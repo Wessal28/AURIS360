@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SEPHS Consulting — HSE Management</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif}
+:root{--green:#1D9E75;--dark-green:#0F6E56;--red:#E24B4A;--amber:#EF9F27;--blue:#185FA5;--bg:#f4f6f8;--card:#fff;--border:#e5e7eb;--text:#111;--text2:#6b7280;--text3:#9ca3af}
+body{background:var(--bg);color:var(--text);min-height:100vh}
+/* LOGIN */
+#login-screen{position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;z-index:100}
+.login-box{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:36px;width:360px;box-shadow:0 4px 24px rgba(0,0,0,.08)}
+.login-logo{font-size:18px;font-weight:700;color:var(--green);margin-bottom:2px}
+.login-sub{font-size:12px;color:var(--text2);margin-bottom:24px}
+.login-err{background:#FCEBEB;color:#A32D2D;font-size:12px;padding:9px 12px;border-radius:8px;margin-bottom:14px;display:none}
+/* APP */
+#app{display:none;height:100vh;overflow:hidden;flex-direction:row}
+.sidebar{width:230px;min-width:230px;background:var(--card);border-right:1px solid var(--border);display:flex;flex-direction:column;height:100vh}
+.sidebar-top{padding:20px;border-bottom:1px solid var(--border)}
+.sidebar-company{font-size:14px;font-weight:600;color:var(--text)}
+.sidebar-user{font-size:12px;color:var(--text2);margin-top:2px}
+.sidebar-role{display:inline-block;margin-top:6px;font-size:10px;padding:2px 8px;border-radius:99px;background:#E1F5EE;color:var(--dark-green);font-weight:500}
+.nav-section{font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:var(--text3);padding:16px 20px 4px}
+.nav-item{display:flex;align-items:center;gap:10px;padding:10px 20px;cursor:pointer;font-size:13px;color:var(--text2);border-left:3px solid transparent;transition:all .15s}
+.nav-item:hover{background:#f9fafb;color:var(--text)}
+.nav-item.active{background:#E1F5EE;color:var(--green);border-left-color:var(--green);font-weight:500}
+.nav-item i{font-size:17px}
+.sidebar-footer{margin-top:auto;padding:14px 20px;border-top:1px solid var(--border)}
+.main{flex:1;overflow-y:auto;padding:28px 32px;background:var(--bg)}
+/* PAGES */
+.page{display:none}.page.active{display:block}
+.page-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:22px}
+.page-title{font-size:20px;font-weight:600;color:var(--text)}
+/* COMPONENTS */
+.btn{padding:8px 16px;border-radius:8px;border:1px solid var(--border);background:var(--card);color:var(--text);font-size:13px;cursor:pointer;display:inline-flex;align-items:center;gap:7px;font-weight:500;transition:all .15s}
+.btn:hover{background:#f9fafb}
+.btn-primary{background:var(--green);color:#fff;border-color:var(--green)}
+.btn-primary:hover{background:var(--dark-green);border-color:var(--dark-green)}
+.btn-sm{padding:5px 10px;font-size:12px}
+.metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:14px;margin-bottom:20px}
+.metric{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px 18px}
+.metric-label{font-size:12px;color:var(--text2);margin-bottom:6px}
+.metric-value{font-size:26px;font-weight:700;color:var(--text)}
+.metric-sub{font-size:11px;color:var(--text3);margin-top:3px}
+.card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px 24px;margin-bottom:16px}
+.card-title{font-size:14px;font-weight:600;color:var(--text);margin-bottom:14px;display:flex;align-items:center;justify-content:space-between}
+.badge{display:inline-flex;align-items:center;padding:3px 9px;border-radius:99px;font-size:11px;font-weight:500}
+.bg{background:#EAF3DE;color:#3B6D11}.ba{background:#FAEEDA;color:#854F0B}.br{background:#FCEBEB;color:#A32D2D}.bb{background:#E6F1FB;color:#185FA5}
+/* FORMS */
+.form-group{margin-bottom:14px}
+.form-label{font-size:12px;color:var(--text2);margin-bottom:5px;display:block;font-weight:500}
+input,select,textarea{width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;color:var(--text);background:var(--card);transition:border .15s}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--green)}
+textarea{resize:vertical;min-height:70px}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+/* TABLE */
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{text-align:left;font-weight:500;color:var(--text2);padding:8px 8px;border-bottom:1px solid var(--border);font-size:12px}
+td{padding:10px 8px;border-bottom:1px solid var(--border);color:var(--text);vertical-align:top}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:#fafafa}
+.empty{text-align:center;padding:32px;color:var(--text3);font-size:13px}
+.loading{text-align:center;padding:24px;color:var(--text2);font-size:13px}
+/* INSPECTION */
+.insp-tbl{width:100%;border-collapse:collapse;font-size:12px}
+.insp-tbl th{background:#f9fafb;padding:7px 10px;border:1px solid var(--border);font-size:11px;font-weight:500;color:var(--text2);text-align:center}
+.insp-tbl th:first-child{text-align:left}
+.insp-tbl td{border:1px solid var(--border);padding:6px 10px;vertical-align:middle}
+.insp-tbl td input[type=checkbox]{width:auto;cursor:pointer}
+.insp-tbl td input[type=text]{border:none;font-size:12px;padding:2px 4px;background:transparent}
+.cat-row td{background:#f3f4f6;font-size:11px;font-weight:600;color:var(--text2);padding:5px 10px}
+/* KPI BAR */
+.kpi-row{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border)}
+.kpi-row:last-child{border-bottom:none}
+.kpi-name{flex:1;font-size:13px;color:var(--text)}
+.pw{flex:1;background:#e5e7eb;border-radius:99px;height:6px;overflow:hidden}
+.pb{height:100%;border-radius:99px;transition:width .4s}
+/* TOAST */
+.toast{position:fixed;bottom:20px;right:20px;padding:11px 18px;border-radius:10px;font-size:13px;font-weight:500;z-index:999;display:none;box-shadow:0 4px 16px rgba(0,0,0,.15)}
+.toast-ok{background:var(--green);color:#fff}
+.toast-err{background:var(--red);color:#fff}
+/* DB STATUS */
+.db-bar{display:inline-flex;align-items:center;gap:7px;font-size:12px;padding:6px 12px;border-radius:8px;background:#E1F5EE;color:var(--dark-green);margin-bottom:18px;font-weight:500}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--green);display:inline-block}
+/* GRID */
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="login-screen">
+  <div class="login-box">
+    <div class="login-logo">SEPHS Consulting</div>
+    <div class="login-sub">HSE Management Platform</div>
+    <div class="login-err" id="login-err"></div>
+    <div class="form-group"><label class="form-label">Email</label><input type="email" id="login-email" placeholder="your@email.com" /></div>
+    <div class="form-group"><label class="form-label">Password</label><input type="password" id="login-pw" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()" /></div>
+    <button class="btn btn-primary" style="width:100%;justify-content:center" onclick="doLogin()" id="login-btn"><i class="ti ti-login"></i>Sign In</button>
+    <div style="margin-top:18px;padding-top:16px;border-top:1px solid var(--border)">
+      <div style="font-size:12px;color:var(--text2);margin-bottom:10px;font-weight:500">New user — register here:</div>
+      <div class="form-group"><label class="form-label">Full name</label><input type="text" id="reg-name" placeholder="Full name" /></div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Role</label>
+          <select id="reg-role"><option value="inspector">Inspector</option><option value="manager">HSE Manager</option><option value="admin">Company Admin</option><option value="sephs_admin">SEPHS Admin</option></select>
+        </div>
+        <div class="form-group"><label class="form-label">Company</label><select id="reg-company"><option value="">Loading...</option></select></div>
+      </div>
+      <button class="btn" style="width:100%;justify-content:center" onclick="doRegister()"><i class="ti ti-user-plus"></i>Register</button>
+    </div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app" style="display:flex">
+  <div class="sidebar">
+    <div class="sidebar-top">
+      <div class="sidebar-company" id="sb-company">SEPHS Consulting</div>
+      <div class="sidebar-user" id="sb-user">—</div>
+      <span class="sidebar-role" id="sb-role">—</span>
+    </div>
+    <span class="nav-section">Modules</span>
+    <div class="nav-item active" onclick="showPage('dashboard',this)"><i class="ti ti-layout-dashboard"></i>Dashboard</div>
+    <div class="nav-item" onclick="showPage('kpi',this)"><i class="ti ti-target"></i>Objectives & KPIs</div>
+    <div class="nav-item" onclick="showPage('events',this)"><i class="ti ti-alert-triangle"></i>Event Reporting</div>
+    <div class="nav-item" onclick="showPage('inspection',this)"><i class="ti ti-clipboard-check"></i>Site Inspection</div>
+    <div class="nav-item" onclick="showPage('training',this)"><i class="ti ti-certificate"></i>Training Monitor</div>
+    <div class="nav-item" id="nav-admin" style="display:none" onclick="showPage('admin',this)"><i class="ti ti-building"></i>Companies</div>
+    <div class="sidebar-footer">
+      <button class="btn btn-sm" style="width:100%;justify-content:center" onclick="doLogout()"><i class="ti ti-logout"></i>Sign out</button>
+    </div>
+  </div>
+
+  <div class="main">
+
+    <!-- DASHBOARD -->
+    <div id="page-dashboard" class="page active">
+      <div class="page-header">
+        <div class="page-title">Dashboard</div>
+        <span id="dash-label" style="font-size:12px;color:var(--text2)"></span>
+      </div>
+      <div class="db-bar"><span class="dot"></span>Connected to Supabase — live data</div>
+      <div class="metrics">
+        <div class="metric"><div class="metric-label">KPIs on track</div><div class="metric-value" id="d-kpis" style="color:var(--green)">—</div></div>
+        <div class="metric"><div class="metric-label">Open events</div><div class="metric-value" id="d-events" style="color:var(--amber)">—</div></div>
+        <div class="metric"><div class="metric-label">Inspections</div><div class="metric-value" id="d-inspections">—</div></div>
+        <div class="metric"><div class="metric-label">Training expiring</div><div class="metric-value" id="d-training" style="color:var(--red)">—</div></div>
+      </div>
+      <div class="grid2">
+        <div class="card"><div class="card-title">Recent events</div><div id="dash-events"><div class="loading">Loading...</div></div></div>
+        <div class="card"><div class="card-title">Recent inspections</div><div id="dash-inspections"><div class="loading">Loading...</div></div></div>
+      </div>
+    </div>
+
+    <!-- KPIs -->
+    <div id="page-kpi" class="page">
+      <div class="page-header"><div class="page-title">Objectives & KPIs</div><button class="btn btn-primary" onclick="showForm('kpi-form')"><i class="ti ti-plus"></i>Add KPI</button></div>
+      <div class="card" id="kpi-form" style="display:none">
+        <div class="card-title">New KPI</div>
+        <div class="form-row"><div class="form-group"><label class="form-label">Objective name</label><input type="text" id="kf-name" /></div><div class="form-group"><label class="form-label">Metric</label><input type="text" id="kf-metric" /></div></div>
+        <div class="form-row"><div class="form-group"><label class="form-label">Target value</label><input type="number" id="kf-target" /></div><div class="form-group"><label class="form-label">Current value</label><input type="number" id="kf-current" /></div></div>
+        <div class="form-row"><div class="form-group"><label class="form-label">Responsible</label><input type="text" id="kf-resp" /></div><div class="form-group"><label class="form-label">Due date</label><input type="date" id="kf-due" /></div></div>
+        <div class="form-group"><label class="form-label">Status</label><select id="kf-status"><option value="on_track">On Track</option><option value="at_risk">At Risk</option><option value="off_track">Off Track</option></select></div>
+        <div style="display:flex;gap:8px"><button class="btn btn-primary" onclick="saveKPI()"><i class="ti ti-device-floppy"></i>Save</button><button class="btn" onclick="hideForm('kpi-form')">Cancel</button></div>
+      </div>
+      <div class="card"><div class="card-title">Active KPIs</div><div id="kpi-list"><div class="loading">Loading...</div></div></div>
+    </div>
+
+    <!-- EVENTS -->
+    <div id="page-events" class="page">
+      <div class="page-header"><div class="page-title">Event Reporting</div><button class="btn btn-primary" onclick="showForm('event-form')"><i class="ti ti-plus"></i>New event</button></div>
+      <div class="card" id="event-form" style="display:none">
+        <div class="card-title">Log new event</div>
+        <div class="form-row"><div class="form-group"><label class="form-label">Event type</label><select id="ef-type"><option value="Near Miss">Near Miss</option><option value="Incident">Incident</option><option value="Hazard Observation">Hazard Observation</option><option value="Dangerous Occurrence">Dangerous Occurrence</option><option value="Environmental">Environmental</option></select></div><div class="form-group"><label class="form-label">Severity</label><select id="ef-sev"><option value="low">Low</option><option value="medium">Medium</option><option value="high">High</option><option value="critical">Critical</option></select></div></div>
+        <div class="form-row"><div class="form-group"><label class="form-label">Date & time</label><input type="datetime-local" id="ef-date" /></div><div class="form-group"><label class="form-label">Location</label><input type="text" id="ef-loc" /></div></div>
+        <div class="form-group"><label class="form-label">Description</label><textarea id="ef-desc"></textarea></div>
+        <div class="form-row"><div class="form-group"><label class="form-label">Immediate action</label><input type="text" id="ef-action" /></div><div class="form-group"><label class="form-label">Reported by</label><input type="text" id="ef-by" /></div></div>
+        <div class="form-row"><div class="form-group"><label class="form-label">Assigned to</label><input type="text" id="ef-assigned" /></div><div class="form-group"><label class="form-label">Action due date</label><input type="date" id="ef-due" /></div></div>
+        <div style="display:flex;gap:8px"><button class="btn btn-primary" onclick="saveEvent()"><i class="ti ti-send"></i>Submit</button><button class="btn" onclick="hideForm('event-form')">Cancel</button></div>
+      </div>
+      <div class="card"><div class="card-title">Event register</div><div id="events-list"><div class="loading">Loading...</div></div></div>
+    </div>
+
+    <!-- INSPECTION -->
+    <div id="page-inspection" class="page">
+      <div class="page-header"><div class="page-title">Site Inspection</div><button class="btn btn-primary" onclick="showForm('insp-form')"><i class="ti ti-plus"></i>New inspection</button></div>
+      <div class="card" id="insp-form" style="display:none">
+        <div class="card-title">New site inspection</div>
+        <div class="form-row"><div class="form-group"><label class="form-label">Site</label><input type="text" id="if-site" /></div><div class="form-group"><label class="form-label">Date</label><input type="date" id="if-date" /></div></div>
+        <div class="form-row"><div class="form-group"><label class="form-label">Performed by</label><input type="text" id="if-by" /></div><div class="form-group"><label class="form-label">Employees present</label><input type="text" id="if-emp" /></div></div>
+        <div style="margin:14px 0 8px;font-size:12px;font-weight:600;color:var(--text2)">Checklist — <span id="if-score" style="color:var(--green)">0 Good / 0 Insufficient</span></div>
+        <table class="insp-tbl"><thead><tr><th style="text-align:left;width:44%">Item</th><th>Good</th><th>Insuf.</th><th>Observation</th></tr></thead><tbody id="if-checklist"></tbody></table>
+        <div style="margin-top:16px">
+          <div class="form-group"><label class="form-label">Positive observations</label><textarea id="if-pos"></textarea></div>
+          <div class="form-group"><label class="form-label">Negative observations</label><textarea id="if-neg"></textarea></div>
+        </div>
+        <div style="display:flex;gap:8px"><button class="btn btn-primary" onclick="saveInspection()"><i class="ti ti-device-floppy"></i>Save inspection</button><button class="btn" onclick="hideForm('insp-form')">Cancel</button></div>
+      </div>
+      <div class="card"><div class="card-title">Inspection history</div><div id="inspections-list"><div class="loading">Loading...</div></div></div>
+    </div>
+
+    <!-- TRAINING -->
+    <div id="page-training" class="page">
+      <div class="page-header"><div class="page-title">Training Monitor</div><button class="btn btn-primary" onclick="showForm('training-form')"><i class="ti ti-plus"></i>Log training</button></div>
+      <div class="card" id="training-form" style="display:none">
+        <div class="card-title">Log training session</div>
+        <div class="form-row"><div class="form-group"><label class="form-label">Course / topic</label><input type="text" id="tf-course" /></div><div class="form-group"><label class="form-label">Trainer</label><input type="text" id="tf-trainer" /></div></div>
+        <div class="form-row"><div class="form-group"><label class="form-label">Date conducted</label><input type="date" id="tf-date" /></div><div class="form-group"><label class="form-label">Certificate expiry</label><input type="date" id="tf-expiry" /></div></div>
+        <div class="form-group"><label class="form-label">Attendees</label><textarea id="tf-attendees"></textarea></div>
+        <div style="display:flex;gap:8px"><button class="btn btn-primary" onclick="saveTraining()"><i class="ti ti-device-floppy"></i>Save</button><button class="btn" onclick="hideForm('training-form')">Cancel</button></div>
+      </div>
+      <div class="card"><div class="card-title">Training sessions</div><div id="training-list"><div class="loading">Loading...</div></div></div>
+    </div>
+
+    <!-- ADMIN -->
+    <div id="page-admin" class="page">
+      <div class="page-header"><div class="page-title">Company Management</div></div>
+      <div class="card">
+        <div class="card-title">Add new company</div>
+        <div class="form-row"><div class="form-group"><label class="form-label">Company name</label><input type="text" id="co-name" /></div><div class="form-group"><label class="form-label">Industry</label><select id="co-industry"><option>Manufacturing</option><option>Construction</option><option>Healthcare</option><option>Transportation</option><option>Energy / Oil & Gas</option><option>Logistics</option><option>Other</option></select></div></div>
+        <div class="form-row"><div class="form-group"><label class="form-label">Contact name</label><input type="text" id="co-contact" /></div><div class="form-group"><label class="form-label">Contact email</label><input type="email" id="co-email" /></div></div>
+        <button class="btn btn-primary" onclick="saveCompany()"><i class="ti ti-device-floppy"></i>Register company</button>
+      </div>
+      <div class="card"><div class="card-title">Registered companies</div><div id="companies-list"><div class="loading">Loading...</div></div></div>
+    </div>
+
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const SB='https://iarfxjhahzbhncsaohbg.supabase.co';
+const KEY='sb_publishable_4kaoLqRo6p84_yhTpO_5pg_47ea89iF';
+let tok=null,prof=null,co=null,chkItems=[];
+
+async function api(path,o={}){
+  const r=await fetch(SB+'/rest/v1'+path,{method:o.m||'GET',headers:{'Content-Type':'application/json','apikey':KEY,'Authorization':'Bearer '+(tok||KEY),...(o.p?{'Prefer':o.p}:{})},body:o.b?JSON.stringify(o.b):undefined});
+  if(r.status===204)return null;const d=await r.json();if(!r.ok)throw new Error(d.message||d.error_description||r.statusText);return d;
+}
+async function authReq(path,body){
+  const r=await fetch(SB+'/auth/v1'+path,{method:'POST',headers:{'Content-Type':'application/json','apikey':KEY},body:JSON.stringify(body)});
+  const d=await r.json();if(!r.ok)throw new Error(d.error_description||d.msg||'Auth error');return d;
+}
+function toast(msg,ok=true){const t=document.getElementById('toast');t.textContent=msg;t.className='toast '+(ok?'toast-ok':'toast-err');t.style.display='block';setTimeout(()=>t.style.display='none',3200);}
+function fmt(d){return d?new Date(d).toLocaleDateString('en-GB'):'—';}
+function sev(s){const m={low:'bb',medium:'ba',high:'br',critical:'br'};return`<span class="badge ${m[s]||'bb'}">${s||'—'}</span>`;}
+function stat(s){const m={open:'ba',in_progress:'ba',closed:'bg',on_track:'bg',at_risk:'ba',off_track:'br',completed:'bb'};return`<span class="badge ${m[s]||'bb'}">${(s||'').replace(/_/g,' ')}</span>`;}
+
+async function doLogin(){
+  const em=document.getElementById('login-email').value.trim();
+  const pw=document.getElementById('login-pw').value;
+  const err=document.getElementById('login-err');
+  const btn=document.getElementById('login-btn');
+  err.style.display='none';btn.innerHTML='<i class="ti ti-loader-2"></i>Signing in...';btn.disabled=true;
+  try{
+    const d=await authReq('/token?grant_type=password',{email:em,password:pw});
+    tok=d.access_token;
+    await loadProfile(d.user.id);
+    document.getElementById('login-screen').style.display='none';
+    document.getElementById('app').style.display='flex';
+    loadDashboard();
+  }catch(e){err.textContent=e.message;err.style.display='block';}
+  btn.innerHTML='<i class="ti ti-login"></i>Sign In';btn.disabled=false;
+}
+
+async function doRegister(){
+  const em=document.getElementById('login-email').value.trim();
+  const pw=document.getElementById('login-pw').value;
+  const name=document.getElementById('reg-name').value.trim();
+  const role=document.getElementById('reg-role').value;
+  const cid=document.getElementById('reg-company').value;
+  const err=document.getElementById('login-err');
+  err.style.display='none';
+  if(!em||!pw||!name){err.textContent='Please enter email, password and your name.';err.style.display='block';return;}
+  try{
+    const d=await authReq('/signup',{email:em,password:pw});
+    tok=d.access_token;
+    await api('/profiles',{m:'POST',p:'return=minimal',b:{id:d.user.id,full_name:name,role,email:em,company_id:cid||null}});
+    await loadProfile(d.user.id);
+    document.getElementById('login-screen').style.display='none';
+    document.getElementById('app').style.display='flex';
+    loadDashboard();toast('Welcome, '+name+'!');
+  }catch(e){err.textContent=e.message;err.style.display='block';}
+}
+
+async function loadProfile(uid){
+  try{
+    const d=await api(`/profiles?id=eq.${uid}&select=*,companies(*)`);
+    if(d&&d[0]){
+      prof=d[0];co=d[0].companies;
+      document.getElementById('sb-company').textContent=co?.name||'SEPHS Consulting';
+      document.getElementById('sb-user').textContent=prof.full_name||prof.email||'—';
+      document.getElementById('sb-role').textContent=prof.role||'user';
+      document.getElementById('dash-label').textContent=co?.name||'';
+      if(prof.role==='sephs_admin')document.getElementById('nav-admin').style.display='flex';
+    }
+  }catch(e){console.error(e);}
+}
+
+function doLogout(){tok=null;prof=null;co=null;document.getElementById('login-screen').style.display='flex';document.getElementById('app').style.display='none';}
+
+function showPage(name,el){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.getElementById('page-'+name).classList.add('active');
+  el.classList.add('active');
+  const L={dashboard:loadDashboard,kpi:loadKPIs,events:loadEvents,inspection:()=>{buildChecklist();loadInspections();},training:loadTraining,admin:loadAdmin};
+  L[name]&&L[name]();
+}
+function showForm(id){document.getElementById(id).style.display='block';window.scrollTo(0,0);}
+function hideForm(id){document.getElementById(id).style.display='none';}
+
+function cf(){return prof?.role==='sephs_admin'?'':(prof?.company_id?`&company_id=eq.${prof.company_id}`:'&company_id=is.null');}
+
+async function loadDashboard(){
+  try{
+    const [k,e,i,t]=await Promise.all([
+      api('/kpis?select=*'+cf()),
+      api('/events?select=*'+cf()+'&order=created_at.desc&limit=5'),
+      api('/inspections?select=*'+cf()+'&order=created_at.desc&limit=5'),
+      api('/training_sessions?select=*'+cf()),
+    ]);
+    const soon=new Date();soon.setDate(soon.getDate()+30);
+    document.getElementById('d-kpis').textContent=(k||[]).filter(x=>x.status==='on_track').length+'/'+(k||[]).length;
+    document.getElementById('d-events').textContent=(e||[]).filter(x=>x.status==='open').length;
+    document.getElementById('d-inspections').textContent=(i||[]).length;
+    document.getElementById('d-training').textContent=(t||[]).filter(x=>x.expiry_date&&new Date(x.expiry_date)<soon).length;
+    const de=document.getElementById('dash-events');
+    de.innerHTML=!e?.length?'<div class="empty">No events yet</div>':`<table><thead><tr><th>Date</th><th>Type</th><th>Severity</th><th>Status</th></tr></thead><tbody>${e.map(x=>`<tr><td>${fmt(x.event_date||x.created_at)}</td><td>${x.event_type}</td><td>${sev(x.severity)}</td><td>${stat(x.status)}</td></tr>`).join('')}</tbody></table>`;
+    const di=document.getElementById('dash-inspections');
+    di.innerHTML=!i?.length?'<div class="empty">No inspections yet</div>':`<table><thead><tr><th>Date</th><th>Site</th><th>Good</th><th>Insuf.</th></tr></thead><tbody>${i.map(x=>`<tr><td>${fmt(x.inspection_date)}</td><td>${x.site||'—'}</td><td><span class="badge bg">${x.score_good}</span></td><td><span class="badge ${x.score_insuf>3?'br':'ba'}">${x.score_insuf}</span></td></tr>`).join('')}</tbody></table>`;
+  }catch(e){toast('Dashboard error: '+e.message,false);}
+}
+
+async function loadKPIs(){
+  const el=document.getElementById('kpi-list');
+  try{
+    const d=await api('/kpis?select=*'+cf()+'&order=created_at.desc');
+    if(!d?.length){el.innerHTML='<div class="empty">No KPIs yet — add one above</div>';return;}
+    const C={on_track:'#1D9E75',at_risk:'#EF9F27',off_track:'#E24B4A',completed:'#185FA5'};
+    el.innerHTML=d.map(k=>{
+      const p=k.target_value>0?Math.round(Math.min(100,(k.current_value/k.target_value)*100)):100;
+      return`<div class="kpi-row"><div class="kpi-name">${k.name}<div style="font-size:11px;color:var(--text3)">${k.metric||''}</div></div><div style="font-size:12px;color:var(--text2);width:80px;text-align:right">${k.responsible||''}</div><div class="pw"><div class="pb" style="width:${p}%;background:${C[k.status]||'#888'}"></div></div><div style="font-size:12px;font-weight:600;min-width:36px;text-align:right;color:${C[k.status]||'#888'}">${p}%</div>${stat(k.status)}</div>`;
+    }).join('');
+  }catch(e){el.innerHTML=`<div class="empty" style="color:var(--red)">${e.message}</div>`;}
+}
+async function saveKPI(){
+  try{
+    await api('/kpis',{m:'POST',p:'return=minimal',b:{company_id:prof?.company_id,name:document.getElementById('kf-name').value,metric:document.getElementById('kf-metric').value,target_value:parseFloat(document.getElementById('kf-target').value)||0,current_value:parseFloat(document.getElementById('kf-current').value)||0,responsible:document.getElementById('kf-resp').value,due_date:document.getElementById('kf-due').value||null,status:document.getElementById('kf-status').value}});
+    hideForm('kpi-form');toast('KPI saved!');loadKPIs();loadDashboard();
+  }catch(e){toast(e.message,false);}
+}
+
+async function loadEvents(){
+  const el=document.getElementById('events-list');
+  try{
+    const d=await api('/events?select=*'+cf()+'&order=created_at.desc');
+    el.innerHTML=!d?.length?'<div class="empty">No events yet</div>':`<table><thead><tr><th>Date</th><th>Type</th><th>Location</th><th>Severity</th><th>Assigned to</th><th>Status</th></tr></thead><tbody>${d.map(x=>`<tr><td>${fmt(x.event_date||x.created_at)}</td><td>${x.event_type}</td><td>${x.location||'—'}</td><td>${sev(x.severity)}</td><td>${x.assigned_to||'—'}</td><td>${stat(x.status)}</td></tr>`).join('')}</tbody></table>`;
+  }catch(e){el.innerHTML=`<div class="empty" style="color:var(--red)">${e.message}</div>`;}
+}
+async function saveEvent(){
+  try{
+    await api('/events',{m:'POST',p:'return=minimal',b:{company_id:prof?.company_id,event_type:document.getElementById('ef-type').value,severity:document.getElementById('ef-sev').value,event_date:document.getElementById('ef-date').value||null,location:document.getElementById('ef-loc').value,description:document.getElementById('ef-desc').value,immediate_action:document.getElementById('ef-action').value,reported_by:document.getElementById('ef-by').value,assigned_to:document.getElementById('ef-assigned').value,action_due_date:document.getElementById('ef-due').value||null,status:'open'}});
+    hideForm('event-form');toast('Event reported!');loadEvents();loadDashboard();
+  }catch(e){toast(e.message,false);}
+}
+
+const CATS=[
+  {cat:'Safety equipment & signage',items:['First aid kit','Fire extinguishers','Safety signages','Means of communication']},
+  {cat:'Personnel & behaviour',items:['First aiders','Knowledge of safety rules','Working postures','Attitude']},
+  {cat:'Compliance & documentation',items:['Permits & Authorisations','Safety training','Respect of work methods']},
+  {cat:'Site conditions',items:['Cleanliness of work site','Site marking','Waste control','Scaffolding','Ladders / step ladders']},
+  {cat:'Equipment & tools',items:['Tools','Portable electrical tools','Collective protection']},
+  {cat:'PPE',items:['Wearing of PPEs','Safety goggles','Gloves','Safety shoes','Safety harness']},
+];
+function buildChecklist(){
+  const tb=document.getElementById('if-checklist');chkItems=[];let html='';let i=0;
+  CATS.forEach(c=>{
+    html+=`<tr class="cat-row"><td colspan="4">${c.cat}</td></tr>`;
+    c.items.forEach(item=>{
+      chkItems.push({item,cat:c.cat});
+      html+=`<tr><td>${item}</td><td style="text-align:center"><input type="checkbox" id="cg-${i}" onchange="syncChk(${i},'g')"></td><td style="text-align:center"><input type="checkbox" id="ci-${i}" onchange="syncChk(${i},'i')"></td><td><input type="text" id="co-${i}" placeholder="Observation..."></td></tr>`;
+      i++;
+    });
+  });
+  tb.innerHTML=html;
+}
+function syncChk(i,t){
+  if(t==='g'){const e=document.getElementById('ci-'+i);if(e)e.checked=false;}
+  else{const e=document.getElementById('cg-'+i);if(e)e.checked=false;}
+  let g=0,ins=0;
+  chkItems.forEach((_,n)=>{if(document.getElementById('cg-'+n)?.checked)g++;if(document.getElementById('ci-'+n)?.checked)ins++;});
+  document.getElementById('if-score').textContent=g+' Good / '+ins+' Insufficient';
+}
+async function loadInspections(){
+  const el=document.getElementById('inspections-list');
+  try{
+    const d=await api('/inspections?select=*'+cf()+'&order=inspection_date.desc');
+    el.innerHTML=!d?.length?'<div class="empty">No inspections yet</div>':`<table><thead><tr><th>Date</th><th>Site</th><th>Performed by</th><th>Good</th><th>Insufficient</th></tr></thead><tbody>${d.map(x=>`<tr><td>${fmt(x.inspection_date)}</td><td>${x.site||'—'}</td><td>${x.performed_by||'—'}</td><td><span class="badge bg">${x.score_good}</span></td><td><span class="badge ${x.score_insuf>3?'br':'ba'}">${x.score_insuf}</span></td></tr>`).join('')}</tbody></table>`;
+  }catch(e){el.innerHTML=`<div class="empty" style="color:var(--red)">${e.message}</div>`;}
+}
+async function saveInspection(){
+  try{
+    let g=0,ins=0;
+    const items=chkItems.map((c,i)=>{
+      const gv=document.getElementById('cg-'+i)?.checked;
+      const iv=document.getElementById('ci-'+i)?.checked;
+      const ov=document.getElementById('co-'+i)?.value||'';
+      if(gv)g++;if(iv)ins++;
+      return{category:c.cat,item_name:c.item,result:gv?'good':iv?'insufficient':null,observation:ov};
+    });
+    const res=await api('/inspections',{m:'POST',p:'return=representation',b:{company_id:prof?.company_id,site:document.getElementById('if-site').value,inspection_date:document.getElementById('if-date').value||null,performed_by:document.getElementById('if-by').value,employees_present:document.getElementById('if-emp').value,score_good:g,score_insuf:ins,positive_obs:document.getElementById('if-pos').value,negative_obs:document.getElementById('if-neg').value,created_by:prof?.id}});
+    if(res?.[0]){
+      const id=res[0].id;
+      const scored=items.filter(x=>x.result);
+      if(scored.length)await api('/inspection_items',{m:'POST',p:'return=minimal',b:scored.map(x=>({...x,inspection_id:id}))});
+    }
+    hideForm('insp-form');toast('Inspection saved!');loadInspections();loadDashboard();
+  }catch(e){toast(e.message,false);}
+}
+
+async function loadTraining(){
+  const el=document.getElementById('training-list');
+  try{
+    const d=await api('/training_sessions?select=*'+cf()+'&order=date_conducted.desc');
+    if(!d?.length){el.innerHTML='<div class="empty">No training sessions yet</div>';return;}
+    const today=new Date(),soon=new Date();soon.setDate(soon.getDate()+30);
+    el.innerHTML=`<table><thead><tr><th>Course</th><th>Trainer</th><th>Date</th><th>Expiry</th><th>Status</th></tr></thead><tbody>${d.map(x=>{
+      const exp=x.expiry_date?new Date(x.expiry_date):null;
+      const s=!exp?'bb':exp<today?'br':exp<soon?'ba':'bg';
+      const sl=!exp?'—':exp<today?'Expired':exp<soon?'Expiring soon':'Valid';
+      return`<tr><td>${x.course}</td><td>${x.trainer||'—'}</td><td>${fmt(x.date_conducted)}</td><td>${fmt(x.expiry_date)}</td><td><span class="badge ${s}">${sl}</span></td></tr>`;
+    }).join('')}</tbody></table>`;
+  }catch(e){el.innerHTML=`<div class="empty" style="color:var(--red)">${e.message}</div>`;}
+}
+async function saveTraining(){
+  try{
+    await api('/training_sessions',{m:'POST',p:'return=minimal',b:{company_id:prof?.company_id,course:document.getElementById('tf-course').value,trainer:document.getElementById('tf-trainer').value,date_conducted:document.getElementById('tf-date').value||null,expiry_date:document.getElementById('tf-expiry').value||null,attendees:document.getElementById('tf-attendees').value,created_by:prof?.id}});
+    hideForm('training-form');toast('Training saved!');loadTraining();
+  }catch(e){toast(e.message,false);}
+}
+
+async function loadAdmin(){
+  const el=document.getElementById('companies-list');
+  try{
+    const d=await api('/companies?select=*&order=name');
+    el.innerHTML=!d?.length?'<div class="empty">No companies yet</div>':`<table><thead><tr><th>Company</th><th>Industry</th><th>Contact email</th><th>Status</th></tr></thead><tbody>${d.map(x=>`<tr><td><strong>${x.name}</strong></td><td>${x.industry||'—'}</td><td>${x.contact_email||'—'}</td><td><span class="badge ${x.active?'bg':'ba'}">${x.active?'Active':'Inactive'}</span></td></tr>`).join('')}</tbody></table>`;
+  }catch(e){el.innerHTML=`<div class="empty" style="color:var(--red)">${e.message}</div>`;}
+}
+async function saveCompany(){
+  try{
+    await api('/companies',{m:'POST',p:'return=minimal',b:{name:document.getElementById('co-name').value,industry:document.getElementById('co-industry').value,contact_name:document.getElementById('co-contact').value,contact_email:document.getElementById('co-email').value,active:true}});
+    toast('Company registered!');loadAdmin();loadCompaniesDropdown();
+    ['co-name','co-contact','co-email'].forEach(id=>document.getElementById(id).value='');
+  }catch(e){toast(e.message,false);}
+}
+
+async function loadCompaniesDropdown(){
+  try{
+    const d=await api('/companies?select=id,name&active=eq.true&order=name');
+    const sel=document.getElementById('reg-company');
+    sel.innerHTML=d?.length?d.map(c=>`<option value="${c.id}">${c.name}</option>`).join(''):'<option value="">No companies yet</option>';
+  }catch(e){}
+}
+
+// Init
+loadCompaniesDropdown();
+document.getElementById('if-date')&&(document.getElementById('if-date').value=new Date().toISOString().slice(0,10));
+</script>
+</body>
+</html>
