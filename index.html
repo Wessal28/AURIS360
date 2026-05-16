@@ -657,13 +657,13 @@ async function getCtx(){
   try{
     const[k,e,i,a,pe,certs]=await Promise.all([api('/kpis?select=*'+cf()),api('/events?select=*'+cf()+'&limit=20'),api('/inspections?select=*'+cf()+'&limit=10'),api('/action_tracker?select=*'+cf()),api('/people?select=*'+cf()),api('/people_certifications?select=*'+cf())]);
     const soon=new Date();soon.setDate(soon.getDate()+30);
-    return 'Company: '+(co?.name||'Unknown')+' | Industry: '+(co?.industry||'Unknown')+'
-KPIs: '+(k||[]).length+' total, '+(k||[]).filter(x=>x.status==='on_track').length+' on track, '+(k||[]).filter(x=>x.status==='at_risk').length+' at risk
-Events: '+(e||[]).length+' total, '+(e||[]).filter(x=>x.severity==='high'||x.severity==='critical').length+' high/critical
-Inspections: '+(i||[]).length+', avg good: '+(i?.length?Math.round((i||[]).reduce((s,x)=>s+x.score_good,0)/(i||[]).length):0)+'/24
-Actions: '+(a||[]).length+' total, '+(a||[]).filter(x=>x.status==='open').length+' open, '+(a||[]).filter(x=>x.priority==='critical').length+' critical
-People: '+(pe||[]).length+' active ('+(pe||[]).filter(x=>x.person_type==='employee').length+' employees, '+(pe||[]).filter(x=>x.person_type==='contractor').length+' contractors)
-Expiring certs (30d): '+(certs||[]).filter(x=>x.expiry_date&&new Date(x.expiry_date)<soon).length;
+    return `Company: ${co?.name||'Unknown'} | Industry: ${co?.industry||'Unknown'}
+KPIs: ${(k||[]).length} total, ${(k||[]).filter(x=>x.status==='on_track').length} on track, ${(k||[]).filter(x=>x.status==='at_risk').length} at risk
+Events: ${(e||[]).length} total, ${(e||[]).filter(x=>x.severity==='high'||x.severity==='critical').length} high/critical
+Inspections: ${(i||[]).length}, avg good: ${i?.length?Math.round((i||[]).reduce((s,x)=>s+x.score_good,0)/(i||[]).length):0}/24
+Actions: ${(a||[]).length} total, ${(a||[]).filter(x=>x.status==='open').length} open, ${(a||[]).filter(x=>x.priority==='critical').length} critical
+People: ${(pe||[]).length} active (${(pe||[]).filter(x=>x.person_type==='employee').length} employees, ${(pe||[]).filter(x=>x.person_type==='contractor').length} contractors)
+Expiring certs (30d): ${(certs||[]).filter(x=>x.expiry_date&&new Date(x.expiry_date)<soon).length}`;
   }catch(e){return 'Unable to load data.';}
 }
 async function callAI(msgs){
@@ -675,10 +675,7 @@ async function sendAI(){
   inp.value='';addMsg(msg,'user');const th=addMsg('Analysing your HSE data...','assistant');
   try{
     const ctx=await getCtx();
-    aiHist.push({role:'user',content:'HSE Data:
-'+ctx+'
-
-Question: '+msg});
+    aiHist.push({role:'user',content:'HSE Data:\n'+ctx+'\n\nQuestion: '+msg});
     const rep=await callAI(aiHist);aiHist.push({role:'assistant',content:rep});th.textContent=rep;
   }catch(e){th.textContent='Error: '+e.message;}
 }
@@ -688,10 +685,7 @@ async function genDashAI(){
   const el=document.getElementById('ai-dash-insights');if(!el)return;
   try{
     const ctx=await getCtx();
-    const rep=await callAI([{role:'user',content:'HSE Data:
-'+ctx+'
-
-Provide exactly 3 brief dashboard insights (1-2 sentences). JSON array: [{"type":"info|warn|danger","title":"...","body":"..."}]'}]);
+    const rep=await callAI([{role:'user',content:'HSE Data:\n'+ctx+'\n\nProvide exactly 3 brief dashboard insights (1-2 sentences). JSON array: [{"type":"info|warn|danger","title":"...","body":"..."}]'}]);
     const ins=JSON.parse(rep.replace(/```json|```/g,'').trim());
     el.innerHTML=ins.map(i=>'<div class="insight-card '+(i.type==='warn'?'warn':i.type==='danger'?'danger':'')+'"><div class="insight-title">'+i.title+'</div><div class="insight-body">'+i.body+'</div></div>').join('');
   }catch(e){el.innerHTML='';}
@@ -702,18 +696,9 @@ async function genFullAI(){
   try{
     const ctx=await getCtx();
     const[main,kpir,hot]=await Promise.all([
-      callAI([{role:'user',content:'HSE Data:
-'+ctx+'
-
-Comprehensive HSE performance analysis with trends, top concerns, and recommendations.'}]),
-      callAI([{role:'user',content:'HSE Data:
-'+ctx+'
-
-KPI analysis with specific improvement recommendations for each status.'}]),
-      callAI([{role:'user',content:'HSE Data:
-'+ctx+'
-
-Top risk hotspots ranked by severity with mitigation steps.'}]),
+      callAI([{role:'user',content:'HSE Data:\n'+ctx+'\n\nComprehensive HSE performance analysis with trends, top concerns, and recommendations.'}]),
+      callAI([{role:'user',content:'HSE Data:\n'+ctx+'\n\nKPI analysis with specific improvement recommendations for each status.'}]),
+      callAI([{role:'user',content:'HSE Data:\n'+ctx+'\n\nTop risk hotspots ranked by severity with mitigation steps.'}]),
     ]);
     document.getElementById('ai-insights-content').innerHTML='<div style="white-space:pre-wrap;font-size:13px;line-height:1.7">'+main+'</div>';
     document.getElementById('ai-kpi-recs').innerHTML='<div style="white-space:pre-wrap;font-size:12px;line-height:1.7">'+kpir+'</div>';
@@ -724,7 +709,7 @@ Top risk hotspots ranked by severity with mitigation steps.'}]),
 // KPIs
 async function loadKPIs(){
   const btn=document.getElementById('kpi-add-btn');
-  if(isMgr())btn.innerHTML='<button class="btn btn-primary" onclick="toggleForm('kpi-form')"><i class="ti ti-plus"></i>Add KPI</button>';
+  if(isMgr())btn.innerHTML='<button class="btn btn-primary" onclick="toggleForm(\'kpi-form\')"><i class="ti ti-plus"></i>Add KPI</button>';
   const el=document.getElementById('kpi-list');
   try{
     const d=await api('/kpis?select=*'+cf()+'&order=created_at.desc');
@@ -772,7 +757,7 @@ const CATS=[
 ];
 function buildChk(){
   const tb=document.getElementById('if-checklist');chkItems=[];let html='';let i=0;
-  CATS.forEach(c=>{html+='<tr class="cat-row"><td colspan="4">'+c.cat+'</td></tr>';c.items.forEach(item=>{chkItems.push({item,cat:c.cat});html+='<tr><td>'+item+'</td><td style="text-align:center"><input type="checkbox" id="cg-'+i+'" onchange="syncChk('+i+','g')"></td><td style="text-align:center"><input type="checkbox" id="ci-'+i+'" onchange="syncChk('+i+','i')"></td><td><input type="text" id="co-'+i+'" placeholder="..."></td></tr>';i++;});});
+  CATS.forEach(c=>{html+='<tr class="cat-row"><td colspan="4">'+c.cat+'</td></tr>';c.items.forEach(item=>{chkItems.push({item,cat:c.cat});html+='<tr><td>'+item+'</td><td style="text-align:center"><input type="checkbox" id="cg-'+i+'" onchange="syncChk('+i+',\'g\')"></td><td style="text-align:center"><input type="checkbox" id="ci-'+i+'" onchange="syncChk('+i+',\'i\')"></td><td><input type="text" id="co-'+i+'" placeholder="..."></td></tr>';i++;});});
   tb.innerHTML=html;
 }
 function syncChk(i,t){if(t==='g'){const e=document.getElementById('ci-'+i);if(e)e.checked=false;}else{const e=document.getElementById('cg-'+i);if(e)e.checked=false;}let g=0,ins=0;chkItems.forEach((_,n)=>{if(document.getElementById('cg-'+n)?.checked)g++;if(document.getElementById('ci-'+n)?.checked)ins++;});document.getElementById('if-score').textContent=g+' Good / '+ins+' Insufficient';}
@@ -805,7 +790,7 @@ async function saveInspection(){
 // RISK ASSESSMENT
 async function loadRA(){
   const btn=document.getElementById('risk-add-btn');
-  if(isMgr())btn.innerHTML='<button class="btn btn-primary" onclick="toggleForm('risk-form')"><i class="ti ti-plus"></i>New assessment</button>';
+  if(isMgr())btn.innerHTML='<button class="btn btn-primary" onclick="toggleForm(\'risk-form\')"><i class="ti ti-plus"></i>New assessment</button>';
   const el=document.getElementById('risk-list');
   try{
     const d=await api('/risk_assessments?select=*'+cf()+'&order=created_at.desc');
@@ -825,7 +810,7 @@ async function saveRA(){
 async function loadInvs(){
   if(isInsp()){document.getElementById('inv-list').innerHTML=denied();return;}
   const btn=document.getElementById('inv-add-btn');
-  if(isMgr())btn.innerHTML='<button class="btn btn-primary" onclick="toggleForm('inv-form')"><i class="ti ti-plus"></i>New investigation</button>';
+  if(isMgr())btn.innerHTML='<button class="btn btn-primary" onclick="toggleForm(\'inv-form\')"><i class="ti ti-plus"></i>New investigation</button>';
   const el=document.getElementById('inv-list');
   try{
     const d=await api('/investigations?select=*'+cf()+'&order=created_at.desc');
@@ -847,7 +832,7 @@ async function saveInv(){
 // PERMITS
 async function loadPermits(){
   const btn=document.getElementById('permit-add-btn');
-  if(isMgr())btn.innerHTML='<button class="btn btn-primary" onclick="toggleForm('permit-form')"><i class="ti ti-plus"></i>New permit</button>';
+  if(isMgr())btn.innerHTML='<button class="btn btn-primary" onclick="toggleForm(\'permit-form\')"><i class="ti ti-plus"></i>New permit</button>';
   else btn.innerHTML='<span class="badge bgr"><i class="ti ti-eye"></i> View only</span>';
   const el=document.getElementById('permits-list');
   try{
@@ -884,7 +869,7 @@ async function saveNoise(){
 async function loadMtgs(){
   if(isInsp()){document.getElementById('meetings-list').innerHTML=denied();return;}
   const btn=document.getElementById('mtg-add-btn');
-  if(isMgr())btn.innerHTML='<button class="btn btn-primary" onclick="toggleForm('meeting-form')"><i class="ti ti-plus"></i>New meeting</button>';
+  if(isMgr())btn.innerHTML='<button class="btn btn-primary" onclick="toggleForm(\'meeting-form\')"><i class="ti ti-plus"></i>New meeting</button>';
   const el=document.getElementById('meetings-list');
   try{
     const d=await api('/hse_meetings?select=*'+cf()+'&order=meeting_date.desc');
@@ -903,7 +888,7 @@ async function saveMtg(){
 // TRAINING
 async function loadTraining(){
   const btn=document.getElementById('training-add-btn');
-  if(isMgr())btn.innerHTML='<button class="btn btn-primary" onclick="toggleForm('training-form')"><i class="ti ti-plus"></i>Log training</button>';
+  if(isMgr())btn.innerHTML='<button class="btn btn-primary" onclick="toggleForm(\'training-form\')"><i class="ti ti-plus"></i>Log training</button>';
   const el=document.getElementById('training-list');
   try{
     const d=await api('/training_sessions?select=*'+cf()+'&order=date_conducted.desc');
@@ -935,7 +920,11 @@ async function loadActions(){
     document.getElementById('action-count').textContent='('+( (d||[]).length)+' actions)';
     if(!d?.length){el.innerHTML='<div class="empty">No actions found</div>';return;}
     const today=new Date();
-    el.innerHTML='<table><thead><tr><th>Description</th><th>Source</th><th>Responsible</th><th>Target date</th><th>Priority</th><th>Status</th><th></th></tr></thead><tbody>'+d.map(x=>{const ov=x.target_date&&new Date(x.target_date)<today&&x.status!=='closed';return'<tr style="'+(ov?'background:#fef2f2':'')+'"><td>'+x.description+(ov?'<br><span style="font-size:10px;color:var(--red);font-weight:700">OVERDUE</span>':'')+'</td><td><span class="badge bgr" style="font-size:10px">'+(x.source_module||'').replace(/_/g,' ')+'</span></td><td>'+(x.responsible||'--')+'</td><td>'+fmt(x.target_date)+'</td><td>'+prio(x.priority)+'</td><td>'+stat(x.status)+'</td><td>'+(isMgr()?'<button class="btn btn-sm" onclick="cycleAction(''+x.id+'',''+x.status+'')"><i class="ti ti-check"></i></button>':'')+'</td></tr>';}).join('')+'</tbody></table>';
+        el.innerHTML='<table><thead><tr><th>Description</th><th>Source</th><th>Responsible</th><th>Target date</th><th>Priority</th><th>Status</th><th></th></tr></thead><tbody>'+d.map(x=>{
+      const ov=x.target_date&&new Date(x.target_date)<today&&x.status!=='closed';
+      const closeBtn=isMgr()? '<button class="btn btn-sm" onclick="cycleAction(\''+x.id+'\',\''+x.status+'\')"><i class="ti ti-check"></i></button>':'';
+      return '<tr style="'+(ov?'background:#fef2f2':'')+'"><td>'+x.description+(ov?'<br><span style="font-size:10px;color:var(--red);font-weight:700">OVERDUE</span>':'')+'</td><td><span class="badge bgr" style="font-size:10px">'+(x.source_module||'').replace(/_/g,' ')+'</span></td><td>'+(x.responsible||'--')+'</td><td>'+fmt(x.target_date)+'</td><td>'+prio(x.priority)+'</td><td>'+stat(x.status)+'</td><td>'+closeBtn+'</td></tr>';
+    }).join('')+'</tbody></table>';
   }catch(e){el.innerHTML='<div class="empty" style="color:var(--red)">'+e.message+'</div>';}
 }
 async function cycleAction(id,s){
@@ -959,7 +948,7 @@ async function saveAction(){
 async function loadDocs(){
   if(isInsp()){document.getElementById('docs-list').innerHTML=denied();return;}
   const btn=document.getElementById('doc-add-btn');
-  if(isMgr())btn.innerHTML='<button class="btn btn-primary" onclick="toggleForm('doc-form')"><i class="ti ti-plus"></i>Register document</button>';
+  if(isMgr())btn.innerHTML='<button class="btn btn-primary" onclick="toggleForm(\'doc-form\')"><i class="ti ti-plus"></i>Register document</button>';
   const el=document.getElementById('docs-list');
   try{
     const d=await api('/documents?select=*'+cf()+'&order=created_at.desc');
@@ -980,7 +969,7 @@ async function saveDoc(){
 // PEOPLE
 async function loadPeople(){
   const btn=document.getElementById('people-add-btn');
-  if(isMgr())btn.innerHTML='<button class="btn btn-primary" onclick="toggleForm('people-form')"><i class="ti ti-plus"></i>Add person</button>';
+  if(isMgr())btn.innerHTML='<button class="btn btn-primary" onclick="toggleForm(\'people-form\')"><i class="ti ti-plus"></i>Add person</button>';
   const el=document.getElementById('people-list');
   try{
     let path='/people?select=*'+cf();
@@ -1037,7 +1026,7 @@ async function loadAdmin(){
   const el=document.getElementById('companies-list');
   try{
     const d=await api('/companies?select=*&order=name');
-    el.innerHTML=!d?.length?'<div class="empty">No companies</div>':'<table><thead><tr><th>Company</th><th>Industry</th><th>Contact</th><th>Status</th></tr></thead><tbody>'+d.map(x=>'<tr><td>'+(x.logo_url?'<img src="'+x.logo_url+'" style="height:20px;margin-right:6px;vertical-align:middle" alt="logo"/>'':'')+x.name+'</td><td>'+(x.industry||'--')+'</td><td>'+(x.contact_email||'--')+'</td><td><span class="badge '+(x.active?'bg':'ba')+'">'+(x.active?'Active':'Inactive')+'</span></td></tr>').join('')+'</tbody></table>';
+    el.innerHTML=!d?.length?'<div class="empty">No companies</div>':'<table><thead><tr><th>Company</th><th>Industry</th><th>Contact</th><th>Status</th></tr></thead><tbody>'+d.map(x=>'<tr><td>'+(x.logo_url?'<img src="'+x.logo_url+'" style="height:20px;margin-right:6px;vertical-align:middle" alt="logo"/>':'')+x.name+'</td><td>'+(x.industry||'--')+'</td><td>'+(x.contact_email||'--')+'</td><td><span class="badge '+(x.active?'bg':'ba')+'">'+(x.active?'Active':'Inactive')+'</span></td></tr>').join('')+'</tbody></table>';
   }catch(e){el.innerHTML='<div class="empty" style="color:var(--red)">'+e.message+'</div>';}
 }
 async function saveCompany(){
