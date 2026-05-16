@@ -210,16 +210,147 @@ tr:hover td{background:#fafafa}
 
     <!-- KPIs -->
     <div id="page-kpi" class="page">
-      <div class="page-header"><div class="page-title">Objectives & KPIs</div><div id="kpi-add-btn"></div></div>
-      <div class="card" id="kpi-form" style="display:none">
-        <div class="card-title">New KPI</div>
-        <div class="form-row"><div class="form-group"><label class="form-label">Objective name</label><input type="text" id="kf-name"/></div><div class="form-group"><label class="form-label">Metric</label><input type="text" id="kf-metric"/></div></div>
-        <div class="form-row"><div class="form-group"><label class="form-label">Target value</label><input type="number" id="kf-target"/></div><div class="form-group"><label class="form-label">Current value</label><input type="number" id="kf-current"/></div></div>
-        <div class="form-row"><div class="form-group"><label class="form-label">Responsible</label><select id="kf-resp"><option value="">Select person...</option></select></div><div class="form-group"><label class="form-label">Due date</label><input type="date" id="kf-due"/></div></div>
-        <div class="form-group"><label class="form-label">Status</label><select id="kf-status"><option value="on_track">On Track</option><option value="at_risk">At Risk</option><option value="off_track">Off Track</option></select></div>
-        <div style="display:flex;gap:8px"><button class="btn btn-primary" onclick="saveKPI()"><i class="ti ti-device-floppy"></i>Save</button><button class="btn" onclick="toggleForm('kpi-form')">Cancel</button></div>
+      <!-- OBJECTIVES & KPIs MODULE -->
+      <div class="kpi-page-header" style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px">
+        <div>
+          <div style="font-size:20px;font-weight:700;color:var(--text)">Objectives & KPIs</div>
+          <div style="font-size:12px;color:var(--text2);margin-top:2px" id="kpi-co-label"></div>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <div style="display:flex;align-items:center;gap:6px">
+            <span style="font-size:12px;color:var(--text2)">Year:</span>
+            <select id="year-sel" onchange="kpiLoadAll()" style="width:auto;padding:6px 10px;font-size:13px;border:1px solid var(--border);border-radius:8px">
+              <option>2024</option><option>2025</option><option selected>2026</option><option>2027</option>
+            </select>
+          </div>
+          <button class="btn btn-primary" id="kpi-add-obj-btn" style="display:none" onclick="openObjModal()"><i class="ti ti-plus"></i>Add objective</button>
+        </div>
       </div>
-      <div class="card"><div class="card-title">Active KPIs</div><div id="kpi-list"><div class="loading-msg">Loading...</div></div></div>
+
+      <!-- TABS -->
+      <div style="display:flex;gap:2px;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:4px;margin-bottom:18px;width:fit-content">
+        <button class="kpi-tab active" onclick="kpiSwitchTab('overview',this)" style="padding:7px 18px;border-radius:7px;font-size:13px;cursor:pointer;font-weight:500;border:none;background:var(--green);color:#fff"><i class="ti ti-layout-list" style="font-size:14px;margin-right:4px"></i>Overview</button>
+        <button class="kpi-tab" onclick="kpiSwitchTab('monthly',this)" style="padding:7px 18px;border-radius:7px;font-size:13px;cursor:pointer;font-weight:500;border:none;background:transparent;color:var(--text2)"><i class="ti ti-calendar-stats" style="font-size:14px;margin-right:4px"></i>Monthly follow-up</button>
+      </div>
+
+      <!-- METRICS -->
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:18px" id="kpi-metrics">
+        <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px 16px"><div style="font-size:11px;color:var(--text2);margin-bottom:5px;font-weight:500">Total KPIs</div><div style="font-size:24px;font-weight:700" id="km-total">—</div></div>
+        <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px 16px"><div style="font-size:11px;color:var(--text2);margin-bottom:5px;font-weight:500">On Track</div><div style="font-size:24px;font-weight:700;color:var(--green)" id="km-ontrack">—</div></div>
+        <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px 16px"><div style="font-size:11px;color:var(--text2);margin-bottom:5px;font-weight:500">At Risk</div><div style="font-size:24px;font-weight:700;color:var(--amber)" id="km-atrisk">—</div></div>
+        <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px 16px"><div style="font-size:11px;color:var(--text2);margin-bottom:5px;font-weight:500">Off Track</div><div style="font-size:24px;font-weight:700;color:var(--red)" id="km-offtrack">—</div></div>
+      </div>
+
+      <!-- OVERVIEW TAB -->
+      <div id="kpi-tab-overview">
+        <div id="kpi-objectives-container"><div style="text-align:center;padding:30px;color:var(--text2);font-size:13px">Loading objectives...</div></div>
+      </div>
+
+      <!-- MONTHLY TAB -->
+      <div id="kpi-tab-monthly" style="display:none">
+        <div class="card" style="padding:0;overflow:hidden">
+          <div style="padding:14px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
+            <div style="font-size:14px;font-weight:700">Monthly follow-up — <span id="kpi-monthly-year">2026</span></div>
+            <div style="font-size:12px;color:var(--text2)">Click any cell to enter value</div>
+          </div>
+          <div style="overflow-x:auto">
+            <table id="kpi-monthly-table" style="width:100%;border-collapse:collapse;font-size:12px">
+              <thead>
+                <tr>
+                  <th style="background:#f9fafb;padding:8px 10px;border:1px solid var(--border);font-size:11px;font-weight:600;color:var(--text2);text-align:left;min-width:220px;position:sticky;left:0;z-index:2">KPI</th>
+                  <th style="background:#f9fafb;padding:8px 10px;border:1px solid var(--border);font-size:11px;font-weight:600;color:var(--text2);text-align:center;min-width:80px">Target</th>
+                  <th style="background:#f9fafb;padding:8px 10px;border:1px solid var(--border);font-size:11px;font-weight:600;color:var(--text2);text-align:center">Jan</th>
+                  <th style="background:#f9fafb;padding:8px 10px;border:1px solid var(--border);font-size:11px;font-weight:600;color:var(--text2);text-align:center">Feb</th>
+                  <th style="background:#f9fafb;padding:8px 10px;border:1px solid var(--border);font-size:11px;font-weight:600;color:var(--text2);text-align:center">Mar</th>
+                  <th style="background:#f9fafb;padding:8px 10px;border:1px solid var(--border);font-size:11px;font-weight:600;color:var(--text2);text-align:center">Apr</th>
+                  <th style="background:#f9fafb;padding:8px 10px;border:1px solid var(--border);font-size:11px;font-weight:600;color:var(--text2);text-align:center">May</th>
+                  <th style="background:#f9fafb;padding:8px 10px;border:1px solid var(--border);font-size:11px;font-weight:600;color:var(--text2);text-align:center">Jun</th>
+                  <th style="background:#f9fafb;padding:8px 10px;border:1px solid var(--border);font-size:11px;font-weight:600;color:var(--text2);text-align:center">Jul</th>
+                  <th style="background:#f9fafb;padding:8px 10px;border:1px solid var(--border);font-size:11px;font-weight:600;color:var(--text2);text-align:center">Aug</th>
+                  <th style="background:#f9fafb;padding:8px 10px;border:1px solid var(--border);font-size:11px;font-weight:600;color:var(--text2);text-align:center">Sep</th>
+                  <th style="background:#f9fafb;padding:8px 10px;border:1px solid var(--border);font-size:11px;font-weight:600;color:var(--text2);text-align:center">Oct</th>
+                  <th style="background:#f9fafb;padding:8px 10px;border:1px solid var(--border);font-size:11px;font-weight:600;color:var(--text2);text-align:center">Nov</th>
+                  <th style="background:#f9fafb;padding:8px 10px;border:1px solid var(--border);font-size:11px;font-weight:600;color:var(--text2);text-align:center">Dec</th>
+                  <th style="background:#E1F5EE;padding:8px 10px;border:1px solid var(--border);font-size:11px;font-weight:700;color:var(--dg);text-align:center">YTD</th>
+                  <th style="background:#f9fafb;padding:8px 10px;border:1px solid var(--border);font-size:11px;font-weight:600;color:var(--text2);text-align:center">Status</th>
+                </tr>
+              </thead>
+              <tbody id="kpi-monthly-body"><tr><td colspan="17" style="text-align:center;padding:30px;color:var(--text2)">Loading...</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- OBJECTIVE MODAL -->
+      <div style="position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:200;display:none;align-items:center;justify-content:center" id="obj-modal">
+        <div style="background:var(--card);border-radius:16px;padding:28px;width:520px;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.2)">
+          <div style="font-size:16px;font-weight:700;margin-bottom:20px;display:flex;align-items:center;justify-content:space-between">
+            <span id="obj-modal-title">Add objective</span>
+            <button onclick="closeKpiModal('obj-modal')" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--text2)"><i class="ti ti-x"></i></button>
+          </div>
+          <div class="form-row"><div class="form-group"><label class="form-label">Code (e.g. 1, 2)</label><input type="text" id="obj-code" placeholder="1"/></div><div class="form-group"><label class="form-label">Year</label><select id="obj-year"><option>2024</option><option>2025</option><option selected>2026</option><option>2027</option></select></div></div>
+          <div class="form-group"><label class="form-label">Objective name</label><input type="text" id="obj-name" placeholder="e.g. Zero Accident & Occupational Illness"/></div>
+          <div class="form-group">
+            <label class="form-label">Colour</label>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px" id="kpi-color-picker">
+              <div class="kpi-color-dot" style="width:24px;height:24px;border-radius:50%;cursor:pointer;border:3px solid var(--text);background:#1D9E75" onclick="kpiSelectColor('#1D9E75',this)"></div>
+              <div class="kpi-color-dot" style="width:24px;height:24px;border-radius:50%;cursor:pointer;border:2px solid transparent;background:#185FA5" onclick="kpiSelectColor('#185FA5',this)"></div>
+              <div class="kpi-color-dot" style="width:24px;height:24px;border-radius:50%;cursor:pointer;border:2px solid transparent;background:#854F0B" onclick="kpiSelectColor('#854F0B',this)"></div>
+              <div class="kpi-color-dot" style="width:24px;height:24px;border-radius:50%;cursor:pointer;border:2px solid transparent;background:#6B21A8" onclick="kpiSelectColor('#6B21A8',this)"></div>
+              <div class="kpi-color-dot" style="width:24px;height:24px;border-radius:50%;cursor:pointer;border:2px solid transparent;background:#0F6E56" onclick="kpiSelectColor('#0F6E56',this)"></div>
+              <div class="kpi-color-dot" style="width:24px;height:24px;border-radius:50%;cursor:pointer;border:2px solid transparent;background:#DC2626" onclick="kpiSelectColor('#DC2626',this)"></div>
+              <div class="kpi-color-dot" style="width:24px;height:24px;border-radius:50%;cursor:pointer;border:2px solid transparent;background:#0369A1" onclick="kpiSelectColor('#0369A1',this)"></div>
+            </div>
+          </div>
+          <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:20px">
+            <button class="btn" onclick="closeKpiModal('obj-modal')">Cancel</button>
+            <button class="btn btn-danger" id="obj-delete-btn" style="display:none" onclick="kpiDeleteObjective()"><i class="ti ti-trash"></i>Delete</button>
+            <button class="btn btn-primary" onclick="kpiSaveObjective()"><i class="ti ti-device-floppy"></i>Save objective</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- KPI MODAL -->
+      <div style="position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:200;display:none;align-items:center;justify-content:center" id="kpi-edit-modal">
+        <div style="background:var(--card);border-radius:16px;padding:28px;width:580px;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.2)">
+          <div style="font-size:16px;font-weight:700;margin-bottom:20px;display:flex;align-items:center;justify-content:space-between">
+            <span id="kpi-modal-title">Add KPI</span>
+            <button onclick="closeKpiModal('kpi-edit-modal')" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--text2)"><i class="ti ti-x"></i></button>
+          </div>
+          <div class="form-row"><div class="form-group"><label class="form-label">KPI code (e.g. 1.1)</label><input type="text" id="kpi-code" placeholder="1.1"/></div><div class="form-group"><label class="form-label">Objective</label><select id="kpi-obj-sel"><option value="">Select objective...</option></select></div></div>
+          <div class="form-group"><label class="form-label">KPI name</label><input type="text" id="kpi-name" placeholder="e.g. Lost Time Injuries (LTI)"/></div>
+          <div class="form-group"><label class="form-label">Measurement indicator</label><input type="text" id="kpi-indicator" placeholder="e.g. Total number recorded during the year"/></div>
+          <div class="form-row3"><div class="form-group"><label class="form-label">Target value</label><input type="number" id="kpi-target" placeholder="0" step="any"/></div><div class="form-group"><label class="form-label">Unit</label><select id="kpi-unit"><option value="">None</option><option value="%">%</option><option value="per month">per month</option><option value="per year">per year</option><option value="per quarter">per quarter</option><option value="count">count</option><option value="days">days</option><option value="score">score</option></select></div><div class="form-group"><label class="form-label">Frequency</label><select id="kpi-freq"><option value="monthly">Monthly</option><option value="quarterly">Quarterly</option><option value="annual">Annual</option></select></div></div>
+          <div class="form-row"><div class="form-group"><label class="form-label">Target operator</label><select id="kpi-operator"><option value="eq">= equal to</option><option value="gte">≥ greater or equal</option><option value="lte">≤ less or equal</option><option value="gt">> greater than</option><option value="lt">< less than</option></select></div><div class="form-group"><label class="form-label">Responsible</label><input type="text" id="kpi-resp" placeholder="Name or role"/></div></div>
+          <div class="form-group"><label class="form-label">Status</label><select id="kpi-status"><option value="not_started">Not started</option><option value="on_track">On Track</option><option value="at_risk">At Risk</option><option value="off_track">Off Track</option></select></div>
+          <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:20px">
+            <button class="btn" onclick="closeKpiModal('kpi-edit-modal')">Cancel</button>
+            <button class="btn btn-danger" id="kpi-delete-btn" style="display:none" onclick="kpiDeleteKPI()"><i class="ti ti-trash"></i>Delete KPI</button>
+            <button class="btn btn-primary" onclick="kpiSaveKPI()"><i class="ti ti-device-floppy"></i>Save KPI</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- MONTHLY ENTRY MODAL -->
+      <div style="position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:200;display:none;align-items:center;justify-content:center" id="kpi-entry-modal">
+        <div style="background:var(--card);border-radius:16px;padding:28px;width:420px;box-shadow:0 20px 60px rgba(0,0,0,.2)">
+          <div style="font-size:16px;font-weight:700;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between">
+            <span id="entry-modal-title">Enter value</span>
+            <button onclick="closeKpiModal('kpi-entry-modal')" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--text2)"><i class="ti ti-x"></i></button>
+          </div>
+          <div style="background:#f9fafb;border-radius:8px;padding:12px;margin-bottom:16px">
+            <div style="font-size:13px;font-weight:600;color:var(--text)" id="entry-kpi-name"></div>
+            <div style="font-size:11px;color:var(--text2);margin-top:3px" id="entry-kpi-target"></div>
+          </div>
+          <div class="form-group"><label class="form-label" id="entry-month-label">Actual value</label><input type="number" id="entry-actual" placeholder="Enter actual value" step="any"/></div>
+          <div class="form-group"><label class="form-label">YTD (leave blank to auto-calculate)</label><input type="number" id="entry-ytd" placeholder="Auto" step="any"/></div>
+          <div class="form-group"><label class="form-label">Comment (optional)</label><textarea id="entry-comment" style="min-height:50px"></textarea></div>
+          <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px">
+            <button class="btn" onclick="closeKpiModal('kpi-entry-modal')">Cancel</button>
+            <button class="btn btn-primary" onclick="kpiSaveEntry()"><i class="ti ti-device-floppy"></i>Save</button>
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- EVENTS -->
@@ -1063,6 +1194,289 @@ async function loadCoDrop(){
 // INIT
 loadCoDrop();
 document.getElementById('if-date')&&(document.getElementById('if-date').value=new Date().toISOString().slice(0,10));
+
+// ===== KPI MODULE =====
+let kpiObjectives=[],kpiKPIs=[],kpiMonthlyData={};
+let kpiSelectedColor='#1D9E75',kpiEditObjId=null,kpiEditKpiId=null;
+let kpiEntryId=null,kpiEntryYear=null,kpiEntryMonth=null;
+const KPI_MONTHS=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+async function loadKPIs(){
+  // Show add button for managers
+  const btn=document.getElementById('kpi-add-obj-btn');
+  if(btn&&isMgr())btn.style.display='flex';
+  document.getElementById('kpi-co-label').textContent=co?.name||'';
+  document.getElementById('kpi-monthly-year').textContent=document.getElementById('year-sel')?.value||new Date().getFullYear();
+  await kpiLoadAll();
+}
+async function kpiLoadAll(){
+  const yr=parseInt(document.getElementById('year-sel')?.value)||new Date().getFullYear();
+  document.getElementById('kpi-monthly-year').textContent=yr;
+  await Promise.all([kpiLoadObjectives(yr),kpiLoadKPIsData(yr),kpiLoadMonthly(yr)]);
+  kpiRenderOverview();kpiRenderMonthly();kpiUpdateMetrics();
+}
+async function kpiLoadObjectives(yr){
+  try{const d=await api('/objectives?select=*'+cf()+'&year=eq.'+yr+'&order=sort_order,code');kpiObjectives=d||[];}catch(e){kpiObjectives=[];}
+}
+async function kpiLoadKPIsData(yr){
+  try{const d=await api('/kpis_v2?select=*'+cf()+'&year=eq.'+yr+'&order=code');kpiKPIs=d||[];}catch(e){kpiKPIs=[];}
+}
+async function kpiLoadMonthly(yr){
+  try{
+    const d=await api('/kpi_monthly_data?select=*'+cf()+'&year=eq.'+yr);
+    kpiMonthlyData={};
+    (d||[]).forEach(r=>{if(!kpiMonthlyData[r.kpi_id])kpiMonthlyData[r.kpi_id]={};kpiMonthlyData[r.kpi_id][r.month]=r;});
+  }catch(e){kpiMonthlyData={};}
+}
+function kpiUpdateMetrics(){
+  document.getElementById('km-total').textContent=kpiKPIs.length;
+  document.getElementById('km-ontrack').textContent=kpiKPIs.filter(k=>k.status==='on_track').length;
+  document.getElementById('km-atrisk').textContent=kpiKPIs.filter(k=>k.status==='at_risk').length;
+  document.getElementById('km-offtrack').textContent=kpiKPIs.filter(k=>k.status==='off_track').length;
+}
+function kpiFmtTarget(k){
+  const op={eq:'',gte:'>=',lte:'<=',gt:'>',lt:'<'}[k.target_operator||'gte']||'';
+  return op+(k.target_value!==null&&k.target_value!==undefined?k.target_value:'--')+(k.unit?' '+k.unit:'');
+}
+function kpiStatBadge(s){
+  const cls={on_track:'bg',at_risk:'ba',off_track:'br',not_started:'bgr'}[s]||'bgr';
+  const lbl={on_track:'On Track',at_risk:'At Risk',off_track:'Off Track',not_started:'Not Started'}[s]||s;
+  return '<span class="badge '+cls+'">'+lbl+'</span>';
+}
+function kpiCellClass(k,val){
+  if(val===null||val===undefined)return '';
+  const t=parseFloat(k.target_value);if(isNaN(t))return '';
+  const op=k.target_operator||'gte';
+  let ok=op==='eq'?val===t:op==='gte'?val>=t:op==='lte'?val<=t:op==='gt'?val>t:val<t;
+  if(ok)return 'background:#EAF3DE;color:#3B6D11;font-weight:600';
+  const diff=Math.abs(val-t)/Math.max(Math.abs(t),1);
+  return diff<=0.15?'background:#FAEEDA;color:#854F0B;font-weight:600':'background:#FCEBEB;color:#A32D2D;font-weight:600';
+}
+function kpiGetProgress(k,actual){
+  if(actual===null||actual===undefined)return null;
+  const t=parseFloat(k.target_value);if(isNaN(t))return null;
+  if(t===0)return actual===0?100:0;
+  const op=k.target_operator||'gte';
+  if(op==='lte'||op==='lt')return Math.min(100,Math.max(0,(1-(actual/t))*100+100));
+  return Math.min(100,Math.max(0,(actual/t)*100));
+}
+function kpiProgColor(prog){return prog>=100?'#1D9E75':prog>=70?'#EF9F27':'#E24B4A';}
+
+function kpiRenderOverview(){
+  const c=document.getElementById('kpi-objectives-container');
+  if(!kpiObjectives.length){c.innerHTML='<div style="text-align:center;padding:40px;color:var(--text3)">No objectives yet'+(isMgr()?' — click Add objective to start':' — contact your HSE Manager')+'</div>';return;}
+  c.innerHTML=kpiObjectives.map(obj=>{
+    const objKPIs=kpiKPIs.filter(k=>k.objective_id===obj.id);
+    const onT=objKPIs.filter(k=>k.status==='on_track').length;
+    return '<div style="margin-bottom:20px;border-radius:12px;overflow:hidden;border:1px solid var(--border)">'
+      +'<div style="display:flex;align-items:center;gap:10px;padding:12px 16px;background:'+obj.color+';cursor:pointer" onclick="kpiToggleObj(\''+obj.id+'\')">'  
+      +'<div style="width:28px;height:28px;border-radius:50%;background:rgba(255,255,255,.25);color:#fff;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0">'+(obj.code||'?')+'</div>'
+      +'<div style="flex:1;font-size:14px;font-weight:700;color:#fff">'+obj.name+'</div>'
+      +'<div style="font-size:11px;color:rgba(255,255,255,.8)">'+objKPIs.length+' KPI'+(objKPIs.length!==1?'s':'')+' &nbsp;|&nbsp; '+onT+'/'+objKPIs.length+' on track</div>'
+      +(isMgr()?'<div onclick="event.stopPropagation()" style="display:flex;gap:4px">'
+        +'<button onclick="openKpiAddModal(null,\''+obj.id+'\')" style="background:rgba(255,255,255,.2);border:none;color:#fff;border-radius:6px;padding:4px 10px;cursor:pointer;font-size:11px;display:flex;align-items:center;gap:4px"><i class="ti ti-plus"></i>Add KPI</button>'
+        +'<button onclick="openObjModal(\''+obj.id+'\')" style="background:rgba(255,255,255,.2);border:none;color:#fff;border-radius:6px;padding:4px 8px;cursor:pointer;font-size:11px"><i class="ti ti-edit"></i></button>'
+        +'</div>':'')
+      +'<i class="ti ti-chevron-down" style="color:rgba(255,255,255,.7);font-size:16px" id="kpi-chev-'+obj.id+'"></i>'
+      +'</div>'
+      +'<div id="kpi-obj-body-'+obj.id+'" style="background:var(--card);display:block">'
+      +(objKPIs.length===0
+        ?'<div style="text-align:center;padding:20px;color:var(--text3);font-size:13px">No KPIs yet'+(isMgr()?' — click + Add KPI above':'')+' </div>'
+        :'<table style="width:100%;border-collapse:collapse;font-size:13px">'
+        +'<thead><tr>'
+        +'<th style="text-align:left;font-weight:600;color:var(--text2);padding:9px 12px;border-bottom:1px solid var(--border);font-size:11px;text-transform:uppercase;background:#fafafa;width:50px">Code</th>'
+        +'<th style="text-align:left;font-weight:600;color:var(--text2);padding:9px 12px;border-bottom:1px solid var(--border);font-size:11px;text-transform:uppercase;background:#fafafa">KPI name</th>'
+        +'<th style="text-align:left;font-weight:600;color:var(--text2);padding:9px 12px;border-bottom:1px solid var(--border);font-size:11px;text-transform:uppercase;background:#fafafa">Measurement indicator</th>'
+        +'<th style="text-align:left;font-weight:600;color:var(--text2);padding:9px 12px;border-bottom:1px solid var(--border);font-size:11px;text-transform:uppercase;background:#fafafa">Target</th>'
+        +'<th style="text-align:left;font-weight:600;color:var(--text2);padding:9px 12px;border-bottom:1px solid var(--border);font-size:11px;text-transform:uppercase;background:#fafafa">Responsible</th>'
+        +'<th style="text-align:left;font-weight:600;color:var(--text2);padding:9px 12px;border-bottom:1px solid var(--border);font-size:11px;text-transform:uppercase;background:#fafafa">Status</th>'
+        +'<th style="text-align:left;font-weight:600;color:var(--text2);padding:9px 12px;border-bottom:1px solid var(--border);font-size:11px;text-transform:uppercase;background:#fafafa;width:120px">Progress</th>'
+        +'</tr></thead><tbody>'
+        +objKPIs.map(k=>{
+          const mvals=kpiMonthlyData[k.id]||{};
+          const actuals=Object.values(mvals).filter(v=>v.actual!==null&&v.actual!==undefined).map(v=>parseFloat(v.actual));
+          const latest=actuals.length?actuals[actuals.length-1]:null;
+          const prog=kpiGetProgress(k,latest);
+          const pc=prog!==null?kpiProgColor(prog):'#888';
+          return '<tr style="cursor:pointer" onclick="openKpiAddModal(\''+k.id+'\',\''+obj.id+'\')" onmouseover="this.style.background=\x27#f9fafb\x27" onmouseout="this.style.background=\x27\x27">'
+            +'<td style="padding:10px 12px;border-bottom:1px solid var(--border);color:var(--text2);font-size:11px;font-weight:600">'+(k.code||'')+'</td>'
+            +'<td style="padding:10px 12px;border-bottom:1px solid var(--border)"><strong>'+k.name+'</strong></td>'
+            +'<td style="padding:10px 12px;border-bottom:1px solid var(--border);color:var(--text2);font-size:12px">'+(k.indicator||'--')+'</td>'
+            +'<td style="padding:10px 12px;border-bottom:1px solid var(--border)"><strong>'+kpiFmtTarget(k)+'</strong></td>'
+            +'<td style="padding:10px 12px;border-bottom:1px solid var(--border);font-size:12px">'+(k.responsible||'--')+'</td>'
+            +'<td style="padding:10px 12px;border-bottom:1px solid var(--border)">'+kpiStatBadge(k.status)+'</td>'
+            +'<td style="padding:10px 12px;border-bottom:1px solid var(--border)">'
+            +(prog!==null?'<div style="background:#e5e7eb;border-radius:99px;height:6px;overflow:hidden;margin-bottom:3px"><div style="width:'+Math.min(100,prog)+'%;height:100%;border-radius:99px;background:'+pc+'"></div></div><span style="font-size:11px;font-weight:600;color:'+pc+'">'+Math.round(prog)+'%</span>':'<span style="color:var(--text3);font-size:12px">No data</span>')
+            +'</td></tr>';
+        }).join('')+'</tbody></table>')
+      +'</div></div>';
+  }).join('');
+}
+
+function kpiRenderMonthly(){
+  const tbody=document.getElementById('kpi-monthly-body');
+  if(!kpiObjectives.length){tbody.innerHTML='<tr><td colspan="17" style="text-align:center;padding:30px;color:var(--text3)">No objectives yet</td></tr>';return;}
+  let rows='';
+  kpiObjectives.forEach(obj=>{
+    const objKPIs=kpiKPIs.filter(k=>k.objective_id===obj.id);
+    if(!objKPIs.length)return;
+    rows+='<tr><td colspan="17" style="background:'+obj.color+'22;border-left:4px solid '+obj.color+';padding:7px 12px;font-weight:700;font-size:11px;color:'+obj.color+';text-transform:uppercase;border:1px solid var(--border)">'+obj.code+'. '+obj.name+'</td></tr>';
+    objKPIs.forEach(k=>{
+      const mdata=kpiMonthlyData[k.id]||{};
+      let ytdSum=0;let hasData=false;
+      const cells=KPI_MONTHS.map((_,mi)=>{
+        const m=mi+1;const entry=mdata[m];
+        if(entry&&entry.actual!==null&&entry.actual!==undefined){
+          hasData=true;const val=parseFloat(entry.actual);ytdSum+=val;
+          const sty=kpiCellClass(k,val);
+          return '<td style="border:1px solid var(--border);padding:6px 8px;text-align:center;cursor:pointer;'+sty+'" onclick="kpiOpenEntry(\''+k.id+'\','+m+')" title="Click to edit">'+val+(k.unit||'')+'</td>';
+        }
+        return '<td style="border:1px solid var(--border);padding:6px 8px;text-align:center;cursor:pointer;color:var(--text3)" onclick="kpiOpenEntry(\''+k.id+'\','+m+')" title="Click to enter value">--</td>';
+      }).join('');
+      const ytdVals=Object.values(mdata).filter(v=>v.ytd!==null&&v.ytd!==undefined);
+      const ytd=ytdVals.length?parseFloat(ytdVals[ytdVals.length-1].ytd):ytdSum;
+      const ytdSty=hasData?kpiCellClass(k,ytd):'';
+      rows+='<tr>'
+        +'<td style="border:1px solid var(--border);padding:8px 12px;font-size:12px;font-weight:500;position:sticky;left:0;background:var(--card);border-right:2px solid var(--border)">'
+        +(k.code?'<span style="color:var(--text2);font-size:10px;margin-right:4px">'+k.code+'</span>':'')+k.name+'</td>'
+        +'<td style="border:1px solid var(--border);padding:6px 8px;text-align:center;font-weight:600;font-size:12px;background:#f9fafb">'+kpiFmtTarget(k)+'</td>'
+        +cells
+        +'<td style="border:1px solid var(--border);padding:6px 8px;text-align:center;font-weight:700;'+ytdSty+'">'+(hasData?ytd+(k.unit||''):'--')+'</td>'
+        +'<td style="border:1px solid var(--border);padding:6px 8px;text-align:center">'+kpiStatBadge(k.status)+'</td>'
+        +'</tr>';
+    });
+  });
+  tbody.innerHTML=rows||'<tr><td colspan="17" style="text-align:center;padding:30px;color:var(--text3)">No KPIs yet</td></tr>';
+}
+
+function kpiToggleObj(id){
+  const b=document.getElementById('kpi-obj-body-'+id);
+  const c=document.getElementById('kpi-chev-'+id);
+  const open=b.style.display==='none';
+  b.style.display=open?'block':'none';
+  if(c)c.className='ti '+(open?'ti-chevron-up':'ti-chevron-down');
+}
+function kpiSwitchTab(tab,btn){
+  document.querySelectorAll('.kpi-tab').forEach(t=>{t.style.background='transparent';t.style.color='var(--text2)';});
+  btn.style.background='var(--green)';btn.style.color='#fff';
+  document.getElementById('kpi-tab-overview').style.display=tab==='overview'?'block':'none';
+  document.getElementById('kpi-tab-monthly').style.display=tab==='monthly'?'block':'none';
+}
+function kpiSelectColor(color,el){
+  kpiSelectedColor=color;
+  document.querySelectorAll('.kpi-color-dot').forEach(d=>d.style.border='2px solid transparent');
+  if(el)el.style.border='3px solid var(--text)';
+}
+function closeKpiModal(id){document.getElementById(id).style.display='none';}
+function openKpiModal(id){document.getElementById(id).style.display='flex';}
+
+function openObjModal(id=null){
+  kpiEditObjId=id;
+  document.getElementById('obj-modal-title').textContent=id?'Edit objective':'Add objective';
+  document.getElementById('obj-delete-btn').style.display=id?'flex':'none';
+  if(id){const obj=kpiObjectives.find(o=>o.id===id);if(obj){document.getElementById('obj-code').value=obj.code||'';document.getElementById('obj-name').value=obj.name||'';document.getElementById('obj-year').value=obj.year||new Date().getFullYear();kpiSelectColor(obj.color||'#1D9E75',null);}}
+  else{document.getElementById('obj-code').value='';document.getElementById('obj-name').value='';kpiSelectColor('#1D9E75',null);}
+  openKpiModal('obj-modal');
+}
+async function kpiSaveObjective(){
+  const name=document.getElementById('obj-name').value.trim();
+  if(!name){toast('Please enter an objective name',false);return;}
+  const body={company_id:prof?.company_id,code:document.getElementById('obj-code').value.trim(),name,color:kpiSelectedColor,year:parseInt(document.getElementById('obj-year').value),sort_order:parseInt(document.getElementById('obj-code').value)||99,created_by:prof?.id};
+  try{
+    if(kpiEditObjId)await api('/objectives?id=eq.'+kpiEditObjId,{m:'PATCH',p:'return=minimal',b:body});
+    else await api('/objectives',{m:'POST',p:'return=minimal',b:body});
+    toast(kpiEditObjId?'Objective updated!':'Objective added!');closeKpiModal('obj-modal');await kpiLoadAll();
+  }catch(e){toast(e.message,false);}
+}
+async function kpiDeleteObjective(){
+  if(!kpiEditObjId||!confirm('Delete this objective and all its KPIs?'))return;
+  try{
+    await api('/kpis_v2?objective_id=eq.'+kpiEditObjId,{m:'DELETE'});
+    await api('/objectives?id=eq.'+kpiEditObjId,{m:'DELETE'});
+    toast('Deleted!');closeKpiModal('obj-modal');await kpiLoadAll();
+  }catch(e){toast(e.message,false);}
+}
+
+function openKpiAddModal(kpiId=null,objId=null){
+  kpiEditKpiId=kpiId;
+  document.getElementById('kpi-modal-title').textContent=kpiId?'Edit KPI':'Add KPI';
+  document.getElementById('kpi-delete-btn').style.display=kpiId?'flex':'none';
+  const sel=document.getElementById('kpi-obj-sel');
+  sel.innerHTML='<option value="">Select objective...</option>'+kpiObjectives.map(o=>'<option value="'+o.id+'">'+o.code+'. '+o.name+'</option>').join('');
+  if(kpiId){
+    const k=kpiKPIs.find(x=>x.id===kpiId);
+    if(k){document.getElementById('kpi-code').value=k.code||'';document.getElementById('kpi-name').value=k.name||'';document.getElementById('kpi-indicator').value=k.indicator||'';document.getElementById('kpi-target').value=k.target_value!==null?k.target_value:'';document.getElementById('kpi-unit').value=k.unit||'';document.getElementById('kpi-freq').value=k.frequency||'monthly';document.getElementById('kpi-operator').value=k.target_operator||'gte';document.getElementById('kpi-resp').value=k.responsible||'';document.getElementById('kpi-status').value=k.status||'not_started';sel.value=k.objective_id||objId||'';}
+  }else{
+    ['kpi-code','kpi-name','kpi-indicator','kpi-resp'].forEach(id=>document.getElementById(id).value='');
+    document.getElementById('kpi-target').value='';document.getElementById('kpi-unit').value='';document.getElementById('kpi-freq').value='monthly';document.getElementById('kpi-operator').value='gte';document.getElementById('kpi-status').value='not_started';
+    if(objId)sel.value=objId;
+  }
+  openKpiModal('kpi-edit-modal');
+}
+async function kpiSaveKPI(){
+  const name=document.getElementById('kpi-name').value.trim();
+  const objId=document.getElementById('kpi-obj-sel').value;
+  if(!name){toast('Please enter a KPI name',false);return;}
+  if(!objId){toast('Please select an objective',false);return;}
+  const tv=document.getElementById('kpi-target').value;
+  const body={company_id:prof?.company_id,objective_id:objId,code:document.getElementById('kpi-code').value.trim(),name,indicator:document.getElementById('kpi-indicator').value.trim(),target_value:tv!==''?parseFloat(tv):null,unit:document.getElementById('kpi-unit').value||null,frequency:document.getElementById('kpi-freq').value,target_operator:document.getElementById('kpi-operator').value,responsible:document.getElementById('kpi-resp').value.trim()||null,status:document.getElementById('kpi-status').value,year:parseInt(document.getElementById('year-sel')?.value)||new Date().getFullYear(),created_by:prof?.id};
+  try{
+    if(kpiEditKpiId)await api('/kpis_v2?id=eq.'+kpiEditKpiId,{m:'PATCH',p:'return=minimal',b:body});
+    else await api('/kpis_v2',{m:'POST',p:'return=minimal',b:body});
+    toast(kpiEditKpiId?'KPI updated!':'KPI added!');closeKpiModal('kpi-edit-modal');await kpiLoadAll();
+  }catch(e){toast(e.message,false);}
+}
+async function kpiDeleteKPI(){
+  if(!kpiEditKpiId||!confirm('Delete this KPI and all its monthly data?'))return;
+  try{
+    await api('/kpi_monthly_data?kpi_id=eq.'+kpiEditKpiId,{m:'DELETE'});
+    await api('/kpis_v2?id=eq.'+kpiEditKpiId,{m:'DELETE'});
+    toast('KPI deleted!');closeKpiModal('kpi-edit-modal');await kpiLoadAll();
+  }catch(e){toast(e.message,false);}
+}
+
+function kpiOpenEntry(kpiId,month){
+  kpiEntryId=kpiId;kpiEntryYear=parseInt(document.getElementById('year-sel')?.value)||new Date().getFullYear();kpiEntryMonth=month;
+  const k=kpiKPIs.find(x=>x.id===kpiId);if(!k)return;
+  document.getElementById('entry-modal-title').textContent='Enter value — '+KPI_MONTHS[month-1]+' '+kpiEntryYear;
+  document.getElementById('entry-kpi-name').textContent=k.name;
+  document.getElementById('entry-kpi-target').textContent='Target: '+kpiFmtTarget(k)+(k.indicator?' | '+k.indicator:'');
+  document.getElementById('entry-month-label').textContent='Actual value for '+KPI_MONTHS[month-1];
+  const ex=kpiMonthlyData[kpiId]?.[month];
+  document.getElementById('entry-actual').value=ex?.actual!==null&&ex?.actual!==undefined?ex.actual:'';
+  document.getElementById('entry-ytd').value=ex?.ytd!==null&&ex?.ytd!==undefined?ex.ytd:'';
+  document.getElementById('entry-comment').value=ex?.comment||'';
+  openKpiModal('kpi-entry-modal');
+}
+async function kpiSaveEntry(){
+  const actual=document.getElementById('entry-actual').value;
+  if(actual===''){toast('Please enter a value',false);return;}
+  const ytdVal=document.getElementById('entry-ytd').value;
+  let ytd=ytdVal!==''?parseFloat(ytdVal):null;
+  if(ytd===null){
+    const mdata=kpiMonthlyData[kpiEntryId]||{};
+    let sum=0;
+    for(let m=1;m<=kpiEntryMonth;m++){
+      if(m===kpiEntryMonth)sum+=parseFloat(actual);
+      else if(mdata[m]?.actual!==null&&mdata[m]?.actual!==undefined)sum+=parseFloat(mdata[m].actual)||0;
+    }
+    ytd=sum;
+  }
+  const body={kpi_id:kpiEntryId,company_id:prof?.company_id,year:kpiEntryYear,month:kpiEntryMonth,actual:parseFloat(actual),ytd,comment:document.getElementById('entry-comment').value||null,entered_by:prof?.id};
+  try{
+    await api('/kpi_monthly_data',{m:'POST',p:'return=minimal,resolution=merge-duplicates',b:body});
+    const k=kpiKPIs.find(x=>x.id===kpiEntryId);
+    if(k){
+      const prog=kpiGetProgress(k,parseFloat(actual));
+      let status='not_started';
+      if(prog!==null){if(prog>=100)status='on_track';else if(prog>=70)status='at_risk';else status='off_track';}
+      await api('/kpis_v2?id=eq.'+kpiEntryId,{m:'PATCH',p:'return=minimal',b:{status,updated_at:new Date().toISOString()}});
+    }
+    toast('Value saved!');closeKpiModal('kpi-entry-modal');await kpiLoadAll();
+  }catch(e){toast(e.message,false);}
+}
+// END KPI MODULE
+
 </script>
 </body>
 </html>
