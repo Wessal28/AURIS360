@@ -653,7 +653,12 @@ function isSA(){return prof?.role==='sephs_admin';}
 // API
 async function api(path,o={}){
   const r=await fetch(SB+'/rest/v1'+path,{method:o.m||'GET',headers:{'Content-Type':'application/json','apikey':KEY,'Authorization':'Bearer '+(tok||KEY),...(o.p?{'Prefer':o.p}:{})},body:o.b?JSON.stringify(o.b):undefined});
-  if(r.status===204)return null;const d=await r.json();if(!r.ok)throw new Error(d.message||d.error_description||r.statusText);return d;
+  if(r.status===204||r.status===205)return null;
+  const txt=await r.text();
+  if(!txt||txt.trim()==='')return null;
+  const d=JSON.parse(txt);
+  if(!r.ok)throw new Error((Array.isArray(d)?d[0]?.message:d.message)||d.error_description||r.statusText);
+  return d;
 }
 async function authQ(path,body){
   const r=await fetch(SB+'/auth/v1'+path,{method:'POST',headers:{'Content-Type':'application/json','apikey':KEY},body:JSON.stringify(body)});
@@ -1383,8 +1388,8 @@ async function kpiSaveObjective(){
   if(!name){toast('Please enter an objective name',false);return;}
   const body={company_id:prof?.company_id,code:document.getElementById('obj-code').value.trim(),name,color:kpiSelectedColor,year:parseInt(document.getElementById('obj-year').value),sort_order:parseInt(document.getElementById('obj-code').value)||99,created_by:prof?.id};
   try{
-    if(kpiEditObjId)await api('/objectives?id=eq.'+kpiEditObjId,{m:'PATCH',p:'return=minimal',b:body});
-    else await api('/objectives',{m:'POST',p:'return=minimal',b:body});
+    if(kpiEditObjId)await api('/objectives?id=eq.'+kpiEditObjId,{m:'PATCH',p:'return=representation',b:body});
+    else await api('/objectives',{m:'POST',p:'return=representation',b:body});
     toast(kpiEditObjId?'Objective updated!':'Objective added!');closeKpiModal('obj-modal');await kpiLoadAll();
   }catch(e){toast(e.message,false);}
 }
@@ -1421,8 +1426,8 @@ async function kpiSaveKPI(){
   const tv=document.getElementById('kpi-target').value;
   const body={company_id:prof?.company_id,objective_id:objId,code:document.getElementById('kpi-code').value.trim(),name,indicator:document.getElementById('kpi-indicator').value.trim(),target_value:tv!==''?parseFloat(tv):null,unit:document.getElementById('kpi-unit').value||null,frequency:document.getElementById('kpi-freq').value,target_operator:document.getElementById('kpi-operator').value,responsible:document.getElementById('kpi-resp').value.trim()||null,status:document.getElementById('kpi-status').value,year:parseInt(document.getElementById('year-sel')?.value)||new Date().getFullYear(),created_by:prof?.id};
   try{
-    if(kpiEditKpiId)await api('/kpis_v2?id=eq.'+kpiEditKpiId,{m:'PATCH',p:'return=minimal',b:body});
-    else await api('/kpis_v2',{m:'POST',p:'return=minimal',b:body});
+    if(kpiEditKpiId)await api('/kpis_v2?id=eq.'+kpiEditKpiId,{m:'PATCH',p:'return=representation',b:body});
+    else await api('/kpis_v2',{m:'POST',p:'return=representation',b:body});
     toast(kpiEditKpiId?'KPI updated!':'KPI added!');closeKpiModal('kpi-edit-modal');await kpiLoadAll();
   }catch(e){toast(e.message,false);}
 }
@@ -1464,13 +1469,13 @@ async function kpiSaveEntry(){
   }
   const body={kpi_id:kpiEntryId,company_id:prof?.company_id,year:kpiEntryYear,month:kpiEntryMonth,actual:parseFloat(actual),ytd,comment:document.getElementById('entry-comment').value||null,entered_by:prof?.id};
   try{
-    await api('/kpi_monthly_data',{m:'POST',p:'return=minimal,resolution=merge-duplicates',b:body});
+    await api('/kpi_monthly_data',{m:'POST',p:'return=representation,resolution=merge-duplicates',b:body});
     const k=kpiKPIs.find(x=>x.id===kpiEntryId);
     if(k){
       const prog=kpiGetProgress(k,parseFloat(actual));
       let status='not_started';
       if(prog!==null){if(prog>=100)status='on_track';else if(prog>=70)status='at_risk';else status='off_track';}
-      await api('/kpis_v2?id=eq.'+kpiEntryId,{m:'PATCH',p:'return=minimal',b:{status,updated_at:new Date().toISOString()}});
+      await api('/kpis_v2?id=eq.'+kpiEntryId,{m:'PATCH',p:'return=representation',b:{status,updated_at:new Date().toISOString()}});
     }
     toast('Value saved!');closeKpiModal('kpi-entry-modal');await kpiLoadAll();
   }catch(e){toast(e.message,false);}
