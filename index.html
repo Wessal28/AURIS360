@@ -1521,7 +1521,13 @@ async function kpiSaveEntry(){
   }
   const body={kpi_id:kpiEntryId,company_id:prof?.company_id,year:kpiEntryYear,month:kpiEntryMonth,actual:parseFloat(actual),ytd,comment:document.getElementById('entry-comment').value||null,entered_by:prof?.id};
   try{
-    await api('/kpi_monthly_data',{m:'POST',p:'return=representation,resolution=merge-duplicates',b:body});
+    // Check if entry already exists - if yes PATCH, if no POST
+    const existing=await api('/kpi_monthly_data?kpi_id=eq.'+kpiEntryId+'&year=eq.'+kpiEntryYear+'&month=eq.'+kpiEntryMonth);
+    if(existing&&existing.length>0){
+      await api('/kpi_monthly_data?kpi_id=eq.'+kpiEntryId+'&year=eq.'+kpiEntryYear+'&month=eq.'+kpiEntryMonth,{m:'PATCH',p:'return=representation',b:{actual:parseFloat(actual),ytd,comment:document.getElementById('entry-comment').value||null,entered_by:prof?.id}});
+    }else{
+      await api('/kpi_monthly_data',{m:'POST',p:'return=representation',b:body});
+    }
     const k=kpiKPIs.find(x=>x.id===kpiEntryId);
     if(k){
       const prog=kpiGetProgress(k,parseFloat(actual));
