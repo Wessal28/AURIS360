@@ -288,7 +288,7 @@ tr:hover td{background:#fafafa}
             <span id="obj-modal-title">Add objective</span>
             <button onclick="closeKpiModal('obj-modal')" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--text2)"><i class="ti ti-x"></i></button>
           </div>
-          <div class="form-row"><div class="form-group"><label class="form-label">Code (e.g. 1, 2)</label><input type="text" id="obj-code" placeholder="1"/></div><div class="form-group"><label class="form-label">Year</label><select id="obj-year"><option>2024</option><option>2025</option><option selected>2026</option><option>2027</option></select></div></div>
+          <div class="form-row"><div class="form-group"><label class="form-label">Code (e.g. 1, 2)</label><input type="text" id="obj-code" readonly style="background:#f9fafb;color:var(--text2);cursor:default" placeholder="Auto-generated"/></div><div class="form-group"><label class="form-label">Year</label><select id="obj-year"><option>2024</option><option>2025</option><option selected>2026</option><option>2027</option></select></div></div>
           <div class="form-group"><label class="form-label">Objective name</label><input type="text" id="obj-name" placeholder="e.g. Zero Accident & Occupational Illness"/></div>
           <div class="form-group">
             <label class="form-label">Colour</label>
@@ -317,7 +317,7 @@ tr:hover td{background:#fafafa}
             <span id="kpi-modal-title">Add KPI</span>
             <button onclick="closeKpiModal('kpi-edit-modal')" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--text2)"><i class="ti ti-x"></i></button>
           </div>
-          <div class="form-row"><div class="form-group"><label class="form-label">KPI code (e.g. 1.1)</label><input type="text" id="kpi-code" placeholder="1.1"/></div><div class="form-group"><label class="form-label">Objective</label><select id="kpi-obj-sel"><option value="">Select objective...</option></select></div></div>
+          <div class="form-row"><div class="form-group"><label class="form-label">KPI code (e.g. 1.1)</label><input type="text" id="kpi-code" readonly style="background:#f9fafb;color:var(--text2);cursor:default" placeholder="Auto-generated"/></div><div class="form-group"><label class="form-label">Objective</label><select id="kpi-obj-sel"><option value="">Select objective...</option></select></div></div>
           <div class="form-group"><label class="form-label">KPI name</label><input type="text" id="kpi-name" placeholder="e.g. Lost Time Injuries (LTI)"/></div>
           <div class="form-group"><label class="form-label">Measurement indicator</label><input type="text" id="kpi-indicator" placeholder="e.g. Total number recorded during the year"/></div>
           <div class="form-row3"><div class="form-group"><label class="form-label">Target value</label><input type="number" id="kpi-target" placeholder="0" step="any"/></div><div class="form-group"><label class="form-label">Unit</label><select id="kpi-unit"><option value="">None</option><option value="%">%</option><option value="per month">per month</option><option value="per year">per year</option><option value="per quarter">per quarter</option><option value="count">count</option><option value="days">days</option><option value="score">score</option></select></div><div class="form-group"><label class="form-label">Frequency</label><select id="kpi-freq"><option value="monthly">Monthly</option><option value="quarterly">Quarterly</option><option value="annual">Annual</option></select></div></div>
@@ -1379,8 +1379,21 @@ function openObjModal(id=null){
   kpiEditObjId=id;
   document.getElementById('obj-modal-title').textContent=id?'Edit objective':'Add objective';
   document.getElementById('obj-delete-btn').style.display=id?'flex':'none';
-  if(id){const obj=kpiObjectives.find(o=>o.id===id);if(obj){document.getElementById('obj-code').value=obj.code||'';document.getElementById('obj-name').value=obj.name||'';document.getElementById('obj-year').value=obj.year||new Date().getFullYear();kpiSelectColor(obj.color||'#1D9E75',null);}}
-  else{document.getElementById('obj-code').value='';document.getElementById('obj-name').value='';kpiSelectColor('#1D9E75',null);}
+  if(id){
+    const obj=kpiObjectives.find(o=>o.id===id);
+    if(obj){
+      document.getElementById('obj-code').value=obj.code||'';
+      document.getElementById('obj-name').value=obj.name||'';
+      document.getElementById('obj-year').value=obj.year||new Date().getFullYear();
+      kpiSelectColor(obj.color||'#1D9E75',null);
+    }
+  }else{
+    // Auto-generate next objective code
+    const nextCode=kpiObjectives.length+1;
+    document.getElementById('obj-code').value=String(nextCode);
+    document.getElementById('obj-name').value='';
+    kpiSelectColor('#1D9E75',null);
+  }
   openKpiModal('obj-modal');
 }
 async function kpiSaveObjective(){
@@ -1410,12 +1423,51 @@ function openKpiAddModal(kpiId=null,objId=null){
   sel.innerHTML='<option value="">Select objective...</option>'+kpiObjectives.map(o=>'<option value="'+o.id+'">'+o.code+'. '+o.name+'</option>').join('');
   if(kpiId){
     const k=kpiKPIs.find(x=>x.id===kpiId);
-    if(k){document.getElementById('kpi-code').value=k.code||'';document.getElementById('kpi-name').value=k.name||'';document.getElementById('kpi-indicator').value=k.indicator||'';document.getElementById('kpi-target').value=k.target_value!==null?k.target_value:'';document.getElementById('kpi-unit').value=k.unit||'';document.getElementById('kpi-freq').value=k.frequency||'monthly';document.getElementById('kpi-operator').value=k.target_operator||'gte';document.getElementById('kpi-resp').value=k.responsible||'';document.getElementById('kpi-status').value=k.status||'not_started';sel.value=k.objective_id||objId||'';}
+    if(k){
+      document.getElementById('kpi-code').value=k.code||'';
+      document.getElementById('kpi-name').value=k.name||'';
+      document.getElementById('kpi-indicator').value=k.indicator||'';
+      document.getElementById('kpi-target').value=k.target_value!==null?k.target_value:'';
+      document.getElementById('kpi-unit').value=k.unit||'';
+      document.getElementById('kpi-freq').value=k.frequency||'monthly';
+      document.getElementById('kpi-operator').value=k.target_operator||'gte';
+      document.getElementById('kpi-resp').value=k.responsible||'';
+      document.getElementById('kpi-status').value=k.status||'not_started';
+      sel.value=k.objective_id||objId||'';
+    }
   }else{
-    ['kpi-code','kpi-name','kpi-indicator','kpi-resp'].forEach(id=>document.getElementById(id).value='');
-    document.getElementById('kpi-target').value='';document.getElementById('kpi-unit').value='';document.getElementById('kpi-freq').value='monthly';document.getElementById('kpi-operator').value='gte';document.getElementById('kpi-status').value='not_started';
-    if(objId)sel.value=objId;
+    document.getElementById('kpi-name').value='';
+    document.getElementById('kpi-indicator').value='';
+    document.getElementById('kpi-target').value='';
+    document.getElementById('kpi-unit').value='';
+    document.getElementById('kpi-freq').value='monthly';
+    document.getElementById('kpi-operator').value='gte';
+    document.getElementById('kpi-resp').value='';
+    document.getElementById('kpi-status').value='not_started';
+    if(objId){
+      sel.value=objId;
+      // Auto-generate KPI code based on objective code + next available sub-number
+      const obj=kpiObjectives.find(o=>o.id===objId);
+      if(obj){
+        const existingKPIs=kpiKPIs.filter(k=>k.objective_id===objId);
+        const nextSub=existingKPIs.length+1;
+        document.getElementById('kpi-code').value=(obj.code||'?')+'.'+nextSub;
+      }
+    }else{
+      document.getElementById('kpi-code').value='';
+    }
   }
+  // When objective changes, auto-update the code
+  sel.onchange=function(){
+    if(!kpiId&&this.value){
+      const obj=kpiObjectives.find(o=>o.id===this.value);
+      if(obj){
+        const existingKPIs=kpiKPIs.filter(k=>k.objective_id===this.value);
+        const nextSub=existingKPIs.length+1;
+        document.getElementById('kpi-code').value=(obj.code||'?')+'.'+nextSub;
+      }
+    }
+  };
   openKpiModal('kpi-edit-modal');
 }
 async function kpiSaveKPI(){
