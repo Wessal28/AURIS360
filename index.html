@@ -3,89 +3,128 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>SEPHS Consulting — HSE Management</title>
+<title>AURIS360 — HSE Management</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css">
 <style>
 *{box-sizing:border-box;margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif}
-:root{--green:#1D9E75;--dark-green:#0F6E56;--red:#E24B4A;--amber:#EF9F27;--blue:#185FA5;--bg:#f4f6f8;--card:#fff;--border:#e5e7eb;--text:#111;--text2:#6b7280;--text3:#9ca3af}
+:root{--green:#1D9E75;--dg:#0F6E56;--red:#E24B4A;--amber:#EF9F27;--blue:#185FA5;--bg:#f4f6f8;--card:#fff;--border:#e5e7eb;--text:#111;--text2:#6b7280;--text3:#9ca3af}
 body{background:var(--bg);color:var(--text);min-height:100vh}
-/* LOGIN */
 #login-screen{position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;z-index:100}
-.login-box{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:36px;width:360px;box-shadow:0 4px 24px rgba(0,0,0,.08)}
-.login-logo{font-size:18px;font-weight:700;color:var(--green);margin-bottom:2px}
+.login-box{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:36px;width:380px;box-shadow:0 4px 24px rgba(0,0,0,.08)}
+.login-logo{font-size:22px;font-weight:800;color:var(--green);margin-bottom:2px;letter-spacing:-.5px}
 .login-sub{font-size:12px;color:var(--text2);margin-bottom:24px}
 .login-err{background:#FCEBEB;color:#A32D2D;font-size:12px;padding:9px 12px;border-radius:8px;margin-bottom:14px;display:none}
-/* APP */
-#app{display:none;height:100vh;overflow:hidden;flex-direction:row}
-.sidebar{width:230px;min-width:230px;background:var(--card);border-right:1px solid var(--border);display:flex;flex-direction:column;height:100vh}
-.sidebar-top{padding:20px;border-bottom:1px solid var(--border)}
-.sidebar-company{font-size:14px;font-weight:600;color:var(--text)}
-.sidebar-user{font-size:12px;color:var(--text2);margin-top:2px}
-.sidebar-role{display:inline-block;margin-top:6px;font-size:10px;padding:2px 8px;border-radius:99px;background:#E1F5EE;color:var(--dark-green);font-weight:500}
-.nav-section{font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:var(--text3);padding:16px 20px 4px}
-.nav-item{display:flex;align-items:center;gap:10px;padding:10px 20px;cursor:pointer;font-size:13px;color:var(--text2);border-left:3px solid transparent;transition:all .15s}
+#app{display:none;height:100vh;overflow:hidden}
+.layout{display:flex;height:100vh}
+.sidebar{width:240px;min-width:240px;background:var(--card);border-right:1px solid var(--border);display:flex;flex-direction:column;height:100vh;overflow-y:auto}
+.sidebar-top{padding:18px 20px 14px;border-bottom:1px solid var(--border)}
+.co-logo{width:48px;height:48px;border-radius:10px;object-fit:contain;margin-bottom:8px;border:1px solid var(--border);display:none}
+.co-initials{width:48px;height:48px;border-radius:10px;background:var(--green);color:#fff;font-size:18px;font-weight:700;display:flex;align-items:center;justify-content:center;margin-bottom:8px}
+.sb-company{font-size:14px;font-weight:700;color:var(--text)}
+.sb-user{font-size:11px;color:var(--text2);margin-top:1px}
+.sb-role{display:inline-block;margin-top:5px;font-size:10px;padding:2px 8px;border-radius:99px;background:#E1F5EE;color:var(--dg);font-weight:600}
+.nav-section{font-size:9px;text-transform:uppercase;letter-spacing:.1em;color:var(--text3);padding:14px 20px 3px;font-weight:600}
+.nav-item{display:flex;align-items:center;gap:9px;padding:9px 20px;cursor:pointer;font-size:13px;color:var(--text2);border-left:3px solid transparent;transition:all .12s}
 .nav-item:hover{background:#f9fafb;color:var(--text)}
-.nav-item.active{background:#E1F5EE;color:var(--green);border-left-color:var(--green);font-weight:500}
-.nav-item i{font-size:17px}
-.sidebar-footer{margin-top:auto;padding:14px 20px;border-top:1px solid var(--border)}
-.main{flex:1;overflow-y:auto;padding:28px 32px;background:var(--bg)}
-/* PAGES */
-.page{display:none}.page.active{display:block}
+.nav-item.active{background:#E1F5EE;color:var(--green);border-left-color:var(--green);font-weight:600}
+.nav-item i{font-size:16px}
+.sb-footer{margin-top:auto;padding:12px 16px;border-top:1px solid var(--border);display:flex;gap:6px}
+.main{flex:1;overflow-y:auto;background:var(--bg)}
+.page{display:none;padding:28px 32px}.page.active{display:block}
 .page-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:22px}
-.page-title{font-size:20px;font-weight:600;color:var(--text)}
-/* COMPONENTS */
-.btn{padding:8px 16px;border-radius:8px;border:1px solid var(--border);background:var(--card);color:var(--text);font-size:13px;cursor:pointer;display:inline-flex;align-items:center;gap:7px;font-weight:500;transition:all .15s}
+.page-title{font-size:20px;font-weight:700;color:var(--text)}
+.btn{padding:8px 16px;border-radius:8px;border:1px solid var(--border);background:var(--card);color:var(--text);font-size:13px;cursor:pointer;display:inline-flex;align-items:center;gap:7px;font-weight:500;transition:all .12s}
 .btn:hover{background:#f9fafb}
 .btn-primary{background:var(--green);color:#fff;border-color:var(--green)}
-.btn-primary:hover{background:var(--dark-green);border-color:var(--dark-green)}
+.btn-primary:hover{background:var(--dg)}
+.btn-red{background:var(--red);color:#fff;border-color:var(--red)}
 .btn-sm{padding:5px 10px;font-size:12px}
 .metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:14px;margin-bottom:20px}
 .metric{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px 18px}
-.metric-label{font-size:12px;color:var(--text2);margin-bottom:6px}
-.metric-value{font-size:26px;font-weight:700;color:var(--text)}
+.metric-label{font-size:11px;color:var(--text2);margin-bottom:6px;font-weight:500}
+.metric-value{font-size:28px;font-weight:700;color:var(--text)}
 .metric-sub{font-size:11px;color:var(--text3);margin-top:3px}
 .card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px 24px;margin-bottom:16px}
-.card-title{font-size:14px;font-weight:600;color:var(--text);margin-bottom:14px;display:flex;align-items:center;justify-content:space-between}
-.badge{display:inline-flex;align-items:center;padding:3px 9px;border-radius:99px;font-size:11px;font-weight:500}
-.bg{background:#EAF3DE;color:#3B6D11}.ba{background:#FAEEDA;color:#854F0B}.br{background:#FCEBEB;color:#A32D2D}.bb{background:#E6F1FB;color:#185FA5}
-/* FORMS */
-.form-group{margin-bottom:14px}
-.form-label{font-size:12px;color:var(--text2);margin-bottom:5px;display:block;font-weight:500}
+.card-title{font-size:14px;font-weight:700;color:var(--text);margin-bottom:14px;display:flex;align-items:center;justify-content:space-between}
+.badge{display:inline-flex;align-items:center;padding:3px 9px;border-radius:99px;font-size:11px;font-weight:600}
+.bg{background:#EAF3DE;color:#3B6D11}.ba{background:#FAEEDA;color:#854F0B}.br{background:#FCEBEB;color:#A32D2D}.bb{background:#E6F1FB;color:#185FA5}.bgr{background:#f3f4f6;color:#374151}
+.form-group{margin-bottom:13px}
+.form-label{font-size:12px;color:var(--text2);margin-bottom:4px;display:block;font-weight:600}
 input,select,textarea{width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;color:var(--text);background:var(--card);transition:border .15s}
-input:focus,select:focus,textarea:focus{outline:none;border-color:var(--green)}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--green);box-shadow:0 0 0 3px rgba(29,158,117,.1)}
 textarea{resize:vertical;min-height:70px}
 .form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-/* TABLE */
+.form-row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
 table{width:100%;border-collapse:collapse;font-size:13px}
-th{text-align:left;font-weight:500;color:var(--text2);padding:8px 8px;border-bottom:1px solid var(--border);font-size:12px}
-td{padding:10px 8px;border-bottom:1px solid var(--border);color:var(--text);vertical-align:top}
+th{text-align:left;font-weight:600;color:var(--text2);padding:9px 8px;border-bottom:1px solid var(--border);font-size:11px;text-transform:uppercase;letter-spacing:.04em}
+td{padding:11px 8px;border-bottom:1px solid var(--border);color:var(--text);vertical-align:middle}
 tr:last-child td{border-bottom:none}
 tr:hover td{background:#fafafa}
-.empty{text-align:center;padding:32px;color:var(--text3);font-size:13px}
-.loading{text-align:center;padding:24px;color:var(--text2);font-size:13px}
-/* INSPECTION */
+.empty{text-align:center;padding:40px;color:var(--text3);font-size:13px}
+.loading-msg{text-align:center;padding:30px;color:var(--text2);font-size:13px}
+.toast{position:fixed;bottom:20px;right:20px;padding:12px 20px;border-radius:10px;font-size:13px;font-weight:600;z-index:9999;display:none;box-shadow:0 4px 20px rgba(0,0,0,.15)}
+.toast-ok{background:var(--green);color:#fff}
+.toast-err{background:var(--red);color:#fff}
+.db-bar{display:inline-flex;align-items:center;gap:7px;font-size:12px;padding:7px 14px;border-radius:8px;background:#E1F5EE;color:var(--dg);margin-bottom:18px;font-weight:600}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--green);display:inline-block}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px}
 .insp-tbl{width:100%;border-collapse:collapse;font-size:12px}
-.insp-tbl th{background:#f9fafb;padding:7px 10px;border:1px solid var(--border);font-size:11px;font-weight:500;color:var(--text2);text-align:center}
+.insp-tbl th{background:#f9fafb;padding:7px 10px;border:1px solid var(--border);font-size:11px;font-weight:600;color:var(--text2);text-align:center}
 .insp-tbl th:first-child{text-align:left}
 .insp-tbl td{border:1px solid var(--border);padding:6px 10px;vertical-align:middle}
 .insp-tbl td input[type=checkbox]{width:auto;cursor:pointer}
-.insp-tbl td input[type=text]{border:none;font-size:12px;padding:2px 4px;background:transparent}
-.cat-row td{background:#f3f4f6;font-size:11px;font-weight:600;color:var(--text2);padding:5px 10px}
-/* KPI BAR */
-.kpi-row{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border)}
+.insp-tbl td input[type=text]{border:none;font-size:11px;padding:2px 4px;background:transparent;width:100%}
+.cat-row td{background:#f3f4f6;font-size:11px;font-weight:700;color:var(--text2);padding:5px 10px;letter-spacing:.04em;text-transform:uppercase}
+.kpi-row{display:flex;align-items:center;gap:12px;padding:11px 0;border-bottom:1px solid var(--border)}
 .kpi-row:last-child{border-bottom:none}
-.kpi-name{flex:1;font-size:13px;color:var(--text)}
-.pw{flex:1;background:#e5e7eb;border-radius:99px;height:6px;overflow:hidden}
+.pw{flex:1;background:#e5e7eb;border-radius:99px;height:7px;overflow:hidden}
 .pb{height:100%;border-radius:99px;transition:width .4s}
-/* TOAST */
-.toast{position:fixed;bottom:20px;right:20px;padding:11px 18px;border-radius:10px;font-size:13px;font-weight:500;z-index:999;display:none;box-shadow:0 4px 16px rgba(0,0,0,.15)}
-.toast-ok{background:var(--green);color:#fff}
-.toast-err{background:var(--red);color:#fff}
-/* DB STATUS */
-.db-bar{display:inline-flex;align-items:center;gap:7px;font-size:12px;padding:6px 12px;border-radius:8px;background:#E1F5EE;color:var(--dark-green);margin-bottom:18px;font-weight:500}
-.dot{width:8px;height:8px;border-radius:50%;background:var(--green);display:inline-block}
-/* GRID */
-.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+/* AI CHAT */
+.ai-panel{position:fixed;bottom:20px;right:20px;z-index:500}
+.ai-toggle{width:54px;height:54px;border-radius:50%;background:var(--green);color:#fff;border:none;cursor:pointer;font-size:24px;box-shadow:0 4px 16px rgba(29,158,117,.4);display:flex;align-items:center;justify-content:center;transition:all .2s}
+.ai-toggle:hover{background:var(--dg);transform:scale(1.05)}
+.ai-window{position:fixed;bottom:86px;right:20px;width:380px;height:520px;background:var(--card);border:1px solid var(--border);border-radius:16px;box-shadow:0 8px 40px rgba(0,0,0,.15);display:none;flex-direction:column;z-index:500;overflow:hidden}
+.ai-window.open{display:flex}
+.ai-header{padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;background:linear-gradient(135deg,var(--green),var(--dg))}
+.ai-header-text{flex:1}
+.ai-title{font-size:14px;font-weight:700;color:#fff}
+.ai-subtitle{font-size:11px;color:rgba(255,255,255,.8)}
+.ai-close{background:none;border:none;color:#fff;cursor:pointer;font-size:18px;padding:2px}
+.ai-messages{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:10px}
+.ai-msg{max-width:85%;padding:10px 14px;border-radius:12px;font-size:13px;line-height:1.5}
+.ai-msg.user{background:var(--green);color:#fff;align-self:flex-end;border-bottom-right-radius:4px}
+.ai-msg.assistant{background:#f3f4f6;color:var(--text);align-self:flex-start;border-bottom-left-radius:4px}
+.ai-msg.thinking{color:var(--text2);font-style:italic}
+.ai-suggestions{padding:8px 16px;display:flex;gap:6px;flex-wrap:wrap;border-top:1px solid var(--border)}
+.ai-suggestion{padding:5px 10px;border-radius:99px;border:1px solid var(--border);background:var(--card);font-size:11px;cursor:pointer;color:var(--text2);transition:all .12s;white-space:nowrap}
+.ai-suggestion:hover{background:#E1F5EE;border-color:var(--green);color:var(--green)}
+.ai-input-row{padding:12px 16px;border-top:1px solid var(--border);display:flex;gap:8px}
+.ai-input{flex:1;padding:9px 14px;border:1px solid var(--border);border-radius:99px;font-size:13px;outline:none}
+.ai-input:focus{border-color:var(--green)}
+.ai-send{padding:9px 16px;background:var(--green);color:#fff;border:none;border-radius:99px;cursor:pointer;font-size:13px;font-weight:600}
+.ai-send:hover{background:var(--dg)}
+/* INSIGHTS CARD */
+.insight-card{border-left:4px solid var(--green);background:#f0fdf8;border-radius:0 10px 10px 0;padding:14px 16px;margin-bottom:10px}
+.insight-card.warn{border-left-color:var(--amber);background:#fffbeb}
+.insight-card.danger{border-left-color:var(--red);background:#fef2f2}
+.insight-title{font-size:13px;font-weight:700;color:var(--text);margin-bottom:3px}
+.insight-body{font-size:12px;color:var(--text2);line-height:1.6}
+/* PERMIT STATUS */
+.permit-status{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:99px;font-size:11px;font-weight:600}
+/* ACTION TRACKER priority */
+.priority-critical{background:#FCEBEB;color:#A32D2D}
+.priority-high{background:#FEF3C7;color:#92400E}
+.priority-medium{background:#FAEEDA;color:#854F0B}
+.priority-low{background:#EAF3DE;color:#3B6D11}
+/* RA score */
+.rl-high{color:#A32D2D;font-weight:700}
+.rl-med{color:#854F0B;font-weight:700}
+.rl-low{color:#3B6D11;font-weight:700}
+/* USER MGMT */
+.user-card{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--border)}
+.user-card:last-child{border-bottom:none}
+.user-avatar{width:36px;height:36px;border-radius:50%;background:var(--green);color:#fff;font-size:14px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0}
 </style>
 </head>
 <body>
@@ -93,19 +132,17 @@ tr:hover td{background:#fafafa}
 <!-- LOGIN -->
 <div id="login-screen">
   <div class="login-box">
-    <div class="login-logo">SEPHS Consulting</div>
-    <div class="login-sub">HSE Management Platform</div>
+    <div class="login-logo">AURIS360</div>
+    <div class="login-sub">Powered by SEPHS Consulting — HSE Management Platform</div>
     <div class="login-err" id="login-err"></div>
-    <div class="form-group"><label class="form-label">Email</label><input type="email" id="login-email" placeholder="your@email.com" /></div>
-    <div class="form-group"><label class="form-label">Password</label><input type="password" id="login-pw" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()" /></div>
+    <div class="form-group"><label class="form-label">Email</label><input type="email" id="login-email" placeholder="your@email.com"/></div>
+    <div class="form-group"><label class="form-label">Password</label><input type="password" id="login-pw" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()"/></div>
     <button class="btn btn-primary" style="width:100%;justify-content:center" onclick="doLogin()" id="login-btn"><i class="ti ti-login"></i>Sign In</button>
     <div style="margin-top:18px;padding-top:16px;border-top:1px solid var(--border)">
-      <div style="font-size:12px;color:var(--text2);margin-bottom:10px;font-weight:500">New user — register here:</div>
-      <div class="form-group"><label class="form-label">Full name</label><input type="text" id="reg-name" placeholder="Full name" /></div>
+      <div style="font-size:12px;color:var(--text2);margin-bottom:10px;font-weight:600">New user — register:</div>
+      <div class="form-group"><label class="form-label">Full name</label><input type="text" id="reg-name" placeholder="Full name"/></div>
       <div class="form-row">
-        <div class="form-group"><label class="form-label">Role</label>
-          <select id="reg-role"><option value="inspector">Inspector</option><option value="manager">HSE Manager</option><option value="admin">Company Admin</option><option value="sephs_admin">SEPHS Admin</option></select>
-        </div>
+        <div class="form-group"><label class="form-label">Role</label><select id="reg-role"><option value="inspector">Inspector</option><option value="manager">HSE Manager</option><option value="admin">Company Admin</option><option value="sephs_admin">SEPHS Admin</option></select></div>
         <div class="form-group"><label class="form-label">Company</label><select id="reg-company"><option value="">Loading...</option></select></div>
       </div>
       <button class="btn" style="width:100%;justify-content:center" onclick="doRegister()"><i class="ti ti-user-plus"></i>Register</button>
@@ -114,22 +151,37 @@ tr:hover td{background:#fafafa}
 </div>
 
 <!-- APP -->
-<div id="app" style="display:flex">
+<div id="app">
+<div class="layout">
   <div class="sidebar">
     <div class="sidebar-top">
-      <div class="sidebar-company" id="sb-company">SEPHS Consulting</div>
-      <div class="sidebar-user" id="sb-user">—</div>
-      <span class="sidebar-role" id="sb-role">—</span>
+      <img id="co-logo-img" class="co-logo" src="" alt="logo"/>
+      <div id="co-initials-div" class="co-initials">A</div>
+      <div class="sb-company" id="sb-company">AURIS360</div>
+      <div class="sb-user" id="sb-user">—</div>
+      <span class="sb-role" id="sb-role">—</span>
     </div>
-    <span class="nav-section">Modules</span>
+    <span class="nav-section">Main</span>
     <div class="nav-item active" onclick="showPage('dashboard',this)"><i class="ti ti-layout-dashboard"></i>Dashboard</div>
+    <div class="nav-item" onclick="showPage('ai-insights',this)"><i class="ti ti-brain"></i>AI Insights</div>
+    <span class="nav-section">HSE Modules</span>
     <div class="nav-item" onclick="showPage('kpi',this)"><i class="ti ti-target"></i>Objectives & KPIs</div>
     <div class="nav-item" onclick="showPage('events',this)"><i class="ti ti-alert-triangle"></i>Event Reporting</div>
     <div class="nav-item" onclick="showPage('inspection',this)"><i class="ti ti-clipboard-check"></i>Site Inspection</div>
-    <div class="nav-item" onclick="showPage('training',this)"><i class="ti ti-certificate"></i>Training Monitor</div>
+    <div class="nav-item" onclick="showPage('risk',this)"><i class="ti ti-shield-check"></i>Risk Assessment</div>
+    <div class="nav-item" onclick="showPage('investigation',this)"><i class="ti ti-search"></i>Investigation</div>
+    <div class="nav-item" onclick="showPage('permit',this)"><i class="ti ti-key"></i>Permit to Work</div>
+    <div class="nav-item" onclick="showPage('noise',this)"><i class="ti ti-volume"></i>Noise Survey</div>
+    <div class="nav-item" onclick="showPage('meetings',this)"><i class="ti ti-notes"></i>HSE Meetings</div>
+    <div class="nav-item" onclick="showPage('training',this)"><i class="ti ti-certificate"></i>Training</div>
+    <span class="nav-section">Management</span>
+    <div class="nav-item" onclick="showPage('actions',this)"><i class="ti ti-list-check"></i>Master Action Plan</div>
+    <div class="nav-item" onclick="showPage('documents',this)"><i class="ti ti-files"></i>Document Control</div>
+    <div class="nav-item" onclick="showPage('users',this)"><i class="ti ti-users"></i>User Management</div>
     <div class="nav-item" id="nav-admin" style="display:none" onclick="showPage('admin',this)"><i class="ti ti-building"></i>Companies</div>
-    <div class="sidebar-footer">
-      <button class="btn btn-sm" style="width:100%;justify-content:center" onclick="doLogout()"><i class="ti ti-logout"></i>Sign out</button>
+    <div class="sb-footer">
+      <button class="btn btn-sm" style="flex:1;justify-content:center" onclick="showPage('settings',document.createElement('div'))"><i class="ti ti-settings"></i>Settings</button>
+      <button class="btn btn-sm" style="justify-content:center" onclick="doLogout()"><i class="ti ti-logout"></i></button>
     </div>
   </div>
 
@@ -137,223 +189,530 @@ tr:hover td{background:#fafafa}
 
     <!-- DASHBOARD -->
     <div id="page-dashboard" class="page active">
-      <div class="page-header">
-        <div class="page-title">Dashboard</div>
-        <span id="dash-label" style="font-size:12px;color:var(--text2)"></span>
-      </div>
-      <div class="db-bar"><span class="dot"></span>Connected to Supabase — live data</div>
+      <div class="page-header"><div class="page-title">Dashboard</div><span id="dash-label" style="font-size:12px;color:var(--text2)"></span></div>
+      <div class="db-bar"><span class="dot"></span>Live — Connected to Supabase</div>
       <div class="metrics">
         <div class="metric"><div class="metric-label">KPIs on track</div><div class="metric-value" id="d-kpis" style="color:var(--green)">—</div></div>
         <div class="metric"><div class="metric-label">Open events</div><div class="metric-value" id="d-events" style="color:var(--amber)">—</div></div>
+        <div class="metric"><div class="metric-label">Open actions</div><div class="metric-value" id="d-actions" style="color:var(--red)">—</div></div>
         <div class="metric"><div class="metric-label">Inspections</div><div class="metric-value" id="d-inspections">—</div></div>
+        <div class="metric"><div class="metric-label">Active permits</div><div class="metric-value" id="d-permits">—</div></div>
         <div class="metric"><div class="metric-label">Training expiring</div><div class="metric-value" id="d-training" style="color:var(--red)">—</div></div>
       </div>
+      <div id="ai-dash-insights" style="margin-bottom:16px"></div>
       <div class="grid2">
-        <div class="card"><div class="card-title">Recent events</div><div id="dash-events"><div class="loading">Loading...</div></div></div>
-        <div class="card"><div class="card-title">Recent inspections</div><div id="dash-inspections"><div class="loading">Loading...</div></div></div>
+        <div class="card"><div class="card-title">Recent events</div><div id="dash-events"><div class="loading-msg">Loading...</div></div></div>
+        <div class="card"><div class="card-title">Open actions (top 5)</div><div id="dash-actions"><div class="loading-msg">Loading...</div></div></div>
+      </div>
+      <div class="grid2">
+        <div class="card"><div class="card-title">Recent inspections</div><div id="dash-inspections-tbl"><div class="loading-msg">Loading...</div></div></div>
+        <div class="card"><div class="card-title">Permits status</div><div id="dash-permits"><div class="loading-msg">Loading...</div></div></div>
+      </div>
+    </div>
+
+    <!-- AI INSIGHTS PAGE -->
+    <div id="page-ai-insights" class="page">
+      <div class="page-header"><div class="page-title">AI Insights</div><button class="btn btn-primary" onclick="generateFullInsights()"><i class="ti ti-refresh"></i>Refresh analysis</button></div>
+      <div class="card">
+        <div class="card-title"><span><i class="ti ti-brain" style="color:var(--green);margin-right:6px"></i>HSE Performance Analysis</span><span id="ai-insights-date" style="font-size:11px;font-weight:400;color:var(--text2)"></span></div>
+        <div id="ai-insights-content"><div class="loading-msg">Click "Refresh analysis" to generate AI insights...</div></div>
+      </div>
+      <div class="grid2">
+        <div class="card"><div class="card-title"><i class="ti ti-trending-up" style="color:var(--green);margin-right:6px"></i>KPI Recommendations</div><div id="ai-kpi-recs"><div class="loading-msg">Analysing...</div></div></div>
+        <div class="card"><div class="card-title"><i class="ti ti-alert-circle" style="color:var(--amber);margin-right:6px"></i>Risk Hotspots</div><div id="ai-risk-hotspots"><div class="loading-msg">Analysing...</div></div></div>
       </div>
     </div>
 
     <!-- KPIs -->
     <div id="page-kpi" class="page">
-      <div class="page-header"><div class="page-title">Objectives & KPIs</div><button class="btn btn-primary" onclick="showForm('kpi-form')"><i class="ti ti-plus"></i>Add KPI</button></div>
+      <div class="page-header"><div class="page-title">Objectives & KPIs</div><button class="btn btn-primary" onclick="toggleForm('kpi-form')"><i class="ti ti-plus"></i>Add KPI</button></div>
       <div class="card" id="kpi-form" style="display:none">
         <div class="card-title">New KPI</div>
-        <div class="form-row"><div class="form-group"><label class="form-label">Objective name</label><input type="text" id="kf-name" /></div><div class="form-group"><label class="form-label">Metric</label><input type="text" id="kf-metric" /></div></div>
-        <div class="form-row"><div class="form-group"><label class="form-label">Target value</label><input type="number" id="kf-target" /></div><div class="form-group"><label class="form-label">Current value</label><input type="number" id="kf-current" /></div></div>
-        <div class="form-row"><div class="form-group"><label class="form-label">Responsible</label><input type="text" id="kf-resp" /></div><div class="form-group"><label class="form-label">Due date</label><input type="date" id="kf-due" /></div></div>
+        <div class="form-row"><div class="form-group"><label class="form-label">Objective name</label><input type="text" id="kf-name"/></div><div class="form-group"><label class="form-label">Metric</label><input type="text" id="kf-metric"/></div></div>
+        <div class="form-row"><div class="form-group"><label class="form-label">Target value</label><input type="number" id="kf-target"/></div><div class="form-group"><label class="form-label">Current value</label><input type="number" id="kf-current"/></div></div>
+        <div class="form-row"><div class="form-group"><label class="form-label">Responsible</label><input type="text" id="kf-resp"/></div><div class="form-group"><label class="form-label">Due date</label><input type="date" id="kf-due"/></div></div>
         <div class="form-group"><label class="form-label">Status</label><select id="kf-status"><option value="on_track">On Track</option><option value="at_risk">At Risk</option><option value="off_track">Off Track</option></select></div>
-        <div style="display:flex;gap:8px"><button class="btn btn-primary" onclick="saveKPI()"><i class="ti ti-device-floppy"></i>Save</button><button class="btn" onclick="hideForm('kpi-form')">Cancel</button></div>
+        <div style="display:flex;gap:8px"><button class="btn btn-primary" onclick="saveKPI()"><i class="ti ti-device-floppy"></i>Save</button><button class="btn" onclick="toggleForm('kpi-form')">Cancel</button></div>
       </div>
-      <div class="card"><div class="card-title">Active KPIs</div><div id="kpi-list"><div class="loading">Loading...</div></div></div>
+      <div class="card"><div class="card-title">Active KPIs</div><div id="kpi-list"><div class="loading-msg">Loading...</div></div></div>
     </div>
 
     <!-- EVENTS -->
     <div id="page-events" class="page">
-      <div class="page-header"><div class="page-title">Event Reporting</div><button class="btn btn-primary" onclick="showForm('event-form')"><i class="ti ti-plus"></i>New event</button></div>
+      <div class="page-header"><div class="page-title">Event Reporting</div><button class="btn btn-primary" onclick="toggleForm('event-form')"><i class="ti ti-plus"></i>New event</button></div>
       <div class="card" id="event-form" style="display:none">
         <div class="card-title">Log new event</div>
         <div class="form-row"><div class="form-group"><label class="form-label">Event type</label><select id="ef-type"><option value="Near Miss">Near Miss</option><option value="Incident">Incident</option><option value="Hazard Observation">Hazard Observation</option><option value="Dangerous Occurrence">Dangerous Occurrence</option><option value="Environmental">Environmental</option></select></div><div class="form-group"><label class="form-label">Severity</label><select id="ef-sev"><option value="low">Low</option><option value="medium">Medium</option><option value="high">High</option><option value="critical">Critical</option></select></div></div>
-        <div class="form-row"><div class="form-group"><label class="form-label">Date & time</label><input type="datetime-local" id="ef-date" /></div><div class="form-group"><label class="form-label">Location</label><input type="text" id="ef-loc" /></div></div>
+        <div class="form-row"><div class="form-group"><label class="form-label">Date & time</label><input type="datetime-local" id="ef-date"/></div><div class="form-group"><label class="form-label">Location</label><input type="text" id="ef-loc"/></div></div>
         <div class="form-group"><label class="form-label">Description</label><textarea id="ef-desc"></textarea></div>
-        <div class="form-row"><div class="form-group"><label class="form-label">Immediate action</label><input type="text" id="ef-action" /></div><div class="form-group"><label class="form-label">Reported by</label><input type="text" id="ef-by" /></div></div>
-        <div class="form-row"><div class="form-group"><label class="form-label">Assigned to</label><input type="text" id="ef-assigned" /></div><div class="form-group"><label class="form-label">Action due date</label><input type="date" id="ef-due" /></div></div>
-        <div style="display:flex;gap:8px"><button class="btn btn-primary" onclick="saveEvent()"><i class="ti ti-send"></i>Submit</button><button class="btn" onclick="hideForm('event-form')">Cancel</button></div>
+        <div class="form-row"><div class="form-group"><label class="form-label">Immediate action</label><input type="text" id="ef-action"/></div><div class="form-group"><label class="form-label">Reported by</label><input type="text" id="ef-by"/></div></div>
+        <div class="form-row"><div class="form-group"><label class="form-label">Assigned to</label><input type="text" id="ef-assigned"/></div><div class="form-group"><label class="form-label">Action due date</label><input type="date" id="ef-due"/></div></div>
+        <div style="display:flex;gap:8px"><button class="btn btn-primary" onclick="saveEvent()"><i class="ti ti-send"></i>Submit</button><button class="btn" onclick="toggleForm('event-form')">Cancel</button></div>
       </div>
-      <div class="card"><div class="card-title">Event register</div><div id="events-list"><div class="loading">Loading...</div></div></div>
+      <div class="card"><div class="card-title">Event register</div><div id="events-list"><div class="loading-msg">Loading...</div></div></div>
     </div>
 
     <!-- INSPECTION -->
     <div id="page-inspection" class="page">
-      <div class="page-header"><div class="page-title">Site Inspection</div><button class="btn btn-primary" onclick="showForm('insp-form')"><i class="ti ti-plus"></i>New inspection</button></div>
+      <div class="page-header"><div class="page-title">Site Inspection</div><button class="btn btn-primary" onclick="toggleForm('insp-form')"><i class="ti ti-plus"></i>New inspection</button></div>
       <div class="card" id="insp-form" style="display:none">
         <div class="card-title">New site inspection</div>
-        <div class="form-row"><div class="form-group"><label class="form-label">Site</label><input type="text" id="if-site" /></div><div class="form-group"><label class="form-label">Date</label><input type="date" id="if-date" /></div></div>
-        <div class="form-row"><div class="form-group"><label class="form-label">Performed by</label><input type="text" id="if-by" /></div><div class="form-group"><label class="form-label">Employees present</label><input type="text" id="if-emp" /></div></div>
-        <div style="margin:14px 0 8px;font-size:12px;font-weight:600;color:var(--text2)">Checklist — <span id="if-score" style="color:var(--green)">0 Good / 0 Insufficient</span></div>
+        <div class="form-row"><div class="form-group"><label class="form-label">Site</label><input type="text" id="if-site"/></div><div class="form-group"><label class="form-label">Date</label><input type="date" id="if-date"/></div></div>
+        <div class="form-row"><div class="form-group"><label class="form-label">Performed by</label><input type="text" id="if-by"/></div><div class="form-group"><label class="form-label">Employees present</label><input type="text" id="if-emp"/></div></div>
+        <div style="margin:14px 0 8px;font-size:12px;font-weight:700;color:var(--text2)">Checklist — <span id="if-score" style="color:var(--green)">0 Good / 0 Insufficient</span></div>
         <table class="insp-tbl"><thead><tr><th style="text-align:left;width:44%">Item</th><th>Good</th><th>Insuf.</th><th>Observation</th></tr></thead><tbody id="if-checklist"></tbody></table>
         <div style="margin-top:16px">
           <div class="form-group"><label class="form-label">Positive observations</label><textarea id="if-pos"></textarea></div>
           <div class="form-group"><label class="form-label">Negative observations</label><textarea id="if-neg"></textarea></div>
         </div>
-        <div style="display:flex;gap:8px"><button class="btn btn-primary" onclick="saveInspection()"><i class="ti ti-device-floppy"></i>Save inspection</button><button class="btn" onclick="hideForm('insp-form')">Cancel</button></div>
+        <div style="display:flex;gap:8px"><button class="btn btn-primary" onclick="saveInspection()"><i class="ti ti-device-floppy"></i>Save inspection</button><button class="btn" onclick="toggleForm('insp-form')">Cancel</button></div>
       </div>
-      <div class="card"><div class="card-title">Inspection history</div><div id="inspections-list"><div class="loading">Loading...</div></div></div>
+      <div class="card"><div class="card-title">Inspection history</div><div id="inspections-list"><div class="loading-msg">Loading...</div></div></div>
+    </div>
+
+    <!-- RISK ASSESSMENT -->
+    <div id="page-risk" class="page">
+      <div class="page-header"><div class="page-title">Risk Assessment</div><button class="btn btn-primary" onclick="toggleForm('risk-form')"><i class="ti ti-plus"></i>New assessment</button></div>
+      <div class="card" id="risk-form" style="display:none">
+        <div class="card-title">New risk assessment</div>
+        <div class="form-row"><div class="form-group"><label class="form-label">Title</label><input type="text" id="rf-title" placeholder="e.g. Warehouse operations RA"/></div><div class="form-group"><label class="form-label">Location</label><input type="text" id="rf-loc"/></div></div>
+        <div class="form-row"><div class="form-group"><label class="form-label">Assessed by</label><input type="text" id="rf-by"/></div><div class="form-group"><label class="form-label">Review date</label><input type="date" id="rf-review"/></div></div>
+        <div class="form-group"><label class="form-label">Status</label><select id="rf-status"><option value="draft">Draft</option><option value="active">Active</option><option value="review">Under review</option><option value="closed">Closed</option></select></div>
+        <div style="display:flex;gap:8px"><button class="btn btn-primary" onclick="saveRA()"><i class="ti ti-device-floppy"></i>Save</button><button class="btn" onclick="toggleForm('risk-form')">Cancel</button></div>
+      </div>
+      <div class="card"><div class="card-title">Risk assessments</div><div id="risk-list"><div class="loading-msg">Loading...</div></div></div>
+    </div>
+
+    <!-- INVESTIGATION -->
+    <div id="page-investigation" class="page">
+      <div class="page-header"><div class="page-title">Incident Investigation</div><button class="btn btn-primary" onclick="toggleForm('inv-form')"><i class="ti ti-plus"></i>New investigation</button></div>
+      <div class="card" id="inv-form" style="display:none">
+        <div class="card-title">SHEARO Investigation</div>
+        <div class="form-row"><div class="form-group"><label class="form-label">Title</label><input type="text" id="invf-title"/></div><div class="form-group"><label class="form-label">Incident date</label><input type="datetime-local" id="invf-date"/></div></div>
+        <div class="form-row"><div class="form-group"><label class="form-label">Location</label><input type="text" id="invf-loc"/></div><div class="form-group"><label class="form-label">Investigated by</label><input type="text" id="invf-by"/></div></div>
+        <div class="form-group"><label class="form-label">Persons involved</label><input type="text" id="invf-persons"/></div>
+        <div class="form-group"><label class="form-label">What happened (WS1 — Incident description)</label><textarea id="invf-what"></textarea></div>
+        <div class="form-group"><label class="form-label">Immediate causes (1-Why)</label><textarea id="invf-imm"></textarea></div>
+        <div class="form-group"><label class="form-label">Human factors analysis (WS2)</label><textarea id="invf-human"></textarea></div>
+        <div class="form-group"><label class="form-label">Technical conditions 5-Why (WS3)</label><textarea id="invf-tech"></textarea></div>
+        <div class="form-group"><label class="form-label">Root causes</label><textarea id="invf-root"></textarea></div>
+        <div class="form-group"><label class="form-label">Corrective actions</label><textarea id="invf-corr"></textarea></div>
+        <div class="form-group"><label class="form-label">Preventive actions</label><textarea id="invf-prev"></textarea></div>
+        <div class="form-group"><label class="form-label">Lessons learned</label><textarea id="invf-lessons"></textarea></div>
+        <div class="form-group"><label class="form-label">Status</label><select id="invf-status"><option value="open">Open</option><option value="in_progress">In Progress</option><option value="closed">Closed</option></select></div>
+        <div style="display:flex;gap:8px"><button class="btn btn-primary" onclick="saveInvestigation()"><i class="ti ti-device-floppy"></i>Save</button><button class="btn" onclick="toggleForm('inv-form')">Cancel</button></div>
+      </div>
+      <div class="card"><div class="card-title">Investigations</div><div id="inv-list"><div class="loading-msg">Loading...</div></div></div>
+    </div>
+
+    <!-- PERMIT TO WORK -->
+    <div id="page-permit" class="page">
+      <div class="page-header"><div class="page-title">Permit to Work</div><button class="btn btn-primary" onclick="toggleForm('permit-form')"><i class="ti ti-plus"></i>New permit</button></div>
+      <div class="card" id="permit-form" style="display:none">
+        <div class="card-title">Issue permit to work</div>
+        <div class="form-row"><div class="form-group"><label class="form-label">Permit number</label><input type="text" id="pf-no" placeholder="PTW-001"/></div><div class="form-group"><label class="form-label">Permit type</label><select id="pf-type"><option value="hot_work">Hot Work</option><option value="confined_space">Confined Space</option><option value="working_at_height">Working at Height</option><option value="electrical">Electrical</option><option value="excavation">Excavation</option><option value="general">General</option></select></div></div>
+        <div class="form-group"><label class="form-label">Work description</label><textarea id="pf-desc"></textarea></div>
+        <div class="form-row"><div class="form-group"><label class="form-label">Location</label><input type="text" id="pf-loc"/></div><div class="form-group"><label class="form-label">Contractor / team</label><input type="text" id="pf-contractor"/></div></div>
+        <div class="form-row"><div class="form-group"><label class="form-label">Start date & time</label><input type="datetime-local" id="pf-start"/></div><div class="form-group"><label class="form-label">End date & time</label><input type="datetime-local" id="pf-end"/></div></div>
+        <div class="form-row"><div class="form-group"><label class="form-label">Issued by</label><input type="text" id="pf-issued"/></div><div class="form-group"><label class="form-label">Approved by</label><input type="text" id="pf-approved"/></div></div>
+        <div class="form-group"><label class="form-label">Precautions / controls</label><textarea id="pf-precautions"></textarea></div>
+        <div class="form-group"><label class="form-label">PPE required</label><input type="text" id="pf-ppe" placeholder="e.g. Hard hat, gloves, safety harness"/></div>
+        <div class="form-group"><label class="form-label">Status</label><select id="pf-status"><option value="draft">Draft</option><option value="pending_approval">Pending approval</option><option value="approved">Approved</option><option value="active">Active</option><option value="closed">Closed</option><option value="cancelled">Cancelled</option></select></div>
+        <div style="display:flex;gap:8px"><button class="btn btn-primary" onclick="savePermit()"><i class="ti ti-device-floppy"></i>Save</button><button class="btn" onclick="toggleForm('permit-form')">Cancel</button></div>
+      </div>
+      <div class="card"><div class="card-title">Permits register</div><div id="permits-list"><div class="loading-msg">Loading...</div></div></div>
+    </div>
+
+    <!-- NOISE SURVEY -->
+    <div id="page-noise" class="page">
+      <div class="page-header"><div class="page-title">Noise Survey</div><button class="btn btn-primary" onclick="toggleForm('noise-form')"><i class="ti ti-plus"></i>New survey</button></div>
+      <div class="card" id="noise-form" style="display:none">
+        <div class="card-title">New noise survey</div>
+        <div class="form-row"><div class="form-group"><label class="form-label">Survey type</label><select id="nf-type"><option value="occupational">Occupational</option><option value="environmental">Environmental</option></select></div><div class="form-group"><label class="form-label">Site</label><input type="text" id="nf-site"/></div></div>
+        <div class="form-row"><div class="form-group"><label class="form-label">Survey date</label><input type="date" id="nf-date"/></div><div class="form-group"><label class="form-label">Conducted by</label><input type="text" id="nf-by"/></div></div>
+        <div class="form-row"><div class="form-group"><label class="form-label">Instrument used</label><input type="text" id="nf-instrument" placeholder="e.g. Sound level meter CEL-620"/></div><div class="form-group"><label class="form-label">Calibration date</label><input type="date" id="nf-cal"/></div></div>
+        <div class="form-group"><label class="form-label">Weather conditions</label><input type="text" id="nf-weather" placeholder="e.g. Sunny, 28°C, light wind"/></div>
+        <div class="form-group"><label class="form-label">Notes</label><textarea id="nf-notes"></textarea></div>
+        <div style="display:flex;gap:8px"><button class="btn btn-primary" onclick="saveNoise()"><i class="ti ti-device-floppy"></i>Save survey</button><button class="btn" onclick="toggleForm('noise-form')">Cancel</button></div>
+      </div>
+      <div class="card"><div class="card-title">Noise surveys</div><div id="noise-list"><div class="loading-msg">Loading...</div></div></div>
+    </div>
+
+    <!-- HSE MEETINGS -->
+    <div id="page-meetings" class="page">
+      <div class="page-header"><div class="page-title">HSE Meetings</div><button class="btn btn-primary" onclick="toggleForm('meeting-form')"><i class="ti ti-plus"></i>New meeting</button></div>
+      <div class="card" id="meeting-form" style="display:none">
+        <div class="card-title">Log HSE meeting</div>
+        <div class="form-row"><div class="form-group"><label class="form-label">Title</label><input type="text" id="mf-title" placeholder="e.g. Monthly Safety Committee"/></div><div class="form-group"><label class="form-label">Meeting type</label><select id="mf-type"><option value="toolbox_talk">Toolbox Talk</option><option value="safety_committee">Safety Committee</option><option value="management_review">Management Review</option><option value="emergency_drill">Emergency Drill</option><option value="other">Other</option></select></div></div>
+        <div class="form-row"><div class="form-group"><label class="form-label">Date & time</label><input type="datetime-local" id="mf-date"/></div><div class="form-group"><label class="form-label">Location</label><input type="text" id="mf-loc"/></div></div>
+        <div class="form-row"><div class="form-group"><label class="form-label">Chaired by</label><input type="text" id="mf-chair"/></div><div class="form-group"><label class="form-label">Next meeting date</label><input type="date" id="mf-next"/></div></div>
+        <div class="form-group"><label class="form-label">Attendees</label><textarea id="mf-attendees" placeholder="Names and job titles..."></textarea></div>
+        <div class="form-group"><label class="form-label">Agenda</label><textarea id="mf-agenda"></textarea></div>
+        <div class="form-group"><label class="form-label">Minutes / discussion</label><textarea id="mf-minutes"></textarea></div>
+        <div style="display:flex;gap:8px"><button class="btn btn-primary" onclick="saveMeeting()"><i class="ti ti-device-floppy"></i>Save</button><button class="btn" onclick="toggleForm('meeting-form')">Cancel</button></div>
+      </div>
+      <div class="card"><div class="card-title">Meetings log</div><div id="meetings-list"><div class="loading-msg">Loading...</div></div></div>
     </div>
 
     <!-- TRAINING -->
     <div id="page-training" class="page">
-      <div class="page-header"><div class="page-title">Training Monitor</div><button class="btn btn-primary" onclick="showForm('training-form')"><i class="ti ti-plus"></i>Log training</button></div>
+      <div class="page-header"><div class="page-title">Training Monitor</div><button class="btn btn-primary" onclick="toggleForm('training-form')"><i class="ti ti-plus"></i>Log training</button></div>
       <div class="card" id="training-form" style="display:none">
         <div class="card-title">Log training session</div>
-        <div class="form-row"><div class="form-group"><label class="form-label">Course / topic</label><input type="text" id="tf-course" /></div><div class="form-group"><label class="form-label">Trainer</label><input type="text" id="tf-trainer" /></div></div>
-        <div class="form-row"><div class="form-group"><label class="form-label">Date conducted</label><input type="date" id="tf-date" /></div><div class="form-group"><label class="form-label">Certificate expiry</label><input type="date" id="tf-expiry" /></div></div>
+        <div class="form-row"><div class="form-group"><label class="form-label">Course / topic</label><input type="text" id="tf-course"/></div><div class="form-group"><label class="form-label">Trainer</label><input type="text" id="tf-trainer"/></div></div>
+        <div class="form-row"><div class="form-group"><label class="form-label">Date conducted</label><input type="date" id="tf-date"/></div><div class="form-group"><label class="form-label">Certificate expiry</label><input type="date" id="tf-expiry"/></div></div>
         <div class="form-group"><label class="form-label">Attendees</label><textarea id="tf-attendees"></textarea></div>
-        <div style="display:flex;gap:8px"><button class="btn btn-primary" onclick="saveTraining()"><i class="ti ti-device-floppy"></i>Save</button><button class="btn" onclick="hideForm('training-form')">Cancel</button></div>
+        <div style="display:flex;gap:8px"><button class="btn btn-primary" onclick="saveTraining()"><i class="ti ti-device-floppy"></i>Save</button><button class="btn" onclick="toggleForm('training-form')">Cancel</button></div>
       </div>
-      <div class="card"><div class="card-title">Training sessions</div><div id="training-list"><div class="loading">Loading...</div></div></div>
+      <div class="card"><div class="card-title">Training sessions</div><div id="training-list"><div class="loading-msg">Loading...</div></div></div>
     </div>
 
-    <!-- ADMIN -->
+    <!-- MASTER ACTION PLAN -->
+    <div id="page-actions" class="page">
+      <div class="page-header"><div class="page-title">Master Action Plan</div><button class="btn btn-primary" onclick="toggleForm('action-form')"><i class="ti ti-plus"></i>Add manual action</button></div>
+      <div class="card" id="action-form" style="display:none">
+        <div class="card-title">Add action manually</div>
+        <div class="form-row"><div class="form-group"><label class="form-label">Description</label><input type="text" id="af-desc" placeholder="Action description"/></div><div class="form-group"><label class="form-label">Source module</label><select id="af-module"><option value="manual">Manual</option><option value="inspection">Inspection</option><option value="event">Event</option><option value="risk_assessment">Risk Assessment</option><option value="investigation">Investigation</option><option value="meeting">Meeting</option><option value="permit">Permit</option><option value="noise_survey">Noise Survey</option><option value="kpi">KPI</option></select></div></div>
+        <div class="form-row"><div class="form-group"><label class="form-label">Responsible</label><input type="text" id="af-resp"/></div><div class="form-group"><label class="form-label">Target date</label><input type="date" id="af-date"/></div></div>
+        <div class="form-row"><div class="form-group"><label class="form-label">Priority</label><select id="af-priority"><option value="low">Low</option><option value="medium">Medium</option><option value="high">High</option><option value="critical">Critical</option></select></div><div class="form-group"><label class="form-label">Status</label><select id="af-status"><option value="open">Open</option><option value="in_progress">In Progress</option><option value="closed">Closed</option></select></div></div>
+        <div class="form-group"><label class="form-label">Comments</label><textarea id="af-comments"></textarea></div>
+        <div style="display:flex;gap:8px"><button class="btn btn-primary" onclick="saveAction()"><i class="ti ti-device-floppy"></i>Save action</button><button class="btn" onclick="toggleForm('action-form')">Cancel</button></div>
+      </div>
+      <div class="card">
+        <div class="card-title">All actions <span id="action-count" style="font-size:12px;font-weight:400;color:var(--text2)"></span></div>
+        <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap">
+          <select id="filter-module" onchange="loadActions()" style="width:auto;padding:6px 10px;font-size:12px"><option value="">All modules</option><option value="manual">Manual</option><option value="inspection">Inspection</option><option value="event">Event</option><option value="risk_assessment">Risk Assessment</option><option value="investigation">Investigation</option><option value="meeting">Meeting</option><option value="permit">Permit</option></select>
+          <select id="filter-status" onchange="loadActions()" style="width:auto;padding:6px 10px;font-size:12px"><option value="">All statuses</option><option value="open">Open</option><option value="in_progress">In Progress</option><option value="overdue">Overdue</option><option value="closed">Closed</option></select>
+          <select id="filter-priority" onchange="loadActions()" style="width:auto;padding:6px 10px;font-size:12px"><option value="">All priorities</option><option value="critical">Critical</option><option value="high">High</option><option value="medium">Medium</option><option value="low">Low</option></select>
+        </div>
+        <div id="actions-list"><div class="loading-msg">Loading...</div></div>
+      </div>
+    </div>
+
+    <!-- DOCUMENT CONTROL -->
+    <div id="page-documents" class="page">
+      <div class="page-header"><div class="page-title">Document Control</div><button class="btn btn-primary" onclick="toggleForm('doc-form')"><i class="ti ti-plus"></i>Register document</button></div>
+      <div class="card" id="doc-form" style="display:none">
+        <div class="card-title">Register document</div>
+        <div class="form-row"><div class="form-group"><label class="form-label">Document title</label><input type="text" id="df-title"/></div><div class="form-group"><label class="form-label">Document type</label><select id="df-type"><option value="policy">Policy</option><option value="procedure">Procedure</option><option value="risk_assessment">Risk Assessment</option><option value="msds">MSDS</option><option value="sop">SOP</option><option value="form">Form</option><option value="certificate">Certificate</option><option value="legal">Legal/Standard</option><option value="other">Other</option></select></div></div>
+        <div class="form-row"><div class="form-group"><label class="form-label">Reference number</label><input type="text" id="df-ref" placeholder="e.g. POL-001"/></div><div class="form-group"><label class="form-label">Version</label><input type="text" id="df-version" placeholder="e.g. v1.0"/></div></div>
+        <div class="form-row"><div class="form-group"><label class="form-label">Issue date</label><input type="date" id="df-issue"/></div><div class="form-group"><label class="form-label">Review date</label><input type="date" id="df-review"/></div></div>
+        <div class="form-row"><div class="form-group"><label class="form-label">Document owner</label><input type="text" id="df-owner"/></div><div class="form-group"><label class="form-label">Status</label><select id="df-status"><option value="current">Current</option><option value="draft">Draft</option><option value="superseded">Superseded</option></select></div></div>
+        <div class="form-group"><label class="form-label">File URL (link to document)</label><input type="url" id="df-url" placeholder="https://..."/></div>
+        <div style="display:flex;gap:8px"><button class="btn btn-primary" onclick="saveDoc()"><i class="ti ti-device-floppy"></i>Register</button><button class="btn" onclick="toggleForm('doc-form')">Cancel</button></div>
+      </div>
+      <div class="card"><div class="card-title">Document register</div><div id="docs-list"><div class="loading-msg">Loading...</div></div></div>
+    </div>
+
+    <!-- USER MANAGEMENT -->
+    <div id="page-users" class="page">
+      <div class="page-header"><div class="page-title">User Management</div></div>
+      <div class="card"><div class="card-title">Users in your company</div><div id="users-list"><div class="loading-msg">Loading...</div></div></div>
+      <div class="card">
+        <div class="card-title">Invite new user</div>
+        <div style="font-size:12px;color:var(--text2);margin-bottom:12px">Share this link with new users so they can register and be automatically linked to your company:</div>
+        <div style="background:#f9fafb;border:1px solid var(--border);border-radius:8px;padding:12px;font-family:monospace;font-size:12px;color:var(--green);word-break:break-all" id="invite-link">https://auris-360.vercel.app</div>
+        <div style="font-size:12px;color:var(--text2);margin-top:10px">After they register, assign them the correct role below:</div>
+        <div style="margin-top:12px" id="pending-users"></div>
+      </div>
+    </div>
+
+    <!-- ADMIN — SEPHS only -->
     <div id="page-admin" class="page">
       <div class="page-header"><div class="page-title">Company Management</div></div>
       <div class="card">
         <div class="card-title">Add new company</div>
-        <div class="form-row"><div class="form-group"><label class="form-label">Company name</label><input type="text" id="co-name" /></div><div class="form-group"><label class="form-label">Industry</label><select id="co-industry"><option>Manufacturing</option><option>Construction</option><option>Healthcare</option><option>Transportation</option><option>Energy / Oil & Gas</option><option>Logistics</option><option>Other</option></select></div></div>
-        <div class="form-row"><div class="form-group"><label class="form-label">Contact name</label><input type="text" id="co-contact" /></div><div class="form-group"><label class="form-label">Contact email</label><input type="email" id="co-email" /></div></div>
+        <div class="form-row"><div class="form-group"><label class="form-label">Company name</label><input type="text" id="co-name"/></div><div class="form-group"><label class="form-label">Industry</label><select id="co-industry"><option>Manufacturing</option><option>Construction</option><option>Healthcare</option><option>Transportation</option><option>Energy / Oil & Gas</option><option>Logistics</option><option>Other</option></select></div></div>
+        <div class="form-row"><div class="form-group"><label class="form-label">Contact name</label><input type="text" id="co-contact"/></div><div class="form-group"><label class="form-label">Contact email</label><input type="email" id="co-email"/></div></div>
+        <div class="form-group"><label class="form-label">Logo URL (optional)</label><input type="url" id="co-logo" placeholder="https://..."/></div>
         <button class="btn btn-primary" onclick="saveCompany()"><i class="ti ti-device-floppy"></i>Register company</button>
       </div>
-      <div class="card"><div class="card-title">Registered companies</div><div id="companies-list"><div class="loading">Loading...</div></div></div>
+      <div class="card"><div class="card-title">All companies</div><div id="companies-list"><div class="loading-msg">Loading...</div></div></div>
+    </div>
+
+    <!-- SETTINGS -->
+    <div id="page-settings" class="page">
+      <div class="page-header"><div class="page-title">Settings</div></div>
+      <div class="card">
+        <div class="card-title">Company branding</div>
+        <div class="form-group"><label class="form-label">Company logo URL</label><input type="url" id="set-logo" placeholder="https://your-logo-url.com/logo.png"/></div>
+        <button class="btn btn-primary" onclick="saveLogo()"><i class="ti ti-device-floppy"></i>Save logo</button>
+      </div>
     </div>
 
   </div>
+</div>
+</div>
+
+<!-- AI CHAT PANEL -->
+<div class="ai-panel" id="ai-panel" style="display:none">
+  <div class="ai-window" id="ai-window">
+    <div class="ai-header">
+      <div style="width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;font-size:18px;color:#fff"><i class="ti ti-brain"></i></div>
+      <div class="ai-header-text">
+        <div class="ai-title">AURIS AI Assistant</div>
+        <div class="ai-subtitle">Powered by Claude — HSE intelligence</div>
+      </div>
+      <button class="ai-close" onclick="toggleAI()"><i class="ti ti-x"></i></button>
+    </div>
+    <div class="ai-messages" id="ai-messages">
+      <div class="ai-msg assistant">Hello! I'm your AURIS HSE AI assistant. I can analyse your safety data, identify risk patterns, recommend improvements, and answer any HSE questions. What would you like to know?</div>
+    </div>
+    <div class="ai-suggestions">
+      <button class="ai-suggestion" onclick="askAI('Analyse my overall HSE performance and identify key risks')">📊 Overall analysis</button>
+      <button class="ai-suggestion" onclick="askAI('What are the most common incident types and how can I prevent them?')">⚠️ Incident patterns</button>
+      <button class="ai-suggestion" onclick="askAI('Which KPIs are at risk and what actions should I take?')">🎯 KPI advice</button>
+      <button class="ai-suggestion" onclick="askAI('Review my open actions and prioritise them')">✅ Action priorities</button>
+    </div>
+    <div class="ai-input-row">
+      <input class="ai-input" id="ai-input" placeholder="Ask anything about your HSE data..." onkeydown="if(event.key==='Enter')sendAI()"/>
+      <button class="ai-send" onclick="sendAI()"><i class="ti ti-send"></i></button>
+    </div>
+  </div>
+  <button class="ai-toggle" onclick="toggleAI()" title="AURIS AI Assistant"><i class="ti ti-brain"></i></button>
 </div>
 
 <div class="toast" id="toast"></div>
 
 <script>
 const SB='https://iarfxjhahzbhncsaohbg.supabase.co';
-const KEY='sb_publishable_4kaoLqRo6p84_yhTpO_5pg_47ea89iF';
+const SBKEY='sb_publishable_4kaoLqRo6p84_yhTpO_5pg_47ea89iF';
+const CLAUDE_MODEL='claude-sonnet-4-20250514';
 let tok=null,prof=null,co=null,chkItems=[];
 
+// ==================== API HELPERS ====================
 async function api(path,o={}){
-  const r=await fetch(SB+'/rest/v1'+path,{method:o.m||'GET',headers:{'Content-Type':'application/json','apikey':KEY,'Authorization':'Bearer '+(tok||KEY),...(o.p?{'Prefer':o.p}:{})},body:o.b?JSON.stringify(o.b):undefined});
+  const r=await fetch(SB+'/rest/v1'+path,{method:o.m||'GET',headers:{'Content-Type':'application/json','apikey':SBKEY,'Authorization':'Bearer '+(tok||SBKEY),...(o.p?{'Prefer':o.p}:{})},body:o.b?JSON.stringify(o.b):undefined});
   if(r.status===204)return null;const d=await r.json();if(!r.ok)throw new Error(d.message||d.error_description||r.statusText);return d;
 }
 async function authReq(path,body){
-  const r=await fetch(SB+'/auth/v1'+path,{method:'POST',headers:{'Content-Type':'application/json','apikey':KEY},body:JSON.stringify(body)});
+  const r=await fetch(SB+'/auth/v1'+path,{method:'POST',headers:{'Content-Type':'application/json','apikey':SBKEY},body:JSON.stringify(body)});
   const d=await r.json();if(!r.ok)throw new Error(d.error_description||d.msg||'Auth error');return d;
 }
-function toast(msg,ok=true){const t=document.getElementById('toast');t.textContent=msg;t.className='toast '+(ok?'toast-ok':'toast-err');t.style.display='block';setTimeout(()=>t.style.display='none',3200);}
+function cf(){return prof?.role==='sephs_admin'?'':(prof?.company_id?`&company_id=eq.${prof.company_id}`:'&company_id=is.null');}
+function toast(msg,ok=true){const t=document.getElementById('toast');t.textContent=msg;t.className='toast '+(ok?'toast-ok':'toast-err');t.style.display='block';setTimeout(()=>t.style.display='none',3500);}
 function fmt(d){return d?new Date(d).toLocaleDateString('en-GB'):'—';}
 function sev(s){const m={low:'bb',medium:'ba',high:'br',critical:'br'};return`<span class="badge ${m[s]||'bb'}">${s||'—'}</span>`;}
-function stat(s){const m={open:'ba',in_progress:'ba',closed:'bg',on_track:'bg',at_risk:'ba',off_track:'br',completed:'bb'};return`<span class="badge ${m[s]||'bb'}">${(s||'').replace(/_/g,' ')}</span>`;}
+function stat(s){const cls={open:'ba',in_progress:'ba',closed:'bg',on_track:'bg',at_risk:'ba',off_track:'br',completed:'bb',approved:'bg',active:'bg',draft:'bgr',pending_approval:'ba',cancelled:'br',review:'ba'};return`<span class="badge ${cls[s]||'bgr'}">${(s||'').replace(/_/g,' ')}</span>`;}
+function prio(p){return`<span class="badge priority-${p}">${p}</span>`;}
 
+// ==================== AUTH ====================
 async function doLogin(){
-  const em=document.getElementById('login-email').value.trim();
-  const pw=document.getElementById('login-pw').value;
-  const err=document.getElementById('login-err');
-  const btn=document.getElementById('login-btn');
+  const em=document.getElementById('login-email').value.trim(),pw=document.getElementById('login-pw').value;
+  const err=document.getElementById('login-err'),btn=document.getElementById('login-btn');
   err.style.display='none';btn.innerHTML='<i class="ti ti-loader-2"></i>Signing in...';btn.disabled=true;
   try{
     const d=await authReq('/token?grant_type=password',{email:em,password:pw});
-    tok=d.access_token;
-    await loadProfile(d.user.id);
+    tok=d.access_token;await loadProfile(d.user.id);
     document.getElementById('login-screen').style.display='none';
-    document.getElementById('app').style.display='flex';
-    loadDashboard();
+    document.getElementById('app').style.display='block';
+    document.getElementById('ai-panel').style.display='block';
+    loadDashboard();setTimeout(()=>generateDashInsights(),2000);
   }catch(e){err.textContent=e.message;err.style.display='block';}
   btn.innerHTML='<i class="ti ti-login"></i>Sign In';btn.disabled=false;
 }
-
 async function doRegister(){
-  const em=document.getElementById('login-email').value.trim();
-  const pw=document.getElementById('login-pw').value;
-  const name=document.getElementById('reg-name').value.trim();
-  const role=document.getElementById('reg-role').value;
-  const cid=document.getElementById('reg-company').value;
-  const err=document.getElementById('login-err');
-  err.style.display='none';
-  if(!em||!pw||!name){err.textContent='Please enter email, password and your name.';err.style.display='block';return;}
+  const em=document.getElementById('login-email').value.trim(),pw=document.getElementById('login-pw').value;
+  const name=document.getElementById('reg-name').value.trim(),role=document.getElementById('reg-role').value,cid=document.getElementById('reg-company').value;
+  const err=document.getElementById('login-err');err.style.display='none';
+  if(!em||!pw||!name){err.textContent='Please enter email, password and name.';err.style.display='block';return;}
   try{
-    const d=await authReq('/signup',{email:em,password:pw});
-    tok=d.access_token;
+    const d=await authReq('/signup',{email:em,password:pw});tok=d.access_token;
     await api('/profiles',{m:'POST',p:'return=minimal',b:{id:d.user.id,full_name:name,role,email:em,company_id:cid||null}});
     await loadProfile(d.user.id);
     document.getElementById('login-screen').style.display='none';
-    document.getElementById('app').style.display='flex';
-    loadDashboard();toast('Welcome, '+name+'!');
+    document.getElementById('app').style.display='block';
+    document.getElementById('ai-panel').style.display='block';
+    loadDashboard();
   }catch(e){err.textContent=e.message;err.style.display='block';}
 }
-
 async function loadProfile(uid){
   try{
     const d=await api(`/profiles?id=eq.${uid}&select=*,companies(*)`);
     if(d&&d[0]){
       prof=d[0];co=d[0].companies;
-      document.getElementById('sb-company').textContent=co?.name||'SEPHS Consulting';
+      document.getElementById('sb-company').textContent=co?.name||'AURIS360';
       document.getElementById('sb-user').textContent=prof.full_name||prof.email||'—';
       document.getElementById('sb-role').textContent=prof.role||'user';
       document.getElementById('dash-label').textContent=co?.name||'';
       if(prof.role==='sephs_admin')document.getElementById('nav-admin').style.display='flex';
+      if(co?.logo_url){
+        document.getElementById('co-logo-img').src=co.logo_url;
+        document.getElementById('co-logo-img').style.display='block';
+        document.getElementById('co-initials-div').style.display='none';
+      }else{
+        document.getElementById('co-initials-div').textContent=(co?.name||'A').charAt(0).toUpperCase();
+      }
     }
   }catch(e){console.error(e);}
 }
+function doLogout(){tok=null;prof=null;co=null;document.getElementById('login-screen').style.display='flex';document.getElementById('app').style.display='none';document.getElementById('ai-panel').style.display='none';}
 
-function doLogout(){tok=null;prof=null;co=null;document.getElementById('login-screen').style.display='flex';document.getElementById('app').style.display='none';}
-
+// ==================== NAVIGATION ====================
 function showPage(name,el){
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
   document.getElementById('page-'+name).classList.add('active');
-  el.classList.add('active');
-  const L={dashboard:loadDashboard,kpi:loadKPIs,events:loadEvents,inspection:()=>{buildChecklist();loadInspections();},training:loadTraining,admin:loadAdmin};
+  if(el&&el.classList)el.classList.add('active');
+  const L={dashboard:loadDashboard,kpi:loadKPIs,events:loadEvents,inspection:()=>{buildChecklist();loadInspections();},risk:loadRA,investigation:loadInvestigations,permit:loadPermits,noise:loadNoise,meetings:loadMeetings,training:loadTraining,actions:loadActions,documents:loadDocs,users:loadUsers,admin:loadAdmin,'ai-insights':generateFullInsights};
   L[name]&&L[name]();
 }
-function showForm(id){document.getElementById(id).style.display='block';window.scrollTo(0,0);}
-function hideForm(id){document.getElementById(id).style.display='none';}
+function toggleForm(id){const el=document.getElementById(id);el.style.display=el.style.display==='none'?'block':'none';}
 
-function cf(){return prof?.role==='sephs_admin'?'':(prof?.company_id?`&company_id=eq.${prof.company_id}`:'&company_id=is.null');}
-
+// ==================== DASHBOARD ====================
 async function loadDashboard(){
   try{
-    const [k,e,i,t]=await Promise.all([
-      api('/kpis?select=*'+cf()),
-      api('/events?select=*'+cf()+'&order=created_at.desc&limit=5'),
+    const [k,e,i,t,p,a]=await Promise.all([
+      api('/kpis?select=*'+cf()),api('/events?select=*'+cf()+'&order=created_at.desc&limit=5'),
       api('/inspections?select=*'+cf()+'&order=created_at.desc&limit=5'),
-      api('/training_sessions?select=*'+cf()),
+      api('/training_sessions?select=*'+cf()),api('/permits?select=*'+cf()),
+      api('/action_tracker?select=*'+cf()+'&status=neq.closed'),
     ]);
     const soon=new Date();soon.setDate(soon.getDate()+30);
     document.getElementById('d-kpis').textContent=(k||[]).filter(x=>x.status==='on_track').length+'/'+(k||[]).length;
     document.getElementById('d-events').textContent=(e||[]).filter(x=>x.status==='open').length;
+    document.getElementById('d-actions').textContent=(a||[]).length;
     document.getElementById('d-inspections').textContent=(i||[]).length;
+    document.getElementById('d-permits').textContent=(p||[]).filter(x=>x.status==='active').length;
     document.getElementById('d-training').textContent=(t||[]).filter(x=>x.expiry_date&&new Date(x.expiry_date)<soon).length;
     const de=document.getElementById('dash-events');
     de.innerHTML=!e?.length?'<div class="empty">No events yet</div>':`<table><thead><tr><th>Date</th><th>Type</th><th>Severity</th><th>Status</th></tr></thead><tbody>${e.map(x=>`<tr><td>${fmt(x.event_date||x.created_at)}</td><td>${x.event_type}</td><td>${sev(x.severity)}</td><td>${stat(x.status)}</td></tr>`).join('')}</tbody></table>`;
-    const di=document.getElementById('dash-inspections');
+    const da=document.getElementById('dash-actions');
+    const top5=(a||[]).sort((x,y)=>{const po={critical:4,high:3,medium:2,low:1};return (po[y.priority]||0)-(po[x.priority]||0);}).slice(0,5);
+    da.innerHTML=!top5.length?'<div class="empty">No open actions</div>':`<table><thead><tr><th>Action</th><th>Responsible</th><th>Due</th><th>Priority</th></tr></thead><tbody>${top5.map(x=>`<tr><td>${x.description}</td><td>${x.responsible||'—'}</td><td>${fmt(x.target_date)}</td><td>${prio(x.priority)}</td></tr>`).join('')}</tbody></table>`;
+    const di=document.getElementById('dash-inspections-tbl');
     di.innerHTML=!i?.length?'<div class="empty">No inspections yet</div>':`<table><thead><tr><th>Date</th><th>Site</th><th>Good</th><th>Insuf.</th></tr></thead><tbody>${i.map(x=>`<tr><td>${fmt(x.inspection_date)}</td><td>${x.site||'—'}</td><td><span class="badge bg">${x.score_good}</span></td><td><span class="badge ${x.score_insuf>3?'br':'ba'}">${x.score_insuf}</span></td></tr>`).join('')}</tbody></table>`;
-  }catch(e){toast('Dashboard error: '+e.message,false);}
+    const dp=document.getElementById('dash-permits');
+    dp.innerHTML=!p?.length?'<div class="empty">No permits yet</div>':`<table><thead><tr><th>Permit no</th><th>Type</th><th>Location</th><th>Status</th></tr></thead><tbody>${(p||[]).slice(0,5).map(x=>`<tr><td>${x.permit_number||'—'}</td><td>${(x.permit_type||'').replace(/_/g,' ')}</td><td>${x.location||'—'}</td><td>${stat(x.status)}</td></tr>`).join('')}</tbody></table>`;
+  }catch(e){toast('Dashboard: '+e.message,false);}
 }
 
+// ==================== AI ASSISTANT ====================
+let aiOpen=false;
+function toggleAI(){aiOpen=!aiOpen;document.getElementById('ai-window').className='ai-window'+(aiOpen?' open':'');}
+
+async function callClaude(messages,systemPrompt){
+  const response=await fetch('https://api.anthropic.com/v1/messages',{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({
+      model:CLAUDE_MODEL,max_tokens:1000,
+      system:systemPrompt,
+      messages:messages
+    })
+  });
+  const data=await response.json();
+  return data.content?.[0]?.text||'Unable to generate response.';
+}
+
+async function getHSEContext(){
+  try{
+    const [k,e,i,a,p,ra]=await Promise.all([
+      api('/kpis?select=*'+cf()),api('/events?select=*'+cf()+'&order=created_at.desc&limit=20'),
+      api('/inspections?select=*'+cf()+'&order=inspection_date.desc&limit=10'),
+      api('/action_tracker?select=*'+cf()),api('/permits?select=*'+cf()),
+      api('/risk_assessments?select=*'+cf()),
+    ]);
+    const soon=new Date();soon.setDate(soon.getDate()+30);
+    return `Company: ${co?.name||'Unknown'} | Industry: ${co?.industry||'Unknown'}
+KPIs: ${(k||[]).length} total, ${(k||[]).filter(x=>x.status==='on_track').length} on track, ${(k||[]).filter(x=>x.status==='at_risk').length} at risk, ${(k||[]).filter(x=>x.status==='off_track').length} off track
+Events (last 20): ${(e||[]).length} total, ${(e||[]).filter(x=>x.severity==='high'||x.severity==='critical').length} high/critical, types: ${[...new Set((e||[]).map(x=>x.event_type))].join(', ')||'none'}
+Inspections: ${(i||[]).length} recent, avg score good: ${i?.length?Math.round((i||[]).reduce((s,x)=>s+x.score_good,0)/(i||[]).length):0}/24
+Actions: ${(a||[]).length} total, ${(a||[]).filter(x=>x.status==='open').length} open, ${(a||[]).filter(x=>x.status==='overdue').length} overdue, ${(a||[]).filter(x=>x.priority==='critical').length} critical priority
+Permits: ${(p||[]).filter(x=>x.status==='active').length} active, ${(p||[]).filter(x=>x.status==='pending_approval').length} pending
+Risk assessments: ${(ra||[]).length} total`;
+  }catch(e){return 'Unable to load HSE data.';}
+}
+
+const SYS_PROMPT=`You are AURIS, an expert AI HSE (Health, Safety & Environment) assistant embedded in the AURIS360 HSE management platform, developed by SEPHS Consulting in Mauritius.
+
+You analyse real HSE data from the platform and provide:
+- Specific, actionable recommendations (not generic advice)
+- Risk pattern identification and trend analysis
+- KPI performance feedback with concrete improvement steps
+- Incident root cause insights
+- Compliance and regulatory guidance for Mauritius/international standards
+- Prioritised action recommendations
+
+Keep responses concise, professional, and practical. Use bullet points for clarity. Always reference the actual data provided.`;
+
+let aiHistory=[];
+
+async function sendAI(){
+  const input=document.getElementById('ai-input');
+  const msg=input.value.trim();if(!msg)return;
+  input.value='';
+  addAIMsg(msg,'user');
+  const thinking=addAIMsg('Analysing your HSE data...','assistant thinking');
+  try{
+    const ctx=await getHSEContext();
+    aiHistory.push({role:'user',content:`HSE Data context:\n${ctx}\n\nUser question: ${msg}`});
+    const reply=await callClaude(aiHistory,SYS_PROMPT);
+    aiHistory.push({role:'assistant',content:reply});
+    thinking.textContent=reply;thinking.className='ai-msg assistant';
+  }catch(e){thinking.textContent='Error: '+e.message;thinking.className='ai-msg assistant';}
+}
+
+async function askAI(question){
+  if(!aiOpen)toggleAI();
+  document.getElementById('ai-input').value=question;
+  sendAI();
+}
+
+function addAIMsg(text,cls){
+  const msgs=document.getElementById('ai-messages');
+  const div=document.createElement('div');
+  div.className='ai-msg '+cls;div.textContent=text;
+  msgs.appendChild(div);msgs.scrollTop=msgs.scrollHeight;return div;
+}
+
+async function generateDashInsights(){
+  const el=document.getElementById('ai-dash-insights');
+  el.innerHTML='<div class="loading-msg" style="padding:10px">AI analysing your data...</div>';
+  try{
+    const ctx=await getHSEContext();
+    const reply=await callClaude([{role:'user',content:`HSE Data:\n${ctx}\n\nProvide exactly 3 brief dashboard insights (1-2 sentences each). Format as JSON array: [{"type":"info|warn|danger","title":"...","body":"..."}]`}],SYS_PROMPT);
+    const clean=reply.replace(/```json|```/g,'').trim();
+    const insights=JSON.parse(clean);
+    el.innerHTML=insights.map(i=>`<div class="insight-card ${i.type==='warn'?'warn':i.type==='danger'?'danger':''}"><div class="insight-title">${i.title}</div><div class="insight-body">${i.body}</div></div>`).join('');
+  }catch(e){el.innerHTML='';}
+}
+
+async function generateFullInsights(){
+  const el=document.getElementById('ai-insights-content');
+  el.innerHTML='<div class="loading-msg">Generating comprehensive HSE analysis...</div>';
+  document.getElementById('ai-insights-date').textContent='Updated: '+new Date().toLocaleString('en-GB');
+  try{
+    const ctx=await getHSEContext();
+    const [main,kpirec,hotspot]=await Promise.all([
+      callClaude([{role:'user',content:`HSE Data:\n${ctx}\n\nProvide a comprehensive HSE performance analysis covering: overall safety performance, trends, top concerns, and strategic recommendations. Be specific and data-driven.`}],SYS_PROMPT),
+      callClaude([{role:'user',content:`HSE Data:\n${ctx}\n\nFocus specifically on KPI performance. For each KPI status (on_track/at_risk/off_track), provide specific recommendations and improvement actions.`}],SYS_PROMPT),
+      callClaude([{role:'user',content:`HSE Data:\n${ctx}\n\nIdentify the top risk hotspots based on events, open actions, and inspection scores. Rank by severity and provide mitigation recommendations.`}],SYS_PROMPT),
+    ]);
+    el.innerHTML=`<div style="white-space:pre-wrap;font-size:13px;line-height:1.7;color:var(--text)">${main}</div>`;
+    document.getElementById('ai-kpi-recs').innerHTML=`<div style="white-space:pre-wrap;font-size:12px;line-height:1.7;color:var(--text)">${kpirec}</div>`;
+    document.getElementById('ai-risk-hotspots').innerHTML=`<div style="white-space:pre-wrap;font-size:12px;line-height:1.7;color:var(--text)">${hotspot}</div>`;
+  }catch(e){el.innerHTML=`<div class="empty" style="color:var(--red)">Error: ${e.message}</div>`;}
+}
+
+// ==================== KPIs ====================
 async function loadKPIs(){
   const el=document.getElementById('kpi-list');
   try{
     const d=await api('/kpis?select=*'+cf()+'&order=created_at.desc');
     if(!d?.length){el.innerHTML='<div class="empty">No KPIs yet — add one above</div>';return;}
     const C={on_track:'#1D9E75',at_risk:'#EF9F27',off_track:'#E24B4A',completed:'#185FA5'};
-    el.innerHTML=d.map(k=>{
-      const p=k.target_value>0?Math.round(Math.min(100,(k.current_value/k.target_value)*100)):100;
-      return`<div class="kpi-row"><div class="kpi-name">${k.name}<div style="font-size:11px;color:var(--text3)">${k.metric||''}</div></div><div style="font-size:12px;color:var(--text2);width:80px;text-align:right">${k.responsible||''}</div><div class="pw"><div class="pb" style="width:${p}%;background:${C[k.status]||'#888'}"></div></div><div style="font-size:12px;font-weight:600;min-width:36px;text-align:right;color:${C[k.status]||'#888'}">${p}%</div>${stat(k.status)}</div>`;
-    }).join('');
+    el.innerHTML=d.map(k=>{const p=k.target_value>0?Math.round(Math.min(100,(k.current_value/k.target_value)*100)):100;return`<div class="kpi-row"><div style="flex:1;font-size:13px">${k.name}<div style="font-size:11px;color:var(--text3)">${k.metric||''}</div></div><div style="font-size:11px;color:var(--text2);width:80px;text-align:right">${k.responsible||''}</div><div class="pw"><div class="pb" style="width:${p}%;background:${C[k.status]||'#888'}"></div></div><div style="font-size:12px;font-weight:700;min-width:36px;text-align:right;color:${C[k.status]||'#888'}">${p}%</div>${stat(k.status)}</div>`;}).join('');
   }catch(e){el.innerHTML=`<div class="empty" style="color:var(--red)">${e.message}</div>`;}
 }
 async function saveKPI(){
   try{
     await api('/kpis',{m:'POST',p:'return=minimal',b:{company_id:prof?.company_id,name:document.getElementById('kf-name').value,metric:document.getElementById('kf-metric').value,target_value:parseFloat(document.getElementById('kf-target').value)||0,current_value:parseFloat(document.getElementById('kf-current').value)||0,responsible:document.getElementById('kf-resp').value,due_date:document.getElementById('kf-due').value||null,status:document.getElementById('kf-status').value}});
-    hideForm('kpi-form');toast('KPI saved!');loadKPIs();loadDashboard();
+    toggleForm('kpi-form');toast('KPI saved!');loadKPIs();loadDashboard();
   }catch(e){toast(e.message,false);}
 }
 
+// ==================== EVENTS ====================
 async function loadEvents(){
   const el=document.getElementById('events-list');
   try{
@@ -363,11 +722,15 @@ async function loadEvents(){
 }
 async function saveEvent(){
   try{
-    await api('/events',{m:'POST',p:'return=minimal',b:{company_id:prof?.company_id,event_type:document.getElementById('ef-type').value,severity:document.getElementById('ef-sev').value,event_date:document.getElementById('ef-date').value||null,location:document.getElementById('ef-loc').value,description:document.getElementById('ef-desc').value,immediate_action:document.getElementById('ef-action').value,reported_by:document.getElementById('ef-by').value,assigned_to:document.getElementById('ef-assigned').value,action_due_date:document.getElementById('ef-due').value||null,status:'open'}});
-    hideForm('event-form');toast('Event reported!');loadEvents();loadDashboard();
+    const res=await api('/events',{m:'POST',p:'return=representation',b:{company_id:prof?.company_id,event_type:document.getElementById('ef-type').value,severity:document.getElementById('ef-sev').value,event_date:document.getElementById('ef-date').value||null,location:document.getElementById('ef-loc').value,description:document.getElementById('ef-desc').value,immediate_action:document.getElementById('ef-action').value,reported_by:document.getElementById('ef-by').value,assigned_to:document.getElementById('ef-assigned').value,action_due_date:document.getElementById('ef-due').value||null,status:'open'}});
+    if(res?.[0]&&document.getElementById('ef-assigned').value){
+      await api('/action_tracker',{m:'POST',p:'return=minimal',b:{company_id:prof?.company_id,source_module:'event',source_id:res[0].id,source_ref:'Event: '+document.getElementById('ef-type').value,description:'Follow up on '+document.getElementById('ef-type').value+' at '+document.getElementById('ef-loc').value,responsible:document.getElementById('ef-assigned').value,target_date:document.getElementById('ef-due').value||null,priority:document.getElementById('ef-sev').value==='critical'?'critical':document.getElementById('ef-sev').value==='high'?'high':'medium',status:'open',created_by:prof?.id}});
+    }
+    toggleForm('event-form');toast('Event reported and added to action tracker!');loadEvents();loadDashboard();
   }catch(e){toast(e.message,false);}
 }
 
+// ==================== INSPECTION ====================
 const CATS=[
   {cat:'Safety equipment & signage',items:['First aid kit','Fire extinguishers','Safety signages','Means of communication']},
   {cat:'Personnel & behaviour',items:['First aiders','Knowledge of safety rules','Working postures','Attitude']},
@@ -380,21 +743,11 @@ function buildChecklist(){
   const tb=document.getElementById('if-checklist');chkItems=[];let html='';let i=0;
   CATS.forEach(c=>{
     html+=`<tr class="cat-row"><td colspan="4">${c.cat}</td></tr>`;
-    c.items.forEach(item=>{
-      chkItems.push({item,cat:c.cat});
-      html+=`<tr><td>${item}</td><td style="text-align:center"><input type="checkbox" id="cg-${i}" onchange="syncChk(${i},'g')"></td><td style="text-align:center"><input type="checkbox" id="ci-${i}" onchange="syncChk(${i},'i')"></td><td><input type="text" id="co-${i}" placeholder="Observation..."></td></tr>`;
-      i++;
-    });
+    c.items.forEach(item=>{chkItems.push({item,cat:c.cat});html+=`<tr><td>${item}</td><td style="text-align:center"><input type="checkbox" id="cg-${i}" onchange="syncChk(${i},'g')"></td><td style="text-align:center"><input type="checkbox" id="ci-${i}" onchange="syncChk(${i},'i')"></td><td><input type="text" id="co-${i}" placeholder="..."></td></tr>`;i++;});
   });
   tb.innerHTML=html;
 }
-function syncChk(i,t){
-  if(t==='g'){const e=document.getElementById('ci-'+i);if(e)e.checked=false;}
-  else{const e=document.getElementById('cg-'+i);if(e)e.checked=false;}
-  let g=0,ins=0;
-  chkItems.forEach((_,n)=>{if(document.getElementById('cg-'+n)?.checked)g++;if(document.getElementById('ci-'+n)?.checked)ins++;});
-  document.getElementById('if-score').textContent=g+' Good / '+ins+' Insufficient';
-}
+function syncChk(i,t){if(t==='g'){const e=document.getElementById('ci-'+i);if(e)e.checked=false;}else{const e=document.getElementById('cg-'+i);if(e)e.checked=false;}let g=0,ins=0;chkItems.forEach((_,n)=>{if(document.getElementById('cg-'+n)?.checked)g++;if(document.getElementById('ci-'+n)?.checked)ins++;});document.getElementById('if-score').textContent=g+' Good / '+ins+' Insufficient';}
 async function loadInspections(){
   const el=document.getElementById('inspections-list');
   try{
@@ -405,59 +758,204 @@ async function loadInspections(){
 async function saveInspection(){
   try{
     let g=0,ins=0;
-    const items=chkItems.map((c,i)=>{
-      const gv=document.getElementById('cg-'+i)?.checked;
-      const iv=document.getElementById('ci-'+i)?.checked;
-      const ov=document.getElementById('co-'+i)?.value||'';
-      if(gv)g++;if(iv)ins++;
-      return{category:c.cat,item_name:c.item,result:gv?'good':iv?'insufficient':null,observation:ov};
-    });
+    const items=chkItems.map((c,i)=>{const gv=document.getElementById('cg-'+i)?.checked,iv=document.getElementById('ci-'+i)?.checked,ov=document.getElementById('co-'+i)?.value||'';if(gv)g++;if(iv)ins++;return{category:c.cat,item_name:c.item,result:gv?'good':iv?'insufficient':null,observation:ov};});
     const res=await api('/inspections',{m:'POST',p:'return=representation',b:{company_id:prof?.company_id,site:document.getElementById('if-site').value,inspection_date:document.getElementById('if-date').value||null,performed_by:document.getElementById('if-by').value,employees_present:document.getElementById('if-emp').value,score_good:g,score_insuf:ins,positive_obs:document.getElementById('if-pos').value,negative_obs:document.getElementById('if-neg').value,created_by:prof?.id}});
     if(res?.[0]){
-      const id=res[0].id;
-      const scored=items.filter(x=>x.result);
+      const id=res[0].id;const scored=items.filter(x=>x.result);
       if(scored.length)await api('/inspection_items',{m:'POST',p:'return=minimal',b:scored.map(x=>({...x,inspection_id:id}))});
+      const insufficient=items.filter(x=>x.result==='insufficient');
+      if(insufficient.length>0){
+        await api('/action_tracker',{m:'POST',p:'return=minimal',b:{company_id:prof?.company_id,source_module:'inspection',source_id:id,source_ref:'Inspection: '+document.getElementById('if-site').value,description:`Address ${insufficient.length} insufficient item(s) from site inspection: ${insufficient.map(x=>x.item_name).slice(0,3).join(', ')}${insufficient.length>3?'...':''}`,responsible:document.getElementById('if-by').value,target_date:null,priority:ins>5?'high':'medium',status:'open',created_by:prof?.id}});
+        toast(`Inspection saved! ${insufficient.length} action(s) added to Master Action Plan.`);
+      }else{toast('Inspection saved!');}
     }
-    hideForm('insp-form');toast('Inspection saved!');loadInspections();loadDashboard();
+    toggleForm('insp-form');loadInspections();loadDashboard();
   }catch(e){toast(e.message,false);}
 }
 
+// ==================== RISK ASSESSMENT ====================
+async function loadRA(){
+  const el=document.getElementById('risk-list');
+  try{
+    const d=await api('/risk_assessments?select=*'+cf()+'&order=created_at.desc');
+    el.innerHTML=!d?.length?'<div class="empty">No risk assessments yet</div>':`<table><thead><tr><th>Title</th><th>Location</th><th>Assessed by</th><th>Review date</th><th>Status</th></tr></thead><tbody>${d.map(x=>`<tr><td><strong>${x.title}</strong></td><td>${x.location||'—'}</td><td>${x.assessed_by||'—'}</td><td>${fmt(x.review_date)}</td><td>${stat(x.status)}</td></tr>`).join('')}</tbody></table>`;
+  }catch(e){el.innerHTML=`<div class="empty" style="color:var(--red)">${e.message}</div>`;}
+}
+async function saveRA(){
+  try{
+    await api('/risk_assessments',{m:'POST',p:'return=minimal',b:{company_id:prof?.company_id,title:document.getElementById('rf-title').value,location:document.getElementById('rf-loc').value,assessed_by:document.getElementById('rf-by').value,review_date:document.getElementById('rf-review').value||null,status:document.getElementById('rf-status').value,created_by:prof?.id}});
+    toggleForm('risk-form');toast('Risk assessment saved!');loadRA();
+  }catch(e){toast(e.message,false);}
+}
+
+// ==================== INVESTIGATION ====================
+async function loadInvestigations(){
+  const el=document.getElementById('inv-list');
+  try{
+    const d=await api('/investigations?select=*'+cf()+'&order=created_at.desc');
+    el.innerHTML=!d?.length?'<div class="empty">No investigations yet</div>':`<table><thead><tr><th>Title</th><th>Date</th><th>Location</th><th>Investigated by</th><th>Status</th></tr></thead><tbody>${d.map(x=>`<tr><td><strong>${x.title}</strong></td><td>${fmt(x.incident_date)}</td><td>${x.location||'—'}</td><td>${x.investigated_by||'—'}</td><td>${stat(x.status)}</td></tr>`).join('')}</tbody></table>`;
+  }catch(e){el.innerHTML=`<div class="empty" style="color:var(--red)">${e.message}</div>`;}
+}
+async function saveInvestigation(){
+  try{
+    const res=await api('/investigations',{m:'POST',p:'return=representation',b:{company_id:prof?.company_id,title:document.getElementById('invf-title').value,incident_date:document.getElementById('invf-date').value||null,location:document.getElementById('invf-loc').value,investigated_by:document.getElementById('invf-by').value,persons_involved:document.getElementById('invf-persons').value,what_happened:document.getElementById('invf-what').value,immediate_causes:document.getElementById('invf-imm').value,human_factors:document.getElementById('invf-human').value,technical_conditions:document.getElementById('invf-tech').value,root_causes:document.getElementById('invf-root').value,corrective_actions:document.getElementById('invf-corr').value,preventive_actions:document.getElementById('invf-prev').value,lessons_learned:document.getElementById('invf-lessons').value,status:document.getElementById('invf-status').value,created_by:prof?.id}});
+    if(res?.[0]&&document.getElementById('invf-corr').value){
+      await api('/action_tracker',{m:'POST',p:'return=minimal',b:{company_id:prof?.company_id,source_module:'investigation',source_id:res[0].id,source_ref:'Investigation: '+document.getElementById('invf-title').value,description:'Implement corrective actions from investigation: '+document.getElementById('invf-title').value,responsible:document.getElementById('invf-by').value,priority:'high',status:'open',created_by:prof?.id}});
+    }
+    toggleForm('inv-form');toast('Investigation saved and added to action tracker!');loadInvestigations();
+  }catch(e){toast(e.message,false);}
+}
+
+// ==================== PERMITS ====================
+async function loadPermits(){
+  const el=document.getElementById('permits-list');
+  try{
+    const d=await api('/permits?select=*'+cf()+'&order=created_at.desc');
+    el.innerHTML=!d?.length?'<div class="empty">No permits yet</div>':`<table><thead><tr><th>Permit no</th><th>Type</th><th>Location</th><th>Contractor</th><th>Start</th><th>End</th><th>Status</th></tr></thead><tbody>${d.map(x=>`<tr><td><strong>${x.permit_number||'—'}</strong></td><td>${(x.permit_type||'').replace(/_/g,' ')}</td><td>${x.location||'—'}</td><td>${x.contractor||'—'}</td><td>${fmt(x.start_datetime)}</td><td>${fmt(x.end_datetime)}</td><td>${stat(x.status)}</td></tr>`).join('')}</tbody></table>`;
+  }catch(e){el.innerHTML=`<div class="empty" style="color:var(--red)">${e.message}</div>`;}
+}
+async function savePermit(){
+  try{
+    await api('/permits',{m:'POST',p:'return=minimal',b:{company_id:prof?.company_id,permit_number:document.getElementById('pf-no').value,permit_type:document.getElementById('pf-type').value,work_description:document.getElementById('pf-desc').value,location:document.getElementById('pf-loc').value,contractor:document.getElementById('pf-contractor').value,start_datetime:document.getElementById('pf-start').value||null,end_datetime:document.getElementById('pf-end').value||null,issued_by:document.getElementById('pf-issued').value,approved_by:document.getElementById('pf-approved').value,precautions:document.getElementById('pf-precautions').value,ppe_required:document.getElementById('pf-ppe').value,status:document.getElementById('pf-status').value,created_by:prof?.id}});
+    toggleForm('permit-form');toast('Permit saved!');loadPermits();loadDashboard();
+  }catch(e){toast(e.message,false);}
+}
+
+// ==================== NOISE SURVEY ====================
+async function loadNoise(){
+  const el=document.getElementById('noise-list');
+  try{
+    const d=await api('/noise_surveys?select=*'+cf()+'&order=survey_date.desc');
+    el.innerHTML=!d?.length?'<div class="empty">No surveys yet</div>':`<table><thead><tr><th>Date</th><th>Type</th><th>Site</th><th>Conducted by</th><th>Instrument</th></tr></thead><tbody>${d.map(x=>`<tr><td>${fmt(x.survey_date)}</td><td><span class="badge bb">${x.survey_type}</span></td><td>${x.site||'—'}</td><td>${x.conducted_by||'—'}</td><td>${x.instrument_used||'—'}</td></tr>`).join('')}</tbody></table>`;
+  }catch(e){el.innerHTML=`<div class="empty" style="color:var(--red)">${e.message}</div>`;}
+}
+async function saveNoise(){
+  try{
+    await api('/noise_surveys',{m:'POST',p:'return=minimal',b:{company_id:prof?.company_id,survey_type:document.getElementById('nf-type').value,site:document.getElementById('nf-site').value,survey_date:document.getElementById('nf-date').value||null,conducted_by:document.getElementById('nf-by').value,instrument_used:document.getElementById('nf-instrument').value,calibration_date:document.getElementById('nf-cal').value||null,weather_conditions:document.getElementById('nf-weather').value,notes:document.getElementById('nf-notes').value,created_by:prof?.id}});
+    toggleForm('noise-form');toast('Noise survey saved!');loadNoise();
+  }catch(e){toast(e.message,false);}
+}
+
+// ==================== MEETINGS ====================
+async function loadMeetings(){
+  const el=document.getElementById('meetings-list');
+  try{
+    const d=await api('/hse_meetings?select=*'+cf()+'&order=meeting_date.desc');
+    el.innerHTML=!d?.length?'<div class="empty">No meetings yet</div>':`<table><thead><tr><th>Title</th><th>Type</th><th>Date</th><th>Chaired by</th><th>Next meeting</th></tr></thead><tbody>${d.map(x=>`<tr><td><strong>${x.title}</strong></td><td>${(x.meeting_type||'').replace(/_/g,' ')}</td><td>${fmt(x.meeting_date)}</td><td>${x.chaired_by||'—'}</td><td>${fmt(x.next_meeting_date)}</td></tr>`).join('')}</tbody></table>`;
+  }catch(e){el.innerHTML=`<div class="empty" style="color:var(--red)">${e.message}</div>`;}
+}
+async function saveMeeting(){
+  try{
+    await api('/hse_meetings',{m:'POST',p:'return=minimal',b:{company_id:prof?.company_id,title:document.getElementById('mf-title').value,meeting_type:document.getElementById('mf-type').value,meeting_date:document.getElementById('mf-date').value||null,location:document.getElementById('mf-loc').value,chaired_by:document.getElementById('mf-chair').value,attendees:document.getElementById('mf-attendees').value,agenda:document.getElementById('mf-agenda').value,minutes:document.getElementById('mf-minutes').value,next_meeting_date:document.getElementById('mf-next').value||null,created_by:prof?.id}});
+    toggleForm('meeting-form');toast('Meeting saved!');loadMeetings();
+  }catch(e){toast(e.message,false);}
+}
+
+// ==================== TRAINING ====================
 async function loadTraining(){
   const el=document.getElementById('training-list');
   try{
     const d=await api('/training_sessions?select=*'+cf()+'&order=date_conducted.desc');
     if(!d?.length){el.innerHTML='<div class="empty">No training sessions yet</div>';return;}
     const today=new Date(),soon=new Date();soon.setDate(soon.getDate()+30);
-    el.innerHTML=`<table><thead><tr><th>Course</th><th>Trainer</th><th>Date</th><th>Expiry</th><th>Status</th></tr></thead><tbody>${d.map(x=>{
-      const exp=x.expiry_date?new Date(x.expiry_date):null;
-      const s=!exp?'bb':exp<today?'br':exp<soon?'ba':'bg';
-      const sl=!exp?'—':exp<today?'Expired':exp<soon?'Expiring soon':'Valid';
-      return`<tr><td>${x.course}</td><td>${x.trainer||'—'}</td><td>${fmt(x.date_conducted)}</td><td>${fmt(x.expiry_date)}</td><td><span class="badge ${s}">${sl}</span></td></tr>`;
-    }).join('')}</tbody></table>`;
+    el.innerHTML=`<table><thead><tr><th>Course</th><th>Trainer</th><th>Date</th><th>Expiry</th><th>Status</th></tr></thead><tbody>${d.map(x=>{const exp=x.expiry_date?new Date(x.expiry_date):null;const s=!exp?'bb':exp<today?'br':exp<soon?'ba':'bg';const sl=!exp?'—':exp<today?'Expired':exp<soon?'Expiring soon':'Valid';return`<tr><td>${x.course}</td><td>${x.trainer||'—'}</td><td>${fmt(x.date_conducted)}</td><td>${fmt(x.expiry_date)}</td><td><span class="badge ${s}">${sl}</span></td></tr>`;}).join('')}</tbody></table>`;
   }catch(e){el.innerHTML=`<div class="empty" style="color:var(--red)">${e.message}</div>`;}
 }
 async function saveTraining(){
   try{
     await api('/training_sessions',{m:'POST',p:'return=minimal',b:{company_id:prof?.company_id,course:document.getElementById('tf-course').value,trainer:document.getElementById('tf-trainer').value,date_conducted:document.getElementById('tf-date').value||null,expiry_date:document.getElementById('tf-expiry').value||null,attendees:document.getElementById('tf-attendees').value,created_by:prof?.id}});
-    hideForm('training-form');toast('Training saved!');loadTraining();
+    toggleForm('training-form');toast('Training saved!');loadTraining();
   }catch(e){toast(e.message,false);}
 }
 
+// ==================== MASTER ACTION TRACKER ====================
+async function loadActions(){
+  const el=document.getElementById('actions-list');
+  try{
+    let path='/action_tracker?select=*'+cf()+'&order=target_date.asc';
+    const mod=document.getElementById('filter-module')?.value;
+    const sts=document.getElementById('filter-status')?.value;
+    const pri=document.getElementById('filter-priority')?.value;
+    if(mod)path+=`&source_module=eq.${mod}`;
+    if(sts)path+=`&status=eq.${sts}`;
+    if(pri)path+=`&priority=eq.${pri}`;
+    const d=await api(path);
+    document.getElementById('action-count').textContent=`(${(d||[]).length} actions)`;
+    if(!d?.length){el.innerHTML='<div class="empty">No actions found</div>';return;}
+    const today=new Date();
+    el.innerHTML=`<table><thead><tr><th>Description</th><th>Source</th><th>Responsible</th><th>Target date</th><th>Priority</th><th>Status</th><th>Action</th></tr></thead><tbody>${d.map(x=>{const overdue=x.target_date&&new Date(x.target_date)<today&&x.status!=='closed';return`<tr style="${overdue?'background:#fef2f2':''}"><td>${x.description}${overdue?'<br><span style="font-size:10px;color:var(--red);font-weight:600">⚠ OVERDUE</span>':''}</td><td><span class="badge bgr" style="font-size:10px">${(x.source_module||'manual').replace(/_/g,' ')}</span></td><td>${x.responsible||'—'}</td><td>${fmt(x.target_date)}</td><td>${prio(x.priority)}</td><td>${stat(x.status)}</td><td><button class="btn btn-sm" onclick="closeAction('${x.id}','${x.status}')"><i class="ti ti-check"></i></button></td></tr>`;}).join('')}</tbody></table>`;
+  }catch(e){el.innerHTML=`<div class="empty" style="color:var(--red)">${e.message}</div>`;}
+}
+async function closeAction(id,currentStatus){
+  const newStatus=currentStatus==='closed'?'open':currentStatus==='open'?'in_progress':'closed';
+  try{
+    await api(`/action_tracker?id=eq.${id}`,{m:'PATCH',p:'return=minimal',b:{status:newStatus,completion_date:newStatus==='closed'?new Date().toISOString().slice(0,10):null,updated_at:new Date().toISOString()}});
+    toast(newStatus==='closed'?'Action closed!':newStatus==='in_progress'?'Action in progress!':'Action reopened!');
+    loadActions();loadDashboard();
+  }catch(e){toast(e.message,false);}
+}
+async function saveAction(){
+  try{
+    await api('/action_tracker',{m:'POST',p:'return=minimal',b:{company_id:prof?.company_id,source_module:document.getElementById('af-module').value,description:document.getElementById('af-desc').value,responsible:document.getElementById('af-resp').value,target_date:document.getElementById('af-date').value||null,priority:document.getElementById('af-priority').value,status:document.getElementById('af-status').value,comments:document.getElementById('af-comments').value,created_by:prof?.id}});
+    toggleForm('action-form');toast('Action added to master tracker!');loadActions();
+  }catch(e){toast(e.message,false);}
+}
+
+// ==================== DOCUMENT CONTROL ====================
+async function loadDocs(){
+  const el=document.getElementById('docs-list');
+  try{
+    const d=await api('/documents?select=*'+cf()+'&order=created_at.desc');
+    if(!d?.length){el.innerHTML='<div class="empty">No documents registered yet</div>';return;}
+    const today=new Date(),soon=new Date();soon.setDate(soon.getDate()+30);
+    el.innerHTML=`<table><thead><tr><th>Title</th><th>Type</th><th>Ref</th><th>Version</th><th>Issue date</th><th>Review date</th><th>Owner</th><th>Status</th></tr></thead><tbody>${d.map(x=>{const rev=x.review_date?new Date(x.review_date):null;const overdue=rev&&rev<today;const expiring=rev&&rev<soon&&rev>=today;return`<tr><td>${x.file_url?`<a href="${x.file_url}" target="_blank" style="color:var(--green);font-weight:600">${x.title}</a>`:x.title}</td><td><span class="badge bb">${x.doc_type||'—'}</span></td><td>${x.reference_no||'—'}</td><td>${x.version||'—'}</td><td>${fmt(x.issue_date)}</td><td style="${overdue?'color:var(--red);font-weight:600':expiring?'color:var(--amber);font-weight:600':''}">${fmt(x.review_date)}${overdue?' ⚠':''}</td><td>${x.owner||'—'}</td><td>${stat(x.status)}</td></tr>`;}).join('')}</tbody></table>`;
+  }catch(e){el.innerHTML=`<div class="empty" style="color:var(--red)">${e.message}</div>`;}
+}
+async function saveDoc(){
+  try{
+    await api('/documents',{m:'POST',p:'return=minimal',b:{company_id:prof?.company_id,title:document.getElementById('df-title').value,doc_type:document.getElementById('df-type').value,reference_no:document.getElementById('df-ref').value,version:document.getElementById('df-version').value,issue_date:document.getElementById('df-issue').value||null,review_date:document.getElementById('df-review').value||null,owner:document.getElementById('df-owner').value,file_url:document.getElementById('df-url').value||null,status:document.getElementById('df-status').value,created_by:prof?.id}});
+    toggleForm('doc-form');toast('Document registered!');loadDocs();
+  }catch(e){toast(e.message,false);}
+}
+
+// ==================== USER MANAGEMENT ====================
+async function loadUsers(){
+  const el=document.getElementById('users-list');
+  try{
+    const filter=prof?.company_id?`&company_id=eq.${prof.company_id}`:'';
+    const d=await api('/profiles?select=*'+filter+'&order=full_name');
+    if(!d?.length){el.innerHTML='<div class="empty">No users found</div>';return;}
+    el.innerHTML=d.map(u=>`<div class="user-card"><div class="user-avatar">${(u.full_name||u.email||'?').charAt(0).toUpperCase()}</div><div style="flex:1"><div style="font-size:13px;font-weight:600">${u.full_name||'—'}</div><div style="font-size:11px;color:var(--text2)">${u.email||'—'}</div></div><span class="badge ${u.role==='sephs_admin'||u.role==='admin'?'bg':u.role==='manager'?'bb':'bgr'}">${u.role||'—'}</span></div>`).join('');
+  }catch(e){el.innerHTML=`<div class="empty" style="color:var(--red)">${e.message}</div>`;}
+}
+
+// ==================== ADMIN ====================
 async function loadAdmin(){
   const el=document.getElementById('companies-list');
   try{
     const d=await api('/companies?select=*&order=name');
-    el.innerHTML=!d?.length?'<div class="empty">No companies yet</div>':`<table><thead><tr><th>Company</th><th>Industry</th><th>Contact email</th><th>Status</th></tr></thead><tbody>${d.map(x=>`<tr><td><strong>${x.name}</strong></td><td>${x.industry||'—'}</td><td>${x.contact_email||'—'}</td><td><span class="badge ${x.active?'bg':'ba'}">${x.active?'Active':'Inactive'}</span></td></tr>`).join('')}</tbody></table>`;
+    el.innerHTML=!d?.length?'<div class="empty">No companies yet</div>':`<table><thead><tr><th>Company</th><th>Industry</th><th>Contact</th><th>Status</th></tr></thead><tbody>${d.map(x=>`<tr><td>${x.logo_url?`<img src="${x.logo_url}" style="height:20px;margin-right:6px;vertical-align:middle" alt="logo"/>`:''}${x.name}</td><td>${x.industry||'—'}</td><td>${x.contact_email||'—'}</td><td><span class="badge ${x.active?'bg':'ba'}">${x.active?'Active':'Inactive'}</span></td></tr>`).join('')}</tbody></table>`;
   }catch(e){el.innerHTML=`<div class="empty" style="color:var(--red)">${e.message}</div>`;}
 }
 async function saveCompany(){
   try{
-    await api('/companies',{m:'POST',p:'return=minimal',b:{name:document.getElementById('co-name').value,industry:document.getElementById('co-industry').value,contact_name:document.getElementById('co-contact').value,contact_email:document.getElementById('co-email').value,active:true}});
+    await api('/companies',{m:'POST',p:'return=minimal',b:{name:document.getElementById('co-name').value,industry:document.getElementById('co-industry').value,contact_name:document.getElementById('co-contact').value,contact_email:document.getElementById('co-email').value,logo_url:document.getElementById('co-logo').value||null,active:true}});
     toast('Company registered!');loadAdmin();loadCompaniesDropdown();
-    ['co-name','co-contact','co-email'].forEach(id=>document.getElementById(id).value='');
+    ['co-name','co-contact','co-email','co-logo'].forEach(id=>document.getElementById(id).value='');
   }catch(e){toast(e.message,false);}
 }
 
+// ==================== SETTINGS ====================
+async function saveLogo(){
+  const url=document.getElementById('set-logo').value;
+  if(!prof?.company_id){toast('No company linked to your profile',false);return;}
+  try{
+    await api(`/companies?id=eq.${prof.company_id}`,{m:'PATCH',p:'return=minimal',b:{logo_url:url||null}});
+    toast('Logo updated! Refresh to see changes.');
+  }catch(e){toast(e.message,false);}
+}
+
+// ==================== DROPDOWN ====================
 async function loadCompaniesDropdown(){
   try{
     const d=await api('/companies?select=id,name&active=eq.true&order=name');
@@ -466,7 +964,7 @@ async function loadCompaniesDropdown(){
   }catch(e){}
 }
 
-// Init
+// ==================== INIT ====================
 loadCompaniesDropdown();
 document.getElementById('if-date')&&(document.getElementById('if-date').value=new Date().toISOString().slice(0,10));
 </script>
