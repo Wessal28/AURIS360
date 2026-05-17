@@ -11,6 +11,8 @@
 
 
 
+
+
 const SB='https://iarfxjhahzbhncsaohbg.supabase.co';
 const KEY='sb_publishable_4kaoLqRo6p84_yhTpO_5pg_47ea89iF';
 let tok=null,prof=null,co=null,chkItems=[],people=[];
@@ -22,12 +24,15 @@ function isMgr(){return can('manager');}
 function isAdm(){return can('admin');}
 function isSA(){return prof?.role==='sephs_admin';}
 async function api(path,o={}){
-const r=await fetch(SB+'/rest/v1'+path,{method:o.m||'GET',headers:{'Content-Type':'application/json','apikey':KEY,'Authorization':'Bearer '+(tok||KEY),...(o.p?{'Prefer':o.p}:{})},body:o.b?JSON.stringify(o.b):undefined});
+const headers={'Content-Type':'application/json','apikey':KEY,'Authorization':'Bearer '+(tok||KEY),'Accept':'application/json'};
+if(o.p)headers['Prefer']=o.p;
+const r=await fetch(SB+'/rest/v1'+path,{method:o.m||'GET',headers:headers,body:o.b?JSON.stringify(o.b):undefined});
 if(r.status===204||r.status===205)return null;
 const txt=await r.text();
 if(!txt||txt.trim()==='')return null;
-const d=JSON.parse(txt);
-if(!r.ok)throw new Error((Array.isArray(d)?d[0]?.message:d.message)||d.error_description||r.statusText);
+let d;
+try{d=JSON.parse(txt);}catch(e){console.error('JSON parse error:',txt.slice(0,200));throw new Error('Invalid server response');}
+if(!r.ok){const msg=(Array.isArray(d)?d[0]?.message:d.message)||d.error_description||d.hint||r.statusText;console.error('API error '+r.status+':',msg,path);throw new Error(msg);}
 return d;
 }
 async function authQ(path,body){
@@ -210,7 +215,7 @@ const d=await api('/kpis?select=*'+cf()+'&order=created_at.desc');
 if(!d?.length){el.innerHTML='<div class="empty">No KPIs yet</div>';return;}
 const C={on_track:'#1D9E75',at_risk:'#EF9F27',off_track:'#E24B4A',completed:'#185FA5'};
 el.innerHTML=d.map(k=>{const p=k.target_value>0?Math.round(Math.min(100,(k.current_value/k.target_value)*100)):100;return'<div class="kpi-row"><div style="flex:1;font-size:13px">'+k.name+'<div style="font-size:11px;color:var(--text3)">'+(k.metric||'')+'</div></div><div style="font-size:11px;color:var(--text2);width:100px;text-align:right">'+(k.responsible||'')+'</div><div class="pw"><div class="pb" style="width:'+p+'%;background:'+(C[k.status]||'#888')+'"></div></div><div style="font-size:12px;font-weight:700;min-width:36px;text-align:right;color:'+(C[k.status]||'#888')+'">'+p+'%</div>'+stat(k.status)+'</div>';}).join('');
-}catch(e){el.innerHTML='<div class="empty" style="color:var(--red)">'+e.message+'</div>';}
+}catch(e){console.error('loadRA error:',e);el.innerHTML='<div class="empty" style="color:var(--red)">Error: '+e.message+'</div>';}
 }
 async function saveKPI(){
 if(!isMgr()){toast('Access denied',false);return;}
@@ -493,7 +498,7 @@ const el=document.getElementById('inspections-list');
 try{
 const d=await api('/inspections?select=*'+cf()+'&order=inspection_date.desc');
 el.innerHTML=!d?.length?'<div class="empty">No inspections yet</div>':'<table><thead><tr><th>Date</th><th>Site</th><th>Performed by</th><th>Good</th><th>Insuf.</th></tr></thead><tbody>'+d.map(x=>'<tr><td>'+fmt(x.inspection_date)+'</td><td>'+(x.site||'--')+'</td><td>'+(x.performed_by||'--')+'</td><td><span class="badge bg">'+x.score_good+'</span></td><td><span class="badge '+(x.score_insuf>3?'br':'ba')+'">'+x.score_insuf+'</span></td></tr>').join('')+'</tbody></table>';
-}catch(e){el.innerHTML='<div class="empty" style="color:var(--red)">'+e.message+'</div>';}
+}catch(e){el.innerHTML='<div class="empty" style="color:var(--red)">Error: '+e.message+'<br><small>Check console (F12) for details</small></div>';console.error('loadInsps error:',e);}
 }
 async function saveInspection(){
 try{
@@ -520,7 +525,7 @@ const el=document.getElementById('risk-list');
 try{
 const d=await api('/risk_assessments?select=*'+cf()+'&order=created_at.desc');
 el.innerHTML=!d?.length?'<div class="empty">No risk assessments yet</div>':'<table><thead><tr><th>Title</th><th>Location</th><th>Assessed by</th><th>Review date</th><th>Status</th></tr></thead><tbody>'+d.map(x=>'<tr><td><strong>'+x.title+'</strong></td><td>'+(x.location||'--')+'</td><td>'+(x.assessed_by||'--')+'</td><td>'+fmt(x.review_date)+'</td><td>'+stat(x.status)+'</td></tr>').join('')+'</tbody></table>';
-}catch(e){el.innerHTML='<div class="empty" style="color:var(--red)">'+e.message+'</div>';}
+}catch(e){console.error('loadInvs error:',e);el.innerHTML='<div class="empty" style="color:var(--red)">Error: '+e.message+'</div>';}
 }
 async function saveRA(){
 if(!isMgr()){toast('Access denied',false);return;}
@@ -538,7 +543,7 @@ const el=document.getElementById('inv-list');
 try{
 const d=await api('/investigations?select=*'+cf()+'&order=created_at.desc');
 el.innerHTML=!d?.length?'<div class="empty">No investigations yet</div>':'<table><thead><tr><th>Title</th><th>Date</th><th>Location</th><th>Investigated by</th><th>Status</th></tr></thead><tbody>'+d.map(x=>'<tr><td><strong>'+x.title+'</strong></td><td>'+fmt(x.incident_date)+'</td><td>'+(x.location||'--')+'</td><td>'+(x.investigated_by||'--')+'</td><td>'+stat(x.status)+'</td></tr>').join('')+'</tbody></table>';
-}catch(e){el.innerHTML='<div class="empty" style="color:var(--red)">'+e.message+'</div>';}
+}catch(e){console.error('loadPermits error:',e);el.innerHTML='<div class="empty" style="color:var(--red)">Error: '+e.message+'</div>';}
 }
 async function saveInv(){
 if(!isMgr()){toast('Access denied',false);return;}
@@ -559,7 +564,7 @@ const el=document.getElementById('permits-list');
 try{
 const d=await api('/permits?select=*'+cf()+'&order=created_at.desc');
 el.innerHTML=!d?.length?'<div class="empty">No permits yet</div>':'<table><thead><tr><th>Permit no</th><th>Type</th><th>Location</th><th>Contractor</th><th>Start</th><th>End</th><th>Status</th></tr></thead><tbody>'+d.map(x=>'<tr><td><strong>'+(x.permit_number||'--')+'</strong></td><td>'+(x.permit_type||'').replace(/_/g,' ')+'</td><td>'+(x.location||'--')+'</td><td>'+(x.contractor||'--')+'</td><td>'+fmt(x.start_datetime)+'</td><td>'+fmt(x.end_datetime)+'</td><td>'+stat(x.status)+'</td></tr>').join('')+'</tbody></table>';
-}catch(e){el.innerHTML='<div class="empty" style="color:var(--red)">'+e.message+'</div>';}
+}catch(e){console.error('loadNoise error:',e);el.innerHTML='<div class="empty" style="color:var(--red)">Error: '+e.message+'</div>';}
 }
 async function savePermit(){
 if(!isMgr()){toast('Access denied',false);return;}
@@ -574,7 +579,7 @@ const el=document.getElementById('noise-list');
 try{
 const d=await api('/noise_surveys?select=*'+cf()+'&order=survey_date.desc');
 el.innerHTML=!d?.length?'<div class="empty">No surveys yet</div>':'<table><thead><tr><th>Date</th><th>Type</th><th>Site</th><th>Conducted by</th><th>Instrument</th></tr></thead><tbody>'+d.map(x=>'<tr><td>'+fmt(x.survey_date)+'</td><td><span class="badge bb">'+x.survey_type+'</span></td><td>'+(x.site||'--')+'</td><td>'+(x.conducted_by||'--')+'</td><td>'+(x.instrument_used||'--')+'</td></tr>').join('')+'</tbody></table>';
-}catch(e){el.innerHTML='<div class="empty" style="color:var(--red)">'+e.message+'</div>';}
+}catch(e){console.error('loadMtgs error:',e);el.innerHTML='<div class="empty" style="color:var(--red)">Error: '+e.message+'</div>';}
 }
 async function saveNoise(){
 try{
@@ -591,7 +596,7 @@ const el=document.getElementById('meetings-list');
 try{
 const d=await api('/hse_meetings?select=*'+cf()+'&order=meeting_date.desc');
 el.innerHTML=!d?.length?'<div class="empty">No meetings yet</div>':'<table><thead><tr><th>Title</th><th>Type</th><th>Date</th><th>Chaired by</th><th>Next meeting</th></tr></thead><tbody>'+d.map(x=>'<tr><td><strong>'+x.title+'</strong></td><td>'+(x.meeting_type||'').replace(/_/g,' ')+'</td><td>'+fmt(x.meeting_date)+'</td><td>'+(x.chaired_by||'--')+'</td><td>'+fmt(x.next_meeting_date)+'</td></tr>').join('')+'</tbody></table>';
-}catch(e){el.innerHTML='<div class="empty" style="color:var(--red)">'+e.message+'</div>';}
+}catch(e){console.error('loadTraining error:',e);el.innerHTML='<div class="empty" style="color:var(--red)">Error: '+e.message+'</div>';}
 }
 async function saveMtg(){
 if(!isMgr()){toast('Access denied',false);return;}
@@ -610,7 +615,7 @@ const d=await api('/training_sessions?select=*'+cf()+'&order=date_conducted.desc
 if(!d?.length){el.innerHTML='<div class="empty">No training sessions yet</div>';return;}
 const today=new Date(),soon=new Date();soon.setDate(soon.getDate()+30);
 el.innerHTML='<table><thead><tr><th>Course</th><th>Trainer</th><th>Date</th><th>Expiry</th><th>Status</th></tr></thead><tbody>'+d.map(x=>{const exp=x.expiry_date?new Date(x.expiry_date):null;const s=!exp?'bb':exp<today?'br':exp<soon?'ba':'bg';const sl=!exp?'--':exp<today?'Expired':exp<soon?'Expiring soon':'Valid';return'<tr><td>'+x.course+'</td><td>'+(x.trainer||'--')+'</td><td>'+fmt(x.date_conducted)+'</td><td>'+fmt(x.expiry_date)+'</td><td><span class="badge '+s+'">'+sl+'</span></td></tr>';}).join('')+'</tbody></table>';
-}catch(e){el.innerHTML='<div class="empty" style="color:var(--red)">'+e.message+'</div>';}
+}catch(e){console.error('loadActions error:',e);el.innerHTML='<div class="empty" style="color:var(--red)">Error: '+e.message+'</div>';}
 }
 async function saveTraining(){
 if(!isMgr()){toast('Access denied',false);return;}
@@ -638,7 +643,7 @@ const ov=x.target_date&&new Date(x.target_date)<today&&x.status!=='closed';
 const closeBtn=isMgr()? '<button class="btn btn-sm" onclick="cycleAction(\''+x.id+'\',\''+x.status+'\')"><i class="ti ti-check"></i></button>':'';
 return '<tr style="'+(ov?'background:#fef2f2':'')+'"><td>'+x.description+(ov?'<br><span style="font-size:10px;color:var(--red);font-weight:700">OVERDUE</span>':'')+'</td><td><span class="badge bgr" style="font-size:10px">'+(x.source_module||'').replace(/_/g,' ')+'</span></td><td>'+(x.responsible||'--')+'</td><td>'+fmt(x.target_date)+'</td><td>'+prio(x.priority)+'</td><td>'+stat(x.status)+'</td><td>'+closeBtn+'</td></tr>';
 }).join('')+'</tbody></table>';
-}catch(e){el.innerHTML='<div class="empty" style="color:var(--red)">'+e.message+'</div>';}
+}catch(e){console.error('loadDocs error:',e);el.innerHTML='<div class="empty" style="color:var(--red)">Error: '+e.message+'</div>';}
 }
 async function cycleAction(id,s){
 if(!isMgr()){toast('Only managers can update actions',false);return;}
@@ -1374,6 +1379,8 @@ kpiObjectives=[];kpiKPIs=[];kpiIndicators=[];kpiMonthlyData={};
 await kpiLoadAll();
 }catch(e){toast(e.message,false);}
 }
+
+
 
 
 
