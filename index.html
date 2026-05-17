@@ -379,18 +379,178 @@ tr:hover td{background:#fafafa}
 
     <!-- EVENTS -->
     <div id="page-events" class="page">
-      <div class="page-header"><div class="page-title">Event Reporting</div><button class="btn btn-primary" onclick="toggleForm('event-form')"><i class="ti ti-plus"></i>New event</button></div>
-      <div class="card" id="event-form" style="display:none">
-        <div class="card-title">Log new event</div>
-        <div class="form-row"><div class="form-group"><label class="form-label">Event type</label><select id="ef-type"><option value="Near Miss">Near Miss</option><option value="Incident">Incident</option><option value="Hazard Observation">Hazard Observation</option><option value="Dangerous Occurrence">Dangerous Occurrence</option><option value="Environmental">Environmental</option></select></div><div class="form-group"><label class="form-label">Severity</label><select id="ef-sev"><option value="low">Low</option><option value="medium">Medium</option><option value="high">High</option><option value="critical">Critical</option></select></div></div>
-        <div class="form-row"><div class="form-group"><label class="form-label">Date & time</label><input type="datetime-local" id="ef-date"/></div><div class="form-group"><label class="form-label">Location</label><input type="text" id="ef-loc"/></div></div>
-        <div class="form-group"><label class="form-label">Description</label><textarea id="ef-desc"></textarea></div>
-        <div class="form-row"><div class="form-group"><label class="form-label">Person involved</label><select id="ef-person"><option value="">Select person...</option></select></div><div class="form-group"><label class="form-label">Reported by</label><select id="ef-by"><option value="">Select person...</option></select></div></div>
-        <div class="form-group"><label class="form-label">Immediate action taken</label><input type="text" id="ef-action"/></div>
-        <div class="form-row"><div class="form-group"><label class="form-label">Assigned to</label><select id="ef-assigned"><option value="">Select person...</option></select></div><div class="form-group"><label class="form-label">Action due date</label><input type="date" id="ef-due"/></div></div>
-        <div style="display:flex;gap:8px"><button class="btn btn-primary" onclick="saveEvent()"><i class="ti ti-send"></i>Submit</button><button class="btn" onclick="toggleForm('event-form')">Cancel</button></div>
+      <div class="page-header">
+        <div>
+          <div class="page-title">Event Reporting</div>
+          <div style="font-size:12px;color:var(--text2);margin-top:2px" id="ev-subtitle">All events — <span id="ev-count">loading...</span></div>
+        </div>
+        <button class="btn btn-primary" onclick="evOpenNew()"><i class="ti ti-plus"></i>Report event</button>
       </div>
-      <div class="card"><div class="card-title">Event register</div><div id="events-list"><div class="loading-msg">Loading...</div></div></div>
+
+      <!-- SUMMARY METRICS -->
+      <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:18px">
+        <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px 16px"><div style="font-size:11px;color:var(--text2);margin-bottom:5px;font-weight:500">Total events</div><div style="font-size:24px;font-weight:700" id="ev-m-total">—</div></div>
+        <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px 16px"><div style="font-size:11px;color:var(--text2);margin-bottom:5px;font-weight:500">Open</div><div style="font-size:24px;font-weight:700;color:var(--amber)" id="ev-m-open">—</div></div>
+        <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px 16px"><div style="font-size:11px;color:var(--text2);margin-bottom:5px;font-weight:500">High / Critical</div><div style="font-size:24px;font-weight:700;color:var(--red)" id="ev-m-high">—</div></div>
+        <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px 16px"><div style="font-size:11px;color:var(--text2);margin-bottom:5px;font-weight:500">This month</div><div style="font-size:24px;font-weight:700;color:var(--blue)" id="ev-m-month">—</div></div>
+        <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px 16px"><div style="font-size:11px;color:var(--text2);margin-bottom:5px;font-weight:500">Closed</div><div style="font-size:24px;font-weight:700;color:var(--green)" id="ev-m-closed">—</div></div>
+      </div>
+
+      <!-- FILTERS -->
+      <div class="card" style="padding:14px 20px;margin-bottom:16px">
+        <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+          <select id="ev-filter-type" onchange="loadEvents()" style="width:auto;padding:6px 10px;font-size:12px;border:1px solid var(--border);border-radius:8px">
+            <option value="">All types</option>
+            <option value="Near Miss">Near Miss</option>
+            <option value="Incident">Incident</option>
+            <option value="Hazard Observation">Hazard Observation</option>
+            <option value="Dangerous Occurrence">Dangerous Occurrence</option>
+            <option value="Environmental">Environmental</option>
+          </select>
+          <select id="ev-filter-severity" onchange="loadEvents()" style="width:auto;padding:6px 10px;font-size:12px;border:1px solid var(--border);border-radius:8px">
+            <option value="">All severities</option>
+            <option value="critical">Critical</option>
+            <option value="high">High</option>
+            <option value="medium">Medium</option>
+            <option value="low">Low</option>
+          </select>
+          <select id="ev-filter-status" onchange="loadEvents()" style="width:auto;padding:6px 10px;font-size:12px;border:1px solid var(--border);border-radius:8px">
+            <option value="">All statuses</option>
+            <option value="open">Open</option>
+            <option value="under_investigation">Under investigation</option>
+            <option value="action_required">Action required</option>
+            <option value="closed">Closed</option>
+          </select>
+          <input type="month" id="ev-filter-month" onchange="loadEvents()" style="width:auto;padding:6px 10px;font-size:12px;border:1px solid var(--border);border-radius:8px"/>
+          <button class="btn btn-sm" onclick="evClearFilters()"><i class="ti ti-filter-off"></i>Clear</button>
+        </div>
+      </div>
+
+      <!-- EVENT LIST -->
+      <div class="card" style="padding:0;overflow:hidden">
+        <div id="events-list"><div class="loading-msg">Loading events...</div></div>
+      </div>
+
+      <!-- EVENT DETAIL / EDIT MODAL -->
+      <div style="position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:200;display:none;align-items:flex-start;justify-content:center;padding:40px 20px;overflow-y:auto" id="ev-modal">
+        <div style="background:var(--card);border-radius:16px;width:680px;max-width:100%;box-shadow:0 20px 60px rgba(0,0,0,.2)">
+          <!-- Modal header -->
+          <div style="padding:20px 24px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
+            <div>
+              <div style="font-size:16px;font-weight:700" id="ev-modal-title">Report event</div>
+              <div style="font-size:12px;color:var(--text2);margin-top:2px" id="ev-modal-ref"></div>
+            </div>
+            <button onclick="evCloseModal()" style="background:none;border:none;font-size:22px;cursor:pointer;color:var(--text2)"><i class="ti ti-x"></i></button>
+          </div>
+          <!-- Modal body -->
+          <div style="padding:24px">
+            <!-- View mode (when opening existing event) -->
+            <div id="ev-view-mode" style="display:none">
+              <div id="ev-view-content"></div>
+              <div style="display:flex;gap:8px;margin-top:20px;flex-wrap:wrap" id="ev-view-actions"></div>
+            </div>
+            <!-- Edit / new mode -->
+            <div id="ev-edit-mode">
+              <div class="form-row">
+                <div class="form-group">
+                  <label class="form-label">Event type <span style="color:var(--red)">*</span></label>
+                  <select id="ev-type">
+                    <option value="">Select type...</option>
+                    <option value="Near Miss">Near Miss</option>
+                    <option value="Incident">Incident</option>
+                    <option value="Hazard Observation">Hazard Observation</option>
+                    <option value="Dangerous Occurrence">Dangerous Occurrence</option>
+                    <option value="Environmental">Environmental</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Severity <span style="color:var(--red)">*</span></label>
+                  <select id="ev-severity">
+                    <option value="low">Low</option>
+                    <option value="medium">Medium</option>
+                    <option value="high">High</option>
+                    <option value="critical">Critical</option>
+                  </select>
+                </div>
+              </div>
+              <div class="form-row">
+                <div class="form-group">
+                  <label class="form-label">Date & time <span style="color:var(--red)">*</span></label>
+                  <input type="datetime-local" id="ev-date"/>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Location <span style="color:var(--red)">*</span></label>
+                  <input type="text" id="ev-location" placeholder="Area, department or specific location"/>
+                </div>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Description <span style="color:var(--red)">*</span></label>
+                <textarea id="ev-description" style="min-height:90px" placeholder="Describe what happened, how it happened, and what the conditions were..."></textarea>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Immediate action taken</label>
+                <textarea id="ev-immediate" style="min-height:60px" placeholder="What was done immediately after the event..."></textarea>
+              </div>
+              <div style="font-size:12px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.05em;margin:16px 0 10px;padding-top:14px;border-top:1px solid var(--border)">People</div>
+              <div class="form-row">
+                <div class="form-group">
+                  <label class="form-label">Person involved</label>
+                  <select id="ev-person">
+                    <option value="">Select from register or leave blank</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Department / area</label>
+                  <input type="text" id="ev-department" placeholder="Department or area"/>
+                </div>
+              </div>
+              <div class="form-row">
+                <div class="form-group">
+                  <label class="form-label">Reported by</label>
+                  <select id="ev-reported-by">
+                    <option value="">Select from register...</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Assigned to (for follow-up)</label>
+                  <select id="ev-assigned-to">
+                    <option value="">Select from register...</option>
+                  </select>
+                </div>
+              </div>
+              <div class="form-row">
+                <div class="form-group">
+                  <label class="form-label">Action due date</label>
+                  <input type="date" id="ev-due-date"/>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Status</label>
+                  <select id="ev-status">
+                    <option value="open">Open</option>
+                    <option value="under_investigation">Under investigation</option>
+                    <option value="action_required">Action required</option>
+                    <option value="closed">Closed</option>
+                  </select>
+                </div>
+              </div>
+              <!-- Warning for high/critical -->
+              <div id="ev-serious-warning" style="display:none;background:#FEF2F2;border:1px solid #FCA5A5;border-radius:8px;padding:12px 14px;margin-top:8px">
+                <div style="font-size:13px;font-weight:600;color:var(--red);margin-bottom:4px"><i class="ti ti-alert-triangle"></i> High / Critical severity</div>
+                <div style="font-size:12px;color:#7F1D1D">This event will automatically create an action in the Master Action Plan and prompt you to start an investigation.</div>
+              </div>
+              <div style="display:flex;gap:8px;justify-content:space-between;margin-top:20px;align-items:center">
+                <div>
+                  <button class="btn btn-danger" id="ev-delete-btn" style="display:none" onclick="evDelete()"><i class="ti ti-trash"></i>Delete</button>
+                </div>
+                <div style="display:flex;gap:8px">
+                  <button class="btn" onclick="evCloseModal()">Cancel</button>
+                  <button class="btn btn-primary" onclick="evSave()"><i class="ti ti-device-floppy"></i>Save event</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- INSPECTION -->
@@ -894,37 +1054,237 @@ async function saveKPI(){
 // EVENTS
 async function loadEvents(){
   const el=document.getElementById('events-list');
+  if(!el)return;
+  el.innerHTML='<div class="loading-msg">Loading events...</div>';
   try{
-    const d=await api('/events?select=*'+cf()+'&order=created_at.desc');
-    el.innerHTML=!d?.length?'<div class="empty">No events yet</div>':'<table><thead><tr><th>Date</th><th>Type</th><th>Location</th><th>Severity</th><th>Person involved</th><th>Status</th></tr></thead><tbody>'+d.map(x=>'<tr><td>'+fmt(x.event_date||x.created_at)+'</td><td>'+x.event_type+'</td><td>'+(x.location||'--')+'</td><td>'+sev(x.severity)+'</td><td>'+(x.reported_by||'--')+'</td><td>'+stat(x.status)+'</td></tr>').join('')+'</tbody></table>';
+    let path='/events?select=*'+cf()+'&order=event_date.desc';
+    const ft=document.getElementById('ev-filter-type')?.value;
+    const fs=document.getElementById('ev-filter-severity')?.value;
+    const fst=document.getElementById('ev-filter-status')?.value;
+    const fm=document.getElementById('ev-filter-month')?.value;
+    if(ft)path+='&event_type=eq.'+encodeURIComponent(ft);
+    if(fs)path+='&severity=eq.'+fs;
+    if(fst)path+='&status=eq.'+fst;
+    if(fm){const pts=fm.split('-');const y=pts[0];const m=pts[1];path+='&event_date=gte.'+y+'-'+m+'-01&event_date=lt.'+y+'-'+String(parseInt(m)+1).padStart(2,'0')+'-01';}
+    const d=await api(path);
+    evAllData=d||[];
+    evUpdateMetrics(evAllData);
+    const cntEl=document.getElementById('ev-count');
+    if(cntEl)cntEl.textContent=evAllData.length+' event'+(evAllData.length!==1?'s':'');
+    if(!evAllData.length){el.innerHTML='<div class="empty" style="padding:50px">No events found — click Report event to log one.</div>';return;}
+    const byMonth={};
+    evAllData.forEach(function(e){
+      const dt=e.event_date?new Date(e.event_date):new Date(e.created_at);
+      const key=dt.toLocaleString('en-GB',{month:'long',year:'numeric'});
+      if(!byMonth[key])byMonth[key]=[];
+      byMonth[key].push(e);
+    });
+    el.innerHTML='';
+    Object.entries(byMonth).forEach(function(entry){
+      const month=entry[0];const events=entry[1];
+      const hdr=document.createElement('div');
+      hdr.style.cssText='padding:10px 20px 4px;background:#f9fafb;border-bottom:1px solid var(--border);font-size:11px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.05em';
+      hdr.textContent=month;el.appendChild(hdr);
+      events.forEach(function(e){
+        const isSerious=e.severity==='high'||e.severity==='critical';
+        const overdue=e.action_due_date&&new Date(e.action_due_date)<new Date()&&e.status!=='closed';
+        const row=document.createElement('div');
+        row.style.cssText='padding:16px 20px;border-bottom:1px solid var(--border);cursor:pointer'+(isSerious&&e.status!=='closed'?';border-left:3px solid var(--red)':'');
+        row.onmouseover=function(){this.style.background='#f9fafb';};
+        row.onmouseout=function(){this.style.background='';};
+        row.onclick=function(){evOpenDetail(e.id);};
+        row.innerHTML='<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px">'
+          +'<div style="flex:1;min-width:0">'
+          +'<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;flex-wrap:wrap">'
+          +(e.event_ref?'<span style="font-size:11px;font-weight:700;color:var(--text3)">'+e.event_ref+'</span>':'')
+          +evTypeBadge(e.event_type)
+          +evSevBadge(e.severity)
+          +evStatBadge(e.status)
+          +(overdue?'<span style="font-size:10px;font-weight:700;color:var(--red);background:#FEF2F2;padding:2px 7px;border-radius:99px">OVERDUE</span>':'')
+          +'</div>'
+          +'<div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:4px">'+(e.description?e.description.slice(0,120)+(e.description.length>120?'...':''):'No description')+'</div>'
+          +'<div style="display:flex;gap:16px;flex-wrap:wrap">'
+          +'<span style="font-size:12px;color:var(--text2)">'+( e.location||'—')+'</span>'
+          +'<span style="font-size:12px;color:var(--text2)">'+evFmt(e.event_date)+'</span>'
+          +(e.person_involved?'<span style="font-size:12px;color:var(--text2)">'+e.person_involved+'</span>':'')
+          +(e.assigned_to?'<span style="font-size:12px;color:var(--text2)">Assigned: '+e.assigned_to+'</span>':'')
+          +'</div></div>'
+          +'<div style="flex-shrink:0;text-align:right">'
+          +(e.action_due_date?'<div style="font-size:11px;color:'+(overdue?'var(--red)':'var(--text3)')+'">Due '+evFmtDate(e.action_due_date)+'</div>':'')
+          +'<div style="font-size:11px;color:var(--text3);margin-top:4px">By '+(e.reported_by||'—')+'</div>'
+          +'</div></div>';
+        el.appendChild(row);
+      });
+    });
   }catch(e){el.innerHTML='<div class="empty" style="color:var(--red)">'+e.message+'</div>';}
 }
-async function saveEvent(){
+
+let evEditingId=null,evAllData=[];
+
+function evTypeBadge(t){const colors={'Near Miss':{bg:'#FAEEDA',c:'#854F0B'},'Incident':{bg:'#FCEBEB',c:'#A32D2D'},'Hazard Observation':{bg:'#E6F1FB',c:'#185FA5'},'Dangerous Occurrence':{bg:'#F3E8FF',c:'#6B21A8'},'Environmental':{bg:'#EAF3DE',c:'#3B6D11'}};const co=colors[t]||{bg:'#f3f4f6',c:'#374151'};return '<span style="display:inline-flex;align-items:center;padding:3px 9px;border-radius:99px;font-size:11px;font-weight:600;background:'+co.bg+';color:'+co.c+'">'+( t||'—')+'</span>';}
+function evSevBadge(s){const colors={low:{bg:'#E6F1FB',c:'#185FA5'},medium:{bg:'#FAEEDA',c:'#854F0B'},high:{bg:'#FCEBEB',c:'#A32D2D'},critical:{bg:'#4A0000',c:'#fff'}};const co=colors[s]||{bg:'#f3f4f6',c:'#374151'};return '<span style="display:inline-flex;align-items:center;padding:3px 9px;border-radius:99px;font-size:11px;font-weight:700;background:'+co.bg+';color:'+co.c+'">'+(s||'').toUpperCase()+'</span>';}
+function evStatBadge(s){const m={open:{bg:'#FAEEDA',c:'#854F0B',l:'Open'},under_investigation:{bg:'#E6F1FB',c:'#185FA5',l:'Under investigation'},action_required:{bg:'#FCEBEB',c:'#A32D2D',l:'Action required'},closed:{bg:'#EAF3DE',c:'#3B6D11',l:'Closed'}};const co=m[s]||{bg:'#f3f4f6',c:'#374151',l:s||'—'};return '<span style="display:inline-flex;align-items:center;padding:3px 9px;border-radius:99px;font-size:11px;font-weight:600;background:'+co.bg+';color:'+co.c+'">'+co.l+'</span>';}
+function evFmt(d){return d?new Date(d).toLocaleString('en-GB',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}):'—';}
+function evFmtDate(d){return d?new Date(d).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}):'—';}
+
+function evUpdateMetrics(data){
+  const now=new Date();
+  const thisMonth=data.filter(function(e){const d=new Date(e.event_date||e.created_at);return d.getMonth()===now.getMonth()&&d.getFullYear()===now.getFullYear();});
+  const setEl=function(id,val){const el=document.getElementById(id);if(el)el.textContent=val;};
+  setEl('ev-m-total',data.length);
+  setEl('ev-m-open',data.filter(function(e){return e.status==='open'||e.status==='action_required';}).length);
+  setEl('ev-m-high',data.filter(function(e){return e.severity==='high'||e.severity==='critical';}).length);
+  setEl('ev-m-month',thisMonth.length);
+  setEl('ev-m-closed',data.filter(function(e){return e.status==='closed';}).length);
+}
+function evClearFilters(){['ev-filter-type','ev-filter-severity','ev-filter-status','ev-filter-month'].forEach(function(id){const el=document.getElementById(id);if(el)el.value='';});loadEvents();}
+function evOpenModal(){document.getElementById('ev-modal').style.display='flex';}
+function evCloseModal(){document.getElementById('ev-modal').style.display='none';evEditingId=null;}
+function evFillPeopleDrops(){
+  const opts='<option value="">Select from register...</option>'+people.map(function(p){return '<option value="'+p.id+'">'+p.last_name+', '+p.first_name+(p.job_title?' — '+p.job_title:'')+'</option>';}).join('');
+  ['ev-person','ev-reported-by','ev-assigned-to'].forEach(function(id){const el=document.getElementById(id);if(el)el.innerHTML=opts;});
+}
+function evOpenNew(){
+  evEditingId=null;
+  document.getElementById('ev-modal-title').textContent='Report new event';
+  document.getElementById('ev-modal-ref').textContent='';
+  document.getElementById('ev-view-mode').style.display='none';
+  document.getElementById('ev-edit-mode').style.display='block';
+  document.getElementById('ev-delete-btn').style.display='none';
+  document.getElementById('ev-serious-warning').style.display='none';
+  document.getElementById('ev-type').value='';
+  document.getElementById('ev-severity').value='medium';
+  document.getElementById('ev-date').value=new Date().toISOString().slice(0,16);
+  document.getElementById('ev-location').value='';
+  document.getElementById('ev-description').value='';
+  document.getElementById('ev-immediate').value='';
+  document.getElementById('ev-department').value='';
+  document.getElementById('ev-due-date').value='';
+  document.getElementById('ev-status').value='open';
+  evFillPeopleDrops();
+  document.getElementById('ev-severity').onchange=function(){document.getElementById('ev-serious-warning').style.display=(this.value==='high'||this.value==='critical')?'block':'none';};
+  evOpenModal();
+}
+function evOpenDetail(id){
+  const e=evAllData.find(function(x){return x.id===id;});if(!e)return;
+  evEditingId=id;
+  document.getElementById('ev-modal-title').textContent=e.event_type||'Event detail';
+  document.getElementById('ev-modal-ref').textContent=e.event_ref||'';
+  document.getElementById('ev-view-mode').style.display='block';
+  document.getElementById('ev-edit-mode').style.display='none';
+  const isSerious=e.severity==='high'||e.severity==='critical';
+  const overdue=e.action_due_date&&new Date(e.action_due_date)<new Date()&&e.status!=='closed';
+  document.getElementById('ev-view-content').innerHTML=''
+    +'<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px">'+evTypeBadge(e.event_type)+evSevBadge(e.severity)+evStatBadge(e.status)+(overdue?'<span style="font-size:10px;font-weight:700;color:var(--red);background:#FEF2F2;padding:3px 9px;border-radius:99px">OVERDUE</span>':'')+'</div>'
+    +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">'
+    +'<div><div style="font-size:11px;color:var(--text2);font-weight:600;margin-bottom:3px">DATE & TIME</div><div style="font-size:13px">'+evFmt(e.event_date)+'</div></div>'
+    +'<div><div style="font-size:11px;color:var(--text2);font-weight:600;margin-bottom:3px">LOCATION</div><div style="font-size:13px">'+(e.location||'—')+'</div></div>'
+    +'<div><div style="font-size:11px;color:var(--text2);font-weight:600;margin-bottom:3px">PERSON INVOLVED</div><div style="font-size:13px">'+(e.person_involved||'—')+'</div></div>'
+    +'<div><div style="font-size:11px;color:var(--text2);font-weight:600;margin-bottom:3px">DEPARTMENT</div><div style="font-size:13px">'+(e.department||'—')+'</div></div>'
+    +'<div><div style="font-size:11px;color:var(--text2);font-weight:600;margin-bottom:3px">REPORTED BY</div><div style="font-size:13px">'+(e.reported_by||'—')+'</div></div>'
+    +'<div><div style="font-size:11px;color:var(--text2);font-weight:600;margin-bottom:3px">ASSIGNED TO</div><div style="font-size:13px">'+(e.assigned_to||'—')+'</div></div>'
+    +(e.action_due_date?'<div><div style="font-size:11px;color:var(--text2);font-weight:600;margin-bottom:3px">ACTION DUE</div><div style="font-size:13px;color:'+(overdue?'var(--red)':'var(--text)')+'">'+evFmtDate(e.action_due_date)+'</div></div>':'')
+    +'</div>'
+    +'<div style="background:#f9fafb;border-radius:8px;padding:14px;margin-bottom:12px"><div style="font-size:11px;color:var(--text2);font-weight:600;margin-bottom:6px">DESCRIPTION</div><div style="font-size:13px;line-height:1.6">'+(e.description||'—')+'</div></div>'
+    +(e.immediate_action?'<div style="background:#f9fafb;border-radius:8px;padding:14px"><div style="font-size:11px;color:var(--text2);font-weight:600;margin-bottom:6px">IMMEDIATE ACTION TAKEN</div><div style="font-size:13px;line-height:1.6">'+e.immediate_action+'</div></div>':'')
+    +(isSerious&&!e.investigation_id?'<div style="background:#FEF2F2;border:1px solid #FCA5A5;border-radius:8px;padding:12px 14px;margin-top:12px"><div style="font-size:12px;font-weight:600;color:var(--red)">High/critical event — investigation recommended</div></div>':'');
+  const actEl=document.getElementById('ev-view-actions');
+  let btns='';
+  if(isMgr())btns+='<button class="btn btn-primary" onclick="evSwitchToEdit()"><i class="ti ti-edit"></i>Edit</button>';
+  if(isMgr()&&e.status!=='closed')btns+='<button class="btn" onclick="evQuickClose(\''+e.id+'\')"><i class="ti ti-check"></i>Mark closed</button>';
+  if(isMgr()&&isSerious&&!e.investigation_id)btns+='<button class="btn" style="background:#FEF2F2;color:var(--red);border-color:#FCA5A5" onclick="evStartInvestigation(\''+e.id+'\')"><i class="ti ti-search"></i>Start investigation</button>';
+  if(e.investigation_id)btns+='<span style="font-size:12px;color:var(--green);display:flex;align-items:center;gap:6px"><i class="ti ti-check-circle"></i>Investigation linked</span>';
+  actEl.innerHTML=btns;
+  evOpenModal();
+}
+function evSwitchToEdit(){
+  const e=evAllData.find(function(x){return x.id===evEditingId;});if(!e)return;
+  document.getElementById('ev-view-mode').style.display='none';
+  document.getElementById('ev-edit-mode').style.display='block';
+  document.getElementById('ev-delete-btn').style.display=isMgr()?'flex':'none';
+  evFillPeopleDrops();
+  document.getElementById('ev-type').value=e.event_type||'';
+  document.getElementById('ev-severity').value=e.severity||'medium';
+  document.getElementById('ev-date').value=e.event_date?new Date(e.event_date).toISOString().slice(0,16):'';
+  document.getElementById('ev-location').value=e.location||'';
+  document.getElementById('ev-description').value=e.description||'';
+  document.getElementById('ev-immediate').value=e.immediate_action||'';
+  document.getElementById('ev-department').value=e.department||'';
+  document.getElementById('ev-due-date').value=e.action_due_date||'';
+  document.getElementById('ev-status').value=e.status||'open';
+  document.getElementById('ev-person').value=e.person_id||'';
+  document.getElementById('ev-reported-by').value=e.reported_by_id||'';
+  document.getElementById('ev-assigned-to').value=e.assigned_to_id||'';
+  document.getElementById('ev-serious-warning').style.display=(e.severity==='high'||e.severity==='critical')?'block':'none';
+  document.getElementById('ev-severity').onchange=function(){document.getElementById('ev-serious-warning').style.display=(this.value==='high'||this.value==='critical')?'block':'none';};
+}
+async function evSave(){
+  const evType=document.getElementById('ev-type').value;
+  const sev=document.getElementById('ev-severity').value;
+  const date=document.getElementById('ev-date').value;
+  const loc=document.getElementById('ev-location').value.trim();
+  const desc=document.getElementById('ev-description').value.trim();
+  if(!evType){toast('Please select an event type',false);return;}
+  if(!date){toast('Please enter a date and time',false);return;}
+  if(!loc){toast('Please enter a location',false);return;}
+  if(!desc){toast('Please enter a description',false);return;}
+  const personId=document.getElementById('ev-person').value||null;
+  const repId=document.getElementById('ev-reported-by').value||null;
+  const assId=document.getElementById('ev-assigned-to').value||null;
+  const personName=personId?pname(personId):null;
+  const repName=repId?pname(repId):prof?.full_name||null;
+  const assName=assId?pname(assId):null;
+  const body={company_id:prof?.company_id,event_type:evType,severity:sev,event_date:date||null,location:loc,description:desc,immediate_action:document.getElementById('ev-immediate').value||null,person_involved:personName,person_id:personId,department:document.getElementById('ev-department').value||null,reported_by:repName,reported_by_id:repId,assigned_to:assName,assigned_to_id:assId,action_due_date:document.getElementById('ev-due-date').value||null,status:document.getElementById('ev-status').value,created_by:prof?.id,updated_at:new Date().toISOString()};
   try{
-    const pid=document.getElementById('ef-person').value,bid=document.getElementById('ef-by').value,aid=document.getElementById('ef-assigned').value;
-    const res=await api('/events',{m:'POST',p:'return=representation',b:{company_id:prof?.company_id,event_type:document.getElementById('ef-type').value,severity:document.getElementById('ef-sev').value,event_date:document.getElementById('ef-date').value||null,location:document.getElementById('ef-loc').value,description:document.getElementById('ef-desc').value,immediate_action:document.getElementById('ef-action').value,reported_by:bid?pname(bid):prof?.full_name,assigned_to:aid?pname(aid):null,action_due_date:document.getElementById('ef-due').value||null,status:'open'}});
-    if(res?.[0]&&aid){
-      await api('/action_tracker',{m:'POST',p:'return=minimal',b:{company_id:prof?.company_id,source_module:'event',source_id:res[0].id,source_ref:'Event: '+document.getElementById('ef-type').value,description:'Follow up: '+document.getElementById('ef-type').value+' at '+(document.getElementById('ef-loc').value||'unknown location'),responsible:aid?pname(aid):null,target_date:document.getElementById('ef-due').value||null,priority:document.getElementById('ef-sev').value==='critical'?'critical':document.getElementById('ef-sev').value==='high'?'high':'medium',status:'open',created_by:prof?.id}});
+    let savedId=evEditingId;
+    if(evEditingId){
+      await api('/events?id=eq.'+evEditingId,{m:'PATCH',p:'return=representation',b:body});
+      toast('Event updated!');
+    }else{
+      const yr=new Date().getFullYear();
+      body.event_ref=await evGenRef(yr);
+      const res=await api('/events',{m:'POST',p:'return=representation',b:body});
+      savedId=res?.[0]?.id;
+      toast('Event reported!');
+      if(savedId&&assName){
+        await api('/action_tracker',{m:'POST',p:'return=minimal',b:{company_id:prof?.company_id,source_module:'event',source_id:savedId,source_ref:(body.event_ref||'EVT')+' — '+evType,description:'Follow-up: '+evType+' at '+loc,responsible:assName,target_date:body.action_due_date||null,priority:sev==='critical'?'critical':sev==='high'?'high':'medium',status:'open',created_by:prof?.id}});
+      }
     }
-    toggleForm('event-form');toast('Event reported!');loadEvents();loadDash();
+    evCloseModal();await loadEvents();
+    if(!evEditingId&&(sev==='high'||sev==='critical')&&savedId){
+      if(confirm('This is a '+sev.toUpperCase()+' event. Start an investigation now?')){
+        await evStartInvestigation(savedId);
+      }
+    }
   }catch(e){toast(e.message,false);}
 }
-
-// INSPECTION
-const CATS=[
-  {cat:'Safety equipment & signage',items:['First aid kit','Fire extinguishers','Safety signages','Means of communication']},
-  {cat:'Personnel & behaviour',items:['First aiders','Knowledge of safety rules','Working postures','Attitude']},
-  {cat:'Compliance & documentation',items:['Permits & Authorisations','Safety training','Respect of work methods']},
-  {cat:'Site conditions',items:['Cleanliness of work site','Site marking','Waste control','Scaffolding','Ladders / step ladders']},
-  {cat:'Equipment & tools',items:['Tools','Portable electrical tools','Collective protection']},
-  {cat:'PPE',items:['Wearing of PPEs','Safety goggles','Gloves','Safety shoes','Safety harness']},
-];
-function buildChk(){
-  const tb=document.getElementById('if-checklist');chkItems=[];let html='';let i=0;
-  CATS.forEach(c=>{html+='<tr class="cat-row"><td colspan="4">'+c.cat+'</td></tr>';c.items.forEach(item=>{chkItems.push({item,cat:c.cat});html+='<tr><td>'+item+'</td><td style="text-align:center"><input type="checkbox" id="cg-'+i+'" onchange="syncChk('+i+',\'g\')"></td><td style="text-align:center"><input type="checkbox" id="ci-'+i+'" onchange="syncChk('+i+',\'i\')"></td><td><input type="text" id="co-'+i+'" placeholder="..."></td></tr>';i++;});});
-  tb.innerHTML=html;
+async function evGenRef(yr){
+  try{
+    const cid=prof?.company_id;if(!cid)return 'EVT-'+yr+'-XXX';
+    const seq=await api('/event_sequence?company_id=eq.'+cid+'&year=eq.'+yr);
+    let next=1;
+    if(seq&&seq.length){next=seq[0].last_seq+1;await api('/event_sequence?company_id=eq.'+cid+'&year=eq.'+yr,{m:'PATCH',p:'return=minimal',b:{last_seq:next}});}
+    else{await api('/event_sequence',{m:'POST',p:'return=minimal',b:{company_id:cid,year:yr,last_seq:1}});}
+    return 'EVT-'+yr+'-'+String(next).padStart(3,'0');
+  }catch(e){return 'EVT-'+yr+'-'+Date.now().toString().slice(-3);}
 }
-function syncChk(i,t){if(t==='g'){const e=document.getElementById('ci-'+i);if(e)e.checked=false;}else{const e=document.getElementById('cg-'+i);if(e)e.checked=false;}let g=0,ins=0;chkItems.forEach((_,n)=>{if(document.getElementById('cg-'+n)?.checked)g++;if(document.getElementById('ci-'+n)?.checked)ins++;});document.getElementById('if-score').textContent=g+' Good / '+ins+' Insufficient';}
+async function evQuickClose(id){
+  try{await api('/events?id=eq.'+id,{m:'PATCH',p:'return=minimal',b:{status:'closed',closed_date:new Date().toISOString().slice(0,10),updated_at:new Date().toISOString()}});toast('Event closed!');evCloseModal();await loadEvents();}catch(e){toast(e.message,false);}
+}
+async function evDelete(){
+  if(!evEditingId||!confirm('Delete this event?'))return;
+  try{await api('/events?id=eq.'+evEditingId,{m:'DELETE'});toast('Event deleted!');evCloseModal();await loadEvents();}catch(e){toast(e.message,false);}
+}
+async function evStartInvestigation(eventId){
+  const e=evAllData.find(function(x){return x.id===eventId;});if(!e)return;
+  try{
+    const invBody={company_id:prof?.company_id,title:'Investigation — '+(e.event_type||'Event')+' at '+(e.location||'unknown'),incident_date:e.event_date||null,location:e.location||null,investigated_by:prof?.full_name||null,persons_involved:e.person_involved||null,status:'open',created_by:prof?.id};
+    const res=await api('/investigations',{m:'POST',p:'return=representation',b:invBody});
+    const invId=res?.[0]?.id;
+    if(invId){await api('/events?id=eq.'+eventId,{m:'PATCH',p:'return=minimal',b:{investigation_id:invId,status:'under_investigation',updated_at:new Date().toISOString()}});toast('Investigation started and linked!');evCloseModal();await loadEvents();}
+  }catch(e){toast('Error: '+e.message,false);}
+}
+
 async function loadInsps(){
   const el=document.getElementById('inspections-list');
   try{
@@ -1846,35 +2206,58 @@ async function kpiSaveEntry(){
       if(prog!==null){if(prog>=100)status='on_track';else if(prog>=70)status='at_risk';else status='off_track';}
       await api('/kpis_v2?id=eq.'+k.id,{m:'PATCH',p:'return=representation',b:{status,updated_at:new Date().toISOString()}});
       // Recalculate and update YTD for all subsequent months that have data
-      await kpiRecalcSubsequentYTD(kpiEntryIndicatorId,kpiEntryMonth,kpiEntryYear);
+      await kpiRecalcAllYTD(kpiEntryIndicatorId,kpiEntryYear);
     }
-    toast('Value saved!');closeKpiModal('kpi-entry-modal');await kpiLoadAll();
+    toast('Value saved!');
+    closeKpiModal('kpi-entry-modal');
+    // Force full data reload to refresh table and YTD everywhere
+    kpiObjectives=[];kpiKPIs=[];kpiIndicators=[];kpiMonthlyData={};
+    await kpiLoadAll();
   }catch(e){toast(e.message,false);}
 }
 
-async function kpiRecalcSubsequentYTD(indicatorId,fromMonth,year){
-  // After changing a month value, recalc YTD for all months after it
-  const mdata=kpiMonthlyData[indicatorId]||{};
+async function kpiRecalcAllYTD(indicatorId,year){
+  // Reload fresh data from DB for this indicator then recalc ALL months' YTD
   const ind=kpiIndicators.find(x=>x.id===indicatorId);
   if(!ind)return;
-  for(let m=fromMonth+1;m<=12;m++){
-    const entry=mdata[m];
-    if(!entry||entry.actual===null||entry.actual===undefined)continue;
-    const newYTD=kpiCalcYTD(indicatorId,m,parseFloat(entry.actual));
-    if(newYTD!==null&&newYTD!==parseFloat(entry.ytd)){
-      try{
+  try{
+    const fresh=await api('/kpi_monthly_data?indicator_id=eq.'+indicatorId+'&year=eq.'+year+'&order=month');
+    if(!fresh||!fresh.length)return;
+    // Build sorted actuals array
+    const actuals={};
+    fresh.forEach(r=>{if(r.actual!==null&&r.actual!==undefined)actuals[r.month]=parseFloat(r.actual);});
+    // Recalc and update YTD for each month that has data
+    for(const entry of fresh){
+      if(entry.actual===null||entry.actual===undefined)continue;
+      const m=entry.month;
+      // Build vals up to this month
+      const vals=[];
+      for(let i=1;i<=m;i++){if(actuals[i]!==undefined)vals.push(actuals[i]);}
+      let newYTD=null;
+      const method=ind.ytd_method||'sum';
+      if(vals.length){
+        if(method==='last')newYTD=vals[vals.length-1];
+        else if(method==='average')newYTD=Math.round((vals.reduce((a,b)=>a+b,0)/vals.length)*100)/100;
+        else if(method==='max')newYTD=Math.max(...vals);
+        else if(method==='min')newYTD=Math.min(...vals);
+        else newYTD=Math.round(vals.reduce((a,b)=>a+b,0)*100)/100;
+      }
+      if(newYTD!==null&&Math.abs(newYTD-(parseFloat(entry.ytd)||0))>0.001){
         await api('/kpi_monthly_data?indicator_id=eq.'+indicatorId+'&year=eq.'+year+'&month=eq.'+m,
           {m:'PATCH',p:'return=minimal',b:{ytd:newYTD}});
-      }catch(e){}
+      }
     }
-  }
+  }catch(e){console.error('YTD recalc error:',e);}
 }
 
 async function kpiClearEntry(){
   if(!confirm("Clear this month's data? This cannot be undone."))return;
   try{
     await api('/kpi_monthly_data?indicator_id=eq.'+kpiEntryIndicatorId+'&year=eq.'+kpiEntryYear+'&month=eq.'+kpiEntryMonth,{m:'DELETE'});
-    toast('Data cleared!');closeKpiModal('kpi-entry-modal');await kpiLoadAll();
+    toast('Data cleared!');
+    closeKpiModal('kpi-entry-modal');
+    kpiObjectives=[];kpiKPIs=[];kpiIndicators=[];kpiMonthlyData={};
+    await kpiLoadAll();
   }catch(e){toast(e.message,false);}
 }
 
