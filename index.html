@@ -17,6 +17,7 @@
 
 
 
+
 const SB='https://iarfxjhahzbhncsaohbg.supabase.co';
 const KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlhcmZ4amhhaHpiaG5jc2FvaGJnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg2OTM1MzAsImV4cCI6MjA5NDI2OTUzMH0.qSjahuX-RwnjWEDmo-LkcorAxpsmyVoaXt4AO4_A9BM';
 let tok=null,prof=null,co=null,chkItems=[],people=[];
@@ -142,13 +143,11 @@ if(L[name])L[name]();
 function toggleForm(id){const el=document.getElementById(id);el.style.display=el.style.display==='none'?'block':'none';}
 function toggleContractor(){document.getElementById('contractor-fields').style.display=document.getElementById('pef-type').value!=='employee'?'block':'none';}
 async function loadDash(){
-console.log('loadDash starting, prof:', prof?.id, 'company:', prof?.company_id);
 try{
-console.log('loadDash fetching data...');
-const safe=async(p)=>{try{return await p;}catch(e){console.warn('API call failed:',e.message);return [];}};
+const safe=async(p)=>{try{return await p;}catch(e){console.warn('API:',e.message);return [];}};
 const[k,e,a,pe,pt,certs,insps]=await Promise.all([
-safe(api('/kpis?select=*'+cf())),
-safe(api('/events?select=*'+cf()+'&order=created_at.desc&limit=5')),
+safe(api('/kpis_v2?select=*'+cf())),
+safe(api('/events?select=*'+cf()+'&order=event_date.desc&limit=5')),
 safe(api('/action_tracker?select=*'+cf()+'&status=neq.closed')),
 safe(api('/people?select=id'+cf()+'&status=eq.active')),
 safe(api('/permits?select=*'+cf()+'&status=eq.active')),
@@ -156,21 +155,26 @@ safe(api('/people_certifications?select=*'+cf())),
 safe(api('/inspections?select=*'+cf()+'&order=inspection_date.desc&limit=5')),
 ]);
 const soon=new Date();soon.setDate(soon.getDate()+30);
-console.log('loadDash data received - k:',k?.length,'e:',e?.length,'a:',a?.length,'pe:',pe?.length,'insps:',insps?.length);
 const ec=(certs||[]).filter(x=>x.expiry_date&&new Date(x.expiry_date)<soon);
-document.getElementById('d-kpis').textContent=(k||[]).filter(x=>x.status==='on_track').length+'/'+(k||[]).length;
-document.getElementById('d-events').textContent=(e||[]).filter(x=>x.status==='open').length;
-document.getElementById('d-actions').textContent=(a||[]).length;
-document.getElementById('d-people').textContent=(pe||[]).length;
-document.getElementById('d-permits').textContent=(pt||[]).length;
-document.getElementById('d-certs').textContent=ec.length;
-document.getElementById('dash-events').innerHTML=!e?.length?'<div class="empty">No events yet</div>':'<table><thead><tr><th>Date</th><th>Type</th><th>Severity</th><th>Status</th></tr></thead><tbody>'+e.map(x=>'<tr><td>'+fmt(x.event_date||x.created_at)+'</td><td>'+x.event_type+'</td><td>'+sev(x.severity)+'</td><td>'+stat(x.status)+'</td></tr>').join('')+'</tbody></table>';
+const setEl=(id,v)=>{const el=document.getElementById(id);if(el)el.textContent=v;};
+setEl('d-kpis',(k||[]).filter(x=>x.status==='on_track').length+'/'+(k||[]).length);
+setEl('d-events',(e||[]).filter(x=>x.status==='open').length);
+setEl('d-actions',(a||[]).length);
+setEl('d-people',(pe||[]).length);
+setEl('d-permits',(pt||[]).length);
+setEl('d-certs',ec.length);
+const de=document.getElementById('dash-events');
+if(de)de.innerHTML=!(e||[]).length?'<div class="empty">No events yet</div>':'<table><thead><tr><th>Date</th><th>Type</th><th>Severity</th><th>Status</th></tr></thead><tbody>'+(e||[]).map(x=>'<tr><td>'+fmt(x.event_date||x.created_at)+'</td><td>'+(x.event_type||'--')+'</td><td>'+sev(x.severity)+'</td><td>'+stat(x.status)+'</td></tr>').join('')+'</tbody></table>';
 const top5=(a||[]).sort((x,y)=>{const po={critical:4,high:3,medium:2,low:1};return(po[y.priority]||0)-(po[x.priority]||0);}).slice(0,5);
-document.getElementById('dash-actions').innerHTML=!top5.length?'<div class="empty">No open actions</div>':'<table><thead><tr><th>Action</th><th>Responsible</th><th>Due</th><th>Priority</th></tr></thead><tbody>'+top5.map(x=>'<tr><td>'+x.description+'</td><td>'+(x.responsible||'--')+'</td><td>'+fmt(x.target_date)+'</td><td>'+prio(x.priority)+'</td></tr>').join('')+'</tbody></table>';
-document.getElementById('dash-inspections-tbl').innerHTML=!insps?.length?'<div class="empty">No inspections yet</div>':'<table><thead><tr><th>Date</th><th>Site</th><th>Good</th><th>Insuf.</th></tr></thead><tbody>'+insps.map(x=>'<tr><td>'+fmt(x.inspection_date)+'</td><td>'+(x.site||'--')+'</td><td><span class="badge bg">'+x.score_good+'</span></td><td><span class="badge '+(x.score_insuf>3?'br':'ba')+'">'+x.score_insuf+'</span></td></tr>').join('')+'</tbody></table>';
-document.getElementById('dash-certs').innerHTML=!ec.length?'<div class="empty">No certifications expiring soon</div>':'<table><thead><tr><th>Certification</th><th>Expiry</th><th>Status</th></tr></thead><tbody>'+ec.slice(0,5).map(x=>'<tr><td>'+x.certification+'</td><td>'+fmt(x.expiry_date)+'</td><td>'+stat(x.status)+'</td></tr>').join('')+'</tbody></table>';
-}catch(e){toast('Dashboard error: '+e.message,false);}
+const da=document.getElementById('dash-actions');
+if(da)da.innerHTML=!top5.length?'<div class="empty">No open actions</div>':'<table><thead><tr><th>Action</th><th>Responsible</th><th>Due</th><th>Priority</th></tr></thead><tbody>'+top5.map(x=>'<tr><td>'+x.description+'</td><td>'+(x.responsible||'--')+'</td><td>'+fmt(x.target_date)+'</td><td>'+prio(x.priority)+'</td></tr>').join('')+'</tbody></table>';
+const di=document.getElementById('dash-inspections-tbl');
+if(di)di.innerHTML=!(insps||[]).length?'<div class="empty">No inspections yet</div>':'<table><thead><tr><th>Date</th><th>Site</th><th>Good</th><th>Insuf.</th></tr></thead><tbody>'+(insps||[]).map(x=>'<tr><td>'+fmt(x.inspection_date)+'</td><td>'+(x.site||'--')+'</td><td><span class="badge bg">'+x.score_good+'</span></td><td><span class="badge '+(x.score_insuf>3?'br':'ba')+'">'+x.score_insuf+'</span></td></tr>').join('')+'</tbody></table>';
+const dc=document.getElementById('dash-certs');
+if(dc)dc.innerHTML=!ec.length?'<div class="empty">No certifications expiring soon</div>':'<table><thead><tr><th>Certification</th><th>Expiry</th><th>Status</th></tr></thead><tbody>'+ec.slice(0,5).map(x=>'<tr><td>'+x.certification+'</td><td>'+fmt(x.expiry_date)+'</td><td>'+stat(x.status)+'</td></tr>').join('')+'</tbody></table>';
+}catch(e){console.error('Dashboard error:',e);}
 }
+
 let aiOpen=false,aiHist=[];
 function toggleAI(){aiOpen=!aiOpen;document.getElementById('ai-window').className='ai-window'+(aiOpen?' open':'');}
 const SYS='You are AURIS, an expert HSE AI assistant for AURIS360 by SEPHS Consulting (Mauritius). Analyse real HSE data and give specific, actionable recommendations. Be concise and professional.';
@@ -1384,6 +1388,7 @@ kpiObjectives=[];kpiKPIs=[];kpiIndicators=[];kpiMonthlyData={};
 await kpiLoadAll();
 }catch(e){toast(e.message,false);}
 }
+
 
 
 
