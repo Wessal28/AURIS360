@@ -1271,10 +1271,20 @@ async function kpiLoadMonthly(yr){
   }catch(e){kpiMonthlyData={};}
 }
 function kpiUpdateMetrics(){
-  document.getElementById('km-total').textContent=kpiKPIs.length;
-  document.getElementById('km-ontrack').textContent=kpiKPIs.filter(k=>k.status==='on_track').length;
-  document.getElementById('km-atrisk').textContent=kpiKPIs.filter(k=>k.status==='at_risk').length;
-  document.getElementById('km-offtrack').textContent=kpiKPIs.filter(k=>k.status==='off_track').length;
+  const total=kpiKPIs.length;
+  const onTrack=kpiKPIs.filter(k=>k.status==='on_track').length;
+  const atRisk=kpiKPIs.filter(k=>k.status==='at_risk').length;
+  const offTrack=kpiKPIs.filter(k=>k.status==='off_track').length;
+  const notStarted=kpiKPIs.filter(k=>k.status==='not_started').length;
+  document.getElementById('km-total').textContent=total;
+  document.getElementById('km-ontrack').textContent=onTrack;
+  document.getElementById('km-atrisk').textContent=atRisk;
+  document.getElementById('km-offtrack').textContent=offTrack;
+  // Color the metric values
+  document.getElementById('km-total').style.color='var(--text)';
+  document.getElementById('km-ontrack').style.color=onTrack>0?'var(--green)':'var(--text3)';
+  document.getElementById('km-atrisk').style.color=atRisk>0?'var(--amber)':'var(--text3)';
+  document.getElementById('km-offtrack').style.color=offTrack>0?'var(--red)':'var(--text3)';
 }
 function kpiFmtTarget(ind){
   const op={eq:'',gte:'>=',lte:'<=',gt:'>',lt:'<'}[ind.target_operator||'gte']||'>=';
@@ -1580,15 +1590,17 @@ async function kpiDeleteObjective(){
 }
 
 // ── KPI MODAL ────────────────────────────────────────────────────────────────
-function kpiAddIndicatorRow(name='',target='',operator='gte',unit=''){
+function kpiAddIndicatorRow(name='',target='',operator='gte',unit='',ytdMethod='sum'){
   const list=document.getElementById('kpi-indicators-list');
   const idx=list.children.length;
   const row=document.createElement('div');
   row.style.cssText='display:grid;grid-template-columns:1fr 80px 120px 100px auto;gap:6px;align-items:center;background:#f9fafb;padding:8px 10px;border-radius:8px;border:1px solid var(--border)';
+  row.style.cssText='display:grid;grid-template-columns:2fr 70px 120px 90px 140px auto;gap:6px;align-items:center;background:#f9fafb;padding:8px 10px;border-radius:8px;border:1px solid var(--border)';
   row.innerHTML='<input type="text" placeholder="Indicator name (e.g. Number of near misses reported)" value="'+name+'" style="font-size:12px;padding:6px 8px"/>'
     +'<input type="number" placeholder="Target" value="'+target+'" step="any" style="font-size:12px;padding:6px 8px;text-align:center"/>'
-    +'<select style="font-size:12px;padding:6px 8px"><option value="eq" '+(operator==='eq'?'selected':'')+'>= equal</option><option value="gte" '+(operator==='gte'?'selected':'')+'>≥ greater/eq</option><option value="lte" '+(operator==='lte'?'selected':'')+'>≤ less/eq</option><option value="gt" '+(operator==='gt'?'selected':'')+'>></option><option value="lt" '+(operator==='lt'?'selected':'')+'>< </option></select>'
+    +'<select style="font-size:12px;padding:6px 8px"><option value="eq" '+(operator==='eq'?'selected':'')+'>= equal</option><option value="gte" '+(operator==='gte'?'selected':'')+'>&#8805; >=</option><option value="lte" '+(operator==='lte'?'selected':'')+'>&#8804; <=</option><option value="gt" '+(operator==='gt'?'selected':'')+'>></option><option value="lt" '+(operator==='lt'?'selected':'')+'>< </option></select>'
     +'<select style="font-size:12px;padding:6px 8px"><option value="" '+(unit===''?'selected':'')+'>No unit</option><option value="%" '+(unit==='%'?'selected':'')+'>%</option><option value="per month" '+(unit==='per month'?'selected':'')+'>per month</option><option value="per year" '+(unit==='per year'?'selected':'')+'>per year</option><option value="count" '+(unit==='count'?'selected':'')+'>count</option><option value="days" '+(unit==='days'?'selected':'')+'>days</option><option value="score" '+(unit==='score'?'selected':'')+'>score</option></select>'
+    +'<select title="How YTD is calculated" style="font-size:12px;padding:6px 8px"><option value="sum" '+(ytdMethod==='sum'?'selected':'')+'>YTD: Sum</option><option value="average" '+(ytdMethod==='average'?'selected':'')+'>YTD: Average</option><option value="last" '+(ytdMethod==='last'?'selected':'')+'>YTD: Last value</option><option value="max" '+(ytdMethod==='max'?'selected':'')+'>YTD: Max</option><option value="min" '+(ytdMethod==='min'?'selected':'')+'>YTD: Min</option></select>'
     +'<button type="button" onclick="this.parentElement.remove()" style="background:none;border:none;cursor:pointer;color:var(--red);font-size:18px;padding:2px 6px"><i class="ti ti-x"></i></button>';
   list.appendChild(row);
 }
@@ -1612,7 +1624,7 @@ function openKpiAddModal(kpiId=null,objId=null){
       sel.value=k.objective_id||objId||'';
       // Load existing indicators
       const inds=kpiIndicators.filter(i=>i.kpi_id===kpiId);
-      if(inds.length)inds.forEach(i=>kpiAddIndicatorRow(i.name,i.target_value!==null?i.target_value:'',i.target_operator||'gte',i.unit||''));
+      if(inds.length)inds.forEach(i=>kpiAddIndicatorRow(i.name,i.target_value!==null?i.target_value:'',i.target_operator||'gte',i.unit||'',i.ytd_method||'sum'));
       else kpiAddIndicatorRow();
     }
   }else{
@@ -1646,7 +1658,13 @@ async function kpiSaveKPI(){
   if(!indRows.length){toast('Please add at least one measurement indicator',false);return;}
   const indicators=indRows.map(row=>{
     const inputs=row.querySelectorAll('input,select');
-    return{name:inputs[0].value.trim(),target_value:inputs[1].value!==''?parseFloat(inputs[1].value):null,target_operator:inputs[2].value,unit:inputs[3].value||null};
+    return{
+      name:inputs[0].value.trim(),
+      target_value:inputs[1].value!==''?parseFloat(inputs[1].value):null,
+      target_operator:inputs[2].value,
+      unit:inputs[3].value||null,
+      ytd_method:inputs[4]?inputs[4].value||'sum':'sum'
+    };
   }).filter(i=>i.name);
   if(!indicators.length){toast('Please enter at least one indicator name',false);return;}
   const body={company_id:prof?.company_id,objective_id:objId,code:document.getElementById('kpi-code').value.trim(),name,frequency:document.getElementById('kpi-freq').value,responsible:document.getElementById('kpi-resp').value.trim()||null,status:document.getElementById('kpi-status').value,year:parseInt(document.getElementById('year-sel')?.value)||new Date().getFullYear(),created_by:prof?.id};
@@ -1678,20 +1696,50 @@ async function kpiDeleteKPI(){
 }
 
 // ── MONTHLY ENTRY ─────────────────────────────────────────────────────────────
+function kpiCalcYTD(indicatorId,upToMonth,newActual){
+  // Calculate YTD based on indicator's ytd_method
+  const ind=kpiIndicators.find(x=>x.id===indicatorId);
+  const mdata=kpiMonthlyData[indicatorId]||{};
+  const method=ind?.ytd_method||'sum';
+  const vals=[];
+  for(let m=1;m<=upToMonth;m++){
+    const v=m===upToMonth?parseFloat(newActual):(mdata[m]?.actual!==null&&mdata[m]?.actual!==undefined?parseFloat(mdata[m].actual):null);
+    if(v!==null&&!isNaN(v))vals.push(v);
+  }
+  if(!vals.length)return null;
+  if(method==='last')return vals[vals.length-1];
+  if(method==='average')return Math.round((vals.reduce((a,b)=>a+b,0)/vals.length)*100)/100;
+  if(method==='max')return Math.max(...vals);
+  if(method==='min')return Math.min(...vals);
+  return Math.round(vals.reduce((a,b)=>a+b,0)*100)/100;// sum (default)
+}
+
 function kpiOpenEntry(indicatorId,kpiId,month){
-  kpiEntryIndicatorId=indicatorId;kpiEntryYear=parseInt(document.getElementById('year-sel')?.value)||new Date().getFullYear();kpiEntryMonth=month;
+  kpiEntryIndicatorId=indicatorId;
+  kpiEntryYear=parseInt(document.getElementById('year-sel')?.value)||new Date().getFullYear();
+  kpiEntryMonth=month;
   const ind=kpiIndicators.find(x=>x.id===indicatorId);
   const k=kpiKPIs.find(x=>x.id===kpiId);
   if(!ind||!k)return;
   document.getElementById('entry-modal-title').textContent='Enter value — '+KPI_MONTHS[month-1]+' '+kpiEntryYear;
   document.getElementById('entry-kpi-name').textContent=k.name+' — '+ind.name;
-  document.getElementById('entry-kpi-target').textContent='Target: '+kpiFmtTarget(ind);
+  const methodLabel={sum:'YTD = cumulative sum',average:'YTD = average of months entered',last:'YTD = last value entered',max:'YTD = maximum value',min:'YTD = minimum value'}[ind.ytd_method||'sum'];
+  document.getElementById('entry-kpi-target').textContent='Target: '+kpiFmtTarget(ind)+' | '+methodLabel;
   document.getElementById('entry-month-label').textContent='Actual value for '+KPI_MONTHS[month-1];
   const ex=kpiMonthlyData[indicatorId]?.[month];
   document.getElementById('entry-actual').value=ex?.actual!==null&&ex?.actual!==undefined?ex.actual:'';
-  document.getElementById('entry-ytd').value=ex?.ytd!==null&&ex?.ytd!==undefined?ex.ytd:'';
+  // Always recalculate YTD preview (don't use stored value as it may be stale)
+  const previewYTD=kpiCalcYTD(indicatorId,month,ex?.actual||0);
+  document.getElementById('entry-ytd').value=previewYTD!==null?previewYTD:'';
+  document.getElementById('entry-ytd').placeholder='Auto ('+(ind.ytd_method||'sum')+')';
   document.getElementById('entry-comment').value=ex?.comment||'';
-  // Show clear button only if data exists
+  // Live update YTD when actual changes
+  document.getElementById('entry-actual').oninput=function(){
+    if(this.value!==''){
+      const newYTD=kpiCalcYTD(indicatorId,month,parseFloat(this.value));
+      document.getElementById('entry-ytd').value=newYTD!==null?newYTD:'';
+    }
+  };
   const clearBtn=document.getElementById('kpi-clear-btn');
   if(clearBtn)clearBtn.style.display=ex?'flex':'none';
   openKpiModal('kpi-entry-modal');
@@ -1700,17 +1748,11 @@ function kpiOpenEntry(indicatorId,kpiId,month){
 async function kpiSaveEntry(){
   const actual=document.getElementById('entry-actual').value;
   if(actual===''){toast('Please enter a value',false);return;}
-  const ytdVal=document.getElementById('entry-ytd').value;
-  let ytd=ytdVal!==''?parseFloat(ytdVal):null;
-  if(ytd===null){
-    const mdata=kpiMonthlyData[kpiEntryIndicatorId]||{};
-    let sum=0;
-    for(let m=1;m<=kpiEntryMonth;m++){
-      if(m===kpiEntryMonth)sum+=parseFloat(actual);
-      else if(mdata[m]?.actual!==null&&mdata[m]?.actual!==undefined)sum+=parseFloat(mdata[m].actual)||0;
-    }
-    ytd=sum;
-  }
+  // Always recalculate YTD based on method (ignore manual override unless typed)
+  const manualYtd=document.getElementById('entry-ytd').value;
+  const autoYTD=kpiCalcYTD(kpiEntryIndicatorId,kpiEntryMonth,parseFloat(actual));
+  let ytd=manualYtd!==''&&manualYtd!==String(autoYTD)?parseFloat(manualYtd):autoYTD;
+  if(ytd===null)ytd=parseFloat(actual);
   const body={kpi_id:null,indicator_id:kpiEntryIndicatorId,company_id:prof?.company_id,year:kpiEntryYear,month:kpiEntryMonth,actual:parseFloat(actual),ytd,comment:document.getElementById('entry-comment').value||null,entered_by:prof?.id};
   try{
     const existing=await api('/kpi_monthly_data?indicator_id=eq.'+kpiEntryIndicatorId+'&year=eq.'+kpiEntryYear+'&month=eq.'+kpiEntryMonth);
@@ -1720,16 +1762,37 @@ async function kpiSaveEntry(){
       await api('/kpi_monthly_data',{m:'POST',p:'return=representation',b:body});
     }
     // Auto-update KPI status
+    // Update status based on latest YTD vs target
     const ind=kpiIndicators.find(x=>x.id===kpiEntryIndicatorId);
     const k=kpiKPIs.find(x=>kpiIndicators.some(i=>i.kpi_id===x.id&&i.id===kpiEntryIndicatorId));
     if(ind&&k){
-      const prog=kpiGetProgress(ind,parseFloat(actual));
+      const prog=kpiGetProgress(ind,ytd);
       let status='not_started';
       if(prog!==null){if(prog>=100)status='on_track';else if(prog>=70)status='at_risk';else status='off_track';}
       await api('/kpis_v2?id=eq.'+k.id,{m:'PATCH',p:'return=representation',b:{status,updated_at:new Date().toISOString()}});
+      // Recalculate and update YTD for all subsequent months that have data
+      await kpiRecalcSubsequentYTD(kpiEntryIndicatorId,kpiEntryMonth,kpiEntryYear);
     }
     toast('Value saved!');closeKpiModal('kpi-entry-modal');await kpiLoadAll();
   }catch(e){toast(e.message,false);}
+}
+
+async function kpiRecalcSubsequentYTD(indicatorId,fromMonth,year){
+  // After changing a month value, recalc YTD for all months after it
+  const mdata=kpiMonthlyData[indicatorId]||{};
+  const ind=kpiIndicators.find(x=>x.id===indicatorId);
+  if(!ind)return;
+  for(let m=fromMonth+1;m<=12;m++){
+    const entry=mdata[m];
+    if(!entry||entry.actual===null||entry.actual===undefined)continue;
+    const newYTD=kpiCalcYTD(indicatorId,m,parseFloat(entry.actual));
+    if(newYTD!==null&&newYTD!==parseFloat(entry.ytd)){
+      try{
+        await api('/kpi_monthly_data?indicator_id=eq.'+indicatorId+'&year=eq.'+year+'&month=eq.'+m,
+          {m:'PATCH',p:'return=minimal',b:{ytd:newYTD}});
+      }catch(e){}
+    }
+  }
 }
 
 async function kpiClearEntry(){
