@@ -19,6 +19,10 @@
 
 
 
+
+
+
+
 const SB='https://iarfxjhahzbhncsaohbg.supabase.co';
 const KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlhcmZ4amhhaHpiaG5jc2FvaGJnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg2OTM1MzAsImV4cCI6MjA5NDI2OTUzMH0.qSjahuX-RwnjWEDmo-LkcorAxpsmyVoaXt4AO4_A9BM';
 let tok=null,prof=null,co=null,chkItems=[],people=[];
@@ -502,13 +506,27 @@ if(sc)sc.textContent=g+' Good / '+ins+' Insufficient';
 function saveEvent(){evSave();}
 async function loadInsps(){
 const el=document.getElementById('inspections-list');
-if(!el){toast('inspections-list element NOT FOUND',false);return;}
+if(!el)return;
 try{
 const d=await api('/inspections?select=*'+cf()+'&order=inspection_date.desc');
-toast('Inspection: '+(d?.length||0)+' records found');
-el.innerHTML=!d?.length?'<div class="empty">No inspections yet</div>':'<table><thead><tr><th>Date</th><th>Site</th><th>Performed by</th><th>Good</th><th>Insuf.</th></tr></thead><tbody>'+d.map(x=>'<tr><td>'+fmt(x.inspection_date)+'</td><td>'+(x.site||'--')+'</td><td>'+(x.performed_by||'--')+'</td><td><span class="badge bg">'+x.score_good+'</span></td><td><span class="badge '+(x.score_insuf>3?'br':'ba')+'">'+x.score_insuf+'</span></td></tr>').join('')+'</tbody></table>';
-}catch(e){el.innerHTML='<div class="empty" style="color:var(--red)">Error: '+e.message+'<br><small>Check console (F12) for details</small></div>';console.error('loadInsps error:',e);}
+if(!d||!d.length){el.innerHTML='<div class="empty">No inspections yet</div>';return;}
+const tbl=document.createElement('table');
+tbl.innerHTML='<thead><tr><th>Date</th><th>Site</th><th>Performed by</th><th>Good</th><th>Insufficient</th></tr></thead>';
+const tb=document.createElement('tbody');
+d.forEach(function(x){
+const tr=document.createElement('tr');
+const dt=x.inspection_date?new Date(x.inspection_date).toLocaleDateString('en-GB'):'--';
+tr.innerHTML='<td>'+dt+'</td><td>'+(x.site||'--')+'</td><td>'+(x.performed_by||'--')+'</td>'
++'<td><span class="badge bg">'+(x.score_good||0)+'</span></td>'
++'<td><span class="badge '+((x.score_insuf||0)>3?'br':'ba')+'">'+(x.score_insuf||0)+'</span></td>';
+tb.appendChild(tr);
+});
+tbl.appendChild(tb);
+el.innerHTML='';
+el.appendChild(tbl);
+}catch(e){el.innerHTML='<div class="empty" style="color:var(--red)">'+e.message+'</div>';console.error(e);}
 }
+
 async function saveInspection(){
 try{
 let g=0,ins=0;
@@ -529,13 +547,25 @@ toggleForm('insp-form');loadInsps();loadDash();
 }
 async function loadRA(){
 const btn=document.getElementById('risk-add-btn');
-if(isMgr())btn.innerHTML='<button class="btn btn-primary" onclick="toggleForm(\'risk-form\')"><i class="ti ti-plus"></i>New assessment</button>';
+if(btn&&isMgr())btn.innerHTML='<button class="btn btn-primary" onclick="toggleForm(\'risk-form\')"><i class="ti ti-plus"></i>New assessment</button>';
 const el=document.getElementById('risk-list');
+if(!el)return;
 try{
-const d=await api('/risk_assessments?select=*'+cf()+'&order=created_at.desc'||[]);
-el.innerHTML=!d?.length?'<div class="empty">No risk assessments yet</div>':'<table><thead><tr><th>Title</th><th>Location</th><th>Assessed by</th><th>Review date</th><th>Status</th></tr></thead><tbody>'+d.map(x=>'<tr><td><strong>'+x.title+'</strong></td><td>'+(x.location||'--')+'</td><td>'+(x.assessed_by||'--')+'</td><td>'+fmt(x.review_date)+'</td><td>'+stat(x.status)+'</td></tr>').join('')+'</tbody></table>';
-}catch(e){console.error('loadInvs error:',e);el.innerHTML='<div class="empty" style="color:var(--red)">Error: '+e.message+'</div>';}
+const d=await api('/risk_assessments?select=*'+cf()+'&order=created_at.desc');
+if(!d||!d.length){el.innerHTML='<div class="empty">No risk assessments yet</div>';return;}
+const tbl=document.createElement('table');
+tbl.innerHTML='<thead><tr><th>Title</th><th>Location</th><th>Assessed by</th><th>Review date</th><th>Status</th></tr></thead>';
+const tb=document.createElement('tbody');
+d.forEach(function(x){
+const tr=document.createElement('tr');
+const rd=x.review_date?new Date(x.review_date).toLocaleDateString('en-GB'):'--';
+tr.innerHTML='<td><strong>'+(x.title||'--')+'</strong></td><td>'+(x.location||'--')+'</td><td>'+(x.assessed_by||'--')+'</td><td>'+rd+'</td><td>'+stat(x.status)+'</td>';
+tb.appendChild(tr);
+});
+tbl.appendChild(tb);el.innerHTML='';el.appendChild(tbl);
+}catch(e){el.innerHTML='<div class="empty" style="color:var(--red)">'+e.message+'</div>';console.error(e);}
 }
+
 async function saveRA(){
 if(!isMgr()){toast('Access denied',false);return;}
 try{
@@ -547,13 +577,25 @@ toggleForm('risk-form');toast('Risk assessment saved!');loadRA();
 async function loadInvs(){
 if(isInsp()){document.getElementById('inv-list').innerHTML=denied();return;}
 const btn=document.getElementById('inv-add-btn');
-if(isMgr())btn.innerHTML='<button class="btn btn-primary" onclick="toggleForm(\'inv-form\')"><i class="ti ti-plus"></i>New investigation</button>';
+if(btn&&isMgr())btn.innerHTML='<button class="btn btn-primary" onclick="toggleForm(\'inv-form\')"><i class="ti ti-plus"></i>New investigation</button>';
 const el=document.getElementById('inv-list');
+if(!el)return;
 try{
-const d=await api('/investigations?select=*'+cf()+'&order=created_at.desc'||[]);
-el.innerHTML=!d?.length?'<div class="empty">No investigations yet</div>':'<table><thead><tr><th>Title</th><th>Date</th><th>Location</th><th>Investigated by</th><th>Status</th></tr></thead><tbody>'+d.map(x=>'<tr><td><strong>'+x.title+'</strong></td><td>'+fmt(x.incident_date)+'</td><td>'+(x.location||'--')+'</td><td>'+(x.investigated_by||'--')+'</td><td>'+stat(x.status)+'</td></tr>').join('')+'</tbody></table>';
-}catch(e){console.error('loadPermits error:',e);el.innerHTML='<div class="empty" style="color:var(--red)">Error: '+e.message+'</div>';}
+const d=await api('/investigations?select=*'+cf()+'&order=created_at.desc');
+if(!d||!d.length){el.innerHTML='<div class="empty">No investigations yet</div>';return;}
+const tbl=document.createElement('table');
+tbl.innerHTML='<thead><tr><th>Title</th><th>Date</th><th>Location</th><th>Investigated by</th><th>Status</th></tr></thead>';
+const tb=document.createElement('tbody');
+d.forEach(function(x){
+const tr=document.createElement('tr');
+const dt=x.incident_date?new Date(x.incident_date).toLocaleDateString('en-GB'):'--';
+tr.innerHTML='<td><strong>'+(x.title||'--')+'</strong></td><td>'+dt+'</td><td>'+(x.location||'--')+'</td><td>'+(x.investigated_by||'--')+'</td><td>'+stat(x.status)+'</td>';
+tb.appendChild(tr);
+});
+tbl.appendChild(tb);el.innerHTML='';el.appendChild(tbl);
+}catch(e){el.innerHTML='<div class="empty" style="color:var(--red)">'+e.message+'</div>';console.error(e);}
 }
+
 async function saveInv(){
 if(!isMgr()){toast('Access denied',false);return;}
 try{
@@ -567,14 +609,26 @@ toggleForm('inv-form');toast('Investigation saved!');loadInvs();
 }
 async function loadPermits(){
 const btn=document.getElementById('permit-add-btn');
-if(isMgr())btn.innerHTML='<button class="btn btn-primary" onclick="toggleForm(\'permit-form\')"><i class="ti ti-plus"></i>New permit</button>';
-else btn.innerHTML='<span class="badge bgr"><i class="ti ti-eye"></i> View only</span>';
+if(btn){if(isMgr())btn.innerHTML='<button class="btn btn-primary" onclick="toggleForm(\'permit-form\')"><i class="ti ti-plus"></i>New permit</button>';else btn.innerHTML='<span class="badge bgr">View only</span>';}
 const el=document.getElementById('permits-list');
+if(!el)return;
 try{
-const d=await api('/permits?select=*'+cf()+'&order=created_at.desc'||[]);
-el.innerHTML=!d?.length?'<div class="empty">No permits yet</div>':'<table><thead><tr><th>Permit no</th><th>Type</th><th>Location</th><th>Contractor</th><th>Start</th><th>End</th><th>Status</th></tr></thead><tbody>'+d.map(x=>'<tr><td><strong>'+(x.permit_number||'--')+'</strong></td><td>'+(x.permit_type||'').replace(/_/g,' ')+'</td><td>'+(x.location||'--')+'</td><td>'+(x.contractor||'--')+'</td><td>'+fmt(x.start_datetime)+'</td><td>'+fmt(x.end_datetime)+'</td><td>'+stat(x.status)+'</td></tr>').join('')+'</tbody></table>';
-}catch(e){console.error('loadNoise error:',e);el.innerHTML='<div class="empty" style="color:var(--red)">Error: '+e.message+'</div>';}
+const d=await api('/permits?select=*'+cf()+'&order=created_at.desc');
+if(!d||!d.length){el.innerHTML='<div class="empty">No permits yet</div>';return;}
+const tbl=document.createElement('table');
+tbl.innerHTML='<thead><tr><th>Permit no</th><th>Type</th><th>Location</th><th>Contractor</th><th>Start</th><th>End</th><th>Status</th></tr></thead>';
+const tb=document.createElement('tbody');
+d.forEach(function(x){
+const tr=document.createElement('tr');
+const s=x.start_datetime?new Date(x.start_datetime).toLocaleDateString('en-GB'):'--';
+const e=x.end_datetime?new Date(x.end_datetime).toLocaleDateString('en-GB'):'--';
+tr.innerHTML='<td><strong>'+(x.permit_number||'--')+'</strong></td><td>'+(x.permit_type||'').replace(/_/g,' ')+'</td><td>'+(x.location||'--')+'</td><td>'+(x.contractor||'--')+'</td><td>'+s+'</td><td>'+e+'</td><td>'+stat(x.status)+'</td>';
+tb.appendChild(tr);
+});
+tbl.appendChild(tb);el.innerHTML='';el.appendChild(tbl);
+}catch(e){el.innerHTML='<div class="empty" style="color:var(--red)">'+e.message+'</div>';console.error(e);}
 }
+
 async function savePermit(){
 if(!isMgr()){toast('Access denied',false);return;}
 try{
@@ -585,11 +639,23 @@ toggleForm('permit-form');toast('Permit saved!');loadPermits();loadDash();
 }
 async function loadNoise(){
 const el=document.getElementById('noise-list');
+if(!el)return;
 try{
-const d=await api('/noise_surveys?select=*'+cf()+'&order=survey_date.desc'||[]);
-el.innerHTML=!d?.length?'<div class="empty">No surveys yet</div>':'<table><thead><tr><th>Date</th><th>Type</th><th>Site</th><th>Conducted by</th><th>Instrument</th></tr></thead><tbody>'+d.map(x=>'<tr><td>'+fmt(x.survey_date)+'</td><td><span class="badge bb">'+x.survey_type+'</span></td><td>'+(x.site||'--')+'</td><td>'+(x.conducted_by||'--')+'</td><td>'+(x.instrument_used||'--')+'</td></tr>').join('')+'</tbody></table>';
-}catch(e){console.error('loadMtgs error:',e);el.innerHTML='<div class="empty" style="color:var(--red)">Error: '+e.message+'</div>';}
+const d=await api('/noise_surveys?select=*'+cf()+'&order=survey_date.desc');
+if(!d||!d.length){el.innerHTML='<div class="empty">No surveys yet</div>';return;}
+const tbl=document.createElement('table');
+tbl.innerHTML='<thead><tr><th>Date</th><th>Type</th><th>Site</th><th>Conducted by</th><th>Instrument</th></tr></thead>';
+const tb=document.createElement('tbody');
+d.forEach(function(x){
+const tr=document.createElement('tr');
+const dt=x.survey_date?new Date(x.survey_date).toLocaleDateString('en-GB'):'--';
+tr.innerHTML='<td>'+dt+'</td><td><span class="badge bb">'+(x.survey_type||'--')+'</span></td><td>'+(x.site||'--')+'</td><td>'+(x.conducted_by||'--')+'</td><td>'+(x.instrument_used||'--')+'</td>';
+tb.appendChild(tr);
+});
+tbl.appendChild(tb);el.innerHTML='';el.appendChild(tbl);
+}catch(e){el.innerHTML='<div class="empty" style="color:var(--red)">'+e.message+'</div>';console.error(e);}
 }
+
 async function saveNoise(){
 try{
 const bid=document.getElementById('nf-by').value;
@@ -600,13 +666,26 @@ toggleForm('noise-form');toast('Noise survey saved!');loadNoise();
 async function loadMtgs(){
 if(isInsp()){document.getElementById('meetings-list').innerHTML=denied();return;}
 const btn=document.getElementById('mtg-add-btn');
-if(isMgr())btn.innerHTML='<button class="btn btn-primary" onclick="toggleForm(\'meeting-form\')"><i class="ti ti-plus"></i>New meeting</button>';
+if(btn&&isMgr())btn.innerHTML='<button class="btn btn-primary" onclick="toggleForm(\'meeting-form\')"><i class="ti ti-plus"></i>New meeting</button>';
 const el=document.getElementById('meetings-list');
+if(!el)return;
 try{
-const d=await api('/hse_meetings?select=*'+cf()+'&order=meeting_date.desc'||[]);
-el.innerHTML=!d?.length?'<div class="empty">No meetings yet</div>':'<table><thead><tr><th>Title</th><th>Type</th><th>Date</th><th>Chaired by</th><th>Next meeting</th></tr></thead><tbody>'+d.map(x=>'<tr><td><strong>'+x.title+'</strong></td><td>'+(x.meeting_type||'').replace(/_/g,' ')+'</td><td>'+fmt(x.meeting_date)+'</td><td>'+(x.chaired_by||'--')+'</td><td>'+fmt(x.next_meeting_date)+'</td></tr>').join('')+'</tbody></table>';
-}catch(e){console.error('loadTraining error:',e);el.innerHTML='<div class="empty" style="color:var(--red)">Error: '+e.message+'</div>';}
+const d=await api('/hse_meetings?select=*'+cf()+'&order=meeting_date.desc');
+if(!d||!d.length){el.innerHTML='<div class="empty">No meetings yet</div>';return;}
+const tbl=document.createElement('table');
+tbl.innerHTML='<thead><tr><th>Title</th><th>Type</th><th>Date</th><th>Chaired by</th><th>Next meeting</th></tr></thead>';
+const tb=document.createElement('tbody');
+d.forEach(function(x){
+const tr=document.createElement('tr');
+const dt=x.meeting_date?new Date(x.meeting_date).toLocaleDateString('en-GB'):'--';
+const nx=x.next_meeting_date?new Date(x.next_meeting_date).toLocaleDateString('en-GB'):'--';
+tr.innerHTML='<td><strong>'+(x.title||'--')+'</strong></td><td>'+(x.meeting_type||'').replace(/_/g,' ')+'</td><td>'+dt+'</td><td>'+(x.chaired_by||'--')+'</td><td>'+nx+'</td>';
+tb.appendChild(tr);
+});
+tbl.appendChild(tb);el.innerHTML='';el.appendChild(tbl);
+}catch(e){el.innerHTML='<div class="empty" style="color:var(--red)">'+e.message+'</div>';console.error(e);}
 }
+
 async function saveMtg(){
 if(!isMgr()){toast('Access denied',false);return;}
 try{
@@ -617,15 +696,30 @@ toggleForm('meeting-form');toast('Meeting saved!');loadMtgs();
 }
 async function loadTraining(){
 const btn=document.getElementById('training-add-btn');
-if(isMgr())btn.innerHTML='<button class="btn btn-primary" onclick="toggleForm(\'training-form\')"><i class="ti ti-plus"></i>Log training</button>';
+if(btn&&isMgr())btn.innerHTML='<button class="btn btn-primary" onclick="toggleForm(\'training-form\')"><i class="ti ti-plus"></i>Log training</button>';
 const el=document.getElementById('training-list');
+if(!el)return;
 try{
-const d=await api('/training_sessions?select=*'+cf()+'&order=date_conducted.desc'||[]);
-if(!d?.length){el.innerHTML='<div class="empty">No training sessions yet</div>';return;}
+const d=await api('/training_sessions?select=*'+cf()+'&order=date_conducted.desc');
+if(!d||!d.length){el.innerHTML='<div class="empty">No training sessions yet</div>';return;}
 const today=new Date(),soon=new Date();soon.setDate(soon.getDate()+30);
-el.innerHTML='<table><thead><tr><th>Course</th><th>Trainer</th><th>Date</th><th>Expiry</th><th>Status</th></tr></thead><tbody>'+d.map(x=>{const exp=x.expiry_date?new Date(x.expiry_date):null;const s=!exp?'bb':exp<today?'br':exp<soon?'ba':'bg';const sl=!exp?'--':exp<today?'Expired':exp<soon?'Expiring soon':'Valid';return'<tr><td>'+x.course+'</td><td>'+(x.trainer||'--')+'</td><td>'+fmt(x.date_conducted)+'</td><td>'+fmt(x.expiry_date)+'</td><td><span class="badge '+s+'">'+sl+'</span></td></tr>';}).join('')+'</tbody></table>';
-}catch(e){console.error('loadActions error:',e);el.innerHTML='<div class="empty" style="color:var(--red)">Error: '+e.message+'</div>';}
+const tbl=document.createElement('table');
+tbl.innerHTML='<thead><tr><th>Course</th><th>Trainer</th><th>Date</th><th>Expiry</th><th>Status</th></tr></thead>';
+const tb=document.createElement('tbody');
+d.forEach(function(x){
+const tr=document.createElement('tr');
+const exp=x.expiry_date?new Date(x.expiry_date):null;
+const sc=!exp?'bb':exp<today?'br':exp<soon?'ba':'bg';
+const sl=!exp?'--':exp<today?'Expired':exp<soon?'Expiring soon':'Valid';
+const dt=x.date_conducted?new Date(x.date_conducted).toLocaleDateString('en-GB'):'--';
+const ex=x.expiry_date?new Date(x.expiry_date).toLocaleDateString('en-GB'):'--';
+tr.innerHTML='<td>'+(x.course||'--')+'</td><td>'+(x.trainer||'--')+'</td><td>'+dt+'</td><td>'+ex+'</td><td><span class="badge '+sc+'">'+sl+'</span></td>';
+tb.appendChild(tr);
+});
+tbl.appendChild(tb);el.innerHTML='';el.appendChild(tbl);
+}catch(e){el.innerHTML='<div class="empty" style="color:var(--red)">'+e.message+'</div>';console.error(e);}
 }
+
 async function saveTraining(){
 if(!isMgr()){toast('Access denied',false);return;}
 try{
@@ -637,23 +731,39 @@ toggleForm('training-form');toast('Training saved!');loadTraining();
 }
 async function loadActions(){
 const el=document.getElementById('actions-list');
+if(!el)return;
 try{
 let path='/action_tracker?select=*'+cf()+'&order=target_date.asc';
-const mod=document.getElementById('filter-module')?.value,sts=document.getElementById('filter-status')?.value,pri=document.getElementById('filter-priority')?.value;
+const mod=document.getElementById('filter-module')?.value;
+const sts=document.getElementById('filter-status')?.value;
+const pri=document.getElementById('filter-priority')?.value;
 if(mod)path+='&source_module=eq.'+mod;
 if(sts)path+='&status=eq.'+sts;
 if(pri)path+='&priority=eq.'+pri;
 const d=await api(path);
-document.getElementById('action-count').textContent='('+( (d||[]).length)+' actions)';
-if(!d?.length){el.innerHTML='<div class="empty">No actions found</div>';return;}
+const cnt=document.getElementById('action-count');
+if(cnt)cnt.textContent='('+(d||[]).length+' actions)';
+if(!d||!d.length){el.innerHTML='<div class="empty">No actions found</div>';return;}
 const today=new Date();
-el.innerHTML='<table><thead><tr><th>Description</th><th>Source</th><th>Responsible</th><th>Target date</th><th>Priority</th><th>Status</th><th></th></tr></thead><tbody>'+d.map(x=>{
+const tbl=document.createElement('table');
+tbl.innerHTML='<thead><tr><th>Description</th><th>Source</th><th>Responsible</th><th>Target date</th><th>Priority</th><th>Status</th><th></th></tr></thead>';
+const tb=document.createElement('tbody');
+d.forEach(function(x){
+const tr=document.createElement('tr');
 const ov=x.target_date&&new Date(x.target_date)<today&&x.status!=='closed';
-const closeBtn=isMgr()? '<button class="btn btn-sm" onclick="cycleAction(\''+x.id+'\',\''+x.status+'\')"><i class="ti ti-check"></i></button>':'';
-return '<tr style="'+(ov?'background:#fef2f2':'')+'"><td>'+x.description+(ov?'<br><span style="font-size:10px;color:var(--red);font-weight:700">OVERDUE</span>':'')+'</td><td><span class="badge bgr" style="font-size:10px">'+(x.source_module||'').replace(/_/g,' ')+'</span></td><td>'+(x.responsible||'--')+'</td><td>'+fmt(x.target_date)+'</td><td>'+prio(x.priority)+'</td><td>'+stat(x.status)+'</td><td>'+closeBtn+'</td></tr>';
-}).join('')+'</tbody></table>';
-}catch(e){console.error('loadDocs error:',e);el.innerHTML='<div class="empty" style="color:var(--red)">Error: '+e.message+'</div>';}
+if(ov)tr.style.background='#fef2f2';
+const dt=x.target_date?new Date(x.target_date).toLocaleDateString('en-GB'):'--';
+const closeBtn=isMgr()?'<button class="btn btn-sm" data-id="'+x.id+'" data-st="'+x.status+'" onclick="var b=this;cycleAction(b.dataset.id,b.dataset.st)"><i class="ti ti-check"></i></button>':'';
+tr.innerHTML='<td>'+( x.description||'--')+(ov?'<br><span style="font-size:10px;color:var(--red);font-weight:700">OVERDUE</span>':'')+'</td>'
++'<td><span class="badge bgr" style="font-size:10px">'+(x.source_module||'').replace(/_/g,' ')+'</span></td>'
++'<td>'+(x.responsible||'--')+'</td><td>'+dt+'</td>'
++'<td>'+prio(x.priority)+'</td><td>'+stat(x.status)+'</td><td>'+closeBtn+'</td>';
+tb.appendChild(tr);
+});
+tbl.appendChild(tb);el.innerHTML='';el.appendChild(tbl);
+}catch(e){el.innerHTML='<div class="empty" style="color:var(--red)">'+e.message+'</div>';console.error(e);}
 }
+
 async function cycleAction(id,s){
 if(!isMgr()){toast('Only managers can update actions',false);return;}
 const ns=s==='closed'?'open':s==='open'?'in_progress':'closed';
@@ -673,15 +783,34 @@ toggleForm('action-form');toast('Action added!');loadActions();
 async function loadDocs(){
 if(isInsp()){document.getElementById('docs-list').innerHTML=denied();return;}
 const btn=document.getElementById('doc-add-btn');
-if(isMgr())btn.innerHTML='<button class="btn btn-primary" onclick="toggleForm(\'doc-form\')"><i class="ti ti-plus"></i>Register document</button>';
+if(btn&&isMgr())btn.innerHTML='<button class="btn btn-primary" onclick="toggleForm(\'doc-form\')"><i class="ti ti-plus"></i>Register document</button>';
 const el=document.getElementById('docs-list');
+if(!el)return;
 try{
-const d=await api('/documents?select=*'+cf()+'&order=created_at.desc'||[]);
-if(!d?.length){el.innerHTML='<div class="empty">No documents yet</div>';return;}
-const today=new Date(),soon=new Date();soon.setDate(soon.getDate()+30);
-el.innerHTML='<table><thead><tr><th>Title</th><th>Type</th><th>Ref</th><th>Version</th><th>Issue</th><th>Review</th><th>Owner</th><th>Status</th></tr></thead><tbody>'+d.map(x=>{const rev=x.review_date?new Date(x.review_date):null;const ov=rev&&rev<today;return'<tr><td>'+(x.file_url?'<a href="'+x.file_url+'" target="_blank" style="color:var(--green);font-weight:600">'+x.title+'</a>':x.title)+'</td><td><span class="badge bb">'+(x.doc_type||'--')+'</span></td><td>'+(x.reference_no||'--')+'</td><td>'+(x.version||'--')+'</td><td>'+fmt(x.issue_date)+'</td><td style="'+(ov?'color:var(--red);font-weight:700':'')+'">'+fmt(x.review_date)+(ov?' ⚠':'')+'</td><td>'+(x.owner||'--')+'</td><td>'+stat(x.status)+'</td></tr>';}).join('')+'</tbody></table>';
-}catch(e){el.innerHTML='<div class="empty" style="color:var(--red)">'+e.message+'</div>';}
+const d=await api('/documents?select=*'+cf()+'&order=created_at.desc');
+if(!d||!d.length){el.innerHTML='<div class="empty">No documents yet</div>';return;}
+const today=new Date();
+const tbl=document.createElement('table');
+tbl.innerHTML='<thead><tr><th>Title</th><th>Type</th><th>Ref</th><th>Version</th><th>Issue date</th><th>Review date</th><th>Owner</th><th>Status</th></tr></thead>';
+const tb=document.createElement('tbody');
+d.forEach(function(x){
+const tr=document.createElement('tr');
+const rev=x.review_date?new Date(x.review_date):null;
+const ov=rev&&rev<today;
+const iss=x.issue_date?new Date(x.issue_date).toLocaleDateString('en-GB'):'--';
+const rv=x.review_date?new Date(x.review_date).toLocaleDateString('en-GB'):'--';
+const titleCell=x.file_url?'<a href="'+x.file_url+'" target="_blank" style="color:var(--green);font-weight:600">'+x.title+'</a>':x.title;
+tr.innerHTML='<td>'+titleCell+'</td><td><span class="badge bb">'+(x.doc_type||'--')+'</span></td>'
++'<td>'+(x.reference_no||'--')+'</td><td>'+(x.version||'--')+'</td>'
++'<td>'+iss+'</td>'
++'<td style="'+(ov?'color:var(--red);font-weight:700':'')+'">'+rv+(ov?' ⚠':'')+'</td>'
++'<td>'+(x.owner||'--')+'</td><td>'+stat(x.status)+'</td>';
+tb.appendChild(tr);
+});
+tbl.appendChild(tb);el.innerHTML='';el.appendChild(tbl);
+}catch(e){el.innerHTML='<div class="empty" style="color:var(--red)">'+e.message+'</div>';console.error(e);}
 }
+
 async function saveDoc(){
 if(!isMgr()){toast('Access denied',false);return;}
 try{
@@ -724,14 +853,25 @@ toggleForm('people-form');toast('Person added!');loadPeople();await loadPeopleCa
 }
 async function loadUsers(){
 if(isInsp()){document.getElementById('users-list').innerHTML=denied();return;}
-if(isAdm())document.getElementById('user-role-card').style.display='block';
+if(isAdm()){const c=document.getElementById('user-role-card');if(c)c.style.display='block';}
 const el=document.getElementById('users-list');
+if(!el)return;
 try{
 const filter=prof?.company_id&&!isSA()?'&company_id=eq.'+prof.company_id:'';
 const d=await api('/profiles?select=*'+filter+'&order=full_name');
-el.innerHTML=!d?.length?'<div class="empty">No users found</div>':'<table><thead><tr><th>Name</th><th>Email</th><th>Role</th></tr></thead><tbody>'+d.map(u=>'<tr><td><strong>'+(u.full_name||'--')+'</strong></td><td>'+(u.email||'--')+'</td><td>'+stat(u.role)+'</td></tr>').join('')+'</tbody></table>';
-}catch(e){el.innerHTML='<div class="empty" style="color:var(--red)">'+e.message+'</div>';}
+if(!d||!d.length){el.innerHTML='<div class="empty">No users found</div>';return;}
+const tbl=document.createElement('table');
+tbl.innerHTML='<thead><tr><th>Name</th><th>Email</th><th>Role</th></tr></thead>';
+const tb=document.createElement('tbody');
+d.forEach(function(u){
+const tr=document.createElement('tr');
+tr.innerHTML='<td><strong>'+(u.full_name||'--')+'</strong></td><td>'+(u.email||'--')+'</td><td>'+stat(u.role)+'</td>';
+tb.appendChild(tr);
+});
+tbl.appendChild(tb);el.innerHTML='';el.appendChild(tbl);
+}catch(e){el.innerHTML='<div class="empty" style="color:var(--red)">'+e.message+'</div>';console.error(e);}
 }
+
 async function updateRole(){
 if(!isAdm()){toast('Access denied',false);return;}
 const email=document.getElementById('ur-email').value.trim(),role=document.getElementById('ur-role').value;
@@ -1388,6 +1528,10 @@ kpiObjectives=[];kpiKPIs=[];kpiIndicators=[];kpiMonthlyData={};
 await kpiLoadAll();
 }catch(e){toast(e.message,false);}
 }
+
+
+
+
 
 
 
