@@ -16,6 +16,7 @@
 
 
 
+
 const SB='https://iarfxjhahzbhncsaohbg.supabase.co';
 const KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlhcmZ4amhhaHpiaG5jc2FvaGJnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg2OTM1MzAsImV4cCI6MjA5NDI2OTUzMH0.qSjahuX-RwnjWEDmo-LkcorAxpsmyVoaXt4AO4_A9BM';
 let tok=null,prof=null,co=null,chkItems=[],people=[];
@@ -224,25 +225,8 @@ document.getElementById('ai-kpi-recs').innerHTML='<div style="white-space:pre-wr
 document.getElementById('ai-risk-hotspots').innerHTML='<div style="white-space:pre-wrap;font-size:12px;line-height:1.7">'+hot+'</div>';
 }catch(e){document.getElementById('ai-insights-content').innerHTML='<div class="empty" style="color:var(--red)">'+e.message+'</div>';}
 }
-async function loadKPIs(){
-const btn=document.getElementById('kpi-add-btn');
-if(isMgr())btn.innerHTML='<button class="btn btn-primary" onclick="toggleForm(\'kpi-form\')"><i class="ti ti-plus"></i>Add KPI</button>';
-const el=document.getElementById('kpi-list');
-try{
-const d=await api('/kpis?select=*'+cf()+'&order=created_at.desc');
-if(!d?.length){el.innerHTML='<div class="empty">No KPIs yet</div>';return;}
-const C={on_track:'#1D9E75',at_risk:'#EF9F27',off_track:'#E24B4A',completed:'#185FA5'};
-el.innerHTML=d.map(k=>{const p=k.target_value>0?Math.round(Math.min(100,(k.current_value/k.target_value)*100)):100;return'<div class="kpi-row"><div style="flex:1;font-size:13px">'+k.name+'<div style="font-size:11px;color:var(--text3)">'+(k.metric||'')+'</div></div><div style="font-size:11px;color:var(--text2);width:100px;text-align:right">'+(k.responsible||'')+'</div><div class="pw"><div class="pb" style="width:'+p+'%;background:'+(C[k.status]||'#888')+'"></div></div><div style="font-size:12px;font-weight:700;min-width:36px;text-align:right;color:'+(C[k.status]||'#888')+'">'+p+'%</div>'+stat(k.status)+'</div>';}).join('');
-}catch(e){console.error('loadRA error:',e);el.innerHTML='<div class="empty" style="color:var(--red)">Error: '+e.message+'</div>';}
-}
-async function saveKPI(){
-if(!isMgr()){toast('Access denied',false);return;}
-try{
-const r=document.getElementById('kf-resp').value;
-await api('/kpis',{m:'POST',p:'return=minimal',b:{company_id:prof?.company_id,name:document.getElementById('kf-name').value,metric:document.getElementById('kf-metric').value,target_value:parseFloat(document.getElementById('kf-target').value)||0,current_value:parseFloat(document.getElementById('kf-current').value)||0,responsible:r?pname(r):null,due_date:document.getElementById('kf-due').value||null,status:document.getElementById('kf-status').value}});
-toggleForm('kpi-form');toast('KPI saved!');loadKPIs();loadDash();
-}catch(e){toast(e.message,false);}
-}
+
+
 async function loadEvents(){
 const el=document.getElementById('events-list');
 if(!el)return;
@@ -1400,6 +1384,7 @@ kpiObjectives=[];kpiKPIs=[];kpiIndicators=[];kpiMonthlyData={};
 await kpiLoadAll();
 }catch(e){toast(e.message,false);}
 }
+
 
 
 
