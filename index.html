@@ -23,6 +23,7 @@
 
 
 
+
 const SB='https://iarfxjhahzbhncsaohbg.supabase.co';
 const KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlhcmZ4amhhaHpiaG5jc2FvaGJnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg2OTM1MzAsImV4cCI6MjA5NDI2OTUzMH0.qSjahuX-RwnjWEDmo-LkcorAxpsmyVoaXt4AO4_A9BM';
 let tok=null,prof=null,co=null,chkItems=[],people=[];
@@ -506,25 +507,31 @@ if(sc)sc.textContent=g+' Good / '+ins+' Insufficient';
 function saveEvent(){evSave();}
 async function loadInsps(){
 const el=document.getElementById('inspections-list');
-if(!el)return;
+if(!el){console.error('NO inspections-list ELEMENT');return;}
 try{
 const d=await api('/inspections?select=*'+cf()+'&order=inspection_date.desc');
-if(!d||!d.length){el.innerHTML='<div class="empty">No inspections yet</div>';return;}
-const tbl=document.createElement('table');
-tbl.innerHTML='<thead><tr><th>Date</th><th>Site</th><th>Performed by</th><th>Good</th><th>Insufficient</th></tr></thead>';
-const tb=document.createElement('tbody');
-d.forEach(function(x){
-const tr=document.createElement('tr');
-const dt=x.inspection_date?new Date(x.inspection_date).toLocaleDateString('en-GB'):'--';
-tr.innerHTML='<td>'+dt+'</td><td>'+(x.site||'--')+'</td><td>'+(x.performed_by||'--')+'</td>'
-+'<td><span class="badge bg">'+(x.score_good||0)+'</span></td>'
-+'<td><span class="badge '+((x.score_insuf||0)>3?'br':'ba')+'">'+(x.score_insuf||0)+'</span></td>';
-tb.appendChild(tr);
+console.log('inspections raw data:', JSON.stringify(d));
+if(!d||!d.length){
+el.innerHTML='<div style="padding:20px;color:green;font-weight:bold">No inspections in database yet</div>';
+return;
+}
+// Ultra simple render - no formatting functions
+let html='<div style="padding:20px">';
+d.forEach(function(x,i){
+html+='<div style="padding:10px;border:1px solid #ccc;margin:5px;border-radius:4px">';
+html+='<strong>Record '+(i+1)+'</strong><br>';
+html+='Date: '+(x.inspection_date||'no date')+'<br>';
+html+='Site: '+(x.site||'no site')+'<br>';
+html+='Score good: '+(x.score_good||0)+' | Insufficient: '+(x.score_insuf||0);
+html+='</div>';
 });
-tbl.appendChild(tb);
-el.innerHTML='';
-el.appendChild(tbl);
-}catch(e){el.innerHTML='<div class="empty" style="color:var(--red)">'+e.message+'</div>';console.error(e);}
+html+='</div>';
+el.innerHTML=html;
+console.log('loadInsps rendered successfully');
+}catch(err){
+console.error('loadInsps CATCH:',err);
+el.innerHTML='<div style="padding:20px;color:red"><strong>ERROR:</strong> '+err.message+'</div>';
+}
 }
 
 async function saveInspection(){
@@ -1528,6 +1535,7 @@ kpiObjectives=[];kpiKPIs=[];kpiIndicators=[];kpiMonthlyData={};
 await kpiLoadAll();
 }catch(e){toast(e.message,false);}
 }
+
 
 
 
