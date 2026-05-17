@@ -14,6 +14,8 @@
 
 
 
+
+
 const SB='https://iarfxjhahzbhncsaohbg.supabase.co';
 const KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlhcmZ4amhhaHpiaG5jc2FvaGJnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg2OTM1MzAsImV4cCI6MjA5NDI2OTUzMH0.qSjahuX-RwnjWEDmo-LkcorAxpsmyVoaXt4AO4_A9BM';
 let tok=null,prof=null,co=null,chkItems=[],people=[];
@@ -139,16 +141,21 @@ if(L[name])L[name]();
 function toggleForm(id){const el=document.getElementById(id);el.style.display=el.style.display==='none'?'block':'none';}
 function toggleContractor(){document.getElementById('contractor-fields').style.display=document.getElementById('pef-type').value!=='employee'?'block':'none';}
 async function loadDash(){
+console.log('loadDash starting, prof:', prof?.id, 'company:', prof?.company_id);
 try{
+console.log('loadDash fetching data...');
+const safe=async(p)=>{try{return await p;}catch(e){console.warn('API call failed:',e.message);return [];}};
 const[k,e,a,pe,pt,certs,insps]=await Promise.all([
-api('/kpis?select=*'+cf()),api('/events?select=*'+cf()+'&order=created_at.desc&limit=5'),
-api('/action_tracker?select=*'+cf()+'&status=neq.closed'),
-api('/people?select=id'+cf()+'&status=eq.active'),
-api('/permits?select=*'+cf()+'&status=eq.active'),
-api('/people_certifications?select=*'+cf()),
-api('/inspections?select=*'+cf()+'&order=inspection_date.desc&limit=5'),
+safe(api('/kpis?select=*'+cf())),
+safe(api('/events?select=*'+cf()+'&order=created_at.desc&limit=5')),
+safe(api('/action_tracker?select=*'+cf()+'&status=neq.closed')),
+safe(api('/people?select=id'+cf()+'&status=eq.active')),
+safe(api('/permits?select=*'+cf()+'&status=eq.active')),
+safe(api('/people_certifications?select=*'+cf())),
+safe(api('/inspections?select=*'+cf()+'&order=inspection_date.desc&limit=5')),
 ]);
 const soon=new Date();soon.setDate(soon.getDate()+30);
+console.log('loadDash data received - k:',k?.length,'e:',e?.length,'a:',a?.length,'pe:',pe?.length,'insps:',insps?.length);
 const ec=(certs||[]).filter(x=>x.expiry_date&&new Date(x.expiry_date)<soon);
 document.getElementById('d-kpis').textContent=(k||[]).filter(x=>x.status==='on_track').length+'/'+(k||[]).length;
 document.getElementById('d-events').textContent=(e||[]).filter(x=>x.status==='open').length;
@@ -506,8 +513,11 @@ if(sc)sc.textContent=g+' Good / '+ins+' Insufficient';
 function saveEvent(){evSave();}
 async function loadInsps(){
 const el=document.getElementById('inspections-list');
+console.log('loadInsps called, el:', el ? 'found' : 'NULL');
 try{
-const d=await api('/inspections?select=*'+cf()+'&order=inspection_date.desc');
+const d=await api('/inspections?select=*'+cf()+'&order=inspection_date.desc'||[]);
+console.log('loadInsps data:', d?.length, 'records');
+console.log('loadInsps rendering, d:', d?.length);
 el.innerHTML=!d?.length?'<div class="empty">No inspections yet</div>':'<table><thead><tr><th>Date</th><th>Site</th><th>Performed by</th><th>Good</th><th>Insuf.</th></tr></thead><tbody>'+d.map(x=>'<tr><td>'+fmt(x.inspection_date)+'</td><td>'+(x.site||'--')+'</td><td>'+(x.performed_by||'--')+'</td><td><span class="badge bg">'+x.score_good+'</span></td><td><span class="badge '+(x.score_insuf>3?'br':'ba')+'">'+x.score_insuf+'</span></td></tr>').join('')+'</tbody></table>';
 }catch(e){el.innerHTML='<div class="empty" style="color:var(--red)">Error: '+e.message+'<br><small>Check console (F12) for details</small></div>';console.error('loadInsps error:',e);}
 }
@@ -534,7 +544,7 @@ const btn=document.getElementById('risk-add-btn');
 if(isMgr())btn.innerHTML='<button class="btn btn-primary" onclick="toggleForm(\'risk-form\')"><i class="ti ti-plus"></i>New assessment</button>';
 const el=document.getElementById('risk-list');
 try{
-const d=await api('/risk_assessments?select=*'+cf()+'&order=created_at.desc');
+const d=await api('/risk_assessments?select=*'+cf()+'&order=created_at.desc'||[]);
 el.innerHTML=!d?.length?'<div class="empty">No risk assessments yet</div>':'<table><thead><tr><th>Title</th><th>Location</th><th>Assessed by</th><th>Review date</th><th>Status</th></tr></thead><tbody>'+d.map(x=>'<tr><td><strong>'+x.title+'</strong></td><td>'+(x.location||'--')+'</td><td>'+(x.assessed_by||'--')+'</td><td>'+fmt(x.review_date)+'</td><td>'+stat(x.status)+'</td></tr>').join('')+'</tbody></table>';
 }catch(e){console.error('loadInvs error:',e);el.innerHTML='<div class="empty" style="color:var(--red)">Error: '+e.message+'</div>';}
 }
@@ -552,7 +562,7 @@ const btn=document.getElementById('inv-add-btn');
 if(isMgr())btn.innerHTML='<button class="btn btn-primary" onclick="toggleForm(\'inv-form\')"><i class="ti ti-plus"></i>New investigation</button>';
 const el=document.getElementById('inv-list');
 try{
-const d=await api('/investigations?select=*'+cf()+'&order=created_at.desc');
+const d=await api('/investigations?select=*'+cf()+'&order=created_at.desc'||[]);
 el.innerHTML=!d?.length?'<div class="empty">No investigations yet</div>':'<table><thead><tr><th>Title</th><th>Date</th><th>Location</th><th>Investigated by</th><th>Status</th></tr></thead><tbody>'+d.map(x=>'<tr><td><strong>'+x.title+'</strong></td><td>'+fmt(x.incident_date)+'</td><td>'+(x.location||'--')+'</td><td>'+(x.investigated_by||'--')+'</td><td>'+stat(x.status)+'</td></tr>').join('')+'</tbody></table>';
 }catch(e){console.error('loadPermits error:',e);el.innerHTML='<div class="empty" style="color:var(--red)">Error: '+e.message+'</div>';}
 }
@@ -573,7 +583,7 @@ if(isMgr())btn.innerHTML='<button class="btn btn-primary" onclick="toggleForm(\'
 else btn.innerHTML='<span class="badge bgr"><i class="ti ti-eye"></i> View only</span>';
 const el=document.getElementById('permits-list');
 try{
-const d=await api('/permits?select=*'+cf()+'&order=created_at.desc');
+const d=await api('/permits?select=*'+cf()+'&order=created_at.desc'||[]);
 el.innerHTML=!d?.length?'<div class="empty">No permits yet</div>':'<table><thead><tr><th>Permit no</th><th>Type</th><th>Location</th><th>Contractor</th><th>Start</th><th>End</th><th>Status</th></tr></thead><tbody>'+d.map(x=>'<tr><td><strong>'+(x.permit_number||'--')+'</strong></td><td>'+(x.permit_type||'').replace(/_/g,' ')+'</td><td>'+(x.location||'--')+'</td><td>'+(x.contractor||'--')+'</td><td>'+fmt(x.start_datetime)+'</td><td>'+fmt(x.end_datetime)+'</td><td>'+stat(x.status)+'</td></tr>').join('')+'</tbody></table>';
 }catch(e){console.error('loadNoise error:',e);el.innerHTML='<div class="empty" style="color:var(--red)">Error: '+e.message+'</div>';}
 }
@@ -588,7 +598,7 @@ toggleForm('permit-form');toast('Permit saved!');loadPermits();loadDash();
 async function loadNoise(){
 const el=document.getElementById('noise-list');
 try{
-const d=await api('/noise_surveys?select=*'+cf()+'&order=survey_date.desc');
+const d=await api('/noise_surveys?select=*'+cf()+'&order=survey_date.desc'||[]);
 el.innerHTML=!d?.length?'<div class="empty">No surveys yet</div>':'<table><thead><tr><th>Date</th><th>Type</th><th>Site</th><th>Conducted by</th><th>Instrument</th></tr></thead><tbody>'+d.map(x=>'<tr><td>'+fmt(x.survey_date)+'</td><td><span class="badge bb">'+x.survey_type+'</span></td><td>'+(x.site||'--')+'</td><td>'+(x.conducted_by||'--')+'</td><td>'+(x.instrument_used||'--')+'</td></tr>').join('')+'</tbody></table>';
 }catch(e){console.error('loadMtgs error:',e);el.innerHTML='<div class="empty" style="color:var(--red)">Error: '+e.message+'</div>';}
 }
@@ -605,7 +615,7 @@ const btn=document.getElementById('mtg-add-btn');
 if(isMgr())btn.innerHTML='<button class="btn btn-primary" onclick="toggleForm(\'meeting-form\')"><i class="ti ti-plus"></i>New meeting</button>';
 const el=document.getElementById('meetings-list');
 try{
-const d=await api('/hse_meetings?select=*'+cf()+'&order=meeting_date.desc');
+const d=await api('/hse_meetings?select=*'+cf()+'&order=meeting_date.desc'||[]);
 el.innerHTML=!d?.length?'<div class="empty">No meetings yet</div>':'<table><thead><tr><th>Title</th><th>Type</th><th>Date</th><th>Chaired by</th><th>Next meeting</th></tr></thead><tbody>'+d.map(x=>'<tr><td><strong>'+x.title+'</strong></td><td>'+(x.meeting_type||'').replace(/_/g,' ')+'</td><td>'+fmt(x.meeting_date)+'</td><td>'+(x.chaired_by||'--')+'</td><td>'+fmt(x.next_meeting_date)+'</td></tr>').join('')+'</tbody></table>';
 }catch(e){console.error('loadTraining error:',e);el.innerHTML='<div class="empty" style="color:var(--red)">Error: '+e.message+'</div>';}
 }
@@ -622,7 +632,7 @@ const btn=document.getElementById('training-add-btn');
 if(isMgr())btn.innerHTML='<button class="btn btn-primary" onclick="toggleForm(\'training-form\')"><i class="ti ti-plus"></i>Log training</button>';
 const el=document.getElementById('training-list');
 try{
-const d=await api('/training_sessions?select=*'+cf()+'&order=date_conducted.desc');
+const d=await api('/training_sessions?select=*'+cf()+'&order=date_conducted.desc'||[]);
 if(!d?.length){el.innerHTML='<div class="empty">No training sessions yet</div>';return;}
 const today=new Date(),soon=new Date();soon.setDate(soon.getDate()+30);
 el.innerHTML='<table><thead><tr><th>Course</th><th>Trainer</th><th>Date</th><th>Expiry</th><th>Status</th></tr></thead><tbody>'+d.map(x=>{const exp=x.expiry_date?new Date(x.expiry_date):null;const s=!exp?'bb':exp<today?'br':exp<soon?'ba':'bg';const sl=!exp?'--':exp<today?'Expired':exp<soon?'Expiring soon':'Valid';return'<tr><td>'+x.course+'</td><td>'+(x.trainer||'--')+'</td><td>'+fmt(x.date_conducted)+'</td><td>'+fmt(x.expiry_date)+'</td><td><span class="badge '+s+'">'+sl+'</span></td></tr>';}).join('')+'</tbody></table>';
@@ -678,7 +688,7 @@ const btn=document.getElementById('doc-add-btn');
 if(isMgr())btn.innerHTML='<button class="btn btn-primary" onclick="toggleForm(\'doc-form\')"><i class="ti ti-plus"></i>Register document</button>';
 const el=document.getElementById('docs-list');
 try{
-const d=await api('/documents?select=*'+cf()+'&order=created_at.desc');
+const d=await api('/documents?select=*'+cf()+'&order=created_at.desc'||[]);
 if(!d?.length){el.innerHTML='<div class="empty">No documents yet</div>';return;}
 const today=new Date(),soon=new Date();soon.setDate(soon.getDate()+30);
 el.innerHTML='<table><thead><tr><th>Title</th><th>Type</th><th>Ref</th><th>Version</th><th>Issue</th><th>Review</th><th>Owner</th><th>Status</th></tr></thead><tbody>'+d.map(x=>{const rev=x.review_date?new Date(x.review_date):null;const ov=rev&&rev<today;return'<tr><td>'+(x.file_url?'<a href="'+x.file_url+'" target="_blank" style="color:var(--green);font-weight:600">'+x.title+'</a>':x.title)+'</td><td><span class="badge bb">'+(x.doc_type||'--')+'</span></td><td>'+(x.reference_no||'--')+'</td><td>'+(x.version||'--')+'</td><td>'+fmt(x.issue_date)+'</td><td style="'+(ov?'color:var(--red);font-weight:700':'')+'">'+fmt(x.review_date)+(ov?' ⚠':'')+'</td><td>'+(x.owner||'--')+'</td><td>'+stat(x.status)+'</td></tr>';}).join('')+'</tbody></table>';
@@ -1390,6 +1400,8 @@ kpiObjectives=[];kpiKPIs=[];kpiIndicators=[];kpiMonthlyData={};
 await kpiLoadAll();
 }catch(e){toast(e.message,false);}
 }
+
+
 
 
 
