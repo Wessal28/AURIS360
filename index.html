@@ -257,7 +257,9 @@ tr:hover td{background:#fafafa}
             <table id="kpi-monthly-table" style="width:100%;border-collapse:collapse;font-size:12px">
               <thead>
                 <tr>
-                  <th style="background:#f9fafb;padding:8px 10px;border:1px solid var(--border);font-size:11px;font-weight:600;color:var(--text2);text-align:left;min-width:220px;position:sticky;left:0;z-index:2">KPI</th>
+                  <th style="background:#f9fafb;padding:8px 10px;border:1px solid var(--border);font-size:11px;font-weight:600;color:var(--text2);text-align:center;min-width:50px;position:sticky;left:0;z-index:2">No.</th>
+                  <th style="background:#f9fafb;padding:8px 10px;border:1px solid var(--border);font-size:11px;font-weight:600;color:var(--text2);text-align:left;min-width:160px">KPI name</th>
+                  <th style="background:#f9fafb;padding:8px 10px;border:1px solid var(--border);font-size:11px;font-weight:600;color:var(--text2);text-align:left;min-width:200px">Measurement indicator</th>
                   <th style="background:#f9fafb;padding:8px 10px;border:1px solid var(--border);font-size:11px;font-weight:600;color:var(--text2);text-align:center;min-width:80px">Target</th>
                   <th style="background:#f9fafb;padding:8px 10px;border:1px solid var(--border);font-size:11px;font-weight:600;color:var(--text2);text-align:center">Jan</th>
                   <th style="background:#f9fafb;padding:8px 10px;border:1px solid var(--border);font-size:11px;font-weight:600;color:var(--text2);text-align:center">Feb</th>
@@ -1361,7 +1363,8 @@ function kpiRenderOverview(){
       tbl.innerHTML='<thead><tr>'
         +'<th style="text-align:left;font-weight:600;color:var(--text2);padding:9px 12px;border-bottom:1px solid var(--border);font-size:11px;text-transform:uppercase;background:#fafafa;width:50px">Code</th>'
         +'<th style="text-align:left;font-weight:600;color:var(--text2);padding:9px 12px;border-bottom:1px solid var(--border);font-size:11px;text-transform:uppercase;background:#fafafa">KPI name</th>'
-        +'<th style="text-align:left;font-weight:600;color:var(--text2);padding:9px 12px;border-bottom:1px solid var(--border);font-size:11px;text-transform:uppercase;background:#fafafa">Measurement indicators</th>'
+        +'<th style="text-align:left;font-weight:600;color:var(--text2);padding:9px 12px;border-bottom:1px solid var(--border);font-size:11px;text-transform:uppercase;background:#fafafa">Measurement indicator</th>'
+        +'<th style="text-align:left;font-weight:600;color:var(--text2);padding:9px 12px;border-bottom:1px solid var(--border);font-size:11px;text-transform:uppercase;background:#fafafa;width:90px">Target</th>'
         +'<th style="text-align:left;font-weight:600;color:var(--text2);padding:9px 12px;border-bottom:1px solid var(--border);font-size:11px;text-transform:uppercase;background:#fafafa">Responsible</th>'
         +'<th style="text-align:left;font-weight:600;color:var(--text2);padding:9px 12px;border-bottom:1px solid var(--border);font-size:11px;text-transform:uppercase;background:#fafafa">Status</th>'
         +'</tr></thead>';
@@ -1373,15 +1376,38 @@ function kpiRenderOverview(){
         tr.onmouseover=function(){this.style.background='#f9fafb';};
         tr.onmouseout=function(){this.style.background='';};
         tr.onclick=function(){openKpiAddModal(k.id,obj.id);};
-        const indHtml=inds.length
-          ?inds.map(function(i){return '<div style="font-size:12px;color:var(--text2);padding:1px 0">&bull; '+i.name+' <span style="color:var(--text3);font-size:11px">(target: '+kpiFmtTarget(i)+')</span></div>';}).join('')
-          :'<span style="color:var(--text3);font-size:12px">No indicators yet</span>';
-        tr.innerHTML='<td style="padding:10px 12px;border-bottom:1px solid var(--border);color:var(--text2);font-size:11px;font-weight:700;vertical-align:top">'+(k.code||'')+'</td>'
-          +'<td style="padding:10px 12px;border-bottom:1px solid var(--border);vertical-align:top"><strong>'+k.name+'</strong><br><span style="font-size:11px;color:var(--text3)">'+(k.frequency||'monthly')+'</span></td>'
-          +'<td style="padding:10px 12px;border-bottom:1px solid var(--border);vertical-align:top">'+indHtml+'</td>'
-          +'<td style="padding:10px 12px;border-bottom:1px solid var(--border);font-size:12px;vertical-align:top">'+(k.responsible||'--')+'</td>'
-          +'<td style="padding:10px 12px;border-bottom:1px solid var(--border);vertical-align:top">'+kpiStatBadge(k.status)+'</td>';
-        tbody.appendChild(tr);
+        // Each indicator gets its own row
+        if(!inds.length){
+          // KPI with no indicators - single row
+          tr.innerHTML='<td style="padding:10px 12px;border-bottom:1px solid var(--border);color:var(--text2);font-size:11px;font-weight:700;vertical-align:middle">'+(k.code||'')+'</td>'
+            +'<td style="padding:10px 12px;border-bottom:1px solid var(--border);vertical-align:middle"><strong>'+k.name+'</strong></td>'
+            +'<td style="padding:10px 12px;border-bottom:1px solid var(--border);color:var(--text3);font-size:12px;font-style:italic" colspan="2">No indicators yet</td>'
+            +'<td style="padding:10px 12px;border-bottom:1px solid var(--border);font-size:12px">'+(k.responsible||'--')+'</td>'
+            +'<td style="padding:10px 12px;border-bottom:1px solid var(--border)">'+kpiStatBadge(k.status)+'</td>';
+          tbody.appendChild(tr);
+        }else{
+          // One row per indicator
+          inds.forEach(function(ind,indIdx){
+            const indRow=indIdx===0?tr:document.createElement('tr');
+            if(indIdx>0){
+              indRow.style.cursor='pointer';
+              indRow.onmouseover=function(){this.style.background='#f9fafb';};
+              indRow.onmouseout=function(){this.style.background='';};
+              indRow.onclick=function(){openKpiAddModal(k.id,obj.id);};
+            }
+            const isLast=indIdx===inds.length-1;
+            const borderStyle=isLast?'border-bottom:2px solid var(--border)':'border-bottom:1px solid #f0f0f0';
+            indRow.innerHTML=
+              // Code — only on first row, spanning all indicator rows
+              (indIdx===0?'<td style="padding:10px 12px;'+borderStyle+';color:var(--text2);font-size:11px;font-weight:700;vertical-align:middle" rowspan="'+inds.length+'">'+(k.code||'')+'</td>'
+                         +'<td style="padding:10px 12px;'+borderStyle+';vertical-align:middle" rowspan="'+inds.length+'"><strong>'+k.name+'</strong><br><span style="font-size:11px;color:var(--text3)">'+(k.frequency||'monthly')+'</span></td>':'')
+              +'<td style="padding:8px 12px;'+borderStyle+';font-size:12px;color:var(--text2)">'+ind.name+'</td>'
+              +'<td style="padding:8px 12px;'+borderStyle+';font-size:12px;font-weight:600;color:var(--text)">'+kpiFmtTarget(ind)+'</td>'
+              +(indIdx===0?'<td style="padding:10px 12px;'+borderStyle+';font-size:12px" rowspan="'+inds.length+'">'+(k.responsible||'--')+'</td>'
+                          +'<td style="padding:10px 12px;'+borderStyle+'" rowspan="'+inds.length+'">'+kpiStatBadge(k.status)+'</td>':'');
+            tbody.appendChild(indRow);
+          });
+        }
       });
       tbl.appendChild(tbody);
       body.appendChild(tbl);
@@ -1403,10 +1429,10 @@ function kpiRenderMonthly(){
     const objKPIs=kpiKPIs.filter(function(k){return k.objective_id===obj.id;});
     if(!objKPIs.length)return;
     hasAny=true;
-    // Objective header row
+    // Objective header row (now 18 cols: No + KPI name + Indicator + Target + 12 months + YTD + Status)
     const objRow=document.createElement('tr');
     const objTd=document.createElement('td');
-    objTd.colSpan=17;
+    objTd.colSpan=18;
     objTd.style.cssText='background:'+obj.color+'22;border-left:4px solid '+obj.color+';padding:7px 12px;font-weight:700;font-size:11px;color:'+obj.color+';text-transform:uppercase;border:1px solid var(--border)';
     objTd.textContent=obj.code+'. '+obj.name;
     objRow.appendChild(objTd);tbody.appendChild(objRow);
@@ -1414,8 +1440,9 @@ function kpiRenderMonthly(){
       const inds=kpiIndicators.filter(function(i){return i.kpi_id===k.id;});
       if(!inds.length){
         const pr=document.createElement('tr');
-        pr.innerHTML='<td style="border:1px solid var(--border);padding:8px 12px;font-size:11px;font-weight:700;color:var(--text2)">'+(k.code||'')+'</td>'
-          +'<td colspan="15" style="border:1px solid var(--border);padding:8px 12px;font-size:12px;color:var(--text2);font-style:italic">'+k.name+' - no indicators added yet</td>'
+        pr.innerHTML='<td style="border:1px solid var(--border);padding:8px 12px;font-size:11px;font-weight:700;color:var(--text2);text-align:center">'+(k.code||'')+'</td>'
+          +'<td style="border:1px solid var(--border);padding:8px 12px;font-size:12px;font-weight:600">'+k.name+'</td>'
+          +'<td colspan="15" style="border:1px solid var(--border);padding:8px 12px;font-size:12px;color:var(--text2);font-style:italic">No indicators added yet</td>'
           +'<td style="border:1px solid var(--border)"></td>';
         tbody.appendChild(pr);return;
       }
@@ -1423,23 +1450,31 @@ function kpiRenderMonthly(){
         const mdata=kpiMonthlyData[ind.id]||{};
         let ytdSum=0;let hasData=false;
         const tr=document.createElement('tr');
-        // Code cell - only on first indicator
-        const codeTd=document.createElement('td');
-        codeTd.style.cssText='border:1px solid var(--border);padding:8px 12px;font-size:11px;font-weight:700;color:var(--text2);vertical-align:middle;background:'+(indIdx===0?'var(--card)':'#fafafa');
-        codeTd.textContent=indIdx===0?(k.code||''):'';
-        tr.appendChild(codeTd);
-        // Name + indicator cell
-        const nameTd=document.createElement('td');
-        nameTd.style.cssText='border:1px solid var(--border);padding:8px 12px;font-size:12px;vertical-align:middle';
-        nameTd.innerHTML=(indIdx===0?'<div style="font-weight:600;font-size:12px;margin-bottom:2px">'+k.name+'</div>':'')
-          +'<div style="font-size:11px;color:var(--text2)">• '+ind.name+'</div>';
-        tr.appendChild(nameTd);
-        // Target cell
+        // Col 1: Code — rowspan on first indicator only
+        if(indIdx===0){
+          const codeTd=document.createElement('td');
+          codeTd.style.cssText='border:1px solid var(--border);padding:8px 10px;font-size:11px;font-weight:700;color:var(--text2);text-align:center;vertical-align:middle';
+          codeTd.rowSpan=inds.length;
+          codeTd.textContent=k.code||'';
+          tr.appendChild(codeTd);
+          // Col 2: KPI name — rowspan on first indicator only
+          const nameTd=document.createElement('td');
+          nameTd.style.cssText='border:1px solid var(--border);padding:8px 10px;font-size:12px;font-weight:600;vertical-align:middle';
+          nameTd.rowSpan=inds.length;
+          nameTd.textContent=k.name;
+          tr.appendChild(nameTd);
+        }
+        // Col 3: Measurement indicator
+        const indTd=document.createElement('td');
+        indTd.style.cssText='border:1px solid var(--border);padding:6px 10px;font-size:12px;color:var(--text2);vertical-align:middle';
+        indTd.textContent=ind.name;
+        tr.appendChild(indTd);
+        // Col 4: Target
         const tgtTd=document.createElement('td');
         tgtTd.style.cssText='border:1px solid var(--border);padding:6px 8px;text-align:center;font-weight:600;font-size:12px;background:#f9fafb;white-space:nowrap';
         tgtTd.textContent=kpiFmtTarget(ind);
         tr.appendChild(tgtTd);
-        // Month cells
+        // Cols 5-16: Jan-Dec
         KPI_MONTHS.forEach(function(_,mi){
           const m=mi+1;
           const entry=mdata[m];
@@ -1460,7 +1495,7 @@ function kpiRenderMonthly(){
           (function(indId,kId,mn){td.onclick=function(){kpiOpenEntry(indId,kId,mn);};})(ind.id,k.id,m);
           tr.appendChild(td);
         });
-        // YTD cell
+        // Col 17: YTD
         const ytdVals=Object.values(mdata).filter(function(v){return v.ytd!==null&&v.ytd!==undefined;});
         const ytd=ytdVals.length?parseFloat(ytdVals[ytdVals.length-1].ytd):ytdSum;
         const ytdTd=document.createElement('td');
@@ -1468,11 +1503,14 @@ function kpiRenderMonthly(){
         ytdTd.style.cssText='border:1px solid var(--border);padding:6px 8px;text-align:center;font-weight:700'+(ytdSty?';'+ytdSty:'');
         ytdTd.textContent=hasData?ytd+(ind.unit||''):'--';
         tr.appendChild(ytdTd);
-        // Status cell
-        const stTd=document.createElement('td');
-        stTd.style.cssText='border:1px solid var(--border);padding:6px 8px;text-align:center';
-        stTd.innerHTML=kpiStatBadge(k.status);
-        tr.appendChild(stTd);
+        // Col 18: Status — rowspan on first indicator only
+        if(indIdx===0){
+          const stTd=document.createElement('td');
+          stTd.style.cssText='border:1px solid var(--border);padding:6px 8px;text-align:center;vertical-align:middle';
+          stTd.rowSpan=inds.length;
+          stTd.innerHTML=kpiStatBadge(k.status);
+          tr.appendChild(stTd);
+        }
         tbody.appendChild(tr);
       });
     });
@@ -1673,7 +1711,7 @@ async function kpiSaveEntry(){
     }
     ytd=sum;
   }
-  const body={kpi_id:kpiEntryIndicatorId,indicator_id:kpiEntryIndicatorId,company_id:prof?.company_id,year:kpiEntryYear,month:kpiEntryMonth,actual:parseFloat(actual),ytd,comment:document.getElementById('entry-comment').value||null,entered_by:prof?.id};
+  const body={kpi_id:null,indicator_id:kpiEntryIndicatorId,company_id:prof?.company_id,year:kpiEntryYear,month:kpiEntryMonth,actual:parseFloat(actual),ytd,comment:document.getElementById('entry-comment').value||null,entered_by:prof?.id};
   try{
     const existing=await api('/kpi_monthly_data?indicator_id=eq.'+kpiEntryIndicatorId+'&year=eq.'+kpiEntryYear+'&month=eq.'+kpiEntryMonth);
     if(existing&&existing.length>0){
