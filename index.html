@@ -8,10 +8,12 @@
 <style>
 
 *{box-sizing:border-box;margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif}:root{--green:#1D9E75;--dg:#0F6E56;--red:#E24B4A;--amber:#EF9F27;--blue:#185FA5;--bg:#f4f6f8;--card:#fff;--border:#e5e7eb;--text:#111;--text2:#6b7280;--text3:#9ca3af} body{background:var(--bg);color:var(--text);min-height:100vh} #login-screen{position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;z-index:100} .login-box{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:36px;width:380px;box-shadow:0 4px 24px rgba(0,0,0,.08)} .login-logo{font-size:22px;font-weight:800;color:var(--green);margin-bottom:2px;letter-spacing:-.5px} .login-sub{font-size:12px;color:var(--text2);margin-bottom:24px} .login-err{background:#FCEBEB;color:#A32D2D;font-size:12px;padding:9px 12px;border-radius:8px;margin-bottom:14px;display:none} #app{display:none;height:100vh;overflow:hidden;width:100%} .layout{display:flex;height:100vh;width:100%} .sidebar{width:240px;min-width:240px;background:var(--card);border-right:1px solid var(--border);display:flex;flex-direction:column;height:100vh;overflow-y:auto} .sidebar-top{padding:18px 20px 14px;border-bottom:1px solid var(--border)} .co-logo{width:48px;height:48px;border-radius:10px;object-fit:contain;margin-bottom:8px;border:1px solid var(--border);display:none} .co-initials{width:48px;height:48px;border-radius:10px;background:var(--green);color:#fff;font-size:18px;font-weight:700;display:flex;align-items:center;justify-content:center;margin-bottom:8px} .sb-company{font-size:14px;font-weight:700;color:var(--text)} .sb-user{font-size:11px;color:var(--text2);margin-top:1px} .sb-role{display:inline-block;margin-top:5px;font-size:10px;padding:2px 8px;border-radius:99px;background:#E1F5EE;color:var(--dg);font-weight:600} .nav-section{font-size:9px;text-transform:uppercase;letter-spacing:.1em;color:var(--text3);padding:14px 20px 3px;font-weight:600} .nav-item{display:flex;align-items:center;gap:9px;padding:9px 20px;cursor:pointer;font-size:13px;color:var(--text2);border-left:3px solid transparent;transition:all .12s} .nav-item:hover{background:#f9fafb;color:var(--text)} .nav-item.active{background:#E1F5EE;color:var(--green);border-left-color:var(--green);font-weight:600} .nav-item i{font-size:16px} .sb-footer{margin-top:auto;padding:12px 16px;border-top:1px solid var(--border);display:flex;gap:6px} .main{flex:1;overflow-y:auto;background:var(--bg);height:100vh} .page{display:none;padding:28px 32px;min-height:100%}
-.inv-tab{background:none;border:none;border-bottom:3px solid transparent;padding:10px 18px;font-size:13px;font-weight:600;color:var(--text2);cursor:pointer;transition:all .15s}
-.inv-tab:hover{color:var(--text)}
+.inv-tab{background:none;border:none;border-bottom:3px solid transparent;padding:10px 20px;font-size:13px;font-weight:600;color:var(--text2);cursor:pointer;transition:all .15s;white-space:nowrap}
+.inv-tab:hover:not(.disabled){color:var(--text)}
 .inv-tab.active{color:var(--green);border-bottom-color:var(--green)}
-.inv-tab.disabled{opacity:.4;cursor:not-allowed}.page.active{display:block} .page-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:22px} .page-title{font-size:20px;font-weight:700;color:var(--text)} .btn{padding:8px 16px;border-radius:8px;border:1px solid var(--border);background:var(--card);color:var(--text);font-size:13px;cursor:pointer;display:inline-flex;align-items:center;gap:7px;font-weight:500;transition:all .12s} .btn:hover{background:#f9fafb} .btn-primary{background:var(--green);color:#fff;border-color:var(--green)} .btn-primary:hover{background:var(--dg)} .btn-sm{padding:5px 10px;font-size:12px} .metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:14px;margin-bottom:20px} .metric{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px 18px} .metric-label{font-size:11px;color:var(--text2);margin-bottom:6px;font-weight:500} .metric-value{font-size:28px;font-weight:700;color:var(--text)} .card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px 24px;margin-bottom:16px} .card-title{font-size:14px;font-weight:700;color:var(--text);margin-bottom:14px;display:flex;align-items:center;justify-content:space-between} .badge{display:inline-flex;align-items:center;padding:3px 9px;border-radius:99px;font-size:11px;font-weight:600} .bg{background:#EAF3DE;color:#3B6D11}.ba{background:#FAEEDA;color:#854F0B}.br{background:#FCEBEB;color:#A32D2D}.bb{background:#E6F1FB;color:#185FA5}.bgr{background:#f3f4f6;color:#374151} .form-group{margin-bottom:13px} .form-label{font-size:12px;color:var(--text2);margin-bottom:4px;display:block;font-weight:600} input,select,textarea{width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;color:var(--text);background:var(--card);transition:border .15s} input:focus,select:focus,textarea:focus{outline:none;border-color:var(--green);box-shadow:0 0 0 3px rgba(29,158,117,.1)} textarea{resize:vertical;min-height:70px} .form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px} .form-row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px} table{width:100%;border-collapse:collapse;font-size:13px} th{text-align:left;font-weight:600;color:var(--text2);padding:9px 8px;border-bottom:1px solid var(--border);font-size:11px;text-transform:uppercase;letter-spacing:.04em} td{padding:11px 8px;border-bottom:1px solid var(--border);color:var(--text);vertical-align:middle} tr:last-child td{border-bottom:none} tr:hover td{background:#fafafa} .empty{text-align:center;padding:40px;color:var(--text3);font-size:13px} .loading-msg{text-align:center;padding:30px;color:var(--text2);font-size:13px} .toast{position:fixed;bottom:20px;right:20px;padding:12px 20px;border-radius:10px;font-size:13px;font-weight:600;z-index:9999;display:none;box-shadow:0 4px 20px rgba(0,0,0,.15)} .toast-ok{background:var(--green);color:#fff} .toast-err{background:var(--red);color:#fff} .db-bar{display:inline-flex;align-items:center;gap:7px;font-size:12px;padding:7px 14px;border-radius:8px;background:#E1F5EE;color:var(--dg);margin-bottom:18px;font-weight:600} .dot{width:8px;height:8px;border-radius:50%;background:var(--green);display:inline-block} .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px} .insp-tbl{width:100%;border-collapse:collapse;font-size:12px} .insp-tbl th{background:#f9fafb;padding:7px 10px;border:1px solid var(--border);font-size:11px;font-weight:600;color:var(--text2);text-align:center} .insp-tbl th:first-child{text-align:left} .insp-tbl td{border:1px solid var(--border);padding:6px 10px;vertical-align:middle} .insp-tbl td input[type=checkbox]{width:auto;cursor:pointer} .insp-tbl td input[type=text]{border:none;font-size:11px;padding:2px 4px;background:transparent;width:100%} .cat-row td{background:#f3f4f6;font-size:11px;font-weight:700;color:var(--text2);padding:5px 10px;text-transform:uppercase} .kpi-row{display:flex;align-items:center;gap:12px;padding:11px 0;border-bottom:1px solid var(--border)} .kpi-row:last-child{border-bottom:none} .pw{flex:1;background:#e5e7eb;border-radius:99px;height:7px;overflow:hidden} .pb{height:100%;border-radius:99px;transition:width .4s} .person-card{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--border)} .person-card:last-child{border-bottom:none} .person-avatar{width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:700;color:#fff;flex-shrink:0} .emp-av{background:var(--green)}.con-av{background:var(--blue)}.sub-av{background:var(--amber)} .access-denied{text-align:center;padding:60px;color:var(--text3)} .access-denied i{font-size:48px;margin-bottom:12px;display:block;color:var(--border)} .role-banner{background:#FEF3C7;border:1px solid #FCD34D;border-radius:8px;padding:10px 14px;font-size:12px;color:#92400E;margin-bottom:16px;display:flex;align-items:center;gap:8px} .ai-panel{position:fixed;bottom:20px;right:20px;z-index:500} .ai-toggle{width:54px;height:54px;border-radius:50%;background:var(--green);color:#fff;border:none;cursor:pointer;font-size:24px;box-shadow:0 4px 16px rgba(29,158,117,.4);display:flex;align-items:center;justify-content:center} .ai-window{position:fixed;bottom:86px;right:20px;width:380px;height:520px;background:var(--card);border:1px solid var(--border);border-radius:16px;box-shadow:0 8px 40px rgba(0,0,0,.15);display:none;flex-direction:column;z-index:500;overflow:hidden} .ai-window.open{display:flex} .ai-header{padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;background:linear-gradient(135deg,var(--green),var(--dg))} .ai-title{font-size:14px;font-weight:700;color:#fff;flex:1} .ai-subtitle{font-size:11px;color:rgba(255,255,255,.8)} .ai-close{background:none;border:none;color:#fff;cursor:pointer;font-size:18px} .ai-messages{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:10px} .ai-msg{max-width:85%;padding:10px 14px;border-radius:12px;font-size:13px;line-height:1.5} .ai-msg.user{background:var(--green);color:#fff;align-self:flex-end;border-bottom-right-radius:4px} .ai-msg.assistant{background:#f3f4f6;color:var(--text);align-self:flex-start;border-bottom-left-radius:4px} .ai-suggestions{padding:8px 16px;display:flex;gap:6px;flex-wrap:wrap;border-top:1px solid var(--border)} .ai-sug{padding:5px 10px;border-radius:99px;border:1px solid var(--border);background:var(--card);font-size:11px;cursor:pointer;color:var(--text2)} .ai-sug:hover{background:#E1F5EE;border-color:var(--green);color:var(--green)} .ai-input-row{padding:12px 16px;border-top:1px solid var(--border);display:flex;gap:8px} .ai-input{flex:1;padding:9px 14px;border:1px solid var(--border);border-radius:99px;font-size:13px;outline:none} .ai-input:focus{border-color:var(--green)} .ai-send{padding:9px 16px;background:var(--green);color:#fff;border:none;border-radius:99px;cursor:pointer;font-size:13px;font-weight:600} .insight-card{border-left:4px solid var(--green);background:#f0fdf8;border-radius:0 10px 10px 0;padding:14px 16px;margin-bottom:10px} .insight-card.warn{border-left-color:var(--amber);background:#fffbeb} .insight-card.danger{border-left-color:var(--red);background:#fef2f2} .insight-title{font-size:13px;font-weight:700;color:var(--text);margin-bottom:3px} .insight-body{font-size:12px;color:var(--text2);line-height:1.6}
+.inv-tab.disabled{opacity:.35;cursor:not-allowed;pointer-events:none}
+.inv-chk-item{display:grid;grid-template-columns:18px 1fr;gap:6px;align-items:start;font-size:12px;cursor:pointer;line-height:1.4;padding:2px 0}
+.inv-chk-item input{margin-top:2px}.page.active{display:block} .page-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:22px} .page-title{font-size:20px;font-weight:700;color:var(--text)} .btn{padding:8px 16px;border-radius:8px;border:1px solid var(--border);background:var(--card);color:var(--text);font-size:13px;cursor:pointer;display:inline-flex;align-items:center;gap:7px;font-weight:500;transition:all .12s} .btn:hover{background:#f9fafb} .btn-primary{background:var(--green);color:#fff;border-color:var(--green)} .btn-primary:hover{background:var(--dg)} .btn-sm{padding:5px 10px;font-size:12px} .metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:14px;margin-bottom:20px} .metric{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px 18px} .metric-label{font-size:11px;color:var(--text2);margin-bottom:6px;font-weight:500} .metric-value{font-size:28px;font-weight:700;color:var(--text)} .card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px 24px;margin-bottom:16px} .card-title{font-size:14px;font-weight:700;color:var(--text);margin-bottom:14px;display:flex;align-items:center;justify-content:space-between} .badge{display:inline-flex;align-items:center;padding:3px 9px;border-radius:99px;font-size:11px;font-weight:600} .bg{background:#EAF3DE;color:#3B6D11}.ba{background:#FAEEDA;color:#854F0B}.br{background:#FCEBEB;color:#A32D2D}.bb{background:#E6F1FB;color:#185FA5}.bgr{background:#f3f4f6;color:#374151} .form-group{margin-bottom:13px} .form-label{font-size:12px;color:var(--text2);margin-bottom:4px;display:block;font-weight:600} input,select,textarea{width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;color:var(--text);background:var(--card);transition:border .15s} input:focus,select:focus,textarea:focus{outline:none;border-color:var(--green);box-shadow:0 0 0 3px rgba(29,158,117,.1)} textarea{resize:vertical;min-height:70px} .form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px} .form-row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px} table{width:100%;border-collapse:collapse;font-size:13px} th{text-align:left;font-weight:600;color:var(--text2);padding:9px 8px;border-bottom:1px solid var(--border);font-size:11px;text-transform:uppercase;letter-spacing:.04em} td{padding:11px 8px;border-bottom:1px solid var(--border);color:var(--text);vertical-align:middle} tr:last-child td{border-bottom:none} tr:hover td{background:#fafafa} .empty{text-align:center;padding:40px;color:var(--text3);font-size:13px} .loading-msg{text-align:center;padding:30px;color:var(--text2);font-size:13px} .toast{position:fixed;bottom:20px;right:20px;padding:12px 20px;border-radius:10px;font-size:13px;font-weight:600;z-index:9999;display:none;box-shadow:0 4px 20px rgba(0,0,0,.15)} .toast-ok{background:var(--green);color:#fff} .toast-err{background:var(--red);color:#fff} .db-bar{display:inline-flex;align-items:center;gap:7px;font-size:12px;padding:7px 14px;border-radius:8px;background:#E1F5EE;color:var(--dg);margin-bottom:18px;font-weight:600} .dot{width:8px;height:8px;border-radius:50%;background:var(--green);display:inline-block} .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px} .insp-tbl{width:100%;border-collapse:collapse;font-size:12px} .insp-tbl th{background:#f9fafb;padding:7px 10px;border:1px solid var(--border);font-size:11px;font-weight:600;color:var(--text2);text-align:center} .insp-tbl th:first-child{text-align:left} .insp-tbl td{border:1px solid var(--border);padding:6px 10px;vertical-align:middle} .insp-tbl td input[type=checkbox]{width:auto;cursor:pointer} .insp-tbl td input[type=text]{border:none;font-size:11px;padding:2px 4px;background:transparent;width:100%} .cat-row td{background:#f3f4f6;font-size:11px;font-weight:700;color:var(--text2);padding:5px 10px;text-transform:uppercase} .kpi-row{display:flex;align-items:center;gap:12px;padding:11px 0;border-bottom:1px solid var(--border)} .kpi-row:last-child{border-bottom:none} .pw{flex:1;background:#e5e7eb;border-radius:99px;height:7px;overflow:hidden} .pb{height:100%;border-radius:99px;transition:width .4s} .person-card{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--border)} .person-card:last-child{border-bottom:none} .person-avatar{width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:700;color:#fff;flex-shrink:0} .emp-av{background:var(--green)}.con-av{background:var(--blue)}.sub-av{background:var(--amber)} .access-denied{text-align:center;padding:60px;color:var(--text3)} .access-denied i{font-size:48px;margin-bottom:12px;display:block;color:var(--border)} .role-banner{background:#FEF3C7;border:1px solid #FCD34D;border-radius:8px;padding:10px 14px;font-size:12px;color:#92400E;margin-bottom:16px;display:flex;align-items:center;gap:8px} .ai-panel{position:fixed;bottom:20px;right:20px;z-index:500} .ai-toggle{width:54px;height:54px;border-radius:50%;background:var(--green);color:#fff;border:none;cursor:pointer;font-size:24px;box-shadow:0 4px 16px rgba(29,158,117,.4);display:flex;align-items:center;justify-content:center} .ai-window{position:fixed;bottom:86px;right:20px;width:380px;height:520px;background:var(--card);border:1px solid var(--border);border-radius:16px;box-shadow:0 8px 40px rgba(0,0,0,.15);display:none;flex-direction:column;z-index:500;overflow:hidden} .ai-window.open{display:flex} .ai-header{padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;background:linear-gradient(135deg,var(--green),var(--dg))} .ai-title{font-size:14px;font-weight:700;color:#fff;flex:1} .ai-subtitle{font-size:11px;color:rgba(255,255,255,.8)} .ai-close{background:none;border:none;color:#fff;cursor:pointer;font-size:18px} .ai-messages{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:10px} .ai-msg{max-width:85%;padding:10px 14px;border-radius:12px;font-size:13px;line-height:1.5} .ai-msg.user{background:var(--green);color:#fff;align-self:flex-end;border-bottom-right-radius:4px} .ai-msg.assistant{background:#f3f4f6;color:var(--text);align-self:flex-start;border-bottom-left-radius:4px} .ai-suggestions{padding:8px 16px;display:flex;gap:6px;flex-wrap:wrap;border-top:1px solid var(--border)} .ai-sug{padding:5px 10px;border-radius:99px;border:1px solid var(--border);background:var(--card);font-size:11px;cursor:pointer;color:var(--text2)} .ai-sug:hover{background:#E1F5EE;border-color:var(--green);color:var(--green)} .ai-input-row{padding:12px 16px;border-top:1px solid var(--border);display:flex;gap:8px} .ai-input{flex:1;padding:9px 14px;border:1px solid var(--border);border-radius:99px;font-size:13px;outline:none} .ai-input:focus{border-color:var(--green)} .ai-send{padding:9px 16px;background:var(--green);color:#fff;border:none;border-radius:99px;cursor:pointer;font-size:13px;font-weight:600} .insight-card{border-left:4px solid var(--green);background:#f0fdf8;border-radius:0 10px 10px 0;padding:14px 16px;margin-bottom:10px} .insight-card.warn{border-left-color:var(--amber);background:#fffbeb} .insight-card.danger{border-left-color:var(--red);background:#fef2f2} .insight-title{font-size:13px;font-weight:700;color:var(--text);margin-bottom:3px} .insight-body{font-size:12px;color:var(--text2);line-height:1.6}
 
 </style>
 </head>
@@ -71,7 +73,7 @@
 </div>
 
 <!-- Tabs -->
-<div style="display:flex;gap:0;margin-bottom:16px;border-bottom:2px solid var(--border)">
+<div style="display:flex;gap:0;margin-bottom:16px;border-bottom:2px solid var(--border);overflow-x:auto">
 <button class="inv-tab active" id="inv-tab-ws1" onclick="invShowTab('ws1')">WS1 — Incident Report</button>
 <button class="inv-tab" id="inv-tab-ws2" onclick="invShowTab('ws2')">WS2 — Human Factors</button>
 <button class="inv-tab" id="inv-tab-ws3" onclick="invShowTab('ws3')">WS3 — Technical 5-Why</button>
@@ -189,35 +191,6 @@
 </div>
 </div>
 
-<!-- WS1 Corrective actions -->
-<div class="card" style="margin-bottom:12px">
-<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
-<div class="card-title" style="margin:0">Corrective Actions to Eliminate or Reduce Risks</div>
-<button class="btn btn-sm" onclick="ws1AddCA()"><i class="ti ti-plus"></i>Add row</button>
-</div>
-<table style="width:100%;border-collapse:collapse">
-<thead><tr style="background:#f9fafb"><th style="padding:8px;text-align:left;border-bottom:1px solid var(--border);font-size:12px">No.</th><th style="padding:8px;text-align:left;border-bottom:1px solid var(--border);font-size:12px">Corrective action description</th><th style="padding:8px;text-align:left;border-bottom:1px solid var(--border);font-size:12px;width:140px">Responsible</th><th style="padding:8px;text-align:left;border-bottom:1px solid var(--border);font-size:12px;width:120px">Due date</th><th style="padding:8px;width:40px;border-bottom:1px solid var(--border)"></th></tr></thead>
-<tbody id="ws1-ca-body">
-<tr><td style="padding:6px;color:var(--text2);font-weight:700;font-size:12px">1</td><td style="padding:4px"><input type="text" class="ws1-ca-desc" style="width:100%;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px"/></td><td style="padding:4px"><input type="text" class="ws1-ca-resp" style="width:100%;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px"/></td><td style="padding:4px"><input type="date" class="ws1-ca-date" style="width:100%;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px"/></td><td style="padding:4px;text-align:center"><button onclick="this.closest('tr').remove()" style="background:none;border:none;cursor:pointer;color:var(--red)"><i class="ti ti-x"></i></button></td></tr>
-<tr><td style="padding:6px;color:var(--text2);font-weight:700;font-size:12px">2</td><td style="padding:4px"><input type="text" class="ws1-ca-desc" style="width:100%;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px"/></td><td style="padding:4px"><input type="text" class="ws1-ca-resp" style="width:100%;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px"/></td><td style="padding:4px"><input type="date" class="ws1-ca-date" style="width:100%;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px"/></td><td style="padding:4px;text-align:center"><button onclick="this.closest('tr').remove()" style="background:none;border:none;cursor:pointer;color:var(--red)"><i class="ti ti-x"></i></button></td></tr>
-<tr><td style="padding:6px;color:var(--text2);font-weight:700;font-size:12px">3</td><td style="padding:4px"><input type="text" class="ws1-ca-desc" style="width:100%;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px"/></td><td style="padding:4px"><input type="text" class="ws1-ca-resp" style="width:100%;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px"/></td><td style="padding:4px"><input type="date" class="ws1-ca-date" style="width:100%;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px"/></td><td style="padding:4px;text-align:center"><button onclick="this.closest('tr').remove()" style="background:none;border:none;cursor:pointer;color:var(--red)"><i class="ti ti-x"></i></button></td></tr>
-<tr><td style="padding:6px;color:var(--text2);font-weight:700;font-size:12px">4</td><td style="padding:4px"><input type="text" class="ws1-ca-desc" style="width:100%;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px"/></td><td style="padding:4px"><input type="text" class="ws1-ca-resp" style="width:100%;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px"/></td><td style="padding:4px"><input type="date" class="ws1-ca-date" style="width:100%;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px"/></td><td style="padding:4px;text-align:center"><button onclick="this.closest('tr').remove()" style="background:none;border:none;cursor:pointer;color:var(--red)"><i class="ti ti-x"></i></button></td></tr>
-</tbody>
-</table>
-</div>
-
-<!-- Further analyses -->
-<div class="card" style="background:#FEF9EC;border-color:#F59E0B">
-<div style="display:flex;align-items:center;gap:10px">
-<input type="checkbox" id="ws1-further" onchange="invTypeChange()"/>
-<label for="ws1-further" style="font-size:13px;font-weight:600;color:#854F0B">Further analyses required (WS2, WS3) — required for serious incidents</label>
-</div>
-<div style="font-size:12px;color:#854F0B;margin-top:6px;margin-left:24px">Check this box if a full root cause analysis (WS2 Human Factors + WS3 Technical 5-Why) is required</div>
-<div class="form-row" style="margin-top:10px">
-<div class="form-group"><label class="form-label">Person responsible for WS2 analysis</label><input type="text" id="ws1-ws2-resp"/></div>
-</div>
-</div>
-
 </div><!-- end ws1 -->
 
 <!-- WS2 Tab -->
@@ -307,84 +280,84 @@
 <!-- First level cause analysis -->
 <div class="card" style="margin-bottom:12px">
 <div class="card-title">First Level Cause Analysis</div>
-<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px">
+<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:4px">
 
-<div style="background:#f9fafb;border-radius:8px;padding:12px;border:1px solid var(--border)">
+<div style="background:#f9fafb;border-radius:8px;padding:14px 16px;border:1px solid var(--border)">
 <div style="font-size:12px;font-weight:700;color:var(--blue);margin-bottom:8px;text-transform:uppercase">Procedures &amp; Systems</div>
 <div style="font-size:11px;color:var(--text2);margin-bottom:8px;font-style:italic">Make the required documents available and discuss about their content</div>
-<div id="ws2-proc" style="display:flex;flex-direction:column;gap:6px">
-<label style="display:flex;align-items:flex-start;gap:6px;font-size:12px;cursor:pointer"><input type="checkbox" style="margin-top:2px"> No written and available procedure to do the task</label>
-<label style="display:flex;align-items:flex-start;gap:6px;font-size:12px;cursor:pointer"><input type="checkbox" style="margin-top:2px"> Procedure not made available at point of use</label>
-<label style="display:flex;align-items:flex-start;gap:6px;font-size:12px;cursor:pointer"><input type="checkbox" style="margin-top:2px"> Procedure not suitable: too complex / not relevant</label>
-<label style="display:flex;align-items:flex-start;gap:6px;font-size:12px;cursor:pointer"><input type="checkbox" style="margin-top:2px"> Quality of procedure: did not address all the risks</label>
-<label style="display:flex;align-items:flex-start;gap:6px;font-size:12px;cursor:pointer"><input type="checkbox" style="margin-top:2px"> Emergency procedure not available for this task</label>
-<label style="display:flex;align-items:flex-start;gap:6px;font-size:12px;cursor:pointer"><input type="checkbox" style="margin-top:2px"> Inadequate emergency procedure / control</label>
-<label style="display:flex;align-items:flex-start;gap:6px;font-size:12px;cursor:pointer"><input type="checkbox" style="margin-top:2px"> Lack of communication passing the shift / relay</label>
-<label style="display:flex;align-items:flex-start;gap:6px;font-size:12px;cursor:pointer"><input type="checkbox" style="margin-top:2px"> Lack of communication related to co-activity</label>
-<label style="display:flex;align-items:flex-start;gap:6px;font-size:12px;cursor:pointer"><input type="checkbox" style="margin-top:2px"> Management of change</label>
+<div id="ws2-proc" style="display:flex;flex-direction:column;gap:8px">
+<label style="display:grid;grid-template-columns:18px 1fr;gap:6px;align-items:start;font-size:12px;cursor:pointer;line-height:1.5"><input type="checkbox" style="margin:0;margin-top:2px"> No written and available procedure to do the task</label>
+<label style="display:grid;grid-template-columns:18px 1fr;gap:6px;align-items:start;font-size:12px;cursor:pointer;line-height:1.5"><input type="checkbox" style="margin:0;margin-top:2px"> Procedure not made available at point of use</label>
+<label style="display:grid;grid-template-columns:18px 1fr;gap:6px;align-items:start;font-size:12px;cursor:pointer;line-height:1.5"><input type="checkbox" style="margin:0;margin-top:2px"> Procedure not suitable: too complex / not relevant</label>
+<label style="display:grid;grid-template-columns:18px 1fr;gap:6px;align-items:start;font-size:12px;cursor:pointer;line-height:1.5"><input type="checkbox" style="margin:0;margin-top:2px"> Quality of procedure: did not address all the risks</label>
+<label style="display:grid;grid-template-columns:18px 1fr;gap:6px;align-items:start;font-size:12px;cursor:pointer;line-height:1.5"><input type="checkbox" style="margin:0;margin-top:2px"> Emergency procedure not available for this task</label>
+<label style="display:grid;grid-template-columns:18px 1fr;gap:6px;align-items:start;font-size:12px;cursor:pointer;line-height:1.5"><input type="checkbox" style="margin:0;margin-top:2px"> Inadequate emergency procedure / control</label>
+<label style="display:grid;grid-template-columns:18px 1fr;gap:6px;align-items:start;font-size:12px;cursor:pointer;line-height:1.5"><input type="checkbox" style="margin:0;margin-top:2px"> Lack of communication passing the shift / relay</label>
+<label style="display:grid;grid-template-columns:18px 1fr;gap:6px;align-items:start;font-size:12px;cursor:pointer;line-height:1.5"><input type="checkbox" style="margin:0;margin-top:2px"> Lack of communication related to co-activity</label>
+<label style="display:grid;grid-template-columns:18px 1fr;gap:6px;align-items:start;font-size:12px;cursor:pointer;line-height:1.5"><input type="checkbox" style="margin:0;margin-top:2px"> Management of change</label>
 </div>
 </div>
 
-<div style="background:#f9fafb;border-radius:8px;padding:12px;border:1px solid var(--border)">
+<div style="background:#f9fafb;border-radius:8px;padding:14px 16px;border:1px solid var(--border)">
 <div style="font-size:12px;font-weight:700;color:var(--blue);margin-bottom:8px;text-transform:uppercase">Management &amp; Supervision</div>
 <div style="font-size:11px;color:var(--text2);margin-bottom:8px;font-style:italic">Discuss about training plan &amp; skills matrix</div>
-<div id="ws2-mgmt" style="display:flex;flex-direction:column;gap:6px">
-<label style="display:flex;align-items:flex-start;gap:6px;font-size:12px;cursor:pointer"><input type="checkbox" style="margin-top:2px"> Collaborator has not been trained to the standards</label>
-<label style="display:flex;align-items:flex-start;gap:6px;font-size:12px;cursor:pointer"><input type="checkbox" style="margin-top:2px"> Training not suitable</label>
-<label style="display:flex;align-items:flex-start;gap:6px;font-size:12px;cursor:pointer"><input type="checkbox" style="margin-top:2px"> Instructions given by supervisor are not clear</label>
-<label style="display:flex;align-items:flex-start;gap:6px;font-size:12px;cursor:pointer"><input type="checkbox" style="margin-top:2px"> Lack of supervision / leadership / coaching</label>
-<label style="display:flex;align-items:flex-start;gap:6px;font-size:12px;cursor:pointer"><input type="checkbox" style="margin-top:2px"> Organisation or responsibilities are unclear</label>
-<label style="display:flex;align-items:flex-start;gap:6px;font-size:12px;cursor:pointer"><input type="checkbox" style="margin-top:2px"> Lack of resources or time made available to do the task safely</label>
-<label style="display:flex;align-items:flex-start;gap:6px;font-size:12px;cursor:pointer"><input type="checkbox" style="margin-top:2px"> Manager unaware of risks related to the task</label>
-<label style="display:flex;align-items:flex-start;gap:6px;font-size:12px;cursor:pointer"><input type="checkbox" style="margin-top:2px"> EHS culture: lack of proper and efficient discussions</label>
+<div id="ws2-mgmt" style="display:flex;flex-direction:column;gap:8px">
+<label style="display:grid;grid-template-columns:18px 1fr;gap:6px;align-items:start;font-size:12px;cursor:pointer;line-height:1.5"><input type="checkbox" style="margin:0;margin-top:2px"> Collaborator has not been trained to the standards</label>
+<label style="display:grid;grid-template-columns:18px 1fr;gap:6px;align-items:start;font-size:12px;cursor:pointer;line-height:1.5"><input type="checkbox" style="margin:0;margin-top:2px"> Training not suitable</label>
+<label style="display:grid;grid-template-columns:18px 1fr;gap:6px;align-items:start;font-size:12px;cursor:pointer;line-height:1.5"><input type="checkbox" style="margin:0;margin-top:2px"> Instructions given by supervisor are not clear</label>
+<label style="display:grid;grid-template-columns:18px 1fr;gap:6px;align-items:start;font-size:12px;cursor:pointer;line-height:1.5"><input type="checkbox" style="margin:0;margin-top:2px"> Lack of supervision / leadership / coaching</label>
+<label style="display:grid;grid-template-columns:18px 1fr;gap:6px;align-items:start;font-size:12px;cursor:pointer;line-height:1.5"><input type="checkbox" style="margin:0;margin-top:2px"> Organisation or responsibilities are unclear</label>
+<label style="display:grid;grid-template-columns:18px 1fr;gap:6px;align-items:start;font-size:12px;cursor:pointer;line-height:1.5"><input type="checkbox" style="margin:0;margin-top:2px"> Lack of resources or time made available to do the task safely</label>
+<label style="display:grid;grid-template-columns:18px 1fr;gap:6px;align-items:start;font-size:12px;cursor:pointer;line-height:1.5"><input type="checkbox" style="margin:0;margin-top:2px"> Manager unaware of risks related to the task</label>
+<label style="display:grid;grid-template-columns:18px 1fr;gap:6px;align-items:start;font-size:12px;cursor:pointer;line-height:1.5"><input type="checkbox" style="margin:0;margin-top:2px"> EHS culture: lack of proper and efficient discussions</label>
 </div>
 </div>
 
-<div style="background:#f9fafb;border-radius:8px;padding:12px;border:1px solid var(--border)">
+<div style="background:#f9fafb;border-radius:8px;padding:14px 16px;border:1px solid var(--border)">
 <div style="font-size:12px;font-weight:700;color:var(--blue);margin-bottom:8px;text-transform:uppercase">Individual Skills &amp; Knowledge</div>
 <div style="font-size:11px;color:var(--text2);margin-bottom:8px;font-style:italic">Ask if collaborator understood how to perform the task correctly</div>
-<div id="ws2-skills" style="display:flex;flex-direction:column;gap:6px">
-<label style="display:flex;align-items:flex-start;gap:6px;font-size:12px;cursor:pointer"><input type="checkbox" style="margin-top:2px"> Not aware of the required standards / procedure</label>
-<label style="display:flex;align-items:flex-start;gap:6px;font-size:12px;cursor:pointer"><input type="checkbox" style="margin-top:2px"> Aware of standards but did not apply them</label>
-<label style="display:flex;align-items:flex-start;gap:6px;font-size:12px;cursor:pointer"><input type="checkbox" style="margin-top:2px"> Lack of experience in performing this task</label>
-<label style="display:flex;align-items:flex-start;gap:6px;font-size:12px;cursor:pointer"><input type="checkbox" style="margin-top:2px"> Inadequate skill level for the task</label>
-<label style="display:flex;align-items:flex-start;gap:6px;font-size:12px;cursor:pointer"><input type="checkbox" style="margin-top:2px"> Did not understand the risk involved</label>
+<div id="ws2-skills" style="display:flex;flex-direction:column;gap:8px">
+<label style="display:grid;grid-template-columns:18px 1fr;gap:6px;align-items:start;font-size:12px;cursor:pointer;line-height:1.5"><input type="checkbox" style="margin:0;margin-top:2px"> Not aware of the required standards / procedure</label>
+<label style="display:grid;grid-template-columns:18px 1fr;gap:6px;align-items:start;font-size:12px;cursor:pointer;line-height:1.5"><input type="checkbox" style="margin:0;margin-top:2px"> Aware of standards but did not apply them</label>
+<label style="display:grid;grid-template-columns:18px 1fr;gap:6px;align-items:start;font-size:12px;cursor:pointer;line-height:1.5"><input type="checkbox" style="margin:0;margin-top:2px"> Lack of experience in performing this task</label>
+<label style="display:grid;grid-template-columns:18px 1fr;gap:6px;align-items:start;font-size:12px;cursor:pointer;line-height:1.5"><input type="checkbox" style="margin:0;margin-top:2px"> Inadequate skill level for the task</label>
+<label style="display:grid;grid-template-columns:18px 1fr;gap:6px;align-items:start;font-size:12px;cursor:pointer;line-height:1.5"><input type="checkbox" style="margin:0;margin-top:2px"> Did not understand the risk involved</label>
 </div>
 </div>
 
-<div style="background:#f9fafb;border-radius:8px;padding:12px;border:1px solid var(--border)">
+<div style="background:#f9fafb;border-radius:8px;padding:14px 16px;border:1px solid var(--border)">
 <div style="font-size:12px;font-weight:700;color:var(--blue);margin-bottom:8px;text-transform:uppercase">Attitude &amp; Behaviour</div>
 <div style="font-size:11px;color:var(--text2);margin-bottom:8px;font-style:italic">Discuss about the result &amp; impact of attitude &amp; behaviour</div>
-<div id="ws2-attitude" style="display:flex;flex-direction:column;gap:6px">
-<label style="display:flex;align-items:flex-start;gap:6px;font-size:12px;cursor:pointer"><input type="checkbox" style="margin-top:2px"> Precipitation / performed the task too quickly</label>
-<label style="display:flex;align-items:flex-start;gap:6px;font-size:12px;cursor:pointer"><input type="checkbox" style="margin-top:2px"> Voluntarily did not follow the procedure</label>
-<label style="display:flex;align-items:flex-start;gap:6px;font-size:12px;cursor:pointer"><input type="checkbox" style="margin-top:2px"> Took a shortcut knowingly</label>
-<label style="display:flex;align-items:flex-start;gap:6px;font-size:12px;cursor:pointer"><input type="checkbox" style="margin-top:2px"> Peer pressure / group dynamics</label>
-<label style="display:flex;align-items:flex-start;gap:6px;font-size:12px;cursor:pointer"><input type="checkbox" style="margin-top:2px"> Overconfidence in own abilities</label>
+<div id="ws2-attitude" style="display:flex;flex-direction:column;gap:8px">
+<label style="display:grid;grid-template-columns:18px 1fr;gap:6px;align-items:start;font-size:12px;cursor:pointer;line-height:1.5"><input type="checkbox" style="margin:0;margin-top:2px"> Precipitation / performed the task too quickly</label>
+<label style="display:grid;grid-template-columns:18px 1fr;gap:6px;align-items:start;font-size:12px;cursor:pointer;line-height:1.5"><input type="checkbox" style="margin:0;margin-top:2px"> Voluntarily did not follow the procedure</label>
+<label style="display:grid;grid-template-columns:18px 1fr;gap:6px;align-items:start;font-size:12px;cursor:pointer;line-height:1.5"><input type="checkbox" style="margin:0;margin-top:2px"> Took a shortcut knowingly</label>
+<label style="display:grid;grid-template-columns:18px 1fr;gap:6px;align-items:start;font-size:12px;cursor:pointer;line-height:1.5"><input type="checkbox" style="margin:0;margin-top:2px"> Peer pressure / group dynamics</label>
+<label style="display:grid;grid-template-columns:18px 1fr;gap:6px;align-items:start;font-size:12px;cursor:pointer;line-height:1.5"><input type="checkbox" style="margin:0;margin-top:2px"> Overconfidence in own abilities</label>
 </div>
 </div>
 
-<div style="background:#f9fafb;border-radius:8px;padding:12px;border:1px solid var(--border)">
+<div style="background:#f9fafb;border-radius:8px;padding:14px 16px;border:1px solid var(--border)">
 <div style="font-size:12px;font-weight:700;color:var(--blue);margin-bottom:8px;text-transform:uppercase">Care &amp; Attention</div>
 <div style="font-size:11px;color:var(--text2);margin-bottom:8px;font-style:italic">Discuss about the result &amp; impact of care &amp; attention</div>
-<div id="ws2-care" style="display:flex;flex-direction:column;gap:6px">
-<label style="display:flex;align-items:flex-start;gap:6px;font-size:12px;cursor:pointer"><input type="checkbox" style="margin-top:2px"> Carelessness</label>
-<label style="display:flex;align-items:flex-start;gap:6px;font-size:12px;cursor:pointer"><input type="checkbox" style="margin-top:2px"> Distraction / loss of concentration</label>
-<label style="display:flex;align-items:flex-start;gap:6px;font-size:12px;cursor:pointer"><input type="checkbox" style="margin-top:2px"> Routine trap / automation error</label>
-<label style="display:flex;align-items:flex-start;gap:6px;font-size:12px;cursor:pointer"><input type="checkbox" style="margin-top:2px"> Error of judgement</label>
-<label style="display:flex;align-items:flex-start;gap:6px;font-size:12px;cursor:pointer"><input type="checkbox" style="margin-top:2px"> Failure to verify / check work</label>
+<div id="ws2-care" style="display:flex;flex-direction:column;gap:8px">
+<label style="display:grid;grid-template-columns:18px 1fr;gap:6px;align-items:start;font-size:12px;cursor:pointer;line-height:1.5"><input type="checkbox" style="margin:0;margin-top:2px"> Carelessness</label>
+<label style="display:grid;grid-template-columns:18px 1fr;gap:6px;align-items:start;font-size:12px;cursor:pointer;line-height:1.5"><input type="checkbox" style="margin:0;margin-top:2px"> Distraction / loss of concentration</label>
+<label style="display:grid;grid-template-columns:18px 1fr;gap:6px;align-items:start;font-size:12px;cursor:pointer;line-height:1.5"><input type="checkbox" style="margin:0;margin-top:2px"> Routine trap / automation error</label>
+<label style="display:grid;grid-template-columns:18px 1fr;gap:6px;align-items:start;font-size:12px;cursor:pointer;line-height:1.5"><input type="checkbox" style="margin:0;margin-top:2px"> Error of judgement</label>
+<label style="display:grid;grid-template-columns:18px 1fr;gap:6px;align-items:start;font-size:12px;cursor:pointer;line-height:1.5"><input type="checkbox" style="margin:0;margin-top:2px"> Failure to verify / check work</label>
 </div>
 </div>
 
-<div style="background:#f9fafb;border-radius:8px;padding:12px;border:1px solid var(--border)">
+<div style="background:#f9fafb;border-radius:8px;padding:14px 16px;border:1px solid var(--border)">
 <div style="font-size:12px;font-weight:700;color:var(--blue);margin-bottom:8px;text-transform:uppercase">Personal Conditions</div>
 <div style="font-size:11px;color:var(--text2);margin-bottom:8px;font-style:italic">Ask if collaborator wants to share personal conditions that could have impacted performance</div>
-<div id="ws2-personal" style="display:flex;flex-direction:column;gap:6px">
-<label style="display:flex;align-items:flex-start;gap:6px;font-size:12px;cursor:pointer"><input type="checkbox" style="margin-top:2px"> Medical or health condition</label>
-<label style="display:flex;align-items:flex-start;gap:6px;font-size:12px;cursor:pointer"><input type="checkbox" style="margin-top:2px"> Fatigue / tiredness</label>
-<label style="display:flex;align-items:flex-start;gap:6px;font-size:12px;cursor:pointer"><input type="checkbox" style="margin-top:2px"> Stress / personal problems</label>
-<label style="display:flex;align-items:flex-start;gap:6px;font-size:12px;cursor:pointer"><input type="checkbox" style="margin-top:2px"> Influence of alcohol or drugs</label>
-<label style="display:flex;align-items:flex-start;gap:6px;font-size:12px;cursor:pointer"><input type="checkbox" style="margin-top:2px"> Language barrier</label>
+<div id="ws2-personal" style="display:flex;flex-direction:column;gap:8px">
+<label style="display:grid;grid-template-columns:18px 1fr;gap:6px;align-items:start;font-size:12px;cursor:pointer;line-height:1.5"><input type="checkbox" style="margin:0;margin-top:2px"> Medical or health condition</label>
+<label style="display:grid;grid-template-columns:18px 1fr;gap:6px;align-items:start;font-size:12px;cursor:pointer;line-height:1.5"><input type="checkbox" style="margin:0;margin-top:2px"> Fatigue / tiredness</label>
+<label style="display:grid;grid-template-columns:18px 1fr;gap:6px;align-items:start;font-size:12px;cursor:pointer;line-height:1.5"><input type="checkbox" style="margin:0;margin-top:2px"> Stress / personal problems</label>
+<label style="display:grid;grid-template-columns:18px 1fr;gap:6px;align-items:start;font-size:12px;cursor:pointer;line-height:1.5"><input type="checkbox" style="margin:0;margin-top:2px"> Influence of alcohol or drugs</label>
+<label style="display:grid;grid-template-columns:18px 1fr;gap:6px;align-items:start;font-size:12px;cursor:pointer;line-height:1.5"><input type="checkbox" style="margin:0;margin-top:2px"> Language barrier</label>
 </div>
 </div>
 
@@ -422,15 +395,15 @@
 <div style="font-size:12px;color:var(--text2);margin-bottom:12px">Most incidents would have several contributory causes. Tick those applicable and explain the reasons why.</div>
 <div style="display:flex;flex-direction:column;gap:12px">
 <div style="display:grid;grid-template-columns:200px 1fr;gap:12px;align-items:center;padding:10px;background:#f9fafb;border-radius:8px;border:1px solid var(--border)">
-<label style="display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;cursor:pointer"><input type="checkbox" id="ws3-machines"> Machines / Tools / Equipment</label>
+<label style="display:grid;grid-template-columns:18px 1fr;gap:8px;align-items:center;font-size:13px;font-weight:600;cursor:pointer"><input type="checkbox" style="margin:0" id="ws3-machines"> Machines / Tools / Equipment</label>
 <div class="form-group" style="margin:0"><input type="text" id="ws3-machines-explain" placeholder="Explain why this contributory cause happened..."/></div>
 </div>
 <div style="display:grid;grid-template-columns:200px 1fr;gap:12px;align-items:center;padding:10px;background:#f9fafb;border-radius:8px;border:1px solid var(--border)">
-<label style="display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;cursor:pointer"><input type="checkbox" id="ws3-materials"> Materials</label>
+<label style="display:grid;grid-template-columns:18px 1fr;gap:8px;align-items:center;font-size:13px;font-weight:600;cursor:pointer"><input type="checkbox" style="margin:0" id="ws3-materials"> Materials</label>
 <div class="form-group" style="margin:0"><input type="text" id="ws3-materials-explain" placeholder="Explain why this contributory cause happened..."/></div>
 </div>
 <div style="display:grid;grid-template-columns:200px 1fr;gap:12px;align-items:center;padding:10px;background:#f9fafb;border-radius:8px;border:1px solid var(--border)">
-<label style="display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;cursor:pointer"><input type="checkbox" id="ws3-environment"> Environment</label>
+<label style="display:grid;grid-template-columns:18px 1fr;gap:8px;align-items:center;font-size:13px;font-weight:600;cursor:pointer"><input type="checkbox" style="margin:0" id="ws3-environment"> Environment</label>
 <div class="form-group" style="margin:0"><input type="text" id="ws3-environment-explain" placeholder="Explain why this contributory cause happened..."/></div>
 </div>
 </div>
@@ -455,6 +428,7 @@
 <th style="padding:8px;text-align:center;border:1px solid var(--border);font-size:12px" colspan="2">Why 2</th>
 <th style="padding:8px;text-align:center;border:1px solid var(--border);font-size:12px" colspan="2">Why 3</th>
 <th style="padding:8px;text-align:center;border:1px solid var(--border);font-size:12px" colspan="2">Why 4</th>
+<th style="padding:8px;text-align:center;border:1px solid var(--border);font-size:12px" colspan="2">Why 5</th>
 <th style="padding:8px;width:32px;border:1px solid var(--border)"></th>
 </tr>
 <tr style="background:#f9fafb">
@@ -467,13 +441,17 @@
 <th style="padding:6px;text-align:center;border:1px solid var(--border);font-size:11px;color:var(--text2)">Why</th>
 <th style="padding:6px;text-align:center;border:1px solid var(--border);font-size:11px;color:var(--text2)">Verify</th>
 <th style="padding:6px;text-align:center;border:1px solid var(--border);font-size:11px;color:var(--text2)">Why</th>
+<th style="padding:6px;text-align:center;border:1px solid var(--border);font-size:11px;color:var(--text2)">Verify</th>
+<th style="padding:6px;text-align:center;border:1px solid var(--border);font-size:11px;color:var(--text2)">Why</th>
+<th style="padding:6px;text-align:center;border:1px solid var(--border);font-size:11px;color:var(--text2)">Verify</th>
+<th style="padding:6px;text-align:center;border:1px solid var(--border);font-size:11px;color:var(--text2)">Why</th>
 <th style="border:1px solid var(--border)"></th>
 </tr>
 </thead>
 <tbody id="ws3-five-why-body">
-<tr class="ws3-why-row"><td style="padding:6px;text-align:center;border:1px solid var(--border);font-weight:700;font-size:12px;color:var(--text2)">1</td><td style="padding:4px;border:1px solid var(--border)"><input type="text" class="ws3-cause-input" style="width:100%;padding:4px 6px;border:1px solid var(--border);border-radius:4px;font-size:12px" placeholder="Contributory cause..."/></td><td style="padding:4px;text-align:center;border:1px solid var(--border)"><input type="checkbox" class="ws3-v"></td><td style="padding:4px;border:1px solid var(--border)"><input type="text" class="ws3-why" style="width:100%;padding:4px 6px;border:1px solid var(--border);border-radius:4px;font-size:11px" placeholder="Why?"/></td><td style="padding:4px;text-align:center;border:1px solid var(--border)"><input type="checkbox" class="ws3-v"></td><td style="padding:4px;border:1px solid var(--border)"><input type="text" class="ws3-why" style="width:100%;padding:4px 6px;border:1px solid var(--border);border-radius:4px;font-size:11px" placeholder="Why?"/></td><td style="padding:4px;text-align:center;border:1px solid var(--border)"><input type="checkbox" class="ws3-v"></td><td style="padding:4px;border:1px solid var(--border)"><input type="text" class="ws3-why" style="width:100%;padding:4px 6px;border:1px solid var(--border);border-radius:4px;font-size:11px" placeholder="Why?"/></td><td style="padding:4px;text-align:center;border:1px solid var(--border)"><input type="checkbox" class="ws3-v"></td><td style="padding:4px;border:1px solid var(--border)"><input type="text" class="ws3-why" style="width:100%;padding:4px 6px;border:1px solid var(--border);border-radius:4px;font-size:11px" placeholder="Why?"/></td><td style="padding:4px;text-align:center;border:1px solid var(--border)"><button onclick="this.closest('tr').remove()" style="background:none;border:none;cursor:pointer;color:var(--red)"><i class="ti ti-x"></i></button></td></tr>
-<tr class="ws3-why-row"><td style="padding:6px;text-align:center;border:1px solid var(--border);font-weight:700;font-size:12px;color:var(--text2)">2</td><td style="padding:4px;border:1px solid var(--border)"><input type="text" class="ws3-cause-input" style="width:100%;padding:4px 6px;border:1px solid var(--border);border-radius:4px;font-size:12px" placeholder="Contributory cause..."/></td><td style="padding:4px;text-align:center;border:1px solid var(--border)"><input type="checkbox" class="ws3-v"></td><td style="padding:4px;border:1px solid var(--border)"><input type="text" class="ws3-why" style="width:100%;padding:4px 6px;border:1px solid var(--border);border-radius:4px;font-size:11px" placeholder="Why?"/></td><td style="padding:4px;text-align:center;border:1px solid var(--border)"><input type="checkbox" class="ws3-v"></td><td style="padding:4px;border:1px solid var(--border)"><input type="text" class="ws3-why" style="width:100%;padding:4px 6px;border:1px solid var(--border);border-radius:4px;font-size:11px" placeholder="Why?"/></td><td style="padding:4px;text-align:center;border:1px solid var(--border)"><input type="checkbox" class="ws3-v"></td><td style="padding:4px;border:1px solid var(--border)"><input type="text" class="ws3-why" style="width:100%;padding:4px 6px;border:1px solid var(--border);border-radius:4px;font-size:11px" placeholder="Why?"/></td><td style="padding:4px;text-align:center;border:1px solid var(--border)"><input type="checkbox" class="ws3-v"></td><td style="padding:4px;border:1px solid var(--border)"><input type="text" class="ws3-why" style="width:100%;padding:4px 6px;border:1px solid var(--border);border-radius:4px;font-size:11px" placeholder="Why?"/></td><td style="padding:4px;text-align:center;border:1px solid var(--border)"><button onclick="this.closest('tr').remove()" style="background:none;border:none;cursor:pointer;color:var(--red)"><i class="ti ti-x"></i></button></td></tr>
-<tr class="ws3-why-row"><td style="padding:6px;text-align:center;border:1px solid var(--border);font-weight:700;font-size:12px;color:var(--text2)">3</td><td style="padding:4px;border:1px solid var(--border)"><input type="text" class="ws3-cause-input" style="width:100%;padding:4px 6px;border:1px solid var(--border);border-radius:4px;font-size:12px" placeholder="Contributory cause..."/></td><td style="padding:4px;text-align:center;border:1px solid var(--border)"><input type="checkbox" class="ws3-v"></td><td style="padding:4px;border:1px solid var(--border)"><input type="text" class="ws3-why" style="width:100%;padding:4px 6px;border:1px solid var(--border);border-radius:4px;font-size:11px" placeholder="Why?"/></td><td style="padding:4px;text-align:center;border:1px solid var(--border)"><input type="checkbox" class="ws3-v"></td><td style="padding:4px;border:1px solid var(--border)"><input type="text" class="ws3-why" style="width:100%;padding:4px 6px;border:1px solid var(--border);border-radius:4px;font-size:11px" placeholder="Why?"/></td><td style="padding:4px;text-align:center;border:1px solid var(--border)"><input type="checkbox" class="ws3-v"></td><td style="padding:4px;border:1px solid var(--border)"><input type="text" class="ws3-why" style="width:100%;padding:4px 6px;border:1px solid var(--border);border-radius:4px;font-size:11px" placeholder="Why?"/></td><td style="padding:4px;text-align:center;border:1px solid var(--border)"><input type="checkbox" class="ws3-v"></td><td style="padding:4px;border:1px solid var(--border)"><input type="text" class="ws3-why" style="width:100%;padding:4px 6px;border:1px solid var(--border);border-radius:4px;font-size:11px" placeholder="Why?"/></td><td style="padding:4px;text-align:center;border:1px solid var(--border)"><button onclick="this.closest('tr').remove()" style="background:none;border:none;cursor:pointer;color:var(--red)"><i class="ti ti-x"></i></button></td></tr>
+<tr class="ws3-why-row"><td style="padding:6px;text-align:center;border:1px solid var(--border);font-weight:700;font-size:12px;color:var(--text2)">1</td><td style="padding:4px;border:1px solid var(--border)"><input type="text" class="ws3-cause-input" style="width:100%;padding:4px 6px;border:1px solid var(--border);border-radius:4px;font-size:12px" placeholder="Contributory cause..."/></td><td style="padding:4px;text-align:center;border:1px solid var(--border)"><input type="checkbox" class="ws3-v"></td><td style="padding:4px;border:1px solid var(--border)"><input type="text" class="ws3-why" style="width:100%;padding:4px 6px;border:1px solid var(--border);border-radius:4px;font-size:11px" placeholder="Why?"/></td><td style="padding:4px;text-align:center;border:1px solid var(--border)"><input type="checkbox" class="ws3-v"></td><td style="padding:4px;border:1px solid var(--border)"><input type="text" class="ws3-why" style="width:100%;padding:4px 6px;border:1px solid var(--border);border-radius:4px;font-size:11px" placeholder="Why?"/></td><td style="padding:4px;text-align:center;border:1px solid var(--border)"><input type="checkbox" class="ws3-v"></td><td style="padding:4px;border:1px solid var(--border)"><input type="text" class="ws3-why" style="width:100%;padding:4px 6px;border:1px solid var(--border);border-radius:4px;font-size:11px" placeholder="Why?"/></td><td style="padding:4px;text-align:center;border:1px solid var(--border)"><input type="checkbox" class="ws3-v"></td><td style="padding:4px;border:1px solid var(--border)"><input type="text" class="ws3-why" style="width:100%;padding:4px 6px;border:1px solid var(--border);border-radius:4px;font-size:11px" placeholder="Why?"/></td><td style="padding:4px;text-align:center;border:1px solid var(--border)"><input type="checkbox" class="ws3-v"></td><td style="padding:4px;border:1px solid var(--border)"><input type="text" class="ws3-why" style="width:100%;padding:4px 6px;border:1px solid var(--border);border-radius:4px;font-size:11px" placeholder="Why?"/></td><td style="padding:4px;text-align:center;border:1px solid var(--border)"><button onclick="this.closest('tr').remove()" style="background:none;border:none;cursor:pointer;color:var(--red)"><i class="ti ti-x"></i></button></td></tr>
+<tr class="ws3-why-row"><td style="padding:6px;text-align:center;border:1px solid var(--border);font-weight:700;font-size:12px;color:var(--text2)">2</td><td style="padding:4px;border:1px solid var(--border)"><input type="text" class="ws3-cause-input" style="width:100%;padding:4px 6px;border:1px solid var(--border);border-radius:4px;font-size:12px" placeholder="Contributory cause..."/></td><td style="padding:4px;text-align:center;border:1px solid var(--border)"><input type="checkbox" class="ws3-v"></td><td style="padding:4px;border:1px solid var(--border)"><input type="text" class="ws3-why" style="width:100%;padding:4px 6px;border:1px solid var(--border);border-radius:4px;font-size:11px" placeholder="Why?"/></td><td style="padding:4px;text-align:center;border:1px solid var(--border)"><input type="checkbox" class="ws3-v"></td><td style="padding:4px;border:1px solid var(--border)"><input type="text" class="ws3-why" style="width:100%;padding:4px 6px;border:1px solid var(--border);border-radius:4px;font-size:11px" placeholder="Why?"/></td><td style="padding:4px;text-align:center;border:1px solid var(--border)"><input type="checkbox" class="ws3-v"></td><td style="padding:4px;border:1px solid var(--border)"><input type="text" class="ws3-why" style="width:100%;padding:4px 6px;border:1px solid var(--border);border-radius:4px;font-size:11px" placeholder="Why?"/></td><td style="padding:4px;text-align:center;border:1px solid var(--border)"><input type="checkbox" class="ws3-v"></td><td style="padding:4px;border:1px solid var(--border)"><input type="text" class="ws3-why" style="width:100%;padding:4px 6px;border:1px solid var(--border);border-radius:4px;font-size:11px" placeholder="Why?"/></td><td style="padding:4px;text-align:center;border:1px solid var(--border)"><input type="checkbox" class="ws3-v"></td><td style="padding:4px;border:1px solid var(--border)"><input type="text" class="ws3-why" style="width:100%;padding:4px 6px;border:1px solid var(--border);border-radius:4px;font-size:11px" placeholder="Why?"/></td><td style="padding:4px;text-align:center;border:1px solid var(--border)"><button onclick="this.closest('tr').remove()" style="background:none;border:none;cursor:pointer;color:var(--red)"><i class="ti ti-x"></i></button></td></tr>
+<tr class="ws3-why-row"><td style="padding:6px;text-align:center;border:1px solid var(--border);font-weight:700;font-size:12px;color:var(--text2)">3</td><td style="padding:4px;border:1px solid var(--border)"><input type="text" class="ws3-cause-input" style="width:100%;padding:4px 6px;border:1px solid var(--border);border-radius:4px;font-size:12px" placeholder="Contributory cause..."/></td><td style="padding:4px;text-align:center;border:1px solid var(--border)"><input type="checkbox" class="ws3-v"></td><td style="padding:4px;border:1px solid var(--border)"><input type="text" class="ws3-why" style="width:100%;padding:4px 6px;border:1px solid var(--border);border-radius:4px;font-size:11px" placeholder="Why?"/></td><td style="padding:4px;text-align:center;border:1px solid var(--border)"><input type="checkbox" class="ws3-v"></td><td style="padding:4px;border:1px solid var(--border)"><input type="text" class="ws3-why" style="width:100%;padding:4px 6px;border:1px solid var(--border);border-radius:4px;font-size:11px" placeholder="Why?"/></td><td style="padding:4px;text-align:center;border:1px solid var(--border)"><input type="checkbox" class="ws3-v"></td><td style="padding:4px;border:1px solid var(--border)"><input type="text" class="ws3-why" style="width:100%;padding:4px 6px;border:1px solid var(--border);border-radius:4px;font-size:11px" placeholder="Why?"/></td><td style="padding:4px;text-align:center;border:1px solid var(--border)"><input type="checkbox" class="ws3-v"></td><td style="padding:4px;border:1px solid var(--border)"><input type="text" class="ws3-why" style="width:100%;padding:4px 6px;border:1px solid var(--border);border-radius:4px;font-size:11px" placeholder="Why?"/></td><td style="padding:4px;text-align:center;border:1px solid var(--border)"><input type="checkbox" class="ws3-v"></td><td style="padding:4px;border:1px solid var(--border)"><input type="text" class="ws3-why" style="width:100%;padding:4px 6px;border:1px solid var(--border);border-radius:4px;font-size:11px" placeholder="Why?"/></td><td style="padding:4px;text-align:center;border:1px solid var(--border)"><button onclick="this.closest('tr').remove()" style="background:none;border:none;cursor:pointer;color:var(--red)"><i class="ti ti-x"></i></button></td></tr>
 </tbody>
 </table>
 </div>
@@ -549,35 +527,38 @@
 </div>
 </div>
 </div>
-<div class="ai-panel" id="ai-panel" style="display:none"><div class="ai-window" id="ai-window"><div class="ai-header"><div style="width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;font-size:18px"><i class="ti ti-brain" style="color:#fff"></i></div><div style="flex:1;margin-left:10px"><div class="ai-title">AURIS AI Assistant</div><div class="ai-subtitle">Powered by Claude — HSE intelligence</div></div><button class="ai-close" onclick="toggleAI()"><i class="ti ti-x"></i></button></div><div class="ai-messages" id="ai-messages"><div class="ai-msg assistant">Hello! I am your AURIS HSE AI assistant. I can analyse your safety data, identify risks, and recommend improvements. What would you like to know?</div></div><div class="ai-suggestions"><button class="ai-sug" onclick="askAI('Analyse my overall HSE performance')">Overall analysis</button><button class="ai-sug" onclick="askAI('What are my top incident patterns?')">Incident patterns</button><button class="ai-sug" onclick="askAI('Review my open actions and prioritise them')">Action priorities</button><button class="ai-sug" onclick="askAI('Which certifications are expiring soon?')">Cert alerts</button></div><div class="ai-input-row"><input class="ai-input" id="ai-input" placeholder="Ask anything about your HSE data..." onkeydown="if(event.key==='Enter')sendAI()"/><button class="ai-send" onclick="sendAI()"><i class="ti ti-send"></i></button></div></div><button class="ai-toggle" onclick="toggleAI()" title="AURIS AI Assistant"><i class="ti ti-brain"></i></button></div><div class="toast" id="toast"></div>
+<div class="ai-panel" id="ai-panel" style="display:none"><div class="ai-window" id="ai-window"><div class="ai-header"><div style="width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;font-size:18px"><i class="ti ti-brain" style="color:#fff"></i></div><div style="flex:1;margin-left:10px"><div class="ai-title">AURIS AI Assistant</div><div class="ai-subtitle">P
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 <script>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 const SB='https://iarfxjhahzbhncsaohbg.supabase.co';
 const KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlhcmZ4amhhaHpiaG5jc2FvaGJnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg2OTM1MzAsImV4cCI6MjA5NDI2OTUzMH0.qSjahuX-RwnjWEDmo-LkcorAxpsmyVoaXt4AO4_A9BM';
 let tok=null,prof=null,co=null,chkItems=[],people=[];
@@ -1188,22 +1169,24 @@ function invShowForm(){
 }
 
 function invShowTab(tab){
+  // Don't switch to disabled tabs
+  var btn=document.getElementById('inv-tab-'+tab);
+  if(btn&&btn.classList.contains('disabled'))return;
   document.querySelectorAll('.inv-tab-content').forEach(t=>t.style.display='none');
   document.querySelectorAll('.inv-tab').forEach(t=>t.classList.remove('active'));
-  document.getElementById('inv-'+tab).style.display='block';
-  document.getElementById('inv-tab-'+tab).classList.add('active');
+  var content=document.getElementById('inv-'+tab);
+  if(content)content.style.display='block';
+  if(btn)btn.classList.add('active');
 }
 
 function invTypeChange(){
   var type=document.getElementById('inv-type-sel').value;
-  var further=document.getElementById('ws1-further').checked;
-  var isFull=type==='full'||further;
+  var isFull=type==='full';
   var ws2btn=document.getElementById('inv-tab-ws2');
   var ws3btn=document.getElementById('inv-tab-ws3');
-  if(ws2btn)ws2btn.className='inv-tab'+(isFull?'':' disabled');
-  if(ws3btn)ws3btn.className='inv-tab'+(isFull?'':' disabled');
+  if(ws2btn){ws2btn.className='inv-tab'+(isFull?'':' disabled');ws2btn.style.opacity=isFull?'1':'0.4';}
+  if(ws3btn){ws3btn.className='inv-tab'+(isFull?'':' disabled');ws3btn.style.opacity=isFull?'1':'0.4';}
   if(!isFull){
-    // Switch back to ws1 if on ws2/ws3
     var active=document.querySelector('.inv-tab.active');
     if(active&&(active.id==='inv-tab-ws2'||active.id==='inv-tab-ws3'))invShowTab('ws1');
   }
@@ -1379,14 +1362,12 @@ function ws3AddRow(){
   var body=document.getElementById('ws3-five-why-body');
   if(!body)return;
   var num=body.querySelectorAll('tr').length+1;
+  var cell='<td style="padding:4px;text-align:center;border:1px solid var(--border)"><input type="checkbox" class="ws3-v"></td><td style="padding:4px;border:1px solid var(--border)"><input type="text" class="ws3-why" style="width:100%;padding:4px 6px;border:1px solid var(--border);border-radius:4px;font-size:11px" placeholder="Why?"/></td>';
   var row='<tr class="ws3-why-row">'
     +'<td style="padding:6px;text-align:center;border:1px solid var(--border);font-weight:700;font-size:12px;color:var(--text2)">'+num+'</td>'
     +'<td style="padding:4px;border:1px solid var(--border)"><input type="text" class="ws3-cause-input" style="width:100%;padding:4px 6px;border:1px solid var(--border);border-radius:4px;font-size:12px" placeholder="Contributory cause..."/></td>'
-    +'<td style="padding:4px;text-align:center;border:1px solid var(--border)"><input type="checkbox" class="ws3-v"></td><td style="padding:4px;border:1px solid var(--border)"><input type="text" class="ws3-why" style="width:100%;padding:4px 6px;border:1px solid var(--border);border-radius:4px;font-size:11px" placeholder="Why?"/></td>'
-    +'<td style="padding:4px;text-align:center;border:1px solid var(--border)"><input type="checkbox" class="ws3-v"></td><td style="padding:4px;border:1px solid var(--border)"><input type="text" class="ws3-why" style="width:100%;padding:4px 6px;border:1px solid var(--border);border-radius:4px;font-size:11px" placeholder="Why?"/></td>'
-    +'<td style="padding:4px;text-align:center;border:1px solid var(--border)"><input type="checkbox" class="ws3-v"></td><td style="padding:4px;border:1px solid var(--border)"><input type="text" class="ws3-why" style="width:100%;padding:4px 6px;border:1px solid var(--border);border-radius:4px;font-size:11px" placeholder="Why?"/></td>'
-    +'<td style="padding:4px;text-align:center;border:1px solid var(--border)"><input type="checkbox" class="ws3-v"></td><td style="padding:4px;border:1px solid var(--border)"><input type="text" class="ws3-why" style="width:100%;padding:4px 6px;border:1px solid var(--border);border-radius:4px;font-size:11px" placeholder="Why?"/></td>'
-    +'<td style="padding:4px;text-align:center;border:1px solid var(--border)"><button onclick=\"this.parentNode.parentNode.remove()\" style="background:none;border:none;cursor:pointer;color:var(--red)"><i class="ti ti-x"></i></button></td></tr>';
+    +cell+cell+cell+cell+cell
+    +'<td style="padding:4px;text-align:center;border:1px solid var(--border)"><button onclick="this.parentNode.parentNode.remove()" style="background:none;border:none;cursor:pointer;color:var(--red)"><i class="ti ti-x"></i></button></td></tr>';
   body.innerHTML+=row;
 }
 
@@ -2378,8 +2359,7 @@ else if(method==='min')newYTD=Math.min(...vals);
 else newYTD=Math.round(vals.reduce((a,b)=>a+b,0)*100)/100;
 }
 if(newYTD!==null&&Math.abs(newYTD-(parseFloat(entry.ytd)||0))>0.001){
-await api('/kpi_monthly_data?indicator_id=eq.'+indicatorId+'&year=eq.'+year+'&month=eq.'+m,
-{m:'PATCH',p:'return=minimal',b:{ytd:newYTD}});
+await api('/kpi_monthly_data?indicator_id=eq.'+indicatorId+'&year=eq.'+year+'&month=eq.'+m,{m:'PATCH',p:'return=minimal',b:{ytd:newYTD}});
 }
 }
 }catch(e){console.error('YTD recalc error:',e);}
@@ -2394,6 +2374,8 @@ kpiObjectives=[];kpiKPIs=[];kpiIndicators=[];kpiMonthlyData={};
 await kpiLoadAll();
 }catch(e){toast(e.message,false);}
 }
+
+
 
 
 
