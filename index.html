@@ -7,7 +7,11 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css"/>
 <style>
 
-*{box-sizing:border-box;margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif}:root{--green:#1D9E75;--dg:#0F6E56;--red:#E24B4A;--amber:#EF9F27;--blue:#185FA5;--bg:#f4f6f8;--card:#fff;--border:#e5e7eb;--text:#111;--text2:#6b7280;--text3:#9ca3af} body{background:var(--bg);color:var(--text);min-height:100vh} #login-screen{position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;z-index:100} .login-box{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:36px;width:380px;box-shadow:0 4px 24px rgba(0,0,0,.08)} .login-logo{font-size:22px;font-weight:800;color:var(--green);margin-bottom:2px;letter-spacing:-.5px} .login-sub{font-size:12px;color:var(--text2);margin-bottom:24px} .login-err{background:#FCEBEB;color:#A32D2D;font-size:12px;padding:9px 12px;border-radius:8px;margin-bottom:14px;display:none} #app{display:none;height:100vh;overflow:hidden;width:100%} .layout{display:flex;height:100vh;width:100%} .sidebar{width:240px;min-width:240px;background:var(--card);border-right:1px solid var(--border);display:flex;flex-direction:column;height:100vh;overflow-y:auto} .sidebar-top{padding:18px 20px 14px;border-bottom:1px solid var(--border)} .co-logo{width:48px;height:48px;border-radius:10px;object-fit:contain;margin-bottom:8px;border:1px solid var(--border);display:none} .co-initials{width:48px;height:48px;border-radius:10px;background:var(--green);color:#fff;font-size:18px;font-weight:700;display:flex;align-items:center;justify-content:center;margin-bottom:8px} .sb-company{font-size:14px;font-weight:700;color:var(--text)} .sb-user{font-size:11px;color:var(--text2);margin-top:1px} .sb-role{display:inline-block;margin-top:5px;font-size:10px;padding:2px 8px;border-radius:99px;background:#E1F5EE;color:var(--dg);font-weight:600} .nav-section{font-size:9px;text-transform:uppercase;letter-spacing:.1em;color:var(--text3);padding:14px 20px 3px;font-weight:600} .nav-item{display:flex;align-items:center;gap:9px;padding:9px 20px;cursor:pointer;font-size:13px;color:var(--text2);border-left:3px solid transparent;transition:all .12s} .nav-item:hover{background:#f9fafb;color:var(--text)} .nav-item.active{background:#E1F5EE;color:var(--green);border-left-color:var(--green);font-weight:600} .nav-item i{font-size:16px} .sb-footer{margin-top:auto;padding:12px 16px;border-top:1px solid var(--border);display:flex;gap:6px} .main{flex:1;overflow-y:auto;background:var(--bg);height:100vh} .page{display:none;padding:28px 32px;min-height:100%}.page.active{display:block} .page-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:22px} .page-title{font-size:20px;font-weight:700;color:var(--text)} .btn{padding:8px 16px;border-radius:8px;border:1px solid var(--border);background:var(--card);color:var(--text);font-size:13px;cursor:pointer;display:inline-flex;align-items:center;gap:7px;font-weight:500;transition:all .12s} .btn:hover{background:#f9fafb} .btn-primary{background:var(--green);color:#fff;border-color:var(--green)} .btn-primary:hover{background:var(--dg)} .btn-sm{padding:5px 10px;font-size:12px} .metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:14px;margin-bottom:20px} .metric{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px 18px} .metric-label{font-size:11px;color:var(--text2);margin-bottom:6px;font-weight:500} .metric-value{font-size:28px;font-weight:700;color:var(--text)} .card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px 24px;margin-bottom:16px} .card-title{font-size:14px;font-weight:700;color:var(--text);margin-bottom:14px;display:flex;align-items:center;justify-content:space-between} .badge{display:inline-flex;align-items:center;padding:3px 9px;border-radius:99px;font-size:11px;font-weight:600} .bg{background:#EAF3DE;color:#3B6D11}.ba{background:#FAEEDA;color:#854F0B}.br{background:#FCEBEB;color:#A32D2D}.bb{background:#E6F1FB;color:#185FA5}.bgr{background:#f3f4f6;color:#374151} .form-group{margin-bottom:13px} .form-label{font-size:12px;color:var(--text2);margin-bottom:4px;display:block;font-weight:600} input,select,textarea{width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;color:var(--text);background:var(--card);transition:border .15s} input:focus,select:focus,textarea:focus{outline:none;border-color:var(--green);box-shadow:0 0 0 3px rgba(29,158,117,.1)} textarea{resize:vertical;min-height:70px} .form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px} .form-row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px} table{width:100%;border-collapse:collapse;font-size:13px} th{text-align:left;font-weight:600;color:var(--text2);padding:9px 8px;border-bottom:1px solid var(--border);font-size:11px;text-transform:uppercase;letter-spacing:.04em} td{padding:11px 8px;border-bottom:1px solid var(--border);color:var(--text);vertical-align:middle} tr:last-child td{border-bottom:none} tr:hover td{background:#fafafa} .empty{text-align:center;padding:40px;color:var(--text3);font-size:13px} .loading-msg{text-align:center;padding:30px;color:var(--text2);font-size:13px} .toast{position:fixed;bottom:20px;right:20px;padding:12px 20px;border-radius:10px;font-size:13px;font-weight:600;z-index:9999;display:none;box-shadow:0 4px 20px rgba(0,0,0,.15)} .toast-ok{background:var(--green);color:#fff} .toast-err{background:var(--red);color:#fff} .db-bar{display:inline-flex;align-items:center;gap:7px;font-size:12px;padding:7px 14px;border-radius:8px;background:#E1F5EE;color:var(--dg);margin-bottom:18px;font-weight:600} .dot{width:8px;height:8px;border-radius:50%;background:var(--green);display:inline-block} .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px} .insp-tbl{width:100%;border-collapse:collapse;font-size:12px} .insp-tbl th{background:#f9fafb;padding:7px 10px;border:1px solid var(--border);font-size:11px;font-weight:600;color:var(--text2);text-align:center} .insp-tbl th:first-child{text-align:left} .insp-tbl td{border:1px solid var(--border);padding:6px 10px;vertical-align:middle} .insp-tbl td input[type=checkbox]{width:auto;cursor:pointer} .insp-tbl td input[type=text]{border:none;font-size:11px;padding:2px 4px;background:transparent;width:100%} .cat-row td{background:#f3f4f6;font-size:11px;font-weight:700;color:var(--text2);padding:5px 10px;text-transform:uppercase} .kpi-row{display:flex;align-items:center;gap:12px;padding:11px 0;border-bottom:1px solid var(--border)} .kpi-row:last-child{border-bottom:none} .pw{flex:1;background:#e5e7eb;border-radius:99px;height:7px;overflow:hidden} .pb{height:100%;border-radius:99px;transition:width .4s} .person-card{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--border)} .person-card:last-child{border-bottom:none} .person-avatar{width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:700;color:#fff;flex-shrink:0} .emp-av{background:var(--green)}.con-av{background:var(--blue)}.sub-av{background:var(--amber)} .access-denied{text-align:center;padding:60px;color:var(--text3)} .access-denied i{font-size:48px;margin-bottom:12px;display:block;color:var(--border)} .role-banner{background:#FEF3C7;border:1px solid #FCD34D;border-radius:8px;padding:10px 14px;font-size:12px;color:#92400E;margin-bottom:16px;display:flex;align-items:center;gap:8px} .ai-panel{position:fixed;bottom:20px;right:20px;z-index:500} .ai-toggle{width:54px;height:54px;border-radius:50%;background:var(--green);color:#fff;border:none;cursor:pointer;font-size:24px;box-shadow:0 4px 16px rgba(29,158,117,.4);display:flex;align-items:center;justify-content:center} .ai-window{position:fixed;bottom:86px;right:20px;width:380px;height:520px;background:var(--card);border:1px solid var(--border);border-radius:16px;box-shadow:0 8px 40px rgba(0,0,0,.15);display:none;flex-direction:column;z-index:500;overflow:hidden} .ai-window.open{display:flex} .ai-header{padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;background:linear-gradient(135deg,var(--green),var(--dg))} .ai-title{font-size:14px;font-weight:700;color:#fff;flex:1} .ai-subtitle{font-size:11px;color:rgba(255,255,255,.8)} .ai-close{background:none;border:none;color:#fff;cursor:pointer;font-size:18px} .ai-messages{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:10px} .ai-msg{max-width:85%;padding:10px 14px;border-radius:12px;font-size:13px;line-height:1.5} .ai-msg.user{background:var(--green);color:#fff;align-self:flex-end;border-bottom-right-radius:4px} .ai-msg.assistant{background:#f3f4f6;color:var(--text);align-self:flex-start;border-bottom-left-radius:4px} .ai-suggestions{padding:8px 16px;display:flex;gap:6px;flex-wrap:wrap;border-top:1px solid var(--border)} .ai-sug{padding:5px 10px;border-radius:99px;border:1px solid var(--border);background:var(--card);font-size:11px;cursor:pointer;color:var(--text2)} .ai-sug:hover{background:#E1F5EE;border-color:var(--green);color:var(--green)} .ai-input-row{padding:12px 16px;border-top:1px solid var(--border);display:flex;gap:8px} .ai-input{flex:1;padding:9px 14px;border:1px solid var(--border);border-radius:99px;font-size:13px;outline:none} .ai-input:focus{border-color:var(--green)} .ai-send{padding:9px 16px;background:var(--green);color:#fff;border:none;border-radius:99px;cursor:pointer;font-size:13px;font-weight:600} .insight-card{border-left:4px solid var(--green);background:#f0fdf8;border-radius:0 10px 10px 0;padding:14px 16px;margin-bottom:10px} .insight-card.warn{border-left-color:var(--amber);background:#fffbeb} .insight-card.danger{border-left-color:var(--red);background:#fef2f2} .insight-title{font-size:13px;font-weight:700;color:var(--text);margin-bottom:3px} .insight-body{font-size:12px;color:var(--text2);line-height:1.6}
+*{box-sizing:border-box;margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif}:root{--green:#1D9E75;--dg:#0F6E56;--red:#E24B4A;--amber:#EF9F27;--blue:#185FA5;--bg:#f4f6f8;--card:#fff;--border:#e5e7eb;--text:#111;--text2:#6b7280;--text3:#9ca3af} body{background:var(--bg);color:var(--text);min-height:100vh} #login-screen{position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;z-index:100} .login-box{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:36px;width:380px;box-shadow:0 4px 24px rgba(0,0,0,.08)} .login-logo{font-size:22px;font-weight:800;color:var(--green);margin-bottom:2px;letter-spacing:-.5px} .login-sub{font-size:12px;color:var(--text2);margin-bottom:24px} .login-err{background:#FCEBEB;color:#A32D2D;font-size:12px;padding:9px 12px;border-radius:8px;margin-bottom:14px;display:none} #app{display:none;height:100vh;overflow:hidden;width:100%} .layout{display:flex;height:100vh;width:100%} .sidebar{width:240px;min-width:240px;background:var(--card);border-right:1px solid var(--border);display:flex;flex-direction:column;height:100vh;overflow-y:auto} .sidebar-top{padding:18px 20px 14px;border-bottom:1px solid var(--border)} .co-logo{width:48px;height:48px;border-radius:10px;object-fit:contain;margin-bottom:8px;border:1px solid var(--border);display:none} .co-initials{width:48px;height:48px;border-radius:10px;background:var(--green);color:#fff;font-size:18px;font-weight:700;display:flex;align-items:center;justify-content:center;margin-bottom:8px} .sb-company{font-size:14px;font-weight:700;color:var(--text)} .sb-user{font-size:11px;color:var(--text2);margin-top:1px} .sb-role{display:inline-block;margin-top:5px;font-size:10px;padding:2px 8px;border-radius:99px;background:#E1F5EE;color:var(--dg);font-weight:600} .nav-section{font-size:9px;text-transform:uppercase;letter-spacing:.1em;color:var(--text3);padding:14px 20px 3px;font-weight:600} .nav-item{display:flex;align-items:center;gap:9px;padding:9px 20px;cursor:pointer;font-size:13px;color:var(--text2);border-left:3px solid transparent;transition:all .12s} .nav-item:hover{background:#f9fafb;color:var(--text)} .nav-item.active{background:#E1F5EE;color:var(--green);border-left-color:var(--green);font-weight:600} .nav-item i{font-size:16px} .sb-footer{margin-top:auto;padding:12px 16px;border-top:1px solid var(--border);display:flex;gap:6px} .main{flex:1;overflow-y:auto;background:var(--bg);height:100vh} .page{display:none;padding:28px 32px;min-height:100%}
+.inv-tab{background:none;border:none;border-bottom:3px solid transparent;padding:10px 18px;font-size:13px;font-weight:600;color:var(--text2);cursor:pointer;transition:all .15s}
+.inv-tab:hover{color:var(--text)}
+.inv-tab.active{color:var(--green);border-bottom-color:var(--green)}
+.inv-tab.disabled{opacity:.4;cursor:not-allowed}.page.active{display:block} .page-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:22px} .page-title{font-size:20px;font-weight:700;color:var(--text)} .btn{padding:8px 16px;border-radius:8px;border:1px solid var(--border);background:var(--card);color:var(--text);font-size:13px;cursor:pointer;display:inline-flex;align-items:center;gap:7px;font-weight:500;transition:all .12s} .btn:hover{background:#f9fafb} .btn-primary{background:var(--green);color:#fff;border-color:var(--green)} .btn-primary:hover{background:var(--dg)} .btn-sm{padding:5px 10px;font-size:12px} .metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:14px;margin-bottom:20px} .metric{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px 18px} .metric-label{font-size:11px;color:var(--text2);margin-bottom:6px;font-weight:500} .metric-value{font-size:28px;font-weight:700;color:var(--text)} .card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px 24px;margin-bottom:16px} .card-title{font-size:14px;font-weight:700;color:var(--text);margin-bottom:14px;display:flex;align-items:center;justify-content:space-between} .badge{display:inline-flex;align-items:center;padding:3px 9px;border-radius:99px;font-size:11px;font-weight:600} .bg{background:#EAF3DE;color:#3B6D11}.ba{background:#FAEEDA;color:#854F0B}.br{background:#FCEBEB;color:#A32D2D}.bb{background:#E6F1FB;color:#185FA5}.bgr{background:#f3f4f6;color:#374151} .form-group{margin-bottom:13px} .form-label{font-size:12px;color:var(--text2);margin-bottom:4px;display:block;font-weight:600} input,select,textarea{width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;color:var(--text);background:var(--card);transition:border .15s} input:focus,select:focus,textarea:focus{outline:none;border-color:var(--green);box-shadow:0 0 0 3px rgba(29,158,117,.1)} textarea{resize:vertical;min-height:70px} .form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px} .form-row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px} table{width:100%;border-collapse:collapse;font-size:13px} th{text-align:left;font-weight:600;color:var(--text2);padding:9px 8px;border-bottom:1px solid var(--border);font-size:11px;text-transform:uppercase;letter-spacing:.04em} td{padding:11px 8px;border-bottom:1px solid var(--border);color:var(--text);vertical-align:middle} tr:last-child td{border-bottom:none} tr:hover td{background:#fafafa} .empty{text-align:center;padding:40px;color:var(--text3);font-size:13px} .loading-msg{text-align:center;padding:30px;color:var(--text2);font-size:13px} .toast{position:fixed;bottom:20px;right:20px;padding:12px 20px;border-radius:10px;font-size:13px;font-weight:600;z-index:9999;display:none;box-shadow:0 4px 20px rgba(0,0,0,.15)} .toast-ok{background:var(--green);color:#fff} .toast-err{background:var(--red);color:#fff} .db-bar{display:inline-flex;align-items:center;gap:7px;font-size:12px;padding:7px 14px;border-radius:8px;background:#E1F5EE;color:var(--dg);margin-bottom:18px;font-weight:600} .dot{width:8px;height:8px;border-radius:50%;background:var(--green);display:inline-block} .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px} .insp-tbl{width:100%;border-collapse:collapse;font-size:12px} .insp-tbl th{background:#f9fafb;padding:7px 10px;border:1px solid var(--border);font-size:11px;font-weight:600;color:var(--text2);text-align:center} .insp-tbl th:first-child{text-align:left} .insp-tbl td{border:1px solid var(--border);padding:6px 10px;vertical-align:middle} .insp-tbl td input[type=checkbox]{width:auto;cursor:pointer} .insp-tbl td input[type=text]{border:none;font-size:11px;padding:2px 4px;background:transparent;width:100%} .cat-row td{background:#f3f4f6;font-size:11px;font-weight:700;color:var(--text2);padding:5px 10px;text-transform:uppercase} .kpi-row{display:flex;align-items:center;gap:12px;padding:11px 0;border-bottom:1px solid var(--border)} .kpi-row:last-child{border-bottom:none} .pw{flex:1;background:#e5e7eb;border-radius:99px;height:7px;overflow:hidden} .pb{height:100%;border-radius:99px;transition:width .4s} .person-card{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--border)} .person-card:last-child{border-bottom:none} .person-avatar{width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:700;color:#fff;flex-shrink:0} .emp-av{background:var(--green)}.con-av{background:var(--blue)}.sub-av{background:var(--amber)} .access-denied{text-align:center;padding:60px;color:var(--text3)} .access-denied i{font-size:48px;margin-bottom:12px;display:block;color:var(--border)} .role-banner{background:#FEF3C7;border:1px solid #FCD34D;border-radius:8px;padding:10px 14px;font-size:12px;color:#92400E;margin-bottom:16px;display:flex;align-items:center;gap:8px} .ai-panel{position:fixed;bottom:20px;right:20px;z-index:500} .ai-toggle{width:54px;height:54px;border-radius:50%;background:var(--green);color:#fff;border:none;cursor:pointer;font-size:24px;box-shadow:0 4px 16px rgba(29,158,117,.4);display:flex;align-items:center;justify-content:center} .ai-window{position:fixed;bottom:86px;right:20px;width:380px;height:520px;background:var(--card);border:1px solid var(--border);border-radius:16px;box-shadow:0 8px 40px rgba(0,0,0,.15);display:none;flex-direction:column;z-index:500;overflow:hidden} .ai-window.open{display:flex} .ai-header{padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;background:linear-gradient(135deg,var(--green),var(--dg))} .ai-title{font-size:14px;font-weight:700;color:#fff;flex:1} .ai-subtitle{font-size:11px;color:rgba(255,255,255,.8)} .ai-close{background:none;border:none;color:#fff;cursor:pointer;font-size:18px} .ai-messages{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:10px} .ai-msg{max-width:85%;padding:10px 14px;border-radius:12px;font-size:13px;line-height:1.5} .ai-msg.user{background:var(--green);color:#fff;align-self:flex-end;border-bottom-right-radius:4px} .ai-msg.assistant{background:#f3f4f6;color:var(--text);align-self:flex-start;border-bottom-left-radius:4px} .ai-suggestions{padding:8px 16px;display:flex;gap:6px;flex-wrap:wrap;border-top:1px solid var(--border)} .ai-sug{padding:5px 10px;border-radius:99px;border:1px solid var(--border);background:var(--card);font-size:11px;cursor:pointer;color:var(--text2)} .ai-sug:hover{background:#E1F5EE;border-color:var(--green);color:var(--green)} .ai-input-row{padding:12px 16px;border-top:1px solid var(--border);display:flex;gap:8px} .ai-input{flex:1;padding:9px 14px;border:1px solid var(--border);border-radius:99px;font-size:13px;outline:none} .ai-input:focus{border-color:var(--green)} .ai-send{padding:9px 16px;background:var(--green);color:#fff;border:none;border-radius:99px;cursor:pointer;font-size:13px;font-weight:600} .insight-card{border-left:4px solid var(--green);background:#f0fdf8;border-radius:0 10px 10px 0;padding:14px 16px;margin-bottom:10px} .insight-card.warn{border-left-color:var(--amber);background:#fffbeb} .insight-card.danger{border-left-color:var(--red);background:#fef2f2} .insight-title{font-size:13px;font-weight:700;color:var(--text);margin-bottom:3px} .insight-body{font-size:12px;color:var(--text2);line-height:1.6}
 
 </style>
 </head>
@@ -30,7 +34,497 @@
 <div id="page-risk" class="page">
 <div class="page-header"><div class="page-title">Risk Assessment</div><div id="risk-add-btn"></div></div><div class="card" id="risk-form" style="display:none"><div class="card-title">New risk assessment</div><div class="form-row"><div class="form-group"><label class="form-label">Title</label><input type="text" id="rf-title"/></div><div class="form-group"><label class="form-label">Location</label><input type="text" id="rf-loc"/></div></div><div class="form-row"><div class="form-group"><label class="form-label">Assessed by</label><select id="rf-by"><option value="">Select person...</option></select></div><div class="form-group"><label class="form-label">Review date</label><input type="date" id="rf-review"/></div></div><div class="form-group"><label class="form-label">Status</label><select id="rf-status"><option value="draft">Draft</option><option value="active">Active</option><option value="review">Under review</option><option value="closed">Closed</option></select></div><div style="display:flex;gap:8px"><button class="btn btn-primary" onclick="saveRA()"><i class="ti ti-device-floppy"></i>Save</button><button class="btn" onclick="toggleForm('risk-form')">Cancel</button></div></div><div class="card"><div class="card-title">Risk assessments</div><div id="risk-list"><div class="loading-msg">Loading...</div></div></div></div>
 <div id="page-investigation" class="page">
-<div class="page-header"><div class="page-title">Incident Investigation</div><div id="inv-add-btn"></div></div><div class="card" id="inv-form" style="display:none"><div class="card-title">SHEARO Investigation Report</div><div class="form-row"><div class="form-group"><label class="form-label">Title</label><input type="text" id="invf-title"/></div><div class="form-group"><label class="form-label">Incident date</label><input type="datetime-local" id="invf-date"/></div></div><div class="form-row"><div class="form-group"><label class="form-label">Location</label><input type="text" id="invf-loc"/></div><div class="form-group"><label class="form-label">Investigated by</label><select id="invf-by"><option value="">Select person...</option></select></div></div><div class="form-group"><label class="form-label">Person(s) involved</label><select id="invf-persons"><option value="">Select person...</option></select></div><div class="form-group"><label class="form-label">WS1 — What happened</label><textarea id="invf-what"></textarea></div><div class="form-group"><label class="form-label">Immediate causes (1-Why)</label><textarea id="invf-imm"></textarea></div><div class="form-group"><label class="form-label">WS2 — Human factors</label><textarea id="invf-human"></textarea></div><div class="form-group"><label class="form-label">WS3 — Technical / 5-Why</label><textarea id="invf-tech"></textarea></div><div class="form-group"><label class="form-label">Root causes</label><textarea id="invf-root"></textarea></div><div class="form-group"><label class="form-label">WS4 — Corrective actions</label><textarea id="invf-corr"></textarea></div><div class="form-group"><label class="form-label">Preventive actions</label><textarea id="invf-prev"></textarea></div><div class="form-group"><label class="form-label">Lessons learned</label><textarea id="invf-lessons"></textarea></div><div class="form-group"><label class="form-label">Status</label><select id="invf-status"><option value="open">Open</option><option value="in_progress">In Progress</option><option value="closed">Closed</option></select></div><div style="display:flex;gap:8px"><button class="btn btn-primary" onclick="saveInv()"><i class="ti ti-device-floppy"></i>Save</button><button class="btn" onclick="toggleForm('inv-form')">Cancel</button></div></div><div class="card"><div class="card-title">Investigations</div><div id="inv-list"><div class="loading-msg">Loading...</div></div></div></div>
+<div class="page-header">
+<div><div class="page-title">Incident Investigation</div><div style="font-size:12px;color:var(--text2)" id="inv-subtitle">SHEARO Investigation Forms</div></div>
+<div style="display:flex;gap:8px" id="inv-add-btn"></div>
+</div>
+
+<!-- Investigation list -->
+<div id="inv-list-view">
+<div class="card" style="padding:0;overflow:hidden"><div id="inv-list"><div class="loading-msg">Loading...</div></div></div>
+</div>
+
+<!-- Investigation form (full page, hidden by default) -->
+<div id="inv-form-view" style="display:none">
+
+<!-- Form header -->
+<div class="card" style="margin-bottom:16px;padding:16px 20px">
+<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px">
+<div>
+<div style="font-size:16px;font-weight:700" id="inv-form-title">New Investigation</div>
+<div style="font-size:12px;color:var(--text2);margin-top:2px" id="inv-form-ref"></div>
+</div>
+<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+<select id="inv-type-sel" onchange="invTypeChange()" style="padding:6px 10px;border:1px solid var(--border);border-radius:8px;font-size:13px;font-weight:600">
+<option value="basic">Basic Investigation (WS1 only)</option>
+<option value="full">Full Investigation (WS1 + WS2 + WS3)</option>
+</select>
+<select id="inv-status-sel" style="padding:6px 10px;border:1px solid var(--border);border-radius:8px;font-size:13px">
+<option value="draft">Draft</option>
+<option value="open">Open</option>
+<option value="closed">Closed</option>
+</select>
+<button class="btn" onclick="invShowList()"><i class="ti ti-arrow-left"></i>Back</button>
+<button class="btn btn-primary" onclick="invSave()"><i class="ti ti-device-floppy"></i>Save</button>
+</div>
+</div>
+</div>
+
+<!-- Tabs -->
+<div style="display:flex;gap:0;margin-bottom:16px;border-bottom:2px solid var(--border)">
+<button class="inv-tab active" id="inv-tab-ws1" onclick="invShowTab('ws1')">WS1 — Incident Report</button>
+<button class="inv-tab" id="inv-tab-ws2" onclick="invShowTab('ws2')">WS2 — Human Factors</button>
+<button class="inv-tab" id="inv-tab-ws3" onclick="invShowTab('ws3')">WS3 — Technical 5-Why</button>
+<button class="inv-tab" id="inv-tab-ca" onclick="invShowTab('ca')">Corrective Actions</button>
+</div>
+
+<!-- WS1 Tab -->
+<div id="inv-ws1" class="inv-tab-content">
+
+<!-- Header -->
+<div class="card" style="margin-bottom:12px">
+<div class="card-title" style="color:var(--green);font-size:13px">WS1 — INCIDENT REPORT</div>
+<div class="form-row">
+<div class="form-group"><label class="form-label">Reported by</label><input type="text" id="ws1-reported-by"/></div>
+<div class="form-group"><label class="form-label">Job title</label><input type="text" id="ws1-reported-title"/></div>
+<div class="form-group"><label class="form-label">Date of completion</label><input type="date" id="ws1-date-completion"/></div>
+<div class="form-group"><label class="form-label">Linked event</label><select id="ws1-event-link"><option value="">None</option></select></div>
+</div>
+</div>
+
+<!-- Description -->
+<div class="card" style="margin-bottom:12px">
+<div class="card-title">Description of the Incident</div>
+<div class="form-row">
+<div class="form-group"><label class="form-label">Date of incident</label><input type="date" id="ws1-inc-date"/></div>
+<div class="form-group"><label class="form-label">Time of incident</label><input type="time" id="ws1-inc-time"/></div>
+<div class="form-group" style="grid-column:span 2"><label class="form-label">Location</label><input type="text" id="ws1-location" placeholder="Where did the incident occur?"/></div>
+</div>
+<div class="form-group"><label class="form-label">Description</label><textarea id="ws1-description" style="min-height:80px" placeholder="Describe what happened..."></textarea></div>
+</div>
+
+<!-- Details -->
+<div class="card" style="margin-bottom:12px">
+<div class="card-title">Details Concerning the Incident</div>
+<!-- H&S row -->
+<div style="display:grid;grid-template-columns:160px 1fr 1fr;gap:10px;align-items:start;margin-bottom:10px;padding-bottom:10px;border-bottom:1px solid var(--border)">
+<div style="display:flex;align-items:center;gap:8px;padding-top:28px"><input type="checkbox" id="ws1-class-hs"/><label for="ws1-class-hs" style="font-weight:600;font-size:13px">Health &amp; Safety</label></div>
+<div class="form-group"><label class="form-label">Nature of H&amp;S event</label><input type="text" id="ws1-nature-hs" placeholder="e.g. Near miss, injury..."/></div>
+<div class="form-group"><label class="form-label">Location of injury / consequences</label><input type="text" id="ws1-conseq-hs" placeholder="Body part, severity..."/></div>
+</div>
+<!-- Environmental row -->
+<div style="display:grid;grid-template-columns:160px 1fr 1fr;gap:10px;align-items:start;margin-bottom:10px;padding-bottom:10px;border-bottom:1px solid var(--border)">
+<div style="display:flex;align-items:center;gap:8px;padding-top:28px"><input type="checkbox" id="ws1-class-env"/><label for="ws1-class-env" style="font-weight:600;font-size:13px">Environmental</label></div>
+<div class="form-group"><label class="form-label">Nature of environmental event</label><input type="text" id="ws1-nature-env"/></div>
+<div class="form-group"><label class="form-label">Consequences (authorities, stakeholders)</label><input type="text" id="ws1-conseq-env"/></div>
+</div>
+<!-- Site risk row -->
+<div style="display:grid;grid-template-columns:160px 1fr 1fr;gap:10px;align-items:start">
+<div style="display:flex;align-items:center;gap:8px;padding-top:28px"><input type="checkbox" id="ws1-class-site"/><label for="ws1-class-site" style="font-weight:600;font-size:13px">Site Risk</label></div>
+<div class="form-group"><label class="form-label">Nature of site risk event</label><input type="text" id="ws1-nature-site"/></div>
+<div class="form-group"><label class="form-label">Extent of damage (financial, continuity)</label><input type="text" id="ws1-conseq-site"/></div>
+</div>
+</div>
+
+<!-- Who -->
+<div class="card" style="margin-bottom:12px">
+<div class="card-title">Who — Person Involved</div>
+<div class="form-row">
+<div class="form-group"><label class="form-label">Name</label><input type="text" id="ws1-person-name"/></div>
+<div class="form-group"><label class="form-label">Function</label><input type="text" id="ws1-person-function"/></div>
+<div class="form-group"><label class="form-label">Start date at position</label><input type="date" id="ws1-person-start"/></div>
+<div class="form-group"><label class="form-label">Type of contract</label>
+<select id="ws1-contract-type">
+<option value="">Select...</option>
+<option>Permanent</option><option>Fixed term</option><option>Temporary</option><option>Contractor</option><option>Sub-contractor</option>
+</select>
+</div>
+</div>
+<div class="form-group"><label class="form-label">Other parties directly involved / witnesses</label><textarea id="ws1-witnesses" style="min-height:60px"></textarea></div>
+</div>
+
+<!-- How -->
+<div class="card" style="margin-bottom:12px">
+<div class="card-title">How</div>
+<div class="form-row">
+<div class="form-group"><label class="form-label">Task frequency analysis</label>
+<select id="ws1-task-freq">
+<option value="">Select...</option>
+<option>Routine task</option><option>Non-routine task</option><option>First time performing task</option><option>Rarely performed task</option>
+</select>
+</div>
+<div class="form-group"><label class="form-label">Type of work</label>
+<select id="ws1-work-type">
+<option value="">Select...</option>
+<option>Normal production</option><option>Maintenance</option><option>Construction</option><option>Inspection</option><option>Cleaning</option><option>Emergency work</option>
+</select>
+</div>
+</div>
+<div style="display:flex;align-items:center;gap:10px;margin-top:8px">
+<input type="checkbox" id="ws1-recurring"/>
+<label for="ws1-recurring" style="font-size:13px;font-weight:600">Recurring event — has this type of incident happened before?</label>
+</div>
+<div class="form-group" style="margin-top:8px"><input type="text" id="ws1-recurring-details" placeholder="If yes, provide details..."/></div>
+</div>
+
+<!-- Immediate actions -->
+<div class="card" style="margin-bottom:12px">
+<div class="card-title">Immediate Actions</div>
+<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+<input type="checkbox" id="ws1-first-aid"/>
+<label for="ws1-first-aid" style="font-size:13px;font-weight:600">First aid given?</label>
+<input type="text" id="ws1-first-aid-details" placeholder="Details of first aid given..." style="flex:1;padding:6px 10px;border:1px solid var(--border);border-radius:8px;font-size:13px"/>
+</div>
+<div class="form-group"><label class="form-label">Immediate actions following incident</label><textarea id="ws1-immediate-actions" style="min-height:70px" placeholder="Describe actions taken immediately after the incident..."></textarea></div>
+</div>
+
+<!-- Immediate cause analysis -->
+<div class="card" style="margin-bottom:12px">
+<div class="card-title">Immediate Cause Analysis (1-Why) — Possible immediate causes</div>
+<div id="ws1-causes-list">
+<div style="display:grid;grid-template-columns:30px 1fr;gap:8px;align-items:center;margin-bottom:8px"><span style="font-weight:700;color:var(--text2)">1</span><input type="text" class="ws1-cause" placeholder="Describe immediate cause 1..."/></div>
+<div style="display:grid;grid-template-columns:30px 1fr;gap:8px;align-items:center;margin-bottom:8px"><span style="font-weight:700;color:var(--text2)">2</span><input type="text" class="ws1-cause" placeholder="Describe immediate cause 2..."/></div>
+<div style="display:grid;grid-template-columns:30px 1fr;gap:8px;align-items:center;margin-bottom:8px"><span style="font-weight:700;color:var(--text2)">3</span><input type="text" class="ws1-cause" placeholder="Describe immediate cause 3..."/></div>
+<div style="display:grid;grid-template-columns:30px 1fr;gap:8px;align-items:center"><span style="font-weight:700;color:var(--text2)">4</span><input type="text" class="ws1-cause" placeholder="Describe immediate cause 4..."/></div>
+</div>
+</div>
+
+<!-- WS1 Corrective actions -->
+<div class="card" style="margin-bottom:12px">
+<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+<div class="card-title" style="margin:0">Corrective Actions to Eliminate or Reduce Risks</div>
+<button class="btn btn-sm" onclick="ws1AddCA()"><i class="ti ti-plus"></i>Add row</button>
+</div>
+<table style="width:100%;border-collapse:collapse">
+<thead><tr style="background:#f9fafb"><th style="padding:8px;text-align:left;border-bottom:1px solid var(--border);font-size:12px">No.</th><th style="padding:8px;text-align:left;border-bottom:1px solid var(--border);font-size:12px">Corrective action description</th><th style="padding:8px;text-align:left;border-bottom:1px solid var(--border);font-size:12px;width:140px">Responsible</th><th style="padding:8px;text-align:left;border-bottom:1px solid var(--border);font-size:12px;width:120px">Due date</th><th style="padding:8px;width:40px;border-bottom:1px solid var(--border)"></th></tr></thead>
+<tbody id="ws1-ca-body">
+<tr><td style="padding:6px;color:var(--text2);font-weight:700;font-size:12px">1</td><td style="padding:4px"><input type="text" class="ws1-ca-desc" style="width:100%;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px"/></td><td style="padding:4px"><input type="text" class="ws1-ca-resp" style="width:100%;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px"/></td><td style="padding:4px"><input type="date" class="ws1-ca-date" style="width:100%;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px"/></td><td style="padding:4px;text-align:center"><button onclick="this.closest('tr').remove()" style="background:none;border:none;cursor:pointer;color:var(--red)"><i class="ti ti-x"></i></button></td></tr>
+<tr><td style="padding:6px;color:var(--text2);font-weight:700;font-size:12px">2</td><td style="padding:4px"><input type="text" class="ws1-ca-desc" style="width:100%;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px"/></td><td style="padding:4px"><input type="text" class="ws1-ca-resp" style="width:100%;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px"/></td><td style="padding:4px"><input type="date" class="ws1-ca-date" style="width:100%;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px"/></td><td style="padding:4px;text-align:center"><button onclick="this.closest('tr').remove()" style="background:none;border:none;cursor:pointer;color:var(--red)"><i class="ti ti-x"></i></button></td></tr>
+<tr><td style="padding:6px;color:var(--text2);font-weight:700;font-size:12px">3</td><td style="padding:4px"><input type="text" class="ws1-ca-desc" style="width:100%;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px"/></td><td style="padding:4px"><input type="text" class="ws1-ca-resp" style="width:100%;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px"/></td><td style="padding:4px"><input type="date" class="ws1-ca-date" style="width:100%;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px"/></td><td style="padding:4px;text-align:center"><button onclick="this.closest('tr').remove()" style="background:none;border:none;cursor:pointer;color:var(--red)"><i class="ti ti-x"></i></button></td></tr>
+<tr><td style="padding:6px;color:var(--text2);font-weight:700;font-size:12px">4</td><td style="padding:4px"><input type="text" class="ws1-ca-desc" style="width:100%;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px"/></td><td style="padding:4px"><input type="text" class="ws1-ca-resp" style="width:100%;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px"/></td><td style="padding:4px"><input type="date" class="ws1-ca-date" style="width:100%;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px"/></td><td style="padding:4px;text-align:center"><button onclick="this.closest('tr').remove()" style="background:none;border:none;cursor:pointer;color:var(--red)"><i class="ti ti-x"></i></button></td></tr>
+</tbody>
+</table>
+</div>
+
+<!-- Further analyses -->
+<div class="card" style="background:#FEF9EC;border-color:#F59E0B">
+<div style="display:flex;align-items:center;gap:10px">
+<input type="checkbox" id="ws1-further" onchange="invTypeChange()"/>
+<label for="ws1-further" style="font-size:13px;font-weight:600;color:#854F0B">Further analyses required (WS2, WS3) — required for serious incidents</label>
+</div>
+<div style="font-size:12px;color:#854F0B;margin-top:6px;margin-left:24px">Check this box if a full root cause analysis (WS2 Human Factors + WS3 Technical 5-Why) is required</div>
+<div class="form-row" style="margin-top:10px">
+<div class="form-group"><label class="form-label">Person responsible for WS2 analysis</label><input type="text" id="ws1-ws2-resp"/></div>
+</div>
+</div>
+
+</div><!-- end ws1 -->
+
+<!-- WS2 Tab -->
+<div id="inv-ws2" class="inv-tab-content" style="display:none">
+
+<div class="card" style="margin-bottom:12px">
+<div class="card-title" style="color:var(--green);font-size:13px">WS2 — SHEARO HUMAN FACTORS ANALYSIS (1-WHY)</div>
+<div class="form-row">
+<div class="form-group"><label class="form-label">Document completed by (interviewer)</label><input type="text" id="ws2-interviewer"/></div>
+<div class="form-group"><label class="form-label">Job title</label><input type="text" id="ws2-interviewer-title"/></div>
+<div class="form-group"><label class="form-label">Person/people being interviewed</label><input type="text" id="ws2-interviewee"/></div>
+<div class="form-group"><label class="form-label">Job title(s)</label><input type="text" id="ws2-interviewee-title"/></div>
+<div class="form-group"><label class="form-label">Date of completion</label><input type="date" id="ws2-date"/></div>
+</div>
+</div>
+
+<!-- Task analysis questions -->
+<div class="card" style="margin-bottom:12px">
+<div class="card-title">Task Analysis — Interview Questions</div>
+<div style="font-size:11px;color:var(--text2);margin-bottom:12px;padding:8px;background:#f9fafb;border-radius:6px">
+<strong>Classification:</strong> A = Task fully understood &nbsp;|&nbsp; B = Task not completely understood &nbsp;|&nbsp; C = Lack of knowledge of task
+</div>
+<div id="ws2-questions-list">
+<div class="ws2-q-row" style="display:grid;grid-template-columns:40px 1fr 80px;gap:10px;align-items:start;margin-bottom:14px;padding-bottom:14px;border-bottom:1px solid var(--border)">
+<div style="font-weight:700;color:var(--text2);padding-top:4px">Q1</div>
+<div>
+<div style="font-size:13px;font-weight:500;margin-bottom:6px">Please explain how you do this task? And how you prepare it?</div>
+<textarea class="ws2-q-resp" style="width:100%;min-height:60px;padding:6px 8px;border:1px solid var(--border);border-radius:8px;font-size:12px;resize:vertical" placeholder="Response and evidence..."></textarea>
+</div>
+<div>
+<div style="font-size:11px;color:var(--text2);margin-bottom:4px;font-weight:600">Classification</div>
+<div style="display:flex;flex-direction:column;gap:4px">
+<label style="display:flex;align-items:center;gap:4px;font-size:12px"><input type="radio" name="ws2-q1-class" value="A"> A</label>
+<label style="display:flex;align-items:center;gap:4px;font-size:12px"><input type="radio" name="ws2-q1-class" value="B"> B</label>
+<label style="display:flex;align-items:center;gap:4px;font-size:12px"><input type="radio" name="ws2-q1-class" value="C"> C</label>
+</div>
+</div>
+</div>
+<div class="ws2-q-row" style="display:grid;grid-template-columns:40px 1fr 80px;gap:10px;align-items:start;margin-bottom:14px;padding-bottom:14px;border-bottom:1px solid var(--border)">
+<div style="font-weight:700;color:var(--text2);padding-top:4px">Q2</div>
+<div>
+<div style="font-size:13px;font-weight:500;margin-bottom:6px">Please explain how you know that you are doing this task correctly?</div>
+<textarea class="ws2-q-resp" style="width:100%;min-height:60px;padding:6px 8px;border:1px solid var(--border);border-radius:8px;font-size:12px;resize:vertical" placeholder="Response and evidence..."></textarea>
+</div>
+<div>
+<div style="font-size:11px;color:var(--text2);margin-bottom:4px;font-weight:600">Classification</div>
+<div style="display:flex;flex-direction:column;gap:4px">
+<label style="display:flex;align-items:center;gap:4px;font-size:12px"><input type="radio" name="ws2-q2-class" value="A"> A</label>
+<label style="display:flex;align-items:center;gap:4px;font-size:12px"><input type="radio" name="ws2-q2-class" value="B"> B</label>
+<label style="display:flex;align-items:center;gap:4px;font-size:12px"><input type="radio" name="ws2-q2-class" value="C"> C</label>
+</div>
+</div>
+</div>
+<div class="ws2-q-row" style="display:grid;grid-template-columns:40px 1fr 80px;gap:10px;align-items:start;margin-bottom:14px;padding-bottom:14px;border-bottom:1px solid var(--border)">
+<div style="font-weight:700;color:var(--text2);padding-top:4px">Q3</div>
+<div>
+<div style="font-size:13px;font-weight:500;margin-bottom:6px">Please explain how you know whether the task is done with minimum level of risk?</div>
+<textarea class="ws2-q-resp" style="width:100%;min-height:60px;padding:6px 8px;border:1px solid var(--border);border-radius:8px;font-size:12px;resize:vertical" placeholder="Response and evidence..."></textarea>
+</div>
+<div>
+<div style="font-size:11px;color:var(--text2);margin-bottom:4px;font-weight:600">Classification</div>
+<div style="display:flex;flex-direction:column;gap:4px">
+<label style="display:flex;align-items:center;gap:4px;font-size:12px"><input type="radio" name="ws2-q3-class" value="A"> A</label>
+<label style="display:flex;align-items:center;gap:4px;font-size:12px"><input type="radio" name="ws2-q3-class" value="B"> B</label>
+<label style="display:flex;align-items:center;gap:4px;font-size:12px"><input type="radio" name="ws2-q3-class" value="C"> C</label>
+</div>
+</div>
+</div>
+<div class="ws2-q-row" style="display:grid;grid-template-columns:40px 1fr 80px;gap:10px;align-items:start">
+<div style="font-weight:700;color:var(--text2);padding-top:4px">Q4</div>
+<div>
+<div style="font-size:13px;font-weight:500;margin-bottom:6px">What could you have done differently to minimize the risks of the task?</div>
+<textarea class="ws2-q-resp" style="width:100%;min-height:60px;padding:6px 8px;border:1px solid var(--border);border-radius:8px;font-size:12px;resize:vertical" placeholder="Response and evidence..."></textarea>
+</div>
+<div>
+<div style="font-size:11px;color:var(--text2);margin-bottom:4px;font-weight:600">Classification</div>
+<div style="display:flex;flex-direction:column;gap:4px">
+<label style="display:flex;align-items:center;gap:4px;font-size:12px"><input type="radio" name="ws2-q4-class" value="A"> A</label>
+<label style="display:flex;align-items:center;gap:4px;font-size:12px"><input type="radio" name="ws2-q4-class" value="B"> B</label>
+<label style="display:flex;align-items:center;gap:4px;font-size:12px"><input type="radio" name="ws2-q4-class" value="C"> C</label>
+</div>
+</div>
+</div>
+</div>
+</div>
+
+<!-- First level cause analysis -->
+<div class="card" style="margin-bottom:12px">
+<div class="card-title">First Level Cause Analysis</div>
+<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px">
+
+<div style="background:#f9fafb;border-radius:8px;padding:12px;border:1px solid var(--border)">
+<div style="font-size:12px;font-weight:700;color:var(--blue);margin-bottom:8px;text-transform:uppercase">Procedures &amp; Systems</div>
+<div style="font-size:11px;color:var(--text2);margin-bottom:8px;font-style:italic">Make the required documents available and discuss about their content</div>
+<div id="ws2-proc" style="display:flex;flex-direction:column;gap:6px">
+<label style="display:flex;align-items:flex-start;gap:6px;font-size:12px;cursor:pointer"><input type="checkbox" style="margin-top:2px"> No written and available procedure to do the task</label>
+<label style="display:flex;align-items:flex-start;gap:6px;font-size:12px;cursor:pointer"><input type="checkbox" style="margin-top:2px"> Procedure not made available at point of use</label>
+<label style="display:flex;align-items:flex-start;gap:6px;font-size:12px;cursor:pointer"><input type="checkbox" style="margin-top:2px"> Procedure not suitable: too complex / not relevant</label>
+<label style="display:flex;align-items:flex-start;gap:6px;font-size:12px;cursor:pointer"><input type="checkbox" style="margin-top:2px"> Quality of procedure: did not address all the risks</label>
+<label style="display:flex;align-items:flex-start;gap:6px;font-size:12px;cursor:pointer"><input type="checkbox" style="margin-top:2px"> Emergency procedure not available for this task</label>
+<label style="display:flex;align-items:flex-start;gap:6px;font-size:12px;cursor:pointer"><input type="checkbox" style="margin-top:2px"> Inadequate emergency procedure / control</label>
+<label style="display:flex;align-items:flex-start;gap:6px;font-size:12px;cursor:pointer"><input type="checkbox" style="margin-top:2px"> Lack of communication passing the shift / relay</label>
+<label style="display:flex;align-items:flex-start;gap:6px;font-size:12px;cursor:pointer"><input type="checkbox" style="margin-top:2px"> Lack of communication related to co-activity</label>
+<label style="display:flex;align-items:flex-start;gap:6px;font-size:12px;cursor:pointer"><input type="checkbox" style="margin-top:2px"> Management of change</label>
+</div>
+</div>
+
+<div style="background:#f9fafb;border-radius:8px;padding:12px;border:1px solid var(--border)">
+<div style="font-size:12px;font-weight:700;color:var(--blue);margin-bottom:8px;text-transform:uppercase">Management &amp; Supervision</div>
+<div style="font-size:11px;color:var(--text2);margin-bottom:8px;font-style:italic">Discuss about training plan &amp; skills matrix</div>
+<div id="ws2-mgmt" style="display:flex;flex-direction:column;gap:6px">
+<label style="display:flex;align-items:flex-start;gap:6px;font-size:12px;cursor:pointer"><input type="checkbox" style="margin-top:2px"> Collaborator has not been trained to the standards</label>
+<label style="display:flex;align-items:flex-start;gap:6px;font-size:12px;cursor:pointer"><input type="checkbox" style="margin-top:2px"> Training not suitable</label>
+<label style="display:flex;align-items:flex-start;gap:6px;font-size:12px;cursor:pointer"><input type="checkbox" style="margin-top:2px"> Instructions given by supervisor are not clear</label>
+<label style="display:flex;align-items:flex-start;gap:6px;font-size:12px;cursor:pointer"><input type="checkbox" style="margin-top:2px"> Lack of supervision / leadership / coaching</label>
+<label style="display:flex;align-items:flex-start;gap:6px;font-size:12px;cursor:pointer"><input type="checkbox" style="margin-top:2px"> Organisation or responsibilities are unclear</label>
+<label style="display:flex;align-items:flex-start;gap:6px;font-size:12px;cursor:pointer"><input type="checkbox" style="margin-top:2px"> Lack of resources or time made available to do the task safely</label>
+<label style="display:flex;align-items:flex-start;gap:6px;font-size:12px;cursor:pointer"><input type="checkbox" style="margin-top:2px"> Manager unaware of risks related to the task</label>
+<label style="display:flex;align-items:flex-start;gap:6px;font-size:12px;cursor:pointer"><input type="checkbox" style="margin-top:2px"> EHS culture: lack of proper and efficient discussions</label>
+</div>
+</div>
+
+<div style="background:#f9fafb;border-radius:8px;padding:12px;border:1px solid var(--border)">
+<div style="font-size:12px;font-weight:700;color:var(--blue);margin-bottom:8px;text-transform:uppercase">Individual Skills &amp; Knowledge</div>
+<div style="font-size:11px;color:var(--text2);margin-bottom:8px;font-style:italic">Ask if collaborator understood how to perform the task correctly</div>
+<div id="ws2-skills" style="display:flex;flex-direction:column;gap:6px">
+<label style="display:flex;align-items:flex-start;gap:6px;font-size:12px;cursor:pointer"><input type="checkbox" style="margin-top:2px"> Not aware of the required standards / procedure</label>
+<label style="display:flex;align-items:flex-start;gap:6px;font-size:12px;cursor:pointer"><input type="checkbox" style="margin-top:2px"> Aware of standards but did not apply them</label>
+<label style="display:flex;align-items:flex-start;gap:6px;font-size:12px;cursor:pointer"><input type="checkbox" style="margin-top:2px"> Lack of experience in performing this task</label>
+<label style="display:flex;align-items:flex-start;gap:6px;font-size:12px;cursor:pointer"><input type="checkbox" style="margin-top:2px"> Inadequate skill level for the task</label>
+<label style="display:flex;align-items:flex-start;gap:6px;font-size:12px;cursor:pointer"><input type="checkbox" style="margin-top:2px"> Did not understand the risk involved</label>
+</div>
+</div>
+
+<div style="background:#f9fafb;border-radius:8px;padding:12px;border:1px solid var(--border)">
+<div style="font-size:12px;font-weight:700;color:var(--blue);margin-bottom:8px;text-transform:uppercase">Attitude &amp; Behaviour</div>
+<div style="font-size:11px;color:var(--text2);margin-bottom:8px;font-style:italic">Discuss about the result &amp; impact of attitude &amp; behaviour</div>
+<div id="ws2-attitude" style="display:flex;flex-direction:column;gap:6px">
+<label style="display:flex;align-items:flex-start;gap:6px;font-size:12px;cursor:pointer"><input type="checkbox" style="margin-top:2px"> Precipitation / performed the task too quickly</label>
+<label style="display:flex;align-items:flex-start;gap:6px;font-size:12px;cursor:pointer"><input type="checkbox" style="margin-top:2px"> Voluntarily did not follow the procedure</label>
+<label style="display:flex;align-items:flex-start;gap:6px;font-size:12px;cursor:pointer"><input type="checkbox" style="margin-top:2px"> Took a shortcut knowingly</label>
+<label style="display:flex;align-items:flex-start;gap:6px;font-size:12px;cursor:pointer"><input type="checkbox" style="margin-top:2px"> Peer pressure / group dynamics</label>
+<label style="display:flex;align-items:flex-start;gap:6px;font-size:12px;cursor:pointer"><input type="checkbox" style="margin-top:2px"> Overconfidence in own abilities</label>
+</div>
+</div>
+
+<div style="background:#f9fafb;border-radius:8px;padding:12px;border:1px solid var(--border)">
+<div style="font-size:12px;font-weight:700;color:var(--blue);margin-bottom:8px;text-transform:uppercase">Care &amp; Attention</div>
+<div style="font-size:11px;color:var(--text2);margin-bottom:8px;font-style:italic">Discuss about the result &amp; impact of care &amp; attention</div>
+<div id="ws2-care" style="display:flex;flex-direction:column;gap:6px">
+<label style="display:flex;align-items:flex-start;gap:6px;font-size:12px;cursor:pointer"><input type="checkbox" style="margin-top:2px"> Carelessness</label>
+<label style="display:flex;align-items:flex-start;gap:6px;font-size:12px;cursor:pointer"><input type="checkbox" style="margin-top:2px"> Distraction / loss of concentration</label>
+<label style="display:flex;align-items:flex-start;gap:6px;font-size:12px;cursor:pointer"><input type="checkbox" style="margin-top:2px"> Routine trap / automation error</label>
+<label style="display:flex;align-items:flex-start;gap:6px;font-size:12px;cursor:pointer"><input type="checkbox" style="margin-top:2px"> Error of judgement</label>
+<label style="display:flex;align-items:flex-start;gap:6px;font-size:12px;cursor:pointer"><input type="checkbox" style="margin-top:2px"> Failure to verify / check work</label>
+</div>
+</div>
+
+<div style="background:#f9fafb;border-radius:8px;padding:12px;border:1px solid var(--border)">
+<div style="font-size:12px;font-weight:700;color:var(--blue);margin-bottom:8px;text-transform:uppercase">Personal Conditions</div>
+<div style="font-size:11px;color:var(--text2);margin-bottom:8px;font-style:italic">Ask if collaborator wants to share personal conditions that could have impacted performance</div>
+<div id="ws2-personal" style="display:flex;flex-direction:column;gap:6px">
+<label style="display:flex;align-items:flex-start;gap:6px;font-size:12px;cursor:pointer"><input type="checkbox" style="margin-top:2px"> Medical or health condition</label>
+<label style="display:flex;align-items:flex-start;gap:6px;font-size:12px;cursor:pointer"><input type="checkbox" style="margin-top:2px"> Fatigue / tiredness</label>
+<label style="display:flex;align-items:flex-start;gap:6px;font-size:12px;cursor:pointer"><input type="checkbox" style="margin-top:2px"> Stress / personal problems</label>
+<label style="display:flex;align-items:flex-start;gap:6px;font-size:12px;cursor:pointer"><input type="checkbox" style="margin-top:2px"> Influence of alcohol or drugs</label>
+<label style="display:flex;align-items:flex-start;gap:6px;font-size:12px;cursor:pointer"><input type="checkbox" style="margin-top:2px"> Language barrier</label>
+</div>
+</div>
+
+</div>
+</div>
+
+<!-- Root causes -->
+<div class="card">
+<div class="card-title">Root Cause(s) — Causes Analysis (1-Why)</div>
+<div style="display:flex;flex-direction:column;gap:10px" id="ws2-root-causes">
+<div style="display:grid;grid-template-columns:30px 1fr;gap:8px;align-items:start"><span style="font-weight:700;color:var(--text2);padding-top:8px">1</span><textarea class="ws2-rc" style="width:100%;min-height:70px;padding:6px 8px;border:1px solid var(--border);border-radius:8px;font-size:12px;resize:vertical" placeholder="Determined from discussion using the categories above..."></textarea></div>
+<div style="display:grid;grid-template-columns:30px 1fr;gap:8px;align-items:start"><span style="font-weight:700;color:var(--text2);padding-top:8px">2</span><textarea class="ws2-rc" style="width:100%;min-height:70px;padding:6px 8px;border:1px solid var(--border);border-radius:8px;font-size:12px;resize:vertical" placeholder="Root cause 2..."></textarea></div>
+<div style="display:grid;grid-template-columns:30px 1fr;gap:8px;align-items:start"><span style="font-weight:700;color:var(--text2);padding-top:8px">3</span><textarea class="ws2-rc" style="width:100%;min-height:70px;padding:6px 8px;border:1px solid var(--border);border-radius:8px;font-size:12px;resize:vertical" placeholder="Root cause 3..."></textarea></div>
+</div>
+</div>
+
+</div><!-- end ws2 -->
+
+<!-- WS3 Tab -->
+<div id="inv-ws3" class="inv-tab-content" style="display:none">
+
+<div class="card" style="margin-bottom:12px">
+<div class="card-title" style="color:var(--green);font-size:13px">WS3 — SHEARO TECHNICAL CONDITIONS ANALYSIS (5-WHY)</div>
+<div class="form-row">
+<div class="form-group"><label class="form-label">Document completed by</label><input type="text" id="ws3-completed-by"/></div>
+<div class="form-group"><label class="form-label">Job title</label><input type="text" id="ws3-completed-title"/></div>
+<div class="form-group" style="grid-column:span 2"><label class="form-label">Names of participants and job titles</label><input type="text" id="ws3-participants" placeholder="Name (title), Name (title)..."/></div>
+<div class="form-group"><label class="form-label">Date</label><input type="date" id="ws3-date"/></div>
+</div>
+</div>
+
+<!-- Contributory causes -->
+<div class="card" style="margin-bottom:12px">
+<div class="card-title">Analysis of Immediate Contributory Causes</div>
+<div style="font-size:12px;color:var(--text2);margin-bottom:12px">Most incidents would have several contributory causes. Tick those applicable and explain the reasons why.</div>
+<div style="display:flex;flex-direction:column;gap:12px">
+<div style="display:grid;grid-template-columns:200px 1fr;gap:12px;align-items:center;padding:10px;background:#f9fafb;border-radius:8px;border:1px solid var(--border)">
+<label style="display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;cursor:pointer"><input type="checkbox" id="ws3-machines"> Machines / Tools / Equipment</label>
+<div class="form-group" style="margin:0"><input type="text" id="ws3-machines-explain" placeholder="Explain why this contributory cause happened..."/></div>
+</div>
+<div style="display:grid;grid-template-columns:200px 1fr;gap:12px;align-items:center;padding:10px;background:#f9fafb;border-radius:8px;border:1px solid var(--border)">
+<label style="display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;cursor:pointer"><input type="checkbox" id="ws3-materials"> Materials</label>
+<div class="form-group" style="margin:0"><input type="text" id="ws3-materials-explain" placeholder="Explain why this contributory cause happened..."/></div>
+</div>
+<div style="display:grid;grid-template-columns:200px 1fr;gap:12px;align-items:center;padding:10px;background:#f9fafb;border-radius:8px;border:1px solid var(--border)">
+<label style="display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;cursor:pointer"><input type="checkbox" id="ws3-environment"> Environment</label>
+<div class="form-group" style="margin:0"><input type="text" id="ws3-environment-explain" placeholder="Explain why this contributory cause happened..."/></div>
+</div>
+</div>
+</div>
+
+<!-- 5-Why table -->
+<div class="card">
+<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+<div>
+<div class="card-title" style="margin:0">5-Why Identification of Root Causes</div>
+<div style="font-size:12px;color:var(--text2);margin-top:4px">For each contributory cause, track the chain of whys until the root cause is found</div>
+</div>
+<button class="btn btn-sm" onclick="ws3AddRow()"><i class="ti ti-plus"></i>Add row</button>
+</div>
+<div style="overflow-x:auto">
+<table style="width:100%;border-collapse:collapse;min-width:700px">
+<thead>
+<tr style="background:#f9fafb">
+<th style="padding:8px;text-align:left;border:1px solid var(--border);font-size:12px;width:40px">No.</th>
+<th style="padding:8px;text-align:left;border:1px solid var(--border);font-size:12px">Contributory cause identified</th>
+<th style="padding:8px;text-align:center;border:1px solid var(--border);font-size:12px" colspan="2">Why 1</th>
+<th style="padding:8px;text-align:center;border:1px solid var(--border);font-size:12px" colspan="2">Why 2</th>
+<th style="padding:8px;text-align:center;border:1px solid var(--border);font-size:12px" colspan="2">Why 3</th>
+<th style="padding:8px;text-align:center;border:1px solid var(--border);font-size:12px" colspan="2">Why 4</th>
+<th style="padding:8px;width:32px;border:1px solid var(--border)"></th>
+</tr>
+<tr style="background:#f9fafb">
+<th style="border:1px solid var(--border)"></th><th style="border:1px solid var(--border)"></th>
+<th style="padding:6px;text-align:center;border:1px solid var(--border);font-size:11px;color:var(--text2)">Verify</th>
+<th style="padding:6px;text-align:center;border:1px solid var(--border);font-size:11px;color:var(--text2)">Why</th>
+<th style="padding:6px;text-align:center;border:1px solid var(--border);font-size:11px;color:var(--text2)">Verify</th>
+<th style="padding:6px;text-align:center;border:1px solid var(--border);font-size:11px;color:var(--text2)">Why</th>
+<th style="padding:6px;text-align:center;border:1px solid var(--border);font-size:11px;color:var(--text2)">Verify</th>
+<th style="padding:6px;text-align:center;border:1px solid var(--border);font-size:11px;color:var(--text2)">Why</th>
+<th style="padding:6px;text-align:center;border:1px solid var(--border);font-size:11px;color:var(--text2)">Verify</th>
+<th style="padding:6px;text-align:center;border:1px solid var(--border);font-size:11px;color:var(--text2)">Why</th>
+<th style="border:1px solid var(--border)"></th>
+</tr>
+</thead>
+<tbody id="ws3-five-why-body">
+<tr class="ws3-why-row"><td style="padding:6px;text-align:center;border:1px solid var(--border);font-weight:700;font-size:12px;color:var(--text2)">1</td><td style="padding:4px;border:1px solid var(--border)"><input type="text" class="ws3-cause-input" style="width:100%;padding:4px 6px;border:1px solid var(--border);border-radius:4px;font-size:12px" placeholder="Contributory cause..."/></td><td style="padding:4px;text-align:center;border:1px solid var(--border)"><input type="checkbox" class="ws3-v"></td><td style="padding:4px;border:1px solid var(--border)"><input type="text" class="ws3-why" style="width:100%;padding:4px 6px;border:1px solid var(--border);border-radius:4px;font-size:11px" placeholder="Why?"/></td><td style="padding:4px;text-align:center;border:1px solid var(--border)"><input type="checkbox" class="ws3-v"></td><td style="padding:4px;border:1px solid var(--border)"><input type="text" class="ws3-why" style="width:100%;padding:4px 6px;border:1px solid var(--border);border-radius:4px;font-size:11px" placeholder="Why?"/></td><td style="padding:4px;text-align:center;border:1px solid var(--border)"><input type="checkbox" class="ws3-v"></td><td style="padding:4px;border:1px solid var(--border)"><input type="text" class="ws3-why" style="width:100%;padding:4px 6px;border:1px solid var(--border);border-radius:4px;font-size:11px" placeholder="Why?"/></td><td style="padding:4px;text-align:center;border:1px solid var(--border)"><input type="checkbox" class="ws3-v"></td><td style="padding:4px;border:1px solid var(--border)"><input type="text" class="ws3-why" style="width:100%;padding:4px 6px;border:1px solid var(--border);border-radius:4px;font-size:11px" placeholder="Why?"/></td><td style="padding:4px;text-align:center;border:1px solid var(--border)"><button onclick="this.closest('tr').remove()" style="background:none;border:none;cursor:pointer;color:var(--red)"><i class="ti ti-x"></i></button></td></tr>
+<tr class="ws3-why-row"><td style="padding:6px;text-align:center;border:1px solid var(--border);font-weight:700;font-size:12px;color:var(--text2)">2</td><td style="padding:4px;border:1px solid var(--border)"><input type="text" class="ws3-cause-input" style="width:100%;padding:4px 6px;border:1px solid var(--border);border-radius:4px;font-size:12px" placeholder="Contributory cause..."/></td><td style="padding:4px;text-align:center;border:1px solid var(--border)"><input type="checkbox" class="ws3-v"></td><td style="padding:4px;border:1px solid var(--border)"><input type="text" class="ws3-why" style="width:100%;padding:4px 6px;border:1px solid var(--border);border-radius:4px;font-size:11px" placeholder="Why?"/></td><td style="padding:4px;text-align:center;border:1px solid var(--border)"><input type="checkbox" class="ws3-v"></td><td style="padding:4px;border:1px solid var(--border)"><input type="text" class="ws3-why" style="width:100%;padding:4px 6px;border:1px solid var(--border);border-radius:4px;font-size:11px" placeholder="Why?"/></td><td style="padding:4px;text-align:center;border:1px solid var(--border)"><input type="checkbox" class="ws3-v"></td><td style="padding:4px;border:1px solid var(--border)"><input type="text" class="ws3-why" style="width:100%;padding:4px 6px;border:1px solid var(--border);border-radius:4px;font-size:11px" placeholder="Why?"/></td><td style="padding:4px;text-align:center;border:1px solid var(--border)"><input type="checkbox" class="ws3-v"></td><td style="padding:4px;border:1px solid var(--border)"><input type="text" class="ws3-why" style="width:100%;padding:4px 6px;border:1px solid var(--border);border-radius:4px;font-size:11px" placeholder="Why?"/></td><td style="padding:4px;text-align:center;border:1px solid var(--border)"><button onclick="this.closest('tr').remove()" style="background:none;border:none;cursor:pointer;color:var(--red)"><i class="ti ti-x"></i></button></td></tr>
+<tr class="ws3-why-row"><td style="padding:6px;text-align:center;border:1px solid var(--border);font-weight:700;font-size:12px;color:var(--text2)">3</td><td style="padding:4px;border:1px solid var(--border)"><input type="text" class="ws3-cause-input" style="width:100%;padding:4px 6px;border:1px solid var(--border);border-radius:4px;font-size:12px" placeholder="Contributory cause..."/></td><td style="padding:4px;text-align:center;border:1px solid var(--border)"><input type="checkbox" class="ws3-v"></td><td style="padding:4px;border:1px solid var(--border)"><input type="text" class="ws3-why" style="width:100%;padding:4px 6px;border:1px solid var(--border);border-radius:4px;font-size:11px" placeholder="Why?"/></td><td style="padding:4px;text-align:center;border:1px solid var(--border)"><input type="checkbox" class="ws3-v"></td><td style="padding:4px;border:1px solid var(--border)"><input type="text" class="ws3-why" style="width:100%;padding:4px 6px;border:1px solid var(--border);border-radius:4px;font-size:11px" placeholder="Why?"/></td><td style="padding:4px;text-align:center;border:1px solid var(--border)"><input type="checkbox" class="ws3-v"></td><td style="padding:4px;border:1px solid var(--border)"><input type="text" class="ws3-why" style="width:100%;padding:4px 6px;border:1px solid var(--border);border-radius:4px;font-size:11px" placeholder="Why?"/></td><td style="padding:4px;text-align:center;border:1px solid var(--border)"><input type="checkbox" class="ws3-v"></td><td style="padding:4px;border:1px solid var(--border)"><input type="text" class="ws3-why" style="width:100%;padding:4px 6px;border:1px solid var(--border);border-radius:4px;font-size:11px" placeholder="Why?"/></td><td style="padding:4px;text-align:center;border:1px solid var(--border)"><button onclick="this.closest('tr').remove()" style="background:none;border:none;cursor:pointer;color:var(--red)"><i class="ti ti-x"></i></button></td></tr>
+</tbody>
+</table>
+</div>
+</div>
+
+</div><!-- end ws3 -->
+
+<!-- Corrective Actions Tab -->
+<div id="inv-ca" class="inv-tab-content" style="display:none">
+<div class="card" style="margin-bottom:12px;background:#EAF3DE;border-color:#3B6D11">
+<div style="font-size:13px;font-weight:600;color:#3B6D11"><i class="ti ti-info-circle"></i> All corrective actions saved here are automatically linked to the Master Action Plan</div>
+</div>
+<div class="card">
+<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+<div><div class="card-title" style="margin:0">Corrective &amp; Preventive Action Plan</div><div style="font-size:12px;color:var(--text2);margin-top:4px">Add all actions identified from WS1, WS2 and WS3 analyses</div></div>
+<button class="btn btn-primary" onclick="invAddCA()"><i class="ti ti-plus"></i>Add action</button>
+</div>
+<div style="overflow-x:auto">
+<table style="width:100%;border-collapse:collapse;min-width:800px">
+<thead><tr style="background:#f9fafb">
+<th style="padding:8px;text-align:left;border:1px solid var(--border);font-size:12px">No.</th>
+<th style="padding:8px;text-align:left;border:1px solid var(--border);font-size:12px">Action description</th>
+<th style="padding:8px;text-align:left;border:1px solid var(--border);font-size:12px">Source (WS)</th>
+<th style="padding:8px;text-align:left;border:1px solid var(--border);font-size:12px">Responsible</th>
+<th style="padding:8px;text-align:left;border:1px solid var(--border);font-size:12px">Due date</th>
+<th style="padding:8px;text-align:left;border:1px solid var(--border);font-size:12px">Priority</th>
+<th style="padding:8px;text-align:left;border:1px solid var(--border);font-size:12px">Status</th>
+<th style="padding:8px;width:40px;border:1px solid var(--border)"></th>
+</tr></thead>
+<tbody id="inv-ca-body"></tbody>
+</table>
+<div id="inv-ca-empty" style="text-align:center;padding:30px;color:var(--text2)">No actions added yet. Click "Add action" to start.</div>
+</div>
+</div>
+
+<!-- Sign-off -->
+<div class="card" style="margin-top:12px">
+<div class="card-title">Sign-off</div>
+<div class="form-row">
+<div class="form-group"><label class="form-label">Investigated by</label><input type="text" id="inv-sign-investigator"/></div>
+<div class="form-group"><label class="form-label">Date</label><input type="date" id="inv-sign-inv-date"/></div>
+<div class="form-group"><label class="form-label">Reviewed by</label><input type="text" id="inv-sign-reviewer"/></div>
+<div class="form-group"><label class="form-label">Date</label><input type="date" id="inv-sign-rev-date"/></div>
+<div class="form-group"><label class="form-label">Approved by</label><input type="text" id="inv-sign-approver"/></div>
+<div class="form-group"><label class="form-label">Date</label><input type="date" id="inv-sign-app-date"/></div>
+</div>
+</div>
+</div><!-- end ca -->
+
+</div><!-- end inv-form-view -->
+</div>
 <div id="page-permit" class="page">
 <div class="page-header"><div class="page-title">Permit to Work</div><div id="permit-add-btn"></div></div><div class="card" id="permit-form" style="display:none"><div class="card-title">Issue permit to work</div><div class="form-row"><div class="form-group"><label class="form-label">Permit number</label><input type="text" id="pf-no" placeholder="PTW-001"/></div><div class="form-group"><label class="form-label">Permit type</label><select id="pf-type"><option value="hot_work">Hot Work</option><option value="confined_space">Confined Space</option><option value="working_at_height">Working at Height</option><option value="electrical">Electrical</option><option value="excavation">Excavation</option><option value="general">General</option></select></div></div><div class="form-group"><label class="form-label">Work description</label><textarea id="pf-desc"></textarea></div><div class="form-row"><div class="form-group"><label class="form-label">Location</label><input type="text" id="pf-loc"/></div><div class="form-group"><label class="form-label">Contractor / team</label><select id="pf-contractor"><option value="">Select person...</option></select></div></div><div class="form-row"><div class="form-group"><label class="form-label">Start</label><input type="datetime-local" id="pf-start"/></div><div class="form-group"><label class="form-label">End</label><input type="datetime-local" id="pf-end"/></div></div><div class="form-row"><div class="form-group"><label class="form-label">Issued by</label><select id="pf-issued"><option value="">Select person...</option></select></div><div class="form-group"><label class="form-label">Approved by</label><select id="pf-approved"><option value="">Select person...</option></select></div></div><div class="form-group"><label class="form-label">Precautions / controls</label><textarea id="pf-precautions"></textarea></div><div class="form-group"><label class="form-label">PPE required</label><input type="text" id="pf-ppe"/></div><div class="form-group"><label class="form-label">Status</label><select id="pf-status"><option value="draft">Draft</option><option value="pending_approval">Pending approval</option><option value="approved">Approved</option><option value="active">Active</option><option value="closed">Closed</option><option value="cancelled">Cancelled</option></select></div><div style="display:flex;gap:8px"><button class="btn btn-primary" onclick="savePermit()"><i class="ti ti-device-floppy"></i>Save</button><button class="btn" onclick="toggleForm('permit-form')">Cancel</button></div></div><div class="card"><div class="card-title">Permits register</div><div id="permits-list"><div class="loading-msg">Loading...</div></div></div></div>
 <div id="page-noise" class="page">
@@ -57,6 +551,10 @@
 </div>
 <div class="ai-panel" id="ai-panel" style="display:none"><div class="ai-window" id="ai-window"><div class="ai-header"><div style="width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;font-size:18px"><i class="ti ti-brain" style="color:#fff"></i></div><div style="flex:1;margin-left:10px"><div class="ai-title">AURIS AI Assistant</div><div class="ai-subtitle">Powered by Claude — HSE intelligence</div></div><button class="ai-close" onclick="toggleAI()"><i class="ti ti-x"></i></button></div><div class="ai-messages" id="ai-messages"><div class="ai-msg assistant">Hello! I am your AURIS HSE AI assistant. I can analyse your safety data, identify risks, and recommend improvements. What would you like to know?</div></div><div class="ai-suggestions"><button class="ai-sug" onclick="askAI('Analyse my overall HSE performance')">Overall analysis</button><button class="ai-sug" onclick="askAI('What are my top incident patterns?')">Incident patterns</button><button class="ai-sug" onclick="askAI('Review my open actions and prioritise them')">Action priorities</button><button class="ai-sug" onclick="askAI('Which certifications are expiring soon?')">Cert alerts</button></div><div class="ai-input-row"><input class="ai-input" id="ai-input" placeholder="Ask anything about your HSE data..." onkeydown="if(event.key==='Enter')sendAI()"/><button class="ai-send" onclick="sendAI()"><i class="ti ti-send"></i></button></div></div><button class="ai-toggle" onclick="toggleAI()" title="AURIS AI Assistant"><i class="ti ti-brain"></i></button></div><div class="toast" id="toast"></div>
 <script>
+
+
+
+
 
 
 
@@ -636,32 +1134,411 @@ await api('/risk_assessments',{m:'POST',p:'return=minimal',b:{company_id:prof?.c
 toggleForm('risk-form');toast('Risk assessment saved!');loadRA();
 }catch(e){toast(e.message,false);}
 }
+
+// ===== INVESTIGATION MODULE =====
+let invEditingId = null;
+let invAllData = [];
+
 async function loadInvs(){
-if(isInsp()){document.getElementById('inv-list').innerHTML='<p style="padding:20px;color:#666">Access restricted</p>';return;}
-const btn=document.getElementById('inv-add-btn');
-if(btn&&isMgr())btn.innerHTML='<button class="btn btn-primary" onclick="toggleForm(\'inv-form\')"><i class="ti ti-plus"></i>New investigation</button>';
-const el=document.getElementById('inv-list');
-if(!el)return;
-try{
-const d=await api('/investigations?select=*'+cf()+'&order=created_at.desc');
-if(!d||!d.length){el.innerHTML='<p style="padding:20px;color:#666">No investigations yet</p>';return;}
-let h='<table style="width:100%;border-collapse:collapse"><thead><tr style="background:#f9fafb"><th style="padding:10px;text-align:left;border-bottom:1px solid #e5e7eb">Title</th><th style="padding:10px;text-align:left;border-bottom:1px solid #e5e7eb">Date</th><th style="padding:10px;text-align:left;border-bottom:1px solid #e5e7eb">Investigated by</th><th style="padding:10px;text-align:left;border-bottom:1px solid #e5e7eb">Status</th></tr></thead><tbody>';
-for(var i=0;i<d.length;i++){var x=d[i];var dt=x.incident_date?new Date(x.incident_date).toLocaleDateString('en-GB'):'--';h+='<tr style="border-bottom:1px solid #f3f4f6"><td style="padding:10px"><strong>'+(x.title||'--')+'</strong></td><td style="padding:10px">'+dt+'</td><td style="padding:10px">'+(x.investigated_by||'--')+'</td><td style="padding:10px">'+stat(x.status)+'</td></tr>';}
-h+='</tbody></table>';el.innerHTML=h;
-}catch(e){el.innerHTML='<p style="padding:20px;color:red">'+e.message+'</p>';console.error(e);}
+  const btn=document.getElementById('inv-add-btn');
+  if(btn&&isMgr())btn.innerHTML='<button class="btn btn-primary" onclick="invNew()"><i class="ti ti-plus"></i>New investigation</button>';
+  const el=document.getElementById('inv-list');
+  if(!el)return;
+  try{
+    const d=await api('/investigations?select=*'+cf()+'&order=created_at.desc');
+    invAllData=d||[];
+    if(!d||!d.length){el.innerHTML='<p style="padding:20px;color:#666">No investigations yet</p>';return;}
+    let h='<table style="width:100%;border-collapse:collapse"><thead><tr style="background:#f9fafb">'
+      +'<th style="padding:10px;text-align:left;border-bottom:1px solid var(--border)">Ref</th>'
+      +'<th style="padding:10px;text-align:left;border-bottom:1px solid var(--border)">Date</th>'
+      +'<th style="padding:10px;text-align:left;border-bottom:1px solid var(--border)">Location</th>'
+      +'<th style="padding:10px;text-align:left;border-bottom:1px solid var(--border)">Type</th>'
+      +'<th style="padding:10px;text-align:left;border-bottom:1px solid var(--border)">Investigated by</th>'
+      +'<th style="padding:10px;text-align:left;border-bottom:1px solid var(--border)">Status</th>'
+      +'<th style="padding:10px;width:80px;border-bottom:1px solid var(--border)"></th>'
+      +'</tr></thead><tbody>';
+    for(var i=0;i<d.length;i++){
+      var x=d[i];
+      var dt=x.incident_date?new Date(x.incident_date).toLocaleDateString('en-GB'):'--';
+      var typeBadge=x.inv_type==='full'?'<span style="background:#F3E8FF;color:#6B21A8;padding:2px 8px;border-radius:99px;font-size:11px;font-weight:600">Full</span>':'<span style="background:#E6F1FB;color:#185FA5;padding:2px 8px;border-radius:99px;font-size:11px;font-weight:600">Basic</span>';
+      h+='<tr style="border-bottom:1px solid #f3f4f6;cursor:pointer" data-id="'+x.id+'" onclick="invOpen(this.dataset.id)">'
+        +'<td style="padding:10px"><strong>'+(x.inv_ref||'--')+'</strong></td>'
+        +'<td style="padding:10px">'+dt+'</td>'
+        +'<td style="padding:10px">'+(x.incident_location||'--')+'</td>'
+        +'<td style="padding:10px">'+typeBadge+'</td>'
+        +'<td style="padding:10px">'+(x.investigated_by||'--')+'</td>'
+        +'<td style="padding:10px">'+stat(x.status)+'</td>'
+        +'<td style="padding:10px"><button class="btn btn-sm" onclick="event.stopPropagation();invOpen(this.dataset.id)" data-id="'+x.id+'""><i class="ti ti-edit"></i></button></td>'
+        +'</tr>';
+    }
+    h+='</tbody></table>';
+    el.innerHTML=h;
+  }catch(e){el.innerHTML='<p style="padding:20px;color:red">'+e.message+'</p>';console.error(e);}
 }
 
-async function saveInv(){
-if(!isMgr()){toast('Access denied',false);return;}
-try{
-const bid=document.getElementById('invf-by').value,pid=document.getElementById('invf-persons').value;
-const res=await api('/investigations',{m:'POST',p:'return=representation',b:{company_id:prof?.company_id,title:document.getElementById('invf-title').value,incident_date:document.getElementById('invf-date').value||null,location:document.getElementById('invf-loc').value,investigated_by:bid?pname(bid):prof?.full_name,persons_involved:pid?pname(pid):null,what_happened:document.getElementById('invf-what').value,immediate_causes:document.getElementById('invf-imm').value,human_factors:document.getElementById('invf-human').value,technical_conditions:document.getElementById('invf-tech').value,root_causes:document.getElementById('invf-root').value,corrective_actions:document.getElementById('invf-corr').value,preventive_actions:document.getElementById('invf-prev').value,lessons_learned:document.getElementById('invf-lessons').value,status:document.getElementById('invf-status').value,created_by:prof?.id}});
-if(res?.[0]&&document.getElementById('invf-corr').value){
-await api('/action_tracker',{m:'POST',p:'return=minimal',b:{company_id:prof?.company_id,source_module:'investigation',source_id:res[0].id,source_ref:'Investigation: '+document.getElementById('invf-title').value,description:'Implement corrective actions for: '+document.getElementById('invf-title').value,responsible:bid?pname(bid):prof?.full_name,priority:'high',status:'open',created_by:prof?.id}});
+function invShowList(){
+  document.getElementById('inv-list-view').style.display='block';
+  document.getElementById('inv-form-view').style.display='none';
+  loadInvs();
 }
-toggleForm('inv-form');toast('Investigation saved!');loadInvs();
-}catch(e){toast(e.message,false);}
+
+function invShowForm(){
+  document.getElementById('inv-list-view').style.display='none';
+  document.getElementById('inv-form-view').style.display='block';
 }
+
+function invShowTab(tab){
+  document.querySelectorAll('.inv-tab-content').forEach(t=>t.style.display='none');
+  document.querySelectorAll('.inv-tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('inv-'+tab).style.display='block';
+  document.getElementById('inv-tab-'+tab).classList.add('active');
+}
+
+function invTypeChange(){
+  var type=document.getElementById('inv-type-sel').value;
+  var further=document.getElementById('ws1-further').checked;
+  var isFull=type==='full'||further;
+  var ws2btn=document.getElementById('inv-tab-ws2');
+  var ws3btn=document.getElementById('inv-tab-ws3');
+  if(ws2btn)ws2btn.className='inv-tab'+(isFull?'':' disabled');
+  if(ws3btn)ws3btn.className='inv-tab'+(isFull?'':' disabled');
+  if(!isFull){
+    // Switch back to ws1 if on ws2/ws3
+    var active=document.querySelector('.inv-tab.active');
+    if(active&&(active.id==='inv-tab-ws2'||active.id==='inv-tab-ws3'))invShowTab('ws1');
+  }
+}
+
+async function invGenRef(yr){
+  try{
+    var cid=prof?.company_id;if(!cid)return 'INV-'+yr+'-XXX';
+    var seq=await api('/inv_sequence?company_id=eq.'+cid+'&year=eq.'+yr);
+    var next=1;
+    if(seq&&seq.length){next=seq[0].last_seq+1;await api('/inv_sequence?company_id=eq.'+cid+'&year=eq.'+yr,{m:'PATCH',p:'return=minimal',b:{last_seq:next}});}
+    else{await api('/inv_sequence',{m:'POST',p:'return=minimal',b:{company_id:cid,year:yr,last_seq:1}});}
+    return 'INV-'+yr+'-'+String(next).padStart(3,'0');
+  }catch(e){return 'INV-'+yr+'-'+Date.now().toString().slice(-3);}
+}
+
+function invClearForm(){
+  // WS1
+  ['ws1-reported-by','ws1-reported-title','ws1-inc-date','ws1-inc-time',
+   'ws1-location','ws1-description','ws1-nature-hs','ws1-conseq-hs',
+   'ws1-nature-env','ws1-conseq-env','ws1-nature-site','ws1-conseq-site',
+   'ws1-person-name','ws1-person-function','ws1-person-start',
+   'ws1-witnesses','ws1-task-freq','ws1-work-type','ws1-recurring-details',
+   'ws1-first-aid-details','ws1-immediate-actions','ws1-ws2-resp',
+   'ws2-interviewer','ws2-interviewer-title','ws2-interviewee',
+   'ws2-interviewee-title','ws2-date',
+   'ws3-completed-by','ws3-completed-title','ws3-participants','ws3-date',
+   'ws3-machines-explain','ws3-materials-explain','ws3-environment-explain',
+   'inv-sign-investigator','inv-sign-reviewer','inv-sign-approver',
+   'inv-sign-inv-date','inv-sign-rev-date','inv-sign-app-date'
+  ].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
+  ['ws1-class-hs','ws1-class-env','ws1-class-site','ws1-recurring',
+   'ws1-first-aid','ws1-further','ws3-machines','ws3-materials','ws3-environment'
+  ].forEach(function(id){var el=document.getElementById(id);if(el)el.checked=false;});
+  document.querySelectorAll('.ws1-cause').forEach(function(el){el.value='';});
+  document.querySelectorAll('.ws2-q-resp').forEach(function(el){el.value='';});
+  document.querySelectorAll('.ws2-rc').forEach(function(el){el.value='';});
+  document.querySelectorAll('[name^="ws2-q"]').forEach(function(el){el.checked=false;});
+  // Reset WS1 CA table
+  var caBody=document.getElementById('ws1-ca-body');
+  if(caBody)caBody.querySelectorAll('input').forEach(function(el){el.value='';});
+  // Clear inv CA
+  var invCaBody=document.getElementById('inv-ca-body');
+  if(invCaBody)invCaBody.innerHTML='';
+  var invCaEmpty=document.getElementById('inv-ca-empty');
+  if(invCaEmpty)invCaEmpty.style.display='block';
+  // Reset WS3 5-why
+  var ws3Body=document.getElementById('ws3-five-why-body');
+  if(ws3Body)ws3Body.querySelectorAll('input').forEach(function(el){if(el.type==='checkbox')el.checked=false;else el.value='';});
+  // Load events for link dropdown
+  invLoadEventsDrop();
+}
+
+async function invLoadEventsDrop(){
+  try{
+    var d=await api('/events?select=id,event_ref,event_type,event_date'+cf()+'&order=event_date.desc&limit=50');
+    var sel=document.getElementById('ws1-event-link');
+    if(!sel)return;
+    var opts='<option value="">None</option>';
+    (d||[]).forEach(function(e){
+      var dt=e.event_date?new Date(e.event_date).toLocaleDateString('en-GB'):'';
+      opts+='<option value="'+e.id+'">'+(e.event_ref||'?')+' — '+(e.event_type||'Event')+' ('+dt+')</option>';
+    });
+    sel.innerHTML=opts;
+  }catch(e){}
+}
+
+async function invNew(){
+  invEditingId=null;
+  invClearForm();
+  document.getElementById('inv-form-title').textContent='New Investigation';
+  document.getElementById('inv-form-ref').textContent='';
+  document.getElementById('inv-type-sel').value='basic';
+  document.getElementById('inv-status-sel').value='draft';
+  document.getElementById('ws1-date-completion').value=new Date().toISOString().slice(0,10);
+  document.getElementById('ws1-reported-by').value=prof?.full_name||'';
+  invTypeChange();
+  invShowTab('ws1');
+  invShowForm();
+}
+
+async function invOpen(id){
+  var inv=invAllData.find(function(x){return x.id===id;});
+  if(!inv){
+    // Reload
+    try{var d=await api('/investigations?id=eq.'+id);inv=d&&d[0];}catch(e){}
+  }
+  if(!inv)return;
+  invEditingId=id;
+  invClearForm();
+  document.getElementById('inv-form-title').textContent=inv.inv_ref||'Investigation';
+  document.getElementById('inv-form-ref').textContent=inv.event_id?'Linked to event':'';
+  document.getElementById('inv-type-sel').value=inv.inv_type||'basic';
+  document.getElementById('inv-status-sel').value=inv.status||'draft';
+  // Fill WS1 fields
+  var flds={
+    'ws1-reported-by':'reported_by','ws1-reported-title':'reported_by_title',
+    'ws1-date-completion':'date_completion','ws1-inc-date':'incident_date',
+    'ws1-inc-time':'incident_time','ws1-location':'incident_location',
+    'ws1-description':'incident_description','ws1-nature-hs':'nature_hs',
+    'ws1-conseq-hs':'consequences_hs','ws1-nature-env':'nature_env',
+    'ws1-conseq-env':'consequences_env','ws1-nature-site':'nature_site',
+    'ws1-conseq-site':'consequences_site','ws1-person-name':'person_name',
+    'ws1-person-function':'person_function','ws1-person-start':'person_start_date',
+    'ws1-witnesses':'witnesses','ws1-task-freq':'task_frequency',
+    'ws1-work-type':'work_type','ws1-recurring-details':'recurring_details',
+    'ws1-first-aid-details':'first_aid_details','ws1-immediate-actions':'immediate_actions',
+    'ws1-ws2-resp':'ws2_resp_person',
+    'ws2-interviewer':'ws2_interviewer','ws2-interviewer-title':'ws2_interviewer_title',
+    'ws2-interviewee':'ws2_interviewee','ws2-interviewee-title':'ws2_interviewee_title',
+    'ws2-date':'ws2_date','ws3-completed-by':'ws3_completed_by',
+    'ws3-completed-title':'ws3_completed_title','ws3-participants':'ws3_participants',
+    'ws3-date':'ws3_date','ws3-machines-explain':'ws3_machines_explain',
+    'ws3-materials-explain':'ws3_materials_explain','ws3-environment-explain':'ws3_environment_explain',
+    'inv-sign-investigator':'investigated_by','inv-sign-reviewer':'reviewed_by',
+    'inv-sign-approver':'approved_by','inv-sign-inv-date':'investigated_date',
+    'inv-sign-rev-date':'reviewed_date','inv-sign-app-date':'approved_date'
+  };
+  Object.entries(flds).forEach(function(e){
+    var el=document.getElementById(e[0]);
+    if(el&&inv[e[1]]!==null&&inv[e[1]]!==undefined)el.value=inv[e[1]];
+  });
+  var chks={'ws1-class-hs':'class_hs','ws1-class-env':'class_env','ws1-class-site':'class_site',
+    'ws1-recurring':'recurring_event','ws1-first-aid':'first_aid_given','ws1-further':'further_analyses',
+    'ws3-machines':'ws3_machines','ws3-materials':'ws3_materials','ws3-environment':'ws3_environment'};
+  Object.entries(chks).forEach(function(e){
+    var el=document.getElementById(e[0]);
+    if(el)el.checked=!!inv[e[1]];
+  });
+  // Fill causes
+  var causes=inv.immediate_causes||[];
+  document.querySelectorAll('.ws1-cause').forEach(function(el,i){
+    el.value=causes[i]||'';
+  });
+  // Fill WS1 CA
+  var ws1cas=inv.ws1_corrective_actions||[];
+  var ws1Body=document.getElementById('ws1-ca-body');
+  if(ws1Body&&ws1cas.length){
+    ws1Body.innerHTML='';
+    ws1cas.forEach(function(ca,i){ws1Body.innerHTML+=invWS1CARow(i+1,ca);});
+  }
+  // Fill WS2 root causes
+  var rcs=inv.ws2_root_causes||[];
+  document.querySelectorAll('.ws2-rc').forEach(function(el,i){el.value=rcs[i]||'';});
+  // Fill inv CA
+  var cas=inv.corrective_actions||[];
+  invRenderCA(cas);
+  // Fill event link
+  await invLoadEventsDrop();
+  if(inv.event_id){var evSel=document.getElementById('ws1-event-link');if(evSel)evSel.value=inv.event_id;}
+  invTypeChange();
+  invShowTab('ws1');
+  invShowForm();
+}
+
+function invWS1CARow(num,ca){
+  ca=ca||{};
+  return '<tr><td style="padding:6px;color:var(--text2);font-weight:700;font-size:12px">'+num+'</td>'
+    +'<td style="padding:4px"><input type="text" class="ws1-ca-desc" value="'+(ca.desc||'')+'" style="width:100%;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px"/></td>'
+    +'<td style="padding:4px"><input type="text" class="ws1-ca-resp" value="'+(ca.resp||'')+'" style="width:100%;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px"/></td>'
+    +'<td style="padding:4px"><input type="date" class="ws1-ca-date" value="'+(ca.date||'')+'" style="width:100%;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px"/></td>'
+    +'<td style="padding:4px;text-align:center"><button onclick=\"this.parentNode.parentNode.remove()\" style="background:none;border:none;cursor:pointer;color:var(--red)"><i class="ti ti-x"></i></button></td></tr>';
+}
+
+function ws1AddCA(){
+  var body=document.getElementById('ws1-ca-body');
+  if(!body)return;
+  var num=body.querySelectorAll('tr').length+1;
+  body.innerHTML+=invWS1CARow(num,{});
+}
+
+function ws3AddRow(){
+  var body=document.getElementById('ws3-five-why-body');
+  if(!body)return;
+  var num=body.querySelectorAll('tr').length+1;
+  var row='<tr class="ws3-why-row">'
+    +'<td style="padding:6px;text-align:center;border:1px solid var(--border);font-weight:700;font-size:12px;color:var(--text2)">'+num+'</td>'
+    +'<td style="padding:4px;border:1px solid var(--border)"><input type="text" class="ws3-cause-input" style="width:100%;padding:4px 6px;border:1px solid var(--border);border-radius:4px;font-size:12px" placeholder="Contributory cause..."/></td>'
+    +'<td style="padding:4px;text-align:center;border:1px solid var(--border)"><input type="checkbox" class="ws3-v"></td><td style="padding:4px;border:1px solid var(--border)"><input type="text" class="ws3-why" style="width:100%;padding:4px 6px;border:1px solid var(--border);border-radius:4px;font-size:11px" placeholder="Why?"/></td>'
+    +'<td style="padding:4px;text-align:center;border:1px solid var(--border)"><input type="checkbox" class="ws3-v"></td><td style="padding:4px;border:1px solid var(--border)"><input type="text" class="ws3-why" style="width:100%;padding:4px 6px;border:1px solid var(--border);border-radius:4px;font-size:11px" placeholder="Why?"/></td>'
+    +'<td style="padding:4px;text-align:center;border:1px solid var(--border)"><input type="checkbox" class="ws3-v"></td><td style="padding:4px;border:1px solid var(--border)"><input type="text" class="ws3-why" style="width:100%;padding:4px 6px;border:1px solid var(--border);border-radius:4px;font-size:11px" placeholder="Why?"/></td>'
+    +'<td style="padding:4px;text-align:center;border:1px solid var(--border)"><input type="checkbox" class="ws3-v"></td><td style="padding:4px;border:1px solid var(--border)"><input type="text" class="ws3-why" style="width:100%;padding:4px 6px;border:1px solid var(--border);border-radius:4px;font-size:11px" placeholder="Why?"/></td>'
+    +'<td style="padding:4px;text-align:center;border:1px solid var(--border)"><button onclick=\"this.parentNode.parentNode.remove()\" style="background:none;border:none;cursor:pointer;color:var(--red)"><i class="ti ti-x"></i></button></td></tr>';
+  body.innerHTML+=row;
+}
+
+function invAddCA(){
+  var body=document.getElementById('inv-ca-body');
+  var empty=document.getElementById('inv-ca-empty');
+  if(!body)return;
+  if(empty)empty.style.display='none';
+  var num=body.querySelectorAll('tr').length+1;
+  body.innerHTML+='<tr>'
+    +'<td style="padding:6px;text-align:center;border:1px solid var(--border);font-weight:700;font-size:12px;color:var(--text2)">'+num+'</td>'
+    +'<td style="padding:4px;border:1px solid var(--border)"><input type="text" class="ca-desc" style="width:100%;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px" placeholder="Action description..."/></td>'
+    +'<td style="padding:4px;border:1px solid var(--border)"><select class="ca-src" style="width:100%;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px"><option value="WS1">WS1</option><option value="WS2">WS2</option><option value="WS3">WS3</option><option value="General">General</option></select></td>'
+    +'<td style="padding:4px;border:1px solid var(--border)"><input type="text" class="ca-resp" style="width:100%;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px" placeholder="Responsible person..."/></td>'
+    +'<td style="padding:4px;border:1px solid var(--border)"><input type="date" class="ca-date" style="width:100%;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px"/></td>'
+    +'<td style="padding:4px;border:1px solid var(--border)"><select class="ca-prio" style="width:100%;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px"><option value="low">Low</option><option value="medium" selected>Medium</option><option value="high">High</option><option value="critical">Critical</option></select></td>'
+    +'<td style="padding:4px;border:1px solid var(--border)"><select class="ca-status" style="width:100%;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px"><option value="open">Open</option><option value="in_progress">In progress</option><option value="closed">Closed</option></select></td>'
+    +'<td style="padding:4px;text-align:center;border:1px solid var(--border)"><button onclick=\"this.parentNode.parentNode.remove()\" style="background:none;border:none;cursor:pointer;color:var(--red)"><i class="ti ti-x"></i></button></td></tr>';
+}
+
+function invRenderCA(cas){
+  var body=document.getElementById('inv-ca-body');
+  var empty=document.getElementById('inv-ca-empty');
+  if(!body)return;
+  body.innerHTML='';
+  if(!cas||!cas.length){if(empty)empty.style.display='block';return;}
+  if(empty)empty.style.display='none';
+  cas.forEach(function(ca,i){
+    body.innerHTML+='<tr>'
+      +'<td style="padding:6px;text-align:center;border:1px solid var(--border);font-weight:700;font-size:12px;color:var(--text2)">'+(i+1)+'</td>'
+      +'<td style="padding:4px;border:1px solid var(--border)"><input type="text" class="ca-desc" value="'+(ca.desc||'')+'" style="width:100%;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px"/></td>'
+      +'<td style="padding:4px;border:1px solid var(--border)"><select class="ca-src" style="width:100%;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px"><option value="WS1"'+(ca.src==='WS1'?' selected':'')+'>WS1</option><option value="WS2"'+(ca.src==='WS2'?' selected':'')+'>WS2</option><option value="WS3"'+(ca.src==='WS3'?' selected':'')+'>WS3</option><option value="General"'+(ca.src==='General'?' selected':'')+'>General</option></select></td>'
+      +'<td style="padding:4px;border:1px solid var(--border)"><input type="text" class="ca-resp" value="'+(ca.resp||'')+'" style="width:100%;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px"/></td>'
+      +'<td style="padding:4px;border:1px solid var(--border)"><input type="date" class="ca-date" value="'+(ca.date||'')+'" style="width:100%;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px"/></td>'
+      +'<td style="padding:4px;border:1px solid var(--border)"><select class="ca-prio" style="width:100%;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px"><option value="low"'+(ca.prio==='low'?' selected':'')+'>Low</option><option value="medium"'+(ca.prio==='medium'?' selected':'')+'>Medium</option><option value="high"'+(ca.prio==='high'?' selected':'')+'>High</option><option value="critical"'+(ca.prio==='critical'?' selected':'')+'>Critical</option></select></td>'
+      +'<td style="padding:4px;border:1px solid var(--border)"><select class="ca-status" style="width:100%;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px"><option value="open"'+(ca.status==='open'?' selected':'')+'>Open</option><option value="in_progress"'+(ca.status==='in_progress'?' selected':'')+'>In progress</option><option value="closed"'+(ca.status==='closed'?' selected':'')+'>Closed</option></select></td>'
+      +'<td style="padding:4px;text-align:center;border:1px solid var(--border)"><button onclick=\"this.parentNode.parentNode.remove()\" style="background:none;border:none;cursor:pointer;color:var(--red)"><i class="ti ti-x"></i></button></td></tr>';
+  });
+}
+
+function invCollectData(){
+  var g=function(id){var el=document.getElementById(id);return el?el.value||null:null;};
+  var ch=function(id){var el=document.getElementById(id);return el?el.checked:false;};
+  var causes=[];document.querySelectorAll('.ws1-cause').forEach(function(el){causes.push(el.value||'');});
+  var ws1cas=[];document.querySelectorAll('#ws1-ca-body tr').forEach(function(tr){
+    var desc=tr.querySelector('.ws1-ca-desc')?.value;
+    if(desc)ws1cas.push({desc:desc,resp:tr.querySelector('.ws1-ca-resp')?.value||'',date:tr.querySelector('.ws1-ca-date')?.value||''});
+  });
+  var ws2qs=[];document.querySelectorAll('.ws2-q-row').forEach(function(row,i){
+    var resp=row.querySelector('.ws2-q-resp')?.value||'';
+    var cl=row.querySelector('input[type=radio]:checked')?.value||'';
+    ws2qs.push({response:resp,classification:cl});
+  });
+  var rcs=[];document.querySelectorAll('.ws2-rc').forEach(function(el){rcs.push(el.value||'');});
+  var cas=[];document.querySelectorAll('#inv-ca-body tr').forEach(function(tr){
+    var desc=tr.querySelector('.ca-desc')?.value;
+    if(desc)cas.push({desc:desc,src:tr.querySelector('.ca-src')?.value||'General',resp:tr.querySelector('.ca-resp')?.value||'',date:tr.querySelector('.ca-date')?.value||'',prio:tr.querySelector('.ca-prio')?.value||'medium',status:tr.querySelector('.ca-status')?.value||'open'});
+  });
+  var ws3rows=[];document.querySelectorAll('.ws3-why-row').forEach(function(tr){
+    var cause=tr.querySelector('.ws3-cause-input')?.value||'';
+    var whys=[];tr.querySelectorAll('.ws3-why').forEach(function(el){whys.push(el.value||'');});
+    var vs=[];tr.querySelectorAll('.ws3-v').forEach(function(el){vs.push(el.checked);});
+    if(cause||whys.some(function(w){return w;}))ws3rows.push({cause:cause,whys:whys,verify:vs});
+  });
+  return {
+    company_id:prof?.company_id,
+    inv_type:document.getElementById('inv-type-sel')?.value||'basic',
+    status:document.getElementById('inv-status-sel')?.value||'draft',
+    event_id:g('ws1-event-link')||null,
+    reported_by:g('ws1-reported-by'),reported_by_title:g('ws1-reported-title'),
+    date_completion:g('ws1-date-completion'),incident_date:g('ws1-inc-date'),
+    incident_time:g('ws1-inc-time'),incident_location:g('ws1-location'),
+    incident_description:g('ws1-description'),
+    class_hs:ch('ws1-class-hs'),class_env:ch('ws1-class-env'),class_site:ch('ws1-class-site'),
+    nature_hs:g('ws1-nature-hs'),consequences_hs:g('ws1-conseq-hs'),
+    nature_env:g('ws1-nature-env'),consequences_env:g('ws1-conseq-env'),
+    nature_site:g('ws1-nature-site'),consequences_site:g('ws1-conseq-site'),
+    person_name:g('ws1-person-name'),person_function:g('ws1-person-function'),
+    person_start_date:g('ws1-person-start'),contract_type:g('ws1-contract-type'),
+    witnesses:g('ws1-witnesses'),task_frequency:g('ws1-task-freq'),
+    work_type:g('ws1-work-type'),recurring_event:ch('ws1-recurring'),
+    recurring_details:g('ws1-recurring-details'),first_aid_given:ch('ws1-first-aid'),
+    first_aid_details:g('ws1-first-aid-details'),immediate_actions:g('ws1-immediate-actions'),
+    immediate_causes:causes,ws1_corrective_actions:ws1cas,
+    further_analyses:ch('ws1-further'),
+    ws2_interviewer:g('ws2-interviewer'),ws2_interviewer_title:g('ws2-interviewer-title'),
+    ws2_interviewee:g('ws2-interviewee'),ws2_interviewee_title:g('ws2-interviewee-title'),
+    ws2_date:g('ws2-date'),ws2_questions:ws2qs,ws2_root_causes:rcs,
+    ws3_completed_by:g('ws3-completed-by'),ws3_completed_title:g('ws3-completed-title'),
+    ws3_participants:g('ws3-participants'),ws3_date:g('ws3-date'),
+    ws3_machines:ch('ws3-machines'),ws3_machines_explain:g('ws3-machines-explain'),
+    ws3_materials:ch('ws3-materials'),ws3_materials_explain:g('ws3-materials-explain'),
+    ws3_environment:ch('ws3-environment'),ws3_environment_explain:g('ws3-environment-explain'),
+    ws3_five_why:ws3rows,corrective_actions:cas,
+    investigated_by:g('inv-sign-investigator'),reviewed_by:g('inv-sign-reviewer'),
+    approved_by:g('inv-sign-approver'),investigated_date:g('inv-sign-inv-date'),
+    reviewed_date:g('inv-sign-rev-date'),approved_date:g('inv-sign-app-date'),
+    updated_at:new Date().toISOString()
+  };
+}
+
+async function invSave(){
+  var body=invCollectData();
+  try{
+    var savedId=invEditingId;
+    if(invEditingId){
+      await api('/investigations?id=eq.'+invEditingId,{m:'PATCH',p:'return=representation',b:body});
+      toast('Investigation saved!');
+    }else{
+      var yr=new Date().getFullYear();
+      body.inv_ref=await invGenRef(yr);
+      body.created_by=prof?.id;
+      var res=await api('/investigations',{m:'POST',p:'return=representation',b:body});
+      savedId=res?.[0]?.id;
+      toast('Investigation created!');
+    }
+    // Sync corrective actions to Master Action Plan
+    if(savedId&&body.corrective_actions&&body.corrective_actions.length){
+      await invSyncToMAP(savedId,body);
+    }
+  }catch(e){toast(e.message,false);console.error(e);}
+}
+
+async function invSyncToMAP(invId,body){
+  try{
+    // Delete old MAP entries for this investigation
+    await api('/action_tracker?source_id=eq.'+invId+'&source_module=eq.investigation',{m:'DELETE'});
+    // Re-create from current corrective actions
+    var invRef=document.getElementById('inv-form-ref')?.textContent||'INV';
+    var title=body.incident_location||body.incident_description||'Investigation';
+    for(var i=0;i<body.corrective_actions.length;i++){
+      var ca=body.corrective_actions[i];
+      if(!ca.desc)continue;
+      await api('/action_tracker',{m:'POST',p:'return=minimal',b:{
+        company_id:prof?.company_id,
+        source_module:'investigation',source_id:invId,
+        source_ref:invRef+' ('+ca.src+')',
+        description:ca.desc,
+        responsible:ca.resp||null,
+        target_date:ca.date||null,
+        priority:ca.prio||'medium',
+        status:ca.status||'open',
+        created_by:prof?.id
+      }});
+    }
+    toast('Corrective actions synced to Master Action Plan!');
+  }catch(e){console.error('MAP sync error:',e);}
+}
+
+async function saveInv(){invSave();}
+
+
 async function loadPermits(){
 const el=document.getElementById('permits-list');
 if(!el)return;
@@ -1517,6 +2394,10 @@ kpiObjectives=[];kpiKPIs=[];kpiIndicators=[];kpiMonthlyData={};
 await kpiLoadAll();
 }catch(e){toast(e.message,false);}
 }
+
+
+
+
 
 
 
