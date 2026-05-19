@@ -649,16 +649,10 @@
 </div>
 </div>
 </div>
-<div class="ai-panel" id="ai-panel" style="display:none"><div class="ai-window" id="ai-window"><div class="ai-header"><div style="width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;font-size:18px"><i class="ti ti-brain" style="color:#fff"></i></div><div s
-
-
-
-
-
-
-
-
+<div class="ai-panel" id="ai-panel" style="display:none"><div class="ai-window" id="ai-window"><div class="ai-header"><div style="width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;font-size:18px"><i class="ti ti-brain" style="color:#fff"></i></div><div style="font-size:11px;color:rgba(255,255,255,.8)">Powered by Claude AI</div><button class="ai-close" onclick="document.getElementById('ai-window').classList.remove('open')"><i class="ti ti-x"></i></button></div><div class="ai-messages" id="ai-messages"></div><div class="ai-suggestions" id="ai-suggestions"></div><div class="ai-input-row"><input type="text" class="ai-input" id="ai-input" placeholder="Ask about HSE performance..." onkeydown="if(event.key==='Enter')sendAIMsg()"/><button class="ai-send" onclick="sendAIMsg()">Send</button></div></div><button class="ai-toggle" onclick="document.getElementById('ai-window').classList.toggle('open')"><i class="ti ti-brain"></i></button></div>
+<div class="toast" id="toast"></div>
 <script>
+
 
 
 
@@ -796,7 +790,7 @@ if(target){
   target.classList.add('active');
 }
 if(el&&el.classList)el.classList.add('active');
-const L={dashboard:loadDash,kpi:loadKPIs,events:loadEvents,inspection:()=>{buildChecklist();loadInsps();},risk:loadRA,investigation:loadInvs,permit:loadPermits,noise:loadNoise,meetings:loadMtgs,training:loadTraining,actions:loadActions,documents:loadDocs,people:loadPeople,users:loadUsers,admin:loadAdmin,'ai-insights':genFullAI,settings:loadSettings};
+const L={dashboard:loadDash,kpi:kpiLoadAll,events:loadEvents,inspection:()=>{buildChecklist();loadInsps();},risk:loadRA,investigation:loadInvs,permit:loadPermits,noise:loadNoise,meetings:loadMtgs,training:loadTraining,actions:loadActions,documents:loadDocs,people:loadPeople,users:loadUsers,admin:loadAdmin,'ai-insights':genFullAI,settings:loadSettings};
 if(L[name])L[name]();
 }
 function toggleForm(id){const el=document.getElementById(id);el.style.display=el.style.display==='none'?'block':'none';}
@@ -2613,6 +2607,7 @@ kpiObjectives=[];kpiKPIs=[];kpiIndicators=[];kpiMonthlyData={};
 await kpiLoadAll();
 }catch(e){toast(e.message,false);}
 }
+
 
 
 
