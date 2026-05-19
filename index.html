@@ -37,7 +37,7 @@
 <div class="page-header"><div class="page-title">Risk Assessment</div><div id="risk-add-btn"></div></div><div class="card" id="risk-form" style="display:none"><div class="card-title">New risk assessment</div><div class="form-row"><div class="form-group"><label class="form-label">Title</label><input type="text" id="rf-title"/></div><div class="form-group"><label class="form-label">Location</label><input type="text" id="rf-loc"/></div></div><div class="form-row"><div class="form-group"><label class="form-label">Assessed by</label><select id="rf-by"><option value="">Select person...</option></select></div><div class="form-group"><label class="form-label">Review date</label><input type="date" id="rf-review"/></div></div><div class="form-group"><label class="form-label">Status</label><select id="rf-status"><option value="draft">Draft</option><option value="active">Active</option><option value="review">Under review</option><option value="closed">Closed</option></select></div><div style="display:flex;gap:8px"><button class="btn btn-primary" onclick="saveRA()"><i class="ti ti-device-floppy"></i>Save</button><button class="btn" onclick="toggleForm('risk-form')">Cancel</button></div></div><div class="card"><div class="card-title">Risk assessments</div><div id="risk-list"><div class="loading-msg">Loading...</div></div></div></div>
 <div id="page-investigation" class="page">
 <div class="page-header">
-<div><div class="page-title">Incident Investigation</div><div style="font-size:12px;color:var(--text2)" id="inv-subtitle">SHEARO Investigation Forms</div></div>
+<div><div class="page-title">Incident Investigation</div><div style="font-size:12px;color:var(--text2)" id="inv-subtitle">Investigation Forms</div></div>
 <div style="display:flex;gap:8px" id="inv-add-btn"></div>
 </div>
 
@@ -197,7 +197,7 @@
 <div id="inv-ws2" class="inv-tab-content" style="display:none">
 
 <div class="card" style="margin-bottom:12px">
-<div class="card-title" style="color:var(--green);font-size:13px">WS2 — SHEARO HUMAN FACTORS ANALYSIS (1-WHY)</div>
+<div class="card-title" style="color:var(--green);font-size:13px">WS2 — HUMAN FACTORS ANALYSIS (1-WHY)</div>
 <div class="form-row">
 <div class="form-group"><label class="form-label">Document completed by (interviewer)</label><input type="text" id="ws2-interviewer"/></div>
 <div class="form-group"><label class="form-label">Job title</label><input type="text" id="ws2-interviewer-title"/></div>
@@ -380,7 +380,7 @@
 <div id="inv-ws3" class="inv-tab-content" style="display:none">
 
 <div class="card" style="margin-bottom:12px">
-<div class="card-title" style="color:var(--green);font-size:13px">WS3 — SHEARO TECHNICAL CONDITIONS ANALYSIS (5-WHY)</div>
+<div class="card-title" style="color:var(--green);font-size:13px">WS3 — TECHNICAL CONDITIONS ANALYSIS (5-WHY)</div>
 <div class="form-row">
 <div class="form-group"><label class="form-label">Document completed by</label><input type="text" id="ws3-completed-by"/></div>
 <div class="form-group"><label class="form-label">Job title</label><input type="text" id="ws3-completed-title"/></div>
@@ -393,18 +393,27 @@
 <div class="card" style="margin-bottom:12px">
 <div class="card-title">Analysis of Immediate Contributory Causes</div>
 <div style="font-size:12px;color:var(--text2);margin-bottom:12px">Most incidents would have several contributory causes. Tick those applicable and explain the reasons why.</div>
-<div style="display:flex;flex-direction:column;gap:12px">
-<div style="display:grid;grid-template-columns:200px 1fr;gap:12px;align-items:center;padding:10px;background:#f9fafb;border-radius:8px;border:1px solid var(--border)">
-<label style="display:grid;grid-template-columns:18px 1fr;gap:8px;align-items:center;font-size:13px;font-weight:600;cursor:pointer"><input type="checkbox" style="margin:0" id="ws3-machines"> Machines / Tools / Equipment</label>
-<div class="form-group" style="margin:0"><input type="text" id="ws3-machines-explain" placeholder="Explain why this contributory cause happened..."/></div>
+<div style="display:flex;flex-direction:column;gap:10px">
+<div style="display:grid;grid-template-columns:240px 1fr;gap:16px;align-items:center;padding:12px 16px;background:#f9fafb;border-radius:8px;border:1px solid var(--border)">
+<label style="display:flex;align-items:center;gap:10px;font-size:13px;font-weight:600;cursor:pointer;user-select:none">
+<input type="checkbox" id="ws3-machines" style="width:16px;height:16px;cursor:pointer;flex-shrink:0">
+<span>Machines / Tools / Equipment</span>
+</label>
+<input type="text" id="ws3-machines-explain" placeholder="Explain why this contributory cause happened..." style="padding:7px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px;width:100%"/>
 </div>
-<div style="display:grid;grid-template-columns:200px 1fr;gap:12px;align-items:center;padding:10px;background:#f9fafb;border-radius:8px;border:1px solid var(--border)">
-<label style="display:grid;grid-template-columns:18px 1fr;gap:8px;align-items:center;font-size:13px;font-weight:600;cursor:pointer"><input type="checkbox" style="margin:0" id="ws3-materials"> Materials</label>
-<div class="form-group" style="margin:0"><input type="text" id="ws3-materials-explain" placeholder="Explain why this contributory cause happened..."/></div>
+<div style="display:grid;grid-template-columns:240px 1fr;gap:16px;align-items:center;padding:12px 16px;background:#f9fafb;border-radius:8px;border:1px solid var(--border)">
+<label style="display:flex;align-items:center;gap:10px;font-size:13px;font-weight:600;cursor:pointer;user-select:none">
+<input type="checkbox" id="ws3-materials" style="width:16px;height:16px;cursor:pointer;flex-shrink:0">
+<span>Materials</span>
+</label>
+<input type="text" id="ws3-materials-explain" placeholder="Explain why this contributory cause happened..." style="padding:7px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px;width:100%"/>
 </div>
-<div style="display:grid;grid-template-columns:200px 1fr;gap:12px;align-items:center;padding:10px;background:#f9fafb;border-radius:8px;border:1px solid var(--border)">
-<label style="display:grid;grid-template-columns:18px 1fr;gap:8px;align-items:center;font-size:13px;font-weight:600;cursor:pointer"><input type="checkbox" style="margin:0" id="ws3-environment"> Environment</label>
-<div class="form-group" style="margin:0"><input type="text" id="ws3-environment-explain" placeholder="Explain why this contributory cause happened..."/></div>
+<div style="display:grid;grid-template-columns:240px 1fr;gap:16px;align-items:center;padding:12px 16px;background:#f9fafb;border-radius:8px;border:1px solid var(--border)">
+<label style="display:flex;align-items:center;gap:10px;font-size:13px;font-weight:600;cursor:pointer;user-select:none">
+<input type="checkbox" id="ws3-environment" style="width:16px;height:16px;cursor:pointer;flex-shrink:0">
+<span>Environment</span>
+</label>
+<input type="text" id="ws3-environment-explain" placeholder="Explain why this contributory cause happened..." style="padding:7px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px;width:100%"/>
 </div>
 </div>
 </div>
@@ -559,6 +568,8 @@
 
 
 <script>
+
+
 const SB='https://iarfxjhahzbhncsaohbg.supabase.co';
 const KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlhcmZ4amhhaHpiaG5jc2FvaGJnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg2OTM1MzAsImV4cCI6MjA5NDI2OTUzMH0.qSjahuX-RwnjWEDmo-LkcorAxpsmyVoaXt4AO4_A9BM';
 let tok=null,prof=null,co=null,chkItems=[],people=[];
@@ -914,7 +925,7 @@ const actEl=document.getElementById('ev-view-actions');
 let btns='';
 if(isMgr())btns+='<button class="btn btn-primary" onclick="evSwitchToEdit()"><i class="ti ti-edit"></i>Edit</button>';
 if(isMgr()&&e.status!=='closed')btns+='<button class="btn" onclick="evQuickClose(\''+e.id+'\')"><i class="ti ti-check"></i>Mark closed</button>';
-if(isMgr()&&isSerious&&!e.investigation_id)btns+='<button class="btn" style="background:#FEF2F2;color:var(--red);border-color:#FCA5A5" onclick="evStartInvestigation(\''+e.id+'\')"><i class="ti ti-search"></i>Start investigation</button>';
+if(isMgr()&&!e.investigation_id)btns+='<button class="btn" style="background:#E6F1FB;color:#185FA5;border-color:#93C5FD;font-weight:600" onclick="evStartInvestigation(\''+e.id+'\')"><i class="ti ti-search"></i>Investigate</button>';
 if(e.investigation_id)btns+='<span style="font-size:12px;color:var(--green);display:flex;align-items:center;gap:6px"><i class="ti ti-check-circle"></i>Investigation linked</span>';
 actEl.innerHTML=btns;
 evOpenModal();
@@ -973,11 +984,7 @@ await api('/action_tracker',{m:'POST',p:'return=minimal',b:{company_id:prof?.com
 }
 }
 evCloseModal();await loadEvents();
-if(!evEditingId&&(sev==='high'||sev==='critical')&&savedId){
-if(confirm('This is a '+sev.toUpperCase()+' event. Start an investigation now?')){
-await evStartInvestigation(savedId);
-}
-}
+// Investigation can be started from the event detail view
 }catch(e){toast(e.message,false);}
 }
 async function evGenRef(yr){
@@ -998,14 +1005,68 @@ if(!evEditingId||!confirm('Delete this event?'))return;
 try{await api('/events?id=eq.'+evEditingId,{m:'DELETE'});toast('Event deleted!');evCloseModal();await loadEvents();}catch(e){toast(e.message,false);}
 }
 async function evStartInvestigation(eventId){
-const e=evAllData.find(function(x){return x.id===eventId;});if(!e)return;
+const e=evAllData.find(function(x){return x.id===eventId;});
+if(!e)return;
 try{
-const invBody={company_id:prof?.company_id,title:'Investigation — '+(e.event_type||'Event')+' at '+(e.location||'unknown'),incident_date:e.event_date||null,location:e.location||null,investigated_by:prof?.full_name||null,persons_involved:e.person_involved||null,status:'open',created_by:prof?.id};
+// Determine investigation type based on severity
+const invType=(e.severity==='high'||e.severity==='critical')?'full':'basic';
+// Generate ref
+const yr=new Date().getFullYear();
+const invRef=await invGenRef(yr);
+// Build investigation body pre-filled from event
+const invBody={
+company_id:prof?.company_id,
+inv_ref:invRef,
+inv_type:invType,
+status:'open',
+event_id:e.id,
+// WS1 fields pre-filled from event
+reported_by:e.reported_by||prof?.full_name||null,
+incident_date:e.event_date?e.event_date.slice(0,10):null,
+incident_time:e.event_date?new Date(e.event_date).toTimeString().slice(0,5):null,
+incident_location:e.location||null,
+incident_description:e.description||null,
+person_name:e.person_involved||null,
+department:e.department||null,
+first_aid_details:e.immediate_action||null,
+immediate_actions:e.immediate_action||null,
+// Classification based on event type
+class_hs:(e.event_type==='Incident'||e.event_type==='Near Miss'||e.event_type==='Dangerous Occurrence'),
+class_env:(e.event_type==='Environmental'),
+investigated_by:prof?.full_name||null,
+further_analyses:invType==='full',
+created_by:prof?.id,
+updated_at:new Date().toISOString()
+};
 const res=await api('/investigations',{m:'POST',p:'return=representation',b:invBody});
 const invId=res?.[0]?.id;
-if(invId){await api('/events?id=eq.'+eventId,{m:'PATCH',p:'return=minimal',b:{investigation_id:invId,status:'under_investigation',updated_at:new Date().toISOString()}});toast('Investigation started and linked!');evCloseModal();await loadEvents();}
-}catch(e){toast('Error: '+e.message,false);}
+if(!invId)throw new Error('Could not create investigation');
+// Link event to investigation
+await api('/events?id=eq.'+eventId,{m:'PATCH',p:'return=minimal',b:{
+investigation_id:invId,
+status:'under_investigation',
+updated_at:new Date().toISOString()
+}});
+// Update local evAllData
+const ev=evAllData.find(function(x){return x.id===eventId;});
+if(ev){ev.investigation_id=invId;ev.status='under_investigation';}
+toast('Investigation '+invRef+' created!');
+evCloseModal();
+// Navigate to investigation page and open the form
+await loadInvs();
+// Wait for loadInvs to complete then open the form
+setTimeout(async function(){
+invAllData=invAllData||[];
+// Reload if needed
+if(!invAllData.find(function(x){return x.id===invId;})){
+try{const d=await api('/investigations?id=eq.'+invId);if(d&&d[0])invAllData.push(d[0]);}catch(err){}
 }
+showPage('investigation',document.querySelector('.nav-item[onclick*="investigation"]'));
+setTimeout(function(){invOpen(invId);},200);
+},300);
+}catch(err){toast('Error: '+err.message,false);console.error(err);}
+}
+
 
 const CATS=[
 {cat:'Safety equipment & signage',items:['First aid kit','Fire extinguishers','Safety signages','Means of communication']},
@@ -2374,6 +2435,8 @@ kpiObjectives=[];kpiKPIs=[];kpiIndicators=[];kpiMonthlyData={};
 await kpiLoadAll();
 }catch(e){toast(e.message,false);}
 }
+
+
 
 
 
