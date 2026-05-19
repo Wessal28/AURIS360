@@ -131,6 +131,7 @@
 <option value="closed">Closed</option>
 </select>
 <button class="btn" onclick="raShowList()"><i class="ti ti-arrow-left"></i>Back</button>
+<button class="btn btn-danger" id="ra-delete-btn" style="display:none" onclick="raDeleteCurrent()"><i class="ti ti-trash"></i>Delete</button>
 <button class="btn btn-primary" onclick="raSave()"><i class="ti ti-device-floppy"></i>Save</button>
 </div>
 </div>
@@ -648,29 +649,7 @@
 </div>
 </div>
 </div>
-<div class="ai-panel" id="ai-panel" style="display:none"><div class="ai-window" id="ai-window"><div class="ai-header"><div style="width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;font-size:18px"><i class="ti ti-brain" style="color:#fff"></i></div><div style="flex:1;margin-left:10px"><div class="ai-title">AURIS AI Assistant</div><div class="ai-subtitle">P
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+<div class="ai-panel" id="ai-panel" style="display:none"><div class="ai-window" id="ai-window"><div class="ai-header"><div style="width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;font-size:18px"><i class="ti ti-brain" style="color:#fff"></i></div><div s
 
 
 
@@ -680,6 +659,12 @@
 
 
 <script>
+
+
+
+
+
+
 
 
 
@@ -1319,15 +1304,20 @@ async function loadRA(){
       var dt=x.assessment_date?new Date(x.assessment_date).toLocaleDateString('en-GB'):'--';
       var rv=x.review_date?new Date(x.review_date).toLocaleDateString('en-GB'):'--';
       var overdue=x.review_date&&new Date(x.review_date)<today&&x.status!=='closed';
-      h+='<tr style="border-bottom:1px solid #f3f4f6;cursor:pointer" data-id="'+x.id+'" onclick="raOpen(this.dataset.id)">'
+      h+='<tr style="border-bottom:1px solid #f3f4f6" data-id="'+x.id+'">'
         +'<td style="padding:10px"><strong>'+(x.ra_ref||'—')+'</strong></td>'
-        +'<td style="padding:10px">'+(x.title||'—')+'</td>'
-        +'<td style="padding:10px">'+typeBadge(x.ra_type)+'</td>'
+        +'<td style="padding:10px;cursor:pointer" onclick="raOpen(\''+x.id+'\')"><span style="color:var(--green);font-weight:600">'+(x.title||'—')+'</span></td>'
+        +'<td style="padding:10px">'+typeBadge(x.ra_type||'baseline')+'</td>'
         +'<td style="padding:10px">'+(x.assessed_by||'—')+'</td>'
         +'<td style="padding:10px">'+dt+'</td>'
         +'<td style="padding:10px;'+(overdue?'color:var(--red);font-weight:700':'')+'">'+rv+(overdue?' ⚠':'')+'</td>'
         +'<td style="padding:10px">'+stat(x.status)+'</td>'
-        +'<td style="padding:10px"><button class="btn btn-sm" data-id="'+x.id+'" onclick="event.stopPropagation();raOpen(this.dataset.id)"><i class="ti ti-edit"></i></button></td>'
+        +'<td style="padding:10px">'
+        +'<div style="display:flex;gap:4px">'
+        +'<button class="btn btn-sm" title="Edit" data-id="'+x.id+'" onclick="event.stopPropagation();raOpen(this.dataset.id)"><i class="ti ti-edit"></i></button>'
+        +(isMgr()?'<button class="btn btn-sm" title="Delete" style="color:var(--red)" data-id="'+x.id+'" onclick="event.stopPropagation();raDelete(this.dataset.id)"><i class="ti ti-trash"></i></button>':'')
+        +'</div>'
+        +'</td>'
         +'</tr>';
     });
     h+='</tbody></table>';
@@ -1399,6 +1389,8 @@ function raNew(type){
   document.getElementById('ra-baseline-form').style.display=type==='baseline'?'block':'none';
   document.getElementById('ra-task-form').style.display=type==='task'?'block':'none';
   document.getElementById('ra-dynamic-form').style.display=type==='dynamic'?'block':'none';
+  var delBtn=document.getElementById('ra-delete-btn');
+  if(delBtn)delBtn.style.display='none';
   // Add 3 default rows
   if(type==='baseline'){raBaselineAddRow();raBaselineAddRow();raBaselineAddRow();}
   if(type==='task'){raTaskAddRow();raTaskAddRow();raTaskAddRow();}
@@ -1409,7 +1401,7 @@ function raNew(type){
 function raOpen(id){
   var ra=raAllData.find(function(x){return x.id===id;});
   if(!ra)return;
-  raEditingId=id; raEditingType=ra.ra_type;
+  raEditingId=id; raEditingType=ra.ra_type||'baseline';
   raClearForm();
   document.getElementById('ra-form-title').textContent={baseline:'Baseline / Generic RA',task:'Task-Based RA',dynamic:'Dynamic RA'}[ra.ra_type]||'Risk Assessment';
   document.getElementById('ra-form-ref').textContent=ra.ra_ref||'';
@@ -1607,8 +1599,7 @@ function raCollectRows(type){
 }
 
 async function raSave(){
-  var type=raEditingType;
-  if(!type){toast('Unknown RA type',false);return;}
+  var type=raEditingType||'baseline';
   var g=function(id){var el=document.getElementById(id);return el?el.value||null:null;};
   var body={
     company_id:prof?.company_id,
@@ -1673,6 +1664,17 @@ async function raSyncToMAP(raId,body,type){
 }
 
 async function saveRA(){raSave();}
+
+async function raDeleteCurrent(){
+  if(!raEditingId)return;
+  if(!confirm('Delete this risk assessment? This cannot be undone.'))return;
+  try{
+    await api('/risk_assessments?id=eq.'+raEditingId,{m:'DELETE'});
+    toast('Risk assessment deleted!');
+    raEditingId=null;
+    raShowList();
+  }catch(e){toast(e.message,false);console.error(e);}
+}
 
 async function loadInvs(){
   const btn=document.getElementById('inv-add-btn');
@@ -2317,340 +2319,21 @@ sel.innerHTML=d?.length?d.map(c=>'<option value="'+c.id+'">'+c.name+'</option>')
 }
 loadCoDrop();
 document.getElementById('if-date')&&(document.getElementById('if-date').value=new Date().toISOString().slice(0,10));
-let kpiObjectives=[],kpiKPIs=[],kpiIndicators=[],kpiMonthlyData={};
-let kpiSelectedColor='#1D9E75',kpiEditObjId=null,kpiEditKpiId=null;
-let kpiEntryIndicatorId=null,kpiEntryYear=null,kpiEntryMonth=null;
-const KPI_MONTHS=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-let kpiIndicatorRows=[];
-async function loadKPIs(){
-const btn=document.getElementById('kpi-add-obj-btn');
-if(btn&&isMgr())btn.style.display='flex';
-document.getElementById('kpi-co-label').textContent=co?.name||'';
-const yr=parseInt(document.getElementById('year-sel')?.value)||new Date().getFullYear();
-document.getElementById('kpi-monthly-year').textContent=yr;
-await kpiLoadAll();
-}
 async function kpiLoadAll(){
-const yr=parseInt(document.getElementById('year-sel')?.value)||new Date().getFullYear();
+var yr=parseInt(document.getElementById('year-sel')?.value)||new Date().getFullYear();
 document.getElementById('kpi-monthly-year').textContent=yr;
+try{
 kpiObjectives=[];kpiKPIs=[];kpiIndicators=[];kpiMonthlyData={};
 await kpiLoadObjectives(yr);
 await kpiLoadKPIsData(yr);
 await kpiLoadIndicators();
 await kpiLoadMonthly(yr);
 kpiRenderOverview();kpiRenderMonthly();kpiUpdateMetrics();
-}
-async function kpiLoadObjectives(yr){
-try{const d=await api('/objectives?select=*'+cf()+'&year=eq.'+yr+'&order=sort_order,code');kpiObjectives=d||[];}catch(e){kpiObjectives=[];}
-}
-async function kpiLoadKPIsData(yr){
-try{const d=await api('/kpis_v2?select=*'+cf()+'&year=eq.'+yr+'&order=code');kpiKPIs=d||[];}catch(e){kpiKPIs=[];}
-}
-async function kpiLoadIndicators(){
-try{
-if(!kpiKPIs.length){kpiIndicators=[];return;}
-const d=await api('/kpi_indicators?select=*'+cf()+'&order=sort_order,created_at');
-const kpiIds=new Set(kpiKPIs.map(k=>k.id));
-kpiIndicators=(d||[]).filter(i=>kpiIds.has(i.kpi_id));
-}catch(e){kpiIndicators=[];}
-}
-async function kpiLoadMonthly(yr){
-try{
-const d=await api('/kpi_monthly_data?select=*'+cf()+'&year=eq.'+yr);
-kpiMonthlyData={};
-(d||[]).forEach(r=>{
-const key=r.indicator_id||r.kpi_id;
-if(!kpiMonthlyData[key])kpiMonthlyData[key]={};
-kpiMonthlyData[key][r.month]=r;
-});
-}catch(e){kpiMonthlyData={};}
-}
-function kpiUpdateMetrics(){
-const total=kpiKPIs.length;
-const onTrack=kpiKPIs.filter(k=>k.status==='on_track').length;
-const atRisk=kpiKPIs.filter(k=>k.status==='at_risk').length;
-const offTrack=kpiKPIs.filter(k=>k.status==='off_track').length;
-const notStarted=kpiKPIs.filter(k=>k.status==='not_started').length;
-document.getElementById('km-total').textContent=total;
-document.getElementById('km-ontrack').textContent=onTrack;
-document.getElementById('km-atrisk').textContent=atRisk;
-document.getElementById('km-offtrack').textContent=offTrack;
-document.getElementById('km-total').style.color='var(--text)';
-document.getElementById('km-ontrack').style.color=onTrack>0?'var(--green)':'var(--text3)';
-document.getElementById('km-atrisk').style.color=atRisk>0?'var(--amber)':'var(--text3)';
-document.getElementById('km-offtrack').style.color=offTrack>0?'var(--red)':'var(--text3)';
-}
-function kpiFmtTarget(ind){
-const op={eq:'',gte:'>=',lte:'<=',gt:'>',lt:'<'}[ind.target_operator||'gte']||'>=';
-return op+(ind.target_value!==null&&ind.target_value!==undefined?ind.target_value:'--')+(ind.unit?' '+ind.unit:'');
-}
-function kpiStatBadge(s){
-const cls={on_track:'bg',at_risk:'ba',off_track:'br',not_started:'bgr'}[s]||'bgr';
-const lbl={on_track:'On Track',at_risk:'At Risk',off_track:'Off Track',not_started:'Not Started'}[s]||s;
-return '<span class="badge '+cls+'">'+lbl+'</span>';
-}
-function kpiCellStyle(ind,val){
-if(val===null||val===undefined)return '';
-const t=parseFloat(ind.target_value);if(isNaN(t))return '';
-const op=ind.target_operator||'gte';
-let ok=op==='eq'?val===t:op==='gte'?val>=t:op==='lte'?val<=t:op==='gt'?val>t:val<t;
-if(ok)return 'background:#EAF3DE;color:#3B6D11;font-weight:600';
-const diff=Math.abs(val-t)/Math.max(Math.abs(t),1);
-return diff<=0.15?'background:#FAEEDA;color:#854F0B;font-weight:600':'background:#FCEBEB;color:#A32D2D;font-weight:600';
-}
-function kpiGetProgress(ind,actual){
-if(actual===null||actual===undefined)return null;
-const t=parseFloat(ind.target_value);if(isNaN(t))return null;
-if(t===0)return actual===0?100:0;
-const op=ind.target_operator||'gte';
-if(op==='lte'||op==='lt')return Math.min(100,Math.max(0,(1-(actual/t))*100+100));
-return Math.min(100,Math.max(0,(actual/t)*100));
-}
-function kpiProgColor(prog){return prog>=100?'#1D9E75':prog>=70?'#EF9F27':'#E24B4A';}
-function kpiRenderOverview(){
-const c=document.getElementById('kpi-objectives-container');
-if(!kpiObjectives.length){
-c.innerHTML='<div style="text-align:center;padding:40px;color:var(--text3)">No objectives yet'+(isMgr()?' - click Add objective to start':'')+'</div>';
-return;
-}
-c.innerHTML='';
-kpiObjectives.forEach(function(obj){
-const objKPIs=kpiKPIs.filter(function(k){return k.objective_id===obj.id;});
-const onT=objKPIs.filter(function(k){return k.status==='on_track';}).length;
-const totalInds=objKPIs.reduce(function(s,k){return s+kpiIndicators.filter(function(i){return i.kpi_id===k.id;}).length;},0);
-const block=document.createElement('div');
-block.style.cssText='margin-bottom:20px;border-radius:12px;overflow:hidden;border:1px solid var(--border)';
-const hdr=document.createElement('div');
-hdr.style.cssText='display:flex;align-items:center;gap:10px;padding:12px 16px;background:'+obj.color+';cursor:pointer';
-hdr.onclick=function(){kpiToggleObj(obj.id);};
-const numEl=document.createElement('div');
-numEl.style.cssText='width:28px;height:28px;border-radius:50%;background:rgba(255,255,255,.25);color:#fff;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0';
-numEl.textContent=obj.code||'?';
-const nameEl=document.createElement('div');
-nameEl.style.cssText='flex:1;font-size:14px;font-weight:700;color:#fff';
-nameEl.textContent=obj.name;
-const metaEl=document.createElement('div');
-metaEl.style.cssText='font-size:11px;color:rgba(255,255,255,.8)';
-metaEl.textContent=objKPIs.length+' KPI'+(objKPIs.length!==1?'s':'')+' · '+totalInds+' indicator'+(totalInds!==1?'s':'')+' · '+onT+'/'+objKPIs.length+' on track';
-hdr.appendChild(numEl);hdr.appendChild(nameEl);hdr.appendChild(metaEl);
-if(isMgr()){
-const acts=document.createElement('div');
-acts.style.cssText='display:flex;gap:4px';
-acts.onclick=function(e){e.stopPropagation();};
-const addKpiBtn=document.createElement('button');
-addKpiBtn.style.cssText='background:rgba(255,255,255,.2);border:none;color:#fff;border-radius:6px;padding:4px 10px;cursor:pointer;font-size:11px;display:flex;align-items:center;gap:4px';
-addKpiBtn.innerHTML='<i class="ti ti-plus"></i>Add KPI';
-addKpiBtn.onclick=function(e){e.stopPropagation();openKpiAddModal(null,obj.id);};
-const editBtn=document.createElement('button');
-editBtn.style.cssText='background:rgba(255,255,255,.2);border:none;color:#fff;border-radius:6px;padding:4px 8px;cursor:pointer;font-size:11px';
-editBtn.innerHTML='<i class="ti ti-edit"></i>';
-editBtn.onclick=function(e){e.stopPropagation();openObjModal(obj.id);};
-acts.appendChild(addKpiBtn);acts.appendChild(editBtn);hdr.appendChild(acts);
-}
-const chevron=document.createElement('i');
-chevron.className='ti ti-chevron-down';
-chevron.style.cssText='color:rgba(255,255,255,.7);font-size:16px';
-chevron.id='kpi-chev-'+obj.id;
-hdr.appendChild(chevron);
-block.appendChild(hdr);
-const body=document.createElement('div');
-body.id='kpi-obj-body-'+obj.id;
-body.style.cssText='background:var(--card);display:block';
-if(!objKPIs.length){
-body.innerHTML='<div style="text-align:center;padding:20px;color:var(--text3);font-size:13px">No KPIs yet'+(isMgr()?' - click + Add KPI above':'')+'</div>';
-}else{
-const tbl=document.createElement('table');
-tbl.style.cssText='width:100%;border-collapse:collapse;font-size:13px';
-tbl.innerHTML='<thead><tr>'
-+'<th style="text-align:left;font-weight:600;color:var(--text2);padding:9px 12px;border-bottom:1px solid var(--border);font-size:11px;text-transform:uppercase;background:#fafafa;width:50px">Code</th>'
-+'<th style="text-align:left;font-weight:600;color:var(--text2);padding:9px 12px;border-bottom:1px solid var(--border);font-size:11px;text-transform:uppercase;background:#fafafa">KPI name</th>'
-+'<th style="text-align:left;font-weight:600;color:var(--text2);padding:9px 12px;border-bottom:1px solid var(--border);font-size:11px;text-transform:uppercase;background:#fafafa">Measurement indicator</th>'
-+'<th style="text-align:left;font-weight:600;color:var(--text2);padding:9px 12px;border-bottom:1px solid var(--border);font-size:11px;text-transform:uppercase;background:#fafafa;width:90px">Target</th>'
-+'<th style="text-align:left;font-weight:600;color:var(--text2);padding:9px 12px;border-bottom:1px solid var(--border);font-size:11px;text-transform:uppercase;background:#fafafa">Responsible</th>'
-+'<th style="text-align:left;font-weight:600;color:var(--text2);padding:9px 12px;border-bottom:1px solid var(--border);font-size:11px;text-transform:uppercase;background:#fafafa">Status</th>'
-+'</tr></thead>';
-const tbody=document.createElement('tbody');
-objKPIs.forEach(function(k){
-const inds=kpiIndicators.filter(function(i){return i.kpi_id===k.id;});
-const tr=document.createElement('tr');
-tr.style.cursor='pointer';
-tr.onmouseover=function(){this.style.background='#f9fafb';};
-tr.onmouseout=function(){this.style.background='';};
-tr.onclick=function(){openKpiAddModal(k.id,obj.id);};
-if(!inds.length){
-tr.innerHTML='<td style="padding:10px 12px;border-bottom:1px solid var(--border);color:var(--text2);font-size:11px;font-weight:700;vertical-align:middle">'+(k.code||'')+'</td>'
-+'<td style="padding:10px 12px;border-bottom:1px solid var(--border);vertical-align:middle"><strong>'+k.name+'</strong></td>'
-+'<td style="padding:10px 12px;border-bottom:1px solid var(--border);color:var(--text3);font-size:12px;font-style:italic" colspan="2">No indicators yet</td>'
-+'<td style="padding:10px 12px;border-bottom:1px solid var(--border);font-size:12px">'+(k.responsible||'--')+'</td>'
-+'<td style="padding:10px 12px;border-bottom:1px solid var(--border)">'+kpiStatBadge(k.status)+'</td>';
-tbody.appendChild(tr);
-}else{
-inds.forEach(function(ind,indIdx){
-const indRow=indIdx===0?tr:document.createElement('tr');
-if(indIdx>0){
-indRow.style.cursor='pointer';
-indRow.onmouseover=function(){this.style.background='#f9fafb';};
-indRow.onmouseout=function(){this.style.background='';};
-indRow.onclick=function(){openKpiAddModal(k.id,obj.id);};
-}
-const isLast=indIdx===inds.length-1;
-const borderStyle=isLast?'border-bottom:2px solid var(--border)':'border-bottom:1px solid #f0f0f0';
-indRow.innerHTML=
-(indIdx===0?'<td style="padding:10px 12px;'+borderStyle+';color:var(--text2);font-size:11px;font-weight:700;vertical-align:middle" rowspan="'+inds.length+'">'+(k.code||'')+'</td>'
-+'<td style="padding:10px 12px;'+borderStyle+';vertical-align:middle" rowspan="'+inds.length+'"><strong>'+k.name+'</strong><br><span style="font-size:11px;color:var(--text3)">'+(k.frequency||'monthly')+'</span></td>':'')
-+'<td style="padding:8px 12px;'+borderStyle+';font-size:12px;color:var(--text2)">'+ind.name+'</td>'
-+'<td style="padding:8px 12px;'+borderStyle+';font-size:12px;font-weight:600;color:var(--text)">'+kpiFmtTarget(ind)+'</td>'
-+(indIdx===0?'<td style="padding:10px 12px;'+borderStyle+';font-size:12px" rowspan="'+inds.length+'">'+(k.responsible||'--')+'</td>'
-+'<td style="padding:10px 12px;'+borderStyle+'" rowspan="'+inds.length+'">'+kpiStatBadge(k.status)+'</td>':'');
-tbody.appendChild(indRow);
-});
-}
-});
-tbl.appendChild(tbody);
-body.appendChild(tbl);
-}
-block.appendChild(body);
-c.appendChild(block);
-});
-}
-function kpiRenderMonthly(){
-const tbody=document.getElementById('kpi-monthly-body');
-tbody.innerHTML='';
-if(!kpiObjectives.length){
-tbody.innerHTML='<tr><td colspan="17" style="text-align:center;padding:30px;color:var(--text3)">No objectives yet</td></tr>';
-return;
-}
-let hasAny=false;
-kpiObjectives.forEach(function(obj){
-const objKPIs=kpiKPIs.filter(function(k){return k.objective_id===obj.id;});
-if(!objKPIs.length)return;
-hasAny=true;
-const objRow=document.createElement('tr');
-const objTd=document.createElement('td');
-objTd.colSpan=18;
-objTd.style.cssText='background:'+obj.color+'22;border-left:4px solid '+obj.color+';padding:7px 12px;font-weight:700;font-size:11px;color:'+obj.color+';text-transform:uppercase;border:1px solid var(--border)';
-objTd.textContent=obj.code+'. '+obj.name;
-objRow.appendChild(objTd);tbody.appendChild(objRow);
-objKPIs.forEach(function(k){
-const inds=kpiIndicators.filter(function(i){return i.kpi_id===k.id;});
-if(!inds.length){
-const pr=document.createElement('tr');
-pr.innerHTML='<td style="border:1px solid var(--border);padding:8px 12px;font-size:11px;font-weight:700;color:var(--text2);text-align:center">'+(k.code||'')+'</td>'
-+'<td style="border:1px solid var(--border);padding:8px 12px;font-size:12px;font-weight:600">'+k.name+'</td>'
-+'<td colspan="15" style="border:1px solid var(--border);padding:8px 12px;font-size:12px;color:var(--text2);font-style:italic">No indicators added yet</td>'
-+'<td style="border:1px solid var(--border)"></td>';
-tbody.appendChild(pr);return;
-}
-inds.forEach(function(ind,indIdx){
-const mdata=kpiMonthlyData[ind.id]||{};
-let ytdSum=0;let hasData=false;
-const tr=document.createElement('tr');
-if(indIdx===0){
-const codeTd=document.createElement('td');
-codeTd.style.cssText='border:1px solid var(--border);padding:8px 10px;font-size:11px;font-weight:700;color:var(--text2);text-align:center;vertical-align:middle';
-codeTd.rowSpan=inds.length;
-codeTd.textContent=k.code||'';
-tr.appendChild(codeTd);
-const nameTd=document.createElement('td');
-nameTd.style.cssText='border:1px solid var(--border);padding:8px 10px;font-size:12px;font-weight:600;vertical-align:middle';
-nameTd.rowSpan=inds.length;
-nameTd.textContent=k.name;
-tr.appendChild(nameTd);
-}
-const indTd=document.createElement('td');
-indTd.style.cssText='border:1px solid var(--border);padding:6px 10px;font-size:12px;color:var(--text2);vertical-align:middle';
-indTd.textContent=ind.name;
-tr.appendChild(indTd);
-const tgtTd=document.createElement('td');
-tgtTd.style.cssText='border:1px solid var(--border);padding:6px 8px;text-align:center;font-weight:600;font-size:12px;background:#f9fafb;white-space:nowrap';
-tgtTd.textContent=kpiFmtTarget(ind);
-tr.appendChild(tgtTd);
-KPI_MONTHS.forEach(function(_,mi){
-const m=mi+1;
-const entry=mdata[m];
-const td=document.createElement('td');
-td.style.cssText='border:1px solid var(--border);padding:6px 8px;text-align:center;cursor:pointer';
-td.title='Click to '+(entry?'edit':'enter value');
-if(entry&&entry.actual!==null&&entry.actual!==undefined){
-hasData=true;
-const val=parseFloat(entry.actual);
-ytdSum+=val;
-const sty=kpiCellStyle(ind,val);
-if(sty)td.style.cssText+=';'+sty;
-td.textContent=val+(ind.unit||'');
-}else{
-td.style.color='var(--text3)';
-td.textContent='--';
-}
-(function(indId,kId,mn){td.onclick=function(){kpiOpenEntry(indId,kId,mn);};})(ind.id,k.id,m);
-tr.appendChild(td);
-});
-const ytdVals=Object.values(mdata).filter(function(v){return v.ytd!==null&&v.ytd!==undefined;});
-const ytd=ytdVals.length?parseFloat(ytdVals[ytdVals.length-1].ytd):ytdSum;
-const ytdTd=document.createElement('td');
-const ytdSty=hasData?kpiCellStyle(ind,ytd):'';
-ytdTd.style.cssText='border:1px solid var(--border);padding:6px 8px;text-align:center;font-weight:700'+(ytdSty?';'+ytdSty:'');
-ytdTd.textContent=hasData?ytd+(ind.unit||''):'--';
-tr.appendChild(ytdTd);
-if(indIdx===0){
-const stTd=document.createElement('td');
-stTd.style.cssText='border:1px solid var(--border);padding:6px 8px;text-align:center;vertical-align:middle';
-stTd.rowSpan=inds.length;
-stTd.innerHTML=kpiStatBadge(k.status);
-tr.appendChild(stTd);
-}
-tbody.appendChild(tr);
-});
-});
-});
-if(!hasAny)tbody.innerHTML='<tr><td colspan="17" style="text-align:center;padding:30px;color:var(--text3)">No KPIs yet</td></tr>';
-}
-function kpiToggleObj(id){
-const b=document.getElementById('kpi-obj-body-'+id);
-const c=document.getElementById('kpi-chev-'+id);
-const open=b.style.display==='none';
-b.style.display=open?'block':'none';
-if(c)c.className='ti '+(open?'ti-chevron-up':'ti-chevron-down');
-}
-function kpiSwitchTab(tab,btn){
-document.querySelectorAll('.kpi-tab').forEach(t=>{t.style.background='transparent';t.style.color='var(--text2)';});
-btn.style.background='var(--green)';btn.style.color='#fff';
-document.getElementById('kpi-tab-overview').style.display=tab==='overview'?'block':'none';
-document.getElementById('kpi-tab-monthly').style.display=tab==='monthly'?'block':'none';
-}
-function kpiSelectColor(color,el){
-kpiSelectedColor=color;
-document.querySelectorAll('.kpi-color-dot').forEach(d=>d.style.border='2px solid transparent');
-if(el)el.style.border='3px solid var(--text)';
-else document.querySelectorAll('.kpi-color-dot').forEach(d=>{if(d.style.background===color)d.style.border='3px solid var(--text)';});
-}
-function closeKpiModal(id){document.getElementById(id).style.display='none';}
-function openKpiModal(id){document.getElementById(id).style.display='flex';}
-function openObjModal(id=null){
-kpiEditObjId=id;
-document.getElementById('obj-modal-title').textContent=id?'Edit objective':'Add objective';
-document.getElementById('obj-delete-btn').style.display=id?'flex':'none';
-if(id){
-const obj=kpiObjectives.find(o=>o.id===id);
-if(obj){document.getElementById('obj-code').value=obj.code||'';document.getElementById('obj-name').value=obj.name||'';document.getElementById('obj-year').value=obj.year||new Date().getFullYear();kpiSelectColor(obj.color||'#1D9E75',null);}
-}else{
-const nextCode=kpiObjectives.length+1;
-document.getElementById('obj-code').value=String(nextCode);
-document.getElementById('obj-name').value='';
-kpiSelectColor('#1D9E75',null);
-}
-openKpiModal('obj-modal');
-}
-async function kpiSaveObjective(){
-const name=document.getElementById('obj-name').value.trim();
-if(!name){toast('Please enter an objective name',false);return;}
-const body={company_id:prof?.company_id,code:document.getElementById('obj-code').value.trim(),name,color:kpiSelectedColor,year:parseInt(document.getElementById('obj-year').value),sort_order:parseInt(document.getElementById('obj-code').value)||99,created_by:prof?.id};
-try{
-if(kpiEditObjId)await api('/objectives?id=eq.'+kpiEditObjId,{m:'PATCH',p:'return=representation',b:body});
-else await api('/objectives',{m:'POST',p:'return=representation',b:body});
-toast(kpiEditObjId?'Objective updated!':'Objective added!');closeKpiModal('obj-modal');await kpiLoadAll();
 }catch(e){toast(e.message,false);}
 }
+
+
+
 async function kpiDeleteObjective(){
 if(!kpiEditObjId||!confirm("Delete this objective and all its KPIs?"))return;
 try{
@@ -2867,13 +2550,13 @@ const manualYtd=document.getElementById('entry-ytd').value;
 const autoYTD=kpiCalcYTD(kpiEntryIndicatorId,kpiEntryMonth,parseFloat(actual));
 let ytd=manualYtd!==''&&manualYtd!==String(autoYTD)?parseFloat(manualYtd):autoYTD;
 if(ytd===null)ytd=parseFloat(actual);
-const body={kpi_id:null,indicator_id:kpiEntryIndicatorId,company_id:prof?.company_id,year:kpiEntryYear,month:kpiEntryMonth,actual:parseFloat(actual),ytd,comment:document.getElementById('entry-comment').value||null,entered_by:prof?.id};
+const comment=document.getElementById('entry-comment').value;
 try{
-const existing=await api('/kpi_monthly_data?indicator_id=eq.'+kpiEntryIndicatorId+'&year=eq.'+kpiEntryYear+'&month=eq.'+kpiEntryMonth);
-if(existing&&existing.length>0){
-await api('/kpi_monthly_data?indicator_id=eq.'+kpiEntryIndicatorId+'&year=eq.'+kpiEntryYear+'&month=eq.'+kpiEntryMonth,{m:'PATCH',p:'return=representation',b:{actual:parseFloat(actual),ytd,comment:document.getElementById('entry-comment').value||null}});
+const existing=kpiMonthlyData[kpiEntryIndicatorId]?.[kpiEntryMonth];
+if(existing){
+await api('/kpi_monthly_data?indicator_id=eq.'+kpiEntryIndicatorId+'&year=eq.'+kpiEntryYear+'&month=eq.'+kpiEntryMonth,{m:'PATCH',p:'return=minimal',b:{actual:parseFloat(actual),ytd:ytd,comment:comment||null}});
 }else{
-await api('/kpi_monthly_data',{m:'POST',p:'return=representation',b:body});
+await api('/kpi_monthly_data',{m:'POST',p:'return=minimal',b:{indicator_id:kpiEntryIndicatorId,year:kpiEntryYear,month:kpiEntryMonth,actual:parseFloat(actual),ytd:ytd,comment:comment||null,company_id:prof?.company_id}});
 }
 const ind=kpiIndicators.find(x=>x.id===kpiEntryIndicatorId);
 const k=kpiKPIs.find(x=>kpiIndicators.some(i=>i.kpi_id===x.id&&i.id===kpiEntryIndicatorId));
@@ -2890,6 +2573,7 @@ kpiObjectives=[];kpiKPIs=[];kpiIndicators=[];kpiMonthlyData={};
 await kpiLoadAll();
 }catch(e){toast(e.message,false);}
 }
+
 async function kpiRecalcAllYTD(indicatorId,year){
 const ind=kpiIndicators.find(x=>x.id===indicatorId);
 if(!ind)return;
@@ -2918,6 +2602,7 @@ await api('/kpi_monthly_data?indicator_id=eq.'+indicatorId+'&year=eq.'+year+'&mo
 }
 }catch(e){console.error('YTD recalc error:',e);}
 }
+
 async function kpiClearEntry(){
 if(!confirm("Clear this month's data? This cannot be undone."))return;
 try{
@@ -2928,6 +2613,19 @@ kpiObjectives=[];kpiKPIs=[];kpiIndicators=[];kpiMonthlyData={};
 await kpiLoadAll();
 }catch(e){toast(e.message,false);}
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
