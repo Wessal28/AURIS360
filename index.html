@@ -570,6 +570,8 @@
 <script>
 
 
+
+
 const SB='https://iarfxjhahzbhncsaohbg.supabase.co';
 const KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlhcmZ4amhhaHpiaG5jc2FvaGJnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg2OTM1MzAsImV4cCI6MjA5NDI2OTUzMH0.qSjahuX-RwnjWEDmo-LkcorAxpsmyVoaXt4AO4_A9BM';
 let tok=null,prof=null,co=null,chkItems=[],people=[];
@@ -597,7 +599,7 @@ const r=await fetch(SB+'/auth/v1'+path,{method:'POST',headers:{'Content-Type':'a
 const d=await r.json();if(!r.ok)throw new Error(d.error_description||d.msg||'Auth error');return d;
 }
 function cf(){return isSA()?'':(prof?.company_id?'&company_id=eq.'+prof.company_id:'&company_id=is.null');}
-function toast(m,ok=true){const t=document.getElementById('toast');t.textContent=m;t.className='toast '+(ok?'toast-ok':'toast-err');t.style.display='block';setTimeout(()=>t.style.display='none',3500);}
+function toast(m,ok=true){const t=document.getElementById('toast');if(!t){console.log('Toast:',m);return;}t.textContent=m;t.className='toast '+(ok?'toast-ok':'toast-err');t.style.display='block';setTimeout(()=>t.style.display='none',3500);}
 function fmt(d){return d?new Date(d).toLocaleDateString('en-GB'):'--';}
 function sev(s){const m={low:'bb',medium:'ba',high:'br',critical:'br'};return '<span class="badge '+(m[s]||'bb')+'">'+( s||'--')+'</span>';}
 function stat(s){const c={open:'ba',in_progress:'ba',closed:'bg',on_track:'bg',at_risk:'ba',off_track:'br',completed:'bb',approved:'bg',active:'bg',draft:'bgr',pending_approval:'ba',cancelled:'br',review:'ba',current:'bg',superseded:'br',valid:'bg',expired:'br',pending:'ba',active:'bg',inactive:'bgr',suspended:'br'};return '<span class="badge '+(c[s]||'bgr')+'">'+( s||'').replace(/_/g,' ')+'</span>';}
@@ -1020,19 +1022,17 @@ inv_ref:invRef,
 inv_type:invType,
 status:'open',
 event_id:e.id,
-// WS1 fields pre-filled from event
 reported_by:e.reported_by||prof?.full_name||null,
 incident_date:e.event_date?e.event_date.slice(0,10):null,
 incident_time:e.event_date?new Date(e.event_date).toTimeString().slice(0,5):null,
 incident_location:e.location||null,
 incident_description:e.description||null,
 person_name:e.person_involved||null,
-department:e.department||null,
 first_aid_details:e.immediate_action||null,
 immediate_actions:e.immediate_action||null,
-// Classification based on event type
 class_hs:(e.event_type==='Incident'||e.event_type==='Near Miss'||e.event_type==='Dangerous Occurrence'),
 class_env:(e.event_type==='Environmental'),
+class_site:false,
 investigated_by:prof?.full_name||null,
 further_analyses:invType==='full',
 created_by:prof?.id,
@@ -1050,8 +1050,8 @@ updated_at:new Date().toISOString()
 // Update local evAllData
 const ev=evAllData.find(function(x){return x.id===eventId;});
 if(ev){ev.investigation_id=invId;ev.status='under_investigation';}
-toast('Investigation '+invRef+' created!');
 evCloseModal();
+toast('Investigation '+invRef+' created!');
 // Navigate to investigation page and open the form
 await loadInvs();
 // Wait for loadInvs to complete then open the form
@@ -2435,6 +2435,8 @@ kpiObjectives=[];kpiKPIs=[];kpiIndicators=[];kpiMonthlyData={};
 await kpiLoadAll();
 }catch(e){toast(e.message,false);}
 }
+
+
 
 
 
