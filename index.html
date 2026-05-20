@@ -748,6 +748,10 @@
 
 
 
+
+
+
+
 const SB='https://iarfxjhahzbhncsaohbg.supabase.co';
 const KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlhcmZ4amhhaHpiaG5jc2FvaGJnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg2OTM1MzAsImV4cCI6MjA5NDI2OTUzMH0.qSjahuX-RwnjWEDmo-LkcorAxpsmyVoaXt4AO4_A9BM';
 let tok=null,prof=null,co=null,chkItems=[],people=[];
@@ -1185,6 +1189,20 @@ try{await api('/events?id=eq.'+evEditingId,{m:'DELETE'});toast('Event deleted!')
 async function evStartInvestigation(eventId){
 const e=evAllData.find(function(x){return x.id===eventId;});
 if(!e)return;
+// Guard: check if investigation already exists for this event
+try{
+const existing=await api('/investigations?event_id=eq.'+eventId+'&select=id,inv_ref'+cf());
+if(existing&&existing.length){
+toast('Investigation '+existing[0].inv_ref+' already exists for this event');
+// Open the existing investigation
+await loadInvs();
+setTimeout(function(){
+showPage('investigation',document.querySelector('.nav-item[onclick*="investigation"]'));
+setTimeout(function(){invOpen(existing[0].id);},200);
+},300);
+return;
+}
+}catch(ex){console.warn('Could not check existing investigation',ex);}
 try{
 // Determine investigation type based on severity
 const invType=(e.severity==='high'||e.severity==='critical')?'full':'basic';
@@ -1221,7 +1239,7 @@ if(!invId)throw new Error('Could not create investigation');
 // Link event to investigation
 await api('/events?id=eq.'+eventId,{m:'PATCH',p:'return=minimal',b:{
 investigation_id:invId,
-status:'under_investigation',
+status:'open',
 updated_at:new Date().toISOString()
 }});
 // Update local evAllData
@@ -1360,6 +1378,8 @@ async function inspOpen(id){
   if(srd)srd.value=rec.reviewed_date?rec.reviewed_date.slice(0,10):'';
   try{
     var items=await api('/inspection_items?inspection_id=eq.'+id);
+    // Normalize: old records use 'item' column, new use 'item_name'
+    (items||[]).forEach(function(it){if(!it.item_name&&it.item)it.item_name=it.item;});
     buildChecklist(items||[]);
   }catch(e){buildChecklist([]);}
 }
@@ -1401,34 +1421,51 @@ function updateScore(){inspScore();}
 
 
 async function loadInsps(){
-const el=document.getElementById('inspections-list');
-if(!el)return;
-try{
-const d=await api('/inspections?select=*'+cf()+'&order=inspection_date.desc');
-if(!d||!d.length){el.innerHTML='<p style="padding:20px;color:#666">No inspections yet</p>';return;}
-let h='<table style="width:100%;border-collapse:collapse">';
-h+='<thead><tr style="background:#f9fafb">';
-h+='<th style="padding:10px;text-align:left;border-bottom:1px solid #e5e7eb">Date</th>';
-h+='<th style="padding:10px;text-align:left;border-bottom:1px solid #e5e7eb">Site</th>';
-h+='<th style="padding:10px;text-align:left;border-bottom:1px solid #e5e7eb">Performed by</th>';
-h+='<th style="padding:10px;text-align:center;border-bottom:1px solid #e5e7eb">Good</th>';
-h+='<th style="padding:10px;text-align:center;border-bottom:1px solid #e5e7eb">Insuf.</th>';
-h+='</tr></thead><tbody>';
-for(var i=0;i<d.length;i++){
-var x=d[i];
-var dt=x.inspection_date?new Date(x.inspection_date).toLocaleDateString('en-GB'):'--';
-h+='<tr style="border-bottom:1px solid #f3f4f6">';
-h+='<td style="padding:10px">'+dt+'</td>';
-h+='<td style="padding:10px">'+(x.site||'--')+'</td>';
-h+='<td style="padding:10px">'+(x.performed_by||'--')+'</td>';
-h+='<td style="padding:10px;text-align:center">'+(x.score_good||0)+'</td>';
-h+='<td style="padding:10px;text-align:center">'+(x.score_insuf||0)+'</td>';
-h+='</tr>';
+  const el=document.getElementById('inspections-list');
+  if(!el)return;
+  try{
+    const d=await api('/inspections?select=*'+cf()+'&order=inspection_date.desc');
+    inspAllData=d||[];
+    if(!d||!d.length){
+      el.innerHTML='<p style="padding:20px;color:#666">No inspections yet — click <strong>New inspection</strong> to start.</p>';
+      return;
+    }
+    let h='<table style="width:100%;border-collapse:collapse">'
+      +'<thead><tr style="background:#f9fafb">'
+      +'<th style="padding:10px 16px;text-align:left;border-bottom:1px solid var(--border);font-size:11px;text-transform:uppercase;color:var(--text2)">Date</th>'
+      +'<th style="padding:10px;text-align:left;border-bottom:1px solid var(--border);font-size:11px;text-transform:uppercase;color:var(--text2)">Site</th>'
+      +'<th style="padding:10px;text-align:left;border-bottom:1px solid var(--border);font-size:11px;text-transform:uppercase;color:var(--text2)">Inspector</th>'
+      +'<th style="padding:10px;text-align:center;border-bottom:1px solid var(--border);font-size:11px;text-transform:uppercase;color:var(--green)">Good</th>'
+      +'<th style="padding:10px;text-align:center;border-bottom:1px solid var(--border);font-size:11px;text-transform:uppercase;color:var(--amber)">Insuf.</th>'
+      +'<th style="padding:10px;text-align:center;border-bottom:1px solid var(--border);font-size:11px;text-transform:uppercase;color:var(--text2)">Score</th>'
+      +'<th style="padding:10px;width:100px;border-bottom:1px solid var(--border)"></th>'
+      +'</tr></thead><tbody>';
+    d.forEach(function(x){
+      var dt=x.inspection_date?new Date(x.inspection_date).toLocaleDateString('en-GB'):'--';
+      var total=(x.score_good||0)+(x.score_insuf||0);
+      var pct=total>0?Math.round((x.score_good||0)/total*100):null;
+      var pctCol=pct===null?'var(--text2)':pct>=80?'var(--green)':pct>=60?'var(--amber)':'var(--red)';
+      var pctStr=pct===null?'--':pct+'%';
+      h+='<tr style="border-bottom:1px solid #f3f4f6">'
+        +'<td style="padding:10px 16px;font-weight:600">'+dt+'</td>'
+        +'<td style="padding:10px;cursor:pointer;color:var(--green);font-weight:600" data-id="'+x.id+'" onclick="inspOpen(this.dataset.id)">'+(x.site||'—')+'</td>'
+        +'<td style="padding:10px">'+(x.performed_by||'—')+'</td>'
+        +'<td style="padding:10px;text-align:center;color:var(--green);font-weight:600">'+(x.score_good||0)+'</td>'
+        +'<td style="padding:10px;text-align:center;color:var(--amber);font-weight:600">'+(x.score_insuf||0)+'</td>'
+        +'<td style="padding:10px;text-align:center;font-weight:700;color:'+pctCol+'">'+pctStr+'</td>'
+        +'<td style="padding:10px">'
+        +'<div style="display:flex;gap:4px">'
+        +'<button class="btn btn-sm" title="Open" data-id="'+x.id+'" onclick="inspOpen(this.dataset.id)" style="color:var(--green)"><i class="ti ti-eye"></i> Open</button>'
+        +(isMgr()?'<button class="btn btn-sm" title="Delete" style="color:var(--red)" data-id="'+x.id+'" onclick="inspDeleteFromList(this.dataset.id)"><i class="ti ti-trash"></i></button>':'')
+        +'</div>'
+        +'</td>'
+        +'</tr>';
+    });
+    h+='</tbody></table>';
+    el.innerHTML=h;
+  }catch(e){el.innerHTML='<p style="padding:20px;color:red">'+e.message+'</p>';console.error(e);}
 }
-h+='</tbody></table>';
-el.innerHTML=h;
-}catch(e){el.innerHTML='<p style="padding:20px;color:red">'+e.message+'</p>';console.error(e);}
-}
+
 
 async function saveInspection(){
 try{
@@ -3122,6 +3159,10 @@ kpiObjectives=[];kpiKPIs=[];kpiIndicators=[];kpiMonthlyData={};
 await kpiLoadAll();
 }catch(e){toast(e.message,false);}
 }
+
+
+
+
 
 
 
