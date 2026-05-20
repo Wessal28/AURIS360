@@ -752,6 +752,7 @@
 
 
 
+
 const SB='https://iarfxjhahzbhncsaohbg.supabase.co';
 const KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlhcmZ4amhhaHpiaG5jc2FvaGJnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg2OTM1MzAsImV4cCI6MjA5NDI2OTUzMH0.qSjahuX-RwnjWEDmo-LkcorAxpsmyVoaXt4AO4_A9BM';
 let tok=null,prof=null,co=null,chkItems=[],people=[];
@@ -1469,44 +1470,76 @@ async function loadInsps(){
 
 async function saveInspection(){
 try{
-let g=0,ins=0;
-const items=chkItems.map((c,i)=>{const gv=document.getElementById('cg-'+i)?.checked,iv=document.getElementById('ci-'+i)?.checked,ov=document.getElementById('co-'+i)?.value||'';if(gv)g++;if(iv)ins++;return{category:c.cat,item_name:c.item,result:gv?'good':iv?'insufficient':null,observation:ov};});
-const bid=document.getElementById('if-by').value;
-const res=await api('/inspections',{m:'POST',p:'return=representation',b:{company_id:prof?.company_id,site:document.getElementById('if-site').value,inspection_date:document.getElementById('if-date').value||null,performed_by:bid?pname(bid):prof?.full_name,employees_present:document.getElementById('if-emp').value,score_good:g,score_insuf:ins,positive_obs:document.getElementById('if-pos').value,negative_obs:document.getElementById('if-neg').value,created_by:prof?.id}});
-if(res?.[0]){
-const id=res[0].id;const sc=items.filter(x=>x.result);
-if(sc.length)await api('/inspection_items',{m:'POST',p:'return=minimal',b:sc.map(x=>({...x,inspection_id:id}))});
-const insuf=items.filter(x=>x.result==='insufficient');
-if(insuf.length){
-await api('/action_tracker',{m:'POST',p:'return=minimal',b:{company_id:prof?.company_id,source_module:'inspection',source_id:id,source_ref:'Inspection: '+(document.getElementById('if-site').value||'site'),description:'Address '+insuf.length+' insufficient item(s): '+insuf.map(x=>x.item_name).slice(0,3).join(', ')+(insuf.length>3?'...':''),responsible:bid?pname(bid):prof?.full_name,priority:ins>5?'high':'medium',status:'open',created_by:prof?.id}});
-toast('Inspection saved! '+insuf.length+' action(s) added to Master Action Plan.');
-}else{toast('Inspection saved!');}
-}
-toggleForm('insp-form');loadInsps();loadDash();
-}catch(e){toast(e.message,false);}
+  let g=0, ins=0;
+  const items=chkItems.map((c,i)=>{
+    if(!c.item)return null;
+    const gv=document.getElementById('cg-'+i)?.checked;
+    const iv=document.getElementById('ci-'+i)?.checked;
+    const nav=document.getElementById('cn-'+i)?.checked;
+    const ov=document.getElementById('co-'+i)?.value||'';
+    if(gv)g++; if(iv)ins++;
+    return{category:c.cat,item_name:c.item,result:gv?'good':iv?'insufficient':nav?'na':null,observation:ov};
+  }).filter(x=>x);
+
+  const bid=document.getElementById('if-by')?.value||'';
+  const inspector=document.getElementById('if-sign-inspector')?.value||(bid?pname(bid):prof?.full_name)||'';
+
+  const body={
+    company_id:prof?.company_id,
+    site:document.getElementById('if-site')?.value||null,
+    inspection_date:document.getElementById('if-date')?.value||null,
+    performed_by:inspector,
+    employees_present:document.getElementById('if-emp')?.value||null,
+    score_good:g, score_insuf:ins,
+    positive_obs:document.getElementById('if-pos')?.value||null,
+    negative_obs:document.getElementById('if-neg')?.value||null,
+    reviewed_by:document.getElementById('if-sign-reviewer')?.value||null,
+    reviewed_date:document.getElementById('if-sign-reviewer-date')?.value||null,
+    updated_at:new Date().toISOString()
+  };
+
+  let savedId=inspEditingId;
+
+  if(inspEditingId){
+    // UPDATE existing inspection
+    await api('/inspections?id=eq.'+inspEditingId,{m:'PATCH',p:'return=minimal',b:body});
+    // Delete old items and re-insert
+    await api('/inspection_items?inspection_id=eq.'+inspEditingId,{m:'DELETE'});
+    const sc=items.filter(x=>x.result);
+    if(sc.length)await api('/inspection_items',{m:'POST',p:'return=minimal',b:sc.map(x=>({...x,inspection_id:inspEditingId}))});
+    toast('Inspection updated!');
+  }else{
+    // CREATE new inspection
+    body.created_by=prof?.id;
+    const res=await api('/inspections',{m:'POST',p:'return=representation',b:body});
+    savedId=res?.[0]?.id;
+    if(savedId){
+      const sc=items.filter(x=>x.result);
+      if(sc.length)await api('/inspection_items',{m:'POST',p:'return=minimal',b:sc.map(x=>({...x,inspection_id:savedId}))});
+      // Add MAP action for insufficient items
+      const insuf=items.filter(x=>x.result==='insufficient');
+      if(insuf.length){
+        await api('/action_tracker',{m:'POST',p:'return=minimal',b:{
+          company_id:prof?.company_id,
+          source_module:'inspection',source_id:savedId,
+          source_ref:'Inspection: '+(body.site||'site'),
+          description:'Address '+insuf.length+' insufficient item(s): '+insuf.map(x=>x.item_name).slice(0,3).join(', ')+(insuf.length>3?'...':''),
+          responsible:inspector||null,
+          priority:ins>5?'high':'medium',
+          status:'open',created_by:prof?.id
+        }});
+        toast('Inspection saved! '+insuf.length+' action(s) added to MAP.');
+      }else{
+        toast('Inspection saved!');
+      }
+    }
+  }
+  // Go back to list
+  inspShowList();
+  loadDash();
+}catch(e){toast(e.message,false);console.error(e);}
 }
 
-// ===== RISK ASSESSMENT MODULE =====
-let raEditingId=null, raEditingType=null, raAllData=[];
-
-const RA_ROP={10:'Very High',8:'High',6:'Medium',4:'Low',1:'Very Low'};
-const RA_RS={100:'Death',40:'Permanent disability',21:'Lost time accident',8:'Non-LTA (<24h)',2:'First Aid only'};
-
-function raRLBadge(rl){
-  var n=parseInt(rl)||0;
-  var bg,col,label;
-  if(n>=600){bg='#FCEBEB';col='#A32D2D';label='Very Critical';}
-  else if(n>=210){bg='#FEF9EC';col='#854F0B';label='Critical';}
-  else if(n>=20){bg='#FAEEDA';col='#854F0B';label='Medium';}
-  else{bg='#EAF3DE';col='#3B6D11';label='Low';}
-  return '<span style="background:'+bg+';color:'+col+';padding:2px 7px;border-radius:4px;font-size:11px;font-weight:700">'+n+' ('+label+')</span>';
-}
-
-function raDynLevelBadge(l){
-  var m={low:{bg:'#EAF3DE',col:'#3B6D11'},medium:{bg:'#FAEEDA',col:'#854F0B'},high:{bg:'#FCEBEB',col:'#A32D2D'},critical:{bg:'#4A0000',col:'#fff'}};
-  var c=m[l]||{bg:'#f3f4f6',col:'#374151'};
-  return '<span style="background:'+c.bg+';color:'+c.col+';padding:2px 7px;border-radius:4px;font-size:11px;font-weight:700">'+(l||'—')+'</span>';
-}
 
 async function loadRA(){
   const btn=document.getElementById('risk-add-btn');
@@ -3159,6 +3192,7 @@ kpiObjectives=[];kpiKPIs=[];kpiIndicators=[];kpiMonthlyData={};
 await kpiLoadAll();
 }catch(e){toast(e.message,false);}
 }
+
 
 
 
