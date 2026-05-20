@@ -539,6 +539,7 @@
 <option value="draft">Draft</option><option value="open">Open</option><option value="closed">Closed</option>
 </select>
 <button class="btn" onclick="invShowList()"><i class="ti ti-arrow-left"></i>Back</button>
+<button class="btn" id="inv-delete-btn" style="display:none;color:var(--red);border-color:var(--red)" onclick="invDeleteCurrent()"><i class="ti ti-trash"></i>Delete</button>
 <button class="btn" id="inv-safety-comm-btn" style="display:none;background:#EC6607;color:#fff;border-color:#EC6607" onclick="generateSafetyComm(invEditingId)"><i class="ti ti-speakerphone"></i>Safety Comm</button>
 <button class="btn btn-primary" onclick="invSave()"><i class="ti ti-device-floppy"></i>Save</button>
 </div>
@@ -753,6 +754,9 @@
 <div class="ai-panel" id="ai-panel" style="display:none"><div class="ai-window" id="ai-window"><div class="ai-header"><div style="width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;font-size:18px"><i class="ti ti-brain" style="color:#fff"></i></div><div style="font-size:11px;color:rgba(255,255,255,.8)">Powered by Claude AI</div><button class="ai-close" onclick="document.getElementById('ai-window').classList.remove('open')"><i class="ti ti-x"></i></button></div><div class="ai-messages" id="ai-messages"></div><div class="ai-suggestions" id="ai-suggestions"></div><div class="ai-input-row"><input type="text" class="ai-input" id="ai-input" placeholder="Ask about HSE performance..." onkeydown="if(event.key==='Enter')sendAIMsg()"/><button class="ai-send" onclick="sendAIMsg()">Send</button></div></div><button class="ai-toggle" onclick="document.getElementById('ai-window').classList.toggle('open')"><i class="ti ti-brain"></i></button></div>
 <div class="toast" id="toast"></div>
 <script>
+
+
+
 
 
 
@@ -2297,8 +2301,10 @@ async function loadInvs(){
         +'<td style="padding:10px">'+typeBadge+'</td>'
         +'<td style="padding:10px">'+(x.investigated_by||'--')+'</td>'
         +'<td style="padding:10px">'+stat(x.status)+'</td>'
-        +'<td style="padding:10px"><button class="btn btn-sm" onclick="event.stopPropagation();invOpen(this.dataset.id)" data-id="'+x.id+'""><i class="ti ti-edit"></i></button></td>'
-        +'</tr>';
+        +'<td style="padding:10px"><div style="display:flex;gap:4px">'
+        +'<button class="btn btn-sm" onclick="event.stopPropagation();invOpen(this.dataset.id)" data-id="\''+x.id+'\'" title="Open"><i class="ti ti-edit"></i></button>'
+        +(isMgr()?'<button class="btn btn-sm" style="color:var(--red)" onclick="event.stopPropagation();invDelete(this.dataset.id)" data-id="\''+x.id+'\'" title="Delete"><i class="ti ti-trash"></i></button>':'')
+        +'</div></td>' +'</tr>';
     }
     h+='</tbody></table>';
     el.innerHTML=h;
@@ -2413,6 +2419,10 @@ async function invNew(){
   document.getElementById('ws1-reported-by').value=prof?.full_name||'';
   invTypeChange();
   invShowTab('ws1');
+  var dBtn2=document.getElementById('inv-delete-btn');
+  var sBtn2=document.getElementById('inv-safety-comm-btn');
+  if(dBtn2)dBtn2.style.display='none';
+  if(sBtn2)sBtn2.style.display='none';
   invShowForm();
 }
 
@@ -2487,6 +2497,10 @@ async function invOpen(id){
   if(inv.event_id){var evSel=document.getElementById('ws1-event-link');if(evSel)evSel.value=inv.event_id;}
   invTypeChange();
   invShowTab('ws1');
+  var dBtn=document.getElementById('inv-delete-btn');
+  var sBtn=document.getElementById('inv-safety-comm-btn');
+  if(dBtn)dBtn.style.display=isMgr()?'inline-flex':'none';
+  if(sBtn)sBtn.style.display='inline-flex';
   invShowForm();
 }
 
@@ -2616,6 +2630,28 @@ function invCollectData(){
     updated_at:new Date().toISOString()
   };
 }
+
+async function invDeleteCurrent(){
+  if(!invEditingId)return;
+  if(!confirm('Delete this investigation? This cannot be undone.'))return;
+  try{
+    await api('/investigations?id=eq.'+invEditingId,{m:'DELETE'});
+    toast('Investigation deleted!');
+    invEditingId=null;
+    invShowList();
+  }catch(e){toast(e.message,false);console.error(e);}
+}
+
+async function invDelete(id){
+  if(!confirm('Delete this investigation? This cannot be undone.'))return;
+  try{
+    await api('/investigations?id=eq.'+id,{m:'DELETE'});
+    invAllData=invAllData.filter(function(x){return x.id!==id;});
+    toast('Investigation deleted!');
+    loadInvs();
+  }catch(e){toast(e.message,false);console.error(e);}
+}
+
 
 async function invSave(){
   var body=invCollectData();
@@ -3504,6 +3540,9 @@ kpiObjectives=[];kpiKPIs=[];kpiIndicators=[];kpiMonthlyData={};
 await kpiLoadAll();
 }catch(e){toast(e.message,false);}
 }
+
+
+
 
 
 
