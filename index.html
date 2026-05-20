@@ -95,6 +95,31 @@
 </div>
 </div>
 
+<!-- Action Plan -->
+<div class="card" style="margin-bottom:12px">
+<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+<div>
+<div class="card-title" style="margin:0">Action Plan</div>
+<div style="font-size:12px;color:var(--text2);margin-top:3px">Actions are automatically linked to the Master Action Plan on save</div>
+</div>
+<button class="btn btn-sm btn-primary" onclick="inspAddAction()"><i class="ti ti-plus"></i>Add action</button>
+</div>
+<div id="if-actions-info" style="background:#EAF3DE;border:1px solid #a7d895;border-radius:8px;padding:8px 12px;font-size:12px;color:#3B6D11;margin-bottom:10px;display:none">
+<i class="ti ti-info-circle"></i> Insufficient items below are pre-filled as actions. Edit, assign and set due dates before saving.
+</div>
+<table style="width:100%;border-collapse:collapse" id="if-actions-table">
+<thead><tr style="background:#f9fafb">
+<th style="padding:8px 12px;text-align:left;border-bottom:1px solid var(--border);font-size:11px;text-transform:uppercase;color:var(--text2)">Action description</th>
+<th style="padding:8px;text-align:left;border-bottom:1px solid var(--border);font-size:11px;text-transform:uppercase;color:var(--text2);width:140px">Responsible</th>
+<th style="padding:8px;text-align:left;border-bottom:1px solid var(--border);font-size:11px;text-transform:uppercase;color:var(--text2);width:120px">Due date</th>
+<th style="padding:8px;text-align:left;border-bottom:1px solid var(--border);font-size:11px;text-transform:uppercase;color:var(--text2);width:100px">Priority</th>
+<th style="padding:8px;width:36px;border-bottom:1px solid var(--border)"></th>
+</tr></thead>
+<tbody id="if-actions-body"></tbody>
+</table>
+<div id="if-actions-empty" style="text-align:center;padding:20px;color:var(--text2);font-size:13px">No actions yet — tick items as Insufficient in the checklist to auto-generate actions, or click Add action.</div>
+</div>
+
 <!-- Sign off -->
 <div class="card">
 <div class="card-title">Sign-off</div>
@@ -753,6 +778,9 @@
 
 
 
+
+
+
 const SB='https://iarfxjhahzbhncsaohbg.supabase.co';
 const KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlhcmZ4amhhaHpiaG5jc2FvaGJnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg2OTM1MzAsImV4cCI6MjA5NDI2OTUzMH0.qSjahuX-RwnjWEDmo-LkcorAxpsmyVoaXt4AO4_A9BM';
 let tok=null,prof=null,co=null,chkItems=[],people=[];
@@ -1344,6 +1372,9 @@ function inspNew(){
   var si=document.getElementById('if-sign-inspector');if(si)si.value=prof?.full_name||'';
   var sd=document.getElementById('if-sign-date');if(sd)sd.value=new Date().toISOString().slice(0,10);
   buildChecklist([]);
+  var ab=document.getElementById('if-actions-body');if(ab)ab.innerHTML='';
+  var ae=document.getElementById('if-actions-empty');if(ae)ae.style.display='block';
+  var ai=document.getElementById('if-actions-info');if(ai)ai.style.display='none';
 }
 
 async function inspOpen(id){
@@ -1377,13 +1408,43 @@ async function inspOpen(id){
   if(sd)sd.value=rec.inspection_date?rec.inspection_date.slice(0,10):'';
   var srd=document.getElementById('if-sign-reviewer-date');
   if(srd)srd.value=rec.reviewed_date?rec.reviewed_date.slice(0,10):'';
+  // Load checklist items
   try{
     var items=await api('/inspection_items?inspection_id=eq.'+id);
-    // Normalize: old records use 'item' column, new use 'item_name'
     (items||[]).forEach(function(it){if(!it.item_name&&it.item)it.item_name=it.item;});
     buildChecklist(items||[]);
   }catch(e){buildChecklist([]);}
+  // Load saved actions from MAP
+  var ab=document.getElementById('if-actions-body');
+  var ae=document.getElementById('if-actions-empty');
+  var ai=document.getElementById('if-actions-info');
+  if(ab){
+    ab.innerHTML='';
+    try{
+      var mapActions=await api('/action_tracker?source_module=eq.inspection&source_id=eq.'+id+cf());
+      if(mapActions&&mapActions.length){
+        if(ae)ae.style.display='none';
+        if(ai)ai.style.display='none';
+        mapActions.forEach(function(a){
+          var tr=document.createElement('tr');
+          tr.dataset.manual='true';
+          tr.dataset.mapId=a.id;
+          tr.innerHTML=inspActionRowHTML({
+            desc:a.description||'',
+            resp:a.responsible||'',
+            date:a.target_date||'',
+            prio:a.priority||'medium'
+          });
+          ab.appendChild(tr);
+        });
+      }else{
+        if(ae)ae.style.display='block';
+        if(ai)ai.style.display='none';
+      }
+    }catch(ex){if(ae)ae.style.display='block';}
+  }
 }
+
 
 async function inspDelete(){
   if(!inspEditingId)return;
@@ -1408,17 +1469,78 @@ async function inspDeleteFromList(id){
 
 function inspScore(){
   var g=0,ins=0;
+  var insufItems=[];
   (chkItems||[]).forEach(function(c,i){
     if(!c.item)return;
     var gEl=document.getElementById('cg-'+i);
     var iEl=document.getElementById('ci-'+i);
     if(gEl&&gEl.checked)g++;
-    if(iEl&&iEl.checked)ins++;
+    if(iEl&&iEl.checked){ins++;insufItems.push(c.item);}
   });
   var el=document.getElementById('if-score');
   if(el)el.textContent=g+' Good / '+ins+' Insufficient';
+  inspSyncActions(insufItems);
 }
 function updateScore(){inspScore();}
+
+function inspSyncActions(insufItems){
+  var body=document.getElementById('if-actions-body');
+  var empty=document.getElementById('if-actions-empty');
+  var info=document.getElementById('if-actions-info');
+  if(!body)return;
+  // Get current manual actions (those NOT auto-generated from checklist)
+  var manualRows=Array.from(body.querySelectorAll('tr[data-manual="true"]'));
+  // Get existing auto rows and their item names
+  var existingAuto={};
+  body.querySelectorAll('tr[data-auto="true"]').forEach(function(tr){
+    existingAuto[tr.dataset.item]=tr;
+  });
+  // Remove auto rows for items no longer insufficient
+  Object.keys(existingAuto).forEach(function(item){
+    if(insufItems.indexOf(item)===-1)existingAuto[item].remove();
+  });
+  // Add auto rows for new insufficient items
+  insufItems.forEach(function(item){
+    if(!existingAuto[item]){
+      var tr=document.createElement('tr');
+      tr.dataset.auto='true';
+      tr.dataset.item=item;
+      tr.innerHTML=inspActionRowHTML({desc:item,auto:true});
+      body.insertBefore(tr,body.firstChild);
+    }
+  });
+  var total=body.querySelectorAll('tr').length;
+  if(empty)empty.style.display=total?'none':'block';
+  if(info)info.style.display=insufItems.length?'flex':'none';
+}
+
+function inspActionRowHTML(a){
+  a=a||{};
+  return '<td style="padding:4px 8px;border-bottom:1px solid #f3f4f6">'
+    +'<input type="text" class="ia-desc" value="'+(a.desc||'')+'" placeholder="Describe action required..." style="width:100%;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px'+(a.auto?';color:var(--amber)':'')+'"/>'
+    +(a.auto?'<div style="font-size:10px;color:var(--amber);margin-top:2px"><i class="ti ti-alert-triangle"></i> Auto-generated from insufficient item</div>':'')
+    +'</td>'
+    +'<td style="padding:4px 6px;border-bottom:1px solid #f3f4f6"><input type="text" class="ia-resp" value="'+(a.resp||'')+'" placeholder="Name..." style="width:100%;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px"/></td>'
+    +'<td style="padding:4px 6px;border-bottom:1px solid #f3f4f6"><input type="date" class="ia-date" value="'+(a.date||'')+'" style="width:100%;padding:5px 6px;border:1px solid var(--border);border-radius:6px;font-size:12px"/></td>'
+    +'<td style="padding:4px 6px;border-bottom:1px solid #f3f4f6"><select class="ia-prio" style="width:100%;padding:5px 6px;border:1px solid var(--border);border-radius:6px;font-size:12px">'
+    +'<option value="low"'+(a.prio==='low'?' selected':'')+'>Low</option>'
+    +'<option value="medium"'+((!a.prio||a.prio==='medium')?' selected':'')+'>Medium</option>'
+    +'<option value="high"'+(a.prio==='high'?' selected':'')+'>High</option>'
+    +'<option value="critical"'+(a.prio==='critical'?' selected':'')+'>Critical</option>'
+    +'</select></td>'
+    +'<td style="padding:4px;text-align:center;border-bottom:1px solid #f3f4f6"><button onclick="this.parentNode.parentNode.remove();inspScore()" style="background:none;border:none;cursor:pointer;color:var(--red)"><i class="ti ti-x"></i></button></td>';
+}
+
+function inspAddAction(){
+  var body=document.getElementById('if-actions-body');
+  var empty=document.getElementById('if-actions-empty');
+  if(!body)return;
+  if(empty)empty.style.display='none';
+  var tr=document.createElement('tr');
+  tr.dataset.manual='true';
+  tr.innerHTML=inspActionRowHTML({});
+  body.appendChild(tr);
+}
 
 
 async function loadInsps(){
@@ -1533,6 +1655,40 @@ try{
         toast('Inspection saved!');
       }
     }
+  }
+  // Collect and save action plan to MAP
+  var actionRows=document.querySelectorAll('#if-actions-body tr');
+  if(actionRows.length){
+    // Delete old MAP entries for this inspection
+    if(savedId){
+      try{await api('/action_tracker?source_module=eq.inspection&source_id=eq.'+savedId,{m:'DELETE'});}catch(ex){}
+    }
+    var actionsAdded=0;
+    for(var i=0;i<actionRows.length;i++){
+      var tr=actionRows[i];
+      var desc=tr.querySelector('.ia-desc')?.value||'';
+      if(!desc.trim())continue;
+      var resp=tr.querySelector('.ia-resp')?.value||null;
+      var dueDate=tr.querySelector('.ia-date')?.value||null;
+      var prio=tr.querySelector('.ia-prio')?.value||'medium';
+      await api('/action_tracker',{m:'POST',p:'return=minimal',b:{
+        company_id:prof?.company_id,
+        source_module:'inspection',
+        source_id:savedId,
+        source_ref:'Inspection: '+(body.site||'site')+' ('+(body.inspection_date||'')+' )',
+        description:desc,
+        responsible:resp,
+        target_date:dueDate,
+        priority:prio,
+        status:'open',
+        created_by:prof?.id
+      }});
+      actionsAdded++;
+    }
+    if(actionsAdded>0)toast('Inspection saved! '+actionsAdded+' action(s) synced to Master Action Plan.');
+    else toast(inspEditingId?'Inspection updated!':'Inspection saved!');
+  }else{
+    toast(inspEditingId?'Inspection updated!':'Inspection saved!');
   }
   // Go back to list
   inspShowList();
@@ -3192,6 +3348,9 @@ kpiObjectives=[];kpiKPIs=[];kpiIndicators=[];kpiMonthlyData={};
 await kpiLoadAll();
 }catch(e){toast(e.message,false);}
 }
+
+
+
 
 
 
