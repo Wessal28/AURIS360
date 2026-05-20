@@ -9,6 +9,9 @@
 
 *{box-sizing:border-box;margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif}:root{--green:#1D9E75;--dg:#0F6E56;--red:#E24B4A;--amber:#EF9F27;--blue:#185FA5;--bg:#f4f6f8;--card:#fff;--border:#e5e7eb;--text:#111;--text2:#6b7280;--text3:#9ca3af} body{background:var(--bg);color:var(--text);min-height:100vh} #login-screen{position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;z-index:100} .login-box{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:36px;width:380px;box-shadow:0 4px 24px rgba(0,0,0,.08)} .login-logo{font-size:22px;font-weight:800;color:var(--green);margin-bottom:2px;letter-spacing:-.5px} .login-sub{font-size:12px;color:var(--text2);margin-bottom:24px} .login-err{background:#FCEBEB;color:#A32D2D;font-size:12px;padding:9px 12px;border-radius:8px;margin-bottom:14px;display:none} #app{display:none;height:100vh;overflow:hidden;width:100%} .layout{display:flex;height:100vh;width:100%} .sidebar{width:240px;min-width:240px;background:var(--card);border-right:1px solid var(--border);display:flex;flex-direction:column;height:100vh;overflow-y:auto} .sidebar-top{padding:18px 20px 14px;border-bottom:1px solid var(--border)} .co-logo{width:48px;height:48px;border-radius:10px;object-fit:contain;margin-bottom:8px;border:1px solid var(--border);display:none} .co-initials{width:48px;height:48px;border-radius:10px;background:var(--green);color:#fff;font-size:18px;font-weight:700;display:flex;align-items:center;justify-content:center;margin-bottom:8px} .sb-company{font-size:14px;font-weight:700;color:var(--text)} .sb-user{font-size:11px;color:var(--text2);margin-top:1px} .sb-role{display:inline-block;margin-top:5px;font-size:10px;padding:2px 8px;border-radius:99px;background:#E1F5EE;color:var(--dg);font-weight:600} .nav-section{font-size:9px;text-transform:uppercase;letter-spacing:.1em;color:var(--text3);padding:14px 20px 3px;font-weight:600} .nav-item{display:flex;align-items:center;gap:9px;padding:9px 20px;cursor:pointer;font-size:13px;color:var(--text2);border-left:3px solid transparent;transition:all .12s} .nav-item:hover{background:#f9fafb;color:var(--text)} .nav-item.active{background:#E1F5EE;color:var(--green);border-left-color:var(--green);font-weight:600} .nav-item i{font-size:16px} .sb-footer{margin-top:auto;padding:12px 16px;border-top:1px solid var(--border);display:flex;gap:6px} .main{flex:1;overflow-y:auto;background:var(--bg);height:100vh} .page{display:none;padding:28px 32px;min-height:100%}
 .inv-tab{background:none;border:none;border-bottom:3px solid transparent;padding:10px 20px;font-size:13px;font-weight:600;color:var(--text2);cursor:pointer;transition:all .15s;white-space:nowrap}
+.mtg-tab{background:none;border:none;border-bottom:3px solid transparent;padding:10px 20px;font-size:13px;font-weight:600;color:var(--text2);cursor:pointer;transition:all .15s;white-space:nowrap}
+.mtg-tab:hover{color:var(--text)}
+.mtg-tab.active{color:var(--green);border-bottom-color:var(--green)}
 .inv-tab:hover:not(.disabled){color:var(--text)}
 .inv-tab.active{color:var(--green);border-bottom-color:var(--green)}
 .inv-tab.disabled{opacity:.35;cursor:not-allowed;pointer-events:none}
@@ -732,7 +735,191 @@
 <div id="page-noise" class="page">
 <div class="page-header"><div class="page-title">Noise Survey</div><button class="btn btn-primary" onclick="toggleForm('noise-form')"><i class="ti ti-plus"></i>New survey</button></div><div class="card" id="noise-form" style="display:none"><div class="card-title">New noise survey</div><div class="form-row"><div class="form-group"><label class="form-label">Survey type</label><select id="nf-type"><option value="occupational">Occupational</option><option value="environmental">Environmental</option></select></div><div class="form-group"><label class="form-label">Site</label><input type="text" id="nf-site"/></div></div><div class="form-row"><div class="form-group"><label class="form-label">Survey date</label><input type="date" id="nf-date"/></div><div class="form-group"><label class="form-label">Conducted by</label><select id="nf-by"><option value="">Select person...</option></select></div></div><div class="form-row"><div class="form-group"><label class="form-label">Instrument used</label><input type="text" id="nf-instrument"/></div><div class="form-group"><label class="form-label">Calibration date</label><input type="date" id="nf-cal"/></div></div><div class="form-group"><label class="form-label">Weather / conditions</label><input type="text" id="nf-weather"/></div><div class="form-group"><label class="form-label">Notes</label><textarea id="nf-notes"></textarea></div><div style="display:flex;gap:8px"><button class="btn btn-primary" onclick="saveNoise()"><i class="ti ti-device-floppy"></i>Save</button><button class="btn" onclick="toggleForm('noise-form')">Cancel</button></div></div><div class="card"><div class="card-title">Noise surveys</div><div id="noise-list"><div class="loading-msg">Loading...</div></div></div></div>
 <div id="page-meetings" class="page">
-<div class="page-header"><div class="page-title">HSE Meetings</div><div id="mtg-add-btn"></div></div><div class="card" id="meeting-form" style="display:none"><div class="card-title">Log HSE meeting</div><div class="form-row"><div class="form-group"><label class="form-label">Title</label><input type="text" id="mf-title"/></div><div class="form-group"><label class="form-label">Meeting type</label><select id="mf-type"><option value="toolbox_talk">Toolbox Talk</option><option value="safety_committee">Safety Committee</option><option value="management_review">Management Review</option><option value="emergency_drill">Emergency Drill</option><option value="other">Other</option></select></div></div><div class="form-row"><div class="form-group"><label class="form-label">Date & time</label><input type="datetime-local" id="mf-date"/></div><div class="form-group"><label class="form-label">Location</label><input type="text" id="mf-loc"/></div></div><div class="form-row"><div class="form-group"><label class="form-label">Chaired by</label><select id="mf-chair"><option value="">Select person...</option></select></div><div class="form-group"><label class="form-label">Next meeting date</label><input type="date" id="mf-next"/></div></div><div class="form-group"><label class="form-label">Attendees</label><textarea id="mf-attendees"></textarea></div><div class="form-group"><label class="form-label">Agenda</label><textarea id="mf-agenda"></textarea></div><div class="form-group"><label class="form-label">Minutes</label><textarea id="mf-minutes"></textarea></div><div style="display:flex;gap:8px"><button class="btn btn-primary" onclick="saveMtg()"><i class="ti ti-device-floppy"></i>Save</button><button class="btn" onclick="toggleForm('meeting-form')">Cancel</button></div></div><div class="card"><div class="card-title">Meetings log</div><div id="meetings-list"><div class="loading-msg">Loading...</div></div></div></div>
+<div class="page-header">
+<div><div class="page-title">HSE Meetings</div><div style="font-size:12px;color:var(--text2)" id="mtg-subtitle">Meeting schedule and minutes</div></div>
+<div style="display:flex;gap:8px">
+<button class="btn btn-primary" id="mtg-new-series-btn" onclick="mtgNewSeries()"><i class="ti ti-settings"></i>Manage schedules</button>
+</div>
+</div>
+
+<!-- View switcher tabs -->
+<div style="display:flex;gap:0;margin-bottom:16px;border-bottom:2px solid var(--border)">
+<button class="mtg-tab active" id="mtg-tab-schedule" onclick="mtgSwitchTab('schedule',this)">📅 Meeting Schedule</button>
+<button class="mtg-tab" id="mtg-tab-minutes" onclick="mtgSwitchTab('minutes',this)">📋 Minutes of Meetings</button>
+</div>
+
+<!-- Schedule tab -->
+<div id="mtg-view-schedule">
+<div class="card" style="padding:0;overflow:hidden"><div id="mtg-series-list"><div class="loading-msg">Loading...</div></div></div>
+</div>
+
+<!-- Minutes tab -->
+<div id="mtg-view-minutes" style="display:none">
+<div class="card" style="padding:0;overflow:hidden"><div id="mtg-minutes-list"><div class="loading-msg">Loading...</div></div></div>
+</div>
+
+<!-- Series form (slide-in) -->
+<div id="mtg-series-form" style="display:none">
+<div class="card" style="margin-bottom:16px;padding:14px 20px">
+<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
+<div style="font-size:16px;font-weight:700" id="mtg-series-title">New Meeting Schedule</div>
+<div style="display:flex;gap:8px">
+<button class="btn" onclick="mtgSeriesBack()"><i class="ti ti-arrow-left"></i>Back</button>
+<button id="mtg-series-del-btn" class="btn" style="display:none;color:var(--red);border-color:var(--red)" onclick="mtgDeleteSeries()"><i class="ti ti-trash"></i>Delete</button>
+<button class="btn btn-primary" onclick="mtgSaveSeries()"><i class="ti ti-device-floppy"></i>Save schedule</button>
+</div>
+</div>
+</div>
+<div class="card">
+<div class="card-title">Meeting Schedule Details</div>
+<div class="form-row">
+<div class="form-group"><label class="form-label">Meeting type</label>
+<select id="ms-type">
+<option value="management_review">HSE Management Review</option>
+<option value="hse_committee">HSE Collaboration / Committee Meeting</option>
+<option value="other">Other Meeting</option>
+</select></div>
+<div class="form-group"><label class="form-label">Meeting title / name</label><input type="text" id="ms-title" placeholder="e.g. Monthly HSE Committee Meeting"/></div>
+<div class="form-group"><label class="form-label">Recurrence</label>
+<select id="ms-recurrence">
+<option value="monthly">Monthly (every month)</option>
+<option value="bimonthly">Every 2 months</option>
+<option value="quarterly">Quarterly (every 3 months)</option>
+<option value="triannual">Every 4 months (3x per year)</option>
+<option value="biannual">Every 6 months (twice a year)</option>
+<option value="annual">Annual (once a year)</option>
+</select></div>
+<div class="form-group"><label class="form-label">Next scheduled date</label><input type="date" id="ms-next-date"/></div>
+</div>
+<div class="form-row">
+<div class="form-group"><label class="form-label">Location</label><input type="text" id="ms-location"/></div>
+<div class="form-group"><label class="form-label">Chaired by</label><input type="text" id="ms-chaired-by"/></div>
+<div class="form-group"><label class="form-label">Responsible person</label><input type="text" id="ms-responsible"/></div>
+<div class="form-group"><label class="form-label">Status</label>
+<select id="ms-active"><option value="true">Active</option><option value="false">Inactive</option></select></div>
+</div>
+<div class="form-group"><label class="form-label">Notes</label><textarea id="ms-notes" style="min-height:60px"></textarea></div>
+</div>
+</div>
+
+<!-- Minutes of Meeting form (full MOM template) -->
+<div id="mtg-mom-form" style="display:none">
+<div class="card" style="margin-bottom:16px;padding:14px 20px">
+<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
+<div>
+<div style="font-size:16px;font-weight:700" id="mtg-mom-title">Minutes of Meeting</div>
+<div style="font-size:12px;color:var(--text2)" id="mtg-mom-ref"></div>
+</div>
+<div style="display:flex;gap:8px;flex-wrap:wrap">
+<select id="mom-status" style="padding:6px 10px;border:1px solid var(--border);border-radius:8px;font-size:13px">
+<option value="draft">Draft</option>
+<option value="completed">Completed</option>
+<option value="cancelled">Cancelled</option>
+</select>
+<button class="btn" onclick="mtgMomBack()"><i class="ti ti-arrow-left"></i>Back</button>
+<button id="mtg-mom-del-btn" class="btn" style="display:none;color:var(--red);border-color:var(--red)" onclick="mtgDeleteMom()"><i class="ti ti-trash"></i>Delete</button>
+<button class="btn btn-primary" onclick="mtgSaveMom()"><i class="ti ti-device-floppy"></i>Save minutes</button>
+</div>
+</div>
+</div>
+
+<!-- MOM Header -->
+<div class="card" style="margin-bottom:12px;background:#f9fafb;border:2px solid var(--green)">
+<div style="text-align:center;padding:8px 0 14px">
+<div style="font-size:11px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px">Minutes of Meeting</div>
+<div style="font-size:20px;font-weight:800;color:var(--green)" id="mom-header-title">HSE Meeting</div>
+</div>
+<div class="form-row" style="padding:0 4px">
+<div class="form-group"><label class="form-label">Meeting type</label>
+<select id="mom-type">
+<option value="management_review">HSE Management Review</option>
+<option value="hse_committee">HSE Collaboration / Committee Meeting</option>
+<option value="other">Other Meeting</option>
+</select></div>
+<div class="form-group"><label class="form-label">Meeting title</label><input type="text" id="mom-title" oninput="document.getElementById('mom-header-title').textContent=this.value||'HSE Meeting'"/></div>
+<div class="form-group"><label class="form-label">Date & time</label><input type="datetime-local" id="mom-date"/></div>
+<div class="form-group"><label class="form-label">Location</label><input type="text" id="mom-location"/></div>
+</div>
+<div class="form-row" style="padding:0 4px">
+<div class="form-group"><label class="form-label">Chaired by</label><input type="text" id="mom-chaired-by"/></div>
+<div class="form-group"><label class="form-label">Minutes recorded by</label><input type="text" id="mom-recorder"/></div>
+<div class="form-group"><label class="form-label">Next meeting date</label><input type="date" id="mom-next-date"/></div>
+</div>
+</div>
+
+<!-- Attendees -->
+<div class="card" style="margin-bottom:12px">
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+<div class="form-group" style="margin:0"><label class="form-label">Present / Attendees</label><textarea id="mom-attendees" style="min-height:80px" placeholder="Names and roles of attendees..."></textarea></div>
+<div class="form-group" style="margin:0"><label class="form-label">Apologies</label><textarea id="mom-apologies" style="min-height:80px" placeholder="Names of those who sent apologies..."></textarea></div>
+</div>
+</div>
+
+<!-- Agenda items -->
+<div class="card" style="margin-bottom:12px">
+<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+<div class="card-title" style="margin:0">Agenda & Discussion Items</div>
+<button class="btn btn-sm btn-primary" onclick="mtgAddAgendaItem()"><i class="ti ti-plus"></i>Add item</button>
+</div>
+<table style="width:100%;border-collapse:collapse">
+<thead><tr style="background:#f9fafb">
+<th style="padding:8px;border:1px solid var(--border);width:40px;text-align:center;font-size:11px">No.</th>
+<th style="padding:8px;border:1px solid var(--border);font-size:11px;text-align:left">Agenda item</th>
+<th style="padding:8px;border:1px solid var(--border);font-size:11px;text-align:left">Discussion / Notes</th>
+<th style="padding:8px;border:1px solid var(--border);width:32px"></th>
+</tr></thead>
+<tbody id="mom-agenda-body">
+<tr><td style="padding:6px;text-align:center;border:1px solid var(--border);font-weight:700;font-size:12px;color:var(--text2)">1</td><td style="padding:4px;border:1px solid var(--border)"><input type="text" class="mom-agenda-item" style="width:100%;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px" placeholder="e.g. Review of previous minutes"/></td><td style="padding:4px;border:1px solid var(--border)"><textarea class="mom-agenda-notes" style="width:100%;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;min-height:50px;resize:vertical" placeholder="Discussion notes..."></textarea></td><td style="padding:4px;text-align:center;border:1px solid var(--border)"><button onclick="this.parentNode.parentNode.remove()" style="background:none;border:none;cursor:pointer;color:var(--red)"><i class="ti ti-x"></i></button></td></tr>
+<tr><td style="padding:6px;text-align:center;border:1px solid var(--border);font-weight:700;font-size:12px;color:var(--text2)">2</td><td style="padding:4px;border:1px solid var(--border)"><input type="text" class="mom-agenda-item" style="width:100%;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px" placeholder="e.g. Incident review"/></td><td style="padding:4px;border:1px solid var(--border)"><textarea class="mom-agenda-notes" style="width:100%;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;min-height:50px;resize:vertical" placeholder="Discussion notes..."></textarea></td><td style="padding:4px;text-align:center;border:1px solid var(--border)"><button onclick="this.parentNode.parentNode.remove()" style="background:none;border:none;cursor:pointer;color:var(--red)"><i class="ti ti-x"></i></button></td></tr>
+<tr><td style="padding:6px;text-align:center;border:1px solid var(--border);font-weight:700;font-size:12px;color:var(--text2)">3</td><td style="padding:4px;border:1px solid var(--border)"><input type="text" class="mom-agenda-item" style="width:100%;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px" placeholder="e.g. KPI review"/></td><td style="padding:4px;border:1px solid var(--border)"><textarea class="mom-agenda-notes" style="width:100%;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;min-height:50px;resize:vertical" placeholder="Discussion notes..."></textarea></td><td style="padding:4px;text-align:center;border:1px solid var(--border)"><button onclick="this.parentNode.parentNode.remove()" style="background:none;border:none;cursor:pointer;color:var(--red)"><i class="ti ti-x"></i></button></td></tr>
+</tbody>
+</table>
+</div>
+
+<!-- Recommendations / Action plan -->
+<div class="card" style="margin-bottom:12px">
+<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+<div>
+<div class="card-title" style="margin:0">Recommendations & Actions</div>
+<div style="font-size:12px;color:var(--text2);margin-top:3px">Automatically synced to Master Action Plan on save</div>
+</div>
+<button class="btn btn-sm btn-primary" onclick="mtgAddRec()"><i class="ti ti-plus"></i>Add action</button>
+</div>
+<table style="width:100%;border-collapse:collapse">
+<thead><tr style="background:#f9fafb">
+<th style="padding:8px;border:1px solid var(--border);width:36px;font-size:11px">No.</th>
+<th style="padding:8px;border:1px solid var(--border);font-size:11px;text-align:left">Recommendation / Action</th>
+<th style="padding:8px;border:1px solid var(--border);font-size:11px;text-align:left;width:140px">Responsible</th>
+<th style="padding:8px;border:1px solid var(--border);font-size:11px;text-align:left;width:120px">Due date</th>
+<th style="padding:8px;border:1px solid var(--border);font-size:11px;text-align:left;width:100px">Priority</th>
+<th style="padding:8px;border:1px solid var(--border);font-size:11px;text-align:left;width:90px">Status</th>
+<th style="padding:8px;border:1px solid var(--border);width:32px"></th>
+</tr></thead>
+<tbody id="mom-rec-body"></tbody>
+</table>
+<div id="mom-rec-empty" style="text-align:center;padding:20px;color:var(--text2);font-size:13px">No actions yet — click Add action above.</div>
+</div>
+
+<!-- Other notes -->
+<div class="card" style="margin-bottom:12px">
+<div class="card-title">Other Notes / Any Other Business</div>
+<textarea id="mom-notes" style="min-height:80px" placeholder="Any other business, announcements, observations..."></textarea>
+</div>
+
+<!-- Sign off -->
+<div class="card">
+<div class="card-title">Sign-off</div>
+<div class="form-row">
+<div class="form-group"><label class="form-label">Chairperson</label><input type="text" id="mom-sign-chair"/></div>
+<div class="form-group"><label class="form-label">Date</label><input type="date" id="mom-sign-date"/></div>
+<div class="form-group"><label class="form-label">Minutes approved by</label><input type="text" id="mom-sign-approver"/></div>
+<div class="form-group"><label class="form-label">Date</label><input type="date" id="mom-sign-approver-date"/></div>
+</div>
+</div>
+</div><!-- end mtg-mom-form -->
+
+</div><!-- end page-meetings -->
+
 <div id="page-training" class="page">
 <div class="page-header"><div class="page-title">Training Monitor</div><div id="training-add-btn"></div></div><div class="card" id="training-form" style="display:none"><div class="card-title">Log training session</div><div class="form-row"><div class="form-group"><label class="form-label">Course / topic</label><input type="text" id="tf-course"/></div><div class="form-group"><label class="form-label">Trainer</label><input type="text" id="tf-trainer"/></div></div><div class="form-row"><div class="form-group"><label class="form-label">Date conducted</label><input type="date" id="tf-date"/></div><div class="form-group"><label class="form-label">Certificate expiry</label><input type="date" id="tf-expiry"/></div></div><div class="form-group"><label class="form-label">Attendees</label><select id="tf-attendees" multiple style="min-height:100px"><option value="">Loading...</option></select><div style="font-size:11px;color:var(--text2);margin-top:4px">Hold Ctrl/Cmd to select multiple</div></div><div style="display:flex;gap:8px"><button class="btn btn-primary" onclick="saveTraining()"><i class="ti ti-device-floppy"></i>Save</button><button class="btn" onclick="toggleForm('training-form')">Cancel</button></div></div><div class="card"><div class="card-title">Training sessions</div><div id="training-list"><div class="loading-msg">Loading...</div></div></div></div>
 <div id="page-actions" class="page">
@@ -751,43 +938,45 @@
 </div>
 </div>
 </div>
-<div class="ai-panel" id="ai-panel" style="display:none"><div class="ai-window" id="ai-window"><div class="ai-header"><div style="width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;font-size:18px"><i class="ti ti-brain" style="color:#fff"></i></div><div style="font-size:11px;color:rgba(255,255,255,.8)">Powered by Claude AI</div><button class="ai-close" onclick="document.getElementById('ai-window').classList.remove('open')"><i class="ti ti-x"></i></button></div><div class="ai-messages" id="ai-messages"></div><div class="ai-suggestions" id="ai-suggestions"></div><div class="ai-input-row"><input type="text" class="ai-input" id="ai-input" placeholder="Ask about HSE performance..." onkeydown="if(event.key==='Enter')sendAIMsg()"/><button class="ai-send" onclick="sendAIMsg()">Send</button></div></div><button class="ai-toggle" onclick="document.getElementById('ai-window').classList.toggle('open')"><i class="ti ti-brain"></i></button></div>
-<div class="toast" id="toast"></div>
+<div class="ai-panel" id="ai-panel" style="display:none"><div class="ai-window" id="ai-window"><div class="ai-header"><div style="width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;font-size:18px"><i class="ti ti-brain" style="color:#fff"></i></div><div style="font-size:11px;color:rgba(255,255,255,.8)">Powered by Claude AI</div><button class="ai-close" onclick="document.getElementById('ai-window').classList.remove('open')"><i class="ti ti-x"></i></button></div><div class="ai-messages" id="ai-messages"></div><div class="ai-suggestions" id="ai-suggestions"></div><div class="ai-input-row"><input type="text" class="ai-input" id="ai-input" placeholder="Ask about HSE performance..." onkeyd
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 <script>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 const SB='https://iarfxjhahzbhncsaohbg.supabase.co';
@@ -2751,26 +2940,468 @@ await api('/noise_surveys',{m:'POST',p:'return=minimal',b:{company_id:prof?.comp
 toggleForm('noise-form');toast('Noise survey saved!');loadNoise();
 }catch(e){toast(e.message,false);}
 }
-async function loadMtgs(){
-const el=document.getElementById('meetings-list');
-if(!el)return;
-try{
-const d=await api('/hse_meetings?select=*'+cf()+'&order=meeting_date.desc');
-if(!d||!d.length){el.innerHTML='<p style="padding:20px;color:#666">No meetings yet</p>';return;}
-let h='<table style="width:100%;border-collapse:collapse"><thead><tr style="background:#f9fafb"><th style="padding:10px;text-align:left;border-bottom:1px solid #e5e7eb">Title</th><th style="padding:10px;text-align:left;border-bottom:1px solid #e5e7eb">Type</th><th style="padding:10px;text-align:left;border-bottom:1px solid #e5e7eb">Date</th><th style="padding:10px;text-align:left;border-bottom:1px solid #e5e7eb">Chaired by</th></tr></thead><tbody>';
-for(var i=0;i<d.length;i++){var x=d[i];var dt=x.meeting_date?new Date(x.meeting_date).toLocaleDateString('en-GB'):'--';h+='<tr style="border-bottom:1px solid #f3f4f6"><td style="padding:10px"><strong>'+(x.title||'--')+'</strong></td><td style="padding:10px">'+(x.meeting_type||'--')+'</td><td style="padding:10px">'+dt+'</td><td style="padding:10px">'+(x.chaired_by||'--')+'</td></tr>';}
-h+='</tbody></table>';el.innerHTML=h;
-}catch(e){el.innerHTML='<p style="padding:20px;color:red">'+e.message+'</p>';console.error(e);}
+// ===== HSE MEETINGS MODULE =====
+let mtgSeriesData=[], mtgMinutesData=[], mtgEditingSeriesId=null, mtgEditingMomId=null;
+
+const MTG_TYPES={'management_review':'HSE Management Review','hse_committee':'HSE Committee Meeting','other':'Other Meeting'};
+const MTG_RECURRENCE={'monthly':'Monthly','bimonthly':'Every 2 months','quarterly':'Quarterly','triannual':'Every 4 months','biannual':'Every 6 months','annual':'Annual'};
+
+function mtgSwitchTab(tab, btn){
+  document.querySelectorAll('.mtg-tab').forEach(t=>{t.classList.remove('active');});
+  btn.classList.add('active');
+  document.getElementById('mtg-view-schedule').style.display=tab==='schedule'?'block':'none';
+  document.getElementById('mtg-view-minutes').style.display=tab==='minutes'?'block':'none';
+  if(tab==='schedule')mtgLoadSeries();
+  else mtgLoadMinutes();
 }
 
-async function saveMtg(){
-if(!isMgr()){toast('Access denied',false);return;}
-try{
-const cid=document.getElementById('mf-chair').value;
-await api('/hse_meetings',{m:'POST',p:'return=minimal',b:{company_id:prof?.company_id,title:document.getElementById('mf-title').value,meeting_type:document.getElementById('mf-type').value,meeting_date:document.getElementById('mf-date').value||null,location:document.getElementById('mf-loc').value,chaired_by:cid?pname(cid):prof?.full_name,attendees:document.getElementById('mf-attendees').value,agenda:document.getElementById('mf-agenda').value,minutes:document.getElementById('mf-minutes').value,next_meeting_date:document.getElementById('mf-next').value||null,created_by:prof?.id}});
-toggleForm('meeting-form');toast('Meeting saved!');loadMtgs();
-}catch(e){toast(e.message,false);}
+// ── SCHEDULE (Series) ──────────────────────────────────────────────────────
+async function loadMtgs(){
+  var btn=document.getElementById('mtg-new-series-btn');
+  if(btn)btn.style.display=isMgr()?'inline-flex':'none';
+  mtgLoadSeries();
 }
+
+async function mtgLoadSeries(){
+  var el=document.getElementById('mtg-series-list');
+  if(!el)return;
+  try{
+    var d=await api('/meeting_series?select=*'+cf()+'&order=meeting_type,title');
+    mtgSeriesData=d||[];
+    if(!d||!d.length){
+      el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)">'
+        +'<div style="font-size:40px;margin-bottom:12px">📅</div>'
+        +'<div style="font-weight:600;margin-bottom:8px">No meeting schedules yet</div>'
+        +(isMgr()?'<button class="btn btn-primary" onclick="mtgNewSeries()"><i class="ti ti-plus"></i>Add first schedule</button>':'<div>Contact your HSE manager to set up meeting schedules</div>')
+        +'</div>';
+      return;
+    }
+    // Group by type
+    var byType={};
+    d.forEach(function(s){
+      if(!byType[s.meeting_type])byType[s.meeting_type]=[];
+      byType[s.meeting_type].push(s);
+    });
+    var h='';
+    Object.entries(byType).forEach(function(e){
+      var type=e[0], series=e[1];
+      h+='<div style="padding:10px 16px;background:#f9fafb;border-bottom:1px solid var(--border);font-size:11px;font-weight:700;text-transform:uppercase;color:var(--green);letter-spacing:.05em">'+(MTG_TYPES[type]||type)+'</div>';
+      series.forEach(function(s){
+        var nextDt=s.next_date?new Date(s.next_date).toLocaleDateString('en-GB'):'Not set';
+        var isOverdue=s.next_date&&new Date(s.next_date)<new Date();
+        h+='<div style="padding:14px 20px;border-bottom:1px solid #f3f4f6;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">'
+          +'<div style="flex:1">'
+          +'<div style="font-size:14px;font-weight:700;margin-bottom:4px">'+(s.title||'—')
+          +(s.active===false?'<span style="background:#f3f4f6;color:#888;padding:2px 8px;border-radius:99px;font-size:10px;margin-left:8px">Inactive</span>':'')
+          +'</div>'
+          +'<div style="font-size:12px;color:var(--text2);display:flex;gap:16px;flex-wrap:wrap">'
+          +'<span><i class="ti ti-refresh" style="font-size:11px"></i> '+(MTG_RECURRENCE[s.recurrence]||s.recurrence||'—')+'</span>'
+          +'<span><i class="ti ti-map-pin" style="font-size:11px"></i> '+(s.location||'—')+'</span>'
+          +'<span><i class="ti ti-user" style="font-size:11px"></i> '+(s.chaired_by||'—')+'</span>'
+          +'<span style="'+(isOverdue?'color:var(--red);font-weight:600':'')+'"><i class="ti ti-calendar" style="font-size:11px"></i> Next: '+nextDt+(isOverdue?' ⚠':'')+'</span>'
+          +'</div>'
+          +'</div>'
+          +'<div style="display:flex;gap:8px">'
+          +'<button class="btn btn-primary" data-id="'+s.id+'" onclick="mtgScheduleMeeting(this.getAttribute(\'data-id\'))"><i class="ti ti-file-text"></i>Schedule meeting</button>'
+          +(isMgr()?'<button class="btn btn-sm" data-id="'+s.id+'" onclick="mtgEditSeries(this.getAttribute(\'data-id\'))" title="Edit schedule"><i class="ti ti-edit"></i></button>':'')
+          +'</div>'
+          +'</div>';
+      });
+    });
+    if(isMgr()){
+      h+='<div style="padding:14px 20px;text-align:center;border-top:1px solid var(--border)">'
+        +'<button class="btn btn-sm" onclick="mtgNewSeries()"><i class="ti ti-plus"></i> Add new meeting schedule</button>'
+        +'</div>';
+    }
+    el.innerHTML=h;
+  }catch(e){el.innerHTML='<p style="padding:20px;color:red">'+e.message+'</p>';console.error(e);}
+}
+
+function mtgNewSeries(){
+  mtgEditingSeriesId=null;
+  document.getElementById('mtg-series-title').textContent='New Meeting Schedule';
+  document.getElementById('mtg-series-del-btn').style.display='none';
+  ['ms-title','ms-location','ms-chaired-by','ms-responsible','ms-notes'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
+  var nd=document.getElementById('ms-next-date');if(nd)nd.value='';
+  var tp=document.getElementById('ms-type');if(tp)tp.value='management_review';
+  var rc=document.getElementById('ms-recurrence');if(rc)rc.value='quarterly';
+  var ac=document.getElementById('ms-active');if(ac)ac.value='true';
+  document.getElementById('mtg-view-schedule').style.display='none';
+  document.getElementById('mtg-view-minutes').style.display='none';
+  document.getElementById('mtg-series-form').style.display='block';
+  document.getElementById('mtg-mom-form').style.display='none';
+}
+
+function mtgEditSeries(id){
+  var s=mtgSeriesData.find(function(x){return x.id===id;});
+  if(!s)return;
+  mtgEditingSeriesId=id;
+  document.getElementById('mtg-series-title').textContent='Edit Meeting Schedule';
+  document.getElementById('mtg-series-del-btn').style.display='inline-flex';
+  var flds={'ms-title':'title','ms-location':'location','ms-chaired-by':'chaired_by','ms-responsible':'responsible','ms-notes':'notes'};
+  Object.entries(flds).forEach(function(e){var el=document.getElementById(e[0]);if(el)el.value=s[e[1]]||'';});
+  var nd=document.getElementById('ms-next-date');if(nd)nd.value=s.next_date||'';
+  var tp=document.getElementById('ms-type');if(tp)tp.value=s.meeting_type||'management_review';
+  var rc=document.getElementById('ms-recurrence');if(rc)rc.value=s.recurrence||'quarterly';
+  var ac=document.getElementById('ms-active');if(ac)ac.value=s.active===false?'false':'true';
+  document.getElementById('mtg-view-schedule').style.display='none';
+  document.getElementById('mtg-view-minutes').style.display='none';
+  document.getElementById('mtg-series-form').style.display='block';
+  document.getElementById('mtg-mom-form').style.display='none';
+}
+
+function mtgSeriesBack(){
+  document.getElementById('mtg-series-form').style.display='none';
+  document.getElementById('mtg-view-schedule').style.display='block';
+  mtgLoadSeries();
+}
+
+async function mtgSaveSeries(){
+  var title=document.getElementById('ms-title')?.value?.trim();
+  if(!title){toast('Please enter a meeting title',false);return;}
+  var body={
+    company_id:prof?.company_id,
+    meeting_type:document.getElementById('ms-type')?.value||'management_review',
+    title:title,
+    recurrence:document.getElementById('ms-recurrence')?.value||'quarterly',
+    location:document.getElementById('ms-location')?.value||null,
+    chaired_by:document.getElementById('ms-chaired-by')?.value||null,
+    responsible:document.getElementById('ms-responsible')?.value||null,
+    next_date:document.getElementById('ms-next-date')?.value||null,
+    notes:document.getElementById('ms-notes')?.value||null,
+    active:document.getElementById('ms-active')?.value!=='false',
+    updated_at:new Date().toISOString()
+  };
+  try{
+    if(mtgEditingSeriesId){
+      await api('/meeting_series?id=eq.'+mtgEditingSeriesId,{m:'PATCH',p:'return=minimal',b:body});
+      toast('Schedule updated!');
+    }else{
+      body.created_by=prof?.id;
+      await api('/meeting_series',{m:'POST',p:'return=minimal',b:body});
+      toast('Schedule created!');
+    }
+    mtgSeriesBack();
+  }catch(e){toast(e.message,false);console.error(e);}
+}
+
+async function mtgDeleteSeries(){
+  if(!mtgEditingSeriesId)return;
+  if(!confirm('Delete this meeting schedule? Past minutes will not be deleted.'))return;
+  try{
+    await api('/meeting_series?id=eq.'+mtgEditingSeriesId,{m:'DELETE'});
+    toast('Schedule deleted!');
+    mtgSeriesBack();
+  }catch(e){toast(e.message,false);console.error(e);}
+}
+
+// ── SCHEDULE MEETING → open MOM form ──────────────────────────────────────
+function mtgScheduleMeeting(seriesId){
+  var s=mtgSeriesData.find(function(x){return x.id===seriesId;});
+  mtgEditingMomId=null;
+  // Clear form
+  mtgClearMom();
+  // Pre-fill from series
+  if(s){
+    var tp=document.getElementById('mom-type');if(tp)tp.value=s.meeting_type||'management_review';
+    var ti=document.getElementById('mom-title');if(ti){ti.value=s.title||'';document.getElementById('mom-header-title').textContent=s.title||'HSE Meeting';}
+    var loc=document.getElementById('mom-location');if(loc)loc.value=s.location||'';
+    var ch=document.getElementById('mom-chaired-by');if(ch)ch.value=s.chaired_by||'';
+    var sc=document.getElementById('mom-sign-chair');if(sc)sc.value=s.chaired_by||'';
+    // Set date to next scheduled date or today
+    var dt=document.getElementById('mom-date');
+    if(dt)dt.value=(s.next_date?s.next_date+'T09:00':new Date().toISOString().slice(0,16));
+    // Set next meeting date based on recurrence
+    var nextDate=mtgCalcNextDate(s.next_date||new Date().toISOString().slice(0,10), s.recurrence);
+    var nd=document.getElementById('mom-next-date');if(nd)nd.value=nextDate;
+    // Store series id for later update
+    document.getElementById('mtg-mom-form').dataset.seriesId=seriesId;
+  }
+  document.getElementById('mtg-view-schedule').style.display='none';
+  document.getElementById('mtg-view-minutes').style.display='none';
+  document.getElementById('mtg-series-form').style.display='none';
+  document.getElementById('mtg-mom-form').style.display='block';
+  document.getElementById('mtg-mom-title').textContent='New Minutes of Meeting';
+  document.getElementById('mtg-mom-ref').textContent='';
+  document.getElementById('mtg-mom-del-btn').style.display='none';
+}
+
+function mtgCalcNextDate(fromDate, recurrence){
+  var d=new Date(fromDate);
+  var months={'monthly':1,'bimonthly':2,'quarterly':3,'triannual':4,'biannual':6,'annual':12};
+  var m=months[recurrence]||3;
+  d.setMonth(d.getMonth()+m);
+  return d.toISOString().slice(0,10);
+}
+
+function mtgClearMom(){
+  ['mom-title','mom-location','mom-chaired-by','mom-recorder','mom-attendees','mom-apologies','mom-notes','mom-sign-chair','mom-sign-approver'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
+  ['mom-date'].forEach(function(id){var el=document.getElementById(id);if(el)el.value=new Date().toISOString().slice(0,16);});
+  ['mom-next-date','mom-sign-date','mom-sign-approver-date'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
+  var st=document.getElementById('mom-status');if(st)st.value='draft';
+  var hdr=document.getElementById('mom-header-title');if(hdr)hdr.textContent='HSE Meeting';
+  // Clear agenda
+  var ab=document.getElementById('mom-agenda-body');
+  if(ab)ab.innerHTML=`
+    <tr><td style="padding:6px;text-align:center;border:1px solid var(--border);font-weight:700;font-size:12px;color:var(--text2)">1</td><td style="padding:4px;border:1px solid var(--border)"><input type="text" class="mom-agenda-item" style="width:100%;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px" placeholder="e.g. Approval of previous minutes"/></td><td style="padding:4px;border:1px solid var(--border)"><textarea class="mom-agenda-notes" style="width:100%;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;min-height:50px;resize:vertical" placeholder="Discussion notes..."></textarea></td><td style="padding:4px;text-align:center;border:1px solid var(--border)"><button onclick="this.parentNode.parentNode.remove()" style="background:none;border:none;cursor:pointer;color:var(--red)"><i class="ti ti-x"></i></button></td></tr>
+    <tr><td style="padding:6px;text-align:center;border:1px solid var(--border);font-weight:700;font-size:12px;color:var(--text2)">2</td><td style="padding:4px;border:1px solid var(--border)"><input type="text" class="mom-agenda-item" style="width:100%;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px" placeholder="e.g. Review of incidents"/></td><td style="padding:4px;border:1px solid var(--border)"><textarea class="mom-agenda-notes" style="width:100%;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;min-height:50px;resize:vertical" placeholder="Discussion notes..."></textarea></td><td style="padding:4px;text-align:center;border:1px solid var(--border)"><button onclick="this.parentNode.parentNode.remove()" style="background:none;border:none;cursor:pointer;color:var(--red)"><i class="ti ti-x"></i></button></td></tr>
+    <tr><td style="padding:6px;text-align:center;border:1px solid var(--border);font-weight:700;font-size:12px;color:var(--text2)">3</td><td style="padding:4px;border:1px solid var(--border)"><input type="text" class="mom-agenda-item" style="width:100%;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px" placeholder="e.g. KPI performance review"/></td><td style="padding:4px;border:1px solid var(--border)"><textarea class="mom-agenda-notes" style="width:100%;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;min-height:50px;resize:vertical" placeholder="Discussion notes..."></textarea></td><td style="padding:4px;text-align:center;border:1px solid var(--border)"><button onclick="this.parentNode.parentNode.remove()" style="background:none;border:none;cursor:pointer;color:var(--red)"><i class="ti ti-x"></i></button></td></tr>
+  `;
+  // Clear recommendations
+  var rb=document.getElementById('mom-rec-body');if(rb)rb.innerHTML='';
+  var re=document.getElementById('mom-rec-empty');if(re)re.style.display='block';
+}
+
+function mtgAddAgendaItem(){
+  var body=document.getElementById('mom-agenda-body');
+  if(!body)return;
+  var num=body.querySelectorAll('tr').length+1;
+  var tr=document.createElement('tr');
+  tr.innerHTML='<td style="padding:6px;text-align:center;border:1px solid var(--border);font-weight:700;font-size:12px;color:var(--text2)">'+num+'</td>'
+    +'<td style="padding:4px;border:1px solid var(--border)"><input type="text" class="mom-agenda-item" style="width:100%;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px" placeholder="Agenda item..."/></td>'
+    +'<td style="padding:4px;border:1px solid var(--border)"><textarea class="mom-agenda-notes" style="width:100%;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;min-height:50px;resize:vertical" placeholder="Discussion notes..."></textarea></td>'
+    +'<td style="padding:4px;text-align:center;border:1px solid var(--border)"><button onclick="this.parentNode.parentNode.remove()" style="background:none;border:none;cursor:pointer;color:var(--red)"><i class="ti ti-x"></i></button></td>';
+  body.appendChild(tr);
+}
+
+function mtgAddRec(){
+  var body=document.getElementById('mom-rec-body');
+  var empty=document.getElementById('mom-rec-empty');
+  if(!body)return;
+  if(empty)empty.style.display='none';
+  var num=body.querySelectorAll('tr').length+1;
+  var tr=document.createElement('tr');
+  tr.innerHTML='<td style="padding:6px;text-align:center;border:1px solid var(--border);font-weight:700;font-size:12px;color:var(--text2)">'+num+'</td>'
+    +'<td style="padding:4px;border:1px solid var(--border)"><input type="text" class="mom-rec-desc" style="width:100%;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px" placeholder="Recommendation or action..."/></td>'
+    +'<td style="padding:4px;border:1px solid var(--border)"><input type="text" class="mom-rec-resp" style="width:100%;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px" placeholder="Responsible..."/></td>'
+    +'<td style="padding:4px;border:1px solid var(--border)"><input type="date" class="mom-rec-date" style="width:100%;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px"/></td>'
+    +'<td style="padding:4px;border:1px solid var(--border)"><select class="mom-rec-prio" style="width:100%;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px"><option value="low">Low</option><option value="medium" selected>Medium</option><option value="high">High</option><option value="critical">Critical</option></select></td>'
+    +'<td style="padding:4px;border:1px solid var(--border)"><select class="mom-rec-status" style="width:100%;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px"><option value="open">Open</option><option value="in_progress">In progress</option><option value="closed">Closed</option></select></td>'
+    +'<td style="padding:4px;text-align:center;border:1px solid var(--border)"><button onclick="this.parentNode.parentNode.remove()" style="background:none;border:none;cursor:pointer;color:var(--red)"><i class="ti ti-x"></i></button></td>';
+  body.appendChild(tr);
+}
+
+function mtgCollectRecs(){
+  var recs=[];
+  document.querySelectorAll('#mom-rec-body tr').forEach(function(tr){
+    var desc=tr.querySelector('.mom-rec-desc')?.value;
+    if(!desc?.trim())return;
+    recs.push({
+      desc:desc,
+      resp:tr.querySelector('.mom-rec-resp')?.value||null,
+      date:tr.querySelector('.mom-rec-date')?.value||null,
+      prio:tr.querySelector('.mom-rec-prio')?.value||'medium',
+      status:tr.querySelector('.mom-rec-status')?.value||'open'
+    });
+  });
+  return recs;
+}
+
+function mtgCollectAgenda(){
+  var items=[];
+  document.querySelectorAll('#mom-agenda-body tr').forEach(function(tr,i){
+    var item=tr.querySelector('.mom-agenda-item')?.value||'';
+    var notes=tr.querySelector('.mom-agenda-notes')?.value||'';
+    if(item||notes)items.push({no:i+1,item:item,notes:notes});
+  });
+  return items;
+}
+
+async function mtgSaveMom(){
+  var title=document.getElementById('mom-title')?.value?.trim();
+  if(!title){toast('Please enter a meeting title',false);return;}
+  var recs=mtgCollectRecs();
+  var agenda=mtgCollectAgenda();
+  var body={
+    company_id:prof?.company_id,
+    series_id:document.getElementById('mtg-mom-form').dataset.seriesId||null,
+    meeting_type:document.getElementById('mom-type')?.value||'management_review',
+    title:title,
+    meeting_date:document.getElementById('mom-date')?.value||null,
+    location:document.getElementById('mom-location')?.value||null,
+    chaired_by:document.getElementById('mom-chaired-by')?.value||null,
+    attendees:document.getElementById('mom-attendees')?.value||null,
+    apologies:document.getElementById('mom-apologies')?.value||null,
+    minutes:document.getElementById('mom-notes')?.value||null,
+    next_meeting_date:document.getElementById('mom-next-date')?.value||null,
+    agenda_items:agenda,
+    recommendations:recs,
+    status:document.getElementById('mom-status')?.value||'draft',
+    updated_at:new Date().toISOString()
+  };
+  try{
+    var savedId=mtgEditingMomId;
+    if(mtgEditingMomId){
+      await api('/hse_meetings?id=eq.'+mtgEditingMomId,{m:'PATCH',p:'return=minimal',b:body});
+      toast('Minutes updated!');
+    }else{
+      body.created_by=prof?.id;
+      var res=await api('/hse_meetings',{m:'POST',p:'return=representation',b:body});
+      savedId=res?.[0]?.id;
+      toast('Minutes saved!');
+    }
+    // Update series next_date if series linked
+    var seriesId=document.getElementById('mtg-mom-form').dataset.seriesId;
+    if(seriesId){
+      var nd=document.getElementById('mom-next-date')?.value;
+      if(nd)await api('/meeting_series?id=eq.'+seriesId,{m:'PATCH',p:'return=minimal',b:{next_date:nd,updated_at:new Date().toISOString()}});
+    }
+    // Sync recommendations to MAP
+    if(savedId&&recs.length){
+      try{await api('/action_tracker?source_module=eq.meeting&source_id=eq.'+savedId,{m:'DELETE'});}catch(ex){}
+      var ref=title+' ('+new Date(body.meeting_date||new Date()).toLocaleDateString('en-GB')+')';
+      for(var i=0;i<recs.length;i++){
+        var r=recs[i];
+        await api('/action_tracker',{m:'POST',p:'return=minimal',b:{
+          company_id:prof?.company_id,source_module:'meeting',source_id:savedId,
+          source_ref:ref,description:r.desc,responsible:r.resp||null,
+          target_date:r.date||null,priority:r.prio||'medium',
+          status:r.status||'open',created_by:prof?.id
+        }});
+      }
+      toast('Minutes saved! '+recs.length+' action(s) synced to Master Action Plan.');
+    }
+    mtgMomBack();
+  }catch(e){toast(e.message,false);console.error(e);}
+}
+
+async function mtgDeleteMom(){
+  if(!mtgEditingMomId)return;
+  if(!confirm('Delete these minutes? This cannot be undone.'))return;
+  try{
+    await api('/action_tracker?source_module=eq.meeting&source_id=eq.'+mtgEditingMomId,{m:'DELETE'});
+    await api('/hse_meetings?id=eq.'+mtgEditingMomId,{m:'DELETE'});
+    toast('Minutes deleted!');
+    mtgMomBack();
+  }catch(e){toast(e.message,false);console.error(e);}
+}
+
+function mtgMomBack(){
+  document.getElementById('mtg-mom-form').style.display='none';
+  document.getElementById('mtg-series-form').style.display='none';
+  document.getElementById('mtg-view-minutes').style.display='none';
+  document.getElementById('mtg-view-schedule').style.display='block';
+  // Reset active tab
+  document.querySelectorAll('.mtg-tab').forEach(t=>t.classList.remove('active'));
+  var tab=document.getElementById('mtg-tab-schedule');if(tab)tab.classList.add('active');
+  mtgLoadSeries();
+}
+
+// ── MINUTES LIST ────────────────────────────────────────────────────────────
+async function mtgLoadMinutes(){
+  var el=document.getElementById('mtg-minutes-list');
+  if(!el)return;
+  try{
+    var d=await api('/hse_meetings?select=*'+cf()+'&order=meeting_date.desc');
+    mtgMinutesData=d||[];
+    if(!d||!d.length){
+      el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)">No minutes yet — schedule a meeting from the Schedule tab.</div>';
+      return;
+    }
+    var h='<table style="width:100%;border-collapse:collapse"><thead><tr style="background:#f9fafb">'
+      +'<th style="padding:10px 16px;text-align:left;border-bottom:1px solid var(--border);font-size:11px;text-transform:uppercase;color:var(--text2)">Date</th>'
+      +'<th style="padding:10px;text-align:left;border-bottom:1px solid var(--border);font-size:11px;text-transform:uppercase;color:var(--text2)">Meeting</th>'
+      +'<th style="padding:10px;text-align:left;border-bottom:1px solid var(--border);font-size:11px;text-transform:uppercase;color:var(--text2)">Type</th>'
+      +'<th style="padding:10px;text-align:left;border-bottom:1px solid var(--border);font-size:11px;text-transform:uppercase;color:var(--text2)">Chaired by</th>'
+      +'<th style="padding:10px;text-align:center;border-bottom:1px solid var(--border);font-size:11px;text-transform:uppercase;color:var(--text2)">Actions</th>'
+      +'<th style="padding:10px;text-align:left;border-bottom:1px solid var(--border);font-size:11px;text-transform:uppercase;color:var(--text2)">Status</th>'
+      +'<th style="padding:10px;width:90px;border-bottom:1px solid var(--border)"></th>'
+      +'</tr></thead><tbody>';
+    d.forEach(function(x){
+      var dt=x.meeting_date?new Date(x.meeting_date).toLocaleDateString('en-GB'):'--';
+      var recs=Array.isArray(x.recommendations)?x.recommendations.length:0;
+      var statusBadge=x.status==='completed'?'<span class="badge bg">Completed</span>':x.status==='cancelled'?'<span class="badge br">Cancelled</span>':'<span class="badge ba">Draft</span>';
+      h+='<tr style="border-bottom:1px solid #f3f4f6">'
+        +'<td style="padding:10px 16px;font-weight:600">'+dt+'</td>'
+        +'<td style="padding:10px;cursor:pointer;color:var(--green);font-weight:600" data-id="'+x.id+'" onclick="mtgOpenMom(this.getAttribute(\'data-id\'))">'+(x.title||'—')+'</td>'
+        +'<td style="padding:10px;font-size:12px;color:var(--text2)">'+(MTG_TYPES[x.meeting_type]||x.meeting_type||'—')+'</td>'
+        +'<td style="padding:10px">'+(x.chaired_by||'—')+'</td>'
+        +'<td style="padding:10px;text-align:center"><span style="background:#EAF3DE;color:#3B6D11;padding:2px 8px;border-radius:99px;font-size:11px;font-weight:600">'+recs+' action'+(recs!==1?'s':'')+'</span></td>'
+        +'<td style="padding:10px">'+statusBadge+'</td>'
+        +'<td style="padding:10px"><div style="display:flex;gap:4px">'
+        +'<button class="btn btn-sm" data-id="'+x.id+'" onclick="mtgOpenMom(this.getAttribute(\'data-id\'))"><i class="ti ti-edit"></i></button>'
+        +(isMgr()?'<button class="btn btn-sm" style="color:var(--red)" data-id="'+x.id+'" onclick="mtgDeleteMomFromList(this.getAttribute(\'data-id\'))"><i class="ti ti-trash"></i></button>':'')
+        +'</div></td>'
+        +'</tr>';
+    });
+    h+='</tbody></table>';
+    el.innerHTML=h;
+  }catch(e){el.innerHTML='<p style="padding:20px;color:red">'+e.message+'</p>';console.error(e);}
+}
+
+async function mtgOpenMom(id){
+  var m=mtgMinutesData.find(function(x){return x.id===id;});
+  if(!m){
+    try{var d=await api('/hse_meetings?id=eq.'+id+'&select=*');m=d&&d[0];}
+    catch(e){toast(e.message,false);return;}
+  }
+  if(!m)return;
+  mtgEditingMomId=id;
+  mtgClearMom();
+  document.getElementById('mtg-mom-form').dataset.seriesId=m.series_id||'';
+  var flds={'mom-title':'title','mom-location':'location','mom-chaired-by':'chaired_by',
+    'mom-attendees':'attendees','mom-apologies':'apologies','mom-notes':'minutes',
+    'mom-sign-chair':'chaired_by'};
+  Object.entries(flds).forEach(function(e){var el=document.getElementById(e[0]);if(el)el.value=m[e[1]]||'';});
+  var hdr=document.getElementById('mom-header-title');if(hdr)hdr.textContent=m.title||'HSE Meeting';
+  var tp=document.getElementById('mom-type');if(tp)tp.value=m.meeting_type||'management_review';
+  var st=document.getElementById('mom-status');if(st)st.value=m.status||'draft';
+  var dt=document.getElementById('mom-date');if(dt)dt.value=m.meeting_date?m.meeting_date.slice(0,16):'';
+  var nd=document.getElementById('mom-next-date');if(nd)nd.value=m.next_meeting_date||'';
+  // Render agenda items
+  var ab=document.getElementById('mom-agenda-body');
+  if(ab&&m.agenda_items&&m.agenda_items.length){
+    ab.innerHTML='';
+    m.agenda_items.forEach(function(a,i){
+      var tr=document.createElement('tr');
+      tr.innerHTML='<td style="padding:6px;text-align:center;border:1px solid var(--border);font-weight:700;font-size:12px;color:var(--text2)">'+(i+1)+'</td>'
+        +'<td style="padding:4px;border:1px solid var(--border)"><input type="text" class="mom-agenda-item" value="'+escH2(a.item||'')+'" style="width:100%;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px"/></td>'
+        +'<td style="padding:4px;border:1px solid var(--border)"><textarea class="mom-agenda-notes" style="width:100%;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;min-height:50px;resize:vertical">'+escH2(a.notes||'')+'</textarea></td>'
+        +'<td style="padding:4px;text-align:center;border:1px solid var(--border)"><button onclick="this.parentNode.parentNode.remove()" style="background:none;border:none;cursor:pointer;color:var(--red)"><i class="ti ti-x"></i></button></td>';
+      ab.appendChild(tr);
+    });
+  }
+  // Render recommendations
+  var rb=document.getElementById('mom-rec-body');
+  var re=document.getElementById('mom-rec-empty');
+  if(rb&&m.recommendations&&m.recommendations.length){
+    if(re)re.style.display='none';
+    rb.innerHTML='';
+    m.recommendations.forEach(function(r){
+      var tr=document.createElement('tr');
+      tr.innerHTML='<td style="padding:6px;text-align:center;border:1px solid var(--border);font-weight:700;font-size:12px;color:var(--text2)">•</td>'
+        +'<td style="padding:4px;border:1px solid var(--border)"><input type="text" class="mom-rec-desc" value="'+escH2(r.desc||'')+'" style="width:100%;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px"/></td>'
+        +'<td style="padding:4px;border:1px solid var(--border)"><input type="text" class="mom-rec-resp" value="'+escH2(r.resp||'')+'" style="width:100%;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px"/></td>'
+        +'<td style="padding:4px;border:1px solid var(--border)"><input type="date" class="mom-rec-date" value="'+(r.date||'')+'" style="width:100%;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px"/></td>'
+        +'<td style="padding:4px;border:1px solid var(--border)"><select class="mom-rec-prio" style="width:100%;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px"><option value="low"'+(r.prio==='low'?' selected':'')+'>Low</option><option value="medium"'+((!r.prio||r.prio==='medium')?' selected':'')+'>Medium</option><option value="high"'+(r.prio==='high'?' selected':'')+'>High</option><option value="critical"'+(r.prio==='critical'?' selected':'')+'>Critical</option></select></td>'
+        +'<td style="padding:4px;border:1px solid var(--border)"><select class="mom-rec-status" style="width:100%;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px"><option value="open"'+(r.status==='open'?' selected':'')+'>Open</option><option value="in_progress"'+(r.status==='in_progress'?' selected':'')+'>In progress</option><option value="closed"'+(r.status==='closed'?' selected':'')+'>Closed</option></select></td>'
+        +'<td style="padding:4px;text-align:center;border:1px solid var(--border)"><button onclick="this.parentNode.parentNode.remove()" style="background:none;border:none;cursor:pointer;color:var(--red)"><i class="ti ti-x"></i></button></td>';
+      rb.appendChild(tr);
+    });
+  }else if(re){re.style.display='block';}
+  document.getElementById('mtg-mom-title').textContent='Minutes of Meeting';
+  document.getElementById('mtg-mom-ref').textContent=m.title||'';
+  document.getElementById('mtg-mom-del-btn').style.display=isMgr()?'inline-flex':'none';
+  document.getElementById('mtg-view-schedule').style.display='none';
+  document.getElementById('mtg-view-minutes').style.display='none';
+  document.getElementById('mtg-series-form').style.display='none';
+  document.getElementById('mtg-mom-form').style.display='block';
+}
+
+async function mtgDeleteMomFromList(id){
+  if(!confirm('Delete these minutes? This cannot be undone.'))return;
+  try{
+    await api('/action_tracker?source_module=eq.meeting&source_id=eq.'+id,{m:'DELETE'});
+    await api('/hse_meetings?id=eq.'+id,{m:'DELETE'});
+    toast('Minutes deleted!');
+    mtgLoadMinutes();
+  }catch(e){toast(e.message,false);console.error(e);}
+}
+
+function escH2(str){return String(str||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+
+async function saveMtg(){mtgSaveMom();}
+
 async function loadTraining(){
 const el=document.getElementById('training-list');
 if(!el)return;
@@ -3548,75 +4179,6 @@ kpiObjectives=[];kpiKPIs=[];kpiIndicators=[];kpiMonthlyData={};
 await kpiLoadAll();
 }catch(e){toast(e.message,false);}
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
