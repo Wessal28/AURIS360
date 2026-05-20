@@ -788,6 +788,8 @@
 
 
 
+
+
 const SB='https://iarfxjhahzbhncsaohbg.supabase.co';
 const KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlhcmZ4amhhaHpiaG5jc2FvaGJnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg2OTM1MzAsImV4cCI6MjA5NDI2OTUzMH0.qSjahuX-RwnjWEDmo-LkcorAxpsmyVoaXt4AO4_A9BM';
 let tok=null,prof=null,co=null,chkItems=[],people=[];
@@ -2273,28 +2275,31 @@ function escH(str){
 }
 
 async function loadInvs(){
-  const btn=document.getElementById('inv-add-btn');
-  if(btn&&isMgr())btn.innerHTML='<button class="btn btn-primary" onclick="invNew()"><i class="ti ti-plus"></i>New investigation</button>';
-  const el=document.getElementById('inv-list');
+  var el=document.getElementById('inv-list');
   if(!el)return;
   try{
-    const d=await api('/investigations?select=*'+cf()+'&order=created_at.desc');
+    var d=await api('/investigations?select=*'+cf()+'&order=created_at.desc');
     invAllData=d||[];
     if(!d||!d.length){el.innerHTML='<p style="padding:20px;color:#666">No investigations yet</p>';return;}
-    let h='<table style="width:100%;border-collapse:collapse"><thead><tr style="background:#f9fafb">'
+    var h='<table style="width:100%;border-collapse:collapse"><thead><tr style="background:#f9fafb">'
       +'<th style="padding:10px;text-align:left;border-bottom:1px solid var(--border)">Ref</th>'
       +'<th style="padding:10px;text-align:left;border-bottom:1px solid var(--border)">Date</th>'
       +'<th style="padding:10px;text-align:left;border-bottom:1px solid var(--border)">Location</th>'
       +'<th style="padding:10px;text-align:left;border-bottom:1px solid var(--border)">Type</th>'
       +'<th style="padding:10px;text-align:left;border-bottom:1px solid var(--border)">Investigated by</th>'
       +'<th style="padding:10px;text-align:left;border-bottom:1px solid var(--border)">Status</th>'
-      +'<th style="padding:10px;width:80px;border-bottom:1px solid var(--border)"></th>'
+      +'<th style="padding:10px;width:90px;border-bottom:1px solid var(--border)"></th>'
       +'</tr></thead><tbody>';
     for(var i=0;i<d.length;i++){
       var x=d[i];
       var dt=x.incident_date?new Date(x.incident_date).toLocaleDateString('en-GB'):'--';
-      var typeBadge=x.inv_type==='full'?'<span style="background:#F3E8FF;color:#6B21A8;padding:2px 8px;border-radius:99px;font-size:11px;font-weight:600">Full</span>':'<span style="background:#E6F1FB;color:#185FA5;padding:2px 8px;border-radius:99px;font-size:11px;font-weight:600">Basic</span>';
-      h+='<tr style="border-bottom:1px solid #f3f4f6;cursor:pointer" data-id="'+x.id+'" onclick="invOpen(this.dataset.id)">'
+      var typeBadge=x.inv_type==='full'
+        ?'<span style="background:#F3E8FF;color:#6B21A8;padding:2px 8px;border-radius:99px;font-size:11px;font-weight:600">Full</span>'
+        :'<span style="background:#E6F1FB;color:#185FA5;padding:2px 8px;border-radius:99px;font-size:11px;font-weight:600">Basic</span>';
+      var delBtn=isMgr()
+        ?'<button class="btn btn-sm" style="color:var(--red)" title="Delete" onclick="invDelete(this.getAttribute(\'data-id\'))" data-id="'+x.id+'"><i class="ti ti-trash"></i></button>'
+        :'';
+      h+='<tr style="border-bottom:1px solid #f3f4f6">'
         +'<td style="padding:10px"><strong>'+(x.inv_ref||'--')+'</strong></td>'
         +'<td style="padding:10px">'+dt+'</td>'
         +'<td style="padding:10px">'+(x.incident_location||'--')+'</td>'
@@ -2302,14 +2307,17 @@ async function loadInvs(){
         +'<td style="padding:10px">'+(x.investigated_by||'--')+'</td>'
         +'<td style="padding:10px">'+stat(x.status)+'</td>'
         +'<td style="padding:10px"><div style="display:flex;gap:4px">'
-        +'<button class="btn btn-sm" onclick="event.stopPropagation();invOpen(this.dataset.id)" data-id="\''+x.id+'\'" title="Open"><i class="ti ti-edit"></i></button>'
-        +(isMgr()?'<button class="btn btn-sm" style="color:var(--red)" onclick="event.stopPropagation();invDelete(this.dataset.id)" data-id="\''+x.id+'\'" title="Delete"><i class="ti ti-trash"></i></button>':'')
-        +'</div></td>' +'</tr>';
+        +'<button class="btn btn-sm" title="Open" onclick="invOpen(this.getAttribute(\'data-id\'))" data-id="'+x.id+'"><i class="ti ti-edit"></i></button>'
+        +delBtn
+        +'</div></td>'
+        +'</tr>';
     }
     h+='</tbody></table>';
     el.innerHTML=h;
   }catch(e){el.innerHTML='<p style="padding:20px;color:red">'+e.message+'</p>';console.error(e);}
 }
+
+
 
 function invShowList(){
   document.getElementById('inv-list-view').style.display='block';
@@ -3540,6 +3548,8 @@ kpiObjectives=[];kpiKPIs=[];kpiIndicators=[];kpiMonthlyData={};
 await kpiLoadAll();
 }catch(e){toast(e.message,false);}
 }
+
+
 
 
 
