@@ -24,6 +24,7 @@
 
 
 
+
 const SB='https://iarfxjhahzbhncsaohbg.supabase.co';
 const KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlhcmZ4amhhaHpiaG5jc2FvaGJnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg2OTM1MzAsImV4cCI6MjA5NDI2OTUzMH0.qSjahuX-RwnjWEDmo-LkcorAxpsmyVoaXt4AO4_A9BM';
 let tok=null,prof=null,co=null,chkItems=[],people=[];
@@ -2407,95 +2408,104 @@ function mtgRenderRoadmap(){
   if(!container)return;
 
   if(!mtgSeriesData||!mtgSeriesData.length){
-    container.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)">No meeting schedules yet. '+(isMgr()?'<button class="btn btn-primary btn-sm" onclick="mtgNewSeries()"><i class="ti ti-plus"></i>Add schedule</button>':'')+'</div>';
+    container.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)">No meeting schedules yet.'+(isMgr()?'<button class="btn btn-primary btn-sm" style="margin-left:8px" onclick="mtgNewSeries()"><i class="ti ti-plus"></i>Add schedule</button>':'')+'</div>';
     return;
   }
 
   var curWeek=mtgRoadmapYear===new Date().getFullYear()?mtgCurrentWeek():-1;
-
-  // Type colors
   var typeColors={management_review:'#1D9E75',hse_committee:'#185FA5',other:'#8B5CF6'};
 
-  // Build week headers (W1..W52 in groups of 4 for months)
-  var monthNames=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  // Build table matching the Excel template exactly
+  var html='<table style="border-collapse:collapse;width:100%;min-width:900px;font-size:12px;table-layout:fixed">';
 
-  var html='<table style="border-collapse:collapse;width:100%;min-width:1200px;font-size:11px">';
-
-  // Month header row
-  html+='<thead><tr><th style="padding:6px 12px;background:#1a1a2e;color:#fff;text-align:left;min-width:180px;position:sticky;left:0;z-index:3;font-size:12px">Meeting Schedule</th>';
-  var weekToMonth=[];
-  var d=new Date(mtgRoadmapYear,0,1);
-  // Pre-compute month for each week
-  for(var w=1;w<=52;w++){
-    var wDate=mtgWeekToDate(w,mtgRoadmapYear);
-    weekToMonth.push(wDate.getMonth());
-  }
-  // Group consecutive weeks by month for colspan
-  var mGroups=[];
-  var curMon=weekToMonth[0]; var curSpan=0; var curStart=1;
-  for(var w=0;w<=52;w++){
-    if(w===52||weekToMonth[w]!==curMon){
-      mGroups.push({month:curMon,start:curStart,span:curSpan});
-      curMon=weekToMonth[w]; curSpan=1; curStart=w+1;
-    } else { curSpan++; }
-  }
-  mGroups.forEach(function(g){
-    html+='<th colspan="'+g.span+'" style="padding:5px 4px;background:#1a1a2e;color:#aab4c4;text-align:center;border-left:2px solid #2d2d4e;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.05em">'+monthNames[g.month]+'</th>';
-  });
+  // ROW 1: Header - No | Meeting | Frequency | "Week" spanning 52 cols
+  html+='<thead>';
+  html+='<tr style="background:#1a3a5c;color:#fff">';
+  html+='<th style="padding:8px 6px;text-align:center;border:1px solid #2d5a8c;width:36px;font-size:11px">No</th>';
+  html+='<th style="padding:8px 10px;text-align:left;border:1px solid #2d5a8c;width:180px;font-size:11px">Meeting</th>';
+  html+='<th style="padding:8px 8px;text-align:left;border:1px solid #2d5a8c;width:110px;font-size:11px">Frequency</th>';
+  html+='<th colspan="52" style="padding:8px;text-align:center;border:1px solid #2d5a8c;font-size:11px;font-weight:700;letter-spacing:.05em">WEEK</th>';
   html+='</tr>';
 
-  // Week numbers row
-  html+='<tr><th style="padding:4px 12px;background:#2d2d4e;color:#aab4c4;text-align:left;position:sticky;left:0;z-index:3;font-size:10px">Week no.</th>';
+  // ROW 2: Week numbers 1-52
+  html+='<tr style="background:#2d5a8c;color:#fff">';
+  html+='<th style="border:1px solid #1a3a5c;padding:4px 2px"></th>';
+  html+='<th style="border:1px solid #1a3a5c;padding:4px 2px"></th>';
+  html+='<th style="border:1px solid #1a3a5c;padding:4px 2px"></th>';
   for(var w=1;w<=52;w++){
     var isCur=w===curWeek;
-    html+='<th style="padding:4px 2px;text-align:center;min-width:22px;max-width:28px;'
-      +(isCur?'background:#EF9F2755;color:#EF9F27;font-weight:700;':'background:#2d2d4e;color:#6b7280;')
-      +'border-left:'+(weekToMonth[w-1]!==weekToMonth[w-2]?'2px solid #3d3d5e':'1px solid #3d3d5e')+'">'+w+'</th>';
+    html+='<th style="padding:4px 1px;text-align:center;border:1px solid #1a3a5c;font-size:10px;'
+      +(isCur?'background:#EF9F27;color:#fff;font-weight:700;':'color:#cce4ff;font-weight:400;')
+      +'width:'+(100/52).toFixed(2)+'%">'+w+'</th>';
   }
   html+='</tr></thead><tbody>';
 
-  // One row per series
+  // DATA ROWS: one per series
+  var recurrenceWeeks={'monthly':4,'bimonthly':9,'quarterly':13,'triannual':17,'biannual':26,'annual':52};
+
   mtgSeriesData.forEach(function(series,si){
-    var weekOccurrences=mtgGetWeeksForSeries(series,mtgRoadmapYear);
-    var weekSet={};
-    weekOccurrences.forEach(function(o){weekSet[o.week]={date:o.date,past:o.past};});
     var color=typeColors[series.meeting_type]||'#6B7280';
-    var bgRow=si%2===0?'#f9fafb':'#fff';
+    var rowBg=si%2===0?'#f9fafb':'#ffffff';
+
+    // Calculate meeting weeks for this series
+    var weeks=mtgGetWeeksForSeries(series,mtgRoadmapYear);
+    var weekSet={};
+    weeks.forEach(function(o){weekSet[o.week]={date:o.date,past:o.past};});
 
     html+='<tr style="border-bottom:1px solid #e5e7eb">';
-    // Label cell
-    html+='<td style="padding:6px 12px;background:'+bgRow+';position:sticky;left:0;z-index:2;border-right:2px solid #e5e7eb;min-width:180px;max-width:220px">'
-      +'<div style="font-weight:600;font-size:11px;color:#1a1a2e;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="'+series.title+'">'+series.title+'</div>'
-      +'<div style="font-size:10px;color:#6b7280;margin-top:1px">'+( MTG_RECURRENCE[series.recurrence]||series.recurrence)+'</div>'
-      +'</td>';
+
+    // No.
+    html+='<td style="padding:6px 4px;text-align:center;background:'+rowBg+';border:1px solid #e5e7eb;font-weight:700;font-size:11px;color:#374151">'+(si+1)+'</td>';
+
+    // Meeting name
+    html+='<td style="padding:6px 8px;background:'+rowBg+';border:1px solid #e5e7eb;font-weight:600;font-size:11px;color:#111827" title="'+series.title+'">'+series.title+'</td>';
+
+    // Frequency
+    html+='<td style="padding:6px 6px;background:'+rowBg+';border:1px solid #e5e7eb;font-size:10px;color:#6b7280">'+(MTG_RECURRENCE[series.recurrence]||series.recurrence)+'</td>';
 
     // Week cells
     for(var w=1;w<=52;w++){
       var isCur=w===curWeek;
       var occ=weekSet[w];
-      var cellBg=isCur?'#EF9F2720':bgRow;
-      var borderL=(weekToMonth[w-1]!==weekToMonth[Math.max(0,w-2)]?'2px solid #d1d5db':'1px solid #f3f4f6');
+      var cellBg=isCur?'#FEF9EC':rowBg;
 
       if(occ){
+        var isPast=occ.past&&(mtgRoadmapYear<new Date().getFullYear()||(mtgRoadmapYear===new Date().getFullYear()&&w<curWeek));
+        var dotColor=isPast?'#E24B4A':color;
         var dt=occ.date.toLocaleDateString('en-GB',{day:'2-digit',month:'short'});
-        var pastColor=occ.past&&mtgRoadmapYear<new Date().getFullYear()||
-          (occ.past&&mtgRoadmapYear===new Date().getFullYear()&&w<curWeek);
-        var dotColor=pastColor?'#E24B4A':color;
-        html+='<td style="padding:2px;text-align:center;background:'+cellBg+';border-left:'+borderL+'">'
-          +'<div title="'+dt+'" style="width:18px;height:18px;border-radius:4px;background:'+dotColor+';margin:0 auto;cursor:pointer;display:flex;align-items:center;justify-content:center" '
-          +'data-id="'+series.id+'" onclick="mtgScheduleMeeting(this.getAttribute(\'data-id\'))">'
-          +'<i class="ti ti-calendar" style="font-size:9px;color:#fff"></i>'
+        html+='<td style="padding:2px 1px;text-align:center;background:'+cellBg+';border:1px solid #e5e7eb;cursor:pointer" '
+          +'title="'+series.title+' — Week '+w+' ('+dt+')" '
+          +'data-series-id="'+series.id+'" onclick="mtgClickWeek(this.dataset.seriesId,'+w+')">'
+          +'<div style="background:'+dotColor+';border-radius:3px;margin:1px;height:20px;display:flex;align-items:center;justify-content:center">'
+          +'<i class="ti ti-check" style="font-size:11px;color:#fff"></i>'
           +'</div>'
           +'</td>';
       }else{
-        html+='<td style="padding:2px;text-align:center;background:'+cellBg+';border-left:'+borderL+'"><div style="width:18px;height:2px;background:#e5e7eb;margin:8px auto;border-radius:1px"></div></td>';
+        html+='<td style="padding:2px 1px;text-align:center;background:'+cellBg+';border:1px solid #e5e7eb"></td>';
       }
     }
     html+='</tr>';
   });
+
   html+='</tbody></table>';
   container.innerHTML=html;
 }
+
+function mtgClickWeek(seriesId,week){
+  // Open the meeting form for this series, pre-set to the approximate date of that week
+  var s=mtgSeriesData.find(function(x){return x.id===seriesId;});
+  if(!s)return;
+  // Calculate actual date for this week
+  var weekDate=mtgWeekToDate(week,mtgRoadmapYear);
+  // Override next_date temporarily for pre-filling
+  var tempSeries=Object.assign({},s,{next_date:weekDate.toISOString().slice(0,10)});
+  // Store and call schedule
+  var origData=mtgSeriesData;
+  mtgSeriesData=mtgSeriesData.map(function(x){return x.id===seriesId?tempSeries:x;});
+  mtgScheduleMeeting(seriesId);
+  mtgSeriesData=origData;
+}
+
 
 function mtgWeekToDate(week,year){
   // Returns the Monday of the given ISO week in the given year
@@ -3399,6 +3409,7 @@ kpiObjectives=[];kpiKPIs=[];kpiIndicators=[];kpiMonthlyData={};
 await kpiLoadAll();
 }catch(e){toast(e.message,false);}
 }
+
 
 
 
