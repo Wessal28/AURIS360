@@ -23,6 +23,7 @@
 <script defer>
 
 
+
 const SB='https://iarfxjhahzbhncsaohbg.supabase.co';
 const KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlhcmZ4amhhaHpiaG5jc2FvaGJnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg2OTM1MzAsImV4cCI6MjA5NDI2OTUzMH0.qSjahuX-RwnjWEDmo-LkcorAxpsmyVoaXt4AO4_A9BM';
 let tok=null,prof=null,co=null,chkItems=[],people=[];
@@ -1995,7 +1996,7 @@ function mtgSwitchTab(tab, btn){
   btn.classList.add('active');
   document.getElementById('mtg-view-schedule').style.display=tab==='schedule'?'block':'none';
   document.getElementById('mtg-view-minutes').style.display=tab==='minutes'?'block':'none';
-  if(tab==='schedule')mtgLoadSeries();
+  if(tab==='schedule'){mtgLoadSeries();}
   else mtgLoadMinutes();
 }
 
@@ -2003,6 +2004,9 @@ function mtgSwitchTab(tab, btn){
 async function loadMtgs(){
   var btn=document.getElementById('mtg-new-series-btn');
   if(btn)btn.style.display=isMgr()?'inline-flex':'none';
+  mtgRoadmapYear=new Date().getFullYear();
+  var yl=document.getElementById('mtg-roadmap-year');
+  if(yl)yl.textContent=mtgRoadmapYear;
   mtgLoadSeries();
 }
 
@@ -2059,6 +2063,8 @@ async function mtgLoadSeries(){
     }
     el.innerHTML=h;
   }catch(e){el.innerHTML='<p style="padding:20px;color:red">'+e.message+'</p>';console.error(e);}
+  // Render roadmap after series loaded
+  mtgRenderRoadmap();
 }
 
 function mtgNewSeries(){
@@ -2332,6 +2338,176 @@ function mtgMomBack(){
 }
 
 // ── MINUTES LIST ────────────────────────────────────────────────────────────
+// ── ROADMAP ─────────────────────────────────────────────────────────────────
+let mtgRoadmapYear = new Date().getFullYear();
+let mtgSeriesListOpen = false;
+
+function mtgRoadmapPrevYear(){ mtgRoadmapYear--; mtgRenderRoadmap(); }
+function mtgRoadmapNextYear(){ mtgRoadmapYear++; mtgRenderRoadmap(); }
+function mtgRoadmapToday(){ mtgRoadmapYear=new Date().getFullYear(); mtgRenderRoadmap(); }
+
+function mtgToggleSeriesList(){
+  var el=document.getElementById('mtg-series-list');
+  var chev=document.getElementById('series-list-chev');
+  mtgSeriesListOpen=!mtgSeriesListOpen;
+  if(el)el.style.display=mtgSeriesListOpen?'block':'none';
+  if(chev)chev.className='ti '+(mtgSeriesListOpen?'ti-chevron-up':'ti-chevron-down');
+  if(mtgSeriesListOpen)mtgLoadSeries();
+}
+
+function mtgGetWeeksForSeries(series, year){
+  // Given a series with recurrence and next_date, calculate which weeks in the year have meetings
+  var weeks=[];
+  var recurrenceMonths={'monthly':1,'bimonthly':2,'quarterly':3,'triannual':4,'biannual':6,'annual':12};
+  var months=recurrenceMonths[series.recurrence]||3;
+
+  // Get start date - use next_date or Jan 1 of year
+  var startDate=series.next_date?new Date(series.next_date):new Date(year,0,1);
+
+  // Work backwards from startDate to find first occurrence in or before this year
+  var d=new Date(startDate);
+  while(d.getFullYear()>year){d.setMonth(d.getMonth()-months);}
+  while(d.getFullYear()<year||(d.getFullYear()===year&&d<new Date(year,0,1))){
+    var next=new Date(d);next.setMonth(next.getMonth()+months);
+    if(next.getFullYear()>year||(next.getFullYear()===year&&next>=new Date(year,0,1)))break;
+    d=next;
+  }
+  // Now d is first occurrence at or before start of year - advance to be in year
+  if(d.getFullYear()<year)d.setMonth(d.getMonth()+months);
+
+  // Collect all occurrences in this year
+  var cur=new Date(d);
+  while(cur.getFullYear()<=year){
+    if(cur.getFullYear()===year){
+      var week=mtgGetWeekNumber(cur);
+      if(week>=1&&week<=52)weeks.push({week:week,date:new Date(cur),past:cur<new Date()});
+    }
+    cur.setMonth(cur.getMonth()+months);
+  }
+  return weeks;
+}
+
+function mtgGetWeekNumber(date){
+  var d=new Date(Date.UTC(date.getFullYear(),date.getMonth(),date.getDate()));
+  d.setUTCDate(d.getUTCDate()+4-(d.getUTCDay()||7));
+  var yearStart=new Date(Date.UTC(d.getUTCFullYear(),0,1));
+  return Math.ceil((((d-yearStart)/86400000)+1)/7);
+}
+
+function mtgCurrentWeek(){
+  return mtgGetWeekNumber(new Date());
+}
+
+function mtgRenderRoadmap(){
+  var container=document.getElementById('mtg-roadmap-container');
+  var yearLabel=document.getElementById('mtg-roadmap-year');
+  var newBtn=document.getElementById('mtg-new-series-btn2');
+  if(yearLabel)yearLabel.textContent=mtgRoadmapYear;
+  if(newBtn)newBtn.style.display=isMgr()?'inline-flex':'none';
+  if(!container)return;
+
+  if(!mtgSeriesData||!mtgSeriesData.length){
+    container.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)">No meeting schedules yet. '+(isMgr()?'<button class="btn btn-primary btn-sm" onclick="mtgNewSeries()"><i class="ti ti-plus"></i>Add schedule</button>':'')+'</div>';
+    return;
+  }
+
+  var curWeek=mtgRoadmapYear===new Date().getFullYear()?mtgCurrentWeek():-1;
+
+  // Type colors
+  var typeColors={management_review:'#1D9E75',hse_committee:'#185FA5',other:'#8B5CF6'};
+
+  // Build week headers (W1..W52 in groups of 4 for months)
+  var monthNames=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+  var html='<table style="border-collapse:collapse;width:100%;min-width:1200px;font-size:11px">';
+
+  // Month header row
+  html+='<thead><tr><th style="padding:6px 12px;background:#1a1a2e;color:#fff;text-align:left;min-width:180px;position:sticky;left:0;z-index:3;font-size:12px">Meeting Schedule</th>';
+  var weekToMonth=[];
+  var d=new Date(mtgRoadmapYear,0,1);
+  // Pre-compute month for each week
+  for(var w=1;w<=52;w++){
+    var wDate=mtgWeekToDate(w,mtgRoadmapYear);
+    weekToMonth.push(wDate.getMonth());
+  }
+  // Group consecutive weeks by month for colspan
+  var mGroups=[];
+  var curMon=weekToMonth[0]; var curSpan=0; var curStart=1;
+  for(var w=0;w<=52;w++){
+    if(w===52||weekToMonth[w]!==curMon){
+      mGroups.push({month:curMon,start:curStart,span:curSpan});
+      curMon=weekToMonth[w]; curSpan=1; curStart=w+1;
+    } else { curSpan++; }
+  }
+  mGroups.forEach(function(g){
+    html+='<th colspan="'+g.span+'" style="padding:5px 4px;background:#1a1a2e;color:#aab4c4;text-align:center;border-left:2px solid #2d2d4e;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.05em">'+monthNames[g.month]+'</th>';
+  });
+  html+='</tr>';
+
+  // Week numbers row
+  html+='<tr><th style="padding:4px 12px;background:#2d2d4e;color:#aab4c4;text-align:left;position:sticky;left:0;z-index:3;font-size:10px">Week no.</th>';
+  for(var w=1;w<=52;w++){
+    var isCur=w===curWeek;
+    html+='<th style="padding:4px 2px;text-align:center;min-width:22px;max-width:28px;'
+      +(isCur?'background:#EF9F2755;color:#EF9F27;font-weight:700;':'background:#2d2d4e;color:#6b7280;')
+      +'border-left:'+(weekToMonth[w-1]!==weekToMonth[w-2]?'2px solid #3d3d5e':'1px solid #3d3d5e')+'">'+w+'</th>';
+  }
+  html+='</tr></thead><tbody>';
+
+  // One row per series
+  mtgSeriesData.forEach(function(series,si){
+    var weekOccurrences=mtgGetWeeksForSeries(series,mtgRoadmapYear);
+    var weekSet={};
+    weekOccurrences.forEach(function(o){weekSet[o.week]={date:o.date,past:o.past};});
+    var color=typeColors[series.meeting_type]||'#6B7280';
+    var bgRow=si%2===0?'#f9fafb':'#fff';
+
+    html+='<tr style="border-bottom:1px solid #e5e7eb">';
+    // Label cell
+    html+='<td style="padding:6px 12px;background:'+bgRow+';position:sticky;left:0;z-index:2;border-right:2px solid #e5e7eb;min-width:180px;max-width:220px">'
+      +'<div style="font-weight:600;font-size:11px;color:#1a1a2e;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="'+series.title+'">'+series.title+'</div>'
+      +'<div style="font-size:10px;color:#6b7280;margin-top:1px">'+( MTG_RECURRENCE[series.recurrence]||series.recurrence)+'</div>'
+      +'</td>';
+
+    // Week cells
+    for(var w=1;w<=52;w++){
+      var isCur=w===curWeek;
+      var occ=weekSet[w];
+      var cellBg=isCur?'#EF9F2720':bgRow;
+      var borderL=(weekToMonth[w-1]!==weekToMonth[Math.max(0,w-2)]?'2px solid #d1d5db':'1px solid #f3f4f6');
+
+      if(occ){
+        var dt=occ.date.toLocaleDateString('en-GB',{day:'2-digit',month:'short'});
+        var pastColor=occ.past&&mtgRoadmapYear<new Date().getFullYear()||
+          (occ.past&&mtgRoadmapYear===new Date().getFullYear()&&w<curWeek);
+        var dotColor=pastColor?'#E24B4A':color;
+        html+='<td style="padding:2px;text-align:center;background:'+cellBg+';border-left:'+borderL+'">'
+          +'<div title="'+dt+'" style="width:18px;height:18px;border-radius:4px;background:'+dotColor+';margin:0 auto;cursor:pointer;display:flex;align-items:center;justify-content:center" '
+          +'data-id="'+series.id+'" onclick="mtgScheduleMeeting(this.getAttribute(\'data-id\'))">'
+          +'<i class="ti ti-calendar" style="font-size:9px;color:#fff"></i>'
+          +'</div>'
+          +'</td>';
+      }else{
+        html+='<td style="padding:2px;text-align:center;background:'+cellBg+';border-left:'+borderL+'"><div style="width:18px;height:2px;background:#e5e7eb;margin:8px auto;border-radius:1px"></div></td>';
+      }
+    }
+    html+='</tr>';
+  });
+  html+='</tbody></table>';
+  container.innerHTML=html;
+}
+
+function mtgWeekToDate(week,year){
+  // Returns the Monday of the given ISO week in the given year
+  var simple=new Date(year,0,1+((week-1)*7));
+  var dow=simple.getDay();
+  var mon=simple;
+  if(dow<=4)mon.setDate(simple.getDate()-simple.getDay()+1);
+  else mon.setDate(simple.getDate()+8-simple.getDay());
+  return mon;
+}
+
+
 async function mtgLoadMinutes(){
   var el=document.getElementById('mtg-minutes-list');
   if(!el)return;
@@ -3226,6 +3402,7 @@ await kpiLoadAll();
 
 
 
+
 </script>
 </head>
 <body>
@@ -3958,7 +4135,42 @@ await kpiLoadAll();
 
 <!-- Schedule tab -->
 <div id="mtg-view-schedule">
-<div class="card" style="padding:0;overflow:hidden"><div id="mtg-series-list"><div class="loading-msg">Loading...</div></div></div>
+<!-- Roadmap controls -->
+<div class="card" style="margin-bottom:12px;padding:14px 20px">
+<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px">
+<div>
+<div style="font-size:14px;font-weight:700;margin-bottom:4px">Meeting Roadmap <span id="mtg-roadmap-year" style="color:var(--green)"></span></div>
+<div style="font-size:12px;color:var(--text2)">Weeks 1–52 showing scheduled meetings per meeting type</div>
+</div>
+<div style="display:flex;gap:8px;align-items:center">
+<button class="btn btn-sm" onclick="mtgRoadmapPrevYear()"><i class="ti ti-chevron-left"></i></button>
+<button class="btn btn-sm" onclick="mtgRoadmapNextYear()"><i class="ti ti-chevron-right"></i></button>
+<button class="btn btn-sm" onclick="mtgRoadmapToday()">Today</button>
+<button class="btn btn-primary btn-sm" id="mtg-new-series-btn2" style="display:none" onclick="mtgNewSeries()"><i class="ti ti-plus"></i>Add schedule</button>
+</div>
+</div>
+</div>
+<!-- Legend -->
+<div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:12px;padding:10px 16px;background:var(--card);border:1px solid var(--border);border-radius:10px">
+<div style="font-size:12px;font-weight:600;color:var(--text2);margin-right:4px">Legend:</div>
+<div style="display:flex;align-items:center;gap:6px;font-size:12px"><span style="width:16px;height:16px;border-radius:4px;background:#1D9E75;display:inline-block"></span>HSE Management Review</div>
+<div style="display:flex;align-items:center;gap:6px;font-size:12px"><span style="width:16px;height:16px;border-radius:4px;background:#185FA5;display:inline-block"></span>HSE Committee Meeting</div>
+<div style="display:flex;align-items:center;gap:6px;font-size:12px"><span style="width:16px;height:16px;border-radius:4px;background:#8B5CF6;display:inline-block"></span>Other Meeting</div>
+<div style="display:flex;align-items:center;gap:6px;font-size:12px"><span style="width:16px;height:16px;border-radius:4px;background:#E24B4A;display:inline-block"></span>Overdue</div>
+<div style="display:flex;align-items:center;gap:6px;font-size:12px;margin-left:auto"><span style="width:16px;height:16px;border-radius:4px;background:#EF9F27;display:inline-block;opacity:.5"></span>Current week</div>
+</div>
+<!-- Roadmap table -->
+<div class="card" style="padding:0;overflow:auto">
+<div id="mtg-roadmap-container"><div class="loading-msg">Loading roadmap...</div></div>
+</div>
+<!-- Series list (collapsible) -->
+<div class="card" style="margin-top:12px;padding:0;overflow:hidden">
+<div style="padding:10px 16px;background:#f9fafb;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;cursor:pointer" onclick="mtgToggleSeriesList()">
+<div style="font-size:13px;font-weight:700">All Meeting Schedules</div>
+<i class="ti ti-chevron-down" id="series-list-chev"></i>
+</div>
+<div id="mtg-series-list" style="display:none"><div class="loading-msg">Loading...</div></div>
+</div>
 </div>
 
 <!-- Minutes tab -->
