@@ -26,6 +26,13 @@
 
 
 
+
+
+
+
+
+
+
 const SB='https://iarfxjhahzbhncsaohbg.supabase.co';
 const KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlhcmZ4amhhaHpiaG5jc2FvaGJnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg2OTM1MzAsImV4cCI6MjA5NDI2OTUzMH0.qSjahuX-RwnjWEDmo-LkcorAxpsmyVoaXt4AO4_A9BM';
 let tok=null,prof=null,co=null,chkItems=[],people=[];
@@ -2469,6 +2476,11 @@ async function mtgSaveMom(){
       }
       toast('Minutes saved! '+recs.length+' action(s) synced to Master Action Plan.');
     }
+    // Reload agenda to reflect completed status
+    try{
+      var mins=await api('/hse_meetings?select=id,series_id,meeting_date,status'+cf());
+      mtgMinutesData=mins||[];
+    }catch(ex){}
     mtgMomBack();
   }catch(e){toast(e.message,false);console.error(e);}
 }
@@ -2608,6 +2620,22 @@ function mtgRenderRoadmap(){
     var weeks=mtgGetWeeksForSeries(series,mtgRoadmapYear);
     var weekSet={};
     weeks.forEach(function(o){weekSet[o.week]={date:o.date,past:o.past};});
+    (mtgMinutesData||[]).forEach(function(m){
+      if(m.series_id===series.id&&m.meeting_date){
+        var md=new Date(m.meeting_date);
+        if(md.getFullYear()===mtgRoadmapYear){
+          var mw=mtgGetWeekNumber(md);
+          var isCompleted=m.status==='completed';
+          if(weekSet[mw]){
+            weekSet[mw].hasMom=true;
+            weekSet[mw].completed=isCompleted;
+          }else{
+            // Meeting saved on a week not in calculated schedule — still show it
+            weekSet[mw]={date:md,past:md<new Date(),hasMom:true,completed:isCompleted};
+          }
+        }
+      }
+    });
 
     html+='<tr style="border-bottom:1px solid #e5e7eb">';
 
@@ -2628,7 +2656,10 @@ function mtgRenderRoadmap(){
 
       if(occ){
         var isPast=occ.past&&(mtgRoadmapYear<new Date().getFullYear()||(mtgRoadmapYear===new Date().getFullYear()&&w<curWeek));
-        var dotColor=isPast?'#E24B4A':color;
+        var hasMom=occ.hasMom;
+        var isCompleted=occ.completed;
+        // Green = completed minutes, Orange = upcoming scheduled, Red = overdue no minutes
+        var dotColor=isCompleted?'#1D9E75':hasMom?'#3B82F6':isPast?'#E24B4A':'#EF9F27';
         var dt=occ.date.toLocaleDateString('en-GB',{day:'2-digit',month:'short'});
         html+='<td style="padding:2px 1px;text-align:center;background:'+cellBg+';border:1px solid #e5e7eb;cursor:pointer" '
           +'title="'+series.title+' — Week '+w+' ('+dt+')" '
@@ -3575,6 +3606,13 @@ await kpiLoadAll();
 
 
 
+
+
+
+
+
+
+
 </script>
 </head>
 <body>
@@ -4325,8 +4363,9 @@ await kpiLoadAll();
 <!-- Legend -->
 <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:12px;padding:10px 16px;background:var(--card);border:1px solid var(--border);border-radius:10px">
 <div style="font-size:12px;font-weight:600;color:var(--text2);margin-right:4px">Legend:</div>
-<div style="display:flex;align-items:center;gap:6px;font-size:12px"><span style="width:16px;height:16px;border-radius:4px;background:#1D9E75;display:inline-block"></span>Minutes saved</div>
-<div style="display:flex;align-items:center;gap:6px;font-size:12px"><span style="width:16px;height:16px;border-radius:4px;background:#EF9F27;display:inline-block"></span>Upcoming / scheduled</div>
+<div style="display:flex;align-items:center;gap:6px;font-size:12px"><span style="width:16px;height:16px;border-radius:4px;background:#1D9E75;display:inline-block"></span>Completed &amp; shared</div>
+<div style="display:flex;align-items:center;gap:6px;font-size:12px"><span style="width:16px;height:16px;border-radius:4px;background:#3B82F6;display:inline-block"></span>Draft minutes</div>
+<div style="display:flex;align-items:center;gap:6px;font-size:12px"><span style="width:16px;height:16px;border-radius:4px;background:#EF9F27;display:inline-block"></span>Upcoming</div>
 <div style="display:flex;align-items:center;gap:6px;font-size:12px"><span style="width:16px;height:16px;border-radius:4px;background:#E24B4A;display:inline-block"></span>Overdue (no minutes)</div>
 <div style="display:flex;align-items:center;gap:6px;font-size:12px;margin-left:auto"><span style="width:16px;height:16px;border-radius:4px;background:#EF9F27;display:inline-block;opacity:.5"></span>Current week</div>
 </div>
