@@ -33,6 +33,7 @@
 
 
 
+
 const SB='https://iarfxjhahzbhncsaohbg.supabase.co';
 const KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlhcmZ4amhhaHpiaG5jc2FvaGJnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg2OTM1MzAsImV4cCI6MjA5NDI2OTUzMH0.qSjahuX-RwnjWEDmo-LkcorAxpsmyVoaXt4AO4_A9BM';
 let tok=null,prof=null,co=null,chkItems=[],people=[];
@@ -2010,6 +2011,457 @@ function mtgSwitchTab(tab, btn){
 }
 
 // ── SCHEDULE (Series) ──────────────────────────────────────────────────────
+// ===== LEGAL COMPLIANCE MODULE =====
+let lrAllData=[], lcAllData=[], lrEditingId=null, lcEditingId=null;
+
+const COMPLIANCE_STATUS={
+  compliant:{label:'Compliant',bg:'#EAF3DE',col:'#3B6D11'},
+  partial:{label:'Partial',bg:'#FEF9EC',col:'#854F0B'},
+  non_compliant:{label:'Non-Compliant',bg:'#FCEBEB',col:'#A32D2D'},
+  not_applicable:{label:'N/A',bg:'#f3f4f6',col:'#6B7280'}
+};
+
+function legalStatusBadge(s){
+  var c=COMPLIANCE_STATUS[s]||COMPLIANCE_STATUS.partial;
+  return '<span style="background:'+c.bg+';color:'+c.col+';padding:3px 9px;border-radius:99px;font-size:11px;font-weight:600">'+c.label+'</span>';
+}
+
+function legalSwitchTab(tab,btn){
+  document.querySelectorAll('.mtg-tab').forEach(function(t){t.classList.remove('active');});
+  btn.classList.add('active');
+  document.getElementById('legal-view-register').style.display=tab==='register'?'block':'none';
+  document.getElementById('legal-view-changes').style.display=tab==='changes'?'block':'none';
+  document.getElementById('legal-view-dashboard').style.display=tab==='dashboard'?'block':'none';
+  if(tab==='register')legalLoadRegister();
+  else if(tab==='changes')legalLoadChanges();
+  else legalRenderDashboard();
+}
+
+async function loadLegal(){
+  var addBtn=document.getElementById('lr-add-btn');
+  var lcBtn=document.getElementById('lc-add-btn');
+  if(addBtn)addBtn.style.display=isMgr()?'inline-flex':'none';
+  if(lcBtn)lcBtn.style.display=isMgr()?'inline-flex':'none';
+  legalLoadRegister();
+}
+
+// ── LEGAL REGISTER ──────────────────────────────────────────────────────────
+async function legalLoadRegister(){
+  var el=document.getElementById('lr-table');
+  if(!el)return;
+  try{
+    var d=await api('/legal_register?select=*'+cf()+'&order=no_order,legislation_main,section');
+    lrAllData=d||[];
+    // Update metrics
+    var setEl=function(id,v){var e=document.getElementById(id);if(e)e.textContent=v;};
+    setEl('lr-m-total',lrAllData.length);
+    setEl('lr-m-compliant',lrAllData.filter(function(x){return x.compliance_status==='compliant';}).length);
+    setEl('lr-m-partial',lrAllData.filter(function(x){return x.compliance_status==='partial';}).length);
+    setEl('lr-m-noncompliant',lrAllData.filter(function(x){return x.compliance_status==='non_compliant';}).length);
+    // Populate legislation filter
+    var legSel=document.getElementById('lr-filter-leg');
+    if(legSel){
+      var legs=[...new Set(lrAllData.map(function(x){return x.legislation_main;}).filter(Boolean))];
+      legSel.innerHTML='<option value="">All legislation</option>'+legs.map(function(l){return '<option value="'+escH(l)+'">'+escH(l)+'</option>';}).join('');
+    }
+    legalFilterRegister();
+  }catch(e){el.innerHTML='<p style="padding:20px;color:red">'+e.message+'</p>';console.error(e);}
+}
+
+function legalFilterRegister(){
+  var search=(document.getElementById('lr-search')?.value||'').toLowerCase();
+  var filterStatus=document.getElementById('lr-filter-status')?.value||'';
+  var filterLeg=document.getElementById('lr-filter-leg')?.value||'';
+  var el=document.getElementById('lr-table');
+  if(!el)return;
+
+  var filtered=lrAllData.filter(function(x){
+    var matchSearch=!search||
+      (x.legislation_main||'').toLowerCase().includes(search)||
+      (x.requirement||'').toLowerCase().includes(search)||
+      (x.legislation_title||'').toLowerCase().includes(search);
+    var matchStatus=!filterStatus||x.compliance_status===filterStatus;
+    var matchLeg=!filterLeg||x.legislation_main===filterLeg;
+    return matchSearch&&matchStatus&&matchLeg;
+  });
+
+  if(!filtered.length){
+    el.innerHTML='<p style="padding:20px;color:var(--text2)">No requirements found.'+(isMgr()?' <button class="btn btn-sm btn-primary" onclick="legalNewRequirement()"><i class="ti ti-plus"></i>Add first requirement</button>':'')+'</p>';
+    return;
+  }
+
+  // Group by legislation
+  var byLeg={};
+  filtered.forEach(function(x){
+    var key=x.legislation_main||'Other';
+    if(!byLeg[key])byLeg[key]=[];
+    byLeg[key].push(x);
+  });
+
+  var html='<table style="width:100%;border-collapse:collapse;font-size:12px">';
+  html+='<thead><tr style="background:#1a3a5c;color:#fff">';
+  html+='<th style="padding:8px 10px;text-align:left;width:40px">No.</th>';
+  html+='<th style="padding:8px 10px;text-align:left;width:80px">Section</th>';
+  html+='<th style="padding:8px 10px;text-align:left">Requirement</th>';
+  html+='<th style="padding:8px 10px;text-align:left;width:120px">Controls in place</th>';
+  html+='<th style="padding:8px 10px;text-align:center;width:80px">App.</th>';
+  html+='<th style="padding:8px 10px;text-align:left;width:130px">Status</th>';
+  html+='<th style="padding:8px 10px;text-align:left;width:120px">Responsibility</th>';
+  html+='<th style="padding:8px 10px;width:70px"></th>';
+  html+='</tr></thead><tbody>';
+
+  Object.entries(byLeg).forEach(function(e){
+    var leg=e[0], reqs=e[1];
+    html+='<tr><td colspan="8" style="padding:8px 12px;background:#f0f4f8;font-weight:700;font-size:11px;color:#1a3a5c;border-bottom:2px solid #dde3ea;text-transform:uppercase;letter-spacing:.04em">'+escH(leg)+'</td></tr>';
+    reqs.forEach(function(x,i){
+      var hasGap=x.gap_identified?'<span style="background:#FCEBEB;color:#A32D2D;padding:1px 6px;border-radius:4px;font-size:10px;font-weight:600;margin-left:4px">GAP</span>':'';
+      var rowBg=i%2===0?'#fff':'#f9fafb';
+      var req=(x.requirement||'').substring(0,120)+(x.requirement&&x.requirement.length>120?'...':'');
+      html+='<tr style="border-bottom:1px solid #f0f0f0;background:'+rowBg+'">';
+      html+='<td style="padding:8px 10px;color:var(--text2);font-weight:600">'+(x.no_order||'')+'</td>';
+      html+='<td style="padding:8px 10px;font-weight:600">'+(x.section||'')+(x.sub_section?'.'+x.sub_section:'')+'</td>';
+      html+='<td style="padding:8px 10px"><div style="font-weight:600;margin-bottom:2px">'+escH(x.legislation_title||'')+hasGap+'</div><div style="color:var(--text2);font-size:11px;line-height:1.4">'+escH(req)+'</div></td>';
+      html+='<td style="padding:8px 10px;font-size:11px;color:var(--text2)">'+escH((x.controls_in_place||'').substring(0,80))+'</td>';
+      html+='<td style="padding:8px 10px;text-align:center">'+(x.applicable?'<span style="color:var(--green);font-weight:700">Y</span>':'<span style="color:var(--text2)">N</span>')+'</td>';
+      html+='<td style="padding:8px 10px">'+legalStatusBadge(x.compliance_status)+'</td>';
+      html+='<td style="padding:8px 10px;font-size:11px">'+(x.responsibility||'—')+'</td>';
+      html+='<td style="padding:8px 10px"><div style="display:flex;gap:4px">';
+      html+='<button class="btn btn-sm" title="Edit" data-id="'+x.id+'" onclick="legalOpenReq(this.getAttribute(\'data-id\'))"><i class="ti ti-edit"></i></button>';
+      if(isMgr())html+='<button class="btn btn-sm" title="Delete" style="color:var(--red)" data-id="'+x.id+'" onclick="legalDeleteReqFromList(this.getAttribute(\'data-id\'))"><i class="ti ti-trash"></i></button>';
+      html+='</div></td>';
+      html+='</tr>';
+    });
+  });
+  html+='</tbody></table>';
+  el.innerHTML=html;
+}
+
+// ── REQUIREMENT FORM ─────────────────────────────────────────────────────────
+function legalShowReqForm(){
+  document.getElementById('legal-view-register').style.display='none';
+  document.getElementById('legal-view-changes').style.display='none';
+  document.getElementById('legal-view-dashboard').style.display='none';
+  document.getElementById('legal-req-form').style.display='block';
+  document.getElementById('legal-chg-form').style.display='none';
+}
+function legalReqBack(){
+  document.getElementById('legal-req-form').style.display='none';
+  document.getElementById('legal-view-register').style.display='block';
+  legalLoadRegister();
+}
+
+function legalNewRequirement(){
+  lrEditingId=null;
+  document.getElementById('lr-form-title').textContent='New Legal Requirement';
+  document.getElementById('lr-del-btn').style.display='none';
+  ['lr-leg-main','lr-leg-title','lr-section','lr-subsection','lr-requirement','lr-controls','lr-further-controls','lr-notes','lr-responsibility'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
+  var td=document.getElementById('lr-target-date');if(td)td.value='';
+  var st=document.getElementById('lr-status');if(st)st.value='partial';
+  var ap=document.getElementById('lr-applicable');if(ap)ap.value='true';
+  var gp=document.getElementById('lr-gap');if(gp)gp.checked=false;
+  legalShowReqForm();
+}
+
+function legalOpenReq(id){
+  var x=lrAllData.find(function(r){return r.id===id;});
+  if(!x)return;
+  lrEditingId=id;
+  document.getElementById('lr-form-title').textContent='Edit Legal Requirement';
+  document.getElementById('lr-del-btn').style.display=isMgr()?'inline-flex':'none';
+  var flds={'lr-leg-main':'legislation_main','lr-leg-title':'legislation_title','lr-section':'section','lr-subsection':'sub_section','lr-requirement':'requirement','lr-controls':'controls_in_place','lr-further-controls':'further_controls','lr-notes':'notes','lr-responsibility':'responsibility'};
+  Object.entries(flds).forEach(function(e){var el=document.getElementById(e[0]);if(el)el.value=x[e[1]]||'';});
+  var td=document.getElementById('lr-target-date');if(td)td.value=x.target_date||'';
+  var st=document.getElementById('lr-status');if(st)st.value=x.compliance_status||'partial';
+  var ap=document.getElementById('lr-applicable');if(ap)ap.value=String(x.applicable!==false);
+  var gp=document.getElementById('lr-gap');if(gp)gp.checked=!!x.gap_identified;
+  legalShowReqForm();
+}
+
+async function legalSaveReq(){
+  var req=document.getElementById('lr-requirement')?.value?.trim();
+  if(!req){toast('Please enter the requirement text',false);return;}
+  var g=function(id){var el=document.getElementById(id);return el?el.value||null:null;};
+  var body={
+    company_id:prof?.company_id,
+    legislation_main:g('lr-leg-main'),
+    legislation_title:g('lr-leg-title'),
+    section:g('lr-section'),
+    sub_section:g('lr-subsection'),
+    requirement:req,
+    applicable:document.getElementById('lr-applicable')?.value!=='false',
+    compliance_status:g('lr-status')||'partial',
+    controls_in_place:g('lr-controls'),
+    gap_identified:document.getElementById('lr-gap')?.checked||false,
+    further_controls:g('lr-further-controls'),
+    responsibility:g('lr-responsibility'),
+    target_date:g('lr-target-date'),
+    notes:g('lr-notes'),
+    updated_at:new Date().toISOString()
+  };
+  try{
+    if(lrEditingId){
+      await api('/legal_register?id=eq.'+lrEditingId,{m:'PATCH',p:'return=minimal',b:body});
+      // If non-compliant or partial with gap, add to MAP
+      if((body.compliance_status==='non_compliant'||body.gap_identified)&&body.further_controls){
+        try{await api('/action_tracker?source_module=eq.legal&source_id=eq.'+lrEditingId,{m:'DELETE'});}catch(ex){}
+        await api('/action_tracker',{m:'POST',p:'return=minimal',b:{
+          company_id:prof?.company_id,source_module:'legal',source_id:lrEditingId,
+          source_ref:(body.legislation_main||'Legal')+(body.section?' s.'+body.section:''),
+          description:body.further_controls,responsible:body.responsibility||null,
+          target_date:body.target_date||null,
+          priority:body.compliance_status==='non_compliant'?'high':'medium',
+          status:'open',created_by:prof?.id
+        }});
+        toast('Saved! Action added to Master Action Plan.');
+      }else{toast('Saved!');}
+    }else{
+      body.created_by=prof?.id;
+      var res=await api('/legal_register',{m:'POST',p:'return=representation',b:body});
+      var newId=res?.[0]?.id;
+      if(newId&&(body.compliance_status==='non_compliant'||body.gap_identified)&&body.further_controls){
+        await api('/action_tracker',{m:'POST',p:'return=minimal',b:{
+          company_id:prof?.company_id,source_module:'legal',source_id:newId,
+          source_ref:(body.legislation_main||'Legal')+(body.section?' s.'+body.section:''),
+          description:body.further_controls,responsible:body.responsibility||null,
+          target_date:body.target_date||null,
+          priority:body.compliance_status==='non_compliant'?'high':'medium',
+          status:'open',created_by:prof?.id
+        }});
+        toast('Requirement added! Action added to MAP.');
+      }else{toast('Requirement added!');}
+    }
+    legalReqBack();
+  }catch(e){toast(e.message,false);console.error(e);}
+}
+
+async function legalDeleteReq(){
+  if(!lrEditingId)return;
+  if(!confirm('Delete this requirement?'))return;
+  try{
+    await api('/legal_register?id=eq.'+lrEditingId,{m:'DELETE'});
+    toast('Deleted!');
+    legalReqBack();
+  }catch(e){toast(e.message,false);}
+}
+
+async function legalDeleteReqFromList(id){
+  if(!confirm('Delete this requirement?'))return;
+  try{
+    await api('/legal_register?id=eq.'+id,{m:'DELETE'});
+    lrAllData=lrAllData.filter(function(x){return x.id!==id;});
+    toast('Deleted!');
+    legalFilterRegister();
+  }catch(e){toast(e.message,false);}
+}
+
+// ── LEGISLATIVE CHANGES ──────────────────────────────────────────────────────
+async function legalLoadChanges(){
+  var el=document.getElementById('lc-table');
+  if(!el)return;
+  try{
+    var d=await api('/legislative_changes?select=*'+cf()+'&order=date_received.desc');
+    lcAllData=d||[];
+    if(!d||!d.length){
+      el.innerHTML='<p style="padding:20px;color:var(--text2)">No changes recorded yet.'+(isMgr()?' <button class="btn btn-sm btn-primary" onclick="legalNewChange()"><i class="ti ti-plus"></i>Add first change</button>':'')+'</p>';
+      return;
+    }
+    var h='<table style="width:100%;border-collapse:collapse;font-size:12px">';
+    h+='<thead><tr style="background:#1a3a5c;color:#fff">';
+    h+='<th style="padding:8px 10px;text-align:left">Date</th>';
+    h+='<th style="padding:8px 10px;text-align:left">Source</th>';
+    h+='<th style="padding:8px 10px;text-align:left">Jurisdiction</th>';
+    h+='<th style="padding:8px 10px;text-align:left">Legislation</th>';
+    h+='<th style="padding:8px 10px;text-align:left">Change identified</th>';
+    h+='<th style="padding:8px 10px;text-align:center">App.</th>';
+    h+='<th style="padding:8px 10px;text-align:left">Action required</th>';
+    h+='<th style="padding:8px 10px;text-align:center">Done</th>';
+    h+='<th style="padding:8px 10px;width:70px"></th>';
+    h+='</tr></thead><tbody>';
+    d.forEach(function(x,i){
+      var dt=x.date_received?new Date(x.date_received).toLocaleDateString('en-GB'):'—';
+      var rowBg=i%2===0?'#fff':'#f9fafb';
+      h+='<tr style="border-bottom:1px solid #f0f0f0;background:'+rowBg+'">';
+      h+='<td style="padding:8px 10px;font-weight:600">'+dt+'</td>';
+      h+='<td style="padding:8px 10px">'+escH(x.source_material||'—')+'</td>';
+      h+='<td style="padding:8px 10px">'+escH(x.jurisdiction||'—')+'</td>';
+      h+='<td style="padding:8px 10px;font-weight:600">'+escH(x.applicable_legislation||'—')+'</td>';
+      h+='<td style="padding:8px 10px;font-size:11px;color:var(--text2)">'+escH((x.changes_identified||'').substring(0,80))+'</td>';
+      h+='<td style="padding:8px 10px;text-align:center">'+(x.applicable?'<span style="color:var(--green);font-weight:700">Y</span>':'<span style="color:var(--text2)">N</span>')+'</td>';
+      h+='<td style="padding:8px 10px;font-size:11px">'+escH(x.action_required||'—')+'</td>';
+      h+='<td style="padding:8px 10px;text-align:center">'+(x.implemented?'<i class="ti ti-check" style="color:var(--green);font-weight:700"></i>':'<i class="ti ti-x" style="color:var(--amber)"></i>')+'</td>';
+      h+='<td style="padding:8px 10px"><div style="display:flex;gap:4px">';
+      h+='<button class="btn btn-sm" data-id="'+x.id+'" onclick="legalOpenChg(this.getAttribute(\'data-id\'))"><i class="ti ti-edit"></i></button>';
+      if(isMgr())h+='<button class="btn btn-sm" style="color:var(--red)" data-id="'+x.id+'" onclick="legalDeleteChgFromList(this.getAttribute(\'data-id\'))"><i class="ti ti-trash"></i></button>';
+      h+='</div></td></tr>';
+    });
+    h+='</tbody></table>';
+    el.innerHTML=h;
+  }catch(e){el.innerHTML='<p style="padding:20px;color:red">'+e.message+'</p>';console.error(e);}
+}
+
+function legalShowChgForm(){
+  document.getElementById('legal-view-register').style.display='none';
+  document.getElementById('legal-view-changes').style.display='none';
+  document.getElementById('legal-view-dashboard').style.display='none';
+  document.getElementById('legal-req-form').style.display='none';
+  document.getElementById('legal-chg-form').style.display='block';
+}
+function legalChgBack(){
+  document.getElementById('legal-chg-form').style.display='none';
+  document.getElementById('legal-view-changes').style.display='block';
+  // Reset active tab
+  document.querySelectorAll('.mtg-tab').forEach(function(t){t.classList.remove('active');});
+  var tab=document.getElementById('legal-tab-changes');if(tab)tab.classList.add('active');
+  legalLoadChanges();
+}
+
+function legalNewChange(){
+  lcEditingId=null;
+  document.getElementById('lc-form-title').textContent='New Legislative Change';
+  document.getElementById('lc-del-btn').style.display='none';
+  ['lc-source','lc-jurisdiction','lc-legislation','lc-changes','lc-action','lc-comments'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
+  var dt=document.getElementById('lc-date');if(dt)dt.value=new Date().toISOString().slice(0,10);
+  var ap=document.getElementById('lc-applicable');if(ap)ap.value='true';
+  var im=document.getElementById('lc-implemented');if(im)im.value='false';
+  legalShowChgForm();
+}
+
+function legalOpenChg(id){
+  var x=lcAllData.find(function(c){return c.id===id;});
+  if(!x)return;
+  lcEditingId=id;
+  document.getElementById('lc-form-title').textContent='Edit Legislative Change';
+  document.getElementById('lc-del-btn').style.display=isMgr()?'inline-flex':'none';
+  var flds={'lc-source':'source_material','lc-jurisdiction':'jurisdiction','lc-legislation':'applicable_legislation','lc-changes':'changes_identified','lc-action':'action_required','lc-comments':'comments'};
+  Object.entries(flds).forEach(function(e){var el=document.getElementById(e[0]);if(el)el.value=x[e[1]]||'';});
+  var dt=document.getElementById('lc-date');if(dt)dt.value=x.date_received||'';
+  var ap=document.getElementById('lc-applicable');if(ap)ap.value=String(x.applicable!==false);
+  var im=document.getElementById('lc-implemented');if(im)im.value=String(!!x.implemented);
+  legalShowChgForm();
+}
+
+async function legalSaveChg(){
+  var changes=document.getElementById('lc-changes')?.value?.trim();
+  if(!changes){toast('Please describe the change',false);return;}
+  var g=function(id){var el=document.getElementById(id);return el?el.value||null:null;};
+  var body={
+    company_id:prof?.company_id,
+    date_received:g('lc-date'),
+    source_material:g('lc-source'),
+    jurisdiction:g('lc-jurisdiction'),
+    applicable_legislation:g('lc-legislation'),
+    changes_identified:changes,
+    applicable:document.getElementById('lc-applicable')?.value!=='false',
+    action_required:g('lc-action'),
+    implemented:document.getElementById('lc-implemented')?.value==='true',
+    comments:g('lc-comments'),
+    updated_at:new Date().toISOString()
+  };
+  try{
+    if(lcEditingId){
+      await api('/legislative_changes?id=eq.'+lcEditingId,{m:'PATCH',p:'return=minimal',b:body});
+      toast('Change updated!');
+    }else{
+      body.created_by=prof?.id;
+      await api('/legislative_changes',{m:'POST',p:'return=minimal',b:body});
+      toast('Change recorded!');
+    }
+    legalChgBack();
+  }catch(e){toast(e.message,false);console.error(e);}
+}
+
+async function legalDeleteChg(){
+  if(!lcEditingId)return;
+  if(!confirm('Delete this change record?'))return;
+  try{await api('/legislative_changes?id=eq.'+lcEditingId,{m:'DELETE'});toast('Deleted!');legalChgBack();}
+  catch(e){toast(e.message,false);}
+}
+
+async function legalDeleteChgFromList(id){
+  if(!confirm('Delete this change record?'))return;
+  try{
+    await api('/legislative_changes?id=eq.'+id,{m:'DELETE'});
+    lcAllData=lcAllData.filter(function(x){return x.id!==id;});
+    toast('Deleted!');legalLoadChanges();
+  }catch(e){toast(e.message,false);}
+}
+
+// ── COMPLIANCE DASHBOARD ──────────────────────────────────────────────────────
+function legalRenderDashboard(){
+  if(!lrAllData.length){legalLoadRegister().then(legalRenderDashboardData);}
+  else legalRenderDashboardData();
+}
+
+function legalRenderDashboardData(){
+  var total=lrAllData.filter(function(x){return x.applicable!==false;}).length;
+  var compliant=lrAllData.filter(function(x){return x.compliance_status==='compliant';}).length;
+  var partial=lrAllData.filter(function(x){return x.compliance_status==='partial';}).length;
+  var nonComp=lrAllData.filter(function(x){return x.compliance_status==='non_compliant';}).length;
+  var pct=total>0?Math.round(((compliant+(partial*0.5))/total)*100):0;
+  var pctEl=document.getElementById('lr-compliance-pct');
+  if(pctEl){
+    var col=pct>=80?'var(--green)':pct>=50?'var(--amber)':'var(--red)';
+    pctEl.textContent=pct+'%';
+    pctEl.style.color=col;
+  }
+  var bkEl=document.getElementById('lr-compliance-breakdown');
+  if(bkEl)bkEl.innerHTML=
+    '<span style="background:#EAF3DE;color:#3B6D11;padding:4px 12px;border-radius:8px;font-size:12px;font-weight:600">'+compliant+' Compliant</span>'+
+    '<span style="background:#FEF9EC;color:#854F0B;padding:4px 12px;border-radius:8px;font-size:12px;font-weight:600">'+partial+' Partial</span>'+
+    '<span style="background:#FCEBEB;color:#A32D2D;padding:4px 12px;border-radius:8px;font-size:12px;font-weight:600">'+nonComp+' Non-Compliant</span>';
+
+  // By legislation
+  var byLeg={};
+  lrAllData.forEach(function(x){
+    var k=x.legislation_main||'Other';
+    if(!byLeg[k])byLeg[k]={total:0,compliant:0,partial:0,non:0};
+    byLeg[k].total++;
+    if(x.compliance_status==='compliant')byLeg[k].compliant++;
+    else if(x.compliance_status==='non_compliant')byLeg[k].non++;
+    else byLeg[k].partial++;
+  });
+  var legEl=document.getElementById('lr-by-legislation');
+  if(legEl){
+    var lh='';
+    Object.entries(byLeg).forEach(function(e){
+      var k=e[0],v=e[1];
+      var p=v.total>0?Math.round((v.compliant/v.total)*100):0;
+      var barCol=p>=80?'var(--green)':p>=50?'var(--amber)':'var(--red)';
+      lh+='<div style="margin-bottom:12px">'
+        +'<div style="display:flex;justify-content:space-between;margin-bottom:4px;font-size:12px">'
+        +'<span style="font-weight:600">'+escH(k)+'</span>'
+        +'<span style="color:var(--text2)">'+v.compliant+'/'+v.total+' compliant ('+p+'%)</span>'
+        +'</div>'
+        +'<div style="height:8px;background:#f3f4f6;border-radius:4px">'
+        +'<div style="height:8px;background:'+barCol+';border-radius:4px;width:'+p+'%"></div>'
+        +'</div></div>';
+    });
+    legEl.innerHTML=lh||'<div style="color:var(--text2);padding:16px">No data yet</div>';
+  }
+
+  // Gaps
+  var gapsEl=document.getElementById('lr-gaps-list');
+  if(gapsEl){
+    var gaps=lrAllData.filter(function(x){return x.gap_identified||x.compliance_status==='non_compliant';});
+    if(!gaps.length){
+      gapsEl.innerHTML='<div style="padding:16px;color:var(--green);font-weight:600"><i class="ti ti-check"></i> No gaps identified</div>';
+    }else{
+      var gh='<table style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr style="background:#f9fafb"><th style="padding:8px;text-align:left;border-bottom:1px solid var(--border)">Legislation</th><th style="padding:8px;text-align:left;border-bottom:1px solid var(--border)">Requirement</th><th style="padding:8px;text-align:left;border-bottom:1px solid var(--border)">Further controls needed</th><th style="padding:8px;text-align:left;border-bottom:1px solid var(--border)">Responsible</th><th style="padding:8px;text-align:left;border-bottom:1px solid var(--border)">Status</th></tr></thead><tbody>';
+      gaps.forEach(function(x){
+        gh+='<tr style="border-bottom:1px solid #f3f4f6">';
+        gh+='<td style="padding:8px;font-size:11px">'+escH(x.legislation_main||'')+(x.section?' s.'+x.section:'')+'</td>';
+        gh+='<td style="padding:8px;font-size:11px">'+escH((x.requirement||'').substring(0,80))+'</td>';
+        gh+='<td style="padding:8px;font-size:11px;color:var(--red)">'+escH(x.further_controls||'Not specified')+'</td>';
+        gh+='<td style="padding:8px;font-size:11px">'+escH(x.responsibility||'—')+'</td>';
+        gh+='<td style="padding:8px">'+legalStatusBadge(x.compliance_status)+'</td>';
+        gh+='</tr>';
+      });
+      gh+='</tbody></table>';
+      gapsEl.innerHTML=gh;
+    }
+  }
+}
+
 async function loadMtgs(){
   var btn=document.getElementById('mtg-new-series-btn');
   if(btn)btn.style.display=isMgr()?'inline-flex':'none';
@@ -3613,6 +4065,7 @@ await kpiLoadAll();
 
 
 
+
 </script>
 </head>
 <body>
@@ -4325,6 +4778,165 @@ await kpiLoadAll();
 </div>
 </div>
 </div>
+<div id="page-legal" class="page">
+<div class="page-header">
+<div><div class="page-title">Legal Compliance Register</div><div style="font-size:12px;color:var(--text2)" id="legal-subtitle">Legal requirements, compliance status and legislative changes</div></div>
+<div style="display:flex;gap:8px" id="legal-header-btns"></div>
+</div>
+
+<!-- Tabs -->
+<div style="display:flex;gap:0;margin-bottom:16px;border-bottom:2px solid var(--border)">
+<button class="mtg-tab active" id="legal-tab-register" onclick="legalSwitchTab('register',this)">📋 Legal Register</button>
+<button class="mtg-tab" id="legal-tab-changes" onclick="legalSwitchTab('changes',this)">🔄 Legislative Changes</button>
+<button class="mtg-tab" id="legal-tab-dashboard" onclick="legalSwitchTab('dashboard',this)">📊 Compliance Dashboard</button>
+</div>
+
+<!-- ── LEGAL REGISTER TAB ── -->
+<div id="legal-view-register">
+<!-- Metrics -->
+<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px">
+<div class="card" style="padding:14px 16px;border-left:4px solid #1D9E75"><div style="font-size:11px;color:var(--text2);margin-bottom:4px;font-weight:500;text-transform:uppercase">Compliant</div><div style="font-size:28px;font-weight:800;color:#1D9E75" id="lr-m-compliant">—</div></div>
+<div class="card" style="padding:14px 16px;border-left:4px solid #EF9F27"><div style="font-size:11px;color:var(--text2);margin-bottom:4px;font-weight:500;text-transform:uppercase">Partial</div><div style="font-size:28px;font-weight:800;color:#EF9F27" id="lr-m-partial">—</div></div>
+<div class="card" style="padding:14px 16px;border-left:4px solid #E24B4A"><div style="font-size:11px;color:var(--text2);margin-bottom:4px;font-weight:500;text-transform:uppercase">Non-Compliant</div><div style="font-size:28px;font-weight:800;color:#E24B4A" id="lr-m-noncompliant">—</div></div>
+<div class="card" style="padding:14px 16px;border-left:4px solid #6B7280"><div style="font-size:11px;color:var(--text2);margin-bottom:4px;font-weight:500;text-transform:uppercase">Total Requirements</div><div style="font-size:28px;font-weight:800" id="lr-m-total">—</div></div>
+</div>
+<!-- Filter bar -->
+<div class="card" style="margin-bottom:12px;padding:12px 16px">
+<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+<input type="text" id="lr-search" placeholder="Search legislation, requirement..." oninput="legalFilterRegister()" style="flex:1;min-width:200px;padding:7px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px"/>
+<select id="lr-filter-status" onchange="legalFilterRegister()" style="padding:7px 10px;border:1px solid var(--border);border-radius:8px;font-size:13px">
+<option value="">All statuses</option>
+<option value="compliant">Compliant</option>
+<option value="partial">Partial</option>
+<option value="non_compliant">Non-Compliant</option>
+<option value="not_applicable">N/A</option>
+</select>
+<select id="lr-filter-leg" onchange="legalFilterRegister()" style="padding:7px 10px;border:1px solid var(--border);border-radius:8px;font-size:13px;max-width:250px">
+<option value="">All legislation</option>
+</select>
+<button class="btn btn-primary" id="lr-add-btn" style="display:none" onclick="legalNewRequirement()"><i class="ti ti-plus"></i>Add requirement</button>
+</div>
+</div>
+<!-- Register table -->
+<div class="card" style="padding:0;overflow:hidden">
+<div style="overflow-x:auto"><div id="lr-table"><div class="loading-msg">Loading...</div></div></div>
+</div>
+</div>
+
+<!-- ── LEGISLATIVE CHANGES TAB ── -->
+<div id="legal-view-changes" style="display:none">
+<div class="card" style="margin-bottom:12px;padding:12px 16px;display:flex;justify-content:space-between;align-items:center">
+<div style="font-size:13px;font-weight:600">Legislative Changes & Updates</div>
+<button class="btn btn-primary" id="lc-add-btn" style="display:none" onclick="legalNewChange()"><i class="ti ti-plus"></i>Add change</button>
+</div>
+<div class="card" style="padding:0;overflow:hidden">
+<div id="lc-table"><div class="loading-msg">Loading...</div></div>
+</div>
+</div>
+
+<!-- ── COMPLIANCE DASHBOARD TAB ── -->
+<div id="legal-view-dashboard" style="display:none">
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">
+<!-- Compliance gauge -->
+<div class="card">
+<div class="card-title">Overall Compliance Rate</div>
+<div style="display:flex;align-items:center;justify-content:center;padding:20px">
+<div style="text-align:center">
+<div style="font-size:64px;font-weight:800" id="lr-compliance-pct">—</div>
+<div style="font-size:14px;color:var(--text2);margin-top:4px">Overall compliance</div>
+<div style="display:flex;gap:8px;justify-content:center;margin-top:16px;flex-wrap:wrap" id="lr-compliance-breakdown"></div>
+</div>
+</div>
+</div>
+<!-- By legislation breakdown -->
+<div class="card">
+<div class="card-title">By Legislation</div>
+<div id="lr-by-legislation" style="font-size:13px"></div>
+</div>
+</div>
+<!-- Gaps requiring action -->
+<div class="card">
+<div class="card-title" style="color:var(--red)"><i class="ti ti-alert-triangle"></i> Gaps Requiring Action</div>
+<div id="lr-gaps-list"></div>
+</div>
+</div>
+
+<!-- ── REQUIREMENT FORM (slide-in) ── -->
+<div id="legal-req-form" style="display:none">
+<div class="card" style="margin-bottom:12px;padding:14px 20px">
+<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
+<div style="font-size:16px;font-weight:700" id="lr-form-title">New Legal Requirement</div>
+<div style="display:flex;gap:8px">
+<button class="btn" onclick="legalReqBack()"><i class="ti ti-arrow-left"></i>Back</button>
+<button id="lr-del-btn" class="btn" style="display:none;color:var(--red);border-color:var(--red)" onclick="legalDeleteReq()"><i class="ti ti-trash"></i>Delete</button>
+<button class="btn btn-primary" onclick="legalSaveReq()"><i class="ti ti-device-floppy"></i>Save</button>
+</div>
+</div>
+</div>
+<div class="card">
+<div class="form-row">
+<div class="form-group"><label class="form-label">Legislation (main)</label><input type="text" id="lr-leg-main" placeholder="e.g. Occupational Safety and Health Act 2005"/></div>
+<div class="form-group"><label class="form-label">Title / Section name</label><input type="text" id="lr-leg-title" placeholder="e.g. General duties of employer"/></div>
+<div class="form-group"><label class="form-label">Section</label><input type="text" id="lr-section" placeholder="e.g. 5"/></div>
+<div class="form-group"><label class="form-label">Sub-section</label><input type="text" id="lr-subsection" placeholder="e.g. 1"/></div>
+</div>
+<div class="form-group"><label class="form-label">Legislative requirement</label><textarea id="lr-requirement" style="min-height:100px" placeholder="Full text of the requirement..."></textarea></div>
+<div class="form-row">
+<div class="form-group"><label class="form-label">Applicable?</label>
+<select id="lr-applicable"><option value="true">Yes</option><option value="false">No</option></select></div>
+<div class="form-group"><label class="form-label">Compliance status</label>
+<select id="lr-status">
+<option value="compliant">Compliant</option>
+<option value="partial">Partial compliance</option>
+<option value="non_compliant">Non-compliant</option>
+<option value="not_applicable">Not applicable</option>
+</select></div>
+<div class="form-group"><label class="form-label">Responsibility</label><input type="text" id="lr-responsibility"/></div>
+<div class="form-group"><label class="form-label">Target date</label><input type="date" id="lr-target-date"/></div>
+</div>
+<div class="form-group"><label class="form-label">Controls in place</label><textarea id="lr-controls" style="min-height:80px" placeholder="Describe existing controls..."></textarea></div>
+<div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+<input type="checkbox" id="lr-gap" style="width:16px;height:16px"/>
+<label for="lr-gap" style="font-weight:600;font-size:13px;color:var(--red)">Gap identified</label>
+</div>
+<div class="form-group" id="lr-gap-section"><label class="form-label">Gap / Further controls required</label><textarea id="lr-further-controls" style="min-height:70px" placeholder="Describe the gap and further controls needed..."></textarea></div>
+<div class="form-group"><label class="form-label">Notes</label><textarea id="lr-notes" style="min-height:60px"></textarea></div>
+</div>
+</div>
+
+<!-- ── CHANGE FORM (slide-in) ── -->
+<div id="legal-chg-form" style="display:none">
+<div class="card" style="margin-bottom:12px;padding:14px 20px">
+<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
+<div style="font-size:16px;font-weight:700" id="lc-form-title">New Legislative Change</div>
+<div style="display:flex;gap:8px">
+<button class="btn" onclick="legalChgBack()"><i class="ti ti-arrow-left"></i>Back</button>
+<button id="lc-del-btn" class="btn" style="display:none;color:var(--red);border-color:var(--red)" onclick="legalDeleteChg()"><i class="ti ti-trash"></i>Delete</button>
+<button class="btn btn-primary" onclick="legalSaveChg()"><i class="ti ti-device-floppy"></i>Save</button>
+</div>
+</div>
+</div>
+<div class="card">
+<div class="form-row">
+<div class="form-group"><label class="form-label">Date received</label><input type="date" id="lc-date"/></div>
+<div class="form-group"><label class="form-label">Source material</label><input type="text" id="lc-source" placeholder="e.g. Act 20 of 2022"/></div>
+<div class="form-group"><label class="form-label">Jurisdiction</label><input type="text" id="lc-jurisdiction" placeholder="e.g. OSHI"/></div>
+<div class="form-group"><label class="form-label">Applicable legislation</label><input type="text" id="lc-legislation" placeholder="e.g. OSH Amendment Act 2022"/></div>
+</div>
+<div class="form-group"><label class="form-label">Changes identified</label><textarea id="lc-changes" style="min-height:80px" placeholder="Describe the change..."></textarea></div>
+<div class="form-row">
+<div class="form-group"><label class="form-label">Applicable to company?</label>
+<select id="lc-applicable"><option value="true">Yes</option><option value="false">No</option></select></div>
+<div class="form-group"><label class="form-label">Action required</label><input type="text" id="lc-action" placeholder="e.g. Update legal register"/></div>
+<div class="form-group"><label class="form-label">Implemented?</label>
+<select id="lc-implemented"><option value="false">No</option><option value="true">Yes</option></select></div>
+</div>
+<div class="form-group"><label class="form-label">Comments</label><textarea id="lc-comments" style="min-height:60px"></textarea></div>
+</div>
+</div>
+
+</div><!-- end page-legal -->
+
 <div id="page-permit" class="page">
 <div class="page-header"><div class="page-title">Permit to Work</div><div id="permit-add-btn"></div></div><div class="card" id="permit-form" style="display:none"><div class="card-title">Issue permit to work</div><div class="form-row"><div class="form-group"><label class="form-label">Permit number</label><input type="text" id="pf-no" placeholder="PTW-001"/></div><div class="form-group"><label class="form-label">Permit type</label><select id="pf-type"><option value="hot_work">Hot Work</option><option value="confined_space">Confined Space</option><option value="working_at_height">Working at Height</option><option value="electrical">Electrical</option><option value="excavation">Excavation</option><option value="general">General</option></select></div></div><div class="form-group"><label class="form-label">Work description</label><textarea id="pf-desc"></textarea></div><div class="form-row"><div class="form-group"><label class="form-label">Location</label><input type="text" id="pf-loc"/></div><div class="form-group"><label class="form-label">Contractor / team</label><select id="pf-contractor"><option value="">Select person...</option></select></div></div><div class="form-row"><div class="form-group"><label class="form-label">Start</label><input type="datetime-local" id="pf-start"/></div><div class="form-group"><label class="form-label">End</label><input type="datetime-local" id="pf-end"/></div></div><div class="form-row"><div class="form-group"><label class="form-label">Issued by</label><select id="pf-issued"><option value="">Select person...</option></select></div><div class="form-group"><label class="form-label">Approved by</label><select id="pf-approved"><option value="">Select person...</option></select></div></div><div class="form-group"><label class="form-label">Precautions / controls</label><textarea id="pf-precautions"></textarea></div><div class="form-group"><label class="form-label">PPE required</label><input type="text" id="pf-ppe"/></div><div class="form-group"><label class="form-label">Status</label><select id="pf-status"><option value="draft">Draft</option><option value="pending_approval">Pending approval</option><option value="approved">Approved</option><option value="active">Active</option><option value="closed">Closed</option><option value="cancelled">Cancelled</option></select></div><div style="display:flex;gap:8px"><button class="btn btn-primary" onclick="savePermit()"><i class="ti ti-device-floppy"></i>Save</button><button class="btn" onclick="toggleForm('permit-form')">Cancel</button></div></div><div class="card"><div class="card-title">Permits register</div><div id="permits-list"><div class="loading-msg">Loading...</div></div></div></div>
 <div id="page-noise" class="page">
