@@ -51,6 +51,8 @@
 
 
 
+
+
 const SB='https://iarfxjhahzbhncsaohbg.supabase.co';
 const KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlhcmZ4amhhaHpiaG5jc2FvaGJnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg2OTM1MzAsImV4cCI6MjA5NDI2OTUzMH0.qSjahuX-RwnjWEDmo-LkcorAxpsmyVoaXt4AO4_A9BM';
 let tok=null,prof=null,co=null,chkItems=[],people=[];
@@ -2515,7 +2517,7 @@ function sopPrint(){
     +'<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">'
     +'<style>body{margin:0;padding:20px;font-family:Arial,sans-serif}@media print{body{padding:0}}[contenteditable]{outline:none}</style>'
     +'</head><body>'+el.outerHTML
-    +'<script>window.onload=function(){window.print()}<\/script>'
+    +'<scr'+'ipt>window.onload=function(){window.print();}<'+'/scr'+'ipt>'
     +'</body></html>');
   w.document.close();
 }
@@ -2527,7 +2529,7 @@ async function sopPrintById(id){
   w.document.write('<!DOCTYPE html><html><head><title>SOP</title>'
     +'<style>body{margin:20px;font-family:Arial,sans-serif}@media print{body{margin:0}}</style>'
     +'</head><body>'+sop.html_content
-    +'<script>window.onload=function(){window.print()}<\/script></body></html>');
+    +'<scr'+'ipt>window.onload=function(){window.print();}<'+'/scr'+'ipt></body></html>');
   w.document.close();
 }
 
@@ -4674,6 +4676,8 @@ function sopSaveToDocControl(){
   toast('SOP saved to Document Control!');
   sopSave();
 }
+
+
 
 </script>
 </head>
