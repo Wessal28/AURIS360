@@ -45,6 +45,7 @@
 
 
 
+
 const SB='https://iarfxjhahzbhncsaohbg.supabase.co';
 const KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlhcmZ4amhhaHpiaG5jc2FvaGJnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg2OTM1MzAsImV4cCI6MjA5NDI2OTUzMH0.qSjahuX-RwnjWEDmo-LkcorAxpsmyVoaXt4AO4_A9BM';
 let tok=null,prof=null,co=null,chkItems=[],people=[];
@@ -3809,17 +3810,693 @@ function escH2(str){return String(str||'').replace(/&/g,'&amp;').replace(/</g,'&
 
 async function saveMtg(){mtgSaveMom();}
 
-async function loadTraining(){
-const el=document.getElementById('training-list');
-if(!el)return;
-try{
-const d=await api('/training_sessions?select=*'+cf()+'&order=date_conducted.desc');
-if(!d||!d.length){el.innerHTML='<p style="padding:20px;color:#666">No training sessions yet</p>';return;}
-let h='<table style="width:100%;border-collapse:collapse"><thead><tr style="background:#f9fafb"><th style="padding:10px;text-align:left;border-bottom:1px solid #e5e7eb">Course</th><th style="padding:10px;text-align:left;border-bottom:1px solid #e5e7eb">Trainer</th><th style="padding:10px;text-align:left;border-bottom:1px solid #e5e7eb">Date</th><th style="padding:10px;text-align:left;border-bottom:1px solid #e5e7eb">Expiry</th></tr></thead><tbody>';
-for(var i=0;i<d.length;i++){var x=d[i];var dt=x.date_conducted?new Date(x.date_conducted).toLocaleDateString('en-GB'):'--';var ex=x.expiry_date?new Date(x.expiry_date).toLocaleDateString('en-GB'):'--';h+='<tr style="border-bottom:1px solid #f3f4f6"><td style="padding:10px">'+(x.course||'--')+'</td><td style="padding:10px">'+(x.trainer||'--')+'</td><td style="padding:10px">'+dt+'</td><td style="padding:10px">'+ex+'</td></tr>';}
-h+='</tbody></table>';el.innerHTML=h;
-}catch(e){el.innerHTML='<p style="padding:20px;color:red">'+e.message+'</p>';console.error(e);}
+
+// ===== TRAINING & COMPETENCY MODULE =====
+let trainYear = new Date().getFullYear();
+let tpAllData = [], tfAllData = [], authAllData = [], compAllData = [], cmAllData = [], tnAllData = [];
+let tpEditingId = null, tfEditingId = null, authEditingId = null;
+
+const TRAIN_LEVELS = ['0 – No knowledge','1 – Theoretical','2 – First experience','3 – Good level','4 – Expert'];
+const LEVEL_COLORS = ['#f3f4f6','#E6F1FB','#FEF9EC','#EAF3DE','#1D9E75'];
+const LEVEL_TEXT   = ['#6B7280','#185FA5','#854F0B','#3B6D11','#fff'];
+
+function trainSwitchTab(tab, btn){
+  document.querySelectorAll('.mtg-tab').forEach(t=>t.classList.remove('active'));
+  btn.classList.add('active');
+  ['matrix','tna','plan','followup','auth'].forEach(function(t){
+    var el=document.getElementById('train-view-'+t);
+    if(el)el.style.display=t===tab?'block':'none';
+  });
+  // Hide all forms
+  ['tp-form','tf-form','auth-form'].forEach(function(id){
+    var el=document.getElementById(id);if(el)el.style.display='none';
+  });
+  if(tab==='matrix')cmLoad();
+  else if(tab==='tna')tnaLoad();
+  else if(tab==='plan')tpLoad();
+  else if(tab==='followup')tfLoad();
+  else if(tab==='auth')authLoad();
 }
+
+async function loadTraining(){
+  var addBtn=document.getElementById('tp-add-btn');
+  if(addBtn)addBtn.style.display=isMgr()?'inline-flex':'none';
+  var authBtn=document.getElementById('auth-add-btn');
+  if(authBtn)authBtn.style.display=isMgr()?'inline-flex':'none';
+  var tfBtn=document.getElementById('tf-add-btn');
+  if(tfBtn)tfBtn.style.display=isMgr()?'inline-flex':'none';
+  var cmBtn=document.getElementById('cm-add-comp-btn');
+  if(cmBtn)cmBtn.style.display=isMgr()?'inline-flex':'none';
+  var tnaBtn=document.getElementById('tna-add-btn');
+  if(tnaBtn)tnaBtn.style.display=isMgr()?'inline-flex':'none';
+  trainYear=new Date().getFullYear();
+  var yl=document.getElementById('tp-year-label');if(yl)yl.textContent=trainYear;
+  cmLoad();
+}
+
+// ── COMPETENCY MATRIX ───────────────────────────────────────────────────────
+async function cmLoad(){
+  var el=document.getElementById('cm-table');
+  if(!el)return;
+  el.innerHTML='<div class="loading-msg">Loading...</div>';
+  try{
+    var [comps, people_data, cm] = await Promise.all([
+      api('/competencies?select=*'+cf()+'&order=sort_order,name'),
+      api('/people?select=id,first_name,last_name,job_title&status=eq.active'+cf()+'&order=last_name'),
+      api('/competency_matrix?select=*'+cf())
+    ]);
+    compAllData=comps||[];
+    cmAllData=cm||[];
+    if(!compAllData.length){
+      el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)">'
+        +'<div style="font-size:40px;margin-bottom:12px">📊</div>'
+        +'<div style="font-weight:600;margin-bottom:8px">No competencies defined yet</div>'
+        +(isMgr()?'<button class="btn btn-primary" onclick="cmAddCompetency()"><i class="ti ti-plus"></i>Add first competency</button>':'')
+        +'</div>';
+      return;
+    }
+    var ppl=people_data||[];
+    // Build matrix
+    var cmMap={};
+    cmAllData.forEach(function(r){cmMap[r.person_id+'_'+r.competency_id]=r;});
+
+    var html='<table style="border-collapse:collapse;font-size:12px;min-width:100%">';
+    // Header
+    html+='<thead><tr><th style="padding:8px 12px;background:#1a3a5c;color:#fff;text-align:left;min-width:160px;position:sticky;left:0;z-index:3">Person / Role</th>';
+    compAllData.forEach(function(comp){
+      html+='<th style="padding:6px 4px;background:#1a3a5c;color:#cce4ff;text-align:center;min-width:80px;font-size:10px;font-weight:600;max-width:90px;word-wrap:break-word">'+escH(comp.name)+'</th>';
+    });
+    if(isMgr())html+='<th style="padding:6px;background:#1a3a5c;width:60px"></th>';
+    html+='</tr></thead><tbody>';
+    // Rows
+    ppl.forEach(function(p,pi){
+      var bg=pi%2===0?'#fff':'#f9fafb';
+      html+='<tr style="border-bottom:1px solid #f0f0f0">';
+      html+='<td style="padding:8px 12px;background:'+bg+';position:sticky;left:0;z-index:2;border-right:2px solid #e5e7eb;font-weight:600">'
+        +escH(p.last_name+', '+p.first_name)
+        +'<br><span style="font-size:10px;color:var(--text2);font-weight:400">'+escH(p.job_title||'')+'</span>'
+        +'</td>';
+      compAllData.forEach(function(comp){
+        var entry=cmMap[p.id+'_'+comp.id];
+        var cur=entry?entry.current_level:null;
+        var req=entry?entry.required_level:2;
+        var isGap=cur!==null&&cur<req;
+        var bg2=cur!==null?LEVEL_COLORS[cur]:'#f9fafb';
+        var col2=cur!==null?LEVEL_TEXT[cur]:'#ccc';
+        html+='<td style="padding:4px;text-align:center;background:'+bg+'">'
+          +'<div style="width:52px;height:28px;border-radius:6px;background:'+bg2+';color:'+col2+';font-weight:700;font-size:12px;display:flex;align-items:center;justify-content:center;margin:0 auto;cursor:pointer;border:1px solid '+(isGap?'var(--red)':'transparent')+';position:relative" '
+          +'title="'+escH(comp.name)+': Level '+(cur!==null?cur:'—')+' (required: '+req+')" '
+          +'data-pid="'+p.id+'" data-cid="'+comp.id+'" onclick="cmEditCell(this.dataset.pid,this.dataset.cid)">'
+          +(cur!==null?cur:'—')
+          +(isGap?'<span style="position:absolute;top:-4px;right:-4px;width:8px;height:8px;border-radius:50%;background:var(--red)"></span>':'')
+          +'</div></td>';
+      });
+      if(isMgr()){
+        html+='<td style="padding:4px;background:'+bg+'"></td>';
+      }
+      html+='</tr>';
+    });
+    html+='</tbody></table>';
+    // Gap legend
+    el.innerHTML=html+'<div style="padding:10px 16px;border-top:1px solid var(--border);background:#fafafa;font-size:11px;color:var(--text2);display:flex;gap:16px;flex-wrap:wrap">'
+      +LEVEL_COLORS.map(function(c,i){return '<span style="display:flex;align-items:center;gap:4px"><span style="width:14px;height:14px;border-radius:3px;background:'+c+';border:1px solid #e5e7eb;display:inline-block"></span>'+i+' – '+['No knowledge','Theoretical','First experience','Good level','Expert'][i]+'</span>';}).join('')
+      +'<span style="display:flex;align-items:center;gap:4px"><span style="width:14px;height:14px;border-radius:3px;background:#fff;border:2px solid var(--red);display:inline-block"></span>Gap identified</span>'
+      +'</div>';
+  }catch(e){el.innerHTML='<p style="padding:20px;color:red">'+e.message+'</p>';console.error(e);}
+}
+
+async function cmEditCell(personId, compId){
+  var entry=cmAllData.find(function(r){return r.person_id===personId&&r.competency_id===compId;});
+  var comp=compAllData.find(function(c){return c.id===compId;});
+  var cur=entry?entry.current_level:0;
+  var req=entry?entry.required_level:2;
+  var newCur=prompt('Competency: '+( comp?.name||'')
+    +'\n\nCurrent level (0-4):\n0=No knowledge\n1=Theoretical\n2=First experience\n3=Good level\n4=Expert'
+    +'\n\nEnter current level (current: '+cur+'):',cur);
+  if(newCur===null)return;
+  var newReq=prompt('Required level for this role (current: '+req+'):',req);
+  if(newReq===null)return;
+  try{
+    var body={company_id:prof?.company_id,person_id:personId,competency_id:compId,
+      current_level:parseInt(newCur)||0,required_level:parseInt(newReq)||2,updated_at:new Date().toISOString()};
+    if(entry){
+      await api('/competency_matrix?id=eq.'+entry.id,{m:'PATCH',p:'return=minimal',b:body});
+    }else{
+      await api('/competency_matrix',{m:'POST',p:'return=minimal',b:body});
+    }
+    toast('Updated!');
+    cmLoad();
+  }catch(e){toast(e.message,false);}
+}
+
+async function cmAddCompetency(){
+  var name=prompt('Competency name:');
+  if(!name||!name.trim())return;
+  var cat=prompt('Category (e.g. Fire Safety, Technical, Personal):','General');
+  try{
+    await api('/competencies',{m:'POST',p:'return=minimal',b:{company_id:prof?.company_id,name:name.trim(),category:cat||'General',sort_order:compAllData.length}});
+    toast('Competency added!');
+    cmLoad();
+  }catch(e){toast(e.message,false);}
+}
+
+// ── TRAINING NEEDS ANALYSIS ─────────────────────────────────────────────────
+async function tnaLoad(){
+  var el=document.getElementById('tna-table');
+  if(!el)return;
+  el.innerHTML='<div class="loading-msg">Loading...</div>';
+  try{
+    var d=await api('/training_needs?select=*'+cf()+'&order=category,role_name,training_topic');
+    tnAllData=d||[];
+    if(!tnAllData.length){
+      el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)">'
+        +'<div style="font-size:40px;margin-bottom:12px">🎯</div>'
+        +'<div style="font-weight:600;margin-bottom:8px">No training needs defined yet</div>'
+        +(isMgr()?'<button class="btn btn-primary" onclick="tnaAddRow()"><i class="ti ti-plus"></i>Add requirement</button>':'')
+        +'</div>';
+      return;
+    }
+    // Group by role
+    var byRole={};
+    tnAllData.forEach(function(r){if(!byRole[r.role_name])byRole[r.role_name]=[];byRole[r.role_name].push(r);});
+    var topics=[...new Set(tnAllData.map(function(r){return r.training_topic;}))];
+    var cats=['INDUCTION','EMERGENCY','HIGH RISK WORK','GENERAL'];
+
+    var html='<table style="border-collapse:collapse;font-size:12px;min-width:100%">';
+    html+='<thead><tr><th style="padding:8px 12px;background:#1a3a5c;color:#fff;text-align:left;min-width:160px;position:sticky;left:0;z-index:3">Role</th>';
+    topics.forEach(function(t){
+      html+='<th style="padding:6px 4px;background:#1a3a5c;color:#cce4ff;text-align:center;min-width:70px;font-size:10px;font-weight:600;max-width:80px;word-wrap:break-word">'+escH(t)+'</th>';
+    });
+    html+='</tr></thead><tbody>';
+    Object.entries(byRole).forEach(function(e,ri){
+      var role=e[0], reqs=e[1];
+      var bg=ri%2===0?'#fff':'#f9fafb';
+      html+='<tr style="border-bottom:1px solid #f0f0f0"><td style="padding:8px 12px;background:'+bg+';position:sticky;left:0;z-index:2;border-right:2px solid #e5e7eb;font-weight:600">'+escH(role)+'</td>';
+      topics.forEach(function(t){
+        var req=reqs.find(function(r){return r.training_topic===t;});
+        var val=req?req.requirement:'N';
+        var bg2=val==='M'?'#EAF3DE':val==='D'?'#E6F1FB':'#f3f4f6';
+        var col2=val==='M'?'#3B6D11':val==='D'?'#185FA5':'#9CA3AF';
+        html+='<td style="padding:4px;text-align:center;background:'+bg+'">'
+          +'<span style="display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:6px;background:'+bg2+';color:'+col2+';font-weight:700;font-size:12px">'+val+'</span>'
+          +'</td>';
+      });
+      html+='</tr>';
+    });
+    html+='</tbody></table>';
+    el.innerHTML=html;
+  }catch(e){el.innerHTML='<p style="padding:20px;color:red">'+e.message+'</p>';console.error(e);}
+}
+
+function tnaAddRow(){
+  var role=prompt('Role name:');if(!role)return;
+  var topic=prompt('Training topic:');if(!topic)return;
+  var cat=prompt('Category (INDUCTION/EMERGENCY/HIGH RISK WORK/GENERAL):','GENERAL');
+  var req=prompt('Requirement (M=Mandatory / D=Desirable / N=Not Required):','D');
+  if(!['M','D','N'].includes((req||'').toUpperCase())){toast('Invalid value. Use M, D or N',false);return;}
+  api('/training_needs',{m:'POST',p:'return=minimal',b:{
+    company_id:prof?.company_id,role_name:role,training_topic:topic,
+    category:(cat||'GENERAL').toUpperCase(),requirement:req.toUpperCase()
+  }}).then(function(){toast('Added!');tnaLoad();}).catch(function(e){toast(e.message,false);});
+}
+
+// ── TRAINING PLAN ───────────────────────────────────────────────────────────
+function trainPlanPrevYear(){trainYear--;var yl=document.getElementById('tp-year-label');if(yl)yl.textContent=trainYear;tpLoad();}
+function trainPlanNextYear(){trainYear++;var yl=document.getElementById('tp-year-label');if(yl)yl.textContent=trainYear;tpLoad();}
+
+async function tpLoad(){
+  var el=document.getElementById('tp-table');
+  if(!el)return;
+  el.innerHTML='<div class="loading-msg">Loading...</div>';
+  try{
+    var d=await api('/training_plan?select=*'+cf()+'&year=eq.'+trainYear+'&order=month,planned_date');
+    tpAllData=d||[];
+    var today=new Date();
+    var planned=tpAllData.filter(function(x){return x.status==='planned'||x.status==='confirmed';}).length;
+    var completed=tpAllData.filter(function(x){return x.status==='completed';}).length;
+    var progress=tpAllData.filter(function(x){return x.status==='confirmed';}).length;
+    var overdue=tpAllData.filter(function(x){
+      return (x.status==='planned'||x.status==='confirmed')&&x.planned_date&&new Date(x.planned_date)<today;
+    }).length;
+    var setM=function(id,v,c){var e=document.getElementById(id);if(e){e.textContent=v;if(c)e.style.color=c;}};
+    setM('tp-m-planned',planned);setM('tp-m-completed',completed);
+    setM('tp-m-progress',progress);setM('tp-m-overdue',overdue,'#E24B4A');
+    if(!tpAllData.length){
+      el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)">'
+        +'<div style="font-size:40px;margin-bottom:12px">📅</div>'
+        +'<div style="font-weight:600;margin-bottom:8px">No training planned for '+trainYear+'</div>'
+        +(isMgr()?'<button class="btn btn-primary" onclick="tpNew()"><i class="ti ti-plus"></i>Plan first training</button>':'')
+        +'</div>';
+      return;
+    }
+    var months=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    var statusBadge=function(s){
+      var cfg={planned:['#E6F1FB','#185FA5'],confirmed:['#EAF3DE','#3B6D11'],completed:['#1D9E75','#fff'],cancelled:['#f3f4f6','#6B7280'],postponed:['#FEF9EC','#854F0B']};
+      var c=cfg[s]||cfg.planned;
+      return '<span style="background:'+c[0]+';color:'+c[1]+';padding:2px 8px;border-radius:99px;font-size:11px;font-weight:600">'+s.charAt(0).toUpperCase()+s.slice(1)+'</span>';
+    };
+    var priorityBadge=function(p){
+      var cfg={low:['#f3f4f6','#6B7280'],medium:['#E6F1FB','#185FA5'],high:['#FEF9EC','#854F0B'],critical:['#FCEBEB','#A32D2D']};
+      var c=cfg[p]||cfg.medium;
+      return '<span style="background:'+c[0]+';color:'+c[1]+';padding:2px 6px;border-radius:4px;font-size:11px;font-weight:600">'+p+'</span>';
+    };
+    var h='<table style="width:100%;border-collapse:collapse;font-size:12px">';
+    h+='<thead><tr style="background:#1a3a5c;color:#fff">';
+    h+='<th style="padding:8px 10px;text-align:left;width:50px">Month</th>';
+    h+='<th style="padding:8px 10px;text-align:left">Training</th>';
+    h+='<th style="padding:8px 10px;text-align:left;width:120px">Target group</th>';
+    h+='<th style="padding:8px 10px;text-align:left;width:80px">Type</th>';
+    h+='<th style="padding:8px 10px;text-align:left;width:80px">Priority</th>';
+    h+='<th style="padding:8px 10px;text-align:left;width:100px">Planned date</th>';
+    h+='<th style="padding:8px 10px;text-align:left;width:110px">Status</th>';
+    h+='<th style="padding:8px 10px;width:70px"></th>';
+    h+='</tr></thead><tbody>';
+    tpAllData.forEach(function(x,i){
+      var bg=i%2===0?'#fff':'#f9fafb';
+      var mo=x.month?months[x.month-1]:'—';
+      var dt=x.planned_date?new Date(x.planned_date).toLocaleDateString('en-GB'):'—';
+      var isOverdue=(x.status==='planned'||x.status==='confirmed')&&x.planned_date&&new Date(x.planned_date)<today;
+      h+='<tr style="border-bottom:1px solid #f0f0f0;background:'+bg+(isOverdue?';border-left:3px solid var(--red)':'')+'">';
+      h+='<td style="padding:8px 10px;font-weight:700;color:var(--text2)">'+mo+'</td>';
+      h+='<td style="padding:8px 10px"><div style="font-weight:600">'+escH(x.training_topic||'—')+'</div>'+(x.trainer?'<div style="font-size:11px;color:var(--text2)"><i class="ti ti-user"></i> '+escH(x.trainer)+'</div>':'')+'</td>';
+      h+='<td style="padding:8px 10px;font-size:11px">'+escH(x.target_group||'—')+'</td>';
+      h+='<td style="padding:8px 10px;font-size:11px">'+escH(x.training_type||'—')+'</td>';
+      h+='<td style="padding:8px 10px">'+priorityBadge(x.priority||'medium')+'</td>';
+      h+='<td style="padding:8px 10px;font-size:11px'+(isOverdue?';color:var(--red);font-weight:600':'')+'">'+dt+(isOverdue?' ⚠':'')+'</td>';
+      h+='<td style="padding:8px 10px">'+statusBadge(x.status||'planned')+'</td>';
+      h+='<td style="padding:8px 10px"><div style="display:flex;gap:4px">'
+        +'<button class="btn btn-sm" data-id="'+x.id+'" onclick="tpOpen(this.getAttribute(\'data-id\'))"><i class="ti ti-edit"></i></button>'
+        +(isMgr()?'<button class="btn btn-sm" style="color:var(--red)" data-id="'+x.id+'" onclick="tpDeleteFromList(this.getAttribute(\'data-id\'))"><i class="ti ti-trash"></i></button>':'')
+        +'</div></td>';
+      h+='</tr>';
+    });
+    h+='</tbody></table>';
+    el.innerHTML=h;
+  }catch(e){el.innerHTML='<p style="padding:20px;color:red">'+e.message+'</p>';console.error(e);}
+}
+
+function tpShowForm(){
+  document.getElementById('train-view-plan').style.display='none';
+  document.getElementById('tp-form').style.display='block';
+}
+function tpBack(){
+  document.getElementById('tp-form').style.display='none';
+  document.getElementById('train-view-plan').style.display='block';
+  tpLoad();
+}
+
+function tpNew(){
+  tpEditingId=null;
+  document.getElementById('tp-form-title').textContent='New Training';
+  document.getElementById('tp-del-btn').style.display='none';
+  ['tp-topic','tp-group','tp-trainer','tp-location','tp-objective','tp-notes'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
+  ['tp-planned-date','tp-actual-date'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
+  var tp=document.getElementById('tp-type');if(tp)tp.value='internal';
+  var pp=document.getElementById('tp-priority');if(pp)pp.value='medium';
+  var sp=document.getElementById('tp-status');if(sp)sp.value='planned';
+  var dur=document.getElementById('tp-duration');if(dur)dur.value='';
+  var bud=document.getElementById('tp-budget');if(bud)bud.value='';
+  var mo=document.getElementById('tp-month');if(mo)mo.value='';
+  tpShowForm();
+}
+
+function tpOpen(id){
+  var x=tpAllData.find(function(r){return r.id===id;});
+  if(!x)return;
+  tpEditingId=id;
+  document.getElementById('tp-form-title').textContent='Edit Training';
+  document.getElementById('tp-del-btn').style.display=isMgr()?'inline-flex':'none';
+  var flds={'tp-topic':'training_topic','tp-group':'target_group','tp-trainer':'trainer','tp-location':'location','tp-objective':'objective','tp-notes':'notes'};
+  Object.entries(flds).forEach(function(e){var el=document.getElementById(e[0]);if(el)el.value=x[e[1]]||'';});
+  var pd=document.getElementById('tp-planned-date');if(pd)pd.value=x.planned_date||'';
+  var ad=document.getElementById('tp-actual-date');if(ad)ad.value=x.actual_date||'';
+  var tp=document.getElementById('tp-type');if(tp)tp.value=x.training_type||'internal';
+  var pp=document.getElementById('tp-priority');if(pp)pp.value=x.priority||'medium';
+  var sp=document.getElementById('tp-status');if(sp)sp.value=x.status||'planned';
+  var dur=document.getElementById('tp-duration');if(dur)dur.value=x.duration_hours||'';
+  var bud=document.getElementById('tp-budget');if(bud)bud.value=x.budget||'';
+  var mo=document.getElementById('tp-month');if(mo)mo.value=x.month||'';
+  tpShowForm();
+}
+
+async function tpSave(){
+  var topic=document.getElementById('tp-topic')?.value?.trim();
+  if(!topic){toast('Please enter a training topic',false);return;}
+  var g=function(id){var el=document.getElementById(id);return el?el.value||null:null;};
+  var body={
+    company_id:prof?.company_id,year:trainYear,
+    training_topic:topic,target_group:g('tp-group'),
+    month:document.getElementById('tp-month')?.value?parseInt(document.getElementById('tp-month').value):null,
+    training_type:g('tp-type')||'internal',priority:g('tp-priority')||'medium',
+    status:g('tp-status')||'planned',trainer:g('tp-trainer'),location:g('tp-location'),
+    planned_date:g('tp-planned-date'),actual_date:g('tp-actual-date'),
+    duration_hours:g('tp-duration')?parseFloat(g('tp-duration')):null,
+    budget:g('tp-budget')?parseFloat(g('tp-budget')):null,
+    objective:g('tp-objective'),notes:g('tp-notes'),updated_at:new Date().toISOString()
+  };
+  try{
+    if(tpEditingId){await api('/training_plan?id=eq.'+tpEditingId,{m:'PATCH',p:'return=minimal',b:body});toast('Updated!');}
+    else{body.created_by=prof?.id;await api('/training_plan',{m:'POST',p:'return=minimal',b:body});toast('Training added to plan!');}
+    tpBack();
+  }catch(e){toast(e.message,false);console.error(e);}
+}
+
+async function tpDelete(){
+  if(!tpEditingId)return;
+  if(!confirm('Delete this training?'))return;
+  try{await api('/training_plan?id=eq.'+tpEditingId,{m:'DELETE'});toast('Deleted!');tpBack();}
+  catch(e){toast(e.message,false);}
+}
+
+async function tpDeleteFromList(id){
+  if(!confirm('Delete this training?'))return;
+  try{await api('/training_plan?id=eq.'+id,{m:'DELETE'});tpAllData=tpAllData.filter(function(x){return x.id!==id;});toast('Deleted!');tpLoad();}
+  catch(e){toast(e.message,false);}
+}
+
+// ── TRAINING FOLLOW-UP ──────────────────────────────────────────────────────
+async function tfLoad(){
+  var el=document.getElementById('tf-table');
+  if(!el)return;
+  el.innerHTML='<div class="loading-msg">Loading...</div>';
+  try{
+    var d=await api('/training_followup?select=*'+cf()+'&order=training_date.desc');
+    tfAllData=d||[];
+    // Populate person dropdowns
+    var opts='<option value="">Select person...</option>';
+    (people||[]).forEach(function(p){opts+='<option value="'+p.id+'">'+p.last_name+', '+p.first_name+(p.job_title?' — '+p.job_title:'')+'</option>';});
+    ['tfr-person','authr-person'].forEach(function(id){var sel=document.getElementById(id);if(sel)sel.innerHTML=opts;});
+    tfRender(tfAllData);
+  }catch(e){el.innerHTML='<p style="padding:20px;color:red">'+e.message+'</p>';console.error(e);}
+}
+
+function tfFilter(){
+  var q=(document.getElementById('tf-search')?.value||'').toLowerCase();
+  var filtered=tfAllData.filter(function(x){
+    return !q||(x.person_name||'').toLowerCase().includes(q)||(x.training_topic||'').toLowerCase().includes(q);
+  });
+  tfRender(filtered);
+}
+
+function tfRender(data){
+  var el=document.getElementById('tf-table');if(!el)return;
+  if(!data.length){
+    el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)">No training records found.'+(isMgr()?' <button class="btn btn-primary btn-sm" onclick="tfNew()"><i class="ti ti-plus"></i>Add record</button>':'')+'</div>';
+    return;
+  }
+  var today=new Date();
+  var soon=new Date();soon.setDate(soon.getDate()+30);
+  var h='<table style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr style="background:#1a3a5c;color:#fff">'
+    +'<th style="padding:8px 10px;text-align:left">Name</th>'
+    +'<th style="padding:8px 10px;text-align:left">Training</th>'
+    +'<th style="padding:8px 10px;text-align:left;width:100px">Date</th>'
+    +'<th style="padding:8px 10px;text-align:left;width:130px">Certificate</th>'
+    +'<th style="padding:8px 10px;text-align:left;width:100px">Expiry</th>'
+    +'<th style="padding:8px 10px;text-align:left;width:100px">Refresher</th>'
+    +'<th style="padding:8px 10px;text-align:center;width:70px">Result</th>'
+    +'<th style="padding:8px 10px;width:70px"></th>'
+    +'</tr></thead><tbody>';
+  data.forEach(function(x,i){
+    var bg=i%2===0?'#fff':'#f9fafb';
+    var dt=x.training_date?new Date(x.training_date).toLocaleDateString('en-GB'):'—';
+    var exp=x.expiry_date?new Date(x.expiry_date):'';
+    var ref=x.refresher_due?new Date(x.refresher_due):'';
+    var expStr=exp?exp.toLocaleDateString('en-GB'):'—';
+    var refStr=ref?ref.toLocaleDateString('en-GB'):'—';
+    var expAlert=exp&&exp<today?'color:var(--red);font-weight:700':exp&&exp<soon?'color:var(--amber);font-weight:600':'';
+    var refAlert=ref&&ref<today?'color:var(--red);font-weight:700':ref&&ref<soon?'color:var(--amber);font-weight:600':'';
+    var result=x.passed===true?'<span style="color:var(--green);font-weight:700">Pass</span>':x.passed===false?'<span style="color:var(--red)">Fail</span>':'—';
+    h+='<tr style="border-bottom:1px solid #f0f0f0;background:'+bg+'">'
+      +'<td style="padding:8px 10px;font-weight:600">'+escH(x.person_name||'—')+'</td>'
+      +'<td style="padding:8px 10px">'+escH(x.training_topic||'—')+'</td>'
+      +'<td style="padding:8px 10px">'+dt+'</td>'
+      +'<td style="padding:8px 10px;font-size:11px">'+escH(x.certificate||'—')+'</td>'
+      +'<td style="padding:8px 10px;'+expAlert+'">'+expStr+(expAlert.includes('red')?' ⚠':'')+'</td>'
+      +'<td style="padding:8px 10px;'+refAlert+'">'+refStr+(refAlert.includes('red')?' ⚠':'')+'</td>'
+      +'<td style="padding:8px 10px;text-align:center">'+result+'</td>'
+      +'<td style="padding:8px 10px"><div style="display:flex;gap:4px">'
+      +'<button class="btn btn-sm" data-id="'+x.id+'" onclick="tfOpen(this.getAttribute(\'data-id\'))"><i class="ti ti-edit"></i></button>'
+      +(isMgr()?'<button class="btn btn-sm" style="color:var(--red)" data-id="'+x.id+'" onclick="tfDeleteFromList(this.getAttribute(\'data-id\'))"><i class="ti ti-trash"></i></button>':'')
+      +'</div></td>'
+      +'</tr>';
+  });
+  h+='</tbody></table>';
+  el.innerHTML=h;
+}
+
+function tfShowForm(){
+  document.getElementById('train-view-followup').style.display='none';
+  document.getElementById('tf-form').style.display='block';
+}
+function tfBack(){
+  document.getElementById('tf-form').style.display='none';
+  document.getElementById('train-view-followup').style.display='block';
+  tfLoad();
+}
+
+function tfNew(){
+  tfEditingId=null;
+  document.getElementById('tf-form-title').textContent='New Training Record';
+  document.getElementById('tf-del-btn').style.display='none';
+  ['tfr-name','tfr-course','tfr-trainer','tfr-cert','tfr-notes'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
+  ['tfr-date','tfr-expiry','tfr-refresher'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
+  var sc=document.getElementById('tfr-score');if(sc)sc.value='';
+  var ps=document.getElementById('tfr-passed');if(ps)ps.value='true';
+  var per=document.getElementById('tfr-person');if(per)per.value='';
+  tfShowForm();
+}
+
+function tfOpen(id){
+  var x=tfAllData.find(function(r){return r.id===id;});
+  if(!x)return;
+  tfEditingId=id;
+  document.getElementById('tf-form-title').textContent='Edit Training Record';
+  document.getElementById('tf-del-btn').style.display=isMgr()?'inline-flex':'none';
+  var flds={'tfr-name':'person_name','tfr-course':'training_topic','tfr-trainer':'trainer','tfr-cert':'certificate','tfr-notes':'notes'};
+  Object.entries(flds).forEach(function(e){var el=document.getElementById(e[0]);if(el)el.value=x[e[1]]||'';});
+  ['tfr-date','tfr-expiry','tfr-refresher'].forEach(function(id){
+    var key={'tfr-date':'training_date','tfr-expiry':'expiry_date','tfr-refresher':'refresher_due'}[id];
+    var el=document.getElementById(id);if(el)el.value=x[key]||'';
+  });
+  var sc=document.getElementById('tfr-score');if(sc)sc.value=x.score||'';
+  var ps=document.getElementById('tfr-passed');if(ps)ps.value=String(x.passed!==false);
+  var per=document.getElementById('tfr-person');if(per)per.value=x.person_id||'';
+  tfShowForm();
+}
+
+async function tfSave(){
+  var course=document.getElementById('tfr-course')?.value?.trim();
+  if(!course){toast('Please enter a training topic',false);return;}
+  var g=function(id){var el=document.getElementById(id);return el?el.value||null:null;};
+  var personId=g('tfr-person');
+  var name=g('tfr-name')||((people||[]).find(function(p){return p.id===personId;})||{last_name:'',first_name:''}).last_name;
+  var body={
+    company_id:prof?.company_id,person_id:personId||null,
+    person_name:name||null,training_topic:course,
+    training_date:g('tfr-date'),trainer:g('tfr-trainer'),certificate:g('tfr-cert'),
+    expiry_date:g('tfr-expiry'),refresher_due:g('tfr-refresher'),
+    score:g('tfr-score')?parseFloat(g('tfr-score')):null,
+    passed:document.getElementById('tfr-passed')?.value!=='false',
+    notes:g('tfr-notes'),updated_at:new Date().toISOString()
+  };
+  try{
+    if(tfEditingId){await api('/training_followup?id=eq.'+tfEditingId,{m:'PATCH',p:'return=minimal',b:body});toast('Updated!');}
+    else{body.created_by=prof?.id;await api('/training_followup',{m:'POST',p:'return=minimal',b:body});toast('Record saved!');}
+    tfBack();
+  }catch(e){toast(e.message,false);console.error(e);}
+}
+
+async function tfDelete(){
+  if(!tfEditingId)return;
+  if(!confirm('Delete this record?'))return;
+  try{await api('/training_followup?id=eq.'+tfEditingId,{m:'DELETE'});toast('Deleted!');tfBack();}
+  catch(e){toast(e.message,false);}
+}
+
+async function tfDeleteFromList(id){
+  if(!confirm('Delete this record?'))return;
+  try{await api('/training_followup?id=eq.'+id,{m:'DELETE'});tfAllData=tfAllData.filter(function(x){return x.id!==id;});toast('Deleted!');tfRender(tfAllData);}
+  catch(e){toast(e.message,false);}
+}
+
+// ── AUTHORISATIONS ──────────────────────────────────────────────────────────
+async function authLoad(){
+  var el=document.getElementById('auth-table');
+  if(!el)return;
+  el.innerHTML='<div class="loading-msg">Loading...</div>';
+  try{
+    var d=await api('/authorisations?select=*'+cf()+'&order=expiry_date,person_name');
+    authAllData=d||[];
+    // Populate type filter
+    var types=[...new Set(authAllData.map(function(x){return x.authorisation_type;}).filter(Boolean))];
+    var typeSel=document.getElementById('auth-filter-type');
+    if(typeSel)typeSel.innerHTML='<option value="">All types</option>'+types.map(function(t){return '<option value="'+escH(t)+'">'+escH(t)+'</option>';}).join('');
+    // Alerts for expiring
+    authShowAlerts();
+    authRender(authAllData);
+  }catch(e){el.innerHTML='<p style="padding:20px;color:red">'+e.message+'</p>';console.error(e);}
+}
+
+function authShowAlerts(){
+  var alertEl=document.getElementById('auth-alerts');
+  if(!alertEl)return;
+  var today=new Date();
+  var soon=new Date();soon.setDate(soon.getDate()+60);
+  var expiring=authAllData.filter(function(x){return x.expiry_date&&new Date(x.expiry_date)<=soon&&x.status==='active';});
+  var expired=authAllData.filter(function(x){return x.status==='expired'||(x.expiry_date&&new Date(x.expiry_date)<today&&x.status==='active');});
+  if(!expiring.length&&!expired.length){alertEl.innerHTML='';return;}
+  var h='';
+  if(expired.length){
+    h+='<div style="background:#FCEBEB;border:1px solid #fca5a5;border-radius:8px;padding:10px 14px;margin-bottom:8px;font-size:12px">'
+      +'<strong style="color:var(--red)">⚠ '+expired.length+' expired authorisation'+(expired.length!==1?'s':'')+':</strong> '
+      +expired.slice(0,5).map(function(x){return escH(x.person_name)+' ('+escH(x.authorisation_type)+')';}).join(', ')
+      +'</div>';
+  }
+  if(expiring.filter(function(x){return new Date(x.expiry_date)>=today;}).length){
+    var exp2=expiring.filter(function(x){return new Date(x.expiry_date)>=today;});
+    h+='<div style="background:#FEF9EC;border:1px solid #fcd34d;border-radius:8px;padding:10px 14px;margin-bottom:8px;font-size:12px">'
+      +'<strong style="color:var(--amber)">⏰ '+exp2.length+' authorisation'+(exp2.length!==1?'s':'')+' expiring within 60 days:</strong> '
+      +exp2.slice(0,5).map(function(x){return escH(x.person_name)+' ('+escH(x.authorisation_type)+' – '+new Date(x.expiry_date).toLocaleDateString('en-GB')+')';}).join(', ')
+      +'</div>';
+  }
+  alertEl.innerHTML=h;
+}
+
+function authFilter(){
+  var q=(document.getElementById('auth-search')?.value||'').toLowerCase();
+  var ft=document.getElementById('auth-filter-type')?.value||'';
+  var filtered=authAllData.filter(function(x){
+    var matchQ=!q||(x.person_name||'').toLowerCase().includes(q)||(x.authorisation_type||'').toLowerCase().includes(q);
+    var matchT=!ft||x.authorisation_type===ft;
+    return matchQ&&matchT;
+  });
+  authRender(filtered);
+}
+
+function authRender(data){
+  var el=document.getElementById('auth-table');if(!el)return;
+  if(!data.length){
+    el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)">No authorisations found.'+(isMgr()?' <button class="btn btn-primary btn-sm" onclick="authNew()"><i class="ti ti-plus"></i>Add</button>':'')+'</div>';
+    return;
+  }
+  var today=new Date();var soon=new Date();soon.setDate(soon.getDate()+60);
+  var statusBadge=function(s,exp){
+    var isExpired=exp&&new Date(exp)<today;
+    var isWarn=exp&&new Date(exp)<=soon&&new Date(exp)>=today;
+    if(isExpired||s==='expired')return '<span style="background:#FCEBEB;color:#A32D2D;padding:2px 8px;border-radius:99px;font-size:11px;font-weight:600">Expired</span>';
+    if(isWarn)return '<span style="background:#FEF9EC;color:#854F0B;padding:2px 8px;border-radius:99px;font-size:11px;font-weight:600">Expiring soon</span>';
+    if(s==='active')return '<span style="background:#EAF3DE;color:#3B6D11;padding:2px 8px;border-radius:99px;font-size:11px;font-weight:600">Active</span>';
+    if(s==='pending')return '<span style="background:#E6F1FB;color:#185FA5;padding:2px 8px;border-radius:99px;font-size:11px;font-weight:600">Pending</span>';
+    return '<span style="background:#f3f4f6;color:#6B7280;padding:2px 8px;border-radius:99px;font-size:11px;font-weight:600">'+s+'</span>';
+  };
+  // Group by person
+  var byPerson={};
+  data.forEach(function(x){if(!byPerson[x.person_name])byPerson[x.person_name]=[];byPerson[x.person_name].push(x);});
+  var h='<table style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr style="background:#1a3a5c;color:#fff">'
+    +'<th style="padding:8px 12px;text-align:left">Person</th>'
+    +'<th style="padding:8px 10px;text-align:left">Authorisation type</th>'
+    +'<th style="padding:8px 10px;text-align:left;width:100px">Issue date</th>'
+    +'<th style="padding:8px 10px;text-align:left;width:100px">Expiry date</th>'
+    +'<th style="padding:8px 10px;text-align:left;width:130px">Reference</th>'
+    +'<th style="padding:8px 10px;text-align:left;width:120px">Status</th>'
+    +'<th style="padding:8px 10px;width:70px"></th>'
+    +'</tr></thead><tbody>';
+  Object.entries(byPerson).forEach(function(e,pi){
+    var name=e[0],auths=e[1];
+    auths.forEach(function(x,ai){
+      var bg=pi%2===0?'#fff':'#f9fafb';
+      var iss=x.issue_date?new Date(x.issue_date).toLocaleDateString('en-GB'):'—';
+      var exp=x.expiry_date?new Date(x.expiry_date).toLocaleDateString('en-GB'):'—';
+      var isExpiredOrWarn=x.expiry_date&&(new Date(x.expiry_date)<today||new Date(x.expiry_date)<=soon);
+      h+='<tr style="border-bottom:1px solid #f0f0f0;background:'+bg+'">'
+        +(ai===0?'<td rowspan="'+auths.length+'" style="padding:8px 12px;font-weight:700;border-right:1px solid #e5e7eb;vertical-align:top">'+escH(name)+'</td>':'')
+        +'<td style="padding:8px 10px;font-weight:600">'+escH(x.authorisation_type||'—')+'</td>'
+        +'<td style="padding:8px 10px">'+iss+'</td>'
+        +'<td style="padding:8px 10px'+(isExpiredOrWarn?';color:var(--red)':'')+'">'+exp+(isExpiredOrWarn?' ⚠':'')+'</td>'
+        +'<td style="padding:8px 10px;font-size:11px">'+escH(x.reference||'—')+'</td>'
+        +'<td style="padding:8px 10px">'+statusBadge(x.status,x.expiry_date)+'</td>'
+        +'<td style="padding:8px 10px"><div style="display:flex;gap:4px">'
+        +'<button class="btn btn-sm" data-id="'+x.id+'" onclick="authOpen(this.getAttribute(\'data-id\'))"><i class="ti ti-edit"></i></button>'
+        +(isMgr()?'<button class="btn btn-sm" style="color:var(--red)" data-id="'+x.id+'" onclick="authDeleteFromList(this.getAttribute(\'data-id\'))"><i class="ti ti-trash"></i></button>':'')
+        +'</div></td>'
+        +'</tr>';
+    });
+  });
+  h+='</tbody></table>';
+  el.innerHTML=h;
+}
+
+function authShowForm(){
+  document.getElementById('train-view-auth').style.display='none';
+  document.getElementById('auth-form').style.display='block';
+}
+function authBack(){
+  document.getElementById('auth-form').style.display='none';
+  document.getElementById('train-view-auth').style.display='block';
+  authLoad();
+}
+
+function authNew(){
+  authEditingId=null;
+  document.getElementById('auth-form-title').textContent='New Authorisation';
+  document.getElementById('auth-del-btn').style.display='none';
+  ['authr-name','authr-type','authr-ref','authr-issuer','authr-notes'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
+  ['authr-issue','authr-expiry'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
+  var st=document.getElementById('authr-status');if(st)st.value='active';
+  var per=document.getElementById('authr-person');if(per)per.value='';
+  authShowForm();
+}
+
+function authOpen(id){
+  var x=authAllData.find(function(r){return r.id===id;});
+  if(!x)return;
+  authEditingId=id;
+  document.getElementById('auth-form-title').textContent='Edit Authorisation';
+  document.getElementById('auth-del-btn').style.display=isMgr()?'inline-flex':'none';
+  var flds={'authr-name':'person_name','authr-type':'authorisation_type','authr-ref':'reference','authr-issuer':'issuing_body','authr-notes':'notes'};
+  Object.entries(flds).forEach(function(e){var el=document.getElementById(e[0]);if(el)el.value=x[e[1]]||'';});
+  var iss=document.getElementById('authr-issue');if(iss)iss.value=x.issue_date||'';
+  var exp=document.getElementById('authr-expiry');if(exp)exp.value=x.expiry_date||'';
+  var st=document.getElementById('authr-status');if(st)st.value=x.status||'active';
+  var per=document.getElementById('authr-person');if(per)per.value=x.person_id||'';
+  authShowForm();
+}
+
+async function authSave(){
+  var type=document.getElementById('authr-type')?.value?.trim();
+  var name=document.getElementById('authr-name')?.value?.trim();
+  if(!type||!name){toast('Please enter person name and authorisation type',false);return;}
+  var g=function(id){var el=document.getElementById(id);return el?el.value||null:null;};
+  var body={
+    company_id:prof?.company_id,
+    person_id:g('authr-person')||null,person_name:name,
+    authorisation_type:type,status:g('authr-status')||'active',
+    issue_date:g('authr-issue'),expiry_date:g('authr-expiry'),
+    reference:g('authr-ref'),issuing_body:g('authr-issuer'),notes:g('authr-notes'),
+    updated_at:new Date().toISOString()
+  };
+  try{
+    if(authEditingId){await api('/authorisations?id=eq.'+authEditingId,{m:'PATCH',p:'return=minimal',b:body});toast('Updated!');}
+    else{body.created_by=prof?.id;await api('/authorisations',{m:'POST',p:'return=minimal',b:body});toast('Authorisation added!');}
+    authBack();
+  }catch(e){toast(e.message,false);console.error(e);}
+}
+
+async function authDelete(){
+  if(!authEditingId)return;
+  if(!confirm('Delete this authorisation?'))return;
+  try{await api('/authorisations?id=eq.'+authEditingId,{m:'DELETE'});toast('Deleted!');authBack();}
+  catch(e){toast(e.message,false);}
+}
+
+async function authDeleteFromList(id){
+  if(!confirm('Delete this authorisation?'))return;
+  try{await api('/authorisations?id=eq.'+id,{m:'DELETE'});authAllData=authAllData.filter(function(x){return x.id!==id;});toast('Deleted!');authRender(authAllData);}
+  catch(e){toast(e.message,false);}
+}
+
+// ── LEGACY saveTraining (keep old training_sessions working) ─────────────────
+
 
 async function saveTraining(){
 if(!isMgr()){toast('Access denied',false);return;}
@@ -4668,6 +5345,7 @@ function sopSaveToDocControl(){
   toast('SOP saved to Document Control!');
   sopSave();
 }
+
 
 
 
@@ -5800,7 +6478,255 @@ function sopSaveToDocControl(){
 </div><!-- end page-meetings -->
 
 <div id="page-training" class="page">
-<div class="page-header"><div class="page-title">Training Monitor</div><div id="training-add-btn"></div></div><div class="card" id="training-form" style="display:none"><div class="card-title">Log training session</div><div class="form-row"><div class="form-group"><label class="form-label">Course / topic</label><input type="text" id="tf-course"/></div><div class="form-group"><label class="form-label">Trainer</label><input type="text" id="tf-trainer"/></div></div><div class="form-row"><div class="form-group"><label class="form-label">Date conducted</label><input type="date" id="tf-date"/></div><div class="form-group"><label class="form-label">Certificate expiry</label><input type="date" id="tf-expiry"/></div></div><div class="form-group"><label class="form-label">Attendees</label><select id="tf-attendees" multiple style="min-height:100px"><option value="">Loading...</option></select><div style="font-size:11px;color:var(--text2);margin-top:4px">Hold Ctrl/Cmd to select multiple</div></div><div style="display:flex;gap:8px"><button class="btn btn-primary" onclick="saveTraining()"><i class="ti ti-device-floppy"></i>Save</button><button class="btn" onclick="toggleForm('training-form')">Cancel</button></div></div><div class="card"><div class="card-title">Training sessions</div><div id="training-list"><div class="loading-msg">Loading...</div></div></div></div>
+<div class="page-header">
+<div><div class="page-title">Training & Competency</div><div style="font-size:12px;color:var(--text2)">Competency matrix, training needs, plan, follow-up and authorisations</div></div>
+<div style="display:flex;gap:8px" id="train-header-btns"></div>
+</div>
+
+<!-- Tabs -->
+<div style="display:flex;gap:0;margin-bottom:16px;border-bottom:2px solid var(--border)">
+<button class="mtg-tab active" id="train-tab-matrix" onclick="trainSwitchTab('matrix',this)">📊 Competency Matrix</button>
+<button class="mtg-tab" id="train-tab-tna" onclick="trainSwitchTab('tna',this)">🎯 Training Needs</button>
+<button class="mtg-tab" id="train-tab-plan" onclick="trainSwitchTab('plan',this)">📅 Training Plan</button>
+<button class="mtg-tab" id="train-tab-followup" onclick="trainSwitchTab('followup',this)">📋 Follow-up</button>
+<button class="mtg-tab" id="train-tab-auth" onclick="trainSwitchTab('auth',this)">🔑 Authorisations</button>
+</div>
+
+<!-- ── COMPETENCY MATRIX ── -->
+<div id="train-view-matrix">
+<div class="card" style="margin-bottom:12px;padding:12px 16px">
+<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
+<div>
+<div class="card-title" style="margin:0">Competency Matrix</div>
+<div style="font-size:12px;color:var(--text2);margin-top:3px">Level: 0=No knowledge  1=Theoretical  2=First experience  3=Good level  4=Expert</div>
+</div>
+<div style="display:flex;gap:8px" id="cm-btns">
+<button class="btn btn-sm btn-primary" id="cm-add-comp-btn" style="display:none" onclick="cmAddCompetency()"><i class="ti ti-plus"></i>Add competency</button>
+</div>
+</div>
+</div>
+<div class="card" style="padding:0;overflow:auto"><div id="cm-table"><div class="loading-msg">Loading...</div></div></div>
+</div>
+
+<!-- ── TRAINING NEEDS ANALYSIS ── -->
+<div id="train-view-tna" style="display:none">
+<div class="card" style="margin-bottom:12px;padding:12px 16px">
+<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
+<div class="card-title" style="margin:0">Training Needs Analysis</div>
+<div style="display:flex;gap:8px">
+<button class="btn btn-sm btn-primary" id="tna-add-btn" style="display:none" onclick="tnaAddRow()"><i class="ti ti-plus"></i>Add requirement</button>
+</div>
+</div>
+<div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap">
+<span style="font-size:12px;font-weight:600;color:var(--text2)">Legend:</span>
+<span style="background:#EAF3DE;color:#3B6D11;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:700">M = Mandatory</span>
+<span style="background:#E6F1FB;color:#185FA5;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:700">D = Desirable</span>
+<span style="background:#f3f4f6;color:#6B7280;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:700">N = Not Required</span>
+</div>
+</div>
+<div class="card" style="padding:0;overflow:auto"><div id="tna-table"><div class="loading-msg">Loading...</div></div></div>
+</div>
+
+<!-- ── TRAINING PLAN ── -->
+<div id="train-view-plan" style="display:none">
+<!-- Year selector + metrics -->
+<div class="card" style="margin-bottom:12px;padding:12px 16px">
+<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
+<div style="display:flex;align-items:center;gap:12px">
+<div class="card-title" style="margin:0">Training Plan</div>
+<div style="display:flex;gap:4px">
+<button class="btn btn-sm" onclick="trainPlanPrevYear()"><i class="ti ti-chevron-left"></i></button>
+<span style="font-size:14px;font-weight:700;padding:4px 10px" id="tp-year-label">2026</span>
+<button class="btn btn-sm" onclick="trainPlanNextYear()"><i class="ti ti-chevron-right"></i></button>
+</div>
+</div>
+<div style="display:flex;gap:8px">
+<button class="btn btn-sm btn-primary" id="tp-add-btn" style="display:none" onclick="tpNew()"><i class="ti ti-plus"></i>Add training</button>
+</div>
+</div>
+</div>
+<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:12px">
+<div class="card" style="padding:12px 14px;border-left:4px solid #185FA5"><div style="font-size:11px;color:var(--text2);margin-bottom:2px;font-weight:500;text-transform:uppercase">Planned</div><div style="font-size:24px;font-weight:800;color:#185FA5" id="tp-m-planned">—</div></div>
+<div class="card" style="padding:12px 14px;border-left:4px solid #1D9E75"><div style="font-size:11px;color:var(--text2);margin-bottom:2px;font-weight:500;text-transform:uppercase">Completed</div><div style="font-size:24px;font-weight:800;color:#1D9E75" id="tp-m-completed">—</div></div>
+<div class="card" style="padding:12px 14px;border-left:4px solid #EF9F27"><div style="font-size:11px;color:var(--text2);margin-bottom:2px;font-weight:500;text-transform:uppercase">In progress</div><div style="font-size:24px;font-weight:800;color:#EF9F27" id="tp-m-progress">—</div></div>
+<div class="card" style="padding:12px 14px;border-left:4px solid #E24B4A"><div style="font-size:11px;color:var(--text2);margin-bottom:2px;font-weight:500;text-transform:uppercase">Overdue</div><div style="font-size:24px;font-weight:800;color:#E24B4A" id="tp-m-overdue">—</div></div>
+</div>
+<div class="card" style="padding:0;overflow:hidden"><div id="tp-table"><div class="loading-msg">Loading...</div></div></div>
+</div>
+
+<!-- ── FOLLOW-UP ── -->
+<div id="train-view-followup" style="display:none">
+<div class="card" style="margin-bottom:12px;padding:12px 16px">
+<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
+<div class="card-title" style="margin:0">Individual Training Follow-up</div>
+<div style="display:flex;gap:8px">
+<input type="text" id="tf-search" placeholder="Search name or course..." oninput="tfFilter()" style="padding:6px 12px;border:1px solid var(--border);border-radius:8px;font-size:12px;width:200px"/>
+<button class="btn btn-sm btn-primary" id="tf-add-btn" style="display:none" onclick="tfNew()"><i class="ti ti-plus"></i>Add record</button>
+</div>
+</div>
+</div>
+<div class="card" style="padding:0;overflow:hidden"><div id="tf-table"><div class="loading-msg">Loading...</div></div></div>
+</div>
+
+<!-- ── AUTHORISATIONS ── -->
+<div id="train-view-auth">
+<div class="card" style="margin-bottom:12px;padding:12px 16px">
+<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
+<div>
+<div class="card-title" style="margin:0">List of Authorisations</div>
+<div style="font-size:12px;color:var(--text2);margin-top:3px">Certificates, permits and authorisations per person</div>
+</div>
+<div style="display:flex;gap:8px">
+<input type="text" id="auth-search" placeholder="Search..." oninput="authFilter()" style="padding:6px 12px;border:1px solid var(--border);border-radius:8px;font-size:12px;width:180px"/>
+<select id="auth-filter-type" onchange="authFilter()" style="padding:6px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px"><option value="">All types</option></select>
+<button class="btn btn-sm btn-primary" id="auth-add-btn" style="display:none" onclick="authNew()"><i class="ti ti-plus"></i>Add authorisation</button>
+</div>
+</div>
+</div>
+<!-- Expiry alerts -->
+<div id="auth-alerts" style="margin-bottom:12px"></div>
+<div class="card" style="padding:0;overflow:hidden"><div id="auth-table"><div class="loading-msg">Loading...</div></div></div>
+</div>
+
+<!-- ── FORMS (slide-in) ── -->
+<!-- Training Plan form -->
+<div id="tp-form" style="display:none">
+<div class="card" style="margin-bottom:12px;padding:14px 20px">
+<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
+<div style="font-size:16px;font-weight:700" id="tp-form-title">New Training</div>
+<div style="display:flex;gap:8px">
+<button class="btn" onclick="tpBack()"><i class="ti ti-arrow-left"></i>Back</button>
+<button id="tp-del-btn" class="btn" style="display:none;color:var(--red);border-color:var(--red)" onclick="tpDelete()"><i class="ti ti-trash"></i>Delete</button>
+<button class="btn btn-primary" onclick="tpSave()"><i class="ti ti-device-floppy"></i>Save</button>
+</div>
+</div>
+</div>
+<div class="card">
+<div class="form-row">
+<div class="form-group"><label class="form-label">Training topic</label><input type="text" id="tp-topic" placeholder="e.g. Fire Safety Awareness"/></div>
+<div class="form-group"><label class="form-label">Target group</label><input type="text" id="tp-group" placeholder="e.g. All staff"/></div>
+<div class="form-group"><label class="form-label">Month</label>
+<select id="tp-month">
+<option value="">Select month...</option>
+<option value="1">January</option>
+<option value="2">February</option>
+<option value="3">March</option>
+<option value="4">April</option>
+<option value="5">May</option>
+<option value="6">June</option>
+<option value="7">July</option>
+<option value="8">August</option>
+<option value="9">September</option>
+<option value="10">October</option>
+<option value="11">November</option>
+<option value="12">December</option>
+</select></div>
+<div class="form-group"><label class="form-label">Planned date</label><input type="date" id="tp-planned-date"/></div>
+</div>
+<div class="form-row">
+<div class="form-group"><label class="form-label">Type</label>
+<select id="tp-type"><option value="internal">Internal</option><option value="external">External</option><option value="e-learning">E-learning</option><option value="on-the-job">On-the-job</option></select></div>
+<div class="form-group"><label class="form-label">Priority</label>
+<select id="tp-priority"><option value="low">Low</option><option value="medium" selected>Medium</option><option value="high">High</option><option value="critical">Critical</option></select></div>
+<div class="form-group"><label class="form-label">Status</label>
+<select id="tp-status"><option value="planned">Planned</option><option value="confirmed">Confirmed</option><option value="completed">Completed</option><option value="cancelled">Cancelled</option><option value="postponed">Postponed</option></select></div>
+<div class="form-group"><label class="form-label">Duration (hours)</label><input type="number" id="tp-duration" step="0.5" min="0"/></div>
+</div>
+<div class="form-row">
+<div class="form-group"><label class="form-label">Trainer / Provider</label><input type="text" id="tp-trainer"/></div>
+<div class="form-group"><label class="form-label">Location</label><input type="text" id="tp-location"/></div>
+<div class="form-group"><label class="form-label">Actual date</label><input type="date" id="tp-actual-date"/></div>
+<div class="form-group"><label class="form-label">Budget (Rs)</label><input type="number" id="tp-budget" min="0"/></div>
+</div>
+<div class="form-group"><label class="form-label">Objective / Expected outcome</label><textarea id="tp-objective" style="min-height:70px"></textarea></div>
+<div class="form-group"><label class="form-label">Notes</label><textarea id="tp-notes" style="min-height:50px"></textarea></div>
+</div>
+</div>
+
+<!-- Follow-up form -->
+<div id="tf-form" style="display:none">
+<div class="card" style="margin-bottom:12px;padding:14px 20px">
+<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
+<div style="font-size:16px;font-weight:700" id="tf-form-title">Training Record</div>
+<div style="display:flex;gap:8px">
+<button class="btn" onclick="tfBack()"><i class="ti ti-arrow-left"></i>Back</button>
+<button id="tf-del-btn" class="btn" style="display:none;color:var(--red);border-color:var(--red)" onclick="tfDelete()"><i class="ti ti-trash"></i>Delete</button>
+<button class="btn btn-primary" onclick="tfSave()"><i class="ti ti-device-floppy"></i>Save</button>
+</div>
+</div>
+</div>
+<div class="card">
+<div class="form-row">
+<div class="form-group"><label class="form-label">Person</label>
+<select id="tfr-person" onchange="document.getElementById('tfr-name').value=this.options[this.selectedIndex].text.split('—')[0].trim()">
+<option value="">Select person...</option></select></div>
+<div class="form-group"><label class="form-label">Name (if not in list)</label><input type="text" id="tfr-name"/></div>
+<div class="form-group"><label class="form-label">Training / Course</label><input type="text" id="tfr-course" placeholder="e.g. Fire Safety Training"/></div>
+<div class="form-group"><label class="form-label">Training date</label><input type="date" id="tfr-date"/></div>
+</div>
+<div class="form-row">
+<div class="form-group"><label class="form-label">Trainer / Provider</label><input type="text" id="tfr-trainer"/></div>
+<div class="form-group"><label class="form-label">Certificate / Diploma</label><input type="text" id="tfr-cert" placeholder="Certificate number or title..."/></div>
+<div class="form-group"><label class="form-label">Expiry date</label><input type="date" id="tfr-expiry"/></div>
+<div class="form-group"><label class="form-label">Refresher due</label><input type="date" id="tfr-refresher"/></div>
+</div>
+<div class="form-row">
+<div class="form-group"><label class="form-label">Score (%)</label><input type="number" id="tfr-score" min="0" max="100"/></div>
+<div class="form-group"><label class="form-label">Result</label>
+<select id="tfr-passed"><option value="true">Pass</option><option value="false">Fail</option></select></div>
+<div class="form-group"><label class="form-label">Notes</label><input type="text" id="tfr-notes"/></div>
+</div>
+</div>
+</div>
+
+<!-- Authorisation form -->
+<div id="auth-form" style="display:none">
+<div class="card" style="margin-bottom:12px;padding:14px 20px">
+<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
+<div style="font-size:16px;font-weight:700" id="auth-form-title">New Authorisation</div>
+<div style="display:flex;gap:8px">
+<button class="btn" onclick="authBack()"><i class="ti ti-arrow-left"></i>Back</button>
+<button id="auth-del-btn" class="btn" style="display:none;color:var(--red);border-color:var(--red)" onclick="authDelete()"><i class="ti ti-trash"></i>Delete</button>
+<button class="btn btn-primary" onclick="authSave()"><i class="ti ti-device-floppy"></i>Save</button>
+</div>
+</div>
+</div>
+<div class="card">
+<div class="form-row">
+<div class="form-group"><label class="form-label">Person</label>
+<select id="authr-person" onchange="document.getElementById('authr-name').value=this.options[this.selectedIndex].text.split('—')[0].trim()">
+<option value="">Select person...</option></select></div>
+<div class="form-group"><label class="form-label">Name (if not in list)</label><input type="text" id="authr-name"/></div>
+<div class="form-group"><label class="form-label">Authorisation type</label>
+<input type="text" id="authr-type" list="auth-types-list" placeholder="e.g. First Aid, Electrical, Work at Height..."/>
+<datalist id="auth-types-list">
+<option value="First Aid">
+<option value="Electrical Safety">
+<option value="Work at Height">
+<option value="Driving Permit">
+<option value="ATEX / Explosive Atmosphere">
+<option value="Confined Space">
+<option value="Forklift Operator">
+<option value="Crane Operator">
+<option value="Fire Warden">
+<option value="Scaffolding Inspector">
+<option value="Hot Works Permit">
+</datalist></div>
+<div class="form-group"><label class="form-label">Status</label>
+<select id="authr-status"><option value="active">Active</option><option value="pending">Pending</option><option value="expired">Expired</option><option value="suspended">Suspended</option></select></div>
+</div>
+<div class="form-row">
+<div class="form-group"><label class="form-label">Issue date</label><input type="date" id="authr-issue"/></div>
+<div class="form-group"><label class="form-label">Expiry date</label><input type="date" id="authr-expiry"/></div>
+<div class="form-group"><label class="form-label">Reference / number</label><input type="text" id="authr-ref"/></div>
+<div class="form-group"><label class="form-label">Issuing body</label><input type="text" id="authr-issuer" placeholder="e.g. OSHA, Red Cross..."/></div>
+</div>
+<div class="form-group"><label class="form-label">Notes</label><textarea id="authr-notes" style="min-height:60px"></textarea></div>
+</div>
+</div>
+
+</div><!-- end page-training -->
+
 <div id="page-actions" class="page">
 <div class="page-header"><div class="page-title">Master Action Plan</div><button class="btn btn-primary" onclick="toggleForm('action-form')"><i class="ti ti-plus"></i>Add action</button></div><div class="card" id="action-form" style="display:none"><div class="card-title">Add action manually</div><div class="form-row"><div class="form-group"><label class="form-label">Description</label><input type="text" id="af-desc"/></div><div class="form-group"><label class="form-label">Source module</label><select id="af-module"><option value="manual">Manual</option><option value="inspection">Inspection</option><option value="event">Event</option><option value="risk_assessment">Risk Assessment</option><option value="investigation">Investigation</option><option value="meeting">Meeting</option><option value="permit">Permit</option><option value="noise_survey">Noise Survey</option><option value="kpi">KPI</option></select></div></div><div class="form-row"><div class="form-group"><label class="form-label">Responsible</label><select id="af-resp"><option value="">Select person...</option></select></div><div class="form-group"><label class="form-label">Target date</label><input type="date" id="af-date"/></div></div><div class="form-row"><div class="form-group"><label class="form-label">Priority</label><select id="af-priority"><option value="low">Low</option><option value="medium">Medium</option><option value="high">High</option><option value="critical">Critical</option></select></div><div class="form-group"><label class="form-label">Status</label><select id="af-status"><option value="open">Open</option><option value="in_progress">In Progress</option><option value="closed">Closed</option></select></div></div><div class="form-group"><label class="form-label">Comments / evidence</label><textarea id="af-comments"></textarea></div><div style="display:flex;gap:8px"><button class="btn btn-primary" onclick="saveAction()"><i class="ti ti-device-floppy"></i>Save</button><button class="btn" onclick="toggleForm('action-form')">Cancel</button></div></div><div class="card"><div class="card-title">All actions <span id="action-count" style="font-size:12px;font-weight:400;color:var(--text2)"></span></div><div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap"><select id="filter-module" onchange="loadActions()" style="width:auto;padding:6px 10px;font-size:12px"><option value="">All modules</option><option value="manual">Manual</option><option value="inspection">Inspection</option><option value="event">Event</option><option value="risk_assessment">Risk Assessment</option><option value="investigation">Investigation</option><option value="meeting">Meeting</option></select><select id="filter-status" onchange="loadActions()" style="width:auto;padding:6px 10px;font-size:12px"><option value="">All statuses</option><option value="open">Open</option><option value="in_progress">In Progress</option><option value="overdue">Overdue</option><option value="closed">Closed</option></select><select id="filter-priority" onchange="loadActions()" style="width:auto;padding:6px 10px;font-size:12px"><option value="">All priorities</option><option value="critical">Critical</option><option value="high">High</option><option value="medium">Medium</option><option value="low">Low</option></select></div><div id="actions-list"><div class="loading-msg">Loading...</div></div></div></div>
 <div id="page-sop" class="page">
