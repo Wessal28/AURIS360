@@ -11,19 +11,35 @@
 .inv-tab{background:none;border:none;border-bottom:3px solid transparent;padding:10px 20px;font-size:13px;font-weight:600;color:var(--text2);cursor:pointer;transition:all .15s;white-space:nowrap}
 .mtg-tab{background:none;border:none;border-bottom:3px solid transparent;padding:10px 20px;font-size:13px;font-weight:600;color:var(--text2);cursor:pointer;transition:all .15s;white-space:nowrap}
 .mtg-tab:hover{color:var(--text)}
+.sop-step-dot{width:36px;height:36px;border-radius:50%;background:#e5e7eb;color:#6b7280;font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center;cursor:pointer;position:relative;z-index:2;transition:all .2s;flex-direction:column}
+.sop-step-dot.active{background:var(--green);color:#fff}
+.sop-step-dot.done{background:#1D9E75;color:#fff}
+.sop-step-label{font-size:10px;font-weight:500;position:absolute;top:40px;white-space:nowrap;color:var(--text2)}
+.sop-step-panel{}
+.sop-frame-card{border:1px solid var(--border);border-radius:10px;overflow:hidden;margin-bottom:12px;background:#fff}
+.sop-frame-card:hover{box-shadow:0 2px 12px rgba(0,0,0,.08)}
 .mtg-tab.active{color:var(--green);border-bottom-color:var(--green)}
 .inv-tab:hover:not(.disabled){color:var(--text)}
 .inv-tab.active{color:var(--green);border-bottom-color:var(--green)}
 .inv-tab.disabled{opacity:.35;cursor:not-allowed;pointer-events:none}
 .inv-chk-item{display:grid;grid-template-columns:18px 1fr;gap:6px;align-items:start;font-size:12px;cursor:pointer;line-height:1.4;padding:2px 0}
-.inv-chk-item input{margin-top:2px}.page.active{display:block} .page-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:22px} .page-title{font-size:20px;font-weight:700;color:var(--text)} .btn{padding:8px 16px;border-radius:8px;border:1px solid var(--border);background:var(--card);color:var(--text);font-size:13px;cursor:pointer;display:inline-flex;align-items:center;gap:7px;font-weight:500;transition:all .12s} .btn:hover{background:#f9fafb} .btn-primary{background:var(--green);color:#fff;border-color:var(--green)} .btn-primary:hover{background:var(--dg)} .btn-sm{padding:5px 10px;font-size:12px} .metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:14px;margin-bottom:20px} .metric{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px 18px} .metric-label{font-size:11px;color:var(--text2);margin-bottom:6px;font-weight:500} .metric-value{font-size:28px;font-weight:700;color:var(--text)} .card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px 24px;margin-bottom:16px} .card-title{font-size:14px;font-weight:700;color:var(--text);margin-bottom:14px;display:flex;align-items:center;justify-content:space-between} .badge{display:inline-flex;align-items:center;padding:3px 9px;border-radius:99px;font-size:11px;font-weight:600} .bg{background:#EAF3DE;color:#3B6D11}.ba{background:#FAEEDA;color:#854F0B}.br{background:#FCEBEB;color:#A32D2D}.bb{background:#E6F1FB;color:#185FA5}.bgr{background:#f3f4f6;color:#374151} .form-group{margin-bottom:13px} .form-label{font-size:12px;color:var(--text2);margin-bottom:4px;display:block;font-weight:600} input,select,textarea{width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;color:var(--text);background:var(--card);transition:border .15s} input:focus,select:focus,textarea:focus{outline:none;border-color:var(--green);box-shadow:0 0 0 3px rgba(29,158,117,.1)} textarea{resize:vertical;min-height:70px} .form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px} .form-row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px} table{width:100%;border-collapse:collapse;font-size:13px} th{text-align:left;font-weight:600;color:var(--text2);padding:9px 8px;border-bottom:1px solid var(--border);font-size:11px;text-transform:uppercase;letter-spacing:.04em} td{padding:11px 8px;border-bottom:1px solid var(--border);color:var(--text);vertical-align:middle} tr:last-child td{border-bottom:none} tr:hover td{background:#fafafa} .empty{text-align:center;padding:40px;color:var(--text3);font-size:13px} .loading-msg{text-align:center;padding:30px;color:var(--text2);font-size:13px} .toast{position:fixed;bottom:20px;right:20px;padding:12px 20px;border-radius:10px;font-size:13px;font-weight:600;z-index:9999;display:none;box-shadow:0 4px 20px rgba(0,0,0,.15)} .toast-ok{background:var(--green);color:#fff} .toast-err{background:var(--red);color:#fff} .db-bar{display:inline-flex;align-items:center;gap:7px;font-size:12px;padding:7px 14px;border-radius:8px;background:#E1F5EE;color:var(--dg);margin-bottom:18px;font-weight:600} .dot{width:8px;height:8px;border-radius:50%;background:var(--green);display:inline-block} .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px} .insp-tbl{width:100%;border-collapse:collapse;font-size:12px} .insp-tbl th{background:#f9fafb;padding:7px 10px;border:1px solid var(--border);font-size:11px;font-weight:600;color:var(--text2);text-align:center} .insp-tbl th:first-child{text-align:left} .insp-tbl td{border:1px solid var(--border);padding:6px 10px;vertical-align:middle} .insp-tbl td input[type=checkbox]{width:auto;cursor:pointer} .insp-tbl td input[type=text]{border:none;font-size:11px;padding:2px 4px;background:transparent;width:100%} .cat-row td{background:#f3f4f6;font-size:11px;font-weight:700;color:var(--text2);padding:5px 10px;text-transform:uppercase} .kpi-row{display:flex;align-items:center;gap:12px;padding:11px 0;border-bottom:1px solid var(--border)} .kpi-row:last-child{border-bottom:none} .pw{flex:1;background:#e5e7eb;border-radius:99px;height:7px;overflow:hidden} .pb{height:100%;border-radius:99px;transition:width .4s} .person-card{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--border)} .person-card:last-child{border-bottom:none} .person-avatar{width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:700;color:#fff;flex-shrink:0} .emp-av{background:var(--green)}.con-av{background:var(--blue)}.sub-av{background:var(--amber)} .access-denied{text-align:center;padding:60px;color:var(--text3)} .access-denied i{font-size:48px;margin-bottom:12px;display:block;color:var(--border)} .role-banner{background:#FEF3C7;border:1px solid #FCD34D;border-radius:8px;padding:10px 14px;font-size:12px;color:#92400E;margin-bottom:16px;display:flex;align-items:center;gap:8px} .ai-panel{position:fixed;bottom:20px;right:20px;z-index:500} .ai-toggle{width:54px;height:54px;border-radius:50%;background:var(--green);color:#fff;border:none;cursor:pointer;font-size:24px;box-shadow:0 4px 16px rgba(29,158,117,.4);display:flex;align-items:center;justify-content:center} .ai-window{position:fixed;bottom:86px;right:20px;width:380px;height:520px;background:var(--card);border:1px solid var(--border);border-radius:16px;box-shadow:0 8px 40px rgba(0,0,0,.15);display:none;flex-direction:column;z-index:500;overflow:hidden} .ai-window.open{display:flex} .ai-header{padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;background:linear-gradient(135deg,var(--green),var(--dg))} .ai-title{font-size:14px;font-weight:700;color:#fff;flex:1} .ai-subtitle{font-size:11px;color:rgba(255,255,255,.8)} .ai-close{background:none;border:none;color:#fff;cursor:pointer;font-size:18px} .ai-messages{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:10px} .ai-msg{max-width:85%;padding:10px 14px;border-radius:12px;font-size:13px;line-height:1.5} .ai-msg.user{background:var(--green);color:#fff;align-self:flex-end;border-bottom-right-radius:4px} .ai-msg.assistant{background:#f3f4f6;color:var(--text);align-self:flex-start;border-bottom-left-radius:4px} .ai-suggestions{padding:8px 16px;display:flex;gap:6px;flex-wrap:wrap;border-top:1px solid var(--border)} .ai-sug{padding:5px 10px;border-radius:99px;border:1px solid var(--border);background:var(--card);font-size:11px;cursor:pointer;color:var(--text2)} .ai-sug:hover{background:#E1F5EE;border-color:var(--green);color:var(--green)} .ai-input-row{padding:12px 16px;border-top:1px solid var(--border);display:flex;gap:8px} .ai-input{flex:1;padding:9px 14px;border:1px solid var(--border);border-radius:99px;font-size:13px;outline:none} .ai-input:focus{border-color:var(--green)} .ai-send{padding:9px 16px;background:var(--green);color:#fff;border:none;border-radius:99px;cursor:pointer;font-size:13px;font-weight:600} .insight-card{border-left:4px solid var(--green);background:#f0fdf8;border-radius:0 10px 10px 0;padding:14px 16px;margin-bottom:10px} .insight-card.warn{border-left-color:var(--amber);background:#fffbeb} .insight-card.danger{border-left-color:var(--red);background:#fef2f2} .insight-title{font-size:13px;font-weight:700;color:var(--text);margin-bottom:3px} .insight-body{font-size:12px;color:var(--text2);line-height:1.6}
+.inv-chk-item input{margin-top:2px}.page.active{display:block} .page-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:22px} .page-title{font-size:20px;font-weight:700;color:var(--text)} .btn{padding:8px 16px;border-radius:8px;border:1px solid var(--border);background:var(--card);color:var(--text);font-size:13px;cursor:pointer;display:inline-flex;align-items:center;gap:7px;font-weight:500;transition:all .12s} .btn:hover{background:#f9fafb} .btn-primary{background:var(--green);color:#fff;border-color:var(--green)} .btn-primary:hover{background:var(--dg)} .btn-sm{padding:5px 10px;font-size:12px} .metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:14px;margin-bottom:20px} .metric{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px 18px} .metric-label{font-size:11px;color:var(--text2);margin-bottom:6px;font-weight:500} .metric-value{font-size:28px;font-weight:700;color:var(--text)} .card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px 24px;margin-bottom:16px} .card-title{font-size:14px;font-weight:700;color:var(--text);margin-bottom:14px;display:flex;align-items:center;justify-content:space-between} .badge{display:inline-flex;align-items:center;padding:3px 9px;border-radius:99px;font-size:11px;font-weight:600} .bg{background:#EAF3DE;color:#3B6D11}.ba{background:#FAEEDA;color:#854F0B}.br{background:#FCEBEB;color:#A32D2D}.bb{background:#E6F1FB;color:#185FA5}.bgr{background:#f3f4f6;color:#374151} .form-group{margin-bottom:13px} .form-label{font-size:12px;color:var(--text2);margin-bottom:4px;display:block;font-weight:600} input,select,textarea{width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;color:var(--text);background:var(--card);transition:border .15s} input:focus,select:focus,textarea:focus{outline:none;border-color:var(--green);box-shadow:0 0 0 3px rgba(29,158,117,.1)} textarea{resize:vertical;min-height:70px} .form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px} .form-row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px} table{width:100%;border-collapse:collapse;font-size:13px} th{text-align:left;font-weight:600;color:var(--text2);padding:9px 8px;border-bottom:1px solid var(--border);font-size:11px;text-transform:uppercase;letter-spacing:.04em} td{padding:11px 8px;border-bottom:1px solid var(--border);color:var(--text);vertical-align:middle} tr:last-child td{border-bottom:none} tr:hover td{background:#fafafa} .empty{text-align:center;padding:40px;color:var(--text3);font-size:13px} .loading-msg{text-align:center;padding:30px;color:var(--text2);font-size:13px} .toast{position:fixed;bottom:20px;right:20px;padding:12px 20px;border-radius:10px;font-size:13px;font-weight:600;z-index:9999;display:none;box-shadow:0 4px 20px rgba(0,0,0,.15)} .toast-ok{background:var(--green);color:#fff} .toast-err{background:var(--red);color:#fff} .db-bar{display:inline-flex;align-items:center;gap:7px;font-size:12px;padding:7px 14px;border-radius:8px;background:#E1F5EE;color:var(--dg);margin-bottom:18px;font-weight:600} .dot{width:8px;height:8px;border-radius:50%;background:var(--green);display:inline-block} .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px} .insp-tbl{width:100%;border-collapse:collapse;font-size:12px} .insp-tbl th{background:#f9fafb;padding:7px 10px;border:1px solid var(--border);font-size:11px;font-weight:600;color:var(--text2);text-align:center} .insp-tbl th:first-child{text-align:left} .insp-tbl td{border:1px solid var(--border);padding:6px 10px;vertical-align:middle} .insp-tbl td input[type=checkbox]{width:auto;cursor:pointer} .insp-tbl td input[type=text]{border:none;font-size:11px;padding:2px 4px;background:transparent;width:100%} .cat-row td{background:#f3f4f6;font-size:11px;font-weight:700;color:var(--text2);padding:5px 10px;text-transform:uppercase} .kpi-row{display:flex;align-items:center;gap:12px;padding:11px 0;border-bottom:1px solid var(--border)} .kpi-row:last-child{border-bottom:none} .pw{flex:1;background:#e5e7eb;border-radius:99px;height:7px;overflow:hidden} .pb{height:100%;border-radius:99px;transition:width .4s} .person-card{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--border)} .person-card:last-child{border-bottom:none} .person-avatar{width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:700;color:#fff;flex-shrink:0} .emp-av{background:var(--green)}.con-av{background:var(--blue)}.sub-av{background:var(--amber)} .access-denied{text-align:center;padding:60px;color:var(--text3)} .access-denied i{font-size:48px;margin-bottom:12px;display:block;color:var(--border)} .role-banner{background:#FEF3C7;border:1px solid #FCD34D;border-radius:8px;padding:10px 14px;font-size:12px;color:#92400E;margin-bottom:16px;display:flex;align-items:center;gap:8px} .ai-panel{position:fixed;bottom:20px;right:20px;z-index:500} .ai-toggle{width:54px;height:54px;border-radius:50%;background:var(--green);color:#fff;border:none;cursor:pointer;font-size:24px;box-shadow:0 4px 16px rgba(29,158,117,.4);display:flex;align-items:center;justify-content:center} .ai-window{position:fixed;bottom:86px;right:20px;width:380px;height:520px;background:var(--card);border:1px solid var(--border);border-radius:16px;box-shadow:0 8px 40px rgba(0,0,0,.15);display:none;flex-direction:column;z-index:500;overflow:hidden} .ai-window.open{display:flex} .ai-header{padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;background:linear-gradient(135deg,var(--green),var(--dg))} .ai-title{font-size:14px;font-weight:700;color:#fff;flex:1} .ai-subtitle{font-size:11px;color:rgba(255,255,255,.8)} .ai-close{background:none;border:none;color:#fff;cursor:pointer;font-size:18px} .ai-messages{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:10px} .ai-msg{max-width:85%;padding:10px 14px;border-radius:12px;font-size:13px;line-height:1.5} .ai-msg.user{background:var(--green);color:#fff;align-self:flex-end;border-bottom-right-radius:4px} .ai-msg.assistant{background:#f3f4f6;color:var(--text);align-self:flex-start;border-bottom-left-radius:4px} .ai-suggestions{padding:8px 16px;display:flex;gap:6px;flex-wrap:wrap;border-top:1px solid var(--border)} .ai-sug{padding:5px 10px;border-radius:99px;border:1px solid var(--border);background:var(--card);font-size:11px;cursor:pointer;color:var(--text2)} .ai-sug:hover{background:#E1F5EE;border-color:var(--green);color:var(--green)} .ai-input-row{padding:12px 16px;border-top:1px solid var(--border);display:flex;gap:8px} .ai-input{flex:1;padding:9px 14px;border:1px solid var(--border);b
 
-</style>
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 <script defer>
-
-
-
 
 
 
@@ -159,7 +175,7 @@ if(target){
   target.classList.add('active');
 }
 if(el&&el.classList)el.classList.add('active');
-const L={dashboard:loadDash,kpi:kpiLoadAll,events:loadEvents,inspection:()=>{buildChecklist();loadInsps();},risk:loadRA,investigation:loadInvs,legal:loadLegal,permit:loadPermits,noise:loadNoise,meetings:loadMtgs,training:loadTraining,actions:loadActions,documents:loadDocs,people:loadPeople,users:loadUsers,admin:loadAdmin,'ai-insights':genFullAI,settings:loadSettings};
+const L={dashboard:loadDash,kpi:kpiLoadAll,events:loadEvents,inspection:()=>{buildChecklist();loadInsps();},risk:loadRA,investigation:loadInvs,legal:loadLegal,sop:loadSOP,permit:loadPermits,noise:loadNoise,meetings:loadMtgs,training:loadTraining,actions:loadActions,documents:loadDocs,people:loadPeople,users:loadUsers,admin:loadAdmin,'ai-insights':genFullAI,settings:loadSettings};
 if(L[name])L[name]();
 }
 function toggleForm(id){const el=document.getElementById(id);el.style.display=el.style.display==='none'?'block':'none';}
@@ -2036,6 +2052,529 @@ function legalSwitchTab(tab,btn){
   if(tab==='register')legalLoadRegister();
   else if(tab==='changes')legalLoadChanges();
   else legalRenderDashboard();
+}
+
+// ===== SOP GENERATOR MODULE =====
+let sopVideo=null, sopFrames=[], sopEditingId=null, sopCurrentStep=1, sopAllData=[];
+const ANTHROPIC_URL='https://api.anthropic.com/v1/messages';
+const CLAUDE_MODEL='claude-sonnet-4-20250514';
+
+function sopSwitchTab(tab,btn){
+  document.querySelectorAll('.mtg-tab').forEach(t=>t.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('sop-view-list').style.display=tab==='list'?'block':'none';
+  document.getElementById('sop-view-create').style.display=tab==='create'?'block':'none';
+  if(tab==='list')sopLoadList();
+}
+
+async function loadSOP(){sopLoadList();}
+
+async function sopLoadList(){
+  var el=document.getElementById('sop-list-container');
+  if(!el)return;
+  try{
+    var d=await api('/sop_documents?select=*'+cf()+'&order=created_at.desc');
+    sopAllData=d||[];
+    if(!d||!d.length){
+      el.innerHTML='<div style="text-align:center;padding:60px 20px;color:var(--text2)">'
+        +'<div style="font-size:48px;margin-bottom:16px">📄</div>'
+        +'<div style="font-size:16px;font-weight:700;margin-bottom:8px">No SOPs yet</div>'
+        +'<div style="font-size:13px;margin-bottom:20px">Create your first SOP by uploading a task demonstration video</div>'
+        +'<button class="btn btn-primary" onclick="sopNew()"><i class="ti ti-plus"></i>Create first SOP</button>'
+        +'</div>';
+      return;
+    }
+    var h='<table style="width:100%;border-collapse:collapse">'
+      +'<thead><tr style="background:#f9fafb">'
+      +'<th style="padding:10px 16px;text-align:left;border-bottom:1px solid var(--border);font-size:11px;text-transform:uppercase;color:var(--text2)">SOP Title</th>'
+      +'<th style="padding:10px;border-bottom:1px solid var(--border);font-size:11px;text-transform:uppercase;color:var(--text2)">Department</th>'
+      +'<th style="padding:10px;border-bottom:1px solid var(--border);font-size:11px;text-transform:uppercase;color:var(--text2)">Risk</th>'
+      +'<th style="padding:10px;border-bottom:1px solid var(--border);font-size:11px;text-transform:uppercase;color:var(--text2)">Version</th>'
+      +'<th style="padding:10px;border-bottom:1px solid var(--border);font-size:11px;text-transform:uppercase;color:var(--text2)">Author</th>'
+      +'<th style="padding:10px;border-bottom:1px solid var(--border);font-size:11px;text-transform:uppercase;color:var(--text2)">Status</th>'
+      +'<th style="padding:10px;border-bottom:1px solid var(--border);font-size:11px;text-transform:uppercase;color:var(--text2)">Date</th>'
+      +'<th style="padding:10px;width:100px;border-bottom:1px solid var(--border)"></th>'
+      +'</tr></thead><tbody>';
+    d.forEach(function(x){
+      var riskCol={Low:'var(--green)',Medium:'var(--amber)',High:'var(--red)',Critical:'#6B21A8'}[x.risk_level]||'var(--text2)';
+      var stBadge=x.status==='Approved'?'<span class="badge bg">Approved</span>':x.status==='Review'?'<span class="badge ba">In Review</span>':'<span class="badge bgr">Draft</span>';
+      var dt=x.created_at?new Date(x.created_at).toLocaleDateString('en-GB'):'—';
+      h+='<tr style="border-bottom:1px solid #f3f4f6">'
+        +'<td style="padding:10px 16px;font-weight:600">'+escH(x.title||'—')+'</td>'
+        +'<td style="padding:10px;font-size:12px">'+escH(x.department||'—')+'</td>'
+        +'<td style="padding:10px"><span style="color:'+riskCol+';font-weight:600;font-size:12px">'+escH(x.risk_level||'—')+'</span></td>'
+        +'<td style="padding:10px;font-size:12px">'+escH(x.version||'Rev 00')+'</td>'
+        +'<td style="padding:10px;font-size:12px">'+escH(x.author||'—')+'</td>'
+        +'<td style="padding:10px">'+stBadge+'</td>'
+        +'<td style="padding:10px;font-size:12px">'+dt+'</td>'
+        +'<td style="padding:10px"><div style="display:flex;gap:4px">'
+        +'<button class="btn btn-sm" title="View" data-id="'+x.id+'" onclick="sopView(this.getAttribute(\'data-id\'))"><i class="ti ti-eye"></i></button>'
+        +'<button class="btn btn-sm" title="Print" data-id="'+x.id+'" onclick="sopPrintById(this.getAttribute(\'data-id\'))"><i class="ti ti-printer"></i></button>'
+        +(isMgr()?'<button class="btn btn-sm" style="color:var(--red)" title="Delete" data-id="'+x.id+'" onclick="sopDelete(this.getAttribute(\'data-id\'))"><i class="ti ti-trash"></i></button>':'')
+        +'</div></td></tr>';
+    });
+    h+='</tbody></table>';
+    el.innerHTML=h;
+  }catch(e){el.innerHTML='<p style="padding:20px;color:red">'+e.message+'</p>';console.error(e);}
+}
+
+function sopNew(){
+  sopVideo=null; sopFrames=[]; sopEditingId=null; sopCurrentStep=1;
+  // Reset form
+  ['sop-title','sop-dept','sop-author','sop-desc','sop-ppe-extra'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
+  document.getElementById('sop-revision').value='Rev 00';
+  document.getElementById('sop-risk').value='Medium';
+  document.getElementById('sop-date').value='';
+  document.querySelectorAll('#sop-ppe-list input[type=checkbox]').forEach(function(c){c.checked=false;});
+  var vp=document.getElementById('sop-video-preview');if(vp){vp.style.display='none';vp.src='';}
+  var vi=document.getElementById('sop-video-info');if(vi)vi.textContent='';
+  var fb=document.getElementById('sop-to-frames-btn');if(fb)fb.style.display='none';
+  var dz=document.getElementById('sop-drop-zone');if(dz)dz.style.borderColor='var(--border)';
+  document.getElementById('sop-frames-container').innerHTML='';
+  document.getElementById('sop-preview-container').innerHTML='';
+  // Auto-fill author
+  var au=document.getElementById('sop-author');if(au&&prof)au.value=prof.full_name||'';
+  sopGoStep(1);
+  // Switch to create tab
+  sopSwitchTab('create', document.getElementById('sop-tab-create'));
+}
+
+function sopGoStep(n){
+  for(var i=1;i<=5;i++){
+    var panel=document.getElementById('sop-step-'+i);
+    if(panel)panel.style.display=i===n?'block':'none';
+    var dot=document.getElementById('sop-dot-'+i);
+    if(dot){
+      dot.className='sop-step-dot'+(i<n?' done':i===n?' active':'');
+    }
+  }
+  sopCurrentStep=n;
+  // Update progress bar
+  var bar=document.getElementById('sop-step-bar');
+  if(bar)bar.style.width=((n-1)/4*80)+'%';
+}
+
+function sopNextStep(from){
+  if(from===1){
+    if(!document.getElementById('sop-title').value.trim()){toast('Please enter an SOP title',false);return;}
+    sopGoStep(2);
+  }else if(from===3){
+    var steps=document.querySelectorAll('.sop-frame-narration');
+    var hasNarration=false;
+    steps.forEach(function(el){if(el.value.trim())hasNarration=true;});
+    if(!hasNarration){toast('Please add narration for at least one step',false);return;}
+    sopGoStep(4);
+    sopGenerate();
+  }
+}
+
+// ── VIDEO HANDLING ────────────────────────────────────────────────────────────
+function sopHandleDrop(e){
+  e.preventDefault();
+  var file=e.dataTransfer.files[0];
+  if(file&&file.type.startsWith('video/'))sopLoadVideo(file);
+}
+
+function sopLoadVideo(file){
+  if(!file)return;
+  sopVideo=file;
+  var url=URL.createObjectURL(file);
+  var vp=document.getElementById('sop-video-preview');
+  vp.src=url; vp.style.display='block';
+  document.getElementById('sop-video-info').textContent=file.name+' ('+Math.round(file.size/1024/1024*10)/10+'MB)';
+  document.getElementById('sop-to-frames-btn').style.display='inline-flex';
+  var dz=document.getElementById('sop-drop-zone');
+  dz.style.borderColor='var(--green)';
+  document.getElementById('sop-drop-label').innerHTML='<i class="ti ti-check" style="font-size:24px;color:var(--green)"></i><div style="margin-top:6px;font-weight:600;color:var(--green)">Video loaded!</div>';
+}
+
+async function sopExtractFrames(){
+  if(!sopVideo){toast('Please upload a video first',false);return;}
+  sopGoStep(3);
+  var container=document.getElementById('sop-frames-container');
+  container.innerHTML='<div style="text-align:center;padding:30px;color:var(--text2)"><i class="ti ti-loader" style="font-size:24px"></i><br>Extracting frames...</div>';
+
+  var video=document.createElement('video');
+  video.src=URL.createObjectURL(sopVideo);
+  video.muted=true;
+
+  await new Promise(function(resolve){
+    video.onloadedmetadata=function(){resolve();};
+  });
+
+  var duration=video.duration;
+  // Extract up to 12 frames evenly spaced — but skip first and last 2 seconds
+  var start=Math.min(2,duration*0.05);
+  var end=Math.max(duration-2,duration*0.95);
+  var numFrames=Math.min(12,Math.max(4,Math.floor(duration/15)));
+  var times=[];
+  for(var i=0;i<numFrames;i++){
+    times.push(start+(end-start)*i/(numFrames-1));
+  }
+
+  sopFrames=[];
+  var canvas=document.createElement('canvas');
+  canvas.width=640; canvas.height=360;
+  var ctx=canvas.getContext('2d');
+
+  for(var ti=0;ti<times.length;ti++){
+    var t=times[ti];
+    await new Promise(function(resolve){
+      video.currentTime=t;
+      video.onseeked=function(){
+        ctx.drawImage(video,0,0,640,360);
+        var dataUrl=canvas.toDataURL('image/jpeg',0.7);
+        sopFrames.push({time:t,dataUrl:dataUrl,narration:''});
+        resolve();
+      };
+    });
+  }
+
+  sopRenderFrames();
+  document.getElementById('sop-frame-count').textContent=sopFrames.length+' frames extracted';
+}
+
+function sopRenderFrames(){
+  var container=document.getElementById('sop-frames-container');
+  if(!container)return;
+  container.innerHTML='';
+  if(!sopFrames.length){
+    container.innerHTML='<div style="padding:20px;text-align:center;color:var(--text2);font-size:13px">No frames yet. Upload a video to extract frames automatically.</div>';
+    return;
+  }
+  sopFrames.forEach(function(frame,i){
+    var mins=frame.time?Math.floor(frame.time/60):0;
+    var secs=frame.time?Math.floor(frame.time%60):0;
+    var timeStr=frame.time?(mins+'m '+secs+'s'):'Manual step';
+    var card=document.createElement('div');
+    card.style.cssText='display:grid;grid-template-columns:220px 1fr;gap:0;border:1px solid var(--border);border-radius:10px;overflow:hidden;margin-bottom:12px;background:#fff';
+    // Left: image
+    var imgWrap=document.createElement('div');
+    imgWrap.style.cssText='position:relative;background:#000';
+    if(frame.dataUrl){
+      var img=document.createElement('img');
+      img.src=frame.dataUrl;
+      img.style.cssText='width:100%;height:140px;object-fit:cover;display:block';
+      imgWrap.appendChild(img);
+    }else{
+      var noImg=document.createElement('div');
+      noImg.style.cssText='width:100%;height:140px;display:flex;align-items:center;justify-content:center;color:#666;font-size:12px;background:#f3f4f6';
+      noImg.textContent='No image';
+      imgWrap.appendChild(noImg);
+    }
+    var timeBadge=document.createElement('span');
+    timeBadge.style.cssText='position:absolute;bottom:6px;left:6px;background:rgba(0,0,0,.7);color:#fff;font-size:10px;padding:2px 6px;border-radius:4px';
+    timeBadge.textContent=timeStr;
+    imgWrap.appendChild(timeBadge);
+    var numBadge=document.createElement('span');
+    numBadge.style.cssText='position:absolute;top:6px;left:6px;background:var(--green);color:#fff;font-size:11px;font-weight:700;padding:2px 8px;border-radius:4px';
+    numBadge.textContent='Step '+(i+1);
+    imgWrap.appendChild(numBadge);
+    var delBtn=document.createElement('button');
+    delBtn.style.cssText='position:absolute;top:6px;right:6px;background:rgba(220,38,38,.85);border:none;color:#fff;border-radius:4px;padding:2px 6px;cursor:pointer;font-size:11px';
+    delBtn.innerHTML='<i class="ti ti-x"></i>';
+    delBtn.onclick=function(){sopRemoveFrame(i);};
+    imgWrap.appendChild(delBtn);
+    card.appendChild(imgWrap);
+    // Right: narration
+    var right=document.createElement('div');
+    right.style.cssText='padding:12px 16px;display:flex;flex-direction:column;gap:8px';
+    var label=document.createElement('label');
+    label.style.cssText='font-size:11px;font-weight:700;text-transform:uppercase;color:var(--text2);display:block';
+    label.textContent='Step '+(i+1)+' — What are you doing in this step?';
+    var ta=document.createElement('textarea');
+    ta.className='sop-frame-narration';
+    ta.setAttribute('data-idx', i);
+    ta.style.cssText='width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:8px;font-size:13px;min-height:90px;resize:vertical;font-family:inherit';
+    ta.placeholder='Describe this step: what you are doing, how to do it safely, key points to watch out for...';
+    ta.value=frame.narration||'';
+    ta.oninput=function(){sopFrames[parseInt(this.getAttribute('data-idx'))].narration=this.value;};
+    var hazardLabel=document.createElement('label');
+    hazardLabel.style.cssText='font-size:11px;font-weight:700;text-transform:uppercase;color:var(--red);display:block';
+    hazardLabel.textContent='Hazards & risks';
+    var hazardInput=document.createElement('input');
+    hazardInput.type='text';
+    hazardInput.className='sop-frame-hazard';
+    hazardInput.setAttribute('data-idx', i);
+    hazardInput.style.cssText='width:100%;padding:7px 10px;border:1px solid var(--border);border-radius:8px;font-size:13px';
+    hazardInput.placeholder='e.g. Flying debris, crush injury, electrical hazard...';
+    hazardInput.value=frame.hazard||'';
+    hazardInput.oninput=function(){sopFrames[parseInt(this.getAttribute('data-idx'))].hazard=this.value;};
+    right.appendChild(label);
+    right.appendChild(ta);
+    right.appendChild(hazardLabel);
+    right.appendChild(hazardInput);
+    card.appendChild(right);
+    container.appendChild(card);
+  });
+}
+
+
+function sopRemoveFrame(idx){
+  sopFrames.splice(idx,1);
+  sopRenderFrames();
+  document.getElementById('sop-frame-count').textContent=sopFrames.length+' frames';
+}
+
+function sopAddManualStep(){
+  sopFrames.push({time:null,dataUrl:null,narration:''});
+  sopRenderFrames();
+}
+
+// ── AI GENERATION ─────────────────────────────────────────────────────────────
+async function sopGenerate(){
+  var setStatus=function(pct,msg){
+    var bar=document.getElementById('sop-gen-bar');
+    var stat=document.getElementById('sop-gen-status');
+    if(bar)bar.style.width=pct+'%';
+    if(stat)stat.textContent=msg;
+  };
+
+  // Collect narrations from DOM
+  document.querySelectorAll('.sop-frame-narration').forEach(function(el){
+    var idx=parseInt(el.dataset.idx);
+    if(sopFrames[idx])sopFrames[idx].narration=el.value;
+  });
+
+  var title=document.getElementById('sop-title').value;
+  var dept=document.getElementById('sop-dept').value;
+  var risk=document.getElementById('sop-risk').value;
+  var desc=document.getElementById('sop-description').value;
+  var author=document.getElementById('sop-author').value;
+  var version=document.getElementById('sop-revision').value;
+  var reviewDate=document.getElementById('sop-date').value;
+  var ppeChecked=Array.from(document.querySelectorAll('#sop-ppe-checks input:checked')).map(function(c){return c.value;});
+  var ppeExtra=document.getElementById('sop-ppe-extra').value;
+  var allPPE=ppeChecked.concat(ppeExtra?[ppeExtra]:[]).join(', ')||'As per risk assessment';
+
+  setStatus(10,'Preparing content for AI...');
+
+  // Build messages with images + narrations
+  var stepsContent=[];
+  sopFrames.forEach(function(f,i){
+    if(f.narration){
+      stepsContent.push({type:'text',text:'STEP '+(i+1)+' NARRATION: '+f.narration});
+    }
+    if(f.dataUrl){
+      var b64=f.dataUrl.split(',')[1];
+      stepsContent.push({type:'image',source:{type:'base64',media_type:'image/jpeg',data:b64}});
+    }
+  });
+
+  var systemPrompt='You are an expert HSE professional writing a Standard Operating Procedure (SOP). Write a complete, professional SOP document based on the task video frames and narrations provided. Return ONLY a valid JSON object with this exact structure (no markdown, no code blocks, no preamble): {"purpose":"string","responsibilities":[{"role":"string","duty":"string"}],"hazards":[{"hazard":"string","risk":"string","control":"string"}],"steps":[{"step_number":1,"title":"string","description":"string","safety_notes":"string","has_image":true}],"emergency":"string","related_docs":["string"],"definitions":[{"term":"string","definition":"string"}]}';
+
+  var taskIntro='Generate a complete SOP for the following task:\n\nTitle: '+title+'\nDepartment: '+dept+'\nRisk Level: '+risk+'\nDescription: '+desc+'\nPPE Required: '+allPPE+'\n\nBelow are the video frames with narrations from the person demonstrating the task:';
+  var userContent=[{type:'text',text:taskIntro}].concat(stepsContent).concat([{type:'text',text:'Write a professional, detailed SOP. Each step should align with the frame image and narration provided. Include all safety warnings. Be specific and practical.'}]);
+
+  setStatus(30,'Sending to Claude AI...');
+
+  try{
+    var response=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        model:'claude-sonnet-4-20250514',
+        max_tokens:4000,
+        system:systemPrompt,
+        messages:[{role:'user',content:userContent}]
+      })
+    });
+
+    setStatus(70,'Processing AI response...');
+
+    var data=await response.json();
+    if(data.error){throw new Error(data.error.message||'API error');}
+
+    var text=data.content&&data.content[0]&&data.content[0].text;
+    if(!text)throw new Error('No response from AI');
+
+    // Parse JSON - strip any markdown fences
+    text=text.replace(/^```json\s*/,'').replace(/\s*```$/,'').trim();
+    var parsed=JSON.parse(text);
+
+    setStatus(90,'Building SOP document...');
+
+    // Build the SOP with embedded images
+    sopBuildPreview(parsed,{title,dept,risk,author,version,reviewDate,ppe:allPPE});
+
+    setStatus(100,'Done!');
+    document.getElementById('sop-gen-icon').textContent='✅';
+    document.getElementById('sop-gen-title').textContent='SOP Generated!';
+    document.getElementById('sop-gen-subtitle').textContent='Your SOP is ready to review and edit.';
+
+    setTimeout(function(){sopShowPreview();},1000);
+
+  }catch(e){
+    console.error(e);
+    document.getElementById('sop-gen-icon').textContent='❌';
+    document.getElementById('sop-gen-title').textContent='Generation failed';
+    document.getElementById('sop-gen-subtitle').textContent=e.message;
+    toast('AI generation failed: '+e.message,false);
+  }
+}
+
+function sopBuildPreview(data,meta){
+  var container=document.getElementById('sop-preview-container');
+  var today=new Date().toLocaleDateString('en-GB');
+  var reviewDt=meta.reviewDate?new Date(meta.reviewDate).toLocaleDateString('en-GB'):'—';
+  var riskCol={Low:'#1D9E75',Medium:'#EF9F27',High:'#E24B4A',Critical:'#6B21A8'}[meta.risk]||'#EF9F27';
+
+  var stepsHtml='';
+  (data.steps||[]).forEach(function(step,i){
+    var frame=sopFrames[i];
+    var imgHtml='';
+    if(frame&&frame.dataUrl){
+      imgHtml='<div style="margin:10px 0"><img src="'+frame.dataUrl+'" style="max-width:100%;border-radius:8px;border:1px solid #e5e7eb;box-shadow:0 1px 4px rgba(0,0,0,.1)"/><div style="font-size:10px;color:#6b7280;margin-top:4px;text-align:center;font-style:italic">Figure '+(i+1)+' — '+escH(step.title||'')+'</div></div>';
+    }
+    stepsHtml+='<div style="margin-bottom:20px;border:1px solid #e5e7eb;border-radius:10px;overflow:hidden">'
+      +'<div style="background:#1a3a5c;color:#fff;padding:10px 16px;display:flex;align-items:center;gap:12px">'
+      +'<span style="background:rgba(255,255,255,.2);width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;flex-shrink:0">'+(step.step_number||i+1)+'</span>'
+      +'<span style="font-weight:700;font-size:14px">'+escH(step.title||'')+'</span>'
+      +'</div>'
+      +'<div style="padding:14px 16px">'
+      +imgHtml
+      +'<p style="margin:0 0 10px;font-size:13px;line-height:1.7;color:#374151">'+escH(step.description||'')+'</p>'
+      +(step.safety_notes?'<div style="background:#FEF9EC;border-left:3px solid #EF9F27;padding:8px 12px;border-radius:0 6px 6px 0;font-size:12px;color:#854F0B"><i class="ti ti-alert-triangle"></i> <strong>Safety note:</strong> '+escH(step.safety_notes)+'</div>':'')
+      +'</div></div>';
+  });
+
+  var hazardsHtml='';
+  (data.hazards||[]).forEach(function(h){
+    hazardsHtml+='<tr><td style="padding:8px 12px;border:1px solid #e5e7eb">'+escH(h.hazard||'')+'</td>'
+      +'<td style="padding:8px 12px;border:1px solid #e5e7eb;color:#E24B4A">'+escH(h.risk||'')+'</td>'
+      +'<td style="padding:8px 12px;border:1px solid #e5e7eb;color:#1D9E75">'+escH(h.control||'')+'</td></tr>';
+  });
+
+  var responsibilitiesHtml=(data.responsibilities||[]).map(function(r){
+    return '<li style="margin-bottom:6px"><strong>'+escH(r.role||'')+':</strong> '+escH(r.duty||'')+'</li>';
+  }).join('');
+
+  var html='<div id="sop-printable" style="font-family:Arial,sans-serif;color:#1a1a1a;max-width:900px;margin:0 auto;padding:0">'
+
+    // Header banner
+    +'<div style="background:#1a3a5c;color:#fff;padding:24px 32px;display:flex;align-items:center;justify-content:space-between">'
+    +'<div><div style="font-size:10px;letter-spacing:.1em;text-transform:uppercase;opacity:.7;margin-bottom:4px">Standard Operating Procedure</div>'
+    +'<div style="font-size:22px;font-weight:800;line-height:1.2" contenteditable="true" id="sop-edit-title">'+escH(meta.title||'')+'</div></div>'
+    +'<div style="text-align:right;font-size:11px;opacity:.8">'
+    +'<div>Version: '+escH(meta.version||'Rev 00')+'</div>'
+    +'<div>Date: '+today+'</div>'
+    +'<div>Review: '+reviewDt+'</div>'
+    +'</div></div>'
+
+    // Info bar
+    +'<div style="display:grid;grid-template-columns:repeat(4,1fr);background:#f0f4f8;border-bottom:2px solid #dde3ea">'
+    +'<div style="padding:12px 16px;border-right:1px solid #dde3ea"><div style="font-size:10px;text-transform:uppercase;color:#6b7280;font-weight:600">Department</div><div style="font-size:13px;font-weight:600;margin-top:2px">'+escH(meta.dept||'—')+'</div></div>'
+    +'<div style="padding:12px 16px;border-right:1px solid #dde3ea"><div style="font-size:10px;text-transform:uppercase;color:#6b7280;font-weight:600">Risk Level</div><div style="font-size:13px;font-weight:700;margin-top:2px;color:'+riskCol+'">'+escH(meta.risk||'—')+'</div></div>'
+    +'<div style="padding:12px 16px;border-right:1px solid #dde3ea"><div style="font-size:10px;text-transform:uppercase;color:#6b7280;font-weight:600">Prepared by</div><div style="font-size:13px;font-weight:600;margin-top:2px">'+escH(meta.author||'—')+'</div></div>'
+    +'<div style="padding:12px 16px"><div style="font-size:10px;text-transform:uppercase;color:#6b7280;font-weight:600">PPE Required</div><div style="font-size:12px;font-weight:600;margin-top:2px;color:#E24B4A">'+escH(meta.ppe||'See risk assessment')+'</div></div>'
+    +'</div>'
+
+    +'<div style="padding:24px 32px">'
+
+    // Purpose
+    +'<h3 style="font-size:13px;text-transform:uppercase;letter-spacing:.05em;color:#1a3a5c;border-bottom:2px solid #1a3a5c;padding-bottom:6px;margin:0 0 12px">1. Purpose & Scope</h3>'
+    +'<p style="font-size:13px;line-height:1.7;margin:0 0 20px;color:#374151" contenteditable="true">'+escH(data.purpose||'')+'</p>'
+
+    // Responsibilities
+    +(responsibilitiesHtml?'<h3 style="font-size:13px;text-transform:uppercase;letter-spacing:.05em;color:#1a3a5c;border-bottom:2px solid #1a3a5c;padding-bottom:6px;margin:0 0 12px">2. Responsibilities</h3>'
+    +'<ul style="font-size:13px;line-height:1.7;margin:0 0 20px;padding-left:20px;color:#374151">'+responsibilitiesHtml+'</ul>':'')
+
+    // Hazard summary
+    +(hazardsHtml?'<h3 style="font-size:13px;text-transform:uppercase;letter-spacing:.05em;color:#1a3a5c;border-bottom:2px solid #1a3a5c;padding-bottom:6px;margin:0 0 12px">3. Key Hazards & Controls</h3>'
+    +'<table style="width:100%;border-collapse:collapse;font-size:12px;margin-bottom:20px"><thead><tr style="background:#f0f4f8"><th style="padding:8px 12px;border:1px solid #e5e7eb;text-align:left">Hazard</th><th style="padding:8px 12px;border:1px solid #e5e7eb;text-align:left">Risk</th><th style="padding:8px 12px;border:1px solid #e5e7eb;text-align:left">Control</th></tr></thead><tbody>'+hazardsHtml+'</tbody></table>':'')
+
+    // Steps
+    +'<h3 style="font-size:13px;text-transform:uppercase;letter-spacing:.05em;color:#1a3a5c;border-bottom:2px solid #1a3a5c;padding-bottom:6px;margin:0 0 16px">4. Step-by-Step Procedure</h3>'
+    +stepsHtml
+
+    // Emergency
+    +(data.emergency?'<h3 style="font-size:13px;text-transform:uppercase;letter-spacing:.05em;color:#E24B4A;border-bottom:2px solid #E24B4A;padding-bottom:6px;margin:20px 0 12px">5. Emergency Procedures</h3>'
+    +'<div style="background:#FCEBEB;border-left:4px solid #E24B4A;padding:12px 16px;border-radius:0 8px 8px 0;font-size:13px;color:#374151;margin-bottom:20px">'+escH(data.emergency)+'</div>':'')
+
+    // Sign-off
+    +'<h3 style="font-size:13px;text-transform:uppercase;letter-spacing:.05em;color:#1a3a5c;border-bottom:2px solid #1a3a5c;padding-bottom:6px;margin:20px 0 12px">6. Sign-off & Approval</h3>'
+    +'<table style="width:100%;border-collapse:collapse;font-size:12px;margin-bottom:20px"><thead><tr style="background:#f0f4f8"><th style="padding:10px 14px;border:1px solid #e5e7eb;text-align:left">Role</th><th style="padding:10px 14px;border:1px solid #e5e7eb;text-align:left">Name</th><th style="padding:10px 14px;border:1px solid #e5e7eb;text-align:left">Signature</th><th style="padding:10px 14px;border:1px solid #e5e7eb;text-align:left">Date</th></tr></thead>'
+    +'<tbody><tr><td style="padding:16px 14px;border:1px solid #e5e7eb">Prepared by</td><td style="padding:16px 14px;border:1px solid #e5e7eb">'+escH(meta.author||'')+'</td><td style="padding:16px 14px;border:1px solid #e5e7eb"></td><td style="padding:16px 14px;border:1px solid #e5e7eb">'+today+'</td></tr>'
+    +'<tr><td style="padding:16px 14px;border:1px solid #e5e7eb">Reviewed by</td><td style="padding:16px 14px;border:1px solid #e5e7eb"></td><td style="padding:16px 14px;border:1px solid #e5e7eb"></td><td style="padding:16px 14px;border:1px solid #e5e7eb"></td></tr>'
+    +'<tr><td style="padding:16px 14px;border:1px solid #e5e7eb">Approved by</td><td style="padding:16px 14px;border:1px solid #e5e7eb"></td><td style="padding:16px 14px;border:1px solid #e5e7eb"></td><td style="padding:16px 14px;border:1px solid #e5e7eb"></td></tr></tbody></table>'
+
+    +'</div></div>';
+
+  container.innerHTML=html;
+
+  // Store generated data for saving
+  window.sopGeneratedData={meta,aiData:data,framesCount:sopFrames.length};
+}
+
+// ── PRINT ──────────────────────────────────────────────────────────────────
+function sopPrint(){
+  var el=document.getElementById('sop-printable');
+  if(!el){toast('No SOP to print',false);return;}
+  var w=window.open('','_blank');
+  w.document.write('<!DOCTYPE html><html><head><title>SOP — '+(window.sopGeneratedData?.meta?.title||'')+'</title>'
+    +'<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">'
+    +'<style>body{margin:0;padding:20px;font-family:Arial,sans-serif}@media print{body{padding:0}}[contenteditable]{outline:none}</style>'
+    +'</head><body>'+el.outerHTML
+    +'<script>window.onload=function(){window.print()}<\/script>'
+    +'</body></html>');
+  w.document.close();
+}
+
+async function sopPrintById(id){
+  var sop=sopAllData.find(function(x){return x.id===id;});
+  if(!sop||!sop.html_content){toast('SOP content not found',false);return;}
+  var w=window.open('','_blank');
+  w.document.write('<!DOCTYPE html><html><head><title>SOP</title>'
+    +'<style>body{margin:20px;font-family:Arial,sans-serif}@media print{body{margin:0}}</style>'
+    +'</head><body>'+sop.html_content
+    +'<script>window.onload=function(){window.print()}<\/script></body></html>');
+  w.document.close();
+}
+
+async function sopView(id){
+  var sop=sopAllData.find(function(x){return x.id===id;});
+  if(!sop){return;}
+  // Restore to step 5
+  sopSwitchTab('create',document.getElementById('sop-tab-create'));
+  sopGoStep(5);
+  var el=document.getElementById('sop-preview-container');
+  if(el)el.innerHTML=sop.html_content||'<p style="padding:20px;color:var(--text2)">No preview available</p>';
+  window.sopGeneratedData={meta:{title:sop.title}};
+}
+
+// ── SAVE ──────────────────────────────────────────────────────────────────
+async function sopSaveDocument(){
+  if(!window.sopGeneratedData){toast('Generate an SOP first',false);return;}
+  var el=document.getElementById('sop-printable');
+  if(!el){toast('No SOP content to save',false);return;}
+  var meta=window.sopGeneratedData.meta;
+  var body={
+    company_id:prof?.company_id,
+    title:meta.title,
+    department:meta.dept,
+    risk_level:meta.risk,
+    author:meta.author,
+    version:meta.version,
+    review_date:meta.reviewDate||null,
+    status:'Draft',
+    html_content:el.outerHTML,
+    created_by:prof?.id,
+    updated_at:new Date().toISOString()
+  };
+  try{
+    await api('/sop_documents',{m:'POST',p:'return=minimal',b:body});
+    toast('SOP saved to Document Control!');
+    sopSwitchTab('list',document.getElementById('sop-tab-list'));
+  }catch(e){toast(e.message,false);console.error(e);}
+}
+
+async function sopDelete(id){
+  if(!confirm('Delete this SOP?'))return;
+  try{
+    await api('/sop_documents?id=eq.'+id,{m:'DELETE'});
+    toast('SOP deleted!');
+    sopLoadList();
+  }catch(e){toast(e.message,false);}
 }
 
 async function loadLegal(){
@@ -4020,28 +4559,19 @@ if(!ind)return;
 try{
 const fresh=await api('/kpi_monthly_data?indicator_id=eq.'+indicatorId+'&year=eq.'+year+'&order=month');
 if(!fresh||!fresh.length)return;
-const actuals={};
-fresh.forEach(r=>{if(r.actual!==null&&r.actual!==undefined)actuals[r.month]=parseFloat(r.actual);});
-for(const entry of fresh){
-if(entry.actual===null||entry.actual===undefined)continue;
-const m=entry.month;
-const vals=[];
-for(let i=1;i<=m;i++){if(actuals[i]!==undefined)vals.push(actuals[i]);}
-let newYTD=null;
-const method=ind.ytd_method||'sum';
-if(vals.length){
-if(method==='last')newYTD=vals[vals.length-1];
-else if(method==='average')newYTD=Math.round((vals.reduce((a,b)=>a+b,0)/vals.length)*100)/100;
-else if(method==='max')newYTD=Math.max(...vals);
-else if(method==='min')newYTD=Math.min(...vals);
-else newYTD=Math.round(vals.reduce((a,b)=>a+b,0)*100)/100;
-}
-if(newYTD!==null&&Math.abs(newYTD-(parseFloat(entry.ytd)||0))>0.001){
-await api('/kpi_monthly_data?indicator_id=eq.'+indicatorId+'&year=eq.'+year+'&month=eq.'+m,{m:'PATCH',p:'return=minimal',b:{ytd:newYTD}});
-}
+for(var mi=0;mi<fresh.length;mi++){
+  var m=fresh[mi].month;
+  var prevVals=fresh.filter(function(x){return x.month<=m&&x.actual!==null&&x.actual!==undefined;}).map(function(x){return parseFloat(x.actual);});
+  if(!prevVals.length)continue;
+  var newYTD=kpiCalcYTD(indicatorId,m,parseFloat(fresh[mi].actual));
+  var entry=fresh[mi];
+  if(Math.abs(newYTD-(parseFloat(entry.ytd)||0))>0.001){
+    await api('/kpi_monthly_data?indicator_id=eq.'+indicatorId+'&year=eq.'+year+'&month=eq.'+m,{m:'PATCH',p:'return=minimal',b:{ytd:newYTD}});
+  }
 }
 }catch(e){console.error('YTD recalc error:',e);}
 }
+
 
 async function kpiClearEntry(){
 if(!confirm("Clear this month's data? This cannot be undone."))return;
@@ -4054,19 +4584,96 @@ await kpiLoadAll();
 }catch(e){toast(e.message,false);}
 }
 
+// ── SOP MODULE HELPERS ────────────────────────────────────────────────────────
+function sopShowList(){
+  document.getElementById('sop-list-view').style.display='block';
+  document.getElementById('sop-gen-view').style.display='none';
+  sopLoadList();
+}
 
+function sopShowPreview(){
+  document.getElementById('sop-generate-panel').style.display='none';
+  document.getElementById('sop-preview').style.display='block';
+  document.getElementById('sop-step4-back').style.display='none';
+}
 
+function sopGoStep(n){
+  for(var i=1;i<=4;i++){
+    var s=document.getElementById('sop-step-'+i);
+    var b=document.getElementById('sop-step-btn-'+i);
+    if(s)s.style.display=i===n?'block':'none';
+    if(b){b.classList.toggle('active',i===n);}
+  }
+  if(n===4){
+    // Update summary
+    var title=document.getElementById('sop-title')?.value||'Untitled';
+    var dept=document.getElementById('sop-dept')?.value||'—';
+    var frames=sopFrames.filter(function(f){return f.narration;}).length;
+    var sumEl=document.getElementById('sop-gen-summary');
+    if(sumEl)sumEl.innerHTML='<strong>Task:</strong> '+escH(title)+'<br><strong>Department:</strong> '+escH(dept)+'<br><strong>Steps with narration:</strong> '+frames+'<br><strong>Frames selected:</strong> '+sopFrames.length;
+    document.getElementById('sop-generate-panel').style.display='block';
+    document.getElementById('sop-preview').style.display='none';
+    document.getElementById('sop-step4-back').style.display='block';
+  }
+}
 
+async function sopSave(){
+  var title=document.getElementById('sop-title')?.value?.trim();
+  if(!title){toast('Please enter a task title first',false);return;}
+  var body={
+    company_id:prof?.company_id,
+    title:title,
+    department:document.getElementById('sop-dept')?.value||null,
+    sop_number:document.getElementById('sop-number')?.value||null,
+    risk_level:document.getElementById('sop-risk')?.value||'medium',
+    prepared_by:document.getElementById('sop-author')?.value||prof?.full_name||null,
+    revision:document.getElementById('sop-revision')?.value||'Rev 00',
+    approved_by:document.getElementById('sop-approver')?.value||null,
+    date:document.getElementById('sop-date')?.value||null,
+    description:document.getElementById('sop-description')?.value||null,
+    frames:JSON.stringify(sopFrames.map(function(f){return{time:f.time,narration:f.narration,hazard:f.hazard,dataUrl:f.dataUrl};})),
+    generated_html:document.getElementById('sop-doc-output')?.innerHTML||null,
+    status:'draft',
+    updated_at:new Date().toISOString()
+  };
+  try{
+    if(sopEditingId){
+      await api('/sop_documents?id=eq.'+sopEditingId,{m:'PATCH',p:'return=minimal',b:body});
+      toast('SOP saved!');
+    }else{
+      body.created_by=prof?.id;
+      var res=await api('/sop_documents',{m:'POST',p:'return=representation',b:body});
+      if(res?.[0])sopEditingId=res[0].id;
+      toast('SOP draft saved!');
+    }
+  }catch(e){toast(e.message,false);console.error(e);}
+}
 
+async function sopDelete(){
+  if(!sopEditingId)return;
+  if(!confirm('Delete this SOP draft?'))return;
+  try{
+    await api('/sop_documents?id=eq.'+sopEditingId,{m:'DELETE'});
+    toast('Deleted!');
+    sopShowList();
+  }catch(e){toast(e.message,false);}
+}
 
+async function sopExportPDF(){
+  var html=document.getElementById('sop-doc-output')?.innerHTML||'';
+  if(!html){toast('Generate the SOP first',false);return;}
+  var w=window.open('','_blank','width=900,height=700,scrollbars=yes');
+  w.document.write('<html><head><title>SOP</title><style>body{font-family:Arial,sans-serif;padding:30px;max-width:800px;margin:0 auto}table{border-collapse:collapse;width:100%}td,th{border:1px solid #ddd;padding:8px}@media print{.no-print{display:none}}</style></head><body>');
+  w.document.write('<button class="no-print" onclick="window.print()" style="margin-bottom:20px;padding:8px 20px;background:#1D9E75;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:14px">🖨️ Print / Save PDF</button>');
+  w.document.write(html);
+  w.document.write('</body></html>');
+  w.document.close();
+}
 
-
-
-
-
-
-
-
+function sopSaveToDocControl(){
+  toast('SOP saved to Document Control!');
+  sopSave();
+}
 
 </script>
 </head>
@@ -4075,6 +4682,7 @@ await kpiLoadAll();
 <div id="app" style="display:none">
 <div class="layout">
 <div class="sidebar"><div class="sidebar-top"><img id="co-logo-img" class="co-logo" src="" alt="logo"/><div id="co-initials-div" class="co-initials">A</div><div class="sb-company" id="sb-company">AURIS360</div><div class="sb-user" id="sb-user">—</div><span class="sb-role" id="sb-role">—</span></div><span class="nav-section">Main</span><div class="nav-item active" onclick="showPage('dashboard',this)"><i class="ti ti-layout-dashboard"></i>Dashboard</div><div class="nav-item" id="nav-ai" onclick="showPage('ai-insights',this)"><i class="ti ti-brain"></i>AI Insights</div><span class="nav-section">HSE Modules</span><div class="nav-item" onclick="showPage('kpi',this)"><i class="ti ti-target"></i>Objectives & KPIs</div><div class="nav-item" onclick="showPage('events',this)"><i class="ti ti-alert-triangle"></i>Event Reporting</div><div class="nav-item" onclick="showPage('inspection',this)"><i class="ti ti-clipboard-check"></i>Site Inspection</div><div class="nav-item" onclick="showPage('risk',this)"><i class="ti ti-shield-check"></i>Risk Assessment</div><div class="nav-item" id="nav-inv" onclick="showPage('investigation',this)"><i class="ti ti-search"></i>Investigation</div><div class="nav-item" onclick="showPage('permit',this)"><i class="ti ti-key"></i>Permit to Work</div><div class="nav-item" onclick="showPage('noise',this)"><i class="ti ti-volume"></i>Noise Survey</div><div class="nav-item" id="nav-mtg" onclick="showPage('meetings',this)"><i class="ti ti-notes"></i>HSE Meetings</div><div class="nav-item" onclick="showPage('training',this)"><i class="ti ti-certificate"></i>Training</div><span class="nav-section">Management</span><div class="nav-item" onclick="showPage('actions',this)"><i class="ti ti-list-check"></i>Master Action Plan</div><div class="nav-item" onclick="showPage('legal',this)"><i class="ti ti-scale"></i>Legal Compliance</div>
+<div class="nav-item" onclick="showPage('sop',this)"><i class="ti ti-file-description"></i>SOP Generator</div>
 <div class="nav-item" id="nav-docs" onclick="showPage('documents',this)"><i class="ti ti-files"></i>Document Control</div><div class="nav-item" onclick="showPage('people',this)"><i class="ti ti-id-badge"></i>People</div><div class="nav-item" id="nav-users" onclick="showPage('users',this)"><i class="ti ti-users"></i>User Management</div><div class="nav-item" id="nav-admin" style="display:none" onclick="showPage('admin',this)"><i class="ti ti-building"></i>Companies</div><div class="nav-item" id="nav-settings" onclick="showPage('settings',this)"><i class="ti ti-settings"></i>Settings</div><div class="sb-footer"><button class="btn btn-sm" style="flex:1;justify-content:center;color:var(--red)" onclick="doLogout()"><i class="ti ti-logout"></i>Sign out</button></div></div>
 <div class="main">
 <div id="page-dashboard" class="page active">
@@ -5197,6 +5805,337 @@ await kpiLoadAll();
 <div class="page-header"><div class="page-title">Training Monitor</div><div id="training-add-btn"></div></div><div class="card" id="training-form" style="display:none"><div class="card-title">Log training session</div><div class="form-row"><div class="form-group"><label class="form-label">Course / topic</label><input type="text" id="tf-course"/></div><div class="form-group"><label class="form-label">Trainer</label><input type="text" id="tf-trainer"/></div></div><div class="form-row"><div class="form-group"><label class="form-label">Date conducted</label><input type="date" id="tf-date"/></div><div class="form-group"><label class="form-label">Certificate expiry</label><input type="date" id="tf-expiry"/></div></div><div class="form-group"><label class="form-label">Attendees</label><select id="tf-attendees" multiple style="min-height:100px"><option value="">Loading...</option></select><div style="font-size:11px;color:var(--text2);margin-top:4px">Hold Ctrl/Cmd to select multiple</div></div><div style="display:flex;gap:8px"><button class="btn btn-primary" onclick="saveTraining()"><i class="ti ti-device-floppy"></i>Save</button><button class="btn" onclick="toggleForm('training-form')">Cancel</button></div></div><div class="card"><div class="card-title">Training sessions</div><div id="training-list"><div class="loading-msg">Loading...</div></div></div></div>
 <div id="page-actions" class="page">
 <div class="page-header"><div class="page-title">Master Action Plan</div><button class="btn btn-primary" onclick="toggleForm('action-form')"><i class="ti ti-plus"></i>Add action</button></div><div class="card" id="action-form" style="display:none"><div class="card-title">Add action manually</div><div class="form-row"><div class="form-group"><label class="form-label">Description</label><input type="text" id="af-desc"/></div><div class="form-group"><label class="form-label">Source module</label><select id="af-module"><option value="manual">Manual</option><option value="inspection">Inspection</option><option value="event">Event</option><option value="risk_assessment">Risk Assessment</option><option value="investigation">Investigation</option><option value="meeting">Meeting</option><option value="permit">Permit</option><option value="noise_survey">Noise Survey</option><option value="kpi">KPI</option></select></div></div><div class="form-row"><div class="form-group"><label class="form-label">Responsible</label><select id="af-resp"><option value="">Select person...</option></select></div><div class="form-group"><label class="form-label">Target date</label><input type="date" id="af-date"/></div></div><div class="form-row"><div class="form-group"><label class="form-label">Priority</label><select id="af-priority"><option value="low">Low</option><option value="medium">Medium</option><option value="high">High</option><option value="critical">Critical</option></select></div><div class="form-group"><label class="form-label">Status</label><select id="af-status"><option value="open">Open</option><option value="in_progress">In Progress</option><option value="closed">Closed</option></select></div></div><div class="form-group"><label class="form-label">Comments / evidence</label><textarea id="af-comments"></textarea></div><div style="display:flex;gap:8px"><button class="btn btn-primary" onclick="saveAction()"><i class="ti ti-device-floppy"></i>Save</button><button class="btn" onclick="toggleForm('action-form')">Cancel</button></div></div><div class="card"><div class="card-title">All actions <span id="action-count" style="font-size:12px;font-weight:400;color:var(--text2)"></span></div><div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap"><select id="filter-module" onchange="loadActions()" style="width:auto;padding:6px 10px;font-size:12px"><option value="">All modules</option><option value="manual">Manual</option><option value="inspection">Inspection</option><option value="event">Event</option><option value="risk_assessment">Risk Assessment</option><option value="investigation">Investigation</option><option value="meeting">Meeting</option></select><select id="filter-status" onchange="loadActions()" style="width:auto;padding:6px 10px;font-size:12px"><option value="">All statuses</option><option value="open">Open</option><option value="in_progress">In Progress</option><option value="overdue">Overdue</option><option value="closed">Closed</option></select><select id="filter-priority" onchange="loadActions()" style="width:auto;padding:6px 10px;font-size:12px"><option value="">All priorities</option><option value="critical">Critical</option><option value="high">High</option><option value="medium">Medium</option><option value="low">Low</option></select></div><div id="actions-list"><div class="loading-msg">Loading...</div></div></div></div>
+<div id="page-sop" class="page">
+<div class="page-header">
+<div>
+<div class="page-title">SOP Generator</div>
+<div style="font-size:12px;color:var(--text2)">Upload a task video → extract frames → AI generates a complete Standard Operating Procedure</div>
+</div>
+<div style="display:flex;gap:8px">
+<button class="btn btn-primary" onclick="sopNew()"><i class="ti ti-plus"></i>New SOP</button>
+</div>
+</div>
+
+<!-- Tabs -->
+<div style="display:flex;gap:0;margin-bottom:16px;border-bottom:2px solid var(--border)">
+<button class="mtg-tab active" id="sop-tab-list" onclick="sopSwitchTab('list',this)">📄 All SOPs</button>
+<button class="mtg-tab" id="sop-tab-create" onclick="sopSwitchTab('create',this)">✨ Create New</button>
+</div>
+
+<!-- LIST VIEW -->
+<div id="sop-view-list">
+<div class="card" style="padding:0;overflow:hidden"><div id="sop-list-container"><div class="loading-msg">Loading...</div></div></div>
+</div>
+
+<!-- CREATE VIEW — multi-step wizard -->
+<div id="sop-view-create" style="display:none">
+
+<!-- Progress stepper -->
+<div class="card" style="margin-bottom:16px;padding:16px 24px">
+<div style="display:flex;align-items:center;justify-content:space-between;position:relative">
+<div style="position:absolute;top:18px;left:10%;right:10%;height:2px;background:var(--border);z-index:0"></div>
+<div style="position:absolute;top:18px;left:10%;height:2px;background:var(--green);z-index:1;transition:width .4s" id="sop-step-bar" style="width:0%"></div>
+<div class="sop-step-dot active" id="sop-dot-1" onclick="sopGoStep(1)">1<div class="sop-step-label">Info</div></div>
+<div class="sop-step-dot" id="sop-dot-2" onclick="sopGoStep(2)">2<div class="sop-step-label">Video</div></div>
+<div class="sop-step-dot" id="sop-dot-3" onclick="sopGoStep(3)">3<div class="sop-step-label">Frames</div></div>
+<div class="sop-step-dot" id="sop-dot-4" onclick="sopGoStep(4)">4<div class="sop-step-label">Generate</div></div>
+<div class="sop-step-dot" id="sop-dot-5" onclick="sopGoStep(5)">5<div class="sop-step-label">Review</div></div>
+</div>
+</div>
+
+<!-- STEP 1: Basic Info -->
+<div id="sop-step-1" class="sop-step-panel">
+<div class="card">
+<div class="card-title">Step 1 — Task Information</div>
+<div class="form-row">
+<div class="form-group"><label class="form-label">SOP Title *</label><input type="text" id="sop-title" placeholder="e.g. Safe Operation of Angle Grinder"/></div>
+<div class="form-group"><label class="form-label">Department / Area</label><input type="text" id="sop-dept" placeholder="e.g. Maintenance Workshop"/></div>
+</div>
+<div class="form-row">
+<div class="form-group"><label class="form-label">Risk level</label>
+<select id="sop-risk">
+<option value="Low">Low</option>
+<option value="Medium" selected>Medium</option>
+<option value="High">High</option>
+<option value="Critical">Critical</option>
+</select></div>
+<div class="form-group"><label class="form-label">Prepared by</label><input type="text" id="sop-author"/></div>
+<div class="form-group"><label class="form-label">Review date</label><input type="date" id="sop-review-date"/></div>
+<div class="form-group"><label class="form-label">Version</label><input type="text" id="sop-version" value="Rev 00"/></div>
+</div>
+<div class="form-group"><label class="form-label">Brief task description</label>
+<textarea id="sop-desc" style="min-height:80px" placeholder="Describe the task in 2-3 sentences. What is being done, where, and why?"></textarea></div>
+<div class="form-group"><label class="form-label">PPE Required (select all that apply)</label>
+<div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:6px" id="sop-ppe-list">
+<label style="display:flex;align-items:center;gap:5px;font-size:12px;cursor:pointer"><input type="checkbox" value="Safety helmet"> Safety helmet</label>
+<label style="display:flex;align-items:center;gap:5px;font-size:12px;cursor:pointer"><input type="checkbox" value="Safety glasses"> Safety glasses</label>
+<label style="display:flex;align-items:center;gap:5px;font-size:12px;cursor:pointer"><input type="checkbox" value="Face shield"> Face shield</label>
+<label style="display:flex;align-items:center;gap:5px;font-size:12px;cursor:pointer"><input type="checkbox" value="Ear protection"> Ear protection</label>
+<label style="display:flex;align-items:center;gap:5px;font-size:12px;cursor:pointer"><input type="checkbox" value="Dust mask / Respirator"> Dust mask / Respirator</label>
+<label style="display:flex;align-items:center;gap:5px;font-size:12px;cursor:pointer"><input type="checkbox" value="Safety gloves"> Safety gloves</label>
+<label style="display:flex;align-items:center;gap:5px;font-size:12px;cursor:pointer"><input type="checkbox" value="Safety footwear"> Safety footwear</label>
+<label style="display:flex;align-items:center;gap:5px;font-size:12px;cursor:pointer"><input type="checkbox" value="High visibility vest"> High visibility vest</label>
+<label style="display:flex;align-items:center;gap:5px;font-size:12px;cursor:pointer"><input type="checkbox" value="Safety harness"> Safety harness</label>
+<label style="display:flex;align-items:center;gap:5px;font-size:12px;cursor:pointer"><input type="checkbox" value="Chemical resistant gloves"> Chemical resistant gloves</label>
+</div>
+</div>
+<div class="form-group"><label class="form-label">Additional PPE / Special equipment</label>
+<input type="text" id="sop-ppe-extra" placeholder="e.g. welding mask, anti-vibration gloves..."/></div>
+</div>
+<div style="display:flex;justify-content:flex-end;margin-top:12px">
+<button class="btn btn-primary" onclick="sopNextStep(1)"><i class="ti ti-arrow-right"></i>Next — Upload Video</button>
+</div>
+</div>
+
+<!-- STEP 2: Video Upload -->
+<div id="sop-step-2" class="sop-step-panel" style="display:none">
+<div class="card" style="text-align:center;padding:40px">
+<div style="font-size:48px;margin-bottom:16px">🎬</div>
+<div style="font-size:18px;font-weight:700;margin-bottom:8px">Upload your task demonstration video</div>
+<div style="font-size:13px;color:var(--text2);margin-bottom:24px;max-width:500px;margin-left:auto;margin-right:auto">Record yourself performing the task step by step. Speak clearly explaining what you are doing at each step. MP4, MOV or WebM format.</div>
+<div id="sop-drop-zone" style="border:3px dashed var(--border);border-radius:16px;padding:40px;cursor:pointer;transition:all .2s;max-width:500px;margin:0 auto" onclick="document.getElementById('sop-video-input').click()" ondragover="event.preventDefault();this.style.borderColor='var(--green)'" ondrop="sopHandleDrop(event)">
+<div id="sop-drop-label">
+<i class="ti ti-upload" style="font-size:32px;color:var(--text2)"></i>
+<div style="margin-top:8px;font-weight:600">Click to browse or drag & drop</div>
+<div style="font-size:12px;color:var(--text2);margin-top:4px">MP4, MOV, WebM — max 200MB</div>
+</div>
+</div>
+<input type="file" id="sop-video-input" accept="video/*" style="display:none" onchange="sopLoadVideo(this.files[0])"/>
+<video id="sop-video-preview" style="display:none;max-width:100%;border-radius:12px;margin-top:16px" controls></video>
+<div id="sop-video-info" style="margin-top:12px;font-size:13px;color:var(--text2)"></div>
+</div>
+<div style="display:flex;justify-content:space-between;margin-top:12px">
+<button class="btn" onclick="sopGoStep(1)"><i class="ti ti-arrow-left"></i>Back</button>
+<button class="btn btn-primary" id="sop-to-frames-btn" style="display:none" onclick="sopExtractFrames()"><i class="ti ti-photo-scan"></i>Extract frames</button>
+</div>
+</div>
+
+<!-- STEP 3: Frame Review + Narration -->
+<div id="sop-step-3" class="sop-step-panel" style="display:none">
+<div class="card" style="margin-bottom:12px;padding:14px 20px">
+<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
+<div>
+<div style="font-size:15px;font-weight:700">Step 3 — Review frames & add narration</div>
+<div style="font-size:12px;color:var(--text2);margin-top:3px">For each frame, describe what you are doing in that step. The AI will use this to write the procedure.</div>
+</div>
+<div style="display:flex;gap:8px">
+<button class="btn btn-sm" onclick="sopAddManualStep()"><i class="ti ti-plus"></i>Add step</button>
+<span id="sop-frame-count" style="font-size:12px;color:var(--text2);padding:6px 10px"></span>
+</div>
+</div>
+</div>
+<div id="sop-frames-container"></div>
+<div style="display:flex;justify-content:space-between;margin-top:12px">
+<button class="btn" onclick="sopGoStep(2)"><i class="ti ti-arrow-left"></i>Back</button>
+<button class="btn btn-primary" onclick="sopNextStep(3)"><i class="ti ti-sparkles"></i>Generate SOP</button>
+</div>
+</div>
+
+<!-- STEP 4: Generating -->
+<div id="sop-step-4" class="sop-step-panel" style="display:none">
+<div class="card" style="text-align:center;padding:60px 40px">
+<div style="font-size:48px;margin-bottom:20px" id="sop-gen-icon">⚙️</div>
+<div style="font-size:20px;font-weight:700;margin-bottom:12px" id="sop-gen-title">Generating your SOP...</div>
+<div style="font-size:14px;color:var(--text2);max-width:400px;margin:0 auto 24px" id="sop-gen-subtitle">The AI is analysing your frames and narration to write a professional SOP document</div>
+<div style="background:#f9fafb;border-radius:12px;padding:16px;max-width:400px;margin:0 auto">
+<div style="height:8px;background:#e5e7eb;border-radius:4px;overflow:hidden">
+<div id="sop-gen-bar" style="height:8px;background:var(--green);border-radius:4px;width:0%;transition:width .5s"></div>
+</div>
+<div style="font-size:12px;color:var(--text2);margin-top:8px" id="sop-gen-status">Initialising...</div>
+</div>
+</div>
+</div>
+
+<!-- STEP 5: Review & Edit -->
+<div id="sop-step-5" class="sop-step-panel" style="display:none">
+<div class="card" style="margin-bottom:12px;padding:14px 20px">
+<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
+<div style="font-size:15px;font-weight:700">Step 5 — Review, edit & save your SOP</div>
+<div style="display:flex;gap:8px">
+<button class="btn" onclick="sopPrint()"><i class="ti ti-printer"></i>Print / PDF</button>
+<button class="btn btn-primary" onclick="sopSaveDocument()"><i class="ti ti-device-floppy"></i>Save SOP</button>
+</div>
+</div>
+</div>
+<div id="sop-preview-container" style="background:#fff;border:1px solid var(--border);border-radius:12px;overflow:hidden"></div>
+</div>
+
+</div><!-- end sop-view-create -->
+</div><!-- end page-sop -->
+
+<div id="page-sop" class="page">
+<div class="page-header">
+<div><div class="page-title">SOP Generator</div><div style="font-size:12px;color:var(--text2)">Generate Standard Operating Procedures from video recordings</div></div>
+<div style="display:flex;gap:8px">
+<button class="btn btn-primary" onclick="sopNew()"><i class="ti ti-plus"></i>New SOP</button>
+</div>
+</div>
+
+<!-- List view -->
+<div id="sop-list-view">
+<div class="card" style="padding:0;overflow:hidden"><div id="sop-list"><div class="loading-msg">Loading...</div></div></div>
+</div>
+
+<!-- Generator view -->
+<div id="sop-gen-view" style="display:none">
+<!-- Header bar -->
+<div class="card" style="margin-bottom:16px;padding:14px 20px">
+<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
+<div style="font-size:16px;font-weight:700" id="sop-gen-title">New SOP</div>
+<div style="display:flex;gap:8px">
+<button class="btn" onclick="sopShowList()"><i class="ti ti-arrow-left"></i>Back</button>
+<button id="sop-del-btn" class="btn" style="display:none;color:var(--red);border-color:var(--red)" onclick="sopDelete()"><i class="ti ti-trash"></i>Delete</button>
+<button class="btn btn-primary" onclick="sopSave()"><i class="ti ti-device-floppy"></i>Save draft</button>
+</div>
+</div>
+</div>
+
+<!-- Step indicator -->
+<div style="display:flex;gap:0;margin-bottom:16px;background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden">
+<div class="sop-step-btn active" id="sop-step-btn-1" onclick="sopGoStep(1)"><span class="sop-step-num">1</span>Task info</div>
+<div class="sop-step-btn" id="sop-step-btn-2" onclick="sopGoStep(2)"><span class="sop-step-num">2</span>Video & frames</div>
+<div class="sop-step-btn" id="sop-step-btn-3" onclick="sopGoStep(3)"><span class="sop-step-num">3</span>Step narration</div>
+<div class="sop-step-btn" id="sop-step-btn-4" onclick="sopGoStep(4)"><span class="sop-step-num">4</span>Generate SOP</div>
+</div>
+
+<!-- STEP 1: Task Info -->
+<div id="sop-step-1">
+<div class="card">
+<div class="card-title">Task Information</div>
+<div class="form-row">
+<div class="form-group"><label class="form-label">SOP title / Task name</label><input type="text" id="sop-title" placeholder="e.g. Safe Operation of Angle Grinder"/></div>
+<div class="form-group"><label class="form-label">Department / Area</label><input type="text" id="sop-dept" placeholder="e.g. Maintenance Workshop"/></div>
+<div class="form-group"><label class="form-label">SOP number</label><input type="text" id="sop-number" placeholder="e.g. SOP-MAINT-001"/></div>
+<div class="form-group"><label class="form-label">Risk level</label>
+<select id="sop-risk">
+<option value="low">Low</option>
+<option value="medium" selected>Medium</option>
+<option value="high">High</option>
+<option value="critical">Critical</option>
+</select></div>
+</div>
+<div class="form-row">
+<div class="form-group"><label class="form-label">Prepared by</label><input type="text" id="sop-author"/></div>
+<div class="form-group"><label class="form-label">Date</label><input type="date" id="sop-date"/></div>
+<div class="form-group"><label class="form-label">Revision</label><input type="text" id="sop-revision" placeholder="Rev 00" value="Rev 00"/></div>
+<div class="form-group"><label class="form-label">Approved by</label><input type="text" id="sop-approver"/></div>
+</div>
+<div class="form-group"><label class="form-label">Brief task description</label><textarea id="sop-description" style="min-height:70px" placeholder="Briefly describe what this task involves, its purpose and scope (2-3 sentences)..."></textarea></div>
+<div class="form-row">
+<div class="form-group"><label class="form-label">PPE required</label>
+<div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:6px" id="sop-ppe-checks">
+<label style="display:flex;align-items:center;gap:6px;font-size:12px"><input type="checkbox" value="Safety helmet"> Safety helmet</label>
+<label style="display:flex;align-items:center;gap:6px;font-size:12px"><input type="checkbox" value="Safety glasses"> Safety glasses</label>
+<label style="display:flex;align-items:center;gap:6px;font-size:12px"><input type="checkbox" value="Face shield"> Face shield</label>
+<label style="display:flex;align-items:center;gap:6px;font-size:12px"><input type="checkbox" value="Hearing protection"> Hearing protection</label>
+<label style="display:flex;align-items:center;gap:6px;font-size:12px"><input type="checkbox" value="Safety gloves"> Safety gloves</label>
+<label style="display:flex;align-items:center;gap:6px;font-size:12px"><input type="checkbox" value="Safety boots"> Safety boots</label>
+<label style="display:flex;align-items:center;gap:6px;font-size:12px"><input type="checkbox" value="High-vis vest"> High-vis vest</label>
+<label style="display:flex;align-items:center;gap:6px;font-size:12px"><input type="checkbox" value="Dust mask / RPE"> Dust mask / RPE</label>
+<label style="display:flex;align-items:center;gap:6px;font-size:12px"><input type="checkbox" value="Chemical apron"> Chemical apron</label>
+<label style="display:flex;align-items:center;gap:6px;font-size:12px"><input type="checkbox" value="Safety harness"> Safety harness</label>
+</div>
+</div>
+</div>
+<div class="form-group"><label class="form-label">Additional PPE / Special equipment</label><input type="text" id="sop-ppe-extra" placeholder="Any other PPE or equipment..."/></div>
+</div>
+<div style="display:flex;justify-content:flex-end;margin-top:8px">
+<button class="btn btn-primary" onclick="sopGoStep(2)">Next — Video & frames <i class="ti ti-arrow-right"></i></button>
+</div>
+</div>
+
+<!-- STEP 2: Video Upload & Frame Extraction -->
+<div id="sop-step-2" style="display:none">
+<div class="card" style="margin-bottom:12px">
+<div class="card-title">Upload your demonstration video</div>
+<div id="sop-video-upload-area" style="border:2px dashed var(--border);border-radius:12px;padding:40px;text-align:center;cursor:pointer;transition:border-color .2s;background:#fafafa" onclick="document.getElementById('sop-video-input').click()">
+<i class="ti ti-video" style="font-size:40px;color:var(--text3);display:block;margin-bottom:10px"></i>
+<div style="font-size:14px;font-weight:600;margin-bottom:6px">Click to upload video</div>
+<div style="font-size:12px;color:var(--text2)">MP4, MOV, AVI or WebM — max 100MB</div>
+<div style="font-size:11px;color:var(--text3);margin-top:6px">Record yourself performing the task step by step, narrating each action as you go</div>
+</div>
+<input type="file" id="sop-video-input" accept="video/*" style="display:none" onchange="sopLoadVideo(this)"/>
+<div id="sop-video-player" style="display:none;margin-top:16px">
+<video id="sop-video-el" style="width:100%;max-height:400px;border-radius:8px;background:#000" controls></video>
+</div>
+</div>
+
+<div class="card" id="sop-frames-card" style="display:none">
+<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+<div>
+<div class="card-title" style="margin:0">Extracted frames</div>
+<div style="font-size:12px;color:var(--text2);margin-top:3px">Select the frames that best represent each step of the task</div>
+</div>
+<div style="display:flex;gap:8px">
+<button class="btn btn-sm" onclick="sopExtractFrames()" id="sop-extract-btn"><i class="ti ti-refresh"></i>Re-extract frames</button>
+<span id="sop-extract-status" style="font-size:12px;color:var(--text2);align-self:center"></span>
+</div>
+</div>
+<div id="sop-frames-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px"></div>
+</div>
+
+<div style="display:flex;justify-content:space-between;margin-top:8px">
+<button class="btn" onclick="sopGoStep(1)"><i class="ti ti-arrow-left"></i> Back</button>
+<button class="btn btn-primary" onclick="sopGoStep(3)" id="sop-to-step3-btn">Next — Add narration <i class="ti ti-arrow-right"></i></button>
+</div>
+</div>
+
+<!-- STEP 3: Step Narration -->
+<div id="sop-step-3" style="display:none">
+<div class="card" style="margin-bottom:12px">
+<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+<div>
+<div class="card-title" style="margin:0">Add narration per step</div>
+<div style="font-size:12px;color:var(--text2);margin-top:3px">For each selected frame, describe what you are doing, the hazards involved and how to do it safely</div>
+</div>
+<button class="btn btn-sm" onclick="sopAddManualStep()"><i class="ti ti-plus"></i>Add step</button>
+</div>
+<div id="sop-narration-list"></div>
+</div>
+<div style="display:flex;justify-content:space-between;margin-top:8px">
+<button class="btn" onclick="sopGoStep(2)"><i class="ti ti-arrow-left"></i> Back</button>
+<button class="btn btn-primary" onclick="sopGoStep(4)">Next — Generate SOP <i class="ti ti-arrow-right"></i></button>
+</div>
+</div>
+
+<!-- STEP 4: Generate & Preview -->
+<div id="sop-step-4" style="display:none">
+<div class="card" style="margin-bottom:12px;text-align:center;padding:30px" id="sop-generate-panel">
+<div style="font-size:40px;margin-bottom:12px">🤖</div>
+<div style="font-size:16px;font-weight:700;margin-bottom:8px">Ready to generate your SOP</div>
+<div style="font-size:13px;color:var(--text2);margin-bottom:20px;max-width:500px;margin-left:auto;margin-right:auto">Claude AI will analyse your frames and narration to produce a complete, professional SOP document with embedded screenshots</div>
+<div id="sop-gen-summary" style="background:#f9fafb;border:1px solid var(--border);border-radius:8px;padding:14px;margin-bottom:20px;text-align:left;font-size:13px;max-width:500px;margin-left:auto;margin-right:auto"></div>
+<button class="btn btn-primary" style="font-size:15px;padding:12px 32px" onclick="sopGenerate()" id="sop-gen-btn"><i class="ti ti-sparkles"></i>Generate SOP with AI</button>
+<div id="sop-gen-progress" style="display:none;margin-top:16px">
+<div style="font-size:13px;color:var(--text2);margin-bottom:8px" id="sop-gen-status">Analysing frames...</div>
+<div style="height:6px;background:#f3f4f6;border-radius:3px;overflow:hidden;max-width:400px;margin:0 auto">
+<div id="sop-gen-bar" style="height:6px;background:var(--green);border-radius:3px;width:0%;transition:width .5s"></div>
+</div>
+</div>
+</div>
+
+<!-- Generated SOP preview -->
+<div id="sop-preview" style="display:none">
+<div class="card" style="margin-bottom:12px;padding:14px 20px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
+<div style="font-size:15px;font-weight:700;color:var(--green)"><i class="ti ti-check"></i> SOP Generated Successfully</div>
+<div style="display:flex;gap:8px">
+<button class="btn" onclick="sopGoStep(3)"><i class="ti ti-arrow-left"></i> Edit steps</button>
+<button class="btn btn-primary" onclick="sopExportPDF()"><i class="ti ti-download"></i>Export PDF</button>
+<button class="btn btn-primary" onclick="sopSaveToDocControl()" style="background:#185FA5;border-color:#185FA5"><i class="ti ti-device-floppy"></i>Save to Documents</button>
+</div>
+</div>
+<div id="sop-doc-output" style="background:#fff;border:1px solid var(--border);border-radius:12px;overflow:hidden"></div>
+</div>
+</div>
+
+<div style="display:flex;justify-content:flex-start;margin-top:8px" id="sop-step4-back">
+<button class="btn" onclick="sopGoStep(3)"><i class="ti ti-arrow-left"></i> Back to narration</button>
+</div>
+</div>
+
+</div><!-- end sop-gen-view -->
+<!-- end page-sop -->
+
 <div id="page-documents" class="page">
 <div class="page-header"><div class="page-title">Document Control</div><div id="doc-add-btn"></div></div><div class="card" id="doc-form" style="display:none"><div class="card-title">Register document</div><div class="form-row"><div class="form-group"><label class="form-label">Title</label><input type="text" id="df-title"/></div><div class="form-group"><label class="form-label">Type</label><select id="df-type"><option value="policy">Policy</option><option value="procedure">Procedure</option><option value="risk_assessment">Risk Assessment</option><option value="msds">MSDS</option><option value="sop">SOP</option><option value="form">Form</option><option value="certificate">Certificate</option><option value="legal">Legal/Standard</option><option value="other">Other</option></select></div></div><div class="form-row"><div class="form-group"><label class="form-label">Reference no.</label><input type="text" id="df-ref"/></div><div class="form-group"><label class="form-label">Version</label><input type="text" id="df-version" placeholder="v1.0"/></div></div><div class="form-row"><div class="form-group"><label class="form-label">Issue date</label><input type="date" id="df-issue"/></div><div class="form-group"><label class="form-label">Review date</label><input type="date" id="df-review"/></div></div><div class="form-row"><div class="form-group"><label class="form-label">Owner</label><select id="df-owner"><option value="">Select person...</option></select></div><div class="form-group"><label class="form-label">Status</label><select id="df-status"><option value="current">Current</option><option value="draft">Draft</option><option value="superseded">Superseded</option></select></div></div><div class="form-group"><label class="form-label">File URL</label><input type="url" id="df-url" placeholder="https://..."/></div><div style="display:flex;gap:8px"><button class="btn btn-primary" onclick="saveDoc()"><i class="ti ti-device-floppy"></i>Register</button><button class="btn" onclick="toggleForm('doc-form')">Cancel</button></div></div><div class="card"><div class="card-title">Document register</div><div id="docs-list"><div class="loading-msg">Loading...</div></div></div></div>
 <div id="page-people" class="page">
