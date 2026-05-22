@@ -52,6 +52,8 @@
 
 
 
+
+
 const SB='https://iarfxjhahzbhncsaohbg.supabase.co';
 const KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlhcmZ4amhhaHpiaG5jc2FvaGJnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg2OTM1MzAsImV4cCI6MjA5NDI2OTUzMH0.qSjahuX-RwnjWEDmo-LkcorAxpsmyVoaXt4AO4_A9BM';
 let tok=null,prof=null,co=null,chkItems=[],people=[];
@@ -727,17 +729,52 @@ function wsTEAddFromRegister(toolId){
 }
 
 function wsTEAddManual(){
-  var name=prompt('Equipment name:');if(!name||!name.trim())return;
-  var cat=prompt('Category (hand_tool/power_tool/equipment/vehicle/lifting/electrical/other):','equipment');
-  wsTEItems.push({tool_id:null,ref:'MANUAL',name:name.trim(),category:cat||'equipment',source:'manual',checked:false});
-  wsTERenderItems();
+  wsTEAddItem();
 }
 
 function wsTEAddItem(){
-  var name=prompt('Equipment name (or use search):');
-  if(!name||!name.trim())return;
-  wsTEItems.push({tool_id:null,ref:'MANUAL',name:name.trim(),category:'equipment',source:'manual',checked:false});
+  var existing=document.getElementById('ws-te-manual-form');
+  if(existing){
+    existing.style.display=existing.style.display==='none'?'flex':'none';
+    return;
+  }
+  var container=document.getElementById('ws-te-items-list');
+  if(!container)return;
+  // Build form using DOM
+  var wrap=document.createElement('div');
+  wrap.id='ws-te-manual-form';
+  wrap.style.cssText='display:flex;gap:10px;align-items:flex-end;background:#f8fafc;border:2px dashed var(--border);border-radius:10px;padding:14px;margin-bottom:12px;flex-wrap:wrap';
+  // Name field
+  var nameWrap=document.createElement('div');nameWrap.style.cssText='flex:2;min-width:180px';
+  var nameLbl=document.createElement('label');nameLbl.textContent='Equipment name';nameLbl.style.cssText='font-size:11px;font-weight:700;color:var(--text2);text-transform:uppercase;display:block;margin-bottom:4px';
+  var nameInp=document.createElement('input');nameInp.type='text';nameInp.id='ws-te-manual-name';nameInp.placeholder='e.g. Angle grinder, Safety harness...';nameInp.style.cssText='width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:8px;font-size:13px';
+  nameInp.addEventListener('keydown',function(e){if(e.key==='Enter')wsTEConfirmManual();});
+  nameWrap.appendChild(nameLbl);nameWrap.appendChild(nameInp);
+  // Cat select
+  var catWrap=document.createElement('div');catWrap.style.cssText='flex:1;min-width:140px';
+  var catLbl=document.createElement('label');catLbl.textContent='Category';catLbl.style.cssText='font-size:11px;font-weight:700;color:var(--text2);text-transform:uppercase;display:block;margin-bottom:4px';
+  var catSel=document.createElement('select');catSel.id='ws-te-manual-cat';catSel.style.cssText='width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:8px;font-size:13px';
+  [['hand_tool','Hand tool'],['power_tool','Power tool'],['equipment','Equipment'],['lifting','Lifting'],['electrical','Electrical'],['vehicle','Vehicle'],['ppe','PPE'],['other','Other']].forEach(function(o){var opt=document.createElement('option');opt.value=o[0];opt.textContent=o[1];if(o[0]==='equipment')opt.selected=true;catSel.appendChild(opt);});
+  catWrap.appendChild(catLbl);catWrap.appendChild(catSel);
+  // Buttons
+  var btnWrap=document.createElement('div');btnWrap.style.cssText='display:flex;gap:8px;align-self:flex-end';
+  var addBtn=document.createElement('button');addBtn.className='btn btn-primary';addBtn.innerHTML='<i class="ti ti-plus"></i> Add';addBtn.onclick=wsTEConfirmManual;
+  var cancelBtn=document.createElement('button');cancelBtn.className='btn';cancelBtn.innerHTML='<i class="ti ti-x"></i>';cancelBtn.onclick=function(){wrap.style.display='none';};
+  btnWrap.appendChild(addBtn);btnWrap.appendChild(cancelBtn);
+  wrap.appendChild(nameWrap);wrap.appendChild(catWrap);wrap.appendChild(btnWrap);
+  container.insertBefore(wrap, container.firstChild);
+  nameInp.focus();
+}
+
+function wsTEConfirmManual(){
+  var name=document.getElementById('ws-te-manual-name')?.value?.trim();
+  if(!name){document.getElementById('ws-te-manual-name')?.focus();return;}
+  var cat=document.getElementById('ws-te-manual-cat')?.value||'equipment';
+  wsTEItems.push({tool_id:null,ref:'MANUAL',name:name,category:cat,source:'manual',checked:false});
+  var form=document.getElementById('ws-te-manual-form');
+  if(form)form.style.display='none';
   wsTERenderItems();
+  toast(escH(name)+' added to equipment list');
 }
 
 function wsTERenderItems(){
@@ -2310,6 +2347,19 @@ function raOpen(id){
 }
 
 // ── Row builders ─────────────────────────────────────────────────────────────
+function raRLBadge(rl){
+  var cfg={
+    'Very High':['#FCEBEB','#A32D2D'],
+    'High':['#FEF6E7','#C2410C'],
+    'Medium':['#FEF9EC','#854F0B'],
+    'Low':['#EAF3DE','#3B6D11'],
+    'Very Low':['#f0fdf4','#166534'],
+    'Negligible':['#f3f4f6','#6B7280']
+  };
+  var c=cfg[rl]||['#f3f4f6','#6B7280'];
+  return '<span style="background:'+c[0]+';color:'+c[1]+';padding:2px 7px;border-radius:4px;font-size:10px;font-weight:700">'+escH(rl||'—')+'</span>';
+}
+
 function raRopSelect(cls,val){
   var opts=[10,8,6,4,1].map(function(v){return '<option value="'+v+'"'+(parseInt(val)===v?' selected':'')+'>'+v+' ('+RA_ROP[v]+')</option>';}).join('');
   return '<select class="'+cls+'" onchange="raCalcRL(this)" style="width:100%;padding:3px 4px;border:1px solid var(--border);border-radius:4px;font-size:11px">'+opts+'</select>';
@@ -7164,6 +7214,8 @@ function sopSaveToDocControl(){
   toast('SOP saved to Document Control!');
   sopSave();
 }
+
+
 
 
 
