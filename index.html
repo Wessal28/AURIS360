@@ -46,6 +46,8 @@
 
 
 
+
+
 const SB='https://iarfxjhahzbhncsaohbg.supabase.co';
 const KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlhcmZ4amhhaHpiaG5jc2FvaGJnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg2OTM1MzAsImV4cCI6MjA5NDI2OTUzMH0.qSjahuX-RwnjWEDmo-LkcorAxpsmyVoaXt4AO4_A9BM';
 let tok=null,prof=null,co=null,chkItems=[],people=[];
@@ -170,7 +172,7 @@ if(target){
   target.classList.add('active');
 }
 if(el&&el.classList)el.classList.add('active');
-const L={dashboard:loadDash,kpi:kpiLoadAll,events:loadEvents,inspection:()=>{buildChecklist();loadInsps();},risk:loadRA,investigation:loadInvs,legal:loadLegal,sop:loadSOP,permit:loadPermits,noise:loadNoise,meetings:loadMtgs,training:loadTraining,actions:loadActions,documents:loadDocs,people:loadPeople,users:loadUsers,admin:loadAdmin,'ai-insights':genFullAI,settings:loadSettings};
+const L={dashboard:loadDash,kpi:kpiLoadAll,events:loadEvents,inspection:()=>{buildChecklist();loadInsps();},risk:loadRA,investigation:loadInvs,legal:loadLegal,sop:loadSOP,tools:loadTools,permit:loadPermits,noise:loadNoise,meetings:loadMtgs,training:loadTraining,actions:loadActions,documents:loadDocs,people:loadPeople,users:loadUsers,admin:loadAdmin,'ai-insights':genFullAI,settings:loadSettings};
 if(L[name])L[name]();
 }
 function toggleForm(id){const el=document.getElementById(id);el.style.display=el.style.display==='none'?'block':'none';}
@@ -2997,6 +2999,634 @@ function legalRenderDashboardData(){
   }
 }
 
+
+// ===== TOOLS & EQUIPMENT MODULE =====
+let toolsAllData=[], toolsEditingId=null, toolsInspEditingId=null, toolsInspEquipId=null;
+
+const TOOL_CAT_LABELS={hand_tool:'Hand tool',power_tool:'Power tool',equipment:'Equipment',vehicle:'Vehicle',lifting:'Lifting equipment',electrical:'Electrical',ppe:'PPE',other:'Other'};
+const TOOL_CAT_COLORS={hand_tool:'#185FA5',power_tool:'#854F0B',equipment:'#3B6D11',vehicle:'#185FA5',lifting:'#8B5CF6',electrical:'#EF9F27',ppe:'#1D9E75',other:'#6B7280'};
+const TOOL_CAT_ICONS={hand_tool:'ti-hammer',power_tool:'ti-bolt',equipment:'ti-settings',vehicle:'ti-car',lifting:'ti-crane',electrical:'ti-plug',ppe:'ti-shield',other:'ti-package'};
+
+function toolsSwitchTab(tab,btn){
+  document.querySelectorAll('.mtg-tab').forEach(t=>t.classList.remove('active'));
+  btn.classList.add('active');
+  ['register','personal','inspection','statutory','vehicles'].forEach(function(t){
+    var el=document.getElementById('tools-view-'+t);if(el)el.style.display=t===tab?'block':'none';
+  });
+  ['tools-form','tools-insp-form'].forEach(function(id){var el=document.getElementById(id);if(el)el.style.display='none';});
+  if(tab==='register')toolsLoadRegister();
+  else if(tab==='personal')toolsLoadPersonal();
+  else if(tab==='inspection')toolsLoadInspections();
+  else if(tab==='statutory')toolsLoadStatutory();
+  else if(tab==='vehicles')toolsLoadVehicles();
+}
+
+async function loadTools(){
+  var addBtn=document.getElementById('tools-add-btn');
+  if(addBtn)addBtn.style.display=isMgr()?'inline-flex':'none';
+  var inspBtn=document.getElementById('insp-new-btn');
+  if(inspBtn)inspBtn.style.display=isMgr()?'inline-flex':'none';
+  var vehBtn=document.getElementById('veh-insp-btn');
+  if(vehBtn)vehBtn.style.display=isMgr()?'inline-flex':'none';
+  toolsLoadRegister();
+}
+
+// ── REGISTER ────────────────────────────────────────────────────────────────
+async function toolsLoadRegister(){
+  var el=document.getElementById('tools-register-list');
+  if(!el)return;
+  el.innerHTML='<div class="loading-msg">Loading...</div>';
+  try{
+    var d=await api('/tools_register?select=*'+cf()+'&order=category,name');
+    toolsAllData=d||[];
+    var today=new Date(); var soon=new Date(); soon.setDate(soon.getDate()+30);
+    var setM=function(id,v){var e=document.getElementById(id);if(e)e.textContent=v;};
+    setM('tools-m-active',toolsAllData.filter(x=>x.status==='active').length);
+    setM('tools-m-oos',toolsAllData.filter(x=>x.status==='out_of_service').length);
+    setM('tools-m-veh',toolsAllData.filter(x=>x.category==='vehicle').length);
+    setM('tools-m-stat',toolsAllData.filter(x=>x.requires_statutory&&x.next_statutory_date&&new Date(x.next_statutory_date)<=soon).length);
+    setM('tools-m-due',0);
+    toolsFilterRegister();
+  }catch(e){el.innerHTML='<p style="padding:20px;color:red">'+e.message+'</p>';console.error(e);}
+}
+
+function toolsFilterRegister(){
+  var el=document.getElementById('tools-register-list');
+  if(!el)return;
+  var search=(document.getElementById('tools-search')?.value||'').toLowerCase();
+  var cat=document.getElementById('tools-filter-cat')?.value||'';
+  var status=document.getElementById('tools-filter-status')?.value||'';
+  var filtered=toolsAllData.filter(function(x){
+    var mS=!search||(x.name||'').toLowerCase().includes(search)||(x.ref_number||'').toLowerCase().includes(search)||(x.serial_number||'').toLowerCase().includes(search);
+    var mC=!cat||x.category===cat;
+    var mSt=!status||x.status===status;
+    return mS&&mC&&mSt;
+  });
+  if(!filtered.length){
+    el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)">'
+      +'<div style="font-size:40px;margin-bottom:12px">🔧</div>'
+      +'<div style="font-weight:600;margin-bottom:8px">No equipment found</div>'
+      +(isMgr()&&!search&&!cat&&!status?'<button class="btn btn-primary" onclick="toolsNew()"><i class="ti ti-plus"></i>Add first equipment</button>':'')
+      +'</div>';
+    return;
+  }
+  // Group by category
+  var bycat={};
+  filtered.forEach(x=>{if(!bycat[x.category])bycat[x.category]=[];bycat[x.category].push(x);});
+  var today=new Date(); var soon=new Date(); soon.setDate(soon.getDate()+30);
+  var html='';
+  Object.entries(bycat).forEach(function(e){
+    var cat=e[0],items=e[1];
+    var col=TOOL_CAT_COLORS[cat]||'#6B7280';
+    html+='<div style="padding:8px 16px;background:'+col+'18;border-bottom:2px solid '+col+'44;display:flex;align-items:center;gap:8px">'
+      +'<i class="ti '+( TOOL_CAT_ICONS[cat]||'ti-package')+'" style="color:'+col+';font-size:14px"></i>'
+      +'<span style="font-size:11px;font-weight:700;text-transform:uppercase;color:'+col+';letter-spacing:.05em">'+(TOOL_CAT_LABELS[cat]||cat)+'</span>'
+      +'<span style="font-size:11px;color:'+col+';opacity:.7">— '+items.length+' item'+(items.length!==1?'s':'')+'</span>'
+      +'</div>';
+    items.forEach(function(x,i){
+      var bg=i%2===0?'#fff':'#fafafa';
+      var isStatDue=x.requires_statutory&&x.next_statutory_date&&new Date(x.next_statutory_date)<=soon;
+      var isOos=x.status!=='active';
+      var statusCfg={active:['#EAF3DE','#3B6D11'],out_of_service:['#FCEBEB','#A32D2D'],under_maintenance:['#FEF9EC','#854F0B'],disposed:['#f3f4f6','#6B7280']};
+      var sc=statusCfg[x.status]||statusCfg.active;
+      html+='<div style="padding:12px 16px;border-bottom:1px solid #f3f4f6;background:'+bg+';display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px'+(isOos?';opacity:.7':'')+(isStatDue?';border-left:3px solid #8B5CF6':'')+'">'
+        +'<div style="display:flex;align-items:center;gap:14px;flex:1">'
+        +'<div style="width:44px;height:44px;border-radius:10px;background:'+col+'20;display:flex;align-items:center;justify-content:center;flex-shrink:0">'
+        +'<i class="ti '+(TOOL_CAT_ICONS[cat]||'ti-package')+'" style="font-size:20px;color:'+col+'"></i></div>'
+        +'<div>'
+        +'<div style="display:flex;align-items:center;gap:8px;margin-bottom:3px">'
+        +'<span style="font-weight:700;font-size:13px">'+escH(x.name||'—')+'</span>'
+        +'<span style="font-family:monospace;font-size:11px;font-weight:700;background:'+col+'20;color:'+col+';padding:2px 7px;border-radius:4px">'+escH(x.ref_number||'—')+'</span>'
+        +'<span style="background:'+sc[0]+';color:'+sc[1]+';padding:2px 8px;border-radius:99px;font-size:10px;font-weight:700">'+(x.status||'active').replace(/_/g,' ')+'</span>'
+        +(isStatDue?'<span style="background:#F3E8FF;color:#8B5CF6;padding:2px 8px;border-radius:99px;font-size:10px;font-weight:700">Statutory due</span>':'')
+        +'</div>'
+        +'<div style="font-size:11px;color:var(--text2);display:flex;gap:12px;flex-wrap:wrap">'
+        +(x.brand?'<span>'+escH(x.brand+(x.model?' '+x.model:''))+'</span>':'')
+        +(x.serial_number?'<span>S/N: '+escH(x.serial_number)+'</span>':'')
+        +(x.location?'<span><i class="ti ti-map-pin" style="font-size:10px"></i> '+escH(x.location)+'</span>':'')
+        +(x.assigned_to_name?'<span><i class="ti ti-user" style="font-size:10px"></i> '+escH(x.assigned_to_name)+'</span>':'')
+        +'</div>'
+        +'</div></div>'
+        +'<div style="display:flex;gap:6px;align-items:center">'
+        +'<button class="btn btn-sm" style="background:#1D9E7515;color:#1D9E75;border-color:#1D9E7540" data-id="'+x.id+'" onclick="toolsStartInspection(this.getAttribute(\'data-id\'))"><i class="ti ti-clipboard-check"></i>Inspect</button>'
+        +'<button class="btn btn-sm" data-id="'+x.id+'" onclick="toolsEdit(this.getAttribute(\'data-id\'))"><i class="ti ti-edit"></i></button>'
+        +(isMgr()?'<button class="btn btn-sm" style="color:var(--red)" data-id="'+x.id+'" onclick="toolsDeleteFromList(this.getAttribute(\'data-id\'))"><i class="ti ti-trash"></i></button>':'')
+        +'</div>'
+        +'</div>';
+    });
+  });
+  el.innerHTML=html;
+}
+
+// ── ADD / EDIT FORM ──────────────────────────────────────────────────────────
+function toolsNew(){
+  toolsEditingId=null;
+  document.getElementById('tools-form-title').textContent='New Equipment';
+  document.getElementById('tools-form-ref').textContent='';
+  document.getElementById('tools-del-btn').style.display='none';
+  document.getElementById('teq-ref-display').textContent='AUTO';
+  ['teq-name','teq-brand','teq-model','teq-serial','teq-location','teq-notes','teq-reg','teq-stat-type','teq-stat-body'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
+  ['teq-purchase-date','teq-insurance','teq-roadworthy','teq-stat-last','teq-stat-next'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
+  var cat=document.getElementById('teq-cat');if(cat)cat.value='hand_tool';
+  var st=document.getElementById('teq-status');if(st)st.value='active';
+  var fr=document.getElementById('teq-freq');if(fr)fr.value='weekly';
+  var as=document.getElementById('teq-assigned');if(as){as.innerHTML='<option value="">General use</option>';(people||[]).forEach(function(p){var o=document.createElement('option');o.value=p.id;o.textContent=p.last_name+', '+p.first_name+(p.job_title?' — '+p.job_title:'');as.appendChild(o);});}
+  var stc=document.getElementById('teq-statutory');if(stc)stc.checked=false;
+  document.getElementById('teq-statutory-fields').style.display='none';
+  document.getElementById('teq-vehicle-section').style.display='none';
+  toolsShowForm();
+}
+
+function toolsEdit(id){
+  var x=toolsAllData.find(function(r){return r.id===id;});
+  if(!x)return;
+  toolsEditingId=id;
+  document.getElementById('tools-form-title').textContent='Edit Equipment';
+  document.getElementById('tools-form-ref').textContent=x.ref_number||'';
+  document.getElementById('tools-del-btn').style.display=isMgr()?'inline-flex':'none';
+  document.getElementById('teq-ref-display').textContent=x.ref_number||'AUTO';
+  var flds={'teq-name':'name','teq-brand':'brand','teq-model':'model','teq-serial':'serial_number','teq-location':'location','teq-notes':'notes','teq-reg':'registration_number','teq-stat-type':'statutory_type','teq-stat-body':'statutory_body'};
+  Object.entries(flds).forEach(function(e){var el=document.getElementById(e[0]);if(el)el.value=x[e[1]]||'';});
+  ['teq-purchase-date','teq-stat-last','teq-stat-next'].forEach(function(id){
+    var key={'teq-purchase-date':'purchase_date','teq-stat-last':'last_statutory_date','teq-stat-next':'next_statutory_date'}[id];
+    var el=document.getElementById(id);if(el)el.value=x[key]||'';
+  });
+  var cat=document.getElementById('teq-cat');if(cat)cat.value=x.category||'hand_tool';
+  var st=document.getElementById('teq-status');if(st)st.value=x.status||'active';
+  var fr=document.getElementById('teq-freq');if(fr)fr.value=x.inspection_frequency||'weekly';
+  var as=document.getElementById('teq-assigned');
+  if(as){as.innerHTML='<option value="">General use</option>';(people||[]).forEach(function(p){var o=document.createElement('option');o.value=p.id;o.textContent=p.last_name+', '+p.first_name+(p.job_title?' — '+p.job_title:'');as.appendChild(o);});as.value=x.assigned_to||'';}
+  var stc=document.getElementById('teq-statutory');if(stc)stc.checked=!!x.requires_statutory;
+  document.getElementById('teq-statutory-fields').style.display=x.requires_statutory?'block':'none';
+  document.getElementById('teq-vehicle-section').style.display=x.category==='vehicle'?'block':'none';
+  toolsShowForm();
+}
+
+function toolsCatChange(){
+  var cat=document.getElementById('teq-cat')?.value;
+  document.getElementById('teq-vehicle-section').style.display=cat==='vehicle'?'block':'none';
+  if(cat==='vehicle'||cat==='lifting'){
+    var stc=document.getElementById('teq-statutory');
+    if(stc&&!stc.checked){stc.checked=true;document.getElementById('teq-statutory-fields').style.display='block';}
+  }
+  var freq=document.getElementById('teq-freq');
+  if(freq&&cat==='vehicle')freq.value='monthly';
+}
+
+function toolsStatutoryChange(){
+  var checked=document.getElementById('teq-statutory')?.checked;
+  document.getElementById('teq-statutory-fields').style.display=checked?'block':'none';
+}
+
+function toolsShowForm(){
+  ['tools-view-register','tools-view-personal','tools-view-inspection','tools-view-statutory','tools-view-vehicles'].forEach(function(id){var el=document.getElementById(id);if(el)el.style.display='none';});
+  document.getElementById('tools-insp-form').style.display='none';
+  document.getElementById('tools-form').style.display='block';
+}
+
+function toolsFormBack(){
+  document.getElementById('tools-form').style.display='none';
+  document.getElementById('tools-view-register').style.display='block';
+  document.querySelectorAll('.mtg-tab').forEach(t=>t.classList.remove('active'));
+  var tab=document.getElementById('tools-tab-register');if(tab)tab.classList.add('active');
+  toolsLoadRegister();
+}
+
+async function toolsSaveEquipment(){
+  var name=document.getElementById('teq-name')?.value?.trim();
+  if(!name){toast('Please enter a name',false);return;}
+  var g=function(id){var el=document.getElementById(id);return el?el.value||null:null;};
+  var cat=g('teq-cat')||'hand_tool';
+  var personId=g('teq-assigned');
+  var personName='';
+  if(personId){var p=(people||[]).find(function(x){return x.id===personId;});personName=p?(p.last_name+', '+p.first_name):'';}
+  var body={
+    company_id:prof?.company_id,category:cat,name:name,
+    brand:g('teq-brand'),model:g('teq-model'),serial_number:g('teq-serial'),
+    location:g('teq-location'),assigned_to:personId||null,assigned_to_name:personName||null,
+    status:g('teq-status')||'active',inspection_frequency:g('teq-freq')||'weekly',
+    purchase_date:g('teq-purchase-date'),
+    is_vehicle:cat==='vehicle',registration_number:g('teq-reg'),
+    requires_statutory:document.getElementById('teq-statutory')?.checked||false,
+    statutory_type:g('teq-stat-type'),last_statutory_date:g('teq-stat-last'),
+    next_statutory_date:g('teq-stat-next'),statutory_body:g('teq-stat-body'),
+    notes:g('teq-notes'),updated_at:new Date().toISOString()
+  };
+  try{
+    if(toolsEditingId){
+      await api('/tools_register?id=eq.'+toolsEditingId,{m:'PATCH',p:'return=minimal',b:body});
+      toast('Equipment updated!');
+    }else{
+      // Generate ref number via Supabase function
+      body.created_by=prof?.id;
+      var res=await api('/tools_register',{m:'POST',p:'return=representation',b:body});
+      if(res?.[0]?.id){
+        // Update with generated ref
+        try{
+          var refRes=await api('/rpc/generate_tool_ref',{m:'POST',b:{cat:cat}});
+          if(refRes){await api('/tools_register?id=eq.'+res[0].id,{m:'PATCH',p:'return=minimal',b:{ref_number:refRes}});}
+        }catch(ex){console.warn('Ref gen failed',ex);}
+        toast('Equipment added! Ref: '+(refRes||res[0].ref_number||''));
+      }
+    }
+    toolsFormBack();
+  }catch(e){toast(e.message,false);console.error(e);}
+}
+
+async function toolsDelete(){
+  if(!toolsEditingId)return;
+  if(!confirm('Delete this equipment?'))return;
+  try{await api('/tools_register?id=eq.'+toolsEditingId,{m:'DELETE'});toast('Deleted!');toolsFormBack();}
+  catch(e){toast(e.message,false);}
+}
+
+async function toolsDeleteFromList(id){
+  if(!confirm('Delete this equipment?'))return;
+  try{
+    await api('/tools_register?id=eq.'+id,{m:'DELETE'});
+    toolsAllData=toolsAllData.filter(x=>x.id!==id);
+    toast('Deleted!');toolsFilterRegister();
+  }catch(e){toast(e.message,false);}
+}
+
+// ── PERSONAL TOOLS ───────────────────────────────────────────────────────────
+async function toolsLoadPersonal(){
+  var el=document.getElementById('tools-personal-list');
+  if(!el)return;
+  el.innerHTML='<div class="loading-msg">Loading...</div>';
+  // Populate filter dropdown
+  var sel=document.getElementById('tools-personal-filter');
+  if(sel&&sel.options.length<=1){
+    sel.innerHTML='<option value="">All employees</option>';
+    (people||[]).forEach(function(p){var o=document.createElement('option');o.value=p.id;o.textContent=p.last_name+', '+p.first_name;sel.appendChild(o);});
+  }
+  var personFilter=document.getElementById('tools-personal-filter')?.value||'';
+  try{
+    var q='/tools_register?select=*'+cf()+'&order=assigned_to_name,name';
+    if(personFilter)q+='&assigned_to=eq.'+personFilter;
+    else q+='&assigned_to=not.is.null';
+    var d=await api(q);
+    var assigned=d||[];
+    if(!assigned.length){
+      el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)">No personal tool assignments found.<br><br>'+(isMgr()?'<button class="btn btn-primary" onclick="toolsNew()"><i class="ti ti-plus"></i>Add equipment and assign to a person</button>':'')+'</div>';
+      return;
+    }
+    // Group by person
+    var byPerson={};
+    assigned.forEach(function(x){var k=x.assigned_to_name||'Unknown';if(!byPerson[k])byPerson[k]=[];byPerson[k].push(x);});
+    var html='';
+    Object.entries(byPerson).forEach(function(e){
+      var person=e[0],tools=e[1];
+      html+='<div class="card" style="margin:0 0 12px 0">';
+      html+='<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">'
+        +'<div style="display:flex;align-items:center;gap:10px">'
+        +'<div style="width:40px;height:40px;border-radius:50%;background:var(--green);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px">'+person.charAt(0)+'</div>'
+        +'<div><div style="font-weight:700;font-size:14px">'+escH(person)+'</div>'
+        +'<div style="font-size:11px;color:var(--text2)">'+tools.length+' tool'+(tools.length!==1?'s':'')+' assigned — weekly self-check required</div>'
+        +'</div></div>'
+        +'<button class="btn btn-sm btn-primary" style="font-size:11px" onclick="toolsStartPersonalCheck(\''+person+'\')"><i class="ti ti-clipboard-check"></i>Weekly check</button>'
+        +'</div>';
+      html+='<table style="width:100%;border-collapse:collapse;font-size:12px">'
+        +'<thead><tr style="background:#f9fafb"><th style="padding:7px 12px;text-align:left;border-bottom:1px solid var(--border)">Ref</th>'
+        +'<th style="padding:7px 12px;text-align:left;border-bottom:1px solid var(--border)">Equipment</th>'
+        +'<th style="padding:7px 12px;text-align:left;border-bottom:1px solid var(--border)">Category</th>'
+        +'<th style="padding:7px 12px;text-align:left;border-bottom:1px solid var(--border)">Frequency</th>'
+        +'<th style="padding:7px 12px;text-align:left;border-bottom:1px solid var(--border)">Status</th>'
+        +'</tr></thead><tbody>';
+      tools.forEach(function(t,ti){
+        var bg=ti%2===0?'#fff':'#fafafa';
+        html+='<tr style="border-bottom:1px solid #f5f5f5;background:'+bg+'">'
+          +'<td style="padding:7px 12px;font-family:monospace;font-weight:700;color:var(--green)">'+escH(t.ref_number||'—')+'</td>'
+          +'<td style="padding:7px 12px;font-weight:600">'+escH(t.name||'—')+'</td>'
+          +'<td style="padding:7px 12px">'+escH(TOOL_CAT_LABELS[t.category]||t.category)+'</td>'
+          +'<td style="padding:7px 12px;text-transform:capitalize">'+escH(t.inspection_frequency||'weekly')+'</td>'
+          +'<td style="padding:7px 12px"><span style="background:'+(t.status==='active'?'#EAF3DE':'#FCEBEB')+';color:'+(t.status==='active'?'#3B6D11':'#A32D2D')+';padding:2px 8px;border-radius:99px;font-size:10px;font-weight:700">'+escH(t.status||'active')+'</span></td>'
+          +'</tr>';
+      });
+      html+='</tbody></table></div>';
+    });
+    el.innerHTML=html;
+  }catch(err){el.innerHTML='<p style="padding:20px;color:red">'+err.message+'</p>';}
+}
+
+function toolsStartPersonalCheck(personName){
+  // Switch to inspection tab and filter by person
+  document.querySelectorAll('.mtg-tab').forEach(t=>t.classList.remove('active'));
+  var btn=document.getElementById('tools-tab-inspection');if(btn)btn.classList.add('active');
+  ['register','personal','statutory','vehicles'].forEach(function(t){var el=document.getElementById('tools-view-'+t);if(el)el.style.display='none';});
+  document.getElementById('tools-view-inspection').style.display='block';
+  toolsLoadInspections();
+}
+
+// ── INSPECTIONS ──────────────────────────────────────────────────────────────
+async function toolsLoadInspections(){
+  var el=document.getElementById('tools-insp-list');
+  if(!el)return;
+  el.innerHTML='<div class="loading-msg">Loading...</div>';
+  try{
+    var d=await api('/tool_inspections?select=*,tools_register(name,ref_number,category)'+cf()+'&order=inspection_date.desc&limit=100');
+    if(!d||!d.length){
+      el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)">No inspections recorded yet.'+(isMgr()?' <button class="btn btn-primary btn-sm" onclick="toolsNewInspection()"><i class="ti ti-plus"></i>New inspection</button>':'')+'</div>';
+      return;
+    }
+    var h='<table style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr style="background:#1a3a5c;color:#fff">'
+      +'<th style="padding:8px 12px;text-align:left">Date</th>'
+      +'<th style="padding:8px 10px;text-align:left">Equipment</th>'
+      +'<th style="padding:8px 10px;text-align:left">Ref</th>'
+      +'<th style="padding:8px 10px;text-align:left">Type</th>'
+      +'<th style="padding:8px 10px;text-align:left">Inspector</th>'
+      +'<th style="padding:8px 10px;text-align:center">Result</th>'
+      +'<th style="padding:8px 10px;width:60px"></th>'
+      +'</tr></thead><tbody>';
+    d.forEach(function(x,i){
+      var bg=i%2===0?'#fff':'#f9fafb';
+      var dt=x.inspection_date?new Date(x.inspection_date).toLocaleDateString('en-GB'):'—';
+      var res=x.overall_result;
+      var resCfg={pass:['#EAF3DE','#3B6D11','✓ Pass'],conditional:['#FEF9EC','#854F0B','⚠ Conditional'],fail:['#FCEBEB','#A32D2D','✗ Fail']};
+      var rc=resCfg[res]||resCfg.pass;
+      h+='<tr style="border-bottom:1px solid #f0f0f0;background:'+bg+'">'
+        +'<td style="padding:8px 12px;font-weight:600">'+dt+'</td>'
+        +'<td style="padding:8px 10px">'+escH(x.tools_register?.name||'—')+'</td>'
+        +'<td style="padding:8px 10px;font-family:monospace;font-size:11px;color:var(--green);font-weight:700">'+escH(x.tools_register?.ref_number||'—')+'</td>'
+        +'<td style="padding:8px 10px;text-transform:capitalize;font-size:11px">'+escH((x.inspection_type||'').replace(/_/g,' '))+'</td>'
+        +'<td style="padding:8px 10px">'+escH(x.inspected_by_name||'—')+'</td>'
+        +'<td style="padding:8px 10px;text-align:center"><span style="background:'+rc[0]+';color:'+rc[1]+';padding:3px 10px;border-radius:99px;font-size:11px;font-weight:700">'+rc[2]+'</span></td>'
+        +'<td style="padding:8px 10px"><button class="btn btn-sm" data-id="'+x.id+'" onclick="toolsViewInspection(this.getAttribute(\'data-id\'))"><i class="ti ti-eye"></i></button></td>'
+        +'</tr>';
+    });
+    h+='</tbody></table>';
+    el.innerHTML=h;
+  }catch(e){el.innerHTML='<p style="padding:20px;color:red">'+e.message+'</p>';}
+}
+
+async function toolsNewInspection(){
+  // Show equipment picker first
+  var id=prompt('Enter equipment Ref No. or name to inspect:');
+  if(!id)return;
+  var found=toolsAllData.find(function(x){return (x.ref_number||'').toLowerCase()===id.toLowerCase()||(x.name||'').toLowerCase().includes(id.toLowerCase());});
+  if(!found){toast('Equipment not found. Please check the register.',false);return;}
+  toolsStartInspection(found.id);
+}
+
+async function toolsStartInspection(toolId){
+  var tool=toolsAllData.find(x=>x.id===toolId);
+  if(!tool&&toolId){try{var d=await api('/tools_register?id=eq.'+toolId+'&select=*');tool=d?.[0];}catch(e){}}
+  if(!tool){toast('Equipment not found',false);return;}
+  toolsInspEquipId=toolId;
+  toolsInspEditingId=null;
+  // Set header info
+  document.getElementById('insp-equip-name').textContent=tool.name||'—';
+  document.getElementById('insp-equip-ref').textContent=tool.ref_number||'';
+  document.getElementById('tools-insp-form-title').textContent='Inspection — '+escH(tool.name||'');
+  document.getElementById('tools-insp-form-sub').textContent=(tool.ref_number||'')+(tool.location?' · '+tool.location:'');
+  // Set date to today
+  var dt=document.getElementById('insp-date');if(dt)dt.value=new Date().toISOString().slice(0,10);
+  // Inspector dropdown
+  var insp=document.getElementById('insp-inspector');
+  if(insp){insp.innerHTML='<option value="">Select inspector...</option>';(people||[]).forEach(function(p){var o=document.createElement('option');o.value=p.id;o.textContent=p.last_name+', '+p.first_name;insp.appendChild(o);});}
+  // Set next inspection based on frequency
+  var nextDate=new Date();
+  var freqDays={daily:1,weekly:7,monthly:30,quarterly:90,annual:365};
+  var days=freqDays[tool.inspection_frequency]||7;
+  nextDate.setDate(nextDate.getDate()+days);
+  var nd=document.getElementById('insp-next-date');if(nd)nd.value=nextDate.toISOString().slice(0,10);
+  // Load checklist
+  await toolsLoadChecklist(tool.category);
+  // Show form
+  ['tools-view-register','tools-view-personal','tools-view-inspection','tools-view-statutory','tools-view-vehicles'].forEach(function(id){var el=document.getElementById(id);if(el)el.style.display='none';});
+  document.getElementById('tools-form').style.display='none';
+  document.getElementById('tools-insp-form').style.display='block';
+}
+
+async function toolsLoadChecklist(category){
+  var tbody=document.getElementById('insp-checklist-body');
+  if(!tbody)return;
+  try{
+    var items=await api('/tool_checklist_templates?category=eq.'+category+'&order=sort_order');
+    if(!items||!items.length){
+      // Generic items
+      items=[{check_item:'Visual inspection — no damage or defects'},{check_item:'Safe to use'},{check_item:'Stored correctly'}];
+    }
+    tbody.innerHTML='';
+    items.forEach(function(item,i){
+      var tr=document.createElement('tr');
+      tr.style.cssText='border-bottom:1px solid #f5f5f5';
+      tr.innerHTML='<td style="padding:8px 16px;font-size:12px">'+escH(item.check_item||item.check_item)+'</td>'
+        +'<td style="padding:6px;text-align:center"><input type="radio" name="chk'+i+'" value="ok" id="ci-ok-'+i+'" onchange="toolsInspScore()" style="width:16px;height:16px;accent-color:#1D9E75"></td>'
+        +'<td style="padding:6px;text-align:center"><input type="radio" name="chk'+i+'" value="fail" id="ci-fail-'+i+'" onchange="toolsInspScore()" style="width:16px;height:16px;accent-color:#E24B4A"></td>'
+        +'<td style="padding:6px;text-align:center"><input type="radio" name="chk'+i+'" value="na" id="ci-na-'+i+'" onchange="toolsInspScore()" style="width:16px;height:16px;accent-color:#6B7280" checked></td>'
+        +'<td style="padding:4px 12px"><input type="text" class="insp-note-'+i+'" placeholder="Notes..." style="width:100%;padding:4px 8px;border:1px solid var(--border);border-radius:6px;font-size:11px"/></td>';
+      tbody.appendChild(tr);
+    });
+    toolsInspScore();
+  }catch(e){console.error(e);}
+}
+
+function toolsInspScore(){
+  var rows=document.querySelectorAll('#insp-checklist-body tr');
+  var ok=0,fail=0,na=0;
+  rows.forEach(function(tr,i){
+    var okR=document.getElementById('ci-ok-'+i);
+    var failR=document.getElementById('ci-fail-'+i);
+    var naR=document.getElementById('ci-na-'+i);
+    if(okR?.checked)ok++;
+    else if(failR?.checked)fail++;
+    else if(naR?.checked)na++;
+  });
+  var el=document.getElementById('insp-score-display');
+  if(el)el.textContent=ok+' OK · '+fail+' Fail · '+na+' N/A';
+  // Auto-set result
+  var res=document.getElementById('insp-result');
+  if(res&&fail>0)res.value='fail';
+  else if(res)res.value='pass';
+}
+
+function toolsInspFormBack(){
+  document.getElementById('tools-insp-form').style.display='none';
+  document.getElementById('tools-view-inspection').style.display='block';
+  document.querySelectorAll('.mtg-tab').forEach(t=>t.classList.remove('active'));
+  var tab=document.getElementById('tools-tab-inspection');if(tab)tab.classList.add('active');
+  toolsLoadInspections();
+}
+
+async function toolsSaveInspection(){
+  var date=document.getElementById('insp-date')?.value;
+  if(!date){toast('Please set inspection date',false);return;}
+  var inspId=document.getElementById('insp-inspector')?.value;
+  var inspName='';
+  if(inspId){var p=(people||[]).find(x=>x.id===inspId);inspName=p?(p.last_name+', '+p.first_name):'';}
+  // Collect checklist
+  var rows=document.querySelectorAll('#insp-checklist-body tr');
+  var results=[];
+  rows.forEach(function(tr,i){
+    var item=tr.querySelector('td')?.textContent||'';
+    var ok=document.getElementById('ci-ok-'+i)?.checked;
+    var fail=document.getElementById('ci-fail-'+i)?.checked;
+    var note=tr.querySelector('input[type="text"]')?.value||'';
+    results.push({item:item,result:ok?'ok':fail?'fail':'na',note:note});
+  });
+  var body={
+    company_id:prof?.company_id,tool_id:toolsInspEquipId,
+    inspection_type:document.getElementById('insp-type')?.value||'periodic',
+    inspection_date:date,inspected_by:inspId||null,inspected_by_name:inspName||null,
+    overall_result:document.getElementById('insp-result')?.value||'pass',
+    checklist_results:results,
+    defects_found:document.getElementById('insp-defects')?.value||null,
+    actions_taken:document.getElementById('insp-actions')?.value||null,
+    next_inspection_date:document.getElementById('insp-next-date')?.value||null,
+    created_by:prof?.id
+  };
+  try{
+    await api('/tool_inspections',{m:'POST',p:'return=minimal',b:body});
+    // If fail, add to MAP
+    if(body.overall_result==='fail'&&body.defects_found){
+      var tool=toolsAllData.find(x=>x.id===toolsInspEquipId);
+      await api('/action_tracker',{m:'POST',p:'return=minimal',b:{
+        company_id:prof?.company_id,source_module:'tools',source_id:toolsInspEquipId,
+        source_ref:(tool?.ref_number||'Equipment')+' — Failed inspection',
+        description:'Equipment failed inspection: '+body.defects_found,
+        responsible:inspName||null,priority:'high',status:'open',created_by:prof?.id
+      }});
+      toast('Inspection saved — FAIL recorded and action added to MAP.');
+    }else{
+      toast('Inspection saved!');
+    }
+    toolsInspFormBack();
+  }catch(e){toast(e.message,false);console.error(e);}
+}
+
+// ── STATUTORY VERIFICATION ───────────────────────────────────────────────────
+async function toolsLoadStatutory(){
+  var el=document.getElementById('tools-stat-list');
+  var alertEl=document.getElementById('tools-stat-alerts');
+  if(!el)return;
+  el.innerHTML='<div class="loading-msg">Loading...</div>';
+  try{
+    var d=await api('/tools_register?requires_statutory=eq.true'+cf()+'&order=next_statutory_date&select=*');
+    if(!d||!d.length){
+      el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)">No equipment requiring statutory examination registered.<br><br>'+(isMgr()?'<button class="btn btn-primary btn-sm" onclick="toolsNew()">Add statutory equipment</button>':'')+'</div>';
+      if(alertEl)alertEl.innerHTML='';
+      return;
+    }
+    var today=new Date(); var soon=new Date(); soon.setDate(soon.getDate()+60);
+    var overdue=d.filter(x=>x.next_statutory_date&&new Date(x.next_statutory_date)<today);
+    var dueSoon=d.filter(x=>x.next_statutory_date&&new Date(x.next_statutory_date)>=today&&new Date(x.next_statutory_date)<=soon);
+    if(alertEl){
+      var ah='';
+      if(overdue.length)ah+='<div style="background:#FCEBEB;border:1px solid #fca5a5;border-radius:8px;padding:10px 14px;margin-bottom:8px;font-size:12px"><strong style="color:var(--red)">⚠ OVERDUE: '+overdue.length+' statutory examination'+(overdue.length!==1?'s':'')+' overdue:</strong> '+overdue.map(x=>escH(x.name+(x.ref_number?' ('+x.ref_number+')':''))).join(', ')+'</div>';
+      if(dueSoon.length)ah+='<div style="background:#FEF9EC;border:1px solid #fcd34d;border-radius:8px;padding:10px 14px;margin-bottom:8px;font-size:12px"><strong style="color:var(--amber)">⏰ Due within 60 days: '+dueSoon.length+' examination'+(dueSoon.length!==1?'s':'')+' due soon</strong></div>';
+      alertEl.innerHTML=ah;
+    }
+    var h='<table style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr style="background:#1a3a5c;color:#fff">'
+      +'<th style="padding:8px 12px;text-align:left">Ref</th>'
+      +'<th style="padding:8px 10px;text-align:left">Equipment</th>'
+      +'<th style="padding:8px 10px;text-align:left">Examination type</th>'
+      +'<th style="padding:8px 10px;text-align:left;width:110px">Last exam</th>'
+      +'<th style="padding:8px 10px;text-align:left;width:110px">Next exam due</th>'
+      +'<th style="padding:8px 10px;text-align:left">Examining body</th>'
+      +'<th style="padding:8px 10px;text-align:center;width:100px">Status</th>'
+      +'<th style="padding:8px 10px;width:60px"></th>'
+      +'</tr></thead><tbody>';
+    d.forEach(function(x,i){
+      var bg=i%2===0?'#fff':'#f9fafb';
+      var nextDate=x.next_statutory_date?new Date(x.next_statutory_date):null;
+      var isOverdue=nextDate&&nextDate<today;
+      var isDueSoon=nextDate&&nextDate>=today&&nextDate<=soon;
+      var statColor=isOverdue?'var(--red)':isDueSoon?'var(--amber)':'var(--green)';
+      var statLabel=isOverdue?'OVERDUE':isDueSoon?'Due soon':'OK';
+      var statBg=isOverdue?'#FCEBEB':isDueSoon?'#FEF9EC':'#EAF3DE';
+      var statTxt=isOverdue?'#A32D2D':isDueSoon?'#854F0B':'#3B6D11';
+      h+='<tr style="border-bottom:1px solid #f0f0f0;background:'+bg+(isOverdue?';border-left:3px solid var(--red)':isDueSoon?';border-left:3px solid var(--amber)':'')+'">'
+        +'<td style="padding:8px 12px;font-family:monospace;font-weight:700;color:var(--green)">'+escH(x.ref_number||'—')+'</td>'
+        +'<td style="padding:8px 10px;font-weight:600">'+escH(x.name||'—')+'</td>'
+        +'<td style="padding:8px 10px">'+escH(x.statutory_type||'—')+'</td>'
+        +'<td style="padding:8px 10px">'+( x.last_statutory_date?new Date(x.last_statutory_date).toLocaleDateString('en-GB'):'—')+'</td>'
+        +'<td style="padding:8px 10px;color:'+statColor+';font-weight:600">'+( nextDate?nextDate.toLocaleDateString('en-GB'):'—')+'</td>'
+        +'<td style="padding:8px 10px">'+escH(x.statutory_body||'—')+'</td>'
+        +'<td style="padding:8px 10px;text-align:center"><span style="background:'+statBg+';color:'+statTxt+';padding:2px 8px;border-radius:99px;font-size:10px;font-weight:700">'+statLabel+'</span></td>'
+        +'<td style="padding:8px 10px"><button class="btn btn-sm" data-id="'+x.id+'" onclick="toolsEdit(this.getAttribute(\'data-id\'))"><i class="ti ti-edit"></i></button></td>'
+        +'</tr>';
+    });
+    h+='</tbody></table>';
+    el.innerHTML=h;
+  }catch(e){el.innerHTML='<p style="padding:20px;color:red">'+e.message+'</p>';}
+}
+
+// ── VEHICLES ─────────────────────────────────────────────────────────────────
+async function toolsLoadVehicles(){
+  var el=document.getElementById('tools-vehicles-list');
+  if(!el)return;
+  el.innerHTML='<div class="loading-msg">Loading...</div>';
+  try{
+    var vehicles=await api('/tools_register?is_vehicle=eq.true'+cf()+'&order=name&select=*');
+    if(!vehicles||!vehicles.length){
+      el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)">'
+        +'<div style="font-size:48px;margin-bottom:12px">🚗</div>'
+        +'<div style="font-weight:600;margin-bottom:8px">No vehicles registered</div>'
+        +(isMgr()?'<button class="btn btn-primary" onclick="toolsNewVehicle()"><i class="ti ti-plus"></i>Add vehicle</button>':'')
+        +'</div>';
+      return;
+    }
+    // Get last inspection for each vehicle
+    var today=new Date();
+    var html='<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:16px;padding:16px">';
+    for(var i=0;i<vehicles.length;i++){
+      var v=vehicles[i];
+      var lastInsp=null;
+      try{var ins=await api('/tool_inspections?tool_id=eq.'+v.id+'&order=inspection_date.desc&limit=1'+cf());lastInsp=ins?.[0];}catch(ex){}
+      var lastDt=lastInsp?new Date(lastInsp.inspection_date):null;
+      var daysSince=lastDt?Math.floor((today-lastDt)/(1000*60*60*24)):999;
+      var isOverdue=daysSince>35;
+      var isDueSoon=daysSince>21&&daysSince<=35;
+      var inspStatus=isOverdue?['#FCEBEB','#A32D2D','Monthly check OVERDUE']:isDueSoon?['#FEF9EC','#854F0B','Due for monthly check']:['#EAF3DE','#3B6D11','Monthly check up to date'];
+      html+='<div class="card" style="border:2px solid '+(isOverdue?'var(--red)':isDueSoon?'var(--amber)':'var(--border)')+';padding:0;overflow:hidden">'
+        +'<div style="background:linear-gradient(135deg,#1a3a5c,#185FA5);padding:16px 20px;color:#fff">'
+        +'<div style="display:flex;align-items:center;justify-content:space-between">'
+        +'<div><div style="font-size:18px;font-weight:800;letter-spacing:2px;font-family:monospace">'+escH(v.registration_number||v.name)+'</div>'
+        +'<div style="font-size:12px;opacity:.8;margin-top:2px">'+escH(v.name+(v.brand?' · '+v.brand:'')+(v.model?' '+v.model:''))+'</div>'
+        +'</div>'
+        +'<div style="font-size:36px">🚗</div>'
+        +'</div>'
+        +'<div style="margin-top:8px;font-family:monospace;font-size:11px;opacity:.7">'+escH(v.ref_number||'')+'</div>'
+        +'</div>'
+        +'<div style="padding:14px 16px">'
+        +'<div style="background:'+inspStatus[0]+';color:'+inspStatus[1]+';padding:6px 12px;border-radius:8px;font-size:12px;font-weight:700;margin-bottom:12px;text-align:center">'+inspStatus[2]+'</div>'
+        +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:12px;margin-bottom:14px">'
+        +'<div><span style="color:var(--text2)">Last inspection:</span><br><strong>'+(lastDt?lastDt.toLocaleDateString('en-GB'):'Never')+'</strong></div>'
+        +'<div><span style="color:var(--text2)">Days since check:</span><br><strong style="color:'+(isOverdue?'var(--red)':'inherit')+'">'+( daysSince<999?daysSince+'d':'—')+'</strong></div>'
+        +'<div><span style="color:var(--text2)">Last result:</span><br><strong>'+(lastInsp?.overall_result||'—')+'</strong></div>'
+        +'<div><span style="color:var(--text2)">Location:</span><br><strong>'+escH(v.location||'—')+'</strong></div>'
+        +'</div>'
+        +'<div style="display:flex;gap:8px">'
+        +'<button class="btn btn-primary" style="flex:1;justify-content:center;font-size:12px" data-id="'+v.id+'" onclick="toolsStartInspection(this.getAttribute(\'data-id\'))"><i class="ti ti-clipboard-check"></i>Monthly check</button>'
+        +'<button class="btn btn-sm" data-id="'+v.id+'" onclick="toolsEdit(this.getAttribute(\'data-id\'))"><i class="ti ti-edit"></i></button>'
+        +'</div>'
+        +'</div></div>';
+    }
+    html+='</div>';
+    if(isMgr())html+='<div style="padding:12px 16px;border-top:1px solid var(--border);text-align:center"><button class="btn btn-sm btn-primary" onclick="toolsNewVehicle()"><i class="ti ti-plus"></i>Add vehicle</button></div>';
+    el.innerHTML=html;
+  }catch(e){el.innerHTML='<p style="padding:20px;color:red">'+e.message+'</p>';}
+}
+
+function toolsNewVehicle(){
+  toolsNew();
+  var cat=document.getElementById('teq-cat');if(cat){cat.value='vehicle';toolsCatChange();}
+  var freq=document.getElementById('teq-freq');if(freq)freq.value='monthly';
+}
+
+function toolsNewVehicleInspection(){
+  document.querySelectorAll('.mtg-tab').forEach(t=>t.classList.remove('active'));
+  var btn=document.getElementById('tools-tab-inspection');if(btn)btn.classList.add('active');
+  ['register','personal','statutory','vehicles'].forEach(function(t){var el=document.getElementById('tools-view-'+t);if(el)el.style.display='none';});
+  document.getElementById('tools-view-inspection').style.display='block';
+  toolsNewInspection();
+}
+
+function toolsViewInspection(id){
+  toast('Inspection details — feature coming soon');
+}
+
 async function loadMtgs(){
   var btn=document.getElementById('mtg-new-series-btn');
   if(btn)btn.style.display=isMgr()?'inline-flex':'none';
@@ -5351,13 +5981,16 @@ function sopSaveToDocControl(){
 
 
 
+
+
 </script>
 </head>
 <body>
 <div id="login-screen"><div class="login-box"><div class="login-logo">AURIS360</div><div class="login-sub">Powered by SEPHS Consulting — HSE Management Platform</div><div class="login-err" id="login-err"></div><div class="form-group"><label class="form-label">Email</label><input type="email" id="login-email" placeholder="your@email.com"/></div><div class="form-group"><label class="form-label">Password</label><input type="password" id="login-pw" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()"/></div><button class="btn btn-primary" style="width:100%;justify-content:center" onclick="doLogin()" id="login-btn"><i class="ti ti-login"></i>Sign In</button><div style="margin-top:18px;padding-top:16px;border-top:1px solid var(--border)"><div style="font-size:12px;color:var(--text2);margin-bottom:10px;font-weight:600">New user — register:</div><div class="form-group"><label class="form-label">Full name</label><input type="text" id="reg-name" placeholder="Full name"/></div><div class="form-row"><div class="form-group"><label class="form-label">Role</label><select id="reg-role"><option value="inspector">Inspector</option><option value="manager">HSE Manager</option><option value="admin">Company Admin</option><option value="sephs_admin">SEPHS Admin</option></select></div><div class="form-group"><label class="form-label">Company</label><select id="reg-company"><option value="">Loading...</option></select></div></div><button class="btn" style="width:100%;justify-content:center" onclick="doRegister()"><i class="ti ti-user-plus"></i>Register</button></div></div></div>
 <div id="app" style="display:none">
 <div class="layout">
-<div class="sidebar"><div class="sidebar-top"><img id="co-logo-img" class="co-logo" src="" alt="logo"/><div id="co-initials-div" class="co-initials">A</div><div class="sb-company" id="sb-company">AURIS360</div><div class="sb-user" id="sb-user">—</div><span class="sb-role" id="sb-role">—</span></div><span class="nav-section">Main</span><div class="nav-item active" onclick="showPage('dashboard',this)"><i class="ti ti-layout-dashboard"></i>Dashboard</div><div class="nav-item" id="nav-ai" onclick="showPage('ai-insights',this)"><i class="ti ti-brain"></i>AI Insights</div><span class="nav-section">HSE Modules</span><div class="nav-item" onclick="showPage('kpi',this)"><i class="ti ti-target"></i>Objectives & KPIs</div><div class="nav-item" onclick="showPage('events',this)"><i class="ti ti-alert-triangle"></i>Event Reporting</div><div class="nav-item" onclick="showPage('inspection',this)"><i class="ti ti-clipboard-check"></i>Site Inspection</div><div class="nav-item" onclick="showPage('risk',this)"><i class="ti ti-shield-check"></i>Risk Assessment</div><div class="nav-item" id="nav-inv" onclick="showPage('investigation',this)"><i class="ti ti-search"></i>Investigation</div><div class="nav-item" onclick="showPage('permit',this)"><i class="ti ti-key"></i>Permit to Work</div><div class="nav-item" onclick="showPage('noise',this)"><i class="ti ti-volume"></i>Noise Survey</div><div class="nav-item" id="nav-mtg" onclick="showPage('meetings',this)"><i class="ti ti-notes"></i>HSE Meetings</div><div class="nav-item" onclick="showPage('training',this)"><i class="ti ti-certificate"></i>Training</div><span class="nav-section">Management</span><div class="nav-item" onclick="showPage('actions',this)"><i class="ti ti-list-check"></i>Master Action Plan</div><div class="nav-item" onclick="showPage('legal',this)"><i class="ti ti-scale"></i>Legal Compliance</div>
+<div class="sidebar"><div class="sidebar-top"><img id="co-logo-img" class="co-logo" src="" alt="logo"/><div id="co-initials-div" class="co-initials">A</div><div class="sb-company" id="sb-company">AURIS360</div><div class="sb-user" id="sb-user">—</div><span class="sb-role" id="sb-role">—</span></div><span class="nav-section">Main</span><div class="nav-item active" onclick="showPage('dashboard',this)"><i class="ti ti-layout-dashboard"></i>Dashboard</div><div class="nav-item" id="nav-ai" onclick="showPage('ai-insights',this)"><i class="ti ti-brain"></i>AI Insights</div><span class="nav-section">HSE Modules</span><div class="nav-item" onclick="showPage('kpi',this)"><i class="ti ti-target"></i>Objectives & KPIs</div><div class="nav-item" onclick="showPage('events',this)"><i class="ti ti-alert-triangle"></i>Event Reporting</div><div class="nav-item" onclick="showPage('inspection',this)"><i class="ti ti-clipboard-check"></i>Site Inspection</div><div class="nav-item" onclick="showPage('risk',this)"><i class="ti ti-shield-check"></i>Risk Assessment</div><div class="nav-item" id="nav-inv" onclick="showPage('investigation',this)"><i class="ti ti-search"></i>Investigation</div><div class="nav-item" onclick="showPage('tools',this)"><i class="ti ti-tools"></i>Tools & Equipment</div>
+<div class="nav-item" onclick="showPage('permit',this)"><i class="ti ti-key"></i>Permit to Work</div><div class="nav-item" onclick="showPage('noise',this)"><i class="ti ti-volume"></i>Noise Survey</div><div class="nav-item" id="nav-mtg" onclick="showPage('meetings',this)"><i class="ti ti-notes"></i>HSE Meetings</div><div class="nav-item" onclick="showPage('training',this)"><i class="ti ti-certificate"></i>Training</div><span class="nav-section">Management</span><div class="nav-item" onclick="showPage('actions',this)"><i class="ti ti-list-check"></i>Master Action Plan</div><div class="nav-item" onclick="showPage('legal',this)"><i class="ti ti-scale"></i>Legal Compliance</div>
 <div class="nav-item" onclick="showPage('sop',this)"><i class="ti ti-file-description"></i>SOP Generator</div>
 <div class="nav-item" id="nav-docs" onclick="showPage('documents',this)"><i class="ti ti-files"></i>Document Control</div><div class="nav-item" onclick="showPage('people',this)"><i class="ti ti-id-badge"></i>People</div><div class="nav-item" id="nav-users" onclick="showPage('users',this)"><i class="ti ti-users"></i>User Management</div><div class="nav-item" id="nav-admin" style="display:none" onclick="showPage('admin',this)"><i class="ti ti-building"></i>Companies</div><div class="nav-item" id="nav-settings" onclick="showPage('settings',this)"><i class="ti ti-settings"></i>Settings</div><div class="sb-footer"><button class="btn btn-sm" style="flex:1;justify-content:center;color:var(--red)" onclick="doLogout()"><i class="ti ti-logout"></i>Sign out</button></div></div>
 <div class="main">
@@ -6223,6 +6856,269 @@ function sopSaveToDocControl(){
 </div>
 
 </div><!-- end page-legal -->
+
+<div id="page-tools" class="page">
+<div class="page-header">
+<div><div class="page-title">Tools &amp; Equipment</div><div style="font-size:12px;color:var(--text2)">Register, inspection checklists, statutory verification and vehicle checks</div></div>
+<div style="display:flex;gap:8px" id="tools-header-btns">
+<button class="btn btn-primary" id="tools-add-btn" style="display:none" onclick="toolsNew()"><i class="ti ti-plus"></i>Add equipment</button>
+</div>
+</div>
+
+<!-- Tabs -->
+<div style="display:flex;gap:0;margin-bottom:16px;border-bottom:2px solid var(--border)">
+<button class="mtg-tab active" id="tools-tab-register" onclick="toolsSwitchTab('register',this)">🔧 Equipment Register</button>
+<button class="mtg-tab" id="tools-tab-personal" onclick="toolsSwitchTab('personal',this)">👷 Personal Tools</button>
+<button class="mtg-tab" id="tools-tab-inspection" onclick="toolsSwitchTab('inspection',this)">✅ Inspection Checklist</button>
+<button class="mtg-tab" id="tools-tab-statutory" onclick="toolsSwitchTab('statutory',this)">⚖️ Statutory Verification</button>
+<button class="mtg-tab" id="tools-tab-vehicles" onclick="toolsSwitchTab('vehicles',this)">🚗 Vehicles</button>
+</div>
+
+<!-- ── EQUIPMENT REGISTER ── -->
+<div id="tools-view-register">
+<!-- Metrics -->
+<div style="display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:14px">
+<div class="card" style="padding:12px 14px;border-left:4px solid #1D9E75"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">Active</div><div style="font-size:24px;font-weight:800;color:#1D9E75" id="tools-m-active">—</div></div>
+<div class="card" style="padding:12px 14px;border-left:4px solid #E24B4A"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">Out of service</div><div style="font-size:24px;font-weight:800;color:#E24B4A" id="tools-m-oos">—</div></div>
+<div class="card" style="padding:12px 14px;border-left:4px solid #EF9F27"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">Due inspection</div><div style="font-size:24px;font-weight:800;color:#EF9F27" id="tools-m-due">—</div></div>
+<div class="card" style="padding:12px 14px;border-left:4px solid #8B5CF6"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">Statutory due</div><div style="font-size:24px;font-weight:800;color:#8B5CF6" id="tools-m-stat">—</div></div>
+<div class="card" style="padding:12px 14px;border-left:4px solid #185FA5"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">Vehicles</div><div style="font-size:24px;font-weight:800;color:#185FA5" id="tools-m-veh">—</div></div>
+</div>
+<!-- Filter bar -->
+<div class="card" style="margin-bottom:12px;padding:10px 14px">
+<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+<input type="text" id="tools-search" placeholder="Search name, ref, serial..." oninput="toolsFilterRegister()" style="flex:1;min-width:180px;padding:7px 12px;border:1px solid var(--border);border-radius:8px;font-size:12px"/>
+<select id="tools-filter-cat" onchange="toolsFilterRegister()" style="padding:7px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px">
+<option value="">All categories</option>
+<option value="hand_tool">Hand tools</option>
+<option value="power_tool">Power tools</option>
+<option value="equipment">Equipment</option>
+<option value="vehicle">Vehicles</option>
+<option value="lifting">Lifting equipment</option>
+<option value="electrical">Electrical</option>
+<option value="ppe">PPE</option>
+<option value="other">Other</option>
+</select>
+<select id="tools-filter-status" onchange="toolsFilterRegister()" style="padding:7px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px">
+<option value="">All statuses</option>
+<option value="active">Active</option>
+<option value="out_of_service">Out of service</option>
+<option value="under_maintenance">Under maintenance</option>
+</select>
+</div>
+</div>
+<div class="card" style="padding:0;overflow:hidden"><div id="tools-register-list"><div class="loading-msg">Loading...</div></div></div>
+</div>
+
+<!-- ── PERSONAL TOOLS ── -->
+<div id="tools-view-personal" style="display:none">
+<div class="card" style="margin-bottom:12px;padding:10px 14px">
+<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
+<div>
+<div class="card-title" style="margin:0">Personal Tool Assignments</div>
+<div style="font-size:12px;color:var(--text2);margin-top:3px">Tools assigned to individual employees — weekly self-check required</div>
+</div>
+<select id="tools-personal-filter" onchange="toolsLoadPersonal()" style="padding:7px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px">
+<option value="">All employees</option>
+</select>
+</div>
+</div>
+<div id="tools-personal-list"><div class="loading-msg">Loading...</div></div>
+</div>
+
+<!-- ── INSPECTION CHECKLIST ── -->
+<div id="tools-view-inspection" style="display:none">
+<div class="card" style="margin-bottom:12px;padding:10px 14px">
+<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
+<div class="card-title" style="margin:0">Recent Inspections</div>
+<button class="btn btn-primary" id="insp-new-btn" style="display:none" onclick="toolsNewInspection()"><i class="ti ti-plus"></i>New inspection</button>
+</div>
+</div>
+<div id="tools-insp-list"><div class="loading-msg">Loading...</div></div>
+</div>
+
+<!-- ── STATUTORY VERIFICATION ── -->
+<div id="tools-view-statutory" style="display:none">
+<div class="card" style="margin-bottom:12px;padding:10px 14px">
+<div>
+<div class="card-title" style="margin:0">Statutory Verification Register</div>
+<div style="font-size:12px;color:var(--text2);margin-top:3px">Equipment requiring statutory thorough examination (LOLER, PUWER, Pressure vessels, etc.)</div>
+</div>
+</div>
+<!-- Alerts -->
+<div id="tools-stat-alerts" style="margin-bottom:12px"></div>
+<div class="card" style="padding:0;overflow:hidden"><div id="tools-stat-list"><div class="loading-msg">Loading...</div></div></div>
+</div>
+
+<!-- ── VEHICLES ── -->
+<div id="tools-view-vehicles" style="display:none">
+<div class="card" style="margin-bottom:12px;padding:10px 14px">
+<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
+<div>
+<div class="card-title" style="margin:0">Vehicle Register</div>
+<div style="font-size:12px;color:var(--text2);margin-top:3px">Monthly inspection checklist required for each vehicle</div>
+</div>
+<button class="btn btn-primary" id="veh-insp-btn" style="display:none" onclick="toolsNewVehicleInspection()"><i class="ti ti-clipboard-check"></i>Monthly check</button>
+</div>
+</div>
+<div id="tools-vehicles-list"><div class="loading-msg">Loading...</div></div>
+</div>
+
+<!-- ── FORM: ADD/EDIT EQUIPMENT ── -->
+<div id="tools-form" style="display:none">
+<div class="card" style="margin-bottom:14px;padding:14px 20px">
+<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
+<div><div style="font-size:16px;font-weight:700" id="tools-form-title">New Equipment</div>
+<div style="font-size:12px;color:var(--green);font-weight:600;margin-top:3px" id="tools-form-ref"></div></div>
+<div style="display:flex;gap:8px">
+<button class="btn" onclick="toolsFormBack()"><i class="ti ti-arrow-left"></i>Back</button>
+<button id="tools-del-btn" class="btn" style="display:none;color:var(--red);border-color:var(--red)" onclick="toolsDelete()"><i class="ti ti-trash"></i>Delete</button>
+<button class="btn btn-primary" onclick="toolsSaveEquipment()"><i class="ti ti-device-floppy"></i>Save</button>
+</div>
+</div>
+</div>
+<!-- Main info -->
+<div style="display:grid;grid-template-columns:2fr 1fr;gap:16px">
+<div>
+<div class="card" style="margin-bottom:14px">
+<div class="card-title">Equipment Details</div>
+<div class="form-row">
+<div class="form-group"><label class="form-label">Category</label>
+<select id="teq-cat" onchange="toolsCatChange()">
+<option value="hand_tool">Hand tool</option>
+<option value="power_tool">Power tool</option>
+<option value="equipment">Equipment</option>
+<option value="vehicle">Vehicle</option>
+<option value="lifting">Lifting equipment</option>
+<option value="electrical">Electrical equipment</option>
+<option value="ppe">PPE</option>
+<option value="other">Other</option>
+</select></div>
+<div class="form-group"><label class="form-label">Name / Description</label><input type="text" id="teq-name" placeholder="e.g. Angle grinder 115mm"/></div>
+<div class="form-group"><label class="form-label">Brand / Make</label><input type="text" id="teq-brand"/></div>
+<div class="form-group"><label class="form-label">Model</label><input type="text" id="teq-model"/></div>
+</div>
+<div class="form-row">
+<div class="form-group"><label class="form-label">Serial number</label><input type="text" id="teq-serial"/></div>
+<div class="form-group"><label class="form-label">Location</label><input type="text" id="teq-location" placeholder="e.g. Tool store, Workshop A"/></div>
+<div class="form-group"><label class="form-label">Status</label>
+<select id="teq-status"><option value="active">Active</option><option value="out_of_service">Out of service</option><option value="under_maintenance">Under maintenance</option><option value="disposed">Disposed</option></select></div>
+<div class="form-group"><label class="form-label">Purchase date</label><input type="date" id="teq-purchase-date"/></div>
+</div>
+<div class="form-row">
+<div class="form-group"><label class="form-label">Assigned to</label>
+<select id="teq-assigned"><option value="">General use (not assigned)</option></select></div>
+<div class="form-group"><label class="form-label">Inspection frequency</label>
+<select id="teq-freq">
+<option value="daily">Daily</option>
+<option value="weekly" selected>Weekly</option>
+<option value="monthly">Monthly</option>
+<option value="quarterly">Quarterly</option>
+<option value="annual">Annual</option>
+<option value="statutory">Statutory only</option>
+</select></div>
+</div>
+<div class="form-group"><label class="form-label">Notes</label><textarea id="teq-notes" style="min-height:60px"></textarea></div>
+</div>
+
+<!-- Vehicle section (conditional) -->
+<div id="teq-vehicle-section" style="display:none">
+<div class="card" style="margin-bottom:14px;border:2px solid #185FA5">
+<div class="card-title" style="color:#185FA5"><i class="ti ti-car"></i> Vehicle Details</div>
+<div class="form-group"><label class="form-label">Registration number</label><input type="text" id="teq-reg" placeholder="e.g. M 1234 XY" style="font-size:16px;font-weight:700;letter-spacing:2px"/></div>
+<div class="form-row">
+<div class="form-group"><label class="form-label">Insurance expiry</label><input type="date" id="teq-insurance"/></div>
+<div class="form-group"><label class="form-label">Roadworthy / Fitness expiry</label><input type="date" id="teq-roadworthy"/></div>
+</div>
+</div>
+</div>
+</div>
+<!-- Statutory section -->
+<div>
+<div class="card" id="teq-stat-card" style="margin-bottom:14px">
+<div class="card-title"><i class="ti ti-certificate" style="color:#8B5CF6"></i> Statutory Inspection</div>
+<div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+<input type="checkbox" id="teq-statutory" style="width:16px;height:16px" onchange="toolsStatutoryChange()"/>
+<label for="teq-statutory" style="font-size:13px;font-weight:600">Requires statutory examination</label>
+</div>
+<div id="teq-statutory-fields" style="display:none">
+<div class="form-group"><label class="form-label">Type of examination</label>
+<input type="text" id="teq-stat-type" list="stat-types" placeholder="e.g. LOLER, PUWER, Pressure vessel"/>
+<datalist id="stat-types"><option value="LOLER (Lifting Operations)"><option value="PUWER (Work Equipment)"><option value="Pressure Vessel / Boiler"><option value="Electrical Installation (EICR)"><option value="Fire Extinguisher"><option value="LEV (Local Exhaust Ventilation)"><option value="Scaffolding Inspection"></datalist></div>
+<div class="form-row">
+<div class="form-group"><label class="form-label">Last examination date</label><input type="date" id="teq-stat-last"/></div>
+<div class="form-group"><label class="form-label">Next examination due</label><input type="date" id="teq-stat-next"/></div>
+</div>
+<div class="form-group"><label class="form-label">Examining body / Inspector</label><input type="text" id="teq-stat-body"/></div>
+</div>
+</div>
+<!-- Ref number display -->
+<div class="card" style="background:linear-gradient(135deg,#1a3a5c,#185FA5);color:#fff;border:none">
+<div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;opacity:.8;margin-bottom:6px">Reference Number</div>
+<div style="font-size:28px;font-weight:900;letter-spacing:4px;font-family:monospace" id="teq-ref-display">AUTO</div>
+<div style="font-size:11px;opacity:.7;margin-top:4px">Auto-generated on save</div>
+</div>
+</div>
+</div>
+</div>
+
+<!-- ── FORM: INSPECTION CHECKLIST ── -->
+<div id="tools-insp-form" style="display:none">
+<div class="card" style="margin-bottom:14px;padding:14px 20px">
+<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
+<div><div style="font-size:16px;font-weight:700" id="tools-insp-form-title">Equipment Inspection</div>
+<div style="font-size:12px;color:var(--text2)" id="tools-insp-form-sub"></div></div>
+<div style="display:flex;gap:8px">
+<button class="btn" onclick="toolsInspFormBack()"><i class="ti ti-arrow-left"></i>Back</button>
+<button class="btn btn-primary" onclick="toolsSaveInspection()"><i class="ti ti-device-floppy"></i>Save inspection</button>
+</div>
+</div>
+</div>
+<!-- Inspection header -->
+<div class="card" style="margin-bottom:14px;background:linear-gradient(135deg,#f8fafc,#e8f0fe);border:1px solid #c7d7f5">
+<div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:12px">
+<div class="form-group" style="margin:0"><label class="form-label">Equipment</label><div style="font-weight:700;font-size:14px" id="insp-equip-name">—</div><div style="font-size:11px;color:var(--green);font-weight:600" id="insp-equip-ref">—</div></div>
+<div class="form-group" style="margin:0"><label class="form-label">Inspection date</label><input type="date" id="insp-date" style="font-weight:600"/></div>
+<div class="form-group" style="margin:0"><label class="form-label">Inspected by</label><select id="insp-inspector"><option value="">Select...</option></select></div>
+<div class="form-group" style="margin:0"><label class="form-label">Type</label>
+<select id="insp-type"><option value="pre_use">Pre-use check</option><option value="periodic" selected>Periodic inspection</option><option value="statutory">Statutory examination</option><option value="handover">Handover check</option></select></div>
+</div>
+</div>
+<!-- Checklist items -->
+<div class="card" style="margin-bottom:14px;padding:0;overflow:hidden">
+<div style="padding:12px 16px;background:#1a3a5c;color:#fff;display:flex;align-items:center;justify-content:space-between">
+<div style="font-weight:700;font-size:14px">Inspection Checklist</div>
+<div id="insp-score-display" style="font-size:13px;font-weight:600;color:#a8f0d4"></div>
+</div>
+<table style="width:100%;border-collapse:collapse" id="insp-checklist-table">
+<thead><tr style="background:#f9fafb">
+<th style="padding:8px 16px;text-align:left;border-bottom:1px solid var(--border);font-size:11px">Check item</th>
+<th style="padding:8px;text-align:center;border-bottom:1px solid var(--border);font-size:11px;width:70px;color:#1D9E75">OK ✓</th>
+<th style="padding:8px;text-align:center;border-bottom:1px solid var(--border);font-size:11px;width:70px;color:#E24B4A">Fail ✗</th>
+<th style="padding:8px;text-align:center;border-bottom:1px solid var(--border);font-size:11px;width:70px;color:#6B7280">N/A</th>
+<th style="padding:8px;text-align:left;border-bottom:1px solid var(--border);font-size:11px">Notes</th>
+</tr></thead>
+<tbody id="insp-checklist-body"></tbody>
+</table>
+</div>
+<!-- Overall result + defects -->
+<div class="card" style="margin-bottom:14px">
+<div class="card-title">Overall Assessment</div>
+<div class="form-row">
+<div class="form-group"><label class="form-label">Overall result</label>
+<select id="insp-result" style="font-weight:700">
+<option value="pass" style="color:#1D9E75">✓ PASS — Equipment safe to use</option>
+<option value="conditional">⚠ CONDITIONAL — Use with caution</option>
+<option value="fail" style="color:#E24B4A">✗ FAIL — Remove from service</option>
+</select></div>
+<div class="form-group"><label class="form-label">Next inspection due</label><input type="date" id="insp-next-date"/></div>
+</div>
+<div class="form-group"><label class="form-label" style="color:var(--red)">Defects / Issues found</label><textarea id="insp-defects" style="min-height:70px" placeholder="Describe any defects, damage or issues observed..."></textarea></div>
+<div class="form-group"><label class="form-label">Actions taken</label><textarea id="insp-actions" style="min-height:60px" placeholder="Corrective actions taken or planned..."></textarea></div>
+</div>
+</div>
+
+</div><!-- end page-tools -->
 
 <div id="page-permit" class="page">
 <div class="page-header"><div class="page-title">Permit to Work</div><div id="permit-add-btn"></div></div><div class="card" id="permit-form" style="display:none"><div class="card-title">Issue permit to work</div><div class="form-row"><div class="form-group"><label class="form-label">Permit number</label><input type="text" id="pf-no" placeholder="PTW-001"/></div><div class="form-group"><label class="form-label">Permit type</label><select id="pf-type"><option value="hot_work">Hot Work</option><option value="confined_space">Confined Space</option><option value="working_at_height">Working at Height</option><option value="electrical">Electrical</option><option value="excavation">Excavation</option><option value="general">General</option></select></div></div><div class="form-group"><label class="form-label">Work description</label><textarea id="pf-desc"></textarea></div><div class="form-row"><div class="form-group"><label class="form-label">Location</label><input type="text" id="pf-loc"/></div><div class="form-group"><label class="form-label">Contractor / team</label><select id="pf-contractor"><option value="">Select person...</option></select></div></div><div class="form-row"><div class="form-group"><label class="form-label">Start</label><input type="datetime-local" id="pf-start"/></div><div class="form-group"><label class="form-label">End</label><input type="datetime-local" id="pf-end"/></div></div><div class="form-row"><div class="form-group"><label class="form-label">Issued by</label><select id="pf-issued"><option value="">Select person...</option></select></div><div class="form-group"><label class="form-label">Approved by</label><select id="pf-approved"><option value="">Select person...</option></select></div></div><div class="form-group"><label class="form-label">Precautions / controls</label><textarea id="pf-precautions"></textarea></div><div class="form-group"><label class="form-label">PPE required</label><input type="text" id="pf-ppe"/></div><div class="form-group"><label class="form-label">Status</label><select id="pf-status"><option value="draft">Draft</option><option value="pending_approval">Pending approval</option><option value="approved">Approved</option><option value="active">Active</option><option value="closed">Closed</option><option value="cancelled">Cancelled</option></select></div><div style="display:flex;gap:8px"><button class="btn btn-primary" onclick="savePermit()"><i class="ti ti-device-floppy"></i>Save</button><button class="btn" onclick="toggleForm('permit-form')">Cancel</button></div></div><div class="card"><div class="card-title">Permits register</div><div id="permits-list"><div class="loading-msg">Loading...</div></div></div></div>
