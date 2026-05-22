@@ -54,6 +54,7 @@
 
 
 
+
 const SB='https://iarfxjhahzbhncsaohbg.supabase.co';
 const KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlhcmZ4amhhaHpiaG5jc2FvaGJnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg2OTM1MzAsImV4cCI6MjA5NDI2OTUzMH0.qSjahuX-RwnjWEDmo-LkcorAxpsmyVoaXt4AO4_A9BM';
 let tok=null,prof=null,co=null,chkItems=[],people=[];
@@ -845,6 +846,8 @@ async function wsTEOpenChecklist(idx){
     try{
       var items=await api('/tool_checklist_templates?category=eq.'+item.category+'&order=sort_order');
       if(!items||!items.length)items=[{check_item:'Visual inspection — no damage'},{check_item:'Safe to use'},{check_item:'Correct for the task'},{check_item:'Clean and functional'}];
+      // Deduplicate
+      var seen2={}; items=items.filter(function(x){if(seen2[x.check_item])return false;seen2[x.check_item]=true;return true;});
       tbody.innerHTML='';
       items.forEach(function(ci,i){
         var tr=document.createElement('tr');
@@ -4643,9 +4646,10 @@ async function toolsLoadChecklist(category){
   try{
     var items=await api('/tool_checklist_templates?category=eq.'+category+'&order=sort_order');
     if(!items||!items.length){
-      // Generic items
       items=[{check_item:'Visual inspection — no damage or defects'},{check_item:'Safe to use'},{check_item:'Stored correctly'}];
     }
+    // Deduplicate by check_item text (in case schema was run multiple times)
+    var seen={}; items=items.filter(function(x){if(seen[x.check_item])return false;seen[x.check_item]=true;return true;});
     tbody.innerHTML='';
     items.forEach(function(item,i){
       var tr=document.createElement('tr');
@@ -7214,6 +7218,7 @@ function sopSaveToDocControl(){
   toast('SOP saved to Document Control!');
   sopSave();
 }
+
 
 
 
