@@ -55,6 +55,7 @@
 
 
 
+
 const SB='https://iarfxjhahzbhncsaohbg.supabase.co';
 const KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlhcmZ4amhhaHpiaG5jc2FvaGJnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg2OTM1MzAsImV4cCI6MjA5NDI2OTUzMH0.qSjahuX-RwnjWEDmo-LkcorAxpsmyVoaXt4AO4_A9BM';
 let tok=null,prof=null,co=null,chkItems=[],people=[];
@@ -275,7 +276,7 @@ document.getElementById('ai-risk-hotspots').innerHTML='<div style="white-space:p
 
 
 // ===== WORK SCHEDULE MODULE =====
-let wsAllData=[], wsEditingId=null, wsCurrentId=null, wsWeekOffset=0, wsTbtAttendees=[];
+let wsAllData=[], wsEditingId=null, wsCurrentId=null, wsWeekOffset=0, wsTbtAttendees=[], wsTbtEditingId=null;
 
 const WS_STATUS_CFG={
   planned:    ['#E6F1FB','#185FA5','Planned'],
@@ -556,41 +557,135 @@ function wsGetCurrent(){return wsAllData.find(function(r){return r.id===wsCurren
 
 function wsOpenToolboxTalk(){
   var x=wsGetCurrent();
-  document.getElementById('ws-detail-view').style.display='none';
-  document.getElementById('ws-tbt-form').style.display='block';
+  // Show the list view instead of directly opening form
+  ['ws-list-view','ws-week-view','ws-detail-view','ws-form-view','ws-tbt-form','ws-te-form','ws-te-checklist-view'].forEach(function(id){
+    var el=document.getElementById(id);if(el)el.style.display='none';
+  });
+  var listView=document.getElementById('ws-tbt-list-view');
+  if(listView)listView.style.display='block';
+  var woTitle=document.getElementById('tbt-list-wo-title');
+  if(woTitle)woTitle.textContent=x.title||'Work Order';
+  wsLoadTBTHistory();
+}
 
-  // Pre-fill
+async function wsLoadTBTHistory(){
+  var el=document.getElementById('ws-tbt-history');
+  if(!el)return;
+  el.innerHTML='<div class="loading-msg">Loading...</div>';
+  try{
+    var d=await api('/toolbox_talks?work_schedule_id=eq.'+wsCurrentId+cf()+'&order=talk_date.desc');
+    var talks=d||[];
+    if(!talks.length){
+      el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)">'
+        +'<div style="font-size:40px;margin-bottom:12px">🔔</div>'
+        +'<div style="font-weight:600;font-size:15px;margin-bottom:8px">No toolbox talks yet</div>'
+        +'<div style="font-size:13px;margin-bottom:16px">Add a toolbox talk before commencing or during the work</div>'
+        +'<button class="btn btn-primary" style="background:#8B5CF6;border-color:#8B5CF6" onclick="wsTBTNew()"><i class="ti ti-plus"></i>New toolbox talk</button>'
+        +'</div>';
+      return;
+    }
+    var h='<div style="display:flex;flex-direction:column;gap:10px">';
+    talks.forEach(function(t,i){
+      var dt=t.talk_date?new Date(t.talk_date).toLocaleDateString('en-GB'):'—';
+      var attendees=t.attendees||[];
+      var status=t.status==='completed'?['#EAF3DE','#3B6D11','✓ Completed']:['#FEF9EC','#854F0B','Draft'];
+      h+='<div class="card" style="padding:0;overflow:hidden;border:1px solid var(--border)">'
+        +'<div style="padding:14px 18px;display:flex;align-items:center;gap:14px">'
+        +'<div style="width:44px;height:44px;border-radius:12px;background:#8B5CF620;display:flex;align-items:center;justify-content:center;flex-shrink:0">'
+        +'<i class="ti ti-speakerphone" style="font-size:20px;color:#8B5CF6"></i></div>'
+        +'<div style="flex:1">'
+        +'<div style="display:flex;align-items:center;gap:8px;margin-bottom:3px">'
+        +'<span style="font-weight:700;font-size:14px">'+escH(t.title||'Toolbox Talk')+'</span>'
+        +'<span style="background:'+status[0]+';color:'+status[1]+';padding:2px 8px;border-radius:99px;font-size:10px;font-weight:700">'+status[2]+'</span>'
+        +'</div>'
+        +'<div style="font-size:12px;color:var(--text2);display:flex;gap:12px;flex-wrap:wrap">'
+        +'<span><i class="ti ti-calendar" style="font-size:10px"></i> '+dt+'</span>'
+        +(t.conducted_by_name?'<span><i class="ti ti-user" style="font-size:10px"></i> '+escH(t.conducted_by_name)+'</span>':'')
+        +'<span><i class="ti ti-users" style="font-size:10px"></i> '+attendees.length+' attendee'+(attendees.length!==1?'s':'')+'</span>'
+        +(t.duration_minutes?'<span><i class="ti ti-clock" style="font-size:10px"></i> '+t.duration_minutes+' min</span>':'')
+        +'</div>'
+        +(t.topics_covered?'<div style="font-size:11px;color:var(--text2);margin-top:4px;font-style:italic">'+escH(t.topics_covered.substring(0,100))+'</div>':'')
+        +'</div>'
+        +'<div style="display:flex;gap:6px">'
+        +'<button class="btn btn-sm" data-id="'+t.id+'" onclick="wsTBTEdit(this.getAttribute(\'data-id\'))"><i class="ti ti-edit"></i></button>'
+        +(isMgr()?'<button class="btn btn-sm" style="color:var(--red)" data-id="'+t.id+'" onclick="wsTBTDelete(this.getAttribute(\'data-id\'))"><i class="ti ti-trash"></i></button>':'')
+        +'</div>'
+        +'</div></div>';
+    });
+    h+='</div>';
+    el.innerHTML=h;
+  }catch(e){el.innerHTML='<p style="padding:20px;color:red">'+e.message+'</p>';}
+}
+
+function wsTBTBackToList(){
+  document.getElementById('ws-tbt-form').style.display='none';
+  document.getElementById('ws-tbt-list-view').style.display='block';
+  wsLoadTBTHistory();
+}
+
+function wsTBTNew(){
+  var x=wsGetCurrent();
+  wsTbtAttendees=[];
+  document.getElementById('ws-tbt-list-view').style.display='none';
+  document.getElementById('ws-tbt-form').style.display='block';
   document.getElementById('tbt-wo-title').textContent=x.title||'Work Order';
-  document.getElementById('tbt-title').value='Toolbox Talk — '+(x.title||'Work Activity');
+  document.getElementById('tbt-title').value='Toolbox Talk — '+new Date().toLocaleDateString('en-GB');
   document.getElementById('tbt-date').value=new Date().toISOString().slice(0,10);
   document.getElementById('tbt-activity').value=x.title||'';
   document.getElementById('tbt-location').value=x.location||'';
   document.getElementById('tbt-sign-dt').value=new Date().toISOString().slice(0,16);
-
-  // Populate conducted-by dropdown
-  var byEl=document.getElementById('tbt-by');
-  if(byEl){
-    byEl.innerHTML='<option value="">Select...</option>';
-    (people||[]).forEach(function(p){
-      var o=document.createElement('option');
-      o.value=p.id;o.textContent=p.last_name+', '+p.first_name;
-      if(x.supervisor_id&&p.id===x.supervisor_id)o.selected=true;
-      byEl.appendChild(o);
-    });
-  }
-
-  // Pre-fill sign name with supervisor
   document.getElementById('tbt-sign-name').value=x.supervisor_name||'';
-
+  ['tbt-hazards','tbt-controls','tbt-topics','tbt-ppe','tbt-emergency'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
+  var tbtConfirmed=document.getElementById('tbt-confirmed');if(tbtConfirmed)tbtConfirmed.checked=false;
+  var dur=document.getElementById('tbt-duration');if(dur)dur.value='15';
+  // Populate by dropdown
+  var byEl=document.getElementById('tbt-by');
+  if(byEl){byEl.innerHTML='<option value="">Select...</option>';(people||[]).forEach(function(p){var o=document.createElement('option');o.value=p.id;o.textContent=p.last_name+', '+p.first_name;if(x.supervisor_id&&p.id===x.supervisor_id)o.selected=true;byEl.appendChild(o);});}
   // Pre-fill team as attendees
   wsTbtAttendees=[];
-  if(x.team_members){
-    x.team_members.split(/[,\n]/).forEach(function(name){
-      var n=name.trim();if(n)wsTbtAttendees.push({name:n,signed:false});
-    });
-  }
+  if(x.team_members){x.team_members.split(/[,\n]/).forEach(function(name){var n=name.trim();if(n)wsTbtAttendees.push({name:n,signed:false});});}
   tbtRenderAttendees();
 }
+
+async function wsTBTEdit(id){
+  try{
+    var d=await api('/toolbox_talks?id=eq.'+id+cf());
+    var t=d?.[0];
+    if(!t)return;
+    var x=wsGetCurrent();
+    document.getElementById('ws-tbt-list-view').style.display='none';
+    document.getElementById('ws-tbt-form').style.display='block';
+    document.getElementById('tbt-wo-title').textContent=x.title||'Work Order';
+    document.getElementById('tbt-title').value=t.title||'';
+    document.getElementById('tbt-date').value=t.talk_date||'';
+    document.getElementById('tbt-activity').value=t.work_activity||'';
+    document.getElementById('tbt-location').value=t.location||'';
+    document.getElementById('tbt-sign-dt').value=t.signed_at?t.signed_at.slice(0,16):'';
+    document.getElementById('tbt-sign-name').value=t.signed_by||'';
+    ['tbt-hazards','tbt-controls','tbt-topics','tbt-ppe','tbt-emergency'].forEach(function(id2){
+      var key={'tbt-hazards':'hazards_discussed','tbt-controls':'controls_discussed','tbt-topics':'topics_covered','tbt-ppe':'ppe_required','tbt-emergency':'emergency_procedures'}[id2];
+      var el=document.getElementById(id2);if(el)el.value=t[key]||'';
+    });
+    var dur=document.getElementById('tbt-duration');if(dur)dur.value=t.duration_minutes||15;
+    var byEl=document.getElementById('tbt-by');
+    if(byEl){byEl.innerHTML='<option value="">Select...</option>';(people||[]).forEach(function(p){var o=document.createElement('option');o.value=p.id;o.textContent=p.last_name+', '+p.first_name;byEl.appendChild(o);});byEl.value=t.conducted_by_id||'';}
+    var tbtConfirmed=document.getElementById('tbt-confirmed');if(tbtConfirmed)tbtConfirmed.checked=t.status==='completed';
+    wsTbtAttendees=t.attendees||[];
+    tbtRenderAttendees();
+    // Store editing id for save
+    wsTbtEditingId=id;
+  }catch(e){toast(e.message,false);}
+}
+
+async function wsTBTDelete(id){
+  if(!confirm('Delete this toolbox talk?'))return;
+  try{
+    await api('/toolbox_talks?id=eq.'+id,{m:'DELETE'});
+    toast('Deleted!');
+    wsLoadTBTHistory();
+  }catch(e){toast(e.message,false);}
+}
+
 
 function wsOpenPreStart(){
   var x=wsGetCurrent();
@@ -957,7 +1052,7 @@ function wsRenderLinkedRecords(x){
 
 
 function wsBackToDetail(){
-  document.getElementById('ws-tbt-form').style.display='none';
+  ['ws-tbt-form','ws-tbt-list-view','ws-te-form','ws-te-checklist-view'].forEach(function(id){var el=document.getElementById(id);if(el)el.style.display='none';});
   document.getElementById('ws-detail-view').style.display='block';
 }
 
@@ -998,37 +1093,40 @@ async function tbtSave(){
   var body={
     company_id:prof?.company_id,
     work_schedule_id:wsCurrentId||null,
-    title:title,
-    talk_date:g('tbt-date'),
+    title:title,talk_date:g('tbt-date'),
     conducted_by_id:byId,conducted_by_name:byName||null,
-    location:g('tbt-location'),
-    duration_minutes:parseInt(g('tbt-duration'))||15,
-    work_activity:g('tbt-activity'),
-    work_location:g('tbt-location'),
-    topics_covered:g('tbt-topics'),
-    hazards_discussed:g('tbt-hazards'),
-    controls_discussed:g('tbt-controls'),
-    ppe_required:g('tbt-ppe'),
+    location:g('tbt-location'),duration_minutes:parseInt(g('tbt-duration'))||15,
+    work_activity:g('tbt-activity'),work_location:g('tbt-location'),
+    topics_covered:g('tbt-topics'),hazards_discussed:g('tbt-hazards'),
+    controls_discussed:g('tbt-controls'),ppe_required:g('tbt-ppe'),
     emergency_procedures:g('tbt-emergency'),
     attendees:wsTbtAttendees,
-    signed_by:g('tbt-sign-name'),
-    signed_at:g('tbt-sign-dt'),
+    signed_by:g('tbt-sign-name'),signed_at:g('tbt-sign-dt'),
     status:document.getElementById('tbt-confirmed')?.checked?'completed':'draft',
-    created_by:prof?.id,updated_at:new Date().toISOString()
+    updated_at:new Date().toISOString()
   };
   try{
-    var res=await api('/toolbox_talks',{m:'POST',p:'return=representation',b:body});
-    // Link to work order
-    if(res?.[0]?.id&&wsCurrentId){
-      await api('/work_schedule?id=eq.'+wsCurrentId,{m:'PATCH',p:'return=minimal',b:{toolbox_talk_id:res[0].id,updated_at:new Date().toISOString()}});
-      var x=wsAllData.find(function(r){return r.id===wsCurrentId;});
-      if(x)x.toolbox_talk_id=res[0].id;
+    if(wsTbtEditingId){
+      await api('/toolbox_talks?id=eq.'+wsTbtEditingId,{m:'PATCH',p:'return=minimal',b:body});
+      wsTbtEditingId=null;
+      toast('Toolbox talk updated!');
+    }else{
+      body.created_by=prof?.id;
+      var res=await api('/toolbox_talks',{m:'POST',p:'return=representation',b:body});
+      // Link FIRST one to work order for status indicator
+      if(res?.[0]?.id&&wsCurrentId){
+        var wo=wsAllData.find(function(r){return r.id===wsCurrentId;});
+        if(wo&&!wo.toolbox_talk_id){
+          await api('/work_schedule?id=eq.'+wsCurrentId,{m:'PATCH',p:'return=minimal',b:{toolbox_talk_id:res[0].id,updated_at:new Date().toISOString()}});
+          if(wo)wo.toolbox_talk_id=res[0].id;
+        }
+      }
+      toast('Toolbox talk saved!');
     }
-    toast('Toolbox talk saved! Linked to work order ✓');
-    wsBackToDetail();
-    if(wsCurrentId){var x2=wsAllData.find(function(r){return r.id===wsCurrentId;});if(x2)wsRenderActionStatuses(x2);}
+    wsTBTBackToList();
   }catch(e){toast(e.message,false);console.error(e);}
 }
+
 
 // ── ADD / EDIT WORK ORDER ────────────────────────────────────────────────────
 function wsNew(){
@@ -7233,6 +7331,7 @@ function sopSaveToDocControl(){
 
 
 
+
 </script>
 </head>
 <body>
@@ -7693,6 +7792,185 @@ function sopSaveToDocControl(){
 </select></div>
 <div class="form-group"><label class="form-label">Defects / Issues</label><input type="text" id="ws-chk-defects" placeholder="Describe any defects found..."/></div>
 </div>
+</div>
+</div>
+
+
+</div><!-- end page-workschedule -->
+
+<!-- ── TOOLBOX TALKS LIST VIEW (multiple per work order) ── -->
+<div id="ws-tbt-list-view" style="display:none">
+<div class="card" style="margin-bottom:14px;padding:0;overflow:hidden">
+<div style="padding:14px 20px;background:linear-gradient(135deg,#6D28D9,#8B5CF6);color:#fff;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
+<div>
+<div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.1em;opacity:.8;margin-bottom:4px">Toolbox Talks</div>
+<div style="font-size:18px;font-weight:800" id="tbt-list-wo-title">—</div>
+<div style="font-size:12px;opacity:.7;margin-top:2px">All toolbox talks conducted for this work order</div>
+</div>
+<div style="display:flex;gap:8px">
+<button class="btn" style="background:rgba(255,255,255,.2);color:#fff;border-color:rgba(255,255,255,.3)" onclick="wsBackToDetail()"><i class="ti ti-arrow-left"></i>Back</button>
+<button class="btn" style="background:#1D9E75;color:#fff;border-color:#1D9E75" onclick="wsTBTNew()"><i class="ti ti-plus"></i>New toolbox talk</button>
+</div>
+</div>
+</div>
+<div id="ws-tbt-history" style="margin-bottom:14px"></div>
+</div>
+
+<!-- ── TOOLBOX TALK FORM ── -->
+<div id="ws-tbt-form" style="display:none">
+<div class="card" style="margin-bottom:14px;padding:0;overflow:hidden">
+<div style="padding:16px 24px;background:linear-gradient(135deg,#6D28D9,#8B5CF6);color:#fff">
+<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
+<div><div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.1em;opacity:.8;margin-bottom:4px">Toolbox Talk / Safety Briefing</div>
+<div style="font-size:18px;font-weight:800" id="tbt-wo-title">—</div></div>
+<div style="display:flex;gap:8px">
+<button class="btn" style="background:rgba(255,255,255,.2);color:#fff;border-color:rgba(255,255,255,.3)" onclick="wsTBTBackToList()"><i class="ti ti-arrow-left"></i>Back to list</button>
+<button class="btn" style="background:#1D9E75;color:#fff;border-color:#1D9E75" onclick="tbtSave()"><i class="ti ti-device-floppy"></i>Save briefing</button>
+</div>
+</div>
+</div>
+</div>
+<div style="display:grid;grid-template-columns:2fr 1fr;gap:14px">
+<div>
+<div class="card" style="margin-bottom:14px;border-left:4px solid #8B5CF6">
+<div class="card-title" style="color:#8B5CF6">Briefing Details</div>
+<div class="form-row">
+<div class="form-group"><label class="form-label">Toolbox talk title</label><input type="text" id="tbt-title"/></div>
+<div class="form-group"><label class="form-label">Date</label><input type="date" id="tbt-date"/></div>
+<div class="form-group"><label class="form-label">Conducted by</label><select id="tbt-by"><option value="">Select...</option></select></div>
+<div class="form-group"><label class="form-label">Duration (min)</label><input type="number" id="tbt-duration" value="15" min="5" max="120"/></div>
+</div>
+<div class="form-row">
+<div class="form-group"><label class="form-label">Work activity</label><input type="text" id="tbt-activity"/></div>
+<div class="form-group"><label class="form-label">Location</label><input type="text" id="tbt-location"/></div>
+</div>
+</div>
+<div class="card" style="margin-bottom:14px">
+<div class="card-title">Safety Topics Discussed</div>
+<div class="form-row">
+<div class="form-group"><label class="form-label" style="color:#E24B4A"><i class="ti ti-alert-triangle"></i> Main hazards</label>
+<textarea id="tbt-hazards" style="min-height:80px" placeholder="Hazards team members need to be aware of..."></textarea></div>
+<div class="form-group"><label class="form-label" style="color:#1D9E75"><i class="ti ti-shield"></i> Control measures</label>
+<textarea id="tbt-controls" style="min-height:80px" placeholder="How will hazards be controlled? PPE, procedures, permits..."></textarea></div>
+</div>
+<div class="form-group"><label class="form-label">Topics covered</label>
+<textarea id="tbt-topics" style="min-height:70px" placeholder="Key safety points discussed..."></textarea></div>
+<div class="form-row">
+<div class="form-group"><label class="form-label">PPE required</label>
+<input type="text" id="tbt-ppe" placeholder="e.g. Safety helmet, gloves..."/></div>
+<div class="form-group"><label class="form-label">Emergency procedures</label>
+<input type="text" id="tbt-emergency" placeholder="e.g. Evacuation point, emergency contact..."/></div>
+</div>
+</div>
+</div>
+<div>
+<div class="card" style="margin-bottom:14px;border:2px solid #8B5CF6">
+<div class="card-title" style="color:#8B5CF6"><i class="ti ti-users"></i> Attendees</div>
+<div style="font-size:11px;color:var(--text2);margin-bottom:10px">All persons who attended this briefing</div>
+<div id="tbt-attendees-list" style="margin-bottom:10px"></div>
+<div style="display:flex;gap:8px">
+<input type="text" id="tbt-new-attendee" placeholder="Add attendee name..." style="flex:1;padding:6px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px" onkeydown="if(event.key==='Enter')tbtAddAttendee()"/>
+<button class="btn btn-sm btn-primary" onclick="tbtAddAttendee()"><i class="ti ti-plus"></i></button>
+</div>
+</div>
+<div class="card" style="background:linear-gradient(135deg,#f8fafc,#f3e8ff);border:1px solid #d8b4fe">
+<div class="card-title" style="color:#8B5CF6">Sign-off</div>
+<div class="form-group"><label class="form-label">Conducted by (signature)</label><input type="text" id="tbt-sign-name"/></div>
+<div class="form-group"><label class="form-label">Date &amp; time</label><input type="datetime-local" id="tbt-sign-dt"/></div>
+<div style="display:flex;align-items:center;gap:8px;margin-top:8px">
+<input type="checkbox" id="tbt-confirmed" style="width:16px;height:16px;accent-color:#8B5CF6"/>
+<label for="tbt-confirmed" style="font-size:12px;font-weight:600">I confirm this toolbox talk was conducted and all attendees were briefed</label>
+</div>
+</div>
+</div>
+</div>
+</div>
+
+
+<!-- ── TOOLS & EQUIPMENT FORM for Work Order ── -->
+<div id="ws-te-form" style="display:none">
+<div class="card" style="margin-bottom:14px;padding:0;overflow:hidden">
+<div style="padding:16px 24px;background:linear-gradient(135deg,#92400E,#EF9F27);color:#fff">
+<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
+<div><div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.1em;opacity:.8;margin-bottom:4px">Tools &amp; Equipment Register</div>
+<div style="font-size:18px;font-weight:800" id="ws-te-wo-title">—</div>
+<div style="font-size:12px;opacity:.8;margin-top:2px">Add all tools and equipment required for this work activity</div></div>
+<div style="display:flex;gap:8px">
+<button class="btn" style="background:rgba(255,255,255,.2);color:#fff;border-color:rgba(255,255,255,.3)" onclick="wsBackToDetail()"><i class="ti ti-arrow-left"></i>Back</button>
+</div>
+</div>
+</div>
+</div>
+
+<!-- Add equipment to this job -->
+<div class="card" style="margin-bottom:14px;border-left:4px solid #EF9F27">
+<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+<div><div class="card-title" style="margin:0;color:#92400E"><i class="ti ti-clipboard-list"></i> Equipment Required for This Job</div>
+<div style="font-size:12px;color:var(--text2);margin-top:3px">Search and add tools/equipment from the register, or add manually</div></div>
+<button class="btn btn-sm btn-primary" style="background:#EF9F27;border-color:#EF9F27" onclick="wsTEAddItem()"><i class="ti ti-plus"></i>Add equipment</button>
+</div>
+<!-- Search from register -->
+<div style="display:flex;gap:8px;margin-bottom:14px">
+<input type="text" id="ws-te-search" placeholder="Search equipment register (ref, name)..." style="flex:1;padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px" oninput="wsTESearchEquipment()"/>
+<button class="btn" onclick="wsTESearchEquipment()"><i class="ti ti-search"></i>Search</button>
+</div>
+<div id="ws-te-search-results" style="margin-bottom:12px"></div>
+<!-- Added items list -->
+<div id="ws-te-items-list"><div style="text-align:center;padding:24px;color:var(--text2);font-size:13px">No equipment added yet. Search above or add manually.</div></div>
+</div>
+</div>
+
+<!-- ── SINGLE EQUIPMENT CHECKLIST VIEW ── -->
+<div id="ws-te-checklist-view" style="display:none">
+<div class="card" style="margin-bottom:14px;padding:0;overflow:hidden">
+<div style="padding:14px 20px;background:linear-gradient(135deg,#1a3a5c,#185FA5);color:#fff;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
+<div>
+<div style="font-size:11px;opacity:.7;margin-bottom:3px">Equipment Inspection</div>
+<div style="font-size:18px;font-weight:800" id="ws-chk-equip-name">—</div>
+<div style="font-family:monospace;font-size:12px;color:#a8f0d4" id="ws-chk-equip-ref">—</div>
+</div>
+<div style="display:flex;gap:8px">
+<button class="btn" style="background:rgba(255,255,255,.2);color:#fff;border-color:rgba(255,255,255,.3)" onclick="wsBackToTEForm()"><i class="ti ti-arrow-left"></i>Back to list</button>
+<button class="btn" style="background:#1D9E75;color:#fff;border-color:#1D9E75" onclick="wsChkSave()"><i class="ti ti-device-floppy"></i>Save inspection</button>
+</div>
+</div>
+</div>
+<!-- Inspection header -->
+<div class="card" style="margin-bottom:14px;background:linear-gradient(135deg,#f8fafc,#e8f0fe);border:1px solid #c7d7f5">
+<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px">
+<div class="form-group" style="margin:0"><label class="form-label">Inspection date</label><input type="date" id="ws-chk-date" style="font-weight:600"/></div>
+<div class="form-group" style="margin:0"><label class="form-label">Inspected by</label><select id="ws-chk-inspector"><option value="">Select...</option></select></div>
+<div class="form-group" style="margin:0"><label class="form-label">Type</label>
+<select id="ws-chk-type"><option value="pre_use">Pre-use check</option><option value="periodic" selected>Periodic inspection</option></select></div>
+</div>
+</div>
+<!-- Checklist table -->
+<div class="card" style="margin-bottom:14px;padding:0;overflow:hidden">
+<div style="padding:10px 16px;background:#1a3a5c;color:#fff;display:flex;justify-content:space-between;align-items:center">
+<div style="font-weight:700">Inspection Checklist</div>
+<div id="ws-chk-score" style="font-size:12px;color:#a8f0d4"></div>
+</div>
+<table style="width:100%;border-collapse:collapse">
+<thead><tr style="background:#f9fafb">
+<th style="padding:8px 16px;text-align:left;border-bottom:1px solid var(--border);font-size:11px">Check item</th>
+<th style="padding:8px;text-align:center;border-bottom:1px solid var(--border);font-size:11px;width:70px;color:#1D9E75">OK ✓</th>
+<th style="padding:8px;text-align:center;border-bottom:1px solid var(--border);font-size:11px;width:70px;color:#E24B4A">Fail ✗</th>
+<th style="padding:8px;text-align:center;border-bottom:1px solid var(--border);font-size:11px;width:70px;color:#6B7280">N/A</th>
+<th style="padding:8px;text-align:left;border-bottom:1px solid var(--border);font-size:11px">Notes</th>
+</tr></thead>
+<tbody id="ws-chk-body"></tbody>
+</table>
+</div>
+<div class="card">
+<div class="card-title">Overall Result</div>
+<div class="form-row">
+<div class="form-group"><label class="form-label">Result</label>
+<select id="ws-chk-result">
+<option value="pass">✓ PASS — Safe to use</option>
+<option value="conditional">⚠ CONDITIONAL</option>
+<option value="fail">✗ FAIL — Remove from service</option>
+</select></div>
+<div class="form-group"><label class="form-label">Defects / Issues</label><input type="text" id="ws-chk-defects" placeholder="Describe any defects found..."/></div>
 </div>
 </div>
 
