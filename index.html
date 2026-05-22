@@ -48,6 +48,7 @@
 
 
 
+
 const SB='https://iarfxjhahzbhncsaohbg.supabase.co';
 const KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlhcmZ4amhhaHpiaG5jc2FvaGJnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg2OTM1MzAsImV4cCI6MjA5NDI2OTUzMH0.qSjahuX-RwnjWEDmo-LkcorAxpsmyVoaXt4AO4_A9BM';
 let tok=null,prof=null,co=null,chkItems=[],people=[];
@@ -614,6 +615,359 @@ if(sc)sc.textContent=g+' Good / '+ins+' Insufficient';
 function saveEvent(){evSave();}
 // ===== INSPECTION HELPERS =====
 let inspEditingId=null, inspAllData=[];
+
+
+// ── PRE-START INSPECTION ─────────────────────────────────────────────────────
+let psAllData = [], psEditingId = null;
+
+const PS_CHECKLIST = [
+  {cat:'Site & Area',items:[
+    'Work area has been inspected and is safe to access',
+    'Area is free from unauthorised persons / public',
+    'Emergency evacuation routes identified and clear',
+    'Emergency contact numbers available on site',
+    'First aid kit available and accessible',
+    'Fire extinguisher available (if applicable)',
+  ]},
+  {cat:'Work Equipment & Tools',items:[
+    'All tools and equipment inspected and in good condition',
+    'Defective tools removed from service / tagged out',
+    'Correct tools for the task available',
+    'Electrical equipment PAT tested and cables undamaged',
+    'Lifting equipment within statutory examination date (if applicable)',
+  ]},
+  {cat:'Hazardous Energy / Isolation',items:[
+    'LOTO (Lockout/Tagout) applied where required',
+    'Electrical isolation confirmed where applicable',
+    'Mechanical isolation confirmed where applicable',
+    'Hot works permit in place (if applicable)',
+    'Confined space permit obtained (if applicable)',
+  ]},
+  {cat:'Environment & Work Conditions',items:[
+    'Lighting adequate for the task',
+    'Weather conditions acceptable (outdoor work)',
+    'Noise level assessed — hearing protection available if needed',
+    'Housekeeping satisfactory — area free from trip hazards',
+    'Spill kit / waste disposal arrangements in place',
+  ]},
+  {cat:'Personnel Competency',items:[
+    'All personnel hold required authorisations for this task',
+    'Relevant training is current for all team members',
+    'Young workers / visitors supervised (if applicable)',
+    'Contractor induction completed (if applicable)',
+  ]},
+  {cat:'Documentation',items:[
+    'Risk assessment reviewed and available on site',
+    'Work procedure / SOP available and understood',
+    'Permit to work obtained (if required)',
+    'Method statement reviewed with team',
+  ]},
+];
+
+// Switch between site inspection and pre-start tabs
+function inspSwitchTab(tab, btn){
+  document.querySelectorAll('.mtg-tab').forEach(t=>t.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('insp-view-site').style.display=tab==='site'?'block':'none';
+  document.getElementById('insp-view-prestart').style.display=tab==='prestart'?'block':'none';
+  if(tab==='site')loadInsps();
+  else psLoad();
+}
+
+async function psLoad(){
+  var el=document.getElementById('ps-list');
+  if(!el)return;
+  el.innerHTML='<div class="loading-msg">Loading...</div>';
+  try{
+    var d=await api('/prestart_inspections?select=*'+cf()+'&order=created_at.desc');
+    psAllData=d||[];
+    if(!d||!d.length){
+      el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)">'
+        +'<div style="font-size:40px;margin-bottom:12px">🔔</div>'
+        +'<div style="font-weight:600;font-size:15px;margin-bottom:8px">No pre-start inspections yet</div>'
+        +'<div style="font-size:13px;margin-bottom:16px">Complete a pre-start check before commencing any work activity</div>'
+        +'<button class="btn btn-primary" onclick="psNew()"><i class="ti ti-plus"></i>Start first pre-start check</button>'
+        +'</div>';
+      return;
+    }
+    var h='<table style="width:100%;border-collapse:collapse;font-size:12px">'
+      +'<thead><tr style="background:#1a3a5c;color:#fff">'
+      +'<th style="padding:9px 14px;text-align:left">Date</th>'
+      +'<th style="padding:9px 12px;text-align:left">Work activity</th>'
+      +'<th style="padding:9px 12px;text-align:left">Location</th>'
+      +'<th style="padding:9px 12px;text-align:left">Supervisor</th>'
+      +'<th style="padding:9px 12px;text-align:center;width:90px">Decision</th>'
+      +'<th style="padding:9px 12px;text-align:center;width:80px">Items</th>'
+      +'<th style="padding:9px 12px;width:80px"></th>'
+      +'</tr></thead><tbody>';
+    psAllData.forEach(function(x,i){
+      var bg=i%2===0?'#fff':'#f9fafb';
+      var dt=x.check_date?new Date(x.check_date).toLocaleDateString('en-GB'):'—';
+      var dec=x.decision||'go';
+      var decCfg={
+        go:['#EAF3DE','#3B6D11','✅ GO'],
+        hold:['#FEF9EC','#854F0B','⚠️ HOLD'],
+        stop:['#FCEBEB','#A32D2D','🛑 STOP']
+      };
+      var dc=decCfg[dec]||decCfg.go;
+      var items=x.checklist_results||[];
+      var yesCount=items.filter(function(r){return r.result==='yes';}).length;
+      var noCount=items.filter(function(r){return r.result==='no';}).length;
+      h+='<tr style="border-bottom:1px solid #f0f0f0;background:'+bg+'">'
+        +'<td style="padding:9px 14px;font-weight:600">'+dt+'</td>'
+        +'<td style="padding:9px 12px;font-weight:600">'+escH(x.activity||'—')+'</td>'
+        +'<td style="padding:9px 12px">'+escH(x.location||'—')+'</td>'
+        +'<td style="padding:9px 12px">'+escH(x.supervisor_name||'—')+'</td>'
+        +'<td style="padding:9px 12px;text-align:center"><span style="background:'+dc[0]+';color:'+dc[1]+';padding:3px 10px;border-radius:99px;font-size:11px;font-weight:700">'+dc[2]+'</span></td>'
+        +'<td style="padding:9px 12px;text-align:center;font-size:11px"><span style="color:var(--green);font-weight:700">'+yesCount+'✓</span> <span style="color:var(--red);font-weight:700">'+noCount+'✗</span></td>'
+        +'<td style="padding:9px 12px"><div style="display:flex;gap:4px">'
+        +'<button class="btn btn-sm" data-id="'+x.id+'" onclick="psOpen(this.getAttribute(\'data-id\'))"><i class="ti ti-eye"></i></button>'
+        +(isMgr()?'<button class="btn btn-sm" style="color:var(--red)" data-id="'+x.id+'" onclick="psDeleteFromList(this.getAttribute(\'data-id\'))"><i class="ti ti-trash"></i></button>':'')
+        +'</div></td>'
+        +'</tr>';
+    });
+    h+='</tbody></table>';
+    el.innerHTML=h;
+  }catch(e){el.innerHTML='<p style="padding:20px;color:red">'+e.message+'</p>';console.error(e);}
+}
+
+function psBuildChecklist(savedResults){
+  var savedMap={};
+  (savedResults||[]).forEach(function(r){savedMap[r.item]=r;});
+  var tbody=document.getElementById('ps-checklist-body');
+  if(!tbody)return;
+  tbody.innerHTML='';
+  var rowIdx=0;
+  PS_CHECKLIST.forEach(function(section){
+    // Category header row
+    var hdr=document.createElement('tr');
+    hdr.innerHTML='<td colspan="5" style="padding:7px 16px;background:linear-gradient(135deg,#1a3a5c22,#185FA511);font-size:11px;font-weight:700;text-transform:uppercase;color:#185FA5;letter-spacing:.05em;border-top:2px solid #185FA540">'+escH(section.cat)+'</td>';
+    tbody.appendChild(hdr);
+    section.items.forEach(function(item){
+      var saved=savedMap[item]||{};
+      var isYes=saved.result==='yes';
+      var isNo=saved.result==='no';
+      var isNA=saved.result==='na'||(!isYes&&!isNo&&!saved.result);
+      var tr=document.createElement('tr');
+      tr.style.borderBottom='1px solid #f5f5f5';
+      // Highlight NO rows in amber
+      if(isNo)tr.style.background='#FEF9EC';
+      var idx=rowIdx;
+      tr.innerHTML='<td style="padding:8px 16px;font-size:12px">'+escH(item)+'</td>'
+        +'<td style="padding:6px 4px;text-align:center"><input type="radio" name="ps'+idx+'" id="ps-yes-'+idx+'" value="yes" onchange="psScore();this.closest(\'tr\').style.background=\'\';" '+(isYes?'checked':'')+' style="width:18px;height:18px;accent-color:#1D9E75"></td>'
+        +'<td style="padding:6px 4px;text-align:center"><input type="radio" name="ps'+idx+'" id="ps-no-'+idx+'" value="no" onchange="psScore();this.closest(\'tr\').style.background=\'#FEF9EC\';" '+(isNo?'checked':'')+' style="width:18px;height:18px;accent-color:#E24B4A"></td>'
+        +'<td style="padding:6px 4px;text-align:center"><input type="radio" name="ps'+idx+'" id="ps-na-'+idx+'" value="na" onchange="psScore();this.closest(\'tr\').style.background=\'\';" '+(isNA&&!isYes&&!isNo?'checked':'')+' style="width:18px;height:18px;accent-color:#6B7280"></td>'
+        +'<td style="padding:5px 12px"><input type="text" id="ps-note-'+idx+'" value="'+escH2(saved.note||'')+'" placeholder="Action / comment..." style="width:100%;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:11px"/></td>';
+      tbody.appendChild(tr);
+      rowIdx++;
+    });
+  });
+  psScore();
+}
+
+function psScore(){
+  var rows=document.querySelectorAll('#ps-checklist-body tr');
+  var yes=0,no=0,na=0,total=0;
+  var idx=0;
+  rows.forEach(function(tr){
+    if(tr.cells.length<5)return; // header row
+    var yEl=document.getElementById('ps-yes-'+idx);
+    var nEl=document.getElementById('ps-no-'+idx);
+    var naEl=document.getElementById('ps-na-'+idx);
+    if(yEl)total++;
+    if(yEl?.checked)yes++;
+    else if(nEl?.checked)no++;
+    else if(naEl?.checked)na++;
+    idx++;
+  });
+  var el=document.getElementById('ps-score');
+  if(el)el.innerHTML='<span style="color:#1D9E75;font-weight:700">'+yes+'✓</span> <span style="color:#E24B4A;font-weight:700">'+no+'✗</span> <span style="color:#6B7280">'+na+' N/A</span>';
+  // Auto-set decision based on NO items
+  if(no>0){
+    document.getElementById('ps-decision-hold').checked=true;
+    psDecisionChange('hold');
+  }else if(yes>0&&no===0){
+    document.getElementById('ps-decision-go').checked=true;
+    psDecisionChange('go');
+  }
+}
+
+function psDecisionChange(val){
+  var cfg={
+    go:['#EAF3DE','#1D9E75'],
+    hold:['#FEF9EC','#EF9F27'],
+    stop:['#FCEBEB','#E24B4A']
+  };
+  ['go','hold','stop'].forEach(function(v){
+    var lbl=document.getElementById('ps-decision-'+v+'-lbl');
+    if(lbl){
+      lbl.style.background=v===val?cfg[v][0]:'#f9fafb';
+      lbl.style.borderColor=v===val?cfg[v][1]:'#e5e7eb';
+    }
+  });
+}
+
+// Hook up decision radio buttons
+document.addEventListener('change',function(e){
+  if(e.target&&e.target.name==='ps-decision'){
+    psDecisionChange(e.target.value);
+  }
+});
+
+function psNew(){
+  psEditingId=null;
+  document.getElementById('ps-form-title').textContent='New Pre-Start Check';
+  document.getElementById('ps-delete-btn').style.display='none';
+  // Clear fields
+  ['ps-activity','ps-location','ps-duration','ps-ra-ref','ps-ptw-ref','ps-team',
+   'ps-hazards','ps-controls','ps-tbt-topics','ps-stop-work','ps-decision-notes',
+   'ps-sign-name','ps-ppe-extra'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
+  var dt=document.getElementById('ps-date');if(dt)dt.value=new Date().toISOString().slice(0,10);
+  var sdt=document.getElementById('ps-sign-datetime');if(sdt)sdt.value=new Date().toISOString().slice(0,16);
+  var tbt=document.getElementById('ps-tbt-done');if(tbt)tbt.checked=false;
+  document.querySelectorAll('#ps-ppe-checks input[type="checkbox"]').forEach(function(cb){cb.checked=false;});
+  // Populate supervisor dropdown
+  var sup=document.getElementById('ps-supervisor');
+  if(sup){sup.innerHTML='<option value="">Select supervisor...</option>';(people||[]).forEach(function(p){var o=document.createElement('option');o.value=p.id;o.textContent=p.last_name+', '+p.first_name+(p.job_title?' — '+p.job_title:'');sup.appendChild(o);});}
+  // Default decision to GO
+  var goR=document.getElementById('ps-decision-go');if(goR)goR.checked=true;
+  psDecisionChange('go');
+  psBuildChecklist([]);
+  document.getElementById('ps-list-view').style.display='none';
+  document.getElementById('ps-form-view').style.display='block';
+}
+
+async function psOpen(id){
+  var x=psAllData.find(function(r){return r.id===id;});
+  if(!x){try{var d=await api('/prestart_inspections?id=eq.'+id);x=d?.[0];}catch(e){return;}}
+  if(!x)return;
+  psEditingId=id;
+  document.getElementById('ps-form-title').textContent='Pre-Start — '+new Date(x.check_date||x.created_at).toLocaleDateString('en-GB');
+  document.getElementById('ps-delete-btn').style.display=isMgr()?'inline-flex':'none';
+  var flds={'ps-activity':'activity','ps-location':'location','ps-duration':'duration',
+    'ps-ra-ref':'ra_ref','ps-ptw-ref':'ptw_ref','ps-team':'team_members',
+    'ps-hazards':'hazards','ps-controls':'controls','ps-tbt-topics':'tbt_topics',
+    'ps-stop-work':'stop_work_concerns','ps-decision-notes':'decision_notes','ps-sign-name':'signed_by'};
+  Object.entries(flds).forEach(function(e){var el=document.getElementById(e[0]);if(el)el.value=x[e[1]]||'';});
+  var dt=document.getElementById('ps-date');if(dt)dt.value=x.check_date||'';
+  var sdt=document.getElementById('ps-sign-datetime');if(sdt)sdt.value=x.signed_at?x.signed_at.slice(0,16):'';
+  var tbt=document.getElementById('ps-tbt-done');if(tbt)tbt.checked=!!x.tbt_conducted;
+  var ppe=x.ppe_required||[];
+  document.querySelectorAll('#ps-ppe-checks input[type="checkbox"]').forEach(function(cb){cb.checked=ppe.includes(cb.value);});
+  var extra=document.getElementById('ps-ppe-extra');if(extra)extra.value=x.ppe_extra||'';
+  // Set supervisor
+  var sup=document.getElementById('ps-supervisor');
+  if(sup){sup.innerHTML='<option value="">Select supervisor...</option>';(people||[]).forEach(function(p){var o=document.createElement('option');o.value=p.id;o.textContent=p.last_name+', '+p.first_name+(p.job_title?' — '+p.job_title:'');sup.appendChild(o);});sup.value=x.supervisor_id||'';}
+  var dec=x.decision||'go';
+  var decEl=document.getElementById('ps-decision-'+dec);if(decEl)decEl.checked=true;
+  psDecisionChange(dec);
+  psBuildChecklist(x.checklist_results||[]);
+  document.getElementById('ps-list-view').style.display='none';
+  document.getElementById('ps-form-view').style.display='block';
+}
+
+function psShowList(){
+  document.getElementById('ps-form-view').style.display='none';
+  document.getElementById('ps-list-view').style.display='block';
+  psLoad();
+}
+
+function psCollectChecklist(){
+  var results=[];
+  var rows=document.querySelectorAll('#ps-checklist-body tr');
+  var idx=0;
+  var cats=PS_CHECKLIST.flatMap(function(s){return s.items;});
+  rows.forEach(function(tr){
+    if(tr.cells.length<5)return;
+    var yEl=document.getElementById('ps-yes-'+idx);
+    var nEl=document.getElementById('ps-no-'+idx);
+    var note=document.getElementById('ps-note-'+idx)?.value||'';
+    var res=yEl?.checked?'yes':nEl?.checked?'no':'na';
+    results.push({item:cats[idx]||'Item '+idx,result:res,note:note});
+    idx++;
+  });
+  return results;
+}
+
+async function psSave(){
+  var activity=document.getElementById('ps-activity')?.value?.trim();
+  if(!activity){toast('Please describe the work activity',false);return;}
+  var supId=document.getElementById('ps-supervisor')?.value||null;
+  var supName='';
+  if(supId){var p=(people||[]).find(function(x){return x.id===supId;});supName=p?(p.last_name+', '+p.first_name):'';}
+  var ppe=[];
+  document.querySelectorAll('#ps-ppe-checks input[type="checkbox"]:checked').forEach(function(cb){ppe.push(cb.value);});
+  var dec=document.querySelector('input[name="ps-decision"]:checked')?.value||'go';
+  var checklist=psCollectChecklist();
+  var body={
+    company_id:prof?.company_id,
+    activity:activity,
+    location:document.getElementById('ps-location')?.value||null,
+    check_date:document.getElementById('ps-date')?.value||null,
+    duration:document.getElementById('ps-duration')?.value||null,
+    supervisor_id:supId||null,supervisor_name:supName||null,
+    team_members:document.getElementById('ps-team')?.value||null,
+    ra_ref:document.getElementById('ps-ra-ref')?.value||null,
+    ptw_ref:document.getElementById('ps-ptw-ref')?.value||null,
+    hazards:document.getElementById('ps-hazards')?.value||null,
+    controls:document.getElementById('ps-controls')?.value||null,
+    tbt_conducted:document.getElementById('ps-tbt-done')?.checked||false,
+    tbt_topics:document.getElementById('ps-tbt-topics')?.value||null,
+    stop_work_concerns:document.getElementById('ps-stop-work')?.value||null,
+    ppe_required:ppe,ppe_extra:document.getElementById('ps-ppe-extra')?.value||null,
+    checklist_results:checklist,
+    decision:dec,
+    decision_notes:document.getElementById('ps-decision-notes')?.value||null,
+    signed_by:document.getElementById('ps-sign-name')?.value||null,
+    signed_at:document.getElementById('ps-sign-datetime')?.value||null,
+    updated_at:new Date().toISOString()
+  };
+  try{
+    if(psEditingId){
+      await api('/prestart_inspections?id=eq.'+psEditingId,{m:'PATCH',p:'return=minimal',b:body});
+      toast('Pre-start check updated!');
+    }else{
+      body.created_by=prof?.id;
+      await api('/prestart_inspections',{m:'POST',p:'return=minimal',b:body});
+      // If STOP or HOLD, add to MAP
+      if(dec==='stop'||dec==='hold'){
+        var concerns=body.decision_notes||body.stop_work_concerns||'Issues identified in pre-start inspection';
+        await api('/action_tracker',{m:'POST',p:'return=minimal',b:{
+          company_id:prof?.company_id,source_module:'prestart',
+          source_ref:'Pre-start: '+activity,
+          description:'['+dec.toUpperCase()+'] '+concerns,
+          responsible:supName||null,priority:dec==='stop'?'critical':'high',
+          status:'open',created_by:prof?.id
+        }});
+        toast('Pre-start saved! Action added to MAP — work is '+(dec==='stop'?'STOPPED':'ON HOLD')+'.');
+      }else{
+        toast('Pre-start check saved — Work approved to proceed ✅');
+      }
+    }
+    psShowList();
+  }catch(e){toast(e.message,false);console.error(e);}
+}
+
+async function psDelete(){
+  if(!psEditingId)return;
+  if(!confirm('Delete this pre-start check?'))return;
+  try{await api('/prestart_inspections?id=eq.'+psEditingId,{m:'DELETE'});toast('Deleted!');psShowList();}
+  catch(e){toast(e.message,false);}
+}
+
+async function psDeleteFromList(id){
+  if(!confirm('Delete this pre-start check?'))return;
+  try{await api('/prestart_inspections?id=eq.'+id,{m:'DELETE'});psAllData=psAllData.filter(x=>x.id!==id);toast('Deleted!');psLoad();}
+  catch(e){toast(e.message,false);}
+}
+
+// Update loadInsps to also set up the tabs
+const _origLoadInsps=loadInsps;
+async function loadInsps(){
+  var addBtn=document.getElementById('insp-header-btns');
+  if(addBtn)addBtn.innerHTML='<button class="btn btn-primary" onclick="inspNew()"><i class="ti ti-plus"></i>New inspection</button>';
+  await _origLoadInsps();
+}
 
 function inspShowList(){
   var lv=document.getElementById('insp-list-view');
@@ -5983,6 +6337,7 @@ function sopSaveToDocControl(){
 
 
 
+
 </script>
 </head>
 <body>
@@ -6004,20 +6359,28 @@ function sopSaveToDocControl(){
 <div class="page-header"><div><div class="page-title">Event Reporting</div><div style="font-size:12px;color:var(--text2);margin-top:2px" id="ev-subtitle">All events — <span id="ev-count">loading...</span></div></div><button class="btn btn-primary" onclick="evOpenNew()"><i class="ti ti-plus"></i>Report event</button></div><div style="display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:18px"><div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px 16px"><div style="font-size:11px;color:var(--text2);margin-bottom:5px;font-weight:500">Total events</div><div style="font-size:24px;font-weight:700" id="ev-m-total">—</div></div><div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px 16px"><div style="font-size:11px;color:var(--text2);margin-bottom:5px;font-weight:500">Open</div><div style="font-size:24px;font-weight:700;color:var(--amber)" id="ev-m-open">—</div></div><div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px 16px"><div style="font-size:11px;color:var(--text2);margin-bottom:5px;font-weight:500">High / Critical</div><div style="font-size:24px;font-weight:700;color:var(--red)" id="ev-m-high">—</div></div><div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px 16px"><div style="font-size:11px;color:var(--text2);margin-bottom:5px;font-weight:500">This month</div><div style="font-size:24px;font-weight:700;color:var(--blue)" id="ev-m-month">—</div></div><div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px 16px"><div style="font-size:11px;color:var(--text2);margin-bottom:5px;font-weight:500">Closed</div><div style="font-size:24px;font-weight:700;color:var(--green)" id="ev-m-closed">—</div></div></div><div class="card" style="padding:14px 20px;margin-bottom:16px"><div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center"><select id="ev-filter-type" onchange="loadEvents()" style="width:auto;padding:6px 10px;font-size:12px;border:1px solid var(--border);border-radius:8px"><option value="">All types</option><option value="Near Miss">Near Miss</option><option value="Incident">Incident</option><option value="Hazard Observation">Hazard Observation</option><option value="Dangerous Occurrence">Dangerous Occurrence</option><option value="Environmental">Environmental</option></select><select id="ev-filter-severity" onchange="loadEvents()" style="width:auto;padding:6px 10px;font-size:12px;border:1px solid var(--border);border-radius:8px"><option value="">All severities</option><option value="critical">Critical</option><option value="high">High</option><option value="medium">Medium</option><option value="low">Low</option></select><select id="ev-filter-status" onchange="loadEvents()" style="width:auto;padding:6px 10px;font-size:12px;border:1px solid var(--border);border-radius:8px"><option value="">All statuses</option><option value="open">Open</option><option value="under_investigation">Under investigation</option><option value="action_required">Action required</option><option value="closed">Closed</option></select><input type="month" id="ev-filter-month" onchange="loadEvents()" style="width:auto;padding:6px 10px;font-size:12px;border:1px solid var(--border);border-radius:8px"/><button class="btn btn-sm" onclick="evClearFilters()"><i class="ti ti-filter-off"></i>Clear</button></div></div><div class="card" style="padding:0;overflow:hidden"><div id="events-list"><div class="loading-msg">Loading events...</div></div></div><div style="position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:200;display:none;align-items:flex-start;justify-content:center;padding:40px 20px;overflow-y:auto" id="ev-modal"><div style="background:var(--card);border-radius:16px;width:680px;max-width:100%;box-shadow:0 20px 60px rgba(0,0,0,.2)"><div style="padding:20px 24px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between"><div><div style="font-size:16px;font-weight:700" id="ev-modal-title">Report event</div><div style="font-size:12px;color:var(--text2);margin-top:2px" id="ev-modal-ref"></div></div><button onclick="evCloseModal()" style="background:none;border:none;font-size:22px;cursor:pointer;color:var(--text2)"><i class="ti ti-x"></i></button></div><div style="padding:24px"><div id="ev-view-mode" style="display:none"><div id="ev-view-content"></div><div style="display:flex;gap:8px;margin-top:20px;flex-wrap:wrap" id="ev-view-actions"></div></div><div id="ev-edit-mode"><div class="form-row"><div class="form-group"><label class="form-label">Event type <span style="color:var(--red)">*</span></label><select id="ev-type"><option value="">Select type...</option><option value="Near Miss">Near Miss</option><option value="Incident">Incident</option><option value="Hazard Observation">Hazard Observation</option><option value="Dangerous Occurrence">Dangerous Occurrence</option><option value="Environmental">Environmental</option></select></div><div class="form-group"><label class="form-label">Severity <span style="color:var(--red)">*</span></label><select id="ev-severity"><option value="low">Low</option><option value="medium">Medium</option><option value="high">High</option><option value="critical">Critical</option></select></div></div><div class="form-row"><div class="form-group"><label class="form-label">Date & time <span style="color:var(--red)">*</span></label><input type="datetime-local" id="ev-date"/></div><div class="form-group"><label class="form-label">Location <span style="color:var(--red)">*</span></label><input type="text" id="ev-location" placeholder="Area, department or specific location"/></div></div><div class="form-group"><label class="form-label">Description <span style="color:var(--red)">*</span></label><textarea id="ev-description" style="min-height:90px" placeholder="Describe what happened, how it happened, and what the conditions were..."></textarea></div><div class="form-group"><label class="form-label">Immediate action taken</label><textarea id="ev-immediate" style="min-height:60px" placeholder="What was done immediately after the event..."></textarea></div><div style="font-size:12px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.05em;margin:16px 0 10px;padding-top:14px;border-top:1px solid var(--border)">People</div><div class="form-row"><div class="form-group"><label class="form-label">Person involved</label><select id="ev-person"><option value="">Select from register or leave blank</option></select></div><div class="form-group"><label class="form-label">Department / area</label><input type="text" id="ev-department" placeholder="Department or area"/></div></div><div class="form-row"><div class="form-group"><label class="form-label">Reported by</label><select id="ev-reported-by"><option value="">Select from register...</option></select></div><div class="form-group"><label class="form-label">Assigned to (for follow-up)</label><select id="ev-assigned-to"><option value="">Select from register...</option></select></div></div><div class="form-row"><div class="form-group"><label class="form-label">Action due date</label><input type="date" id="ev-due-date"/></div><div class="form-group"><label class="form-label">Status</label><select id="ev-status"><option value="open">Open</option><option value="under_investigation">Under investigation</option><option value="action_required">Action required</option><option value="closed">Closed</option></select></div></div><div id="ev-serious-warning" style="display:none;background:#FEF2F2;border:1px solid #FCA5A5;border-radius:8px;padding:12px 14px;margin-top:8px"><div style="font-size:13px;font-weight:600;color:var(--red);margin-bottom:4px"><i class="ti ti-alert-triangle"></i> High / Critical severity</div><div style="font-size:12px;color:#7F1D1D">This event will automatically create an action in the Master Action Plan and prompt you to start an investigation.</div></div><div style="display:flex;gap:8px;justify-content:space-between;margin-top:20px;align-items:center"><div><button class="btn btn-danger" id="ev-delete-btn" style="display:none" onclick="evDelete()"><i class="ti ti-trash"></i>Delete</button></div><div style="display:flex;gap:8px"><button class="btn" onclick="evCloseModal()">Cancel</button><button class="btn btn-primary" onclick="evSave()"><i class="ti ti-device-floppy"></i>Save event</button></div></div></div></div></div></div></div>
 <div id="page-inspection" class="page">
 <div class="page-header">
-<div><div class="page-title">Site Inspection</div><div style="font-size:12px;color:var(--text2)" id="insp-subtitle">Workplace inspection checklist</div></div>
-<div style="display:flex;gap:8px" id="insp-header-btns">
-<button class="btn btn-primary" onclick="inspNew()"><i class="ti ti-plus"></i>New inspection</button>
-</div>
+<div><div class="page-title">Site Inspection</div><div style="font-size:12px;color:var(--text2)" id="insp-subtitle">Workplace inspections and pre-start checks</div></div>
+<div style="display:flex;gap:8px" id="insp-header-btns"></div>
 </div>
 
+<!-- Tabs -->
+<div style="display:flex;gap:0;margin-bottom:16px;border-bottom:2px solid var(--border)">
+<button class="mtg-tab active" id="insp-tab-site" onclick="inspSwitchTab('site',this)">🏗️ Site Inspection</button>
+<button class="mtg-tab" id="insp-tab-prestart" onclick="inspSwitchTab('prestart',this)">🔔 Pre-Start Inspection</button>
+</div>
+
+<!-- ── SITE INSPECTION TAB ── -->
+<div id="insp-view-site">
 <!-- List view -->
 <div id="insp-list-view">
+<div style="display:flex;justify-content:flex-end;margin-bottom:10px">
+<button class="btn btn-primary" onclick="inspNew()"><i class="ti ti-plus"></i>New inspection</button>
+</div>
 <div class="card" style="padding:0;overflow:hidden"><div id="inspections-list"><div class="loading-msg">Loading...</div></div></div>
 </div>
 
 <!-- Form / Detail view -->
 <div id="insp-form-view" style="display:none">
-<!-- Header bar -->
 <div class="card" style="margin-bottom:16px;padding:14px 20px">
 <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
 <div style="font-size:16px;font-weight:700" id="insp-form-title">New Inspection</div>
@@ -6028,8 +6391,6 @@ function sopSaveToDocControl(){
 </div>
 </div>
 </div>
-
-<!-- Header fields -->
 <div class="card" style="margin-bottom:12px">
 <div class="form-row">
 <div class="form-group"><label class="form-label">Site</label><input type="text" id="if-site"/></div>
@@ -6038,8 +6399,6 @@ function sopSaveToDocControl(){
 <div class="form-group"><label class="form-label">Employees present</label><input type="text" id="if-emp"/></div>
 </div>
 </div>
-
-<!-- Checklist -->
 <div class="card" style="margin-bottom:12px;padding:0;overflow:hidden">
 <div style="padding:12px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
 <div class="card-title" style="margin:0">Inspection Checklist</div>
@@ -6056,8 +6415,6 @@ function sopSaveToDocControl(){
 <tbody id="if-checklist"></tbody>
 </table>
 </div>
-
-<!-- Observations -->
 <div class="card" style="margin-bottom:12px">
 <div class="card-title">Overall Observations</div>
 <div class="form-row">
@@ -6065,33 +6422,25 @@ function sopSaveToDocControl(){
 <div class="form-group"><label class="form-label" style="color:var(--red)">Areas requiring action</label><textarea id="if-neg" style="min-height:70px"></textarea></div>
 </div>
 </div>
-
 <!-- Action Plan -->
 <div class="card" style="margin-bottom:12px">
 <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
-<div>
-<div class="card-title" style="margin:0">Action Plan</div>
-<div style="font-size:12px;color:var(--text2);margin-top:3px">Actions are automatically linked to the Master Action Plan on save</div>
-</div>
+<div><div class="card-title" style="margin:0">Action Plan</div><div style="font-size:12px;color:var(--text2);margin-top:3px">Linked to Master Action Plan on save</div></div>
 <button class="btn btn-sm btn-primary" onclick="inspAddAction()"><i class="ti ti-plus"></i>Add action</button>
 </div>
-<div id="if-actions-info" style="background:#EAF3DE;border:1px solid #a7d895;border-radius:8px;padding:8px 12px;font-size:12px;color:#3B6D11;margin-bottom:10px;display:none">
-<i class="ti ti-info-circle"></i> Insufficient items below are pre-filled as actions. Edit, assign and set due dates before saving.
-</div>
-<table style="width:100%;border-collapse:collapse" id="if-actions-table">
+<div id="if-actions-info" style="background:#EAF3DE;border:1px solid #a7d895;border-radius:8px;padding:8px 12px;font-size:12px;color:#3B6D11;margin-bottom:10px;display:none"><i class="ti ti-info-circle"></i> Insufficient items pre-filled as actions.</div>
+<table style="width:100%;border-collapse:collapse">
 <thead><tr style="background:#f9fafb">
-<th style="padding:8px 12px;text-align:left;border-bottom:1px solid var(--border);font-size:11px;text-transform:uppercase;color:var(--text2)">Action description</th>
-<th style="padding:8px;text-align:left;border-bottom:1px solid var(--border);font-size:11px;text-transform:uppercase;color:var(--text2);width:140px">Responsible</th>
-<th style="padding:8px;text-align:left;border-bottom:1px solid var(--border);font-size:11px;text-transform:uppercase;color:var(--text2);width:120px">Due date</th>
-<th style="padding:8px;text-align:left;border-bottom:1px solid var(--border);font-size:11px;text-transform:uppercase;color:var(--text2);width:100px">Priority</th>
+<th style="padding:8px 12px;text-align:left;border-bottom:1px solid var(--border);font-size:11px">Action</th>
+<th style="padding:8px;border-bottom:1px solid var(--border);font-size:11px;width:140px">Responsible</th>
+<th style="padding:8px;border-bottom:1px solid var(--border);font-size:11px;width:120px">Due date</th>
+<th style="padding:8px;border-bottom:1px solid var(--border);font-size:11px;width:100px">Priority</th>
 <th style="padding:8px;width:36px;border-bottom:1px solid var(--border)"></th>
 </tr></thead>
 <tbody id="if-actions-body"></tbody>
 </table>
-<div id="if-actions-empty" style="text-align:center;padding:20px;color:var(--text2);font-size:13px">No actions yet — tick items as Insufficient in the checklist to auto-generate actions, or click Add action.</div>
+<div id="if-actions-empty" style="text-align:center;padding:20px;color:var(--text2);font-size:13px">No actions yet.</div>
 </div>
-
-<!-- Sign off -->
 <div class="card">
 <div class="card-title">Sign-off</div>
 <div class="form-row">
@@ -6099,6 +6448,164 @@ function sopSaveToDocControl(){
 <div class="form-group"><label class="form-label">Date</label><input type="date" id="if-sign-date"/></div>
 <div class="form-group"><label class="form-label">Reviewed by</label><input type="text" id="if-sign-reviewer"/></div>
 <div class="form-group"><label class="form-label">Date</label><input type="date" id="if-sign-reviewer-date"/></div>
+</div>
+</div>
+</div>
+</div>
+
+<!-- ── PRE-START INSPECTION TAB ── -->
+<div id="insp-view-prestart" style="display:none">
+<!-- Pre-start list -->
+<div id="ps-list-view">
+<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+<div style="font-size:13px;color:var(--text2)">A pre-start inspection must be completed before commencing any work activity</div>
+<button class="btn btn-primary" onclick="psNew()"><i class="ti ti-plus"></i>New pre-start check</button>
+</div>
+<div class="card" style="padding:0;overflow:hidden"><div id="ps-list"><div class="loading-msg">Loading...</div></div></div>
+</div>
+
+<!-- Pre-start form -->
+<div id="ps-form-view" style="display:none">
+<!-- Dramatic header -->
+<div style="background:linear-gradient(135deg,#1a3a5c,#185FA5);border-radius:12px;padding:20px 24px;margin-bottom:16px;color:#fff">
+<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
+<div>
+<div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.1em;opacity:.7;margin-bottom:4px">Pre-Start Safety Inspection</div>
+<div style="font-size:20px;font-weight:800" id="ps-form-title">New Pre-Start Check</div>
+<div style="font-size:12px;opacity:.8;margin-top:4px">Complete ALL checks before commencing work</div>
+</div>
+<div style="display:flex;gap:8px">
+<button class="btn" style="background:rgba(255,255,255,.15);color:#fff;border-color:rgba(255,255,255,.3)" onclick="psShowList()"><i class="ti ti-arrow-left"></i>Back</button>
+<button id="ps-delete-btn" class="btn" style="background:rgba(220,38,38,.3);color:#fff;border-color:rgba(220,38,38,.5);display:none" onclick="psDelete()"><i class="ti ti-trash"></i>Delete</button>
+<button class="btn" style="background:#1D9E75;color:#fff;border-color:#1D9E75" onclick="psSave()"><i class="ti ti-device-floppy"></i>Save &amp; Sign off</button>
+</div>
+</div>
+</div>
+
+<!-- Work details -->
+<div class="card" style="margin-bottom:14px;border-left:4px solid #185FA5">
+<div class="card-title" style="color:#185FA5"><i class="ti ti-file-description"></i> Work Details</div>
+<div class="form-row">
+<div class="form-group"><label class="form-label">Work activity / Task description</label><input type="text" id="ps-activity" placeholder="e.g. Electrical installation in workshop B"/></div>
+<div class="form-group"><label class="form-label">Work location</label><input type="text" id="ps-location" placeholder="e.g. Workshop B, Floor 2"/></div>
+<div class="form-group"><label class="form-label">Date</label><input type="date" id="ps-date"/></div>
+<div class="form-group"><label class="form-label">Estimated duration</label><input type="text" id="ps-duration" placeholder="e.g. 4 hours, Full day"/></div>
+</div>
+<div class="form-row">
+<div class="form-group"><label class="form-label">Supervisor / Responsible person</label><select id="ps-supervisor"><option value="">Select...</option></select></div>
+<div class="form-group"><label class="form-label">Team members</label><textarea id="ps-team" style="min-height:50px" placeholder="Names of all persons involved in this work activity..."></textarea></div>
+<div class="form-group"><label class="form-label">Linked risk assessment ref.</label><input type="text" id="ps-ra-ref" placeholder="e.g. GRA-2026-001"/></div>
+<div class="form-group"><label class="form-label">Permit to work ref. (if applicable)</label><input type="text" id="ps-ptw-ref" placeholder="e.g. PTW-2026-001"/></div>
+</div>
+</div>
+
+<!-- Pre-start checklist -->
+<div class="card" style="margin-bottom:14px;padding:0;overflow:hidden">
+<div style="padding:12px 20px;background:linear-gradient(135deg,#f8fafc,#e8f0fe);border-bottom:2px solid #185FA5;display:flex;align-items:center;justify-content:space-between">
+<div><div style="font-weight:700;font-size:14px;color:#1a3a5c">Pre-Start Safety Checks</div>
+<div style="font-size:11px;color:#6b7280;margin-top:2px">All items must be checked before work commences</div></div>
+<div id="ps-score" style="font-size:13px;font-weight:700;color:#185FA5">—</div>
+</div>
+<table style="width:100%;border-collapse:collapse">
+<thead><tr style="background:#f9fafb">
+<th style="padding:9px 16px;text-align:left;border-bottom:1px solid var(--border);font-size:11px;color:var(--text2);text-transform:uppercase;letter-spacing:.04em">Check item</th>
+<th style="padding:9px 8px;text-align:center;border-bottom:1px solid var(--border);font-size:11px;width:80px;color:#1D9E75;font-weight:700">YES ✓</th>
+<th style="padding:9px 8px;text-align:center;border-bottom:1px solid var(--border);font-size:11px;width:80px;color:#E24B4A;font-weight:700">NO ✗</th>
+<th style="padding:9px 8px;text-align:center;border-bottom:1px solid var(--border);font-size:11px;width:80px;color:#6B7280">N/A</th>
+<th style="padding:9px 8px;text-align:left;border-bottom:1px solid var(--border);font-size:11px;color:var(--text2)">Action / Comments</th>
+</tr></thead>
+<tbody id="ps-checklist-body"></tbody>
+</table>
+</div>
+
+<!-- Hazards & Controls -->
+<div class="card" style="margin-bottom:14px;border-left:4px solid #E24B4A">
+<div class="card-title" style="color:#E24B4A"><i class="ti ti-alert-triangle"></i> Hazards Identified &amp; Controls</div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+<div class="form-group" style="margin:0"><label class="form-label">Main hazards for this activity</label><textarea id="ps-hazards" style="min-height:80px" placeholder="List main hazards identified (e.g. electrical shock, working at height, manual handling...)"></textarea></div>
+<div class="form-group" style="margin:0"><label class="form-label">Control measures in place</label><textarea id="ps-controls" style="min-height:80px" placeholder="Control measures applied (e.g. isolation, permit, PPE, toolbox talk done...)"></textarea></div>
+</div>
+</div>
+
+<!-- PPE confirmation -->
+<div class="card" style="margin-bottom:14px;border-left:4px solid #1D9E75">
+<div class="card-title" style="color:#1D9E75"><i class="ti ti-shield-check"></i> PPE Confirmation</div>
+<div style="font-size:12px;color:var(--text2);margin-bottom:12px">Confirm that all required PPE is available and will be worn throughout the work activity</div>
+<div style="display:flex;flex-wrap:wrap;gap:8px" id="ps-ppe-checks">
+<label style="display:flex;align-items:center;gap:6px;font-size:12px;background:#f9fafb;padding:6px 10px;border-radius:8px;border:1px solid var(--border);cursor:pointer"><input type="checkbox" value="Safety helmet" style="accent-color:var(--green)"> Safety helmet</label>
+<label style="display:flex;align-items:center;gap:6px;font-size:12px;background:#f9fafb;padding:6px 10px;border-radius:8px;border:1px solid var(--border);cursor:pointer"><input type="checkbox" value="Safety glasses/goggles" style="accent-color:var(--green)"> Safety glasses</label>
+<label style="display:flex;align-items:center;gap:6px;font-size:12px;background:#f9fafb;padding:6px 10px;border-radius:8px;border:1px solid var(--border);cursor:pointer"><input type="checkbox" value="Face shield" style="accent-color:var(--green)"> Face shield</label>
+<label style="display:flex;align-items:center;gap:6px;font-size:12px;background:#f9fafb;padding:6px 10px;border-radius:8px;border:1px solid var(--border);cursor:pointer"><input type="checkbox" value="Hearing protection" style="accent-color:var(--green)"> Hearing protection</label>
+<label style="display:flex;align-items:center;gap:6px;font-size:12px;background:#f9fafb;padding:6px 10px;border-radius:8px;border:1px solid var(--border);cursor:pointer"><input type="checkbox" value="Safety gloves" style="accent-color:var(--green)"> Safety gloves</label>
+<label style="display:flex;align-items:center;gap:6px;font-size:12px;background:#f9fafb;padding:6px 10px;border-radius:8px;border:1px solid var(--border);cursor:pointer"><input type="checkbox" value="Safety boots" style="accent-color:var(--green)"> Safety boots</label>
+<label style="display:flex;align-items:center;gap:6px;font-size:12px;background:#f9fafb;padding:6px 10px;border-radius:8px;border:1px solid var(--border);cursor:pointer"><input type="checkbox" value="High-visibility vest" style="accent-color:var(--green)"> Hi-vis vest</label>
+<label style="display:flex;align-items:center;gap:6px;font-size:12px;background:#f9fafb;padding:6px 10px;border-radius:8px;border:1px solid var(--border);cursor:pointer"><input type="checkbox" value="Dust mask / RPE" style="accent-color:var(--green)"> Dust mask / RPE</label>
+<label style="display:flex;align-items:center;gap:6px;font-size:12px;background:#f9fafb;padding:6px 10px;border-radius:8px;border:1px solid var(--border);cursor:pointer"><input type="checkbox" value="Safety harness" style="accent-color:var(--green)"> Safety harness</label>
+<label style="display:flex;align-items:center;gap:6px;font-size:12px;background:#f9fafb;padding:6px 10px;border-radius:8px;border:1px solid var(--border);cursor:pointer"><input type="checkbox" value="Chemical resistant gloves" style="accent-color:var(--green)"> Chemical gloves</label>
+<label style="display:flex;align-items:center;gap:6px;font-size:12px;background:#f9fafb;padding:6px 10px;border-radius:8px;border:1px solid var(--border);cursor:pointer"><input type="checkbox" value="Protective clothing / coveralls" style="accent-color:var(--green)"> Coveralls</label>
+</div>
+<div class="form-group" style="margin-top:10px"><label class="form-label">Additional PPE / comments</label><input type="text" id="ps-ppe-extra" placeholder="Any other PPE required..."/></div>
+</div>
+
+<!-- Toolbox talk -->
+<div class="card" style="margin-bottom:14px;border-left:4px solid #8B5CF6">
+<div class="card-title" style="color:#8B5CF6"><i class="ti ti-speakerphone"></i> Toolbox Talk / Briefing</div>
+<div style="display:flex;align-items:center;gap:16px;margin-bottom:12px">
+<label style="display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;cursor:pointer">
+<input type="checkbox" id="ps-tbt-done" style="width:18px;height:18px;accent-color:#8B5CF6"/>
+Toolbox talk / safety briefing conducted before starting work
+</label>
+</div>
+<div class="form-group"><label class="form-label">Topics covered</label><textarea id="ps-tbt-topics" style="min-height:60px" placeholder="Main safety points discussed with the team..."></textarea></div>
+</div>
+
+<!-- Stop Work Authority -->
+<div class="card" style="margin-bottom:14px;background:linear-gradient(135deg,#FEF9EC,#fff);border:2px solid #EF9F27">
+<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+<div style="width:40px;height:40px;border-radius:50%;background:#EF9F27;color:#fff;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">⚠</div>
+<div><div style="font-weight:700;font-size:14px;color:#854F0B">Stop Work Authority</div>
+<div style="font-size:12px;color:#854F0B;opacity:.8">Any person has the right and responsibility to stop work if an unsafe condition is identified</div></div>
+</div>
+<div class="form-group" style="margin:0"><label class="form-label" style="color:#854F0B">Any immediate concerns or reasons to STOP WORK?</label>
+<textarea id="ps-stop-work" style="min-height:60px;border-color:#EF9F27" placeholder="Describe any conditions that prevent safe start of work... (leave blank if none)"></textarea></div>
+</div>
+
+<!-- Overall decision -->
+<div class="card" style="margin-bottom:14px;padding:0;overflow:hidden">
+<div style="padding:14px 20px;background:#1a3a5c;color:#fff;font-weight:700;font-size:14px">Overall Assessment &amp; Decision</div>
+<div style="padding:16px 20px">
+<div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:16px">
+<label style="flex:1;min-width:180px;border-radius:10px;border:2px solid transparent;padding:14px;cursor:pointer;background:#EAF3DE;border-color:#1D9E75;text-align:center" id="ps-decision-go-lbl">
+<input type="radio" name="ps-decision" id="ps-decision-go" value="go" style="display:none">
+<div style="font-size:24px;margin-bottom:6px">✅</div>
+<div style="font-weight:700;font-size:14px;color:#1D9E75">GO — Safe to proceed</div>
+<div style="font-size:11px;color:#3B6D11;margin-top:4px">All checks passed, work may commence</div>
+</label>
+<label style="flex:1;min-width:180px;border-radius:10px;border:2px solid #e5e7eb;padding:14px;cursor:pointer;background:#f9fafb;text-align:center" id="ps-decision-hold-lbl">
+<input type="radio" name="ps-decision" id="ps-decision-hold" value="hold" style="display:none">
+<div style="font-size:24px;margin-bottom:6px">⚠️</div>
+<div style="font-weight:700;font-size:14px;color:#854F0B">HOLD — Conditional</div>
+<div style="font-size:11px;color:#854F0B;margin-top:4px">Issues identified, address before proceeding</div>
+</label>
+<label style="flex:1;min-width:180px;border-radius:10px;border:2px solid #e5e7eb;padding:14px;cursor:pointer;background:#f9fafb;text-align:center" id="ps-decision-stop-lbl">
+<input type="radio" name="ps-decision" id="ps-decision-stop" value="stop" style="display:none">
+<div style="font-size:24px;margin-bottom:6px">🛑</div>
+<div style="font-weight:700;font-size:14px;color:#A32D2D">STOP — Do not proceed</div>
+<div style="font-size:11px;color:#A32D2D;margin-top:4px">Unsafe conditions, work must not start</div>
+</label>
+</div>
+<div class="form-group"><label class="form-label">Notes / Actions required before work can proceed</label><textarea id="ps-decision-notes" style="min-height:60px" placeholder="If HOLD or STOP: describe what needs to be resolved before work can begin..."></textarea></div>
+</div>
+</div>
+
+<!-- Sign-off -->
+<div class="card" style="background:linear-gradient(135deg,#f8fafc,#e8f0fe);border:1px solid #c7d7f5">
+<div class="card-title" style="color:#185FA5"><i class="ti ti-pen"></i> Sign-off</div>
+<div style="font-size:12px;color:var(--text2);margin-bottom:12px">By signing off, the supervisor confirms that all checks have been completed and the team has been briefed</div>
+<div class="form-row">
+<div class="form-group"><label class="form-label">Supervisor name</label><input type="text" id="ps-sign-name"/></div>
+<div class="form-group"><label class="form-label">Date &amp; Time</label><input type="datetime-local" id="ps-sign-datetime"/></div>
+</div>
 </div>
 </div>
 </div>
