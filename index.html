@@ -51,6 +51,7 @@
 
 
 
+
 const SB='https://iarfxjhahzbhncsaohbg.supabase.co';
 const KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlhcmZ4amhhaHpiaG5jc2FvaGJnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg2OTM1MzAsImV4cCI6MjA5NDI2OTUzMH0.qSjahuX-RwnjWEDmo-LkcorAxpsmyVoaXt4AO4_A9BM';
 let tok=null,prof=null,co=null,chkItems=[],people=[];
@@ -641,6 +642,279 @@ function wsOpenToolsCheck(){
     },200);
   },200);
 }
+
+// ── RA & PTW LINKS ───────────────────────────────────────────────────────────
+function wsOpenRA(){
+  var x=wsGetCurrent();
+  showPage('risk',document.querySelector('[onclick*="\'risk\'"]'));
+  if(x.ra_ref)setTimeout(function(){
+    toast('RA reference: '+x.ra_ref+' — search in the register');
+  },400);
+}
+
+function wsOpenPTW(){
+  var x=wsGetCurrent();
+  showPage('permit',document.querySelector('[onclick*="\'permit\'"]'));
+  if(x.permit_ref)setTimeout(function(){
+    toast('PTW reference: '+x.permit_ref);
+  },400);
+}
+
+// ── TOOLS & EQUIPMENT for WORK ORDER ─────────────────────────────────────────
+let wsTEItems=[]; // [{tool_id, ref, name, category, source:'register'|'manual', checked:false}]
+let wsChkToolId=null, wsChkToolName='', wsChkToolCat='';
+
+function wsOpenToolsCheck(){
+  var x=wsGetCurrent();
+  document.getElementById('ws-detail-view').style.display='none';
+  document.getElementById('ws-te-form').style.display='block';
+  document.getElementById('ws-te-checklist-view').style.display='none';
+  document.getElementById('ws-te-wo-title').textContent=x.title||'Work Order';
+  document.getElementById('ws-te-search').value='';
+  document.getElementById('ws-te-search-results').innerHTML='';
+  // Load saved items if any
+  wsTELoadItems();
+}
+
+async function wsTELoadItems(){
+  // Check if work order has saved equipment list in notes or dedicated field
+  // For now render from wsTEItems (session only) + show option to save
+  wsTERenderItems();
+}
+
+function wsTESearchEquipment(){
+  var q=(document.getElementById('ws-te-search')?.value||'').toLowerCase().trim();
+  var el=document.getElementById('ws-te-search-results');
+  if(!el)return;
+  if(q.length<2){el.innerHTML='';return;}
+  // Search from toolsAllData (already loaded if tools module was visited)
+  var results=(toolsAllData||[]).filter(function(t){
+    return (t.name||'').toLowerCase().includes(q)||(t.ref_number||'').toLowerCase().includes(q)||(t.serial_number||'').toLowerCase().includes(q);
+  }).slice(0,8);
+  if(!results.length){
+    el.innerHTML='<div style="padding:8px 12px;font-size:12px;color:var(--text2)">No equipment found in register. <button class="btn btn-sm btn-primary" onclick="wsTEAddManual()"><i class="ti ti-plus"></i>Add manually</button></div>';
+    return;
+  }
+  var h='<div style="border:1px solid var(--border);border-radius:8px;overflow:hidden;margin-bottom:8px">';
+  results.forEach(function(t){
+    var cat=t.category||'other';
+    var col=(TOOL_CAT_COLORS||{})[cat]||'#6B7280';
+    var icon=(TOOL_CAT_ICONS||{})[cat]||'ti-package';
+    var alreadyAdded=wsTEItems.find(function(i){return i.tool_id===t.id;});
+    h+='<div style="padding:10px 14px;border-bottom:1px solid #f5f5f5;display:flex;align-items:center;gap:12px;background:'+(alreadyAdded?'#f0fdf4':'#fff')+'">'
+      +'<i class="ti '+icon+'" style="color:'+col+';font-size:16px;width:20px"></i>'
+      +'<div style="flex:1">'
+      +'<div style="font-weight:600;font-size:13px">'+escH(t.name)+'</div>'
+      +'<div style="font-size:11px;color:var(--text2)"><span style="font-family:monospace;color:'+col+'">'+escH(t.ref_number||'—')+'</span>'+(t.location?' · '+escH(t.location):'')+'</div>'
+      +'</div>'
+      +(alreadyAdded
+        ?'<span style="color:var(--green);font-size:11px;font-weight:700">✓ Added</span>'
+        :'<button class="btn btn-sm btn-primary" data-id="'+t.id+'" onclick="wsTEAddFromRegister(this.dataset.id)"><i class="ti ti-plus"></i>Add</button>')
+      +'</div>';
+  });
+  h+='</div>';
+  el.innerHTML=h;
+}
+
+function wsTEAddFromRegister(toolId){
+  var t=(toolsAllData||[]).find(function(x){return x.id===toolId;});
+  if(!t)return;
+  if(wsTEItems.find(function(i){return i.tool_id===toolId;})){toast('Already in list');return;}
+  wsTEItems.push({tool_id:toolId,ref:t.ref_number||'',name:t.name,category:t.category||'other',source:'register',checked:false});
+  wsTERenderItems();
+  wsTESearchEquipment();
+  toast(escH(t.name)+' added to equipment list');
+}
+
+function wsTEAddManual(){
+  var name=prompt('Equipment name:');if(!name||!name.trim())return;
+  var cat=prompt('Category (hand_tool/power_tool/equipment/vehicle/lifting/electrical/other):','equipment');
+  wsTEItems.push({tool_id:null,ref:'MANUAL',name:name.trim(),category:cat||'equipment',source:'manual',checked:false});
+  wsTERenderItems();
+}
+
+function wsTEAddItem(){
+  var name=prompt('Equipment name (or use search):');
+  if(!name||!name.trim())return;
+  wsTEItems.push({tool_id:null,ref:'MANUAL',name:name.trim(),category:'equipment',source:'manual',checked:false});
+  wsTERenderItems();
+}
+
+function wsTERenderItems(){
+  var el=document.getElementById('ws-te-items-list');if(!el)return;
+  if(!wsTEItems.length){
+    el.innerHTML='<div style="text-align:center;padding:24px;color:var(--text2);font-size:13px">No equipment added yet. Search the register or add manually.</div>';
+    return;
+  }
+  var h='<div style="font-weight:700;font-size:12px;color:var(--text2);text-transform:uppercase;letter-spacing:.04em;padding:8px 0;margin-bottom:6px">'+wsTEItems.length+' item'+(wsTEItems.length!==1?'s':'')+' required for this job</div>';
+  h+='<div style="display:flex;flex-direction:column;gap:8px">';
+  wsTEItems.forEach(function(item,i){
+    var col=(TOOL_CAT_COLORS||{})[item.category]||'#6B7280';
+    var icon=(TOOL_CAT_ICONS||{})[item.category]||'ti-package';
+    var label=TOOL_CAT_LABELS?.[item.category]||item.category;
+    h+='<div style="border:1px solid var(--border);border-radius:10px;padding:12px 16px;background:#fff;display:flex;align-items:center;gap:12px;cursor:pointer;transition:box-shadow .15s" '
+      +'data-idx="'+i+'" onclick="wsTEOpenChecklist('+i+')" '
+      +'onmouseover="this.style.boxShadow=\'0 2px 12px rgba(0,0,0,.08)\'" onmouseout="this.style.boxShadow=\'\'">'
+      +'<div style="width:42px;height:42px;border-radius:10px;background:'+col+'20;display:flex;align-items:center;justify-content:center;flex-shrink:0">'
+      +'<i class="ti '+icon+'" style="font-size:20px;color:'+col+'"></i></div>'
+      +'<div style="flex:1">'
+      +'<div style="font-weight:700;font-size:13px">'+escH(item.name)+'</div>'
+      +'<div style="font-size:11px;color:var(--text2);display:flex;gap:10px;margin-top:2px">'
+      +'<span style="font-family:monospace;color:'+col+'">'+escH(item.ref||'MANUAL')+'</span>'
+      +'<span>'+escH(label)+'</span>'
+      +(item.source==='manual'?'<span style="color:#9CA3AF;font-style:italic">Manual entry</span>':'')
+      +'</div></div>'
+      +'<div style="display:flex;gap:8px;align-items:center">'
+      +(item.inspected
+        ?'<span style="background:#EAF3DE;color:#3B6D11;padding:3px 10px;border-radius:99px;font-size:11px;font-weight:700">✓ Inspected '+(item.result==='pass'?'PASS':item.result==='fail'?'FAIL':'COND')+'</span>'
+        :'<span style="background:#FEF9EC;color:#854F0B;padding:3px 10px;border-radius:99px;font-size:11px;font-weight:600">⚠ Not checked</span>')
+      +'<button class="btn btn-sm" style="color:'+col+';border-color:'+col+'40" onclick="event.stopPropagation();wsTEOpenChecklist('+i+')"><i class="ti ti-clipboard-check"></i>Inspect</button>'
+      +'<button class="btn btn-sm" style="color:var(--red)" onclick="event.stopPropagation();wsTERemove('+i+')"><i class="ti ti-x"></i></button>'
+      +'</div>'
+      +'</div>';
+  });
+  h+='</div>';
+  el.innerHTML=h;
+}
+
+function wsTERemove(idx){
+  wsTEItems.splice(idx,1);
+  wsTERenderItems();
+}
+
+async function wsTEOpenChecklist(idx){
+  var item=wsTEItems[idx];
+  if(!item)return;
+  wsChkToolId=item.tool_id;
+  wsChkToolName=item.name;
+  wsChkToolCat=item.category;
+  wsChkItemIdx=idx;
+
+  document.getElementById('ws-te-form').style.display='none';
+  document.getElementById('ws-te-checklist-view').style.display='block';
+  document.getElementById('ws-chk-equip-name').textContent=item.name;
+  document.getElementById('ws-chk-equip-ref').textContent=item.ref||'Manual entry';
+  // Set date
+  var dt=document.getElementById('ws-chk-date');if(dt)dt.value=new Date().toISOString().slice(0,10);
+  // Inspector dropdown
+  var insp=document.getElementById('ws-chk-inspector');
+  if(insp){
+    insp.innerHTML='<option value="">Select...</option>';
+    (people||[]).forEach(function(p){var o=document.createElement('option');o.value=p.id;o.textContent=p.last_name+', '+p.first_name;insp.appendChild(o);});
+  }
+  // Load checklist
+  var tbody=document.getElementById('ws-chk-body');
+  if(tbody){
+    try{
+      var items=await api('/tool_checklist_templates?category=eq.'+item.category+'&order=sort_order');
+      if(!items||!items.length)items=[{check_item:'Visual inspection — no damage'},{check_item:'Safe to use'},{check_item:'Correct for the task'},{check_item:'Clean and functional'}];
+      tbody.innerHTML='';
+      items.forEach(function(ci,i){
+        var tr=document.createElement('tr');
+        tr.style.borderBottom='1px solid #f5f5f5';
+        tr.innerHTML='<td style="padding:8px 16px;font-size:12px">'+escH(ci.check_item)+'</td>'
+          +'<td style="padding:6px;text-align:center"><input type="radio" name="wsc'+i+'" value="ok" id="wsc-ok-'+i+'" onchange="wsChkScore()" style="width:16px;height:16px;accent-color:#1D9E75"></td>'
+          +'<td style="padding:6px;text-align:center"><input type="radio" name="wsc'+i+'" value="fail" id="wsc-fail-'+i+'" onchange="wsChkScore()" style="width:16px;height:16px;accent-color:#E24B4A"></td>'
+          +'<td style="padding:6px;text-align:center"><input type="radio" name="wsc'+i+'" value="na" id="wsc-na-'+i+'" onchange="wsChkScore()" checked style="width:16px;height:16px;accent-color:#6B7280"></td>'
+          +'<td style="padding:5px 12px"><input type="text" id="wsc-note-'+i+'" placeholder="Note..." style="width:100%;padding:4px 8px;border:1px solid var(--border);border-radius:6px;font-size:11px"/></td>';
+        tbody.appendChild(tr);
+      });
+      wsChkScore();
+    }catch(e){console.error(e);}
+  }
+}
+
+var wsChkItemIdx=0;
+
+function wsChkScore(){
+  var rows=document.querySelectorAll('#ws-chk-body tr');
+  var ok=0,fail=0,na=0;
+  rows.forEach(function(tr,i){
+    if(document.getElementById('wsc-ok-'+i)?.checked)ok++;
+    else if(document.getElementById('wsc-fail-'+i)?.checked)fail++;
+    else na++;
+  });
+  var el=document.getElementById('ws-chk-score');
+  if(el)el.innerHTML='<span style="color:#a8f0d4;font-weight:700">'+ok+'✓</span> <span style="color:#fca5a5;font-weight:700">'+fail+'✗</span> <span style="opacity:.7">'+na+' N/A</span>';
+  var res=document.getElementById('ws-chk-result');
+  if(res)res.value=fail>0?'fail':'pass';
+}
+
+async function wsChkSave(){
+  var inspId=document.getElementById('ws-chk-inspector')?.value||null;
+  var inspName='';
+  if(inspId){var p=(people||[]).find(function(x){return x.id===inspId;});inspName=p?(p.last_name+', '+p.first_name):'';}
+  var rows=document.querySelectorAll('#ws-chk-body tr');
+  var results=[];
+  rows.forEach(function(tr,i){
+    var item=tr.querySelector('td')?.textContent||'Item '+i;
+    var ok=document.getElementById('wsc-ok-'+i)?.checked;
+    var fail=document.getElementById('wsc-fail-'+i)?.checked;
+    var note=tr.querySelector('input[type="text"]')?.value||'';
+    results.push({item:item,result:ok?'ok':fail?'fail':'na',note:note});
+  });
+  var resultVal=document.getElementById('ws-chk-result')?.value||'pass';
+  try{
+    if(wsChkToolId){
+      // Save proper inspection record
+      await api('/tool_inspections',{m:'POST',p:'return=minimal',b:{
+        company_id:prof?.company_id,tool_id:wsChkToolId,
+        inspection_type:document.getElementById('ws-chk-type')?.value||'pre_use',
+        inspection_date:document.getElementById('ws-chk-date')?.value||new Date().toISOString().slice(0,10),
+        inspected_by:inspId||null,inspected_by_name:inspName||null,
+        overall_result:resultVal,checklist_results:results,
+        defects_found:document.getElementById('ws-chk-defects')?.value||null,
+        created_by:prof?.id
+      }});
+    }
+    // Mark item as inspected in local list
+    if(wsTEItems[wsChkItemIdx]){
+      wsTEItems[wsChkItemIdx].inspected=true;
+      wsTEItems[wsChkItemIdx].result=resultVal;
+    }
+    toast('Inspection saved — '+(resultVal==='pass'?'PASS':resultVal==='fail'?'FAIL':'Conditional'));
+    wsBackToTEForm();
+  }catch(e){toast(e.message,false);console.error(e);}
+}
+
+function wsBackToTEForm(){
+  document.getElementById('ws-te-checklist-view').style.display='none';
+  document.getElementById('ws-te-form').style.display='block';
+  wsTERenderItems();
+}
+
+// Update wsRenderActionStatuses to include RA, PTW
+const _origWsRenderActionStatuses=wsRenderActionStatuses;
+function wsRenderActionStatuses(x){
+  _origWsRenderActionStatuses(x);
+  var ra=document.getElementById('ws-ra-status');
+  var ptw=document.getElementById('ws-ptw-status');
+  if(ra)ra.innerHTML=x.ra_ref?'<span style="color:var(--green);font-weight:700">Ref: '+escH(x.ra_ref)+'</span>':'<span style="color:var(--text2)">No RA linked</span>';
+  if(ptw)ptw.innerHTML=(x.permit_ref&&x.requires_permit)?'<span style="color:var(--green);font-weight:700">Ref: '+escH(x.permit_ref)+'</span>':x.requires_permit?'<span style="color:var(--amber);font-weight:600">Required — not issued</span>':'<span style="color:var(--text2)">Not required</span>';
+}
+
+
+
+// Update wsRenderLinkedRecords to include RA + PTW
+const _origWsRenderLinkedRecords=wsRenderLinkedRecords;
+function wsRenderLinkedRecords(x){
+  var el=document.getElementById('ws-linked-records');if(!el)return;
+  var row=function(icon,label,val,col){
+    return '<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid #f5f5f5">'
+      +'<i class="ti '+icon+'" style="color:'+col+';font-size:14px;width:18px"></i>'
+      +'<span style="font-size:12px;color:var(--text2);flex:1">'+label+'</span>'
+      +(val?'<span style="font-size:11px;font-weight:700;color:'+col+'">'+escH(val)+'</span>':'<span style="font-size:11px;color:#ccc">None</span>')
+      +'</div>';
+  };
+  var h='';
+  h+=row('ti-speakerphone','Toolbox talk',x.toolbox_talk_id?'Linked':'','#8B5CF6');
+  h+=row('ti-shield-check','Pre-start check',x.prestart_id?'Linked':'','#185FA5');
+  h+=row('ti-clipboard-check','Site inspection',x.site_inspection_id?'Linked':'','#1D9E75');
+  h+=row('ti-alert-triangle','Risk assessment',x.ra_ref||'','#E24B4A');
+  h+=row('ti-key','Permit to work',(x.requires_permit&&x.permit_ref)?x.permit_ref:x.requires_permit?'Required — not issued':'N/A','#185FA5');
+  el.innerHTML=h;
+}
+
 
 function wsBackToDetail(){
   document.getElementById('ws-tbt-form').style.display='none';
@@ -6901,6 +7175,7 @@ function sopSaveToDocControl(){
 
 
 
+
 </script>
 </head>
 <body>
@@ -7041,13 +7316,31 @@ function sopSaveToDocControl(){
 <button class="btn btn-sm" style="background:#1D9E75;color:#fff;border-color:#1D9E75;margin-top:8px;width:100%;justify-content:center" onclick="event.stopPropagation();wsOpenSiteInspection()"><i class="ti ti-plus"></i>Open Site Inspection</button>
 </div>
 <!-- Tools & Equipment -->
-<div class="ws-action-card" id="ws-act-tools" style="padding:20px;border-bottom:1px solid var(--border);cursor:pointer;transition:background .15s;text-align:center" onclick="wsOpenToolsCheck()">
+<div class="ws-action-card" id="ws-act-tools" style="padding:20px;border-right:1px solid var(--border);border-bottom:1px solid var(--border);cursor:pointer;transition:background .15s;text-align:center" onclick="wsOpenToolsCheck()">
 <div style="width:52px;height:52px;border-radius:14px;background:#EF9F2720;display:flex;align-items:center;justify-content:center;margin:0 auto 10px">
 <i class="ti ti-tools" style="font-size:24px;color:#EF9F27"></i></div>
 <div style="font-weight:700;font-size:13px;margin-bottom:4px;color:#1a1a1a">Tools &amp; Equipment</div>
-<div style="font-size:11px;color:var(--text2);margin-bottom:10px">Equipment inspection checklist</div>
+<div style="font-size:11px;color:var(--text2);margin-bottom:10px">Add equipment list &amp; run checklists</div>
 <div id="ws-te-status" style="font-size:11px;font-weight:600"></div>
-<button class="btn btn-sm" style="background:#EF9F27;color:#fff;border-color:#EF9F27;margin-top:8px;width:100%;justify-content:center" onclick="event.stopPropagation();wsOpenToolsCheck()"><i class="ti ti-plus"></i>Equipment Check</button>
+<button class="btn btn-sm" style="background:#EF9F27;color:#fff;border-color:#EF9F27;margin-top:8px;width:100%;justify-content:center" onclick="event.stopPropagation();wsOpenToolsCheck()"><i class="ti ti-tools"></i>Manage Equipment</button>
+</div>
+<!-- Risk Assessment -->
+<div class="ws-action-card" id="ws-act-ra" style="padding:20px;border-right:1px solid var(--border);border-bottom:1px solid var(--border);cursor:pointer;transition:background .15s;text-align:center" onclick="wsOpenRA()">
+<div style="width:52px;height:52px;border-radius:14px;background:#E24B4A20;display:flex;align-items:center;justify-content:center;margin:0 auto 10px">
+<i class="ti ti-alert-triangle" style="font-size:24px;color:#E24B4A"></i></div>
+<div style="font-weight:700;font-size:13px;margin-bottom:4px;color:#1a1a1a">Risk Assessment</div>
+<div style="font-size:11px;color:var(--text2);margin-bottom:10px">View or create linked risk assessment</div>
+<div id="ws-ra-status" style="font-size:11px;font-weight:600"></div>
+<button class="btn btn-sm" style="background:#E24B4A;color:#fff;border-color:#E24B4A;margin-top:8px;width:100%;justify-content:center" onclick="event.stopPropagation();wsOpenRA()"><i class="ti ti-alert-triangle"></i>Risk Assessment</button>
+</div>
+<!-- Permit to Work -->
+<div class="ws-action-card" id="ws-act-ptw" style="padding:20px;border-bottom:1px solid var(--border);cursor:pointer;transition:background .15s;text-align:center" onclick="wsOpenPTW()">
+<div style="width:52px;height:52px;border-radius:14px;background:#185FA520;display:flex;align-items:center;justify-content:center;margin:0 auto 10px">
+<i class="ti ti-key" style="font-size:24px;color:#185FA5"></i></div>
+<div style="font-weight:700;font-size:13px;margin-bottom:4px;color:#1a1a1a">Permit to Work</div>
+<div style="font-size:11px;color:var(--text2);margin-bottom:10px">Issue or view permit to work</div>
+<div id="ws-ptw-status" style="font-size:11px;font-weight:600"></div>
+<button class="btn btn-sm" style="background:#185FA5;color:#fff;border-color:#185FA5;margin-top:8px;width:100%;justify-content:center" onclick="event.stopPropagation();wsOpenPTW()"><i class="ti ti-key"></i>Permit to Work</button>
 </div>
 </div>
 </div>
@@ -7256,6 +7549,96 @@ function sopSaveToDocControl(){
 </div>
 </div>
 </div>
+
+
+<!-- ── TOOLS & EQUIPMENT FORM for Work Order ── -->
+<div id="ws-te-form" style="display:none">
+<div class="card" style="margin-bottom:14px;padding:0;overflow:hidden">
+<div style="padding:16px 24px;background:linear-gradient(135deg,#92400E,#EF9F27);color:#fff">
+<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
+<div><div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.1em;opacity:.8;margin-bottom:4px">Tools &amp; Equipment Register</div>
+<div style="font-size:18px;font-weight:800" id="ws-te-wo-title">—</div>
+<div style="font-size:12px;opacity:.8;margin-top:2px">Add all tools and equipment required for this work activity</div></div>
+<div style="display:flex;gap:8px">
+<button class="btn" style="background:rgba(255,255,255,.2);color:#fff;border-color:rgba(255,255,255,.3)" onclick="wsBackToDetail()"><i class="ti ti-arrow-left"></i>Back</button>
+</div>
+</div>
+</div>
+</div>
+
+<!-- Add equipment to this job -->
+<div class="card" style="margin-bottom:14px;border-left:4px solid #EF9F27">
+<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+<div><div class="card-title" style="margin:0;color:#92400E"><i class="ti ti-clipboard-list"></i> Equipment Required for This Job</div>
+<div style="font-size:12px;color:var(--text2);margin-top:3px">Search and add tools/equipment from the register, or add manually</div></div>
+<button class="btn btn-sm btn-primary" style="background:#EF9F27;border-color:#EF9F27" onclick="wsTEAddItem()"><i class="ti ti-plus"></i>Add equipment</button>
+</div>
+<!-- Search from register -->
+<div style="display:flex;gap:8px;margin-bottom:14px">
+<input type="text" id="ws-te-search" placeholder="Search equipment register (ref, name)..." style="flex:1;padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px" oninput="wsTESearchEquipment()"/>
+<button class="btn" onclick="wsTESearchEquipment()"><i class="ti ti-search"></i>Search</button>
+</div>
+<div id="ws-te-search-results" style="margin-bottom:12px"></div>
+<!-- Added items list -->
+<div id="ws-te-items-list"><div style="text-align:center;padding:24px;color:var(--text2);font-size:13px">No equipment added yet. Search above or add manually.</div></div>
+</div>
+</div>
+
+<!-- ── SINGLE EQUIPMENT CHECKLIST VIEW ── -->
+<div id="ws-te-checklist-view" style="display:none">
+<div class="card" style="margin-bottom:14px;padding:0;overflow:hidden">
+<div style="padding:14px 20px;background:linear-gradient(135deg,#1a3a5c,#185FA5);color:#fff;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
+<div>
+<div style="font-size:11px;opacity:.7;margin-bottom:3px">Equipment Inspection</div>
+<div style="font-size:18px;font-weight:800" id="ws-chk-equip-name">—</div>
+<div style="font-family:monospace;font-size:12px;color:#a8f0d4" id="ws-chk-equip-ref">—</div>
+</div>
+<div style="display:flex;gap:8px">
+<button class="btn" style="background:rgba(255,255,255,.2);color:#fff;border-color:rgba(255,255,255,.3)" onclick="wsBackToTEForm()"><i class="ti ti-arrow-left"></i>Back to list</button>
+<button class="btn" style="background:#1D9E75;color:#fff;border-color:#1D9E75" onclick="wsChkSave()"><i class="ti ti-device-floppy"></i>Save inspection</button>
+</div>
+</div>
+</div>
+<!-- Inspection header -->
+<div class="card" style="margin-bottom:14px;background:linear-gradient(135deg,#f8fafc,#e8f0fe);border:1px solid #c7d7f5">
+<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px">
+<div class="form-group" style="margin:0"><label class="form-label">Inspection date</label><input type="date" id="ws-chk-date" style="font-weight:600"/></div>
+<div class="form-group" style="margin:0"><label class="form-label">Inspected by</label><select id="ws-chk-inspector"><option value="">Select...</option></select></div>
+<div class="form-group" style="margin:0"><label class="form-label">Type</label>
+<select id="ws-chk-type"><option value="pre_use">Pre-use check</option><option value="periodic" selected>Periodic inspection</option></select></div>
+</div>
+</div>
+<!-- Checklist table -->
+<div class="card" style="margin-bottom:14px;padding:0;overflow:hidden">
+<div style="padding:10px 16px;background:#1a3a5c;color:#fff;display:flex;justify-content:space-between;align-items:center">
+<div style="font-weight:700">Inspection Checklist</div>
+<div id="ws-chk-score" style="font-size:12px;color:#a8f0d4"></div>
+</div>
+<table style="width:100%;border-collapse:collapse">
+<thead><tr style="background:#f9fafb">
+<th style="padding:8px 16px;text-align:left;border-bottom:1px solid var(--border);font-size:11px">Check item</th>
+<th style="padding:8px;text-align:center;border-bottom:1px solid var(--border);font-size:11px;width:70px;color:#1D9E75">OK ✓</th>
+<th style="padding:8px;text-align:center;border-bottom:1px solid var(--border);font-size:11px;width:70px;color:#E24B4A">Fail ✗</th>
+<th style="padding:8px;text-align:center;border-bottom:1px solid var(--border);font-size:11px;width:70px;color:#6B7280">N/A</th>
+<th style="padding:8px;text-align:left;border-bottom:1px solid var(--border);font-size:11px">Notes</th>
+</tr></thead>
+<tbody id="ws-chk-body"></tbody>
+</table>
+</div>
+<div class="card">
+<div class="card-title">Overall Result</div>
+<div class="form-row">
+<div class="form-group"><label class="form-label">Result</label>
+<select id="ws-chk-result">
+<option value="pass">✓ PASS — Safe to use</option>
+<option value="conditional">⚠ CONDITIONAL</option>
+<option value="fail">✗ FAIL — Remove from service</option>
+</select></div>
+<div class="form-group"><label class="form-label">Defects / Issues</label><input type="text" id="ws-chk-defects" placeholder="Describe any defects found..."/></div>
+</div>
+</div>
+</div>
+
 
 </div><!-- end page-workschedule -->
 
