@@ -49,6 +49,8 @@
 
 
 
+
+
 const SB='https://iarfxjhahzbhncsaohbg.supabase.co';
 const KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlhcmZ4amhhaHpiaG5jc2FvaGJnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg2OTM1MzAsImV4cCI6MjA5NDI2OTUzMH0.qSjahuX-RwnjWEDmo-LkcorAxpsmyVoaXt4AO4_A9BM';
 let tok=null,prof=null,co=null,chkItems=[],people=[];
@@ -173,7 +175,7 @@ if(target){
   target.classList.add('active');
 }
 if(el&&el.classList)el.classList.add('active');
-const L={dashboard:loadDash,kpi:kpiLoadAll,events:loadEvents,inspection:()=>{buildChecklist();loadInsps();},risk:loadRA,investigation:loadInvs,legal:loadLegal,sop:loadSOP,tools:loadTools,permit:loadPermits,noise:loadNoise,meetings:loadMtgs,training:loadTraining,actions:loadActions,documents:loadDocs,people:loadPeople,users:loadUsers,admin:loadAdmin,'ai-insights':genFullAI,settings:loadSettings};
+const L={dashboard:loadDash,kpi:kpiLoadAll,workschedule:loadWorkSchedule,events:loadEvents,inspection:()=>{buildChecklist();loadInsps();},risk:loadRA,investigation:loadInvs,legal:loadLegal,sop:loadSOP,tools:loadTools,permit:loadPermits,noise:loadNoise,meetings:loadMtgs,training:loadTraining,actions:loadActions,documents:loadDocs,people:loadPeople,users:loadUsers,admin:loadAdmin,'ai-insights':genFullAI,settings:loadSettings};
 if(L[name])L[name]();
 }
 function toggleForm(id){const el=document.getElementById(id);el.style.display=el.style.display==='none'?'block':'none';}
@@ -266,6 +268,565 @@ document.getElementById('ai-risk-hotspots').innerHTML='<div style="white-space:p
 }catch(e){document.getElementById('ai-insights-content').innerHTML='<div class="empty" style="color:var(--red)">'+e.message+'</div>';}
 }
 
+
+
+// ===== WORK SCHEDULE MODULE =====
+let wsAllData=[], wsEditingId=null, wsCurrentId=null, wsWeekOffset=0, wsTbtAttendees=[];
+
+const WS_STATUS_CFG={
+  planned:    ['#E6F1FB','#185FA5','Planned'],
+  approved:   ['#EDE9FE','#7C3AED','Approved'],
+  in_progress:['#FEF9EC','#854F0B','In Progress'],
+  on_hold:    ['#F3E8FF','#8B5CF6','On Hold'],
+  completed:  ['#EAF3DE','#3B6D11','Completed'],
+  cancelled:  ['#f3f4f6','#6B7280','Cancelled']
+};
+const WS_PRIORITY_CFG={
+  low:     ['#f3f4f6','#6B7280'],
+  medium:  ['#E6F1FB','#185FA5'],
+  high:    ['#FEF9EC','#854F0B'],
+  critical:['#FCEBEB','#A32D2D']
+};
+const WS_RISK_CFG={
+  low:     ['#EAF3DE','#3B6D11'],
+  medium:  ['#FEF9EC','#854F0B'],
+  high:    ['#FEF6E7','#C2410C'],
+  critical:['#FCEBEB','#A32D2D']
+};
+const WS_TYPE_LABELS={maintenance:'Maintenance',construction:'Construction',inspection:'Inspection',cleaning:'Cleaning',electrical:'Electrical',mechanical:'Mechanical',civil:'Civil',other:'Other'};
+const WS_TYPE_ICONS={maintenance:'ti-tool',construction:'ti-building',inspection:'ti-clipboard-check',cleaning:'ti-wash',electrical:'ti-bolt',mechanical:'ti-settings-2',civil:'ti-road',other:'ti-package'};
+
+function wsBadge(val, cfg){
+  var c=cfg[val]||Object.values(cfg)[0];
+  return '<span style="background:'+c[0]+';color:'+c[1]+';padding:2px 9px;border-radius:99px;font-size:11px;font-weight:700">'+(c[2]||val)+'</span>';
+}
+
+async function loadWorkSchedule(){
+  var addBtn=document.getElementById('ws-add-btn');
+  if(addBtn)addBtn.style.display=isMgr()?'inline-flex':'none';
+  wsWeekOffset=0;
+  wsSetView('list');
+}
+
+function wsSetView(type){
+  var listBtn=document.getElementById('ws-btn-list');
+  var weekBtn=document.getElementById('ws-btn-week');
+  if(listBtn)listBtn.style.background=type==='list'?'var(--green)':'';
+  if(listBtn)listBtn.style.color=type==='list'?'#fff':'';
+  if(weekBtn)weekBtn.style.background=type==='week'?'var(--green)':'';
+  if(weekBtn)weekBtn.style.color=type==='week'?'#fff':'';
+  ['ws-list-view','ws-week-view','ws-detail-view','ws-form-view','ws-tbt-form'].forEach(function(id){
+    var el=document.getElementById(id);if(el)el.style.display='none';
+  });
+  if(type==='list'){
+    document.getElementById('ws-list-view').style.display='block';
+    wsLoadList();
+  }else{
+    document.getElementById('ws-week-view').style.display='block';
+    wsRenderWeek();
+  }
+}
+
+function wsShowList(){wsSetView('list');}
+
+async function wsLoadList(){
+  var el=document.getElementById('ws-list');
+  if(!el)return;
+  el.innerHTML='<div class="loading-msg">Loading...</div>';
+  try{
+    var d=await api('/work_schedule?select=*'+cf()+'&order=planned_start,created_at.desc');
+    wsAllData=d||[];
+    var today=new Date();
+    var setM=function(id,v){var e=document.getElementById(id);if(e)e.textContent=v;};
+    setM('ws-m-planned',wsAllData.filter(x=>x.status==='planned'||x.status==='approved').length);
+    setM('ws-m-progress',wsAllData.filter(x=>x.status==='in_progress').length);
+    setM('ws-m-done',wsAllData.filter(x=>x.status==='completed').length);
+    setM('ws-m-overdue',wsAllData.filter(x=>['planned','approved','in_progress'].includes(x.status)&&x.planned_end&&new Date(x.planned_end)<today).length);
+    setM('ws-m-hold',wsAllData.filter(x=>x.status==='on_hold').length);
+    wsFilter();
+  }catch(e){el.innerHTML='<p style="padding:20px;color:red">'+e.message+'</p>';console.error(e);}
+}
+
+function wsFilter(){
+  var el=document.getElementById('ws-list');if(!el)return;
+  var search=(document.getElementById('ws-search')?.value||'').toLowerCase();
+  var status=document.getElementById('ws-filter-status')?.value||'';
+  var priority=document.getElementById('ws-filter-priority')?.value||'';
+  var filtered=wsAllData.filter(function(x){
+    var mS=!search||(x.title||'').toLowerCase().includes(search)||(x.ref_number||'').toLowerCase().includes(search)||(x.location||'').toLowerCase().includes(search);
+    var mSt=!status||x.status===status;
+    var mP=!priority||x.priority===priority;
+    return mS&&mSt&&mP;
+  });
+  if(!filtered.length){
+    el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)">'
+      +'<div style="font-size:40px;margin-bottom:12px">📋</div>'
+      +'<div style="font-weight:600;margin-bottom:8px">No work orders found</div>'
+      +(isMgr()&&!search&&!status&&!priority?'<button class="btn btn-primary" onclick="wsNew()"><i class="ti ti-plus"></i>Create first work order</button>':'')
+      +'</div>';
+    return;
+  }
+  var today=new Date();
+  var html='';
+  filtered.forEach(function(x){
+    var sc=WS_STATUS_CFG[x.status]||WS_STATUS_CFG.planned;
+    var pc=WS_PRIORITY_CFG[x.priority]||WS_PRIORITY_CFG.medium;
+    var rc=WS_RISK_CFG[x.risk_level]||WS_RISK_CFG.medium;
+    var isOverdue=['planned','approved','in_progress'].includes(x.status)&&x.planned_end&&new Date(x.planned_end)<today;
+    var typeIcon=WS_TYPE_ICONS[x.work_type]||'ti-package';
+    var startStr=x.planned_start?new Date(x.planned_start).toLocaleDateString('en-GB'):'—';
+    var endStr=x.planned_end?new Date(x.planned_end).toLocaleDateString('en-GB'):'—';
+    html+='<div class="card" style="margin:0 0 10px 0;padding:0;overflow:hidden;border:1px solid '+(isOverdue?'var(--red)':'var(--border)')+';cursor:pointer;transition:box-shadow .15s" '
+      +'data-id="'+x.id+'" onclick="wsShowDetail(this.dataset.id)" '
+      +'onmouseover="this.style.boxShadow=\'0 4px 16px rgba(0,0,0,.1)\'" onmouseout="this.style.boxShadow=\'\'">'
+      +'<div style="display:flex;align-items:stretch">'
+      // Priority stripe
+      +'<div style="width:5px;background:'+pc[1]+';flex-shrink:0"></div>'
+      // Icon
+      +'<div style="padding:16px 14px;display:flex;align-items:center;border-right:1px solid var(--border)">'
+      +'<div style="width:44px;height:44px;border-radius:12px;background:'+pc[0]+';display:flex;align-items:center;justify-content:center;flex-shrink:0">'
+      +'<i class="ti '+typeIcon+'" style="font-size:20px;color:'+pc[1]+'"></i></div></div>'
+      // Content
+      +'<div style="flex:1;padding:12px 16px;min-width:0">'
+      +'<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:6px">'
+      +'<div>'
+      +'<div style="display:flex;align-items:center;gap:8px;margin-bottom:3px">'
+      +'<span style="font-family:monospace;font-size:11px;font-weight:700;color:var(--green)">'+escH(x.ref_number||'DRAFT')+'</span>'
+      +(isOverdue?'<span style="background:#FCEBEB;color:#A32D2D;padding:1px 7px;border-radius:4px;font-size:10px;font-weight:700">OVERDUE</span>':'')
+      +'</div>'
+      +'<div style="font-weight:700;font-size:14px;color:#1a1a1a">'+escH(x.title||'Untitled')+'</div>'
+      +'</div>'
+      +'<div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">'
+      +wsBadge(x.status,WS_STATUS_CFG)
+      +wsBadge(x.priority,WS_PRIORITY_CFG)
+      +'</div>'
+      +'</div>'
+      +'<div style="display:flex;gap:16px;font-size:12px;color:var(--text2);flex-wrap:wrap">'
+      +(x.location?'<span><i class="ti ti-map-pin" style="font-size:10px"></i> '+escH(x.location)+'</span>':'')
+      +(x.supervisor_name?'<span><i class="ti ti-user" style="font-size:10px"></i> '+escH(x.supervisor_name)+'</span>':'')
+      +'<span><i class="ti ti-calendar" style="font-size:10px"></i> '+startStr+(x.planned_end?' → '+endStr:'')+'</span>'
+      +(x.estimated_duration?'<span><i class="ti ti-clock" style="font-size:10px"></i> '+escH(x.estimated_duration)+'</span>':'')
+      +'</div>'
+      +'</div>'
+      // Arrow
+      +'<div style="padding:16px 14px;display:flex;align-items:center;color:var(--text3)">'
+      +'<i class="ti ti-chevron-right" style="font-size:18px"></i></div>'
+      +'</div></div>';
+  });
+  el.innerHTML=html;
+}
+
+// ── WEEK VIEW ────────────────────────────────────────────────────────────────
+function wsPrevWeek(){wsWeekOffset--;wsRenderWeek();}
+function wsNextWeek(){wsWeekOffset++;wsRenderWeek();}
+function wsThisWeek(){wsWeekOffset=0;wsRenderWeek();}
+
+function wsRenderWeek(){
+  var el=document.getElementById('ws-week-grid');
+  if(!el)return;
+  var today=new Date();
+  var mon=new Date(today);
+  var day=today.getDay();
+  mon.setDate(today.getDate()-(day===0?6:day-1)+(wsWeekOffset*7));
+  var days=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+  var labelEl=document.getElementById('ws-week-label');
+  var endDay=new Date(mon);endDay.setDate(mon.getDate()+6);
+  if(labelEl)labelEl.textContent='Week of '+mon.toLocaleDateString('en-GB')+' – '+endDay.toLocaleDateString('en-GB');
+  var html='<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:8px">';
+  for(var i=0;i<7;i++){
+    var d=new Date(mon);d.setDate(mon.getDate()+i);
+    var isToday=d.toDateString()===today.toDateString();
+    var dayStr=d.toISOString().slice(0,10);
+    var dayOrders=wsAllData.filter(function(x){
+      if(!x.planned_start)return false;
+      var s=new Date(x.planned_start);var e=x.planned_end?new Date(x.planned_end):s;
+      return d>=s&&d<=e;
+    });
+    html+='<div class="card" style="padding:0;overflow:hidden;min-height:120px;border:2px solid '+(isToday?'var(--green)':'var(--border)')+'">'
+      +'<div style="padding:6px 10px;background:'+(isToday?'var(--green)':'#f9fafb')+';color:'+(isToday?'#fff':'var(--text2)')+';font-size:11px;font-weight:700;border-bottom:1px solid var(--border)">'
+      +days[i]+' '+d.getDate()+'</div>'
+      +'<div style="padding:6px 8px">';
+    dayOrders.forEach(function(x){
+      var pc=WS_PRIORITY_CFG[x.priority]||WS_PRIORITY_CFG.medium;
+      html+='<div style="background:'+pc[0]+';color:'+pc[1]+';border-radius:6px;padding:4px 8px;font-size:11px;font-weight:600;margin-bottom:4px;cursor:pointer;overflow:hidden;white-space:nowrap;text-overflow:ellipsis" '
+        +'data-id="'+x.id+'" onclick="wsShowDetail(this.dataset.id)" title="'+escH(x.title)+'">'
+        +escH(x.title)+'</div>';
+    });
+    html+='</div></div>';
+  }
+  html+='</div>';
+  el.innerHTML=html;
+}
+
+// ── DETAIL VIEW ──────────────────────────────────────────────────────────────
+async function wsShowDetail(id){
+  var x=wsAllData.find(function(r){return r.id===id;});
+  if(!x){try{var d=await api('/work_schedule?id=eq.'+id);x=d?.[0];}catch(e){return;}}
+  if(!x)return;
+  wsCurrentId=id;
+  ['ws-list-view','ws-week-view','ws-form-view','ws-tbt-form'].forEach(function(i){
+    var el=document.getElementById(i);if(el)el.style.display='none';
+  });
+  document.getElementById('ws-detail-view').style.display='block';
+
+  // Banner
+  var pc=WS_PRIORITY_CFG[x.priority]||WS_PRIORITY_CFG.medium;
+  document.getElementById('ws-detail-ref').textContent=x.ref_number||'DRAFT';
+  document.getElementById('ws-detail-title').textContent=x.title||'Untitled';
+  document.getElementById('ws-detail-type').textContent=(WS_TYPE_LABELS[x.work_type]||x.work_type||'');
+  document.getElementById('ws-detail-location').textContent=x.location?'📍 '+x.location:'';
+  var startStr=x.planned_start?new Date(x.planned_start).toLocaleDateString('en-GB'):'';
+  var endStr=x.planned_end?new Date(x.planned_end).toLocaleDateString('en-GB'):'';
+  document.getElementById('ws-detail-dates').textContent=startStr?(startStr+(endStr?' → '+endStr:'')):'';
+
+  // Badges
+  document.getElementById('ws-detail-status-badge').innerHTML=wsBadge(x.status,WS_STATUS_CFG);
+  document.getElementById('ws-detail-priority-badge').innerHTML=wsBadge(x.priority,WS_PRIORITY_CFG);
+  document.getElementById('ws-detail-risk-badge').innerHTML=wsBadge(x.risk_level,WS_RISK_CFG);
+
+  // Details grid
+  document.getElementById('ws-detail-desc').textContent=x.description||'—';
+  document.getElementById('ws-detail-supervisor').textContent=x.supervisor_name||'—';
+  document.getElementById('ws-detail-team').textContent=x.team_members||'—';
+  document.getElementById('ws-detail-duration').textContent=x.estimated_duration||'—';
+  document.getElementById('ws-detail-ra').textContent=x.ra_ref||'—';
+  document.getElementById('ws-detail-ptw').textContent=x.permit_ref||'—';
+  document.getElementById('ws-detail-notes').textContent=x.notes||'—';
+
+  // Quick status
+  var qs=document.getElementById('ws-quick-status');if(qs)qs.value=x.status||'planned';
+
+  // Linked records
+  wsRenderLinkedRecords(x);
+
+  // Action card statuses
+  wsRenderActionStatuses(x);
+}
+
+function wsRenderLinkedRecords(x){
+  var el=document.getElementById('ws-linked-records');if(!el)return;
+  var h='';
+  var row=function(icon,label,val,col){
+    return '<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid #f5f5f5">'
+      +'<i class="ti '+icon+'" style="color:'+col+';font-size:14px;width:18px"></i>'
+      +'<span style="font-size:12px;color:var(--text2);flex:1">'+label+'</span>'
+      +(val?'<span style="font-size:11px;font-weight:700;color:'+col+'">'+escH(val)+'</span>':'<span style="font-size:11px;color:#ccc">None</span>')
+      +'</div>';
+  };
+  h+=row('ti-speakerphone','Toolbox talk',x.toolbox_talk_id?'Linked':'','#8B5CF6');
+  h+=row('ti-shield-check','Pre-start check',x.prestart_id?'Linked':'','#185FA5');
+  h+=row('ti-clipboard-check','Site inspection',x.site_inspection_id?'Linked':'','#1D9E75');
+  el.innerHTML=h||'<div style="color:var(--text2);font-size:12px;padding:8px 0">No linked records yet</div>';
+}
+
+function wsRenderActionStatuses(x){
+  var tbt=document.getElementById('ws-tbt-status');
+  var ps=document.getElementById('ws-ps-status');
+  var si=document.getElementById('ws-si-status');
+  var te=document.getElementById('ws-te-status');
+  if(tbt)tbt.innerHTML=x.toolbox_talk_id?'<span style="color:var(--green);font-weight:700">✓ Completed</span>':'<span style="color:var(--text2)">Pending</span>';
+  if(ps)ps.innerHTML=x.prestart_id?'<span style="color:var(--green);font-weight:700">✓ Completed</span>':'<span style="color:var(--text2)">Pending</span>';
+  if(si)si.innerHTML=x.site_inspection_id?'<span style="color:var(--green);font-weight:700">✓ Completed</span>':'<span style="color:var(--text2)">Pending</span>';
+  if(te)te.innerHTML='<span style="color:var(--text2)">Check equipment</span>';
+}
+
+async function wsUpdateStatus(val){
+  if(!wsCurrentId)return;
+  try{
+    await api('/work_schedule?id=eq.'+wsCurrentId,{m:'PATCH',p:'return=minimal',b:{status:val,updated_at:new Date().toISOString()}});
+    var x=wsAllData.find(function(r){return r.id===wsCurrentId;});
+    if(x)x.status=val;
+    var badge=document.getElementById('ws-detail-status-badge');
+    if(badge)badge.innerHTML=wsBadge(val,WS_STATUS_CFG);
+    toast('Status updated!');
+  }catch(e){toast(e.message,false);}
+}
+
+function wsEditCurrent(){
+  var x=wsAllData.find(function(r){return r.id===wsCurrentId;});
+  if(x)wsEdit(wsCurrentId);
+}
+
+// ── OPEN ACTION FORMS (pre-filled) ────────────────────────────────────────────
+function wsGetCurrent(){return wsAllData.find(function(r){return r.id===wsCurrentId;})||{};}
+
+function wsOpenToolboxTalk(){
+  var x=wsGetCurrent();
+  document.getElementById('ws-detail-view').style.display='none';
+  document.getElementById('ws-tbt-form').style.display='block';
+
+  // Pre-fill
+  document.getElementById('tbt-wo-title').textContent=x.title||'Work Order';
+  document.getElementById('tbt-title').value='Toolbox Talk — '+(x.title||'Work Activity');
+  document.getElementById('tbt-date').value=new Date().toISOString().slice(0,10);
+  document.getElementById('tbt-activity').value=x.title||'';
+  document.getElementById('tbt-location').value=x.location||'';
+  document.getElementById('tbt-sign-dt').value=new Date().toISOString().slice(0,16);
+
+  // Populate conducted-by dropdown
+  var byEl=document.getElementById('tbt-by');
+  if(byEl){
+    byEl.innerHTML='<option value="">Select...</option>';
+    (people||[]).forEach(function(p){
+      var o=document.createElement('option');
+      o.value=p.id;o.textContent=p.last_name+', '+p.first_name;
+      if(x.supervisor_id&&p.id===x.supervisor_id)o.selected=true;
+      byEl.appendChild(o);
+    });
+  }
+
+  // Pre-fill sign name with supervisor
+  document.getElementById('tbt-sign-name').value=x.supervisor_name||'';
+
+  // Pre-fill team as attendees
+  wsTbtAttendees=[];
+  if(x.team_members){
+    x.team_members.split(/[,\n]/).forEach(function(name){
+      var n=name.trim();if(n)wsTbtAttendees.push({name:n,signed:false});
+    });
+  }
+  tbtRenderAttendees();
+}
+
+function wsOpenPreStart(){
+  var x=wsGetCurrent();
+  // Switch to inspection module, pre-start tab, new form
+  showPage('inspection', document.querySelector('[onclick*="inspection"]'));
+  setTimeout(function(){
+    // Switch to pre-start tab
+    var btn=document.getElementById('insp-tab-prestart');
+    if(btn)inspSwitchTab('prestart',btn);
+    setTimeout(function(){
+      psNew();
+      // Pre-fill
+      setTimeout(function(){
+        var act=document.getElementById('ps-activity');if(act)act.value=x.title||'';
+        var loc=document.getElementById('ps-location');if(loc)loc.value=x.location||'';
+        var ra=document.getElementById('ps-ra-ref');if(ra)ra.value=x.ra_ref||'';
+        var ptw=document.getElementById('ps-ptw-ref');if(ptw)ptw.value=x.permit_ref||'';
+        var tm=document.getElementById('ps-team');if(tm)tm.value=x.team_members||'';
+        var sup=document.getElementById('ps-supervisor');if(sup&&x.supervisor_id)sup.value=x.supervisor_id;
+      },100);
+    },150);
+  },200);
+}
+
+function wsOpenSiteInspection(){
+  var x=wsGetCurrent();
+  showPage('inspection', document.querySelector('[onclick*="inspection"]'));
+  setTimeout(function(){
+    // Stay on site inspection tab, open new form
+    var btn=document.getElementById('insp-tab-site');
+    if(btn)inspSwitchTab('site',btn);
+    setTimeout(function(){
+      inspNew();
+      setTimeout(function(){
+        var site=document.getElementById('if-site');if(site)site.value=x.location||'';
+        var dt=document.getElementById('if-date');if(dt)dt.value=x.planned_start||new Date().toISOString().slice(0,10);
+        var sup=document.getElementById('if-by');if(sup&&x.supervisor_id)sup.value=x.supervisor_id;
+      },100);
+    },150);
+  },200);
+}
+
+function wsOpenToolsCheck(){
+  var x=wsGetCurrent();
+  showPage('tools', document.querySelector('[onclick*="tools"]'));
+  setTimeout(function(){
+    // Switch to inspection tab
+    var btn=document.getElementById('tools-tab-inspection');
+    if(btn)toolsSwitchTab('inspection',btn);
+    setTimeout(function(){
+      toolsNewInspection();
+    },200);
+  },200);
+}
+
+function wsBackToDetail(){
+  document.getElementById('ws-tbt-form').style.display='none';
+  document.getElementById('ws-detail-view').style.display='block';
+}
+
+// ── TOOLBOX TALK FORM ────────────────────────────────────────────────────────
+function tbtAddAttendee(){
+  var inp=document.getElementById('tbt-new-attendee');
+  var name=(inp?.value||'').trim();
+  if(!name)return;
+  wsTbtAttendees.push({name:name,signed:false});
+  inp.value='';
+  tbtRenderAttendees();
+}
+
+function tbtRenderAttendees(){
+  var el=document.getElementById('tbt-attendees-list');if(!el)return;
+  if(!wsTbtAttendees.length){
+    el.innerHTML='<div style="color:var(--text2);font-size:12px;padding:8px 0">No attendees added yet</div>';
+    return;
+  }
+  el.innerHTML=wsTbtAttendees.map(function(a,i){
+    return '<div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid #f5f5f5">'
+      +'<div style="width:28px;height:28px;border-radius:50%;background:var(--green);color:#fff;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0">'+a.name.charAt(0).toUpperCase()+'</div>'
+      +'<span style="flex:1;font-size:13px;font-weight:500">'+escH(a.name)+'</span>'
+      +'<label style="display:flex;align-items:center;gap:4px;font-size:11px;color:var(--green);cursor:pointer">'
+      +'<input type="checkbox" '+(a.signed?'checked':'')+' style="accent-color:var(--green)" onchange="wsTbtAttendees['+i+'].signed=this.checked;tbtRenderAttendees()"> Signed</label>'
+      +'<button class="btn btn-sm" style="color:var(--red);padding:2px 6px" onclick="wsTbtAttendees.splice('+i+',1);tbtRenderAttendees()"><i class="ti ti-x" style="font-size:11px"></i></button>'
+      +'</div>';
+  }).join('');
+}
+
+async function tbtSave(){
+  var title=document.getElementById('tbt-title')?.value?.trim();
+  if(!title){toast('Please enter a title',false);return;}
+  var byId=document.getElementById('tbt-by')?.value||null;
+  var byName='';
+  if(byId){var p=(people||[]).find(function(x){return x.id===byId;});byName=p?(p.last_name+', '+p.first_name):'';}
+  var g=function(id){var el=document.getElementById(id);return el?el.value||null:null;};
+  var body={
+    company_id:prof?.company_id,
+    work_schedule_id:wsCurrentId||null,
+    title:title,
+    talk_date:g('tbt-date'),
+    conducted_by_id:byId,conducted_by_name:byName||null,
+    location:g('tbt-location'),
+    duration_minutes:parseInt(g('tbt-duration'))||15,
+    work_activity:g('tbt-activity'),
+    work_location:g('tbt-location'),
+    topics_covered:g('tbt-topics'),
+    hazards_discussed:g('tbt-hazards'),
+    controls_discussed:g('tbt-controls'),
+    ppe_required:g('tbt-ppe'),
+    emergency_procedures:g('tbt-emergency'),
+    attendees:wsTbtAttendees,
+    signed_by:g('tbt-sign-name'),
+    signed_at:g('tbt-sign-dt'),
+    status:document.getElementById('tbt-confirmed')?.checked?'completed':'draft',
+    created_by:prof?.id,updated_at:new Date().toISOString()
+  };
+  try{
+    var res=await api('/toolbox_talks',{m:'POST',p:'return=representation',b:body});
+    // Link to work order
+    if(res?.[0]?.id&&wsCurrentId){
+      await api('/work_schedule?id=eq.'+wsCurrentId,{m:'PATCH',p:'return=minimal',b:{toolbox_talk_id:res[0].id,updated_at:new Date().toISOString()}});
+      var x=wsAllData.find(function(r){return r.id===wsCurrentId;});
+      if(x)x.toolbox_talk_id=res[0].id;
+    }
+    toast('Toolbox talk saved! Linked to work order ✓');
+    wsBackToDetail();
+    if(wsCurrentId){var x2=wsAllData.find(function(r){return r.id===wsCurrentId;});if(x2)wsRenderActionStatuses(x2);}
+  }catch(e){toast(e.message,false);console.error(e);}
+}
+
+// ── ADD / EDIT WORK ORDER ────────────────────────────────────────────────────
+function wsNew(){
+  wsEditingId=null;
+  document.getElementById('ws-form-title').textContent='New Work Order';
+  document.getElementById('ws-form-ref').textContent='';
+  document.getElementById('ws-del-btn').style.display='none';
+  document.getElementById('wsf-ref-display').textContent='WO-AUTO';
+  ['wsf-title','wsf-desc','wsf-location','wsf-dept','wsf-duration','wsf-team','wsf-notes','wsf-ra-ref','wsf-ptw-ref'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
+  ['wsf-start','wsf-end'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
+  var t=document.getElementById('wsf-type');if(t)t.value='maintenance';
+  var s=document.getElementById('wsf-status');if(s)s.value='planned';
+  var r=document.getElementById('wsf-risk');if(r)r.value='medium';
+  var p=document.getElementById('wsf-priority');if(p)p.value='medium';
+  var ra=document.getElementById('wsf-requires-ra');if(ra)ra.checked=true;
+  var pt=document.getElementById('wsf-requires-permit');if(pt)pt.checked=false;
+  var sup=document.getElementById('wsf-supervisor');
+  if(sup){sup.innerHTML='<option value="">Select supervisor...</option>';(people||[]).forEach(function(p){var o=document.createElement('option');o.value=p.id;o.textContent=p.last_name+', '+p.first_name+(p.job_title?' — '+p.job_title:'');sup.appendChild(o);});}
+  ['ws-list-view','ws-week-view','ws-detail-view','ws-tbt-form'].forEach(function(id){var el=document.getElementById(id);if(el)el.style.display='none';});
+  document.getElementById('ws-form-view').style.display='block';
+}
+
+function wsEdit(id){
+  var x=wsAllData.find(function(r){return r.id===id;});
+  if(!x)return;
+  wsEditingId=id;
+  document.getElementById('ws-form-title').textContent='Edit Work Order';
+  document.getElementById('ws-form-ref').textContent=x.ref_number||'';
+  document.getElementById('ws-del-btn').style.display=isMgr()?'inline-flex':'none';
+  document.getElementById('wsf-ref-display').textContent=x.ref_number||'WO-AUTO';
+  var flds={'wsf-title':'title','wsf-desc':'description','wsf-location':'location','wsf-dept':'department','wsf-duration':'estimated_duration','wsf-team':'team_members','wsf-notes':'notes','wsf-ra-ref':'ra_ref','wsf-ptw-ref':'permit_ref'};
+  Object.entries(flds).forEach(function(e){var el=document.getElementById(e[0]);if(el)el.value=x[e[1]]||'';});
+  var st=document.getElementById('wsf-start');if(st)st.value=x.planned_start||'';
+  var en=document.getElementById('wsf-end');if(en)en.value=x.planned_end||'';
+  var t=document.getElementById('wsf-type');if(t)t.value=x.work_type||'maintenance';
+  var s=document.getElementById('wsf-status');if(s)s.value=x.status||'planned';
+  var r=document.getElementById('wsf-risk');if(r)r.value=x.risk_level||'medium';
+  var p=document.getElementById('wsf-priority');if(p)p.value=x.priority||'medium';
+  var ra=document.getElementById('wsf-requires-ra');if(ra)ra.checked=x.requires_ra!==false;
+  var pt=document.getElementById('wsf-requires-permit');if(pt)pt.checked=!!x.requires_permit;
+  var sup=document.getElementById('wsf-supervisor');
+  if(sup){sup.innerHTML='<option value="">Select...</option>';(people||[]).forEach(function(p){var o=document.createElement('option');o.value=p.id;o.textContent=p.last_name+', '+p.first_name+(p.job_title?' — '+p.job_title:'');sup.appendChild(o);});sup.value=x.supervisor_id||'';}
+  ['ws-list-view','ws-week-view','ws-detail-view','ws-tbt-form'].forEach(function(id){var el=document.getElementById(id);if(el)el.style.display='none';});
+  document.getElementById('ws-form-view').style.display='block';
+}
+
+function wsFormBack(){
+  document.getElementById('ws-form-view').style.display='none';
+  if(wsCurrentId){
+    document.getElementById('ws-detail-view').style.display='block';
+  }else{
+    wsSetView('list');
+  }
+}
+
+async function wsSave(){
+  var title=document.getElementById('wsf-title')?.value?.trim();
+  if(!title){toast('Please enter a work order title',false);return;}
+  var supId=document.getElementById('wsf-supervisor')?.value||null;
+  var supName='';
+  if(supId){var p=(people||[]).find(function(x){return x.id===supId;});supName=p?(p.last_name+', '+p.first_name):'';}
+  var g=function(id){var el=document.getElementById(id);return el?el.value||null:null;};
+  var body={
+    company_id:prof?.company_id,title:title,
+    description:g('wsf-desc'),location:g('wsf-location'),department:g('wsf-dept'),
+    work_type:g('wsf-type')||'maintenance',status:g('wsf-status')||'planned',
+    priority:g('wsf-priority')||'medium',risk_level:g('wsf-risk')||'medium',
+    planned_start:g('wsf-start'),planned_end:g('wsf-end'),
+    estimated_duration:g('wsf-duration'),
+    supervisor_id:supId||null,supervisor_name:supName||null,
+    team_members:g('wsf-team'),
+    requires_ra:document.getElementById('wsf-requires-ra')?.checked||false,
+    requires_permit:document.getElementById('wsf-requires-permit')?.checked||false,
+    ra_ref:g('wsf-ra-ref'),permit_ref:g('wsf-ptw-ref'),
+    notes:g('wsf-notes'),updated_at:new Date().toISOString()
+  };
+  try{
+    if(wsEditingId){
+      await api('/work_schedule?id=eq.'+wsEditingId,{m:'PATCH',p:'return=minimal',b:body});
+      var idx=wsAllData.findIndex(function(x){return x.id===wsEditingId;});
+      if(idx>=0)Object.assign(wsAllData[idx],body);
+      toast('Work order updated!');
+      wsCurrentId=wsEditingId;
+      wsShowDetail(wsEditingId);
+    }else{
+      body.created_by=prof?.id;
+      var res=await api('/work_schedule',{m:'POST',p:'return=representation',b:body});
+      if(res?.[0]){
+        // Generate ref number
+        var yr=new Date().getFullYear();
+        var next=String(wsAllData.length+1).padStart(3,'0');
+        var ref='WO-'+yr+'-'+next;
+        try{await api('/work_schedule?id=eq.'+res[0].id,{m:'PATCH',p:'return=minimal',b:{ref_number:ref}});res[0].ref_number=ref;}catch(ex){}
+        res[0].ref_number=res[0].ref_number||ref;
+        wsAllData.unshift(res[0]);
+        wsCurrentId=res[0].id;
+        toast('Work order created! Ref: '+res[0].ref_number);
+        wsShowDetail(res[0].id);
+      }
+    }
+  }catch(e){toast(e.message,false);console.error(e);}
+}
+
+async function wsDelete(){
+  if(!wsEditingId)return;
+  if(!confirm('Delete this work order?'))return;
+  try{
+    await api('/work_schedule?id=eq.'+wsEditingId,{m:'DELETE'});
+    wsAllData=wsAllData.filter(function(x){return x.id!==wsEditingId;});
+    toast('Deleted!');wsCurrentId=null;wsSetView('list');
+  }catch(e){toast(e.message,false);}
+}
 
 async function loadEvents(){
 const el=document.getElementById('events-list');
@@ -6338,13 +6899,16 @@ function sopSaveToDocControl(){
 
 
 
+
+
 </script>
 </head>
 <body>
 <div id="login-screen"><div class="login-box"><div class="login-logo">AURIS360</div><div class="login-sub">Powered by SEPHS Consulting — HSE Management Platform</div><div class="login-err" id="login-err"></div><div class="form-group"><label class="form-label">Email</label><input type="email" id="login-email" placeholder="your@email.com"/></div><div class="form-group"><label class="form-label">Password</label><input type="password" id="login-pw" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()"/></div><button class="btn btn-primary" style="width:100%;justify-content:center" onclick="doLogin()" id="login-btn"><i class="ti ti-login"></i>Sign In</button><div style="margin-top:18px;padding-top:16px;border-top:1px solid var(--border)"><div style="font-size:12px;color:var(--text2);margin-bottom:10px;font-weight:600">New user — register:</div><div class="form-group"><label class="form-label">Full name</label><input type="text" id="reg-name" placeholder="Full name"/></div><div class="form-row"><div class="form-group"><label class="form-label">Role</label><select id="reg-role"><option value="inspector">Inspector</option><option value="manager">HSE Manager</option><option value="admin">Company Admin</option><option value="sephs_admin">SEPHS Admin</option></select></div><div class="form-group"><label class="form-label">Company</label><select id="reg-company"><option value="">Loading...</option></select></div></div><button class="btn" style="width:100%;justify-content:center" onclick="doRegister()"><i class="ti ti-user-plus"></i>Register</button></div></div></div>
 <div id="app" style="display:none">
 <div class="layout">
-<div class="sidebar"><div class="sidebar-top"><img id="co-logo-img" class="co-logo" src="" alt="logo"/><div id="co-initials-div" class="co-initials">A</div><div class="sb-company" id="sb-company">AURIS360</div><div class="sb-user" id="sb-user">—</div><span class="sb-role" id="sb-role">—</span></div><span class="nav-section">Main</span><div class="nav-item active" onclick="showPage('dashboard',this)"><i class="ti ti-layout-dashboard"></i>Dashboard</div><div class="nav-item" id="nav-ai" onclick="showPage('ai-insights',this)"><i class="ti ti-brain"></i>AI Insights</div><span class="nav-section">HSE Modules</span><div class="nav-item" onclick="showPage('kpi',this)"><i class="ti ti-target"></i>Objectives & KPIs</div><div class="nav-item" onclick="showPage('events',this)"><i class="ti ti-alert-triangle"></i>Event Reporting</div><div class="nav-item" onclick="showPage('inspection',this)"><i class="ti ti-clipboard-check"></i>Site Inspection</div><div class="nav-item" onclick="showPage('risk',this)"><i class="ti ti-shield-check"></i>Risk Assessment</div><div class="nav-item" id="nav-inv" onclick="showPage('investigation',this)"><i class="ti ti-search"></i>Investigation</div><div class="nav-item" onclick="showPage('tools',this)"><i class="ti ti-tools"></i>Tools & Equipment</div>
+<div class="sidebar"><div class="sidebar-top"><img id="co-logo-img" class="co-logo" src="" alt="logo"/><div id="co-initials-div" class="co-initials">A</div><div class="sb-company" id="sb-company">AURIS360</div><div class="sb-user" id="sb-user">—</div><span class="sb-role" id="sb-role">—</span></div><span class="nav-section">Main</span><div class="nav-item active" onclick="showPage('dashboard',this)"><i class="ti ti-layout-dashboard"></i>Dashboard</div><div class="nav-item" id="nav-ai" onclick="showPage('ai-insights',this)"><i class="ti ti-brain"></i>AI Insights</div><span class="nav-section">HSE Modules</span><div class="nav-item" onclick="showPage('kpi',this)"><i class="ti ti-target"></i>Objectives & KPIs</div><div class="nav-item" onclick="showPage('workschedule',this)"><i class="ti ti-calendar-event"></i>Work Schedule</div>
+<div class="nav-item" onclick="showPage('events',this)"><i class="ti ti-alert-triangle"></i>Event Reporting</div><div class="nav-item" onclick="showPage('inspection',this)"><i class="ti ti-clipboard-check"></i>Site Inspection</div><div class="nav-item" onclick="showPage('risk',this)"><i class="ti ti-shield-check"></i>Risk Assessment</div><div class="nav-item" id="nav-inv" onclick="showPage('investigation',this)"><i class="ti ti-search"></i>Investigation</div><div class="nav-item" onclick="showPage('tools',this)"><i class="ti ti-tools"></i>Tools & Equipment</div>
 <div class="nav-item" onclick="showPage('permit',this)"><i class="ti ti-key"></i>Permit to Work</div><div class="nav-item" onclick="showPage('noise',this)"><i class="ti ti-volume"></i>Noise Survey</div><div class="nav-item" id="nav-mtg" onclick="showPage('meetings',this)"><i class="ti ti-notes"></i>HSE Meetings</div><div class="nav-item" onclick="showPage('training',this)"><i class="ti ti-certificate"></i>Training</div><span class="nav-section">Management</span><div class="nav-item" onclick="showPage('actions',this)"><i class="ti ti-list-check"></i>Master Action Plan</div><div class="nav-item" onclick="showPage('legal',this)"><i class="ti ti-scale"></i>Legal Compliance</div>
 <div class="nav-item" onclick="showPage('sop',this)"><i class="ti ti-file-description"></i>SOP Generator</div>
 <div class="nav-item" id="nav-docs" onclick="showPage('documents',this)"><i class="ti ti-files"></i>Document Control</div><div class="nav-item" onclick="showPage('people',this)"><i class="ti ti-id-badge"></i>People</div><div class="nav-item" id="nav-users" onclick="showPage('users',this)"><i class="ti ti-users"></i>User Management</div><div class="nav-item" id="nav-admin" style="display:none" onclick="showPage('admin',this)"><i class="ti ti-building"></i>Companies</div><div class="nav-item" id="nav-settings" onclick="showPage('settings',this)"><i class="ti ti-settings"></i>Settings</div><div class="sb-footer"><button class="btn btn-sm" style="flex:1;justify-content:center;color:var(--red)" onclick="doLogout()"><i class="ti ti-logout"></i>Sign out</button></div></div>
@@ -6355,6 +6919,346 @@ function sopSaveToDocControl(){
 <div class="page-header"><div class="page-title">AI Insights</div><button class="btn btn-primary" onclick="generateFullInsights()"><i class="ti ti-refresh"></i>Refresh analysis</button></div><div class="card"><div class="card-title"><span><i class="ti ti-brain" style="color:var(--green);margin-right:6px"></i>HSE Performance Analysis</span><span id="ai-insights-date" style="font-size:11px;font-weight:400;color:var(--text2)"></span></div><div id="ai-insights-content"><div class="loading-msg">Click Refresh to generate AI insights...</div></div></div><div class="grid2"><div class="card"><div class="card-title"><i class="ti ti-trending-up" style="color:var(--green);margin-right:6px"></i>KPI Recommendations</div><div id="ai-kpi-recs"><div class="loading-msg">Loading...</div></div></div><div class="card"><div class="card-title"><i class="ti ti-alert-circle" style="color:var(--amber);margin-right:6px"></i>Risk Hotspots</div><div id="ai-risk-hotspots"><div class="loading-msg">Loading...</div></div></div></div></div>
 <div id="page-kpi" class="page">
 <div class="kpi-page-header" style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px"><div><div style="font-size:20px;font-weight:700;color:var(--text)">Objectives & KPIs</div><div style="font-size:12px;color:var(--text2);margin-top:2px" id="kpi-co-label"></div></div><div style="display:flex;gap:8px;align-items:center"><div style="display:flex;align-items:center;gap:6px"><span style="font-size:12px;color:var(--text2)">Year:</span><select id="year-sel" onchange="kpiLoadAll()" style="width:auto;padding:6px 10px;font-size:13px;border:1px solid var(--border);border-radius:8px"><option>2024</option><option>2025</option><option selected>2026</option><option>2027</option></select></div><button class="btn btn-primary" id="kpi-add-obj-btn" style="display:none" onclick="openObjModal()"><i class="ti ti-plus"></i>Add objective</button></div></div><div style="display:flex;gap:2px;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:4px;margin-bottom:18px;width:fit-content"><button class="kpi-tab active" onclick="kpiSwitchTab('overview',this)" style="padding:7px 18px;border-radius:7px;font-size:13px;cursor:pointer;font-weight:500;border:none;background:var(--green);color:#fff"><i class="ti ti-layout-list" style="font-size:14px;margin-right:4px"></i>Overview</button><button class="kpi-tab" onclick="kpiSwitchTab('monthly',this)" style="padding:7px 18px;border-radius:7px;font-size:13px;cursor:pointer;font-weight:500;border:none;background:transparent;color:var(--text2)"><i class="ti ti-calendar-stats" style="font-size:14px;margin-right:4px"></i>Monthly follow-up</button></div><div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:18px" id="kpi-metrics"><div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px 16px"><div style="font-size:11px;color:var(--text2);margin-bottom:5px;font-weight:500">Total KPIs</div><div style="font-size:24px;font-weight:700" id="km-total">—</div></div><div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px 16px"><div style="font-size:11px;color:var(--text2);margin-bottom:5px;font-weight:500">On Track</div><div style="font-size:24px;font-weight:700;color:var(--green)" id="km-ontrack">—</div></div><div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px 16px"><div style="font-size:11px;color:var(--text2);margin-bottom:5px;font-weight:500">At Risk</div><div style="font-size:24px;font-weight:700;color:var(--amber)" id="km-atrisk">—</div></div><div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px 16px"><div style="font-size:11px;color:var(--text2);margin-bottom:5px;font-weight:500">Off Track</div><div style="font-size:24px;font-weight:700;color:var(--red)" id="km-offtrack">—</div></div></div><div id="kpi-tab-overview"><div id="kpi-objectives-container"><div style="text-align:center;padding:30px;color:var(--text2);font-size:13px">Loading objectives...</div></div></div><div id="kpi-tab-monthly" style="display:none"><div class="card" style="padding:0;overflow:hidden"><div style="padding:14px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between"><div style="font-size:14px;font-weight:700">Monthly follow-up — <span id="kpi-monthly-year">2026</span></div><div style="font-size:12px;color:var(--text2)">Click any cell to enter value</div></div><div style="overflow-x:auto"><table id="kpi-monthly-table" style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr><th style="background:#f9fafb;padding:8px 10px;border:1px solid var(--border);font-size:11px;font-weight:600;color:var(--text2);text-align:center;min-width:50px;position:sticky;left:0;z-index:2">No.</th><th style="background:#f9fafb;padding:8px 10px;border:1px solid var(--border);font-size:11px;font-weight:600;color:var(--text2);text-align:left;min-width:160px">KPI name</th><th style="background:#f9fafb;padding:8px 10px;border:1px solid var(--border);font-size:11px;font-weight:600;color:var(--text2);text-align:left;min-width:200px">Measurement indicator</th><th style="background:#f9fafb;padding:8px 10px;border:1px solid var(--border);font-size:11px;font-weight:600;color:var(--text2);text-align:center;min-width:80px">Target</th><th style="background:#f9fafb;padding:8px 10px;border:1px solid var(--border);font-size:11px;font-weight:600;color:var(--text2);text-align:center">Jan</th><th style="background:#f9fafb;padding:8px 10px;border:1px solid var(--border);font-size:11px;font-weight:600;color:var(--text2);text-align:center">Feb</th><th style="background:#f9fafb;padding:8px 10px;border:1px solid var(--border);font-size:11px;font-weight:600;color:var(--text2);text-align:center">Mar</th><th style="background:#f9fafb;padding:8px 10px;border:1px solid var(--border);font-size:11px;font-weight:600;color:var(--text2);text-align:center">Apr</th><th style="background:#f9fafb;padding:8px 10px;border:1px solid var(--border);font-size:11px;font-weight:600;color:var(--text2);text-align:center">May</th><th style="background:#f9fafb;padding:8px 10px;border:1px solid var(--border);font-size:11px;font-weight:600;color:var(--text2);text-align:center">Jun</th><th style="background:#f9fafb;padding:8px 10px;border:1px solid var(--border);font-size:11px;font-weight:600;color:var(--text2);text-align:center">Jul</th><th style="background:#f9fafb;padding:8px 10px;border:1px solid var(--border);font-size:11px;font-weight:600;color:var(--text2);text-align:center">Aug</th><th style="background:#f9fafb;padding:8px 10px;border:1px solid var(--border);font-size:11px;font-weight:600;color:var(--text2);text-align:center">Sep</th><th style="background:#f9fafb;padding:8px 10px;border:1px solid var(--border);font-size:11px;font-weight:600;color:var(--text2);text-align:center">Oct</th><th style="background:#f9fafb;padding:8px 10px;border:1px solid var(--border);font-size:11px;font-weight:600;color:var(--text2);text-align:center">Nov</th><th style="background:#f9fafb;padding:8px 10px;border:1px solid var(--border);font-size:11px;font-weight:600;color:var(--text2);text-align:center">Dec</th><th style="background:#E1F5EE;padding:8px 10px;border:1px solid var(--border);font-size:11px;font-weight:700;color:var(--dg);text-align:center">YTD</th><th style="background:#f9fafb;padding:8px 10px;border:1px solid var(--border);font-size:11px;font-weight:600;color:var(--text2);text-align:center">Status</th></tr></thead><tbody id="kpi-monthly-body"><tr><td colspan="17" style="text-align:center;padding:30px;color:var(--text2)">Loading...</td></tr></tbody></table></div></div></div><div style="position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:200;display:none;align-items:center;justify-content:center" id="obj-modal"><div style="background:var(--card);border-radius:16px;padding:28px;width:520px;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.2)"><div style="font-size:16px;font-weight:700;margin-bottom:20px;display:flex;align-items:center;justify-content:space-between"><span id="obj-modal-title">Add objective</span><button onclick="closeKpiModal('obj-modal')" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--text2)"><i class="ti ti-x"></i></button></div><div class="form-row"><div class="form-group"><label class="form-label">Code (e.g. 1, 2)</label><input type="text" id="obj-code" readonly style="background:#f9fafb;color:var(--text2);cursor:default" placeholder="Auto-generated"/></div><div class="form-group"><label class="form-label">Year</label><select id="obj-year"><option>2024</option><option>2025</option><option selected>2026</option><option>2027</option></select></div></div><div class="form-group"><label class="form-label">Objective name</label><input type="text" id="obj-name" placeholder="e.g. Zero Accident & Occupational Illness"/></div><div class="form-group"><label class="form-label">Colour</label><div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px" id="kpi-color-picker"><div class="kpi-color-dot" style="width:24px;height:24px;border-radius:50%;cursor:pointer;border:3px solid var(--text);background:#1D9E75" onclick="kpiSelectColor('#1D9E75',this)"></div><div class="kpi-color-dot" style="width:24px;height:24px;border-radius:50%;cursor:pointer;border:2px solid transparent;background:#185FA5" onclick="kpiSelectColor('#185FA5',this)"></div><div class="kpi-color-dot" style="width:24px;height:24px;border-radius:50%;cursor:pointer;border:2px solid transparent;background:#854F0B" onclick="kpiSelectColor('#854F0B',this)"></div><div class="kpi-color-dot" style="width:24px;height:24px;border-radius:50%;cursor:pointer;border:2px solid transparent;background:#6B21A8" onclick="kpiSelectColor('#6B21A8',this)"></div><div class="kpi-color-dot" style="width:24px;height:24px;border-radius:50%;cursor:pointer;border:2px solid transparent;background:#0F6E56" onclick="kpiSelectColor('#0F6E56',this)"></div><div class="kpi-color-dot" style="width:24px;height:24px;border-radius:50%;cursor:pointer;border:2px solid transparent;background:#DC2626" onclick="kpiSelectColor('#DC2626',this)"></div><div class="kpi-color-dot" style="width:24px;height:24px;border-radius:50%;cursor:pointer;border:2px solid transparent;background:#0369A1" onclick="kpiSelectColor('#0369A1',this)"></div></div></div><div style="display:flex;gap:8px;justify-content:flex-end;margin-top:20px"><button class="btn" onclick="closeKpiModal('obj-modal')">Cancel</button><button class="btn btn-danger" id="obj-delete-btn" style="display:none" onclick="kpiDeleteObjective()"><i class="ti ti-trash"></i>Delete</button><button class="btn btn-primary" onclick="kpiSaveObjective()"><i class="ti ti-device-floppy"></i>Save objective</button></div></div></div><div style="position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:200;display:none;align-items:center;justify-content:center" id="kpi-edit-modal"><div style="background:var(--card);border-radius:16px;padding:28px;width:600px;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.2)"><div style="font-size:16px;font-weight:700;margin-bottom:20px;display:flex;align-items:center;justify-content:space-between"><span id="kpi-modal-title">Add KPI</span><button onclick="closeKpiModal('kpi-edit-modal')" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--text2)"><i class="ti ti-x"></i></button></div><div class="form-row"><div class="form-group"><label class="form-label">Code (auto)</label><input type="text" id="kpi-code" readonly style="background:#f9fafb;color:var(--text2);cursor:default" placeholder="Auto-generated"/></div><div class="form-group"><label class="form-label">Objective</label><select id="kpi-obj-sel"><option value="">Select objective...</option></select></div></div><div class="form-row"><div class="form-group"><label class="form-label">KPI name</label><input type="text" id="kpi-name" placeholder="e.g. Near Miss Reporting"/></div><div class="form-group"><label class="form-label">Frequency</label><select id="kpi-freq"><option value="monthly">Monthly</option><option value="quarterly">Quarterly</option><option value="annual">Annual</option></select></div></div><div class="form-row"><div class="form-group"><label class="form-label">Responsible</label><input type="text" id="kpi-resp" placeholder="Name or role"/></div><div class="form-group"><label class="form-label">Status</label><select id="kpi-status"><option value="not_started">Not started</option><option value="on_track">On Track</option><option value="at_risk">At Risk</option><option value="off_track">Off Track</option></select></div></div><div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--border)"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px"><div><div style="font-size:13px;font-weight:600;color:var(--text)">Measurement indicators</div><div style="font-size:11px;color:var(--text3);margin-top:2px">Each indicator gets its own row in the monthly follow-up table</div></div><button type="button" class="btn btn-sm" onclick="kpiAddIndicatorRow()"><i class="ti ti-plus"></i>Add indicator</button></div><div id="kpi-indicators-list" style="display:flex;flex-direction:column;gap:8px"></div></div><div style="display:flex;gap:8px;justify-content:flex-end;margin-top:20px"><button class="btn" onclick="closeKpiModal('kpi-edit-modal')">Cancel</button><button class="btn btn-danger" id="kpi-delete-btn" style="display:none" onclick="kpiDeleteKPI()"><i class="ti ti-trash"></i>Delete KPI</button><button class="btn btn-primary" onclick="kpiSaveKPI()"><i class="ti ti-device-floppy"></i>Save KPI</button></div></div></div><div style="position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:200;display:none;align-items:center;justify-content:center" id="kpi-entry-modal"><div style="background:var(--card);border-radius:16px;padding:28px;width:420px;box-shadow:0 20px 60px rgba(0,0,0,.2)"><div style="font-size:16px;font-weight:700;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between"><span id="entry-modal-title">Enter value</span><button onclick="closeKpiModal('kpi-entry-modal')" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--text2)"><i class="ti ti-x"></i></button></div><div style="background:#f9fafb;border-radius:8px;padding:12px;margin-bottom:16px"><div style="font-size:13px;font-weight:600;color:var(--text)" id="entry-kpi-name"></div><div style="font-size:11px;color:var(--text2);margin-top:3px" id="entry-kpi-target"></div></div><div class="form-group"><label class="form-label" id="entry-month-label">Actual value</label><input type="number" id="entry-actual" placeholder="Enter actual value" step="any"/></div><div class="form-group"><label class="form-label">YTD (leave blank to auto-calculate)</label><input type="number" id="entry-ytd" placeholder="Auto" step="any"/></div><div class="form-group"><label class="form-label">Comment (optional)</label><textarea id="entry-comment" style="min-height:50px"></textarea></div><div style="display:flex;gap:8px;justify-content:space-between;margin-top:16px;align-items:center"><button class="btn btn-danger" id="kpi-clear-btn" onclick="kpiClearEntry()" style="display:none"><i class="ti ti-trash"></i>Clear data</button><div style="display:flex;gap:8px;margin-left:auto"><button class="btn" onclick="closeKpiModal('kpi-entry-modal')">Cancel</button><button class="btn btn-primary" onclick="kpiSaveEntry()"><i class="ti ti-device-floppy"></i>Save</button></div></div></div></div></div>
+<div id="page-workschedule" class="page">
+<div class="page-header">
+<div><div class="page-title">Work Schedule</div><div style="font-size:12px;color:var(--text2)">Plan, track and manage work orders with integrated HSE checks</div></div>
+<div style="display:flex;gap:8px">
+<button class="btn btn-sm" onclick="wsSetView('week')" id="ws-btn-week"><i class="ti ti-calendar-week"></i>Week</button>
+<button class="btn btn-sm" onclick="wsSetView('list')" id="ws-btn-list"><i class="ti ti-list"></i>List</button>
+<button class="btn btn-primary" id="ws-add-btn" style="display:none" onclick="wsNew()"><i class="ti ti-plus"></i>New work order</button>
+</div>
+</div>
+
+<!-- Metrics -->
+<div style="display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:14px">
+<div class="card" style="padding:12px 14px;border-left:4px solid #185FA5"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">Planned</div><div style="font-size:24px;font-weight:800;color:#185FA5" id="ws-m-planned">—</div></div>
+<div class="card" style="padding:12px 14px;border-left:4px solid #EF9F27"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">In Progress</div><div style="font-size:24px;font-weight:800;color:#EF9F27" id="ws-m-progress">—</div></div>
+<div class="card" style="padding:12px 14px;border-left:4px solid #1D9E75"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">Completed</div><div style="font-size:24px;font-weight:800;color:#1D9E75" id="ws-m-done">—</div></div>
+<div class="card" style="padding:12px 14px;border-left:4px solid #E24B4A"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">Overdue</div><div style="font-size:24px;font-weight:800;color:#E24B4A" id="ws-m-overdue">—</div></div>
+<div class="card" style="padding:12px 14px;border-left:4px solid #8B5CF6"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">On Hold</div><div style="font-size:24px;font-weight:800;color:#8B5CF6" id="ws-m-hold">—</div></div>
+</div>
+
+<!-- Filter bar -->
+<div class="card" style="margin-bottom:12px;padding:10px 14px">
+<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+<input type="text" id="ws-search" placeholder="Search work order, location..." oninput="wsFilter()" style="flex:1;min-width:180px;padding:7px 12px;border:1px solid var(--border);border-radius:8px;font-size:12px"/>
+<select id="ws-filter-status" onchange="wsFilter()" style="padding:7px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px">
+<option value="">All statuses</option>
+<option value="planned">Planned</option>
+<option value="approved">Approved</option>
+<option value="in_progress">In Progress</option>
+<option value="on_hold">On Hold</option>
+<option value="completed">Completed</option>
+</select>
+<select id="ws-filter-priority" onchange="wsFilter()" style="padding:7px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px">
+<option value="">All priorities</option>
+<option value="critical">Critical</option>
+<option value="high">High</option>
+<option value="medium">Medium</option>
+<option value="low">Low</option>
+</select>
+</div>
+</div>
+
+<!-- LIST VIEW -->
+<div id="ws-list-view"><div id="ws-list"><div class="loading-msg">Loading...</div></div></div>
+
+<!-- WEEK VIEW -->
+<div id="ws-week-view" style="display:none">
+<div class="card" style="padding:10px 16px;margin-bottom:12px;display:flex;align-items:center;gap:12px">
+<button class="btn btn-sm" onclick="wsPrevWeek()"><i class="ti ti-chevron-left"></i></button>
+<span style="font-size:14px;font-weight:700;flex:1;text-align:center" id="ws-week-label">Week</span>
+<button class="btn btn-sm" onclick="wsNextWeek()"><i class="ti ti-chevron-right"></i></button>
+<button class="btn btn-sm" onclick="wsThisWeek()">Today</button>
+</div>
+<div id="ws-week-grid"></div>
+</div>
+
+<!-- WORK ORDER DETAIL VIEW -->
+<div id="ws-detail-view" style="display:none">
+<!-- Detail header -->
+<div class="card" style="margin-bottom:14px;padding:0;overflow:hidden">
+<div id="ws-detail-banner" style="padding:20px 24px;background:linear-gradient(135deg,#1a3a5c,#185FA5);color:#fff">
+<div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:12px">
+<div>
+<div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.1em;opacity:.7;margin-bottom:4px" id="ws-detail-ref">—</div>
+<div style="font-size:22px;font-weight:800;margin-bottom:6px" id="ws-detail-title">—</div>
+<div style="display:flex;gap:12px;flex-wrap:wrap;font-size:12px;opacity:.85">
+<span id="ws-detail-type"></span>
+<span id="ws-detail-location"></span>
+<span id="ws-detail-dates"></span>
+</div>
+</div>
+<div style="display:flex;gap:8px;flex-wrap:wrap">
+<button class="btn" style="background:rgba(255,255,255,.15);color:#fff;border-color:rgba(255,255,255,.3)" onclick="wsShowList()"><i class="ti ti-arrow-left"></i>Back</button>
+<button class="btn" style="background:rgba(255,255,255,.15);color:#fff;border-color:rgba(255,255,255,.3)" onclick="wsEditCurrent()"><i class="ti ti-edit"></i>Edit</button>
+</div>
+</div>
+</div>
+<!-- Status bar -->
+<div id="ws-status-bar" style="padding:10px 24px;background:#f9fafb;border-top:1px solid var(--border);display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+<span style="font-size:12px;font-weight:600;color:var(--text2)">Status:</span>
+<span id="ws-detail-status-badge"></span>
+<span style="font-size:12px;font-weight:600;color:var(--text2);margin-left:10px">Priority:</span>
+<span id="ws-detail-priority-badge"></span>
+<span style="font-size:12px;font-weight:600;color:var(--text2);margin-left:10px">Risk:</span>
+<span id="ws-detail-risk-badge"></span>
+</div>
+</div>
+
+<!-- ACTION BUTTONS — the main feature -->
+<div class="card" style="margin-bottom:14px;padding:0;overflow:hidden">
+<div style="padding:12px 20px;background:linear-gradient(135deg,#f8fafc,#e8f0fe);border-bottom:2px solid #185FA540">
+<div style="font-weight:700;font-size:14px;color:#1a3a5c;margin-bottom:2px"><i class="ti ti-rocket"></i> Start Work Actions</div>
+<div style="font-size:12px;color:#6b7280">Complete these HSE checks before and during the work activity</div>
+</div>
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:0">
+<!-- Toolbox Talk -->
+<div class="ws-action-card" id="ws-act-tbt" style="padding:20px;border-right:1px solid var(--border);border-bottom:1px solid var(--border);cursor:pointer;transition:background .15s;text-align:center" onclick="wsOpenToolboxTalk()">
+<div style="width:52px;height:52px;border-radius:14px;background:#8B5CF620;display:flex;align-items:center;justify-content:center;margin:0 auto 10px">
+<i class="ti ti-speakerphone" style="font-size:24px;color:#8B5CF6"></i></div>
+<div style="font-weight:700;font-size:13px;margin-bottom:4px;color:#1a1a1a">Toolbox Talk</div>
+<div style="font-size:11px;color:var(--text2);margin-bottom:10px">Brief the team on hazards and controls</div>
+<div id="ws-tbt-status" style="font-size:11px;font-weight:600"></div>
+<button class="btn btn-sm" style="background:#8B5CF6;color:#fff;border-color:#8B5CF6;margin-top:8px;width:100%;justify-content:center" onclick="event.stopPropagation();wsOpenToolboxTalk()"><i class="ti ti-plus"></i>Open Toolbox Talk</button>
+</div>
+<!-- Pre-Start Inspection -->
+<div class="ws-action-card" id="ws-act-prestart" style="padding:20px;border-right:1px solid var(--border);border-bottom:1px solid var(--border);cursor:pointer;transition:background .15s;text-align:center" onclick="wsOpenPreStart()">
+<div style="width:52px;height:52px;border-radius:14px;background:#185FA520;display:flex;align-items:center;justify-content:center;margin:0 auto 10px">
+<i class="ti ti-shield-check" style="font-size:24px;color:#185FA5"></i></div>
+<div style="font-weight:700;font-size:13px;margin-bottom:4px;color:#1a1a1a">Pre-Start Inspection</div>
+<div style="font-size:11px;color:var(--text2);margin-bottom:10px">Safety checks before commencing work</div>
+<div id="ws-ps-status" style="font-size:11px;font-weight:600"></div>
+<button class="btn btn-sm" style="background:#185FA5;color:#fff;border-color:#185FA5;margin-top:8px;width:100%;justify-content:center" onclick="event.stopPropagation();wsOpenPreStart()"><i class="ti ti-plus"></i>Open Pre-Start Check</button>
+</div>
+<!-- Site Inspection -->
+<div class="ws-action-card" id="ws-act-siteinsp" style="padding:20px;border-right:1px solid var(--border);border-bottom:1px solid var(--border);cursor:pointer;transition:background .15s;text-align:center" onclick="wsOpenSiteInspection()">
+<div style="width:52px;height:52px;border-radius:14px;background:#1D9E7520;display:flex;align-items:center;justify-content:center;margin:0 auto 10px">
+<i class="ti ti-clipboard-check" style="font-size:24px;color:#1D9E75"></i></div>
+<div style="font-weight:700;font-size:13px;margin-bottom:4px;color:#1a1a1a">Site Inspection</div>
+<div style="font-size:11px;color:var(--text2);margin-bottom:10px">Workplace safety inspection checklist</div>
+<div id="ws-si-status" style="font-size:11px;font-weight:600"></div>
+<button class="btn btn-sm" style="background:#1D9E75;color:#fff;border-color:#1D9E75;margin-top:8px;width:100%;justify-content:center" onclick="event.stopPropagation();wsOpenSiteInspection()"><i class="ti ti-plus"></i>Open Site Inspection</button>
+</div>
+<!-- Tools & Equipment -->
+<div class="ws-action-card" id="ws-act-tools" style="padding:20px;border-bottom:1px solid var(--border);cursor:pointer;transition:background .15s;text-align:center" onclick="wsOpenToolsCheck()">
+<div style="width:52px;height:52px;border-radius:14px;background:#EF9F2720;display:flex;align-items:center;justify-content:center;margin:0 auto 10px">
+<i class="ti ti-tools" style="font-size:24px;color:#EF9F27"></i></div>
+<div style="font-weight:700;font-size:13px;margin-bottom:4px;color:#1a1a1a">Tools &amp; Equipment</div>
+<div style="font-size:11px;color:var(--text2);margin-bottom:10px">Equipment inspection checklist</div>
+<div id="ws-te-status" style="font-size:11px;font-weight:600"></div>
+<button class="btn btn-sm" style="background:#EF9F27;color:#fff;border-color:#EF9F27;margin-top:8px;width:100%;justify-content:center" onclick="event.stopPropagation();wsOpenToolsCheck()"><i class="ti ti-plus"></i>Equipment Check</button>
+</div>
+</div>
+</div>
+
+<!-- Work order details -->
+<div style="display:grid;grid-template-columns:2fr 1fr;gap:14px;margin-bottom:14px">
+<div class="card">
+<div class="card-title">Work Order Details</div>
+<div style="font-size:13px;line-height:1.8">
+<div style="display:grid;grid-template-columns:auto 1fr;gap:4px 16px">
+<span style="color:var(--text2);font-weight:500">Description:</span><span id="ws-detail-desc">—</span>
+<span style="color:var(--text2);font-weight:500">Supervisor:</span><span id="ws-detail-supervisor">—</span>
+<span style="color:var(--text2);font-weight:500">Team:</span><span id="ws-detail-team">—</span>
+<span style="color:var(--text2);font-weight:500">Duration:</span><span id="ws-detail-duration">—</span>
+<span style="color:var(--text2);font-weight:500">RA Ref:</span><span id="ws-detail-ra" style="font-family:monospace;color:var(--green);font-weight:600">—</span>
+<span style="color:var(--text2);font-weight:500">Permit Ref:</span><span id="ws-detail-ptw" style="font-family:monospace;color:var(--green);font-weight:600">—</span>
+<span style="color:var(--text2);font-weight:500">Notes:</span><span id="ws-detail-notes">—</span>
+</div>
+</div>
+</div>
+<div>
+<!-- Linked records -->
+<div class="card" style="margin-bottom:12px">
+<div class="card-title" style="font-size:12px">Linked HSE Records</div>
+<div id="ws-linked-records" style="font-size:12px"></div>
+</div>
+<!-- Quick status update -->
+<div class="card">
+<div class="card-title" style="font-size:12px">Update Status</div>
+<select id="ws-quick-status" style="width:100%;padding:7px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px;margin-bottom:8px" onchange="wsUpdateStatus(this.value)">
+<option value="planned">Planned</option>
+<option value="approved">Approved</option>
+<option value="in_progress">In Progress</option>
+<option value="on_hold">On Hold</option>
+<option value="completed">Completed ✓</option>
+<option value="cancelled">Cancelled</option>
+</select>
+</div>
+</div>
+</div>
+
+</div><!-- end ws-detail-view -->
+
+<!-- WORK ORDER FORM -->
+<div id="ws-form-view" style="display:none">
+<div class="card" style="margin-bottom:14px;padding:14px 20px">
+<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
+<div><div style="font-size:16px;font-weight:700" id="ws-form-title">New Work Order</div>
+<div style="font-size:12px;color:var(--green);font-weight:600;font-family:monospace" id="ws-form-ref"></div></div>
+<div style="display:flex;gap:8px">
+<button class="btn" onclick="wsFormBack()"><i class="ti ti-arrow-left"></i>Back</button>
+<button id="ws-del-btn" class="btn" style="display:none;color:var(--red);border-color:var(--red)" onclick="wsDelete()"><i class="ti ti-trash"></i>Delete</button>
+<button class="btn btn-primary" onclick="wsSave()"><i class="ti ti-device-floppy"></i>Save work order</button>
+</div>
+</div>
+</div>
+<div style="display:grid;grid-template-columns:2fr 1fr;gap:14px">
+<div>
+<div class="card" style="margin-bottom:14px">
+<div class="card-title">Work Order Information</div>
+<div class="form-row">
+<div class="form-group"><label class="form-label">Work order title</label><input type="text" id="wsf-title" placeholder="e.g. Electrical panel maintenance — Building A"/></div>
+<div class="form-group"><label class="form-label">Work type</label>
+<select id="wsf-type">
+<option value="maintenance">Maintenance</option>
+<option value="construction">Construction</option>
+<option value="inspection">Inspection</option>
+<option value="cleaning">Cleaning</option>
+<option value="electrical">Electrical</option>
+<option value="mechanical">Mechanical</option>
+<option value="civil">Civil</option>
+<option value="other">Other</option>
+</select></div>
+</div>
+<div class="form-group"><label class="form-label">Description</label><textarea id="wsf-desc" style="min-height:80px" placeholder="Detailed description of the work to be performed..."></textarea></div>
+<div class="form-row">
+<div class="form-group"><label class="form-label">Location</label><input type="text" id="wsf-location" placeholder="e.g. Workshop B, Floor 2"/></div>
+<div class="form-group"><label class="form-label">Department</label><input type="text" id="wsf-dept"/></div>
+</div>
+<div class="form-row">
+<div class="form-group"><label class="form-label">Planned start</label><input type="date" id="wsf-start"/></div>
+<div class="form-group"><label class="form-label">Planned end</label><input type="date" id="wsf-end"/></div>
+<div class="form-group"><label class="form-label">Est. duration</label><input type="text" id="wsf-duration" placeholder="e.g. 4 hours, 2 days"/></div>
+<div class="form-group"><label class="form-label">Status</label>
+<select id="wsf-status">
+<option value="planned">Planned</option>
+<option value="approved">Approved</option>
+<option value="in_progress">In Progress</option>
+<option value="on_hold">On Hold</option>
+<option value="completed">Completed</option>
+</select></div>
+</div>
+<div class="form-row">
+<div class="form-group"><label class="form-label">Supervisor</label><select id="wsf-supervisor"><option value="">Select...</option></select></div>
+<div class="form-group"><label class="form-label">Team members</label><input type="text" id="wsf-team" placeholder="Names of all team members..."/></div>
+</div>
+<div class="form-group"><label class="form-label">Notes</label><textarea id="wsf-notes" style="min-height:50px"></textarea></div>
+</div>
+</div>
+<div>
+<div class="card" style="margin-bottom:14px;border:2px solid #185FA5">
+<div class="card-title" style="color:#185FA5"><i class="ti ti-shield"></i> HSE Requirements</div>
+<div class="form-row">
+<div class="form-group"><label class="form-label">Risk level</label>
+<select id="wsf-risk">
+<option value="low">Low</option>
+<option value="medium" selected>Medium</option>
+<option value="high">High</option>
+<option value="critical">Critical</option>
+</select></div>
+<div class="form-group"><label class="form-label">Priority</label>
+<select id="wsf-priority">
+<option value="low">Low</option>
+<option value="medium" selected>Medium</option>
+<option value="high">High</option>
+<option value="critical">Critical</option>
+</select></div>
+</div>
+<div style="display:flex;gap:12px;margin-bottom:10px">
+<label style="display:flex;align-items:center;gap:6px;font-size:12px;font-weight:600;cursor:pointer">
+<input type="checkbox" id="wsf-requires-ra" checked style="accent-color:var(--green);width:15px;height:15px">Risk assessment required</label>
+<label style="display:flex;align-items:center;gap:6px;font-size:12px;font-weight:600;cursor:pointer">
+<input type="checkbox" id="wsf-requires-permit" style="accent-color:var(--green);width:15px;height:15px">Permit to work required</label>
+</div>
+<div class="form-group"><label class="form-label">RA reference</label><input type="text" id="wsf-ra-ref" placeholder="e.g. GRA-2026-001" style="font-family:monospace"/></div>
+<div class="form-group"><label class="form-label">Permit reference</label><input type="text" id="wsf-ptw-ref" placeholder="e.g. PTW-2026-001" style="font-family:monospace"/></div>
+</div>
+<!-- Ref number display -->
+<div class="card" style="background:linear-gradient(135deg,#1a3a5c,#185FA5);color:#fff;border:none;text-align:center;padding:20px">
+<div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.1em;opacity:.8;margin-bottom:8px">Work Order Ref</div>
+<div style="font-size:26px;font-weight:900;letter-spacing:3px;font-family:monospace" id="wsf-ref-display">WO-AUTO</div>
+<div style="font-size:11px;opacity:.6;margin-top:6px">Generated on save</div>
+</div>
+</div>
+</div>
+</div>
+
+<!-- TOOLBOX TALK FORM -->
+<div id="ws-tbt-form" style="display:none">
+<div class="card" style="margin-bottom:14px;padding:0;overflow:hidden">
+<div style="padding:16px 24px;background:linear-gradient(135deg,#6D28D9,#8B5CF6);color:#fff">
+<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
+<div><div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.1em;opacity:.8;margin-bottom:4px">Toolbox Talk / Safety Briefing</div>
+<div style="font-size:18px;font-weight:800" id="tbt-wo-title">—</div></div>
+<div style="display:flex;gap:8px">
+<button class="btn" style="background:rgba(255,255,255,.2);color:#fff;border-color:rgba(255,255,255,.3)" onclick="wsBackToDetail()"><i class="ti ti-arrow-left"></i>Back</button>
+<button class="btn" style="background:#1D9E75;color:#fff;border-color:#1D9E75" onclick="tbtSave()"><i class="ti ti-device-floppy"></i>Save briefing</button>
+</div>
+</div>
+</div>
+</div>
+<div style="display:grid;grid-template-columns:2fr 1fr;gap:14px">
+<div>
+<div class="card" style="margin-bottom:14px;border-left:4px solid #8B5CF6">
+<div class="card-title" style="color:#8B5CF6">Briefing Details</div>
+<div class="form-row">
+<div class="form-group"><label class="form-label">Toolbox talk title</label><input type="text" id="tbt-title"/></div>
+<div class="form-group"><label class="form-label">Date</label><input type="date" id="tbt-date"/></div>
+<div class="form-group"><label class="form-label">Conducted by</label><select id="tbt-by"><option value="">Select...</option></select></div>
+<div class="form-group"><label class="form-label">Duration (min)</label><input type="number" id="tbt-duration" value="15" min="5" max="120"/></div>
+</div>
+<div class="form-row">
+<div class="form-group"><label class="form-label">Work activity</label><input type="text" id="tbt-activity"/></div>
+<div class="form-group"><label class="form-label">Location</label><input type="text" id="tbt-location"/></div>
+</div>
+</div>
+<div class="card" style="margin-bottom:14px">
+<div class="card-title">Safety Topics Discussed</div>
+<div class="form-row">
+<div class="form-group"><label class="form-label" style="color:#E24B4A"><i class="ti ti-alert-triangle"></i> Main hazards for this work</label>
+<textarea id="tbt-hazards" style="min-height:80px" placeholder="Describe the main hazards team members need to be aware of..."></textarea></div>
+<div class="form-group"><label class="form-label" style="color:#1D9E75"><i class="ti ti-shield"></i> Control measures</label>
+<textarea id="tbt-controls" style="min-height:80px" placeholder="How will these hazards be controlled? PPE, procedures, permits..."></textarea></div>
+</div>
+<div class="form-group"><label class="form-label">Topics covered</label>
+<textarea id="tbt-topics" style="min-height:70px" placeholder="Key safety points discussed (e.g. isolation procedure, PPE requirements, emergency contacts, evacuation routes...)"></textarea></div>
+<div class="form-row">
+<div class="form-group"><label class="form-label">PPE required for this work</label>
+<input type="text" id="tbt-ppe" placeholder="e.g. Safety helmet, gloves, safety glasses..."/></div>
+<div class="form-group"><label class="form-label">Emergency procedures discussed</label>
+<input type="text" id="tbt-emergency" placeholder="e.g. Evacuation point, emergency contact..."/></div>
+</div>
+</div>
+</div>
+<div>
+<!-- Attendees sign-off -->
+<div class="card" style="margin-bottom:14px;border:2px solid #8B5CF6">
+<div class="card-title" style="color:#8B5CF6"><i class="ti ti-users"></i> Attendees</div>
+<div style="font-size:11px;color:var(--text2);margin-bottom:10px">All persons who attended the toolbox talk</div>
+<div id="tbt-attendees-list" style="margin-bottom:10px"></div>
+<div style="display:flex;gap:8px">
+<input type="text" id="tbt-new-attendee" placeholder="Add attendee name..." style="flex:1;padding:6px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px" onkeydown="if(event.key==='Enter')tbtAddAttendee()"/>
+<button class="btn btn-sm btn-primary" onclick="tbtAddAttendee()"><i class="ti ti-plus"></i></button>
+</div>
+</div>
+<!-- Sign-off -->
+<div class="card" style="background:linear-gradient(135deg,#f8fafc,#f3e8ff);border:1px solid #d8b4fe">
+<div class="card-title" style="color:#8B5CF6">Sign-off</div>
+<div class="form-group"><label class="form-label">Conducted by (signature)</label><input type="text" id="tbt-sign-name"/></div>
+<div class="form-group"><label class="form-label">Date &amp; time</label><input type="datetime-local" id="tbt-sign-dt"/></div>
+<div style="display:flex;align-items:center;gap:8px;margin-top:8px">
+<input type="checkbox" id="tbt-confirmed" style="width:16px;height:16px;accent-color:#8B5CF6"/>
+<label for="tbt-confirmed" style="font-size:12px;font-weight:600">I confirm that this toolbox talk was conducted and all attendees were briefed</label>
+</div>
+</div>
+</div>
+</div>
+</div>
+
+</div><!-- end page-workschedule -->
+
 <div id="page-events" class="page">
 <div class="page-header"><div><div class="page-title">Event Reporting</div><div style="font-size:12px;color:var(--text2);margin-top:2px" id="ev-subtitle">All events — <span id="ev-count">loading...</span></div></div><button class="btn btn-primary" onclick="evOpenNew()"><i class="ti ti-plus"></i>Report event</button></div><div style="display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:18px"><div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px 16px"><div style="font-size:11px;color:var(--text2);margin-bottom:5px;font-weight:500">Total events</div><div style="font-size:24px;font-weight:700" id="ev-m-total">—</div></div><div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px 16px"><div style="font-size:11px;color:var(--text2);margin-bottom:5px;font-weight:500">Open</div><div style="font-size:24px;font-weight:700;color:var(--amber)" id="ev-m-open">—</div></div><div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px 16px"><div style="font-size:11px;color:var(--text2);margin-bottom:5px;font-weight:500">High / Critical</div><div style="font-size:24px;font-weight:700;color:var(--red)" id="ev-m-high">—</div></div><div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px 16px"><div style="font-size:11px;color:var(--text2);margin-bottom:5px;font-weight:500">This month</div><div style="font-size:24px;font-weight:700;color:var(--blue)" id="ev-m-month">—</div></div><div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px 16px"><div style="font-size:11px;color:var(--text2);margin-bottom:5px;font-weight:500">Closed</div><div style="font-size:24px;font-weight:700;color:var(--green)" id="ev-m-closed">—</div></div></div><div class="card" style="padding:14px 20px;margin-bottom:16px"><div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center"><select id="ev-filter-type" onchange="loadEvents()" style="width:auto;padding:6px 10px;font-size:12px;border:1px solid var(--border);border-radius:8px"><option value="">All types</option><option value="Near Miss">Near Miss</option><option value="Incident">Incident</option><option value="Hazard Observation">Hazard Observation</option><option value="Dangerous Occurrence">Dangerous Occurrence</option><option value="Environmental">Environmental</option></select><select id="ev-filter-severity" onchange="loadEvents()" style="width:auto;padding:6px 10px;font-size:12px;border:1px solid var(--border);border-radius:8px"><option value="">All severities</option><option value="critical">Critical</option><option value="high">High</option><option value="medium">Medium</option><option value="low">Low</option></select><select id="ev-filter-status" onchange="loadEvents()" style="width:auto;padding:6px 10px;font-size:12px;border:1px solid var(--border);border-radius:8px"><option value="">All statuses</option><option value="open">Open</option><option value="under_investigation">Under investigation</option><option value="action_required">Action required</option><option value="closed">Closed</option></select><input type="month" id="ev-filter-month" onchange="loadEvents()" style="width:auto;padding:6px 10px;font-size:12px;border:1px solid var(--border);border-radius:8px"/><button class="btn btn-sm" onclick="evClearFilters()"><i class="ti ti-filter-off"></i>Clear</button></div></div><div class="card" style="padding:0;overflow:hidden"><div id="events-list"><div class="loading-msg">Loading events...</div></div></div><div style="position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:200;display:none;align-items:flex-start;justify-content:center;padding:40px 20px;overflow-y:auto" id="ev-modal"><div style="background:var(--card);border-radius:16px;width:680px;max-width:100%;box-shadow:0 20px 60px rgba(0,0,0,.2)"><div style="padding:20px 24px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between"><div><div style="font-size:16px;font-weight:700" id="ev-modal-title">Report event</div><div style="font-size:12px;color:var(--text2);margin-top:2px" id="ev-modal-ref"></div></div><button onclick="evCloseModal()" style="background:none;border:none;font-size:22px;cursor:pointer;color:var(--text2)"><i class="ti ti-x"></i></button></div><div style="padding:24px"><div id="ev-view-mode" style="display:none"><div id="ev-view-content"></div><div style="display:flex;gap:8px;margin-top:20px;flex-wrap:wrap" id="ev-view-actions"></div></div><div id="ev-edit-mode"><div class="form-row"><div class="form-group"><label class="form-label">Event type <span style="color:var(--red)">*</span></label><select id="ev-type"><option value="">Select type...</option><option value="Near Miss">Near Miss</option><option value="Incident">Incident</option><option value="Hazard Observation">Hazard Observation</option><option value="Dangerous Occurrence">Dangerous Occurrence</option><option value="Environmental">Environmental</option></select></div><div class="form-group"><label class="form-label">Severity <span style="color:var(--red)">*</span></label><select id="ev-severity"><option value="low">Low</option><option value="medium">Medium</option><option value="high">High</option><option value="critical">Critical</option></select></div></div><div class="form-row"><div class="form-group"><label class="form-label">Date & time <span style="color:var(--red)">*</span></label><input type="datetime-local" id="ev-date"/></div><div class="form-group"><label class="form-label">Location <span style="color:var(--red)">*</span></label><input type="text" id="ev-location" placeholder="Area, department or specific location"/></div></div><div class="form-group"><label class="form-label">Description <span style="color:var(--red)">*</span></label><textarea id="ev-description" style="min-height:90px" placeholder="Describe what happened, how it happened, and what the conditions were..."></textarea></div><div class="form-group"><label class="form-label">Immediate action taken</label><textarea id="ev-immediate" style="min-height:60px" placeholder="What was done immediately after the event..."></textarea></div><div style="font-size:12px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.05em;margin:16px 0 10px;padding-top:14px;border-top:1px solid var(--border)">People</div><div class="form-row"><div class="form-group"><label class="form-label">Person involved</label><select id="ev-person"><option value="">Select from register or leave blank</option></select></div><div class="form-group"><label class="form-label">Department / area</label><input type="text" id="ev-department" placeholder="Department or area"/></div></div><div class="form-row"><div class="form-group"><label class="form-label">Reported by</label><select id="ev-reported-by"><option value="">Select from register...</option></select></div><div class="form-group"><label class="form-label">Assigned to (for follow-up)</label><select id="ev-assigned-to"><option value="">Select from register...</option></select></div></div><div class="form-row"><div class="form-group"><label class="form-label">Action due date</label><input type="date" id="ev-due-date"/></div><div class="form-group"><label class="form-label">Status</label><select id="ev-status"><option value="open">Open</option><option value="under_investigation">Under investigation</option><option value="action_required">Action required</option><option value="closed">Closed</option></select></div></div><div id="ev-serious-warning" style="display:none;background:#FEF2F2;border:1px solid #FCA5A5;border-radius:8px;padding:12px 14px;margin-top:8px"><div style="font-size:13px;font-weight:600;color:var(--red);margin-bottom:4px"><i class="ti ti-alert-triangle"></i> High / Critical severity</div><div style="font-size:12px;color:#7F1D1D">This event will automatically create an action in the Master Action Plan and prompt you to start an investigation.</div></div><div style="display:flex;gap:8px;justify-content:space-between;margin-top:20px;align-items:center"><div><button class="btn btn-danger" id="ev-delete-btn" style="display:none" onclick="evDelete()"><i class="ti ti-trash"></i>Delete</button></div><div style="display:flex;gap:8px"><button class="btn" onclick="evCloseModal()">Cancel</button><button class="btn btn-primary" onclick="evSave()"><i class="ti ti-device-floppy"></i>Save event</button></div></div></div></div></div></div></div>
 <div id="page-inspection" class="page">
