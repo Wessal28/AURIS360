@@ -70,6 +70,7 @@
 
 
 
+
 const SB='https://iarfxjhahzbhncsaohbg.supabase.co';
 const KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlhcmZ4amhhaHpiaG5jc2FvaGJnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg2OTM1MzAsImV4cCI6MjA5NDI2OTUzMH0.qSjahuX-RwnjWEDmo-LkcorAxpsmyVoaXt4AO4_A9BM';
 let tok=null,prof=null,co=null,chkItems=[],people=[];
@@ -8712,6 +8713,555 @@ function toolsViewInspection(id){
   toast('Inspection details — feature coming soon');
 }
 
+// ===================================================================
+// MEETING & COMMUNICATION MANAGEMENT — New modules
+// Toolbox Talks · Safety Alerts · Safety Bulletins
+// ===================================================================
+
+let tbtAllData=[], alertAllData=[], bulletinAllData=[];
+let tbtEditId=null, alertEditId=null, bulletinEditId=null;
+
+const TBT_TOPIC_CFG={
+  safety_general:    {emoji:'🦺',label:'General Safety',      color:'#185FA5'},
+  fire_safety:       {emoji:'🔥',label:'Fire Safety',          color:'#DC2626'},
+  chemical:          {emoji:'🧪',label:'Chemical / COSHH',     color:'#7C3AED'},
+  ppe:               {emoji:'🧤',label:'PPE',                  color:'#1D9E75'},
+  manual_handling:   {emoji:'💪',label:'Manual Handling',      color:'#854F0B'},
+  working_at_height: {emoji:'🪝',label:'Working at Height',    color:'#C2410C'},
+  electrical:        {emoji:'⚡',label:'Electrical Safety',    color:'#B45309'},
+  machinery:         {emoji:'⚙️', label:'Machinery',            color:'#6B7280'},
+  housekeeping:      {emoji:'🧹',label:'Housekeeping',         color:'#0891B2'},
+  emergency:         {emoji:'🚨',label:'Emergency Response',   color:'#E24B4A'},
+  environment:       {emoji:'🌿',label:'Environmental',        color:'#065F46'},
+  health:            {emoji:'🩺',label:'Occupational Health',  color:'#8B5CF6'},
+  driving:           {emoji:'🚗',label:'Driving / Fleet',       color:'#6B7280'},
+  contractor:        {emoji:'👷',label:'Contractor Safety',     color:'#854F0B'},
+  other:             {emoji:'📋',label:'Other',                 color:'#6B7280'}
+};
+
+const ALERT_SEV_CFG={
+  critical:{bg:'#FCEBEB',tc:'#A32D2D',border:'#DC2626',label:'Critical'},
+  high:    {bg:'#FEF6E7',tc:'#C2410C',border:'#F97316',label:'High'},
+  medium:  {bg:'#FEF9EC',tc:'#854F0B',border:'#EF9F27',label:'Medium'},
+  low:     {bg:'#EAF3DE',tc:'#3B6D11',border:'#22C55E',label:'Low'}
+};
+
+const ALERT_TYPE_CFG={
+  hazard_warning:   {emoji:'⚠️', label:'Hazard Warning'},
+  near_miss:        {emoji:'⚡',label:'Near Miss'},
+  incident_learning:{emoji:'📖',label:'Incident Learning'},
+  equipment_recall: {emoji:'🔧',label:'Equipment Recall'},
+  regulatory:       {emoji:'⚖️', label:'Regulatory'},
+  weather:          {emoji:'🌩️', label:'Weather'},
+  other:            {emoji:'📋',label:'Other'}
+};
+
+const BULL_TYPE_CFG={
+  safety_bulletin:    {emoji:'📋',label:'Safety Bulletin',     color:'#185FA5'},
+  safety_newsletter:  {emoji:'📰',label:'Newsletter',           color:'#1D9E75'},
+  regulatory_update:  {emoji:'⚖️', label:'Regulatory Update',   color:'#7C3AED'},
+  best_practice:      {emoji:'⭐',label:'Best Practice',        color:'#B45309'},
+  statistics_report:  {emoji:'📊',label:'Statistics Report',    color:'#854F0B'},
+  campaign:           {emoji:'📢',label:'Campaign',             color:'#DC2626'},
+  other:              {emoji:'📄',label:'Other',                 color:'#6B7280'}
+};
+
+// ── Patch mtgSwitchTab to handle new tabs ─────────────────────────────────────
+// Override the existing function
+function mtgSwitchTab(tab, btn){
+  document.querySelectorAll('.mtg-tab').forEach(t=>{t.classList.remove('active');});
+  btn.classList.add('active');
+  // Hide all views
+  ['schedule','minutes','tbt','alerts','bulletins'].forEach(function(t){
+    var el=document.getElementById('mtg-view-'+t);if(el)el.style.display='none';
+  });
+  // Hide all forms
+  ['tbt-form','alert-form','bulletin-form'].forEach(function(id){
+    var el=document.getElementById(id);if(el)el.style.display='none';
+  });
+  // Show selected
+  var viewEl=document.getElementById('mtg-view-'+tab);
+  if(viewEl)viewEl.style.display='block';
+  // Load data
+  if(tab==='schedule'){mtgLoadSeries();}
+  else if(tab==='minutes'){mtgLoadMinutes();}
+  else if(tab==='tbt'){tbtLoad();}
+  else if(tab==='alerts'){alertLoad();}
+  else if(tab==='bulletins'){bulletinLoad();}
+}
+
+// ── loadMtgs override to add new btns ─────────────────────────────────────────
+var _origLoadMtgs=loadMtgs;
+function loadMtgs(){
+  _origLoadMtgs();
+  ['tbt-add-btn','alert-add-btn','bull-add-btn'].forEach(function(id){
+    var el=document.getElementById(id);if(el)el.style.display=isMgr()?'inline-flex':'none';
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// TOOLBOX TALKS
+// ═══════════════════════════════════════════════════════════════════════════
+
+async function tbtLoad(){
+  var el=document.getElementById('tbt-list');if(!el)return;
+  el.innerHTML='<div class="loading-msg">Loading...</div>';
+  var ft=document.getElementById('tbt-filter-cat')?.value||'';
+  try{
+    var q='/toolbox_talks?select=*'+cf()+'&order=talk_date.desc';
+    if(ft)q+='&topic_category=eq.'+ft;
+    var d=await api(q);tbtAllData=d||[];
+    // Metrics
+    var now=new Date();var m=now.getMonth();var y=now.getFullYear();
+    var setM=function(id,v){var e=document.getElementById(id);if(e)e.textContent=v;};
+    setM('tbt-m-total',(d||[]).length);
+    setM('tbt-m-month',(d||[]).filter(x=>x.talk_date&&new Date(x.talk_date).getMonth()===m&&new Date(x.talk_date).getFullYear()===y).length);
+    setM('tbt-m-attendees',(d||[]).reduce((s,x)=>s+(parseInt(x.attendance_count)||0),0));
+    setM('tbt-m-actions',(d||[]).reduce((s,x)=>s+((x.actions_raised||[]).length),0));
+    if(!d||!d.length){
+      el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)"><div style="font-size:40px;margin-bottom:12px">🗣️</div><div style="font-weight:600;margin-bottom:8px">No toolbox talks recorded yet</div>'+(isMgr()?'<button class="btn btn-primary" onclick="tbtNew()"><i class="ti ti-plus"></i>Record first TBT</button>':'')+'</div>';
+      return;
+    }
+    // Cards
+    var h='<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:12px">';
+    d.forEach(function(x){
+      var cfg=TBT_TOPIC_CFG[x.topic_category||'other']||TBT_TOPIC_CFG.other;
+      var actions=(x.actions_raised||[]).length;
+      var attendees=parseInt(x.attendance_count)||0;
+      var dt=x.talk_date?new Date(x.talk_date).toLocaleDateString('en-GB'):'—';
+      var stColor=x.status==='completed'?'#1D9E75':x.status==='planned'?'#185FA5':'#6B7280';
+      h+='<div class="card" style="padding:0;overflow:hidden;cursor:pointer;border-left:4px solid '+cfg.color+';transition:box-shadow .15s" data-id="'+x.id+'" onclick="tbtEdit(this.dataset.id)" onmouseover="this.style.boxShadow=\'0 4px 16px rgba(0,0,0,.1)\'" onmouseout="this.style.boxShadow=\'\'">'
+        +'<div style="padding:14px 16px">'
+        +'<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:8px">'
+        +'<div style="display:flex;align-items:center;gap:8px">'
+        +'<span style="font-size:24px">'+cfg.emoji+'</span>'
+        +'<div>'
+        +'<div style="font-weight:700;font-size:14px">'+escH(x.title||'Untitled TBT')+'</div>'
+        +'<div style="font-size:11px;display:flex;gap:6px;margin-top:2px;flex-wrap:wrap">'
+        +(x.tbt_ref?'<span style="font-family:monospace;color:'+cfg.color+'">'+escH(x.tbt_ref)+'</span>':'')
+        +'<span style="background:'+cfg.color+'15;color:'+cfg.color+';padding:1px 6px;border-radius:4px;font-weight:600">'+escH(cfg.label)+'</span>'
+        +'</div></div></div>'
+        +'<span style="font-size:10px;font-weight:700;color:'+stColor+';background:'+stColor+'15;padding:2px 8px;border-radius:99px;text-transform:capitalize">'+escH(x.status||'completed')+'</span>'
+        +'</div>'
+        +'<div style="display:flex;gap:16px;font-size:12px;color:var(--text2);flex-wrap:wrap">'
+        +'<span><i class="ti ti-calendar" style="font-size:10px"></i> '+dt+'</span>'
+        +(x.presenter?'<span><i class="ti ti-user" style="font-size:10px"></i> '+escH(x.presenter)+'</span>':'')
+        +(x.location?'<span><i class="ti ti-map-pin" style="font-size:10px"></i> '+escH(x.location)+'</span>':'')
+        +(x.duration_mins?'<span><i class="ti ti-clock" style="font-size:10px"></i> '+x.duration_mins+'min</span>':'')
+        +'</div>'
+        +'<div style="display:flex;gap:10px;margin-top:10px">'
+        +'<div style="flex:1;text-align:center;background:#f9fafb;border-radius:8px;padding:8px 0">'
+        +'<div style="font-size:18px;font-weight:800;color:#185FA5">'+attendees+'</div>'
+        +'<div style="font-size:10px;color:var(--text2);font-weight:600">Attendees</div></div>'
+        +'<div style="flex:1;text-align:center;background:'+(actions>0?'#FEF9EC':'#f9fafb')+';border-radius:8px;padding:8px 0">'
+        +'<div style="font-size:18px;font-weight:800;color:'+(actions>0?'#854F0B':'#6B7280')+'">'+actions+'</div>'
+        +'<div style="font-size:10px;color:var(--text2);font-weight:600">Actions</div></div>'
+        +(x.duration_mins?'<div style="flex:1;text-align:center;background:#f9fafb;border-radius:8px;padding:8px 0"><div style="font-size:18px;font-weight:800;color:#1D9E75">'+x.duration_mins+'</div><div style="font-size:10px;color:var(--text2);font-weight:600">Mins</div></div>':'')
+        +'</div>'
+        +'</div></div>';
+    });
+    h+='</div>';el.innerHTML=h;
+  }catch(e){el.innerHTML='<p style="padding:20px;color:red">'+e.message+'</p>';}
+}
+
+function tbtShowForm(){
+  document.getElementById('mtg-view-tbt').style.display='none';
+  document.getElementById('tbt-form').style.display='block';
+}
+function tbtBack(){
+  document.getElementById('tbt-form').style.display='none';
+  document.getElementById('mtg-view-tbt').style.display='block';
+  document.querySelectorAll('.mtg-tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('mtg-tab-tbt')?.classList.add('active');
+  tbtLoad();
+}
+
+function tbtNew(){
+  tbtEditId=null;
+  document.getElementById('tbt-form-title').textContent='New Toolbox Talk';
+  document.getElementById('tbt-form-ref').textContent='TBT-AUTO';
+  document.getElementById('tbt-del-btn').style.display='none';
+  ['tbtf-title','tbtf-location','tbtf-dept','tbtf-presenter','tbtf-key-points',
+   'tbtf-hazards','tbtf-incidents','tbtf-notes'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
+  document.getElementById('tbtf-date').value=new Date().toISOString().slice(0,10);
+  document.getElementById('tbtf-duration').value='15';
+  document.getElementById('tbtf-att-count').value='0';
+  document.getElementById('tbtf-category').value='safety_general';
+  document.getElementById('tbtf-status').value='completed';
+  document.getElementById('tbt-attendees-list').innerHTML='';
+  document.getElementById('tbt-actions-list').innerHTML='';
+  document.getElementById('tbt-preview-title').textContent='Toolbox Talk';
+  document.getElementById('tbt-preview-count').textContent='0';
+  tbtShowForm();
+}
+
+function tbtEdit(id){
+  var x=tbtAllData.find(r=>r.id===id);if(!x)return;
+  tbtEditId=id;
+  document.getElementById('tbt-form-title').textContent=x.title||'Edit TBT';
+  document.getElementById('tbt-form-ref').textContent=x.tbt_ref||'—';
+  document.getElementById('tbt-del-btn').style.display=isMgr()?'inline-flex':'none';
+  var gf=function(fid,val){var el=document.getElementById(fid);if(el)el.value=val||'';};
+  gf('tbtf-title',x.title);gf('tbtf-location',x.location);gf('tbtf-dept',x.department);
+  gf('tbtf-presenter',x.presenter);gf('tbtf-key-points',x.key_points);
+  gf('tbtf-hazards',x.hazards_discussed);gf('tbtf-incidents',x.incidents_referenced);
+  gf('tbtf-notes',x.notes);gf('tbtf-date',x.talk_date);
+  document.getElementById('tbtf-duration').value=x.duration_mins||15;
+  document.getElementById('tbtf-att-count').value=x.attendance_count||0;
+  document.getElementById('tbtf-category').value=x.topic_category||'safety_general';
+  document.getElementById('tbtf-status').value=x.status||'completed';
+  // Render attendees
+  var attEl=document.getElementById('tbt-attendees-list');
+  if(attEl&&x.attendees){
+    attEl.innerHTML=(x.attendees||[]).map(function(a,i){return tbtAttendeeRow(a.name||'',a.dept||'',i);}).join('');
+  }
+  // Render actions
+  var actEl=document.getElementById('tbt-actions-list');
+  if(actEl&&x.actions_raised){
+    actEl.innerHTML=(x.actions_raised||[]).map(function(a,i){return tbtActionRow(a.description||'',a.assigned_to||'',a.due_date||'',i);}).join('');
+  }
+  document.getElementById('tbt-preview-title').textContent=x.title||'Toolbox Talk';
+  document.getElementById('tbt-preview-count').textContent=x.attendance_count||0;
+  tbtShowForm();
+}
+
+function tbtAttendeeRow(name,dept,idx){
+  return '<div class="tbt-att-row" style="display:flex;gap:6px;align-items:center;margin-bottom:6px">'
+    +'<input type="text" placeholder="Name" value="'+escH(name)+'" class="tbt-att-name" style="flex:2;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px"/>'
+    +'<input type="text" placeholder="Dept" value="'+escH(dept)+'" class="tbt-att-dept" style="flex:1;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px"/>'
+    +'<button class="btn btn-sm" style="color:var(--red);padding:4px 8px" onclick="this.closest(\'.tbt-att-row\').remove();tbtUpdateCount()"><i class="ti ti-x"></i></button>'
+    +'</div>';
+}
+
+function tbtActionRow(desc,assigned,due,idx){
+  return '<div class="tbt-act-row" style="display:flex;gap:6px;align-items:center;margin-bottom:6px;flex-wrap:wrap">'
+    +'<input type="text" placeholder="Action description..." value="'+escH(desc)+'" class="tbt-act-desc" style="flex:3;min-width:150px;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px"/>'
+    +'<input type="text" placeholder="Assigned to" value="'+escH(assigned)+'" class="tbt-act-assigned" style="flex:2;min-width:100px;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px"/>'
+    +'<input type="date" value="'+escH(due)+'" class="tbt-act-due" style="flex:1;min-width:120px;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px"/>'
+    +'<button class="btn btn-sm" style="color:var(--red);padding:4px 8px" onclick="this.closest(\'.tbt-act-row\').remove()"><i class="ti ti-x"></i></button>'
+    +'</div>';
+}
+
+function tbtAddAttendee(){
+  var el=document.getElementById('tbt-attendees-list');if(!el)return;
+  var idx=el.querySelectorAll('.tbt-att-row').length;
+  el.insertAdjacentHTML('beforeend',tbtAttendeeRow('','',idx));
+  tbtUpdateCount();
+}
+
+function tbtAddAction(){
+  var el=document.getElementById('tbt-actions-list');if(!el)return;
+  var idx=el.querySelectorAll('.tbt-act-row').length;
+  el.insertAdjacentHTML('beforeend',tbtActionRow('','','',idx));
+}
+
+function tbtUpdateCount(){
+  var names=document.querySelectorAll('.tbt-att-name');
+  var filled=Array.from(names).filter(n=>n.value.trim()).length;
+  var manualCount=parseInt(document.getElementById('tbtf-att-count')?.value)||0;
+  var total=Math.max(filled,manualCount);
+  var countEl=document.getElementById('tbtf-att-count');if(countEl)countEl.value=total;
+  var prevEl=document.getElementById('tbt-preview-count');if(prevEl)prevEl.textContent=total;
+  var titleEl=document.getElementById('tbt-preview-title');
+  if(titleEl)titleEl.textContent=document.getElementById('tbtf-title')?.value||'Toolbox Talk';
+}
+
+async function tbtSave(){
+  var title=document.getElementById('tbtf-title')?.value?.trim();if(!title){toast('Please enter TBT title',false);return;}
+  var g=function(id){var el=document.getElementById(id);return el?el.value||null:null;};
+  // Collect attendees
+  var attendees=[];
+  document.querySelectorAll('.tbt-att-row').forEach(function(row){
+    var name=row.querySelector('.tbt-att-name')?.value?.trim();
+    var dept=row.querySelector('.tbt-att-dept')?.value?.trim()||'';
+    if(name)attendees.push({name,dept});
+  });
+  // Collect actions
+  var actions_raised=[];
+  document.querySelectorAll('.tbt-act-row').forEach(function(row){
+    var desc=row.querySelector('.tbt-act-desc')?.value?.trim();
+    var assigned=row.querySelector('.tbt-act-assigned')?.value?.trim()||'';
+    var due=row.querySelector('.tbt-act-due')?.value||'';
+    if(desc)actions_raised.push({description:desc,assigned_to:assigned,due_date:due||null});
+  });
+  var attCount=Math.max(parseInt(g('tbtf-att-count'))||0,attendees.length);
+  var body={company_id:prof?.company_id,title,topic_category:g('tbtf-category')||'safety_general',talk_date:g('tbtf-date'),location:g('tbtf-location'),department:g('tbtf-dept'),presenter:g('tbtf-presenter'),duration_mins:parseInt(g('tbtf-duration'))||15,key_points:g('tbtf-key-points'),hazards_discussed:g('tbtf-hazards'),incidents_referenced:g('tbtf-incidents'),notes:g('tbtf-notes'),attendance_count:attCount,attendees,actions_raised,status:g('tbtf-status')||'completed',updated_at:new Date().toISOString()};
+  try{
+    if(tbtEditId){
+      await api('/toolbox_talks?id=eq.'+tbtEditId,{m:'PATCH',p:'return=minimal',b:body});
+      toast('TBT updated!');
+      // Auto-create MAP actions for any new action items
+      for(var act of actions_raised){
+        if(act.description&&!tbtEditId){
+          try{await api('/action_tracker',{m:'POST',p:'return=minimal',b:{company_id:prof?.company_id,title:act.description,description:act.description,source_type:'toolbox_talk',source_module:'meeting',priority:'medium',status:'open',assigned_to_name:act.assigned_to||null,target_date:act.due_date||null,created_by:prof?.id}});}catch(ex){}
+        }
+      }
+    }else{
+      body.created_by=prof?.id;
+      var res=await api('/toolbox_talks',{m:'POST',p:'return=representation',b:body});
+      if(res?.[0]?.id){
+        var yr=new Date().getFullYear();var ref='TBT-'+yr+'-'+String(tbtAllData.length+1).padStart(3,'0');
+        await api('/toolbox_talks?id=eq.'+res[0].id,{m:'PATCH',p:'return=minimal',b:{tbt_ref:ref}});
+        toast('TBT saved! Ref: '+ref);
+        // Auto-create MAP actions
+        for(var act2 of actions_raised){
+          if(act2.description){
+            try{await api('/action_tracker',{m:'POST',p:'return=minimal',b:{company_id:prof?.company_id,title:act2.description,description:act2.description,source_type:'toolbox_talk',source_module:'meeting',source_ref:ref,priority:'medium',status:'open',assigned_to_name:act2.assigned_to||null,target_date:act2.due_date||null,created_by:prof?.id}});}catch(ex){}
+          }
+        }
+      }
+    }
+    tbtBack();
+  }catch(e){toast(e.message,false);}
+}
+
+async function tbtDelete(){
+  if(!tbtEditId||!confirm('Delete this toolbox talk record?'))return;
+  try{await api('/toolbox_talks?id=eq.'+tbtEditId,{m:'DELETE'});toast('Deleted!');tbtBack();}catch(e){toast(e.message,false);}
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// SAFETY ALERTS
+// ═══════════════════════════════════════════════════════════════════════════
+
+async function alertLoad(){
+  var el=document.getElementById('alert-list');if(!el)return;
+  el.innerHTML='<div class="loading-msg">Loading...</div>';
+  var fsev=document.getElementById('alert-filter-sev')?.value||'';
+  try{
+    var q='/safety_alerts?select=*'+cf()+'&order=issued_date.desc';
+    if(fsev)q+='&severity=eq.'+fsev;
+    var d=await api(q);alertAllData=d||[];
+    var now=new Date();var m=now.getMonth();var y=now.getFullYear();
+    var setM=function(id,v){var e=document.getElementById(id);if(e)e.textContent=v;};
+    setM('alert-m-active',(d||[]).filter(x=>x.status==='active').length);
+    setM('alert-m-critical',(d||[]).filter(x=>x.severity==='critical'&&x.status==='active').length);
+    setM('alert-m-high',(d||[]).filter(x=>x.severity==='high'&&x.status==='active').length);
+    setM('alert-m-month',(d||[]).filter(x=>x.issued_date&&new Date(x.issued_date).getMonth()===m&&new Date(x.issued_date).getFullYear()===y).length);
+    if(!d||!d.length){
+      el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)"><div style="font-size:40px;margin-bottom:12px">🚨</div><div style="font-weight:600;margin-bottom:8px">No safety alerts issued</div>'+(isMgr()?'<button class="btn btn-primary" onclick="alertNew()"><i class="ti ti-plus"></i>Issue first alert</button>':'')+'</div>';
+      return;
+    }
+    var h='<div style="display:flex;flex-direction:column;gap:10px">';
+    d.forEach(function(x){
+      var sc=ALERT_SEV_CFG[x.severity||'medium']||ALERT_SEV_CFG.medium;
+      var tc=ALERT_TYPE_CFG[x.alert_type||'other']||ALERT_TYPE_CFG.other;
+      var isExpired=x.expiry_date&&new Date(x.expiry_date)<now;
+      h+='<div class="card" style="padding:0;overflow:hidden;cursor:pointer;border:2px solid '+sc.border+';transition:box-shadow .15s" data-id="'+x.id+'" onclick="alertEdit(this.dataset.id)" onmouseover="this.style.boxShadow=\'0 4px 16px rgba(0,0,0,.12)\'" onmouseout="this.style.boxShadow=\'\'">'
+        +'<div style="background:'+sc.bg+';padding:12px 16px;display:flex;align-items:flex-start;justify-content:space-between;gap:10px;flex-wrap:wrap">'
+        +'<div style="display:flex;align-items:center;gap:10px">'
+        +'<span style="font-size:28px">'+tc.emoji+'</span>'
+        +'<div>'
+        +'<div style="display:flex;align-items:center;gap:8px;margin-bottom:2px">'
+        +(x.alert_ref?'<span style="font-family:monospace;font-size:11px;font-weight:700;color:'+sc.tc+'">'+escH(x.alert_ref)+'</span>':'')
+        +'<span style="background:'+sc.border+';color:#fff;padding:1px 8px;border-radius:99px;font-size:10px;font-weight:700">'+sc.label+'</span>'
+        +'<span style="font-size:11px;color:'+sc.tc+'">'+escH(tc.label)+'</span>'
+        +(isExpired?'<span style="background:#f3f4f6;color:#6B7280;padding:1px 7px;border-radius:99px;font-size:10px;font-weight:700">EXPIRED</span>':'')
+        +(x.status==='draft'?'<span style="background:#f3f4f6;color:#6B7280;padding:1px 7px;border-radius:99px;font-size:10px;font-weight:700">DRAFT</span>':'')
+        +'</div>'
+        +'<div style="font-weight:800;font-size:15px;color:'+sc.tc+'">'+escH(x.title||'—')+'</div>'
+        +'</div></div>'
+        +'<div style="font-size:11px;color:'+sc.tc+';text-align:right">'
+        +(x.issued_by?'<div>'+escH(x.issued_by)+'</div>':'')
+        +(x.issued_date?'<div>'+new Date(x.issued_date).toLocaleDateString('en-GB')+'</div>':'')
+        +'</div></div>'
+        +(x.summary?'<div style="padding:10px 16px;font-size:13px;border-top:1px solid '+sc.border+'20">'+escH(x.summary.substring(0,180))+(x.summary.length>180?'…':'')+'</div>':'')
+        +(x.action_required?'<div style="padding:8px 16px;background:#fff;border-top:1px solid '+sc.border+'20;font-size:12px"><strong style="color:'+sc.tc+'">Action required: </strong>'+escH(x.action_required.substring(0,150))+'</div>':'')
+        +'</div>';
+    });
+    h+='</div>';el.innerHTML=h;
+  }catch(e){el.innerHTML='<p style="padding:20px;color:red">'+e.message+'</p>';}
+}
+
+function alertShowForm(){
+  document.getElementById('mtg-view-alerts').style.display='none';
+  document.getElementById('alert-form').style.display='block';
+}
+function alertBack(){
+  document.getElementById('alert-form').style.display='none';
+  document.getElementById('mtg-view-alerts').style.display='block';
+  document.querySelectorAll('.mtg-tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('mtg-tab-alerts')?.classList.add('active');
+  alertLoad();
+}
+
+function alertNew(){
+  alertEditId=null;
+  document.getElementById('alert-form-title').textContent='New Safety Alert';
+  document.getElementById('alert-form-ref').textContent='ALERT-AUTO';
+  document.getElementById('alert-del-btn').style.display='none';
+  ['alertf-title','alertf-summary','alertf-background','alertf-lessons',
+   'alertf-action','alertf-depts','alertf-applies','alertf-issued-by',
+   'alertf-expiry'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
+  document.getElementById('alertf-issued-date').value=new Date().toISOString().slice(0,10);
+  document.getElementById('alertf-type').value='hazard_warning';
+  document.getElementById('alertf-severity').value='medium';
+  document.getElementById('alertf-status').value='active';
+  document.getElementById('alertf-req-ack').checked=false;
+  alertShowForm();
+}
+
+function alertEdit(id){
+  var x=alertAllData.find(r=>r.id===id);if(!x)return;
+  alertEditId=id;
+  document.getElementById('alert-form-title').textContent=x.title||'Edit Alert';
+  document.getElementById('alert-form-ref').textContent=x.alert_ref||'—';
+  document.getElementById('alert-del-btn').style.display=isMgr()?'inline-flex':'none';
+  var gf=function(fid,val){var el=document.getElementById(fid);if(el)el.value=val||'';};
+  gf('alertf-title',x.title);gf('alertf-summary',x.summary);gf('alertf-background',x.background);
+  gf('alertf-lessons',x.lessons_learned);gf('alertf-action',x.action_required);
+  gf('alertf-depts',(x.departments||[]).join(', '));gf('alertf-applies',x.applies_to);
+  gf('alertf-issued-by',x.issued_by);gf('alertf-issued-date',x.issued_date);
+  gf('alertf-expiry',x.expiry_date);
+  document.getElementById('alertf-type').value=x.alert_type||'hazard_warning';
+  document.getElementById('alertf-severity').value=x.severity||'medium';
+  document.getElementById('alertf-status').value=x.status||'active';
+  document.getElementById('alertf-req-ack').checked=!!x.requires_ack;
+  alertShowForm();
+}
+
+async function alertSave(){
+  var title=document.getElementById('alertf-title')?.value?.trim();if(!title){toast('Please enter alert title',false);return;}
+  var summary=document.getElementById('alertf-summary')?.value?.trim();if(!summary){toast('Please enter alert summary',false);return;}
+  var g=function(id){var el=document.getElementById(id);return el?el.value||null:null;};
+  var body={company_id:prof?.company_id,title,alert_type:g('alertf-type')||'hazard_warning',severity:g('alertf-severity')||'medium',summary,background:g('alertf-background'),lessons_learned:g('alertf-lessons'),action_required:g('alertf-action'),departments:g('alertf-depts')?g('alertf-depts').split(',').map(t=>t.trim()).filter(Boolean):[],applies_to:g('alertf-applies'),issued_by:g('alertf-issued-by'),issued_date:g('alertf-issued-date')||new Date().toISOString().slice(0,10),expiry_date:g('alertf-expiry')||null,requires_ack:document.getElementById('alertf-req-ack')?.checked||false,status:g('alertf-status')||'active',updated_at:new Date().toISOString()};
+  try{
+    if(alertEditId){
+      await api('/safety_alerts?id=eq.'+alertEditId,{m:'PATCH',p:'return=minimal',b:body});
+      toast('Alert updated!');
+    }else{
+      body.created_by=prof?.id;
+      var res=await api('/safety_alerts',{m:'POST',p:'return=representation',b:body});
+      if(res?.[0]?.id){var yr=new Date().getFullYear();var ref='ALERT-'+yr+'-'+String(alertAllData.length+1).padStart(3,'0');await api('/safety_alerts?id=eq.'+res[0].id,{m:'PATCH',p:'return=minimal',b:{alert_ref:ref}});toast('Alert issued! Ref: '+ref);}
+    }
+    alertBack();
+  }catch(e){toast(e.message,false);}
+}
+
+async function alertDelete(){
+  if(!alertEditId||!confirm('Delete this safety alert?'))return;
+  try{await api('/safety_alerts?id=eq.'+alertEditId,{m:'DELETE'});toast('Deleted!');alertBack();}catch(e){toast(e.message,false);}
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// SAFETY BULLETINS
+// ═══════════════════════════════════════════════════════════════════════════
+
+async function bulletinLoad(){
+  var el=document.getElementById('bulletin-list');if(!el)return;
+  el.innerHTML='<div class="loading-msg">Loading...</div>';
+  var ft=document.getElementById('bull-filter-type')?.value||'';
+  try{
+    var q='/safety_bulletins?select=*'+cf()+'&order=publication_date.desc';
+    if(ft)q+='&bulletin_type=eq.'+ft;
+    var d=await api(q);bulletinAllData=d||[];
+    if(!d||!d.length){
+      el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)"><div style="font-size:40px;margin-bottom:12px">📰</div><div style="font-weight:600;margin-bottom:8px">No bulletins published yet</div>'+(isMgr()?'<button class="btn btn-primary" onclick="bulletinNew()"><i class="ti ti-plus"></i>Publish first bulletin</button>':'')+'</div>';
+      return;
+    }
+    var h='<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px">';
+    d.forEach(function(x){
+      var cfg=BULL_TYPE_CFG[x.bulletin_type||'other']||BULL_TYPE_CFG.other;
+      var isArch=x.status==='archived';var isDraft=x.status==='draft';
+      h+='<div class="card" style="padding:0;overflow:hidden;cursor:pointer;border-top:4px solid '+cfg.color+';opacity:'+(isArch?'.65':'1')+';transition:box-shadow .15s" data-id="'+x.id+'" onclick="bulletinEdit(this.dataset.id)" onmouseover="this.style.boxShadow=\'0 4px 16px rgba(0,0,0,.1)\'" onmouseout="this.style.boxShadow=\'\'">'
+        +'<div style="padding:14px 16px">'
+        +'<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:8px">'
+        +'<div style="display:flex;align-items:center;gap:8px">'
+        +'<span style="font-size:22px">'+cfg.emoji+'</span>'
+        +'<div>'
+        +'<div style="display:flex;align-items:center;gap:6px;margin-bottom:2px">'
+        +(x.bulletin_ref?'<span style="font-family:monospace;font-size:10px;font-weight:700;color:'+cfg.color+'">'+escH(x.bulletin_ref)+'</span>':'')
+        +(x.issue_number?'<span style="font-size:10px;color:var(--text2)">#'+x.issue_number+'</span>':'')
+        +(isDraft?'<span style="background:#f3f4f6;color:#6B7280;padding:1px 6px;border-radius:99px;font-size:9px;font-weight:700">DRAFT</span>':'')
+        +(isArch?'<span style="background:#f3f4f6;color:#6B7280;padding:1px 6px;border-radius:99px;font-size:9px;font-weight:700">ARCHIVED</span>':'')
+        +'</div>'
+        +'<div style="font-weight:700;font-size:13px">'+escH(x.title||'—')+'</div>'
+        +'</div></div>'
+        +'<span style="background:'+cfg.color+'15;color:'+cfg.color+';padding:2px 8px;border-radius:99px;font-size:10px;font-weight:600;white-space:nowrap">'+escH(cfg.label)+'</span>'
+        +'</div>'
+        +(x.summary?'<div style="font-size:12px;color:var(--text2);margin-bottom:10px;line-height:1.5">'+escH(x.summary.substring(0,120))+(x.summary.length>120?'…':'')+'</div>':'')
+        +'<div style="display:flex;gap:12px;font-size:11px;color:var(--text2);flex-wrap:wrap">'
+        +(x.publication_date?'<span><i class="ti ti-calendar" style="font-size:10px"></i> '+new Date(x.publication_date).toLocaleDateString('en-GB')+'</span>':'')
+        +(x.author?'<span><i class="ti ti-user" style="font-size:10px"></i> '+escH(x.author)+'</span>':'')
+        +(x.target_audience?'<span><i class="ti ti-users" style="font-size:10px"></i> '+escH(x.target_audience)+'</span>':'')
+        +(x.file_url?'<a href="'+escH(x.file_url)+'" target="_blank" onclick="event.stopPropagation()" style="color:var(--green)"><i class="ti ti-external-link" style="font-size:10px"></i> View</a>':'')
+        +'</div>'
+        +((x.topics||[]).length?'<div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:8px">'+x.topics.map(t=>'<span style="background:'+cfg.color+'15;color:'+cfg.color+';padding:1px 8px;border-radius:99px;font-size:10px">'+escH(t)+'</span>').join('')+'</div>':'')
+        +'</div></div>';
+    });
+    h+='</div>';el.innerHTML=h;
+  }catch(e){el.innerHTML='<p style="padding:20px;color:red">'+e.message+'</p>';}
+}
+
+function bulletinShowForm(){
+  document.getElementById('mtg-view-bulletins').style.display='none';
+  document.getElementById('bulletin-form').style.display='block';
+}
+function bulletinBack(){
+  document.getElementById('bulletin-form').style.display='none';
+  document.getElementById('mtg-view-bulletins').style.display='block';
+  document.querySelectorAll('.mtg-tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('mtg-tab-bulletins')?.classList.add('active');
+  bulletinLoad();
+}
+
+function bulletinNew(){
+  bulletinEditId=null;
+  document.getElementById('bull-form-title').textContent='New Bulletin';
+  document.getElementById('bull-form-ref').textContent='BULL-AUTO';
+  document.getElementById('bull-del-btn').style.display='none';
+  ['bullf-title','bullf-summary','bullf-key-messages','bullf-content',
+   'bullf-topics','bullf-author','bullf-approved-by','bullf-audience',
+   'bullf-file-url','bullf-file-name'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
+  document.getElementById('bullf-pub-date').value=new Date().toISOString().slice(0,10);
+  document.getElementById('bullf-type').value='safety_bulletin';
+  document.getElementById('bullf-dist-method').value='email';
+  document.getElementById('bullf-status').value='published';
+  document.getElementById('bullf-issue-no').value='';
+  bulletinShowForm();
+}
+
+function bulletinEdit(id){
+  var x=bulletinAllData.find(r=>r.id===id);if(!x)return;
+  bulletinEditId=id;
+  document.getElementById('bull-form-title').textContent=x.title||'Edit Bulletin';
+  document.getElementById('bull-form-ref').textContent=x.bulletin_ref||'—';
+  document.getElementById('bull-del-btn').style.display=isMgr()?'inline-flex':'none';
+  var gf=function(fid,val){var el=document.getElementById(fid);if(el)el.value=val||'';};
+  gf('bullf-title',x.title);gf('bullf-summary',x.summary);gf('bullf-key-messages',x.key_messages);
+  gf('bullf-content',x.content);gf('bullf-topics',(x.topics||[]).join(', '));
+  gf('bullf-author',x.author);gf('bullf-approved-by',x.approved_by);
+  gf('bullf-audience',x.target_audience);gf('bullf-file-url',x.file_url);
+  gf('bullf-file-name',x.file_name);gf('bullf-pub-date',x.publication_date);
+  document.getElementById('bullf-type').value=x.bulletin_type||'safety_bulletin';
+  document.getElementById('bullf-dist-method').value=x.distribution_method||'email';
+  document.getElementById('bullf-status').value=x.status||'published';
+  document.getElementById('bullf-issue-no').value=x.issue_number||'';
+  bulletinShowForm();
+}
+
+async function bulletinSave(){
+  var title=document.getElementById('bullf-title')?.value?.trim();if(!title){toast('Please enter bulletin title',false);return;}
+  var g=function(id){var el=document.getElementById(id);return el?el.value||null:null;};
+  var body={company_id:prof?.company_id,title,bulletin_type:g('bullf-type')||'safety_bulletin',issue_number:parseInt(g('bullf-issue-no'))||null,publication_date:g('bullf-pub-date')||new Date().toISOString().slice(0,10),summary:g('bullf-summary'),key_messages:g('bullf-key-messages'),content:g('bullf-content'),topics:g('bullf-topics')?g('bullf-topics').split(',').map(t=>t.trim()).filter(Boolean):[],author:g('bullf-author'),approved_by:g('bullf-approved-by'),target_audience:g('bullf-audience'),distribution_method:g('bullf-dist-method')||'email',file_url:g('bullf-file-url'),file_name:g('bullf-file-name'),status:g('bullf-status')||'published',updated_at:new Date().toISOString()};
+  try{
+    if(bulletinEditId){
+      await api('/safety_bulletins?id=eq.'+bulletinEditId,{m:'PATCH',p:'return=minimal',b:body});
+      toast('Bulletin updated!');
+    }else{
+      body.created_by=prof?.id;
+      var res=await api('/safety_bulletins',{m:'POST',p:'return=representation',b:body});
+      if(res?.[0]?.id){var yr=new Date().getFullYear();var ref='BULL-'+yr+'-'+String(bulletinAllData.length+1).padStart(3,'0');await api('/safety_bulletins?id=eq.'+res[0].id,{m:'PATCH',p:'return=minimal',b:{bulletin_ref:ref}});toast('Bulletin published! Ref: '+ref);}
+    }
+    bulletinBack();
+  }catch(e){toast(e.message,false);}
+}
+
+async function bulletinDelete(){
+  if(!bulletinEditId||!confirm('Delete this bulletin?'))return;
+  try{await api('/safety_bulletins?id=eq.'+bulletinEditId,{m:'DELETE'});toast('Deleted!');bulletinBack();}catch(e){toast(e.message,false);}
+}
+
 async function loadMtgs(){
   var btn=document.getElementById('mtg-new-series-btn');
   if(btn)btn.style.display=isMgr()?'inline-flex':'none';
@@ -12334,6 +12884,7 @@ function sopSaveToDocControl(){
   toast('SOP saved to Document Control!');
   sopSave();
 }
+
 
 
 
@@ -16681,7 +17232,7 @@ Toolbox talk / safety briefing conducted before starting work
 <div class="page-header"><div class="page-title">Noise Survey</div><button class="btn btn-primary" onclick="toggleForm('noise-form')"><i class="ti ti-plus"></i>New survey</button></div><div class="card" id="noise-form" style="display:none"><div class="card-title">New noise survey</div><div class="form-row"><div class="form-group"><label class="form-label">Survey type</label><select id="nf-type"><option value="occupational">Occupational</option><option value="environmental">Environmental</option></select></div><div class="form-group"><label class="form-label">Site</label><input type="text" id="nf-site"/></div></div><div class="form-row"><div class="form-group"><label class="form-label">Survey date</label><input type="date" id="nf-date"/></div><div class="form-group"><label class="form-label">Conducted by</label><select id="nf-by"><option value="">Select person...</option></select></div></div><div class="form-row"><div class="form-group"><label class="form-label">Instrument used</label><input type="text" id="nf-instrument"/></div><div class="form-group"><label class="form-label">Calibration date</label><input type="date" id="nf-cal"/></div></div><div class="form-group"><label class="form-label">Weather / conditions</label><input type="text" id="nf-weather"/></div><div class="form-group"><label class="form-label">Notes</label><textarea id="nf-notes"></textarea></div><div style="display:flex;gap:8px"><button class="btn btn-primary" onclick="saveNoise()"><i class="ti ti-device-floppy"></i>Save</button><button class="btn" onclick="toggleForm('noise-form')">Cancel</button></div></div><div class="card"><div class="card-title">Noise surveys</div><div id="noise-list"><div class="loading-msg">Loading...</div></div></div></div>
 <div id="page-meetings" class="page">
 <div class="page-header">
-<div><div class="page-title">HSE Meetings</div><div style="font-size:12px;color:var(--text2)" id="mtg-subtitle">Meeting schedule and minutes</div></div>
+<div><div class="page-title">Meeting &amp; Communication Management</div><div style="font-size:12px;color:var(--text2)" id="mtg-subtitle">Safety meetings · Minutes · Toolbox talks · Alerts · Bulletins</div></div>
 <div style="display:flex;gap:8px">
 <button class="btn btn-primary" id="mtg-new-series-btn" onclick="mtgNewSeries()"><i class="ti ti-settings"></i>Manage schedules</button>
 </div>
@@ -16690,8 +17241,12 @@ Toolbox talk / safety briefing conducted before starting work
 <!-- View switcher tabs -->
 <div style="display:flex;gap:0;margin-bottom:16px;border-bottom:2px solid var(--border)">
 <button class="mtg-tab active" id="mtg-tab-schedule" onclick="mtgSwitchTab('schedule',this)">📅 Meeting Agenda</button>
-<button class="mtg-tab" id="mtg-tab-minutes" onclick="mtgSwitchTab('minutes',this)">📋 Minutes of Meetings</button>
+<button class="mtg-tab" id="mtg-tab-minutes" onclick="mtgSwitchTab('minutes',this)" style="white-space:nowrap">📋 Minutes of Meetings</button>
+<button class="mtg-tab" id="mtg-tab-tbt" onclick="mtgSwitchTab('tbt',this)" style="white-space:nowrap">🗣️ Toolbox Talks</button>
+<button class="mtg-tab" id="mtg-tab-alerts" onclick="mtgSwitchTab('alerts',this)" style="white-space:nowrap">🚨 Safety Alerts</button>
+<button class="mtg-tab" id="mtg-tab-bulletins" onclick="mtgSwitchTab('bulletins',this)" style="white-space:nowrap">📰 Safety Bulletins</button>
 </div>
+<style>#mtg-tab-schedule,#mtg-tab-minutes{white-space:nowrap}</style>
 
 <!-- Schedule tab -->
 <div id="mtg-view-schedule">
@@ -16736,6 +17291,262 @@ Toolbox talk / safety briefing conducted before starting work
 <!-- Minutes tab -->
 <div id="mtg-view-minutes" style="display:none">
 <div class="card" style="padding:0;overflow:hidden"><div id="mtg-minutes-list"><div class="loading-msg">Loading...</div></div></div>
+</div>
+
+<!-- ── TOOLBOX TALKS VIEW ── -->
+<div id="mtg-view-tbt" style="display:none">
+<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px">
+<div class="card" style="padding:10px 12px;border-left:4px solid #185FA5"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">Total TBTs</div><div style="font-size:22px;font-weight:800;color:#185FA5" id="tbt-m-total">—</div></div>
+<div class="card" style="padding:10px 12px;border-left:4px solid #1D9E75"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">This Month</div><div style="font-size:22px;font-weight:800;color:#1D9E75" id="tbt-m-month">—</div></div>
+<div class="card" style="padding:10px 12px;border-left:4px solid #EF9F27"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">Total Attendees</div><div style="font-size:22px;font-weight:800;color:#EF9F27" id="tbt-m-attendees">—</div></div>
+<div class="card" style="padding:10px 12px;border-left:4px solid #8B5CF6"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">Actions Raised</div><div style="font-size:22px;font-weight:800;color:#8B5CF6" id="tbt-m-actions">—</div></div>
+</div>
+<div class="card" style="margin-bottom:12px;padding:10px 14px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+<div><div class="card-title" style="margin:0">Toolbox Talk Register</div><div style="font-size:12px;color:var(--text2)">All toolbox talks with attendance and action records</div></div>
+<div style="display:flex;gap:8px">
+<select id="tbt-filter-cat" onchange="tbtLoad()" style="padding:6px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px">
+<option value="">All topics</option>
+<option value="safety_general">General Safety</option><option value="fire_safety">Fire Safety</option>
+<option value="chemical">Chemical / COSHH</option><option value="ppe">PPE</option>
+<option value="manual_handling">Manual Handling</option><option value="working_at_height">Working at Height</option>
+<option value="electrical">Electrical Safety</option><option value="machinery">Machinery</option>
+<option value="housekeeping">Housekeeping</option><option value="emergency">Emergency Response</option>
+<option value="environment">Environment</option><option value="health">Occupational Health</option>
+<option value="other">Other</option>
+</select>
+<button class="btn btn-primary" id="tbt-add-btn" style="display:none" onclick="tbtNew()"><i class="ti ti-plus"></i>New TBT</button>
+</div>
+</div>
+<div id="tbt-list"><div class="loading-msg">Loading...</div></div>
+</div>
+
+<!-- ── SAFETY ALERTS VIEW ── -->
+<div id="mtg-view-alerts" style="display:none">
+<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px">
+<div class="card" style="padding:10px 12px;border-left:4px solid #DC2626"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">Active Alerts</div><div style="font-size:22px;font-weight:800;color:#DC2626" id="alert-m-active">—</div></div>
+<div class="card" style="padding:10px 12px;border-left:4px solid #E24B4A"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">Critical</div><div style="font-size:22px;font-weight:800;color:#E24B4A" id="alert-m-critical">—</div></div>
+<div class="card" style="padding:10px 12px;border-left:4px solid #EF9F27"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">High</div><div style="font-size:22px;font-weight:800;color:#EF9F27" id="alert-m-high">—</div></div>
+<div class="card" style="padding:10px 12px;border-left:4px solid #6B7280"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">This Month</div><div style="font-size:22px;font-weight:800" id="alert-m-month">—</div></div>
+</div>
+<div class="card" style="margin-bottom:12px;padding:10px 14px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+<div><div class="card-title" style="margin:0">Safety Alerts</div><div style="font-size:12px;color:var(--text2)">Hazard warnings, incident learnings, regulatory notices</div></div>
+<div style="display:flex;gap:8px">
+<select id="alert-filter-sev" onchange="alertLoad()" style="padding:6px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px">
+<option value="">All severities</option><option value="critical">Critical</option>
+<option value="high">High</option><option value="medium">Medium</option><option value="low">Low</option>
+</select>
+<button class="btn btn-primary" id="alert-add-btn" style="display:none" onclick="alertNew()"><i class="ti ti-plus"></i>New alert</button>
+</div>
+</div>
+<div id="alert-list"><div class="loading-msg">Loading...</div></div>
+</div>
+
+<!-- ── SAFETY BULLETINS VIEW ── -->
+<div id="mtg-view-bulletins" style="display:none">
+<div class="card" style="margin-bottom:12px;padding:10px 14px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+<div><div class="card-title" style="margin:0">Safety Bulletins &amp; Communications</div><div style="font-size:12px;color:var(--text2)">Newsletters, regulatory updates, best practice guides, campaign materials</div></div>
+<div style="display:flex;gap:8px">
+<select id="bull-filter-type" onchange="bulletinLoad()" style="padding:6px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px">
+<option value="">All types</option>
+<option value="safety_bulletin">Safety Bulletin</option><option value="safety_newsletter">Newsletter</option>
+<option value="regulatory_update">Regulatory Update</option><option value="best_practice">Best Practice</option>
+<option value="statistics_report">Statistics Report</option><option value="campaign">Campaign</option>
+</select>
+<button class="btn btn-primary" id="bull-add-btn" style="display:none" onclick="bulletinNew()"><i class="ti ti-plus"></i>New bulletin</button>
+</div>
+</div>
+<div id="bulletin-list"><div class="loading-msg">Loading...</div></div>
+</div>
+
+<!-- ── TBT FORM ── -->
+<div id="tbt-form" style="display:none">
+<div class="card" style="margin-bottom:14px;padding:0;overflow:hidden">
+<div style="padding:14px 20px;background:linear-gradient(135deg,#0891B2,#185FA5);color:#fff;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+<div>
+<div style="font-size:11px;font-weight:600;text-transform:uppercase;opacity:.8;margin-bottom:4px">Toolbox Talk</div>
+<div style="font-size:17px;font-weight:800" id="tbt-form-title">New Toolbox Talk</div>
+<div style="font-family:monospace;font-size:12px;color:#bae6fd;margin-top:3px" id="tbt-form-ref">TBT-AUTO</div>
+</div>
+<div style="display:flex;gap:8px">
+<button class="btn" style="background:rgba(255,255,255,.2);color:#fff;border-color:rgba(255,255,255,.3)" onclick="tbtBack()"><i class="ti ti-arrow-left"></i>Back</button>
+<button id="tbt-del-btn" class="btn" style="display:none;background:rgba(220,38,38,.3);color:#fff;border-color:rgba(220,38,38,.5)" onclick="tbtDelete()"><i class="ti ti-trash"></i></button>
+<button class="btn" style="background:#1D9E75;color:#fff;border-color:#1D9E75" onclick="tbtSave()"><i class="ti ti-device-floppy"></i>Save</button>
+</div>
+</div>
+</div>
+<div style="display:grid;grid-template-columns:2fr 1fr;gap:14px">
+<div>
+<div class="card" style="margin-bottom:14px"><div class="card-title">Talk Details</div>
+<div class="form-row">
+<div class="form-group"><label class="form-label">TBT Title</label><input type="text" id="tbtf-title" placeholder="e.g. Safe Handling of Chemicals"/></div>
+<div class="form-group"><label class="form-label">Topic category</label>
+<select id="tbtf-category">
+<option value="safety_general">General Safety</option><option value="fire_safety">Fire Safety</option>
+<option value="chemical">Chemical / COSHH</option><option value="ppe">PPE</option>
+<option value="manual_handling">Manual Handling</option><option value="working_at_height">Working at Height</option>
+<option value="electrical">Electrical Safety</option><option value="machinery">Machinery Safety</option>
+<option value="housekeeping">Housekeeping / 5S</option><option value="emergency">Emergency Response</option>
+<option value="environment">Environmental</option><option value="health">Occupational Health</option>
+<option value="driving">Driving / Fleet</option><option value="contractor">Contractor Safety</option>
+<option value="other">Other</option>
+</select></div>
+</div>
+<div class="form-row">
+<div class="form-group"><label class="form-label">Date</label><input type="date" id="tbtf-date"/></div>
+<div class="form-group"><label class="form-label">Location / Area</label><input type="text" id="tbtf-location"/></div>
+<div class="form-group"><label class="form-label">Department</label><input type="text" id="tbtf-dept"/></div>
+<div class="form-group"><label class="form-label">Presenter</label><input type="text" id="tbtf-presenter"/></div>
+</div>
+<div class="form-row">
+<div class="form-group"><label class="form-label">Duration (minutes)</label><input type="number" id="tbtf-duration" value="15" min="5" max="120"/></div>
+<div class="form-group"><label class="form-label">Status</label><select id="tbtf-status"><option value="completed">Completed</option><option value="planned">Planned</option><option value="cancelled">Cancelled</option></select></div>
+</div>
+</div>
+<div class="card" style="margin-bottom:14px"><div class="card-title" style="color:#185FA5">Content</div>
+<div class="form-group"><label class="form-label">Key points covered</label><textarea id="tbtf-key-points" style="min-height:80px" placeholder="Main safety messages communicated during this TBT..."></textarea></div>
+<div class="form-group"><label class="form-label">Hazards discussed</label><textarea id="tbtf-hazards" style="min-height:60px" placeholder="Specific hazards addressed..."></textarea></div>
+<div class="form-group"><label class="form-label">Incidents / near misses referenced</label><input type="text" id="tbtf-incidents" placeholder="Any recent incidents used as learning examples..."/></div>
+<div class="form-group"><label class="form-label">Notes</label><textarea id="tbtf-notes" style="min-height:50px"></textarea></div>
+</div>
+<div class="card"><div class="card-title" style="color:#E24B4A">Actions Raised</div>
+<div id="tbt-actions-list" style="margin-bottom:10px"></div>
+<button class="btn btn-sm" onclick="tbtAddAction()"><i class="ti ti-plus"></i>Add action item</button>
+</div>
+</div>
+<div>
+<div class="card" style="margin-bottom:14px;border:2px solid #185FA5"><div class="card-title" style="color:#185FA5">Attendance Register</div>
+<div class="form-group"><label class="form-label">Total attendees</label><input type="number" id="tbtf-att-count" value="0" min="0" oninput="tbtUpdateCount()"/></div>
+<div id="tbt-attendees-list" style="margin-bottom:10px"></div>
+<button class="btn btn-sm btn-primary" onclick="tbtAddAttendee()"><i class="ti ti-plus"></i>Add attendee</button>
+</div>
+<div class="card" style="background:linear-gradient(135deg,#0891B2,#185FA5);color:#fff;border:none;text-align:center;padding:20px">
+<div style="font-size:40px;margin-bottom:10px">🗣️</div>
+<div style="font-size:14px;font-weight:700" id="tbt-preview-title">Toolbox Talk</div>
+<div style="font-size:28px;font-weight:900;margin-top:10px" id="tbt-preview-count">0</div>
+<div style="font-size:12px;opacity:.8">Attendees</div>
+</div>
+</div>
+</div>
+</div>
+
+<!-- ── ALERT FORM ── -->
+<div id="alert-form" style="display:none">
+<div class="card" style="margin-bottom:14px;padding:0;overflow:hidden">
+<div style="padding:14px 20px;background:linear-gradient(135deg,#7F1D1D,#DC2626);color:#fff;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+<div>
+<div style="font-size:11px;font-weight:600;text-transform:uppercase;opacity:.8;margin-bottom:4px">Safety Alert</div>
+<div style="font-size:17px;font-weight:800" id="alert-form-title">New Safety Alert</div>
+<div style="font-family:monospace;font-size:12px;color:#fca5a5;margin-top:3px" id="alert-form-ref">ALERT-AUTO</div>
+</div>
+<div style="display:flex;gap:8px">
+<button class="btn" style="background:rgba(255,255,255,.2);color:#fff;border-color:rgba(255,255,255,.3)" onclick="alertBack()"><i class="ti ti-arrow-left"></i>Back</button>
+<button id="alert-del-btn" class="btn" style="display:none;background:rgba(0,0,0,.3);color:#fff;border-color:rgba(255,255,255,.3)" onclick="alertDelete()"><i class="ti ti-trash"></i></button>
+<button class="btn" style="background:#1D9E75;color:#fff;border-color:#1D9E75" onclick="alertSave()"><i class="ti ti-device-floppy"></i>Save alert</button>
+</div>
+</div>
+</div>
+<div style="display:grid;grid-template-columns:2fr 1fr;gap:14px">
+<div>
+<div class="card" style="margin-bottom:14px;border-left:4px solid #DC2626"><div class="card-title" style="color:#DC2626">Alert Details</div>
+<div class="form-group"><label class="form-label">Alert title</label><input type="text" id="alertf-title" placeholder="Clear, concise title describing the hazard or learning..."/></div>
+<div class="form-row">
+<div class="form-group"><label class="form-label">Alert type</label>
+<select id="alertf-type">
+<option value="hazard_warning">⚠️ Hazard Warning</option>
+<option value="near_miss">⚡ Near Miss Learning</option>
+<option value="incident_learning">📖 Incident Learning</option>
+<option value="equipment_recall">🔧 Equipment Recall / Defect</option>
+<option value="regulatory">⚖️ Regulatory Notice</option>
+<option value="weather">🌩️ Weather / Environmental</option>
+<option value="other">📋 Other</option>
+</select></div>
+<div class="form-group"><label class="form-label">Severity</label>
+<select id="alertf-severity">
+<option value="critical">🔴 Critical — immediate action</option>
+<option value="high">🟠 High — action this week</option>
+<option value="medium" selected>🟡 Medium — action this month</option>
+<option value="low">🟢 Low — for awareness</option>
+</select></div>
+</div>
+<div class="form-group"><label class="form-label">Summary / What this alert is about</label><textarea id="alertf-summary" style="min-height:70px" placeholder="Brief summary of the hazard, incident or regulatory notice..."></textarea></div>
+<div class="form-group"><label class="form-label">Background / What happened</label><textarea id="alertf-background" style="min-height:70px" placeholder="Background information and context..."></textarea></div>
+<div class="form-group"><label class="form-label">Lessons learned</label><textarea id="alertf-lessons" style="min-height:60px" placeholder="What can we learn from this? What should be done differently?"></textarea></div>
+<div class="form-group"><label class="form-label">Action required</label><textarea id="alertf-action" style="min-height:60px" placeholder="Specific actions that must be taken by the target audience..."></textarea></div>
+</div>
+<div class="card" style="margin-bottom:14px"><div class="card-title">Applies to</div>
+<div class="form-group"><label class="form-label">Departments / areas affected</label><input type="text" id="alertf-depts" placeholder="e.g. All departments, Production, Maintenance..."/></div>
+<div class="form-group"><label class="form-label">Who this applies to</label><input type="text" id="alertf-applies" placeholder="e.g. All workers, Supervisors, Contractors..."/></div>
+</div>
+</div>
+<div>
+<div class="card" style="margin-bottom:14px;border:2px solid #DC2626"><div class="card-title" style="color:#DC2626">Issue Details</div>
+<div class="form-group"><label class="form-label">Issued by</label><input type="text" id="alertf-issued-by"/></div>
+<div class="form-group"><label class="form-label">Issued date</label><input type="date" id="alertf-issued-date"/></div>
+<div class="form-group"><label class="form-label">Expiry date</label><input type="date" id="alertf-expiry" placeholder="Leave blank for no expiry"/></div>
+<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px"><input type="checkbox" id="alertf-req-ack" style="accent-color:var(--red)"/><label for="alertf-req-ack" style="font-size:13px;font-weight:600;cursor:pointer">Acknowledgement required</label></div>
+<div class="form-group"><label class="form-label">Status</label><select id="alertf-status"><option value="active">Active</option><option value="draft">Draft</option><option value="archived">Archived</option></select></div>
+</div>
+</div>
+</div>
+</div>
+
+<!-- ── BULLETIN FORM ── -->
+<div id="bulletin-form" style="display:none">
+<div class="card" style="margin-bottom:14px;padding:0;overflow:hidden">
+<div style="padding:14px 20px;background:linear-gradient(135deg,#1a3a5c,#5B21B6);color:#fff;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+<div>
+<div style="font-size:11px;font-weight:600;text-transform:uppercase;opacity:.8;margin-bottom:4px">Safety Communication</div>
+<div style="font-size:17px;font-weight:800" id="bull-form-title">New Bulletin</div>
+<div style="font-family:monospace;font-size:12px;color:#ddd6fe;margin-top:3px" id="bull-form-ref">BULL-AUTO</div>
+</div>
+<div style="display:flex;gap:8px">
+<button class="btn" style="background:rgba(255,255,255,.2);color:#fff;border-color:rgba(255,255,255,.3)" onclick="bulletinBack()"><i class="ti ti-arrow-left"></i>Back</button>
+<button id="bull-del-btn" class="btn" style="display:none;background:rgba(0,0,0,.3);color:#fff;border-color:rgba(255,255,255,.3)" onclick="bulletinDelete()"><i class="ti ti-trash"></i></button>
+<button class="btn" style="background:#1D9E75;color:#fff;border-color:#1D9E75" onclick="bulletinSave()"><i class="ti ti-device-floppy"></i>Save</button>
+</div>
+</div>
+</div>
+<div style="display:grid;grid-template-columns:2fr 1fr;gap:14px">
+<div>
+<div class="card" style="margin-bottom:14px"><div class="card-title">Bulletin Details</div>
+<div class="form-group"><label class="form-label">Title</label><input type="text" id="bullf-title" placeholder="e.g. Safety Newsletter — May 2026"/></div>
+<div class="form-row">
+<div class="form-group"><label class="form-label">Type</label>
+<select id="bullf-type">
+<option value="safety_bulletin">Safety Bulletin</option>
+<option value="safety_newsletter">Safety Newsletter</option>
+<option value="regulatory_update">Regulatory Update</option>
+<option value="best_practice">Best Practice Guide</option>
+<option value="statistics_report">Safety Statistics Report</option>
+<option value="campaign">Safety Campaign</option>
+<option value="other">Other</option>
+</select></div>
+<div class="form-group"><label class="form-label">Issue number</label><input type="number" id="bullf-issue-no" min="1" placeholder="e.g. 12"/></div>
+<div class="form-group"><label class="form-label">Publication date</label><input type="date" id="bullf-pub-date"/></div>
+</div>
+<div class="form-group"><label class="form-label">Summary / Abstract</label><textarea id="bullf-summary" style="min-height:60px" placeholder="Brief overview of what this bulletin covers..."></textarea></div>
+<div class="form-group"><label class="form-label">Key messages</label><textarea id="bullf-key-messages" style="min-height:70px" placeholder="The most important safety messages in this bulletin..."></textarea></div>
+<div class="form-group"><label class="form-label">Full content / body</label><textarea id="bullf-content" style="min-height:100px" placeholder="Full bulletin text, articles, statistics..."></textarea></div>
+<div class="form-group"><label class="form-label">Topics covered (comma separated)</label><input type="text" id="bullf-topics" placeholder="e.g. LOTO, PPE compliance, incident statistics..."/></div>
+</div>
+<div>
+<div class="card" style="margin-bottom:14px;border:2px solid #5B21B6"><div class="card-title" style="color:#5B21B6">Publication Details</div>
+<div class="form-group"><label class="form-label">Author</label><input type="text" id="bullf-author"/></div>
+<div class="form-group"><label class="form-label">Approved by</label><input type="text" id="bullf-approved-by"/></div>
+<div class="form-group"><label class="form-label">Target audience</label><input type="text" id="bullf-audience" placeholder="e.g. All staff, Management, Supervisors"/></div>
+<div class="form-group"><label class="form-label">Distribution method</label>
+<select id="bullf-dist-method">
+<option value="email">Email</option><option value="noticeboard">Noticeboard</option>
+<option value="intranet">Intranet / Portal</option><option value="printed">Printed copy</option>
+<option value="meeting">Distributed at meeting</option><option value="all">All channels</option>
+</select></div>
+<div class="form-group"><label class="form-label">File URL / attachment</label><input type="text" id="bullf-file-url" placeholder="https://..."/></div>
+<div class="form-group"><label class="form-label">File name</label><input type="text" id="bullf-file-name" placeholder="safety-bulletin-may2026.pdf"/></div>
+<div class="form-group"><label class="form-label">Status</label><select id="bullf-status"><option value="published">Published</option><option value="draft">Draft</option><option value="archived">Archived</option></select></div>
+</div>
+</div>
+</div>
+</div>
 </div>
 
 <!-- Series form (slide-in) -->
