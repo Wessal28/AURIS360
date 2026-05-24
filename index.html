@@ -66,6 +66,8 @@
 
 
 
+
+
 const SB='https://iarfxjhahzbhncsaohbg.supabase.co';
 const KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlhcmZ4amhhaHpiaG5jc2FvaGJnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg2OTM1MzAsImV4cCI6MjA5NDI2OTUzMH0.qSjahuX-RwnjWEDmo-LkcorAxpsmyVoaXt4AO4_A9BM';
 let tok=null,prof=null,co=null,chkItems=[],people=[];
@@ -190,7 +192,7 @@ if(target){
   target.classList.add('active');
 }
 if(el&&el.classList)el.classList.add('active');
-const L={dashboard:loadDash,kpi:kpiLoadAll,workschedule:loadWorkSchedule,events:loadEvents,inspection:()=>{buildChecklist();loadInsps();},risk:loadRA,investigation:loadInvs,legal:loadLegal,sop:loadSOP,tools:loadTools,permit:loadPermits,contractor:loadContractors,esg:loadESG,emergency:loadEmergency,ohealth:loadOHealth,noise:loadNoise,meetings:loadMtgs,training:loadTraining,actions:loadActions,documents:loadDocs,people:loadPeople,users:loadUsers,admin:loadAdmin,'ai-insights':genFullAI,settings:loadSettings};
+const L={dashboard:loadDash,kpi:kpiLoadAll,workschedule:loadWorkSchedule,events:loadEvents,inspection:()=>{buildChecklist();loadInsps();},risk:loadRA,investigation:loadInvs,legal:loadLegal,sop:loadSOP,tools:loadTools,permit:loadPermits,contractor:loadContractors,esg:loadESG,emergency:loadEmergency,ohealth:loadOHealth,ppe:loadPPE,noise:loadNoise,meetings:loadMtgs,training:loadTraining,actions:loadActions,documents:loadDocs,people:loadPeople,users:loadUsers,admin:loadAdmin,'ai-insights':genFullAI,settings:loadSettings};
 if(L[name])L[name]();
 }
 function toggleForm(id){const el=document.getElementById(id);el.style.display=el.style.display==='none'?'block':'none';}
@@ -6509,6 +6511,567 @@ async function odSave(){var name=document.getElementById('odf-name')?.value?.tri
 async function odDelete(){if(!ohOdEditId||!confirm('Delete?'))return;try{await api('/occupational_diseases?id=eq.'+ohOdEditId,{m:'DELETE'});toast('Deleted!');odBack();}catch(e){toast(e.message,false);}}
 async function odDeleteRow(id){if(!confirm('Delete?'))return;try{await api('/occupational_diseases?id=eq.'+id,{m:'DELETE'});ohOdData=ohOdData.filter(x=>x.id!==id);toast('Deleted!');ohOdLoad();}catch(e){toast(e.message,false);}}
 
+// ===================================================================
+// PPE MANAGEMENT MODULE
+// Catalogue · Issuance · Inspections · Replacements · Expiry alerts
+// Smart: hazard linkage, auto replacement reminders
+// ===================================================================
+
+let ppeCatData=[], ppeIssData=[], ppeInspData=[], ppeRepData=[];
+let ppeCatEditId=null, ppeIssEditId=null, ppeInspEditId=null, ppeRepEditId=null;
+let ppeExpiryDays=30;
+
+const PPE_CAT_CFG={
+  head:             {emoji:'⛑️', label:'Head protection',    color:'#185FA5'},
+  eye_face:         {emoji:'👓', label:'Eye / Face',          color:'#0891B2'},
+  hearing:          {emoji:'🎧', label:'Hearing protection',  color:'#8B5CF6'},
+  respiratory:      {emoji:'😷', label:'Respiratory',         color:'#065F46'},
+  hands:            {emoji:'🧤', label:'Hand protection',     color:'#1D9E75'},
+  feet:             {emoji:'👢', label:'Foot protection',      color:'#854F0B'},
+  body:             {emoji:'🦺', label:'Body protection',      color:'#EF9F27'},
+  fall_protection:  {emoji:'🪝', label:'Fall protection',     color:'#DC2626'},
+  high_visibility:  {emoji:'🟡', label:'High visibility',     color:'#B45309'},
+  other:            {emoji:'📦', label:'Other PPE',            color:'#6B7280'}
+};
+
+const PPE_INSP_CHECKLISTS={
+  head:['Overall structural integrity — no cracks, dents or deformation','Suspension system intact and undamaged','Sweatband clean and in good condition','Chin strap functional (if fitted)','No chemical contamination or paint visible','Date stamp checked — within service life','No signs of UV degradation or bleaching'],
+  eye_face:['Lens clear — no deep scratches or crazing','Frame undamaged — no cracks or broken hinges','Side shields present and intact','Anti-fog coating still effective','Markings and standard stamp legible','Headband / temple arms secure'],
+  hearing:['Ear cushions soft and pliable — not hard/cracked','Cushion sealing surface intact — no splits','Headband spring tension adequate','Cup shells undamaged','Attenuation rating marking legible','Cleaning — free of contamination'],
+  respiratory:['Face seal area undamaged and flexible','Exhalation valve functional and clean','Inhalation valves present and functional','Head straps undamaged and adjustable','Filter/cartridge within service life / not expired','No chemical damage or contamination'],
+  hands:['No cuts, tears or holes','Grip surface intact and effective','Cuff length adequate for hazard','No chemical contamination or hardening','Correct glove type for the hazard','Size appropriate for wearer'],
+  feet:['Steel toe cap intact — no visible deformation','Sole not worn through or delaminating','Upper leather/material undamaged','Anti-slip tread adequate depth','Laces/fasteners present and functional','No chemical damage or contamination'],
+  body:['No tears, rips or holes in material','All fasteners (zips, buttons) functional','Retroreflective tape intact and visible','Material not chemically contaminated','Size and fit correct for wearer'],
+  fall_protection:['Webbing — no cuts, abrasion, chemical damage or UV degradation','Stitching intact throughout','D-rings and buckles undamaged and functional','No evidence of shock-loading or fall event','Labels/tags readable and within service life','Lifeline/lanyard — no kinks, knots or damage'],
+  high_visibility:['Fluorescent panels bright and undamaged','Retroreflective strips intact and reflective','No excessive soiling or fading','No tears or missing material','Washing history within care label limits'],
+  other:['Item undamaged and functional','Within service life / not expired','Labels and markings legible','No contamination or damage visible','Correct for intended hazard']
+};
+
+// ── Entry ─────────────────────────────────────────────────────────────────────
+async function loadPPE(){
+  ['ppe-cat-add-btn','ppe-iss-add-btn','ppe-insp-add-btn','ppe-rep-add-btn'].forEach(function(id){
+    var el=document.getElementById(id);if(el)el.style.display=isMgr()?'inline-flex':'none';
+  });
+  ppeLoadDash();
+}
+
+function ppeSwitchTab(tab,btn){
+  document.querySelectorAll('[id^="ppe-tab-"]').forEach(t=>t.classList.remove('active'));
+  btn.classList.add('active');
+  ['dash','catalogue','issuance','inspections','replacements','expiry'].forEach(function(t){
+    var el=document.getElementById('ppe-view-'+t);if(el)el.style.display=t===tab?'block':'none';
+  });
+  ['ppe-cat-form','ppe-iss-form','ppe-insp-form','ppe-rep-form'].forEach(function(id){
+    var el=document.getElementById(id);if(el)el.style.display='none';
+  });
+  if(tab==='dash')ppeLoadDash();
+  else if(tab==='catalogue')ppeLoadCatalogue();
+  else if(tab==='issuance')ppeLoadIssuance();
+  else if(tab==='inspections')ppeLoadInspections();
+  else if(tab==='replacements')ppeLoadReplacements();
+  else if(tab==='expiry')ppeLoadExpiry();
+}
+
+// ── DASHBOARD ─────────────────────────────────────────────────────────────────
+async function ppeLoadDash(){
+  var setM=function(id,v){var e=document.getElementById(id);if(e)e.textContent=v;};
+  try{
+    var now=new Date();var d30=new Date();d30.setDate(d30.getDate()+30);
+    var d90=new Date();d90.setDate(d90.getDate()+90);
+    var [cat,iss,insp,rep]=await Promise.all([
+      api('/ppe_catalogue?select=*'+cf()),
+      api('/ppe_issuance?select=*'+cf()+'&status=eq.active'),
+      api('/ppe_inspections?select=id,overall_result,next_inspection_date'+cf()),
+      api('/ppe_replacements?select=id,status'+cf())
+    ]);
+    ppeCatData=cat||[];ppeIssData=iss||[];ppeInspData=insp||[];ppeRepData=rep||[];
+    setM('ppe-m-types',(cat||[]).filter(x=>x.status==='active').length);
+    setM('ppe-m-issued',(iss||[]).length);
+    var expiredOrDue=(iss||[]).filter(x=>(x.expiry_date&&new Date(x.expiry_date)<=d30)||(x.expected_replacement_date&&new Date(x.expected_replacement_date)<=d30)).length;
+    setM('ppe-m-expired',expiredOrDue);
+    var lowStock=(cat||[]).filter(x=>x.quantity_available!=null&&x.reorder_level!=null&&x.quantity_available<=x.reorder_level&&x.status==='active').length;
+    setM('ppe-m-lowstock',lowStock);
+    setM('ppe-m-replace',(rep||[]).filter(x=>x.status==='pending').length);
+    var inspDue=(iss||[]).filter(x=>x.expected_replacement_date&&new Date(x.expected_replacement_date)<=d30).length;
+    setM('ppe-m-insp-due',inspDue);
+    // Alerts
+    var alertEl=document.getElementById('ppe-dash-alerts');
+    if(alertEl){
+      var alerts=[];
+      if(expiredOrDue>0)alerts.push({bg:'#FCEBEB',bc:'#fecaca',tc:'#A32D2D',icon:'ti-alert-triangle',msg:expiredOrDue+' PPE item'+(expiredOrDue>1?'s':'')+' expired or due for replacement within 30 days — workers may be using compromised PPE'});
+      if(lowStock>0)alerts.push({bg:'#FEF9EC',bc:'#fcd34d',tc:'#854F0B',icon:'ti-package',msg:lowStock+' PPE type'+(lowStock>1?'s':'')+' at or below reorder level — replenish stock'});
+      alertEl.innerHTML=alerts.map(function(a){return '<div style="background:'+a.bg+';border:1px solid '+a.bc+';border-radius:8px;padding:10px 14px;margin-bottom:8px;display:flex;align-items:center;gap:10px;font-size:12px;font-weight:600;color:'+a.tc+'"><i class="ti '+a.icon+'" style="font-size:16px"></i>'+escH(a.msg)+'</div>';}).join('');
+    }
+    // Inventory by category
+    var invEl=document.getElementById('ppe-dash-inventory');
+    if(invEl&&cat){
+      var byCategory={};
+      (cat||[]).forEach(function(c){
+        var cfg=PPE_CAT_CFG[c.category]||PPE_CAT_CFG.other;
+        if(!byCategory[c.category])byCategory[c.category]={label:cfg.label,emoji:cfg.emoji,color:cfg.color,count:0,available:0};
+        byCategory[c.category].count++;byCategory[c.category].available+=(c.quantity_available||0);
+      });
+      var h='<div style="display:flex;flex-direction:column;gap:6px">';
+      Object.values(byCategory).sort((a,b)=>b.count-a.count).forEach(function(c){
+        var lowStockCount=(cat||[]).filter(x=>PPE_CAT_CFG[x.category]?.label===c.label&&x.quantity_available<=x.reorder_level).length;
+        h+='<div style="display:flex;align-items:center;gap:8px;padding:6px 10px;border:1px solid var(--border);border-radius:8px">'
+          +'<span style="font-size:16px">'+c.emoji+'</span>'
+          +'<span style="flex:1;font-size:12px;font-weight:600">'+escH(c.label)+'</span>'
+          +'<span style="font-size:11px;color:var(--text2)">'+c.count+' type'+(c.count>1?'s':'')+'</span>'
+          +'<span style="font-size:11px;font-weight:700;color:'+(lowStockCount>0?'var(--red)':'var(--green)')+'">'+c.available+' avail.</span>'
+          +'</div>';
+      });
+      if(!Object.keys(byCategory).length)h+='<div style="text-align:center;padding:20px;color:var(--text2)">No PPE catalogue entries yet</div>';
+      h+='</div>';invEl.innerHTML=h;
+    }
+    // Expiry in 30 days
+    var expEl=document.getElementById('ppe-dash-expiry');
+    if(expEl){
+      var expiring=(iss||[]).filter(x=>(x.expiry_date&&new Date(x.expiry_date)>now&&new Date(x.expiry_date)<=d30)||(x.expected_replacement_date&&new Date(x.expected_replacement_date)>now&&new Date(x.expected_replacement_date)<=d30)).slice(0,8);
+      if(!expiring.length){expEl.innerHTML='<div style="text-align:center;padding:16px;color:var(--text2)">✅ No PPE expiring in the next 30 days</div>';}
+      else{
+        expEl.innerHTML='<div style="display:flex;flex-direction:column;gap:6px">'
+          +expiring.map(function(x){
+            var dt=new Date(x.expiry_date||x.expected_replacement_date);
+            var days=Math.floor((dt-now)/86400000);
+            return '<div style="display:flex;align-items:center;gap:10px;padding:6px 12px;border:1px solid var(--border);border-radius:8px;background:#FFFBEB">'
+              +'<div style="font-size:11px;font-weight:800;color:#C2410C;min-width:40px">'+days+'d</div>'
+              +'<div style="flex:1"><div style="font-weight:600;font-size:12px">'+escH(x.employee_name||'—')+'</div>'
+              +'<div style="font-size:11px;color:var(--text2)">'+escH(x.ppe_name||'—')+'</div></div>'
+              +'<div style="font-size:11px;font-family:monospace;color:#854F0B">'+escH(x.issuance_ref||'—')+'</div>'
+              +'</div>';
+          }).join('')+'</div>';
+      }
+    }
+    // Recent issuances
+    var recEl=document.getElementById('ppe-dash-recent');
+    if(recEl){
+      var recent=(iss||[]).slice(0,6);
+      if(!recent.length){recEl.innerHTML='<div style="text-align:center;padding:16px;color:var(--text2)">No PPE issued yet</div>';}
+      else{
+        var h2='<table style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr style="background:#f9fafb"><th style="padding:6px 12px;text-align:left;border-bottom:1px solid var(--border)">Ref</th><th style="padding:6px;text-align:left;border-bottom:1px solid var(--border)">PPE</th><th style="padding:6px;text-align:left;border-bottom:1px solid var(--border)">Employee</th><th style="padding:6px;border-bottom:1px solid var(--border)">Date</th><th style="padding:6px;border-bottom:1px solid var(--border)">Expires</th></tr></thead><tbody>';
+        recent.forEach(function(x,i){
+          var bg=i%2===0?'#fff':'#f9fafb';
+          var isExpiring=x.expiry_date&&new Date(x.expiry_date)<=d30;
+          h2+='<tr style="border-bottom:1px solid #f0f0f0;background:'+bg+'">'
+            +'<td style="padding:6px 12px;font-family:monospace;color:#1D9E75;font-size:11px;font-weight:700">'+escH(x.issuance_ref||'—')+'</td>'
+            +'<td style="padding:6px;font-weight:600">'+escH(x.ppe_name||'—')+'</td>'
+            +'<td style="padding:6px">'+escH(x.employee_name||'—')+'</td>'
+            +'<td style="padding:6px;font-size:11px">'+(x.issued_date?new Date(x.issued_date).toLocaleDateString('en-GB'):'—')+'</td>'
+            +'<td style="padding:6px;font-size:11px;color:'+(isExpiring?'var(--red)':'inherit');
+          h2+='">'+(x.expiry_date?new Date(x.expiry_date).toLocaleDateString('en-GB')+(isExpiring?' ⚠':''):'—')+'</td></tr>';
+        });
+        h2+='</tbody></table>';recEl.innerHTML=h2;
+      }
+    }
+  }catch(e){console.error(e);}
+}
+
+// ── CATALOGUE ─────────────────────────────────────────────────────────────────
+async function ppeLoadCatalogue(){
+  var el=document.getElementById('ppe-cat-list');if(!el)return;
+  el.innerHTML='<div class="loading-msg">Loading...</div>';
+  var ft=document.getElementById('ppe-cat-filter')?.value||'';
+  try{
+    var q='/ppe_catalogue?select=*'+cf()+'&order=category,name';if(ft)q+='&category=eq.'+ft;
+    var d=await api(q);ppeCatData=d||[];
+    if(!d||!d.length){
+      el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)"><div style="font-size:40px;margin-bottom:12px">📦</div><div style="font-weight:600;margin-bottom:8px">No PPE in catalogue yet</div>'+(isMgr()?'<button class="btn btn-primary" onclick="ppeCatNew()"><i class="ti ti-plus"></i>Add PPE type</button>':'')+'</div>';
+      return;
+    }
+    var h='<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px">';
+    d.forEach(function(x){
+      var cfg=PPE_CAT_CFG[x.category]||PPE_CAT_CFG.other;
+      var isLow=x.quantity_available!=null&&x.reorder_level!=null&&x.quantity_available<=x.reorder_level;
+      var isOut=x.quantity_available===0;
+      h+='<div class="card" style="padding:0;overflow:hidden;cursor:pointer;border-left:4px solid '+cfg.color+';transition:box-shadow .15s" data-id="'+x.id+'" onclick="ppeCatEdit(this.dataset.id)" onmouseover="this.style.boxShadow=\'0 4px 16px rgba(0,0,0,.1)\'" onmouseout="this.style.boxShadow=\'\'">'
+        +'<div style="padding:14px 16px">'
+        +'<div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:8px">'
+        +'<div style="display:flex;align-items:center;gap:8px">'
+        +'<span style="font-size:26px">'+cfg.emoji+'</span>'
+        +'<div><div style="font-weight:700;font-size:14px">'+escH(x.name||'—')+'</div>'
+        +'<div style="font-size:11px;color:var(--text2)">'+escH(x.sub_category||x.brand||'')+'</div>'
+        +(x.standard?'<div style="font-size:10px;font-family:monospace;color:'+cfg.color+'">'+escH(x.standard)+'</div>':'')
+        +'</div></div>'
+        +(x.status!=='active'?'<span style="background:#f3f4f6;color:#6B7280;padding:2px 7px;border-radius:99px;font-size:10px;font-weight:700;text-transform:capitalize">'+x.status.replace('_',' ')+'</span>':'')
+        +'</div>'
+        +'<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-top:10px">'
+        +'<div style="background:'+(isOut?'#FCEBEB':isLow?'#FEF9EC':'#f0fdf4')+';border-radius:6px;padding:8px;text-align:center">'
+        +'<div style="font-size:10px;font-weight:600;color:var(--text2);text-transform:uppercase;margin-bottom:2px">Available</div>'
+        +'<div style="font-size:18px;font-weight:800;color:'+(isOut?'#A32D2D':isLow?'#854F0B':'#1D9E75')+'">'+(x.quantity_available??'—')+'</div>'
+        +(isLow&&!isOut?'<div style="font-size:9px;color:#854F0B;font-weight:600">LOW STOCK</div>':(isOut?'<div style="font-size:9px;color:#A32D2D;font-weight:600">OUT OF STOCK</div>':''))
+        +'</div>'
+        +'<div style="background:#f9fafb;border-radius:6px;padding:8px;text-align:center"><div style="font-size:10px;font-weight:600;color:var(--text2);text-transform:uppercase;margin-bottom:2px">Issued</div><div style="font-size:18px;font-weight:800;color:#185FA5">'+(x.quantity_issued??'—')+'</div></div>'
+        +'<div style="background:#f9fafb;border-radius:6px;padding:8px;text-align:center"><div style="font-size:10px;font-weight:600;color:var(--text2);text-transform:uppercase;margin-bottom:2px">Total</div><div style="font-size:18px;font-weight:800">'+(x.quantity_total??'—')+'</div></div>'
+        +'</div>'
+        +(x.hazard_types?.length?'<div style="margin-top:8px;display:flex;gap:4px;flex-wrap:wrap">'+x.hazard_types.map(h=>'<span style="background:'+cfg.color+'20;color:'+cfg.color+';padding:1px 8px;border-radius:99px;font-size:10px;font-weight:600">'+escH(h)+'</span>').join('')+'</div>':'')
+        +'</div></div>';
+    });
+    h+='</div>';el.innerHTML=h;
+  }catch(e){el.innerHTML='<p style="padding:20px;color:red">'+e.message+'</p>';}
+}
+
+function ppeCatShowForm(){document.getElementById('ppe-view-catalogue').style.display='none';document.getElementById('ppe-cat-form').style.display='block';}
+function ppeCatBack(){document.getElementById('ppe-cat-form').style.display='none';document.getElementById('ppe-view-catalogue').style.display='block';document.querySelectorAll('[id^="ppe-tab-"]').forEach(t=>t.classList.remove('active'));document.getElementById('ppe-tab-catalogue')?.classList.add('active');ppeLoadCatalogue();}
+
+function ppeCatNew(){
+  ppeCatEditId=null;document.getElementById('ppe-cat-form-title').textContent='New PPE Type';document.getElementById('ppe-cat-del-btn').style.display='none';
+  ['pcf-name','pcf-subcat','pcf-brand','pcf-model','pcf-standard','pcf-protection','pcf-hazards','pcf-notes','pcf-location','pcf-supplier'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
+  ['pcf-qty-total','pcf-qty-avail'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='0';});
+  ['pcf-service-life','pcf-cost'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
+  document.getElementById('pcf-reorder').value='5';document.getElementById('pcf-category').value='head';document.getElementById('pcf-status').value='active';document.getElementById('pcf-has-expiry').checked=false;document.getElementById('pcf-insp-interval').value='90';
+  ppeCatShowForm();
+}
+function ppeCatEdit(id){
+  var x=ppeCatData.find(r=>r.id===id);if(!x)return;
+  ppeCatEditId=id;document.getElementById('ppe-cat-form-title').textContent='Edit PPE Type';document.getElementById('ppe-cat-del-btn').style.display=isMgr()?'inline-flex':'none';
+  var gf=function(fid,val){var el=document.getElementById(fid);if(el)el.value=val||'';};
+  gf('pcf-name',x.name);gf('pcf-subcat',x.sub_category);gf('pcf-brand',x.brand);gf('pcf-model',x.model);gf('pcf-standard',x.standard);gf('pcf-protection',x.protection_level);gf('pcf-notes',x.notes);gf('pcf-location',x.location);gf('pcf-supplier',x.supplier);gf('pcf-service-life',x.service_life_months||'');gf('pcf-cost',x.unit_cost||'');
+  gf('pcf-hazards',(x.hazard_types||[]).join(', '));gf('pcf-qty-total',x.quantity_total??0);gf('pcf-qty-avail',x.quantity_available??0);gf('pcf-reorder',x.reorder_level??5);gf('pcf-insp-interval',x.inspection_interval_days??90);
+  document.getElementById('pcf-category').value=x.category||'head';document.getElementById('pcf-status').value=x.status||'active';document.getElementById('pcf-has-expiry').checked=!!x.has_expiry;
+  ppeCatShowForm();
+}
+async function ppeCatSave(){
+  var name=document.getElementById('pcf-name')?.value?.trim();if(!name){toast('Please enter PPE name',false);return;}
+  var g=function(id){var el=document.getElementById(id);return el?el.value||null:null;};
+  var body={company_id:prof?.company_id,name:name,category:g('pcf-category')||'head',sub_category:g('pcf-subcat'),brand:g('pcf-brand'),model:g('pcf-model'),standard:g('pcf-standard'),protection_level:g('pcf-protection'),hazard_types:g('pcf-hazards')?g('pcf-hazards').split(',').map(x=>x.trim()).filter(Boolean):[],notes:g('pcf-notes'),location:g('pcf-location'),supplier:g('pcf-supplier'),has_expiry:document.getElementById('pcf-has-expiry')?.checked||false,service_life_months:parseInt(g('pcf-service-life'))||null,inspection_interval_days:parseInt(g('pcf-insp-interval'))||90,quantity_total:parseInt(g('pcf-qty-total'))||0,quantity_available:parseInt(g('pcf-qty-avail'))||0,reorder_level:parseInt(g('pcf-reorder'))||5,unit_cost:parseFloat(g('pcf-cost'))||null,status:g('pcf-status')||'active',updated_at:new Date().toISOString()};
+  try{
+    if(ppeCatEditId){await api('/ppe_catalogue?id=eq.'+ppeCatEditId,{m:'PATCH',p:'return=minimal',b:body});toast('Updated!');}
+    else{
+      body.created_by=prof?.id;var res=await api('/ppe_catalogue',{m:'POST',p:'return=representation',b:body});
+      if(res?.[0]?.id){var yr=new Date().getFullYear();var prefix={head:'HELM',eye_face:'EYE',hearing:'EAR',respiratory:'RESP',hands:'GLOVE',feet:'BOOT',body:'BODY',fall_protection:'FALL',high_visibility:'HIVIS',other:'PPE'}[body.category]||'PPE';var ref='PPE-'+prefix+'-'+String(ppeCatData.length+1).padStart(3,'0');await api('/ppe_catalogue?id=eq.'+res[0].id,{m:'PATCH',p:'return=minimal',b:{ppe_code:ref}});toast('PPE type added! Code: '+ref);}
+    }
+    ppeCatBack();
+  }catch(e){toast(e.message,false);}
+}
+async function ppeCatDelete(){if(!ppeCatEditId||!confirm('Delete this PPE type?'))return;try{await api('/ppe_catalogue?id=eq.'+ppeCatEditId,{m:'DELETE'});toast('Deleted!');ppeCatBack();}catch(e){toast(e.message,false);}}
+
+// ── ISSUANCE ──────────────────────────────────────────────────────────────────
+async function ppeLoadIssuance(){
+  var el=document.getElementById('ppe-iss-list');if(!el)return;el.innerHTML='<div class="loading-msg">Loading...</div>';
+  var q_param=document.getElementById('ppe-iss-search')?.value?.trim()||'';
+  var fs=document.getElementById('ppe-iss-filter-status')?.value||'';
+  var now=new Date();var d30=new Date();d30.setDate(d30.getDate()+30);
+  try{
+    var q='/ppe_issuance?select=*'+cf()+'&order=issued_date.desc';if(fs)q+='&status=eq.'+fs;
+    var d=await api(q);ppeIssData=d||[];
+    if(q_param){var ql=q_param.toLowerCase();ppeIssData=ppeIssData.filter(x=>(x.employee_name||'').toLowerCase().includes(ql)||(x.ppe_name||'').toLowerCase().includes(ql)||(x.issuance_ref||'').toLowerCase().includes(ql)||(x.department||'').toLowerCase().includes(ql));}
+    if(!ppeIssData.length){el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)"><div style="font-size:40px;margin-bottom:12px">📋</div><div style="font-weight:600;margin-bottom:8px">No issuance records</div>'+(isMgr()?'<button class="btn btn-primary" onclick="ppeIssNew()"><i class="ti ti-plus"></i>Issue PPE</button>':'')+'</div>';return;}
+    var stCfg={active:['#EAF3DE','#3B6D11'],returned:['#f3f4f6','#6B7280'],expired:['#FCEBEB','#A32D2D'],lost:['#FCEBEB','#A32D2D'],condemned:['#f3f4f6','#6B7280']};
+    var h='<div class="card" style="padding:0;overflow:hidden"><table style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr style="background:#064E3B;color:#fff"><th style="padding:8px 14px;text-align:left">Ref</th><th style="padding:8px">PPE Item</th><th style="padding:8px">Employee</th><th style="padding:8px">Dept</th><th style="padding:8px">Issued</th><th style="padding:8px">Expiry</th><th style="padding:8px">Replace by</th><th style="padding:8px">Status</th><th style="padding:8px;width:60px"></th></tr></thead><tbody>';
+    ppeIssData.forEach(function(x,i){
+      var bg=i%2===0?'#fff':'#f9fafb';var sc=stCfg[x.status]||stCfg.active;
+      var expiring=x.expiry_date&&new Date(x.expiry_date)<=d30;
+      var replaceDue=x.expected_replacement_date&&new Date(x.expected_replacement_date)<=d30;
+      h+='<tr style="border-bottom:1px solid #f0f0f0;background:'+bg+'">'
+        +'<td style="padding:8px 14px;font-family:monospace;font-size:11px;font-weight:700;color:#1D9E75">'+escH(x.issuance_ref||'—')+'</td>'
+        +'<td style="padding:8px;font-weight:600"><div>'+escH(x.ppe_name||'—')+'</div><div style="font-size:10px;color:var(--text2)">'+escH(x.ppe_category?.replace('_',' ')||'')+'</div></td>'
+        +'<td style="padding:8px"><div style="font-weight:600">'+escH(x.employee_name||'—')+'</div><div style="font-size:10px;color:var(--text2)">'+escH(x.employee_id||'')+'</div></td>'
+        +'<td style="padding:8px;font-size:11px">'+escH(x.department||'—')+'</td>'
+        +'<td style="padding:8px;font-size:11px">'+(x.issued_date?new Date(x.issued_date).toLocaleDateString('en-GB'):'—')+'</td>'
+        +'<td style="padding:8px;font-size:11px;font-weight:'+(expiring?'700':'400')+';color:'+(expiring?'var(--red)':'inherit')+'">'+(x.expiry_date?new Date(x.expiry_date).toLocaleDateString('en-GB')+(expiring?' ⚠':''):'—')+'</td>'
+        +'<td style="padding:8px;font-size:11px;font-weight:'+(replaceDue?'700':'400')+';color:'+(replaceDue?'#C2410C':'inherit')+'">'+(x.expected_replacement_date?new Date(x.expected_replacement_date).toLocaleDateString('en-GB')+(replaceDue?' 🔔':''):'—')+'</td>'
+        +'<td style="padding:8px"><span style="background:'+sc[0]+';color:'+sc[1]+';padding:2px 8px;border-radius:99px;font-size:10px;font-weight:700;text-transform:capitalize">'+x.status+'</span></td>'
+        +'<td style="padding:8px"><div style="display:flex;gap:4px"><button class="btn btn-sm" data-id="'+x.id+'" onclick="ppeIssEdit(this.dataset.id)"><i class="ti ti-edit"></i></button>'+(isMgr()?'<button class="btn btn-sm" style="color:var(--red)" data-id="'+x.id+'" onclick="ppeIssDeleteRow(this.dataset.id)"><i class="ti ti-trash"></i></button>':'')+'</div></td></tr>';
+    });
+    h+='</tbody></table></div>';el.innerHTML=h;
+  }catch(e){el.innerHTML='<p style="padding:20px;color:red">'+e.message+'</p>';}
+}
+
+async function ppePopulatePPESelects(){
+  if(!ppeCatData.length){try{var d=await api('/ppe_catalogue?select=id,name,category,service_life_months,has_expiry'+cf()+'&status=eq.active');ppeCatData=d||[];}catch(ex){}}
+  var opts='<option value="">Select PPE from catalogue...</option>'+ppeCatData.map(function(p){var cfg=PPE_CAT_CFG[p.category]||PPE_CAT_CFG.other;return '<option value="'+p.id+'" data-svc="'+(p.service_life_months||'')+'" data-expiry="'+(p.has_expiry?'1':'0')+'">'+cfg.emoji+' '+escH(p.name)+'</option>';}).join('');
+  ['pif-ppe-id','piif-ppe-id','prf-ppe-id'].forEach(function(id){var el=document.getElementById(id);if(el)el.innerHTML=opts;});
+}
+
+function ppeIssSelectItem(){
+  var sel=document.getElementById('pif-ppe-id');if(!sel)return;
+  var opt=sel.selectedOptions[0];var ppeId=sel.value;
+  var ppe=ppeCatData.find(x=>x.id===ppeId);
+  var infoEl=document.getElementById('pif-ppe-info');
+  if(ppe&&infoEl){
+    var cfg=PPE_CAT_CFG[ppe.category]||PPE_CAT_CFG.other;
+    infoEl.innerHTML='<div style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:'+cfg.color+'15;border:1px solid '+cfg.color+'40;border-radius:8px;font-size:12px"><span style="font-size:20px">'+cfg.emoji+'</span><div><strong>'+escH(ppe.name)+'</strong>'+(ppe.standard?' · '+escH(ppe.standard):'')+(ppe.protection_level?' · '+escH(ppe.protection_level):'')+'<br><span style="color:var(--text2)">Available: '+( ppe.quantity_available||0)+(ppe.service_life_months?' · Service life: '+ppe.service_life_months+' months':'')+'</span></div></div>';
+    // Auto-set replacement date
+    var issDt=document.getElementById('pif-issued-date')?.value;
+    if(ppe.service_life_months&&issDt){
+      var rd=new Date(issDt);rd.setMonth(rd.getMonth()+ppe.service_life_months);
+      var rdEl=document.getElementById('pif-replace-date');if(rdEl)rdEl.value=rd.toISOString().slice(0,10);
+      var hint=document.getElementById('pif-replace-hint');if(hint)hint.textContent='Based on '+ppe.service_life_months+'-month service life';
+    }
+  }else if(infoEl)infoEl.innerHTML='';
+}
+
+function ppeIssShowForm(){document.getElementById('ppe-view-issuance').style.display='none';document.getElementById('ppe-iss-form').style.display='block';}
+function ppeIssBack(){document.getElementById('ppe-iss-form').style.display='none';document.getElementById('ppe-view-issuance').style.display='block';document.querySelectorAll('[id^="ppe-tab-"]').forEach(t=>t.classList.remove('active'));document.getElementById('ppe-tab-issuance')?.classList.add('active');ppeLoadIssuance();}
+
+function ppeIssToggleReturn(){
+  var cb=document.getElementById('pif-returned');
+  var rf=document.getElementById('pif-return-fields');
+  if(rf)rf.style.display=cb?.checked?'block':'none';
+}
+
+async function ppeIssNew(){
+  ppeIssEditId=null;document.getElementById('ppe-iss-form-title').textContent='Issue PPE';document.getElementById('ppe-iss-form-ref').textContent='ISS-AUTO';document.getElementById('ppe-iss-del-btn').style.display='none';
+  ['pif-emp-name','pif-emp-id','pif-dept','pif-title','pif-issued-by','pif-size','pif-serial','pif-batch','pif-wo-ref','pif-ra-ref','pif-hazard','pif-notes','pif-return-reason','pif-mfg-date'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
+  ['pif-expiry-date','pif-replace-date','pif-ack-date','pif-return-date'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
+  document.getElementById('pif-issued-date').value=new Date().toISOString().slice(0,10);
+  document.getElementById('pif-qty').value='1';document.getElementById('pif-condition').value='new';document.getElementById('pif-status').value='active';
+  document.getElementById('pif-returned').checked=false;document.getElementById('pif-ack').checked=false;document.getElementById('pif-return-fields').style.display='none';
+  document.getElementById('pif-ppe-info').innerHTML='';document.getElementById('pif-replace-hint').textContent='Based on service life';
+  await ppePopulatePPESelects();document.getElementById('pif-ppe-id').value='';
+  ppeIssShowForm();
+}
+
+function ppeIssEdit(id){
+  var x=ppeIssData.find(r=>r.id===id);if(!x)return;
+  ppeIssEditId=id;document.getElementById('ppe-iss-form-title').textContent='Edit Issuance';document.getElementById('ppe-iss-form-ref').textContent=x.issuance_ref||'—';document.getElementById('ppe-iss-del-btn').style.display=isMgr()?'inline-flex':'none';
+  var gf=function(fid,val){var el=document.getElementById(fid);if(el)el.value=val||'';};
+  gf('pif-emp-name',x.employee_name);gf('pif-emp-id',x.employee_id);gf('pif-dept',x.department);gf('pif-title',x.job_title);gf('pif-issued-by',x.issued_by);gf('pif-size',x.size);gf('pif-serial',x.serial_number);gf('pif-batch',x.batch_number);gf('pif-wo-ref',x.work_order_ref);gf('pif-ra-ref',x.ra_ref);gf('pif-hazard',x.hazard_ref);gf('pif-notes',x.notes);gf('pif-issued-date',x.issued_date);gf('pif-mfg-date',x.manufacture_date);gf('pif-expiry-date',x.expiry_date);gf('pif-replace-date',x.expected_replacement_date);gf('pif-ack-date',x.acknowledgement_date);gf('pif-return-date',x.return_date);gf('pif-return-reason',x.return_reason);
+  document.getElementById('pif-qty').value=x.quantity||1;document.getElementById('pif-condition').value=x.condition_on_issue||'new';document.getElementById('pif-status').value=x.status||'active';document.getElementById('pif-returned').checked=!!x.returned;document.getElementById('pif-ack').checked=!!x.employee_signature;
+  var rcEl=document.getElementById('pif-return-condition');if(rcEl&&x.return_condition)rcEl.value=x.return_condition;
+  document.getElementById('pif-return-fields').style.display=x.returned?'block':'none';
+  ppePopulatePPESelects().then(function(){var sel=document.getElementById('pif-ppe-id');if(sel&&x.ppe_id)sel.value=x.ppe_id;ppeIssSelectItem();});
+  ppeIssShowForm();
+}
+
+async function ppeIssSave(){
+  var emp=document.getElementById('pif-emp-name')?.value?.trim();if(!emp){toast('Please enter employee name',false);return;}
+  var ppeSel=document.getElementById('pif-ppe-id');var ppeId=ppeSel?.value||null;
+  var ppeName=ppeSel?.selectedOptions[0]?.text?.replace(/^[^ ]+ /,'')||document.getElementById('pif-ppe-name')?.value||'PPE';
+  if(ppeId&&ppeSel?.selectedOptions[0]?.text?.includes('Select'))ppeName='PPE';
+  var g=function(id){var el=document.getElementById(id);return el?el.value||null:null;};
+  var ppe=ppeCatData.find(x=>x.id===ppeId);
+  var body={company_id:prof?.company_id,ppe_id:ppeId||null,ppe_name:ppe?.name||ppeName,ppe_category:ppe?.category||null,employee_name:emp,employee_id:g('pif-emp-id'),department:g('pif-dept'),job_title:g('pif-title'),issued_date:g('pif-issued-date'),issued_by:g('pif-issued-by'),quantity:parseInt(g('pif-qty'))||1,size:g('pif-size'),serial_number:g('pif-serial'),batch_number:g('pif-batch'),condition_on_issue:g('pif-condition')||'new',manufacture_date:g('pif-mfg-date')||null,expiry_date:g('pif-expiry-date')||null,expected_replacement_date:g('pif-replace-date')||null,work_order_ref:g('pif-wo-ref'),ra_ref:g('pif-ra-ref'),hazard_ref:g('pif-hazard'),employee_signature:document.getElementById('pif-ack')?.checked||false,acknowledgement_date:g('pif-ack-date')||null,returned:document.getElementById('pif-returned')?.checked||false,return_date:g('pif-return-date')||null,return_condition:g('pif-return-condition')||null,return_reason:g('pif-return-reason'),notes:g('pif-notes'),status:g('pif-status')||'active',updated_at:new Date().toISOString()};
+  try{
+    if(ppeIssEditId){await api('/ppe_issuance?id=eq.'+ppeIssEditId,{m:'PATCH',p:'return=minimal',b:body});toast('Updated!');}
+    else{
+      body.created_by=prof?.id;var res=await api('/ppe_issuance',{m:'POST',p:'return=representation',b:body});
+      if(res?.[0]?.id){var yr=new Date().getFullYear();var ref='ISS-'+yr+'-'+String(ppeIssData.length+1).padStart(3,'0');await api('/ppe_issuance?id=eq.'+res[0].id,{m:'PATCH',p:'return=minimal',b:{issuance_ref:ref}});toast('PPE issued! Ref: '+ref);
+        // Update catalogue stock
+        if(ppeId&&ppe){try{await api('/ppe_catalogue?id=eq.'+ppeId,{m:'PATCH',p:'return=minimal',b:{quantity_available:Math.max(0,(ppe.quantity_available||0)-1),quantity_issued:(ppe.quantity_issued||0)+1,updated_at:new Date().toISOString()}});}catch(ex){}}
+      }
+    }
+    ppeIssBack();
+  }catch(e){toast(e.message,false);}
+}
+async function ppeIssDelete(){if(!ppeIssEditId||!confirm('Delete?'))return;try{await api('/ppe_issuance?id=eq.'+ppeIssEditId,{m:'DELETE'});toast('Deleted!');ppeIssBack();}catch(e){toast(e.message,false);}}
+async function ppeIssDeleteRow(id){if(!confirm('Delete?'))return;try{await api('/ppe_issuance?id=eq.'+id,{m:'DELETE'});ppeIssData=ppeIssData.filter(x=>x.id!==id);toast('Deleted!');ppeLoadIssuance();}catch(e){toast(e.message,false);}}
+
+// ── INSPECTIONS ───────────────────────────────────────────────────────────────
+async function ppeLoadInspections(){
+  var el=document.getElementById('ppe-insp-list');if(!el)return;el.innerHTML='<div class="loading-msg">Loading...</div>';
+  var now=new Date();var d30=new Date();d30.setDate(d30.getDate()+30);
+  try{
+    var d=await api('/ppe_inspections?select=*'+cf()+'&order=inspection_date.desc');ppeInspData=d||[];
+    var setM=function(id,v){var e=document.getElementById(id);if(e)e.textContent=v;};
+    setM('ppe-insp-pass',(d||[]).filter(x=>x.overall_result==='pass').length);
+    setM('ppe-insp-fail',(d||[]).filter(x=>x.overall_result==='fail').length);
+    setM('ppe-insp-cond',(d||[]).filter(x=>x.overall_result==='condemn').length);
+    setM('ppe-insp-due',(d||[]).filter(x=>x.next_inspection_date&&new Date(x.next_inspection_date)<=d30).length);
+    if(!d||!d.length){el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)"><div style="font-size:40px;margin-bottom:12px">🔍</div><div style="font-weight:600;margin-bottom:8px">No PPE inspections recorded</div>'+(isMgr()?'<button class="btn btn-primary" onclick="ppeInspNew()"><i class="ti ti-plus"></i>New inspection</button>':'')+'</div>';return;}
+    var resCfg={pass:['#EAF3DE','#3B6D11','✓ Pass'],fail:['#FCEBEB','#A32D2D','✗ Fail'],condemn:['#4C0519','#fff','☠ Condemn'],monitor:['#FEF9EC','#854F0B','⚠ Monitor']};
+    var h='<div class="card" style="padding:0;overflow:hidden"><table style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr style="background:#1E3A5F;color:#fff"><th style="padding:8px 14px;text-align:left">Ref</th><th style="padding:8px">PPE Item</th><th style="padding:8px">Employee</th><th style="padding:8px">Inspector</th><th style="padding:8px">Date</th><th style="padding:8px">Result</th><th style="padding:8px">Action taken</th><th style="padding:8px">Next insp.</th><th style="padding:8px;width:60px"></th></tr></thead><tbody>';
+    d.forEach(function(x,i){
+      var bg=i%2===0?'#fff':'#f9fafb';var rc=resCfg[x.overall_result]||resCfg.pass;
+      var isDue=x.next_inspection_date&&new Date(x.next_inspection_date)<=d30;
+      h+='<tr style="border-bottom:1px solid #f0f0f0;background:'+bg+'">'
+        +'<td style="padding:8px 14px;font-family:monospace;font-size:11px;font-weight:700;color:#8B5CF6">'+escH(x.inspection_ref||'—')+'</td>'
+        +'<td style="padding:8px;font-weight:600">'+escH(x.ppe_name||'—')+'</td>'
+        +'<td style="padding:8px;font-size:11px">'+escH(x.employee_name||'—')+'</td>'
+        +'<td style="padding:8px;font-size:11px">'+escH(x.inspector||'—')+'</td>'
+        +'<td style="padding:8px;font-size:11px">'+(x.inspection_date?new Date(x.inspection_date).toLocaleDateString('en-GB'):'—')+'</td>'
+        +'<td style="padding:8px"><span style="background:'+rc[0]+';color:'+rc[1]+';padding:2px 8px;border-radius:99px;font-size:10px;font-weight:700">'+rc[2]+'</span></td>'
+        +'<td style="padding:8px;font-size:11px;text-transform:capitalize">'+escH((x.action_taken||'—').replace(/_/g,' '))+'</td>'
+        +'<td style="padding:8px;font-size:11px;font-weight:'+(isDue?'700':'400')+';color:'+(isDue?'var(--red)':'inherit')+'">'+(x.next_inspection_date?new Date(x.next_inspection_date).toLocaleDateString('en-GB')+(isDue?' ⚠':''):'—')+'</td>'
+        +'<td style="padding:8px"><div style="display:flex;gap:4px"><button class="btn btn-sm" data-id="'+x.id+'" onclick="ppeInspEdit(this.dataset.id)"><i class="ti ti-edit"></i></button>'+(isMgr()?'<button class="btn btn-sm" style="color:var(--red)" data-id="'+x.id+'" onclick="ppeInspDeleteRow(this.dataset.id)"><i class="ti ti-trash"></i></button>':'')+'</div></td></tr>';
+    });
+    h+='</tbody></table></div>';el.innerHTML=h;
+  }catch(e){el.innerHTML='<p style="padding:20px;color:red">'+e.message+'</p>';}
+}
+
+function ppeInspSelectItem(){
+  var sel=document.getElementById('piif-ppe-id');if(!sel)return;
+  var ppeId=sel.value;var ppe=ppeCatData.find(x=>x.id===ppeId);if(!ppe)return;
+  // Build category-specific checklist
+  var checklistItems=PPE_INSP_CHECKLISTS[ppe.category]||PPE_INSP_CHECKLISTS.other;
+  var el=document.getElementById('piif-checklist');if(!el)return;
+  el.innerHTML=checklistItems.map(function(item,i){
+    return '<div style="display:flex;align-items:flex-start;gap:10px;padding:8px 6px;border-bottom:1px solid #f5f5f5">'
+      +'<div style="display:flex;gap:8px;flex-shrink:0;margin-top:2px">'
+      +'<label style="cursor:pointer"><input type="radio" name="chk-'+i+'" value="pass" style="accent-color:var(--green)" checked> <span style="font-size:11px;color:#1D9E75;font-weight:600">Pass</span></label>'
+      +'<label style="cursor:pointer"><input type="radio" name="chk-'+i+'" value="fail" style="accent-color:var(--red)"> <span style="font-size:11px;color:var(--red);font-weight:600">Fail</span></label>'
+      +'<label style="cursor:pointer"><input type="radio" name="chk-'+i+'" value="na"> <span style="font-size:11px;color:var(--text2);font-weight:600">N/A</span></label>'
+      +'</div>'
+      +'<div style="flex:1"><div style="font-size:12px">'+escH(item)+'</div></div>'
+      +'</div>';
+  }).join('');
+  // Auto set next inspection date
+  var interval=ppe.inspection_interval_days||90;
+  var nd=document.getElementById('piif-next-date');if(nd){var d=new Date();d.setDate(d.getDate()+interval);nd.value=d.toISOString().slice(0,10);}
+}
+
+function ppeInspShowForm(){document.getElementById('ppe-view-inspections').style.display='none';document.getElementById('ppe-insp-form').style.display='block';}
+function ppeInspBack(){document.getElementById('ppe-insp-form').style.display='none';document.getElementById('ppe-view-inspections').style.display='block';document.querySelectorAll('[id^="ppe-tab-"]').forEach(t=>t.classList.remove('active'));document.getElementById('ppe-tab-inspections')?.classList.add('active');ppeLoadInspections();}
+
+async function ppeInspNew(){
+  ppeInspEditId=null;document.getElementById('ppe-insp-form-title').textContent='New PPE Inspection';document.getElementById('ppe-insp-form-ref').textContent='PPEINSP-AUTO';document.getElementById('ppe-insp-del-btn').style.display='none';
+  ['piif-emp-name','piif-dept','piif-inspector','piif-defects','piif-notes','piif-repl-ref'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
+  ['piif-date','piif-next-date'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
+  document.getElementById('piif-date').value=new Date().toISOString().slice(0,10);
+  document.getElementById('piif-action').value='cleared_for_use';document.getElementById('piif-result').value='pass';document.getElementById('piif-repl-issued').checked=false;
+  document.querySelectorAll('[name^="piif-result-radio"]').forEach(r=>{r.checked=r.value==='pass';});
+  document.getElementById('piif-checklist').innerHTML='<div style="color:var(--text2);font-size:12px;padding:10px">Select a PPE item above to load the inspection checklist</div>';
+  await ppePopulatePPESelects();document.getElementById('piif-ppe-id').value='';
+  ppeInspShowForm();
+}
+
+async function ppeInspEdit(id){
+  var x=ppeInspData.find(r=>r.id===id);if(!x)return;
+  ppeInspEditId=id;document.getElementById('ppe-insp-form-title').textContent='Edit Inspection';document.getElementById('ppe-insp-form-ref').textContent=x.inspection_ref||'—';document.getElementById('ppe-insp-del-btn').style.display=isMgr()?'inline-flex':'none';
+  var gf=function(fid,val){var el=document.getElementById(fid);if(el)el.value=val||'';};
+  gf('piif-emp-name',x.employee_name);gf('piif-dept',x.department);gf('piif-inspector',x.inspector);gf('piif-date',x.inspection_date);gf('piif-next-date',x.next_inspection_date);gf('piif-defects',x.defects_found);gf('piif-notes',x.notes);gf('piif-repl-ref',x.replacement_issuance_ref);
+  document.getElementById('piif-action').value=x.action_taken||'none';document.getElementById('piif-result').value=x.overall_result||'pass';document.getElementById('piif-repl-issued').checked=!!x.replacement_issued;
+  document.querySelectorAll('[name^="piif-result-radio"]').forEach(r=>{r.checked=r.value===(x.overall_result||'pass');});
+  await ppePopulatePPESelects();
+  if(x.ppe_id){document.getElementById('piif-ppe-id').value=x.ppe_id;ppeInspSelectItem();}
+  // Restore checklist state
+  if(x.checklist&&Array.isArray(x.checklist)){
+    x.checklist.forEach(function(item,i){
+      var radios=document.querySelectorAll('[name="chk-'+i+'"]');
+      radios.forEach(r=>{r.checked=r.value===(item.result||'pass');});
+    });
+  }
+  ppeInspShowForm();
+}
+
+async function ppeInspSave(){
+  var inspector=document.getElementById('piif-inspector')?.value?.trim();if(!inspector){toast('Please enter inspector name',false);return;}
+  var ppeSel=document.getElementById('piif-ppe-id');var ppeId=ppeSel?.value||null;
+  var ppeName=ppeSel?.selectedOptions[0]?.text?.replace(/^[^ ]+ /,'')||'PPE';
+  var g=function(id){var el=document.getElementById(id);return el?el.value||null:null;};
+  // Collect checklist
+  var checklistItems=document.querySelectorAll('#piif-checklist [type="radio"]:checked');
+  var checklistMap={};checklistItems.forEach(function(r){checklistMap[r.name]=r.value;});
+  var ppe=ppeCatData.find(x=>x.id===ppeId);
+  var chkItems=PPE_INSP_CHECKLISTS[ppe?.category||'other']||[];
+  var checklist=chkItems.map(function(item,i){return {item:item,result:checklistMap['chk-'+i]||'pass'};});
+  var body={company_id:prof?.company_id,ppe_id:ppeId||null,ppe_name:ppe?.name||ppeName,employee_name:g('piif-emp-name'),department:g('piif-dept'),inspector:inspector,inspection_date:g('piif-date'),next_inspection_date:g('piif-next-date')||null,checklist:checklist,overall_result:g('piif-result')||'pass',defects_found:g('piif-defects'),action_taken:g('piif-action')||'none',replacement_issued:document.getElementById('piif-repl-issued')?.checked||false,replacement_issuance_ref:g('piif-repl-ref'),notes:g('piif-notes')};
+  try{
+    if(ppeInspEditId){await api('/ppe_inspections?id=eq.'+ppeInspEditId,{m:'PATCH',p:'return=minimal',b:body});toast('Updated!');}
+    else{body.created_by=prof?.id;var res=await api('/ppe_inspections',{m:'POST',p:'return=representation',b:body});if(res?.[0]?.id){var yr=new Date().getFullYear();var ref='PPEINSP-'+yr+'-'+String(ppeInspData.length+1).padStart(3,'0');await api('/ppe_inspections?id=eq.'+res[0].id,{m:'PATCH',p:'return=minimal',b:{inspection_ref:ref}});toast('Inspection saved! Ref: '+ref);
+      // If condemned, trigger replacement request
+      if(body.overall_result==='condemn'&&body.employee_name){try{await api('/ppe_replacements',{m:'POST',p:'return=minimal',b:{company_id:prof?.company_id,ppe_id:ppeId,ppe_name:body.ppe_name,employee_name:body.employee_name,reason:'inspection_fail',reason_notes:'PPE condemned on inspection '+ref,requested_date:g('piif-date'),urgency:'urgent',status:'pending',created_by:prof?.id}});}catch(ex){}}
+    }}
+    ppeInspBack();
+  }catch(e){toast(e.message,false);}
+}
+async function ppeInspDelete(){if(!ppeInspEditId||!confirm('Delete?'))return;try{await api('/ppe_inspections?id=eq.'+ppeInspEditId,{m:'DELETE'});toast('Deleted!');ppeInspBack();}catch(e){toast(e.message,false);}}
+async function ppeInspDeleteRow(id){if(!confirm('Delete?'))return;try{await api('/ppe_inspections?id=eq.'+id,{m:'DELETE'});ppeInspData=ppeInspData.filter(x=>x.id!==id);toast('Deleted!');ppeLoadInspections();}catch(e){toast(e.message,false);}}
+
+// ── REPLACEMENTS ──────────────────────────────────────────────────────────────
+async function ppeLoadReplacements(){
+  var el=document.getElementById('ppe-rep-list');if(!el)return;el.innerHTML='<div class="loading-msg">Loading...</div>';
+  try{
+    var d=await api('/ppe_replacements?select=*'+cf()+'&order=created_at.desc');ppeRepData=d||[];
+    if(!d||!d.length){el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)"><div style="font-size:40px;margin-bottom:12px">🔄</div><div style="font-weight:600;margin-bottom:8px">No replacement requests</div>'+(isMgr()?'<button class="btn btn-primary" onclick="ppeRepNew()"><i class="ti ti-plus"></i>New request</button>':'')+'</div>';return;}
+    var urgCfg={immediate:['#FCEBEB','#A32D2D','🔴 Immediate'],urgent:['#FEF6E7','#C2410C','🟠 Urgent'],normal:['#FEF9EC','#854F0B','🟡 Normal'],planned:['#EAF3DE','#3B6D11','🟢 Planned']};
+    var stCfg={pending:['#FEF9EC','#854F0B'],approved:['#EFF6FF','#185FA5'],fulfilled:['#EAF3DE','#3B6D11'],rejected:['#f3f4f6','#6B7280'],cancelled:['#f3f4f6','#6B7280']};
+    var h='<div class="card" style="padding:0;overflow:hidden"><table style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr style="background:#B45309;color:#fff"><th style="padding:8px 14px;text-align:left">Ref</th><th style="padding:8px">PPE Item</th><th style="padding:8px">Employee</th><th style="padding:8px">Reason</th><th style="padding:8px">Urgency</th><th style="padding:8px">Date</th><th style="padding:8px">Status</th><th style="padding:8px;width:60px"></th></tr></thead><tbody>';
+    d.forEach(function(x,i){
+      var bg=i%2===0?'#fff':'#f9fafb';var uc=urgCfg[x.urgency]||urgCfg.normal;var sc=stCfg[x.status]||stCfg.pending;
+      h+='<tr style="border-bottom:1px solid #f0f0f0;background:'+bg+'">'
+        +'<td style="padding:8px 14px;font-family:monospace;font-size:11px;font-weight:700;color:#B45309">'+escH(x.replacement_ref||'—')+'</td>'
+        +'<td style="padding:8px;font-weight:600">'+escH(x.ppe_name||'—')+'</td>'
+        +'<td style="padding:8px"><div style="font-weight:600">'+escH(x.employee_name||'—')+'</div><div style="font-size:10px;color:var(--text2)">'+escH(x.department||'')+'</div></td>'
+        +'<td style="padding:8px;font-size:11px;text-transform:capitalize">'+escH((x.reason||'—').replace(/_/g,' '))+'</td>'
+        +'<td style="padding:8px"><span style="background:'+uc[0]+';color:'+uc[1]+';padding:2px 8px;border-radius:99px;font-size:10px;font-weight:700">'+uc[2]+'</span></td>'
+        +'<td style="padding:8px;font-size:11px">'+(x.requested_date?new Date(x.requested_date).toLocaleDateString('en-GB'):'—')+'</td>'
+        +'<td style="padding:8px"><span style="background:'+sc[0]+';color:'+sc[1]+';padding:2px 8px;border-radius:99px;font-size:10px;font-weight:700;text-transform:capitalize">'+x.status+'</span></td>'
+        +'<td style="padding:8px"><div style="display:flex;gap:4px"><button class="btn btn-sm" data-id="'+x.id+'" onclick="ppeRepEdit(this.dataset.id)"><i class="ti ti-edit"></i></button>'+(isMgr()?'<button class="btn btn-sm" style="color:var(--red)" data-id="'+x.id+'" onclick="ppeRepDeleteRow(this.dataset.id)"><i class="ti ti-trash"></i></button>':'')+'</div></td></tr>';
+    });
+    h+='</tbody></table></div>';el.innerHTML=h;
+  }catch(e){el.innerHTML='<p style="padding:20px;color:red">'+e.message+'</p>';}
+}
+
+function ppeRepShowForm(){document.getElementById('ppe-view-replacements').style.display='none';document.getElementById('ppe-rep-form').style.display='block';}
+function ppeRepBack(){document.getElementById('ppe-rep-form').style.display='none';document.getElementById('ppe-view-replacements').style.display='block';document.querySelectorAll('[id^="ppe-tab-"]').forEach(t=>t.classList.remove('active'));document.getElementById('ppe-tab-replacements')?.classList.add('active');ppeLoadReplacements();}
+
+async function ppeRepNew(){ppeRepEditId=null;document.getElementById('ppe-rep-form-title').textContent='New Replacement Request';document.getElementById('ppe-rep-form-ref').textContent='REP-AUTO';document.getElementById('ppe-rep-del-btn').style.display='none';['prf-emp-name','prf-dept','prf-old-condition','prf-notes','prf-approved-by','prf-new-iss-ref','prf-requested-by'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});['prf-date','prf-approved-date','prf-fulfilled-date'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});document.getElementById('prf-date').value=new Date().toISOString().slice(0,10);document.getElementById('prf-reason').value='expiry';document.getElementById('prf-urgency').value='normal';document.getElementById('prf-status').value='pending';document.querySelectorAll('[name="prf-status-radio"]').forEach(r=>{r.checked=r.value==='pending';});await ppePopulatePPESelects();document.getElementById('prf-ppe-id').value='';ppeRepShowForm();}
+function ppeRepEdit(id){var x=ppeRepData.find(r=>r.id===id);if(!x)return;ppeRepEditId=id;document.getElementById('ppe-rep-form-title').textContent='Edit Request';document.getElementById('ppe-rep-form-ref').textContent=x.replacement_ref||'—';document.getElementById('ppe-rep-del-btn').style.display=isMgr()?'inline-flex':'none';var gf=function(fid,val){var el=document.getElementById(fid);if(el)el.value=val||'';};gf('prf-emp-name',x.employee_name);gf('prf-dept',x.department);gf('prf-old-condition',x.old_item_condition);gf('prf-notes',x.reason_notes);gf('prf-approved-by',x.approved_by);gf('prf-new-iss-ref',x.new_issuance_ref);gf('prf-requested-by',x.requested_by);gf('prf-date',x.requested_date);gf('prf-approved-date',x.approved_date);gf('prf-fulfilled-date',x.fulfilled_date);document.getElementById('prf-reason').value=x.reason||'expiry';document.getElementById('prf-urgency').value=x.urgency||'normal';document.getElementById('prf-status').value=x.status||'pending';document.querySelectorAll('[name="prf-status-radio"]').forEach(r=>{r.checked=r.value===(x.status||'pending');});ppePopulatePPESelects().then(function(){if(x.ppe_id)document.getElementById('prf-ppe-id').value=x.ppe_id;});ppeRepShowForm();}
+async function ppeRepSave(){var emp=document.getElementById('prf-emp-name')?.value?.trim();if(!emp){toast('Please enter employee name',false);return;}var ppeSel=document.getElementById('prf-ppe-id');var ppeId=ppeSel?.value||null;var ppe=ppeCatData.find(x=>x.id===ppeId);var ppeName=ppe?.name||(ppeSel?.selectedOptions[0]?.text?.replace(/^[^ ]+ /,'')||'PPE');var g=function(id){var el=document.getElementById(id);return el?el.value||null:null;};var body={company_id:prof?.company_id,ppe_id:ppeId||null,ppe_name:ppeName,employee_name:emp,department:g('prf-dept'),reason:g('prf-reason')||'expiry',reason_notes:g('prf-notes'),old_item_condition:g('prf-old-condition'),requested_date:g('prf-date'),requested_by:g('prf-requested-by'),urgency:g('prf-urgency')||'normal',approved_by:g('prf-approved-by'),approved_date:g('prf-approved-date')||null,fulfilled_date:g('prf-fulfilled-date')||null,new_issuance_ref:g('prf-new-iss-ref'),status:g('prf-status')||'pending',updated_at:new Date().toISOString()};
+  try{if(ppeRepEditId){await api('/ppe_replacements?id=eq.'+ppeRepEditId,{m:'PATCH',p:'return=minimal',b:body});toast('Updated!');}else{body.created_by=prof?.id;var res=await api('/ppe_replacements',{m:'POST',p:'return=representation',b:body});if(res?.[0]?.id){var yr=new Date().getFullYear();var ref='REP-'+yr+'-'+String(ppeRepData.length+1).padStart(3,'0');await api('/ppe_replacements?id=eq.'+res[0].id,{m:'PATCH',p:'return=minimal',b:{replacement_ref:ref}});toast('Replacement request created! Ref: '+ref);}}ppeRepBack();}catch(e){toast(e.message,false);}
+}
+async function ppeRepDelete(){if(!ppeRepEditId||!confirm('Delete?'))return;try{await api('/ppe_replacements?id=eq.'+ppeRepEditId,{m:'DELETE'});toast('Deleted!');ppeRepBack();}catch(e){toast(e.message,false);}}
+async function ppeRepDeleteRow(id){if(!confirm('Delete?'))return;try{await api('/ppe_replacements?id=eq.'+id,{m:'DELETE'});ppeRepData=ppeRepData.filter(x=>x.id!==id);toast('Deleted!');ppeLoadReplacements();}catch(e){toast(e.message,false);}}
+
+// ── EXPIRY ALERTS ─────────────────────────────────────────────────────────────
+function ppeExpiryFilter(days,btn){
+  ppeExpiryDays=days;
+  document.querySelectorAll('[id^="ppe-exp-btn-"]').forEach(b=>{b.style.background='';b.style.color='';b.style.borderColor='';});
+  if(btn){btn.style.background='#DC2626';btn.style.color='#fff';btn.style.borderColor='#DC2626';}
+  ppeLoadExpiry();
+}
+
+async function ppeLoadExpiry(){
+  var el=document.getElementById('ppe-expiry-list');if(!el)return;el.innerHTML='<div class="loading-msg">Loading...</div>';
+  try{
+    var d=await api('/ppe_issuance?select=*'+cf()+'&order=expiry_date.asc');
+    var now=new Date();var cutoff=new Date();if(ppeExpiryDays>0)cutoff.setDate(cutoff.getDate()+ppeExpiryDays);
+    var filtered;
+    if(ppeExpiryDays===0){filtered=(d||[]).filter(x=>x.status==='active');}
+    else{filtered=(d||[]).filter(function(x){
+      var expDate=x.expiry_date?new Date(x.expiry_date):null;
+      var repDate=x.expected_replacement_date?new Date(x.expected_replacement_date):null;
+      return x.status==='active'&&((expDate&&expDate<=cutoff)||(repDate&&repDate<=cutoff));
+    });}
+    if(!filtered.length){el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)"><div style="font-size:40px;margin-bottom:12px">✅</div><div style="font-weight:600;margin-bottom:8px">No PPE expiring in this window</div><div style="font-size:13px;color:var(--text2)">All active PPE is within its service life</div></div>';return;}
+    var h='<div class="card" style="padding:0;overflow:hidden"><table style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr style="background:#7F1D1D;color:#fff"><th style="padding:8px 14px;text-align:left">Priority</th><th style="padding:8px">Ref</th><th style="padding:8px">PPE Item</th><th style="padding:8px">Employee</th><th style="padding:8px">Dept</th><th style="padding:8px">Issued</th><th style="padding:8px">Expiry date</th><th style="padding:8px">Replace by</th><th style="padding:8px">Action</th></tr></thead><tbody>';
+    filtered.forEach(function(x,i){
+      var bg=i%2===0?'#fff':'#f9fafb';
+      var expDate=x.expiry_date?new Date(x.expiry_date):null;var repDate=x.expected_replacement_date?new Date(x.expected_replacement_date):null;
+      var earliest=expDate&&repDate?new Date(Math.min(expDate,repDate)):expDate||repDate||new Date(9999,0,1);
+      var daysLeft=Math.ceil((earliest-now)/86400000);
+      var urgency=daysLeft<0?'EXPIRED':daysLeft<=7?'CRITICAL':daysLeft<=30?'URGENT':daysLeft<=60?'HIGH':'PLANNED';
+      var urgColor={EXPIRED:'#4C0519',CRITICAL:'#A32D2D',URGENT:'#C2410C',HIGH:'#854F0B',PLANNED:'#3B6D11'};
+      var urgBg={EXPIRED:'#4C0519',CRITICAL:'#FCEBEB',URGENT:'#FEF6E7',HIGH:'#FEF9EC',PLANNED:'#EAF3DE'};
+      var urgText={EXPIRED:'#fff',CRITICAL:'#A32D2D',URGENT:'#C2410C',HIGH:'#854F0B',PLANNED:'#3B6D11'};
+      h+='<tr style="border-bottom:1px solid #f0f0f0;background:'+bg+'">'
+        +'<td style="padding:8px 14px"><div style="background:'+urgBg[urgency]+';color:'+urgText[urgency]+';padding:3px 10px;border-radius:99px;font-size:10px;font-weight:700;text-align:center">'+urgency+'</div>'
+        +(daysLeft<0?'<div style="font-size:10px;color:#A32D2D;font-weight:700;text-align:center">'+Math.abs(daysLeft)+'d ago</div>':'<div style="font-size:10px;color:var(--text2);text-align:center">'+daysLeft+'d left</div>')
+        +'</td>'
+        +'<td style="padding:8px;font-family:monospace;font-size:11px;font-weight:700;color:#DC2626">'+escH(x.issuance_ref||'—')+'</td>'
+        +'<td style="padding:8px;font-weight:600">'+escH(x.ppe_name||'—')+'</td>'
+        +'<td style="padding:8px"><div style="font-weight:600">'+escH(x.employee_name||'—')+'</div><div style="font-size:10px;color:var(--text2)">'+escH(x.employee_id||'')+'</div></td>'
+        +'<td style="padding:8px;font-size:11px">'+escH(x.department||'—')+'</td>'
+        +'<td style="padding:8px;font-size:11px">'+(x.issued_date?new Date(x.issued_date).toLocaleDateString('en-GB'):'—')+'</td>'
+        +'<td style="padding:8px;font-size:11px;font-weight:700;color:'+( expDate&&expDate<=now?'#A32D2D':'inherit')+'">'+(expDate?expDate.toLocaleDateString('en-GB')+(expDate<=now?' EXPIRED':''):'—')+'</td>'
+        +'<td style="padding:8px;font-size:11px;font-weight:700;color:'+(repDate&&repDate<=now?'#C2410C':'inherit')+'">'+(repDate?repDate.toLocaleDateString('en-GB')+(repDate<=now?' DUE':''):'—')+'</td>'
+        +'<td style="padding:8px"><button class="btn btn-sm btn-primary" style="font-size:10px;padding:3px 8px" onclick="ppeQuickReplace(\''+x.id+'\',\''+escH2(x.employee_name)+'\',\''+escH2(x.ppe_name)+'\')"><i class="ti ti-refresh"></i>Replace</button></td>'
+        +'</tr>';
+    });
+    h+='</tbody></table></div>';el.innerHTML=h;
+  }catch(e){el.innerHTML='<p style="padding:20px;color:red">'+e.message+'</p>';}
+}
+
+async function ppeQuickReplace(issId,empName,ppeName){
+  // Pre-fill a replacement request and jump to the replacements tab
+  await ppePopulatePPESelects();
+  var iss=ppeIssData.find(x=>x.id===issId);
+  var tab=document.getElementById('ppe-tab-replacements');
+  ppeSwitchTab('replacements',tab);
+  setTimeout(function(){
+    ppeRepNew().then(function(){
+      document.getElementById('prf-emp-name').value=empName||'';
+      document.getElementById('prf-dept').value=iss?.department||'';
+      document.getElementById('prf-reason').value='expiry';
+      document.getElementById('prf-urgency').value='urgent';
+      if(iss?.ppe_id){document.getElementById('prf-ppe-id').value=iss.ppe_id;}
+      toast('Replacement request pre-filled for '+ppeName+' — '+empName+'. Review and save.');
+    });
+  },300);
+}
+
 async function loadNoise(){
 const el=document.getElementById('noise-list');
 if(!el)return;
@@ -10521,6 +11084,8 @@ function sopSaveToDocControl(){
 
 
 
+
+
 </script>
 </head>
 <body>
@@ -10532,6 +11097,7 @@ function sopSaveToDocControl(){
 <div class="nav-item" onclick="showPage('permit',this)"><i class="ti ti-key"></i>Permit to Work</div>
 <div class="nav-item" onclick="showPage('contractor',this)"><i class="ti ti-hard-hat"></i>Contractors</div><div class="nav-item" onclick="showPage('emergency',this)"><i class="ti ti-alert-square"></i>Emergency</div>
 <div class="nav-item" onclick="showPage('ohealth',this)"><i class="ti ti-stethoscope"></i>Occupational Health</div>
+<div class="nav-item" onclick="showPage('ppe',this)"><i class="ti ti-shield-check"></i>PPE</div>
 <div class="nav-item" onclick="showPage('esg',this)"><i class="ti ti-leaf"></i>Environmental / ESG</div>
 <div class="nav-item" onclick="showPage('noise',this)"><i class="ti ti-volume"></i>Noise Survey</div><div class="nav-item" id="nav-mtg" onclick="showPage('meetings',this)"><i class="ti ti-notes"></i>HSE Meetings</div><div class="nav-item" onclick="showPage('training',this)"><i class="ti ti-certificate"></i>Training</div><span class="nav-section">Management</span><div class="nav-item" onclick="showPage('actions',this)"><i class="ti ti-list-check"></i>Master Action Plan</div><div class="nav-item" onclick="showPage('legal',this)"><i class="ti ti-scale"></i>Legal Compliance</div>
 <div class="nav-item" onclick="showPage('sop',this)"><i class="ti ti-file-description"></i>SOP Generator</div>
@@ -14447,6 +15013,391 @@ Toolbox talk / safety briefing conducted before starting work
 </div>
 
 </div><!-- end page-ohealth -->
+
+<div id="page-ppe" class="page">
+<div class="page-header">
+<div><div class="page-title">PPE Management</div><div style="font-size:12px;color:var(--text2)">Catalogue · Issuance · Inspections · Replacements · Expiry tracking</div></div>
+<div style="display:flex;gap:8px" id="ppe-header-btns"></div>
+</div>
+
+<!-- Tabs -->
+<div style="display:flex;gap:0;margin-bottom:16px;border-bottom:2px solid var(--border);overflow-x:auto">
+<button class="mtg-tab active" id="ppe-tab-dash" onclick="ppeSwitchTab('dash',this)" style="white-space:nowrap">📊 Dashboard</button>
+<button class="mtg-tab" id="ppe-tab-catalogue" onclick="ppeSwitchTab('catalogue',this)" style="white-space:nowrap">📦 Catalogue</button>
+<button class="mtg-tab" id="ppe-tab-issuance" onclick="ppeSwitchTab('issuance',this)" style="white-space:nowrap">📋 Issuance</button>
+<button class="mtg-tab" id="ppe-tab-inspections" onclick="ppeSwitchTab('inspections',this)" style="white-space:nowrap">🔍 Inspections</button>
+<button class="mtg-tab" id="ppe-tab-replacements" onclick="ppeSwitchTab('replacements',this)" style="white-space:nowrap">🔄 Replacements</button>
+<button class="mtg-tab" id="ppe-tab-expiry" onclick="ppeSwitchTab('expiry',this)" style="white-space:nowrap">⏰ Expiry Alerts</button>
+</div>
+
+<!-- ── DASHBOARD ── -->
+<div id="ppe-view-dash">
+<div style="display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin-bottom:14px">
+<div class="card" style="padding:10px 12px;border-left:4px solid #185FA5"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">PPE Types</div><div style="font-size:22px;font-weight:800;color:#185FA5" id="ppe-m-types">—</div></div>
+<div class="card" style="padding:10px 12px;border-left:4px solid #1D9E75"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">Currently Issued</div><div style="font-size:22px;font-weight:800;color:#1D9E75" id="ppe-m-issued">—</div></div>
+<div class="card" style="padding:10px 12px;border-left:4px solid #E24B4A"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">Expired / Due</div><div style="font-size:22px;font-weight:800;color:#E24B4A" id="ppe-m-expired">—</div></div>
+<div class="card" style="padding:10px 12px;border-left:4px solid #EF9F27"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">Low Stock</div><div style="font-size:22px;font-weight:800;color:#EF9F27" id="ppe-m-lowstock">—</div></div>
+<div class="card" style="padding:10px 12px;border-left:4px solid #8B5CF6"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">Pending Replacement</div><div style="font-size:22px;font-weight:800;color:#8B5CF6" id="ppe-m-replace">—</div></div>
+<div class="card" style="padding:10px 12px;border-left:4px solid #6B7280"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">Inspections Due</div><div style="font-size:22px;font-weight:800;color:#6B7280" id="ppe-m-insp-due">—</div></div>
+</div>
+<!-- Alerts banner -->
+<div id="ppe-dash-alerts" style="margin-bottom:14px"></div>
+<!-- Category breakdown + Recent issuances -->
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px">
+<div class="card"><div class="card-title"><i class="ti ti-chart-bar"></i> Inventory by Category</div><div id="ppe-dash-inventory" style="font-size:13px"></div></div>
+<div class="card"><div class="card-title"><i class="ti ti-clock"></i> Expiring in 30 Days</div><div id="ppe-dash-expiry" style="font-size:13px"></div></div>
+</div>
+<div class="card"><div class="card-title"><i class="ti ti-activity"></i> Recent Issuances</div><div id="ppe-dash-recent" style="font-size:13px"></div></div>
+</div>
+
+<!-- ── CATALOGUE ── -->
+<div id="ppe-view-catalogue" style="display:none">
+<div class="card" style="margin-bottom:12px;padding:10px 14px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+<div><div class="card-title" style="margin:0">PPE Catalogue &amp; Inventory</div><div style="font-size:12px;color:var(--text2)">All PPE types with stock levels and specifications</div></div>
+<div style="display:flex;gap:8px">
+<select id="ppe-cat-filter" onchange="ppeLoadCatalogue()" style="padding:6px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px">
+<option value="">All categories</option>
+<option value="head">Head</option><option value="eye_face">Eye/Face</option>
+<option value="hearing">Hearing</option><option value="respiratory">Respiratory</option>
+<option value="hands">Hands</option><option value="feet">Feet</option>
+<option value="body">Body</option><option value="fall_protection">Fall protection</option>
+<option value="high_visibility">High visibility</option><option value="other">Other</option>
+</select>
+<button class="btn btn-primary" id="ppe-cat-add-btn" style="display:none" onclick="ppeCatNew()"><i class="ti ti-plus"></i>Add PPE type</button>
+</div>
+</div>
+<div id="ppe-cat-list"></div>
+</div>
+
+<!-- ── ISSUANCE ── -->
+<div id="ppe-view-issuance" style="display:none">
+<div class="card" style="margin-bottom:12px;padding:10px 14px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+<div><div class="card-title" style="margin:0">PPE Issuance Register</div><div style="font-size:12px;color:var(--text2)">Track who has what PPE issued — with expiry and replacement dates</div></div>
+<div style="display:flex;gap:8px">
+<input type="text" id="ppe-iss-search" placeholder="Search employee, PPE..." oninput="ppeLoadIssuance()" style="padding:6px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px;width:180px"/>
+<select id="ppe-iss-filter-status" onchange="ppeLoadIssuance()" style="padding:6px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px">
+<option value="active">Active only</option><option value="">All</option>
+<option value="expired">Expired</option><option value="returned">Returned</option>
+</select>
+<button class="btn btn-primary" id="ppe-iss-add-btn" style="display:none" onclick="ppeIssNew()"><i class="ti ti-plus"></i>Issue PPE</button>
+</div>
+</div>
+<div id="ppe-iss-list"></div>
+</div>
+
+<!-- ── INSPECTIONS ── -->
+<div id="ppe-view-inspections" style="display:none">
+<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px">
+<div class="card" style="padding:10px 12px;border-left:4px solid #1D9E75"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">Pass</div><div style="font-size:22px;font-weight:800;color:#1D9E75" id="ppe-insp-pass">—</div></div>
+<div class="card" style="padding:10px 12px;border-left:4px solid #E24B4A"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">Fail</div><div style="font-size:22px;font-weight:800;color:#E24B4A" id="ppe-insp-fail">—</div></div>
+<div class="card" style="padding:10px 12px;border-left:4px solid #DC2626"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">Condemned</div><div style="font-size:22px;font-weight:800;color:#DC2626" id="ppe-insp-cond">—</div></div>
+<div class="card" style="padding:10px 12px;border-left:4px solid #EF9F27"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">Due Soon</div><div style="font-size:22px;font-weight:800;color:#EF9F27" id="ppe-insp-due">—</div></div>
+</div>
+<div class="card" style="margin-bottom:12px;padding:10px 14px;display:flex;justify-content:space-between;align-items:center">
+<div class="card-title" style="margin:0">PPE Inspection Records</div>
+<button class="btn btn-primary" id="ppe-insp-add-btn" style="display:none" onclick="ppeInspNew()"><i class="ti ti-plus"></i>New inspection</button>
+</div>
+<div id="ppe-insp-list"></div>
+</div>
+
+<!-- ── REPLACEMENTS ── -->
+<div id="ppe-view-replacements" style="display:none">
+<div class="card" style="margin-bottom:12px;padding:10px 14px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+<div><div class="card-title" style="margin:0">Replacement Requests</div><div style="font-size:12px;color:var(--text2)">Track PPE replacement requests from damage, expiry or inspection failures</div></div>
+<button class="btn btn-primary" id="ppe-rep-add-btn" style="display:none" onclick="ppeRepNew()"><i class="ti ti-plus"></i>New request</button>
+</div>
+<div id="ppe-rep-list"></div>
+</div>
+
+<!-- ── EXPIRY ALERTS ── -->
+<div id="ppe-view-expiry" style="display:none">
+<div class="card" style="margin-bottom:12px;padding:12px 16px;background:linear-gradient(135deg,#7F1D1D,#DC2626);color:#fff">
+<div style="font-size:14px;font-weight:700;margin-bottom:4px"><i class="ti ti-alert-triangle"></i> Expiry &amp; Replacement Reminders</div>
+<div style="font-size:12px;opacity:.85">PPE items that have expired or are due for replacement within 90 days. Act before workers use expired PPE.</div>
+</div>
+<div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap">
+<button class="btn active" id="ppe-exp-btn-30" onclick="ppeExpiryFilter(30,this)" style="background:#DC2626;color:#fff;border-color:#DC2626">🔴 Expired / Due &lt;30d</button>
+<button class="btn" id="ppe-exp-btn-60" onclick="ppeExpiryFilter(60,this)">🟠 Due &lt;60d</button>
+<button class="btn" id="ppe-exp-btn-90" onclick="ppeExpiryFilter(90,this)">🟡 Due &lt;90d</button>
+<button class="btn" id="ppe-exp-btn-all" onclick="ppeExpiryFilter(0,this)">📋 All active</button>
+</div>
+<div id="ppe-expiry-list"></div>
+</div>
+
+<!-- ═══════ FORMS ═══════ -->
+
+<!-- Catalogue form -->
+<div id="ppe-cat-form" style="display:none">
+<div class="card" style="margin-bottom:14px;padding:0;overflow:hidden">
+<div style="padding:14px 20px;background:linear-gradient(135deg,#1a3a5c,#185FA5);color:#fff;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+<div><div style="font-size:11px;font-weight:600;text-transform:uppercase;opacity:.8;margin-bottom:4px">PPE Catalogue</div>
+<div style="font-size:17px;font-weight:800" id="ppe-cat-form-title">New PPE Type</div></div>
+<div style="display:flex;gap:8px">
+<button class="btn" style="background:rgba(255,255,255,.2);color:#fff;border-color:rgba(255,255,255,.3)" onclick="ppeCatBack()"><i class="ti ti-arrow-left"></i>Back</button>
+<button id="ppe-cat-del-btn" class="btn" style="display:none;background:rgba(220,38,38,.3);color:#fff;border-color:rgba(220,38,38,.5)" onclick="ppeCatDelete()"><i class="ti ti-trash"></i></button>
+<button class="btn" style="background:#1D9E75;color:#fff;border-color:#1D9E75" onclick="ppeCatSave()"><i class="ti ti-device-floppy"></i>Save</button>
+</div>
+</div>
+</div>
+<div style="display:grid;grid-template-columns:2fr 1fr;gap:14px">
+<div>
+<div class="card" style="margin-bottom:14px"><div class="card-title">PPE Details</div>
+<div class="form-row">
+<div class="form-group"><label class="form-label">PPE name</label><input type="text" id="pcf-name" placeholder="e.g. Safety Helmet Type 1"/></div>
+<div class="form-group"><label class="form-label">Category</label>
+<select id="pcf-category">
+<option value="head">⛑️ Head protection</option><option value="eye_face">👓 Eye/Face protection</option>
+<option value="hearing">🎧 Hearing protection</option><option value="respiratory">😷 Respiratory protection</option>
+<option value="hands">🧤 Hand protection</option><option value="feet">👢 Foot protection</option>
+<option value="body">🦺 Body protection</option><option value="fall_protection">🪝 Fall protection</option>
+<option value="high_visibility">🟡 High visibility</option><option value="other">📦 Other</option>
+</select></div>
+<div class="form-group"><label class="form-label">Sub-category / Type</label><input type="text" id="pcf-subcat" placeholder="e.g. Hard hat, Safety glasses..."/></div>
+</div>
+<div class="form-row">
+<div class="form-group"><label class="form-label">Brand</label><input type="text" id="pcf-brand"/></div>
+<div class="form-group"><label class="form-label">Model / Part no.</label><input type="text" id="pcf-model"/></div>
+<div class="form-group"><label class="form-label">Standard / Certification</label><input type="text" id="pcf-standard" placeholder="e.g. EN 397, ISO 20345, ANSI Z89.1"/></div>
+<div class="form-group"><label class="form-label">Protection level</label><input type="text" id="pcf-protection" placeholder="e.g. Class 3, FFP2, S1P"/></div>
+</div>
+<div class="form-group"><label class="form-label">Linked hazard types (comma separated)</label><input type="text" id="pcf-hazards" placeholder="e.g. falling objects, noise, chemical splash, height..."/></div>
+<div class="form-group"><label class="form-label">Notes / Description</label><textarea id="pcf-notes" style="min-height:50px"></textarea></div>
+</div>
+<div class="card" style="margin-bottom:14px"><div class="card-title">Lifecycle</div>
+<div style="display:flex;align-items:center;gap:8px;margin-bottom:12px"><input type="checkbox" id="pcf-has-expiry" style="accent-color:var(--green)"/><label for="pcf-has-expiry" style="font-size:13px;font-weight:600;cursor:pointer">This PPE has an expiry date</label></div>
+<div class="form-row">
+<div class="form-group"><label class="form-label">Service life (months)</label><input type="number" id="pcf-service-life" min="1" max="240" placeholder="e.g. 24 for 2 years"/></div>
+<div class="form-group"><label class="form-label">Inspection interval (days)</label><input type="number" id="pcf-insp-interval" min="1" max="365" value="90" placeholder="90"/></div>
+</div>
+</div>
+</div>
+<div>
+<div class="card" style="margin-bottom:14px;border:2px solid #185FA5"><div class="card-title" style="color:#185FA5">Inventory</div>
+<div class="form-row">
+<div class="form-group"><label class="form-label">Total quantity</label><input type="number" id="pcf-qty-total" min="0" value="0"/></div>
+<div class="form-group"><label class="form-label">Available stock</label><input type="number" id="pcf-qty-avail" min="0" value="0"/></div>
+</div>
+<div class="form-row">
+<div class="form-group"><label class="form-label">Reorder level</label><input type="number" id="pcf-reorder" min="0" value="5"/></div>
+<div class="form-group"><label class="form-label">Unit cost (Rs)</label><input type="number" id="pcf-cost" step="0.01" min="0"/></div>
+</div>
+<div class="form-group"><label class="form-label">Storage location</label><input type="text" id="pcf-location" placeholder="e.g. Store room A, Shelf 3"/></div>
+<div class="form-group"><label class="form-label">Supplier</label><input type="text" id="pcf-supplier"/></div>
+</div>
+<div class="card"><div class="card-title">Status</div>
+<div class="form-group"><label class="form-label">Status</label><select id="pcf-status"><option value="active">Active</option><option value="discontinued">Discontinued</option><option value="out_of_stock">Out of stock</option></select></div>
+</div>
+</div>
+</div>
+</div>
+
+<!-- Issuance form -->
+<div id="ppe-iss-form" style="display:none">
+<div class="card" style="margin-bottom:14px;padding:0;overflow:hidden">
+<div style="padding:14px 20px;background:linear-gradient(135deg,#064E3B,#1D9E75);color:#fff;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+<div>
+<div style="font-size:11px;font-weight:600;text-transform:uppercase;opacity:.8;margin-bottom:4px">PPE Issuance</div>
+<div style="font-size:17px;font-weight:800" id="ppe-iss-form-title">Issue PPE</div>
+<div style="font-family:monospace;font-size:12px;color:#a7f3d0;margin-top:3px" id="ppe-iss-form-ref">ISS-AUTO</div>
+</div>
+<div style="display:flex;gap:8px">
+<button class="btn" style="background:rgba(255,255,255,.2);color:#fff;border-color:rgba(255,255,255,.3)" onclick="ppeIssBack()"><i class="ti ti-arrow-left"></i>Back</button>
+<button id="ppe-iss-del-btn" class="btn" style="display:none;background:rgba(0,0,0,.3);color:#fff;border-color:rgba(255,255,255,.3)" onclick="ppeIssDelete()"><i class="ti ti-trash"></i></button>
+<button class="btn" style="background:#fff;color:#1D9E75;font-weight:700" onclick="ppeIssSave()"><i class="ti ti-device-floppy"></i>Save issuance</button>
+</div>
+</div>
+</div>
+<div style="display:grid;grid-template-columns:2fr 1fr;gap:14px">
+<div>
+<div class="card" style="margin-bottom:14px"><div class="card-title">PPE &amp; Recipient</div>
+<div class="form-row">
+<div class="form-group"><label class="form-label">PPE item</label><select id="pif-ppe-id" onchange="ppeIssSelectItem()"><option value="">Select PPE from catalogue...</option></select></div>
+<div class="form-group" id="pif-ppe-name-group" style="display:none"><label class="form-label">PPE name (manual)</label><input type="text" id="pif-ppe-name"/></div>
+</div>
+<div id="pif-ppe-info" style="margin-bottom:12px"></div>
+<div class="form-row">
+<div class="form-group"><label class="form-label">Employee name</label><input type="text" id="pif-emp-name" placeholder="Who is receiving this PPE?"/></div>
+<div class="form-group"><label class="form-label">Employee ID</label><input type="text" id="pif-emp-id"/></div>
+<div class="form-group"><label class="form-label">Department</label><input type="text" id="pif-dept"/></div>
+<div class="form-group"><label class="form-label">Job title</label><input type="text" id="pif-title"/></div>
+</div>
+</div>
+<div class="card" style="margin-bottom:14px"><div class="card-title">Issuance Details</div>
+<div class="form-row">
+<div class="form-group"><label class="form-label">Issued date</label><input type="date" id="pif-issued-date"/></div>
+<div class="form-group"><label class="form-label">Issued by</label><input type="text" id="pif-issued-by"/></div>
+<div class="form-group"><label class="form-label">Quantity</label><input type="number" id="pif-qty" value="1" min="1"/></div>
+<div class="form-group"><label class="form-label">Size</label><input type="text" id="pif-size" placeholder="S / M / L / XL / 42 etc."/></div>
+</div>
+<div class="form-row">
+<div class="form-group"><label class="form-label">Serial / Tag number</label><input type="text" id="pif-serial" style="font-family:monospace"/></div>
+<div class="form-group"><label class="form-label">Batch number</label><input type="text" id="pif-batch" style="font-family:monospace"/></div>
+<div class="form-group"><label class="form-label">Condition on issue</label><select id="pif-condition"><option value="new">New</option><option value="good">Good</option><option value="fair">Fair</option></select></div>
+</div>
+</div>
+<div class="card" style="margin-bottom:14px"><div class="card-title">Linked References</div>
+<div class="form-row">
+<div class="form-group"><label class="form-label">Work order ref</label><input type="text" id="pif-wo-ref" style="font-family:monospace"/></div>
+<div class="form-group"><label class="form-label">Risk Assessment ref</label><input type="text" id="pif-ra-ref" style="font-family:monospace"/></div>
+<div class="form-group"><label class="form-label">Hazard type</label><input type="text" id="pif-hazard" placeholder="e.g. noise, height, chemical..."/></div>
+</div></div>
+<div class="card"><div class="card-title">Return Details (fill on return)</div>
+<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px"><input type="checkbox" id="pif-returned" style="accent-color:var(--green)" onchange="ppeIssToggleReturn()"/><label for="pif-returned" style="font-size:13px;font-weight:600;cursor:pointer">PPE returned</label></div>
+<div id="pif-return-fields" style="display:none">
+<div class="form-row">
+<div class="form-group"><label class="form-label">Return date</label><input type="date" id="pif-return-date"/></div>
+<div class="form-group"><label class="form-label">Return condition</label><select id="pif-return-condition"><option value="good">Good</option><option value="damaged">Damaged</option><option value="condemned">Condemned</option><option value="lost">Lost</option></select></div>
+</div>
+<div class="form-group"><label class="form-label">Return reason / notes</label><input type="text" id="pif-return-reason"/></div>
+</div></div>
+</div>
+<div>
+<div class="card" style="margin-bottom:14px;border:2px solid #1D9E75"><div class="card-title" style="color:#1D9E75">Dates &amp; Lifecycle</div>
+<div class="form-group"><label class="form-label">Manufacture date</label><input type="date" id="pif-mfg-date"/></div>
+<div class="form-group"><label class="form-label">Expiry date</label><input type="date" id="pif-expiry-date"/></div>
+<div class="form-group" style="background:#EFF6FF;border-radius:8px;padding:10px"><label class="form-label" style="color:#185FA5">Expected replacement date</label><input type="date" id="pif-replace-date" style="font-weight:700"/><div style="font-size:11px;color:#185FA5;margin-top:4px" id="pif-replace-hint">Based on service life</div></div>
+<div class="form-group" style="margin-top:10px"><label class="form-label">Status</label><select id="pif-status"><option value="active">Active — in use</option><option value="returned">Returned</option><option value="expired">Expired</option><option value="lost">Lost</option><option value="condemned">Condemned</option></select></div></div>
+<div class="card"><div class="card-title">Acknowledgement</div>
+<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px"><input type="checkbox" id="pif-ack" style="accent-color:var(--green)"/><label for="pif-ack" style="font-size:13px;font-weight:600;cursor:pointer">Employee acknowledged receipt</label></div>
+<div class="form-group"><label class="form-label">Acknowledgement date</label><input type="date" id="pif-ack-date"/></div>
+<div class="form-group"><label class="form-label">Notes</label><textarea id="pif-notes" style="min-height:50px"></textarea></div></div>
+</div>
+</div>
+</div>
+
+<!-- Inspection form -->
+<div id="ppe-insp-form" style="display:none">
+<div class="card" style="margin-bottom:14px;padding:0;overflow:hidden">
+<div style="padding:14px 20px;background:linear-gradient(135deg,#1E3A5F,#8B5CF6);color:#fff;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+<div>
+<div style="font-size:11px;font-weight:600;text-transform:uppercase;opacity:.8;margin-bottom:4px">PPE Inspection</div>
+<div style="font-size:17px;font-weight:800" id="ppe-insp-form-title">New Inspection</div>
+<div style="font-family:monospace;font-size:12px;color:#ddd6fe;margin-top:3px" id="ppe-insp-form-ref">PPEINSP-AUTO</div>
+</div>
+<div style="display:flex;gap:8px">
+<button class="btn" style="background:rgba(255,255,255,.2);color:#fff;border-color:rgba(255,255,255,.3)" onclick="ppeInspBack()"><i class="ti ti-arrow-left"></i>Back</button>
+<button id="ppe-insp-del-btn" class="btn" style="display:none;background:rgba(0,0,0,.3);color:#fff;border-color:rgba(255,255,255,.3)" onclick="ppeInspDelete()"><i class="ti ti-trash"></i></button>
+<button class="btn" style="background:#1D9E75;color:#fff;border-color:#1D9E75" onclick="ppeInspSave()"><i class="ti ti-device-floppy"></i>Save</button>
+</div>
+</div>
+</div>
+<div class="card" style="margin-bottom:14px">
+<div class="form-row">
+<div class="form-group"><label class="form-label">PPE item</label><select id="piif-ppe-id" onchange="ppeInspSelectItem()"><option value="">Select PPE...</option></select></div>
+<div class="form-group"><label class="form-label">Employee name</label><input type="text" id="piif-emp-name"/></div>
+<div class="form-group"><label class="form-label">Department</label><input type="text" id="piif-dept"/></div>
+<div class="form-group"><label class="form-label">Inspector</label><input type="text" id="piif-inspector"/></div>
+<div class="form-group"><label class="form-label">Inspection date</label><input type="date" id="piif-date"/></div>
+<div class="form-group"><label class="form-label">Next inspection date</label><input type="date" id="piif-next-date"/></div>
+</div>
+</div>
+<!-- Dynamic checklist -->
+<div class="card" style="margin-bottom:14px;padding:0;overflow:hidden">
+<div style="padding:10px 16px;background:linear-gradient(135deg,#1E3A5F,#8B5CF6);color:#fff;font-weight:700">Inspection Checklist</div>
+<div id="piif-checklist" style="padding:10px"></div>
+</div>
+<div style="display:grid;grid-template-columns:2fr 1fr;gap:14px">
+<div>
+<div class="card" style="margin-bottom:14px"><div class="card-title">Findings</div>
+<div class="form-group"><label class="form-label">Defects / issues found</label><textarea id="piif-defects" style="min-height:70px" placeholder="Describe any defects, damage or issues found..."></textarea></div>
+<div class="form-group"><label class="form-label">Action taken</label>
+<select id="piif-action">
+<option value="cleared_for_use">✓ Cleared for use</option>
+<option value="repaired">🔧 Repaired and returned</option>
+<option value="condemned_replaced">✗ Condemned — replacement issued</option>
+<option value="returned_for_maintenance">⚙️ Returned for maintenance</option>
+<option value="none">— No action required</option>
+</select></div>
+<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px"><input type="checkbox" id="piif-repl-issued" style="accent-color:var(--green)"/><label for="piif-repl-issued" style="font-size:13px;font-weight:600;cursor:pointer">Replacement issued</label></div>
+<div class="form-group"><label class="form-label">Replacement issuance ref</label><input type="text" id="piif-repl-ref" style="font-family:monospace"/></div>
+<div class="form-group"><label class="form-label">Notes</label><textarea id="piif-notes" style="min-height:50px"></textarea></div>
+</div>
+</div>
+<div>
+<div class="card" style="border:2px solid #8B5CF6"><div class="card-title" style="color:#8B5CF6">Overall Result</div>
+<div style="display:flex;flex-direction:column;gap:8px">
+<label style="display:flex;align-items:center;gap:8px;padding:10px;border-radius:8px;cursor:pointer;background:#f0fdf4;border:1px solid #bbf7d0" onclick="document.getElementById('piif-result').value='pass'"><input type="radio" name="piif-result-radio" value="pass" style="accent-color:var(--green)" checked><span style="font-weight:700;color:#166534">✓ Pass — cleared for use</span></label>
+<label style="display:flex;align-items:center;gap:8px;padding:10px;border-radius:8px;cursor:pointer;background:#FFF7ED;border:1px solid #fed7aa" onclick="document.getElementById('piif-result').value='monitor'"><input type="radio" name="piif-result-radio" value="monitor" style="accent-color:#C2410C"><span style="font-weight:700;color:#C2410C">⚠ Monitor — recheck needed</span></label>
+<label style="display:flex;align-items:center;gap:8px;padding:10px;border-radius:8px;cursor:pointer;background:#FEF2F2;border:1px solid #fecaca" onclick="document.getElementById('piif-result').value='fail'"><input type="radio" name="piif-result-radio" value="fail" style="accent-color:var(--red)"><span style="font-weight:700;color:var(--red)">✗ Fail — remove from service</span></label>
+<label style="display:flex;align-items:center;gap:8px;padding:10px;border-radius:8px;cursor:pointer;background:#FCEBEB;border:1px solid #fca5a5" onclick="document.getElementById('piif-result').value='condemn'"><input type="radio" name="piif-result-radio" value="condemn" style="accent-color:#7F1D1D"><span style="font-weight:700;color:#7F1D1D">☠ Condemn — destroy &amp; replace</span></label>
+</div>
+<input type="hidden" id="piif-result" value="pass"/>
+</div>
+</div>
+</div>
+</div>
+
+<!-- Replacement form -->
+<div id="ppe-rep-form" style="display:none">
+<div class="card" style="margin-bottom:14px;padding:0;overflow:hidden">
+<div style="padding:14px 20px;background:linear-gradient(135deg,#1a3a5c,#B45309);color:#fff;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+<div>
+<div style="font-size:11px;font-weight:600;text-transform:uppercase;opacity:.8;margin-bottom:4px">Replacement Request</div>
+<div style="font-size:17px;font-weight:800" id="ppe-rep-form-title">New Request</div>
+<div style="font-family:monospace;font-size:12px;color:#fef3c7;margin-top:3px" id="ppe-rep-form-ref">REP-AUTO</div>
+</div>
+<div style="display:flex;gap:8px">
+<button class="btn" style="background:rgba(255,255,255,.2);color:#fff;border-color:rgba(255,255,255,.3)" onclick="ppeRepBack()"><i class="ti ti-arrow-left"></i>Back</button>
+<button id="ppe-rep-del-btn" class="btn" style="display:none;background:rgba(0,0,0,.3);color:#fff;border-color:rgba(255,255,255,.3)" onclick="ppeRepDelete()"><i class="ti ti-trash"></i></button>
+<button class="btn" style="background:#1D9E75;color:#fff;border-color:#1D9E75" onclick="ppeRepSave()"><i class="ti ti-device-floppy"></i>Save request</button>
+</div>
+</div>
+</div>
+<div style="display:grid;grid-template-columns:2fr 1fr;gap:14px">
+<div>
+<div class="card" style="margin-bottom:14px"><div class="card-title">Request Details</div>
+<div class="form-row">
+<div class="form-group"><label class="form-label">PPE item</label><select id="prf-ppe-id"><option value="">Select PPE...</option></select></div>
+<div class="form-group"><label class="form-label">Employee name</label><input type="text" id="prf-emp-name"/></div>
+<div class="form-group"><label class="form-label">Department</label><input type="text" id="prf-dept"/></div>
+</div>
+<div class="form-row">
+<div class="form-group"><label class="form-label">Replacement reason</label>
+<select id="prf-reason">
+<option value="expiry">Expiry / end of service life</option>
+<option value="damage">Physical damage</option>
+<option value="loss">Loss / theft</option>
+<option value="wear">Normal wear and tear</option>
+<option value="inspection_fail">Failed inspection</option>
+<option value="size_change">Size change required</option>
+<option value="other">Other</option>
+</select></div>
+<div class="form-group"><label class="form-label">Urgency</label>
+<select id="prf-urgency"><option value="immediate">🔴 Immediate</option><option value="urgent">🟠 Urgent</option><option value="normal" selected>🟡 Normal</option><option value="planned">🟢 Planned</option></select></div>
+<div class="form-group"><label class="form-label">Date requested</label><input type="date" id="prf-date"/></div>
+<div class="form-group"><label class="form-label">Requested by</label><input type="text" id="prf-requested-by"/></div>
+</div>
+<div class="form-row">
+<div class="form-group"><label class="form-label">Old item condition</label><input type="text" id="prf-old-condition" placeholder="Describe current state of the PPE..."/></div>
+</div>
+<div class="form-group"><label class="form-label">Reason notes</label><textarea id="prf-notes" style="min-height:60px" placeholder="Additional details about why replacement is needed..."></textarea></div>
+</div>
+<div class="card"><div class="card-title">Approval &amp; Fulfilment</div>
+<div class="form-row">
+<div class="form-group"><label class="form-label">Approved by</label><input type="text" id="prf-approved-by"/></div>
+<div class="form-group"><label class="form-label">Approved date</label><input type="date" id="prf-approved-date"/></div>
+</div>
+<div class="form-row">
+<div class="form-group"><label class="form-label">Fulfilled date</label><input type="date" id="prf-fulfilled-date"/></div>
+<div class="form-group"><label class="form-label">New issuance ref</label><input type="text" id="prf-new-iss-ref" style="font-family:monospace"/></div>
+</div>
+</div>
+</div>
+<div>
+<div class="card" style="border:2px solid #B45309"><div class="card-title" style="color:#B45309">Status</div>
+<div style="display:flex;flex-direction:column;gap:8px">
+<label style="display:flex;align-items:center;gap:8px;padding:10px;border-radius:8px;cursor:pointer;background:#FFFBEB;border:1px solid #fcd34d" onclick="document.getElementById('prf-status').value='pending'"><input type="radio" name="prf-status-radio" value="pending" style="accent-color:#EF9F27" checked><span style="font-weight:700;color:#854F0B">⏳ Pending approval</span></label>
+<label style="display:flex;align-items:center;gap:8px;padding:10px;border-radius:8px;cursor:pointer;background:#EFF6FF;border:1px solid #bfdbfe" onclick="document.getElementById('prf-status').value='approved'"><input type="radio" name="prf-status-radio" value="approved" style="accent-color:#185FA5"><span style="font-weight:700;color:#185FA5">✓ Approved</span></label>
+<label style="display:flex;align-items:center;gap:8px;padding:10px;border-radius:8px;cursor:pointer;background:#f0fdf4;border:1px solid #bbf7d0" onclick="document.getElementById('prf-status').value='fulfilled'"><input type="radio" name="prf-status-radio" value="fulfilled" style="accent-color:var(--green)"><span style="font-weight:700;color:#166534">✓✓ Fulfilled</span></label>
+<label style="display:flex;align-items:center;gap:8px;padding:10px;border-radius:8px;cursor:pointer;background:#FEF2F2;border:1px solid #fecaca" onclick="document.getElementById('prf-status').value='rejected'"><input type="radio" name="prf-status-radio" value="rejected" style="accent-color:var(--red)"><span style="font-weight:700;color:var(--red)">✗ Rejected</span></label>
+</div>
+<input type="hidden" id="prf-status" value="pending"/>
+</div>
+</div>
+</div>
+</div>
+
+</div><!-- end page-ppe -->
 
 <div id="page-noise" class="page">
 <div class="page-header"><div class="page-title">Noise Survey</div><button class="btn btn-primary" onclick="toggleForm('noise-form')"><i class="ti ti-plus"></i>New survey</button></div><div class="card" id="noise-form" style="display:none"><div class="card-title">New noise survey</div><div class="form-row"><div class="form-group"><label class="form-label">Survey type</label><select id="nf-type"><option value="occupational">Occupational</option><option value="environmental">Environmental</option></select></div><div class="form-group"><label class="form-label">Site</label><input type="text" id="nf-site"/></div></div><div class="form-row"><div class="form-group"><label class="form-label">Survey date</label><input type="date" id="nf-date"/></div><div class="form-group"><label class="form-label">Conducted by</label><select id="nf-by"><option value="">Select person...</option></select></div></div><div class="form-row"><div class="form-group"><label class="form-label">Instrument used</label><input type="text" id="nf-instrument"/></div><div class="form-group"><label class="form-label">Calibration date</label><input type="date" id="nf-cal"/></div></div><div class="form-group"><label class="form-label">Weather / conditions</label><input type="text" id="nf-weather"/></div><div class="form-group"><label class="form-label">Notes</label><textarea id="nf-notes"></textarea></div><div style="display:flex;gap:8px"><button class="btn btn-primary" onclick="saveNoise()"><i class="ti ti-device-floppy"></i>Save</button><button class="btn" onclick="toggleForm('noise-form')">Cancel</button></div></div><div class="card"><div class="card-title">Noise surveys</div><div id="noise-list"><div class="loading-msg">Loading...</div></div></div></div>
