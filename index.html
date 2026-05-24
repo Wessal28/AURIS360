@@ -76,6 +76,8 @@
 
 
 
+
+
 const SB='https://iarfxjhahzbhncsaohbg.supabase.co';
 const KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlhcmZ4amhhaHpiaG5jc2FvaGJnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg2OTM1MzAsImV4cCI6MjA5NDI2OTUzMH0.qSjahuX-RwnjWEDmo-LkcorAxpsmyVoaXt4AO4_A9BM';
 let tok=null,prof=null,co=null,chkItems=[],people=[];
@@ -256,6 +258,573 @@ async function cirDelete(){if(!conCirEditId||!confirm('Delete?'))return;try{awai
 
 // ── INVESTIGATION MODULE — Entry & Core Functions ─────────────────────────────
 let invAllData=[], invEditId=null, invCurrentTab='ws1';
+
+// ===================================================================
+// OBSERVATION & BEHAVIOUR-BASED SAFETY (BBS) MODULE
+// Safety observation cards · Positive behaviour · Unsafe acts/conditions
+// Near miss · Trend analysis · AI insights
+// ===================================================================
+
+let obsAllData = [], obsEditId = null, obsCurrentTab = 'list';
+
+const OBS_TYPE_CFG = {
+  positive_behaviour: { emoji:'✅', label:'Positive Behaviour', color:'#1D9E75',  bg:'#EAF3DE', banner:'linear-gradient(135deg,#064E3B,#1D9E75)' },
+  unsafe_behaviour:   { emoji:'⚠️',  label:'Unsafe Behaviour',   color:'#DC2626',  bg:'#FCEBEB', banner:'linear-gradient(135deg,#7F1D1D,#DC2626)' },
+  unsafe_condition:   { emoji:'🔴', label:'Unsafe Condition',   color:'#C2410C',  bg:'#FEF6E7', banner:'linear-gradient(135deg,#7C2D12,#C2410C)' },
+  near_miss:          { emoji:'⚡', label:'Near Miss',           color:'#7C3AED',  bg:'#EDE9FE', banner:'linear-gradient(135deg,#3B0764,#7C3AED)' },
+  good_practice:      { emoji:'⭐', label:'Good Practice',       color:'#185FA5',  bg:'#EFF6FF', banner:'linear-gradient(135deg,#1e3a8a,#185FA5)' }
+};
+
+const OBS_SEV_CFG = {
+  critical: { color:'#A32D2D', bg:'#FCEBEB', border:'#DC2626' },
+  high:     { color:'#C2410C', bg:'#FEF6E7', border:'#F97316' },
+  medium:   { color:'#854F0B', bg:'#FEF9EC', border:'#EF9F27' },
+  low:      { color:'#3B6D11', bg:'#EAF3DE', border:'#22C55E' }
+};
+
+const OBS_CAT_CFG = {
+  ppe:              '🧤', housekeeping:      '🧹', working_at_height: '🪝',
+  manual_handling:  '💪', electrical:        '⚡', machinery:         '⚙️',
+  chemical:         '🧪', fire:              '🔥', environmental:     '🌿',
+  driving:          '🚗', ergonomics:        '🏋️',  procedures:        '📋', general:'📌'
+};
+
+// ── Entry ─────────────────────────────────────────────────────────────────────
+async function loadObservation() {
+  var btn = document.getElementById('obs-new-btn');
+  if (btn) btn.style.display = 'inline-flex';
+  obsSwitchTab('list', document.getElementById('obs-tab-list'));
+}
+
+function obsSwitchTab(tab, btn) {
+  obsCurrentTab = tab;
+  document.querySelectorAll('[id^="obs-tab-"]').forEach(t => t.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  ['list','positive','unsafe','trends'].forEach(function(t) {
+    var el = document.getElementById('obs-view-'+t);
+    if (el) el.style.display = t === tab ? 'block' : 'none';
+  });
+  document.getElementById('obs-form-view').style.display = 'none';
+  if (tab === 'list')     obsLoadList();
+  else if (tab === 'positive') obsLoadPositive();
+  else if (tab === 'unsafe')   obsLoadUnsafe();
+  else if (tab === 'trends')   obsLoadTrends();
+}
+
+function obsShowList() {
+  document.getElementById('obs-form-view').style.display = 'none';
+  var view = obsCurrentTab === 'list' ? 'list' : obsCurrentTab;
+  obsSwitchTab(view, document.getElementById('obs-tab-'+view));
+}
+
+// ── Load & filter ─────────────────────────────────────────────────────────────
+async function obsLoadAll() {
+  try {
+    var d = await api('/safety_observations?select=*'+cf()+'&order=observation_date.desc,created_at.desc');
+    obsAllData = d || [];
+    // Metrics
+    var now = new Date(); var m = now.getMonth(); var y = now.getFullYear();
+    var setM = function(id,v){var e=document.getElementById(id);if(e)e.textContent=v;};
+    setM('obs-m-positive',  obsAllData.filter(x=>['positive_behaviour','good_practice'].includes(x.obs_type)).length);
+    setM('obs-m-unsafe-act',obsAllData.filter(x=>x.obs_type==='unsafe_behaviour').length);
+    setM('obs-m-unsafe-cond',obsAllData.filter(x=>x.obs_type==='unsafe_condition').length);
+    setM('obs-m-near-miss', obsAllData.filter(x=>x.obs_type==='near_miss').length);
+    setM('obs-m-actions',   obsAllData.filter(x=>x.action_required&&!x.action_completed&&x.status!=='closed').length);
+    setM('obs-m-month',     obsAllData.filter(x=>x.observation_date&&new Date(x.observation_date).getMonth()===m&&new Date(x.observation_date).getFullYear()===y).length);
+  } catch(e) { console.error('obsLoadAll:', e); }
+}
+
+async function obsLoadList() {
+  var el = document.getElementById('obs-list-container'); if (!el) return;
+  el.innerHTML = '<div class="loading-msg">Loading...</div>';
+  await obsLoadAll();
+  obsFilterList();
+}
+
+function obsFilterList() {
+  var el = document.getElementById('obs-list-container'); if (!el) return;
+  var q   = (document.getElementById('obs-search')?.value||'').toLowerCase();
+  var ft  = document.getElementById('obs-filter-type')?.value||'';
+  var fc  = document.getElementById('obs-filter-cat')?.value||'';
+  var fs  = document.getElementById('obs-filter-sev')?.value||'';
+  var filt = obsAllData.filter(function(x) {
+    var mQ = !q || (x.observer_name||'').toLowerCase().includes(q) ||
+             (x.location||'').toLowerCase().includes(q) ||
+             (x.observation_text||x.positive_points||'').toLowerCase().includes(q) ||
+             (x.obs_ref||'').toLowerCase().includes(q) ||
+             (x.department||'').toLowerCase().includes(q);
+    var mT = !ft || x.obs_type === ft;
+    var mC = !fc || x.category === fc;
+    var mS = !fs || x.severity === fs;
+    return mQ && mT && mC && mS;
+  });
+  if (!filt.length) {
+    el.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text2)">'
+      +'<div style="font-size:48px;margin-bottom:12px">👁️</div>'
+      +'<div style="font-weight:600;margin-bottom:8px">No observations found</div>'
+      +'<button class="btn btn-primary" onclick="obsNew()"><i class="ti ti-plus"></i>Record first observation</button>'
+      +'</div>';
+    return;
+  }
+  el.innerHTML = '<div style="display:flex;flex-direction:column;gap:8px">'
+    + filt.map(x => obsCard(x)).join('') + '</div>';
+}
+
+function obsCard(x) {
+  var cfg = OBS_TYPE_CFG[x.obs_type] || OBS_TYPE_CFG.unsafe_condition;
+  var sev = OBS_SEV_CFG[x.severity||'medium'] || OBS_SEV_CFG.medium;
+  var cat = OBS_CAT_CFG[x.category||'general'] || '📌';
+  var desc = x.observation_text || x.positive_points || x.unsafe_act_description || '—';
+  var hasAction = x.action_required && !x.action_completed && x.status !== 'closed';
+  var stCfg = {open:['#FEF9EC','#854F0B'], actioned:['#EFF6FF','#185FA5'], closed:['#EAF3DE','#3B6D11'], acknowledged:['#f3f4f6','#6B7280']};
+  var sc = stCfg[x.status] || stCfg.open;
+  return '<div class="card" style="padding:0;overflow:hidden;cursor:pointer;border-left:5px solid '
+    +cfg.color+';transition:box-shadow .15s" data-id="'+x.id+'" onclick="obsEdit(this.dataset.id)"'
+    +' onmouseover="this.style.boxShadow=\'0 4px 16px rgba(0,0,0,.1)\'" onmouseout="this.style.boxShadow=\'\'">'
+    +'<div style="padding:10px 14px;display:flex;align-items:flex-start;justify-content:space-between;gap:10px;flex-wrap:wrap">'
+    +'<div style="display:flex;gap:10px;flex:1;min-width:0">'
+    +'<div style="font-size:24px;flex-shrink:0">'+cfg.emoji+'</div>'
+    +'<div style="min-width:0">'
+    +'<div style="display:flex;gap:6px;align-items:center;margin-bottom:3px;flex-wrap:wrap">'
+    +(x.obs_ref?'<span style="font-family:monospace;font-size:11px;font-weight:700;color:'+cfg.color+'">'+escH(x.obs_ref)+'</span>':'')
+    +'<span style="background:'+cfg.bg+';color:'+cfg.color+';padding:1px 7px;border-radius:99px;font-size:10px;font-weight:700">'+cfg.label+'</span>'
+    +'<span style="font-size:13px">'+cat+'</span>'
+    +'<span style="font-size:11px;color:var(--text2);text-transform:capitalize">'+escH((x.category||'').replace(/_/g,' '))+'</span>'
+    +(hasAction?'<span style="background:#FEF9EC;color:#854F0B;padding:1px 6px;border-radius:4px;font-size:10px;font-weight:700">ACTION OPEN</span>':'')
+    +'</div>'
+    +'<div style="font-size:13px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:400px">'+escH(desc.substring(0,100))+'</div>'
+    +'<div style="display:flex;gap:12px;font-size:11px;color:var(--text2);margin-top:4px;flex-wrap:wrap">'
+    +(x.observation_date?'<span>📅 '+new Date(x.observation_date).toLocaleDateString('en-GB')+'</span>':'')
+    +(x.observer_name?'<span>👤 '+escH(x.observer_name)+'</span>':'')
+    +(x.location?'<span>📍 '+escH(x.location)+'</span>':'')
+    +(x.department?'<span>🏢 '+escH(x.department)+'</span>':'')
+    +'</div></div></div>'
+    +'<div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0">'
+    +'<span style="background:'+sev.bg+';color:'+sev.color+';padding:2px 8px;border-radius:99px;font-size:10px;font-weight:700;text-transform:capitalize">'+escH(x.severity||'medium')+'</span>'
+    +'<span style="background:'+sc[0]+';color:'+sc[1]+';padding:2px 8px;border-radius:99px;font-size:10px;font-weight:700;text-transform:capitalize">'+escH(x.status||'open')+'</span>'
+    +(x.stopped_work?'<span style="background:#FCEBEB;color:#A32D2D;padding:1px 6px;border-radius:4px;font-size:10px;font-weight:700">⛔ STOPPED</span>':'')
+    +'</div></div></div>';
+}
+
+// ── Positive tab ──────────────────────────────────────────────────────────────
+async function obsLoadPositive() {
+  var el = document.getElementById('obs-positive-list'); if (!el) return;
+  if (!obsAllData.length) await obsLoadAll();
+  var positives = obsAllData.filter(x => ['positive_behaviour','good_practice'].includes(x.obs_type));
+  if (!positives.length) {
+    el.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text2)"><div style="font-size:48px;margin-bottom:12px">✅</div><div style="font-weight:600;margin-bottom:8px">No positive observations yet</div><button class="btn btn-primary" onclick="obsNew(\'positive_behaviour\')"><i class="ti ti-plus"></i>Add positive observation</button></div>';
+    return;
+  }
+  el.innerHTML = '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px">'
+    + positives.map(function(x) {
+      var cfg = OBS_TYPE_CFG[x.obs_type] || OBS_TYPE_CFG.positive_behaviour;
+      var desc = x.observation_text || x.positive_points || '—';
+      return '<div class="card" style="border-top:4px solid '+cfg.color+';cursor:pointer;transition:box-shadow .15s" data-id="'+x.id+'" onclick="obsEdit(this.dataset.id)" onmouseover="this.style.boxShadow=\'0 4px 16px rgba(0,0,0,.1)\'" onmouseout="this.style.boxShadow=\'\'">'
+        +'<div style="font-size:28px;margin-bottom:8px">'+cfg.emoji+'</div>'
+        +'<div style="font-weight:700;margin-bottom:6px">'+escH(desc.substring(0,80))+'</div>'
+        +'<div style="font-size:11px;color:var(--text2);display:flex;gap:10px;flex-wrap:wrap">'
+        +(x.observation_date?'<span>'+new Date(x.observation_date).toLocaleDateString('en-GB')+'</span>':'')
+        +(x.observer_name?'<span>'+escH(x.observer_name)+'</span>':'')
+        +(x.location?'<span>'+escH(x.location)+'</span>':'')
+        +'</div>'
+        +(x.obs_ref?'<div style="font-family:monospace;font-size:10px;color:'+cfg.color+';margin-top:6px;font-weight:700">'+escH(x.obs_ref)+'</div>':'')
+        +'</div>';
+    }).join('') + '</div>';
+}
+
+// ── Unsafe tab ────────────────────────────────────────────────────────────────
+async function obsLoadUnsafe() {
+  var el = document.getElementById('obs-unsafe-list'); if (!el) return;
+  if (!obsAllData.length) await obsLoadAll();
+  var unsafes = obsAllData.filter(x => ['unsafe_behaviour','unsafe_condition','near_miss'].includes(x.obs_type));
+  var critical = unsafes.filter(x => (x.severity==='critical'||x.severity==='high') && x.status !== 'closed');
+  var alertEl = document.getElementById('obs-unsafe-alerts');
+  if (alertEl && critical.length) {
+    alertEl.innerHTML = '<div style="background:#FCEBEB;border:2px solid #DC2626;border-radius:10px;padding:10px 16px;font-size:12px;font-weight:600;color:#A32D2D">'
+      +'<i class="ti ti-alert-triangle"></i> '+critical.length+' critical/high severity observation'+(critical.length>1?'s':'')+' require immediate attention: '
+      +critical.map(x=>escH(x.obs_ref||x.obs_type.replace(/_/g,' '))).join(', ')+'</div>';
+  } else if (alertEl) alertEl.innerHTML = '';
+  if (!unsafes.length) {
+    el.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text2)"><div style="font-size:48px;margin-bottom:12px">🎉</div><div style="font-weight:600">No unsafe acts or conditions reported</div></div>';
+    return;
+  }
+  el.innerHTML = '<div style="display:flex;flex-direction:column;gap:8px">' + unsafes.map(x => obsCard(x)).join('') + '</div>';
+}
+
+// ── Trends ────────────────────────────────────────────────────────────────────
+async function obsLoadTrends() {
+  if (!obsAllData.length) await obsLoadAll();
+  var d = obsAllData;
+  // 1. Safe/Unsafe ratio
+  var ratioEl = document.getElementById('obs-trend-ratio');
+  if (ratioEl) {
+    var safe = d.filter(x=>['positive_behaviour','good_practice'].includes(x.obs_type)).length;
+    var unsafe = d.filter(x=>['unsafe_behaviour','unsafe_condition','near_miss'].includes(x.obs_type)).length;
+    var total = d.length || 1;
+    var safePct = Math.round(safe/total*100);
+    var unsafePct = Math.round(unsafe/total*100);
+    ratioEl.innerHTML = '<div style="display:flex;align-items:center;gap:16px;margin-bottom:12px">'
+      +'<div style="flex:1;text-align:center"><div style="font-size:36px;font-weight:900;color:#1D9E75">'+safe+'</div><div style="font-size:12px;font-weight:600;color:#1D9E75">Safe/Positive</div></div>'
+      +'<div style="font-size:20px;color:var(--text2)">vs</div>'
+      +'<div style="flex:1;text-align:center"><div style="font-size:36px;font-weight:900;color:#DC2626">'+unsafe+'</div><div style="font-size:12px;font-weight:600;color:#DC2626">Unsafe/Negative</div></div>'
+      +'</div>'
+      +'<div style="width:100%;background:#e5e7eb;border-radius:99px;height:14px;overflow:hidden;margin-bottom:6px">'
+      +'<div style="width:'+safePct+'%;background:linear-gradient(90deg,#1D9E75,#22c55e);height:100%;border-radius:99px;transition:width .5s"></div>'
+      +'</div>'
+      +'<div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text2)">'
+      +'<span style="color:#1D9E75;font-weight:700">'+safePct+'% Safe</span>'
+      +'<span style="color:#DC2626;font-weight:700">'+unsafePct+'% Unsafe</span>'
+      +'</div>'
+      +'<div style="margin-top:12px;padding:10px;background:'+(safePct>=75?'#EAF3DE':safePct>=50?'#FEF9EC':'#FCEBEB')+';border-radius:8px;font-size:12px;font-weight:600;color:'+(safePct>=75?'#166534':safePct>=50?'#854F0B':'#991B1B')+'">'
+      +(safePct>=75?'✓ Good BBS ratio — keep reinforcing safe behaviours':safePct>=50?'⚠ BBS ratio needs improvement — increase observation frequency':'✗ High unsafe observation rate — urgent BBS intervention needed')
+      +'</div>';
+  }
+
+  // 2. Monthly volume (last 6 months)
+  var monthEl = document.getElementById('obs-trend-monthly');
+  if (monthEl) {
+    var months = [];
+    for (var i=5; i>=0; i--) {
+      var d2 = new Date(); d2.setMonth(d2.getMonth()-i);
+      var m = d2.getMonth(); var y = d2.getFullYear();
+      var label = d2.toLocaleString('en-GB',{month:'short'});
+      var mData = obsAllData.filter(x=>x.observation_date&&new Date(x.observation_date).getMonth()===m&&new Date(x.observation_date).getFullYear()===y);
+      var safe2 = mData.filter(x=>['positive_behaviour','good_practice'].includes(x.obs_type)).length;
+      var unsafe2 = mData.length - safe2;
+      months.push({label,safe:safe2,unsafe:unsafe2,total:mData.length});
+    }
+    var maxVal = Math.max(...months.map(m=>m.total),1);
+    monthEl.innerHTML = '<div style="display:flex;gap:6px;align-items:flex-end;height:100px;padding:0 4px;margin-bottom:6px">'
+      + months.map(function(m) {
+        var barH = Math.round((m.total/maxVal)*90);
+        var safeH = m.total ? Math.round((m.safe/m.total)*barH) : 0;
+        return '<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px">'
+          +'<div style="font-size:10px;font-weight:700;color:var(--text2)">'+m.total+'</div>'
+          +'<div style="width:100%;height:'+barH+'px;display:flex;flex-direction:column;justify-content:flex-end;border-radius:4px 4px 0 0;overflow:hidden;background:#f3f4f6">'
+          +'<div style="width:100%;height:'+safeH+'px;background:#1D9E75"></div>'
+          +'<div style="width:100%;height:'+(barH-safeH)+'px;background:#DC2626"></div>'
+          +'</div></div>';
+      }).join('')
+      +'</div>'
+      +'<div style="display:flex;gap:6px;justify-content:center;flex-wrap:wrap">'
+      +months.map(m=>'<span style="font-size:10px;color:var(--text2)">'+m.label+'</span>').join('<span style="flex:1"></span>')
+      +'</div>'
+      +'<div style="display:flex;gap:12px;margin-top:8px;font-size:11px">'
+      +'<span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:10px;background:#1D9E75;border-radius:2px;display:inline-block"></span>Safe</span>'
+      +'<span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:10px;background:#DC2626;border-radius:2px;display:inline-block"></span>Unsafe</span>'
+      +'</div>';
+  }
+
+  // 3. Top unsafe categories
+  var catEl = document.getElementById('obs-trend-categories');
+  if (catEl) {
+    var unsafeObs = obsAllData.filter(x=>['unsafe_behaviour','unsafe_condition','near_miss'].includes(x.obs_type));
+    var catCount = {};
+    unsafeObs.forEach(x=>{var c=x.category||'general';catCount[c]=(catCount[c]||0)+1;});
+    var sorted = Object.entries(catCount).sort((a,b)=>b[1]-a[1]).slice(0,6);
+    var maxCat = sorted[0]?.[1]||1;
+    catEl.innerHTML = '<div style="display:flex;flex-direction:column;gap:8px">'
+      + sorted.map(function(entry) {
+        var cat=entry[0]; var cnt=entry[1];
+        var pct = Math.round(cnt/maxCat*100);
+        var emoji = OBS_CAT_CFG[cat]||'📌';
+        return '<div style="display:flex;align-items:center;gap:8px">'
+          +'<span style="font-size:14px;width:20px">'+emoji+'</span>'
+          +'<div style="flex:1"><div style="font-size:11px;font-weight:600;text-transform:capitalize">'+escH(cat.replace(/_/g,' '))+'</div>'
+          +'<div style="width:100%;background:#f3f4f6;border-radius:99px;height:6px;margin-top:2px;overflow:hidden"><div style="width:'+pct+'%;background:#E24B4A;height:100%;border-radius:99px"></div></div></div>'
+          +'<span style="font-size:12px;font-weight:700;color:#E24B4A;min-width:24px;text-align:right">'+cnt+'</span>'
+          +'</div>';
+      }).join('')
+      + (sorted.length===0?'<div style="color:var(--text2);font-size:13px;text-align:center;padding:16px">No unsafe observations yet</div>':'')
+      +'</div>';
+  }
+
+  // 4. Top locations
+  var locEl = document.getElementById('obs-trend-locations');
+  if (locEl) {
+    var locCount = {};
+    obsAllData.forEach(x=>{if(x.location){var l=x.location.trim();locCount[l]=(locCount[l]||0)+1;}});
+    var sortedLoc = Object.entries(locCount).sort((a,b)=>b[1]-a[1]).slice(0,6);
+    var maxLoc = sortedLoc[0]?.[1]||1;
+    locEl.innerHTML = '<div style="display:flex;flex-direction:column;gap:8px">'
+      + sortedLoc.map(function(entry) {
+        var loc=entry[0]; var cnt=entry[1];
+        var pct = Math.round(cnt/maxLoc*100);
+        return '<div style="display:flex;align-items:center;gap:8px">'
+          +'<span style="font-size:12px">📍</span>'
+          +'<div style="flex:1"><div style="font-size:11px;font-weight:600">'+escH(loc)+'</div>'
+          +'<div style="width:100%;background:#f3f4f6;border-radius:99px;height:6px;margin-top:2px;overflow:hidden"><div style="width:'+pct+'%;background:#185FA5;height:100%;border-radius:99px"></div></div></div>'
+          +'<span style="font-size:12px;font-weight:700;color:#185FA5;min-width:24px;text-align:right">'+cnt+'</span>'
+          +'</div>';
+      }).join('')
+      + (sortedLoc.length===0?'<div style="color:var(--text2);font-size:13px;text-align:center;padding:16px">No location data yet</div>':'')
+      +'</div>';
+  }
+
+  // 5. Critical & high observations
+  var critEl = document.getElementById('obs-trend-critical');
+  if (critEl) {
+    var crits = obsAllData.filter(x=>['critical','high'].includes(x.severity)&&x.status!=='closed').slice(0,5);
+    if (!crits.length) {
+      critEl.innerHTML='<div style="text-align:center;padding:16px;color:#1D9E75;font-weight:600">✓ No critical or high observations open</div>';
+    } else {
+      critEl.innerHTML='<div style="display:flex;flex-direction:column;gap:6px">'
+        +crits.map(function(x){
+          var cfg=OBS_TYPE_CFG[x.obs_type]||OBS_TYPE_CFG.unsafe_condition;
+          var sev=OBS_SEV_CFG[x.severity||'high']||OBS_SEV_CFG.high;
+          var desc=x.observation_text||x.positive_points||'—';
+          return '<div style="display:flex;gap:10px;align-items:flex-start;padding:8px 12px;border:1px solid '+sev.border+'40;border-radius:8px;background:'+sev.bg+';cursor:pointer" data-id="'+x.id+'" onclick="obsEdit(this.dataset.id)">'
+            +'<span style="font-size:18px">'+cfg.emoji+'</span>'
+            +'<div style="flex:1;min-width:0"><div style="font-weight:600;font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+escH(desc.substring(0,70))+'</div>'
+            +'<div style="font-size:11px;color:var(--text2)">'+escH(x.location||'—')+(x.observation_date?' · '+new Date(x.observation_date).toLocaleDateString('en-GB'):'')+'</div></div>'
+            +'<span style="font-size:10px;font-weight:700;color:'+sev.color+';text-transform:capitalize;white-space:nowrap">'+x.severity+'</span>'
+            +'</div>';
+        }).join('')+'</div>';
+    }
+  }
+}
+
+// ── New / Edit form ───────────────────────────────────────────────────────────
+function obsNew(type) {
+  obsEditId = null;
+  document.getElementById('obs-form-title').textContent = 'New Safety Observation';
+  document.getElementById('obs-form-ref').textContent = 'OBS-AUTO';
+  document.getElementById('obs-del-btn').style.display = 'none';
+  // Clear fields
+  ['obs-positive-text','obs-positive-reinforce','obs-text','obs-immediate-cause',
+   'obs-consequence','obs-location','obs-dept','obs-activity','obs-time',
+   'obs-immediate-desc','obs-feedback-notes','obs-action-desc','obs-action-assigned',
+   'obs-observer','obs-observer-dept','obs-person-observed','obs-root-cause','obs-ppe-notes'].forEach(function(id){
+    var el=document.getElementById(id); if(el)el.value='';
+  });
+  ['obs-action-due'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
+  document.getElementById('obs-date').value = new Date().toISOString().slice(0,10);
+  document.getElementById('obs-num-persons').value = '1';
+  document.getElementById('obs-category').value = 'general';
+  document.getElementById('obs-severity').value = 'medium';
+  document.getElementById('obs-status').value = 'open';
+  document.getElementById('obs-immediate-action').checked = false;
+  document.getElementById('obs-stopped-work').checked = false;
+  document.getElementById('obs-feedback-given').checked = false;
+  document.getElementById('obs-action-required').checked = false;
+  document.getElementById('obs-action-fields').style.display = 'none';
+  document.getElementById('obs-ppe-worn').value = 'na';
+  document.querySelectorAll('[name="obs-ppe"]').forEach(r=>{r.checked=r.value==='na';});
+  obsSelectType(type || 'unsafe_condition');
+  document.getElementById('obs-form-view').style.display = 'block';
+  ['list','positive','unsafe','trends'].forEach(t=>{var el=document.getElementById('obs-view-'+t);if(el)el.style.display='none';});
+}
+
+function obsEdit(id) {
+  var x = obsAllData.find(r=>r.id===id); if(!x)return;
+  obsEditId = id;
+  var cfg = OBS_TYPE_CFG[x.obs_type] || OBS_TYPE_CFG.unsafe_condition;
+  document.getElementById('obs-form-banner').style.background = cfg.banner;
+  document.getElementById('obs-form-title').textContent = cfg.label + ' Observation';
+  document.getElementById('obs-form-ref').textContent = x.obs_ref || x.id?.slice(0,8)||'—';
+  document.getElementById('obs-del-btn').style.display = isMgr()?'inline-flex':'none';
+  var gf = function(fid,val){var el=document.getElementById(fid);if(el)el.value=val||'';};
+  gf('obs-positive-text', x.observation_text||(x.obs_type==='positive_behaviour'?x.positive_points:''));
+  gf('obs-positive-reinforce', x.positive_points);
+  gf('obs-text', x.observation_text||x.unsafe_act_description||x.unsafe_condition_description);
+  gf('obs-immediate-cause', x.immediate_cause);
+  gf('obs-consequence', x.potential_consequence);
+  gf('obs-location', x.location);
+  gf('obs-dept', x.department);
+  gf('obs-activity', x.work_activity);
+  gf('obs-date', x.observation_date);
+  gf('obs-time', x.observation_time);
+  document.getElementById('obs-num-persons').value = x.num_persons_involved||1;
+  gf('obs-immediate-desc', x.immediate_action_desc);
+  gf('obs-feedback-notes', x.feedback_notes);
+  gf('obs-action-desc', x.action_description);
+  gf('obs-action-assigned', x.action_assigned_to);
+  gf('obs-action-due', x.action_due_date);
+  gf('obs-observer', x.observer_name);
+  gf('obs-observer-dept', x.observer_dept);
+  gf('obs-person-observed', x.person_observed);
+  gf('obs-root-cause', x.root_cause);
+  gf('obs-ppe-notes', x.ppe_notes);
+  document.getElementById('obs-category').value = x.category||'general';
+  document.getElementById('obs-severity').value = x.severity||'medium';
+  document.getElementById('obs-status').value = x.status||'open';
+  document.getElementById('obs-immediate-action').checked = !!x.immediate_action_taken;
+  document.getElementById('obs-stopped-work').checked = !!x.stopped_work;
+  document.getElementById('obs-feedback-given').checked = !!x.feedback_given;
+  document.getElementById('obs-action-required').checked = !!x.action_required;
+  document.getElementById('obs-action-fields').style.display = x.action_required?'block':'none';
+  var ppeVal = x.ppe_worn===true?'true':x.ppe_worn===false?'false':x.ppe_worn===null?'na':(x.ppe_worn||'na');
+  document.getElementById('obs-ppe-worn').value = ppeVal;
+  document.querySelectorAll('[name="obs-ppe"]').forEach(r=>{r.checked=r.value===ppeVal;});
+  obsSelectType(x.obs_type||'unsafe_condition');
+  document.getElementById('obs-form-view').style.display = 'block';
+  ['list','positive','unsafe','trends'].forEach(t=>{var el=document.getElementById('obs-view-'+t);if(el)el.style.display='none';});
+}
+
+function obsSelectType(type) {
+  document.getElementById('obs-type').value = type;
+  var cfg = OBS_TYPE_CFG[type] || OBS_TYPE_CFG.unsafe_condition;
+  document.getElementById('obs-form-banner').style.background = cfg.banner;
+  document.getElementById('obs-form-type-label').textContent = cfg.label;
+  document.querySelectorAll('.obs-type-btn').forEach(function(btn) {
+    var t = btn.dataset.type;
+    var btnCfg = OBS_TYPE_CFG[t]||OBS_TYPE_CFG.unsafe_condition;
+    if (t === type) {
+      btn.style.borderColor = btnCfg.color;
+      btn.style.background = btnCfg.bg;
+      btn.style.transform = 'scale(1.04)';
+      btn.style.boxShadow = '0 2px 12px '+btnCfg.color+'40';
+    } else {
+      btn.style.borderColor = '';
+      btn.style.background = '';
+      btn.style.transform = '';
+      btn.style.boxShadow = '';
+    }
+  });
+  var isPositive = ['positive_behaviour','good_practice'].includes(type);
+  document.getElementById('obs-positive-section').style.display = isPositive?'block':'none';
+  document.getElementById('obs-unsafe-section').style.display = isPositive?'none':'block';
+  if (!isPositive) {
+    var titles = {unsafe_behaviour:'⚠️ Unsafe Behaviour',unsafe_condition:'🔴 Unsafe Condition',near_miss:'⚡ Near Miss'};
+    var titleEl=document.getElementById('obs-unsafe-section-title');
+    if(titleEl) titleEl.textContent = titles[type]||'⚠️ Unsafe Observation';
+  }
+}
+
+function obsToggleAction() {
+  var cb = document.getElementById('obs-action-required');
+  var af = document.getElementById('obs-action-fields');
+  if (af) af.style.display = cb?.checked?'block':'none';
+}
+
+// ── Save ──────────────────────────────────────────────────────────────────────
+async function obsSave() {
+  var g = function(id){var el=document.getElementById(id);return el?el.value||null:null;};
+  var type = g('obs-type')||'unsafe_condition';
+  var isPositive = ['positive_behaviour','good_practice'].includes(type);
+  var desc = isPositive ? (g('obs-positive-text')||g('obs-positive-reinforce')) : (g('obs-text')||g('obs-immediate-cause'));
+  if (!desc) { toast('Please describe what was observed', false); return; }
+  var ppeVal = g('obs-ppe-worn');
+  var body = {
+    company_id: prof?.company_id,
+    obs_type: type,
+    category: g('obs-category')||'general',
+    severity: g('obs-severity')||'medium',
+    observation_date: g('obs-date'),
+    observation_time: g('obs-time'),
+    location: g('obs-location'),
+    department: g('obs-dept'),
+    work_activity: g('obs-activity'),
+    observer_name: g('obs-observer'),
+    observer_dept: g('obs-observer-dept'),
+    person_observed: g('obs-person-observed'),
+    num_persons_involved: parseInt(g('obs-num-persons'))||1,
+    observation_text: isPositive ? g('obs-positive-text') : g('obs-text'),
+    positive_points: g('obs-positive-reinforce')||( isPositive?g('obs-positive-text'):null ),
+    unsafe_act_description: !isPositive&&type==='unsafe_behaviour'?g('obs-text'):null,
+    unsafe_condition_description: type==='unsafe_condition'?g('obs-text'):null,
+    immediate_cause: g('obs-immediate-cause'),
+    potential_consequence: g('obs-consequence'),
+    root_cause: g('obs-root-cause'),
+    ppe_worn: ppeVal==='true'?true:ppeVal==='false'?false:null,
+    ppe_adequate: ppeVal==='partial'?false:ppeVal==='true'?true:null,
+    ppe_notes: g('obs-ppe-notes'),
+    immediate_action_taken: document.getElementById('obs-immediate-action')?.checked||false,
+    immediate_action_desc: g('obs-immediate-desc'),
+    stopped_work: document.getElementById('obs-stopped-work')?.checked||false,
+    feedback_given: document.getElementById('obs-feedback-given')?.checked||false,
+    feedback_notes: g('obs-feedback-notes'),
+    action_required: document.getElementById('obs-action-required')?.checked||false,
+    action_description: g('obs-action-desc'),
+    action_assigned_to: g('obs-action-assigned'),
+    action_due_date: g('obs-action-due')||null,
+    action_completed: false,
+    status: g('obs-status')||'open',
+    updated_at: new Date().toISOString()
+  };
+  try {
+    if (obsEditId) {
+      await api('/safety_observations?id=eq.'+obsEditId, {m:'PATCH',p:'return=minimal',b:body});
+      var idx = obsAllData.findIndex(x=>x.id===obsEditId);
+      if (idx>=0) Object.assign(obsAllData[idx],body);
+      toast('Observation updated!');
+    } else {
+      body.created_by = prof?.id;
+      var res = await api('/safety_observations', {m:'POST',p:'return=representation',b:body});
+      if (res?.[0]?.id) {
+        var yr = new Date().getFullYear();
+        var typeCode = {positive_behaviour:'POS',unsafe_behaviour:'UBA',unsafe_condition:'UCC',near_miss:'NM',good_practice:'GP'}[type]||'OBS';
+        var ref = 'OBS-'+typeCode+'-'+yr+'-'+String(obsAllData.length+1).padStart(3,'0');
+        await api('/safety_observations?id=eq.'+res[0].id, {m:'PATCH',p:'return=minimal',b:{obs_ref:ref}});
+        res[0].obs_ref=ref; obsAllData.unshift(res[0]);
+        toast('Observation saved! Ref: '+ref);
+        // Auto-create MAP action for critical/high unsafe
+        if (['critical','high'].includes(body.severity) && body.action_required && body.action_description) {
+          try {
+            await api('/action_tracker', {m:'POST',p:'return=minimal',b:{
+              company_id: prof?.company_id,
+              title: 'Observation action: '+body.action_description.substring(0,60),
+              description: body.action_description,
+              source_type: 'observation', source_module: 'observation', source_ref: ref,
+              priority: body.severity, status: 'open',
+              assigned_to_name: body.action_assigned_to||null,
+              target_date: body.action_due_date||null,
+              created_by: prof?.id
+            }});
+          } catch(ex) {}
+        }
+      }
+    }
+    obsShowList();
+  } catch(e) { toast(e.message, false); }
+}
+
+async function obsDelete() {
+  if (!obsEditId||!confirm('Delete this observation?')) return;
+  try {
+    await api('/safety_observations?id=eq.'+obsEditId, {m:'DELETE'});
+    obsAllData = obsAllData.filter(x=>x.id!==obsEditId);
+    toast('Deleted!'); obsEditId=null; obsShowList();
+  } catch(e) { toast(e.message, false); }
+}
+
+// ── AI Insights ───────────────────────────────────────────────────────────────
+async function obsAskAI(question) {
+  if (!question?.trim()) { toast('Please enter a question', false); return; }
+  var inputEl = document.getElementById('obs-ai-input');
+  if (inputEl) inputEl.value = question;
+  var respEl = document.getElementById('obs-ai-response');
+  if (!respEl) return;
+  respEl.style.display='block';
+  respEl.textContent='⏳ Analysing observation data...';
+  // Build context summary
+  var total = obsAllData.length;
+  var pos = obsAllData.filter(x=>['positive_behaviour','good_practice'].includes(x.obs_type)).length;
+  var unsafe = total - pos;
+  var catCount = {};
+  obsAllData.filter(x=>!['positive_behaviour','good_practice'].includes(x.obs_type))
+    .forEach(x=>{var c=x.category||'general'; catCount[c]=(catCount[c]||0)+1;});
+  var topCats = Object.entries(catCount).sort((a,b)=>b[1]-a[1]).slice(0,5).map(e=>e[0]+':'+e[1]).join(', ');
+  var context = 'BBS Programme Data Summary:\n'
+    +'Total observations: '+total+'\n'
+    +'Positive/Safe: '+pos+' ('+Math.round(pos/Math.max(total,1)*100)+'%)\n'
+    +'Unsafe/Negative: '+unsafe+' ('+Math.round(unsafe/Math.max(total,1)*100)+'%)\n'
+    +'Top unsafe categories: '+topCats+'\n\n';
+  try {
+    var resp = await fetch('https://api.anthropic.com/v1/messages', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,messages:[{role:'user',
+        content: context+'You are an expert in Behaviour-Based Safety (BBS) programmes. '
+          +'Based on the observation data above, answer this question concisely and practically:\n\n'+question}]})
+    });
+    var data = await resp.json();
+    var text = (data.content||[]).map(c=>c.text||'').join('');
+    respEl.textContent = text||'No response received.';
+    if (inputEl) inputEl.value='';
+  } catch(e) {
+    respEl.textContent = 'AI unavailable: '+e.message;
+  }
+}
 
 async function loadInvs(){
   var addBtn=document.getElementById('inv-add-btn');
@@ -466,7 +1035,7 @@ if(target){
   target.classList.add('active');
 }
 if(el&&el.classList)el.classList.add('active');
-const L={dashboard:loadDash,kpi:kpiLoadAll,workschedule:loadWorkSchedule,events:loadEvents,inspection:()=>{buildChecklist();loadInsps();},risk:loadRA,investigation:loadInvs,legal:loadLegal,sop:loadSOP,tools:loadTools,permit:loadPermits,contractor:loadContractors,esg:loadESG,emergency:loadEmergency,ohealth:loadOHealth,ppe:loadPPE,noise:loadNoise,meetings:loadMtgs,training:loadTraining,actions:loadActions,documents:loadDocs,people:loadPeople,users:loadUsers,admin:loadAdmin,'ai-insights':genFullAI,settings:loadSettings};
+const L={dashboard:loadDash,kpi:kpiLoadAll,workschedule:loadWorkSchedule,events:loadEvents,observation:loadObservation,inspection:()=>{buildChecklist();loadInsps();},risk:loadRA,investigation:loadInvs,legal:loadLegal,sop:loadSOP,tools:loadTools,permit:loadPermits,contractor:loadContractors,esg:loadESG,emergency:loadEmergency,ohealth:loadOHealth,ppe:loadPPE,noise:loadNoise,meetings:loadMtgs,training:loadTraining,actions:loadActions,documents:loadDocs,people:loadPeople,users:loadUsers,admin:loadAdmin,'ai-insights':genFullAI,settings:loadSettings};
 if(L[name])L[name]();
 }
 function toggleForm(id){const el=document.getElementById(id);el.style.display=el.style.display==='none'?'block':'none';}
@@ -12720,6 +13289,8 @@ function sopSaveToDocControl(){
 
 
 
+
+
 </script>
 </head>
 <body>
@@ -12727,7 +13298,8 @@ function sopSaveToDocControl(){
 <div id="app" style="display:none">
 <div class="layout">
 <div class="sidebar"><div class="sidebar-top"><img id="co-logo-img" class="co-logo" src="" alt="logo"/><div id="co-initials-div" class="co-initials">A</div><div class="sb-company" id="sb-company">AURIS360</div><div class="sb-user" id="sb-user">—</div><span class="sb-role" id="sb-role">—</span></div><span class="nav-section">Main</span><div class="nav-item active" onclick="showPage('dashboard',this)"><i class="ti ti-layout-dashboard"></i>Dashboard</div><div class="nav-item" id="nav-ai" onclick="showPage('ai-insights',this)"><i class="ti ti-brain"></i>AI Insights</div><span class="nav-section">HSE Modules</span><div class="nav-item" onclick="showPage('kpi',this)"><i class="ti ti-target"></i>Objectives & KPIs</div><div class="nav-item" onclick="showPage('workschedule',this)"><i class="ti ti-calendar-event"></i>Work Schedule</div>
-<div class="nav-item" onclick="showPage('events',this)"><i class="ti ti-alert-triangle"></i>Event Reporting</div><div class="nav-item" onclick="showPage('inspection',this)"><i class="ti ti-clipboard-check"></i>Site Inspection</div><div class="nav-item" onclick="showPage('risk',this)"><i class="ti ti-shield-check"></i>Risk Assessment</div><div class="nav-item" id="nav-inv" onclick="showPage('investigation',this)"><i class="ti ti-search"></i>Investigation</div><div class="nav-item" onclick="showPage('tools',this)"><i class="ti ti-tools"></i>Tools & Equipment</div>
+<div class="nav-item" onclick="showPage('events',this)"><i class="ti ti-alert-triangle"></i>Event Reporting</div><div class="nav-item" onclick="showPage('observation',this)"><i class="ti ti-eye"></i>BBS Observations</div>
+<div class="nav-item" onclick="showPage('inspection',this)"><i class="ti ti-clipboard-check"></i>Site Inspection</div><div class="nav-item" onclick="showPage('risk',this)"><i class="ti ti-shield-check"></i>Risk Assessment</div><div class="nav-item" id="nav-inv" onclick="showPage('investigation',this)"><i class="ti ti-search"></i>Investigation</div><div class="nav-item" onclick="showPage('tools',this)"><i class="ti ti-tools"></i>Tools & Equipment</div>
 <div class="nav-item" onclick="showPage('permit',this)"><i class="ti ti-key"></i>Permit to Work</div>
 <div class="nav-item" onclick="showPage('contractor',this)"><i class="ti ti-hard-hat"></i>Contractors</div><div class="nav-item" onclick="showPage('emergency',this)"><i class="ti ti-alert-square"></i>Emergency</div>
 <div class="nav-item" onclick="showPage('ohealth',this)"><i class="ti ti-stethoscope"></i>Occupational Health</div>
@@ -13372,6 +13944,282 @@ function sopSaveToDocControl(){
 
 <div id="page-events" class="page">
 <div class="page-header"><div><div class="page-title">Event Reporting</div><div style="font-size:12px;color:var(--text2);margin-top:2px" id="ev-subtitle">All events — <span id="ev-count">loading...</span></div></div><button class="btn btn-primary" onclick="evOpenNew()"><i class="ti ti-plus"></i>Report event</button></div><div style="display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:18px"><div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px 16px"><div style="font-size:11px;color:var(--text2);margin-bottom:5px;font-weight:500">Total events</div><div style="font-size:24px;font-weight:700" id="ev-m-total">—</div></div><div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px 16px"><div style="font-size:11px;color:var(--text2);margin-bottom:5px;font-weight:500">Open</div><div style="font-size:24px;font-weight:700;color:var(--amber)" id="ev-m-open">—</div></div><div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px 16px"><div style="font-size:11px;color:var(--text2);margin-bottom:5px;font-weight:500">High / Critical</div><div style="font-size:24px;font-weight:700;color:var(--red)" id="ev-m-high">—</div></div><div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px 16px"><div style="font-size:11px;color:var(--text2);margin-bottom:5px;font-weight:500">This month</div><div style="font-size:24px;font-weight:700;color:var(--blue)" id="ev-m-month">—</div></div><div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px 16px"><div style="font-size:11px;color:var(--text2);margin-bottom:5px;font-weight:500">Closed</div><div style="font-size:24px;font-weight:700;color:var(--green)" id="ev-m-closed">—</div></div></div><div class="card" style="padding:14px 20px;margin-bottom:16px"><div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center"><select id="ev-filter-type" onchange="loadEvents()" style="width:auto;padding:6px 10px;font-size:12px;border:1px solid var(--border);border-radius:8px"><option value="">All types</option><option value="Near Miss">Near Miss</option><option value="Incident">Incident</option><option value="Hazard Observation">Hazard Observation</option><option value="Dangerous Occurrence">Dangerous Occurrence</option><option value="Environmental">Environmental</option></select><select id="ev-filter-severity" onchange="loadEvents()" style="width:auto;padding:6px 10px;font-size:12px;border:1px solid var(--border);border-radius:8px"><option value="">All severities</option><option value="critical">Critical</option><option value="high">High</option><option value="medium">Medium</option><option value="low">Low</option></select><select id="ev-filter-status" onchange="loadEvents()" style="width:auto;padding:6px 10px;font-size:12px;border:1px solid var(--border);border-radius:8px"><option value="">All statuses</option><option value="open">Open</option><option value="under_investigation">Under investigation</option><option value="action_required">Action required</option><option value="closed">Closed</option></select><input type="month" id="ev-filter-month" onchange="loadEvents()" style="width:auto;padding:6px 10px;font-size:12px;border:1px solid var(--border);border-radius:8px"/><button class="btn btn-sm" onclick="evClearFilters()"><i class="ti ti-filter-off"></i>Clear</button></div></div><div class="card" style="padding:0;overflow:hidden"><div id="events-list"><div class="loading-msg">Loading events...</div></div></div><div style="position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:200;display:none;align-items:flex-start;justify-content:center;padding:40px 20px;overflow-y:auto" id="ev-modal"><div style="background:var(--card);border-radius:16px;width:680px;max-width:100%;box-shadow:0 20px 60px rgba(0,0,0,.2)"><div style="padding:20px 24px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between"><div><div style="font-size:16px;font-weight:700" id="ev-modal-title">Report event</div><div style="font-size:12px;color:var(--text2);margin-top:2px" id="ev-modal-ref"></div></div><button onclick="evCloseModal()" style="background:none;border:none;font-size:22px;cursor:pointer;color:var(--text2)"><i class="ti ti-x"></i></button></div><div style="padding:24px"><div id="ev-view-mode" style="display:none"><div id="ev-view-content"></div><div style="display:flex;gap:8px;margin-top:20px;flex-wrap:wrap" id="ev-view-actions"></div></div><div id="ev-edit-mode"><div class="form-row"><div class="form-group"><label class="form-label">Event type <span style="color:var(--red)">*</span></label><select id="ev-type"><option value="">Select type...</option><option value="Near Miss">Near Miss</option><option value="Incident">Incident</option><option value="Hazard Observation">Hazard Observation</option><option value="Dangerous Occurrence">Dangerous Occurrence</option><option value="Environmental">Environmental</option></select></div><div class="form-group"><label class="form-label">Severity <span style="color:var(--red)">*</span></label><select id="ev-severity"><option value="low">Low</option><option value="medium">Medium</option><option value="high">High</option><option value="critical">Critical</option></select></div></div><div class="form-row"><div class="form-group"><label class="form-label">Date & time <span style="color:var(--red)">*</span></label><input type="datetime-local" id="ev-date"/></div><div class="form-group"><label class="form-label">Location <span style="color:var(--red)">*</span></label><input type="text" id="ev-location" placeholder="Area, department or specific location"/></div></div><div class="form-group"><label class="form-label">Description <span style="color:var(--red)">*</span></label><textarea id="ev-description" style="min-height:90px" placeholder="Describe what happened, how it happened, and what the conditions were..."></textarea></div><div class="form-group"><label class="form-label">Immediate action taken</label><textarea id="ev-immediate" style="min-height:60px" placeholder="What was done immediately after the event..."></textarea></div><div style="font-size:12px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.05em;margin:16px 0 10px;padding-top:14px;border-top:1px solid var(--border)">People</div><div class="form-row"><div class="form-group"><label class="form-label">Person involved</label><select id="ev-person"><option value="">Select from register or leave blank</option></select></div><div class="form-group"><label class="form-label">Department / area</label><input type="text" id="ev-department" placeholder="Department or area"/></div></div><div class="form-row"><div class="form-group"><label class="form-label">Reported by</label><select id="ev-reported-by"><option value="">Select from register...</option></select></div><div class="form-group"><label class="form-label">Assigned to (for follow-up)</label><select id="ev-assigned-to"><option value="">Select from register...</option></select></div></div><div class="form-row"><div class="form-group"><label class="form-label">Action due date</label><input type="date" id="ev-due-date"/></div><div class="form-group"><label class="form-label">Status</label><select id="ev-status"><option value="open">Open</option><option value="under_investigation">Under investigation</option><option value="action_required">Action required</option><option value="closed">Closed</option></select></div></div><div id="ev-serious-warning" style="display:none;background:#FEF2F2;border:1px solid #FCA5A5;border-radius:8px;padding:12px 14px;margin-top:8px"><div style="font-size:13px;font-weight:600;color:var(--red);margin-bottom:4px"><i class="ti ti-alert-triangle"></i> High / Critical severity</div><div style="font-size:12px;color:#7F1D1D">This event will automatically create an action in the Master Action Plan and prompt you to start an investigation.</div></div><div style="display:flex;gap:8px;justify-content:space-between;margin-top:20px;align-items:center"><div><button class="btn btn-danger" id="ev-delete-btn" style="display:none" onclick="evDelete()"><i class="ti ti-trash"></i>Delete</button></div><div style="display:flex;gap:8px"><button class="btn" onclick="evCloseModal()">Cancel</button><button class="btn btn-primary" onclick="evSave()"><i class="ti ti-device-floppy"></i>Save event</button></div></div></div></div></div></div></div>
+<div id="page-observation" class="page">
+<div class="page-header">
+<div>
+<div class="page-title">Observations &amp; BBS</div>
+<div style="font-size:12px;color:var(--text2)">Behaviour-Based Safety · Safety observation cards · Positive behaviour · Unsafe acts &amp; conditions · Trend analysis</div>
+</div>
+<div style="display:flex;gap:8px">
+<button class="btn btn-primary" id="obs-new-btn" onclick="obsNew()"><i class="ti ti-plus"></i>New observation</button>
+</div>
+</div>
+
+<!-- Metrics -->
+<div style="display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin-bottom:14px">
+<div class="card" style="padding:10px 12px;border-left:4px solid #1D9E75"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">Positive</div><div style="font-size:22px;font-weight:800;color:#1D9E75" id="obs-m-positive">—</div></div>
+<div class="card" style="padding:10px 12px;border-left:4px solid #E24B4A"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">Unsafe Acts</div><div style="font-size:22px;font-weight:800;color:#E24B4A" id="obs-m-unsafe-act">—</div></div>
+<div class="card" style="padding:10px 12px;border-left:4px solid #EF9F27"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">Unsafe Conditions</div><div style="font-size:22px;font-weight:800;color:#EF9F27" id="obs-m-unsafe-cond">—</div></div>
+<div class="card" style="padding:10px 12px;border-left:4px solid #8B5CF6"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">Near Misses</div><div style="font-size:22px;font-weight:800;color:#8B5CF6" id="obs-m-near-miss">—</div></div>
+<div class="card" style="padding:10px 12px;border-left:4px solid #DC2626"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">Actions Open</div><div style="font-size:22px;font-weight:800;color:#DC2626" id="obs-m-actions">—</div></div>
+<div class="card" style="padding:10px 12px;border-left:4px solid #185FA5"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">This Month</div><div style="font-size:22px;font-weight:800;color:#185FA5" id="obs-m-month">—</div></div>
+</div>
+
+<!-- Tab bar -->
+<div style="display:flex;gap:0;margin-bottom:14px;border-bottom:2px solid var(--border);overflow-x:auto">
+<button class="mtg-tab active" id="obs-tab-list" onclick="obsSwitchTab('list',this)" style="white-space:nowrap">📋 All Observations</button>
+<button class="mtg-tab" id="obs-tab-positive" onclick="obsSwitchTab('positive',this)" style="white-space:nowrap">✅ Positive Behaviours</button>
+<button class="mtg-tab" id="obs-tab-unsafe" onclick="obsSwitchTab('unsafe',this)" style="white-space:nowrap">⚠️ Unsafe Acts/Conditions</button>
+<button class="mtg-tab" id="obs-tab-trends" onclick="obsSwitchTab('trends',this)" style="white-space:nowrap">📈 Trend Analysis</button>
+</div>
+
+<!-- ── ALL OBSERVATIONS ── -->
+<div id="obs-view-list">
+<div class="card" style="margin-bottom:12px;padding:10px 14px">
+<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+<input type="text" id="obs-search" placeholder="Search observer, location, description..." oninput="obsFilterList()" style="flex:1;min-width:180px;padding:7px 12px;border:1px solid var(--border);border-radius:8px;font-size:12px"/>
+<select id="obs-filter-type" onchange="obsFilterList()" style="padding:7px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px">
+<option value="">All types</option>
+<option value="positive_behaviour">✅ Positive behaviour</option>
+<option value="unsafe_behaviour">⚠️ Unsafe behaviour</option>
+<option value="unsafe_condition">🔴 Unsafe condition</option>
+<option value="near_miss">⚡ Near miss</option>
+<option value="good_practice">⭐ Good practice</option>
+</select>
+<select id="obs-filter-cat" onchange="obsFilterList()" style="padding:7px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px">
+<option value="">All categories</option>
+<option value="ppe">PPE</option><option value="housekeeping">Housekeeping</option>
+<option value="working_at_height">Working at Height</option><option value="manual_handling">Manual Handling</option>
+<option value="electrical">Electrical</option><option value="machinery">Machinery</option>
+<option value="chemical">Chemical</option><option value="fire">Fire</option>
+<option value="environmental">Environmental</option><option value="driving">Driving</option>
+<option value="ergonomics">Ergonomics</option><option value="procedures">Procedures</option>
+</select>
+<select id="obs-filter-sev" onchange="obsFilterList()" style="padding:7px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px">
+<option value="">All severities</option>
+<option value="critical">Critical</option><option value="high">High</option>
+<option value="medium">Medium</option><option value="low">Low</option>
+</select>
+</div>
+</div>
+<div id="obs-list-container"></div>
+</div>
+
+<!-- ── POSITIVE BEHAVIOURS ── -->
+<div id="obs-view-positive" style="display:none">
+<div class="card" style="margin-bottom:14px;padding:16px 20px;background:linear-gradient(135deg,#064E3B,#1D9E75);color:#fff">
+<div style="font-size:15px;font-weight:800;margin-bottom:4px">✅ Positive Behaviour Recognition</div>
+<div style="font-size:12px;opacity:.85">Recognise and reinforce safe behaviours. Every positive observation strengthens your safety culture.</div>
+</div>
+<div id="obs-positive-list"></div>
+</div>
+
+<!-- ── UNSAFE ACTS/CONDITIONS ── -->
+<div id="obs-view-unsafe" style="display:none">
+<div class="card" style="margin-bottom:14px;padding:16px 20px;background:linear-gradient(135deg,#7F1D1D,#DC2626);color:#fff">
+<div style="font-size:15px;font-weight:800;margin-bottom:4px">⚠️ Unsafe Acts &amp; Conditions</div>
+<div style="font-size:12px;opacity:.85">Review and act on reported unsafe behaviours and physical hazards. Critical items require immediate action.</div>
+</div>
+<div id="obs-unsafe-alerts" style="margin-bottom:10px"></div>
+<div id="obs-unsafe-list"></div>
+</div>
+
+<!-- ── TREND ANALYSIS ── -->
+<div id="obs-view-trends" style="display:none">
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px">
+<!-- Safe/Unsafe ratio gauge -->
+<div class="card">
+<div class="card-title"><i class="ti ti-chart-pie"></i> Safe vs Unsafe Ratio</div>
+<div id="obs-trend-ratio" style="padding:10px"></div>
+</div>
+<!-- Observations over time -->
+<div class="card">
+<div class="card-title"><i class="ti ti-trending-up"></i> Monthly Volume</div>
+<div id="obs-trend-monthly" style="padding:10px"></div>
+</div>
+</div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px">
+<!-- Top categories -->
+<div class="card">
+<div class="card-title"><i class="ti ti-category"></i> Top Categories (Unsafe)</div>
+<div id="obs-trend-categories"></div>
+</div>
+<!-- Top locations -->
+<div class="card">
+<div class="card-title"><i class="ti ti-map-pin"></i> Top Locations</div>
+<div id="obs-trend-locations"></div>
+</div>
+</div>
+<!-- Behaviour trend -->
+<div class="card" style="margin-bottom:14px">
+<div class="card-title"><i class="ti ti-robot"></i> AI Behavioural Safety Insights</div>
+<div style="font-size:12px;color:var(--text2);margin-bottom:10px">AI-powered analysis of your observation data — patterns, root causes, and recommendations</div>
+<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">
+<button class="btn btn-sm" style="background:#5B21B6;color:#fff;border-color:#5B21B6" onclick="obsAskAI('Analyse our safety observation data and identify the top 3 recurring unsafe behaviour patterns and their likely root causes')">🔍 Behaviour patterns</button>
+<button class="btn btn-sm" style="background:#5B21B6;color:#fff;border-color:#5B21B6" onclick="obsAskAI('Based on our observation categories, what targeted BBS interventions and toolbox talks would most reduce our unsafe behaviours?')">🎯 Intervention ideas</button>
+<button class="btn btn-sm" style="background:#5B21B6;color:#fff;border-color:#5B21B6" onclick="obsAskAI('Write a brief safety observation programme summary report including trends and recommendations')">📊 Generate report</button>
+</div>
+<div style="display:flex;gap:8px;margin-bottom:8px">
+<input type="text" id="obs-ai-input" placeholder="Ask about your observation trends, BBS programme effectiveness, root causes..." style="flex:1;padding:8px 12px;border:1px solid #c4b5fd;border-radius:8px;font-size:12px" onkeydown="if(event.key==='Enter')obsAskAI(this.value)"/>
+<button class="btn" style="background:#5B21B6;color:#fff;border-color:#5B21B6" onclick="obsAskAI(document.getElementById('obs-ai-input').value)"><i class="ti ti-send"></i></button>
+</div>
+<div id="obs-ai-response" style="display:none;background:#F5F3FF;border:1px solid #c4b5fd;border-radius:8px;padding:12px;font-size:13px;line-height:1.6;white-space:pre-wrap;max-height:360px;overflow-y:auto"></div>
+</div>
+<!-- Recent observations summary -->
+<div class="card">
+<div class="card-title">Recent Critical &amp; High Observations</div>
+<div id="obs-trend-critical"></div>
+</div>
+</div>
+
+<!-- ═══════ OBSERVATION FORM ═══════ -->
+<div id="obs-form-view" style="display:none">
+<!-- Header -->
+<div class="card" style="margin-bottom:14px;padding:0;overflow:hidden">
+<div id="obs-form-banner" style="padding:16px 24px;background:linear-gradient(135deg,#1a3a5c,#185FA5);color:#fff;display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:10px">
+<div>
+<div style="font-size:11px;font-weight:600;text-transform:uppercase;opacity:.8;letter-spacing:.08em;margin-bottom:4px" id="obs-form-type-label">Safety Observation</div>
+<div style="font-size:18px;font-weight:800" id="obs-form-title">New Observation</div>
+<div style="font-family:monospace;font-size:12px;color:#a8d8f0;margin-top:3px" id="obs-form-ref">OBS-AUTO</div>
+</div>
+<div style="display:flex;gap:8px;flex-wrap:wrap">
+<button class="btn" style="background:rgba(255,255,255,.2);color:#fff;border-color:rgba(255,255,255,.3)" onclick="obsShowList()"><i class="ti ti-arrow-left"></i>Back</button>
+<button id="obs-del-btn" class="btn" style="display:none;background:rgba(220,38,38,.3);color:#fff;border-color:rgba(220,38,38,.5)" onclick="obsDelete()"><i class="ti ti-trash"></i></button>
+<button class="btn" style="background:#1D9E75;color:#fff;border-color:#1D9E75" onclick="obsSave()"><i class="ti ti-device-floppy"></i>Save</button>
+</div>
+</div>
+</div>
+
+<!-- Observation type selector (large visual buttons) -->
+<div class="card" style="margin-bottom:14px">
+<div class="card-title">Observation Type</div>
+<div style="display:grid;grid-template-columns:repeat(5,1fr);gap:10px" id="obs-type-selector">
+<div class="obs-type-btn" data-type="positive_behaviour" onclick="obsSelectType('positive_behaviour')" style="padding:14px 10px;border-radius:10px;text-align:center;cursor:pointer;border:2px solid #bbf7d0;background:#f0fdf4;transition:all .15s">
+<div style="font-size:28px;margin-bottom:6px">✅</div><div style="font-weight:700;font-size:12px;color:#166534">Positive Behaviour</div><div style="font-size:10px;color:var(--text2);margin-top:3px">Safe act observed</div></div>
+<div class="obs-type-btn" data-type="unsafe_behaviour" onclick="obsSelectType('unsafe_behaviour')" style="padding:14px 10px;border-radius:10px;text-align:center;cursor:pointer;border:2px solid #fecaca;background:#FEF2F2;transition:all .15s">
+<div style="font-size:28px;margin-bottom:6px">⚠️</div><div style="font-weight:700;font-size:12px;color:#991B1B">Unsafe Behaviour</div><div style="font-size:10px;color:var(--text2);margin-top:3px">At-risk act seen</div></div>
+<div class="obs-type-btn" data-type="unsafe_condition" onclick="obsSelectType('unsafe_condition')" style="padding:14px 10px;border-radius:10px;text-align:center;cursor:pointer;border:2px solid #fed7aa;background:#FFF7ED;transition:all .15s">
+<div style="font-size:28px;margin-bottom:6px">🔴</div><div style="font-weight:700;font-size:12px;color:#9A3412">Unsafe Condition</div><div style="font-size:10px;color:var(--text2);margin-top:3px">Physical hazard</div></div>
+<div class="obs-type-btn" data-type="near_miss" onclick="obsSelectType('near_miss')" style="padding:14px 10px;border-radius:10px;text-align:center;cursor:pointer;border:2px solid #ddd6fe;background:#F5F3FF;transition:all .15s">
+<div style="font-size:28px;margin-bottom:6px">⚡</div><div style="font-weight:700;font-size:12px;color:#5B21B6">Near Miss</div><div style="font-size:10px;color:var(--text2);margin-top:3px">Almost happened</div></div>
+<div class="obs-type-btn" data-type="good_practice" onclick="obsSelectType('good_practice')" style="padding:14px 10px;border-radius:10px;text-align:center;cursor:pointer;border:2px solid #bfdbfe;background:#EFF6FF;transition:all .15s">
+<div style="font-size:28px;margin-bottom:6px">⭐</div><div style="font-weight:700;font-size:12px;color:#1e40af">Good Practice</div><div style="font-size:10px;color:var(--text2);margin-top:3px">Best practice</div></div>
+</div>
+<input type="hidden" id="obs-type" value="unsafe_condition"/>
+</div>
+
+<div style="display:grid;grid-template-columns:2fr 1fr;gap:14px">
+<div>
+<!-- What was observed -->
+<div class="card" style="margin-bottom:14px" id="obs-positive-section">
+<div class="card-title" style="color:#1D9E75">✅ Positive Observation</div>
+<div class="form-group"><label class="form-label">What safe behaviour / good practice was observed?</label><textarea id="obs-positive-text" style="min-height:80px" placeholder="Describe the safe behaviour, what was done correctly, and why it was good practice..."></textarea></div>
+<div class="form-group"><label class="form-label">What positive aspects should be reinforced?</label><textarea id="obs-positive-reinforce" style="min-height:60px" placeholder="What should be recognised and encouraged?"></textarea></div>
+</div>
+<div class="card" style="margin-bottom:14px" id="obs-unsafe-section" style="display:none">
+<div class="card-title" style="color:#DC2626" id="obs-unsafe-section-title">⚠️ Unsafe Observation</div>
+<div class="form-group"><label class="form-label">Observation description</label><textarea id="obs-text" style="min-height:80px" placeholder="Describe clearly what was observed — the unsafe act, condition or near miss..."></textarea></div>
+<div class="form-group"><label class="form-label">Immediate / direct cause</label><textarea id="obs-immediate-cause" style="min-height:60px" placeholder="What was the immediate cause of the unsafe situation?"></textarea></div>
+<div class="form-group"><label class="form-label">Potential consequence (if unaddressed)</label><input type="text" id="obs-consequence" placeholder="e.g. Fall from height, Chemical splash, Crush injury..."/></div>
+</div>
+
+<!-- Location & Context -->
+<div class="card" style="margin-bottom:14px"><div class="card-title">Location &amp; Context</div>
+<div class="form-row">
+<div class="form-group"><label class="form-label">Location / area</label><input type="text" id="obs-location" placeholder="e.g. Production floor B, Store area, Car park..."/></div>
+<div class="form-group"><label class="form-label">Department</label><input type="text" id="obs-dept"/></div>
+<div class="form-group"><label class="form-label">Work activity</label><input type="text" id="obs-activity" placeholder="e.g. Loading/unloading, Machine operation, Cleaning..."/></div>
+</div>
+<div class="form-row">
+<div class="form-group"><label class="form-label">Date</label><input type="date" id="obs-date"/></div>
+<div class="form-group"><label class="form-label">Time</label><input type="time" id="obs-time"/></div>
+<div class="form-group"><label class="form-label">No. of persons involved</label><input type="number" id="obs-num-persons" value="1" min="1" max="50"/></div>
+</div>
+</div>
+
+<!-- Action taken -->
+<div class="card" style="margin-bottom:14px"><div class="card-title" style="color:#185FA5">Immediate Action &amp; Feedback</div>
+<div style="display:flex;gap:20px;flex-wrap:wrap;margin-bottom:10px">
+<label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer;font-weight:600"><input type="checkbox" id="obs-immediate-action" style="accent-color:var(--green)"/> Immediate action taken</label>
+<label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer;font-weight:600"><input type="checkbox" id="obs-stopped-work" style="accent-color:var(--red)"/> Work stopped</label>
+<label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer;font-weight:600"><input type="checkbox" id="obs-feedback-given" style="accent-color:var(--green)"/> Feedback given to person</label>
+</div>
+<div class="form-group"><label class="form-label">Immediate action description</label><textarea id="obs-immediate-desc" style="min-height:60px" placeholder="Describe what was done immediately to address the observation..."></textarea></div>
+<div class="form-group"><label class="form-label">Feedback notes</label><textarea id="obs-feedback-notes" style="min-height:50px" placeholder="What was communicated to the person observed?"></textarea></div>
+</div>
+
+<!-- Follow-up action -->
+<div class="card"><div class="card-title" style="color:#E24B4A">Follow-up Action Required</div>
+<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px"><input type="checkbox" id="obs-action-required" style="accent-color:var(--red)" onchange="obsToggleAction()"/><label for="obs-action-required" style="font-size:13px;font-weight:600;cursor:pointer;color:#E24B4A">Further action required</label></div>
+<div id="obs-action-fields" style="display:none">
+<div class="form-group"><label class="form-label">Action description</label><textarea id="obs-action-desc" style="min-height:60px" placeholder="What action must be taken to prevent recurrence?"></textarea></div>
+<div class="form-row">
+<div class="form-group"><label class="form-label">Assigned to</label><input type="text" id="obs-action-assigned"/></div>
+<div class="form-group"><label class="form-label">Due date</label><input type="date" id="obs-action-due"/></div>
+</div>
+</div>
+</div>
+</div>
+
+<div>
+<!-- PPE -->
+<div class="card" style="margin-bottom:14px"><div class="card-title">PPE Status</div>
+<div style="display:flex;flex-direction:column;gap:8px">
+<label style="display:flex;align-items:center;gap:8px;padding:8px;border-radius:8px;cursor:pointer;background:#f9fafb" onclick="document.getElementById('obs-ppe-worn').value='true'"><input type="radio" name="obs-ppe" value="true" style="accent-color:var(--green)"> <span style="font-size:12px;font-weight:600;color:#166534">✓ PPE worn correctly</span></label>
+<label style="display:flex;align-items:center;gap:8px;padding:8px;border-radius:8px;cursor:pointer;background:#f9fafb" onclick="document.getElementById('obs-ppe-worn').value='partial'"><input type="radio" name="obs-ppe" value="partial" style="accent-color:#EF9F27"> <span style="font-size:12px;font-weight:600;color:#854F0B">⚠ PPE worn but inadequate</span></label>
+<label style="display:flex;align-items:center;gap:8px;padding:8px;border-radius:8px;cursor:pointer;background:#f9fafb" onclick="document.getElementById('obs-ppe-worn').value='false'"><input type="radio" name="obs-ppe" value="false" style="accent-color:var(--red)"> <span style="font-size:12px;font-weight:600;color:#991B1B">✗ PPE not worn</span></label>
+<label style="display:flex;align-items:center;gap:8px;padding:8px;border-radius:8px;cursor:pointer;background:#f9fafb" onclick="document.getElementById('obs-ppe-worn').value='na'"><input type="radio" name="obs-ppe" value="na" style="accent-color:#6B7280" checked> <span style="font-size:12px;font-weight:600;color:#6B7280">— Not applicable</span></label>
+</div>
+<input type="hidden" id="obs-ppe-worn" value="na"/>
+<div class="form-group" style="margin-top:10px"><label class="form-label">PPE notes</label><input type="text" id="obs-ppe-notes" placeholder="Which PPE? What was the issue?"/></div>
+</div>
+
+<!-- Category -->
+<div class="card" style="margin-bottom:14px"><div class="card-title">Category &amp; Severity</div>
+<div class="form-group"><label class="form-label">Category</label>
+<select id="obs-category">
+<option value="ppe">🧤 PPE</option>
+<option value="housekeeping">🧹 Housekeeping</option>
+<option value="working_at_height">🪝 Working at Height</option>
+<option value="manual_handling">💪 Manual Handling</option>
+<option value="electrical">⚡ Electrical</option>
+<option value="machinery">⚙️ Machinery</option>
+<option value="chemical">🧪 Chemical</option>
+<option value="fire">🔥 Fire</option>
+<option value="environmental">🌿 Environmental</option>
+<option value="driving">🚗 Driving/Fleet</option>
+<option value="ergonomics">🏋️ Ergonomics</option>
+<option value="procedures">📋 Procedures</option>
+<option value="general">📌 General</option>
+</select></div>
+<div class="form-group"><label class="form-label">Potential severity</label>
+<select id="obs-severity">
+<option value="low">🟢 Low — minor consequence</option>
+<option value="medium" selected>🟡 Medium — moderate consequence</option>
+<option value="high">🟠 High — serious consequence</option>
+<option value="critical">🔴 Critical — fatal or major</option>
+</select></div>
+<div class="form-group"><label class="form-label">Status</label>
+<select id="obs-status">
+<option value="open">Open</option>
+<option value="actioned">Actioned</option>
+<option value="closed">Closed</option>
+</select></div>
+</div>
+
+<!-- Observer -->
+<div class="card"><div class="card-title">Observer &amp; Person</div>
+<div class="form-group"><label class="form-label">Observer name</label><input type="text" id="obs-observer" placeholder="Who made this observation?"/></div>
+<div class="form-group"><label class="form-label">Observer department</label><input type="text" id="obs-observer-dept"/></div>
+<div class="form-group"><label class="form-label">Person observed (optional)</label><input type="text" id="obs-person-observed" placeholder="Anonymous or name..."/></div>
+<div class="form-group"><label class="form-label">Root cause (if known)</label><textarea id="obs-root-cause" style="min-height:50px" placeholder="Why did this occur? (system, training, attitude, environment...)"></textarea></div>
+</div>
+</div>
+</div>
+</div><!-- end obs-form-view -->
+
+</div><!-- end page-observation -->
+
 <div id="page-inspection" class="page">
 <div class="page-header">
 <div><div class="page-title">Site Inspection</div><div style="font-size:12px;color:var(--text2)" id="insp-subtitle">Workplace inspections and pre-start checks</div></div>
