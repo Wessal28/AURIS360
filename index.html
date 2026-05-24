@@ -78,6 +78,8 @@
 
 
 
+
+
 const SB='https://iarfxjhahzbhncsaohbg.supabase.co';
 const KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlhcmZ4amhhaHpiaG5jc2FvaGJnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg2OTM1MzAsImV4cCI6MjA5NDI2OTUzMH0.qSjahuX-RwnjWEDmo-LkcorAxpsmyVoaXt4AO4_A9BM';
 let tok=null,prof=null,co=null,chkItems=[],people=[];
@@ -10446,753 +10448,884 @@ async function saveMtg(){mtgSaveMom();}
 
 
 // ===== TRAINING & COMPETENCY MODULE =====
+let tpAllData=[], tfAllData=[], authAllData=[], compAllData=[], compMatrixData=[];
+let indAllData=[], elcAllData=[], eleAllData=[], tnAllData=[];
+let tpEditingId=null, tfEditingId=null, authEditingId=null;
+let compEditId=null, indEditId=null, elcEditId=null, eleEditId=null;
 let trainYear = new Date().getFullYear();
-let tpAllData = [], tfAllData = [], authAllData = [], compAllData = [], cmAllData = [], tnAllData = [];
-let tpEditingId = null, tfEditingId = null, authEditingId = null;
 
-const TRAIN_LEVELS = ['0 – No knowledge','1 – Theoretical','2 – First experience','3 – Good level','4 – Expert'];
-const LEVEL_COLORS = ['#f3f4f6','#E6F1FB','#FEF9EC','#EAF3DE','#1D9E75'];
-const LEVEL_TEXT   = ['#6B7280','#185FA5','#854F0B','#3B6D11','#fff'];
+// ── Competency type definitions (licence/cert tracking) ──────────────────────
+const COMP_TYPES = [
+  {name:'Forklift Licence',        emoji:'🚜', category:'Plant Operation',   validity:36},
+  {name:'Crane Operator',          emoji:'🏗️',  category:'Plant Operation',   validity:36},
+  {name:'Scaffolding Licence',     emoji:'🏗️',  category:'Working at Height', validity:24},
+  {name:'First Aid Certificate',   emoji:'🚑', category:'Emergency Response',validity:36},
+  {name:'Fire Warden Certificate', emoji:'🔥', category:'Emergency Response',validity:12},
+  {name:'Confined Space Entry',    emoji:'⚠️',  category:'High Risk',         validity:24},
+  {name:'Electrical Authorisation',emoji:'⚡', category:'Technical',         validity:24},
+  {name:'Working at Height',       emoji:'🪝', category:'Working at Height', validity:24},
+  {name:'NEBOSH Certificate',      emoji:'📜', category:'Professional',      validity:null},
+  {name:'IOSH Managing Safely',    emoji:'📜', category:'Professional',      validity:null},
+  {name:'Banksman / Slinger',      emoji:'🚧', category:'Plant Operation',   validity:36},
+  {name:'Rigging Certificate',     emoji:'🔩', category:'Technical',         validity:36},
+  {name:'Welding Certification',   emoji:'🔧', category:'Technical',         validity:24},
+  {name:'Driver Authorisation',    emoji:'🚗', category:'Driving',           validity:12},
+];
 
-function trainSwitchTab(tab, btn){
-  document.querySelectorAll('.mtg-tab').forEach(t=>t.classList.remove('active'));
-  btn.classList.add('active');
-  ['matrix','tna','plan','followup','auth'].forEach(function(t){
-    var el=document.getElementById('train-view-'+t);
-    if(el)el.style.display=t===tab?'block':'none';
-  });
-  // Hide all forms
-  ['tp-form','tf-form','auth-form'].forEach(function(id){
-    var el=document.getElementById(id);if(el)el.style.display='none';
-  });
-  if(tab==='matrix')cmLoad();
-  else if(tab==='tna')tnaLoad();
-  else if(tab==='plan')tpLoad();
-  else if(tab==='followup')tfLoad();
-  else if(tab==='auth')authLoad();
+const COMP_LEVEL_CFG = {
+  not_assessed: {bg:'#f3f4f6',tc:'#6B7280',label:'N/A'},
+  not_competent:{bg:'#FCEBEB',tc:'#A32D2D',label:'✗ Not comp.'},
+  developing:   {bg:'#FEF9EC',tc:'#854F0B',label:'⏳ Developing'},
+  competent:    {bg:'#EAF3DE',tc:'#3B6D11',label:'✓ Competent'},
+  expert:       {bg:'#EDE9FE',tc:'#5B21B6',label:'⭐ Expert'},
+};
+
+// ── Entry / Switch ────────────────────────────────────────────────────────────
+async function loadTraining() {
+  // Show add btn
+  var nb = document.getElementById('train-new-btn');
+  if (nb) nb.style.display = isMgr() ? 'inline-flex' : 'none';
+  // Set year label
+  var yl = document.getElementById('tp-year-label');
+  if (yl) yl.textContent = trainYear;
+  // Load metrics and expiry banner async (don't block tab render)
+  trainLoadMetrics();
+  trainRenderExpiryBanner();
+  // Load first tab
+  trainSwitchTab('matrix', document.getElementById('train-tab-matrix'));
 }
 
-async function loadTraining(){
-  var addBtn=document.getElementById('tp-add-btn');
-  if(addBtn)addBtn.style.display=isMgr()?'inline-flex':'none';
-  var authBtn=document.getElementById('auth-add-btn');
-  if(authBtn)authBtn.style.display=isMgr()?'inline-flex':'none';
-  var tfBtn=document.getElementById('tf-add-btn');
-  if(tfBtn)tfBtn.style.display=isMgr()?'inline-flex':'none';
-  var cmBtn=document.getElementById('cm-add-comp-btn');
-  if(cmBtn)cmBtn.style.display=isMgr()?'inline-flex':'none';
-  var tnaBtn=document.getElementById('tna-add-btn');
-  if(tnaBtn)tnaBtn.style.display=isMgr()?'inline-flex':'none';
-  trainYear=new Date().getFullYear();
-  var yl=document.getElementById('tp-year-label');if(yl)yl.textContent=trainYear;
-  cmLoad();
+function trainSwitchTab(tab, btn) {
+  document.querySelectorAll('[id^="train-tab-"]').forEach(t => t.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  var allViews = ['matrix','competency','induction','plan','followup','elearning','auth','tna'];
+  allViews.forEach(function(t) {
+    var el = document.getElementById('train-view-'+t);
+    if (el) el.style.display = t === tab ? 'block' : 'none';
+  });
+  var allForms = ['tp-form','tf-form','comp-form','ind-form','auth-form','elc-form','ele-form'];
+  allForms.forEach(function(id) { var el=document.getElementById(id); if(el) el.style.display='none'; });
+  // Update header add btn label
+  var labels = {matrix:'Add column', competency:'Add record', induction:'New induction',
+                plan:'Add training', followup:'Add record', elearning:'Add course',
+                auth:'Add licence', tna:'Add need'};
+  var nb = document.getElementById('train-new-btn');
+  if (nb) {
+    if (labels[tab]) { nb.innerHTML='<i class="ti ti-plus"></i>'+labels[tab]; nb.style.display=isMgr()?'inline-flex':'none'; }
+    else nb.style.display = 'none';
+  }
+  if (tab==='matrix')     cmLoad();
+  else if (tab==='competency') { compLoadAll(); }
+  else if (tab==='induction')  indLoad();
+  else if (tab==='plan')   tpLoad();
+  else if (tab==='followup') tfLoad();
+  else if (tab==='elearning') { elcLoad(); eleLoad(); }
+  else if (tab==='auth')   authLoad();
+  else if (tab==='tna')    tnaLoad();
 }
 
-// ── COMPETENCY MATRIX ───────────────────────────────────────────────────────
-async function cmLoad(){
-  var el=document.getElementById('cm-table');
-  if(!el)return;
-  el.innerHTML='<div class="loading-msg">Loading...</div>';
-  try{
+function trainNewFromTab() {
+  var active = document.querySelector('[id^="train-tab-"].active');
+  var tab = active?.id?.replace('train-tab-','');
+  if (tab==='matrix')     cmAddCompetency();
+  else if (tab==='competency') compNew();
+  else if (tab==='induction')  indNew();
+  else if (tab==='plan')   tpNew();
+  else if (tab==='followup') tfNew();
+  else if (tab==='elearning') elcNew();
+  else if (tab==='auth')   authNew();
+  else if (tab==='tna')    tnaAddRow();
+}
+
+// ── Metrics & Expiry Banner ───────────────────────────────────────────────────
+async function trainLoadMetrics() {
+  try {
+    var now = new Date(); var soon = new Date(); soon.setDate(soon.getDate()+90);
+    var [tp, tf, auth, ind, ele] = await Promise.all([
+      api('/training_plan?select=status,year'+cf()+'&year=eq.'+trainYear),
+      api('/training_followup?select=expiry_date'+cf()),
+      api('/authorisations?select=expiry_date,status'+cf()),
+      api('/induction_records?select=status,refresher_due_date'+cf()),
+      api('/elearning_enrolments?select=status'+cf()),
+    ]).catch(() => [[],[],[],[],[]]);
+    var setM = function(id,v){var e=document.getElementById(id);if(e)e.textContent=v;};
+    setM('tr-m-plans', (tp||[]).length);
+    setM('tr-m-completed', (tp||[]).filter(x=>x.status==='completed').length);
+    var expiring = [...(tf||[]).filter(x=>x.expiry_date&&new Date(x.expiry_date)>now&&new Date(x.expiry_date)<=soon),
+                   ...(auth||[]).filter(x=>x.expiry_date&&new Date(x.expiry_date)>now&&new Date(x.expiry_date)<=soon)].length;
+    setM('tr-m-expiring', expiring);
+    setM('tr-m-gaps', '—');  // updated by competency tab
+    setM('tr-m-inductions', (ind||[]).filter(x=>x.status!=='completed').length);
+    setM('tr-m-elearning', (ele||[]).filter(x=>x.status==='completed').length);
+  } catch(e) { /* silent */ }
+}
+
+async function trainRenderExpiryBanner() {
+  try {
+    var banner = document.getElementById('tr-expiry-banner'); if (!banner) return;
+    var now = new Date(); var soon = new Date(); soon.setDate(soon.getDate()+60);
+    var auth = await api('/authorisations?select=person_name,authorisation_type,expiry_date,status'+cf()+'&status=eq.active&order=expiry_date.asc');
+    var expiring = (auth||[]).filter(x => x.expiry_date && new Date(x.expiry_date) > now && new Date(x.expiry_date) <= soon);
+    var expired  = (auth||[]).filter(x => x.expiry_date && new Date(x.expiry_date) < now && x.status==='active');
+    if (!expiring.length && !expired.length) { banner.style.display='none'; return; }
+    var parts = [];
+    if (expired.length) parts.push('<span style="color:#A32D2D;font-weight:700">⛔ '+expired.length+' EXPIRED</span>: '+expired.slice(0,3).map(x=>escH(x.person_name)+' ('+escH(x.authorisation_type)+')').join(', '));
+    if (expiring.length) parts.push('<span style="color:#C2410C;font-weight:700">⚠ '+expiring.length+' expiring &lt;60 days</span>: '+expiring.slice(0,3).map(x=>escH(x.person_name)+' ('+escH(x.authorisation_type)+')').join(', '));
+    banner.innerHTML = '<div style="background:#FEF6E7;border:2px solid #F97316;border-radius:10px;padding:10px 16px;font-size:12px;display:flex;align-items:center;gap:10px;flex-wrap:wrap">'
+      +'<i class="ti ti-alert-triangle" style="color:#C2410C;font-size:18px;flex-shrink:0"></i>'
+      +'<div>'+parts.join(' &nbsp;|&nbsp; ')+'</div>'
+      +'<button class="btn btn-sm" style="margin-left:auto;background:#C2410C;color:#fff;border-color:#C2410C" onclick="trainSwitchTab(\'auth\',document.getElementById(\'train-tab-auth\'))">View certificates</button>'
+      +'</div>';
+    banner.style.display = 'block';
+  } catch(e) { /* silent */ }
+}
+
+// ── TRAINING MATRIX (competency coverage grid) ────────────────────────────────
+async function cmLoad() {
+  var el = document.getElementById('cm-table'); if (!el) return;
+  el.innerHTML = '<div class="loading-msg">Loading matrix...</div>';
+  var btn = document.getElementById('cm-add-comp-btn');
+  if (btn) btn.style.display = isMgr() ? 'inline-flex' : 'none';
+  try {
+    var deptFilter = document.getElementById('cm-filter-dept')?.value || '';
     var [comps, people_data, cm] = await Promise.all([
       api('/competencies?select=*'+cf()+'&order=sort_order,name'),
-      api('/people?select=id,first_name,last_name,job_title&status=eq.active'+cf()+'&order=last_name'),
+      api('/people?select=id,first_name,last_name,job_title,department&status=eq.active'+cf()+'&order=last_name'),
       api('/competency_matrix?select=*'+cf())
     ]);
-    compAllData=comps||[];
-    cmAllData=cm||[];
-    if(!compAllData.length){
-      el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)">'
-        +'<div style="font-size:40px;margin-bottom:12px">📊</div>'
-        +'<div style="font-weight:600;margin-bottom:8px">No competencies defined yet</div>'
-        +(isMgr()?'<button class="btn btn-primary" onclick="cmAddCompetency()"><i class="ti ti-plus"></i>Add first competency</button>':'')
-        +'</div>';
+    compAllData = comps || [];
+    // Populate dept filter
+    var deptSel = document.getElementById('cm-filter-dept');
+    if (deptSel && people_data) {
+      var depts = [...new Set((people_data||[]).map(p=>p.department).filter(Boolean))].sort();
+      var existing = Array.from(deptSel.options).map(o=>o.value);
+      depts.forEach(function(d){if(!existing.includes(d)){var o=document.createElement('option');o.value=d;o.textContent=d;deptSel.appendChild(o);}});
+    }
+    var ppl = deptFilter ? (people_data||[]).filter(p=>p.department===deptFilter) : (people_data||[]);
+    if (!comps?.length || !ppl?.length) {
+      el.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text2)"><div style="font-size:40px;margin-bottom:12px">📊</div><div style="font-weight:600;margin-bottom:8px">No data for matrix</div><div style="font-size:13px">Add competencies and active people to generate the matrix</div></div>';
       return;
     }
-    var ppl=people_data||[];
-    // Build matrix
-    var cmMap={};
-    cmAllData.forEach(function(r){cmMap[r.person_id+'_'+r.competency_id]=r;});
-
-    var html='<table style="border-collapse:collapse;font-size:12px;min-width:100%">';
-    // Header
-    html+='<thead><tr><th style="padding:8px 12px;background:#1a3a5c;color:#fff;text-align:left;min-width:160px;position:sticky;left:0;z-index:3">Person / Role</th>';
-    compAllData.forEach(function(comp){
-      html+='<th style="padding:6px 4px;background:#1a3a5c;color:#cce4ff;text-align:center;min-width:80px;font-size:10px;font-weight:600;max-width:90px;word-wrap:break-word">'+escH(comp.name)+'</th>';
-    });
-    if(isMgr())html+='<th style="padding:6px;background:#1a3a5c;width:60px"></th>';
-    html+='</tr></thead><tbody>';
-    // Rows
-    ppl.forEach(function(p,pi){
-      var bg=pi%2===0?'#fff':'#f9fafb';
-      html+='<tr style="border-bottom:1px solid #f0f0f0">';
-      html+='<td style="padding:8px 12px;background:'+bg+';position:sticky;left:0;z-index:2;border-right:2px solid #e5e7eb;font-weight:600">'
-        +escH(p.last_name+', '+p.first_name)
-        +'<br><span style="font-size:10px;color:var(--text2);font-weight:400">'+escH(p.job_title||'')+'</span>'
-        +'</td>';
-      compAllData.forEach(function(comp){
-        var entry=cmMap[p.id+'_'+comp.id];
-        var cur=entry?entry.current_level:null;
-        var req=entry?entry.required_level:2;
-        var isGap=cur!==null&&cur<req;
-        var bg2=cur!==null?LEVEL_COLORS[cur]:'#f9fafb';
-        var col2=cur!==null?LEVEL_TEXT[cur]:'#ccc';
-        html+='<td style="padding:4px;text-align:center;background:'+bg+'">'
-          +'<div style="width:52px;height:28px;border-radius:6px;background:'+bg2+';color:'+col2+';font-weight:700;font-size:12px;display:flex;align-items:center;justify-content:center;margin:0 auto;cursor:pointer;border:1px solid '+(isGap?'var(--red)':'transparent')+';position:relative" '
-          +'title="'+escH(comp.name)+': Level '+(cur!==null?cur:'—')+' (required: '+req+')" '
-          +'data-pid="'+p.id+'" data-cid="'+comp.id+'" onclick="cmEditCell(this.dataset.pid,this.dataset.cid)">'
-          +(cur!==null?cur:'—')
-          +(isGap?'<span style="position:absolute;top:-4px;right:-4px;width:8px;height:8px;border-radius:50%;background:var(--red)"></span>':'')
-          +'</div></td>';
-      });
-      if(isMgr()){
-        html+='<td style="padding:4px;background:'+bg+'"></td>';
-      }
-      html+='</tr>';
-    });
-    html+='</tbody></table>';
-    // Gap legend
-    el.innerHTML=html+'<div style="padding:10px 16px;border-top:1px solid var(--border);background:#fafafa;font-size:11px;color:var(--text2);display:flex;gap:16px;flex-wrap:wrap">'
-      +LEVEL_COLORS.map(function(c,i){return '<span style="display:flex;align-items:center;gap:4px"><span style="width:14px;height:14px;border-radius:3px;background:'+c+';border:1px solid #e5e7eb;display:inline-block"></span>'+i+' – '+['No knowledge','Theoretical','First experience','Good level','Expert'][i]+'</span>';}).join('')
-      +'<span style="display:flex;align-items:center;gap:4px"><span style="width:14px;height:14px;border-radius:3px;background:#fff;border:2px solid var(--red);display:inline-block"></span>Gap identified</span>'
-      +'</div>';
-  }catch(e){el.innerHTML='<p style="padding:20px;color:red">'+e.message+'</p>';console.error(e);}
-}
-
-async function cmEditCell(personId, compId){
-  var entry=cmAllData.find(function(r){return r.person_id===personId&&r.competency_id===compId;});
-  var comp=compAllData.find(function(c){return c.id===compId;});
-  var cur=entry?entry.current_level:0;
-  var req=entry?entry.required_level:2;
-  var newCur=prompt('Competency: '+( comp?.name||'')
-    +'\n\nCurrent level (0-4):\n0=No knowledge\n1=Theoretical\n2=First experience\n3=Good level\n4=Expert'
-    +'\n\nEnter current level (current: '+cur+'):',cur);
-  if(newCur===null)return;
-  var newReq=prompt('Required level for this role (current: '+req+'):',req);
-  if(newReq===null)return;
-  try{
-    var body={company_id:prof?.company_id,person_id:personId,competency_id:compId,
-      current_level:parseInt(newCur)||0,required_level:parseInt(newReq)||2,updated_at:new Date().toISOString()};
-    if(entry){
-      await api('/competency_matrix?id=eq.'+entry.id,{m:'PATCH',p:'return=minimal',b:body});
-    }else{
-      await api('/competency_matrix',{m:'POST',p:'return=minimal',b:body});
-    }
-    toast('Updated!');
-    cmLoad();
-  }catch(e){toast(e.message,false);}
-}
-
-async function cmAddCompetency(){
-  var name=prompt('Competency name:');
-  if(!name||!name.trim())return;
-  var cat=prompt('Category (e.g. Fire Safety, Technical, Personal):','General');
-  try{
-    await api('/competencies',{m:'POST',p:'return=minimal',b:{company_id:prof?.company_id,name:name.trim(),category:cat||'General',sort_order:compAllData.length}});
-    toast('Competency added!');
-    cmLoad();
-  }catch(e){toast(e.message,false);}
-}
-
-// ── TRAINING NEEDS ANALYSIS ─────────────────────────────────────────────────
-async function tnaLoad(){
-  var el=document.getElementById('tna-table');
-  if(!el)return;
-  el.innerHTML='<div class="loading-msg">Loading...</div>';
-  try{
-    var d=await api('/training_needs?select=*'+cf()+'&order=category,role_name,training_topic');
-    tnAllData=d||[];
-    if(!tnAllData.length){
-      el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)">'
-        +'<div style="font-size:40px;margin-bottom:12px">🎯</div>'
-        +'<div style="font-weight:600;margin-bottom:8px">No training needs defined yet</div>'
-        +(isMgr()?'<button class="btn btn-primary" onclick="tnaAddRow()"><i class="ti ti-plus"></i>Add requirement</button>':'')
-        +'</div>';
-      return;
-    }
-    // Group by role
-    var byRole={};
-    tnAllData.forEach(function(r){if(!byRole[r.role_name])byRole[r.role_name]=[];byRole[r.role_name].push(r);});
-    var topics=[...new Set(tnAllData.map(function(r){return r.training_topic;}))];
-    var cats=['INDUCTION','EMERGENCY','HIGH RISK WORK','GENERAL'];
-
-    var html='<table style="border-collapse:collapse;font-size:12px;min-width:100%">';
-    html+='<thead><tr><th style="padding:8px 12px;background:#1a3a5c;color:#fff;text-align:left;min-width:160px;position:sticky;left:0;z-index:3">Role</th>';
-    topics.forEach(function(t){
-      html+='<th style="padding:6px 4px;background:#1a3a5c;color:#cce4ff;text-align:center;min-width:70px;font-size:10px;font-weight:600;max-width:80px;word-wrap:break-word">'+escH(t)+'</th>';
-    });
-    html+='</tr></thead><tbody>';
-    Object.entries(byRole).forEach(function(e,ri){
-      var role=e[0], reqs=e[1];
-      var bg=ri%2===0?'#fff':'#f9fafb';
-      html+='<tr style="border-bottom:1px solid #f0f0f0"><td style="padding:8px 12px;background:'+bg+';position:sticky;left:0;z-index:2;border-right:2px solid #e5e7eb;font-weight:600">'+escH(role)+'</td>';
-      topics.forEach(function(t){
-        var req=reqs.find(function(r){return r.training_topic===t;});
-        var val=req?req.requirement:'N';
-        var bg2=val==='M'?'#EAF3DE':val==='D'?'#E6F1FB':'#f3f4f6';
-        var col2=val==='M'?'#3B6D11':val==='D'?'#185FA5':'#9CA3AF';
-        html+='<td style="padding:4px;text-align:center;background:'+bg+'">'
-          +'<span style="display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:6px;background:'+bg2+';color:'+col2+';font-weight:700;font-size:12px">'+val+'</span>'
+    // Build lookup map
+    var lookup = {};
+    (cm||[]).forEach(function(r){ lookup[(r.person_name||'')+'|'+(r.competency_name||r.competency_id||'')] = r; });
+    // Build table
+    var h = '<table style="border-collapse:collapse;font-size:11px;min-width:100%"><thead><tr style="background:#1a3a5c;color:#fff"><th style="padding:8px 12px;text-align:left;min-width:140px;position:sticky;left:0;background:#1a3a5c;z-index:2">Person</th><th style="padding:8px 10px;text-align:left;min-width:80px;position:sticky;left:140px;background:#1a3a5c;z-index:2">Dept</th>';
+    comps.forEach(function(c){ h+='<th style="padding:8px;text-align:center;min-width:80px;max-width:100px;white-space:normal;line-height:1.2">'+escH(c.name)+'</th>'; });
+    h+='</tr></thead><tbody>';
+    ppl.forEach(function(p, i) {
+      var fullName = (p.last_name||'')+' '+(p.first_name||'');
+      var bg = i%2===0?'#fff':'#f9fafb';
+      h += '<tr style="border-bottom:1px solid #f0f0f0;background:'+bg+'">'
+        +'<td style="padding:8px 12px;font-weight:600;position:sticky;left:0;background:'+bg+';z-index:1">'+escH(fullName.trim())+'<div style="font-size:10px;color:var(--text2)">'+escH(p.job_title||'')+'</div></td>'
+        +'<td style="padding:8px 10px;font-size:11px;color:var(--text2);position:sticky;left:140px;background:'+bg+';z-index:1">'+escH(p.department||'')+'</td>';
+      comps.forEach(function(c) {
+        var key = fullName.trim()+'|'+c.name;
+        var rec = lookup[key] || lookup[fullName.trim()+'|'+c.id] || null;
+        var lvl = rec?.level || 'not_assessed';
+        var cfg = COMP_LEVEL_CFG[lvl] || COMP_LEVEL_CFG.not_assessed;
+        var isExpired = rec?.expiry_date && new Date(rec.expiry_date) < new Date();
+        var isSoon = rec?.expiry_date && !isExpired && (new Date(rec.expiry_date)-new Date())<90*86400000;
+        var borderColor = isExpired?'#DC2626':isSoon?'#F97316':'transparent';
+        h += '<td style="padding:4px;text-align:center">'
+          +'<div onclick="cmEditCell(\''+escH(p.id||'')+'\',\''+escH(fullName.trim())+'\',\''+escH(c.id)+'\',\''+escH(c.name)+'\')" '
+          +'style="background:'+cfg.bg+';color:'+cfg.tc+';border-radius:6px;padding:3px 5px;cursor:pointer;font-size:10px;font-weight:600;border:2px solid '+borderColor+';min-width:60px;display:inline-block"'
+          +' title="'+escH(fullName.trim()+' — '+c.name+(rec?.expiry_date?' | Exp: '+new Date(rec.expiry_date).toLocaleDateString('en-GB'):''))+'">'+cfg.label+'</div>'
           +'</td>';
       });
-      html+='</tr>';
+      h += '</tr>';
     });
-    html+='</tbody></table>';
-    el.innerHTML=html;
-  }catch(e){el.innerHTML='<p style="padding:20px;color:red">'+e.message+'</p>';console.error(e);}
+    h += '</tbody></table>';
+    // Legend
+    h = '<div style="display:flex;gap:10px;flex-wrap:wrap;padding:8px 14px;border-bottom:1px solid var(--border);font-size:11px">'
+      + Object.entries(COMP_LEVEL_CFG).map(([k,c])=>'<span style="background:'+c.bg+';color:'+c.tc+';padding:2px 8px;border-radius:99px;font-weight:600">'+c.label+'</span>').join('')
+      +'<span style="background:#fff;color:#DC2626;padding:2px 8px;border-radius:99px;font-weight:600;border:2px solid #DC2626">Expired</span>'
+      +'<span style="background:#fff;color:#F97316;padding:2px 8px;border-radius:99px;font-weight:600;border:2px solid #F97316">Expiring &lt;90d</span>'
+      +'</div>' + h;
+    el.innerHTML = h;
+  } catch(e) { el.innerHTML='<div style="padding:20px;color:var(--text2);text-align:center">Matrix unavailable: '+escH(e.message)+'</div>'; }
 }
 
-function tnaAddRow(){
-  var role=prompt('Role name:');if(!role)return;
-  var topic=prompt('Training topic:');if(!topic)return;
-  var cat=prompt('Category (INDUCTION/EMERGENCY/HIGH RISK WORK/GENERAL):','GENERAL');
-  var req=prompt('Requirement (M=Mandatory / D=Desirable / N=Not Required):','D');
-  if(!['M','D','N'].includes((req||'').toUpperCase())){toast('Invalid value. Use M, D or N',false);return;}
-  api('/training_needs',{m:'POST',p:'return=minimal',b:{
-    company_id:prof?.company_id,role_name:role,training_topic:topic,
-    category:(cat||'GENERAL').toUpperCase(),requirement:req.toUpperCase()
-  }}).then(function(){toast('Added!');tnaLoad();}).catch(function(e){toast(e.message,false);});
+function cmEditCell(personId, personName, compId, compName) {
+  // Open competency form pre-filled
+  compEditId = null;
+  compAllData.forEach(function(c){ if(c.id===compId){ var el=document.getElementById('compf-competency-id'); if(el)el.value=compId; }});
+  document.getElementById('compf-person').value = personName;
+  document.getElementById('compf-competency-name').value = compName;
+  document.getElementById('comp-form-title').textContent = personName+' — '+compName;
+  document.getElementById('comp-del-btn').style.display = 'none';
+  // Check if a record exists
+  var existing = compMatrixData.find(r => (r.person_name===personName||r.person_id===personId) && (r.competency_name===compName||r.competency_id===compId));
+  if (existing) {
+    compEditId = existing.id;
+    document.getElementById('compf-level').value = existing.level||'not_assessed';
+    document.getElementById('compf-dept').value = existing.department||'';
+    document.getElementById('compf-job-title').value = existing.job_title||'';
+    document.getElementById('compf-assessed-date').value = existing.assessed_date||'';
+    document.getElementById('compf-expiry').value = existing.expiry_date||'';
+    document.getElementById('compf-assessor').value = existing.assessor||'';
+    document.getElementById('compf-evidence').value = existing.evidence||'';
+    document.getElementById('compf-notes').value = existing.notes||'';
+    document.getElementById('compf-required').value = existing.required!==false?'true':'false';
+    document.getElementById('comp-del-btn').style.display = isMgr()?'inline-flex':'none';
+  } else {
+    ['compf-dept','compf-job-title','compf-assessed-date','compf-expiry','compf-assessor','compf-evidence','compf-notes'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
+    document.getElementById('compf-level').value='not_assessed';
+  }
+  // Show comp form, hide matrix
+  document.getElementById('train-view-matrix').style.display='none';
+  document.getElementById('comp-form').style.display='block';
 }
 
-// ── TRAINING PLAN ───────────────────────────────────────────────────────────
-function trainPlanPrevYear(){trainYear--;var yl=document.getElementById('tp-year-label');if(yl)yl.textContent=trainYear;tpLoad();}
-function trainPlanNextYear(){trainYear++;var yl=document.getElementById('tp-year-label');if(yl)yl.textContent=trainYear;tpLoad();}
+async function cmAddCompetency() {
+  var name = prompt('New competency / training column name:'); if (!name?.trim()) return;
+  var cat = prompt('Category (e.g. Technical, Fire Safety, First Aid):','General');
+  try {
+    await api('/competencies',{m:'POST',p:'return=minimal',b:{company_id:prof?.company_id,name:name.trim(),category:cat||'General',sort_order:compAllData.length}});
+    toast('Column added!'); cmLoad();
+  } catch(e) { toast(e.message,false); }
+}
+
+// ── COMPETENCY MATRIX TAB ────────────────────────────────────────────────────
+async function compLoadAll() {
+  var el = document.getElementById('comp-list'); if (!el) return;
+  el.innerHTML='<div class="loading-msg">Loading...</div>';
+  var btn = document.getElementById('comp-add-btn');
+  if (btn) btn.style.display = isMgr()?'inline-flex':'none';
+  try {
+    var [cm, comps] = await Promise.all([
+      api('/competency_matrix?select=*'+cf()+'&order=person_name,competency_name'),
+      api('/competencies?select=*'+cf()+'&order=sort_order,name')
+    ]);
+    compMatrixData = cm||[]; compAllData = comps||[];
+    // Populate category filter
+    var catSel = document.getElementById('comp-filter-cat');
+    if (catSel && comps) {
+      var cats = [...new Set((comps||[]).map(c=>c.category).filter(Boolean))].sort();
+      var existing = Array.from(catSel.options).map(o=>o.value);
+      cats.forEach(function(c){if(!existing.includes(c)){var o=document.createElement('option');o.value=c;o.textContent=c;catSel.appendChild(o);}});
+    }
+    // Populate competency select in comp-form
+    var compSel = document.getElementById('compf-competency-id');
+    if (compSel) {
+      compSel.innerHTML = '<option value="">Select competency...</option>'+(comps||[]).map(c=>'<option value="'+c.id+'">'+escH(c.name)+'</option>').join('');
+    }
+    // Gap analysis banner
+    var gaps = (cm||[]).filter(x=>x.required!==false&&(x.level==='not_assessed'||x.level==='not_competent'));
+    var gapEl = document.getElementById('comp-gap-banner');
+    if (gapEl) {
+      setM('tr-m-gaps', gaps.length);
+      gapEl.innerHTML = gaps.length ? '<div style="background:#FCEBEB;border:1px solid #DC2626;border-radius:8px;padding:10px 14px;font-size:12px;font-weight:600;color:#A32D2D;margin-bottom:10px">⚠ '+gaps.length+' competency gap'+(gaps.length>1?'s':'')+' identified — required competencies not assessed or not met</div>' : '';
+    }
+    compFilter();
+  } catch(e) { el.innerHTML='<div style="padding:20px;color:var(--text2);text-align:center">'+escH(e.message)+'</div>'; }
+}
+
+function setM(id,v){var e=document.getElementById(id);if(e)e.textContent=v;}
+
+function compFilter() {
+  var el = document.getElementById('comp-list'); if (!el) return;
+  var q = (document.getElementById('comp-search')?.value||'').toLowerCase();
+  var fc = document.getElementById('comp-filter-cat')?.value||'';
+  var filt = compMatrixData.filter(function(x) {
+    var mQ = !q||(x.person_name||'').toLowerCase().includes(q)||(x.competency_name||'').toLowerCase().includes(q)||(x.department||'').toLowerCase().includes(q);
+    var mC = !fc || (compAllData.find(c=>c.id===x.competency_id)?.category||x.category||'')=== fc;
+    return mQ && mC;
+  });
+  if (!filt.length) { el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)"><div style="font-size:40px;margin-bottom:12px">🏅</div><div style="font-weight:600;margin-bottom:8px">No competency records found</div>'+(isMgr()?'<button class="btn btn-primary" onclick="compNew()"><i class="ti ti-plus"></i>Add record</button>':'')+'</div>'; return; }
+  var now = new Date();
+  var h = '<div style="overflow:auto"><table style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr style="background:#3B0764;color:#fff"><th style="padding:8px 14px;text-align:left">Person</th><th style="padding:8px">Department</th><th style="padding:8px">Competency</th><th style="padding:8px">Required</th><th style="padding:8px">Level</th><th style="padding:8px">Assessed</th><th style="padding:8px">Expiry</th><th style="padding:8px">Assessor</th><th style="padding:8px;width:50px"></th></tr></thead><tbody>';
+  filt.forEach(function(x,i) {
+    var bg = i%2===0?'#fff':'#f9fafb';
+    var cfg = COMP_LEVEL_CFG[x.level||'not_assessed']||COMP_LEVEL_CFG.not_assessed;
+    var isExpired = x.expiry_date && new Date(x.expiry_date) < now;
+    var isSoon = x.expiry_date && !isExpired && (new Date(x.expiry_date)-now) < 90*86400000;
+    var expColor = isExpired?'var(--red)':isSoon?'#C2410C':'inherit';
+    h+='<tr style="border-bottom:1px solid #f0f0f0;background:'+bg+'">'
+      +'<td style="padding:8px 14px;font-weight:700">'+escH(x.person_name||'—')+'<div style="font-size:10px;color:var(--text2)">'+escH(x.job_title||'')+'</div></td>'
+      +'<td style="padding:8px;font-size:11px">'+escH(x.department||'—')+'</td>'
+      +'<td style="padding:8px;font-weight:600">'+escH(x.competency_name||'—')+'</td>'
+      +'<td style="padding:8px;text-align:center">'+(x.required!==false?'<span style="color:#1D9E75;font-weight:700">✓</span>':'<span style="color:#6B7280">—</span>')+'</td>'
+      +'<td style="padding:8px"><span style="background:'+cfg.bg+';color:'+cfg.tc+';padding:2px 8px;border-radius:99px;font-size:10px;font-weight:700">'+cfg.label+'</span></td>'
+      +'<td style="padding:8px;font-size:11px">'+(x.assessed_date?new Date(x.assessed_date).toLocaleDateString('en-GB'):'—')+'</td>'
+      +'<td style="padding:8px;font-size:11px;color:'+expColor+'">'+(x.expiry_date?new Date(x.expiry_date).toLocaleDateString('en-GB')+(isExpired?' ⚠':'')+(isSoon?' ⏰':''):'—')+'</td>'
+      +'<td style="padding:8px;font-size:11px">'+escH(x.assessor||'—')+'</td>'
+      +'<td style="padding:8px"><button class="btn btn-sm" data-id="'+x.id+'" onclick="compEdit(this.dataset.id)"><i class="ti ti-edit"></i></button></td>'
+      +'</tr>';
+  });
+  h += '</tbody></table></div>';
+  el.innerHTML = h;
+}
+
+function compBack(){
+  document.getElementById('comp-form').style.display='none';
+  var active = document.querySelector('[id^="train-tab-"].active')?.id?.replace('train-tab-','');
+  if (active==='matrix') { document.getElementById('train-view-matrix').style.display='block'; cmLoad(); }
+  else { document.getElementById('train-view-competency').style.display='block'; compFilter(); }
+}
+function compNew(){
+  compEditId=null;
+  document.getElementById('comp-form-title').textContent='New Competency Record';
+  document.getElementById('comp-del-btn').style.display='none';
+  ['compf-person','compf-dept','compf-job-title','compf-competency-name','compf-assessed-date','compf-expiry','compf-assessor','compf-evidence','compf-notes'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
+  document.getElementById('compf-level').value='not_assessed';
+  document.getElementById('compf-required').value='true';
+  document.getElementById('compf-competency-id').value='';
+  document.getElementById('train-view-competency').style.display='none';
+  document.getElementById('comp-form').style.display='block';
+}
+function compEdit(id){
+  var x=compMatrixData.find(r=>r.id===id); if(!x)return;
+  compEditId=id;
+  document.getElementById('comp-form-title').textContent=(x.person_name||'Edit')+' — '+(x.competency_name||'Competency');
+  document.getElementById('comp-del-btn').style.display=isMgr()?'inline-flex':'none';
+  var gf=function(fid,val){var el=document.getElementById(fid);if(el)el.value=val||'';};
+  gf('compf-person',x.person_name);gf('compf-dept',x.department);gf('compf-job-title',x.job_title);
+  gf('compf-competency-name',x.competency_name);gf('compf-assessed-date',x.assessed_date);
+  gf('compf-expiry',x.expiry_date);gf('compf-assessor',x.assessor);gf('compf-evidence',x.evidence);gf('compf-notes',x.notes);
+  document.getElementById('compf-competency-id').value=x.competency_id||'';
+  document.getElementById('compf-level').value=x.level||'not_assessed';
+  document.getElementById('compf-required').value=x.required!==false?'true':'false';
+  document.getElementById('train-view-competency').style.display='none';
+  document.getElementById('comp-form').style.display='block';
+}
+function compSelectComp(){
+  var sel=document.getElementById('compf-competency-id'); if(!sel?.value)return;
+  var comp=compAllData.find(c=>c.id===sel.value);
+  if(comp){var el=document.getElementById('compf-competency-name');if(el)el.value=comp.name;}
+}
+async function compSave(){
+  var person=document.getElementById('compf-person')?.value?.trim(); if(!person){toast('Please enter person name',false);return;}
+  var compName=document.getElementById('compf-competency-name')?.value?.trim()||document.getElementById('compf-competency-id')?.value;
+  if(!compName){toast('Please select or enter a competency',false);return;}
+  var g=function(id){var el=document.getElementById(id);return el?el.value||null:null;};
+  var compId=document.getElementById('compf-competency-id')?.value||null;
+  var compDisplayName=document.getElementById('compf-competency-name')?.value?.trim();
+  if(!compDisplayName&&compId){compDisplayName=(compAllData.find(c=>c.id===compId)||{}).name||'';}
+  var body={company_id:prof?.company_id,person_name:person,department:g('compf-dept'),job_title:g('compf-job-title'),competency_id:compId||null,competency_name:compDisplayName||compName,level:g('compf-level')||'not_assessed',required:g('compf-required')!=='false',assessed_date:g('compf-assessed-date')||null,expiry_date:g('compf-expiry')||null,assessor:g('compf-assessor'),evidence:g('compf-evidence'),notes:g('compf-notes'),updated_at:new Date().toISOString()};
+  try{
+    if(compEditId){await api('/competency_matrix?id=eq.'+compEditId,{m:'PATCH',p:'return=minimal',b:body});toast('Updated!');}
+    else{body.created_by=prof?.id;await api('/competency_matrix',{m:'POST',p:'return=minimal',b:body});toast('Competency record saved!');}
+    compBack();
+  }catch(e){toast(e.message,false);}
+}
+async function compDelete(){if(!compEditId||!confirm('Delete?'))return;try{await api('/competency_matrix?id=eq.'+compEditId,{m:'DELETE'});toast('Deleted!');compBack();}catch(e){toast(e.message,false);}}
+
+// ── INDUCTION MODULE ──────────────────────────────────────────────────────────
+async function indLoad(){
+  var el=document.getElementById('ind-list'); if(!el)return;
+  el.innerHTML='<div class="loading-msg">Loading...</div>';
+  var btn=document.getElementById('ind-add-btn'); if(btn)btn.style.display=isMgr()?'inline-flex':'none';
+  var ft=document.getElementById('ind-filter-type')?.value||'';
+  try{
+    var q='/induction_records?select=*'+cf()+'&order=induction_date.desc';
+    if(ft) q+='&induction_type=eq.'+ft;
+    var d=await api(q); indAllData=d||[];
+    var now=new Date(); var soon=new Date(); soon.setDate(soon.getDate()+30);
+    var setM2=function(id,v){var e=document.getElementById(id);if(e)e.textContent=v;};
+    setM2('ind-m-total',d.length);
+    setM2('ind-m-done',(d||[]).filter(x=>x.status==='completed').length);
+    setM2('ind-m-pending',(d||[]).filter(x=>x.status!=='completed').length);
+    setM2('ind-m-refresh',(d||[]).filter(x=>x.refresher_due_date&&new Date(x.refresher_due_date)<=soon&&new Date(x.refresher_due_date)>=now).length);
+    if(!d.length){el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)"><div style="font-size:40px;margin-bottom:12px">🎓</div><div style="font-weight:600;margin-bottom:8px">No induction records yet</div>'+(isMgr()?'<button class="btn btn-primary" onclick="indNew()"><i class="ti ti-plus"></i>Record induction</button>':'')+'</div>';return;}
+    var typeCfg={new_employee:{bg:'#EFF6FF',tc:'#185FA5',label:'New Employee'},contractor:{bg:'#FEF6E7',tc:'#C2410C',label:'Contractor'},visitor:{bg:'#EDE9FE',tc:'#5B21B6',label:'Visitor'},refresher:{bg:'#EAF3DE',tc:'#3B6D11',label:'Refresher'},site_specific:{bg:'#f3f4f6',tc:'#6B7280',label:'Site Specific'}};
+    var stCfg={completed:['#EAF3DE','#3B6D11'],in_progress:['#FEF9EC','#854F0B'],pending:['#f3f4f6','#6B7280'],failed:['#FCEBEB','#A32D2D']};
+    var h='<div style="overflow:auto"><table style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr style="background:#185FA5;color:#fff"><th style="padding:8px 14px;text-align:left">Ref</th><th style="padding:8px;text-align:left">Person</th><th style="padding:8px">Type</th><th style="padding:8px">Date</th><th style="padding:8px">Inducted by</th><th style="padding:8px">Refresher due</th><th style="padding:8px">Certificate</th><th style="padding:8px">Status</th><th style="padding:8px;width:50px"></th></tr></thead><tbody>';
+    d.forEach(function(x,i){
+      var bg=i%2===0?'#fff':'#f9fafb';
+      var tcfg=typeCfg[x.induction_type]||typeCfg.new_employee;
+      var sc2=stCfg[x.status]||stCfg.pending;
+      var isRefreshDue=x.refresher_due_date&&new Date(x.refresher_due_date)<=soon&&new Date(x.refresher_due_date)>=now;
+      h+='<tr style="border-bottom:1px solid #f0f0f0;background:'+bg+';cursor:pointer" onclick="indEdit(\''+x.id+'\')"><td style="padding:8px 14px;font-family:monospace;font-size:11px;font-weight:700;color:#185FA5">'+escH(x.induction_ref||x.id?.slice(0,8)||'—')+'</td><td style="padding:8px;font-weight:600">'+escH(x.person_name||'—')+'<div style="font-size:10px;color:var(--text2)">'+escH(x.department||'')+(x.job_title?' · '+escH(x.job_title):'')+'</div></td><td style="padding:8px"><span style="background:'+tcfg.bg+';color:'+tcfg.tc+';padding:2px 7px;border-radius:99px;font-size:10px;font-weight:700">'+tcfg.label+'</span></td><td style="padding:8px;font-size:11px">'+(x.induction_date?new Date(x.induction_date).toLocaleDateString('en-GB'):'—')+'</td><td style="padding:8px;font-size:11px">'+escH(x.inducted_by||'—')+'</td><td style="padding:8px;font-size:11px;color:'+(isRefreshDue?'#C2410C':'inherit')+'">'+(x.refresher_due_date?new Date(x.refresher_due_date).toLocaleDateString('en-GB')+(isRefreshDue?' ⏰':''):'—')+'</td><td style="padding:8px;text-align:center">'+(x.certificate_issued?'<span style="color:#1D9E75;font-weight:700">✓</span>':'<span style="color:#6B7280">—</span>')+'</td><td style="padding:8px"><span style="background:'+sc2[0]+';color:'+sc2[1]+';padding:2px 8px;border-radius:99px;font-size:10px;font-weight:700;text-transform:capitalize">'+escH(x.status||'pending')+'</span></td><td style="padding:8px"><button class="btn btn-sm" data-id="'+x.id+'" onclick="event.stopPropagation();indEdit(this.dataset.id)"><i class="ti ti-edit"></i></button></td></tr>';
+    });
+    h+='</tbody></table></div>'; el.innerHTML=h;
+  }catch(e){el.innerHTML='<div style="padding:20px;color:var(--text2);text-align:center">'+escH(e.message)+'<br><small>Run training_schema.sql to create the induction_records table.</small></div>';}
+}
+
+function indShowForm(){document.getElementById('train-view-induction').style.display='none';document.getElementById('ind-form').style.display='block';}
+function indBack(){document.getElementById('ind-form').style.display='none';document.getElementById('train-view-induction').style.display='block';indLoad();}
+function indNew(){
+  indEditId=null;
+  document.getElementById('ind-form-title').textContent='New Induction';
+  document.getElementById('ind-form-ref').textContent='IND-AUTO';
+  document.getElementById('ind-del-btn').style.display='none';
+  ['indf-person','indf-emp-id','indf-dept','indf-job-title','indf-inducted-by','indf-extra-topics','indf-notes'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
+  ['indf-start-date','indf-ind-date','indf-refresher-due'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
+  document.getElementById('indf-ind-date').value=new Date().toISOString().slice(0,10);
+  document.getElementById('indf-type').value='new_employee';
+  document.getElementById('indf-duration').value='1';
+  document.getElementById('indf-score').value='';
+  document.getElementById('indf-status').value='completed';
+  document.querySelectorAll('[name="ind-st-r"]').forEach(r=>{r.checked=r.value==='completed';});
+  document.getElementById('indf-cert-issued').checked=false;
+  document.getElementById('indf-sig').checked=false;
+  document.querySelectorAll('.ind-topic').forEach(cb=>{cb.checked=false;});
+  indShowForm();
+}
+function indEdit(id){
+  var x=indAllData.find(r=>r.id===id); if(!x)return;
+  indEditId=id;
+  document.getElementById('ind-form-title').textContent=x.person_name||'Edit Induction';
+  document.getElementById('ind-form-ref').textContent=x.induction_ref||'—';
+  document.getElementById('ind-del-btn').style.display=isMgr()?'inline-flex':'none';
+  var gf=function(fid,val){var el=document.getElementById(fid);if(el)el.value=val||'';};
+  gf('indf-person',x.person_name);gf('indf-emp-id',x.employee_id);gf('indf-dept',x.department);
+  gf('indf-job-title',x.job_title);gf('indf-inducted-by',x.inducted_by);
+  gf('indf-start-date',x.start_date);gf('indf-ind-date',x.induction_date);
+  gf('indf-refresher-due',x.refresher_due_date);gf('indf-extra-topics',x.extra_topics||x.notes);
+  gf('indf-notes',x.notes);
+  document.getElementById('indf-type').value=x.induction_type||'new_employee';
+  document.getElementById('indf-duration').value=x.duration_hours||1;
+  document.getElementById('indf-score').value=x.score||'';
+  document.getElementById('indf-status').value=x.status||'completed';
+  document.querySelectorAll('[name="ind-st-r"]').forEach(r=>{r.checked=r.value===(x.status||'completed');});
+  document.getElementById('indf-cert-issued').checked=!!x.certificate_issued;
+  document.getElementById('indf-sig').checked=!!x.signature_obtained;
+  var topics=x.topics_covered||[];
+  document.querySelectorAll('.ind-topic').forEach(cb=>{cb.checked=topics.includes(cb.value);});
+  indShowForm();
+}
+async function indSave(){
+  var person=document.getElementById('indf-person')?.value?.trim(); if(!person){toast('Please enter person name',false);return;}
+  var g=function(id){var el=document.getElementById(id);return el?el.value||null:null;};
+  var topics=Array.from(document.querySelectorAll('.ind-topic:checked')).map(cb=>cb.value);
+  var body={company_id:prof?.company_id,person_name:person,employee_id:g('indf-emp-id'),department:g('indf-dept'),job_title:g('indf-job-title'),induction_type:g('indf-type')||'new_employee',start_date:g('indf-start-date')||null,induction_date:g('indf-ind-date'),inducted_by:g('indf-inducted-by'),duration_hours:parseFloat(g('indf-duration'))||1,score:g('indf-score')?parseFloat(g('indf-score')):null,topics_covered:topics,extra_topics:g('indf-extra-topics'),notes:g('indf-notes'),status:g('indf-status')||'completed',completed:g('indf-status')==='completed',certificate_issued:document.getElementById('indf-cert-issued')?.checked||false,signature_obtained:document.getElementById('indf-sig')?.checked||false,refresher_due_date:g('indf-refresher-due')||null,passed:g('indf-status')==='completed',updated_at:new Date().toISOString()};
+  try{
+    if(indEditId){await api('/induction_records?id=eq.'+indEditId,{m:'PATCH',p:'return=minimal',b:body});toast('Updated!');}
+    else{body.created_by=prof?.id;var res=await api('/induction_records',{m:'POST',p:'return=representation',b:body});if(res?.[0]?.id){var ref='IND-'+new Date().getFullYear()+'-'+String(indAllData.length+1).padStart(3,'0');await api('/induction_records?id=eq.'+res[0].id,{m:'PATCH',p:'return=minimal',b:{induction_ref:ref}});toast('Induction saved! Ref: '+ref);}else{toast('Induction saved!');}}
+    indBack();
+  }catch(e){toast('Error: '+e.message+'. Run training_schema.sql first.',false);}
+}
+async function indDelete(){if(!indEditId||!confirm('Delete?'))return;try{await api('/induction_records?id=eq.'+indEditId,{m:'DELETE'});toast('Deleted!');indBack();}catch(e){toast(e.message,false);}}
+
+// ── TRAINING PLAN ─────────────────────────────────────────────────────────────
+function trainPlanPrevYear(){ trainYear--; document.getElementById('tp-year-label').textContent=trainYear; tpLoad(); }
+function trainPlanNextYear(){ trainYear++; document.getElementById('tp-year-label').textContent=trainYear; tpLoad(); }
 
 async function tpLoad(){
-  var el=document.getElementById('tp-table');
-  if(!el)return;
+  var el=document.getElementById('tp-table'); if(!el)return;
   el.innerHTML='<div class="loading-msg">Loading...</div>';
+  var btn=document.getElementById('tp-add-btn'); if(btn)btn.style.display=isMgr()?'inline-flex':'none';
   try{
     var d=await api('/training_plan?select=*'+cf()+'&year=eq.'+trainYear+'&order=month,planned_date');
     tpAllData=d||[];
     var today=new Date();
-    var planned=tpAllData.filter(function(x){return x.status==='planned'||x.status==='confirmed';}).length;
-    var completed=tpAllData.filter(function(x){return x.status==='completed';}).length;
-    var progress=tpAllData.filter(function(x){return x.status==='confirmed';}).length;
-    var overdue=tpAllData.filter(function(x){
-      return (x.status==='planned'||x.status==='confirmed')&&x.planned_date&&new Date(x.planned_date)<today;
-    }).length;
-    var setM=function(id,v,c){var e=document.getElementById(id);if(e){e.textContent=v;if(c)e.style.color=c;}};
-    setM('tp-m-planned',planned);setM('tp-m-completed',completed);
-    setM('tp-m-progress',progress);setM('tp-m-overdue',overdue,'#E24B4A');
-    if(!tpAllData.length){
-      el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)">'
-        +'<div style="font-size:40px;margin-bottom:12px">📅</div>'
-        +'<div style="font-weight:600;margin-bottom:8px">No training planned for '+trainYear+'</div>'
-        +(isMgr()?'<button class="btn btn-primary" onclick="tpNew()"><i class="ti ti-plus"></i>Plan first training</button>':'')
-        +'</div>';
-      return;
-    }
+    var planned=tpAllData.filter(x=>x.status==='planned'||x.status==='confirmed');
+    var completed=tpAllData.filter(x=>x.status==='completed');
+    var inprog=tpAllData.filter(x=>x.status==='in_progress');
+    var overdue=tpAllData.filter(x=>{if(x.status==='completed'||x.status==='cancelled')return false;var pd=x.planned_date?new Date(x.planned_date):null;return pd&&pd<today;});
+    var setM2=function(id,v){var e=document.getElementById(id);if(e)e.textContent=v;};
+    setM2('tp-m-planned',planned.length); setM2('tp-m-completed',completed.length);
+    setM2('tp-m-progress',inprog.length); setM2('tp-m-overdue',overdue.length);
+    if(!tpAllData.length){el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)"><div style="font-size:40px;margin-bottom:12px">📅</div><div style="font-weight:600;margin-bottom:8px">No training planned for '+trainYear+'</div>'+(isMgr()?'<button class="btn btn-primary" onclick="tpNew()"><i class="ti ti-plus"></i>Add first training</button>':'')+'</div>';return;}
     var months=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-    var statusBadge=function(s){
-      var cfg={planned:['#E6F1FB','#185FA5'],confirmed:['#EAF3DE','#3B6D11'],completed:['#1D9E75','#fff'],cancelled:['#f3f4f6','#6B7280'],postponed:['#FEF9EC','#854F0B']};
-      var c=cfg[s]||cfg.planned;
-      return '<span style="background:'+c[0]+';color:'+c[1]+';padding:2px 8px;border-radius:99px;font-size:11px;font-weight:600">'+s.charAt(0).toUpperCase()+s.slice(1)+'</span>';
-    };
-    var priorityBadge=function(p){
-      var cfg={low:['#f3f4f6','#6B7280'],medium:['#E6F1FB','#185FA5'],high:['#FEF9EC','#854F0B'],critical:['#FCEBEB','#A32D2D']};
-      var c=cfg[p]||cfg.medium;
-      return '<span style="background:'+c[0]+';color:'+c[1]+';padding:2px 6px;border-radius:4px;font-size:11px;font-weight:600">'+p+'</span>';
-    };
-    var h='<table style="width:100%;border-collapse:collapse;font-size:12px">';
-    h+='<thead><tr style="background:#1a3a5c;color:#fff">';
-    h+='<th style="padding:8px 10px;text-align:left;width:50px">Month</th>';
-    h+='<th style="padding:8px 10px;text-align:left">Training</th>';
-    h+='<th style="padding:8px 10px;text-align:left;width:120px">Target group</th>';
-    h+='<th style="padding:8px 10px;text-align:left;width:80px">Type</th>';
-    h+='<th style="padding:8px 10px;text-align:left;width:80px">Priority</th>';
-    h+='<th style="padding:8px 10px;text-align:left;width:100px">Planned date</th>';
-    h+='<th style="padding:8px 10px;text-align:left;width:110px">Status</th>';
-    h+='<th style="padding:8px 10px;width:70px"></th>';
-    h+='</tr></thead><tbody>';
+    var stCfg={planned:['#EFF6FF','#185FA5'],confirmed:['#EDE9FE','#5B21B6'],in_progress:['#FEF9EC','#854F0B'],completed:['#EAF3DE','#3B6D11'],overdue:['#FCEBEB','#A32D2D'],cancelled:['#f3f4f6','#6B7280']};
+    var priCfg={critical:'#DC2626',high:'#C2410C',medium:'#185FA5',low:'#6B7280'};
+    var h='<table style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr style="background:#185FA5;color:#fff"><th style="padding:8px 14px;text-align:left">Month</th><th style="padding:8px;text-align:left">Training topic</th><th style="padding:8px">Type</th><th style="padding:8px">Group</th><th style="padding:8px">Trainer</th><th style="padding:8px">Date</th><th style="padding:8px">Duration</th><th style="padding:8px">Priority</th><th style="padding:8px">Status</th><th style="padding:8px;width:50px"></th></tr></thead><tbody>';
     tpAllData.forEach(function(x,i){
       var bg=i%2===0?'#fff':'#f9fafb';
-      var mo=x.month?months[x.month-1]:'—';
-      var dt=x.planned_date?new Date(x.planned_date).toLocaleDateString('en-GB'):'—';
-      var isOverdue=(x.status==='planned'||x.status==='confirmed')&&x.planned_date&&new Date(x.planned_date)<today;
-      h+='<tr style="border-bottom:1px solid #f0f0f0;background:'+bg+(isOverdue?';border-left:3px solid var(--red)':'')+'">';
-      h+='<td style="padding:8px 10px;font-weight:700;color:var(--text2)">'+mo+'</td>';
-      h+='<td style="padding:8px 10px"><div style="font-weight:600">'+escH(x.training_topic||'—')+'</div>'+(x.trainer?'<div style="font-size:11px;color:var(--text2)"><i class="ti ti-user"></i> '+escH(x.trainer)+'</div>':'')+'</td>';
-      h+='<td style="padding:8px 10px;font-size:11px">'+escH(x.target_group||'—')+'</td>';
-      h+='<td style="padding:8px 10px;font-size:11px">'+escH(x.training_type||'—')+'</td>';
-      h+='<td style="padding:8px 10px">'+priorityBadge(x.priority||'medium')+'</td>';
-      h+='<td style="padding:8px 10px;font-size:11px'+(isOverdue?';color:var(--red);font-weight:600':'')+'">'+dt+(isOverdue?' ⚠':'')+'</td>';
-      h+='<td style="padding:8px 10px">'+statusBadge(x.status||'planned')+'</td>';
-      h+='<td style="padding:8px 10px"><div style="display:flex;gap:4px">'
-        +'<button class="btn btn-sm" data-id="'+x.id+'" onclick="tpOpen(this.getAttribute(\'data-id\'))"><i class="ti ti-edit"></i></button>'
-        +(isMgr()?'<button class="btn btn-sm" style="color:var(--red)" data-id="'+x.id+'" onclick="tpDeleteFromList(this.getAttribute(\'data-id\'))"><i class="ti ti-trash"></i></button>':'')
-        +'</div></td>';
-      h+='</tr>';
+      var stCfg2=stCfg[x.status]||stCfg.planned;
+      var priColor=priCfg[x.priority||'medium']||priCfg.medium;
+      var isOvd=x.status!=='completed'&&x.status!=='cancelled'&&x.planned_date&&new Date(x.planned_date)<today;
+      h+='<tr style="border-bottom:1px solid #f0f0f0;background:'+bg+(isOvd?';border-left:3px solid #DC2626':'')+';cursor:pointer" onclick="tpOpen(\''+x.id+'\')"><td style="padding:8px 14px;font-size:11px;font-weight:600">'+(x.month?months[x.month-1]:(!x.planned_date?'—':months[new Date(x.planned_date).getMonth()]))+'</td><td style="padding:8px;font-weight:600">'+escH(x.training_topic||'—')+'<div style="font-size:10px;color:var(--text2)">'+escH(x.objective||'').substring(0,60)+'</div></td><td style="padding:8px;font-size:11px;text-transform:capitalize">'+escH((x.training_type||'—').replace(/_/g,' '))+'</td><td style="padding:8px;font-size:11px">'+escH(x.target_group||'—')+'</td><td style="padding:8px;font-size:11px">'+escH(x.trainer||'—')+'</td><td style="padding:8px;font-size:11px">'+(x.planned_date?new Date(x.planned_date).toLocaleDateString('en-GB'):'—')+'</td><td style="padding:8px;font-size:11px;text-align:center">'+(x.duration_hours?x.duration_hours+'h':'—')+'</td><td style="padding:8px;text-align:center"><span style="color:'+priColor+';font-weight:700;font-size:11px;text-transform:capitalize">'+escH(x.priority||'medium')+'</span></td><td style="padding:8px"><span style="background:'+stCfg2[0]+';color:'+stCfg2[1]+';padding:2px 7px;border-radius:99px;font-size:10px;font-weight:700;text-transform:capitalize">'+escH(x.status||'planned')+'</span></td><td style="padding:8px"><button class="btn btn-sm" data-id="'+x.id+'" onclick="event.stopPropagation();tpOpen(this.dataset.id)"><i class="ti ti-edit"></i></button></td></tr>';
     });
-    h+='</tbody></table>';
-    el.innerHTML=h;
-  }catch(e){el.innerHTML='<p style="padding:20px;color:red">'+e.message+'</p>';console.error(e);}
+    h+='</tbody></table>'; el.innerHTML=h;
+  }catch(e){el.innerHTML='<div style="padding:20px;color:var(--text2);text-align:center">'+escH(e.message)+'</div>';}
 }
 
-function tpShowForm(){
-  document.getElementById('train-view-plan').style.display='none';
-  document.getElementById('tp-form').style.display='block';
-}
-function tpBack(){
-  document.getElementById('tp-form').style.display='none';
-  document.getElementById('train-view-plan').style.display='block';
-  tpLoad();
-}
-
+function tpShowForm(){document.getElementById('train-view-plan').style.display='none';document.getElementById('tp-form').style.display='block';}
+function tpBack(){document.getElementById('tp-form').style.display='none';document.getElementById('train-view-plan').style.display='block';tpLoad();}
 function tpNew(){
   tpEditingId=null;
   document.getElementById('tp-form-title').textContent='New Training';
   document.getElementById('tp-del-btn').style.display='none';
   ['tp-topic','tp-group','tp-trainer','tp-location','tp-objective','tp-notes'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
   ['tp-planned-date','tp-actual-date'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
-  var tp=document.getElementById('tp-type');if(tp)tp.value='internal';
-  var pp=document.getElementById('tp-priority');if(pp)pp.value='medium';
-  var sp=document.getElementById('tp-status');if(sp)sp.value='planned';
-  var dur=document.getElementById('tp-duration');if(dur)dur.value='';
-  var bud=document.getElementById('tp-budget');if(bud)bud.value='';
-  var mo=document.getElementById('tp-month');if(mo)mo.value='';
+  document.getElementById('tp-type').value='classroom';
+  document.getElementById('tp-priority').value='medium';
+  document.getElementById('tp-status').value='planned';
+  document.getElementById('tp-duration').value='1';
+  document.getElementById('tp-budget').value='';
+  document.getElementById('tp-month').value=new Date().getMonth()+1;
   tpShowForm();
 }
-
 function tpOpen(id){
-  var x=tpAllData.find(function(r){return r.id===id;});
-  if(!x)return;
+  var x=tpAllData.find(r=>r.id===id); if(!x)return;
   tpEditingId=id;
-  document.getElementById('tp-form-title').textContent='Edit Training';
+  document.getElementById('tp-form-title').textContent=x.training_topic||'Edit Training';
   document.getElementById('tp-del-btn').style.display=isMgr()?'inline-flex':'none';
-  var flds={'tp-topic':'training_topic','tp-group':'target_group','tp-trainer':'trainer','tp-location':'location','tp-objective':'objective','tp-notes':'notes'};
-  Object.entries(flds).forEach(function(e){var el=document.getElementById(e[0]);if(el)el.value=x[e[1]]||'';});
-  var pd=document.getElementById('tp-planned-date');if(pd)pd.value=x.planned_date||'';
-  var ad=document.getElementById('tp-actual-date');if(ad)ad.value=x.actual_date||'';
-  var tp=document.getElementById('tp-type');if(tp)tp.value=x.training_type||'internal';
-  var pp=document.getElementById('tp-priority');if(pp)pp.value=x.priority||'medium';
-  var sp=document.getElementById('tp-status');if(sp)sp.value=x.status||'planned';
-  var dur=document.getElementById('tp-duration');if(dur)dur.value=x.duration_hours||'';
-  var bud=document.getElementById('tp-budget');if(bud)bud.value=x.budget||'';
-  var mo=document.getElementById('tp-month');if(mo)mo.value=x.month||'';
+  var gf=function(fid,val){var el=document.getElementById(fid);if(el)el.value=val||'';};
+  gf('tp-topic',x.training_topic);gf('tp-group',x.target_group);gf('tp-trainer',x.trainer);
+  gf('tp-location',x.location);gf('tp-objective',x.objective);gf('tp-notes',x.notes);
+  gf('tp-planned-date',x.planned_date);gf('tp-actual-date',x.actual_date);
+  document.getElementById('tp-month').value=x.month||new Date().getMonth()+1;
+  document.getElementById('tp-type').value=x.training_type||'classroom';
+  document.getElementById('tp-priority').value=x.priority||'medium';
+  document.getElementById('tp-status').value=x.status||'planned';
+  document.getElementById('tp-duration').value=x.duration_hours||1;
+  document.getElementById('tp-budget').value=x.budget||'';
   tpShowForm();
 }
-
 async function tpSave(){
-  var topic=document.getElementById('tp-topic')?.value?.trim();
-  if(!topic){toast('Please enter a training topic',false);return;}
+  var topic=document.getElementById('tp-topic')?.value?.trim(); if(!topic){toast('Please enter training topic',false);return;}
   var g=function(id){var el=document.getElementById(id);return el?el.value||null:null;};
-  var body={
-    company_id:prof?.company_id,year:trainYear,
-    training_topic:topic,target_group:g('tp-group'),
-    month:document.getElementById('tp-month')?.value?parseInt(document.getElementById('tp-month').value):null,
-    training_type:g('tp-type')||'internal',priority:g('tp-priority')||'medium',
-    status:g('tp-status')||'planned',trainer:g('tp-trainer'),location:g('tp-location'),
-    planned_date:g('tp-planned-date'),actual_date:g('tp-actual-date'),
-    duration_hours:g('tp-duration')?parseFloat(g('tp-duration')):null,
-    budget:g('tp-budget')?parseFloat(g('tp-budget')):null,
-    objective:g('tp-objective'),notes:g('tp-notes'),updated_at:new Date().toISOString()
-  };
-  try{
-    if(tpEditingId){await api('/training_plan?id=eq.'+tpEditingId,{m:'PATCH',p:'return=minimal',b:body});toast('Updated!');}
-    else{body.created_by=prof?.id;await api('/training_plan',{m:'POST',p:'return=minimal',b:body});toast('Training added to plan!');}
-    tpBack();
-  }catch(e){toast(e.message,false);console.error(e);}
+  var body={company_id:prof?.company_id,year:trainYear,training_topic:topic,target_group:g('tp-group'),month:parseInt(g('tp-month'))||null,training_type:g('tp-type')||'classroom',priority:g('tp-priority')||'medium',status:g('tp-status')||'planned',trainer:g('tp-trainer'),location:g('tp-location'),planned_date:g('tp-planned-date')||null,actual_date:g('tp-actual-date')||null,duration_hours:g('tp-duration')?parseFloat(g('tp-duration')):null,budget:g('tp-budget')?parseFloat(g('tp-budget')):null,objective:g('tp-objective'),notes:g('tp-notes'),updated_at:new Date().toISOString()};
+  try{if(tpEditingId){await api('/training_plan?id=eq.'+tpEditingId,{m:'PATCH',p:'return=minimal',b:body});toast('Updated!');}else{body.created_by=prof?.id;await api('/training_plan',{m:'POST',p:'return=minimal',b:body});toast('Added to plan!');}tpBack();}catch(e){toast(e.message,false);}
 }
+async function tpDelete(){if(!tpEditingId||!confirm('Delete?'))return;try{await api('/training_plan?id=eq.'+tpEditingId,{m:'DELETE'});toast('Deleted!');tpBack();}catch(e){toast(e.message,false);}}
+function tpDeleteFromList(id){if(!confirm('Delete?'))return;api('/training_plan?id=eq.'+id,{m:'DELETE'}).then(function(){tpAllData=tpAllData.filter(x=>x.id!==id);tpLoad();toast('Deleted!');}).catch(e=>toast(e.message,false));}
 
-async function tpDelete(){
-  if(!tpEditingId)return;
-  if(!confirm('Delete this training?'))return;
-  try{await api('/training_plan?id=eq.'+tpEditingId,{m:'DELETE'});toast('Deleted!');tpBack();}
-  catch(e){toast(e.message,false);}
-}
-
-async function tpDeleteFromList(id){
-  if(!confirm('Delete this training?'))return;
-  try{await api('/training_plan?id=eq.'+id,{m:'DELETE'});tpAllData=tpAllData.filter(function(x){return x.id!==id;});toast('Deleted!');tpLoad();}
-  catch(e){toast(e.message,false);}
-}
-
-// ── TRAINING FOLLOW-UP ──────────────────────────────────────────────────────
+// ── TRAINING RECORDS ──────────────────────────────────────────────────────────
 async function tfLoad(){
-  var el=document.getElementById('tf-table');
-  if(!el)return;
+  var el=document.getElementById('tf-table'); if(!el)return;
   el.innerHTML='<div class="loading-msg">Loading...</div>';
+  var btn=document.getElementById('tf-add-btn'); if(btn)btn.style.display=isMgr()?'inline-flex':'none';
+  // Populate person dropdown
+  var pSel=document.getElementById('tfr-person');
+  if(pSel&&pSel.options.length<=1&&(people||[]).length){
+    pSel.innerHTML='<option value="">Select person...</option>'+(people||[]).map(p=>'<option value="'+p.id+'">'+(p.last_name||'')+' '+(p.first_name||'')+'</option>').join('');
+  }
   try{
     var d=await api('/training_followup?select=*'+cf()+'&order=training_date.desc');
-    tfAllData=d||[];
-    // Populate person dropdowns
-    var opts='<option value="">Select person...</option>';
-    (people||[]).forEach(function(p){opts+='<option value="'+p.id+'">'+p.last_name+', '+p.first_name+(p.job_title?' — '+p.job_title:'')+'</option>';});
-    ['tfr-person','authr-person'].forEach(function(id){var sel=document.getElementById(id);if(sel)sel.innerHTML=opts;});
-    tfRender(tfAllData);
-  }catch(e){el.innerHTML='<p style="padding:20px;color:red">'+e.message+'</p>';console.error(e);}
+    tfAllData=d||[]; tfFilter();
+  }catch(e){el.innerHTML='<div style="padding:20px;color:var(--text2);text-align:center">'+escH(e.message)+'</div>';}
+}
+
+function tfPersonSelect(){
+  var sel=document.getElementById('tfr-person'); if(!sel?.value)return;
+  var person=(people||[]).find(p=>p.id===sel.value);
+  if(person){
+    var nameEl=document.getElementById('tfr-name'); if(nameEl&&!nameEl.value)nameEl.value=(person.last_name||'')+' '+(person.first_name||'');
+    var deptEl=document.getElementById('tfr-dept'); if(deptEl&&!deptEl.value)deptEl.value=person.department||'';
+  }
 }
 
 function tfFilter(){
+  var el=document.getElementById('tf-table'); if(!el)return;
   var q=(document.getElementById('tf-search')?.value||'').toLowerCase();
-  var filtered=tfAllData.filter(function(x){
-    return !q||(x.person_name||'').toLowerCase().includes(q)||(x.training_topic||'').toLowerCase().includes(q);
+  var fExp=document.getElementById('tf-filter-exp')?.value||'';
+  var now=new Date(); var soon=new Date(); soon.setDate(soon.getDate()+90);
+  var filt=tfAllData.filter(function(x){
+    var mQ=!q||(x.person_name||'').toLowerCase().includes(q)||(x.training_topic||'').toLowerCase().includes(q);
+    var mE=!fExp||
+      (fExp==='expiring'&&x.expiry_date&&new Date(x.expiry_date)>now&&new Date(x.expiry_date)<=soon)||
+      (fExp==='expired'&&x.expiry_date&&new Date(x.expiry_date)<now);
+    return mQ&&mE;
   });
-  tfRender(filtered);
+  tfRender(filt);
 }
 
 function tfRender(data){
-  var el=document.getElementById('tf-table');if(!el)return;
-  if(!data.length){
-    el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)">No training records found.'+(isMgr()?' <button class="btn btn-primary btn-sm" onclick="tfNew()"><i class="ti ti-plus"></i>Add record</button>':'')+'</div>';
-    return;
-  }
-  var today=new Date();
-  var soon=new Date();soon.setDate(soon.getDate()+30);
-  var h='<table style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr style="background:#1a3a5c;color:#fff">'
-    +'<th style="padding:8px 10px;text-align:left">Name</th>'
-    +'<th style="padding:8px 10px;text-align:left">Training</th>'
-    +'<th style="padding:8px 10px;text-align:left;width:100px">Date</th>'
-    +'<th style="padding:8px 10px;text-align:left;width:130px">Certificate</th>'
-    +'<th style="padding:8px 10px;text-align:left;width:100px">Expiry</th>'
-    +'<th style="padding:8px 10px;text-align:left;width:100px">Refresher</th>'
-    +'<th style="padding:8px 10px;text-align:center;width:70px">Result</th>'
-    +'<th style="padding:8px 10px;width:70px"></th>'
-    +'</tr></thead><tbody>';
+  var el=document.getElementById('tf-table'); if(!el)return;
+  if(!data.length){el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)"><div style="font-size:40px;margin-bottom:12px">📋</div><div style="font-weight:600;margin-bottom:8px">No training records found</div>'+(isMgr()?'<button class="btn btn-primary" onclick="tfNew()"><i class="ti ti-plus"></i>Add first record</button>':'')+'</div>';return;}
+  var now=new Date();
+  var h='<div style="overflow:auto"><table style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr style="background:#1D9E75;color:#fff"><th style="padding:8px 14px;text-align:left">Person</th><th style="padding:8px;text-align:left">Training</th><th style="padding:8px">Date</th><th style="padding:8px">Trainer</th><th style="padding:8px">Score</th><th style="padding:8px">Result</th><th style="padding:8px">Certificate</th><th style="padding:8px">Expiry</th><th style="padding:8px">Refresher</th><th style="padding:8px;width:50px"></th></tr></thead><tbody>';
   data.forEach(function(x,i){
     var bg=i%2===0?'#fff':'#f9fafb';
-    var dt=x.training_date?new Date(x.training_date).toLocaleDateString('en-GB'):'—';
-    var exp=x.expiry_date?new Date(x.expiry_date):'';
-    var ref=x.refresher_due?new Date(x.refresher_due):'';
-    var expStr=exp?exp.toLocaleDateString('en-GB'):'—';
-    var refStr=ref?ref.toLocaleDateString('en-GB'):'—';
-    var expAlert=exp&&exp<today?'color:var(--red);font-weight:700':exp&&exp<soon?'color:var(--amber);font-weight:600':'';
-    var refAlert=ref&&ref<today?'color:var(--red);font-weight:700':ref&&ref<soon?'color:var(--amber);font-weight:600':'';
-    var result=x.passed===true?'<span style="color:var(--green);font-weight:700">Pass</span>':x.passed===false?'<span style="color:var(--red)">Fail</span>':'—';
-    h+='<tr style="border-bottom:1px solid #f0f0f0;background:'+bg+'">'
-      +'<td style="padding:8px 10px;font-weight:600">'+escH(x.person_name||'—')+'</td>'
-      +'<td style="padding:8px 10px">'+escH(x.training_topic||'—')+'</td>'
-      +'<td style="padding:8px 10px">'+dt+'</td>'
-      +'<td style="padding:8px 10px;font-size:11px">'+escH(x.certificate||'—')+'</td>'
-      +'<td style="padding:8px 10px;'+expAlert+'">'+expStr+(expAlert.includes('red')?' ⚠':'')+'</td>'
-      +'<td style="padding:8px 10px;'+refAlert+'">'+refStr+(refAlert.includes('red')?' ⚠':'')+'</td>'
-      +'<td style="padding:8px 10px;text-align:center">'+result+'</td>'
-      +'<td style="padding:8px 10px"><div style="display:flex;gap:4px">'
-      +'<button class="btn btn-sm" data-id="'+x.id+'" onclick="tfOpen(this.getAttribute(\'data-id\'))"><i class="ti ti-edit"></i></button>'
-      +(isMgr()?'<button class="btn btn-sm" style="color:var(--red)" data-id="'+x.id+'" onclick="tfDeleteFromList(this.getAttribute(\'data-id\'))"><i class="ti ti-trash"></i></button>':'')
-      +'</div></td>'
+    var isExpired=x.expiry_date&&new Date(x.expiry_date)<now;
+    var isSoon=x.expiry_date&&!isExpired&&(new Date(x.expiry_date)-now)<90*86400000;
+    var isRefresh=x.refresher_due&&new Date(x.refresher_due)<now;
+    h+='<tr style="border-bottom:1px solid #f0f0f0;background:'+bg+';cursor:pointer" onclick="tfOpen(\''+x.id+'\')">'
+      +'<td style="padding:8px 14px;font-weight:700">'+escH(x.person_name||'—')+'<div style="font-size:10px;color:var(--text2)">'+escH(x.department||'')+'</div></td>'
+      +'<td style="padding:8px;font-weight:600">'+escH(x.training_topic||'—')+'</td>'
+      +'<td style="padding:8px;font-size:11px">'+(x.training_date?new Date(x.training_date).toLocaleDateString('en-GB'):'—')+'</td>'
+      +'<td style="padding:8px;font-size:11px">'+escH(x.trainer||'—')+'</td>'
+      +'<td style="padding:8px;text-align:center;font-size:11px">'+(x.score!=null?x.score+'%':'—')+'</td>'
+      +'<td style="padding:8px;text-align:center">'+(x.passed===false?'<span style="background:#FCEBEB;color:#A32D2D;padding:1px 6px;border-radius:99px;font-size:10px;font-weight:700">Fail</span>':'<span style="background:#EAF3DE;color:#3B6D11;padding:1px 6px;border-radius:99px;font-size:10px;font-weight:700">Pass</span>')+'</td>'
+      +'<td style="padding:8px;font-size:11px">'+escH(x.certificate||'—')+'</td>'
+      +'<td style="padding:8px;font-size:11px;color:'+(isExpired?'var(--red)':isSoon?'#C2410C':'inherit')+'">'+(x.expiry_date?new Date(x.expiry_date).toLocaleDateString('en-GB')+(isExpired?' ⚠':'')+(isSoon?' ⏰':''):'—')+'</td>'
+      +'<td style="padding:8px;font-size:11px;color:'+(isRefresh?'var(--red)':'inherit')+'">'+(x.refresher_due?new Date(x.refresher_due).toLocaleDateString('en-GB')+(isRefresh?' ⚠':''):'—')+'</td>'
+      +'<td style="padding:8px"><button class="btn btn-sm" data-id="'+x.id+'" onclick="event.stopPropagation();tfOpen(this.dataset.id)"><i class="ti ti-edit"></i></button></td>'
       +'</tr>';
   });
-  h+='</tbody></table>';
-  el.innerHTML=h;
+  h+='</tbody></table></div>'; el.innerHTML=h;
 }
 
-function tfShowForm(){
-  document.getElementById('train-view-followup').style.display='none';
-  document.getElementById('tf-form').style.display='block';
-}
-function tfBack(){
-  document.getElementById('tf-form').style.display='none';
-  document.getElementById('train-view-followup').style.display='block';
-  tfLoad();
-}
-
+function tfShowForm(){document.getElementById('train-view-followup').style.display='none';document.getElementById('tf-form').style.display='block';}
+function tfBack(){document.getElementById('tf-form').style.display='none';document.getElementById('train-view-followup').style.display='block';tfLoad();}
 function tfNew(){
   tfEditingId=null;
   document.getElementById('tf-form-title').textContent='New Training Record';
   document.getElementById('tf-del-btn').style.display='none';
-  ['tfr-name','tfr-course','tfr-trainer','tfr-cert','tfr-notes'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
-  ['tfr-date','tfr-expiry','tfr-refresher'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
-  var sc=document.getElementById('tfr-score');if(sc)sc.value='';
-  var ps=document.getElementById('tfr-passed');if(ps)ps.value='true';
-  var per=document.getElementById('tfr-person');if(per)per.value='';
+  ['tfr-person','tfr-name','tfr-dept','tfr-course','tfr-trainer','tfr-cert','tfr-notes','tfr-cert-url'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
+  document.getElementById('tfr-date').value=new Date().toISOString().slice(0,10);
+  ['tfr-expiry','tfr-refresher'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
+  document.getElementById('tfr-score').value='';document.getElementById('tfr-duration').value='';
+  document.getElementById('tfr-passed').value='true';
   tfShowForm();
 }
-
 function tfOpen(id){
-  var x=tfAllData.find(function(r){return r.id===id;});
-  if(!x)return;
+  var x=tfAllData.find(r=>r.id===id); if(!x)return;
   tfEditingId=id;
-  document.getElementById('tf-form-title').textContent='Edit Training Record';
+  document.getElementById('tf-form-title').textContent=(x.person_name||'Edit')+' — '+(x.training_topic||'Training Record');
   document.getElementById('tf-del-btn').style.display=isMgr()?'inline-flex':'none';
-  var flds={'tfr-name':'person_name','tfr-course':'training_topic','tfr-trainer':'trainer','tfr-cert':'certificate','tfr-notes':'notes'};
-  Object.entries(flds).forEach(function(e){var el=document.getElementById(e[0]);if(el)el.value=x[e[1]]||'';});
-  ['tfr-date','tfr-expiry','tfr-refresher'].forEach(function(id){
-    var key={'tfr-date':'training_date','tfr-expiry':'expiry_date','tfr-refresher':'refresher_due'}[id];
-    var el=document.getElementById(id);if(el)el.value=x[key]||'';
-  });
-  var sc=document.getElementById('tfr-score');if(sc)sc.value=x.score||'';
-  var ps=document.getElementById('tfr-passed');if(ps)ps.value=String(x.passed!==false);
-  var per=document.getElementById('tfr-person');if(per)per.value=x.person_id||'';
+  var gf=function(fid,val){var el=document.getElementById(fid);if(el)el.value=val||'';};
+  // person_id mapped to tfr-person select
+  var pSel=document.getElementById('tfr-person');if(pSel&&x.person_id)pSel.value=x.person_id;
+  gf('tfr-name',x.person_name);gf('tfr-dept',x.department);gf('tfr-course',x.training_topic);
+  gf('tfr-date',x.training_date);gf('tfr-trainer',x.trainer);gf('tfr-cert',x.certificate);
+  gf('tfr-expiry',x.expiry_date);gf('tfr-refresher',x.refresher_due);
+  gf('tfr-notes',x.notes);gf('tfr-cert-url',x.certificate_url);
+  document.getElementById('tfr-score').value=x.score!=null?x.score:'';
+  document.getElementById('tfr-passed').value=x.passed===false?'false':'true';
+  document.getElementById('tfr-duration').value=x.duration_hours||'';
   tfShowForm();
 }
-
 async function tfSave(){
-  var course=document.getElementById('tfr-course')?.value?.trim();
-  if(!course){toast('Please enter a training topic',false);return;}
+  var course=document.getElementById('tfr-course')?.value?.trim(); if(!course){toast('Please enter training topic',false);return;}
   var g=function(id){var el=document.getElementById(id);return el?el.value||null:null;};
   var personId=g('tfr-person');
-  var name=g('tfr-name')||((people||[]).find(function(p){return p.id===personId;})||{last_name:'',first_name:''}).last_name;
-  var body={
-    company_id:prof?.company_id,person_id:personId||null,
-    person_name:name||null,training_topic:course,
-    training_date:g('tfr-date'),trainer:g('tfr-trainer'),certificate:g('tfr-cert'),
-    expiry_date:g('tfr-expiry'),refresher_due:g('tfr-refresher'),
-    score:g('tfr-score')?parseFloat(g('tfr-score')):null,
-    passed:document.getElementById('tfr-passed')?.value!=='false',
-    notes:g('tfr-notes'),updated_at:new Date().toISOString()
-  };
+  var personName=g('tfr-name')||((people||[]).find(p=>p.id===personId)||{last_name:'',first_name:''}).last_name||'';
+  var body={company_id:prof?.company_id,person_id:personId||null,person_name:personName||null,department:g('tfr-dept'),training_topic:course,training_date:g('tfr-date'),trainer:g('tfr-trainer'),certificate:g('tfr-cert'),certificate_url:g('tfr-cert-url'),expiry_date:g('tfr-expiry')||null,refresher_due:g('tfr-refresher')||null,score:g('tfr-score')?parseFloat(g('tfr-score')):null,passed:g('tfr-passed')!=='false',duration_hours:g('tfr-duration')?parseFloat(g('tfr-duration')):null,notes:g('tfr-notes'),updated_at:new Date().toISOString()};
+  try{if(tfEditingId){await api('/training_followup?id=eq.'+tfEditingId,{m:'PATCH',p:'return=minimal',b:body});toast('Updated!');}else{body.created_by=prof?.id;await api('/training_followup',{m:'POST',p:'return=minimal',b:body});toast('Record saved!');}tfBack();}catch(e){toast(e.message,false);}
+}
+async function tfDelete(){if(!tfEditingId||!confirm('Delete?'))return;try{await api('/training_followup?id=eq.'+tfEditingId,{m:'DELETE'});toast('Deleted!');tfBack();}catch(e){toast(e.message,false);}}
+function tfDeleteFromList(id){if(!confirm('Delete?'))return;api('/training_followup?id=eq.'+id,{m:'DELETE'}).then(function(){tfAllData=tfAllData.filter(x=>x.id!==id);tfFilter();toast('Deleted!');}).catch(e=>toast(e.message,false));}
+
+// ── E-LEARNING ────────────────────────────────────────────────────────────────
+async function elcLoad(){
+  var el=document.getElementById('elc-list'); if(!el)return;
+  el.innerHTML='<div class="loading-msg">Loading courses...</div>';
+  var btn=document.getElementById('elc-add-btn'); if(btn)btn.style.display=isMgr()?'inline-flex':'none';
   try{
-    if(tfEditingId){await api('/training_followup?id=eq.'+tfEditingId,{m:'PATCH',p:'return=minimal',b:body});toast('Updated!');}
-    else{body.created_by=prof?.id;await api('/training_followup',{m:'POST',p:'return=minimal',b:body});toast('Record saved!');}
-    tfBack();
-  }catch(e){toast(e.message,false);console.error(e);}
+    var d=await api('/elearning_courses?select=*'+cf()+'&status=neq.archived&order=title');
+    elcAllData=d||[];
+    // Populate enrolment course select
+    var cSel=document.getElementById('elef-course-id');
+    if(cSel){cSel.innerHTML='<option value="">Select course...</option>'+(d||[]).map(c=>'<option value="'+c.id+'">'+escH(c.title)+'</option>').join('');}
+    if(!d||!d.length){el.innerHTML='<div style="text-align:center;padding:20px;color:var(--text2)"><div style="font-size:32px;margin-bottom:8px">💻</div><div style="font-weight:600">No courses yet</div>'+(isMgr()?'<button class="btn btn-sm btn-primary" style="margin-top:8px" onclick="elcNew()"><i class="ti ti-plus"></i>Add course</button>':'')+'</div>';return;}
+    el.innerHTML='<div style="display:flex;flex-direction:column;gap:6px">'+(d||[]).map(function(c){
+      return '<div class="card" style="padding:10px 14px;cursor:pointer;border-left:3px solid #0891B2;transition:box-shadow .15s" data-id="'+c.id+'" onclick="elcEdit(this.dataset.id)" onmouseover="this.style.boxShadow=\'0 2px 8px rgba(0,0,0,.1)\'" onmouseout="this.style.boxShadow=\'\'">'
+        +'<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px">'
+        +'<div><div style="font-weight:700;font-size:13px">'+escH(c.title)+'</div>'
+        +'<div style="font-size:11px;color:var(--text2);margin-top:3px;display:flex;gap:8px;flex-wrap:wrap">'
+        +(c.course_code?'<span style="font-family:monospace;color:#0891B2;font-weight:700">'+escH(c.course_code)+'</span>':'')
+        +(c.category?'<span>'+escH(c.category)+'</span>':'')
+        +(c.duration_mins?'<span>⏱ '+c.duration_mins+'min</span>':'')
+        +(c.passing_score?'<span>Pass: '+c.passing_score+'%</span>':'')
+        +(c.validity_months?'<span>Valid: '+c.validity_months+'mo</span>':'')
+        +'</div></div>'
+        +'<div style="display:flex;gap:4px">'
+        +(c.is_mandatory?'<span style="background:#FEF9EC;color:#854F0B;padding:1px 6px;border-radius:99px;font-size:10px;font-weight:700">MANDATORY</span>':'')
+        +'<span style="background:'+(c.status==='active'?'#EAF3DE':'#f3f4f6')+';color:'+(c.status==='active'?'#3B6D11':'#6B7280')+';padding:1px 6px;border-radius:99px;font-size:10px;font-weight:700;text-transform:capitalize">'+escH(c.status)+'</span>'
+        +'</div></div>'
+        +(c.description?'<div style="font-size:11px;color:var(--text2);margin-top:5px">'+escH(c.description.substring(0,100))+(c.description.length>100?'…':'')+'</div>':'')
+        +(c.course_url?'<a href="'+escH(c.course_url)+'" target="_blank" onclick="event.stopPropagation()" style="font-size:11px;color:#0891B2;display:inline-block;margin-top:4px"><i class="ti ti-external-link" style="font-size:10px"></i> Open course</a>':'')
+        +'</div>';
+    }).join('')+'</div>';
+    setM('tr-m-elearning', (d||[]).filter(c=>c.status==='active').length);
+  }catch(e){el.innerHTML='<div style="padding:16px;color:var(--text2);text-align:center">E-learning unavailable.<br><small>Run training_schema.sql to create the elearning_courses table.</small></div>';}
 }
 
-async function tfDelete(){
-  if(!tfEditingId)return;
-  if(!confirm('Delete this record?'))return;
-  try{await api('/training_followup?id=eq.'+tfEditingId,{m:'DELETE'});toast('Deleted!');tfBack();}
-  catch(e){toast(e.message,false);}
+async function eleLoad(){
+  var el=document.getElementById('ele-list'); if(!el)return;
+  el.innerHTML='<div class="loading-msg">Loading enrolments...</div>';
+  var btn=document.getElementById('ele-add-btn'); if(btn)btn.style.display=isMgr()?'inline-flex':'none';
+  try{
+    var d=await api('/elearning_enrolments?select=*'+cf()+'&order=created_at.desc&limit=50');
+    eleAllData=d||[];
+    if(!d||!d.length){el.innerHTML='<div style="text-align:center;padding:20px;color:var(--text2)"><div style="font-size:32px;margin-bottom:8px">✅</div><div style="font-weight:600">No enrolments yet</div>'+(isMgr()?'<button class="btn btn-sm btn-primary" style="margin-top:8px" onclick="eleNew()"><i class="ti ti-plus"></i>Enrol person</button>':'')+'</div>';return;}
+    var now=new Date();
+    var stCfg={enrolled:['#EFF6FF','#185FA5'],in_progress:['#FEF9EC','#854F0B'],completed:['#EAF3DE','#3B6D11'],failed:['#FCEBEB','#A32D2D'],expired:['#f3f4f6','#6B7280']};
+    el.innerHTML='<div style="display:flex;flex-direction:column;gap:5px">'+(d||[]).map(function(x){
+      var sc2=stCfg[x.status]||stCfg.enrolled;
+      var isExp=x.expiry_date&&new Date(x.expiry_date)<now;
+      return '<div style="display:flex;align-items:center;gap:10px;padding:8px 12px;border:1px solid var(--border);border-radius:8px;cursor:pointer;transition:background .1s" data-id="'+x.id+'" onclick="eleEdit(this.dataset.id)" onmouseover="this.style.background=\'#f9fafb\'" onmouseout="this.style.background=\'#fff\'">'
+        +'<div style="flex:1"><div style="font-weight:600;font-size:12px">'+escH(x.person_name||'—')+'</div>'
+        +'<div style="font-size:11px;color:var(--text2)">'+escH(x.course_title||'—')+(x.department?' · '+escH(x.department):'')+'</div></div>'
+        +(x.score!=null?'<div style="font-weight:800;font-size:14px;color:'+(x.passed?'#1D9E75':'#DC2626')+'">'+x.score+'%</div>':'')
+        +'<span style="background:'+sc2[0]+';color:'+sc2[1]+';padding:2px 8px;border-radius:99px;font-size:10px;font-weight:700;text-transform:capitalize;white-space:nowrap">'+escH(x.status)+'</span>'
+        +(isExp?'<span style="background:#FCEBEB;color:#A32D2D;padding:1px 6px;border-radius:4px;font-size:10px;font-weight:700">EXPIRED</span>':'')
+        +'</div>';
+    }).join('')+'</div>';
+  }catch(e){el.innerHTML='<div style="padding:16px;color:var(--text2);text-align:center">Enrolments unavailable.<br><small>Run training_schema.sql.</small></div>';}
 }
 
-async function tfDeleteFromList(id){
-  if(!confirm('Delete this record?'))return;
-  try{await api('/training_followup?id=eq.'+id,{m:'DELETE'});tfAllData=tfAllData.filter(function(x){return x.id!==id;});toast('Deleted!');tfRender(tfAllData);}
-  catch(e){toast(e.message,false);}
+function elcShowForm(){document.getElementById('train-view-elearning').style.display='none';document.getElementById('elc-form').style.display='block';}
+function elcBack(){document.getElementById('elc-form').style.display='none';document.getElementById('train-view-elearning').style.display='block';elcLoad();eleLoad();}
+function elcNew(){elcEditId=null;document.getElementById('elc-form-title').textContent='New Course';document.getElementById('elc-del-btn').style.display='none';['elcf-title','elcf-code','elcf-cat','elcf-desc','elcf-url','elcf-roles'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});document.getElementById('elcf-duration').value='';document.getElementById('elcf-pass-score').value='80';document.getElementById('elcf-validity').value='';document.getElementById('elcf-status').value='active';document.getElementById('elcf-mandatory').checked=false;elcShowForm();}
+function elcEdit(id){var x=elcAllData.find(r=>r.id===id);if(!x)return;elcEditId=id;document.getElementById('elc-form-title').textContent=x.title||'Edit Course';document.getElementById('elc-del-btn').style.display=isMgr()?'inline-flex':'none';var gf=function(fid,val){var el=document.getElementById(fid);if(el)el.value=val||'';};gf('elcf-title',x.title);gf('elcf-code',x.course_code);gf('elcf-cat',x.category);gf('elcf-desc',x.description);gf('elcf-url',x.course_url);gf('elcf-roles',(x.target_roles||[]).join(', '));document.getElementById('elcf-duration').value=x.duration_mins||'';document.getElementById('elcf-pass-score').value=x.passing_score||80;document.getElementById('elcf-validity').value=x.validity_months||'';document.getElementById('elcf-status').value=x.status||'active';document.getElementById('elcf-mandatory').checked=!!x.is_mandatory;elcShowForm();}
+async function elcSave(){var title=document.getElementById('elcf-title')?.value?.trim();if(!title){toast('Please enter course title',false);return;}var g=function(id){var el=document.getElementById(id);return el?el.value||null:null;};var body={company_id:prof?.company_id,title,course_code:g('elcf-code'),category:g('elcf-cat'),description:g('elcf-desc'),duration_mins:g('elcf-duration')?parseInt(g('elcf-duration')):null,passing_score:parseInt(g('elcf-pass-score'))||80,validity_months:g('elcf-validity')?parseInt(g('elcf-validity')):null,course_url:g('elcf-url'),target_roles:g('elcf-roles')?g('elcf-roles').split(',').map(r=>r.trim()).filter(Boolean):[],is_mandatory:document.getElementById('elcf-mandatory')?.checked||false,status:g('elcf-status')||'active',updated_at:new Date().toISOString()};
+  try{if(elcEditId){await api('/elearning_courses?id=eq.'+elcEditId,{m:'PATCH',p:'return=minimal',b:body});toast('Updated!');}else{body.created_by=prof?.id;await api('/elearning_courses',{m:'POST',p:'return=minimal',b:body});toast('Course added!');}elcBack();}catch(e){toast('Error: '+e.message+'<br>Run training_schema.sql first',false);}
 }
+async function elcDelete(){if(!elcEditId||!confirm('Delete?'))return;try{await api('/elearning_courses?id=eq.'+elcEditId,{m:'DELETE'});toast('Deleted!');elcBack();}catch(e){toast(e.message,false);}}
 
-// ── AUTHORISATIONS ──────────────────────────────────────────────────────────
+function eleShowForm(){document.getElementById('train-view-elearning').style.display='none';document.getElementById('ele-form').style.display='block';}
+function eleBack(){document.getElementById('ele-form').style.display='none';document.getElementById('train-view-elearning').style.display='block';elcLoad();eleLoad();}
+function eleNew(){eleEditId=null;document.getElementById('ele-form-title').textContent='New Enrolment';document.getElementById('ele-del-btn').style.display='none';['elef-person','elef-dept'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});document.getElementById('elef-enrol-date').value=new Date().toISOString().slice(0,10);['elef-comp-date','elef-expiry'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});document.getElementById('elef-score').value='';document.getElementById('elef-status').value='enrolled';document.getElementById('elef-attempts').value='1';document.getElementById('elef-time').value='';document.getElementById('elef-course-id').value='';eleShowForm();}
+function eleEdit(id){var x=eleAllData.find(r=>r.id===id);if(!x)return;eleEditId=id;document.getElementById('ele-form-title').textContent=(x.person_name||'Edit')+' — '+(x.course_title||'');document.getElementById('ele-del-btn').style.display=isMgr()?'inline-flex':'none';var gf=function(fid,val){var el=document.getElementById(fid);if(el)el.value=val||'';};gf('elef-person',x.person_name);gf('elef-dept',x.department);gf('elef-enrol-date',x.enrolment_date);gf('elef-comp-date',x.completion_date);gf('elef-expiry',x.expiry_date);document.getElementById('elef-course-id').value=x.course_id||'';document.getElementById('elef-score').value=x.score!=null?x.score:'';document.getElementById('elef-status').value=x.status||'enrolled';document.getElementById('elef-attempts').value=x.attempts||1;document.getElementById('elef-time').value=x.time_spent_mins||'';eleShowForm();}
+async function eleSave(){var person=document.getElementById('elef-person')?.value?.trim();if(!person){toast('Please enter person name',false);return;}var g=function(id){var el=document.getElementById(id);return el?el.value||null:null;};var courseId=g('elef-course-id');var courseTitle=elcAllData.find(c=>c.id===courseId)?.title||'';var score=g('elef-score')?parseFloat(g('elef-score')):null;var passScore=elcAllData.find(c=>c.id===courseId)?.passing_score||80;var body={company_id:prof?.company_id,course_id:courseId||null,course_title:courseTitle,person_name:person,department:g('elef-dept'),enrolment_date:g('elef-enrol-date')||null,completion_date:g('elef-comp-date')||null,expiry_date:g('elef-expiry')||null,score,passed:score!=null?score>=passScore:null,attempts:parseInt(g('elef-attempts'))||1,time_spent_mins:g('elef-time')?parseInt(g('elef-time')):null,status:g('elef-status')||'enrolled',updated_at:new Date().toISOString()};
+  try{if(eleEditId){await api('/elearning_enrolments?id=eq.'+eleEditId,{m:'PATCH',p:'return=minimal',b:body});toast('Updated!');}else{body.created_by=prof?.id;await api('/elearning_enrolments',{m:'POST',p:'return=minimal',b:body});toast('Enrolment saved!');}eleBack();}catch(e){toast('Error: '+e.message,false);}
+}
+async function eleDelete(){if(!eleEditId||!confirm('Delete?'))return;try{await api('/elearning_enrolments?id=eq.'+eleEditId,{m:'DELETE'});toast('Deleted!');eleBack();}catch(e){toast(e.message,false);}}
+
+// ── CERTIFICATES / LICENCES ───────────────────────────────────────────────────
 async function authLoad(){
-  var el=document.getElementById('auth-table');
-  if(!el)return;
+  var el=document.getElementById('auth-table'); if(!el)return;
   el.innerHTML='<div class="loading-msg">Loading...</div>';
+  var btn=document.getElementById('auth-add-btn'); if(btn)btn.style.display=isMgr()?'inline-flex':'none';
   try{
     var d=await api('/authorisations?select=*'+cf()+'&order=expiry_date,person_name');
     authAllData=d||[];
     // Populate type filter
-    var types=[...new Set(authAllData.map(function(x){return x.authorisation_type;}).filter(Boolean))];
+    var types=[...new Set((authAllData||[]).map(x=>x.authorisation_type||x.auth_type).filter(Boolean))].sort();
     var typeSel=document.getElementById('auth-filter-type');
-    if(typeSel)typeSel.innerHTML='<option value="">All types</option>'+types.map(function(t){return '<option value="'+escH(t)+'">'+escH(t)+'</option>';}).join('');
-    // Alerts for expiring
-    authShowAlerts();
-    authRender(authAllData);
-  }catch(e){el.innerHTML='<p style="padding:20px;color:red">'+e.message+'</p>';console.error(e);}
+    if(typeSel){typeSel.innerHTML='<option value="">All types</option>'+types.map(t=>'<option value="'+escH(t)+'">'+escH(t)+'</option>').join('');}
+    authShowAlerts(authAllData);
+    authFilter();
+  }catch(e){el.innerHTML='<div style="padding:20px;color:var(--text2);text-align:center">'+escH(e.message)+'</div>';}
 }
 
-function authShowAlerts(){
-  var alertEl=document.getElementById('auth-alerts');
-  if(!alertEl)return;
-  var today=new Date();
-  var soon=new Date();soon.setDate(soon.getDate()+60);
-  var expiring=authAllData.filter(function(x){return x.expiry_date&&new Date(x.expiry_date)<=soon&&x.status==='active';});
-  var expired=authAllData.filter(function(x){return x.status==='expired'||(x.expiry_date&&new Date(x.expiry_date)<today&&x.status==='active');});
-  if(!expiring.length&&!expired.length){alertEl.innerHTML='';return;}
-  var h='';
-  if(expired.length){
-    h+='<div style="background:#FCEBEB;border:1px solid #fca5a5;border-radius:8px;padding:10px 14px;margin-bottom:8px;font-size:12px">'
-      +'<strong style="color:var(--red)">⚠ '+expired.length+' expired authorisation'+(expired.length!==1?'s':'')+':</strong> '
-      +expired.slice(0,5).map(function(x){return escH(x.person_name)+' ('+escH(x.authorisation_type)+')';}).join(', ')
-      +'</div>';
-  }
-  if(expiring.filter(function(x){return new Date(x.expiry_date)>=today;}).length){
-    var exp2=expiring.filter(function(x){return new Date(x.expiry_date)>=today;});
-    h+='<div style="background:#FEF9EC;border:1px solid #fcd34d;border-radius:8px;padding:10px 14px;margin-bottom:8px;font-size:12px">'
-      +'<strong style="color:var(--amber)">⏰ '+exp2.length+' authorisation'+(exp2.length!==1?'s':'')+' expiring within 60 days:</strong> '
-      +exp2.slice(0,5).map(function(x){return escH(x.person_name)+' ('+escH(x.authorisation_type)+' – '+new Date(x.expiry_date).toLocaleDateString('en-GB')+')';}).join(', ')
-      +'</div>';
-  }
-  alertEl.innerHTML=h;
+function authShowAlerts(data){
+  var el=document.getElementById('auth-alerts'); if(!el)return;
+  var now=new Date(); var soon=new Date(); soon.setDate(soon.getDate()+90);
+  var expired=(data||[]).filter(x=>x.expiry_date&&new Date(x.expiry_date)<now&&x.status==='active');
+  var expiring=(data||[]).filter(x=>x.expiry_date&&new Date(x.expiry_date)>=now&&new Date(x.expiry_date)<=soon);
+  if(!expired.length&&!expiring.length){el.innerHTML='';return;}
+  var h='<div style="display:flex;flex-direction:column;gap:6px">';
+  if(expired.length) h+='<div style="background:#FCEBEB;border:2px solid #DC2626;border-radius:8px;padding:10px 14px;font-size:12px"><strong style="color:#A32D2D">⛔ '+expired.length+' EXPIRED</strong>: '+expired.map(x=>'<strong>'+escH(x.person_name||'—')+'</strong> ('+escH(x.authorisation_type||x.auth_type||'—')+')').join(', ')+'</div>';
+  if(expiring.length) h+='<div style="background:#FEF6E7;border:2px solid #F97316;border-radius:8px;padding:10px 14px;font-size:12px"><strong style="color:#C2410C">⚠ '+expiring.length+' expiring within 90 days</strong>: '+expiring.map(x=>'<strong>'+escH(x.person_name||'—')+'</strong> ('+escH(x.authorisation_type||x.auth_type||'—')+') — '+new Date(x.expiry_date).toLocaleDateString('en-GB')).join(', ')+'</div>';
+  el.innerHTML=h+'</div>';
 }
 
 function authFilter(){
+  var el=document.getElementById('auth-table'); if(!el)return;
   var q=(document.getElementById('auth-search')?.value||'').toLowerCase();
   var ft=document.getElementById('auth-filter-type')?.value||'';
-  var filtered=authAllData.filter(function(x){
-    var matchQ=!q||(x.person_name||'').toLowerCase().includes(q)||(x.authorisation_type||'').toLowerCase().includes(q);
-    var matchT=!ft||x.authorisation_type===ft;
-    return matchQ&&matchT;
+  var filt=authAllData.filter(function(x){
+    var mQ=!q||(x.person_name||'').toLowerCase().includes(q)||(x.authorisation_type||x.auth_type||'').toLowerCase().includes(q);
+    var mT=!ft||(x.authorisation_type||x.auth_type||'')=== ft;
+    return mQ&&mT;
   });
-  authRender(filtered);
+  authRender(filt);
 }
 
 function authRender(data){
-  var el=document.getElementById('auth-table');if(!el)return;
-  if(!data.length){
-    el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)">No authorisations found.'+(isMgr()?' <button class="btn btn-primary btn-sm" onclick="authNew()"><i class="ti ti-plus"></i>Add</button>':'')+'</div>';
-    return;
-  }
-  var today=new Date();var soon=new Date();soon.setDate(soon.getDate()+60);
-  var statusBadge=function(s,exp){
-    var isExpired=exp&&new Date(exp)<today;
-    var isWarn=exp&&new Date(exp)<=soon&&new Date(exp)>=today;
-    if(isExpired||s==='expired')return '<span style="background:#FCEBEB;color:#A32D2D;padding:2px 8px;border-radius:99px;font-size:11px;font-weight:600">Expired</span>';
-    if(isWarn)return '<span style="background:#FEF9EC;color:#854F0B;padding:2px 8px;border-radius:99px;font-size:11px;font-weight:600">Expiring soon</span>';
-    if(s==='active')return '<span style="background:#EAF3DE;color:#3B6D11;padding:2px 8px;border-radius:99px;font-size:11px;font-weight:600">Active</span>';
-    if(s==='pending')return '<span style="background:#E6F1FB;color:#185FA5;padding:2px 8px;border-radius:99px;font-size:11px;font-weight:600">Pending</span>';
-    return '<span style="background:#f3f4f6;color:#6B7280;padding:2px 8px;border-radius:99px;font-size:11px;font-weight:600">'+s+'</span>';
-  };
-  // Group by person
-  var byPerson={};
-  data.forEach(function(x){if(!byPerson[x.person_name])byPerson[x.person_name]=[];byPerson[x.person_name].push(x);});
-  var h='<table style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr style="background:#1a3a5c;color:#fff">'
-    +'<th style="padding:8px 12px;text-align:left">Person</th>'
-    +'<th style="padding:8px 10px;text-align:left">Authorisation type</th>'
-    +'<th style="padding:8px 10px;text-align:left;width:100px">Issue date</th>'
-    +'<th style="padding:8px 10px;text-align:left;width:100px">Expiry date</th>'
-    +'<th style="padding:8px 10px;text-align:left;width:130px">Reference</th>'
-    +'<th style="padding:8px 10px;text-align:left;width:120px">Status</th>'
-    +'<th style="padding:8px 10px;width:70px"></th>'
-    +'</tr></thead><tbody>';
-  Object.entries(byPerson).forEach(function(e,pi){
-    var name=e[0],auths=e[1];
-    auths.forEach(function(x,ai){
-      var bg=pi%2===0?'#fff':'#f9fafb';
-      var iss=x.issue_date?new Date(x.issue_date).toLocaleDateString('en-GB'):'—';
-      var exp=x.expiry_date?new Date(x.expiry_date).toLocaleDateString('en-GB'):'—';
-      var isExpiredOrWarn=x.expiry_date&&(new Date(x.expiry_date)<today||new Date(x.expiry_date)<=soon);
-      h+='<tr style="border-bottom:1px solid #f0f0f0;background:'+bg+'">'
-        +(ai===0?'<td rowspan="'+auths.length+'" style="padding:8px 12px;font-weight:700;border-right:1px solid #e5e7eb;vertical-align:top">'+escH(name)+'</td>':'')
-        +'<td style="padding:8px 10px;font-weight:600">'+escH(x.authorisation_type||'—')+'</td>'
-        +'<td style="padding:8px 10px">'+iss+'</td>'
-        +'<td style="padding:8px 10px'+(isExpiredOrWarn?';color:var(--red)':'')+'">'+exp+(isExpiredOrWarn?' ⚠':'')+'</td>'
-        +'<td style="padding:8px 10px;font-size:11px">'+escH(x.reference||'—')+'</td>'
-        +'<td style="padding:8px 10px">'+statusBadge(x.status,x.expiry_date)+'</td>'
-        +'<td style="padding:8px 10px"><div style="display:flex;gap:4px">'
-        +'<button class="btn btn-sm" data-id="'+x.id+'" onclick="authOpen(this.getAttribute(\'data-id\'))"><i class="ti ti-edit"></i></button>'
-        +(isMgr()?'<button class="btn btn-sm" style="color:var(--red)" data-id="'+x.id+'" onclick="authDeleteFromList(this.getAttribute(\'data-id\'))"><i class="ti ti-trash"></i></button>':'')
-        +'</div></td>'
-        +'</tr>';
-    });
+  var el=document.getElementById('auth-table'); if(!el)return;
+  if(!data.length){el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)"><div style="font-size:40px;margin-bottom:12px">🪪</div><div style="font-weight:600;margin-bottom:8px">No certificates or licences recorded</div>'+(isMgr()?'<button class="btn btn-primary" onclick="authNew()"><i class="ti ti-plus"></i>Add first licence</button>':'')+'</div>';return;}
+  var now=new Date(); var soon=new Date(); soon.setDate(soon.getDate()+90);
+  // Group by type for summary row
+  var typeLookup={};
+  COMP_TYPES.forEach(function(t){typeLookup[t.name]=t;});
+  var h='<div style="overflow:auto"><table style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr style="background:#B45309;color:#fff"><th style="padding:8px 14px;text-align:left">Holder</th><th style="padding:8px;text-align:left">Department</th><th style="padding:8px;text-align:left">Licence / Certificate</th><th style="padding:8px">Ref</th><th style="padding:8px">Issuing body</th><th style="padding:8px">Issue date</th><th style="padding:8px">Expiry</th><th style="padding:8px">Days left</th><th style="padding:8px">Status</th><th style="padding:8px;width:50px"></th></tr></thead><tbody>';
+  data.forEach(function(x,i){
+    var bg=i%2===0?'#fff':'#f9fafb';
+    var authType=x.authorisation_type||x.auth_type||'—';
+    var emoji=typeLookup[authType]?.emoji||'📋';
+    var isExpired=x.expiry_date&&new Date(x.expiry_date)<now;
+    var daysLeft=x.expiry_date?Math.ceil((new Date(x.expiry_date)-now)/86400000):null;
+    var isSoon=daysLeft!=null&&daysLeft>=0&&daysLeft<=90;
+    var rowBg=isExpired?'#FFF5F5':isSoon?'#FFFBEB':bg;
+    var stCfg={active:['#EAF3DE','#3B6D11'],expired:['#FCEBEB','#A32D2D'],suspended:['#FEF9EC','#854F0B'],pending:['#EFF6FF','#185FA5']};
+    var sc2=stCfg[x.status]||stCfg.active;
+    h+='<tr style="border-bottom:1px solid #f0f0f0;background:'+rowBg+';cursor:pointer" onclick="authOpen(\''+x.id+'\')">'
+      +'<td style="padding:8px 14px;font-weight:700">'+escH(x.person_name||'—')+'<div style="font-size:10px;color:var(--text2)">'+escH(x.job_title||'')+'</div></td>'
+      +'<td style="padding:8px;font-size:11px">'+escH(x.department||'—')+'</td>'
+      +'<td style="padding:8px"><div style="display:flex;align-items:center;gap:6px"><span style="font-size:16px">'+emoji+'</span><div><div style="font-weight:600">'+escH(authType)+'</div>'+(x.scope?'<div style="font-size:10px;color:var(--text2)">'+escH(x.scope)+'</div>':'')+'</div></div></td>'
+      +'<td style="padding:8px;font-family:monospace;font-size:11px;color:#185FA5">'+escH(x.reference||x.auth_ref||'—')+'</td>'
+      +'<td style="padding:8px;font-size:11px">'+escH(x.issuing_body||'—')+'</td>'
+      +'<td style="padding:8px;font-size:11px">'+(x.issue_date?new Date(x.issue_date).toLocaleDateString('en-GB'):'—')+'</td>'
+      +'<td style="padding:8px;font-size:11px;color:'+(isExpired?'#A32D2D':isSoon?'#C2410C':'inherit')+';font-weight:'+(isExpired||isSoon?'700':'400')+'">'+(x.expiry_date?new Date(x.expiry_date).toLocaleDateString('en-GB'):'No expiry')+'</td>'
+      +'<td style="padding:8px;text-align:center;font-size:12px;font-weight:800;color:'+(isExpired?'#A32D2D':isSoon?'#C2410C':daysLeft!=null&&daysLeft<=180?'#185FA5':'#1D9E75')+'">'+(daysLeft==null?'—':isExpired?Math.abs(daysLeft)+'d ago':daysLeft+'d')+'</td>'
+      +'<td style="padding:8px"><span style="background:'+sc2[0]+';color:'+sc2[1]+';padding:2px 8px;border-radius:99px;font-size:10px;font-weight:700;text-transform:capitalize">'+escH(x.status||'active')+'</span>'+(isExpired&&x.status==='active'?'<span style="background:#FCEBEB;color:#A32D2D;padding:1px 6px;border-radius:99px;font-size:9px;font-weight:700;margin-left:3px">OVERDUE RENEWAL</span>':'')+'</td>'
+      +'<td style="padding:8px"><button class="btn btn-sm" data-id="'+x.id+'" onclick="event.stopPropagation();authOpen(this.dataset.id)"><i class="ti ti-edit"></i></button></td>'
+      +'</tr>';
   });
-  h+='</tbody></table>';
-  el.innerHTML=h;
+  h+='</tbody></table></div>'; el.innerHTML=h;
 }
 
-function authShowForm(){
-  document.getElementById('train-view-auth').style.display='none';
-  document.getElementById('auth-form').style.display='block';
-}
-function authBack(){
-  document.getElementById('auth-form').style.display='none';
-  document.getElementById('train-view-auth').style.display='block';
-  authLoad();
-}
-
+function authShowForm(){document.getElementById('train-view-auth').style.display='none';document.getElementById('auth-form').style.display='block';}
+function authBack(){document.getElementById('auth-form').style.display='none';document.getElementById('train-view-auth').style.display='block';document.querySelectorAll('[id^="train-tab-"]').forEach(t=>t.classList.remove('active'));document.getElementById('train-tab-auth')?.classList.add('active');authLoad();}
 function authNew(){
   authEditingId=null;
-  document.getElementById('auth-form-title').textContent='New Authorisation';
+  document.getElementById('auth-form-title').textContent='New Licence / Certificate';
   document.getElementById('auth-del-btn').style.display='none';
-  ['authr-name','authr-type','authr-ref','authr-issuer','authr-notes'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
+  ['authr-person','authr-name','authr-dept','authr-job-title','authr-ref','authr-issuer','authr-cert-url','authr-scope','authr-notes'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
   ['authr-issue','authr-expiry'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
-  var st=document.getElementById('authr-status');if(st)st.value='active';
-  var per=document.getElementById('authr-person');if(per)per.value='';
+  document.getElementById('authr-type').value='Forklift Licence';
+  document.getElementById('authr-status').value='active';
   authShowForm();
 }
-
 function authOpen(id){
-  var x=authAllData.find(function(r){return r.id===id;});
-  if(!x)return;
+  var x=authAllData.find(r=>r.id===id); if(!x)return;
   authEditingId=id;
-  document.getElementById('auth-form-title').textContent='Edit Authorisation';
+  document.getElementById('auth-form-title').textContent=(x.person_name||'Edit')+' — '+(x.authorisation_type||x.auth_type||'Licence');
   document.getElementById('auth-del-btn').style.display=isMgr()?'inline-flex':'none';
-  var flds={'authr-name':'person_name','authr-type':'authorisation_type','authr-ref':'reference','authr-issuer':'issuing_body','authr-notes':'notes'};
-  Object.entries(flds).forEach(function(e){var el=document.getElementById(e[0]);if(el)el.value=x[e[1]]||'';});
-  var iss=document.getElementById('authr-issue');if(iss)iss.value=x.issue_date||'';
-  var exp=document.getElementById('authr-expiry');if(exp)exp.value=x.expiry_date||'';
-  var st=document.getElementById('authr-status');if(st)st.value=x.status||'active';
-  var per=document.getElementById('authr-person');if(per)per.value=x.person_id||'';
+  var gf=function(fid,val){var el=document.getElementById(fid);if(el)el.value=val||'';};
+  gf('authr-person',x.person_name);gf('authr-name',x.employee_id||x.person_id||'');
+  gf('authr-dept',x.department);gf('authr-job-title',x.job_title);
+  gf('authr-ref',x.reference||x.auth_ref);gf('authr-issuer',x.issuing_body);
+  gf('authr-cert-url',x.certificate_url||x.cert_url);gf('authr-scope',x.scope||x.restrictions);
+  gf('authr-notes',x.notes);gf('authr-issue',x.issue_date);gf('authr-expiry',x.expiry_date);
+  document.getElementById('authr-type').value=x.authorisation_type||x.auth_type||'Forklift Licence';
+  document.getElementById('authr-status').value=x.status||'active';
   authShowForm();
 }
-
 async function authSave(){
-  var type=document.getElementById('authr-type')?.value?.trim();
-  var name=document.getElementById('authr-name')?.value?.trim();
-  if(!type||!name){toast('Please enter person name and authorisation type',false);return;}
+  var authType=document.getElementById('authr-type')?.value?.trim();
+  var personName=document.getElementById('authr-person')?.value?.trim();
+  if(!authType||!personName){toast('Please enter holder name and licence type',false);return;}
   var g=function(id){var el=document.getElementById(id);return el?el.value||null:null;};
-  var body={
-    company_id:prof?.company_id,
-    person_id:g('authr-person')||null,person_name:name,
-    authorisation_type:type,status:g('authr-status')||'active',
-    issue_date:g('authr-issue'),expiry_date:g('authr-expiry'),
-    reference:g('authr-ref'),issuing_body:g('authr-issuer'),notes:g('authr-notes'),
-    updated_at:new Date().toISOString()
-  };
+  var body={company_id:prof?.company_id,person_name:personName,employee_id:g('authr-name'),department:g('authr-dept'),job_title:g('authr-job-title'),authorisation_type:authType,auth_type:authType,reference:g('authr-ref'),auth_ref:g('authr-ref'),issuing_body:g('authr-issuer'),issue_date:g('authr-issue')||null,expiry_date:g('authr-expiry')||null,status:g('authr-status')||'active',certificate_url:g('authr-cert-url'),scope:g('authr-scope'),notes:g('authr-notes'),updated_at:new Date().toISOString()};
+  try{if(authEditingId){await api('/authorisations?id=eq.'+authEditingId,{m:'PATCH',p:'return=minimal',b:body});toast('Updated!');}else{body.created_by=prof?.id;await api('/authorisations',{m:'POST',p:'return=minimal',b:body});toast('Certificate added!');}authBack();}catch(e){toast(e.message,false);}
+}
+async function authDelete(){if(!authEditingId||!confirm('Delete?'))return;try{await api('/authorisations?id=eq.'+authEditingId,{m:'DELETE'});toast('Deleted!');authBack();}catch(e){toast(e.message,false);}}
+function authDeleteFromList(id){if(!confirm('Delete?'))return;api('/authorisations?id=eq.'+id,{m:'DELETE'}).then(function(){authAllData=authAllData.filter(x=>x.id!==id);authFilter();toast('Deleted!');}).catch(e=>toast(e.message,false));}
+
+// ── GAP ANALYSIS / TNA ────────────────────────────────────────────────────────
+async function tnaLoad(){
+  var el=document.getElementById('tna-table'); if(!el)return;
+  el.innerHTML='<div class="loading-msg">Loading...</div>';
+  var btn=document.getElementById('tna-add-btn'); if(btn)btn.style.display=isMgr()?'inline-flex':'none';
   try{
-    if(authEditingId){await api('/authorisations?id=eq.'+authEditingId,{m:'PATCH',p:'return=minimal',b:body});toast('Updated!');}
-    else{body.created_by=prof?.id;await api('/authorisations',{m:'POST',p:'return=minimal',b:body});toast('Authorisation added!');}
-    authBack();
-  }catch(e){toast(e.message,false);console.error(e);}
+    var d=await api('/training_needs?select=*'+cf()+'&order=category,role_name,training_topic');
+    tnAllData=d||[];
+    if(!tnAllData.length){
+      el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)"><div style="font-size:40px;margin-bottom:12px">🎯</div><div style="font-weight:600;margin-bottom:8px">No training needs defined yet</div>'+(isMgr()?'<button class="btn btn-primary" onclick="tnaAddRow()"><i class="ti ti-plus"></i>Add training need</button>':'')+'</div>';
+      return;
+    }
+    var priColors={critical:'#DC2626',high:'#C2410C',medium:'#185FA5',low:'#6B7280'};
+    var stCfg={pending:['#f3f4f6','#6B7280'],in_progress:['#FEF9EC','#854F0B'],completed:['#EAF3DE','#3B6D11'],overdue:['#FCEBEB','#A32D2D']};
+    var h='<div style="overflow:auto"><table style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr style="background:#5B21B6;color:#fff"><th style="padding:8px 14px;text-align:left">Role</th><th style="padding:8px;text-align:left">Category</th><th style="padding:8px;text-align:left">Training topic</th><th style="padding:8px">Priority</th><th style="padding:8px">Frequency</th><th style="padding:8px">Status</th><th style="padding:8px">Target date</th><th style="padding:8px;width:60px"></th></tr></thead><tbody>';
+    tnAllData.forEach(function(x,i){
+      var bg=i%2===0?'#fff':'#f9fafb';
+      var sc2=stCfg[x.status]||stCfg.pending;
+      h+='<tr style="border-bottom:1px solid #f0f0f0;background:'+bg+'">'
+        +'<td style="padding:8px 14px;font-weight:700">'+escH(x.role_name||'—')+'</td>'
+        +'<td style="padding:8px;font-size:11px">'+escH(x.category||'—')+'</td>'
+        +'<td style="padding:8px;font-weight:600">'+escH(x.training_topic||'—')+'</td>'
+        +'<td style="padding:8px;text-align:center"><span style="color:'+(priColors[x.priority||'medium'])+';font-weight:700;text-transform:capitalize;font-size:11px">'+escH(x.priority||'medium')+'</span></td>'
+        +'<td style="padding:8px;text-align:center;font-size:11px;text-transform:capitalize">'+escH((x.frequency||'annual').replace(/_/g,' '))+'</td>'
+        +'<td style="padding:8px"><span style="background:'+sc2[0]+';color:'+sc2[1]+';padding:2px 8px;border-radius:99px;font-size:10px;font-weight:700;text-transform:capitalize">'+escH(x.status||'pending')+'</span></td>'
+        +'<td style="padding:8px;font-size:11px">'+(x.target_date?new Date(x.target_date).toLocaleDateString('en-GB'):'—')+'</td>'
+        +'<td style="padding:8px;display:flex;gap:4px">'
+        +'<button class="btn btn-sm" data-id="'+x.id+'" onclick="tnaEdit(this.dataset.id)"><i class="ti ti-edit"></i></button>'
+        +(isMgr()?'<button class="btn btn-sm" style="color:var(--red)" data-id="'+x.id+'" onclick="tnaDelete(this.dataset.id)"><i class="ti ti-trash"></i></button>':'')
+        +'</td></tr>';
+    });
+    h+='</tbody></table></div>'; el.innerHTML=h;
+  }catch(e){el.innerHTML='<div style="padding:20px;color:var(--text2);text-align:center">'+escH(e.message)+'</div>';}
 }
 
-async function authDelete(){
-  if(!authEditingId)return;
-  if(!confirm('Delete this authorisation?'))return;
-  try{await api('/authorisations?id=eq.'+authEditingId,{m:'DELETE'});toast('Deleted!');authBack();}
-  catch(e){toast(e.message,false);}
+function tnaAddRow(){
+  var role=prompt('Role / job title:'); if(!role?.trim())return;
+  var topic=prompt('Training topic:'); if(!topic?.trim())return;
+  var cat=prompt('Category (e.g. Mandatory, Technical, Fire):','Mandatory');
+  api('/training_needs',{m:'POST',p:'return=minimal',b:{company_id:prof?.company_id,role_name:role.trim(),training_topic:topic.trim(),category:cat||'Mandatory',priority:'medium',frequency:'annual',status:'pending',created_by:prof?.id}})
+    .then(function(){toast('Training need added!');tnaLoad();}).catch(function(e){toast(e.message,false);});
 }
-
-async function authDeleteFromList(id){
-  if(!confirm('Delete this authorisation?'))return;
-  try{await api('/authorisations?id=eq.'+id,{m:'DELETE'});authAllData=authAllData.filter(function(x){return x.id!==id;});toast('Deleted!');authRender(authAllData);}
-  catch(e){toast(e.message,false);}
+function tnaEdit(id){
+  var x=tnAllData.find(r=>r.id===id); if(!x)return;
+  var newStatus=prompt('Status (pending/in_progress/completed/overdue):',x.status||'pending');
+  if(!newStatus)return;
+  var newDate=prompt('Target date (YYYY-MM-DD or blank):',x.target_date||'');
+  api('/training_needs?id=eq.'+id,{m:'PATCH',p:'return=minimal',b:{status:newStatus,target_date:newDate||null,updated_at:new Date().toISOString()}})
+    .then(function(){toast('Updated!');tnaLoad();}).catch(function(e){toast(e.message,false);});
 }
+async function tnaDelete(id){if(!confirm('Delete?'))return;try{await api('/training_needs?id=eq.'+id,{m:'DELETE'});tnAllData=tnAllData.filter(x=>x.id!==id);tnaLoad();toast('Deleted!');}catch(e){toast(e.message,false);}}
+function tnaSave(){tnaLoad();}
+function saveTraining(){tnaLoad();}
 
-// ── LEGACY saveTraining (keep old training_sessions working) ─────────────────
-
-
-async function saveTraining(){
-if(!isMgr()){toast('Access denied',false);return;}
-try{
-const sel=document.getElementById('tf-attendees');
-const selected=Array.from(sel.selectedOptions).map(o=>pname(o.value)).join(', ');
-await api('/training_sessions',{m:'POST',p:'return=minimal',b:{company_id:prof?.company_id,course:document.getElementById('tf-course').value,trainer:document.getElementById('tf-trainer').value,date_conducted:document.getElementById('tf-date').value||null,expiry_date:document.getElementById('tf-expiry').value||null,attendees:selected,created_by:prof?.id}});
-toggleForm('training-form');toast('Training saved!');loadTraining();
-}catch(e){toast(e.message,false);}
-}
-// ===================================================================
-// MASTER ACTION PLAN (MAP) / CAPA MODULE — Full Rebuild
-// Action tracking · Assignment workflows · Escalation hierarchy
-// Verification process · Closure approval
-// Sources: Incidents · Audits · Inspections · Complaints · RA · TBT
-// ===================================================================
-
-let mapAllData=[], mapEditingId=null, mapCurrentView='all';
-
-const MAP_STATUS_CFG={
-  open:                 {bg:'#FEF9EC',tc:'#854F0B',    label:'Open'},
-  in_progress:          {bg:'#E6F1FB',tc:'#185FA5',    label:'In Progress'},
-  pending_verification: {bg:'#EDE9FE',tc:'#7C3AED',    label:'Pending Verification'},
-  pending_closure:      {bg:'#FEF6E7',tc:'#C2410C',    label:'Pending Closure'},
-  closed:               {bg:'#EAF3DE',tc:'#3B6D11',    label:'Closed'},
-  cancelled:            {bg:'#f3f4f6',tc:'#6B7280',    label:'Cancelled'}
-};
-
-const MAP_PRIORITY_CFG={
-  critical: {bg:'#FCEBEB',tc:'#A32D2D', label:'Critical', color:'#DC2626'},
-  high:     {bg:'#FEF6E7',tc:'#C2410C', label:'High',     color:'#C2410C'},
-  medium:   {bg:'#FEF9EC',tc:'#854F0B', label:'Medium',   color:'#EF9F27'},
-  low:      {bg:'#EAF3DE',tc:'#3B6D11', label:'Low',      color:'#1D9E75'}
-};
-
-const MAP_SOURCE_CFG={
-  incident:        {emoji:'🚨',label:'Incident',          color:'#DC2626'},
-  audit:           {emoji:'🔎',label:'Audit',             color:'#185FA5'},
-  inspection:      {emoji:'📋',label:'Inspection',        color:'#1D9E75'},
-  complaint:       {emoji:'📢',label:'Complaint',         color:'#8B5CF6'},
-  risk_assessment: {emoji:'⚠️', label:'Risk Assessment',  color:'#EF9F27'},
-  toolbox_talk:    {emoji:'🗣️', label:'Toolbox Talk',      color:'#0891B2'},
-  permit:          {emoji:'🔑',label:'Permit',            color:'#854F0B'},
-  noise_survey:    {emoji:'🔊',label:'Noise Survey',      color:'#7C3AED'},
-  ohealth:         {emoji:'🩺',label:'Occ. Health',       color:'#065F46'},
-  esg:             {emoji:'🌿',label:'Environmental',     color:'#166534'},
-  ppe:             {emoji:'🦺',label:'PPE',               color:'#B45309'},
-  kpi:             {emoji:'📊',label:'KPI Review',        color:'#185FA5'},
-  meeting:         {emoji:'🗓️', label:'Meeting',           color:'#6B7280'},
-  observation:     {emoji:'👁️', label:'Observation',       color:'#6B7280'},
-  manual:          {emoji:'📄',label:'Manual',            color:'#6B7280'},
-  other:           {emoji:'📄',label:'Other',             color:'#6B7280'}
-};
-
-const MAP_TYPE_CFG={
-  corrective:  {emoji:'🔧',label:'Corrective',  color:'#E24B4A'},
-  preventive:  {emoji:'🛡️', label:'Preventive',  color:'#185FA5'},
-  improvement: {emoji:'🚀',label:'Improvement', color:'#1D9E75'},
-  observation: {emoji:'👁️', label:'Observation', color:'#6B7280'}
-};
-
-// ── Entry ─────────────────────────────────────────────────────────────────────
 async function loadActions(){
   var btn=document.getElementById('map-new-btn');
   if(btn)btn.style.display=isMgr()?'inline-flex':'none';
@@ -13253,6 +13386,8 @@ function sopSaveToDocControl(){
   toast('SOP saved to Document Control!');
   sopSave();
 }
+
+
 
 
 
@@ -18719,249 +18854,494 @@ Toolbox talk / safety briefing conducted before starting work
 
 <div id="page-training" class="page">
 <div class="page-header">
-<div><div class="page-title">Training & Competency</div><div style="font-size:12px;color:var(--text2)">Competency matrix, training needs, plan, follow-up and authorisations</div></div>
-<div style="display:flex;gap:8px" id="train-header-btns"></div>
-</div>
-
-<!-- Tabs -->
-<div style="display:flex;gap:0;margin-bottom:16px;border-bottom:2px solid var(--border)">
-<button class="mtg-tab active" id="train-tab-matrix" onclick="trainSwitchTab('matrix',this)">📊 Competency Matrix</button>
-<button class="mtg-tab" id="train-tab-tna" onclick="trainSwitchTab('tna',this)">🎯 Training Needs</button>
-<button class="mtg-tab" id="train-tab-plan" onclick="trainSwitchTab('plan',this)">📅 Training Plan</button>
-<button class="mtg-tab" id="train-tab-followup" onclick="trainSwitchTab('followup',this)">📋 Follow-up</button>
-<button class="mtg-tab" id="train-tab-auth" onclick="trainSwitchTab('auth',this)">🔑 Authorisations</button>
-</div>
-
-<!-- ── COMPETENCY MATRIX ── -->
-<div id="train-view-matrix">
-<div class="card" style="margin-bottom:12px;padding:12px 16px">
-<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
 <div>
-<div class="card-title" style="margin:0">Competency Matrix</div>
-<div style="font-size:12px;color:var(--text2);margin-top:3px">Level: 0=No knowledge  1=Theoretical  2=First experience  3=Good level  4=Expert</div>
+<div class="page-title">Training &amp; Competency</div>
+<div style="font-size:12px;color:var(--text2)" id="train-header-sub">Training matrix · Competency · Induction · E-learning · Certificates · Gap analysis</div>
 </div>
-<div style="display:flex;gap:8px" id="cm-btns">
-<button class="btn btn-sm btn-primary" id="cm-add-comp-btn" style="display:none" onclick="cmAddCompetency()"><i class="ti ti-plus"></i>Add competency</button>
+<div style="display:flex;gap:8px" id="train-header-btns">
+<button class="btn btn-primary" id="train-new-btn" style="display:none" onclick="trainNewFromTab()"><i class="ti ti-plus"></i>Add new</button>
 </div>
-</div>
-</div>
-<div class="card" style="padding:0;overflow:auto"><div id="cm-table"><div class="loading-msg">Loading...</div></div></div>
 </div>
 
-<!-- ── TRAINING NEEDS ANALYSIS ── -->
-<div id="train-view-tna" style="display:none">
-<div class="card" style="margin-bottom:12px;padding:12px 16px">
-<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
-<div class="card-title" style="margin:0">Training Needs Analysis</div>
+<!-- Metrics row -->
+<div style="display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin-bottom:14px">
+<div class="card" style="padding:10px 12px;border-left:4px solid #185FA5"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">Training Plans</div><div style="font-size:22px;font-weight:800;color:#185FA5" id="tr-m-plans">—</div></div>
+<div class="card" style="padding:10px 12px;border-left:4px solid #1D9E75"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">Completed</div><div style="font-size:22px;font-weight:800;color:#1D9E75" id="tr-m-completed">—</div></div>
+<div class="card" style="padding:10px 12px;border-left:4px solid #E24B4A"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">Certs Expiring</div><div style="font-size:22px;font-weight:800;color:#E24B4A" id="tr-m-expiring">—</div></div>
+<div class="card" style="padding:10px 12px;border-left:4px solid #8B5CF6"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">Comp Gaps</div><div style="font-size:22px;font-weight:800;color:#8B5CF6" id="tr-m-gaps">—</div></div>
+<div class="card" style="padding:10px 12px;border-left:4px solid #EF9F27"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">Inductions Due</div><div style="font-size:22px;font-weight:800;color:#EF9F27" id="tr-m-inductions">—</div></div>
+<div class="card" style="padding:10px 12px;border-left:4px solid #0891B2"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">E-Learning</div><div style="font-size:22px;font-weight:800;color:#0891B2" id="tr-m-elearning">—</div></div>
+</div>
+
+<!-- Expiry alert banner -->
+<div id="tr-expiry-banner" style="display:none;margin-bottom:12px"></div>
+
+<!-- Tab bar -->
+<div style="display:flex;gap:0;margin-bottom:14px;border-bottom:2px solid var(--border);overflow-x:auto">
+<button class="mtg-tab active" id="train-tab-matrix"     onclick="trainSwitchTab('matrix',this)"     style="white-space:nowrap">📊 Training Matrix</button>
+<button class="mtg-tab"        id="train-tab-competency" onclick="trainSwitchTab('competency',this)" style="white-space:nowrap">🏅 Competency</button>
+<button class="mtg-tab"        id="train-tab-induction"  onclick="trainSwitchTab('induction',this)"  style="white-space:nowrap">🎓 Inductions</button>
+<button class="mtg-tab"        id="train-tab-plan"       onclick="trainSwitchTab('plan',this)"       style="white-space:nowrap">📅 Training Plan</button>
+<button class="mtg-tab"        id="train-tab-followup"   onclick="trainSwitchTab('followup',this)"   style="white-space:nowrap">📋 Records</button>
+<button class="mtg-tab"        id="train-tab-elearning"  onclick="trainSwitchTab('elearning',this)"  style="white-space:nowrap">💻 E-Learning</button>
+<button class="mtg-tab"        id="train-tab-auth"       onclick="trainSwitchTab('auth',this)"       style="white-space:nowrap">🪪 Certificates</button>
+<button class="mtg-tab"        id="train-tab-tna"        onclick="trainSwitchTab('tna',this)"        style="white-space:nowrap">🎯 Gap Analysis</button>
+</div>
+
+<!-- ══ TRAINING MATRIX ══ -->
+<div id="train-view-matrix">
+<div class="card" style="margin-bottom:12px;padding:10px 14px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+<div><div class="card-title" style="margin:0">Training Matrix</div><div style="font-size:12px;color:var(--text2)">Who has been trained in what — colour-coded by competency level</div></div>
 <div style="display:flex;gap:8px">
-<button class="btn btn-sm btn-primary" id="tna-add-btn" style="display:none" onclick="tnaAddRow()"><i class="ti ti-plus"></i>Add requirement</button>
+<select id="cm-filter-dept" onchange="cmLoad()" style="padding:6px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px"><option value="">All departments</option></select>
+<button class="btn btn-primary" id="cm-add-comp-btn" style="display:none" onclick="cmAddCompetency()"><i class="ti ti-plus"></i>Add column</button>
 </div>
 </div>
-<div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap">
-<span style="font-size:12px;font-weight:600;color:var(--text2)">Legend:</span>
-<span style="background:#EAF3DE;color:#3B6D11;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:700">M = Mandatory</span>
-<span style="background:#E6F1FB;color:#185FA5;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:700">D = Desirable</span>
-<span style="background:#f3f4f6;color:#6B7280;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:700">N = Not Required</span>
-</div>
-</div>
-<div class="card" style="padding:0;overflow:auto"><div id="tna-table"><div class="loading-msg">Loading...</div></div></div>
+<div class="card" style="padding:0;overflow:auto" id="cm-btns"><div id="cm-table"><div class="loading-msg">Loading matrix...</div></div></div>
 </div>
 
-<!-- ── TRAINING PLAN ── -->
-<div id="train-view-plan" style="display:none">
-<!-- Year selector + metrics -->
-<div class="card" style="margin-bottom:12px;padding:12px 16px">
-<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
+<!-- ══ COMPETENCY MATRIX ══ -->
+<div id="train-view-competency" style="display:none">
+<div class="card" style="margin-bottom:12px;padding:10px 14px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+<div><div class="card-title" style="margin:0">Competency &amp; Licence Tracker</div>
+<div style="font-size:12px;color:var(--text2)">Forklift · Crane · Scaffolding · First Aid · Fire Warden · Confined Space · Electrical</div></div>
+<div style="display:flex;gap:8px">
+<input type="text" id="comp-search" placeholder="Search person, competency..." oninput="compFilter()" style="padding:6px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px;width:200px"/>
+<select id="comp-filter-cat" onchange="compFilter()" style="padding:6px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px"><option value="">All categories</option></select>
+<button class="btn btn-primary" id="comp-add-btn" style="display:none" onclick="compNew()"><i class="ti ti-plus"></i>Add record</button>
+</div>
+</div>
+<div id="comp-gap-banner" style="margin-bottom:10px"></div>
+<div id="comp-list"><div class="loading-msg">Loading...</div></div>
+</div>
+
+<!-- ══ INDUCTIONS ══ -->
+<div id="train-view-induction" style="display:none">
+<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px">
+<div class="card" style="padding:10px 12px;border-left:4px solid #185FA5"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">Total</div><div style="font-size:22px;font-weight:800;color:#185FA5" id="ind-m-total">—</div></div>
+<div class="card" style="padding:10px 12px;border-left:4px solid #1D9E75"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">Completed</div><div style="font-size:22px;font-weight:800;color:#1D9E75" id="ind-m-done">—</div></div>
+<div class="card" style="padding:10px 12px;border-left:4px solid #EF9F27"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">Pending</div><div style="font-size:22px;font-weight:800;color:#EF9F27" id="ind-m-pending">—</div></div>
+<div class="card" style="padding:10px 12px;border-left:4px solid #E24B4A"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">Refreshers Due</div><div style="font-size:22px;font-weight:800;color:#E24B4A" id="ind-m-refresh">—</div></div>
+</div>
+<div class="card" style="margin-bottom:12px;padding:10px 14px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+<div class="card-title" style="margin:0">Induction Register</div>
+<div style="display:flex;gap:8px">
+<select id="ind-filter-type" onchange="indLoad()" style="padding:6px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px">
+<option value="">All types</option><option value="new_employee">New Employee</option>
+<option value="contractor">Contractor</option><option value="visitor">Visitor</option>
+<option value="refresher">Refresher</option><option value="site_specific">Site Specific</option>
+</select>
+<button class="btn btn-primary" id="ind-add-btn" style="display:none" onclick="indNew()"><i class="ti ti-plus"></i>New induction</button>
+</div>
+</div>
+<div id="ind-list"><div class="loading-msg">Loading...</div></div>
+</div>
+
+<!-- ══ TRAINING PLAN ══ -->
+<div id="train-view-plan">
+<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px">
+<div class="card" style="padding:10px 12px;border-left:4px solid #185FA5"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">Planned</div><div style="font-size:22px;font-weight:800;color:#185FA5" id="tp-m-planned">—</div></div>
+<div class="card" style="padding:10px 12px;border-left:4px solid #1D9E75"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">Completed</div><div style="font-size:22px;font-weight:800;color:#1D9E75" id="tp-m-completed">—</div></div>
+<div class="card" style="padding:10px 12px;border-left:4px solid #0891B2"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">In Progress</div><div style="font-size:22px;font-weight:800;color:#0891B2" id="tp-m-progress">—</div></div>
+<div class="card" style="padding:10px 12px;border-left:4px solid #E24B4A"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">Overdue</div><div style="font-size:22px;font-weight:800;color:#E24B4A" id="tp-m-overdue">—</div></div>
+</div>
+<div class="card" style="margin-bottom:12px;padding:10px 14px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
 <div style="display:flex;align-items:center;gap:12px">
-<div class="card-title" style="margin:0">Training Plan</div>
-<div style="display:flex;gap:4px">
 <button class="btn btn-sm" onclick="trainPlanPrevYear()"><i class="ti ti-chevron-left"></i></button>
-<span style="font-size:14px;font-weight:700;padding:4px 10px" id="tp-year-label">2026</span>
+<div style="font-size:16px;font-weight:800" id="tp-year-label">2026</div>
 <button class="btn btn-sm" onclick="trainPlanNextYear()"><i class="ti ti-chevron-right"></i></button>
 </div>
+<button class="btn btn-primary" id="tp-add-btn" style="display:none" onclick="tpNew()"><i class="ti ti-plus"></i>Add training</button>
 </div>
-<div style="display:flex;gap:8px">
-<button class="btn btn-sm btn-primary" id="tp-add-btn" style="display:none" onclick="tpNew()"><i class="ti ti-plus"></i>Add training</button>
-</div>
-</div>
-</div>
-<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:12px">
-<div class="card" style="padding:12px 14px;border-left:4px solid #185FA5"><div style="font-size:11px;color:var(--text2);margin-bottom:2px;font-weight:500;text-transform:uppercase">Planned</div><div style="font-size:24px;font-weight:800;color:#185FA5" id="tp-m-planned">—</div></div>
-<div class="card" style="padding:12px 14px;border-left:4px solid #1D9E75"><div style="font-size:11px;color:var(--text2);margin-bottom:2px;font-weight:500;text-transform:uppercase">Completed</div><div style="font-size:24px;font-weight:800;color:#1D9E75" id="tp-m-completed">—</div></div>
-<div class="card" style="padding:12px 14px;border-left:4px solid #EF9F27"><div style="font-size:11px;color:var(--text2);margin-bottom:2px;font-weight:500;text-transform:uppercase">In progress</div><div style="font-size:24px;font-weight:800;color:#EF9F27" id="tp-m-progress">—</div></div>
-<div class="card" style="padding:12px 14px;border-left:4px solid #E24B4A"><div style="font-size:11px;color:var(--text2);margin-bottom:2px;font-weight:500;text-transform:uppercase">Overdue</div><div style="font-size:24px;font-weight:800;color:#E24B4A" id="tp-m-overdue">—</div></div>
-</div>
-<div class="card" style="padding:0;overflow:hidden"><div id="tp-table"><div class="loading-msg">Loading...</div></div></div>
+<div class="card" style="padding:0;overflow:auto"><div id="tp-table"><div class="loading-msg">Loading...</div></div></div>
 </div>
 
-<!-- ── FOLLOW-UP ── -->
+<!-- ══ TRAINING RECORDS ══ -->
 <div id="train-view-followup" style="display:none">
-<div class="card" style="margin-bottom:12px;padding:12px 16px">
-<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
-<div class="card-title" style="margin:0">Individual Training Follow-up</div>
+<div class="card" style="margin-bottom:12px;padding:10px 14px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+<div class="card-title" style="margin:0">Training Records &amp; Attendance</div>
 <div style="display:flex;gap:8px">
-<input type="text" id="tf-search" placeholder="Search name or course..." oninput="tfFilter()" style="padding:6px 12px;border:1px solid var(--border);border-radius:8px;font-size:12px;width:200px"/>
-<button class="btn btn-sm btn-primary" id="tf-add-btn" style="display:none" onclick="tfNew()"><i class="ti ti-plus"></i>Add record</button>
+<input type="text" id="tf-search" placeholder="Search person, course..." oninput="tfFilter()" style="padding:6px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px;width:180px"/>
+<select id="tf-filter-exp" onchange="tfFilter()" style="padding:6px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px">
+<option value="">All</option><option value="expiring">Expiring &lt;90d</option><option value="expired">Expired</option>
+</select>
+<button class="btn btn-primary" id="tf-add-btn" style="display:none" onclick="tfNew()"><i class="ti ti-plus"></i>Add record</button>
 </div>
 </div>
-</div>
-<div class="card" style="padding:0;overflow:hidden"><div id="tf-table"><div class="loading-msg">Loading...</div></div></div>
+<div id="tf-table"><div class="loading-msg">Loading...</div></div>
 </div>
 
-<!-- ── AUTHORISATIONS ── -->
-<div id="train-view-auth">
-<div class="card" style="margin-bottom:12px;padding:12px 16px">
-<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
-<div>
-<div class="card-title" style="margin:0">List of Authorisations</div>
-<div style="font-size:12px;color:var(--text2);margin-top:3px">Certificates, permits and authorisations per person</div>
+<!-- ══ E-LEARNING ══ -->
+<div id="train-view-elearning" style="display:none">
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px">
+<div class="card"><div class="card-title">📚 Course Library</div>
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px">
+<div style="font-size:12px;color:var(--text2)">Available online courses</div>
+<button class="btn btn-sm btn-primary" id="elc-add-btn" style="display:none" onclick="elcNew()"><i class="ti ti-plus"></i>Add course</button>
 </div>
-<div style="display:flex;gap:8px">
-<input type="text" id="auth-search" placeholder="Search..." oninput="authFilter()" style="padding:6px 12px;border:1px solid var(--border);border-radius:8px;font-size:12px;width:180px"/>
-<select id="auth-filter-type" onchange="authFilter()" style="padding:6px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px"><option value="">All types</option></select>
-<button class="btn btn-sm btn-primary" id="auth-add-btn" style="display:none" onclick="authNew()"><i class="ti ti-plus"></i>Add authorisation</button>
+<div id="elc-list"><div class="loading-msg">Loading...</div></div>
+</div>
+<div class="card"><div class="card-title">✅ Enrolments &amp; Completions</div>
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px">
+<div style="font-size:12px;color:var(--text2)">Track who completed what</div>
+<button class="btn btn-sm btn-primary" id="ele-add-btn" style="display:none" onclick="eleNew()"><i class="ti ti-plus"></i>Enrol person</button>
+</div>
+<div id="ele-list"><div class="loading-msg">Loading...</div></div>
 </div>
 </div>
-</div>
-<!-- Expiry alerts -->
-<div id="auth-alerts" style="margin-bottom:12px"></div>
-<div class="card" style="padding:0;overflow:hidden"><div id="auth-table"><div class="loading-msg">Loading...</div></div></div>
 </div>
 
-<!-- ── FORMS (slide-in) ── -->
+<!-- ══ CERTIFICATES / LICENCES ══ -->
+<div id="train-view-auth" style="display:none">
+<div class="card" style="margin-bottom:12px;padding:10px 14px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+<div><div class="card-title" style="margin:0">Licence &amp; Certificate Register</div>
+<div style="font-size:12px;color:var(--text2)">Forklift · Crane · Scaffolding · First Aid · Fire Warden · Confined Space · Electrical · NEBOSH · IOSH</div></div>
+<div style="display:flex;gap:8px">
+<input type="text" id="auth-search" placeholder="Search name, type..." oninput="authFilter()" style="padding:6px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px;width:160px"/>
+<select id="auth-filter-type" onchange="authFilter()" style="padding:6px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px;max-width:180px"><option value="">All types</option></select>
+<button class="btn btn-primary" id="auth-add-btn" style="display:none" onclick="authNew()"><i class="ti ti-plus"></i>Add licence</button>
+</div>
+</div>
+<div id="auth-alerts" style="margin-bottom:10px"></div>
+<div id="auth-table"><div class="loading-msg">Loading...</div></div>
+</div>
+
+<!-- ══ GAP ANALYSIS / TNA ══ -->
+<div id="train-view-tna" style="display:none">
+<div class="card" style="margin-bottom:12px;padding:12px 16px;background:linear-gradient(135deg,#1a3a5c,#5B21B6);color:#fff">
+<div style="font-size:14px;font-weight:700;margin-bottom:4px"><i class="ti ti-target"></i> Training Needs &amp; Gap Analysis</div>
+<div style="font-size:12px;opacity:.85">Identify and track outstanding training needs, retraining requirements and competency gaps</div>
+</div>
+<div class="card" style="margin-bottom:12px;padding:10px 14px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+<div class="card-title" style="margin:0">Training Needs Register</div>
+<button class="btn btn-primary" id="tna-add-btn" style="display:none" onclick="tnaAddRow()"><i class="ti ti-plus"></i>Add need</button>
+</div>
+<div id="tna-table"><div class="loading-msg">Loading...</div></div>
+</div>
+
+<!-- ════════ FORMS ════════ -->
+
 <!-- Training Plan form -->
 <div id="tp-form" style="display:none">
-<div class="card" style="margin-bottom:12px;padding:14px 20px">
-<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
-<div style="font-size:16px;font-weight:700" id="tp-form-title">New Training</div>
+<div class="card" style="margin-bottom:14px;padding:0;overflow:hidden">
+<div style="padding:14px 20px;background:linear-gradient(135deg,#185FA5,#0891B2);color:#fff;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+<div style="font-size:17px;font-weight:800" id="tp-form-title">New Training</div>
 <div style="display:flex;gap:8px">
-<button class="btn" onclick="tpBack()"><i class="ti ti-arrow-left"></i>Back</button>
-<button id="tp-del-btn" class="btn" style="display:none;color:var(--red);border-color:var(--red)" onclick="tpDelete()"><i class="ti ti-trash"></i>Delete</button>
-<button class="btn btn-primary" onclick="tpSave()"><i class="ti ti-device-floppy"></i>Save</button>
+<button class="btn" style="background:rgba(255,255,255,.2);color:#fff;border-color:rgba(255,255,255,.3)" onclick="tpBack()"><i class="ti ti-arrow-left"></i>Back</button>
+<button id="tp-del-btn" class="btn" style="display:none;background:rgba(220,38,38,.3);color:#fff;border-color:rgba(220,38,38,.5)" onclick="tpDelete()"><i class="ti ti-trash"></i></button>
+<button class="btn" style="background:#1D9E75;color:#fff;border-color:#1D9E75" onclick="tpSave()"><i class="ti ti-device-floppy"></i>Save</button>
 </div>
 </div>
 </div>
-<div class="card">
+<div style="display:grid;grid-template-columns:2fr 1fr;gap:14px">
+<div>
+<div class="card" style="margin-bottom:14px"><div class="card-title">Training Details</div>
+<div class="form-group"><label class="form-label">Training topic / title</label><input type="text" id="tp-topic"/></div>
 <div class="form-row">
-<div class="form-group"><label class="form-label">Training topic</label><input type="text" id="tp-topic" placeholder="e.g. Fire Safety Awareness"/></div>
-<div class="form-group"><label class="form-label">Target group</label><input type="text" id="tp-group" placeholder="e.g. All staff"/></div>
-<div class="form-group"><label class="form-label">Month</label>
-<select id="tp-month">
-<option value="">Select month...</option>
-<option value="1">January</option>
-<option value="2">February</option>
-<option value="3">March</option>
-<option value="4">April</option>
-<option value="5">May</option>
-<option value="6">June</option>
-<option value="7">July</option>
-<option value="8">August</option>
-<option value="9">September</option>
-<option value="10">October</option>
-<option value="11">November</option>
-<option value="12">December</option>
-</select></div>
-<div class="form-group"><label class="form-label">Planned date</label><input type="date" id="tp-planned-date"/></div>
-</div>
-<div class="form-row">
+<div class="form-group"><label class="form-label">Target group</label><input type="text" id="tp-group" placeholder="e.g. All staff, Production team..."/></div>
 <div class="form-group"><label class="form-label">Type</label>
-<select id="tp-type"><option value="internal">Internal</option><option value="external">External</option><option value="e-learning">E-learning</option><option value="on-the-job">On-the-job</option></select></div>
-<div class="form-group"><label class="form-label">Priority</label>
-<select id="tp-priority"><option value="low">Low</option><option value="medium" selected>Medium</option><option value="high">High</option><option value="critical">Critical</option></select></div>
-<div class="form-group"><label class="form-label">Status</label>
-<select id="tp-status"><option value="planned">Planned</option><option value="confirmed">Confirmed</option><option value="completed">Completed</option><option value="cancelled">Cancelled</option><option value="postponed">Postponed</option></select></div>
-<div class="form-group"><label class="form-label">Duration (hours)</label><input type="number" id="tp-duration" step="0.5" min="0"/></div>
+<select id="tp-type"><option value="classroom">Classroom</option><option value="on_job">On-the-job</option><option value="online">Online / E-learning</option><option value="external">External course</option><option value="toolbox">Toolbox talk</option><option value="induction">Induction</option><option value="refresher">Refresher</option></select></div>
 </div>
 <div class="form-row">
-<div class="form-group"><label class="form-label">Trainer / Provider</label><input type="text" id="tp-trainer"/></div>
-<div class="form-group"><label class="form-label">Location</label><input type="text" id="tp-location"/></div>
+<div class="form-group"><label class="form-label">Month</label>
+<select id="tp-month"><option value="1">January</option><option value="2">February</option><option value="3">March</option><option value="4">April</option><option value="5">May</option><option value="6">June</option><option value="7">July</option><option value="8">August</option><option value="9">September</option><option value="10">October</option><option value="11">November</option><option value="12">December</option></select></div>
+<div class="form-group"><label class="form-label">Planned date</label><input type="date" id="tp-planned-date"/></div>
 <div class="form-group"><label class="form-label">Actual date</label><input type="date" id="tp-actual-date"/></div>
-<div class="form-group"><label class="form-label">Budget (Rs)</label><input type="number" id="tp-budget" min="0"/></div>
 </div>
-<div class="form-group"><label class="form-label">Objective / Expected outcome</label><textarea id="tp-objective" style="min-height:70px"></textarea></div>
-<div class="form-group"><label class="form-label">Notes</label><textarea id="tp-notes" style="min-height:50px"></textarea></div>
+<div class="form-row">
+<div class="form-group"><label class="form-label">Priority</label>
+<select id="tp-priority"><option value="critical">Critical</option><option value="high">High</option><option value="medium" selected>Medium</option><option value="low">Low</option></select></div>
+<div class="form-group"><label class="form-label">Status</label>
+<select id="tp-status"><option value="planned">Planned</option><option value="in_progress">In Progress</option><option value="completed">Completed</option><option value="cancelled">Cancelled</option><option value="overdue">Overdue</option></select></div>
+<div class="form-group"><label class="form-label">Duration (hrs)</label><input type="number" id="tp-duration" step="0.5" min="0.5" value="1"/></div>
+</div>
+<div class="form-group"><label class="form-label">Objectives</label><textarea id="tp-objective" style="min-height:60px"></textarea></div>
+<div class="form-group"><label class="form-label">Notes</label><textarea id="tp-notes" style="min-height:40px"></textarea></div>
+</div>
+</div>
+<div>
+<div class="card" style="margin-bottom:14px"><div class="card-title">Delivery</div>
+<div class="form-group"><label class="form-label">Trainer / facilitator</label><input type="text" id="tp-trainer"/></div>
+<div class="form-group"><label class="form-label">Location / venue</label><input type="text" id="tp-location"/></div>
+<div class="form-group"><label class="form-label">Budget (Rs)</label><input type="number" id="tp-budget" step="100"/></div>
+</div>
+</div>
 </div>
 </div>
 
-<!-- Follow-up form -->
+<!-- Training Record form -->
 <div id="tf-form" style="display:none">
-<div class="card" style="margin-bottom:12px;padding:14px 20px">
-<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
-<div style="font-size:16px;font-weight:700" id="tf-form-title">Training Record</div>
+<div class="card" style="margin-bottom:14px;padding:0;overflow:hidden">
+<div style="padding:14px 20px;background:linear-gradient(135deg,#064E3B,#1D9E75);color:#fff;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+<div style="font-size:17px;font-weight:800" id="tf-form-title">Training Record</div>
 <div style="display:flex;gap:8px">
-<button class="btn" onclick="tfBack()"><i class="ti ti-arrow-left"></i>Back</button>
-<button id="tf-del-btn" class="btn" style="display:none;color:var(--red);border-color:var(--red)" onclick="tfDelete()"><i class="ti ti-trash"></i>Delete</button>
-<button class="btn btn-primary" onclick="tfSave()"><i class="ti ti-device-floppy"></i>Save</button>
+<button class="btn" style="background:rgba(255,255,255,.2);color:#fff;border-color:rgba(255,255,255,.3)" onclick="tfBack()"><i class="ti ti-arrow-left"></i>Back</button>
+<button id="tf-del-btn" class="btn" style="display:none;background:rgba(0,0,0,.3);color:#fff;border-color:rgba(255,255,255,.3)" onclick="tfDelete()"><i class="ti ti-trash"></i></button>
+<button class="btn" style="background:#fff;color:#1D9E75;font-weight:700" onclick="tfSave()"><i class="ti ti-device-floppy"></i>Save</button>
 </div>
 </div>
 </div>
 <div class="card">
 <div class="form-row">
-<div class="form-group"><label class="form-label">Person</label>
-<select id="tfr-person" onchange="document.getElementById('tfr-name').value=this.options[this.selectedIndex].text.split('—')[0].trim()">
-<option value="">Select person...</option></select></div>
-<div class="form-group"><label class="form-label">Name (if not in list)</label><input type="text" id="tfr-name"/></div>
-<div class="form-group"><label class="form-label">Training / Course</label><input type="text" id="tfr-course" placeholder="e.g. Fire Safety Training"/></div>
-<div class="form-group"><label class="form-label">Training date</label><input type="date" id="tfr-date"/></div>
+<div class="form-group"><label class="form-label">Employee name</label><select id="tfr-person" onchange="tfPersonSelect()"><option value="">Select person...</option></select></div>
+<div class="form-group"><label class="form-label">Or type name manually</label><input type="text" id="tfr-name" placeholder="Manual entry if not in People module"/></div>
+<div class="form-group"><label class="form-label">Department</label><input type="text" id="tfr-dept"/></div>
 </div>
 <div class="form-row">
-<div class="form-group"><label class="form-label">Trainer / Provider</label><input type="text" id="tfr-trainer"/></div>
-<div class="form-group"><label class="form-label">Certificate / Diploma</label><input type="text" id="tfr-cert" placeholder="Certificate number or title..."/></div>
-<div class="form-group"><label class="form-label">Expiry date</label><input type="date" id="tfr-expiry"/></div>
-<div class="form-group"><label class="form-label">Refresher due</label><input type="date" id="tfr-refresher"/></div>
+<div class="form-group"><label class="form-label">Training / course name</label><input type="text" id="tfr-course"/></div>
+<div class="form-group"><label class="form-label">Training date</label><input type="date" id="tfr-date"/></div>
+<div class="form-group"><label class="form-label">Trainer</label><input type="text" id="tfr-trainer"/></div>
+<div class="form-group"><label class="form-label">Duration (hrs)</label><input type="number" id="tfr-duration" step="0.5" min="0.5"/></div>
 </div>
 <div class="form-row">
 <div class="form-group"><label class="form-label">Score (%)</label><input type="number" id="tfr-score" min="0" max="100"/></div>
-<div class="form-group"><label class="form-label">Result</label>
-<select id="tfr-passed"><option value="true">Pass</option><option value="false">Fail</option></select></div>
-<div class="form-group"><label class="form-label">Notes</label><input type="text" id="tfr-notes"/></div>
+<div class="form-group"><label class="form-label">Result</label><select id="tfr-passed"><option value="true">Pass</option><option value="false">Fail</option></select></div>
+<div class="form-group"><label class="form-label">Certificate no.</label><input type="text" id="tfr-cert" style="font-family:monospace"/></div>
+<div class="form-group"><label class="form-label">Certificate expiry</label><input type="date" id="tfr-expiry"/></div>
 </div>
+<div class="form-row">
+<div class="form-group"><label class="form-label">Refresher due</label><input type="date" id="tfr-refresher"/></div>
+<div class="form-group"><label class="form-label">Certificate URL</label><input type="text" id="tfr-cert-url" placeholder="https://..."/></div>
+</div>
+<div class="form-group"><label class="form-label">Notes</label><textarea id="tfr-notes" style="min-height:40px"></textarea></div>
 </div>
 </div>
 
-<!-- Authorisation form -->
-<div id="auth-form" style="display:none">
-<div class="card" style="margin-bottom:12px;padding:14px 20px">
-<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
-<div style="font-size:16px;font-weight:700" id="auth-form-title">New Authorisation</div>
+<!-- Competency record form -->
+<div id="comp-form" style="display:none">
+<div class="card" style="margin-bottom:14px;padding:0;overflow:hidden">
+<div style="padding:14px 20px;background:linear-gradient(135deg,#3B0764,#7C3AED);color:#fff;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+<div style="font-size:17px;font-weight:800" id="comp-form-title">Competency Record</div>
 <div style="display:flex;gap:8px">
-<button class="btn" onclick="authBack()"><i class="ti ti-arrow-left"></i>Back</button>
-<button id="auth-del-btn" class="btn" style="display:none;color:var(--red);border-color:var(--red)" onclick="authDelete()"><i class="ti ti-trash"></i>Delete</button>
-<button class="btn btn-primary" onclick="authSave()"><i class="ti ti-device-floppy"></i>Save</button>
+<button class="btn" style="background:rgba(255,255,255,.2);color:#fff;border-color:rgba(255,255,255,.3)" onclick="compBack()"><i class="ti ti-arrow-left"></i>Back</button>
+<button id="comp-del-btn" class="btn" style="display:none;background:rgba(0,0,0,.3);color:#fff;border-color:rgba(255,255,255,.3)" onclick="compDelete()"><i class="ti ti-trash"></i></button>
+<button class="btn" style="background:#1D9E75;color:#fff;border-color:#1D9E75" onclick="compSave()"><i class="ti ti-device-floppy"></i>Save</button>
 </div>
 </div>
 </div>
 <div class="card">
 <div class="form-row">
-<div class="form-group"><label class="form-label">Person</label>
-<select id="authr-person" onchange="document.getElementById('authr-name').value=this.options[this.selectedIndex].text.split('—')[0].trim()">
-<option value="">Select person...</option></select></div>
-<div class="form-group"><label class="form-label">Name (if not in list)</label><input type="text" id="authr-name"/></div>
-<div class="form-group"><label class="form-label">Authorisation type</label>
-<input type="text" id="authr-type" list="auth-types-list" placeholder="e.g. First Aid, Electrical, Work at Height..."/>
-<datalist id="auth-types-list">
-<option value="First Aid">
-<option value="Electrical Safety">
-<option value="Work at Height">
-<option value="Driving Permit">
-<option value="ATEX / Explosive Atmosphere">
-<option value="Confined Space">
-<option value="Forklift Operator">
-<option value="Crane Operator">
-<option value="Fire Warden">
-<option value="Scaffolding Inspector">
-<option value="Hot Works Permit">
-</datalist></div>
-<div class="form-group"><label class="form-label">Status</label>
-<select id="authr-status"><option value="active">Active</option><option value="pending">Pending</option><option value="expired">Expired</option><option value="suspended">Suspended</option></select></div>
+<div class="form-group"><label class="form-label">Person name</label><input type="text" id="compf-person"/></div>
+<div class="form-group"><label class="form-label">Department</label><input type="text" id="compf-dept"/></div>
+<div class="form-group"><label class="form-label">Job title</label><input type="text" id="compf-job-title"/></div>
 </div>
 <div class="form-row">
+<div class="form-group"><label class="form-label">Competency</label>
+<select id="compf-competency-id" onchange="compSelectComp()"><option value="">Select or type below...</option></select></div>
+<div class="form-group"><label class="form-label">Manual entry / custom name</label><input type="text" id="compf-competency-name" placeholder="e.g. Forklift licence..."/></div>
+</div>
+<div class="form-row">
+<div class="form-group"><label class="form-label">Competency level</label>
+<select id="compf-level">
+<option value="not_assessed">Not assessed</option><option value="not_competent">✗ Not competent</option>
+<option value="developing">⏳ Developing</option><option value="competent">✓ Competent</option><option value="expert">⭐ Expert</option>
+</select></div>
+<div class="form-group"><label class="form-label">Required?</label>
+<select id="compf-required"><option value="true">Yes — mandatory</option><option value="false">No — optional</option></select></div>
+<div class="form-group"><label class="form-label">Assessed date</label><input type="date" id="compf-assessed-date"/></div>
+<div class="form-group"><label class="form-label">Expiry date</label><input type="date" id="compf-expiry"/></div>
+</div>
+<div class="form-row">
+<div class="form-group"><label class="form-label">Assessor</label><input type="text" id="compf-assessor"/></div>
+<div class="form-group"><label class="form-label">Evidence / certificate ref</label><input type="text" id="compf-evidence"/></div>
+</div>
+<div class="form-group"><label class="form-label">Notes</label><textarea id="compf-notes" style="min-height:40px"></textarea></div>
+</div>
+</div>
+
+<!-- Induction form -->
+<div id="ind-form" style="display:none">
+<div class="card" style="margin-bottom:14px;padding:0;overflow:hidden">
+<div style="padding:14px 20px;background:linear-gradient(135deg,#1a3a5c,#185FA5);color:#fff;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+<div>
+<div style="font-size:17px;font-weight:800" id="ind-form-title">New Induction</div>
+<div style="font-family:monospace;font-size:12px;color:#a8d8f0;margin-top:3px" id="ind-form-ref">IND-AUTO</div>
+</div>
+<div style="display:flex;gap:8px">
+<button class="btn" style="background:rgba(255,255,255,.2);color:#fff;border-color:rgba(255,255,255,.3)" onclick="indBack()"><i class="ti ti-arrow-left"></i>Back</button>
+<button id="ind-del-btn" class="btn" style="display:none;background:rgba(220,38,38,.3);color:#fff;border-color:rgba(220,38,38,.5)" onclick="indDelete()"><i class="ti ti-trash"></i></button>
+<button class="btn" style="background:#1D9E75;color:#fff;border-color:#1D9E75" onclick="indSave()"><i class="ti ti-device-floppy"></i>Save</button>
+</div>
+</div>
+</div>
+<div style="display:grid;grid-template-columns:2fr 1fr;gap:14px">
+<div>
+<div class="card" style="margin-bottom:14px"><div class="card-title">Person Details</div>
+<div class="form-row">
+<div class="form-group"><label class="form-label">Person name</label><input type="text" id="indf-person"/></div>
+<div class="form-group"><label class="form-label">Employee / Contractor ID</label><input type="text" id="indf-emp-id"/></div>
+<div class="form-group"><label class="form-label">Department</label><input type="text" id="indf-dept"/></div>
+<div class="form-group"><label class="form-label">Job title</label><input type="text" id="indf-job-title"/></div>
+</div>
+<div class="form-row">
+<div class="form-group"><label class="form-label">Induction type</label>
+<select id="indf-type"><option value="new_employee">New Employee</option><option value="contractor">Contractor</option><option value="visitor">Visitor</option><option value="refresher">Refresher</option><option value="site_specific">Site Specific</option></select></div>
+<div class="form-group"><label class="form-label">Start date</label><input type="date" id="indf-start-date"/></div>
+<div class="form-group"><label class="form-label">Induction date</label><input type="date" id="indf-ind-date"/></div>
+</div>
+</div>
+<div class="card" style="margin-bottom:14px"><div class="card-title" style="color:#185FA5">HSE Induction Checklist</div>
+<div style="display:flex;flex-direction:column;gap:5px;font-size:12px">
+<label style="display:flex;align-items:center;gap:6px;cursor:pointer"><input type="checkbox" class="ind-topic" value="company_policies" style="accent-color:var(--green)"/> Company HSE policies</label>
+<label style="display:flex;align-items:center;gap:6px;cursor:pointer"><input type="checkbox" class="ind-topic" value="emergency_procedures" style="accent-color:var(--green)"/> Emergency procedures &amp; exits</label>
+<label style="display:flex;align-items:center;gap:6px;cursor:pointer"><input type="checkbox" class="ind-topic" value="fire_safety" style="accent-color:var(--green)"/> Fire safety &amp; muster points</label>
+<label style="display:flex;align-items:center;gap:6px;cursor:pointer"><input type="checkbox" class="ind-topic" value="ppe_requirements" style="accent-color:var(--green)"/> PPE requirements</label>
+<label style="display:flex;align-items:center;gap:6px;cursor:pointer"><input type="checkbox" class="ind-topic" value="hazard_reporting" style="accent-color:var(--green)"/> Hazard &amp; incident reporting</label>
+<label style="display:flex;align-items:center;gap:6px;cursor:pointer"><input type="checkbox" class="ind-topic" value="site_rules" style="accent-color:var(--green)"/> Site rules &amp; access</label>
+<label style="display:flex;align-items:center;gap:6px;cursor:pointer"><input type="checkbox" class="ind-topic" value="first_aid" style="accent-color:var(--green)"/> First aid &amp; medical facilities</label>
+<label style="display:flex;align-items:center;gap:6px;cursor:pointer"><input type="checkbox" class="ind-topic" value="manual_handling" style="accent-color:var(--green)"/> Manual handling</label>
+<label style="display:flex;align-items:center;gap:6px;cursor:pointer"><input type="checkbox" class="ind-topic" value="chemical_safety" style="accent-color:var(--green)"/> Chemical safety (COSHH)</label>
+<label style="display:flex;align-items:center;gap:6px;cursor:pointer"><input type="checkbox" class="ind-topic" value="environmental" style="accent-color:var(--green)"/> Environmental responsibilities</label>
+</div>
+<div class="form-group" style="margin-top:8px"><label class="form-label">Additional topics covered</label><textarea id="indf-extra-topics" style="min-height:40px"></textarea></div>
+</div>
+</div>
+<div>
+<div class="card" style="margin-bottom:14px;border:2px solid #185FA5"><div class="card-title" style="color:#185FA5">Delivery</div>
+<div class="form-group"><label class="form-label">Inducted by</label><input type="text" id="indf-inducted-by"/></div>
+<div class="form-group"><label class="form-label">Duration (hours)</label><input type="number" id="indf-duration" step="0.5" value="1"/></div>
+<div class="form-group"><label class="form-label">Score (%)</label><input type="number" id="indf-score" min="0" max="100"/></div>
+</div>
+<div class="card" style="margin-bottom:14px"><div class="card-title">Outcome</div>
+<div style="display:flex;flex-direction:column;gap:6px">
+<label style="display:flex;align-items:center;gap:8px;padding:8px;border-radius:8px;cursor:pointer;background:#f0fdf4;border:1px solid #bbf7d0" onclick="document.getElementById('indf-status').value='completed'"><input type="radio" name="ind-st-r" value="completed" style="accent-color:var(--green)" checked><span style="font-weight:700;color:#166534;font-size:12px">✓ Completed</span></label>
+<label style="display:flex;align-items:center;gap:8px;padding:8px;border-radius:8px;cursor:pointer;background:#FEF9EC;border:1px solid #fcd34d" onclick="document.getElementById('indf-status').value='in_progress'"><input type="radio" name="ind-st-r" value="in_progress" style="accent-color:#EF9F27"><span style="font-weight:700;color:#854F0B;font-size:12px">⏳ In progress</span></label>
+<label style="display:flex;align-items:center;gap:8px;padding:8px;border-radius:8px;cursor:pointer;background:#FEF2F2;border:1px solid #fecaca" onclick="document.getElementById('indf-status').value='failed'"><input type="radio" name="ind-st-r" value="failed" style="accent-color:var(--red)"><span style="font-weight:700;color:var(--red);font-size:12px">✗ Failed</span></label>
+</div>
+<input type="hidden" id="indf-status" value="completed"/>
+<div style="display:flex;gap:10px;margin-top:8px;flex-wrap:wrap">
+<label style="display:flex;align-items:center;gap:5px;font-size:12px;cursor:pointer;font-weight:600"><input type="checkbox" id="indf-cert-issued" style="accent-color:var(--green)"/> Certificate issued</label>
+<label style="display:flex;align-items:center;gap:5px;font-size:12px;cursor:pointer;font-weight:600"><input type="checkbox" id="indf-sig" style="accent-color:var(--green)"/> Signature obtained</label>
+</div>
+<div class="form-group" style="margin-top:8px"><label class="form-label">Refresher due</label><input type="date" id="indf-refresher-due"/></div>
+</div>
+<div class="card"><div class="card-title">Notes</div>
+<textarea id="indf-notes" style="min-height:50px"></textarea>
+</div>
+</div>
+</div>
+</div>
+
+<!-- Certificate / Licence form -->
+<div id="auth-form" style="display:none">
+<div class="card" style="margin-bottom:14px;padding:0;overflow:hidden">
+<div style="padding:14px 20px;background:linear-gradient(135deg,#B45309,#D97706);color:#fff;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+<div style="font-size:17px;font-weight:800" id="auth-form-title">Licence / Certificate</div>
+<div style="display:flex;gap:8px">
+<button class="btn" style="background:rgba(255,255,255,.2);color:#fff;border-color:rgba(255,255,255,.3)" onclick="authBack()"><i class="ti ti-arrow-left"></i>Back</button>
+<button id="auth-del-btn" class="btn" style="display:none;background:rgba(0,0,0,.3);color:#fff;border-color:rgba(255,255,255,.3)" onclick="authDelete()"><i class="ti ti-trash"></i></button>
+<button class="btn" style="background:#1D9E75;color:#fff;border-color:#1D9E75" onclick="authSave()"><i class="ti ti-device-floppy"></i>Save</button>
+</div>
+</div>
+</div>
+<div class="card">
+<div class="form-row">
+<div class="form-group"><label class="form-label">Holder name</label><input type="text" id="authr-person" placeholder="Person name"/></div>
+<div class="form-group"><label class="form-label">Employee ID</label><input type="text" id="authr-name"/></div>
+<div class="form-group"><label class="form-label">Department</label><input type="text" id="authr-dept"/></div>
+<div class="form-group"><label class="form-label">Job title</label><input type="text" id="authr-job-title"/></div>
+</div>
+<div class="form-row">
+<div class="form-group"><label class="form-label">Licence / certificate type</label>
+<select id="authr-type">
+<option value="Forklift Licence">🚜 Forklift Licence</option>
+<option value="Crane Operator Certificate">🏗️ Crane Operator Certificate</option>
+<option value="Scaffolding Licence">🏗️ Scaffolding Licence</option>
+<option value="First Aid Certificate">🚑 First Aid Certificate</option>
+<option value="Fire Warden Certificate">🔥 Fire Warden Certificate</option>
+<option value="Confined Space Entry">⚠️ Confined Space Entry</option>
+<option value="Electrical Authorisation">⚡ Electrical Authorisation</option>
+<option value="Working at Height Certificate">🪝 Working at Height</option>
+<option value="NEBOSH Certificate">📜 NEBOSH Certificate</option>
+<option value="IOSH Managing Safely">📜 IOSH Managing Safely</option>
+<option value="Banksman / Slinger Certificate">🚧 Banksman / Slinger</option>
+<option value="Rigging Certificate">🔩 Rigging Certificate</option>
+<option value="Welding Certification">🔧 Welding Certification</option>
+<option value="Driver Authorisation">🚗 Driver Authorisation</option>
+<option value="NEBOSH Diploma">📜 NEBOSH Diploma</option>
+<option value="Other">📋 Other</option>
+</select></div>
+<div id="auth-types-list"></div>
+</div>
+<div class="form-row">
+<div class="form-group"><label class="form-label">Ref / licence number</label><input type="text" id="authr-ref" style="font-family:monospace"/></div>
+<div class="form-group"><label class="form-label">Issuing body</label><input type="text" id="authr-issuer" placeholder="e.g. OSHI, Red Cross, NEBOSH..."/></div>
 <div class="form-group"><label class="form-label">Issue date</label><input type="date" id="authr-issue"/></div>
 <div class="form-group"><label class="form-label">Expiry date</label><input type="date" id="authr-expiry"/></div>
-<div class="form-group"><label class="form-label">Reference / number</label><input type="text" id="authr-ref"/></div>
-<div class="form-group"><label class="form-label">Issuing body</label><input type="text" id="authr-issuer" placeholder="e.g. OSHA, Red Cross..."/></div>
 </div>
-<div class="form-group"><label class="form-label">Notes</label><textarea id="authr-notes" style="min-height:60px"></textarea></div>
+<div class="form-row">
+<div class="form-group"><label class="form-label">Status</label>
+<select id="authr-status"><option value="active">Active</option><option value="expired">Expired</option><option value="suspended">Suspended</option><option value="pending">Pending renewal</option></select></div>
+<div class="form-group"><label class="form-label">Certificate URL</label><input type="text" id="authr-cert-url" placeholder="https://..."/></div>
+<div class="form-group"><label class="form-label">Scope / restrictions</label><input type="text" id="authr-scope" placeholder="e.g. 5 tonne max..."/></div>
+</div>
+<div class="form-group"><label class="form-label">Notes</label><textarea id="authr-notes" style="min-height:40px"></textarea></div>
+</div>
+</div>
+
+<!-- E-learning course form -->
+<div id="elc-form" style="display:none">
+<div class="card" style="margin-bottom:14px;padding:0;overflow:hidden">
+<div style="padding:14px 20px;background:linear-gradient(135deg,#0369a1,#0891B2);color:#fff;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+<div style="font-size:17px;font-weight:800" id="elc-form-title">E-Learning Course</div>
+<div style="display:flex;gap:8px">
+<button class="btn" style="background:rgba(255,255,255,.2);color:#fff;border-color:rgba(255,255,255,.3)" onclick="elcBack()"><i class="ti ti-arrow-left"></i>Back</button>
+<button id="elc-del-btn" class="btn" style="display:none;background:rgba(0,0,0,.3);color:#fff;border-color:rgba(255,255,255,.3)" onclick="elcDelete()"><i class="ti ti-trash"></i></button>
+<button class="btn" style="background:#1D9E75;color:#fff;border-color:#1D9E75" onclick="elcSave()"><i class="ti ti-device-floppy"></i>Save</button>
+</div>
+</div>
+</div>
+<div class="card">
+<div class="form-row">
+<div class="form-group"><label class="form-label">Course title</label><input type="text" id="elcf-title"/></div>
+<div class="form-group"><label class="form-label">Course code</label><input type="text" id="elcf-code" style="font-family:monospace"/></div>
+<div class="form-group"><label class="form-label">Category</label><input type="text" id="elcf-cat" placeholder="e.g. Fire Safety, Manual Handling..."/></div>
+</div>
+<div class="form-group"><label class="form-label">Description</label><textarea id="elcf-desc" style="min-height:60px"></textarea></div>
+<div class="form-row">
+<div class="form-group"><label class="form-label">Duration (mins)</label><input type="number" id="elcf-duration" min="1"/></div>
+<div class="form-group"><label class="form-label">Passing score (%)</label><input type="number" id="elcf-pass-score" value="80" min="1" max="100"/></div>
+<div class="form-group"><label class="form-label">Validity (months)</label><input type="number" id="elcf-validity" min="1" placeholder="Blank = no expiry"/></div>
+<div class="form-group"><label class="form-label">Status</label><select id="elcf-status"><option value="active">Active</option><option value="draft">Draft</option><option value="archived">Archived</option></select></div>
+</div>
+<div class="form-row">
+<div class="form-group"><label class="form-label">Course URL / LMS link</label><input type="text" id="elcf-url" placeholder="https://..."/></div>
+<div class="form-group"><label class="form-label">Target roles</label><input type="text" id="elcf-roles" placeholder="e.g. All staff, Supervisors..."/></div>
+</div>
+<div style="display:flex;align-items:center;gap:8px"><input type="checkbox" id="elcf-mandatory" style="accent-color:var(--green)"/><label for="elcf-mandatory" style="font-size:12px;font-weight:600;cursor:pointer">Mandatory course</label></div>
+</div>
+</div>
+
+<!-- E-learning enrolment form -->
+<div id="ele-form" style="display:none">
+<div class="card" style="margin-bottom:14px;padding:0;overflow:hidden">
+<div style="padding:14px 20px;background:linear-gradient(135deg,#0369a1,#0891B2);color:#fff;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+<div style="font-size:17px;font-weight:800" id="ele-form-title">Course Enrolment</div>
+<div style="display:flex;gap:8px">
+<button class="btn" style="background:rgba(255,255,255,.2);color:#fff;border-color:rgba(255,255,255,.3)" onclick="eleBack()"><i class="ti ti-arrow-left"></i>Back</button>
+<button id="ele-del-btn" class="btn" style="display:none;background:rgba(0,0,0,.3);color:#fff;border-color:rgba(255,255,255,.3)" onclick="eleDelete()"><i class="ti ti-trash"></i></button>
+<button class="btn" style="background:#1D9E75;color:#fff;border-color:#1D9E75" onclick="eleSave()"><i class="ti ti-device-floppy"></i>Save</button>
+</div>
+</div>
+</div>
+<div class="card">
+<div class="form-row">
+<div class="form-group"><label class="form-label">Person name</label><input type="text" id="elef-person"/></div>
+<div class="form-group"><label class="form-label">Department</label><input type="text" id="elef-dept"/></div>
+<div class="form-group"><label class="form-label">Course</label><select id="elef-course-id"><option value="">Select course...</option></select></div>
+</div>
+<div class="form-row">
+<div class="form-group"><label class="form-label">Enrolment date</label><input type="date" id="elef-enrol-date"/></div>
+<div class="form-group"><label class="form-label">Completion date</label><input type="date" id="elef-comp-date"/></div>
+<div class="form-group"><label class="form-label">Score (%)</label><input type="number" id="elef-score" min="0" max="100"/></div>
+<div class="form-group"><label class="form-label">Status</label>
+<select id="elef-status"><option value="enrolled">Enrolled</option><option value="in_progress">In Progress</option><option value="completed">Completed</option><option value="failed">Failed</option></select></div>
+</div>
+<div class="form-row">
+<div class="form-group"><label class="form-label">Expiry date</label><input type="date" id="elef-expiry"/></div>
+<div class="form-group"><label class="form-label">Attempts</label><input type="number" id="elef-attempts" value="1" min="1"/></div>
+<div class="form-group"><label class="form-label">Time spent (mins)</label><input type="number" id="elef-time"/></div>
+</div>
 </div>
 </div>
 
