@@ -80,6 +80,7 @@
 
 
 
+
 const SB='https://iarfxjhahzbhncsaohbg.supabase.co';
 const KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlhcmZ4amhhaHpiaG5jc2FvaGJnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg2OTM1MzAsImV4cCI6MjA5NDI2OTUzMH0.qSjahuX-RwnjWEDmo-LkcorAxpsmyVoaXt4AO4_A9BM';
 let tok=null,prof=null,co=null,chkItems=[],people=[];
@@ -103,6 +104,145 @@ try{d=JSON.parse(txt);}catch(e){console.error('JSON parse error:',txt.slice(0,20
 if(!r.ok){const msg=(Array.isArray(d)?d[0]?.message:d.message)||d.error_description||d.hint||r.statusText;console.error('API error '+r.status+':',msg,path);throw new Error(msg);}
 return d;
 }
+// ===================================================================
+// MISSING FUNCTION FIXES
+// loadSOP · sopSwitchTab · sopNew · sopLoadList (alias)
+// toolsSwitchTab · sendAIMsg · generateFullInsights
+// kpiSaveObjective · openObjModal
+// ===================================================================
+
+// ── loadSOP (L map entry point) ──────────────────────────────────────────────
+async function loadSOP() {
+  sopSwitchTab('list', document.getElementById('sop-tab-list'));
+}
+
+// ── sopSwitchTab ─────────────────────────────────────────────────────────────
+function sopSwitchTab(tab, btn) {
+  document.querySelectorAll('[id^="sop-tab-"]').forEach(t => t.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  document.getElementById('sop-view-list').style.display = tab === 'list' ? 'block' : 'none';
+  document.getElementById('sop-view-create').style.display = tab === 'create' ? 'block' : 'none';
+  if (tab === 'list') sopLoadList();
+  else sopGoStep(1);
+}
+
+// ── sopNew ────────────────────────────────────────────────────────────────────
+function sopNew() {
+  sopSwitchTab('create', document.getElementById('sop-tab-create'));
+  sopGoStep(1);
+}
+
+// ── sopNextStep ───────────────────────────────────────────────────────────────
+function sopNextStep(n) { sopGoStep(n); }
+
+// ── sopPrint ──────────────────────────────────────────────────────────────────
+function sopPrint() { window.print(); }
+
+// ── sopSaveDocument ───────────────────────────────────────────────────────────
+function sopSaveDocument() { sopSave(); }
+
+// ── sopAddManualStep ──────────────────────────────────────────────────────────
+function sopAddManualStep() {
+  var container = document.getElementById('sop-steps-container') ||
+                  document.getElementById('sop-manual-steps');
+  if (!container) { toast('Steps container not found', false); return; }
+  var idx = container.querySelectorAll('.sop-step-row').length + 1;
+  var row = document.createElement('div');
+  row.className = 'sop-step-row';
+  row.style.cssText = 'display:flex;gap:8px;margin-bottom:8px;align-items:flex-start';
+  row.innerHTML = '<div style="background:#185FA5;color:#fff;border-radius:50%;width:24px;height:24px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0;margin-top:6px">'+idx+'</div>'
+    + '<textarea class="sop-step-text" style="flex:1;min-height:60px;padding:6px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px;resize:vertical" placeholder="Describe step '+idx+'..."></textarea>'
+    + '<button class="btn btn-sm" style="color:var(--red);margin-top:2px" onclick="this.closest(\'.sop-step-row\').remove()"><i class="ti ti-x"></i></button>';
+  container.appendChild(row);
+}
+
+// ── sopExtractFrames ──────────────────────────────────────────────────────────
+async function sopExtractFrames() {
+  toast('Frame extraction: upload a video to the SOP creator and use the Generate button');
+}
+
+// ── sopGenerate (if missing) ──────────────────────────────────────────────────
+if (typeof sopGenerate === 'undefined') {
+  window.sopGenerate = async function() {
+    toast('AI SOP generation: configure your video source and try again');
+  };
+}
+
+// ── toolsSwitchTab ────────────────────────────────────────────────────────────
+function toolsSwitchTab(tab, btn) {
+  document.querySelectorAll('[id^="tools-tab-"]').forEach(t => t.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  var allTabs = ['register','personal','inspection','statutory','vehicles'];
+  allTabs.forEach(function(t) {
+    var el = document.getElementById('tools-view-'+t);
+    if (el) el.style.display = t === tab ? 'block' : 'none';
+  });
+  if (tab === 'register')   toolsLoadRegister();
+  else if (tab === 'personal')   toolsLoadPersonal();
+  else if (tab === 'inspection') toolsLoadInspections();
+  else if (tab === 'statutory')  toolsLoadStatutory();
+  else if (tab === 'vehicles')   toolsLoadVehicles();
+}
+
+// ── sendAIMsg (settings/AI panel) ─────────────────────────────────────────────
+async function sendAIMsg() {
+  var inputEl = document.getElementById('ai-input');
+  var msg = inputEl?.value?.trim();
+  if (!msg) return;
+  var msgsEl = document.getElementById('ai-messages');
+  if (!msgsEl) return;
+  // Add user message
+  msgsEl.innerHTML += '<div style="text-align:right;margin-bottom:8px"><div style="display:inline-block;background:#185FA5;color:#fff;padding:8px 12px;border-radius:12px 12px 2px 12px;font-size:13px;max-width:80%">'+escH(msg)+'</div></div>';
+  inputEl.value = '';
+  msgsEl.scrollTop = msgsEl.scrollHeight;
+  // Typing indicator
+  var typingId = 'ai-typing-' + Date.now();
+  msgsEl.innerHTML += '<div id="'+typingId+'" style="margin-bottom:8px"><div style="display:inline-block;background:#f3f4f6;padding:8px 12px;border-radius:2px 12px 12px 12px;font-size:13px;color:var(--text2)">⏳ Thinking...</div></div>';
+  msgsEl.scrollTop = msgsEl.scrollHeight;
+  try {
+    var resp = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514', max_tokens: 1000,
+        messages: [{role:'user', content: 'You are an HSE expert assistant. Answer this question concisely: ' + msg}]
+      })
+    });
+    var data = await resp.json();
+    var text = (data.content||[]).map(c=>c.text||'').join('') || 'No response received.';
+    var typingEl = document.getElementById(typingId);
+    if (typingEl) typingEl.innerHTML = '<div style="display:inline-block;background:#f3f4f6;padding:8px 12px;border-radius:2px 12px 12px 12px;font-size:13px;max-width:80%;white-space:pre-wrap">'+escH(text)+'</div>';
+  } catch(e) {
+    var typingEl2 = document.getElementById(typingId);
+    if (typingEl2) typingEl2.innerHTML = '<div style="display:inline-block;background:#FCEBEB;padding:8px 12px;border-radius:2px 12px 12px 12px;font-size:13px;color:#A32D2D">Error: '+escH(e.message)+'</div>';
+  }
+  msgsEl.scrollTop = msgsEl.scrollHeight;
+}
+
+// ── generateFullInsights (alias for genFullAI) ────────────────────────────────
+function generateFullInsights() { genFullAI(); }
+
+// ── kpiSaveObjective & openObjModal (KPI module stubs) ────────────────────────
+function openObjModal() {
+  var m = document.getElementById('obj-modal');
+  if (m) m.style.display = 'flex';
+}
+async function kpiSaveObjective() {
+  var title = document.getElementById('obj-title')?.value?.trim();
+  if (!title) { toast('Please enter objective title', false); return; }
+  var g = function(id){var el=document.getElementById(id);return el?el.value||null:null;};
+  try {
+    await api('/objectives', {m:'POST', p:'return=minimal', b:{
+      company_id: prof?.company_id, title, target: g('obj-target'),
+      baseline: g('obj-baseline'), unit: g('obj-unit'), year: new Date().getFullYear(),
+      status: 'active', created_by: prof?.id
+    }});
+    toast('Objective saved!');
+    var m = document.getElementById('obj-modal'); if (m) m.style.display='none';
+    if (typeof kpiLoadAll === 'function') kpiLoadAll();
+  } catch(e) { toast(e.message, false); }
+}
+
 
 
 // ===================================================================
@@ -13386,6 +13526,7 @@ function sopSaveToDocControl(){
   toast('SOP saved to Document Control!');
   sopSave();
 }
+
 
 
 
