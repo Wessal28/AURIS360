@@ -73,6 +73,9 @@
 
 
 
+
+
+
 const SB='https://iarfxjhahzbhncsaohbg.supabase.co';
 const KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlhcmZ4amhhaHpiaG5jc2FvaGJnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg2OTM1MzAsImV4cCI6MjA5NDI2OTUzMH0.qSjahuX-RwnjWEDmo-LkcorAxpsmyVoaXt4AO4_A9BM';
 let tok=null,prof=null,co=null,chkItems=[],people=[];
@@ -7379,999 +7382,527 @@ function mtgSwitchTab(tab, btn){
 
 // ── SCHEDULE (Series) ──────────────────────────────────────────────────────
 // ===== LEGAL COMPLIANCE MODULE =====
-let lrAllData=[], lcAllData=[], lrEditingId=null, lcEditingId=null;
+let lrAllData=[], lcAllData=[], lcaAllData=[], gapAllData=[], calAllData=[];
+let lrEditId=null, lcEditId=null, lcaEditId=null, gapEditId=null, calEditId=null;
+let calCurrentFilter='overdue';
 
-const COMPLIANCE_STATUS={
-  compliant:{label:'Compliant',bg:'#EAF3DE',col:'#3B6D11'},
-  partial:{label:'Partial',bg:'#FEF9EC',col:'#854F0B'},
-  non_compliant:{label:'Non-Compliant',bg:'#FCEBEB',col:'#A32D2D'},
-  not_applicable:{label:'N/A',bg:'#f3f4f6',col:'#6B7280'}
+const LEGAL_LEG_CFG={
+  'Occupational Safety and Health Act 2005':{color:'#185FA5',short:'OSH Act'},
+  'Environment Protection Act 2002':         {color:'#1D9E75',short:'EPA'},
+  'Fire Services Act':                       {color:'#DC2626',short:'Fire Act'},
+  'ISO 45001:2018':                          {color:'#8B5CF6',short:'ISO 45001'},
+  'ISO 14001:2015':                          {color:'#065F46',short:'ISO 14001'},
+};
+const LEGAL_CAT_CFG={
+  health_safety: {emoji:'🦺',label:'H&S',         color:'#185FA5'},
+  environment:   {emoji:'🌿',label:'Environment',  color:'#1D9E75'},
+  fire:          {emoji:'🔥',label:'Fire',         color:'#DC2626'},
+  chemical:      {emoji:'🧪',label:'Chemical',     color:'#7C3AED'},
+  electrical:    {emoji:'⚡',label:'Electrical',   color:'#B45309'},
+  construction:  {emoji:'🏗️', label:'Construction', color:'#854F0B'},
+  noise:         {emoji:'🔊',label:'Noise',        color:'#8B5CF6'},
+  waste:         {emoji:'♻️', label:'Waste',        color:'#065F46'},
+  iso:           {emoji:'🏅',label:'ISO',          color:'#5B21B6'},
+  client:        {emoji:'🤝',label:'Client',       color:'#6B7280'},
+  other:         {emoji:'📋',label:'Other',        color:'#6B7280'}
+};
+const LEG_STATUS_CFG={
+  compliant:      {bg:'#EAF3DE',tc:'#3B6D11', label:'Compliant',     score:100},
+  partial:        {bg:'#FEF9EC',tc:'#854F0B', label:'Partial',       score:50},
+  non_compliant:  {bg:'#FCEBEB',tc:'#A32D2D', label:'Non-Compliant', score:0},
+  not_applicable: {bg:'#f3f4f6',tc:'#6B7280', label:'N/A',           score:null}
+};
+const GAP_RISK_CFG={
+  critical:{bg:'#FCEBEB',tc:'#A32D2D',border:'#DC2626'},
+  high:    {bg:'#FEF6E7',tc:'#C2410C',border:'#F97316'},
+  medium:  {bg:'#FEF9EC',tc:'#854F0B',border:'#EF9F27'},
+  low:     {bg:'#EAF3DE',tc:'#3B6D11',border:'#22C55E'}
 };
 
-function legalStatusBadge(s){
-  var c=COMPLIANCE_STATUS[s]||COMPLIANCE_STATUS.partial;
-  return '<span style="background:'+c.bg+';color:'+c.col+';padding:3px 9px;border-radius:99px;font-size:11px;font-weight:600">'+c.label+'</span>';
+// ── Entry ─────────────────────────────────────────────────────────────────────
+async function loadLegal(){
+  ['lr-add-btn','lc-add-btn','lca-add-btn','gap-add-btn','cal-add-btn','legal-new-btn'].forEach(function(id){
+    var el=document.getElementById(id);if(el)el.style.display=isMgr()?'inline-flex':'none';
+  });
+  legalSwitchTab('register',document.getElementById('legal-tab-register'));
 }
 
 function legalSwitchTab(tab,btn){
-  document.querySelectorAll('.mtg-tab').forEach(function(t){t.classList.remove('active');});
-  btn.classList.add('active');
-  document.getElementById('legal-view-register').style.display=tab==='register'?'block':'none';
-  document.getElementById('legal-view-changes').style.display=tab==='changes'?'block':'none';
-  document.getElementById('legal-view-dashboard').style.display=tab==='dashboard'?'block':'none';
+  document.querySelectorAll('[id^="legal-tab-"]').forEach(t=>t.classList.remove('active'));
+  if(btn)btn.classList.add('active');
+  ['register','changes','assessments','gaps','calendar','dashboard'].forEach(function(t){
+    var el=document.getElementById('legal-view-'+t);if(el)el.style.display=t===tab?'block':'none';
+  });
+  ['legal-req-form','legal-chg-form','lca-form','gap-form','cal-form'].forEach(function(id){
+    var el=document.getElementById(id);if(el)el.style.display='none';
+  });
+  // Update new-btn label
+  var labels={register:'Add requirement',changes:'Add change',assessments:'New assessment',gaps:'Add gap',calendar:'Add event',dashboard:null};
+  var newBtn=document.getElementById('legal-new-btn');
+  if(newBtn){if(labels[tab]){newBtn.innerHTML='<i class="ti ti-plus"></i>'+labels[tab];newBtn.style.display=isMgr()?'inline-flex':'none';}else newBtn.style.display='none';}
   if(tab==='register')legalLoadRegister();
   else if(tab==='changes')legalLoadChanges();
-  else legalRenderDashboard();
+  else if(tab==='assessments')lcaLoad();
+  else if(tab==='gaps')gapLoad();
+  else if(tab==='calendar')calLoad('overdue',document.getElementById('cal-btn-overdue'));
+  else if(tab==='dashboard')legalRenderDashboard();
 }
 
-// ===== SOP GENERATOR MODULE =====
-let sopVideo=null, sopFrames=[], sopEditingId=null, sopCurrentStep=1, sopAllData=[];
-const ANTHROPIC_URL='https://api.anthropic.com/v1/messages';
-const CLAUDE_MODEL='claude-sonnet-4-20250514';
-
-function sopSwitchTab(tab,btn){
-  document.querySelectorAll('.mtg-tab').forEach(t=>t.classList.remove('active'));
-  btn.classList.add('active');
-  document.getElementById('sop-view-list').style.display=tab==='list'?'block':'none';
-  document.getElementById('sop-view-create').style.display=tab==='create'?'block':'none';
-  if(tab==='list')sopLoadList();
+function legalNewFromTab(){
+  var active=document.querySelector('[id^="legal-tab-"].active');
+  var tab=active?.id?.replace('legal-tab-','');
+  if(tab==='register')legalNewRequirement();
+  else if(tab==='changes')legalNewChange();
+  else if(tab==='assessments')lcaNew();
+  else if(tab==='gaps')gapNew();
+  else if(tab==='calendar')calNew();
 }
 
-async function loadSOP(){sopLoadList();}
-
-async function sopLoadList(){
-  var el=document.getElementById('sop-list-container');
-  if(!el)return;
-  try{
-    var d=await api('/sop_documents?select=*'+cf()+'&order=created_at.desc');
-    sopAllData=d||[];
-    if(!d||!d.length){
-      el.innerHTML='<div style="text-align:center;padding:60px 20px;color:var(--text2)">'
-        +'<div style="font-size:48px;margin-bottom:16px">📄</div>'
-        +'<div style="font-size:16px;font-weight:700;margin-bottom:8px">No SOPs yet</div>'
-        +'<div style="font-size:13px;margin-bottom:20px">Create your first SOP by uploading a task demonstration video</div>'
-        +'<button class="btn btn-primary" onclick="sopNew()"><i class="ti ti-plus"></i>Create first SOP</button>'
-        +'</div>';
-      return;
-    }
-    var h='<table style="width:100%;border-collapse:collapse">'
-      +'<thead><tr style="background:#f9fafb">'
-      +'<th style="padding:10px 16px;text-align:left;border-bottom:1px solid var(--border);font-size:11px;text-transform:uppercase;color:var(--text2)">SOP Title</th>'
-      +'<th style="padding:10px;border-bottom:1px solid var(--border);font-size:11px;text-transform:uppercase;color:var(--text2)">Department</th>'
-      +'<th style="padding:10px;border-bottom:1px solid var(--border);font-size:11px;text-transform:uppercase;color:var(--text2)">Risk</th>'
-      +'<th style="padding:10px;border-bottom:1px solid var(--border);font-size:11px;text-transform:uppercase;color:var(--text2)">Version</th>'
-      +'<th style="padding:10px;border-bottom:1px solid var(--border);font-size:11px;text-transform:uppercase;color:var(--text2)">Author</th>'
-      +'<th style="padding:10px;border-bottom:1px solid var(--border);font-size:11px;text-transform:uppercase;color:var(--text2)">Status</th>'
-      +'<th style="padding:10px;border-bottom:1px solid var(--border);font-size:11px;text-transform:uppercase;color:var(--text2)">Date</th>'
-      +'<th style="padding:10px;width:100px;border-bottom:1px solid var(--border)"></th>'
-      +'</tr></thead><tbody>';
-    d.forEach(function(x){
-      var riskCol={Low:'var(--green)',Medium:'var(--amber)',High:'var(--red)',Critical:'#6B21A8'}[x.risk_level]||'var(--text2)';
-      var stBadge=x.status==='Approved'?'<span class="badge bg">Approved</span>':x.status==='Review'?'<span class="badge ba">In Review</span>':'<span class="badge bgr">Draft</span>';
-      var dt=x.created_at?new Date(x.created_at).toLocaleDateString('en-GB'):'—';
-      h+='<tr style="border-bottom:1px solid #f3f4f6">'
-        +'<td style="padding:10px 16px;font-weight:600">'+escH(x.title||'—')+'</td>'
-        +'<td style="padding:10px;font-size:12px">'+escH(x.department||'—')+'</td>'
-        +'<td style="padding:10px"><span style="color:'+riskCol+';font-weight:600;font-size:12px">'+escH(x.risk_level||'—')+'</span></td>'
-        +'<td style="padding:10px;font-size:12px">'+escH(x.version||'Rev 00')+'</td>'
-        +'<td style="padding:10px;font-size:12px">'+escH(x.author||'—')+'</td>'
-        +'<td style="padding:10px">'+stBadge+'</td>'
-        +'<td style="padding:10px;font-size:12px">'+dt+'</td>'
-        +'<td style="padding:10px"><div style="display:flex;gap:4px">'
-        +'<button class="btn btn-sm" title="View" data-id="'+x.id+'" onclick="sopView(this.getAttribute(\'data-id\'))"><i class="ti ti-eye"></i></button>'
-        +'<button class="btn btn-sm" title="Print" data-id="'+x.id+'" onclick="sopPrintById(this.getAttribute(\'data-id\'))"><i class="ti ti-printer"></i></button>'
-        +(isMgr()?'<button class="btn btn-sm" style="color:var(--red)" title="Delete" data-id="'+x.id+'" onclick="sopDelete(this.getAttribute(\'data-id\'))"><i class="ti ti-trash"></i></button>':'')
-        +'</div></td></tr>';
-    });
-    h+='</tbody></table>';
-    el.innerHTML=h;
-  }catch(e){el.innerHTML='<p style="padding:20px;color:red">'+e.message+'</p>';console.error(e);}
-}
-
-function sopNew(){
-  sopVideo=null; sopFrames=[]; sopEditingId=null; sopCurrentStep=1;
-  // Reset form
-  ['sop-title','sop-dept','sop-author','sop-desc','sop-ppe-extra'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
-  document.getElementById('sop-revision').value='Rev 00';
-  document.getElementById('sop-risk').value='Medium';
-  document.getElementById('sop-date').value='';
-  document.querySelectorAll('#sop-ppe-list input[type=checkbox]').forEach(function(c){c.checked=false;});
-  var vp=document.getElementById('sop-video-preview');if(vp){vp.style.display='none';vp.src='';}
-  var vi=document.getElementById('sop-video-info');if(vi)vi.textContent='';
-  var fb=document.getElementById('sop-to-frames-btn');if(fb)fb.style.display='none';
-  var dz=document.getElementById('sop-drop-zone');if(dz)dz.style.borderColor='var(--border)';
-  document.getElementById('sop-frames-container').innerHTML='';
-  document.getElementById('sop-preview-container').innerHTML='';
-  // Auto-fill author
-  var au=document.getElementById('sop-author');if(au&&prof)au.value=prof.full_name||'';
-  sopGoStep(1);
-  // Switch to create tab
-  sopSwitchTab('create', document.getElementById('sop-tab-create'));
-}
-
-function sopGoStep(n){
-  for(var i=1;i<=5;i++){
-    var panel=document.getElementById('sop-step-'+i);
-    if(panel)panel.style.display=i===n?'block':'none';
-    var dot=document.getElementById('sop-dot-'+i);
-    if(dot){
-      dot.className='sop-step-dot'+(i<n?' done':i===n?' active':'');
-    }
-  }
-  sopCurrentStep=n;
-  // Update progress bar
-  var bar=document.getElementById('sop-step-bar');
-  if(bar)bar.style.width=((n-1)/4*80)+'%';
-}
-
-function sopNextStep(from){
-  if(from===1){
-    if(!document.getElementById('sop-title').value.trim()){toast('Please enter an SOP title',false);return;}
-    sopGoStep(2);
-  }else if(from===3){
-    var steps=document.querySelectorAll('.sop-frame-narration');
-    var hasNarration=false;
-    steps.forEach(function(el){if(el.value.trim())hasNarration=true;});
-    if(!hasNarration){toast('Please add narration for at least one step',false);return;}
-    sopGoStep(4);
-    sopGenerate();
-  }
-}
-
-// ── VIDEO HANDLING ────────────────────────────────────────────────────────────
-function sopHandleDrop(e){
-  e.preventDefault();
-  var file=e.dataTransfer.files[0];
-  if(file&&file.type.startsWith('video/'))sopLoadVideo(file);
-}
-
-function sopLoadVideo(file){
-  if(!file)return;
-  sopVideo=file;
-  var url=URL.createObjectURL(file);
-  var vp=document.getElementById('sop-video-preview');
-  vp.src=url; vp.style.display='block';
-  document.getElementById('sop-video-info').textContent=file.name+' ('+Math.round(file.size/1024/1024*10)/10+'MB)';
-  document.getElementById('sop-to-frames-btn').style.display='inline-flex';
-  var dz=document.getElementById('sop-drop-zone');
-  dz.style.borderColor='var(--green)';
-  document.getElementById('sop-drop-label').innerHTML='<i class="ti ti-check" style="font-size:24px;color:var(--green)"></i><div style="margin-top:6px;font-weight:600;color:var(--green)">Video loaded!</div>';
-}
-
-async function sopExtractFrames(){
-  if(!sopVideo){toast('Please upload a video first',false);return;}
-  sopGoStep(3);
-  var container=document.getElementById('sop-frames-container');
-  container.innerHTML='<div style="text-align:center;padding:30px;color:var(--text2)"><i class="ti ti-loader" style="font-size:24px"></i><br>Extracting frames...</div>';
-
-  var video=document.createElement('video');
-  video.src=URL.createObjectURL(sopVideo);
-  video.muted=true;
-
-  await new Promise(function(resolve){
-    video.onloadedmetadata=function(){resolve();};
-  });
-
-  var duration=video.duration;
-  // Extract up to 12 frames evenly spaced — but skip first and last 2 seconds
-  var start=Math.min(2,duration*0.05);
-  var end=Math.max(duration-2,duration*0.95);
-  var numFrames=Math.min(12,Math.max(4,Math.floor(duration/15)));
-  var times=[];
-  for(var i=0;i<numFrames;i++){
-    times.push(start+(end-start)*i/(numFrames-1));
-  }
-
-  sopFrames=[];
-  var canvas=document.createElement('canvas');
-  canvas.width=640; canvas.height=360;
-  var ctx=canvas.getContext('2d');
-
-  for(var ti=0;ti<times.length;ti++){
-    var t=times[ti];
-    await new Promise(function(resolve){
-      video.currentTime=t;
-      video.onseeked=function(){
-        ctx.drawImage(video,0,0,640,360);
-        var dataUrl=canvas.toDataURL('image/jpeg',0.7);
-        sopFrames.push({time:t,dataUrl:dataUrl,narration:''});
-        resolve();
-      };
-    });
-  }
-
-  sopRenderFrames();
-  document.getElementById('sop-frame-count').textContent=sopFrames.length+' frames extracted';
-}
-
-function sopRenderFrames(){
-  var container=document.getElementById('sop-frames-container');
-  if(!container)return;
-  container.innerHTML='';
-  if(!sopFrames.length){
-    container.innerHTML='<div style="padding:20px;text-align:center;color:var(--text2);font-size:13px">No frames yet. Upload a video to extract frames automatically.</div>';
-    return;
-  }
-  sopFrames.forEach(function(frame,i){
-    var mins=frame.time?Math.floor(frame.time/60):0;
-    var secs=frame.time?Math.floor(frame.time%60):0;
-    var timeStr=frame.time?(mins+'m '+secs+'s'):'Manual step';
-    var card=document.createElement('div');
-    card.style.cssText='display:grid;grid-template-columns:220px 1fr;gap:0;border:1px solid var(--border);border-radius:10px;overflow:hidden;margin-bottom:12px;background:#fff';
-    // Left: image
-    var imgWrap=document.createElement('div');
-    imgWrap.style.cssText='position:relative;background:#000';
-    if(frame.dataUrl){
-      var img=document.createElement('img');
-      img.src=frame.dataUrl;
-      img.style.cssText='width:100%;height:140px;object-fit:cover;display:block';
-      imgWrap.appendChild(img);
-    }else{
-      var noImg=document.createElement('div');
-      noImg.style.cssText='width:100%;height:140px;display:flex;align-items:center;justify-content:center;color:#666;font-size:12px;background:#f3f4f6';
-      noImg.textContent='No image';
-      imgWrap.appendChild(noImg);
-    }
-    var timeBadge=document.createElement('span');
-    timeBadge.style.cssText='position:absolute;bottom:6px;left:6px;background:rgba(0,0,0,.7);color:#fff;font-size:10px;padding:2px 6px;border-radius:4px';
-    timeBadge.textContent=timeStr;
-    imgWrap.appendChild(timeBadge);
-    var numBadge=document.createElement('span');
-    numBadge.style.cssText='position:absolute;top:6px;left:6px;background:var(--green);color:#fff;font-size:11px;font-weight:700;padding:2px 8px;border-radius:4px';
-    numBadge.textContent='Step '+(i+1);
-    imgWrap.appendChild(numBadge);
-    var delBtn=document.createElement('button');
-    delBtn.style.cssText='position:absolute;top:6px;right:6px;background:rgba(220,38,38,.85);border:none;color:#fff;border-radius:4px;padding:2px 6px;cursor:pointer;font-size:11px';
-    delBtn.innerHTML='<i class="ti ti-x"></i>';
-    delBtn.onclick=function(){sopRemoveFrame(i);};
-    imgWrap.appendChild(delBtn);
-    card.appendChild(imgWrap);
-    // Right: narration
-    var right=document.createElement('div');
-    right.style.cssText='padding:12px 16px;display:flex;flex-direction:column;gap:8px';
-    var label=document.createElement('label');
-    label.style.cssText='font-size:11px;font-weight:700;text-transform:uppercase;color:var(--text2);display:block';
-    label.textContent='Step '+(i+1)+' — What are you doing in this step?';
-    var ta=document.createElement('textarea');
-    ta.className='sop-frame-narration';
-    ta.setAttribute('data-idx', i);
-    ta.style.cssText='width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:8px;font-size:13px;min-height:90px;resize:vertical;font-family:inherit';
-    ta.placeholder='Describe this step: what you are doing, how to do it safely, key points to watch out for...';
-    ta.value=frame.narration||'';
-    ta.oninput=function(){sopFrames[parseInt(this.getAttribute('data-idx'))].narration=this.value;};
-    var hazardLabel=document.createElement('label');
-    hazardLabel.style.cssText='font-size:11px;font-weight:700;text-transform:uppercase;color:var(--red);display:block';
-    hazardLabel.textContent='Hazards & risks';
-    var hazardInput=document.createElement('input');
-    hazardInput.type='text';
-    hazardInput.className='sop-frame-hazard';
-    hazardInput.setAttribute('data-idx', i);
-    hazardInput.style.cssText='width:100%;padding:7px 10px;border:1px solid var(--border);border-radius:8px;font-size:13px';
-    hazardInput.placeholder='e.g. Flying debris, crush injury, electrical hazard...';
-    hazardInput.value=frame.hazard||'';
-    hazardInput.oninput=function(){sopFrames[parseInt(this.getAttribute('data-idx'))].hazard=this.value;};
-    right.appendChild(label);
-    right.appendChild(ta);
-    right.appendChild(hazardLabel);
-    right.appendChild(hazardInput);
-    card.appendChild(right);
-    container.appendChild(card);
-  });
-}
-
-
-function sopRemoveFrame(idx){
-  sopFrames.splice(idx,1);
-  sopRenderFrames();
-  document.getElementById('sop-frame-count').textContent=sopFrames.length+' frames';
-}
-
-function sopAddManualStep(){
-  sopFrames.push({time:null,dataUrl:null,narration:''});
-  sopRenderFrames();
-}
-
-// ── AI GENERATION ─────────────────────────────────────────────────────────────
-async function sopGenerate(){
-  var setStatus=function(pct,msg){
-    var bar=document.getElementById('sop-gen-bar');
-    var stat=document.getElementById('sop-gen-status');
-    if(bar)bar.style.width=pct+'%';
-    if(stat)stat.textContent=msg;
-  };
-
-  // Collect narrations from DOM
-  document.querySelectorAll('.sop-frame-narration').forEach(function(el){
-    var idx=parseInt(el.dataset.idx);
-    if(sopFrames[idx])sopFrames[idx].narration=el.value;
-  });
-
-  var title=document.getElementById('sop-title').value;
-  var dept=document.getElementById('sop-dept').value;
-  var risk=document.getElementById('sop-risk').value;
-  var desc=document.getElementById('sop-description').value;
-  var author=document.getElementById('sop-author').value;
-  var version=document.getElementById('sop-revision').value;
-  var reviewDate=document.getElementById('sop-date').value;
-  var ppeChecked=Array.from(document.querySelectorAll('#sop-ppe-checks input:checked')).map(function(c){return c.value;});
-  var ppeExtra=document.getElementById('sop-ppe-extra').value;
-  var allPPE=ppeChecked.concat(ppeExtra?[ppeExtra]:[]).join(', ')||'As per risk assessment';
-
-  setStatus(10,'Preparing content for AI...');
-
-  // Build messages with images + narrations
-  var stepsContent=[];
-  sopFrames.forEach(function(f,i){
-    if(f.narration){
-      stepsContent.push({type:'text',text:'STEP '+(i+1)+' NARRATION: '+f.narration});
-    }
-    if(f.dataUrl){
-      var b64=f.dataUrl.split(',')[1];
-      stepsContent.push({type:'image',source:{type:'base64',media_type:'image/jpeg',data:b64}});
-    }
-  });
-
-  var systemPrompt='You are an expert HSE professional writing a Standard Operating Procedure (SOP). Write a complete, professional SOP document based on the task video frames and narrations provided. Return ONLY a valid JSON object with this exact structure (no markdown, no code blocks, no preamble): {"purpose":"string","responsibilities":[{"role":"string","duty":"string"}],"hazards":[{"hazard":"string","risk":"string","control":"string"}],"steps":[{"step_number":1,"title":"string","description":"string","safety_notes":"string","has_image":true}],"emergency":"string","related_docs":["string"],"definitions":[{"term":"string","definition":"string"}]}';
-
-  var taskIntro='Generate a complete SOP for the following task:\n\nTitle: '+title+'\nDepartment: '+dept+'\nRisk Level: '+risk+'\nDescription: '+desc+'\nPPE Required: '+allPPE+'\n\nBelow are the video frames with narrations from the person demonstrating the task:';
-  var userContent=[{type:'text',text:taskIntro}].concat(stepsContent).concat([{type:'text',text:'Write a professional, detailed SOP. Each step should align with the frame image and narration provided. Include all safety warnings. Be specific and practical.'}]);
-
-  setStatus(30,'Sending to Claude AI...');
-
-  try{
-    var response=await fetch('https://api.anthropic.com/v1/messages',{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({
-        model:'claude-sonnet-4-20250514',
-        max_tokens:4000,
-        system:systemPrompt,
-        messages:[{role:'user',content:userContent}]
-      })
-    });
-
-    setStatus(70,'Processing AI response...');
-
-    var data=await response.json();
-    if(data.error){throw new Error(data.error.message||'API error');}
-
-    var text=data.content&&data.content[0]&&data.content[0].text;
-    if(!text)throw new Error('No response from AI');
-
-    // Parse JSON - strip any markdown fences
-    text=text.replace(/^```json\s*/,'').replace(/\s*```$/,'').trim();
-    var parsed=JSON.parse(text);
-
-    setStatus(90,'Building SOP document...');
-
-    // Build the SOP with embedded images
-    sopBuildPreview(parsed,{title,dept,risk,author,version,reviewDate,ppe:allPPE});
-
-    setStatus(100,'Done!');
-    document.getElementById('sop-gen-icon').textContent='✅';
-    document.getElementById('sop-gen-title').textContent='SOP Generated!';
-    document.getElementById('sop-gen-subtitle').textContent='Your SOP is ready to review and edit.';
-
-    setTimeout(function(){sopShowPreview();},1000);
-
-  }catch(e){
-    console.error(e);
-    document.getElementById('sop-gen-icon').textContent='❌';
-    document.getElementById('sop-gen-title').textContent='Generation failed';
-    document.getElementById('sop-gen-subtitle').textContent=e.message;
-    toast('AI generation failed: '+e.message,false);
-  }
-}
-
-function sopBuildPreview(data,meta){
-  var container=document.getElementById('sop-preview-container');
-  var today=new Date().toLocaleDateString('en-GB');
-  var reviewDt=meta.reviewDate?new Date(meta.reviewDate).toLocaleDateString('en-GB'):'—';
-  var riskCol={Low:'#1D9E75',Medium:'#EF9F27',High:'#E24B4A',Critical:'#6B21A8'}[meta.risk]||'#EF9F27';
-
-  var stepsHtml='';
-  (data.steps||[]).forEach(function(step,i){
-    var frame=sopFrames[i];
-    var imgHtml='';
-    if(frame&&frame.dataUrl){
-      imgHtml='<div style="margin:10px 0"><img src="'+frame.dataUrl+'" style="max-width:100%;border-radius:8px;border:1px solid #e5e7eb;box-shadow:0 1px 4px rgba(0,0,0,.1)"/><div style="font-size:10px;color:#6b7280;margin-top:4px;text-align:center;font-style:italic">Figure '+(i+1)+' — '+escH(step.title||'')+'</div></div>';
-    }
-    stepsHtml+='<div style="margin-bottom:20px;border:1px solid #e5e7eb;border-radius:10px;overflow:hidden">'
-      +'<div style="background:#1a3a5c;color:#fff;padding:10px 16px;display:flex;align-items:center;gap:12px">'
-      +'<span style="background:rgba(255,255,255,.2);width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;flex-shrink:0">'+(step.step_number||i+1)+'</span>'
-      +'<span style="font-weight:700;font-size:14px">'+escH(step.title||'')+'</span>'
-      +'</div>'
-      +'<div style="padding:14px 16px">'
-      +imgHtml
-      +'<p style="margin:0 0 10px;font-size:13px;line-height:1.7;color:#374151">'+escH(step.description||'')+'</p>'
-      +(step.safety_notes?'<div style="background:#FEF9EC;border-left:3px solid #EF9F27;padding:8px 12px;border-radius:0 6px 6px 0;font-size:12px;color:#854F0B"><i class="ti ti-alert-triangle"></i> <strong>Safety note:</strong> '+escH(step.safety_notes)+'</div>':'')
-      +'</div></div>';
-  });
-
-  var hazardsHtml='';
-  (data.hazards||[]).forEach(function(h){
-    hazardsHtml+='<tr><td style="padding:8px 12px;border:1px solid #e5e7eb">'+escH(h.hazard||'')+'</td>'
-      +'<td style="padding:8px 12px;border:1px solid #e5e7eb;color:#E24B4A">'+escH(h.risk||'')+'</td>'
-      +'<td style="padding:8px 12px;border:1px solid #e5e7eb;color:#1D9E75">'+escH(h.control||'')+'</td></tr>';
-  });
-
-  var responsibilitiesHtml=(data.responsibilities||[]).map(function(r){
-    return '<li style="margin-bottom:6px"><strong>'+escH(r.role||'')+':</strong> '+escH(r.duty||'')+'</li>';
-  }).join('');
-
-  var html='<div id="sop-printable" style="font-family:Arial,sans-serif;color:#1a1a1a;max-width:900px;margin:0 auto;padding:0">'
-
-    // Header banner
-    +'<div style="background:#1a3a5c;color:#fff;padding:24px 32px;display:flex;align-items:center;justify-content:space-between">'
-    +'<div><div style="font-size:10px;letter-spacing:.1em;text-transform:uppercase;opacity:.7;margin-bottom:4px">Standard Operating Procedure</div>'
-    +'<div style="font-size:22px;font-weight:800;line-height:1.2" contenteditable="true" id="sop-edit-title">'+escH(meta.title||'')+'</div></div>'
-    +'<div style="text-align:right;font-size:11px;opacity:.8">'
-    +'<div>Version: '+escH(meta.version||'Rev 00')+'</div>'
-    +'<div>Date: '+today+'</div>'
-    +'<div>Review: '+reviewDt+'</div>'
-    +'</div></div>'
-
-    // Info bar
-    +'<div style="display:grid;grid-template-columns:repeat(4,1fr);background:#f0f4f8;border-bottom:2px solid #dde3ea">'
-    +'<div style="padding:12px 16px;border-right:1px solid #dde3ea"><div style="font-size:10px;text-transform:uppercase;color:#6b7280;font-weight:600">Department</div><div style="font-size:13px;font-weight:600;margin-top:2px">'+escH(meta.dept||'—')+'</div></div>'
-    +'<div style="padding:12px 16px;border-right:1px solid #dde3ea"><div style="font-size:10px;text-transform:uppercase;color:#6b7280;font-weight:600">Risk Level</div><div style="font-size:13px;font-weight:700;margin-top:2px;color:'+riskCol+'">'+escH(meta.risk||'—')+'</div></div>'
-    +'<div style="padding:12px 16px;border-right:1px solid #dde3ea"><div style="font-size:10px;text-transform:uppercase;color:#6b7280;font-weight:600">Prepared by</div><div style="font-size:13px;font-weight:600;margin-top:2px">'+escH(meta.author||'—')+'</div></div>'
-    +'<div style="padding:12px 16px"><div style="font-size:10px;text-transform:uppercase;color:#6b7280;font-weight:600">PPE Required</div><div style="font-size:12px;font-weight:600;margin-top:2px;color:#E24B4A">'+escH(meta.ppe||'See risk assessment')+'</div></div>'
-    +'</div>'
-
-    +'<div style="padding:24px 32px">'
-
-    // Purpose
-    +'<h3 style="font-size:13px;text-transform:uppercase;letter-spacing:.05em;color:#1a3a5c;border-bottom:2px solid #1a3a5c;padding-bottom:6px;margin:0 0 12px">1. Purpose & Scope</h3>'
-    +'<p style="font-size:13px;line-height:1.7;margin:0 0 20px;color:#374151" contenteditable="true">'+escH(data.purpose||'')+'</p>'
-
-    // Responsibilities
-    +(responsibilitiesHtml?'<h3 style="font-size:13px;text-transform:uppercase;letter-spacing:.05em;color:#1a3a5c;border-bottom:2px solid #1a3a5c;padding-bottom:6px;margin:0 0 12px">2. Responsibilities</h3>'
-    +'<ul style="font-size:13px;line-height:1.7;margin:0 0 20px;padding-left:20px;color:#374151">'+responsibilitiesHtml+'</ul>':'')
-
-    // Hazard summary
-    +(hazardsHtml?'<h3 style="font-size:13px;text-transform:uppercase;letter-spacing:.05em;color:#1a3a5c;border-bottom:2px solid #1a3a5c;padding-bottom:6px;margin:0 0 12px">3. Key Hazards & Controls</h3>'
-    +'<table style="width:100%;border-collapse:collapse;font-size:12px;margin-bottom:20px"><thead><tr style="background:#f0f4f8"><th style="padding:8px 12px;border:1px solid #e5e7eb;text-align:left">Hazard</th><th style="padding:8px 12px;border:1px solid #e5e7eb;text-align:left">Risk</th><th style="padding:8px 12px;border:1px solid #e5e7eb;text-align:left">Control</th></tr></thead><tbody>'+hazardsHtml+'</tbody></table>':'')
-
-    // Steps
-    +'<h3 style="font-size:13px;text-transform:uppercase;letter-spacing:.05em;color:#1a3a5c;border-bottom:2px solid #1a3a5c;padding-bottom:6px;margin:0 0 16px">4. Step-by-Step Procedure</h3>'
-    +stepsHtml
-
-    // Emergency
-    +(data.emergency?'<h3 style="font-size:13px;text-transform:uppercase;letter-spacing:.05em;color:#E24B4A;border-bottom:2px solid #E24B4A;padding-bottom:6px;margin:20px 0 12px">5. Emergency Procedures</h3>'
-    +'<div style="background:#FCEBEB;border-left:4px solid #E24B4A;padding:12px 16px;border-radius:0 8px 8px 0;font-size:13px;color:#374151;margin-bottom:20px">'+escH(data.emergency)+'</div>':'')
-
-    // Sign-off
-    +'<h3 style="font-size:13px;text-transform:uppercase;letter-spacing:.05em;color:#1a3a5c;border-bottom:2px solid #1a3a5c;padding-bottom:6px;margin:20px 0 12px">6. Sign-off & Approval</h3>'
-    +'<table style="width:100%;border-collapse:collapse;font-size:12px;margin-bottom:20px"><thead><tr style="background:#f0f4f8"><th style="padding:10px 14px;border:1px solid #e5e7eb;text-align:left">Role</th><th style="padding:10px 14px;border:1px solid #e5e7eb;text-align:left">Name</th><th style="padding:10px 14px;border:1px solid #e5e7eb;text-align:left">Signature</th><th style="padding:10px 14px;border:1px solid #e5e7eb;text-align:left">Date</th></tr></thead>'
-    +'<tbody><tr><td style="padding:16px 14px;border:1px solid #e5e7eb">Prepared by</td><td style="padding:16px 14px;border:1px solid #e5e7eb">'+escH(meta.author||'')+'</td><td style="padding:16px 14px;border:1px solid #e5e7eb"></td><td style="padding:16px 14px;border:1px solid #e5e7eb">'+today+'</td></tr>'
-    +'<tr><td style="padding:16px 14px;border:1px solid #e5e7eb">Reviewed by</td><td style="padding:16px 14px;border:1px solid #e5e7eb"></td><td style="padding:16px 14px;border:1px solid #e5e7eb"></td><td style="padding:16px 14px;border:1px solid #e5e7eb"></td></tr>'
-    +'<tr><td style="padding:16px 14px;border:1px solid #e5e7eb">Approved by</td><td style="padding:16px 14px;border:1px solid #e5e7eb"></td><td style="padding:16px 14px;border:1px solid #e5e7eb"></td><td style="padding:16px 14px;border:1px solid #e5e7eb"></td></tr></tbody></table>'
-
-    +'</div></div>';
-
-  container.innerHTML=html;
-
-  // Store generated data for saving
-  window.sopGeneratedData={meta,aiData:data,framesCount:sopFrames.length};
-}
-
-// ── PRINT ──────────────────────────────────────────────────────────────────
-function sopPrint(){
-  var el=document.getElementById('sop-printable');
-  if(!el){toast('No SOP to print',false);return;}
-  var w=window.open('','_blank');
-  w.document.write('<!DOCTYPE html><html><head><title>SOP — '+(window.sopGeneratedData?.meta?.title||'')+'</title>'
-    +'<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">'
-    +'<style>body{margin:0;padding:20px;font-family:Arial,sans-serif}@media print{body{padding:0}}[contenteditable]{outline:none}<\/style>'
-    +'</head><body>'+el.outerHTML
-    +'<scr'+'ipt>window.onload=function(){window.print();}<'+'/scr'+'ipt>'
-    +'</body></html>');
-  w.document.close();
-}
-
-async function sopPrintById(id){
-  var sop=sopAllData.find(function(x){return x.id===id;});
-  if(!sop||!sop.html_content){toast('SOP content not found',false);return;}
-  var w=window.open('','_blank');
-  w.document.write('<!DOCTYPE html><html><head><title>SOP</title>'
-    +'<style>body{margin:20px;font-family:Arial,sans-serif}@media print{body{margin:0}}<\/style>'
-    +'</head><body>'+sop.html_content
-    +'<scr'+'ipt>window.onload=function(){window.print();}<'+'/scr'+'ipt></body></html>');
-  w.document.close();
-}
-
-async function sopView(id){
-  var sop=sopAllData.find(function(x){return x.id===id;});
-  if(!sop){return;}
-  // Restore to step 5
-  sopSwitchTab('create',document.getElementById('sop-tab-create'));
-  sopGoStep(5);
-  var el=document.getElementById('sop-preview-container');
-  if(el)el.innerHTML=sop.html_content||'<p style="padding:20px;color:var(--text2)">No preview available</p>';
-  window.sopGeneratedData={meta:{title:sop.title}};
-}
-
-// ── SAVE ──────────────────────────────────────────────────────────────────
-async function sopSaveDocument(){
-  if(!window.sopGeneratedData){toast('Generate an SOP first',false);return;}
-  var el=document.getElementById('sop-printable');
-  if(!el){toast('No SOP content to save',false);return;}
-  var meta=window.sopGeneratedData.meta;
-  var body={
-    company_id:prof?.company_id,
-    title:meta.title,
-    department:meta.dept,
-    risk_level:meta.risk,
-    author:meta.author,
-    version:meta.version,
-    review_date:meta.reviewDate||null,
-    status:'Draft',
-    html_content:el.outerHTML,
-    created_by:prof?.id,
-    updated_at:new Date().toISOString()
-  };
-  try{
-    await api('/sop_documents',{m:'POST',p:'return=minimal',b:body});
-    toast('SOP saved to Document Control!');
-    sopSwitchTab('list',document.getElementById('sop-tab-list'));
-  }catch(e){toast(e.message,false);console.error(e);}
-}
-
-async function sopDelete(id){
-  if(!confirm('Delete this SOP?'))return;
-  try{
-    await api('/sop_documents?id=eq.'+id,{m:'DELETE'});
-    toast('SOP deleted!');
-    sopLoadList();
-  }catch(e){toast(e.message,false);}
-}
-
-async function loadLegal(){
-  var addBtn=document.getElementById('lr-add-btn');
-  var lcBtn=document.getElementById('lc-add-btn');
-  if(addBtn)addBtn.style.display=isMgr()?'inline-flex':'none';
-  if(lcBtn)lcBtn.style.display=isMgr()?'inline-flex':'none';
-  legalLoadRegister();
-}
-
-// ── LEGAL REGISTER ──────────────────────────────────────────────────────────
+// ── LEGAL REGISTER ────────────────────────────────────────────────────────────
 async function legalLoadRegister(){
-  var el=document.getElementById('lr-table');
-  if(!el)return;
+  var el=document.getElementById('lr-table');if(!el)return;
+  el.innerHTML='<div class="loading-msg">Loading...</div>';
   try{
-    var d=await api('/legal_register?select=*'+cf()+'&order=no_order,legislation_main,section');
+    var d=await api('/legal_requirements?select=*'+cf()+'&order=legislation,section');
     lrAllData=d||[];
-    // Update metrics
-    var setEl=function(id,v){var e=document.getElementById(id);if(e)e.textContent=v;};
-    setEl('lr-m-total',lrAllData.length);
-    setEl('lr-m-compliant',lrAllData.filter(function(x){return x.compliance_status==='compliant';}).length);
-    setEl('lr-m-partial',lrAllData.filter(function(x){return x.compliance_status==='partial';}).length);
-    setEl('lr-m-noncompliant',lrAllData.filter(function(x){return x.compliance_status==='non_compliant';}).length);
+    var now=new Date();
+    var setM=function(id,v){var e=document.getElementById(id);if(e)e.textContent=v;};
+    var apps=(d||[]).filter(x=>x.applicable!==false&&x.status!=='not_applicable');
+    setM('lr-m-compliant',(d||[]).filter(x=>x.status==='compliant').length);
+    setM('lr-m-partial',(d||[]).filter(x=>x.status==='partial').length);
+    setM('lr-m-noncompliant',(d||[]).filter(x=>x.status==='non_compliant').length);
+    setM('lr-m-total',(d||[]).length);
     // Populate legislation filter
     var legSel=document.getElementById('lr-filter-leg');
     if(legSel){
-      var legs=[...new Set(lrAllData.map(function(x){return x.legislation_main;}).filter(Boolean))];
-      legSel.innerHTML='<option value="">All legislation</option>'+legs.map(function(l){return '<option value="'+escH(l)+'">'+escH(l)+'</option>';}).join('');
+      var legs=[...new Set((d||[]).map(x=>x.legislation).filter(Boolean))].sort();
+      var existing=Array.from(legSel.options).map(o=>o.value);
+      legs.forEach(function(leg){if(!existing.includes(leg)){var o=document.createElement('option');o.value=leg;o.textContent=leg.length>45?leg.substring(0,45)+'…':leg;legSel.appendChild(o);}});
     }
     legalFilterRegister();
-  }catch(e){el.innerHTML='<p style="padding:20px;color:red">'+e.message+'</p>';console.error(e);}
+  }catch(e){el.innerHTML='<p style="padding:20px;color:red">'+escH(e.message)+'</p>';}
 }
 
 function legalFilterRegister(){
-  var search=(document.getElementById('lr-search')?.value||'').toLowerCase();
-  var filterStatus=document.getElementById('lr-filter-status')?.value||'';
-  var filterLeg=document.getElementById('lr-filter-leg')?.value||'';
-  var el=document.getElementById('lr-table');
-  if(!el)return;
-
-  var filtered=lrAllData.filter(function(x){
-    var matchSearch=!search||
-      (x.legislation_main||'').toLowerCase().includes(search)||
-      (x.requirement||'').toLowerCase().includes(search)||
-      (x.legislation_title||'').toLowerCase().includes(search);
-    var matchStatus=!filterStatus||x.compliance_status===filterStatus;
-    var matchLeg=!filterLeg||x.legislation_main===filterLeg;
-    return matchSearch&&matchStatus&&matchLeg;
+  var el=document.getElementById('lr-table');if(!el)return;
+  var q=(document.getElementById('lr-search')?.value||'').toLowerCase();
+  var fs=document.getElementById('lr-filter-status')?.value||'';
+  var fl=document.getElementById('lr-filter-leg')?.value||'';
+  var fc=document.getElementById('lr-filter-cat')?.value||'';
+  var filt=lrAllData.filter(function(x){
+    var mQ=!q||(x.legislation||'').toLowerCase().includes(q)||(x.title||'').toLowerCase().includes(q)||(x.requirement||'').toLowerCase().includes(q)||(x.req_ref||'').toLowerCase().includes(q)||(x.section||'').toLowerCase().includes(q);
+    var mS=!fs||x.status===fs;
+    var mL=!fl||x.legislation===fl;
+    var mC=!fc||(x.category||'')=== fc;
+    return mQ&&mS&&mL&&mC;
   });
-
-  if(!filtered.length){
-    el.innerHTML='<p style="padding:20px;color:var(--text2)">No requirements found.'+(isMgr()?' <button class="btn btn-sm btn-primary" onclick="legalNewRequirement()"><i class="ti ti-plus"></i>Add first requirement</button>':'')+'</p>';
+  if(!filt.length){
+    el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)"><div style="font-size:40px;margin-bottom:12px">⚖️</div><div style="font-weight:600;margin-bottom:8px">No requirements found</div>'+(isMgr()?'<button class="btn btn-primary" onclick="legalNewRequirement()"><i class="ti ti-plus"></i>Add first requirement</button>':'')+'</div>';
     return;
   }
-
-  // Group by legislation
-  var byLeg={};
-  filtered.forEach(function(x){
-    var key=x.legislation_main||'Other';
-    if(!byLeg[key])byLeg[key]=[];
-    byLeg[key].push(x);
+  var h='<table style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr style="background:#1a3a5c;color:#fff"><th style="padding:8px 14px;text-align:left">Ref</th><th style="padding:8px;text-align:left">Legislation</th><th style="padding:8px;text-align:left">Section / Requirement</th><th style="padding:8px;text-align:left">Category</th><th style="padding:8px;text-align:left">Obligation</th><th style="padding:8px;text-align:left">Responsibility</th><th style="padding:8px;text-align:center">Score</th><th style="padding:8px;text-align:left">Status</th><th style="padding:8px;width:50px"></th></tr></thead><tbody>';
+  filt.forEach(function(x,i){
+    var bg=i%2===0?'#fff':'#f9fafb';
+    var sc=LEG_STATUS_CFG[x.status]||LEG_STATUS_CFG.non_compliant;
+    var catCfg=LEGAL_CAT_CFG[x.category||'other']||LEGAL_CAT_CFG.other;
+    var hasGap=x.gap||x.gap_identified;
+    var score=x.compliance_score!=null?x.compliance_score:sc.score;
+    var scoreColor=score==null?'#6B7280':score>=80?'#1D9E75':score>=50?'#EF9F27':score>=20?'#C2410C':'#A32D2D';
+    h+='<tr style="border-bottom:1px solid #f0f0f0;background:'+bg+';cursor:pointer" onclick="legalOpenReq(\''+x.id+'\')">'
+      +'<td style="padding:8px 14px;font-family:monospace;font-size:11px;font-weight:700;color:#185FA5">'+escH(x.req_ref||x.id?.slice(0,8)||'—')+'</td>'
+      +'<td style="padding:8px;max-width:180px"><div style="font-size:11px;font-weight:600;color:#185FA5">'+escH((x.legislation||'—').substring(0,45))+'</div>'+(x.legislation_type?'<div style="font-size:10px;color:var(--text2);text-transform:capitalize">'+escH(x.legislation_type.replace(/_/g,' '))+'</div>':'')+'</td>'
+      +'<td style="padding:8px;max-width:250px"><div style="font-weight:600">'+escH(x.title||('Section '+(x.section||'—')))+'</div><div style="font-size:11px;color:var(--text2)">'+escH((x.requirement||'').substring(0,80))+(x.requirement?.length>80?'…':'')+'</div>'+(hasGap?'<span style="background:#FCEBEB;color:#A32D2D;padding:1px 6px;border-radius:4px;font-size:10px;font-weight:700;margin-top:2px;display:inline-block">⚠ GAP</span>':'')+'</td>'
+      +'<td style="padding:8px"><span style="background:'+catCfg.color+'15;color:'+catCfg.color+';padding:2px 7px;border-radius:99px;font-size:10px;font-weight:600">'+catCfg.emoji+' '+catCfg.label+'</span></td>'
+      +'<td style="padding:8px;font-size:11px;text-transform:capitalize">'+escH((x.obligation_type||'mandatory').replace(/_/g,' '))+'</td>'
+      +'<td style="padding:8px;font-size:11px">'+escH(x.responsibility||x.responsible_person||'—')+'</td>'
+      +'<td style="padding:8px;text-align:center;font-weight:800;color:'+scoreColor+'">'+(score!=null?score+'%':'—')+'</td>'
+      +'<td style="padding:8px"><span style="background:'+sc.bg+';color:'+sc.tc+';padding:2px 8px;border-radius:99px;font-size:10px;font-weight:700">'+sc.label+'</span></td>'
+      +'<td style="padding:8px"><button class="btn btn-sm" data-id="'+x.id+'" onclick="event.stopPropagation();legalOpenReq(this.dataset.id)"><i class="ti ti-edit"></i></button></td></tr>';
   });
-
-  var html='<table style="width:100%;border-collapse:collapse;font-size:12px">';
-  html+='<thead><tr style="background:#1a3a5c;color:#fff">';
-  html+='<th style="padding:8px 10px;text-align:left;width:40px">No.</th>';
-  html+='<th style="padding:8px 10px;text-align:left;width:80px">Section</th>';
-  html+='<th style="padding:8px 10px;text-align:left">Requirement</th>';
-  html+='<th style="padding:8px 10px;text-align:left;width:120px">Controls in place</th>';
-  html+='<th style="padding:8px 10px;text-align:center;width:80px">App.</th>';
-  html+='<th style="padding:8px 10px;text-align:left;width:130px">Status</th>';
-  html+='<th style="padding:8px 10px;text-align:left;width:120px">Responsibility</th>';
-  html+='<th style="padding:8px 10px;width:70px"></th>';
-  html+='</tr></thead><tbody>';
-
-  Object.entries(byLeg).forEach(function(e){
-    var leg=e[0], reqs=e[1];
-    html+='<tr><td colspan="8" style="padding:8px 12px;background:#f0f4f8;font-weight:700;font-size:11px;color:#1a3a5c;border-bottom:2px solid #dde3ea;text-transform:uppercase;letter-spacing:.04em">'+escH(leg)+'</td></tr>';
-    reqs.forEach(function(x,i){
-      var hasGap=x.gap_identified?'<span style="background:#FCEBEB;color:#A32D2D;padding:1px 6px;border-radius:4px;font-size:10px;font-weight:600;margin-left:4px">GAP</span>':'';
-      var rowBg=i%2===0?'#fff':'#f9fafb';
-      var req=(x.requirement||'').substring(0,120)+(x.requirement&&x.requirement.length>120?'...':'');
-      html+='<tr style="border-bottom:1px solid #f0f0f0;background:'+rowBg+'">';
-      html+='<td style="padding:8px 10px;color:var(--text2);font-weight:600">'+(x.no_order||'')+'</td>';
-      html+='<td style="padding:8px 10px;font-weight:600">'+(x.section||'')+(x.sub_section?'.'+x.sub_section:'')+'</td>';
-      html+='<td style="padding:8px 10px"><div style="font-weight:600;margin-bottom:2px">'+escH(x.legislation_title||'')+hasGap+'</div><div style="color:var(--text2);font-size:11px;line-height:1.4">'+escH(req)+'</div></td>';
-      html+='<td style="padding:8px 10px;font-size:11px;color:var(--text2)">'+escH((x.controls_in_place||'').substring(0,80))+'</td>';
-      html+='<td style="padding:8px 10px;text-align:center">'+(x.applicable?'<span style="color:var(--green);font-weight:700">Y</span>':'<span style="color:var(--text2)">N</span>')+'</td>';
-      html+='<td style="padding:8px 10px">'+legalStatusBadge(x.compliance_status)+'</td>';
-      html+='<td style="padding:8px 10px;font-size:11px">'+(x.responsibility||'—')+'</td>';
-      html+='<td style="padding:8px 10px"><div style="display:flex;gap:4px">';
-      html+='<button class="btn btn-sm" title="Edit" data-id="'+x.id+'" onclick="legalOpenReq(this.getAttribute(\'data-id\'))"><i class="ti ti-edit"></i></button>';
-      if(isMgr())html+='<button class="btn btn-sm" title="Delete" style="color:var(--red)" data-id="'+x.id+'" onclick="legalDeleteReqFromList(this.getAttribute(\'data-id\'))"><i class="ti ti-trash"></i></button>';
-      html+='</div></td>';
-      html+='</tr>';
-    });
-  });
-  html+='</tbody></table>';
-  el.innerHTML=html;
+  h+='</tbody></table>';el.innerHTML=h;
 }
 
-// ── REQUIREMENT FORM ─────────────────────────────────────────────────────────
-function legalShowReqForm(){
-  document.getElementById('legal-view-register').style.display='none';
-  document.getElementById('legal-view-changes').style.display='none';
-  document.getElementById('legal-view-dashboard').style.display='none';
-  document.getElementById('legal-req-form').style.display='block';
-  document.getElementById('legal-chg-form').style.display='none';
-}
+function legalStatusBadge(s){var c=LEG_STATUS_CFG[s]||LEG_STATUS_CFG.non_compliant;return '<span style="background:'+c.bg+';color:'+c.tc+';padding:2px 8px;border-radius:99px;font-size:10px;font-weight:700">'+c.label+'</span>';}
+
 function legalReqBack(){
   document.getElementById('legal-req-form').style.display='none';
   document.getElementById('legal-view-register').style.display='block';
+  document.querySelectorAll('[id^="legal-tab-"]').forEach(t=>t.classList.remove('active'));
+  document.getElementById('legal-tab-register')?.classList.add('active');
   legalLoadRegister();
 }
 
 function legalNewRequirement(){
-  lrEditingId=null;
+  lrEditId=null;
   document.getElementById('lr-form-title').textContent='New Legal Requirement';
+  document.getElementById('lr-form-ref-badge').textContent='REQ-AUTO';
   document.getElementById('lr-del-btn').style.display='none';
-  ['lr-leg-main','lr-leg-title','lr-section','lr-subsection','lr-requirement','lr-controls','lr-further-controls','lr-notes','lr-responsibility'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
-  var td=document.getElementById('lr-target-date');if(td)td.value='';
-  var st=document.getElementById('lr-status');if(st)st.value='partial';
-  var ap=document.getElementById('lr-applicable');if(ap)ap.value='true';
-  var gp=document.getElementById('lr-gap');if(gp)gp.checked=false;
-  legalShowReqForm();
+  ['lr-leg-main','lr-leg-title','lr-section','lr-subsection','lr-requirement','lr-controls',
+   'lr-evidence-req','lr-evidence-loc','lr-further-controls','lr-penalty','lr-notes',
+   'lr-responsibility','lr-assessed-by'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
+  ['lr-target-date','lr-effective-date','lr-review-date','lr-last-assessed'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
+  document.getElementById('lr-jurisdiction').value='Mauritius';
+  document.getElementById('lr-leg-type').value='statutory';
+  document.getElementById('lr-category').value='health_safety';
+  document.getElementById('lr-obligation').value='mandatory';
+  document.getElementById('lr-frequency').value='ongoing';
+  document.getElementById('lr-applicable').value='true';
+  document.getElementById('lr-status').value='non_compliant';
+  document.querySelectorAll('[name="lr-status-r"]').forEach(r=>{r.checked=r.value==='non_compliant';});
+  document.getElementById('lr-gap').checked=false;
+  document.getElementById('lr-compliance-score').value=0;
+  document.getElementById('lr-score-display').textContent='0%';
+  document.getElementById('legal-view-register').style.display='none';
+  document.getElementById('legal-req-form').style.display='block';
 }
 
 function legalOpenReq(id){
-  var x=lrAllData.find(function(r){return r.id===id;});
-  if(!x)return;
-  lrEditingId=id;
-  document.getElementById('lr-form-title').textContent='Edit Legal Requirement';
+  var x=lrAllData.find(r=>r.id===id);if(!x)return;
+  lrEditId=id;
+  document.getElementById('lr-form-title').textContent=x.title||x.legislation||'Edit Requirement';
+  document.getElementById('lr-form-ref-badge').textContent=x.req_ref||x.id?.slice(0,8)||'—';
   document.getElementById('lr-del-btn').style.display=isMgr()?'inline-flex':'none';
-  var flds={'lr-leg-main':'legislation_main','lr-leg-title':'legislation_title','lr-section':'section','lr-subsection':'sub_section','lr-requirement':'requirement','lr-controls':'controls_in_place','lr-further-controls':'further_controls','lr-notes':'notes','lr-responsibility':'responsibility'};
-  Object.entries(flds).forEach(function(e){var el=document.getElementById(e[0]);if(el)el.value=x[e[1]]||'';});
-  var td=document.getElementById('lr-target-date');if(td)td.value=x.target_date||'';
-  var st=document.getElementById('lr-status');if(st)st.value=x.compliance_status||'partial';
-  var ap=document.getElementById('lr-applicable');if(ap)ap.value=String(x.applicable!==false);
-  var gp=document.getElementById('lr-gap');if(gp)gp.checked=!!x.gap_identified;
-  legalShowReqForm();
+  var gf=function(fid,val){var el=document.getElementById(fid);if(el)el.value=val||'';};
+  gf('lr-leg-main',x.legislation);gf('lr-leg-title',x.title);gf('lr-section',x.section);
+  gf('lr-subsection',x.subsection);gf('lr-requirement',x.requirement);gf('lr-controls',x.controls);
+  gf('lr-evidence-req',x.evidence_required);gf('lr-evidence-loc',x.evidence_location);
+  gf('lr-further-controls',x.further_controls||x.gap_description);gf('lr-penalty',x.penalty_risk);
+  gf('lr-notes',x.notes);gf('lr-responsibility',x.responsibility||x.responsible_person);
+  gf('lr-jurisdiction',x.jurisdiction||'Mauritius');gf('lr-authority',x.authority);
+  gf('lr-assessed-by',x.assessed_by);
+  gf('lr-target-date',x.target_date);gf('lr-effective-date',x.effective_date);
+  gf('lr-review-date',x.review_date);gf('lr-last-assessed',x.last_assessed_date);
+  document.getElementById('lr-leg-type').value=x.legislation_type||'statutory';
+  document.getElementById('lr-category').value=x.category||'health_safety';
+  document.getElementById('lr-obligation').value=x.obligation_type||'mandatory';
+  document.getElementById('lr-frequency').value=x.frequency||'ongoing';
+  document.getElementById('lr-applicable').value=x.applicable!==false?'true':'false';
+  var st=x.status||'non_compliant';
+  document.getElementById('lr-status').value=st;
+  document.querySelectorAll('[name="lr-status-r"]').forEach(r=>{r.checked=r.value===st;});
+  document.getElementById('lr-gap').checked=!!(x.gap||x.gap_identified);
+  var sc=x.compliance_score!=null?x.compliance_score:(LEG_STATUS_CFG[st]?.score||0);
+  document.getElementById('lr-compliance-score').value=sc!=null?sc:0;
+  document.getElementById('lr-score-display').textContent=(sc!=null?sc:0)+'%';
+  document.getElementById('legal-view-register').style.display='none';
+  document.getElementById('legal-req-form').style.display='block';
+}
+
+function legalScoreUpdate(val){
+  var el=document.getElementById('lr-score-display');if(el)el.textContent=val+'%';
+  // Auto-set status
+  var v=parseInt(val);var autoSt=v>=90?'compliant':v>=50?'partial':'non_compliant';
+  document.getElementById('lr-status').value=autoSt;
+  document.querySelectorAll('[name="lr-status-r"]').forEach(r=>{r.checked=r.value===autoSt;});
 }
 
 async function legalSaveReq(){
-  var req=document.getElementById('lr-requirement')?.value?.trim();
-  if(!req){toast('Please enter the requirement text',false);return;}
+  var leg=document.getElementById('lr-leg-main')?.value?.trim();if(!leg){toast('Please enter legislation name',false);return;}
   var g=function(id){var el=document.getElementById(id);return el?el.value||null:null;};
-  var body={
-    company_id:prof?.company_id,
-    legislation_main:g('lr-leg-main'),
-    legislation_title:g('lr-leg-title'),
-    section:g('lr-section'),
-    sub_section:g('lr-subsection'),
-    requirement:req,
-    applicable:document.getElementById('lr-applicable')?.value!=='false',
-    compliance_status:g('lr-status')||'partial',
-    controls_in_place:g('lr-controls'),
-    gap_identified:document.getElementById('lr-gap')?.checked||false,
-    further_controls:g('lr-further-controls'),
-    responsibility:g('lr-responsibility'),
-    target_date:g('lr-target-date'),
-    notes:g('lr-notes'),
-    updated_at:new Date().toISOString()
-  };
+  var score=parseInt(g('lr-compliance-score'))||0;
+  var st=g('lr-status')||'non_compliant';
+  var body={company_id:prof?.company_id,legislation:leg,title:g('lr-leg-title'),section:g('lr-section'),subsection:g('lr-subsection'),requirement:g('lr-requirement'),legislation_type:g('lr-leg-type')||'statutory',category:g('lr-category')||'health_safety',jurisdiction:g('lr-jurisdiction')||'Mauritius',authority:g('lr-authority'),obligation_type:g('lr-obligation')||'mandatory',frequency:g('lr-frequency')||'ongoing',applicable:g('lr-applicable')!=='false',status:st,compliance_score:score,controls:g('lr-controls'),evidence_required:g('lr-evidence-req'),evidence_location:g('lr-evidence-loc'),gap:document.getElementById('lr-gap')?.checked||false,gap_identified:document.getElementById('lr-gap')?.checked||false,further_controls:g('lr-further-controls'),penalty_risk:g('lr-penalty'),notes:g('lr-notes'),responsibility:g('lr-responsibility'),responsible_person:g('lr-responsibility'),target_date:g('lr-target-date')||null,effective_date:g('lr-effective-date')||null,review_date:g('lr-review-date')||null,last_assessed_date:g('lr-last-assessed')||null,assessed_by:g('lr-assessed-by'),updated_at:new Date().toISOString()};
   try{
-    if(lrEditingId){
-      await api('/legal_register?id=eq.'+lrEditingId,{m:'PATCH',p:'return=minimal',b:body});
-      // If non-compliant or partial with gap, add to MAP
-      if((body.compliance_status==='non_compliant'||body.gap_identified)&&body.further_controls){
-        try{await api('/action_tracker?source_module=eq.legal&source_id=eq.'+lrEditingId,{m:'DELETE'});}catch(ex){}
-        await api('/action_tracker',{m:'POST',p:'return=minimal',b:{
-          company_id:prof?.company_id,source_module:'legal',source_id:lrEditingId,
-          source_ref:(body.legislation_main||'Legal')+(body.section?' s.'+body.section:''),
-          description:body.further_controls,responsible:body.responsibility||null,
-          target_date:body.target_date||null,
-          priority:body.compliance_status==='non_compliant'?'high':'medium',
-          status:'open',created_by:prof?.id
-        }});
-        toast('Saved! Action added to Master Action Plan.');
-      }else{toast('Saved!');}
-    }else{
-      body.created_by=prof?.id;
-      var res=await api('/legal_register',{m:'POST',p:'return=representation',b:body});
-      var newId=res?.[0]?.id;
-      if(newId&&(body.compliance_status==='non_compliant'||body.gap_identified)&&body.further_controls){
-        await api('/action_tracker',{m:'POST',p:'return=minimal',b:{
-          company_id:prof?.company_id,source_module:'legal',source_id:newId,
-          source_ref:(body.legislation_main||'Legal')+(body.section?' s.'+body.section:''),
-          description:body.further_controls,responsible:body.responsibility||null,
-          target_date:body.target_date||null,
-          priority:body.compliance_status==='non_compliant'?'high':'medium',
-          status:'open',created_by:prof?.id
-        }});
-        toast('Requirement added! Action added to MAP.');
-      }else{toast('Requirement added!');}
-    }
-    legalReqBack();
-  }catch(e){toast(e.message,false);console.error(e);}
-}
-
-async function legalDeleteReq(){
-  if(!lrEditingId)return;
-  if(!confirm('Delete this requirement?'))return;
-  try{
-    await api('/legal_register?id=eq.'+lrEditingId,{m:'DELETE'});
-    toast('Deleted!');
+    if(lrEditId){await api('/legal_requirements?id=eq.'+lrEditId,{m:'PATCH',p:'return=minimal',b:body});toast('Requirement updated!');}
+    else{body.created_by=prof?.id;var res=await api('/legal_requirements',{m:'POST',p:'return=representation',b:body});if(res?.[0]?.id){var typeCode={statutory:'REQ',regulatory:'REG',iso_standard:'ISO',client_standard:'CLI',industry_code:'IND',other:'LEG'}[body.legislation_type]||'REQ';var ref=typeCode+'-'+String(lrAllData.length+1).padStart(3,'0');await api('/legal_requirements?id=eq.'+res[0].id,{m:'PATCH',p:'return=minimal',b:{req_ref:ref}});toast('Requirement saved! Ref: '+ref);if(body.gap){try{await api('/compliance_gaps',{m:'POST',p:'return=minimal',b:{company_id:prof?.company_id,legislation:leg,section:body.section,gap_description:body.further_controls||'Gap identified — controls inadequate',risk_level:'high',status:'open',created_by:prof?.id}});}catch(ex){}}};}
     legalReqBack();
   }catch(e){toast(e.message,false);}
 }
+async function legalDeleteReq(){if(!lrEditId||!confirm('Delete this requirement?'))return;try{await api('/legal_requirements?id=eq.'+lrEditId,{m:'DELETE'});toast('Deleted!');legalReqBack();}catch(e){toast(e.message,false);}}
+function legalDeleteReqFromList(id){if(!confirm('Delete?'))return;api('/legal_requirements?id=eq.'+id,{m:'DELETE'}).then(function(){lrAllData=lrAllData.filter(x=>x.id!==id);legalFilterRegister();toast('Deleted!');}).catch(function(e){toast(e.message,false);});}
 
-async function legalDeleteReqFromList(id){
-  if(!confirm('Delete this requirement?'))return;
-  try{
-    await api('/legal_register?id=eq.'+id,{m:'DELETE'});
-    lrAllData=lrAllData.filter(function(x){return x.id!==id;});
-    toast('Deleted!');
-    legalFilterRegister();
-  }catch(e){toast(e.message,false);}
-}
-
-// ── LEGISLATIVE CHANGES ──────────────────────────────────────────────────────
+// ── REGULATORY CHANGES ────────────────────────────────────────────────────────
 async function legalLoadChanges(){
-  var el=document.getElementById('lc-table');
-  if(!el)return;
+  var el=document.getElementById('lc-table');if(!el)return;
+  el.innerHTML='<div class="loading-msg">Loading...</div>';
   try{
-    var d=await api('/legislative_changes?select=*'+cf()+'&order=date_received.desc');
+    var d=await api('/legal_changes?select=*'+cf()+'&order=date_received.desc');
     lcAllData=d||[];
-    if(!d||!d.length){
-      el.innerHTML='<p style="padding:20px;color:var(--text2)">No changes recorded yet.'+(isMgr()?' <button class="btn btn-sm btn-primary" onclick="legalNewChange()"><i class="ti ti-plus"></i>Add first change</button>':'')+'</p>';
-      return;
-    }
-    var h='<table style="width:100%;border-collapse:collapse;font-size:12px">';
-    h+='<thead><tr style="background:#1a3a5c;color:#fff">';
-    h+='<th style="padding:8px 10px;text-align:left">Date</th>';
-    h+='<th style="padding:8px 10px;text-align:left">Source</th>';
-    h+='<th style="padding:8px 10px;text-align:left">Jurisdiction</th>';
-    h+='<th style="padding:8px 10px;text-align:left">Legislation</th>';
-    h+='<th style="padding:8px 10px;text-align:left">Change identified</th>';
-    h+='<th style="padding:8px 10px;text-align:center">App.</th>';
-    h+='<th style="padding:8px 10px;text-align:left">Action required</th>';
-    h+='<th style="padding:8px 10px;text-align:center">Done</th>';
-    h+='<th style="padding:8px 10px;width:70px"></th>';
-    h+='</tr></thead><tbody>';
+    if(!d||!d.length){el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)"><div style="font-size:40px;margin-bottom:12px">📰</div><div style="font-weight:600;margin-bottom:8px">No regulatory changes recorded</div>'+(isMgr()?'<button class="btn btn-primary" onclick="legalNewChange()"><i class="ti ti-plus"></i>Add change</button>':'')+'</div>';return;}
+    var h='<table style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr style="background:#854F0B;color:#fff"><th style="padding:8px 14px;text-align:left">Date</th><th style="padding:8px">Legislation</th><th style="padding:8px">Change</th><th style="padding:8px">Category</th><th style="padding:8px">Action required</th><th style="padding:8px">Applicable?</th><th style="padding:8px">Implemented?</th><th style="padding:8px;width:50px"></th></tr></thead><tbody>';
     d.forEach(function(x,i){
-      var dt=x.date_received?new Date(x.date_received).toLocaleDateString('en-GB'):'—';
-      var rowBg=i%2===0?'#fff':'#f9fafb';
-      h+='<tr style="border-bottom:1px solid #f0f0f0;background:'+rowBg+'">';
-      h+='<td style="padding:8px 10px;font-weight:600">'+dt+'</td>';
-      h+='<td style="padding:8px 10px">'+escH(x.source_material||'—')+'</td>';
-      h+='<td style="padding:8px 10px">'+escH(x.jurisdiction||'—')+'</td>';
-      h+='<td style="padding:8px 10px;font-weight:600">'+escH(x.applicable_legislation||'—')+'</td>';
-      h+='<td style="padding:8px 10px;font-size:11px;color:var(--text2)">'+escH((x.changes_identified||'').substring(0,80))+'</td>';
-      h+='<td style="padding:8px 10px;text-align:center">'+(x.applicable?'<span style="color:var(--green);font-weight:700">Y</span>':'<span style="color:var(--text2)">N</span>')+'</td>';
-      h+='<td style="padding:8px 10px;font-size:11px">'+escH(x.action_required||'—')+'</td>';
-      h+='<td style="padding:8px 10px;text-align:center">'+(x.implemented?'<i class="ti ti-check" style="color:var(--green);font-weight:700"></i>':'<i class="ti ti-x" style="color:var(--amber)"></i>')+'</td>';
-      h+='<td style="padding:8px 10px"><div style="display:flex;gap:4px">';
-      h+='<button class="btn btn-sm" data-id="'+x.id+'" onclick="legalOpenChg(this.getAttribute(\'data-id\'))"><i class="ti ti-edit"></i></button>';
-      if(isMgr())h+='<button class="btn btn-sm" style="color:var(--red)" data-id="'+x.id+'" onclick="legalDeleteChgFromList(this.getAttribute(\'data-id\'))"><i class="ti ti-trash"></i></button>';
-      h+='</div></td></tr>';
+      var bg=i%2===0?'#fff':'#f9fafb';
+      var imp=x.implemented===true||x.implemented==='true';
+      var app=x.applicable!==false&&x.applicable!=='false';
+      h+='<tr style="border-bottom:1px solid #f0f0f0;background:'+bg+'">'
+        +'<td style="padding:8px 14px;font-size:11px;white-space:nowrap">'+(x.date_received?new Date(x.date_received).toLocaleDateString('en-GB'):'—')+'</td>'
+        +'<td style="padding:8px;font-weight:600;max-width:180px">'+escH(x.legislation||'—')+'<div style="font-size:10px;color:var(--text2)">'+escH(x.source||'')+'</div></td>'
+        +'<td style="padding:8px;max-width:250px;font-size:11px">'+escH((x.changes_identified||x.changes||'—').substring(0,100))+(((x.changes_identified||x.changes||'').length>100)?'…':'')+'</td>'
+        +'<td style="padding:8px">'+(x.category?'<span style="background:'+(LEGAL_CAT_CFG[x.category]?.color||'#6B7280')+'15;color:'+(LEGAL_CAT_CFG[x.category]?.color||'#6B7280')+';padding:1px 7px;border-radius:99px;font-size:10px;font-weight:600">'+(LEGAL_CAT_CFG[x.category]?.emoji||'📋')+' '+escH(LEGAL_CAT_CFG[x.category]?.label||x.category)+'</span>':'—')+'</td>'
+        +'<td style="padding:8px;font-size:11px">'+escH((x.action_required||x.action||'—').substring(0,60))+'</td>'
+        +'<td style="padding:8px;text-align:center">'+(app?'<span style="color:#1D9E75;font-weight:700">✓ Yes</span>':'<span style="color:#6B7280">No</span>')+'</td>'
+        +'<td style="padding:8px;text-align:center">'+(imp?'<span style="background:#EAF3DE;color:#3B6D11;padding:2px 8px;border-radius:99px;font-size:10px;font-weight:700">Done</span>':'<span style="background:#FEF9EC;color:#854F0B;padding:2px 8px;border-radius:99px;font-size:10px;font-weight:700">Pending</span>')+'</td>'
+        +'<td style="padding:8px"><div style="display:flex;gap:4px"><button class="btn btn-sm" data-id="'+x.id+'" onclick="legalOpenChg(this.dataset.id)"><i class="ti ti-edit"></i></button>'+(isMgr()?'<button class="btn btn-sm" style="color:var(--red)" data-id="'+x.id+'" onclick="legalDeleteChgFromList(this.dataset.id)"><i class="ti ti-trash"></i></button>':'')+'</div></td></tr>';
     });
-    h+='</tbody></table>';
-    el.innerHTML=h;
-  }catch(e){el.innerHTML='<p style="padding:20px;color:red">'+e.message+'</p>';console.error(e);}
+    h+='</tbody></table>';el.innerHTML=h;
+  }catch(e){el.innerHTML='<div style="padding:20px;color:var(--text2);text-align:center">Changes unavailable. Ensure the legal_changes table exists.</div>';}
 }
 
-function legalShowChgForm(){
-  document.getElementById('legal-view-register').style.display='none';
-  document.getElementById('legal-view-changes').style.display='none';
-  document.getElementById('legal-view-dashboard').style.display='none';
-  document.getElementById('legal-req-form').style.display='none';
-  document.getElementById('legal-chg-form').style.display='block';
+function legalChgBack(){document.getElementById('legal-chg-form').style.display='none';document.getElementById('legal-view-changes').style.display='block';document.querySelectorAll('[id^="legal-tab-"]').forEach(t=>t.classList.remove('active'));document.getElementById('legal-tab-changes')?.classList.add('active');legalLoadChanges();}
+function legalNewChange(){lcEditId=null;document.getElementById('lc-form-title').textContent='New Regulatory Change';document.getElementById('lc-del-btn').style.display='none';['lc-source','lc-legislation','lc-changes','lc-action','lc-comments','lc-responsible'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});['lc-date','lc-effective-date'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});document.getElementById('lc-date').value=new Date().toISOString().slice(0,10);document.getElementById('lc-jurisdiction').value='Mauritius';document.getElementById('lc-category').value='health_safety';document.getElementById('lc-applicable').value='true';document.getElementById('lc-implemented').value='false';document.getElementById('legal-view-changes').style.display='none';document.getElementById('legal-chg-form').style.display='block';}
+function legalOpenChg(id){var x=lcAllData.find(r=>r.id===id);if(!x)return;lcEditId=id;document.getElementById('lc-form-title').textContent=x.legislation||'Edit Change';document.getElementById('lc-del-btn').style.display=isMgr()?'inline-flex':'none';var gf=function(fid,val){var el=document.getElementById(fid);if(el)el.value=val||'';};gf('lc-date',x.date_received);gf('lc-source',x.source);gf('lc-jurisdiction',x.jurisdiction||'Mauritius');gf('lc-legislation',x.legislation);gf('lc-changes',x.changes_identified||x.changes);gf('lc-action',x.action_required||x.action);gf('lc-comments',x.comments);gf('lc-responsible',x.responsible_person);gf('lc-effective-date',x.effective_date);document.getElementById('lc-category').value=x.category||'health_safety';document.getElementById('lc-applicable').value=x.applicable!==false&&x.applicable!=='false'?'true':'false';document.getElementById('lc-implemented').value=x.implemented===true||x.implemented==='true'?'true':'false';document.getElementById('legal-view-changes').style.display='none';document.getElementById('legal-chg-form').style.display='block';}
+async function legalSaveChg(){var g=function(id){var el=document.getElementById(id);return el?el.value||null:null;};var body={company_id:prof?.company_id,date_received:g('lc-date')||null,source:g('lc-source'),jurisdiction:g('lc-jurisdiction')||'Mauritius',legislation:g('lc-legislation'),category:g('lc-category')||'health_safety',changes_identified:g('lc-changes'),changes:g('lc-changes'),action_required:g('lc-action'),action:g('lc-action'),responsible_person:g('lc-responsible'),effective_date:g('lc-effective-date')||null,applicable:g('lc-applicable')!=='false',implemented:g('lc-implemented')==='true',comments:g('lc-comments'),updated_at:new Date().toISOString()};
+  try{if(lcEditId){await api('/legal_changes?id=eq.'+lcEditId,{m:'PATCH',p:'return=minimal',b:body});toast('Updated!');}else{body.created_by=prof?.id;await api('/legal_changes',{m:'POST',p:'return=minimal',b:body});toast('Change recorded!');}legalChgBack();}catch(e){toast('Error: '+e.message,false);}
 }
-function legalChgBack(){
-  document.getElementById('legal-chg-form').style.display='none';
-  document.getElementById('legal-view-changes').style.display='block';
-  // Reset active tab
-  document.querySelectorAll('.mtg-tab').forEach(function(t){t.classList.remove('active');});
-  var tab=document.getElementById('legal-tab-changes');if(tab)tab.classList.add('active');
-  legalLoadChanges();
-}
+async function legalDeleteChg(){if(!lcEditId||!confirm('Delete?'))return;try{await api('/legal_changes?id=eq.'+lcEditId,{m:'DELETE'});toast('Deleted!');legalChgBack();}catch(e){toast(e.message,false);}}
+function legalDeleteChgFromList(id){if(!confirm('Delete?'))return;api('/legal_changes?id=eq.'+id,{m:'DELETE'}).then(function(){lcAllData=lcAllData.filter(x=>x.id!==id);legalLoadChanges();toast('Deleted!');}).catch(function(e){toast(e.message,false);});}
 
-function legalNewChange(){
-  lcEditingId=null;
-  document.getElementById('lc-form-title').textContent='New Legislative Change';
-  document.getElementById('lc-del-btn').style.display='none';
-  ['lc-source','lc-jurisdiction','lc-legislation','lc-changes','lc-action','lc-comments'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
-  var dt=document.getElementById('lc-date');if(dt)dt.value=new Date().toISOString().slice(0,10);
-  var ap=document.getElementById('lc-applicable');if(ap)ap.value='true';
-  var im=document.getElementById('lc-implemented');if(im)im.value='false';
-  legalShowChgForm();
-}
-
-function legalOpenChg(id){
-  var x=lcAllData.find(function(c){return c.id===id;});
-  if(!x)return;
-  lcEditingId=id;
-  document.getElementById('lc-form-title').textContent='Edit Legislative Change';
-  document.getElementById('lc-del-btn').style.display=isMgr()?'inline-flex':'none';
-  var flds={'lc-source':'source_material','lc-jurisdiction':'jurisdiction','lc-legislation':'applicable_legislation','lc-changes':'changes_identified','lc-action':'action_required','lc-comments':'comments'};
-  Object.entries(flds).forEach(function(e){var el=document.getElementById(e[0]);if(el)el.value=x[e[1]]||'';});
-  var dt=document.getElementById('lc-date');if(dt)dt.value=x.date_received||'';
-  var ap=document.getElementById('lc-applicable');if(ap)ap.value=String(x.applicable!==false);
-  var im=document.getElementById('lc-implemented');if(im)im.value=String(!!x.implemented);
-  legalShowChgForm();
-}
-
-async function legalSaveChg(){
-  var changes=document.getElementById('lc-changes')?.value?.trim();
-  if(!changes){toast('Please describe the change',false);return;}
-  var g=function(id){var el=document.getElementById(id);return el?el.value||null:null;};
-  var body={
-    company_id:prof?.company_id,
-    date_received:g('lc-date'),
-    source_material:g('lc-source'),
-    jurisdiction:g('lc-jurisdiction'),
-    applicable_legislation:g('lc-legislation'),
-    changes_identified:changes,
-    applicable:document.getElementById('lc-applicable')?.value!=='false',
-    action_required:g('lc-action'),
-    implemented:document.getElementById('lc-implemented')?.value==='true',
-    comments:g('lc-comments'),
-    updated_at:new Date().toISOString()
-  };
+// ── COMPLIANCE ASSESSMENTS ────────────────────────────────────────────────────
+async function lcaLoad(){
+  var el=document.getElementById('lca-list');if(!el)return;el.innerHTML='<div class="loading-msg">Loading...</div>';
   try{
-    if(lcEditingId){
-      await api('/legislative_changes?id=eq.'+lcEditingId,{m:'PATCH',p:'return=minimal',b:body});
-      toast('Change updated!');
-    }else{
-      body.created_by=prof?.id;
-      await api('/legislative_changes',{m:'POST',p:'return=minimal',b:body});
-      toast('Change recorded!');
-    }
-    legalChgBack();
-  }catch(e){toast(e.message,false);console.error(e);}
-}
-
-async function legalDeleteChg(){
-  if(!lcEditingId)return;
-  if(!confirm('Delete this change record?'))return;
-  try{await api('/legislative_changes?id=eq.'+lcEditingId,{m:'DELETE'});toast('Deleted!');legalChgBack();}
-  catch(e){toast(e.message,false);}
-}
-
-async function legalDeleteChgFromList(id){
-  if(!confirm('Delete this change record?'))return;
-  try{
-    await api('/legislative_changes?id=eq.'+id,{m:'DELETE'});
-    lcAllData=lcAllData.filter(function(x){return x.id!==id;});
-    toast('Deleted!');legalLoadChanges();
-  }catch(e){toast(e.message,false);}
-}
-
-// ── COMPLIANCE DASHBOARD ──────────────────────────────────────────────────────
-function legalRenderDashboard(){
-  if(!lrAllData.length){legalLoadRegister().then(legalRenderDashboardData);}
-  else legalRenderDashboardData();
-}
-
-function legalRenderDashboardData(){
-  var total=lrAllData.filter(function(x){return x.applicable!==false;}).length;
-  var compliant=lrAllData.filter(function(x){return x.compliance_status==='compliant';}).length;
-  var partial=lrAllData.filter(function(x){return x.compliance_status==='partial';}).length;
-  var nonComp=lrAllData.filter(function(x){return x.compliance_status==='non_compliant';}).length;
-  var pct=total>0?Math.round(((compliant+(partial*0.5))/total)*100):0;
-  var pctEl=document.getElementById('lr-compliance-pct');
-  if(pctEl){
-    var col=pct>=80?'var(--green)':pct>=50?'var(--amber)':'var(--red)';
-    pctEl.textContent=pct+'%';
-    pctEl.style.color=col;
-  }
-  var bkEl=document.getElementById('lr-compliance-breakdown');
-  if(bkEl)bkEl.innerHTML=
-    '<span style="background:#EAF3DE;color:#3B6D11;padding:4px 12px;border-radius:8px;font-size:12px;font-weight:600">'+compliant+' Compliant</span>'+
-    '<span style="background:#FEF9EC;color:#854F0B;padding:4px 12px;border-radius:8px;font-size:12px;font-weight:600">'+partial+' Partial</span>'+
-    '<span style="background:#FCEBEB;color:#A32D2D;padding:4px 12px;border-radius:8px;font-size:12px;font-weight:600">'+nonComp+' Non-Compliant</span>';
-
-  // By legislation
-  var byLeg={};
-  lrAllData.forEach(function(x){
-    var k=x.legislation_main||'Other';
-    if(!byLeg[k])byLeg[k]={total:0,compliant:0,partial:0,non:0};
-    byLeg[k].total++;
-    if(x.compliance_status==='compliant')byLeg[k].compliant++;
-    else if(x.compliance_status==='non_compliant')byLeg[k].non++;
-    else byLeg[k].partial++;
-  });
-  var legEl=document.getElementById('lr-by-legislation');
-  if(legEl){
-    var lh='';
-    Object.entries(byLeg).forEach(function(e){
-      var k=e[0],v=e[1];
-      var p=v.total>0?Math.round((v.compliant/v.total)*100):0;
-      var barCol=p>=80?'var(--green)':p>=50?'var(--amber)':'var(--red)';
-      lh+='<div style="margin-bottom:12px">'
-        +'<div style="display:flex;justify-content:space-between;margin-bottom:4px;font-size:12px">'
-        +'<span style="font-weight:600">'+escH(k)+'</span>'
-        +'<span style="color:var(--text2)">'+v.compliant+'/'+v.total+' compliant ('+p+'%)</span>'
+    var d=await api('/compliance_assessments?select=*'+cf()+'&order=assessment_date.desc');lcaAllData=d||[];
+    var setM=function(id,v){var e=document.getElementById(id);if(e)e.textContent=v;};
+    setM('lr-m-assessments',(d||[]).length);
+    if(!d||!d.length){el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)"><div style="font-size:40px;margin-bottom:12px">✅</div><div style="font-weight:600;margin-bottom:8px">No compliance assessments recorded</div>'+(isMgr()?'<button class="btn btn-primary" onclick="lcaNew()"><i class="ti ti-plus"></i>New assessment</button>':'')+'</div>';return;}
+    var stCfg={draft:['#f3f4f6','#6B7280'],completed:['#EFF6FF','#185FA5'],reviewed:['#FEF9EC','#854F0B'],approved:['#EAF3DE','#3B6D11']};
+    var h='<div style="display:flex;flex-direction:column;gap:10px">';
+    d.forEach(function(x){
+      var sc2=stCfg[x.status]||stCfg.draft;
+      var score=x.overall_score;
+      var scoreColor=score==null?'#6B7280':score>=80?'#1D9E75':score>=60?'#EF9F27':score>=40?'#C2410C':'#A32D2D';
+      h+='<div class="card" style="padding:0;overflow:hidden;cursor:pointer;transition:box-shadow .15s" data-id="'+x.id+'" onclick="lcaEdit(this.dataset.id)" onmouseover="this.style.boxShadow=\'0 4px 16px rgba(0,0,0,.1)\'" onmouseout="this.style.boxShadow=\'\'">'
+        +'<div style="display:flex;align-items:stretch">'
+        +'<div style="width:6px;background:'+scoreColor+';flex-shrink:0"></div>'
+        +'<div style="flex:1;padding:12px 16px">'
+        +'<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:6px">'
+        +'<div><div style="font-weight:700;font-size:14px">'+escH(x.title||'Compliance Assessment')+'</div>'
+        +'<div style="display:flex;gap:8px;margin-top:3px;flex-wrap:wrap">'
+        +(x.assessment_ref?'<span style="font-family:monospace;font-size:11px;color:'+scoreColor+';font-weight:700">'+escH(x.assessment_ref)+'</span>':'')
+        +'<span style="font-size:11px;color:var(--text2);text-transform:capitalize">'+escH((x.assessment_type||'periodic').replace(/_/g,' '))+'</span>'
+        +'<span style="background:'+sc2[0]+';color:'+sc2[1]+';padding:1px 7px;border-radius:99px;font-size:10px;font-weight:700;text-transform:capitalize">'+x.status+'</span>'
+        +'</div></div>'
+        +'<div style="text-align:right">'+(score!=null?'<div style="font-size:28px;font-weight:900;color:'+scoreColor+'">'+score+'%</div><div style="font-size:11px;color:var(--text2)">compliance</div>':'')+'</div>'
         +'</div>'
-        +'<div style="height:8px;background:#f3f4f6;border-radius:4px">'
-        +'<div style="height:8px;background:'+barCol+';border-radius:4px;width:'+p+'%"></div>'
-        +'</div></div>';
+        +'<div style="display:flex;gap:16px;font-size:12px;color:var(--text2);flex-wrap:wrap">'
+        +(x.assessment_date?'<span><i class="ti ti-calendar" style="font-size:10px"></i> '+new Date(x.assessment_date).toLocaleDateString('en-GB')+'</span>':'')
+        +(x.assessor?'<span><i class="ti ti-user" style="font-size:10px"></i> '+escH(x.assessor)+'</span>':'')
+        +(x.total_requirements?'<span>'+x.total_requirements+' requirements assessed</span>':'')
+        +' · <span style="color:#1D9E75">'+escH(x.compliant_count||0)+'✓</span><span style="color:#EF9F27"> '+escH(x.partial_count||0)+'⚠</span><span style="color:#E24B4A"> '+escH(x.non_compliant_count||0)+'✗</span>'
+        +'</div>'
+        +'</div></div></div>';
     });
-    legEl.innerHTML=lh||'<div style="color:var(--text2);padding:16px">No data yet</div>';
-  }
-
-  // Gaps
-  var gapsEl=document.getElementById('lr-gaps-list');
-  if(gapsEl){
-    var gaps=lrAllData.filter(function(x){return x.gap_identified||x.compliance_status==='non_compliant';});
-    if(!gaps.length){
-      gapsEl.innerHTML='<div style="padding:16px;color:var(--green);font-weight:600"><i class="ti ti-check"></i> No gaps identified</div>';
-    }else{
-      var gh='<table style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr style="background:#f9fafb"><th style="padding:8px;text-align:left;border-bottom:1px solid var(--border)">Legislation</th><th style="padding:8px;text-align:left;border-bottom:1px solid var(--border)">Requirement</th><th style="padding:8px;text-align:left;border-bottom:1px solid var(--border)">Further controls needed</th><th style="padding:8px;text-align:left;border-bottom:1px solid var(--border)">Responsible</th><th style="padding:8px;text-align:left;border-bottom:1px solid var(--border)">Status</th></tr></thead><tbody>';
-      gaps.forEach(function(x){
-        gh+='<tr style="border-bottom:1px solid #f3f4f6">';
-        gh+='<td style="padding:8px;font-size:11px">'+escH(x.legislation_main||'')+(x.section?' s.'+x.section:'')+'</td>';
-        gh+='<td style="padding:8px;font-size:11px">'+escH((x.requirement||'').substring(0,80))+'</td>';
-        gh+='<td style="padding:8px;font-size:11px;color:var(--red)">'+escH(x.further_controls||'Not specified')+'</td>';
-        gh+='<td style="padding:8px;font-size:11px">'+escH(x.responsibility||'—')+'</td>';
-        gh+='<td style="padding:8px">'+legalStatusBadge(x.compliance_status)+'</td>';
-        gh+='</tr>';
-      });
-      gh+='</tbody></table>';
-      gapsEl.innerHTML=gh;
-    }
-  }
+    h+='</div>';el.innerHTML=h;
+  }catch(e){el.innerHTML='<div style="padding:20px;color:var(--text2);text-align:center">Assessments unavailable. Run the legal schema SQL to create the compliance_assessments table.</div>';}
 }
 
+function lcaCalcScore(){
+  var c=parseInt(document.getElementById('lcaf-compliant')?.value)||0;
+  var p=parseInt(document.getElementById('lcaf-partial')?.value)||0;
+  var n=parseInt(document.getElementById('lcaf-noncompliant')?.value)||0;
+  var na=parseInt(document.getElementById('lcaf-na')?.value)||0;
+  var total=c+p+n;
+  var score=total>0?Math.round((c*100+p*50)/total):0;
+  var el=document.getElementById('lca-score-number');
+  if(el){
+    var color=score>=80?'#1D9E75':score>=60?'#EF9F27':score>=40?'#C2410C':'#A32D2D';
+    el.textContent=score+'%';el.style.color=color;
+  }
+  var prevEl=document.getElementById('lca-score-preview');
+  if(prevEl)prevEl.style.background=score>=80?'#f0fdf4':score>=60?'#FFFBEB':score>=40?'#FFF7ED':'#FEF2F2';
+}
 
-// ===== TOOLS & EQUIPMENT MODULE =====
-let toolsAllData=[], toolsEditingId=null, toolsInspEditingId=null, toolsInspEquipId=null;
+function lcaBack(){document.getElementById('lca-form').style.display='none';document.getElementById('legal-view-assessments').style.display='block';document.querySelectorAll('[id^="legal-tab-"]').forEach(t=>t.classList.remove('active'));document.getElementById('legal-tab-assessments')?.classList.add('active');lcaLoad();}
+function lcaNew(){lcaEditId=null;document.getElementById('lca-form-title').textContent='New Compliance Assessment';document.getElementById('lca-form-ref').textContent='CA-AUTO';document.getElementById('lca-del-btn').style.display='none';['lcaf-title','lcaf-assessor','lcaf-scope','lcaf-methodology','lcaf-findings','lcaf-recommendations','lcaf-approved-by','lcaf-audit-ref'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});['lcaf-date','lcaf-next-date','lcaf-approved-date'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});document.getElementById('lcaf-date').value=new Date().toISOString().slice(0,10);document.getElementById('lcaf-type').value='periodic';document.getElementById('lcaf-status').value='draft';['lcaf-compliant','lcaf-partial','lcaf-noncompliant','lcaf-na'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='0';});document.getElementById('lca-score-number').textContent='—';document.getElementById('legal-view-assessments').style.display='none';document.getElementById('lca-form').style.display='block';}
+function lcaEdit(id){var x=lcaAllData.find(r=>r.id===id);if(!x)return;lcaEditId=id;document.getElementById('lca-form-title').textContent=x.title||'Edit Assessment';document.getElementById('lca-form-ref').textContent=x.assessment_ref||'—';document.getElementById('lca-del-btn').style.display=isMgr()?'inline-flex':'none';var gf=function(fid,val){var el=document.getElementById(fid);if(el)el.value=val||'';};gf('lcaf-title',x.title);gf('lcaf-assessor',x.assessor);gf('lcaf-scope',x.scope);gf('lcaf-methodology',x.methodology);gf('lcaf-findings',x.findings);gf('lcaf-recommendations',x.recommendations);gf('lcaf-approved-by',x.approved_by);gf('lcaf-audit-ref',x.linked_audit_ref);gf('lcaf-date',x.assessment_date);gf('lcaf-next-date',x.next_assessment_date);gf('lcaf-approved-date',x.approved_date);document.getElementById('lcaf-type').value=x.assessment_type||'periodic';document.getElementById('lcaf-status').value=x.status||'draft';document.getElementById('lcaf-compliant').value=x.compliant_count||0;document.getElementById('lcaf-partial').value=x.partial_count||0;document.getElementById('lcaf-noncompliant').value=x.non_compliant_count||0;document.getElementById('lcaf-na').value=x.na_count||0;lcaCalcScore();document.getElementById('legal-view-assessments').style.display='none';document.getElementById('lca-form').style.display='block';}
+async function lcaSave(){var title=document.getElementById('lcaf-title')?.value?.trim();if(!title){toast('Please enter assessment title',false);return;}var g=function(id){var el=document.getElementById(id);return el?el.value||null:null;};var c=parseInt(g('lcaf-compliant'))||0;var p=parseInt(g('lcaf-partial'))||0;var n=parseInt(g('lcaf-noncompliant'))||0;var na=parseInt(g('lcaf-na'))||0;var total=c+p+n;var score=total>0?Math.round((c*100+p*50)/total):0;var body={company_id:prof?.company_id,title,assessment_type:g('lcaf-type')||'periodic',assessment_date:g('lcaf-date'),next_assessment_date:g('lcaf-next-date')||null,assessor:g('lcaf-assessor'),total_requirements:total+na,compliant_count:c,partial_count:p,non_compliant_count:n,na_count:na,overall_score:score,scope:g('lcaf-scope'),methodology:g('lcaf-methodology'),findings:g('lcaf-findings'),recommendations:g('lcaf-recommendations'),status:g('lcaf-status')||'draft',approved_by:g('lcaf-approved-by'),approved_date:g('lcaf-approved-date')||null,linked_audit_ref:g('lcaf-audit-ref'),updated_at:new Date().toISOString()};
+  try{if(lcaEditId){await api('/compliance_assessments?id=eq.'+lcaEditId,{m:'PATCH',p:'return=minimal',b:body});toast('Assessment updated!');}else{body.created_by=prof?.id;var res=await api('/compliance_assessments',{m:'POST',p:'return=representation',b:body});if(res?.[0]?.id){var ref='CA-'+new Date().getFullYear()+'-'+String(lcaAllData.length+1).padStart(3,'0');await api('/compliance_assessments?id=eq.'+res[0].id,{m:'PATCH',p:'return=minimal',b:{assessment_ref:ref}});toast('Assessment saved! Ref: '+ref);}}lcaBack();}catch(e){toast('Error: '+e.message,false);}
+}
+async function lcaDelete(){if(!lcaEditId||!confirm('Delete?'))return;try{await api('/compliance_assessments?id=eq.'+lcaEditId,{m:'DELETE'});toast('Deleted!');lcaBack();}catch(e){toast(e.message,false);}}
 
-const TOOL_CAT_LABELS={hand_tool:'Hand tool',power_tool:'Power tool',equipment:'Equipment',vehicle:'Vehicle',lifting:'Lifting equipment',electrical:'Electrical',ppe:'PPE',other:'Other'};
-const TOOL_CAT_COLORS={hand_tool:'#185FA5',power_tool:'#854F0B',equipment:'#3B6D11',vehicle:'#185FA5',lifting:'#8B5CF6',electrical:'#EF9F27',ppe:'#1D9E75',other:'#6B7280'};
-const TOOL_CAT_ICONS={hand_tool:'ti-hammer',power_tool:'ti-bolt',equipment:'ti-settings',vehicle:'ti-car',lifting:'ti-crane',electrical:'ti-plug',ppe:'ti-shield',other:'ti-package'};
+// ── GAP ANALYSIS ──────────────────────────────────────────────────────────────
+async function gapLoad(){
+  var el=document.getElementById('gap-list');if(!el)return;el.innerHTML='<div class="loading-msg">Loading...</div>';
+  var fr=document.getElementById('gap-filter-risk')?.value||'';
+  var fs=document.getElementById('gap-filter-status')?.value||'';
+  try{
+    var q='/compliance_gaps?select=*'+cf()+'&order=risk_level.desc,created_at.desc';
+    if(fr)q+='&risk_level=eq.'+fr;if(fs)q+='&status=eq.'+fs;
+    var d=await api(q);gapAllData=d||[];
+    var setM=function(id,v){var e=document.getElementById(id);if(e)e.textContent=v;};
+    setM('gap-m-critical',(d||[]).filter(x=>x.risk_level==='critical'&&x.status!=='closed').length);
+    setM('gap-m-high',(d||[]).filter(x=>x.risk_level==='high'&&x.status!=='closed').length);
+    setM('gap-m-medium',(d||[]).filter(x=>x.risk_level==='medium'&&x.status!=='closed').length);
+    setM('gap-m-closed',(d||[]).filter(x=>x.status==='closed').length);
+    setM('lr-m-gaps',(d||[]).filter(x=>['open','in_progress'].includes(x.status)).length);
+    if(!d||!d.length){el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)"><div style="font-size:40px;margin-bottom:12px">✅</div><div style="font-weight:600;margin-bottom:8px">No compliance gaps identified</div>'+(isMgr()?'<button class="btn btn-primary" onclick="gapNew()"><i class="ti ti-plus"></i>Add gap</button>':'')+'</div>';return;}
+    var h='<div style="display:flex;flex-direction:column;gap:8px">';
+    d.forEach(function(x){
+      var rc=GAP_RISK_CFG[x.risk_level||'medium']||GAP_RISK_CFG.medium;
+      var isOverdue=x.target_date&&new Date(x.target_date)<new Date()&&x.status!=='closed';
+      var stColors={open:['#FEF9EC','#854F0B'],in_progress:['#EFF6FF','#185FA5'],closed:['#EAF3DE','#3B6D11'],accepted_risk:['#f3f4f6','#6B7280']};
+      var sc2=stColors[x.status]||stColors.open;
+      h+='<div class="card" style="padding:0;overflow:hidden;cursor:pointer;border:2px solid '+rc.border+';transition:box-shadow .15s" data-id="'+x.id+'" onclick="gapEdit(this.dataset.id)" onmouseover="this.style.boxShadow=\'0 4px 16px rgba(0,0,0,.1)\'" onmouseout="this.style.boxShadow=\'\'">'
+        +'<div style="background:'+rc.bg+';padding:10px 16px;display:flex;align-items:flex-start;justify-content:space-between;gap:10px;flex-wrap:wrap">'
+        +'<div style="flex:1">'
+        +'<div style="display:flex;gap:8px;align-items:center;margin-bottom:4px;flex-wrap:wrap">'
+        +(x.gap_ref?'<span style="font-family:monospace;font-size:11px;font-weight:700;color:'+rc.tc+'">'+escH(x.gap_ref)+'</span>':'')
+        +'<span style="background:'+rc.border+';color:#fff;padding:1px 8px;border-radius:99px;font-size:10px;font-weight:700;text-transform:capitalize">'+escH(x.risk_level||'medium')+'</span>'
+        +(isOverdue?'<span style="background:#FCEBEB;color:#A32D2D;padding:1px 7px;border-radius:99px;font-size:10px;font-weight:700">OVERDUE</span>':'')
+        +'</div>'
+        +'<div style="font-weight:700;font-size:13px;color:'+rc.tc+'">'+escH(x.gap_description?.substring(0,100)||'—')+(x.gap_description?.length>100?'…':'')+'</div>'
+        +'<div style="font-size:11px;color:var(--text2);margin-top:4px">'+escH(x.legislation||'—')+(x.section?' § '+escH(x.section):'')+'</div>'
+        +'</div>'
+        +'<div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">'
+        +'<span style="background:'+sc2[0]+';color:'+sc2[1]+';padding:2px 8px;border-radius:99px;font-size:10px;font-weight:700;text-transform:capitalize">'+escH((x.status||'open').replace(/_/g,' '))+'</span>'
+        +(x.target_date?'<span style="font-size:11px;color:var(--text2)">Due: '+new Date(x.target_date).toLocaleDateString('en-GB')+'</span>':'')
+        +(x.responsible_person?'<span style="font-size:11px;color:var(--text2)">'+escH(x.responsible_person)+'</span>':'')
+        +'</div></div>'
+        +(x.action_required?'<div style="padding:8px 16px;font-size:12px;border-top:1px solid '+rc.border+'30"><strong style="color:'+rc.tc+'">Action: </strong>'+escH(x.action_required.substring(0,120))+'</div>':'')
+        +'</div>';
+    });
+    h+='</div>';el.innerHTML=h;
+  }catch(e){el.innerHTML='<div style="padding:20px;color:var(--text2);text-align:center">Gap records unavailable. Run legal_schema.sql to create the compliance_gaps table.</div>';}
+}
 
-function toolsSwitchTab(tab,btn){
-  document.querySelectorAll('.mtg-tab').forEach(t=>t.classList.remove('active'));
-  btn.classList.add('active');
-  ['register','personal','inspection','statutory','vehicles'].forEach(function(t){
-    var el=document.getElementById('tools-view-'+t);if(el)el.style.display=t===tab?'block':'none';
-  });
-  ['tools-form','tools-insp-form'].forEach(function(id){var el=document.getElementById(id);if(el)el.style.display='none';});
-  if(tab==='register')toolsLoadRegister();
-  else if(tab==='personal')toolsLoadPersonal();
-  else if(tab==='inspection')toolsLoadInspections();
-  else if(tab==='statutory')toolsLoadStatutory();
-  else if(tab==='vehicles')toolsLoadVehicles();
+function gapBack(){document.getElementById('gap-form').style.display='none';document.getElementById('legal-view-gaps').style.display='block';document.querySelectorAll('[id^="legal-tab-"]').forEach(t=>t.classList.remove('active'));document.getElementById('legal-tab-gaps')?.classList.add('active');gapLoad();}
+function gapNew(){gapEditId=null;document.getElementById('gap-form-title').textContent='New Compliance Gap';document.getElementById('gap-form-ref').textContent='GAP-AUTO';document.getElementById('gap-del-btn').style.display='none';['gapf-legislation','gapf-section','gapf-description','gapf-action','gapf-responsible','gapf-action-ref','gapf-closure-notes'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});['gapf-target-date','gapf-completion-date'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});document.getElementById('gapf-type').value='missing_control';document.getElementById('gapf-risk').value='medium';document.getElementById('gapf-status').value='open';document.querySelectorAll('[name="gap-st-r"]').forEach(r=>{r.checked=r.value==='open';});document.getElementById('legal-view-gaps').style.display='none';document.getElementById('gap-form').style.display='block';}
+function gapEdit(id){var x=gapAllData.find(r=>r.id===id);if(!x)return;gapEditId=id;document.getElementById('gap-form-title').textContent=x.legislation||'Edit Gap';document.getElementById('gap-form-ref').textContent=x.gap_ref||'—';document.getElementById('gap-del-btn').style.display=isMgr()?'inline-flex':'none';var gf=function(fid,val){var el=document.getElementById(fid);if(el)el.value=val||'';};gf('gapf-legislation',x.legislation);gf('gapf-section',x.section);gf('gapf-description',x.gap_description);gf('gapf-action',x.action_required);gf('gapf-responsible',x.responsible_person);gf('gapf-action-ref',x.action_ref);gf('gapf-closure-notes',x.closure_notes);gf('gapf-target-date',x.target_date);gf('gapf-completion-date',x.completion_date);document.getElementById('gapf-type').value=x.gap_type||'missing_control';document.getElementById('gapf-risk').value=x.risk_level||'medium';document.getElementById('gapf-status').value=x.status||'open';document.querySelectorAll('[name="gap-st-r"]').forEach(r=>{r.checked=r.value===(x.status||'open');});document.getElementById('legal-view-gaps').style.display='none';document.getElementById('gap-form').style.display='block';}
+async function gapSave(){var desc=document.getElementById('gapf-description')?.value?.trim();var leg=document.getElementById('gapf-legislation')?.value?.trim();if(!desc||!leg){toast('Please enter legislation and gap description',false);return;}var g=function(id){var el=document.getElementById(id);return el?el.value||null:null;};var body={company_id:prof?.company_id,legislation:leg,section:g('gapf-section'),gap_description:desc,gap_type:g('gapf-type')||'missing_control',risk_level:g('gapf-risk')||'medium',action_required:g('gapf-action'),responsible_person:g('gapf-responsible'),target_date:g('gapf-target-date')||null,completion_date:g('gapf-completion-date')||null,action_ref:g('gapf-action-ref'),status:g('gapf-status')||'open',closure_notes:g('gapf-closure-notes'),updated_at:new Date().toISOString()};
+  try{if(gapEditId){await api('/compliance_gaps?id=eq.'+gapEditId,{m:'PATCH',p:'return=minimal',b:body});toast('Gap updated!');}else{body.created_by=prof?.id;var res=await api('/compliance_gaps',{m:'POST',p:'return=representation',b:body});if(res?.[0]?.id){var ref='GAP-'+new Date().getFullYear()+'-'+String(gapAllData.length+1).padStart(3,'0');await api('/compliance_gaps?id=eq.'+res[0].id,{m:'PATCH',p:'return=minimal',b:{gap_ref:ref}});toast('Gap recorded! Ref: '+ref);if(['critical','high'].includes(body.risk_level)){try{await api('/action_tracker',{m:'POST',p:'return=minimal',b:{company_id:prof?.company_id,title:'Close compliance gap: '+desc.substring(0,60),description:desc,source_type:'audit',source_module:'legal',priority:body.risk_level,status:'open',assigned_to_name:body.responsible_person,target_date:body.target_date||null,created_by:prof?.id}});}catch(ex){}}}}gapBack();}catch(e){toast('Error: '+e.message,false);}
+}
+async function gapDelete(){if(!gapEditId||!confirm('Delete?'))return;try{await api('/compliance_gaps?id=eq.'+gapEditId,{m:'DELETE'});toast('Deleted!');gapBack();}catch(e){toast(e.message,false);}}
+
+// ── COMPLIANCE CALENDAR ───────────────────────────────────────────────────────
+async function calLoad(filter, btn){
+  calCurrentFilter=filter||'overdue';
+  document.querySelectorAll('[id^="cal-btn-"]').forEach(b=>{b.style.background='';b.style.color='';b.style.borderColor='';});
+  if(btn){btn.style.background='#185FA5';btn.style.color='#fff';btn.style.borderColor='#185FA5';}
+  var el=document.getElementById('cal-list');if(!el)return;el.innerHTML='<div class="loading-msg">Loading...</div>';
+  var now=new Date();var cutoff=new Date();
+  if(filter==='30')cutoff.setDate(cutoff.getDate()+30);
+  else if(filter==='90')cutoff.setDate(cutoff.getDate()+90);
+  else if(filter!=='overdue')cutoff=new Date(9999,0,1);
+  try{
+    var q='/compliance_calendar?select=*'+cf()+'&order=due_date.asc';
+    var d=await api(q);calAllData=d||[];
+    var filtered;
+    if(filter==='overdue'){filtered=(d||[]).filter(x=>x.status!=='completed'&&x.due_date&&new Date(x.due_date)<now);}
+    else if(filter==='all'){filtered=(d||[]).filter(x=>x.status!=='completed'&&new Date(x.due_date)>=now);}
+    else{filtered=(d||[]).filter(x=>x.status!=='completed'&&x.due_date&&new Date(x.due_date)>=now&&new Date(x.due_date)<=cutoff);}
+    var due30=(d||[]).filter(x=>x.status!=='completed'&&x.due_date&&new Date(x.due_date)>=now&&new Date(x.due_date)<=new Date(now.getTime()+30*86400000));
+    var setM=function(id,v){var e=document.getElementById(id);if(e)e.textContent=v;};
+    setM('lr-m-cal-due',due30.length);
+    if(!filtered.length){el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)"><div style="font-size:40px;margin-bottom:12px">📅</div><div style="font-weight:600;margin-bottom:8px">No compliance events in this period</div>'+(isMgr()?'<button class="btn btn-primary" onclick="calNew()"><i class="ti ti-plus"></i>Add event</button>':'')+'</div>';return;}
+    var typeEmoji={assessment:'✅',submission:'📤',renewal:'🔄',audit:'🔍',review:'📋',training:'🎓',inspection:'🏗️',reporting:'📊',other:'📌'};
+    var h='<div style="display:flex;flex-direction:column;gap:8px">';
+    filtered.forEach(function(x){
+      var daysLeft=Math.ceil((new Date(x.due_date)-now)/86400000);
+      var isOverdue=daysLeft<0;
+      var urgency=isOverdue?'OVERDUE':daysLeft<=7?'CRITICAL':daysLeft<=30?'URGENT':daysLeft<=90?'UPCOMING':'PLANNED';
+      var urgBg={OVERDUE:'#FCEBEB',CRITICAL:'#FEF6E7',URGENT:'#FEF9EC',UPCOMING:'#EFF6FF',PLANNED:'#f3f4f6'};
+      var urgTc={OVERDUE:'#A32D2D',CRITICAL:'#C2410C',URGENT:'#854F0B',UPCOMING:'#185FA5',PLANNED:'#6B7280'};
+      h+='<div class="card" style="padding:0;overflow:hidden;cursor:pointer;border-left:4px solid '+(urgTc[urgency])+';transition:box-shadow .15s" data-id="'+x.id+'" onclick="calEdit(this.dataset.id)" onmouseover="this.style.boxShadow=\'0 4px 16px rgba(0,0,0,.1)\'" onmouseout="this.style.boxShadow=\'\'">'
+        +'<div style="padding:12px 16px;display:flex;align-items:flex-start;justify-content:space-between;gap:10px;flex-wrap:wrap">'
+        +'<div style="display:flex;align-items:center;gap:12px">'
+        +'<div style="min-width:50px;text-align:center;background:#f0f4ff;border-radius:8px;padding:6px 4px">'
+        +'<div style="font-size:16px;font-weight:900;color:#185FA5">'+(isOverdue?Math.abs(daysLeft)+'d':daysLeft+'d')+'</div>'
+        +'<div style="font-size:9px;color:#6B7280;font-weight:600">'+(isOverdue?'OVERDUE':'left')+'</div>'
+        +'</div>'
+        +'<div>'
+        +'<div style="display:flex;gap:6px;align-items:center;margin-bottom:3px">'
+        +'<span style="font-size:15px">'+(typeEmoji[x.event_type]||'📌')+'</span>'
+        +'<span style="background:'+urgBg[urgency]+';color:'+urgTc[urgency]+';padding:1px 8px;border-radius:99px;font-size:10px;font-weight:700">'+urgency+'</span>'
+        +(x.recurrence!=='none'?'<span style="background:#EDE9FE;color:#7C3AED;padding:1px 7px;border-radius:99px;font-size:10px;font-weight:600;text-transform:capitalize">🔄 '+escH(x.recurrence||'')+'</span>':'')
+        +'</div>'
+        +'<div style="font-weight:700;font-size:14px">'+escH(x.title||'—')+'</div>'
+        +'<div style="font-size:11px;color:var(--text2)">'+escH(x.legislation||'')+(x.responsible_person?' · '+escH(x.responsible_person):'')+'</div>'
+        +'</div></div>'
+        +'<div style="text-align:right">'
+        +'<div style="font-weight:700;color:#185FA5">'+(x.due_date?new Date(x.due_date).toLocaleDateString('en-GB'):'—')+'</div>'
+        +(x.department?'<div style="font-size:11px;color:var(--text2)">'+escH(x.department)+'</div>':'')
+        +'<button class="btn btn-sm btn-primary" style="margin-top:6px;font-size:10px" onclick="event.stopPropagation();calMarkComplete(\''+x.id+'\')"><i class="ti ti-check"></i>Mark done</button>'
+        +'</div>'
+        +'</div>'
+        +(x.description?'<div style="padding:6px 16px 10px;font-size:11px;color:var(--text2);border-top:1px solid #f0f0f0">'+escH(x.description.substring(0,120))+'</div>':'')
+        +'</div>';
+    });
+    h+='</div>';el.innerHTML=h;
+  }catch(e){el.innerHTML='<div style="padding:20px;color:var(--text2);text-align:center">Calendar unavailable. Run legal_schema.sql to create the compliance_calendar table.</div>';}
+}
+
+function calFilter(f,btn){calLoad(f,btn);}
+function calBack(){document.getElementById('cal-form').style.display='none';document.getElementById('legal-view-calendar').style.display='block';document.querySelectorAll('[id^="legal-tab-"]').forEach(t=>t.classList.remove('active'));document.getElementById('legal-tab-calendar')?.classList.add('active');calLoad(calCurrentFilter,document.getElementById('cal-btn-'+calCurrentFilter));}
+function calNew(){calEditId=null;document.getElementById('cal-form-title').textContent='New Compliance Event';document.getElementById('cal-del-btn').style.display='none';['calf-title','calf-legislation','calf-ob-ref','calf-responsible','calf-dept','calf-description','calf-action-ref'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});['calf-due-date','calf-completed-date'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});document.getElementById('calf-type').value='submission';document.getElementById('calf-recurrence').value='annual';document.getElementById('calf-status').value='upcoming';document.getElementById('calf-reminder').value='30';document.getElementById('legal-view-calendar').style.display='none';document.getElementById('cal-form').style.display='block';}
+function calEdit(id){var x=calAllData.find(r=>r.id===id);if(!x)return;calEditId=id;document.getElementById('cal-form-title').textContent=x.title||'Edit Event';document.getElementById('cal-del-btn').style.display=isMgr()?'inline-flex':'none';var gf=function(fid,val){var el=document.getElementById(fid);if(el)el.value=val||'';};gf('calf-title',x.title);gf('calf-legislation',x.legislation);gf('calf-ob-ref',x.obligation_ref);gf('calf-responsible',x.responsible_person);gf('calf-dept',x.department);gf('calf-description',x.description);gf('calf-action-ref',x.linked_action_ref);gf('calf-due-date',x.due_date);gf('calf-completed-date',x.completed_date);document.getElementById('calf-type').value=x.event_type||'submission';document.getElementById('calf-recurrence').value=x.recurrence||'none';document.getElementById('calf-status').value=x.status||'upcoming';document.getElementById('calf-reminder').value=x.reminder_days||30;document.getElementById('legal-view-calendar').style.display='none';document.getElementById('cal-form').style.display='block';}
+async function calSave(){var title=document.getElementById('calf-title')?.value?.trim();if(!title){toast('Please enter event title',false);return;}var g=function(id){var el=document.getElementById(id);return el?el.value||null:null;};var body={company_id:prof?.company_id,title,event_type:g('calf-type')||'submission',legislation:g('calf-legislation'),obligation_ref:g('calf-ob-ref'),due_date:g('calf-due-date'),recurrence:g('calf-recurrence')||'none',responsible_person:g('calf-responsible'),department:g('calf-dept'),description:g('calf-description'),reminder_days:parseInt(g('calf-reminder'))||30,status:g('calf-status')||'upcoming',completed_date:g('calf-completed-date')||null,linked_action_ref:g('calf-action-ref'),updated_at:new Date().toISOString()};
+  try{if(calEditId){await api('/compliance_calendar?id=eq.'+calEditId,{m:'PATCH',p:'return=minimal',b:body});toast('Event updated!');}else{body.created_by=prof?.id;await api('/compliance_calendar',{m:'POST',p:'return=minimal',b:body});toast('Calendar event added!');}calBack();}catch(e){toast('Error: '+e.message,false);}
+}
+async function calMarkComplete(id){try{await api('/compliance_calendar?id=eq.'+id,{m:'PATCH',p:'return=minimal',b:{status:'completed',completed_date:new Date().toISOString().slice(0,10),updated_at:new Date().toISOString()}});toast('✓ Marked as completed');calLoad(calCurrentFilter,document.getElementById('cal-btn-'+calCurrentFilter));}catch(e){toast(e.message,false);}
+}
+async function calDelete(){if(!calEditId||!confirm('Delete?'))return;try{await api('/compliance_calendar?id=eq.'+calEditId,{m:'DELETE'});toast('Deleted!');calBack();}catch(e){toast(e.message,false);}}
+
+// ── DASHBOARD ─────────────────────────────────────────────────────────────────
+async function legalRenderDashboard(){
+  try{
+    if(!lrAllData.length)await legalLoadRegister();
+    var d=lrAllData;
+    var apps=d.filter(x=>x.status!=='not_applicable'&&x.applicable!==false);
+    var comp=d.filter(x=>x.status==='compliant').length;
+    var part=d.filter(x=>x.status==='partial').length;
+    var nonC=d.filter(x=>x.status==='non_compliant').length;
+    var total=apps.length||1;
+    var score=Math.round((comp*100+part*50)/total);
+    var pctEl=document.getElementById('lr-compliance-pct');
+    if(pctEl){pctEl.textContent=score+'%';pctEl.style.color=score>=80?'#1D9E75':score>=60?'#EF9F27':score>=40?'#C2410C':'#A32D2D';}
+    var fillEl=document.getElementById('lr-score-fill');
+    if(fillEl){fillEl.style.width=score+'%';fillEl.style.background=score>=80?'#1D9E75':score>=60?'#EF9F27':score>=40?'#C2410C':'#A32D2D';}
+    var bkEl=document.getElementById('lr-compliance-breakdown');
+    if(bkEl)bkEl.innerHTML='<span style="background:#EAF3DE;color:#3B6D11;padding:4px 12px;border-radius:99px;font-size:12px;font-weight:700">'+comp+' Compliant</span><span style="background:#FEF9EC;color:#854F0B;padding:4px 12px;border-radius:99px;font-size:12px;font-weight:700">'+part+' Partial</span><span style="background:#FCEBEB;color:#A32D2D;padding:4px 12px;border-radius:99px;font-size:12px;font-weight:700">'+nonC+' Non-compliant</span>';
+    // By category
+    var legEl=document.getElementById('lr-by-legislation');
+    if(legEl){
+      var byCat={};d.forEach(function(x){var c=x.category||'other';if(!byCat[c])byCat[c]={comp:0,part:0,nonC:0,total:0};byCat[c].total++;if(x.status==='compliant')byCat[c].comp++;else if(x.status==='partial')byCat[c].part++;else if(x.status==='non_compliant')byCat[c].nonC++;});
+      var legH='<div style="display:flex;flex-direction:column;gap:10px">';
+      Object.entries(byCat).sort((a,b)=>{var sa=Math.round((a[1].comp*100+a[1].part*50)/(a[1].total||1));var sb=Math.round((b[1].comp*100+b[1].part*50)/(b[1].total||1));return sa-sb;}).forEach(function(entry){
+        var cat=entry[0];var c=entry[1];var cfg=LEGAL_CAT_CFG[cat]||LEGAL_CAT_CFG.other;
+        var cs=Math.round((c.comp*100+c.part*50)/(c.total||1));var color=cs>=80?'#1D9E75':cs>=60?'#EF9F27':'#E24B4A';
+        legH+='<div style="display:flex;align-items:center;gap:10px"><span style="font-size:14px">'+cfg.emoji+'</span><div style="flex:1"><div style="font-size:12px;font-weight:600">'+escH(cfg.label)+'</div><div style="width:100%;background:#e5e7eb;border-radius:99px;height:6px;margin-top:3px"><div style="width:'+cs+'%;background:'+color+';height:100%;border-radius:99px"></div></div></div><span style="font-size:12px;font-weight:700;color:'+color+';min-width:40px;text-align:right">'+cs+'%</span><span style="font-size:11px;color:var(--text2)">'+c.total+' req</span></div>';
+      });
+      legEl.innerHTML=legH+'</div>';
+    }
+    // Gaps
+    var gapsEl=document.getElementById('lr-gaps-list');
+    if(gapsEl){
+      var allGaps=await api('/compliance_gaps?status=neq.closed'+cf()+'&risk_level=in.(critical,high)&order=risk_level.desc&limit=5');
+      if(!(allGaps||[]).length){gapsEl.innerHTML='<div style="text-align:center;padding:16px;color:#1D9E75;font-weight:600">✓ No critical or high-risk gaps</div>';}
+      else{gapsEl.innerHTML='<div style="display:flex;flex-direction:column;gap:6px">'+(allGaps||[]).map(function(g){var rc=GAP_RISK_CFG[g.risk_level||'medium']||GAP_RISK_CFG.medium;return '<div style="display:flex;gap:8px;align-items:flex-start;padding:8px 12px;border:1px solid '+rc.border+'30;border-radius:8px;background:'+rc.bg+'"><div style="font-weight:700;font-size:11px;color:'+rc.tc+';min-width:55px;text-transform:capitalize">'+escH(g.risk_level||'medium')+'</div><div style="flex:1;font-size:12px">'+escH(g.gap_description?.substring(0,80)||'—')+'<div style="font-size:10px;color:'+rc.tc+'">'+escH(g.legislation||'—')+'</div></div></div>';}).join('')+'</div>';}
+    }
+    // Calendar preview
+    var calPreEl=document.getElementById('lr-calendar-preview');
+    if(calPreEl){
+      var now=new Date();var soon=new Date();soon.setDate(soon.getDate()+30);
+      var calItems=await api('/compliance_calendar?due_date=gte.'+now.toISOString().slice(0,10)+'&due_date=lte.'+soon.toISOString().slice(0,10)+'&status=neq.completed'+cf()+'&order=due_date.asc&limit=5');
+      if(!(calItems||[]).length){calPreEl.innerHTML='<div style="text-align:center;padding:16px;color:#1D9E75;font-weight:600">✓ Nothing due in the next 30 days</div>';}
+      else{calPreEl.innerHTML='<div style="display:flex;flex-direction:column;gap:6px">'+(calItems||[]).map(function(c){var daysLeft=Math.ceil((new Date(c.due_date)-now)/86400000);return '<div style="display:flex;gap:8px;align-items:center;padding:6px 12px;border:1px solid var(--border);border-radius:8px"><div style="min-width:40px;text-align:center;font-weight:800;font-size:13px;color:'+(daysLeft<=7?'#DC2626':daysLeft<=30?'#C2410C':'#185FA5')+'">'+daysLeft+'d</div><div style="flex:1;font-size:12px;font-weight:600">'+escH(c.title||'—')+'<div style="font-size:10px;color:var(--text2)">'+escH(c.legislation||'')+'</div></div></div>';}).join('')+'</div>';}
+    }
+  }catch(e){console.error('Dashboard error:',e);}
+}
+
+// Keep old function for backward compat
+function legalRenderDashboardData(){legalRenderDashboard();}
+
+// ── AI COMPLIANCE ASSISTANT ───────────────────────────────────────────────────
+async function legalAskAI(question){
+  if(!question||!question.trim()){toast('Please enter a question',false);return;}
+  var inputEl=document.getElementById('legal-ai-input');if(inputEl)inputEl.value=question;
+  var respEl=document.getElementById('legal-ai-response');
+  if(!respEl)return;
+  respEl.style.display='block';
+  respEl.textContent='⏳ Asking AI compliance assistant...';
+  // Build context from legal register
+  var context='';
+  if(lrAllData.length){
+    var summary=lrAllData.slice(0,20).map(function(x){return x.legislation+' s.'+x.section+': '+x.status+(x.gap?' [GAP]':'');}).join('\n');
+    context='Current compliance status summary (first 20 requirements):\n'+summary+'\n\n';
+  }
+  try{
+    var resp=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,messages:[{role:'user',content:context+'You are an expert HSE compliance advisor specialising in Mauritius legislation (OSH Act 2005, Environment Protection Act, Fire Services Act) and international standards (ISO 45001, ISO 14001). Answer the following compliance question concisely and practically:\n\n'+question}]})});
+    var d=await resp.json();
+    var text=(d.content||[]).map(c=>c.text||'').join('');
+    respEl.textContent=text||'No response received.';
+    if(inputEl)inputEl.value='';
+  }catch(e){respEl.textContent='AI assistant unavailable: '+e.message+'\n\nTry again or check your connection.';}
 }
 
 async function loadTools(){
@@ -13186,6 +12717,9 @@ function sopSaveToDocControl(){
 
 
 
+
+
+
 </script>
 </head>
 <body>
@@ -14837,158 +14371,483 @@ Toolbox talk / safety briefing conducted before starting work
 </div>
 <div id="page-legal" class="page">
 <div class="page-header">
-<div><div class="page-title">Legal Compliance Register</div><div style="font-size:12px;color:var(--text2)" id="legal-subtitle">Legal requirements, compliance status and legislative changes</div></div>
-<div style="display:flex;gap:8px" id="legal-header-btns"></div>
+<div>
+<div class="page-title">Legal Compliance</div>
+<div style="font-size:12px;color:var(--text2)" id="legal-subtitle">Legal register · Compliance assessments · Gap analysis · Compliance calendar</div>
+</div>
+<div style="display:flex;gap:8px" id="legal-header-btns">
+<button class="btn btn-primary" id="legal-new-btn" style="display:none" onclick="legalNewFromTab()"><i class="ti ti-plus"></i>Add new</button>
+</div>
 </div>
 
-<!-- Tabs -->
-<div style="display:flex;gap:0;margin-bottom:16px;border-bottom:2px solid var(--border)">
-<button class="mtg-tab active" id="legal-tab-register" onclick="legalSwitchTab('register',this)">📋 Legal Register</button>
-<button class="mtg-tab" id="legal-tab-changes" onclick="legalSwitchTab('changes',this)">🔄 Legislative Changes</button>
-<button class="mtg-tab" id="legal-tab-dashboard" onclick="legalSwitchTab('dashboard',this)">📊 Compliance Dashboard</button>
+<!-- Metrics bar -->
+<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:10px;margin-bottom:14px">
+<div class="card" style="padding:10px 12px;border-left:4px solid #1D9E75"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">Compliant</div><div style="font-size:22px;font-weight:800;color:#1D9E75" id="lr-m-compliant">—</div></div>
+<div class="card" style="padding:10px 12px;border-left:4px solid #EF9F27"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">Partial</div><div style="font-size:22px;font-weight:800;color:#EF9F27" id="lr-m-partial">—</div></div>
+<div class="card" style="padding:10px 12px;border-left:4px solid #E24B4A"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">Non-Compliant</div><div style="font-size:22px;font-weight:800;color:#E24B4A" id="lr-m-noncompliant">—</div></div>
+<div class="card" style="padding:10px 12px;border-left:4px solid #8B5CF6"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">Open Gaps</div><div style="font-size:22px;font-weight:800;color:#8B5CF6" id="lr-m-gaps">—</div></div>
+<div class="card" style="padding:10px 12px;border-left:4px solid #DC2626"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">Calendar Due</div><div style="font-size:22px;font-weight:800;color:#DC2626" id="lr-m-cal-due">—</div></div>
+<div class="card" style="padding:10px 12px;border-left:4px solid #185FA5"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">Assessments</div><div style="font-size:22px;font-weight:800;color:#185FA5" id="lr-m-assessments">—</div></div>
+<div class="card" style="padding:10px 12px;border-left:4px solid #6B7280"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">Total Reqs</div><div style="font-size:22px;font-weight:800" id="lr-m-total">—</div></div>
 </div>
 
-<!-- ── LEGAL REGISTER TAB ── -->
+<!-- Tab bar -->
+<div style="display:flex;gap:0;margin-bottom:14px;border-bottom:2px solid var(--border);overflow-x:auto">
+<button class="mtg-tab active" id="legal-tab-register" onclick="legalSwitchTab('register',this)" style="white-space:nowrap">📋 Legal Register</button>
+<button class="mtg-tab" id="legal-tab-changes" onclick="legalSwitchTab('changes',this)" style="white-space:nowrap">🔄 Regulatory Changes</button>
+<button class="mtg-tab" id="legal-tab-assessments" onclick="legalSwitchTab('assessments',this)" style="white-space:nowrap">✅ Compliance Assessments</button>
+<button class="mtg-tab" id="legal-tab-gaps" onclick="legalSwitchTab('gaps',this)" style="white-space:nowrap">🔍 Gap Analysis</button>
+<button class="mtg-tab" id="legal-tab-calendar" onclick="legalSwitchTab('calendar',this)" style="white-space:nowrap">📅 Compliance Calendar</button>
+<button class="mtg-tab" id="legal-tab-dashboard" onclick="legalSwitchTab('dashboard',this)" style="white-space:nowrap">📊 Dashboard</button>
+</div>
+
+<!-- ── LEGAL REGISTER ── -->
 <div id="legal-view-register">
-<!-- Metrics -->
-<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px">
-<div class="card" style="padding:14px 16px;border-left:4px solid #1D9E75"><div style="font-size:11px;color:var(--text2);margin-bottom:4px;font-weight:500;text-transform:uppercase">Compliant</div><div style="font-size:28px;font-weight:800;color:#1D9E75" id="lr-m-compliant">—</div></div>
-<div class="card" style="padding:14px 16px;border-left:4px solid #EF9F27"><div style="font-size:11px;color:var(--text2);margin-bottom:4px;font-weight:500;text-transform:uppercase">Partial</div><div style="font-size:28px;font-weight:800;color:#EF9F27" id="lr-m-partial">—</div></div>
-<div class="card" style="padding:14px 16px;border-left:4px solid #E24B4A"><div style="font-size:11px;color:var(--text2);margin-bottom:4px;font-weight:500;text-transform:uppercase">Non-Compliant</div><div style="font-size:28px;font-weight:800;color:#E24B4A" id="lr-m-noncompliant">—</div></div>
-<div class="card" style="padding:14px 16px;border-left:4px solid #6B7280"><div style="font-size:11px;color:var(--text2);margin-bottom:4px;font-weight:500;text-transform:uppercase">Total Requirements</div><div style="font-size:28px;font-weight:800" id="lr-m-total">—</div></div>
-</div>
-<!-- Filter bar -->
-<div class="card" style="margin-bottom:12px;padding:12px 16px">
+<div class="card" style="margin-bottom:12px;padding:10px 14px">
 <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
-<input type="text" id="lr-search" placeholder="Search legislation, requirement..." oninput="legalFilterRegister()" style="flex:1;min-width:200px;padding:7px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px"/>
-<select id="lr-filter-status" onchange="legalFilterRegister()" style="padding:7px 10px;border:1px solid var(--border);border-radius:8px;font-size:13px">
+<input type="text" id="lr-search" placeholder="Search legislation, requirement, ref..." oninput="legalFilterRegister()" style="flex:1;min-width:180px;padding:7px 12px;border:1px solid var(--border);border-radius:8px;font-size:12px"/>
+<select id="lr-filter-status" onchange="legalFilterRegister()" style="padding:7px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px">
 <option value="">All statuses</option>
-<option value="compliant">Compliant</option>
-<option value="partial">Partial</option>
-<option value="non_compliant">Non-Compliant</option>
-<option value="not_applicable">N/A</option>
+<option value="compliant">Compliant</option><option value="partial">Partial</option>
+<option value="non_compliant">Non-Compliant</option><option value="not_applicable">N/A</option>
 </select>
-<select id="lr-filter-leg" onchange="legalFilterRegister()" style="padding:7px 10px;border:1px solid var(--border);border-radius:8px;font-size:13px;max-width:250px">
+<select id="lr-filter-leg" onchange="legalFilterRegister()" style="padding:7px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px;max-width:220px">
 <option value="">All legislation</option>
+</select>
+<select id="lr-filter-cat" onchange="legalFilterRegister()" style="padding:7px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px">
+<option value="">All categories</option>
+<option value="health_safety">Health &amp; Safety</option>
+<option value="environment">Environment</option>
+<option value="fire">Fire Safety</option>
+<option value="chemical">Chemical / COSHH</option>
+<option value="iso">ISO Standards</option>
+<option value="client">Client Standards</option>
+<option value="other">Other</option>
 </select>
 <button class="btn btn-primary" id="lr-add-btn" style="display:none" onclick="legalNewRequirement()"><i class="ti ti-plus"></i>Add requirement</button>
 </div>
 </div>
-<!-- Register table -->
-<div class="card" style="padding:0;overflow:hidden">
-<div style="overflow-x:auto"><div id="lr-table"><div class="loading-msg">Loading...</div></div></div>
-</div>
+<div class="card" style="padding:0;overflow:hidden"><div id="lr-table"><div class="loading-msg">Loading...</div></div></div>
 </div>
 
-<!-- ── LEGISLATIVE CHANGES TAB ── -->
+<!-- ── REGULATORY CHANGES ── -->
 <div id="legal-view-changes" style="display:none">
-<div class="card" style="margin-bottom:12px;padding:12px 16px;display:flex;justify-content:space-between;align-items:center">
-<div style="font-size:13px;font-weight:600">Legislative Changes & Updates</div>
+<div class="card" style="margin-bottom:12px;padding:10px 14px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+<div><div class="card-title" style="margin:0">Regulatory Changes &amp; Updates</div><div style="font-size:12px;color:var(--text2)">Track legislative changes and ensure obligations are updated</div></div>
 <button class="btn btn-primary" id="lc-add-btn" style="display:none" onclick="legalNewChange()"><i class="ti ti-plus"></i>Add change</button>
 </div>
-<div class="card" style="padding:0;overflow:hidden">
-<div id="lc-table"><div class="loading-msg">Loading...</div></div>
-</div>
+<div class="card" style="padding:0;overflow:hidden"><div id="lc-table"><div class="loading-msg">Loading...</div></div></div>
 </div>
 
-<!-- ── COMPLIANCE DASHBOARD TAB ── -->
+<!-- ── COMPLIANCE ASSESSMENTS ── -->
+<div id="legal-view-assessments" style="display:none">
+<div class="card" style="margin-bottom:12px;padding:10px 14px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+<div><div class="card-title" style="margin:0">Compliance Assessments</div><div style="font-size:12px;color:var(--text2)">Periodic and triggered assessments of overall compliance posture</div></div>
+<button class="btn btn-primary" id="lca-add-btn" style="display:none" onclick="lcaNew()"><i class="ti ti-plus"></i>New assessment</button>
+</div>
+<div id="lca-list"><div class="loading-msg">Loading...</div></div>
+</div>
+
+<!-- ── GAP ANALYSIS ── -->
+<div id="legal-view-gaps" style="display:none">
+<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px">
+<div class="card" style="padding:10px 12px;border-left:4px solid #DC2626"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">Critical</div><div style="font-size:22px;font-weight:800;color:#DC2626" id="gap-m-critical">—</div></div>
+<div class="card" style="padding:10px 12px;border-left:4px solid #E24B4A"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">High</div><div style="font-size:22px;font-weight:800;color:#E24B4A" id="gap-m-high">—</div></div>
+<div class="card" style="padding:10px 12px;border-left:4px solid #EF9F27"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">Medium</div><div style="font-size:22px;font-weight:800;color:#EF9F27" id="gap-m-medium">—</div></div>
+<div class="card" style="padding:10px 12px;border-left:4px solid #1D9E75"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">Closed</div><div style="font-size:22px;font-weight:800;color:#1D9E75" id="gap-m-closed">—</div></div>
+</div>
+<div class="card" style="margin-bottom:12px;padding:10px 14px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+<div><div class="card-title" style="margin:0">Compliance Gap Register</div><div style="font-size:12px;color:var(--text2)">Identified gaps between legal obligations and current controls</div></div>
+<div style="display:flex;gap:8px">
+<select id="gap-filter-risk" onchange="gapLoad()" style="padding:6px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px">
+<option value="">All risk levels</option><option value="critical">Critical</option>
+<option value="high">High</option><option value="medium">Medium</option><option value="low">Low</option>
+</select>
+<select id="gap-filter-status" onchange="gapLoad()" style="padding:6px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px">
+<option value="">All statuses</option><option value="open">Open</option>
+<option value="in_progress">In progress</option><option value="closed">Closed</option>
+<option value="accepted_risk">Accepted risk</option>
+</select>
+<button class="btn btn-primary" id="gap-add-btn" style="display:none" onclick="gapNew()"><i class="ti ti-plus"></i>Add gap</button>
+</div>
+</div>
+<div id="gap-list"><div class="loading-msg">Loading...</div></div>
+</div>
+
+<!-- ── COMPLIANCE CALENDAR ── -->
+<div id="legal-view-calendar" style="display:none">
+<div class="card" style="margin-bottom:12px;padding:12px 16px;background:linear-gradient(135deg,#1a3a5c,#185FA5);color:#fff">
+<div style="font-size:14px;font-weight:700;margin-bottom:4px"><i class="ti ti-calendar-event"></i> Compliance Calendar</div>
+<div style="font-size:12px;opacity:.85">Upcoming compliance deadlines, renewals, assessments and regulatory submissions</div>
+</div>
+<div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap">
+<button class="btn" id="cal-btn-overdue" onclick="calFilter('overdue',this)" style="background:#DC2626;color:#fff;border-color:#DC2626">🔴 Overdue</button>
+<button class="btn" id="cal-btn-30" onclick="calFilter('30',this)">🟠 Due &lt;30d</button>
+<button class="btn" id="cal-btn-90" onclick="calFilter('90',this)">🟡 Due &lt;90d</button>
+<button class="btn" id="cal-btn-all" onclick="calFilter('all',this)">📋 All upcoming</button>
+</div>
+<div class="card" style="margin-bottom:12px;padding:10px 14px;display:flex;justify-content:space-between;align-items:center">
+<div class="card-title" style="margin:0">Compliance Events</div>
+<button class="btn btn-primary" id="cal-add-btn" style="display:none" onclick="calNew()"><i class="ti ti-plus"></i>Add event</button>
+</div>
+<div id="cal-list"><div class="loading-msg">Loading...</div></div>
+</div>
+
+<!-- ── DASHBOARD ── -->
 <div id="legal-view-dashboard" style="display:none">
-<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">
-<!-- Compliance gauge -->
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px">
 <div class="card">
-<div class="card-title">Overall Compliance Rate</div>
-<div style="display:flex;align-items:center;justify-content:center;padding:20px">
-<div style="text-align:center">
-<div style="font-size:64px;font-weight:800" id="lr-compliance-pct">—</div>
-<div style="font-size:14px;color:var(--text2);margin-top:4px">Overall compliance</div>
+<div class="card-title">Overall Compliance Score</div>
+<div style="display:flex;align-items:center;justify-content:center;padding:20px;flex-direction:column">
+<div style="font-size:72px;font-weight:900;line-height:1" id="lr-compliance-pct" style="color:#1D9E75">—</div>
+<div style="font-size:13px;color:var(--text2);margin-top:6px">overall compliance</div>
 <div style="display:flex;gap:8px;justify-content:center;margin-top:16px;flex-wrap:wrap" id="lr-compliance-breakdown"></div>
+<div id="lr-score-bar" style="width:100%;background:#e5e7eb;border-radius:99px;height:12px;margin-top:14px;overflow:hidden"><div id="lr-score-fill" style="height:100%;background:#1D9E75;border-radius:99px;transition:width .5s;width:0%"></div></div>
 </div>
 </div>
-</div>
-<!-- By legislation breakdown -->
 <div class="card">
-<div class="card-title">By Legislation</div>
+<div class="card-title">Compliance by Category</div>
 <div id="lr-by-legislation" style="font-size:13px"></div>
 </div>
 </div>
-<!-- Gaps requiring action -->
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px">
 <div class="card">
-<div class="card-title" style="color:var(--red)"><i class="ti ti-alert-triangle"></i> Gaps Requiring Action</div>
+<div class="card-title" style="color:#DC2626"><i class="ti ti-alert-triangle"></i> Critical Gaps</div>
 <div id="lr-gaps-list"></div>
 </div>
+<div class="card">
+<div class="card-title" style="color:#185FA5"><i class="ti ti-calendar"></i> Next 30 Days</div>
+<div id="lr-calendar-preview"></div>
+</div>
+</div>
+<!-- AI Compliance Assistant -->
+<div class="card" style="border:2px solid #5B21B6">
+<div class="card-title" style="color:#5B21B6"><i class="ti ti-robot"></i> AI Compliance Assistant</div>
+<div style="font-size:12px;color:var(--text2);margin-bottom:12px">Ask about specific requirements, get gap remediation advice, or generate compliance summaries</div>
+<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px" id="legal-ai-quick-btns">
+<button class="btn btn-sm" style="background:#5B21B6;color:#fff;border-color:#5B21B6" onclick="legalAskAI('Summarise our current compliance status and top 3 priority gaps')">📊 Compliance summary</button>
+<button class="btn btn-sm" style="background:#5B21B6;color:#fff;border-color:#5B21B6" onclick="legalAskAI('What are the key requirements of the OSH Act 2005 Mauritius that apply to our organisation?')">⚖️ OSH Act key points</button>
+<button class="btn btn-sm" style="background:#5B21B6;color:#fff;border-color:#5B21B6" onclick="legalAskAI('What actions should we take to close our non-compliance gaps and improve our compliance score?')">🎯 Gap remediation plan</button>
+<button class="btn btn-sm" style="background:#5B21B6;color:#fff;border-color:#5B21B6" onclick="legalAskAI('List the main ISO 45001:2018 clauses and their compliance requirements for a Mauritius company')">🏅 ISO 45001 guide</button>
+</div>
+<div style="display:flex;gap:8px;margin-bottom:10px">
+<input type="text" id="legal-ai-input" placeholder="Ask about a specific regulation, requirement or compliance question..." style="flex:1;padding:8px 12px;border:1px solid #c4b5fd;border-radius:8px;font-size:12px" onkeydown="if(event.key==='Enter')legalAskAI(this.value)"/>
+<button class="btn" style="background:#5B21B6;color:#fff;border-color:#5B21B6" onclick="legalAskAI(document.getElementById('legal-ai-input').value)"><i class="ti ti-send"></i>Ask AI</button>
+</div>
+<div id="legal-ai-response" style="display:none;background:#F5F3FF;border:1px solid #c4b5fd;border-radius:8px;padding:12px;font-size:13px;line-height:1.6;white-space:pre-wrap;max-height:400px;overflow-y:auto"></div>
+</div>
 </div>
 
-<!-- ── REQUIREMENT FORM (slide-in) ── -->
+<!-- ═════════ FORMS ═════════ -->
+
+<!-- Requirement form -->
 <div id="legal-req-form" style="display:none">
-<div class="card" style="margin-bottom:12px;padding:14px 20px">
-<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
-<div style="font-size:16px;font-weight:700" id="lr-form-title">New Legal Requirement</div>
+<div class="card" style="margin-bottom:14px;padding:0;overflow:hidden">
+<div style="padding:14px 20px;background:linear-gradient(135deg,#1a3a5c,#185FA5);color:#fff;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+<div>
+<div style="font-size:11px;font-weight:600;text-transform:uppercase;opacity:.8;margin-bottom:4px">Legal Requirement</div>
+<div style="font-size:17px;font-weight:800" id="lr-form-title">New Requirement</div>
+<div style="font-family:monospace;font-size:12px;color:#a8d8f0;margin-top:3px" id="lr-form-ref-badge">OSH-AUTO</div>
+</div>
 <div style="display:flex;gap:8px">
-<button class="btn" onclick="legalReqBack()"><i class="ti ti-arrow-left"></i>Back</button>
-<button id="lr-del-btn" class="btn" style="display:none;color:var(--red);border-color:var(--red)" onclick="legalDeleteReq()"><i class="ti ti-trash"></i>Delete</button>
-<button class="btn btn-primary" onclick="legalSaveReq()"><i class="ti ti-device-floppy"></i>Save</button>
+<button class="btn" style="background:rgba(255,255,255,.2);color:#fff;border-color:rgba(255,255,255,.3)" onclick="legalReqBack()"><i class="ti ti-arrow-left"></i>Back</button>
+<button id="lr-del-btn" class="btn" style="display:none;background:rgba(220,38,38,.3);color:#fff;border-color:rgba(220,38,38,.5)" onclick="legalDeleteReq()"><i class="ti ti-trash"></i></button>
+<button class="btn" style="background:#1D9E75;color:#fff;border-color:#1D9E75" onclick="legalSaveReq()"><i class="ti ti-device-floppy"></i>Save</button>
 </div>
 </div>
 </div>
-<div class="card">
+<div style="display:grid;grid-template-columns:2fr 1fr;gap:14px">
+<div>
+<div class="card" style="margin-bottom:14px"><div class="card-title">Legislation Details</div>
 <div class="form-row">
 <div class="form-group"><label class="form-label">Legislation (main)</label><input type="text" id="lr-leg-main" placeholder="e.g. Occupational Safety and Health Act 2005"/></div>
+<div class="form-group"><label class="form-label">Legislation type</label>
+<select id="lr-leg-type">
+<option value="statutory">⚖️ Statutory — Act of Parliament</option>
+<option value="regulatory">📋 Regulatory — Regulations/Rules</option>
+<option value="iso_standard">🏅 ISO Standard</option>
+<option value="client_standard">🤝 Client Standard</option>
+<option value="industry_code">🏭 Industry Code of Practice</option>
+<option value="internal_policy">📄 Internal Policy</option>
+<option value="other">Other</option>
+</select></div>
+</div>
+<div class="form-row">
 <div class="form-group"><label class="form-label">Title / Section name</label><input type="text" id="lr-leg-title" placeholder="e.g. General duties of employer"/></div>
 <div class="form-group"><label class="form-label">Section</label><input type="text" id="lr-section" placeholder="e.g. 5"/></div>
-<div class="form-group"><label class="form-label">Sub-section</label><input type="text" id="lr-subsection" placeholder="e.g. 1"/></div>
-</div>
-<div class="form-group"><label class="form-label">Legislative requirement</label><textarea id="lr-requirement" style="min-height:100px" placeholder="Full text of the requirement..."></textarea></div>
-<div class="form-row">
-<div class="form-group"><label class="form-label">Applicable?</label>
-<select id="lr-applicable"><option value="true">Yes</option><option value="false">No</option></select></div>
-<div class="form-group"><label class="form-label">Compliance status</label>
-<select id="lr-status">
-<option value="compliant">Compliant</option>
-<option value="partial">Partial compliance</option>
-<option value="non_compliant">Non-compliant</option>
-<option value="not_applicable">Not applicable</option>
+<div class="form-group"><label class="form-label">Sub-section</label><input type="text" id="lr-subsection"/></div>
+<div class="form-group"><label class="form-label">Category</label>
+<select id="lr-category">
+<option value="health_safety">Health &amp; Safety</option><option value="environment">Environment</option>
+<option value="fire">Fire Safety</option><option value="chemical">Chemical</option>
+<option value="electrical">Electrical</option><option value="construction">Construction</option>
+<option value="noise">Noise</option><option value="waste">Waste</option>
+<option value="iso">ISO Standard</option><option value="client">Client Standard</option><option value="other">Other</option>
 </select></div>
+</div>
+<div class="form-group"><label class="form-label">Full legislative requirement text</label><textarea id="lr-requirement" style="min-height:100px" placeholder="Full text of the legal requirement..."></textarea></div>
+<div class="form-row">
+<div class="form-group"><label class="form-label">Jurisdiction</label><input type="text" id="lr-jurisdiction" value="Mauritius"/></div>
+<div class="form-group"><label class="form-label">Regulatory authority</label><input type="text" id="lr-authority" placeholder="e.g. OSHI, MOE, Fire Services"/></div>
+<div class="form-group"><label class="form-label">Obligation type</label>
+<select id="lr-obligation">
+<option value="mandatory">Mandatory</option><option value="conditional">Conditional</option>
+<option value="recommended">Recommended</option><option value="best_practice">Best practice</option>
+</select></div>
+<div class="form-group"><label class="form-label">Frequency</label>
+<select id="lr-frequency">
+<option value="ongoing">Ongoing</option><option value="annual">Annual</option>
+<option value="biannual">Biannual</option><option value="quarterly">Quarterly</option>
+<option value="monthly">Monthly</option><option value="one_off">One-off</option>
+</select></div>
+</div>
+</div>
+<div class="card" style="margin-bottom:14px;border-left:4px solid #1D9E75"><div class="card-title" style="color:#1D9E75">Compliance Evidence</div>
+<div class="form-group"><label class="form-label">Controls in place</label><textarea id="lr-controls" style="min-height:80px" placeholder="Describe existing controls, procedures, records..."></textarea></div>
+<div class="form-group"><label class="form-label">Evidence required</label><input type="text" id="lr-evidence-req" placeholder="e.g. Safety committee minutes, training records, inspection reports..."/></div>
+<div class="form-group"><label class="form-label">Evidence location / document ref</label><input type="text" id="lr-evidence-loc"/></div>
+</div>
+<div class="card"><div class="card-title" style="color:#E24B4A">Gap Identification</div>
+<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px"><input type="checkbox" id="lr-gap" style="accent-color:var(--red)"/><label for="lr-gap" style="font-weight:600;font-size:13px;cursor:pointer;color:var(--red)">Gap identified — controls are inadequate or missing</label></div>
+<div class="form-group"><label class="form-label">Gap description / Further controls required</label><textarea id="lr-further-controls" style="min-height:70px" placeholder="Describe the compliance gap and what additional controls are needed..."></textarea></div>
+<div class="form-group"><label class="form-label">Penalty / risk if non-compliant</label><input type="text" id="lr-penalty" placeholder="e.g. Fine Rs 50,000, imprisonment 2 years..."/></div>
+<div class="form-group"><label class="form-label">Notes</label><textarea id="lr-notes" style="min-height:50px"></textarea></div>
+</div>
+</div>
+<div>
+<div class="card" style="margin-bottom:14px;border:2px solid #185FA5"><div class="card-title" style="color:#185FA5">Compliance Status</div>
+<div style="display:flex;flex-direction:column;gap:8px;margin-bottom:12px">
+<label style="display:flex;align-items:center;gap:8px;padding:10px;border-radius:8px;cursor:pointer;background:#f0fdf4;border:1px solid #bbf7d0" onclick="document.getElementById('lr-status').value='compliant'"><input type="radio" name="lr-status-r" value="compliant" style="accent-color:var(--green)" checked><span style="font-weight:700;color:#166534">✓ Compliant</span></label>
+<label style="display:flex;align-items:center;gap:8px;padding:10px;border-radius:8px;cursor:pointer;background:#FFFBEB;border:1px solid #fcd34d" onclick="document.getElementById('lr-status').value='partial'"><input type="radio" name="lr-status-r" value="partial" style="accent-color:#EF9F27"><span style="font-weight:700;color:#854F0B">⚠ Partial compliance</span></label>
+<label style="display:flex;align-items:center;gap:8px;padding:10px;border-radius:8px;cursor:pointer;background:#FEF2F2;border:1px solid #fecaca" onclick="document.getElementById('lr-status').value='non_compliant'"><input type="radio" name="lr-status-r" value="non_compliant" style="accent-color:var(--red)"><span style="font-weight:700;color:var(--red)">✗ Non-compliant</span></label>
+<label style="display:flex;align-items:center;gap:8px;padding:10px;border-radius:8px;cursor:pointer;background:#f3f4f6;border:1px solid #e5e7eb" onclick="document.getElementById('lr-status').value='not_applicable'"><input type="radio" name="lr-status-r" value="not_applicable" style="accent-color:#6B7280"><span style="font-weight:700;color:#6B7280">— Not applicable</span></label>
+</div>
+<input type="hidden" id="lr-status"/>
+<div class="form-group"><label class="form-label">Applicable to company?</label><select id="lr-applicable"><option value="true">Yes</option><option value="false">No</option></select></div>
+<div class="form-group"><label class="form-label">Compliance score (0–100)</label>
+<div style="display:flex;align-items:center;gap:10px"><input type="range" id="lr-compliance-score" min="0" max="100" step="5" value="0" oninput="legalScoreUpdate(this.value)" style="flex:1;accent-color:#185FA5"/><span id="lr-score-display" style="font-weight:800;min-width:40px;font-size:16px">0%</span></div></div>
+</div>
+<div class="card" style="margin-bottom:14px"><div class="card-title">Responsibility &amp; Dates</div>
 <div class="form-group"><label class="form-label">Responsibility</label><input type="text" id="lr-responsibility"/></div>
-<div class="form-group"><label class="form-label">Target date</label><input type="date" id="lr-target-date"/></div>
+<div class="form-group"><label class="form-label">Target compliance date</label><input type="date" id="lr-target-date"/></div>
+<div class="form-group"><label class="form-label">Effective date</label><input type="date" id="lr-effective-date"/></div>
+<div class="form-group"><label class="form-label">Next review date</label><input type="date" id="lr-review-date"/></div>
+<div class="form-row">
+<div class="form-group"><label class="form-label">Last assessed date</label><input type="date" id="lr-last-assessed"/></div>
+<div class="form-group"><label class="form-label">Assessed by</label><input type="text" id="lr-assessed-by"/></div>
 </div>
-<div class="form-group"><label class="form-label">Controls in place</label><textarea id="lr-controls" style="min-height:80px" placeholder="Describe existing controls..."></textarea></div>
-<div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
-<input type="checkbox" id="lr-gap" style="width:16px;height:16px"/>
-<label for="lr-gap" style="font-weight:600;font-size:13px;color:var(--red)">Gap identified</label>
 </div>
-<div class="form-group" id="lr-gap-section"><label class="form-label">Gap / Further controls required</label><textarea id="lr-further-controls" style="min-height:70px" placeholder="Describe the gap and further controls needed..."></textarea></div>
-<div class="form-group"><label class="form-label">Notes</label><textarea id="lr-notes" style="min-height:60px"></textarea></div>
+</div>
 </div>
 </div>
 
-<!-- ── CHANGE FORM (slide-in) ── -->
+<!-- Legislative change form -->
 <div id="legal-chg-form" style="display:none">
-<div class="card" style="margin-bottom:12px;padding:14px 20px">
-<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
-<div style="font-size:16px;font-weight:700" id="lc-form-title">New Legislative Change</div>
+<div class="card" style="margin-bottom:14px;padding:0;overflow:hidden">
+<div style="padding:14px 20px;background:linear-gradient(135deg,#854F0B,#B45309);color:#fff;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+<div style="font-size:17px;font-weight:800" id="lc-form-title">New Regulatory Change</div>
 <div style="display:flex;gap:8px">
-<button class="btn" onclick="legalChgBack()"><i class="ti ti-arrow-left"></i>Back</button>
-<button id="lc-del-btn" class="btn" style="display:none;color:var(--red);border-color:var(--red)" onclick="legalDeleteChg()"><i class="ti ti-trash"></i>Delete</button>
-<button class="btn btn-primary" onclick="legalSaveChg()"><i class="ti ti-device-floppy"></i>Save</button>
+<button class="btn" style="background:rgba(255,255,255,.2);color:#fff;border-color:rgba(255,255,255,.3)" onclick="legalChgBack()"><i class="ti ti-arrow-left"></i>Back</button>
+<button id="lc-del-btn" class="btn" style="display:none;background:rgba(0,0,0,.3);color:#fff;border-color:rgba(255,255,255,.3)" onclick="legalDeleteChg()"><i class="ti ti-trash"></i></button>
+<button class="btn" style="background:#1D9E75;color:#fff;border-color:#1D9E75" onclick="legalSaveChg()"><i class="ti ti-device-floppy"></i>Save</button>
 </div>
 </div>
 </div>
 <div class="card">
 <div class="form-row">
 <div class="form-group"><label class="form-label">Date received</label><input type="date" id="lc-date"/></div>
-<div class="form-group"><label class="form-label">Source material</label><input type="text" id="lc-source" placeholder="e.g. Act 20 of 2022"/></div>
-<div class="form-group"><label class="form-label">Jurisdiction</label><input type="text" id="lc-jurisdiction" placeholder="e.g. OSHI"/></div>
-<div class="form-group"><label class="form-label">Applicable legislation</label><input type="text" id="lc-legislation" placeholder="e.g. OSH Amendment Act 2022"/></div>
+<div class="form-group"><label class="form-label">Source / Publication ref</label><input type="text" id="lc-source" placeholder="e.g. Government Gazette No. 22/2026"/></div>
+<div class="form-group"><label class="form-label">Jurisdiction</label><input type="text" id="lc-jurisdiction" value="Mauritius"/></div>
+<div class="form-group"><label class="form-label">Applicable legislation</label><input type="text" id="lc-legislation" placeholder="e.g. OSH Amendment Act 2026"/></div>
 </div>
-<div class="form-group"><label class="form-label">Changes identified</label><textarea id="lc-changes" style="min-height:80px" placeholder="Describe the change..."></textarea></div>
 <div class="form-row">
-<div class="form-group"><label class="form-label">Applicable to company?</label>
-<select id="lc-applicable"><option value="true">Yes</option><option value="false">No</option></select></div>
-<div class="form-group"><label class="form-label">Action required</label><input type="text" id="lc-action" placeholder="e.g. Update legal register"/></div>
-<div class="form-group"><label class="form-label">Implemented?</label>
-<select id="lc-implemented"><option value="false">No</option><option value="true">Yes</option></select></div>
+<div class="form-group"><label class="form-label">Category</label>
+<select id="lc-category">
+<option value="health_safety">Health &amp; Safety</option><option value="environment">Environment</option>
+<option value="fire">Fire</option><option value="iso">ISO</option><option value="other">Other</option>
+</select></div>
+<div class="form-group"><label class="form-label">Effective date</label><input type="date" id="lc-effective-date"/></div>
+<div class="form-group"><label class="form-label">Applicable to company?</label><select id="lc-applicable"><option value="true">Yes</option><option value="false">No</option></select></div>
+<div class="form-group"><label class="form-label">Implemented?</label><select id="lc-implemented"><option value="false">Pending</option><option value="true">Done</option></select></div>
 </div>
-<div class="form-group"><label class="form-label">Comments</label><textarea id="lc-comments" style="min-height:60px"></textarea></div>
+<div class="form-group"><label class="form-label">Changes identified / what changed?</label><textarea id="lc-changes" style="min-height:80px" placeholder="Describe the regulatory change and its implications..."></textarea></div>
+<div class="form-row">
+<div class="form-group"><label class="form-label">Action required</label><textarea id="lc-action" style="min-height:50px" placeholder="What action must be taken to comply with this change?"></textarea></div>
+<div class="form-group"><label class="form-label">Responsible person</label><input type="text" id="lc-responsible"/></div>
+</div>
+<div class="form-group"><label class="form-label">Comments</label><textarea id="lc-comments" style="min-height:50px"></textarea></div>
+</div>
+</div>
+
+<!-- Compliance Assessment form -->
+<div id="lca-form" style="display:none">
+<div class="card" style="margin-bottom:14px;padding:0;overflow:hidden">
+<div style="padding:14px 20px;background:linear-gradient(135deg,#064E3B,#1D9E75);color:#fff;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+<div>
+<div style="font-size:11px;font-weight:600;text-transform:uppercase;opacity:.8;margin-bottom:4px">Compliance Assessment</div>
+<div style="font-size:17px;font-weight:800" id="lca-form-title">New Assessment</div>
+<div style="font-family:monospace;font-size:12px;color:#a7f3d0;margin-top:3px" id="lca-form-ref">CA-AUTO</div>
+</div>
+<div style="display:flex;gap:8px">
+<button class="btn" style="background:rgba(255,255,255,.2);color:#fff;border-color:rgba(255,255,255,.3)" onclick="lcaBack()"><i class="ti ti-arrow-left"></i>Back</button>
+<button id="lca-del-btn" class="btn" style="display:none;background:rgba(0,0,0,.3);color:#fff;border-color:rgba(255,255,255,.3)" onclick="lcaDelete()"><i class="ti ti-trash"></i></button>
+<button class="btn" style="background:#fff;color:#1D9E75;font-weight:700" onclick="lcaSave()"><i class="ti ti-device-floppy"></i>Save</button>
+</div>
+</div>
+</div>
+<div style="display:grid;grid-template-columns:2fr 1fr;gap:14px">
+<div>
+<div class="card" style="margin-bottom:14px"><div class="card-title">Assessment Details</div>
+<div class="form-group"><label class="form-label">Assessment title</label><input type="text" id="lcaf-title"/></div>
+<div class="form-row">
+<div class="form-group"><label class="form-label">Assessment type</label>
+<select id="lcaf-type">
+<option value="periodic">Periodic assessment</option><option value="initial">Initial assessment</option>
+<option value="triggered">Triggered assessment</option><option value="pre_audit">Pre-audit</option>
+<option value="post_incident">Post-incident</option><option value="external">External audit</option>
+</select></div>
+<div class="form-group"><label class="form-label">Assessment date</label><input type="date" id="lcaf-date"/></div>
+<div class="form-group"><label class="form-label">Next assessment date</label><input type="date" id="lcaf-next-date"/></div>
+<div class="form-group"><label class="form-label">Assessor</label><input type="text" id="lcaf-assessor"/></div>
+</div>
+<div class="form-group"><label class="form-label">Scope of assessment</label><textarea id="lcaf-scope" style="min-height:60px" placeholder="What legislation, activities or areas does this assessment cover?"></textarea></div>
+<div class="form-group"><label class="form-label">Methodology / how was compliance verified?</label><textarea id="lcaf-methodology" style="min-height:60px"></textarea></div>
+</div>
+<div class="card" style="margin-bottom:14px;border-left:4px solid #1D9E75"><div class="card-title" style="color:#1D9E75">Results &amp; Scores</div>
+<div class="form-row">
+<div class="form-group"><label class="form-label">Compliant</label><input type="number" id="lcaf-compliant" min="0" value="0" oninput="lcaCalcScore()"/></div>
+<div class="form-group"><label class="form-label">Partial</label><input type="number" id="lcaf-partial" min="0" value="0" oninput="lcaCalcScore()"/></div>
+<div class="form-group"><label class="form-label">Non-compliant</label><input type="number" id="lcaf-noncompliant" min="0" value="0" oninput="lcaCalcScore()"/></div>
+<div class="form-group"><label class="form-label">N/A</label><input type="number" id="lcaf-na" min="0" value="0" oninput="lcaCalcScore()"/></div>
+</div>
+<div id="lca-score-preview" style="padding:14px;background:#f0fdf4;border-radius:8px;text-align:center;margin-top:8px">
+<div style="font-size:32px;font-weight:900;color:#1D9E75" id="lca-score-number">—</div>
+<div style="font-size:12px;color:var(--text2)">Compliance score</div>
+</div>
+</div>
+<div class="card"><div class="card-title">Findings &amp; Actions</div>
+<div class="form-group"><label class="form-label">Key findings</label><textarea id="lcaf-findings" style="min-height:80px"></textarea></div>
+<div class="form-group"><label class="form-label">Recommendations</label><textarea id="lcaf-recommendations" style="min-height:80px"></textarea></div>
+</div>
+</div>
+<div>
+<div class="card" style="margin-bottom:14px;border:2px solid #1D9E75"><div class="card-title" style="color:#1D9E75">Approval</div>
+<div class="form-group"><label class="form-label">Status</label>
+<select id="lcaf-status"><option value="draft">Draft</option><option value="completed">Completed</option><option value="reviewed">Reviewed</option><option value="approved">Approved</option></select></div>
+<div class="form-group"><label class="form-label">Approved by</label><input type="text" id="lcaf-approved-by"/></div>
+<div class="form-group"><label class="form-label">Approval date</label><input type="date" id="lcaf-approved-date"/></div>
+<div class="form-group"><label class="form-label">Linked audit ref</label><input type="text" id="lcaf-audit-ref" style="font-family:monospace"/></div>
+</div>
+</div>
+</div>
+</div>
+
+<!-- Gap Analysis form -->
+<div id="gap-form" style="display:none">
+<div class="card" style="margin-bottom:14px;padding:0;overflow:hidden">
+<div style="padding:14px 20px;background:linear-gradient(135deg,#7F1D1D,#DC2626);color:#fff;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+<div>
+<div style="font-size:11px;font-weight:600;text-transform:uppercase;opacity:.8;margin-bottom:4px">Compliance Gap</div>
+<div style="font-size:17px;font-weight:800" id="gap-form-title">New Gap</div>
+<div style="font-family:monospace;font-size:12px;color:#fca5a5;margin-top:3px" id="gap-form-ref">GAP-AUTO</div>
+</div>
+<div style="display:flex;gap:8px">
+<button class="btn" style="background:rgba(255,255,255,.2);color:#fff;border-color:rgba(255,255,255,.3)" onclick="gapBack()"><i class="ti ti-arrow-left"></i>Back</button>
+<button id="gap-del-btn" class="btn" style="display:none;background:rgba(0,0,0,.3);color:#fff;border-color:rgba(255,255,255,.3)" onclick="gapDelete()"><i class="ti ti-trash"></i></button>
+<button class="btn" style="background:#1D9E75;color:#fff;border-color:#1D9E75" onclick="gapSave()"><i class="ti ti-device-floppy"></i>Save gap</button>
+</div>
+</div>
+</div>
+<div style="display:grid;grid-template-columns:2fr 1fr;gap:14px">
+<div>
+<div class="card" style="margin-bottom:14px;border-left:4px solid #DC2626"><div class="card-title" style="color:#DC2626">Gap Details</div>
+<div class="form-row">
+<div class="form-group"><label class="form-label">Legislation / standard</label><input type="text" id="gapf-legislation" placeholder="e.g. OSH Act 2005"/></div>
+<div class="form-group"><label class="form-label">Section / clause</label><input type="text" id="gapf-section"/></div>
+</div>
+<div class="form-group"><label class="form-label">Gap description</label><textarea id="gapf-description" style="min-height:80px" placeholder="Describe clearly what the gap is — what obligation is not being met?"></textarea></div>
+<div class="form-row">
+<div class="form-group"><label class="form-label">Gap type</label>
+<select id="gapf-type">
+<option value="missing_control">Missing control</option><option value="inadequate_control">Inadequate control</option>
+<option value="documentation">Documentation gap</option><option value="training">Training gap</option>
+<option value="monitoring">Monitoring gap</option><option value="reporting">Reporting gap</option><option value="other">Other</option>
+</select></div>
+<div class="form-group"><label class="form-label">Risk level</label>
+<select id="gapf-risk">
+<option value="critical">🔴 Critical</option><option value="high">🟠 High</option>
+<option value="medium" selected>🟡 Medium</option><option value="low">🟢 Low</option>
+</select></div>
+</div>
+</div>
+<div class="card"><div class="card-title">Closure Plan</div>
+<div class="form-group"><label class="form-label">Action required to close gap</label><textarea id="gapf-action" style="min-height:70px" placeholder="What specific actions are needed to achieve compliance?"></textarea></div>
+<div class="form-row">
+<div class="form-group"><label class="form-label">Responsible person</label><input type="text" id="gapf-responsible"/></div>
+<div class="form-group"><label class="form-label">Target closure date</label><input type="date" id="gapf-target-date"/></div>
+</div>
+<div class="form-group"><label class="form-label">MAP action reference</label><input type="text" id="gapf-action-ref" style="font-family:monospace" placeholder="MAP-CA-2026-001"/></div>
+<div class="form-group"><label class="form-label">Closure notes</label><textarea id="gapf-closure-notes" style="min-height:50px"></textarea></div>
+</div>
+</div>
+<div>
+<div class="card" style="border:2px solid #DC2626"><div class="card-title" style="color:#DC2626">Status</div>
+<div style="display:flex;flex-direction:column;gap:8px">
+<label style="display:flex;align-items:center;gap:8px;padding:10px;border-radius:8px;cursor:pointer;background:#FEF2F2;border:1px solid #fecaca" onclick="document.getElementById('gapf-status').value='open'"><input type="radio" name="gap-st-r" value="open" style="accent-color:var(--red)" checked><span style="font-weight:700;color:var(--red)">⚠ Open</span></label>
+<label style="display:flex;align-items:center;gap:8px;padding:10px;border-radius:8px;cursor:pointer;background:#EFF6FF;border:1px solid #bfdbfe" onclick="document.getElementById('gapf-status').value='in_progress'"><input type="radio" name="gap-st-r" value="in_progress" style="accent-color:#185FA5"><span style="font-weight:700;color:#185FA5">🔄 In progress</span></label>
+<label style="display:flex;align-items:center;gap:8px;padding:10px;border-radius:8px;cursor:pointer;background:#f0fdf4;border:1px solid #bbf7d0" onclick="document.getElementById('gapf-status').value='closed'"><input type="radio" name="gap-st-r" value="closed" style="accent-color:var(--green)"><span style="font-weight:700;color:#166534">✓ Closed</span></label>
+<label style="display:flex;align-items:center;gap:8px;padding:10px;border-radius:8px;cursor:pointer;background:#f3f4f6;border:1px solid #e5e7eb" onclick="document.getElementById('gapf-status').value='accepted_risk'"><input type="radio" name="gap-st-r" value="accepted_risk" style="accent-color:#6B7280"><span style="font-weight:700;color:#6B7280">✋ Accepted risk</span></label>
+</div>
+<input type="hidden" id="gapf-status" value="open"/>
+<div class="form-group" style="margin-top:10px"><label class="form-label">Completion date</label><input type="date" id="gapf-completion-date"/></div>
+</div>
+</div>
+</div>
+</div>
+
+<!-- Calendar event form -->
+<div id="cal-form" style="display:none">
+<div class="card" style="margin-bottom:14px;padding:0;overflow:hidden">
+<div style="padding:14px 20px;background:linear-gradient(135deg,#1a3a5c,#5B21B6);color:#fff;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+<div style="font-size:17px;font-weight:800" id="cal-form-title">New Compliance Event</div>
+<div style="display:flex;gap:8px">
+<button class="btn" style="background:rgba(255,255,255,.2);color:#fff;border-color:rgba(255,255,255,.3)" onclick="calBack()"><i class="ti ti-arrow-left"></i>Back</button>
+<button id="cal-del-btn" class="btn" style="display:none;background:rgba(0,0,0,.3);color:#fff;border-color:rgba(255,255,255,.3)" onclick="calDelete()"><i class="ti ti-trash"></i></button>
+<button class="btn" style="background:#1D9E75;color:#fff;border-color:#1D9E75" onclick="calSave()"><i class="ti ti-device-floppy"></i>Save</button>
+</div>
+</div>
+</div>
+<div class="card">
+<div class="form-row">
+<div class="form-group"><label class="form-label">Event title</label><input type="text" id="calf-title" placeholder="e.g. Annual safety report submission"/></div>
+<div class="form-group"><label class="form-label">Event type</label>
+<select id="calf-type">
+<option value="submission">📤 Regulatory submission</option><option value="assessment">✅ Compliance assessment</option>
+<option value="renewal">🔄 Licence/permit renewal</option><option value="audit">🔍 Audit</option>
+<option value="review">📋 Review</option><option value="training">🎓 Training</option>
+<option value="inspection">🏗️ Inspection</option><option value="reporting">📊 Reporting</option><option value="other">Other</option>
+</select></div>
+</div>
+<div class="form-row">
+<div class="form-group"><label class="form-label">Legislation / obligation</label><input type="text" id="calf-legislation" placeholder="e.g. OSH Act 2005 s.50"/></div>
+<div class="form-group"><label class="form-label">Obligation reference</label><input type="text" id="calf-ob-ref" style="font-family:monospace"/></div>
+<div class="form-group"><label class="form-label">Due date</label><input type="date" id="calf-due-date"/></div>
+<div class="form-group"><label class="form-label">Recurrence</label>
+<select id="calf-recurrence"><option value="none">No recurrence</option><option value="monthly">Monthly</option>
+<option value="quarterly">Quarterly</option><option value="biannual">Biannual</option><option value="annual">Annual</option></select></div>
+</div>
+<div class="form-row">
+<div class="form-group"><label class="form-label">Responsible person</label><input type="text" id="calf-responsible"/></div>
+<div class="form-group"><label class="form-label">Department</label><input type="text" id="calf-dept"/></div>
+<div class="form-group"><label class="form-label">Reminder (days before)</label><input type="number" id="calf-reminder" value="30" min="1" max="180"/></div>
+<div class="form-group"><label class="form-label">Status</label>
+<select id="calf-status"><option value="upcoming">Upcoming</option><option value="completed">Completed</option><option value="overdue">Overdue</option><option value="waived">Waived</option></select></div>
+</div>
+<div class="form-group"><label class="form-label">Description / notes</label><textarea id="calf-description" style="min-height:60px"></textarea></div>
+<div class="form-row">
+<div class="form-group"><label class="form-label">Completion date</label><input type="date" id="calf-completed-date"/></div>
+<div class="form-group"><label class="form-label">Linked MAP action ref</label><input type="text" id="calf-action-ref" style="font-family:monospace"/></div>
+</div>
 </div>
 </div>
 
