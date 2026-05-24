@@ -68,6 +68,7 @@
 
 
 
+
 const SB='https://iarfxjhahzbhncsaohbg.supabase.co';
 const KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlhcmZ4amhhaHpiaG5jc2FvaGJnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg2OTM1MzAsImV4cCI6MjA5NDI2OTUzMH0.qSjahuX-RwnjWEDmo-LkcorAxpsmyVoaXt4AO4_A9BM';
 let tok=null,prof=null,co=null,chkItems=[],people=[];
@@ -10220,51 +10221,601 @@ await api('/training_sessions',{m:'POST',p:'return=minimal',b:{company_id:prof?.
 toggleForm('training-form');toast('Training saved!');loadTraining();
 }catch(e){toast(e.message,false);}
 }
+// ===================================================================
+// MASTER ACTION PLAN (MAP) / CAPA MODULE — Full Rebuild
+// Action tracking · Assignment workflows · Escalation hierarchy
+// Verification process · Closure approval
+// Sources: Incidents · Audits · Inspections · Complaints · RA · TBT
+// ===================================================================
+
+let mapAllData=[], mapEditingId=null, mapCurrentView='all';
+
+const MAP_STATUS_CFG={
+  open:                 {bg:'#FEF9EC',tc:'#854F0B',    label:'Open'},
+  in_progress:          {bg:'#E6F1FB',tc:'#185FA5',    label:'In Progress'},
+  pending_verification: {bg:'#EDE9FE',tc:'#7C3AED',    label:'Pending Verification'},
+  pending_closure:      {bg:'#FEF6E7',tc:'#C2410C',    label:'Pending Closure'},
+  closed:               {bg:'#EAF3DE',tc:'#3B6D11',    label:'Closed'},
+  cancelled:            {bg:'#f3f4f6',tc:'#6B7280',    label:'Cancelled'}
+};
+
+const MAP_PRIORITY_CFG={
+  critical: {bg:'#FCEBEB',tc:'#A32D2D', label:'Critical', color:'#DC2626'},
+  high:     {bg:'#FEF6E7',tc:'#C2410C', label:'High',     color:'#C2410C'},
+  medium:   {bg:'#FEF9EC',tc:'#854F0B', label:'Medium',   color:'#EF9F27'},
+  low:      {bg:'#EAF3DE',tc:'#3B6D11', label:'Low',      color:'#1D9E75'}
+};
+
+const MAP_SOURCE_CFG={
+  incident:        {emoji:'🚨',label:'Incident',          color:'#DC2626'},
+  audit:           {emoji:'🔎',label:'Audit',             color:'#185FA5'},
+  inspection:      {emoji:'📋',label:'Inspection',        color:'#1D9E75'},
+  complaint:       {emoji:'📢',label:'Complaint',         color:'#8B5CF6'},
+  risk_assessment: {emoji:'⚠️', label:'Risk Assessment',  color:'#EF9F27'},
+  toolbox_talk:    {emoji:'🗣️', label:'Toolbox Talk',      color:'#0891B2'},
+  permit:          {emoji:'🔑',label:'Permit',            color:'#854F0B'},
+  noise_survey:    {emoji:'🔊',label:'Noise Survey',      color:'#7C3AED'},
+  ohealth:         {emoji:'🩺',label:'Occ. Health',       color:'#065F46'},
+  esg:             {emoji:'🌿',label:'Environmental',     color:'#166534'},
+  ppe:             {emoji:'🦺',label:'PPE',               color:'#B45309'},
+  kpi:             {emoji:'📊',label:'KPI Review',        color:'#185FA5'},
+  meeting:         {emoji:'🗓️', label:'Meeting',           color:'#6B7280'},
+  observation:     {emoji:'👁️', label:'Observation',       color:'#6B7280'},
+  manual:          {emoji:'📄',label:'Manual',            color:'#6B7280'},
+  other:           {emoji:'📄',label:'Other',             color:'#6B7280'}
+};
+
+const MAP_TYPE_CFG={
+  corrective:  {emoji:'🔧',label:'Corrective',  color:'#E24B4A'},
+  preventive:  {emoji:'🛡️', label:'Preventive',  color:'#185FA5'},
+  improvement: {emoji:'🚀',label:'Improvement', color:'#1D9E75'},
+  observation: {emoji:'👁️', label:'Observation', color:'#6B7280'}
+};
+
+// ── Entry ─────────────────────────────────────────────────────────────────────
 async function loadActions(){
-const el=document.getElementById('actions-list');
-if(!el)return;
-try{
-let path='/action_tracker?select=*'+cf()+'&order=target_date.asc';
-const mod=document.getElementById('filter-module')?.value;
-const sts=document.getElementById('filter-status')?.value;
-const pri=document.getElementById('filter-priority')?.value;
-if(mod)path+='&source_module=eq.'+mod;
-if(sts)path+='&status=eq.'+sts;
-if(pri)path+='&priority=eq.'+pri;
-const d=await api(path);
-const cnt=document.getElementById('action-count');
-if(cnt)cnt.textContent='('+(d||[]).length+' actions)';
-if(!d||!d.length){el.innerHTML='<p style="padding:20px;color:#666">No actions found</p>';return;}
-const today=new Date();
-let h='<table style="width:100%;border-collapse:collapse"><thead><tr style="background:#f9fafb"><th style="padding:10px;text-align:left;border-bottom:1px solid #e5e7eb">Description</th><th style="padding:10px;text-align:left;border-bottom:1px solid #e5e7eb">Source</th><th style="padding:10px;text-align:left;border-bottom:1px solid #e5e7eb">Responsible</th><th style="padding:10px;text-align:left;border-bottom:1px solid #e5e7eb">Due</th><th style="padding:10px;text-align:left;border-bottom:1px solid #e5e7eb">Priority</th><th style="padding:10px;text-align:left;border-bottom:1px solid #e5e7eb">Status</th><th style="padding:10px"></th></tr></thead><tbody>';
-for(var i=0;i<d.length;i++){
-var x=d[i];
-var ov=x.target_date&&new Date(x.target_date)<today&&x.status!=='closed';
-var dt=x.target_date?new Date(x.target_date).toLocaleDateString('en-GB'):'--';
-var bg=ov?'background:#fef2f2':'';
-var cb=isMgr()?'<button class="btn btn-sm" data-id="'+x.id+'" data-st="'+x.status+'" onclick="var b=this;cycleAction(b.dataset.id,b.dataset.st)"><i class="ti ti-check"></i></button>':'';
-h+='<tr style="border-bottom:1px solid #f3f4f6;'+bg+'"><td style="padding:10px">'+(x.description||'--')+(ov?' <span style="color:red;font-size:10px;font-weight:700">OVERDUE</span>':'')+'</td><td style="padding:10px">'+(x.source_module||'--')+'</td><td style="padding:10px">'+(x.responsible||'--')+'</td><td style="padding:10px">'+dt+'</td><td style="padding:10px">'+prio(x.priority)+'</td><td style="padding:10px">'+stat(x.status)+'</td><td style="padding:10px">'+cb+'</td></tr>';
-}
-h+='</tbody></table>';el.innerHTML=h;
-}catch(e){el.innerHTML='<p style="padding:20px;color:red">'+e.message+'</p>';console.error(e);}
+  var btn=document.getElementById('map-new-btn');
+  if(btn)btn.style.display=isMgr()?'inline-flex':'none';
+  mapShowList();
 }
 
-async function cycleAction(id,s){
-if(!isMgr()){toast('Only managers can update actions',false);return;}
-const ns=s==='closed'?'open':s==='open'?'in_progress':'closed';
-try{
-await api('/action_tracker?id=eq.'+id,{m:'PATCH',p:'return=minimal',b:{status:ns,completion_date:ns==='closed'?new Date().toISOString().slice(0,10):null,updated_at:new Date().toISOString()}});
-toast(ns==='closed'?'Action closed!':ns==='in_progress'?'Marked in progress!':'Action reopened!');
-loadActions();loadDash();
-}catch(e){toast(e.message,false);}
+function mapShowList(){
+  document.getElementById('map-list-view').style.display='block';
+  document.getElementById('map-form-view').style.display='none';
+  mapLoadList();
 }
-async function saveAction(){
-try{
-const rid=document.getElementById('af-resp').value;
-await api('/action_tracker',{m:'POST',p:'return=minimal',b:{company_id:prof?.company_id,source_module:document.getElementById('af-module').value,description:document.getElementById('af-desc').value,responsible:rid?pname(rid):null,target_date:document.getElementById('af-date').value||null,priority:document.getElementById('af-priority').value,status:document.getElementById('af-status').value,comments:document.getElementById('af-comments').value,created_by:prof?.id}});
-toggleForm('action-form');toast('Action added!');loadActions();
-}catch(e){toast(e.message,false);}
+
+function mapSetView(view, btn){
+  mapCurrentView=view;
+  document.querySelectorAll('[id^="map-tab-"]').forEach(t=>t.classList.remove('active'));
+  if(btn)btn.classList.add('active');
+  mapRenderList();
 }
+
+// ── Load & render list ────────────────────────────────────────────────────────
+async function mapLoadList(){
+  var el=document.getElementById('actions-list');if(!el)return;
+  el.innerHTML='<div class="loading-msg">Loading...</div>';
+  try{
+    var d=await api('/action_tracker?select=*'+cf()+'&order=target_date.asc,created_at.desc');
+    mapAllData=d||[];
+    // Metrics
+    var now=new Date();
+    var setM=function(id,v){var e=document.getElementById(id);if(e)e.textContent=v;};
+    var overdue=(d||[]).filter(x=>x.target_date&&new Date(x.target_date)<now&&!['closed','cancelled'].includes(x.status)).length;
+    setM('map-m-overdue',overdue);
+    setM('map-m-open',(d||[]).filter(x=>x.status==='open').length);
+    setM('map-m-inprog',(d||[]).filter(x=>x.status==='in_progress').length);
+    setM('map-m-verify',(d||[]).filter(x=>x.status==='pending_verification').length);
+    setM('map-m-pclose',(d||[]).filter(x=>x.status==='pending_closure').length);
+    setM('map-m-closed',(d||[]).filter(x=>x.status==='closed').length);
+    setM('map-m-total',(d||[]).length);
+    // Escalation banner
+    var escalated=(d||[]).filter(x=>x.escalated);
+    var escBanner=document.getElementById('map-escalation-banner');
+    if(escBanner){
+      if(escalated.length){
+        escBanner.style.display='block';
+        escBanner.innerHTML='<div style="background:#FCEBEB;border:2px solid #E24B4A;border-radius:10px;padding:12px 16px">'
+          +'<div style="font-weight:700;color:#A32D2D;margin-bottom:6px"><i class="ti ti-arrow-up"></i> '+escalated.length+' escalated action'+(escalated.length>1?'s require':'requires')+' management attention</div>'
+          +'<div style="display:flex;flex-wrap:wrap;gap:8px">'
+          +escalated.map(function(x){
+            var pc=MAP_PRIORITY_CFG[x.priority]||MAP_PRIORITY_CFG.medium;
+            return '<span style="background:'+pc.bg+';color:'+pc.tc+';padding:2px 10px;border-radius:99px;font-size:11px;font-weight:600;cursor:pointer" onclick="mapEdit(\''+x.id+'\')">'
+              +escH(x.action_ref||x.id.slice(0,8))+' — '+escH((x.title||x.description||'').substring(0,40))+'</span>';
+          }).join('')+'</div></div>';
+      }else escBanner.style.display='none';
+    }
+    mapRenderList();
+  }catch(e){
+    var el2=document.getElementById('actions-list');
+    if(el2)el2.innerHTML='<p style="padding:20px;color:red">'+e.message+'</p>';
+    console.error(e);
+  }
+}
+
+function mapRenderList(){
+  var el=document.getElementById('actions-list');if(!el)return;
+  var now=new Date();
+  var q=(document.getElementById('map-search')?.value||'').toLowerCase();
+  var fsrc=document.getElementById('map-filter-source')?.value||'';
+  var fpri=document.getElementById('filter-priority')?.value||'';
+  var fst=document.getElementById('filter-status')?.value||'';
+  var ftype=document.getElementById('map-filter-type')?.value||'';
+  var currentUser=prof?.full_name||'';
+
+  var filtered=mapAllData.filter(function(x){
+    if(mapCurrentView==='mine')return (x.assigned_to_name||x.responsible||'').toLowerCase().includes(currentUser.toLowerCase())||x.assigned_to_id===prof?.id;
+    if(mapCurrentView==='overdue')return x.target_date&&new Date(x.target_date)<now&&!['closed','cancelled'].includes(x.status);
+    if(mapCurrentView==='verify')return x.status==='pending_verification';
+    if(mapCurrentView==='closure')return x.status==='pending_closure';
+    return true;
+  }).filter(function(x){
+    var mQ=!q||(x.action_ref||'').toLowerCase().includes(q)||(x.title||'').toLowerCase().includes(q)||(x.description||'').toLowerCase().includes(q)||(x.assigned_to_name||x.responsible||'').toLowerCase().includes(q)||(x.source_ref||'').toLowerCase().includes(q);
+    var mSrc=!fsrc||(x.source_type||x.source_module||'')=== fsrc;
+    var mPri=!fpri||x.priority===fpri;
+    var mSt=!fst||x.status===fst;
+    var mType=!ftype||(x.action_type||'corrective')===ftype;
+    return mQ&&mSrc&&mPri&&mSt&&mType;
+  });
+
+  if(!filtered.length){
+    el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)">'
+      +'<div style="font-size:40px;margin-bottom:12px">✅</div>'
+      +'<div style="font-weight:600;margin-bottom:8px">No actions found</div>'
+      +(isMgr()&&mapCurrentView==='all'&&!q&&!fsrc&&!fpri&&!fst?'<button class="btn btn-primary" onclick="mapNew()"><i class="ti ti-plus"></i>Create first action</button>':'')
+      +'</div>';
+    return;
+  }
+
+  var h='';
+  filtered.forEach(function(x){
+    var isOverdue=x.target_date&&new Date(x.target_date)<now&&!['closed','cancelled'].includes(x.status);
+    var sc=MAP_STATUS_CFG[x.status]||MAP_STATUS_CFG.open;
+    var pc=MAP_PRIORITY_CFG[x.priority]||MAP_PRIORITY_CFG.medium;
+    var srcCfg=MAP_SOURCE_CFG[x.source_type||x.source_module||'manual']||MAP_SOURCE_CFG.manual;
+    var typeCfg=MAP_TYPE_CFG[x.action_type||'corrective']||MAP_TYPE_CFG.corrective;
+    var daysOverdue=isOverdue?Math.floor((now-new Date(x.target_date))/86400000):0;
+    var progress=parseInt(x.progress_pct)||0;
+
+    h+='<div class="card" style="margin:0 0 10px;padding:0;overflow:hidden;border:1px solid '+(isOverdue?'#fecaca':'var(--border)')+';cursor:pointer;transition:box-shadow .15s" '
+      +'data-id="'+x.id+'" onclick="mapEdit(this.dataset.id)" '
+      +'onmouseover="this.style.boxShadow=\'0 4px 16px rgba(0,0,0,.1)\'" onmouseout="this.style.boxShadow=\'\'">'
+      +'<div style="display:flex;align-items:stretch">'
+      +'<div style="width:5px;background:'+pc.color+';flex-shrink:0"></div>'
+      // Source emoji column
+      +'<div style="padding:12px 10px;display:flex;align-items:flex-start;border-right:1px solid var(--border)">'
+      +'<div title="'+escH(srcCfg.label)+'" style="width:36px;height:36px;border-radius:8px;background:'+srcCfg.color+'15;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">'+srcCfg.emoji+'</div></div>'
+      +'<div style="flex:1;padding:10px 14px;min-width:0">'
+      // Top row
+      +'<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-bottom:4px">'
+      +'<div>'
+      +'<div style="display:flex;align-items:center;gap:8px;margin-bottom:2px">'
+      +(x.action_ref?'<span style="font-family:monospace;font-size:11px;font-weight:700;color:'+pc.color+'">'+escH(x.action_ref)+'</span>':'')
+      +'<span style="background:'+srcCfg.color+'15;color:'+srcCfg.color+';padding:1px 7px;border-radius:4px;font-size:10px;font-weight:600">'+escH(srcCfg.label)+'</span>'
+      +'<span style="font-size:11px;color:var(--text2)">'+escH(typeCfg.emoji+' '+typeCfg.label)+'</span>'
+      +(x.escalated?'<span style="background:#FCEBEB;color:#A32D2D;padding:1px 7px;border-radius:4px;font-size:10px;font-weight:700">⬆ ESCALATED</span>':'')
+      +'</div>'
+      +'<div style="font-weight:700;font-size:14px">'+escH(x.title||x.description||'Untitled action')+'</div>'
+      +'</div>'
+      +'<div style="display:flex;gap:6px;flex-wrap:wrap">'
+      +'<span style="background:'+pc.bg+';color:'+pc.tc+';padding:2px 8px;border-radius:99px;font-size:11px;font-weight:700">'+pc.label+'</span>'
+      +'<span style="background:'+sc.bg+';color:'+sc.tc+';padding:2px 8px;border-radius:99px;font-size:11px;font-weight:700">'+sc.label+'</span>'
+      +'</div></div>'
+      // Bottom row: meta
+      +'<div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--text2)">'
+      +(x.assigned_to_name||x.responsible?'<span><i class="ti ti-user" style="font-size:10px"></i> '+escH(x.assigned_to_name||x.responsible||'')+'</span>':'')
+      +(x.department?'<span><i class="ti ti-building" style="font-size:10px"></i> '+escH(x.department)+'</span>':'')
+      +(x.target_date?'<span style="font-weight:'+(isOverdue?'700':'400')+';color:'+(isOverdue?'var(--red)':'inherit')+'">'
+        +'<i class="ti ti-calendar" style="font-size:10px"></i> '+new Date(x.target_date).toLocaleDateString('en-GB')+(isOverdue?' ('+daysOverdue+'d overdue)':'')+'</span>':'')
+      +(x.source_ref?'<span style="font-family:monospace;font-size:10px;color:'+srcCfg.color+'">'+escH(x.source_ref)+'</span>':'')
+      +'</div>'
+      // Progress bar
+      +(progress>0?'<div style="margin-top:6px;display:flex;align-items:center;gap:8px"><div style="flex:1;background:#e5e7eb;border-radius:99px;height:5px;overflow:hidden"><div style="width:'+progress+'%;background:'+(progress===100?'var(--green)':'#185FA5')+';height:100%;border-radius:99px"></div></div><span style="font-size:10px;font-weight:700;color:#185FA5">'+progress+'%</span></div>':'')
+      +'</div>'
+      +'<div style="padding:12px;display:flex;align-items:center;color:var(--text3)">'
+      +'<i class="ti ti-chevron-right" style="font-size:18px"></i></div>'
+      +'</div></div>';
+  });
+  el.innerHTML=h;
+}
+
+// ── Workflow bar ───────────────────────────────────────────────────────────────
+function mapRenderWorkflowBar(x){
+  var el=document.getElementById('map-workflow-bar');if(!el)return;
+  var steps=[
+    {key:'open',label:'Open'},
+    {key:'in_progress',label:'In Progress'},
+    {key:'pending_verification',label:'Verification'},
+    {key:'pending_closure',label:'Pending Closure'},
+    {key:'closed',label:'Closed'}
+  ];
+  if(x.status==='cancelled'){el.innerHTML='<span style="font-size:12px;font-weight:700;color:#6B7280">✗ CANCELLED</span>';return;}
+  var currentIdx=steps.findIndex(s=>s.key===x.status);
+  var h='<div style="display:flex;align-items:center;gap:4px;flex:1">';
+  steps.forEach(function(s,i){
+    var done=i<=currentIdx;var active=s.key===x.status;
+    h+='<div style="display:flex;align-items:center;gap:4px">'
+      +'<div style="padding:4px 10px;border-radius:99px;font-size:11px;font-weight:700;background:'+(active?'#185FA5':done?'#1D9E75':'#f3f4f6')+';color:'+(done?'#fff':'#9CA3AF')+'">'+s.label+'</div>'
+      +(i<steps.length-1?'<div style="width:16px;height:2px;background:'+(i<currentIdx?'#1D9E75':'#e5e7eb')+';flex-shrink:0"></div>':'')+'</div>';
+  });
+  h+='</div>';
+  el.innerHTML=h;
+}
+
+// ── New / Edit ─────────────────────────────────────────────────────────────────
+function mapNew(){
+  mapEditingId=null;
+  document.getElementById('map-form-title').textContent='New Action';
+  document.getElementById('map-form-ref').textContent='MAP-AUTO';
+  document.getElementById('map-del-btn').style.display='none';
+  document.getElementById('map-form-banner').style.background='linear-gradient(135deg,#1a3a5c,#185FA5)';
+  // Clear fields
+  ['mf-title','mf-desc','mf-rootcause','mf-source-ref','mf-location',
+   'mf-start-date','mf-target-date','mf-completed-date','mf-ext-reason',
+   'mf-est-cost','mf-act-cost','mf-dept','mf-assigned-by','mf-assigned-date',
+   'mf-instructions','mf-esc-reason','mf-progress-notes','mf-evidence',
+   'af-comments','mf-verified-date','mf-verif-notes','mf-closure-notes',
+   'mf-closure-rejected'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
+  document.getElementById('mf-type').value='corrective';
+  document.getElementById('af-priority').value='medium';
+  document.getElementById('af-status').value='open';
+  document.getElementById('mf-source-type').value='manual';
+  document.getElementById('mf-progress').value=0;
+  document.getElementById('mf-effectiveness').value=0;
+  mapUpdateProgress(0);
+  document.getElementById('mf-date-extended').checked=false;
+  document.getElementById('mf-escalated').checked=false;
+  document.getElementById('mf-req-verif').checked=true;
+  document.getElementById('mf-req-closure-approval').checked=false;
+  ['mcc-1','mcc-2','mcc-3','mcc-4','mcc-5','mcc-6'].forEach(function(id){var el=document.getElementById(id);if(el)el.checked=false;});
+  document.getElementById('mf-target-date').value=new Date(Date.now()+30*86400000).toISOString().slice(0,10);
+  document.getElementById('mf-start-date').value=new Date().toISOString().slice(0,10);
+  mapUpdateEffectivenessStars(0);
+  mapPopulatePeopleSelects();
+  document.getElementById('map-action-btns').innerHTML='';
+  document.getElementById('map-workflow-bar').innerHTML='';
+  document.getElementById('map-form-type-label').textContent='New CAPA Action';
+  document.getElementById('map-log-content').innerHTML='';
+  document.getElementById('map-list-view').style.display='none';
+  document.getElementById('map-form-view').style.display='block';
+  mapFormTab('details', document.getElementById('map-ftab-details'));
+}
+
+async function mapEdit(id){
+  var x=mapAllData.find(r=>r.id===id);
+  if(!x){try{var d=await api('/action_tracker?id=eq.'+id+cf());x=d?.[0];}catch(ex){}}
+  if(!x)return;
+  mapEditingId=id;
+  var pc=MAP_PRIORITY_CFG[x.priority]||MAP_PRIORITY_CFG.medium;
+  var typeCfg=MAP_TYPE_CFG[x.action_type||'corrective']||MAP_TYPE_CFG.corrective;
+  document.getElementById('map-form-banner').style.background='linear-gradient(135deg,'+pc.color+'dd,'+pc.color+')';
+  document.getElementById('map-form-title').textContent=x.title||x.description||'Action';
+  document.getElementById('map-form-ref').textContent=x.action_ref||x.id?.slice(0,8)||'—';
+  document.getElementById('map-form-type-label').textContent=typeCfg.emoji+' '+typeCfg.label+' Action';
+  document.getElementById('map-del-btn').style.display=isMgr()?'inline-flex':'none';
+  // Fill fields
+  var gf=function(fid,val){var el=document.getElementById(fid);if(el)el.value=val||'';};
+  gf('mf-title',x.title||x.description);gf('mf-desc',x.description);gf('mf-rootcause',x.root_cause);
+  gf('mf-source-ref',x.source_ref||x.source_description);gf('mf-location',x.location);
+  gf('mf-start-date',x.start_date);gf('mf-target-date',x.target_date);gf('mf-completed-date',x.completed_date);
+  gf('mf-ext-reason',x.extension_reason);gf('mf-est-cost',x.estimated_cost||'');gf('mf-act-cost',x.actual_cost||'');
+  gf('mf-dept',x.department||x.dept);gf('mf-assigned-by',x.assigned_by||x.issuer);gf('mf-assigned-date',x.assigned_date);
+  gf('mf-instructions',x.instructions);gf('mf-esc-reason',x.escalation_reason);
+  gf('mf-progress-notes',x.progress_notes||x.comments);gf('mf-evidence',x.evidence);gf('af-comments',x.comments);
+  gf('mf-verified-date',x.verified_date);gf('mf-verif-notes',x.verification_notes);
+  gf('mf-verif-method',x.verification_method);
+  gf('mf-closure-notes',x.closure_notes);gf('mf-closure-rejected',x.closure_rejected_reason);
+  // Selects
+  var setS=function(id,val){var el=document.getElementById(id);if(el&&val)el.value=val;};
+  setS('mf-type',x.action_type||'corrective');setS('af-priority',x.priority||'medium');setS('af-status',x.status||'open');
+  setS('mf-source-type',x.source_type||x.source_module||'manual');setS('mf-esc-level',String(x.escalation_level||0));
+  setS('mf-verif-status',x.verification_status||'not_required');
+  // Checkboxes
+  var cb=function(id,val){var el=document.getElementById(id);if(el)el.checked=!!val;};
+  cb('mf-date-extended',x.date_extended);cb('mf-escalated',x.escalated);
+  cb('mf-req-verif',x.requires_verification!==false);cb('mf-req-closure-approval',x.requires_closure_approval);
+  // Progress
+  var prog=parseInt(x.progress_pct)||0;document.getElementById('mf-progress').value=prog;mapUpdateProgress(prog);
+  // Effectiveness
+  var eff=parseInt(x.effectiveness_rating)||0;document.getElementById('mf-effectiveness').value=eff;mapUpdateEffectivenessStars(eff);
+  // Recurrence
+  var recEl=document.getElementById('mf-recurrence');if(recEl)recEl.value=x.recurrence_prevented==null?'':(x.recurrence_prevented?'true':'false');
+  await mapPopulatePeopleSelects();
+  var assSel=document.getElementById('mf-assigned-to');if(assSel&&x.assigned_to_id)assSel.value=x.assigned_to_id;
+  var escSel=document.getElementById('mf-escalated-to');if(escSel&&x.escalated_to){var opt=Array.from(escSel.options).find(o=>o.text.includes(x.escalated_to));if(opt)escSel.value=opt.value;}
+  var closeSel=document.getElementById('mf-closure-by');if(closeSel&&x.closure_approved_by){var opt2=Array.from(closeSel.options).find(o=>o.text.includes(x.closure_approved_by));if(opt2)closeSel.value=opt2.value;}
+  var verifSel=document.getElementById('mf-verified-by');if(verifSel&&x.verified_by){var opt3=Array.from(verifSel.options).find(o=>o.text.includes(x.verified_by));if(opt3)verifSel.value=opt3.value;}
+  // Workflow
+  mapRenderWorkflowBar(x);
+  mapRenderActionButtons(x);
+  document.getElementById('map-list-view').style.display='none';
+  document.getElementById('map-form-view').style.display='block';
+  mapFormTab('details', document.getElementById('map-ftab-details'));
+  mapLoadLog(id);
+}
+
+async function mapPopulatePeopleSelects(){
+  if(!people||!people.length){try{var d=await api('/people?select=id,first_name,last_name,job_title'+cf());if(d&&d.length)window.people=d;}catch(ex){}}
+  var opts='<option value="">Select person...</option>'+(people||[]).map(function(p){return '<option value="'+p.id+'">'+escH(p.last_name+', '+p.first_name+(p.job_title?' — '+p.job_title:''))+'</option>';}).join('');
+  ['mf-assigned-to','mf-escalated-to','mf-verified-by','mf-closure-by'].forEach(function(id){var el=document.getElementById(id);if(el)el.innerHTML=opts;});
+}
+
+function mapRenderActionButtons(x){
+  var el=document.getElementById('map-action-btns');if(!el)return;
+  var h='';
+  var btn=function(icon,label,onclick,col){return '<button class="btn" style="background:'+col+';color:#fff;border-color:'+col+'" onclick="'+onclick+'"><i class="ti '+icon+'"></i>'+label+'</button>';};
+  if(x.status==='open')h+=btn('ti-player-play','Start Working',"mapChangeStatus('in_progress')",'#185FA5');
+  if(x.status==='in_progress')h+=btn('ti-search','Submit for Verification',"mapChangeStatus('pending_verification')",'#8B5CF6');
+  if(x.status==='in_progress')h+=btn('ti-check','Mark Complete — Skip to Closure',"mapChangeStatus('pending_closure')",'#1D9E75');
+  if(x.status==='pending_verification')h+=btn('ti-certificate','Approve Verification',"mapApproveVerification()",'#8B5CF6');
+  if(x.status==='pending_closure')h+=btn('ti-circle-check','Approve Closure',"mapApproveClosure()",'#1D9E75');
+  if(['open','in_progress'].includes(x.status))h+=btn('ti-arrow-up','Escalate',"mapFormTab('assignment',document.getElementById('map-ftab-assignment'))",'#E24B4A');
+  if(x.status!=='closed'&&x.status!=='cancelled')h+=btn('ti-ban','Cancel Action',"mapChangeStatus('cancelled')",'#6B7280');
+  el.innerHTML=h;
+}
+
+function mapFormTab(tab,btn){
+  document.querySelectorAll('[id^="map-ftab-"]').forEach(t=>t.classList.remove('active'));
+  if(btn)btn.classList.add('active');
+  ['details','assignment','progress','verification','closure','log'].forEach(function(t){
+    var el=document.getElementById('map-fview-'+t);if(el)el.style.display=t===tab?'block':'none';
+  });
+  if(tab==='log'&&mapEditingId)mapLoadLog(mapEditingId);
+}
+
+function mapUpdateSourceLabel(){
+  var type=document.getElementById('mf-source-type')?.value||'manual';
+  var cfg=MAP_SOURCE_CFG[type]||MAP_SOURCE_CFG.manual;
+  var lbl=document.getElementById('mf-source-ref-label');
+  if(lbl)lbl.textContent=cfg.label+' reference';
+}
+
+function mapUpdateProgress(val){
+  val=parseInt(val)||0;
+  var disp=document.getElementById('mf-progress-display');if(disp)disp.textContent=val+'%';
+  var bar=document.getElementById('mf-progress-bar');if(bar)bar.style.width=val+'%';
+  var card=document.getElementById('map-progress-status-card');
+  if(card){
+    var icon=val===100?'✅':val>=75?'🔷':val>=50?'⏳':val>=25?'📋':'📂';
+    var msg=val===100?'Complete — ready for verification':'In progress — '+val+'% done';
+    var color=val===100?'#1D9E75':val>=75?'#185FA5':val>=50?'#EF9F27':'#6B7280';
+    card.innerHTML='<div style="font-size:40px;margin-bottom:8px">'+icon+'</div><div style="font-weight:700;font-size:14px;color:'+color+'">'+msg+'</div>';
+  }
+}
+
+function mapSetEffectiveness(val){
+  document.getElementById('mf-effectiveness').value=val;
+  mapUpdateEffectivenessStars(val);
+}
+function mapUpdateEffectivenessStars(val){
+  var el=document.getElementById('map-effectiveness-stars');if(!el)return;
+  el.innerHTML=[1,2,3,4,5].map(function(i){
+    return '<span style="cursor:pointer;color:'+(i<=val?'#EF9F27':'#d1d5db')+';font-size:24px" onclick="mapSetEffectiveness('+i+')">'+(i<=val?'★':'☆')+'</span>';
+  }).join('');
+}
+
+// ── Save ──────────────────────────────────────────────────────────────────────
+async function mapSave(draft){
+  var g=function(id){var el=document.getElementById(id);return el?el.value||null:null;};
+  var assSel=document.getElementById('mf-assigned-to');var assId=assSel?.value||null;
+  var assName='';if(assId){var p=(people||[]).find(x=>x.id===assId);assName=p?(p.last_name+', '+p.first_name):'';}
+  var escSel=document.getElementById('mf-escalated-to');var escName='';
+  if(escSel?.value){var ep=(people||[]).find(x=>x.id===escSel.value);escName=ep?(ep.last_name+', '+ep.first_name):'';}
+  var closeSel=document.getElementById('mf-closure-by');var closeName='';
+  if(closeSel?.value){var cp=(people||[]).find(x=>x.id===closeSel.value);closeName=cp?(cp.last_name+', '+cp.first_name):'';}
+  var verifSel=document.getElementById('mf-verified-by');var verifName='';
+  if(verifSel?.value){var vp=(people||[]).find(x=>x.id===verifSel.value);verifName=vp?(vp.last_name+', '+vp.first_name):'';}
+  var body={
+    company_id:prof?.company_id,
+    title:g('mf-title'),description:g('mf-desc')||g('mf-title'),
+    action_type:g('mf-type')||'corrective',priority:g('af-priority')||'medium',
+    status:g('af-status')||'open',
+    root_cause:g('mf-rootcause'),
+    source_type:g('mf-source-type')||'manual',source_module:g('mf-source-type')||'manual',
+    source_ref:g('mf-source-ref'),location:g('mf-location'),
+    start_date:g('mf-start-date')||null,target_date:g('mf-target-date')||null,
+    completed_date:g('mf-completed-date')||null,
+    date_extended:document.getElementById('mf-date-extended')?.checked||false,
+    extension_reason:g('mf-ext-reason'),
+    estimated_cost:parseFloat(g('mf-est-cost'))||null,actual_cost:parseFloat(g('mf-act-cost'))||null,
+    department:g('mf-dept'),
+    assigned_to_id:assId||null,assigned_to_name:assName||null,
+    responsible:assName||g('mf-assigned-to'),
+    assigned_by:g('mf-assigned-by'),assigned_date:g('mf-assigned-date')||null,
+    instructions:g('mf-instructions'),
+    escalated:document.getElementById('mf-escalated')?.checked||false,
+    escalated_to:escName||null,escalation_level:parseInt(g('mf-esc-level'))||0,
+    escalation_reason:g('mf-esc-reason'),
+    progress_pct:parseInt(document.getElementById('mf-progress')?.value)||0,
+    progress_notes:g('mf-progress-notes'),evidence:g('mf-evidence'),comments:g('af-comments'),
+    requires_verification:document.getElementById('mf-req-verif')?.checked!==false,
+    verified_by:verifName||null,verified_date:g('mf-verified-date')||null,
+    verification_method:g('mf-verif-method'),verification_notes:g('mf-verif-notes'),
+    verification_status:g('mf-verif-status')||'not_required',
+    requires_closure_approval:document.getElementById('mf-req-closure-approval')?.checked||false,
+    closure_approved_by:closeName||null,closure_approved_date:g('mf-closure-date')||null,
+    closure_notes:g('mf-closure-notes'),closure_rejected_reason:g('mf-closure-rejected'),
+    effectiveness_rating:parseInt(document.getElementById('mf-effectiveness')?.value)||null,
+    recurrence_prevented:g('mf-recurrence')===''?null:g('mf-recurrence')==='true',
+    updated_at:new Date().toISOString()
+  };
+  try{
+    var refStr='';
+    if(mapEditingId){
+      var old=mapAllData.find(x=>x.id===mapEditingId)||{};
+      await api('/action_tracker?id=eq.'+mapEditingId,{m:'PATCH',p:'return=minimal',b:body});
+      var idx=mapAllData.findIndex(x=>x.id===mapEditingId);if(idx>=0)Object.assign(mapAllData[idx],body);
+      // Log status change
+      if(old.status!==body.status){
+        try{await api('/map_activity_log',{m:'POST',p:'return=minimal',b:{company_id:prof?.company_id,action_id:mapEditingId,activity_type:'Status changed',performed_by:prof?.full_name||'User',old_value:old.status,new_value:body.status}});}catch(ex){}
+      }
+      toast('Action updated!');
+    }else{
+      body.created_by=prof?.id;
+      var res=await api('/action_tracker',{m:'POST',p:'return=representation',b:body});
+      if(res?.[0]?.id){
+        var yr=new Date().getFullYear();var typeCode={corrective:'CA',preventive:'PA',improvement:'IA',observation:'OB'}[body.action_type]||'MA';
+        var ref='MAP-'+typeCode+'-'+yr+'-'+String(mapAllData.length+1).padStart(3,'0');
+        await api('/action_tracker?id=eq.'+res[0].id,{m:'PATCH',p:'return=minimal',b:{action_ref:ref}});
+        res[0].action_ref=ref;mapAllData.unshift(res[0]);mapEditingId=res[0].id;
+        document.getElementById('map-form-ref').textContent=ref;refStr=' Ref: '+ref;
+        try{await api('/map_activity_log',{m:'POST',p:'return=minimal',b:{company_id:prof?.company_id,action_id:res[0].id,activity_type:'Action created',performed_by:prof?.full_name||'User',new_value:body.status}});}catch(ex){}
+      }
+      toast('Action saved!'+refStr);
+      // Update header
+      document.getElementById('map-form-title').textContent=body.title||body.description||'Action';
+      document.getElementById('map-del-btn').style.display=isMgr()?'inline-flex':'none';
+    }
+    if(mapEditingId){
+      var updated=mapAllData.find(x=>x.id===mapEditingId);
+      if(updated){mapRenderWorkflowBar(updated);mapRenderActionButtons(updated);}
+    }
+  }catch(e){toast(e.message,false);console.error(e);}
+}
+
+// ── Status changes ────────────────────────────────────────────────────────────
+async function mapChangeStatus(newStatus){
+  var old=mapAllData.find(x=>x.id===mapEditingId)||{};
+  var extraBody={status:newStatus,updated_at:new Date().toISOString()};
+  if(newStatus==='in_progress'&&!old.start_date)extraBody.start_date=new Date().toISOString().slice(0,10);
+  if(newStatus==='closed')extraBody.completed_date=new Date().toISOString().slice(0,10);
+  try{
+    await api('/action_tracker?id=eq.'+mapEditingId,{m:'PATCH',p:'return=minimal',b:extraBody});
+    Object.assign(old,extraBody);var st=document.getElementById('af-status');if(st)st.value=newStatus;
+    try{await api('/map_activity_log',{m:'POST',p:'return=minimal',b:{company_id:prof?.company_id,action_id:mapEditingId,activity_type:'Status changed to '+newStatus.replace(/_/g,' '),performed_by:prof?.full_name||'User',old_value:old.status,new_value:newStatus}});}catch(ex){}
+    toast('Status updated to: '+newStatus.replace(/_/g,' '));
+    mapRenderWorkflowBar(old);mapRenderActionButtons(old);
+    mapLoadLog(mapEditingId);
+  }catch(e){toast(e.message,false);}
+}
+
+async function mapApproveVerification(){
+  var notesEl=document.getElementById('mf-verif-notes');var verifEl=document.getElementById('mf-verified-by');
+  var notes=notesEl?.value?.trim();if(!notes){toast('Please add verification notes before approving',false);return;}
+  var verifSel=document.getElementById('mf-verified-by');var verifName='';
+  if(verifSel?.value){var p=(people||[]).find(x=>x.id===verifSel.value);verifName=p?(p.last_name+', '+p.first_name):'';}
+  var body={status:'pending_closure',verification_status:'passed',verified_date:new Date().toISOString().slice(0,10),verified_by:verifName||prof?.full_name||'Verifier',verification_notes:notes,updated_at:new Date().toISOString()};
+  try{
+    await api('/action_tracker?id=eq.'+mapEditingId,{m:'PATCH',p:'return=minimal',b:body});
+    var x=mapAllData.find(r=>r.id===mapEditingId);if(x)Object.assign(x,body);
+    var stEl=document.getElementById('af-status');if(stEl)stEl.value='pending_closure';
+    var vsEl=document.getElementById('mf-verif-status');if(vsEl)vsEl.value='passed';
+    try{await api('/map_activity_log',{m:'POST',p:'return=minimal',b:{company_id:prof?.company_id,action_id:mapEditingId,activity_type:'Verification approved — ready for closure',performed_by:verifName||prof?.full_name||'User'}});}catch(ex){}
+    toast('✓ Verification approved — action moved to Pending Closure');
+    var updated=mapAllData.find(r=>r.id===mapEditingId);if(updated){mapRenderWorkflowBar(updated);mapRenderActionButtons(updated);}
+    mapFormTab('closure',document.getElementById('map-ftab-closure'));
+    mapLoadLog(mapEditingId);
+  }catch(e){toast(e.message,false);}
+}
+
+async function mapFailVerification(){
+  var reason=prompt('Reason for verification failure — what needs to be done again?');if(!reason)return;
+  var body={status:'in_progress',verification_status:'failed',verification_notes:(document.getElementById('mf-verif-notes')?.value||'')+'\nFAILED: '+reason,updated_at:new Date().toISOString()};
+  try{
+    await api('/action_tracker?id=eq.'+mapEditingId,{m:'PATCH',p:'return=minimal',b:body});
+    var x=mapAllData.find(r=>r.id===mapEditingId);if(x)Object.assign(x,body);
+    var stEl=document.getElementById('af-status');if(stEl)stEl.value='in_progress';
+    try{await api('/map_activity_log',{m:'POST',p:'return=minimal',b:{company_id:prof?.company_id,action_id:mapEditingId,activity_type:'Verification failed — action reopened',performed_by:prof?.full_name||'User',notes:reason}});}catch(ex){}
+    toast('✗ Verification failed — action reopened for further work');
+    var updated=mapAllData.find(r=>r.id===mapEditingId);if(updated){mapRenderWorkflowBar(updated);mapRenderActionButtons(updated);}
+    mapLoadLog(mapEditingId);
+  }catch(e){toast(e.message,false);}
+}
+
+async function mapApproveClosure(){
+  var closeName='';var closeSel=document.getElementById('mf-closure-by');
+  if(closeSel?.value){var cp=(people||[]).find(x=>x.id===closeSel.value);closeName=cp?(cp.last_name+', '+cp.first_name):'';}
+  var notes=document.getElementById('mf-closure-notes')?.value?.trim();
+  var checked=['mcc-1','mcc-2','mcc-3','mcc-4','mcc-5','mcc-6'].filter(function(id){return document.getElementById(id)?.checked;}).length;
+  if(checked<3){toast('Please confirm at least 3 closure checklist items before approving closure',false);return;}
+  var body={status:'closed',closure_approved_by:closeName||prof?.full_name||'Approver',closure_approved_date:new Date().toISOString().slice(0,10),closure_notes:notes||'',completed_date:new Date().toISOString().slice(0,10),progress_pct:100,updated_at:new Date().toISOString()};
+  try{
+    await api('/action_tracker?id=eq.'+mapEditingId,{m:'PATCH',p:'return=minimal',b:body});
+    var x=mapAllData.find(r=>r.id===mapEditingId);if(x)Object.assign(x,body);
+    var stEl=document.getElementById('af-status');if(stEl)stEl.value='closed';
+    document.getElementById('mf-progress').value=100;mapUpdateProgress(100);
+    try{await api('/map_activity_log',{m:'POST',p:'return=minimal',b:{company_id:prof?.company_id,action_id:mapEditingId,activity_type:'Action CLOSED — closure approved by '+(closeName||'User'),performed_by:closeName||prof?.full_name||'User'}});}catch(ex){}
+    toast('✅ Action CLOSED and approved!');
+    var updated=mapAllData.find(r=>r.id===mapEditingId);if(updated){mapRenderWorkflowBar(updated);mapRenderActionButtons(updated);}
+    mapLoadLog(mapEditingId);
+  }catch(e){toast(e.message,false);}
+}
+
+async function mapRejectClosure(){
+  var reason=document.getElementById('mf-closure-rejected')?.value?.trim();
+  if(!reason)reason=prompt('Reason for rejecting closure:');if(!reason)return;
+  var body={status:'in_progress',closure_rejected_reason:reason,updated_at:new Date().toISOString()};
+  try{
+    await api('/action_tracker?id=eq.'+mapEditingId,{m:'PATCH',p:'return=minimal',b:body});
+    var x=mapAllData.find(r=>r.id===mapEditingId);if(x)Object.assign(x,body);
+    var stEl=document.getElementById('af-status');if(stEl)stEl.value='in_progress';
+    try{await api('/map_activity_log',{m:'POST',p:'return=minimal',b:{company_id:prof?.company_id,action_id:mapEditingId,activity_type:'Closure REJECTED — action reopened',performed_by:prof?.full_name||'User',notes:reason}});}catch(ex){}
+    toast('Closure rejected — action reopened. Please address the rejection reason.');
+    var updated=mapAllData.find(r=>r.id===mapEditingId);if(updated){mapRenderWorkflowBar(updated);mapRenderActionButtons(updated);}
+    mapLoadLog(mapEditingId);
+  }catch(e){toast(e.message,false);}
+}
+
+async function mapTriggerEscalation(){
+  var escSel=document.getElementById('mf-escalated-to');var escName='';
+  if(escSel?.value){var ep=(people||[]).find(x=>x.id===escSel.value);escName=ep?(ep.last_name+', '+ep.first_name):'';}
+  var reason=document.getElementById('mf-esc-reason')?.value?.trim();
+  if(!escName){toast('Please select the person to escalate to first',false);return;}
+  if(!reason){toast('Please enter the escalation reason',false);return;}
+  var level=parseInt(document.getElementById('mf-esc-level')?.value)||1;
+  var body={escalated:true,escalated_to:escName,escalation_level:level,escalation_reason:reason,escalated_at:new Date().toISOString(),updated_at:new Date().toISOString()};
+  try{
+    await api('/action_tracker?id=eq.'+mapEditingId,{m:'PATCH',p:'return=minimal',b:body});
+    var x=mapAllData.find(r=>r.id===mapEditingId);if(x)Object.assign(x,body);
+    try{await api('/map_activity_log',{m:'POST',p:'return=minimal',b:{company_id:prof?.company_id,action_id:mapEditingId,activity_type:'Action ESCALATED to Level '+level+' — '+escName,performed_by:prof?.full_name||'User',notes:reason}});}catch(ex){}
+    toast('⬆ Action escalated to: '+escName);
+    document.getElementById('mf-escalated').checked=true;
+    mapLoadLog(mapEditingId);
+  }catch(e){toast(e.message,false);}
+}
+
+// ── Activity Log ──────────────────────────────────────────────────────────────
+async function mapLoadLog(id){
+  var el=document.getElementById('map-log-content');if(!el)return;
+  try{
+    var d=await api('/map_activity_log?action_id=eq.'+id+'&order=performed_at.desc');
+    if(!d||!d.length){el.innerHTML='<div class="card"><div style="text-align:center;padding:20px;color:var(--text2)">No activity recorded yet</div></div>';return;}
+    var h='<div class="card" style="padding:0;overflow:hidden">'
+      +'<div style="padding:10px 16px;background:#1a3a5c;color:#fff;font-weight:700">Activity Log</div>';
+    d.forEach(function(a,i){
+      var bg=i%2===0?'#fff':'#f9fafb';
+      h+='<div style="padding:10px 16px;border-bottom:1px solid #f0f0f0;display:flex;gap:12px;background:'+bg+'">'
+        +'<div style="font-size:11px;color:var(--text2);min-width:130px">'+new Date(a.performed_at).toLocaleString('en-GB')+'</div>'
+        +'<div style="font-size:12px;font-weight:600;flex:1">'+escH(a.activity_type||'—')+'</div>'
+        +(a.old_value&&a.new_value?'<div style="font-size:11px;color:var(--text2)">'+escH(a.old_value)+' → '+escH(a.new_value)+'</div>':'')
+        +'<div style="font-size:11px;color:var(--text2)">'+escH(a.performed_by||'—')+'</div>'
+        +'</div>';
+    });
+    h+='</div>';el.innerHTML=h;
+  }catch(e){el.innerHTML='<div class="card"><div style="color:var(--text2);padding:12px">Activity log unavailable</div></div>';}
+}
+
+// ── Delete ────────────────────────────────────────────────────────────────────
+function mapDelete(){
+  if(!mapEditingId||!confirm('Delete this action?'))return;
+  api('/action_tracker?id=eq.'+mapEditingId,{m:'DELETE'}).then(function(){
+    mapAllData=mapAllData.filter(x=>x.id!==mapEditingId);
+    toast('Action deleted!');mapEditingId=null;mapShowList();
+  }).catch(function(e){toast(e.message,false);});
+}
+
+// Keep legacy function aliases for backward compatibility with auto-actions from other modules
+function saveAction(){mapSave();}
+function cycleAction(id, currentStatus){
+  var next={open:'in_progress',in_progress:'pending_closure',pending_closure:'closed',closed:'closed'}[currentStatus]||'in_progress';
+  api('/action_tracker?id=eq.'+id,{m:'PATCH',p:'return=minimal',b:{status:next,updated_at:new Date().toISOString()}}).then(function(){
+    var x=mapAllData.find(r=>r.id===id);if(x)x.status=next;mapRenderList();mapLoadList();
+    toast('Status updated!');
+  }).catch(function(e){toast(e.message,false);});
+}
+
+
 async function loadDocs(){
 const el=document.getElementById('docs-list');
 if(!el)return;
@@ -11058,6 +11609,7 @@ function sopSaveToDocControl(){
   toast('SOP saved to Document Control!');
   sopSave();
 }
+
 
 
 
@@ -15901,7 +16453,349 @@ Toolbox talk / safety briefing conducted before starting work
 </div><!-- end page-training -->
 
 <div id="page-actions" class="page">
-<div class="page-header"><div class="page-title">Master Action Plan</div><button class="btn btn-primary" onclick="toggleForm('action-form')"><i class="ti ti-plus"></i>Add action</button></div><div class="card" id="action-form" style="display:none"><div class="card-title">Add action manually</div><div class="form-row"><div class="form-group"><label class="form-label">Description</label><input type="text" id="af-desc"/></div><div class="form-group"><label class="form-label">Source module</label><select id="af-module"><option value="manual">Manual</option><option value="inspection">Inspection</option><option value="event">Event</option><option value="risk_assessment">Risk Assessment</option><option value="investigation">Investigation</option><option value="meeting">Meeting</option><option value="permit">Permit</option><option value="noise_survey">Noise Survey</option><option value="kpi">KPI</option></select></div></div><div class="form-row"><div class="form-group"><label class="form-label">Responsible</label><select id="af-resp"><option value="">Select person...</option></select></div><div class="form-group"><label class="form-label">Target date</label><input type="date" id="af-date"/></div></div><div class="form-row"><div class="form-group"><label class="form-label">Priority</label><select id="af-priority"><option value="low">Low</option><option value="medium">Medium</option><option value="high">High</option><option value="critical">Critical</option></select></div><div class="form-group"><label class="form-label">Status</label><select id="af-status"><option value="open">Open</option><option value="in_progress">In Progress</option><option value="closed">Closed</option></select></div></div><div class="form-group"><label class="form-label">Comments / evidence</label><textarea id="af-comments"></textarea></div><div style="display:flex;gap:8px"><button class="btn btn-primary" onclick="saveAction()"><i class="ti ti-device-floppy"></i>Save</button><button class="btn" onclick="toggleForm('action-form')">Cancel</button></div></div><div class="card"><div class="card-title">All actions <span id="action-count" style="font-size:12px;font-weight:400;color:var(--text2)"></span></div><div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap"><select id="filter-module" onchange="loadActions()" style="width:auto;padding:6px 10px;font-size:12px"><option value="">All modules</option><option value="manual">Manual</option><option value="inspection">Inspection</option><option value="event">Event</option><option value="risk_assessment">Risk Assessment</option><option value="investigation">Investigation</option><option value="meeting">Meeting</option></select><select id="filter-status" onchange="loadActions()" style="width:auto;padding:6px 10px;font-size:12px"><option value="">All statuses</option><option value="open">Open</option><option value="in_progress">In Progress</option><option value="overdue">Overdue</option><option value="closed">Closed</option></select><select id="filter-priority" onchange="loadActions()" style="width:auto;padding:6px 10px;font-size:12px"><option value="">All priorities</option><option value="critical">Critical</option><option value="high">High</option><option value="medium">Medium</option><option value="low">Low</option></select></div><div id="actions-list"><div class="loading-msg">Loading...</div></div></div></div>
+<div class="page-header">
+<div>
+<div class="page-title">Master Action Plan</div>
+<div style="font-size:12px;color:var(--text2)">CAPA · Corrective &amp; Preventive Actions · Assignment · Verification · Closure</div>
+</div>
+<div style="display:flex;gap:8px">
+<button class="btn btn-primary" id="map-new-btn" style="display:none" onclick="mapNew()"><i class="ti ti-plus"></i>New action</button>
+</div>
+</div>
+
+<!-- Metrics -->
+<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:10px;margin-bottom:14px">
+<div class="card" style="padding:10px 12px;border-left:4px solid #E24B4A"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">Overdue</div><div style="font-size:22px;font-weight:800;color:#E24B4A" id="map-m-overdue">—</div></div>
+<div class="card" style="padding:10px 12px;border-left:4px solid #EF9F27"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">Open</div><div style="font-size:22px;font-weight:800;color:#EF9F27" id="map-m-open">—</div></div>
+<div class="card" style="padding:10px 12px;border-left:4px solid #185FA5"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">In Progress</div><div style="font-size:22px;font-weight:800;color:#185FA5" id="map-m-inprog">—</div></div>
+<div class="card" style="padding:10px 12px;border-left:4px solid #8B5CF6"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">Pending Verify</div><div style="font-size:22px;font-weight:800;color:#8B5CF6" id="map-m-verify">—</div></div>
+<div class="card" style="padding:10px 12px;border-left:4px solid #EF9F27"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">Pending Closure</div><div style="font-size:22px;font-weight:800;color:#EF9F27" id="map-m-pclose">—</div></div>
+<div class="card" style="padding:10px 12px;border-left:4px solid #1D9E75"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">Closed</div><div style="font-size:22px;font-weight:800;color:#1D9E75" id="map-m-closed">—</div></div>
+<div class="card" style="padding:10px 12px;border-left:4px solid #6B7280"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">Total</div><div style="font-size:22px;font-weight:800" id="map-m-total">—</div></div>
+</div>
+
+<!-- Escalation alerts -->
+<div id="map-escalation-banner" style="display:none;margin-bottom:12px"></div>
+
+<!-- Tabs -->
+<div style="display:flex;gap:0;margin-bottom:14px;border-bottom:2px solid var(--border)">
+<button class="mtg-tab active" id="map-tab-all" onclick="mapSetView('all',this)">📋 All Actions</button>
+<button class="mtg-tab" id="map-tab-mine" onclick="mapSetView('mine',this)">👤 Assigned to Me</button>
+<button class="mtg-tab" id="map-tab-overdue" onclick="mapSetView('overdue',this)">⚠️ Overdue</button>
+<button class="mtg-tab" id="map-tab-verify" onclick="mapSetView('verify',this)">🔍 Pending Verification</button>
+<button class="mtg-tab" id="map-tab-closure" onclick="mapSetView('closure',this)">✅ Pending Closure</button>
+</div>
+
+<!-- Filter bar -->
+<div class="card" style="margin-bottom:12px;padding:10px 14px">
+<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+<input type="text" id="map-search" placeholder="Search ref, title, description, source..." oninput="mapRenderList()" style="flex:1;min-width:180px;padding:7px 12px;border:1px solid var(--border);border-radius:8px;font-size:12px"/>
+<select id="map-filter-source" onchange="mapRenderList()" style="padding:7px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px">
+<option value="">All sources</option>
+<option value="incident">Incident</option><option value="audit">Audit</option>
+<option value="inspection">Inspection</option><option value="complaint">Complaint</option>
+<option value="risk_assessment">Risk Assessment</option><option value="toolbox_talk">Toolbox Talk</option>
+<option value="permit">Permit</option><option value="ohealth">Occupational Health</option>
+<option value="esg">Environmental / ESG</option><option value="ppe">PPE</option><option value="manual">Manual</option>
+</select>
+<select id="filter-priority" onchange="mapRenderList()" style="padding:7px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px">
+<option value="">All priorities</option>
+<option value="critical">Critical</option><option value="high">High</option>
+<option value="medium">Medium</option><option value="low">Low</option>
+</select>
+<select id="filter-status" onchange="mapRenderList()" style="padding:7px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px">
+<option value="">All statuses</option>
+<option value="open">Open</option><option value="in_progress">In Progress</option>
+<option value="pending_verification">Pending Verification</option>
+<option value="pending_closure">Pending Closure</option>
+<option value="closed">Closed</option><option value="cancelled">Cancelled</option>
+</select>
+<select id="map-filter-type" onchange="mapRenderList()" style="padding:7px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px">
+<option value="">All types</option>
+<option value="corrective">Corrective</option><option value="preventive">Preventive</option>
+<option value="improvement">Improvement</option><option value="observation">Observation</option>
+</select>
+</div>
+</div>
+
+<!-- List -->
+<div id="map-list-view">
+<div id="actions-list"></div>
+</div>
+
+<!-- ── DETAIL / FORM VIEW ── -->
+<div id="map-form-view" style="display:none">
+<!-- Header -->
+<div class="card" style="margin-bottom:14px;padding:0;overflow:hidden">
+<div id="map-form-banner" style="padding:16px 24px;background:linear-gradient(135deg,#1a3a5c,#185FA5);color:#fff;display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:10px">
+<div>
+<div style="font-size:11px;font-weight:600;text-transform:uppercase;opacity:.8;letter-spacing:.08em;margin-bottom:4px" id="map-form-type-label">CAPA Action</div>
+<div style="font-size:18px;font-weight:800" id="map-form-title">New Action</div>
+<div style="font-family:monospace;font-size:12px;color:#a8d8f0;margin-top:3px" id="map-form-ref">MAP-AUTO</div>
+</div>
+<div style="display:flex;gap:8px;flex-wrap:wrap">
+<button class="btn" style="background:rgba(255,255,255,.2);color:#fff;border-color:rgba(255,255,255,.3)" onclick="mapShowList()"><i class="ti ti-arrow-left"></i>Back</button>
+<button id="map-del-btn" class="btn" style="display:none;background:rgba(220,38,38,.3);color:#fff;border-color:rgba(220,38,38,.5)" onclick="mapDelete()"><i class="ti ti-trash"></i></button>
+<button class="btn" style="background:rgba(255,255,255,.2);color:#fff;border-color:rgba(255,255,255,.3)" onclick="mapSave('draft')"><i class="ti ti-device-floppy"></i>Save</button>
+</div>
+</div>
+<!-- Workflow bar -->
+<div id="map-workflow-bar" style="padding:10px 24px;background:#f9fafb;border-top:1px solid var(--border);overflow-x:auto"></div>
+</div>
+
+<!-- Action buttons -->
+<div id="map-action-btns" style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap"></div>
+
+<!-- Form tabs -->
+<div style="display:flex;gap:0;margin-bottom:14px;border-bottom:2px solid var(--border)">
+<button class="mtg-tab active" id="map-ftab-details" onclick="mapFormTab('details',this)">📝 Details</button>
+<button class="mtg-tab" id="map-ftab-assignment" onclick="mapFormTab('assignment',this)">👥 Assignment</button>
+<button class="mtg-tab" id="map-ftab-progress" onclick="mapFormTab('progress',this)">📈 Progress</button>
+<button class="mtg-tab" id="map-ftab-verification" onclick="mapFormTab('verification',this)">🔍 Verification</button>
+<button class="mtg-tab" id="map-ftab-closure" onclick="mapFormTab('closure',this)">✅ Closure</button>
+<button class="mtg-tab" id="map-ftab-log" onclick="mapFormTab('log',this)">📜 Activity Log</button>
+</div>
+
+<!-- Details tab -->
+<div id="map-fview-details">
+<div style="display:grid;grid-template-columns:2fr 1fr;gap:14px">
+<div>
+<div class="card" style="margin-bottom:14px"><div class="card-title">Action Details</div>
+<div class="form-group"><label class="form-label">Action title / brief description</label><input type="text" id="mf-title" placeholder="Short descriptive title for this action..."/></div>
+<div class="form-group"><label class="form-label">Full description / what needs to be done</label><textarea id="mf-desc" style="min-height:80px" placeholder="Detailed description of the corrective/preventive action required..."></textarea></div>
+<div class="form-row">
+<div class="form-group"><label class="form-label">Action type</label>
+<select id="mf-type">
+<option value="corrective">🔧 Corrective — fix a known problem</option>
+<option value="preventive">🛡️ Preventive — prevent recurrence</option>
+<option value="improvement">🚀 Improvement — enhance current controls</option>
+<option value="observation">👁️ Observation — monitor a condition</option>
+</select></div>
+<div class="form-group"><label class="form-label">Priority</label>
+<select id="af-priority">
+<option value="critical">🔴 Critical — immediate action</option>
+<option value="high">🟠 High — within 1 week</option>
+<option value="medium" selected>🟡 Medium — within 1 month</option>
+<option value="low">🟢 Low — within 3 months</option>
+</select></div>
+</div>
+<div class="form-group"><label class="form-label">Root cause / reason this action is needed</label><textarea id="mf-rootcause" style="min-height:60px" placeholder="What is the underlying cause? Why is this action necessary?"></textarea></div>
+</div>
+<div class="card" style="margin-bottom:14px;border-left:4px solid #185FA5"><div class="card-title" style="color:#185FA5"><i class="ti ti-link"></i> Source &amp; Origin</div>
+<div class="form-row">
+<div class="form-group"><label class="form-label">Source type</label>
+<select id="mf-source-type" onchange="mapUpdateSourceLabel()">
+<option value="manual">Manual entry</option>
+<option value="incident">🚨 Incident investigation</option>
+<option value="audit">🔎 Audit</option>
+<option value="inspection">📋 Workplace inspection</option>
+<option value="complaint">📢 Complaint</option>
+<option value="risk_assessment">⚠️ Risk assessment</option>
+<option value="toolbox_talk">🗣️ Toolbox talk</option>
+<option value="permit">🔑 Permit to Work</option>
+<option value="noise_survey">🔊 Noise survey</option>
+<option value="ohealth">🩺 Occupational health</option>
+<option value="esg">🌿 Environmental / ESG</option>
+<option value="ppe">🦺 PPE management</option>
+<option value="kpi">📊 KPI review</option>
+<option value="meeting">🗓️ Meeting</option>
+<option value="observation">👁️ Site observation</option>
+<option value="other">📄 Other</option>
+</select></div>
+<div class="form-group"><label class="form-label" id="mf-source-ref-label">Source reference</label><input type="text" id="mf-source-ref" placeholder="Ref number of source document..." style="font-family:monospace"/></div>
+</div>
+<div class="form-group"><label class="form-label">Location / area</label><input type="text" id="mf-location" placeholder="Where does this action apply?"/></div>
+</div>
+</div>
+<div>
+<div class="card" style="margin-bottom:14px;border:2px solid #185FA5"><div class="card-title" style="color:#185FA5">Status &amp; Dates</div>
+<div class="form-group"><label class="form-label">Status</label>
+<select id="af-status">
+<option value="open">Open</option>
+<option value="in_progress">In Progress</option>
+<option value="pending_verification">Pending Verification</option>
+<option value="pending_closure">Pending Closure</option>
+<option value="closed">Closed</option>
+<option value="cancelled">Cancelled</option>
+</select></div>
+<div class="form-group"><label class="form-label">Start date</label><input type="date" id="mf-start-date"/></div>
+<div class="form-group"><label class="form-label">Target completion date</label><input type="date" id="mf-target-date"/></div>
+<div class="form-group"><label class="form-label">Completed date</label><input type="date" id="mf-completed-date"/></div>
+<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px"><input type="checkbox" id="mf-date-extended" style="accent-color:var(--green)"/><label for="mf-date-extended" style="font-size:12px;font-weight:600;cursor:pointer">Due date extended</label></div>
+<div class="form-group"><label class="form-label">Extension reason</label><textarea id="mf-ext-reason" style="min-height:40px"></textarea></div>
+</div>
+<div class="card"><div class="card-title">Cost Tracking</div>
+<div class="form-row">
+<div class="form-group"><label class="form-label">Estimated cost (Rs)</label><input type="number" id="mf-est-cost" step="100" min="0"/></div>
+<div class="form-group"><label class="form-label">Actual cost (Rs)</label><input type="number" id="mf-act-cost" step="100" min="0"/></div>
+</div></div>
+</div>
+</div>
+</div>
+
+<!-- Assignment tab -->
+<div id="map-fview-assignment" style="display:none">
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+<div>
+<div class="card" style="margin-bottom:14px;border:2px solid #1D9E75"><div class="card-title" style="color:#1D9E75"><i class="ti ti-user-check"></i> Primary Assignment</div>
+<div class="form-group"><label class="form-label">Assigned to</label><select id="mf-assigned-to"><option value="">Select person...</option></select></div>
+<div class="form-group"><label class="form-label">Department</label><input type="text" id="mf-dept"/></div>
+<div class="form-row">
+<div class="form-group"><label class="form-label">Assigned by</label><input type="text" id="mf-assigned-by"/></div>
+<div class="form-group"><label class="form-label">Assignment date</label><input type="date" id="mf-assigned-date"/></div>
+</div>
+<div class="form-group"><label class="form-label">Instructions to assignee</label><textarea id="mf-instructions" style="min-height:70px" placeholder="What specifically does the assignee need to do?"></textarea></div>
+</div>
+<div class="card">
+<div class="card-title" style="color:#E24B4A"><i class="ti ti-arrow-up"></i> Escalation</div>
+<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px"><input type="checkbox" id="mf-escalated" style="accent-color:var(--red)"/><label for="mf-escalated" style="font-size:13px;font-weight:600;cursor:pointer;color:var(--red)">This action has been escalated</label></div>
+<div class="form-row">
+<div class="form-group"><label class="form-label">Escalated to</label><select id="mf-escalated-to"><option value="">Select person...</option></select></div>
+<div class="form-group"><label class="form-label">Escalation level</label><select id="mf-esc-level"><option value="0">Level 0 — not escalated</option><option value="1">Level 1 — supervisor</option><option value="2">Level 2 — manager</option><option value="3">Level 3 — director / executive</option></select></div>
+</div>
+<div class="form-group"><label class="form-label">Escalation reason</label><textarea id="mf-esc-reason" style="min-height:60px" placeholder="Why was this escalated? What attempts were made before escalation?"></textarea></div>
+</div>
+</div>
+<div>
+<div class="card" style="border:2px solid #185FA5">
+<div class="card-title" style="color:#185FA5">Escalation Hierarchy</div>
+<div style="font-size:12px;color:var(--text2);margin-bottom:12px">Automatic escalation triggers when overdue thresholds are exceeded</div>
+<div style="display:flex;flex-direction:column;gap:6px">
+<div style="padding:10px 12px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px"><div style="font-weight:700;font-size:12px;color:#166534">Level 0 — Assigned person</div><div style="font-size:11px;color:var(--text2)">Primary responsibility. Notified on assignment and 7 days before due date.</div></div>
+<div style="padding:10px 12px;background:#EFF6FF;border:1px solid #bfdbfe;border-radius:8px"><div style="font-weight:700;font-size:12px;color:#185FA5">Level 1 — Supervisor (auto: 7 days overdue)</div><div style="font-size:11px;color:var(--text2)">Escalated if action not completed within 7 days of target date.</div></div>
+<div style="padding:10px 12px;background:#FEF9EC;border:1px solid #fcd34d;border-radius:8px"><div style="font-weight:700;font-size:12px;color:#854F0B">Level 2 — Manager (auto: 21 days overdue)</div><div style="font-size:11px;color:var(--text2)">Further escalation if still incomplete after 21 days overdue.</div></div>
+<div style="padding:10px 12px;background:#FEF2F2;border:1px solid #fecaca;border-radius:8px"><div style="font-weight:700;font-size:12px;color:#A32D2D">Level 3 — Director / Executive (auto: 45 days overdue)</div><div style="font-size:11px;color:var(--text2)">Final escalation for critical overdue actions requiring executive intervention.</div></div>
+</div>
+<button class="btn btn-sm" style="margin-top:12px;width:100%;justify-content:center;color:#E24B4A;border-color:#E24B4A" onclick="mapTriggerEscalation()"><i class="ti ti-arrow-up"></i>Trigger manual escalation now</button>
+</div>
+</div>
+</div>
+</div>
+
+<!-- Progress tab -->
+<div id="map-fview-progress" style="display:none">
+<div style="display:grid;grid-template-columns:2fr 1fr;gap:14px">
+<div>
+<div class="card" style="margin-bottom:14px"><div class="card-title">Progress Update</div>
+<div class="form-group"><label class="form-label">% Complete</label>
+<div style="display:flex;align-items:center;gap:12px">
+<input type="range" id="mf-progress" min="0" max="100" step="5" value="0" oninput="mapUpdateProgress(this.value)" style="flex:1;accent-color:var(--green)"/>
+<div style="font-size:20px;font-weight:800;color:var(--green);min-width:50px" id="mf-progress-display">0%</div>
+</div>
+<div style="width:100%;background:#e5e7eb;border-radius:99px;height:8px;margin-top:6px;overflow:hidden"><div id="mf-progress-bar" style="height:100%;background:var(--green);border-radius:99px;width:0%;transition:width .3s"></div></div>
+</div>
+<div class="form-group"><label class="form-label">Progress notes / update</label><textarea id="mf-progress-notes" style="min-height:80px" placeholder="Describe what has been done so far, any obstacles, current status..."></textarea></div>
+<div class="form-group"><label class="form-label">Evidence / supporting documents</label><textarea id="mf-evidence" style="min-height:60px" placeholder="List evidence collected: photos, documents, records, test results..."></textarea></div>
+<div class="form-group"><label class="form-label">Comments</label><textarea id="af-comments" style="min-height:50px"></textarea></div>
+</div>
+</div>
+<div>
+<div class="card" style="margin-bottom:14px">
+<div class="card-title">Completion</div>
+<div id="map-progress-status-card" style="text-align:center;padding:20px">
+<div style="font-size:48px;margin-bottom:10px">📈</div>
+<div style="font-size:14px;font-weight:700;color:var(--text2)">Enter progress above</div>
+</div>
+</div>
+<div class="card">
+<div class="card-title">Effectiveness</div>
+<div style="font-size:12px;color:var(--text2);margin-bottom:8px">After closure: rate how effective this action was</div>
+<div style="display:flex;gap:6px;justify-content:center;font-size:20px" id="map-effectiveness-stars">
+<span style="cursor:pointer" onclick="mapSetEffectiveness(1)">☆</span>
+<span style="cursor:pointer" onclick="mapSetEffectiveness(2)">☆</span>
+<span style="cursor:pointer" onclick="mapSetEffectiveness(3)">☆</span>
+<span style="cursor:pointer" onclick="mapSetEffectiveness(4)">☆</span>
+<span style="cursor:pointer" onclick="mapSetEffectiveness(5)">☆</span>
+</div>
+<input type="hidden" id="mf-effectiveness" value="0"/>
+<div class="form-group" style="margin-top:10px"><label class="form-label">Did this prevent recurrence?</label>
+<select id="mf-recurrence"><option value="">— Not yet assessed</option><option value="true">✓ Yes — recurrence prevented</option><option value="false">✗ No — did not fully prevent</option></select></div>
+</div>
+</div>
+</div>
+</div>
+
+<!-- Verification tab -->
+<div id="map-fview-verification" style="display:none">
+<div style="display:grid;grid-template-columns:2fr 1fr;gap:14px">
+<div class="card">
+<div class="card-title" style="color:#8B5CF6"><i class="ti ti-search"></i> Verification Process</div>
+<div style="font-size:12px;color:var(--text2);margin-bottom:12px">Verification confirms the action was implemented correctly and the hazard/problem has been adequately controlled.</div>
+<div style="display:flex;align-items:center;gap:8px;margin-bottom:12px"><input type="checkbox" id="mf-req-verif" style="accent-color:#8B5CF6"/><label for="mf-req-verif" style="font-size:13px;font-weight:600;cursor:pointer">Verification required before closure</label></div>
+<div class="form-row">
+<div class="form-group"><label class="form-label">Verified by</label><select id="mf-verified-by"><option value="">Select verifier...</option></select></div>
+<div class="form-group"><label class="form-label">Verification date</label><input type="date" id="mf-verified-date"/></div>
+</div>
+<div class="form-group"><label class="form-label">Verification method</label>
+<select id="mf-verif-method">
+<option value="">Select method...</option>
+<option value="site_inspection">Site inspection / walkthrough</option>
+<option value="document_review">Document review</option>
+<option value="measurement">Measurement / testing</option>
+<option value="observation">Behavioral observation</option>
+<option value="interview">Interview / interview workers</option>
+<option value="photo_evidence">Photo evidence review</option>
+<option value="audit">Audit or re-audit</option>
+<option value="other">Other</option>
+</select></div>
+<div class="form-group"><label class="form-label">Verification notes / findings</label><textarea id="mf-verif-notes" style="min-height:80px" placeholder="What was observed/tested? How was the action verified as effective?"></textarea></div>
+<div class="form-group"><label class="form-label">Verification result</label>
+<select id="mf-verif-status">
+<option value="not_required">Not required</option>
+<option value="pending">Pending — not yet verified</option>
+<option value="passed">✓ Passed — action verified effective</option>
+<option value="failed">✗ Failed — action did not achieve objective</option>
+</select></div>
+</div>
+<div class="card" style="border:2px solid #8B5CF6">
+<div class="card-title" style="color:#8B5CF6">Verification Decision</div>
+<div id="map-verif-decision" style="padding:12px;text-align:center"><div style="font-size:32px;margin-bottom:8px">🔍</div><div style="font-size:13px;color:var(--text2)">Complete verification details to proceed to closure</div></div>
+<button class="btn btn-primary" style="width:100%;justify-content:center;background:#8B5CF6;border-color:#8B5CF6;margin-top:10px" onclick="mapApproveVerification()"><i class="ti ti-check"></i>Mark as Verified — proceed to closure</button>
+<button class="btn" style="width:100%;justify-content:center;margin-top:6px;color:#E24B4A;border-color:#E24B4A" onclick="mapFailVerification()"><i class="ti ti-x"></i>Verification failed — reopen action</button>
+</div>
+</div>
+</div>
+
+<!-- Closure tab -->
+<div id="map-fview-closure" style="display:none">
+<div style="display:grid;grid-template-columns:2fr 1fr;gap:14px">
+<div class="card">
+<div class="card-title" style="color:#1D9E75"><i class="ti ti-check"></i> Closure Approval</div>
+<div style="font-size:12px;color:var(--text2);margin-bottom:12px">Formal closure approval confirms the action is complete, effective and no further follow-up is required.</div>
+<div style="display:flex;align-items:center;gap:8px;margin-bottom:12px"><input type="checkbox" id="mf-req-closure-approval" style="accent-color:var(--green)"/><label for="mf-req-closure-approval" style="font-size:13px;font-weight:600;cursor:pointer">Closure approval required (for high/critical priority)</label></div>
+<div class="form-row">
+<div class="form-group"><label class="form-label">Closure approved by</label><select id="mf-closure-by"><option value="">Select approver...</option></select></div>
+<div class="form-group"><label class="form-label">Closure date</label><input type="date" id="mf-closure-date"/></div>
+</div>
+<div class="form-group"><label class="form-label">Closure notes — summary of what was achieved</label><textarea id="mf-closure-notes" style="min-height:80px" placeholder="Summarise what was done, evidence of completion, and confirmation that the risk/problem has been controlled..."></textarea></div>
+<div class="form-group"><label class="form-label">Rejection reason (if closure is refused)</label><textarea id="mf-closure-rejected" style="min-height:50px" placeholder="If closure is being rejected, explain why and what additional work is required..."></textarea></div>
+</div>
+<div>
+<div class="card" style="margin-bottom:14px;border:2px solid #1D9E75">
+<div class="card-title" style="color:#1D9E75">Closure Checklist</div>
+<div style="display:flex;flex-direction:column;gap:8px;font-size:12px">
+<label style="display:flex;align-items:flex-start;gap:8px;cursor:pointer"><input type="checkbox" id="mcc-1" style="accent-color:var(--green);margin-top:1px"/> Action completed as described</label>
+<label style="display:flex;align-items:flex-start;gap:8px;cursor:pointer"><input type="checkbox" id="mcc-2" style="accent-color:var(--green);margin-top:1px"/> Evidence of completion available</label>
+<label style="display:flex;align-items:flex-start;gap:8px;cursor:pointer"><input type="checkbox" id="mcc-3" style="accent-color:var(--green);margin-top:1px"/> Verification completed (if required)</label>
+<label style="display:flex;align-items:flex-start;gap:8px;cursor:pointer"><input type="checkbox" id="mcc-4" style="accent-color:var(--green);margin-top:1px"/> Root cause addressed</label>
+<label style="display:flex;align-items:flex-start;gap:8px;cursor:pointer"><input type="checkbox" id="mcc-5" style="accent-color:var(--green);margin-top:1px"/> Similar areas / tasks reviewed</label>
+<label style="display:flex;align-items:flex-start;gap:8px;cursor:pointer"><input type="checkbox" id="mcc-6" style="accent-color:var(--green);margin-top:1px"/> No further risk identified</label>
+</div>
+<button class="btn btn-primary" style="background:#1D9E75;border-color:#1D9E75;width:100%;justify-content:center;margin-top:12px" onclick="mapApproveClosure()"><i class="ti ti-check"></i>Approve &amp; Close Action</button>
+<button class="btn" style="color:#E24B4A;border-color:#E24B4A;width:100%;justify-content:center;margin-top:6px" onclick="mapRejectClosure()"><i class="ti ti-x"></i>Reject closure — reopen</button>
+</div>
+</div>
+</div>
+</div>
+
+<!-- Activity Log tab -->
+<div id="map-fview-log" style="display:none">
+<div id="map-log-content"><div class="loading-msg">Loading...</div></div>
+</div>
+
+</div><!-- end map-form-view -->
+</div><!-- end page-actions -->
+
 <div id="page-sop" class="page">
 <div class="page-header">
 <div>
