@@ -56,6 +56,8 @@
 
 
 
+
+
 const SB='https://iarfxjhahzbhncsaohbg.supabase.co';
 const KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlhcmZ4amhhaHpiaG5jc2FvaGJnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg2OTM1MzAsImV4cCI6MjA5NDI2OTUzMH0.qSjahuX-RwnjWEDmo-LkcorAxpsmyVoaXt4AO4_A9BM';
 let tok=null,prof=null,co=null,chkItems=[],people=[];
@@ -180,7 +182,7 @@ if(target){
   target.classList.add('active');
 }
 if(el&&el.classList)el.classList.add('active');
-const L={dashboard:loadDash,kpi:kpiLoadAll,workschedule:loadWorkSchedule,events:loadEvents,inspection:()=>{buildChecklist();loadInsps();},risk:loadRA,investigation:loadInvs,legal:loadLegal,sop:loadSOP,tools:loadTools,permit:loadPermits,noise:loadNoise,meetings:loadMtgs,training:loadTraining,actions:loadActions,documents:loadDocs,people:loadPeople,users:loadUsers,admin:loadAdmin,'ai-insights':genFullAI,settings:loadSettings};
+const L={dashboard:loadDash,kpi:kpiLoadAll,workschedule:loadWorkSchedule,events:loadEvents,inspection:()=>{buildChecklist();loadInsps();},risk:loadRA,investigation:loadInvs,legal:loadLegal,sop:loadSOP,tools:loadTools,permit:loadPermits,contractor:loadContractors,noise:loadNoise,meetings:loadMtgs,training:loadTraining,actions:loadActions,documents:loadDocs,people:loadPeople,users:loadUsers,admin:loadAdmin,'ai-insights':genFullAI,settings:loadSettings};
 if(L[name])L[name]();
 }
 function toggleForm(id){const el=document.getElementById(id);el.style.display=el.style.display==='none'?'block':'none';}
@@ -3309,6 +3311,921 @@ async function invSyncToMAP(invId,body){
 
 async function saveInv(){invSave();}
 
+
+
+// ===== CONTRACTOR MANAGEMENT MODULE =====
+let conAllData=[], conPAData=[], conEvalData=[], conATWData=[], conIncData=[];
+let conEditingId=null, cpaEditingId=null, cevEditingId=null, catwEditingId=null, cirEditingId=null;
+let catwPersons=[];
+
+const CON_STATUS_CFG={
+  pending:    ['#FEF9EC','#854F0B','Pending'],
+  pre_assessed:['#E6F1FB','#185FA5','Pre-assessed'],
+  approved:   ['#EAF3DE','#3B6D11','Approved'],
+  suspended:  ['#FCEBEB','#A32D2D','Suspended'],
+  rejected:   ['#f3f4f6','#6B7280','Rejected'],
+  expired:    ['#f3f4f6','#6B7280','Expired']
+};
+const CON_CAT_ICONS={electrical:'ti-bolt',mechanical:'ti-settings-2',civil:'ti-road',construction:'ti-building',cleaning:'ti-wash',security:'ti-shield',it:'ti-device-laptop',catering:'ti-soup',other:'ti-package',general:'ti-briefcase'};
+const INC_TYPE_CFG={
+  near_miss:['#FEF9EC','#854F0B','Near Miss'],
+  first_aid:['#E6F1FB','#185FA5','First Aid'],
+  medical_treatment:['#EDE9FE','#7C3AED','Medical Treatment'],
+  lost_time:['#FEF6E7','#C2410C','Lost Time Injury'],
+  dangerous_occurrence:['#FCEBEB','#A32D2D','Dangerous Occurrence'],
+  property_damage:['#f3f4f6','#6B7280','Property Damage'],
+  environmental:['#EAF3DE','#3B6D11','Environmental'],
+  fatality:['#1a0000','#ff0000','Fatality']
+};
+
+function conSwitchTab(tab,btn){
+  document.querySelectorAll('.mtg-tab').forEach(t=>t.classList.remove('active'));
+  btn.classList.add('active');
+  ['register','preassess','eval','atw','incidents'].forEach(function(t){
+    var el=document.getElementById('con-view-'+t);if(el)el.style.display=t===tab?'block':'none';
+  });
+  ['con-form','cpa-form','cev-form','catw-form','cir-form'].forEach(function(id){
+    var el=document.getElementById(id);if(el)el.style.display='none';
+  });
+  if(tab==='register')conLoadRegister();
+  else if(tab==='preassess')cpaLoad();
+  else if(tab==='eval')cevLoad();
+  else if(tab==='atw')catwLoad();
+  else if(tab==='incidents')cirLoad();
+}
+
+async function loadContractors(){
+  var addBtn=document.getElementById('con-add-btn');if(addBtn)addBtn.style.display=isMgr()?'inline-flex':'none';
+  var cpab=document.getElementById('cpa-add-btn');if(cpab)cpab.style.display=isMgr()?'inline-flex':'none';
+  var cevb=document.getElementById('cev-add-btn');if(cevb)cevb.style.display=isMgr()?'inline-flex':'none';
+  var catwb=document.getElementById('catw-add-btn');if(catwb)catwb.style.display=isMgr()?'inline-flex':'none';
+  var cirb=document.getElementById('cir-add-btn');if(cirb)cirb.style.display=isMgr()?'inline-flex':'none';
+  conLoadRegister();
+}
+
+// ── CONTRACTOR REGISTER ──────────────────────────────────────────────────────
+async function conLoadRegister(){
+  var el=document.getElementById('con-register-list');if(!el)return;
+  el.innerHTML='<div class="loading-msg">Loading...</div>';
+  try{
+    var d=await api('/contractors?select=*'+cf()+'&order=contractor_name');
+    conAllData=d||[];
+    var today=new Date(); var soon=new Date(); soon.setDate(soon.getDate()+60);
+    var setM=function(id,v){var e=document.getElementById(id);if(e)e.textContent=v;};
+    setM('con-m-total',conAllData.length);
+    setM('con-m-approved',conAllData.filter(x=>x.status==='approved').length);
+    setM('con-m-pending',conAllData.filter(x=>x.status==='pending'||x.status==='pre_assessed').length);
+    setM('con-m-suspended',conAllData.filter(x=>x.status==='suspended'||x.status==='rejected').length);
+    setM('con-m-expiring',conAllData.filter(x=>x.expiry_date&&new Date(x.expiry_date)<=soon&&x.status==='approved').length);
+    conFilterRegister();
+  }catch(e){el.innerHTML='<p style="padding:20px;color:red">'+e.message+'</p>';console.error(e);}
+}
+
+function conFilterRegister(){
+  var el=document.getElementById('con-register-list');if(!el)return;
+  var q=(document.getElementById('con-search')?.value||'').toLowerCase();
+  var fst=document.getElementById('con-filter-status')?.value||'';
+  var fcat=document.getElementById('con-filter-cat')?.value||'';
+  var filtered=conAllData.filter(function(x){
+    var mQ=!q||(x.contractor_name||'').toLowerCase().includes(q)||(x.contact_person||'').toLowerCase().includes(q);
+    var mSt=!fst||x.status===fst;
+    var mC=!fcat||x.category===fcat;
+    return mQ&&mSt&&mC;
+  });
+  if(!filtered.length){
+    el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)">'
+      +'<div style="font-size:40px;margin-bottom:12px">🏢</div>'
+      +'<div style="font-weight:600;margin-bottom:8px">No contractors registered yet</div>'
+      +(isMgr()?'<button class="btn btn-primary" onclick="conNew()"><i class="ti ti-plus"></i>Register first contractor</button>':'')
+      +'</div>';
+    return;
+  }
+  var today=new Date(); var soon=new Date(); soon.setDate(soon.getDate()+60);
+  var h='';
+  filtered.forEach(function(x){
+    var sc=CON_STATUS_CFG[x.status]||CON_STATUS_CFG.pending;
+    var icon=CON_CAT_ICONS[x.category]||'ti-briefcase';
+    var isExpiring=x.expiry_date&&new Date(x.expiry_date)<=soon&&x.status==='approved';
+    var isExpired=x.expiry_date&&new Date(x.expiry_date)<today&&x.status==='approved';
+    h+='<div style="padding:14px 18px;border-bottom:1px solid #f0f0f0;display:flex;align-items:center;gap:14px;cursor:pointer;transition:background .1s" '
+      +'onclick="conOpenDetail(\''+x.id+'\')" onmouseover="this.style.background=\'#fafafa\'" onmouseout="this.style.background=\'\'">'
+      +'<div style="width:44px;height:44px;border-radius:12px;background:#185FA520;display:flex;align-items:center;justify-content:center;flex-shrink:0">'
+      +'<i class="ti '+icon+'" style="font-size:20px;color:#185FA5"></i></div>'
+      +'<div style="flex:1">'
+      +'<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">'
+      +'<span style="font-weight:700;font-size:14px">'+escH(x.contractor_name||'—')+'</span>'
+      +(x.trading_name&&x.trading_name!==x.contractor_name?'<span style="font-size:11px;color:var(--text2)">('+escH(x.trading_name)+')</span>':'')
+      +'<span style="background:'+sc[0]+';color:'+sc[1]+';padding:2px 9px;border-radius:99px;font-size:10px;font-weight:700">'+sc[2]+'</span>'
+      +(isExpired?'<span style="background:#FCEBEB;color:#A32D2D;padding:2px 8px;border-radius:99px;font-size:10px;font-weight:700">EXPIRED</span>':'')
+      +(isExpiring&&!isExpired?'<span style="background:#FEF9EC;color:#854F0B;padding:2px 8px;border-radius:99px;font-size:10px;font-weight:600">Expiring soon</span>':'')
+      +'</div>'
+      +'<div style="font-size:12px;color:var(--text2);display:flex;gap:14px;flex-wrap:wrap">'
+      +(x.contact_person?'<span><i class="ti ti-user" style="font-size:10px"></i> '+escH(x.contact_person)+'</span>':'')
+      +(x.contact_phone?'<span><i class="ti ti-phone" style="font-size:10px"></i> '+escH(x.contact_phone)+'</span>':'')
+      +(x.specialisation?'<span>'+escH(x.specialisation)+'</span>':'')
+      +(x.expiry_date?'<span><i class="ti ti-calendar" style="font-size:10px"></i> Expires: '+new Date(x.expiry_date).toLocaleDateString('en-GB')+'</span>':'')
+      +'</div></div>'
+      +'<div style="display:flex;gap:6px">'
+      +'<button class="btn btn-sm" data-id="'+x.id+'" onclick="event.stopPropagation();conEdit(this.getAttribute(\'data-id\'))"><i class="ti ti-edit"></i></button>'
+      +(isMgr()?'<button class="btn btn-sm" style="color:var(--red)" data-id="'+x.id+'" onclick="event.stopPropagation();conDeleteFromList(this.getAttribute(\'data-id\'))"><i class="ti ti-trash"></i></button>':'')
+      +'</div>'
+      +'</div>';
+  });
+  el.innerHTML=h;
+}
+
+function conOpenDetail(id){
+  // Quick view: switch to pre-assessment tab for this contractor
+  var x=conAllData.find(function(r){return r.id===id;});
+  if(!x)return;
+  toast('Contractor: '+x.contractor_name+' · Status: '+(CON_STATUS_CFG[x.status]?.[2]||x.status));
+  conEdit(id);
+}
+
+// ── CONTRACTOR FORM ───────────────────────────────────────────────────────────
+function conShowForm(){
+  ['con-view-register','con-view-preassess','con-view-eval','con-view-atw','con-view-incidents'].forEach(function(id){var el=document.getElementById(id);if(el)el.style.display='none';});
+  document.getElementById('con-form').style.display='block';
+}
+function conFormBack(){
+  document.getElementById('con-form').style.display='none';
+  document.getElementById('con-view-register').style.display='block';
+  document.querySelectorAll('.mtg-tab').forEach(t=>t.classList.remove('active'));
+  var tab=document.getElementById('con-tab-register');if(tab)tab.classList.add('active');
+  conLoadRegister();
+}
+
+function conNew(){
+  conEditingId=null;
+  document.getElementById('con-form-title').textContent='New Contractor';
+  document.getElementById('con-del-btn').style.display='none';
+  ['conf-name','conf-trading','conf-reg','conf-vat','conf-address','conf-contact','conf-email','conf-phone','conf-website','conf-spec','conf-notes','conf-ins-type','conf-ins-provider','conf-ins-policy'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
+  ['conf-ins-expiry','conf-approved-date','conf-expiry-date','conf-review-date'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
+  var cat=document.getElementById('conf-cat');if(cat)cat.value='general';
+  var st=document.getElementById('conf-status');if(st)st.value='pending';
+  document.getElementById('conf-preview-name').textContent='New Contractor';
+  document.getElementById('conf-preview-cat').textContent='—';
+  conShowForm();
+}
+
+function conEdit(id){
+  var x=conAllData.find(function(r){return r.id===id;});
+  if(!x)return;
+  conEditingId=id;
+  document.getElementById('con-form-title').textContent='Edit Contractor';
+  document.getElementById('con-del-btn').style.display=isMgr()?'inline-flex':'none';
+  var flds={'conf-name':'contractor_name','conf-trading':'trading_name','conf-reg':'registration_number','conf-vat':'vat_number','conf-address':'address','conf-contact':'contact_person','conf-email':'contact_email','conf-phone':'contact_phone','conf-website':'website','conf-spec':'specialisation','conf-notes':'notes','conf-ins-type':'insurance_type','conf-ins-provider':'insurance_provider','conf-ins-policy':'insurance_policy_number'};
+  Object.entries(flds).forEach(function(e){var el=document.getElementById(e[0]);if(el)el.value=x[e[1]]||'';});
+  ['conf-ins-expiry','conf-approved-date','conf-expiry-date','conf-review-date'].forEach(function(id){
+    var key={'conf-ins-expiry':'insurance_expiry','conf-approved-date':'approved_date','conf-expiry-date':'expiry_date','conf-review-date':'next_review_date'}[id];
+    var el=document.getElementById(id);if(el)el.value=x[key]||'';
+  });
+  var cat=document.getElementById('conf-cat');if(cat)cat.value=x.category||'general';
+  var st=document.getElementById('conf-status');if(st)st.value=x.status||'pending';
+  document.getElementById('conf-preview-name').textContent=x.contractor_name||'Contractor';
+  document.getElementById('conf-preview-cat').textContent=x.category||'—';
+  conShowForm();
+}
+
+async function conSave(){
+  var name=document.getElementById('conf-name')?.value?.trim();
+  if(!name){toast('Please enter contractor name',false);return;}
+  var g=function(id){var el=document.getElementById(id);return el?el.value||null:null;};
+  var body={
+    company_id:prof?.company_id,contractor_name:name,
+    trading_name:g('conf-trading'),registration_number:g('conf-reg'),vat_number:g('conf-vat'),
+    address:g('conf-address'),contact_person:g('conf-contact'),contact_email:g('conf-email'),
+    contact_phone:g('conf-phone'),website:g('conf-website'),
+    category:g('conf-cat')||'general',specialisation:g('conf-spec'),
+    status:g('conf-status')||'pending',
+    insurance_type:g('conf-ins-type'),insurance_provider:g('conf-ins-provider'),
+    insurance_policy_number:g('conf-ins-policy'),
+    insurance_expiry:g('conf-ins-expiry'),approved_date:g('conf-approved-date'),
+    expiry_date:g('conf-expiry-date'),next_review_date:g('conf-review-date'),
+    notes:g('conf-notes'),updated_at:new Date().toISOString()
+  };
+  try{
+    if(conEditingId){await api('/contractors?id=eq.'+conEditingId,{m:'PATCH',p:'return=minimal',b:body});toast('Contractor updated!');}
+    else{body.created_by=prof?.id;await api('/contractors',{m:'POST',p:'return=minimal',b:body});toast('Contractor registered!');}
+    conFormBack();
+  }catch(e){toast(e.message,false);console.error(e);}
+}
+
+async function conDelete(){
+  if(!conEditingId)return;
+  if(!confirm('Delete this contractor? This will also remove all assessments and evaluations.'))return;
+  try{await api('/contractors?id=eq.'+conEditingId,{m:'DELETE'});toast('Deleted!');conFormBack();}
+  catch(e){toast(e.message,false);}
+}
+async function conDeleteFromList(id){
+  if(!confirm('Delete this contractor?'))return;
+  try{await api('/contractors?id=eq.'+id,{m:'DELETE'});conAllData=conAllData.filter(x=>x.id!==id);toast('Deleted!');conFilterRegister();}
+  catch(e){toast(e.message,false);}
+}
+
+// ── PRE-ASSESSMENT ────────────────────────────────────────────────────────────
+const CPA_QUESTIONS=[
+  {sec:'s1',field:'has_registration',label:'Company is legally registered',detail:'conf-reg',weight:10},
+  {sec:'s1',field:'has_insurance',label:'Adequate liability insurance in place',weight:15},
+  {sec:'s1',field:'has_hse_policy',label:'Written HSE policy in place and signed',weight:10},
+  {sec:'s2',field:'has_hse_manager',label:'Dedicated HSE officer / manager assigned',weight:10},
+  {sec:'s2',field:'has_risk_assessment_process',label:'Formal risk assessment process in place',weight:10},
+  {sec:'s2',field:'has_method_statements',label:'Method statements prepared for high-risk work',weight:8},
+  {sec:'s2',field:'has_accident_reporting',label:'Accident / near miss reporting procedure',weight:7},
+  {sec:'s3',field:'has_trained_supervisors',label:'Supervisors are trained in HSE',weight:10},
+  {sec:'s3',field:'training_records_available',label:'Training records available and up-to-date',weight:8},
+  {sec:'s4',field:'has_equipment_inspection',label:'Formal equipment inspection programme in place',weight:7},
+  {sec:'s4',field:'has_statutory_inspections',label:'Statutory inspections carried out and certified',weight:8},
+  {sec:'s5',field:'has_environmental_policy',label:'Environmental policy / awareness in place',weight:4},
+  {sec:'s5',field:'waste_management_procedure',label:'Waste management procedures in place',weight:3}
+];
+
+function cpaBuildSections(){
+  ['s1','s2','s3','s4','s5'].forEach(function(sec){
+    var el=document.getElementById('cpa-'+sec);if(!el)return;
+    var qs=CPA_QUESTIONS.filter(function(q){return q.sec===sec;});
+    var h='<div style="display:flex;flex-direction:column;gap:10px">';
+    qs.forEach(function(q){
+      h+='<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:#f9fafb;border-radius:8px;border:1px solid var(--border)">'
+        +'<div><div style="font-size:13px;font-weight:500">'+escH(q.label)+'</div>'
+        +'<div style="font-size:11px;color:var(--text2);margin-top:3px">Weight: '+q.weight+' points</div></div>'
+        +'<div style="display:flex;gap:12px;align-items:center">'
+        +'<label style="display:flex;align-items:center;gap:5px;font-size:12px;font-weight:600;cursor:pointer;color:var(--green)">'
+        +'<input type="radio" name="cpa-'+q.field+'" value="yes" id="cpa-'+q.field+'-y" onchange="cpaCalcScore()" style="accent-color:var(--green);width:15px;height:15px"> Yes</label>'
+        +'<label style="display:flex;align-items:center;gap:5px;font-size:12px;font-weight:600;cursor:pointer;color:var(--red)">'
+        +'<input type="radio" name="cpa-'+q.field+'" value="no" id="cpa-'+q.field+'-n" onchange="cpaCalcScore()" style="accent-color:var(--red);width:15px;height:15px"> No</label>'
+        +'<label style="display:flex;align-items:center;gap:5px;font-size:12px;cursor:pointer;color:var(--text2)">'
+        +'<input type="radio" name="cpa-'+q.field+'" value="na" id="cpa-'+q.field+'-na" onchange="cpaCalcScore()" style="width:15px;height:15px" checked> N/A</label>'
+        +'</div></div>';
+    });
+    h+='</div>';
+    el.innerHTML=h;
+  });
+}
+
+function cpaCalcScore(){
+  var total=0;var possible=0;
+  CPA_QUESTIONS.forEach(function(q){
+    var yes=document.getElementById('cpa-'+q.field+'-y')?.checked;
+    var na=document.getElementById('cpa-'+q.field+'-na')?.checked;
+    if(!na){
+      possible+=q.weight;
+      if(yes)total+=q.weight;
+    }
+  });
+  var pct=possible>0?Math.round((total/possible)*100):0;
+  var scoreEl=document.getElementById('cpa-total-score');
+  var dispEl=document.getElementById('cpa-score-display');
+  if(scoreEl)scoreEl.textContent=pct+'%';
+  var col=pct>=75?'#EAF3DE':pct>=50?'#FEF9EC':'#FCEBEB';
+  var textCol=pct>=75?'#3B6D11':pct>=50?'#854F0B':'#A32D2D';
+  if(dispEl){dispEl.style.background=col;scoreEl.style.color=textCol;}
+  var res=document.getElementById('cpaf-result');
+  if(res)res.value=pct>=75?'approved':pct>=50?'conditional':'rejected';
+}
+
+async function cpaLoad(){
+  var el=document.getElementById('con-pa-list');if(!el)return;
+  el.innerHTML='<div class="loading-msg">Loading...</div>';
+  try{
+    var d=await api('/contractor_preassessments?select=*,contractors(contractor_name)'+cf()+'&order=assessment_date.desc');
+    conPAData=d||[];
+    if(!d||!d.length){
+      el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)">No pre-assessments yet.'+(isMgr()?' <button class="btn btn-primary btn-sm" onclick="cpaNew()"><i class="ti ti-plus"></i>New pre-assessment</button>':'')+'</div>';
+      return;
+    }
+    var h='<div class="card" style="padding:0;overflow:hidden"><table style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr style="background:#1a3a5c;color:#fff">'
+      +'<th style="padding:8px 14px;text-align:left">Contractor</th>'
+      +'<th style="padding:8px 10px;text-align:left">Date</th>'
+      +'<th style="padding:8px 10px;text-align:left">Assessed by</th>'
+      +'<th style="padding:8px 10px;text-align:center">Score</th>'
+      +'<th style="padding:8px 10px;text-align:left">Result</th>'
+      +'<th style="padding:8px 10px;width:80px"></th>'
+      +'</tr></thead><tbody>';
+    d.forEach(function(x,i){
+      var bg=i%2===0?'#fff':'#f9fafb';
+      var dt=x.assessment_date?new Date(x.assessment_date).toLocaleDateString('en-GB'):'—';
+      var sc2=x.score||0;
+      var res=x.result||'pending';
+      var rcfg={approved:['#EAF3DE','#3B6D11','Approved'],conditional:['#FEF9EC','#854F0B','Conditional'],rejected:['#FCEBEB','#A32D2D','Rejected'],pending:['#f3f4f6','#6B7280','Pending']};
+      var rc=rcfg[res]||rcfg.pending;
+      h+='<tr style="border-bottom:1px solid #f0f0f0;background:'+bg+'">'
+        +'<td style="padding:9px 14px;font-weight:600">'+escH(x.contractors?.contractor_name||'—')+'</td>'
+        +'<td style="padding:9px 10px">'+dt+'</td>'
+        +'<td style="padding:9px 10px">'+escH(x.assessed_by||'—')+'</td>'
+        +'<td style="padding:9px 10px;text-align:center"><span style="font-weight:800;font-size:14px;color:'+(sc2>=75?'#1D9E75':sc2>=50?'#854F0B':'#E24B4A')+'">'+sc2+'%</span></td>'
+        +'<td style="padding:9px 10px"><span style="background:'+rc[0]+';color:'+rc[1]+';padding:2px 9px;border-radius:99px;font-size:11px;font-weight:700">'+rc[2]+'</span></td>'
+        +'<td style="padding:9px 10px"><div style="display:flex;gap:4px">'
+        +'<button class="btn btn-sm" data-id="'+x.id+'" onclick="cpaEdit(this.getAttribute(\'data-id\'))"><i class="ti ti-edit"></i></button>'
+        +(isMgr()?'<button class="btn btn-sm" style="color:var(--red)" data-id="'+x.id+'" onclick="cpaDeleteRow(this.getAttribute(\'data-id\'))"><i class="ti ti-trash"></i></button>':'')
+        +'</div></td>'
+        +'</tr>';
+    });
+    h+='</tbody></table></div>';
+    el.innerHTML=h;
+  }catch(e){el.innerHTML='<p style="padding:20px;color:red">'+e.message+'</p>';}
+}
+
+function cpaShowForm(){
+  ['con-view-register','con-view-preassess','con-view-eval','con-view-atw','con-view-incidents'].forEach(function(id){var el=document.getElementById(id);if(el)el.style.display='none';});
+  document.getElementById('cpa-form').style.display='block';
+  cpaBuildSections();
+}
+function cpaFormBack(){
+  document.getElementById('cpa-form').style.display='none';
+  document.getElementById('con-view-preassess').style.display='block';
+  document.querySelectorAll('.mtg-tab').forEach(t=>t.classList.remove('active'));
+  var tab=document.getElementById('con-tab-preassess');if(tab)tab.classList.add('active');
+  cpaLoad();
+}
+
+function cpaNew(){
+  cpaEditingId=null;
+  document.getElementById('cpa-form-contractor').textContent='New Pre-Assessment';
+  var sel=document.getElementById('cpaf-contractor');
+  if(sel){sel.innerHTML='<option value="">Select contractor...</option>';conAllData.forEach(function(c){var o=document.createElement('option');o.value=c.id;o.textContent=c.contractor_name;sel.appendChild(o);});}
+  var dt=document.getElementById('cpaf-date');if(dt)dt.value=new Date().toISOString().slice(0,10);
+  var as=document.getElementById('cpaf-assessor');if(as)as.value=prof?.full_name||'';
+  var res=document.getElementById('cpaf-result');if(res)res.value='pending';
+  ['cpaf-conditions','cpaf-comments'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
+  document.getElementById('cpa-total-score').textContent='—';
+  cpaShowForm();
+}
+
+async function cpaEdit(id){
+  var x=conPAData.find(function(r){return r.id===id;});if(!x)return;
+  cpaEditingId=id;
+  var conSel=document.getElementById('cpaf-contractor');
+  if(conSel){conSel.innerHTML='<option value="">Select contractor...</option>';conAllData.forEach(function(c){var o=document.createElement('option');o.value=c.id;o.textContent=c.contractor_name;conSel.appendChild(o);});conSel.value=x.contractor_id||'';}
+  var conName=conAllData.find(function(c){return c.id===x.contractor_id;})?.contractor_name||'—';
+  document.getElementById('cpa-form-contractor').textContent=conName;
+  var dt=document.getElementById('cpaf-date');if(dt)dt.value=x.assessment_date||'';
+  var as=document.getElementById('cpaf-assessor');if(as)as.value=x.assessed_by||'';
+  var res=document.getElementById('cpaf-result');if(res)res.value=x.result||'pending';
+  var cond=document.getElementById('cpaf-conditions');if(cond)cond.value=x.conditions_notes||'';
+  var com=document.getElementById('cpaf-comments');if(com)com.value=x.assessor_comments||'';
+  // Rebuild sections then set values
+  cpaBuildSections();
+  setTimeout(function(){
+    CPA_QUESTIONS.forEach(function(q){
+      var val=x[q.field];
+      var yEl=document.getElementById('cpa-'+q.field+'-y');
+      var nEl=document.getElementById('cpa-'+q.field+'-n');
+      var naEl=document.getElementById('cpa-'+q.field+'-na');
+      if(val===true&&yEl)yEl.checked=true;
+      else if(val===false&&nEl)nEl.checked=true;
+      else if(naEl)naEl.checked=true;
+    });
+    cpaCalcScore();
+  },100);
+  cpaShowForm();
+}
+
+async function cpaSave(){
+  var conId=document.getElementById('cpaf-contractor')?.value;
+  if(!conId){toast('Please select a contractor',false);return;}
+  var g=function(id){var el=document.getElementById(id);return el?el.value||null:null;};
+  var body={company_id:prof?.company_id,contractor_id:conId,assessment_date:g('cpaf-date'),assessed_by:g('cpaf-assessor'),result:g('cpaf-result')||'pending',conditions_notes:g('cpaf-conditions'),assessor_comments:g('cpaf-comments'),updated_at:new Date().toISOString()};
+  CPA_QUESTIONS.forEach(function(q){
+    var yes=document.getElementById('cpa-'+q.field+'-y')?.checked;
+    var no=document.getElementById('cpa-'+q.field+'-n')?.checked;
+    var na=document.getElementById('cpa-'+q.field+'-na')?.checked;
+    body[q.field]=yes?true:no?false:null;
+  });
+  // Calc score
+  var total=0;var possible=0;
+  CPA_QUESTIONS.forEach(function(q){if(body[q.field]!==null){possible+=q.weight;if(body[q.field])total+=q.weight;}});
+  body.score=possible>0?Math.round((total/possible)*100):0;
+  try{
+    if(cpaEditingId){await api('/contractor_preassessments?id=eq.'+cpaEditingId,{m:'PATCH',p:'return=minimal',b:body});toast('Assessment updated!');}
+    else{body.created_by=prof?.id;await api('/contractor_preassessments',{m:'POST',p:'return=minimal',b:body});
+      // Update contractor status
+      var newStatus=body.result==='approved'?'approved':body.result==='conditional'?'pre_assessed':'pending';
+      await api('/contractors?id=eq.'+conId,{m:'PATCH',p:'return=minimal',b:{status:newStatus,updated_at:new Date().toISOString()}});
+      toast('Assessment saved! Contractor status updated to: '+newStatus);}
+    cpaFormBack();
+  }catch(e){toast(e.message,false);console.error(e);}
+}
+
+async function cpaDeleteRow(id){
+  if(!confirm('Delete this assessment?'))return;
+  try{await api('/contractor_preassessments?id=eq.'+id,{m:'DELETE'});conPAData=conPAData.filter(x=>x.id!==id);toast('Deleted!');cpaLoad();}
+  catch(e){toast(e.message,false);}
+}
+
+// ── EVALUATION ────────────────────────────────────────────────────────────────
+const CEV_CRITERIA=[
+  {field:'score_hse_compliance',label:'HSE compliance & adherence to site rules'},
+  {field:'score_ppe_usage',label:'Correct use of PPE at all times'},
+  {field:'score_housekeeping',label:'Housekeeping and waste management'},
+  {field:'score_toolbox_talks',label:'Participation in toolbox talks & briefings'},
+  {field:'score_incident_reporting',label:'Incident reporting and near miss awareness'},
+  {field:'score_quality_work',label:'Quality and standard of work'},
+  {field:'score_communication',label:'Communication and cooperation'},
+  {field:'score_punctuality',label:'Punctuality and adherence to schedule'}
+];
+
+function cevBuildScores(){
+  var el=document.getElementById('cev-scores');if(!el)return;
+  var h='';
+  CEV_CRITERIA.forEach(function(c){
+    h+='<div style="display:flex;align-items:center;padding:8px 12px;border-bottom:1px solid #f5f5f5">'
+      +'<div style="flex:1;font-size:12px;font-weight:500">'+escH(c.label)+'</div>'
+      +'<div style="display:flex;gap:4px">';
+    for(var i=1;i<=5;i++){
+      var col=i<=2?'#E24B4A':i===3?'#EF9F27':'#1D9E75';
+      h+='<button class="cev-score-btn" data-field="'+c.field+'" data-val="'+i+'" '
+        +'style="width:32px;height:32px;border-radius:6px;border:1px solid var(--border);background:#f9fafb;cursor:pointer;font-size:12px;font-weight:700;transition:all .15s" '
+        +'onclick="cevSetScore(\''+c.field+'\','+i+')">'+i+'</button>';
+    }
+    h+='</div></div>';
+  });
+  el.innerHTML=h;
+  cevCalcTotal();
+}
+
+function cevSetScore(field, val){
+  // Update visual
+  document.querySelectorAll('[data-field="'+field+'"]').forEach(function(btn){
+    var bval=parseInt(btn.getAttribute('data-val'));
+    var active=bval<=val;
+    var col=val<=2?'#E24B4A':val===3?'#EF9F27':'#1D9E75';
+    btn.style.background=active?col:'#f9fafb';
+    btn.style.color=active?'#fff':'#333';
+    btn.style.borderColor=active?col:'var(--border)';
+  });
+  btn=document.querySelector('[data-field="'+field+'"][data-val="'+val+'"]');
+  if(btn)btn.setAttribute('data-selected',val);
+  // Store in hidden input
+  var inp=document.getElementById('cev-score-'+field);
+  if(!inp){inp=document.createElement('input');inp.type='hidden';inp.id='cev-score-'+field;document.getElementById('cev-scores').appendChild(inp);}
+  inp.value=val;
+  cevCalcTotal();
+}
+
+function cevCalcTotal(){
+  var total=0;var count=0;
+  CEV_CRITERIA.forEach(function(c){
+    var inp=document.getElementById('cev-score-'+c.field);
+    if(inp&&inp.value){total+=parseInt(inp.value);count++;}
+  });
+  var el=document.getElementById('cev-total-score');if(el)el.textContent=total||'—';
+  var badge=document.getElementById('cev-rating-badge');
+  if(badge&&total>0){
+    var maxScore=CEV_CRITERIA.length*5;
+    var pct=total/maxScore;
+    var rating=pct>=0.9?'excellent':pct>=0.7?'good':pct>=0.5?'satisfactory':pct>=0.3?'poor':'unacceptable';
+    var rcfg={excellent:['#EAF3DE','#3B6D11','⭐ Excellent'],good:['#E6F1FB','#185FA5','✓ Good'],satisfactory:['#FEF9EC','#854F0B','~ Satisfactory'],poor:['#FEF6E7','#C2410C','⚠ Poor'],unacceptable:['#FCEBEB','#A32D2D','✗ Unacceptable']};
+    var rc=rcfg[rating];
+    badge.style.background=rc[0];badge.style.color=rc[1];badge.textContent=rc[2];
+    badge.setAttribute('data-rating',rating);
+  }
+}
+
+async function cevLoad(){
+  var el=document.getElementById('con-ev-list');if(!el)return;
+  el.innerHTML='<div class="loading-msg">Loading...</div>';
+  try{
+    var d=await api('/contractor_evaluations?select=*,contractors(contractor_name)'+cf()+'&order=evaluation_date.desc');
+    conEvalData=d||[];
+    if(!d||!d.length){
+      el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)">No evaluations yet.'+(isMgr()?' <button class="btn btn-primary btn-sm" onclick="cevNew()"><i class="ti ti-plus"></i>New evaluation</button>':'')+'</div>';
+      return;
+    }
+    var h='<div class="card" style="padding:0;overflow:hidden"><table style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr style="background:#1a3a5c;color:#fff">'
+      +'<th style="padding:8px 14px;text-align:left">Contractor</th>'
+      +'<th style="padding:8px 10px;text-align:left">Date</th>'
+      +'<th style="padding:8px 10px;text-align:left">Work</th>'
+      +'<th style="padding:8px 10px;text-align:center">Score</th>'
+      +'<th style="padding:8px 10px;text-align:left">Rating</th>'
+      +'<th style="padding:8px 10px;text-align:center">Recommend</th>'
+      +'<th style="padding:8px 10px;width:80px"></th>'
+      +'</tr></thead><tbody>';
+    d.forEach(function(x,i){
+      var bg=i%2===0?'#fff':'#f9fafb';
+      var dt=x.evaluation_date?new Date(x.evaluation_date).toLocaleDateString('en-GB'):'—';
+      var ratingCfg={excellent:['#EAF3DE','#3B6D11'],good:['#E6F1FB','#185FA5'],satisfactory:['#FEF9EC','#854F0B'],poor:['#FEF6E7','#C2410C'],unacceptable:['#FCEBEB','#A32D2D']};
+      var rc=ratingCfg[x.overall_rating||'satisfactory']||ratingCfg.satisfactory;
+      h+='<tr style="border-bottom:1px solid #f0f0f0;background:'+bg+'">'
+        +'<td style="padding:9px 14px;font-weight:600">'+escH(x.contractors?.contractor_name||'—')+'</td>'
+        +'<td style="padding:9px 10px">'+dt+'</td>'
+        +'<td style="padding:9px 10px;font-size:11px">'+escH((x.work_description||'—').substring(0,50))+'</td>'
+        +'<td style="padding:9px 10px;text-align:center;font-weight:800;color:'+rc[1]+'">'+( x.total_score||'—')+'</td>'
+        +'<td style="padding:9px 10px"><span style="background:'+rc[0]+';color:'+rc[1]+';padding:2px 9px;border-radius:99px;font-size:11px;font-weight:700;text-transform:capitalize">'+( x.overall_rating||'—')+'</span></td>'
+        +'<td style="padding:9px 10px;text-align:center">'+(x.recommend_future_use?'<span style="color:var(--green);font-weight:700">✓ Yes</span>':'<span style="color:var(--red)">✗ No</span>')+'</td>'
+        +'<td style="padding:9px 10px"><div style="display:flex;gap:4px">'
+        +'<button class="btn btn-sm" data-id="'+x.id+'" onclick="cevEdit(this.getAttribute(\'data-id\'))"><i class="ti ti-edit"></i></button>'
+        +(isMgr()?'<button class="btn btn-sm" style="color:var(--red)" data-id="'+x.id+'" onclick="cevDeleteRow(this.getAttribute(\'data-id\'))"><i class="ti ti-trash"></i></button>':'')
+        +'</div></td></tr>';
+    });
+    h+='</tbody></table></div>';
+    el.innerHTML=h;
+  }catch(e){el.innerHTML='<p style="padding:20px;color:red">'+e.message+'</p>';}
+}
+
+function cevShowForm(){
+  ['con-view-register','con-view-preassess','con-view-eval','con-view-atw','con-view-incidents'].forEach(function(id){var el=document.getElementById(id);if(el)el.style.display='none';});
+  document.getElementById('cev-form').style.display='block';
+  cevBuildScores();
+}
+function cevFormBack(){
+  document.getElementById('cev-form').style.display='none';
+  document.getElementById('con-view-eval').style.display='block';
+  document.querySelectorAll('.mtg-tab').forEach(t=>t.classList.remove('active'));
+  var tab=document.getElementById('con-tab-eval');if(tab)tab.classList.add('active');
+  cevLoad();
+}
+
+function cevNew(){
+  cevEditingId=null;
+  document.getElementById('cev-form-title').textContent='New Evaluation';
+  var conSel=document.getElementById('cevf-contractor');
+  if(conSel){conSel.innerHTML='<option value="">Select contractor...</option>';conAllData.forEach(function(c){var o=document.createElement('option');o.value=c.id;o.textContent=c.contractor_name;conSel.appendChild(o);});}
+  var dt=document.getElementById('cevf-date');if(dt)dt.value=new Date().toISOString().slice(0,10);
+  var ev=document.getElementById('cevf-evaluator');if(ev)ev.value=prof?.full_name||'';
+  ['cevf-work-desc','cevf-positive','cevf-improve','cevf-incident-details','cevf-rec-notes'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
+  ['cevf-start','cevf-end'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
+  var inc=document.getElementById('cevf-incidents');if(inc)inc.value='0';
+  var rec=document.getElementById('cevf-recommend');if(rec)rec.value='true';
+  cevShowForm();
+}
+
+async function cevEdit(id){
+  var x=conEvalData.find(function(r){return r.id===id;});if(!x)return;
+  cevEditingId=id;
+  document.getElementById('cev-form-title').textContent='Edit Evaluation';
+  var conSel=document.getElementById('cevf-contractor');
+  if(conSel){conSel.innerHTML='<option value="">Select contractor...</option>';conAllData.forEach(function(c){var o=document.createElement('option');o.value=c.id;o.textContent=c.contractor_name;conSel.appendChild(o);});conSel.value=x.contractor_id||'';}
+  var flds={'cevf-work-desc':'work_description','cevf-evaluator':'evaluated_by','cevf-positive':'positive_observations','cevf-improve':'areas_improvement','cevf-incident-details':'incident_details','cevf-rec-notes':'recommendation_notes'};
+  Object.entries(flds).forEach(function(e){var el=document.getElementById(e[0]);if(el)el.value=x[e[1]]||'';});
+  var dt=document.getElementById('cevf-date');if(dt)dt.value=x.evaluation_date||'';
+  var st=document.getElementById('cevf-start');if(st)st.value=x.work_period_start||'';
+  var en=document.getElementById('cevf-end');if(en)en.value=x.work_period_end||'';
+  var inc=document.getElementById('cevf-incidents');if(inc)inc.value=x.incidents_during_work||0;
+  var rec=document.getElementById('cevf-recommend');if(rec)rec.value=String(x.recommend_future_use!==false);
+  cevShowForm();
+  setTimeout(function(){
+    CEV_CRITERIA.forEach(function(c){if(x[c.field])cevSetScore(c.field,x[c.field]);});
+  },100);
+}
+
+async function cevSave(){
+  var conId=document.getElementById('cevf-contractor')?.value;
+  if(!conId){toast('Please select a contractor',false);return;}
+  var g=function(id){var el=document.getElementById(id);return el?el.value||null:null;};
+  var body={company_id:prof?.company_id,contractor_id:conId,evaluation_date:g('cevf-date'),evaluated_by:g('cevf-evaluator'),work_description:g('cevf-work-desc'),work_period_start:g('cevf-start'),work_period_end:g('cevf-end'),incidents_during_work:parseInt(g('cevf-incidents'))||0,incident_details:g('cevf-incident-details'),positive_observations:g('cevf-positive'),areas_improvement:g('cevf-improve'),recommendation_notes:g('cevf-rec-notes'),recommend_future_use:document.getElementById('cevf-recommend')?.value!=='false',updated_at:new Date().toISOString()};
+  var total=0;
+  CEV_CRITERIA.forEach(function(c){var inp=document.getElementById('cev-score-'+c.field);var v=inp?parseInt(inp.value)||0:0;body[c.field]=v||null;total+=v;});
+  body.total_score=total;
+  var maxScore=CEV_CRITERIA.length*5;var pct=total/maxScore;
+  body.overall_rating=pct>=0.9?'excellent':pct>=0.7?'good':pct>=0.5?'satisfactory':pct>=0.3?'poor':'unacceptable';
+  try{
+    if(cevEditingId){await api('/contractor_evaluations?id=eq.'+cevEditingId,{m:'PATCH',p:'return=minimal',b:body});toast('Evaluation updated!');}
+    else{body.created_by=prof?.id;await api('/contractor_evaluations',{m:'POST',p:'return=minimal',b:body});toast('Evaluation saved!');}
+    cevFormBack();
+  }catch(e){toast(e.message,false);console.error(e);}
+}
+async function cevDeleteRow(id){
+  if(!confirm('Delete?'))return;
+  try{await api('/contractor_evaluations?id=eq.'+id,{m:'DELETE'});conEvalData=conEvalData.filter(x=>x.id!==id);toast('Deleted!');cevLoad();}
+  catch(e){toast(e.message,false);}
+}
+
+// ── AUTHORISATION TO WORK ─────────────────────────────────────────────────────
+function catwAddPerson(){
+  var name=prompt('Person name:');if(!name||!name.trim())return;
+  var role=prompt('Role / Job title:','');
+  catwPersons.push({name:name.trim(),role:role||'',id_number:''});
+  catwRenderPersons();
+}
+
+function catwRenderPersons(){
+  var el=document.getElementById('catw-persons-list');if(!el)return;
+  if(!catwPersons.length){el.innerHTML='<div style="color:var(--text2);font-size:12px;padding:8px 0">No persons added yet</div>';return;}
+  el.innerHTML=catwPersons.map(function(p,i){
+    return '<div style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:#f9fafb;border-radius:8px;margin-bottom:6px">'
+      +'<div style="width:32px;height:32px;border-radius:50%;background:#185FA5;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;flex-shrink:0">'+p.name.charAt(0).toUpperCase()+'</div>'
+      +'<div style="flex:1"><div style="font-weight:600;font-size:13px">'+escH(p.name)+'</div><div style="font-size:11px;color:var(--text2)">'+escH(p.role||'—')+'</div></div>'
+      +'<button class="btn btn-sm" style="color:var(--red);padding:3px 8px" onclick="catwPersons.splice('+i+',1);catwRenderPersons()"><i class="ti ti-x" style="font-size:11px"></i></button>'
+      +'</div>';
+  }).join('');
+}
+
+async function catwLoad(){
+  var el=document.getElementById('con-atw-list');if(!el)return;
+  el.innerHTML='<div class="loading-msg">Loading...</div>';
+  try{
+    var d=await api('/contractor_authorisations?select=*,contractors(contractor_name)'+cf()+'&order=created_at.desc');
+    conATWData=d||[];
+    var today=new Date(); var soon=new Date(); soon.setDate(soon.getDate()+7);
+    var expiring=d?d.filter(function(x){return x.valid_until&&new Date(x.valid_until)<=soon&&x.status==='active';}):[];
+    var alertEl=document.getElementById('con-atw-alerts');
+    if(alertEl&&expiring.length){alertEl.innerHTML='<div style="background:#FCEBEB;border:1px solid #fca5a5;border-radius:8px;padding:10px 14px;font-size:12px;margin-bottom:8px"><strong style="color:var(--red)">⚠ '+expiring.length+' authorisation'+(expiring.length!==1?'s':'')+' expiring within 7 days:</strong> '+expiring.map(function(x){return escH(x.contractors?.contractor_name||'');}).join(', ')+'</div>';}
+    else if(alertEl)alertEl.innerHTML='';
+    if(!d||!d.length){
+      el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)">No authorisations issued yet.'+(isMgr()?' <button class="btn btn-primary btn-sm" onclick="catwNew()"><i class="ti ti-plus"></i>New authorisation</button>':'')+'</div>';
+      return;
+    }
+    var h='<table style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr style="background:#1a3a5c;color:#fff">'
+      +'<th style="padding:8px 14px;text-align:left">Ref</th>'
+      +'<th style="padding:8px 10px;text-align:left">Contractor</th>'
+      +'<th style="padding:8px 10px;text-align:left">Work description</th>'
+      +'<th style="padding:8px 10px;text-align:left">Valid period</th>'
+      +'<th style="padding:8px 10px;text-align:left">Persons</th>'
+      +'<th style="padding:8px 10px;text-align:left">Status</th>'
+      +'<th style="padding:8px 10px;width:80px"></th>'
+      +'</tr></thead><tbody>';
+    d.forEach(function(x,i){
+      var bg=i%2===0?'#fff':'#f9fafb';
+      var from=x.valid_from?new Date(x.valid_from).toLocaleDateString('en-GB'):'—';
+      var until=x.valid_until?new Date(x.valid_until).toLocaleDateString('en-GB'):'—';
+      var stCfg={draft:['#f3f4f6','#6B7280'],active:['#EAF3DE','#3B6D11'],suspended:['#FEF9EC','#854F0B'],completed:['#E6F1FB','#185FA5'],revoked:['#FCEBEB','#A32D2D']};
+      var sc2=stCfg[x.status]||stCfg.active;
+      var persons=x.authorised_persons||[];
+      h+='<tr style="border-bottom:1px solid #f0f0f0;background:'+bg+'">'
+        +'<td style="padding:9px 14px;font-family:monospace;font-weight:700;color:var(--green)">'+escH(x.ref_number||'—')+'</td>'
+        +'<td style="padding:9px 10px;font-weight:600">'+escH(x.contractors?.contractor_name||'—')+'</td>'
+        +'<td style="padding:9px 10px;font-size:11px">'+escH((x.work_description||'—').substring(0,60))+'</td>'
+        +'<td style="padding:9px 10px;font-size:11px">'+from+' → '+until+'</td>'
+        +'<td style="padding:9px 10px;text-align:center">'+persons.length+'</td>'
+        +'<td style="padding:9px 10px"><span style="background:'+sc2[0]+';color:'+sc2[1]+';padding:2px 9px;border-radius:99px;font-size:11px;font-weight:700;text-transform:capitalize">'+x.status+'</span></td>'
+        +'<td style="padding:9px 10px"><div style="display:flex;gap:4px">'
+        +'<button class="btn btn-sm" data-id="'+x.id+'" onclick="catwEdit(this.getAttribute(\'data-id\'))"><i class="ti ti-edit"></i></button>'
+        +(isMgr()?'<button class="btn btn-sm" style="color:var(--red)" data-id="'+x.id+'" onclick="catwDeleteRow(this.getAttribute(\'data-id\'))"><i class="ti ti-trash"></i></button>':'')
+        +'</div></td></tr>';
+    });
+    h+='</tbody></table>';
+    el.innerHTML=h;
+  }catch(e){el.innerHTML='<p style="padding:20px;color:red">'+e.message+'</p>';}
+}
+
+function catwShowForm(){
+  ['con-view-register','con-view-preassess','con-view-eval','con-view-atw','con-view-incidents'].forEach(function(id){var el=document.getElementById(id);if(el)el.style.display='none';});
+  document.getElementById('catw-form').style.display='block';
+}
+function catwFormBack(){
+  document.getElementById('catw-form').style.display='none';
+  document.getElementById('con-view-atw').style.display='block';
+  document.querySelectorAll('.mtg-tab').forEach(t=>t.classList.remove('active'));
+  var tab=document.getElementById('con-tab-atw');if(tab)tab.classList.add('active');
+  catwLoad();
+}
+
+async function catwNew(){
+  catwEditingId=null;catwPersons=[];
+  document.getElementById('catw-form-title').textContent='New Authorisation to Work';
+  document.getElementById('catw-form-ref').textContent='ATW-AUTO';
+  document.getElementById('catw-del-btn').style.display='none';
+  // Populate contractor select
+  var conSel=document.getElementById('catwf-contractor');
+  if(conSel){conSel.innerHTML='<option value="">Select contractor...</option>';conAllData.filter(x=>x.status==='approved').forEach(function(c){var o=document.createElement('option');o.value=c.id;o.textContent=c.contractor_name;conSel.appendChild(o);});}
+  // Populate work order select
+  var woSel=document.getElementById('catwf-wo');
+  if(woSel){woSel.innerHTML='<option value="">None / standalone</option>';try{var wos=await api('/work_schedule?select=id,title,ref_number'+cf()+'&order=planned_start.desc&limit=20');(wos||[]).forEach(function(w){var o=document.createElement('option');o.value=w.id;o.textContent=(w.ref_number||'WO')+'— '+w.title;woSel.appendChild(o);});}catch(ex){}}
+  // Populate permit select
+  var ptSel=document.getElementById('catwf-permit');
+  if(ptSel){ptSel.innerHTML='<option value="">None required</option>';try{var pts=await api('/permits?select=id,permit_type,permit_number'+cf()+'&order=created_at.desc&limit=20');(pts||[]).forEach(function(p){var o=document.createElement('option');o.value=p.id;o.textContent=(p.permit_number||'PTW')+' — '+p.permit_type;ptSel.appendChild(o);});}catch(ex){}}
+  // Populate issued-by
+  var issSel=document.getElementById('catwf-issued-by');
+  if(issSel){issSel.innerHTML='<option value="">Select...</option>';(people||[]).forEach(function(p){var o=document.createElement('option');o.value=p.id;o.textContent=p.last_name+', '+p.first_name;issSel.appendChild(o);});}
+  ['catwf-desc','catwf-location','catwf-conditions','catwf-ppe','catwf-supervision','catwf-ra-ref','catwf-ms-ref','catwf-induction-topics','catwf-con-sig','catwf-notes','catwf-induction-by'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
+  ['catwf-from','catwf-until','catwf-induction-date'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
+  var ind=document.getElementById('catwf-induction-done');if(ind)ind.checked=false;
+  var st=document.getElementById('catwf-status');if(st)st.value='active';
+  catwRenderPersons();
+  catwShowForm();
+}
+
+async function catwEdit(id){
+  var x=conATWData.find(function(r){return r.id===id;});if(!x)return;
+  catwEditingId=id;
+  catwPersons=x.authorised_persons||[];
+  document.getElementById('catw-form-title').textContent='Edit Authorisation';
+  document.getElementById('catw-form-ref').textContent=x.ref_number||'—';
+  document.getElementById('catw-del-btn').style.display=isMgr()?'inline-flex':'none';
+  await catwNew(); // Reuse setup
+  catwEditingId=id; // Reset after catwNew clears it
+  catwPersons=x.authorised_persons||[];
+  var conSel=document.getElementById('catwf-contractor');if(conSel)conSel.value=x.contractor_id||'';
+  var flds={'catwf-desc':'work_description','catwf-location':'work_location','catwf-conditions':'conditions','catwf-ppe':'ppe_requirements','catwf-supervision':'supervision_requirements','catwf-ra-ref':'risk_assessment_ref','catwf-ms-ref':'method_statement_ref','catwf-induction-topics':'induction_topics','catwf-con-sig':'contractor_signature','catwf-notes':'notes','catwf-induction-by':'induction_conducted_by'};
+  Object.entries(flds).forEach(function(e){var el=document.getElementById(e[0]);if(el)el.value=x[e[1]]||'';});
+  ['catwf-from','catwf-until','catwf-induction-date'].forEach(function(id){
+    var key={'catwf-from':'valid_from','catwf-until':'valid_until','catwf-induction-date':'induction_date'}[id];
+    var el=document.getElementById(id);if(el)el.value=x[key]||'';
+  });
+  var ind=document.getElementById('catwf-induction-done');if(ind)ind.checked=!!x.induction_completed;
+  var st=document.getElementById('catwf-status');if(st)st.value=x.status||'active';
+  catwRenderPersons();
+}
+
+async function catwSave(){
+  var conId=document.getElementById('catwf-contractor')?.value;
+  var desc=document.getElementById('catwf-desc')?.value?.trim();
+  if(!conId||!desc){toast('Please select contractor and enter work description',false);return;}
+  var g=function(id){var el=document.getElementById(id);return el?el.value||null:null;};
+  var issuerId=g('catwf-issued-by');
+  var issuerName='';if(issuerId){var p=(people||[]).find(function(x){return x.id===issuerId;});issuerName=p?(p.last_name+', '+p.first_name):'';}
+  var body={
+    company_id:prof?.company_id,contractor_id:conId,
+    work_order_id:g('catwf-wo')||null,permit_id:g('catwf-permit')||null,
+    work_description:desc,work_location:g('catwf-location'),
+    valid_from:g('catwf-from'),valid_until:g('catwf-until'),
+    authorised_persons:catwPersons,conditions:g('catwf-conditions'),
+    ppe_requirements:g('catwf-ppe'),supervision_requirements:g('catwf-supervision'),
+    risk_assessment_ref:g('catwf-ra-ref'),method_statement_ref:g('catwf-ms-ref'),
+    induction_completed:document.getElementById('catwf-induction-done')?.checked||false,
+    induction_date:g('catwf-induction-date'),induction_conducted_by:g('catwf-induction-by'),
+    induction_topics:g('catwf-induction-topics'),
+    issued_by:issuerName||null,issued_by_id:issuerId||null,
+    contractor_signature:g('catwf-con-sig'),status:g('catwf-status')||'active',
+    notes:g('catwf-notes'),updated_at:new Date().toISOString()
+  };
+  try{
+    if(catwEditingId){
+      await api('/contractor_authorisations?id=eq.'+catwEditingId,{m:'PATCH',p:'return=minimal',b:body});
+      toast('Authorisation updated!');
+    }else{
+      body.created_by=prof?.id;
+      var res=await api('/contractor_authorisations',{m:'POST',p:'return=representation',b:body});
+      if(res?.[0]?.id){
+        var yr=new Date().getFullYear();
+        var ref='ATW-'+yr+'-'+String(conATWData.length+1).padStart(3,'0');
+        await api('/contractor_authorisations?id=eq.'+res[0].id,{m:'PATCH',p:'return=minimal',b:{ref_number:ref}});
+        toast('Authorisation issued! Ref: '+ref);
+      }
+    }
+    catwFormBack();
+  }catch(e){toast(e.message,false);console.error(e);}
+}
+
+async function catwDelete(){
+  if(!catwEditingId)return;
+  if(!confirm('Revoke this authorisation?'))return;
+  try{await api('/contractor_authorisations?id=eq.'+catwEditingId,{m:'DELETE'});toast('Deleted!');catwFormBack();}
+  catch(e){toast(e.message,false);}
+}
+async function catwDeleteRow(id){
+  if(!confirm('Delete?'))return;
+  try{await api('/contractor_authorisations?id=eq.'+id,{m:'DELETE'});conATWData=conATWData.filter(x=>x.id!==id);toast('Deleted!');catwLoad();}
+  catch(e){toast(e.message,false);}
+}
+
+// ── CONTRACTOR INCIDENTS ──────────────────────────────────────────────────────
+async function cirLoad(){
+  var el=document.getElementById('con-inc-list');if(!el)return;
+  el.innerHTML='<div class="loading-msg">Loading...</div>';
+  try{
+    var d=await api('/contractor_incidents?select=*,contractors(contractor_name)'+cf()+'&order=incident_date.desc');
+    conIncData=d||[];
+    if(!d||!d.length){
+      el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)">No contractor incidents recorded.'+(isMgr()?' <button class="btn btn-primary btn-sm" onclick="cirNew()"><i class="ti ti-plus"></i>Report incident</button>':'')+'</div>';
+      return;
+    }
+    var h='<table style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr style="background:#1a3a5c;color:#fff">'
+      +'<th style="padding:8px 14px;text-align:left">Ref</th>'
+      +'<th style="padding:8px 10px;text-align:left">Date</th>'
+      +'<th style="padding:8px 10px;text-align:left">Contractor</th>'
+      +'<th style="padding:8px 10px;text-align:left">Type</th>'
+      +'<th style="padding:8px 10px;text-align:left">Severity</th>'
+      +'<th style="padding:8px 10px;text-align:left">Status</th>'
+      +'<th style="padding:8px 10px;width:80px"></th>'
+      +'</tr></thead><tbody>';
+    d.forEach(function(x,i){
+      var bg=i%2===0?'#fff':'#f9fafb';
+      var dt=x.incident_date?new Date(x.incident_date).toLocaleDateString('en-GB'):'—';
+      var tc=INC_TYPE_CFG[x.incident_type]||INC_TYPE_CFG.near_miss;
+      var sevCfg={negligible:['#f3f4f6','#6B7280'],low:['#EAF3DE','#3B6D11'],medium:['#FEF9EC','#854F0B'],high:['#FEF6E7','#C2410C'],critical:['#FCEBEB','#A32D2D']};
+      var sc2=sevCfg[x.severity]||sevCfg.medium;
+      var stCfg={open:['#FEF9EC','#854F0B'],investigating:['#EDE9FE','#7C3AED'],closed:['#EAF3DE','#3B6D11']};
+      var stc=stCfg[x.status]||stCfg.open;
+      h+='<tr style="border-bottom:1px solid #f0f0f0;background:'+bg+'">'
+        +'<td style="padding:9px 14px;font-family:monospace;font-weight:700;color:#E24B4A">'+escH(x.ref_number||'—')+'</td>'
+        +'<td style="padding:9px 10px;font-weight:600">'+dt+'</td>'
+        +'<td style="padding:9px 10px">'+escH(x.contractors?.contractor_name||'—')+'</td>'
+        +'<td style="padding:9px 10px"><span style="background:'+tc[0]+';color:'+tc[1]+';padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600">'+tc[2]+'</span></td>'
+        +'<td style="padding:9px 10px"><span style="background:'+sc2[0]+';color:'+sc2[1]+';padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600;text-transform:capitalize">'+x.severity+'</span></td>'
+        +'<td style="padding:9px 10px"><span style="background:'+stc[0]+';color:'+stc[1]+';padding:2px 8px;border-radius:99px;font-size:11px;font-weight:600;text-transform:capitalize">'+x.status+'</span></td>'
+        +'<td style="padding:9px 10px"><div style="display:flex;gap:4px">'
+        +'<button class="btn btn-sm" data-id="'+x.id+'" onclick="cirEdit(this.getAttribute(\'data-id\'))"><i class="ti ti-edit"></i></button>'
+        +(isMgr()?'<button class="btn btn-sm" style="color:var(--red)" data-id="'+x.id+'" onclick="cirDeleteRow(this.getAttribute(\'data-id\'))"><i class="ti ti-trash"></i></button>':'')
+        +'</div></td></tr>';
+    });
+    h+='</tbody></table>';
+    el.innerHTML=h;
+  }catch(e){el.innerHTML='<p style="padding:20px;color:red">'+e.message+'</p>';}
+}
+
+function cirShowForm(){
+  ['con-view-register','con-view-preassess','con-view-eval','con-view-atw','con-view-incidents'].forEach(function(id){var el=document.getElementById(id);if(el)el.style.display='none';});
+  document.getElementById('cir-form').style.display='block';
+}
+function cirFormBack(){
+  document.getElementById('cir-form').style.display='none';
+  document.getElementById('con-view-incidents').style.display='block';
+  document.querySelectorAll('.mtg-tab').forEach(t=>t.classList.remove('active'));
+  var tab=document.getElementById('con-tab-incidents');if(tab)tab.classList.add('active');
+  cirLoad();
+}
+
+function cirNew(){
+  cirEditingId=null;
+  document.getElementById('cir-form-title').textContent='New Incident Report';
+  document.getElementById('cir-form-ref').textContent='CIR-AUTO';
+  document.getElementById('cir-del-btn').style.display='none';
+  var conSel=document.getElementById('cirf-contractor');
+  if(conSel){conSel.innerHTML='<option value="">Select contractor...</option>';conAllData.forEach(function(c){var o=document.createElement('option');o.value=c.id;o.textContent=c.contractor_name;conSel.appendChild(o);});}
+  var dt=document.getElementById('cirf-date');if(dt)dt.value=new Date().toISOString().slice(0,10);
+  var rdt=document.getElementById('cirf-report-date');if(rdt)rdt.value=new Date().toISOString().slice(0,10);
+  ['cirf-location','cirf-desc','cirf-injured-name','cirf-injured-role','cirf-injury-type','cirf-injury-desc','cirf-treatment','cirf-immediate','cirf-root','cirf-factors','cirf-immediate-action','cirf-corrective','cirf-action-resp','cirf-reg-ref','cirf-notes','cirf-reported-by','cirf-time'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
+  var adue=document.getElementById('cirf-action-due');if(adue)adue.value='';
+  var typ=document.getElementById('cirf-type');if(typ)typ.value='near_miss';
+  var sev=document.getElementById('cirf-severity');if(sev)sev.value='low';
+  var st=document.getElementById('cirf-status');if(st)st.value='open';
+  var reg=document.getElementById('cirf-regulator');if(reg)reg.checked=false;
+  cirShowForm();
+}
+
+async function cirEdit(id){
+  var x=conIncData.find(function(r){return r.id===id;});if(!x)return;
+  cirEditingId=id;
+  document.getElementById('cir-form-title').textContent='Edit Incident Report';
+  document.getElementById('cir-form-ref').textContent=x.ref_number||'—';
+  document.getElementById('cir-del-btn').style.display=isMgr()?'inline-flex':'none';
+  var conSel=document.getElementById('cirf-contractor');
+  if(conSel){conSel.innerHTML='<option value="">Select contractor...</option>';conAllData.forEach(function(c){var o=document.createElement('option');o.value=c.id;o.textContent=c.contractor_name;conSel.appendChild(o);});conSel.value=x.contractor_id||'';}
+  var flds={'cirf-location':'location','cirf-desc':'description','cirf-injured-name':'injured_person_name','cirf-injured-role':'injured_person_role','cirf-injury-type':'injury_type','cirf-injury-desc':'injury_description','cirf-treatment':'treatment_provided','cirf-immediate':'immediate_cause','cirf-root':'root_cause','cirf-factors':'contributing_factors','cirf-immediate-action':'immediate_actions','cirf-corrective':'corrective_actions','cirf-action-resp':'action_responsible','cirf-reg-ref':'regulator_reference','cirf-notes':'notes','cirf-reported-by':'reported_by','cirf-time':'incident_time'};
+  Object.entries(flds).forEach(function(e){var el=document.getElementById(e[0]);if(el)el.value=x[e[1]]||'';});
+  var dt=document.getElementById('cirf-date');if(dt)dt.value=x.incident_date||'';
+  var rdt=document.getElementById('cirf-report-date');if(rdt)rdt.value=x.report_date||'';
+  var adue=document.getElementById('cirf-action-due');if(adue)adue.value=x.action_due_date||'';
+  var typ=document.getElementById('cirf-type');if(typ)typ.value=x.incident_type||'near_miss';
+  var sev=document.getElementById('cirf-severity');if(sev)sev.value=x.severity||'low';
+  var st=document.getElementById('cirf-status');if(st)st.value=x.status||'open';
+  var reg=document.getElementById('cirf-regulator');if(reg)reg.checked=!!x.reported_to_regulator;
+  cirShowForm();
+}
+
+async function cirSave(){
+  var conId=document.getElementById('cirf-contractor')?.value;
+  var desc=document.getElementById('cirf-desc')?.value?.trim();
+  if(!conId||!desc){toast('Please select contractor and describe the incident',false);return;}
+  var g=function(id){var el=document.getElementById(id);return el?el.value||null:null;};
+  var body={
+    company_id:prof?.company_id,contractor_id:conId,
+    incident_date:g('cirf-date'),incident_time:g('cirf-time'),report_date:g('cirf-report-date'),
+    reported_by:g('cirf-reported-by'),incident_type:g('cirf-type')||'near_miss',
+    severity:g('cirf-severity')||'low',location:g('cirf-location'),description:desc,
+    injured_person_name:g('cirf-injured-name'),injured_person_role:g('cirf-injured-role'),
+    injury_type:g('cirf-injury-type'),injury_description:g('cirf-injury-desc'),
+    treatment_provided:g('cirf-treatment'),immediate_cause:g('cirf-immediate'),
+    root_cause:g('cirf-root'),contributing_factors:g('cirf-factors'),
+    immediate_actions:g('cirf-immediate-action'),corrective_actions:g('cirf-corrective'),
+    action_responsible:g('cirf-action-resp'),action_due_date:g('cirf-action-due'),
+    reported_to_regulator:document.getElementById('cirf-regulator')?.checked||false,
+    regulator_reference:g('cirf-reg-ref'),status:g('cirf-status')||'open',
+    notes:g('cirf-notes'),updated_at:new Date().toISOString()
+  };
+  try{
+    if(cirEditingId){
+      await api('/contractor_incidents?id=eq.'+cirEditingId,{m:'PATCH',p:'return=minimal',b:body});
+      toast('Incident report updated!');
+    }else{
+      body.created_by=prof?.id;
+      var res=await api('/contractor_incidents',{m:'POST',p:'return=representation',b:body});
+      if(res?.[0]?.id){
+        var yr=new Date().getFullYear();
+        var ref='CIR-'+yr+'-'+String(conIncData.length+1).padStart(3,'0');
+        await api('/contractor_incidents?id=eq.'+res[0].id,{m:'PATCH',p:'return=minimal',b:{ref_number:ref}});
+        // Add to MAP if high/critical
+        if(['high','critical'].includes(body.severity)){
+          var conName=conAllData.find(function(c){return c.id===conId;})?.contractor_name||'Contractor';
+          await api('/action_tracker',{m:'POST',p:'return=minimal',b:{
+            company_id:prof?.company_id,source_module:'contractor',source_id:res[0].id,
+            source_ref:ref+' — '+conName,description:body.corrective_actions||'Investigate contractor incident: '+body.description.substring(0,100),
+            responsible:body.action_responsible||null,target_date:body.action_due_date||null,
+            priority:body.severity==='critical'?'critical':'high',status:'open',created_by:prof?.id
+          }});
+          toast('Incident reported! Ref: '+ref+' — Action added to MAP.');
+        }else{
+          toast('Incident reported! Ref: '+ref);
+        }
+      }
+    }
+    cirFormBack();
+  }catch(e){toast(e.message,false);console.error(e);}
+}
+
+async function cirDelete(){
+  if(!cirEditingId)return;
+  if(!confirm('Delete this incident report?'))return;
+  try{await api('/contractor_incidents?id=eq.'+cirEditingId,{m:'DELETE'});toast('Deleted!');cirFormBack();}
+  catch(e){toast(e.message,false);}
+}
+async function cirDeleteRow(id){
+  if(!confirm('Delete?'))return;
+  try{await api('/contractor_incidents?id=eq.'+id,{m:'DELETE'});conIncData=conIncData.filter(x=>x.id!==id);toast('Deleted!');cirLoad();}
+  catch(e){toast(e.message,false);}
+}
 
 async function loadPermits(){
 const el=document.getElementById('permits-list');
@@ -7332,6 +8249,8 @@ function sopSaveToDocControl(){
 
 
 
+
+
 </script>
 </head>
 <body>
@@ -7340,7 +8259,8 @@ function sopSaveToDocControl(){
 <div class="layout">
 <div class="sidebar"><div class="sidebar-top"><img id="co-logo-img" class="co-logo" src="" alt="logo"/><div id="co-initials-div" class="co-initials">A</div><div class="sb-company" id="sb-company">AURIS360</div><div class="sb-user" id="sb-user">—</div><span class="sb-role" id="sb-role">—</span></div><span class="nav-section">Main</span><div class="nav-item active" onclick="showPage('dashboard',this)"><i class="ti ti-layout-dashboard"></i>Dashboard</div><div class="nav-item" id="nav-ai" onclick="showPage('ai-insights',this)"><i class="ti ti-brain"></i>AI Insights</div><span class="nav-section">HSE Modules</span><div class="nav-item" onclick="showPage('kpi',this)"><i class="ti ti-target"></i>Objectives & KPIs</div><div class="nav-item" onclick="showPage('workschedule',this)"><i class="ti ti-calendar-event"></i>Work Schedule</div>
 <div class="nav-item" onclick="showPage('events',this)"><i class="ti ti-alert-triangle"></i>Event Reporting</div><div class="nav-item" onclick="showPage('inspection',this)"><i class="ti ti-clipboard-check"></i>Site Inspection</div><div class="nav-item" onclick="showPage('risk',this)"><i class="ti ti-shield-check"></i>Risk Assessment</div><div class="nav-item" id="nav-inv" onclick="showPage('investigation',this)"><i class="ti ti-search"></i>Investigation</div><div class="nav-item" onclick="showPage('tools',this)"><i class="ti ti-tools"></i>Tools & Equipment</div>
-<div class="nav-item" onclick="showPage('permit',this)"><i class="ti ti-key"></i>Permit to Work</div><div class="nav-item" onclick="showPage('noise',this)"><i class="ti ti-volume"></i>Noise Survey</div><div class="nav-item" id="nav-mtg" onclick="showPage('meetings',this)"><i class="ti ti-notes"></i>HSE Meetings</div><div class="nav-item" onclick="showPage('training',this)"><i class="ti ti-certificate"></i>Training</div><span class="nav-section">Management</span><div class="nav-item" onclick="showPage('actions',this)"><i class="ti ti-list-check"></i>Master Action Plan</div><div class="nav-item" onclick="showPage('legal',this)"><i class="ti ti-scale"></i>Legal Compliance</div>
+<div class="nav-item" onclick="showPage('permit',this)"><i class="ti ti-key"></i>Permit to Work</div>
+<div class="nav-item" onclick="showPage('contractor',this)"><i class="ti ti-hard-hat"></i>Contractors</div><div class="nav-item" onclick="showPage('noise',this)"><i class="ti ti-volume"></i>Noise Survey</div><div class="nav-item" id="nav-mtg" onclick="showPage('meetings',this)"><i class="ti ti-notes"></i>HSE Meetings</div><div class="nav-item" onclick="showPage('training',this)"><i class="ti ti-certificate"></i>Training</div><span class="nav-section">Management</span><div class="nav-item" onclick="showPage('actions',this)"><i class="ti ti-list-check"></i>Master Action Plan</div><div class="nav-item" onclick="showPage('legal',this)"><i class="ti ti-scale"></i>Legal Compliance</div>
 <div class="nav-item" onclick="showPage('sop',this)"><i class="ti ti-file-description"></i>SOP Generator</div>
 <div class="nav-item" id="nav-docs" onclick="showPage('documents',this)"><i class="ti ti-files"></i>Document Control</div><div class="nav-item" onclick="showPage('people',this)"><i class="ti ti-id-badge"></i>People</div><div class="nav-item" id="nav-users" onclick="showPage('users',this)"><i class="ti ti-users"></i>User Management</div><div class="nav-item" id="nav-admin" style="display:none" onclick="showPage('admin',this)"><i class="ti ti-building"></i>Companies</div><div class="nav-item" id="nav-settings" onclick="showPage('settings',this)"><i class="ti ti-settings"></i>Settings</div><div class="sb-footer"><button class="btn btn-sm" style="flex:1;justify-content:center;color:var(--red)" onclick="doLogout()"><i class="ti ti-logout"></i>Sign out</button></div></div>
 <div class="main">
@@ -9251,6 +10171,514 @@ Toolbox talk / safety briefing conducted before starting work
 
 <div id="page-permit" class="page">
 <div class="page-header"><div class="page-title">Permit to Work</div><div id="permit-add-btn"></div></div><div class="card" id="permit-form" style="display:none"><div class="card-title">Issue permit to work</div><div class="form-row"><div class="form-group"><label class="form-label">Permit number</label><input type="text" id="pf-no" placeholder="PTW-001"/></div><div class="form-group"><label class="form-label">Permit type</label><select id="pf-type"><option value="hot_work">Hot Work</option><option value="confined_space">Confined Space</option><option value="working_at_height">Working at Height</option><option value="electrical">Electrical</option><option value="excavation">Excavation</option><option value="general">General</option></select></div></div><div class="form-group"><label class="form-label">Work description</label><textarea id="pf-desc"></textarea></div><div class="form-row"><div class="form-group"><label class="form-label">Location</label><input type="text" id="pf-loc"/></div><div class="form-group"><label class="form-label">Contractor / team</label><select id="pf-contractor"><option value="">Select person...</option></select></div></div><div class="form-row"><div class="form-group"><label class="form-label">Start</label><input type="datetime-local" id="pf-start"/></div><div class="form-group"><label class="form-label">End</label><input type="datetime-local" id="pf-end"/></div></div><div class="form-row"><div class="form-group"><label class="form-label">Issued by</label><select id="pf-issued"><option value="">Select person...</option></select></div><div class="form-group"><label class="form-label">Approved by</label><select id="pf-approved"><option value="">Select person...</option></select></div></div><div class="form-group"><label class="form-label">Precautions / controls</label><textarea id="pf-precautions"></textarea></div><div class="form-group"><label class="form-label">PPE required</label><input type="text" id="pf-ppe"/></div><div class="form-group"><label class="form-label">Status</label><select id="pf-status"><option value="draft">Draft</option><option value="pending_approval">Pending approval</option><option value="approved">Approved</option><option value="active">Active</option><option value="closed">Closed</option><option value="cancelled">Cancelled</option></select></div><div style="display:flex;gap:8px"><button class="btn btn-primary" onclick="savePermit()"><i class="ti ti-device-floppy"></i>Save</button><button class="btn" onclick="toggleForm('permit-form')">Cancel</button></div></div><div class="card"><div class="card-title">Permits register</div><div id="permits-list"><div class="loading-msg">Loading...</div></div></div></div>
+<div id="page-contractor" class="page">
+<div class="page-header">
+<div><div class="page-title">Contractor Management</div><div style="font-size:12px;color:var(--text2)">Pre-assessment, evaluation, authorisation to work and incident reporting</div></div>
+<div style="display:flex;gap:8px" id="con-header-btns">
+<button class="btn btn-primary" id="con-add-btn" style="display:none" onclick="conNew()"><i class="ti ti-plus"></i>Register contractor</button>
+</div>
+</div>
+
+<!-- Tabs -->
+<div style="display:flex;gap:0;margin-bottom:16px;border-bottom:2px solid var(--border)">
+<button class="mtg-tab active" id="con-tab-register" onclick="conSwitchTab('register',this)">🏢 Contractor Register</button>
+<button class="mtg-tab" id="con-tab-preassess" onclick="conSwitchTab('preassess',this)">📋 Pre-Assessment</button>
+<button class="mtg-tab" id="con-tab-eval" onclick="conSwitchTab('eval',this)">⭐ Evaluation</button>
+<button class="mtg-tab" id="con-tab-atw" onclick="conSwitchTab('atw',this)">🔑 Auth. to Work</button>
+<button class="mtg-tab" id="con-tab-incidents" onclick="conSwitchTab('incidents',this)">⚠️ Incidents</button>
+</div>
+
+<!-- ── CONTRACTOR REGISTER ── -->
+<div id="con-view-register">
+<!-- Metrics -->
+<div style="display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:14px">
+<div class="card" style="padding:12px 14px;border-left:4px solid #1D9E75"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">Approved</div><div style="font-size:24px;font-weight:800;color:#1D9E75" id="con-m-approved">—</div></div>
+<div class="card" style="padding:12px 14px;border-left:4px solid #EF9F27"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">Pending</div><div style="font-size:24px;font-weight:800;color:#EF9F27" id="con-m-pending">—</div></div>
+<div class="card" style="padding:12px 14px;border-left:4px solid #E24B4A"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">Suspended</div><div style="font-size:24px;font-weight:800;color:#E24B4A" id="con-m-suspended">—</div></div>
+<div class="card" style="padding:12px 14px;border-left:4px solid #8B5CF6"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">Expiring soon</div><div style="font-size:24px;font-weight:800;color:#8B5CF6" id="con-m-expiring">—</div></div>
+<div class="card" style="padding:12px 14px;border-left:4px solid #185FA5"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">Total</div><div style="font-size:24px;font-weight:800;color:#185FA5" id="con-m-total">—</div></div>
+</div>
+<!-- Filter -->
+<div class="card" style="margin-bottom:12px;padding:10px 14px">
+<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+<input type="text" id="con-search" placeholder="Search contractor name..." oninput="conFilterRegister()" style="flex:1;min-width:180px;padding:7px 12px;border:1px solid var(--border);border-radius:8px;font-size:12px"/>
+<select id="con-filter-status" onchange="conFilterRegister()" style="padding:7px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px">
+<option value="">All statuses</option>
+<option value="approved">Approved</option>
+<option value="pending">Pending</option>
+<option value="pre_assessed">Pre-assessed</option>
+<option value="suspended">Suspended</option>
+<option value="rejected">Rejected</option>
+<option value="expired">Expired</option>
+</select>
+<select id="con-filter-cat" onchange="conFilterRegister()" style="padding:7px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px">
+<option value="">All categories</option>
+<option value="electrical">Electrical</option>
+<option value="mechanical">Mechanical</option>
+<option value="civil">Civil</option>
+<option value="construction">Construction</option>
+<option value="cleaning">Cleaning</option>
+<option value="security">Security</option>
+<option value="it">IT</option>
+<option value="other">Other</option>
+</select>
+</div>
+</div>
+<div class="card" style="padding:0;overflow:hidden"><div id="con-register-list"><div class="loading-msg">Loading...</div></div></div>
+</div>
+
+<!-- ── PRE-ASSESSMENT ── -->
+<div id="con-view-preassess" style="display:none">
+<div class="card" style="margin-bottom:12px;padding:10px 14px;display:flex;justify-content:space-between;align-items:center">
+<div><div class="card-title" style="margin:0">Contractor Pre-Assessments</div>
+<div style="font-size:12px;color:var(--text2);margin-top:3px">Safety management system review before appointing a contractor</div></div>
+<button class="btn btn-primary" id="cpa-add-btn" style="display:none" onclick="cpaNew()"><i class="ti ti-plus"></i>New pre-assessment</button>
+</div>
+<div id="con-pa-list"><div class="loading-msg">Loading...</div></div>
+</div>
+
+<!-- ── EVALUATION ── -->
+<div id="con-view-eval" style="display:none">
+<div class="card" style="margin-bottom:12px;padding:10px 14px;display:flex;justify-content:space-between;align-items:center">
+<div><div class="card-title" style="margin:0">Performance Evaluations</div>
+<div style="font-size:12px;color:var(--text2);margin-top:3px">Post-work contractor performance review</div></div>
+<button class="btn btn-primary" id="cev-add-btn" style="display:none" onclick="cevNew()"><i class="ti ti-plus"></i>New evaluation</button>
+</div>
+<div id="con-ev-list"><div class="loading-msg">Loading...</div></div>
+</div>
+
+<!-- ── AUTHORISATION TO WORK ── -->
+<div id="con-view-atw" style="display:none">
+<div class="card" style="margin-bottom:12px;padding:10px 14px;display:flex;justify-content:space-between;align-items:center">
+<div><div class="card-title" style="margin:0">Authorisation to Work</div>
+<div style="font-size:12px;color:var(--text2);margin-top:3px">Formal authorisation linking contractors to work orders and permits</div></div>
+<button class="btn btn-primary" id="catw-add-btn" style="display:none" onclick="catwNew()"><i class="ti ti-plus"></i>New authorisation</button>
+</div>
+<div id="con-atw-alerts" style="margin-bottom:10px"></div>
+<div class="card" style="padding:0;overflow:hidden"><div id="con-atw-list"><div class="loading-msg">Loading...</div></div></div>
+</div>
+
+<!-- ── INCIDENTS ── -->
+<div id="con-view-incidents" style="display:none">
+<div class="card" style="margin-bottom:12px;padding:10px 14px;display:flex;justify-content:space-between;align-items:center">
+<div><div class="card-title" style="margin:0">Contractor Incident Reports</div>
+<div style="font-size:12px;color:var(--text2);margin-top:3px">Incidents involving contractor or subcontractor personnel</div></div>
+<button class="btn btn-primary" id="cir-add-btn" style="display:none" onclick="cirNew()"><i class="ti ti-plus"></i>Report incident</button>
+</div>
+<div class="card" style="padding:0;overflow:hidden"><div id="con-inc-list"><div class="loading-msg">Loading...</div></div></div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════════════ -->
+<!-- FORMS -->
+<!-- ═══════════════════════════════════════════════════════════════════════════ -->
+
+<!-- ── CONTRACTOR REGISTER FORM ── -->
+<div id="con-form" style="display:none">
+<div class="card" style="margin-bottom:14px;padding:0;overflow:hidden">
+<div style="padding:16px 24px;background:linear-gradient(135deg,#1a3a5c,#185FA5);color:#fff;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
+<div><div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.1em;opacity:.7;margin-bottom:4px">Contractor Registration</div>
+<div style="font-size:18px;font-weight:800" id="con-form-title">New Contractor</div></div>
+<div style="display:flex;gap:8px">
+<button class="btn" style="background:rgba(255,255,255,.2);color:#fff;border-color:rgba(255,255,255,.3)" onclick="conFormBack()"><i class="ti ti-arrow-left"></i>Back</button>
+<button id="con-del-btn" class="btn" style="display:none;background:rgba(220,38,38,.3);color:#fff;border-color:rgba(220,38,38,.5)" onclick="conDelete()"><i class="ti ti-trash"></i>Delete</button>
+<button class="btn" style="background:#1D9E75;color:#fff;border-color:#1D9E75" onclick="conSave()"><i class="ti ti-device-floppy"></i>Save</button>
+</div>
+</div>
+</div>
+<div style="display:grid;grid-template-columns:2fr 1fr;gap:14px">
+<div>
+<div class="card" style="margin-bottom:14px">
+<div class="card-title">Company Information</div>
+<div class="form-row">
+<div class="form-group"><label class="form-label">Contractor / Company name</label><input type="text" id="conf-name" placeholder="Full legal company name"/></div>
+<div class="form-group"><label class="form-label">Trading name (if different)</label><input type="text" id="conf-trading"/></div>
+<div class="form-group"><label class="form-label">Registration / BRN number</label><input type="text" id="conf-reg"/></div>
+<div class="form-group"><label class="form-label">VAT number</label><input type="text" id="conf-vat"/></div>
+</div>
+<div class="form-group"><label class="form-label">Address</label><textarea id="conf-address" style="min-height:60px"></textarea></div>
+<div class="form-row">
+<div class="form-group"><label class="form-label">Primary contact person</label><input type="text" id="conf-contact"/></div>
+<div class="form-group"><label class="form-label">Email</label><input type="email" id="conf-email"/></div>
+<div class="form-group"><label class="form-label">Phone</label><input type="tel" id="conf-phone"/></div>
+<div class="form-group"><label class="form-label">Website</label><input type="text" id="conf-website"/></div>
+</div>
+<div class="form-row">
+<div class="form-group"><label class="form-label">Category</label>
+<select id="conf-cat">
+<option value="general">General</option>
+<option value="electrical">Electrical</option>
+<option value="mechanical">Mechanical</option>
+<option value="civil">Civil</option>
+<option value="construction">Construction</option>
+<option value="cleaning">Cleaning</option>
+<option value="security">Security</option>
+<option value="it">IT / Technology</option>
+<option value="catering">Catering</option>
+<option value="other">Other</option>
+</select></div>
+<div class="form-group"><label class="form-label">Specialisation / Scope of work</label><input type="text" id="conf-spec" placeholder="e.g. HV electrical installation, scaffolding..."/></div>
+</div>
+<div class="form-group"><label class="form-label">Notes</label><textarea id="conf-notes" style="min-height:50px"></textarea></div>
+</div>
+<div class="card">
+<div class="card-title" style="color:#EF9F27"><i class="ti ti-shield-check"></i> Insurance Details</div>
+<div class="form-group"><label class="form-label">Insurance type</label><input type="text" id="conf-ins-type" placeholder="e.g. Public liability, Employer's liability..."/></div>
+<div class="form-row">
+<div class="form-group"><label class="form-label">Insurance provider</label><input type="text" id="conf-ins-provider"/></div>
+<div class="form-group"><label class="form-label">Policy number</label><input type="text" id="conf-ins-policy"/></div>
+<div class="form-group"><label class="form-label">Expiry date</label><input type="date" id="conf-ins-expiry"/></div>
+</div>
+</div>
+</div>
+<div>
+<div class="card" style="margin-bottom:14px;border:2px solid #185FA5">
+<div class="card-title" style="color:#185FA5">Approval Status</div>
+<div class="form-group"><label class="form-label">Status</label>
+<select id="conf-status">
+<option value="pending">Pending review</option>
+<option value="pre_assessed">Pre-assessed</option>
+<option value="approved">Approved</option>
+<option value="suspended">Suspended</option>
+<option value="rejected">Rejected</option>
+<option value="expired">Expired</option>
+</select></div>
+<div class="form-group"><label class="form-label">Approved date</label><input type="date" id="conf-approved-date"/></div>
+<div class="form-group"><label class="form-label">Approval expiry date</label><input type="date" id="conf-expiry-date"/></div>
+<div class="form-group"><label class="form-label">Next review date</label><input type="date" id="conf-review-date"/></div>
+</div>
+<div class="card" style="background:linear-gradient(135deg,#1a3a5c,#185FA5);color:#fff;border:none;text-align:center;padding:20px">
+<div style="font-size:40px;margin-bottom:10px">🏢</div>
+<div style="font-size:14px;font-weight:700;margin-bottom:4px" id="conf-preview-name">New Contractor</div>
+<div style="font-size:11px;opacity:.7">Category: <span id="conf-preview-cat">—</span></div>
+</div>
+</div>
+</div>
+</div>
+
+<!-- ── PRE-ASSESSMENT FORM ── -->
+<div id="cpa-form" style="display:none">
+<div class="card" style="margin-bottom:14px;padding:0;overflow:hidden">
+<div style="padding:16px 24px;background:linear-gradient(135deg,#064E3B,#1D9E75);color:#fff;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
+<div><div style="font-size:11px;font-weight:600;text-transform:uppercase;opacity:.8;margin-bottom:4px;letter-spacing:.08em">Contractor Pre-Assessment</div>
+<div style="font-size:18px;font-weight:800" id="cpa-form-contractor">Select contractor</div></div>
+<div style="display:flex;gap:8px">
+<button class="btn" style="background:rgba(255,255,255,.2);color:#fff;border-color:rgba(255,255,255,.3)" onclick="cpaFormBack()"><i class="ti ti-arrow-left"></i>Back</button>
+<button class="btn" style="background:#1D9E75;color:#fff;border-color:#1D9E75" onclick="cpaSave()"><i class="ti ti-device-floppy"></i>Save assessment</button>
+</div>
+</div>
+</div>
+<!-- Header info -->
+<div class="card" style="margin-bottom:14px">
+<div class="form-row">
+<div class="form-group"><label class="form-label">Contractor</label><select id="cpaf-contractor"><option value="">Select contractor...</option></select></div>
+<div class="form-group"><label class="form-label">Assessment date</label><input type="date" id="cpaf-date"/></div>
+<div class="form-group"><label class="form-label">Assessed by</label><input type="text" id="cpaf-assessor"/></div>
+</div>
+</div>
+<!-- Section 1: Company & Legal -->
+<div class="card" style="margin-bottom:14px;border-left:4px solid #185FA5">
+<div class="card-title" style="color:#185FA5">Section 1 — Company &amp; Legal Compliance</div>
+<div id="cpa-s1" class="cpa-section"></div>
+</div>
+<!-- Section 2: HSE Management -->
+<div class="card" style="margin-bottom:14px;border-left:4px solid #1D9E75">
+<div class="card-title" style="color:#1D9E75">Section 2 — HSE Management System</div>
+<div id="cpa-s2" class="cpa-section"></div>
+</div>
+<!-- Section 3: Competency & Training -->
+<div class="card" style="margin-bottom:14px;border-left:4px solid #8B5CF6">
+<div class="card-title" style="color:#8B5CF6">Section 3 — Competency &amp; Training</div>
+<div id="cpa-s3" class="cpa-section"></div>
+</div>
+<!-- Section 4: Equipment & Tools -->
+<div class="card" style="margin-bottom:14px;border-left:4px solid #EF9F27">
+<div class="card-title" style="color:#EF9F27">Section 4 — Equipment &amp; Tools</div>
+<div id="cpa-s4" class="cpa-section"></div>
+</div>
+<!-- Section 5: Environmental -->
+<div class="card" style="margin-bottom:14px;border-left:4px solid #0891B2">
+<div class="card-title" style="color:#0891B2">Section 5 — Environmental</div>
+<div id="cpa-s5" class="cpa-section"></div>
+</div>
+<!-- Result -->
+<div class="card" style="background:linear-gradient(135deg,#f8fafc,#e8f0fe);border:2px solid #185FA5">
+<div class="card-title" style="color:#185FA5"><i class="ti ti-trophy"></i> Assessment Result</div>
+<div style="display:flex;gap:16px;margin-bottom:14px;flex-wrap:wrap">
+<div style="text-align:center;padding:14px 20px;border-radius:12px;flex:1;min-width:120px" id="cpa-score-display" style="background:#f3f4f6">
+<div style="font-size:40px;font-weight:900" id="cpa-total-score">—</div>
+<div style="font-size:11px;color:var(--text2);font-weight:600;text-transform:uppercase">Total score / 100</div>
+</div>
+</div>
+<div class="form-row">
+<div class="form-group"><label class="form-label">Overall result</label>
+<select id="cpaf-result">
+<option value="pending">Pending</option>
+<option value="approved">Approved — meets requirements</option>
+<option value="conditional">Conditional — improvements required</option>
+<option value="rejected">Rejected — does not meet requirements</option>
+</select></div>
+</div>
+<div class="form-group"><label class="form-label">Conditions / Actions required</label><textarea id="cpaf-conditions" style="min-height:70px" placeholder="If conditional: list specific improvements required before appointment..."></textarea></div>
+<div class="form-group"><label class="form-label">Assessor comments</label><textarea id="cpaf-comments" style="min-height:60px"></textarea></div>
+</div>
+</div>
+
+<!-- ── EVALUATION FORM ── -->
+<div id="cev-form" style="display:none">
+<div class="card" style="margin-bottom:14px;padding:0;overflow:hidden">
+<div style="padding:16px 24px;background:linear-gradient(135deg,#1e3a5f,#7C3AED);color:#fff;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
+<div><div style="font-size:11px;font-weight:600;text-transform:uppercase;opacity:.8;margin-bottom:4px;letter-spacing:.08em">Performance Evaluation</div>
+<div style="font-size:18px;font-weight:800" id="cev-form-title">New Evaluation</div></div>
+<div style="display:flex;gap:8px">
+<button class="btn" style="background:rgba(255,255,255,.2);color:#fff;border-color:rgba(255,255,255,.3)" onclick="cevFormBack()"><i class="ti ti-arrow-left"></i>Back</button>
+<button class="btn" style="background:#1D9E75;color:#fff;border-color:#1D9E75" onclick="cevSave()"><i class="ti ti-device-floppy"></i>Save evaluation</button>
+</div>
+</div>
+</div>
+<div style="display:grid;grid-template-columns:2fr 1fr;gap:14px">
+<div>
+<div class="card" style="margin-bottom:14px">
+<div class="card-title">Evaluation Details</div>
+<div class="form-row">
+<div class="form-group"><label class="form-label">Contractor</label><select id="cevf-contractor"><option value="">Select...</option></select></div>
+<div class="form-group"><label class="form-label">Evaluation date</label><input type="date" id="cevf-date"/></div>
+<div class="form-group"><label class="form-label">Evaluated by</label><input type="text" id="cevf-evaluator"/></div>
+</div>
+<div class="form-row">
+<div class="form-group"><label class="form-label">Work description</label><input type="text" id="cevf-work-desc" placeholder="e.g. Electrical panel installation — Building A"/></div>
+<div class="form-group"><label class="form-label">Work start date</label><input type="date" id="cevf-start"/></div>
+<div class="form-group"><label class="form-label">Work end date</label><input type="date" id="cevf-end"/></div>
+</div>
+</div>
+<!-- Scoring -->
+<div class="card" style="margin-bottom:14px">
+<div class="card-title"><i class="ti ti-star"></i> Performance Scoring (1 = Poor · 5 = Excellent)</div>
+<div id="cev-scores" style="display:flex;flex-direction:column;gap:2px"></div>
+</div>
+<div class="card">
+<div class="card-title">Qualitative Assessment</div>
+<div class="form-row">
+<div class="form-group"><label class="form-label" style="color:#1D9E75"><i class="ti ti-thumbs-up"></i> Positive observations</label><textarea id="cevf-positive" style="min-height:70px" placeholder="What did the contractor do well?"></textarea></div>
+<div class="form-group"><label class="form-label" style="color:#E24B4A"><i class="ti ti-thumbs-down"></i> Areas for improvement</label><textarea id="cevf-improve" style="min-height:70px" placeholder="What needs to improve?"></textarea></div>
+</div>
+<div class="form-row">
+<div class="form-group"><label class="form-label">Incidents during this work</label><input type="number" id="cevf-incidents" value="0" min="0"/></div>
+<div class="form-group"><label class="form-label">Incident details (if any)</label><input type="text" id="cevf-incident-details"/></div>
+</div>
+</div>
+</div>
+<div>
+<div class="card" style="margin-bottom:14px;border:2px solid #7C3AED">
+<div class="card-title" style="color:#7C3AED"><i class="ti ti-award"></i> Overall Rating</div>
+<div style="text-align:center;padding:20px">
+<div style="font-size:48px;font-weight:900" id="cev-total-score">—</div>
+<div style="font-size:11px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:12px">Score out of 40</div>
+<div id="cev-rating-badge" style="padding:8px 16px;border-radius:99px;font-size:13px;font-weight:700;display:inline-block">—</div>
+</div>
+<div class="form-group"><label class="form-label">Recommend for future work?</label>
+<select id="cevf-recommend">
+<option value="true">Yes — recommend</option>
+<option value="false">No — do not recommend</option>
+</select></div>
+<div class="form-group"><label class="form-label">Recommendation notes</label><textarea id="cevf-rec-notes" style="min-height:50px"></textarea></div>
+</div>
+</div>
+</div>
+</div>
+
+<!-- ── AUTHORISATION TO WORK FORM ── -->
+<div id="catw-form" style="display:none">
+<div class="card" style="margin-bottom:14px;padding:0;overflow:hidden">
+<div style="padding:16px 24px;background:linear-gradient(135deg,#1a3a5c,#1D6070);color:#fff;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
+<div>
+<div style="font-size:11px;font-weight:600;text-transform:uppercase;opacity:.8;margin-bottom:4px;letter-spacing:.08em">Authorisation to Work</div>
+<div style="font-size:18px;font-weight:800" id="catw-form-title">New Authorisation</div>
+<div style="font-family:monospace;font-size:13px;color:#a8f0d4;margin-top:4px" id="catw-form-ref">ATW-AUTO</div>
+</div>
+<div style="display:flex;gap:8px">
+<button class="btn" style="background:rgba(255,255,255,.2);color:#fff;border-color:rgba(255,255,255,.3)" onclick="catwFormBack()"><i class="ti ti-arrow-left"></i>Back</button>
+<button id="catw-del-btn" class="btn" style="display:none;background:rgba(220,38,38,.3);color:#fff;border-color:rgba(220,38,38,.5)" onclick="catwDelete()"><i class="ti ti-trash"></i></button>
+<button class="btn" style="background:#1D9E75;color:#fff;border-color:#1D9E75" onclick="catwSave()"><i class="ti ti-device-floppy"></i>Save &amp; Issue</button>
+</div>
+</div>
+</div>
+<div style="display:grid;grid-template-columns:2fr 1fr;gap:14px">
+<div>
+<div class="card" style="margin-bottom:14px;border-left:4px solid #1D9E75">
+<div class="card-title" style="color:#1D9E75"><i class="ti ti-file-description"></i> Work Details</div>
+<div class="form-row">
+<div class="form-group"><label class="form-label">Contractor</label><select id="catwf-contractor"><option value="">Select contractor...</option></select></div>
+<div class="form-group"><label class="form-label">Linked work order</label><select id="catwf-wo"><option value="">None / standalone</option></select></div>
+<div class="form-group"><label class="form-label">Linked permit to work</label><select id="catwf-permit"><option value="">None required</option></select></div>
+</div>
+<div class="form-group"><label class="form-label">Description of work</label><textarea id="catwf-desc" style="min-height:80px" placeholder="Detailed description of the work to be performed..."></textarea></div>
+<div class="form-row">
+<div class="form-group"><label class="form-label">Work location</label><input type="text" id="catwf-location"/></div>
+<div class="form-group"><label class="form-label">Valid from</label><input type="date" id="catwf-from"/></div>
+<div class="form-group"><label class="form-label">Valid until</label><input type="date" id="catwf-until"/></div>
+</div>
+</div>
+<!-- Authorised persons -->
+<div class="card" style="margin-bottom:14px;border-left:4px solid #8B5CF6">
+<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+<div class="card-title" style="margin:0;color:#8B5CF6"><i class="ti ti-users"></i> Authorised Persons</div>
+<button class="btn btn-sm" onclick="catwAddPerson()"><i class="ti ti-plus"></i>Add person</button>
+</div>
+<div style="font-size:12px;color:var(--text2);margin-bottom:10px">All contractor personnel who are authorised to carry out this work</div>
+<div id="catw-persons-list" style="margin-bottom:8px"></div>
+</div>
+<!-- Conditions -->
+<div class="card" style="margin-bottom:14px">
+<div class="card-title"><i class="ti ti-checklist"></i> Conditions &amp; Requirements</div>
+<div class="form-group"><label class="form-label" style="color:#E24B4A">Conditions of authorisation</label><textarea id="catwf-conditions" style="min-height:70px" placeholder="Specific conditions that must be met during the work..."></textarea></div>
+<div class="form-row">
+<div class="form-group"><label class="form-label">PPE requirements</label><input type="text" id="catwf-ppe" placeholder="Required PPE for this work..."/></div>
+<div class="form-group"><label class="form-label">Supervision requirements</label><input type="text" id="catwf-supervision" placeholder="Who must supervise this work..."/></div>
+</div>
+<div class="form-row">
+<div class="form-group"><label class="form-label">Risk assessment ref.</label><input type="text" id="catwf-ra-ref" style="font-family:monospace"/></div>
+<div class="form-group"><label class="form-label">Method statement ref.</label><input type="text" id="catwf-ms-ref" style="font-family:monospace"/></div>
+</div>
+</div>
+</div>
+<div>
+<!-- Induction -->
+<div class="card" style="margin-bottom:14px;border:2px solid #1D9E75">
+<div class="card-title" style="color:#1D9E75"><i class="ti ti-school"></i> Site Induction</div>
+<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+<input type="checkbox" id="catwf-induction-done" style="width:16px;height:16px;accent-color:var(--green)"/>
+<label for="catwf-induction-done" style="font-size:13px;font-weight:600;cursor:pointer">Site induction completed</label>
+</div>
+<div class="form-row">
+<div class="form-group"><label class="form-label">Induction date</label><input type="date" id="catwf-induction-date"/></div>
+<div class="form-group"><label class="form-label">Conducted by</label><input type="text" id="catwf-induction-by"/></div>
+</div>
+<div class="form-group"><label class="form-label">Induction topics covered</label><textarea id="catwf-induction-topics" style="min-height:70px" placeholder="e.g. Emergency evacuation, site rules, PPE requirements, hazard identification..."></textarea></div>
+</div>
+<!-- Status & sign-off -->
+<div class="card" style="border:2px solid #185FA5">
+<div class="card-title" style="color:#185FA5"><i class="ti ti-pen"></i> Issue &amp; Sign-off</div>
+<div class="form-group"><label class="form-label">Status</label>
+<select id="catwf-status">
+<option value="draft">Draft</option>
+<option value="active">Active — issued</option>
+<option value="suspended">Suspended</option>
+<option value="completed">Completed</option>
+<option value="revoked">Revoked</option>
+</select></div>
+<div class="form-group"><label class="form-label">Issued by</label><select id="catwf-issued-by"><option value="">Select...</option></select></div>
+<div class="form-group"><label class="form-label">Contractor representative (signature)</label><input type="text" id="catwf-con-sig" placeholder="Name of contractor representative who signed..."/></div>
+<div class="form-group"><label class="form-label">Notes</label><textarea id="catwf-notes" style="min-height:50px"></textarea></div>
+</div>
+</div>
+</div>
+</div>
+
+<!-- ── CONTRACTOR INCIDENT REPORT FORM ── -->
+<div id="cir-form" style="display:none">
+<div class="card" style="margin-bottom:14px;padding:0;overflow:hidden">
+<div style="padding:16px 24px;background:linear-gradient(135deg,#7F1D1D,#E24B4A);color:#fff;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
+<div>
+<div style="font-size:11px;font-weight:600;text-transform:uppercase;opacity:.8;margin-bottom:4px;letter-spacing:.08em">Contractor Incident Report</div>
+<div style="font-size:18px;font-weight:800" id="cir-form-title">New Incident Report</div>
+<div style="font-family:monospace;font-size:13px;color:#fca5a5;margin-top:4px" id="cir-form-ref">CIR-AUTO</div>
+</div>
+<div style="display:flex;gap:8px">
+<button class="btn" style="background:rgba(255,255,255,.2);color:#fff;border-color:rgba(255,255,255,.3)" onclick="cirFormBack()"><i class="ti ti-arrow-left"></i>Back</button>
+<button id="cir-del-btn" class="btn" style="display:none;background:rgba(0,0,0,.3);color:#fff;border-color:rgba(255,255,255,.3)" onclick="cirDelete()"><i class="ti ti-trash"></i></button>
+<button class="btn" style="background:#1D9E75;color:#fff;border-color:#1D9E75" onclick="cirSave()"><i class="ti ti-device-floppy"></i>Save report</button>
+</div>
+</div>
+</div>
+<div style="display:grid;grid-template-columns:2fr 1fr;gap:14px">
+<div>
+<div class="card" style="margin-bottom:14px;border-left:4px solid #E24B4A">
+<div class="card-title" style="color:#E24B4A"><i class="ti ti-alert-triangle"></i> Incident Details</div>
+<div class="form-row">
+<div class="form-group"><label class="form-label">Contractor</label><select id="cirf-contractor"><option value="">Select...</option></select></div>
+<div class="form-group"><label class="form-label">Incident date</label><input type="date" id="cirf-date"/></div>
+<div class="form-group"><label class="form-label">Incident time</label><input type="time" id="cirf-time"/></div>
+<div class="form-group"><label class="form-label">Location</label><input type="text" id="cirf-location"/></div>
+</div>
+<div class="form-row">
+<div class="form-group"><label class="form-label">Incident type</label>
+<select id="cirf-type">
+<option value="near_miss">Near miss</option>
+<option value="first_aid">First aid</option>
+<option value="medical_treatment">Medical treatment</option>
+<option value="lost_time">Lost time injury</option>
+<option value="dangerous_occurrence">Dangerous occurrence</option>
+<option value="property_damage">Property damage</option>
+<option value="environmental">Environmental</option>
+<option value="fatality">Fatality</option>
+</select></div>
+<div class="form-group"><label class="form-label">Severity</label>
+<select id="cirf-severity">
+<option value="negligible">Negligible</option>
+<option value="low">Low</option>
+<option value="medium">Medium</option>
+<option value="high">High</option>
+<option value="critical">Critical</option>
+</select></div>
+<div class="form-group"><label class="form-label">Report date</label><input type="date" id="cirf-report-date"/></div>
+<div class="form-group"><label class="form-label">Reported by</label><input type="text" id="cirf-reported-by"/></div>
+</div>
+<div class="form-group"><label class="form-label">Incident description</label><textarea id="cirf-desc" style="min-height:90px" placeholder="Describe what happened, sequence of events, conditions at the time..."></textarea></div>
+</div>
+<!-- Injured person -->
+<div class="card" style="margin-bottom:14px">
+<div class="card-title">Injured / Involved Person</div>
+<div class="form-row">
+<div class="form-group"><label class="form-label">Name</label><input type="text" id="cirf-injured-name"/></div>
+<div class="form-group"><label class="form-label">Role / Job title</label><input type="text" id="cirf-injured-role"/></div>
+<div class="form-group"><label class="form-label">Injury type</label><input type="text" id="cirf-injury-type" placeholder="e.g. Laceration, bruise, fracture..."/></div>
+<div class="form-group"><label class="form-label">Body part affected</label><input type="text" id="cirf-injury-desc" placeholder="e.g. Right hand, left knee..."/></div>
+</div>
+<div class="form-group"><label class="form-label">Treatment provided</label><textarea id="cirf-treatment" style="min-height:50px" placeholder="First aid, hospital, etc."></textarea></div>
+</div>
+<!-- Investigation -->
+<div class="card">
+<div class="card-title"><i class="ti ti-search"></i> Investigation &amp; Root Cause</div>
+<div class="form-row">
+<div class="form-group"><label class="form-label">Immediate cause</label><textarea id="cirf-immediate" style="min-height:60px" placeholder="Direct / immediate cause of the incident..."></textarea></div>
+<div class="form-group"><label class="form-label">Root cause</label><textarea id="cirf-root" style="min-height:60px" placeholder="Underlying / root cause..."></textarea></div>
+</div>
+<div class="form-group"><label class="form-label">Contributing factors</label><textarea id="cirf-factors" style="min-height:50px" placeholder="Other factors that contributed to the incident..."></textarea></div>
+</div>
+</div>
+<div>
+<!-- Actions -->
+<div class="card" style="margin-bottom:14px;border:2px solid #E24B4A">
+<div class="card-title" style="color:#E24B4A"><i class="ti ti-tool"></i> Corrective Actions</div>
+<div class="form-group"><label class="form-label">Immediate actions taken</label><textarea id="cirf-immediate-action" style="min-height:70px" placeholder="Actions taken immediately after the incident..."></textarea></div>
+<div class="form-group"><label class="form-label">Corrective / preventive actions</label><textarea id="cirf-corrective" style="min-height:70px" placeholder="Longer-term corrective measures..."></textarea></div>
+<div class="form-row">
+<div class="form-group"><label class="form-label">Responsible</label><input type="text" id="cirf-action-resp"/></div>
+<div class="form-group"><label class="form-label">Due date</label><input type="date" id="cirf-action-due"/></div>
+</div>
+</div>
+<!-- Status & regulatory -->
+<div class="card">
+<div class="card-title">Status &amp; Reporting</div>
+<div class="form-group"><label class="form-label">Investigation status</label>
+<select id="cirf-status">
+<option value="open">Open</option>
+<option value="investigating">Under investigation</option>
+<option value="closed">Closed</option>
+</select></div>
+<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+<input type="checkbox" id="cirf-regulator" style="width:15px;height:15px;accent-color:var(--red)"/>
+<label for="cirf-regulator" style="font-size:12px;font-weight:600;cursor:pointer;color:var(--red)">Reported to regulatory authority</label>
+</div>
+<div class="form-group"><label class="form-label">Regulatory reference</label><input type="text" id="cirf-reg-ref" placeholder="Reference from OSHA/authority..."/></div>
+<div class="form-group"><label class="form-label">Notes</label><textarea id="cirf-notes" style="min-height:50px"></textarea></div>
+</div>
+</div>
+</div>
+</div>
+
+</div><!-- end page-contractor -->
+
 <div id="page-noise" class="page">
 <div class="page-header"><div class="page-title">Noise Survey</div><button class="btn btn-primary" onclick="toggleForm('noise-form')"><i class="ti ti-plus"></i>New survey</button></div><div class="card" id="noise-form" style="display:none"><div class="card-title">New noise survey</div><div class="form-row"><div class="form-group"><label class="form-label">Survey type</label><select id="nf-type"><option value="occupational">Occupational</option><option value="environmental">Environmental</option></select></div><div class="form-group"><label class="form-label">Site</label><input type="text" id="nf-site"/></div></div><div class="form-row"><div class="form-group"><label class="form-label">Survey date</label><input type="date" id="nf-date"/></div><div class="form-group"><label class="form-label">Conducted by</label><select id="nf-by"><option value="">Select person...</option></select></div></div><div class="form-row"><div class="form-group"><label class="form-label">Instrument used</label><input type="text" id="nf-instrument"/></div><div class="form-group"><label class="form-label">Calibration date</label><input type="date" id="nf-cal"/></div></div><div class="form-group"><label class="form-label">Weather / conditions</label><input type="text" id="nf-weather"/></div><div class="form-group"><label class="form-label">Notes</label><textarea id="nf-notes"></textarea></div><div style="display:flex;gap:8px"><button class="btn btn-primary" onclick="saveNoise()"><i class="ti ti-device-floppy"></i>Save</button><button class="btn" onclick="toggleForm('noise-form')">Cancel</button></div></div><div class="card"><div class="card-title">Noise surveys</div><div id="noise-list"><div class="loading-msg">Loading...</div></div></div></div>
 <div id="page-meetings" class="page">
