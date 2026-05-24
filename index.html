@@ -58,6 +58,8 @@
 
 
 
+
+
 const SB='https://iarfxjhahzbhncsaohbg.supabase.co';
 const KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlhcmZ4amhhaHpiaG5jc2FvaGJnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg2OTM1MzAsImV4cCI6MjA5NDI2OTUzMH0.qSjahuX-RwnjWEDmo-LkcorAxpsmyVoaXt4AO4_A9BM';
 let tok=null,prof=null,co=null,chkItems=[],people=[];
@@ -182,7 +184,7 @@ if(target){
   target.classList.add('active');
 }
 if(el&&el.classList)el.classList.add('active');
-const L={dashboard:loadDash,kpi:kpiLoadAll,workschedule:loadWorkSchedule,events:loadEvents,inspection:()=>{buildChecklist();loadInsps();},risk:loadRA,investigation:loadInvs,legal:loadLegal,sop:loadSOP,tools:loadTools,permit:loadPermits,contractor:loadContractors,noise:loadNoise,meetings:loadMtgs,training:loadTraining,actions:loadActions,documents:loadDocs,people:loadPeople,users:loadUsers,admin:loadAdmin,'ai-insights':genFullAI,settings:loadSettings};
+const L={dashboard:loadDash,kpi:kpiLoadAll,workschedule:loadWorkSchedule,events:loadEvents,inspection:()=>{buildChecklist();loadInsps();},risk:loadRA,investigation:loadInvs,legal:loadLegal,sop:loadSOP,tools:loadTools,permit:loadPermits,contractor:loadContractors,esg:loadESG,noise:loadNoise,meetings:loadMtgs,training:loadTraining,actions:loadActions,documents:loadDocs,people:loadPeople,users:loadUsers,admin:loadAdmin,'ai-insights':genFullAI,settings:loadSettings};
 if(L[name])L[name]();
 }
 function toggleForm(id){const el=document.getElementById(id);el.style.display=el.style.display==='none'?'block':'none';}
@@ -4247,6 +4249,562 @@ await api('/permits',{m:'POST',p:'return=minimal',b:{company_id:prof?.company_id
 toggleForm('permit-form');toast('Permit saved!');loadPermits();loadDash();
 }catch(e){toast(e.message,false);}
 }
+
+// ===== ENVIRONMENTAL & ESG MODULE =====
+let esgWasteData=[], esgHWData=[], esgFuelData=[], esgWaterData=[], esgSpillData=[], esgInspData=[];
+let esgWasteEditId=null, esgHWEditId=null, esgFuelEditId=null, esgWaterEditId=null, esgSpillEditId=null, esgInspEditId=null;
+
+// CO2 emission factors (kg CO2e per litre/unit) — DEFRA/IPCC
+const CO2_FACTORS={diesel:2.68,petrol:2.31,lpg:1.51,natural_gas:1.89,electricity:0.233,heavy_fuel_oil:3.18,other:2.5};
+
+// Environmental inspection checklist items
+const ENV_CHECKLIST=[
+  'Waste segregation — correct bins in place and labelled',
+  'Hazardous waste storage — secure, labelled, in bunded area',
+  'Spill kits — present, stocked, accessible',
+  'Chemical storage — SDS available, containers labelled',
+  'Drains — no blockages, oil/silt interceptors functional',
+  'No visible liquid discharges to drains',
+  'No visible soil contamination',
+  'Dust suppression measures in place (if applicable)',
+  'Noise from site within acceptable limits',
+  'Fuel / oil storage — no leaks, bunded correctly',
+  'Waste disposal records up to date',
+  'Environmental signage in place',
+  'No unauthorised burning or open fires',
+  'Water usage meters readable and up to date',
+  'Environmental incidents reported correctly'
+];
+
+function esgSwitchTab(tab, btn){
+  document.querySelectorAll('.mtg-tab').forEach(t=>t.classList.remove('active'));
+  btn.classList.add('active');
+  ['dash','waste','hazwaste','fuel','water','spills','inspections'].forEach(function(t){
+    var el=document.getElementById('esg-view-'+t);if(el)el.style.display=t===tab?'block':'none';
+  });
+  ['esg-waste-form','esg-hw-form','esg-fuel-form','esg-water-form','esg-spill-form','esg-insp-form'].forEach(function(id){
+    var el=document.getElementById(id);if(el)el.style.display='none';
+  });
+  if(tab==='dash')esgLoadDash();
+  else if(tab==='waste')esgLoadWaste();
+  else if(tab==='hazwaste')esgLoadHW();
+  else if(tab==='fuel')esgLoadFuel();
+  else if(tab==='water')esgLoadWater();
+  else if(tab==='spills')esgLoadSpills();
+  else if(tab==='inspections')esgLoadInsp();
+}
+
+async function loadESG(){
+  var btns=['esg-waste-add-btn','esg-hw-add-btn','esg-fuel-add-btn','esg-water-add-btn','esg-spill-add-btn','esg-insp-add-btn'];
+  btns.forEach(function(id){var el=document.getElementById(id);if(el)el.style.display=isMgr()?'inline-flex':'none';});
+  // Populate month filter
+  var mSel=document.getElementById('esg-waste-filter-month');
+  if(mSel&&mSel.options.length<=1){
+    var months=['January','February','March','April','May','June','July','August','September','October','November','December'];
+    var yr=new Date().getFullYear();
+    for(var i=11;i>=0;i--){var m=i+1;var o=document.createElement('option');o.value=yr+'-'+String(m).padStart(2,'0');o.textContent=months[i]+' '+yr;mSel.appendChild(o);}
+  }
+  esgLoadDash();
+}
+
+// ── DASHBOARD ─────────────────────────────────────────────────────────────────
+async function esgLoadDash(){
+  var now=new Date(); var yr=now.getFullYear(); var mo=now.getMonth()+1;
+  var moStr=yr+'-'+String(mo).padStart(2,'0');
+  var setM=function(id,v){var e=document.getElementById(id);if(e)e.textContent=v;};
+  try{
+    var [waste,fuel,water,spills,hw,inspections]=await Promise.all([
+      api('/waste_records?select=quantity,category'+cf()+'&record_date=gte.'+moStr+'-01'),
+      api('/fuel_consumption?select=quantity,fuel_type,carbon_kg'+cf()+'&record_date=gte.'+moStr+'-01'),
+      api('/water_usage?select=quantity,unit'+cf()+'&record_date=gte.'+moStr+'-01'),
+      api('/spill_reports?select=status'+cf()+'&status=neq.closed'),
+      api('/hazardous_waste?select=status'+cf()+'&status=neq.disposed'),
+      api('/environmental_inspections?select=id'+cf()+'&inspection_date=gte.'+yr+'-01-01')
+    ]);
+    var totalWaste=(waste||[]).reduce(function(s,r){return s+(parseFloat(r.quantity)||0);},0);
+    var totalFuelL=(fuel||[]).reduce(function(s,r){return s+(r.fuel_type!=='electricity'?parseFloat(r.quantity)||0:0);},0);
+    var totalCO2=(fuel||[]).reduce(function(s,r){return s+(parseFloat(r.carbon_kg)||0);},0);
+    var totalWaterL=(water||[]).reduce(function(s,r){var q=parseFloat(r.quantity)||0;return s+(r.unit==='m3'?q*1000:r.unit==='gallons'?q*3.785:q);},0);
+    setM('esg-m-waste',totalWaste.toFixed(0));
+    setM('esg-m-fuel',totalFuelL.toFixed(0));
+    setM('esg-m-water',(totalWaterL/1000).toFixed(1));
+    setM('esg-m-carbon',totalCO2.toFixed(0));
+    setM('esg-m-spills',(spills||[]).length);
+    setM('esg-m-hazwaste',(hw||[]).length);
+    setM('esg-m-inspections',(inspections||[]).length);
+    // Recycling rate
+    var recyclable=(waste||[]).filter(function(r){return r.category==='recyclable';}).reduce(function(s,r){return s+parseFloat(r.quantity)||0;},0);
+    var recycleRate=totalWaste>0?Math.round((recyclable/totalWaste)*100):0;
+    setM('esg-m-recycle',recycleRate+'%');
+    // Waste chart
+    var bycat={};
+    (waste||[]).forEach(function(r){bycat[r.category]=(bycat[r.category]||0)+(parseFloat(r.quantity)||0);});
+    var wasteEl=document.getElementById('esg-waste-chart');
+    var catLabels={general:'General',recyclable:'Recyclable',hazardous:'Hazardous',organic:'Organic',electronic:'Electronic',construction:'Construction',medical:'Medical',other:'Other'};
+    var catColors={general:'#6B7280',recyclable:'#1D9E75',hazardous:'#E24B4A',organic:'#854F0B',electronic:'#185FA5',construction:'#EF9F27',medical:'#8B5CF6',other:'#9CA3AF'};
+    if(wasteEl){
+      if(Object.keys(bycat).length===0){wasteEl.innerHTML='<div style="color:var(--text2);padding:20px;text-align:center">No waste data this month</div>';}
+      else{
+        var maxVal=Math.max(...Object.values(bycat));
+        var h='<div style="display:flex;flex-direction:column;gap:8px;padding:8px 0">';
+        Object.entries(bycat).sort(function(a,b){return b[1]-a[1];}).forEach(function(e){
+          var pct=maxVal>0?Math.round((e[1]/maxVal)*100):0;
+          var col=catColors[e[0]]||'#6B7280';
+          h+='<div><div style="display:flex;justify-content:space-between;margin-bottom:4px;font-size:12px"><span style="font-weight:600">'+escH(catLabels[e[0]]||e[0])+'</span><span style="color:var(--text2)">'+e[1].toFixed(1)+' kg</span></div>'
+            +'<div style="height:8px;background:#f3f4f6;border-radius:4px"><div style="height:8px;background:'+col+';border-radius:4px;width:'+pct+'%"></div></div></div>';
+        });
+        h+='</div>';
+        wasteEl.innerHTML=h;
+      }
+    }
+    // Carbon chart
+    var carbonEl=document.getElementById('esg-carbon-chart');
+    if(carbonEl){
+      var byfuel={};
+      (fuel||[]).forEach(function(r){byfuel[r.fuel_type]=(byfuel[r.fuel_type]||0)+(parseFloat(r.carbon_kg)||0);});
+      var fuelColors={diesel:'#374151',petrol:'#EF9F27',lpg:'#185FA5',natural_gas:'#6B7280',electricity:'#1D9E75',heavy_fuel_oil:'#7F1D1D',other:'#9CA3AF'};
+      var fuelLabels={diesel:'Diesel',petrol:'Petrol',lpg:'LPG',natural_gas:'Natural Gas',electricity:'Electricity',heavy_fuel_oil:'Heavy Fuel Oil',other:'Other'};
+      if(Object.keys(byfuel).length===0){carbonEl.innerHTML='<div style="color:var(--text2);padding:20px;text-align:center">No fuel data this month</div>';}
+      else{
+        var totalC=Object.values(byfuel).reduce(function(s,v){return s+v;},0);
+        var h2='<div style="display:flex;flex-direction:column;gap:8px;padding:8px 0">';
+        Object.entries(byfuel).sort(function(a,b){return b[1]-a[1];}).forEach(function(e){
+          var pct=totalC>0?Math.round((e[1]/totalC)*100):0;
+          var col=fuelColors[e[0]]||'#6B7280';
+          h2+='<div><div style="display:flex;justify-content:space-between;margin-bottom:4px;font-size:12px"><span style="font-weight:600">'+escH(fuelLabels[e[0]]||e[0])+'</span><span style="color:var(--text2)">'+e[1].toFixed(1)+' kg CO₂e ('+pct+'%)</span></div>'
+            +'<div style="height:8px;background:#f3f4f6;border-radius:4px"><div style="height:8px;background:'+col+';border-radius:4px;width:'+pct+'%"></div></div></div>';
+        });
+        h2+='</div>';
+        carbonEl.innerHTML=h2;
+      }
+    }
+  }catch(e){console.error(e);}
+}
+
+// ── WASTE ─────────────────────────────────────────────────────────────────────
+async function esgLoadWaste(){
+  var el=document.getElementById('esg-waste-list');if(!el)return;
+  el.innerHTML='<div class="loading-msg">Loading...</div>';
+  var month=document.getElementById('esg-waste-filter-month')?.value||'';
+  try{
+    var q='/waste_records?select=*'+cf()+'&order=record_date.desc';
+    if(month)q+='&record_date=gte.'+month+'-01&record_date=lt.'+month+'-32';
+    var d=await api(q);esgWasteData=d||[];
+    if(!d||!d.length){el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)">No waste records found.'+(isMgr()?' <button class="btn btn-primary btn-sm" onclick="esgWasteNew()"><i class="ti ti-plus"></i>Add</button>':'')+'</div>';return;}
+    var catColors={general:'#6B7280',recyclable:'#1D9E75',hazardous:'#E24B4A',organic:'#854F0B',electronic:'#185FA5',construction:'#EF9F27',medical:'#8B5CF6',other:'#9CA3AF'};
+    var h='<table style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr style="background:#14532D;color:#fff">'
+      +'<th style="padding:8px 14px;text-align:left">Date</th><th style="padding:8px 10px;text-align:left">Waste type</th>'
+      +'<th style="padding:8px 10px;text-align:left">Category</th><th style="padding:8px 10px;text-align:right">Quantity</th>'
+      +'<th style="padding:8px 10px;text-align:left">Disposal</th><th style="padding:8px 10px;width:70px"></th>'
+      +'</tr></thead><tbody>';
+    d.forEach(function(x,i){
+      var bg=i%2===0?'#fff':'#f9fafb';
+      var col=catColors[x.category]||'#6B7280';
+      h+='<tr style="border-bottom:1px solid #f0f0f0;background:'+bg+'">'
+        +'<td style="padding:8px 14px;font-weight:600">'+( x.record_date?new Date(x.record_date).toLocaleDateString('en-GB'):'—')+'</td>'
+        +'<td style="padding:8px 10px">'+escH(x.waste_type||'—')+'</td>'
+        +'<td style="padding:8px 10px"><span style="background:'+col+'20;color:'+col+';padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600;text-transform:capitalize">'+escH(x.category||'—')+'</span></td>'
+        +'<td style="padding:8px 10px;text-align:right;font-weight:700">'+parseFloat(x.quantity||0).toFixed(1)+' '+escH(x.unit||'kg')+'</td>'
+        +'<td style="padding:8px 10px;font-size:11px;color:var(--text2)">'+escH(x.disposal_method||'—')+'</td>'
+        +'<td style="padding:8px 10px"><div style="display:flex;gap:4px">'
+        +'<button class="btn btn-sm" data-id="'+x.id+'" onclick="esgWasteEdit(this.getAttribute(\'data-id\'))"><i class="ti ti-edit"></i></button>'
+        +(isMgr()?'<button class="btn btn-sm" style="color:var(--red)" data-id="'+x.id+'" onclick="esgWasteDel(this.getAttribute(\'data-id\'))"><i class="ti ti-trash"></i></button>':'')
+        +'</div></td></tr>';
+    });
+    h+='</tbody></table>';
+    el.innerHTML=h;
+  }catch(e){el.innerHTML='<p style="padding:20px;color:red">'+e.message+'</p>';}
+}
+
+function esgShowForm(formId){
+  ['esg-view-dash','esg-view-waste','esg-view-hazwaste','esg-view-fuel','esg-view-water','esg-view-spills','esg-view-inspections','esg-waste-form','esg-hw-form','esg-fuel-form','esg-water-form','esg-spill-form','esg-insp-form'].forEach(function(id){var el=document.getElementById(id);if(el)el.style.display='none';});
+  var el=document.getElementById(formId);if(el)el.style.display='block';
+}
+
+function esgResetForm(fields,dates,sels){
+  (fields||[]).forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
+  (dates||[]).forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
+  Object.entries(sels||{}).forEach(function(e){var el=document.getElementById(e[0]);if(el)el.value=e[1];});
+}
+
+function esgWasteNew(){
+  esgWasteEditId=null;document.getElementById('esg-waste-form-title').textContent='New Waste Record';
+  esgResetForm(['wf-type','wf-qty','wf-disposal','wf-contractor','wf-manifest','wf-location','wf-notes'],['wf-date'],{'wf-cat':'general','wf-unit':'kg'});
+  document.getElementById('wf-date').value=new Date().toISOString().slice(0,10);
+  esgShowForm('esg-waste-form');
+}
+function esgWasteEdit(id){
+  var x=esgWasteData.find(function(r){return r.id===id;});if(!x)return;
+  esgWasteEditId=id;document.getElementById('esg-waste-form-title').textContent='Edit Waste Record';
+  var flds={'wf-type':'waste_type','wf-qty':'quantity','wf-disposal':'disposal_method','wf-contractor':'disposal_contractor','wf-manifest':'manifest_number','wf-location':'location','wf-notes':'notes'};
+  Object.entries(flds).forEach(function(e){var el=document.getElementById(e[0]);if(el)el.value=x[e[1]]||'';});
+  var dt=document.getElementById('wf-date');if(dt)dt.value=x.record_date||'';
+  var cat=document.getElementById('wf-cat');if(cat)cat.value=x.category||'general';
+  var un=document.getElementById('wf-unit');if(un)un.value=x.unit||'kg';
+  esgShowForm('esg-waste-form');
+}
+function esgWasteBack(){
+  document.getElementById('esg-waste-form').style.display='none';
+  document.getElementById('esg-view-waste').style.display='block';
+  document.querySelectorAll('.mtg-tab').forEach(t=>t.classList.remove('active'));
+  var tab=document.getElementById('esg-tab-waste');if(tab)tab.classList.add('active');
+  esgLoadWaste();
+}
+async function esgWasteSave(){
+  var tp=document.getElementById('wf-type')?.value?.trim();if(!tp){toast('Please enter waste type',false);return;}
+  var g=function(id){var el=document.getElementById(id);return el?el.value||null:null;};
+  var body={company_id:prof?.company_id,record_date:g('wf-date'),waste_type:tp,category:g('wf-cat')||'general',quantity:parseFloat(g('wf-qty'))||0,unit:g('wf-unit')||'kg',disposal_method:g('wf-disposal'),disposal_contractor:g('wf-contractor'),manifest_number:g('wf-manifest'),location:g('wf-location'),notes:g('wf-notes')};
+  try{
+    if(esgWasteEditId){await api('/waste_records?id=eq.'+esgWasteEditId,{m:'PATCH',p:'return=minimal',b:body});toast('Updated!');}
+    else{body.created_by=prof?.id;await api('/waste_records',{m:'POST',p:'return=minimal',b:body});toast('Waste record saved!');}
+    esgWasteBack();
+  }catch(e){toast(e.message,false);}
+}
+async function esgWasteDel(id){if(!confirm('Delete?'))return;try{await api('/waste_records?id=eq.'+id,{m:'DELETE'});esgWasteData=esgWasteData.filter(x=>x.id!==id);toast('Deleted!');esgLoadWaste();}catch(e){toast(e.message,false);}}
+
+// ── HAZARDOUS WASTE ───────────────────────────────────────────────────────────
+async function esgLoadHW(){
+  var el=document.getElementById('esg-hw-list');if(!el)return;
+  el.innerHTML='<div class="loading-msg">Loading...</div>';
+  try{
+    var d=await api('/hazardous_waste?select=*'+cf()+'&order=generation_date.desc');
+    esgHWData=d||[];
+    var stored=(d||[]).filter(function(x){return x.status==='stored'||x.status==='awaiting_collection';}).length;
+    var alertEl=document.getElementById('esg-hw-alerts');
+    if(alertEl&&stored>0)alertEl.innerHTML='<div style="background:#FEF9EC;border:1px solid #fcd34d;border-radius:8px;padding:10px 14px;font-size:12px;margin-bottom:8px"><strong style="color:#854F0B">⚠ '+stored+' hazardous waste item'+(stored!==1?'s':'')+' currently stored on site — ensure licensed contractor collection is scheduled</strong></div>';
+    else if(alertEl)alertEl.innerHTML='';
+    if(!d||!d.length){el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)">No hazardous waste records.'+(isMgr()?' <button class="btn btn-primary btn-sm" onclick="esgHWNew()"><i class="ti ti-plus"></i>Add</button>':'')+'</div>';return;}
+    var stCfg={stored:['#FEF9EC','#854F0B'],awaiting_collection:['#FEF6E7','#C2410C'],in_transit:['#EDE9FE','#7C3AED'],disposed:['#EAF3DE','#3B6D11'],spilled:['#FCEBEB','#A32D2D']};
+    var h='<table style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr style="background:#7F1D1D;color:#fff">'
+      +'<th style="padding:8px 14px;text-align:left">Waste</th><th style="padding:8px 10px;text-align:left">UN No.</th>'
+      +'<th style="padding:8px 10px;text-align:right">Quantity</th><th style="padding:8px 10px;text-align:left">Storage</th>'
+      +'<th style="padding:8px 10px;text-align:left">Collection date</th><th style="padding:8px 10px;text-align:left">Contractor</th>'
+      +'<th style="padding:8px 10px;text-align:left">Status</th><th style="padding:8px 10px;width:70px"></th>'
+      +'</tr></thead><tbody>';
+    d.forEach(function(x,i){
+      var bg=i%2===0?'#fff':'#f9fafb';
+      var sc2=stCfg[x.status]||stCfg.stored;
+      h+='<tr style="border-bottom:1px solid #f0f0f0;background:'+bg+'">'
+        +'<td style="padding:8px 14px;font-weight:600">'+escH(x.waste_name||'—')+'<br><span style="font-size:10px;color:var(--text2)">'+escH(x.hazard_class||'')+'</span></td>'
+        +'<td style="padding:8px 10px;font-family:monospace">'+escH(x.un_number||'—')+'</td>'
+        +'<td style="padding:8px 10px;text-align:right;font-weight:700">'+(x.quantity||'—')+' '+escH(x.unit||'')+'</td>'
+        +'<td style="padding:8px 10px;font-size:11px">'+escH(x.storage_location||'—')+'</td>'
+        +'<td style="padding:8px 10px">'+(x.collection_date?new Date(x.collection_date).toLocaleDateString('en-GB'):'—')+'</td>'
+        +'<td style="padding:8px 10px;font-size:11px">'+escH(x.licensed_contractor||'—')+'</td>'
+        +'<td style="padding:8px 10px"><span style="background:'+sc2[0]+';color:'+sc2[1]+';padding:2px 8px;border-radius:99px;font-size:11px;font-weight:600;text-transform:capitalize">'+(x.status||'stored').replace(/_/g,' ')+'</span></td>'
+        +'<td style="padding:8px 10px"><div style="display:flex;gap:4px">'
+        +'<button class="btn btn-sm" data-id="'+x.id+'" onclick="esgHWEdit(this.getAttribute(\'data-id\'))"><i class="ti ti-edit"></i></button>'
+        +(isMgr()?'<button class="btn btn-sm" style="color:var(--red)" data-id="'+x.id+'" onclick="esgHWDel(this.getAttribute(\'data-id\'))"><i class="ti ti-trash"></i></button>':'')
+        +'</div></td></tr>';
+    });
+    h+='</tbody></table>';el.innerHTML=h;
+  }catch(e){el.innerHTML='<p style="padding:20px;color:red">'+e.message+'</p>';}
+}
+
+function esgHWNew(){esgHWEditId=null;document.getElementById('esg-hw-form-title').textContent='New Hazardous Waste Record';esgResetForm(['hwf-name','hwf-un','hwf-class','hwf-qty','hwf-container','hwf-location','hwf-contractor','hwf-license','hwf-manifest','hwf-disposal-method','hwf-notes'],['hwf-gen-date','hwf-collect-date','hwf-disposal-date'],{'hwf-unit':'kg','hwf-status':'stored','hwf-sds':'false'});esgShowForm('esg-hw-form');}
+function esgHWEdit(id){
+  var x=esgHWData.find(function(r){return r.id===id;});if(!x)return;esgHWEditId=id;
+  document.getElementById('esg-hw-form-title').textContent='Edit Hazardous Waste';
+  var flds={'hwf-name':'waste_name','hwf-un':'un_number','hwf-class':'hazard_class','hwf-qty':'quantity','hwf-container':'container_type','hwf-location':'storage_location','hwf-contractor':'licensed_contractor','hwf-license':'contractor_license_number','hwf-manifest':'manifest_number','hwf-disposal-method':'disposal_method','hwf-notes':'notes'};
+  Object.entries(flds).forEach(function(e){var el=document.getElementById(e[0]);if(el)el.value=x[e[1]]||'';});
+  var dates={'hwf-gen-date':'generation_date','hwf-collect-date':'collection_date','hwf-disposal-date':'disposal_date'};
+  Object.entries(dates).forEach(function(e){var el=document.getElementById(e[0]);if(el)el.value=x[e[1]]||'';});
+  var un=document.getElementById('hwf-unit');if(un)un.value=x.unit||'kg';
+  var st=document.getElementById('hwf-status');if(st)st.value=x.status||'stored';
+  var sds=document.getElementById('hwf-sds');if(sds)sds.value=String(!!x.sds_available);
+  esgShowForm('esg-hw-form');
+}
+function esgHWBack(){document.getElementById('esg-hw-form').style.display='none';document.getElementById('esg-view-hazwaste').style.display='block';document.querySelectorAll('.mtg-tab').forEach(t=>t.classList.remove('active'));var tab=document.getElementById('esg-tab-hazwaste');if(tab)tab.classList.add('active');esgLoadHW();}
+async function esgHWSave(){
+  var name=document.getElementById('hwf-name')?.value?.trim();if(!name){toast('Please enter waste name',false);return;}
+  var g=function(id){var el=document.getElementById(id);return el?el.value||null:null;};
+  var body={company_id:prof?.company_id,waste_name:name,un_number:g('hwf-un'),hazard_class:g('hwf-class'),quantity:parseFloat(g('hwf-qty'))||null,unit:g('hwf-unit')||'kg',container_type:g('hwf-container'),storage_location:g('hwf-location'),generation_date:g('hwf-gen-date'),collection_date:g('hwf-collect-date'),disposal_date:g('hwf-disposal-date'),licensed_contractor:g('hwf-contractor'),contractor_license_number:g('hwf-license'),manifest_number:g('hwf-manifest'),disposal_method:g('hwf-disposal-method'),status:g('hwf-status')||'stored',sds_available:document.getElementById('hwf-sds')?.value==='true',notes:g('hwf-notes'),updated_at:new Date().toISOString()};
+  try{if(esgHWEditId){await api('/hazardous_waste?id=eq.'+esgHWEditId,{m:'PATCH',p:'return=minimal',b:body});toast('Updated!');}else{body.created_by=prof?.id;await api('/hazardous_waste',{m:'POST',p:'return=minimal',b:body});toast('Record saved!');}esgHWBack();}catch(e){toast(e.message,false);}
+}
+async function esgHWDel(id){if(!confirm('Delete?'))return;try{await api('/hazardous_waste?id=eq.'+id,{m:'DELETE'});esgHWData=esgHWData.filter(x=>x.id!==id);toast('Deleted!');esgLoadHW();}catch(e){toast(e.message,false);}}
+
+// ── FUEL ──────────────────────────────────────────────────────────────────────
+function esgCalcCO2(){
+  var tp=document.getElementById('ff-type')?.value||'diesel';
+  var qty=parseFloat(document.getElementById('ff-qty')?.value)||0;
+  var factor=CO2_FACTORS[tp]||2.5;
+  var co2=qty*factor;
+  var el=document.getElementById('ff-co2-display');if(el)el.textContent=co2>0?co2.toFixed(2)+' kg':'—';
+}
+
+async function esgLoadFuel(){
+  var el=document.getElementById('esg-fuel-list');if(!el)return;el.innerHTML='<div class="loading-msg">Loading...</div>';
+  var ft=document.getElementById('esg-fuel-filter-type')?.value||'';
+  try{
+    var q='/fuel_consumption?select=*'+cf()+'&order=record_date.desc';if(ft)q+='&fuel_type=eq.'+ft;
+    var d=await api(q);esgFuelData=d||[];
+    if(!d||!d.length){el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)">No fuel records.'+(isMgr()?' <button class="btn btn-primary btn-sm" onclick="esgFuelNew()"><i class="ti ti-plus"></i>Add</button>':'')+'</div>';return;}
+    var fuelLabels={diesel:'Diesel',petrol:'Petrol',lpg:'LPG',natural_gas:'Natural Gas',electricity:'Electricity',heavy_fuel_oil:'HFO',other:'Other'};
+    var fuelColors={diesel:'#374151',petrol:'#EF9F27',lpg:'#185FA5',natural_gas:'#6B7280',electricity:'#1D9E75',heavy_fuel_oil:'#7F1D1D',other:'#9CA3AF'};
+    var h='<table style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr style="background:#1e3a5f;color:#fff">'
+      +'<th style="padding:8px 14px;text-align:left">Date</th><th style="padding:8px 10px;text-align:left">Type</th>'
+      +'<th style="padding:8px 10px;text-align:left">Vehicle/Equipment</th><th style="padding:8px 10px;text-align:right">Quantity</th>'
+      +'<th style="padding:8px 10px;text-align:right">CO₂e (kg)</th><th style="padding:8px 10px;text-align:left">Purpose</th>'
+      +'<th style="padding:8px 10px;width:70px"></th></tr></thead><tbody>';
+    d.forEach(function(x,i){
+      var bg=i%2===0?'#fff':'#f9fafb';var col=fuelColors[x.fuel_type]||'#6B7280';
+      h+='<tr style="border-bottom:1px solid #f0f0f0;background:'+bg+'">'
+        +'<td style="padding:8px 14px;font-weight:600">'+(x.record_date?new Date(x.record_date).toLocaleDateString('en-GB'):'—')+'</td>'
+        +'<td style="padding:8px 10px"><span style="background:'+col+'20;color:'+col+';padding:2px 8px;border-radius:4px;font-size:11px;font-weight:700">'+escH(fuelLabels[x.fuel_type]||x.fuel_type||'—')+'</span></td>'
+        +'<td style="padding:8px 10px;font-size:11px">'+escH(x.vehicle_equipment||'—')+'</td>'
+        +'<td style="padding:8px 10px;text-align:right;font-weight:700">'+(parseFloat(x.quantity||0).toFixed(1))+' '+escH(x.unit||'L')+'</td>'
+        +'<td style="padding:8px 10px;text-align:right;color:#6D28D9;font-weight:600">'+(x.carbon_kg?parseFloat(x.carbon_kg).toFixed(1):'—')+'</td>'
+        +'<td style="padding:8px 10px;font-size:11px">'+escH(x.purpose||'—')+'</td>'
+        +'<td style="padding:8px 10px"><div style="display:flex;gap:4px">'
+        +'<button class="btn btn-sm" data-id="'+x.id+'" onclick="esgFuelEdit(this.getAttribute(\'data-id\'))"><i class="ti ti-edit"></i></button>'
+        +(isMgr()?'<button class="btn btn-sm" style="color:var(--red)" data-id="'+x.id+'" onclick="esgFuelDel(this.getAttribute(\'data-id\'))"><i class="ti ti-trash"></i></button>':'')
+        +'</div></td></tr>';
+    });
+    h+='</tbody></table>';el.innerHTML=h;
+  }catch(e){el.innerHTML='<p style="padding:20px;color:red">'+e.message+'</p>';}
+}
+
+function esgFuelNew(){esgFuelEditId=null;document.getElementById('esg-fuel-form-title').textContent='New Fuel / Energy Record';esgResetForm(['ff-vehicle','ff-odo-start','ff-odo-end','ff-purpose','ff-dept','ff-cost','ff-notes'],['ff-date'],{'ff-type':'diesel','ff-unit':'litres'});document.getElementById('ff-date').value=new Date().toISOString().slice(0,10);document.getElementById('ff-qty').value='';document.getElementById('ff-co2-display').textContent='—';esgShowForm('esg-fuel-form');}
+function esgFuelEdit(id){
+  var x=esgFuelData.find(function(r){return r.id===id;});if(!x)return;esgFuelEditId=id;
+  document.getElementById('esg-fuel-form-title').textContent='Edit Fuel Record';
+  var flds={'ff-vehicle':'vehicle_equipment','ff-odo-start':'meter_reading_start','ff-odo-end':'meter_reading_end','ff-purpose':'purpose','ff-dept':'department','ff-cost':'cost','ff-notes':'notes'};
+  Object.entries(flds).forEach(function(e){var el=document.getElementById(e[0]);if(el)el.value=x[e[1]]||'';});
+  var dt=document.getElementById('ff-date');if(dt)dt.value=x.record_date||'';
+  var tp=document.getElementById('ff-type');if(tp)tp.value=x.fuel_type||'diesel';
+  var qty=document.getElementById('ff-qty');if(qty)qty.value=x.quantity||'';
+  var un=document.getElementById('ff-unit');if(un)un.value=x.unit||'litres';
+  esgCalcCO2();esgShowForm('esg-fuel-form');
+}
+function esgFuelBack(){document.getElementById('esg-fuel-form').style.display='none';document.getElementById('esg-view-fuel').style.display='block';document.querySelectorAll('.mtg-tab').forEach(t=>t.classList.remove('active'));var tab=document.getElementById('esg-tab-fuel');if(tab)tab.classList.add('active');esgLoadFuel();}
+async function esgFuelSave(){
+  var qty=parseFloat(document.getElementById('ff-qty')?.value);if(!qty||qty<=0){toast('Please enter quantity',false);return;}
+  var tp=document.getElementById('ff-type')?.value||'diesel';
+  var co2=qty*(CO2_FACTORS[tp]||2.5);
+  var g=function(id){var el=document.getElementById(id);return el?el.value||null:null;};
+  var body={company_id:prof?.company_id,record_date:g('ff-date'),fuel_type:tp,quantity:qty,unit:g('ff-unit')||'litres',vehicle_equipment:g('ff-vehicle'),meter_reading_start:g('ff-odo-start')?parseFloat(g('ff-odo-start')):null,meter_reading_end:g('ff-odo-end')?parseFloat(g('ff-odo-end')):null,purpose:g('ff-purpose'),department:g('ff-dept'),cost:g('ff-cost')?parseFloat(g('ff-cost')):null,currency:'MUR',carbon_kg:Math.round(co2*100)/100,notes:g('ff-notes')};
+  try{if(esgFuelEditId){await api('/fuel_consumption?id=eq.'+esgFuelEditId,{m:'PATCH',p:'return=minimal',b:body});toast('Updated!');}else{body.created_by=prof?.id;await api('/fuel_consumption',{m:'POST',p:'return=minimal',b:body});toast('Fuel record saved! CO₂e: '+co2.toFixed(1)+' kg');}esgFuelBack();}catch(e){toast(e.message,false);}
+}
+async function esgFuelDel(id){if(!confirm('Delete?'))return;try{await api('/fuel_consumption?id=eq.'+id,{m:'DELETE'});esgFuelData=esgFuelData.filter(x=>x.id!==id);toast('Deleted!');esgLoadFuel();}catch(e){toast(e.message,false);}}
+
+// ── WATER ─────────────────────────────────────────────────────────────────────
+function esgCalcWater(){
+  var start=parseFloat(document.getElementById('waf-start')?.value)||0;
+  var end=parseFloat(document.getElementById('waf-end')?.value)||0;
+  var diff=end-start;
+  var el=document.getElementById('waf-consumption-display');if(el)el.textContent=diff>0?diff.toFixed(3):'—';
+  var qty=document.getElementById('waf-qty');if(qty&&diff>0)qty.value=diff.toFixed(3);
+}
+
+async function esgLoadWater(){
+  var el=document.getElementById('esg-water-list');if(!el)return;el.innerHTML='<div class="loading-msg">Loading...</div>';
+  try{
+    var d=await api('/water_usage?select=*'+cf()+'&order=record_date.desc');esgWaterData=d||[];
+    if(!d||!d.length){el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)">No water records.'+(isMgr()?' <button class="btn btn-primary btn-sm" onclick="esgWaterNew()"><i class="ti ti-plus"></i>Add</button>':'')+'</div>';return;}
+    var srcLabels={mains:'Mains',borehole:'Borehole',rainwater:'Rainwater',river:'River',recycled:'Recycled',other:'Other'};
+    var h='<table style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr style="background:#164E63;color:#fff">'
+      +'<th style="padding:8px 14px;text-align:left">Date</th><th style="padding:8px 10px;text-align:left">Source</th>'
+      +'<th style="padding:8px 10px;text-align:left">Meter ID</th><th style="padding:8px 10px;text-align:right">Consumption</th>'
+      +'<th style="padding:8px 10px;text-align:left">Purpose</th><th style="padding:8px 10px;text-align:left">Location</th>'
+      +'<th style="padding:8px 10px;width:70px"></th></tr></thead><tbody>';
+    d.forEach(function(x,i){
+      var bg=i%2===0?'#fff':'#f9fafb';
+      h+='<tr style="border-bottom:1px solid #f0f0f0;background:'+bg+'">'
+        +'<td style="padding:8px 14px;font-weight:600">'+(x.record_date?new Date(x.record_date).toLocaleDateString('en-GB'):'—')+'</td>'
+        +'<td style="padding:8px 10px"><span style="background:#e0f2fe;color:#0891B2;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600">'+escH(srcLabels[x.source]||x.source||'—')+'</span></td>'
+        +'<td style="padding:8px 10px;font-family:monospace;font-size:11px">'+escH(x.meter_id||'—')+'</td>'
+        +'<td style="padding:8px 10px;text-align:right;font-weight:700;color:#0891B2">'+(parseFloat(x.quantity||0).toFixed(3))+' '+escH(x.unit||'m³')+'</td>'
+        +'<td style="padding:8px 10px;font-size:11px">'+escH(x.purpose||'—')+'</td>'
+        +'<td style="padding:8px 10px;font-size:11px">'+escH(x.location||'—')+'</td>'
+        +'<td style="padding:8px 10px"><div style="display:flex;gap:4px">'
+        +'<button class="btn btn-sm" data-id="'+x.id+'" onclick="esgWaterEdit(this.getAttribute(\'data-id\'))"><i class="ti ti-edit"></i></button>'
+        +(isMgr()?'<button class="btn btn-sm" style="color:var(--red)" data-id="'+x.id+'" onclick="esgWaterDel(this.getAttribute(\'data-id\'))"><i class="ti ti-trash"></i></button>':'')
+        +'</div></td></tr>';
+    });
+    h+='</tbody></table>';el.innerHTML=h;
+  }catch(e){el.innerHTML='<p style="padding:20px;color:red">'+e.message+'</p>';}
+}
+
+function esgWaterNew(){esgWaterEditId=null;document.getElementById('esg-water-form-title').textContent='New Water Reading';esgResetForm(['waf-meter-id','waf-start','waf-end','waf-purpose','waf-location','waf-cost','waf-notes'],['waf-date'],{'waf-source':'mains','waf-unit':'m3'});document.getElementById('waf-date').value=new Date().toISOString().slice(0,10);document.getElementById('waf-consumption-display').textContent='—';esgShowForm('esg-water-form');}
+function esgWaterEdit(id){
+  var x=esgWaterData.find(function(r){return r.id===id;});if(!x)return;esgWaterEditId=id;
+  document.getElementById('esg-water-form-title').textContent='Edit Water Record';
+  var flds={'waf-meter-id':'meter_id','waf-start':'meter_reading_start','waf-end':'meter_reading_end','waf-purpose':'purpose','waf-location':'location','waf-cost':'cost','waf-notes':'notes'};
+  Object.entries(flds).forEach(function(e){var el=document.getElementById(e[0]);if(el)el.value=x[e[1]]||'';});
+  var dt=document.getElementById('waf-date');if(dt)dt.value=x.record_date||'';
+  var src=document.getElementById('waf-source');if(src)src.value=x.source||'mains';
+  var un=document.getElementById('waf-unit');if(un)un.value=x.unit||'m3';
+  var qty=document.getElementById('waf-qty');if(qty)qty.value=x.quantity||'';
+  document.getElementById('waf-consumption-display').textContent=x.quantity?parseFloat(x.quantity).toFixed(3):'—';
+  esgShowForm('esg-water-form');
+}
+function esgWaterBack(){document.getElementById('esg-water-form').style.display='none';document.getElementById('esg-view-water').style.display='block';document.querySelectorAll('.mtg-tab').forEach(t=>t.classList.remove('active'));var tab=document.getElementById('esg-tab-water');if(tab)tab.classList.add('active');esgLoadWater();}
+async function esgWaterSave(){
+  var qty=parseFloat(document.getElementById('waf-end')?.value||0)-parseFloat(document.getElementById('waf-start')?.value||0);
+  if(qty<=0)qty=parseFloat(document.getElementById('waf-qty')?.value)||0;
+  if(qty<=0){toast('Please enter meter readings or quantity',false);return;}
+  var g=function(id){var el=document.getElementById(id);return el?el.value||null:null;};
+  var body={company_id:prof?.company_id,record_date:g('waf-date'),source:g('waf-source')||'mains',meter_id:g('waf-meter-id'),meter_reading_start:g('waf-start')?parseFloat(g('waf-start')):null,meter_reading_end:g('waf-end')?parseFloat(g('waf-end')):null,quantity:qty,unit:g('waf-unit')||'m3',purpose:g('waf-purpose'),location:g('waf-location'),cost:g('waf-cost')?parseFloat(g('waf-cost')):null,notes:g('waf-notes')};
+  try{if(esgWaterEditId){await api('/water_usage?id=eq.'+esgWaterEditId,{m:'PATCH',p:'return=minimal',b:body});toast('Updated!');}else{body.created_by=prof?.id;await api('/water_usage',{m:'POST',p:'return=minimal',b:body});toast('Water record saved!');}esgWaterBack();}catch(e){toast(e.message,false);}
+}
+async function esgWaterDel(id){if(!confirm('Delete?'))return;try{await api('/water_usage?id=eq.'+id,{m:'DELETE'});esgWaterData=esgWaterData.filter(x=>x.id!==id);toast('Deleted!');esgLoadWater();}catch(e){toast(e.message,false);}}
+
+// ── SPILLS ────────────────────────────────────────────────────────────────────
+async function esgLoadSpills(){
+  var el=document.getElementById('esg-spill-list');if(!el)return;el.innerHTML='<div class="loading-msg">Loading...</div>';
+  try{
+    var d=await api('/spill_reports?select=*'+cf()+'&order=spill_date.desc');esgSpillData=d||[];
+    if(!d||!d.length){el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)">No spills recorded.'+(isMgr()?' <button class="btn btn-primary btn-sm" onclick="esgSpillNew()"><i class="ti ti-plus"></i>Report spill</button>':'')+'</div>';return;}
+    var sevCfg={minor:['#EAF3DE','#3B6D11'],moderate:['#FEF9EC','#854F0B'],major:['#FEF6E7','#C2410C'],critical:['#FCEBEB','#A32D2D']};
+    var stCfg={open:['#FCEBEB','#A32D2D'],contained:['#FEF9EC','#854F0B'],remediated:['#E6F1FB','#185FA5'],closed:['#EAF3DE','#3B6D11']};
+    var h='<table style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr style="background:#164E63;color:#fff">'
+      +'<th style="padding:8px 14px;text-align:left">Ref</th><th style="padding:8px 10px;text-align:left">Date</th>'
+      +'<th style="padding:8px 10px;text-align:left">Substance</th><th style="padding:8px 10px;text-align:left">Location</th>'
+      +'<th style="padding:8px 10px;text-align:right">Qty</th><th style="padding:8px 10px;text-align:left">Severity</th>'
+      +'<th style="padding:8px 10px;text-align:left">Status</th><th style="padding:8px 10px;width:70px"></th>'
+      +'</tr></thead><tbody>';
+    d.forEach(function(x,i){
+      var bg=i%2===0?'#fff':'#f9fafb';
+      var sc2=sevCfg[x.severity]||sevCfg.minor;var stc=stCfg[x.status]||stCfg.open;
+      var drain=x.reached_drain_watercourse?'<span style="color:var(--red);font-weight:700;font-size:10px"> ⚠ drain</span>':'';
+      h+='<tr style="border-bottom:1px solid #f0f0f0;background:'+bg+'">'
+        +'<td style="padding:8px 14px;font-family:monospace;font-weight:700;color:#0284C7">'+escH(x.ref_number||'—')+'</td>'
+        +'<td style="padding:8px 10px;font-weight:600">'+(x.spill_date?new Date(x.spill_date).toLocaleDateString('en-GB'):'—')+'</td>'
+        +'<td style="padding:8px 10px;font-weight:600">'+escH(x.substance||'—')+drain+'</td>'
+        +'<td style="padding:8px 10px;font-size:11px">'+escH(x.location||'—')+'</td>'
+        +'<td style="padding:8px 10px;text-align:right">'+(x.estimated_quantity?x.estimated_quantity+' '+escH(x.unit||'L'):'—')+'</td>'
+        +'<td style="padding:8px 10px"><span style="background:'+sc2[0]+';color:'+sc2[1]+';padding:2px 8px;border-radius:4px;font-size:11px;font-weight:700;text-transform:capitalize">'+x.severity+'</span></td>'
+        +'<td style="padding:8px 10px"><span style="background:'+stc[0]+';color:'+stc[1]+';padding:2px 8px;border-radius:99px;font-size:11px;font-weight:600;text-transform:capitalize">'+x.status+'</span></td>'
+        +'<td style="padding:8px 10px"><div style="display:flex;gap:4px">'
+        +'<button class="btn btn-sm" data-id="'+x.id+'" onclick="esgSpillEdit(this.getAttribute(\'data-id\'))"><i class="ti ti-edit"></i></button>'
+        +(isMgr()?'<button class="btn btn-sm" style="color:var(--red)" data-id="'+x.id+'" onclick="esgSpillDel(this.getAttribute(\'data-id\'))"><i class="ti ti-trash"></i></button>':'')
+        +'</div></td></tr>';
+    });
+    h+='</tbody></table>';el.innerHTML=h;
+  }catch(e){el.innerHTML='<p style="padding:20px;color:red">'+e.message+'</p>';}
+}
+
+function esgSpillNew(){
+  esgSpillEditId=null;document.getElementById('esg-spill-form-title').textContent='New Spill Report';document.getElementById('esg-spill-form-ref').textContent='SPL-AUTO';
+  esgResetForm(['spf-location','spf-substance','spf-qty','spf-cause','spf-immediate','spf-containment','spf-cleanup','spf-cleanup-con','spf-waste','spf-root','spf-corrective','spf-impact','spf-lessons','spf-reg-body','spf-reg-ref','spf-reporter','spf-time'],['spf-date'],{'spf-unit':'litres','spf-severity':'minor','spf-status':'open'});
+  document.getElementById('spf-date').value=new Date().toISOString().slice(0,10);
+  ['spf-drain','spf-soil','spf-photos','spf-regulator'].forEach(function(id){var el=document.getElementById(id);if(el)el.checked=false;});
+  esgShowForm('esg-spill-form');
+}
+function esgSpillEdit(id){
+  var x=esgSpillData.find(function(r){return r.id===id;});if(!x)return;esgSpillEditId=id;
+  document.getElementById('esg-spill-form-title').textContent='Edit Spill Report';
+  document.getElementById('esg-spill-form-ref').textContent=x.ref_number||'—';
+  var flds={'spf-location':'location','spf-substance':'substance','spf-qty':'estimated_quantity','spf-cause':'spill_cause','spf-immediate':'immediate_actions','spf-containment':'containment_method','spf-cleanup':'cleanup_method','spf-cleanup-con':'cleanup_contractor','spf-waste':'waste_generated','spf-root':'root_cause','spf-corrective':'corrective_actions','spf-impact':'environmental_impact','spf-lessons':'lessons_learned','spf-reg-body':'regulatory_body','spf-reg-ref':'regulatory_ref','spf-reporter':'reported_by','spf-time':'spill_time'};
+  Object.entries(flds).forEach(function(e){var el=document.getElementById(e[0]);if(el)el.value=x[e[1]]||'';});
+  var dt=document.getElementById('spf-date');if(dt)dt.value=x.spill_date||'';
+  var sv=document.getElementById('spf-severity');if(sv)sv.value=x.severity||'minor';
+  var st=document.getElementById('spf-status');if(st)st.value=x.status||'open';
+  var un=document.getElementById('spf-unit');if(un)un.value=x.unit||'litres';
+  ['spf-drain','spf-soil','spf-photos','spf-regulator'].forEach(function(id){
+    var key={'spf-drain':'reached_drain_watercourse','spf-soil':'reached_soil','spf-photos':'photos_taken','spf-regulator':'regulatory_notification_required'}[id];
+    var el=document.getElementById(id);if(el)el.checked=!!x[key];
+  });
+  esgShowForm('esg-spill-form');
+}
+function esgSpillBack(){document.getElementById('esg-spill-form').style.display='none';document.getElementById('esg-view-spills').style.display='block';document.querySelectorAll('.mtg-tab').forEach(t=>t.classList.remove('active'));var tab=document.getElementById('esg-tab-spills');if(tab)tab.classList.add('active');esgLoadSpills();}
+async function esgSpillSave(){
+  var substance=document.getElementById('spf-substance')?.value?.trim();
+  var location=document.getElementById('spf-location')?.value?.trim();
+  if(!substance||!location){toast('Please enter substance and location',false);return;}
+  var g=function(id){var el=document.getElementById(id);return el?el.value||null:null;};
+  var body={company_id:prof?.company_id,spill_date:g('spf-date'),spill_time:g('spf-time'),reported_by:g('spf-reporter'),location:location,substance:substance,estimated_quantity:g('spf-qty')?parseFloat(g('spf-qty')):null,unit:g('spf-unit')||'litres',spill_cause:g('spf-cause'),reached_drain_watercourse:document.getElementById('spf-drain')?.checked||false,reached_soil:document.getElementById('spf-soil')?.checked||false,immediate_actions:g('spf-immediate'),containment_method:g('spf-containment'),cleanup_method:g('spf-cleanup'),cleanup_contractor:g('spf-cleanup-con'),waste_generated:g('spf-waste'),root_cause:g('spf-root'),corrective_actions:g('spf-corrective'),environmental_impact:g('spf-impact'),lessons_learned:g('spf-lessons'),regulatory_notification_required:document.getElementById('spf-regulator')?.checked||false,regulatory_body:g('spf-reg-body'),regulatory_ref:g('spf-reg-ref'),severity:g('spf-severity')||'minor',status:g('spf-status')||'open',photos_taken:document.getElementById('spf-photos')?.checked||false,updated_at:new Date().toISOString()};
+  try{
+    if(esgSpillEditId){await api('/spill_reports?id=eq.'+esgSpillEditId,{m:'PATCH',p:'return=minimal',b:body});toast('Updated!');}
+    else{
+      body.created_by=prof?.id;
+      var res=await api('/spill_reports',{m:'POST',p:'return=representation',b:body});
+      if(res?.[0]?.id){
+        var yr=new Date().getFullYear();var ref='SPL-'+yr+'-'+String(esgSpillData.length+1).padStart(3,'0');
+        await api('/spill_reports?id=eq.'+res[0].id,{m:'PATCH',p:'return=minimal',b:{ref_number:ref}});
+        if(['major','critical'].includes(body.severity)){
+          await api('/action_tracker',{m:'POST',p:'return=minimal',b:{company_id:prof?.company_id,source_module:'esg',source_ref:ref,description:'Spill remediation: '+substance+' at '+location+(body.corrective_actions?'\n'+body.corrective_actions:''),priority:body.severity==='critical'?'critical':'high',status:'open',created_by:prof?.id}});
+          toast('Spill report saved! Ref: '+ref+' — Action added to MAP.');
+        }else{toast('Spill report saved! Ref: '+ref);}
+      }
+    }
+    esgSpillBack();
+  }catch(e){toast(e.message,false);console.error(e);}
+}
+async function esgSpillDel(id){if(!confirm('Delete?'))return;try{await api('/spill_reports?id=eq.'+id,{m:'DELETE'});esgSpillData=esgSpillData.filter(x=>x.id!==id);toast('Deleted!');esgLoadSpills();}catch(e){toast(e.message,false);}}
+
+// ── ENVIRONMENTAL INSPECTIONS ─────────────────────────────────────────────────
+function esgBuildInspChecklist(saved){
+  var saved2=saved||[]; var map={};saved2.forEach(function(r){map[r.item]=r;});
+  var tbody=document.getElementById('eif-checklist-body');if(!tbody)return;tbody.innerHTML='';
+  ENV_CHECKLIST.forEach(function(item,i){
+    var s=map[item]||{};var isOK=s.result==='ok';var isNC=s.result==='nc';
+    var tr=document.createElement('tr');tr.style.borderBottom='1px solid #f0f4f0';
+    tr.innerHTML='<td style="padding:8px 16px;font-size:12px">'+escH(item)+'</td>'
+      +'<td style="padding:6px;text-align:center"><input type="radio" name="eic'+i+'" value="ok" id="eic-ok-'+i+'" style="accent-color:#1D9E75;width:16px;height:16px" '+(isOK?'checked':'')+'></td>'
+      +'<td style="padding:6px;text-align:center"><input type="radio" name="eic'+i+'" value="nc" id="eic-nc-'+i+'" style="accent-color:#E24B4A;width:16px;height:16px" '+(isNC?'checked':'')+'></td>'
+      +'<td style="padding:6px;text-align:center"><input type="radio" name="eic'+i+'" value="na" id="eic-na-'+i+'" style="width:16px;height:16px" '+(!isOK&&!isNC?'checked':'')+'></td>'
+      +'<td style="padding:5px 12px"><input type="text" id="eic-note-'+i+'" value="'+escH2(s.note||'')+'" placeholder="Observation..." style="width:100%;padding:4px 8px;border:1px solid var(--border);border-radius:6px;font-size:11px"/></td>';
+    tbody.appendChild(tr);
+  });
+}
+
+async function esgLoadInsp(){
+  var el=document.getElementById('esg-insp-list');if(!el)return;el.innerHTML='<div class="loading-msg">Loading...</div>';
+  try{
+    var d=await api('/environmental_inspections?select=*'+cf()+'&order=inspection_date.desc');esgInspData=d||[];
+    if(!d||!d.length){el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)">No environmental inspections.'+(isMgr()?' <button class="btn btn-primary btn-sm" onclick="esgInspNew()"><i class="ti ti-plus"></i>New</button>':'')+'</div>';return;}
+    var ratCfg={excellent:['#EAF3DE','#3B6D11'],good:['#E6F1FB','#185FA5'],satisfactory:['#FEF9EC','#854F0B'],poor:['#FEF6E7','#C2410C'],unacceptable:['#FCEBEB','#A32D2D']};
+    var h='<table style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr style="background:#14532D;color:#fff">'
+      +'<th style="padding:8px 14px;text-align:left">Date</th><th style="padding:8px 10px;text-align:left">Inspector</th>'
+      +'<th style="padding:8px 10px;text-align:left">Area</th><th style="padding:8px 10px;text-align:left">Type</th>'
+      +'<th style="padding:8px 10px;text-align:center">NC</th><th style="padding:8px 10px;text-align:left">Rating</th>'
+      +'<th style="padding:8px 10px;width:70px"></th></tr></thead><tbody>';
+    d.forEach(function(x,i){
+      var bg=i%2===0?'#fff':'#f9fafb';var rc=ratCfg[x.overall_rating]||ratCfg.satisfactory;
+      h+='<tr style="border-bottom:1px solid #f0f0f0;background:'+bg+'">'
+        +'<td style="padding:8px 14px;font-weight:600">'+(x.inspection_date?new Date(x.inspection_date).toLocaleDateString('en-GB'):'—')+'</td>'
+        +'<td style="padding:8px 10px">'+escH(x.inspector||'—')+'</td>'
+        +'<td style="padding:8px 10px">'+escH(x.area||'—')+'</td>'
+        +'<td style="padding:8px 10px;text-transform:capitalize;font-size:11px">'+escH((x.inspection_type||'routine').replace(/_/g,' '))+'</td>'
+        +'<td style="padding:8px 10px;text-align:center;font-weight:700;color:'+(x.non_conformances>0?'var(--red)':'var(--green)')+'">'+( x.non_conformances||0)+'</td>'
+        +'<td style="padding:8px 10px"><span style="background:'+rc[0]+';color:'+rc[1]+';padding:2px 8px;border-radius:99px;font-size:11px;font-weight:700;text-transform:capitalize">'+escH(x.overall_rating||'satisfactory')+'</span></td>'
+        +'<td style="padding:8px 10px"><div style="display:flex;gap:4px">'
+        +'<button class="btn btn-sm" data-id="'+x.id+'" onclick="esgInspEdit(this.getAttribute(\'data-id\'))"><i class="ti ti-edit"></i></button>'
+        +(isMgr()?'<button class="btn btn-sm" style="color:var(--red)" data-id="'+x.id+'" onclick="esgInspDel(this.getAttribute(\'data-id\'))"><i class="ti ti-trash"></i></button>':'')
+        +'</div></td></tr>';
+    });
+    h+='</tbody></table>';el.innerHTML=h;
+  }catch(e){el.innerHTML='<p style="padding:20px;color:red">'+e.message+'</p>';}
+}
+
+function esgInspNew(){esgInspEditId=null;document.getElementById('esg-insp-form-title').textContent='New Environmental Inspection';esgResetForm(['eif-inspector','eif-area','eif-findings','eif-nc','eif-actions'],['eif-date','eif-next-date'],{'eif-type':'routine','eif-rating':'satisfactory'});document.getElementById('eif-date').value=new Date().toISOString().slice(0,10);document.getElementById('eif-nc').value='0';esgBuildInspChecklist([]);esgShowForm('esg-insp-form');}
+function esgInspEdit(id){
+  var x=esgInspData.find(function(r){return r.id===id;});if(!x)return;esgInspEditId=id;
+  document.getElementById('esg-insp-form-title').textContent='Edit Inspection';
+  var flds={'eif-inspector':'inspector','eif-area':'area','eif-findings':'findings','eif-nc':'non_conformances','eif-actions':'corrective_actions'};
+  Object.entries(flds).forEach(function(e){var el=document.getElementById(e[0]);if(el)el.value=x[e[1]]||'';});
+  var dt=document.getElementById('eif-date');if(dt)dt.value=x.inspection_date||'';
+  var nd=document.getElementById('eif-next-date');if(nd)nd.value=x.next_inspection_date||'';
+  var tp=document.getElementById('eif-type');if(tp)tp.value=x.inspection_type||'routine';
+  var rt=document.getElementById('eif-rating');if(rt)rt.value=x.overall_rating||'satisfactory';
+  esgBuildInspChecklist(x.checklist_results||[]);
+  esgShowForm('esg-insp-form');
+}
+function esgInspBack(){document.getElementById('esg-insp-form').style.display='none';document.getElementById('esg-view-inspections').style.display='block';document.querySelectorAll('.mtg-tab').forEach(t=>t.classList.remove('active'));var tab=document.getElementById('esg-tab-inspections');if(tab)tab.classList.add('active');esgLoadInsp();}
+async function esgInspSave(){
+  var area=document.getElementById('eif-area')?.value?.trim();if(!area){toast('Please enter inspection area',false);return;}
+  var g=function(id){var el=document.getElementById(id);return el?el.value||null:null;};
+  var checklist=ENV_CHECKLIST.map(function(item,i){var ok=document.getElementById('eic-ok-'+i)?.checked;var nc=document.getElementById('eic-nc-'+i)?.checked;var note=document.getElementById('eic-note-'+i)?.value||'';return{item:item,result:ok?'ok':nc?'nc':'na',note:note};});
+  var body={company_id:prof?.company_id,inspection_date:g('eif-date'),inspector:g('eif-inspector'),area:area,inspection_type:g('eif-type')||'routine',checklist_results:checklist,findings:g('eif-findings'),non_conformances:parseInt(g('eif-nc'))||0,overall_rating:g('eif-rating')||'satisfactory',corrective_actions:g('eif-actions'),next_inspection_date:g('eif-next-date')};
+  try{
+    if(esgInspEditId){await api('/environmental_inspections?id=eq.'+esgInspEditId,{m:'PATCH',p:'return=minimal',b:body});toast('Updated!');}
+    else{body.created_by=prof?.id;await api('/environmental_inspections',{m:'POST',p:'return=minimal',b:body});toast('Inspection saved!');}
+    esgInspBack();
+  }catch(e){toast(e.message,false);console.error(e);}
+}
+async function esgInspDel(id){if(!confirm('Delete?'))return;try{await api('/environmental_inspections?id=eq.'+id,{m:'DELETE'});esgInspData=esgInspData.filter(x=>x.id!==id);toast('Deleted!');esgLoadInsp();}catch(e){toast(e.message,false);}}
+
 async function loadNoise(){
 const el=document.getElementById('noise-list');
 if(!el)return;
@@ -8251,6 +8809,8 @@ function sopSaveToDocControl(){
 
 
 
+
+
 </script>
 </head>
 <body>
@@ -8260,7 +8820,8 @@ function sopSaveToDocControl(){
 <div class="sidebar"><div class="sidebar-top"><img id="co-logo-img" class="co-logo" src="" alt="logo"/><div id="co-initials-div" class="co-initials">A</div><div class="sb-company" id="sb-company">AURIS360</div><div class="sb-user" id="sb-user">—</div><span class="sb-role" id="sb-role">—</span></div><span class="nav-section">Main</span><div class="nav-item active" onclick="showPage('dashboard',this)"><i class="ti ti-layout-dashboard"></i>Dashboard</div><div class="nav-item" id="nav-ai" onclick="showPage('ai-insights',this)"><i class="ti ti-brain"></i>AI Insights</div><span class="nav-section">HSE Modules</span><div class="nav-item" onclick="showPage('kpi',this)"><i class="ti ti-target"></i>Objectives & KPIs</div><div class="nav-item" onclick="showPage('workschedule',this)"><i class="ti ti-calendar-event"></i>Work Schedule</div>
 <div class="nav-item" onclick="showPage('events',this)"><i class="ti ti-alert-triangle"></i>Event Reporting</div><div class="nav-item" onclick="showPage('inspection',this)"><i class="ti ti-clipboard-check"></i>Site Inspection</div><div class="nav-item" onclick="showPage('risk',this)"><i class="ti ti-shield-check"></i>Risk Assessment</div><div class="nav-item" id="nav-inv" onclick="showPage('investigation',this)"><i class="ti ti-search"></i>Investigation</div><div class="nav-item" onclick="showPage('tools',this)"><i class="ti ti-tools"></i>Tools & Equipment</div>
 <div class="nav-item" onclick="showPage('permit',this)"><i class="ti ti-key"></i>Permit to Work</div>
-<div class="nav-item" onclick="showPage('contractor',this)"><i class="ti ti-hard-hat"></i>Contractors</div><div class="nav-item" onclick="showPage('noise',this)"><i class="ti ti-volume"></i>Noise Survey</div><div class="nav-item" id="nav-mtg" onclick="showPage('meetings',this)"><i class="ti ti-notes"></i>HSE Meetings</div><div class="nav-item" onclick="showPage('training',this)"><i class="ti ti-certificate"></i>Training</div><span class="nav-section">Management</span><div class="nav-item" onclick="showPage('actions',this)"><i class="ti ti-list-check"></i>Master Action Plan</div><div class="nav-item" onclick="showPage('legal',this)"><i class="ti ti-scale"></i>Legal Compliance</div>
+<div class="nav-item" onclick="showPage('contractor',this)"><i class="ti ti-hard-hat"></i>Contractors</div><div class="nav-item" onclick="showPage('esg',this)"><i class="ti ti-leaf"></i>Environmental / ESG</div>
+<div class="nav-item" onclick="showPage('noise',this)"><i class="ti ti-volume"></i>Noise Survey</div><div class="nav-item" id="nav-mtg" onclick="showPage('meetings',this)"><i class="ti ti-notes"></i>HSE Meetings</div><div class="nav-item" onclick="showPage('training',this)"><i class="ti ti-certificate"></i>Training</div><span class="nav-section">Management</span><div class="nav-item" onclick="showPage('actions',this)"><i class="ti ti-list-check"></i>Master Action Plan</div><div class="nav-item" onclick="showPage('legal',this)"><i class="ti ti-scale"></i>Legal Compliance</div>
 <div class="nav-item" onclick="showPage('sop',this)"><i class="ti ti-file-description"></i>SOP Generator</div>
 <div class="nav-item" id="nav-docs" onclick="showPage('documents',this)"><i class="ti ti-files"></i>Document Control</div><div class="nav-item" onclick="showPage('people',this)"><i class="ti ti-id-badge"></i>People</div><div class="nav-item" id="nav-users" onclick="showPage('users',this)"><i class="ti ti-users"></i>User Management</div><div class="nav-item" id="nav-admin" style="display:none" onclick="showPage('admin',this)"><i class="ti ti-building"></i>Companies</div><div class="nav-item" id="nav-settings" onclick="showPage('settings',this)"><i class="ti ti-settings"></i>Settings</div><div class="sb-footer"><button class="btn btn-sm" style="flex:1;justify-content:center;color:var(--red)" onclick="doLogout()"><i class="ti ti-logout"></i>Sign out</button></div></div>
 <div class="main">
@@ -10678,6 +11239,475 @@ Toolbox talk / safety briefing conducted before starting work
 </div>
 
 </div><!-- end page-contractor -->
+
+<div id="page-esg" class="page">
+<div class="page-header">
+<div><div class="page-title">Environmental &amp; ESG</div><div style="font-size:12px;color:var(--text2)">Waste, water, energy, spills, carbon footprint and environmental inspections</div></div>
+<div style="display:flex;gap:8px" id="esg-header-btns"></div>
+</div>
+
+<!-- Tabs -->
+<div style="display:flex;gap:0;margin-bottom:16px;border-bottom:2px solid var(--border);overflow-x:auto">
+<button class="mtg-tab active" id="esg-tab-dash" onclick="esgSwitchTab('dash',this)" style="white-space:nowrap">📊 Dashboard</button>
+<button class="mtg-tab" id="esg-tab-waste" onclick="esgSwitchTab('waste',this)" style="white-space:nowrap">🗑️ Waste</button>
+<button class="mtg-tab" id="esg-tab-hazwaste" onclick="esgSwitchTab('hazwaste',this)" style="white-space:nowrap">☣️ Hazardous Waste</button>
+<button class="mtg-tab" id="esg-tab-fuel" onclick="esgSwitchTab('fuel',this)" style="white-space:nowrap">⛽ Fuel / Energy</button>
+<button class="mtg-tab" id="esg-tab-water" onclick="esgSwitchTab('water',this)" style="white-space:nowrap">💧 Water</button>
+<button class="mtg-tab" id="esg-tab-spills" onclick="esgSwitchTab('spills',this)" style="white-space:nowrap">🌊 Spills</button>
+<button class="mtg-tab" id="esg-tab-inspections" onclick="esgSwitchTab('inspections',this)" style="white-space:nowrap">🔍 Inspections</button>
+</div>
+
+<!-- ── DASHBOARD ── -->
+<div id="esg-view-dash">
+<!-- ESG Metrics row -->
+<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px">
+<div class="card" style="padding:14px 16px;border-left:4px solid #1D9E75;text-align:center">
+<div style="font-size:11px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:4px">Total Waste (kg)</div>
+<div style="font-size:28px;font-weight:800;color:#1D9E75" id="esg-m-waste">—</div>
+<div style="font-size:11px;color:var(--text2)" id="esg-m-waste-sub">this month</div>
+</div>
+<div class="card" style="padding:14px 16px;border-left:4px solid #185FA5;text-align:center">
+<div style="font-size:11px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:4px">Fuel Used (L)</div>
+<div style="font-size:28px;font-weight:800;color:#185FA5" id="esg-m-fuel">—</div>
+<div style="font-size:11px;color:var(--text2)" id="esg-m-fuel-sub">this month</div>
+</div>
+<div class="card" style="padding:14px 16px;border-left:4px solid #0891B2;text-align:center">
+<div style="font-size:11px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:4px">Water Used (m³)</div>
+<div style="font-size:28px;font-weight:800;color:#0891B2" id="esg-m-water">—</div>
+<div style="font-size:11px;color:var(--text2)" id="esg-m-water-sub">this month</div>
+</div>
+<div class="card" style="padding:14px 16px;border-left:4px solid #6D28D9;text-align:center">
+<div style="font-size:11px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:4px">CO₂e (kg)</div>
+<div style="font-size:28px;font-weight:800;color:#6D28D9" id="esg-m-carbon">—</div>
+<div style="font-size:11px;color:var(--text2)">estimated</div>
+</div>
+</div>
+<!-- Second row -->
+<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px">
+<div class="card" style="padding:14px 16px;border-left:4px solid #E24B4A;text-align:center">
+<div style="font-size:11px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:4px">Open Spills</div>
+<div style="font-size:28px;font-weight:800;color:#E24B4A" id="esg-m-spills">—</div>
+</div>
+<div class="card" style="padding:14px 16px;border-left:4px solid #854F0B;text-align:center">
+<div style="font-size:11px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:4px">Hazardous Waste</div>
+<div style="font-size:28px;font-weight:800;color:#854F0B" id="esg-m-hazwaste">—</div>
+<div style="font-size:11px;color:var(--text2)">items stored</div>
+</div>
+<div class="card" style="padding:14px 16px;border-left:4px solid #1D9E75;text-align:center">
+<div style="font-size:11px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:4px">Recycling Rate</div>
+<div style="font-size:28px;font-weight:800;color:#1D9E75" id="esg-m-recycle">—</div>
+</div>
+<div class="card" style="padding:14px 16px;border-left:4px solid #185FA5;text-align:center">
+<div style="font-size:11px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:4px">Inspections</div>
+<div style="font-size:28px;font-weight:800;color:#185FA5" id="esg-m-inspections">—</div>
+<div style="font-size:11px;color:var(--text2)">this year</div>
+</div>
+</div>
+<!-- Waste breakdown + Carbon -->
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+<div class="card">
+<div class="card-title"><i class="ti ti-chart-bar"></i> Waste by Category (current month)</div>
+<div id="esg-waste-chart" style="font-size:13px"></div>
+</div>
+<div class="card">
+<div class="card-title" style="color:#6D28D9"><i class="ti ti-cloud"></i> Carbon Footprint Breakdown</div>
+<div id="esg-carbon-chart" style="font-size:13px"></div>
+</div>
+</div>
+</div>
+
+<!-- ── WASTE TRACKING ── -->
+<div id="esg-view-waste" style="display:none">
+<div class="card" style="margin-bottom:12px;padding:10px 14px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+<div>
+<div class="card-title" style="margin:0">Waste Records</div>
+<div style="font-size:12px;color:var(--text2);margin-top:3px">Track general, recyclable, organic and other waste streams</div>
+</div>
+<div style="display:flex;gap:8px">
+<select id="esg-waste-filter-month" onchange="esgLoadWaste()" style="padding:6px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px">
+<option value="">All months</option>
+</select>
+<button class="btn btn-primary" id="esg-waste-add-btn" style="display:none" onclick="esgWasteNew()"><i class="ti ti-plus"></i>Add record</button>
+</div>
+</div>
+<div class="card" style="padding:0;overflow:hidden"><div id="esg-waste-list"><div class="loading-msg">Loading...</div></div></div>
+</div>
+
+<!-- ── HAZARDOUS WASTE ── -->
+<div id="esg-view-hazwaste" style="display:none">
+<div class="card" style="margin-bottom:12px;padding:10px 14px;display:flex;justify-content:space-between;align-items:center">
+<div><div class="card-title" style="margin:0">Hazardous Waste Register</div>
+<div style="font-size:12px;color:var(--text2);margin-top:3px">Track hazardous substances, storage and licensed disposal</div></div>
+<button class="btn btn-primary" id="esg-hw-add-btn" style="display:none" onclick="esgHWNew()"><i class="ti ti-plus"></i>Add hazardous waste</button>
+</div>
+<div id="esg-hw-alerts" style="margin-bottom:10px"></div>
+<div class="card" style="padding:0;overflow:hidden"><div id="esg-hw-list"><div class="loading-msg">Loading...</div></div></div>
+</div>
+
+<!-- ── FUEL / ENERGY ── -->
+<div id="esg-view-fuel" style="display:none">
+<div class="card" style="margin-bottom:12px;padding:10px 14px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+<div><div class="card-title" style="margin:0">Fuel &amp; Energy Consumption</div>
+<div style="font-size:12px;color:var(--text2);margin-top:3px">Diesel, petrol, LPG, electricity — with CO₂e estimates</div></div>
+<div style="display:flex;gap:8px">
+<select id="esg-fuel-filter-type" onchange="esgLoadFuel()" style="padding:6px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px">
+<option value="">All types</option>
+<option value="diesel">Diesel</option>
+<option value="petrol">Petrol</option>
+<option value="lpg">LPG</option>
+<option value="natural_gas">Natural gas</option>
+<option value="electricity">Electricity</option>
+</select>
+<button class="btn btn-primary" id="esg-fuel-add-btn" style="display:none" onclick="esgFuelNew()"><i class="ti ti-plus"></i>Add consumption</button>
+</div>
+</div>
+<div class="card" style="padding:0;overflow:hidden"><div id="esg-fuel-list"><div class="loading-msg">Loading...</div></div></div>
+</div>
+
+<!-- ── WATER USAGE ── -->
+<div id="esg-view-water" style="display:none">
+<div class="card" style="margin-bottom:12px;padding:10px 14px;display:flex;justify-content:space-between;align-items:center">
+<div><div class="card-title" style="margin:0">Water Usage</div>
+<div style="font-size:12px;color:var(--text2);margin-top:3px">Track consumption by source, meter and purpose</div></div>
+<button class="btn btn-primary" id="esg-water-add-btn" style="display:none" onclick="esgWaterNew()"><i class="ti ti-plus"></i>Add reading</button>
+</div>
+<div class="card" style="padding:0;overflow:hidden"><div id="esg-water-list"><div class="loading-msg">Loading...</div></div></div>
+</div>
+
+<!-- ── SPILLS ── -->
+<div id="esg-view-spills" style="display:none">
+<div class="card" style="margin-bottom:12px;padding:10px 14px;display:flex;justify-content:space-between;align-items:center">
+<div><div class="card-title" style="margin:0">Spill Reports</div>
+<div style="font-size:12px;color:var(--text2);margin-top:3px">Chemical, fuel and substance spill reporting and remediation tracking</div></div>
+<button class="btn btn-primary" id="esg-spill-add-btn" style="display:none" onclick="esgSpillNew()"><i class="ti ti-plus"></i>Report spill</button>
+</div>
+<div class="card" style="padding:0;overflow:hidden"><div id="esg-spill-list"><div class="loading-msg">Loading...</div></div></div>
+</div>
+
+<!-- ── INSPECTIONS ── -->
+<div id="esg-view-inspections" style="display:none">
+<div class="card" style="margin-bottom:12px;padding:10px 14px;display:flex;justify-content:space-between;align-items:center">
+<div><div class="card-title" style="margin:0">Environmental Inspections</div>
+<div style="font-size:12px;color:var(--text2);margin-top:3px">Routine and regulatory environmental audits and site checks</div></div>
+<button class="btn btn-primary" id="esg-insp-add-btn" style="display:none" onclick="esgInspNew()"><i class="ti ti-plus"></i>New inspection</button>
+</div>
+<div class="card" style="padding:0;overflow:hidden"><div id="esg-insp-list"><div class="loading-msg">Loading...</div></div></div>
+</div>
+
+<!-- ═══════════ FORMS ═══════════ -->
+
+<!-- Waste form -->
+<div id="esg-waste-form" style="display:none">
+<div class="card" style="margin-bottom:14px;padding:0;overflow:hidden">
+<div style="padding:14px 20px;background:linear-gradient(135deg,#14532D,#1D9E75);color:#fff;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
+<div style="font-size:17px;font-weight:800" id="esg-waste-form-title">New Waste Record</div>
+<div style="display:flex;gap:8px">
+<button class="btn" style="background:rgba(255,255,255,.2);color:#fff;border-color:rgba(255,255,255,.3)" onclick="esgWasteBack()"><i class="ti ti-arrow-left"></i>Back</button>
+<button class="btn" style="background:#fff;color:#1D9E75;font-weight:700" onclick="esgWasteSave()"><i class="ti ti-device-floppy"></i>Save</button>
+</div>
+</div>
+</div>
+<div class="card">
+<div class="form-row">
+<div class="form-group"><label class="form-label">Date</label><input type="date" id="wf-date"/></div>
+<div class="form-group"><label class="form-label">Waste type / Description</label><input type="text" id="wf-type" placeholder="e.g. Cardboard packaging, Food waste, Metal offcuts..."/></div>
+<div class="form-group"><label class="form-label">Category</label>
+<select id="wf-cat">
+<option value="general">General waste</option>
+<option value="recyclable">Recyclable</option>
+<option value="hazardous">Hazardous</option>
+<option value="organic">Organic / food</option>
+<option value="electronic">Electronic / WEEE</option>
+<option value="construction">Construction / C&D</option>
+<option value="medical">Medical / clinical</option>
+<option value="other">Other</option>
+</select></div>
+</div>
+<div class="form-row">
+<div class="form-group"><label class="form-label">Quantity</label><input type="number" id="wf-qty" step="0.01" min="0"/></div>
+<div class="form-group"><label class="form-label">Unit</label>
+<select id="wf-unit"><option value="kg">kg</option><option value="tonnes">tonnes</option><option value="litres">litres</option><option value="m3">m³</option><option value="bags">bags</option><option value="units">units</option></select></div>
+<div class="form-group"><label class="form-label">Disposal method</label>
+<input type="text" id="wf-disposal" list="esg-disposal-methods" placeholder="e.g. Landfill, Recycled, Composted..."/>
+<datalist id="esg-disposal-methods"><option value="Landfill"><option value="Recycled"><option value="Composted"><option value="Incineration"><option value="Reused"><option value="Energy recovery"><option value="Licensed disposal contractor"></datalist></div>
+<div class="form-group"><label class="form-label">Disposal contractor</label><input type="text" id="wf-contractor"/></div>
+</div>
+<div class="form-row">
+<div class="form-group"><label class="form-label">Manifest / Consignment note</label><input type="text" id="wf-manifest"/></div>
+<div class="form-group"><label class="form-label">Location generated</label><input type="text" id="wf-location"/></div>
+</div>
+<div class="form-group"><label class="form-label">Notes</label><textarea id="wf-notes" style="min-height:50px"></textarea></div>
+</div>
+</div>
+
+<!-- Hazardous waste form -->
+<div id="esg-hw-form" style="display:none">
+<div class="card" style="margin-bottom:14px;padding:0;overflow:hidden">
+<div style="padding:14px 20px;background:linear-gradient(135deg,#7F1D1D,#DC6427);color:#fff;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
+<div style="font-size:17px;font-weight:800" id="esg-hw-form-title">Hazardous Waste Record</div>
+<div style="display:flex;gap:8px">
+<button class="btn" style="background:rgba(255,255,255,.2);color:#fff;border-color:rgba(255,255,255,.3)" onclick="esgHWBack()"><i class="ti ti-arrow-left"></i>Back</button>
+<button class="btn" style="background:#fff;color:#DC6427;font-weight:700" onclick="esgHWSave()"><i class="ti ti-device-floppy"></i>Save</button>
+</div>
+</div>
+</div>
+<div class="card">
+<div class="form-row">
+<div class="form-group"><label class="form-label">Waste name / substance</label><input type="text" id="hwf-name" placeholder="e.g. Used engine oil, Battery acid, Paint waste..."/></div>
+<div class="form-group"><label class="form-label">UN Number</label><input type="text" id="hwf-un" placeholder="e.g. UN1267"/></div>
+<div class="form-group"><label class="form-label">Hazard class</label><input type="text" id="hwf-class" placeholder="e.g. Class 3 — Flammable Liquid"/></div>
+<div class="form-group"><label class="form-label">SDS available?</label>
+<select id="hwf-sds"><option value="true">Yes</option><option value="false">No</option></select></div>
+</div>
+<div class="form-row">
+<div class="form-group"><label class="form-label">Quantity</label><input type="number" id="hwf-qty" step="0.01" min="0"/></div>
+<div class="form-group"><label class="form-label">Unit</label>
+<select id="hwf-unit"><option value="kg">kg</option><option value="litres">litres</option><option value="tonnes">tonnes</option><option value="units">units</option></select></div>
+<div class="form-group"><label class="form-label">Container type</label><input type="text" id="hwf-container" placeholder="e.g. 200L drum, IBC, sacks..."/></div>
+<div class="form-group"><label class="form-label">Storage location</label><input type="text" id="hwf-location" placeholder="e.g. Hazardous waste store"/></div>
+</div>
+<div class="form-row">
+<div class="form-group"><label class="form-label">Generation date</label><input type="date" id="hwf-gen-date"/></div>
+<div class="form-group"><label class="form-label">Collection date</label><input type="date" id="hwf-collect-date"/></div>
+<div class="form-group"><label class="form-label">Disposal date</label><input type="date" id="hwf-disposal-date"/></div>
+<div class="form-group"><label class="form-label">Status</label>
+<select id="hwf-status"><option value="stored">Stored on site</option><option value="awaiting_collection">Awaiting collection</option><option value="in_transit">In transit</option><option value="disposed">Disposed</option></select></div>
+</div>
+<div class="form-row">
+<div class="form-group"><label class="form-label">Licensed disposal contractor</label><input type="text" id="hwf-contractor"/></div>
+<div class="form-group"><label class="form-label">Contractor licence number</label><input type="text" id="hwf-license"/></div>
+<div class="form-group"><label class="form-label">Manifest number</label><input type="text" id="hwf-manifest"/></div>
+<div class="form-group"><label class="form-label">Disposal method</label><input type="text" id="hwf-disposal-method" placeholder="e.g. Incineration, Licensed landfill..."/></div>
+</div>
+<div class="form-group"><label class="form-label">Notes</label><textarea id="hwf-notes" style="min-height:50px"></textarea></div>
+</div>
+</div>
+
+<!-- Fuel form -->
+<div id="esg-fuel-form" style="display:none">
+<div class="card" style="margin-bottom:14px;padding:0;overflow:hidden">
+<div style="padding:14px 20px;background:linear-gradient(135deg,#1e3a5f,#185FA5);color:#fff;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
+<div style="font-size:17px;font-weight:800" id="esg-fuel-form-title">Fuel / Energy Record</div>
+<div style="display:flex;gap:8px">
+<button class="btn" style="background:rgba(255,255,255,.2);color:#fff;border-color:rgba(255,255,255,.3)" onclick="esgFuelBack()"><i class="ti ti-arrow-left"></i>Back</button>
+<button class="btn" style="background:#fff;color:#185FA5;font-weight:700" onclick="esgFuelSave()"><i class="ti ti-device-floppy"></i>Save</button>
+</div>
+</div>
+</div>
+<div class="card">
+<div class="form-row">
+<div class="form-group"><label class="form-label">Date</label><input type="date" id="ff-date"/></div>
+<div class="form-group"><label class="form-label">Fuel / energy type</label>
+<select id="ff-type" onchange="esgCalcCO2()">
+<option value="diesel">Diesel</option>
+<option value="petrol">Petrol / Gasoline</option>
+<option value="lpg">LPG</option>
+<option value="natural_gas">Natural Gas</option>
+<option value="electricity">Electricity</option>
+<option value="heavy_fuel_oil">Heavy Fuel Oil</option>
+<option value="other">Other</option>
+</select></div>
+<div class="form-group"><label class="form-label">Quantity</label><input type="number" id="ff-qty" step="0.01" min="0" oninput="esgCalcCO2()"/></div>
+<div class="form-group"><label class="form-label">Unit</label>
+<select id="ff-unit"><option value="litres">Litres</option><option value="kg">kg</option><option value="m3">m³</option><option value="kwh">kWh</option></select></div>
+</div>
+<div class="form-row">
+<div class="form-group"><label class="form-label">Vehicle / Equipment</label><input type="text" id="ff-vehicle" placeholder="e.g. Toyota Hilux M1234XY, Generator G1..."/></div>
+<div class="form-group"><label class="form-label">Odometer start (km)</label><input type="number" id="ff-odo-start" step="1"/></div>
+<div class="form-group"><label class="form-label">Odometer end (km)</label><input type="number" id="ff-odo-end" step="1"/></div>
+<div class="form-group"><label class="form-label">Purpose</label><input type="text" id="ff-purpose" placeholder="e.g. Fleet operations, Generator, Heating..."/></div>
+</div>
+<div class="form-row">
+<div class="form-group"><label class="form-label">Department</label><input type="text" id="ff-dept"/></div>
+<div class="form-group"><label class="form-label">Cost (Rs)</label><input type="number" id="ff-cost" step="0.01"/></div>
+<div class="form-group" style="background:#f3e8ff;border:1px solid #d8b4fe;border-radius:8px;padding:10px">
+<label class="form-label" style="color:#6D28D9">Est. CO₂e (kg)</label>
+<div style="font-size:22px;font-weight:800;color:#6D28D9" id="ff-co2-display">—</div>
+<div style="font-size:10px;color:#9CA3AF">Based on IPCC emission factors</div>
+</div>
+</div>
+<div class="form-group"><label class="form-label">Notes</label><textarea id="ff-notes" style="min-height:40px"></textarea></div>
+</div>
+</div>
+
+<!-- Water form -->
+<div id="esg-water-form" style="display:none">
+<div class="card" style="margin-bottom:14px;padding:0;overflow:hidden">
+<div style="padding:14px 20px;background:linear-gradient(135deg,#164E63,#0891B2);color:#fff;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
+<div style="font-size:17px;font-weight:800" id="esg-water-form-title">Water Usage Record</div>
+<div style="display:flex;gap:8px">
+<button class="btn" style="background:rgba(255,255,255,.2);color:#fff;border-color:rgba(255,255,255,.3)" onclick="esgWaterBack()"><i class="ti ti-arrow-left"></i>Back</button>
+<button class="btn" style="background:#fff;color:#0891B2;font-weight:700" onclick="esgWaterSave()"><i class="ti ti-device-floppy"></i>Save</button>
+</div>
+</div>
+</div>
+<div class="card">
+<div class="form-row">
+<div class="form-group"><label class="form-label">Date</label><input type="date" id="waf-date"/></div>
+<div class="form-group"><label class="form-label">Source</label>
+<select id="waf-source"><option value="mains">Mains / Municipal</option><option value="borehole">Borehole / Well</option><option value="rainwater">Rainwater harvesting</option><option value="river">River / Surface water</option><option value="recycled">Recycled / Treated</option><option value="other">Other</option></select></div>
+<div class="form-group"><label class="form-label">Meter ID / Reference</label><input type="text" id="waf-meter-id" placeholder="e.g. WM-001"/></div>
+</div>
+<div class="form-row">
+<div class="form-group"><label class="form-label">Meter reading start</label><input type="number" id="waf-start" step="0.001"/></div>
+<div class="form-group"><label class="form-label">Meter reading end</label><input type="number" id="waf-end" step="0.001" oninput="esgCalcWater()"/></div>
+<div class="form-group"><label class="form-label">Consumption</label>
+<div style="padding:8px 10px;border:1px solid var(--border);border-radius:8px;font-weight:700;font-size:16px;color:#0891B2;background:#f0fdff" id="waf-consumption-display">—</div></div>
+<div class="form-group"><label class="form-label">Unit</label>
+<select id="waf-unit"><option value="m3">m³</option><option value="litres">Litres</option><option value="gallons">Gallons</option></select></div>
+</div>
+<div class="form-row">
+<div class="form-group"><label class="form-label">Purpose</label><input type="text" id="waf-purpose" placeholder="e.g. Process, Sanitary, Irrigation, Cooling..."/></div>
+<div class="form-group"><label class="form-label">Location</label><input type="text" id="waf-location"/></div>
+<div class="form-group"><label class="form-label">Cost (Rs)</label><input type="number" id="waf-cost" step="0.01"/></div>
+</div>
+<div class="form-group"><label class="form-label">Notes</label><textarea id="waf-notes" style="min-height:40px"></textarea></div>
+</div>
+</div>
+
+<!-- Spill form -->
+<div id="esg-spill-form" style="display:none">
+<div class="card" style="margin-bottom:14px;padding:0;overflow:hidden">
+<div style="padding:14px 20px;background:linear-gradient(135deg,#164E63,#0284C7);color:#fff;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
+<div>
+<div style="font-size:11px;font-weight:600;text-transform:uppercase;opacity:.8;letter-spacing:.08em;margin-bottom:4px">Spill Report</div>
+<div style="font-size:17px;font-weight:800" id="esg-spill-form-title">New Spill Report</div>
+<div style="font-family:monospace;font-size:12px;color:#bae6fd;margin-top:3px" id="esg-spill-form-ref">SPL-AUTO</div>
+</div>
+<div style="display:flex;gap:8px">
+<button class="btn" style="background:rgba(255,255,255,.2);color:#fff;border-color:rgba(255,255,255,.3)" onclick="esgSpillBack()"><i class="ti ti-arrow-left"></i>Back</button>
+<button class="btn" style="background:#fff;color:#0284C7;font-weight:700" onclick="esgSpillSave()"><i class="ti ti-device-floppy"></i>Save report</button>
+</div>
+</div>
+</div>
+<div style="display:grid;grid-template-columns:2fr 1fr;gap:14px">
+<div>
+<div class="card" style="margin-bottom:14px;border-left:4px solid #0284C7">
+<div class="card-title" style="color:#0284C7"><i class="ti ti-alert-triangle"></i> Spill Details</div>
+<div class="form-row">
+<div class="form-group"><label class="form-label">Spill date</label><input type="date" id="spf-date"/></div>
+<div class="form-group"><label class="form-label">Time</label><input type="time" id="spf-time"/></div>
+<div class="form-group"><label class="form-label">Location</label><input type="text" id="spf-location" placeholder="Where did the spill occur?"/></div>
+<div class="form-group"><label class="form-label">Reported by</label><input type="text" id="spf-reporter"/></div>
+</div>
+<div class="form-row">
+<div class="form-group"><label class="form-label">Substance spilled</label><input type="text" id="spf-substance" placeholder="e.g. Diesel, Engine oil, Chemical X..."/></div>
+<div class="form-group"><label class="form-label">Estimated quantity</label><input type="number" id="spf-qty" step="0.01" min="0"/></div>
+<div class="form-group"><label class="form-label">Unit</label>
+<select id="spf-unit"><option value="litres">Litres</option><option value="kg">kg</option><option value="m3">m³</option></select></div>
+<div class="form-group"><label class="form-label">Severity</label>
+<select id="spf-severity">
+<option value="minor">Minor — contained on hard surface</option>
+<option value="moderate">Moderate — potential environmental impact</option>
+<option value="major">Major — reached drain/soil/water</option>
+<option value="critical">Critical — significant environmental damage</option>
+</select></div>
+</div>
+<div class="form-group"><label class="form-label">Cause of spill</label><textarea id="spf-cause" style="min-height:60px" placeholder="How did the spill occur?"></textarea></div>
+<div style="display:flex;gap:16px;margin-bottom:12px">
+<label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer;color:var(--red);font-weight:600">
+<input type="checkbox" id="spf-drain" style="accent-color:var(--red)"/> Reached drain / watercourse</label>
+<label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer;color:#854F0B;font-weight:600">
+<input type="checkbox" id="spf-soil" style="accent-color:#854F0B"/> Reached soil / ground</label>
+<label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer">
+<input type="checkbox" id="spf-photos"/> Photos taken</label>
+</div>
+</div>
+<div class="card" style="margin-bottom:14px">
+<div class="card-title">Response &amp; Cleanup</div>
+<div class="form-row">
+<div class="form-group"><label class="form-label">Immediate actions taken</label><textarea id="spf-immediate" style="min-height:60px" placeholder="Stop source, contain spill, PPE used..."></textarea></div>
+<div class="form-group"><label class="form-label">Containment method</label><textarea id="spf-containment" style="min-height:60px" placeholder="Booms, absorbent, bunds used..."></textarea></div>
+</div>
+<div class="form-row">
+<div class="form-group"><label class="form-label">Cleanup method</label><textarea id="spf-cleanup" style="min-height:60px"></textarea></div>
+<div class="form-group"><label class="form-label">Cleanup contractor</label><input type="text" id="spf-cleanup-con"/></div>
+</div>
+<div class="form-group"><label class="form-label">Waste generated from cleanup</label><input type="text" id="spf-waste" placeholder="e.g. 20L contaminated absorbent, disposed via licensed contractor"/></div>
+</div>
+<div class="card">
+<div class="card-title">Root Cause &amp; Prevention</div>
+<div class="form-row">
+<div class="form-group"><label class="form-label">Root cause</label><textarea id="spf-root" style="min-height:60px"></textarea></div>
+<div class="form-group"><label class="form-label">Corrective / preventive actions</label><textarea id="spf-corrective" style="min-height:60px"></textarea></div>
+</div>
+<div class="form-group"><label class="form-label">Environmental impact assessment</label><textarea id="spf-impact" style="min-height:50px"></textarea></div>
+<div class="form-group"><label class="form-label">Lessons learned</label><textarea id="spf-lessons" style="min-height:50px"></textarea></div>
+</div>
+</div>
+<div>
+<div class="card" style="margin-bottom:14px;border:2px solid #E24B4A">
+<div class="card-title" style="color:#E24B4A">Status</div>
+<div class="form-group"><label class="form-label">Current status</label>
+<select id="spf-status">
+<option value="open">Open — response in progress</option>
+<option value="contained">Contained</option>
+<option value="remediated">Remediated</option>
+<option value="closed">Closed</option>
+</select></div>
+</div>
+<div class="card">
+<div class="card-title" style="color:#E24B4A"><i class="ti ti-building-bank"></i> Regulatory Notification</div>
+<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+<input type="checkbox" id="spf-regulator" style="width:16px;height:16px;accent-color:var(--red)"/>
+<label for="spf-regulator" style="font-size:12px;font-weight:600;cursor:pointer;color:var(--red)">Regulatory authority notification required</label>
+</div>
+<div class="form-group"><label class="form-label">Regulatory body</label><input type="text" id="spf-reg-body" placeholder="e.g. DEA, OSHI, Local Authority..."/></div>
+<div class="form-group"><label class="form-label">Reference number</label><input type="text" id="spf-reg-ref"/></div>
+</div>
+</div>
+</div>
+</div>
+
+<!-- Environmental inspection form -->
+<div id="esg-insp-form" style="display:none">
+<div class="card" style="margin-bottom:14px;padding:0;overflow:hidden">
+<div style="padding:14px 20px;background:linear-gradient(135deg,#14532D,#15803D);color:#fff;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
+<div style="font-size:17px;font-weight:800" id="esg-insp-form-title">Environmental Inspection</div>
+<div style="display:flex;gap:8px">
+<button class="btn" style="background:rgba(255,255,255,.2);color:#fff;border-color:rgba(255,255,255,.3)" onclick="esgInspBack()"><i class="ti ti-arrow-left"></i>Back</button>
+<button class="btn" style="background:#fff;color:#15803D;font-weight:700" onclick="esgInspSave()"><i class="ti ti-device-floppy"></i>Save</button>
+</div>
+</div>
+</div>
+<div class="card" style="margin-bottom:14px">
+<div class="form-row">
+<div class="form-group"><label class="form-label">Inspection date</label><input type="date" id="eif-date"/></div>
+<div class="form-group"><label class="form-label">Inspector</label><input type="text" id="eif-inspector"/></div>
+<div class="form-group"><label class="form-label">Area / Location</label><input type="text" id="eif-area"/></div>
+<div class="form-group"><label class="form-label">Type</label>
+<select id="eif-type"><option value="routine">Routine</option><option value="regulatory">Regulatory</option><option value="audit">Audit</option><option value="follow_up">Follow-up</option></select></div>
+</div>
+</div>
+<!-- Checklist -->
+<div class="card" style="margin-bottom:14px;padding:0;overflow:hidden">
+<div style="padding:10px 16px;background:#14532D;color:#fff;font-weight:700">Environmental Inspection Checklist</div>
+<table style="width:100%;border-collapse:collapse">
+<thead><tr style="background:#f0fdf4">
+<th style="padding:8px 16px;text-align:left;border-bottom:1px solid var(--border);font-size:11px">Check item</th>
+<th style="padding:8px;text-align:center;border-bottom:1px solid var(--border);font-size:11px;width:70px;color:#1D9E75">OK ✓</th>
+<th style="padding:8px;text-align:center;border-bottom:1px solid var(--border);font-size:11px;width:70px;color:#E24B4A">NC ✗</th>
+<th style="padding:8px;text-align:center;border-bottom:1px solid var(--border);font-size:11px;width:70px;color:#6B7280">N/A</th>
+<th style="padding:8px;text-align:left;border-bottom:1px solid var(--border);font-size:11px">Observation</th>
+</tr></thead>
+<tbody id="eif-checklist-body"></tbody>
+</table>
+</div>
+<div class="card">
+<div class="form-row">
+<div class="form-group"><label class="form-label">Findings / Observations</label><textarea id="eif-findings" style="min-height:80px"></textarea></div>
+<div class="form-group"><label class="form-label">Non-conformances identified</label><input type="number" id="eif-nc" min="0" value="0"/></div>
+</div>
+<div class="form-row">
+<div class="form-group"><label class="form-label">Overall rating</label>
+<select id="eif-rating"><option value="excellent">Excellent</option><option value="good">Good</option><option value="satisfactory" selected>Satisfactory</option><option value="poor">Poor</option><option value="unacceptable">Unacceptable</option></select></div>
+<div class="form-group"><label class="form-label">Next inspection date</label><input type="date" id="eif-next-date"/></div>
+</div>
+<div class="form-group"><label class="form-label">Corrective actions required</label><textarea id="eif-actions" style="min-height:60px"></textarea></div>
+</div>
+</div>
+
+</div><!-- end page-esg -->
 
 <div id="page-noise" class="page">
 <div class="page-header"><div class="page-title">Noise Survey</div><button class="btn btn-primary" onclick="toggleForm('noise-form')"><i class="ti ti-plus"></i>New survey</button></div><div class="card" id="noise-form" style="display:none"><div class="card-title">New noise survey</div><div class="form-row"><div class="form-group"><label class="form-label">Survey type</label><select id="nf-type"><option value="occupational">Occupational</option><option value="environmental">Environmental</option></select></div><div class="form-group"><label class="form-label">Site</label><input type="text" id="nf-site"/></div></div><div class="form-row"><div class="form-group"><label class="form-label">Survey date</label><input type="date" id="nf-date"/></div><div class="form-group"><label class="form-label">Conducted by</label><select id="nf-by"><option value="">Select person...</option></select></div></div><div class="form-row"><div class="form-group"><label class="form-label">Instrument used</label><input type="text" id="nf-instrument"/></div><div class="form-group"><label class="form-label">Calibration date</label><input type="date" id="nf-cal"/></div></div><div class="form-group"><label class="form-label">Weather / conditions</label><input type="text" id="nf-weather"/></div><div class="form-group"><label class="form-label">Notes</label><textarea id="nf-notes"></textarea></div><div style="display:flex;gap:8px"><button class="btn btn-primary" onclick="saveNoise()"><i class="ti ti-device-floppy"></i>Save</button><button class="btn" onclick="toggleForm('noise-form')">Cancel</button></div></div><div class="card"><div class="card-title">Noise surveys</div><div id="noise-list"><div class="loading-msg">Loading...</div></div></div></div>
