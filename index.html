@@ -90,6 +90,7 @@
 
 
 
+
 const SB='https://iarfxjhahzbhncsaohbg.supabase.co';
 const KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlhcmZ4amhhaHpiaG5jc2FvaGJnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg2OTM1MzAsImV4cCI6MjA5NDI2OTUzMH0.qSjahuX-RwnjWEDmo-LkcorAxpsmyVoaXt4AO4_A9BM';
 let tok=null,prof=null,co=null,chkItems=[],people=[];
@@ -1186,43 +1187,720 @@ if(target){
   target.classList.add('active');
 }
 if(el&&el.classList)el.classList.add('active');
-const L={dashboard:loadDash,kpi:kpiLoadAll,workschedule:loadWorkSchedule,events:loadEvents,observation:loadObservation,inspection:()=>{buildChecklist();loadInsps();},risk:loadRA,investigation:loadInvs,legal:loadLegal,sop:loadSOP,tools:loadTools,permit:loadPermits,contractor:loadContractors,esg:loadESG,emergency:loadEmergency,ohealth:loadOHealth,ppe:loadPPE,noise:loadNoise,meetings:loadMtgs,training:loadTraining,actions:loadActions,documents:loadDocs,people:loadPeople,users:loadUsers,admin:loadAdmin,'ai-insights':genFullAI,settings:loadSettings};
+const L={dashboard:loadDash,executive:loadExecutive,kpi:kpiLoadAll,workschedule:loadWorkSchedule,events:loadEvents,observation:loadObservation,inspection:()=>{buildChecklist();loadInsps();},risk:loadRA,investigation:loadInvs,legal:loadLegal,sop:loadSOP,tools:loadTools,permit:loadPermits,contractor:loadContractors,esg:loadESG,emergency:loadEmergency,ohealth:loadOHealth,ppe:loadPPE,noise:loadNoise,meetings:loadMtgs,training:loadTraining,actions:loadActions,documents:loadDocs,people:loadPeople,users:loadUsers,admin:loadAdmin,'ai-insights':genFullAI,settings:loadSettings};
 if(L[name])L[name]();
 }
 function toggleForm(id){const el=document.getElementById(id);el.style.display=el.style.display==='none'?'block':'none';}
 function toggleContractor(){document.getElementById('contractor-fields').style.display=document.getElementById('pef-type').value!=='employee'?'block':'none';}
-async function loadDash(){
-try{
-const safe=async(p)=>{try{return await p;}catch(e){console.warn('API:',e.message);return [];}};
-const[k,e,a,pe,pt,certs,insps]=await Promise.all([
-safe(api('/kpis_v2?select=*'+cf())),
-safe(api('/events?select=*'+cf()+'&order=event_date.desc&limit=5')),
-safe(api('/action_tracker?select=*'+cf()+'&status=neq.closed')),
-safe(api('/people?select=id'+cf()+'&status=eq.active')),
-safe(api('/permits?select=*'+cf()+'&status=eq.active')),
-safe(api('/people_certifications?select=*'+cf())),
-safe(api('/inspections?select=*'+cf()+'&order=inspection_date.desc&limit=5')),
-]);
-const soon=new Date();soon.setDate(soon.getDate()+30);
-const ec=(certs||[]).filter(x=>x.expiry_date&&new Date(x.expiry_date)<soon);
-const setEl=(id,v)=>{const el=document.getElementById(id);if(el)el.textContent=v;};
-setEl('d-kpis',(k||[]).filter(x=>x.status==='on_track').length+'/'+(k||[]).length);
-setEl('d-events',(e||[]).filter(x=>x.status==='open').length);
-setEl('d-actions',(a||[]).length);
-setEl('d-people',(pe||[]).length);
-setEl('d-permits',(pt||[]).length);
-setEl('d-certs',ec.length);
-const de=document.getElementById('dash-events');
-if(de)de.innerHTML=!(e||[]).length?'<div class="empty">No events yet</div>':'<table><thead><tr><th>Date</th><th>Type</th><th>Severity</th><th>Status</th></tr></thead><tbody>'+(e||[]).map(x=>'<tr><td>'+fmt(x.event_date||x.created_at)+'</td><td>'+(x.event_type||'--')+'</td><td>'+sev(x.severity)+'</td><td>'+stat(x.status)+'</td></tr>').join('')+'</tbody></table>';
-const top5=(a||[]).sort((x,y)=>{const po={critical:4,high:3,medium:2,low:1};return(po[y.priority]||0)-(po[x.priority]||0);}).slice(0,5);
-const da=document.getElementById('dash-actions');
-if(da)da.innerHTML=!top5.length?'<div class="empty">No open actions</div>':'<table><thead><tr><th>Action</th><th>Responsible</th><th>Due</th><th>Priority</th></tr></thead><tbody>'+top5.map(x=>'<tr><td>'+x.description+'</td><td>'+(x.responsible||'--')+'</td><td>'+fmt(x.target_date)+'</td><td>'+prio(x.priority)+'</td></tr>').join('')+'</tbody></table>';
-const di=document.getElementById('dash-inspections-tbl');
-if(di)di.innerHTML=!(insps||[]).length?'<div class="empty">No inspections yet</div>':'<table><thead><tr><th>Date</th><th>Site</th><th>Good</th><th>Insuf.</th></tr></thead><tbody>'+(insps||[]).map(x=>'<tr><td>'+fmt(x.inspection_date)+'</td><td>'+(x.site||'--')+'</td><td><span class="badge bg">'+x.score_good+'</span></td><td><span class="badge '+(x.score_insuf>3?'br':'ba')+'">'+x.score_insuf+'</span></td></tr>').join('')+'</tbody></table>';
-const dc=document.getElementById('dash-certs');
-if(dc)dc.innerHTML=!ec.length?'<div class="empty">No certifications expiring soon</div>':'<table><thead><tr><th>Certification</th><th>Expiry</th><th>Status</th></tr></thead><tbody>'+ec.slice(0,5).map(x=>'<tr><td>'+x.certification+'</td><td>'+fmt(x.expiry_date)+'</td><td>'+stat(x.status)+'</td></tr>').join('')+'</tbody></table>';
-}catch(e){console.error('Dashboard error:',e);}
+// ===================================================================
+// REAL-TIME HSE DASHBOARD + EXECUTIVE MANAGEMENT DASHBOARD
+// ===================================================================
+
+// ─── REAL-TIME DASHBOARD ──────────────────────────────────────────
+async function loadDash() {
+  var refreshIcon = document.getElementById('dash-refresh-icon');
+  if (refreshIcon) refreshIcon.style.animation = 'spin .8s linear infinite';
+  try {
+    var safe = async function(p) { try { return await p; } catch(e) { console.warn('Dash API:', e.message); return []; } };
+    var now = new Date(); var yr = now.getFullYear();
+    var yrStart = yr + '-01-01';
+    var results = await Promise.all([
+      safe(api('/events?select=*'+cf()+'&order=event_date.desc&limit=100')),
+      safe(api('/action_tracker?select=*'+cf()+'&order=created_at.desc&limit=200')),
+      safe(api('/people?select=id,first_name,last_name,department,status'+cf()+'&status=eq.active')),
+      safe(api('/permits?select=*'+cf()+'&status=eq.active')),
+      safe(api('/authorisations?select=*'+cf()+'&status=eq.active&order=expiry_date.asc')),
+      safe(api('/inspections?select=*'+cf()+'&order=inspection_date.desc&limit=10')),
+      safe(api('/legal_requirements?select=id,compliance_score,category'+cf())),
+      safe(api('/training_followup?select=id,person_name,expiry_date'+cf())),
+      safe(api('/kpi_monthly_data?select=*'+cf()+'&order=year.desc,month.desc&limit=50')),
+    ]);
+    var [events, actions, people, permits, certs, insps, legal, training, kpiData] = results;
+    events = events||[]; actions = actions||[]; people = people||[];
+    permits = permits||[]; certs = certs||[]; insps = insps||[];
+    legal = legal||[]; training = training||[]; kpiData = kpiData||[];
+
+    var thisMonth = events.filter(function(x) {
+      var d = x.event_date||x.created_at||''; return d.startsWith(yr+'-'+String(now.getMonth()+1).padStart(2,'0'));
+    });
+    var openEvents = events.filter(function(x){return x.status==='open'||x.status==='under_investigation';});
+    var openActions = actions.filter(function(x){return x.status!=='closed';});
+    var overdueActions = openActions.filter(function(x){return (x.target_date||x.due_date)&&new Date(x.target_date||x.due_date)<now;});
+
+    function sm(id,v){var e=document.getElementById(id);if(e)e.textContent=v;}
+
+    // Safety metrics
+    sm('d-events', openEvents.length);
+    sm('d-events-sub', thisMonth.length+' this month');
+    sm('d-actions', openActions.length);
+    sm('d-actions-sub', overdueActions.length+' overdue');
+    sm('d-people', people.length);
+    sm('d-permits', permits.length);
+
+    // LTIFR & TRIR
+    var ytdEvents = events.filter(function(x){var d=x.event_date||x.created_at||'';return d>=yrStart;});
+    var ltiEvents = ytdEvents.filter(function(x){return x.injury_type==='lti'||x.lost_time_days>0;});
+    var recordable = ytdEvents.filter(function(x){return ['injury','lti','medical_treatment','restricted_work'].includes(x.event_type)||x.injury_type;});
+    var manhours = people.length * 2000 * (now.getMonth()+1) / 12;
+    var ltifr = manhours>0 ? (ltiEvents.length/manhours*1000000).toFixed(2) : '0.00';
+    var trir = manhours>0 ? (recordable.length/manhours*200000).toFixed(2) : '0.00';
+    sm('d-ltifr', ltifr); sm('d-trir', trir);
+
+    // Training compliance
+    var soon60 = new Date(); soon60.setDate(soon60.getDate()+60);
+    var expCerts = certs.filter(function(x){return x.expiry_date&&new Date(x.expiry_date)<soon60;});
+    sm('d-certs', expCerts.length);
+    var trainValid = training.filter(function(x){return !x.expiry_date||new Date(x.expiry_date)>now;});
+    var trainPct = training.length>0 ? Math.round(trainValid.length/Math.max(people.length,1)*100) : 0;
+    sm('d-training-pct', Math.min(trainPct,100)+'%');
+
+    // Compliance
+    var legalScores = legal.filter(function(x){return x.compliance_score!=null;}).map(function(x){return parseFloat(x.compliance_score)||0;});
+    var compPct = legalScores.length>0 ? Math.round(legalScores.reduce(function(a,b){return a+b;},0)/legalScores.length) : 0;
+    sm('d-compliance', compPct+'%');
+    var barInner = document.getElementById('d-compliance-bar-inner');
+    if(barInner) { barInner.style.width=compPct+'%'; barInner.style.background=compPct>=80?'#1D9E75':compPct>=60?'#EF9F27':'#DC2626'; }
+
+    // Environmental incidents
+    var envInc = ytdEvents.filter(function(x){return x.event_type==='environmental';});
+    sm('d-env', envInc.length);
+
+    // Audit score
+    var lastInsp = insps[0];
+    if(lastInsp) {
+      var total=(lastInsp.score_good||0)+(lastInsp.score_insuf||0);
+      var score=total>0?Math.round((lastInsp.score_good||0)/total*100):0;
+      sm('d-audit-score', score+'%');
+    } else { sm('d-audit-score','—'); }
+
+    // KPIs
+    var kpis = kpiData.filter(function(x){return x.year==yr;});
+    var kpiTotal = kpis.length; var kpiOK = kpis.filter(function(x){return x.status==='on_track';}).length;
+    sm('d-kpis', kpiOK+'/'+kpiTotal); sm('d-kpis-sub','of '+kpiTotal+' targets');
+
+    // Critical alert bar
+    var alertBar = document.getElementById('dash-alert-bar');
+    var alertText = document.getElementById('dash-alert-text');
+    var criticals = events.filter(function(x){return x.severity==='critical'&&x.status!=='closed';});
+    if(criticals.length>0 && alertBar && alertText) {
+      alertText.textContent = criticals.length+' critical unresolved incident'+(criticals.length>1?'s':'')+': '+criticals.slice(0,2).map(function(x){return x.description||x.event_type||'—';}).join(', ');
+      alertBar.style.display='flex';
+    } else if(alertBar) { alertBar.style.display='none'; }
+
+    // Charts
+    dashRenderTrendChart(events);
+    dashRenderSeverityChart(events);
+    dashRenderComplianceRings(compPct, trainPct, permits.length);
+    dashRenderDeptHeatmap(events, people);
+    dashRenderHighRisk(permits, events);
+
+    // Tables
+    dashRenderRecentEvents(openEvents.slice(0,5));
+    dashRenderPriorityActions(openActions.slice(0,5));
+    dashRenderTrainingCompliance(expCerts, trainValid, people);
+
+    // Populate dept filter
+    var deptSel = document.getElementById('dash-dept-filter');
+    if(deptSel && deptSel.options.length<=1) {
+      var depts = [...new Set(people.map(function(p){return p.department;}).filter(Boolean))].sort();
+      depts.forEach(function(d){var o=document.createElement('option');o.value=d;o.textContent=d;deptSel.appendChild(o);});
+    }
+
+    // Update role banner
+    var banner = document.getElementById('role-banner-dash');
+    if(banner&&prof&&prof.role) {
+      if(prof.role==='inspector'){banner.innerHTML='<div style="background:#EFF6FF;border:1px solid #bfdbfe;border-radius:8px;padding:8px 14px;font-size:12px;color:#185FA5;font-weight:600">🔍 Inspector view — showing your assigned areas only</div>';banner.style.display='block';}
+      else banner.style.display='none';
+    }
+
+    sm('dash-label', 'Updated '+now.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}));
+  } catch(e) { console.error('Dashboard error:', e); }
+  finally {
+    if(refreshIcon) refreshIcon.style.animation = '';
+  }
 }
+
+function dashRenderTrendChart(events) {
+  var el = document.getElementById('dash-trend-chart');
+  var labEl = document.getElementById('dash-trend-labels');
+  if(!el) return;
+  var now = new Date(); var months = [];
+  for(var i=11;i>=0;i--) {
+    var d2=new Date(); d2.setMonth(d2.getMonth()-i);
+    var mm=d2.getMonth(); var yy=d2.getFullYear();
+    var label=d2.toLocaleString('en-GB',{month:'short'});
+    var inc = events.filter(function(x){var dt=x.event_date||x.created_at||'';return dt&&new Date(dt).getMonth()===mm&&new Date(dt).getFullYear()===yy&&x.event_type!=='near_miss';}).length;
+    var nm  = events.filter(function(x){var dt=x.event_date||x.created_at||'';return dt&&new Date(dt).getMonth()===mm&&new Date(dt).getFullYear()===yy&&x.event_type==='near_miss';}).length;
+    months.push({label,inc,nm});
+  }
+  var maxV = Math.max(...months.map(function(m){return m.inc+m.nm;}), 1);
+  el.innerHTML = months.map(function(m) {
+    var hInc = Math.max(Math.round(m.inc/maxV*100), m.inc>0?4:0);
+    var hNm  = Math.max(Math.round(m.nm/maxV*100),  m.nm>0?4:0);
+    return '<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:1px">'
+      +(m.nm>0?'<div style="width:100%;height:'+hNm+'px;background:#EF9F27;border-radius:2px 2px 0 0" title="Near miss: '+m.nm+'"></div>':'')
+      +(m.inc>0?'<div style="width:100%;height:'+hInc+'px;background:#DC2626;border-radius:'+(m.nm?'0':'2px 2px')+' 0 0" title="Incidents: '+m.inc+'"></div>':'')
+      +(m.inc===0&&m.nm===0?'<div style="width:100%;height:2px;background:#f3f4f6;border-radius:2px"></div>':'')
+      +'</div>';
+  }).join('');
+  if(labEl) labEl.innerHTML = months.map(function(m){return '<div style="flex:1;text-align:center;font-size:9px;color:var(--text2)">'+m.label+'</div>';}).join('');
+}
+
+function dashRenderSeverityChart(events) {
+  var el = document.getElementById('dash-severity-chart'); if(!el) return;
+  var sevs = {critical:0,high:0,medium:0,low:0};
+  events.forEach(function(x){if(x.severity&&sevs.hasOwnProperty(x.severity))sevs[x.severity]++;});
+  var total = events.length || 1;
+  var colors = {critical:'#DC2626',high:'#F97316',medium:'#EF9F27',low:'#1D9E75'};
+  el.innerHTML = Object.entries(sevs).map(function(e) {
+    var pct = Math.round(e[1]/total*100);
+    return '<div style="display:flex;align-items:center;gap:6px">'
+      +'<span style="font-size:11px;font-weight:700;color:'+colors[e[0]]+';min-width:55px;text-transform:capitalize">'+e[0]+'</span>'
+      +'<div style="flex:1;height:8px;background:#f3f4f6;border-radius:99px;overflow:hidden">'
+      +'<div style="width:'+pct+'%;height:100%;background:'+colors[e[0]]+';border-radius:99px;transition:width .8s"></div></div>'
+      +'<span style="font-size:11px;font-weight:700;min-width:22px;text-align:right">'+e[1]+'</span>'
+      +'</div>';
+  }).join('');
+}
+
+function dashRenderComplianceRings(compPct, trainPct, permits) {
+  var el = document.getElementById('dash-compliance-ring'); if(!el) return;
+  var items = [
+    {label:'Legal compliance', pct:compPct, color:'#1D9E75'},
+    {label:'Training', pct:Math.min(trainPct,100), color:'#0891B2'},
+    {label:'Active PTW', value:permits+' live', pct:permits>0?75:0, color:'#EF9F27'},
+  ];
+  el.innerHTML = items.map(function(item) {
+    return '<div>'
+      +'<div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:2px">'
+      +'<span style="font-weight:600">'+item.label+'</span>'
+      +'<span style="font-weight:700;color:'+item.color+'">'+(item.value||item.pct+'%')+'</span>'
+      +'</div>'
+      +'<div style="height:6px;background:#f3f4f6;border-radius:99px;overflow:hidden">'
+      +'<div style="width:'+item.pct+'%;height:100%;background:'+item.color+';border-radius:99px;transition:width .8s"></div>'
+      +'</div></div>';
+  }).join('');
+}
+
+function dashRenderDeptHeatmap(events, people) {
+  var el = document.getElementById('dash-dept-heatmap'); if(!el) return;
+  var yr = new Date().getFullYear();
+  var ytdEvents = events.filter(function(x){var d=x.event_date||x.created_at||'';return d>=yr+'-01-01';});
+  var deptCount = {};
+  var allDepts = [...new Set([
+    ...people.map(function(p){return p.department;}).filter(Boolean),
+    ...ytdEvents.map(function(x){return x.department||x.person_dept;}).filter(Boolean)
+  ])].sort();
+  ytdEvents.forEach(function(x){var d=x.department||x.person_dept||'Unknown';deptCount[d]=(deptCount[d]||0)+1;});
+  var sorted = allDepts.filter(function(d){return deptCount[d]>0;}).sort(function(a,b){return (deptCount[b]||0)-(deptCount[a]||0);}).slice(0,8);
+  if(!sorted.length) { el.innerHTML='<div style="text-align:center;padding:20px;color:var(--text2);font-size:11px">No incidents with department data yet</div>'; return; }
+  var maxV = deptCount[sorted[0]] || 1;
+  el.innerHTML = sorted.map(function(d) {
+    var cnt = deptCount[d]||0;
+    var pct = Math.round(cnt/maxV*100);
+    var color = cnt>=5?'#DC2626':cnt>=3?'#F97316':cnt>=1?'#EF9F27':'#1D9E75';
+    return '<div style="display:flex;align-items:center;gap:8px">'
+      +'<div style="font-size:11px;font-weight:600;min-width:90px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+escH(d)+'</div>'
+      +'<div style="flex:1;height:14px;background:#f3f4f6;border-radius:4px;overflow:hidden">'
+      +'<div style="width:'+pct+'%;height:100%;background:'+color+';border-radius:4px;transition:width .8s;display:flex;align-items:center;justify-content:flex-end;padding-right:4px">'
+      +(pct>15?'<span style="font-size:9px;color:#fff;font-weight:700">'+cnt+'</span>':'')
+      +'</div></div>'
+      +(pct<=15?'<span style="font-size:11px;font-weight:700;color:'+color+';min-width:16px">'+cnt+'</span>':'')
+      +'</div>';
+  }).join('');
+}
+
+function dashRenderHighRisk(permits, events) {
+  var el = document.getElementById('dash-highrisk'); if(!el) return;
+  var items = [];
+  // High-risk permits
+  var hrPermits = (permits||[]).filter(function(p){return ['confined_space','hot_work','electrical','working_at_height','excavation'].includes(p.permit_type||p.type);});
+  hrPermits.slice(0,3).forEach(function(p){items.push({emoji:'🔑',label:(p.title||p.permit_type||'Permit').substring(0,40),sub:p.location||'',color:'#C2410C',badge:'ACTIVE PTW'});});
+  // Critical/high open incidents
+  var criHigh = events.filter(function(x){return ['critical','high'].includes(x.severity)&&x.status!=='closed';});
+  criHigh.slice(0,3).forEach(function(x){items.push({emoji:x.severity==='critical'?'🔴':'🟠',label:(x.description||x.event_type||'Incident').substring(0,40),sub:x.location||'',color:x.severity==='critical'?'#DC2626':'#F97316',badge:x.severity.toUpperCase()});});
+  if(!items.length){el.innerHTML='<div style="text-align:center;padding:20px;color:var(--text2);font-size:11px">✓ No active high-risk activities</div>';return;}
+  el.innerHTML = items.map(function(item){
+    return '<div style="display:flex;align-items:flex-start;gap:8px;padding:6px 8px;background:#FFF7ED;border-radius:6px;border-left:3px solid '+item.color+'">'
+      +'<span style="font-size:16px;flex-shrink:0;line-height:1.2">'+item.emoji+'</span>'
+      +'<div style="flex:1;min-width:0"><div style="font-size:12px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+escH(item.label)+'</div>'
+      +(item.sub?'<div style="font-size:10px;color:var(--text2)">'+escH(item.sub)+'</div>':'')+'</div>'
+      +'<span style="font-size:9px;background:'+item.color+';color:#fff;padding:1px 5px;border-radius:4px;font-weight:700;white-space:nowrap;flex-shrink:0">'+item.badge+'</span>'
+      +'</div>';
+  }).join('');
+}
+
+function dashRenderRecentEvents(events) {
+  var el = document.getElementById('dash-events'); if(!el) return;
+  if(!events.length){el.innerHTML='<div style="text-align:center;padding:12px;color:var(--text2);font-size:11px">✓ No open incidents</div>';return;}
+  var sevColors={critical:'#DC2626',high:'#F97316',medium:'#EF9F27',low:'#1D9E75'};
+  el.innerHTML = events.map(function(x){
+    var sc=sevColors[x.severity||'medium']||sevColors.medium;
+    var d=x.event_date||x.created_at||'';
+    return '<div style="display:flex;align-items:flex-start;gap:6px;padding:5px 0;border-bottom:1px solid #f3f4f6">'
+      +'<div style="width:3px;height:36px;background:'+sc+';border-radius:2px;flex-shrink:0;margin-top:2px"></div>'
+      +'<div style="flex:1;min-width:0"><div style="font-size:11px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+escH((x.description||x.event_type||'Incident').substring(0,50))+'</div>'
+      +'<div style="font-size:10px;color:var(--text2)">'+(d?new Date(d).toLocaleDateString('en-GB'):'')+' · '+escH(x.location||'')+'</div></div>'
+      +'<span style="background:'+sc+';color:#fff;padding:1px 5px;border-radius:3px;font-size:9px;font-weight:700;white-space:nowrap;flex-shrink:0">'+escH((x.severity||'med').substring(0,4).toUpperCase())+'</span>'
+      +'</div>';
+  }).join('');
+}
+
+function dashRenderPriorityActions(actions) {
+  var el = document.getElementById('dash-actions'); if(!el) return;
+  if(!actions.length){el.innerHTML='<div style="text-align:center;padding:12px;color:var(--text2);font-size:11px">✓ No open actions</div>';return;}
+  var now=new Date();
+  var priC={critical:'#DC2626',high:'#C2410C',medium:'#185FA5',low:'#6B7280'};
+  var sorted=actions.sort(function(a,b){var p={critical:4,high:3,medium:2,low:1};return(p[b.priority]||0)-(p[a.priority]||0);}).slice(0,5);
+  el.innerHTML = sorted.map(function(x){
+    var isOvd=(x.target_date||x.due_date)&&new Date(x.target_date||x.due_date)<now;
+    var pc=priC[x.priority||'medium']||priC.medium;
+    return '<div style="display:flex;align-items:flex-start;gap:6px;padding:5px 0;border-bottom:1px solid #f3f4f6">'
+      +'<div style="flex:1;min-width:0"><div style="font-size:11px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+escH((x.title||x.description||'Action').substring(0,50))+'</div>'
+      +'<div style="font-size:10px;color:'+(isOvd?'#DC2626':'var(--text2)')+'">'+escH(x.assigned_to_name||x.responsible||'Unassigned')+(x.target_date||x.due_date?' · Due '+new Date(x.target_date||x.due_date).toLocaleDateString('en-GB'):'')+(isOvd?' ⚠':'')+'</div></div>'
+      +'<span style="color:'+pc+';font-size:9px;font-weight:700;text-transform:uppercase;flex-shrink:0">'+escH(x.priority||'MED')+'</span>'
+      +'</div>';
+  }).join('');
+}
+
+function dashRenderTrainingCompliance(expCerts, valid, people) {
+  var el = document.getElementById('dash-training-compliance'); if(!el) return;
+  var pct = people.length>0 ? Math.min(Math.round(valid.length/people.length*100),100) : 0;
+  var color = pct>=80?'#1D9E75':pct>=60?'#EF9F27':'#DC2626';
+  el.innerHTML = '<div style="margin-bottom:8px">'
+    +'<div style="display:flex;justify-content:space-between;font-size:12px;font-weight:700;margin-bottom:4px">'
+    +'<span>Overall compliance</span><span style="color:'+color+'">'+pct+'%</span></div>'
+    +'<div style="height:8px;background:#f3f4f6;border-radius:99px;overflow:hidden">'
+    +'<div style="width:'+pct+'%;height:100%;background:'+color+';border-radius:99px;transition:width .8s"></div>'
+    +'</div></div>'
+    +(expCerts.length>0?
+      '<div style="font-size:11px;font-weight:600;color:#C2410C;margin-bottom:4px">⚠ '+expCerts.length+' certificate'+(expCerts.length>1?'s':'')+' expiring &lt; 60 days:</div>'
+      +expCerts.slice(0,4).map(function(x){
+        return '<div style="font-size:11px;padding:3px 0;border-bottom:1px solid #f3f4f6">'
+          +escH(x.person_name||'—')+' — '+escH(x.authorisation_type||x.auth_type||'Cert')
+          +(x.expiry_date?' <span style="color:#DC2626">'+new Date(x.expiry_date).toLocaleDateString('en-GB')+'</span>':'')
+          +'</div>';
+      }).join('')
+    : '<div style="font-size:11px;color:#1D9E75;text-align:center;padding:8px">✓ All certificates current</div>');
+}
+
+async function genDashAI() {
+  var el = document.getElementById('dash-ai-content'); if(!el) return;
+  el.textContent = '⏳ Generating AI insights...';
+  try {
+    var ctx = await getCtx ? getCtx() : {};
+    var resp = await fetch('https://api.anthropic.com/v1/messages', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:800,
+        messages:[{role:'user',content:'You are an HSE expert analysing AURIS360 data. Provide 3-4 concise, actionable insights about the HSE performance based on this context: '+JSON.stringify(ctx||{})+'.\n\nFocus on: (1) key risks, (2) positive trends, (3) immediate actions needed. Be specific and practical. Max 200 words.'}]})
+    });
+    var d = await resp.json();
+    el.textContent = (d.content||[]).map(function(c){return c.text||'';}).join('') || 'No insights generated.';
+  } catch(e) { el.textContent = 'AI unavailable: ' + e.message; }
+}
+
+// ─── EXECUTIVE DASHBOARD ──────────────────────────────────────────
+var execData = {};
+
+async function loadExecutive() {
+  try {
+    var safe = async function(p){try{return await p;}catch(e){console.warn('Exec:',e.message);return [];}};
+    var yr = new Date().getFullYear();
+    var yrFilter = document.getElementById('exec-year-filter')?.value || '';
+    var useYr = yrFilter ? parseInt(yrFilter) : yr;
+    var yrStart = useYr+'-01-01'; var yrEnd = useYr+'-12-31';
+
+    // Populate year selector
+    var ySel = document.getElementById('exec-year-filter');
+    if(ySel && ySel.options.length<=1) {
+      for(var y=yr;y>=yr-4;y--) {
+        var o=document.createElement('option'); o.value=y; o.textContent=y+(y===yr?' (Current)':'');
+        ySel.appendChild(o);
+      }
+    }
+
+    var results = await Promise.all([
+      safe(api('/events?select=*'+cf()+'&event_date=gte.'+yrStart+'&event_date=lte.'+yrEnd+'&order=event_date.asc')),
+      safe(api('/action_tracker?select=*'+cf()+'&order=created_at.desc&limit=500')),
+      safe(api('/people?select=id,department,status'+cf()+'&status=eq.active')),
+      safe(api('/inspections?select=*'+cf()+'&order=inspection_date.desc&limit=50')),
+      safe(api('/legal_requirements?select=*'+cf())),
+      safe(api('/authorisations?select=*'+cf())),
+      safe(api('/spill_reports?select=*'+cf())),
+      safe(api('/waste_records?select=*'+cf()+'&order=created_at.desc&limit=100')),
+      safe(api('/fuel_consumption?select=*'+cf()+'&order=created_at.desc&limit=100')),
+    ]);
+
+    var [events,actions,people,insps,legal,certs,spills,waste,fuel] = results;
+    events=events||[]; actions=actions||[]; people=people||[];
+    insps=insps||[]; legal=legal||[]; certs=certs||[];
+    spills=spills||[]; waste=waste||[]; fuel=fuel||[];
+
+    execData = {events,actions,people,insps,legal,certs,spills,waste,fuel,yr:useYr};
+
+    var now = new Date();
+    var manhours = people.length * 2000 * (useYr<yr?12:(now.getMonth()+1)) / 12;
+    var ltiEvts = events.filter(function(x){return x.injury_type==='lti'||x.lost_time_days>0;});
+    var recEvts = events.filter(function(x){return ['injury','lti','medical_treatment','restricted_work'].includes(x.event_type)||x.injury_type;});
+    var ltifr = manhours>0?(ltiEvts.length/manhours*1000000).toFixed(2):'0.00';
+    var trir = manhours>0?(recEvts.length/manhours*200000).toFixed(2):'0.00';
+
+    function sm(id,v){var e=document.getElementById(id);if(e)e.textContent=v;}
+
+    // Overview metrics
+    sm('exec-ltifr', ltifr); sm('exec-trir', trir);
+    var lScores = legal.filter(function(x){return x.compliance_score!=null;}).map(function(x){return parseFloat(x.compliance_score)||0;});
+    var compPct = lScores.length>0?Math.round(lScores.reduce(function(a,b){return a+b;},0)/lScores.length):0;
+    sm('exec-compliance', compPct+'%');
+    var cpInner = document.getElementById('exec-compliance-prog-inner');
+    if(cpInner){cpInner.style.width=compPct+'%';}
+
+    // Days since LTI
+    var lastLTI = ltiEvts.slice(-1)[0];
+    if(lastLTI&&lastLTI.event_date){
+      var daysAgo = Math.floor((now-new Date(lastLTI.event_date))/86400000);
+      sm('exec-days-lti', daysAgo);
+    } else { sm('exec-days-lti', events.length?'365+':'N/A'); }
+
+    // Safety tab metrics
+    sm('exec-fatalities', events.filter(function(x){return x.injury_type==='fatality';}).length);
+    sm('exec-ltis', ltiEvts.length);
+    sm('exec-mti', events.filter(function(x){return x.injury_type==='medical_treatment'||x.event_type==='injury';}).length);
+    sm('exec-nm', events.filter(function(x){return x.event_type==='near_miss';}).length);
+
+    // Compliance tab
+    sm('exec-legal-pct', compPct+'%');
+    var avgAudit = insps.length>0?Math.round(insps.reduce(function(s,x){var t=(x.score_good||0)+(x.score_insuf||0);return s+(t>0?(x.score_good||0)/t*100:0);},0)/insps.length):0;
+    sm('exec-audit-pct', avgAudit+'%');
+    sm('exec-training-pct', people.length>0?Math.min(100,Math.round(certs.length/people.length*100))+'%':'—');
+
+    // ESG metrics
+    sm('exec-env-inc', events.filter(function(x){return x.event_type==='environmental';}).length);
+    sm('exec-spills', spills.length);
+    var totalWaste = waste.reduce(function(s,x){return s+(parseFloat(x.quantity_kg)||0);},0);
+    sm('exec-waste', (totalWaste/1000).toFixed(1));
+    var totalCO2 = fuel.reduce(function(s,x){return s+(parseFloat(x.co2_tonnes||x.co2)||0);},0);
+    sm('exec-co2', totalCO2.toFixed(1));
+
+    // Render charts
+    execRenderAnnualTrend(events);
+    execRenderRiskDist(events);
+    execRenderDeptComparison(events, people);
+    execRenderContractorComparison(events);
+    execRenderIncidentTypes(events);
+    execRenderLostTime(events);
+    execRenderLocationRank(events);
+    execRenderComplianceCategories(legal);
+    execRenderCAAge(actions);
+    execRenderESGScorecard(compPct, spills.length, events);
+    execRenderSustainability(waste, fuel);
+
+    // LTIFR trend indicators
+    var ltEl = document.getElementById('exec-ltifr-trend');
+    if(ltEl) ltEl.innerHTML = '<span style="font-size:11px;opacity:.85">'+(ltiEvts.length===0?'✓ Zero LTIs this period':'⚠ '+ltiEvts.length+' LTI'+(ltiEvts.length>1?'s':''))+'</span>';
+    var trEl = document.getElementById('exec-trir-trend');
+    if(trEl) trEl.innerHTML = '<span style="font-size:11px;opacity:.85">'+recEvts.length+' recordable incident'+(recEvts.length!==1?'s':'')+'</span>';
+
+  } catch(e) { console.error('Executive dashboard:', e); }
+}
+
+function execTab(tab, btn) {
+  document.querySelectorAll('[id^="exec-tab-"]').forEach(function(t){t.classList.remove('active');});
+  if(btn) btn.classList.add('active');
+  ['overview','safety','compliance','esg','reports'].forEach(function(t){
+    var el=document.getElementById('exec-view-'+t);
+    if(el) el.style.display=t===tab?'block':'none';
+  });
+}
+
+function execRenderAnnualTrend(events) {
+  var el=document.getElementById('exec-annual-trend'); var labEl=document.getElementById('exec-trend-labels');
+  if(!el) return;
+  var months=[]; var yr=execData.yr||new Date().getFullYear();
+  for(var i=0;i<12;i++){
+    var cnt=events.filter(function(x){var d=x.event_date||'';return d.startsWith(yr+'-'+String(i+1).padStart(2,'0'));}).length;
+    months.push({label:['J','F','M','A','M','J','J','A','S','O','N','D'][i],cnt});
+  }
+  var maxV=Math.max(...months.map(function(m){return m.cnt;}),1);
+  el.innerHTML=months.map(function(m){
+    var h=Math.max(Math.round(m.cnt/maxV*120),m.cnt>0?4:0);
+    var c=m.cnt>=5?'#DC2626':m.cnt>=3?'#F97316':m.cnt>=1?'#EF9F27':'#e5e7eb';
+    return '<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px">'
+      +'<span style="font-size:9px;font-weight:700;color:var(--text2)">'+m.cnt+'</span>'
+      +'<div style="width:100%;height:'+h+'px;background:'+c+';border-radius:3px 3px 0 0;min-height:2px"></div>'
+      +'</div>';
+  }).join('');
+  if(labEl) labEl.innerHTML=months.map(function(m){return '<div style="flex:1;text-align:center;font-size:9px;color:var(--text2)">'+m.label+'</div>';}).join('');
+}
+
+function execRenderRiskDist(events) {
+  var el=document.getElementById('exec-risk-dist'); if(!el) return;
+  var dist={critical:0,high:0,medium:0,low:0};
+  events.forEach(function(x){if(x.severity&&dist.hasOwnProperty(x.severity))dist[x.severity]++;});
+  var total=events.length||1;
+  var cfg={critical:{c:'#DC2626',label:'Critical'},high:{c:'#F97316',label:'High'},medium:{c:'#EF9F27',label:'Medium'},low:{c:'#1D9E75',label:'Low'}};
+  el.innerHTML='<div style="display:flex;flex-direction:column;gap:10px">'+Object.entries(dist).map(function(e){
+    var pct=Math.round(e[1]/total*100); var c=cfg[e[0]];
+    return '<div><div style="display:flex;justify-content:space-between;font-size:11px;font-weight:700;margin-bottom:3px">'
+      +'<span style="color:'+c.c+'">'+c.label+'</span><span>'+e[1]+' ('+pct+'%)</span></div>'
+      +'<div style="height:10px;background:#f3f4f6;border-radius:99px;overflow:hidden">'
+      +'<div style="width:'+pct+'%;height:100%;background:'+c.c+';border-radius:99px;transition:width .8s"></div></div></div>';
+  }).join('')+'</div>';
+}
+
+function execRenderDeptComparison(events, people) {
+  var el=document.getElementById('exec-dept-comparison'); if(!el) return;
+  var depts={};
+  events.forEach(function(x){var d=x.department||x.person_dept||'Unknown';depts[d]=(depts[d]||0)+1;});
+  var sorted=Object.entries(depts).sort(function(a,b){return b[1]-a[1];}).slice(0,8);
+  var maxV=sorted[0]?.[1]||1;
+  if(!sorted.length){el.innerHTML='<div style="color:var(--text2);font-size:11px;text-align:center;padding:10px">No department data</div>';return;}
+  el.innerHTML=sorted.map(function(e){
+    var pct=Math.round(e[1]/maxV*100);
+    var c=e[1]>=5?'#DC2626':e[1]>=3?'#F97316':'#185FA5';
+    return '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">'
+      +'<div style="font-size:11px;min-width:80px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+escH(e[0])+'</div>'
+      +'<div style="flex:1;height:12px;background:#f3f4f6;border-radius:99px;overflow:hidden">'
+      +'<div style="width:'+pct+'%;height:100%;background:'+c+';border-radius:99px;transition:width .8s"></div></div>'
+      +'<span style="font-size:11px;font-weight:800;color:'+c+';min-width:16px">'+e[1]+'</span></div>';
+  }).join('');
+}
+
+function execRenderContractorComparison(events) {
+  var el=document.getElementById('exec-contractor-comparison'); if(!el) return;
+  var empCount=events.filter(function(x){return x.ws1_contract_type==='employee'||(!x.ws1_contract_type&&x.person_name);}).length;
+  var conCount=events.filter(function(x){return x.ws1_contract_type==='contractor';}).length;
+  var visCount=events.filter(function(x){return x.ws1_contract_type==='visitor';}).length;
+  var unkCount=events.length-empCount-conCount-visCount;
+  var data=[{label:'Employee',cnt:empCount,c:'#185FA5'},{label:'Contractor',cnt:conCount,c:'#C2410C'},{label:'Visitor',cnt:visCount,c:'#EF9F27'},{label:'Unknown',cnt:unkCount>0?unkCount:0,c:'#9CA3AF'}].filter(function(x){return x.cnt>0;});
+  var total=events.length||1;
+  el.innerHTML=data.map(function(d){
+    var pct=Math.round(d.cnt/total*100);
+    return '<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid #f3f4f6">'
+      +'<span style="font-size:14px;min-width:16px">'+{Employee:'👤',Contractor:'🦺',Visitor:'👥',Unknown:'❓'}[d.label]+'</span>'
+      +'<div style="flex:1"><div style="font-size:11px;font-weight:600;margin-bottom:2px">'+d.label+'</div>'
+      +'<div style="height:6px;background:#f3f4f6;border-radius:99px;overflow:hidden">'
+      +'<div style="width:'+pct+'%;height:100%;background:'+d.c+';border-radius:99px;transition:width .8s"></div></div></div>'
+      +'<span style="font-size:12px;font-weight:800;color:'+d.c+'">'+d.cnt+'</span>'
+      +'</div>';
+  }).join('');
+}
+
+function execRenderIncidentTypes(events) {
+  var el=document.getElementById('exec-incident-types'); if(!el) return;
+  var types={}; events.forEach(function(x){var t=x.event_type||'other';types[t]=(types[t]||0)+1;});
+  var sorted=Object.entries(types).sort(function(a,b){return b[1]-a[1];}).slice(0,8);
+  var maxV=sorted[0]?.[1]||1;
+  el.innerHTML=sorted.map(function(e){
+    var cfg=window.IMS_TYPE_CFG?IMS_TYPE_CFG[e[0]]:{emoji:'📋',label:e[0],color:'#6B7280'};
+    var pct=Math.round(e[1]/maxV*100);
+    return '<div style="display:flex;align-items:center;gap:6px;margin-bottom:5px">'
+      +'<span style="font-size:13px;width:18px">'+cfg.emoji+'</span>'
+      +'<div style="flex:1;min-width:0"><div style="font-size:11px;font-weight:600;margin-bottom:1px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+escH(cfg.label||e[0])+'</div>'
+      +'<div style="height:5px;background:#f3f4f6;border-radius:99px;overflow:hidden">'
+      +'<div style="width:'+pct+'%;height:100%;background:'+(cfg.color||'#185FA5')+';border-radius:99px"></div></div></div>'
+      +'<span style="font-size:11px;font-weight:800;color:'+(cfg.color||'#185FA5')+';min-width:20px;text-align:right">'+e[1]+'</span></div>';
+  }).join('');
+}
+
+function execRenderLostTime(events) {
+  var el=document.getElementById('exec-lost-time'); var labEl=document.getElementById('exec-lt-labels');
+  if(!el) return;
+  var yr=execData.yr||new Date().getFullYear();
+  var months=[];
+  for(var i=0;i<12;i++){
+    var mo=String(i+1).padStart(2,'0');
+    var ltDays=events.filter(function(x){return (x.event_date||'').startsWith(yr+'-'+mo);}).reduce(function(s,x){return s+(parseInt(x.lost_time_days)||0);},0);
+    months.push({label:['J','F','M','A','M','J','J','A','S','O','N','D'][i],d:ltDays});
+  }
+  var maxV=Math.max(...months.map(function(m){return m.d;}),1);
+  el.innerHTML=months.map(function(m){
+    var h=Math.max(Math.round(m.d/maxV*110),m.d>0?4:0);
+    return '<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:1px">'
+      +'<span style="font-size:9px;font-weight:700;color:var(--text2)">'+m.d+'</span>'
+      +'<div style="width:100%;height:'+h+'px;background:#C2410C;border-radius:3px 3px 0 0;min-height:2px"></div>'
+      +'</div>';
+  }).join('');
+  if(labEl) labEl.innerHTML=months.map(function(m){return '<div style="flex:1;text-align:center;font-size:9px;color:var(--text2)">'+m.label+'</div>';}).join('');
+}
+
+function execRenderLocationRank(events) {
+  var el=document.getElementById('exec-location-rank'); if(!el) return;
+  var locs={}; events.forEach(function(x){if(x.location){var l=x.location.trim().substring(0,30);locs[l]=(locs[l]||0)+1;}});
+  var sorted=Object.entries(locs).sort(function(a,b){return b[1]-a[1];}).slice(0,8);
+  if(!sorted.length){el.innerHTML='<div style="color:var(--text2);font-size:11px;text-align:center;padding:10px">No location data</div>';return;}
+  var maxV=sorted[0][1];
+  el.innerHTML='<div style="overflow:auto"><table style="width:100%;border-collapse:collapse;font-size:11px"><thead><tr style="background:#f3f4f6"><th style="padding:5px 8px;text-align:left">Rank</th><th style="padding:5px 8px;text-align:left">Location</th><th style="padding:5px 8px;text-align:center">Incidents</th><th style="padding:5px 8px">Risk bar</th></tr></thead><tbody>'
+    +sorted.map(function(e,i){
+      var pct=Math.round(e[1]/maxV*100);
+      var c=e[1]>=5?'#DC2626':e[1]>=3?'#F97316':'#185FA5';
+      return '<tr style="border-bottom:1px solid #f3f4f6"><td style="padding:5px 8px;font-weight:700;color:'+c+'">#'+(i+1)+'</td>'
+        +'<td style="padding:5px 8px;font-weight:600">'+escH(e[0])+'</td>'
+        +'<td style="padding:5px 8px;text-align:center;font-weight:800;color:'+c+'">'+e[1]+'</td>'
+        +'<td style="padding:5px 8px"><div style="height:6px;background:#f3f4f6;border-radius:99px;width:80px;overflow:hidden"><div style="width:'+pct+'%;height:100%;background:'+c+';border-radius:99px"></div></div></td></tr>';
+    }).join('')+'</tbody></table></div>';
+}
+
+function execRenderComplianceCategories(legal) {
+  var el=document.getElementById('exec-compliance-cat'); if(!el) return;
+  var cats={}; var catCounts={};
+  legal.forEach(function(x){var c=x.category||'General'; if(!cats[c]){cats[c]=0;catCounts[c]=0;} cats[c]+=(parseFloat(x.compliance_score)||0); catCounts[c]++;});
+  var sorted=Object.entries(cats).map(function(e){return{cat:e[0],avg:Math.round(e[1]/(catCounts[e[0]]||1))};}).sort(function(a,b){return a.avg-b.avg;});
+  if(!sorted.length){el.innerHTML='<div style="color:var(--text2);font-size:11px;text-align:center;padding:10px">No compliance data</div>';return;}
+  el.innerHTML=sorted.map(function(d){
+    var c=d.avg>=80?'#1D9E75':d.avg>=60?'#EF9F27':'#DC2626';
+    return '<div style="display:flex;align-items:center;gap:8px;margin-bottom:5px">'
+      +'<div style="font-size:11px;min-width:100px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+escH(d.cat)+'</div>'
+      +'<div style="flex:1;height:8px;background:#f3f4f6;border-radius:99px;overflow:hidden">'
+      +'<div style="width:'+d.avg+'%;height:100%;background:'+c+';border-radius:99px;transition:width .8s"></div></div>'
+      +'<span style="font-size:11px;font-weight:800;color:'+c+';min-width:35px;text-align:right">'+d.avg+'%</span></div>';
+  }).join('');
+}
+
+function execRenderCAAge(actions) {
+  var el=document.getElementById('exec-ca-age'); if(!el) return;
+  var now=new Date();
+  var open=actions.filter(function(x){return x.status!=='closed';});
+  var groups={'<7 days':0,'7-30 days':0,'30-90 days':0,'>90 days':0,'No due date':0};
+  open.forEach(function(x){
+    var d=x.target_date||x.due_date;
+    if(!d){groups['No due date']++;return;}
+    var diff=Math.floor((now-new Date(d))/86400000);
+    if(diff<7)groups['<7 days']++;
+    else if(diff<30)groups['7-30 days']++;
+    else if(diff<90)groups['30-90 days']++;
+    else groups['>90 days']++;
+  });
+  var total=open.length||1;
+  var colors={'<7 days':'#1D9E75','7-30 days':'#EF9F27','30-90 days':'#F97316','>90 days':'#DC2626','No due date':'#9CA3AF'};
+  el.innerHTML=Object.entries(groups).map(function(e){
+    var pct=Math.round(e[1]/total*100);
+    return '<div style="display:flex;align-items:center;gap:8px;margin-bottom:5px">'
+      +'<div style="font-size:11px;min-width:80px;font-weight:600">'+e[0]+'</div>'
+      +'<div style="flex:1;height:10px;background:#f3f4f6;border-radius:99px;overflow:hidden">'
+      +'<div style="width:'+pct+'%;height:100%;background:'+colors[e[0]]+';border-radius:99px;transition:width .8s"></div></div>'
+      +'<span style="font-size:11px;font-weight:800;color:'+colors[e[0]]+';min-width:20px;text-align:right">'+e[1]+'</span></div>';
+  }).join('');
+}
+
+function execRenderESGScorecard(compPct, spills, events) {
+  var el=document.getElementById('exec-esg-scorecard'); if(!el) return;
+  var envEvents=events.filter(function(x){return x.event_type==='environmental';});
+  var scores=[
+    {label:'Environmental compliance',score:Math.max(0,100-envEvents.length*10-spills*5),icon:'🌿'},
+    {label:'Legal compliance',score:compPct,icon:'⚖️'},
+    {label:'Incident severity',score:Math.max(0,100-events.filter(function(x){return ['critical','high'].includes(x.severity);}).length*8),icon:'🦺'},
+    {label:'Waste management',score:spills>0?Math.max(20,80-spills*15):95,icon:'♻️'},
+  ];
+  el.innerHTML=scores.map(function(s){
+    var c=s.score>=80?'#1D9E75':s.score>=60?'#EF9F27':'#DC2626';
+    return '<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid #f3f4f6">'
+      +'<span style="font-size:14px">'+s.icon+'</span>'
+      +'<div style="flex:1"><div style="font-size:11px;font-weight:600;margin-bottom:2px">'+s.label+'</div>'
+      +'<div style="height:6px;background:#f3f4f6;border-radius:99px;overflow:hidden">'
+      +'<div style="width:'+s.score+'%;height:100%;background:'+c+';border-radius:99px;transition:width .8s"></div></div></div>'
+      +'<span style="font-size:13px;font-weight:800;color:'+c+'">'+s.score+'%</span></div>';
+  }).join('');
+}
+
+function execRenderSustainability(waste, fuel) {
+  var el=document.getElementById('exec-sustainability'); if(!el) return;
+  var totalWaste=waste.reduce(function(s,x){return s+(parseFloat(x.quantity_kg)||0);},0);
+  var hazWaste=waste.filter(function(x){return x.waste_type==='hazardous';}).reduce(function(s,x){return s+(parseFloat(x.quantity_kg)||0);},0);
+  var totalFuel=fuel.reduce(function(s,x){return s+(parseFloat(x.volume_litres)||0);},0);
+  var totalCO2=fuel.reduce(function(s,x){return s+(parseFloat(x.co2_tonnes||x.co2)||0);},0);
+  var metrics=[
+    {label:'Total waste',value:(totalWaste/1000).toFixed(1)+' t',icon:'🗑️',color:'#0891B2'},
+    {label:'Hazardous waste',value:(hazWaste/1000).toFixed(1)+' t',icon:'☢️',color:'#DC2626'},
+    {label:'Fuel consumption',value:totalFuel.toFixed(0)+' L',icon:'⛽',color:'#EF9F27'},
+    {label:'Carbon footprint',value:totalCO2.toFixed(1)+' tCO₂e',icon:'🌡️',color:'#854F0B'},
+  ];
+  el.innerHTML=metrics.map(function(m){
+    return '<div style="display:flex;align-items:center;justify-content:space-between;padding:6px 8px;background:#f9fafb;border-radius:6px;margin-bottom:4px">'
+      +'<div style="display:flex;align-items:center;gap:6px"><span style="font-size:14px">'+m.icon+'</span><span style="font-size:11px;font-weight:600">'+m.label+'</span></div>'
+      +'<span style="font-size:12px;font-weight:800;color:'+m.color+'">'+m.value+'</span></div>';
+  }).join('');
+}
+
+async function execAIReport(type) {
+  var outEl = document.getElementById('exec-ai-output');
+  var phEl  = document.getElementById('exec-ai-placeholder');
+  if(!outEl) return;
+  outEl.style.display='block'; if(phEl) phEl.style.display='none';
+  outEl.textContent = '⏳ Generating '+type+' report...';
+  var d = execData;
+  var ctx = 'Company HSE data: '+d.events?.length+' incidents YTD, '
+    + d.events?.filter(function(x){return x.injury_type==='lti'||x.lost_time_days>0;}).length+' LTIs, '
+    + d.actions?.filter(function(x){return x.status!=='closed';}).length+' open actions, '
+    + d.people?.length+' workers, '
+    + d.spills?.length+' environmental spills, '
+    + d.certs?.length+' certifications tracked.';
+  var prompts = {
+    executive_summary: 'Write a concise executive summary (200 words) of our HSE performance for board review. Include LTIFR, compliance rate, key risks, and 3 strategic recommendations.',
+    monthly_report: 'Write a monthly HSE management report (300 words) covering: incident summary, compliance status, training, permit-to-work, corrective actions progress, and next month priorities.',
+    annual_stats: 'Generate an annual HSE statistics summary (300 words) with LTIFR/TRIR calculations, year-on-year trends, top incident causes, compliance achievements, and year-ahead targets.',
+  };
+  var prompt = prompts[type] || 'Generate a comprehensive HSE report (300 words) covering safety performance, compliance, environmental impact, and strategic recommendations.';
+  try {
+    var resp = await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1200,messages:[{role:'user',content:ctx+'\n\n'+prompt}]})});
+    var data = await resp.json();
+    outEl.textContent = (data.content||[]).map(function(c){return c.text||'';}).join('') || 'No report generated.';
+  } catch(e) { outEl.textContent = 'AI unavailable: '+e.message; }
+}
+
+async function execGenerateReport(type) {
+  var outEl=document.getElementById('exec-report-output');
+  var textEl=document.getElementById('exec-report-text');
+  var titleEl=document.getElementById('exec-report-title');
+  if(!outEl||!textEl) return;
+  outEl.style.display='block';
+  var titles={monthly:'Monthly HSE Report',board:'Board Dashboard Report',annual:'Annual HSE Statistics',esg:'ESG Report',sustainability:'Sustainability Report',compliance:'Compliance Report'};
+  if(titleEl) titleEl.textContent = titles[type]||'HSE Report';
+  textEl.textContent = '⏳ Generating '+titles[type]+'...';
+  var d = execData;
+  var yr = d.yr || new Date().getFullYear();
+  var ltiCnt = (d.events||[]).filter(function(x){return x.injury_type==='lti'||x.lost_time_days>0;}).length;
+  var recCnt = (d.events||[]).filter(function(x){return x.injury_type||['injury','lti','medical_treatment'].includes(x.event_type);}).length;
+  var manhours = (d.people||[]).length * 2000;
+  var ltifr = manhours>0?(ltiCnt/manhours*1000000).toFixed(2):'N/A';
+  var trir = manhours>0?(recCnt/manhours*200000).toFixed(2):'N/A';
+  var lScores=(d.legal||[]).filter(function(x){return x.compliance_score!=null;}).map(function(x){return parseFloat(x.compliance_score)||0;});
+  var compPct=lScores.length>0?Math.round(lScores.reduce(function(a,b){return a+b;},0)/lScores.length):0;
+  var ctx = 'Organisation HSE data for '+yr+':\n'
+    +'- Total incidents: '+(d.events||[]).length+'\n'
+    +'- LTIs: '+ltiCnt+', Recordable: '+recCnt+'\n'
+    +'- LTIFR: '+ltifr+', TRIR: '+trir+'\n'
+    +'- Workforce: '+(d.people||[]).length+' active\n'
+    +'- Legal compliance: '+compPct+'%\n'
+    +'- Open actions: '+(d.actions||[]).filter(function(x){return x.status!=='closed';}).length+'\n'
+    +'- Environmental incidents: '+(d.events||[]).filter(function(x){return x.event_type==='environmental';}).length+'\n'
+    +'- Spills: '+(d.spills||[]).length+'\n';
+  var prompts = {
+    monthly: ctx+'\n\nWrite a professional Monthly HSE Report for management. Include: Executive summary, Incident statistics, Compliance status, Training update, Actions update, Environmental performance, and Priorities for next month. Professional tone, ~400 words.',
+    board: ctx+'\n\nWrite a Board-Level HSE Dashboard Report. Include: Safety performance vs targets, Critical incidents, Compliance headline, Key risks and mitigations, Executive decisions required. Board presentation style, ~350 words.',
+    annual: ctx+'\n\nWrite an Annual HSE Statistics Report. Include: Year in review, LTIFR/TRIR with benchmark comparison, Incident trends, Top root causes, Compliance achievements, Lessons learned, Targets for next year. ~500 words.',
+    esg: ctx+'\n\nWrite an ESG (Environmental, Social, Governance) Report section on Safety & Health. Cover: E - environmental incidents, spills, emissions; S - worker safety, training, wellbeing; G - compliance, governance, reporting. Aligned with GRI standards. ~400 words.',
+    sustainability: ctx+'\n\nWrite a Sustainability Report HSE chapter. Cover: Health & safety performance, Environmental footprint, Social responsibility (worker welfare, training), Resource efficiency, and future sustainability targets. GRI/UN SDG aligned. ~400 words.',
+    compliance: ctx+'\n\nWrite a Compliance Status Report. Cover: Legal compliance score, Gap analysis summary, Regulatory notifications, Open corrective actions by age, Audit performance, Compliance calendar outlook. ~350 words.',
+  };
+  try {
+    var resp = await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1500,messages:[{role:'user',content:prompts[type]||ctx+'\n\nWrite a comprehensive HSE report. ~400 words.'}]})});
+    var data = await resp.json();
+    textEl.textContent = (data.content||[]).map(function(c){return c.text||'';}).join('') || 'No report generated.';
+  } catch(e) { textEl.textContent = 'AI unavailable: '+e.message; }
+}
+
+function execExportReport() {
+  var report = document.getElementById('exec-report-text')?.textContent;
+  if(!report||report.includes('⏳')||report.includes('No report')) {
+    toast('Generate a report first using the Reports tab', false); return;
+  }
+  var blob = new Blob([report], {type:'text/plain'});
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a'); a.href=url; a.download='HSE_Report_'+new Date().toISOString().slice(0,10)+'.txt'; a.click();
+  URL.revokeObjectURL(url); toast('Report downloaded!');
+}
+
 
 let aiOpen=false,aiHist=[];
 function toggleAI(){aiOpen=!aiOpen;document.getElementById('ai-window').className='ai-window'+(aiOpen?' open':'');}
@@ -1254,15 +1932,6 @@ const rep=await callAI(aiHist);aiHist.push({role:'assistant',content:rep});th.te
 }
 async function askAI(q){if(!aiOpen)toggleAI();document.getElementById('ai-input').value=q;sendAI();}
 function addMsg(text,cls){const m=document.getElementById('ai-messages');const d=document.createElement('div');d.className='ai-msg '+cls;d.textContent=text;m.appendChild(d);m.scrollTop=m.scrollHeight;return d;}
-async function genDashAI(){
-const el=document.getElementById('ai-dash-insights');if(!el)return;
-try{
-const ctx=await getCtx();
-const rep=await callAI([{role:'user',content:'HSE Data:\n'+ctx+'\n\nProvide exactly 3 brief dashboard insights (1-2 sentences). JSON array: [{"type":"info|warn|danger","title":"...","body":"..."}]'}]);
-const ins=JSON.parse(rep.replace(/```json|```/g,'').trim());
-el.innerHTML=ins.map(i=>'<div class="insight-card '+(i.type==='warn'?'warn':i.type==='danger'?'danger':'')+'"><div class="insight-title">'+i.title+'</div><div class="insight-body">'+i.body+'</div></div>').join('');
-}catch(e){el.innerHTML='';}
-}
 async function genFullAI(){
 document.getElementById('ai-insights-content').innerHTML='<div class="loading-msg">Generating analysis...</div>';
 document.getElementById('ai-insights-date').textContent='Updated: '+new Date().toLocaleString('en-GB');
@@ -16968,13 +17637,15 @@ async function compSave() {
   } catch(e) { toast(e.message, false); }
 }
 
+
 </script>
 </head>
 <body>
 <div id="login-screen"><div class="login-box"><div class="login-logo">AURIS360</div><div class="login-sub">Powered by SEPHS Consulting — HSE Management Platform</div><div class="login-err" id="login-err"></div><div class="form-group"><label class="form-label">Email</label><input type="email" id="login-email" placeholder="your@email.com"/></div><div class="form-group"><label class="form-label">Password</label><input type="password" id="login-pw" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()"/></div><button class="btn btn-primary" style="width:100%;justify-content:center" onclick="doLogin()" id="login-btn"><i class="ti ti-login"></i>Sign In</button><div style="margin-top:18px;padding-top:16px;border-top:1px solid var(--border)"><div style="font-size:12px;color:var(--text2);margin-bottom:10px;font-weight:600">New user — register:</div><div class="form-group"><label class="form-label">Full name</label><input type="text" id="reg-name" placeholder="Full name"/></div><div class="form-row"><div class="form-group"><label class="form-label">Role</label><select id="reg-role"><option value="inspector">Inspector</option><option value="manager">HSE Manager</option><option value="admin">Company Admin</option><option value="sephs_admin">SEPHS Admin</option></select></div><div class="form-group"><label class="form-label">Company</label><select id="reg-company"><option value="">Loading...</option></select></div></div><button class="btn" style="width:100%;justify-content:center" onclick="doRegister()"><i class="ti ti-user-plus"></i>Register</button></div></div></div>
 <div id="app" style="display:none">
 <div class="layout">
-<div class="sidebar"><div class="sidebar-top"><img id="co-logo-img" class="co-logo" src="" alt="logo"/><div id="co-initials-div" class="co-initials">A</div><div class="sb-company" id="sb-company">AURIS360</div><div class="sb-user" id="sb-user">—</div><span class="sb-role" id="sb-role">—</span></div><span class="nav-section">Main</span><div class="nav-item active" onclick="showPage('dashboard',this)"><i class="ti ti-layout-dashboard"></i>Dashboard</div><div class="nav-item" id="nav-ai" onclick="showPage('ai-insights',this)"><i class="ti ti-brain"></i>AI Insights</div><span class="nav-section">HSE Modules</span><div class="nav-item" onclick="showPage('kpi',this)"><i class="ti ti-target"></i>Objectives & KPIs</div><div class="nav-item" onclick="showPage('workschedule',this)"><i class="ti ti-calendar-event"></i>Work Schedule</div>
+<div class="sidebar"><div class="sidebar-top"><img id="co-logo-img" class="co-logo" src="" alt="logo"/><div id="co-initials-div" class="co-initials">A</div><div class="sb-company" id="sb-company">AURIS360</div><div class="sb-user" id="sb-user">—</div><span class="sb-role" id="sb-role">—</span></div><span class="nav-section">Main</span><div class="nav-item active" onclick="showPage('dashboard',this)"><i class="ti ti-layout-dashboard"></i>Dashboard</div>
+<div class="nav-item" id="nav-executive" onclick="showPage('executive',this)"><i class="ti ti-chart-bar"></i>Executive Dashboard</div><div class="nav-item" id="nav-ai" onclick="showPage('ai-insights',this)"><i class="ti ti-brain"></i>AI Insights</div><span class="nav-section">HSE Modules</span><div class="nav-item" onclick="showPage('kpi',this)"><i class="ti ti-target"></i>Objectives & KPIs</div><div class="nav-item" onclick="showPage('workschedule',this)"><i class="ti ti-calendar-event"></i>Work Schedule</div>
 <div class="nav-item" onclick="showPage('events',this)"><i class="ti ti-alert-triangle"></i>Incident Management</div><div class="nav-item" onclick="showPage('observation',this)"><i class="ti ti-eye"></i>BBS Observations</div>
 <div class="nav-item" onclick="showPage('inspection',this)"><i class="ti ti-clipboard-check"></i>Site Inspection</div><div class="nav-item" onclick="showPage('risk',this)"><i class="ti ti-shield-check"></i>Risk Assessment</div><div class="nav-item" onclick="showPage('tools',this)"><i class="ti ti-tools"></i>Tools & Equipment</div>
 <div class="nav-item" onclick="showPage('permit',this)"><i class="ti ti-key"></i>Permit to Work</div>
@@ -16986,10 +17657,421 @@ async function compSave() {
 <div class="nav-item" onclick="showPage('sop',this)"><i class="ti ti-file-description"></i>SOP Generator</div>
 <div class="nav-item" id="nav-docs" onclick="showPage('documents',this)"><i class="ti ti-files"></i>Document Control</div><div class="nav-item" onclick="showPage('people',this)"><i class="ti ti-id-badge"></i>People</div><div class="nav-item" id="nav-users" onclick="showPage('users',this)"><i class="ti ti-users"></i>User Management</div><div class="nav-item" id="nav-admin" style="display:none" onclick="showPage('admin',this)"><i class="ti ti-building"></i>Companies</div><div class="nav-item" id="nav-settings" onclick="showPage('settings',this)"><i class="ti ti-settings"></i>Settings</div><div class="sb-footer"><button class="btn btn-sm" style="flex:1;justify-content:center;color:var(--red)" onclick="doLogout()"><i class="ti ti-logout"></i>Sign out</button></div></div>
 <div class="main">
+<!-- ══════════════════════════════════════════════════════ -->
+<!-- DASHBOARD (Real-time HSE)                             -->
+<!-- ══════════════════════════════════════════════════════ -->
 <div id="page-dashboard" class="page active">
-<div class="page-header"><div class="page-title">Dashboard</div><span id="dash-label" style="font-size:12px;color:var(--text2)"></span></div><div class="db-bar"><span class="dot"></span>Live — Connected to Supabase</div><div id="role-banner-dash"></div><div class="metrics"><div class="metric"><div class="metric-label">KPIs on track</div><div class="metric-value" id="d-kpis" style="color:var(--green)">—</div></div><div class="metric"><div class="metric-label">Open events</div><div class="metric-value" id="d-events" style="color:var(--amber)">—</div></div><div class="metric"><div class="metric-label">Open actions</div><div class="metric-value" id="d-actions" style="color:var(--red)">—</div></div><div class="metric"><div class="metric-label">Active people</div><div class="metric-value" id="d-people">—</div></div><div class="metric"><div class="metric-label">Active permits</div><div class="metric-value" id="d-permits">—</div></div><div class="metric"><div class="metric-label">Certs expiring</div><div class="metric-value" id="d-certs" style="color:var(--red)">—</div></div></div><div id="ai-dash-insights" style="margin-bottom:16px"></div><div class="grid2"><div class="card"><div class="card-title">Recent events</div><div id="dash-events"><div class="loading-msg">Loading...</div></div></div><div class="card"><div class="card-title">Top open actions</div><div id="dash-actions"><div class="loading-msg">Loading...</div></div></div></div><div class="grid2"><div class="card"><div class="card-title">Recent inspections</div><div id="dash-inspections-tbl"><div class="loading-msg">Loading...</div></div></div><div class="card"><div class="card-title">Expiring certifications</div><div id="dash-certs"><div class="loading-msg">Loading...</div></div></div></div></div>
-<div id="page-ai-insights" class="page">
-<div class="page-header"><div class="page-title">AI Insights</div><button class="btn btn-primary" onclick="generateFullInsights()"><i class="ti ti-refresh"></i>Refresh analysis</button></div><div class="card"><div class="card-title"><span><i class="ti ti-brain" style="color:var(--green);margin-right:6px"></i>HSE Performance Analysis</span><span id="ai-insights-date" style="font-size:11px;font-weight:400;color:var(--text2)"></span></div><div id="ai-insights-content"><div class="loading-msg">Click Refresh to generate AI insights...</div></div></div><div class="grid2"><div class="card"><div class="card-title"><i class="ti ti-trending-up" style="color:var(--green);margin-right:6px"></i>KPI Recommendations</div><div id="ai-kpi-recs"><div class="loading-msg">Loading...</div></div></div><div class="card"><div class="card-title"><i class="ti ti-alert-circle" style="color:var(--amber);margin-right:6px"></i>Risk Hotspots</div><div id="ai-risk-hotspots"><div class="loading-msg">Loading...</div></div></div></div></div>
+<div class="page-header" style="margin-bottom:10px">
+<div>
+<div class="page-title">Real-Time HSE Dashboard</div>
+<div style="font-size:12px;color:var(--text2)" id="dash-label">Live operational overview — refreshes automatically</div>
+</div>
+<div style="display:flex;gap:8px;align-items:center">
+<select id="dash-dept-filter" onchange="loadDash()" style="padding:6px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px">
+<option value="">All departments</option>
+</select>
+<button class="btn btn-sm" onclick="loadDash()" style="gap:4px"><i class="ti ti-refresh" id="dash-refresh-icon"></i>Refresh</button>
+<button class="btn btn-sm btn-primary" onclick="showPage('executive',document.getElementById('nav-executive'))"><i class="ti ti-chart-bar"></i>Executive View</button>
+</div>
+</div>
+
+<!-- Role banner -->
+<div id="role-banner-dash" style="display:none;margin-bottom:10px"></div>
+
+<!-- Critical alert bar -->
+<div id="dash-alert-bar" style="display:none;margin-bottom:12px;background:#FCEBEB;border:2px solid #DC2626;border-radius:10px;padding:10px 16px;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+<i class="ti ti-alert-triangle" style="color:#DC2626;font-size:20px;flex-shrink:0"></i>
+<div id="dash-alert-text" style="flex:1;font-size:12px;font-weight:600;color:#A32D2D"></div>
+<button class="btn btn-sm" style="background:#DC2626;color:#fff;border-color:#DC2626;flex-shrink:0" onclick="showPage('events',document.querySelector('.nav-item'))">View incidents</button>
+</div>
+
+<!-- KPI Metrics Row 1: Safety -->
+<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:8px;margin-bottom:10px">
+<div class="card" style="padding:10px 12px;border-left:4px solid #DC2626;cursor:pointer" onclick="showPage('events',null)">
+<div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;letter-spacing:.05em">Open Incidents</div>
+<div style="font-size:24px;font-weight:800;color:#DC2626" id="d-events">—</div>
+<div style="font-size:10px;color:var(--text2)" id="d-events-sub">this month</div>
+</div>
+<div class="card" style="padding:10px 12px;border-left:4px solid #C2410C;cursor:pointer" onclick="showPage('actions',null)">
+<div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;letter-spacing:.05em">Open Actions</div>
+<div style="font-size:24px;font-weight:800;color:#C2410C" id="d-actions">—</div>
+<div style="font-size:10px;color:var(--text2)" id="d-actions-sub">overdue</div>
+</div>
+<div class="card" style="padding:10px 12px;border-left:4px solid #185FA5;cursor:pointer" onclick="showPage('events',null)">
+<div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;letter-spacing:.05em">LTIFR</div>
+<div style="font-size:24px;font-weight:800;color:#185FA5" id="d-ltifr">—</div>
+<div style="font-size:10px;color:var(--text2)">per million hrs</div>
+</div>
+<div class="card" style="padding:10px 12px;border-left:4px solid #5B21B6;cursor:pointer" onclick="showPage('events',null)">
+<div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;letter-spacing:.05em">TRIR</div>
+<div style="font-size:24px;font-weight:800;color:#5B21B6" id="d-trir">—</div>
+<div style="font-size:10px;color:var(--text2)">total recordable</div>
+</div>
+<div class="card" style="padding:10px 12px;border-left:4px solid #1D9E75;cursor:pointer" onclick="showPage('people',null)">
+<div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;letter-spacing:.05em">Workforce</div>
+<div style="font-size:24px;font-weight:800;color:#1D9E75" id="d-people">—</div>
+<div style="font-size:10px;color:var(--text2)">active workers</div>
+</div>
+<div class="card" style="padding:10px 12px;border-left:4px solid #EF9F27;cursor:pointer" onclick="showPage('permit',null)">
+<div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;letter-spacing:.05em">Active PTW</div>
+<div style="font-size:24px;font-weight:800;color:#EF9F27" id="d-permits">—</div>
+<div style="font-size:10px;color:var(--text2)">live permits</div>
+</div>
+<div class="card" style="padding:10px 12px;border-left:4px solid #0891B2;cursor:pointer" onclick="showPage('training',null)">
+<div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;letter-spacing:.05em">Training %</div>
+<div style="font-size:24px;font-weight:800;color:#0891B2" id="d-training-pct">—</div>
+<div style="font-size:10px;color:var(--text2)">compliance</div>
+</div>
+</div>
+
+<!-- KPI Metrics Row 2: Compliance & Environment -->
+<div style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:12px">
+<div class="card" style="padding:10px 12px;border-left:4px solid #3B6D11;cursor:pointer" onclick="showPage('legal',null)">
+<div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;letter-spacing:.05em">Compliance</div>
+<div style="font-size:24px;font-weight:800;color:#3B6D11" id="d-compliance">—</div>
+<div id="d-compliance-bar" style="height:4px;background:#f3f4f6;border-radius:99px;margin-top:4px;overflow:hidden"><div id="d-compliance-bar-inner" style="height:100%;background:#1D9E75;width:0%;transition:width .8s;border-radius:99px"></div></div>
+</div>
+<div class="card" style="padding:10px 12px;border-left:4px solid #065F46;cursor:pointer" onclick="showPage('esg',null)">
+<div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;letter-spacing:.05em">Env Incidents</div>
+<div style="font-size:24px;font-weight:800;color:#065F46" id="d-env">—</div>
+<div style="font-size:10px;color:var(--text2)">year to date</div>
+</div>
+<div class="card" style="padding:10px 12px;border-left:4px solid #B45309;cursor:pointer" onclick="showPage('training',null)">
+<div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;letter-spacing:.05em">Certs Expiring</div>
+<div style="font-size:24px;font-weight:800;color:#B45309" id="d-certs">—</div>
+<div style="font-size:10px;color:var(--text2);white-space:nowrap">&lt; 60 days</div>
+</div>
+<div class="card" style="padding:10px 12px;border-left:4px solid #185FA5;cursor:pointer" onclick="showPage('inspection',null)">
+<div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;letter-spacing:.05em">Audit Score</div>
+<div style="font-size:24px;font-weight:800;color:#185FA5" id="d-audit-score">—</div>
+<div style="font-size:10px;color:var(--text2)">last inspection</div>
+</div>
+<div class="card" style="padding:10px 12px;border-left:4px solid #8B5CF6;cursor:pointer" onclick="showPage('kpi',null)">
+<div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;letter-spacing:.05em">KPIs On Track</div>
+<div style="font-size:24px;font-weight:800;color:#8B5CF6" id="d-kpis">—</div>
+<div style="font-size:10px;color:var(--text2)" id="d-kpis-sub">of total</div>
+</div>
+</div>
+
+<!-- Main charts row -->
+<div style="display:grid;grid-template-columns:2fr 1fr 1fr;gap:12px;margin-bottom:12px">
+<!-- 12-month incident trend -->
+<div class="card">
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+<div class="card-title" style="margin:0">Incident Trend — 12 Months</div>
+<div style="display:flex;gap:6px">
+<span style="font-size:10px;display:flex;align-items:center;gap:3px"><span style="width:10px;height:10px;background:#DC2626;border-radius:2px;display:inline-block"></span>Incidents</span>
+<span style="font-size:10px;display:flex;align-items:center;gap:3px"><span style="width:10px;height:10px;background:#EF9F27;border-radius:2px;display:inline-block"></span>Near miss</span>
+</div>
+</div>
+<div id="dash-trend-chart" style="height:120px;display:flex;align-items:flex-end;gap:3px;padding:0 4px">
+<div class="loading-msg" style="font-size:11px;width:100%;text-align:center">Loading...</div>
+</div>
+<div id="dash-trend-labels" style="display:flex;gap:3px;margin-top:4px;padding:0 4px"></div>
+</div>
+<!-- Severity donut -->
+<div class="card">
+<div class="card-title" style="margin-bottom:10px">Severity Breakdown</div>
+<div id="dash-severity-chart" style="display:flex;flex-direction:column;gap:6px">
+<div class="loading-msg" style="font-size:11px">Loading...</div>
+</div>
+</div>
+<!-- Compliance ring -->
+<div class="card">
+<div class="card-title" style="margin-bottom:10px">Compliance Overview</div>
+<div id="dash-compliance-ring" style="display:flex;flex-direction:column;gap:6px">
+<div class="loading-msg" style="font-size:11px">Loading...</div>
+</div>
+</div>
+</div>
+
+<!-- Department comparison + High-risk activities -->
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+<!-- Department incident heatmap -->
+<div class="card">
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+<div class="card-title" style="margin:0">Department Incident Heatmap</div>
+<div style="font-size:10px;color:var(--text2)">incidents this year</div>
+</div>
+<div id="dash-dept-heatmap" style="display:flex;flex-direction:column;gap:5px">
+<div class="loading-msg" style="font-size:11px">Loading...</div>
+</div>
+</div>
+<!-- High-risk activities (active PTW + high-risk RA) -->
+<div class="card">
+<div class="card-title" style="margin-bottom:10px">⚠️ High-Risk Activities</div>
+<div id="dash-highrisk" style="display:flex;flex-direction:column;gap:6px">
+<div class="loading-msg" style="font-size:11px">Loading...</div>
+</div>
+</div>
+</div>
+
+<!-- Bottom row: Recent incidents + Open actions + Training compliance -->
+<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px">
+<div class="card">
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+<div class="card-title" style="margin:0">Recent Incidents</div>
+<button class="btn btn-sm" onclick="showPage('events',null)" style="font-size:10px">View all</button>
+</div>
+<div id="dash-events" style="font-size:12px"><div class="loading-msg">Loading...</div></div>
+</div>
+<div class="card">
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+<div class="card-title" style="margin:0">Priority Actions</div>
+<button class="btn btn-sm" onclick="showPage('actions',null)" style="font-size:10px">View all</button>
+</div>
+<div id="dash-actions" style="font-size:12px"><div class="loading-msg">Loading...</div></div>
+</div>
+<div class="card">
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+<div class="card-title" style="margin:0">Training Compliance</div>
+<button class="btn btn-sm" onclick="showPage('training',null)" style="font-size:10px">View all</button>
+</div>
+<div id="dash-training-compliance" style="font-size:12px"><div class="loading-msg">Loading...</div></div>
+</div>
+</div>
+
+<!-- AI Insights panel -->
+<div id="ai-dash-insights" style="margin-top:12px">
+<div class="card" style="border:2px solid #185FA5">
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+<div class="card-title" style="margin:0;color:#185FA5"><i class="ti ti-robot"></i> AI Dashboard Insights</div>
+<button class="btn btn-sm btn-primary" onclick="genDashAI()"><i class="ti ti-robot"></i>Generate insights</button>
+</div>
+<div id="dash-ai-content" style="font-size:12px;color:var(--text2);font-style:italic">Click "Generate insights" for AI-powered analysis of your HSE data.</div>
+</div>
+</div>
+
+</div><!-- end page-dashboard -->
+
+<!-- ══════════════════════════════════════════════════════ -->
+<!-- EXECUTIVE MANAGEMENT DASHBOARD                        -->
+<!-- ══════════════════════════════════════════════════════ -->
+<div id="page-executive" class="page" style="display:none">
+<div class="page-header" style="margin-bottom:10px">
+<div>
+<div class="page-title">Executive Management Dashboard</div>
+<div style="font-size:12px;color:var(--text2)">Board-level HSE performance · Monthly reports · ESG · Sustainability</div>
+</div>
+<div style="display:flex;gap:8px;align-items:center">
+<select id="exec-year-filter" onchange="loadExecutive()" style="padding:6px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px">
+<option value="">Current year</option>
+</select>
+<button class="btn btn-sm btn-primary" onclick="execExportReport()"><i class="ti ti-file-export"></i>Export report</button>
+<button class="btn btn-sm" onclick="showPage('dashboard',document.getElementById('nav-dashboard'))"><i class="ti ti-arrow-left"></i>Operational</button>
+</div>
+</div>
+
+<!-- Executive tab bar -->
+<div style="display:flex;gap:0;margin-bottom:14px;border-bottom:2px solid var(--border);overflow-x:auto">
+<button class="mtg-tab active" id="exec-tab-overview" onclick="execTab('overview',this)" style="white-space:nowrap">📊 Executive Overview</button>
+<button class="mtg-tab" id="exec-tab-safety" onclick="execTab('safety',this)" style="white-space:nowrap">🦺 Safety Performance</button>
+<button class="mtg-tab" id="exec-tab-compliance" onclick="execTab('compliance',this)" style="white-space:nowrap">✅ Compliance</button>
+<button class="mtg-tab" id="exec-tab-esg" onclick="execTab('esg',this)" style="white-space:nowrap">🌿 ESG &amp; Environment</button>
+<button class="mtg-tab" id="exec-tab-reports" onclick="execTab('reports',this)" style="white-space:nowrap">📋 Reports</button>
+</div>
+
+<!-- ── OVERVIEW ── -->
+<div id="exec-view-overview">
+<!-- Headline KPIs -->
+<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px">
+<div class="card" style="padding:14px 16px;background:linear-gradient(135deg,#7F1D1D,#DC2626);color:#fff">
+<div style="font-size:11px;font-weight:700;text-transform:uppercase;opacity:.8;margin-bottom:6px">LTIFR YTD</div>
+<div style="font-size:32px;font-weight:900" id="exec-ltifr">—</div>
+<div style="font-size:11px;opacity:.75;margin-top:3px">per million man-hours</div>
+<div style="font-size:11px;margin-top:8px" id="exec-ltifr-trend"></div>
+</div>
+<div class="card" style="padding:14px 16px;background:linear-gradient(135deg,#312e81,#5B21B6);color:#fff">
+<div style="font-size:11px;font-weight:700;text-transform:uppercase;opacity:.8;margin-bottom:6px">TRIR YTD</div>
+<div style="font-size:32px;font-weight:900" id="exec-trir">—</div>
+<div style="font-size:11px;opacity:.75;margin-top:3px">total recordable rate</div>
+<div style="font-size:11px;margin-top:8px" id="exec-trir-trend"></div>
+</div>
+<div class="card" style="padding:14px 16px;background:linear-gradient(135deg,#064E3B,#1D9E75);color:#fff">
+<div style="font-size:11px;font-weight:700;text-transform:uppercase;opacity:.8;margin-bottom:6px">Compliance</div>
+<div style="font-size:32px;font-weight:900" id="exec-compliance">—</div>
+<div style="font-size:11px;opacity:.75;margin-top:3px">overall HSE compliance</div>
+<div id="exec-compliance-prog" style="height:4px;background:rgba(255,255,255,.2);border-radius:99px;margin-top:8px;overflow:hidden"><div id="exec-compliance-prog-inner" style="height:100%;background:#fff;width:0%;transition:width 1s;border-radius:99px"></div></div>
+</div>
+<div class="card" style="padding:14px 16px;background:linear-gradient(135deg,#1e3a5f,#185FA5);color:#fff">
+<div style="font-size:11px;font-weight:700;text-transform:uppercase;opacity:.8;margin-bottom:6px">Days Since LTI</div>
+<div style="font-size:32px;font-weight:900" id="exec-days-lti">—</div>
+<div style="font-size:11px;opacity:.75;margin-top:3px">lost time injury free</div>
+</div>
+</div>
+
+<!-- Performance trend + Site comparison -->
+<div style="display:grid;grid-template-columns:2fr 1fr;gap:12px;margin-bottom:12px">
+<div class="card">
+<div class="card-title">Annual Safety Performance Trend</div>
+<div id="exec-annual-trend" style="height:140px;display:flex;align-items:flex-end;gap:4px;padding:4px">
+<div class="loading-msg" style="font-size:11px;width:100%;text-align:center">Loading...</div>
+</div>
+<div id="exec-trend-labels" style="display:flex;gap:4px;margin-top:4px"></div>
+</div>
+<div class="card">
+<div class="card-title">Risk Distribution</div>
+<div id="exec-risk-dist" style="display:flex;flex-direction:column;gap:8px">
+<div class="loading-msg" style="font-size:11px">Loading...</div>
+</div>
+</div>
+</div>
+
+<!-- Department + Contractor comparison -->
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+<div class="card">
+<div class="card-title">Department Comparison</div>
+<div id="exec-dept-comparison" style="display:flex;flex-direction:column;gap:6px">
+<div class="loading-msg" style="font-size:11px">Loading...</div>
+</div>
+</div>
+<div class="card">
+<div class="card-title">Contractor vs Employee Incidents</div>
+<div id="exec-contractor-comparison" style="display:flex;flex-direction:column;gap:8px">
+<div class="loading-msg" style="font-size:11px">Loading...</div>
+</div>
+</div>
+</div>
+
+<!-- AI Executive Summary -->
+<div class="card" style="border:2px solid #5B21B6">
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+<div><div class="card-title" style="margin:0;color:#5B21B6"><i class="ti ti-robot"></i> AI Executive Summary</div><div style="font-size:11px;color:var(--text2)">Board-ready HSE performance summary</div></div>
+<div style="display:flex;gap:6px">
+<button class="btn btn-sm" style="background:#5B21B6;color:#fff;border-color:#5B21B6" onclick="execAIReport('executive_summary')">📊 Board summary</button>
+<button class="btn btn-sm" style="background:#5B21B6;color:#fff;border-color:#5B21B6" onclick="execAIReport('monthly_report')">📋 Monthly report</button>
+<button class="btn btn-sm" style="background:#5B21B6;color:#fff;border-color:#5B21B6" onclick="execAIReport('annual_stats')">📈 Annual stats</button>
+</div>
+</div>
+<div id="exec-ai-output" style="display:none;background:#F5F3FF;border:1px solid #c4b5fd;border-radius:8px;padding:14px;font-size:13px;line-height:1.7;white-space:pre-wrap;max-height:400px;overflow-y:auto"></div>
+<div id="exec-ai-placeholder" style="font-size:12px;color:var(--text2);font-style:italic">Select a report type above to generate an AI-powered executive summary.</div>
+</div>
+</div>
+
+<!-- ── SAFETY PERFORMANCE ── -->
+<div id="exec-view-safety" style="display:none">
+<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px">
+<div class="card" style="padding:10px 12px;border-left:4px solid #DC2626"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase">Fatalities</div><div style="font-size:28px;font-weight:800;color:#DC2626" id="exec-fatalities">0</div></div>
+<div class="card" style="padding:10px 12px;border-left:4px solid #C2410C"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase">LTIs</div><div style="font-size:28px;font-weight:800;color:#C2410C" id="exec-ltis">—</div></div>
+<div class="card" style="padding:10px 12px;border-left:4px solid #EF9F27"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase">Medical Treatment</div><div style="font-size:28px;font-weight:800;color:#EF9F27" id="exec-mti">—</div></div>
+<div class="card" style="padding:10px 12px;border-left:4px solid #185FA5"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase">Near Misses</div><div style="font-size:28px;font-weight:800;color:#185FA5" id="exec-nm">—</div></div>
+</div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+<div class="card">
+<div class="card-title">Incident Types — YTD</div>
+<div id="exec-incident-types" style="display:flex;flex-direction:column;gap:6px"><div class="loading-msg" style="font-size:11px">Loading...</div></div>
+</div>
+<div class="card">
+<div class="card-title">Monthly Lost Time Days</div>
+<div id="exec-lost-time" style="height:120px;display:flex;align-items:flex-end;gap:4px;padding:4px"><div class="loading-msg" style="font-size:11px;width:100%;text-align:center">Loading...</div></div>
+<div id="exec-lt-labels" style="display:flex;gap:4px;margin-top:4px"></div>
+</div>
+</div>
+<div class="card">
+<div class="card-title">Top Incident Locations — Risk Ranking</div>
+<div id="exec-location-rank" style="display:flex;flex-direction:column;gap:6px"><div class="loading-msg" style="font-size:11px">Loading...</div></div>
+</div>
+</div>
+
+<!-- ── COMPLIANCE ── -->
+<div id="exec-view-compliance" style="display:none">
+<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px">
+<div class="card" style="padding:10px 12px;border-left:4px solid #3B6D11"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase">Legal Compliance</div><div style="font-size:28px;font-weight:800;color:#3B6D11" id="exec-legal-pct">—</div><div style="font-size:10px;color:var(--text2)">requirements met</div></div>
+<div class="card" style="padding:10px 12px;border-left:4px solid #185FA5"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase">Audit Compliance</div><div style="font-size:28px;font-weight:800;color:#185FA5" id="exec-audit-pct">—</div><div style="font-size:10px;color:var(--text2)">inspection score avg</div></div>
+<div class="card" style="padding:10px 12px;border-left:4px solid #0891B2"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase">Training Compliance</div><div style="font-size:28px;font-weight:800;color:#0891B2" id="exec-training-pct">—</div><div style="font-size:10px;color:var(--text2)">of workforce trained</div></div>
+</div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+<div class="card">
+<div class="card-title">Compliance by Category</div>
+<div id="exec-compliance-cat" style="display:flex;flex-direction:column;gap:8px"><div class="loading-msg" style="font-size:11px">Loading...</div></div>
+</div>
+<div class="card">
+<div class="card-title">Open Corrective Actions — Age Profile</div>
+<div id="exec-ca-age" style="display:flex;flex-direction:column;gap:8px"><div class="loading-msg" style="font-size:11px">Loading...</div></div>
+</div>
+</div>
+</div>
+
+<!-- ── ESG & ENVIRONMENT ── -->
+<div id="exec-view-esg" style="display:none">
+<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px">
+<div class="card" style="padding:10px 12px;border-left:4px solid #065F46"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase">Environmental Incidents</div><div style="font-size:28px;font-weight:800;color:#065F46" id="exec-env-inc">—</div></div>
+<div class="card" style="padding:10px 12px;border-left:4px solid #1D9E75"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase">Spills</div><div style="font-size:28px;font-weight:800;color:#1D9E75" id="exec-spills">—</div></div>
+<div class="card" style="padding:10px 12px;border-left:4px solid #0891B2"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase">Waste (tonnes)</div><div style="font-size:28px;font-weight:800;color:#0891B2" id="exec-waste">—</div></div>
+<div class="card" style="padding:10px 12px;border-left:4px solid #854F0B"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase">CO₂ (tCO₂e)</div><div style="font-size:28px;font-weight:800;color:#854F0B" id="exec-co2">—</div></div>
+</div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+<div class="card">
+<div class="card-title">ESG Score Card</div>
+<div id="exec-esg-scorecard" style="display:flex;flex-direction:column;gap:8px"><div class="loading-msg" style="font-size:11px">Loading...</div></div>
+</div>
+<div class="card">
+<div class="card-title">Sustainability KPIs</div>
+<div id="exec-sustainability" style="display:flex;flex-direction:column;gap:8px"><div class="loading-msg" style="font-size:11px">Loading...</div></div>
+</div>
+</div>
+</div>
+
+<!-- ── REPORTS ── -->
+<div id="exec-view-reports" style="display:none">
+<div class="card" style="margin-bottom:14px;padding:14px 20px;background:linear-gradient(135deg,#1a3a5c,#185FA5);color:#fff">
+<div style="font-size:15px;font-weight:800;margin-bottom:4px">📋 AI-Powered HSE Reports</div>
+<div style="font-size:12px;opacity:.85">Generate board-ready reports, monthly summaries and annual statistics using AI</div>
+</div>
+<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:14px">
+<div class="card" style="cursor:pointer;transition:box-shadow .15s;border:2px solid transparent" onmouseover="this.style.borderColor='#185FA5';this.style.boxShadow='0 4px 16px rgba(24,95,165,.2)'" onmouseout="this.style.borderColor='transparent';this.style.boxShadow=''" onclick="execGenerateReport('monthly')">
+<div style="font-size:28px;margin-bottom:8px">📅</div>
+<div style="font-weight:700;font-size:14px;margin-bottom:4px">Monthly HSE Report</div>
+<div style="font-size:12px;color:var(--text2)">Comprehensive monthly summary with incident analysis, compliance status, and action items</div>
+<button class="btn btn-primary" style="width:100%;margin-top:12px" onclick="event.stopPropagation();execGenerateReport('monthly')"><i class="ti ti-robot"></i>Generate</button>
+</div>
+<div class="card" style="cursor:pointer;transition:box-shadow .15s;border:2px solid transparent" onmouseover="this.style.borderColor='#5B21B6';this.style.boxShadow='0 4px 16px rgba(91,33,182,.2)'" onmouseout="this.style.borderColor='transparent';this.style.boxShadow=''" onclick="execGenerateReport('board')">
+<div style="font-size:28px;margin-bottom:8px">🏛️</div>
+<div style="font-weight:700;font-size:14px;margin-bottom:4px">Board Dashboard Report</div>
+<div style="font-size:12px;color:var(--text2)">Executive-level HSE performance overview for board presentations and governance reporting</div>
+<button class="btn" style="width:100%;margin-top:12px;background:#5B21B6;color:#fff;border-color:#5B21B6" onclick="event.stopPropagation();execGenerateReport('board')"><i class="ti ti-robot"></i>Generate</button>
+</div>
+<div class="card" style="cursor:pointer;transition:box-shadow .15s;border:2px solid transparent" onmouseover="this.style.borderColor='#065F46';this.style.boxShadow='0 4px 16px rgba(6,95,70,.2)'" onmouseout="this.style.borderColor='transparent';this.style.boxShadow=''" onclick="execGenerateReport('annual')">
+<div style="font-size:28px;margin-bottom:8px">📈</div>
+<div style="font-weight:700;font-size:14px;margin-bottom:4px">Annual HSE Statistics</div>
+<div style="font-size:12px;color:var(--text2)">Full-year performance statistics including LTIFR, TRIR, trends and year-on-year comparison</div>
+<button class="btn" style="width:100%;margin-top:12px;background:#065F46;color:#fff;border-color:#065F46" onclick="event.stopPropagation();execGenerateReport('annual')"><i class="ti ti-robot"></i>Generate</button>
+</div>
+<div class="card" style="cursor:pointer;transition:box-shadow .15s;border:2px solid transparent" onmouseover="this.style.borderColor='#1D9E75';this.style.boxShadow='0 4px 16px rgba(29,158,117,.2)'" onmouseout="this.style.borderColor='transparent';this.style.boxShadow=''" onclick="execGenerateReport('esg')">
+<div style="font-size:28px;margin-bottom:8px">🌿</div>
+<div style="font-weight:700;font-size:14px;margin-bottom:4px">ESG Report</div>
+<div style="font-size:12px;color:var(--text2)">Environmental, Social and Governance performance report aligned with international ESG frameworks</div>
+<button class="btn" style="width:100%;margin-top:12px;background:#1D9E75;color:#fff;border-color:#1D9E75" onclick="event.stopPropagation();execGenerateReport('esg')"><i class="ti ti-robot"></i>Generate</button>
+</div>
+<div class="card" style="cursor:pointer;transition:box-shadow .15s;border:2px solid transparent" onmouseover="this.style.borderColor='#0891B2';this.style.boxShadow='0 4px 16px rgba(8,145,178,.2)'" onmouseout="this.style.borderColor='transparent';this.style.boxShadow=''" onclick="execGenerateReport('sustainability')">
+<div style="font-size:28px;margin-bottom:8px">♻️</div>
+<div style="font-weight:700;font-size:14px;margin-bottom:4px">Sustainability Report</div>
+<div style="font-size:12px;color:var(--text2)">GRI-aligned sustainability performance including waste, water, energy and carbon footprint</div>
+<button class="btn" style="width:100%;margin-top:12px;background:#0891B2;color:#fff;border-color:#0891B2" onclick="event.stopPropagation();execGenerateReport('sustainability')"><i class="ti ti-robot"></i>Generate</button>
+</div>
+<div class="card" style="cursor:pointer;transition:box-shadow .15s;border:2px solid transparent" onmouseover="this.style.borderColor='#EF9F27';this.style.boxShadow='0 4px 16px rgba(239,159,39,.2)'" onmouseout="this.style.borderColor='transparent';this.style.boxShadow=''" onclick="execGenerateReport('compliance')">
+<div style="font-size:28px;margin-bottom:8px">⚖️</div>
+<div style="font-weight:700;font-size:14px;margin-bottom:4px">Compliance Report</div>
+<div style="font-size:12px;color:var(--text2)">Legal compliance status, regulatory notifications, gap analysis and corrective action summary</div>
+<button class="btn" style="width:100%;margin-top:12px;background:#EF9F27;color:#fff;border-color:#EF9F27" onclick="event.stopPropagation();execGenerateReport('compliance')"><i class="ti ti-robot"></i>Generate</button>
+</div>
+</div>
+
+<!-- Report output -->
+<div id="exec-report-output" style="display:none" class="card">
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+<div style="font-weight:700;font-size:14px" id="exec-report-title">Report</div>
+<div style="display:flex;gap:6px">
+<button class="btn btn-sm" onclick="navigator.clipboard.writeText(document.getElementById('exec-report-text').textContent).then(()=>toast('Copied!'))"><i class="ti ti-copy"></i>Copy</button>
+<button class="btn btn-sm" onclick="document.getElementById('exec-report-output').style.display='none'"><i class="ti ti-x"></i></button>
+</div>
+</div>
+<div id="exec-report-text" style="white-space:pre-wrap;font-size:13px;line-height:1.8;color:#1a1a1a;background:#f9fafb;padding:16px;border-radius:8px;max-height:500px;overflow-y:auto"></div>
+</div>
+</div>
+
+</div><!-- end page-executive -->
+
 <div id="page-kpi" class="page">
 <div class="kpi-page-header" style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px"><div><div style="font-size:20px;font-weight:700;color:var(--text)">Objectives & KPIs</div><div style="font-size:12px;color:var(--text2);margin-top:2px" id="kpi-co-label"></div></div><div style="display:flex;gap:8px;align-items:center"><div style="display:flex;align-items:center;gap:6px"><span style="font-size:12px;color:var(--text2)">Year:</span><select id="year-sel" onchange="kpiLoadAll()" style="width:auto;padding:6px 10px;font-size:13px;border:1px solid var(--border);border-radius:8px"><option>2024</option><option>2025</option><option selected>2026</option><option>2027</option></select></div><button class="btn btn-primary" id="kpi-add-obj-btn" style="display:none" onclick="openObjModal()"><i class="ti ti-plus"></i>Add objective</button></div></div><div style="display:flex;gap:2px;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:4px;margin-bottom:18px;width:fit-content"><button class="kpi-tab active" onclick="kpiSwitchTab('overview',this)" style="padding:7px 18px;border-radius:7px;font-size:13px;cursor:pointer;font-weight:500;border:none;background:var(--green);color:#fff"><i class="ti ti-layout-list" style="font-size:14px;margin-right:4px"></i>Overview</button><button class="kpi-tab" onclick="kpiSwitchTab('monthly',this)" style="padding:7px 18px;border-radius:7px;font-size:13px;cursor:pointer;font-weight:500;border:none;background:transparent;color:var(--text2)"><i class="ti ti-calendar-stats" style="font-size:14px;margin-right:4px"></i>Monthly follow-up</button></div><div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:18px" id="kpi-metrics"><div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px 16px"><div style="font-size:11px;color:var(--text2);margin-bottom:5px;font-weight:500">Total KPIs</div><div style="font-size:24px;font-weight:700" id="km-total">—</div></div><div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px 16px"><div style="font-size:11px;color:var(--text2);margin-bottom:5px;font-weight:500">On Track</div><div style="font-size:24px;font-weight:700;color:var(--green)" id="km-ontrack">—</div></div><div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px 16px"><div style="font-size:11px;color:var(--text2);margin-bottom:5px;font-weight:500">At Risk</div><div style="font-size:24px;font-weight:700;color:var(--amber)" id="km-atrisk">—</div></div><div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px 16px"><div style="font-size:11px;color:var(--text2);margin-bottom:5px;font-weight:500">Off Track</div><div style="font-size:24px;font-weight:700;color:var(--red)" id="km-offtrack">—</div></div></div><div id="kpi-tab-overview"><div id="kpi-objectives-container"><div style="text-align:center;padding:30px;color:var(--text2);font-size:13px">Loading objectives...</div></div></div><div id="kpi-tab-monthly" style="display:none"><div class="card" style="padding:0;overflow:hidden"><div style="padding:14px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between"><div style="font-size:14px;font-weight:700">Monthly follow-up — <span id="kpi-monthly-year">2026</span></div><div style="font-size:12px;color:var(--text2)">Click any cell to enter value</div></div><div style="overflow-x:auto"><table id="kpi-monthly-table" style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr><th style="background:#f9fafb;padding:8px 10px;border:1px solid var(--border);font-size:11px;font-weight:600;color:var(--text2);text-align:center;min-width:50px;position:sticky;left:0;z-index:2">No.</th><th style="background:#f9fafb;padding:8px 10px;border:1px solid var(--border);font-size:11px;font-weight:600;color:var(--text2);text-align:left;min-width:160px">KPI name</th><th style="background:#f9fafb;padding:8px 10px;border:1px solid var(--border);font-size:11px;font-weight:600;color:var(--text2);text-align:left;min-width:200px">Measurement indicator</th><th style="background:#f9fafb;padding:8px 10px;border:1px solid var(--border);font-size:11px;font-weight:600;color:var(--text2);text-align:center;min-width:80px">Target</th><th style="background:#f9fafb;padding:8px 10px;border:1px solid var(--border);font-size:11px;font-weight:600;color:var(--text2);text-align:center">Jan</th><th style="background:#f9fafb;padding:8px 10px;border:1px solid var(--border);font-size:11px;font-weight:600;color:var(--text2);text-align:center">Feb</th><th style="background:#f9fafb;padding:8px 10px;border:1px solid var(--border);font-size:11px;font-weight:600;color:var(--text2);text-align:center">Mar</th><th style="background:#f9fafb;padding:8px 10px;border:1px solid var(--border);font-size:11px;font-weight:600;color:var(--text2);text-align:center">Apr</th><th style="background:#f9fafb;padding:8px 10px;border:1px solid var(--border);font-size:11px;font-weight:600;color:var(--text2);text-align:center">May</th><th style="background:#f9fafb;padding:8px 10px;border:1px solid var(--border);font-size:11px;font-weight:600;color:var(--text2);text-align:center">Jun</th><th style="background:#f9fafb;padding:8px 10px;border:1px solid var(--border);font-size:11px;font-weight:600;color:var(--text2);text-align:center">Jul</th><th style="background:#f9fafb;padding:8px 10px;border:1px solid var(--border);font-size:11px;font-weight:600;color:var(--text2);text-align:center">Aug</th><th style="background:#f9fafb;padding:8px 10px;border:1px solid var(--border);font-size:11px;font-weight:600;color:var(--text2);text-align:center">Sep</th><th style="background:#f9fafb;padding:8px 10px;border:1px solid var(--border);font-size:11px;font-weight:600;color:var(--text2);text-align:center">Oct</th><th style="background:#f9fafb;padding:8px 10px;border:1px solid var(--border);font-size:11px;font-weight:600;color:var(--text2);text-align:center">Nov</th><th style="background:#f9fafb;padding:8px 10px;border:1px solid var(--border);font-size:11px;font-weight:600;color:var(--text2);text-align:center">Dec</th><th style="background:#E1F5EE;padding:8px 10px;border:1px solid var(--border);font-size:11px;font-weight:700;color:var(--dg);text-align:center">YTD</th><th style="background:#f9fafb;padding:8px 10px;border:1px solid var(--border);font-size:11px;font-weight:600;color:var(--text2);text-align:center">Status</th></tr></thead><tbody id="kpi-monthly-body"><tr><td colspan="17" style="text-align:center;padding:30px;color:var(--text2)">Loading...</td></tr></tbody></table></div></div></div><div style="position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:200;display:none;align-items:center;justify-content:center" id="obj-modal"><div style="background:var(--card);border-radius:16px;padding:28px;width:520px;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.2)"><div style="font-size:16px;font-weight:700;margin-bottom:20px;display:flex;align-items:center;justify-content:space-between"><span id="obj-modal-title">Add objective</span><button onclick="closeKpiModal('obj-modal')" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--text2)"><i class="ti ti-x"></i></button></div><div class="form-row"><div class="form-group"><label class="form-label">Code (e.g. 1, 2)</label><input type="text" id="obj-code" readonly style="background:#f9fafb;color:var(--text2);cursor:default" placeholder="Auto-generated"/></div><div class="form-group"><label class="form-label">Year</label><select id="obj-year"><option>2024</option><option>2025</option><option selected>2026</option><option>2027</option></select></div></div><div class="form-group"><label class="form-label">Objective name</label><input type="text" id="obj-name" placeholder="e.g. Zero Accident & Occupational Illness"/></div><div class="form-group"><label class="form-label">Colour</label><div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px" id="kpi-color-picker"><div class="kpi-color-dot" style="width:24px;height:24px;border-radius:50%;cursor:pointer;border:3px solid var(--text);background:#1D9E75" onclick="kpiSelectColor('#1D9E75',this)"></div><div class="kpi-color-dot" style="width:24px;height:24px;border-radius:50%;cursor:pointer;border:2px solid transparent;background:#185FA5" onclick="kpiSelectColor('#185FA5',this)"></div><div class="kpi-color-dot" style="width:24px;height:24px;border-radius:50%;cursor:pointer;border:2px solid transparent;background:#854F0B" onclick="kpiSelectColor('#854F0B',this)"></div><div class="kpi-color-dot" style="width:24px;height:24px;border-radius:50%;cursor:pointer;border:2px solid transparent;background:#6B21A8" onclick="kpiSelectColor('#6B21A8',this)"></div><div class="kpi-color-dot" style="width:24px;height:24px;border-radius:50%;cursor:pointer;border:2px solid transparent;background:#0F6E56" onclick="kpiSelectColor('#0F6E56',this)"></div><div class="kpi-color-dot" style="width:24px;height:24px;border-radius:50%;cursor:pointer;border:2px solid transparent;background:#DC2626" onclick="kpiSelectColor('#DC2626',this)"></div><div class="kpi-color-dot" style="width:24px;height:24px;border-radius:50%;cursor:pointer;border:2px solid transparent;background:#0369A1" onclick="kpiSelectColor('#0369A1',this)"></div></div></div><div style="display:flex;gap:8px;justify-content:flex-end;margin-top:20px"><button class="btn" onclick="closeKpiModal('obj-modal')">Cancel</button><button class="btn btn-danger" id="obj-delete-btn" style="display:none" onclick="kpiDeleteObjective()"><i class="ti ti-trash"></i>Delete</button><button class="btn btn-primary" onclick="kpiSaveObjective()"><i class="ti ti-device-floppy"></i>Save objective</button></div></div></div><div style="position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:200;display:none;align-items:center;justify-content:center" id="kpi-edit-modal"><div style="background:var(--card);border-radius:16px;padding:28px;width:600px;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.2)"><div style="font-size:16px;font-weight:700;margin-bottom:20px;display:flex;align-items:center;justify-content:space-between"><span id="kpi-modal-title">Add KPI</span><button onclick="closeKpiModal('kpi-edit-modal')" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--text2)"><i class="ti ti-x"></i></button></div><div class="form-row"><div class="form-group"><label class="form-label">Code (auto)</label><input type="text" id="kpi-code" readonly style="background:#f9fafb;color:var(--text2);cursor:default" placeholder="Auto-generated"/></div><div class="form-group"><label class="form-label">Objective</label><select id="kpi-obj-sel"><option value="">Select objective...</option></select></div></div><div class="form-row"><div class="form-group"><label class="form-label">KPI name</label><input type="text" id="kpi-name" placeholder="e.g. Near Miss Reporting"/></div><div class="form-group"><label class="form-label">Frequency</label><select id="kpi-freq"><option value="monthly">Monthly</option><option value="quarterly">Quarterly</option><option value="annual">Annual</option></select></div></div><div class="form-row"><div class="form-group"><label class="form-label">Responsible</label><input type="text" id="kpi-resp" placeholder="Name or role"/></div><div class="form-group"><label class="form-label">Status</label><select id="kpi-status"><option value="not_started">Not started</option><option value="on_track">On Track</option><option value="at_risk">At Risk</option><option value="off_track">Off Track</option></select></div></div><div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--border)"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px"><div><div style="font-size:13px;font-weight:600;color:var(--text)">Measurement indicators</div><div style="font-size:11px;color:var(--text3);margin-top:2px">Each indicator gets its own row in the monthly follow-up table</div></div><button type="button" class="btn btn-sm" onclick="kpiAddIndicatorRow()"><i class="ti ti-plus"></i>Add indicator</button></div><div id="kpi-indicators-list" style="display:flex;flex-direction:column;gap:8px"></div></div><div style="display:flex;gap:8px;justify-content:flex-end;margin-top:20px"><button class="btn" onclick="closeKpiModal('kpi-edit-modal')">Cancel</button><button class="btn btn-danger" id="kpi-delete-btn" style="display:none" onclick="kpiDeleteKPI()"><i class="ti ti-trash"></i>Delete KPI</button><button class="btn btn-primary" onclick="kpiSaveKPI()"><i class="ti ti-device-floppy"></i>Save KPI</button></div></div></div><div style="position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:200;display:none;align-items:center;justify-content:center" id="kpi-entry-modal"><div style="background:var(--card);border-radius:16px;padding:28px;width:420px;box-shadow:0 20px 60px rgba(0,0,0,.2)"><div style="font-size:16px;font-weight:700;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between"><span id="entry-modal-title">Enter value</span><button onclick="closeKpiModal('kpi-entry-modal')" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--text2)"><i class="ti ti-x"></i></button></div><div style="background:#f9fafb;border-radius:8px;padding:12px;margin-bottom:16px"><div style="font-size:13px;font-weight:600;color:var(--text)" id="entry-kpi-name"></div><div style="font-size:11px;color:var(--text2);margin-top:3px" id="entry-kpi-target"></div></div><div class="form-group"><label class="form-label" id="entry-month-label">Actual value</label><input type="number" id="entry-actual" placeholder="Enter actual value" step="any"/></div><div class="form-group"><label class="form-label">YTD (leave blank to auto-calculate)</label><input type="number" id="entry-ytd" placeholder="Auto" step="any"/></div><div class="form-group"><label class="form-label">Comment (optional)</label><textarea id="entry-comment" style="min-height:50px"></textarea></div><div style="display:flex;gap:8px;justify-content:space-between;margin-top:16px;align-items:center"><button class="btn btn-danger" id="kpi-clear-btn" onclick="kpiClearEntry()" style="display:none"><i class="ti ti-trash"></i>Clear data</button><div style="display:flex;gap:8px;margin-left:auto"><button class="btn" onclick="closeKpiModal('kpi-entry-modal')">Cancel</button><button class="btn btn-primary" onclick="kpiSaveEntry()"><i class="ti ti-device-floppy"></i>Save</button></div></div></div></div></div>
 <div id="page-workschedule" class="page">
