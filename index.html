@@ -94,6 +94,7 @@
 
 
 
+
 const SB='https://iarfxjhahzbhncsaohbg.supabase.co';
 const KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlhcmZ4amhhaHpiaG5jc2FvaGJnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg2OTM1MzAsImV4cCI6MjA5NDI2OTUzMH0.qSjahuX-RwnjWEDmo-LkcorAxpsmyVoaXt4AO4_A9BM';
 let tok=null,prof=null,co=null,chkItems=[],people=[];
@@ -8108,20 +8109,712 @@ if(typeof RL !== 'undefined') {
   RL.executive    = 1;
 }
 
-async function loadAdmin(){
-const el=document.getElementById('companies-list');
-try{
-const d=await api('/companies?select=*&order=name');
-el.innerHTML=!d?.length?'<div class="empty">No companies</div>':'<table><thead><tr><th>Company</th><th>Industry</th><th>Contact</th><th>Status</th></tr></thead><tbody>'+d.map(x=>'<tr><td>'+(x.logo_url?'<img src="'+x.logo_url+'" style="height:20px;margin-right:6px;vertical-align:middle" alt="logo"/>':'')+x.name+'</td><td>'+(x.industry||'--')+'</td><td>'+(x.contact_email||'--')+'</td><td><span class="badge '+(x.active?'bg':'ba')+'">'+(x.active?'Active':'Inactive')+'</span></td></tr>').join('')+'</tbody></table>';
-}catch(e){el.innerHTML='<div class="empty" style="color:var(--red)">'+e.message+'</div>';}
+// ===================================================================
+// MULTI-SITE & MULTI-COMPANY MANAGEMENT
+// Companies · Sites · Hierarchy · Central Oversight · Access Control
+// ===================================================================
+
+let adminCompaniesData = [], adminSitesData = [], adminAccessData = [];
+let adminEditCoId = null, adminEditSiteId = null;
+let adminActiveSiteFilter = null;  // currently selected site for data filtering
+
+const SITE_TYPE_CFG = {
+  group:    {emoji:'🌐', label:'Group',    color:'#5B21B6', order:1},
+  region:   {emoji:'🗺️',  label:'Region',   color:'#185FA5', order:2},
+  country:  {emoji:'🏳️',  label:'Country',  color:'#0891B2', order:3},
+  site:     {emoji:'🏭', label:'Site',     color:'#065F46', order:4},
+  facility: {emoji:'🏗️',  label:'Facility', color:'#854F0B', order:5},
+  building: {emoji:'🏢', label:'Building', color:'#374151', order:6},
+  area:     {emoji:'📐', label:'Area',     color:'#6B7280', order:7},
+  zone:     {emoji:'📍', label:'Zone',     color:'#9CA3AF', order:8},
+};
+
+const RISK_CFG = {
+  critical: {color:'#DC2626', bg:'#FCEBEB'},
+  high:     {color:'#C2410C', bg:'#FEF6E7'},
+  medium:   {color:'#854F0B', bg:'#FEF9EC'},
+  low:      {color:'#3B6D11', bg:'#EAF3DE'},
+};
+
+// ── Entry point ────────────────────────────────────────────────────────────────
+async function loadAdmin() {
+  adminTab('overview', document.getElementById('adm-tab-overview'));
 }
-async function saveCompany(){
-try{
-await api('/companies',{m:'POST',p:'return=minimal',b:{name:document.getElementById('co-name').value,industry:document.getElementById('co-industry').value,contact_name:document.getElementById('co-contact').value,contact_email:document.getElementById('co-email').value,logo_url:document.getElementById('co-logo').value||null,active:true}});
-toast('Company registered!');loadAdmin();loadCoDrop();
-['co-name','co-contact','co-email','co-logo'].forEach(id=>document.getElementById(id).value='');
-}catch(e){toast(e.message,false);}
+
+function adminTab(tab, btn) {
+  document.querySelectorAll('[id^="adm-tab-"]').forEach(function(t){t.classList.remove('active');});
+  if(btn) btn.classList.add('active');
+  ['overview','companies','sites','hierarchy','oversight','access'].forEach(function(t){
+    var el = document.getElementById('adm-view-'+t);
+    if(el) el.style.display = t===tab ? 'block' : 'none';
+  });
+  if(tab === 'overview')   adminLoadOverview();
+  else if(tab === 'companies') adminLoadCompanies();
+  else if(tab === 'sites')     adminLoadSites();
+  else if(tab === 'hierarchy') adminLoadHierarchyData();
+  else if(tab === 'oversight') adminLoadOversight();
+  else if(tab === 'access')    adminLoadAccessList();
 }
+
+// ── Load all data ──────────────────────────────────────────────────────────────
+async function adminLoadAll() {
+  var safe = async function(p){try{return await p;}catch(e){return [];}};
+  var results = await Promise.all([
+    safe(api('/companies?select=*&order=name')),
+    safe(api('/sites?select=*&order=name')),
+  ]);
+  adminCompaniesData = results[0]||[];
+  adminSitesData     = results[1]||[];
+  // Metrics
+  function sm(id,v){var e=document.getElementById(id);if(e)e.textContent=v;}
+  sm('adm-m-companies', adminCompaniesData.length);
+  sm('adm-m-sites', adminSitesData.filter(function(s){return s.status!=='inactive';}).length);
+  sm('adm-m-workers', adminSitesData.reduce(function(s,x){return s+(parseInt(x.headcount)||0);},0) || adminCompaniesData.reduce(function(s,x){return s+(parseInt(x.headcount)||0);},0));
+  // Populate dropdowns across the page
+  adminPopulateDropdowns();
+}
+
+function adminPopulateDropdowns() {
+  var cos = adminCompaniesData;
+  // Company selects
+  ['adm-co-parent','adm-hier-filter-co','adm-sites-filter-co','oversight-co-sel'].forEach(function(id){
+    var el = document.getElementById(id); if(!el) return;
+    var first = el.options[0];
+    el.innerHTML = '';
+    el.appendChild(first);
+    cos.forEach(function(c){
+      var o=document.createElement('option'); o.value=c.id; o.textContent=c.name;
+      el.appendChild(o);
+    });
+  });
+  // Site company select in site form
+  var siteCo = document.getElementById('adm-site-company');
+  if(siteCo){
+    siteCo.innerHTML='<option value="">Select company...</option>';
+    cos.forEach(function(c){var o=document.createElement('option');o.value=c.id;o.textContent=c.name;siteCo.appendChild(o);});
+  }
+  // Site parent select
+  adminRefreshSiteParentSelect();
+  // Access modal site select
+  var accSite = document.getElementById('adm-acc-site');
+  if(accSite){
+    accSite.innerHTML='<option value="">Select site...</option>';
+    adminSitesData.forEach(function(s){
+      var o=document.createElement('option'); o.value=s.id;
+      var cfg=SITE_TYPE_CFG[s.site_type]||{emoji:'📍'};
+      o.textContent=cfg.emoji+' '+s.name+(s.city?' ('+s.city+')':'');
+      accSite.appendChild(o);
+    });
+  }
+  // Site switcher in overview
+  var switcher = document.getElementById('adm-site-switcher');
+  if(switcher){
+    switcher.innerHTML='<option value="">All sites (no filter)</option>';
+    var grouped = {};
+    adminSitesData.forEach(function(s){
+      if(!grouped[s.company_id]) grouped[s.company_id]=[];
+      grouped[s.company_id].push(s);
+    });
+    Object.entries(grouped).forEach(function(e){
+      var co = adminCompaniesData.find(function(c){return c.id===e[0];});
+      var og = document.createElement('optgroup');
+      og.label = co?.name||'Unknown';
+      e[1].forEach(function(s){
+        var o=document.createElement('option'); o.value=s.id;
+        var cfg=SITE_TYPE_CFG[s.site_type]||{emoji:'📍'};
+        o.textContent=cfg.emoji+' '+s.name;
+        if(adminActiveSiteFilter===s.id) o.selected=true;
+        og.appendChild(o);
+      });
+      switcher.appendChild(og);
+    });
+  }
+}
+
+function adminRefreshSiteParentSelect(companyId) {
+  var el = document.getElementById('adm-site-parent'); if(!el) return;
+  el.innerHTML='<option value="">None (top-level)</option>';
+  var filter = companyId || document.getElementById('adm-site-company')?.value;
+  var sites = filter ? adminSitesData.filter(function(s){return s.company_id===filter;}) : adminSitesData;
+  sites.forEach(function(s){
+    var o=document.createElement('option'); o.value=s.id;
+    var cfg=SITE_TYPE_CFG[s.site_type]||{emoji:'📍'};
+    o.textContent=cfg.emoji+' '+s.name;
+    if(adminEditSiteId && s.id===adminEditSiteId) return; // can't be own parent
+    el.appendChild(o);
+  });
+}
+
+// ── Overview ───────────────────────────────────────────────────────────────────
+async function adminLoadOverview() {
+  await adminLoadAll();
+  // Update context card
+  var coName = document.getElementById('adm-ctx-company');
+  var coRole = document.getElementById('adm-ctx-role');
+  if(coName) coName.textContent = prof?.company_name || adminCompaniesData.find(function(c){return c.id===prof?.company_id;})?.name || 'AURIS360';
+  if(coRole){ var rc=typeof HSE_ROLES!=='undefined'?HSE_ROLES[prof?.role]:null; coRole.textContent=(rc?rc.emoji+' '+rc.label:(prof?.role||'').replace(/_/g,' '))+' · '+(isSA()?'Platform Admin':'Company Access'); }
+  // Render company cards
+  adminRenderOverviewCards();
+  // Aggregate KPIs
+  await adminRenderAggKPIs();
+  // Metrics from DB
+  try {
+    var safe = async function(p){try{return await p;}catch(e){return [];}};
+    var evd = await safe(api('/events?select=id,status&status=neq.closed'+(isSA()?'':'&company_id=eq.'+prof?.company_id)));
+    var acd = await safe(api('/action_tracker?select=id,status&status=neq.closed'+(isSA()?'':'&company_id=eq.'+prof?.company_id)));
+    function sm(id,v){var e=document.getElementById(id);if(e)e.textContent=v;}
+    sm('adm-m-incidents',(evd||[]).length);
+    sm('adm-m-actions',(acd||[]).length);
+  } catch(ex) {}
+}
+
+function adminFilterCompanies() {
+  var q = (document.getElementById('adm-search-co')?.value||'').toLowerCase();
+  var filt = adminCompaniesData.filter(function(c){return !q||(c.name||'').toLowerCase().includes(q)||(c.industry||'').toLowerCase().includes(q);});
+  adminRenderOverviewCards(filt);
+}
+
+function adminRenderOverviewCards(data) {
+  var el = document.getElementById('adm-companies-grid'); if(!el) return;
+  var cos = data || adminCompaniesData;
+  if(!cos.length){ el.innerHTML='<div style="text-align:center;padding:30px;color:var(--text2)"><div style="font-size:36px;margin-bottom:8px">🏢</div><div>No companies yet</div></div>'; return; }
+  el.innerHTML = cos.map(function(co) {
+    var sites = adminSitesData.filter(function(s){return s.company_id===co.id;});
+    var headcount = parseInt(co.headcount)||0;
+    var tierColors = {starter:['#6B7280','#f3f4f6'],professional:['#185FA5','#EFF6FF'],enterprise:['#5B21B6','#F5F3FF']};
+    var tc = tierColors[co.subscription_tier||'professional']||tierColors.professional;
+    var typeCfg = {group:'🌐 Group',subsidiary:'🔗 Subsidiary',client:'🤝 Client',standalone:'🏢 Standalone'};
+    return '<div class="card" style="padding:0;overflow:hidden;cursor:pointer;border:2px solid '+(co.active!==false?'#185FA5':'#e5e7eb')+';transition:all .15s" onclick="adminEditCompany(\''+co.id+'\')" onmouseover="this.style.boxShadow=\'0 4px 16px rgba(0,0,0,.1)\'" onmouseout="this.style.boxShadow=\'\'">'
+      + '<div style="height:4px;background:'+(co.active!==false?'linear-gradient(90deg,#185FA5,#1D9E75)':'#e5e7eb')+'"></div>'
+      + '<div style="padding:12px 14px">'
+      + '<div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:8px">'
+      + '<div style="display:flex;align-items:center;gap:8px">'
+      + (co.logo_url?'<img src="'+escH(co.logo_url)+'" style="width:36px;height:36px;border-radius:8px;object-fit:contain;border:1px solid #f3f4f6" onerror="this.style.display=\'none\'"/>':
+        '<div style="width:36px;height:36px;border-radius:8px;background:#185FA5;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:14px;flex-shrink:0">'+(co.name?co.name[0].toUpperCase():'?')+'</div>')
+      + '<div><div style="font-weight:700;font-size:13px">'+escH(co.name)+'</div>'
+      + '<div style="font-size:10px;color:var(--text2)">'+escH(co.industry||'—')+'</div>'
+      + '</div></div>'
+      + '<span style="background:'+tc[1]+';color:'+tc[0]+';padding:2px 7px;border-radius:99px;font-size:9px;font-weight:700;text-transform:uppercase">'+escH(co.subscription_tier||'pro')+'</span>'
+      + '</div>'
+      + '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;text-align:center">'
+      + '<div style="background:#f9fafb;border-radius:6px;padding:5px 4px"><div style="font-size:15px;font-weight:800;color:#185FA5">'+sites.length+'</div><div style="font-size:9px;color:var(--text2)">Sites</div></div>'
+      + '<div style="background:#f9fafb;border-radius:6px;padding:5px 4px"><div style="font-size:15px;font-weight:800;color:#1D9E75">'+headcount+'</div><div style="font-size:9px;color:var(--text2)">Workers</div></div>'
+      + '<div style="background:#f9fafb;border-radius:6px;padding:5px 4px"><div style="font-size:15px;font-weight:800;color:'+(co.active!==false?'#1D9E75':'#6B7280')+'">'+(co.active!==false?'✓':'✗')+'</div><div style="font-size:9px;color:var(--text2)">Status</div></div>'
+      + '</div>'
+      + '<div style="display:flex;gap:4px;margin-top:8px">'
+      + '<span style="font-size:10px;color:var(--text2);background:#f3f4f6;padding:1px 6px;border-radius:3px">'+escH(typeCfg[co.company_type||'standalone']||co.company_type||'—')+'</span>'
+      + (co.country?'<span style="font-size:10px;color:var(--text2)">📍 '+escH(co.country)+'</span>':'')
+      + '</div>'
+      + '</div></div>';
+  }).join('');
+}
+
+async function adminRenderAggKPIs() {
+  var el = document.getElementById('adm-agg-kpis'); if(!el) return;
+  var safe = async function(p){try{return await p;}catch(e){return [];}};
+  var q = isSA()?'':'&company_id=eq.'+prof?.company_id;
+  var results = await Promise.all([
+    safe(api('/events?select=id,severity&status=neq.closed'+q)),
+    safe(api('/action_tracker?select=id,status'+q)),
+    safe(api('/inspections?select=id,score_good,score_insuf'+q+'&order=created_at.desc&limit=20')),
+  ]);
+  var events=results[0]||[]; var actions=results[1]||[]; var insps=results[2]||[];
+  var criHigh = events.filter(function(x){return ['critical','high'].includes(x.severity);}).length;
+  var overdue = actions.filter(function(x){return x.status!=='closed';}).length;
+  var avgScore = insps.length>0?Math.round(insps.reduce(function(s,x){var t=(x.score_good||0)+(x.score_insuf||0);return s+(t>0?(x.score_good||0)/t*100:0);},0)/insps.length):null;
+  var kpis = [
+    {label:'Critical/High incidents open', value:criHigh, color:criHigh>0?'#DC2626':'#1D9E75', icon:'⚠️'},
+    {label:'Overdue actions', value:overdue, color:overdue>0?'#EF9F27':'#1D9E75', icon:'📋'},
+    {label:'Avg inspection score', value:avgScore!=null?avgScore+'%':'—', color:avgScore!=null?(avgScore>=80?'#1D9E75':avgScore>=60?'#EF9F27':'#DC2626'):'#6B7280', icon:'🔍'},
+    {label:'Active sites', value:adminSitesData.filter(function(s){return s.status==='active';}).length, color:'#185FA5', icon:'📍'},
+  ];
+  el.innerHTML = kpis.map(function(k){
+    return '<div style="display:flex;align-items:center;justify-content:space-between;padding:6px 8px;background:#f9fafb;border-radius:6px">'
+      +'<div style="display:flex;align-items:center;gap:6px"><span style="font-size:12px">'+k.icon+'</span><span style="font-size:11px;font-weight:600;color:var(--text2)">'+k.label+'</span></div>'
+      +'<span style="font-size:14px;font-weight:800;color:'+k.color+'">'+k.value+'</span>'
+      +'</div>';
+  }).join('');
+}
+
+// ── Site switcher ───────────────────────────────────────────────────────────────
+function adminSwitchSite(siteId) {
+  adminActiveSiteFilter = siteId || null;
+  if(siteId) {
+    var site = adminSitesData.find(function(s){return s.id===siteId;});
+    toast('Now viewing site: '+(site?.name||siteId));
+    // Inject site filter — override the cf() function temporarily
+    window._adminSiteOverride = siteId;
+  } else {
+    window._adminSiteOverride = null;
+    toast('Site filter cleared — showing all data');
+  }
+}
+
+// ── Companies CRUD ──────────────────────────────────────────────────────────────
+async function adminLoadCompanies() {
+  await adminLoadAll();
+  var el = document.getElementById('adm-companies-table'); if(!el) return;
+  var cos = adminCompaniesData;
+  if(!cos.length){ el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)"><div style="font-size:40px;margin-bottom:10px">🏢</div><div>No companies registered</div></div>'; return; }
+  var h = '<div style="overflow:auto"><table style="width:100%;border-collapse:collapse;font-size:12px">'
+    + '<thead><tr style="background:#185FA5;color:#fff">'
+    + '<th style="padding:8px 14px;text-align:left">Company</th>'
+    + '<th style="padding:8px">Type</th>'
+    + '<th style="padding:8px">Industry</th>'
+    + '<th style="padding:8px">Country</th>'
+    + '<th style="padding:8px">Sites</th>'
+    + '<th style="padding:8px">Workers</th>'
+    + '<th style="padding:8px">Tier</th>'
+    + '<th style="padding:8px">Status</th>'
+    + '<th style="padding:8px;width:60px"></th>'
+    + '</tr></thead><tbody>';
+  cos.forEach(function(co, i){
+    var bg=i%2===0?'#fff':'#f9fafb';
+    var sites=adminSitesData.filter(function(s){return s.company_id===co.id;}).length;
+    var typeCfg={group:'🌐',subsidiary:'🔗',client:'🤝',standalone:'🏢'};
+    var tierColors={starter:'#6B7280',professional:'#185FA5',enterprise:'#5B21B6'};
+    h+='<tr style="border-bottom:1px solid #f0f0f0;background:'+bg+'">'
+      +'<td style="padding:8px 14px"><div style="display:flex;align-items:center;gap:8px">'
+      +(co.logo_url?'<img src="'+escH(co.logo_url)+'" style="width:24px;height:24px;border-radius:4px;object-fit:contain" onerror="this.style.display=\'none\'"/>':
+        '<div style="width:24px;height:24px;border-radius:4px;background:#185FA5;color:#fff;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700">'+co.name[0].toUpperCase()+'</div>')
+      +'<span style="font-weight:700">'+escH(co.name)+'</span>'
+      +(co.parent_company_id?'<span style="font-size:9px;background:#EDE9FE;color:#5B21B6;padding:1px 5px;border-radius:3px">subsidiary</span>':'')
+      +'</div></td>'
+      +'<td style="padding:8px;text-align:center;font-size:14px">'+(typeCfg[co.company_type||'standalone']||'🏢')+'</td>'
+      +'<td style="padding:8px;font-size:11px">'+escH(co.industry||'—')+'</td>'
+      +'<td style="padding:8px;font-size:11px">'+escH(co.country||'—')+'</td>'
+      +'<td style="padding:8px;text-align:center;font-weight:700;color:#185FA5">'+sites+'</td>'
+      +'<td style="padding:8px;text-align:center;font-weight:700">'+escH(String(co.headcount||0))+'</td>'
+      +'<td style="padding:8px"><span style="color:'+(tierColors[co.subscription_tier||'professional'])+';font-size:10px;font-weight:700;text-transform:capitalize">'+escH(co.subscription_tier||'pro')+'</span></td>'
+      +'<td style="padding:8px"><span style="background:'+(co.active!==false?'#EAF3DE':'#f3f4f6')+';color:'+(co.active!==false?'#3B6D11':'#6B7280')+';padding:2px 8px;border-radius:99px;font-size:10px;font-weight:700">'+(co.active!==false?'Active':'Inactive')+'</span></td>'
+      +'<td style="padding:8px"><button class="btn btn-sm" data-id="'+co.id+'" onclick="adminEditCompany(this.dataset.id)"><i class="ti ti-edit"></i></button></td>'
+      +'</tr>';
+  });
+  el.innerHTML = h + '</tbody></table></div>';
+}
+
+function adminNewCompany() {
+  adminEditCoId = null;
+  document.getElementById('adm-co-modal-title').textContent = 'New Company';
+  document.getElementById('adm-co-del-btn').style.display = 'none';
+  ['adm-co-name','adm-co-regno','adm-co-address','adm-co-contact','adm-co-email','adm-co-phone','adm-co-logo'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
+  document.getElementById('adm-co-headcount').value='';
+  document.getElementById('adm-co-country').value='Mauritius';
+  document.getElementById('adm-co-type').value='standalone';
+  document.getElementById('adm-co-currency').value='MUR';
+  document.getElementById('adm-co-tier').value='professional';
+  document.getElementById('adm-co-parent').value='';
+  document.getElementById('adm-company-modal').style.display='flex';
+}
+
+function adminEditCompany(id) {
+  var co = adminCompaniesData.find(function(c){return c.id===id;}); if(!co) return;
+  adminEditCoId = id;
+  document.getElementById('adm-co-modal-title').textContent = co.name||'Edit Company';
+  document.getElementById('adm-co-del-btn').style.display = isSA()?'inline-flex':'none';
+  var gf=function(fid,val){var el=document.getElementById(fid);if(el)el.value=val||'';};
+  gf('adm-co-name',co.name); gf('adm-co-regno',co.registration_no); gf('adm-co-address',co.address);
+  gf('adm-co-contact',co.contact_name); gf('adm-co-email',co.contact_email); gf('adm-co-phone',co.phone);
+  gf('adm-co-logo',co.logo_url); gf('adm-co-country',co.country||'Mauritius');
+  document.getElementById('adm-co-headcount').value=co.headcount||'';
+  document.getElementById('adm-co-type').value=co.company_type||'standalone';
+  document.getElementById('adm-co-currency').value=co.currency||'MUR';
+  document.getElementById('adm-co-tier').value=co.subscription_tier||'professional';
+  document.getElementById('adm-co-parent').value=co.parent_company_id||'';
+  document.getElementById('adm-co-industry').value=co.industry||'Manufacturing';
+  document.getElementById('adm-company-modal').style.display='flex';
+}
+
+function adminCloseCoModal(){ document.getElementById('adm-company-modal').style.display='none'; }
+
+async function adminSaveCompany() {
+  var name = document.getElementById('adm-co-name')?.value?.trim();
+  if(!name){toast('Company name required',false);return;}
+  var g=function(id){var el=document.getElementById(id);return el?el.value||null:null;};
+  var body={name,company_type:g('adm-co-type')||'standalone',parent_company_id:g('adm-co-parent')||null,
+    industry:g('adm-co-industry'),registration_no:g('adm-co-regno'),address:g('adm-co-address'),
+    country:g('adm-co-country')||'Mauritius',currency:g('adm-co-currency')||'MUR',
+    phone:g('adm-co-phone'),contact_name:g('adm-co-contact'),contact_email:g('adm-co-email'),
+    headcount:g('adm-co-headcount')?parseInt(g('adm-co-headcount')):null,
+    logo_url:g('adm-co-logo'),subscription_tier:g('adm-co-tier')||'professional',
+    active:true,updated_at:new Date().toISOString()};
+  try{
+    if(adminEditCoId){await api('/companies?id=eq.'+adminEditCoId,{m:'PATCH',p:'return=minimal',b:body});toast('Company updated!');}
+    else{await api('/companies',{m:'POST',p:'return=minimal',b:body});toast('Company registered!');}
+    adminCloseCoModal(); adminLoadAll().then(function(){adminLoadCompanies();adminRenderOverviewCards();});
+    if(typeof loadCoDrop==='function') loadCoDrop();
+  }catch(e){toast(e.message,false);}
+}
+
+async function adminDeleteCompany() {
+  if(!adminEditCoId||!confirm('Delete this company? This is irreversible.'))return;
+  try{await api('/companies?id=eq.'+adminEditCoId,{m:'DELETE'});toast('Company deleted!');adminCloseCoModal();adminLoadAll().then(function(){adminLoadCompanies();});}
+  catch(e){toast(e.message,false);}
+}
+
+// ── Sites CRUD ──────────────────────────────────────────────────────────────────
+async function adminLoadSites() {
+  if(!adminCompaniesData.length) await adminLoadAll();
+  var el = document.getElementById('adm-sites-table'); if(!el) return;
+  var fCo = document.getElementById('adm-sites-filter-co')?.value||'';
+  var fType = document.getElementById('adm-sites-filter-type')?.value||'';
+  var sites = adminSitesData.filter(function(s){
+    var mCo = !fCo || s.company_id===fCo;
+    var mT  = !fType || s.site_type===fType;
+    return mCo && mT;
+  });
+  if(!sites.length){el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)"><div style="font-size:40px;margin-bottom:10px">📍</div><div style="font-weight:600;margin-bottom:8px">No sites found</div><button class="btn btn-primary" onclick="adminNewSite(null)"><i class="ti ti-plus"></i>Add site</button></div>'; return;}
+  var h='<div style="overflow:auto"><table style="width:100%;border-collapse:collapse;font-size:12px">'
+    +'<thead><tr style="background:#1D9E75;color:#fff">'
+    +'<th style="padding:8px 14px;text-align:left">Site</th><th style="padding:8px">Company</th>'
+    +'<th style="padding:8px">Type</th><th style="padding:8px">Parent</th>'
+    +'<th style="padding:8px">Manager</th><th style="padding:8px">Headcount</th>'
+    +'<th style="padding:8px">Risk</th><th style="padding:8px">Status</th>'
+    +'<th style="padding:8px;width:80px"></th>'
+    +'</tr></thead><tbody>';
+  sites.forEach(function(s,i){
+    var bg=i%2===0?'#fff':'#f9fafb';
+    var co=adminCompaniesData.find(function(c){return c.id===s.company_id;});
+    var parent=adminSitesData.find(function(p){return p.id===s.parent_site_id;});
+    var tc=SITE_TYPE_CFG[s.site_type]||{emoji:'📍',label:s.site_type,color:'#6B7280'};
+    var rc=RISK_CFG[s.risk_level||'medium']||RISK_CFG.medium;
+    var stCfg={active:['#EAF3DE','#3B6D11'],inactive:['#f3f4f6','#6B7280'],construction:['#FEF9EC','#854F0B']};
+    var sc=stCfg[s.status||'active']||stCfg.active;
+    h+='<tr style="border-bottom:1px solid #f0f0f0;background:'+bg+'">'
+      +'<td style="padding:8px 14px"><div style="display:flex;align-items:center;gap:6px"><span style="font-size:14px">'+tc.emoji+'</span><div><div style="font-weight:700">'+escH(s.name)+'</div>'+(s.site_code?'<div style="font-size:10px;font-family:monospace;color:var(--text2)">'+escH(s.site_code)+'</div>':'')+'</div></div></td>'
+      +'<td style="padding:8px;font-size:11px">'+escH(co?.name||'—')+'</td>'
+      +'<td style="padding:8px"><span style="background:'+tc.color+'18;color:'+tc.color+';padding:1px 7px;border-radius:99px;font-size:10px;font-weight:700">'+tc.label+'</span></td>'
+      +'<td style="padding:8px;font-size:11px;color:var(--text2)">'+escH(parent?.name||'—')+'</td>'
+      +'<td style="padding:8px;font-size:11px">'+escH(s.manager_name||'—')+'</td>'
+      +'<td style="padding:8px;text-align:center;font-weight:700">'+escH(String(s.headcount||0))+'</td>'
+      +'<td style="padding:8px"><span style="background:'+rc.bg+';color:'+rc.color+';padding:1px 7px;border-radius:99px;font-size:10px;font-weight:700;text-transform:capitalize">'+escH(s.risk_level||'medium')+'</span></td>'
+      +'<td style="padding:8px"><span style="background:'+sc[0]+';color:'+sc[1]+';padding:2px 8px;border-radius:99px;font-size:10px;font-weight:700;text-transform:capitalize">'+escH(s.status||'active')+'</span></td>'
+      +'<td style="padding:8px"><div style="display:flex;gap:4px">'
+      +'<button class="btn btn-sm" title="Edit site" data-id="'+s.id+'" onclick="adminEditSite(this.dataset.id)"><i class="ti ti-edit"></i></button>'
+      +'<button class="btn btn-sm" title="Set as active site" data-id="'+s.id+'" onclick="adminSwitchSite(this.dataset.id);document.getElementById(\'adm-site-switcher\').value=this.dataset.id;toast(\'Viewing: \'+(adminSitesData.find(function(x){return x.id===this.dataset.id;})?.name||\'Site\'))"><i class="ti ti-eye"></i></button>'
+      +'</div></td></tr>';
+  });
+  el.innerHTML=h+'</tbody></table></div>';
+}
+
+function adminNewSite(companyId) {
+  adminEditSiteId = null;
+  document.getElementById('adm-site-modal-title').textContent='New Site';
+  document.getElementById('adm-site-del-btn').style.display='none';
+  ['adm-site-name','adm-site-code','adm-site-address','adm-site-city','adm-site-manager','adm-site-mgr-email','adm-site-lat','adm-site-lng'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
+  document.getElementById('adm-site-headcount').value='';
+  document.getElementById('adm-site-country').value='Mauritius';
+  document.getElementById('adm-site-type').value='site';
+  document.getElementById('adm-site-risk').value='medium';
+  document.getElementById('adm-site-status').value='active';
+  if(companyId) document.getElementById('adm-site-company').value=companyId;
+  else document.getElementById('adm-site-company').value=prof?.company_id||'';
+  document.getElementById('adm-site-parent').value='';
+  adminRefreshSiteParentSelect(companyId);
+  document.getElementById('adm-site-modal').style.display='flex';
+}
+
+function adminEditSite(id) {
+  var s=adminSitesData.find(function(x){return x.id===id;}); if(!s) return;
+  adminEditSiteId=id;
+  document.getElementById('adm-site-modal-title').textContent=s.name||'Edit Site';
+  document.getElementById('adm-site-del-btn').style.display=isMgr()?'inline-flex':'none';
+  var gf=function(fid,val){var el=document.getElementById(fid);if(el)el.value=val||'';};
+  gf('adm-site-name',s.name);gf('adm-site-code',s.site_code);gf('adm-site-address',s.address);
+  gf('adm-site-city',s.city);gf('adm-site-country',s.country||'Mauritius');
+  gf('adm-site-manager',s.manager_name);gf('adm-site-mgr-email',s.manager_email);
+  gf('adm-site-lat',s.lat);gf('adm-site-lng',s.lng);
+  document.getElementById('adm-site-headcount').value=s.headcount||'';
+  document.getElementById('adm-site-company').value=s.company_id||'';
+  document.getElementById('adm-site-type').value=s.site_type||'site';
+  document.getElementById('adm-site-risk').value=s.risk_level||'medium';
+  document.getElementById('adm-site-status').value=s.status||'active';
+  adminRefreshSiteParentSelect(s.company_id);
+  document.getElementById('adm-site-parent').value=s.parent_site_id||'';
+  document.getElementById('adm-site-modal').style.display='flex';
+}
+
+function adminCloseSiteModal(){ document.getElementById('adm-site-modal').style.display='none'; }
+
+function adminSiteGetGPS(){
+  if(!navigator.geolocation){toast('Geolocation not supported',false);return;}
+  toast('Getting GPS...');
+  navigator.geolocation.getCurrentPosition(function(p){
+    document.getElementById('adm-site-lat').value=p.coords.latitude.toFixed(6);
+    document.getElementById('adm-site-lng').value=p.coords.longitude.toFixed(6);
+    toast('✓ GPS obtained');
+  },function(){toast('Could not get GPS',false);});
+}
+
+async function adminSaveSite() {
+  var name=document.getElementById('adm-site-name')?.value?.trim();
+  var coId=document.getElementById('adm-site-company')?.value;
+  if(!name){toast('Site name required',false);return;}
+  if(!coId){toast('Please select a company',false);return;}
+  var g=function(id){var el=document.getElementById(id);return el?el.value||null:null;};
+  var body={company_id:coId,name,site_code:g('adm-site-code'),site_type:g('adm-site-type')||'site',
+    parent_site_id:g('adm-site-parent')||null,address:g('adm-site-address'),city:g('adm-site-city'),
+    country:g('adm-site-country')||'Mauritius',lat:g('adm-site-lat')?parseFloat(g('adm-site-lat')):null,
+    lng:g('adm-site-lng')?parseFloat(g('adm-site-lng')):null,manager_name:g('adm-site-manager'),
+    manager_email:g('adm-site-mgr-email'),headcount:g('adm-site-headcount')?parseInt(g('adm-site-headcount')):0,
+    risk_level:g('adm-site-risk')||'medium',status:g('adm-site-status')||'active',updated_at:new Date().toISOString()};
+  try{
+    if(adminEditSiteId){await api('/sites?id=eq.'+adminEditSiteId,{m:'PATCH',p:'return=minimal',b:body});toast('Site updated!');}
+    else{body.created_by=prof?.id;var res=await api('/sites',{m:'POST',p:'return=representation',b:body});if(res?.[0]?.id&&!body.site_code){var n=String(adminSitesData.length+1).padStart(3,'0');await api('/sites?id=eq.'+res[0].id,{m:'PATCH',p:'return=minimal',b:{site_code:'SITE-'+n}});}toast('Site added!');}
+    adminCloseSiteModal(); await adminLoadAll(); adminLoadSites(); adminRenderHierarchy();
+  }catch(e){toast('Run multisite_schema.sql first. Error: '+e.message,false);}
+}
+
+async function adminDeleteSite(){
+  if(!adminEditSiteId||!confirm('Delete this site?'))return;
+  try{await api('/sites?id=eq.'+adminEditSiteId,{m:'DELETE'});toast('Site deleted!');adminCloseSiteModal();await adminLoadAll();adminLoadSites();}
+  catch(e){toast(e.message,false);}
+}
+
+// ── Hierarchy tree ──────────────────────────────────────────────────────────────
+async function adminLoadHierarchyData() {
+  if(!adminSitesData.length) await adminLoadAll();
+  adminRenderHierarchy();
+}
+
+function adminRenderHierarchy() {
+  var el = document.getElementById('adm-hierarchy-tree'); if(!el) return;
+  var fCo = document.getElementById('adm-hier-filter-co')?.value||'';
+  var sites = fCo ? adminSitesData.filter(function(s){return s.company_id===fCo;}) : adminSitesData;
+  var companies = fCo ? adminCompaniesData.filter(function(c){return c.id===fCo;}) : adminCompaniesData;
+  if(!sites.length&&!companies.length){ el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)"><div style="font-size:40px;margin-bottom:10px">🌳</div><div>No hierarchy data. Add companies and sites first.</div></div>'; return; }
+  var html = '';
+  companies.forEach(function(co){
+    var coSites=sites.filter(function(s){return s.company_id===co.id;});
+    html += '<div class="card" style="margin-bottom:12px;padding:0;overflow:hidden">'
+      + '<div style="padding:12px 16px;background:linear-gradient(135deg,#1a3a5c,#185FA5);color:#fff;display:flex;align-items:center;justify-content:space-between">'
+      + '<div style="display:flex;align-items:center;gap:10px">'
+      + (co.logo_url?'<img src="'+escH(co.logo_url)+'" style="width:28px;height:28px;border-radius:6px;object-fit:contain;background:#fff;padding:2px" onerror="this.style.display=\'none\'"/>':
+        '<div style="width:28px;height:28px;border-radius:6px;background:rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;font-weight:800;color:#fff">'+co.name[0]+'</div>')
+      + '<div><div style="font-weight:800;font-size:14px">'+escH(co.name)+'</div>'
+      + '<div style="font-size:10px;opacity:.8">'+escH(co.industry||'')+(co.country?' · '+escH(co.country):'')+(co.company_type?' · '+escH(co.company_type):'')+'</div></div></div>'
+      + '<div style="display:flex;gap:8px;align-items:center">'
+      + '<span style="font-size:11px;opacity:.8">'+coSites.length+' sites</span>'
+      + '<button class="btn btn-sm" style="background:rgba(255,255,255,.2);color:#fff;border-color:rgba(255,255,255,.3)" onclick="adminNewSite(\''+co.id+'\')"><i class="ti ti-plus"></i>Add site</button>'
+      + '</div></div>'
+      + '<div style="padding:12px 16px">';
+    if(!coSites.length){
+      html += '<div style="color:var(--text2);font-size:12px;text-align:center;padding:12px">No sites registered for this company</div>';
+    } else {
+      html += renderSiteTree(coSites, null, 0);
+    }
+    html += '</div></div>';
+  });
+  el.innerHTML = html;
+}
+
+function renderSiteTree(sites, parentId, depth) {
+  var children = sites.filter(function(s){return (s.parent_site_id||null)===(parentId||null);});
+  if(!children.length) return '';
+  var html = '<div style="margin-left:'+(depth*20)+'px">';
+  children.forEach(function(s){
+    var tc=SITE_TYPE_CFG[s.site_type]||{emoji:'📍',label:s.site_type,color:'#6B7280'};
+    var rc=RISK_CFG[s.risk_level||'medium']||RISK_CFG.medium;
+    var subCount=sites.filter(function(x){return x.parent_site_id===s.id;}).length;
+    html += '<div style="display:flex;align-items:center;gap:8px;padding:7px 10px;margin-bottom:4px;background:#f9fafb;border-radius:8px;border-left:3px solid '+tc.color+'">'
+      + (depth>0?'<span style="color:#d1d5db;font-size:10px">'+('└─').padStart(depth*2,'│ ')+'</span>':'')
+      + '<span style="font-size:16px">'+tc.emoji+'</span>'
+      + '<div style="flex:1"><div style="font-weight:700;font-size:12px">'+escH(s.name)+(s.site_code?'<span style="font-family:monospace;font-size:9px;color:var(--text2);margin-left:6px">'+escH(s.site_code)+'</span>':'')+'</div>'
+      + '<div style="font-size:10px;color:var(--text2)">'+tc.label+(s.manager_name?' · 👤 '+escH(s.manager_name):'')+(s.headcount?' · '+s.headcount+' workers':'')+'</div></div>'
+      + '<span style="background:'+rc.bg+';color:'+rc.color+';padding:1px 6px;border-radius:99px;font-size:9px;font-weight:700;text-transform:capitalize">'+escH(s.risk_level||'medium')+'</span>'
+      + (subCount>0?'<span style="font-size:10px;color:var(--text2)">+'+subCount+' sub</span>':'')
+      + '<div style="display:flex;gap:4px">'
+      + '<button class="btn btn-sm" style="padding:2px 5px" data-id="'+s.id+'" onclick="adminEditSite(this.dataset.id)"><i class="ti ti-edit"></i></button>'
+      + '<button class="btn btn-sm" style="padding:2px 5px" title="Add child site" data-co="'+s.company_id+'" data-parent="'+s.id+'" onclick="adminNewChildSite(this.dataset.co,this.dataset.parent)"><i class="ti ti-plus"></i></button>'
+      + '</div></div>';
+    html += renderSiteTree(sites, s.id, depth+1);
+  });
+  return html + '</div>';
+}
+
+function adminNewChildSite(companyId, parentId) {
+  adminNewSite(companyId);
+  setTimeout(function(){
+    var parentSel = document.getElementById('adm-site-parent');
+    if(parentSel) parentSel.value = parentId;
+  }, 100);
+}
+
+// ── Central Oversight ───────────────────────────────────────────────────────────
+async function adminLoadOversight() {
+  if(!adminCompaniesData.length) await adminLoadAll();
+  var cos = adminCompaniesData;
+  if(!isSA()){ document.getElementById('adm-view-oversight').innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)"><div style="font-size:40px;margin-bottom:10px">🔒</div><div>Central oversight is available to SEPHS Admins and executives with multi-company access.</div></div>'; return; }
+  var safe = async function(p){try{return await p;}catch(e){return [];}};
+  var results = await Promise.all(cos.map(function(co){ return safe(api('/events?select=id,severity,status,event_type&company_id=eq.'+co.id+'&event_date=gte.'+(new Date().getFullYear())+'-01-01')); }));
+  var actResults = await Promise.all(cos.map(function(co){ return safe(api('/action_tracker?select=id,status&company_id=eq.'+co.id)); }));
+  var legalResults = await Promise.all(cos.map(function(co){ return safe(api('/legal_requirements?select=compliance_score&company_id=eq.'+co.id)); }));
+  // Incidents chart
+  var incEl = document.getElementById('oversight-incidents-chart');
+  if(incEl){
+    var maxV=Math.max(...results.map(function(d){return d?.length||0;}),1);
+    incEl.innerHTML=cos.map(function(co,i){
+      var cnt=(results[i]||[]).length;
+      var pct=Math.round(cnt/maxV*100);
+      var c=cnt>=10?'#DC2626':cnt>=5?'#EF9F27':'#185FA5';
+      return '<div style="display:flex;align-items:center;gap:8px;margin-bottom:5px">'
+        +'<div style="font-size:11px;font-weight:600;min-width:110px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+escH(co.name)+'</div>'
+        +'<div style="flex:1;height:12px;background:#f3f4f6;border-radius:99px;overflow:hidden"><div style="width:'+pct+'%;height:100%;background:'+c+';border-radius:99px;transition:width .8s"></div></div>'
+        +'<span style="font-size:11px;font-weight:800;color:'+c+';min-width:24px;text-align:right">'+cnt+'</span></div>';
+    }).join('');
+  }
+  // Compliance chart
+  var compEl = document.getElementById('oversight-compliance-chart');
+  if(compEl){
+    compEl.innerHTML=cos.map(function(co,i){
+      var scores=(legalResults[i]||[]).filter(function(x){return x.compliance_score!=null;}).map(function(x){return parseFloat(x.compliance_score)||0;});
+      var pct=scores.length>0?Math.round(scores.reduce(function(a,b){return a+b;},0)/scores.length):null;
+      var c=pct==null?'#9CA3AF':pct>=80?'#1D9E75':pct>=60?'#EF9F27':'#DC2626';
+      return '<div style="display:flex;align-items:center;gap:8px;margin-bottom:5px">'
+        +'<div style="font-size:11px;font-weight:600;min-width:110px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+escH(co.name)+'</div>'
+        +'<div style="flex:1;height:12px;background:#f3f4f6;border-radius:99px;overflow:hidden"><div style="width:'+(pct||0)+'%;height:100%;background:'+c+';border-radius:99px;transition:width .8s"></div></div>'
+        +'<span style="font-size:11px;font-weight:800;color:'+c+';min-width:36px;text-align:right">'+(pct!=null?pct+'%':'—')+'</span></div>';
+    }).join('');
+  }
+  // Performance matrix
+  var matEl = document.getElementById('oversight-matrix');
+  if(matEl){
+    var h='<div style="overflow:auto"><table style="width:100%;border-collapse:collapse;font-size:11px">'
+      +'<thead><tr style="background:#312e81;color:#fff">'
+      +'<th style="padding:8px 14px;text-align:left;min-width:140px">Company</th>'
+      +'<th style="padding:8px;text-align:center">Sites</th>'
+      +'<th style="padding:8px;text-align:center">Workers</th>'
+      +'<th style="padding:8px;text-align:center">Incidents YTD</th>'
+      +'<th style="padding:8px;text-align:center">Critical/High</th>'
+      +'<th style="padding:8px;text-align:center">Open actions</th>'
+      +'<th style="padding:8px;text-align:center">Compliance %</th>'
+      +'<th style="padding:8px;text-align:center">Risk level</th>'
+      +'</tr></thead><tbody>';
+    cos.forEach(function(co,i){
+      var bgrow=i%2===0?'#fff':'#f9fafb';
+      var events=results[i]||[]; var acts=actResults[i]||[]; var legal=legalResults[i]||[];
+      var criHigh=events.filter(function(x){return ['critical','high'].includes(x.severity);}).length;
+      var openActs=acts.filter(function(x){return x.status!=='closed';}).length;
+      var scores=legal.filter(function(x){return x.compliance_score!=null;}).map(function(x){return parseFloat(x.compliance_score)||0;});
+      var compPct=scores.length>0?Math.round(scores.reduce(function(a,b){return a+b;},0)/scores.length):null;
+      var sites=adminSitesData.filter(function(s){return s.company_id===co.id;}).length;
+      var risk=criHigh>=5?'critical':criHigh>=2?'high':events.length>=5?'medium':'low';
+      var rc=RISK_CFG[risk]||RISK_CFG.low;
+      var cc=compPct==null?'#9CA3AF':compPct>=80?'#1D9E75':compPct>=60?'#EF9F27':'#DC2626';
+      h+='<tr style="border-bottom:1px solid #f0f0f0;background:'+bgrow+'">'
+        +'<td style="padding:8px 14px;font-weight:700">'+escH(co.name)+'</td>'
+        +'<td style="padding:8px;text-align:center">'+sites+'</td>'
+        +'<td style="padding:8px;text-align:center">'+escH(String(co.headcount||0))+'</td>'
+        +'<td style="padding:8px;text-align:center;font-weight:700;color:'+(events.length>0?'#185FA5':'#6B7280')+'">'+events.length+'</td>'
+        +'<td style="padding:8px;text-align:center;font-weight:800;color:'+(criHigh>0?'#DC2626':'#1D9E75')+'">'+criHigh+'</td>'
+        +'<td style="padding:8px;text-align:center;font-weight:700;color:'+(openActs>5?'#EF9F27':'#6B7280')+'">'+openActs+'</td>'
+        +'<td style="padding:8px;text-align:center;font-weight:800;color:'+cc+'">'+(compPct!=null?compPct+'%':'—')+'</td>'
+        +'<td style="padding:8px;text-align:center"><span style="background:'+rc.bg+';color:'+rc.color+';padding:2px 8px;border-radius:99px;font-size:10px;font-weight:700;text-transform:capitalize">'+risk+'</span></td>'
+        +'</tr>';
+    });
+    matEl.innerHTML=h+'</tbody></table></div>';
+  }
+}
+
+async function adminGroupAI(type) {
+  var outEl = document.getElementById('oversight-ai-output');
+  var phEl  = document.getElementById('oversight-ai-placeholder');
+  if(!outEl) return;
+  outEl.style.display='block'; if(phEl)phEl.style.display='none';
+  outEl.textContent='⏳ Generating '+type.replace(/_/g,' ')+'...';
+  var numCos=adminCompaniesData.length; var numSites=adminSitesData.length;
+  var ctx='Multi-company HSE group data: '+numCos+' companies, '+numSites+' sites registered. Company names: '+adminCompaniesData.map(function(c){return c.name;}).join(', ')+'.\n\n';
+  var prompts={
+    group_summary:ctx+'Write a concise executive group HSE summary (250 words) covering: portfolio overview, safety performance across companies, top risks, compliance status, and strategic recommendations for the group.',
+    risk_comparison:ctx+'Write a risk comparison analysis (250 words) comparing HSE risk profiles across the companies in this portfolio. Identify which sites/companies need most attention and why.',
+    consultant_report:ctx+'You are an HSE consultant at SEPHS Consulting. Write a client-facing consultant report (300 words) summarising overall HSE performance across all client companies, key findings, and recommended priorities for improvement.',
+  };
+  try{
+    var resp=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1200,messages:[{role:'user',content:prompts[type]||ctx+'Write a group HSE analysis. 250 words.'}]})});
+    var d=await resp.json(); outEl.textContent=(d.content||[]).map(function(c){return c.text||'';}).join('')||'No response.';
+  }catch(e){outEl.textContent='AI unavailable: '+e.message;}
+}
+
+// ── Site access ─────────────────────────────────────────────────────────────────
+async function adminLoadAccessList() {
+  var el = document.getElementById('adm-access-list'); if(!el) return;
+  el.innerHTML='<div class="loading-msg">Loading...</div>';
+  if(!adminSitesData.length) await adminLoadAll();
+  try{
+    var d=await api('/user_site_access?select=*'+cf()+'&order=granted_at.desc');
+    adminAccessData=d||[];
+    if(!d||!d.length){el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)"><div style="font-size:40px;margin-bottom:10px">🔐</div><div style="font-weight:600;margin-bottom:8px">No site access assignments yet</div><button class="btn btn-primary" onclick="adminGrantAccess()"><i class="ti ti-plus"></i>Grant first access</button></div>';return;}
+    var h='<div style="overflow:auto"><table style="width:100%;border-collapse:collapse;font-size:12px">'
+      +'<thead><tr style="background:#374151;color:#fff">'
+      +'<th style="padding:8px 14px;text-align:left">User ID</th>'
+      +'<th style="padding:8px;text-align:left">Site</th>'
+      +'<th style="padding:8px">Role override</th>'
+      +'<th style="padding:8px">Access level</th>'
+      +'<th style="padding:8px">Granted</th>'
+      +'<th style="padding:8px;width:60px"></th>'
+      +'</tr></thead><tbody>';
+    d.forEach(function(a,i){
+      var bg=i%2===0?'#fff':'#f9fafb';
+      var site=adminSitesData.find(function(s){return s.id===a.site_id;});
+      var tc=site?SITE_TYPE_CFG[site.site_type]||{emoji:'📍'}:{emoji:'📍'};
+      var rc=typeof HSE_ROLES!=='undefined'?HSE_ROLES[a.role_override]:null;
+      h+='<tr style="border-bottom:1px solid #f0f0f0;background:'+bg+'">'
+        +'<td style="padding:8px 14px;font-family:monospace;font-size:10px;color:var(--text2)">'+escH(a.user_id?.slice(0,16)+'…'||'—')+'</td>'
+        +'<td style="padding:8px;font-weight:600">'+tc.emoji+' '+escH(site?.name||a.site_id?.slice(0,8)||'—')+'</td>'
+        +'<td style="padding:8px">'+(rc?'<span style="background:'+rc.bg+';color:'+rc.color+';padding:1px 7px;border-radius:99px;font-size:10px;font-weight:700">'+rc.emoji+' '+rc.label+'</span>':'<span style="color:var(--text2);font-size:11px">Default</span>')+'</td>'
+        +'<td style="padding:8px"><span style="font-size:11px;font-weight:600;color:'+(a.access_level==='read_only'?'#6B7280':'#185FA5')+'">'+escH(a.access_level||'read_write').replace('_',' ')+'</span></td>'
+        +'<td style="padding:8px;font-size:11px;color:var(--text2)">'+(a.granted_at?new Date(a.granted_at).toLocaleDateString('en-GB'):'—')+'</td>'
+        +'<td style="padding:8px"><button class="btn btn-sm" style="color:#DC2626" data-id="'+a.id+'" onclick="adminRevokeAccess(this.dataset.id)"><i class="ti ti-x"></i></button></td>'
+        +'</tr>';
+    });
+    el.innerHTML=h+'</tbody></table></div>';
+  }catch(e){el.innerHTML='<div style="padding:20px;color:var(--text2);text-align:center">'+escH(e.message)+'<br><small>Run multisite_schema.sql to create the user_site_access table.</small></div>';}
+}
+
+function adminGrantAccess(){
+  if(!adminSitesData.length)adminLoadAll();
+  document.getElementById('adm-acc-email').value='';
+  document.getElementById('adm-acc-site').value='';
+  document.getElementById('adm-acc-role').value='';
+  document.getElementById('adm-acc-level').value='read_write';
+  document.getElementById('adm-access-modal').style.display='flex';
+}
+function adminCloseAccessModal(){document.getElementById('adm-access-modal').style.display='none';}
+
+async function adminSaveAccess(){
+  var email=document.getElementById('adm-acc-email')?.value?.trim();
+  var siteId=document.getElementById('adm-acc-site')?.value;
+  if(!email||!siteId){toast('Email and site required',false);return;}
+  // Lookup user profile
+  try{
+    var users=await api('/profiles?email=eq.'+email+(prof?.company_id&&!isSA()?'&company_id=eq.'+prof.company_id:'')+'&select=id,full_name');
+    if(!users||!users.length){toast('User not found: '+email,false);return;}
+    var userId=users[0].id;
+    var body={user_id:userId,site_id:siteId,company_id:prof?.company_id,role_override:document.getElementById('adm-acc-role')?.value||null,access_level:document.getElementById('adm-acc-level')?.value||'read_write',granted_by:prof?.id};
+    await api('/user_site_access',{m:'POST',p:'return=minimal',b:body});
+    toast('Access granted to '+escH(users[0].full_name||email));
+    adminCloseAccessModal(); adminLoadAccessList();
+  }catch(e){toast('Error: '+e.message,false);}
+}
+
+async function adminRevokeAccess(id){
+  if(!confirm('Revoke this site access?'))return;
+  try{await api('/user_site_access?id=eq.'+id,{m:'DELETE'});toast('Access revoked!');adminLoadAccessList();}
+  catch(e){toast(e.message,false);}
+}
+
+// ── Backward compat aliases ─────────────────────────────────────────────────────
+async function saveCompany(){adminSaveCompany();}
+function loadCoDrop(){
+  // Populate company dropdown if exists anywhere in the app
+  var sel = document.getElementById('co-drop')||document.getElementById('company-select');
+  if(sel&&adminCompaniesData.length){
+    sel.innerHTML='<option value="">Select company...</option>';
+    adminCompaniesData.forEach(function(c){var o=document.createElement('option');o.value=c.id;o.textContent=c.name;sel.appendChild(o);});
+  }
+}
+function companies_list(){return adminCompaniesData;}
+
 // ===================================================================
 // INTEGRATIONS MODULE — Complete JS
 // ERP · HR · Payroll · Access Control · IoT · CCTV · Power BI
@@ -18945,6 +19638,7 @@ async function compSave() {
 
 
 
+
 </script>
 </head>
 <body>
@@ -26980,7 +27674,303 @@ async function compSave() {
 </div><!-- end page-users -->
 
 <div id="page-admin" class="page">
-<div class="page-header"><div class="page-title">Company Management</div></div><div class="card"><div class="card-title">Add new company</div><div class="form-row"><div class="form-group"><label class="form-label">Company name</label><input type="text" id="co-name"/></div><div class="form-group"><label class="form-label">Industry</label><select id="co-industry"><option>Manufacturing</option><option>Construction</option><option>Healthcare</option><option>Transportation</option><option>Energy / Oil & Gas</option><option>Logistics</option><option>Other</option></select></div></div><div class="form-row"><div class="form-group"><label class="form-label">Contact name</label><input type="text" id="co-contact"/></div><div class="form-group"><label class="form-label">Contact email</label><input type="email" id="co-email"/></div></div><div class="form-group"><label class="form-label">Logo URL</label><input type="url" id="co-logo" placeholder="https://..."/></div><button class="btn btn-primary" onclick="saveCompany()"><i class="ti ti-device-floppy"></i>Register</button></div><div class="card"><div class="card-title">All companies</div><div id="companies-list"><div class="loading-msg">Loading...</div></div></div></div>
+<div class="page-header">
+<div>
+<div class="page-title">Company &amp; Site Management</div>
+<div style="font-size:12px;color:var(--text2)" id="admin-subtitle">Multi-company · Site hierarchy · Central oversight · Access control</div>
+</div>
+<div style="display:flex;gap:8px" id="admin-header-btns">
+<button class="btn btn-sm btn-primary" onclick="adminNewCompany()"><i class="ti ti-building"></i>Add company</button>
+<button class="btn btn-sm" onclick="adminNewSite(null)"><i class="ti ti-map-pin"></i>Add site</button>
+</div>
+</div>
+
+<!-- Metrics -->
+<div style="display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:14px" id="admin-metrics">
+<div class="card" style="padding:10px 12px;border-left:4px solid #185FA5"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase">Companies</div><div style="font-size:22px;font-weight:800;color:#185FA5" id="adm-m-companies">—</div></div>
+<div class="card" style="padding:10px 12px;border-left:4px solid #1D9E75"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase">Active sites</div><div style="font-size:22px;font-weight:800;color:#1D9E75" id="adm-m-sites">—</div></div>
+<div class="card" style="padding:10px 12px;border-left:4px solid #5B21B6"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase">Total workers</div><div style="font-size:22px;font-weight:800;color:#5B21B6" id="adm-m-workers">—</div></div>
+<div class="card" style="padding:10px 12px;border-left:4px solid #EF9F27"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase">Open incidents</div><div style="font-size:22px;font-weight:800;color:#EF9F27" id="adm-m-incidents">—</div></div>
+<div class="card" style="padding:10px 12px;border-left:4px solid #DC2626"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase">Open actions</div><div style="font-size:22px;font-weight:800;color:#DC2626" id="adm-m-actions">—</div></div>
+</div>
+
+<!-- Tab bar -->
+<div style="display:flex;gap:0;margin-bottom:14px;border-bottom:2px solid var(--border);overflow-x:auto">
+<button class="mtg-tab active" id="adm-tab-overview"   onclick="adminTab('overview',this)"   style="white-space:nowrap">🏢 Overview</button>
+<button class="mtg-tab"        id="adm-tab-companies"  onclick="adminTab('companies',this)"  style="white-space:nowrap">🏛️ Companies</button>
+<button class="mtg-tab"        id="adm-tab-sites"      onclick="adminTab('sites',this)"      style="white-space:nowrap">📍 Sites</button>
+<button class="mtg-tab"        id="adm-tab-hierarchy"  onclick="adminTab('hierarchy',this)"  style="white-space:nowrap">🌳 Hierarchy</button>
+<button class="mtg-tab"        id="adm-tab-oversight"  onclick="adminTab('oversight',this)"  style="white-space:nowrap">📊 Central Oversight</button>
+<button class="mtg-tab"        id="adm-tab-access"     onclick="adminTab('access',this)"     style="white-space:nowrap">🔐 Site Access</button>
+</div>
+
+<!-- ── OVERVIEW ── -->
+<div id="adm-view-overview">
+<div style="display:grid;grid-template-columns:2fr 1fr;gap:14px;margin-bottom:14px">
+<!-- Company cards -->
+<div>
+<div style="font-size:13px;font-weight:700;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center">
+<span>All Companies</span>
+<input type="text" id="adm-search-co" placeholder="Search companies..." oninput="adminFilterCompanies()" style="padding:5px 10px;border:1px solid var(--border);border-radius:6px;font-size:11px;width:160px"/>
+</div>
+<div id="adm-companies-grid" style="display:flex;flex-direction:column;gap:8px"><div class="loading-msg">Loading...</div></div>
+</div>
+<!-- Quick site switcher + stats -->
+<div>
+<div class="card" style="margin-bottom:10px;background:linear-gradient(135deg,#1a3a5c,#185FA5);color:#fff;padding:14px 16px">
+<div style="font-size:12px;font-weight:700;opacity:.8;margin-bottom:6px">CURRENT CONTEXT</div>
+<div style="font-size:16px;font-weight:800" id="adm-ctx-company">—</div>
+<div style="font-size:12px;opacity:.8;margin-top:3px" id="adm-ctx-role">—</div>
+</div>
+<div class="card" style="margin-bottom:10px">
+<div style="font-size:12px;font-weight:700;margin-bottom:8px">Quick site switch</div>
+<select id="adm-site-switcher" onchange="adminSwitchSite(this.value)" style="width:100%;padding:7px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px">
+<option value="">Select a site...</option>
+</select>
+<div style="font-size:10px;color:var(--text2);margin-top:5px">Switching site filters all module data to that location</div>
+</div>
+<div class="card">
+<div style="font-size:12px;font-weight:700;margin-bottom:8px">Aggregate KPIs</div>
+<div id="adm-agg-kpis" style="display:flex;flex-direction:column;gap:6px"><div class="loading-msg" style="font-size:11px">Loading...</div></div>
+</div>
+</div>
+</div>
+</div>
+
+<!-- ── COMPANIES ── -->
+<div id="adm-view-companies" style="display:none">
+<div class="card" style="margin-bottom:14px;padding:10px 14px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+<div style="font-size:13px;font-weight:700">Company Register</div>
+<button class="btn btn-primary" onclick="adminNewCompany()"><i class="ti ti-plus"></i>Add company</button>
+</div>
+<div id="adm-companies-table"><div class="loading-msg">Loading...</div></div>
+</div>
+
+<!-- ── SITES ── -->
+<div id="adm-view-sites" style="display:none">
+<div class="card" style="margin-bottom:12px;padding:10px 14px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+<div style="display:flex;gap:8px;flex-wrap:wrap">
+<select id="adm-sites-filter-co" onchange="adminLoadSites()" style="padding:7px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px">
+<option value="">All companies</option>
+</select>
+<select id="adm-sites-filter-type" onchange="adminLoadSites()" style="padding:7px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px">
+<option value="">All types</option>
+<option value="group">Group</option><option value="region">Region</option>
+<option value="country">Country</option><option value="site">Site</option>
+<option value="facility">Facility</option><option value="building">Building</option>
+<option value="area">Area</option><option value="zone">Zone</option>
+</select>
+</div>
+<button class="btn btn-primary" onclick="adminNewSite(null)"><i class="ti ti-plus"></i>Add site</button>
+</div>
+<div id="adm-sites-table"><div class="loading-msg">Loading...</div></div>
+</div>
+
+<!-- ── HIERARCHY TREE ── -->
+<div id="adm-view-hierarchy" style="display:none">
+<div class="card" style="margin-bottom:12px;padding:10px 14px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+<div><div style="font-size:13px;font-weight:700">Site Hierarchy</div><div style="font-size:11px;color:var(--text2)">Group → Region → Country → Site → Facility → Building → Area → Zone</div></div>
+<select id="adm-hier-filter-co" onchange="adminRenderHierarchy()" style="padding:7px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px">
+<option value="">All companies</option>
+</select>
+</div>
+<div id="adm-hierarchy-tree"></div>
+</div>
+
+<!-- ── CENTRAL OVERSIGHT ── -->
+<div id="adm-view-oversight" style="display:none">
+<div class="card" style="margin-bottom:14px;padding:14px 20px;background:linear-gradient(135deg,#312e81,#5B21B6);color:#fff">
+<div style="font-size:15px;font-weight:800;margin-bottom:4px">📊 Central Oversight Dashboard</div>
+<div style="font-size:12px;opacity:.85">Aggregate KPIs across all companies — available to SEPHS Admin and executives with multi-company access</div>
+</div>
+<!-- Company comparison table -->
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px">
+<div class="card">
+<div class="card-title">Incidents by company — YTD</div>
+<div id="oversight-incidents-chart" style="display:flex;flex-direction:column;gap:6px"><div class="loading-msg" style="font-size:11px">Loading...</div></div>
+</div>
+<div class="card">
+<div class="card-title">Compliance % by company</div>
+<div id="oversight-compliance-chart" style="display:flex;flex-direction:column;gap:6px"><div class="loading-msg" style="font-size:11px">Loading...</div></div>
+</div>
+</div>
+<div class="card" style="margin-bottom:14px">
+<div class="card-title">Company performance matrix</div>
+<div style="overflow:auto" id="oversight-matrix"><div class="loading-msg">Loading...</div></div>
+</div>
+<div class="card" style="border:2px solid #5B21B6">
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+<div class="card-title" style="margin:0;color:#5B21B6"><i class="ti ti-robot"></i> AI Group Report</div>
+<div style="display:flex;gap:6px">
+<button class="btn btn-sm" style="background:#5B21B6;color:#fff;border-color:#5B21B6" onclick="adminGroupAI('group_summary')">📊 Group summary</button>
+<button class="btn btn-sm" style="background:#5B21B6;color:#fff;border-color:#5B21B6" onclick="adminGroupAI('risk_comparison')">⚠️ Risk comparison</button>
+<button class="btn btn-sm" style="background:#5B21B6;color:#fff;border-color:#5B21B6" onclick="adminGroupAI('consultant_report')">📋 Consultant report</button>
+</div>
+</div>
+<div id="oversight-ai-output" style="display:none;background:#F5F3FF;border:1px solid #c4b5fd;border-radius:8px;padding:12px;font-size:13px;line-height:1.7;white-space:pre-wrap;max-height:400px;overflow-y:auto"></div>
+<div id="oversight-ai-placeholder" style="font-size:12px;color:var(--text2);font-style:italic">Select a report type above to generate a cross-company analysis.</div>
+</div>
+</div>
+
+<!-- ── SITE ACCESS ── -->
+<div id="adm-view-access" style="display:none">
+<div class="card" style="margin-bottom:12px;padding:10px 14px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+<div><div style="font-size:13px;font-weight:700">Site Access Permissions</div><div style="font-size:11px;color:var(--text2)">Assign users to specific sites with role overrides</div></div>
+<button class="btn btn-primary" onclick="adminGrantAccess()"><i class="ti ti-plus"></i>Grant access</button>
+</div>
+<div id="adm-access-list"><div class="loading-msg">Loading...</div></div>
+</div>
+
+<!-- ── COMPANY FORM MODAL ── -->
+<div id="adm-company-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9999;align-items:flex-start;justify-content:center;padding:40px 20px;overflow-y:auto">
+<div style="background:#fff;border-radius:14px;max-width:620px;width:100%;box-shadow:0 24px 80px rgba(0,0,0,.35)">
+<div style="padding:16px 24px;background:linear-gradient(135deg,#1a3a5c,#185FA5);color:#fff;border-radius:14px 14px 0 0;display:flex;justify-content:space-between;align-items:center">
+<div style="font-size:17px;font-weight:800" id="adm-co-modal-title">New Company</div>
+<button class="btn btn-sm" style="background:rgba(255,255,255,.2);color:#fff;border-color:rgba(255,255,255,.3)" onclick="adminCloseCoModal()"><i class="ti ti-x"></i></button>
+</div>
+<div style="padding:20px">
+<input type="hidden" id="adm-co-id"/>
+<div style="display:grid;grid-template-columns:2fr 1fr;gap:12px">
+<div class="form-group"><label class="form-label">Company name *</label><input type="text" id="adm-co-name" placeholder="Company Ltd."/></div>
+<div class="form-group"><label class="form-label">Company type</label>
+<select id="adm-co-type">
+<option value="standalone">Standalone</option>
+<option value="group">Group / Holding</option>
+<option value="subsidiary">Subsidiary</option>
+<option value="client">Client (consultancy)</option>
+</select></div>
+</div>
+<div class="form-row">
+<div class="form-group"><label class="form-label">Parent company</label>
+<select id="adm-co-parent"><option value="">None (top-level)</option></select></div>
+<div class="form-group"><label class="form-label">Industry</label>
+<select id="adm-co-industry">
+<option value="Manufacturing">Manufacturing</option><option value="Construction">Construction</option>
+<option value="Healthcare">Healthcare</option><option value="Transportation">Transportation</option>
+<option value="Energy / Oil & Gas">Energy / Oil &amp; Gas</option><option value="Logistics">Logistics</option>
+<option value="Hospitality">Hospitality</option><option value="Retail">Retail</option>
+<option value="Finance">Finance</option><option value="Government">Government</option>
+<option value="Other">Other</option>
+</select></div>
+</div>
+<div class="form-row">
+<div class="form-group"><label class="form-label">Registration number</label><input type="text" id="adm-co-regno" placeholder="BRN/Company No."/></div>
+<div class="form-group"><label class="form-label">Country</label><input type="text" id="adm-co-country" value="Mauritius"/></div>
+<div class="form-group"><label class="form-label">Currency</label>
+<select id="adm-co-currency"><option value="MUR">MUR — Mauritian Rupee</option><option value="USD">USD — US Dollar</option><option value="EUR">EUR — Euro</option><option value="GBP">GBP — British Pound</option><option value="ZAR">ZAR — South African Rand</option></select></div>
+</div>
+<div class="form-group"><label class="form-label">Address</label><input type="text" id="adm-co-address" placeholder="Street, city, country..."/></div>
+<div class="form-row">
+<div class="form-group"><label class="form-label">Contact name</label><input type="text" id="adm-co-contact"/></div>
+<div class="form-group"><label class="form-label">Contact email</label><input type="email" id="adm-co-email"/></div>
+<div class="form-group"><label class="form-label">Phone</label><input type="text" id="adm-co-phone"/></div>
+</div>
+<div class="form-row">
+<div class="form-group"><label class="form-label">Headcount</label><input type="number" id="adm-co-headcount" min="0"/></div>
+<div class="form-group"><label class="form-label">Logo URL</label><input type="url" id="adm-co-logo" placeholder="https://..."/></div>
+<div class="form-group"><label class="form-label">Subscription tier</label>
+<select id="adm-co-tier"><option value="starter">Starter</option><option value="professional" selected>Professional</option><option value="enterprise">Enterprise</option></select></div>
+</div>
+<div style="display:flex;gap:8px;margin-top:16px;justify-content:flex-end">
+<button class="btn" onclick="adminCloseCoModal()">Cancel</button>
+<button id="adm-co-del-btn" class="btn" style="display:none;color:#DC2626" onclick="adminDeleteCompany()"><i class="ti ti-trash"></i>Delete</button>
+<button class="btn btn-primary" onclick="adminSaveCompany()"><i class="ti ti-device-floppy"></i>Save company</button>
+</div>
+</div>
+</div>
+</div>
+
+<!-- ── SITE FORM MODAL ── -->
+<div id="adm-site-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9999;align-items:flex-start;justify-content:center;padding:40px 20px;overflow-y:auto">
+<div style="background:#fff;border-radius:14px;max-width:600px;width:100%;box-shadow:0 24px 80px rgba(0,0,0,.35)">
+<div style="padding:16px 24px;background:linear-gradient(135deg,#064E3B,#1D9E75);color:#fff;border-radius:14px 14px 0 0;display:flex;justify-content:space-between;align-items:center">
+<div style="font-size:17px;font-weight:800" id="adm-site-modal-title">New Site</div>
+<button class="btn btn-sm" style="background:rgba(255,255,255,.2);color:#fff;border-color:rgba(255,255,255,.3)" onclick="adminCloseSiteModal()"><i class="ti ti-x"></i></button>
+</div>
+<div style="padding:20px">
+<input type="hidden" id="adm-site-id"/>
+<div style="display:grid;grid-template-columns:2fr 1fr;gap:12px">
+<div class="form-group"><label class="form-label">Site name *</label><input type="text" id="adm-site-name" placeholder="Site / location name..."/></div>
+<div class="form-group"><label class="form-label">Site type</label>
+<select id="adm-site-type">
+<option value="group">Group</option><option value="region">Region</option>
+<option value="country">Country</option><option value="site" selected>Site</option>
+<option value="facility">Facility</option><option value="building">Building</option>
+<option value="area">Area</option><option value="zone">Zone</option>
+</select></div>
+</div>
+<div class="form-row">
+<div class="form-group"><label class="form-label">Company *</label>
+<select id="adm-site-company"><option value="">Select company...</option></select></div>
+<div class="form-group"><label class="form-label">Parent site</label>
+<select id="adm-site-parent"><option value="">None (top-level)</option></select></div>
+<div class="form-group"><label class="form-label">Site code</label><input type="text" id="adm-site-code" placeholder="SITE-001"/></div>
+</div>
+<div class="form-group"><label class="form-label">Address</label><input type="text" id="adm-site-address" placeholder="Physical address..."/></div>
+<div class="form-row">
+<div class="form-group"><label class="form-label">City</label><input type="text" id="adm-site-city"/></div>
+<div class="form-group"><label class="form-label">Country</label><input type="text" id="adm-site-country" value="Mauritius"/></div>
+</div>
+<div class="form-row">
+<div class="form-group"><label class="form-label">Latitude</label><input type="text" id="adm-site-lat" style="font-family:monospace" placeholder="-20.000"/></div>
+<div class="form-group"><label class="form-label">Longitude</label><input type="text" id="adm-site-lng" style="font-family:monospace" placeholder="57.000"/></div>
+<div class="form-group" style="display:flex;align-items:flex-end"><button class="btn btn-sm" onclick="adminSiteGetGPS()" style="width:100%"><i class="ti ti-map-pin"></i>GPS</button></div>
+</div>
+<div class="form-row">
+<div class="form-group"><label class="form-label">Site manager</label><input type="text" id="adm-site-manager"/></div>
+<div class="form-group"><label class="form-label">Manager email</label><input type="email" id="adm-site-mgr-email"/></div>
+</div>
+<div class="form-row">
+<div class="form-group"><label class="form-label">Headcount</label><input type="number" id="adm-site-headcount" min="0"/></div>
+<div class="form-group"><label class="form-label">Risk level</label>
+<select id="adm-site-risk"><option value="low">Low</option><option value="medium" selected>Medium</option><option value="high">High</option><option value="critical">Critical</option></select></div>
+<div class="form-group"><label class="form-label">Status</label>
+<select id="adm-site-status"><option value="active">Active</option><option value="inactive">Inactive</option><option value="construction">Under construction</option></select></div>
+</div>
+<div style="display:flex;gap:8px;margin-top:16px;justify-content:flex-end">
+<button class="btn" onclick="adminCloseSiteModal()">Cancel</button>
+<button id="adm-site-del-btn" class="btn" style="display:none;color:#DC2626" onclick="adminDeleteSite()"><i class="ti ti-trash"></i>Delete</button>
+<button class="btn btn-primary" onclick="adminSaveSite()"><i class="ti ti-device-floppy"></i>Save site</button>
+</div>
+</div>
+</div>
+</div>
+
+<!-- ── GRANT ACCESS MODAL ── -->
+<div id="adm-access-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px">
+<div style="background:#fff;border-radius:12px;max-width:440px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,.3)">
+<div style="padding:14px 20px;background:linear-gradient(135deg,#374151,#1a1a2e);color:#fff;border-radius:12px 12px 0 0;display:flex;justify-content:space-between;align-items:center">
+<div style="font-size:16px;font-weight:800">Grant site access</div>
+<button class="btn btn-sm" style="background:rgba(255,255,255,.2);color:#fff;border-color:rgba(255,255,255,.3)" onclick="adminCloseAccessModal()"><i class="ti ti-x"></i></button>
+</div>
+<div style="padding:20px">
+<div class="form-group"><label class="form-label">User email</label><input type="email" id="adm-acc-email" placeholder="user@company.com"/></div>
+<div class="form-group"><label class="form-label">Site</label>
+<select id="adm-acc-site"><option value="">Select site...</option></select></div>
+<div class="form-row">
+<div class="form-group"><label class="form-label">Role at this site</label>
+<select id="adm-acc-role">
+<option value="">Use default role</option>
+<option value="hse_manager">HSE Manager</option><option value="site_manager">Site Manager</option>
+<option value="supervisor">Supervisor</option><option value="auditor">Auditor</option>
+<option value="employee">Employee</option><option value="contractor">Contractor</option>
+</select></div>
+<div class="form-group"><label class="form-label">Access level</label>
+<select id="adm-acc-level">
+<option value="read_write">Read &amp; Write</option>
+<option value="read_only">Read only</option>
+</select></div>
+</div>
+<div style="display:flex;gap:8px;margin-top:14px;justify-content:flex-end">
+<button class="btn" onclick="adminCloseAccessModal()">Cancel</button>
+<button class="btn btn-primary" onclick="adminSaveAccess()"><i class="ti ti-check"></i>Grant access</button>
+</div>
+</div>
+</div>
+</div>
+
+</div><!-- end page-admin -->
+
 <div id="page-integrations" class="page">
 <div class="page-header">
 <div>
