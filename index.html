@@ -91,6 +91,7 @@
 
 
 
+
 const SB='https://iarfxjhahzbhncsaohbg.supabase.co';
 const KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlhcmZ4amhhaHpiaG5jc2FvaGJnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg2OTM1MzAsImV4cCI6MjA5NDI2OTUzMH0.qSjahuX-RwnjWEDmo-LkcorAxpsmyVoaXt4AO4_A9BM';
 let tok=null,prof=null,co=null,chkItems=[],people=[];
@@ -16896,205 +16897,674 @@ const PS_CHECKLIST = [
 ];
 
 // Switch between site inspection and pre-start tabs
-function inspSwitchTab(tab, btn){
-  document.querySelectorAll('.mtg-tab').forEach(t=>t.classList.remove('active'));
-  btn.classList.add('active');
-  document.getElementById('insp-view-site').style.display=tab==='site'?'block':'none';
-  document.getElementById('insp-view-prestart').style.display=tab==='prestart'?'block':'none';
-  if(tab==='site')loadInsps();
-  else psLoad();
+// ===================================================================
+// AUDIT & INSPECTION MANAGEMENT — Complete JS
+// Inspections · Audits · Pre-Start · Findings · Mobile features
+// ===================================================================
+
+let auditAllData=[], auditEditId=null, auditCurrentTab='all';
+let auditTemplates=[], auditFindingsData=[];
+let inspEditingId=null;  // backward compat
+
+const AUDIT_TYPE_CFG = {
+  workplace:       {emoji:'🏭',label:'Workplace Inspection',      color:'#1e40af',bg:'#EFF6FF', border:'#bfdbfe'},
+  behavioral:      {emoji:'👁️', label:'Behavioral Safety Obs.',    color:'#5B21B6',bg:'#F5F3FF', border:'#ddd6fe'},
+  equipment:       {emoji:'⚙️', label:'Equipment Inspection',      color:'#9A3412',bg:'#FFF7ED', border:'#fed7aa'},
+  ppe:             {emoji:'🦺',label:'PPE Inspection',             color:'#065F46',bg:'#ECFDF5', border:'#a7f3d0'},
+  fire:            {emoji:'🔥',label:'Fire Safety Inspection',     color:'#991B1B',bg:'#FEF2F2', border:'#fecaca'},
+  environmental:   {emoji:'🌿',label:'Environmental Inspection',   color:'#065F46',bg:'#ECFDF5', border:'#a7f3d0'},
+  iso_audit:       {emoji:'📊',label:'ISO Audit',                  color:'#374151',bg:'#f9fafb', border:'#e5e7eb'},
+  internal_audit:  {emoji:'🔍',label:'Internal Audit',             color:'#1e40af',bg:'#EFF6FF', border:'#bfdbfe'},
+  supplier_audit:  {emoji:'🏢',label:'Supplier Audit',             color:'#854F0B',bg:'#FFFBEB', border:'#fcd34d'},
+  contractor_audit:{emoji:'👷',label:'Contractor Audit',           color:'#9A3412',bg:'#FFF7ED', border:'#fed7aa'},
+  regulatory:      {emoji:'⚖️', label:'Regulatory Inspection',     color:'#991B1B',bg:'#FEF2F2', border:'#fecaca'},
+  prestart:        {emoji:'🚦',label:'Pre-Start Inspection',       color:'#065F46',bg:'#ECFDF5', border:'#a7f3d0'},
+};
+
+// ── Entry point ────────────────────────────────────────────────────
+function loadInsps() {
+  // Expose ps-add-btn based on role
+  var psBtn = document.getElementById('ps-add-btn');
+  if(psBtn) psBtn.style.display = isMgr()?'inline-flex':'none';
+  auditSwitchTab('all', document.getElementById('insp-tab-all'));
+  auditLoadTemplates();
+  auditWatchOffline();
 }
 
+function inspSwitchTab(tab, btn) {
+  // Backward compat alias
+  if(tab==='site') auditSwitchTab('workplace', document.getElementById('insp-tab-workplace'));
+  else if(tab==='prestart') auditSwitchTab('prestart', document.getElementById('insp-tab-prestart'));
+  else auditSwitchTab(tab, btn);
+}
+
+function auditSwitchTab(tab, btn) {
+  auditCurrentTab = tab;
+  document.querySelectorAll('[id^="insp-tab-"]').forEach(function(t){t.classList.remove('active');});
+  if(btn) btn.classList.add('active');
+  // Show/hide views
+  document.getElementById('audit-view-register').style.display  = tab==='findings'||tab==='prestart' ? 'none' : 'block';
+  document.getElementById('audit-view-prestart').style.display  = tab==='prestart' ? 'block' : 'none';
+  document.getElementById('audit-view-findings').style.display  = tab==='findings' ? 'block' : 'none';
+  document.getElementById('audit-form-view').style.display      = 'none';
+  // Update filter label
+  var cfg = AUDIT_TYPE_CFG[tab];
+  var labelEl = document.getElementById('audit-filter-label');
+  if(labelEl) labelEl.textContent = cfg ? cfg.emoji+' '+cfg.label : '';
+  // Update type filter
+  var typeFilter = document.getElementById('audit-filter-type');
+  if(typeFilter && tab !== 'all') typeFilter.value = tab;
+  else if(typeFilter && tab === 'all') typeFilter.value = '';
+  // Update new button label
+  var newBtn = document.getElementById('insp-new-btn');
+  if(newBtn) newBtn.innerHTML = '<i class="ti ti-plus"></i>New '+(cfg?cfg.label.toLowerCase():'inspection');
+  // Load content
+  if(tab === 'prestart') { psLoad(); return; }
+  if(tab === 'findings') { findingsLoad(); return; }
+  auditLoad(tab === 'audit' ? ['iso_audit','internal_audit','supplier_audit','contractor_audit','regulatory'] : (tab==='all'?null:[tab]));
+}
+
+// ── Load inspection register ──────────────────────────────────────
+async function auditLoad(typeFilter) {
+  var el = document.getElementById('audit-register-list'); if(!el) return;
+  el.innerHTML = '<div class="loading-msg">Loading...</div>';
+  try {
+    var q = '/inspections?select=*'+cf()+'&order=inspection_date.desc,created_at.desc';
+    var d = await api(q);
+    auditAllData = d||[];
+    var now = new Date(); var m = now.getMonth(); var y = now.getFullYear();
+    // Metrics
+    function sm(id,v){var e=document.getElementById(id);if(e)e.textContent=v;}
+    sm('audit-m-total', auditAllData.length);
+    sm('audit-m-done', auditAllData.filter(function(x){return x.status==='completed'||x.status==='closed';}).length);
+    sm('audit-m-overdue', auditAllData.filter(function(x){
+      return x.status!=='closed'&&x.status!=='completed'&&x.planned_date&&new Date(x.planned_date)<now;
+    }).length);
+    // Apply filter and render
+    auditFilter();
+  } catch(e) {
+    el.innerHTML = '<div style="padding:20px;color:var(--text2);text-align:center">'+escH(e.message)+'</div>';
+  }
+  // Load findings count separately
+  try {
+    var findings = await api('/audit_findings?select=id,finding_type,status'+cf());
+    var fEl = document.getElementById('audit-m-findings');
+    if(fEl) fEl.textContent = (findings||[]).filter(function(x){return x.status==='open';}).length;
+    var mEl = document.getElementById('audit-m-major');
+    if(mEl) mEl.textContent = (findings||[]).filter(function(x){return x.finding_type==='major_nc';}).length;
+    // avg score
+    var scored = auditAllData.filter(function(x){return x.score_good>=0&&(x.score_good+x.score_insuf)>0;});
+    var avgScore = scored.length>0 ? Math.round(scored.reduce(function(s,x){return s+(x.score_good/(x.score_good+x.score_insuf)*100);},0)/scored.length) : null;
+    var sEl = document.getElementById('audit-m-score');
+    if(sEl) sEl.textContent = avgScore!=null ? avgScore+'%' : '—';
+  } catch(ex) {}
+}
+
+function auditFilter() {
+  var el = document.getElementById('audit-register-list'); if(!el) return;
+  var q = (document.getElementById('audit-search')?.value||'').toLowerCase();
+  var ft = document.getElementById('audit-filter-type')?.value||'';
+  var fs = document.getElementById('audit-filter-status')?.value||'';
+  var now = new Date();
+  var filt = (auditAllData||[]).filter(function(x) {
+    var mQ = !q || (x.site||'').toLowerCase().includes(q) || (x.inspection_type||'').toLowerCase().includes(q) ||
+              (x.reference_no||x.id||'').toLowerCase().includes(q) || (x.inspector||x.by||x.if_by||'').toLowerCase().includes(q);
+    var mT = !ft || (x.inspection_type||'workplace') === ft;
+    var mS = !fs || x.status === fs;
+    return mQ && mT && mS;
+  });
+  if(!filt.length) {
+    el.innerHTML = '<div style="text-align:center;padding:48px;color:var(--text2)"><div style="font-size:44px;margin-bottom:12px">📋</div><div style="font-weight:700;font-size:14px;margin-bottom:8px">No inspections found</div><button class="btn btn-primary" onclick="auditNew()"><i class="ti ti-plus"></i>Start inspection</button></div>';
+    return;
+  }
+  var h = '<div style="display:flex;flex-direction:column;gap:8px">';
+  filt.forEach(function(x) {
+    var type = x.inspection_type || 'workplace';
+    var cfg = AUDIT_TYPE_CFG[type] || AUDIT_TYPE_CFG.workplace;
+    var score = (x.score_good!=null&&(x.score_good+x.score_insuf)>0) ? Math.round(x.score_good/(x.score_good+x.score_insuf)*100) : null;
+    var scoreColor = score==null?'#6B7280':score>=80?'#1D9E75':score>=60?'#EF9F27':'#DC2626';
+    var stCfg = {open:['#FCEBEB','#A32D2D'],in_progress:['#EFF6FF','#185FA5'],completed:['#EAF3DE','#3B6D11'],closed:['#EAF3DE','#3B6D11']};
+    var sc = stCfg[x.status||'open']||stCfg.open;
+    var isOverdue = x.status!=='closed'&&x.status!=='completed'&&x.planned_date&&new Date(x.planned_date)<new Date();
+    var ref = x.reference_no||x.id?.slice(0,8)||'—';
+    h += '<div class="card" style="padding:0;overflow:hidden;cursor:pointer;border-left:5px solid '+cfg.border+';transition:box-shadow .15s" data-id="'+x.id+'" onclick="auditOpen(this.dataset.id)" onmouseover="this.style.boxShadow=\'0 4px 16px rgba(0,0,0,.1)\'" onmouseout="this.style.boxShadow=\'\'">'
+      + '<div style="padding:10px 14px;display:flex;align-items:flex-start;justify-content:space-between;gap:10px;flex-wrap:wrap">'
+      + '<div style="display:flex;gap:10px;flex:1;min-width:0">'
+      + '<div style="font-size:24px;flex-shrink:0;line-height:1.2">'+cfg.emoji+'</div>'
+      + '<div style="min-width:0;flex:1">'
+      + '<div style="display:flex;gap:6px;align-items:center;margin-bottom:3px;flex-wrap:wrap">'
+      + '<span style="font-family:monospace;font-size:11px;font-weight:800;color:'+cfg.color+'">'+escH(ref)+'</span>'
+      + '<span style="background:'+cfg.bg+';color:'+cfg.color+';padding:1px 8px;border-radius:99px;font-size:10px;font-weight:700;border:1px solid '+cfg.border+'">'+cfg.label+'</span>'
+      + (isOverdue?'<span style="background:#FCEBEB;color:#DC2626;padding:1px 6px;border-radius:4px;font-size:9px;font-weight:700">OVERDUE</span>':'')
+      + '</div>'
+      + '<div style="font-size:13px;font-weight:600">'+(x.site||'—')+(x.department?' — '+escH(x.department):'')+'</div>'
+      + '<div style="display:flex;gap:12px;font-size:11px;color:var(--text2);margin-top:3px;flex-wrap:wrap">'
+      + (x.inspection_date||x.if_date?'<span>📅 '+new Date(x.inspection_date||x.if_date).toLocaleDateString('en-GB')+'</span>':'')
+      + '<span>👤 '+escH(x.inspector||x.by||x.if_by||'—')+'</span>'
+      + (x.audit_standard?'<span>📋 '+escH(x.audit_standard)+'</span>':'')
+      + '</div></div></div>'
+      + '<div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0">'
+      + (score!=null?'<span style="font-size:18px;font-weight:800;color:'+scoreColor+'">'+score+'%</span>':'')
+      + '<span style="background:'+sc[0]+';color:'+sc[1]+';padding:2px 8px;border-radius:99px;font-size:10px;font-weight:700;text-transform:capitalize">'+(x.status||'open')+'</span>'
+      + '</div></div></div>';
+  });
+  el.innerHTML = h + '</div>';
+}
+
+// ── New / Open inspection ──────────────────────────────────────────
+function auditNew(preType) {
+  auditEditId = null; inspEditingId = null;
+  var type = preType || 'workplace';
+  auditSelectType(type);
+  document.getElementById('audit-form-title').textContent = 'New Inspection';
+  document.getElementById('audit-form-ref').textContent = 'REF-AUTO';
+  document.getElementById('audit-delete-btn').style.display = 'none';
+  document.getElementById('audit-form-view').style.display = 'block';
+  document.getElementById('audit-view-register').style.display = 'none';
+  // Clear form
+  ['if-site','if-by','if-pos','if-neg','if-sign-inspector','if-sign-reviewer',
+   'audit-dept','audit-scope','audit-lead-auditor','audit-team','audit-auditee',
+   'audit-gps-address','audit-lat','audit-lng'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
+  ['if-date','if-sign-date','if-sign-reviewer-date'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
+  document.getElementById('if-date').value = new Date().toISOString().slice(0,10);
+  document.getElementById('audit-priority').value = 'medium';
+  document.getElementById('audit-status').value = 'open';
+  document.getElementById('if-checklist').innerHTML = '';
+  document.getElementById('audit-photos-list').innerHTML = '';
+  document.getElementById('if-actions-body').innerHTML = '';
+  document.getElementById('if-actions-empty').style.display = 'block';
+  document.getElementById('if-score').textContent = '0 Good / 0 Insufficient';
+  document.getElementById('audit-score-display').textContent = '—';
+  document.getElementById('audit-score-detail').textContent = '';
+  document.getElementById('audit-score-bar').style.width = '0%';
+  // Load template for type
+  auditAutoLoadTemplate(type);
+}
+
+function auditOpen(id) {
+  var x = auditAllData.find(function(r){return r.id===id;}); if(!x) return;
+  auditEditId = id; inspEditingId = id;
+  var type = x.inspection_type || 'workplace';
+  auditSelectType(type);
+  document.getElementById('audit-form-title').textContent = x.site || 'Edit Inspection';
+  document.getElementById('audit-form-ref').textContent = x.reference_no || '—';
+  document.getElementById('audit-delete-btn').style.display = isMgr()?'inline-flex':'none';
+  document.getElementById('audit-form-view').style.display = 'block';
+  document.getElementById('audit-view-register').style.display = 'none';
+  document.getElementById('audit-view-prestart').style.display = 'none';
+  var gf=function(fid,val){var el=document.getElementById(fid);if(el)el.value=val||'';};
+  gf('if-site',x.site||x.if_site); gf('if-by',x.inspector||x.by||x.if_by);
+  gf('if-date',x.inspection_date||x.if_date); gf('if-pos',x.positive_obs||x.if_pos);
+  gf('if-neg',x.negative_obs||x.if_neg); gf('if-sign-inspector',x.sign_inspector);
+  gf('if-sign-date',x.sign_date); gf('if-sign-reviewer',x.sign_reviewer);
+  gf('if-sign-reviewer-date',x.sign_reviewer_date); gf('audit-dept',x.department);
+  gf('audit-scope',x.audit_scope); gf('audit-lead-auditor',x.lead_auditor);
+  gf('audit-team',x.audit_team); gf('audit-auditee',x.auditee);
+  gf('audit-gps-address',x.gps_address); gf('audit-lat',x.lat); gf('audit-lng',x.lng);
+  if(document.getElementById('audit-standard')&&x.audit_standard) document.getElementById('audit-standard').value=x.audit_standard;
+  document.getElementById('audit-priority').value = x.priority||'medium';
+  document.getElementById('audit-status').value = x.status||'open';
+  // Rebuild checklist from saved items
+  if(x.items) buildChecklist(x.items);
+  // Photos
+  var photosEl = document.getElementById('audit-photos-list');
+  if(photosEl) {
+    photosEl.innerHTML = '';
+    var photos = Array.isArray(x.photos)?x.photos:[];
+    photos.forEach(function(url){auditAddPhotoRow(url);});
+  }
+  // Actions
+  var actBody = document.getElementById('if-actions-body');
+  if(actBody) {
+    actBody.innerHTML = '';
+    (x.action_items||[]).forEach(function(a){actBody.insertAdjacentHTML('beforeend',inspActionRowHTML(a));});
+    document.getElementById('if-actions-empty').style.display = (x.action_items||[]).length?'none':'block';
+  }
+  updateScore();
+}
+
+// ── Select type and configure form ────────────────────────────────
+function auditSelectType(type) {
+  document.getElementById('audit-type').value = type;
+  var cfg = AUDIT_TYPE_CFG[type] || AUDIT_TYPE_CFG.workplace;
+  var banner = document.getElementById('audit-form-banner');
+  if(banner) banner.style.background = 'linear-gradient(135deg,'+cfg.color+'cc,'+cfg.color+')';
+  document.getElementById('audit-form-type-label').textContent = cfg.label;
+  // Style type buttons
+  document.querySelectorAll('.audit-type-btn').forEach(function(b) {
+    var t=b.dataset.type; var bc=AUDIT_TYPE_CFG[t]||{};
+    if(t===type){b.style.borderColor=bc.color||cfg.color;b.style.transform='scale(1.05)';b.style.boxShadow='0 2px 10px '+(bc.color||cfg.color)+'40';}
+    else{b.style.borderColor='';b.style.transform='';b.style.boxShadow='';}
+  });
+  // Show/hide audit-specific fields
+  var auditTypes = ['iso_audit','internal_audit','supplier_audit','contractor_audit','regulatory'];
+  var stdRow = document.getElementById('audit-standard-row');
+  var findSec = document.getElementById('audit-findings-section');
+  if(stdRow) stdRow.style.display = auditTypes.includes(type)?'block':'none';
+  if(findSec) findSec.style.display = auditTypes.includes(type)?'block':'none';
+}
+
+// ── Templates ──────────────────────────────────────────────────────
+async function auditLoadTemplates() {
+  try {
+    var d = await api('/checklist_templates?select=*'+cf()+'&order=template_name');
+    auditTemplates = d||[];
+    // Also check for default templates seeded in DB
+    var sel = document.getElementById('audit-template-select');
+    if(sel) {
+      sel.innerHTML = '<option value="">Load template...</option>'
+        + (auditTemplates||[]).map(function(t){return '<option value="'+t.id+'">'+escH(t.template_name)+'</option>';}).join('');
+    }
+  } catch(e) {
+    // Use built-in default templates if DB not available
+    auditTemplates = [];
+  }
+}
+
+async function auditLoadTemplate() {
+  var sel = document.getElementById('audit-template-select');
+  if(!sel||!sel.value) return;
+  var tmpl = auditTemplates.find(function(t){return t.id===sel.value;});
+  if(!tmpl) return;
+  var items = typeof tmpl.items==='string'?JSON.parse(tmpl.items):(tmpl.items||[]);
+  // Convert to chkItems format
+  window.chkItems = items.map(function(item){return{ca:item.category||'',item:item.item||'',guidance:item.guidance||''};});
+  buildChecklist([]);
+  toast('Template loaded: '+tmpl.template_name);
+}
+
+async function auditAutoLoadTemplate(type) {
+  // Try to load the default template for this type
+  try {
+    var templates = auditTemplates.filter(function(t){return t.inspection_type===type&&t.is_default;});
+    if(!templates.length && auditTemplates.length===0) {
+      // Load from DB
+      var d = await api('/checklist_templates?select=*'+cf()+'&inspection_type=eq.'+type+'&is_default=eq.true&limit=1');
+      templates = d||[];
+    }
+    if(templates[0]) {
+      var items = typeof templates[0].items==='string'?JSON.parse(templates[0].items):(templates[0].items||[]);
+      window.chkItems = items.map(function(item){return{ca:item.category||'',item:item.item||''};});
+      buildChecklist([]);
+    } else {
+      // Use built-in fallback
+      var fallback = AUDIT_DEFAULT_CHECKLISTS[type];
+      if(fallback) {
+        window.chkItems = fallback;
+        buildChecklist([]);
+      }
+    }
+  } catch(e) {
+    var fallback = AUDIT_DEFAULT_CHECKLISTS[type];
+    if(fallback) { window.chkItems = fallback; buildChecklist([]); }
+  }
+}
+
+// Built-in fallback checklists (if DB templates not available)
+var AUDIT_DEFAULT_CHECKLISTS = {
+  workplace: [
+    {ca:'Housekeeping',item:'Work areas clean and tidy'},{ca:'Housekeeping',item:'Aisles and exits clear'},
+    {ca:'Equipment',item:'Machine guards in place'},{ca:'Equipment',item:'Emergency stops accessible'},
+    {ca:'Electrical',item:'No damaged cables or exposed wires'},{ca:'Fire',item:'Extinguishers accessible and tagged'},
+    {ca:'Fire',item:'Fire exits clear and marked'},{ca:'PPE',item:'Appropriate PPE available'},
+    {ca:'First Aid',item:'First aid kit stocked and accessible'},{ca:'Chemical',item:'Chemicals labelled and SDS available'},
+  ],
+  fire: [
+    {ca:'Fire Extinguishers',item:'Correct type, accessible, within service date'},
+    {ca:'Fire Extinguishers',item:'Pressure gauge in green zone'},
+    {ca:'Emergency Routes',item:'All fire exits unobstructed'},{ca:'Emergency Routes',item:'Exit signs illuminated'},
+    {ca:'Detection',item:'Detectors present and unobstructed'},{ca:'Detection',item:'Alarm call points accessible'},
+    {ca:'Documentation',item:'Fire evacuation plan posted'},
+  ],
+  ppe: [
+    {ca:'Head',item:'Hard hats available and undamaged'},{ca:'Eyes',item:'Safety glasses available'},
+    {ca:'Hearing',item:'Ear protection in noise zones'},{ca:'Respiratory',item:'Respirators available and fit-tested'},
+    {ca:'Hands',item:'Appropriate gloves available'},{ca:'Feet',item:'Safety boots worn in required areas'},
+    {ca:'Fall',item:'Harnesses within inspection date'},
+  ],
+  equipment: [
+    {ca:'Pre-use',item:'Equipment pre-use inspection completed'},{ca:'Guards',item:'All guards and covers in place'},
+    {ca:'Operation',item:'E-stop tested and functional'},{ca:'Records',item:'Maintenance record up to date'},
+    {ca:'Tags',item:'Equipment has current inspection/calibration tag'},{ca:'Condition',item:'No visible damage or unusual wear'},
+  ],
+  environmental: [
+    {ca:'Spills',item:'Spill kits accessible and stocked'},{ca:'Spills',item:'Secondary containment in place'},
+    {ca:'Waste',item:'Waste streams correctly segregated'},{ca:'Waste',item:'Hazardous waste sealed and labelled'},
+    {ca:'Drainage',item:'No discharge to drains'},{ca:'Chemicals',item:'Chemicals stored in designated areas'},
+  ],
+  iso_audit: [
+    {ca:'Leadership (Cl.5)',item:'OH&S policy documented and communicated'},{ca:'Planning (Cl.6)',item:'Risk assessment process implemented'},
+    {ca:'Support (Cl.7)',item:'Competency and training records maintained'},{ca:'Operation (Cl.8)',item:'Operational controls in place'},
+    {ca:'Performance (Cl.9)',item:'Monitoring and measurement implemented'},{ca:'Improvement (Cl.10)',item:'NCR and incident process in place'},
+  ],
+};
+
+// ── Add checklist row ──────────────────────────────────────────────
+function auditAddChecklistRow() {
+  if(!window.chkItems) window.chkItems = [];
+  window.chkItems.push({ca:'', item:''});
+  buildChecklist([]);
+}
+
+// ── Photos / voice notes ──────────────────────────────────────────
+function auditAddPhotoRow(url) {
+  var container = document.getElementById('audit-photos-list'); if(!container) return;
+  var row = document.createElement('div');
+  row.style.cssText = 'display:flex;gap:8px;align-items:center;margin-bottom:4px';
+  row.innerHTML = '<input type="text" class="audit-photo-url" placeholder="Paste photo or voice note URL..." value="'+(url?escH(url):'')+'" style="flex:1;padding:6px 10px;border:1px solid var(--border);border-radius:6px;font-size:12px"/>'
+    + '<select class="audit-photo-type" style="padding:6px;border:1px solid var(--border);border-radius:6px;font-size:12px">'
+    + '<option value="photo">📷 Photo</option><option value="voice">🎤 Voice</option><option value="video">🎬 Video</option><option value="document">📄 Document</option>'
+    + '</select>'
+    + '<button class="btn btn-sm" style="color:var(--red);flex-shrink:0" onclick="this.parentElement.remove()"><i class="ti ti-x"></i></button>';
+  container.appendChild(row);
+}
+
+// ── GPS ────────────────────────────────────────────────────────────
+function auditGetGPS() {
+  if(!navigator.geolocation){toast('Geolocation not supported',false);return;}
+  toast('Getting GPS location...');
+  navigator.geolocation.getCurrentPosition(function(pos){
+    document.getElementById('audit-lat').value=pos.coords.latitude.toFixed(6);
+    document.getElementById('audit-lng').value=pos.coords.longitude.toFixed(6);
+    toast('✓ GPS location obtained');
+  },function(){toast('Could not get GPS location',false);});
+}
+
+// ── Findings ────────────────────────────────────────────────────────
+function auditAddFinding() {
+  var container = document.getElementById('audit-findings-list'); if(!container) return;
+  var idx = container.querySelectorAll('.audit-finding-row').length + 1;
+  var row = document.createElement('div'); row.className='audit-finding-row';
+  row.style.cssText = 'border:1px solid var(--border);border-radius:8px;padding:10px;margin-bottom:8px;background:#f9fafb';
+  row.innerHTML = '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:6px">'
+    + '<div><label style="font-size:10px;font-weight:600;text-transform:uppercase;color:var(--text2)">Finding type</label>'
+    + '<select class="af-type" style="width:100%;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;margin-top:2px">'
+    + '<option value="major_nc">⛔ Major NC</option><option value="minor_nc">⚠️ Minor NC</option>'
+    + '<option value="observation">👁️ Observation</option><option value="opportunity">💡 Opportunity</option><option value="positive">✓ Positive</option>'
+    + '</select></div>'
+    + '<div><label style="font-size:10px;font-weight:600;text-transform:uppercase;color:var(--text2)">Clause / reference</label>'
+    + '<input type="text" class="af-clause" placeholder="e.g. 8.1.3, §14..." style="width:100%;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;margin-top:2px"/></div>'
+    + '<div><label style="font-size:10px;font-weight:600;text-transform:uppercase;color:var(--text2)">Assigned to</label>'
+    + '<input type="text" class="af-assigned" style="width:100%;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;margin-top:2px"/></div>'
+    + '</div>'
+    + '<div style="margin-bottom:6px"><label style="font-size:10px;font-weight:600;text-transform:uppercase;color:var(--text2)">Finding description</label>'
+    + '<textarea class="af-desc" style="width:100%;min-height:60px;padding:6px;border:1px solid var(--border);border-radius:6px;font-size:12px;resize:vertical;margin-top:2px" placeholder="Describe the finding / non-conformance..."></textarea></div>'
+    + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">'
+    + '<div><label style="font-size:10px;font-weight:600;text-transform:uppercase;color:var(--text2)">Objective evidence</label>'
+    + '<textarea class="af-evidence" style="width:100%;min-height:40px;padding:6px;border:1px solid var(--border);border-radius:6px;font-size:12px;resize:vertical;margin-top:2px" placeholder="Evidence observed..."></textarea></div>'
+    + '<div><label style="font-size:10px;font-weight:600;text-transform:uppercase;color:var(--text2)">Required corrective action</label>'
+    + '<textarea class="af-action" style="width:100%;min-height:40px;padding:6px;border:1px solid var(--border);border-radius:6px;font-size:12px;resize:vertical;margin-top:2px" placeholder="What needs to be done?"></textarea></div>'
+    + '</div>'
+    + '<div style="display:flex;justify-content:flex-end;margin-top:6px"><button class="btn btn-sm" style="color:var(--red)" onclick="this.closest(\'.audit-finding-row\').remove()"><i class="ti ti-x"></i>Remove</button></div>';
+  container.appendChild(row);
+}
+
+// ── Save inspection ────────────────────────────────────────────────
+async function auditSave() {
+  var site = document.getElementById('if-site')?.value?.trim();
+  var type = document.getElementById('audit-type')?.value||'workplace';
+  if(!site){toast('Please enter location / site',false);return;}
+  var g=function(id){var el=document.getElementById(id);return el?el.value||null:null;};
+  // Collect checklist items
+  var items = (window.chkItems||[]).map(function(c,i){
+    var gEl=document.getElementById('cg-'+i); var iEl=document.getElementById('ci-'+i);
+    var nEl=document.getElementById('cn-'+i); var oEl=document.getElementById('co-'+i);
+    return{category:c.ca||'',item:c.item||'',result:gEl?.checked?'good':(iEl?.checked?'insufficient':(nEl?.checked?'na':''))};
+  }).filter(function(x){return x.item;});
+  var goodCnt=items.filter(function(x){return x.result==='good';}).length;
+  var insufCnt=items.filter(function(x){return x.result==='insufficient';}).length;
+  // Collect photos
+  var photos = Array.from(document.querySelectorAll('.audit-photo-url'))
+    .map(function(el){return{url:el.value.trim(),type:el.parentElement?.querySelector('.audit-photo-type')?.value||'photo'};})
+    .filter(function(p){return p.url;});
+  // Collect actions
+  var actions = [];
+  document.querySelectorAll('.if-action-row').forEach(function(row){
+    var desc=row.querySelector('.ia-desc')?.value?.trim();
+    if(desc)actions.push({description:desc,responsible:row.querySelector('.ia-who')?.value||'',target_date:row.querySelector('.ia-due')?.value||null});
+  });
+  // Collect findings
+  var findings = [];
+  document.querySelectorAll('.audit-finding-row').forEach(function(row){
+    var desc=row.querySelector('.af-desc')?.value?.trim();
+    if(desc)findings.push({finding_type:row.querySelector('.af-type')?.value||'observation',clause:row.querySelector('.af-clause')?.value||'',description:desc,evidence:row.querySelector('.af-evidence')?.value||'',corrective_action:row.querySelector('.af-action')?.value||'',assigned_to:row.querySelector('.af-assigned')?.value||''});
+  });
+  var body = {
+    company_id:prof?.company_id, inspection_type:type,
+    site:site, if_site:site, department:g('audit-dept'),
+    inspection_date:g('if-date')||null, if_date:g('if-date')||null,
+    inspector:g('if-by'), by:g('if-by'), if_by:g('if-by'),
+    positive_obs:g('if-pos'), if_pos:g('if-pos'),
+    negative_obs:g('if-neg'), if_neg:g('if-neg'),
+    score_good:goodCnt, score_insuf:insufCnt, items:items,
+    action_items:actions, photos:photos,
+    priority:g('audit-priority')||'medium', status:g('audit-status')||'open',
+    audit_standard:g('audit-standard'), audit_scope:g('audit-scope'),
+    lead_auditor:g('audit-lead-auditor'), audit_team:g('audit-team'), auditee:g('audit-auditee'),
+    sign_inspector:g('if-sign-inspector'), sign_date:g('if-sign-date')||null,
+    sign_reviewer:g('if-sign-reviewer'), sign_reviewer_date:g('if-sign-reviewer-date')||null,
+    gps_address:g('audit-gps-address'), lat:g('audit-lat')?parseFloat(g('audit-lat')):null,
+    lng:g('audit-lng')?parseFloat(g('audit-lng')):null,
+    updated_at:new Date().toISOString()
+  };
+  try {
+    var savedId = auditEditId;
+    if(auditEditId){
+      await api('/inspections?id=eq.'+auditEditId,{m:'PATCH',p:'return=minimal',b:body});
+      toast('Inspection updated!');
+    } else {
+      body.created_by=prof?.id;
+      var res=await api('/inspections',{m:'POST',p:'return=representation',b:body});
+      if(res?.[0]?.id){
+        var yr=new Date().getFullYear(); var n=String(auditAllData.length+1).padStart(3,'0');
+        var prefix = {workplace:'WI',fire:'FS',ppe:'PPE',equipment:'EQ',environmental:'ENV',
+                      iso_audit:'ISO',internal_audit:'AUD',supplier_audit:'SA',
+                      contractor_audit:'CA',regulatory:'REG',behavioral:'BBO'}[type]||'INS';
+        var ref = prefix+'-'+yr+'-'+n;
+        await api('/inspections?id=eq.'+res[0].id,{m:'PATCH',p:'return=minimal',b:{reference_no:ref}});
+        toast('Saved! Ref: '+ref);
+        savedId=res[0].id; auditEditId=res[0].id;
+        document.getElementById('audit-form-ref').textContent=ref;
+      }
+    }
+    // Save findings to audit_findings table
+    for(var fi of findings){
+      try{await api('/audit_findings',{m:'POST',p:'return=minimal',b:{company_id:prof?.company_id,inspection_id:savedId,finding_ref:'F'+String(findings.indexOf(fi)+1).padStart(3,'0'),...fi,status:'open',created_by:prof?.id}});}catch(ex){}
+    }
+    // Create MAP actions for insufficient items + action rows
+    var allActions = actions.slice();
+    if(insufCnt>0){allActions.push({description:'Address '+insufCnt+' insufficient item'+(insufCnt>1?'s':'')+' found during inspection: '+(body.site||''),responsible:'',target_date:null});}
+    for(var a of allActions){
+      if(!a.description)continue;
+      try{await api('/action_tracker',{m:'POST',p:'return=minimal',b:{company_id:prof?.company_id,title:a.description.substring(0,80),description:a.description,source_type:'inspection',source_module:'inspection',source_ref:body.reference_no||savedId?.slice(0,8)||'',priority:'high',status:'open',assigned_to_name:a.responsible||null,target_date:a.target_date||null,created_by:prof?.id}});}catch(ex){}
+    }
+    auditBackToList();
+  } catch(e) { toast('Error: '+e.message,false); }
+}
+
+function saveInspection(){auditSave();}  // backward compat
+
+async function auditDelete() {
+  if(!auditEditId||!confirm('Delete this inspection?'))return;
+  try{await api('/inspections?id=eq.'+auditEditId,{m:'DELETE'});toast('Deleted!');auditBackToList();}
+  catch(e){toast(e.message,false);}
+}
+
+function auditBackToList() {
+  document.getElementById('audit-form-view').style.display='none';
+  document.getElementById('audit-view-prestart').style.display='none';
+  document.getElementById('audit-view-register').style.display='block';
+  auditLoad(null);
+}
+
+function inspShowList(){auditBackToList();}  // backward compat
+function inspNew(){auditNew('workplace');}   // backward compat
+function inspOpen(id){auditOpen(id);}        // backward compat
+function inspDelete(){auditDelete();}        // backward compat
+
+// ── Checklist helpers (used by existing buildChecklist) ────────────
+function updateScore() {
+  var g=0,ins=0;
+  (window.chkItems||[]).forEach(function(_,i){
+    if(document.getElementById('cg-'+i)&&document.getElementById('cg-'+i).checked)g++;
+    if(document.getElementById('ci-'+i)&&document.getElementById('ci-'+i).checked)ins++;
+  });
+  var total=g+ins; var pct=total>0?Math.round(g/total*100):null;
+  var scoreEl=document.getElementById('if-score');
+  if(scoreEl)scoreEl.textContent=g+' Good / '+ins+' Insufficient';
+  var dispEl=document.getElementById('audit-score-display');
+  var detEl=document.getElementById('audit-score-detail');
+  var barEl=document.getElementById('audit-score-bar');
+  if(dispEl)dispEl.textContent=pct!=null?pct+'%':'—';
+  if(detEl)detEl.textContent=pct!=null?g+' good, '+ins+' insufficient of '+total+' items':'Checklist not yet completed';
+  if(barEl){barEl.style.width=(pct||0)+'%;';barEl.style.background=pct>=80?'#fff':pct>=60?'#fcd34d':'#fca5a5';}
+}
+
+function inspScore(){updateScore();}  // backward compat
+
+function syncChk(i,t){
+  if(t==='g'){var e=document.getElementById('ci-'+i);if(e)e.checked=false;}
+  else if(t==='i'){var e=document.getElementById('cg-'+i);if(e)e.checked=false;}
+  else{var eg=document.getElementById('cg-'+i);var ei=document.getElementById('ci-'+i);if(eg)eg.checked=false;if(ei)ei.checked=false;}
+  updateScore();
+}
+
+function inspAddAction(){
+  var body=document.getElementById('if-actions-body'); if(!body)return;
+  var empty=document.getElementById('if-actions-empty'); if(empty)empty.style.display='none';
+  body.insertAdjacentHTML('beforeend',inspActionRowHTML({}));
+}
+function inspActionRowHTML(a){
+  return '<div class="if-action-row" style="display:grid;grid-template-columns:3fr 2fr 1fr auto;gap:6px;margin-bottom:6px;align-items:center">'
+    +'<input type="text" class="ia-desc" value="'+escH((a.description||''))+'" placeholder="Action description..." style="padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px"/>'
+    +'<input type="text" class="ia-who" value="'+escH((a.responsible||a.assigned_to||''))+'" placeholder="Responsible person..." style="padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px"/>'
+    +'<input type="date" class="ia-due" value="'+escH((a.target_date||a.due_date||''))+'" style="padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px"/>'
+    +'<button class="btn btn-sm" style="color:var(--red)" onclick="this.closest(\'.if-action-row\').remove()"><i class="ti ti-x"></i></button>'
+    +'</div>';
+}
+function inspSyncActions(a){return inspActionRowHTML(a);}
+
+// ── buildChecklist (enhanced to support new format) ────────────────
+function buildChecklist(preloadedItems) {
+  var preMap={};
+  (preloadedItems||[]).forEach(function(item){preMap[item.item_name||item.item]=item;});
+  var tbody=document.getElementById('if-checklist'); if(!tbody)return;
+  tbody.innerHTML='';
+  var items = window.chkItems||[];
+  var lastCat='';
+  items.forEach(function(c,i){
+    if(!c.item)return;
+    var pre=preMap[c.item]||{};
+    var isGood=pre.result==='good';
+    var isInsuf=pre.result==='insufficient';
+    var isNA=pre.result==='na';
+    var obs=pre.observation||pre.obs||'';
+    var showCatRow = c.ca && c.ca!==lastCat;
+    if(showCatRow){
+      lastCat=c.ca;
+      var catRow=document.createElement('tr');
+      catRow.innerHTML='<td colspan="7" style="padding:6px 10px;font-size:11px;font-weight:800;text-transform:uppercase;color:#fff;background:linear-gradient(90deg,#185FA5,#0891B2);letter-spacing:.05em">'+escH(c.ca)+'</td>';
+      tbody.appendChild(catRow);
+    }
+    var tr=document.createElement('tr');
+    tr.style.cssText='border-bottom:1px solid #f3f4f6;';
+    tr.innerHTML='<td style="padding:5px 10px;font-size:11px;color:var(--text2)">'+escH(c.ca||'')+'</td>'
+      +'<td style="padding:5px 10px;font-size:12px;font-weight:500">'+escH(c.item)+(c.guidance?'<br><span style="font-size:10px;color:var(--text2);font-style:italic">'+escH(c.guidance)+'</span>':'')+'</td>'
+      +'<td style="text-align:center;padding:4px"><input type="checkbox" id="cg-'+i+'" '+(isGood?'checked':'')+' onchange="syncChk('+i+',\'g\')" style="accent-color:#1D9E75;width:16px;height:16px;cursor:pointer"/></td>'
+      +'<td style="text-align:center;padding:4px"><input type="checkbox" id="ci-'+i+'" '+(isInsuf?'checked':'')+' onchange="syncChk('+i+',\'i\')" style="accent-color:#DC2626;width:16px;height:16px;cursor:pointer"/></td>'
+      +'<td style="text-align:center;padding:4px"><input type="checkbox" id="cn-'+i+'" '+(isNA?'checked':'')+' onchange="syncChk('+i+',\'n\')" style="accent-color:#9CA3AF;width:16px;height:16px;cursor:pointer"/></td>'
+      +'<td style="text-align:center;padding:4px"><button class="btn btn-sm" style="padding:2px 5px;font-size:10px" onclick="auditAddPhotoRow()"><i class="ti ti-camera"></i></button></td>'
+      +'<td style="padding:4px 6px"><input type="text" id="co-'+i+'" value="'+escH(obs)+'" placeholder="Notes..." style="width:100%;padding:3px 6px;border:1px solid var(--border);border-radius:4px;font-size:11px"/></td>';
+    tbody.appendChild(tr);
+  });
+  updateScore();
+}
+
+// ── Findings tab ────────────────────────────────────────────────────
+async function findingsLoad() {
+  var el = document.getElementById('findings-list'); if(!el) return;
+  el.innerHTML='<div class="loading-msg">Loading...</div>';
+  var ft=document.getElementById('findings-filter-type')?.value||'';
+  var fs=document.getElementById('findings-filter-status')?.value||'';
+  try{
+    var q='/audit_findings?select=*'+cf()+'&order=created_at.desc';
+    if(ft) q+='&finding_type=eq.'+ft;
+    if(fs) q+='&status=eq.'+fs;
+    var d=await api(q); auditFindingsData=d||[];
+    if(!d||!d.length){el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)"><div style="font-size:40px;margin-bottom:12px">⚠️</div><div style="font-weight:600">No audit findings recorded yet</div></div>';return;}
+    var typeCfg={major_nc:{color:'#DC2626',bg:'#FCEBEB',label:'Major NC',emoji:'⛔'},minor_nc:{color:'#C2410C',bg:'#FEF6E7',label:'Minor NC',emoji:'⚠️'},observation:{color:'#185FA5',bg:'#EFF6FF',label:'Observation',emoji:'👁️'},opportunity:{color:'#065F46',bg:'#ECFDF5',label:'Opportunity',emoji:'💡'},positive:{color:'#1D9E75',bg:'#EAF3DE',label:'Positive',emoji:'✓'}};
+    var stCfg={open:['#FCEBEB','#A32D2D'],in_progress:['#EFF6FF','#185FA5'],closed:['#EAF3DE','#3B6D11'],accepted:['#f3f4f6','#6B7280']};
+    var h='<div style="display:flex;flex-direction:column;gap:8px">';
+    d.forEach(function(x){
+      var tc=typeCfg[x.finding_type]||typeCfg.observation;
+      var sc=stCfg[x.status||'open']||stCfg.open;
+      h+='<div class="card" style="border-left:4px solid '+tc.color+';padding:10px 14px">'
+        +'<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:5px">'
+        +'<div style="display:flex;gap:8px;align-items:center">'
+        +'<span style="font-size:16px">'+tc.emoji+'</span>'
+        +'<div><span style="background:'+tc.bg+';color:'+tc.color+';padding:1px 8px;border-radius:99px;font-size:10px;font-weight:700">'+tc.label+'</span>'
+        +(x.clause?'<span style="font-size:10px;color:var(--text2);margin-left:6px;font-family:monospace">'+escH(x.clause)+'</span>':'')+'</div></div>'
+        +'<span style="background:'+sc[0]+';color:'+sc[1]+';padding:2px 8px;border-radius:99px;font-size:10px;font-weight:700;white-space:nowrap">'+(x.status||'open')+'</span>'
+        +'</div>'
+        +'<div style="font-size:13px;font-weight:600;margin-bottom:4px">'+escH(x.description||'—')+'</div>'
+        +(x.evidence?'<div style="font-size:11px;color:var(--text2);margin-bottom:4px"><strong>Evidence:</strong> '+escH(x.evidence)+'</div>':'')
+        +(x.corrective_action?'<div style="font-size:11px;color:#185FA5;margin-bottom:4px"><strong>Required action:</strong> '+escH(x.corrective_action)+'</div>':'')
+        +'<div style="display:flex;gap:10px;font-size:11px;color:var(--text2)">'
+        +(x.assigned_to?'<span>👤 '+escH(x.assigned_to)+'</span>':'')
+        +(x.due_date?'<span>📅 Due '+new Date(x.due_date).toLocaleDateString('en-GB')+'</span>':'')
+        +(x.finding_ref?'<span style="font-family:monospace">'+escH(x.finding_ref)+'</span>':'')
+        +'</div>'
+        +(isMgr()?'<div style="margin-top:8px;display:flex;gap:6px">'
+          +'<button class="btn btn-sm" data-id="'+x.id+'" onclick="findingClose(this.dataset.id)">✓ Mark closed</button>'
+          +'</div>':'')
+        +'</div>';
+    });
+    el.innerHTML=h+'</div>';
+  }catch(e){el.innerHTML='<div style="padding:20px;color:var(--text2);text-align:center">'+escH(e.message)+'<br><small>Run audit_schema.sql to create the audit_findings table.</small></div>';}
+}
+
+async function findingClose(id){
+  try{await api('/audit_findings?id=eq.'+id,{m:'PATCH',p:'return=minimal',b:{status:'closed',closed_date:new Date().toISOString().slice(0,10),updated_at:new Date().toISOString()}});toast('Finding closed!');findingsLoad();}
+  catch(e){toast(e.message,false);}
+}
+
+// ── Offline detection ───────────────────────────────────────────────
+function auditWatchOffline() {
+  function update(){
+    var banner=document.getElementById('audit-offline-banner');
+    if(banner)banner.style.display=navigator.onLine?'none':'flex';
+  }
+  window.addEventListener('online',update); window.addEventListener('offline',update);
+  update();
+}
+
+// ── Pre-start (enhanced, preserving existing functions) ────────────
 async function psLoad(){
-  var el=document.getElementById('ps-list');
-  if(!el)return;
+  var btn=document.getElementById('ps-add-btn'); if(btn)btn.style.display=isMgr()?'inline-flex':'none';
+  var el=document.getElementById('ps-list'); if(!el)return;
   el.innerHTML='<div class="loading-msg">Loading...</div>';
   try{
-    var d=await api('/prestart_inspections?select=*'+cf()+'&order=created_at.desc');
-    psAllData=d||[];
-    if(!d||!d.length){
-      el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)">'
-        +'<div style="font-size:40px;margin-bottom:12px">🔔</div>'
-        +'<div style="font-weight:600;font-size:15px;margin-bottom:8px">No pre-start inspections yet</div>'
-        +'<div style="font-size:13px;margin-bottom:16px">Complete a pre-start check before commencing any work activity</div>'
-        +'<button class="btn btn-primary" onclick="psNew()"><i class="ti ti-plus"></i>Start first pre-start check</button>'
-        +'</div>';
-      return;
-    }
-    var h='<table style="width:100%;border-collapse:collapse;font-size:12px">'
-      +'<thead><tr style="background:#1a3a5c;color:#fff">'
-      +'<th style="padding:9px 14px;text-align:left">Date</th>'
-      +'<th style="padding:9px 12px;text-align:left">Work activity</th>'
-      +'<th style="padding:9px 12px;text-align:left">Location</th>'
-      +'<th style="padding:9px 12px;text-align:left">Supervisor</th>'
-      +'<th style="padding:9px 12px;text-align:center;width:90px">Decision</th>'
-      +'<th style="padding:9px 12px;text-align:center;width:80px">Items</th>'
-      +'<th style="padding:9px 12px;width:80px"></th>'
-      +'</tr></thead><tbody>';
-    psAllData.forEach(function(x,i){
+    var d=await api('/inspections?select=*'+cf()+'&inspection_type=eq.prestart&order=created_at.desc');
+    if(!d||!d.length){el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)"><div style="font-size:40px;margin-bottom:12px">🚦</div><div style="font-weight:600;margin-bottom:8px">No pre-start inspections yet</div>'+(isMgr()?'<button class="btn btn-primary" onclick="psNew()"><i class="ti ti-plus"></i>New pre-start</button>':'')+'</div>';return;}
+    var decColors={go:'#1D9E75',hold:'#EF9F27',stop:'#DC2626'};
+    var h='<table style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr style="background:#185FA5;color:#fff"><th style="padding:8px 14px;text-align:left">Date</th><th style="padding:8px;text-align:left">Activity</th><th style="padding:8px;text-align:left">Location</th><th style="padding:8px">Decision</th><th style="padding:8px">Score</th><th style="padding:8px">Supervisor</th><th style="padding:8px;width:50px"></th></tr></thead><tbody>';
+    d.forEach(function(x,i){
       var bg=i%2===0?'#fff':'#f9fafb';
-      var dt=x.check_date?new Date(x.check_date).toLocaleDateString('en-GB'):'—';
-      var dec=x.decision||'go';
-      var decCfg={
-        go:['#EAF3DE','#3B6D11','✅ GO'],
-        hold:['#FEF9EC','#854F0B','⚠️ HOLD'],
-        stop:['#FCEBEB','#A32D2D','🛑 STOP']
-      };
-      var dc=decCfg[dec]||decCfg.go;
-      var items=x.checklist_results||[];
-      var yesCount=items.filter(function(r){return r.result==='yes';}).length;
-      var noCount=items.filter(function(r){return r.result==='no';}).length;
-      h+='<tr style="border-bottom:1px solid #f0f0f0;background:'+bg+'">'
-        +'<td style="padding:9px 14px;font-weight:600">'+dt+'</td>'
-        +'<td style="padding:9px 12px;font-weight:600">'+escH(x.activity||'—')+'</td>'
-        +'<td style="padding:9px 12px">'+escH(x.location||'—')+'</td>'
-        +'<td style="padding:9px 12px">'+escH(x.supervisor_name||'—')+'</td>'
-        +'<td style="padding:9px 12px;text-align:center"><span style="background:'+dc[0]+';color:'+dc[1]+';padding:3px 10px;border-radius:99px;font-size:11px;font-weight:700">'+dc[2]+'</span></td>'
-        +'<td style="padding:9px 12px;text-align:center;font-size:11px"><span style="color:var(--green);font-weight:700">'+yesCount+'✓</span> <span style="color:var(--red);font-weight:700">'+noCount+'✗</span></td>'
-        +'<td style="padding:9px 12px"><div style="display:flex;gap:4px">'
-        +'<button class="btn btn-sm" data-id="'+x.id+'" onclick="psOpen(this.getAttribute(\'data-id\'))"><i class="ti ti-eye"></i></button>'
-        +(isMgr()?'<button class="btn btn-sm" style="color:var(--red)" data-id="'+x.id+'" onclick="psDeleteFromList(this.getAttribute(\'data-id\'))"><i class="ti ti-trash"></i></button>':'')
-        +'</div></td>'
+      var dec=x.decision||'go'; var dc=decColors[dec]||decColors.go;
+      var score=x.score_good!=null&&(x.score_good+x.score_insuf)>0?Math.round(x.score_good/(x.score_good+x.score_insuf)*100):null;
+      var dt=x.inspection_date||x.if_date||x.created_at||'';
+      h+='<tr style="border-bottom:1px solid #f0f0f0;background:'+bg+';cursor:pointer" onclick="psOpen(\''+x.id+'\')">'
+        +'<td style="padding:8px 14px;font-size:11px">'+(dt?new Date(dt).toLocaleDateString('en-GB'):'—')+'</td>'
+        +'<td style="padding:8px;font-weight:600">'+escH(x.site||x.activity||'—')+'</td>'
+        +'<td style="padding:8px;font-size:11px">'+escH(x.location||'—')+'</td>'
+        +'<td style="padding:8px;text-align:center"><span style="background:'+dc+';color:#fff;padding:2px 10px;border-radius:99px;font-size:10px;font-weight:800;text-transform:uppercase">'+dec.toUpperCase()+'</span></td>'
+        +'<td style="padding:8px;text-align:center;font-weight:700;color:'+(score!=null?(score>=80?'#1D9E75':score>=60?'#EF9F27':'#DC2626'):'#9CA3AF')+'">'+(score!=null?score+'%':'—')+'</td>'
+        +'<td style="padding:8px;font-size:11px">'+escH(x.inspector||x.supervisor||'—')+'</td>'
+        +'<td style="padding:8px"><button class="btn btn-sm" data-id="'+x.id+'" onclick="event.stopPropagation();psOpen(this.dataset.id)"><i class="ti ti-edit"></i></button></td>'
         +'</tr>';
     });
-    h+='</tbody></table>';
-    el.innerHTML=h;
-  }catch(e){el.innerHTML='<p style="padding:20px;color:red">'+e.message+'</p>';console.error(e);}
-}
-
-function psBuildChecklist(savedResults){
-  var savedMap={};
-  (savedResults||[]).forEach(function(r){savedMap[r.item]=r;});
-  var tbody=document.getElementById('ps-checklist-body');
-  if(!tbody)return;
-  tbody.innerHTML='';
-  var rowIdx=0;
-  PS_CHECKLIST.forEach(function(section){
-    // Category header row
-    var hdr=document.createElement('tr');
-    hdr.innerHTML='<td colspan="5" style="padding:7px 16px;background:linear-gradient(135deg,#1a3a5c22,#185FA511);font-size:11px;font-weight:700;text-transform:uppercase;color:#185FA5;letter-spacing:.05em;border-top:2px solid #185FA540">'+escH(section.cat)+'</td>';
-    tbody.appendChild(hdr);
-    section.items.forEach(function(item){
-      var saved=savedMap[item]||{};
-      var isYes=saved.result==='yes';
-      var isNo=saved.result==='no';
-      var isNA=saved.result==='na'||(!isYes&&!isNo&&!saved.result);
-      var tr=document.createElement('tr');
-      tr.style.borderBottom='1px solid #f5f5f5';
-      // Highlight NO rows in amber
-      if(isNo)tr.style.background='#FEF9EC';
-      var idx=rowIdx;
-      tr.innerHTML='<td style="padding:8px 16px;font-size:12px">'+escH(item)+'</td>'
-        +'<td style="padding:6px 4px;text-align:center"><input type="radio" name="ps'+idx+'" id="ps-yes-'+idx+'" value="yes" onchange="psScore();this.closest(\'tr\').style.background=\'\';" '+(isYes?'checked':'')+' style="width:18px;height:18px;accent-color:#1D9E75"></td>'
-        +'<td style="padding:6px 4px;text-align:center"><input type="radio" name="ps'+idx+'" id="ps-no-'+idx+'" value="no" onchange="psScore();this.closest(\'tr\').style.background=\'#FEF9EC\';" '+(isNo?'checked':'')+' style="width:18px;height:18px;accent-color:#E24B4A"></td>'
-        +'<td style="padding:6px 4px;text-align:center"><input type="radio" name="ps'+idx+'" id="ps-na-'+idx+'" value="na" onchange="psScore();this.closest(\'tr\').style.background=\'\';" '+(isNA&&!isYes&&!isNo?'checked':'')+' style="width:18px;height:18px;accent-color:#6B7280"></td>'
-        +'<td style="padding:5px 12px"><input type="text" id="ps-note-'+idx+'" value="'+escH2(saved.note||'')+'" placeholder="Action / comment..." style="width:100%;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:11px"/></td>';
-      tbody.appendChild(tr);
-      rowIdx++;
-    });
-  });
-  psScore();
-}
-
-function psScore(){
-  var rows=document.querySelectorAll('#ps-checklist-body tr');
-  var yes=0,no=0,na=0,total=0;
-  var idx=0;
-  rows.forEach(function(tr){
-    if(tr.cells.length<5)return; // header row
-    var yEl=document.getElementById('ps-yes-'+idx);
-    var nEl=document.getElementById('ps-no-'+idx);
-    var naEl=document.getElementById('ps-na-'+idx);
-    if(yEl)total++;
-    if(yEl?.checked)yes++;
-    else if(nEl?.checked)no++;
-    else if(naEl?.checked)na++;
-    idx++;
-  });
-  var el=document.getElementById('ps-score');
-  if(el)el.innerHTML='<span style="color:#1D9E75;font-weight:700">'+yes+'✓</span> <span style="color:#E24B4A;font-weight:700">'+no+'✗</span> <span style="color:#6B7280">'+na+' N/A</span>';
-  // Auto-set decision based on NO items
-  if(no>0){
-    document.getElementById('ps-decision-hold').checked=true;
-    psDecisionChange('hold');
-  }else if(yes>0&&no===0){
-    document.getElementById('ps-decision-go').checked=true;
-    psDecisionChange('go');
-  }
-}
-
-function psDecisionChange(val){
-  var cfg={
-    go:['#EAF3DE','#1D9E75'],
-    hold:['#FEF9EC','#EF9F27'],
-    stop:['#FCEBEB','#E24B4A']
-  };
-  ['go','hold','stop'].forEach(function(v){
-    var lbl=document.getElementById('ps-decision-'+v+'-lbl');
-    if(lbl){
-      lbl.style.background=v===val?cfg[v][0]:'#f9fafb';
-      lbl.style.borderColor=v===val?cfg[v][1]:'#e5e7eb';
-    }
-  });
-}
-
-// Hook up decision radio buttons
-document.addEventListener('change',function(e){
-  if(e.target&&e.target.name==='ps-decision'){
-    psDecisionChange(e.target.value);
-  }
-});
-
-function psNew(){
-  psEditingId=null;
-  document.getElementById('ps-form-title').textContent='New Pre-Start Check';
-  document.getElementById('ps-delete-btn').style.display='none';
-  // Clear fields
-  ['ps-activity','ps-location','ps-duration','ps-ra-ref','ps-ptw-ref','ps-team',
-   'ps-hazards','ps-controls','ps-tbt-topics','ps-stop-work','ps-decision-notes',
-   'ps-sign-name','ps-ppe-extra'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
-  var dt=document.getElementById('ps-date');if(dt)dt.value=new Date().toISOString().slice(0,10);
-  var sdt=document.getElementById('ps-sign-datetime');if(sdt)sdt.value=new Date().toISOString().slice(0,16);
-  var tbt=document.getElementById('ps-tbt-done');if(tbt)tbt.checked=false;
-  document.querySelectorAll('#ps-ppe-checks input[type="checkbox"]').forEach(function(cb){cb.checked=false;});
-  // Populate supervisor dropdown
-  var sup=document.getElementById('ps-supervisor');
-  if(sup){sup.innerHTML='<option value="">Select supervisor...</option>';(people||[]).forEach(function(p){var o=document.createElement('option');o.value=p.id;o.textContent=p.last_name+', '+p.first_name+(p.job_title?' — '+p.job_title:'');sup.appendChild(o);});}
-  // Default decision to GO
-  var goR=document.getElementById('ps-decision-go');if(goR)goR.checked=true;
-  psDecisionChange('go');
-  psBuildChecklist([]);
-  document.getElementById('ps-list-view').style.display='none';
-  document.getElementById('ps-form-view').style.display='block';
-}
-
-async function psOpen(id){
-  var x=psAllData.find(function(r){return r.id===id;});
-  if(!x){try{var d=await api('/prestart_inspections?id=eq.'+id);x=d?.[0];}catch(e){return;}}
-  if(!x)return;
-  psEditingId=id;
-  document.getElementById('ps-form-title').textContent='Pre-Start — '+new Date(x.check_date||x.created_at).toLocaleDateString('en-GB');
-  document.getElementById('ps-delete-btn').style.display=isMgr()?'inline-flex':'none';
-  var flds={'ps-activity':'activity','ps-location':'location','ps-duration':'duration',
-    'ps-ra-ref':'ra_ref','ps-ptw-ref':'ptw_ref','ps-team':'team_members',
-    'ps-hazards':'hazards','ps-controls':'controls','ps-tbt-topics':'tbt_topics',
-    'ps-stop-work':'stop_work_concerns','ps-decision-notes':'decision_notes','ps-sign-name':'signed_by'};
-  Object.entries(flds).forEach(function(e){var el=document.getElementById(e[0]);if(el)el.value=x[e[1]]||'';});
-  var dt=document.getElementById('ps-date');if(dt)dt.value=x.check_date||'';
-  var sdt=document.getElementById('ps-sign-datetime');if(sdt)sdt.value=x.signed_at?x.signed_at.slice(0,16):'';
-  var tbt=document.getElementById('ps-tbt-done');if(tbt)tbt.checked=!!x.tbt_conducted;
-  var ppe=x.ppe_required||[];
-  document.querySelectorAll('#ps-ppe-checks input[type="checkbox"]').forEach(function(cb){cb.checked=ppe.includes(cb.value);});
-  var extra=document.getElementById('ps-ppe-extra');if(extra)extra.value=x.ppe_extra||'';
-  // Set supervisor
-  var sup=document.getElementById('ps-supervisor');
-  if(sup){sup.innerHTML='<option value="">Select supervisor...</option>';(people||[]).forEach(function(p){var o=document.createElement('option');o.value=p.id;o.textContent=p.last_name+', '+p.first_name+(p.job_title?' — '+p.job_title:'');sup.appendChild(o);});sup.value=x.supervisor_id||'';}
-  var dec=x.decision||'go';
-  var decEl=document.getElementById('ps-decision-'+dec);if(decEl)decEl.checked=true;
-  psDecisionChange(dec);
-  psBuildChecklist(x.checklist_results||[]);
-  document.getElementById('ps-list-view').style.display='none';
-  document.getElementById('ps-form-view').style.display='block';
+    el.innerHTML=h+'</tbody></table>';
+  }catch(e){el.innerHTML='<div style="padding:20px;color:var(--text2);text-align:center">'+escH(e.message)+'</div>';}
 }
 
 function psShowList(){
@@ -17103,157 +17573,112 @@ function psShowList(){
   psLoad();
 }
 
-function psCollectChecklist(){
-  var results=[];
-  var rows=document.querySelectorAll('#ps-checklist-body tr');
-  var idx=0;
-  var cats=PS_CHECKLIST.flatMap(function(s){return s.items;});
-  rows.forEach(function(tr){
-    if(tr.cells.length<5)return;
-    var yEl=document.getElementById('ps-yes-'+idx);
-    var nEl=document.getElementById('ps-no-'+idx);
-    var note=document.getElementById('ps-note-'+idx)?.value||'';
-    var res=yEl?.checked?'yes':nEl?.checked?'no':'na';
-    results.push({item:cats[idx]||'Item '+idx,result:res,note:note});
-    idx++;
-  });
-  return results;
+function psNew(){
+  window.psEditId=null;
+  document.getElementById('ps-form-title').textContent='New Pre-Start Inspection';
+  document.getElementById('ps-delete-btn').style.display='none';
+  ['ps-activity','ps-location','ps-supervisor','ps-team','ps-ra-ref','ps-ptw-ref',
+   'ps-tbt-topics','ps-decision-notes','ps-sign-name'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
+  document.getElementById('ps-date').value=new Date().toISOString().slice(0,16);
+  document.getElementById('ps-duration').value='';
+  document.getElementById('ps-score').textContent='—';
+  document.getElementById('ps-tbt-done').checked=false;
+  document.getElementById('ps-stop-work').checked=false;
+  document.querySelectorAll('input[name="ps-dec"]').forEach(function(r){r.checked=r.value==='go';});
+  // Load pre-start checklist
+  window.chkItems=[
+    {ca:'Equipment',item:'Equipment is in good working condition'},{ca:'Equipment',item:'All guards and safety devices in place'},
+    {ca:'Area',item:'Work area is clear of hazards'},{ca:'Area',item:'Proper lighting is available'},
+    {ca:'Personnel',item:'All team members are competent for the task'},{ca:'Personnel',item:'No physical impairment (fatigue, illness)'},
+    {ca:'Documentation',item:'Risk assessment has been reviewed'},{ca:'Documentation',item:'Permit to work is in place (if required)'},
+    {ca:'PPE',item:'All required PPE is available and worn'},{ca:'Emergency',item:'Emergency procedures are known'},
+  ];
+  buildChecklist([]);
+  document.getElementById('ps-list-view').style.display='none';
+  document.getElementById('ps-form-view').style.display='block';
+}
+
+function psOpen(id){
+  // Load from audit data or fetch
+  var x = auditAllData.find(function(r){return r.id===id;});
+  if(x){
+    psOpenData(x);
+  } else {
+    api('/inspections?id=eq.'+id+cf()).then(function(d){if(d&&d[0])psOpenData(d[0]);}).catch(function(){});
+  }
+}
+
+function psOpenData(x){
+  window.psEditId=x.id;
+  document.getElementById('ps-form-title').textContent=x.site||x.activity||'Pre-Start';
+  document.getElementById('ps-delete-btn').style.display=isMgr()?'inline-flex':'none';
+  var gf=function(fid,val){var el=document.getElementById(fid);if(el)el.value=val||'';};
+  gf('ps-activity',x.site||x.activity); gf('ps-location',x.location);
+  var dt=x.inspection_date||x.if_date||'';
+  gf('ps-date',dt?dt+'T'+(x.inspection_time||'08:00'):new Date().toISOString().slice(0,16));
+  gf('ps-duration',x.duration_hours||''); gf('ps-supervisor',x.inspector||x.supervisor||'');
+  gf('ps-team',x.team_members||''); gf('ps-ra-ref',x.ra_ref||''); gf('ps-ptw-ref',x.ptw_ref||'');
+  gf('ps-tbt-topics',x.tbt_topics||''); gf('ps-decision-notes',x.decision_notes||'');
+  gf('ps-sign-name',x.sign_inspector||'');
+  if(document.getElementById('ps-sign-datetime'))document.getElementById('ps-sign-datetime').value=x.sign_date||'';
+  document.getElementById('ps-tbt-done').checked=!!x.tbt_done;
+  document.getElementById('ps-stop-work').checked=!!x.stop_work_briefed;
+  var dec=x.decision||'go';
+  document.querySelectorAll('input[name="ps-dec"]').forEach(function(r){r.checked=r.value===dec;});
+  if(x.items){window.chkItems=(x.items||[]).map(function(i){return{ca:i.category||'',item:i.item||''};});buildChecklist(x.items);}
+  else psNew();
+  document.getElementById('ps-list-view').style.display='none';
+  document.getElementById('ps-form-view').style.display='block';
 }
 
 async function psSave(){
   var activity=document.getElementById('ps-activity')?.value?.trim();
-  if(!activity){toast('Please describe the work activity',false);return;}
-  var supId=document.getElementById('ps-supervisor')?.value||null;
-  var supName='';
-  if(supId){var p=(people||[]).find(function(x){return x.id===supId;});supName=p?(p.last_name+', '+p.first_name):'';}
-  var ppe=[];
-  document.querySelectorAll('#ps-ppe-checks input[type="checkbox"]:checked').forEach(function(cb){ppe.push(cb.value);});
-  var dec=document.querySelector('input[name="ps-decision"]:checked')?.value||'go';
-  var checklist=psCollectChecklist();
-  var body={
-    company_id:prof?.company_id,
-    activity:activity,
-    location:document.getElementById('ps-location')?.value||null,
-    check_date:document.getElementById('ps-date')?.value||null,
-    duration:document.getElementById('ps-duration')?.value||null,
-    supervisor_id:supId||null,supervisor_name:supName||null,
-    team_members:document.getElementById('ps-team')?.value||null,
-    ra_ref:document.getElementById('ps-ra-ref')?.value||null,
-    ptw_ref:document.getElementById('ps-ptw-ref')?.value||null,
-    hazards:document.getElementById('ps-hazards')?.value||null,
-    controls:document.getElementById('ps-controls')?.value||null,
-    tbt_conducted:document.getElementById('ps-tbt-done')?.checked||false,
-    tbt_topics:document.getElementById('ps-tbt-topics')?.value||null,
-    stop_work_concerns:document.getElementById('ps-stop-work')?.value||null,
-    ppe_required:ppe,ppe_extra:document.getElementById('ps-ppe-extra')?.value||null,
-    checklist_results:checklist,
-    decision:dec,
-    decision_notes:document.getElementById('ps-decision-notes')?.value||null,
-    signed_by:document.getElementById('ps-sign-name')?.value||null,
-    signed_at:document.getElementById('ps-sign-datetime')?.value||null,
-    updated_at:new Date().toISOString()
-  };
+  if(!activity){toast('Please enter activity / task',false);return;}
+  var g=function(id){var el=document.getElementById(id);return el?el.value||null:null;};
+  var items=(window.chkItems||[]).map(function(c,i){
+    var gEl=document.getElementById('cg-'+i);var iEl=document.getElementById('ci-'+i);var nEl=document.getElementById('cn-'+i);var oEl=document.getElementById('co-'+i);
+    return{category:c.ca||'',item:c.item||'',result:gEl?.checked?'good':(iEl?.checked?'insufficient':(nEl?.checked?'na':''))};
+  }).filter(function(x){return x.item;});
+  var goodCnt=items.filter(function(x){return x.result==='good';}).length;
+  var insufCnt=items.filter(function(x){return x.result==='insufficient';}).length;
+  var dec=document.querySelector('input[name="ps-dec"]:checked')?.value||'go';
+  var dt=g('ps-date');
+  var body={company_id:prof?.company_id,inspection_type:'prestart',site:activity,activity:activity,
+    location:g('ps-location'),inspection_date:dt?dt.split('T')[0]:null,if_date:dt?dt.split('T')[0]:null,
+    inspection_time:dt?dt.split('T')[1]:null,duration_hours:g('ps-duration')?parseFloat(g('ps-duration')):null,
+    inspector:g('ps-supervisor'),supervisor:g('ps-supervisor'),if_by:g('ps-supervisor'),
+    team_members:g('ps-team'),ra_ref:g('ps-ra-ref'),ptw_ref:g('ps-ptw-ref'),
+    tbt_done:document.getElementById('ps-tbt-done')?.checked||false,tbt_topics:g('ps-tbt-topics'),
+    stop_work_briefed:document.getElementById('ps-stop-work')?.checked||false,
+    decision:dec,decision_notes:g('ps-decision-notes'),
+    sign_inspector:g('ps-sign-name'),sign_date:g('ps-sign-datetime')||null,
+    score_good:goodCnt,score_insuf:insufCnt,items,status:'completed',updated_at:new Date().toISOString()};
   try{
-    if(psEditingId){
-      await api('/prestart_inspections?id=eq.'+psEditingId,{m:'PATCH',p:'return=minimal',b:body});
-      toast('Pre-start check updated!');
-    }else{
-      body.created_by=prof?.id;
-      await api('/prestart_inspections',{m:'POST',p:'return=minimal',b:body});
-      // If STOP or HOLD, add to MAP
-      if(dec==='stop'||dec==='hold'){
-        var concerns=body.decision_notes||body.stop_work_concerns||'Issues identified in pre-start inspection';
-        await api('/action_tracker',{m:'POST',p:'return=minimal',b:{
-          company_id:prof?.company_id,source_module:'prestart',
-          source_ref:'Pre-start: '+activity,
-          description:'['+dec.toUpperCase()+'] '+concerns,
-          responsible:supName||null,priority:dec==='stop'?'critical':'high',
-          status:'open',created_by:prof?.id
-        }});
-        toast('Pre-start saved! Action added to MAP — work is '+(dec==='stop'?'STOPPED':'ON HOLD')+'.');
-      }else{
-        toast('Pre-start check saved — Work approved to proceed ✅');
-      }
-    }
+    if(window.psEditId){await api('/inspections?id=eq.'+window.psEditId,{m:'PATCH',p:'return=minimal',b:body});toast('Updated!');}
+    else{body.created_by=prof?.id;await api('/inspections',{m:'POST',p:'return=minimal',b:body});toast('Pre-start saved!');}
+    if(dec==='stop')toast('⛔ STOP decision — work must not proceed until issues resolved.',false);
     psShowList();
-  }catch(e){toast(e.message,false);console.error(e);}
+  }catch(e){toast(e.message,false);}
 }
 
 async function psDelete(){
-  if(!psEditingId)return;
-  if(!confirm('Delete this pre-start check?'))return;
-  try{await api('/prestart_inspections?id=eq.'+psEditingId,{m:'DELETE'});toast('Deleted!');psShowList();}
-  catch(e){toast(e.message,false);}
+  if(!window.psEditId||!confirm('Delete?'))return;
+  try{await api('/inspections?id=eq.'+window.psEditId,{m:'DELETE'});toast('Deleted!');psShowList();}catch(e){toast(e.message,false);}
 }
 
-async function psDeleteFromList(id){
-  if(!confirm('Delete this pre-start check?'))return;
-  try{await api('/prestart_inspections?id=eq.'+id,{m:'DELETE'});psAllData=psAllData.filter(x=>x.id!==id);toast('Deleted!');psLoad();}
-  catch(e){toast(e.message,false);}
+function psDeleteFromList(id){
+  if(!confirm('Delete?'))return;
+  api('/inspections?id=eq.'+id,{m:'DELETE'}).then(function(){psLoad();toast('Deleted!');}).catch(function(e){toast(e.message,false);});
 }
 
-// Update loadInsps to also set up the tabs
-const _origLoadInsps=loadInsps;
-async function loadInsps(){
-  var addBtn=document.getElementById('insp-header-btns');
-  if(addBtn)addBtn.innerHTML='<button class="btn btn-primary" onclick="inspNew()"><i class="ti ti-plus"></i>New inspection</button>';
-  await _origLoadInsps();
-}
+function psDecisionChange(){}  // handled by radio onchange
+function psBuildChecklist(){buildChecklist([]);}
+function psScore(){updateScore();}
+function psCollectChecklist(){return (window.chkItems||[]).map(function(c,i){return{category:c.ca,item:c.item,result:document.getElementById('cg-'+i)?.checked?'good':(document.getElementById('ci-'+i)?.checked?'insufficient':'na')};});}
 
-// ===== RA PART 1 FIX =====
-// ===================================================================
-// ENHANCED RISK ASSESSMENT MODULE — Full Rebuild
-// Features: Baseline, Task, Dynamic, HIRA, JSA/JHA, Environmental
-// Libraries: Hazard lib, Control lib, Templates
-// Advanced: AI generation, Risk scoring, HOC, Bowtie, Legal refs
-// ===================================================================
+// ── Misc backward compat ────────────────────────────────────────────
+function psShowList_alt(){psShowList();}
 
-// ── State ────────────────────────────────────────────────────────────────────
-let raAllData=[], raEditingId=null, raEditingType='baseline';
-let raAllJSA=[], jsaEditingId=null, jsaSteps=[];
-let raLegalRefs=[], raCurrentRevision=1;
-let libHazardData=[], libControlData=[];
-let raCurrentListTab='ra';
-
-// ── Config ───────────────────────────────────────────────────────────────────
-const RA_TYPE_CFG={
-  baseline:  {label:'Baseline / Generic RA', color:'#185FA5', bg:'#EFF6FF', emoji:'📋'},
-  task:      {label:'Task-Based RA',          color:'#1D9E75', bg:'#F0FDF4', emoji:'⚙️'},
-  dynamic:   {label:'Dynamic RA',             color:'#EF9F27', bg:'#FFFBEB', emoji:'⚡'},
-  hira:      {label:'HIRA',                   color:'#E24B4A', bg:'#FEF2F2', emoji:'🔬'},
-  jsa:       {label:'JSA / JHA',              color:'#6D28D9', bg:'#F5F3FF', emoji:'🔧'},
-  environmental:{label:'Environmental RA',    color:'#065F46', bg:'#F0FDF4', emoji:'🌿'}
-};
-
-const RL_CFG={
-  'Very Low': ['#EAF3DE','#3B6D11'],
-  'Low':      ['#D1FAE5','#065F46'],
-  'Medium':   ['#FEF9EC','#854F0B'],
-  'High':     ['#FEF6E7','#C2410C'],
-  'Very High':['#FCEBEB','#A32D2D'],
-  'Critical': ['#4C0519','#fff']
-};
-
-const RA_STATUS_CFG={
-  draft:          ['#f3f4f6','#6B7280','Draft'],
-  pending_review: ['#FEF9EC','#854F0B','Pending Review'],
-  active:         ['#EAF3DE','#3B6D11','Active'],
-  review:         ['#EDE9FE','#7C3AED','Under Review'],
-  archived:       ['#f3f4f6','#6B7280','Archived'],
-  rejected:       ['#FCEBEB','#A32D2D','Rejected']
-};
-
-const HOC_LEVELS=[
-  {key:'elimination',  label:'Elimination',  color:'#065F46', desc:'Remove the hazard entirely'},
-  {key:'substitution', label:'Substitution',  color:'#1D9E75', desc:'Replace with something less hazardous'},
-  {key:'engineering',  label:'Engineering',   color:'#185FA5', desc:'Isolate people from the hazard'},
-  {key:'administrative',label:'Administrative',color:'#EF9F27', desc:'Change work practices and procedures'},
-  {key:'ppe',          label:'PPE',           color:'#E24B4A', desc:'Protect the worker — last resort'}
-];
-
-const HAZARD_CATEGORIES=['Physical','Mechanical','Electrical','Chemical','Biological','Ergonomic','Fire','Environmental','Organisational','Psychological'];
-
-// ── Entry Point ───────────────────────────────────────────────────────────────
 async function loadRA(){
   var btn=document.getElementById('risk-add-btn');
   if(btn&&isMgr())document.getElementById('ra-new-main-btn').style.display='inline-flex';
@@ -17638,6 +18063,7 @@ async function compSave() {
 }
 
 
+
 </script>
 </head>
 <body>
@@ -17647,7 +18073,7 @@ async function compSave() {
 <div class="sidebar"><div class="sidebar-top"><img id="co-logo-img" class="co-logo" src="" alt="logo"/><div id="co-initials-div" class="co-initials">A</div><div class="sb-company" id="sb-company">AURIS360</div><div class="sb-user" id="sb-user">—</div><span class="sb-role" id="sb-role">—</span></div><span class="nav-section">Main</span><div class="nav-item active" onclick="showPage('dashboard',this)"><i class="ti ti-layout-dashboard"></i>Dashboard</div>
 <div class="nav-item" id="nav-executive" onclick="showPage('executive',this)"><i class="ti ti-chart-bar"></i>Executive Dashboard</div><div class="nav-item" id="nav-ai" onclick="showPage('ai-insights',this)"><i class="ti ti-brain"></i>AI Insights</div><span class="nav-section">HSE Modules</span><div class="nav-item" onclick="showPage('kpi',this)"><i class="ti ti-target"></i>Objectives & KPIs</div><div class="nav-item" onclick="showPage('workschedule',this)"><i class="ti ti-calendar-event"></i>Work Schedule</div>
 <div class="nav-item" onclick="showPage('events',this)"><i class="ti ti-alert-triangle"></i>Incident Management</div><div class="nav-item" onclick="showPage('observation',this)"><i class="ti ti-eye"></i>BBS Observations</div>
-<div class="nav-item" onclick="showPage('inspection',this)"><i class="ti ti-clipboard-check"></i>Site Inspection</div><div class="nav-item" onclick="showPage('risk',this)"><i class="ti ti-shield-check"></i>Risk Assessment</div><div class="nav-item" onclick="showPage('tools',this)"><i class="ti ti-tools"></i>Tools & Equipment</div>
+<div class="nav-item" onclick="showPage('inspection',this)"><i class="ti ti-clipboard-check"></i>Audits &amp; Inspections</div><div class="nav-item" onclick="showPage('risk',this)"><i class="ti ti-shield-check"></i>Risk Assessment</div><div class="nav-item" onclick="showPage('tools',this)"><i class="ti ti-tools"></i>Tools & Equipment</div>
 <div class="nav-item" onclick="showPage('permit',this)"><i class="ti ti-key"></i>Permit to Work</div>
 <div class="nav-item" onclick="showPage('contractor',this)"><i class="ti ti-hard-hat"></i>Contractors</div><div class="nav-item" onclick="showPage('emergency',this)"><i class="ti ti-alert-square"></i>Emergency</div>
 <div class="nav-item" onclick="showPage('ohealth',this)"><i class="ti ti-stethoscope"></i>Occupational Health</div>
@@ -19585,257 +20011,336 @@ async function compSave() {
 
 <div id="page-inspection" class="page">
 <div class="page-header">
-<div><div class="page-title">Site Inspection</div><div style="font-size:12px;color:var(--text2)" id="insp-subtitle">Workplace inspections and pre-start checks</div></div>
-<div style="display:flex;gap:8px" id="insp-header-btns"></div>
+<div>
+<div class="page-title">Audits &amp; Inspections</div>
+<div style="font-size:12px;color:var(--text2)" id="insp-subtitle">Workplace · Equipment · PPE · Fire · Environmental · ISO Audits · Regulatory</div>
+</div>
+<div style="display:flex;gap:8px" id="insp-header-btns">
+<button class="btn btn-primary" id="insp-new-btn" onclick="auditNew()"><i class="ti ti-plus"></i>New inspection</button>
+</div>
 </div>
 
-<!-- Tabs -->
-<div style="display:flex;gap:0;margin-bottom:16px;border-bottom:2px solid var(--border)">
-<button class="mtg-tab active" id="insp-tab-site" onclick="inspSwitchTab('site',this)">🏗️ Site Inspection</button>
-<button class="mtg-tab" id="insp-tab-prestart" onclick="inspSwitchTab('prestart',this)">🔔 Pre-Start Inspection</button>
+<!-- Metrics -->
+<div style="display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin-bottom:14px">
+<div class="card" style="padding:10px 12px;border-left:4px solid #185FA5"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase">Total</div><div style="font-size:22px;font-weight:800;color:#185FA5" id="audit-m-total">—</div></div>
+<div class="card" style="padding:10px 12px;border-left:4px solid #1D9E75"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase">Completed</div><div style="font-size:22px;font-weight:800;color:#1D9E75" id="audit-m-done">—</div></div>
+<div class="card" style="padding:10px 12px;border-left:4px solid #DC2626"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase">Open Findings</div><div style="font-size:22px;font-weight:800;color:#DC2626" id="audit-m-findings">—</div></div>
+<div class="card" style="padding:10px 12px;border-left:4px solid #EF9F27"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase">Overdue</div><div style="font-size:22px;font-weight:800;color:#EF9F27" id="audit-m-overdue">—</div></div>
+<div class="card" style="padding:10px 12px;border-left:4px solid #8B5CF6"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase">Major NCs</div><div style="font-size:22px;font-weight:800;color:#8B5CF6" id="audit-m-major">—</div></div>
+<div class="card" style="padding:10px 12px;border-left:4px solid #0891B2"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase">Avg Score</div><div style="font-size:22px;font-weight:800;color:#0891B2" id="audit-m-score">—</div></div>
 </div>
 
-<!-- ── SITE INSPECTION TAB ── -->
-<div id="insp-view-site">
-<!-- List view -->
-<div id="insp-list-view">
-<div style="display:flex;justify-content:flex-end;margin-bottom:10px">
-<button class="btn btn-primary" onclick="inspNew()"><i class="ti ti-plus"></i>New inspection</button>
-</div>
-<div class="card" style="padding:0;overflow:hidden"><div id="inspections-list"><div class="loading-msg">Loading...</div></div></div>
+<!-- Tab bar -->
+<div style="display:flex;gap:0;margin-bottom:14px;border-bottom:2px solid var(--border);overflow-x:auto">
+<button class="mtg-tab active" id="insp-tab-all"          onclick="auditSwitchTab('all',this)"          style="white-space:nowrap">📋 All</button>
+<button class="mtg-tab"        id="insp-tab-workplace"    onclick="auditSwitchTab('workplace',this)"    style="white-space:nowrap">🏭 Workplace</button>
+<button class="mtg-tab"        id="insp-tab-behavioral"   onclick="auditSwitchTab('behavioral',this)"   style="white-space:nowrap">👁️ Behavioral</button>
+<button class="mtg-tab"        id="insp-tab-equipment"    onclick="auditSwitchTab('equipment',this)"    style="white-space:nowrap">⚙️ Equipment</button>
+<button class="mtg-tab"        id="insp-tab-ppe"          onclick="auditSwitchTab('ppe',this)"          style="white-space:nowrap">🦺 PPE</button>
+<button class="mtg-tab"        id="insp-tab-fire"         onclick="auditSwitchTab('fire',this)"         style="white-space:nowrap">🔥 Fire</button>
+<button class="mtg-tab"        id="insp-tab-environmental" onclick="auditSwitchTab('environmental',this)" style="white-space:nowrap">🌿 Environmental</button>
+<button class="mtg-tab"        id="insp-tab-audit"        onclick="auditSwitchTab('audit',this)"        style="white-space:nowrap">📊 Audits</button>
+<button class="mtg-tab"        id="insp-tab-prestart"     onclick="auditSwitchTab('prestart',this)"     style="white-space:nowrap">🚦 Pre-Start</button>
+<button class="mtg-tab"        id="insp-tab-findings"     onclick="auditSwitchTab('findings',this)"     style="white-space:nowrap">⚠️ Findings</button>
 </div>
 
-<!-- Form / Detail view -->
-<div id="insp-form-view" style="display:none">
-<div class="card" style="margin-bottom:16px;padding:14px 20px">
-<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
-<div style="font-size:16px;font-weight:700" id="insp-form-title">New Inspection</div>
+<!-- ── REGISTER (list view used by all/workplace/equipment etc tabs) ── -->
+<div id="audit-view-register">
+<div class="card" style="margin-bottom:12px;padding:10px 14px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+<div style="display:flex;gap:8px;flex-wrap:wrap">
+<input type="text" id="audit-search" placeholder="Search ref, site, type..." oninput="auditFilter()" style="padding:7px 12px;border:1px solid var(--border);border-radius:8px;font-size:12px;width:200px"/>
+<select id="audit-filter-type" onchange="auditFilter()" style="padding:7px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px">
+<option value="">All types</option>
+<option value="workplace">🏭 Workplace</option><option value="behavioral">👁️ Behavioral</option>
+<option value="equipment">⚙️ Equipment</option><option value="ppe">🦺 PPE</option>
+<option value="fire">🔥 Fire</option><option value="environmental">🌿 Environmental</option>
+<option value="iso_audit">📊 ISO Audit</option><option value="internal_audit">🔍 Internal Audit</option>
+<option value="supplier_audit">🏢 Supplier Audit</option><option value="contractor_audit">🦺 Contractor Audit</option>
+<option value="regulatory">⚖️ Regulatory</option>
+</select>
+<select id="audit-filter-status" onchange="auditFilter()" style="padding:7px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px">
+<option value="">All statuses</option>
+<option value="open">Open</option><option value="in_progress">In Progress</option>
+<option value="completed">Completed</option><option value="closed">Closed</option>
+</select>
+</div>
+<div style="font-size:12px;color:var(--text2)" id="audit-filter-label"></div>
+</div>
+<div id="audit-register-list"><div class="loading-msg">Loading...</div></div>
+</div>
+
+<!-- ── PRE-START TAB ── -->
+<div id="audit-view-prestart" style="display:none">
+<div class="card" style="margin-bottom:12px;padding:10px 14px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+<div class="card-title" style="margin:0">Pre-Start Inspections</div>
+<button class="btn btn-primary" id="ps-add-btn" onclick="psNew()" style="display:none"><i class="ti ti-plus"></i>New pre-start</button>
+</div>
+<div id="ps-list-view">
+<div id="ps-list"><div class="loading-msg">Loading...</div></div>
+</div>
+<div id="ps-form-view" style="display:none">
+<div class="card" style="margin-bottom:14px;padding:0;overflow:hidden">
+<div style="padding:14px 20px;background:linear-gradient(135deg,#1a3a5c,#185FA5);color:#fff;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+<div style="font-size:17px;font-weight:800" id="ps-form-title">Pre-Start Inspection</div>
 <div style="display:flex;gap:8px">
-<button class="btn" onclick="inspShowList()"><i class="ti ti-arrow-left"></i>Back</button>
-<button id="insp-delete-btn" class="btn" style="color:var(--red);display:none" onclick="inspDelete()"><i class="ti ti-trash"></i>Delete</button>
-<button class="btn btn-primary" onclick="saveInspection()"><i class="ti ti-device-floppy"></i>Save</button>
+<button class="btn" style="background:rgba(255,255,255,.2);color:#fff;border-color:rgba(255,255,255,.3)" onclick="psShowList()"><i class="ti ti-arrow-left"></i>Back</button>
+<button id="ps-delete-btn" class="btn" style="display:none;background:rgba(220,38,38,.3);color:#fff;border-color:rgba(220,38,38,.5)" onclick="psDelete()"><i class="ti ti-trash"></i></button>
+<button class="btn" style="background:#1D9E75;color:#fff;border-color:#1D9E75" onclick="psSave()"><i class="ti ti-device-floppy"></i>Save</button>
 </div>
 </div>
 </div>
-<div class="card" style="margin-bottom:12px">
+<div style="display:grid;grid-template-columns:2fr 1fr;gap:14px">
+<div>
+<div class="card" style="margin-bottom:14px"><div class="card-title">Task Details</div>
 <div class="form-row">
-<div class="form-group"><label class="form-label">Site</label><input type="text" id="if-site"/></div>
+<div class="form-group"><label class="form-label">Activity / task</label><input type="text" id="ps-activity" placeholder="e.g. Excavation, Crane lift..."/></div>
+<div class="form-group"><label class="form-label">Location</label><input type="text" id="ps-location"/></div>
+<div class="form-group"><label class="form-label">Date &amp; time</label><input type="datetime-local" id="ps-date"/></div>
+</div>
+<div class="form-row">
+<div class="form-group"><label class="form-label">Duration (hrs)</label><input type="number" id="ps-duration" min="0.5" step="0.5"/></div>
+<div class="form-group"><label class="form-label">Supervisor</label><input type="text" id="ps-supervisor"/></div>
+<div class="form-group"><label class="form-label">Team members</label><input type="text" id="ps-team" placeholder="Names of team..."/></div>
+</div>
+<div class="form-row">
+<div class="form-group"><label class="form-label">Risk assessment ref</label><input type="text" id="ps-ra-ref" style="font-family:monospace"/></div>
+<div class="form-group"><label class="form-label">Permit to Work ref</label><input type="text" id="ps-ptw-ref" style="font-family:monospace"/></div>
+</div>
+</div>
+<div class="card" style="margin-bottom:14px"><div class="card-title">Checklist</div>
+<div style="font-size:12px;color:var(--text2);margin-bottom:8px">Score: <strong id="ps-score">—</strong></div>
+<div id="ps-checklist-body"></div>
+</div>
+<div class="card" style="margin-bottom:14px"><div class="card-title">Hazards &amp; Controls</div>
+<div class="form-group"><label class="form-label">Identified hazards</label><textarea id="ps-hazards" style="min-height:60px"></textarea></div>
+<div class="form-group"><label class="form-label">Controls in place</label><textarea id="ps-controls" style="min-height:60px"></textarea></div>
+</div>
+<div class="card" style="margin-bottom:14px"><div class="card-title">PPE Checks</div>
+<div id="ps-ppe-checks" style="display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:12px">
+<label style="display:flex;align-items:center;gap:6px;cursor:pointer"><input type="checkbox" style="accent-color:var(--green)"/> Hard hat</label>
+<label style="display:flex;align-items:center;gap:6px;cursor:pointer"><input type="checkbox" style="accent-color:var(--green)"/> Safety glasses</label>
+<label style="display:flex;align-items:center;gap:6px;cursor:pointer"><input type="checkbox" style="accent-color:var(--green)"/> Safety boots</label>
+<label style="display:flex;align-items:center;gap:6px;cursor:pointer"><input type="checkbox" style="accent-color:var(--green)"/> Hi-vis vest</label>
+<label style="display:flex;align-items:center;gap:6px;cursor:pointer"><input type="checkbox" style="accent-color:var(--green)"/> Gloves</label>
+<label style="display:flex;align-items:center;gap:6px;cursor:pointer"><input type="checkbox" style="accent-color:var(--green)"/> Harness (WAH)</label>
+<label style="display:flex;align-items:center;gap:6px;cursor:pointer"><input type="checkbox" style="accent-color:var(--green)"/> Respirator</label>
+<label style="display:flex;align-items:center;gap:6px;cursor:pointer"><input type="checkbox" style="accent-color:var(--green)"/> Hearing protection</label>
+</div>
+<div class="form-group" style="margin-top:8px"><label class="form-label">Additional PPE required</label><input type="text" id="ps-ppe-extra"/></div>
+</div>
+</div>
+<div>
+<div class="card" style="margin-bottom:14px"><div class="card-title">Toolbox Talk</div>
+<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px"><input type="checkbox" id="ps-tbt-done" style="accent-color:var(--green)"/><label for="ps-tbt-done" style="font-size:13px;font-weight:600;cursor:pointer">Toolbox talk completed</label></div>
+<div class="form-group"><label class="form-label">Topics covered</label><input type="text" id="ps-tbt-topics" placeholder="Key topics discussed..."/></div>
+</div>
+<div class="card" style="margin-bottom:14px"><div class="card-title">Stop Work Authority</div>
+<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px"><input type="checkbox" id="ps-stop-work" style="accent-color:var(--green)"/><label for="ps-stop-work" style="font-size:13px;font-weight:600;cursor:pointer">Team briefed on Stop Work Authority</label></div>
+</div>
+<div class="card" style="margin-bottom:14px;border:2px solid var(--green)"><div class="card-title" style="color:#065F46">Go / Hold / Stop</div>
+<div style="display:flex;flex-direction:column;gap:8px">
+<label style="display:flex;align-items:center;gap:8px;padding:8px;border-radius:8px;cursor:pointer;background:#f0fdf4;border:1px solid #bbf7d0"><input type="radio" name="ps-dec" value="go" style="accent-color:var(--green)" checked/><span style="font-weight:700;color:#166534;font-size:13px" id="ps-decision-go-lbl">✓ GO — Safe to proceed</span></label>
+<label style="display:flex;align-items:center;gap:8px;padding:8px;border-radius:8px;cursor:pointer;background:#FEF9EC;border:1px solid #fcd34d"><input type="radio" name="ps-dec" value="hold" style="accent-color:#EF9F27"/><span style="font-weight:700;color:#854F0B;font-size:13px" id="ps-decision-hold-lbl">⏸ HOLD — Issues to resolve</span></label>
+<label style="display:flex;align-items:center;gap:8px;padding:8px;border-radius:8px;cursor:pointer;background:#FEF2F2;border:1px solid #fecaca"><input type="radio" name="ps-dec" value="stop" style="accent-color:var(--red)"/><span style="font-weight:700;color:#991B1B;font-size:13px" id="ps-decision-stop-lbl">✗ STOP — Do NOT proceed</span></label>
+</div>
+<div class="form-group" style="margin-top:8px"><label class="form-label">Decision notes</label><textarea id="ps-decision-notes" style="min-height:50px"></textarea></div>
+</div>
+<div class="card"><div class="card-title">Sign-off</div>
+<div class="form-group"><label class="form-label">Supervisor / Inspector name</label><input type="text" id="ps-sign-name"/></div>
+<div class="form-group"><label class="form-label">Date &amp; time signed</label><input type="datetime-local" id="ps-sign-datetime"/></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+
+<!-- ── FINDINGS TAB ── -->
+<div id="audit-view-findings" style="display:none">
+<div class="card" style="margin-bottom:12px;padding:10px 14px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+<div class="card-title" style="margin:0">Audit Findings &amp; Non-Conformances</div>
+<div style="display:flex;gap:8px">
+<select id="findings-filter-type" onchange="findingsLoad()" style="padding:7px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px">
+<option value="">All types</option>
+<option value="major_nc">Major NC</option><option value="minor_nc">Minor NC</option>
+<option value="observation">Observation</option><option value="opportunity">Opportunity</option>
+</select>
+<select id="findings-filter-status" onchange="findingsLoad()" style="padding:7px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px">
+<option value="">All statuses</option>
+<option value="open">Open</option><option value="in_progress">In progress</option><option value="closed">Closed</option>
+</select>
+</div>
+</div>
+<div id="findings-list"><div class="loading-msg">Loading...</div></div>
+</div>
+
+<!-- ══════════ MAIN INSPECTION / AUDIT FORM ══════════ -->
+<div id="audit-form-view" style="display:none">
+<div class="card" style="margin-bottom:14px;padding:0;overflow:hidden">
+<div id="audit-form-banner" style="padding:16px 24px;background:linear-gradient(135deg,#1a3a5c,#185FA5);color:#fff;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px">
+<div>
+<div style="font-size:11px;font-weight:600;text-transform:uppercase;opacity:.8;letter-spacing:.08em;margin-bottom:4px" id="audit-form-type-label">Inspection</div>
+<div style="font-size:18px;font-weight:800" id="audit-form-title">New Inspection</div>
+<div style="font-family:monospace;font-size:12px;color:#a8d8f0;margin-top:3px" id="audit-form-ref">REF-AUTO</div>
+</div>
+<div style="display:flex;gap:8px;flex-wrap:wrap">
+<button class="btn" style="background:rgba(255,255,255,.2);color:#fff;border-color:rgba(255,255,255,.3)" onclick="auditBackToList()"><i class="ti ti-arrow-left"></i>Back</button>
+<button id="audit-delete-btn" class="btn" style="display:none;background:rgba(220,38,38,.3);color:#fff;border-color:rgba(220,38,38,.5)" onclick="auditDelete()"><i class="ti ti-trash"></i></button>
+<button class="btn" style="background:#fff;color:#185FA5;font-weight:700" onclick="auditSave()"><i class="ti ti-device-floppy"></i>Save</button>
+</div>
+</div>
+</div>
+
+<div style="display:grid;grid-template-columns:2fr 1fr;gap:14px">
+<div>
+<!-- Inspection type selector -->
+<div class="card" style="margin-bottom:14px"><div class="card-title">Inspection / Audit Type</div>
+<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px;margin-bottom:12px" id="audit-type-grid">
+<div class="audit-type-btn" data-type="workplace"       onclick="auditSelectType('workplace')"       style="padding:8px;border-radius:8px;text-align:center;cursor:pointer;border:2px solid #bfdbfe;background:#EFF6FF;transition:all .15s"><div style="font-size:18px;margin-bottom:3px">🏭</div><div style="font-weight:700;font-size:10px;color:#1e40af">Workplace</div></div>
+<div class="audit-type-btn" data-type="behavioral"      onclick="auditSelectType('behavioral')"      style="padding:8px;border-radius:8px;text-align:center;cursor:pointer;border:2px solid #ddd6fe;background:#F5F3FF;transition:all .15s"><div style="font-size:18px;margin-bottom:3px">👁️</div><div style="font-weight:700;font-size:10px;color:#5B21B6">Behavioral</div></div>
+<div class="audit-type-btn" data-type="equipment"       onclick="auditSelectType('equipment')"       style="padding:8px;border-radius:8px;text-align:center;cursor:pointer;border:2px solid #fed7aa;background:#FFF7ED;transition:all .15s"><div style="font-size:18px;margin-bottom:3px">⚙️</div><div style="font-weight:700;font-size:10px;color:#9A3412">Equipment</div></div>
+<div class="audit-type-btn" data-type="ppe"             onclick="auditSelectType('ppe')"             style="padding:8px;border-radius:8px;text-align:center;cursor:pointer;border:2px solid #a7f3d0;background:#ECFDF5;transition:all .15s"><div style="font-size:18px;margin-bottom:3px">🦺</div><div style="font-weight:700;font-size:10px;color:#065F46">PPE</div></div>
+<div class="audit-type-btn" data-type="fire"            onclick="auditSelectType('fire')"            style="padding:8px;border-radius:8px;text-align:center;cursor:pointer;border:2px solid #fecaca;background:#FEF2F2;transition:all .15s"><div style="font-size:18px;margin-bottom:3px">🔥</div><div style="font-weight:700;font-size:10px;color:#991B1B">Fire</div></div>
+<div class="audit-type-btn" data-type="environmental"   onclick="auditSelectType('environmental')"   style="padding:8px;border-radius:8px;text-align:center;cursor:pointer;border:2px solid #a7f3d0;background:#ECFDF5;transition:all .15s"><div style="font-size:18px;margin-bottom:3px">🌿</div><div style="font-weight:700;font-size:10px;color:#065F46">Environmental</div></div>
+<div class="audit-type-btn" data-type="iso_audit"       onclick="auditSelectType('iso_audit')"       style="padding:8px;border-radius:8px;text-align:center;cursor:pointer;border:2px solid #e5e7eb;background:#f9fafb;transition:all .15s"><div style="font-size:18px;margin-bottom:3px">📊</div><div style="font-weight:700;font-size:10px;color:#374151">ISO Audit</div></div>
+<div class="audit-type-btn" data-type="internal_audit"  onclick="auditSelectType('internal_audit')"  style="padding:8px;border-radius:8px;text-align:center;cursor:pointer;border:2px solid #bfdbfe;background:#EFF6FF;transition:all .15s"><div style="font-size:18px;margin-bottom:3px">🔍</div><div style="font-weight:700;font-size:10px;color:#1e40af">Internal</div></div>
+<div class="audit-type-btn" data-type="supplier_audit"  onclick="auditSelectType('supplier_audit')"  style="padding:8px;border-radius:8px;text-align:center;cursor:pointer;border:2px solid #fcd34d;background:#FFFBEB;transition:all .15s"><div style="font-size:18px;margin-bottom:3px">🏢</div><div style="font-weight:700;font-size:10px;color:#854F0B">Supplier</div></div>
+<div class="audit-type-btn" data-type="contractor_audit" onclick="auditSelectType('contractor_audit')" style="padding:8px;border-radius:8px;text-align:center;cursor:pointer;border:2px solid #fed7aa;background:#FFF7ED;transition:all .15s"><div style="font-size:18px;margin-bottom:3px">👷</div><div style="font-weight:700;font-size:10px;color:#9A3412">Contractor</div></div>
+<div class="audit-type-btn" data-type="regulatory"      onclick="auditSelectType('regulatory')"      style="padding:8px;border-radius:8px;text-align:center;cursor:pointer;border:2px solid #fecaca;background:#FEF2F2;transition:all .15s"><div style="font-size:18px;margin-bottom:3px">⚖️</div><div style="font-weight:700;font-size:10px;color:#991B1B">Regulatory</div></div>
+</div>
+<input type="hidden" id="audit-type" value="workplace"/>
+<!-- ISO/Audit standard selector (shown for audit types) -->
+<div id="audit-standard-row" style="display:none">
+<div class="form-row">
+<div class="form-group"><label class="form-label">Audit standard</label>
+<select id="audit-standard"><option value="">Select...</option><option value="ISO 45001">ISO 45001:2018 — OH&S</option><option value="ISO 14001">ISO 14001:2015 — Environmental</option><option value="ISO 9001">ISO 9001:2015 — Quality</option><option value="ISO 50001">ISO 50001 — Energy</option><option value="OHSAS 18001">OHSAS 18001</option><option value="Internal">Internal standard</option><option value="Regulatory">Regulatory requirement</option><option value="Custom">Custom / other</option></select></div>
+<div class="form-group"><label class="form-label">Audit scope</label><input type="text" id="audit-scope" placeholder="Departments, processes, sites..."/></div>
+</div>
+<div class="form-row">
+<div class="form-group"><label class="form-label">Lead auditor</label><input type="text" id="audit-lead-auditor"/></div>
+<div class="form-group"><label class="form-label">Audit team</label><input type="text" id="audit-team" placeholder="Names of auditors..."/></div>
+<div class="form-group"><label class="form-label">Auditee (person/dept/supplier)</label><input type="text" id="audit-auditee"/></div>
+</div>
+</div>
+</div>
+
+<!-- Core details -->
+<div class="card" style="margin-bottom:14px"><div class="card-title">Details</div>
+<div class="form-row">
+<div class="form-group"><label class="form-label">Location / site</label><input type="text" id="if-site" placeholder="Site, area, building..."/></div>
+<div class="form-group"><label class="form-label">Department</label><input type="text" id="audit-dept"/></div>
 <div class="form-group"><label class="form-label">Date</label><input type="date" id="if-date"/></div>
-<div class="form-group"><label class="form-label">Performed by</label><select id="if-by"><option value="">Select person...</option></select></div>
-<div class="form-group"><label class="form-label">Employees present</label><input type="text" id="if-emp"/></div>
+</div>
+<div class="form-row">
+<div class="form-group"><label class="form-label">Inspector / auditor</label><input type="text" id="if-by" placeholder="Name of inspector..."/></div>
+<div class="form-group"><label class="form-label">Priority</label>
+<select id="audit-priority"><option value="critical">Critical</option><option value="high">High</option><option value="medium" selected>Medium</option><option value="low">Low</option></select></div>
+<div class="form-group"><label class="form-label">Status</label>
+<select id="audit-status"><option value="open">Open</option><option value="in_progress">In Progress</option><option value="completed">Completed</option><option value="closed">Closed</option></select></div>
 </div>
 </div>
-<div class="card" style="margin-bottom:12px;padding:0;overflow:hidden">
-<div style="padding:12px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
+
+<!-- Checklist with template selector -->
+<div class="card" style="margin-bottom:14px">
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
 <div class="card-title" style="margin:0">Inspection Checklist</div>
-<span id="if-score" style="font-size:13px;font-weight:600;color:var(--green)">0 Good / 0 Insufficient</span>
+<div style="display:flex;gap:6px;flex-wrap:wrap">
+<select id="audit-template-select" onchange="auditLoadTemplate()" style="padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:11px;max-width:180px">
+<option value="">Load template...</option>
+</select>
+<button class="btn btn-sm" onclick="auditAddChecklistRow()"><i class="ti ti-plus"></i>Add item</button>
 </div>
-<table class="insp-tbl" style="width:100%">
-<thead><tr style="background:#f9fafb">
-<th style="text-align:left;padding:8px 16px;width:44%;border-bottom:1px solid var(--border)">Item</th>
-<th style="padding:8px;text-align:center;border-bottom:1px solid var(--border);width:70px">Good</th>
-<th style="padding:8px;text-align:center;border-bottom:1px solid var(--border);width:70px">Insuf.</th>
-<th style="padding:8px;text-align:center;border-bottom:1px solid var(--border);width:70px">N/A</th>
-<th style="padding:8px;text-align:left;border-bottom:1px solid var(--border)">Observation</th>
+</div>
+<div style="font-size:12px;color:var(--text2);margin-bottom:8px">Score: <strong id="if-score">0 Good / 0 Insufficient</strong></div>
+<div style="overflow:auto">
+<table style="width:100%;border-collapse:collapse;font-size:12px">
+<thead><tr style="background:#185FA5;color:#fff">
+<th style="padding:6px 10px;text-align:left;width:35%">Category</th>
+<th style="padding:6px 10px;text-align:left">Item / requirement</th>
+<th style="padding:6px 8px;text-align:center;width:60px">✓ Good</th>
+<th style="padding:6px 8px;text-align:center;width:70px">✗ Insuf.</th>
+<th style="padding:6px 8px;text-align:center;width:50px">N/A</th>
+<th style="padding:6px 8px;text-align:center;width:50px">📷</th>
+<th style="padding:6px 10px;text-align:left;width:25%">Observation / notes</th>
 </tr></thead>
 <tbody id="if-checklist"></tbody>
 </table>
 </div>
-<div class="card" style="margin-bottom:12px">
-<div class="card-title">Overall Observations</div>
+</div>
+
+<!-- Observations -->
+<div class="card" style="margin-bottom:14px"><div class="card-title">Overall Observations</div>
 <div class="form-row">
-<div class="form-group"><label class="form-label" style="color:var(--green)">Positive observations</label><textarea id="if-pos" style="min-height:70px"></textarea></div>
-<div class="form-group"><label class="form-label" style="color:var(--red)">Areas requiring action</label><textarea id="if-neg" style="min-height:70px"></textarea></div>
-</div>
-</div>
-<!-- Action Plan -->
-<div class="card" style="margin-bottom:12px">
-<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
-<div><div class="card-title" style="margin:0">Action Plan</div><div style="font-size:12px;color:var(--text2);margin-top:3px">Linked to Master Action Plan on save</div></div>
-<button class="btn btn-sm btn-primary" onclick="inspAddAction()"><i class="ti ti-plus"></i>Add action</button>
-</div>
-<div id="if-actions-info" style="background:#EAF3DE;border:1px solid #a7d895;border-radius:8px;padding:8px 12px;font-size:12px;color:#3B6D11;margin-bottom:10px;display:none"><i class="ti ti-info-circle"></i> Insufficient items pre-filled as actions.</div>
-<table style="width:100%;border-collapse:collapse">
-<thead><tr style="background:#f9fafb">
-<th style="padding:8px 12px;text-align:left;border-bottom:1px solid var(--border);font-size:11px">Action</th>
-<th style="padding:8px;border-bottom:1px solid var(--border);font-size:11px;width:140px">Responsible</th>
-<th style="padding:8px;border-bottom:1px solid var(--border);font-size:11px;width:120px">Due date</th>
-<th style="padding:8px;border-bottom:1px solid var(--border);font-size:11px;width:100px">Priority</th>
-<th style="padding:8px;width:36px;border-bottom:1px solid var(--border)"></th>
-</tr></thead>
-<tbody id="if-actions-body"></tbody>
-</table>
-<div id="if-actions-empty" style="text-align:center;padding:20px;color:var(--text2);font-size:13px">No actions yet.</div>
-</div>
-<div class="card">
-<div class="card-title">Sign-off</div>
-<div class="form-row">
-<div class="form-group"><label class="form-label">Inspector signature</label><input type="text" id="if-sign-inspector"/></div>
-<div class="form-group"><label class="form-label">Date</label><input type="date" id="if-sign-date"/></div>
-<div class="form-group"><label class="form-label">Reviewed by</label><input type="text" id="if-sign-reviewer"/></div>
-<div class="form-group"><label class="form-label">Date</label><input type="date" id="if-sign-reviewer-date"/></div>
-</div>
-</div>
+<div class="form-group"><label class="form-label" style="color:#1D9E75">✓ Positive observations / good practices</label><textarea id="if-pos" style="min-height:60px"></textarea></div>
+<div class="form-group"><label class="form-label" style="color:#DC2626">✗ Issues / non-conformances found</label><textarea id="if-neg" style="min-height:60px"></textarea></div>
 </div>
 </div>
 
-<!-- ── PRE-START INSPECTION TAB ── -->
-<div id="insp-view-prestart" style="display:none">
-<!-- Pre-start list -->
-<div id="ps-list-view">
-<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
-<div style="font-size:13px;color:var(--text2)">A pre-start inspection must be completed before commencing any work activity</div>
-<button class="btn btn-primary" onclick="psNew()"><i class="ti ti-plus"></i>New pre-start check</button>
-</div>
-<div class="card" style="padding:0;overflow:hidden"><div id="ps-list"><div class="loading-msg">Loading...</div></div></div>
+<!-- Photos & Voice notes (mobile-friendly) -->
+<div class="card" style="margin-bottom:14px">
+<div class="card-title">📷 Evidence &amp; Media</div>
+<div style="font-size:12px;color:var(--text2);margin-bottom:10px">Attach photo URLs or paste links from cloud storage. Voice note links can also be added here.</div>
+<div id="audit-photos-list" style="display:flex;flex-direction:column;gap:6px"></div>
+<button class="btn btn-sm" onclick="auditAddPhotoRow()"><i class="ti ti-plus"></i>Add photo / voice note URL</button>
 </div>
 
-<!-- Pre-start form -->
-<div id="ps-form-view" style="display:none">
-<!-- Dramatic header -->
-<div style="background:linear-gradient(135deg,#1a3a5c,#185FA5);border-radius:12px;padding:20px 24px;margin-bottom:16px;color:#fff">
-<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
+<!-- Actions -->
+<div class="card" style="margin-bottom:14px">
+<div class="card-title">Corrective Actions</div>
+<div id="if-actions-info" style="font-size:12px;color:var(--text2);margin-bottom:8px">Actions are added to the MAP module automatically on save.</div>
+<div id="if-actions-body"></div>
+<div id="if-actions-empty" style="color:var(--text2);font-size:12px;text-align:center;padding:12px">No actions added yet</div>
+<button class="btn btn-primary" onclick="inspAddAction()"><i class="ti ti-plus"></i>Add action</button>
+</div>
+</div>
+
 <div>
-<div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.1em;opacity:.7;margin-bottom:4px">Pre-Start Safety Inspection</div>
-<div style="font-size:20px;font-weight:800" id="ps-form-title">New Pre-Start Check</div>
-<div style="font-size:12px;opacity:.8;margin-top:4px">Complete ALL checks before commencing work</div>
-</div>
-<div style="display:flex;gap:8px">
-<button class="btn" style="background:rgba(255,255,255,.15);color:#fff;border-color:rgba(255,255,255,.3)" onclick="psShowList()"><i class="ti ti-arrow-left"></i>Back</button>
-<button id="ps-delete-btn" class="btn" style="background:rgba(220,38,38,.3);color:#fff;border-color:rgba(220,38,38,.5);display:none" onclick="psDelete()"><i class="ti ti-trash"></i>Delete</button>
-<button class="btn" style="background:#1D9E75;color:#fff;border-color:#1D9E75" onclick="psSave()"><i class="ti ti-device-floppy"></i>Save &amp; Sign off</button>
-</div>
-</div>
-</div>
-
-<!-- Work details -->
-<div class="card" style="margin-bottom:14px;border-left:4px solid #185FA5">
-<div class="card-title" style="color:#185FA5"><i class="ti ti-file-description"></i> Work Details</div>
-<div class="form-row">
-<div class="form-group"><label class="form-label">Work activity / Task description</label><input type="text" id="ps-activity" placeholder="e.g. Electrical installation in workshop B"/></div>
-<div class="form-group"><label class="form-label">Work location</label><input type="text" id="ps-location" placeholder="e.g. Workshop B, Floor 2"/></div>
-<div class="form-group"><label class="form-label">Date</label><input type="date" id="ps-date"/></div>
-<div class="form-group"><label class="form-label">Estimated duration</label><input type="text" id="ps-duration" placeholder="e.g. 4 hours, Full day"/></div>
-</div>
-<div class="form-row">
-<div class="form-group"><label class="form-label">Supervisor / Responsible person</label><select id="ps-supervisor"><option value="">Select...</option></select></div>
-<div class="form-group"><label class="form-label">Team members</label><textarea id="ps-team" style="min-height:50px" placeholder="Names of all persons involved in this work activity..."></textarea></div>
-<div class="form-group"><label class="form-label">Linked risk assessment ref.</label><input type="text" id="ps-ra-ref" placeholder="e.g. GRA-2026-001"/></div>
-<div class="form-group"><label class="form-label">Permit to work ref. (if applicable)</label><input type="text" id="ps-ptw-ref" placeholder="e.g. PTW-2026-001"/></div>
-</div>
-</div>
-
-<!-- Pre-start checklist -->
-<div class="card" style="margin-bottom:14px;padding:0;overflow:hidden">
-<div style="padding:12px 20px;background:linear-gradient(135deg,#f8fafc,#e8f0fe);border-bottom:2px solid #185FA5;display:flex;align-items:center;justify-content:space-between">
-<div><div style="font-weight:700;font-size:14px;color:#1a3a5c">Pre-Start Safety Checks</div>
-<div style="font-size:11px;color:#6b7280;margin-top:2px">All items must be checked before work commences</div></div>
-<div id="ps-score" style="font-size:13px;font-weight:700;color:#185FA5">—</div>
-</div>
-<table style="width:100%;border-collapse:collapse">
-<thead><tr style="background:#f9fafb">
-<th style="padding:9px 16px;text-align:left;border-bottom:1px solid var(--border);font-size:11px;color:var(--text2);text-transform:uppercase;letter-spacing:.04em">Check item</th>
-<th style="padding:9px 8px;text-align:center;border-bottom:1px solid var(--border);font-size:11px;width:80px;color:#1D9E75;font-weight:700">YES ✓</th>
-<th style="padding:9px 8px;text-align:center;border-bottom:1px solid var(--border);font-size:11px;width:80px;color:#E24B4A;font-weight:700">NO ✗</th>
-<th style="padding:9px 8px;text-align:center;border-bottom:1px solid var(--border);font-size:11px;width:80px;color:#6B7280">N/A</th>
-<th style="padding:9px 8px;text-align:left;border-bottom:1px solid var(--border);font-size:11px;color:var(--text2)">Action / Comments</th>
-</tr></thead>
-<tbody id="ps-checklist-body"></tbody>
-</table>
-</div>
-
-<!-- Hazards & Controls -->
-<div class="card" style="margin-bottom:14px;border-left:4px solid #E24B4A">
-<div class="card-title" style="color:#E24B4A"><i class="ti ti-alert-triangle"></i> Hazards Identified &amp; Controls</div>
-<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
-<div class="form-group" style="margin:0"><label class="form-label">Main hazards for this activity</label><textarea id="ps-hazards" style="min-height:80px" placeholder="List main hazards identified (e.g. electrical shock, working at height, manual handling...)"></textarea></div>
-<div class="form-group" style="margin:0"><label class="form-label">Control measures in place</label><textarea id="ps-controls" style="min-height:80px" placeholder="Control measures applied (e.g. isolation, permit, PPE, toolbox talk done...)"></textarea></div>
-</div>
-</div>
-
-<!-- PPE confirmation -->
-<div class="card" style="margin-bottom:14px;border-left:4px solid #1D9E75">
-<div class="card-title" style="color:#1D9E75"><i class="ti ti-shield-check"></i> PPE Confirmation</div>
-<div style="font-size:12px;color:var(--text2);margin-bottom:12px">Confirm that all required PPE is available and will be worn throughout the work activity</div>
-<div style="display:flex;flex-wrap:wrap;gap:8px" id="ps-ppe-checks">
-<label style="display:flex;align-items:center;gap:6px;font-size:12px;background:#f9fafb;padding:6px 10px;border-radius:8px;border:1px solid var(--border);cursor:pointer"><input type="checkbox" value="Safety helmet" style="accent-color:var(--green)"> Safety helmet</label>
-<label style="display:flex;align-items:center;gap:6px;font-size:12px;background:#f9fafb;padding:6px 10px;border-radius:8px;border:1px solid var(--border);cursor:pointer"><input type="checkbox" value="Safety glasses/goggles" style="accent-color:var(--green)"> Safety glasses</label>
-<label style="display:flex;align-items:center;gap:6px;font-size:12px;background:#f9fafb;padding:6px 10px;border-radius:8px;border:1px solid var(--border);cursor:pointer"><input type="checkbox" value="Face shield" style="accent-color:var(--green)"> Face shield</label>
-<label style="display:flex;align-items:center;gap:6px;font-size:12px;background:#f9fafb;padding:6px 10px;border-radius:8px;border:1px solid var(--border);cursor:pointer"><input type="checkbox" value="Hearing protection" style="accent-color:var(--green)"> Hearing protection</label>
-<label style="display:flex;align-items:center;gap:6px;font-size:12px;background:#f9fafb;padding:6px 10px;border-radius:8px;border:1px solid var(--border);cursor:pointer"><input type="checkbox" value="Safety gloves" style="accent-color:var(--green)"> Safety gloves</label>
-<label style="display:flex;align-items:center;gap:6px;font-size:12px;background:#f9fafb;padding:6px 10px;border-radius:8px;border:1px solid var(--border);cursor:pointer"><input type="checkbox" value="Safety boots" style="accent-color:var(--green)"> Safety boots</label>
-<label style="display:flex;align-items:center;gap:6px;font-size:12px;background:#f9fafb;padding:6px 10px;border-radius:8px;border:1px solid var(--border);cursor:pointer"><input type="checkbox" value="High-visibility vest" style="accent-color:var(--green)"> Hi-vis vest</label>
-<label style="display:flex;align-items:center;gap:6px;font-size:12px;background:#f9fafb;padding:6px 10px;border-radius:8px;border:1px solid var(--border);cursor:pointer"><input type="checkbox" value="Dust mask / RPE" style="accent-color:var(--green)"> Dust mask / RPE</label>
-<label style="display:flex;align-items:center;gap:6px;font-size:12px;background:#f9fafb;padding:6px 10px;border-radius:8px;border:1px solid var(--border);cursor:pointer"><input type="checkbox" value="Safety harness" style="accent-color:var(--green)"> Safety harness</label>
-<label style="display:flex;align-items:center;gap:6px;font-size:12px;background:#f9fafb;padding:6px 10px;border-radius:8px;border:1px solid var(--border);cursor:pointer"><input type="checkbox" value="Chemical resistant gloves" style="accent-color:var(--green)"> Chemical gloves</label>
-<label style="display:flex;align-items:center;gap:6px;font-size:12px;background:#f9fafb;padding:6px 10px;border-radius:8px;border:1px solid var(--border);cursor:pointer"><input type="checkbox" value="Protective clothing / coveralls" style="accent-color:var(--green)"> Coveralls</label>
-</div>
-<div class="form-group" style="margin-top:10px"><label class="form-label">Additional PPE / comments</label><input type="text" id="ps-ppe-extra" placeholder="Any other PPE required..."/></div>
-</div>
-
-<!-- Toolbox talk -->
-<div class="card" style="margin-bottom:14px;border-left:4px solid #8B5CF6">
-<div class="card-title" style="color:#8B5CF6"><i class="ti ti-speakerphone"></i> Toolbox Talk / Briefing</div>
-<div style="display:flex;align-items:center;gap:16px;margin-bottom:12px">
-<label style="display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;cursor:pointer">
-<input type="checkbox" id="ps-tbt-done" style="width:18px;height:18px;accent-color:#8B5CF6"/>
-Toolbox talk / safety briefing conducted before starting work
-</label>
-</div>
-<div class="form-group"><label class="form-label">Topics covered</label><textarea id="ps-tbt-topics" style="min-height:60px" placeholder="Main safety points discussed with the team..."></textarea></div>
-</div>
-
-<!-- Stop Work Authority -->
-<div class="card" style="margin-bottom:14px;background:linear-gradient(135deg,#FEF9EC,#fff);border:2px solid #EF9F27">
-<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
-<div style="width:40px;height:40px;border-radius:50%;background:#EF9F27;color:#fff;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">⚠</div>
-<div><div style="font-weight:700;font-size:14px;color:#854F0B">Stop Work Authority</div>
-<div style="font-size:12px;color:#854F0B;opacity:.8">Any person has the right and responsibility to stop work if an unsafe condition is identified</div></div>
-</div>
-<div class="form-group" style="margin:0"><label class="form-label" style="color:#854F0B">Any immediate concerns or reasons to STOP WORK?</label>
-<textarea id="ps-stop-work" style="min-height:60px;border-color:#EF9F27" placeholder="Describe any conditions that prevent safe start of work... (leave blank if none)"></textarea></div>
-</div>
-
-<!-- Overall decision -->
-<div class="card" style="margin-bottom:14px;padding:0;overflow:hidden">
-<div style="padding:14px 20px;background:#1a3a5c;color:#fff;font-weight:700;font-size:14px">Overall Assessment &amp; Decision</div>
-<div style="padding:16px 20px">
-<div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:16px">
-<label style="flex:1;min-width:180px;border-radius:10px;border:2px solid transparent;padding:14px;cursor:pointer;background:#EAF3DE;border-color:#1D9E75;text-align:center" id="ps-decision-go-lbl">
-<input type="radio" name="ps-decision" id="ps-decision-go" value="go" style="display:none">
-<div style="font-size:24px;margin-bottom:6px">✅</div>
-<div style="font-weight:700;font-size:14px;color:#1D9E75">GO — Safe to proceed</div>
-<div style="font-size:11px;color:#3B6D11;margin-top:4px">All checks passed, work may commence</div>
-</label>
-<label style="flex:1;min-width:180px;border-radius:10px;border:2px solid #e5e7eb;padding:14px;cursor:pointer;background:#f9fafb;text-align:center" id="ps-decision-hold-lbl">
-<input type="radio" name="ps-decision" id="ps-decision-hold" value="hold" style="display:none">
-<div style="font-size:24px;margin-bottom:6px">⚠️</div>
-<div style="font-weight:700;font-size:14px;color:#854F0B">HOLD — Conditional</div>
-<div style="font-size:11px;color:#854F0B;margin-top:4px">Issues identified, address before proceeding</div>
-</label>
-<label style="flex:1;min-width:180px;border-radius:10px;border:2px solid #e5e7eb;padding:14px;cursor:pointer;background:#f9fafb;text-align:center" id="ps-decision-stop-lbl">
-<input type="radio" name="ps-decision" id="ps-decision-stop" value="stop" style="display:none">
-<div style="font-size:24px;margin-bottom:6px">🛑</div>
-<div style="font-weight:700;font-size:14px;color:#A32D2D">STOP — Do not proceed</div>
-<div style="font-size:11px;color:#A32D2D;margin-top:4px">Unsafe conditions, work must not start</div>
-</label>
-</div>
-<div class="form-group"><label class="form-label">Notes / Actions required before work can proceed</label><textarea id="ps-decision-notes" style="min-height:60px" placeholder="If HOLD or STOP: describe what needs to be resolved before work can begin..."></textarea></div>
-</div>
-</div>
-
 <!-- Sign-off -->
-<div class="card" style="background:linear-gradient(135deg,#f8fafc,#e8f0fe);border:1px solid #c7d7f5">
-<div class="card-title" style="color:#185FA5"><i class="ti ti-pen"></i> Sign-off</div>
-<div style="font-size:12px;color:var(--text2);margin-bottom:12px">By signing off, the supervisor confirms that all checks have been completed and the team has been briefed</div>
+<div class="card" style="margin-bottom:14px"><div class="card-title">Sign-off</div>
+<div class="form-group"><label class="form-label">Inspector / Lead auditor</label><input type="text" id="if-sign-inspector"/></div>
+<div class="form-group"><label class="form-label">Date signed</label><input type="date" id="if-sign-date"/></div>
+<div class="form-group"><label class="form-label">Reviewer</label><input type="text" id="if-sign-reviewer"/></div>
+<div class="form-group"><label class="form-label">Review date</label><input type="date" id="if-sign-reviewer-date"/></div>
+</div>
+
+<!-- Findings summary (for audits) -->
+<div class="card" style="margin-bottom:14px;display:none" id="audit-findings-section">
+<div class="card-title" style="color:#DC2626">⚠️ Audit Findings</div>
+<div id="audit-findings-list" style="display:flex;flex-direction:column;gap:6px"></div>
+<button class="btn btn-sm btn-primary" onclick="auditAddFinding()"><i class="ti ti-plus"></i>Add finding</button>
+</div>
+
+<!-- Quick stats card -->
+<div class="card" style="margin-bottom:14px;background:linear-gradient(135deg,#185FA5,#0891B2);color:#fff">
+<div style="font-size:12px;font-weight:700;margin-bottom:8px;opacity:.9">INSPECTION SCORE</div>
+<div style="font-size:36px;font-weight:900" id="audit-score-display">—</div>
+<div style="font-size:11px;opacity:.8;margin-top:4px" id="audit-score-detail"></div>
+<div style="height:6px;background:rgba(255,255,255,.2);border-radius:99px;margin-top:10px;overflow:hidden">
+<div id="audit-score-bar" style="height:100%;background:#fff;width:0%;transition:width .8s;border-radius:99px"></div>
+</div>
+</div>
+
+<!-- GPS location for mobile -->
+<div class="card">
+<div class="card-title">📍 Location</div>
 <div class="form-row">
-<div class="form-group"><label class="form-label">Supervisor name</label><input type="text" id="ps-sign-name"/></div>
-<div class="form-group"><label class="form-label">Date &amp; Time</label><input type="datetime-local" id="ps-sign-datetime"/></div>
+<div class="form-group"><label class="form-label">Address / location description</label><input type="text" id="audit-gps-address" placeholder="Where was inspection conducted?"/></div>
+</div>
+<div class="form-row">
+<div class="form-group"><label class="form-label">Latitude</label><input type="text" id="audit-lat" style="font-family:monospace"/></div>
+<div class="form-group"><label class="form-label">Longitude</label><input type="text" id="audit-lng" style="font-family:monospace"/></div>
+<div class="form-group" style="display:flex;align-items:flex-end"><button class="btn btn-sm" onclick="auditGetGPS()" style="width:100%"><i class="ti ti-map-pin"></i>Get GPS</button></div>
 </div>
 </div>
 </div>
 </div>
 </div>
+
+<!-- OFFLINE BANNER -->
+<div id="audit-offline-banner" style="display:none;position:fixed;bottom:16px;left:50%;transform:translateX(-50%);background:#854F0B;color:#fff;padding:10px 20px;border-radius:8px;font-size:12px;font-weight:700;z-index:9999;box-shadow:0 4px 20px rgba(0,0,0,.3)">
+📴 Offline mode — changes will sync when connection is restored
+</div>
+
+</div><!-- end page-inspection -->
 
 <div id="page-risk" class="page">
 <div class="page-header">
