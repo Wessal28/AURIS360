@@ -92,6 +92,7 @@
 
 
 
+
 const SB='https://iarfxjhahzbhncsaohbg.supabase.co';
 const KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlhcmZ4amhhaHpiaG5jc2FvaGJnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg2OTM1MzAsImV4cCI6MjA5NDI2OTUzMH0.qSjahuX-RwnjWEDmo-LkcorAxpsmyVoaXt4AO4_A9BM';
 let tok=null,prof=null,co=null,chkItems=[],people=[];
@@ -1140,7 +1141,8 @@ if(d&&d[0]){
 prof=d[0];co=d[0].companies;
 document.getElementById('sb-company').textContent=co?.name||'AURIS360';
 document.getElementById('sb-user').textContent=prof.full_name||prof.email||'--';
-document.getElementById('sb-role').textContent=(prof.role||'user').replace(/_/g,' ');
+var _rc=typeof HSE_ROLES!=='undefined'?HSE_ROLES[prof.role]:null;
+document.getElementById('sb-role').textContent=_rc?_rc.emoji+' '+_rc.label:(prof.role||'user').replace(/_/g,' ');
 document.getElementById('dash-label').textContent=co?.name||'';
 if(co?.logo_url){document.getElementById('co-logo-img').src=co.logo_url;document.getElementById('co-logo-img').style.display='block';document.getElementById('co-initials-div').style.display='none';}
 else{document.getElementById('co-initials-div').textContent=(co?.name||'A').charAt(0).toUpperCase();}
@@ -7658,36 +7660,453 @@ await api('/people',{m:'POST',p:'return=minimal',b:{company_id:prof?.company_id,
 toggleForm('people-form');toast('Person added!');loadPeople();await loadPeopleCache();
 }catch(e){toast(e.message,false);}
 }
-async function loadUsers(){
-if(isInsp()){document.getElementById('users-list').innerHTML=denied();return;}
-if(isAdm()){const c=document.getElementById('user-role-card');if(c)c.style.display='block';}
-const el=document.getElementById('users-list');
-if(!el)return;
-try{
-const filter=prof?.company_id&&!isSA()?'&company_id=eq.'+prof.company_id:'';
-const d=await api('/profiles?select=*'+filter+'&order=full_name');
-if(!d||!d.length){el.innerHTML='<div class="empty">No users found</div>';return;}
-const tbl=document.createElement('table');
-tbl.innerHTML='<thead><tr><th>Name</th><th>Email</th><th>Role</th></tr></thead>';
-const tb=document.createElement('tbody');
-d.forEach(function(u){
-const tr=document.createElement('tr');
-tr.innerHTML='<td><strong>'+(u.full_name||'--')+'</strong></td><td>'+(u.email||'--')+'</td><td>'+stat(u.role)+'</td>';
-tb.appendChild(tr);
-});
-tbl.appendChild(tb);el.innerHTML='';el.appendChild(tbl);
-}catch(e){el.innerHTML='<div class="empty" style="color:var(--red)">'+e.message+'</div>';console.error(e);}
+// ===================================================================
+// USERS & ROLES MODULE — Complete rebuild
+// 8 HSE roles + permission matrix + user management
+// ===================================================================
+
+// ── Role definitions ────────────────────────────────────────────────
+const HSE_ROLES = {
+  executive:    {label:'Executive Management', emoji:'📊', color:'#185FA5',  bg:'#EFF6FF',  level:5, desc:'Board & executive — read-only dashboards, executive reports, ESG'},
+  admin:        {label:'Company Admin',         emoji:'🔑', color:'#374151',  bg:'#f9fafb',  level:5, desc:'Full platform access including system configuration'},
+  hse_manager:  {label:'HSE Manager',           emoji:'🛡️',  color:'#065F46',  bg:'#ECFDF5',  level:4, desc:'Full HSE module access, can manage users and settings'},
+  site_manager: {label:'Site Manager',          emoji:'🏗️',  color:'#9A3412',  bg:'#FFF7ED',  level:3, desc:'Incidents, PTW, inspections, actions and people on their site'},
+  auditor:      {label:'Auditor',               emoji:'🔍', color:'#5B21B6',  bg:'#F5F3FF',  level:3, desc:'Read-only all modules + write access to audits and inspections'},
+  hr:           {label:'HR',                    emoji:'👩‍💼', color:'#854F0B',  bg:'#FFFBEB',  level:3, desc:'People management, training, occupational health, certifications'},
+  supervisor:   {label:'Supervisor',            emoji:'👷', color:'#1e40af',  bg:'#EFF6FF',  level:2, desc:'Report incidents, conduct inspections, pre-start checks, toolbox talks'},
+  employee:     {label:'Employee',              emoji:'👤', color:'#374151',  bg:'#f9fafb',  level:1, desc:'Report incidents and near misses, view own training and certificates'},
+  contractor:   {label:'Contractor',            emoji:'🦺', color:'#C2410C',  bg:'#FEF6E7',  level:1, desc:'Report incidents, view active PTW, view own certificates'},
+  // Legacy roles (backward compat)
+  manager:      {label:'Manager (legacy)',      emoji:'⚙️',  color:'#1D9E75',  bg:'#ECFDF5',  level:4, desc:'Maps to HSE Manager permissions'},
+  inspector:    {label:'Inspector (legacy)',    emoji:'🔎', color:'#6B7280',  bg:'#f3f4f6',  level:2, desc:'Maps to Supervisor permissions'},
+};
+
+// Permission matrix: module → min access level
+const ROLE_PERMISSIONS = {
+  //                          exec adm  hm   sm   aud  hr   sup  emp  con
+  'Dashboard':               [true,true,true,true,true,true,true,true,false],
+  'Executive Dashboard':     [true,true,true,false,false,false,false,false,false],
+  'Objectives & KPIs':       [true,true,true,true,true,false,false,false,false],
+  'Incident Management':     [true,true,true,true,true,false,true,true,true],
+  '→ Report incident':       [true,true,true,true,false,false,true,true,true],
+  '→ Investigate':           [false,true,true,true,true,false,false,false,false],
+  'BBS Observations':        [false,true,true,true,true,false,true,true,false],
+  'Audits & Inspections':    [false,true,true,true,true,false,true,false,false],
+  '→ Write inspection':      [false,true,true,true,true,false,true,false,false],
+  '→ Write audit':           [false,true,true,false,true,false,false,false,false],
+  'Risk Assessment':         [false,true,true,true,true,false,true,false,false],
+  'Permit to Work':          [false,true,true,true,false,false,true,false,true],
+  'Contractors':             [false,true,true,true,false,false,false,false,false],
+  'Emergency Management':    [false,true,true,true,false,false,true,false,false],
+  'Occupational Health':     [false,true,true,false,false,true,false,false,false],
+  'PPE':                     [false,true,true,true,false,false,true,false,false],
+  'ESG / Environmental':     [true,true,true,true,true,false,false,false,false],
+  'Noise Surveys':           [false,true,true,true,false,false,true,false,false],
+  'Training & Competency':   [false,true,true,false,false,true,false,false,false],
+  '→ View own training':     [false,true,true,true,false,true,true,true,true],
+  'Meetings & Comms':        [false,true,true,true,false,false,true,false,false],
+  'Actions (MAP)':           [false,true,true,true,false,false,true,false,false],
+  'Legal Compliance':        [false,true,true,false,true,false,false,false,false],
+  'Documents':               [false,true,true,false,true,true,false,false,false],
+  'People':                  [false,true,true,false,false,true,false,false,false],
+  'Users & Roles':           [false,true,true,false,false,false,false,false,false],
+  'Settings':                [false,true,true,false,false,false,false,false,false],
+};
+
+const ROLE_KEYS = ['executive','admin','hse_manager','site_manager','auditor','hr','supervisor','employee','contractor'];
+
+// ── Role helper (extend existing RL) ────────────────────────────────
+// Map new roles to numeric levels for isMgr()/isAdm() checks
+function getRoleLevel(role) {
+  var rlMap = {
+    sephs_admin:4, admin:4, hse_manager:4, manager:4,
+    site_manager:3, auditor:3, hr:3,
+    supervisor:2, inspector:2,
+    employee:1, contractor:1, executive:1
+  };
+  return rlMap[role]||0;
 }
 
-async function updateRole(){
-if(!isAdm()){toast('Access denied',false);return;}
-const email=document.getElementById('ur-email').value.trim(),role=document.getElementById('ur-role').value;
-if(!email){toast('Enter an email',false);return;}
-try{
-await api('/profiles?email=eq.'+email+'&company_id=eq.'+prof.company_id,{m:'PATCH',p:'return=minimal',b:{role}});
-toast('User role updated!');loadUsers();
-}catch(e){toast(e.message,false);}
+function canAccess(minRole) {
+  if(!prof) return false;
+  var userLevel = getRoleLevel(prof.role||'employee');
+  var minLevel = getRoleLevel(minRole);
+  return userLevel >= minLevel;
 }
+
+// ── Entry point ─────────────────────────────────────────────────────
+let usersAllData = [];
+
+async function loadUsers() {
+  var invBtn = document.getElementById('users-invite-btn');
+  if(invBtn) invBtn.style.display = isMgr()?'inline-flex':'none';
+  var invTab = document.getElementById('utab-invite');
+  if(invTab) invTab.style.display = isAdm()?'flex':'none';
+  uSwitchTab('users', document.getElementById('utab-users'));
+}
+
+function uSwitchTab(tab, btn) {
+  document.querySelectorAll('[id^="utab-"]').forEach(function(t){t.classList.remove('active');});
+  if(btn) btn.classList.add('active');
+  document.getElementById('uview-users').style.display   = tab==='users'  ?'block':'none';
+  document.getElementById('uview-roles').style.display   = tab==='roles'  ?'block':'none';
+  document.getElementById('uview-invite').style.display  = tab==='invite' ?'block':'none';
+  if(tab==='users')  usersLoad();
+  else if(tab==='roles')  rolesRenderMatrix();
+  else if(tab==='invite') {}
+}
+
+// ── Load users ───────────────────────────────────────────────────────
+async function usersLoad() {
+  var el = document.getElementById('users-list'); if(!el) return;
+  el.innerHTML = '<div class="loading-msg">Loading users...</div>';
+  try {
+    var filter = prof?.company_id&&!isSA() ? '&company_id=eq.'+prof.company_id : '';
+    var d = await api('/profiles?select=*'+filter+'&order=full_name');
+    usersAllData = d||[];
+    // Metrics
+    function sm(id,v){var e=document.getElementById(id);if(e)e.textContent=v;}
+    sm('um-total', usersAllData.length);
+    sm('um-active', usersAllData.filter(function(u){return u.status!=='inactive';}).length);
+    var mgrs = usersAllData.filter(function(u){return ['hse_manager','site_manager','manager','admin'].includes(u.role);});
+    sm('um-managers', mgrs.length);
+    sm('um-contractors', usersAllData.filter(function(u){return u.role==='contractor';}).length);
+    sm('um-pending', 0); // will update from invites if tracked
+    usersFilter();
+  } catch(e) {
+    el.innerHTML = '<div style="padding:20px;color:var(--text2);text-align:center">'+escH(e.message)+'</div>';
+  }
+}
+
+function usersFilter() {
+  var el = document.getElementById('users-list'); if(!el) return;
+  var q  = (document.getElementById('users-search')?.value||'').toLowerCase();
+  var fr = document.getElementById('users-filter-role')?.value||'';
+  var fs = document.getElementById('users-filter-status')?.value||'';
+  var filt = usersAllData.filter(function(u) {
+    var mQ = !q || (u.full_name||'').toLowerCase().includes(q) ||
+              (u.email||'').toLowerCase().includes(q) ||
+              (u.department||'').toLowerCase().includes(q);
+    var mR = !fr || u.role===fr;
+    var mS = !fs || (fs==='active' ? u.status!=='inactive' : u.status==='inactive');
+    return mQ && mR && mS;
+  });
+  var countEl = document.getElementById('users-count-label');
+  if(countEl) countEl.textContent = filt.length+' user'+(filt.length!==1?'s':'');
+  usersRender(filt);
+}
+
+function usersRender(data) {
+  var el = document.getElementById('users-list'); if(!el) return;
+  if(!data.length) {
+    el.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text2)"><div style="font-size:40px;margin-bottom:12px">👥</div><div style="font-weight:600">No users found</div></div>';
+    return;
+  }
+  var h = '<div style="overflow:auto"><table style="width:100%;border-collapse:collapse;font-size:12px">'
+    + '<thead><tr style="background:#185FA5;color:#fff">'
+    + '<th style="padding:8px 14px;text-align:left">User</th>'
+    + '<th style="padding:8px;text-align:left">Email</th>'
+    + '<th style="padding:8px">Role</th>'
+    + '<th style="padding:8px;text-align:left">Department</th>'
+    + '<th style="padding:8px;text-align:left">Job title</th>'
+    + '<th style="padding:8px">Status</th>'
+    + (isMgr()?'<th style="padding:8px;width:80px">Actions</th>':'')
+    + '</tr></thead><tbody>';
+  data.forEach(function(u, i) {
+    var bg = i%2===0?'#fff':'#f9fafb';
+    var rc = HSE_ROLES[u.role] || {label:u.role||'—',emoji:'❓',color:'#6B7280',bg:'#f3f4f6'};
+    var isActive = u.status !== 'inactive';
+    var isSelf = u.id === prof?.id;
+    h += '<tr style="border-bottom:1px solid #f0f0f0;background:'+bg+(isSelf?';outline:2px solid #185FA5 inset':'')+';">'
+      + '<td style="padding:8px 14px">'
+      + '<div style="display:flex;align-items:center;gap:8px">'
+      + '<div style="width:32px;height:32px;border-radius:50%;background:'+rc.color+';color:#fff;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;flex-shrink:0">'
+      + (u.full_name?u.full_name[0].toUpperCase():rc.emoji)+'</div>'
+      + '<div><div style="font-weight:700">'+escH(u.full_name||'—')+(isSelf?'<span style="font-size:9px;background:#185FA5;color:#fff;padding:1px 5px;border-radius:3px;margin-left:4px">YOU</span>':'')+'</div>'
+      + '</div></div></td>'
+      + '<td style="padding:8px;font-family:monospace;font-size:11px;color:var(--text2)">'+escH(u.email||'—')+'</td>'
+      + '<td style="padding:8px"><span style="background:'+rc.bg+';color:'+rc.color+';padding:3px 10px;border-radius:99px;font-size:10px;font-weight:700;white-space:nowrap">'+rc.emoji+' '+rc.label+'</span></td>'
+      + '<td style="padding:8px;font-size:11px">'+escH(u.department||'—')+'</td>'
+      + '<td style="padding:8px;font-size:11px">'+escH(u.job_title||'—')+'</td>'
+      + '<td style="padding:8px;text-align:center"><span style="background:'+(isActive?'#EAF3DE':'#f3f4f6')+';color:'+(isActive?'#3B6D11':'#6B7280')+';padding:2px 8px;border-radius:99px;font-size:10px;font-weight:700">'+(isActive?'Active':'Inactive')+'</span></td>'
+      + (isMgr()
+        ? '<td style="padding:8px"><div style="display:flex;gap:4px">'
+          + '<button class="btn btn-sm" title="Edit user" data-id="'+u.id+'" onclick="usersEdit(this.dataset.id)"><i class="ti ti-edit"></i></button>'
+          + (isAdm()&&!isSelf?'<button class="btn btn-sm" style="color:'+(!isActive?'var(--green)':'var(--red)')+'" title="'+(isActive?'Deactivate':'Activate')+'" data-id="'+u.id+'" data-active="'+(isActive?'1':'0')+'" onclick="usersToggleStatus(this.dataset.id,this.dataset.active)"><i class="ti ti-'+(isActive?'user-off':'user-check')+'"></i></button>':'')
+          + '</div></td>'
+        : '')
+      + '</tr>';
+  });
+  el.innerHTML = h + '</tbody></table></div>';
+}
+
+// ── Edit user ────────────────────────────────────────────────────────
+function usersEdit(id) {
+  var u = usersAllData.find(function(x){return x.id===id;}); if(!u) return;
+  document.getElementById('uem-id').value = id;
+  document.getElementById('uem-title').textContent = u.full_name || 'Edit User';
+  document.getElementById('uem-name').value = u.full_name||'';
+  document.getElementById('uem-email').value = u.email||'';
+  document.getElementById('uem-role').value = u.role||'employee';
+  document.getElementById('uem-job-title').value = u.job_title||'';
+  document.getElementById('uem-dept').value = u.department||'';
+  document.getElementById('uem-phone').value = u.phone||'';
+  document.getElementById('uem-site').value = u.site||'';
+  document.getElementById('uem-contractor-co').value = u.contractor_company||'';
+  document.getElementById('uem-status').value = u.status||'active';
+  document.getElementById('uem-contractor-row').style.display = u.role==='contractor'?'block':'none';
+  var modal = document.getElementById('user-edit-modal');
+  if(modal) modal.style.display = 'flex';
+  // Wire role change to show/hide contractor field
+  var roleEl = document.getElementById('uem-role');
+  if(roleEl) roleEl.onchange = function(){ document.getElementById('uem-contractor-row').style.display = this.value==='contractor'?'block':'none'; };
+}
+
+function usersCloseModal() {
+  var modal = document.getElementById('user-edit-modal');
+  if(modal) modal.style.display = 'none';
+}
+
+async function usersSaveEdit() {
+  var id = document.getElementById('uem-id')?.value;
+  if(!id){toast('No user selected',false);return;}
+  var g = function(fid){var el=document.getElementById(fid);return el?el.value||null:null;};
+  var body = {
+    full_name: g('uem-name'), role: g('uem-role'), job_title: g('uem-job-title'),
+    department: g('uem-dept'), phone: g('uem-phone'), site: g('uem-site'),
+    contractor_company: g('uem-contractor-co'), status: g('uem-status')||'active',
+    updated_at: new Date().toISOString()
+  };
+  try {
+    await api('/profiles?id=eq.'+id, {m:'PATCH', p:'return=minimal', b:body});
+    toast('User updated!');
+    usersCloseModal();
+    usersLoad();
+    // If updating own role, reload profile
+    if(id === prof?.id) await loadProf();
+  } catch(e) { toast(e.message, false); }
+}
+
+async function usersToggleStatus(id, isActive) {
+  var newStatus = isActive==='1' ? 'inactive' : 'active';
+  var userName = usersAllData.find(function(u){return u.id===id;})?.full_name||'this user';
+  if(!confirm((newStatus==='inactive'?'Deactivate':'Activate')+' '+userName+'?')) return;
+  try {
+    await api('/profiles?id=eq.'+id, {m:'PATCH', p:'return=minimal', b:{status:newStatus}});
+    toast((newStatus==='inactive'?'Deactivated: ':'Activated: ')+userName);
+    usersLoad();
+  } catch(e) { toast(e.message, false); }
+}
+
+// ── Update role (from invite tab) ────────────────────────────────────
+async function updateRole() {
+  if(!isAdm()){toast('Admin access required',false);return;}
+  var email = document.getElementById('ur-email')?.value?.trim();
+  var role  = document.getElementById('ur-role')?.value;
+  var jt    = document.getElementById('ur-job-title')?.value?.trim();
+  var dept  = document.getElementById('ur-department')?.value?.trim();
+  if(!email){toast('Enter user email',false);return;}
+  try {
+    var body = {role};
+    if(jt) body.job_title = jt;
+    if(dept) body.department = dept;
+    await api('/profiles?email=eq.'+email+(prof?.company_id&&!isSA()?'&company_id=eq.'+prof.company_id:''), {m:'PATCH', p:'return=minimal', b:body});
+    toast('Role updated for '+email+'!');
+    document.getElementById('ur-email').value = '';
+    usersLoad();
+  } catch(e) { toast(e.message, false); }
+}
+
+// ── Invite helpers ────────────────────────────────────────────────────
+function usersShowInvite() {
+  uSwitchTab('invite', document.getElementById('utab-invite'));
+  document.getElementById('utab-invite').style.display = 'flex';
+}
+
+function usersShareLink() {
+  var link = document.getElementById('invite-link')?.textContent;
+  if(navigator.clipboard) {
+    navigator.clipboard.writeText(link).then(function(){toast('Link copied!');}).catch(function(){});
+  } else {
+    var ta = document.createElement('textarea'); ta.value=link;
+    document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta);
+    toast('Link copied!');
+  }
+}
+
+// ── Role permission matrix ────────────────────────────────────────────
+function rolesRenderMatrix() {
+  var thead = document.getElementById('roles-matrix-head');
+  var tbody = document.getElementById('roles-matrix-body');
+  if(!thead||!tbody) return;
+
+  // Column headers
+  var headerRow = '<tr style="background:#1a3a5c;color:#fff">'
+    + '<th style="padding:10px 14px;text-align:left;min-width:200px;position:sticky;left:0;background:#1a3a5c;z-index:2">Module / Feature</th>';
+  ROLE_KEYS.forEach(function(rk) {
+    var rc = HSE_ROLES[rk];
+    headerRow += '<th style="padding:8px 6px;text-align:center;min-width:80px;font-size:10px">'
+      + '<div style="font-size:16px;margin-bottom:2px">'+rc.emoji+'</div>'
+      + '<div style="font-size:9px;line-height:1.2;white-space:normal">'+rc.label+'</div>'
+      + '</th>';
+  });
+  headerRow += '</tr>';
+  thead.innerHTML = headerRow;
+
+  // Rows
+  var currentSection = '';
+  var h = '';
+  Object.entries(ROLE_PERMISSIONS).forEach(function(entry, i) {
+    var module = entry[0]; var perms = entry[1];
+    var isSubRow = module.startsWith('→');
+    var bg = i%2===0?'#fff':'#f9fafb';
+    if(isSubRow) bg = bg==='#fff'?'#f9f9ff':'#f3f3fa';
+    h += '<tr style="border-bottom:1px solid #f0f0f0;background:'+bg+'">'
+      + '<td style="padding:'+(isSubRow?'6px 14px 6px 28px':'8px 14px')+';font-size:12px;font-weight:'+(isSubRow?'500':'700')+';position:sticky;left:0;background:'+bg+';z-index:1;color:'+(isSubRow?'var(--text2)':'inherit')+'">'
+      + (isSubRow?'<span style="color:var(--text2);margin-right:4px">└</span>':'')
+      + escH(module.replace('→','').trim())+'</td>';
+    ROLE_KEYS.forEach(function(rk, ri) {
+      var hasPerm = perms[ri] !== false && perms[ri] !== undefined ? perms[ri] : false;
+      // Map legacy roles: manager→hse_manager level, inspector→supervisor level
+      if(rk==='manager') hasPerm = perms[ROLE_KEYS.indexOf('hse_manager')];
+      if(rk==='inspector') hasPerm = perms[ROLE_KEYS.indexOf('supervisor')];
+      var rc = HSE_ROLES[rk];
+      h += '<td style="padding:6px;text-align:center">'
+        + '<span style="display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;font-size:12px;background:'+(hasPerm?rc.bg:'transparent')+';">'
+        + (hasPerm?'<span style="color:'+rc.color+';font-weight:900">✓</span>':'<span style="color:#e5e7eb">—</span>')
+        + '</span></td>';
+    });
+    h += '</tr>';
+  });
+  tbody.innerHTML = h;
+
+  // Role description cards below the table
+  var descDiv = document.getElementById('roles-matrix-table')?.closest('.card');
+  if(descDiv) {
+    var existing = document.getElementById('roles-desc-cards');
+    if(!existing) {
+      var descEl = document.createElement('div');
+      descEl.id = 'roles-desc-cards';
+      descEl.style.cssText = 'display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px;padding:14px 0 0';
+      descEl.innerHTML = ROLE_KEYS.map(function(rk) {
+        var rc = HSE_ROLES[rk];
+        return '<div style="border:2px solid '+rc.bg+';border-radius:10px;padding:10px 12px;background:#fff">'
+          + '<div style="display:flex;align-items:center;gap:6px;margin-bottom:5px">'
+          + '<span style="font-size:18px">'+rc.emoji+'</span>'
+          + '<span style="font-weight:700;font-size:12px;color:'+rc.color+'">'+rc.label+'</span>'
+          + '</div>'
+          + '<div style="font-size:11px;color:var(--text2);line-height:1.5">'+escH(rc.desc)+'</div>'
+          + '</div>';
+      }).join('');
+      descDiv.appendChild(descEl);
+    }
+  }
+}
+
+// ── Apply roles to UI (enhanced) ────────────────────────────────────
+function applyRoles() {
+  var role = prof?.role || 'employee';
+  var level = getRoleLevel(role);
+
+  // Nav visibility rules
+  var navRules = {
+    'nav-ai':       level >= 4,
+    'nav-users':    level >= 3,
+    'nav-settings': level >= 4,
+    'nav-admin':    isSA(),
+    'nav-executive':level >= 4 || role === 'executive',
+  };
+  Object.entries(navRules).forEach(function(e) {
+    var el = document.getElementById(e[0]);
+    if(el) el.style.display = e[1] ? 'flex' : 'none';
+  });
+
+  // Role-specific nav hiding for restricted roles
+  if(role === 'employee') {
+    ['nav-ai','nav-sop','nav-docs','nav-users','nav-settings'].forEach(function(id){
+      var e=document.getElementById(id);if(e)e.style.display='none';
+    });
+  }
+  if(role === 'contractor') {
+    ['nav-ai','nav-sop','nav-docs','nav-users','nav-settings','nav-training',
+     'nav-people','nav-legal','nav-noise','nav-esg','nav-ohealth'].forEach(function(id){
+      var e=document.getElementById(id);if(e)e.style.display='none';
+    });
+  }
+  if(role === 'executive') {
+    // Executive gets dashboard and reports only
+    ['nav-users','nav-settings','nav-admin','nav-ai'].forEach(function(id){
+      var e=document.getElementById(id);if(e)e.style.display='none';
+    });
+  }
+  if(role === 'auditor') {
+    // Auditors: read-mostly, full access to inspections
+    ['nav-users','nav-settings'].forEach(function(id){
+      var e=document.getElementById(id);if(e)e.style.display='none';
+    });
+  }
+  if(role === 'hr') {
+    // HR: people, training, OH
+    ['nav-users','nav-settings','nav-ai'].forEach(function(id){
+      var e=document.getElementById(id);if(e)e.style.display='none';
+    });
+  }
+  // Inspector (legacy) = supervisor
+  if(role === 'inspector') {
+    ['nav-ai','nav-inv','nav-docs','nav-users','nav-settings','nav-legal',
+     'nav-sop','nav-admin','nav-people'].forEach(function(id){
+      var e=document.getElementById(id);if(e)e.style.display='none';
+    });
+  }
+
+  // Role banner on dashboard
+  var banner = document.getElementById('role-banner-dash');
+  if(banner) {
+    var rc = HSE_ROLES[role] || {emoji:'👤',label:role,color:'#6B7280'};
+    var restrictedRoles = ['employee','contractor','inspector','auditor','executive','hr'];
+    if(restrictedRoles.includes(role)) {
+      banner.innerHTML = '<div style="background:#EFF6FF;border:1px solid #bfdbfe;border-radius:8px;padding:8px 14px;font-size:12px;color:#185FA5;font-weight:600;display:flex;align-items:center;gap:8px"><span style="font-size:16px">'+rc.emoji+'</span> Logged in as <strong>'+rc.label+'</strong>. '+getRoleAccessNote(role)+'</div>';
+      banner.style.display = 'block';
+    } else {
+      banner.style.display = 'none';
+    }
+  }
+
+  // Add/Remove buttons visibility for non-managers
+  if(level < 2) {
+    document.querySelectorAll('.btn-primary[onclick*="New"], .btn-primary[onclick*="new"], #insp-new-btn, #ims-report-btn').forEach(function(btn){
+      if(btn.id!=='ims-report-btn') btn.style.display='none';
+    });
+  }
+}
+
+function getRoleAccessNote(role) {
+  var notes = {
+    employee:'You can report incidents and near misses, and view your training records.',
+    contractor:'You can report incidents, view active permits to work, and view your certificates.',
+    inspector:'You can submit incidents, conduct inspections and noise surveys.',
+    auditor:'You have read access to all modules and can write inspection and audit reports.',
+    executive:'You have read-only access to dashboards, executive reports and ESG data.',
+    hr:'You manage people records, training, occupational health and competencies.',
+  };
+  return notes[role] || '';
+}
+
+// ── Backward compat ─────────────────────────────────────────────────
+// Keep RL map in sync with new role levels so isMgr()/isAdm() still work
+// The app uses RL[prof.role] for can() checks — we must map new roles
+// Patch RL to include new role values
+if(typeof RL !== 'undefined') {
+  RL.hse_manager  = 2;  // maps to 'manager' level (can())
+  RL.site_manager = 2;
+  RL.auditor      = 2;
+  RL.hr           = 2;
+  RL.supervisor   = 1;
+  RL.employee     = 1;
+  RL.contractor   = 1;
+  RL.executive    = 1;
+}
+
 async function loadAdmin(){
 const el=document.getElementById('companies-list');
 try{
@@ -18064,10 +18483,20 @@ async function compSave() {
 
 
 
+
 </script>
 </head>
 <body>
-<div id="login-screen"><div class="login-box"><div class="login-logo">AURIS360</div><div class="login-sub">Powered by SEPHS Consulting — HSE Management Platform</div><div class="login-err" id="login-err"></div><div class="form-group"><label class="form-label">Email</label><input type="email" id="login-email" placeholder="your@email.com"/></div><div class="form-group"><label class="form-label">Password</label><input type="password" id="login-pw" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()"/></div><button class="btn btn-primary" style="width:100%;justify-content:center" onclick="doLogin()" id="login-btn"><i class="ti ti-login"></i>Sign In</button><div style="margin-top:18px;padding-top:16px;border-top:1px solid var(--border)"><div style="font-size:12px;color:var(--text2);margin-bottom:10px;font-weight:600">New user — register:</div><div class="form-group"><label class="form-label">Full name</label><input type="text" id="reg-name" placeholder="Full name"/></div><div class="form-row"><div class="form-group"><label class="form-label">Role</label><select id="reg-role"><option value="inspector">Inspector</option><option value="manager">HSE Manager</option><option value="admin">Company Admin</option><option value="sephs_admin">SEPHS Admin</option></select></div><div class="form-group"><label class="form-label">Company</label><select id="reg-company"><option value="">Loading...</option></select></div></div><button class="btn" style="width:100%;justify-content:center" onclick="doRegister()"><i class="ti ti-user-plus"></i>Register</button></div></div></div>
+<div id="login-screen"><div class="login-box"><div class="login-logo">AURIS360</div><div class="login-sub">Powered by SEPHS Consulting — HSE Management Platform</div><div class="login-err" id="login-err"></div><div class="form-group"><label class="form-label">Email</label><input type="email" id="login-email" placeholder="your@email.com"/></div><div class="form-group"><label class="form-label">Password</label><input type="password" id="login-pw" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()"/></div><button class="btn btn-primary" style="width:100%;justify-content:center" onclick="doLogin()" id="login-btn"><i class="ti ti-login"></i>Sign In</button><div style="margin-top:18px;padding-top:16px;border-top:1px solid var(--border)"><div style="font-size:12px;color:var(--text2);margin-bottom:10px;font-weight:600">New user — register:</div><div class="form-group"><label class="form-label">Full name</label><input type="text" id="reg-name" placeholder="Full name"/></div><div class="form-row"><div class="form-group"><label class="form-label">Role</label><select id="reg-role"><option value="employee">👤 Employee</option>
+<option value="contractor">🦺 Contractor</option>
+<option value="supervisor">👷 Supervisor</option>
+<option value="site_manager">🏗️ Site Manager</option>
+<option value="hse_manager">🛡️ HSE Manager</option>
+<option value="auditor">🔍 Auditor</option>
+<option value="hr">👩 HR</option>
+<option value="executive">📊 Executive Management</option>
+<option value="admin">🔑 Company Admin</option>
+<option value="sephs_admin" style="display:none">SEPHS Admin</option></select></div><div class="form-group"><label class="form-label">Company</label><select id="reg-company"><option value="">Loading...</option></select></div></div><button class="btn" style="width:100%;justify-content:center" onclick="doRegister()"><i class="ti ti-user-plus"></i>Register</button></div></div></div>
 <div id="app" style="display:none">
 <div class="layout">
 <div class="sidebar"><div class="sidebar-top"><img id="co-logo-img" class="co-logo" src="" alt="logo"/><div id="co-initials-div" class="co-initials">A</div><div class="sb-company" id="sb-company">AURIS360</div><div class="sb-user" id="sb-user">—</div><span class="sb-role" id="sb-role">—</span></div><span class="nav-section">Main</span><div class="nav-item active" onclick="showPage('dashboard',this)"><i class="ti ti-layout-dashboard"></i>Dashboard</div>
@@ -18081,7 +18510,7 @@ async function compSave() {
 <div class="nav-item" onclick="showPage('esg',this)"><i class="ti ti-leaf"></i>Environmental / ESG</div>
 <div class="nav-item" onclick="showPage('noise',this)"><i class="ti ti-volume"></i>Noise Survey</div><div class="nav-item" id="nav-mtg" onclick="showPage('meetings',this)"><i class="ti ti-notes"></i>HSE Meetings</div><div class="nav-item" onclick="showPage('training',this)"><i class="ti ti-certificate"></i>Training</div><span class="nav-section">Management</span><div class="nav-item" onclick="showPage('actions',this)"><i class="ti ti-list-check"></i>Master Action Plan</div><div class="nav-item" onclick="showPage('legal',this)"><i class="ti ti-scale"></i>Legal Compliance</div>
 <div class="nav-item" onclick="showPage('sop',this)"><i class="ti ti-file-description"></i>SOP Generator</div>
-<div class="nav-item" id="nav-docs" onclick="showPage('documents',this)"><i class="ti ti-files"></i>Document Control</div><div class="nav-item" onclick="showPage('people',this)"><i class="ti ti-id-badge"></i>People</div><div class="nav-item" id="nav-users" onclick="showPage('users',this)"><i class="ti ti-users"></i>User Management</div><div class="nav-item" id="nav-admin" style="display:none" onclick="showPage('admin',this)"><i class="ti ti-building"></i>Companies</div><div class="nav-item" id="nav-settings" onclick="showPage('settings',this)"><i class="ti ti-settings"></i>Settings</div><div class="sb-footer"><button class="btn btn-sm" style="flex:1;justify-content:center;color:var(--red)" onclick="doLogout()"><i class="ti ti-logout"></i>Sign out</button></div></div>
+<div class="nav-item" id="nav-docs" onclick="showPage('documents',this)"><i class="ti ti-files"></i>Document Control</div><div class="nav-item" onclick="showPage('people',this)"><i class="ti ti-id-badge"></i>People</div><div class="nav-item" id="nav-users" onclick="showPage('users',this)"><i class="ti ti-users"></i>Users &amp; Roles</div><div class="nav-item" id="nav-admin" style="display:none" onclick="showPage('admin',this)"><i class="ti ti-building"></i>Companies</div><div class="nav-item" id="nav-settings" onclick="showPage('settings',this)"><i class="ti ti-settings"></i>Settings</div><div class="sb-footer"><button class="btn btn-sm" style="flex:1;justify-content:center;color:var(--red)" onclick="doLogout()"><i class="ti ti-logout"></i>Sign out</button></div></div>
 <div class="main">
 <!-- ══════════════════════════════════════════════════════ -->
 <!-- DASHBOARD (Real-time HSE)                             -->
@@ -25923,7 +26352,171 @@ async function compSave() {
 <div id="page-people" class="page">
 <div class="page-header"><div class="page-title">People</div><div id="people-add-btn"></div></div><div class="card" id="people-form" style="display:none"><div class="card-title">Add person</div><div style="font-size:11px;font-weight:700;color:var(--text2);margin-bottom:10px;text-transform:uppercase;letter-spacing:.05em">Personal information</div><div class="form-row3"><div class="form-group"><label class="form-label">First name</label><input type="text" id="pef-first"/></div><div class="form-group"><label class="form-label">Last name</label><input type="text" id="pef-last"/></div><div class="form-group"><label class="form-label">ID number</label><input type="text" id="pef-id"/></div></div><div class="form-row3"><div class="form-group"><label class="form-label">Date of birth</label><input type="date" id="pef-dob"/></div><div class="form-group"><label class="form-label">Gender</label><select id="pef-gender"><option value="">—</option><option value="male">Male</option><option value="female">Female</option><option value="other">Other</option></select></div><div class="form-group"><label class="form-label">Nationality</label><input type="text" id="pef-nationality"/></div></div><div style="font-size:11px;font-weight:700;color:var(--text2);margin:14px 0 10px;text-transform:uppercase;letter-spacing:.05em">Employment</div><div class="form-row3"><div class="form-group"><label class="form-label">Person type</label><select id="pef-type" onchange="toggleContractor()"><option value="employee">Employee</option><option value="contractor">Contractor</option><option value="subcontractor">Subcontractor</option></select></div><div class="form-group"><label class="form-label">Job title</label><input type="text" id="pef-jobtitle"/></div><div class="form-group"><label class="form-label">Department</label><input type="text" id="pef-dept"/></div></div><div class="form-row3"><div class="form-group"><label class="form-label">Site</label><input type="text" id="pef-site"/></div><div class="form-group"><label class="form-label">Staff no.</label><input type="text" id="pef-empno"/></div><div class="form-group"><label class="form-label">Contract type</label><select id="pef-contract"><option value="permanent">Permanent</option><option value="fixed_term">Fixed term</option><option value="casual">Casual</option><option value="contract">Contract</option></select></div></div><div class="form-row"><div class="form-group"><label class="form-label">Start date</label><input type="date" id="pef-start"/></div><div class="form-group"><label class="form-label">End date</label><input type="date" id="pef-end"/></div></div><div id="contractor-fields" style="display:none"><div style="font-size:11px;font-weight:700;color:var(--text2);margin:14px 0 10px;text-transform:uppercase;letter-spacing:.05em">Contractor details</div><div class="form-row"><div class="form-group"><label class="form-label">Company name</label><input type="text" id="pef-coname"/></div><div class="form-group"><label class="form-label">Contract reference</label><input type="text" id="pef-cref"/></div></div><div class="form-row"><div class="form-group"><label class="form-label">Contract start</label><input type="date" id="pef-cstart"/></div><div class="form-group"><label class="form-label">Contract end</label><input type="date" id="pef-cend"/></div></div></div><div style="font-size:11px;font-weight:700;color:var(--text2);margin:14px 0 10px;text-transform:uppercase;letter-spacing:.05em">Contact & HSE</div><div class="form-row"><div class="form-group"><label class="form-label">Email</label><input type="email" id="pef-email"/></div><div class="form-group"><label class="form-label">Phone</label><input type="text" id="pef-phone"/></div></div><div class="form-row3"><div class="form-group"><label class="form-label">Emergency contact</label><input type="text" id="pef-emname"/></div><div class="form-group"><label class="form-label">Relation</label><input type="text" id="pef-emrel"/></div><div class="form-group"><label class="form-label">Emergency phone</label><input type="text" id="pef-emphone"/></div></div><div class="form-row"><div class="form-group"><label class="form-label">Induction date</label><input type="date" id="pef-induction"/></div><div class="form-group"><label class="form-label">Medical fitness date</label><input type="date" id="pef-medical"/></div></div><div class="form-group"><label class="form-label">Status</label><select id="pef-status"><option value="active">Active</option><option value="inactive">Inactive</option><option value="suspended">Suspended</option></select></div><div style="display:flex;gap:8px"><button class="btn btn-primary" onclick="savePerson()"><i class="ti ti-device-floppy"></i>Save person</button><button class="btn" onclick="toggleForm('people-form')">Cancel</button></div></div><div class="metrics" style="margin-bottom:16px"><div class="metric"><div class="metric-label">Total active</div><div class="metric-value" id="pe-total">—</div></div><div class="metric"><div class="metric-label">Employees</div><div class="metric-value" id="pe-emp" style="color:var(--green)">—</div></div><div class="metric"><div class="metric-label">Contractors</div><div class="metric-value" id="pe-con" style="color:var(--blue)">—</div></div><div class="metric"><div class="metric-label">Subcontractors</div><div class="metric-value" id="pe-sub" style="color:var(--amber)">—</div></div></div><div class="card"><div class="card-title">People register<div style="display:flex;gap:8px"><select id="filter-ptype" onchange="loadPeople()" style="width:auto;padding:5px 9px;font-size:12px"><option value="">All types</option><option value="employee">Employees</option><option value="contractor">Contractors</option><option value="subcontractor">Subcontractors</option></select><select id="filter-pstatus" onchange="loadPeople()" style="width:auto;padding:5px 9px;font-size:12px"><option value="">All statuses</option><option value="active">Active</option><option value="inactive">Inactive</option></select></div></div><div id="people-list"><div class="loading-msg">Loading...</div></div></div></div>
 <div id="page-users" class="page">
-<div class="page-header"><div class="page-title">User Management</div></div><div class="card"><div class="card-title">Platform users</div><div id="users-list"><div class="loading-msg">Loading...</div></div></div><div class="card" id="user-role-card" style="display:none"><div class="card-title">Update user role</div><div class="form-row"><div class="form-group"><label class="form-label">User email</label><input type="email" id="ur-email" placeholder="user@company.com"/></div><div class="form-group"><label class="form-label">New role</label><select id="ur-role"><option value="inspector">Inspector</option><option value="manager">HSE Manager</option><option value="admin">Company Admin</option></select></div></div><button class="btn btn-primary" onclick="updateRole()"><i class="ti ti-edit"></i>Update role</button></div><div class="card"><div class="card-title">Invite new user</div><div style="font-size:12px;color:var(--text2);margin-bottom:8px">Share this link with new users to register:</div><div style="background:#f9fafb;border:1px solid var(--border);border-radius:8px;padding:12px;font-family:monospace;font-size:12px;color:var(--green)">https://auris-360.vercel.app</div><div style="font-size:12px;color:var(--text2);margin-top:8px">After they register, use "Update user role" above to assign the correct role.</div></div></div>
+<div class="page-header">
+<div>
+<div class="page-title">Users &amp; Roles</div>
+<div style="font-size:12px;color:var(--text2)" id="users-subtitle">Manage access levels across all HSE roles</div>
+</div>
+<div style="display:flex;gap:8px">
+<button class="btn btn-primary" id="users-invite-btn" onclick="usersShowInvite()" style="display:none"><i class="ti ti-user-plus"></i>Invite user</button>
+</div>
+</div>
+
+<!-- Metrics -->
+<div style="display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:14px" id="users-metrics">
+<div class="card" style="padding:10px 12px;border-left:4px solid #185FA5"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase">Total users</div><div style="font-size:22px;font-weight:800;color:#185FA5" id="um-total">—</div></div>
+<div class="card" style="padding:10px 12px;border-left:4px solid #1D9E75"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase">Active</div><div style="font-size:22px;font-weight:800;color:#1D9E75" id="um-active">—</div></div>
+<div class="card" style="padding:10px 12px;border-left:4px solid #5B21B6"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase">Managers</div><div style="font-size:22px;font-weight:800;color:#5B21B6" id="um-managers">—</div></div>
+<div class="card" style="padding:10px 12px;border-left:4px solid #0891B2"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase">Contractors</div><div style="font-size:22px;font-weight:800;color:#0891B2" id="um-contractors">—</div></div>
+<div class="card" style="padding:10px 12px;border-left:4px solid #EF9F27"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase">Pending</div><div style="font-size:22px;font-weight:800;color:#EF9F27" id="um-pending">—</div></div>
+</div>
+
+<!-- Tab bar -->
+<div style="display:flex;gap:0;margin-bottom:14px;border-bottom:2px solid var(--border)">
+<button class="mtg-tab active" id="utab-users" onclick="uSwitchTab('users',this)" style="white-space:nowrap">👥 Users</button>
+<button class="mtg-tab" id="utab-roles" onclick="uSwitchTab('roles',this)" style="white-space:nowrap">🔐 Role Permissions</button>
+<button class="mtg-tab" id="utab-invite" onclick="uSwitchTab('invite',this)" style="display:none;white-space:nowrap">✉️ Invite &amp; Manage</button>
+</div>
+
+<!-- ── USERS LIST ── -->
+<div id="uview-users">
+<div class="card" style="margin-bottom:12px;padding:10px 14px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+<div style="display:flex;gap:8px;flex-wrap:wrap">
+<input type="text" id="users-search" placeholder="Search name, email, dept..." oninput="usersFilter()" style="padding:7px 12px;border:1px solid var(--border);border-radius:8px;font-size:12px;width:200px"/>
+<select id="users-filter-role" onchange="usersFilter()" style="padding:7px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px">
+<option value="">All roles</option>
+<option value="hse_manager">HSE Manager</option>
+<option value="site_manager">Site Manager</option>
+<option value="supervisor">Supervisor</option>
+<option value="employee">Employee</option>
+<option value="contractor">Contractor</option>
+<option value="auditor">Auditor</option>
+<option value="hr">HR</option>
+<option value="executive">Executive Management</option>
+<option value="manager">Manager (legacy)</option>
+<option value="inspector">Inspector (legacy)</option>
+<option value="admin">Company Admin</option>
+</select>
+<select id="users-filter-status" onchange="usersFilter()" style="padding:7px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px">
+<option value="">All statuses</option>
+<option value="active">Active</option>
+<option value="inactive">Inactive</option>
+</select>
+</div>
+<div id="users-count-label" style="font-size:12px;color:var(--text2)"></div>
+</div>
+<div id="users-list"><div class="loading-msg">Loading...</div></div>
+</div>
+
+<!-- ── ROLE PERMISSIONS ── -->
+<div id="uview-roles" style="display:none">
+<div class="card" style="margin-bottom:14px;padding:14px 20px;background:linear-gradient(135deg,#1a3a5c,#185FA5);color:#fff">
+<div style="font-size:15px;font-weight:800;margin-bottom:4px">🔐 Role Permission Matrix</div>
+<div style="font-size:12px;opacity:.85">Access levels for each role across all AURIS360 modules. Admins can customise permissions per user.</div>
+</div>
+<div style="overflow:auto" class="card" style="padding:0">
+<table style="width:100%;border-collapse:collapse;font-size:11px" id="roles-matrix-table">
+<thead id="roles-matrix-head"></thead>
+<tbody id="roles-matrix-body"></tbody>
+</table>
+</div>
+</div>
+
+<!-- ── INVITE & MANAGE ── -->
+<div id="uview-invite" style="display:none">
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+
+<!-- Update role card -->
+<div class="card">
+<div class="card-title">✏️ Update User Role</div>
+<div style="font-size:12px;color:var(--text2);margin-bottom:12px">Change an existing user's role and access level</div>
+<div class="form-group"><label class="form-label">User email</label><input type="email" id="ur-email" placeholder="user@company.com" style="font-family:monospace"/></div>
+<div class="form-group"><label class="form-label">New role</label>
+<select id="ur-role">
+<option value="employee">👤 Employee</option>
+<option value="contractor">🦺 Contractor</option>
+<option value="supervisor">👷 Supervisor</option>
+<option value="site_manager">🏗️ Site Manager</option>
+<option value="hse_manager">🛡️ HSE Manager</option>
+<option value="auditor">🔍 Auditor</option>
+<option value="hr">👩‍💼 HR</option>
+<option value="executive">📊 Executive Management</option>
+<option value="manager">⚙️ Manager (legacy)</option>
+<option value="inspector">🔎 Inspector (legacy)</option>
+<option value="admin">🔑 Company Admin</option>
+</select></div>
+<div class="form-group"><label class="form-label">Job title (optional)</label><input type="text" id="ur-job-title" placeholder="e.g. HSE Officer, Safety Manager..."/></div>
+<div class="form-group"><label class="form-label">Department (optional)</label><input type="text" id="ur-department"/></div>
+<button class="btn btn-primary" onclick="updateRole()" style="width:100%"><i class="ti ti-edit"></i>Update role &amp; details</button>
+</div>
+
+<!-- Invite card -->
+<div class="card">
+<div class="card-title">✉️ Invite New User</div>
+<div style="font-size:12px;color:var(--text2);margin-bottom:12px">Share the registration link with new team members</div>
+<div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:12px;font-family:monospace;font-size:12px;color:#065F46;word-break:break-all;margin-bottom:10px" id="invite-link">https://auris-360.vercel.app</div>
+<button class="btn btn-sm" onclick="usersShareLink()"><i class="ti ti-copy"></i>Copy link</button>
+<div style="margin-top:14px;font-size:12px;color:var(--text2)">
+<div style="font-weight:700;margin-bottom:6px">Onboarding steps:</div>
+<ol style="margin:0;padding-left:18px;line-height:1.8">
+<li>Share the link with the new user</li>
+<li>They register with their work email</li>
+<li>Use "Update User Role" to assign their role</li>
+<li>They log in and see modules matching their role</li>
+</ol>
+</div>
+</div>
+</div>
+</div>
+
+<!-- ── USER EDIT MODAL ── -->
+<div id="user-edit-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px">
+<div style="background:#fff;border-radius:12px;max-width:480px;width:100%;max-height:80vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.3)">
+<div style="padding:16px 20px;background:linear-gradient(135deg,#1a3a5c,#185FA5);color:#fff;border-radius:12px 12px 0 0;display:flex;justify-content:space-between;align-items:center">
+<div style="font-size:16px;font-weight:800" id="uem-title">Edit User</div>
+<button class="btn btn-sm" style="background:rgba(255,255,255,.2);color:#fff;border-color:rgba(255,255,255,.3)" onclick="usersCloseModal()"><i class="ti ti-x"></i></button>
+</div>
+<div style="padding:20px">
+<input type="hidden" id="uem-id"/>
+<div class="form-row">
+<div class="form-group"><label class="form-label">Full name</label><input type="text" id="uem-name"/></div>
+<div class="form-group"><label class="form-label">Email</label><input type="email" id="uem-email" style="font-family:monospace"/></div>
+</div>
+<div class="form-group"><label class="form-label">Role</label>
+<select id="uem-role">
+<option value="employee">👤 Employee</option>
+<option value="contractor">🦺 Contractor</option>
+<option value="supervisor">👷 Supervisor</option>
+<option value="site_manager">🏗️ Site Manager</option>
+<option value="hse_manager">🛡️ HSE Manager</option>
+<option value="auditor">🔍 Auditor</option>
+<option value="hr">👩‍💼 HR</option>
+<option value="executive">📊 Executive Management</option>
+<option value="manager">⚙️ Manager (legacy)</option>
+<option value="inspector">🔎 Inspector (legacy)</option>
+<option value="admin">🔑 Company Admin</option>
+</select></div>
+<div class="form-row">
+<div class="form-group"><label class="form-label">Job title</label><input type="text" id="uem-job-title"/></div>
+<div class="form-group"><label class="form-label">Department</label><input type="text" id="uem-dept"/></div>
+</div>
+<div class="form-row">
+<div class="form-group"><label class="form-label">Phone</label><input type="text" id="uem-phone"/></div>
+<div class="form-group"><label class="form-label">Site / location</label><input type="text" id="uem-site"/></div>
+</div>
+<div class="form-group" id="uem-contractor-row" style="display:none"><label class="form-label">Contractor company</label><input type="text" id="uem-contractor-co"/></div>
+<div class="form-group"><label class="form-label">Status</label>
+<select id="uem-status"><option value="active">Active</option><option value="inactive">Inactive</option></select></div>
+<div style="display:flex;gap:8px;margin-top:16px">
+<button class="btn btn-primary" onclick="usersSaveEdit()" style="flex:1"><i class="ti ti-device-floppy"></i>Save changes</button>
+<button class="btn" onclick="usersCloseModal()">Cancel</button>
+</div>
+</div>
+</div>
+</div>
+
+</div><!-- end page-users -->
+
 <div id="page-admin" class="page">
 <div class="page-header"><div class="page-title">Company Management</div></div><div class="card"><div class="card-title">Add new company</div><div class="form-row"><div class="form-group"><label class="form-label">Company name</label><input type="text" id="co-name"/></div><div class="form-group"><label class="form-label">Industry</label><select id="co-industry"><option>Manufacturing</option><option>Construction</option><option>Healthcare</option><option>Transportation</option><option>Energy / Oil & Gas</option><option>Logistics</option><option>Other</option></select></div></div><div class="form-row"><div class="form-group"><label class="form-label">Contact name</label><input type="text" id="co-contact"/></div><div class="form-group"><label class="form-label">Contact email</label><input type="email" id="co-email"/></div></div><div class="form-group"><label class="form-label">Logo URL</label><input type="url" id="co-logo" placeholder="https://..."/></div><button class="btn btn-primary" onclick="saveCompany()"><i class="ti ti-device-floppy"></i>Register</button></div><div class="card"><div class="card-title">All companies</div><div id="companies-list"><div class="loading-msg">Loading...</div></div></div></div>
 <div id="page-settings" class="page">
