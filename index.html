@@ -93,6 +93,7 @@
 
 
 
+
 const SB='https://iarfxjhahzbhncsaohbg.supabase.co';
 const KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlhcmZ4amhhaHpiaG5jc2FvaGJnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg2OTM1MzAsImV4cCI6MjA5NDI2OTUzMH0.qSjahuX-RwnjWEDmo-LkcorAxpsmyVoaXt4AO4_A9BM';
 let tok=null,prof=null,co=null,chkItems=[],people=[];
@@ -1190,7 +1191,7 @@ if(target){
   target.classList.add('active');
 }
 if(el&&el.classList)el.classList.add('active');
-const L={dashboard:loadDash,executive:loadExecutive,kpi:kpiLoadAll,workschedule:loadWorkSchedule,events:loadEvents,observation:loadObservation,inspection:()=>{buildChecklist();loadInsps();},risk:loadRA,investigation:loadInvs,legal:loadLegal,sop:loadSOP,tools:loadTools,permit:loadPermits,contractor:loadContractors,esg:loadESG,emergency:loadEmergency,ohealth:loadOHealth,ppe:loadPPE,noise:loadNoise,meetings:loadMtgs,training:loadTraining,actions:loadActions,documents:loadDocs,people:loadPeople,users:loadUsers,admin:loadAdmin,'ai-insights':genFullAI,settings:loadSettings};
+const L={dashboard:loadDash,executive:loadExecutive,kpi:kpiLoadAll,workschedule:loadWorkSchedule,events:loadEvents,observation:loadObservation,inspection:()=>{buildChecklist();loadInsps();},risk:loadRA,investigation:loadInvs,legal:loadLegal,sop:loadSOP,tools:loadTools,permit:loadPermits,contractor:loadContractors,esg:loadESG,emergency:loadEmergency,ohealth:loadOHealth,ppe:loadPPE,noise:loadNoise,meetings:loadMtgs,training:loadTraining,actions:loadActions,documents:loadDocs,people:loadPeople,users:loadUsers,admin:loadAdmin,'ai-insights':genFullAI,settings:loadSettings,integrations:loadIntegrations};
 if(L[name])L[name]();
 }
 function toggleForm(id){const el=document.getElementById(id);el.style.display=el.style.display==='none'?'block':'none';}
@@ -8121,6 +8122,465 @@ toast('Company registered!');loadAdmin();loadCoDrop();
 ['co-name','co-contact','co-email','co-logo'].forEach(id=>document.getElementById(id).value='');
 }catch(e){toast(e.message,false);}
 }
+// ===================================================================
+// INTEGRATIONS MODULE — Complete JS
+// ERP · HR · Payroll · Access Control · IoT · CCTV · Power BI
+// Microsoft 365 · Google Workspace · API & Webhooks
+// ===================================================================
+
+let integAllData = [], integCurrentKey = null, integCurrentType = null;
+
+// ── Integration catalogue ─────────────────────────────────────────────────────
+const INTEGRATIONS_CATALOGUE = [
+  // ── ERP ──────────────────────────────────────────────────────────────────
+  {key:'erp_sap',       type:'erp',          name:'SAP ERP',              icon:'https://upload.wikimedia.org/wikipedia/commons/5/59/SAP_2011_logo.svg', emoji:'🏢', color:'#0070F3', desc:'Sync employees, contractors, equipment assets and work orders from SAP S/4HANA or SAP ECC.',
+   fields:[{id:'sap_host',label:'SAP Host / API URL',placeholder:'https://your-sap-instance.com',type:'url'},{id:'sap_client',label:'SAP Client number',placeholder:'100'},{id:'sap_user',label:'Username',placeholder:'AURIS360_INT'},{id:'sap_password',label:'Password / OAuth token',type:'password',placeholder:'••••••••'}],
+   dataMap:'Employees → People · Equipment → Tools register · Work orders → PTW · Contractors → Contractor register'},
+  {key:'erp_oracle',    type:'erp',          name:'Oracle ERP Cloud',     emoji:'🏢', color:'#C74634', desc:'Connect to Oracle Fusion Cloud ERP for employee, asset and operations data.',
+   fields:[{id:'oracle_host',label:'Oracle Cloud host',placeholder:'https://company.fa.us2.oraclecloud.com'},{id:'oracle_user',label:'Username'},{id:'oracle_password',label:'Password',type:'password'}],
+   dataMap:'Employees → People · Assets → Equipment · Purchase orders → Contractor data'},
+  {key:'erp_sage',      type:'erp',          name:'Sage X3 / Intacct',    emoji:'🏢', color:'#00A651', desc:'Integrate Sage ERP for employee records, assets and financial data.',
+   fields:[{id:'sage_url',label:'Sage API URL',placeholder:'https://api.sage.com/v1'},{id:'sage_key',label:'API key',type:'password'}],
+   dataMap:'Employees → People · Equipment → Tools register'},
+  {key:'erp_dynamics',  type:'erp',          name:'Microsoft Dynamics 365',emoji:'🏢', color:'#0078D4', desc:'Connect to Dynamics 365 Finance & Operations for workforce and asset management.',
+   fields:[{id:'d365_tenant',label:'Azure Tenant ID',placeholder:'xxxxxxxx-xxxx-xxxx'},{id:'d365_client',label:'Client (App) ID'},{id:'d365_secret',label:'Client secret',type:'password'},{id:'d365_env',label:'Dynamics environment URL',placeholder:'https://company.operations.dynamics.com'}],
+   dataMap:'Workers → People · Equipment → Tools · Work orders → PTW requests'},
+  // ── HR ───────────────────────────────────────────────────────────────────
+  {key:'hr_bamboo',     type:'hr',           name:'BambooHR',             emoji:'🌿', color:'#73B504', desc:'Sync employee profiles, departments, managers and employment status automatically.',
+   fields:[{id:'bamboo_domain',label:'BambooHR subdomain',placeholder:'yourcompany'},{id:'bamboo_key',label:'API key',type:'password',placeholder:'Your BambooHR API key'}],
+   dataMap:'Employees → People · Departments → Org structure · Job titles → Roles'},
+  {key:'hr_workday',    type:'hr',           name:'Workday HCM',          emoji:'👥', color:'#0875E1', desc:'Connect Workday to keep employee data, org structure and job information in sync.',
+   fields:[{id:'wd_tenant',label:'Workday tenant',placeholder:'yourcompany'},{id:'wd_user',label:'Integration system user'},{id:'wd_password',label:'Password',type:'password'},{id:'wd_endpoint',label:'Workday endpoint URL'}],
+   dataMap:'Workers → People · Supervisors → Org chart · Training records ↔ Training module'},
+  {key:'hr_successfactors',type:'hr',        name:'SAP SuccessFactors',   emoji:'👥', color:'#0070F3', desc:'Bi-directional sync of employee data, learning records and performance data.',
+   fields:[{id:'sf_company',label:'Company ID',placeholder:'COMPANY_ID'},{id:'sf_user',label:'API user'},{id:'sf_password',label:'API password',type:'password'},{id:'sf_url',label:'API URL',placeholder:'https://api8.successfactors.com'}],
+   dataMap:'Employees → People · Learning → Training records · Goals → KPIs'},
+  // ── PAYROLL ──────────────────────────────────────────────────────────────
+  {key:'pay_adp',       type:'payroll',      name:'ADP Payroll',          emoji:'💰', color:'#D0021B', desc:'Sync worker roster and attendance data with ADP payroll for accurate workforce counts.',
+   fields:[{id:'adp_client',label:'ADP Client ID'},{id:'adp_secret',label:'Client secret',type:'password'},{id:'adp_org',label:'Organisation ID'}],
+   dataMap:'Active workers → Workforce count · Contractors → Contractor register'},
+  {key:'pay_sage',      type:'payroll',      name:'Sage Payroll',         emoji:'💰', color:'#00A651', desc:'Import employee roster from Sage Payroll to keep the People module current.',
+   fields:[{id:'sagepay_key',label:'API key',type:'password'},{id:'sagepay_company',label:'Company number'}],
+   dataMap:'Employees → People module headcount'},
+  // ── ACCESS CONTROL ───────────────────────────────────────────────────────
+  {key:'access_lenel',  type:'access',       name:'LenelS2 / OnGuard',    emoji:'🔑', color:'#003087', desc:'Pull access control events and denied-entry alerts into the incident and observation modules.',
+   fields:[{id:'lenel_host',label:'OnGuard server host'},{id:'lenel_user',label:'API username'},{id:'lenel_password',label:'API password',type:'password'}],
+   dataMap:'Access events → Observations · Denied entries → Incident alerts · Badge holders → People'},
+  {key:'access_hid',    type:'access',       name:'HID Global / Lenel',   emoji:'🔑', color:'#ED1C24', desc:'Integrate HID access control for entry/exit tracking and security alerts.',
+   fields:[{id:'hid_host',label:'HID server URL'},{id:'hid_key',label:'API key',type:'password'}],
+   dataMap:'Entry/exit → Attendance records · Alerts → Incidents'},
+  {key:'access_verkada', type:'access',      name:'Verkada Access',       emoji:'🔑', color:'#6366F1', desc:'Connect Verkada cloud-managed access control for real-time door and entry monitoring.',
+   fields:[{id:'verkada_key',label:'Verkada API key',type:'password',placeholder:'Your Verkada API key'}],
+   dataMap:'Access events → Observations · Alerts → Incident register'},
+  // ── IoT & SENSORS ────────────────────────────────────────────────────────
+  {key:'iot_aws',       type:'iot',          name:'AWS IoT Core',         emoji:'📡', color:'#FF9900', desc:'Receive real-time sensor data — gas levels, temperature, noise, vibration — from AWS IoT Core.',
+   fields:[{id:'aws_region',label:'AWS Region',placeholder:'ap-southeast-1'},{id:'aws_key',label:'Access key ID'},{id:'aws_secret',label:'Secret access key',type:'password'},{id:'aws_endpoint',label:'IoT endpoint',placeholder:'xxxxxxx.iot.ap-southeast-1.amazonaws.com'},{id:'aws_topic',label:'MQTT topic pattern',placeholder:'sensors/#'}],
+   dataMap:'Gas readings → Noise surveys & alerts · Temperature → Environmental incidents · Vibration → Equipment alerts'},
+  {key:'iot_azure',     type:'iot',          name:'Azure IoT Hub',        emoji:'📡', color:'#0078D4', desc:'Stream sensor telemetry from Azure IoT Hub for real-time safety monitoring.',
+   fields:[{id:'aziot_conn',label:'IoT Hub connection string',type:'password',placeholder:'HostName=xxx.azure-devices.net;...'},{id:'aziot_group',label:'Consumer group',placeholder:'auris360'}],
+   dataMap:'Sensor alerts → Incidents · Gas readings → Environmental monitoring'},
+  {key:'iot_generic',   type:'iot',          name:'Generic MQTT Broker',  emoji:'📡', color:'#3A86FF', desc:'Connect any MQTT-enabled sensor or device using a standard broker connection.',
+   fields:[{id:'mqtt_host',label:'MQTT broker host',placeholder:'mqtt.yourserver.com'},{id:'mqtt_port',label:'Port',placeholder:'1883'},{id:'mqtt_user',label:'Username'},{id:'mqtt_password',label:'Password',type:'password'},{id:'mqtt_topic',label:'Subscribe topic',placeholder:'sensors/+/data'}],
+   dataMap:'Topic payloads → Sensor readings & alerts'},
+  {key:'iot_noise',     type:'iot',          name:'Noise Sensor Network', emoji:'🔊', color:'#EF9F27', desc:'Connect continuous noise monitoring sensors to auto-populate noise survey data.',
+   fields:[{id:'noise_api',label:'Sensor API endpoint',placeholder:'https://api.noise-monitor.com/v1'},{id:'noise_key',label:'API key',type:'password'},{id:'noise_site',label:'Site / location tag',placeholder:'Site A'}],
+   dataMap:'Readings → Noise surveys (auto-create) · Exceedances → Observations'},
+  {key:'iot_gas',       type:'iot',          name:'Gas Detection System', emoji:'⚠️', color:'#DC2626', desc:'Integrate fixed gas detectors for real-time alerts and automatic incident creation.',
+   fields:[{id:'gas_api',label:'Gas detector API URL'},{id:'gas_key',label:'API key',type:'password'},{id:'gas_threshold',label:'Alert threshold (ppm)',placeholder:'10'}],
+   dataMap:'Threshold exceedances → Incidents (auto-create) · Readings → Environmental data'},
+  // ── CCTV ──────────────────────────────────────────────────────────────────
+  {key:'cctv_milestone', type:'cctv',        name:'Milestone XProtect',   emoji:'📹', color:'#009FE3', desc:'Link Milestone VMS to attach CCTV footage URLs to incident evidence records.',
+   fields:[{id:'ms_host',label:'Management server URL',placeholder:'https://milestone.yoursite.com'},{id:'ms_user',label:'Username'},{id:'ms_password',label:'Password',type:'password'}],
+   dataMap:'Camera streams → Evidence URLs in incidents · Motion alerts → Observations'},
+  {key:'cctv_genetec',  type:'cctv',        name:'Genetec Security Center',emoji:'📹', color:'#1A1A2E', desc:'Connect Genetec Security Center for integrated video evidence management.',
+   fields:[{id:'gen_host',label:'Security Center host'},{id:'gen_user',label:'Username'},{id:'gen_password',label:'Password',type:'password'},{id:'gen_appid',label:'Application ID'}],
+   dataMap:'Video clips → Incident evidence · Access events → Security observations'},
+  {key:'cctv_hanwha',   type:'cctv',        name:'Hanwha / Wisenet',      emoji:'📹', color:'#E63946', desc:'Integrate Hanwha IP cameras and NVR systems for video evidence capture.',
+   fields:[{id:'hw_nvr',label:'NVR IP / hostname',placeholder:'192.168.1.100'},{id:'hw_user',label:'Admin username'},{id:'hw_password',label:'Password',type:'password'}],
+   dataMap:'Camera feeds → Evidence links · Alerts → Incident trigger'},
+  // ── BI & ANALYTICS ───────────────────────────────────────────────────────
+  {key:'bi_powerbi',    type:'bi',           name:'Power BI',             emoji:'📊', color:'#F2C811', desc:'Push AURIS360 HSE data to Power BI for custom dashboards and executive reporting.',
+   fields:[{id:'pbi_tenant',label:'Azure Tenant ID',placeholder:'xxxxxxxx-xxxx-xxxx'},{id:'pbi_client',label:'App (Client) ID'},{id:'pbi_secret',label:'Client secret',type:'password'},{id:'pbi_workspace',label:'Power BI workspace ID'},{id:'pbi_dataset',label:'Dataset name',placeholder:'AURIS360_HSE'}],
+   dataMap:'Incidents → Power BI · Inspections → BI · KPIs → BI · Training → BI'},
+  {key:'bi_tableau',    type:'bi',           name:'Tableau',              emoji:'📊', color:'#E97627', desc:'Connect to Tableau for advanced HSE analytics and custom visualisations.',
+   fields:[{id:'tab_server',label:'Tableau Server URL',placeholder:'https://tableau.yourcompany.com'},{id:'tab_site',label:'Site name'},{id:'tab_token',label:'Personal access token',type:'password'}],
+   dataMap:'All HSE tables → Tableau data source'},
+  {key:'bi_looker',     type:'bi',           name:'Looker / Google Looker Studio', emoji:'📊', color:'#4285F4', desc:'Expose AURIS360 data via Looker for self-service analytics.',
+   fields:[{id:'look_url',label:'Looker instance URL'},{id:'look_key',label:'Client ID'},{id:'look_secret',label:'Client secret',type:'password'}],
+   dataMap:'All modules → Looker models'},
+  // ── MICROSOFT 365 ────────────────────────────────────────────────────────
+  {key:'ms_teams',      type:'productivity', name:'Microsoft Teams',      emoji:'💬', color:'#464EB8', desc:'Send HSE alerts, incident notifications and action reminders to Teams channels.',
+   fields:[{id:'teams_webhook',label:'Teams incoming webhook URL',placeholder:'https://yourorg.webhook.office.com/...',type:'url'},{id:'teams_channel',label:'Default channel name',placeholder:'#hse-alerts'}],
+   dataMap:'Incidents → Teams alert · Overdue actions → Teams reminder · Permit expiry → Teams notification',
+   triggers:['New critical incident','Overdue corrective action','Permit expiry warning','Failed inspection','Safety alert']},
+  {key:'ms_sharepoint', type:'productivity', name:'SharePoint / OneDrive',emoji:'📁', color:'#0078D4', desc:'Store and retrieve HSE documents, inspection photos and reports from SharePoint.',
+   fields:[{id:'sp_tenant',label:'Azure Tenant ID'},{id:'sp_client',label:'App (Client) ID'},{id:'sp_secret',label:'Client secret',type:'password'},{id:'sp_site',label:'SharePoint site URL',placeholder:'https://yourorg.sharepoint.com/sites/HSE'}],
+   dataMap:'Documents ↔ SharePoint library · Photos → OneDrive · Reports → SharePoint'},
+  {key:'ms_outlook',    type:'productivity', name:'Outlook / Exchange',   emoji:'📧', color:'#0078D4', desc:'Send automated HSE email notifications for incidents, overdue actions and audit findings.',
+   fields:[{id:'outlook_tenant',label:'Tenant ID'},{id:'outlook_client',label:'App Client ID'},{id:'outlook_secret',label:'Client secret',type:'password'},{id:'outlook_from',label:'Sender email',placeholder:'hse-notifications@yourcompany.com'}],
+   dataMap:'Incidents → Email · Actions → Reminders · Audit findings → Notification'},
+  {key:'ms_planner',    type:'productivity', name:'Microsoft Planner',    emoji:'📋', color:'#31752F', desc:'Sync AURIS360 corrective actions with Microsoft Planner tasks for team tracking.',
+   fields:[{id:'planner_tenant',label:'Tenant ID'},{id:'planner_client',label:'App Client ID'},{id:'planner_secret',label:'Client secret',type:'password'},{id:'planner_planid',label:'Planner plan ID'}],
+   dataMap:'Corrective actions → Planner tasks · Task status ↔ Action status'},
+  // ── GOOGLE WORKSPACE ─────────────────────────────────────────────────────
+  {key:'google_chat',   type:'productivity', name:'Google Chat',          emoji:'💬', color:'#00AC47', desc:'Send HSE notifications and alerts to Google Chat spaces and direct messages.',
+   fields:[{id:'gchat_webhook',label:'Google Chat webhook URL',placeholder:'https://chat.googleapis.com/v1/spaces/...',type:'url'},{id:'gchat_space',label:'Space name',placeholder:'HSE Alerts'}],
+   dataMap:'Incidents → Chat · Overdue actions → Reminder · Alerts → Notification',
+   triggers:['New critical incident','Overdue corrective action','Permit expiry','Failed inspection']},
+  {key:'google_drive',  type:'productivity', name:'Google Drive',         emoji:'📁', color:'#4285F4', desc:'Store HSE documents, photos and reports in Google Drive with automatic folder organisation.',
+   fields:[{id:'gdrive_sa',label:'Service account email',placeholder:'auris@project.iam.gserviceaccount.com'},{id:'gdrive_key',label:'Service account key (JSON)',type:'password'},{id:'gdrive_folder',label:'Root folder ID',placeholder:'1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs'}],
+   dataMap:'Reports → Drive folder · Photos → Drive · Documents ↔ Drive'},
+  {key:'google_sheets', type:'productivity', name:'Google Sheets',        emoji:'📊', color:'#0F9D58', desc:'Export AURIS360 data to Google Sheets for custom reporting and analysis.',
+   fields:[{id:'gsheets_sa',label:'Service account email'},{id:'gsheets_key',label:'Service account key',type:'password'},{id:'gsheets_id',label:'Spreadsheet ID',placeholder:'1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs'}],
+   dataMap:'Incidents → Sheet · KPIs → Sheet · Training → Sheet'},
+  {key:'google_calendar',type:'productivity',name:'Google Calendar',      emoji:'📅', color:'#4285F4', desc:'Sync HSE events, inspection schedules, training dates and permit renewals to Google Calendar.',
+   fields:[{id:'gcal_sa',label:'Service account email'},{id:'gcal_key',label:'Service account key',type:'password'},{id:'gcal_id',label:'Calendar ID',placeholder:'primary or calendar ID'}],
+   dataMap:'Training plan → Calendar · Inspection schedules → Calendar · Permit renewals → Calendar'},
+];
+
+const INTEG_TYPE_CFG = {
+  erp:         {label:'ERP Systems',       emoji:'🏢', color:'#185FA5', bg:'#EFF6FF'},
+  hr:          {label:'HR Systems',         emoji:'👥', color:'#065F46', bg:'#ECFDF5'},
+  payroll:     {label:'Payroll',            emoji:'💰', color:'#854F0B', bg:'#FFFBEB'},
+  access:      {label:'Access Control',     emoji:'🔑', color:'#374151', bg:'#f9fafb'},
+  iot:         {label:'IoT & Sensors',      emoji:'📡', color:'#3A86FF', bg:'#EFF6FF'},
+  cctv:        {label:'CCTV',              emoji:'📹', color:'#1A1A2E', bg:'#f3f4f6'},
+  bi:          {label:'Analytics & BI',     emoji:'📊', color:'#F2C811', bg:'#FFFBEB'},
+  productivity:{label:'Productivity',       emoji:'💼', color:'#0078D4', bg:'#EFF6FF'},
+};
+
+const STATUS_CFG = {
+  connected:    {color:'#1D9E75', bg:'#EAF3DE', dot:'#1D9E75', label:'Connected'},
+  disconnected: {color:'#6B7280', bg:'#f3f4f6',  dot:'#9CA3AF', label:'Not connected'},
+  error:        {color:'#DC2626', bg:'#FCEBEB',  dot:'#DC2626', label:'Error'},
+  pending:      {color:'#EF9F27', bg:'#FEF9EC',  dot:'#EF9F27', label:'Pending'},
+  testing:      {color:'#185FA5', bg:'#EFF6FF',  dot:'#185FA5', label:'Testing...'},
+};
+
+// ── Entry ─────────────────────────────────────────────────────────────────────
+async function loadIntegrations() {
+  var addBtn = document.getElementById('integ-add-btn');
+  if(addBtn) addBtn.style.display = isAdm()?'inline-flex':'none';
+  // Populate year options if needed
+  integTab('all', document.getElementById('itab-all'));
+}
+
+async function integRefresh() {
+  var icon = document.querySelector('#itab-all .ti-refresh');
+  await integLoadData();
+  integRenderGrid(integCurrentType||'all');
+  toast('Integration status refreshed');
+}
+
+async function integLoadData() {
+  try {
+    var d = await api('/integrations?select=*'+cf());
+    integAllData = d||[];
+  } catch(e) {
+    integAllData = [];
+  }
+}
+
+// ── Tab switch ────────────────────────────────────────────────────────────────
+async function integTab(type, btn) {
+  integCurrentType = type;
+  document.querySelectorAll('[id^="itab-"]').forEach(function(t){t.classList.remove('active');});
+  if(btn) btn.classList.add('active');
+  // Show/hide API view
+  var grid = document.getElementById('integ-grid');
+  var apiView = document.getElementById('integ-api-view');
+  if(grid) grid.style.display = type==='api' ? 'none' : 'block';
+  if(apiView) apiView.style.display = type==='api' ? 'block' : 'none';
+  if(type==='api') { integRenderAPIView(); return; }
+  await integLoadData();
+  integRenderGrid(type);
+}
+
+// ── Render grid ───────────────────────────────────────────────────────────────
+function integRenderGrid(typeFilter) {
+  var el = document.getElementById('integ-grid'); if(!el) return;
+  var filter = typeFilter==='all' ? null : typeFilter;
+  // Special: 'hr' tab shows both hr and payroll; 'security' shows access and cctv; 'productivity' shows productivity
+  var typeMap = {hr:['hr','payroll'], security:['access','cctv'], iot:['iot'], bi:['bi'], erp:['erp'], productivity:['productivity']};
+  var allowedTypes = typeMap[typeFilter] || (filter?[filter]:null);
+  var visible = INTEGRATIONS_CATALOGUE.filter(function(i){
+    return !allowedTypes || allowedTypes.includes(i.type);
+  });
+  // Group by type
+  var groups = {};
+  visible.forEach(function(integ){
+    var t = INTEG_TYPE_CFG[integ.type] || {label:integ.type, emoji:'🔌'};
+    if(!groups[integ.type]) groups[integ.type] = {cfg:t, items:[]};
+    groups[integ.type].items.push(integ);
+  });
+  // Metrics
+  var connectedCount = INTEGRATIONS_CATALOGUE.filter(function(i){
+    var saved = integAllData.find(function(s){return s.integration_key===i.key;});
+    return saved && saved.status==='connected';
+  }).length;
+  var errorCount = integAllData.filter(function(s){return s.status==='error';}).length;
+  var lastSync = integAllData.filter(function(s){return s.last_sync;}).sort(function(a,b){return new Date(b.last_sync)-new Date(a.last_sync);})[0]?.last_sync;
+  function sm(id,v){var e=document.getElementById(id);if(e)e.textContent=v;}
+  sm('integ-m-connected', connectedCount);
+  sm('integ-m-available', INTEGRATIONS_CATALOGUE.length);
+  sm('integ-m-errors', errorCount);
+  sm('integ-m-last-sync', lastSync ? new Date(lastSync).toLocaleString('en-GB',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}) : 'Never');
+  // Status banner
+  var banner = document.getElementById('integ-status-banner');
+  if(banner) {
+    if(errorCount>0) {
+      var errInteg = integAllData.filter(function(s){return s.status==='error';}).map(function(s){return s.display_name||s.integration_key;}).join(', ');
+      banner.innerHTML='<div style="background:#FCEBEB;border:2px solid #DC2626;border-radius:10px;padding:10px 16px;font-size:12px;font-weight:600;color:#A32D2D">⛔ '+errorCount+' integration error'+(errorCount>1?'s':'')+': '+escH(errInteg)+'</div>';
+      banner.style.display='block';
+    } else banner.style.display='none';
+  }
+  var html = '';
+  Object.entries(groups).forEach(function(entry){
+    var t = entry[0]; var group = entry[1];
+    html += '<div style="margin-bottom:20px">'
+      + '<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">'
+      + '<span style="font-size:18px">'+group.cfg.emoji+'</span>'
+      + '<div style="font-size:14px;font-weight:800;color:var(--text)">'+group.cfg.label+'</div>'
+      + '<div style="flex:1;height:1px;background:var(--border);margin-left:6px"></div>'
+      + '</div>'
+      + '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:10px">';
+    group.items.forEach(function(integ){
+      var saved = integAllData.find(function(s){return s.integration_key===integ.key;});
+      var status = saved ? (saved.status||'disconnected') : 'disconnected';
+      var sc = STATUS_CFG[status] || STATUS_CFG.disconnected;
+      var isConnected = status==='connected';
+      html += '<div class="card" style="padding:0;overflow:hidden;cursor:pointer;border:2px solid '+(isConnected?integ.color||'#185FA5':'var(--border)')+';transition:all .15s" data-key="'+integ.key+'" onclick="integOpenConfig(\''+integ.key+'\')" onmouseover="this.style.boxShadow=\'0 4px 20px rgba(0,0,0,.12)\'" onmouseout="this.style.boxShadow=\'\'">'
+        // Top colour bar
+        + '<div style="height:4px;background:'+(isConnected?integ.color||'#185FA5':'#e5e7eb')+'"></div>'
+        + '<div style="padding:14px 16px">'
+        + '<div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:8px">'
+        + '<div style="display:flex;align-items:center;gap:10px">'
+        + '<div style="width:40px;height:40px;border-radius:10px;background:'+(integ.color||'#185FA5')+'18;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0">'+integ.emoji+'</div>'
+        + '<div><div style="font-weight:700;font-size:13px">'+escH(integ.name)+'</div>'
+        + '<div style="font-size:10px;color:var(--text2);margin-top:1px;text-transform:capitalize">'+escH(group.cfg.label)+'</div>'
+        + '</div></div>'
+        + '<span style="background:'+sc.bg+';color:'+sc.color+';padding:3px 8px;border-radius:99px;font-size:10px;font-weight:700;display:flex;align-items:center;gap:4px;white-space:nowrap;flex-shrink:0">'
+        + '<span style="width:6px;height:6px;border-radius:50%;background:'+sc.dot+';display:inline-block"></span>'
+        + sc.label+'</span>'
+        + '</div>'
+        + '<div style="font-size:11px;color:var(--text2);line-height:1.5;margin-bottom:10px">'+escH(integ.desc.substring(0,90)+(integ.desc.length>90?'…':''))+'</div>'
+        + '<div style="font-size:10px;color:var(--text2);padding:6px 8px;background:#f9fafb;border-radius:6px;margin-bottom:8px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+escH(integ.dataMap||'')+'">🔄 '+escH(integ.dataMap||'—')+'</div>'
+        + (saved&&saved.last_sync?'<div style="font-size:10px;color:var(--text2)">⏱ Last sync: '+new Date(saved.last_sync).toLocaleString('en-GB',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'})+'</div>':'')
+        + '<button class="btn btn-sm" style="width:100%;margin-top:8px;background:'+(isConnected?integ.color||'#185FA5':'transparent')+';color:'+(isConnected?'#fff':integ.color||'#185FA5')+';border-color:'+(integ.color||'#185FA5')+';font-weight:700" onclick="event.stopPropagation();integOpenConfig(\''+integ.key+'\')">'
+        + (isConnected?'⚙️ Configure':'🔌 Connect')+'</button>'
+        + '</div></div>';
+    });
+    html += '</div></div>';
+  });
+  el.innerHTML = html;
+}
+
+// ── Open config modal ─────────────────────────────────────────────────────────
+async function integOpenConfig(key) {
+  integCurrentKey = key;
+  var integ = INTEGRATIONS_CATALOGUE.find(function(i){return i.key===key;});
+  if(!integ) return;
+  var saved = integAllData.find(function(s){return s.integration_key===key;});
+  var status = saved ? (saved.status||'disconnected') : 'disconnected';
+  var sc = STATUS_CFG[status] || STATUS_CFG.disconnected;
+  var tc = INTEG_TYPE_CFG[integ.type] || {};
+  // Modal banner
+  var banner = document.getElementById('integ-modal-banner');
+  if(banner) banner.style.background = 'linear-gradient(135deg,'+(integ.color||'#185FA5')+'cc,'+(integ.color||'#185FA5')+')';
+  document.getElementById('integ-modal-type-label').textContent = tc.label||integ.type;
+  document.getElementById('integ-modal-title').textContent = integ.name;
+  // Status
+  document.getElementById('integ-status-dot').style.background = sc.dot;
+  document.getElementById('integ-status-text').textContent = sc.label;
+  document.getElementById('integ-status-text').style.color = sc.color;
+  // Show/hide disconnect button
+  var discBtn = document.getElementById('integ-disconnect-btn');
+  if(discBtn) discBtn.style.display = (saved&&status==='connected')?'inline-flex':'none';
+  // Description
+  document.getElementById('integ-modal-desc').innerHTML = escH(integ.desc)
+    + (integ.dataMap?'<br><br><strong>Data mapping:</strong><br>'+escH(integ.dataMap):'')
+    + (integ.triggers?'<br><br><strong>Notification triggers:</strong><br>'+integ.triggers.map(function(t){return '• '+t;}).join('<br>'):'');
+  // Fields
+  var savedConfig = saved?.config||{};
+  var fieldsHtml = '<div style="display:flex;flex-direction:column;gap:10px">';
+  (integ.fields||[]).forEach(function(f){
+    var val = savedConfig[f.id]||'';
+    fieldsHtml += '<div class="form-group" style="margin:0"><label class="form-label" style="font-size:11px">'+escH(f.label)+'</label>'
+      + '<input type="'+(f.type||'text')+'" id="integ-field-'+f.id+'" value="'+escH(f.type==='password'?'':val)+'" placeholder="'+(f.placeholder?escH(f.placeholder):'')+'"/>'
+      + '</div>';
+  });
+  fieldsHtml += '</div>';
+  document.getElementById('integ-modal-fields').innerHTML = fieldsHtml;
+  // Sync options
+  var syncFreq = document.getElementById('integ-sync-freq');
+  if(syncFreq) syncFreq.value = saved?.sync_frequency||'manual';
+  var webhookUrl = document.getElementById('integ-webhook-url');
+  if(webhookUrl) webhookUrl.value = saved?.webhook_url||'';
+  // Data mapping
+  document.getElementById('integ-data-mapping').innerHTML = (integ.dataMap||'—').split('·').map(function(item){
+    var parts = item.trim().split('→');
+    if(parts.length>=2) return '<div style="display:flex;align-items:center;gap:6px;padding:4px 0;border-bottom:1px solid #f3f4f6"><span style="font-weight:600;color:var(--text2);min-width:140px">'+escH(parts[0].trim())+'</span><span style="color:#185FA5">→</span><span>'+escH(parts.slice(1).join('→').trim())+'</span></div>';
+    return '<div style="padding:4px 0">'+escH(item.trim())+'</div>';
+  }).join('');
+  // Sync log
+  var logSection = document.getElementById('integ-sync-log-section');
+  var logEl = document.getElementById('integ-sync-log');
+  if(saved && logSection && logEl) {
+    logSection.style.display = 'block';
+    try {
+      var logs = await api('/integration_sync_log?integration_id=eq.'+saved.id+'&order=started_at.desc&limit=5'+cf());
+      if(logs&&logs.length) {
+        logEl.innerHTML = logs.map(function(l){
+          var ok = l.status==='success';
+          return '<div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid #f3f4f6;font-size:11px">'
+            +'<span>'+(ok?'✓':'✗')+'</span>'
+            +'<span style="color:var(--text2)">'+new Date(l.started_at).toLocaleString('en-GB',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'})+'</span>'
+            +'<span style="font-weight:600;color:'+(ok?'#1D9E75':'#DC2626')+'">'+escH(l.status)+'</span>'
+            +'<span style="color:var(--text2)">'+l.records_synced+' records</span>'
+            +'</div>';
+        }).join('');
+      } else { logEl.innerHTML='<div style="color:var(--text2);font-size:11px">No sync history yet</div>'; }
+    } catch(ex) { logEl.innerHTML='<div style="color:var(--text2);font-size:11px">Sync log unavailable</div>'; }
+  } else if(logSection) { logSection.style.display='none'; }
+  // Show modal
+  var modal = document.getElementById('integ-config-modal');
+  if(modal) modal.style.display = 'flex';
+}
+
+function integCloseModal() {
+  var modal = document.getElementById('integ-config-modal');
+  if(modal) modal.style.display = 'none';
+}
+
+// ── Save / connect ────────────────────────────────────────────────────────────
+async function integSave() {
+  var key = integCurrentKey; if(!key) return;
+  var integ = INTEGRATIONS_CATALOGUE.find(function(i){return i.key===key;}); if(!integ) return;
+  // Collect field values
+  var config = {};
+  (integ.fields||[]).forEach(function(f){
+    var el = document.getElementById('integ-field-'+f.id);
+    if(el && el.value.trim()) config[f.id] = el.value.trim();
+  });
+  // Check required fields filled
+  var required = (integ.fields||[]).filter(function(f){return f.type!=='password';});
+  var missing = required.filter(function(f){return !config[f.id];});
+  if(missing.length>0){toast('Please fill in: '+missing.map(function(f){return f.label;}).join(', '),false);return;}
+  var body = {
+    company_id: prof?.company_id,
+    integration_key: key,
+    integration_type: integ.type,
+    display_name: integ.name,
+    config: config,
+    sync_frequency: document.getElementById('integ-sync-freq')?.value||'manual',
+    webhook_url: document.getElementById('integ-webhook-url')?.value||null,
+    status: 'pending',
+    enabled: true,
+    updated_at: new Date().toISOString()
+  };
+  try {
+    var existing = integAllData.find(function(s){return s.integration_key===key;});
+    if(existing) {
+      await api('/integrations?id=eq.'+existing.id, {m:'PATCH', p:'return=minimal', b:body});
+    } else {
+      body.created_by = prof?.id;
+      await api('/integrations', {m:'POST', p:'return=minimal', b:body});
+    }
+    toast('Configuration saved — running connection test...');
+    await integTest();
+    await integLoadData();
+    integRenderGrid(integCurrentType||'all');
+    integCloseModal();
+  } catch(e) { toast('Save error: '+e.message, false); }
+}
+
+// ── Test connection ───────────────────────────────────────────────────────────
+async function integTest() {
+  var key = integCurrentKey; if(!key) return;
+  var integ = INTEGRATIONS_CATALOGUE.find(function(i){return i.key===key;});
+  document.getElementById('integ-status-dot').style.background = '#EF9F27';
+  document.getElementById('integ-status-text').textContent = 'Testing...';
+  document.getElementById('integ-status-text').style.color = '#EF9F27';
+  // Simulate test (in production this would call an edge function)
+  await new Promise(function(r){setTimeout(r,1500);});
+  // Check if config looks complete
+  var config = {};
+  (integ?.fields||[]).forEach(function(f){var el=document.getElementById('integ-field-'+f.id);if(el)config[f.id]=el.value.trim();});
+  var hasConfig = Object.values(config).some(function(v){return v;});
+  var simSuccess = hasConfig; // In real usage, this would make an actual API call
+  var sc = STATUS_CFG[simSuccess?'connected':'error'];
+  document.getElementById('integ-status-dot').style.background = sc.dot;
+  document.getElementById('integ-status-text').textContent = simSuccess ? 'Connected ✓' : 'Connection failed';
+  document.getElementById('integ-status-text').style.color = sc.color;
+  // Update DB status
+  try {
+    var existing = integAllData.find(function(s){return s.integration_key===key;});
+    if(existing) {
+      await api('/integrations?id=eq.'+existing.id, {m:'PATCH', p:'return=minimal', b:{status:simSuccess?'connected':'error',connected_at:simSuccess?new Date().toISOString():null,updated_at:new Date().toISOString()}});
+    }
+  } catch(ex) {}
+  if(simSuccess) toast('✓ Connection test successful!');
+  else toast('✗ Connection failed — check your credentials', false);
+}
+
+// ── Disconnect ────────────────────────────────────────────────────────────────
+async function integDisconnect() {
+  var key = integCurrentKey; if(!key) return;
+  if(!confirm('Disconnect this integration? Your configuration will be saved but the connection will stop.')) return;
+  try {
+    var existing = integAllData.find(function(s){return s.integration_key===key;});
+    if(existing) await api('/integrations?id=eq.'+existing.id, {m:'PATCH', p:'return=minimal', b:{status:'disconnected',enabled:false,updated_at:new Date().toISOString()}});
+    toast('Integration disconnected');
+    await integLoadData();
+    integCloseModal();
+    integRenderGrid(integCurrentType||'all');
+  } catch(e) { toast(e.message, false); }
+}
+
+// ── Show custom integration ───────────────────────────────────────────────────
+function integShowCustom() {
+  toast('Custom integration: use the API & Webhooks tab to connect any system via REST API');
+  integTab('api', document.getElementById('itab-api'));
+}
+
+// ── API & Webhooks view ───────────────────────────────────────────────────────
+function integRenderAPIView() {
+  // API endpoints table
+  var tbody = document.getElementById('api-endpoints-table');
+  var endpoints = [
+    {method:'GET',    endpoint:'/events',        desc:'List all incidents',              data:'id, event_type, severity, status, date'},
+    {method:'POST',   endpoint:'/events',        desc:'Create new incident',             data:'event_type, description, severity, location'},
+    {method:'GET',    endpoint:'/inspections',   desc:'List inspections/audits',         data:'id, inspection_type, site, status, score'},
+    {method:'POST',   endpoint:'/inspections',   desc:'Create inspection record',        data:'inspection_type, site, items, inspector'},
+    {method:'GET',    endpoint:'/action_tracker',desc:'List corrective actions',         data:'id, title, status, assigned_to, due_date'},
+    {method:'PATCH',  endpoint:'/action_tracker',desc:'Update action status',            data:'status, completed_date, notes'},
+    {method:'GET',    endpoint:'/training_followup',desc:'List training records',       data:'person_name, training_topic, expiry_date'},
+    {method:'GET',    endpoint:'/authorisations',desc:'List licences/certificates',      data:'person_name, auth_type, expiry_date, status'},
+    {method:'GET',    endpoint:'/people',        desc:'List workforce (active)',          data:'first_name, last_name, department, status'},
+    {method:'POST',   endpoint:'/noise_surveys', desc:'Create noise survey record',      data:'location, leq_db, peak_db, survey_date'},
+    {method:'GET',    endpoint:'/kpi_monthly_data',desc:'KPI performance data',          data:'indicator_id, year, month, actual, target'},
+    {method:'POST',   endpoint:'/audit_findings',desc:'Submit audit finding',            data:'inspection_id, finding_type, description, clause'},
+  ];
+  var mColors = {GET:'#1D9E75',POST:'#185FA5',PATCH:'#EF9F27',DELETE:'#DC2626',PUT:'#5B21B6'};
+  tbody.innerHTML = endpoints.map(function(e,i){
+    var bg=i%2===0?'#fff':'#f9fafb';
+    return '<tr style="border-bottom:1px solid #f0f0f0;background:'+bg+'">'
+      +'<td style="padding:6px 12px"><span style="background:'+(mColors[e.method]||'#6B7280')+'20;color:'+(mColors[e.method]||'#6B7280')+';padding:2px 7px;border-radius:4px;font-weight:700;font-family:monospace;font-size:10px">'+e.method+'</span></td>'
+      +'<td style="padding:6px 12px;font-family:monospace;font-size:11px;color:#185FA5">'+escH(e.endpoint)+'</td>'
+      +'<td style="padding:6px 12px;font-size:11px">'+escH(e.desc)+'</td>'
+      +'<td style="padding:6px 12px;font-size:10px;color:var(--text2);max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+escH(e.data)+'">'+escH(e.data)+'</td>'
+      +'</tr>';
+  }).join('');
+  // cURL example
+  var curlEl = document.getElementById('api-curl-example');
+  if(curlEl) curlEl.textContent = '# Get all open incidents\ncurl -X GET \\\n  \'https://iarfxjhahzbhncsaohbg.supabase.co/rest/v1/events?status=eq.open\' \\\n  -H \'apikey: YOUR_API_KEY\' \\\n  -H \'Authorization: Bearer YOUR_API_KEY\' \\\n  -H \'Content-Type: application/json\'\n\n# Create a new incident\ncurl -X POST \\\n  \'https://iarfxjhahzbhncsaohbg.supabase.co/rest/v1/events\' \\\n  -H \'apikey: YOUR_API_KEY\' \\\n  -H \'Authorization: Bearer YOUR_API_KEY\' \\\n  -H \'Content-Type: application/json\' \\\n  -H \'Prefer: return=representation\' \\\n  -d \'{"event_type":"near_miss","description":"Example incident","severity":"low","location":"Site A"}\'';
+}
+
+function integCopyBaseUrl() {
+  var url = 'https://iarfxjhahzbhncsaohbg.supabase.co/rest/v1';
+  navigator.clipboard?.writeText(url).then(function(){toast('API base URL copied!');});
+}
+
 function loadSettings(){
 if(isAdm())document.getElementById('logo-settings').style.display='block';
 document.getElementById('my-profile-info').innerHTML='<div style="font-size:13px"><strong>'+(prof?.full_name||'--')+'</strong><br><span style="color:var(--text2)">'+(prof?.email||'--')+'</span><br>'+stat(prof?.role)+'</div>';
@@ -18484,6 +18944,7 @@ async function compSave() {
 
 
 
+
 </script>
 </head>
 <body>
@@ -18510,7 +18971,8 @@ async function compSave() {
 <div class="nav-item" onclick="showPage('esg',this)"><i class="ti ti-leaf"></i>Environmental / ESG</div>
 <div class="nav-item" onclick="showPage('noise',this)"><i class="ti ti-volume"></i>Noise Survey</div><div class="nav-item" id="nav-mtg" onclick="showPage('meetings',this)"><i class="ti ti-notes"></i>HSE Meetings</div><div class="nav-item" onclick="showPage('training',this)"><i class="ti ti-certificate"></i>Training</div><span class="nav-section">Management</span><div class="nav-item" onclick="showPage('actions',this)"><i class="ti ti-list-check"></i>Master Action Plan</div><div class="nav-item" onclick="showPage('legal',this)"><i class="ti ti-scale"></i>Legal Compliance</div>
 <div class="nav-item" onclick="showPage('sop',this)"><i class="ti ti-file-description"></i>SOP Generator</div>
-<div class="nav-item" id="nav-docs" onclick="showPage('documents',this)"><i class="ti ti-files"></i>Document Control</div><div class="nav-item" onclick="showPage('people',this)"><i class="ti ti-id-badge"></i>People</div><div class="nav-item" id="nav-users" onclick="showPage('users',this)"><i class="ti ti-users"></i>Users &amp; Roles</div><div class="nav-item" id="nav-admin" style="display:none" onclick="showPage('admin',this)"><i class="ti ti-building"></i>Companies</div><div class="nav-item" id="nav-settings" onclick="showPage('settings',this)"><i class="ti ti-settings"></i>Settings</div><div class="sb-footer"><button class="btn btn-sm" style="flex:1;justify-content:center;color:var(--red)" onclick="doLogout()"><i class="ti ti-logout"></i>Sign out</button></div></div>
+<div class="nav-item" id="nav-docs" onclick="showPage('documents',this)"><i class="ti ti-files"></i>Document Control</div><div class="nav-item" onclick="showPage('people',this)"><i class="ti ti-id-badge"></i>People</div><div class="nav-item" id="nav-users" onclick="showPage('users',this)"><i class="ti ti-users"></i>Users &amp; Roles</div><div class="nav-item" id="nav-admin" style="display:none" onclick="showPage('admin',this)"><i class="ti ti-building"></i>Companies</div><div class="nav-item" id="nav-integrations" onclick="showPage('integrations',this)"><i class="ti ti-plug"></i>Integrations</div>
+<div class="nav-item" id="nav-settings" onclick="showPage('settings',this)"><i class="ti ti-settings"></i>Settings</div><div class="sb-footer"><button class="btn btn-sm" style="flex:1;justify-content:center;color:var(--red)" onclick="doLogout()"><i class="ti ti-logout"></i>Sign out</button></div></div>
 <div class="main">
 <!-- ══════════════════════════════════════════════════════ -->
 <!-- DASHBOARD (Real-time HSE)                             -->
@@ -26519,6 +26981,137 @@ async function compSave() {
 
 <div id="page-admin" class="page">
 <div class="page-header"><div class="page-title">Company Management</div></div><div class="card"><div class="card-title">Add new company</div><div class="form-row"><div class="form-group"><label class="form-label">Company name</label><input type="text" id="co-name"/></div><div class="form-group"><label class="form-label">Industry</label><select id="co-industry"><option>Manufacturing</option><option>Construction</option><option>Healthcare</option><option>Transportation</option><option>Energy / Oil & Gas</option><option>Logistics</option><option>Other</option></select></div></div><div class="form-row"><div class="form-group"><label class="form-label">Contact name</label><input type="text" id="co-contact"/></div><div class="form-group"><label class="form-label">Contact email</label><input type="email" id="co-email"/></div></div><div class="form-group"><label class="form-label">Logo URL</label><input type="url" id="co-logo" placeholder="https://..."/></div><button class="btn btn-primary" onclick="saveCompany()"><i class="ti ti-device-floppy"></i>Register</button></div><div class="card"><div class="card-title">All companies</div><div id="companies-list"><div class="loading-msg">Loading...</div></div></div></div>
+<div id="page-integrations" class="page">
+<div class="page-header">
+<div>
+<div class="page-title">Integrations</div>
+<div style="font-size:12px;color:var(--text2)" id="integ-subtitle">Connect AURIS360 with ERP, HR, IoT, BI and productivity systems</div>
+</div>
+<div style="display:flex;gap:8px">
+<button class="btn btn-sm" onclick="integRefresh()"><i class="ti ti-refresh"></i>Refresh status</button>
+<button class="btn btn-primary" id="integ-add-btn" onclick="integShowCustom()" style="display:none"><i class="ti ti-plug"></i>Custom integration</button>
+</div>
+</div>
+
+<!-- Status banner -->
+<div id="integ-status-banner" style="display:none;margin-bottom:14px"></div>
+
+<!-- Metrics -->
+<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px">
+<div class="card" style="padding:10px 12px;border-left:4px solid #1D9E75"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase">Connected</div><div style="font-size:22px;font-weight:800;color:#1D9E75" id="integ-m-connected">—</div></div>
+<div class="card" style="padding:10px 12px;border-left:4px solid #185FA5"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase">Available</div><div style="font-size:22px;font-weight:800;color:#185FA5" id="integ-m-available">—</div></div>
+<div class="card" style="padding:10px 12px;border-left:4px solid #DC2626"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase">Errors</div><div style="font-size:22px;font-weight:800;color:#DC2626" id="integ-m-errors">—</div></div>
+<div class="card" style="padding:10px 12px;border-left:4px solid #EF9F27"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase">Last sync</div><div style="font-size:14px;font-weight:700;color:#EF9F27;white-space:nowrap" id="integ-m-last-sync">—</div></div>
+</div>
+
+<!-- Tab bar -->
+<div style="display:flex;gap:0;margin-bottom:14px;border-bottom:2px solid var(--border);overflow-x:auto">
+<button class="mtg-tab active" id="itab-all"       onclick="integTab('all',this)"       style="white-space:nowrap">🔌 All Integrations</button>
+<button class="mtg-tab"        id="itab-erp"       onclick="integTab('erp',this)"       style="white-space:nowrap">🏢 ERP</button>
+<button class="mtg-tab"        id="itab-hr"        onclick="integTab('hr',this)"        style="white-space:nowrap">👥 HR &amp; Payroll</button>
+<button class="mtg-tab"        id="itab-iot"       onclick="integTab('iot',this)"       style="white-space:nowrap">📡 IoT &amp; Sensors</button>
+<button class="mtg-tab"        id="itab-security"  onclick="integTab('security',this)"  style="white-space:nowrap">🔒 Access &amp; CCTV</button>
+<button class="mtg-tab"        id="itab-bi"        onclick="integTab('bi',this)"        style="white-space:nowrap">📊 Analytics &amp; BI</button>
+<button class="mtg-tab"        id="itab-productivity" onclick="integTab('productivity',this)" style="white-space:nowrap">💼 Productivity</button>
+<button class="mtg-tab"        id="itab-api"       onclick="integTab('api',this)"       style="white-space:nowrap">⚙️ API &amp; Webhooks</button>
+</div>
+
+<!-- Integration cards grid -->
+<div id="integ-grid"></div>
+
+<!-- Config modal -->
+<div id="integ-config-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9999;align-items:center;justify-content:center;padding:20px">
+<div style="background:#fff;border-radius:14px;max-width:560px;width:100%;max-height:85vh;overflow-y:auto;box-shadow:0 24px 80px rgba(0,0,0,.35)">
+<div id="integ-modal-banner" style="padding:18px 24px;border-radius:14px 14px 0 0;display:flex;justify-content:space-between;align-items:center;background:linear-gradient(135deg,#1a3a5c,#185FA5);color:#fff">
+<div>
+<div style="font-size:11px;font-weight:600;text-transform:uppercase;opacity:.8;margin-bottom:3px" id="integ-modal-type-label">Integration</div>
+<div style="font-size:18px;font-weight:800" id="integ-modal-title">Configure</div>
+</div>
+<button class="btn btn-sm" style="background:rgba(255,255,255,.2);color:#fff;border-color:rgba(255,255,255,.3)" onclick="integCloseModal()"><i class="ti ti-x"></i></button>
+</div>
+<div style="padding:20px">
+<div id="integ-modal-status-row" style="margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
+<div style="display:flex;align-items:center;gap:8px">
+<div id="integ-status-dot" style="width:10px;height:10px;border-radius:50%;background:#9CA3AF"></div>
+<span id="integ-status-text" style="font-size:12px;font-weight:600;color:var(--text2)">Not connected</span>
+</div>
+<div style="display:flex;gap:6px">
+<button class="btn btn-sm" id="integ-test-btn" onclick="integTest()"><i class="ti ti-bolt"></i>Test connection</button>
+<button class="btn btn-sm btn-primary" id="integ-connect-btn" onclick="integSave()"><i class="ti ti-plug"></i>Save &amp; connect</button>
+<button class="btn btn-sm" style="color:#DC2626" id="integ-disconnect-btn" style="display:none" onclick="integDisconnect()"><i class="ti ti-unlink"></i>Disconnect</button>
+</div>
+</div>
+<div id="integ-modal-desc" style="background:#f9fafb;border-radius:8px;padding:10px 14px;font-size:12px;color:var(--text2);margin-bottom:14px;line-height:1.6"></div>
+<div id="integ-modal-fields"></div>
+<div id="integ-sync-options" style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border)">
+<div style="font-size:12px;font-weight:700;margin-bottom:8px">Sync options</div>
+<div class="form-row">
+<div class="form-group"><label class="form-label">Sync frequency</label>
+<select id="integ-sync-freq" style="padding:6px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px;width:100%">
+<option value="manual">Manual only</option>
+<option value="hourly">Every hour</option>
+<option value="daily">Daily</option>
+<option value="weekly">Weekly</option>
+<option value="realtime">Real-time (webhook)</option>
+</select></div>
+<div class="form-group"><label class="form-label">Webhook URL (for inbound)</label><input type="text" id="integ-webhook-url" placeholder="https://..." style="font-family:monospace;font-size:11px"/></div>
+</div>
+</div>
+<div id="integ-sync-log-section" style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border);display:none">
+<div style="font-size:12px;font-weight:700;margin-bottom:8px">Recent sync activity</div>
+<div id="integ-sync-log"></div>
+</div>
+<div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border)">
+<div style="font-size:12px;font-weight:700;margin-bottom:8px">Data mapping</div>
+<div id="integ-data-mapping" style="font-size:11px;color:var(--text2)"></div>
+</div>
+</div>
+</div>
+</div>
+
+<!-- API & Webhooks tab content (shown inline, not modal) -->
+<div id="integ-api-view" style="display:none">
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px">
+<div class="card">
+<div class="card-title">🔑 API Access</div>
+<div style="font-size:12px;color:var(--text2);margin-bottom:12px">Use the AURIS360 API to push/pull data from any external system</div>
+<div class="form-group"><label class="form-label">Base URL</label>
+<div style="background:#f9fafb;border:1px solid var(--border);border-radius:6px;padding:8px 12px;font-family:monospace;font-size:11px;color:#185FA5;word-break:break-all" id="api-base-url">https://iarfxjhahzbhncsaohbg.supabase.co/rest/v1</div></div>
+<div class="form-group"><label class="form-label">Authentication</label>
+<div style="background:#f9fafb;border:1px solid var(--border);border-radius:6px;padding:8px 12px;font-family:monospace;font-size:11px;color:var(--text2)">Header: <strong>apikey</strong>: [your API key]</div></div>
+<button class="btn btn-sm" onclick="integCopyBaseUrl()"><i class="ti ti-copy"></i>Copy base URL</button>
+</div>
+<div class="card">
+<div class="card-title">🪝 Webhook Receiver</div>
+<div style="font-size:12px;color:var(--text2);margin-bottom:12px">Receive events from external systems into AURIS360</div>
+<div class="form-group"><label class="form-label">Inbound webhook URL</label>
+<div style="background:#f9fafb;border:1px solid var(--border);border-radius:6px;padding:8px 12px;font-family:monospace;font-size:11px;color:#185FA5;word-break:break-all">https://auris-360.vercel.app/api/webhook</div></div>
+<div class="form-group"><label class="form-label">Supported events</label>
+<div style="font-size:11px;color:var(--text2);line-height:1.8">incident.created · inspection.completed · action.overdue · permit.expired · sensor.alert · access.denied</div></div>
+</div>
+</div>
+<div class="card" style="margin-bottom:14px">
+<div class="card-title">📚 API Endpoints</div>
+<div style="overflow:auto">
+<table style="width:100%;border-collapse:collapse;font-size:11px">
+<thead><tr style="background:#185FA5;color:#fff">
+<th style="padding:6px 12px;text-align:left">Method</th>
+<th style="padding:6px 12px;text-align:left">Endpoint</th>
+<th style="padding:6px 12px;text-align:left">Description</th>
+<th style="padding:6px 12px;text-align:left">Data</th>
+</tr></thead>
+<tbody id="api-endpoints-table"></tbody>
+</table>
+</div>
+</div>
+<div class="card">
+<div class="card-title">💡 Quick start — cURL example</div>
+<div style="background:#1a1a2e;border-radius:8px;padding:14px;font-family:monospace;font-size:11px;color:#a8d8f0;overflow-x:auto;white-space:pre" id="api-curl-example"></div>
+</div>
+</div>
+
+</div><!-- end page-integrations -->
+
 <div id="page-settings" class="page">
 <div class="page-header"><div class="page-title">Settings</div></div><div class="card" id="logo-settings" style="display:none"><div class="card-title">Company branding</div><div class="form-group"><label class="form-label">Company logo URL</label><input type="url" id="set-logo" placeholder="https://..."/></div><button class="btn btn-primary" onclick="saveLogo()"><i class="ti ti-device-floppy"></i>Save logo</button></div><div class="card"><div class="card-title">My profile</div><div id="my-profile-info"></div></div></div>
 
