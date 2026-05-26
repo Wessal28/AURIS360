@@ -280,6 +280,7 @@
 
 
 
+
 const SB='https://iarfxjhahzbhncsaohbg.supabase.co';
 const KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlhcmZ4amhhaHpiaG5jc2FvaGJnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg2OTM1MzAsImV4cCI6MjA5NDI2OTUzMH0.qSjahuX-RwnjWEDmo-LkcorAxpsmyVoaXt4AO4_A9BM';
 let tok=null,prof=null,co=null,chkItems=[],people=[];
@@ -1572,6 +1573,7 @@ async function authOnSignIn(authData) {
   if(aiPanel) aiPanel.style.display='block';
   document.getElementById('page-dashboard').style.display='block';
   applyRoles();
+  sbInitRoleSelect();
   await loadPeopleCache();
   loadDash();
   setTimeout(function(){genDashAI();}, 3000);
@@ -21371,6 +21373,36 @@ window.addEventListener('resize', function() {
 
 
 
+
+
+// ── Quick role changer (sidebar) ──────────────────────────────────────────────
+async function sbChangeRole() {
+  var sel = document.getElementById('sb-role-select');
+  var newRole = sel?.value;
+  if(!newRole || !prof?.id) { toast('Please log in first', false); return; }
+  try {
+    await api('/profiles?id=eq.'+prof.id, {m:'PATCH', p:'return=minimal', b:{role:newRole, updated_at:new Date().toISOString()}});
+    prof.role = newRole;
+    // Update sidebar display
+    var roleEl = document.getElementById('sb-role');
+    if(roleEl) {
+      var rc = typeof HSE_ROLES!=='undefined' ? HSE_ROLES[newRole] : null;
+      roleEl.textContent = rc ? rc.emoji+' '+rc.label : newRole.replace(/_/g,' ');
+    }
+    applyRoles();
+    toast('✓ Role changed to '+newRole+' — refreshing...');
+    setTimeout(function() { window.location.reload(); }, 1200);
+  } catch(e) {
+    toast('Error: '+e.message, false);
+  }
+}
+
+// Pre-select current role in the sidebar role selector
+function sbInitRoleSelect() {
+  var sel = document.getElementById('sb-role-select');
+  if(sel && prof?.role) sel.value = prof.role;
+}
+
 </script>
 </head>
 <body>
@@ -21519,7 +21551,22 @@ window.addEventListener('resize', function() {
 
 <div id="app" style="display:none">
 <div class="layout">
-<div class="sidebar"><div class="sidebar-top"><img id="co-logo-img" class="co-logo" src="" alt="logo"/><div id="co-initials-div" class="co-initials">A</div><div class="sb-company" id="sb-company">AURIS360</div><div class="sb-user" id="sb-user">—</div><span class="sb-role" id="sb-role">—</span></div><span class="nav-section">Main</span><div class="nav-item active" onclick="showPage('dashboard',this)"><i class="ti ti-layout-dashboard"></i>Dashboard</div>
+<div class="sidebar"><div class="sidebar-top"><img id="co-logo-img" class="co-logo" src="" alt="logo"/><div id="co-initials-div" class="co-initials">A</div><div class="sb-company" id="sb-company">AURIS360</div><div class="sb-user" id="sb-user">—</div><span class="sb-role" id="sb-role">—</span></div><div id="sb-role-changer" style="padding:8px 20px;border-bottom:1px solid var(--border);display:flex;gap:6px;align-items:center">
+<select id="sb-role-select" style="flex:1;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:11px" onchange="">
+<option value="employee">👤 Employee</option>
+<option value="contractor">🦺 Contractor</option>
+<option value="supervisor">👷 Supervisor</option>
+<option value="site_manager">🏗️ Site Manager</option>
+<option value="hse_manager">🛡️ HSE Manager</option>
+<option value="auditor">🔍 Auditor</option>
+<option value="hr">👩 HR</option>
+<option value="executive">📊 Executive</option>
+<option value="admin">🔑 Admin</option>
+<option value="sephs_admin">⭐ SEPHS Admin</option>
+</select>
+<button class="btn btn-sm" style="flex-shrink:0;padding:4px 8px;font-size:10px" onclick="sbChangeRole()">Apply</button>
+</div>
+<span class="nav-section">Main</span><div class="nav-item active" onclick="showPage('dashboard',this)"><i class="ti ti-layout-dashboard"></i>Dashboard</div>
 <div class="nav-item" id="nav-executive" onclick="showPage('executive',this)"><i class="ti ti-chart-bar"></i>Executive Dashboard</div><div class="nav-item" id="nav-ai" onclick="showPage('ai-insights',this)"><i class="ti ti-brain"></i>AI Insights</div><span class="nav-section">HSE Modules</span><div class="nav-item" onclick="showPage('kpi',this)"><i class="ti ti-target"></i>Objectives & KPIs</div><div class="nav-item" onclick="showPage('workschedule',this)"><i class="ti ti-calendar-event"></i>Work Schedule</div>
 <div class="nav-item" onclick="showPage('events',this)"><i class="ti ti-alert-triangle"></i>Incident Management</div><div class="nav-item" onclick="showPage('observation',this)"><i class="ti ti-eye"></i>BBS Observations</div>
 <div class="nav-item" onclick="showPage('inspection',this)"><i class="ti ti-clipboard-check"></i>Audits &amp; Inspections</div><div class="nav-item" onclick="showPage('risk',this)"><i class="ti ti-shield-check"></i>Risk Assessment</div><div class="nav-item" onclick="showPage('tools',this)"><i class="ti ti-tools"></i>Tools & Equipment</div>
