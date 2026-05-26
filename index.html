@@ -49,23 +49,27 @@
 @keyframes spin{to{transform:rotate(360deg)}}
 
 
-/* ── MOBILE RESPONSIVE LAYOUT ─────────────────────────────── */
 
-/* Mobile top bar (hidden on desktop) */
+/* ══════════════════════════════════════════════════════════
+   MOBILE RESPONSIVE LAYOUT — Complete rewrite
+   ════════════════════════════════════════════════════════ */
+
+/* Mobile top bar */
 #mobile-topbar {
   display: none;
   position: fixed;
   top: 0; left: 0; right: 0;
-  height: 54px;
+  height: 52px;
   background: var(--card);
   border-bottom: 1px solid var(--border);
   z-index: 200;
   align-items: center;
-  padding: 0 16px;
-  gap: 12px;
+  padding: 0 14px;
+  gap: 10px;
+  box-shadow: 0 1px 8px rgba(0,0,0,.06);
 }
 #mobile-topbar .mobile-logo {
-  font-size: 16px;
+  font-size: 17px;
   font-weight: 800;
   color: var(--green);
   flex: 1;
@@ -75,134 +79,194 @@
   background: none;
   border: none;
   cursor: pointer;
-  padding: 6px;
+  padding: 8px;
   color: var(--text);
   border-radius: 8px;
   display: flex;
   align-items: center;
   justify-content: center;
+  -webkit-tap-highlight-color: transparent;
 }
-#mobile-menu-btn:active { background: var(--bg); }
 
 /* Sidebar overlay backdrop */
 #sidebar-backdrop {
   display: none;
   position: fixed;
   inset: 0;
-  background: rgba(0,0,0,.45);
+  background: rgba(0,0,0,.5);
   z-index: 299;
+  -webkit-tap-highlight-color: transparent;
 }
 
 @media (max-width: 768px) {
-  /* Show mobile top bar */
+
+  /* ── Show mobile top bar ── */
   #mobile-topbar { display: flex !important; }
 
-  /* Push main content down to clear top bar */
-  .main { padding-top: 54px !important; }
+  /* ── Main layout: stack vertically ── */
+  .layout {
+    display: flex !important;
+    flex-direction: column !important;
+    height: 100vh !important;
+    overflow: hidden !important;
+  }
 
-  /* Sidebar becomes a slide-in drawer */
+  /* ── Sidebar: slide-in drawer ── */
   .sidebar {
     position: fixed !important;
-    top: 0; left: 0; bottom: 0;
-    width: 280px !important;
-    min-width: 280px !important;
-    z-index: 300;
-    transform: translateX(-100%);
-    transition: transform .25s cubic-bezier(.4,0,.2,1);
-    box-shadow: 4px 0 24px rgba(0,0,0,.15);
+    top: 0 !important;
+    left: 0 !important;
+    bottom: 0 !important;
+    width: 82vw !important;
+    max-width: 300px !important;
+    min-width: unset !important;
+    z-index: 300 !important;
+    transform: translateX(-110%) !important;
+    transition: transform .28s cubic-bezier(.4,0,.2,1) !important;
+    box-shadow: 4px 0 24px rgba(0,0,0,.18) !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch !important;
   }
   .sidebar.open {
-    transform: translateX(0);
+    transform: translateX(0) !important;
   }
   .sidebar-backdrop-active {
     display: block !important;
   }
 
-  /* Layout: full width main, no side-by-side */
-  .layout { display: block !important; }
+  /* ── Main content: scrollable, below topbar ── */
+  .main {
+    flex: 1 !important;
+    width: 100% !important;
+    height: calc(100vh - 52px) !important;
+    margin-top: 52px !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    -webkit-overflow-scrolling: touch !important;
+    padding-top: 0 !important;
+  }
 
-  /* Full-width pages */
-  .page { min-width: 0 !important; }
+  /* ── Pages ── */
+  .page {
+    padding: 14px 12px 80px !important;
+    min-height: auto !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  /* ── Page header ── */
   .page-header {
     flex-direction: column !important;
     align-items: flex-start !important;
     gap: 10px !important;
-    padding: 14px 16px !important;
+    margin-bottom: 14px !important;
+    padding: 0 !important;
   }
-  .page-title { font-size: 18px !important; }
-
-  /* Cards full width */
-  .card { margin-left: 0 !important; margin-right: 0 !important; }
-
-  /* Grids go single column on small screens */
-  [style*="grid-template-columns:repeat(3"],
-  [style*="grid-template-columns:repeat(4"],
-  [style*="grid-template-columns:repeat(5"],
-  [style*="grid-template-columns:repeat(6"] {
-    grid-template-columns: 1fr 1fr !important;
+  .page-title { font-size: 19px !important; line-height: 1.2 !important; }
+  .page-header > div:last-child {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 6px !important;
+    width: 100% !important;
   }
 
-  /* Tables: allow horizontal scroll */
-  table { font-size: 11px !important; }
-  .card > div > table { min-width: 500px; }
+  /* ── Cards ── */
+  .card {
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+    border-radius: 10px !important;
+  }
 
-  /* Form rows stack on mobile */
+  /* ── Tabs: horizontal scroll ── */
+  .mtg-tab {
+    padding: 8px 12px !important;
+    font-size: 11px !important;
+    white-space: nowrap !important;
+    flex-shrink: 0 !important;
+  }
+
+  /* ── Form rows: single column ── */
   .form-row {
+    display: flex !important;
     flex-direction: column !important;
     gap: 0 !important;
   }
+  .form-group { margin-bottom: 10px !important; }
 
-  /* Login screen: smaller padding */
+  /* ── Tables: horizontal scroll container ── */
+  .card { overflow-x: auto !important; }
+  table { font-size: 11px !important; min-width: 480px !important; }
+
+  /* ── Inline grids → 2 col on mobile ── */
+  .dash-grid-6 { grid-template-columns: 1fr 1fr !important; }
+
+  /* ── Buttons: bigger tap targets ── */
+  .btn { min-height: 36px !important; }
+  .btn-sm { min-height: 30px !important; }
+
+  /* ── Login box ── */
   .login-box {
-    padding: 24px 20px !important;
+    padding: 28px 20px !important;
     width: calc(100vw - 32px) !important;
-    max-width: 380px !important;
+    max-width: 400px !important;
   }
 
-  /* Tabs: scrollable horizontal */
-  [style*="border-bottom:2px solid var(--border)"] > button.mtg-tab {
-    padding: 8px 12px !important;
-    font-size: 11px !important;
-  }
-
-  /* AI floating panel: full width bottom sheet */
+  /* ── AI floating panel: bottom sheet ── */
   .ai-panel {
     width: 100% !important;
-    height: 60vh !important;
+    height: 65vh !important;
     bottom: 0 !important;
     right: 0 !important;
     left: 0 !important;
-    border-radius: 16px 16px 0 0 !important;
-  }
-
-  /* Modal: full screen */
-  #adm-company-modal .login-box,
-  #adm-site-modal .login-box,
-  [style*="max-width:560px"],
-  [style*="max-width:480px"] {
+    border-radius: 20px 20px 0 0 !important;
     max-width: 100% !important;
-    margin: 0 !important;
   }
 
-  /* PWA install button */
+  /* ── Modals: full screen ── */
+  #adm-company-modal > div,
+  #adm-site-modal > div,
+  #integ-config-modal > div,
+  #user-edit-modal > div {
+    width: 100% !important;
+    max-width: 100% !important;
+    max-height: 92vh !important;
+    margin: 0 !important;
+    border-radius: 16px 16px 0 0 !important;
+    position: fixed !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+  }
+
+  /* ── Modals: align to bottom ── */
+  #adm-company-modal,
+  #adm-site-modal,
+  #integ-config-modal,
+  #user-edit-modal {
+    align-items: flex-end !important;
+    padding: 0 !important;
+  }
+
+  /* ── Hide print btn ── */
+  .print-btn { display: none !important; }
+
+  /* ── PWA install ── */
   #pwa-install-btn { display: flex !important; }
 
-  /* Print button: hide on mobile */
-  .print-btn { display: none !important; }
+  /* ── Role changer in sidebar ── */
+  #sb-role-changer {
+    padding: 8px 14px !important;
+  }
 }
 
 @media (max-width: 480px) {
-  /* Very small screens: single column grids */
-  [style*="grid-template-columns:repeat(2"],
-  [style*="grid-template-columns:1fr 1fr"] {
+  .page { padding: 10px 10px 80px !important; }
+  .page-title { font-size: 17px !important; }
+
+  /* Single column grids on very small phones */
+  .dash-grid-3,
+  .dash-grid-4 {
     grid-template-columns: 1fr !important;
-  }
-  .page-header > div:last-child {
-    width: 100% !important;
-  }
-  .page-header > div:last-child button {
-    width: 100% !important;
-    justify-content: center !important;
   }
 }
 </style>
@@ -1775,8 +1839,11 @@ if(L[name])L[name]();
 // Mobile: close sidebar and scroll to top
 if(window.innerWidth<=768){
   if(typeof mobileCloseSidebar==='function') mobileCloseSidebar();
+  // Scroll the main content area to top
   var mainEl=document.querySelector('.main');
-  if(mainEl) mainEl.scrollTop=0;
+  if(mainEl){ mainEl.scrollTop=0; mainEl.scrollLeft=0; }
+  // Also scroll the window
+  window.scrollTo(0,0);
 }
 }
 function toggleForm(id){const el=document.getElementById(id);el.style.display=el.style.display==='none'?'block':'none';}
@@ -21329,39 +21396,35 @@ window.addEventListener('offline', function() {
 
 // ── Mobile sidebar toggle ────────────────────────────────────────────────────
 function mobileToggleSidebar() {
-  var sidebar   = document.querySelector('.sidebar');
-  var backdrop  = document.getElementById('sidebar-backdrop');
-  var menuBtn   = document.getElementById('mobile-menu-btn');
-  var isOpen    = sidebar.classList.contains('open');
-  if(isOpen) {
-    mobileCloseSidebar();
-  } else {
-    sidebar.classList.add('open');
-    backdrop.classList.add('sidebar-backdrop-active');
-    if(menuBtn) menuBtn.querySelector('i').className = 'ti ti-x';
-    document.body.style.overflow = 'hidden';
-  }
+  var sidebar  = document.querySelector('.sidebar');
+  var backdrop = document.getElementById('sidebar-backdrop');
+  var menuBtn  = document.getElementById('mobile-menu-btn');
+  if(!sidebar) return;
+  var isOpen = sidebar.classList.contains('open');
+  if(isOpen) { mobileCloseSidebar(); return; }
+  sidebar.classList.add('open');
+  if(backdrop) backdrop.style.display='block';
+  var icon = menuBtn?.querySelector('i');
+  if(icon) icon.className='ti ti-x';
 }
 
 function mobileCloseSidebar() {
   var sidebar  = document.querySelector('.sidebar');
   var backdrop = document.getElementById('sidebar-backdrop');
   var menuBtn  = document.getElementById('mobile-menu-btn');
+  if(!sidebar) return;
   sidebar.classList.remove('open');
-  backdrop.classList.remove('sidebar-backdrop-active');
-  if(menuBtn) menuBtn.querySelector('i').className = 'ti ti-menu-2';
-  document.body.style.overflow = '';
+  if(backdrop) backdrop.style.display='none';
+  var icon = menuBtn?.querySelector('i');
+  if(icon) icon.className='ti ti-menu-2';
 }
 
-// Auto-close sidebar on nav item click (mobile)
-document.addEventListener('DOMContentLoaded', function() {
-  document.querySelectorAll('.nav-item').forEach(function(item) {
-    item.addEventListener('click', function() {
-      if(window.innerWidth <= 768) {
-        setTimeout(mobileCloseSidebar, 150);
-      }
-    });
-  });
+// Auto-close sidebar on nav item click (mobile) - use event delegation
+document.addEventListener('click', function(e) {
+  var navItem = e.target.closest('.nav-item');
+  if(navItem && window.innerWidth <= 768) {
+    setTimeout(mobileCloseSidebar, 200);
+  }
 });
 
 // Close sidebar on resize to desktop
