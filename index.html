@@ -417,6 +417,8 @@ input[type="button"], input[type="submit"] {
 
 
 
+
+
 const SB='https://iarfxjhahzbhncsaohbg.supabase.co';
 const KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlhcmZ4amhhaHpiaG5jc2FvaGJnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg2OTM1MzAsImV4cCI6MjA5NDI2OTUzMH0.qSjahuX-RwnjWEDmo-LkcorAxpsmyVoaXt4AO4_A9BM';
 let tok=null,prof=null,co=null,chkItems=[],people=[];
@@ -21819,6 +21821,142 @@ window.addEventListener('load', function() {
 });
 
 
+
+
+// ═══════════════════════════════════════════════════════════
+// EMAIL NOTIFICATIONS — Settings, queue display, test send
+// ═══════════════════════════════════════════════════════════
+
+async function loadNotifSettings() {
+  var el = document.getElementById('notif-settings-body');
+  if (!el) return;
+  el.innerHTML = '<div class="loading">Loading...</div>';
+  try {
+    var rows = await api('/notification_settings?company_id=eq.' + prof.company_id + '&limit=1');
+    var s = rows && rows[0] ? rows[0] : {};
+    var queue = await api('/notification_queue?company_id=eq.' + prof.company_id + '&order=created_at.desc&limit=10');
+    el.innerHTML = renderNotifSettings(s, queue || []);
+  } catch(e) {
+    el.innerHTML = '<div style="color:var(--red);padding:12px">Error loading settings: ' + escH(e.message) + '</div>';
+  }
+}
+
+function renderNotifSettings(s, queue) {
+  var fields = [
+    {id:'email_enabled',           val: s.email_enabled !== false,           label:'Email notifications enabled'},
+    {id:'notify_on_incident',      val: s.notify_on_incident !== false,      label:'Notify on new incident (HSE managers + admins)'},
+    {id:'notify_on_permit',        val: s.notify_on_permit !== false,        label:'Notify permit requester on status change'},
+    {id:'notify_on_overdue',       val: s.notify_on_overdue !== false,       label:'Daily digest of overdue actions'},
+    {id:'notify_on_investigation', val: s.notify_on_investigation !== false, label:'Notify investigator when assigned'},
+    {id:'notify_on_audit',         val: s.notify_on_audit !== false,         label:'Notify participants when audit scheduled'},
+  ];
+
+  var togglesHtml = fields.map(function(f) {
+    var bg  = f.val ? 'var(--green)' : 'var(--border)';
+    var dot = f.val ? '22px' : '2px';
+    return '<label style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);cursor:pointer">'
+      + '<div data-field="' + f.id + '" class="notif-toggle" style="width:44px;height:24px;border-radius:12px;background:' + bg + ';position:relative;cursor:pointer;transition:background .2s;flex-shrink:0">'
+      + '<div class="notif-dot" style="width:20px;height:20px;border-radius:50%;background:#fff;position:absolute;top:2px;left:' + dot + ';transition:left .2s;box-shadow:0 1px 3px rgba(0,0,0,.2)"></div></div>'
+      + '<span style="font-size:13px;color:var(--text)">' + f.label + '</span></label>';
+  }).join('');
+
+  var recentRows = queue.length ? queue.map(function(n) {
+    var color = n.status === 'sent' ? 'var(--green)' : n.status === 'failed' ? 'var(--red)' : 'var(--text2)';
+    return '<tr>'
+      + '<td style="padding:8px 10px">' + escH((n.subject||'').substring(0,50)) + '</td>'
+      + '<td style="padding:8px 10px">' + escH(n.to_email||'') + '</td>'
+      + '<td style="padding:8px 10px"><span style="color:' + color + ';font-weight:600;font-size:12px">'
+      + (n.status||'').toUpperCase() + '</span></td>'
+      + '<td style="padding:8px 10px;color:var(--text2);font-size:11px">'
+      + (n.created_at ? new Date(n.created_at).toLocaleString() : '') + '</td>'
+      + '</tr>';
+  }).join('') : '<tr><td colspan="4" style="padding:16px;text-align:center;color:var(--text2)">No notifications yet</td></tr>';
+
+  return '<div class="form-row" style="margin-bottom:16px">'
+    + '<div class="form-group"><label class="form-label">From Email Address</label>'
+    + '<input type="email" id="notif-from-email" value="' + escH(s.from_email||'noreply@auris360.app') + '" placeholder="noreply@yourdomain.com"/></div>'
+    + '<div class="form-group"><label class="form-label">Resend API Key</label>'
+    + '<input type="password" id="notif-resend-key" value="' + escH(s.resend_api_key||'') + '" placeholder="re_xxxxxxxxxxxx"/></div>'
+    + '</div>'
+    + '<div id="notif-toggles" style="margin-bottom:16px">' + togglesHtml + '</div>'
+    + '<div style="display:flex;gap:10px;margin-bottom:20px">'
+    + '<button class="btn btn-primary" onclick="saveNotifSettings()"><i class="ti ti-device-floppy"></i>Save Settings</button>'
+    + '<button class="btn" onclick="sendTestEmail()"><i class="ti ti-mail"></i>Send Test Email</button>'
+    + '</div>'
+    + '<div style="font-size:13px;font-weight:600;margin-bottom:10px">Recent Notifications</div>'
+    + '<div style="overflow-x:auto"><table style="width:100%;font-size:12px;min-width:500px">'
+    + '<thead><tr style="border-bottom:2px solid var(--border)">'
+    + '<th style="padding:8px 10px;text-align:left">Subject</th><th style="padding:8px 10px;text-align:left">To</th>'
+    + '<th style="padding:8px 10px;text-align:left">Status</th><th style="padding:8px 10px;text-align:left">Time</th>'
+    + '</tr></thead><tbody>' + recentRows + '</tbody></table></div>';
+}
+
+
+var _notifToggles = {};
+function notifToggle(el, field) {}  // legacy - see event delegation below
+
+// Event delegation for notification toggles
+document.addEventListener('click', function(e) {
+  var toggle = e.target.closest('.notif-toggle');
+  if (!toggle) return;
+  var field = toggle.getAttribute('data-field');
+  if (!field) return;
+  if (!_notifToggles) _notifToggles = {};
+  var isOn = toggle.style.background.includes('1D9E75') || toggle.style.background === 'var(--green)';
+  var newVal = !isOn;
+  _notifToggles[field] = newVal;
+  toggle.style.background = newVal ? 'var(--green)' : 'var(--border)';
+  var dot = toggle.querySelector('.notif-dot');
+  if (dot) dot.style.left = newVal ? '22px' : '2px';
+});
+
+async function saveNotifSettings() {
+  var fromEmail = document.getElementById('notif-from-email')?.value?.trim();
+  var resendKey = document.getElementById('notif-resend-key')?.value?.trim();
+  var updates = { from_email: fromEmail, resend_api_key: resendKey, updated_at: new Date().toISOString() };
+  Object.assign(updates, _notifToggles || {});
+  try {
+    var existing = await api('/notification_settings?company_id=eq.' + prof.company_id + '&limit=1');
+    if (existing && existing[0]) {
+      await api('/notification_settings?company_id=eq.' + prof.company_id, {m:'PATCH', p:'return=minimal', b:updates});
+    } else {
+      updates.company_id = prof.company_id;
+      await api('/notification_settings', {m:'POST', p:'return=minimal', b:updates});
+    }
+    toast('✓ Notification settings saved');
+    _notifToggles = {};
+  } catch(e) {
+    toast('Error: ' + e.message, false);
+  }
+}
+
+async function sendTestEmail() {
+  var fromEmail = document.getElementById('notif-from-email')?.value?.trim() || 'noreply@auris360.app';
+  var resendKey = document.getElementById('notif-resend-key')?.value?.trim();
+  if (!resendKey) { toast('Please enter your Resend API key first', false); return; }
+  if (!prof?.email) { toast('No email on your profile', false); return; }
+  try {
+    var r = await fetch('https://api.resend.com/emails', {
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer ' + resendKey},
+      body: JSON.stringify({
+        from: 'AURIS360 <' + fromEmail + '>',
+        to: [prof.email],
+        subject: 'AURIS360 Test Email',
+        html: '<div style="font-family:Arial,sans-serif;padding:24px;max-width:500px">'
+          + '<div style="background:#1D9E75;padding:16px;color:#fff;border-radius:8px 8px 0 0;font-size:18px;font-weight:700">AURIS360</div>'
+          + '<div style="padding:20px;border:1px solid #e5e7eb;border-top:none;border-radius:0 0 8px 8px">'
+          + '<p>✅ Your email notifications are working correctly!</p>'
+          + '<p style="color:#6b7280;font-size:13px">This test was sent from AURIS360 by SEPHS Consulting.</p>'
+          + '</div></div>'
+      })
+    });
+    if (r.ok) toast('✓ Test email sent to ' + prof.email);
+    else { var d = await r.json(); toast('Error: ' + (d.message||'Send failed'), false); }
+  } catch(e) { toast('Error: ' + e.message, false); }
+}
+
+
 </script>
 </head>
 <body>
@@ -30756,6 +30894,20 @@ I can help you:<br>
 </div>
 </div>
 <div class="ai-panel" id="ai-panel" style="display:none"><div class="ai-window" id="ai-window"><div class="ai-header"><div style="width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;font-size:18px"><i class="ti ti-brain" style="color:#fff"></i></div><div style="font-size:11px;color:rgba(255,255,255,.8)">Powered by Claude AI</div><button class="ai-close" onclick="document.getElementById('ai-window').classList.remove('open')"><i class="ti ti-x"></i></button></div><div class="ai-messages" id="ai-messages"></div><div class="ai-suggestions" id="ai-suggestions"></div><div class="ai-input-row"><input type="text" class="ai-input" id="ai-input" placeholder="Ask about HSE performance..." onkeydown="if(event.key==='Enter')sendAIMsg()"/><button class="ai-send" onclick="sendAIMsg()">Send</button></div></div><button class="ai-toggle" onclick="document.getElementById('ai-window').classList.toggle('open')"><i class="ti ti-brain"></i></button></div>
-<div class="toast" id="toast"></div>
+<div class="toast" id="toast">
+
+<!-- NOTIFICATIONS TAB CONTENT -->
+<div id="integ-notif-panel" style="display:none">
+  <div class="card-title" style="display:flex;align-items:center;gap:8px">
+    <i class="ti ti-bell" style="color:var(--green)"></i>Email Notifications
+  </div>
+  <p style="font-size:13px;color:var(--text2);margin-bottom:16px">
+    Configure automatic email alerts for incidents, permits, actions and more.
+    Uses <a href="https://resend.com" target="_blank" style="color:var(--blue)">Resend</a> (free: 3,000 emails/month).
+  </p>
+  <div id="notif-settings-body"><div class="loading">Loading...</div></div>
+</div>
+
+</div>
 </body>
 </html>
