@@ -278,6 +278,8 @@
 
 
 
+
+
 const SB='https://iarfxjhahzbhncsaohbg.supabase.co';
 const KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlhcmZ4amhhaHpiaG5jc2FvaGJnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg2OTM1MzAsImV4cCI6MjA5NDI2OTUzMH0.qSjahuX-RwnjWEDmo-LkcorAxpsmyVoaXt4AO4_A9BM';
 let tok=null,prof=null,co=null,chkItems=[],people=[];
@@ -1736,16 +1738,6 @@ else{document.getElementById('co-initials-div').textContent=(co?.name||'A').char
 }catch(e){console.error(e);}
 }
 function doLogout(){tok=null;prof=null;co=null;people=[];document.getElementById('login-screen').style.display='flex';document.getElementById('app').style.display='none';document.getElementById('ai-panel').style.display='none';}
-function applyRoles(){
-if(isInsp()){
-['nav-ai','nav-inv','nav-mtg','nav-docs','nav-users','nav-settings'].forEach(id=>{const e=document.getElementById(id);if(e)e.style.display='none';});
-const b=document.getElementById('role-banner-dash');
-if(b)b.innerHTML='<div class="role-banner"><i class="ti ti-info-circle"></i>You are logged in as <strong>Inspector</strong>. You can submit events, inspections and noise surveys.</div>';
-}
-if(!isAdm())['nav-settings'].forEach(id=>{const e=document.getElementById(id);if(e)e.style.display='none';});
-if(isSA())document.getElementById('nav-admin').style.display='flex';
-if(isMgr()||isSA()){const u=document.getElementById('nav-users');if(u)u.style.display='flex';}
-}
 async function loadPeopleCache(){
 try{
 const d=await api('/people?select=id,first_name,last_name,job_title,person_type'+cf()+'&status=eq.active&order=last_name');
@@ -1778,6 +1770,12 @@ if(target){
 if(el&&el.classList)el.classList.add('active');
 const L={dashboard:loadDash,executive:loadExecutive,kpi:kpiLoadAll,workschedule:loadWorkSchedule,events:loadEvents,observation:loadObservation,inspection:()=>{buildChecklist();loadInsps();},risk:loadRA,investigation:loadInvs,legal:loadLegal,sop:loadSOP,tools:loadTools,permit:loadPermits,contractor:loadContractors,esg:loadESG,emergency:loadEmergency,ohealth:loadOHealth,ppe:loadPPE,noise:loadNoise,meetings:loadMtgs,training:loadTraining,actions:loadActions,documents:loadDocs,people:loadPeople,users:loadUsers,admin:loadAdmin,'ai-insights':genFullAI,settings:loadSettings,integrations:loadIntegrations};
 if(L[name])L[name]();
+// Mobile: close sidebar and scroll to top
+if(window.innerWidth<=768){
+  if(typeof mobileCloseSidebar==='function') mobileCloseSidebar();
+  var mainEl=document.querySelector('.main');
+  if(mainEl) mainEl.scrollTop=0;
+}
 }
 function toggleForm(id){const el=document.getElementById(id);el.style.display=el.style.display==='none'?'block':'none';}
 function toggleContractor(){document.getElementById('contractor-fields').style.display=document.getElementById('pef-type').value!=='employee'?'block':'none';}
@@ -3080,16 +3078,6 @@ else{document.getElementById('co-initials-div').textContent=(co?.name||'A').char
 }catch(e){console.error(e);}
 }
 function doLogout(){tok=null;prof=null;co=null;people=[];document.getElementById('login-screen').style.display='flex';document.getElementById('app').style.display='none';document.getElementById('ai-panel').style.display='none';}
-function applyRoles(){
-if(isInsp()){
-['nav-ai','nav-inv','nav-mtg','nav-docs','nav-users','nav-settings'].forEach(id=>{const e=document.getElementById(id);if(e)e.style.display='none';});
-const b=document.getElementById('role-banner-dash');
-if(b)b.innerHTML='<div class="role-banner"><i class="ti ti-info-circle"></i>You are logged in as <strong>Inspector</strong>. You can submit events, inspections and noise surveys.</div>';
-}
-if(!isAdm())['nav-settings'].forEach(id=>{const e=document.getElementById(id);if(e)e.style.display='none';});
-if(isSA())document.getElementById('nav-admin').style.display='flex';
-if(isMgr()||isSA()){const u=document.getElementById('nav-users');if(u)u.style.display='flex';}
-}
 async function loadPeopleCache(){
 try{
 const d=await api('/people?select=id,first_name,last_name,job_title,person_type'+cf()+'&status=eq.active&order=last_name');
@@ -21380,6 +21368,8 @@ window.addEventListener('resize', function() {
     mobileCloseSidebar();
   }
 });
+
+
 
 </script>
 </head>
