@@ -2,7 +2,25 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover"/>
+<meta name="mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="default"/>
+<meta name="apple-mobile-web-app-title" content="AURIS360"/>
+<meta name="application-name" content="AURIS360"/>
+<meta name="theme-color" content="#1D9E75"/>
+<meta name="description" content="HSE Management Platform by SEPHS Consulting — Incidents, Inspections, Risk, AI Safety"/>
+<meta name="msapplication-TileColor" content="#1D9E75"/>
+<meta name="msapplication-tap-highlight" content="no"/>
+<!-- PWA Manifest (inline) -->
+<link rel="manifest" href="/manifest.json"/>
+<!-- Apple touch icons -->
+<link rel="apple-touch-icon" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAMAAAADACAIAAADdvvtQAAACeElEQVR42u3bwQnCUBRE0TRimbZjlSLufipwYSTOI3PkVvByGBR1e77e0uE2JxBAAkgAfer2uCsVQALIgwQIIIAAAgggASSAAAIIIIAAEkACCCCAAAIIIAEkgAACCCCAABJAAggggAACCCCAABJAAggggAACCCABJIAAAsiT1g8uARJAAkgACSCnEUDx1pcvgHQckAVS3fwAZH4AMj8AmR+A1Dg/AJkfgMwPQOYHIDXOD0DmByDzA5D5AYieBRBA5gcg8wOQ+QGIHoBkfgAyPwCZH4DoAUjmByDzA5D5Acj8AAQQPQABBNB8QJc/BUAAATQVUMMpAAIIoJGASk4BEEAAzQPUcwqAAAJoGKCqUwAEEECTALWdAiCAABoDqPAUAAEE0AxAnacACCCABgCqPQVAAAGUBtR8CoAAAigKqPwUAAFUCSj75OgBCKB6QMHnR08XoDXpBdCst7EAAQQQQLM/SAMEEEAA5b5MAAgggADK/aACIIAAAij3o1KAAAIIoNwfawACCCCA/gLIl+QAAQRQFBBDAAEEUBQQQwABBFAUEEMAAQRQFBBDAAEEUBQQQwABBFAUEEMAAQQQQwABpEsBYggggABiCCCA1AuIIYAAAoghgABSLyCGAAIIIIYAAki9gBgCCCCAGAIIIPUCYggggABiCCCA1AuIIYAAAoghgABSLyCGAAIIIIYAAki9gBgCCCCAGAIIIPUCEkACSABJAAkgjQV0Us494UmfFEAAASSABBBAAAEEEEACSAABBBBAAAEEEEACSAABBBBAAAEkgAQQQAABBBBAAkgAAQQQQAABJIAEEEAAAQQQQAJIAOnSASSAlGsH1S/8dzhOSgMAAAAASUVORK5CYII="/>
+<link rel="apple-touch-icon" sizes="192x192" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAMAAAADACAIAAADdvvtQAAACeElEQVR42u3bwQnCUBRE0TRimbZjlSLufipwYSTOI3PkVvByGBR1e77e0uE2JxBAAkgAfer2uCsVQALIgwQIIIAAAgggASSAAAIIIIAAEkACCCCAAAIIIAEkgAACCCCAABJAAggggAACCCCAABJAAggggAACCCABJIAAAsiT1g8uARJAAkgACSCnEUDx1pcvgHQckAVS3fwAZH4AMj8AmR+A1Dg/AJkfgMwPQOYHIDXOD0DmByDzA5D5AYieBRBA5gcg8wOQ+QGIHoBkfgAyPwCZH4DoAUjmByDzA5D5Acj8AAQQPQABBNB8QJc/BUAAATQVUMMpAAIIoJGASk4BEEAAzQPUcwqAAAJoGKCqUwAEEECTALWdAiCAABoDqPAUAAEE0AxAnacACCCABgCqPQVAAAGUBtR8CoAAAigKqPwUAAFUCSj75OgBCKB6QMHnR08XoDXpBdCst7EAAQQQQLM/SAMEEEAA5b5MAAgggADK/aACIIAAAij3o1KAAAIIoNwfawACCCCA/gLIl+QAAQRQFBBDAAEEUBQQQwABBFAUEEMAAQRQFBBDAAEEUBQQQwABBFAUEEMAAQQQQwABpEsBYggggABiCCCA1AuIIYAAAoghgABSLyCGAAIIIIYAAki9gBgCCCCAGAIIIPUCYggggABiCCCA1AuIIYAAAoghgABSLyCGAAIIIIYAAki9gBgCCCCAGAIIIPUCEkACSABJAAkgjQV0Us494UmfFEAAASSABBBAAAEEEEACSAABBBBAAAEEEEACSAABBBBAAAEkgAQQQAABBBBAAkgAAQQQQAABJIAEEEAAAQQQQAJIAOnSASSAlGsH1S/8dzhOSgMAAAAASUVORK5CYII="/>
+<link rel="apple-touch-icon" sizes="512x512" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAIAAAB7GkOtAAAKeElEQVR42u3a0U0DQRAFQSdCmKRDlAjxBzlwu3ezdK0qgpH9WrL8+vz6BiDo5QQAAgCAAAAgAAAIAAACAIAAACAAAAgAAAIAgADM9fbxDnQYPQEQABAAARAAXwkQAAEQAEAABEAAAAEQAAEABEAABAAQAAEQAEAABEAAAAEQAAEABEAABAAQAAEQAEAABEAAAAEQAAEABEAABAAQAAEQAEAABEAAAAEQAAEABEAABAAQAAEQAEAABEAAAAEQAAEABEAABAAQAAEQAEAABEAAQAAEwBUEAARAAAQAEAABEABAAARAAAABEAABAARAAAQAEAABEABAAARAAAABEAABAARAAAQAEAABEABAAARAAAABEAABAARAAAQAEAABEABAAARAAAABEAABAARAAAQAEAABEABAAARAAAABEAABAARAAAQAEAABEAAQALsnAAIAAiAAAuArAQIgAAIACIAACAAgAAIgAIAACIAAAAIgAAIACIAACAAgAAIgAIAACIAAAAIgAAIACIAACAAgAAIgAIAACIAAAAIgAAIACIAACAAgAAIgAIAACIAAAAIgAAIACIAACAAgAAIgAIAACIAAAAIgAAIACIAACAAIgAAgACAAAiAAgAAIgAAAAiAAAgAIgAAIACAAmQD4oAD8y84JAIAACACAAAgAgAAIAIAAACAAAAgAAAIAgAAAIAAACAAAAgCAAAAgAAAIAKT8PPccXwAEAAQAARAAsP4IgACAACAAgPVHAAABQAAA648AAAKAAADWHwEABAABAKw/AgACIAAIAFh/648AgAAIAAIA1t/6IwAgAAKAAID1t/4IAAiAACAAYP2tPwIAAiAACABYf+svAAIAAoAACABYfwRAAEAAEAABAOuPAAgACAACIABg/REAQAAQAMD6IwCAACAAgPVHAAABQADA+lt/BAAEQAAQALD+1h8BAAEQAAQArL/1RwBAAAQAAQDrb/0RABAAAUAAwPpbfwQABEAAEACw/iAAIAAgAGD9EQABAAFAAAQArD8CIAAgAAiAAID1RwAEAAQAARAAsP4IACAACABg/REAEAABQADA+lt/BAAEQAAQALD+1h8BAAEQAAQArL/1RwBAAAQAAQDrb/0RABAAAUAAwPq7PwIAAgACANYfBAAEAAQArD8IAAgAAiAAYP0RAAEAAUAABACsPwIgACAACIAAwIQAuDwCAAIAAgCZADg7AgACAAIAmQC4OQIAAgACAJkAODgCAAIAAgCZALg2AgACAAIAmQA4NQIAAgACAJkAuDMCAAIAAgCZADgyAgACAAIAmQC4MAIAAgACAJkAOC8CAAIAAgCZALgtAgACAAIAmQA4LAIAAgACAJkAuCoCAAIAAgCZADgpAgACAAIAmQC4JwIAAgACAJkAOCYCAAIAAgCZALgkAgACAAIAmQA4IwIAAgACAJkAuCECAAIAAgCZADggAgACAAIAmQC4HgIAAgACAJkAOB0CAAIAAgCZALgbAgACAAIAmQA4GgIAAgACAJkAuBgCAAIAAgCZADgXAgACAAIAmQC4FQIAAgACAJkAOBQCAAIAAgCZALgSAgACAAIAmQA4EQIAAgACAJkAuA8CAAIAAsDTa+UItwXAcRAABEAAQACYsVbucEMAXAYBQAAEAASASWvlFFsD4CwIAAIgACAAzFsr19gUADdBABAAAQABYOpaOYiTIgACYK2e/L+8t+P5tCMATPm9wiILAAKAAHgCgABQ+s+iRRYABAAB8AQAAWBGAO4ZC4ssAAgAAuAJAALAmADcsBcWWQAQAATAEwAEgEkB2D0ZFlkAEAAEwBMABIBhAdi6GhZZABAABMATAASAeQHYNxwWWQAQAATAEwAEgJEB2LQdFlkAEAAEwBMABICpAdgxHxZZABAABMATAASAwQFYviAWWQAQAATAEwAEgNkBWDsiFlkAEAAEwBMABIDxAVi4IxZZABAABMATAASAEwKwakossgAgAAiAJwAIAIcEYMmaWGQBQAAQAE8AEADOCcD1QbHIAoAAIACeACAAHBWAi5tikQUAAUAAPAFAADgtAFdmxSILAAKAAHgCgABwYAD+vCwWWQAQAKIBAASA4wOgASAAAiAAgAAQC4AGgAAIgAAAAkAsABoAAiAAAgAIALEAaAAIgCMKACAAxAKgASAACAAgAMQCoAEgAAgAIADEAqABIAAIACAAxAKgASAACAAgAMQCoAEgAAgAIADEAqABIAAIACAAxAKgASAACAAgAMQCoAEgAAgAIADEAqABIAAIACAAxAKgASAACAAgAMQCoAEgAAgAIADEAqABIAAIACAAxAKgASAACAAgAMQCoAEgAAgAIABoACAACAAgAGgAIAAIACAAaAAgAAgAIABoACAACAAgAGgAIAAIACAAaAAgAAgAIABoAAiAAAiAAIAACIAGaAAIgAAIgACAAAiABmgACIAACIAAgAAIgAZoAAgAAiAAIABogAaAACAAAgACgAZoAAgAAiAAIABogAaAACAAAgACgAYAAoAAAAKABgACgAAAAoAGAAKAAAACgAYAAoAAAAKABgACgAAAAoAGgAAIAAIAAiAAaAAIgAAgACAAAqABGgACIAACIAAgAI6oARoAAoAACAAIABqgASAACIAAgACgARoAAoAACAAIABqgASAACIAAgACgARoAAoAACAAIABqgASAACAAgAGgAIAAIACAAaAAgAAgAIABoACAACAAIgACgASAAAoAAgAAIABoAAiAACAAIgACgASAAAoAAgACABoAAIAACAAKABmgACAACIAAgAGiABoAAIAACAAKABmgACAACIAAgAGiABoAAIAACAAKABmgACAACIAAgAGiABoAAIAACAAKABrg/CAACAAgAGgAIAAIAAiAAaAAIgAAgACAAAoAGgAAIAAIAAiAAaAAIgCMiACAAoAEgAAAIAAACAIAAACAAAAgAAAIAgAAAIAAACAAAAgCAAAAgAAAIAAACAMCSAET4oIBlrBEAAQABEAABAARAAAQAEAABEABAAARAAAABEAABAARAAAQAEAABEABAAARAAAABEAABAARAAAQAEAABEABAAARAAAABEAABAARAAAQAEAABEABAAARAAAABEAABAARAAAQAEAABEABAAARAAAABEAABAARAAAQAEAABEAAQAAFAAEAABEAAAAEQAAEABEAABAAQAAEQAEAABEAAAAEQAAEABEAABAAQAAEQAEAABEAAAAEQAAEABEAABAAQAAEQAEAABEAAAAEQAAEABEAABAAQAAEQAEAABEAAAAEQAAEABEAABAAQAAEQAEAABEAAAAEQAAEAARAAJxAAEAABEABAAARAAAABEAABAARAAAQAEAABEABAAARAAAABEAABAARAAAQAEAABEABAAARAAAABEAABAARAAAQAEAABEABAAARAAAABEAABAARAAAQAEAABEABAAARAAAABEAABAARAAAQAEAABEABAAARAAAABEAABAAEQAHwfQAAEQAAAARAAAQAEQAAEABAAARAAQAAEAAABAEAAABAAAAQAAAEAQAAAEAAABAAAAQBgj1+VXoqpfuefvwAAAABJRU5ErkJggg=="/>
+<!-- Favicon -->
+<link rel="icon" type="image/png" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAIAAAD8GO2jAAAAcElEQVR42mP48u0HTREDppDsvFJK0KgFg9ICCk3Ej8i34D8M0NYCWvmASOdTagGt4oB451NkAQ1TET0soG0+oKYFcLP+YwNDxAKSAmSwWkCJHYRTEZ0sINsOovIBnSwgzw5iczLNLaAokkfbRcPcAgD4PjXvP0B8EwAAAABJRU5ErkJggg=="/>
+<link rel="shortcut icon" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAIAAAD8GO2jAAAAcElEQVR42mP48u0HTREDppDsvFJK0KgFg9ICCk3Ej8i34D8M0NYCWvmASOdTagGt4oB451NkAQ1TET0soG0+oKYFcLP+YwNDxAKSAmSwWkCJHYRTEZ0sINsOovIBnSwgzw5iczLNLaAokkfbRcPcAgD4PjXvP0B8EwAAAABJRU5ErkJggg=="/>
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
 <meta http-equiv="Pragma" content="no-cache"/>
 <meta http-equiv="Expires" content="0"/>
@@ -21041,6 +21059,114 @@ function wsTBTSave(){ if(typeof tbtSave==='function')tbtSave(); }
 
 
 
+
+
+// ===================================================================
+// PWA — Service Worker registration & install prompt
+// ===================================================================
+
+var _pwaInstallPrompt = null;
+
+// Register service worker
+if('serviceWorker' in navigator) {
+  window.addEventListener('load', function() {
+    navigator.serviceWorker.register('/sw.js')
+      .then(function(reg) {
+        console.log('AURIS360 SW registered:', reg.scope);
+        // Check for updates every 10 minutes
+        setInterval(function() { reg.update(); }, 10 * 60 * 1000);
+        // When a new SW is waiting, prompt user to update
+        reg.addEventListener('updatefound', function() {
+          var newWorker = reg.installing;
+          if(!newWorker) return;
+          newWorker.addEventListener('statechange', function() {
+            if(newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+              // New version available
+              if(typeof toast === 'function') {
+                toast('🔄 Update available — refresh to get the latest AURIS360');
+              }
+            }
+          });
+        });
+      })
+      .catch(function(err) {
+        console.warn('AURIS360 SW registration failed:', err);
+      });
+  });
+}
+
+// Capture install prompt (Android/Chrome)
+window.addEventListener('beforeinstallprompt', function(e) {
+  e.preventDefault();
+  _pwaInstallPrompt = e;
+  // Show install button in sidebar if visible
+  var installBtn = document.getElementById('pwa-install-btn');
+  if(installBtn) installBtn.style.display = 'flex';
+});
+
+// Handle app installed event
+window.addEventListener('appinstalled', function() {
+  _pwaInstallPrompt = null;
+  var installBtn = document.getElementById('pwa-install-btn');
+  if(installBtn) installBtn.style.display = 'none';
+  if(typeof toast === 'function') toast('✓ AURIS360 installed as app!');
+});
+
+// Show PWA install prompt
+function pwaInstall() {
+  if(!_pwaInstallPrompt) {
+    // iOS instructions
+    var isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+    if(isIOS) {
+      alert('To install AURIS360 on iOS:\n\n1. Tap the Share button (box with arrow) at the bottom of Safari\n2. Scroll down and tap "Add to Home Screen"\n3. Tap "Add" — AURIS360 will appear on your home screen');
+    } else {
+      alert('To install AURIS360:\n\nIn Chrome, tap the menu (⋮) and select "Install app" or "Add to Home Screen"');
+    }
+    return;
+  }
+  _pwaInstallPrompt.prompt();
+  _pwaInstallPrompt.userChoice.then(function(result) {
+    if(result.outcome === 'accepted') {
+      if(typeof toast === 'function') toast('✓ AURIS360 installed!');
+    }
+    _pwaInstallPrompt = null;
+    var installBtn = document.getElementById('pwa-install-btn');
+    if(installBtn) installBtn.style.display = 'none';
+  });
+}
+
+// Handle deep links from PWA shortcuts (?goto=xxx)
+window.addEventListener('load', function() {
+  var params = new URLSearchParams(window.location.search);
+  var goto = params.get('goto');
+  if(goto) {
+    // Wait for auth then navigate
+    var checkAuth = setInterval(function() {
+      if(typeof prof !== 'undefined' && prof && typeof showPage === 'function') {
+        clearInterval(checkAuth);
+        showPage(goto, null);
+      }
+    }, 500);
+    // Give up after 10 seconds
+    setTimeout(function() { clearInterval(checkAuth); }, 10000);
+  }
+});
+
+// Online/offline status notification
+window.addEventListener('online', function() {
+  if(typeof toast === 'function') toast('✓ Back online');
+  // Trigger background sync if supported
+  if('serviceWorker' in navigator && 'SyncManager' in window) {
+    navigator.serviceWorker.ready.then(function(reg) {
+      reg.sync.register('sync-incidents').catch(function(){});
+      reg.sync.register('sync-inspections').catch(function(){});
+    });
+  }
+});
+window.addEventListener('offline', function() {
+  if(typeof toast === 'function') toast('📴 You are offline — data will sync when reconnected', false);
+});
+
 </script>
 </head>
 <body>
@@ -21201,7 +21327,8 @@ function wsTBTSave(){ if(typeof tbtSave==='function')tbtSave(); }
 <div class="nav-item" onclick="showPage('noise',this)"><i class="ti ti-volume"></i>Noise Survey</div><div class="nav-item" id="nav-mtg" onclick="showPage('meetings',this)"><i class="ti ti-notes"></i>HSE Meetings</div><div class="nav-item" onclick="showPage('training',this)"><i class="ti ti-certificate"></i>Training</div><span class="nav-section">Management</span><div class="nav-item" onclick="showPage('actions',this)"><i class="ti ti-list-check"></i>Master Action Plan</div><div class="nav-item" onclick="showPage('legal',this)"><i class="ti ti-scale"></i>Legal Compliance</div>
 <div class="nav-item" onclick="showPage('sop',this)"><i class="ti ti-file-description"></i>SOP Generator</div>
 <div class="nav-item" id="nav-docs" onclick="showPage('documents',this)"><i class="ti ti-files"></i>Document Control</div><div class="nav-item" onclick="showPage('people',this)"><i class="ti ti-id-badge"></i>People</div><div class="nav-item" id="nav-users" onclick="showPage('users',this)"><i class="ti ti-users"></i>Users &amp; Roles</div><div class="nav-item" id="nav-admin" style="display:none" onclick="showPage('admin',this)"><i class="ti ti-building"></i>Companies</div><div class="nav-item" id="nav-integrations" onclick="showPage('integrations',this)"><i class="ti ti-plug"></i>Integrations</div>
-<div class="nav-item" id="nav-settings" onclick="showPage('settings',this)"><i class="ti ti-settings"></i>Settings</div><div class="sb-footer"><button class="btn btn-sm" style="flex:1;justify-content:center;color:var(--red)" onclick="doLogout()"><i class="ti ti-logout"></i>Sign out</button></div></div>
+<div class="nav-item" id="nav-settings" onclick="showPage('settings',this)"><i class="ti ti-settings"></i>Settings</div><div class="sb-footer"><button class="btn btn-sm" style="flex:1;justify-content:center;color:var(--red)" onclick="doLogout()"><i class="ti ti-logout"></i>Sign out</button></div>
+<div id="pwa-install-btn" onclick="pwaInstall()" style="display:none;align-items:center;gap:10px;padding:10px 20px;cursor:pointer;font-size:13px;color:var(--green);font-weight:600;border-top:1px solid var(--border);margin-top:auto"><i class="ti ti-download" style="font-size:16px"></i>Install app</div></div>
 <div class="main">
 <!-- ══════════════════════════════════════════════════════ -->
 <!-- DASHBOARD (Real-time HSE)                             -->
