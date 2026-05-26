@@ -101,6 +101,7 @@
 
 
 
+
 const SB='https://iarfxjhahzbhncsaohbg.supabase.co';
 const KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlhcmZ4amhhaHpiaG5jc2FvaGJnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg2OTM1MzAsImV4cCI6MjA5NDI2OTUzMH0.qSjahuX-RwnjWEDmo-LkcorAxpsmyVoaXt4AO4_A9BM';
 let tok=null,prof=null,co=null,chkItems=[],people=[];
@@ -1427,6 +1428,9 @@ function doLogout() {
 
 // ── Auto-restore session on page load ─────────────────────────────────────────
 async function authInitSession() {
+  // Always show login screen immediately — don't leave user stuck
+  // Session restore happens silently and hides the login screen if successful
+
   // Check URL hash for password reset token (#access_token=xxx&type=recovery)
   var hash = window.location.hash;
   if(hash && hash.includes('type=recovery')) {
@@ -1434,48 +1438,72 @@ async function authInitSession() {
     var recoveryToken = params.get('access_token');
     if(recoveryToken) {
       tok = recoveryToken;
-      // Clear hash from URL
       history.replaceState(null,'',window.location.pathname);
-      // Show update password panel
       document.getElementById('login-screen').style.display='flex';
       authShowPanel('update-pw');
       return;
     }
   }
+
+  // Load company dropdown immediately (for register panel)
+  authLoadCompanyDropdown();
+
   // Check for stored session
   var stored = authGetStoredSession();
-  if(!stored?.access_token) {
-    // No session — show login, load company dropdown
-    authLoadCompanyDropdown();
+  if(!stored || !stored.access_token) {
+    // No session — show login normally
+    document.getElementById('login-screen').style.display='flex';
     return;
   }
-  // Check if token is expired
-  var now = Date.now()/1000;
-  if(stored.expires_at && stored.expires_at < now) {
-    // Try refresh
-    if(stored.refresh_token) {
-      try {
-        var newSession = await authRefreshToken(stored.refresh_token);
-        await authOnSignIn(newSession);
-        return;
-      } catch(e) {
-        authClearSession();
-        authLoadCompanyDropdown();
-        return;
-      }
-    }
+
+  // Show a subtle restoring indicator (not the full loading overlay)
+  var loginScreen = document.getElementById('login-screen');
+  if(loginScreen) loginScreen.style.display='flex';
+
+  // Set a hard timeout — if restore takes more than 8 seconds, give up and show login
+  var timedOut = false;
+  var timeout = setTimeout(function() {
+    timedOut = true;
     authClearSession();
-    authLoadCompanyDropdown();
-    return;
+    tok = null; prof = null;
+    document.getElementById('login-screen').style.display='flex';
+    authHideLoading();
+  }, 8000);
+
+  var now = Date.now()/1000;
+
+  // If token expired, try refresh
+  if(stored.expires_at && stored.expires_at < now) {
+    if(!stored.refresh_token) {
+      clearTimeout(timeout);
+      authClearSession();
+      return;
+    }
+    try {
+      var newSession = await authRefreshToken(stored.refresh_token);
+      if(timedOut) return;
+      clearTimeout(timeout);
+      await authOnSignIn(newSession);
+      return;
+    } catch(e) {
+      clearTimeout(timeout);
+      authClearSession();
+      authHideLoading();
+      return;
+    }
   }
-  // Session still valid — restore
+
+  // Token still valid — restore session silently
   tok = stored.access_token;
-  authScheduleRefresh(stored);
   try {
+    authScheduleRefresh(stored);
     await loadProf(stored.user_id);
+    if(timedOut) return;
+    clearTimeout(timeout);
+    // Hide login, show app
     document.getElementById('login-screen').style.display='none';
     document.getElementById('app').style.display='block';
-    var aiPanel=document.getElementById('ai-panel');
+    var aiPanel = document.getElementById('ai-panel');
     if(aiPanel) aiPanel.style.display='block';
     document.getElementById('page-dashboard').style.display='block';
     applyRoles();
@@ -1483,13 +1511,15 @@ async function authInitSession() {
     loadDash();
     setTimeout(function(){genDashAI();}, 3000);
   } catch(e) {
+    clearTimeout(timeout);
     authClearSession();
-    tok=null; prof=null;
-    authLoadCompanyDropdown();
+    tok = null; prof = null;
+    authHideLoading();
+    document.getElementById('login-screen').style.display='flex';
   }
 }
 
-// Load company dropdown on register panel
+
 async function authLoadCompanyDropdown() {
   var sel=document.getElementById('reg-company');
   if(!sel) return;
@@ -21010,6 +21040,7 @@ function wsTBTBackToList(){ if(typeof tbtBack==='function')tbtBack();else{var el
 function wsTBTSave(){ if(typeof tbtSave==='function')tbtSave(); }
 
 
+
 </script>
 </head>
 <body>
@@ -21147,7 +21178,7 @@ function wsTBTSave(){ if(typeof tbtSave==='function')tbtSave(); }
 </div>
 
 <!-- Loading overlay -->
-<div id="auth-loading" style="display:none;position:absolute;inset:0;background:rgba(255,255,255,.85);border-radius:12px;z-index:10;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:10px">
+<div id="auth-loading" style="display:none;position:absolute;inset:0;background:rgba(255,255,255,.85);border-radius:12px;z-index:10;align-items:center;justify-content:center;flex-direction:column;gap:10px">
 <div style="width:36px;height:36px;border:3px solid var(--border);border-top-color:var(--green);border-radius:50%;animation:spin .8s linear infinite"></div>
 <div style="font-size:12px;color:var(--text2)" id="auth-loading-msg">Signing in...</div>
 </div>
