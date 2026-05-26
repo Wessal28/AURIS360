@@ -1,4 +1,9 @@
 {
+  "functions": {
+    "api/send-emails.js": {
+      "runtime": "nodejs20.x"
+    }
+  },
   "crons": [
     {
       "path": "/api/send-emails",
