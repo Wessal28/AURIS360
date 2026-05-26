@@ -50,11 +50,24 @@
 
 
 
-/* ══════════════════════════════════════════════════════════
-   MOBILE RESPONSIVE LAYOUT — Complete rewrite
-   ════════════════════════════════════════════════════════ */
+/* ═══════════════════════════════════════════════════════
+   AURIS360 MOBILE PATCH — Huawei & all mobile browsers
+   SAFE: CSS only, zero JS changes
+   ═══════════════════════════════════════════════════════ */
 
-/* Mobile top bar */
+/* ── Touch responsiveness (fixes Huawei 300ms tap delay) ── */
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+button, .btn, .nav-item, .tab-btn, .mtg-tab,
+[onclick], .card-action, .mob-nav-btn,
+input[type="button"], input[type="submit"] {
+  touch-action: manipulation !important;
+  -ms-touch-action: manipulation !important;
+  cursor: pointer;
+}
+
+/* ── Mobile top bar ── */
 #mobile-topbar {
   display: none;
   position: fixed;
@@ -64,105 +77,170 @@
   border-bottom: 1px solid var(--border);
   z-index: 200;
   align-items: center;
-  padding: 0 14px;
-  gap: 10px;
-  box-shadow: 0 1px 8px rgba(0,0,0,.06);
+  padding: 0 8px;
+  gap: 4px;
+  box-shadow: 0 1px 6px rgba(0,0,0,.06);
 }
-#mobile-topbar .mobile-logo {
-  font-size: 17px;
+.mobile-logo {
+  flex: 1;
+  font-size: 16px;
   font-weight: 800;
   color: var(--green);
-  flex: 1;
-  letter-spacing: -.3px;
+  padding: 0 6px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
-#mobile-menu-btn {
+#mobile-menu-btn, #mobile-back-btn {
   background: none;
   border: none;
-  cursor: pointer;
-  padding: 8px;
+  padding: 10px;
   color: var(--text);
-  border-radius: 8px;
+  border-radius: 10px;
   display: flex;
   align-items: center;
   justify-content: center;
+  min-width: 44px;
+  min-height: 44px;
+  touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
 }
 
-/* Sidebar overlay backdrop */
+/* ── Sidebar backdrop ── */
 #sidebar-backdrop {
   display: none;
   position: fixed;
   inset: 0;
   background: rgba(0,0,0,.5);
   z-index: 299;
-  -webkit-tap-highlight-color: transparent;
 }
 
+/* ── Bottom nav ── */
+#mobile-bottom-nav {
+  display: none;
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  height: 58px;
+  background: var(--card);
+  border-top: 1px solid var(--border);
+  z-index: 200;
+  align-items: stretch;
+}
+.mob-nav-btn {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  background: none;
+  border: none;
+  color: var(--text2);
+  font-size: 9px;
+  font-weight: 600;
+  padding: 4px;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  min-width: 44px;
+}
+.mob-nav-btn i { font-size: 20px; line-height: 1; }
+.mob-nav-btn.active { color: var(--green); }
+
+/* ── Modules drawer ── */
+#mobile-modules-drawer { display: none; }
+#mobile-modules-panel {
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  background: var(--card);
+  border-radius: 20px 20px 0 0;
+  z-index: 400;
+  max-height: 78vh;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  transform: translateY(100%);
+  transition: transform .3s cubic-bezier(.4,0,.2,1);
+}
+#mobile-modules-panel.open {
+  transform: translateY(0);
+}
+#mobile-modules-grid button {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 12px 6px;
+  border: none;
+  background: transparent;
+  border-radius: 12px;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  width: 100%;
+}
+
+/* ════════════════════════════════════════
+   MOBILE BREAKPOINT — 768px and below
+   ════════════════════════════════════════ */
 @media (max-width: 768px) {
 
-  /* ── Show mobile top bar ── */
-  #mobile-topbar { display: flex !important; }
+  /* Show mobile elements */
+  #mobile-topbar     { display: flex !important; }
+  #mobile-bottom-nav { display: flex !important; }
 
-  /* ── Main layout: stack vertically ── */
-  .layout {
-    display: flex !important;
-    flex-direction: column !important;
-    height: 100vh !important;
-    overflow: hidden !important;
-  }
+  /* Hide desktop sidebar */
+  .layout { display: block !important; }
 
-  /* ── Sidebar: slide-in drawer ── */
+  /* Sidebar: off-canvas drawer */
   .sidebar {
     position: fixed !important;
-    top: 0 !important;
-    left: 0 !important;
-    bottom: 0 !important;
+    top: 0 !important; left: 0 !important; bottom: 0 !important;
     width: 82vw !important;
     max-width: 300px !important;
     min-width: unset !important;
     z-index: 300 !important;
     transform: translateX(-110%) !important;
     transition: transform .28s cubic-bezier(.4,0,.2,1) !important;
-    box-shadow: 4px 0 24px rgba(0,0,0,.18) !important;
     overflow-y: auto !important;
     -webkit-overflow-scrolling: touch !important;
+    overscroll-behavior: contain !important;
   }
   .sidebar.open {
     transform: translateX(0) !important;
+    box-shadow: 4px 0 24px rgba(0,0,0,.18) !important;
   }
-  .sidebar-backdrop-active {
-    display: block !important;
-  }
+  #sidebar-backdrop.active { display: block !important; }
 
-  /* ── Main content: scrollable, below topbar ── */
+  /* Main content: scrollable area between top and bottom nav */
   .main {
-    flex: 1 !important;
-    width: 100% !important;
-    height: calc(100vh - 52px) !important;
-    margin-top: 52px !important;
+    position: fixed !important;
+    top: 52px !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 58px !important;
+    height: auto !important;
     overflow-y: auto !important;
     overflow-x: hidden !important;
     -webkit-overflow-scrolling: touch !important;
+    overscroll-behavior-y: contain !important;
     padding-top: 0 !important;
   }
 
-  /* ── Pages ── */
+  /* Pages: proper padding, no overflow */
   .page {
-    padding: 14px 12px 80px !important;
+    padding: 14px 12px 24px !important;
     min-height: auto !important;
-    width: 100% !important;
     box-sizing: border-box !important;
+    overflow-x: hidden !important;
   }
 
-  /* ── Page header ── */
+  /* Page header: stack vertically */
   .page-header {
     flex-direction: column !important;
     align-items: flex-start !important;
     gap: 10px !important;
     margin-bottom: 14px !important;
-    padding: 0 !important;
   }
-  .page-title { font-size: 19px !important; line-height: 1.2 !important; }
+  .page-title { font-size: 18px !important; }
   .page-header > div:last-child {
     display: flex !important;
     flex-wrap: wrap !important;
@@ -170,108 +248,102 @@
     width: 100% !important;
   }
 
-  /* ── Cards ── */
-  .card {
-    margin-left: 0 !important;
-    margin-right: 0 !important;
-    border-radius: 10px !important;
+  /* Inputs: min 16px to prevent iOS zoom, 44px tap target */
+  input[type="text"], input[type="email"],
+  input[type="password"], input[type="number"],
+  input[type="date"], input[type="datetime-local"],
+  input[type="search"], input[type="tel"],
+  select, textarea {
+    font-size: 16px !important;
+    min-height: 44px !important;
   }
 
-  /* ── Tabs: horizontal scroll ── */
-  .mtg-tab {
-    padding: 8px 12px !important;
-    font-size: 11px !important;
-    white-space: nowrap !important;
-    flex-shrink: 0 !important;
-  }
+  /* Buttons: 44px min tap target */
+  .btn { min-height: 44px !important; }
+  .btn-sm { min-height: 38px !important; }
 
-  /* ── Form rows: single column ── */
+  /* Form rows: stack */
   .form-row {
     display: flex !important;
     flex-direction: column !important;
     gap: 0 !important;
   }
-  .form-group { margin-bottom: 10px !important; }
 
-  /* ── Tables: horizontal scroll container ── */
-  .card { overflow-x: auto !important; }
-  table { font-size: 11px !important; min-width: 480px !important; }
+  /* Tables: horizontal scroll */
+  .card, .table-wrap { overflow-x: auto !important; }
+  table { font-size: 12px !important; min-width: 480px !important; }
+  th, td { padding: 8px 10px !important; white-space: nowrap !important; }
 
-  /* ── Inline grids → 2 col on mobile ── */
-  .dash-grid-6 { grid-template-columns: 1fr 1fr !important; }
-
-  /* ── Buttons: bigger tap targets ── */
-  .btn { min-height: 36px !important; }
-  .btn-sm { min-height: 30px !important; }
-
-  /* ── Login box ── */
-  .login-box {
-    padding: 28px 20px !important;
-    width: calc(100vw - 32px) !important;
-    max-width: 400px !important;
+  /* Tab bars: scroll horizontally */
+  .mtg-tab, .tab-btn {
+    white-space: nowrap !important;
+    flex-shrink: 0 !important;
+    min-height: 40px !important;
+    padding: 8px 14px !important;
   }
 
-  /* ── AI floating panel: bottom sheet ── */
+  /* Grids: 2 columns max */
+  [style*="repeat(3,1fr)"], [style*="repeat(4,1fr)"],
+  [style*="repeat(5,1fr)"], [style*="repeat(6,1fr)"] {
+    grid-template-columns: 1fr 1fr !important;
+  }
+
+  /* Login */
+  #login-screen {
+    align-items: flex-start !important;
+    padding-top: 30px !important;
+  }
+  .login-box {
+    width: calc(100vw - 32px) !important;
+    max-width: 420px !important;
+    padding: 24px 18px !important;
+  }
+
+  /* AI panel: bottom sheet */
   .ai-panel {
     width: 100% !important;
     height: 65vh !important;
-    bottom: 0 !important;
-    right: 0 !important;
-    left: 0 !important;
-    border-radius: 20px 20px 0 0 !important;
+    bottom: 58px !important;
+    right: 0 !important; left: 0 !important;
+    border-radius: 18px 18px 0 0 !important;
     max-width: 100% !important;
   }
 
-  /* ── Modals: full screen ── */
-  #adm-company-modal > div,
-  #adm-site-modal > div,
-  #integ-config-modal > div,
-  #user-edit-modal > div {
-    width: 100% !important;
-    max-width: 100% !important;
-    max-height: 92vh !important;
-    margin: 0 !important;
-    border-radius: 16px 16px 0 0 !important;
-    position: fixed !important;
-    bottom: 0 !important;
-    left: 0 !important;
-    right: 0 !important;
-  }
-
-  /* ── Modals: align to bottom ── */
+  /* Modals: bottom sheet */
   #adm-company-modal,
   #adm-site-modal,
-  #integ-config-modal,
-  #user-edit-modal {
+  #user-edit-modal,
+  #integ-config-modal {
     align-items: flex-end !important;
     padding: 0 !important;
   }
-
-  /* ── Hide print btn ── */
-  .print-btn { display: none !important; }
-
-  /* ── PWA install ── */
-  #pwa-install-btn { display: flex !important; }
-
-  /* ── Role changer in sidebar ── */
-  #sb-role-changer {
-    padding: 8px 14px !important;
+  #adm-company-modal > div, #adm-site-modal > div,
+  #user-edit-modal > div, #integ-config-modal > div {
+    max-width: 100% !important;
+    width: 100% !important;
+    border-radius: 18px 18px 0 0 !important;
+    max-height: 88vh !important;
+    overflow-y: auto !important;
   }
+
+  /* Hide desktop only */
+  .print-btn { display: none !important; }
 }
 
+/* Very small phones */
 @media (max-width: 480px) {
-  .page { padding: 10px 10px 80px !important; }
-  .page-title { font-size: 17px !important; }
-
-  /* Single column grids on very small phones */
-  .dash-grid-3,
-  .dash-grid-4 {
+  .page { padding: 10px 10px 24px !important; }
+  [style*="repeat(2,1fr)"],
+  [style*="grid-template-columns:1fr 1fr"] {
     grid-template-columns: 1fr !important;
   }
 }
+
 </style>
 
 <script defer>
+
+
 
 
 
@@ -4463,14 +4535,59 @@ function generateSafetyComm(invId){
 <body>
 <!-- Mobile top bar (shown on screens ≤768px) -->
 <div id="mobile-topbar">
-  <button id="mobile-menu-btn" onclick="mobileToggleSidebar()" aria-label="Open menu">
+  <button id="mobile-back-btn" onclick="mobileGoBack()" style="display:none">
+    <i class="ti ti-arrow-left" style="font-size:20px"></i>
+  </button>
+  <button id="mobile-menu-btn" onclick="mobileToggleSidebar()">
     <i class="ti ti-menu-2" style="font-size:22px"></i>
   </button>
-  <div class="mobile-logo">AURIS360</div>
-  <button class="btn btn-sm" onclick="showPage('ai-insights',null)" style="padding:6px 10px;font-size:11px;flex-shrink:0"><i class="ti ti-robot"></i>AI</button>
+  <div class="mobile-logo" id="mobile-page-title">AURIS360</div>
+  <button onclick="mobileToggleSearch()" style="background:none;border:none;padding:10px;color:var(--text);min-width:44px;min-height:44px;display:flex;align-items:center;justify-content:center;touch-action:manipulation;-webkit-tap-highlight-color:transparent">
+    <i class="ti ti-search" style="font-size:18px"></i>
+  </button>
 </div>
 <!-- Sidebar backdrop -->
-<div id="sidebar-backdrop" onclick="mobileCloseSidebar()"></div>
+<div id="sidebar-backdrop" onclick="mobileCloseSidebar()">
+<!-- Search overlay -->
+<div id="mobile-search-overlay" style="display:none;position:fixed;top:0;left:0;right:0;z-index:250;background:var(--card);padding:12px 14px;box-shadow:0 2px 12px rgba(0,0,0,.12)">
+  <div style="display:flex;gap:10px;align-items:center">
+    <i class="ti ti-search" style="color:var(--text2);font-size:16px"></i>
+    <input type="text" id="mobile-search-input" placeholder="Search modules..." oninput="mobileSearchModules(this.value)" autocomplete="off"
+      style="flex:1;border:none;outline:none;font-size:16px;background:transparent;color:var(--text)"/>
+    <button onclick="mobileToggleSearch()" style="background:none;border:none;color:var(--green);font-size:13px;font-weight:600;padding:4px 8px;touch-action:manipulation;-webkit-tap-highlight-color:transparent">Done</button>
+  </div>
+  <div id="mobile-search-results" style="margin-top:8px;max-height:280px;overflow-y:auto"></div>
+</div>
+
+<!-- Bottom navigation bar -->
+<div id="mobile-bottom-nav">
+  <button class="mob-nav-btn active" id="mob-btn-dashboard" onclick="mobileNavTo('dashboard','Dashboard',this)">
+    <i class="ti ti-layout-dashboard"></i><span>Home</span>
+  </button>
+  <button class="mob-nav-btn" id="mob-btn-events" onclick="mobileNavTo('events','Incidents',this)">
+    <i class="ti ti-alert-triangle"></i><span>Incidents</span>
+  </button>
+  <button class="mob-nav-btn" id="mob-btn-inspection" onclick="mobileNavTo('inspection','Inspections',this)">
+    <i class="ti ti-clipboard-check"></i><span>Inspect</span>
+  </button>
+  <button class="mob-nav-btn" id="mob-btn-modules" onclick="mobileToggleModules()">
+    <i class="ti ti-grid-dots"></i><span>Modules</span>
+  </button>
+  <button class="mob-nav-btn" id="mob-btn-ai" onclick="mobileNavTo('ai-insights','AI Insights',this)">
+    <i class="ti ti-robot"></i><span>AI</span>
+  </button>
+</div>
+
+<!-- Modules drawer (slides up from bottom) -->
+<div id="mobile-modules-drawer" style="display:none">
+  <div onclick="mobileCloseModules()" style="position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:399"></div>
+  <div id="mobile-modules-panel" style="position:fixed;bottom:0;left:0;right:0;background:var(--card);border-radius:20px 20px 0 0;z-index:400;max-height:78vh;overflow-y:auto;-webkit-overflow-scrolling:touch;padding-bottom:16px">
+    <div style="text-align:center;padding:10px 0 0"><div style="width:36px;height:4px;background:var(--border);border-radius:2px;display:inline-block"></div></div>
+    <div style="padding:12px 18px 6px;font-size:12px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.05em">All Modules</div>
+    <div id="mobile-modules-grid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:2px;padding:0 6px 8px"></div>
+  </div>
+</div>
+</div>
 <button class="print-btn" onclick="window.print()">🖨️ Print / Save PDF</button>
 <div class="comm-page">
 
@@ -21394,77 +21511,313 @@ window.addEventListener('offline', function() {
 
 
 
-// ── Mobile sidebar toggle ────────────────────────────────────────────────────
+
+// ═══════════════════════════════════════════════════════════
+// MOBILE — Navigation, drawer, search, back button
+// Huawei-safe: no template literals, ES5 compatible
+// ═══════════════════════════════════════════════════════════
+
+var _mobileHistory   = ['dashboard'];
+var _mobileCurrentPg = 'dashboard';
+var _modulesOpen     = false;
+
+var MOBILE_MODULES = [
+  {k:'dashboard',    l:'Dashboard',    i:'ti-layout-dashboard',   r:['all']},
+  {k:'executive',    l:'Executive',    i:'ti-chart-bar',          r:['executive','admin','hse_manager','sephs_admin']},
+  {k:'kpi',          l:'KPIs',         i:'ti-target',             r:['all']},
+  {k:'workschedule', l:'Schedule',     i:'ti-calendar',           r:['all']},
+  {k:'events',       l:'Incidents',    i:'ti-alert-triangle',     r:['all']},
+  {k:'observation',  l:'Observations', i:'ti-eye',                r:['all']},
+  {k:'inspection',   l:'Inspections',  i:'ti-clipboard-check',    r:['all']},
+  {k:'risk',         l:'Risk',         i:'ti-shield-exclamation', r:['all']},
+  {k:'tools',        l:'Tools',        i:'ti-tool',               r:['all']},
+  {k:'permit',       l:'Permits',      i:'ti-file-certificate',   r:['all']},
+  {k:'contractor',   l:'Contractors',  i:'ti-hard-hat',           r:['admin','hse_manager','site_manager','supervisor','sephs_admin']},
+  {k:'emergency',    l:'Emergency',    i:'ti-ambulance',          r:['all']},
+  {k:'ohealth',      l:'OH&S',         i:'ti-stethoscope',        r:['admin','hse_manager','hr','sephs_admin']},
+  {k:'ppe',          l:'PPE',          i:'ti-shield',             r:['all']},
+  {k:'esg',          l:'ESG',          i:'ti-leaf',               r:['all']},
+  {k:'noise',        l:'Noise',        i:'ti-volume',             r:['all']},
+  {k:'meetings',     l:'Meetings',     i:'ti-users',              r:['all']},
+  {k:'training',     l:'Training',     i:'ti-school',             r:['all']},
+  {k:'actions',      l:'Actions',      i:'ti-checklist',          r:['all']},
+  {k:'legal',        l:'Legal',        i:'ti-gavel',              r:['admin','hse_manager','auditor','sephs_admin']},
+  {k:'sop',          l:'SOPs',         i:'ti-book',               r:['admin','hse_manager','supervisor','sephs_admin']},
+  {k:'documents',    l:'Documents',    i:'ti-files',              r:['admin','hse_manager','hr','auditor','sephs_admin']},
+  {k:'people',       l:'People',       i:'ti-users-group',        r:['admin','hse_manager','hr','sephs_admin']},
+  {k:'users',        l:'Users',        i:'ti-user-cog',           r:['admin','hse_manager','sephs_admin']},
+  {k:'admin',        l:'Company',      i:'ti-building',           r:['admin','sephs_admin']},
+  {k:'integrations', l:'Integrations', i:'ti-plug',               r:['admin','hse_manager','sephs_admin']},
+  {k:'ai-insights',  l:'AI Insights',  i:'ti-robot',              r:['admin','hse_manager','auditor','sephs_admin']},
+  {k:'settings',     l:'Settings',     i:'ti-settings',           r:['admin','hse_manager','sephs_admin']},
+];
+
+var MODULE_COLORS = {
+  dashboard:'#185FA5', executive:'#5B21B6', kpi:'#185FA5',
+  workschedule:'#065F46', events:'#DC2626', observation:'#9A3412',
+  inspection:'#1D9E75', risk:'#C2410C', tools:'#374151',
+  permit:'#854F0B', contractor:'#0891B2', emergency:'#DC2626',
+  ohealth:'#065F46', ppe:'#1D9E75', esg:'#065F46',
+  noise:'#EF9F27', meetings:'#185FA5', training:'#5B21B6',
+  actions:'#DC2626', legal:'#374151', sop:'#374151',
+  documents:'#374151', people:'#185FA5', users:'#5B21B6',
+  admin:'#185FA5', integrations:'#0891B2', 'ai-insights':'#5B21B6',
+  settings:'#374151'
+};
+
+function mobileNavTo(page, title, btnEl) {
+  if (_mobileCurrentPg !== page) {
+    _mobileHistory.push(page);
+    if (_mobileHistory.length > 30) _mobileHistory.shift();
+  }
+  _mobileCurrentPg = page;
+  var titleEl = document.getElementById('mobile-page-title');
+  if (titleEl) titleEl.textContent = title || page;
+  var backBtn = document.getElementById('mobile-back-btn');
+  var menuBtn = document.getElementById('mobile-menu-btn');
+  if (backBtn && menuBtn) {
+    var showBack = _mobileHistory.length > 1 && page !== 'dashboard';
+    backBtn.style.display = showBack ? 'flex' : 'none';
+    menuBtn.style.display = showBack ? 'none' : 'flex';
+  }
+  document.querySelectorAll('.mob-nav-btn').forEach(function(b) { b.classList.remove('active'); });
+  var activeBtn = document.getElementById('mob-btn-' + page);
+  if (activeBtn) activeBtn.classList.add('active');
+  else { var mb = document.getElementById('mob-btn-modules'); if(mb) mb.classList.add('active'); }
+  mobileCloseModules();
+  mobileCloseSidebar();
+  showPage(page, null);
+}
+
+function mobileGoBack() {
+  if (_mobileHistory.length > 1) {
+    _mobileHistory.pop();
+    var prev = _mobileHistory[_mobileHistory.length - 1];
+    var mod = null;
+    for (var i = 0; i < MOBILE_MODULES.length; i++) {
+      if (MOBILE_MODULES[i].k === prev) { mod = MOBILE_MODULES[i]; break; }
+    }
+    mobileNavTo(prev, mod ? mod.l : prev, null);
+  } else {
+    mobileNavTo('dashboard', 'Dashboard', null);
+  }
+}
+
+// Intercept browser back button — prevent app from closing
+window.addEventListener('popstate', function(e) {
+  if (window.innerWidth > 768) return;
+  e.preventDefault();
+  if (_modulesOpen) { mobileCloseModules(); }
+  else if (document.querySelector('.sidebar.open')) { mobileCloseSidebar(); }
+  else if (_mobileHistory.length > 1) { mobileGoBack(); }
+  else { history.pushState(null, '', window.location.href); }
+});
+
+// Push initial history state so back button works
+if (window.innerWidth <= 768) {
+  history.pushState(null, '', window.location.href);
+}
+
 function mobileToggleSidebar() {
-  var sidebar  = document.querySelector('.sidebar');
+  var sidebar = document.querySelector('.sidebar');
   var backdrop = document.getElementById('sidebar-backdrop');
-  var menuBtn  = document.getElementById('mobile-menu-btn');
-  if(!sidebar) return;
-  var isOpen = sidebar.classList.contains('open');
-  if(isOpen) { mobileCloseSidebar(); return; }
-  sidebar.classList.add('open');
-  if(backdrop) backdrop.style.display='block';
-  var icon = menuBtn?.querySelector('i');
-  if(icon) icon.className='ti ti-x';
+  if (!sidebar) return;
+  if (sidebar.classList.contains('open')) {
+    mobileCloseSidebar();
+  } else {
+    sidebar.classList.add('open');
+    if (backdrop) { backdrop.style.display = 'block'; backdrop.classList.add('active'); }
+    history.pushState(null, '', window.location.href);
+  }
 }
 
 function mobileCloseSidebar() {
-  var sidebar  = document.querySelector('.sidebar');
+  var sidebar = document.querySelector('.sidebar');
   var backdrop = document.getElementById('sidebar-backdrop');
-  var menuBtn  = document.getElementById('mobile-menu-btn');
-  if(!sidebar) return;
+  if (!sidebar) return;
   sidebar.classList.remove('open');
-  if(backdrop) backdrop.style.display='none';
-  var icon = menuBtn?.querySelector('i');
-  if(icon) icon.className='ti ti-menu-2';
+  if (backdrop) { backdrop.style.display = 'none'; backdrop.classList.remove('active'); }
 }
 
-// Auto-close sidebar on nav item click (mobile) - use event delegation
+function mobileToggleModules() {
+  if (_modulesOpen) { mobileCloseModules(); } else { mobileOpenModules(); }
+}
+
+function mobileOpenModules() {
+  _modulesOpen = true;
+  mobileRenderModulesGrid();
+  var drawer = document.getElementById('mobile-modules-drawer');
+  var panel  = document.getElementById('mobile-modules-panel');
+  if (drawer) drawer.style.display = 'block';
+  if (panel) {
+    panel.style.transition = 'none';
+    panel.style.transform = 'translateY(100%)';
+    setTimeout(function() {
+      panel.style.transition = 'transform .3s cubic-bezier(.4,0,.2,1)';
+      panel.style.transform = 'translateY(0)';
+    }, 10);
+  }
+  var mb = document.getElementById('mob-btn-modules');
+  if (mb) mb.classList.add('active');
+  history.pushState(null, '', window.location.href);
+}
+
+function mobileCloseModules() {
+  _modulesOpen = false;
+  var panel  = document.getElementById('mobile-modules-panel');
+  var drawer = document.getElementById('mobile-modules-drawer');
+  if (panel) {
+    panel.style.transform = 'translateY(100%)';
+    setTimeout(function() {
+      if (drawer) drawer.style.display = 'none';
+    }, 300);
+  } else {
+    if (drawer) drawer.style.display = 'none';
+  }
+  var mb = document.getElementById('mob-btn-modules');
+  if (mb) mb.classList.remove('active');
+}
+
+function mobileRenderModulesGrid() {
+  var grid = document.getElementById('mobile-modules-grid');
+  if (!grid) return;
+  var role = (typeof prof !== 'undefined' && prof) ? (prof.role || 'employee') : 'employee';
+  var html = '';
+  for (var i = 0; i < MOBILE_MODULES.length; i++) {
+    var m = MOBILE_MODULES[i];
+    if (m.r.indexOf('all') === -1 && m.r.indexOf(role) === -1) continue;
+    var color = MODULE_COLORS[m.k] || '#185FA5';
+    var isCur = m.k === _mobileCurrentPg;
+    html += '<button data-page="' + m.k + '" data-label="' + m.l + '" class="mob-module-btn"'
+      + ' style="display:flex;flex-direction:column;align-items:center;justify-content:center;'
+      + 'gap:6px;padding:14px 6px;border:2px solid ' + (isCur ? color : 'transparent') + ';'
+      + 'background:' + (isCur ? color + '18' : 'transparent') + ';'
+      + 'border-radius:12px;touch-action:manipulation;-webkit-tap-highlight-color:transparent;width:100%;">'
+      + '<div style="width:44px;height:44px;border-radius:12px;background:' + color + '18;'
+      + 'display:flex;align-items:center;justify-content:center;">'
+      + '<i class="ti ' + m.i + '" style="font-size:22px;color:' + color + '"></i></div>'
+      + '<span style="font-size:10px;font-weight:600;color:var(--text);text-align:center;line-height:1.2">'
+      + m.l + '</span></button>';
+  }
+  grid.innerHTML = html;
+  grid.querySelectorAll('.mob-module-btn').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      mobileNavTo(btn.getAttribute('data-page'), btn.getAttribute('data-label'), null);
+    });
+  });
+}
+
+function mobileSearchModulesRender(q, el) {
+  var role = (typeof prof !== 'undefined' && prof) ? (prof.role || 'employee') : 'employee';
+  var ql = q.toLowerCase();
+  var html = '';
+  var found = 0;
+  for (var i = 0; i < MOBILE_MODULES.length; i++) {
+    var m = MOBILE_MODULES[i];
+    if (m.r.indexOf('all') === -1 && m.r.indexOf(role) === -1) continue;
+    if (m.l.toLowerCase().indexOf(ql) === -1) continue;
+    found++;
+    var color = MODULE_COLORS[m.k] || '#185FA5';
+    html += '<div data-page="' + m.k + '" data-label="' + m.l + '" class="mob-search-result"'
+      + ' style="display:flex;align-items:center;gap:12px;padding:12px 4px;'
+      + 'border-bottom:1px solid var(--border);touch-action:manipulation;-webkit-tap-highlight-color:transparent;">'
+      + '<i class="ti ' + m.i + '" style="font-size:20px;color:' + color + ';width:28px"></i>'
+      + '<span style="font-size:14px;font-weight:500;color:var(--text)">' + m.l + '</span></div>';
+  }
+  if (!found) html = '<div style="padding:12px;color:var(--text2);font-size:13px">No modules found</div>';
+  el.innerHTML = html;
+  el.querySelectorAll('.mob-search-result').forEach(function(d) {
+    d.addEventListener('click', function() {
+      mobileNavTo(d.getAttribute('data-page'), d.getAttribute('data-label'), null);
+      mobileToggleSearch();
+    });
+  });
+}
+
+
+function mobileToggleSearch() {
+  var overlay = document.getElementById('mobile-search-overlay');
+  if (!overlay) return;
+  if (overlay.style.display !== 'none' && overlay.style.display !== '') {
+    overlay.style.display = 'none';
+    var inp = document.getElementById('mobile-search-input');
+    if (inp) inp.value = '';
+    document.getElementById('mobile-search-results').innerHTML = '';
+  } else {
+    overlay.style.display = 'block';
+    setTimeout(function() {
+      var inp = document.getElementById('mobile-search-input');
+      if (inp) inp.focus();
+    }, 150);
+  }
+}
+
+function mobileSearchModules(q) {
+  var el = document.getElementById('mobile-search-results');
+  if (!el) return;
+  if (!q.trim()) { el.innerHTML = ''; return; }
+  mobileSearchModulesRender(q, el);
+}
+
+
+// Close sidebar when nav item clicked from sidebar on mobile
 document.addEventListener('click', function(e) {
-  var navItem = e.target.closest('.nav-item');
-  if(navItem && window.innerWidth <= 768) {
-    setTimeout(mobileCloseSidebar, 200);
-  }
-});
-
-// Close sidebar on resize to desktop
-window.addEventListener('resize', function() {
-  if(window.innerWidth > 768) {
-    mobileCloseSidebar();
-  }
-});
-
-
-
-
-
-// ── Quick role changer (sidebar) ──────────────────────────────────────────────
-async function sbChangeRole() {
-  var sel = document.getElementById('sb-role-select');
-  var newRole = sel?.value;
-  if(!newRole || !prof?.id) { toast('Please log in first', false); return; }
-  try {
-    await api('/profiles?id=eq.'+prof.id, {m:'PATCH', p:'return=minimal', b:{role:newRole, updated_at:new Date().toISOString()}});
-    prof.role = newRole;
-    // Update sidebar display
-    var roleEl = document.getElementById('sb-role');
-    if(roleEl) {
-      var rc = typeof HSE_ROLES!=='undefined' ? HSE_ROLES[newRole] : null;
-      roleEl.textContent = rc ? rc.emoji+' '+rc.label : newRole.replace(/_/g,' ');
+  var navItem = e.target.closest ? e.target.closest('.nav-item') : null;
+  if (navItem && window.innerWidth <= 768) {
+    var onclickAttr = navItem.getAttribute('onclick') || '';
+    var match = onclickAttr.match(/showPage\('([\w-]+)'/);
+    if (match) {
+      var pageKey = match[1];
+      var mod = null;
+      for (var i = 0; i < MOBILE_MODULES.length; i++) {
+        if (MOBILE_MODULES[i].k === pageKey) { mod = MOBILE_MODULES[i]; break; }
+      }
+      _mobileCurrentPg = pageKey;
+      if (_mobileHistory[_mobileHistory.length-1] !== pageKey) _mobileHistory.push(pageKey);
+      var titleEl = document.getElementById('mobile-page-title');
+      if (titleEl) titleEl.textContent = mod ? mod.l : pageKey;
+      var backBtn = document.getElementById('mobile-back-btn');
+      var menuBtn = document.getElementById('mobile-menu-btn');
+      if (backBtn && menuBtn) {
+        var showBack = _mobileHistory.length > 1 && pageKey !== 'dashboard';
+        backBtn.style.display = showBack ? 'flex' : 'none';
+        menuBtn.style.display = showBack ? 'none' : 'flex';
+      }
+      setTimeout(mobileCloseSidebar, 200);
+      // Also scroll main to top
+      var mainEl = document.querySelector('.main');
+      if (mainEl) mainEl.scrollTop = 0;
     }
-    applyRoles();
-    toast('✓ Role changed to '+newRole+' — refreshing...');
-    setTimeout(function() { window.location.reload(); }, 1200);
-  } catch(e) {
-    toast('Error: '+e.message, false);
   }
+});
+
+// Also scroll to top on showPage for mobile
+var _origShowPage = window.showPage;
+if (typeof _origShowPage === 'function') {
+  window.showPage = function(name, el) {
+    _origShowPage(name, el);
+    if (window.innerWidth <= 768) {
+      var mainEl = document.querySelector('.main');
+      if (mainEl) mainEl.scrollTop = 0;
+    }
+  };
 }
 
-// Pre-select current role in the sidebar role selector
-function sbInitRoleSelect() {
-  var sel = document.getElementById('sb-role-select');
-  if(sel && prof?.role) sel.value = prof.role;
-}
+window.addEventListener('resize', function() {
+  if (window.innerWidth > 768) {
+    mobileCloseSidebar();
+    mobileCloseModules();
+  }
+});
+
+window.addEventListener('load', function() {
+  if (window.innerWidth <= 768) {
+    history.pushState(null, '', window.location.href);
+    var titleEl = document.getElementById('mobile-page-title');
+    if (titleEl) titleEl.textContent = 'Dashboard';
+  }
+});
+
 
 </script>
 </head>
