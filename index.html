@@ -21959,6 +21959,463 @@ async function sendTestEmail() {
 }
 
 
+
+// ================================================================
+// AURIS360 PDF REPORT GENERATOR
+// Uses browser print-to-PDF — no external libraries needed
+// Reports: Incident, Risk Assessment, Audit, Permit, Contractor
+// ================================================================
+
+// ── Core print engine ────────────────────────────────────────────
+function aurisPrint(html, title) {
+  var w = window.open('', '_blank', 'width=900,height=700');
+  if (!w) { toast('Please allow popups for PDF generation', false); return; }
+  w.document.write('<!DOCTYPE html><html><head>'
+    + '<meta charset="UTF-8">'
+    + '<title>' + escH(title) + '</title>'
+    + '<style>' + aurisPrintCSS() + '</style>'
+    + '</head><body>' + html + '</body></html>');
+  w.document.close();
+  w.focus();
+  setTimeout(function() { w.print(); }, 600);
+}
+
+function aurisPrintCSS() {
+  return `
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: Arial, Helvetica, sans-serif; font-size: 11pt; color: #1a1a1a; background: #fff; }
+    .report-page { max-width: 210mm; margin: 0 auto; padding: 12mm; }
+    
+    /* Header */
+    .rpt-header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 3px solid #1D9E75; padding-bottom: 10px; margin-bottom: 16px; }
+    .rpt-logo { font-size: 22pt; font-weight: 900; color: #1D9E75; letter-spacing: -1px; }
+    .rpt-company { font-size: 9pt; color: #6b7280; margin-top: 2px; }
+    .rpt-meta { text-align: right; font-size: 9pt; color: #6b7280; }
+    .rpt-meta strong { color: #1a1a1a; }
+    
+    /* Title */
+    .rpt-title { font-size: 16pt; font-weight: 700; color: #1a1a1a; margin-bottom: 4px; }
+    .rpt-subtitle { font-size: 10pt; color: #6b7280; margin-bottom: 16px; }
+    
+    /* Sections */
+    .rpt-section { margin-bottom: 16px; }
+    .rpt-section-title { font-size: 11pt; font-weight: 700; color: #fff; background: #1D9E75; padding: 5px 10px; border-radius: 4px; margin-bottom: 8px; }
+    .rpt-section-title.red { background: #DC2626; }
+    .rpt-section-title.blue { background: #185FA5; }
+    .rpt-section-title.amber { background: #EF9F27; }
+    .rpt-section-title.grey { background: #374151; }
+    
+    /* Fields grid */
+    .rpt-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 16px; margin-bottom: 8px; }
+    .rpt-grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px 12px; }
+    .rpt-field { border-bottom: 1px solid #e5e7eb; padding-bottom: 4px; }
+    .rpt-field label { font-size: 8pt; color: #6b7280; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; display: block; }
+    .rpt-field span { font-size: 10pt; color: #1a1a1a; }
+    .rpt-full { grid-column: 1 / -1; }
+    
+    /* Tables */
+    table { width: 100%; border-collapse: collapse; font-size: 9pt; margin-bottom: 10px; }
+    th { background: #f3f4f6; font-weight: 700; text-align: left; padding: 6px 8px; border: 1px solid #d1d5db; font-size: 8pt; }
+    td { padding: 5px 8px; border: 1px solid #e5e7eb; vertical-align: top; }
+    tr:nth-child(even) td { background: #f9fafb; }
+    
+    /* Badges */
+    .badge { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 8pt; font-weight: 700; }
+    .badge-red { background: #FEE2E2; color: #DC2626; }
+    .badge-amber { background: #FEF3C7; color: #92400E; }
+    .badge-green { background: #D1FAE5; color: #065F46; }
+    .badge-blue { background: #DBEAFE; color: #1E40AF; }
+    .badge-grey { background: #F3F4F6; color: #374151; }
+    
+    /* Signature boxes */
+    .rpt-signatures { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; margin-top: 20px; }
+    .rpt-sig-box { border-top: 2px solid #1a1a1a; padding-top: 6px; }
+    .rpt-sig-box label { font-size: 8pt; color: #6b7280; font-weight: 600; display: block; }
+    .rpt-sig-box .sig-line { height: 30px; }
+    
+    /* Footer */
+    .rpt-footer { margin-top: 20px; padding-top: 8px; border-top: 1px solid #e5e7eb; display: flex; justify-content: space-between; font-size: 8pt; color: #9ca3af; }
+    
+    /* Print settings */
+    @page { size: A4; margin: 10mm; }
+    @media print {
+      body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      .no-print { display: none !important; }
+    }
+  `;
+}
+
+function aurisHeader(title, subtitle, refNo) {
+  var today = new Date().toLocaleDateString('en-GB', {day:'2-digit', month:'short', year:'numeric'});
+  return '<div class="rpt-header">'
+    + '<div><div class="rpt-logo">AURIS360</div><div class="rpt-company">HSE Management Platform by SEPHS Consulting</div></div>'
+    + '<div class="rpt-meta"><strong>' + escH(refNo||'') + '</strong><br>Generated: ' + today + '<br>' + escH(co&&co.name?co.name:'') + '</div>'
+    + '</div>'
+    + '<div class="rpt-title">' + escH(title) + '</div>'
+    + (subtitle ? '<div class="rpt-subtitle">' + escH(subtitle) + '</div>' : '');
+}
+
+function aurisFooter(docType) {
+  return '<div class="rpt-footer">'
+    + '<span>AURIS360 — ' + escH(co&&co.name?co.name:'') + ' | ' + escH(docType) + '</span>'
+    + '<span>This document is system-generated. Verify with original records.</span>'
+    + '<span>Page 1 of 1</span>'
+    + '</div>';
+}
+
+function fld(label, value, full) {
+  return '<div class="rpt-field' + (full?' rpt-full':'') + '"><label>' + label + '</label><span>' + escH(value||'—') + '</span></div>';
+}
+
+function badge(val, map) {
+  var cls = (map&&map[val]) || 'badge-grey';
+  return '<span class="badge ' + cls + '">' + escH(val||'—') + '</span>';
+}
+
+// ── 1. INCIDENT REPORT ──────────────────────────────────────────
+function printIncidentReport(invId) {
+  var inv = (invAllData||[]).find(function(x){ return x.id === invId; });
+  if (!inv) { toast('Incident not found', false); return; }
+
+  var sevMap = {critical:'badge-red', high:'badge-red', medium:'badge-amber', low:'badge-green', negligible:'badge-grey'};
+  var statusMap = {open:'badge-red', 'under_investigation':'badge-amber', closed:'badge-green', 'no_action':'badge-grey'};
+
+  var actions = (typeof actionAllData !== 'undefined' ? actionAllData : [])
+    .filter(function(a){ return a.related_id === invId; });
+
+  var html = '<div class="report-page">'
+    + aurisHeader('Incident Report', 'Workplace Incident / Near Miss Investigation Record', inv.inv_ref||'REF-'+invId.substring(0,8).toUpperCase())
+
+    + '<div class="rpt-section"><div class="rpt-section-title red">Incident Details</div>'
+    + '<div class="rpt-grid">'
+    + fld('Reference No.', inv.inv_ref)
+    + fld('Date of Incident', inv.incident_date ? new Date(inv.incident_date).toLocaleDateString('en-GB') : '')
+    + fld('Severity', '') + '</div>'
+    + '<div class="rpt-grid">'
+    + '<div class="rpt-field"><label>Severity</label><span>' + badge(inv.severity, sevMap) + '</span></div>'
+    + '<div class="rpt-field"><label>Status</label><span>' + badge(inv.status, statusMap) + '</span></div>'
+    + fld('Location', inv.location)
+    + fld('Department', inv.department)
+    + fld('Reported By', inv.reported_by)
+    + fld('Person Involved', inv.person_involved)
+    + '</div>'
+    + '<div class="rpt-grid">'
+    + fld('Description', inv.incident_description, true)
+    + '</div></div>'
+
+    + '<div class="rpt-section"><div class="rpt-section-title amber">Classification</div>'
+    + '<div class="rpt-grid-3">'
+    + fld('H&S Incident', inv.class_hs ? 'Yes' : 'No')
+    + fld('Environmental', inv.class_env ? 'Yes' : 'No')
+    + fld('Property Damage', inv.class_property ? 'Yes' : 'No')
+    + fld('First Aid', inv.class_first_aid ? 'Yes' : 'No')
+    + fld('Medical Treatment', inv.class_medical ? 'Yes' : 'No')
+    + fld('Lost Time Injury', inv.class_lti ? 'Yes' : 'No')
+    + '</div></div>'
+
+    + '<div class="rpt-section"><div class="rpt-section-title">Root Cause Analysis</div>'
+    + '<div class="rpt-grid">'
+    + fld('Immediate Cause', inv.immediate_cause, true)
+    + fld('Root Cause', inv.root_cause, true)
+    + fld('Contributing Factors', inv.contributing_factors, true)
+    + '</div></div>'
+
+    + '<div class="rpt-section"><div class="rpt-section-title blue">Corrective Actions</div>'
+    + (actions.length ? '<table><thead><tr><th>Action</th><th>Responsible</th><th>Due Date</th><th>Status</th></tr></thead><tbody>'
+      + actions.map(function(a){
+          return '<tr><td>' + escH(a.description||'') + '</td><td>' + escH(a.responsible||'') + '</td>'
+            + '<td>' + (a.due_date?new Date(a.due_date).toLocaleDateString('en-GB'):'—') + '</td>'
+            + '<td><span class="badge ' + (a.status==='closed'?'badge-green':a.status==='overdue'?'badge-red':'badge-amber') + '">' + escH(a.status||'') + '</span></td></tr>';
+        }).join('') + '</tbody></table>'
+      : '<p style="color:#6b7280;font-size:9pt;padding:8px">No corrective actions recorded.</p>')
+    + '</div>'
+
+    + '<div class="rpt-signatures">'
+    + '<div class="rpt-sig-box"><div class="sig-line"></div><label>Reported By / Date</label></div>'
+    + '<div class="rpt-sig-box"><div class="sig-line"></div><label>HSE Manager / Date</label></div>'
+    + '<div class="rpt-sig-box"><div class="sig-line"></div><label>Site Manager / Date</label></div>'
+    + '</div>'
+    + aurisFooter('Incident Report')
+    + '</div>';
+
+  aurisPrint(html, 'Incident Report — ' + (inv.inv_ref||invId.substring(0,8)));
+}
+
+// ── 2. RISK ASSESSMENT REPORT ──────────────────────────────────
+function printRiskAssessment(raId) {
+  var ra = (raAllData||[]).find(function(x){ return x.id === raId; });
+  if (!ra) { toast('Risk assessment not found', false); return; }
+
+  var risks = (typeof raRisks !== 'undefined' ? raRisks : [])
+    .filter(function(r){ return r.ra_id === raId; });
+
+  var rrColor = function(rr) {
+    if (rr >= 200) return 'badge-red';
+    if (rr >= 100) return 'badge-amber';
+    if (rr >= 50)  return 'badge-blue';
+    return 'badge-green';
+  };
+
+  var html = '<div class="report-page">'
+    + aurisHeader('Risk Assessment', ra.activity||'', ra.reference||'RA-'+raId.substring(0,8).toUpperCase())
+
+    + '<div class="rpt-section"><div class="rpt-section-title">Assessment Details</div>'
+    + '<div class="rpt-grid">'
+    + fld('Activity / Task', ra.activity, true)
+    + fld('Location', ra.location)
+    + fld('Department', ra.department)
+    + fld('Assessor', ra.assessor)
+    + fld('Assessment Date', ra.assessment_date ? new Date(ra.assessment_date).toLocaleDateString('en-GB') : '')
+    + fld('Review Date', ra.review_date ? new Date(ra.review_date).toLocaleDateString('en-GB') : '')
+    + fld('Status', ra.status)
+    + fld('Persons at Risk', ra.persons_at_risk)
+    + '</div></div>'
+
+    + '<div class="rpt-section"><div class="rpt-section-title red">Hazards & Controls</div>'
+    + (risks.length ? '<table><thead><tr><th>Hazard</th><th>Risk</th><th>Initial RR</th><th>Control Measures</th><th>Residual RR</th></tr></thead><tbody>'
+      + risks.map(function(r){
+          return '<tr>'
+            + '<td>' + escH(r.hazard||'') + '</td>'
+            + '<td>' + escH(r.risk||'') + '</td>'
+            + '<td><span class="badge ' + rrColor(r.initial_rr||0) + '">' + (r.initial_rr||'—') + '</span></td>'
+            + '<td>' + escH(r.control_measures||'') + '</td>'
+            + '<td><span class="badge ' + rrColor(r.residual_rr||0) + '">' + (r.residual_rr||'—') + '</span></td>'
+            + '</tr>';
+        }).join('') + '</tbody></table>'
+      : '<p style="color:#6b7280;font-size:9pt;padding:8px">No risks recorded.</p>')
+    + '</div>'
+
+    + '<div class="rpt-signatures">'
+    + '<div class="rpt-sig-box"><div class="sig-line"></div><label>Assessor / Date</label></div>'
+    + '<div class="rpt-sig-box"><div class="sig-line"></div><label>HSE Manager / Date</label></div>'
+    + '<div class="rpt-sig-box"><div class="sig-line"></div><label>Approved By / Date</label></div>'
+    + '</div>'
+    + aurisFooter('Risk Assessment Report')
+    + '</div>';
+
+  aurisPrint(html, 'Risk Assessment — ' + (ra.reference||raId.substring(0,8)));
+}
+
+// ── 3. AUDIT REPORT ────────────────────────────────────────────
+function printAuditReport(auditId) {
+  var audit = (auditAllData||[]).find(function(x){ return x.id === auditId; });
+  if (!audit) { toast('Audit not found', false); return; }
+
+  var findings = (typeof auditFindings !== 'undefined' ? auditFindings : [])
+    .filter(function(f){ return f.audit_id === auditId; });
+
+  var score = audit.score_good && audit.total_items
+    ? Math.round((audit.score_good / audit.total_items) * 100) + '%'
+    : audit.score || '—';
+
+  var html = '<div class="report-page">'
+    + aurisHeader('Inspection / Audit Report', audit.audit_type||'Workplace Inspection', 'AUD-'+auditId.substring(0,8).toUpperCase())
+
+    + '<div class="rpt-section"><div class="rpt-section-title">Audit Details</div>'
+    + '<div class="rpt-grid">'
+    + fld('Audit Type', audit.audit_type)
+    + fld('Location / Area', audit.location)
+    + fld('Date', audit.audit_date ? new Date(audit.audit_date).toLocaleDateString('en-GB') : '')
+    + fld('Lead Auditor', audit.auditor)
+    + fld('Department', audit.department)
+    + fld('Score', score)
+    + fld('Status', audit.status)
+    + fld('Next Audit', audit.next_audit_date ? new Date(audit.next_audit_date).toLocaleDateString('en-GB') : '')
+    + '</div></div>'
+
+    + '<div class="rpt-section"><div class="rpt-section-title red">Findings & Non-Conformances</div>'
+    + (findings.length ? '<table><thead><tr><th>Category</th><th>Finding</th><th>Severity</th><th>Action Required</th><th>Responsible</th><th>Due</th></tr></thead><tbody>'
+      + findings.map(function(f){
+          var sev = f.severity;
+          var cls = sev==='critical'?'badge-red':sev==='major'?'badge-amber':sev==='minor'?'badge-blue':'badge-grey';
+          return '<tr>'
+            + '<td>' + escH(f.category||'') + '</td>'
+            + '<td>' + escH(f.finding||'') + '</td>'
+            + '<td><span class="badge ' + cls + '">' + escH(sev||'') + '</span></td>'
+            + '<td>' + escH(f.action_required||'') + '</td>'
+            + '<td>' + escH(f.responsible||'') + '</td>'
+            + '<td>' + (f.due_date?new Date(f.due_date).toLocaleDateString('en-GB'):'—') + '</td>'
+            + '</tr>';
+        }).join('') + '</tbody></table>'
+      : '<p style="color:#6b7280;font-size:9pt;padding:8px">No findings recorded.</p>')
+    + '</div>'
+
+    + '<div class="rpt-section"><div class="rpt-section-title blue">General Observations</div>'
+    + '<div class="rpt-grid">'
+    + fld('Positive Observations', audit.positive_observations, true)
+    + fld('Overall Comments', audit.comments, true)
+    + '</div></div>'
+
+    + '<div class="rpt-signatures">'
+    + '<div class="rpt-sig-box"><div class="sig-line"></div><label>Lead Auditor / Date</label></div>'
+    + '<div class="rpt-sig-box"><div class="sig-line"></div><label>Area Manager / Date</label></div>'
+    + '<div class="rpt-sig-box"><div class="sig-line"></div><label>HSE Manager / Date</label></div>'
+    + '</div>'
+    + aurisFooter('Audit / Inspection Report')
+    + '</div>';
+
+  aurisPrint(html, 'Audit Report — ' + auditId.substring(0,8));
+}
+
+// ── 4. PERMIT TO WORK ──────────────────────────────────────────
+function printPermit(permitId) {
+  var ptw = (ptwAllData||[]).find(function(x){ return x.id === permitId; });
+  if (!ptw) { toast('Permit not found', false); return; }
+
+  var statusMap = {active:'badge-green', approved:'badge-green', pending:'badge-amber', rejected:'badge-red', closed:'badge-grey', expired:'badge-red'};
+
+  var html = '<div class="report-page">'
+    + aurisHeader('Permit to Work', ptw.permit_type||'Work Permit', ptw.permit_number||'PTW-'+permitId.substring(0,8).toUpperCase())
+
+    + '<div class="rpt-section"><div class="rpt-section-title">Permit Details</div>'
+    + '<div class="rpt-grid">'
+    + fld('Permit Number', ptw.permit_number)
+    + fld('Permit Type', ptw.permit_type)
+    + '<div class="rpt-field"><label>Status</label><span>' + badge(ptw.status, statusMap) + '</span></div>'
+    + fld('Location', ptw.location)
+    + fld('Start Date/Time', ptw.start_datetime ? new Date(ptw.start_datetime).toLocaleString('en-GB') : '')
+    + fld('End Date/Time', ptw.end_datetime ? new Date(ptw.end_datetime).toLocaleString('en-GB') : '')
+    + fld('Contractor', ptw.contractor_name)
+    + fld('Issued To', ptw.issued_to)
+    + fld('Approved By', ptw.approved_by)
+    + fld('Supervisor', ptw.supervisor)
+    + fld('Work Description', ptw.work_description, true)
+    + '</div></div>'
+
+    + '<div class="rpt-section"><div class="rpt-section-title red">Hazards Identified</div>'
+    + '<div class="rpt-grid"><div class="rpt-field rpt-full"><label>Hazards</label><span>' + escH(ptw.hazards||'—') + '</span></div></div>'
+    + '</div>'
+
+    + '<div class="rpt-section"><div class="rpt-section-title blue">Precautions & PPE Required</div>'
+    + '<div class="rpt-grid">'
+    + fld('Precautions', ptw.precautions, true)
+    + fld('PPE Required', ptw.ppe_required, true)
+    + fld('Isolation Required', ptw.isolation_required ? 'Yes' : 'No')
+    + fld('Hot Work', ptw.hot_work ? 'Yes' : 'No')
+    + fld('Confined Space', ptw.confined_space ? 'Yes' : 'No')
+    + fld('Working at Height', ptw.working_at_height ? 'Yes' : 'No')
+    + '</div></div>'
+
+    + '<div class="rpt-signatures">'
+    + '<div class="rpt-sig-box"><div class="sig-line"></div><label>Issued By / Date</label></div>'
+    + '<div class="rpt-sig-box"><div class="sig-line"></div><label>Approved By / Date</label></div>'
+    + '<div class="rpt-sig-box"><div class="sig-line"></div><label>Closed By / Date</label></div>'
+    + '</div>'
+    + aurisFooter('Permit to Work')
+    + '</div>';
+
+  aurisPrint(html, 'Permit to Work — ' + (ptw.permit_number||permitId.substring(0,8)));
+}
+
+// ── 5. HSE MONTHLY SUMMARY REPORT ──────────────────────────────
+async function printMonthlySummary() {
+  toast('Generating monthly report...');
+  try {
+    var now = new Date();
+    var monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+    var monthEnd = new Date(now.getFullYear(), now.getMonth()+1, 0).toISOString();
+    var monthName = now.toLocaleDateString('en-GB', {month:'long', year:'numeric'});
+
+    // Fetch this month's data
+    var cid = prof.company_id ? '&company_id=eq.' + prof.company_id : '';
+    var [events, audits, actions, permits] = await Promise.all([
+      api('/events?created_at=gte.' + monthStart + '&created_at=lte.' + monthEnd + cid + '&select=*'),
+      api('/inspections?audit_date=gte.' + monthStart + '&audit_date=lte.' + monthEnd + cid + '&select=*'),
+      api('/action_tracker?created_at=gte.' + monthStart + '&created_at=lte.' + monthEnd + cid + '&select=*'),
+      api('/permits?created_at=gte.' + monthStart + '&created_at=lte.' + monthEnd + cid + '&select=*'),
+    ]);
+
+    events  = events  || [];
+    audits  = audits  || [];
+    actions = actions || [];
+    permits = permits || [];
+
+    var critical = events.filter(function(e){ return e.severity==='critical'||e.severity==='high'; }).length;
+    var openActions = actions.filter(function(a){ return a.status==='open'; }).length;
+    var overdueActions = actions.filter(function(a){ return a.status==='overdue'; }).length;
+    var avgScore = audits.length
+      ? Math.round(audits.reduce(function(s,a){ return s + (a.score_good||0)/(a.total_items||1)*100; }, 0) / audits.length)
+      : 0;
+
+    var html = '<div class="report-page">'
+      + aurisHeader('Monthly HSE Summary Report', monthName, 'MONTHLY-' + now.getFullYear() + (now.getMonth()+1).toString().padStart(2,'0'))
+
+      + '<div class="rpt-section"><div class="rpt-section-title">Key Performance Indicators</div>'
+      + '<div class="rpt-grid-3">'
+      + '<div class="rpt-field"><label>Total Incidents</label><span style="font-size:18pt;font-weight:700;color:#DC2626">' + events.length + '</span></div>'
+      + '<div class="rpt-field"><label>High/Critical</label><span style="font-size:18pt;font-weight:700;color:#EF9F27">' + critical + '</span></div>'
+      + '<div class="rpt-field"><label>Inspections Done</label><span style="font-size:18pt;font-weight:700;color:#1D9E75">' + audits.length + '</span></div>'
+      + '<div class="rpt-field"><label>Open Actions</label><span style="font-size:18pt;font-weight:700;color:#185FA5">' + openActions + '</span></div>'
+      + '<div class="rpt-field"><label>Overdue Actions</label><span style="font-size:18pt;font-weight:700;color:#DC2626">' + overdueActions + '</span></div>'
+      + '<div class="rpt-field"><label>Avg Audit Score</label><span style="font-size:18pt;font-weight:700;color:#1D9E75">' + avgScore + '%</span></div>'
+      + '</div></div>'
+
+      + '<div class="rpt-section"><div class="rpt-section-title red">Incidents This Month</div>'
+      + (events.length ? '<table><thead><tr><th>Ref</th><th>Date</th><th>Severity</th><th>Location</th><th>Status</th></tr></thead><tbody>'
+        + events.map(function(e){
+            var cls = e.severity==='critical'?'badge-red':e.severity==='high'?'badge-red':e.severity==='medium'?'badge-amber':'badge-green';
+            return '<tr><td>' + escH(e.inv_ref||'—') + '</td>'
+              + '<td>' + (e.incident_date?new Date(e.incident_date).toLocaleDateString('en-GB'):'—') + '</td>'
+              + '<td><span class="badge ' + cls + '">' + escH(e.severity||'') + '</span></td>'
+              + '<td>' + escH(e.location||'—') + '</td>'
+              + '<td><span class="badge ' + (e.status==='closed'?'badge-green':'badge-amber') + '">' + escH(e.status||'') + '</span></td>'
+              + '</tr>';
+          }).join('') + '</tbody></table>'
+        : '<p style="color:#6b7280;font-size:9pt;padding:8px">No incidents recorded this month. ✓</p>')
+      + '</div>'
+
+      + '<div class="rpt-section"><div class="rpt-section-title blue">Inspections & Audits</div>'
+      + (audits.length ? '<table><thead><tr><th>Type</th><th>Date</th><th>Location</th><th>Score</th><th>Status</th></tr></thead><tbody>'
+        + audits.map(function(a){
+            var sc = a.score_good && a.total_items ? Math.round(a.score_good/a.total_items*100)+'%' : (a.score||'—');
+            return '<tr><td>' + escH(a.audit_type||'Inspection') + '</td>'
+              + '<td>' + (a.audit_date?new Date(a.audit_date).toLocaleDateString('en-GB'):'—') + '</td>'
+              + '<td>' + escH(a.location||'—') + '</td>'
+              + '<td>' + sc + '</td>'
+              + '<td><span class="badge ' + (a.status==='closed'?'badge-green':'badge-amber') + '">' + escH(a.status||'') + '</span></td>'
+              + '</tr>';
+          }).join('') + '</tbody></table>'
+        : '<p style="color:#6b7280;font-size:9pt;padding:8px">No inspections recorded this month.</p>')
+      + '</div>'
+
+      + '<div class="rpt-section"><div class="rpt-section-title amber">Outstanding Actions</div>'
+      + (openActions + overdueActions > 0
+        ? '<table><thead><tr><th>Action</th><th>Responsible</th><th>Due Date</th><th>Status</th></tr></thead><tbody>'
+          + actions.filter(function(a){ return a.status!=='closed'; }).map(function(a){
+              return '<tr><td>' + escH(a.description||'') + '</td>'
+                + '<td>' + escH(a.responsible||'—') + '</td>'
+                + '<td>' + (a.due_date?new Date(a.due_date).toLocaleDateString('en-GB'):'—') + '</td>'
+                + '<td><span class="badge ' + (a.status==='overdue'?'badge-red':'badge-amber') + '">' + escH(a.status||'') + '</span></td>'
+                + '</tr>';
+            }).join('') + '</tbody></table>'
+        : '<p style="color:#6b7280;font-size:9pt;padding:8px">All actions are closed. ✓</p>')
+      + '</div>'
+
+      + '<div class="rpt-signatures">'
+      + '<div class="rpt-sig-box"><div class="sig-line"></div><label>Prepared By / Date</label></div>'
+      + '<div class="rpt-sig-box"><div class="sig-line"></div><label>HSE Manager / Date</label></div>'
+      + '<div class="rpt-sig-box"><div class="sig-line"></div><label>Senior Management / Date</label></div>'
+      + '</div>'
+      + aurisFooter('Monthly HSE Summary')
+      + '</div>';
+
+    aurisPrint(html, 'HSE Monthly Report — ' + monthName);
+  } catch(e) {
+    toast('Error generating report: ' + e.message, false);
+  }
+}
+
+// ── Print buttons helper ────────────────────────────────────────
+function addPrintBtn(container, onclick, label) {
+  var btn = document.createElement('button');
+  btn.className = 'btn btn-sm';
+  btn.style.cssText = 'gap:6px;';
+  btn.innerHTML = '<i class="ti ti-printer"></i>' + (label||'Print PDF');
+  btn.setAttribute('onclick', onclick);
+  if (container) container.appendChild(btn);
+  return btn;
+}
+
 </script>
 </head>
 <body>
@@ -22152,6 +22609,7 @@ async function sendTestEmail() {
 </select>
 <button class="btn btn-sm" onclick="loadDash()" style="gap:4px"><i class="ti ti-refresh" id="dash-refresh-icon"></i>Refresh</button>
 <button class="btn btn-sm btn-primary" onclick="showPage('executive',document.getElementById('nav-executive'))"><i class="ti ti-chart-bar"></i>Executive View</button>
+<button class="btn btn-sm" onclick="printMonthlySummary()" title="Monthly PDF Report"><i class="ti ti-file-analytics"></i>Monthly Report</button>
 </div>
 </div>
 
@@ -23189,6 +23647,7 @@ async function sendTestEmail() {
 </div>
 <div style="display:flex;gap:8px">
 <button class="btn btn-primary" onclick="imsNewIncident()" id="ims-report-btn"><i class="ti ti-plus"></i>Report incident</button>
+<button class="btn btn-sm" onclick="var sel=document.getElementById('inv-list')?.querySelector('.active');if(sel)printIncidentReport(sel.dataset.id||invEditId);else toast('Select an incident first',false)" title="Print PDF"><i class="ti ti-printer"></i>Print PDF</button>
 </div>
 </div>
 
@@ -24071,6 +24530,7 @@ async function sendTestEmail() {
 </div>
 <div style="display:flex;gap:8px" id="insp-header-btns">
 <button class="btn btn-primary" id="insp-new-btn" onclick="auditNew()"><i class="ti ti-plus"></i>New inspection</button>
+<button class="btn btn-sm" onclick="if(typeof auditCurrentId!=='undefined'&&auditCurrentId)printAuditReport(auditCurrentId);else toast('Open an audit first',false)" title="Print PDF"><i class="ti ti-printer"></i>Print PDF</button>
 </div>
 </div>
 
@@ -24402,6 +24862,7 @@ async function sendTestEmail() {
 <div style="display:flex;gap:8px" id="risk-add-btn">
 <button class="btn btn-sm" id="ra-lib-btn" onclick="raShowLibrary()"><i class="ti ti-books"></i>Libraries</button>
 <button class="btn btn-primary" onclick="raShowNewPanel()" id="ra-new-main-btn" style="display:none"><i class="ti ti-plus"></i>New RA</button>
+<button class="btn btn-sm" onclick="if(raEditingId)printRiskAssessment(raEditingId);else toast('Open a risk assessment first',false)" title="Print PDF"><i class="ti ti-printer"></i>Print PDF</button>
 </div>
 </div>
 
@@ -25684,6 +26145,7 @@ async function sendTestEmail() {
 <div style="display:flex;gap:8px">
 <button class="btn btn-sm" id="ptw-btn-active" onclick="ptwFilterSet('active',this)" style="background:var(--green);color:#fff;border-color:var(--green)"><i class="ti ti-activity"></i>Active</button>
 <button class="btn btn-sm" id="ptw-btn-all" onclick="ptwFilterSet('all',this)"><i class="ti ti-list"></i>All</button>
+<button class="btn btn-sm" onclick="if(typeof ptwCurrentId!=='undefined'&&ptwCurrentId)printPermit(ptwCurrentId);else toast('Open a permit first',false)" title="Print PDF"><i class="ti ti-printer"></i>Print PDF</button>
 <button class="btn btn-primary" id="ptw-new-btn" style="display:none" onclick="ptwNew()"><i class="ti ti-plus"></i>New Permit</button>
 </div>
 </div>
