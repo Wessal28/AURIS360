@@ -1,5 +1,4 @@
 {
-    "version": 2,
   "functions": {
     "api/send-emails.js": {
       "maxDuration": 30
@@ -8,7 +7,7 @@
   "crons": [
     {
       "path": "/api/send-emails",
-      "schedule": "*/5 * * * *"
+      "schedule": "0 9 * * *"
     }
   ]
 }
