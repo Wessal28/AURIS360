@@ -17026,13 +17026,288 @@ function dcFilterList(){
       +(x.effective_date||x.issue_date?'<span><i class="ti ti-calendar" style="font-size:10px"></i> Issued: '+new Date(x.effective_date||x.issue_date).toLocaleDateString('en-GB')+'</span>':'')
       +(x.review_date?'<span style="color:'+(isReviewDue?'#C2410C':'inherit')+'"><i class="ti ti-refresh" style="font-size:10px"></i> Review: '+new Date(x.review_date).toLocaleDateString('en-GB')+'</span>':'')
       +(x.expiry_date?'<span style="color:'+(isExpired?'var(--red)':'inherit')+'"><i class="ti ti-clock" style="font-size:10px"></i> Expires: '+new Date(x.expiry_date).toLocaleDateString('en-GB')+'</span>':'')
-      +(x.file_url?'<a href="'+escH(x.file_url)+'" target="_blank" onclick="event.stopPropagation()" style="color:var(--green)"><i class="ti ti-external-link" style="font-size:10px"></i> Open file</a>':'')
+      +(x.file_url?'<a href="javascript:void(0)" onclick="event.stopPropagation();dcViewDocById(\''+x.id+'\')" style="color:var(--green);font-weight:600"><i class="ti ti-eye" style="font-size:11px"></i> Preview</a>':'')
       +'</div></div>'
       +'<div style="padding:12px;display:flex;align-items:center;color:var(--text3)"><i class="ti ti-chevron-right" style="font-size:18px"></i></div>'
       +'</div></div>';
   });
   el.innerHTML=h;
 }
+
+/* ═══════════════════════════════════════════════════════════════════
+   DOCUMENT CONTROL — UPLOAD + INLINE VIEWER
+   - Upload  : Supabase Storage (bucket: documents)
+   - Storage path: <company_id>/<timestamp>_<sanitized_name>
+   - Viewer  : type-aware modal
+       PDF / image / SVG    → native browser rendering
+       docx / xlsx / pptx   → Office Online embed viewer
+       txt / csv / md       → fetched text in <pre>
+       other                → metadata + download
+═══════════════════════════════════════════════════════════════════ */
+var DC_BUCKET = 'documents';
+var _dcUploadAbort = null;
+
+function dcUploadDrop(ev){
+  ev.preventDefault();
+  ev.currentTarget.classList.remove('dragover');
+  var f = ev.dataTransfer.files && ev.dataTransfer.files[0];
+  if(f) dcUploadFile(f);
+}
+
+function dcSanitiseName(name){
+  // keep ASCII letters/digits/dot/dash, replace the rest with _
+  return (name||'file').replace(/[^A-Za-z0-9._-]/g,'_').slice(0,120);
+}
+
+function dcMimeFromName(name){
+  var ext = (name||'').toLowerCase().split('.').pop();
+  var map = {
+    pdf:'application/pdf',
+    png:'image/png', jpg:'image/jpeg', jpeg:'image/jpeg', gif:'image/gif', webp:'image/webp', svg:'image/svg+xml',
+    doc:'application/msword', docx:'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    xls:'application/vnd.ms-excel', xlsx:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    ppt:'application/vnd.ms-powerpoint', pptx:'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+    txt:'text/plain', csv:'text/csv', md:'text/markdown'
+  };
+  return map[ext] || 'application/octet-stream';
+}
+
+function dcIconForMime(mime, name){
+  var ext = (name||'').toLowerCase().split('.').pop();
+  if(mime==='application/pdf') return 'ti-file-type-pdf';
+  if(mime && mime.startsWith('image/')) return 'ti-photo';
+  if(ext==='docx'||ext==='doc') return 'ti-file-type-doc';
+  if(ext==='xlsx'||ext==='xls'||ext==='csv') return 'ti-file-type-xls';
+  if(ext==='pptx'||ext==='ppt') return 'ti-file-type-ppt';
+  if(ext==='txt'||ext==='md') return 'ti-file-text';
+  return 'ti-file';
+}
+
+function dcFormatSize(bytes){
+  if(!bytes) return '';
+  if(bytes < 1024) return bytes+' B';
+  if(bytes < 1024*1024) return (bytes/1024).toFixed(1)+' KB';
+  return (bytes/1024/1024).toFixed(2)+' MB';
+}
+
+async function dcUploadFile(file){
+  if(!file) return;
+  if(file.size > 50*1024*1024){ toast('File too large — max 50 MB',false); return; }
+  if(!prof?.company_id){ toast('No company linked',false); return; }
+  if(!tok){ toast('Not authenticated',false); return; }
+
+  // Show progress UI
+  document.getElementById('df-uploader-idle').style.display='none';
+  document.getElementById('df-uploader-done').style.display='none';
+  document.getElementById('df-uploader-progress').style.display='block';
+  document.getElementById('df-upload-name').textContent = file.name;
+  document.getElementById('df-upload-bar').style.width = '0%';
+  document.getElementById('df-upload-pct').textContent = '0%';
+
+  // Path: <company_id>/<timestamp>_<sanitized>
+  var path = prof.company_id + '/' + Date.now() + '_' + dcSanitiseName(file.name);
+
+  // Use XHR for progress events (fetch doesn't expose upload progress)
+  var xhr = new XMLHttpRequest();
+  _dcUploadAbort = function(){ try{xhr.abort();}catch(_){} };
+  xhr.open('POST', SB+'/storage/v1/object/'+DC_BUCKET+'/'+encodeURIComponent(path), true);
+  xhr.setRequestHeader('Authorization','Bearer '+tok);
+  xhr.setRequestHeader('apikey', KEY);
+  xhr.setRequestHeader('x-upsert','true');
+  // Let the browser set the right Content-Type from the File object
+  if(file.type) xhr.setRequestHeader('Content-Type', file.type);
+
+  xhr.upload.onprogress = function(e){
+    if(!e.lengthComputable) return;
+    var pct = Math.round((e.loaded/e.total)*100);
+    document.getElementById('df-upload-bar').style.width = pct+'%';
+    document.getElementById('df-upload-pct').textContent = pct+'%';
+  };
+
+  xhr.onload = function(){
+    _dcUploadAbort = null;
+    if(xhr.status>=200 && xhr.status<300){
+      // Public URL
+      var publicUrl = SB+'/storage/v1/object/public/'+DC_BUCKET+'/'+path;
+      var mime = file.type || dcMimeFromName(file.name);
+
+      // Populate form fields
+      document.getElementById('df-url').value       = publicUrl;
+      document.getElementById('df-file-name').value = file.name;
+      document.getElementById('df-file-size').value = file.size;
+      document.getElementById('df-file-mime').value = mime;
+      document.getElementById('df-file-path').value = path;
+
+      // Swap UI to "done" state
+      document.getElementById('df-uploader-progress').style.display='none';
+      document.getElementById('df-uploader-done').style.display='block';
+      document.getElementById('df-upload-done-name').textContent = file.name;
+      document.getElementById('df-upload-done-size').textContent = dcFormatSize(file.size)+' · '+mime;
+      document.getElementById('df-upload-icon').className = 'ti '+dcIconForMime(mime,file.name);
+
+      toast('File uploaded');
+    } else {
+      // Common failure: bucket doesn't exist yet
+      var msg = '';
+      try{ msg = JSON.parse(xhr.responseText).message || xhr.responseText; }catch(_){ msg = xhr.responseText; }
+      if(/Bucket not found|404/i.test(msg+xhr.status)){
+        toast('Storage bucket "'+DC_BUCKET+'" missing — see console for setup', false);
+        console.warn('[Document Control] Create the storage bucket in Supabase:\n'+dcStorageSetupSQL());
+      } else {
+        toast('Upload failed: '+msg, false);
+      }
+      dcUploadClearUI();
+    }
+  };
+  xhr.onerror = function(){
+    _dcUploadAbort = null;
+    toast('Upload failed — network error', false);
+    dcUploadClearUI();
+  };
+
+  xhr.send(file);
+}
+
+function dcUploadClear(){
+  // Just clears the form fields & UI; doesn't delete remote file (admin can do that via "delete document")
+  ['df-url','df-file-name','df-file-size','df-file-mime','df-file-path'].forEach(function(id){
+    var el = document.getElementById(id); if(el) el.value='';
+  });
+  dcUploadClearUI();
+}
+
+function dcUploadClearUI(){
+  document.getElementById('df-uploader-idle').style.display='block';
+  document.getElementById('df-uploader-progress').style.display='none';
+  document.getElementById('df-uploader-done').style.display='none';
+  document.getElementById('df-file-input').value = '';
+}
+
+// When admin types a URL into the fallback field, restore the "done" tile so they can preview
+function dcUrlEntered(){
+  var url = document.getElementById('df-url').value.trim();
+  if(!url){ dcUploadClearUI(); return; }
+  var name = document.getElementById('df-file-name').value || url.split('/').pop().split('?')[0] || 'External file';
+  document.getElementById('df-file-name').value = name;
+  if(!document.getElementById('df-file-mime').value){
+    document.getElementById('df-file-mime').value = dcMimeFromName(name);
+  }
+  document.getElementById('df-uploader-idle').style.display='none';
+  document.getElementById('df-uploader-progress').style.display='none';
+  document.getElementById('df-uploader-done').style.display='block';
+  document.getElementById('df-upload-done-name').textContent = name;
+  document.getElementById('df-upload-done-size').textContent = 'External URL';
+  document.getElementById('df-upload-icon').className = 'ti '+dcIconForMime(document.getElementById('df-file-mime').value, name);
+}
+
+function dcPreviewCurrent(){
+  var url  = document.getElementById('df-url').value;
+  var name = document.getElementById('df-file-name').value;
+  var mime = document.getElementById('df-file-mime').value || dcMimeFromName(name);
+  if(!url){ toast('No file to preview',false); return; }
+  dcOpenViewer({ file_url:url, file_name:name, file_mime:mime });
+}
+
+/* ── INLINE VIEWER ───────────────────────────────────────────────── */
+function dcOpenViewer(doc){
+  if(!doc || !doc.file_url){ toast('No file attached to this document',false); return; }
+  var name = doc.file_name || doc.title || doc.file_url.split('/').pop();
+  var mime = (doc.file_mime || dcMimeFromName(name)).toLowerCase();
+  var url  = doc.file_url;
+
+  document.getElementById('dc-viewer-title').textContent = name;
+  document.getElementById('dc-viewer-meta').textContent  = mime + (doc.file_size?' · '+dcFormatSize(doc.file_size):'');
+  document.getElementById('dc-viewer-download').href     = url;
+  document.getElementById('dc-viewer-download').setAttribute('download', name);
+  document.getElementById('dc-viewer-open').href         = url;
+
+  var body = document.getElementById('dc-viewer-body');
+  body.innerHTML = '<div style="padding:40px;text-align:center;color:var(--text2)"><i class="ti ti-loader" style="font-size:28px;animation:spin 1s linear infinite"></i><div style="margin-top:10px;font-size:13px">Loading preview…</div></div>';
+
+  // Pick the right renderer
+  setTimeout(function(){
+    if(mime === 'application/pdf'){
+      body.innerHTML = '<embed src="'+escH(url)+'#toolbar=1" type="application/pdf" style="width:100%;height:100%;border:none"/>';
+    }
+    else if(mime.startsWith('image/')){
+      body.innerHTML = '<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:#0f172a;overflow:auto;padding:20px"><img src="'+escH(url)+'" style="max-width:100%;max-height:100%;object-fit:contain;box-shadow:0 4px 24px rgba(0,0,0,.3)"/></div>';
+    }
+    else if(/wordprocessingml|spreadsheetml|presentationml|msword|ms-excel|ms-powerpoint/i.test(mime)
+         || /\.(docx?|xlsx?|pptx?)$/i.test(name)){
+      // Microsoft Office Online viewer — requires publicly accessible URL (Supabase Storage public bucket gives us this)
+      var officeUrl = 'https://view.officeapps.live.com/op/embed.aspx?src=' + encodeURIComponent(url);
+      body.innerHTML = '<iframe src="'+escH(officeUrl)+'" style="width:100%;height:100%;border:none" sandbox="allow-scripts allow-same-origin allow-forms allow-popups"></iframe>'
+        + '<div style="position:absolute;bottom:10px;right:10px;font-size:10px;color:#94a3b8;background:rgba(15,23,42,.7);padding:4px 8px;border-radius:4px">Powered by Office Online</div>';
+    }
+    else if(/^text\/|json|csv|markdown|xml/i.test(mime)){
+      fetch(url).then(function(r){ return r.text(); }).then(function(txt){
+        var safe = (txt||'').replace(/[<>&]/g,function(c){return c==='<'?'&lt;':c==='>'?'&gt;':'&amp;';});
+        body.innerHTML = '<pre style="margin:0;padding:20px;height:100%;overflow:auto;background:#0f172a;color:#e2e8f0;font-family:Menlo,Consolas,monospace;font-size:12px;line-height:1.5;white-space:pre-wrap;word-break:break-word">'+safe+'</pre>';
+      }).catch(function(){
+        body.innerHTML = dcViewerFallbackHTML(url, name, mime);
+      });
+    }
+    else {
+      body.innerHTML = dcViewerFallbackHTML(url, name, mime);
+    }
+  }, 50);
+
+  document.getElementById('dc-viewer-modal').style.display = 'flex';
+}
+
+function dcViewerFallbackHTML(url, name, mime){
+  return '<div style="padding:60px 30px;text-align:center;color:var(--text2)">'
+       + '<i class="ti ti-file-unknown" style="font-size:54px;color:var(--text3);display:block;margin-bottom:14px"></i>'
+       + '<div style="font-size:15px;font-weight:600;color:var(--text);margin-bottom:6px">No inline preview available</div>'
+       + '<div style="font-size:13px;margin-bottom:18px">This file type (<code>'+escH(mime||'unknown')+'</code>) can\'t be previewed in the browser, but you can still download it.</div>'
+       + '<a href="'+escH(url)+'" download="'+escH(name)+'" class="btn btn-primary" style="display:inline-flex"><i class="ti ti-download"></i>Download '+escH(name)+'</a>'
+       + '</div>';
+}
+
+function dcCloseViewer(){
+  document.getElementById('dc-viewer-modal').style.display = 'none';
+  document.getElementById('dc-viewer-body').innerHTML = '';
+}
+
+// Open viewer from a document row click — wired into the list renderer
+function dcViewDocById(id){
+  api('/documents?id=eq.'+id+'&select=*').then(function(rows){
+    if(rows && rows[0]) dcOpenViewer(rows[0]);
+    else toast('Document not found',false);
+  }).catch(function(e){ toast('Load failed: '+e.message, false); });
+}
+
+// Supabase Storage setup helper for the admin
+function dcStorageSetupSQL(){
+  return [
+    "-- 1) Create the storage bucket (Supabase → Storage → New bucket)",
+    "--    Name: documents",
+    "--    Public: YES (required for inline viewers)",
+    "",
+    "-- 2) Add file metadata columns to the documents table",
+    "ALTER TABLE documents",
+    "  ADD COLUMN IF NOT EXISTS file_size  bigint,",
+    "  ADD COLUMN IF NOT EXISTS file_mime  text,",
+    "  ADD COLUMN IF NOT EXISTS file_path  text;",
+    "",
+    "-- 3) Storage policies (run in Supabase SQL editor)",
+    "-- Allow authenticated users to upload to their company folder",
+    "CREATE POLICY \"co_upload\" ON storage.objects",
+    "  FOR INSERT TO authenticated",
+    "  WITH CHECK (bucket_id = 'documents');",
+    "",
+    "-- Allow anyone to read (so Office Online viewer can fetch the file)",
+    "CREATE POLICY \"public_read\" ON storage.objects",
+    "  FOR SELECT TO public",
+    "  USING (bucket_id = 'documents');",
+    "",
+    "-- Allow authenticated users to delete their company's files",
+    "CREATE POLICY \"co_delete\" ON storage.objects",
+    "  FOR DELETE TO authenticated",
+    "  USING (bucket_id = 'documents');"
+  ].join('\n');
+}
+window.dcStorageSetupSQL = dcStorageSetupSQL;
 
 // ── New / Edit ─────────────────────────────────────────────────────────────────
 function dcNew(){
@@ -17069,6 +17344,7 @@ function dcNew(){
   dcPopulatePeopleSelects();
   document.getElementById('dc-view-all').style.display='none';
   document.getElementById('dc-form-view').style.display='block';
+  try{ dcUploadClearUI(); }catch(_){}
   dcFormTab('details', document.getElementById('dc-ftab-details'));
 }
 
@@ -17111,6 +17387,24 @@ async function dcEdit(id){
   var authorDate=document.getElementById('dc-sign-author-date');if(authorDate)authorDate.value=x.issue_date||'';
   var revDate=document.getElementById('dc-sign-reviewer-date');if(revDate)revDate.value=x.last_reviewed_date||'';
   var appDate=document.getElementById('dc-sign-approver-date');if(appDate)appDate.value=x.approved_at?.slice(0,10)||'';
+  // Populate uploader "done" tile if the document already has a file
+  try{
+    var gf2=function(fid,val){var el=document.getElementById(fid);if(el)el.value=val||'';};
+    gf2('df-file-size', x.file_size);
+    gf2('df-file-mime', x.file_mime);
+    gf2('df-file-path', x.file_path);
+    if(x.file_url){
+      document.getElementById('df-uploader-idle').style.display='none';
+      document.getElementById('df-uploader-progress').style.display='none';
+      document.getElementById('df-uploader-done').style.display='block';
+      document.getElementById('df-upload-done-name').textContent = x.file_name || x.file_url.split('/').pop();
+      var mt = x.file_mime || dcMimeFromName(x.file_name||'');
+      document.getElementById('df-upload-done-size').textContent = (x.file_size?dcFormatSize(x.file_size)+' · ':'')+mt;
+      document.getElementById('df-upload-icon').className = 'ti '+dcIconForMime(mt, x.file_name||'');
+    } else {
+      dcUploadClearUI();
+    }
+  }catch(_){}
   document.getElementById('dc-view-all').style.display='none';
   document.getElementById('dc-form-view').style.display='block';
   dcFormTab('details', document.getElementById('dc-ftab-details'));
@@ -17187,6 +17481,9 @@ async function dcSave(){
     supersedes_ref:g('df-supersedes'),
     legal_refs:g('df-legal-refs')?g('df-legal-refs').split(',').map(t=>t.trim()).filter(Boolean):[],
     file_url:g('df-url'),file_name:g('df-file-name'),location:g('df-location'),
+    file_size:g('df-file-size')?parseInt(g('df-file-size'))||null:null,
+    file_mime:g('df-file-mime')||null,
+    file_path:g('df-file-path')||null,
     issue_date:g('df-issue')||null,effective_date:g('df-effective')||null,
     expiry_date:g('df-expiry')||null,review_date:g('df-review')||null,
     review_interval_months:parseInt(g('df-review-interval'))||12,
@@ -31009,10 +31306,48 @@ async function obCreate() {
 <option value="60">Every 5 years</option>
 </select></div></div>
 <!-- File -->
-<div class="card" style="margin-bottom:14px"><div class="card-title">File &amp; Location</div>
-<div class="form-group"><label class="form-label">Document URL / link</label><input type="text" id="df-url" placeholder="https://... or network path"/></div>
-<div class="form-group"><label class="form-label">File name</label><input type="text" id="df-file-name" placeholder="filename.pdf"/></div>
-<div class="form-group"><label class="form-label">Physical location</label><input type="text" id="df-location" placeholder="e.g. Server / Shelf B3 / Online"/></div>
+<div class="card" style="margin-bottom:14px"><div class="card-title"><i class="ti ti-file-upload" style="color:var(--green)"></i> File &amp; Location</div>
+
+<!-- Drag & drop uploader -->
+<div id="df-uploader" class="dc-uploader" onclick="document.getElementById('df-file-input').click()" ondragover="event.preventDefault();this.classList.add('dragover')" ondragleave="this.classList.remove('dragover')" ondrop="dcUploadDrop(event)">
+  <div id="df-uploader-idle" style="text-align:center">
+    <i class="ti ti-cloud-upload" style="font-size:34px;color:var(--green);display:block;margin-bottom:6px"></i>
+    <div style="font-size:13px;font-weight:600;color:var(--text)">Drag &amp; drop a file here, or click to browse</div>
+    <div style="font-size:11px;color:var(--text2);margin-top:3px">PDF, Word, Excel, PowerPoint, images — max 50 MB</div>
+  </div>
+  <div id="df-uploader-progress" style="display:none;width:100%">
+    <div style="font-size:12px;font-weight:600;color:var(--text);margin-bottom:6px"><span id="df-upload-name">Uploading...</span></div>
+    <div style="background:#e5e7eb;border-radius:99px;height:6px;overflow:hidden"><div id="df-upload-bar" style="background:var(--green);height:100%;width:0%;transition:width .2s"></div></div>
+    <div id="df-upload-pct" style="font-size:11px;color:var(--text2);margin-top:4px">0%</div>
+  </div>
+  <div id="df-uploader-done" style="display:none;width:100%">
+    <div style="display:flex;align-items:center;gap:10px;padding:10px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px">
+      <div style="width:36px;height:36px;border-radius:8px;background:var(--green);color:#fff;display:flex;align-items:center;justify-content:center"><i id="df-upload-icon" class="ti ti-file"></i></div>
+      <div style="flex:1;min-width:0">
+        <div id="df-upload-done-name" style="font-size:12px;font-weight:600;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap"></div>
+        <div id="df-upload-done-size" style="font-size:11px;color:var(--text2)"></div>
+      </div>
+      <button type="button" class="btn" style="padding:5px 10px;font-size:11px" onclick="event.stopPropagation();dcPreviewCurrent()"><i class="ti ti-eye"></i>Preview</button>
+      <button type="button" class="btn" style="padding:5px 10px;font-size:11px;color:var(--red)" onclick="event.stopPropagation();dcUploadClear()"><i class="ti ti-x"></i></button>
+    </div>
+  </div>
+</div>
+<input type="file" id="df-file-input" style="display:none" onchange="dcUploadFile(this.files[0])" accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,.md,.png,.jpg,.jpeg,.gif,.webp,.svg"/>
+
+<details style="margin-top:10px">
+  <summary style="cursor:pointer;font-size:12px;color:var(--text2);font-weight:600">…or paste an external URL instead</summary>
+  <div style="padding-top:10px">
+    <div class="form-group"><label class="form-label">Document URL / link</label><input type="text" id="df-url" placeholder="https://... or network path" oninput="dcUrlEntered()"/></div>
+    <div class="form-group"><label class="form-label">File name</label><input type="text" id="df-file-name" placeholder="filename.pdf"/></div>
+  </div>
+</details>
+
+<!-- Hidden meta fields populated by uploader -->
+<input type="hidden" id="df-file-size"/>
+<input type="hidden" id="df-file-mime"/>
+<input type="hidden" id="df-file-path"/>
+
+<div class="form-group" style="margin-top:14px"><label class="form-label">Physical location (optional)</label><input type="text" id="df-location" placeholder="e.g. Server / Shelf B3 / Online"/></div>
 <div style="display:flex;align-items:center;gap:8px"><input type="checkbox" id="df-controlled" checked style="accent-color:var(--green)"/><label for="df-controlled" style="font-size:12px;font-weight:600;cursor:pointer">Controlled document</label></div>
 </div>
 <!-- People -->
@@ -31182,6 +31517,30 @@ async function obCreate() {
 </div>
 
 </div><!-- end page-documents -->
+
+<!-- ═══════ DOCUMENT VIEWER MODAL (inline preview) ═══════ -->
+<div id="dc-viewer-modal" style="display:none;position:fixed;inset:0;background:rgba(15,23,42,.85);z-index:600;align-items:center;justify-content:center;padding:24px" onclick="if(event.target===this)dcCloseViewer()">
+  <div style="background:var(--card);border-radius:12px;width:100%;max-width:1100px;height:90vh;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,.5);overflow:hidden">
+    <div style="padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;background:#0f172a;color:#fff">
+      <i class="ti ti-file-text" style="font-size:20px;color:var(--green)"></i>
+      <div style="flex:1;min-width:0">
+        <div id="dc-viewer-title" style="font-size:14px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">Document</div>
+        <div id="dc-viewer-meta" style="font-size:11px;color:#94a3b8;margin-top:1px"></div>
+      </div>
+      <a id="dc-viewer-open" href="#" target="_blank" class="btn" style="padding:6px 12px;font-size:12px;background:rgba(255,255,255,.1);color:#fff;border-color:rgba(255,255,255,.2)" title="Open in new tab"><i class="ti ti-external-link"></i>Open</a>
+      <a id="dc-viewer-download" href="#" download class="btn btn-primary" style="padding:6px 12px;font-size:12px"><i class="ti ti-download"></i>Download</a>
+      <button class="btn" style="padding:6px 10px;font-size:14px;background:rgba(255,255,255,.1);color:#fff;border-color:rgba(255,255,255,.2)" onclick="dcCloseViewer()" title="Close"><i class="ti ti-x"></i></button>
+    </div>
+    <div id="dc-viewer-body" style="flex:1;position:relative;overflow:auto;background:#f8fafc"></div>
+  </div>
+</div>
+
+<style>
+.dc-uploader{border:2px dashed var(--border);border-radius:10px;padding:24px;display:flex;align-items:center;justify-content:center;min-height:120px;cursor:pointer;background:#fafbfc;transition:all .15s}
+.dc-uploader:hover{border-color:var(--green);background:#f1f7f4}
+.dc-uploader.dragover{border-color:var(--green);background:#e7f3ec;transform:scale(1.01)}
+@keyframes spin{from{transform:rotate(0)}to{transform:rotate(360deg)}}
+</style>
 
 <div id="page-people" class="page">
 <div class="page-header"><div class="page-title">People</div><div id="people-add-btn"></div></div><div class="card" id="people-form" style="display:none"><div class="card-title">Add person</div><div style="font-size:11px;font-weight:700;color:var(--text2);margin-bottom:10px;text-transform:uppercase;letter-spacing:.05em">Personal information</div><div class="form-row3"><div class="form-group"><label class="form-label">First name</label><input type="text" id="pef-first"/></div><div class="form-group"><label class="form-label">Last name</label><input type="text" id="pef-last"/></div><div class="form-group"><label class="form-label">ID number</label><input type="text" id="pef-id"/></div></div><div class="form-row3"><div class="form-group"><label class="form-label">Date of birth</label><input type="date" id="pef-dob"/></div><div class="form-group"><label class="form-label">Gender</label><select id="pef-gender"><option value="">—</option><option value="male">Male</option><option value="female">Female</option><option value="other">Other</option></select></div><div class="form-group"><label class="form-label">Nationality</label><input type="text" id="pef-nationality"/></div></div><div style="font-size:11px;font-weight:700;color:var(--text2);margin:14px 0 10px;text-transform:uppercase;letter-spacing:.05em">Employment</div><div class="form-row3"><div class="form-group"><label class="form-label">Person type</label><select id="pef-type" onchange="toggleContractor()"><option value="employee">Employee</option><option value="contractor">Contractor</option><option value="subcontractor">Subcontractor</option></select></div><div class="form-group"><label class="form-label">Job title</label><input type="text" id="pef-jobtitle"/></div><div class="form-group"><label class="form-label">Department</label><input type="text" id="pef-dept"/></div></div><div class="form-row3"><div class="form-group"><label class="form-label">Site</label><input type="text" id="pef-site"/></div><div class="form-group"><label class="form-label">Staff no.</label><input type="text" id="pef-empno"/></div><div class="form-group"><label class="form-label">Contract type</label><select id="pef-contract"><option value="permanent">Permanent</option><option value="fixed_term">Fixed term</option><option value="casual">Casual</option><option value="contract">Contract</option></select></div></div><div class="form-row"><div class="form-group"><label class="form-label">Start date</label><input type="date" id="pef-start"/></div><div class="form-group"><label class="form-label">End date</label><input type="date" id="pef-end"/></div></div><div id="contractor-fields" style="display:none"><div style="font-size:11px;font-weight:700;color:var(--text2);margin:14px 0 10px;text-transform:uppercase;letter-spacing:.05em">Contractor details</div><div class="form-row"><div class="form-group"><label class="form-label">Company name</label><input type="text" id="pef-coname"/></div><div class="form-group"><label class="form-label">Contract reference</label><input type="text" id="pef-cref"/></div></div><div class="form-row"><div class="form-group"><label class="form-label">Contract start</label><input type="date" id="pef-cstart"/></div><div class="form-group"><label class="form-label">Contract end</label><input type="date" id="pef-cend"/></div></div></div><div style="font-size:11px;font-weight:700;color:var(--text2);margin:14px 0 10px;text-transform:uppercase;letter-spacing:.05em">Contact & HSE</div><div class="form-row"><div class="form-group"><label class="form-label">Email</label><input type="email" id="pef-email"/></div><div class="form-group"><label class="form-label">Phone</label><input type="text" id="pef-phone"/></div></div><div class="form-row3"><div class="form-group"><label class="form-label">Emergency contact</label><input type="text" id="pef-emname"/></div><div class="form-group"><label class="form-label">Relation</label><input type="text" id="pef-emrel"/></div><div class="form-group"><label class="form-label">Emergency phone</label><input type="text" id="pef-emphone"/></div></div><div class="form-row"><div class="form-group"><label class="form-label">Induction date</label><input type="date" id="pef-induction"/></div><div class="form-group"><label class="form-label">Medical fitness date</label><input type="date" id="pef-medical"/></div></div><div class="form-group"><label class="form-label">Status</label><select id="pef-status"><option value="active">Active</option><option value="inactive">Inactive</option><option value="suspended">Suspended</option></select></div><div style="display:flex;gap:8px"><button class="btn btn-primary" onclick="savePerson()"><i class="ti ti-device-floppy"></i>Save person</button><button class="btn" onclick="toggleForm('people-form')">Cancel</button></div></div><div class="metrics" style="margin-bottom:16px"><div class="metric"><div class="metric-label">Total active</div><div class="metric-value" id="pe-total">—</div></div><div class="metric"><div class="metric-label">Employees</div><div class="metric-value" id="pe-emp" style="color:var(--green)">—</div></div><div class="metric"><div class="metric-label">Contractors</div><div class="metric-value" id="pe-con" style="color:var(--blue)">—</div></div><div class="metric"><div class="metric-label">Subcontractors</div><div class="metric-value" id="pe-sub" style="color:var(--amber)">—</div></div></div><div class="card"><div class="card-title">People register<div style="display:flex;gap:8px"><select id="filter-ptype" onchange="loadPeople()" style="width:auto;padding:5px 9px;font-size:12px"><option value="">All types</option><option value="employee">Employees</option><option value="contractor">Contractors</option><option value="subcontractor">Subcontractors</option></select><select id="filter-pstatus" onchange="loadPeople()" style="width:auto;padding:5px 9px;font-size:12px"><option value="">All statuses</option><option value="active">Active</option><option value="inactive">Inactive</option></select></div></div><div id="people-list"><div class="loading-msg">Loading...</div></div></div></div>
