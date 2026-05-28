@@ -1872,12 +1872,142 @@ document.getElementById('sb-user').textContent=prof.full_name||prof.email||'--';
 var _rc=typeof HSE_ROLES!=='undefined'?HSE_ROLES[prof.role]:null;
 document.getElementById('sb-role').textContent=_rc?_rc.emoji+' '+_rc.label:(prof.role||'user').replace(/_/g,' ');
 document.getElementById('dash-label').textContent=co?.name||'';
-if(co?.logo_url){document.getElementById('co-logo-img').src=co.logo_url;document.getElementById('co-logo-img').style.display='block';document.getElementById('co-initials-div').style.display='none';}
-else{document.getElementById('co-initials-div').textContent=(co?.name||'A').charAt(0).toUpperCase();}
+// White-label: delegate logo + colours to the Brand runtime
+try{ Brand.loadFromCompany(co); }catch(_){
+  if(co?.logo_url){document.getElementById('co-logo-img').src=co.logo_url;document.getElementById('co-logo-img').style.display='block';document.getElementById('co-initials-div').style.display='none';}
+  else{document.getElementById('co-initials-div').textContent=(co?.name||'A').charAt(0).toUpperCase();}
+}
 }
 }catch(e){console.error(e);}
 }
-function doLogout(){tok=null;prof=null;co=null;people=[];document.getElementById('login-screen').style.display='flex';document.getElementById('app').style.display='none';document.getElementById('ai-panel').style.display='none';}
+function doLogout(){tok=null;prof=null;co=null;people=[];document.getElementById('login-screen').style.display='flex';document.getElementById('app').style.display='none';document.getElementById('ai-panel').style.display='none';try{Brand.reset();}catch(_){}}
+
+/* ═══════════════════════════════════════════════════════════════════
+   BRAND RUNTIME — white-label engine for AURIS360
+   - Loads brand profile from companies row (extended fields)
+   - Caches in localStorage for instant paint on refresh
+   - Applies CSS custom properties to :root (--green/--dg/--amber are
+     retinted so every existing widget picks up the new colours automatically)
+   - Swaps logos, favicon, document title, login screen
+   - Brand.get() is the contract for PDF/chart/email generators
+═══════════════════════════════════════════════════════════════════ */
+window.Brand = (function(){
+  var DEFAULTS = {
+    primary:    '#1D9E75',
+    secondary:  '#0F6E56',
+    accent:     '#EF9F27',
+    logo_url:   null,
+    logo_dark_url: null,
+    favicon_url:null,
+    display_name: 'AURIS360',
+    tagline:    'HSE Management Platform',
+    tab_title:  'AURIS360 v4 — HSE Management Platform',
+    email_header_color: null,
+    pdf_footer_text: null,
+    hide_poweredby: false,
+    theme_preset: 'sephs'
+  };
+  var PRESETS = [
+    {id:'sephs',     name:'SEPHS',     primary:'#1D9E75', secondary:'#0F6E56', accent:'#EF9F27'},
+    {id:'ocean',     name:'Ocean',     primary:'#0EA5E9', secondary:'#075985', accent:'#F59E0B'},
+    {id:'crimson',   name:'Crimson',   primary:'#DC2626', secondary:'#7F1D1D', accent:'#F59E0B'},
+    {id:'graphite',  name:'Graphite',  primary:'#374151', secondary:'#111827', accent:'#10B981'},
+    {id:'royal',     name:'Royal',     primary:'#4F46E5', secondary:'#3730A3', accent:'#F59E0B'},
+    {id:'sunset',    name:'Sunset',    primary:'#EA580C', secondary:'#9A3412', accent:'#FACC15'}
+  ];
+  var STORAGE_KEY = 'auris360_brand_v1';
+  var current = Object.assign({}, DEFAULTS);
+
+  function apply(b){
+    var r = document.documentElement.style;
+    r.setProperty('--brand-primary',    b.primary);
+    r.setProperty('--brand-secondary',  b.secondary);
+    r.setProperty('--brand-accent',     b.accent);
+    r.setProperty('--green',  b.primary);
+    r.setProperty('--dg',     b.secondary);
+    r.setProperty('--amber',  b.accent);
+
+    var img  = document.getElementById('co-logo-img');
+    var init = document.getElementById('co-initials-div');
+    var logo = b.logo_dark_url || b.logo_url;
+    if(img && init){
+      if(logo){
+        img.src = logo;
+        img.style.display = 'block';
+        init.style.display = 'none';
+      } else {
+        img.style.display = 'none';
+        init.style.display = 'flex';
+        init.textContent = (b.display_name||'A').charAt(0).toUpperCase();
+        init.style.background = b.primary;
+      }
+    }
+    var sbName = document.getElementById('sb-company');
+    if(sbName && b.display_name) sbName.textContent = b.display_name;
+
+    if(b.favicon_url){
+      document.querySelectorAll('link[rel="icon"],link[rel="shortcut icon"]').forEach(function(l){ l.href = b.favicon_url; });
+    }
+    if(b.tab_title) document.title = b.tab_title;
+
+    var tc = document.querySelector('meta[name="theme-color"]');
+    if(tc) tc.setAttribute('content', b.primary);
+
+    var loginLogo = document.querySelector('.login-logo');
+    if(loginLogo) loginLogo.textContent = b.display_name || 'AURIS360';
+    var loginSub = document.querySelector('.login-sub');
+    if(loginSub) loginSub.textContent = b.tagline || 'HSE Management Platform';
+
+    document.querySelectorAll('[data-powered-by]').forEach(function(el){
+      el.style.display = b.hide_poweredby ? 'none' : '';
+    });
+
+    current = b;
+  }
+
+  function cache(b){ try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(b)); }catch(_){} }
+  function readCache(){
+    try{ var raw = localStorage.getItem(STORAGE_KEY); return raw ? JSON.parse(raw) : null; }
+    catch(_){ return null; }
+  }
+
+  function loadFromCompany(c){
+    if(!c) return apply(DEFAULTS);
+    var b = {
+      primary:           c.brand_primary    || DEFAULTS.primary,
+      secondary:         c.brand_secondary  || DEFAULTS.secondary,
+      accent:            c.brand_accent     || DEFAULTS.accent,
+      logo_url:          c.logo_url         || null,
+      logo_dark_url:     c.logo_dark_url    || null,
+      favicon_url:       c.favicon_url      || null,
+      display_name:      c.brand_display_name || c.name || 'AURIS360',
+      tagline:           c.brand_tagline    || DEFAULTS.tagline,
+      tab_title:         c.brand_tab_title  || ((c.name||'AURIS360')+' — HSE Platform'),
+      email_header_color:c.email_header_color || null,
+      pdf_footer_text:   c.pdf_footer_text  || null,
+      hide_poweredby:    !!c.hide_poweredby,
+      theme_preset:      c.theme_preset     || 'custom'
+    };
+    apply(b);
+    cache(b);
+  }
+
+  return {
+    DEFAULTS: DEFAULTS,
+    PRESETS:  PRESETS,
+    get:      function(){ return current; },
+    apply:    apply,
+    loadFromCompany: loadFromCompany,
+    cache:    cache,
+    paintFromCache: function(){
+      var c = readCache();
+      if(c) apply(Object.assign({}, DEFAULTS, c));
+    },
+    reset:    function(){ apply(DEFAULTS); try{localStorage.removeItem(STORAGE_KEY);}catch(_){} }
+  };
+})();
+try{ Brand.paintFromCache(); }catch(_){}
+
 async function loadPeopleCache(){
 try{
 const d=await api('/people?select=id,first_name,last_name,job_title,person_type'+cf()+'&status=eq.active&order=last_name');
@@ -3215,12 +3345,14 @@ document.getElementById('sb-company').textContent=co?.name||'AURIS360';
 document.getElementById('sb-user').textContent=prof.full_name||prof.email||'--';
 document.getElementById('sb-role').textContent=(prof.role||'user').replace(/_/g,' ');
 document.getElementById('dash-label').textContent=co?.name||'';
-if(co?.logo_url){document.getElementById('co-logo-img').src=co.logo_url;document.getElementById('co-logo-img').style.display='block';document.getElementById('co-initials-div').style.display='none';}
-else{document.getElementById('co-initials-div').textContent=(co?.name||'A').charAt(0).toUpperCase();}
+try{ Brand.loadFromCompany(co); }catch(_){
+  if(co?.logo_url){document.getElementById('co-logo-img').src=co.logo_url;document.getElementById('co-logo-img').style.display='block';document.getElementById('co-initials-div').style.display='none';}
+  else{document.getElementById('co-initials-div').textContent=(co?.name||'A').charAt(0).toUpperCase();}
+}
 }
 }catch(e){console.error(e);}
 }
-function doLogout(){tok=null;prof=null;co=null;people=[];document.getElementById('login-screen').style.display='flex';document.getElementById('app').style.display='none';document.getElementById('ai-panel').style.display='none';}
+function doLogout(){tok=null;prof=null;co=null;people=[];document.getElementById('login-screen').style.display='flex';document.getElementById('app').style.display='none';document.getElementById('ai-panel').style.display='none';try{Brand.reset();}catch(_){}}
 async function loadPeopleCache(){
 try{
 const d=await api('/people?select=id,first_name,last_name,job_title,person_type'+cf()+'&status=eq.active&order=last_name');
@@ -7112,6 +7244,7 @@ toast('Company registered!');loadAdmin();loadCoDrop();
 function loadSettings(){
 if(isAdm())document.getElementById('logo-settings').style.display='block';
 document.getElementById('my-profile-info').innerHTML='<div style="font-size:13px"><strong>'+(prof?.full_name||'--')+'</strong><br><span style="color:var(--text2)">'+(prof?.email||'--')+'</span><br>'+stat(prof?.role)+'</div>';
+try{ brandInit(); }catch(e){ console.error('brandInit:',e); }
 }
 async function saveLogo(){
 const url=document.getElementById('set-logo').value;
@@ -7121,6 +7254,283 @@ await api('/companies?id=eq.'+prof.company_id,{m:'PATCH',p:'return=minimal',b:{l
 toast('Logo updated! Refresh to see it.');
 }catch(e){toast(e.message,false);}
 }
+
+/* ═══════════════════════════════════════════════════════════════════
+   BRANDING STUDIO CONTROLLER
+   - Populates editor with current brand
+   - Renders preset chips
+   - Handles file → base64 upload (with size guard)
+   - Live preview applies brand via Brand.apply without saving
+   - Save persists to companies table and re-applies
+═══════════════════════════════════════════════════════════════════ */
+var _brandLogoData = { light:null, dark:null };  // base64 data URIs captured before save
+
+function brandInit(){
+  if(!isAdm()){ document.getElementById('branding-studio').style.display='none'; return; }
+  document.getElementById('branding-studio').style.display='block';
+  brandRenderPresets();
+  brandPopulateFromCurrent();
+}
+
+function brandRenderPresets(){
+  var host = document.getElementById('brand-presets');
+  if(!host) return;
+  var b = Brand.get();
+  host.innerHTML = Brand.PRESETS.map(function(p){
+    var active = (b.theme_preset===p.id) ? ' active' : '';
+    return '<div class="brand-preset'+active+'" data-preset="'+p.id+'" onclick="brandPickPreset(\''+p.id+'\')">'+
+      '<div class="brand-preset-swatch">'+
+        '<span style="background:'+p.primary+'"></span>'+
+        '<span style="background:'+p.secondary+'"></span>'+
+        '<span style="background:'+p.accent+'"></span>'+
+      '</div>'+
+      '<div class="brand-preset-name">'+p.name+'</div>'+
+    '</div>';
+  }).join('');
+}
+
+function brandPickPreset(id){
+  var p = Brand.PRESETS.find(function(x){return x.id===id;});
+  if(!p) return;
+  document.getElementById('br-primary').value      = p.primary;
+  document.getElementById('br-primary-hex').value  = p.primary;
+  document.getElementById('br-secondary').value    = p.secondary;
+  document.getElementById('br-secondary-hex').value= p.secondary;
+  document.getElementById('br-accent').value       = p.accent;
+  document.getElementById('br-accent-hex').value   = p.accent;
+  document.getElementById('branding-studio').dataset.preset = id;
+  document.querySelectorAll('.brand-preset').forEach(function(el){ el.classList.toggle('active', el.dataset.preset===id); });
+  brandLivePreview();
+}
+
+function brandPopulateFromCurrent(){
+  var b = Brand.get();
+  document.getElementById('br-primary').value      = b.primary;
+  document.getElementById('br-primary-hex').value  = b.primary;
+  document.getElementById('br-secondary').value    = b.secondary;
+  document.getElementById('br-secondary-hex').value= b.secondary;
+  document.getElementById('br-accent').value       = b.accent;
+  document.getElementById('br-accent-hex').value   = b.accent;
+
+  document.getElementById('br-display-name').value = (b.display_name===Brand.DEFAULTS.display_name && co?.name) ? co.name : (b.display_name||'');
+  document.getElementById('br-tagline').value      = b.tagline || '';
+  document.getElementById('br-tab-title').value    = b.tab_title || '';
+  document.getElementById('br-pdf-footer').value   = b.pdf_footer_text || '';
+  document.getElementById('br-favicon').value      = b.favicon_url || '';
+  document.getElementById('br-email-color').value     = b.email_header_color || b.primary;
+  document.getElementById('br-email-color-hex').value = b.email_header_color || b.primary;
+  document.getElementById('br-hide-poweredby').checked = !!b.hide_poweredby;
+  document.getElementById('br-logo-url').value     = b.logo_url || '';
+  document.getElementById('br-logo-dark-url').value= b.logo_dark_url || '';
+  _brandLogoData.light = b.logo_url || null;
+  _brandLogoData.dark  = b.logo_dark_url || null;
+  brandRefreshLogoPreviews();
+  brandLivePreview();
+}
+
+function brandRefreshLogoPreviews(){
+  ['light','dark'].forEach(function(kind){
+    var pid  = kind==='dark' ? 'br-logo-dark-preview' : 'br-logo-preview';
+    var ph   = kind==='dark' ? 'br-logo-dark-placeholder' : 'br-logo-placeholder';
+    var src  = _brandLogoData[kind];
+    var im   = document.getElementById(pid);
+    var phEl = document.getElementById(ph);
+    if(!im||!phEl) return;
+    if(src){ im.src=src; im.style.display='block'; phEl.style.display='none'; }
+    else   { im.style.display='none'; phEl.style.display='block'; }
+  });
+}
+
+function brandSyncHex(which){
+  var hex = document.getElementById('br-'+which+'-hex').value.trim();
+  if(/^#[0-9a-fA-F]{6}$/.test(hex)){
+    document.getElementById('br-'+which).value = hex;
+    brandLivePreview();
+  }
+}
+
+function brandLogoFile(input, kind){
+  var f = input.files && input.files[0];
+  if(!f) return;
+  if(f.size > 1024*1024){ toast('Logo too large — max 1 MB',false); input.value=''; return; }
+  var rd = new FileReader();
+  rd.onload = function(e){
+    _brandLogoData[kind] = e.target.result;  // base64 data URI
+    document.getElementById('br-logo'+(kind==='dark'?'-dark':'')+'-url').value = '';
+    brandRefreshLogoPreviews();
+    brandLivePreview();
+  };
+  rd.readAsDataURL(f);
+}
+
+function brandLogoDrop(ev, kind){
+  ev.preventDefault();
+  ev.currentTarget.classList.remove('dragover');
+  var f = ev.dataTransfer.files && ev.dataTransfer.files[0];
+  if(!f) return;
+  if(!f.type.startsWith('image/')){ toast('Please drop an image file',false); return; }
+  if(f.size > 1024*1024){ toast('Logo too large — max 1 MB',false); return; }
+  var rd = new FileReader();
+  rd.onload = function(e){
+    _brandLogoData[kind] = e.target.result;
+    document.getElementById('br-logo'+(kind==='dark'?'-dark':'')+'-url').value = '';
+    brandRefreshLogoPreviews();
+    brandLivePreview();
+  };
+  rd.readAsDataURL(f);
+}
+
+function brandLogoUrl(kind){
+  var url = document.getElementById('br-logo'+(kind==='dark'?'-dark':'')+'-url').value.trim();
+  _brandLogoData[kind] = url || null;
+  brandRefreshLogoPreviews();
+  brandLivePreview();
+}
+
+function brandLogoClear(kind){
+  _brandLogoData[kind] = null;
+  document.getElementById('br-logo'+(kind==='dark'?'-dark':'')+'-url').value = '';
+  document.getElementById('br-logo'+(kind==='dark'?'-dark':'')+'-file').value = '';
+  brandRefreshLogoPreviews();
+  brandLivePreview();
+}
+
+function brandLivePreview(){
+  // Build candidate brand object and apply (but don't save)
+  var b = {
+    primary:   document.getElementById('br-primary').value,
+    secondary: document.getElementById('br-secondary').value,
+    accent:    document.getElementById('br-accent').value,
+    logo_url:      _brandLogoData.light,
+    logo_dark_url: _brandLogoData.dark,
+    favicon_url:   document.getElementById('br-favicon').value || null,
+    display_name:  document.getElementById('br-display-name').value || (co?.name||'AURIS360'),
+    tagline:       document.getElementById('br-tagline').value || Brand.DEFAULTS.tagline,
+    tab_title:     document.getElementById('br-tab-title').value || ((co?.name||'AURIS360')+' — HSE Platform'),
+    email_header_color: document.getElementById('br-email-color').value || null,
+    pdf_footer_text:    document.getElementById('br-pdf-footer').value || null,
+    hide_poweredby:     document.getElementById('br-hide-poweredby').checked,
+    theme_preset: document.getElementById('branding-studio').dataset.preset || 'custom'
+  };
+  // Sync hex display fields
+  document.getElementById('br-primary-hex').value   = b.primary;
+  document.getElementById('br-secondary-hex').value = b.secondary;
+  document.getElementById('br-accent-hex').value    = b.accent;
+  document.getElementById('br-email-color-hex').value = b.email_header_color || b.primary;
+
+  Brand.apply(b);
+
+  // Update the right-side preview panel
+  var pImg = document.getElementById('prev-logo-img');
+  var pIni = document.getElementById('prev-logo-initials');
+  var pWrap= document.getElementById('prev-logo-wrap');
+  var logo = b.logo_url || b.logo_dark_url;
+  if(pImg && pIni){
+    if(logo){ pImg.src=logo; pImg.style.display='block'; pIni.style.display='none'; pWrap.style.background='transparent'; }
+    else    { pImg.style.display='none'; pIni.style.display='block'; pIni.textContent=(b.display_name||'A').charAt(0).toUpperCase(); pWrap.style.background=b.primary; }
+  }
+  document.getElementById('prev-co-name').textContent   = b.display_name;
+  document.getElementById('prev-login-logo').textContent= b.display_name;
+  document.getElementById('prev-login-tag').textContent = b.tagline;
+  var ehc = b.email_header_color || b.primary;
+  document.getElementById('prev-email-header').style.background = ehc;
+  document.getElementById('prev-email-btn').style.background    = ehc;
+  document.getElementById('prev-email-title').textContent       = b.display_name;
+  var elog = document.getElementById('prev-email-logo');
+  if(elog){ if(logo){elog.src=logo; elog.style.display='block';} else { elog.style.display='none'; } }
+}
+
+async function brandSave(){
+  if(!isAdm()){ toast('Only admins can change branding',false); return; }
+  if(!prof?.company_id){ toast('No company linked',false); return; }
+
+  var preset = document.getElementById('branding-studio').dataset.preset || 'custom';
+  var body = {
+    brand_primary:        document.getElementById('br-primary').value || null,
+    brand_secondary:      document.getElementById('br-secondary').value || null,
+    brand_accent:         document.getElementById('br-accent').value || null,
+    logo_url:             _brandLogoData.light,
+    logo_dark_url:        _brandLogoData.dark,
+    favicon_url:          document.getElementById('br-favicon').value || null,
+    brand_display_name:   document.getElementById('br-display-name').value || null,
+    brand_tagline:        document.getElementById('br-tagline').value || null,
+    brand_tab_title:      document.getElementById('br-tab-title').value || null,
+    email_header_color:   document.getElementById('br-email-color').value || null,
+    pdf_footer_text:      document.getElementById('br-pdf-footer').value || null,
+    hide_poweredby:       document.getElementById('br-hide-poweredby').checked,
+    theme_preset:         preset
+  };
+
+  // Warn if logo is base64 and very large (won't fit Supabase column comfortably)
+  if((body.logo_url && body.logo_url.length>200000) || (body.logo_dark_url && body.logo_dark_url.length>200000)){
+    if(!confirm('One of your logos is large (>150 KB encoded). For best performance, host on a CDN and paste the URL. Save anyway?')) return;
+  }
+
+  try{
+    await api('/companies?id=eq.'+prof.company_id, {m:'PATCH', p:'return=minimal', b:body});
+    // Re-fetch company so Brand has the canonical row, then re-apply
+    var rows = await api('/companies?id=eq.'+prof.company_id+'&select=*');
+    if(rows && rows[0]){ co = rows[0]; Brand.loadFromCompany(co); }
+    toast('Branding saved — applied across the platform');
+  }catch(e){
+    // If the new columns don't exist yet, give a useful migration hint
+    if(/column .* does not exist|400/i.test(e.message||'')){
+      toast('Brand columns missing — run the migration SQL (see console)', false);
+      console.warn('[Branding] Run this SQL in Supabase:\\n'+brandMigrationSQL());
+    } else {
+      toast('Save failed: '+e.message, false);
+    }
+  }
+}
+
+function brandResetDefaults(){
+  if(!confirm('Reset to AURIS360 default branding? Your custom logos and colours will be cleared.')) return;
+  _brandLogoData = {light:null, dark:null};
+  // Apply defaults to editor
+  var d = Brand.DEFAULTS;
+  document.getElementById('br-primary').value      = d.primary;
+  document.getElementById('br-primary-hex').value  = d.primary;
+  document.getElementById('br-secondary').value    = d.secondary;
+  document.getElementById('br-secondary-hex').value= d.secondary;
+  document.getElementById('br-accent').value       = d.accent;
+  document.getElementById('br-accent-hex').value   = d.accent;
+  document.getElementById('br-display-name').value = co?.name || '';
+  document.getElementById('br-tagline').value      = d.tagline;
+  document.getElementById('br-tab-title').value    = '';
+  document.getElementById('br-pdf-footer').value   = '';
+  document.getElementById('br-favicon').value      = '';
+  document.getElementById('br-email-color').value     = d.primary;
+  document.getElementById('br-email-color-hex').value = d.primary;
+  document.getElementById('br-hide-poweredby').checked= false;
+  document.getElementById('br-logo-url').value     = '';
+  document.getElementById('br-logo-dark-url').value= '';
+  brandRefreshLogoPreviews();
+  document.getElementById('branding-studio').dataset.preset = 'sephs';
+  document.querySelectorAll('.brand-preset').forEach(function(el){ el.classList.toggle('active', el.dataset.preset==='sephs'); });
+  brandLivePreview();
+  toast('Reset to defaults — click Save to persist');
+}
+
+// SQL migration string the admin can copy/paste into Supabase
+function brandMigrationSQL(){
+  return [
+    "-- Add white-labelling columns to companies (run once in Supabase SQL editor)",
+    "ALTER TABLE companies",
+    "  ADD COLUMN IF NOT EXISTS brand_primary       text,",
+    "  ADD COLUMN IF NOT EXISTS brand_secondary     text,",
+    "  ADD COLUMN IF NOT EXISTS brand_accent        text,",
+    "  ADD COLUMN IF NOT EXISTS logo_dark_url       text,",
+    "  ADD COLUMN IF NOT EXISTS favicon_url         text,",
+    "  ADD COLUMN IF NOT EXISTS brand_display_name  text,",
+    "  ADD COLUMN IF NOT EXISTS brand_tagline       text,",
+    "  ADD COLUMN IF NOT EXISTS brand_tab_title     text,",
+    "  ADD COLUMN IF NOT EXISTS email_header_color  text,",
+    "  ADD COLUMN IF NOT EXISTS pdf_footer_text     text,",
+    "  ADD COLUMN IF NOT EXISTS hide_poweredby      boolean DEFAULT false,",
+    "  ADD COLUMN IF NOT EXISTS theme_preset        text;"
+  ].join('\\n');
+}
+window.brandMigrationSQL = brandMigrationSQL;
 async function loadCoDrop(){
 try{
 const d=await api('/companies?select=id,name&active=eq.true&order=name');
@@ -31691,7 +32101,209 @@ I can help you:<br>
 </div><!-- end page-ai-insights -->
 
 <div id="page-settings" class="page">
-<div class="page-header"><div class="page-title">Settings</div></div><div class="card" id="logo-settings" style="display:none"><div class="card-title">Company branding</div><div class="form-group"><label class="form-label">Company logo URL</label><input type="url" id="set-logo" placeholder="https://..."/></div><button class="btn btn-primary" onclick="saveLogo()"><i class="ti ti-device-floppy"></i>Save logo</button></div><div class="card"><div class="card-title">My profile</div><div id="my-profile-info"></div></div></div>
+<div class="page-header"><div class="page-title">Settings</div></div>
+
+<!-- ═══════ BRANDING STUDIO (white-label) ═══════ -->
+<div class="card" id="branding-studio" style="display:none;padding:0;overflow:hidden">
+  <div style="padding:18px 22px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap">
+    <div>
+      <div style="font-size:16px;font-weight:700;display:flex;align-items:center;gap:8px"><i class="ti ti-palette" style="color:var(--brand-primary,#1D9E75)"></i>Branding Studio</div>
+      <div style="font-size:12px;color:var(--text2);margin-top:2px">Customise how AURIS360 looks for your organisation — colours, logos, identity. Changes apply instantly across the platform.</div>
+    </div>
+    <div style="display:flex;gap:8px">
+      <button class="btn" onclick="brandResetDefaults()"><i class="ti ti-restore"></i>Reset</button>
+      <button class="btn btn-primary" onclick="brandSave()"><i class="ti ti-device-floppy"></i>Save branding</button>
+    </div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:1fr 360px;gap:0;align-items:stretch">
+    <!-- LEFT: editor -->
+    <div style="padding:22px;border-right:1px solid var(--border)">
+
+      <!-- Theme presets -->
+      <div style="font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--text3);font-weight:600;margin-bottom:10px">Theme preset</div>
+      <div id="brand-presets" style="display:grid;grid-template-columns:repeat(6,1fr);gap:8px;margin-bottom:22px"></div>
+
+      <!-- Colours -->
+      <div style="font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--text3);font-weight:600;margin-bottom:10px">Brand colours</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:22px">
+        <div>
+          <label class="form-label" style="font-size:11px">Primary</label>
+          <div style="display:flex;gap:6px;align-items:center">
+            <input type="color" id="br-primary" style="width:36px;height:36px;padding:0;border:1px solid var(--border);border-radius:6px;cursor:pointer" oninput="brandLivePreview()"/>
+            <input type="text" id="br-primary-hex" style="flex:1;font-family:monospace;font-size:12px" oninput="brandSyncHex('primary')"/>
+          </div>
+          <div style="font-size:10px;color:var(--text3);margin-top:3px">Buttons, links, active nav</div>
+        </div>
+        <div>
+          <label class="form-label" style="font-size:11px">Secondary (dark)</label>
+          <div style="display:flex;gap:6px;align-items:center">
+            <input type="color" id="br-secondary" style="width:36px;height:36px;padding:0;border:1px solid var(--border);border-radius:6px;cursor:pointer" oninput="brandLivePreview()"/>
+            <input type="text" id="br-secondary-hex" style="flex:1;font-family:monospace;font-size:12px" oninput="brandSyncHex('secondary')"/>
+          </div>
+          <div style="font-size:10px;color:var(--text3);margin-top:3px">Hover states, depth</div>
+        </div>
+        <div>
+          <label class="form-label" style="font-size:11px">Accent</label>
+          <div style="display:flex;gap:6px;align-items:center">
+            <input type="color" id="br-accent" style="width:36px;height:36px;padding:0;border:1px solid var(--border);border-radius:6px;cursor:pointer" oninput="brandLivePreview()"/>
+            <input type="text" id="br-accent-hex" style="flex:1;font-family:monospace;font-size:12px" oninput="brandSyncHex('accent')"/>
+          </div>
+          <div style="font-size:10px;color:var(--text3);margin-top:3px">Highlights, badges</div>
+        </div>
+      </div>
+
+      <!-- Logos -->
+      <div style="font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--text3);font-weight:600;margin-bottom:10px">Logos</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:22px">
+        <div>
+          <label class="form-label" style="font-size:11px">Primary logo (light backgrounds)</label>
+          <div id="br-logo-drop" class="brand-drop" onclick="document.getElementById('br-logo-file').click()" ondragover="event.preventDefault();this.classList.add('dragover')" ondragleave="this.classList.remove('dragover')" ondrop="brandLogoDrop(event,'light')">
+            <img id="br-logo-preview" style="max-height:54px;max-width:100%;display:none"/>
+            <div id="br-logo-placeholder" style="text-align:center;color:var(--text2);font-size:12px"><i class="ti ti-upload" style="font-size:22px;display:block;margin-bottom:4px"></i>Drag or click to upload<div style="font-size:10px;color:var(--text3);margin-top:2px">PNG, JPG or SVG · max 1 MB</div></div>
+          </div>
+          <input type="file" id="br-logo-file" accept="image/*" style="display:none" onchange="brandLogoFile(this,'light')"/>
+          <div style="display:flex;gap:6px;margin-top:6px">
+            <input type="url" id="br-logo-url" placeholder="…or paste a logo URL" style="flex:1;font-size:12px" oninput="brandLogoUrl('light')"/>
+            <button class="btn" style="padding:6px 10px;font-size:11px" onclick="brandLogoClear('light')"><i class="ti ti-x"></i></button>
+          </div>
+        </div>
+        <div>
+          <label class="form-label" style="font-size:11px">Dark logo (sidebar, PDFs, dark mode)</label>
+          <div id="br-logo-dark-drop" class="brand-drop brand-drop-dark" onclick="document.getElementById('br-logo-dark-file').click()" ondragover="event.preventDefault();this.classList.add('dragover')" ondragleave="this.classList.remove('dragover')" ondrop="brandLogoDrop(event,'dark')">
+            <img id="br-logo-dark-preview" style="max-height:54px;max-width:100%;display:none"/>
+            <div id="br-logo-dark-placeholder" style="text-align:center;color:#9aa4b2;font-size:12px"><i class="ti ti-upload" style="font-size:22px;display:block;margin-bottom:4px"></i>Optional dark variant<div style="font-size:10px;color:#778;margin-top:2px">Falls back to primary if empty</div></div>
+          </div>
+          <input type="file" id="br-logo-dark-file" accept="image/*" style="display:none" onchange="brandLogoFile(this,'dark')"/>
+          <div style="display:flex;gap:6px;margin-top:6px">
+            <input type="url" id="br-logo-dark-url" placeholder="…or paste a logo URL" style="flex:1;font-size:12px" oninput="brandLogoUrl('dark')"/>
+            <button class="btn" style="padding:6px 10px;font-size:11px" onclick="brandLogoClear('dark')"><i class="ti ti-x"></i></button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Identity -->
+      <div style="font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--text3);font-weight:600;margin-bottom:10px">Identity</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px">
+        <div class="form-group" style="margin:0">
+          <label class="form-label" style="font-size:11px">Display name (appears in sidebar &amp; login)</label>
+          <input type="text" id="br-display-name" placeholder="e.g. Acme Manufacturing" oninput="brandLivePreview()"/>
+        </div>
+        <div class="form-group" style="margin:0">
+          <label class="form-label" style="font-size:11px">Tagline / strapline</label>
+          <input type="text" id="br-tagline" placeholder="e.g. Safer every shift" oninput="brandLivePreview()"/>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:22px">
+        <div class="form-group" style="margin:0">
+          <label class="form-label" style="font-size:11px">Browser tab title</label>
+          <input type="text" id="br-tab-title" placeholder="e.g. Acme HSE Portal" oninput="brandLivePreview()"/>
+        </div>
+        <div class="form-group" style="margin:0">
+          <label class="form-label" style="font-size:11px">PDF / report footer line</label>
+          <input type="text" id="br-pdf-footer" placeholder="e.g. © Acme Manufacturing · Confidential"/>
+        </div>
+      </div>
+
+      <!-- Advanced -->
+      <details style="margin-bottom:8px">
+        <summary style="cursor:pointer;font-size:12px;color:var(--text2);font-weight:600;padding:8px 0">Advanced options</summary>
+        <div style="padding-top:12px;display:grid;grid-template-columns:1fr 1fr;gap:12px">
+          <div>
+            <label class="form-label" style="font-size:11px">Favicon URL</label>
+            <input type="url" id="br-favicon" placeholder="https://..."/>
+            <div style="font-size:10px;color:var(--text3);margin-top:3px">PNG or ICO, 32×32 recommended</div>
+          </div>
+          <div>
+            <label class="form-label" style="font-size:11px">Email header colour</label>
+            <div style="display:flex;gap:6px;align-items:center">
+              <input type="color" id="br-email-color" style="width:36px;height:36px;padding:0;border:1px solid var(--border);border-radius:6px;cursor:pointer"/>
+              <input type="text" id="br-email-color-hex" style="flex:1;font-family:monospace;font-size:12px"/>
+            </div>
+            <div style="font-size:10px;color:var(--text3);margin-top:3px">Used in notification emails (defaults to Primary)</div>
+          </div>
+          <div style="grid-column:span 2">
+            <label style="display:flex;align-items:center;gap:8px;font-size:12px;cursor:pointer"><input type="checkbox" id="br-hide-poweredby"/> Hide "Powered by SEPHS Consulting" footer (Enterprise tier only)</label>
+          </div>
+        </div>
+      </details>
+    </div>
+
+    <!-- RIGHT: live preview -->
+    <div style="background:var(--bg);padding:18px;display:flex;flex-direction:column;gap:12px">
+      <div style="font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--text3);font-weight:600">Live preview</div>
+
+      <!-- Sidebar preview -->
+      <div style="background:#fff;border:1px solid var(--border);border-radius:10px;overflow:hidden">
+        <div style="display:flex;height:140px">
+          <div id="prev-sidebar" style="width:90px;background:#fff;border-right:1px solid var(--border);padding:10px;display:flex;flex-direction:column;align-items:center;gap:6px">
+            <div id="prev-logo-wrap" style="width:38px;height:38px;border-radius:8px;background:var(--brand-primary,#1D9E75);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:14px;overflow:hidden">
+              <img id="prev-logo-img" style="width:100%;height:100%;object-fit:contain;display:none"/>
+              <span id="prev-logo-initials">A</span>
+            </div>
+            <div id="prev-co-name" style="font-size:9px;font-weight:700;text-align:center;line-height:1.2">AURIS360</div>
+            <div style="height:6px"></div>
+            <div style="width:100%;height:6px;border-radius:3px;background:var(--brand-primary,#1D9E75);opacity:.15"></div>
+            <div style="width:100%;height:6px;border-radius:3px;background:#e5e7eb"></div>
+            <div style="width:100%;height:6px;border-radius:3px;background:#e5e7eb"></div>
+          </div>
+          <div style="flex:1;padding:10px;background:var(--bg)">
+            <div style="font-size:10px;font-weight:700;color:var(--text)">Dashboard</div>
+            <div style="display:flex;gap:6px;margin-top:6px">
+              <button id="prev-btn" style="background:var(--brand-primary,#1D9E75);color:#fff;border:none;padding:4px 8px;border-radius:5px;font-size:9px;font-weight:600">Primary CTA</button>
+              <span id="prev-badge" style="background:var(--brand-accent,#EF9F27);color:#fff;padding:2px 6px;border-radius:99px;font-size:8px;font-weight:600">Badge</span>
+            </div>
+            <div style="margin-top:8px;padding:6px;background:#fff;border:1px solid var(--border);border-radius:5px">
+              <div style="font-size:8px;color:var(--text2)">KPI</div>
+              <div id="prev-kpi" style="font-size:14px;font-weight:700;color:var(--brand-primary,#1D9E75)">94%</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Email preview -->
+      <div style="background:#fff;border:1px solid var(--border);border-radius:10px;overflow:hidden">
+        <div id="prev-email-header" style="background:var(--brand-primary,#1D9E75);padding:10px 12px;color:#fff;display:flex;align-items:center;gap:8px">
+          <img id="prev-email-logo" style="height:18px;display:none"/>
+          <span id="prev-email-title" style="font-size:11px;font-weight:700">AURIS360</span>
+        </div>
+        <div style="padding:10px 12px;font-size:10px;color:var(--text2);line-height:1.5">
+          <strong style="color:var(--text)">Hi James,</strong><br>
+          A new incident has been logged. Click to review.
+          <div style="margin-top:8px"><span id="prev-email-btn" style="background:var(--brand-primary,#1D9E75);color:#fff;padding:5px 10px;border-radius:5px;font-size:9px;font-weight:600">View incident</span></div>
+        </div>
+      </div>
+
+      <!-- Login screen preview -->
+      <div style="background:#fff;border:1px solid var(--border);border-radius:10px;padding:14px;text-align:center">
+        <div style="font-size:10px;color:var(--text3);margin-bottom:6px">Login screen</div>
+        <div id="prev-login-logo" style="font-size:16px;font-weight:800;color:var(--brand-primary,#1D9E75);letter-spacing:-.3px">AURIS360</div>
+        <div id="prev-login-tag" style="font-size:9px;color:var(--text2);margin-top:2px">HSE Management Platform</div>
+        <div style="margin-top:8px"><button style="background:var(--brand-primary,#1D9E75);color:#fff;border:none;padding:5px 14px;border-radius:5px;font-size:9px;font-weight:600;width:100%">Sign in</button></div>
+      </div>
+    </div>
+  </div>
+</div>
+<style>
+.brand-drop{border:2px dashed var(--border);border-radius:10px;padding:18px;display:flex;align-items:center;justify-content:center;min-height:90px;cursor:pointer;background:#fafbfc;transition:all .15s}
+.brand-drop:hover{border-color:var(--brand-primary,#1D9E75);background:#f1f7f4}
+.brand-drop.dragover{border-color:var(--brand-primary,#1D9E75);background:#e7f3ec}
+.brand-drop-dark{background:#1f2937;border-color:#374151}
+.brand-drop-dark:hover{background:#283447}
+.brand-preset{border:2px solid var(--border);border-radius:8px;padding:8px 6px;cursor:pointer;text-align:center;transition:all .12s;background:#fff}
+.brand-preset:hover{transform:translateY(-1px);box-shadow:0 4px 12px rgba(0,0,0,.08)}
+.brand-preset.active{border-color:var(--brand-primary,#1D9E75);box-shadow:0 0 0 3px rgba(29,158,117,.15)}
+.brand-preset-swatch{display:flex;gap:2px;justify-content:center;margin-bottom:5px}
+.brand-preset-swatch span{width:14px;height:14px;border-radius:3px}
+.brand-preset-name{font-size:10px;font-weight:600;color:var(--text)}
+</style>
+
+<div class="card"><div class="card-title">My profile</div><div id="my-profile-info"></div></div>
+
+<!-- Legacy logo-settings card kept hidden for backwards compatibility with saveLogo() -->
+<div id="logo-settings" style="display:none"><input type="url" id="set-logo"/></div>
+
+</div>
 
 </div>
 </div>
