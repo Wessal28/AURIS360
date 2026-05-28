@@ -22416,6 +22416,343 @@ function addPrintBtn(container, onclick, label) {
   return btn;
 }
 
+
+// ================================================================
+// CLIENT ONBOARDING WIZARD
+// 4 steps: Company → Sites → Admin User → Confirm & Create
+// ================================================================
+
+var _obStep = 1;
+var _obCompanyId = null;
+var _obSiteCount = 0;
+
+// ── Open / Close ────────────────────────────────────────────────
+function openOnboarding() {
+  if (!isSA()) { toast('Only SEPHS admins can onboard new clients', false); return; }
+  _obStep = 1;
+  _obCompanyId = null;
+  _obSiteCount = 0;
+  obRenderStep();
+  // Add first site row
+  obResetSites();
+  var modal = document.getElementById('onboard-modal');
+  if (modal) modal.style.display = 'flex';
+}
+
+function closeOnboarding() {
+  var modal = document.getElementById('onboard-modal');
+  if (modal) modal.style.display = 'none';
+}
+
+// ── Step navigation ──────────────────────────────────────────────
+function obRenderStep() {
+  // Show/hide steps
+  for (var i = 1; i <= 4; i++) {
+    var el = document.getElementById('ob-step-' + i);
+    if (el) el.style.display = i === _obStep ? 'block' : 'none';
+  }
+  // Update label
+  var labels = ['Company Details', 'Work Sites', 'Admin Account', 'Review & Create'];
+  var labelEl = document.getElementById('ob-step-label');
+  if (labelEl) labelEl.textContent = 'Step ' + _obStep + ' of 4 — ' + labels[_obStep - 1];
+  // Update progress
+  var prog = document.getElementById('ob-progress');
+  if (prog) prog.style.width = (_obStep * 25) + '%';
+  // Back button
+  var backBtn = document.getElementById('ob-back-btn');
+  if (backBtn) backBtn.style.display = _obStep > 1 ? 'flex' : 'none';
+  // Next button
+  var nextBtn = document.getElementById('ob-next-btn');
+  if (nextBtn) {
+    if (_obStep === 4) {
+      nextBtn.innerHTML = '<i class="ti ti-rocket"></i>Create Client';
+      nextBtn.style.background = 'var(--green)';
+    } else {
+      nextBtn.innerHTML = 'Next <i class="ti ti-arrow-right"></i>';
+      nextBtn.style.background = '';
+    }
+  }
+  // Build summary on step 4
+  if (_obStep === 4) obBuildSummary();
+}
+
+function obNext() {
+  if (_obStep === 1 && !obValidateStep1()) return;
+  if (_obStep === 2 && !obValidateStep2()) return;
+  if (_obStep === 3 && !obValidateStep3()) return;
+  if (_obStep === 4) { obCreate(); return; }
+  _obStep++;
+  obRenderStep();
+}
+
+function obBack() {
+  if (_obStep > 1) { _obStep--; obRenderStep(); }
+}
+
+// ── Validation ───────────────────────────────────────────────────
+function obValidateStep1() {
+  var name  = document.getElementById('ob-co-name')?.value?.trim();
+  var ind   = document.getElementById('ob-co-industry')?.value;
+  var cont  = document.getElementById('ob-co-contact')?.value?.trim();
+  var email = document.getElementById('ob-co-email')?.value?.trim();
+  if (!name)  { toast('Company name is required', false); return false; }
+  if (!ind)   { toast('Please select an industry', false); return false; }
+  if (!cont)  { toast('Contact person name is required', false); return false; }
+  if (!email || !email.includes('@')) { toast('Valid contact email is required', false); return false; }
+  return true;
+}
+
+function obValidateStep2() {
+  var sites = document.querySelectorAll('.ob-site-name');
+  var valid = Array.from(sites).some(function(s) { return s.value.trim(); });
+  if (!valid) { toast('Add at least one site name', false); return false; }
+  return true;
+}
+
+function obValidateStep3() {
+  var name  = document.getElementById('ob-admin-name')?.value?.trim();
+  var email = document.getElementById('ob-admin-email')?.value?.trim();
+  var pw    = document.getElementById('ob-admin-pw')?.value;
+  var pw2   = document.getElementById('ob-admin-pw2')?.value;
+  if (!name)  { toast('Admin name is required', false); return false; }
+  if (!email || !email.includes('@')) { toast('Valid admin email is required', false); return false; }
+  if (!pw || pw.length < 8) { toast('Password must be at least 8 characters', false); return false; }
+  if (pw !== pw2) { toast('Passwords do not match', false); return false; }
+  return true;
+}
+
+// ── Sites management ─────────────────────────────────────────────
+function obResetSites() {
+  var list = document.getElementById('ob-sites-list');
+  if (!list) return;
+  list.innerHTML = '';
+  _obSiteCount = 0;
+  obAddSite();
+}
+
+function obAddSite() {
+  _obSiteCount++;
+  var list = document.getElementById('ob-sites-list');
+  if (!list) return;
+  var div = document.createElement('div');
+  div.id = 'ob-site-' + _obSiteCount;
+  div.style.cssText = 'background:var(--bg);border-radius:10px;padding:12px 14px;border:1px solid var(--border)';
+  div.innerHTML = '<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">'
+    + '<i class="ti ti-building" style="color:var(--green)"></i>'
+    + '<span style="font-size:13px;font-weight:600">Site ' + _obSiteCount + '</span>'
+    + (_obSiteCount > 1 ? '<button onclick="obRemoveSite(' + _obSiteCount + ')" style="background:none;border:none;color:var(--red);cursor:pointer;margin-left:auto;font-size:11px">Remove</button>' : '')
+    + '</div>'
+    + '<div class="form-row">'
+    + '<div class="form-group"><label class="form-label">Site Name *</label>'
+    + '<input type="text" class="ob-site-name" data-site="' + _obSiteCount + '" placeholder="e.g. Main Factory, Head Office"/></div>'
+    + '<div class="form-group"><label class="form-label">Site Type</label>'
+    + '<select class="ob-site-type" data-site="' + _obSiteCount + '">'
+    + '<option value="office">🏢 Office</option>'
+    + '<option value="factory">🏭 Factory / Plant</option>'
+    + '<option value="warehouse">📦 Warehouse</option>'
+    + '<option value="construction">🏗️ Construction Site</option>'
+    + '<option value="retail">🛒 Retail</option>'
+    + '<option value="remote">🌍 Remote Site</option>'
+    + '</select></div>'
+    + '</div>'
+    + '<div class="form-group"><label class="form-label">Address</label>'
+    + '<input type="text" class="ob-site-address" data-site="' + _obSiteCount + '" placeholder="Site address"/></div>';
+  list.appendChild(div);
+}
+
+function obRemoveSite(n) {
+  var el = document.getElementById('ob-site-' + n);
+  if (el) el.remove();
+}
+
+// ── Summary builder ──────────────────────────────────────────────
+function obBuildSummary() {
+  var el = document.getElementById('ob-summary');
+  if (!el) return;
+
+  var coName   = document.getElementById('ob-co-name')?.value || '';
+  var coInd    = document.getElementById('ob-co-industry')?.value || '';
+  var coEmail  = document.getElementById('ob-co-email')?.value || '';
+  var coCont   = document.getElementById('ob-co-contact')?.value || '';
+  var coTier   = document.getElementById('ob-co-tier')?.value || '';
+
+  var sites = Array.from(document.querySelectorAll('.ob-site-name'))
+    .filter(function(s){ return s.value.trim(); })
+    .map(function(s){ return s.value.trim(); });
+
+  var adminName  = document.getElementById('ob-admin-name')?.value || '';
+  var adminEmail = document.getElementById('ob-admin-email')?.value || '';
+  var adminRole  = document.getElementById('ob-admin-role')?.value || '';
+
+  el.innerHTML = '<table style="width:100%;font-size:12px;border-collapse:collapse">'
+    + '<tr><td style="padding:5px 8px;color:var(--text2);width:130px;font-weight:600">Company</td><td style="padding:5px 8px"><strong>' + escH(coName) + '</strong></td></tr>'
+    + '<tr style="background:var(--card)"><td style="padding:5px 8px;color:var(--text2);font-weight:600">Industry</td><td style="padding:5px 8px">' + escH(coInd) + '</td></tr>'
+    + '<tr><td style="padding:5px 8px;color:var(--text2);font-weight:600">Contact</td><td style="padding:5px 8px">' + escH(coCont) + ' — ' + escH(coEmail) + '</td></tr>'
+    + '<tr style="background:var(--card)"><td style="padding:5px 8px;color:var(--text2);font-weight:600">Subscription</td><td style="padding:5px 8px">' + escH(coTier) + '</td></tr>'
+    + '<tr><td style="padding:5px 8px;color:var(--text2);font-weight:600">Sites</td><td style="padding:5px 8px">' + sites.map(function(s){ return '<span style="background:var(--green);color:#fff;padding:2px 8px;border-radius:10px;font-size:11px;margin-right:4px">' + escH(s) + '</span>'; }).join('') + '</td></tr>'
+    + '<tr style="background:var(--card)"><td style="padding:5px 8px;color:var(--text2);font-weight:600">Admin User</td><td style="padding:5px 8px">' + escH(adminName) + ' (' + escH(adminEmail) + ') — ' + escH(adminRole) + '</td></tr>'
+    + '</table>';
+}
+
+// ── CREATE — the main function ────────────────────────────────────
+async function obCreate() {
+  var nextBtn = document.getElementById('ob-next-btn');
+  if (nextBtn) { nextBtn.disabled = true; nextBtn.innerHTML = '<i class="ti ti-loader-2"></i>Creating...'; }
+
+  try {
+    var g = function(id) { var el = document.getElementById(id); return el ? el.value?.trim() || null : null; };
+
+    // ── Step 1: Create company ──────────────────────────────────
+    toast('Creating company...');
+    var coBody = {
+      name:                g('ob-co-name'),
+      industry:            g('ob-co-industry'),
+      registration_no:     g('ob-co-regno'),
+      headcount:           g('ob-co-headcount') ? parseInt(g('ob-co-headcount')) : null,
+      contact_name:        g('ob-co-contact'),
+      contact_email:       g('ob-co-email'),
+      phone:               g('ob-co-phone'),
+      address:             g('ob-co-address'),
+      subscription_tier:   g('ob-co-tier') || 'professional',
+      company_type:        'standalone',
+      country:             'Mauritius',
+      currency:            'MUR',
+      active:              true,
+      created_at:          new Date().toISOString(),
+      updated_at:          new Date().toISOString()
+    };
+
+    var coRes = await api('/companies', { m: 'POST', p: 'return=representation', b: coBody });
+    if (!coRes || !coRes[0]) throw new Error('Failed to create company');
+    _obCompanyId = coRes[0].id;
+    toast('Company created ✓');
+
+    // ── Step 2: Create sites ────────────────────────────────────
+    var siteInputs = Array.from(document.querySelectorAll('.ob-site-name'))
+      .filter(function(s) { return s.value.trim(); });
+
+    for (var i = 0; i < siteInputs.length; i++) {
+      var siteN   = siteInputs[i].value.trim();
+      var siteT   = document.querySelector('.ob-site-type[data-site="' + siteInputs[i].dataset.site + '"]')?.value || 'office';
+      var siteA   = document.querySelector('.ob-site-address[data-site="' + siteInputs[i].dataset.site + '"]')?.value?.trim() || null;
+      await api('/sites', { m: 'POST', p: 'return=minimal', b: {
+        name:       siteN,
+        site_type:  siteT,
+        address:    siteA,
+        company_id: _obCompanyId,
+        active:     true,
+        created_at: new Date().toISOString()
+      }});
+    }
+    toast(siteInputs.length + ' site(s) created ✓');
+
+    // ── Step 3: Create admin user via Supabase Auth ─────────────
+    var adminEmail = g('ob-admin-email');
+    var adminPw    = document.getElementById('ob-admin-pw')?.value;
+    var adminName  = g('ob-admin-name');
+    var adminRole  = g('ob-admin-role') || 'admin';
+    var adminTitle = g('ob-admin-title');
+
+    toast('Creating admin account...');
+    var signupRes = await authQ('/signup', {
+      email:    adminEmail,
+      password: adminPw,
+      data:     { full_name: adminName, role: adminRole }
+    });
+
+    if (!signupRes || (!signupRes.user && !signupRes.id)) {
+      throw new Error('Failed to create admin account: ' + JSON.stringify(signupRes).substring(0,100));
+    }
+
+    var adminId = signupRes.user?.id || signupRes.id;
+
+    // Create profile for admin
+    try {
+      await api('/profiles', { m: 'POST', p: 'return=minimal', b: {
+        id:          adminId,
+        email:       adminEmail,
+        full_name:   adminName,
+        role:        adminRole,
+        job_title:   adminTitle,
+        company_id:  _obCompanyId,
+        created_at:  new Date().toISOString(),
+        updated_at:  new Date().toISOString()
+      }});
+    } catch (profileErr) {
+      // Profile may already exist from trigger - try update
+      await api('/profiles?id=eq.' + adminId, { m: 'PATCH', p: 'return=minimal', b: {
+        full_name:  adminName,
+        role:       adminRole,
+        job_title:  adminTitle,
+        company_id: _obCompanyId,
+        updated_at: new Date().toISOString()
+      }});
+    }
+    toast('Admin account created ✓');
+
+    // ── Step 4: Create notification settings ────────────────────
+    try {
+      await api('/notification_settings', { m: 'POST', p: 'return=minimal', b: {
+        company_id: _obCompanyId,
+        email_enabled: true,
+        notify_on_incident: true,
+        notify_on_permit: true,
+        notify_on_overdue: true,
+        notify_on_investigation: true,
+        notify_on_audit: true
+      }});
+    } catch (e) {} // Already exists is fine
+
+    // ── Step 5: Queue welcome email ──────────────────────────────
+    try {
+      var coName = g('ob-co-name');
+      var welcomeHtml = '<!DOCTYPE html><html><body style="font-family:Arial,sans-serif;background:#f4f6f8;padding:20px">'
+        + '<div style="max-width:600px;margin:0 auto;background:#fff;border-radius:12px;overflow:hidden">'
+        + '<div style="background:#1D9E75;padding:20px 24px;color:#fff">'
+        + '<div style="font-size:20px;font-weight:700">Welcome to AURIS360</div>'
+        + '<div style="font-size:13px;opacity:.8">HSE Management Platform by SEPHS Consulting</div>'
+        + '</div>'
+        + '<div style="padding:24px">'
+        + '<p style="font-size:15px;color:#1a1a1a">Hi <strong>' + escH(adminName) + '</strong>,</p>'
+        + '<p style="color:#374151;margin-top:10px">Your AURIS360 account has been set up for <strong>' + escH(coName) + '</strong>. You can now log in and start managing your HSE operations.</p>'
+        + '<div style="background:#f9fafb;border-radius:8px;padding:16px;margin:16px 0;font-size:14px">'
+        + '<div><strong>Login URL:</strong> <a href="https://auris-360.vercel.app">auris-360.vercel.app</a></div>'
+        + '<div style="margin-top:6px"><strong>Email:</strong> ' + escH(adminEmail) + '</div>'
+        + '<div style="margin-top:6px"><strong>Temporary Password:</strong> (as provided by SEPHS Consulting)</div>'
+        + '</div>'
+        + '<p style="color:#374151;font-size:13px">Please change your password after your first login.</p>'
+        + '<div style="margin-top:20px;text-align:center">'
+        + '<a href="https://auris-360.vercel.app" style="background:#1D9E75;color:#fff;padding:12px 28px;border-radius:8px;text-decoration:none;font-weight:600;font-size:14px">Login to AURIS360</a>'
+        + '</div></div>'
+        + '<div style="padding:12px 24px;background:#f4f6f8;font-size:11px;color:#6B7280;text-align:center">AURIS360 by SEPHS Consulting — ' + escH(coName) + '</div>'
+        + '</div></body></html>';
+
+      await api('/notification_queue', { m: 'POST', p: 'return=minimal', b: {
+        company_id:    _obCompanyId,
+        type:          'welcome',
+        subject:       'Welcome to AURIS360 — ' + coName,
+        body_html:     welcomeHtml,
+        to_email:      adminEmail,
+        to_name:       adminName,
+        related_table: 'companies',
+        related_id:    _obCompanyId
+      }});
+    } catch (e) {} // Welcome email is non-critical
+
+    // ── Done! ────────────────────────────────────────────────────
+    closeOnboarding();
+    toast('✓ Client onboarded successfully! ' + g('ob-co-name') + ' is ready.');
+
+    // Refresh admin page if open
+    if (typeof adminLoadAll === 'function') adminLoadAll();
+    if (typeof adminLoadCompanies === 'function') adminLoadCompanies();
+
+  } catch (err) {
+    toast('Error: ' + err.message, false);
+    if (nextBtn) { nextBtn.disabled = false; nextBtn.innerHTML = '<i class="ti ti-rocket"></i>Create Client'; }
+  }
+}
+
 </script>
 </head>
 <body>
@@ -30446,6 +30783,7 @@ function addPrintBtn(container, onclick, label) {
 </div>
 <div style="display:flex;gap:8px">
 <button class="btn btn-primary" id="users-invite-btn" onclick="usersShowInvite()" style="display:none"><i class="ti ti-user-plus"></i>Invite user</button>
+<button class="btn" onclick="openOnboarding()" style="border-color:var(--green);color:var(--green)"><i class="ti ti-building-plus"></i>Onboard Client</button>
 </div>
 </div>
 
@@ -30612,6 +30950,7 @@ function addPrintBtn(container, onclick, label) {
 </div>
 <div style="display:flex;gap:8px" id="admin-header-btns">
 <button class="btn btn-sm btn-primary" onclick="adminNewCompany()"><i class="ti ti-building"></i>Add company</button>
+<button class="btn btn-primary" onclick="openOnboarding()" style="background:var(--green)"><i class="ti ti-user-plus"></i>New Client</button>
 <button class="btn btn-sm" onclick="adminNewSite(null)"><i class="ti ti-map-pin"></i>Add site</button>
 </div>
 </div>
@@ -31373,5 +31712,182 @@ I can help you:<br>
 </div>
 
 </div>
+
+<!-- ═══════ CLIENT ONBOARDING WIZARD ═══════ -->
+<div id="onboard-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:500;align-items:center;justify-content:center;padding:16px">
+  <div style="background:var(--card);border-radius:16px;width:100%;max-width:640px;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.3)">
+
+    <!-- Header -->
+    <div style="background:var(--green);padding:20px 24px;border-radius:16px 16px 0 0;color:#fff;display:flex;align-items:center;justify-content:space-between">
+      <div>
+        <div style="font-size:18px;font-weight:700">New Client Onboarding</div>
+        <div style="font-size:12px;opacity:.85" id="ob-step-label">Step 1 of 4 — Company Details</div>
+      </div>
+      <button onclick="closeOnboarding()" style="background:rgba(255,255,255,.2);border:none;color:#fff;width:32px;height:32px;border-radius:50%;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center">✕</button>
+    </div>
+
+    <!-- Progress bar -->
+    <div style="height:4px;background:rgba(255,255,255,.2);margin-top:-4px">
+      <div id="ob-progress" style="height:100%;background:#fff;width:25%;transition:width .3s;border-radius:0 2px 2px 0"></div>
+    </div>
+
+    <!-- Step content -->
+    <div style="padding:24px" id="ob-content">
+
+      <!-- STEP 1: Company Details -->
+      <div id="ob-step-1">
+        <div style="font-size:14px;font-weight:600;margin-bottom:16px;color:var(--text)">Company Information</div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Company Name *</label>
+            <input type="text" id="ob-co-name" placeholder="e.g. Cascavelle Ltd"/>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Industry *</label>
+            <select id="ob-co-industry">
+              <option value="">Select industry...</option>
+              <option>Manufacturing</option>
+              <option>Construction</option>
+              <option>Oil & Gas</option>
+              <option>Healthcare</option>
+              <option>Transportation & Logistics</option>
+              <option>Hospitality & Tourism</option>
+              <option>Retail</option>
+              <option>Education</option>
+              <option>Government</option>
+              <option>Mining</option>
+              <option>Agriculture</option>
+              <option>Financial Services</option>
+              <option>Other</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Registration No.</label>
+            <input type="text" id="ob-co-regno" placeholder="Business registration number"/>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Headcount</label>
+            <input type="number" id="ob-co-headcount" placeholder="Number of employees" min="1"/>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Contact Person *</label>
+            <input type="text" id="ob-co-contact" placeholder="Full name"/>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Contact Email *</label>
+            <input type="email" id="ob-co-email" placeholder="contact@company.com"/>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Phone</label>
+            <input type="text" id="ob-co-phone" placeholder="+230 xxx xxxx"/>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Subscription Tier</label>
+            <select id="ob-co-tier">
+              <option value="starter">🌱 Starter (up to 50 users)</option>
+              <option value="professional" selected>⭐ Professional (up to 200 users)</option>
+              <option value="enterprise">🏢 Enterprise (unlimited)</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Address</label>
+          <input type="text" id="ob-co-address" placeholder="Street address, city"/>
+        </div>
+      </div>
+
+      <!-- STEP 2: Sites -->
+      <div id="ob-step-2" style="display:none">
+        <div style="font-size:14px;font-weight:600;margin-bottom:4px;color:var(--text)">Work Sites</div>
+        <div style="font-size:12px;color:var(--text2);margin-bottom:16px">Add at least one site. You can add more later.</div>
+        <div id="ob-sites-list" style="display:flex;flex-direction:column;gap:10px;margin-bottom:14px"></div>
+        <button class="btn btn-sm" onclick="obAddSite()" style="background:var(--bg);border-color:var(--green);color:var(--green)">
+          <i class="ti ti-plus"></i>Add Another Site
+        </button>
+      </div>
+
+      <!-- STEP 3: Admin User -->
+      <div id="ob-step-3" style="display:none">
+        <div style="font-size:14px;font-weight:600;margin-bottom:4px;color:var(--text)">Client Admin Account</div>
+        <div style="font-size:12px;color:var(--text2);margin-bottom:16px">This person will be the company admin — they can manage users, sites and settings.</div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Full Name *</label>
+            <input type="text" id="ob-admin-name" placeholder="Admin full name"/>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Email *</label>
+            <input type="email" id="ob-admin-email" placeholder="admin@company.com"/>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Job Title</label>
+            <input type="text" id="ob-admin-title" placeholder="e.g. HSE Manager"/>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Role</label>
+            <select id="ob-admin-role">
+              <option value="admin">🔑 Company Admin</option>
+              <option value="hse_manager">🛡️ HSE Manager</option>
+              <option value="site_manager">🏗️ Site Manager</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Temporary Password *</label>
+            <input type="password" id="ob-admin-pw" placeholder="Min 8 characters"/>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Confirm Password *</label>
+            <input type="password" id="ob-admin-pw2" placeholder="Repeat password"/>
+          </div>
+        </div>
+        <div style="background:var(--bg);border-radius:8px;padding:12px;font-size:12px;color:var(--text2);margin-top:4px">
+          <i class="ti ti-info-circle" style="color:var(--green)"></i>
+          The admin will receive a welcome email with their login details and a link to set their own password.
+        </div>
+      </div>
+
+      <!-- STEP 4: Confirmation -->
+      <div id="ob-step-4" style="display:none">
+        <div style="text-align:center;padding:8px 0 20px">
+          <div style="font-size:40px;margin-bottom:8px">🎉</div>
+          <div style="font-size:16px;font-weight:700;color:var(--text)">Ready to onboard!</div>
+          <div style="font-size:13px;color:var(--text2);margin-top:4px">Review the summary below then click Create to set everything up.</div>
+        </div>
+        <div id="ob-summary" style="background:var(--bg);border-radius:10px;padding:16px;font-size:13px;line-height:1.8"></div>
+        <div style="margin-top:16px;padding:12px;background:#EAF3DE;border-radius:8px;font-size:12px;color:#3B6D11">
+          <strong>What happens next:</strong><br>
+          ✓ Company and site(s) created in the database<br>
+          ✓ Admin account registered with Supabase Auth<br>
+          ✓ Welcome email sent to the admin<br>
+          ✓ Invite link generated for additional users
+        </div>
+      </div>
+    </div>
+
+    <!-- Footer buttons -->
+    <div style="padding:16px 24px;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center">
+      <button id="ob-back-btn" class="btn" onclick="obBack()" style="display:none"><i class="ti ti-arrow-left"></i>Back</button>
+      <div style="flex:1"></div>
+      <div style="display:flex;gap:10px">
+        <button class="btn" onclick="closeOnboarding()">Cancel</button>
+        <button id="ob-next-btn" class="btn btn-primary" onclick="obNext()">
+          Next <i class="ti ti-arrow-right"></i>
+        </button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
 </body>
 </html>
