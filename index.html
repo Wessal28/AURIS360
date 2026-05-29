@@ -556,70 +556,18 @@ async function kpiSaveObjective() {
 
 // ── CONTRACTOR MANAGEMENT — Entry & Core Functions ────────────────────────────
 let conAllData=[], conPaData=[], conEvData=[], conAtwData=[], conCirData=[];
-let conEditId=null, conPaEditId=null, conEvEditId=null, conAtwEditId=null, conCirEditId=null;
+let conPaEditId=null, conEvEditId=null, conAtwEditId=null, conCirEditId=null;
 let conCurrentTab='register';
 
 async function loadContractors(){
-  var btn=document.getElementById('con-add-btn');if(btn)btn.style.display=isMgr()?'inline-flex':'none';
+  // Role-gate all 5 add-buttons across the contractor sub-tabs
+  ['con-add-btn','cpa-add-btn','cev-add-btn','catw-add-btn','cir-add-btn'].forEach(function(id){
+    var el=document.getElementById(id);if(el)el.style.display=isMgr()?'inline-flex':'none';
+  });
   conSwitchTab('register',document.getElementById('con-tab-register'));
 }
 
-function conSwitchTab(tab,btn){
-  conCurrentTab=tab;
-  document.querySelectorAll('[id^="con-tab-"]').forEach(t=>t.classList.remove('active'));
-  if(btn)btn.classList.add('active');
-  ['register','preassess','eval','atw','incidents'].forEach(function(t){
-    var el=document.getElementById('con-view-'+t);if(el)el.style.display=t===tab?'block':'none';
-  });
-  ['con-form','cpa-form','cev-form','catw-form','cir-form'].forEach(function(id){
-    var el=document.getElementById(id);if(el)el.style.display='none';
-  });
-  if(tab==='register')conLoadRegister();
-  else if(tab==='preassess')conLoadPa();
-  else if(tab==='eval')conLoadEv();
-  else if(tab==='atw')conLoadAtw();
-  else if(tab==='incidents')conLoadCir();
-}
 
-async function conLoadRegister(){
-  var el=document.getElementById('con-register-list');if(!el)return;
-  el.innerHTML='<div class="loading-msg">Loading...</div>';
-  var q_search=document.getElementById('con-search')?.value?.trim()||'';
-  var q_status=document.getElementById('con-filter-status')?.value||'';
-  var q_cat=document.getElementById('con-filter-cat')?.value||'';
-  try{
-    var q='/contractors?select=*'+cf()+'&order=company_name.asc';
-    if(q_status)q+='&status=eq.'+q_status;
-    var d=await api(q);conAllData=d||[];
-    if(q_search){var ql=q_search.toLowerCase();conAllData=conAllData.filter(x=>(x.company_name||'').toLowerCase().includes(ql)||(x.trading_name||'').toLowerCase().includes(ql)||(x.category||'').toLowerCase().includes(ql));}
-    if(q_cat)conAllData=conAllData.filter(x=>(x.category||'')=== q_cat);
-    var now=new Date();var soon=new Date();soon.setDate(soon.getDate()+90);
-    var setM=function(id,v){var e=document.getElementById(id);if(e)e.textContent=v;};
-    setM('con-m-total',(d||[]).length);
-    setM('con-m-approved',(d||[]).filter(x=>x.status==='approved').length);
-    setM('con-m-pending',(d||[]).filter(x=>['pending','under_review'].includes(x.status)).length);
-    setM('con-m-suspended',(d||[]).filter(x=>x.status==='suspended').length);
-    setM('con-m-expiring',(d||[]).filter(x=>x.expiry_date&&new Date(x.expiry_date)>now&&new Date(x.expiry_date)<=soon).length);
-    if(!conAllData.length){el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)"><div style="font-size:40px;margin-bottom:12px">👷</div><div style="font-weight:600;margin-bottom:8px">No contractors registered</div>'+(isMgr()?'<button class="btn btn-primary" onclick="conNew()"><i class="ti ti-plus"></i>Register contractor</button>':'')+'</div>';return;}
-    var stCfg={approved:['#EAF3DE','#3B6D11'],pending:['#FEF9EC','#854F0B'],under_review:['#EFF6FF','#185FA5'],suspended:['#FCEBEB','#A32D2D'],expired:['#f3f4f6','#6B7280'],rejected:['#FCEBEB','#A32D2D']};
-    var h='<div class="card" style="padding:0;overflow:hidden"><table style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr style="background:#1a3a5c;color:#fff"><th style="padding:8px 14px;text-align:left">Company name</th><th style="padding:8px">Category</th><th style="padding:8px">Contact</th><th style="padding:8px">Insurance expiry</th><th style="padding:8px">Approved date</th><th style="padding:8px">Review date</th><th style="padding:8px">Status</th><th style="padding:8px;width:50px"></th></tr></thead><tbody>';
-    conAllData.forEach(function(x,i){
-      var bg=i%2===0?'#fff':'#f9fafb';var sc2=stCfg[x.status]||stCfg.pending;
-      var isExpiring=x.expiry_date&&new Date(x.expiry_date)>now&&new Date(x.expiry_date)<=soon;
-      var isExpired=x.expiry_date&&new Date(x.expiry_date)<now;
-      h+='<tr style="border-bottom:1px solid #f0f0f0;background:'+bg+'">'
-        +'<td style="padding:8px 14px"><div style="font-weight:700">'+escH(x.company_name||'—')+'</div>'+(x.trading_name?'<div style="font-size:10px;color:var(--text2)">'+escH(x.trading_name)+'</div>':'')+'</td>'
-        +'<td style="padding:8px;font-size:11px;text-transform:capitalize">'+escH(x.category||'—')+'</td>'
-        +'<td style="padding:8px;font-size:11px"><div>'+escH(x.contact_name||'—')+'</div><div style="color:var(--text2)">'+escH(x.contact_email||'')+'</div></td>'
-        +'<td style="padding:8px;font-size:11px;color:'+(isExpired?'var(--red)':isExpiring?'#C2410C':'inherit')+'">'+(x.insurance_expiry?new Date(x.insurance_expiry).toLocaleDateString('en-GB')+(isExpired?' ⚠':''):'—')+'</td>'
-        +'<td style="padding:8px;font-size:11px">'+(x.approved_date?new Date(x.approved_date).toLocaleDateString('en-GB'):'—')+'</td>'
-        +'<td style="padding:8px;font-size:11px">'+(x.review_date?new Date(x.review_date).toLocaleDateString('en-GB'):'—')+'</td>'
-        +'<td style="padding:8px"><span style="background:'+sc2[0]+';color:'+sc2[1]+';padding:2px 8px;border-radius:99px;font-size:10px;font-weight:700;text-transform:capitalize">'+escH(x.status||'pending')+'</span></td>'
-        +'<td style="padding:8px"><button class="btn btn-sm" data-id="'+x.id+'" onclick="conEdit(this.dataset.id)"><i class="ti ti-edit"></i></button></td></tr>';
-    });
-    h+='</tbody></table></div>';el.innerHTML=h;
-  }catch(e){el.innerHTML='<p style="padding:20px;color:var(--text2)">Error loading contractors: '+escH(e.message)+'<br><small>Ensure the contractors table exists in Supabase.</small></p>';}
-}
 
 async function conLoadPa(){
   var el=document.getElementById('con-pa-list');if(!el)return;el.innerHTML='<div class="loading-msg">Loading...</div>';
@@ -671,11 +619,8 @@ async function conLoadCir(){
 }
 
 // Contractor register CRUD stubs
-function conFormBack(){['con-form'].forEach(function(id){var el=document.getElementById(id);if(el)el.style.display='none';});document.getElementById('con-view-register').style.display='block';document.querySelectorAll('[id^="con-tab-"]').forEach(t=>t.classList.remove('active'));document.getElementById('con-tab-register')?.classList.add('active');conLoadRegister();}
-function conNew(){conEditId=null;document.getElementById('con-form-title').textContent='Register Contractor';document.getElementById('con-del-btn').style.display='none';['conf-name','conf-trading','conf-reg','conf-vat','conf-address','conf-contact','conf-email','conf-phone','conf-website','conf-spec','conf-notes','conf-ins-type','conf-ins-provider','conf-ins-policy'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});['conf-ins-expiry','conf-approved-date','conf-expiry-date','conf-review-date'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});document.getElementById('conf-cat').value='construction';document.getElementById('conf-status').value='pending';document.getElementById('con-view-register').style.display='none';document.getElementById('con-form').style.display='block';}
-function conEdit(id){var x=conAllData.find(r=>r.id===id);if(!x)return;conEditId=id;document.getElementById('con-form-title').textContent=x.company_name||'Edit Contractor';document.getElementById('con-del-btn').style.display=isMgr()?'inline-flex':'none';var gf=function(fid,val){var el=document.getElementById(fid);if(el)el.value=val||'';};gf('conf-name',x.company_name);gf('conf-trading',x.trading_name);gf('conf-reg',x.registration_no);gf('conf-vat',x.vat_no);gf('conf-address',x.address);gf('conf-contact',x.contact_name);gf('conf-email',x.contact_email);gf('conf-phone',x.contact_phone);gf('conf-website',x.website);gf('conf-spec',x.specialisation);gf('conf-notes',x.notes);gf('conf-ins-type',x.insurance_type);gf('conf-ins-provider',x.insurance_provider);gf('conf-ins-policy',x.insurance_policy_no);gf('conf-ins-expiry',x.insurance_expiry);gf('conf-approved-date',x.approved_date);gf('conf-expiry-date',x.expiry_date);gf('conf-review-date',x.review_date);document.getElementById('conf-cat').value=x.category||'construction';document.getElementById('conf-status').value=x.status||'pending';document.getElementById('conf-preview-name').textContent=x.company_name||'—';document.getElementById('conf-preview-cat').textContent=x.category||'—';document.getElementById('con-view-register').style.display='none';document.getElementById('con-form').style.display='block';}
-async function conSave(){var name=document.getElementById('conf-name')?.value?.trim();if(!name){toast('Please enter company name',false);return;}var g=function(id){var el=document.getElementById(id);return el?el.value||null:null;};var body={company_id:prof?.company_id,company_name:name,trading_name:g('conf-trading'),registration_no:g('conf-reg'),vat_no:g('conf-vat'),address:g('conf-address'),contact_name:g('conf-contact'),contact_email:g('conf-email'),contact_phone:g('conf-phone'),website:g('conf-website'),category:g('conf-cat')||'construction',specialisation:g('conf-spec'),notes:g('conf-notes'),insurance_type:g('conf-ins-type'),insurance_provider:g('conf-ins-provider'),insurance_policy_no:g('conf-ins-policy'),insurance_expiry:g('conf-ins-expiry')||null,approved_date:g('conf-approved-date')||null,expiry_date:g('conf-expiry-date')||null,review_date:g('conf-review-date')||null,status:g('conf-status')||'pending',updated_at:new Date().toISOString()};try{if(conEditId){await api('/contractors?id=eq.'+conEditId,{m:'PATCH',p:'return=minimal',b:body});toast('Contractor updated!');}else{body.created_by=prof?.id;await api('/contractors',{m:'POST',p:'return=minimal',b:body});toast('Contractor registered!');}conFormBack();}catch(e){toast('Error: '+e.message+' (ensure contractors table exists)',false);}};
-async function conDelete(){if(!conEditId||!confirm('Delete this contractor?'))return;try{await api('/contractors?id=eq.'+conEditId,{m:'DELETE'});toast('Deleted!');conFormBack();}catch(e){toast(e.message,false);}};
+;
+;
 
 // Pre-assessment stubs
 function cpaFormBack(){document.getElementById('cpa-form').style.display='none';document.getElementById('con-view-preassess').style.display='block';conLoadPa();}
