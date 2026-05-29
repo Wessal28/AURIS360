@@ -523,39 +523,6 @@ function toolsSwitchTab(tab, btn) {
 }
 
 // ── sendAIMsg (settings/AI panel) ─────────────────────────────────────────────
-async function sendAIMsg() {
-  var inputEl = document.getElementById('ai-input');
-  var msg = inputEl?.value?.trim();
-  if (!msg) return;
-  var msgsEl = document.getElementById('ai-messages');
-  if (!msgsEl) return;
-  // Add user message
-  msgsEl.innerHTML += '<div style="text-align:right;margin-bottom:8px"><div style="display:inline-block;background:#185FA5;color:#fff;padding:8px 12px;border-radius:12px 12px 2px 12px;font-size:13px;max-width:80%">'+escH(msg)+'</div></div>';
-  inputEl.value = '';
-  msgsEl.scrollTop = msgsEl.scrollHeight;
-  // Typing indicator
-  var typingId = 'ai-typing-' + Date.now();
-  msgsEl.innerHTML += '<div id="'+typingId+'" style="margin-bottom:8px"><div style="display:inline-block;background:#f3f4f6;padding:8px 12px;border-radius:2px 12px 12px 12px;font-size:13px;color:var(--text2)">⏳ Thinking...</div></div>';
-  msgsEl.scrollTop = msgsEl.scrollHeight;
-  try {
-    var resp = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514', max_tokens: 1000,
-        messages: [{role:'user', content: 'You are an HSE expert assistant. Answer this question concisely: ' + msg}]
-      })
-    });
-    var data = await resp.json();
-    var text = (data.content||[]).map(c=>c.text||'').join('') || 'No response received.';
-    var typingEl = document.getElementById(typingId);
-    if (typingEl) typingEl.innerHTML = '<div style="display:inline-block;background:#f3f4f6;padding:8px 12px;border-radius:2px 12px 12px 12px;font-size:13px;max-width:80%;white-space:pre-wrap">'+escH(text)+'</div>';
-  } catch(e) {
-    var typingEl2 = document.getElementById(typingId);
-    if (typingEl2) typingEl2.innerHTML = '<div style="display:inline-block;background:#FCEBEB;padding:8px 12px;border-radius:2px 12px 12px 12px;font-size:13px;color:#A32D2D">Error: '+escH(e.message)+'</div>';
-  }
-  msgsEl.scrollTop = msgsEl.scrollHeight;
-}
 
 // ── generateFullInsights (alias for genFullAI) ────────────────────────────────
 function generateFullInsights() { genFullAI(); }
@@ -2344,20 +2311,6 @@ function dashRenderTrainingCompliance(expCerts, valid, people) {
     : '<div style="font-size:11px;color:#1D9E75;text-align:center;padding:8px">✓ All certificates current</div>');
 }
 
-async function genDashAI() {
-  var el = document.getElementById('dash-ai-content'); if(!el) return;
-  el.textContent = '⏳ Generating AI insights...';
-  try {
-    var ctx = await getCtx ? getCtx() : {};
-    var resp = await fetch('https://api.anthropic.com/v1/messages', {
-      method:'POST', headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:800,
-        messages:[{role:'user',content:'You are an HSE expert analysing AURIS360 data. Provide 3-4 concise, actionable insights about the HSE performance based on this context: '+JSON.stringify(ctx||{})+'.\n\nFocus on: (1) key risks, (2) positive trends, (3) immediate actions needed. Be specific and practical. Max 200 words.'}]})
-    });
-    var d = await resp.json();
-    el.textContent = (d.content||[]).map(function(c){return c.text||'';}).join('') || 'No insights generated.';
-  } catch(e) { el.textContent = 'AI unavailable: ' + e.message; }
-}
 
 // ─── EXECUTIVE DASHBOARD ──────────────────────────────────────────
 var execData = {};
@@ -3218,28 +3171,45 @@ async function sendAI() {
   var msg = inp?.value?.trim(); if(!msg) return;
   inp.value = '';
   var msgsEl = document.getElementById('ai-messages'); if(!msgsEl) return;
-  var addMsg = function(text, role) {
+
+  // ── Render helper: chat bubble with WhatsApp-style asymmetric tail ──
+  // User bubbles: right-aligned, blue, tail at bottom-right
+  // Assistant bubbles: left-aligned, grey, tail at bottom-left
+  var addMsg = function(text, role, isThinking, isError) {
     var div = document.createElement('div');
     div.style.cssText = role==='user' ? 'text-align:right;margin-bottom:8px' : 'margin-bottom:8px';
-    div.innerHTML = '<div style="display:inline-block;background:'+(role==='user'?'#185FA5;color:#fff':'#f3f4f6;color:#1a1a1a')+';padding:8px 12px;border-radius:12px;font-size:13px;max-width:80%;">'+escH(text)+'</div>';
+    var bg = role==='user' ? '#185FA5' : (isError ? '#FCEBEB' : '#f3f4f6');
+    var fg = role==='user' ? '#fff' : (isError ? '#A32D2D' : '#1a1a1a');
+    // Asymmetric border-radius gives the bubble a "tail" on the inside corner
+    var radius = role==='user' ? '12px 12px 2px 12px' : '2px 12px 12px 12px';
+    var prefix = isThinking ? '⏳ ' : '';
+    div.innerHTML = '<div style="display:inline-block;background:'+bg+';color:'+fg+';padding:8px 12px;border-radius:'+radius+';font-size:13px;max-width:80%;white-space:pre-wrap">'+prefix+escH(text)+'</div>';
     msgsEl.appendChild(div);
     msgsEl.scrollTop = msgsEl.scrollHeight;
     return div.querySelector('div');
   };
-  addMsg(msg,'user');
-  var thinking = addMsg('Thinking...','assistant');
+
+  addMsg(msg, 'user');
+  var thinking = addMsg('Thinking...', 'assistant', true);
+
   try {
     var ctx = await getCtx();
-    aiHist = aiHist||[];
-    if(!aiHist.length) aiHist.push({role:'user',content:'Context: '+ctx});
-    aiHist.push({role:'user',content:msg});
-    var rep = await callAI(aiHist.slice(-6));
-    aiHist.push({role:'assistant',content:rep});
+    aiHist = aiHist || [];
+    if(!aiHist.length) aiHist.push({role:'user', content:'Context: '+ctx});
+    aiHist.push({role:'user', content:msg});
+    var rep = await callAI(aiHist.slice(-6));   // sliding context window — prevents token bloat
+    aiHist.push({role:'assistant', content:rep});
+    // Replace the thinking bubble with the real response (removing the ⏳ prefix)
     thinking.textContent = rep;
-  } catch(e) { thinking.textContent = 'Error: '+e.message; }
+    thinking.style.whiteSpace = 'pre-wrap';
+  } catch(e) {
+    // Re-render the thinking bubble as an error bubble (red, no emoji prefix)
+    thinking.parentElement.innerHTML = '<div style="display:inline-block;background:#FCEBEB;color:#A32D2D;padding:8px 12px;border-radius:2px 12px 12px 12px;font-size:13px;max-width:80%">Error: '+escH(e.message)+'</div>';
+  }
+  msgsEl.scrollTop = msgsEl.scrollHeight;
 }
 
-function sendAIMsg() { sendAI(); }
+function sendAIMsg() { return sendAI(); }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 function aiCopyOutput(elOrId) {
@@ -3286,18 +3256,6 @@ function pname(id){const p=people.find(x=>x.id===id);return p?p.first_name+' '+p
 
 // DEDUP: let aiOpen=false,aiHist=[];
 // DEDUP: const SYS='You are AURIS, an expert HSE AI assistant for AURIS360 by SEPHS Consulting (Mauritius). Analyse real HSE data and give specific, actionable recommendations. Be concise and professional.';
-async function callAI(msgs){
-return 'AI features require configuration. Please contact your system administrator.';
-}
-async function sendAI(){
-const inp=document.getElementById('ai-input');const msg=inp.value.trim();if(!msg)return;
-inp.value='';addMsg(msg,'user');const th=addMsg('Analysing your HSE data...','assistant');
-try{
-const ctx=await getCtx();
-aiHist.push({role:'user',content:'HSE Data:\n'+ctx+'\n\nQuestion: '+msg});
-const rep=await callAI(aiHist);aiHist.push({role:'assistant',content:rep});th.textContent=rep;
-}catch(e){th.textContent='Error: '+e.message;}
-}
 async function askAI(q){if(!aiOpen)toggleAI();document.getElementById('ai-input').value=q;sendAI();}
 function addMsg(text,cls){const m=document.getElementById('ai-messages');const d=document.createElement('div');d.className='ai-msg '+cls;d.textContent=text;m.appendChild(d);m.scrollTop=m.scrollHeight;return d;}
 async function genDashAI(){
@@ -3308,21 +3266,6 @@ const rep=await callAI([{role:'user',content:'HSE Data:\n'+ctx+'\n\nProvide exac
 const ins=JSON.parse(rep.replace(/```json|```/g,'').trim());
 el.innerHTML=ins.map(i=>'<div class="insight-card '+(i.type==='warn'?'warn':i.type==='danger'?'danger':'')+'"><div class="insight-title">'+i.title+'</div><div class="insight-body">'+i.body+'</div></div>').join('');
 }catch(e){el.innerHTML='';}
-}
-async function genFullAI(){
-document.getElementById('ai-insights-content').innerHTML='<div class="loading-msg">Generating analysis...</div>';
-document.getElementById('ai-insights-date').textContent='Updated: '+new Date().toLocaleString('en-GB');
-try{
-const ctx=await getCtx();
-const[main,kpir,hot]=await Promise.all([
-callAI([{role:'user',content:'HSE Data:\n'+ctx+'\n\nComprehensive HSE performance analysis with trends, top concerns, and recommendations.'}]),
-callAI([{role:'user',content:'HSE Data:\n'+ctx+'\n\nKPI analysis with specific improvement recommendations for each status.'}]),
-callAI([{role:'user',content:'HSE Data:\n'+ctx+'\n\nTop risk hotspots ranked by severity with mitigation steps.'}]),
-]);
-document.getElementById('ai-insights-content').innerHTML='<div style="white-space:pre-wrap;font-size:13px;line-height:1.7">'+main+'</div>';
-document.getElementById('ai-kpi-recs').innerHTML='<div style="white-space:pre-wrap;font-size:12px;line-height:1.7">'+kpir+'</div>';
-document.getElementById('ai-risk-hotspots').innerHTML='<div style="white-space:pre-wrap;font-size:12px;line-height:1.7">'+hot+'</div>';
-}catch(e){document.getElementById('ai-insights-content').innerHTML='<div class="empty" style="color:var(--red)">'+e.message+'</div>';}
 }
 
 
