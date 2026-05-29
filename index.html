@@ -3271,24 +3271,6 @@ function aiDownload(elId, prefix) {
 
 
 // ===== APP.JS =====
-function rlv(){return RL[prof?.role]||0;}
-function can(r){return rlv()>=RL[r];}
-function isInsp(){return prof?.role==='inspector';}
-function isMgr(){return can('manager');}
-function isAdm(){return can('admin');}
-function isSA(){return prof?.role==='sephs_admin';}
-async function api(path,o={}){
-const headers={'Content-Type':'application/json','apikey':KEY,'Authorization':'Bearer '+(tok||KEY),'Accept':'application/json'};
-if(o.p)headers['Prefer']=o.p;
-const r=await fetch(SB+'/rest/v1'+path,{method:o.m||'GET',headers:headers,body:o.b?JSON.stringify(o.b):undefined});
-if(r.status===204||r.status===205)return null;
-const txt=await r.text();
-if(!txt||txt.trim()==='')return null;
-let d;
-try{d=JSON.parse(txt);}catch(e){console.error('JSON parse error:',txt.slice(0,200));throw new Error('Invalid server response');}
-if(!r.ok){const msg=(Array.isArray(d)?d[0]?.message:d.message)||d.error_description||d.hint||r.statusText;console.error('API error '+r.status+':',msg,path);throw new Error(msg);}
-return d;
-}
 async function authQ(path,body){
 const r=await fetch(SB+'/auth/v1'+path,{method:'POST',headers:{'Content-Type':'application/json','apikey':KEY},body:JSON.stringify(body)});
 const d=await r.json();if(!r.ok)throw new Error(d.error_description||d.msg||'Auth error');return d;
@@ -3353,18 +3335,6 @@ try{ Brand.loadFromCompany(co); }catch(_){
 }catch(e){console.error(e);}
 }
 function doLogout(){tok=null;prof=null;co=null;people=[];document.getElementById('login-screen').style.display='flex';document.getElementById('app').style.display='none';document.getElementById('ai-panel').style.display='none';try{Brand.reset();}catch(_){}}
-async function loadPeopleCache(){
-try{
-const d=await api('/people?select=id,first_name,last_name,job_title,person_type'+cf()+'&status=eq.active&order=last_name');
-people=d||[];fillPplDrops();
-}catch(e){people=[];}
-}
-function fillPplDrops(){
-const opts='<option value="">Select person...</option>'+people.map(p=>'<option value="'+p.id+'">'+p.last_name+', '+p.first_name+(p.job_title?' -- '+p.job_title:'')+'</option>').join('');
-['ef-person','ef-by','ef-assigned','if-by','rf-by','invf-by','invf-persons','pf-contractor','pf-issued','pf-approved','nf-by','mf-chair','kf-resp','af-resp','df-owner'].forEach(id=>{const el=document.getElementById(id);if(el&&!el.multiple)el.innerHTML=opts;});
-const ms=document.getElementById('tf-attendees');
-if(ms)ms.innerHTML=people.map(p=>'<option value="'+p.id+'">'+p.last_name+', '+p.first_name+'</option>').join('');
-}
 function showPage(name,el){
 
 // Hide all pages using inline style
@@ -3386,8 +3356,6 @@ if(el&&el.classList)el.classList.add('active');
 const L={dashboard:loadDash,kpi:kpiLoadAll,events:loadEvents,inspection:()=>{buildChecklist();loadInsps();},risk:loadRA,investigation:loadInvs,legal:loadLegal,sop:loadSOP,permit:loadPermits,noise:loadNoise,meetings:loadMtgs,training:loadTraining,actions:loadActions,documents:loadDocs,people:loadPeople,users:loadUsers,admin:loadAdmin,'ai-insights':genFullAI,settings:loadSettings};
 if(L[name])L[name]();
 }
-function toggleForm(id){const el=document.getElementById(id);el.style.display=el.style.display==='none'?'block':'none';}
-function toggleContractor(){document.getElementById('contractor-fields').style.display=document.getElementById('pef-type').value!=='employee'?'block':'none';}
 async function loadDash(){
 try{
 const safe=async(p)=>{try{return await p;}catch(e){console.warn('API:',e.message);return [];}};
@@ -3422,21 +3390,7 @@ if(dc)dc.innerHTML=!ec.length?'<div class="empty">No certifications expiring soo
 }
 
 // DEDUP: let aiOpen=false,aiHist=[];
-function toggleAI(){aiOpen=!aiOpen;document.getElementById('ai-window').className='ai-window'+(aiOpen?' open':'');}
 // DEDUP: const SYS='You are AURIS, an expert HSE AI assistant for AURIS360 by SEPHS Consulting (Mauritius). Analyse real HSE data and give specific, actionable recommendations. Be concise and professional.';
-async function getCtx(){
-try{
-const[k,e,i,a,pe,certs]=await Promise.all([api('/kpis?select=*'+cf()),api('/events?select=*'+cf()+'&limit=20'),api('/inspections?select=*'+cf()+'&limit=10'),api('/action_tracker?select=*'+cf()),api('/people?select=*'+cf()),api('/people_certifications?select=*'+cf())]);
-const soon=new Date();soon.setDate(soon.getDate()+30);
-return `Company: ${co?.name||'Unknown'} | Industry: ${co?.industry||'Unknown'}
-KPIs: ${(k||[]).length} total, ${(k||[]).filter(x=>x.status==='on_track').length} on track, ${(k||[]).filter(x=>x.status==='at_risk').length} at risk
-Events: ${(e||[]).length} total, ${(e||[]).filter(x=>x.severity==='high'||x.severity==='critical').length} high/critical
-Inspections: ${(i||[]).length}, avg good: ${i?.length?Math.round((i||[]).reduce((s,x)=>s+x.score_good,0)/(i||[]).length):0}/24
-Actions: ${(a||[]).length} total, ${(a||[]).filter(x=>x.status==='open').length} open, ${(a||[]).filter(x=>x.priority==='critical').length} critical
-People: ${(pe||[]).length} active (${(pe||[]).filter(x=>x.person_type==='employee').length} employees, ${(pe||[]).filter(x=>x.person_type==='contractor').length} contractors)
-Expiring certs (30d): ${(certs||[]).filter(x=>x.expiry_date&&new Date(x.expiry_date)<soon).length}`;
-}catch(e){return 'Unable to load data.';}
-}
 async function callAI(msgs){
 return 'AI features require configuration. Please contact your system administrator.';
 }
