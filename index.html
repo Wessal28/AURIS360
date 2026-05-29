@@ -561,7 +561,7 @@ async function loadContractors(){
 ;
 
 // ── INVESTIGATION MODULE — Entry & Core Functions ─────────────────────────────
-let invAllData=[], invEditId=null, invCurrentTab='ws1';
+let invAllData=[], invCurrentTab='ws1';
 
 // ===================================================================
 // OBSERVATION & BEHAVIOUR-BASED SAFETY (BBS) MODULE
@@ -1131,106 +1131,14 @@ async function obsAskAI(question) {
 }
 
 
-async function invLoadList(){
-  var el=document.getElementById('inv-list');if(!el)return;
-  el.innerHTML='<div class="loading-msg">Loading...</div>';
-  try{
-    var d=await api('/investigations?select=*'+cf()+'&order=created_at.desc');invAllData=d||[];
-    if(!d||!d.length){el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)"><div style="font-size:40px;margin-bottom:12px">🔍</div><div style="font-weight:600;margin-bottom:8px">No investigations recorded</div>'+(isMgr()?'<button class="btn btn-primary" onclick="invNew()"><i class="ti ti-plus"></i>Start investigation</button>':'')+'</div>';return;}
-    var stCfg={open:['#FEF9EC','#854F0B'],in_progress:['#EFF6FF','#185FA5'],completed:['#EAF3DE','#3B6D11'],closed:['#EAF3DE','#3B6D11'],pending_review:['#EDE9FE','#7C3AED']};
-    var h='<table style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr style="background:#f9fafb"><th style="padding:10px 14px;text-align:left;border-bottom:1px solid var(--border)">Reference</th><th style="padding:10px;border-bottom:1px solid var(--border)">Title / Description</th><th style="padding:10px;border-bottom:1px solid var(--border)">Type</th><th style="padding:10px;border-bottom:1px solid var(--border)">Date</th><th style="padding:10px;border-bottom:1px solid var(--border)">Investigator</th><th style="padding:10px;border-bottom:1px solid var(--border)">Status</th><th style="padding:10px;border-bottom:1px solid var(--border);width:50px"></th></tr></thead><tbody>';
-    d.forEach(function(x,i){
-      var bg=i%2===0?'#fff':'#f9fafb';var sc2=stCfg[x.status]||stCfg.open;
-      h+='<tr style="border-bottom:1px solid #f5f5f5;background:'+bg+';cursor:pointer" onclick="invOpen(\''+x.id+'\')">'
-        +'<td style="padding:10px 14px;font-family:monospace;font-weight:700;font-size:11px;color:#185FA5">'+escH(x.investigation_ref||x.id?.slice(0,8)||'—')+'</td>'
-        +'<td style="padding:10px;max-width:300px"><div style="font-weight:600">'+escH((x.title||x.incident_title||x.description||'—').substring(0,80))+'</div>'+(x.location?'<div style="font-size:10px;color:var(--text2)">'+escH(x.location)+'</div>':'')+'</td>'
-        +'<td style="padding:10px;font-size:11px;text-transform:capitalize">'+escH((x.investigation_type||x.inv_type||'general').replace(/_/g,' '))+'</td>'
-        +'<td style="padding:10px;font-size:11px">'+(x.incident_date||x.date?new Date(x.incident_date||x.date).toLocaleDateString('en-GB'):'—')+'</td>'
-        +'<td style="padding:10px;font-size:11px">'+escH(x.investigator||x.reported_by||'—')+'</td>'
-        +'<td style="padding:10px"><span style="background:'+sc2[0]+';color:'+sc2[1]+';padding:2px 8px;border-radius:99px;font-size:10px;font-weight:700;text-transform:capitalize">'+escH((x.status||'open').replace(/_/g,' '))+'</span></td>'
-        +'<td style="padding:10px"><i class="ti ti-chevron-right" style="color:var(--text2)"></i></td>'
-        +'</tr>';
-    });
-    h+='</tbody></table>';el.innerHTML=h;
-  }catch(e){el.innerHTML='<div style="padding:20px;color:var(--text2);text-align:center">Investigation records unavailable. Ensure the investigations table exists in Supabase.</div>';}
-}
 
-function invShowList(){
-  document.getElementById('inv-list-view').style.display='block';
-  document.getElementById('inv-form-view').style.display='none';
-  invLoadList();
-}
 
-function invOpen(id){
-  var x=invAllData.find(r=>r.id===id);
-  if(x)invEditId=id; else invEditId=null;
-  invOpenForm(x||{id});
-}
 
-function invNew(){
-  invEditId=null;
-  invOpenForm({});
-}
 
-function invOpenForm(x){
-  document.getElementById('inv-list-view').style.display='none';
-  document.getElementById('inv-form-view').style.display='block';
-  document.getElementById('inv-form-title').textContent=x.title||x.incident_title||'New Investigation';
-  document.getElementById('inv-form-ref').textContent=x.investigation_ref||'INV-AUTO';
-  document.getElementById('inv-type-sel').value=x.investigation_type||x.inv_type||'incident';
-  document.getElementById('inv-status-sel').value=x.status||'open';
-  document.getElementById('inv-delete-btn').style.display=(invEditId&&isMgr())?'inline-flex':'none';
-  // WS1 fields
-  var gf=function(fid,val){var el=document.getElementById(fid);if(el)el.value=val||'';};
-  gf('ws1-reported-by',x.reported_by||x.investigator);gf('ws1-reported-title',x.reporter_title);
-  gf('ws1-date-completion',x.completion_date);gf('ws1-event-link',x.linked_event_ref);
-  gf('ws1-inc-date',x.incident_date||x.date);gf('ws1-inc-time',x.incident_time);
-  gf('ws1-location',x.location);gf('ws1-description',x.description||x.incident_description);
-  gf('ws1-person-name',x.person_name);gf('ws1-person-function',x.person_function);
-  gf('ws1-person-start',x.person_start_time);gf('ws1-contract-type',x.contract_type);
-  gf('ws1-witnesses',x.witnesses);gf('ws1-task-freq',x.task_frequency);gf('ws1-work-type',x.work_type);
-  gf('ws1-immediate-actions',x.immediate_actions);gf('ws1-root-causes',x.root_causes);
-  gf('ws2-interviewer',x.interviewer);gf('ws2-interviewee',x.interviewee);gf('ws2-date',x.interview_date);
-  gf('ws2-proc',x.ws2_procedures);gf('ws2-mgmt',x.ws2_management);gf('ws2-skills',x.ws2_skills);
-  gf('ws2-attitude',x.ws2_attitude);gf('ws2-care',x.ws2_care);gf('ws2-personal',x.ws2_personal);
-  gf('ws2-root-causes',x.ws2_root_causes);
-  gf('ws3-completed-by',x.ws3_completed_by);gf('ws3-participants',x.ws3_participants);gf('ws3-date',x.ws3_date);
-  gf('ws3-machines',x.ws3_machines);gf('ws3-machines-explain',x.ws3_machines_explain);
-  gf('ws3-materials',x.ws3_materials);gf('ws3-materials-explain',x.ws3_materials_explain);
-  gf('ws3-environment',x.ws3_environment);gf('ws3-environment-explain',x.ws3_environment_explain);
-  gf('inv-sign-investigator',x.sign_investigator);gf('inv-sign-inv-date',x.sign_inv_date);
-  gf('inv-sign-reviewer',x.sign_reviewer);gf('inv-sign-rev-date',x.sign_rev_date);
-  gf('inv-sign-approver',x.sign_approver);gf('inv-sign-app-date',x.sign_app_date);
-  // Load CAs
-  var caBody=document.getElementById('inv-ca-body');
-  if(caBody&&x.corrective_actions){caBody.innerHTML=(x.corrective_actions||[]).map(function(a,i){return invCaRow(a.description||'',a.assigned_to||'',a.due_date||'',a.status||'open',i);}).join('');}
-  invShowTab('ws1',document.getElementById('inv-tab-ws1'));
-}
 
-function invShowTab(tab,btn){
-  invCurrentTab=tab;
-  document.querySelectorAll('[id^="inv-tab-"]').forEach(t=>t.classList.remove('active'));
-  if(btn)btn.classList.add('active');
-  ['ws1','ws2','ws3','ca'].forEach(function(t){var el=document.getElementById('inv-'+t);if(el)el.style.display=t===tab?'block':'none';});
-}
 
-function invCaRow(desc,assigned,due,status,idx){return '<div class="inv-ca-row" style="display:grid;grid-template-columns:3fr 2fr 1fr 1fr auto;gap:6px;align-items:center;margin-bottom:6px"><input type="text" placeholder="Corrective action..." value="'+escH(desc)+'" class="inv-ca-desc" style="padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px"/><input type="text" placeholder="Assigned to" value="'+escH(assigned)+'" class="inv-ca-assigned" style="padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px"/><input type="date" value="'+escH(due)+'" class="inv-ca-due" style="padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px"/><select class="inv-ca-status" style="padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px"><option value="open">Open</option><option value="in_progress">In progress</option><option value="completed">Completed</option></select><button class="btn btn-sm" style="color:var(--red)" onclick="this.closest(\'.inv-ca-row\').remove()"><i class="ti ti-x"></i></button></div>';}
-function invAddCA(){var el=document.getElementById('inv-ca-body');if(!el)return;var empty=document.getElementById('inv-ca-empty');if(empty)empty.style.display='none';el.insertAdjacentHTML('beforeend',invCaRow('','','','open',el.querySelectorAll('.inv-ca-row').length));}
 function ws3AddRow(){var el=document.getElementById('ws3-five-why-body');if(!el)return;var row=document.createElement('div');row.style.cssText='display:grid;grid-template-columns:auto 1fr auto;gap:8px;align-items:start;margin-bottom:8px;padding:8px;border:1px solid var(--border);border-radius:8px';var idx=el.querySelectorAll('.ws3-why-row').length+1;row.className='ws3-why-row';row.innerHTML='<div style="font-weight:700;color:#185FA5;min-width:50px;padding-top:6px">Why '+idx+'?</div><textarea class="ws3-why-ans" style="min-height:50px;padding:6px;border:1px solid var(--border);border-radius:6px;font-size:12px;resize:vertical" placeholder="Why did this happen?"></textarea><button class="btn btn-sm" style="color:var(--red);margin-top:2px" onclick="this.closest(\'.ws3-why-row\').remove()"><i class="ti ti-x"></i></button>';el.appendChild(row);}
-async function invSave(){
-  var g=function(id){var el=document.getElementById(id);return el?el.value||null:null;};
-  // Collect CAs
-  var cas=[];document.querySelectorAll('.inv-ca-row').forEach(function(row){var desc=row.querySelector('.inv-ca-desc')?.value?.trim();var assigned=row.querySelector('.inv-ca-assigned')?.value?.trim()||'';var due=row.querySelector('.inv-ca-due')?.value||'';var status=row.querySelector('.inv-ca-status')?.value||'open';if(desc)cas.push({description:desc,assigned_to:assigned,due_date:due||null,status});});
-  // Collect 5-why
-  var whys=[];document.querySelectorAll('.ws3-why-ans').forEach(function(ta){if(ta.value.trim())whys.push(ta.value.trim());});
-  var body={company_id:prof?.company_id,investigation_type:g('inv-type-sel')||'incident',status:g('inv-status-sel')||'open',reported_by:g('ws1-reported-by'),reporter_title:g('ws1-reported-title'),incident_date:g('ws1-inc-date')||null,incident_time:g('ws1-inc-time'),location:g('ws1-location'),description:g('ws1-description'),person_name:g('ws1-person-name'),person_function:g('ws1-person-function'),witnesses:g('ws1-witnesses'),task_frequency:g('ws1-task-freq'),work_type:g('ws1-work-type'),immediate_actions:g('ws1-immediate-actions'),root_causes:g('ws1-root-causes'),interviewer:g('ws2-interviewer'),interviewee:g('ws2-interviewee'),interview_date:g('ws2-date')||null,ws2_procedures:g('ws2-proc'),ws2_management:g('ws2-mgmt'),ws2_skills:g('ws2-skills'),ws2_attitude:g('ws2-attitude'),ws2_care:g('ws2-care'),ws2_personal:g('ws2-personal'),ws2_root_causes:g('ws2-root-causes'),ws3_completed_by:g('ws3-completed-by'),ws3_participants:g('ws3-participants'),ws3_date:g('ws3-date')||null,ws3_machines:g('ws3-machines'),ws3_machines_explain:g('ws3-machines-explain'),ws3_materials:g('ws3-materials'),ws3_materials_explain:g('ws3-materials-explain'),ws3_environment:g('ws3-environment'),ws3_environment_explain:g('ws3-environment-explain'),five_whys:whys,corrective_actions:cas,sign_investigator:g('inv-sign-investigator'),sign_inv_date:g('inv-sign-inv-date')||null,sign_reviewer:g('inv-sign-reviewer'),sign_rev_date:g('inv-sign-rev-date')||null,sign_approver:g('inv-sign-approver'),sign_app_date:g('inv-sign-app-date')||null,updated_at:new Date().toISOString()};
-  try{
-    if(invEditId){await api('/investigations?id=eq.'+invEditId,{m:'PATCH',p:'return=minimal',b:body});toast('Investigation updated!');}
-    else{body.created_by=prof?.id;var res=await api('/investigations',{m:'POST',p:'return=representation',b:body});if(res?.[0]?.id){var ref='INV-'+new Date().getFullYear()+'-'+String(invAllData.length+1).padStart(3,'0');await api('/investigations?id=eq.'+res[0].id,{m:'PATCH',p:'return=minimal',b:{investigation_ref:ref}});toast('Investigation saved! Ref: '+ref);invEditId=res[0].id;document.getElementById('inv-form-ref').textContent=ref;// Auto-create MAP actions
-      for(var ca of cas){if(ca.description){try{await api('/action_tracker',{m:'POST',p:'return=minimal',b:{company_id:prof?.company_id,title:ca.description,description:ca.description,source_type:'incident',source_module:'investigation',source_ref:ref,priority:'high',status:ca.status||'open',assigned_to_name:ca.assigned_to||null,target_date:ca.due_date||null,created_by:prof?.id}});}catch(ex){}}}}}
-  }catch(e){toast('Error: '+e.message+' (ensure investigations table exists in Supabase)',false);}
-}
-async function invDeleteCurrent(){if(!invEditId||!confirm('Delete this investigation?'))return;try{await api('/investigations?id=eq.'+invEditId,{m:'DELETE'});toast('Deleted!');invShowList();}catch(e){toast(e.message,false);}};
+;
 async function generateSafetyComm(){toast('Generating AI safety communication...');try{var x=invAllData.find(r=>r.id===invEditId)||{};var resp=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,messages:[{role:'user',content:'Write a brief safety alert communication based on this investigation: Location: '+(x.location||'—')+', What happened: '+(x.description||'—')+', Root causes: '+(x.root_causes||'—')+'. Format as a short alert for all workers. Max 200 words.'}]})});var d=await resp.json();var text=(d.content||[]).map(c=>c.text||'').join('');toast('Safety communication ready — see console for text.');console.log('SAFETY COMMUNICATION:\n'+text);}catch(e){toast('AI unavailable: '+e.message,false);}};
 // ===================================================================
 // SUPABASE AUTH — Production implementation
@@ -3935,27 +3843,12 @@ function escH(str){
 
 
 
-function invShowList(){
-  document.getElementById('inv-list-view').style.display='block';
-  document.getElementById('inv-form-view').style.display='none';
-  loadInvs();
-}
 
 function invShowForm(){
   document.getElementById('inv-list-view').style.display='none';
   document.getElementById('inv-form-view').style.display='block';
 }
 
-function invShowTab(tab){
-  // Don't switch to disabled tabs
-  var btn=document.getElementById('inv-tab-'+tab);
-  if(btn&&btn.classList.contains('disabled'))return;
-  document.querySelectorAll('.inv-tab-content').forEach(t=>t.style.display='none');
-  document.querySelectorAll('.inv-tab').forEach(t=>t.classList.remove('active'));
-  var content=document.getElementById('inv-'+tab);
-  if(content)content.style.display='block';
-  if(btn)btn.classList.add('active');
-}
 
 function invTypeChange(){
   var type=document.getElementById('inv-type-sel').value;
@@ -4032,101 +3925,7 @@ async function invLoadEventsDrop(){
   }catch(e){}
 }
 
-async function invNew(){
-  invEditingId=null;
-  invClearForm();
-  document.getElementById('inv-form-title').textContent='New Investigation';
-  document.getElementById('inv-form-ref').textContent='';
-  document.getElementById('inv-type-sel').value='basic';
-  document.getElementById('inv-status-sel').value='draft';
-  document.getElementById('ws1-date-completion').value=new Date().toISOString().slice(0,10);
-  document.getElementById('ws1-reported-by').value=prof?.full_name||'';
-  invTypeChange();
-  invShowTab('ws1');
-  var dBtn2=document.getElementById('inv-delete-btn');
-  var sBtn2=document.getElementById('inv-safety-comm-btn');
-  if(dBtn2)dBtn2.style.display='none';
-  if(sBtn2)sBtn2.style.display='none';
-  invShowForm();
-}
 
-async function invOpen(id){
-  var inv=invAllData.find(function(x){return x.id===id;});
-  if(!inv){
-    // Reload
-    try{var d=await api('/investigations?id=eq.'+id);inv=d&&d[0];}catch(e){}
-  }
-  if(!inv)return;
-  invEditingId=id;
-  invClearForm();
-  document.getElementById('inv-form-title').textContent=inv.inv_ref||'Investigation';
-  document.getElementById('inv-form-ref').textContent=inv.event_id?'Linked to event':'';
-  document.getElementById('inv-type-sel').value=inv.inv_type||'basic';
-  document.getElementById('inv-status-sel').value=inv.status||'draft';
-  // Fill WS1 fields
-  var flds={
-    'ws1-reported-by':'reported_by','ws1-reported-title':'reported_by_title',
-    'ws1-date-completion':'date_completion','ws1-inc-date':'incident_date',
-    'ws1-inc-time':'incident_time','ws1-location':'incident_location',
-    'ws1-description':'incident_description','ws1-nature-hs':'nature_hs',
-    'ws1-conseq-hs':'consequences_hs','ws1-nature-env':'nature_env',
-    'ws1-conseq-env':'consequences_env','ws1-nature-site':'nature_site',
-    'ws1-conseq-site':'consequences_site','ws1-person-name':'person_name',
-    'ws1-person-function':'person_function','ws1-person-start':'person_start_date',
-    'ws1-witnesses':'witnesses','ws1-task-freq':'task_frequency',
-    'ws1-work-type':'work_type','ws1-recurring-details':'recurring_details',
-    'ws1-first-aid-details':'first_aid_details','ws1-immediate-actions':'immediate_actions',
-    'ws1-ws2-resp':'ws2_resp_person',
-    'ws2-interviewer':'ws2_interviewer','ws2-interviewer-title':'ws2_interviewer_title',
-    'ws2-interviewee':'ws2_interviewee','ws2-interviewee-title':'ws2_interviewee_title',
-    'ws2-date':'ws2_date','ws3-completed-by':'ws3_completed_by',
-    'ws3-completed-title':'ws3_completed_title','ws3-participants':'ws3_participants',
-    'ws3-date':'ws3_date','ws3-machines-explain':'ws3_machines_explain',
-    'ws3-materials-explain':'ws3_materials_explain','ws3-environment-explain':'ws3_environment_explain',
-    'inv-sign-investigator':'investigated_by','inv-sign-reviewer':'reviewed_by',
-    'inv-sign-approver':'approved_by','inv-sign-inv-date':'investigated_date',
-    'inv-sign-rev-date':'reviewed_date','inv-sign-app-date':'approved_date'
-  };
-  Object.entries(flds).forEach(function(e){
-    var el=document.getElementById(e[0]);
-    if(el&&inv[e[1]]!==null&&inv[e[1]]!==undefined)el.value=inv[e[1]];
-  });
-  var chks={'ws1-class-hs':'class_hs','ws1-class-env':'class_env','ws1-class-site':'class_site',
-    'ws1-recurring':'recurring_event','ws1-first-aid':'first_aid_given','ws1-further':'further_analyses',
-    'ws3-machines':'ws3_machines','ws3-materials':'ws3_materials','ws3-environment':'ws3_environment'};
-  Object.entries(chks).forEach(function(e){
-    var el=document.getElementById(e[0]);
-    if(el)el.checked=!!inv[e[1]];
-  });
-  // Fill causes
-  var causes=inv.immediate_causes||[];
-  document.querySelectorAll('.ws1-cause').forEach(function(el,i){
-    el.value=causes[i]||'';
-  });
-  // Fill WS1 CA
-  var ws1cas=inv.ws1_corrective_actions||[];
-  var ws1Body=document.getElementById('ws1-ca-body');
-  if(ws1Body&&ws1cas.length){
-    ws1Body.innerHTML='';
-    ws1cas.forEach(function(ca,i){ws1Body.innerHTML+=invWS1CARow(i+1,ca);});
-  }
-  // Fill WS2 root causes
-  var rcs=inv.ws2_root_causes||[];
-  document.querySelectorAll('.ws2-rc').forEach(function(el,i){el.value=rcs[i]||'';});
-  // Fill inv CA
-  var cas=inv.corrective_actions||[];
-  invRenderCA(cas);
-  // Fill event link
-  await invLoadEventsDrop();
-  if(inv.event_id){var evSel=document.getElementById('ws1-event-link');if(evSel)evSel.value=inv.event_id;}
-  invTypeChange();
-  invShowTab('ws1');
-  var dBtn=document.getElementById('inv-delete-btn');
-  var sBtn=document.getElementById('inv-safety-comm-btn');
-  if(dBtn)dBtn.style.display=isMgr()?'inline-flex':'none';
-  if(sBtn)sBtn.style.display='inline-flex';
-  invShowForm();
-}
 
 function invWS1CARow(num,ca){
   ca=ca||{};
@@ -4157,22 +3956,6 @@ function ws3AddRow(){
   body.innerHTML+=row;
 }
 
-function invAddCA(){
-  var body=document.getElementById('inv-ca-body');
-  var empty=document.getElementById('inv-ca-empty');
-  if(!body)return;
-  if(empty)empty.style.display='none';
-  var num=body.querySelectorAll('tr').length+1;
-  body.innerHTML+='<tr>'
-    +'<td style="padding:6px;text-align:center;border:1px solid var(--border);font-weight:700;font-size:12px;color:var(--text2)">'+num+'</td>'
-    +'<td style="padding:4px;border:1px solid var(--border)"><input type="text" class="ca-desc" style="width:100%;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px" placeholder="Action description..."/></td>'
-    +'<td style="padding:4px;border:1px solid var(--border)"><select class="ca-src" style="width:100%;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px"><option value="WS1">WS1</option><option value="WS2">WS2</option><option value="WS3">WS3</option><option value="General">General</option></select></td>'
-    +'<td style="padding:4px;border:1px solid var(--border)"><input type="text" class="ca-resp" style="width:100%;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px" placeholder="Responsible person..."/></td>'
-    +'<td style="padding:4px;border:1px solid var(--border)"><input type="date" class="ca-date" style="width:100%;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px"/></td>'
-    +'<td style="padding:4px;border:1px solid var(--border)"><select class="ca-prio" style="width:100%;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px"><option value="low">Low</option><option value="medium" selected>Medium</option><option value="high">High</option><option value="critical">Critical</option></select></td>'
-    +'<td style="padding:4px;border:1px solid var(--border)"><select class="ca-status" style="width:100%;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px"><option value="open">Open</option><option value="in_progress">In progress</option><option value="closed">Closed</option></select></td>'
-    +'<td style="padding:4px;text-align:center;border:1px solid var(--border)"><button onclick=\"this.parentNode.parentNode.remove()\" style="background:none;border:none;cursor:pointer;color:var(--red)"><i class="ti ti-x"></i></button></td></tr>';
-}
 
 function invRenderCA(cas){
   var body=document.getElementById('inv-ca-body');
@@ -4255,16 +4038,6 @@ function invCollectData(){
   };
 }
 
-async function invDeleteCurrent(){
-  if(!invEditingId)return;
-  if(!confirm('Delete this investigation? This cannot be undone.'))return;
-  try{
-    await api('/investigations?id=eq.'+invEditingId,{m:'DELETE'});
-    toast('Investigation deleted!');
-    invEditingId=null;
-    invShowList();
-  }catch(e){toast(e.message,false);console.error(e);}
-}
 
 async function invDelete(id){
   if(!confirm('Delete this investigation? This cannot be undone.'))return;
@@ -4277,27 +4050,6 @@ async function invDelete(id){
 }
 
 
-async function invSave(){
-  var body=invCollectData();
-  try{
-    var savedId=invEditingId;
-    if(invEditingId){
-      await api('/investigations?id=eq.'+invEditingId,{m:'PATCH',p:'return=representation',b:body});
-      toast('Investigation saved!');
-    }else{
-      var yr=new Date().getFullYear();
-      body.inv_ref=await invGenRef(yr);
-      body.created_by=prof?.id;
-      var res=await api('/investigations',{m:'POST',p:'return=representation',b:body});
-      savedId=res?.[0]?.id;
-      toast('Investigation created!');
-    }
-    // Sync corrective actions to Master Action Plan
-    if(savedId&&body.corrective_actions&&body.corrective_actions.length){
-      await invSyncToMAP(savedId,body);
-    }
-  }catch(e){toast(e.message,false);console.error(e);}
-}
 
 async function invSyncToMAP(invId,body){
   try{
@@ -23339,7 +23091,7 @@ async function obCreate() {
 </div>
 <div style="display:flex;gap:8px">
 <button class="btn btn-primary" onclick="imsNewIncident()" id="ims-report-btn"><i class="ti ti-plus"></i>Report incident</button>
-<button class="btn btn-sm" onclick="var sel=document.getElementById('inv-list')?.querySelector('.active');if(sel)printIncidentReport(sel.dataset.id||invEditId);else toast('Select an incident first',false)" title="Print PDF"><i class="ti ti-printer"></i>Print PDF</button>
+<button class="btn btn-sm" onclick="var sel=document.getElementById('ims-inv-list')?.querySelector('.active');if(sel)printIncidentReport(sel.dataset.id||imsInvEditId);else if(imsInvEditId)printIncidentReport(imsInvEditId);else toast('Select an incident first',false)" title="Print PDF"><i class="ti ti-printer"></i>Print PDF</button>
 </div>
 </div>
 
