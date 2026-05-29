@@ -17096,6 +17096,30 @@ async function dcUploadFile(file){
   if(!prof?.company_id){ toast('No company linked',false); return; }
   if(!tok){ toast('Not authenticated',false); return; }
 
+  // ISO 9001 — if replacing a file on an already-approved document, prompt to archive the current file as a revision
+  var existingUrl = document.getElementById('df-url').value;
+  var current = dcEditingId ? (dcAllData.find(function(r){return r.id===dcEditingId;})||{}) : null;
+  if(dcEditingId && existingUrl && current && (current.approval_status==='approved' || current.status==='approved')){
+    var ok = confirm('This document has an approved file already.\n\nReplacing it will archive the current version to revision history.\n\nContinue?');
+    if(!ok) return;
+    // Snapshot the existing file into doc_revisions BEFORE we overwrite the form
+    try{
+      await api('/doc_revisions',{m:'POST',p:'return=minimal',b:{
+        company_id: prof?.company_id,
+        document_id: dcEditingId,
+        version: current.version || current.doc_version || '1.0',
+        revision_type: current.revision_type || 'minor',
+        summary: 'File replaced via re-upload — previous file archived',
+        changed_by: prof?.full_name || 'User',
+        effective_date: new Date().toISOString().slice(0,10),
+        snapshot: current
+      }});
+    }catch(ex){
+      console.warn('[Document Control] Could not archive previous revision:', ex.message);
+      // Don't block the upload — archiving is a nice-to-have but the new file should still go up
+    }
+  }
+
   // Show progress UI
   document.getElementById('df-uploader-idle').style.display='none';
   document.getElementById('df-uploader-done').style.display='none';
@@ -17693,6 +17717,13 @@ async function dcLoadRevisions(docId){
     var h='<div style="display:flex;flex-direction:column;gap:10px;margin-top:8px">';
     d.forEach(function(r){
       var rc=revTypeCfg[r.revision_type]||revTypeCfg.minor;
+      // Extract archived file info from the snapshot
+      var snap = r.snapshot || {};
+      var snapFileUrl  = snap.file_url || null;
+      var snapFileName = snap.file_name || (snapFileUrl ? snapFileUrl.split('/').pop() : null);
+      var snapFileMime = snap.file_mime || (snapFileName ? dcMimeFromName(snapFileName) : null);
+      var snapFileSize = snap.file_size || null;
+
       h+='<div style="padding:12px 14px;border:1px solid var(--border);border-radius:10px;background:#f9fafb">'
         +'<div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;flex-wrap:wrap">'
         +'<span style="font-family:monospace;font-weight:800;font-size:14px;color:#185FA5">v'+escH(r.version||'—')+'</span>'
@@ -17701,11 +17732,42 @@ async function dcLoadRevisions(docId){
         +(r.changed_by?'<span style="font-size:11px;color:var(--text2)">·</span><span style="font-size:11px;color:var(--text2)">'+escH(r.changed_by)+'</span>':'')
         +(r.approved_by?'<span style="font-size:11px;color:#1D9E75">· Approved by '+escH(r.approved_by)+'</span>':'')
         +'</div>'
-        +(r.summary?'<div style="font-size:12px;color:#374151">'+escH(r.summary)+'</div>':'')
+        +(r.summary?'<div style="font-size:12px;color:#374151;margin-bottom:'+(snapFileUrl?'10px':'0')+'">'+escH(r.summary)+'</div>':'')
+        // Archived file row
+        +(snapFileUrl
+          ? '<div style="display:flex;align-items:center;gap:10px;padding:8px 10px;background:#fff;border:1px solid var(--border);border-radius:8px">'
+            +'<i class="ti '+dcIconForMime(snapFileMime, snapFileName||'')+'" style="font-size:18px;color:var(--text2)"></i>'
+            +'<div style="flex:1;min-width:0">'
+            +'<div style="font-size:12px;font-weight:600;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+escH(snapFileName||'Archived file')+'</div>'
+            +'<div style="font-size:10px;color:var(--text3)">Archived '+escH(snapFileMime||'')+(snapFileSize?' · '+dcFormatSize(snapFileSize):'')+'</div>'
+            +'</div>'
+            +'<button type="button" class="btn" style="padding:5px 10px;font-size:11px" onclick="dcPreviewRevision(\''+r.id+'\')"><i class="ti ti-eye"></i>Preview</button>'
+            +'<a class="btn" href="'+escH(snapFileUrl)+'" download="'+escH(snapFileName||'archived-file')+'" style="padding:5px 10px;font-size:11px"><i class="ti ti-download"></i></a>'
+            +'</div>'
+          : '<div style="font-size:11px;color:var(--text3);font-style:italic">No file attached to this revision</div>'
+        )
         +'</div>';
     });
     h+='</div>';el.innerHTML=h;
+    // Stash revisions in window so the Preview button can find them
+    window._dcRevisionsCache = (window._dcRevisionsCache||{});
+    window._dcRevisionsCache[docId] = d;
+    d.forEach(function(r){ window._dcRevisionsCache[r.id] = r; });
   }catch(e){el.innerHTML='<div style="color:var(--text2);font-size:12px">Could not load revision history</div>';}
+}
+
+// Preview an archived revision by its revision-row ID
+function dcPreviewRevision(revId){
+  var r = window._dcRevisionsCache && window._dcRevisionsCache[revId];
+  if(!r){ toast('Revision not found',false); return; }
+  var snap = r.snapshot || {};
+  if(!snap.file_url){ toast('No file attached to this revision',false); return; }
+  dcOpenViewer({
+    file_url:  snap.file_url,
+    file_name: (snap.file_name || 'v'+r.version+' archived file') + ' (v' + (r.version||'?') + ')',
+    file_mime: snap.file_mime || dcMimeFromName(snap.file_name||''),
+    file_size: snap.file_size
+  });
 }
 
 // ── Controlled Copies ─────────────────────────────────────────────────────────
@@ -22688,14 +22750,21 @@ function aurisPrint(html, title) {
 }
 
 function aurisPrintCSS() {
+  // Pull live brand colours so the PDF/print output matches the on-screen branding
+  var B = (window.Brand && window.Brand.get) ? window.Brand.get() : {primary:'#1D9E75', secondary:'#0F6E56', accent:'#EF9F27'};
+  var P = B.primary   || '#1D9E75';
+  var S = B.secondary || '#0F6E56';
+  var A = B.accent    || '#EF9F27';
   return `
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body { font-family: Arial, Helvetica, sans-serif; font-size: 11pt; color: #1a1a1a; background: #fff; }
     .report-page { max-width: 210mm; margin: 0 auto; padding: 12mm; }
     
     /* Header */
-    .rpt-header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 3px solid #1D9E75; padding-bottom: 10px; margin-bottom: 16px; }
-    .rpt-logo { font-size: 22pt; font-weight: 900; color: #1D9E75; letter-spacing: -1px; }
+    .rpt-header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 3px solid ${P}; padding-bottom: 10px; margin-bottom: 16px; }
+    .rpt-logo-wrap { display: flex; align-items: center; gap: 10px; }
+    .rpt-logo-img { max-height: 44px; max-width: 180px; object-fit: contain; }
+    .rpt-logo { font-size: 22pt; font-weight: 900; color: ${P}; letter-spacing: -1px; }
     .rpt-company { font-size: 9pt; color: #6b7280; margin-top: 2px; }
     .rpt-meta { text-align: right; font-size: 9pt; color: #6b7280; }
     .rpt-meta strong { color: #1a1a1a; }
@@ -22706,10 +22775,11 @@ function aurisPrintCSS() {
     
     /* Sections */
     .rpt-section { margin-bottom: 16px; }
-    .rpt-section-title { font-size: 11pt; font-weight: 700; color: #fff; background: #1D9E75; padding: 5px 10px; border-radius: 4px; margin-bottom: 8px; }
+    .rpt-section-title { font-size: 11pt; font-weight: 700; color: #fff; background: ${P}; padding: 5px 10px; border-radius: 4px; margin-bottom: 8px; }
     .rpt-section-title.red { background: #DC2626; }
     .rpt-section-title.blue { background: #185FA5; }
-    .rpt-section-title.amber { background: #EF9F27; }
+    .rpt-section-title.amber { background: ${A}; }
+    .rpt-section-title.secondary { background: ${S}; }
     .rpt-section-title.grey { background: #374151; }
     
     /* Fields grid */
@@ -22742,6 +22812,8 @@ function aurisPrintCSS() {
     
     /* Footer */
     .rpt-footer { margin-top: 20px; padding-top: 8px; border-top: 1px solid #e5e7eb; display: flex; justify-content: space-between; font-size: 8pt; color: #9ca3af; }
+    .rpt-footer-custom { margin-top: 6px; padding-top: 6px; border-top: 1px dashed #e5e7eb; text-align: center; font-size: 8pt; color: #6b7280; font-style: italic; }
+    .rpt-powered { margin-top: 4px; text-align: center; font-size: 7pt; color: #b8bcc4; }
     
     /* Print settings */
     @page { size: A4; margin: 10mm; }
@@ -22754,8 +22826,18 @@ function aurisPrintCSS() {
 
 function aurisHeader(title, subtitle, refNo) {
   var today = new Date().toLocaleDateString('en-GB', {day:'2-digit', month:'short', year:'numeric'});
+  var B = (window.Brand && window.Brand.get) ? window.Brand.get() : null;
+  var displayName = (B && B.display_name) || (co&&co.name) || 'AURIS360';
+  var tagline     = (B && B.tagline) || 'HSE Management Platform by SEPHS Consulting';
+  // Prefer the light-background logo; fall back to dark variant
+  var logoUrl     = (B && (B.logo_url || B.logo_dark_url)) || (co && co.logo_url) || null;
+
+  var logoBlock = logoUrl
+    ? '<div class="rpt-logo-wrap"><img class="rpt-logo-img" src="' + escH(logoUrl) + '" alt="' + escH(displayName) + '"/><div><div class="rpt-logo" style="font-size:14pt">' + escH(displayName) + '</div><div class="rpt-company">' + escH(tagline) + '</div></div></div>'
+    : '<div><div class="rpt-logo">' + escH(displayName) + '</div><div class="rpt-company">' + escH(tagline) + '</div></div>';
+
   return '<div class="rpt-header">'
-    + '<div><div class="rpt-logo">AURIS360</div><div class="rpt-company">HSE Management Platform by SEPHS Consulting</div></div>'
+    + logoBlock
     + '<div class="rpt-meta"><strong>' + escH(refNo||'') + '</strong><br>Generated: ' + today + '<br>' + escH(co&&co.name?co.name:'') + '</div>'
     + '</div>'
     + '<div class="rpt-title">' + escH(title) + '</div>'
@@ -22763,11 +22845,24 @@ function aurisHeader(title, subtitle, refNo) {
 }
 
 function aurisFooter(docType) {
-  return '<div class="rpt-footer">'
-    + '<span>AURIS360 — ' + escH(co&&co.name?co.name:'') + ' | ' + escH(docType) + '</span>'
+  var B = (window.Brand && window.Brand.get) ? window.Brand.get() : null;
+  var customFooter = B && B.pdf_footer_text;
+  var hidePoweredBy = B && B.hide_poweredby;
+  var displayName = (B && B.display_name) || (co&&co.name) || 'AURIS360';
+
+  var html = '<div class="rpt-footer">'
+    + '<span>' + escH(displayName) + ' | ' + escH(docType) + '</span>'
     + '<span>This document is system-generated. Verify with original records.</span>'
     + '<span>Page 1 of 1</span>'
     + '</div>';
+
+  if (customFooter) {
+    html += '<div class="rpt-footer-custom">' + escH(customFooter) + '</div>';
+  }
+  if (!hidePoweredBy) {
+    html += '<div class="rpt-powered" data-powered-by>Powered by AURIS360 · SEPHS Consulting</div>';
+  }
+  return html;
 }
 
 function fld(label, value, full) {
