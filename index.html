@@ -455,49 +455,18 @@ async function loadSOP() {
 }
 
 // ── sopSwitchTab ─────────────────────────────────────────────────────────────
-function sopSwitchTab(tab, btn) {
-  document.querySelectorAll('[id^="sop-tab-"]').forEach(t => t.classList.remove('active'));
-  if (btn) btn.classList.add('active');
-  document.getElementById('sop-view-list').style.display = tab === 'list' ? 'block' : 'none';
-  document.getElementById('sop-view-create').style.display = tab === 'create' ? 'block' : 'none';
-  if (tab === 'list') sopLoadList();
-  else sopGoStep(1);
-}
 
 // ── sopNew ────────────────────────────────────────────────────────────────────
-function sopNew() {
-  sopSwitchTab('create', document.getElementById('sop-tab-create'));
-  sopGoStep(1);
-}
 
 // ── sopNextStep ───────────────────────────────────────────────────────────────
-function sopNextStep(n) { sopGoStep(n); }
 
 // ── sopPrint ──────────────────────────────────────────────────────────────────
-function sopPrint() { window.print(); }
 
 // ── sopSaveDocument ───────────────────────────────────────────────────────────
-function sopSaveDocument() { sopSave(); }
 
 // ── sopAddManualStep ──────────────────────────────────────────────────────────
-function sopAddManualStep() {
-  var container = document.getElementById('sop-steps-container') ||
-                  document.getElementById('sop-manual-steps');
-  if (!container) { toast('Steps container not found', false); return; }
-  var idx = container.querySelectorAll('.sop-step-row').length + 1;
-  var row = document.createElement('div');
-  row.className = 'sop-step-row';
-  row.style.cssText = 'display:flex;gap:8px;margin-bottom:8px;align-items:flex-start';
-  row.innerHTML = '<div style="background:#185FA5;color:#fff;border-radius:50%;width:24px;height:24px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0;margin-top:6px">'+idx+'</div>'
-    + '<textarea class="sop-step-text" style="flex:1;min-height:60px;padding:6px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px;resize:vertical" placeholder="Describe step '+idx+'..."></textarea>'
-    + '<button class="btn btn-sm" style="color:var(--red);margin-top:2px" onclick="this.closest(\'.sop-step-row\').remove()"><i class="ti ti-x"></i></button>';
-  container.appendChild(row);
-}
 
 // ── sopExtractFrames ──────────────────────────────────────────────────────────
-async function sopExtractFrames() {
-  toast('Frame extraction: upload a video to the SOP creator and use the Generate button');
-}
 
 // ── sopGenerate (if missing) ──────────────────────────────────────────────────
 if (typeof sopGenerate === 'undefined') {
@@ -4499,20 +4468,6 @@ function sopNew(){
   sopSwitchTab('create', document.getElementById('sop-tab-create'));
 }
 
-function sopGoStep(n){
-  for(var i=1;i<=5;i++){
-    var panel=document.getElementById('sop-step-'+i);
-    if(panel)panel.style.display=i===n?'block':'none';
-    var dot=document.getElementById('sop-dot-'+i);
-    if(dot){
-      dot.className='sop-step-dot'+(i<n?' done':i===n?' active':'');
-    }
-  }
-  sopCurrentStep=n;
-  // Update progress bar
-  var bar=document.getElementById('sop-step-bar');
-  if(bar)bar.style.width=((n-1)/4*80)+'%';
-}
 
 function sopNextStep(from){
   if(from===1){
@@ -4928,14 +4883,6 @@ async function sopSaveDocument(){
   }catch(e){toast(e.message,false);console.error(e);}
 }
 
-async function sopDelete(id){
-  if(!confirm('Delete this SOP?'))return;
-  try{
-    await api('/sop_documents?id=eq.'+id,{m:'DELETE'});
-    toast('SOP deleted!');
-    sopLoadList();
-  }catch(e){toast(e.message,false);}
-}
 
 
 // ── LEGAL REGISTER ──────────────────────────────────────────────────────────
@@ -16588,10 +16535,6 @@ function dcAddDistPerson(){
 
 // Keep legacy function for backward compat
 function saveDoc(){dcSave();}
-function sopSaveToDocControl(data){
-  // Called from SOP module when saving a new SOP
-  if(data)toast('SOP saved to Document Control');
-}
 
 // ===== LEGAL_JS.JS =====
 // ===================================================================
