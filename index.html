@@ -1273,11 +1273,6 @@ async function obsAskAI(question) {
   }
 }
 
-async function loadInvs(){
-  var addBtn=document.getElementById('inv-add-btn');
-  if(addBtn)addBtn.innerHTML=isMgr()?'<button class="btn btn-primary" onclick="invNew()"><i class="ti ti-plus"></i>New investigation</button>':'';
-  invLoadList();
-}
 
 async function invLoadList(){
   var el=document.getElementById('inv-list');if(!el)return;
@@ -1822,13 +1817,6 @@ async function authLoadCompanyDropdown() {
 window.addEventListener('load', function() {
   authInitSession();
 });
-
-// Backward compat alias (old code called loadCoDrop to populate company selects)
-var _origLoadCoDrop = window.loadCoDrop;
-window.loadCoDrop = function() {
-  authLoadCompanyDropdown();
-  if(typeof _origLoadCoDrop === 'function') _origLoadCoDrop();
-};
 
 async function loadProf(uid){
 try{
@@ -3269,72 +3257,6 @@ el.innerHTML=ins.map(i=>'<div class="insight-card '+(i.type==='warn'?'warn':i.ty
 }
 
 
-async function loadEvents(){
-const el=document.getElementById('events-list');
-if(!el)return;
-el.innerHTML='<div class="loading-msg">Loading events...</div>';
-try{
-let path='/events?select=*'+cf()+'&order=event_date.desc';
-const ft=document.getElementById('ev-filter-type')?.value;
-const fs=document.getElementById('ev-filter-severity')?.value;
-const fst=document.getElementById('ev-filter-status')?.value;
-const fm=document.getElementById('ev-filter-month')?.value;
-if(ft)path+='&event_type=eq.'+encodeURIComponent(ft);
-if(fs)path+='&severity=eq.'+fs;
-if(fst)path+='&status=eq.'+fst;
-if(fm){const pts=fm.split('-');const y=pts[0];const m=pts[1];path+='&event_date=gte.'+y+'-'+m+'-01&event_date=lt.'+y+'-'+String(parseInt(m)+1).padStart(2,'0')+'-01';}
-const d=await api(path);
-evAllData=d||[];
-evUpdateMetrics(evAllData);
-const cntEl=document.getElementById('ev-count');
-if(cntEl)cntEl.textContent=evAllData.length+' event'+(evAllData.length!==1?'s':'');
-if(!evAllData.length){el.innerHTML='<div class="empty" style="padding:50px">No events found — click Report event to log one.</div>';return;}
-const byMonth={};
-evAllData.forEach(function(e){
-const dt=e.event_date?new Date(e.event_date):new Date(e.created_at);
-const key=dt.toLocaleString('en-GB',{month:'long',year:'numeric'});
-if(!byMonth[key])byMonth[key]=[];
-byMonth[key].push(e);
-});
-el.innerHTML='';
-Object.entries(byMonth).forEach(function(entry){
-const month=entry[0];const events=entry[1];
-const hdr=document.createElement('div');
-hdr.style.cssText='padding:10px 20px 4px;background:#f9fafb;border-bottom:1px solid var(--border);font-size:11px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.05em';
-hdr.textContent=month;el.appendChild(hdr);
-events.forEach(function(e){
-const isSerious=e.severity==='high'||e.severity==='critical';
-const overdue=e.action_due_date&&new Date(e.action_due_date)<new Date()&&e.status!=='closed';
-const row=document.createElement('div');
-row.style.cssText='padding:16px 20px;border-bottom:1px solid var(--border);cursor:pointer'+(isSerious&&e.status!=='closed'?';border-left:3px solid var(--red)':'');
-row.onmouseover=function(){this.style.background='#f9fafb';};
-row.onmouseout=function(){this.style.background='';};
-row.onclick=function(){evOpenDetail(e.id);};
-row.innerHTML='<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px">'
-+'<div style="flex:1;min-width:0">'
-+'<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;flex-wrap:wrap">'
-+(e.event_ref?'<span style="font-size:11px;font-weight:700;color:var(--text3)">'+e.event_ref+'</span>':'')
-+evTypeBadge(e.event_type)
-+evSevBadge(e.severity)
-+evStatBadge(e.status)
-+(overdue?'<span style="font-size:10px;font-weight:700;color:var(--red);background:#FEF2F2;padding:2px 7px;border-radius:99px">OVERDUE</span>':'')
-+'</div>'
-+'<div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:4px">'+(e.description?e.description.slice(0,120)+(e.description.length>120?'...':''):'No description')+'</div>'
-+'<div style="display:flex;gap:16px;flex-wrap:wrap">'
-+'<span style="font-size:12px;color:var(--text2)">'+( e.location||'—')+'</span>'
-+'<span style="font-size:12px;color:var(--text2)">'+evFmt(e.event_date)+'</span>'
-+(e.person_involved?'<span style="font-size:12px;color:var(--text2)">'+e.person_involved+'</span>':'')
-+(e.assigned_to?'<span style="font-size:12px;color:var(--text2)">Assigned: '+e.assigned_to+'</span>':'')
-+'</div></div>'
-+'<div style="flex-shrink:0;text-align:right">'
-+(e.action_due_date?'<div style="font-size:11px;color:'+(overdue?'var(--red)':'var(--text3)')+'">Due '+evFmtDate(e.action_due_date)+'</div>':'')
-+'<div style="font-size:11px;color:var(--text3);margin-top:4px">By '+(e.reported_by||'—')+'</div>'
-+'</div></div>';
-el.appendChild(row);
-});
-});
-}catch(e){el.innerHTML='<div class="empty" style="color:var(--red)">'+e.message+'</div>';}
-}
 // DEDUP: let evEditingId=null,evAllData=[];
 function evTypeBadge(t){const colors={'Near Miss':{bg:'#FAEEDA',c:'#854F0B'},'Incident':{bg:'#FCEBEB',c:'#A32D2D'},'Hazard Observation':{bg:'#E6F1FB',c:'#185FA5'},'Dangerous Occurrence':{bg:'#F3E8FF',c:'#6B21A8'},'Environmental':{bg:'#EAF3DE',c:'#3B6D11'}};const co=colors[t]||{bg:'#f3f4f6',c:'#374151'};return '<span style="display:inline-flex;align-items:center;padding:3px 9px;border-radius:99px;font-size:11px;font-weight:600;background:'+co.bg+';color:'+co.c+'">'+( t||'—')+'</span>';}
 function evSevBadge(s){const colors={low:{bg:'#E6F1FB',c:'#185FA5'},medium:{bg:'#FAEEDA',c:'#854F0B'},high:{bg:'#FCEBEB',c:'#A32D2D'},critical:{bg:'#4A0000',c:'#fff'}};const co=colors[s]||{bg:'#f3f4f6',c:'#374151'};return '<span style="display:inline-flex;align-items:center;padding:3px 9px;border-radius:99px;font-size:11px;font-weight:700;background:'+co.bg+';color:'+co.c+'">'+(s||'').toUpperCase()+'</span>';}
@@ -3813,51 +3735,6 @@ function inspAddAction(){
 }
 
 
-async function loadInsps(){
-  const el=document.getElementById('inspections-list');
-  if(!el)return;
-  try{
-    const d=await api('/inspections?select=*'+cf()+'&order=inspection_date.desc');
-    inspAllData=d||[];
-    if(!d||!d.length){
-      el.innerHTML='<p style="padding:20px;color:#666">No inspections yet — click <strong>New inspection</strong> to start.</p>';
-      return;
-    }
-    let h='<table style="width:100%;border-collapse:collapse">'
-      +'<thead><tr style="background:#f9fafb">'
-      +'<th style="padding:10px 16px;text-align:left;border-bottom:1px solid var(--border);font-size:11px;text-transform:uppercase;color:var(--text2)">Date</th>'
-      +'<th style="padding:10px;text-align:left;border-bottom:1px solid var(--border);font-size:11px;text-transform:uppercase;color:var(--text2)">Site</th>'
-      +'<th style="padding:10px;text-align:left;border-bottom:1px solid var(--border);font-size:11px;text-transform:uppercase;color:var(--text2)">Inspector</th>'
-      +'<th style="padding:10px;text-align:center;border-bottom:1px solid var(--border);font-size:11px;text-transform:uppercase;color:var(--green)">Good</th>'
-      +'<th style="padding:10px;text-align:center;border-bottom:1px solid var(--border);font-size:11px;text-transform:uppercase;color:var(--amber)">Insuf.</th>'
-      +'<th style="padding:10px;text-align:center;border-bottom:1px solid var(--border);font-size:11px;text-transform:uppercase;color:var(--text2)">Score</th>'
-      +'<th style="padding:10px;width:100px;border-bottom:1px solid var(--border)"></th>'
-      +'</tr></thead><tbody>';
-    d.forEach(function(x){
-      var dt=x.inspection_date?new Date(x.inspection_date).toLocaleDateString('en-GB'):'--';
-      var total=(x.score_good||0)+(x.score_insuf||0);
-      var pct=total>0?Math.round((x.score_good||0)/total*100):null;
-      var pctCol=pct===null?'var(--text2)':pct>=80?'var(--green)':pct>=60?'var(--amber)':'var(--red)';
-      var pctStr=pct===null?'--':pct+'%';
-      h+='<tr style="border-bottom:1px solid #f3f4f6">'
-        +'<td style="padding:10px 16px;font-weight:600">'+dt+'</td>'
-        +'<td style="padding:10px;cursor:pointer;color:var(--green);font-weight:600" data-id="'+x.id+'" onclick="inspOpen(this.dataset.id)">'+(x.site||'—')+'</td>'
-        +'<td style="padding:10px">'+(x.performed_by||'—')+'</td>'
-        +'<td style="padding:10px;text-align:center;color:var(--green);font-weight:600">'+(x.score_good||0)+'</td>'
-        +'<td style="padding:10px;text-align:center;color:var(--amber);font-weight:600">'+(x.score_insuf||0)+'</td>'
-        +'<td style="padding:10px;text-align:center;font-weight:700;color:'+pctCol+'">'+pctStr+'</td>'
-        +'<td style="padding:10px">'
-        +'<div style="display:flex;gap:4px">'
-        +'<button class="btn btn-sm" title="Open" data-id="'+x.id+'" onclick="inspOpen(this.dataset.id)" style="color:var(--green)"><i class="ti ti-eye"></i> Open</button>'
-        +(isMgr()?'<button class="btn btn-sm" title="Delete" style="color:var(--red)" data-id="'+x.id+'" onclick="inspDeleteFromList(this.dataset.id)"><i class="ti ti-trash"></i></button>':'')
-        +'</div>'
-        +'</td>'
-        +'</tr>';
-    });
-    h+='</tbody></table>';
-    el.innerHTML=h;
-  }catch(e){el.innerHTML='<p style="padding:20px;color:red">'+e.message+'</p>';console.error(e);}
-}
 
 
 async function saveInspection(){
@@ -3967,53 +3844,6 @@ try{
 }
 
 
-async function loadRA(){
-  const btn=document.getElementById('risk-add-btn');
-  if(btn&&isMgr())btn.innerHTML='<button class="btn btn-primary" onclick="raShowNewPanel()"><i class="ti ti-plus"></i>New RA</button>';
-  const el=document.getElementById('ra-list');
-  if(!el)return;
-  try{
-    var path='/risk_assessments?select=*'+cf()+'&order=created_at.desc';
-    var ft=document.getElementById('ra-filter-type')?.value;
-    var fs=document.getElementById('ra-filter-status')?.value;
-    if(ft)path+='&ra_type=eq.'+ft;
-    if(fs)path+='&status=eq.'+fs;
-    const d=await api(path);
-    raAllData=d||[];
-    // Update metrics
-    const today=new Date(); const soon=new Date(); soon.setDate(soon.getDate()+30);
-    var setEl=function(id,v){var e=document.getElementById(id);if(e)e.textContent=v;};
-    setEl('ra-m-total',raAllData.length);
-    setEl('ra-m-active',raAllData.filter(function(x){return x.status==='active';}).length);
-    setEl('ra-m-review',raAllData.filter(function(x){return x.review_date&&new Date(x.review_date)<soon&&x.status!=='closed';}).length);
-    setEl('ra-m-draft',raAllData.filter(function(x){return x.status==='draft';}).length);
-    if(!raAllData.length){el.innerHTML='<p style="padding:20px;color:#666">No risk assessments yet. Click <strong>New RA</strong> to create one.</p>';return;}
-    var typeBadge=function(t){var m={baseline:{bg:'#E1F5EE',col:'#0F6E56',l:'Baseline/Generic'},task:{bg:'#E6F1FB',col:'#185FA5',l:'Task-Based'},dynamic:{bg:'#FEF9EC',col:'#854F0B',l:'Dynamic'}};var c=m[t]||{bg:'#f3f4f6',col:'#374151',l:t};return '<span style="background:'+c.bg+';color:'+c.col+';padding:3px 9px;border-radius:99px;font-size:11px;font-weight:600">'+c.l+'</span>';};
-    var h='<table style="width:100%;border-collapse:collapse"><thead><tr style="background:#f9fafb"><th style="padding:10px;text-align:left;border-bottom:1px solid var(--border)">Ref</th><th style="padding:10px;text-align:left;border-bottom:1px solid var(--border)">Title</th><th style="padding:10px;text-align:left;border-bottom:1px solid var(--border)">Type</th><th style="padding:10px;text-align:left;border-bottom:1px solid var(--border)">Assessed by</th><th style="padding:10px;text-align:left;border-bottom:1px solid var(--border)">Date</th><th style="padding:10px;text-align:left;border-bottom:1px solid var(--border)">Review</th><th style="padding:10px;text-align:left;border-bottom:1px solid var(--border)">Status</th><th style="padding:10px;width:80px;border-bottom:1px solid var(--border)"></th></tr></thead><tbody>';
-    raAllData.forEach(function(x){
-      var dt=x.assessment_date?new Date(x.assessment_date).toLocaleDateString('en-GB'):'--';
-      var rv=x.review_date?new Date(x.review_date).toLocaleDateString('en-GB'):'--';
-      var overdue=x.review_date&&new Date(x.review_date)<today&&x.status!=='closed';
-      h+='<tr style="border-bottom:1px solid #f3f4f6" data-id="'+x.id+'">'
-        +'<td style="padding:10px"><strong>'+(x.ra_ref||'—')+'</strong></td>'
-        +'<td style="padding:10px;cursor:pointer" onclick="raOpen(\''+x.id+'\')"><span style="color:var(--green);font-weight:600">'+(x.title||'—')+'</span></td>'
-        +'<td style="padding:10px">'+typeBadge(x.ra_type||'baseline')+'</td>'
-        +'<td style="padding:10px">'+(x.assessed_by||'—')+'</td>'
-        +'<td style="padding:10px">'+dt+'</td>'
-        +'<td style="padding:10px;'+(overdue?'color:var(--red);font-weight:700':'')+'">'+rv+(overdue?' ⚠':'')+'</td>'
-        +'<td style="padding:10px">'+stat(x.status)+'</td>'
-        +'<td style="padding:10px">'
-        +'<div style="display:flex;gap:4px">'
-        +'<button class="btn btn-sm" title="Edit" data-id="'+x.id+'" onclick="event.stopPropagation();raOpen(this.dataset.id)"><i class="ti ti-edit"></i></button>'
-        +(isMgr()?'<button class="btn btn-sm" title="Delete" style="color:var(--red)" data-id="'+x.id+'" onclick="event.stopPropagation();raDelete(this.dataset.id)"><i class="ti ti-trash"></i></button>':'')
-        +'</div>'
-        +'</td>'
-        +'</tr>';
-    });
-    h+='</tbody></table>';
-    el.innerHTML=h;
-  }catch(e){el.innerHTML='<p style="padding:20px;color:red">'+e.message+'</p>';console.error(e);}
-}
 
 function raShowList(){
   document.getElementById('ra-list-view').style.display='block';
@@ -4590,48 +4420,6 @@ function escH(str){
   return String(str||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
-async function loadInvs(){
-  var el=document.getElementById('inv-list');
-  if(!el)return;
-  try{
-    var d=await api('/investigations?select=*'+cf()+'&order=created_at.desc');
-    invAllData=d||[];
-    if(!d||!d.length){el.innerHTML='<p style="padding:20px;color:#666">No investigations yet</p>';return;}
-    var h='<table style="width:100%;border-collapse:collapse"><thead><tr style="background:#f9fafb">'
-      +'<th style="padding:10px;text-align:left;border-bottom:1px solid var(--border)">Ref</th>'
-      +'<th style="padding:10px;text-align:left;border-bottom:1px solid var(--border)">Date</th>'
-      +'<th style="padding:10px;text-align:left;border-bottom:1px solid var(--border)">Location</th>'
-      +'<th style="padding:10px;text-align:left;border-bottom:1px solid var(--border)">Type</th>'
-      +'<th style="padding:10px;text-align:left;border-bottom:1px solid var(--border)">Investigated by</th>'
-      +'<th style="padding:10px;text-align:left;border-bottom:1px solid var(--border)">Status</th>'
-      +'<th style="padding:10px;width:90px;border-bottom:1px solid var(--border)"></th>'
-      +'</tr></thead><tbody>';
-    for(var i=0;i<d.length;i++){
-      var x=d[i];
-      var dt=x.incident_date?new Date(x.incident_date).toLocaleDateString('en-GB'):'--';
-      var typeBadge=x.inv_type==='full'
-        ?'<span style="background:#F3E8FF;color:#6B21A8;padding:2px 8px;border-radius:99px;font-size:11px;font-weight:600">Full</span>'
-        :'<span style="background:#E6F1FB;color:#185FA5;padding:2px 8px;border-radius:99px;font-size:11px;font-weight:600">Basic</span>';
-      var delBtn=isMgr()
-        ?'<button class="btn btn-sm" style="color:var(--red)" title="Delete" onclick="invDelete(this.getAttribute(\'data-id\'))" data-id="'+x.id+'"><i class="ti ti-trash"></i></button>'
-        :'';
-      h+='<tr style="border-bottom:1px solid #f3f4f6">'
-        +'<td style="padding:10px"><strong>'+(x.inv_ref||'--')+'</strong></td>'
-        +'<td style="padding:10px">'+dt+'</td>'
-        +'<td style="padding:10px">'+(x.incident_location||'--')+'</td>'
-        +'<td style="padding:10px">'+typeBadge+'</td>'
-        +'<td style="padding:10px">'+(x.investigated_by||'--')+'</td>'
-        +'<td style="padding:10px">'+stat(x.status)+'</td>'
-        +'<td style="padding:10px"><div style="display:flex;gap:4px">'
-        +'<button class="btn btn-sm" title="Open" onclick="invOpen(this.getAttribute(\'data-id\'))" data-id="'+x.id+'"><i class="ti ti-edit"></i></button>'
-        +delBtn
-        +'</div></td>'
-        +'</tr>';
-    }
-    h+='</tbody></table>';
-    el.innerHTML=h;
-  }catch(e){el.innerHTML='<p style="padding:20px;color:red">'+e.message+'</p>';console.error(e);}
-}
 
 
 
@@ -5028,17 +4816,6 @@ async function invSyncToMAP(invId,body){
 async function saveInv(){invSave();}
 
 
-async function loadPermits(){
-const el=document.getElementById('permits-list');
-if(!el)return;
-try{
-const d=await api('/permits?select=*'+cf()+'&order=created_at.desc');
-if(!d||!d.length){el.innerHTML='<p style="padding:20px;color:#666">No permits yet</p>';return;}
-let h='<table style="width:100%;border-collapse:collapse"><thead><tr style="background:#f9fafb"><th style="padding:10px;text-align:left;border-bottom:1px solid #e5e7eb">Permit No</th><th style="padding:10px;text-align:left;border-bottom:1px solid #e5e7eb">Type</th><th style="padding:10px;text-align:left;border-bottom:1px solid #e5e7eb">Location</th><th style="padding:10px;text-align:left;border-bottom:1px solid #e5e7eb">Status</th></tr></thead><tbody>';
-for(var i=0;i<d.length;i++){var x=d[i];h+='<tr style="border-bottom:1px solid #f3f4f6"><td style="padding:10px"><strong>'+(x.permit_number||'--')+'</strong></td><td style="padding:10px">'+(x.permit_type||'--')+'</td><td style="padding:10px">'+(x.location||'--')+'</td><td style="padding:10px">'+stat(x.status)+'</td></tr>';}
-h+='</tbody></table>';el.innerHTML=h;
-}catch(e){el.innerHTML='<p style="padding:20px;color:red">'+e.message+'</p>';console.error(e);}
-}
 
 async function savePermit(){
 if(!isMgr()){toast('Access denied',false);return;}
@@ -5122,7 +4899,6 @@ function sopSwitchTab(tab,btn){
   if(tab==='list')sopLoadList();
 }
 
-async function loadSOP(){sopLoadList();}
 
 async function sopLoadList(){
   var el=document.getElementById('sop-list-container');
@@ -5632,13 +5408,6 @@ async function sopDelete(id){
   }catch(e){toast(e.message,false);}
 }
 
-async function loadLegal(){
-  var addBtn=document.getElementById('lr-add-btn');
-  var lcBtn=document.getElementById('lc-add-btn');
-  if(addBtn)addBtn.style.display=isMgr()?'inline-flex':'none';
-  if(lcBtn)lcBtn.style.display=isMgr()?'inline-flex':'none';
-  legalLoadRegister();
-}
 
 // ── LEGAL REGISTER ──────────────────────────────────────────────────────────
 async function legalLoadRegister(){
@@ -6063,6 +5832,10 @@ async function loadMtgs(){
   mtgRoadmapYear=new Date().getFullYear();
   var yl=document.getElementById('mtg-agenda-year');
   if(yl)yl.textContent=mtgRoadmapYear;
+  // Role-gate the toolbox-talks / safety-alert / bulletin add buttons (was in a separate override)
+  ['tbt-add-btn','alert-add-btn','bull-add-btn'].forEach(function(id){
+    var el=document.getElementById(id);if(el)el.style.display=isMgr()?'inline-flex':'none';
+  });
   mtgLoadSeries();
 }
 
@@ -6870,17 +6643,6 @@ function escH2(str){return String(str||'').replace(/&/g,'&amp;').replace(/</g,'&
 
 async function saveMtg(){mtgSaveMom();}
 
-async function loadTraining(){
-const el=document.getElementById('training-list');
-if(!el)return;
-try{
-const d=await api('/training_sessions?select=*'+cf()+'&order=date_conducted.desc');
-if(!d||!d.length){el.innerHTML='<p style="padding:20px;color:#666">No training sessions yet</p>';return;}
-let h='<table style="width:100%;border-collapse:collapse"><thead><tr style="background:#f9fafb"><th style="padding:10px;text-align:left;border-bottom:1px solid #e5e7eb">Course</th><th style="padding:10px;text-align:left;border-bottom:1px solid #e5e7eb">Trainer</th><th style="padding:10px;text-align:left;border-bottom:1px solid #e5e7eb">Date</th><th style="padding:10px;text-align:left;border-bottom:1px solid #e5e7eb">Expiry</th></tr></thead><tbody>';
-for(var i=0;i<d.length;i++){var x=d[i];var dt=x.date_conducted?new Date(x.date_conducted).toLocaleDateString('en-GB'):'--';var ex=x.expiry_date?new Date(x.expiry_date).toLocaleDateString('en-GB'):'--';h+='<tr style="border-bottom:1px solid #f3f4f6"><td style="padding:10px">'+(x.course||'--')+'</td><td style="padding:10px">'+(x.trainer||'--')+'</td><td style="padding:10px">'+dt+'</td><td style="padding:10px">'+ex+'</td></tr>';}
-h+='</tbody></table>';el.innerHTML=h;
-}catch(e){el.innerHTML='<p style="padding:20px;color:red">'+e.message+'</p>';console.error(e);}
-}
 
 async function saveTraining(){
 if(!isMgr()){toast('Access denied',false);return;}
@@ -6890,34 +6652,6 @@ const selected=Array.from(sel.selectedOptions).map(o=>pname(o.value)).join(', ')
 await api('/training_sessions',{m:'POST',p:'return=minimal',b:{company_id:prof?.company_id,course:document.getElementById('tf-course').value,trainer:document.getElementById('tf-trainer').value,date_conducted:document.getElementById('tf-date').value||null,expiry_date:document.getElementById('tf-expiry').value||null,attendees:selected,created_by:prof?.id}});
 toggleForm('training-form');toast('Training saved!');loadTraining();
 }catch(e){toast(e.message,false);}
-}
-async function loadActions(){
-const el=document.getElementById('actions-list');
-if(!el)return;
-try{
-let path='/action_tracker?select=*'+cf()+'&order=target_date.asc';
-const mod=document.getElementById('filter-module')?.value;
-const sts=document.getElementById('filter-status')?.value;
-const pri=document.getElementById('filter-priority')?.value;
-if(mod)path+='&source_module=eq.'+mod;
-if(sts)path+='&status=eq.'+sts;
-if(pri)path+='&priority=eq.'+pri;
-const d=await api(path);
-const cnt=document.getElementById('action-count');
-if(cnt)cnt.textContent='('+(d||[]).length+' actions)';
-if(!d||!d.length){el.innerHTML='<p style="padding:20px;color:#666">No actions found</p>';return;}
-const today=new Date();
-let h='<table style="width:100%;border-collapse:collapse"><thead><tr style="background:#f9fafb"><th style="padding:10px;text-align:left;border-bottom:1px solid #e5e7eb">Description</th><th style="padding:10px;text-align:left;border-bottom:1px solid #e5e7eb">Source</th><th style="padding:10px;text-align:left;border-bottom:1px solid #e5e7eb">Responsible</th><th style="padding:10px;text-align:left;border-bottom:1px solid #e5e7eb">Due</th><th style="padding:10px;text-align:left;border-bottom:1px solid #e5e7eb">Priority</th><th style="padding:10px;text-align:left;border-bottom:1px solid #e5e7eb">Status</th><th style="padding:10px"></th></tr></thead><tbody>';
-for(var i=0;i<d.length;i++){
-var x=d[i];
-var ov=x.target_date&&new Date(x.target_date)<today&&x.status!=='closed';
-var dt=x.target_date?new Date(x.target_date).toLocaleDateString('en-GB'):'--';
-var bg=ov?'background:#fef2f2':'';
-var cb=isMgr()?'<button class="btn btn-sm" data-id="'+x.id+'" data-st="'+x.status+'" onclick="var b=this;cycleAction(b.dataset.id,b.dataset.st)"><i class="ti ti-check"></i></button>':'';
-h+='<tr style="border-bottom:1px solid #f3f4f6;'+bg+'"><td style="padding:10px">'+(x.description||'--')+(ov?' <span style="color:red;font-size:10px;font-weight:700">OVERDUE</span>':'')+'</td><td style="padding:10px">'+(x.source_module||'--')+'</td><td style="padding:10px">'+(x.responsible||'--')+'</td><td style="padding:10px">'+dt+'</td><td style="padding:10px">'+prio(x.priority)+'</td><td style="padding:10px">'+stat(x.status)+'</td><td style="padding:10px">'+cb+'</td></tr>';
-}
-h+='</tbody></table>';el.innerHTML=h;
-}catch(e){el.innerHTML='<p style="padding:20px;color:red">'+e.message+'</p>';console.error(e);}
 }
 
 async function cycleAction(id,s){
@@ -6935,18 +6669,6 @@ const rid=document.getElementById('af-resp').value;
 await api('/action_tracker',{m:'POST',p:'return=minimal',b:{company_id:prof?.company_id,source_module:document.getElementById('af-module').value,description:document.getElementById('af-desc').value,responsible:rid?pname(rid):null,target_date:document.getElementById('af-date').value||null,priority:document.getElementById('af-priority').value,status:document.getElementById('af-status').value,comments:document.getElementById('af-comments').value,created_by:prof?.id}});
 toggleForm('action-form');toast('Action added!');loadActions();
 }catch(e){toast(e.message,false);}
-}
-async function loadDocs(){
-const el=document.getElementById('docs-list');
-if(!el)return;
-try{
-const d=await api('/documents?select=*'+cf()+'&order=created_at.desc');
-if(!d||!d.length){el.innerHTML='<p style="padding:20px;color:#666">No documents yet</p>';return;}
-const today=new Date();
-let h='<table style="width:100%;border-collapse:collapse"><thead><tr style="background:#f9fafb"><th style="padding:10px;text-align:left;border-bottom:1px solid #e5e7eb">Title</th><th style="padding:10px;text-align:left;border-bottom:1px solid #e5e7eb">Type</th><th style="padding:10px;text-align:left;border-bottom:1px solid #e5e7eb">Ref</th><th style="padding:10px;text-align:left;border-bottom:1px solid #e5e7eb">Version</th><th style="padding:10px;text-align:left;border-bottom:1px solid #e5e7eb">Review date</th><th style="padding:10px;text-align:left;border-bottom:1px solid #e5e7eb">Status</th></tr></thead><tbody>';
-for(var i=0;i<d.length;i++){var x=d[i];var rev=x.review_date?new Date(x.review_date):null;var ov=rev&&rev<today;var rv=x.review_date?new Date(x.review_date).toLocaleDateString('en-GB'):'--';var title=x.file_url?'<a href="'+x.file_url+'" target="_blank" style="color:var(--green)">'+x.title+'</a>':(x.title||'--');h+='<tr style="border-bottom:1px solid #f3f4f6"><td style="padding:10px">'+title+'</td><td style="padding:10px">'+(x.doc_type||'--')+'</td><td style="padding:10px">'+(x.reference_no||'--')+'</td><td style="padding:10px">'+(x.version||'--')+'</td><td style="padding:10px;'+(ov?'color:red;font-weight:700':'')+'">'+rv+(ov?' ⚠':'')+'</td><td style="padding:10px">'+stat(x.status)+'</td></tr>';}
-h+='</tbody></table>';el.innerHTML=h;
-}catch(e){el.innerHTML='<p style="padding:20px;color:red">'+e.message+'</p>';console.error(e);}
 }
 
 async function saveDoc(){
@@ -6989,26 +6711,6 @@ await api('/people',{m:'POST',p:'return=minimal',b:{company_id:prof?.company_id,
 toggleForm('people-form');toast('Person added!');loadPeople();await loadPeopleCache();
 }catch(e){toast(e.message,false);}
 }
-async function loadUsers(){
-if(isInsp()){document.getElementById('users-list').innerHTML=denied();return;}
-if(isAdm()){const c=document.getElementById('user-role-card');if(c)c.style.display='block';}
-const el=document.getElementById('users-list');
-if(!el)return;
-try{
-const filter=prof?.company_id&&!isSA()?'&company_id=eq.'+prof.company_id:'';
-const d=await api('/profiles?select=*'+filter+'&order=full_name');
-if(!d||!d.length){el.innerHTML='<div class="empty">No users found</div>';return;}
-const tbl=document.createElement('table');
-tbl.innerHTML='<thead><tr><th>Name</th><th>Email</th><th>Role</th></tr></thead>';
-const tb=document.createElement('tbody');
-d.forEach(function(u){
-const tr=document.createElement('tr');
-tr.innerHTML='<td><strong>'+(u.full_name||'--')+'</strong></td><td>'+(u.email||'--')+'</td><td>'+stat(u.role)+'</td>';
-tb.appendChild(tr);
-});
-tbl.appendChild(tb);el.innerHTML='';el.appendChild(tbl);
-}catch(e){el.innerHTML='<div class="empty" style="color:var(--red)">'+e.message+'</div>';console.error(e);}
-}
 
 async function updateRole(){
 if(!isAdm()){toast('Access denied',false);return;}
@@ -7018,13 +6720,6 @@ try{
 await api('/profiles?email=eq.'+email+'&company_id=eq.'+prof.company_id,{m:'PATCH',p:'return=minimal',b:{role}});
 toast('User role updated!');loadUsers();
 }catch(e){toast(e.message,false);}
-}
-async function loadAdmin(){
-const el=document.getElementById('companies-list');
-try{
-const d=await api('/companies?select=*&order=name');
-el.innerHTML=!d?.length?'<div class="empty">No companies</div>':'<table><thead><tr><th>Company</th><th>Industry</th><th>Contact</th><th>Status</th></tr></thead><tbody>'+d.map(x=>'<tr><td>'+(x.logo_url?'<img src="'+x.logo_url+'" style="height:20px;margin-right:6px;vertical-align:middle" alt="logo"/>':'')+x.name+'</td><td>'+(x.industry||'--')+'</td><td>'+(x.contact_email||'--')+'</td><td><span class="badge '+(x.active?'bg':'ba')+'">'+(x.active?'Active':'Inactive')+'</span></td></tr>').join('')+'</tbody></table>';
-}catch(e){el.innerHTML='<div class="empty" style="color:var(--red)">'+e.message+'</div>';}
 }
 async function saveCompany(){
 try{
@@ -7324,11 +7019,26 @@ function brandMigrationSQL(){
 }
 window.brandMigrationSQL = brandMigrationSQL;
 async function loadCoDrop(){
-try{
-const d=await api('/companies?select=id,name&active=eq.true&order=name');
-const sel=document.getElementById('reg-company');
-sel.innerHTML=d?.length?d.map(c=>'<option value="'+c.id+'">'+c.name+'</option>').join(''):'<option value="">No companies yet</option>';
-}catch(e){}
+  // Populates company dropdowns wherever they exist:
+  //  • #reg-company — used on the public registration page (fetches from API)
+  //  • #co-drop / #company-select — used inside admin pages (reads cached adminCompaniesData)
+  try{
+    const d=await api('/companies?select=id,name&active=eq.true&order=name');
+    const regSel=document.getElementById('reg-company');
+    if(regSel) regSel.innerHTML = d?.length
+      ? '<option value="">Select company...</option>'+d.map(c=>'<option value="'+c.id+'">'+escH(c.name)+'</option>').join('')
+      : '<option value="">No companies yet</option>';
+  }catch(e){}
+  // Admin-side dropdowns use the locally cached list (populated by adminLoadCompanies)
+  var adminSel = document.getElementById('co-drop') || document.getElementById('company-select');
+  if(adminSel && typeof adminCompaniesData !== 'undefined' && adminCompaniesData.length){
+    adminSel.innerHTML='<option value="">Select company...</option>';
+    adminCompaniesData.forEach(function(c){
+      var o=document.createElement('option');
+      o.value=c.id; o.textContent=c.name;
+      adminSel.appendChild(o);
+    });
+  }
 }
 loadCoDrop();
 document.getElementById('if-date')&&(document.getElementById('if-date').value=new Date().toISOString().slice(0,10));
@@ -12092,14 +11802,6 @@ function conSwitchTab(tab,btn){
   else if(tab==='incidents')cirLoad();
 }
 
-async function loadContractors(){
-  var addBtn=document.getElementById('con-add-btn');if(addBtn)addBtn.style.display=isMgr()?'inline-flex':'none';
-  var cpab=document.getElementById('cpa-add-btn');if(cpab)cpab.style.display=isMgr()?'inline-flex':'none';
-  var cevb=document.getElementById('cev-add-btn');if(cevb)cevb.style.display=isMgr()?'inline-flex':'none';
-  var catwb=document.getElementById('catw-add-btn');if(catwb)catwb.style.display=isMgr()?'inline-flex':'none';
-  var cirb=document.getElementById('cir-add-btn');if(cirb)cirb.style.display=isMgr()?'inline-flex':'none';
-  conLoadRegister();
-}
 
 // ── CONTRACTOR REGISTER ──────────────────────────────────────────────────────
 async function conLoadRegister(){
@@ -18367,15 +18069,6 @@ function mtgSwitchTab(tab, btn){
   else if(tab==='bulletins'){bulletinLoad();}
 }
 
-// ── loadMtgs override to add new btns ─────────────────────────────────────────
-var _origLoadMtgs=loadMtgs;
-function loadMtgs(){
-  _origLoadMtgs();
-  ['tbt-add-btn','alert-add-btn','bull-add-btn'].forEach(function(id){
-    var el=document.getElementById(id);if(el)el.style.display=isMgr()?'inline-flex':'none';
-  });
-}
-
 // ═══════════════════════════════════════════════════════════════════════════
 // TOOLBOX TALKS
 // ═══════════════════════════════════════════════════════════════════════════
@@ -21462,14 +21155,6 @@ async function adminRevokeAccess(id){
 
 // ── Backward compat aliases ─────────────────────────────────────────────────────
 async function saveCompany(){adminSaveCompany();}
-function loadCoDrop(){
-  // Populate company dropdown if exists anywhere in the app
-  var sel = document.getElementById('co-drop')||document.getElementById('company-select');
-  if(sel&&adminCompaniesData.length){
-    sel.innerHTML='<option value="">Select company...</option>';
-    adminCompaniesData.forEach(function(c){var o=document.createElement('option');o.value=c.id;o.textContent=c.name;sel.appendChild(o);});
-  }
-}
 function companies_list(){return adminCompaniesData;}
 
 
