@@ -476,20 +476,6 @@ if (typeof sopGenerate === 'undefined') {
 }
 
 // ── toolsSwitchTab ────────────────────────────────────────────────────────────
-function toolsSwitchTab(tab, btn) {
-  document.querySelectorAll('[id^="tools-tab-"]').forEach(t => t.classList.remove('active'));
-  if (btn) btn.classList.add('active');
-  var allTabs = ['register','personal','inspection','statutory','vehicles'];
-  allTabs.forEach(function(t) {
-    var el = document.getElementById('tools-view-'+t);
-    if (el) el.style.display = t === tab ? 'block' : 'none';
-  });
-  if (tab === 'register')   toolsLoadRegister();
-  else if (tab === 'personal')   toolsLoadPersonal();
-  else if (tab === 'inspection') toolsLoadInspections();
-  else if (tab === 'statutory')  toolsLoadStatutory();
-  else if (tab === 'vehicles')   toolsLoadVehicles();
-}
 
 // ── sendAIMsg (settings/AI panel) ─────────────────────────────────────────────
 
@@ -1138,7 +1124,7 @@ async function obsAskAI(question) {
 
 
 ;
-async function generateSafetyComm(){toast('Generating AI safety communication...');try{var x=invAllData.find(r=>r.id===invEditId)||{};var resp=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,messages:[{role:'user',content:'Write a brief safety alert communication based on this investigation: Location: '+(x.location||'—')+', What happened: '+(x.description||'—')+', Root causes: '+(x.root_causes||'—')+'. Format as a short alert for all workers. Max 200 words.'}]})});var d=await resp.json();var text=(d.content||[]).map(c=>c.text||'').join('');toast('Safety communication ready — see console for text.');console.log('SAFETY COMMUNICATION:\n'+text);}catch(e){toast('AI unavailable: '+e.message,false);}};
+;
 // ===================================================================
 // SUPABASE AUTH — Production implementation
 // Session persistence · Password reset · Token refresh
@@ -3264,14 +3250,6 @@ chkItems=CATS.flatMap(function(c){
 });
 
 
-function syncChk(i,t){
-if(t==='g'){const e=document.getElementById('ci-'+i);if(e)e.checked=false;}
-else{const e=document.getElementById('cg-'+i);if(e)e.checked=false;}
-var g=0,ins=0;
-chkItems.forEach(function(_,n){if(document.getElementById('cg-'+n)&&document.getElementById('cg-'+n).checked)g++;if(document.getElementById('ci-'+n)&&document.getElementById('ci-'+n).checked)ins++;});
-const sc=document.getElementById('if-score');
-if(sc)sc.textContent=g+' Good / '+ins+' Insufficient';
-}
 
 function saveEvent(){evSave();}
 // ===== INSPECTION HELPERS =====
@@ -3289,111 +3267,6 @@ function saveEvent(){evSave();}
 
 
 
-async function saveInspection(){
-try{
-  let g=0, ins=0;
-  const items=chkItems.map((c,i)=>{
-    if(!c.item)return null;
-    const gv=document.getElementById('cg-'+i)?.checked;
-    const iv=document.getElementById('ci-'+i)?.checked;
-    const nav=document.getElementById('cn-'+i)?.checked;
-    const ov=document.getElementById('co-'+i)?.value||'';
-    if(gv)g++; if(iv)ins++;
-    return{category:c.cat,item_name:c.item,result:gv?'good':iv?'insufficient':nav?'na':null,observation:ov};
-  }).filter(x=>x);
-
-  const bid=document.getElementById('if-by')?.value||'';
-  const inspector=document.getElementById('if-sign-inspector')?.value||(bid?pname(bid):prof?.full_name)||'';
-
-  const body={
-    company_id:prof?.company_id,
-    site:document.getElementById('if-site')?.value||null,
-    inspection_date:document.getElementById('if-date')?.value||null,
-    performed_by:inspector,
-    employees_present:document.getElementById('if-emp')?.value||null,
-    score_good:g, score_insuf:ins,
-    positive_obs:document.getElementById('if-pos')?.value||null,
-    negative_obs:document.getElementById('if-neg')?.value||null,
-    reviewed_by:document.getElementById('if-sign-reviewer')?.value||null,
-    reviewed_date:document.getElementById('if-sign-reviewer-date')?.value||null,
-    updated_at:new Date().toISOString()
-  };
-
-  let savedId=inspEditingId;
-
-  if(inspEditingId){
-    // UPDATE existing inspection
-    await api('/inspections?id=eq.'+inspEditingId,{m:'PATCH',p:'return=minimal',b:body});
-    // Delete old items and re-insert
-    await api('/inspection_items?inspection_id=eq.'+inspEditingId,{m:'DELETE'});
-    const sc=items.filter(x=>x.result);
-    if(sc.length)await api('/inspection_items',{m:'POST',p:'return=minimal',b:sc.map(x=>({...x,inspection_id:inspEditingId}))});
-    toast('Inspection updated!');
-  }else{
-    // CREATE new inspection
-    body.created_by=prof?.id;
-    const res=await api('/inspections',{m:'POST',p:'return=representation',b:body});
-    savedId=res?.[0]?.id;
-    if(savedId){
-      const sc=items.filter(x=>x.result);
-      if(sc.length)await api('/inspection_items',{m:'POST',p:'return=minimal',b:sc.map(x=>({...x,inspection_id:savedId}))});
-      // Add MAP action for insufficient items
-      const insuf=items.filter(x=>x.result==='insufficient');
-      if(insuf.length){
-        await api('/action_tracker',{m:'POST',p:'return=minimal',b:{
-          company_id:prof?.company_id,
-          source_module:'inspection',source_id:savedId,
-          source_ref:'Inspection: '+(body.site||'site'),
-          description:'Address '+insuf.length+' insufficient item(s): '+insuf.map(x=>x.item_name).slice(0,3).join(', ')+(insuf.length>3?'...':''),
-          responsible:inspector||null,
-          priority:ins>5?'high':'medium',
-          status:'open',created_by:prof?.id
-        }});
-        toast('Inspection saved! '+insuf.length+' action(s) added to MAP.');
-      }else{
-        toast('Inspection saved!');
-      }
-    }
-  }
-  // Collect and save action plan to MAP
-  var actionRows=document.querySelectorAll('#if-actions-body tr');
-  if(actionRows.length){
-    // Delete old MAP entries for this inspection
-    if(savedId){
-      try{await api('/action_tracker?source_module=eq.inspection&source_id=eq.'+savedId,{m:'DELETE'});}catch(ex){}
-    }
-    var actionsAdded=0;
-    for(var i=0;i<actionRows.length;i++){
-      var tr=actionRows[i];
-      var desc=tr.querySelector('.ia-desc')?.value||'';
-      if(!desc.trim())continue;
-      var resp=tr.querySelector('.ia-resp')?.value||null;
-      var dueDate=tr.querySelector('.ia-date')?.value||null;
-      var prio=tr.querySelector('.ia-prio')?.value||'medium';
-      await api('/action_tracker',{m:'POST',p:'return=minimal',b:{
-        company_id:prof?.company_id,
-        source_module:'inspection',
-        source_id:savedId,
-        source_ref:'Inspection: '+(body.site||'site')+' ('+(body.inspection_date||'')+' )',
-        description:desc,
-        responsible:resp,
-        target_date:dueDate,
-        priority:prio,
-        status:'open',
-        created_by:prof?.id
-      }});
-      actionsAdded++;
-    }
-    if(actionsAdded>0)toast('Inspection saved! '+actionsAdded+' action(s) synced to Master Action Plan.');
-    else toast(inspEditingId?'Inspection updated!':'Inspection saved!');
-  }else{
-    toast(inspEditingId?'Inspection updated!':'Inspection saved!');
-  }
-  // Go back to list
-  inspShowList();
-  loadDash();
-}catch(e){toast(e.message,false);console.error(e);}
-}
 
 
 
@@ -3420,208 +3293,6 @@ async function saveRA(){raSave();}
 
 
 // ===== SAFETY COMMUNICATION GENERATOR =====
-function generateSafetyComm(invId){
-  var inv=invAllData.find(function(x){return x.id===invId;})||{};
-  
-  // Collect data
-  var title=inv.inv_ref?inv.inv_ref+' — ':'';
-  var incType=inv.class_hs?'H&S Incident':inv.class_env?'Environmental Incident':'Site Risk Incident';
-  title+=inv.incident_description?inv.incident_description.split('.')[0]:incType;
-  
-  var what=inv.incident_description||'—';
-  
-  var causes=(inv.immediate_causes||[]).filter(function(c){return c&&c.trim();});
-  var rc=(inv.ws2_root_causes||[]).filter(function(c){return c&&c.trim();});
-  var allCauses=causes.concat(rc).filter(Boolean);
-  
-  var actions=(inv.corrective_actions||[]).filter(function(a){return a.desc;});
-  
-  // Shared learning - build from causes and actions
-  var learning=[];
-  if(allCauses.length)learning.push('Identified causes: '+allCauses.slice(0,3).join('; ')+'.');
-  if(actions.length)learning.push('Key actions: '+actions.map(function(a){return a.desc;}).slice(0,3).join('; ')+'.');
-  if(!learning.length)learning.push('Review risk assessments and safe work procedures related to this incident.');
-
-  var severity=inv.inv_type==='full'?'LTA / Serious':'Near Miss / First Aid';
-  try{
-    var e=evAllData.find(function(x){return x.id===inv.event_id;});
-    if(e){
-      var smap={critical:'Fatal / Critical',high:'LTA / Serious',medium:'Non-LTA',low:'Near Miss / First Aid'};
-      severity=smap[e.severity]||severity;
-    }
-  }catch(ex){}
-
-  var dt=inv.incident_date?new Date(inv.incident_date).toLocaleDateString('en-GB',{month:'short',year:'numeric'}):'—';
-  var classification=(inv.class_hs?'H&S ':'')+(inv.class_env?'Environmental ':'')+(inv.class_site?'Site Risk ':'');
-  var company=prof?.company_name||'Company';
-  var contact=inv.investigated_by||prof?.full_name||'HSE Department';
-  
-  var causeHtml=allCauses.length?'<ul style="margin:0;padding-left:16px">'+allCauses.map(function(c){return '<li>'+c+'</li>';}).join('')+'</ul>':'No causes recorded yet.';
-  var actionHtml=actions.length?'<ul style="margin:0;padding-left:16px">'+actions.map(function(a){return '<li><strong>'+a.desc+'</strong>'+(a.resp?' ('+a.resp+')':(a.responsible?' ('+a.responsible+')':''))+(a.date||a.due_date?' — '+(a.date||a.due_date):'')+'</li>';}).join('')+'</ul>':'No actions recorded yet.';
-  var learningHtml='<ul style="margin:0;padding-left:16px">'+learning.map(function(l){return '<li><strong>'+l+'</strong></li>';}).join('')+'</ul>';
-
-  var html=`<!DOCTYPE html>
-<html>
-<head>
-<meta charset="UTF-8">
-<title>Safety Communication — ${escH(inv.inv_ref||'')}</title>
-<style>
-  *{box-sizing:border-box;margin:0;padding:0;font-family:Arial,sans-serif}
-  body{background:#f0f0f0;padding:20px}
-  .comm-page{width:1040px;margin:0 auto;background:#fff;box-shadow:0 2px 20px rgba(0,0,0,.15)}
-  .comm-header{display:grid;grid-template-columns:1fr auto auto auto auto;border-bottom:3px solid #EC6607}
-  .comm-header-cell{padding:8px 14px;font-size:15px;border-right:1px solid #ccc}
-  .comm-header-cell:last-child{border-right:none}
-  .comm-header-cell.bold{font-weight:700;background:#EC6607;color:#fff}
-  .comm-title{padding:12px 16px;font-size:22px;font-weight:700;color:#1a1a1a;border-bottom:2px solid #EC6607;line-height:1.3}
-  .comm-body{display:grid;grid-template-columns:1fr 1fr;border-top:none}
-  .comm-row{display:contents}
-  .comm-cell{padding:10px 14px;border:1px solid #ddd;font-size:12px;line-height:1.6;vertical-align:top}
-  .comm-cell.full{grid-column:span 2}
-  .comm-cell.orange{background:#EC6607;color:#fff;font-size:15px;font-weight:700;padding:8px 14px}
-  .comm-cell.orange.full{grid-column:span 2}
-  .comm-cell.pink{background:#F6E7E8}
-  .comm-cell.pink.full{grid-column:span 2}
-  .comm-section{display:grid;grid-template-columns:2fr 1fr;width:100%}
-  .comm-section-3{display:grid;grid-template-columns:1fr;width:100%}
-  .comm-table{width:100%;border-collapse:collapse}
-  .comm-table td{padding:10px 14px;border:1px solid #ddd;font-size:12px;line-height:1.6;vertical-align:top}
-  .comm-table tr.orange td{background:#EC6607;color:#fff;font-size:15px;font-weight:700;padding:8px 14px;border-color:#c45500}
-  .comm-table tr.pink td{background:#F6E7E8}
-  .photo-box{border:2px dashed #ccc;background:#f9f9f9;min-height:200px;display:flex;align-items:center;justify-content:center;color:#999;font-size:13px;flex-direction:column;gap:8px;padding:20px}
-  .comm-footer{padding:8px 14px;background:#1a1a1a;color:#fff;font-size:11px;display:flex;justify-content:space-between;align-items:center}
-  .print-btn{position:fixed;top:20px;right:20px;background:#EC6607;color:#fff;border:none;padding:10px 20px;border-radius:8px;cursor:pointer;font-size:14px;font-weight:600;box-shadow:0 2px 8px rgba(0,0,0,.2);display:flex;align-items:center;gap:6px}
-  @media print{.print-btn{display:none}body{background:#fff;padding:0}.comm-page{box-shadow:none;width:100%}}
-  ul li{margin-bottom:4px}
-</style>
-</head>
-<body>
-<!-- Mobile top bar (shown on screens ≤768px) -->
-<div id="mobile-topbar">
-  <button id="mobile-back-btn" onclick="mobileGoBack()" style="display:none">
-    <i class="ti ti-arrow-left" style="font-size:20px"></i>
-  </button>
-  <button id="mobile-menu-btn" onclick="mobileToggleSidebar()">
-    <i class="ti ti-menu-2" style="font-size:22px"></i>
-  </button>
-  <div class="mobile-logo" id="mobile-page-title">AURIS360</div>
-  <button onclick="mobileToggleSearch()" style="background:none;border:none;padding:10px;color:var(--text);min-width:44px;min-height:44px;display:flex;align-items:center;justify-content:center;touch-action:manipulation;-webkit-tap-highlight-color:transparent">
-    <i class="ti ti-search" style="font-size:18px"></i>
-  </button>
-</div>
-<!-- Sidebar backdrop -->
-<div id="sidebar-backdrop" onclick="mobileCloseSidebar()">
-<!-- Search overlay -->
-<div id="mobile-search-overlay" style="display:none;position:fixed;top:0;left:0;right:0;z-index:250;background:var(--card);padding:12px 14px;box-shadow:0 2px 12px rgba(0,0,0,.12)">
-  <div style="display:flex;gap:10px;align-items:center">
-    <i class="ti ti-search" style="color:var(--text2);font-size:16px"></i>
-    <input type="text" id="mobile-search-input" placeholder="Search modules..." oninput="mobileSearchModules(this.value)" autocomplete="off"
-      style="flex:1;border:none;outline:none;font-size:16px;background:transparent;color:var(--text)"/>
-    <button onclick="mobileToggleSearch()" style="background:none;border:none;color:var(--green);font-size:13px;font-weight:600;padding:4px 8px;touch-action:manipulation;-webkit-tap-highlight-color:transparent">Done</button>
-  </div>
-  <div id="mobile-search-results" style="margin-top:8px;max-height:280px;overflow-y:auto"></div>
-</div>
-
-<!-- Bottom navigation bar -->
-<div id="mobile-bottom-nav">
-  <button class="mob-nav-btn active" id="mob-btn-dashboard" onclick="mobileNavTo('dashboard','Dashboard',this)">
-    <i class="ti ti-layout-dashboard"></i><span>Home</span>
-  </button>
-  <button class="mob-nav-btn" id="mob-btn-events" onclick="mobileNavTo('events','Incidents',this)">
-    <i class="ti ti-alert-triangle"></i><span>Incidents</span>
-  </button>
-  <button class="mob-nav-btn" id="mob-btn-inspection" onclick="mobileNavTo('inspection','Inspections',this)">
-    <i class="ti ti-clipboard-check"></i><span>Inspect</span>
-  </button>
-  <button class="mob-nav-btn" id="mob-btn-modules" onclick="mobileToggleModules()">
-    <i class="ti ti-grid-dots"></i><span>Modules</span>
-  </button>
-  <button class="mob-nav-btn" id="mob-btn-ai" onclick="mobileNavTo('ai-insights','AI Insights',this)">
-    <i class="ti ti-robot"></i><span>AI</span>
-  </button>
-</div>
-
-<!-- Modules drawer (slides up from bottom) -->
-<div id="mobile-modules-drawer" style="display:none">
-  <div onclick="mobileCloseModules()" style="position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:399"></div>
-  <div id="mobile-modules-panel" style="position:fixed;bottom:0;left:0;right:0;background:var(--card);border-radius:20px 20px 0 0;z-index:400;max-height:78vh;overflow-y:auto;-webkit-overflow-scrolling:touch;padding-bottom:16px">
-    <div style="text-align:center;padding:10px 0 0"><div style="width:36px;height:4px;background:var(--border);border-radius:2px;display:inline-block"></div></div>
-    <div style="padding:12px 18px 6px;font-size:12px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.05em">All Modules</div>
-    <div id="mobile-modules-grid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:2px;padding:0 6px 8px"></div>
-  </div>
-</div>
-</div>
-<button class="print-btn" onclick="window.print()">🖨️ Print / Save PDF</button>
-<div class="comm-page">
-
-<!-- Header bar -->
-<div class="comm-header">
-  <div class="comm-header-cell">${escH(company)}</div>
-  <div class="comm-header-cell">Ref: ${escH(inv.inv_ref||'—')}</div>
-  <div class="comm-header-cell bold">${escH(dt)}</div>
-  <div class="comm-header-cell bold">${escH(severity)}</div>
-  <div class="comm-header-cell bold">${escH(classification||'H&S')}</div>
-</div>
-
-<!-- Title -->
-<div class="comm-title">${escH(title)}</div>
-
-<!-- Main content table -->
-<table class="comm-table">
-  <!-- What happened -->
-  <tr class="pink">
-    <td colspan="2" style="font-size:13px">${escH(what)}</td>
-  </tr>
-  <!-- Causes / Actions headers -->
-  <tr class="orange">
-    <td style="width:50%">Immediate &amp; Root Causes</td>
-    <td>Actions Taken / Planned</td>
-  </tr>
-  <!-- Causes / Actions content -->
-  <tr>
-    <td>${causeHtml}</td>
-    <td>${actionHtml}</td>
-  </tr>
-  <!-- Shared learning -->
-  <tr class="orange">
-    <td colspan="2" style="font-size:14px">Shared Learning</td>
-  </tr>
-  <tr>
-    <td colspan="2">${learningHtml}</td>
-  </tr>
-  <!-- Standards -->
-  <tr class="orange">
-    <td colspan="2">Relevant Standards &amp; References</td>
-  </tr>
-  <tr class="pink">
-    <td colspan="2">Risk Assessment, Incident Investigation, Safe Work Procedures, PPE Policy</td>
-  </tr>
-  <!-- Contact / Photos -->
-  <tr class="orange">
-    <td>Contact</td>
-    <td>Photos / Evidence</td>
-  </tr>
-  <tr>
-    <td style="font-size:12px"><strong>${escH(contact)}</strong><br>HSE Department<br>${escH(company)}<br><br>
-    <em>This communication was generated from Investigation ${escH(inv.inv_ref||'—')} on ${new Date().toLocaleDateString('en-GB')}</em></td>
-    <td><div class="photo-box"><span style="font-size:30px">📷</span><span>Photos to be added when printing</span><span style="font-size:11px;color:#aaa">Attach relevant images of the incident scene, equipment or corrective actions</span></div></td>
-  </tr>
-</table>
-
-<div class="comm-footer">
-  <span>⚠️ SAFETY COMMUNICATION — FOR IMMEDIATE DISTRIBUTION TO ALL RELEVANT TEAMS</span>
-  <span>Generated by AURIS360 HSE Platform</span>
-</div>
-
-</div>
-</body>
-</html>`;
-
-  // Open in new window
-  var w=window.open('','_blank','width=1100,height=900,scrollbars=yes');
-  w.document.write(html);
-  w.document.close();
-}
 
 function escH(str){
   return String(str||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
@@ -5243,41 +4914,8 @@ function escH2(str){return String(str||'').replace(/&/g,'&amp;').replace(/</g,'&
 async function saveMtg(){mtgSaveMom();}
 
 
-async function saveTraining(){
-if(!isMgr()){toast('Access denied',false);return;}
-try{
-const sel=document.getElementById('tf-attendees');
-const selected=Array.from(sel.selectedOptions).map(o=>pname(o.value)).join(', ');
-await api('/training_sessions',{m:'POST',p:'return=minimal',b:{company_id:prof?.company_id,course:document.getElementById('tf-course').value,trainer:document.getElementById('tf-trainer').value,date_conducted:document.getElementById('tf-date').value||null,expiry_date:document.getElementById('tf-expiry').value||null,attendees:selected,created_by:prof?.id}});
-toggleForm('training-form');toast('Training saved!');loadTraining();
-}catch(e){toast(e.message,false);}
-}
 
-async function cycleAction(id,s){
-if(!isMgr()){toast('Only managers can update actions',false);return;}
-const ns=s==='closed'?'open':s==='open'?'in_progress':'closed';
-try{
-await api('/action_tracker?id=eq.'+id,{m:'PATCH',p:'return=minimal',b:{status:ns,completion_date:ns==='closed'?new Date().toISOString().slice(0,10):null,updated_at:new Date().toISOString()}});
-toast(ns==='closed'?'Action closed!':ns==='in_progress'?'Marked in progress!':'Action reopened!');
-loadActions();loadDash();
-}catch(e){toast(e.message,false);}
-}
-async function saveAction(){
-try{
-const rid=document.getElementById('af-resp').value;
-await api('/action_tracker',{m:'POST',p:'return=minimal',b:{company_id:prof?.company_id,source_module:document.getElementById('af-module').value,description:document.getElementById('af-desc').value,responsible:rid?pname(rid):null,target_date:document.getElementById('af-date').value||null,priority:document.getElementById('af-priority').value,status:document.getElementById('af-status').value,comments:document.getElementById('af-comments').value,created_by:prof?.id}});
-toggleForm('action-form');toast('Action added!');loadActions();
-}catch(e){toast(e.message,false);}
-}
 
-async function saveDoc(){
-if(!isMgr()){toast('Access denied',false);return;}
-try{
-const oid=document.getElementById('df-owner').value;
-await api('/documents',{m:'POST',p:'return=minimal',b:{company_id:prof?.company_id,title:document.getElementById('df-title').value,doc_type:document.getElementById('df-type').value,reference_no:document.getElementById('df-ref').value,version:document.getElementById('df-version').value,issue_date:document.getElementById('df-issue').value||null,review_date:document.getElementById('df-review').value||null,owner:oid?pname(oid):null,file_url:document.getElementById('df-url').value||null,status:document.getElementById('df-status').value,created_by:prof?.id}});
-toggleForm('doc-form');toast('Document registered!');loadDocs();
-}catch(e){toast(e.message,false);}
-}
 async function loadPeople(){
 const btn=document.getElementById('people-add-btn');
 if(isMgr())btn.innerHTML='<button class="btn btn-primary" onclick="toggleForm(\'people-form\')"><i class="ti ti-plus"></i>Add person</button>';
@@ -5311,22 +4949,6 @@ toggleForm('people-form');toast('Person added!');loadPeople();await loadPeopleCa
 }catch(e){toast(e.message,false);}
 }
 
-async function updateRole(){
-if(!isAdm()){toast('Access denied',false);return;}
-const email=document.getElementById('ur-email').value.trim(),role=document.getElementById('ur-role').value;
-if(!email){toast('Enter an email',false);return;}
-try{
-await api('/profiles?email=eq.'+email+'&company_id=eq.'+prof.company_id,{m:'PATCH',p:'return=minimal',b:{role}});
-toast('User role updated!');loadUsers();
-}catch(e){toast(e.message,false);}
-}
-async function saveCompany(){
-try{
-await api('/companies',{m:'POST',p:'return=minimal',b:{name:document.getElementById('co-name').value,industry:document.getElementById('co-industry').value,contact_name:document.getElementById('co-contact').value,contact_email:document.getElementById('co-email').value,logo_url:document.getElementById('co-logo').value||null,active:true}});
-toast('Company registered!');loadAdmin();loadCoDrop();
-['co-name','co-contact','co-email','co-logo'].forEach(id=>document.getElementById(id).value='');
-}catch(e){toast(e.message,false);}
-}
 function loadSettings(){
 if(isAdm())document.getElementById('logo-settings').style.display='block';
 document.getElementById('my-profile-info').innerHTML='<div style="font-size:13px"><strong>'+(prof?.full_name||'--')+'</strong><br><span style="color:var(--text2)">'+(prof?.email||'--')+'</span><br>'+stat(prof?.role)+'</div>';
@@ -5729,24 +5351,6 @@ return Math.min(100,Math.max(0,(actual/t)*100));
 
 function kpiProgColor(prog){return prog>=100?'#1D9E75':prog>=70?'#EF9F27':'#E24B4A';}
 
-function kpiCalcYTD(indicatorId,month,actual){
-const ind=kpiIndicators.find(x=>x.id===indicatorId);
-if(!ind)return actual;
-const mdata=kpiMonthlyData[indicatorId]||{};
-const method=ind.ytd_method||'sum';
-const vals=[];
-for(let i=1;i<month;i++){
-if(mdata[i]&&mdata[i].actual!==null&&mdata[i].actual!==undefined)
-vals.push(parseFloat(mdata[i].actual));
-}
-vals.push(actual);
-if(!vals.length)return actual;
-if(method==='last')return vals[vals.length-1];
-if(method==='average')return Math.round((vals.reduce((a,b)=>a+b,0)/vals.length)*100)/100;
-if(method==='max')return Math.max(...vals);
-if(method==='min')return Math.min(...vals);
-return Math.round(vals.reduce((a,b)=>a+b,0)*100)/100;
-}
 
 function kpiRenderOverview(){
 const c=document.getElementById('kpi-objectives-container');
