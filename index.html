@@ -3007,8 +3007,8 @@ function prio(p){const c={critical:'br',high:'ba',medium:'bb',low:'bg'};return '
 function denied(){return '<div class="access-denied"><i class="ti ti-lock"></i><h3>Access restricted</h3><p>Your role does not have permission to view this section.</p></div>';}
 function pname(id){const p=people.find(x=>x.id===id);return p?p.first_name+' '+p.last_name:'--';}
 
-// DEDUP: let aiOpen=false,aiHist=[];
-// DEDUP: const SYS='You are AURIS, an expert HSE AI assistant for AURIS360 by SEPHS Consulting (Mauritius). Analyse real HSE data and give specific, actionable recommendations. Be concise and professional.';
+// DEDUP: aiOpen and aiHist already declared at L2471
+
 async function askAI(q){if(!aiOpen)toggleAI();document.getElementById('ai-input').value=q;sendAI();}
 function addMsg(text,cls){const m=document.getElementById('ai-messages');const d=document.createElement('div');d.className='ai-msg '+cls;d.textContent=text;m.appendChild(d);m.scrollTop=m.scrollHeight;return d;}
 async function genDashAI(){
@@ -3022,7 +3022,7 @@ el.innerHTML=ins.map(i=>'<div class="insight-card '+(i.type==='warn'?'warn':i.ty
 }
 
 
-// DEDUP: let evEditingId=null,evAllData=[];
+// DEDUP: evEditingId and evAllData declared elsewhere
 function evTypeBadge(t){const colors={'Near Miss':{bg:'#FAEEDA',c:'#854F0B'},'Incident':{bg:'#FCEBEB',c:'#A32D2D'},'Hazard Observation':{bg:'#E6F1FB',c:'#185FA5'},'Dangerous Occurrence':{bg:'#F3E8FF',c:'#6B21A8'},'Environmental':{bg:'#EAF3DE',c:'#3B6D11'}};const co=colors[t]||{bg:'#f3f4f6',c:'#374151'};return '<span style="display:inline-flex;align-items:center;padding:3px 9px;border-radius:99px;font-size:11px;font-weight:600;background:'+co.bg+';color:'+co.c+'">'+( t||'—')+'</span>';}
 function evSevBadge(s){const colors={low:{bg:'#E6F1FB',c:'#185FA5'},medium:{bg:'#FAEEDA',c:'#854F0B'},high:{bg:'#FCEBEB',c:'#A32D2D'},critical:{bg:'#4A0000',c:'#fff'}};const co=colors[s]||{bg:'#f3f4f6',c:'#374151'};return '<span style="display:inline-flex;align-items:center;padding:3px 9px;border-radius:99px;font-size:11px;font-weight:700;background:'+co.bg+';color:'+co.c+'">'+(s||'').toUpperCase()+'</span>';}
 function evStatBadge(s){const m={open:{bg:'#FAEEDA',c:'#854F0B',l:'Open'},under_investigation:{bg:'#E6F1FB',c:'#185FA5',l:'Under investigation'},action_required:{bg:'#FCEBEB',c:'#A32D2D',l:'Action required'},closed:{bg:'#EAF3DE',c:'#3B6D11',l:'Closed'}};const co=m[s]||{bg:'#f3f4f6',c:'#374151',l:s||'—'};return '<span style="display:inline-flex;align-items:center;padding:3px 9px;border-radius:99px;font-size:11px;font-weight:600;background:'+co.bg+';color:'+co.c+'">'+co.l+'</span>';}
@@ -3264,33 +3264,6 @@ chkItems=CATS.flatMap(function(c){
   return rows;
 });
 
-function buildChecklist(preloadedItems){
-var preMap={};
-(preloadedItems||[]).forEach(function(item){preMap[item.item_name]=item;});
-const tbody=document.getElementById('if-checklist');
-if(!tbody)return;
-tbody.innerHTML='';
-chkItems.forEach(function(c,i){
-var pre=preMap[c.item]||{};
-var isGood=pre.result==='good';
-var isInsuf=pre.result==='insufficient';
-var isNA=pre.result==='na';
-var obs=pre.observation||'';
-var isHdr=!c.item;
-if(isHdr){
-tbody.innerHTML+='<tr><td colspan="5" style="padding:8px 16px;background:#f3f4f6;font-size:11px;font-weight:700;text-transform:uppercase;color:var(--text2);letter-spacing:.05em">'+c.cat+'</td></tr>';
-return;
-}
-tbody.innerHTML+='<tr style="border-bottom:1px solid #f9fafb">'
-+'<td style="padding:8px 16px;font-size:12px">'+c.item+'</td>'
-+'<td style="padding:6px;text-align:center"><input type="radio" name="chk-'+i+'" id="cg-'+i+'" value="good" onchange="inspScore()"'+(isGood?' checked':'')+' style="width:16px;height:16px;accent-color:var(--green)"></td>'
-+'<td style="padding:6px;text-align:center"><input type="radio" name="chk-'+i+'" id="ci-'+i+'" value="insufficient" onchange="inspScore()"'+(isInsuf?' checked':'')+' style="width:16px;height:16px;accent-color:var(--amber)"></td>'
-+'<td style="padding:6px;text-align:center"><input type="radio" name="chk-'+i+'" id="cn-'+i+'" value="na" onchange="inspScore()"'+(isNA?' checked':'')+' style="width:16px;height:16px;accent-color:var(--text2)"></td>'
-+'<td style="padding:6px 16px"><input type="text" id="co-'+i+'" value="'+obs+'" placeholder="Observation..." style="width:100%;padding:4px 8px;border:1px solid var(--border);border-radius:6px;font-size:11px"></td>'
-+'</tr>';
-});
-inspScore();
-}
 
 function syncChk(i,t){
 if(t==='g'){const e=document.getElementById('ci-'+i);if(e)e.checked=false;}
@@ -3303,201 +3276,16 @@ if(sc)sc.textContent=g+' Good / '+ins+' Insufficient';
 
 function saveEvent(){evSave();}
 // ===== INSPECTION HELPERS =====
-// DEDUP: let inspEditingId=null, inspAllData=[];
-
-function inspShowList(){
-  var lv=document.getElementById('insp-list-view');
-  var fv=document.getElementById('insp-form-view');
-  if(lv)lv.style.display='block';
-  if(fv)fv.style.display='none';
-  loadInsps();
-}
-
-function inspNew(){
-  inspEditingId=null;
-  var fv=document.getElementById('insp-form-view');
-  var lv=document.getElementById('insp-list-view');
-  if(lv)lv.style.display='none';
-  if(fv)fv.style.display='block';
-  var ftitle=document.getElementById('insp-form-title');
-  if(ftitle)ftitle.textContent='New Inspection';
-  var delbtn=document.getElementById('insp-delete-btn');
-  if(delbtn)delbtn.style.display='none';
-  var fields=['if-site','if-emp','if-pos','if-neg','if-sign-inspector','if-sign-reviewer','if-sign-reviewer-date'];
-  fields.forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
-  var dt=document.getElementById('if-date');if(dt)dt.value=new Date().toISOString().slice(0,10);
-  var si=document.getElementById('if-sign-inspector');if(si)si.value=prof?.full_name||'';
-  var sd=document.getElementById('if-sign-date');if(sd)sd.value=new Date().toISOString().slice(0,10);
-  buildChecklist([]);
-  var ab=document.getElementById('if-actions-body');if(ab)ab.innerHTML='';
-  var ae=document.getElementById('if-actions-empty');if(ae)ae.style.display='block';
-  var ai=document.getElementById('if-actions-info');if(ai)ai.style.display='none';
-}
-
-async function inspOpen(id){
-  inspEditingId=id;
-  var rec=inspAllData.find(function(x){return x.id===id;});
-  if(!rec){
-    try{var d=await api('/inspections?id=eq.'+id+'&select=*');rec=d&&d[0];}
-    catch(e){toast(e.message,false);return;}
-  }
-  if(!rec)return;
-  var lv=document.getElementById('insp-list-view');
-  var fv=document.getElementById('insp-form-view');
-  if(lv)lv.style.display='none';
-  if(fv)fv.style.display='block';
-  var ftitle=document.getElementById('insp-form-title');
-  if(ftitle)ftitle.textContent='Inspection — '+new Date(rec.inspection_date||rec.created_at).toLocaleDateString('en-GB');
-  var delbtn=document.getElementById('insp-delete-btn');
-  if(delbtn)delbtn.style.display=isMgr()?'inline-flex':'none';
-  var flds={
-    'if-site':'site','if-emp':'employees_present',
-    'if-pos':'positive_obs','if-neg':'negative_obs',
-    'if-sign-inspector':'performed_by','if-sign-reviewer':'reviewed_by'
-  };
-  Object.entries(flds).forEach(function(e){
-    var el=document.getElementById(e[0]);
-    if(el)el.value=rec[e[1]]||'';
-  });
-  var dt=document.getElementById('if-date');
-  if(dt)dt.value=rec.inspection_date?rec.inspection_date.slice(0,10):'';
-  var sd=document.getElementById('if-sign-date');
-  if(sd)sd.value=rec.inspection_date?rec.inspection_date.slice(0,10):'';
-  var srd=document.getElementById('if-sign-reviewer-date');
-  if(srd)srd.value=rec.reviewed_date?rec.reviewed_date.slice(0,10):'';
-  // Load checklist items
-  try{
-    var items=await api('/inspection_items?inspection_id=eq.'+id);
-    (items||[]).forEach(function(it){if(!it.item_name&&it.item)it.item_name=it.item;});
-    buildChecklist(items||[]);
-  }catch(e){buildChecklist([]);}
-  // Load saved actions from MAP
-  var ab=document.getElementById('if-actions-body');
-  var ae=document.getElementById('if-actions-empty');
-  var ai=document.getElementById('if-actions-info');
-  if(ab){
-    ab.innerHTML='';
-    try{
-      var mapActions=await api('/action_tracker?source_module=eq.inspection&source_id=eq.'+id+cf());
-      if(mapActions&&mapActions.length){
-        if(ae)ae.style.display='none';
-        if(ai)ai.style.display='none';
-        mapActions.forEach(function(a){
-          var tr=document.createElement('tr');
-          tr.dataset.manual='true';
-          tr.dataset.mapId=a.id;
-          tr.innerHTML=inspActionRowHTML({
-            desc:a.description||'',
-            resp:a.responsible||'',
-            date:a.target_date||'',
-            prio:a.priority||'medium'
-          });
-          ab.appendChild(tr);
-        });
-      }else{
-        if(ae)ae.style.display='block';
-        if(ai)ai.style.display='none';
-      }
-    }catch(ex){if(ae)ae.style.display='block';}
-  }
-}
 
 
-async function inspDelete(){
-  if(!inspEditingId)return;
-  if(!confirm('Delete this inspection? This cannot be undone.'))return;
-  try{
-    await api('/inspection_items?inspection_id=eq.'+inspEditingId,{m:'DELETE'});
-    await api('/inspections?id=eq.'+inspEditingId,{m:'DELETE'});
-    toast('Inspection deleted!');
-    inspShowList();
-  }catch(e){toast(e.message,false);console.error(e);}
-}
 
-async function inspDeleteFromList(id){
-  if(!confirm('Delete this inspection? This cannot be undone.'))return;
-  try{
-    await api('/inspection_items?inspection_id=eq.'+id,{m:'DELETE'});
-    await api('/inspections?id=eq.'+id,{m:'DELETE'});
-    toast('Inspection deleted!');
-    loadInsps();
-  }catch(e){toast(e.message,false);console.error(e);}
-}
 
-function inspScore(){
-  var g=0,ins=0;
-  var insufItems=[];
-  (chkItems||[]).forEach(function(c,i){
-    if(!c.item)return;
-    var gEl=document.getElementById('cg-'+i);
-    var iEl=document.getElementById('ci-'+i);
-    if(gEl&&gEl.checked)g++;
-    if(iEl&&iEl.checked){ins++;insufItems.push(c.item);}
-  });
-  var el=document.getElementById('if-score');
-  if(el)el.textContent=g+' Good / '+ins+' Insufficient';
-  inspSyncActions(insufItems);
-}
-function updateScore(){inspScore();}
 
-function inspSyncActions(insufItems){
-  var body=document.getElementById('if-actions-body');
-  var empty=document.getElementById('if-actions-empty');
-  var info=document.getElementById('if-actions-info');
-  if(!body)return;
-  // Get current manual actions (those NOT auto-generated from checklist)
-  var manualRows=Array.from(body.querySelectorAll('tr[data-manual="true"]'));
-  // Get existing auto rows and their item names
-  var existingAuto={};
-  body.querySelectorAll('tr[data-auto="true"]').forEach(function(tr){
-    existingAuto[tr.dataset.item]=tr;
-  });
-  // Remove auto rows for items no longer insufficient
-  Object.keys(existingAuto).forEach(function(item){
-    if(insufItems.indexOf(item)===-1)existingAuto[item].remove();
-  });
-  // Add auto rows for new insufficient items
-  insufItems.forEach(function(item){
-    if(!existingAuto[item]){
-      var tr=document.createElement('tr');
-      tr.dataset.auto='true';
-      tr.dataset.item=item;
-      tr.innerHTML=inspActionRowHTML({desc:item,auto:true});
-      body.insertBefore(tr,body.firstChild);
-    }
-  });
-  var total=body.querySelectorAll('tr').length;
-  if(empty)empty.style.display=total?'none':'block';
-  if(info)info.style.display=insufItems.length?'flex':'none';
-}
 
-function inspActionRowHTML(a){
-  a=a||{};
-  return '<td style="padding:4px 8px;border-bottom:1px solid #f3f4f6">'
-    +'<input type="text" class="ia-desc" value="'+(a.desc||'')+'" placeholder="Describe action required..." style="width:100%;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px'+(a.auto?';color:var(--amber)':'')+'"/>'
-    +(a.auto?'<div style="font-size:10px;color:var(--amber);margin-top:2px"><i class="ti ti-alert-triangle"></i> Auto-generated from insufficient item</div>':'')
-    +'</td>'
-    +'<td style="padding:4px 6px;border-bottom:1px solid #f3f4f6"><input type="text" class="ia-resp" value="'+(a.resp||'')+'" placeholder="Name..." style="width:100%;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px"/></td>'
-    +'<td style="padding:4px 6px;border-bottom:1px solid #f3f4f6"><input type="date" class="ia-date" value="'+(a.date||'')+'" style="width:100%;padding:5px 6px;border:1px solid var(--border);border-radius:6px;font-size:12px"/></td>'
-    +'<td style="padding:4px 6px;border-bottom:1px solid #f3f4f6"><select class="ia-prio" style="width:100%;padding:5px 6px;border:1px solid var(--border);border-radius:6px;font-size:12px">'
-    +'<option value="low"'+(a.prio==='low'?' selected':'')+'>Low</option>'
-    +'<option value="medium"'+((!a.prio||a.prio==='medium')?' selected':'')+'>Medium</option>'
-    +'<option value="high"'+(a.prio==='high'?' selected':'')+'>High</option>'
-    +'<option value="critical"'+(a.prio==='critical'?' selected':'')+'>Critical</option>'
-    +'</select></td>'
-    +'<td style="padding:4px;text-align:center;border-bottom:1px solid #f3f4f6"><button onclick="this.parentNode.parentNode.remove();inspScore()" style="background:none;border:none;cursor:pointer;color:var(--red)"><i class="ti ti-x"></i></button></td>';
-}
 
-function inspAddAction(){
-  var body=document.getElementById('if-actions-body');
-  var empty=document.getElementById('if-actions-empty');
-  if(!body)return;
-  if(empty)empty.style.display='none';
-  var tr=document.createElement('tr');
-  tr.dataset.manual='true';
-  tr.innerHTML=inspActionRowHTML({});
-  body.appendChild(tr);
-}
+
+
+
 
 
 
@@ -4109,7 +3897,7 @@ toggleForm('noise-form');toast('Noise survey saved!');loadNoise();
 }catch(e){toast(e.message,false);}
 }
 // ===== HSE MEETINGS MODULE =====
-// DEDUP: let mtgSeriesData=[], mtgMinutesData=[], mtgEditingSeriesId=null, mtgEditingMomId=null;
+// DEDUP: mtg variables declared elsewhere
 
 const MTG_TYPES={'management_review':'HSE Management Review','hse_committee':'HSE Committee Meeting','other':'Other Meeting'};
 const MTG_RECURRENCE={'monthly':'Monthly','bimonthly':'Every 2 months','quarterly':'Quarterly','triannual':'Every 4 months','biannual':'Every 6 months','annual':'Annual'};
@@ -4125,7 +3913,7 @@ function mtgSwitchTab(tab, btn){
 
 // ── SCHEDULE (Series) ──────────────────────────────────────────────────────
 // ===== LEGAL COMPLIANCE MODULE =====
-// DEDUP: let lrAllData=[], lcAllData=[], lrEditingId=null, lcEditingId=null;
+// DEDUP: legal variables declared elsewhere
 
 const COMPLIANCE_STATUS={
   compliant:{label:'Compliant',bg:'#EAF3DE',col:'#3B6D11'},
@@ -18061,7 +17849,6 @@ async function saveTraining(){
 
 let auditAllData=[], auditEditId=null, auditCurrentTab='all';
 let auditTemplates=[], auditFindingsData=[];
-// DEDUP: let inspEditingId=null;  // backward compat
 
 const AUDIT_TYPE_CFG = {
   workplace:       {emoji:'🏭',label:'Workplace Inspection',      color:'#1e40af',bg:'#EFF6FF', border:'#bfdbfe'},
@@ -18210,7 +17997,7 @@ function auditFilter() {
 
 // ── New / Open inspection ──────────────────────────────────────────
 function auditNew(preType) {
-  auditEditId = null; inspEditingId = null;
+  auditEditId = null;
   var type = preType || 'workplace';
   auditSelectType(type);
   document.getElementById('audit-form-title').textContent = 'New Inspection';
@@ -18240,7 +18027,7 @@ function auditNew(preType) {
 
 function auditOpen(id) {
   var x = auditAllData.find(function(r){return r.id===id;}); if(!x) return;
-  auditEditId = id; inspEditingId = id;
+  auditEditId = id;
   var type = x.inspection_type || 'workplace';
   auditSelectType(type);
   document.getElementById('audit-form-title').textContent = x.site || 'Edit Inspection';
