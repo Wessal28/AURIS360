@@ -1737,6 +1737,7 @@ function doLogout() {
   }
   tok=null; prof=null; co=null; people=[]; _authSession=null;
   authClearSession();
+  try{ Brand.reset(); }catch(_){}
   authShowPanel('signin');
   document.getElementById('login-screen').style.display='flex';
   document.getElementById('app').style.display='none';
@@ -1880,7 +1881,6 @@ try{ Brand.loadFromCompany(co); }catch(_){
 }
 }catch(e){console.error(e);}
 }
-function doLogout(){tok=null;prof=null;co=null;people=[];document.getElementById('login-screen').style.display='flex';document.getElementById('app').style.display='none';document.getElementById('ai-panel').style.display='none';try{Brand.reset();}catch(_){}}
 
 /* ═══════════════════════════════════════════════════════════════════
    BRAND RUNTIME — white-label engine for AURIS360
@@ -3283,41 +3283,6 @@ function stat(s){const c={open:'ba',in_progress:'ba',closed:'bg',on_track:'bg',a
 function prio(p){const c={critical:'br',high:'ba',medium:'bb',low:'bg'};return '<span class="badge '+(c[p]||'bgr')+'">'+(p||'--')+'</span>';}
 function denied(){return '<div class="access-denied"><i class="ti ti-lock"></i><h3>Access restricted</h3><p>Your role does not have permission to view this section.</p></div>';}
 function pname(id){const p=people.find(x=>x.id===id);return p?p.first_name+' '+p.last_name:'--';}
-async function doLogin(){
-const em=document.getElementById('login-email').value.trim(),pw=document.getElementById('login-pw').value;
-const err=document.getElementById('login-err'),btn=document.getElementById('login-btn');
-err.style.display='none';btn.innerHTML='<i class="ti ti-loader-2"></i>Signing in...';btn.disabled=true;
-try{
-const d=await authQ('/token?grant_type=password',{email:em,password:pw});
-tok=d.access_token;await loadProf(d.user.id);
-document.getElementById('login-screen').style.display='none';
-document.getElementById('app').style.display='block';
-document.getElementById('ai-panel').style.display='block';
-// Ensure dashboard is visible with inline style
-document.getElementById('page-dashboard').style.display='block';
-applyRoles();await loadPeopleCache();loadDash();
-setTimeout(()=>genDashAI(),3000);
-
-}catch(e){err.textContent=e.message;err.style.display='block';}
-btn.innerHTML='<i class="ti ti-login"></i>Sign In';btn.disabled=false;
-}
-async function doRegister(){
-const em=document.getElementById('login-email').value.trim(),pw=document.getElementById('login-pw').value;
-const name=document.getElementById('reg-name').value.trim(),role=document.getElementById('reg-role').value,cid=document.getElementById('reg-company').value;
-const err=document.getElementById('login-err');err.style.display='none';
-if(!em||!pw||!name){err.textContent='Please fill email, password and name.';err.style.display='block';return;}
-try{
-const d=await authQ('/signup',{email:em,password:pw});tok=d.access_token;
-await api('/profiles',{m:'POST',p:'return=minimal',b:{id:d.user.id,full_name:name,role,email:em,company_id:cid||null}});
-await loadProf(d.user.id);
-document.getElementById('login-screen').style.display='none';
-document.getElementById('app').style.display='block';
-document.getElementById('ai-panel').style.display='block';
-// Ensure dashboard is visible with inline style
-document.getElementById('page-dashboard').style.display='block';
-applyRoles();await loadPeopleCache();loadDash();
-}catch(e){err.textContent=e.message;err.style.display='block';}
-}
 async function loadProf(uid){
 try{
 const d=await api('/profiles?id=eq.'+uid+'&select=*,companies(*)');
@@ -3334,7 +3299,6 @@ try{ Brand.loadFromCompany(co); }catch(_){
 }
 }catch(e){console.error(e);}
 }
-function doLogout(){tok=null;prof=null;co=null;people=[];document.getElementById('login-screen').style.display='flex';document.getElementById('app').style.display='none';document.getElementById('ai-panel').style.display='none';try{Brand.reset();}catch(_){}}
 function showPage(name,el){
 
 // Hide all pages using inline style
