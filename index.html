@@ -1137,7 +1137,6 @@ async function obsAskAI(question) {
 
 
 
-function ws3AddRow(){var el=document.getElementById('ws3-five-why-body');if(!el)return;var row=document.createElement('div');row.style.cssText='display:grid;grid-template-columns:auto 1fr auto;gap:8px;align-items:start;margin-bottom:8px;padding:8px;border:1px solid var(--border);border-radius:8px';var idx=el.querySelectorAll('.ws3-why-row').length+1;row.className='ws3-why-row';row.innerHTML='<div style="font-weight:700;color:#185FA5;min-width:50px;padding-top:6px">Why '+idx+'?</div><textarea class="ws3-why-ans" style="min-height:50px;padding:6px;border:1px solid var(--border);border-radius:6px;font-size:12px;resize:vertical" placeholder="Why did this happen?"></textarea><button class="btn btn-sm" style="color:var(--red);margin-top:2px" onclick="this.closest(\'.ws3-why-row\').remove()"><i class="ti ti-x"></i></button>';el.appendChild(row);}
 ;
 async function generateSafetyComm(){toast('Generating AI safety communication...');try{var x=invAllData.find(r=>r.id===invEditId)||{};var resp=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,messages:[{role:'user',content:'Write a brief safety alert communication based on this investigation: Location: '+(x.location||'—')+', What happened: '+(x.description||'—')+', Root causes: '+(x.root_causes||'—')+'. Format as a short alert for all workers. Max 200 words.'}]})});var d=await resp.json();var text=(d.content||[]).map(c=>c.text||'').join('');toast('Safety communication ready — see console for text.');console.log('SAFETY COMMUNICATION:\n'+text);}catch(e){toast('AI unavailable: '+e.message,false);}};
 // ===================================================================
@@ -3731,18 +3730,6 @@ function ws1AddCA(){
   body.innerHTML+=invWS1CARow(num,{});
 }
 
-function ws3AddRow(){
-  var body=document.getElementById('ws3-five-why-body');
-  if(!body)return;
-  var num=body.querySelectorAll('tr').length+1;
-  var cell='<td style="padding:4px;text-align:center;border:1px solid var(--border)"><input type="checkbox" class="ws3-v"></td><td style="padding:4px;border:1px solid var(--border)"><input type="text" class="ws3-why" style="width:100%;padding:4px 6px;border:1px solid var(--border);border-radius:4px;font-size:11px" placeholder="Why?"/></td>';
-  var row='<tr class="ws3-why-row">'
-    +'<td style="padding:6px;text-align:center;border:1px solid var(--border);font-weight:700;font-size:12px;color:var(--text2)">'+num+'</td>'
-    +'<td style="padding:4px;border:1px solid var(--border)"><input type="text" class="ws3-cause-input" style="width:100%;padding:4px 6px;border:1px solid var(--border);border-radius:4px;font-size:12px" placeholder="Contributory cause..."/></td>'
-    +cell+cell+cell+cell+cell
-    +'<td style="padding:4px;text-align:center;border:1px solid var(--border)"><button onclick="this.parentNode.parentNode.remove()" style="background:none;border:none;cursor:pointer;color:var(--red)"><i class="ti ti-x"></i></button></td></tr>';
-  body.innerHTML+=row;
-}
 
 
 function invRenderCA(cas){
@@ -3902,14 +3889,6 @@ toggleForm('noise-form');toast('Noise survey saved!');loadNoise();
 const MTG_TYPES={'management_review':'HSE Management Review','hse_committee':'HSE Committee Meeting','other':'Other Meeting'};
 const MTG_RECURRENCE={'monthly':'Monthly','bimonthly':'Every 2 months','quarterly':'Quarterly','triannual':'Every 4 months','biannual':'Every 6 months','annual':'Annual'};
 
-function mtgSwitchTab(tab, btn){
-  document.querySelectorAll('.mtg-tab').forEach(t=>{t.classList.remove('active');});
-  btn.classList.add('active');
-  document.getElementById('mtg-view-schedule').style.display=tab==='schedule'?'block':'none';
-  document.getElementById('mtg-view-minutes').style.display=tab==='minutes'?'block':'none';
-  if(tab==='schedule'){mtgLoadSeries();}
-  else mtgLoadMinutes();
-}
 
 // ── SCHEDULE (Series) ──────────────────────────────────────────────────────
 // ===== LEGAL COMPLIANCE MODULE =====
@@ -6538,7 +6517,7 @@ async function wsShowDetail(id){
   if(!x){try{var d=await api('/work_schedule?id=eq.'+id);x=d?.[0];}catch(e){return;}}
   if(!x)return;
   wsCurrentId=id;
-  ['ws-list-view','ws-week-view','ws-form-view','ws-tbt-form'].forEach(function(i){
+  ['ws-list-view','ws-week-view','ws-form-view','ws-tbt-form','ws-te-form','ws-te-checklist-view'].forEach(function(i){
     var el=document.getElementById(i);if(el)el.style.display='none';
   });
   document.getElementById('ws-detail-view').style.display='block';
@@ -6577,21 +6556,6 @@ async function wsShowDetail(id){
   wsRenderActionStatuses(x);
 }
 
-function wsRenderLinkedRecords(x){
-  var el=document.getElementById('ws-linked-records');if(!el)return;
-  var h='';
-  var row=function(icon,label,val,col){
-    return '<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid #f5f5f5">'
-      +'<i class="ti '+icon+'" style="color:'+col+';font-size:14px;width:18px"></i>'
-      +'<span style="font-size:12px;color:var(--text2);flex:1">'+label+'</span>'
-      +(val?'<span style="font-size:11px;font-weight:700;color:'+col+'">'+escH(val)+'</span>':'<span style="font-size:11px;color:#ccc">None</span>')
-      +'</div>';
-  };
-  h+=row('ti-speakerphone','Toolbox talk',x.toolbox_talk_id?'Linked':'','#8B5CF6');
-  h+=row('ti-shield-check','Pre-start check',x.prestart_id?'Linked':'','#185FA5');
-  h+=row('ti-clipboard-check','Site inspection',x.site_inspection_id?'Linked':'','#1D9E75');
-  el.innerHTML=h||'<div style="color:var(--text2);font-size:12px;padding:8px 0">No linked records yet</div>';
-}
 
 function wsRenderActionStatuses(x){
   var tbt=document.getElementById('ws-tbt-status');
@@ -6602,6 +6566,11 @@ function wsRenderActionStatuses(x){
   if(ps)ps.innerHTML=x.prestart_id?'<span style="color:var(--green);font-weight:700">✓ Completed</span>':'<span style="color:var(--text2)">Pending</span>';
   if(si)si.innerHTML=x.site_inspection_id?'<span style="color:var(--green);font-weight:700">✓ Completed</span>':'<span style="color:var(--text2)">Pending</span>';
   if(te)te.innerHTML='<span style="color:var(--text2)">Check equipment</span>';
+  // RA + PTW status (was previously a separate monkey-patch wrapper)
+  var ra=document.getElementById('ws-ra-status');
+  var ptw=document.getElementById('ws-ptw-status');
+  if(ra)ra.innerHTML=x.ra_ref?'<span style="color:var(--green);font-weight:700">Ref: '+escH(x.ra_ref)+'</span>':'<span style="color:var(--text2)">No RA linked</span>';
+  if(ptw)ptw.innerHTML=(x.permit_ref&&x.requires_permit)?'<span style="color:var(--green);font-weight:700">Ref: '+escH(x.permit_ref)+'</span>':x.requires_permit?'<span style="color:var(--amber);font-weight:600">Required — not issued</span>':'<span style="color:var(--text2)">Not required</span>';
 }
 
 async function wsUpdateStatus(val){
@@ -6703,18 +6672,6 @@ function wsOpenSiteInspection(){
   },200);
 }
 
-function wsOpenToolsCheck(){
-  var x=wsGetCurrent();
-  showPage('tools', document.querySelector('[onclick*="tools"]'));
-  setTimeout(function(){
-    // Switch to inspection tab
-    var btn=document.getElementById('tools-tab-inspection');
-    if(btn)toolsSwitchTab('inspection',btn);
-    setTimeout(function(){
-      toolsNewInspection();
-    },200);
-  },200);
-}
 
 function wsBackToDetail(){
   document.getElementById('ws-tbt-form').style.display='none';
@@ -6722,14 +6679,6 @@ function wsBackToDetail(){
 }
 
 // ── TOOLBOX TALK FORM ────────────────────────────────────────────────────────
-function tbtAddAttendee(){
-  var inp=document.getElementById('tbt-new-attendee');
-  var name=(inp?.value||'').trim();
-  if(!name)return;
-  wsTbtAttendees.push({name:name,signed:false});
-  inp.value='';
-  tbtRenderAttendees();
-}
 
 function tbtRenderAttendees(){
   var el=document.getElementById('tbt-attendees-list');if(!el)return;
@@ -6748,47 +6697,6 @@ function tbtRenderAttendees(){
   }).join('');
 }
 
-async function tbtSave(){
-  var title=document.getElementById('tbt-title')?.value?.trim();
-  if(!title){toast('Please enter a title',false);return;}
-  var byId=document.getElementById('tbt-by')?.value||null;
-  var byName='';
-  if(byId){var p=(people||[]).find(function(x){return x.id===byId;});byName=p?(p.last_name+', '+p.first_name):'';}
-  var g=function(id){var el=document.getElementById(id);return el?el.value||null:null;};
-  var body={
-    company_id:prof?.company_id,
-    work_schedule_id:wsCurrentId||null,
-    title:title,
-    talk_date:g('tbt-date'),
-    conducted_by_id:byId,conducted_by_name:byName||null,
-    location:g('tbt-location'),
-    duration_minutes:parseInt(g('tbt-duration'))||15,
-    work_activity:g('tbt-activity'),
-    work_location:g('tbt-location'),
-    topics_covered:g('tbt-topics'),
-    hazards_discussed:g('tbt-hazards'),
-    controls_discussed:g('tbt-controls'),
-    ppe_required:g('tbt-ppe'),
-    emergency_procedures:g('tbt-emergency'),
-    attendees:wsTbtAttendees,
-    signed_by:g('tbt-sign-name'),
-    signed_at:g('tbt-sign-dt'),
-    status:document.getElementById('tbt-confirmed')?.checked?'completed':'draft',
-    created_by:prof?.id,updated_at:new Date().toISOString()
-  };
-  try{
-    var res=await api('/toolbox_talks',{m:'POST',p:'return=representation',b:body});
-    // Link to work order
-    if(res?.[0]?.id&&wsCurrentId){
-      await api('/work_schedule?id=eq.'+wsCurrentId,{m:'PATCH',p:'return=minimal',b:{toolbox_talk_id:res[0].id,updated_at:new Date().toISOString()}});
-      var x=wsAllData.find(function(r){return r.id===wsCurrentId;});
-      if(x)x.toolbox_talk_id=res[0].id;
-    }
-    toast('Toolbox talk saved! Linked to work order ✓');
-    wsBackToDetail();
-    if(wsCurrentId){var x2=wsAllData.find(function(r){return r.id===wsCurrentId;});if(x2)wsRenderActionStatuses(x2);}
-  }catch(e){toast(e.message,false);console.error(e);}
-}
 
 // ── ADD / EDIT WORK ORDER ────────────────────────────────────────────────────
 function wsNew(){
@@ -7144,26 +7052,7 @@ function wsBackToTEForm(){
   wsTERenderItems();
 }
 
-// Update wsRenderActionStatuses to include RA, PTW
-const _origWsRenderActionStatuses=wsRenderActionStatuses;
-function wsRenderActionStatuses(x){
-  _origWsRenderActionStatuses(x);
-  var ra=document.getElementById('ws-ra-status');
-  var ptw=document.getElementById('ws-ptw-status');
-  if(ra)ra.innerHTML=x.ra_ref?'<span style="color:var(--green);font-weight:700">Ref: '+escH(x.ra_ref)+'</span>':'<span style="color:var(--text2)">No RA linked</span>';
-  if(ptw)ptw.innerHTML=(x.permit_ref&&x.requires_permit)?'<span style="color:var(--green);font-weight:700">Ref: '+escH(x.permit_ref)+'</span>':x.requires_permit?'<span style="color:var(--amber);font-weight:600">Required — not issued</span>':'<span style="color:var(--text2)">Not required</span>';
-}
-
-// Update wsShowDetail to hide TE forms
-const _origWsShowDetail=wsShowDetail;
-async function wsShowDetail(id){
-  // Hide TE forms
-  ['ws-te-form','ws-te-checklist-view'].forEach(function(fid){var el=document.getElementById(fid);if(el)el.style.display='none';});
-  await _origWsShowDetail(id);
-}
-
-// Update wsRenderLinkedRecords to include RA + PTW
-const _origWsRenderLinkedRecords=wsRenderLinkedRecords;
+// wsRenderLinkedRecords — canonical version with RA + PTW rows
 function wsRenderLinkedRecords(x){
   var el=document.getElementById('ws-linked-records');if(!el)return;
   var row=function(icon,label,val,col){
