@@ -1616,8 +1616,88 @@ try{ Brand.loadFromCompany(co); }catch(_){
   if(co?.logo_url){document.getElementById('co-logo-img').src=co.logo_url;document.getElementById('co-logo-img').style.display='block';document.getElementById('co-initials-div').style.display='none';}
   else{document.getElementById('co-initials-div').textContent=(co?.name||'A').charAt(0).toUpperCase();}
 }
+// First-login password change prompt — if admin provisioned this user with a temp password.
+if(prof.must_change_password) {
+  setTimeout(function(){ pwChangeShow(true); }, 300);  // small delay so dashboard paints first
+}
 }
 }catch(e){console.error(e);}
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Force password change (first-login prompt)
+// Shown when prof.must_change_password is true — typically because an admin
+// provisioned the account directly. User cannot dismiss until they set a new
+// password and the must_change_password flag is cleared.
+// ═══════════════════════════════════════════════════════════════════════════
+
+function pwChangeShow(forced) {
+  var modal = document.getElementById('pw-change-modal');
+  if(!modal) return;
+  modal.dataset.forced = forced ? '1' : '0';
+  document.getElementById('pw-change-close-btn').style.display = forced ? 'none' : 'inline-flex';
+  document.getElementById('pw-change-cancel-btn').style.display = forced ? 'none' : 'inline-flex';
+  document.getElementById('pw-change-title').textContent = forced ? 'Set a new password' : 'Change password';
+  document.getElementById('pw-change-intro').textContent = forced
+    ? 'Your account was set up with a temporary password. Please choose a new password to continue.'
+    : 'Choose a new password for your account.';
+  ['pw-new','pw-confirm'].forEach(function(id){var el=document.getElementById(id); if(el) el.value='';});
+  document.getElementById('pw-change-err').style.display = 'none';
+  modal.style.display = 'flex';
+}
+
+function pwChangeClose() {
+  var modal = document.getElementById('pw-change-modal');
+  if(!modal) return;
+  if(modal.dataset.forced === '1') {
+    toast('You must set a new password before continuing', false);
+    return;
+  }
+  modal.style.display = 'none';
+}
+
+async function pwChangeSubmit() {
+  var pw  = document.getElementById('pw-new')?.value || '';
+  var pw2 = document.getElementById('pw-confirm')?.value || '';
+  var errEl = document.getElementById('pw-change-err');
+  function err(m){ errEl.textContent = m; errEl.style.display = 'block'; }
+  errEl.style.display = 'none';
+
+  if(pw.length < 8)        return err('Password must be at least 8 characters.');
+  if(pw !== pw2)           return err('Passwords do not match.');
+  if(/^[a-z]+$/i.test(pw)) return err('Please use a mix of letters and numbers.');
+
+  var btn = document.getElementById('pw-change-submit-btn');
+  if(btn) { btn.disabled = true; btn.innerHTML = '<i class="ti ti-loader-2"></i>Updating...'; }
+
+  try {
+    // Update the password via Supabase auth
+    var resp = await fetch(SB + '/auth/v1/user', {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + tok,
+        'apikey': KEY,
+      },
+      body: JSON.stringify({ password: pw })
+    });
+    var data = await resp.json().catch(function(){return{};});
+    if(!resp.ok) throw new Error(data.error_description || data.msg || ('HTTP '+resp.status));
+
+    // Clear the must_change_password flag on the profile
+    await api('/profiles?id=eq.' + prof.id, {
+      m:'PATCH', p:'return=minimal',
+      b: { must_change_password: false, updated_at: new Date().toISOString() }
+    });
+    if(prof) prof.must_change_password = false;
+
+    document.getElementById('pw-change-modal').style.display = 'none';
+    toast('Password updated successfully');
+  } catch(e) {
+    err(e.message || 'Could not update password');
+  } finally {
+    if(btn) { btn.disabled = false; btn.innerHTML = '<i class="ti ti-check"></i>Update password'; }
+  }
 }
 
 /* ═══════════════════════════════════════════════════════════════════
@@ -18295,8 +18375,204 @@ function uSwitchTab(tab, btn) {
   document.getElementById('uview-invite').style.display  = tab==='invite' ?'block':'none';
   if(tab==='users')  usersLoad();
   else if(tab==='roles')  rolesRenderMatrix();
-  else if(tab==='invite') {}
+  else if(tab==='invite') cuInit();
 }
+
+// ═══════════════════════════════════════════════════════════════════════════
+// CREATE USER (cu*) — wires the Invite tab's Create User form to the
+// admin-users Edge Function. Supports two modes:
+//   • invite  — email-based: Supabase sends a "set your password" link
+//   • direct  — admin sets a temp password; the user is forced to change it
+//               on first login. Used for staff without email access.
+// ═══════════════════════════════════════════════════════════════════════════
+
+var cuMode = 'invite';
+
+function cuInit() {
+  // Default to invite mode; show company dropdown only for sephs_admin
+  cuSetMode('invite');
+  // Reset all fields
+  ['cu-name','cu-email','cu-password','cu-synthetic'].forEach(function(id){
+    var el = document.getElementById(id); if(el) el.value = '';
+  });
+  var roleEl = document.getElementById('cu-role'); if(roleEl) roleEl.value = 'employee';
+  var resEl = document.getElementById('cu-result'); if(resEl){ resEl.style.display='none'; resEl.innerHTML=''; }
+  // Company dropdown — only visible to sephs_admin
+  var coRow = document.getElementById('cu-company-row');
+  if(coRow) coRow.style.display = isSA() ? 'block' : 'none';
+  if(isSA()) cuLoadCompanies();
+}
+
+function cuSetMode(mode) {
+  cuMode = mode;
+  var inviteBtn = document.getElementById('cu-mode-invite-btn');
+  var directBtn = document.getElementById('cu-mode-direct-btn');
+  var hint = document.getElementById('cu-mode-hint');
+  var emailRow = document.getElementById('cu-email-row');
+  var synthRow = document.getElementById('cu-synthetic-row');
+  var pwRow = document.getElementById('cu-password-row');
+
+  if(mode === 'invite') {
+    if(inviteBtn){ inviteBtn.style.background='#185FA5'; inviteBtn.style.color='#fff'; inviteBtn.style.borderColor='#185FA5'; }
+    if(directBtn){ directBtn.style.background=''; directBtn.style.color=''; directBtn.style.borderColor=''; }
+    if(hint) hint.innerHTML = '<i class="ti ti-info-circle"></i> The user will receive an email with a link to set their own password.';
+    if(emailRow) emailRow.style.display = 'block';
+    if(synthRow) synthRow.style.display = 'none';
+    if(pwRow) pwRow.style.display = 'none';
+  } else {
+    if(directBtn){ directBtn.style.background='#185FA5'; directBtn.style.color='#fff'; directBtn.style.borderColor='#185FA5'; }
+    if(inviteBtn){ inviteBtn.style.background=''; inviteBtn.style.color=''; inviteBtn.style.borderColor=''; }
+    if(hint) hint.innerHTML = '<i class="ti ti-info-circle"></i> Set a temporary password now. Share it with the user directly (face-to-face, on a paper card, etc.). They\'ll be required to change it on first login.';
+    if(emailRow) emailRow.style.display = 'none';
+    if(synthRow) synthRow.style.display = 'block';
+    if(pwRow) pwRow.style.display = 'block';
+    cuUpdateSynthetic();
+    cuGenPassword();
+  }
+}
+
+function cuUpdateSynthetic() {
+  // Build a synthetic identifier like firstname.lastname@<company-slug>.local
+  var name = (document.getElementById('cu-name')?.value || '').trim().toLowerCase();
+  if(!name) {
+    var el = document.getElementById('cu-synthetic'); if(el) el.value = '(enter name first)';
+    return;
+  }
+  var slug = name.replace(/[^a-z0-9 ]/g,'').replace(/\s+/g,'.').substring(0, 30);
+  // Pick the company slug from the company dropdown (if sephs_admin) or current company
+  var coId = isSA() ? document.getElementById('cu-company')?.value : prof?.company_id;
+  var co = (typeof adminCompaniesData !== 'undefined' ? adminCompaniesData : []).find(function(c){return c.id===coId;});
+  var coSlug = (co?.name || 'company').toLowerCase().replace(/[^a-z0-9]/g,'').substring(0, 20);
+  var el = document.getElementById('cu-synthetic');
+  if(el) el.value = slug + '@' + coSlug + '.local';
+}
+
+function cuGenPassword() {
+  // Generate a memorable but secure temp password: <word>-<word>-<3 digits>
+  var words = ['safe','swift','calm','bright','steady','clear','solid','firm','keen','sharp'];
+  var w1 = words[Math.floor(Math.random()*words.length)];
+  var w2 = words[Math.floor(Math.random()*words.length)];
+  while(w2 === w1) w2 = words[Math.floor(Math.random()*words.length)];
+  var num = Math.floor(Math.random()*900) + 100;
+  var pw = w1 + '-' + w2 + '-' + num;
+  var el = document.getElementById('cu-password'); if(el) el.value = pw;
+}
+
+async function cuLoadCompanies() {
+  var sel = document.getElementById('cu-company'); if(!sel) return;
+  if(typeof adminCompaniesData === 'undefined' || !adminCompaniesData.length) {
+    // Trigger a load if needed
+    try { await adminLoadAll(); } catch(e) {}
+  }
+  sel.innerHTML = '<option value="">— Select company —</option>';
+  (adminCompaniesData || []).forEach(function(c){
+    var o = document.createElement('option');
+    o.value = c.id; o.textContent = c.name;
+    sel.appendChild(o);
+  });
+}
+
+// Helper: call the admin-users Edge Function with proper auth.
+// Throws on non-OK responses with the error message as .message.
+async function adminFnCall(action, payload) {
+  // Find the anon key (used in the apikey header). The app stores it as KEY.
+  var anonKey = (typeof KEY !== 'undefined') ? KEY : null;
+  if(!anonKey) {
+    // Fallback: extract from page source
+    var html = document.documentElement.outerHTML;
+    var jwts = html.match(/eyJ[A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]{20,}/g) || [];
+    for(var i=0;i<jwts.length;i++){
+      try{ var p = JSON.parse(atob(jwts[i].split('.')[1])); if(p.role==='anon'){ anonKey = jwts[i]; break; } }catch(e){}
+    }
+  }
+  if(!anonKey) throw new Error('Could not locate Supabase anon key');
+  if(!tok) throw new Error('Not logged in');
+  if(typeof SB === 'undefined') throw new Error('Supabase URL not configured');
+
+  var resp = await fetch(SB + '/functions/v1/admin-users', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer ' + tok,
+      'apikey': anonKey,
+    },
+    body: JSON.stringify(Object.assign({ action: action }, payload || {}))
+  });
+  var data = await resp.json().catch(function(){return{};});
+  if(!resp.ok || !data.ok) {
+    throw new Error(data.error || ('HTTP '+resp.status));
+  }
+  return data;
+}
+
+async function cuSubmit() {
+  var btn = document.getElementById('cu-submit-btn');
+  var resEl = document.getElementById('cu-result');
+  var name = (document.getElementById('cu-name')?.value || '').trim();
+  var role = document.getElementById('cu-role')?.value || 'employee';
+  var companyId = isSA() ? (document.getElementById('cu-company')?.value || null) : null;
+
+  if(!name) { toast('Please enter the user\'s full name', false); return; }
+  if(isSA() && !companyId) { toast('Please select a company', false); return; }
+
+  resEl.style.display = 'none';
+  resEl.innerHTML = '';
+  if(btn) { btn.disabled = true; btn.innerHTML = '<i class="ti ti-loader-2"></i>Creating...'; }
+
+  try {
+    if(cuMode === 'invite') {
+      var email = (document.getElementById('cu-email')?.value || '').trim();
+      if(!email || !email.includes('@')) throw new Error('Please enter a valid email address');
+      var d = await adminFnCall('invite_user', {
+        email: email, full_name: name, role: role, company_id: companyId
+      });
+      resEl.style.display = 'block';
+      resEl.innerHTML = '<div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:12px;font-size:12px;color:#065F46">'
+        + '<div style="font-weight:700;margin-bottom:6px">✓ Invitation sent</div>'
+        + 'An email has been sent to <strong>' + escH(email) + '</strong> with a link to set their password. They will be assigned the <strong>' + escH(role) + '</strong> role on completion.'
+        + '</div>';
+    } else {
+      var synth = (document.getElementById('cu-synthetic')?.value || '').trim();
+      var pw = (document.getElementById('cu-password')?.value || '').trim();
+      if(!synth || synth.startsWith('(')) throw new Error('Could not generate username — please re-enter the full name');
+      if(!pw || pw.length < 8) throw new Error('Password must be at least 8 characters');
+      var d2 = await adminFnCall('create_user', {
+        email: synth, password: pw, full_name: name, role: role, company_id: companyId
+      });
+      resEl.style.display = 'block';
+      resEl.innerHTML = '<div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:12px;font-size:12px;color:#065F46">'
+        + '<div style="font-weight:700;margin-bottom:8px">✓ User created</div>'
+        + 'Share these credentials with the user. They will be required to set a new password on first login.'
+        + '<div style="margin-top:10px;padding:10px;background:#fff;border:1px solid #d1fae5;border-radius:6px;font-family:monospace;font-size:12px">'
+        + '<div><strong>Username:</strong> ' + escH(synth) + '</div>'
+        + '<div><strong>Password:</strong> ' + escH(pw) + '</div>'
+        + '</div>'
+        + '<button class="btn btn-sm" style="margin-top:10px" onclick="navigator.clipboard.writeText(\'Username: ' + escH(synth) + '\\nPassword: ' + escH(pw) + '\').then(function(){toast(\'Copied to clipboard\');})"><i class="ti ti-copy"></i>Copy credentials</button>'
+        + '</div>';
+    }
+    // Refresh the users list
+    usersLoad();
+    // Reset the form
+    document.getElementById('cu-name').value = '';
+    document.getElementById('cu-email').value = '';
+    if(cuMode === 'direct') { cuUpdateSynthetic(); cuGenPassword(); }
+  } catch(e) {
+    resEl.style.display = 'block';
+    resEl.innerHTML = '<div style="background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:12px;font-size:12px;color:#991b1b">'
+      + '<div style="font-weight:700;margin-bottom:6px">Could not create user</div>'
+      + escH(e.message || 'Unknown error')
+      + '</div>';
+  } finally {
+    if(btn) { btn.disabled = false; btn.innerHTML = '<i class="ti ti-user-plus"></i>Create user'; }
+  }
+}
+
+// Wire up auto-update of synthetic username when name/company changes
+document.addEventListener('input', function(e) {
+  if(e.target && (e.target.id === 'cu-name' || e.target.id === 'cu-company')) {
+    if(cuMode === 'direct') cuUpdateSynthetic();
+  }
+});
 
 // ── Load users ───────────────────────────────────────────────────────
 async function usersLoad() {
@@ -21267,7 +21543,7 @@ async function obCreate() {
   <i class="ti ti-login"></i>Sign in
 </button>
 <div style="text-align:center;margin-top:16px;font-size:12px;color:var(--text2)">
-  Don't have an account? <a href="#" style="color:var(--blue);font-weight:600;text-decoration:none" onclick="authShowPanel('register');return false">Register here</a>
+  Don't have an account? Contact your administrator for access.
 </div>
 </div>
 
@@ -29410,20 +29686,91 @@ async function obCreate() {
 <button class="btn btn-primary" onclick="updateRole()" style="width:100%"><i class="ti ti-edit"></i>Update role &amp; details</button>
 </div>
 
-<!-- Invite card -->
+<!-- Create User card (replaces the old copy-link invite) -->
 <div class="card">
-<div class="card-title">✉️ Invite New User</div>
-<div style="font-size:12px;color:var(--text2);margin-bottom:12px">Share the registration link with new team members</div>
-<div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:12px;font-family:monospace;font-size:12px;color:#065F46;word-break:break-all;margin-bottom:10px" id="invite-link">https://auris-360.vercel.app</div>
-<button class="btn btn-sm" onclick="usersShareLink()"><i class="ti ti-copy"></i>Copy link</button>
-<div style="margin-top:14px;font-size:12px;color:var(--text2)">
-<div style="font-weight:700;margin-bottom:6px">Onboarding steps:</div>
-<ol style="margin:0;padding-left:18px;line-height:1.8">
-<li>Share the link with the new user</li>
-<li>They register with their work email</li>
-<li>Use "Update User Role" to assign their role</li>
-<li>They log in and see modules matching their role</li>
-</ol>
+<div class="card-title">➕ Create New User</div>
+<div style="font-size:12px;color:var(--text2);margin-bottom:12px">Provision a new user account. Choose the method based on whether they have email access.</div>
+
+<!-- Mode toggle -->
+<div style="display:flex;gap:6px;margin-bottom:14px;background:#f3f4f6;border-radius:8px;padding:4px">
+<button class="btn btn-sm" id="cu-mode-invite-btn" onclick="cuSetMode('invite')" style="flex:1;background:#185FA5;color:#fff;border-color:#185FA5"><i class="ti ti-mail"></i>Email Invite</button>
+<button class="btn btn-sm" id="cu-mode-direct-btn" onclick="cuSetMode('direct')" style="flex:1"><i class="ti ti-user-plus"></i>Direct (no email)</button>
+</div>
+
+<div id="cu-mode-hint" style="font-size:11px;color:var(--text2);background:#EFF6FF;border:1px solid #DBEAFE;border-radius:6px;padding:8px 10px;margin-bottom:12px">
+<i class="ti ti-info-circle"></i> The user will receive an email with a link to set their own password.
+</div>
+
+<div class="form-group"><label class="form-label">Full name *</label><input type="text" id="cu-name" placeholder="John Doe"/></div>
+
+<div class="form-group" id="cu-email-row"><label class="form-label">Email *</label><input type="email" id="cu-email" placeholder="user@company.com" style="font-family:monospace"/></div>
+
+<div class="form-group" id="cu-synthetic-row" style="display:none">
+<label class="form-label">Username (auto-generated)</label>
+<input type="text" id="cu-synthetic" readonly style="font-family:monospace;background:#f9fafb"/>
+<div style="font-size:11px;color:var(--text2);margin-top:4px">This is the unique identifier the user will use to log in. They will not receive any email at this address.</div>
+</div>
+
+<div class="form-group" id="cu-password-row" style="display:none">
+<label class="form-label">Temporary password *</label>
+<div style="display:flex;gap:6px">
+<input type="text" id="cu-password" placeholder="Min 8 characters" style="flex:1;font-family:monospace"/>
+<button type="button" class="btn btn-sm" onclick="cuGenPassword()" title="Generate"><i class="ti ti-refresh"></i></button>
+</div>
+<div style="font-size:11px;color:var(--text2);margin-top:4px">Share this with the user directly. They will be prompted to change it on first login.</div>
+</div>
+
+<div class="form-group"><label class="form-label">Role *</label>
+<select id="cu-role">
+<option value="employee">👤 Employee</option>
+<option value="contractor">🦺 Contractor</option>
+<option value="supervisor">👷 Supervisor</option>
+<option value="site_manager">🏗️ Site Manager</option>
+<option value="hse_manager">🛡️ HSE Manager</option>
+<option value="auditor">🔍 Auditor</option>
+<option value="hr">👩‍💼 HR</option>
+<option value="executive">📊 Executive Management</option>
+<option value="admin">🔑 Company Admin</option>
+</select>
+</div>
+
+<div class="form-group" id="cu-company-row" style="display:none">
+<label class="form-label">Company *</label>
+<select id="cu-company"><option value="">Loading...</option></select>
+<div style="font-size:11px;color:var(--text2);margin-top:4px">Only visible to SEPHS admins. Company admins automatically assign to their own company.</div>
+</div>
+
+<button class="btn btn-primary" onclick="cuSubmit()" id="cu-submit-btn" style="width:100%;margin-top:6px"><i class="ti ti-user-plus"></i>Create user</button>
+
+<div id="cu-result" style="margin-top:14px;display:none"></div>
+</div>
+</div>
+</div>
+
+<!-- ── PASSWORD CHANGE MODAL ── -->
+<div id="pw-change-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:10000;align-items:center;justify-content:center;padding:20px">
+<div style="background:#fff;border-radius:12px;max-width:420px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,.3)">
+<div style="padding:16px 20px;background:linear-gradient(135deg,#1a3a5c,#185FA5);color:#fff;border-radius:12px 12px 0 0;display:flex;justify-content:space-between;align-items:center">
+<div style="font-size:16px;font-weight:800" id="pw-change-title">Set a new password</div>
+<button class="btn btn-sm" id="pw-change-close-btn" style="background:rgba(255,255,255,.2);color:#fff;border-color:rgba(255,255,255,.3);display:none" onclick="pwChangeClose()"><i class="ti ti-x"></i></button>
+</div>
+<div style="padding:20px">
+<div id="pw-change-intro" style="font-size:13px;color:var(--text2);margin-bottom:16px;line-height:1.5">Your account was set up with a temporary password. Please choose a new password to continue.</div>
+
+<div class="form-group">
+<label class="form-label">New password</label>
+<input type="password" id="pw-new" placeholder="At least 8 characters" autocomplete="new-password"/>
+</div>
+<div class="form-group">
+<label class="form-label">Confirm new password</label>
+<input type="password" id="pw-confirm" placeholder="Re-enter the password" autocomplete="new-password"/>
+</div>
+
+<div id="pw-change-err" style="display:none;background:#fef2f2;border:1px solid #fecaca;color:#991b1b;padding:8px 12px;border-radius:6px;font-size:12px;margin-bottom:12px"></div>
+
+<div style="display:flex;gap:8px;margin-top:8px">
+<button class="btn btn-primary" id="pw-change-submit-btn" onclick="pwChangeSubmit()" style="flex:1"><i class="ti ti-check"></i>Update password</button>
+<button class="btn" id="pw-change-cancel-btn" onclick="pwChangeClose()" style="display:none">Cancel</button>
 </div>
 </div>
 </div>
