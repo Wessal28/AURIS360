@@ -1260,32 +1260,65 @@ async function doRegister() {
   if(pw!==pw2){authShowErr('Passwords do not match.');return;}
   if(pw.length<8){authShowErr('Password must be at least 8 characters.');return;}
   if(authCheckStrength(pw)<2){authShowErr('Please choose a stronger password (mix of letters, numbers and symbols).');return;}
+  // Resolve company: handle "+ Create a new company..." option
+  if(cid==='__new__'){
+    var coName = prompt('Enter your company name:', '');
+    if(!coName||!coName.trim()){authShowErr('A company name is required to create a new company.');return;}
+    coName = coName.trim();
+    authShowErr(''); authShowLoading('Creating company...');
+    try {
+      var createdCo = await api('/companies',{
+        m:'POST', p:'return=representation',
+        b:{ name: coName, active: true, created_at: new Date().toISOString() }
+      });
+      if(createdCo && createdCo[0] && createdCo[0].id){
+        cid = createdCo[0].id;
+      } else {
+        authShowErr('Could not create company. Try again or contact support.');
+        return;
+      }
+    } catch(coErr) {
+      authShowErr('Could not create company: ' + (coErr.message||'unknown error'));
+      return;
+    }
+  }
   authShowErr(''); authShowLoading('Creating account...');
   if(btn){btn.disabled=true;btn.innerHTML='<i class="ti ti-loader-2"></i>Creating...';}
   try {
     var d=await authQ('/signup',{
       email:em, password:pw,
-      data:{full_name:name, role:role}   // stored in raw_user_meta_data → trigger reads it
+      data:{full_name:name, role:role, company_id:cid}   // stored in raw_user_meta_data → trigger may read company_id
     });
     // If email confirmation is enabled, d.access_token may be null
     if(d.access_token) {
-      // Create/update profile with all details
       tok=d.access_token;
+      // Ensure profile has company_id set. The Supabase trigger creates a basic
+      // profile row but doesn't know about company_id, so we PATCH it here.
+      var profBody = {
+        id: d.user.id, full_name: name, role: role, email: em,
+        company_id: cid || null,
+        updated_at: new Date().toISOString()
+      };
       try {
         await api('/profiles?id=eq.'+d.user.id, {
-          m:'PATCH', p:'return=minimal',
-          b:{id:d.user.id,full_name:name,role,email:em,company_id:cid||null,updated_at:new Date().toISOString()}
+          m:'PATCH', p:'return=minimal', b: profBody
         });
       } catch(ex) {
-        // If profile doesn't exist yet (trigger may not have fired), insert it
-        await api('/profiles',{
-          m:'POST', p:'return=minimal',
-          b:{id:d.user.id,full_name:name,role,email:em,company_id:cid||null,created_at:new Date().toISOString(),updated_at:new Date().toISOString()}
-        });
+        // Profile may not exist yet if the trigger hasn't fired. Try insert.
+        try {
+          profBody.created_at = new Date().toISOString();
+          await api('/profiles', { m:'POST', p:'return=minimal', b: profBody });
+        } catch(ex2) {
+          // Both PATCH and POST failed — log but proceed, user can update later
+          console.warn('Could not finalise profile:', ex2);
+          toast('Account created but profile setup incomplete. Please update your profile in Settings.', false);
+        }
       }
       await authOnSignIn(d);
     } else {
-      // Email confirmation required
+      // Email confirmation required — store the chosen company_id locally so
+      // we can attach it after they confirm and sign in.
+      try { localStorage.setItem('pending_company_id_' + em.toLowerCase(), cid || ''); } catch(e) {}
       authShowPanel('signin');
       authShowSuccess('Account created! Check your email to confirm your address, then sign in.');
     }
@@ -2456,8 +2489,35 @@ function execExportReport() {
 let aiOpen=false,aiHist=[];
 function toggleAI(){aiOpen=!aiOpen;document.getElementById('ai-window').className='ai-window'+(aiOpen?' open':'');}
 const SYS='You are AURIS, an expert HSE AI assistant for AURIS360 by SEPHS Consulting (Mauritius). Analyse real HSE data and give specific, actionable recommendations. Be concise and professional.';
-const ANTHROPIC_URL='https://api.anthropic.com/v1/messages';
-const CLAUDE_MODEL='claude-sonnet-4-20250514';
+// ── AI configuration ──────────────────────────────────────────────────────────
+// Direct browser-to-Anthropic calls don't work — the Anthropic API requires
+// an API key, and exposing one client-side is insecure. For production AI,
+// set AI_PROXY_URL to a Supabase Edge Function (or any backend) that holds
+// the key. Until then, AI features show a friendly "configure proxy" message
+// rather than failing with cryptic network errors.
+const AI_PROXY_URL = null;  // e.g. 'https://<your-project>.supabase.co/functions/v1/ai-proxy'
+const ANTHROPIC_URL = AI_PROXY_URL || 'https://api.anthropic.com/v1/messages';
+const CLAUDE_MODEL = 'claude-sonnet-4-20250514';
+const AI_AVAILABLE = !!AI_PROXY_URL;
+
+// Global guard for direct Anthropic fetches. When AI is not configured, every
+// fetch to api.anthropic.com is intercepted and returns a synthetic error
+// response so the calling code can handle it gracefully with try/catch.
+(function() {
+  if (AI_AVAILABLE) return;
+  var _origFetch = window.fetch;
+  window.fetch = function(input, init) {
+    var url = (typeof input === 'string') ? input : (input && input.url);
+    if (url && url.indexOf('api.anthropic.com') !== -1) {
+      // Synthetic 503 response so caller's try/catch gets a sensible error
+      return Promise.resolve(new Response(
+        JSON.stringify({ error: { message: 'AI features require a backend proxy. Ask your administrator to set up AI_PROXY_URL.' } }),
+        { status: 503, headers: { 'Content-Type': 'application/json' } }
+      ));
+    }
+    return _origFetch.apply(this, arguments);
+  };
+})();
 
 async function getCtx(){
 try{
@@ -2487,6 +2547,9 @@ var aiCurrentTab = 'insights';
 // ── Real callAI implementation ────────────────────────────────────────────────
 // Replaces the stub with actual Anthropic API calls
 async function callAI(msgs, systemOverride) {
+  if(!AI_AVAILABLE) {
+    throw new Error('AI features require a backend proxy. Ask your administrator to configure AI_PROXY_URL in Settings → AI Setup.');
+  }
   var sys = systemOverride || SYS;
   var response = await fetch(ANTHROPIC_URL, {
     method: 'POST',
@@ -5246,9 +5309,14 @@ async function loadCoDrop(){
   try{
     const d=await api('/companies?select=id,name&active=eq.true&order=name');
     const regSel=document.getElementById('reg-company');
-    if(regSel) regSel.innerHTML = d?.length
-      ? '<option value="">Select company...</option>'+d.map(c=>'<option value="'+c.id+'">'+escH(c.name)+'</option>').join('')
-      : '<option value="">No companies yet</option>';
+    if(regSel){
+      // Special "__new__" option lets a new tester create + link a company in one go.
+      // doRegister() detects this value and prompts for the company name.
+      var createOpt = '<option value="__new__">➕ Create a new company…</option>';
+      regSel.innerHTML = d?.length
+        ? '<option value="">Select company...</option>' + createOpt + d.map(c=>'<option value="'+c.id+'">'+escH(c.name)+'</option>').join('')
+        : createOpt;
+    }
   }catch(e){}
   // Admin-side dropdowns use the locally cached list (populated by adminLoadCompanies)
   var adminSel = document.getElementById('co-drop') || document.getElementById('company-select');
@@ -16322,14 +16390,30 @@ function tbtActionRow(desc,assigned,due,idx){
 }
 
 function tbtAddAttendee(){
-  var el=document.getElementById('tbt-attendees-list');if(!el)return;
+  // HTML has three #tbt-attendees-list elements (in WS-linked TBT form, in WS-detail TBT form,
+  // and in the standalone TBT page). Find the one that's currently visible so the row appears
+  // where the user is actually looking.
+  var lists = document.querySelectorAll('#tbt-attendees-list');
+  var el = null;
+  for (var i = 0; i < lists.length; i++) {
+    if (lists[i].offsetParent !== null) { el = lists[i]; break; }  // offsetParent === null means hidden
+  }
+  if (!el) el = lists[0];  // fall back to first if nothing is visible
+  if (!el) return;
   var idx=el.querySelectorAll('.tbt-att-row').length;
   el.insertAdjacentHTML('beforeend',tbtAttendeeRow('','',idx));
   tbtUpdateCount();
 }
 
 function tbtAddAction(){
-  var el=document.getElementById('tbt-actions-list');if(!el)return;
+  // Same duplicate-ID issue as tbtAddAttendee — find the visible #tbt-actions-list.
+  var lists = document.querySelectorAll('#tbt-actions-list');
+  var el = null;
+  for (var i = 0; i < lists.length; i++) {
+    if (lists[i].offsetParent !== null) { el = lists[i]; break; }
+  }
+  if (!el) el = lists[0];
+  if (!el) return;
   var idx=el.querySelectorAll('.tbt-act-row').length;
   el.insertAdjacentHTML('beforeend',tbtActionRow('','','',idx));
 }
@@ -20461,7 +20545,9 @@ function badge(val, map) {
 
 // ── 1. INCIDENT REPORT ──────────────────────────────────────────
 function printIncidentReport(invId) {
-  var inv = (invAllData||[]).find(function(x){ return x.id === invId; });
+  // Look in the IMS data store first (canonical), fall back to the legacy var if present
+  var src = (typeof imsInvAllData !== 'undefined' ? imsInvAllData : null) || (typeof invAllData !== 'undefined' ? invAllData : []);
+  var inv = (src || []).find(function(x){ return x.id === invId; });
   if (!inv) { toast('Incident not found', false); return; }
 
   var sevMap = {critical:'badge-red', high:'badge-red', medium:'badge-amber', low:'badge-green', negligible:'badge-grey'};
