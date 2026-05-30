@@ -1495,17 +1495,59 @@ async function authInitSession() {
   // Always show login screen immediately — don't leave user stuck
   // Session restore happens silently and hides the login screen if successful
 
-  // Check URL hash for password reset token (#access_token=xxx&type=recovery)
+  // Check URL hash for password reset / invite / signup-confirm tokens
+  // These come back from Supabase Auth as: #access_token=xxx&refresh_token=yyy&type=zzz
   var hash = window.location.hash;
-  if(hash && hash.includes('type=recovery')) {
+  if(hash && (hash.includes('type=recovery') || hash.includes('type=invite') || hash.includes('type=signup'))) {
     var params = new URLSearchParams(hash.substring(1));
-    var recoveryToken = params.get('access_token');
-    if(recoveryToken) {
-      tok = recoveryToken;
+    var hashToken = params.get('access_token');
+    var hashRefreshToken = params.get('refresh_token');
+    var hashType = params.get('type');
+    if(hashToken) {
+      tok = hashToken;
+      // Persist the session so refresh/reload doesn't dump them back to login
+      try {
+        localStorage.setItem('auris360_session', JSON.stringify({
+          access_token: hashToken,
+          refresh_token: hashRefreshToken,
+          expires_at: Math.floor(Date.now()/1000) + 3600,  // ~1h, will refresh later
+          user: null
+        }));
+      } catch(_){}
       history.replaceState(null,'',window.location.pathname);
-      document.getElementById('login-screen').style.display='flex';
-      authShowPanel('update-pw');
-      return;
+
+      if(hashType === 'recovery') {
+        // Password recovery flow — show update-pw panel on login screen
+        document.getElementById('login-screen').style.display='flex';
+        authShowPanel('update-pw');
+        return;
+      }
+      // Invite or signup-confirm — load the dashboard, then force password change.
+      // We mark must_change_password and let loadProf trigger the pw-change modal.
+      try {
+        // Find the user id from the JWT we just received
+        var payload = JSON.parse(atob(hashToken.split('.')[1]));
+        var uid = payload.sub;
+        // Hide the login screen and show the dashboard scaffold
+        document.getElementById('login-screen').style.display = 'none';
+        document.getElementById('app').style.display = 'flex';
+        // Patch the profile to set must_change_password=true so loadProf shows the modal
+        try {
+          await api('/profiles?id=eq.' + uid, {
+            m:'PATCH', p:'return=minimal',
+            b: { must_change_password: true, updated_at: new Date().toISOString() }
+          });
+        } catch(patchErr) {
+          console.warn('Could not pre-flag must_change_password:', patchErr);
+        }
+        // Now load the profile — loadProf will detect must_change_password and prompt
+        await loadProf(uid);
+        await loadDash();
+        return;
+      } catch(e) {
+        console.error('Invite token handling failed:', e);
+        // Fall through to regular login
+      }
     }
   }
 
