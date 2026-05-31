@@ -18874,7 +18874,70 @@ function applyRoles() {
   var role = prof?.role || 'employee';
   var level = getRoleLevel(role);
 
-  // Nav visibility rules
+  // ── Phase 1: ensure every nav-item has an ID we can target ──
+  // Most static <div class="nav-item" onclick="showPage('X',this)"> items have
+  // no ID, which means we can't role-gate them. Walk them once and assign
+  // id="nav-{page}" based on the showPage(...) target in their onclick.
+  document.querySelectorAll('.nav-item').forEach(function(el){
+    if(el.id) return;  // already has an ID, leave it alone
+    var oc = el.getAttribute('onclick') || '';
+    var m = oc.match(/showPage\(['"]([^'"]+)['"]/);
+    if(m) el.id = 'nav-' + m[1];
+  });
+
+  // ── Phase 2: build the allowed-page set for the current role ──
+  // Mirrors the MOBILE_MODULES role arrays so mobile and desktop are
+  // consistent. 'all' means everyone sees it.
+  var roleAllowed = {
+    'sephs_admin': null,  // null = sees everything
+    'admin':       null,  // company admin sees everything in their company
+    'hse_manager': null,
+    'executive':   ['dashboard','executive','kpi','workschedule','events','observation',
+                    'inspection','risk','tools','permit','contractor','emergency',
+                    'ohealth','ppe','esg','noise','meetings','training','actions',
+                    'legal','sop','documents','people'],
+    'manager':     ['dashboard','executive','kpi','workschedule','events','observation',
+                    'inspection','risk','tools','permit','contractor','emergency',
+                    'ohealth','ppe','esg','noise','meetings','training','actions',
+                    'legal','sop','documents','people'],
+    'site_manager':['dashboard','kpi','workschedule','events','observation','inspection',
+                    'risk','tools','permit','contractor','emergency','ppe','esg','noise',
+                    'meetings','training','actions','sop','people'],
+    'supervisor':  ['dashboard','kpi','workschedule','events','observation','inspection',
+                    'risk','tools','permit','contractor','emergency','ppe','noise',
+                    'meetings','training','actions','sop'],
+    'auditor':     ['dashboard','events','observation','inspection','risk','legal',
+                    'documents','meetings','actions'],
+    'hr':          ['dashboard','kpi','training','people','documents','ohealth','meetings'],
+    'inspector':   ['dashboard','events','observation','inspection','risk','permit',
+                    'tools','ppe','meetings'],
+    'employee':    ['dashboard','events','observation','training','meetings','ppe','emergency'],
+    'contractor':  ['dashboard','events','observation','permit','tools','ppe','emergency','meetings'],
+    'user':        ['dashboard','events','observation','meetings'],  // fallback for the catch-all role
+  };
+
+  // ── Phase 3: apply the allowed set ──
+  // If allowed is null (admin/sephs_admin), show everything.
+  // Otherwise hide every nav item whose target page is NOT in the list.
+  var allowed = roleAllowed[role];
+  if(allowed) {
+    document.querySelectorAll('.nav-item').forEach(function(el){
+      if(!el.id || !el.id.startsWith('nav-')) return;
+      var pageKey = el.id.slice(4);  // 'nav-foo' → 'foo'
+      el.style.display = allowed.indexOf(pageKey) === -1 ? 'none' : 'flex';
+    });
+  } else {
+    // sephs_admin / admin / hse_manager — show everything by default
+    document.querySelectorAll('.nav-item').forEach(function(el){
+      if(el.style.display === 'none' && el.id !== 'nav-admin') {
+        // restore visibility, but leave nav-admin alone (handled below)
+        el.style.display = 'flex';
+      }
+    });
+  }
+
+  // ── Phase 4: legacy fine-grained rules (preserved from original) ──
+  // These run AFTER the bulk allow/hide so they can override edge cases.
   var navRules = {
     'nav-ai':       level >= 4,
     'nav-users':    level >= 3,
@@ -18887,45 +18950,25 @@ function applyRoles() {
     if(el) el.style.display = e[1] ? 'flex' : 'none';
   });
 
-  // Role-specific nav hiding for restricted roles
-  if(role === 'employee') {
-    ['nav-ai','nav-sop','nav-docs','nav-users','nav-settings'].forEach(function(id){
-      var e=document.getElementById(id);if(e)e.style.display='none';
-    });
-  }
-  if(role === 'contractor') {
-    ['nav-ai','nav-sop','nav-docs','nav-users','nav-settings','nav-training',
-     'nav-people','nav-legal','nav-noise','nav-esg','nav-ohealth'].forEach(function(id){
-      var e=document.getElementById(id);if(e)e.style.display='none';
-    });
-  }
-  if(role === 'executive') {
-    // Executive gets dashboard and reports only
-    ['nav-users','nav-settings','nav-admin','nav-ai'].forEach(function(id){
-      var e=document.getElementById(id);if(e)e.style.display='none';
-    });
-  }
-  if(role === 'auditor') {
-    // Auditors: read-mostly, full access to inspections
-    ['nav-users','nav-settings'].forEach(function(id){
-      var e=document.getElementById(id);if(e)e.style.display='none';
-    });
-  }
-  if(role === 'hr') {
-    // HR: people, training, OH
-    ['nav-users','nav-settings','nav-ai'].forEach(function(id){
-      var e=document.getElementById(id);if(e)e.style.display='none';
-    });
-  }
-  // Inspector (legacy) = supervisor
-  if(role === 'inspector') {
-    ['nav-ai','nav-inv','nav-docs','nav-users','nav-settings','nav-legal',
-     'nav-sop','nav-admin','nav-people'].forEach(function(id){
-      var e=document.getElementById(id);if(e)e.style.display='none';
-    });
-  }
+  // ── Phase 5: hide nav section headers if all their items are hidden ──
+  // The .nav-section labels ("Main", "HSE Modules", "Management") look orphaned
+  // if every child below them is hidden. Hide the label too.
+  document.querySelectorAll('.nav-section').forEach(function(label){
+    var sibling = label.nextElementSibling;
+    var anyVisible = false;
+    while(sibling && !sibling.classList.contains('nav-section') && !sibling.classList.contains('sb-footer')) {
+      if(sibling.classList.contains('nav-item') && sibling.style.display !== 'none') {
+        anyVisible = true;
+        break;
+      }
+      sibling = sibling.nextElementSibling;
+    }
+    label.style.display = anyVisible ? '' : 'none';
+  });
 
-  // Role banner on dashboard
+  // ── Phase 6: role-banner on dashboard ──
+  // Shows a friendly "Logged in as X" hint for restricted roles, explaining
+  // what they can do. Helps testers understand why some menus are hidden.
   var banner = document.getElementById('role-banner-dash');
   if(banner) {
     var rc = HSE_ROLES[role] || {emoji:'👤',label:role,color:'#6B7280'};
@@ -18938,7 +18981,9 @@ function applyRoles() {
     }
   }
 
-  // Add/Remove buttons visibility for non-managers
+  // ── Phase 7: hide "Add new" buttons for non-manager roles ──
+  // Inspectors, employees etc. shouldn't see "Create" buttons even if they
+  // somehow land on a page where they exist.
   if(level < 2) {
     document.querySelectorAll('.btn-primary[onclick*="New"], .btn-primary[onclick*="new"], #insp-new-btn, #ims-report-btn').forEach(function(btn){
       if(btn.id!=='ims-report-btn') btn.style.display='none';
