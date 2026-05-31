@@ -1676,6 +1676,12 @@ if(prof.must_change_password) {
 function pwChangeShow(forced) {
   var modal = document.getElementById('pw-change-modal');
   if(!modal) return;
+  // Move the modal to <body> if it's still nested in a page container.
+  // Without this, when the user is not on the Users page, the modal
+  // inherits display:none from its parent and renders with 0 x 0 size.
+  if(modal.parentElement !== document.body) {
+    document.body.appendChild(modal);
+  }
   modal.dataset.forced = forced ? '1' : '0';
   document.getElementById('pw-change-close-btn').style.display = forced ? 'none' : 'inline-flex';
   document.getElementById('pw-change-cancel-btn').style.display = forced ? 'none' : 'inline-flex';
