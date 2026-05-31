@@ -18919,11 +18919,18 @@ function applyRoles() {
   // ── Phase 3: apply the allowed set ──
   // If allowed is null (admin/sephs_admin), show everything.
   // Otherwise hide every nav item whose target page is NOT in the list.
+  // We read the page key from the onclick (not the id), because some items
+  // have legacy IDs like "nav-mtg" that don't match the page key "meetings".
+  function navPageKey(el) {
+    var oc = el.getAttribute('onclick') || '';
+    var m = oc.match(/showPage\(['"]([^'"]+)['"]/);
+    return m ? m[1] : null;
+  }
   var allowed = roleAllowed[role];
   if(allowed) {
     document.querySelectorAll('.nav-item').forEach(function(el){
-      if(!el.id || !el.id.startsWith('nav-')) return;
-      var pageKey = el.id.slice(4);  // 'nav-foo' → 'foo'
+      var pageKey = navPageKey(el);
+      if(!pageKey) return;
       el.style.display = allowed.indexOf(pageKey) === -1 ? 'none' : 'flex';
     });
   } else {
