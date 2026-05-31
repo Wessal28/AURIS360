@@ -1886,7 +1886,53 @@ const opts='<option value="">Select person...</option>'+people.map(p=>'<option v
 const ms=document.getElementById('tf-attendees');
 if(ms)ms.innerHTML=people.map(p=>'<option value="'+p.id+'">'+p.last_name+', '+p.first_name+'</option>').join('');
 }
+// ── Role → allowed pages map ────────────────────────────────────────
+// Used by applyRoles() (hides sidebar items) AND showPage() (blocks navigation
+// to pages a role isn't allowed to access, no matter how the call was made).
+// null = sees everything. Otherwise = explicit allow-list.
+var ROLE_ALLOWED = {
+  'sephs_admin': null,
+  'admin':       null,
+  'hse_manager': null,
+  'executive':   ['dashboard','executive','kpi','workschedule','events','observation',
+                  'inspection','risk','tools','permit','contractor','emergency',
+                  'ohealth','ppe','esg','noise','meetings','training','actions',
+                  'legal','sop','documents','people'],
+  'manager':     ['dashboard','executive','kpi','workschedule','events','observation',
+                  'inspection','risk','tools','permit','contractor','emergency',
+                  'ohealth','ppe','esg','noise','meetings','training','actions',
+                  'legal','sop','documents','people'],
+  'site_manager':['dashboard','kpi','workschedule','events','observation','inspection',
+                  'risk','tools','permit','contractor','emergency','ppe','esg','noise',
+                  'meetings','training','actions','sop','people'],
+  'supervisor':  ['dashboard','kpi','workschedule','events','observation','inspection',
+                  'risk','tools','permit','contractor','emergency','ppe','noise',
+                  'meetings','training','actions','sop'],
+  'auditor':     ['dashboard','events','observation','inspection','risk','legal',
+                  'documents','meetings','actions'],
+  'hr':          ['dashboard','kpi','training','people','documents','ohealth','meetings'],
+  'inspector':   ['dashboard','events','observation','inspection','risk','permit',
+                  'tools','ppe','meetings'],
+  'employee':    ['dashboard','events','observation','training','meetings','ppe','emergency'],
+  'contractor':  ['dashboard','events','observation','permit','tools','ppe','emergency','meetings'],
+  'user':        ['dashboard','events','observation','meetings'],
+};
+
+// Returns true if the current user's role is allowed to access `pageKey`.
+function canAccessPage(pageKey) {
+  var role = prof?.role || 'employee';
+  var allowed = ROLE_ALLOWED[role];
+  if(allowed === null || allowed === undefined) return true;  // null = sees all; undefined role = treat as allowed by default
+  return allowed.indexOf(pageKey) !== -1;
+}
+
 function showPage(name,el){
+  // Block access to restricted pages regardless of how this was called
+  // (sidebar click, dashboard card, programmatic call, deep link).
+  if(!canAccessPage(name)) {
+    if(typeof toast === 'function') toast('You don\'t have permission to access this module.', false);
+    return;
+  }
 
 // Hide all pages using inline style
 document.querySelectorAll('.page').forEach(p=>{
@@ -18885,36 +18931,9 @@ function applyRoles() {
     if(m) el.id = 'nav-' + m[1];
   });
 
-  // ── Phase 2: build the allowed-page set for the current role ──
-  // Mirrors the MOBILE_MODULES role arrays so mobile and desktop are
-  // consistent. 'all' means everyone sees it.
-  var roleAllowed = {
-    'sephs_admin': null,  // null = sees everything
-    'admin':       null,  // company admin sees everything in their company
-    'hse_manager': null,
-    'executive':   ['dashboard','executive','kpi','workschedule','events','observation',
-                    'inspection','risk','tools','permit','contractor','emergency',
-                    'ohealth','ppe','esg','noise','meetings','training','actions',
-                    'legal','sop','documents','people'],
-    'manager':     ['dashboard','executive','kpi','workschedule','events','observation',
-                    'inspection','risk','tools','permit','contractor','emergency',
-                    'ohealth','ppe','esg','noise','meetings','training','actions',
-                    'legal','sop','documents','people'],
-    'site_manager':['dashboard','kpi','workschedule','events','observation','inspection',
-                    'risk','tools','permit','contractor','emergency','ppe','esg','noise',
-                    'meetings','training','actions','sop','people'],
-    'supervisor':  ['dashboard','kpi','workschedule','events','observation','inspection',
-                    'risk','tools','permit','contractor','emergency','ppe','noise',
-                    'meetings','training','actions','sop'],
-    'auditor':     ['dashboard','events','observation','inspection','risk','legal',
-                    'documents','meetings','actions'],
-    'hr':          ['dashboard','kpi','training','people','documents','ohealth','meetings'],
-    'inspector':   ['dashboard','events','observation','inspection','risk','permit',
-                    'tools','ppe','meetings'],
-    'employee':    ['dashboard','events','observation','training','meetings','ppe','emergency'],
-    'contractor':  ['dashboard','events','observation','permit','tools','ppe','emergency','meetings'],
-    'user':        ['dashboard','events','observation','meetings'],  // fallback for the catch-all role
-  };
+  // ── Phase 2: read allowed pages from shared ROLE_ALLOWED map ──
+  // (defined near showPage so both can consult it)
+  var roleAllowed = (typeof ROLE_ALLOWED !== 'undefined') ? ROLE_ALLOWED : {};
 
   // ── Phase 3: apply the allowed set ──
   // If allowed is null (admin/sephs_admin), show everything.
