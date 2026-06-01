@@ -48,6 +48,81 @@
 
 @keyframes spin{to{transform:rotate(360deg)}}
 
+/* ═══════════════════════════════════════════════════════
+   AURIS360 DASHBOARD REDESIGN (Stage 1-5)
+   Status-tinted KPI cards, sparklines, hero section
+   ═══════════════════════════════════════════════════════ */
+
+@keyframes skel { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+
+.kpi-card {
+  padding: 14px 16px;
+  border-radius: 12px;
+  position: relative;
+  cursor: pointer;
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
+  border: 1px solid transparent;
+  background: #F9FAFB;
+  animation: fadeIn 0.3s ease both;
+}
+.kpi-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(0,0,0,0.06);
+}
+.kpi-card[data-tone="green"] { background: #ECFDF5; border-color: #D1FAE5; }
+.kpi-card[data-tone="amber"] { background: #FFFBEB; border-color: #FEF3C7; }
+.kpi-card[data-tone="red"]   { background: #FEF2F2; border-color: #FECACA; }
+.kpi-card[data-tone="blue"]  { background: #EFF6FF; border-color: #DBEAFE; }
+.kpi-card[data-tone="grey"]  { background: #F9FAFB; border-color: #E5E7EB; }
+
+.kpi-icon {
+  width: 32px; height: 32px;
+  border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 16px;
+  margin-bottom: 10px;
+  background: rgba(255,255,255,0.7);
+}
+.kpi-card[data-tone="green"] .kpi-icon { background: #10B981; color: white; }
+.kpi-card[data-tone="amber"] .kpi-icon { background: #F59E0B; color: white; }
+.kpi-card[data-tone="red"]   .kpi-icon { background: #EF4444; color: white; }
+.kpi-card[data-tone="blue"]  .kpi-icon { background: #3B82F6; color: white; }
+.kpi-card[data-tone="grey"]  .kpi-icon { background: #6B7280; color: white; }
+
+.kpi-label {
+  font-size: 11px;
+  color: #6B7280;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.kpi-value {
+  font-size: 26px;
+  font-weight: 800;
+  line-height: 1.1;
+  margin: 4px 0 6px;
+  letter-spacing: -0.02em;
+  color: #111827;
+}
+.kpi-card[data-tone="green"] .kpi-value { color: #065F46; }
+.kpi-card[data-tone="amber"] .kpi-value { color: #92400E; }
+.kpi-card[data-tone="red"]   .kpi-value { color: #991B1B; }
+.kpi-card[data-tone="blue"]  .kpi-value { color: #1E40AF; }
+.kpi-card[data-tone="grey"]  .kpi-value { color: #374151; }
+
+.kpi-trend {
+  font-size: 11px;
+  color: #6B7280;
+  line-height: 1.3;
+}
+.kpi-spark {
+  width: 100%;
+  height: 22px;
+  margin-top: 8px;
+  display: block;
+}
+
 
 
 /* ═══════════════════════════════════════════════════════
@@ -2063,6 +2138,25 @@ async function loadDash() {
     dashRenderTrendChart(events);
     dashRenderSeverityChart(events);
     dashRenderComplianceRings(compPct, trainPct, permits.length);
+    
+    // ─── Dashboard redesign hooks (Stage 1-5) ───
+    dashRenderGreeting();
+    dashRenderHero(events);
+    dashApplyTones({
+      openEvents: openEvents.length,
+      overdueActions: overdueActions.length,
+      trainPct: trainPct,
+      permits: permits.length,
+      expCerts: expCerts.length,
+      ltifr: ltifr,
+      trir: trir,
+      compPct: compPct,
+      envInc: envInc.length,
+      auditScore: lastInsp ? Math.round(((lastInsp.score_good||0)/((lastInsp.score_good||0)+(lastInsp.score_insuf||0)||1))*100) : null,
+      kpiTotal: kpiTotal,
+      kpiOK: kpiOK
+    });
+    dashRenderSparklines(events, actions, people);
     dashRenderDeptHeatmap(events, people);
     dashRenderHighRisk(permits, events);
 
@@ -2092,6 +2186,185 @@ async function loadDash() {
   }
 }
 
+// ═══════════════════════════════════════════════════════════════════════
+// DASHBOARD REDESIGN HELPERS (Stage 1-5)
+// Greeting / hero / status tones / sparklines / donut charts
+// ═══════════════════════════════════════════════════════════════════════
+
+// ── Greeting + date line ──────────────────────────────────────────────
+function dashRenderGreeting() {
+  var now = new Date();
+  var hour = now.getHours();
+  var greet = hour<5?'Good evening':hour<12?'Good morning':hour<18?'Good afternoon':'Good evening';
+  var name = (prof?.full_name||'').split(' ')[0] || prof?.email?.split('@')[0] || 'there';
+  var coName = co?.name || '';
+  var greetEl = document.getElementById('dash-greeting');
+  if(greetEl) greetEl.textContent = greet + ', ' + name;
+  var dateLine = now.toLocaleDateString('en-GB',{weekday:'long',day:'2-digit',month:'long',year:'numeric'});
+  var dl = document.getElementById('dash-date-line');
+  if(dl) dl.textContent = dateLine + (coName?(' · '+coName.toUpperCase()):'');
+  var labelEl = document.getElementById('dash-label');
+  if(labelEl) labelEl.textContent = 'Updated '+now.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})+' · live overview';
+}
+
+// ── Hero card (Days Since Last LTI) ───────────────────────────────────
+function dashRenderHero(events) {
+  var daysEl = document.getElementById('dash-hero-days');
+  var ctxEl  = document.getElementById('dash-hero-context');
+  if(!daysEl) return;
+  // Find the most recent LTI or serious injury
+  var ltis = (events||[]).filter(function(x){
+    return x.injury_type==='lti' || (x.lost_time_days&&x.lost_time_days>0) || x.severity==='critical';
+  }).map(function(x){
+    return new Date(x.event_date||x.created_at||0);
+  }).filter(function(d){return !isNaN(d);}).sort(function(a,b){return b-a;});
+  
+  if(ltis.length === 0) {
+    daysEl.textContent = '—';
+    if(ctxEl) ctxEl.innerHTML = '✓ No lost-time incidents on record yet';
+    return;
+  }
+  var lastLTI = ltis[0];
+  var days = Math.floor((Date.now() - lastLTI) / 86400000);
+  daysEl.textContent = days;
+  if(ctxEl) {
+    var msg = days >= 30 ? '↑ Strong safety streak' :
+              days >= 7  ? 'Building back up — keep watch' :
+                           '⚠ Recent incident, vigilance needed';
+    ctxEl.innerHTML = msg + ' · last LTI on '+lastLTI.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'});
+  }
+}
+
+// ── Status tone logic for KPI cards ───────────────────────────────────
+// Each KPI gets its background tone reset based on actual data thresholds.
+function dashApplyTones(metrics) {
+  function setTone(id, tone) {
+    var card = document.querySelector('.kpi-card[data-id="'+id+'"]');
+    if(card) card.setAttribute('data-tone', tone);
+  }
+  // Open incidents: 0=green, 1-2=amber, 3+=red
+  var ev = metrics.openEvents;
+  setTone('d-events', ev===0?'green':ev<=2?'amber':'red');
+  // Open actions: by overdue count
+  var ovd = metrics.overdueActions;
+  setTone('d-actions', ovd===0?'green':ovd<=2?'amber':'red');
+  // Training compliance: <70=red, 70-85=amber, >85=green
+  var tp = metrics.trainPct;
+  setTone('d-training-pct', tp>=85?'green':tp>=70?'amber':'red');
+  // Workforce: always blue (informational)
+  setTone('d-people', 'blue');
+  // Active PTW: blue informational (high values mean activity, not bad)
+  setTone('d-permits', metrics.permits>10?'amber':'blue');
+  // Certs expiring: 0=green, 1-3=amber, 4+=red
+  var ce = metrics.expCerts;
+  setTone('d-certs', ce===0?'green':ce<=3?'amber':'red');
+  // LTIFR: <2=green, 2-4=amber, >4=red
+  var lt = parseFloat(metrics.ltifr)||0;
+  setTone('d-ltifr', lt<2?'green':lt<=4?'amber':'red');
+  // TRIR: <1=green, 1-3=amber, >3=red
+  var tr = parseFloat(metrics.trir)||0;
+  setTone('d-trir', tr<1?'green':tr<=3?'amber':'red');
+  // Legal compliance: <60=red, 60-80=amber, >=80=green
+  var cp = metrics.compPct;
+  setTone('d-compliance', cp>=80?'green':cp>=60?'amber':'red');
+  // Env incidents: 0=green, 1-2=amber, 3+=red
+  var en = metrics.envInc;
+  setTone('d-env', en===0?'green':en<=2?'amber':'red');
+  // Audit score: <60=red, 60-80=amber, >=80=green
+  var as = metrics.auditScore;
+  if(as === null || as === undefined) {
+    setTone('d-audit-score', 'grey');
+  } else {
+    setTone('d-audit-score', as>=80?'green':as>=60?'amber':'red');
+  }
+  // KPIs on track: by ratio
+  var kt = metrics.kpiTotal||0;
+  var kr = kt>0 ? metrics.kpiOK/kt : 0;
+  setTone('d-kpis', kr>=0.8?'green':kr>=0.5?'amber':kt>0?'red':'blue');
+}
+
+// ── Sparklines ─────────────────────────────────────────────────────────
+// Build a 12-week sparkline of monthly-ish data given a list of events,
+// a filter function, and a target SVG id.
+function dashBuildSparkline(sparkId, dataPoints, color) {
+  var svg = document.getElementById(sparkId);
+  if(!svg) return;
+  if(!dataPoints || dataPoints.length === 0) {
+    svg.innerHTML = '';
+    return;
+  }
+  // Normalize to 0-22 (svg viewBox is 100 x 24)
+  var max = Math.max.apply(null, dataPoints), min = Math.min.apply(null, dataPoints);
+  var range = max - min || 1;
+  var step = 100 / Math.max(dataPoints.length - 1, 1);
+  var points = dataPoints.map(function(v, i) {
+    var y = 22 - ((v - min) / range) * 20;
+    return (i*step).toFixed(1) + ',' + y.toFixed(1);
+  }).join(' ');
+  svg.innerHTML = '<polyline points="'+points+'" stroke="'+color+'" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/>';
+}
+
+// Compute month-by-month counts of events matching a filter, over the last N months
+function dashMonthlyCounts(events, filterFn, months) {
+  months = months || 8;
+  var now = new Date();
+  var buckets = [];
+  for(var i=months-1; i>=0; i--) {
+    var d = new Date(now.getFullYear(), now.getMonth()-i, 1);
+    var dEnd = new Date(now.getFullYear(), now.getMonth()-i+1, 1);
+    var count = (events||[]).filter(function(x){
+      var dt = new Date(x.event_date||x.created_at||0);
+      return !isNaN(dt) && dt>=d && dt<dEnd && filterFn(x);
+    }).length;
+    buckets.push(count);
+  }
+  return buckets;
+}
+
+function dashRenderSparklines(events, actions, people) {
+  var sparkColors = {
+    'd-events-spark':       '#DC2626',
+    'd-actions-spark':      '#F59E0B',
+    'd-training-pct-spark': '#10B981',
+    'd-people-spark':       '#3B82F6',
+    'd-permits-spark':      '#6B7280',
+    'd-certs-spark':        '#F59E0B',
+    'd-ltifr-spark':        '#10B981',
+    'd-trir-spark':         '#10B981',
+    'd-env-spark':          '#10B981',
+    'd-audit-score-spark':  '#3B82F6',
+    'd-kpis-spark':         '#3B82F6',
+  };
+  // Incidents trend
+  dashBuildSparkline('d-events-spark',
+    dashMonthlyCounts(events, function(x){return x.event_type!=='near_miss';}, 8),
+    sparkColors['d-events-spark']);
+  // Actions trend — count of actions created per month
+  dashBuildSparkline('d-actions-spark',
+    dashMonthlyCounts(actions, function(){return true;}, 8),
+    sparkColors['d-actions-spark']);
+  // LTIs over months
+  dashBuildSparkline('d-ltifr-spark',
+    dashMonthlyCounts(events, function(x){return x.injury_type==='lti'||x.lost_time_days>0;}, 8),
+    sparkColors['d-ltifr-spark']);
+  // Recordable
+  dashBuildSparkline('d-trir-spark',
+    dashMonthlyCounts(events, function(x){return ['injury','lti','medical_treatment','restricted_work'].includes(x.event_type)||x.injury_type;}, 8),
+    sparkColors['d-trir-spark']);
+  // Env incidents
+  dashBuildSparkline('d-env-spark',
+    dashMonthlyCounts(events, function(x){return x.event_type==='environmental';}, 8),
+    sparkColors['d-env-spark']);
+  // The rest get a soft placeholder line until we have real timeseries data
+  ['d-training-pct-spark','d-people-spark','d-permits-spark','d-certs-spark','d-audit-score-spark','d-kpis-spark'].forEach(function(id){
+    var svg = document.getElementById(id);
+    if(svg && !svg.innerHTML) {
+      // Subtle baseline only (no fake spikes)
+      svg.innerHTML = '<line x1="0" y1="12" x2="100" y2="12" stroke="'+sparkColors[id]+'" stroke-width="1" opacity="0.25" stroke-dasharray="2,2"/>';
+    }
+  });
+}
+
 function dashRenderTrendChart(events) {
   var el = document.getElementById('dash-trend-chart');
   var labEl = document.getElementById('dash-trend-labels');
@@ -2105,14 +2378,14 @@ function dashRenderTrendChart(events) {
     var nm  = events.filter(function(x){var dt=x.event_date||x.created_at||'';return dt&&new Date(dt).getMonth()===mm&&new Date(dt).getFullYear()===yy&&x.event_type==='near_miss';}).length;
     months.push({label,inc,nm});
   }
-  var maxV = Math.max(...months.map(function(m){return m.inc+m.nm;}), 1);
+  var maxV = Math.max.apply(null, months.map(function(m){return m.inc+m.nm;}).concat([1]));
   el.innerHTML = months.map(function(m) {
-    var hInc = Math.max(Math.round(m.inc/maxV*100), m.inc>0?4:0);
-    var hNm  = Math.max(Math.round(m.nm/maxV*100),  m.nm>0?4:0);
+    var hInc = Math.max(Math.round(m.inc/maxV*100), m.inc>0?6:0);
+    var hNm  = Math.max(Math.round(m.nm/maxV*100),  m.nm>0?6:0);
     return '<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:1px">'
-      +(m.nm>0?'<div style="width:100%;height:'+hNm+'px;background:#EF9F27;border-radius:2px 2px 0 0" title="Near miss: '+m.nm+'"></div>':'')
-      +(m.inc>0?'<div style="width:100%;height:'+hInc+'px;background:#DC2626;border-radius:'+(m.nm?'0':'2px 2px')+' 0 0" title="Incidents: '+m.inc+'"></div>':'')
-      +(m.inc===0&&m.nm===0?'<div style="width:100%;height:2px;background:#f3f4f6;border-radius:2px"></div>':'')
+      +(m.nm>0?'<div style="width:80%;height:'+hNm+'px;background:#EF9F27;border-radius:3px 3px 0 0;transition:height .5s" title="Near miss: '+m.nm+'"></div>':'')
+      +(m.inc>0?'<div style="width:80%;height:'+hInc+'px;background:#DC2626;border-radius:'+(m.nm?'0':'3px 3px')+' 0 0;transition:height .5s" title="Incidents: '+m.inc+'"></div>':'')
+      +(m.inc===0&&m.nm===0?'<div style="width:80%;height:2px;background:#E5E7EB;border-radius:2px"></div>':'')
       +'</div>';
   }).join('');
   if(labEl) labEl.innerHTML = months.map(function(m){return '<div style="flex:1;text-align:center;font-size:9px;color:var(--text2)">'+m.label+'</div>';}).join('');
@@ -2122,36 +2395,51 @@ function dashRenderSeverityChart(events) {
   var el = document.getElementById('dash-severity-chart'); if(!el) return;
   var sevs = {critical:0,high:0,medium:0,low:0};
   events.forEach(function(x){if(x.severity&&sevs.hasOwnProperty(x.severity))sevs[x.severity]++;});
-  var total = events.length || 1;
-  var colors = {critical:'#DC2626',high:'#F97316',medium:'#EF9F27',low:'#1D9E75'};
-  el.innerHTML = Object.entries(sevs).map(function(e) {
-    var pct = Math.round(e[1]/total*100);
-    return '<div style="display:flex;align-items:center;gap:6px">'
-      +'<span style="font-size:11px;font-weight:700;color:'+colors[e[0]]+';min-width:55px;text-transform:capitalize">'+e[0]+'</span>'
-      +'<div style="flex:1;height:8px;background:#f3f4f6;border-radius:99px;overflow:hidden">'
-      +'<div style="width:'+pct+'%;height:100%;background:'+colors[e[0]]+';border-radius:99px;transition:width .8s"></div></div>'
-      +'<span style="font-size:11px;font-weight:700;min-width:22px;text-align:right">'+e[1]+'</span>'
-      +'</div>';
+  var total = sevs.critical+sevs.high+sevs.medium+sevs.low;
+  if(total===0) {
+    el.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text2);font-size:11px">No severity data yet</div>';
+    return;
+  }
+  var colors = {critical:'#DC2626',high:'#F97316',medium:'#EF9F27',low:'#10B981'};
+  // Build a stacked donut
+  var r = 38, c = 2*Math.PI*r;
+  var offset = 0;
+  var segments = '';
+  Object.entries(sevs).forEach(function(e){
+    var pct = e[1]/total;
+    if(pct === 0) return;
+    var dash = pct * c;
+    segments += '<circle cx="50" cy="50" r="'+r+'" fill="none" stroke="'+colors[e[0]]+'" stroke-width="14" stroke-dasharray="'+dash.toFixed(1)+' '+c.toFixed(1)+'" stroke-dashoffset="'+(-offset).toFixed(1)+'" transform="rotate(-90 50 50)"/>';
+    offset += dash;
+  });
+  var legend = Object.entries(sevs).map(function(e){
+    return '<div style="display:flex;align-items:center;gap:5px;font-size:10px;justify-content:space-between"><span style="display:flex;align-items:center;gap:5px"><span style="width:8px;height:8px;background:'+colors[e[0]]+';border-radius:2px;display:inline-block"></span><span style="text-transform:capitalize;color:var(--text2)">'+e[0]+'</span></span><span style="font-weight:700">'+e[1]+'</span></div>';
   }).join('');
+  el.innerHTML = '<svg width="120" height="120" viewBox="0 0 100 100" style="margin:0 auto;display:block">'
+    +'<circle cx="50" cy="50" r="'+r+'" fill="none" stroke="#F3F4F6" stroke-width="14"/>'
+    +segments
+    +'<text x="50" y="49" text-anchor="middle" font-size="20" font-weight="800" fill="#111827">'+total+'</text>'
+    +'<text x="50" y="62" text-anchor="middle" font-size="8" fill="#6B7280">total</text>'
+    +'</svg>'
+    +'<div style="margin-top:10px;display:flex;flex-direction:column;gap:4px;text-align:left">'+legend+'</div>';
 }
 
 function dashRenderComplianceRings(compPct, trainPct, permits) {
   var el = document.getElementById('dash-compliance-ring'); if(!el) return;
-  var items = [
-    {label:'Legal compliance', pct:compPct, color:'#1D9E75'},
-    {label:'Training', pct:Math.min(trainPct,100), color:'#0891B2'},
-    {label:'Active PTW', value:permits+' live', pct:permits>0?75:0, color:'#EF9F27'},
-  ];
-  el.innerHTML = items.map(function(item) {
-    return '<div>'
-      +'<div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:2px">'
-      +'<span style="font-weight:600">'+item.label+'</span>'
-      +'<span style="font-weight:700;color:'+item.color+'">'+(item.value||item.pct+'%')+'</span>'
-      +'</div>'
-      +'<div style="height:6px;background:#f3f4f6;border-radius:99px;overflow:hidden">'
-      +'<div style="width:'+item.pct+'%;height:100%;background:'+item.color+';border-radius:99px;transition:width .8s"></div>'
-      +'</div></div>';
-  }).join('');
+  var pct = Math.max(0, Math.min(100, compPct||0));
+  var color = pct>=80?'#10B981':pct>=60?'#F59E0B':'#DC2626';
+  var r = 38, c = 2*Math.PI*r;
+  var dash = (pct/100) * c;
+  el.innerHTML = '<svg width="120" height="120" viewBox="0 0 100 100" style="margin:0 auto;display:block">'
+    +'<circle cx="50" cy="50" r="'+r+'" fill="none" stroke="#F3F4F6" stroke-width="14"/>'
+    +'<circle cx="50" cy="50" r="'+r+'" fill="none" stroke="'+color+'" stroke-width="14" stroke-dasharray="'+dash.toFixed(1)+' '+c.toFixed(1)+'" stroke-linecap="round" transform="rotate(-90 50 50)"/>'
+    +'<text x="50" y="49" text-anchor="middle" font-size="20" font-weight="800" fill="#111827">'+pct+'%</text>'
+    +'<text x="50" y="62" text-anchor="middle" font-size="8" fill="#6B7280">legal</text>'
+    +'</svg>'
+    +'<div style="margin-top:10px;display:flex;flex-direction:column;gap:6px;text-align:left">'
+    +'<div style="display:flex;justify-content:space-between;font-size:11px"><span style="color:var(--text2)">Training</span><span style="font-weight:700;color:'+(trainPct>=85?'#10B981':trainPct>=70?'#F59E0B':'#DC2626')+'">'+Math.min(trainPct,100)+'%</span></div>'
+    +'<div style="display:flex;justify-content:space-between;font-size:11px"><span style="color:var(--text2)">Active PTW</span><span style="font-weight:700">'+permits+'</span></div>'
+    +'</div>';
 }
 
 function dashRenderDeptHeatmap(events, people) {
@@ -21803,186 +22091,264 @@ async function obCreate() {
 <!-- DASHBOARD (Real-time HSE)                             -->
 <!-- ══════════════════════════════════════════════════════ -->
 <div id="page-dashboard" class="page active">
-<div class="page-header" style="margin-bottom:10px">
-<div>
-<div class="page-title">Real-Time HSE Dashboard</div>
-<div style="font-size:12px;color:var(--text2)" id="dash-label">Live operational overview — refreshes automatically</div>
-</div>
-<div style="display:flex;gap:8px;align-items:center">
-<select id="dash-dept-filter" onchange="loadDash()" style="padding:6px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px">
-<option value="">All departments</option>
-</select>
-<button class="btn btn-sm" onclick="loadDash()" style="gap:4px"><i class="ti ti-refresh" id="dash-refresh-icon"></i>Refresh</button>
-<button class="btn btn-sm btn-primary" onclick="showPage('executive',document.getElementById('nav-executive'))"><i class="ti ti-chart-bar"></i>Executive View</button>
-<button class="btn btn-sm" onclick="printMonthlySummary()" title="Monthly PDF Report"><i class="ti ti-file-analytics"></i>Monthly Report</button>
-</div>
+
+<!-- ════════════════════════════════════════════════════════════════════════
+     GREETING BAR — personalised header with name, date, controls
+     ════════════════════════════════════════════════════════════════════════ -->
+<div style="display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:18px;flex-wrap:wrap;gap:12px">
+  <div>
+    <div style="font-size:11px;color:var(--text2);font-family:monospace;letter-spacing:.1em;text-transform:uppercase;margin-bottom:4px" id="dash-date-line">—</div>
+    <div style="font-size:24px;font-weight:800;color:var(--text);letter-spacing:-0.01em" id="dash-greeting">Good day</div>
+    <div style="font-size:12px;color:var(--text2);margin-top:2px" id="dash-label">Live operational overview</div>
+  </div>
+  <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+    <select id="dash-dept-filter" onchange="loadDash()" style="padding:7px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px;background:#fff">
+      <option value="">All departments</option>
+    </select>
+    <button class="btn btn-sm" onclick="loadDash()" style="gap:4px"><i class="ti ti-refresh" id="dash-refresh-icon"></i>Refresh</button>
+    <button class="btn btn-sm btn-primary" onclick="showPage('executive',document.getElementById('nav-executive'))"><i class="ti ti-chart-bar"></i>Executive View</button>
+    <button class="btn btn-sm" onclick="printMonthlySummary()" title="Monthly PDF Report"><i class="ti ti-file-analytics"></i>Monthly Report</button>
+  </div>
 </div>
 
-<!-- Role banner -->
-<div id="role-banner-dash" style="display:none;margin-bottom:10px"></div>
+<!-- Role banner (for non-admin roles) -->
+<div id="role-banner-dash" style="display:none;margin-bottom:12px"></div>
 
 <!-- Critical alert bar -->
-<div id="dash-alert-bar" style="display:none;margin-bottom:12px;background:#FCEBEB;border:2px solid #DC2626;border-radius:10px;padding:10px 16px;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-<i class="ti ti-alert-triangle" style="color:#DC2626;font-size:20px;flex-shrink:0"></i>
-<div id="dash-alert-text" style="flex:1;font-size:12px;font-weight:600;color:#A32D2D"></div>
-<button class="btn btn-sm" style="background:#DC2626;color:#fff;border-color:#DC2626;flex-shrink:0" onclick="showPage('events',document.querySelector('.nav-item'))">View incidents</button>
+<div id="dash-alert-bar" style="display:none;margin-bottom:12px;background:#FCEBEB;border:2px solid #DC2626;border-radius:10px;padding:10px 16px;align-items:center;gap:10px;flex-wrap:wrap">
+  <i class="ti ti-alert-triangle" style="color:#DC2626;font-size:20px;flex-shrink:0"></i>
+  <div id="dash-alert-text" style="flex:1;font-size:12px;font-weight:600;color:#A32D2D"></div>
+  <button class="btn btn-sm" style="background:#DC2626;color:#fff;border-color:#DC2626;flex-shrink:0" onclick="showPage('events',document.querySelector('.nav-item'))">View incidents</button>
 </div>
 
-<!-- KPI Metrics Row 1: Safety -->
-<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:8px;margin-bottom:10px">
-<div class="card" style="padding:10px 12px;border-left:4px solid #DC2626;cursor:pointer" onclick="showPage('events',null)">
-<div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;letter-spacing:.05em">Open Incidents</div>
-<div style="font-size:24px;font-weight:800;color:#DC2626" id="d-events">—</div>
-<div style="font-size:10px;color:var(--text2)" id="d-events-sub">this month</div>
-</div>
-<div class="card" style="padding:10px 12px;border-left:4px solid #C2410C;cursor:pointer" onclick="showPage('actions',null)">
-<div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;letter-spacing:.05em">Open Actions</div>
-<div style="font-size:24px;font-weight:800;color:#C2410C" id="d-actions">—</div>
-<div style="font-size:10px;color:var(--text2)" id="d-actions-sub">overdue</div>
-</div>
-<div class="card" style="padding:10px 12px;border-left:4px solid #185FA5;cursor:pointer" onclick="showPage('events',null)">
-<div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;letter-spacing:.05em">LTIFR</div>
-<div style="font-size:24px;font-weight:800;color:#185FA5" id="d-ltifr">—</div>
-<div style="font-size:10px;color:var(--text2)">per million hrs</div>
-</div>
-<div class="card" style="padding:10px 12px;border-left:4px solid #5B21B6;cursor:pointer" onclick="showPage('events',null)">
-<div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;letter-spacing:.05em">TRIR</div>
-<div style="font-size:24px;font-weight:800;color:#5B21B6" id="d-trir">—</div>
-<div style="font-size:10px;color:var(--text2)">total recordable</div>
-</div>
-<div class="card" style="padding:10px 12px;border-left:4px solid #1D9E75;cursor:pointer" onclick="showPage('people',null)">
-<div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;letter-spacing:.05em">Workforce</div>
-<div style="font-size:24px;font-weight:800;color:#1D9E75" id="d-people">—</div>
-<div style="font-size:10px;color:var(--text2)">active workers</div>
-</div>
-<div class="card" style="padding:10px 12px;border-left:4px solid #EF9F27;cursor:pointer" onclick="showPage('permit',null)">
-<div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;letter-spacing:.05em">Active PTW</div>
-<div style="font-size:24px;font-weight:800;color:#EF9F27" id="d-permits">—</div>
-<div style="font-size:10px;color:var(--text2)">live permits</div>
-</div>
-<div class="card" style="padding:10px 12px;border-left:4px solid #0891B2;cursor:pointer" onclick="showPage('training',null)">
-<div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;letter-spacing:.05em">Training %</div>
-<div style="font-size:24px;font-weight:800;color:#0891B2" id="d-training-pct">—</div>
-<div style="font-size:10px;color:var(--text2)">compliance</div>
-</div>
+
+<!-- ════════════════════════════════════════════════════════════════════════
+     HERO CARD — Days Since Last LTI (visual anchor of the page)
+     ════════════════════════════════════════════════════════════════════════ -->
+<div id="dash-hero" style="background:linear-gradient(135deg,#1D9E75 0%,#0d8060 100%);color:#fff;border-radius:14px;padding:22px 26px;margin-bottom:16px;display:grid;grid-template-columns:2fr 1fr;gap:24px;align-items:center;box-shadow:0 8px 22px rgba(29,158,117,0.22);cursor:pointer" onclick="showPage('events',null)">
+  <div>
+    <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.12em;opacity:0.9;margin-bottom:6px">Days Since Last Lost-Time Incident</div>
+    <div style="font-size:54px;font-weight:800;line-height:1;letter-spacing:-0.03em" id="dash-hero-days">—</div>
+    <div style="font-size:13px;opacity:0.95;margin-top:10px;display:flex;align-items:center;gap:6px" id="dash-hero-context">Calculating safety streak…</div>
+  </div>
+  <div style="background:rgba(255,255,255,0.15);border-radius:10px;padding:12px;min-height:80px">
+    <svg width="100%" height="80" viewBox="0 0 200 80" preserveAspectRatio="none" id="dash-hero-spark">
+      <polyline points="0,60 20,55 40,58 60,50 80,52 100,40 120,42 140,30 160,32 180,20 200,15" stroke="#fff" stroke-width="2" fill="none" opacity="0.9"/>
+      <polyline points="0,60 20,55 40,58 60,50 80,52 100,40 120,42 140,30 160,32 180,20 200,15 200,80 0,80" fill="#fff" opacity="0.15"/>
+    </svg>
+  </div>
 </div>
 
-<!-- KPI Metrics Row 2: Compliance & Environment -->
-<div style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:12px">
-<div class="card" style="padding:10px 12px;border-left:4px solid #3B6D11;cursor:pointer" onclick="showPage('legal',null)">
-<div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;letter-spacing:.05em">Compliance</div>
-<div style="font-size:24px;font-weight:800;color:#3B6D11" id="d-compliance">—</div>
-<div id="d-compliance-bar" style="height:4px;background:#f3f4f6;border-radius:99px;margin-top:4px;overflow:hidden"><div id="d-compliance-bar-inner" style="height:100%;background:#1D9E75;width:0%;transition:width .8s;border-radius:99px"></div></div>
-</div>
-<div class="card" style="padding:10px 12px;border-left:4px solid #065F46;cursor:pointer" onclick="showPage('esg',null)">
-<div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;letter-spacing:.05em">Env Incidents</div>
-<div style="font-size:24px;font-weight:800;color:#065F46" id="d-env">—</div>
-<div style="font-size:10px;color:var(--text2)">year to date</div>
-</div>
-<div class="card" style="padding:10px 12px;border-left:4px solid #B45309;cursor:pointer" onclick="showPage('training',null)">
-<div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;letter-spacing:.05em">Certs Expiring</div>
-<div style="font-size:24px;font-weight:800;color:#B45309" id="d-certs">—</div>
-<div style="font-size:10px;color:var(--text2);white-space:nowrap">&lt; 60 days</div>
-</div>
-<div class="card" style="padding:10px 12px;border-left:4px solid #185FA5;cursor:pointer" onclick="showPage('inspection',null)">
-<div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;letter-spacing:.05em">Audit Score</div>
-<div style="font-size:24px;font-weight:800;color:#185FA5" id="d-audit-score">—</div>
-<div style="font-size:10px;color:var(--text2)">last inspection</div>
-</div>
-<div class="card" style="padding:10px 12px;border-left:4px solid #8B5CF6;cursor:pointer" onclick="showPage('kpi',null)">
-<div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;letter-spacing:.05em">KPIs On Track</div>
-<div style="font-size:24px;font-weight:800;color:#8B5CF6" id="d-kpis">—</div>
-<div style="font-size:10px;color:var(--text2)" id="d-kpis-sub">of total</div>
-</div>
+
+<!-- ════════════════════════════════════════════════════════════════════════
+     KPI GRID — status-tinted cards with icons and sparklines
+     Row 1: 4 primary safety KPIs
+     ════════════════════════════════════════════════════════════════════════ -->
+<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:12px">
+
+  <div class="kpi-card" data-id="d-events" data-tone="red" style="cursor:pointer" onclick="showPage('events',null)">
+    <div class="kpi-icon">⚠</div>
+    <div class="kpi-label">Open Incidents</div>
+    <div class="kpi-value" id="d-events">—</div>
+    <div class="kpi-trend" id="d-events-sub">this month</div>
+    <svg class="kpi-spark" viewBox="0 0 100 24" preserveAspectRatio="none" id="d-events-spark"></svg>
+  </div>
+
+  <div class="kpi-card" data-id="d-actions" data-tone="amber" style="cursor:pointer" onclick="showPage('actions',null)">
+    <div class="kpi-icon">📋</div>
+    <div class="kpi-label">Actions Due</div>
+    <div class="kpi-value" id="d-actions">—</div>
+    <div class="kpi-trend" id="d-actions-sub">overdue</div>
+    <svg class="kpi-spark" viewBox="0 0 100 24" preserveAspectRatio="none" id="d-actions-spark"></svg>
+  </div>
+
+  <div class="kpi-card" data-id="d-training-pct" data-tone="green" style="cursor:pointer" onclick="showPage('training',null)">
+    <div class="kpi-icon">🦺</div>
+    <div class="kpi-label">Training Compliance</div>
+    <div class="kpi-value" id="d-training-pct">—</div>
+    <div class="kpi-trend">of workforce certified</div>
+    <svg class="kpi-spark" viewBox="0 0 100 24" preserveAspectRatio="none" id="d-training-pct-spark"></svg>
+  </div>
+
+  <div class="kpi-card" data-id="d-people" data-tone="blue" style="cursor:pointer" onclick="showPage('people',null)">
+    <div class="kpi-icon">👥</div>
+    <div class="kpi-label">Active Workforce</div>
+    <div class="kpi-value" id="d-people">—</div>
+    <div class="kpi-trend">across all sites</div>
+    <svg class="kpi-spark" viewBox="0 0 100 24" preserveAspectRatio="none" id="d-people-spark"></svg>
+  </div>
+
 </div>
 
-<!-- Main charts row -->
+<!-- Row 2: 4 secondary KPIs -->
+<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px">
+
+  <div class="kpi-card" data-id="d-permits" data-tone="grey" style="cursor:pointer" onclick="showPage('permit',null)">
+    <div class="kpi-icon">🔥</div>
+    <div class="kpi-label">Active PTW</div>
+    <div class="kpi-value" id="d-permits">—</div>
+    <div class="kpi-trend">live permits</div>
+    <svg class="kpi-spark" viewBox="0 0 100 24" preserveAspectRatio="none" id="d-permits-spark"></svg>
+  </div>
+
+  <div class="kpi-card" data-id="d-certs" data-tone="amber" style="cursor:pointer" onclick="showPage('training',null)">
+    <div class="kpi-icon">🎓</div>
+    <div class="kpi-label">Certs Expiring</div>
+    <div class="kpi-value" id="d-certs">—</div>
+    <div class="kpi-trend">in next 60 days</div>
+    <svg class="kpi-spark" viewBox="0 0 100 24" preserveAspectRatio="none" id="d-certs-spark"></svg>
+  </div>
+
+  <div class="kpi-card" data-id="d-ltifr" data-tone="green" style="cursor:pointer" onclick="showPage('events',null)">
+    <div class="kpi-icon">📊</div>
+    <div class="kpi-label">LTIFR</div>
+    <div class="kpi-value" id="d-ltifr">—</div>
+    <div class="kpi-trend">per million hrs worked</div>
+    <svg class="kpi-spark" viewBox="0 0 100 24" preserveAspectRatio="none" id="d-ltifr-spark"></svg>
+  </div>
+
+  <div class="kpi-card" data-id="d-trir" data-tone="green" style="cursor:pointer" onclick="showPage('events',null)">
+    <div class="kpi-icon">🏥</div>
+    <div class="kpi-label">TRIR</div>
+    <div class="kpi-value" id="d-trir">—</div>
+    <div class="kpi-trend">total recordable rate</div>
+    <svg class="kpi-spark" viewBox="0 0 100 24" preserveAspectRatio="none" id="d-trir-spark"></svg>
+  </div>
+
+</div>
+
+<!-- Row 3: 4 compliance/environment KPIs -->
+<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:18px">
+
+  <div class="kpi-card" data-id="d-compliance" data-tone="green" style="cursor:pointer" onclick="showPage('legal',null)">
+    <div class="kpi-icon">⚖</div>
+    <div class="kpi-label">Legal Compliance</div>
+    <div class="kpi-value" id="d-compliance">—</div>
+    <div class="kpi-trend">average score</div>
+    <div id="d-compliance-bar" style="height:4px;background:rgba(0,0,0,0.06);border-radius:99px;margin-top:8px;overflow:hidden"><div id="d-compliance-bar-inner" style="height:100%;background:#1D9E75;width:0%;transition:width .8s;border-radius:99px"></div></div>
+  </div>
+
+  <div class="kpi-card" data-id="d-env" data-tone="green" style="cursor:pointer" onclick="showPage('esg',null)">
+    <div class="kpi-icon">🌿</div>
+    <div class="kpi-label">Env Incidents</div>
+    <div class="kpi-value" id="d-env">—</div>
+    <div class="kpi-trend">year to date</div>
+    <svg class="kpi-spark" viewBox="0 0 100 24" preserveAspectRatio="none" id="d-env-spark"></svg>
+  </div>
+
+  <div class="kpi-card" data-id="d-audit-score" data-tone="blue" style="cursor:pointer" onclick="showPage('inspection',null)">
+    <div class="kpi-icon">✓</div>
+    <div class="kpi-label">Audit Score</div>
+    <div class="kpi-value" id="d-audit-score">—</div>
+    <div class="kpi-trend">last inspection</div>
+    <svg class="kpi-spark" viewBox="0 0 100 24" preserveAspectRatio="none" id="d-audit-score-spark"></svg>
+  </div>
+
+  <div class="kpi-card" data-id="d-kpis" data-tone="blue" style="cursor:pointer" onclick="showPage('kpi',null)">
+    <div class="kpi-icon">🎯</div>
+    <div class="kpi-label">KPIs On Track</div>
+    <div class="kpi-value" id="d-kpis">—</div>
+    <div class="kpi-trend" id="d-kpis-sub">of targets met</div>
+    <svg class="kpi-spark" viewBox="0 0 100 24" preserveAspectRatio="none" id="d-kpis-spark"></svg>
+  </div>
+
+</div>
+
+
+<!-- ════════════════════════════════════════════════════════════════════════
+     MAIN CHARTS ROW — 12-month trend + donut charts
+     ════════════════════════════════════════════════════════════════════════ -->
 <div style="display:grid;grid-template-columns:2fr 1fr 1fr;gap:12px;margin-bottom:12px">
-<!-- 12-month incident trend -->
-<div class="card">
-<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-<div class="card-title" style="margin:0">Incident Trend — 12 Months</div>
-<div style="display:flex;gap:6px">
-<span style="font-size:10px;display:flex;align-items:center;gap:3px"><span style="width:10px;height:10px;background:#DC2626;border-radius:2px;display:inline-block"></span>Incidents</span>
-<span style="font-size:10px;display:flex;align-items:center;gap:3px"><span style="width:10px;height:10px;background:#EF9F27;border-radius:2px;display:inline-block"></span>Near miss</span>
-</div>
-</div>
-<div id="dash-trend-chart" style="height:120px;display:flex;align-items:flex-end;gap:3px;padding:0 4px">
-<div class="loading-msg" style="font-size:11px;width:100%;text-align:center">Loading...</div>
-</div>
-<div id="dash-trend-labels" style="display:flex;gap:3px;margin-top:4px;padding:0 4px"></div>
-</div>
-<!-- Severity donut -->
-<div class="card">
-<div class="card-title" style="margin-bottom:10px">Severity Breakdown</div>
-<div id="dash-severity-chart" style="display:flex;flex-direction:column;gap:6px">
-<div class="loading-msg" style="font-size:11px">Loading...</div>
-</div>
-</div>
-<!-- Compliance ring -->
-<div class="card">
-<div class="card-title" style="margin-bottom:10px">Compliance Overview</div>
-<div id="dash-compliance-ring" style="display:flex;flex-direction:column;gap:6px">
-<div class="loading-msg" style="font-size:11px">Loading...</div>
-</div>
-</div>
+
+  <div class="card" style="padding:18px 20px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+      <div style="font-size:13px;font-weight:600;color:var(--text)">Incident Trend — 12 Months</div>
+      <div style="display:flex;gap:10px;font-size:10px;color:var(--text2)">
+        <span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:10px;background:#DC2626;border-radius:2px;display:inline-block"></span>Incidents</span>
+        <span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:10px;background:#EF9F27;border-radius:2px;display:inline-block"></span>Near miss</span>
+      </div>
+    </div>
+    <div id="dash-trend-chart" style="height:120px;display:flex;align-items:flex-end;gap:3px;padding:0 4px">
+      <div class="skeleton" style="width:100%;height:80%;border-radius:4px;background:linear-gradient(90deg,#f3f4f6 0%,#e5e7eb 50%,#f3f4f6 100%);background-size:200% 100%;animation:skel 1.5s infinite"></div>
+    </div>
+    <div id="dash-trend-labels" style="display:flex;gap:3px;margin-top:4px;padding:0 4px"></div>
+  </div>
+
+  <div class="card" style="padding:18px 20px;text-align:center">
+    <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:12px;text-align:left">Severity</div>
+    <div id="dash-severity-chart">
+      <div class="skeleton" style="width:120px;height:120px;border-radius:50%;margin:0 auto;background:linear-gradient(90deg,#f3f4f6 0%,#e5e7eb 50%,#f3f4f6 100%);background-size:200% 100%;animation:skel 1.5s infinite"></div>
+    </div>
+  </div>
+
+  <div class="card" style="padding:18px 20px;text-align:center">
+    <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:12px;text-align:left">Compliance</div>
+    <div id="dash-compliance-ring">
+      <div class="skeleton" style="width:120px;height:120px;border-radius:50%;margin:0 auto;background:linear-gradient(90deg,#f3f4f6 0%,#e5e7eb 50%,#f3f4f6 100%);background-size:200% 100%;animation:skel 1.5s infinite"></div>
+    </div>
+  </div>
+
 </div>
 
-<!-- Department comparison + High-risk activities -->
+
+<!-- ════════════════════════════════════════════════════════════════════════
+     DEPT HEATMAP + HIGH-RISK
+     ════════════════════════════════════════════════════════════════════════ -->
 <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
-<!-- Department incident heatmap -->
-<div class="card">
-<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-<div class="card-title" style="margin:0">Department Incident Heatmap</div>
-<div style="font-size:10px;color:var(--text2)">incidents this year</div>
-</div>
-<div id="dash-dept-heatmap" style="display:flex;flex-direction:column;gap:5px">
-<div class="loading-msg" style="font-size:11px">Loading...</div>
-</div>
-</div>
-<!-- High-risk activities (active PTW + high-risk RA) -->
-<div class="card">
-<div class="card-title" style="margin-bottom:10px">⚠️ High-Risk Activities</div>
-<div id="dash-highrisk" style="display:flex;flex-direction:column;gap:6px">
-<div class="loading-msg" style="font-size:11px">Loading...</div>
-</div>
-</div>
+  <div class="card" style="padding:18px 20px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+      <div style="font-size:13px;font-weight:600;color:var(--text)">Department Incident Heatmap</div>
+      <div style="font-size:10px;color:var(--text2)">incidents this year</div>
+    </div>
+    <div id="dash-dept-heatmap" style="display:flex;flex-direction:column;gap:5px">
+      <div class="loading-msg" style="font-size:11px">Loading...</div>
+    </div>
+  </div>
+  <div class="card" style="padding:18px 20px">
+    <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:12px">⚠️ High-Risk Activities</div>
+    <div id="dash-highrisk" style="display:flex;flex-direction:column;gap:6px">
+      <div class="loading-msg" style="font-size:11px">Loading...</div>
+    </div>
+  </div>
 </div>
 
-<!-- Bottom row: Recent incidents + Open actions + Training compliance -->
+
+<!-- ════════════════════════════════════════════════════════════════════════
+     BOTTOM ROW — Recent incidents / Priority actions / Training
+     ════════════════════════════════════════════════════════════════════════ -->
 <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px">
-<div class="card">
-<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-<div class="card-title" style="margin:0">Recent Incidents</div>
-<button class="btn btn-sm" onclick="showPage('events',null)" style="font-size:10px">View all</button>
-</div>
-<div id="dash-events" style="font-size:12px"><div class="loading-msg">Loading...</div></div>
-</div>
-<div class="card">
-<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-<div class="card-title" style="margin:0">Priority Actions</div>
-<button class="btn btn-sm" onclick="showPage('actions',null)" style="font-size:10px">View all</button>
-</div>
-<div id="dash-actions" style="font-size:12px"><div class="loading-msg">Loading...</div></div>
-</div>
-<div class="card">
-<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-<div class="card-title" style="margin:0">Training Compliance</div>
-<button class="btn btn-sm" onclick="showPage('training',null)" style="font-size:10px">View all</button>
-</div>
-<div id="dash-training-compliance" style="font-size:12px"><div class="loading-msg">Loading...</div></div>
-</div>
+  <div class="card" style="padding:18px 20px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+      <div style="font-size:13px;font-weight:600;color:var(--text)">Recent Incidents</div>
+      <button class="btn btn-sm" onclick="showPage('events',null)" style="font-size:10px">View all</button>
+    </div>
+    <div id="dash-events" style="font-size:12px"><div class="loading-msg">Loading...</div></div>
+  </div>
+  <div class="card" style="padding:18px 20px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+      <div style="font-size:13px;font-weight:600;color:var(--text)">Priority Actions</div>
+      <button class="btn btn-sm" onclick="showPage('actions',null)" style="font-size:10px">View all</button>
+    </div>
+    <div id="dash-actions" style="font-size:12px"><div class="loading-msg">Loading...</div></div>
+  </div>
+  <div class="card" style="padding:18px 20px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+      <div style="font-size:13px;font-weight:600;color:var(--text)">Training Compliance</div>
+      <button class="btn btn-sm" onclick="showPage('training',null)" style="font-size:10px">View all</button>
+    </div>
+    <div id="dash-training-compliance" style="font-size:12px"><div class="loading-msg">Loading...</div></div>
+  </div>
 </div>
 
 <!-- AI Insights panel -->
-<div id="ai-dash-insights" style="margin-top:12px">
-<div class="card" style="border:2px solid #185FA5">
-<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-<div class="card-title" style="margin:0;color:#185FA5"><i class="ti ti-robot"></i> AI Dashboard Insights</div>
-<button class="btn btn-sm btn-primary" onclick="genDashAI()"><i class="ti ti-robot"></i>Generate insights</button>
-</div>
-<div id="dash-ai-content" style="font-size:12px;color:var(--text2);font-style:italic">Click "Generate insights" for AI-powered analysis of your HSE data.</div>
-</div>
+<div id="ai-dash-insights" style="margin-top:14px">
+  <div class="card" style="border:2px solid #185FA5;padding:18px 20px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+      <div style="font-size:13px;font-weight:600;color:#185FA5"><i class="ti ti-robot"></i> AI Dashboard Insights</div>
+      <button class="btn btn-sm btn-primary" onclick="genDashAI()"><i class="ti ti-robot"></i>Generate insights</button>
+    </div>
+    <div id="dash-ai-content" style="font-size:12px;color:var(--text2);font-style:italic">Click "Generate insights" for AI-powered analysis of your HSE data.</div>
+  </div>
 </div>
 
 </div><!-- end page-dashboard -->
