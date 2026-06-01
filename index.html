@@ -1746,6 +1746,8 @@ async function authOnSignIn(authData) {
   document.getElementById('page-dashboard').style.display='block';
   applyRoles();
   sidebarApplyState(sidebarGetState());
+  devModeUpdateUI();
+  saCompanyInit();
   sbInitRoleSelect();
   await loadPeopleCache();
   loadDash();
@@ -1904,6 +1906,8 @@ async function authInitSession() {
     document.getElementById('page-dashboard').style.display='block';
     applyRoles();
     sidebarApplyState(sidebarGetState());
+    devModeUpdateUI();
+    saCompanyInit();
     await loadPeopleCache();
     loadDash();
     setTimeout(function(){genDashAI();}, 3000);
@@ -2210,7 +2214,11 @@ var ROLE_ALLOWED = {
 };
 
 // Returns true if the current user's role is allowed to access `pageKey`.
+// Combines TWO gates: (1) feature flag (is module launched?) AND (2) role allow-list.
 function canAccessPage(pageKey) {
+  // Gate 1: Feature flag. Dashboard always accessible.
+  if(pageKey !== 'dashboard' && !isModuleLaunched(pageKey)) return false;
+  // Gate 2: Role allow-list.
   var role = prof?.role || 'employee';
   var allowed = ROLE_ALLOWED[role];
   if(allowed === null || allowed === undefined) return true;  // null = sees all; undefined role = treat as allowed by default
@@ -2830,19 +2838,65 @@ function dashRenderTrendChart(events) {
     var label=d2.toLocaleString('en-GB',{month:'short'});
     var inc = events.filter(function(x){var dt=x.event_date||x.created_at||'';return dt&&new Date(dt).getMonth()===mm&&new Date(dt).getFullYear()===yy&&x.event_type!=='near_miss';}).length;
     var nm  = events.filter(function(x){var dt=x.event_date||x.created_at||'';return dt&&new Date(dt).getMonth()===mm&&new Date(dt).getFullYear()===yy&&x.event_type==='near_miss';}).length;
-    months.push({label,inc,nm});
+    months.push({label:label,inc:inc,nm:nm,yy:yy,mm:mm});
   }
   var maxV = Math.max.apply(null, months.map(function(m){return m.inc+m.nm;}).concat([1]));
   el.innerHTML = months.map(function(m) {
     var hInc = Math.max(Math.round(m.inc/maxV*100), m.inc>0?6:0);
     var hNm  = Math.max(Math.round(m.nm/maxV*100),  m.nm>0?6:0);
-    return '<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:1px">'
-      +(m.nm>0?'<div style="width:80%;height:'+hNm+'px;background:#EF9F27;border-radius:3px 3px 0 0;transition:height .5s" title="Near miss: '+m.nm+'"></div>':'')
-      +(m.inc>0?'<div style="width:80%;height:'+hInc+'px;background:#DC2626;border-radius:'+(m.nm?'0':'3px 3px')+' 0 0;transition:height .5s" title="Incidents: '+m.inc+'"></div>':'')
-      +(m.inc===0&&m.nm===0?'<div style="width:80%;height:2px;background:#E5E7EB;border-radius:2px"></div>':'')
+    var monthLabel = m.label+' '+m.yy;
+    var totalCount = m.inc+m.nm;
+    var hasData = totalCount > 0;
+    var tooltipText = monthLabel + ': ' + 
+      (m.inc>0?m.inc+' incident'+(m.inc>1?'s':''):'') +
+      (m.inc>0 && m.nm>0?' · ':'') +
+      (m.nm>0?m.nm+' near miss'+(m.nm>1?'es':''):'') +
+      (totalCount===0?'No data':'') +
+      (hasData?' · click to view':'');
+    // Build clickable segments. Incidents bar = navigate filtered to incidents only.
+    // Near miss bar = navigate filtered to near miss only.
+    var incBar = m.inc>0
+      ? '<div onclick="event.stopPropagation();dashNavigateToMonth('+m.yy+','+m.mm+',\'incident\')" style="width:80%;height:'+hInc+'px;background:#DC2626;border-radius:'+(m.nm?'0':'3px 3px')+' 0 0;cursor:pointer;transition:height .5s,opacity .15s" onmouseover="this.style.opacity=0.8" onmouseout="this.style.opacity=1" title="'+m.inc+' incident'+(m.inc>1?'s':'')+' in '+monthLabel+' — click to view"></div>'
+      : '';
+    var nmBar = m.nm>0
+      ? '<div onclick="event.stopPropagation();dashNavigateToMonth('+m.yy+','+m.mm+',\'near_miss\')" style="width:80%;height:'+hNm+'px;background:#EF9F27;border-radius:3px 3px 0 0;cursor:pointer;transition:height .5s,opacity .15s" onmouseover="this.style.opacity=0.8" onmouseout="this.style.opacity=1" title="'+m.nm+' near miss'+(m.nm>1?'es':'')+' in '+monthLabel+' — click to view"></div>'
+      : '';
+    var empty = (m.inc===0 && m.nm===0)
+      ? '<div onclick="dashNavigateToMonth('+m.yy+','+m.mm+',\'all\')" style="width:80%;height:2px;background:#E5E7EB;border-radius:2px;cursor:pointer" title="'+monthLabel+': No incidents — click to view month"></div>'
+      : '';
+    return '<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:1px" title="'+tooltipText+'">'
+      + nmBar + incBar + empty
       +'</div>';
   }).join('');
   if(labEl) labEl.innerHTML = months.map(function(m){return '<div style="flex:1;text-align:center;font-size:9px;color:var(--text2)">'+m.label+'</div>';}).join('');
+}
+
+// Navigate to incident module with a date filter for the chosen month.
+// Uses window-level filter variables that the incident module's load function can read.
+function dashNavigateToMonth(year, month, typeFilter) {
+  if(!canAccessPage('events')) {
+    if(typeof toast === 'function') toast("You don't have access to incidents.", false);
+    return;
+  }
+  // Build month-range dates
+  var from = year + '-' + String(month+1).padStart(2,'0') + '-01';
+  var lastDay = new Date(year, month+1, 0).getDate();
+  var to = year + '-' + String(month+1).padStart(2,'0') + '-' + String(lastDay).padStart(2,'0');
+  // Set hints that the events module can read. The module's load function
+  // should check these (window.eventsFilterFromDash) and apply them.
+  window.eventsFilterFromDash = {
+    dateFrom: from,
+    dateTo: to,
+    type: typeFilter,  // 'incident' | 'near_miss' | 'all'
+    source: 'dashboard-trend',
+  };
+  showPage('events', null);
+  // Show a toast indicating the filter has been applied
+  if(typeof toast === 'function') {
+    var monthName = new Date(year, month, 1).toLocaleString('en-GB',{month:'long',year:'numeric'});
+    var typeLabel = typeFilter==='incident'?'incidents':typeFilter==='near_miss'?'near misses':'all events';
+    toast('Showing '+typeLabel+' in '+monthName, true);
+  }
 }
 
 function dashRenderSeverityChart(events) {
@@ -3962,7 +4016,19 @@ async function authQ(path,body){
 const r=await fetch(SB+'/auth/v1'+path,{method:'POST',headers:{'Content-Type':'application/json','apikey':KEY},body:JSON.stringify(body)});
 const d=await r.json();if(!r.ok)throw new Error(d.error_description||d.msg||'Auth error');return d;
 }
-function cf(){return isSA()?'':(prof?.company_id?'&company_id=eq.'+prof.company_id:'&company_id=is.null');}
+// Company filter for API queries.
+// Default behaviour:
+//   - sephs_admin → no filter (sees all companies)
+//   - everyone else → filter to their assigned company
+// Override: if sephs_admin has picked a specific company via the switcher,
+//   filter to that company. Switcher state is in sephsCompanyContext.
+var sephsCompanyContext = null;  // null = all companies; else company UUID
+function cf(){
+  if(isSA()) {
+    return sephsCompanyContext ? '&company_id=eq.'+sephsCompanyContext : '';
+  }
+  return prof?.company_id ? '&company_id=eq.'+prof.company_id : '&company_id=is.null';
+}
 function toast(m,ok=true){const t=document.getElementById('toast');if(!t){console.log('Toast:',m);return;}t.textContent=m;t.className='toast '+(ok?'toast-ok':'toast-err');t.style.display='block';setTimeout(()=>t.style.display='none',3500);}
 function fmt(d){return d?new Date(d).toLocaleDateString('en-GB'):'--';}
 function sev(s){const m={low:'bb',medium:'ba',high:'br',critical:'br'};return '<span class="badge '+(m[s]||'bb')+'">'+( s||'--')+'</span>';}
@@ -7728,17 +7794,54 @@ async function imsLoadRegister(){
   try{
     var d=await api('/events?select=*'+cf()+'&order=event_date.desc,created_at.desc');
     imsAllData=d||[];
+    
+    // Apply dashboard-driven filter if present (from clicking the trend chart)
+    if(window.eventsFilterFromDash) {
+      var f = window.eventsFilterFromDash;
+      // Filter by date range
+      if(f.dateFrom && f.dateTo) {
+        imsAllData = imsAllData.filter(function(x){
+          var dt = x.event_date || x.date || x.created_at;
+          if(!dt) return false;
+          var d2 = dt.slice(0,10);
+          return d2 >= f.dateFrom && d2 <= f.dateTo;
+        });
+      }
+      // Filter by event type
+      if(f.type === 'incident') {
+        imsAllData = imsAllData.filter(function(x){return (x.event_type||'')!=='near_miss';});
+      } else if(f.type === 'near_miss') {
+        imsAllData = imsAllData.filter(function(x){return (x.event_type||'')==='near_miss';});
+      }
+      // Show a banner explaining the active filter
+      var monthLabel = '';
+      if(f.dateFrom) {
+        var dParts = f.dateFrom.split('-');
+        monthLabel = new Date(parseInt(dParts[0]), parseInt(dParts[1])-1, 1).toLocaleString('en-GB',{month:'long',year:'numeric'});
+      }
+      var typeLabel = f.type==='incident'?'incidents':f.type==='near_miss'?'near misses':'all events';
+      el.innerHTML = '<div style="background:#EFF6FF;border:1px solid #bfdbfe;border-radius:8px;padding:10px 14px;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><div style="font-size:12px;color:#185FA5;font-weight:600">📅 Filtered to '+typeLabel+(monthLabel?' in '+monthLabel:'')+' (from dashboard)</div><button class="btn btn-sm" onclick="imsClearDashFilter()" style="font-size:11px">Clear filter</button></div><div id="ims-register-inner"></div>';
+      // Clear the filter so it doesn't re-apply on next visit
+      window.eventsFilterFromDash = null;
+    }
+    
     var now=new Date(); var m=now.getMonth(); var y=now.getFullYear();
     function sm(id,v){var e=document.getElementById(id);if(e)e.textContent=v;}
-    sm('ev-m-total',d.length);
-    sm('ev-m-open',(d||[]).filter(x=>x.status==='open').length);
-    sm('ev-m-investigating',(d||[]).filter(x=>x.status==='under_investigation').length);
-    sm('ev-m-high',(d||[]).filter(x=>['critical','high'].includes(x.severity)).length);
-    sm('ev-m-month',(d||[]).filter(x=>{var dt=x.event_date||x.date||x.created_at;return dt&&new Date(dt).getMonth()===m&&new Date(dt).getFullYear()===y;}).length);
-    sm('ev-m-closed',(d||[]).filter(x=>x.status==='closed').length);
+    sm('ev-m-total',imsAllData.length);
+    sm('ev-m-open',(imsAllData||[]).filter(x=>x.status==='open').length);
+    sm('ev-m-investigating',(imsAllData||[]).filter(x=>x.status==='under_investigation').length);
+    sm('ev-m-high',(imsAllData||[]).filter(x=>['critical','high'].includes(x.severity)).length);
+    sm('ev-m-month',(imsAllData||[]).filter(x=>{var dt=x.event_date||x.date||x.created_at;return dt&&new Date(dt).getMonth()===m&&new Date(dt).getFullYear()===y;}).length);
+    sm('ev-m-closed',(imsAllData||[]).filter(x=>x.status==='closed').length);
     try{var iv=await api('/investigations?select=id'+cf());sm('ev-m-inv',(iv||[]).length);}catch(ex){}
     imsFilterList();
   }catch(e){el.innerHTML='<div style="padding:20px;color:var(--text2);text-align:center">'+escH(e.message)+'</div>';}
+}
+
+// Clear the dashboard-driven filter and reload the register fresh
+function imsClearDashFilter() {
+  window.eventsFilterFromDash = null;
+  imsLoadRegister();
 }
 
 function imsFilterList(){
@@ -19659,6 +19762,222 @@ function rolesRenderMatrix() {
 
 // ── Apply roles to UI (enhanced) ────────────────────────────────────
 // ═══════════════════════════════════════════════════════════════════════
+// FEATURE FLAGS — Module rollout control for pilot launches
+// Only modules in LAUNCHED_MODULES are visible to non-sephs_admin users.
+// sephs_admin can toggle DEV_MODE to see/hide non-launched modules.
+// To activate a new module for clients, add its page key here and deploy.
+// ═══════════════════════════════════════════════════════════════════════
+var LAUNCHED_MODULES = [
+  'dashboard',     // always launched
+  'kpi',           // Objectives & KPIs — Phase 1
+  'events',        // Incident Management — Phase 1
+  'observation',   // BBS Observations — Phase 1
+  'training',      // Training — Phase 1
+  'meetings',      // HSE Meetings — Phase 1
+  'ppe',           // PPE — Phase 1
+  'emergency',     // Emergency — Phase 1
+  'permit',        // Permit to Work — Phase 1
+  // To activate more: add module key here and redeploy
+];
+
+var DEV_MODE_KEY = 'auris360_dev_mode';
+
+function devModeOn() {
+  // Only sephs_admin can have dev-mode active (others can't enable it)
+  if(!isSA()) return false;
+  try { return localStorage.getItem(DEV_MODE_KEY) === '1'; }
+  catch(e) { return false; }
+}
+
+function devModeToggle() {
+  if(!isSA()) return;
+  var cur = devModeOn();
+  try { localStorage.setItem(DEV_MODE_KEY, cur?'0':'1'); } catch(e){}
+  // Re-apply gating across the app
+  applyRoles();
+  modulesMenuBuild();
+  // Re-trigger dashboard render to refresh navigation visibility there too
+  if(typeof dashRouteView === 'function') dashRouteView();
+  devModeUpdateUI();
+  toast(cur?'Dev mode OFF — pilot view (only launched modules visible)':'Dev mode ON — all modules visible', true);
+}
+
+// Update the dev-mode button's appearance based on current state.
+// Show button only for sephs_admin; hide for everyone else.
+function devModeUpdateUI() {
+  var btn = document.getElementById('dev-mode-toggle');
+  if(!btn) return;
+  if(!isSA()) { btn.style.display = 'none'; return; }
+  btn.style.display = 'inline-flex';
+  var on = devModeOn();
+  var icon = document.getElementById('dev-mode-icon');
+  var label = document.getElementById('dev-mode-label');
+  if(on) {
+    btn.style.background = '#FEF3C7';
+    btn.style.borderColor = '#FCD34D';
+    btn.style.color = '#92400E';
+    if(icon) icon.style.color = '#92400E';
+    if(label) label.textContent = 'Dev: ON';
+  } else {
+    btn.style.background = '';
+    btn.style.borderColor = 'transparent';
+    btn.style.color = '';
+    if(icon) icon.style.color = '';
+    if(label) label.textContent = 'Dev: OFF';
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// SEPHS_ADMIN COMPANY SWITCHER — view data scoped to one client at a time.
+// Default: sees all companies. Pick one → all subsequent queries filter to it.
+// ═══════════════════════════════════════════════════════════════════════
+var SA_COMPANY_CTX_KEY = 'auris360_sa_company_ctx';
+var saCompanyList = [];  // cached list of {id, name}
+
+function saCompanyGetContext() {
+  try { return localStorage.getItem(SA_COMPANY_CTX_KEY) || null; }
+  catch(e) { return null; }
+}
+function saCompanySetContext(companyId) {
+  try {
+    if(companyId) localStorage.setItem(SA_COMPANY_CTX_KEY, companyId);
+    else localStorage.removeItem(SA_COMPANY_CTX_KEY);
+  } catch(e){}
+  sephsCompanyContext = companyId;
+  saCompanyUpdateLabel();
+}
+
+function saCompanyUpdateLabel() {
+  var lbl = document.getElementById('sa-company-label');
+  if(!lbl) return;
+  if(!sephsCompanyContext) {
+    lbl.textContent = 'All companies';
+  } else {
+    var co = saCompanyList.find(function(c){return c.id===sephsCompanyContext;});
+    lbl.textContent = co ? co.name : 'Selected company';
+  }
+}
+
+async function saCompanyInit() {
+  // Only run for sephs_admin
+  if(!isSA()) {
+    var w = document.getElementById('sa-company-switcher');
+    if(w) w.style.display = 'none';
+    return;
+  }
+  var w = document.getElementById('sa-company-switcher');
+  if(w) w.style.display = 'inline-flex';
+  // Load company list (only once per session)
+  if(saCompanyList.length === 0) {
+    try {
+      // Direct query bypassing cf() since we want ALL companies
+      var data = await api('/companies?select=id,name&order=name.asc');
+      saCompanyList = data || [];
+    } catch(e) {
+      console.warn('Could not load companies:', e);
+    }
+  }
+  // Restore saved context
+  var saved = saCompanyGetContext();
+  if(saved) {
+    sephsCompanyContext = saved;
+  }
+  saCompanyUpdateLabel();
+}
+
+function saCompanyMenuToggle(evt) {
+  if(evt) evt.stopPropagation();
+  var menu = document.getElementById('sa-company-menu');
+  if(!menu) return;
+  var willOpen = !menu.classList.contains('open');
+  if(willOpen) saCompanyMenuBuild();
+  menu.classList.toggle('open', willOpen);
+}
+function saCompanyMenuClose() {
+  var menu = document.getElementById('sa-company-menu');
+  if(menu) menu.classList.remove('open');
+}
+
+function saCompanyMenuBuild() {
+  var menu = document.getElementById('sa-company-menu');
+  if(!menu) return;
+  var html = '<div class="modules-menu-section">View context</div>';
+  // "All companies" option at top
+  var isAllActive = !sephsCompanyContext;
+  html += '<div class="modules-menu-item'+(isAllActive?' active':'')+'" onclick="saCompanyPick(null)"><i class="ti ti-globe"></i>All companies (portfolio view)</div>';
+  if(saCompanyList.length === 0) {
+    html += '<div style="padding:10px 14px;font-size:11px;color:var(--text3)">No companies loaded yet.</div>';
+  } else {
+    html += '<div class="modules-menu-section">Companies (' + saCompanyList.length + ')</div>';
+    saCompanyList.forEach(function(c){
+      var isActive = sephsCompanyContext === c.id;
+      html += '<div class="modules-menu-item'+(isActive?' active':'')+'" onclick="saCompanyPick(\''+c.id+'\')"><i class="ti ti-building"></i>'+escapeHtml(c.name||'(unnamed)')+'</div>';
+    });
+  }
+  menu.innerHTML = html;
+}
+
+function saCompanyPick(companyId) {
+  saCompanyMenuClose();
+  saCompanySetContext(companyId);
+  // Reload the current page's data with the new filter context.
+  // Find which page is active and call its load function.
+  var activePage = document.querySelector('.page.active');
+  var activeId = activePage ? activePage.id.replace('page-','') : 'dashboard';
+  // Call the appropriate loader. Most modules use their own load function.
+  var loaders = {
+    'dashboard':  function(){ loadDash(); },
+    'executive':  function(){ if(typeof loadExecutive==='function') loadExecutive(); },
+    'kpi':        function(){ if(typeof loadKPI==='function') loadKPI(); },
+    'events':     function(){ if(typeof loadEvents==='function') loadEvents(); },
+    'observation':function(){ if(typeof loadObservation==='function') loadObservation(); },
+    'training':   function(){ if(typeof loadTraining==='function') loadTraining(); },
+    'meetings':   function(){ if(typeof loadMeetings==='function') loadMeetings(); },
+    'ppe':        function(){ if(typeof loadPPE==='function') loadPPE(); },
+    'emergency':  function(){ if(typeof loadEmergency==='function') loadEmergency(); },
+    'permit':     function(){ if(typeof loadPermits==='function') loadPermits(); },
+    'risk':       function(){ if(typeof loadRisk==='function') loadRisk(); },
+    'inspection': function(){ if(typeof loadInspections==='function') loadInspections(); },
+    'tools':      function(){ if(typeof loadTools==='function') loadTools(); },
+    'contractor': function(){ if(typeof loadContractors==='function') loadContractors(); },
+    'ohealth':    function(){ if(typeof loadOH==='function') loadOH(); },
+    'esg':        function(){ if(typeof loadESG==='function') loadESG(); },
+    'noise':      function(){ if(typeof loadNoise==='function') loadNoise(); },
+    'actions':    function(){ if(typeof loadActions==='function') loadActions(); },
+    'legal':      function(){ if(typeof loadLegal==='function') loadLegal(); },
+    'sop':        function(){ if(typeof loadSOP==='function') loadSOP(); },
+    'documents':  function(){ if(typeof loadDocuments==='function') loadDocuments(); },
+    'people':     function(){ if(typeof loadPeople==='function') loadPeople(); },
+    'users':      function(){ if(typeof loadUsers==='function') loadUsers(); },
+    'admin':      function(){ if(typeof loadAdmin==='function') loadAdmin(); },
+  };
+  var loader = loaders[activeId];
+  if(loader) loader();
+  else loadDash();  // safe fallback
+  // Toast confirmation
+  var co = companyId ? saCompanyList.find(function(c){return c.id===companyId;}) : null;
+  if(typeof toast === 'function') {
+    toast(co ? 'Viewing data for: '+co.name : 'Viewing data for: All companies (portfolio view)', true);
+  }
+}
+
+// Close company switcher on outside click
+document.addEventListener('click', function(e){
+  var menu = document.getElementById('sa-company-menu');
+  var trigger = document.getElementById('sa-company-trigger');
+  if(!menu || !menu.classList.contains('open')) return;
+  if(menu.contains(e.target) || (trigger && trigger.contains(e.target))) return;
+  saCompanyMenuClose();
+});
+
+// Module is "launched" if it's in LAUNCHED_MODULES, OR if user is sephs_admin in dev mode.
+function isModuleLaunched(pageKey) {
+  if(LAUNCHED_MODULES.indexOf(pageKey) !== -1) return true;
+  if(devModeOn()) return true;  // sephs_admin in dev mode sees everything
+  return false;
+}
+
+// ═══════════════════════════════════════════════════════════════════════
 // SIDEBAR — collapsible + hidden states with localStorage persistence
 // States: '' (expanded, default) → 'collapsed' (icons only) → 'hidden' (off)
 // ═══════════════════════════════════════════════════════════════════════
@@ -19831,9 +20150,10 @@ function applyRoles() {
   // (defined near showPage so both can consult it)
   var roleAllowed = (typeof ROLE_ALLOWED !== 'undefined') ? ROLE_ALLOWED : {};
 
-  // ── Phase 3: apply the allowed set ──
-  // If allowed is null (admin/sephs_admin), show everything.
-  // Otherwise hide every nav item whose target page is NOT in the list.
+  // ── Phase 3: apply the combined gate (feature flag + role allow-list) ──
+  // Use canAccessPage() which combines LAUNCHED_MODULES check with role allow-list.
+  // This way feature-flagging a module hides it from sidebar AUTOMATICALLY for
+  // every role (except sephs_admin in dev mode).
   // We read the page key from the onclick (not the id), because some items
   // have legacy IDs like "nav-mtg" that don't match the page key "meetings".
   function navPageKey(el) {
@@ -19841,22 +20161,11 @@ function applyRoles() {
     var m = oc.match(/showPage\(['"]([^'"]+)['"]/);
     return m ? m[1] : null;
   }
-  var allowed = roleAllowed[role];
-  if(allowed) {
-    document.querySelectorAll('.nav-item').forEach(function(el){
-      var pageKey = navPageKey(el);
-      if(!pageKey) return;
-      el.style.display = allowed.indexOf(pageKey) === -1 ? 'none' : 'flex';
-    });
-  } else {
-    // sephs_admin / admin / hse_manager — show everything by default
-    document.querySelectorAll('.nav-item').forEach(function(el){
-      if(el.style.display === 'none' && el.id !== 'nav-admin') {
-        // restore visibility, but leave nav-admin alone (handled below)
-        el.style.display = 'flex';
-      }
-    });
-  }
+  document.querySelectorAll('.nav-item').forEach(function(el){
+    var pageKey = navPageKey(el);
+    if(!pageKey) return;
+    el.style.display = canAccessPage(pageKey) ? 'flex' : 'none';
+  });
 
   // ── Phase 4: legacy fine-grained rules (preserved from original) ──
   // These run AFTER the bulk allow/hide so they can override edge cases.
@@ -22712,6 +23021,20 @@ async function obCreate() {
     <div class="modules-menu" id="modules-menu"></div>
   </div>
   <div style="flex:1"></div>
+  <!-- Company context switcher — visible only to sephs_admin -->
+  <div class="modules-dropdown" id="sa-company-switcher" style="display:none">
+    <button class="topbar-btn" onclick="saCompanyMenuToggle(event)" id="sa-company-trigger">
+      <i class="ti ti-building" style="color:#185FA5"></i>
+      <span style="font-weight:600">Viewing:</span>
+      <span id="sa-company-label">All companies</span>
+      <i class="ti ti-chevron-down" style="font-size:14px;margin-left:2px"></i>
+    </button>
+    <div class="modules-menu" id="sa-company-menu" style="right:0;left:auto"></div>
+  </div>
+  <button class="topbar-btn" id="dev-mode-toggle" onclick="devModeToggle()" style="display:none" title="Toggle pilot view vs full developer view">
+    <i class="ti ti-flask" id="dev-mode-icon"></i>
+    <span id="dev-mode-label">Dev: OFF</span>
+  </button>
   <div id="topbar-extras" style="display:flex;gap:8px;align-items:center"></div>
 </div>
 
