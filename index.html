@@ -49,6 +49,153 @@
 @keyframes spin{to{transform:rotate(360deg)}}
 
 /* ═══════════════════════════════════════════════════════
+   AURIS360 SIDEBAR — COLLAPSIBLE + HIDDEN STATES
+   Desktop: 3 states (expanded / collapsed-icons / hidden)
+   ═══════════════════════════════════════════════════════ */
+
+@media (min-width: 769px) {
+  /* Smooth transitions for sidebar width changes */
+  .sidebar {
+    transition: width 0.22s cubic-bezier(.4,0,.2,1),
+                min-width 0.22s cubic-bezier(.4,0,.2,1),
+                margin-left 0.22s cubic-bezier(.4,0,.2,1);
+  }
+
+  /* Collapsed = icon strip mode */
+  .sidebar.collapsed {
+    width: 56px;
+    min-width: 56px;
+    overflow: hidden;
+  }
+  .sidebar.collapsed .sidebar-top { padding: 10px 4px; text-align: center; }
+  .sidebar.collapsed .sb-company,
+  .sidebar.collapsed .sb-user,
+  .sidebar.collapsed .sb-role,
+  .sidebar.collapsed .nav-section,
+  .sidebar.collapsed .nav-item span,
+  .sidebar.collapsed #sb-role-changer,
+  .sidebar.collapsed #pwa-install-btn { display: none !important; }
+  .sidebar.collapsed .co-initials,
+  .sidebar.collapsed .co-logo { margin: 0 auto 4px; width: 36px; height: 36px; font-size: 14px; }
+  .sidebar.collapsed .nav-item {
+    padding: 10px 0;
+    justify-content: center;
+    border-left-width: 0;
+    border-right: 3px solid transparent;
+  }
+  .sidebar.collapsed .nav-item.active { border-right-color: var(--green); }
+  .sidebar.collapsed .nav-item i { font-size: 18px; }
+  .sidebar.collapsed .sb-footer { padding: 8px 4px; flex-direction: column; gap: 4px; }
+  .sidebar.collapsed .sb-footer .btn { padding: 6px; font-size: 0; }
+  .sidebar.collapsed .sb-footer .btn i { font-size: 16px; margin: 0; }
+
+  /* Tooltip on hover when collapsed */
+  .sidebar.collapsed .nav-item { position: relative; }
+  .sidebar.collapsed .nav-item:hover::after {
+    content: attr(data-tip);
+    position: absolute;
+    left: calc(100% + 4px); top: 50%;
+    transform: translateY(-50%);
+    background: #111827; color: #fff;
+    padding: 5px 10px; border-radius: 6px;
+    font-size: 11px; font-weight: 500;
+    white-space: nowrap;
+    z-index: 200;
+    pointer-events: none;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+  }
+
+  /* Hidden = fully off, 0 width */
+  .sidebar.hidden {
+    width: 0 !important;
+    min-width: 0 !important;
+    border-right: none !important;
+    overflow: hidden;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════
+   TOP BAR — sticky header above pages with hamburger + modules dropdown
+   ═══════════════════════════════════════════════════════ */
+.topbar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 16px;
+  background: var(--card);
+  border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+  z-index: 60;
+  flex-shrink: 0;
+}
+.topbar-btn {
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  padding: 7px 10px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text);
+  transition: all 0.15s ease;
+}
+.topbar-btn:hover { background: #F3F4F6; }
+.topbar-btn i { font-size: 16px; color: var(--text2); }
+.topbar-btn:hover i { color: var(--text); }
+
+/* Modules dropdown */
+.modules-dropdown {
+  position: relative;
+}
+.modules-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.12);
+  min-width: 280px;
+  max-height: 70vh;
+  overflow-y: auto;
+  z-index: 200;
+  display: none;
+  padding: 6px 0;
+}
+.modules-menu.open { display: block; animation: fadeIn 0.15s ease both; }
+.modules-menu-section {
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--text3);
+  font-weight: 600;
+  padding: 10px 14px 4px;
+}
+.modules-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 8px 14px;
+  cursor: pointer;
+  font-size: 13px;
+  color: var(--text2);
+  transition: background 0.12s ease;
+}
+.modules-menu-item:hover { background: #F3F4F6; color: var(--text); }
+.modules-menu-item.active { background: #E1F5EE; color: var(--green); font-weight: 600; }
+.modules-menu-item i { font-size: 15px; flex-shrink: 0; }
+
+/* Mobile: hide top-bar elements that don't make sense */
+@media (max-width: 768px) {
+  .topbar { display: none; }
+}
+
+
+/* ═══════════════════════════════════════════════════════
    AURIS360 DASHBOARD REDESIGN (Stage 1-5)
    Status-tinted KPI cards, sparklines, hero section
    ═══════════════════════════════════════════════════════ */
@@ -1598,6 +1745,7 @@ async function authOnSignIn(authData) {
   if(aiPanel) aiPanel.style.display='block';
   document.getElementById('page-dashboard').style.display='block';
   applyRoles();
+  sidebarApplyState(sidebarGetState());
   sbInitRoleSelect();
   await loadPeopleCache();
   loadDash();
@@ -1755,6 +1903,7 @@ async function authInitSession() {
     if(aiPanel) aiPanel.style.display='block';
     document.getElementById('page-dashboard').style.display='block';
     applyRoles();
+    sidebarApplyState(sidebarGetState());
     await loadPeopleCache();
     loadDash();
     setTimeout(function(){genDashAI();}, 3000);
@@ -2279,13 +2428,16 @@ function dashRouteView() {
   // Toggle which view is visible based on role
   var orgView = document.getElementById('dash-org-view');
   var perView = document.getElementById('dash-personal-view');
+  var orgControls = document.getElementById('dash-org-controls');
   if(!orgView || !perView) return;
   if(isPersonalDashRole()) {
     orgView.style.display = 'none';
     perView.style.display = 'block';
+    if(orgControls) orgControls.style.display = 'none';
   } else {
     orgView.style.display = '';
     perView.style.display = 'none';
+    if(orgControls) orgControls.style.display = 'flex';
   }
 }
 
@@ -19506,6 +19658,160 @@ function rolesRenderMatrix() {
 }
 
 // ── Apply roles to UI (enhanced) ────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════════
+// SIDEBAR — collapsible + hidden states with localStorage persistence
+// States: '' (expanded, default) → 'collapsed' (icons only) → 'hidden' (off)
+// ═══════════════════════════════════════════════════════════════════════
+var SIDEBAR_STATE_KEY = 'auris360_sidebar_state';
+var SIDEBAR_STATES = ['', 'collapsed', 'hidden'];
+
+function sidebarGetState() {
+  try { return localStorage.getItem(SIDEBAR_STATE_KEY) || ''; }
+  catch(e) { return ''; }
+}
+function sidebarSetState(s) {
+  try { localStorage.setItem(SIDEBAR_STATE_KEY, s); } catch(e){}
+  sidebarApplyState(s);
+}
+function sidebarApplyState(s) {
+  var sb = document.querySelector('.sidebar');
+  if(!sb) return;
+  sb.classList.remove('collapsed','hidden');
+  if(s === 'collapsed') sb.classList.add('collapsed');
+  else if(s === 'hidden') sb.classList.add('hidden');
+  // Tooltip data — needs nav items annotated with their label for icon-only mode
+  if(s === 'collapsed') {
+    document.querySelectorAll('.sidebar .nav-item').forEach(function(el){
+      if(el.dataset.tip) return;
+      // The text-only label is the trimmed contents after the icon
+      var txt = el.textContent.trim();
+      if(txt) el.dataset.tip = txt;
+    });
+  }
+  // Update toggle icon
+  var icon = document.getElementById('sidebar-toggle-icon');
+  if(icon) {
+    if(s === 'hidden') icon.className = 'ti ti-layout-sidebar-left-expand';
+    else if(s === 'collapsed') icon.className = 'ti ti-layout-sidebar-left-collapse';
+    else icon.className = 'ti ti-menu-2';
+  }
+}
+function sidebarCycle() {
+  var cur = sidebarGetState();
+  var i = SIDEBAR_STATES.indexOf(cur);
+  var next = SIDEBAR_STATES[(i + 1) % SIDEBAR_STATES.length];
+  sidebarSetState(next);
+}
+// Keyboard shortcut: Ctrl+B (and Cmd+B on Mac)
+document.addEventListener('keydown', function(e){
+  if((e.ctrlKey || e.metaKey) && e.key === 'b') {
+    // Only when app is visible (not on login screen)
+    var app = document.getElementById('app');
+    if(app && app.style.display !== 'none') {
+      e.preventDefault();
+      sidebarCycle();
+    }
+  }
+});
+
+// ═══════════════════════════════════════════════════════════════════════
+// MODULES DROPDOWN — alternative navigation from the top bar
+// Filters by role using canAccessPage(), same as showPage() gating.
+// ═══════════════════════════════════════════════════════════════════════
+// Module metadata: page key, icon, label, section
+var MODULES_DIR = [
+  // Main
+  {k:'dashboard',   i:'ti-layout-dashboard',   l:'Dashboard',           sec:'Main'},
+  {k:'executive',   i:'ti-chart-bar',          l:'Executive Dashboard', sec:'Main'},
+  {k:'ai-insights', i:'ti-brain',              l:'AI Insights',         sec:'Main'},
+  // HSE Modules
+  {k:'kpi',         i:'ti-target',             l:'Objectives & KPIs',   sec:'HSE Modules'},
+  {k:'workschedule',i:'ti-calendar-event',     l:'Work Schedule',       sec:'HSE Modules'},
+  {k:'events',      i:'ti-alert-triangle',     l:'Incident Management', sec:'HSE Modules'},
+  {k:'observation', i:'ti-eye',                l:'BBS Observations',    sec:'HSE Modules'},
+  {k:'inspection',  i:'ti-clipboard-check',    l:'Audits & Inspections',sec:'HSE Modules'},
+  {k:'risk',        i:'ti-shield-check',       l:'Risk Assessment',     sec:'HSE Modules'},
+  {k:'tools',       i:'ti-tools',              l:'Tools & Equipment',   sec:'HSE Modules'},
+  {k:'permit',      i:'ti-key',                l:'Permit to Work',      sec:'HSE Modules'},
+  {k:'contractor',  i:'ti-hard-hat',           l:'Contractors',         sec:'HSE Modules'},
+  {k:'emergency',   i:'ti-alert-square',       l:'Emergency',           sec:'HSE Modules'},
+  {k:'ohealth',     i:'ti-stethoscope',        l:'Occupational Health', sec:'HSE Modules'},
+  {k:'ppe',         i:'ti-shield-check',       l:'PPE',                 sec:'HSE Modules'},
+  {k:'esg',         i:'ti-leaf',               l:'Environmental / ESG', sec:'HSE Modules'},
+  {k:'noise',       i:'ti-volume',             l:'Noise Survey',        sec:'HSE Modules'},
+  {k:'meetings',    i:'ti-notes',              l:'HSE Meetings',        sec:'HSE Modules'},
+  {k:'training',    i:'ti-certificate',        l:'Training',            sec:'HSE Modules'},
+  // Management
+  {k:'actions',     i:'ti-list-check',         l:'Master Action Plan',  sec:'Management'},
+  {k:'legal',       i:'ti-scale',              l:'Legal Compliance',    sec:'Management'},
+  {k:'sop',         i:'ti-file-description',   l:'SOP Generator',       sec:'Management'},
+  {k:'documents',   i:'ti-files',              l:'Document Control',    sec:'Management'},
+  {k:'people',      i:'ti-id-badge',           l:'People',              sec:'Management'},
+  {k:'users',       i:'ti-users',              l:'Users & Roles',       sec:'Management'},
+  {k:'admin',       i:'ti-building',           l:'Companies',           sec:'Management'},
+  {k:'integrations',i:'ti-plug',               l:'Integrations',        sec:'Management'},
+  {k:'settings',    i:'ti-settings',           l:'Settings',            sec:'Management'},
+];
+
+function modulesMenuBuild() {
+  var menu = document.getElementById('modules-menu');
+  if(!menu) return;
+  // Filter by accessibility for the current user
+  var allowed = MODULES_DIR.filter(function(m){ return canAccessPage(m.k); });
+  if(allowed.length === 0) {
+    menu.innerHTML = '<div style="padding:14px;color:var(--text2);font-size:12px">No modules available.</div>';
+    return;
+  }
+  // Group by section in original order
+  var sections = {};
+  var sectionOrder = [];
+  allowed.forEach(function(m){
+    if(!sections[m.sec]) { sections[m.sec] = []; sectionOrder.push(m.sec); }
+    sections[m.sec].push(m);
+  });
+  // Determine which page is currently active
+  var activePage = (document.querySelector('.page.active') || {}).id || '';
+  if(activePage.startsWith('page-')) activePage = activePage.slice(5);
+  
+  var html = '';
+  sectionOrder.forEach(function(sec){
+    html += '<div class="modules-menu-section">'+sec+'</div>';
+    sections[sec].forEach(function(m){
+      var isActive = (m.k === activePage);
+      html += '<div class="modules-menu-item'+(isActive?' active':'')+'" onclick="modulesMenuNavigate(\''+m.k+'\')"><i class="ti '+m.i+'"></i>'+escapeHtml(m.l)+'</div>';
+    });
+  });
+  menu.innerHTML = html;
+}
+
+function modulesMenuToggle(evt) {
+  if(evt) evt.stopPropagation();
+  var menu = document.getElementById('modules-menu');
+  if(!menu) return;
+  var willOpen = !menu.classList.contains('open');
+  if(willOpen) modulesMenuBuild();
+  menu.classList.toggle('open', willOpen);
+}
+
+function modulesMenuClose() {
+  var menu = document.getElementById('modules-menu');
+  if(menu) menu.classList.remove('open');
+}
+
+function modulesMenuNavigate(pageKey) {
+  modulesMenuClose();
+  showPage(pageKey, null);
+}
+
+// Close the menu when clicking outside it
+document.addEventListener('click', function(e){
+  var menu = document.getElementById('modules-menu');
+  var trigger = document.getElementById('modules-trigger');
+  if(!menu || !menu.classList.contains('open')) return;
+  if(menu.contains(e.target) || (trigger && trigger.contains(e.target))) return;
+  modulesMenuClose();
+});
+
 function applyRoles() {
   var role = prof?.role || 'employee';
   var level = getRoleLevel(role);
@@ -22389,6 +22695,26 @@ async function obCreate() {
 <div class="nav-item" id="nav-settings" onclick="showPage('settings',this)"><i class="ti ti-settings"></i>Settings</div><div class="sb-footer"><button class="btn btn-sm" style="flex:1;justify-content:center;color:var(--red)" onclick="doLogout()"><i class="ti ti-logout"></i>Sign out</button></div>
 <div id="pwa-install-btn" onclick="pwaInstall()" style="display:none;align-items:center;gap:10px;padding:10px 20px;cursor:pointer;font-size:13px;color:var(--green);font-weight:600;border-top:1px solid var(--border);margin-top:auto"><i class="ti ti-download" style="font-size:16px"></i>Install app</div></div>
 <div class="main">
+
+<!-- ════════════════════════════════════════════════════════════════════════
+     TOP BAR — Desktop only. Sidebar toggle + Modules dropdown.
+     ════════════════════════════════════════════════════════════════════════ -->
+<div class="topbar">
+  <button class="topbar-btn" onclick="sidebarCycle()" title="Toggle sidebar (Ctrl+B)" aria-label="Toggle sidebar">
+    <i class="ti ti-menu-2" id="sidebar-toggle-icon"></i>
+  </button>
+  <div class="modules-dropdown">
+    <button class="topbar-btn" onclick="modulesMenuToggle(event)" id="modules-trigger" aria-haspopup="true">
+      <i class="ti ti-apps"></i>
+      <span>Modules</span>
+      <i class="ti ti-chevron-down" style="font-size:14px;margin-left:2px"></i>
+    </button>
+    <div class="modules-menu" id="modules-menu"></div>
+  </div>
+  <div style="flex:1"></div>
+  <div id="topbar-extras" style="display:flex;gap:8px;align-items:center"></div>
+</div>
+
 <!-- ══════════════════════════════════════════════════════ -->
 <!-- DASHBOARD (Real-time HSE)                             -->
 <!-- ══════════════════════════════════════════════════════ -->
@@ -22404,12 +22730,16 @@ async function obCreate() {
     <div style="font-size:12px;color:var(--text2);margin-top:2px" id="dash-label">Live operational overview</div>
   </div>
   <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-    <select id="dash-dept-filter" onchange="loadDash()" style="padding:7px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px;background:#fff">
-      <option value="">All departments</option>
-    </select>
+    <!-- Org-only controls — hidden for employee/contractor/inspector -->
+    <div id="dash-org-controls" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+      <select id="dash-dept-filter" onchange="loadDash()" style="padding:7px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px;background:#fff">
+        <option value="">All departments</option>
+      </select>
+      <button class="btn btn-sm btn-primary" onclick="showPage('executive',document.getElementById('nav-executive'))"><i class="ti ti-chart-bar"></i>Executive View</button>
+      <button class="btn btn-sm" onclick="printMonthlySummary()" title="Monthly PDF Report"><i class="ti ti-file-analytics"></i>Monthly Report</button>
+    </div>
+    <!-- Refresh button — kept for both views, useful even for employees -->
     <button class="btn btn-sm" onclick="loadDash()" style="gap:4px"><i class="ti ti-refresh" id="dash-refresh-icon"></i>Refresh</button>
-    <button class="btn btn-sm btn-primary" onclick="showPage('executive',document.getElementById('nav-executive'))"><i class="ti ti-chart-bar"></i>Executive View</button>
-    <button class="btn btn-sm" onclick="printMonthlySummary()" title="Monthly PDF Report"><i class="ti ti-file-analytics"></i>Monthly Report</button>
   </div>
 </div>
 
