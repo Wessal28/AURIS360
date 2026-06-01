@@ -123,6 +123,73 @@
   display: block;
 }
 
+/* ── Personal-dashboard action buttons ── */
+.dash-action-btn {
+  background: rgba(255,255,255,0.15);
+  border: 1px solid rgba(255,255,255,0.25);
+  color: #fff;
+  padding: 11px 18px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.18s ease;
+  backdrop-filter: blur(4px);
+}
+.dash-action-btn:hover {
+  background: rgba(255,255,255,0.25);
+  border-color: rgba(255,255,255,0.4);
+  transform: translateY(-1px);
+}
+.dash-action-btn i { font-size: 16px; }
+
+/* ── Personal-view list items ── */
+.dp-item {
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: #F9FAFB;
+  margin-bottom: 6px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid transparent;
+  transition: all 0.15s ease;
+}
+.dp-item:hover {
+  background: #F3F4F6;
+  border-color: #E5E7EB;
+}
+.dp-item-main { flex: 1; min-width: 0; }
+.dp-item-title { font-size: 12px; font-weight: 600; color: #111827; line-height: 1.3; }
+.dp-item-meta  { font-size: 10px; color: #6B7280; margin-top: 2px; }
+.dp-item-status {
+  font-size: 9px;
+  font-weight: 700;
+  padding: 3px 7px;
+  border-radius: 99px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  flex-shrink: 0;
+}
+.dp-item-status.open    { background: #FEF3C7; color: #92400E; }
+.dp-item-status.closed  { background: #D1FAE5; color: #065F46; }
+.dp-item-status.review  { background: #DBEAFE; color: #1E40AF; }
+.dp-item-status.overdue { background: #FECACA; color: #991B1B; }
+.dp-item-status.valid   { background: #D1FAE5; color: #065F46; }
+.dp-item-status.expiring{ background: #FEF3C7; color: #92400E; }
+.dp-item-status.expired { background: #FECACA; color: #991B1B; }
+.dp-empty {
+  padding: 18px 12px;
+  text-align: center;
+  color: #6B7280;
+  font-size: 11px;
+  font-style: italic;
+}
+
 
 
 /* ═══════════════════════════════════════════════════════
@@ -1988,7 +2055,7 @@ var ROLE_ALLOWED = {
   'hr':          ['dashboard','kpi','training','people','documents','ohealth','meetings'],
   'inspector':   ['dashboard','events','observation','inspection','risk','permit',
                   'tools','ppe','meetings'],
-  'employee':    ['dashboard','events','observation','training','meetings','ppe','emergency'],
+  'employee':    ['dashboard','events','observation','training','meetings','ppe','emergency','permit'],
   'contractor':  ['dashboard','events','observation','permit','tools','ppe','emergency','meetings'],
   'user':        ['dashboard','events','observation','meetings'],
 };
@@ -2140,6 +2207,7 @@ async function loadDash() {
     dashRenderComplianceRings(compPct, trainPct, permits.length);
     
     // ─── Dashboard redesign hooks (Stage 1-5) ───
+    dashRouteView();      // toggle org vs personal view based on role
     dashRenderGreeting();
     dashRenderHero(events);
     dashApplyTones({
@@ -2157,6 +2225,13 @@ async function loadDash() {
       kpiOK: kpiOK
     });
     dashRenderSparklines(events, actions, people);
+    
+    // Personal view (employee/contractor/inspector)
+    if(isPersonalDashRole()) {
+      dashRenderPersonal(events, actions, people, permits, training).catch(function(e){
+        console.warn('Personal dashboard render error:', e);
+      });
+    }
     dashRenderDeptHeatmap(events, people);
     dashRenderHighRisk(permits, events);
 
@@ -2190,6 +2265,233 @@ async function loadDash() {
 // DASHBOARD REDESIGN HELPERS (Stage 1-5)
 // Greeting / hero / status tones / sparklines / donut charts
 // ═══════════════════════════════════════════════════════════════════════
+
+// ── Role-based dashboard router ─────────────────────────────────────────
+// Personal dashboard: employee, contractor, inspector — light, action-oriented, "my stuff"
+// Org dashboard: everyone else — KPI grid, charts, organisational view
+var PERSONAL_DASH_ROLES = ['employee', 'contractor', 'inspector'];
+
+function isPersonalDashRole() {
+  return PERSONAL_DASH_ROLES.indexOf(prof?.role || '') !== -1;
+}
+
+function dashRouteView() {
+  // Toggle which view is visible based on role
+  var orgView = document.getElementById('dash-org-view');
+  var perView = document.getElementById('dash-personal-view');
+  if(!orgView || !perView) return;
+  if(isPersonalDashRole()) {
+    orgView.style.display = 'none';
+    perView.style.display = 'block';
+  } else {
+    orgView.style.display = '';
+    perView.style.display = 'none';
+  }
+}
+
+// ── Personal dashboard render ───────────────────────────────────────────
+async function dashRenderPersonal(events, actions, people, permits, training) {
+  if(!isPersonalDashRole()) return;  // safety: don't run if user is admin
+
+  // 1. Update tagline based on role
+  var tagline = document.getElementById('dash-personal-tagline');
+  if(tagline) {
+    if(prof.role === 'contractor') {
+      tagline.textContent = 'Report incidents, log observations, manage your permits.';
+    } else if(prof.role === 'inspector') {
+      tagline.textContent = 'Log observations, complete inspections, report any issues.';
+    } else {
+      tagline.textContent = 'Report something, log an observation, or check your training.';
+    }
+  }
+
+  // Hide permit button if role doesn't have access (canAccessPage handles this)
+  var permitBtn = document.getElementById('dash-action-permit');
+  if(permitBtn) permitBtn.style.display = canAccessPage('permit') ? '' : 'none';
+
+  // Find current user's person record (matches profile by email or full_name)
+  var myPerson = (people||[]).find(function(p){
+    var fullName = (p.first_name+' '+p.last_name).toLowerCase().trim();
+    return (p.email && p.email.toLowerCase() === (prof.email||'').toLowerCase())
+        || fullName === (prof.full_name||'').toLowerCase().trim();
+  });
+
+  // 2. Site-pulse cards
+  // Days Since Last Incident — at user's site, or company-wide if no site
+  var mySite = myPerson?.site || myPerson?.location || null;
+  var siteEvents = mySite
+    ? (events||[]).filter(function(x){return x.location===mySite||x.site===mySite;})
+    : events || [];
+  var lastIncident = siteEvents
+    .map(function(x){return new Date(x.event_date||x.created_at||0);})
+    .filter(function(d){return !isNaN(d);})
+    .sort(function(a,b){return b-a;})[0];
+  var daysSinceEl = document.getElementById('dp-days');
+  if(daysSinceEl) {
+    if(!lastIncident) {
+      daysSinceEl.textContent = '—';
+      document.getElementById('dp-days-sub').textContent = 'no incidents on record';
+    } else {
+      var d = Math.floor((Date.now() - lastIncident) / 86400000);
+      daysSinceEl.textContent = d;
+      document.getElementById('dp-days-sub').textContent = mySite ? 'at '+mySite : 'across the company';
+      var card = document.querySelector('.kpi-card[data-id="dp-days"]');
+      if(card) card.setAttribute('data-tone', d>=30?'green':d>=7?'amber':'red');
+    }
+  }
+
+  // Open issues at my site
+  var openSite = siteEvents.filter(function(x){return x.status==='open'||x.status==='under_investigation';}).length;
+  var oseEl = document.getElementById('dp-site-incidents');
+  if(oseEl) {
+    oseEl.textContent = openSite;
+    document.getElementById('dp-site-incidents-sub').textContent = openSite===0 ? 'all clear ✓' : (openSite===1?'1 active issue':openSite+' active issues');
+    var card2 = document.querySelector('.kpi-card[data-id="dp-site-incidents"]');
+    if(card2) card2.setAttribute('data-tone', openSite===0?'green':openSite<=2?'amber':'red');
+  }
+
+  // My training
+  var myTraining = (training||[]).filter(function(t){
+    return myPerson && (t.person_id===myPerson.id || (t.person_name||'').toLowerCase()===((myPerson.first_name+' '+myPerson.last_name).toLowerCase().trim()));
+  });
+  var soon60 = new Date(); soon60.setDate(soon60.getDate()+60);
+  var validTraining = myTraining.filter(function(t){return !t.expiry_date||new Date(t.expiry_date)>new Date();});
+  var expiringSoon = myTraining.filter(function(t){return t.expiry_date && new Date(t.expiry_date)>new Date() && new Date(t.expiry_date)<soon60;});
+  var expired = myTraining.filter(function(t){return t.expiry_date && new Date(t.expiry_date)<=new Date();});
+  var tEl = document.getElementById('dp-training');
+  if(tEl) {
+    tEl.textContent = validTraining.length;
+    var sub = validTraining.length===0 ? 'no records' :
+              expired.length>0 ? expired.length+' expired ⚠' :
+              expiringSoon.length>0 ? expiringSoon.length+' expiring soon' :
+              'all current ✓';
+    document.getElementById('dp-training-sub').textContent = sub;
+    var card3 = document.querySelector('.kpi-card[data-id="dp-training"]');
+    if(card3) card3.setAttribute('data-tone', expired.length>0?'red':expiringSoon.length>0?'amber':'green');
+  }
+
+  // 3. My Reports — incidents reported by me
+  var myReports = (events||[]).filter(function(x){
+    return x.reported_by_id === prof.id 
+        || (x.reported_by && (x.reported_by===prof.email || x.reported_by===prof.full_name))
+        || x.created_by === prof.id;
+  }).slice(0, 5);
+  renderPersonalList('dp-my-reports', myReports, function(x){
+    return {
+      title: x.title || x.description || x.event_type || 'Untitled incident',
+      meta: (x.event_date||x.created_at||'').slice(0,10) + ' · ' + (x.event_type||'incident'),
+      status: x.status==='closed' ? 'closed' : x.status==='under_investigation' ? 'review' : 'open',
+      statusLabel: x.status==='closed' ? 'Closed' : x.status==='under_investigation' ? 'Reviewing' : 'Open',
+    };
+  }, 'No reports yet — tap "Report an incident" above to file one.');
+
+  // 4. My Observations — BBS observations
+  var myObsRaw = await (async function(){
+    try {
+      return await api('/observations?select=*'+cf()+'&order=created_at.desc&limit=20');
+    } catch(e) { return []; }
+  })();
+  var myObs = (myObsRaw||[]).filter(function(x){
+    return x.observer_id === prof.id 
+        || (x.observer && (x.observer===prof.email || x.observer===prof.full_name))
+        || x.created_by === prof.id;
+  }).slice(0, 5);
+  renderPersonalList('dp-my-observations', myObs, function(x){
+    return {
+      title: x.unsafe_act || x.observation || x.behavior || 'Observation',
+      meta: (x.observation_date||x.created_at||'').slice(0,10) + ' · ' + (x.category||'general'),
+      status: x.status==='closed' ? 'closed' : 'open',
+      statusLabel: x.status==='closed' ? 'Closed' : 'Logged',
+    };
+  }, 'No observations yet — tap "Log an observation" above.');
+
+  // 5. Actions Assigned to Me
+  var myActions = (actions||[]).filter(function(a){
+    return a.assigned_to_id === prof.id 
+        || a.assigned_to === prof.email 
+        || a.assigned_to_name === prof.full_name 
+        || a.responsible === prof.full_name
+        || a.responsible === prof.email;
+  }).filter(function(a){return a.status!=='closed';}).slice(0, 5);
+  renderPersonalList('dp-my-actions', myActions, function(x){
+    var due = x.target_date || x.due_date;
+    var overdue = due && new Date(due) < new Date();
+    return {
+      title: x.title || x.description || x.instructions || 'Action item',
+      meta: (due?'Due '+due.slice(0,10):'No due date') + (x.priority?' · '+x.priority:''),
+      status: overdue ? 'overdue' : 'open',
+      statusLabel: overdue ? 'Overdue' : (x.priority?String(x.priority):'Open'),
+    };
+  }, 'No actions assigned to you right now. ✓');
+
+  // 6. My Training Records
+  var trainList = myTraining
+    .sort(function(a,b){return new Date(b.training_date||0)-new Date(a.training_date||0);})
+    .slice(0, 5);
+  renderPersonalList('dp-my-training', trainList, function(x){
+    var exp = x.expiry_date ? new Date(x.expiry_date) : null;
+    var nowD = new Date();
+    var status, statusLabel;
+    if(!exp) { status='valid'; statusLabel='Current'; }
+    else if(exp <= nowD) { status='expired'; statusLabel='Expired'; }
+    else if(exp < soon60) { status='expiring'; statusLabel='Expiring'; }
+    else { status='valid'; statusLabel='Valid'; }
+    return {
+      title: x.training_type || x.course || x.topic || 'Training',
+      meta: (x.training_date||'').slice(0,10) + (exp?' · expires '+exp.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}):''),
+      status: status,
+      statusLabel: statusLabel,
+    };
+  }, 'No training records yet. Speak to your HSE manager.');
+
+  // 7. My Permits (only show if role can see permits)
+  var permitSection = document.getElementById('dp-permits-section');
+  if(permitSection) {
+    if(canAccessPage('permit')) {
+      permitSection.style.display = '';
+      var myPermits = (permits||[]).filter(function(p){
+        return p.permit_receiver === prof.id 
+            || p.permit_receiver === prof.email
+            || p.permit_receiver_name === prof.full_name
+            || p.created_by === prof.id;
+      }).slice(0, 5);
+      renderPersonalList('dp-my-permits', myPermits, function(x){
+        return {
+          title: x.permit_type || x.work_description || 'Permit',
+          meta: (x.valid_from||'').slice(0,10) + (x.valid_to?' → '+x.valid_to.slice(0,10):''),
+          status: x.status==='closed' ? 'closed' : x.status==='approved' ? 'valid' : 'open',
+          statusLabel: x.status || 'Draft',
+        };
+      }, 'No permits yet — tap "Request a permit" above if you need one.');
+    } else {
+      permitSection.style.display = 'none';
+    }
+  }
+}
+
+function renderPersonalList(elId, items, mapFn, emptyMsg) {
+  var el = document.getElementById(elId);
+  if(!el) return;
+  if(!items || items.length === 0) {
+    el.innerHTML = '<div class="dp-empty">'+emptyMsg+'</div>';
+    return;
+  }
+  el.innerHTML = items.map(function(item){
+    var m = mapFn(item);
+    return '<div class="dp-item">'
+      +'<div class="dp-item-main"><div class="dp-item-title">'+escapeHtml(m.title||'—')+'</div>'
+      +(m.meta?'<div class="dp-item-meta">'+escapeHtml(m.meta)+'</div>':'')
+      +'</div>'
+      +'<span class="dp-item-status '+(m.status||'open')+'">'+escapeHtml(m.statusLabel||'')+'</span>'
+      +'</div>';
+  }).join('');
+}
+
+function escapeHtml(s) {
+  return String(s==null?'':s).replace(/[&<>"']/g, function(c){
+    return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
+  });
+}
 
 // ── Greeting + date line ──────────────────────────────────────────────
 function dashRenderGreeting() {
@@ -22123,6 +22425,114 @@ async function obCreate() {
 
 
 <!-- ════════════════════════════════════════════════════════════════════════
+     PERSONAL VIEW — for employee, contractor, inspector
+     Light, personal, action-oriented. Hidden for managers/admins.
+     ════════════════════════════════════════════════════════════════════════ -->
+<div id="dash-personal-view" style="display:none">
+
+  <!-- Quick actions strip -->
+  <div style="background:linear-gradient(135deg,#185FA5 0%,#0d4a82 100%);color:#fff;border-radius:14px;padding:22px 26px;margin-bottom:16px;box-shadow:0 8px 22px rgba(24,95,165,0.18)">
+    <div style="font-size:13px;font-weight:600;opacity:0.9;text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px">What can I help you with today?</div>
+    <div style="font-size:14px;opacity:0.85;margin-bottom:16px" id="dash-personal-tagline">Report something, log an observation, or check your training.</div>
+    <div id="dash-personal-actions" style="display:flex;gap:10px;flex-wrap:wrap">
+      <button class="dash-action-btn" onclick="showPage('events',null)"><i class="ti ti-alert-triangle"></i> Report an incident</button>
+      <button class="dash-action-btn" onclick="showPage('observation',null)"><i class="ti ti-eye"></i> Log an observation</button>
+      <button class="dash-action-btn" onclick="showPage('training',null)"><i class="ti ti-school"></i> My training</button>
+      <button class="dash-action-btn" id="dash-action-permit" onclick="showPage('permit',null)"><i class="ti ti-file-certificate"></i> Request a permit</button>
+    </div>
+  </div>
+
+  <!-- Site safety pulse: 3 small cards -->
+  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px">
+    <div class="kpi-card" data-id="dp-days" data-tone="green">
+      <div class="kpi-icon">🛡️</div>
+      <div class="kpi-label">Days Since Last Incident</div>
+      <div class="kpi-value" id="dp-days">—</div>
+      <div class="kpi-trend" id="dp-days-sub">at my site</div>
+    </div>
+    <div class="kpi-card" data-id="dp-site-incidents" data-tone="green">
+      <div class="kpi-icon">⚠</div>
+      <div class="kpi-label">Open Issues at My Site</div>
+      <div class="kpi-value" id="dp-site-incidents">—</div>
+      <div class="kpi-trend" id="dp-site-incidents-sub">currently being addressed</div>
+    </div>
+    <div class="kpi-card" data-id="dp-training" data-tone="green">
+      <div class="kpi-icon">🎓</div>
+      <div class="kpi-label">My Training</div>
+      <div class="kpi-value" id="dp-training">—</div>
+      <div class="kpi-trend" id="dp-training-sub">certifications</div>
+    </div>
+  </div>
+
+  <!-- "My Stuff" — personal lists -->
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+    <div class="card" style="padding:18px 20px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+        <div style="font-size:13px;font-weight:600;color:var(--text)">📝 My Reports</div>
+        <button class="btn btn-sm" onclick="showPage('events',null)" style="font-size:10px">View all</button>
+      </div>
+      <div id="dp-my-reports" style="font-size:12px"><div class="loading-msg">Loading...</div></div>
+    </div>
+    <div class="card" style="padding:18px 20px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+        <div style="font-size:13px;font-weight:600;color:var(--text)">👁 My Observations</div>
+        <button class="btn btn-sm" onclick="showPage('observation',null)" style="font-size:10px">View all</button>
+      </div>
+      <div id="dp-my-observations" style="font-size:12px"><div class="loading-msg">Loading...</div></div>
+    </div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+    <div class="card" style="padding:18px 20px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+        <div style="font-size:13px;font-weight:600;color:var(--text)">✅ Actions Assigned to Me</div>
+        <button class="btn btn-sm" onclick="showPage('actions',null)" style="font-size:10px">View all</button>
+      </div>
+      <div id="dp-my-actions" style="font-size:12px"><div class="loading-msg">Loading...</div></div>
+    </div>
+    <div class="card" style="padding:18px 20px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+        <div style="font-size:13px;font-weight:600;color:var(--text)">🦺 My Training Records</div>
+        <button class="btn btn-sm" onclick="showPage('training',null)" style="font-size:10px">View all</button>
+      </div>
+      <div id="dp-my-training" style="font-size:12px"><div class="loading-msg">Loading...</div></div>
+    </div>
+  </div>
+
+  <!-- My Permits section, only visible if the role can see permits -->
+  <div id="dp-permits-section" style="display:none;margin-bottom:12px">
+    <div class="card" style="padding:18px 20px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+        <div style="font-size:13px;font-weight:600;color:var(--text)">🔥 My Active Permits</div>
+        <button class="btn btn-sm" onclick="showPage('permit',null)" style="font-size:10px">View all</button>
+      </div>
+      <div id="dp-my-permits" style="font-size:12px"><div class="loading-msg">Loading...</div></div>
+    </div>
+  </div>
+
+  <!-- Emergency contacts quick reference -->
+  <div class="card" style="padding:16px 20px;background:#FEF2F2;border:1px solid #FECACA;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap">
+    <div style="display:flex;align-items:center;gap:10px">
+      <div style="font-size:24px">🚨</div>
+      <div>
+        <div style="font-size:13px;font-weight:700;color:#991B1B">In an emergency?</div>
+        <div style="font-size:11px;color:#7F1D1D;margin-top:2px">View emergency contacts, evacuation routes, and incident protocols.</div>
+      </div>
+    </div>
+    <button class="btn btn-sm" style="background:#DC2626;color:#fff;border-color:#DC2626" onclick="showPage('emergency',null)">Open Emergency</button>
+  </div>
+
+</div><!-- end dash-personal-view -->
+
+
+<!-- ════════════════════════════════════════════════════════════════════════
+     ORG VIEW — for managers, admins, hse_manager, sephs_admin, etc.
+     The status-tinted KPI grid we built earlier. Default visible.
+     ════════════════════════════════════════════════════════════════════════ -->
+<div id="dash-org-view">
+
+
+<!-- ════════════════════════════════════════════════════════════════════════
      HERO CARD — Days Since Last LTI (visual anchor of the page)
      ════════════════════════════════════════════════════════════════════════ -->
 <div id="dash-hero" style="background:linear-gradient(135deg,#1D9E75 0%,#0d8060 100%);color:#fff;border-radius:14px;padding:22px 26px;margin-bottom:16px;display:grid;grid-template-columns:2fr 1fr;gap:24px;align-items:center;box-shadow:0 8px 22px rgba(29,158,117,0.22);cursor:pointer" onclick="showPage('events',null)">
@@ -22350,6 +22760,8 @@ async function obCreate() {
     <div id="dash-ai-content" style="font-size:12px;color:var(--text2);font-style:italic">Click "Generate insights" for AI-powered analysis of your HSE data.</div>
   </div>
 </div>
+
+</div><!-- end dash-org-view -->
 
 </div><!-- end page-dashboard -->
 
