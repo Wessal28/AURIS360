@@ -1244,6 +1244,13 @@ function kpiPrint() {
   }
   wrapper.innerHTML = html;
   
+  // Temporarily override document.title so the browser's print auto-header
+  // shows our scorecard title instead of whatever stale value is cached.
+  // This is what the browser stamps at the top of every printed page.
+  var originalTitle = document.title;
+  var printTitle = 'KPI Scorecard - ' + companyName + ' - ' + year;
+  document.title = printTitle;
+  
   // Print
   document.body.classList.add('kpi-printing-clean');
   setTimeout(function(){
@@ -1251,6 +1258,8 @@ function kpiPrint() {
     setTimeout(function(){
       document.body.classList.remove('kpi-printing-clean');
       if (wrapper && wrapper.parentNode) wrapper.parentNode.removeChild(wrapper);
+      // Restore the original title after the print dialog has been dismissed
+      document.title = originalTitle;
     }, 400);
   }, 100);
 }
@@ -2550,6 +2559,11 @@ if (isSephsAdmin) {
   var initEl = document.getElementById('co-initials-div');
   if (logoEl) logoEl.style.display = 'none';
   if (initEl) { initEl.textContent = 'A'; initEl.style.display = ''; }
+  // Reset any cached brand from previous sessions (otherwise BuildCo-themed
+  // titles/icons/colors carry over into the sephs_admin experience).
+  try{ Brand.reset(); }catch(_){}
+  // Restore the platform title — paintFromCache might have set a stale value
+  try{ document.title = 'AURIS360 — HSE Management Platform'; }catch(_){}
 } else {
   try{ Brand.loadFromCompany(co); }catch(_){
     if(co?.logo_url){document.getElementById('co-logo-img').src=co.logo_url;document.getElementById('co-logo-img').style.display='block';document.getElementById('co-initials-div').style.display='none';}
