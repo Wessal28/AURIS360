@@ -8568,8 +8568,15 @@ function imsOpenEdit(id){
   document.getElementById('ims-start-inv-btn').style.display=x.investigation_required?'inline-flex':'none';
   document.getElementById('ev-type').value=type;
   var gf=function(fid,val){var el=document.getElementById(fid);if(el)el.value=val||'';};
-  var dt=x.event_date||(x.date?x.date.split('T')[0]:'');
-  document.getElementById('ev-date').value=dt+(x.event_time?'T'+x.event_time:'T00:00');
+  // Build the datetime-local value. event_date is YYYY-MM-DD; event_time from PostgreSQL
+  // comes back as HH:MM:SS but datetime-local inputs expect HH:MM (no seconds), so we strip.
+  var dt = x.event_date || (x.date ? x.date.split('T')[0] : '');
+  var tm = x.event_time ? String(x.event_time).substring(0,5) : '00:00';
+  if (dt) {
+    document.getElementById('ev-date').value = dt + 'T' + tm;
+  } else {
+    document.getElementById('ev-date').value = '';
+  }
   gf('ev-location',x.location);gf('ev-department',x.department);gf('ev-description',x.description);
   gf('ev-immediate',x.immediate_action);gf('ev-root-cause',x.root_cause);gf('ev-witnesses',x.witnesses);
   gf('ev-reported-by-name',x.reported_by_name||x.reported_by);gf('ev-assigned-name',x.assigned_to_name||x.assigned_to);
