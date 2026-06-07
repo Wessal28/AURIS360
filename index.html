@@ -1198,15 +1198,21 @@ function kpiPrint() {
   var printingOverview = overviewTab && overviewTab.style.display !== 'none';
   
   // Build context strings: company name, year, date
+  // Resolution order:
+  //   1. sephs_admin with a selected company → use that company's name
+  //   2. sephs_admin with no selection → "All companies"
+  //   3. Other users → their own company name (co.name)
+  //   4. Fallback → "AURIS360"
   var companyName = 'AURIS360';
-  if (isSA() && sephsCompanyContext && typeof saCompanyList !== 'undefined') {
-    var c = saCompanyList.find(function(co){ return co.id === sephsCompanyContext; });
-    if (c) companyName = c.name;
-  } else if (typeof prof !== 'undefined' && prof?.company_name) {
-    companyName = prof.company_name;
-  } else {
-    var coLabel = document.getElementById('kpi-co-label');
-    if (coLabel && coLabel.textContent.trim()) companyName = coLabel.textContent.trim();
+  if (isSA()) {
+    if (sephsCompanyContext && typeof saCompanyList !== 'undefined') {
+      var c = saCompanyList.find(function(x){ return x.id === sephsCompanyContext; });
+      companyName = c ? c.name : 'AURIS360';
+    } else {
+      companyName = 'All companies';
+    }
+  } else if (typeof co !== 'undefined' && co?.name) {
+    companyName = co.name;
   }
   var year = document.getElementById('year-sel')?.value || new Date().getFullYear();
   var generatedOn = new Date().toLocaleDateString('en-GB', { day:'numeric', month:'long', year:'numeric' });
@@ -2528,15 +2534,27 @@ try{
 const d=await api('/profiles?id=eq.'+uid+'&select=*,companies(*)');
 if(d&&d[0]){
 prof=d[0];co=d[0].companies;
-document.getElementById('sb-company').textContent=co?.name||'AURIS360';
+// Sidebar branding rule:
+//   - sephs_admin → ALWAYS shows AURIS360 (they own the platform, not a single client)
+//   - Other users → shows their company name + logo (white-label experience)
+var isSephsAdmin = prof?.role === 'sephs_admin';
+document.getElementById('sb-company').textContent = isSephsAdmin ? 'AURIS360' : (co?.name||'AURIS360');
 document.getElementById('sb-user').textContent=prof.full_name||prof.email||'--';
 var _rc=typeof HSE_ROLES!=='undefined'?HSE_ROLES[prof.role]:null;
 document.getElementById('sb-role').textContent=_rc?_rc.emoji+' '+_rc.label:(prof.role||'user').replace(/_/g,' ');
-document.getElementById('dash-label').textContent=co?.name||'';
-// White-label: delegate logo + colours to the Brand runtime
-try{ Brand.loadFromCompany(co); }catch(_){
-  if(co?.logo_url){document.getElementById('co-logo-img').src=co.logo_url;document.getElementById('co-logo-img').style.display='block';document.getElementById('co-initials-div').style.display='none';}
-  else{document.getElementById('co-initials-div').textContent=(co?.name||'A').charAt(0).toUpperCase();}
+document.getElementById('dash-label').textContent= isSephsAdmin ? 'Platform administration' : (co?.name||'');
+// White-label: only apply client branding for non-sephs-admin users
+if (isSephsAdmin) {
+  // Neutral AURIS360 logo — show the "A" initial
+  var logoEl = document.getElementById('co-logo-img');
+  var initEl = document.getElementById('co-initials-div');
+  if (logoEl) logoEl.style.display = 'none';
+  if (initEl) { initEl.textContent = 'A'; initEl.style.display = ''; }
+} else {
+  try{ Brand.loadFromCompany(co); }catch(_){
+    if(co?.logo_url){document.getElementById('co-logo-img').src=co.logo_url;document.getElementById('co-logo-img').style.display='block';document.getElementById('co-initials-div').style.display='none';}
+    else{document.getElementById('co-initials-div').textContent=(co?.name||'A').charAt(0).toUpperCase();}
+  }
 }
 // First-login password change prompt — if admin provisioned this user with a temp password.
 if(prof.must_change_password) {
