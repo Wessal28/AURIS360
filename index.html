@@ -970,9 +970,87 @@ if (typeof sopGenerate === 'undefined') {
 function generateFullInsights() { genFullAI(); }
 
 // ── kpiSaveObjective & openObjModal (KPI module) ──────────────────────────────
-function openObjModal() {
+// ── openObjModal — opens the add/edit objective modal ────────────────
+// Called with no args (or null) → create new objective
+// Called with an objective ID → edit existing objective
+var kpiEditObjId = null;  // tracks which objective is being edited (null = creating new)
+function openObjModal(objId) {
   var m = document.getElementById('obj-modal');
-  if (m) m.style.display = 'flex';
+  if (!m) return;
+  
+  // Common: get form references
+  var nameEl  = document.getElementById('obj-name');
+  var codeEl  = document.getElementById('obj-code');
+  var yearEl  = document.getElementById('obj-year');
+  var titleEl = document.getElementById('obj-modal-title');
+  var delBtn  = document.getElementById('obj-delete-btn');
+  var picker  = document.getElementById('kpi-color-picker');
+  
+  // Reset all colour dots to unselected state, then pick green by default
+  if (picker) {
+    picker.querySelectorAll('.kpi-color-dot').forEach(function(d){
+      d.style.border = '2px solid transparent';
+    });
+  }
+  
+  if (objId && typeof kpiObjectives !== 'undefined') {
+    // ── EDIT MODE ─────────────────────────────────────────────────
+    var obj = kpiObjectives.find(function(o){ return o.id === objId; });
+    if (!obj) {
+      toast('Objective not found', false);
+      return;
+    }
+    
+    // Pre-fill form fields with existing values
+    if (nameEl) nameEl.value = obj.name || '';
+    if (codeEl) codeEl.value = obj.code || '';
+    if (yearEl) yearEl.value = obj.year || new Date().getFullYear();
+    
+    // Set selected colour and highlight the matching dot
+    if (typeof kpiSelectedColor !== 'undefined') {
+      kpiSelectedColor = obj.color || '#1D9E75';
+    }
+    if (picker) {
+      picker.querySelectorAll('.kpi-color-dot').forEach(function(d){
+        // Each dot has its hex set inline via background:#XXXXXX in the onclick
+        var onclickStr = d.getAttribute('onclick') || '';
+        var match = onclickStr.match(/kpiSelectColor\('([^']+)'/);
+        if (match && match[1] === obj.color) {
+          d.style.border = '3px solid var(--text)';
+        }
+      });
+    }
+    
+    // Set edit mode markers
+    m.dataset.editId = objId;
+    if (typeof kpiEditObjId !== 'undefined' || true) { kpiEditObjId = objId; }
+    if (titleEl) titleEl.textContent = 'Edit objective';
+    if (delBtn) delBtn.style.display = '';  // show delete button
+  } else {
+    // ── CREATE MODE ───────────────────────────────────────────────
+    // Clear all fields
+    if (nameEl) nameEl.value = '';
+    if (codeEl) codeEl.value = '';
+    if (yearEl) yearEl.value = String(new Date().getFullYear());
+    
+    // Reset selected colour to default green and highlight that dot
+    if (typeof kpiSelectedColor !== 'undefined') {
+      kpiSelectedColor = '#1D9E75';
+    }
+    if (picker) {
+      var firstDot = picker.querySelector('.kpi-color-dot');
+      if (firstDot) firstDot.style.border = '3px solid var(--text)';
+    }
+    
+    // Clear edit mode markers
+    delete m.dataset.editId;
+    kpiEditObjId = null;
+    if (titleEl) titleEl.textContent = 'Add objective';
+    if (delBtn) delBtn.style.display = 'none';
+  }
+  
+  // Show the modal
+  m.style.display = 'flex';
 }
 
 async function kpiSaveObjective() {
@@ -983,8 +1061,8 @@ async function kpiSaveObjective() {
   var code = document.getElementById('obj-code')?.value?.trim() || null;
   // Colour: read from the global kpiSelectedColor (set by kpiSelectColor()), fallback to green
   var color = (typeof kpiSelectedColor !== 'undefined' && kpiSelectedColor) ? kpiSelectedColor : '#1D9E75';
-  // Determine if we're editing (modal has data-edit-id) or creating
-  var editId = document.getElementById('obj-modal')?.dataset?.editId || null;
+  // Determine if we're editing (kpiEditObjId set by openObjModal) or creating
+  var editId = kpiEditObjId || null;
   
   try {
     // Auto-generate code if blank: look at existing objectives for this year and increment
@@ -1014,7 +1092,8 @@ async function kpiSaveObjective() {
       await api('/objectives?id=eq.'+editId, {m:'PATCH', p:'return=minimal', b: payload});
       toast('Objective updated');
     } else {
-      // Create new — created_at and created_by are set by DB defaults / triggers
+      // Create new — created_by tracks who created it
+      payload.created_by = prof?.id;
       await api('/objectives', {m:'POST', p:'return=minimal', b: payload});
       toast('Objective saved');
     }
@@ -1025,6 +1104,7 @@ async function kpiSaveObjective() {
       m.style.display='none';
       delete m.dataset.editId;
     }
+    kpiEditObjId = null;
     // Clear form fields
     var nameEl = document.getElementById('obj-name'); if(nameEl) nameEl.value = '';
     var codeEl = document.getElementById('obj-code'); if(codeEl) codeEl.value = '';
@@ -6867,7 +6947,12 @@ if(el)el.style.border='3px solid var(--text)';
 else document.querySelectorAll('.kpi-color-dot').forEach(d=>{if(d.style.background===color)d.style.border='3px solid var(--text)';});
 }
 
-function closeKpiModal(id){const e=document.getElementById(id);if(e)e.style.display='none';}
+function closeKpiModal(id){
+  const e=document.getElementById(id);
+  if(e)e.style.display='none';
+  // When closing the objective modal, clear edit state so next "Add" starts fresh
+  if(id==='obj-modal'){ kpiEditObjId = null; if(e) delete e.dataset.editId; }
+}
 function openKpiModal(id){const e=document.getElementById(id);if(e)e.style.display='flex';}
 
 
