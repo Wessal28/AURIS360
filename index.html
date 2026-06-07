@@ -507,32 +507,96 @@
 }
 
 
-   When kpiPrint() runs, body gets 'kpi-printing' class, then we hide
-   everything except the KPI page content. Sidebar, top bar, dashboard,
-   other modules — all hidden. Only the currently-active tab is printed
-   (Overview or Monthly Follow-up, whichever the user is looking at).
+
+/* ── Print rules for KPI module (clean document approach) ─────────────
+   When kpiPrint() runs, body gets 'kpi-printing-clean' class, then we hide
+   EVERYTHING except a generated #kpi-print-wrapper containing the clean
+   printable document built by kpiPrint(). This avoids fighting the live
+   UI's inline styles and gives us a print-friendly layout.
    ──────────────────────────────────────────────────────────────────── */
+
+/* The print wrapper sits off-screen by default; only visible when printing */
+#kpi-print-wrapper {
+  position: absolute;
+  left: -10000px;
+  top: 0;
+}
+
 @media print {
-  body.kpi-printing .sidebar,
-  body.kpi-printing .topbar,
-  body.kpi-printing #ai-panel,
-  body.kpi-printing .ai-fab,
-  body.kpi-printing #ai-dash-insights,
-  body.kpi-printing #kpi-add-obj-btn,
-  body.kpi-printing button[onclick*="kpiPrint"],
-  body.kpi-printing #year-sel,
-  body.kpi-printing [id^="page-"]:not(#page-kpi),
-  body.kpi-printing .role-banner,
-  body.kpi-printing #role-banner-dash,
-  body.kpi-printing .kpi-tab,
-  body.kpi-printing .dash-action-btn { display: none !important; }
-  body.kpi-printing .main { margin-left: 0 !important; padding: 0 !important; }
-  body.kpi-printing #page-kpi { display: block !important; padding: 20px !important; }
-  body.kpi-printing { background: white !important; }
-  /* Only show the currently-visible tab (the one the user is looking at).
-     The OTHER tab keeps display:none (set by kpiSwitchTab) so it stays hidden. */
-  body.kpi-printing .kpi-page-header > div:last-child { display: none !important; }
-  /* Hide year selector and Add/Print buttons in print, keep the title */
+  body.kpi-printing-clean > *:not(#kpi-print-wrapper) {
+    display: none !important;
+  }
+  body.kpi-printing-clean #kpi-print-wrapper {
+    position: static !important;
+    left: auto !important;
+    top: auto !important;
+    display: block !important;
+  }
+  body.kpi-printing-clean {
+    background: #fff !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+  @page { size: A4 landscape; margin: 12mm 10mm; }
+}
+
+/* The print document — styled for paper, not screen */
+#kpi-print-wrapper .print-doc {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+  color: #111;
+  background: #fff;
+  font-size: 10pt;
+  line-height: 1.4;
+}
+#kpi-print-wrapper .print-doc-header {
+  border-bottom: 2px solid #111;
+  padding-bottom: 8px;
+  margin-bottom: 14px;
+}
+#kpi-print-wrapper .print-doc-title {
+  font-size: 16pt; font-weight: 700; letter-spacing: -0.01em; margin-bottom: 2px;
+}
+#kpi-print-wrapper .print-doc-sub {
+  font-size: 11pt; font-weight: 600; color: #444;
+}
+#kpi-print-wrapper .print-doc-meta {
+  font-size: 9pt; color: #888; margin-top: 4px;
+}
+#kpi-print-wrapper .print-doc-footer {
+  margin-top: 18px; padding-top: 6px; border-top: 1px solid #ccc;
+  font-size: 8pt; color: #888; text-align: center;
+}
+#kpi-print-wrapper .print-obj-section {
+  margin-bottom: 18px; page-break-inside: avoid;
+}
+#kpi-print-wrapper .print-obj-title {
+  font-size: 11pt; font-weight: 700; background: #f5f5f5;
+  padding: 6px 10px; border-left: 3px solid #111; margin-bottom: 0;
+}
+#kpi-print-wrapper .print-obj-empty {
+  font-size: 9pt; color: #888; font-style: italic; padding: 6px 10px;
+}
+#kpi-print-wrapper .print-table {
+  width: 100%; border-collapse: collapse; font-size: 9pt;
+}
+#kpi-print-wrapper .print-table th {
+  background: #f5f5f5; padding: 6px 8px; text-align: left;
+  font-size: 8pt; font-weight: 600; text-transform: uppercase;
+  letter-spacing: 0.04em; color: #333; border-bottom: 1px solid #999;
+}
+#kpi-print-wrapper .print-table td {
+  padding: 6px 8px; border-bottom: 1px solid #eee; vertical-align: top;
+}
+#kpi-print-wrapper .print-kpi-freq {
+  font-size: 8pt; color: #888; font-weight: normal; font-style: italic; margin-top: 2px;
+}
+#kpi-print-wrapper .print-section-row td {
+  background: #fafafa !important; padding: 6px 8px !important; font-size: 9pt;
+}
+#kpi-print-wrapper .print-monthly { font-size: 8pt; }
+#kpi-print-wrapper .print-monthly td { padding: 4px 6px; }
+#kpi-print-wrapper .print-doc-empty {
+  text-align: center; padding: 30px; color: #888; font-style: italic;
 }
 
 
@@ -1117,22 +1181,200 @@ async function kpiSaveObjective() {
 }
 
 // ── Print the KPI scorecard ─────────────────────────────────────────────
-// Adds a "kpi-printing" class to the body so print CSS hides everything else.
-// Triggers browser's native print, then removes the class.
+// Builds a clean print-only document with just the data — no sidebar, top bar,
+// buttons, or coloured objective banners. The currently-active tab determines
+// what gets printed (Overview = objectives & KPIs table; Monthly Follow-up =
+// the matrix view). 
 function kpiPrint() {
-  // Make sure we're on the KPI page
   var page = document.getElementById('page-kpi');
   if (!page || page.style.display === 'none') {
     if (typeof toast === 'function') toast('Open the Objectives & KPIs page first', false);
     return;
   }
-  document.body.classList.add('kpi-printing');
-  // Give the browser a tick to apply the class before printing
+  
+  // Decide which view is currently active
+  var overviewTab = document.getElementById('kpi-tab-overview');
+  var monthlyTab = document.getElementById('kpi-tab-monthly');
+  var printingOverview = overviewTab && overviewTab.style.display !== 'none';
+  
+  // Build context strings: company name, year, date
+  var companyName = 'AURIS360';
+  if (isSA() && sephsCompanyContext && typeof saCompanyList !== 'undefined') {
+    var c = saCompanyList.find(function(co){ return co.id === sephsCompanyContext; });
+    if (c) companyName = c.name;
+  } else if (typeof prof !== 'undefined' && prof?.company_name) {
+    companyName = prof.company_name;
+  } else {
+    var coLabel = document.getElementById('kpi-co-label');
+    if (coLabel && coLabel.textContent.trim()) companyName = coLabel.textContent.trim();
+  }
+  var year = document.getElementById('year-sel')?.value || new Date().getFullYear();
+  var generatedOn = new Date().toLocaleDateString('en-GB', { day:'numeric', month:'long', year:'numeric' });
+  
+  // Build the print document body — clean HTML for paper
+  var html = '';
+  html += '<div class="print-doc">';
+  html += '<div class="print-doc-header">';
+  html += '<div class="print-doc-title">Objectives &amp; KPIs Scorecard</div>';
+  html += '<div class="print-doc-sub">'+kpiPrintEsc(companyName)+' &middot; '+year+'</div>';
+  html += '<div class="print-doc-meta">Generated on '+generatedOn+(printingOverview?' &middot; Overview':' &middot; Monthly Follow-up')+'</div>';
+  html += '</div>';
+  
+  if (printingOverview) {
+    html += kpiBuildPrintOverview();
+  } else {
+    html += kpiBuildPrintMonthly(year);
+  }
+  
+  html += '<div class="print-doc-footer">AURIS360 &middot; SEPHS Consulting</div>';
+  html += '</div>';
+  
+  // Inject into the page (inside a print-only wrapper)
+  var wrapper = document.getElementById('kpi-print-wrapper');
+  if (!wrapper) {
+    wrapper = document.createElement('div');
+    wrapper.id = 'kpi-print-wrapper';
+    document.body.appendChild(wrapper);
+  }
+  wrapper.innerHTML = html;
+  
+  // Print
+  document.body.classList.add('kpi-printing-clean');
   setTimeout(function(){
     window.print();
-    // Clean up after print dialog closes (slight delay to be safe)
-    setTimeout(function(){ document.body.classList.remove('kpi-printing'); }, 500);
+    setTimeout(function(){
+      document.body.classList.remove('kpi-printing-clean');
+      if (wrapper && wrapper.parentNode) wrapper.parentNode.removeChild(wrapper);
+    }, 400);
   }, 100);
+}
+
+// Lightweight HTML-escape for print fields
+function kpiPrintEsc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c];}); }
+
+// Helper: nice label for KPI status
+function kpiPrintStatusLabel(st){
+  if(st==='on_track') return 'On Track';
+  if(st==='at_risk') return 'At Risk';
+  if(st==='off_track') return 'Off Track';
+  if(st==='not_started') return 'Not Started';
+  return st || '--';
+}
+
+// Helper: format target with operator + unit (re-uses kpiFmtTarget if available)
+function kpiPrintFmtTarget(ind){
+  if (typeof kpiFmtTarget === 'function') return kpiFmtTarget(ind);
+  var op = ind?.target_operator==='lte'?'≤':ind?.target_operator==='eq'?'=':'≥';
+  return op+' '+(ind?.target_value!=null?ind.target_value:'--')+(ind?.unit?' '+ind.unit:'');
+}
+
+// Build the overview document content
+function kpiBuildPrintOverview() {
+  if (!kpiObjectives || !kpiObjectives.length) {
+    return '<div class="print-doc-empty">No objectives have been set up yet.</div>';
+  }
+  var html = '';
+  kpiObjectives.forEach(function(obj){
+    var objKPIs = (kpiKPIs||[]).filter(function(k){ return k.objective_id === obj.id; });
+    html += '<div class="print-obj-section">';
+    html += '<div class="print-obj-title">'+kpiPrintEsc(obj.code||'')+'. '+kpiPrintEsc(obj.name||'')+'</div>';
+    if (!objKPIs.length) {
+      html += '<div class="print-obj-empty">No KPIs defined for this objective.</div>';
+    } else {
+      html += '<table class="print-table"><thead><tr>';
+      html += '<th style="width:46px">Code</th>';
+      html += '<th>KPI</th>';
+      html += '<th>Measurement Indicator</th>';
+      html += '<th style="width:80px;text-align:center">Target</th>';
+      html += '<th style="width:110px">Responsible</th>';
+      html += '<th style="width:90px;text-align:center">Status</th>';
+      html += '</tr></thead><tbody>';
+      objKPIs.forEach(function(k){
+        var inds = (kpiIndicators||[]).filter(function(i){return i.kpi_id===k.id;});
+        if (!inds.length) {
+          html += '<tr>';
+          html += '<td>'+kpiPrintEsc(k.code||'')+'</td>';
+          html += '<td><strong>'+kpiPrintEsc(k.name||'')+'</strong><div class="print-kpi-freq">'+kpiPrintEsc(k.frequency||'monthly')+'</div></td>';
+          html += '<td style="color:#888;font-style:italic">No indicators</td>';
+          html += '<td style="text-align:center">--</td>';
+          html += '<td>'+kpiPrintEsc(k.responsible||'--')+'</td>';
+          html += '<td style="text-align:center">'+kpiPrintStatusLabel(k.status)+'</td>';
+          html += '</tr>';
+        } else {
+          inds.forEach(function(ind, idx){
+            html += '<tr>';
+            if (idx === 0) {
+              html += '<td rowspan="'+inds.length+'">'+kpiPrintEsc(k.code||'')+'</td>';
+              html += '<td rowspan="'+inds.length+'"><strong>'+kpiPrintEsc(k.name||'')+'</strong><div class="print-kpi-freq">'+kpiPrintEsc(k.frequency||'monthly')+'</div></td>';
+            }
+            html += '<td>'+kpiPrintEsc(ind.name||'')+'</td>';
+            html += '<td style="text-align:center">'+kpiPrintFmtTarget(ind)+'</td>';
+            if (idx === 0) {
+              html += '<td rowspan="'+inds.length+'">'+kpiPrintEsc(k.responsible||'--')+'</td>';
+              html += '<td rowspan="'+inds.length+'" style="text-align:center">'+kpiPrintStatusLabel(k.status)+'</td>';
+            }
+            html += '</tr>';
+          });
+        }
+      });
+      html += '</tbody></table>';
+    }
+    html += '</div>';
+  });
+  return html;
+}
+
+// Build the monthly follow-up table for printing
+function kpiBuildPrintMonthly(year) {
+  if (!kpiObjectives || !kpiObjectives.length) {
+    return '<div class="print-doc-empty">No data to display.</div>';
+  }
+  var months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  var html = '<table class="print-table print-monthly"><thead><tr>';
+  html += '<th style="width:38px">No.</th>';
+  html += '<th>KPI</th>';
+  html += '<th>Indicator</th>';
+  html += '<th style="width:55px;text-align:center">Target</th>';
+  months.forEach(function(m){ html += '<th style="text-align:center;min-width:34px">'+m+'</th>'; });
+  html += '<th style="text-align:center;background:#f0f9f4;width:48px"><strong>YTD</strong></th>';
+  html += '<th style="width:70px;text-align:center">Status</th>';
+  html += '</tr></thead><tbody>';
+  
+  kpiObjectives.forEach(function(obj){
+    var objKPIs = (kpiKPIs||[]).filter(function(k){return k.objective_id===obj.id;});
+    if (!objKPIs.length) return;
+    // Section divider row
+    html += '<tr class="print-section-row"><td colspan="'+(5+months.length+1)+'"><strong>'+kpiPrintEsc(obj.code||'')+'. '+kpiPrintEsc(obj.name||'')+'</strong></td></tr>';
+    objKPIs.forEach(function(k){
+      var inds = (kpiIndicators||[]).filter(function(i){return i.kpi_id===k.id;});
+      if (!inds.length) return;
+      inds.forEach(function(ind, idx){
+        html += '<tr>';
+        if (idx === 0) {
+          html += '<td rowspan="'+inds.length+'">'+kpiPrintEsc(k.code||'')+'</td>';
+          html += '<td rowspan="'+inds.length+'"><strong>'+kpiPrintEsc(k.name||'')+'</strong></td>';
+        }
+        html += '<td>'+kpiPrintEsc(ind.name||'')+'</td>';
+        html += '<td style="text-align:center">'+kpiPrintFmtTarget(ind)+'</td>';
+        // Monthly values for this indicator
+        var data = (kpiMonthlyData && kpiMonthlyData[ind.id]) || {};
+        var ytdVal = null;
+        for (var m = 1; m <= 12; m++) {
+          var d = data[m];
+          var actual = d?.actual != null ? d.actual : null;
+          if (d?.ytd != null) ytdVal = d.ytd;
+          html += '<td style="text-align:center">'+(actual != null ? actual : '–')+'</td>';
+        }
+        html += '<td style="text-align:center;background:#f0f9f4"><strong>'+(ytdVal!=null?ytdVal:'–')+'</strong></td>';
+        if (idx === 0) {
+          html += '<td rowspan="'+inds.length+'" style="text-align:center">'+kpiPrintStatusLabel(k.status)+'</td>';
+        }
+        html += '</tr>';
+      });
+    });
+  });
+  html += '</tbody></table>';
+  return html;
 }
 
 
