@@ -8651,7 +8651,11 @@ async function imsSave(){
   if(!desc){toast('Please describe what happened',false);return;}
   var g=function(id){var el=document.getElementById(id);return el?el.value||null:null;};
   var invReq=document.getElementById('ev-inv-required')?.checked||false;
-  var body={company_id:prof?.company_id,event_type:type,event_date:date.includes('T')?date.split('T')[0]:date,
+  // Use sephs_admin's selected company context when applicable, otherwise user's own.
+  // Without this, sephs_admin saves under their profile company (BuildCo) even when
+  // viewing another client's data via the switcher.
+  var effectiveCompanyId = (isSA() && sephsCompanyContext) ? sephsCompanyContext : prof?.company_id;
+  var body={company_id:effectiveCompanyId,event_type:type,event_date:date.includes('T')?date.split('T')[0]:date,
     event_time:date.includes('T')?date.split('T')[1]:null,severity:g('ev-severity')||'medium',
     status:g('ev-status')||'open',location:g('ev-location'),department:g('ev-department'),
     description:desc,immediate_actions:g('ev-immediate'),root_cause:g('ev-root-cause'),
@@ -8661,7 +8665,7 @@ async function imsSave(){
     injury_type:g('ev-injury-type'),body_part:g('ev-body-part'),treatment:g('ev-treatment'),
     lost_time_days:parseInt(g('ev-lost-time'))||0,restricted_work_days:parseInt(g('ev-restricted-days'))||0,
     vehicle_reg:g('ev-vehicle-reg'),damage_estimate:g('ev-damage-estimate')?parseFloat(g('ev-damage-estimate')):null,
-    property_description:g('ev-property-desc'),property_owner:g('ev-property-owner'),
+    property_owner:g('ev-property-owner'),
     quantity_released:g('ev-quantity'),regulator_notified:document.getElementById('ev-regulator-notified')?.checked||false,
     gps_address:g('ev-gps-address'),lat:g('ev-lat')?parseFloat(g('ev-lat')):null,lng:g('ev-lng')?parseFloat(g('ev-lng')):null,
     investigation_required:invReq,updated_at:new Date().toISOString()};
@@ -8673,7 +8677,19 @@ async function imsSave(){
       body.created_by=prof?.id;
       var res=await api('/events',{m:'POST',p:'return=representation',b:body});
       if(res?.[0]?.id){
-        var yr=new Date().getFullYear(); var n=String((imsAllData||[]).length+1).padStart(4,'0');
+        // Generate reference number. Query the actual database for highest existing
+        // sequence in this company/year, then increment — more reliable than counting
+        // the in-memory array which only reflects the current view.
+        var yr=new Date().getFullYear();
+        var seq = 1;
+        try {
+          var existing = await api('/events?select=event_ref&company_id=eq.'+effectiveCompanyId+'&event_ref=like.INC-'+yr+'-*&order=event_ref.desc&limit=1');
+          if(existing && existing[0] && existing[0].event_ref){
+            var match = existing[0].event_ref.match(/INC-\d{4}-(\d+)/);
+            if(match) seq = parseInt(match[1]) + 1;
+          }
+        } catch(_) { /* fall back to seq=1 */ }
+        var n=String(seq).padStart(4,'0');
         var ref='INC-'+yr+'-'+n;
         await api('/events?id=eq.'+res[0].id,{m:'PATCH',p:'return=minimal',b:{event_ref:ref,incident_number:ref}});
         toast('Incident reported! Ref: '+ref);
