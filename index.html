@@ -8568,10 +8568,31 @@ function imsOpenEdit(id){
   document.getElementById('ims-start-inv-btn').style.display=x.investigation_required?'inline-flex':'none';
   document.getElementById('ev-type').value=type;
   var gf=function(fid,val){var el=document.getElementById(fid);if(el)el.value=val||'';};
-  // Build the datetime-local value. event_date is YYYY-MM-DD; event_time from PostgreSQL
-  // comes back as HH:MM:SS but datetime-local inputs expect HH:MM (no seconds), so we strip.
-  var dt = x.event_date || (x.date ? x.date.split('T')[0] : '');
-  var tm = x.event_time ? String(x.event_time).substring(0,5) : '00:00';
+  // Build the datetime-local value robustly. The events table has THREE date columns
+  // (event_date as timestamp, event_time as time, event_datetime as timestamp) and
+  // historical data is inconsistent — some records have time inside event_date,
+  // others split it across event_date + event_time.
+  // Steps:
+  //   1. Get the date portion (YYYY-MM-DD) from whatever event_date contains.
+  //   2. Get the time portion (HH:MM) from event_time, falling back to extracting
+  //      it from event_date if event_time is null.
+  //   3. Combine as YYYY-MM-DDTHH:MM (format required by datetime-local input).
+  var dt = '', tm = '00:00';
+  var rawDate = x.event_date || x.event_datetime || x.date || '';
+  if (rawDate) {
+    var sRaw = String(rawDate);
+    // Extract date: split on 'T' or ' ' and take the first part
+    dt = sRaw.split('T')[0].split(' ')[0];  // "2026-06-08"
+    // If event_time is provided, use it (strip seconds defensively).
+    // Otherwise try to extract HH:MM from the timestamp portion.
+    if (x.event_time) {
+      tm = String(x.event_time).substring(0, 5);
+    } else {
+      // Find the part after T or space, take first 5 chars (HH:MM)
+      var afterDate = sRaw.split('T')[1] || sRaw.split(' ')[1] || '';
+      if (afterDate) tm = afterDate.substring(0, 5);
+    }
+  }
   if (dt) {
     document.getElementById('ev-date').value = dt + 'T' + tm;
   } else {
