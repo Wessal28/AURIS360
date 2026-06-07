@@ -337,10 +337,180 @@
   font-style: italic;
 }
 
-/* ── Print rules for KPI module ────────────────────────────────────────
+/* ── KPI module visual polish (Batch 1) ─────────────────────────────────
+   Less color, more typography hierarchy. Override the inline styles
+   already in the markup by using #page-kpi as a higher-specificity selector.
+   ──────────────────────────────────────────────────────────────────── */
+
+/* Page header refinement */
+#page-kpi .kpi-page-header > div:first-child > div:first-child {
+  font-size: 22px !important;
+  font-weight: 700 !important;
+  letter-spacing: -0.01em;
+}
+#page-kpi .kpi-page-header > div:first-child > #kpi-co-label {
+  font-size: 12px;
+  color: var(--text2);
+  margin-top: 3px;
+  letter-spacing: 0.01em;
+}
+
+/* Metric cards — typography forward, color restrained */
+#page-kpi #kpi-metrics > div {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 16px 18px !important;
+  transition: border-color 0.15s ease;
+  position: relative;
+}
+#page-kpi #kpi-metrics > div:hover {
+  border-color: #D1D5DB;
+}
+/* Label: smaller, uppercase, less prominent */
+#page-kpi #kpi-metrics > div > div:first-child {
+  font-size: 10px !important;
+  font-weight: 600 !important;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text2);
+  margin-bottom: 8px !important;
+}
+/* Number: bigger, tighter, dominant */
+#page-kpi #kpi-metrics > div > div:last-child {
+  font-size: 32px !important;
+  font-weight: 700 !important;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+/* Subtle status accent — a 3px left border instead of full color fills */
+#page-kpi #kpi-metrics > div:nth-child(2) { border-left: 3px solid var(--green); }
+#page-kpi #kpi-metrics > div:nth-child(3) { border-left: 3px solid var(--amber); }
+#page-kpi #kpi-metrics > div:nth-child(4) { border-left: 3px solid var(--red); }
+/* Override the inline coloured number text — restore to neutral, let the border carry the meaning */
+#page-kpi #kpi-metrics > div > div:last-child {
+  color: var(--text) !important;
+}
+
+/* Tab buttons — slightly tighter, cleaner */
+#page-kpi .kpi-tab {
+  font-size: 13px !important;
+  padding: 8px 18px !important;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+/* Objective headers — more breathing room, cleaner hierarchy */
+#page-kpi .kpi-objective-header {
+  padding: 14px 18px !important;
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: -0.005em;
+}
+#page-kpi .kpi-objective-header > span:first-child {
+  font-size: 13px;
+  font-weight: 700;
+  opacity: 0.85;
+}
+
+/* Table headers — refined */
+#page-kpi #kpi-tab-overview thead th,
+#page-kpi #kpi-tab-monthly thead th {
+  font-size: 10px !important;
+  font-weight: 600 !important;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text2) !important;
+  padding: 10px 12px !important;
+  background: #FAFBFC !important;
+}
+
+/* Body rows — clearer rows, subtle hover */
+#page-kpi #kpi-tab-overview tbody td,
+#page-kpi #kpi-tab-monthly tbody td {
+  font-size: 13px;
+  padding: 11px 12px !important;
+  border-bottom: 1px solid #F3F4F6 !important;
+}
+
+/* KPI name in row — more prominent */
+#page-kpi .kpi-row-name {
+  font-weight: 600;
+  color: var(--text);
+  font-size: 13px;
+}
+#page-kpi .kpi-row-freq {
+  font-size: 11px;
+  color: var(--text3);
+  margin-top: 2px;
+}
+
+/* Status badges — cleaner pill */
+#page-kpi .kpi-status-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+#page-kpi .kpi-status-ontrack { background: #ECFDF5; color: #047857; }
+#page-kpi .kpi-status-atrisk  { background: #FFFBEB; color: #B45309; }
+#page-kpi .kpi-status-offtrack { background: #FEF2F2; color: #B91C1C; }
+#page-kpi .kpi-status-notstarted { background: #F3F4F6; color: #6B7280; }
+
+/* ── Empty/loading states ──────────────────────────────── */
+.kpi-empty {
+  text-align: center;
+  padding: 48px 24px;
+  background: var(--card);
+  border: 1px dashed var(--border);
+  border-radius: 10px;
+}
+.kpi-empty-icon {
+  font-size: 36px;
+  color: #D1D5DB;
+  margin-bottom: 12px;
+  display: block;
+}
+.kpi-empty-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 6px;
+}
+.kpi-empty-body {
+  font-size: 12px;
+  color: var(--text2);
+  max-width: 320px;
+  margin: 0 auto 16px;
+  line-height: 1.5;
+}
+.kpi-loading {
+  text-align: center;
+  padding: 40px 20px;
+  color: var(--text2);
+  font-size: 13px;
+}
+.kpi-loading::before {
+  content: '';
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border: 2px solid #E5E7EB;
+  border-top-color: var(--green);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+  margin-right: 10px;
+  vertical-align: middle;
+}
+
+
    When kpiPrint() runs, body gets 'kpi-printing' class, then we hide
    everything except the KPI page content. Sidebar, top bar, dashboard,
-   other modules — all hidden.
+   other modules — all hidden. Only the currently-active tab is printed
+   (Overview or Monthly Follow-up, whichever the user is looking at).
    ──────────────────────────────────────────────────────────────────── */
 @media print {
   body.kpi-printing .sidebar,
@@ -354,15 +524,15 @@
   body.kpi-printing [id^="page-"]:not(#page-kpi),
   body.kpi-printing .role-banner,
   body.kpi-printing #role-banner-dash,
+  body.kpi-printing .kpi-tab,
   body.kpi-printing .dash-action-btn { display: none !important; }
   body.kpi-printing .main { margin-left: 0 !important; padding: 0 !important; }
   body.kpi-printing #page-kpi { display: block !important; padding: 20px !important; }
   body.kpi-printing { background: white !important; }
-  body.kpi-printing .kpi-tab,
-  body.kpi-printing .kpi-tab.active { background: transparent !important; color: #000 !important; border: 1px solid #ccc !important; }
-  body.kpi-printing #kpi-tab-overview,
-  body.kpi-printing #kpi-tab-monthly { display: block !important; page-break-before: always; }
-  body.kpi-printing #kpi-tab-overview { page-break-before: auto; }
+  /* Only show the currently-visible tab (the one the user is looking at).
+     The OTHER tab keeps display:none (set by kpiSwitchTab) so it stays hidden. */
+  body.kpi-printing .kpi-page-header > div:last-child { display: none !important; }
+  /* Hide year selector and Add/Print buttons in print, keep the title */
 }
 
 
@@ -6503,7 +6673,8 @@ function kpiRenderOverview(){
 const c=document.getElementById('kpi-objectives-container');
 if(!c)return;
 if(!kpiObjectives.length){
-c.innerHTML='<div style="text-align:center;padding:40px;color:var(--text3)">No objectives yet'+(isMgr()?' — click Add objective to start':'')+'</div>';
+var addBtn = isMgr() ? '<button class="btn btn-primary" onclick="openObjModal()"><i class="ti ti-plus"></i>Add your first objective</button>' : '<div style="font-size:11px;color:var(--text3);font-style:italic">Ask your HSE manager to set up objectives.</div>';
+c.innerHTML='<div class="kpi-empty"><i class="ti ti-target kpi-empty-icon"></i><div class="kpi-empty-title">No objectives set up yet</div><div class="kpi-empty-body">Objectives are the high-level safety, health and environment goals you want to track this year. Each objective contains one or more KPIs with measurable indicators.</div>'+addBtn+'</div>';
 return;
 }
 c.innerHTML='';
@@ -6605,7 +6776,7 @@ const tbody=document.getElementById('kpi-monthly-body');
 if(!tbody)return;
 tbody.innerHTML='';
 if(!kpiObjectives.length){
-tbody.innerHTML='<tr><td colspan="18" style="text-align:center;padding:30px;color:var(--text3)">No objectives yet</td></tr>';
+tbody.innerHTML='<tr><td colspan="18" style="padding:36px 20px;text-align:center;color:var(--text2)"><i class="ti ti-calendar-stats" style="font-size:32px;color:#D1D5DB;display:block;margin-bottom:10px"></i><div style="font-size:14px;font-weight:600;color:var(--text);margin-bottom:4px">No data to display</div><div style="font-size:12px;color:var(--text2)">Set up objectives and KPIs first, then monthly values will appear here.</div></td></tr>';
 return;
 }
 let hasAny=false;
@@ -23721,7 +23892,7 @@ async function obCreate() {
 </div><!-- end page-executive -->
 
 <div id="page-kpi" class="page">
-<div class="kpi-page-header" style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px"><div><div style="font-size:20px;font-weight:700;color:var(--text)">Objectives & KPIs</div><div style="font-size:12px;color:var(--text2);margin-top:2px" id="kpi-co-label"></div></div><div style="display:flex;gap:8px;align-items:center"><div style="display:flex;align-items:center;gap:6px"><span style="font-size:12px;color:var(--text2)">Year:</span><select id="year-sel" onchange="kpiLoadAll()" style="width:auto;padding:6px 10px;font-size:13px;border:1px solid var(--border);border-radius:8px"><option>2024</option><option>2025</option><option selected>2026</option><option>2027</option></select></div><button class="btn btn-primary" id="kpi-add-obj-btn" style="display:none" onclick="openObjModal()"><i class="ti ti-plus"></i>Add objective</button><button class="btn btn-sm" onclick="kpiPrint()" title="Print KPI scorecard" style="margin-left:6px"><i class="ti ti-printer"></i>Print</button></div></div><div style="display:flex;gap:2px;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:4px;margin-bottom:18px;width:fit-content"><button class="kpi-tab active" onclick="kpiSwitchTab('overview',this)" style="padding:7px 18px;border-radius:7px;font-size:13px;cursor:pointer;font-weight:500;border:none;background:var(--green);color:#fff"><i class="ti ti-layout-list" style="font-size:14px;margin-right:4px"></i>Overview</button><button class="kpi-tab" onclick="kpiSwitchTab('monthly',this)" style="padding:7px 18px;border-radius:7px;font-size:13px;cursor:pointer;font-weight:500;border:none;background:transparent;color:var(--text2)"><i class="ti ti-calendar-stats" style="font-size:14px;margin-right:4px"></i>Monthly follow-up</button></div><div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:18px" id="kpi-metrics"><div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px 16px"><div style="font-size:11px;color:var(--text2);margin-bottom:5px;font-weight:500">Total KPIs</div><div style="font-size:24px;font-weight:700" id="km-total">—</div></div><div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px 16px"><div style="font-size:11px;color:var(--text2);margin-bottom:5px;font-weight:500">On Track</div><div style="font-size:24px;font-weight:700;color:var(--green)" id="km-ontrack">—</div></div><div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px 16px"><div style="font-size:11px;color:var(--text2);margin-bottom:5px;font-weight:500">At Risk</div><div style="font-size:24px;font-weight:700;color:var(--amber)" id="km-atrisk">—</div></div><div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px 16px"><div style="font-size:11px;color:var(--text2);margin-bottom:5px;font-weight:500">Off Track</div><div style="font-size:24px;font-weight:700;color:var(--red)" id="km-offtrack">—</div></div></div><div id="kpi-tab-overview"><div id="kpi-objectives-container"><div style="text-align:center;padding:30px;color:var(--text2);font-size:13px">Loading objectives...</div></div></div><div id="kpi-tab-monthly" style="display:none"><div class="card" style="padding:0;overflow:hidden"><div style="padding:14px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between"><div style="font-size:14px;font-weight:700">Monthly follow-up — <span id="kpi-monthly-year">2026</span></div><div style="font-size:12px;color:var(--text2)">Click any cell to enter value</div></div><div style="overflow-x:auto"><table id="kpi-monthly-table" style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr><th style="background:#f9fafb;padding:8px 10px;border:1px solid var(--border);font-size:11px;font-weight:600;color:var(--text2);text-align:center;min-width:50px;position:sticky;left:0;z-index:2">No.</th><th style="background:#f9fafb;padding:8px 10px;border:1px solid var(--border);font-size:11px;font-weight:600;color:var(--text2);text-align:left;min-width:160px">KPI name</th><th style="background:#f9fafb;padding:8px 10px;border:1px solid var(--border);font-size:11px;font-weight:600;color:var(--text2);text-align:left;min-width:200px">Measurement indicator</th><th style="background:#f9fafb;padding:8px 10px;border:1px solid var(--border);font-size:11px;font-weight:600;color:var(--text2);text-align:center;min-width:80px">Target</th><th style="background:#f9fafb;padding:8px 10px;border:1px solid var(--border);font-size:11px;font-weight:600;color:var(--text2);text-align:center">Jan</th><th style="background:#f9fafb;padding:8px 10px;border:1px solid var(--border);font-size:11px;font-weight:600;color:var(--text2);text-align:center">Feb</th><th style="background:#f9fafb;padding:8px 10px;border:1px solid var(--border);font-size:11px;font-weight:600;color:var(--text2);text-align:center">Mar</th><th style="background:#f9fafb;padding:8px 10px;border:1px solid var(--border);font-size:11px;font-weight:600;color:var(--text2);text-align:center">Apr</th><th style="background:#f9fafb;padding:8px 10px;border:1px solid var(--border);font-size:11px;font-weight:600;color:var(--text2);text-align:center">May</th><th style="background:#f9fafb;padding:8px 10px;border:1px solid var(--border);font-size:11px;font-weight:600;color:var(--text2);text-align:center">Jun</th><th style="background:#f9fafb;padding:8px 10px;border:1px solid var(--border);font-size:11px;font-weight:600;color:var(--text2);text-align:center">Jul</th><th style="background:#f9fafb;padding:8px 10px;border:1px solid var(--border);font-size:11px;font-weight:600;color:var(--text2);text-align:center">Aug</th><th style="background:#f9fafb;padding:8px 10px;border:1px solid var(--border);font-size:11px;font-weight:600;color:var(--text2);text-align:center">Sep</th><th style="background:#f9fafb;padding:8px 10px;border:1px solid var(--border);font-size:11px;font-weight:600;color:var(--text2);text-align:center">Oct</th><th style="background:#f9fafb;padding:8px 10px;border:1px solid var(--border);font-size:11px;font-weight:600;color:var(--text2);text-align:center">Nov</th><th style="background:#f9fafb;padding:8px 10px;border:1px solid var(--border);font-size:11px;font-weight:600;color:var(--text2);text-align:center">Dec</th><th style="background:#E1F5EE;padding:8px 10px;border:1px solid var(--border);font-size:11px;font-weight:700;color:var(--dg);text-align:center">YTD</th><th style="background:#f9fafb;padding:8px 10px;border:1px solid var(--border);font-size:11px;font-weight:600;color:var(--text2);text-align:center">Status</th></tr></thead><tbody id="kpi-monthly-body"><tr><td colspan="17" style="text-align:center;padding:30px;color:var(--text2)">Loading...</td></tr></tbody></table></div></div></div><div style="position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:200;display:none;align-items:center;justify-content:center" id="obj-modal"><div style="background:var(--card);border-radius:16px;padding:28px;width:520px;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.2)"><div style="font-size:16px;font-weight:700;margin-bottom:20px;display:flex;align-items:center;justify-content:space-between"><span id="obj-modal-title">Add objective</span><button onclick="closeKpiModal('obj-modal')" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--text2)"><i class="ti ti-x"></i></button></div><div class="form-row"><div class="form-group"><label class="form-label">Code (e.g. 1, 2)</label><input type="text" id="obj-code" readonly style="background:#f9fafb;color:var(--text2);cursor:default" placeholder="Auto-generated"/></div><div class="form-group"><label class="form-label">Year</label><select id="obj-year"><option>2024</option><option>2025</option><option selected>2026</option><option>2027</option></select></div></div><div class="form-group"><label class="form-label">Objective name</label><input type="text" id="obj-name" placeholder="e.g. Zero Accident & Occupational Illness"/></div><div class="form-group"><label class="form-label">Colour</label><div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px" id="kpi-color-picker"><div class="kpi-color-dot" style="width:24px;height:24px;border-radius:50%;cursor:pointer;border:3px solid var(--text);background:#1D9E75" onclick="kpiSelectColor('#1D9E75',this)"></div><div class="kpi-color-dot" style="width:24px;height:24px;border-radius:50%;cursor:pointer;border:2px solid transparent;background:#185FA5" onclick="kpiSelectColor('#185FA5',this)"></div><div class="kpi-color-dot" style="width:24px;height:24px;border-radius:50%;cursor:pointer;border:2px solid transparent;background:#854F0B" onclick="kpiSelectColor('#854F0B',this)"></div><div class="kpi-color-dot" style="width:24px;height:24px;border-radius:50%;cursor:pointer;border:2px solid transparent;background:#6B21A8" onclick="kpiSelectColor('#6B21A8',this)"></div><div class="kpi-color-dot" style="width:24px;height:24px;border-radius:50%;cursor:pointer;border:2px solid transparent;background:#0F6E56" onclick="kpiSelectColor('#0F6E56',this)"></div><div class="kpi-color-dot" style="width:24px;height:24px;border-radius:50%;cursor:pointer;border:2px solid transparent;background:#DC2626" onclick="kpiSelectColor('#DC2626',this)"></div><div class="kpi-color-dot" style="width:24px;height:24px;border-radius:50%;cursor:pointer;border:2px solid transparent;background:#0369A1" onclick="kpiSelectColor('#0369A1',this)"></div></div></div><div style="display:flex;gap:8px;justify-content:flex-end;margin-top:20px"><button class="btn" onclick="closeKpiModal('obj-modal')">Cancel</button><button class="btn btn-danger" id="obj-delete-btn" style="display:none" onclick="kpiDeleteObjective()"><i class="ti ti-trash"></i>Delete</button><button class="btn btn-primary" onclick="kpiSaveObjective()"><i class="ti ti-device-floppy"></i>Save objective</button></div></div></div><div style="position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:200;display:none;align-items:center;justify-content:center" id="kpi-edit-modal"><div style="background:var(--card);border-radius:16px;padding:28px;width:600px;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.2)"><div style="font-size:16px;font-weight:700;margin-bottom:20px;display:flex;align-items:center;justify-content:space-between"><span id="kpi-modal-title">Add KPI</span><button onclick="closeKpiModal('kpi-edit-modal')" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--text2)"><i class="ti ti-x"></i></button></div><div class="form-row"><div class="form-group"><label class="form-label">Code (auto)</label><input type="text" id="kpi-code" readonly style="background:#f9fafb;color:var(--text2);cursor:default" placeholder="Auto-generated"/></div><div class="form-group"><label class="form-label">Objective</label><select id="kpi-obj-sel"><option value="">Select objective...</option></select></div></div><div class="form-row"><div class="form-group"><label class="form-label">KPI name</label><input type="text" id="kpi-name" placeholder="e.g. Near Miss Reporting"/></div><div class="form-group"><label class="form-label">Frequency</label><select id="kpi-freq"><option value="monthly">Monthly</option><option value="quarterly">Quarterly</option><option value="annual">Annual</option></select></div></div><div class="form-row"><div class="form-group"><label class="form-label">Responsible</label><input type="text" id="kpi-resp" placeholder="Name or role"/></div><div class="form-group"><label class="form-label">Status</label><select id="kpi-status"><option value="not_started">Not started</option><option value="on_track">On Track</option><option value="at_risk">At Risk</option><option value="off_track">Off Track</option></select></div></div><div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--border)"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px"><div><div style="font-size:13px;font-weight:600;color:var(--text)">Measurement indicators</div><div style="font-size:11px;color:var(--text3);margin-top:2px">Each indicator gets its own row in the monthly follow-up table</div></div><button type="button" class="btn btn-sm" onclick="kpiAddIndicatorRow()"><i class="ti ti-plus"></i>Add indicator</button></div><div id="kpi-indicators-list" style="display:flex;flex-direction:column;gap:8px"></div></div><div style="display:flex;gap:8px;justify-content:flex-end;margin-top:20px"><button class="btn" onclick="closeKpiModal('kpi-edit-modal')">Cancel</button><button class="btn btn-danger" id="kpi-delete-btn" style="display:none" onclick="kpiDeleteKPI()"><i class="ti ti-trash"></i>Delete KPI</button><button class="btn btn-primary" onclick="kpiSaveKPI()"><i class="ti ti-device-floppy"></i>Save KPI</button></div></div></div><div style="position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:200;display:none;align-items:center;justify-content:center" id="kpi-entry-modal"><div style="background:var(--card);border-radius:16px;padding:28px;width:420px;box-shadow:0 20px 60px rgba(0,0,0,.2)"><div style="font-size:16px;font-weight:700;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between"><span id="entry-modal-title">Enter value</span><button onclick="closeKpiModal('kpi-entry-modal')" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--text2)"><i class="ti ti-x"></i></button></div><div style="background:#f9fafb;border-radius:8px;padding:12px;margin-bottom:16px"><div style="font-size:13px;font-weight:600;color:var(--text)" id="entry-kpi-name"></div><div style="font-size:11px;color:var(--text2);margin-top:3px" id="entry-kpi-target"></div></div><div class="form-group"><label class="form-label" id="entry-month-label">Actual value</label><input type="number" id="entry-actual" placeholder="Enter actual value" step="any"/></div><div class="form-group"><label class="form-label">YTD (leave blank to auto-calculate)</label><input type="number" id="entry-ytd" placeholder="Auto" step="any"/></div><div class="form-group"><label class="form-label">Comment (optional)</label><textarea id="entry-comment" style="min-height:50px"></textarea></div><div style="display:flex;gap:8px;justify-content:space-between;margin-top:16px;align-items:center"><button class="btn btn-danger" id="kpi-clear-btn" onclick="kpiClearEntry()" style="display:none"><i class="ti ti-trash"></i>Clear data</button><div style="display:flex;gap:8px;margin-left:auto"><button class="btn" onclick="closeKpiModal('kpi-entry-modal')">Cancel</button><button class="btn btn-primary" onclick="kpiSaveEntry()"><i class="ti ti-device-floppy"></i>Save</button></div></div></div></div></div>
+<div class="kpi-page-header" style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px"><div><div style="font-size:20px;font-weight:700;color:var(--text)">Objectives & KPIs</div><div style="font-size:12px;color:var(--text2);margin-top:2px" id="kpi-co-label"></div></div><div style="display:flex;gap:8px;align-items:center"><div style="display:flex;align-items:center;gap:6px"><span style="font-size:12px;color:var(--text2)">Year:</span><select id="year-sel" onchange="kpiLoadAll()" style="width:auto;padding:6px 10px;font-size:13px;border:1px solid var(--border);border-radius:8px"><option>2024</option><option>2025</option><option selected>2026</option><option>2027</option></select></div><button class="btn btn-primary" id="kpi-add-obj-btn" style="display:none" onclick="openObjModal()"><i class="ti ti-plus"></i>Add objective</button><button class="btn btn-sm" onclick="kpiPrint()" title="Print KPI scorecard" style="margin-left:6px"><i class="ti ti-printer"></i>Print</button></div></div><div style="display:flex;gap:2px;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:4px;margin-bottom:18px;width:fit-content"><button class="kpi-tab active" onclick="kpiSwitchTab('overview',this)" style="padding:7px 18px;border-radius:7px;font-size:13px;cursor:pointer;font-weight:500;border:none;background:var(--green);color:#fff"><i class="ti ti-layout-list" style="font-size:14px;margin-right:4px"></i>Overview</button><button class="kpi-tab" onclick="kpiSwitchTab('monthly',this)" style="padding:7px 18px;border-radius:7px;font-size:13px;cursor:pointer;font-weight:500;border:none;background:transparent;color:var(--text2)"><i class="ti ti-calendar-stats" style="font-size:14px;margin-right:4px"></i>Monthly follow-up</button></div><div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:18px" id="kpi-metrics"><div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px 16px"><div style="font-size:11px;color:var(--text2);margin-bottom:5px;font-weight:500">Total KPIs</div><div style="font-size:24px;font-weight:700" id="km-total">—</div></div><div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px 16px"><div style="font-size:11px;color:var(--text2);margin-bottom:5px;font-weight:500">On Track</div><div style="font-size:24px;font-weight:700;color:var(--green)" id="km-ontrack">—</div></div><div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px 16px"><div style="font-size:11px;color:var(--text2);margin-bottom:5px;font-weight:500">At Risk</div><div style="font-size:24px;font-weight:700;color:var(--amber)" id="km-atrisk">—</div></div><div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px 16px"><div style="font-size:11px;color:var(--text2);margin-bottom:5px;font-weight:500">Off Track</div><div style="font-size:24px;font-weight:700;color:var(--red)" id="km-offtrack">—</div></div></div><div id="kpi-tab-overview"><div id="kpi-objectives-container"><div class="kpi-loading">Loading objectives...</div></div></div><div id="kpi-tab-monthly" style="display:none"><div class="card" style="padding:0;overflow:hidden"><div style="padding:14px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between"><div style="font-size:14px;font-weight:700">Monthly follow-up — <span id="kpi-monthly-year">2026</span></div><div style="font-size:12px;color:var(--text2)">Click any cell to enter value</div></div><div style="overflow-x:auto"><table id="kpi-monthly-table" style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr><th style="background:#f9fafb;padding:8px 10px;border:1px solid var(--border);font-size:11px;font-weight:600;color:var(--text2);text-align:center;min-width:50px;position:sticky;left:0;z-index:2">No.</th><th style="background:#f9fafb;padding:8px 10px;border:1px solid var(--border);font-size:11px;font-weight:600;color:var(--text2);text-align:left;min-width:160px">KPI name</th><th style="background:#f9fafb;padding:8px 10px;border:1px solid var(--border);font-size:11px;font-weight:600;color:var(--text2);text-align:left;min-width:200px">Measurement indicator</th><th style="background:#f9fafb;padding:8px 10px;border:1px solid var(--border);font-size:11px;font-weight:600;color:var(--text2);text-align:center;min-width:80px">Target</th><th style="background:#f9fafb;padding:8px 10px;border:1px solid var(--border);font-size:11px;font-weight:600;color:var(--text2);text-align:center">Jan</th><th style="background:#f9fafb;padding:8px 10px;border:1px solid var(--border);font-size:11px;font-weight:600;color:var(--text2);text-align:center">Feb</th><th style="background:#f9fafb;padding:8px 10px;border:1px solid var(--border);font-size:11px;font-weight:600;color:var(--text2);text-align:center">Mar</th><th style="background:#f9fafb;padding:8px 10px;border:1px solid var(--border);font-size:11px;font-weight:600;color:var(--text2);text-align:center">Apr</th><th style="background:#f9fafb;padding:8px 10px;border:1px solid var(--border);font-size:11px;font-weight:600;color:var(--text2);text-align:center">May</th><th style="background:#f9fafb;padding:8px 10px;border:1px solid var(--border);font-size:11px;font-weight:600;color:var(--text2);text-align:center">Jun</th><th style="background:#f9fafb;padding:8px 10px;border:1px solid var(--border);font-size:11px;font-weight:600;color:var(--text2);text-align:center">Jul</th><th style="background:#f9fafb;padding:8px 10px;border:1px solid var(--border);font-size:11px;font-weight:600;color:var(--text2);text-align:center">Aug</th><th style="background:#f9fafb;padding:8px 10px;border:1px solid var(--border);font-size:11px;font-weight:600;color:var(--text2);text-align:center">Sep</th><th style="background:#f9fafb;padding:8px 10px;border:1px solid var(--border);font-size:11px;font-weight:600;color:var(--text2);text-align:center">Oct</th><th style="background:#f9fafb;padding:8px 10px;border:1px solid var(--border);font-size:11px;font-weight:600;color:var(--text2);text-align:center">Nov</th><th style="background:#f9fafb;padding:8px 10px;border:1px solid var(--border);font-size:11px;font-weight:600;color:var(--text2);text-align:center">Dec</th><th style="background:#E1F5EE;padding:8px 10px;border:1px solid var(--border);font-size:11px;font-weight:700;color:var(--dg);text-align:center">YTD</th><th style="background:#f9fafb;padding:8px 10px;border:1px solid var(--border);font-size:11px;font-weight:600;color:var(--text2);text-align:center">Status</th></tr></thead><tbody id="kpi-monthly-body"><tr><td colspan="17" class="kpi-loading" style="padding:36px 20px">Loading...</td></tr></tbody></table></div></div></div><div style="position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:200;display:none;align-items:center;justify-content:center" id="obj-modal"><div style="background:var(--card);border-radius:16px;padding:28px;width:520px;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.2)"><div style="font-size:16px;font-weight:700;margin-bottom:20px;display:flex;align-items:center;justify-content:space-between"><span id="obj-modal-title">Add objective</span><button onclick="closeKpiModal('obj-modal')" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--text2)"><i class="ti ti-x"></i></button></div><div class="form-row"><div class="form-group"><label class="form-label">Code (e.g. 1, 2)</label><input type="text" id="obj-code" readonly style="background:#f9fafb;color:var(--text2);cursor:default" placeholder="Auto-generated"/></div><div class="form-group"><label class="form-label">Year</label><select id="obj-year"><option>2024</option><option>2025</option><option selected>2026</option><option>2027</option></select></div></div><div class="form-group"><label class="form-label">Objective name</label><input type="text" id="obj-name" placeholder="e.g. Zero Accident & Occupational Illness"/></div><div class="form-group"><label class="form-label">Colour</label><div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px" id="kpi-color-picker"><div class="kpi-color-dot" style="width:24px;height:24px;border-radius:50%;cursor:pointer;border:3px solid var(--text);background:#1D9E75" onclick="kpiSelectColor('#1D9E75',this)"></div><div class="kpi-color-dot" style="width:24px;height:24px;border-radius:50%;cursor:pointer;border:2px solid transparent;background:#185FA5" onclick="kpiSelectColor('#185FA5',this)"></div><div class="kpi-color-dot" style="width:24px;height:24px;border-radius:50%;cursor:pointer;border:2px solid transparent;background:#854F0B" onclick="kpiSelectColor('#854F0B',this)"></div><div class="kpi-color-dot" style="width:24px;height:24px;border-radius:50%;cursor:pointer;border:2px solid transparent;background:#6B21A8" onclick="kpiSelectColor('#6B21A8',this)"></div><div class="kpi-color-dot" style="width:24px;height:24px;border-radius:50%;cursor:pointer;border:2px solid transparent;background:#0F6E56" onclick="kpiSelectColor('#0F6E56',this)"></div><div class="kpi-color-dot" style="width:24px;height:24px;border-radius:50%;cursor:pointer;border:2px solid transparent;background:#DC2626" onclick="kpiSelectColor('#DC2626',this)"></div><div class="kpi-color-dot" style="width:24px;height:24px;border-radius:50%;cursor:pointer;border:2px solid transparent;background:#0369A1" onclick="kpiSelectColor('#0369A1',this)"></div></div></div><div style="display:flex;gap:8px;justify-content:flex-end;margin-top:20px"><button class="btn" onclick="closeKpiModal('obj-modal')">Cancel</button><button class="btn btn-danger" id="obj-delete-btn" style="display:none" onclick="kpiDeleteObjective()"><i class="ti ti-trash"></i>Delete</button><button class="btn btn-primary" onclick="kpiSaveObjective()"><i class="ti ti-device-floppy"></i>Save objective</button></div></div></div><div style="position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:200;display:none;align-items:center;justify-content:center" id="kpi-edit-modal"><div style="background:var(--card);border-radius:16px;padding:28px;width:600px;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.2)"><div style="font-size:16px;font-weight:700;margin-bottom:20px;display:flex;align-items:center;justify-content:space-between"><span id="kpi-modal-title">Add KPI</span><button onclick="closeKpiModal('kpi-edit-modal')" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--text2)"><i class="ti ti-x"></i></button></div><div class="form-row"><div class="form-group"><label class="form-label">Code (auto)</label><input type="text" id="kpi-code" readonly style="background:#f9fafb;color:var(--text2);cursor:default" placeholder="Auto-generated"/></div><div class="form-group"><label class="form-label">Objective</label><select id="kpi-obj-sel"><option value="">Select objective...</option></select></div></div><div class="form-row"><div class="form-group"><label class="form-label">KPI name</label><input type="text" id="kpi-name" placeholder="e.g. Near Miss Reporting"/></div><div class="form-group"><label class="form-label">Frequency</label><select id="kpi-freq"><option value="monthly">Monthly</option><option value="quarterly">Quarterly</option><option value="annual">Annual</option></select></div></div><div class="form-row"><div class="form-group"><label class="form-label">Responsible</label><input type="text" id="kpi-resp" placeholder="Name or role"/></div><div class="form-group"><label class="form-label">Status</label><select id="kpi-status"><option value="not_started">Not started</option><option value="on_track">On Track</option><option value="at_risk">At Risk</option><option value="off_track">Off Track</option></select></div></div><div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--border)"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px"><div><div style="font-size:13px;font-weight:600;color:var(--text)">Measurement indicators</div><div style="font-size:11px;color:var(--text3);margin-top:2px">Each indicator gets its own row in the monthly follow-up table</div></div><button type="button" class="btn btn-sm" onclick="kpiAddIndicatorRow()"><i class="ti ti-plus"></i>Add indicator</button></div><div id="kpi-indicators-list" style="display:flex;flex-direction:column;gap:8px"></div></div><div style="display:flex;gap:8px;justify-content:flex-end;margin-top:20px"><button class="btn" onclick="closeKpiModal('kpi-edit-modal')">Cancel</button><button class="btn btn-danger" id="kpi-delete-btn" style="display:none" onclick="kpiDeleteKPI()"><i class="ti ti-trash"></i>Delete KPI</button><button class="btn btn-primary" onclick="kpiSaveKPI()"><i class="ti ti-device-floppy"></i>Save KPI</button></div></div></div><div style="position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:200;display:none;align-items:center;justify-content:center" id="kpi-entry-modal"><div style="background:var(--card);border-radius:16px;padding:28px;width:420px;box-shadow:0 20px 60px rgba(0,0,0,.2)"><div style="font-size:16px;font-weight:700;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between"><span id="entry-modal-title">Enter value</span><button onclick="closeKpiModal('kpi-entry-modal')" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--text2)"><i class="ti ti-x"></i></button></div><div style="background:#f9fafb;border-radius:8px;padding:12px;margin-bottom:16px"><div style="font-size:13px;font-weight:600;color:var(--text)" id="entry-kpi-name"></div><div style="font-size:11px;color:var(--text2);margin-top:3px" id="entry-kpi-target"></div></div><div class="form-group"><label class="form-label" id="entry-month-label">Actual value</label><input type="number" id="entry-actual" placeholder="Enter actual value" step="any"/></div><div class="form-group"><label class="form-label">YTD (leave blank to auto-calculate)</label><input type="number" id="entry-ytd" placeholder="Auto" step="any"/></div><div class="form-group"><label class="form-label">Comment (optional)</label><textarea id="entry-comment" style="min-height:50px"></textarea></div><div style="display:flex;gap:8px;justify-content:space-between;margin-top:16px;align-items:center"><button class="btn btn-danger" id="kpi-clear-btn" onclick="kpiClearEntry()" style="display:none"><i class="ti ti-trash"></i>Clear data</button><div style="display:flex;gap:8px;margin-left:auto"><button class="btn" onclick="closeKpiModal('kpi-entry-modal')">Cancel</button><button class="btn btn-primary" onclick="kpiSaveEntry()"><i class="ti ti-device-floppy"></i>Save</button></div></div></div></div></div>
 <div id="page-workschedule" class="page">
 <div class="page-header">
 <div><div class="page-title">Work Schedule</div><div style="font-size:12px;color:var(--text2)">Plan, track and manage work orders with integrated HSE checks</div></div>
