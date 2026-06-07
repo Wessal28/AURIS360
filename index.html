@@ -1006,9 +1006,7 @@ async function kpiSaveObjective() {
       name: name,
       code: code,
       year: year,
-      color: color,
-      status: 'active',
-      updated_at: new Date().toISOString()
+      color: color
     };
     
     if (editId) {
@@ -1016,9 +1014,7 @@ async function kpiSaveObjective() {
       await api('/objectives?id=eq.'+editId, {m:'PATCH', p:'return=minimal', b: payload});
       toast('Objective updated');
     } else {
-      // Create new
-      payload.created_by = prof?.id;
-      payload.created_at = new Date().toISOString();
+      // Create new — created_at and created_by are set by DB defaults / triggers
       await api('/objectives', {m:'POST', p:'return=minimal', b: payload});
       toast('Objective saved');
     }
