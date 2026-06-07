@@ -7078,7 +7078,11 @@ ytd_method:ytdEl?ytdEl.value||'sum':'sum'
 };
 }).filter(i=>i&&i.name);
 if(!indicators.length){toast('Please enter at least one indicator name',false);return;}
-const body={company_id:prof?.company_id,objective_id:objId,code:document.getElementById('kpi-code').value.trim(),name,frequency:document.getElementById('kpi-freq').value,responsible:document.getElementById('kpi-resp').value.trim()||null,status:document.getElementById('kpi-status').value,year:parseInt(document.getElementById('year-sel')?.value)||new Date().getFullYear(),created_by:prof?.id};
+// Use the sephs_admin's selected company context if any, otherwise the user's own company.
+// This is critical: without it, sephs_admin saves under their own profile company
+// (BuildCo) even when viewing/working on another client's data.
+const effectiveCompanyId = (isSA() && sephsCompanyContext) ? sephsCompanyContext : prof?.company_id;
+const body={company_id:effectiveCompanyId,objective_id:objId,code:document.getElementById('kpi-code').value.trim(),name,frequency:document.getElementById('kpi-freq').value,responsible:document.getElementById('kpi-resp').value.trim()||null,status:document.getElementById('kpi-status').value,year:parseInt(document.getElementById('year-sel')?.value)||new Date().getFullYear(),created_by:prof?.id};
 try{
 let kpiId=kpiEditKpiId;
 if(kpiId){
@@ -7098,7 +7102,8 @@ target_value:ind.target_value,target_operator:ind.target_operator,
 unit:ind.unit,ytd_method:ind.ytd_method,sort_order:i
 }});
 }else{
-await api('/kpi_indicators',{m:'POST',p:'return=minimal',b:{...ind,kpi_id:kpiId,company_id:prof?.company_id,sort_order:i}});
+// Same company-context logic for the indicator: must match the parent KPI's company.
+await api('/kpi_indicators',{m:'POST',p:'return=minimal',b:{...ind,kpi_id:kpiId,company_id:effectiveCompanyId,sort_order:i}});
 }
 }
 for(const ex of existingInds){
@@ -7180,7 +7185,8 @@ const existing=kpiMonthlyData[kpiEntryIndicatorId]?.[kpiEntryMonth];
 if(existing){
 await api('/kpi_monthly_data?indicator_id=eq.'+kpiEntryIndicatorId+'&year=eq.'+kpiEntryYear+'&month=eq.'+kpiEntryMonth,{m:'PATCH',p:'return=minimal',b:{actual:parseFloat(actual),ytd:ytd,comment:comment||null}});
 }else{
-await api('/kpi_monthly_data',{m:'POST',p:'return=minimal',b:{indicator_id:kpiEntryIndicatorId,year:kpiEntryYear,month:kpiEntryMonth,actual:parseFloat(actual),ytd:ytd,comment:comment||null,company_id:prof?.company_id}});
+const entryCompanyId = (isSA() && sephsCompanyContext) ? sephsCompanyContext : prof?.company_id;
+await api('/kpi_monthly_data',{m:'POST',p:'return=minimal',b:{indicator_id:kpiEntryIndicatorId,year:kpiEntryYear,month:kpiEntryMonth,actual:parseFloat(actual),ytd:ytd,comment:comment||null,company_id:entryCompanyId}});
 }
 const ind=kpiIndicators.find(x=>x.id===kpiEntryIndicatorId);
 const k=kpiKPIs.find(x=>kpiIndicators.some(i=>i.kpi_id===x.id&&i.id===kpiEntryIndicatorId));
