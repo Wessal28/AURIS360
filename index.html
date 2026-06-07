@@ -8571,16 +8571,15 @@ function imsOpenEdit(id){
   var dt=x.event_date||(x.date?x.date.split('T')[0]:'');
   document.getElementById('ev-date').value=dt+(x.event_time?'T'+x.event_time:'T00:00');
   gf('ev-location',x.location);gf('ev-department',x.department);gf('ev-description',x.description);
-  gf('ev-immediate',x.immediate_actions);gf('ev-root-cause',x.root_cause);gf('ev-witnesses',x.witnesses);
+  gf('ev-immediate',x.immediate_action);gf('ev-root-cause',x.root_cause);gf('ev-witnesses',x.witnesses);
   gf('ev-reported-by-name',x.reported_by_name||x.reported_by);gf('ev-assigned-name',x.assigned_to_name||x.assigned_to);
-  gf('ev-due-date',x.due_date);gf('ev-person-name',x.person_name);gf('ev-person-function',x.person_function);
+  gf('ev-due-date',x.due_date);gf('ev-person-name',x.injured_person);
   gf('ev-injury-type',x.injury_type);gf('ev-body-part',x.body_part);gf('ev-treatment',x.treatment);
   document.getElementById('ev-lost-time').value=x.lost_time_days||0;
   document.getElementById('ev-restricted-days').value=x.restricted_work_days||0;
-  gf('ev-vehicle-reg',x.vehicle_reg);gf('ev-vehicle-type',x.vehicle_type);
+  gf('ev-vehicle-reg',x.vehicle_reg);
   document.getElementById('ev-damage-estimate').value=x.damage_estimate||'';
-  gf('ev-property-desc',x.property_description);gf('ev-property-owner',x.property_owner);
-  document.getElementById('ev-property-damage').value=x.property_damage_estimate||'';
+  gf('ev-property-owner',x.property_owner);
   gf('ev-quantity',x.quantity_released);gf('ev-gps-address',x.gps_address);
   gf('ev-lat',x.lat);gf('ev-lng',x.lng);
   document.getElementById('ev-severity').value=x.severity||'medium';
@@ -8658,10 +8657,10 @@ async function imsSave(){
   var body={company_id:effectiveCompanyId,event_type:type,event_date:date.includes('T')?date.split('T')[0]:date,
     event_time:date.includes('T')?date.split('T')[1]:null,severity:g('ev-severity')||'medium',
     status:g('ev-status')||'open',location:g('ev-location'),department:g('ev-department'),
-    description:desc,immediate_actions:g('ev-immediate'),root_cause:g('ev-root-cause'),
+    description:desc,immediate_action:g('ev-immediate'),root_cause:g('ev-root-cause'),
     witnesses:g('ev-witnesses'),reported_by_name:g('ev-reported-by-name'),
     assigned_to_name:g('ev-assigned-name'),due_date:g('ev-due-date')||null,
-    person_name:g('ev-person-name'),person_function:g('ev-person-function'),
+    injured_person:g('ev-person-name'),
     injury_type:g('ev-injury-type'),body_part:g('ev-body-part'),treatment:g('ev-treatment'),
     lost_time_days:parseInt(g('ev-lost-time'))||0,restricted_work_days:parseInt(g('ev-restricted-days'))||0,
     vehicle_reg:g('ev-vehicle-reg'),damage_estimate:g('ev-damage-estimate')?parseFloat(g('ev-damage-estimate')):null,
