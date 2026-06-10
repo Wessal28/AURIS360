@@ -2831,11 +2831,27 @@ var ROLE_ALLOWED = {
 };
 
 // Returns true if the current user's role is allowed to access `pageKey`.
-// Combines TWO gates: (1) feature flag (is module launched?) AND (2) role allow-list.
+// THREE gates, all must pass:
+//   1. Feature flag (LAUNCHED_MODULES) — is the module globally enabled?
+//   2. Per-company access (companies.module_access) — does this client have it enabled?
+//   3. Role allow-list (ROLE_ALLOWED) — does this user's role permit it?
+// sephs_admin bypasses gate 2 (they see everything they manage).
 function canAccessPage(pageKey) {
   // Gate 1: Feature flag. Dashboard always accessible.
   if(pageKey !== 'dashboard' && !isModuleLaunched(pageKey)) return false;
-  // Gate 2: Role allow-list.
+  
+  // Gate 2: Per-company module access. sephs_admin sees everything.
+  // Dashboard is always accessible (it's the landing page).
+  if(pageKey !== 'dashboard' && !isSA()) {
+    // co is the global company object loaded with the profile.
+    // If module_access is NULL/missing → fall back to allowing access (no regression).
+    // If module_access is an array → check membership.
+    if(co && Array.isArray(co.module_access)) {
+      if(co.module_access.indexOf(pageKey) === -1) return false;
+    }
+  }
+  
+  // Gate 3: Role allow-list.
   var role = prof?.role || 'employee';
   var allowed = ROLE_ALLOWED[role];
   if(allowed === null || allowed === undefined) return true;  // null = sees all; undefined role = treat as allowed by default
@@ -21386,6 +21402,7 @@ function adminRenderHierarchy() {
       + '<div style="font-size:10px;opacity:.8">'+escH(co.industry||'')+(co.country?' · '+escH(co.country):'')+(co.company_type?' · '+escH(co.company_type):'')+'</div></div></div>'
       + '<div style="display:flex;gap:8px;align-items:center">'
       + '<span style="font-size:11px;opacity:.8">'+coSites.length+' sites</span>'
+      + '<button class="btn btn-sm" style="background:rgba(255,255,255,.2);color:#fff;border-color:rgba(255,255,255,.3)" onclick="openModuleAccess(\''+co.id+'\')" title="Manage which modules this company can access"><i class="ti ti-apps"></i>Modules</button>'
       + '<button class="btn btn-sm" style="background:rgba(255,255,255,.2);color:#fff;border-color:rgba(255,255,255,.3)" onclick="adminNewSite(\''+co.id+'\')"><i class="ti ti-plus"></i>Add site</button>'
       + '</div></div>'
       + '<div style="padding:12px 16px">';
@@ -21571,6 +21588,132 @@ function adminGrantAccess(){
   document.getElementById('adm-access-modal').style.display='flex';
 }
 function adminCloseAccessModal(){document.getElementById('adm-access-modal').style.display='none';}
+
+// ═════════════════════════════════════════════════════════════════════════
+// MODULE ACCESS — per-company control of which modules a client can see.
+// ═════════════════════════════════════════════════════════════════════════
+// Catalog of all known modules with friendly names and icons. Modules not
+// in LAUNCHED_MODULES are still listed but shown as "Coming soon" (you can
+// pre-toggle access so a client gets it the moment we ship).
+var MODULE_CATALOG = [
+  { key:'dashboard',   icon:'ti-layout-dashboard', name:'Dashboard',        note:'Always enabled' },
+  { key:'kpi',         icon:'ti-target',           name:'Objectives & KPIs' },
+  { key:'events',      icon:'ti-alert-triangle',   name:'Incident Management' },
+  { key:'observation', icon:'ti-eye',              name:'BBS Observations' },
+  { key:'training',    icon:'ti-school',           name:'Training' },
+  { key:'meetings',    icon:'ti-calendar',         name:'HSE Meetings' },
+  { key:'ppe',         icon:'ti-shield',           name:'PPE Management' },
+  { key:'emergency',   icon:'ti-flame',            name:'Emergency' },
+  { key:'permit',      icon:'ti-id-badge',         name:'Permit to Work' },
+  // Coming-soon modules (not in LAUNCHED_MODULES yet — toggle shows but inactive)
+  { key:'risk',        icon:'ti-chart-bar',        name:'Risk Assessment' },
+  { key:'inspection',  icon:'ti-clipboard-check',  name:'Audits & Inspections' },
+  { key:'tools',       icon:'ti-tool',             name:'Tools & Equipment' },
+  { key:'contractor',  icon:'ti-users',            name:'Contractors' },
+  { key:'ohealth',     icon:'ti-stethoscope',      name:'Occupational Health' },
+  { key:'noise',       icon:'ti-volume',           name:'Noise Survey' },
+  { key:'legal',       icon:'ti-scale',            name:'Legal Register' },
+  { key:'workschedule',icon:'ti-calendar-week',    name:'Work Schedule' },
+  { key:'documents',   icon:'ti-file',             name:'Documents' },
+  { key:'sop',         icon:'ti-book',             name:'SOPs' },
+  { key:'actions',     icon:'ti-checkbox',         name:'Action Tracker' },
+  { key:'esg',         icon:'ti-leaf',             name:'ESG' },
+];
+
+// Module presets — for one-click setup of common configurations
+var MODULE_PRESETS = {
+  starter: ['dashboard','kpi'],
+  pilot:   ['dashboard','kpi','events','observation','training','meetings','ppe','emergency','permit'],
+  none:    ['dashboard'],  // keep dashboard so they don't see a blank app
+  all:     []  // filled at runtime to match LAUNCHED_MODULES
+};
+
+var currentModuleCompanyId = null;
+var currentModuleAccess = [];
+
+function openModuleAccess(coId) {
+  if (!isSA()) { toast('Sephs admin only', false); return; }
+  var co = (adminCompaniesData||[]).find(function(c){return c.id===coId;});
+  if (!co) { toast('Company not found', false); return; }
+  currentModuleCompanyId = coId;
+  currentModuleAccess = Array.isArray(co.module_access) ? co.module_access.slice() : ['dashboard'];
+  document.getElementById('adm-modules-co-name').textContent = co.name;
+  renderModuleAccessList();
+  document.getElementById('adm-modules-modal').style.display = 'flex';
+}
+
+function closeModuleAccess() {
+  document.getElementById('adm-modules-modal').style.display = 'none';
+  currentModuleCompanyId = null;
+  currentModuleAccess = [];
+}
+
+function renderModuleAccessList() {
+  var host = document.getElementById('adm-modules-list');
+  if (!host) return;
+  var launched = (typeof LAUNCHED_MODULES !== 'undefined') ? LAUNCHED_MODULES : [];
+  host.innerHTML = MODULE_CATALOG.map(function(m){
+    var isLaunched = launched.indexOf(m.key) !== -1;
+    var checked = currentModuleAccess.indexOf(m.key) !== -1;
+    var isDashboard = m.key === 'dashboard';
+    var disabled = isDashboard;  // dashboard always on
+    var statusBadge = isLaunched 
+      ? '<span style="font-size:9px;background:#ECFDF5;color:#047857;padding:2px 6px;border-radius:999px;font-weight:600">LIVE</span>' 
+      : '<span style="font-size:9px;background:#FEF3C7;color:#92400E;padding:2px 6px;border-radius:999px;font-weight:600">COMING SOON</span>';
+    return '<label style="display:flex;align-items:center;gap:10px;padding:9px 11px;border:1px solid '+(checked?'#5B21B6':'#E5E7EB')+';border-radius:8px;cursor:'+(disabled?'not-allowed':'pointer')+';background:'+(checked?'#F5F3FF':'#fff')+';opacity:'+(disabled?'0.7':'1')+'">'
+      + '<input type="checkbox" '+(checked?'checked':'')+' '+(disabled?'disabled':'')+' onchange="toggleModuleAccess(\''+m.key+'\', this.checked)" style="width:16px;height:16px;cursor:'+(disabled?'not-allowed':'pointer')+'"/>'
+      + '<i class="ti '+m.icon+'" style="font-size:18px;color:'+(checked?'#5B21B6':'#6B7280')+'"></i>'
+      + '<div style="flex:1;min-width:0">'
+      + '<div style="font-size:12px;font-weight:600;color:var(--text)">'+escH(m.name)+'</div>'
+      + (m.note ? '<div style="font-size:10px;color:var(--text2);font-style:italic">'+escH(m.note)+'</div>' : '')
+      + '</div>'
+      + statusBadge
+      + '</label>';
+  }).join('');
+}
+
+function toggleModuleAccess(key, checked) {
+  if (key === 'dashboard') return;  // always on, can't toggle
+  var idx = currentModuleAccess.indexOf(key);
+  if (checked && idx === -1) currentModuleAccess.push(key);
+  else if (!checked && idx !== -1) currentModuleAccess.splice(idx, 1);
+  renderModuleAccessList();
+}
+
+function moduleAccessSelectPreset(name) {
+  if (name === 'all') {
+    currentModuleAccess = (typeof LAUNCHED_MODULES !== 'undefined') ? LAUNCHED_MODULES.slice() : ['dashboard'];
+  } else if (MODULE_PRESETS[name]) {
+    currentModuleAccess = MODULE_PRESETS[name].slice();
+  }
+  // Always include dashboard
+  if (currentModuleAccess.indexOf('dashboard') === -1) currentModuleAccess.unshift('dashboard');
+  renderModuleAccessList();
+}
+
+async function saveModuleAccess() {
+  if (!currentModuleCompanyId) { toast('No company selected', false); return; }
+  // Always ensure dashboard is in the list
+  if (currentModuleAccess.indexOf('dashboard') === -1) currentModuleAccess.unshift('dashboard');
+  try {
+    await api('/companies?id=eq.'+currentModuleCompanyId, {
+      m:'PATCH',
+      p:'return=minimal',
+      b: { module_access: currentModuleAccess }
+    });
+    // Update local cache so the UI reflects immediately
+    var co = (adminCompaniesData||[]).find(function(c){return c.id===currentModuleCompanyId;});
+    if (co) co.module_access = currentModuleAccess.slice();
+    // If sephs_admin is currently viewing this company via the switcher, refresh nav
+    if (typeof refreshSidebarVisibility === 'function') {
+      try { refreshSidebarVisibility(); } catch(_){}
+    }
+    toast('Module access saved ('+currentModuleAccess.length+' modules)');
+    closeModuleAccess();
+  } catch (e) {
+    toast('Save failed: '+e.message, false);
+  }
+}
 
 async function adminSaveAccess(){
   var email=document.getElementById('adm-acc-email')?.value?.trim();
@@ -32282,6 +32425,40 @@ async function obCreate() {
 <button class="btn" onclick="adminCloseSiteModal()">Cancel</button>
 <button id="adm-site-del-btn" class="btn" style="display:none;color:#DC2626" onclick="adminDeleteSite()"><i class="ti ti-trash"></i>Delete</button>
 <button class="btn btn-primary" onclick="adminSaveSite()"><i class="ti ti-device-floppy"></i>Save site</button>
+</div>
+</div>
+</div>
+</div>
+
+<!-- ── MODULE ACCESS MODAL (sephs_admin: control per-company module visibility) ── -->
+<div id="adm-modules-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9999;align-items:flex-start;justify-content:center;padding:40px 20px;overflow-y:auto">
+<div style="background:#fff;border-radius:12px;max-width:640px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,.3)">
+<div style="padding:14px 20px;background:linear-gradient(135deg,#5B21B6,#3b1a8a);color:#fff;border-radius:12px 12px 0 0;display:flex;justify-content:space-between;align-items:center">
+<div>
+<div style="font-size:16px;font-weight:800">Module access</div>
+<div style="font-size:11px;opacity:.85" id="adm-modules-co-name">—</div>
+</div>
+<button class="btn btn-sm" style="background:rgba(255,255,255,.2);color:#fff;border-color:rgba(255,255,255,.3)" onclick="closeModuleAccess()"><i class="ti ti-x"></i></button>
+</div>
+<div style="padding:20px">
+<div style="font-size:12px;color:var(--text2);margin-bottom:14px;line-height:1.5">
+Pick the modules this client can see. Sephs admin (you) always sees everything regardless of these settings. Changes take effect the next time the client logs in or refreshes.
+</div>
+
+<!-- Quick-action buttons -->
+<div style="display:flex;gap:8px;margin-bottom:14px;padding:10px;background:#f9fafb;border-radius:8px">
+<button class="btn btn-sm" onclick="moduleAccessSelectPreset('starter')">📦 Starter (Dashboard + KPI)</button>
+<button class="btn btn-sm" onclick="moduleAccessSelectPreset('pilot')">🚀 Pilot pack (9 modules)</button>
+<button class="btn btn-sm" onclick="moduleAccessSelectPreset('none')">❌ None</button>
+<button class="btn btn-sm" onclick="moduleAccessSelectPreset('all')">✅ All launched</button>
+</div>
+
+<!-- Module checkbox grid -->
+<div id="adm-modules-list" style="display:grid;grid-template-columns:repeat(2,1fr);gap:6px;max-height:380px;overflow-y:auto;padding:4px"></div>
+
+<div style="display:flex;gap:8px;margin-top:18px;justify-content:flex-end">
+<button class="btn btn-sm" onclick="closeModuleAccess()">Cancel</button>
+<button class="btn btn-sm btn-primary" onclick="saveModuleAccess()"><i class="ti ti-check"></i>Save access</button>
 </div>
 </div>
 </div>
