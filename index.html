@@ -23482,9 +23482,7 @@ async function obCreate() {
       company_type:        'standalone',
       country:             'Mauritius',
       currency:            'MUR',
-      active:              true,
-      created_at:          new Date().toISOString(),
-      updated_at:          new Date().toISOString()
+      active:              true
     };
 
     var coRes = await api('/companies', { m: 'POST', p: 'return=representation', b: coBody });
@@ -23505,8 +23503,7 @@ async function obCreate() {
         site_type:  siteT,
         address:    siteA,
         company_id: _obCompanyId,
-        active:     true,
-        created_at: new Date().toISOString()
+        active:     true
       }});
     }
     toast(siteInputs.length + ' site(s) created ✓');
@@ -23539,9 +23536,7 @@ async function obCreate() {
         full_name:   adminName,
         role:        adminRole,
         job_title:   adminTitle,
-        company_id:  _obCompanyId,
-        created_at:  new Date().toISOString(),
-        updated_at:  new Date().toISOString()
+        company_id:  _obCompanyId
       }});
     } catch (profileErr) {
       // Profile may already exist from trigger - try update
@@ -23549,8 +23544,7 @@ async function obCreate() {
         full_name:  adminName,
         role:       adminRole,
         job_title:  adminTitle,
-        company_id: _obCompanyId,
-        updated_at: new Date().toISOString()
+        company_id: _obCompanyId
       }});
     }
     toast('Admin account created ✓');
