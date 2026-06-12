@@ -8698,7 +8698,8 @@ function imsBackToRegister(){
 var imsPersonnel=[];
 async function imsLoadPersonnel(){
   try{
-    var d=await api('/profiles?select=id,full_name,email'+cf()+'&order=full_name');
+    // Exclude deactivated users from assignment suggestions (null status counts as active)
+    var d=await api('/profiles?select=id,full_name,email'+cf()+'&or=(status.neq.inactive,status.is.null)&order=full_name');
     imsPersonnel=d||[];
     var dl=document.getElementById('ims-personnel-list');
     if(dl)dl.innerHTML=imsPersonnel.map(function(p){return '<option value="'+escH(p.full_name||p.email||'')+'"></option>';}).join('');
@@ -20712,7 +20713,9 @@ function usersRender(data) {
       + (isMgr()
         ? '<td style="padding:8px"><div style="display:flex;gap:4px">'
           + '<button class="btn btn-sm" title="Edit user" data-id="'+u.id+'" onclick="usersEdit(this.dataset.id)"><i class="ti ti-edit"></i></button>'
-          + (isAdm()&&!isSelf?'<button class="btn btn-sm" style="color:'+(!isActive?'var(--green)':'var(--red)')+'" title="'+(isActive?'Deactivate':'Activate')+'" data-id="'+u.id+'" data-active="'+(isActive?'1':'0')+'" onclick="usersToggleStatus(this.dataset.id,this.dataset.active)"><i class="ti ti-'+(isActive?'user-off':'user-check')+'"></i></button>':'')
+          + (isAdm()&&!isSelf&&!u.synthetic_email?'<button class="btn btn-sm" title="Send password reset email" data-id="'+u.id+'" onclick="usersResetPw(this.dataset.id)"><i class="ti ti-key"></i></button>':'')
+          + (isAdm()&&!isSelf?'<button class="btn btn-sm" style="color:'+(!isActive?'var(--green)':'var(--red)')+'" title="'+(isActive?'Deactivate (block login)':'Reactivate')+'" data-id="'+u.id+'" data-active="'+(isActive?'1':'0')+'" onclick="usersToggleStatus(this.dataset.id,this.dataset.active)"><i class="ti ti-'+(isActive?'user-off':'user-check')+'"></i></button>':'')
+          + (isAdm()&&!isSelf?'<button class="btn btn-sm" style="color:var(--red)" title="Permanently delete user" data-id="'+u.id+'" onclick="usersDelete(this.dataset.id)"><i class="ti ti-trash"></i></button>':'')
           + '</div></td>'
         : '')
       + '</tr>';
@@ -20770,11 +20773,49 @@ async function usersSaveEdit() {
 async function usersToggleStatus(id, isActive) {
   var newStatus = isActive==='1' ? 'inactive' : 'active';
   var userName = usersAllData.find(function(u){return u.id===id;})?.full_name||'this user';
-  if(!confirm((newStatus==='inactive'?'Deactivate':'Activate')+' '+userName+'?')) return;
+  var msg = newStatus==='inactive'
+    ? 'Deactivate '+userName+'?\n\nThey will no longer be able to log in. Their records (incidents, training, sign-offs) are kept. This is reversible.'
+    : 'Reactivate '+userName+'? They will be able to log in again.';
+  if(!confirm(msg)) return;
   try {
-    await api('/profiles?id=eq.'+id, {m:'PATCH', p:'return=minimal', b:{status:newStatus}});
-    toast((newStatus==='inactive'?'Deactivated: ':'Activated: ')+userName);
+    // Goes through the admin-users Edge Function so the LOGIN is actually
+    // banned/unbanned server-side — not just the profile label.
+    await adminFnCall(newStatus==='inactive'?'deactivate_user':'reactivate_user', {user_id:id});
+    toast((newStatus==='inactive'?'Deactivated (login blocked): ':'Reactivated: ')+userName);
     usersLoad();
+  } catch(e) { toast(e.message, false); }
+}
+
+// Permanently delete a user account — guarded by a type-the-name confirmation.
+async function usersDelete(id) {
+  var u = usersAllData.find(function(x){return x.id===id;});
+  if(!u) return;
+  var warn = 'PERMANENTLY DELETE '+(u.full_name||u.email)+'?\n\n'
+    + 'Their login account and profile will be removed and CANNOT be recovered.\n'
+    + 'Records they created (incidents, investigations, training) keep their name as text but lose the account link.\n\n'
+    + 'If this person simply left the company, use Deactivate instead.\n\n'
+    + 'To confirm deletion, type their full name exactly:';
+  var typed = prompt(warn);
+  if(typed===null) return;
+  if((typed||'').trim().toLowerCase() !== (u.full_name||'').trim().toLowerCase()){
+    toast('Name did not match — deletion cancelled', false); return;
+  }
+  try {
+    await adminFnCall('delete_user', {user_id:id});
+    toast('User permanently deleted: '+(u.full_name||u.email));
+    usersLoad();
+  } catch(e) { toast(e.message, false); }
+}
+
+// Send a password-reset email (real-email accounts only)
+async function usersResetPw(id) {
+  var u = usersAllData.find(function(x){return x.id===id;});
+  if(!u || !u.email) return;
+  if(u.synthetic_email){toast('This account uses a generated username, not a real email — set a new password via Edit instead',false);return;}
+  if(!confirm('Send a password-reset email to '+u.email+'?')) return;
+  try {
+    await adminFnCall('reset_password', {email:u.email});
+    toast('Password reset email sent to '+u.email);
   } catch(e) { toast(e.message, false); }
 }
 
