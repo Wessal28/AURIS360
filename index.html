@@ -20585,7 +20585,7 @@ async function cuSubmit() {
   try {
     if(cuMode === 'invite') {
       var email = (document.getElementById('cu-email')?.value || '').trim();
-      if(!email || !email.includes('@')) throw new Error('Please enter a valid email address');
+      if(!email || !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) throw new Error('Please enter a valid email address (e.g. name@company.com)');
       var d = await adminFnCall('invite_user', {
         email: email, full_name: name, role: role, company_id: companyId
       });
@@ -23169,7 +23169,7 @@ function renderNotifSettings(s, queue) {
   }).join('');
 
   var recentRows = queue.length ? queue.map(function(n) {
-    var color = n.status === 'sent' ? 'var(--green)' : n.status === 'failed' ? 'var(--red)' : 'var(--text2)';
+    var color = (n.status==='sent'||n.status==='delivered') ? 'var(--green)' : (n.status==='failed'||n.status==='bounced') ? 'var(--red)' : 'var(--text2)';
     return '<tr>'
       + '<td style="padding:8px 10px">' + escH((n.subject||'').substring(0,50)) + '</td>'
       + '<td style="padding:8px 10px">' + escH(n.to_email||'') + '</td>'

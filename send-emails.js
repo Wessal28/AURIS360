@@ -41,10 +41,14 @@ async function processEmailQueue() {
         })
       });
       if (sr.ok) {
+        // Capture Resend's email id so the /api/resend-webhook can match
+        // bounce/delivery events back to this queue row.
+        let resendId = null;
+        try { const sd = await sr.json(); resendId = sd && sd.id; } catch (_) {}
         await fetch(SB + '/rest/v1/notification_queue?id=eq.' + n.id, {
           method: 'PATCH',
           headers: { ...headers, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
-          body: JSON.stringify({ status: 'sent', sent_at: new Date().toISOString() })
+          body: JSON.stringify({ status: 'sent', sent_at: new Date().toISOString(), resend_id: resendId })
         });
         sent++;
       } else {
