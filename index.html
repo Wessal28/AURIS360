@@ -8723,7 +8723,7 @@ async function imsNotifyAssignee(assignedName, companyId, ref, desc, location){
     +(location?'<div style="margin-top:5px"><strong>Location:</strong> '+escH(location)+'</div>':'')
     +'<div style="margin-top:5px"><strong>Description:</strong> '+escH((desc||'').substring(0,200))+'</div>'
     +'</div>'
-    +'<div style="margin-top:18px;text-align:center"><a href="https://auris-360.vercel.app" style="background:#1D9E75;color:#fff;padding:10px 24px;border-radius:8px;text-decoration:none;font-weight:600;font-size:13px">Open AURIS360</a></div>'
+    +'<div style="margin-top:18px;text-align:center"><a href="https://app.auris360.com" style="background:#1D9E75;color:#fff;padding:10px 24px;border-radius:8px;text-decoration:none;font-weight:600;font-size:13px">Open AURIS360</a></div>'
     +'</div>'
     +'<div style="padding:10px 24px;background:#f4f6f8;font-size:11px;color:#6B7280;text-align:center">AURIS360 — Incident Management</div>'
     +'</div></body></html>';
@@ -9342,7 +9342,7 @@ async function invNotifySign(toName, companyId, invRef, stageLabel){
     +'<div style="background:#5B21B6;padding:18px 24px;color:#fff;font-size:16px;font-weight:700">&#128269; Investigation ready for your '+escH(stageLabel)+'</div>'
     +'<div style="padding:24px"><p style="font-size:14px;color:#1a1a1a">Hi <strong>'+escH(p.full_name||'')+'</strong>,</p>'
     +'<p style="color:#374151;font-size:13px">Investigation <strong>'+escH(invRef||'')+'</strong> has been signed at the previous stage and is now waiting for your '+escH(stageLabel)+' in AURIS360.</p>'
-    +'<div style="margin-top:18px;text-align:center"><a href="https://auris-360.vercel.app" style="background:#1D9E75;color:#fff;padding:10px 24px;border-radius:8px;text-decoration:none;font-weight:600;font-size:13px">Open AURIS360</a></div>'
+    +'<div style="margin-top:18px;text-align:center"><a href="https://app.auris360.com" style="background:#1D9E75;color:#fff;padding:10px 24px;border-radius:8px;text-decoration:none;font-weight:600;font-size:13px">Open AURIS360</a></div>'
     +'</div><div style="padding:10px 24px;background:#f4f6f8;font-size:11px;color:#6B7280;text-align:center">AURIS360 - Investigation Sign-off</div>'
     +'</div></body></html>';
   try{
@@ -23141,7 +23141,7 @@ function renderNotifSettings(s, queue) {
 
   return '<div class="form-row" style="margin-bottom:16px">'
     + '<div class="form-group"><label class="form-label">From Email Address</label>'
-    + '<input type="email" id="notif-from-email" value="' + escH(s.from_email||'noreply@auris360.app') + '" placeholder="noreply@yourdomain.com"/></div>'
+    + '<input type="email" id="notif-from-email" value="' + escH(s.from_email||'noreply@auris360.com') + '" placeholder="noreply@yourdomain.com"/></div>'
     + '<div class="form-group"><label class="form-label">Resend API Key</label>'
     + '<input type="password" id="notif-resend-key" value="' + escH(s.resend_api_key||'') + '" placeholder="re_xxxxxxxxxxxx"/></div>'
     + '</div>'
@@ -23198,7 +23198,7 @@ async function saveNotifSettings() {
 }
 
 async function sendTestEmail() {
-  var fromEmail = document.getElementById('notif-from-email')?.value?.trim() || 'noreply@auris360.app';
+  var fromEmail = document.getElementById('notif-from-email')?.value?.trim() || 'noreply@auris360.com';
   var resendKey = document.getElementById('notif-resend-key')?.value?.trim();
   if (!resendKey) { toast('Please enter your Resend API key first', false); return; }
   if (!prof?.email) { toast('No email on your profile', false); return; }
@@ -24010,13 +24010,13 @@ async function obCreate() {
         + '<p style="font-size:15px;color:#1a1a1a">Hi <strong>' + escH(adminName) + '</strong>,</p>'
         + '<p style="color:#374151;margin-top:10px">Your AURIS360 account has been set up for <strong>' + escH(coName) + '</strong>. You can now log in and start managing your HSE operations.</p>'
         + '<div style="background:#f9fafb;border-radius:8px;padding:16px;margin:16px 0;font-size:14px">'
-        + '<div><strong>Login URL:</strong> <a href="https://auris-360.vercel.app">auris-360.vercel.app</a></div>'
+        + '<div><strong>Login URL:</strong> <a href="https://app.auris360.com">app.auris360.com</a></div>'
         + '<div style="margin-top:6px"><strong>Email:</strong> ' + escH(adminEmail) + '</div>'
         + '<div style="margin-top:6px"><strong>Temporary Password:</strong> (as provided by SEPHS Consulting)</div>'
         + '</div>'
         + '<p style="color:#374151;font-size:13px">Please change your password after your first login.</p>'
         + '<div style="margin-top:20px;text-align:center">'
-        + '<a href="https://auris-360.vercel.app" style="background:#1D9E75;color:#fff;padding:12px 28px;border-radius:8px;text-decoration:none;font-weight:600;font-size:14px">Login to AURIS360</a>'
+        + '<a href="https://app.auris360.com" style="background:#1D9E75;color:#fff;padding:12px 28px;border-radius:8px;text-decoration:none;font-weight:600;font-size:14px">Login to AURIS360</a>'
         + '</div></div>'
         + '<div style="padding:12px 24px;background:#f4f6f8;font-size:11px;color:#6B7280;text-align:center">AURIS360 by SEPHS Consulting — ' + escH(coName) + '</div>'
         + '</div></body></html>';
@@ -33052,7 +33052,7 @@ Pick the modules this client can see. Sephs admin (you) always sees everything r
 <div class="card-title">🪝 Webhook Receiver</div>
 <div style="font-size:12px;color:var(--text2);margin-bottom:12px">Receive events from external systems into AURIS360</div>
 <div class="form-group"><label class="form-label">Inbound webhook URL</label>
-<div style="background:#f9fafb;border:1px solid var(--border);border-radius:6px;padding:8px 12px;font-family:monospace;font-size:11px;color:#185FA5;word-break:break-all">https://auris-360.vercel.app/api/webhook</div></div>
+<div style="background:#f9fafb;border:1px solid var(--border);border-radius:6px;padding:8px 12px;font-family:monospace;font-size:11px;color:#185FA5;word-break:break-all">https://app.auris360.com/api/webhook</div></div>
 <div class="form-group"><label class="form-label">Supported events</label>
 <div style="font-size:11px;color:var(--text2);line-height:1.8">incident.created · inspection.completed · action.overdue · permit.expired · sensor.alert · access.denied</div></div>
 </div>
