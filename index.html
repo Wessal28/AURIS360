@@ -8982,19 +8982,21 @@ function invAddCA(){
 
 async function invSave(){
   var g=function(id){var el=document.getElementById(id);return el?el.value||null:null;};
-  // Collect 5-Why
+  // Collect 5-Why answers as array (column is jsonb — accepts array directly)
   var whys=Array.from(document.querySelectorAll('.ws3-why-ans')).map(ta=>ta.value.trim()).filter(Boolean);
-  // Collect fishbone
+  // Collect fishbone (jsonb object)
   var fishbone={people:g('fb-people'),equipment:g('fb-equipment'),methods:g('fb-methods'),environment:g('fb-environment'),training:g('fb-training'),management:g('fb-management')};
-  // Collect timeline
+  // Collect timeline (jsonb array)
   var timeline=Array.from(document.querySelectorAll('.inv-timeline-row')).map(r=>({time:r.querySelector('.tl-time')?.value||'',description:r.querySelector('.tl-event')?.value?.trim()||''})).filter(e=>e.description);
-  // Collect CAs
+  // Collect corrective actions
   var cas=[];
   document.querySelectorAll('.inv-ca-row').forEach(row=>{
     var desc=row.querySelector('.inv-ca-desc')?.value?.trim();
     if(desc)cas.push({description:desc,assigned_to:row.querySelector('.inv-ca-assigned')?.value?.trim()||'',due_date:row.querySelector('.inv-ca-due')?.value||null,status:row.querySelector('.inv-ca-status')?.value||'open'});
   });
-  var body={company_id:prof?.company_id,
+  // Use sephs_admin's selected company if applicable, else user's own
+  var effectiveCompanyId = (isSA() && sephsCompanyContext) ? sephsCompanyContext : prof?.company_id;
+  var body={company_id:effectiveCompanyId,
     investigation_type:g('inv-type-sel')||'incident',investigation_method:g('inv-method')||'5why',
     status:g('inv-status-sel')||'open',reported_by:g('ws1-reported-by'),
     linked_event_ref:g('ws1-event-link'),incident_date:g('ws1-inc-date')||null,
@@ -9009,11 +9011,13 @@ async function invSave(){
     ws3_materials:g('ws3-materials'),ws3_materials_explain:g('ws3-materials-explain'),
     ws3_environment:g('ws3-environment'),ws3_environment_explain:g('ws3-environment-explain'),
     root_causes:g('ws2-attitude'),contributing_factors:g('ws2-personal'),recurrence_likelihood:g('inv-recurrence'),
+    // jsonb columns — send as JS objects/arrays, PostgREST will encode as JSON
     five_whys:whys,fishbone_causes:fishbone,timeline_events:timeline,
     icam_absence_controls:g('icam-absence'),icam_individual_factors:g('icam-individual'),
     icam_task_conditions:g('icam-task'),icam_org_factors:g('icam-org'),
     taproot_root_causes:[g('tr-cf1'),g('tr-cf2'),g('tr-cf3'),g('tr-cf4'),g('tr-cf5')].filter(Boolean),
-    corrective_actions:cas,
+    // corrective_actions is TEXT in the DB — stringify the structured array to fit
+    corrective_actions: cas.length ? JSON.stringify(cas) : null,
     sign_investigator:g('inv-sign-investigator'),sign_inv_date:g('inv-sign-inv-date')||null,
     sign_reviewer:g('inv-sign-reviewer'),sign_rev_date:g('inv-sign-rev-date')||null,
     sign_approver:g('inv-sign-approver'),sign_app_date:g('inv-sign-app-date')||null,
@@ -9027,15 +9031,26 @@ async function invSave(){
       body.created_by=prof?.id;
       var res=await api('/investigations',{m:'POST',p:'return=representation',b:body});
       if(res?.[0]?.id){
-        var ref='INV-'+new Date().getFullYear()+'-'+String((imsInvAllData||[]).length+1).padStart(3,'0');
+        // Generate ref number by querying actual DB for highest existing — same
+        // pattern as incidents — more reliable than counting in-memory array.
+        var yr=new Date().getFullYear();
+        var seq=1;
+        try{
+          var existing=await api('/investigations?select=investigation_ref&company_id=eq.'+effectiveCompanyId+'&investigation_ref=like.INV-'+yr+'-*&order=investigation_ref.desc&limit=1');
+          if(existing && existing[0] && existing[0].investigation_ref){
+            var match=existing[0].investigation_ref.match(/INV-\d{4}-(\d+)/);
+            if(match) seq=parseInt(match[1])+1;
+          }
+        }catch(_){}
+        var ref='INV-'+yr+'-'+String(seq).padStart(3,'0');
         await api('/investigations?id=eq.'+res[0].id,{m:'PATCH',p:'return=minimal',b:{investigation_ref:ref}});
         toast('Investigation saved! Ref: '+ref);
         imsInvEditId=res[0].id;
         document.getElementById('inv-form-ref').textContent=ref;
-        // Auto-create MAP actions for corrective actions
+        // Auto-create action_tracker rows for each corrective action — also fix company_id
         for(var ca of cas){
           if(ca.description){
-            try{await api('/action_tracker',{m:'POST',p:'return=minimal',b:{company_id:prof?.company_id,title:ca.description.substring(0,80),description:ca.description,source_type:'incident',source_module:'investigation',source_ref:ref,priority:'high',status:ca.status||'open',assigned_to_name:ca.assigned_to||null,target_date:ca.due_date||null,created_by:prof?.id}});}
+            try{await api('/action_tracker',{m:'POST',p:'return=minimal',b:{company_id:effectiveCompanyId,title:ca.description.substring(0,80),description:ca.description,source_type:'incident',source_module:'investigation',source_ref:ref,priority:'high',status:ca.status||'open',assigned_to_name:ca.assigned_to||null,target_date:ca.due_date||null,created_by:prof?.id}});}
             catch(ex){}
           }
         }
@@ -25315,7 +25330,7 @@ async function obCreate() {
 <div id="ims-view-investigate" style="display:none">
 <div class="card" style="margin-bottom:12px;padding:10px 14px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
 <div><div class="card-title" style="margin:0">Incident Investigations</div>
-<div style="font-size:12px;color:var(--text2)">5-Why · Fishbone · ICAM · TapRooT · Timeline reconstruction</div></div>
+<div style="font-size:12px;color:var(--text2)">5-Why · Timeline reconstruction</div></div>
 <button class="btn btn-primary" id="inv-add-btn" onclick="imsNewInvestigation()" style="display:none"><i class="ti ti-plus"></i>New investigation</button>
 </div>
 
@@ -25334,7 +25349,7 @@ async function obCreate() {
 <button class="btn" style="background:rgba(255,255,255,.2);color:#fff;border-color:rgba(255,255,255,.3)" onclick="imsInvBack()"><i class="ti ti-arrow-left"></i>Back</button>
 <button id="inv-delete-btn" class="btn" style="display:none;background:rgba(0,0,0,.3);color:#fff;border-color:rgba(255,255,255,.3)" onclick="invDeleteCurrent()"><i class="ti ti-trash"></i></button>
 <button class="btn" style="background:#1D9E75;color:#fff;border-color:#1D9E75" onclick="invSave()"><i class="ti ti-device-floppy"></i>Save</button>
-<button class="btn" style="background:#fff;color:#5B21B6;font-weight:700" onclick="invGenerateAISummary()"><i class="ti ti-robot"></i>AI summary</button>
+<button class="btn" style="display:none;background:#fff;color:#5B21B6;font-weight:700" onclick="invGenerateAISummary()"><i class="ti ti-robot"></i>AI summary</button>
 </div>
 </div>
 </div>
@@ -25343,9 +25358,9 @@ async function obCreate() {
 <div class="card" style="margin-bottom:14px"><div class="card-title">Investigation Method</div>
 <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px" id="inv-method-selector">
 <div class="inv-meth-btn" data-meth="5why"     onclick="invSelectMethod('5why')"     style="padding:10px;border-radius:8px;text-align:center;cursor:pointer;border:2px solid #bfdbfe;background:#EFF6FF;transition:all .15s"><div style="font-size:20px;margin-bottom:4px">❓</div><div style="font-weight:700;font-size:11px;color:#1e40af">5 Why</div></div>
-<div class="inv-meth-btn" data-meth="fishbone" onclick="invSelectMethod('fishbone')" style="padding:10px;border-radius:8px;text-align:center;cursor:pointer;border:2px solid #fed7aa;background:#FFF7ED;transition:all .15s"><div style="font-size:20px;margin-bottom:4px">🐟</div><div style="font-weight:700;font-size:11px;color:#9A3412">Fishbone</div></div>
-<div class="inv-meth-btn" data-meth="icam"     onclick="invSelectMethod('icam')"     style="padding:10px;border-radius:8px;text-align:center;cursor:pointer;border:2px solid #ddd6fe;background:#F5F3FF;transition:all .15s"><div style="font-size:20px;margin-bottom:4px">🔬</div><div style="font-weight:700;font-size:11px;color:#5B21B6">ICAM</div></div>
-<div class="inv-meth-btn" data-meth="taproot"  onclick="invSelectMethod('taproot')"  style="padding:10px;border-radius:8px;text-align:center;cursor:pointer;border:2px solid #a7f3d0;background:#ECFDF5;transition:all .15s"><div style="font-size:20px;margin-bottom:4px">🌿</div><div style="font-weight:700;font-size:11px;color:#065F46">TapRooT</div></div>
+<div class="inv-meth-btn" data-meth="fishbone" onclick="invSelectMethod('fishbone')" style="display:none;padding:10px;border-radius:8px;text-align:center;cursor:pointer;border:2px solid #fed7aa;background:#FFF7ED;transition:all .15s"><div style="font-size:20px;margin-bottom:4px">🐟</div><div style="font-weight:700;font-size:11px;color:#9A3412">Fishbone</div></div>
+<div class="inv-meth-btn" data-meth="icam"     onclick="invSelectMethod('icam')"     style="display:none;padding:10px;border-radius:8px;text-align:center;cursor:pointer;border:2px solid #ddd6fe;background:#F5F3FF;transition:all .15s"><div style="font-size:20px;margin-bottom:4px">🔬</div><div style="font-weight:700;font-size:11px;color:#5B21B6">ICAM</div></div>
+<div class="inv-meth-btn" data-meth="taproot"  onclick="invSelectMethod('taproot')"  style="display:none;padding:10px;border-radius:8px;text-align:center;cursor:pointer;border:2px solid #a7f3d0;background:#ECFDF5;transition:all .15s"><div style="font-size:20px;margin-bottom:4px">🌿</div><div style="font-weight:700;font-size:11px;color:#065F46">TapRooT</div></div>
 <div class="inv-meth-btn" data-meth="timeline" onclick="invSelectMethod('timeline')" style="padding:10px;border-radius:8px;text-align:center;cursor:pointer;border:2px solid #fcd34d;background:#FFFBEB;transition:all .15s"><div style="font-size:20px;margin-bottom:4px">📅</div><div style="font-weight:700;font-size:11px;color:#854F0B">Timeline</div></div>
 </div>
 <input type="hidden" id="inv-method" value="5why"/>
