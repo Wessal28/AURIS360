@@ -8506,36 +8506,40 @@ function imsFilterList(){
     el.innerHTML='<div style="text-align:center;padding:48px;color:var(--text2)"><div style="font-size:52px;margin-bottom:12px">📋</div><div style="font-weight:700;font-size:15px;margin-bottom:8px">No incidents found</div><button class="btn btn-primary" onclick="imsNewIncident()"><i class="ti ti-plus"></i>Report incident</button></div>';
     return;
   }
-  var now=new Date();
-  var h='<div style="display:flex;flex-direction:column;gap:8px">';
-  filt.forEach(x=>{
+  var h='<div class="card" style="padding:0;overflow:hidden"><div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:12px">'
+    +'<thead><tr style="background:#7F1D1D;color:#fff">'
+    +'<th style="padding:9px 14px;text-align:left;color:#fff;border:none">Ref</th>'
+    +'<th style="padding:9px 10px;text-align:left;color:#fff;border:none">Type</th>'
+    +'<th style="padding:9px 10px;text-align:left;color:#fff;border:none">Date</th>'
+    +'<th style="padding:9px 10px;text-align:left;color:#fff;border:none">Description</th>'
+    +'<th style="padding:9px 10px;text-align:left;color:#fff;border:none">Location</th>'
+    +'<th style="padding:9px 10px;text-align:left;color:#fff;border:none">Reported by</th>'
+    +'<th style="padding:9px 10px;text-align:left;color:#fff;border:none">Assigned to</th>'
+    +'<th style="padding:9px 10px;text-align:center;color:#fff;border:none">Severity</th>'
+    +'<th style="padding:9px 10px;text-align:center;color:#fff;border:none">Status</th>'
+    +'<th style="padding:9px 10px;text-align:center;color:#fff;border:none">Inv.</th>'
+    +'</tr></thead><tbody>';
+  filt.forEach(function(x,i){
     var type=x.event_type||x.type||'near_miss';
     var cfg=IMS_TYPE_CFG[type]||IMS_TYPE_CFG.near_miss;
     var sev=IMS_SEV[x.severity||'medium']||IMS_SEV.medium;
     var stc=IMS_STAT[x.status||'open']||IMS_STAT.open;
     var ref=x.event_ref||x.incident_number||x.id?.slice(0,8)||'—';
-    h+='<div class="card" style="padding:0;overflow:hidden;cursor:pointer;border-left:5px solid '+sev.border+';transition:box-shadow .15s" data-id="'+x.id+'" onclick="imsOpenEdit(this.dataset.id)" onmouseover="this.style.boxShadow=\'0 4px 16px rgba(0,0,0,.1)\'" onmouseout="this.style.boxShadow=\'\'">'
-      +'<div style="padding:10px 14px;display:flex;align-items:flex-start;justify-content:space-between;gap:10px;flex-wrap:wrap">'
-      +'<div style="display:flex;gap:10px;flex:1;min-width:0">'
-      +'<div style="font-size:28px;flex-shrink:0;line-height:1">'+cfg.emoji+'</div>'
-      +'<div style="min-width:0;flex:1">'
-      +'<div style="display:flex;gap:6px;align-items:center;margin-bottom:3px;flex-wrap:wrap">'
-      +'<span style="font-family:monospace;font-size:11px;font-weight:800;color:'+cfg.color+'">'+escH(ref)+'</span>'
-      +'<span style="background:'+cfg.bg+';color:'+cfg.color+';padding:1px 8px;border-radius:99px;font-size:10px;font-weight:700;border:1px solid '+cfg.border+'">'+cfg.label+'</span>'
-      +'</div>'
-      +'<div style="font-size:13px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:550px">'+escH((x.description||'No description').substring(0,100))+'</div>'
-      +'<div style="display:flex;gap:12px;font-size:11px;color:var(--text2);margin-top:4px;flex-wrap:wrap">'
-      +(x.event_date||x.date?'<span>📅 '+new Date(x.event_date||x.date).toLocaleDateString('en-GB')+'</span>':'')
-      +(x.location?'<span>📍 '+escH(x.location)+'</span>':'')
-      +(x.reported_by_name||x.reported_by?'<span>👤 '+escH(x.reported_by_name||x.reported_by||'')+'</span>':'')
-      +'</div></div></div>'
-      +'<div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0">'
-      +'<span style="background:'+sev.bg+';color:'+sev.color+';padding:2px 8px;border-radius:99px;font-size:10px;font-weight:700">'+sev.label+'</span>'
-      +'<span style="background:'+stc.bg+';color:'+stc.tc+';padding:2px 8px;border-radius:99px;font-size:10px;font-weight:700">'+stc.label+'</span>'
-      +(x.investigation_required?'<span style="background:#EDE9FE;color:#5B21B6;padding:1px 7px;border-radius:4px;font-size:10px;font-weight:700">🔍 INV</span>':'')
-      +'</div></div></div>';
+    var bg=i%2===0?'#fff':'#f9fafb';
+    h+='<tr style="border-bottom:1px solid #f0f0f0;background:'+bg+';cursor:pointer;border-left:4px solid '+sev.border+'" data-id="'+x.id+'" onclick="imsOpenEdit(this.dataset.id)">'
+      +'<td style="padding:8px 14px;font-family:monospace;font-size:11px;font-weight:800;color:'+cfg.color+';white-space:nowrap;border:none">'+escH(ref)+'</td>'
+      +'<td style="padding:8px 10px;white-space:nowrap;border:none"><span style="background:'+cfg.bg+';color:'+cfg.color+';padding:2px 8px;border-radius:99px;font-size:10px;font-weight:700;border:1px solid '+cfg.border+'">'+cfg.emoji+' '+cfg.label+'</span></td>'
+      +'<td style="padding:8px 10px;font-size:11px;white-space:nowrap;border:none">'+(x.event_date||x.date?new Date(x.event_date||x.date).toLocaleDateString('en-GB'):'—')+'</td>'
+      +'<td style="padding:8px 10px;max-width:300px;border:none"><div style="font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+escH((x.description||'No description').substring(0,90))+'</div></td>'
+      +'<td style="padding:8px 10px;font-size:11px;max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;border:none">'+escH(x.location||'—')+'</td>'
+      +'<td style="padding:8px 10px;font-size:11px;white-space:nowrap;border:none">'+escH(x.reported_by_name||x.reported_by||'—')+'</td>'
+      +'<td style="padding:8px 10px;font-size:11px;white-space:nowrap;border:none">'+escH(x.assigned_to_name||x.assigned_to||'—')+'</td>'
+      +'<td style="padding:8px 10px;text-align:center;border:none"><span style="background:'+sev.bg+';color:'+sev.color+';padding:2px 8px;border-radius:99px;font-size:10px;font-weight:700">'+sev.label+'</span></td>'
+      +'<td style="padding:8px 10px;text-align:center;border:none"><span style="background:'+stc.bg+';color:'+stc.tc+';padding:2px 8px;border-radius:99px;font-size:10px;font-weight:700">'+stc.label+'</span></td>'
+      +'<td style="padding:8px 10px;text-align:center;border:none">'+(x.investigation_required?'<span title="Investigation required" style="background:#EDE9FE;color:#5B21B6;padding:1px 7px;border-radius:4px;font-size:10px;font-weight:700">🔍</span>':'')+'</td>'
+      +'</tr>';
   });
-  el.innerHTML=h+'</div>';
+  el.innerHTML=h+'</tbody></table></div></div>';
 }
 
 // ─── REPORT FORM ──────────────────────────────────────────────────────────────
@@ -8564,6 +8568,10 @@ function imsNewIncident(){
   document.getElementById('ev-regulator-notified').checked=false;
   ['ims-injury-fields','ims-vehicle-fields','ims-env-fields','ims-property-fields'].forEach(id=>{var el=document.getElementById(id);if(el)el.style.display='none';});
   document.querySelectorAll('.ims-type-btn').forEach(b=>{b.style.transform='';b.style.boxShadow='';b.style.borderColor='';});
+  // Auto-fill "Reported by" with the logged-in user (editable if reporting on someone's behalf)
+  var rb=document.getElementById('ev-reported-by-name'); if(rb)rb.value=prof?.full_name||prof?.email||'';
+  // Populate the Assigned-to typeahead with registered personnel
+  imsLoadPersonnel();
   // Switch to report tab
   document.querySelectorAll('[id^="ims-tab-"]').forEach(t=>t.classList.remove('active'));
   document.getElementById('ims-tab-report')?.classList.add('active');
@@ -8617,6 +8625,7 @@ function imsOpenEdit(id){
   gf('ev-location',x.location);gf('ev-department',x.department);gf('ev-description',x.description);
   gf('ev-immediate',x.immediate_action);gf('ev-root-cause',x.root_cause);gf('ev-witnesses',x.witnesses);
   gf('ev-reported-by-name',x.reported_by_name||x.reported_by);gf('ev-assigned-name',x.assigned_to_name||x.assigned_to);
+  imsLoadPersonnel();
   gf('ev-due-date',x.due_date);gf('ev-person-name',x.injured_person);
   gf('ev-injury-type',x.injury_type);gf('ev-body-part',x.body_part);gf('ev-treatment',x.treatment);
   document.getElementById('ev-lost-time').value=x.lost_time_days||0;
@@ -8685,6 +8694,155 @@ function imsBackToRegister(){
   imsLoadRegister();
 }
 
+// ─── PERSONNEL TYPEAHEAD + ASSIGNMENT NOTIFICATION ───────────────────────────
+var imsPersonnel=[];
+async function imsLoadPersonnel(){
+  try{
+    var d=await api('/profiles?select=id,full_name,email'+cf()+'&order=full_name');
+    imsPersonnel=d||[];
+    var dl=document.getElementById('ims-personnel-list');
+    if(dl)dl.innerHTML=imsPersonnel.map(function(p){return '<option value="'+escH(p.full_name||p.email||'')+'"></option>';}).join('');
+  }catch(e){/* non-critical */}
+}
+
+// Queue an email notification for the person an incident is assigned to.
+// Sent by the daily /api/send-emails cron via Resend. Fails silently —
+// notification is a nice-to-have, never blocks the save.
+async function imsNotifyAssignee(assignedName, companyId, ref, desc, location){
+  if(!assignedName)return;
+  var p=(imsPersonnel||[]).find(function(x){return (x.full_name||'').toLowerCase()===assignedName.toLowerCase();});
+  if(!p||!p.email)return;
+  var html='<!DOCTYPE html><html><body style="margin:0;font-family:Arial,sans-serif;background:#f4f6f8;padding:20px">'
+    +'<div style="max-width:560px;margin:0 auto;background:#fff;border-radius:12px;overflow:hidden;border:1px solid #e5e7eb">'
+    +'<div style="background:#7F1D1D;padding:18px 24px;color:#fff;font-size:16px;font-weight:700">🚨 Incident assigned to you</div>'
+    +'<div style="padding:24px">'
+    +'<p style="font-size:14px;color:#1a1a1a">Hi <strong>'+escH(p.full_name||'')+'</strong>,</p>'
+    +'<p style="color:#374151;font-size:13px">An incident has been assigned to you in AURIS360:</p>'
+    +'<div style="background:#f9fafb;border-radius:8px;padding:14px;margin:14px 0;font-size:13px">'
+    +'<div><strong>Reference:</strong> '+escH(ref||'(pending)')+'</div>'
+    +(location?'<div style="margin-top:5px"><strong>Location:</strong> '+escH(location)+'</div>':'')
+    +'<div style="margin-top:5px"><strong>Description:</strong> '+escH((desc||'').substring(0,200))+'</div>'
+    +'</div>'
+    +'<div style="margin-top:18px;text-align:center"><a href="https://auris-360.vercel.app" style="background:#1D9E75;color:#fff;padding:10px 24px;border-radius:8px;text-decoration:none;font-weight:600;font-size:13px">Open AURIS360</a></div>'
+    +'</div>'
+    +'<div style="padding:10px 24px;background:#f4f6f8;font-size:11px;color:#6B7280;text-align:center">AURIS360 — Incident Management</div>'
+    +'</div></body></html>';
+  try{
+    await api('/notification_queue',{m:'POST',p:'return=minimal',b:{
+      company_id:companyId,type:'incident_assigned',
+      subject:'Incident assigned to you — '+(ref||'New incident'),
+      body_html:html,to_email:p.email,to_name:p.full_name||'',
+      related_table:'events',related_id:imsEditId||null
+    }});
+    toast('📧 Notification queued for '+(p.full_name||p.email));
+  }catch(e){/* non-critical */}
+}
+
+// ─── INCIDENT PRINT (clean hidden-document approach, same as KPI print) ──────
+function imsPrintIncident(){
+  if(!imsEditId){toast('Open an incident from the register first',false);return;}
+  var x=(imsAllData||[]).find(function(r){return r.id===imsEditId;})||{};
+  var gv=function(id){var el=document.getElementById(id);return el?(el.value||''):'';};
+  var reportOpen=document.getElementById('ims-view-report')?.style.display!=='none';
+  // Prefer live form values when the form is open (reflects unsaved edits), else the record
+  var V=function(formId,recVal){return reportOpen?(gv(formId)||recVal||''):(recVal||'');};
+
+  var type=reportOpen?(gv('ev-type')||x.event_type):(x.event_type||'near_miss');
+  var cfg=(typeof IMS_TYPE_CFG!=='undefined'&&IMS_TYPE_CFG[type])||{label:type||'Incident'};
+  var ref=x.event_ref||x.incident_number||document.getElementById('ims-form-ref')?.textContent||'—';
+
+  // Company name (same resolution as KPI print)
+  var companyName='AURIS360';
+  if(isSA()){
+    if(sephsCompanyContext&&typeof saCompanyList!=='undefined'){
+      var c=saCompanyList.find(function(co2){return co2.id===sephsCompanyContext;});
+      companyName=c?c.name:'AURIS360';
+    }
+  }else if(typeof co!=='undefined'&&co?.name){companyName=co.name;}
+
+  var dtRaw=reportOpen?gv('ev-date'):(x.event_date||'');
+  var dtStr='—';
+  if(dtRaw){try{dtStr=new Date(dtRaw).toLocaleDateString('en-GB')+(String(dtRaw).includes('T')?' '+String(dtRaw).split('T')[1].substring(0,5):'');}catch(e){dtStr=String(dtRaw);}}
+  var e=function(s){return escH(s==null?'':String(s));};
+  var row=function(label,val){return '<tr><td style="padding:6px 10px;border:1px solid #ccc;background:#f5f5f5;font-weight:700;width:30%;font-size:9pt">'+e(label)+'</td><td style="padding:6px 10px;border:1px solid #ccc;font-size:9pt">'+(e(val)||'—')+'</td></tr>';};
+  var sect=function(title){return '<div style="background:#7F1D1D;color:#fff;padding:6px 10px;font-weight:700;font-size:10pt;margin-top:14px">'+e(title)+'</div>';};
+
+  var sev=V('ev-severity',x.severity), stat=V('ev-status',x.status);
+  var html='<div class="print-doc">'
+    +'<div class="print-doc-header"><div class="print-doc-title">Incident Report</div>'
+    +'<div class="print-doc-sub">'+e(companyName)+' — Incident Management System</div>'
+    +'<div style="font-size:9pt;color:#555;margin-top:3px">Reference: <strong>'+e(ref)+'</strong> &nbsp;·&nbsp; Generated: '+new Date().toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'})+'</div></div>'
+    +sect('Incident Details')
+    +'<table style="width:100%;border-collapse:collapse">'
+    +row('Reference No.',ref)
+    +row('Type',cfg.label)
+    +row('Date / Time',dtStr)
+    +row('Severity (actual)',(sev||'').replace(/_/g,' '))
+    +row('Severity (potential)',V('ev-potential-severity',x.potential_severity).replace(/_/g,' '))
+    +row('Status',(stat||'').replace(/_/g,' '))
+    +row('Location',V('ev-location',x.location))
+    +row('Department',V('ev-department',x.department))
+    +row('Reported by',V('ev-reported-by-name',x.reported_by_name||x.reported_by))
+    +row('Assigned to',V('ev-assigned-name',x.assigned_to_name||x.assigned_to))
+    +row('Due date',V('ev-due-date',x.due_date))
+    +'</table>'
+    +sect('Description')
+    +'<div style="border:1px solid #ccc;padding:10px;font-size:9pt;min-height:50px;white-space:pre-wrap">'+(e(V('ev-description',x.description))||'—')+'</div>'
+    +sect('Immediate Action Taken')
+    +'<div style="border:1px solid #ccc;padding:10px;font-size:9pt;min-height:40px;white-space:pre-wrap">'+(e(V('ev-immediate',x.immediate_action))||'—')+'</div>'
+    +sect('Preliminary Root Cause')
+    +'<div style="border:1px solid #ccc;padding:10px;font-size:9pt;min-height:40px;white-space:pre-wrap">'+(e(V('ev-root-cause',x.root_cause))||'—')+'</div>';
+
+  if(type==='injury'){
+    html+=sect('Injury Details')
+      +'<table style="width:100%;border-collapse:collapse">'
+      +row('Injured person',V('ev-person-name',x.injured_person))
+      +row('Injury type',V('ev-injury-type',x.injury_type))
+      +row('Body part',V('ev-body-part',x.body_part))
+      +row('Treatment',V('ev-treatment',x.treatment))
+      +row('Lost time (days)',V('ev-lost-time',x.lost_time_days))
+      +row('Restricted work (days)',V('ev-restricted-days',x.restricted_work_days))
+      +'</table>';
+  }
+
+  html+=sect('Other Information')
+    +'<table style="width:100%;border-collapse:collapse">'
+    +row('Witnesses',V('ev-witnesses',x.witnesses))
+    +row('Investigation required',(reportOpen?document.getElementById('ev-inv-required')?.checked:x.investigation_required)?'Yes':'No')
+    +row('Investigation ref',gv('ev-inv-ref')||x.investigation_ref||'')
+    +row('Regulator notified',(reportOpen?document.getElementById('ev-regulator-notified')?.checked:x.regulator_notified)?'Yes':'No')
+    +'</table>'
+    +'<div style="margin-top:26px;display:flex;gap:30px">'
+    +'<div style="flex:1"><div style="border-top:1px solid #111;padding-top:4px;font-size:9pt">Reported by (signature / date)</div></div>'
+    +'<div style="flex:1"><div style="border-top:1px solid #111;padding-top:4px;font-size:9pt">Reviewed by (signature / date)</div></div>'
+    +'</div>'
+    +'<div style="margin-top:18px;font-size:8pt;color:#777;border-top:1px solid #ddd;padding-top:6px">Generated by AURIS360 — '+e(companyName)+'</div>'
+    +'</div>';
+
+  var wrapper=document.getElementById('kpi-print-wrapper');
+  if(!wrapper){wrapper=document.createElement('div');wrapper.id='kpi-print-wrapper';document.body.appendChild(wrapper);}
+  wrapper.innerHTML=html;
+
+  // Portrait override for incident reports (KPI default is landscape)
+  var pStyle=document.createElement('style');
+  pStyle.id='ims-print-portrait';
+  pStyle.textContent='@media print{@page{size:A4 portrait;margin:14mm 12mm}}';
+  document.head.appendChild(pStyle);
+
+  var originalTitle=document.title;
+  document.title='Incident Report - '+ref+' - '+companyName;
+  document.body.classList.add('kpi-printing-clean');
+  setTimeout(function(){
+    window.print();
+    setTimeout(function(){
+      document.body.classList.remove('kpi-printing-clean');
+      if(wrapper&&wrapper.parentNode)wrapper.parentNode.removeChild(wrapper);
+      var ps=document.getElementById('ims-print-portrait'); if(ps&&ps.parentNode)ps.parentNode.removeChild(ps);
+      document.title=originalTitle;
+    },400);
+  },100);
+}
+
 async function imsSave(){
   var type=document.getElementById('ev-type')?.value;
   if(!type){toast('Please select incident type',false);return;}
@@ -8713,9 +8871,17 @@ async function imsSave(){
     gps_address:g('ev-gps-address'),lat:g('ev-lat')?parseFloat(g('ev-lat')):null,lng:g('ev-lng')?parseFloat(g('ev-lng')):null,
     investigation_required:invReq,updated_at:new Date().toISOString()};
   try{
+    // Detect whether the assignment changed — only notify on new/changed assignment
+    var prevAssigned='';
+    if(imsEditId){var prevRec=(imsAllData||[]).find(function(r){return r.id===imsEditId;});prevAssigned=prevRec?.assigned_to_name||prevRec?.assigned_to||'';}
+    var newAssigned=g('ev-assigned-name')||'';
     if(imsEditId){
       await api('/events?id=eq.'+imsEditId,{m:'PATCH',p:'return=minimal',b:body});
       toast('Incident updated!');
+      if(newAssigned&&newAssigned.toLowerCase()!==prevAssigned.toLowerCase()){
+        var recNow=(imsAllData||[]).find(function(r){return r.id===imsEditId;});
+        imsNotifyAssignee(newAssigned,effectiveCompanyId,recNow?.event_ref||recNow?.incident_number||document.getElementById('ims-form-ref')?.textContent,desc,g('ev-location'));
+      }
     }else{
       body.created_by=prof?.id;
       var res=await api('/events',{m:'POST',p:'return=representation',b:body});
@@ -8739,6 +8905,14 @@ async function imsSave(){
         imsEditId=res[0].id;
         document.getElementById('ims-form-ref').textContent=ref;
         if(invReq) document.getElementById('ims-start-inv-btn').style.display='inline-flex';
+        if(newAssigned) imsNotifyAssignee(newAssigned,effectiveCompanyId,ref,desc,g('ev-location'));
+        // If an investigation is required, stay on the form so the user can
+        // click "Start investigation" immediately instead of re-opening the record.
+        if(invReq){
+          var refField=document.getElementById('ev-inv-ref'); if(refField)refField.placeholder='Will be assigned when investigation starts';
+          toast('Saved! Click "Start investigation" to begin the investigation.');
+          return;
+        }
       }
     }
     imsBackToRegister();
@@ -8752,7 +8926,15 @@ async function imsDelete(){
 }
 
 async function imsStartInvestigation(){
-  if(!imsEditId)return;
+  if(!imsEditId){toast('Save the incident first',false);return;}
+  // Switch to the Investigations tab/view FIRST — previously the investigation
+  // form was opened inside a hidden view, so clicking did nothing visible.
+  document.querySelectorAll('[id^="ims-tab-"]').forEach(t=>t.classList.remove('active'));
+  document.getElementById('ims-tab-investigate')?.classList.add('active');
+  ['register','report','investigate','actions','evidence','stats'].forEach(t=>{
+    var el=document.getElementById('ims-view-'+t);
+    if(el) el.style.display=t==='investigate'?'block':'none';
+  });
   imsNewInvestigation(imsEditId);
 }
 
@@ -8813,7 +8995,10 @@ function imsNewInvestigation(linkedEventId){
       document.getElementById('ws1-event-link').value=ev.event_ref||ev.incident_number||'';
       document.getElementById('ws1-location').value=ev.location||'';
       document.getElementById('ws1-description').value=ev.description||'';
-      document.getElementById('ws1-inc-date').value=ev.event_date||'';
+      // event_date is a timestamp — a date input only accepts YYYY-MM-DD
+      document.getElementById('ws1-inc-date').value=ev.event_date?String(ev.event_date).slice(0,10):'';
+      var t1=document.getElementById('ws1-inc-time'); if(t1)t1.value=ev.event_time?String(ev.event_time).substring(0,5):'';
+      var r1=document.getElementById('ws1-reported-by'); if(r1)r1.value=ev.reported_by_name||ev.reported_by||'';
     }
   }
   document.getElementById('inv-type-sel').value='incident';
@@ -25084,7 +25269,7 @@ async function obCreate() {
 </div>
 <div style="display:flex;gap:8px">
 <button class="btn btn-primary" onclick="imsNewIncident()" id="ims-report-btn"><i class="ti ti-plus"></i>Report incident</button>
-<button class="btn btn-sm" onclick="var sel=document.getElementById('ims-inv-list')?.querySelector('.active');if(sel)printIncidentReport(sel.dataset.id||imsInvEditId);else if(imsInvEditId)printIncidentReport(imsInvEditId);else toast('Select an incident first',false)" title="Print PDF"><i class="ti ti-printer"></i>Print PDF</button>
+<button class="btn btn-sm" onclick="imsPrintIncident()" title="Print PDF"><i class="ti ti-printer"></i>Print PDF</button>
 </div>
 </div>
 
@@ -25158,7 +25343,7 @@ async function obCreate() {
 <button class="btn" style="background:rgba(255,255,255,.2);color:#fff;border-color:rgba(255,255,255,.3)" onclick="imsBackToRegister()"><i class="ti ti-arrow-left"></i>Back</button>
 <button id="ims-del-btn" class="btn" style="display:none;background:rgba(0,0,0,.3);color:#fff;border-color:rgba(255,255,255,.3)" onclick="imsDelete()"><i class="ti ti-trash"></i></button>
 <button class="btn" style="background:#1D9E75;color:#fff;border-color:#1D9E75" onclick="imsSave()"><i class="ti ti-device-floppy"></i>Save report</button>
-<button class="btn" style="background:#5B21B6;color:#fff;border-color:#5B21B6" id="ims-start-inv-btn" style="display:none" onclick="imsStartInvestigation()"><i class="ti ti-search"></i>Start investigation</button>
+<button class="btn" style="background:#5B21B6;color:#fff;border-color:#5B21B6;display:none" id="ims-start-inv-btn" onclick="imsStartInvestigation()"><i class="ti ti-search"></i>Start investigation</button>
 </div>
 </div>
 </div>
@@ -25273,8 +25458,8 @@ async function obCreate() {
 </div>
 <div class="form-group"><label class="form-label">Witnesses</label><textarea id="ev-witnesses" style="min-height:50px" placeholder="Names and contact details of witnesses..."></textarea></div>
 <div class="form-row">
-<div class="form-group"><label class="form-label">Reported by</label><input type="text" id="ev-reported-by-name"/></div>
-<div class="form-group"><label class="form-label">Assigned to</label><input type="text" id="ev-assigned-name"/></div>
+<div class="form-group"><label class="form-label">Reported by</label><input type="text" id="ev-reported-by-name" placeholder="Auto-filled from your account"/></div>
+<div class="form-group"><label class="form-label">Assigned to</label><input type="text" id="ev-assigned-name" list="ims-personnel-list" placeholder="Start typing a name..." autocomplete="off"/><datalist id="ims-personnel-list"></datalist></div>
 <div class="form-group"><label class="form-label">Due date</label><input type="date" id="ev-due-date"/></div>
 </div>
 </div>
@@ -25316,7 +25501,7 @@ async function obCreate() {
 <!-- Investigation required -->
 <div class="card" style="border:2px solid #5B21B6">
 <div class="card-title" style="color:#5B21B6"><i class="ti ti-search"></i> Investigation</div>
-<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px"><input type="checkbox" id="ev-inv-required" style="accent-color:#5B21B6" onchange="imsToggleInvReq()"/><label for="ev-inv-required" style="font-size:13px;font-weight:600;cursor:pointer;color:#5B21B6">Investigation required</label></div>
+<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px"><input type="checkbox" id="ev-inv-required" style="accent-color:#5B21B6;width:16px;height:16px;padding:0;margin:0;flex-shrink:0;cursor:pointer" onchange="imsToggleInvReq()"/><label for="ev-inv-required" style="font-size:13px;font-weight:600;cursor:pointer;color:#5B21B6;margin:0">Investigation required</label></div>
 <div id="ev-inv-ref-section" style="display:none">
 <div class="form-group"><label class="form-label">Investigation ref</label><input type="text" id="ev-inv-ref" style="font-family:monospace" readonly placeholder="Auto-assigned on save"/></div>
 </div>
