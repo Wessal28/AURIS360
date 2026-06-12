@@ -20754,18 +20754,30 @@ async function usersSaveEdit() {
   var id = document.getElementById('uem-id')?.value;
   if(!id){toast('No user selected',false);return;}
   var g = function(fid){var el=document.getElementById(fid);return el?el.value||null:null;};
-  var body = {
-    full_name: g('uem-name'), role: g('uem-role'), job_title: g('uem-job-title'),
-    department: g('uem-dept'), phone: g('uem-phone'), site: g('uem-site'),
-    contractor_company: g('uem-contractor-co'), status: g('uem-status')||'active',
-    updated_at: new Date().toISOString()
-  };
+  var email = (g('uem-email')||'').trim();
+  if(email && !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)){
+    toast('Please enter a valid email address (e.g. name@company.com)',false);return;
+  }
   try {
-    await api('/profiles?id=eq.'+id, {m:'PATCH', p:'return=minimal', b:body});
-    toast('User updated!');
+    // Routed through the admin-users Edge Function (v2.2+):
+    //  - profile fields save via service role (no silent RLS zero-row "success")
+    //  - email change also updates the LOGIN email in Supabase Auth
+    await adminFnCall('update_user', {
+      user_id: id,
+      full_name: g('uem-name'), email: email, role: g('uem-role'),
+      job_title: g('uem-job-title'), department: g('uem-dept'),
+      phone: g('uem-phone'), site: g('uem-site'),
+      contractor_company: g('uem-contractor-co'), status: g('uem-status')||'active'
+    });
     usersCloseModal();
-    usersLoad();
-    // If updating own role, reload profile
+    // Reload and VERIFY the change is visible before claiming success
+    await usersLoad();
+    var fresh = usersAllData.find(function(x){return x.id===id;});
+    if(fresh && email && (fresh.email||'').toLowerCase()!==email.toLowerCase()){
+      toast('Warning: the change did not appear after reload — please check',false);
+    } else {
+      toast('User updated!');
+    }
     if(id === prof?.id) await loadProf();
   } catch(e) { toast(e.message, false); }
 }
