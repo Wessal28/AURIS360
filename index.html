@@ -9008,6 +9008,13 @@ function imsNewInvestigation(linkedEventId){
   document.getElementById('inv-recurrence').value='likely';
   var caBody=document.getElementById('inv-ca-body'); if(caBody)caBody.innerHTML='';
   var caEmpty=document.getElementById('inv-ca-empty'); if(caEmpty)caEmpty.style.display='block';
+  // Reset team, witnesses, sign-off
+  invTeam=[]; invRenderTeam();
+  invWitnessFiles={};
+  var wl=document.getElementById('inv-witness-list'); if(wl)wl.innerHTML='';
+  var we=document.getElementById('inv-witness-empty'); if(we)we.style.display='block';
+  imsLoadPersonnel();
+  invRefreshSignButtons();
   var whyBody=document.getElementById('ws3-five-why-body'); if(whyBody)whyBody.innerHTML='';
   var tlBody=document.getElementById('inv-timeline-body'); if(tlBody)tlBody.innerHTML='';
   invSelectMethod('5why');
@@ -9025,7 +9032,13 @@ function imsOpenInvestigation(id){
   var gf=function(fid,val){var el=document.getElementById(fid);if(el)el.value=val||'';};
   gf('ws1-reported-by',x.reported_by||x.investigator);
   gf('ws1-event-link',x.linked_event_ref||'');
-  gf('ws1-inc-date',x.incident_date||x.date);gf('ws1-inc-time',x.incident_time||'');
+  gf('ws1-inc-date',x.incident_date?String(x.incident_date).slice(0,10):(x.date?String(x.date).slice(0,10):''));gf('ws1-inc-time',x.incident_time||'');
+  // Team members (comma-separated text column -> chips)
+  invTeam=(x.team_members||'').split(',').map(function(s){return s.trim();}).filter(Boolean);
+  invRenderTeam();
+  // Witness interview records + personnel suggestions + sign-off state
+  imsLoadPersonnel();
+  invLoadWitnesses(id);
   gf('ws1-location',x.location);gf('ws1-description',x.description||x.incident_description);
   gf('ws1-person-name',x.person_name);gf('ws1-person-function',x.person_function);
   gf('ws1-witnesses',x.witnesses);gf('ws1-immediate-actions',x.immediate_actions);
@@ -9083,6 +9096,7 @@ function imsOpenInvestigation(id){
   if(x.ws3_environment){var el=document.getElementById('ws3-environment');if(el)el.value=x.ws3_environment;}
   if(x.recurrence_likelihood){var el=document.getElementById('inv-recurrence');if(el)el.value=x.recurrence_likelihood;}
   invSelectMethod(x.investigation_method||'5why');
+  invRefreshSignButtons();
   invShowTab('ws1', document.getElementById('inv-tab-ws1'));
 }
 
@@ -9165,6 +9179,223 @@ function invAddCA(){
   caBody.insertAdjacentHTML('beforeend', invCaRow('','','','open',caBody.querySelectorAll('.inv-ca-row').length));
 }
 
+// ─── INVESTIGATION TEAM MEMBERS (stored as comma-separated text) ─────────────
+var invTeam=[];
+function invRenderTeam(){
+  var el=document.getElementById('inv-team-chips'); if(!el)return;
+  el.innerHTML=invTeam.map(function(n,i){
+    return '<span style="background:#EDE9FE;color:#5B21B6;padding:3px 10px;border-radius:99px;font-size:12px;font-weight:600;display:inline-flex;align-items:center;gap:6px">'
+      +escH(n)+'<span style="cursor:pointer;font-weight:800" data-i="'+i+'" onclick="invRemoveTeamMember(parseInt(this.dataset.i))" title="Remove">&times;</span></span>';
+  }).join('');
+}
+function invAddTeamMember(){
+  var inp=document.getElementById('inv-team-input'); if(!inp)return;
+  var n=(inp.value||'').trim(); if(!n)return;
+  if(!invTeam.some(function(t){return t.toLowerCase()===n.toLowerCase();})) invTeam.push(n);
+  inp.value=''; invRenderTeam();
+}
+function invRemoveTeamMember(i){ invTeam.splice(i,1); invRenderTeam(); }
+
+// ─── WITNESS INTERVIEWS (each row = one incident_evidence record) ────────────
+var invWitnessFiles={};   // rowKey -> File object pending upload
+var invWitnessRowSeq=0;
+
+function invWitnessRowHtml(key, ev){
+  ev=ev||{};
+  var hasFile=!!ev.file_url;
+  return '<div class="card inv-witness-row" data-key="'+key+'" data-evid="'+(ev.id||'')+'" data-filepath="'+escH(ev.file_url||'')+'" style="background:#f9fafb;padding:14px;margin-bottom:10px">'
+    +'<div class="form-row3">'
+    +'<div class="form-group"><label class="form-label">Witness name</label><input type="text" class="wt-name" value="'+escH(ev.witness_name||'')+'" placeholder="Full name"/></div>'
+    +'<div class="form-group"><label class="form-label">Contact / job title</label><input type="text" class="wt-contact" value="'+escH(ev.witness_contact||'')+'"/></div>'
+    +'<div class="form-group"><label class="form-label">Interview date</label><input type="date" class="wt-date" value="'+escH(ev.collected_date||'')+'"/></div>'
+    +'</div>'
+    +'<div class="form-group"><label class="form-label">Statement / interview summary</label><textarea class="wt-statement" style="min-height:60px" placeholder="What the witness saw or stated...">'+escH(ev.witness_statement||'')+'</textarea></div>'
+    +'<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">'
+    +'<label class="btn btn-sm" style="cursor:pointer;margin:0">&#128206; '+(hasFile?'Replace statement file':'Attach signed statement')
+    +'<input type="file" class="wt-file" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.heic" style="display:none" onchange="invWitnessFileSel(this)"/></label>'
+    +'<span class="wt-file-label" style="font-size:11px;color:var(--text2)">'+(hasFile?'&#128196; '+escH(ev.file_name||'attached file'):'No file attached')+'</span>'
+    +(hasFile?'<button type="button" class="btn btn-sm" onclick="invViewStatement(this)">&#128065; View</button>':'')
+    +'<button type="button" class="btn btn-sm" style="margin-left:auto;color:var(--red)" onclick="invDeleteWitnessRow(this)"><i class="ti ti-trash"></i>Remove</button>'
+    +'</div></div>';
+}
+function invAddWitnessRow(ev){
+  var list=document.getElementById('inv-witness-list'); if(!list)return;
+  var key='w'+(++invWitnessRowSeq);
+  list.insertAdjacentHTML('beforeend', invWitnessRowHtml(key, ev));
+  var empty=document.getElementById('inv-witness-empty'); if(empty)empty.style.display='none';
+}
+function invWitnessFileSel(input){
+  var row=input.closest('.inv-witness-row'); if(!row)return;
+  var f=input.files&&input.files[0]; if(!f)return;
+  if(f.size>15*1024*1024){toast('File too large (max 15 MB)',false);input.value='';return;}
+  invWitnessFiles[row.dataset.key]=f;
+  var lbl=row.querySelector('.wt-file-label'); if(lbl)lbl.textContent='\uD83D\uDCC4 '+f.name+' (will upload on save)';
+}
+async function invDeleteWitnessRow(btn){
+  var row=btn.closest('.inv-witness-row'); if(!row)return;
+  var evid=row.dataset.evid;
+  if(evid){
+    if(!confirm('Remove this witness record? The saved record and any attached file will be deleted.'))return;
+    try{
+      var fp=row.dataset.filepath;
+      await api('/incident_evidence?id=eq.'+evid,{m:'DELETE'});
+      if(fp){try{await fetch(SB+'/storage/v1/object/evidence/'+fp.split('/').map(encodeURIComponent).join('/'),{method:'DELETE',headers:{'Authorization':'Bearer '+tok,'apikey':KEY}});}catch(_){}}
+      toast('Witness record removed');
+    }catch(e){toast(e.message,false);return;}
+  }
+  delete invWitnessFiles[row.dataset.key];
+  row.remove();
+  if(!document.querySelector('.inv-witness-row')){var empty=document.getElementById('inv-witness-empty');if(empty)empty.style.display='block';}
+}
+// View a statement from the PRIVATE evidence bucket via a short-lived signed URL
+async function invViewStatement(btn){
+  var row=btn.closest('.inv-witness-row'); var path=row?.dataset?.filepath; if(!path)return;
+  try{
+    var r=await fetch(SB+'/storage/v1/object/sign/evidence/'+path.split('/').map(encodeURIComponent).join('/'),{
+      method:'POST',headers:{'Authorization':'Bearer '+tok,'apikey':KEY,'Content-Type':'application/json'},
+      body:JSON.stringify({expiresIn:3600})});
+    var d=await r.json();
+    if(d.signedURL) window.open(SB+'/storage/v1'+d.signedURL,'_blank');
+    else toast('Could not open file: '+(d.message||'unknown error'),false);
+  }catch(e){toast(e.message,false);}
+}
+async function invUploadEvidenceFile(file, companyId, invId){
+  var clean=(typeof dcSanitiseName==='function')?dcSanitiseName(file.name):file.name.replace(/[^a-zA-Z0-9._-]/g,'_');
+  var path=companyId+'/investigations/'+invId+'/'+Date.now()+'_'+clean;
+  var r=await fetch(SB+'/storage/v1/object/evidence/'+path.split('/').map(encodeURIComponent).join('/'),{
+    method:'POST',
+    headers:{'Authorization':'Bearer '+tok,'apikey':KEY,'x-upsert':'true','Content-Type':file.type||'application/octet-stream'},
+    body:file});
+  if(!r.ok){var t='';try{t=await r.text();}catch(_){}throw new Error('Statement upload failed: '+t.substring(0,140));}
+  return path;
+}
+// Persist all witness rows as incident_evidence records (insert or update)
+async function invSaveWitnesses(invId, companyId){
+  var rows=document.querySelectorAll('.inv-witness-row');
+  for(var i=0;i<rows.length;i++){
+    var row=rows[i];
+    var name=row.querySelector('.wt-name')?.value?.trim();
+    var statement=row.querySelector('.wt-statement')?.value?.trim();
+    if(!name&&!statement&&!invWitnessFiles[row.dataset.key])continue; // skip empty rows
+    var rec={
+      company_id:companyId, investigation_id:invId,
+      evidence_type:'witness_statement',
+      title:'Witness statement - '+(name||'unnamed'),
+      witness_name:name||null,
+      witness_contact:row.querySelector('.wt-contact')?.value?.trim()||null,
+      witness_statement:statement||null,
+      collected_date:row.querySelector('.wt-date')?.value||null,
+      collected_by:prof?.full_name||null
+    };
+    var pending=invWitnessFiles[row.dataset.key];
+    if(pending){
+      var path=await invUploadEvidenceFile(pending, companyId, invId);
+      rec.file_url=path; rec.file_name=pending.name; rec.file_size=String(pending.size);
+      row.dataset.filepath=path; delete invWitnessFiles[row.dataset.key];
+    }
+    if(row.dataset.evid){
+      await api('/incident_evidence?id=eq.'+row.dataset.evid,{m:'PATCH',p:'return=minimal',b:rec});
+    }else{
+      rec.created_by=prof?.id;
+      var res=await api('/incident_evidence',{m:'POST',p:'return=representation',b:rec});
+      if(res?.[0]?.id)row.dataset.evid=res[0].id;
+    }
+  }
+}
+async function invLoadWitnesses(invId){
+  var list=document.getElementById('inv-witness-list'); if(!list)return;
+  list.innerHTML=''; invWitnessFiles={};
+  var empty=document.getElementById('inv-witness-empty');
+  try{
+    var d=await api('/incident_evidence?investigation_id=eq.'+invId+'&evidence_type=eq.witness_statement&order=created_at.asc');
+    (d||[]).forEach(function(ev){invAddWitnessRow(ev);});
+    if(empty)empty.style.display=(d&&d.length)?'none':'block';
+  }catch(e){if(empty)empty.style.display='block';}
+}
+
+// ─── SIGN-OFF WORKFLOW (investigator -> reviewer -> approver) ─────────────────
+var INV_SIGN_CFG={
+  investigator:{nameId:'inv-sign-investigator',dateId:'inv-sign-inv-date',dateCol:'sign_inv_date',nameCol:'sign_investigator',next:'reviewer',nextLabel:'review'},
+  reviewer:{nameId:'inv-sign-reviewer',dateId:'inv-sign-rev-date',dateCol:'sign_rev_date',nameCol:'sign_reviewer',next:'approver',nextLabel:'approval'},
+  approver:{nameId:'inv-sign-approver',dateId:'inv-sign-app-date',dateCol:'sign_app_date',nameCol:'sign_approver',next:null}
+};
+function invRefreshSignButtons(){
+  var invDate=document.getElementById('inv-sign-inv-date')?.value;
+  var revDate=document.getElementById('inv-sign-rev-date')?.value;
+  var appDate=document.getElementById('inv-sign-app-date')?.value;
+  var set=function(role,signed,enabled,note){
+    var btn=document.getElementById('inv-sign-btn-'+role);
+    var st=document.getElementById('inv-sign-status-'+role);
+    if(btn){btn.disabled=signed||!enabled;btn.style.opacity=(signed||!enabled)?'0.45':'1';}
+    if(st)st.innerHTML=signed?'<span style="color:var(--green);font-weight:700">&#10003; Signed</span>':(note||'');
+  };
+  set('investigator',!!invDate,true,'');
+  set('reviewer',!!revDate,!!invDate,invDate?'':'Waiting for investigator');
+  set('approver',!!appDate,!!revDate,revDate?'':'Waiting for reviewer');
+}
+async function invNotifySign(toName, companyId, invRef, stageLabel){
+  if(!toName)return false;
+  var p=(imsPersonnel||[]).find(function(x){return (x.full_name||'').toLowerCase()===toName.toLowerCase();});
+  if(!p||!p.email)return false;
+  var html='<!DOCTYPE html><html><body style="margin:0;font-family:Arial,sans-serif;background:#f4f6f8;padding:20px">'
+    +'<div style="max-width:560px;margin:0 auto;background:#fff;border-radius:12px;overflow:hidden;border:1px solid #e5e7eb">'
+    +'<div style="background:#5B21B6;padding:18px 24px;color:#fff;font-size:16px;font-weight:700">&#128269; Investigation ready for your '+escH(stageLabel)+'</div>'
+    +'<div style="padding:24px"><p style="font-size:14px;color:#1a1a1a">Hi <strong>'+escH(p.full_name||'')+'</strong>,</p>'
+    +'<p style="color:#374151;font-size:13px">Investigation <strong>'+escH(invRef||'')+'</strong> has been signed at the previous stage and is now waiting for your '+escH(stageLabel)+' in AURIS360.</p>'
+    +'<div style="margin-top:18px;text-align:center"><a href="https://auris-360.vercel.app" style="background:#1D9E75;color:#fff;padding:10px 24px;border-radius:8px;text-decoration:none;font-weight:600;font-size:13px">Open AURIS360</a></div>'
+    +'</div><div style="padding:10px 24px;background:#f4f6f8;font-size:11px;color:#6B7280;text-align:center">AURIS360 - Investigation Sign-off</div>'
+    +'</div></body></html>';
+  try{
+    await api('/notification_queue',{m:'POST',p:'return=minimal',b:{
+      company_id:companyId,type:'investigation_signoff',
+      subject:'Investigation '+(invRef||'')+' - awaiting your '+stageLabel,
+      body_html:html,to_email:p.email,to_name:p.full_name||'',
+      related_table:'investigations',related_id:imsInvEditId||null}});
+    return true;
+  }catch(e){return false;}
+}
+async function invSign(role){
+  var cfg=INV_SIGN_CFG[role]; if(!cfg)return;
+  if(!imsInvEditId){toast('Save the investigation first',false);return;}
+  var name=(document.getElementById(cfg.nameId)?.value||'').trim();
+  if(!name){toast('Enter the '+role+' name first',false);return;}
+  // Sequence gating
+  if(role==='reviewer'&&!document.getElementById('inv-sign-inv-date')?.value){toast('Investigator must sign first',false);return;}
+  if(role==='approver'&&!document.getElementById('inv-sign-rev-date')?.value){toast('Reviewer must sign first',false);return;}
+  // Only the named person (or sephs_admin) can sign this step
+  var me=(prof?.full_name||'').trim();
+  if(!isSA()&&me.toLowerCase()!==name.toLowerCase()){
+    toast('Only '+name+' can sign as '+role,false);return;
+  }
+  var rec=(imsInvAllData||[]).find(function(r){return r.id===imsInvEditId;})||{};
+  var companyId=rec.company_id||((isSA()&&sephsCompanyContext)?sephsCompanyContext:prof?.company_id);
+  var today=new Date().toISOString().slice(0,10);
+  var patch={updated_at:new Date().toISOString()};
+  patch[cfg.nameCol]=name; patch[cfg.dateCol]=today;
+  if(role==='approver')patch.status='closed';
+  else if(role==='investigator'&&(rec.status==='open'||!rec.status))patch.status='in_progress';
+  try{
+    await api('/investigations?id=eq.'+imsInvEditId,{m:'PATCH',p:'return=minimal',b:patch});
+    document.getElementById(cfg.dateId).value=today;
+    if(role==='approver'){var ss=document.getElementById('inv-status-sel');if(ss)ss.value='closed';}
+    // Update local cache so subsequent signs see fresh state
+    Object.assign(rec,patch);
+    var invRef=rec.investigation_ref||document.getElementById('inv-form-ref')?.textContent||'';
+    if(cfg.next){
+      var nextName=(document.getElementById(INV_SIGN_CFG[cfg.next].nameId)?.value||'').trim();
+      if(nextName){
+        var queued=await invNotifySign(nextName, companyId, invRef, cfg.nextLabel);
+        toast('\u2713 Signed as '+role+(queued?' - '+nextName+' will be notified':' - assign a registered '+cfg.next+' to notify them'));
+      }else{
+        toast('\u2713 Signed as '+role+' - enter the '+cfg.next+' name so they can be notified');
+      }
+    }else{
+      toast('\u2713 Investigation approved and closed');
+    }
+    invRefreshSignButtons();
+  }catch(e){toast(e.message,false);}
+}
+
 async function invSave(){
   var g=function(id){var el=document.getElementById(id);return el?el.value||null:null;};
   // Collect 5-Why answers as array (column is jsonb — accepts array directly)
@@ -9188,6 +9419,7 @@ async function invSave(){
     incident_time:g('ws1-inc-time'),location:g('ws1-location'),description:g('ws1-description'),
     person_name:g('ws1-person-name'),person_function:g('ws1-person-function'),
     ws1_contract_type:g('ws1-contract-type'),witnesses:g('ws1-witnesses'),immediate_actions:g('ws1-immediate-actions'),
+    team_members:invTeam.length?invTeam.join(', '):null,
     interviewer:g('ws2-interviewer'),interviewee:g('ws2-interviewee'),interview_date:g('ws2-date')||null,
     ws2_procedures:g('ws2-proc'),ws2_management:g('ws2-mgmt'),ws2_skills:g('ws2-skills'),
     ws2_care:g('ws2-care'),ws2_root_causes:g('ws2-root-causes'),
@@ -9211,6 +9443,7 @@ async function invSave(){
   try{
     if(imsInvEditId){
       await api('/investigations?id=eq.'+imsInvEditId,{m:'PATCH',p:'return=minimal',b:body});
+      await invSaveWitnesses(imsInvEditId, effectiveCompanyId);
       toast('Investigation updated!');
     }else{
       body.created_by=prof?.id;
@@ -9232,6 +9465,8 @@ async function invSave(){
         toast('Investigation saved! Ref: '+ref);
         imsInvEditId=res[0].id;
         document.getElementById('inv-form-ref').textContent=ref;
+        await invSaveWitnesses(imsInvEditId, effectiveCompanyId);
+        invRefreshSignButtons();
         // Auto-create action_tracker rows for each corrective action — also fix company_id
         for(var ca of cas){
           if(ca.description){
@@ -25588,7 +25823,11 @@ async function obCreate() {
 <div class="form-group"><label class="form-label">Employment type</label>
 <select id="ws1-contract-type"><option value="employee">Employee</option><option value="contractor">Contractor</option><option value="visitor">Visitor</option></select></div>
 </div>
-<div class="form-group"><label class="form-label">Witnesses</label><textarea id="ws1-witnesses" style="min-height:50px"></textarea></div>
+<div class="form-group"><label class="form-label">Witnesses</label><textarea id="ws1-witnesses" style="min-height:50px" placeholder="Quick list of witness names — detailed interviews are recorded in the Interview tab"></textarea></div>
+<div class="form-group"><label class="form-label">Investigation team members</label>
+<div style="display:flex;gap:8px"><input type="text" id="inv-team-input" list="ims-personnel-list" placeholder="Type a name (registered personnel suggested) and click Add" autocomplete="off" onkeydown="if(event.key==='Enter'){event.preventDefault();invAddTeamMember();}"/><button type="button" class="btn btn-sm" onclick="invAddTeamMember()" style="flex-shrink:0"><i class="ti ti-plus"></i>Add</button></div>
+<div id="inv-team-chips" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px"></div>
+</div>
 <div class="form-group"><label class="form-label">Immediate actions taken</label><textarea id="ws1-immediate-actions" style="min-height:60px"></textarea></div>
 </div>
 
@@ -25605,6 +25844,15 @@ async function obCreate() {
 <div class="form-group"><label class="form-label">Were skills/training adequate?</label><textarea id="ws2-skills" style="min-height:50px"></textarea></div>
 <div class="form-group"><label class="form-label">Were workplace conditions adequate?</label><textarea id="ws2-care" style="min-height:50px"></textarea></div>
 <div class="form-group"><label class="form-label">Root causes identified from interview</label><textarea id="ws2-root-causes" style="min-height:60px"></textarea></div>
+<div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--border)">
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+<div style="font-weight:700;font-size:13px">Witness interviews &amp; statements</div>
+<button type="button" class="btn btn-sm" onclick="invAddWitnessRow()"><i class="ti ti-plus"></i>Add witness</button>
+</div>
+<div style="font-size:11px;color:var(--text2);margin-bottom:10px">Add a row per witness. Each is saved as an evidence record when you save the investigation. You can attach a scanned signed statement (PDF, photo or Word) per witness.</div>
+<div id="inv-witness-list"></div>
+<div id="inv-witness-empty" style="text-align:center;padding:12px;color:var(--text2);font-size:12px">No witnesses added yet</div>
+</div>
 </div>
 
 <!-- RCA Tab -->
@@ -25722,21 +25970,28 @@ async function obCreate() {
 <div id="inv-safety-comm-btn" style="margin-bottom:14px">
 <button class="btn" style="background:#5B21B6;color:#fff;border-color:#5B21B6" onclick="generateSafetyComm()"><i class="ti ti-robot"></i>Generate AI Safety Communication</button>
 </div>
+<div style="font-size:12px;color:var(--text2);margin-bottom:12px;background:#EFF6FF;border:1px solid #bfdbfe;border-radius:8px;padding:10px 12px">Workflow: the <strong>Investigator</strong> signs when the investigation is complete → the Reviewer is notified by email. The <strong>Reviewer</strong> signs → the Approver is notified. The <strong>Approver</strong> signs → the investigation is closed. Each step can only be signed by the named person (or SEPHS admin).</div>
 <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px">
 <div class="card" style="background:#f9fafb">
-<div style="font-weight:700;font-size:12px;margin-bottom:8px">Investigator</div>
-<div class="form-group"><label class="form-label">Name</label><input type="text" id="inv-sign-investigator"/></div>
-<div class="form-group"><label class="form-label">Date</label><input type="date" id="inv-sign-inv-date"/></div>
+<div style="font-weight:700;font-size:12px;margin-bottom:8px">1. Investigator</div>
+<div class="form-group"><label class="form-label">Name</label><input type="text" id="inv-sign-investigator" list="ims-personnel-list" autocomplete="off" placeholder="Select from personnel..."/></div>
+<div class="form-group"><label class="form-label">Date signed</label><input type="date" id="inv-sign-inv-date" readonly style="background:#f3f4f6"/></div>
+<button type="button" class="btn btn-sm" id="inv-sign-btn-investigator" onclick="invSign('investigator')" style="width:100%;background:#1D9E75;color:#fff;border-color:#1D9E75">✍ Sign as investigator</button>
+<div id="inv-sign-status-investigator" style="font-size:11px;margin-top:6px;text-align:center;color:var(--text2)"></div>
 </div>
 <div class="card" style="background:#f9fafb">
-<div style="font-weight:700;font-size:12px;margin-bottom:8px">Reviewer</div>
-<div class="form-group"><label class="form-label">Name</label><input type="text" id="inv-sign-reviewer"/></div>
-<div class="form-group"><label class="form-label">Date</label><input type="date" id="inv-sign-rev-date"/></div>
+<div style="font-weight:700;font-size:12px;margin-bottom:8px">2. Reviewer</div>
+<div class="form-group"><label class="form-label">Name</label><input type="text" id="inv-sign-reviewer" list="ims-personnel-list" autocomplete="off" placeholder="Select from personnel..."/></div>
+<div class="form-group"><label class="form-label">Date signed</label><input type="date" id="inv-sign-rev-date" readonly style="background:#f3f4f6"/></div>
+<button type="button" class="btn btn-sm" id="inv-sign-btn-reviewer" onclick="invSign('reviewer')" style="width:100%;background:#1D9E75;color:#fff;border-color:#1D9E75">✍ Sign as reviewer</button>
+<div id="inv-sign-status-reviewer" style="font-size:11px;margin-top:6px;text-align:center;color:var(--text2)"></div>
 </div>
 <div class="card" style="background:#f9fafb">
-<div style="font-weight:700;font-size:12px;margin-bottom:8px">Approver</div>
-<div class="form-group"><label class="form-label">Name</label><input type="text" id="inv-sign-approver"/></div>
-<div class="form-group"><label class="form-label">Date</label><input type="date" id="inv-sign-app-date"/></div>
+<div style="font-weight:700;font-size:12px;margin-bottom:8px">3. Approver</div>
+<div class="form-group"><label class="form-label">Name</label><input type="text" id="inv-sign-approver" list="ims-personnel-list" autocomplete="off" placeholder="Select from personnel..."/></div>
+<div class="form-group"><label class="form-label">Date signed</label><input type="date" id="inv-sign-app-date" readonly style="background:#f3f4f6"/></div>
+<button type="button" class="btn btn-sm" id="inv-sign-btn-approver" onclick="invSign('approver')" style="width:100%;background:#1D9E75;color:#fff;border-color:#1D9E75">✓ Approve &amp; close</button>
+<div id="inv-sign-status-approver" style="font-size:11px;margin-top:6px;text-align:center;color:var(--text2)"></div>
 </div>
 </div>
 <div class="form-group" style="margin-top:12px"><label class="form-label">Effectiveness review date</label><input type="date" id="inv-effectiveness-date"/></div>
