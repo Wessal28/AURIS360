@@ -21852,6 +21852,9 @@ function adminEditCompany(id) {
   gf('adm-co-name',co.name); gf('adm-co-regno',co.registration_no); gf('adm-co-address',co.address);
   gf('adm-co-contact',co.contact_name); gf('adm-co-email',co.contact_email); gf('adm-co-phone',co.phone);
   gf('adm-co-logo',co.logo_url); gf('adm-co-country',co.country||'Mauritius');
+  var _lp=document.getElementById('adm-co-logo-preview'), _ls=document.getElementById('adm-co-logo-status');
+  if(_lp){ if(co.logo_url){_lp.src=co.logo_url;_lp.style.display='block';} else {_lp.style.display='none';_lp.src='';} }
+  if(_ls)_ls.textContent='';
   document.getElementById('adm-co-headcount').value=co.headcount||'';
   document.getElementById('adm-co-type').value=co.company_type||'standalone';
   document.getElementById('adm-co-currency').value=co.currency||'MUR';
@@ -21862,6 +21865,35 @@ function adminEditCompany(id) {
 }
 
 function adminCloseCoModal(){ document.getElementById('adm-company-modal').style.display='none'; }
+
+// Upload a client's logo to the public 'logos' bucket (for clients with no website).
+async function adminCoLogoUpload(input){
+  var f = input.files && input.files[0]; if(!f) return;
+  if(f.size > 1024*1024){ toast('Logo too large — max 1 MB', false); input.value=''; return; }
+  var status = document.getElementById('adm-co-logo-status');
+  if(status) status.textContent = 'Uploading…';
+  try{
+    var coId = adminEditCoId || 'new';
+    var clean = (typeof dcSanitiseName==='function') ? dcSanitiseName(f.name) : f.name.replace(/[^a-zA-Z0-9._-]/g,'_');
+    var path = coId + '/' + Date.now() + '_' + clean;
+    var r = await fetch(SB+'/storage/v1/object/logos/'+path.split('/').map(encodeURIComponent).join('/'), {
+      method:'POST',
+      headers:{'Authorization':'Bearer '+tok,'apikey':KEY,'x-upsert':'true','Content-Type':f.type||'application/octet-stream'},
+      body:f
+    });
+    if(!r.ok){ var t=''; try{t=await r.text();}catch(_){}
+      throw new Error('Upload failed: '+t.substring(0,140)); }
+    var publicUrl = SB+'/storage/v1/object/public/logos/'+path.split('/').map(encodeURIComponent).join('/');
+    document.getElementById('adm-co-logo').value = publicUrl;
+    var img = document.getElementById('adm-co-logo-preview');
+    if(img){ img.src = publicUrl; img.style.display='block'; }
+    if(status) status.textContent = '✓ Uploaded — remember to Save the company';
+    toast('Logo uploaded');
+  }catch(e){
+    if(status) status.textContent = '';
+    toast(e.message, false);
+  }
+}
 
 async function adminSaveCompany() {
   var name = document.getElementById('adm-co-name')?.value?.trim();
@@ -33117,7 +33149,18 @@ async function obCreate() {
 </div>
 <div class="form-row">
 <div class="form-group"><label class="form-label">Headcount</label><input type="number" id="adm-co-headcount" min="0"/></div>
-<div class="form-group"><label class="form-label">Logo URL</label><input type="url" id="adm-co-logo" placeholder="https://..."/></div>
+<div class="form-group"><label class="form-label">Logo</label>
+<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+<input type="url" id="adm-co-logo" placeholder="https://...  (or upload →)" style="flex:1;min-width:180px"/>
+<label class="btn btn-sm" style="cursor:pointer;margin:0;white-space:nowrap">⬆ Upload logo
+<input type="file" accept="image/png,image/jpeg,image/svg+xml,image/webp" style="display:none" onchange="adminCoLogoUpload(this)"/></label>
+</div>
+<div style="display:flex;align-items:center;gap:8px;margin-top:6px">
+<img id="adm-co-logo-preview" src="" alt="" style="display:none;width:44px;height:44px;object-fit:contain;border:1px solid var(--border);border-radius:8px;background:#fff"/>
+<span id="adm-co-logo-status" style="font-size:11px;color:var(--text2)"></span>
+</div>
+<div style="font-size:11px;color:var(--text2);margin-top:3px">For clients without a website: upload a PNG/JPG/SVG (max 1 MB) and we'll host it.</div>
+</div>
 <div class="form-group"><label class="form-label">Subscription tier</label>
 <select id="adm-co-tier"><option value="starter">Starter</option><option value="professional" selected>Professional</option><option value="enterprise">Enterprise</option></select></div>
 </div>
