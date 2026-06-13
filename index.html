@@ -2268,6 +2268,10 @@ async function doUpdatePassword() {
     });
     var d=await r.json();
     if(!r.ok) throw new Error(d.error_description||d.msg||'Update failed');
+    try {
+      var jwtPay = JSON.parse(atob(tok.split('.')[1]));
+      if(jwtPay.sub) await api('/profiles?id=eq.'+jwtPay.sub,{m:'PATCH',p:'return=minimal',b:{must_change_password:false,updated_at:new Date().toISOString()}});
+    } catch(_){}
     authShowPanel('signin');
     authShowSuccess('Password updated successfully. Please sign in with your new password.');
   } catch(e) {
@@ -2436,6 +2440,34 @@ async function authInitSession() {
       document.getElementById('login-screen').style.display='flex';
       authShowPanel('signin');
       authShowErr('Could not verify the reset link. Please request a new one.');
+      return;
+    }
+  }
+  var qpTokenHash = qp.get('token_hash');
+  var qpType = qp.get('type');
+  if(qpTokenHash && (qpType==='recovery'||qpType==='invite'||qpType==='signup') && !pkceCode) {
+    authShowLoading('Verifying reset link...');
+    try {
+      var vr = await fetch(SB+'/auth/v1/verify',{method:'POST',headers:{'Content-Type':'application/json','apikey':KEY},body:JSON.stringify({token_hash:qpTokenHash,type:qpType})});
+      var vd = await vr.json();
+      if(vr.ok && vd.access_token) {
+        tok = vd.access_token;
+        try{localStorage.setItem('auris360_session',JSON.stringify({access_token:vd.access_token,refresh_token:vd.refresh_token,expires_at:Math.floor(Date.now()/1000)+(vd.expires_in||3600),user:null}));}catch(_){}
+        history.replaceState(null,'',window.location.pathname);
+        document.getElementById('login-screen').style.display='flex';
+        authShowPanel(qpType==='recovery'?'update-pw':'signin');
+        return;
+      } else {
+        history.replaceState(null,'',window.location.pathname);
+        document.getElementById('login-screen').style.display='flex';
+        authShowPanel('signin');
+        authShowErr('This reset link has expired or was already used. Please request a new one.');
+        return;
+      }
+    } catch(ex) {
+      document.getElementById('login-screen').style.display='flex';
+      authShowPanel('signin');
+      authShowErr('Could not verify the reset link. Please try again.');
       return;
     }
   }
