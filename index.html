@@ -26603,17 +26603,13 @@ async function obCreate() {
 <!-- Observation type selector (large visual buttons) -->
 <div class="card" style="margin-bottom:14px">
 <div class="card-title">Observation Type</div>
-<div style="display:grid;grid-template-columns:repeat(5,1fr);gap:10px" id="obs-type-selector">
+<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px" id="obs-type-selector">
 <div class="obs-type-btn" data-type="positive_behaviour" onclick="obsSelectType('positive_behaviour')" style="padding:14px 10px;border-radius:10px;text-align:center;cursor:pointer;border:2px solid #bbf7d0;background:#f0fdf4;transition:all .15s">
 <div style="font-size:28px;margin-bottom:6px">✅</div><div style="font-weight:700;font-size:12px;color:#166534">Positive Behaviour</div><div style="font-size:10px;color:var(--text2);margin-top:3px">Safe act observed</div></div>
 <div class="obs-type-btn" data-type="unsafe_behaviour" onclick="obsSelectType('unsafe_behaviour')" style="padding:14px 10px;border-radius:10px;text-align:center;cursor:pointer;border:2px solid #fecaca;background:#FEF2F2;transition:all .15s">
 <div style="font-size:28px;margin-bottom:6px">⚠️</div><div style="font-weight:700;font-size:12px;color:#991B1B">Unsafe Behaviour</div><div style="font-size:10px;color:var(--text2);margin-top:3px">At-risk act seen</div></div>
 <div class="obs-type-btn" data-type="unsafe_condition" onclick="obsSelectType('unsafe_condition')" style="padding:14px 10px;border-radius:10px;text-align:center;cursor:pointer;border:2px solid #fed7aa;background:#FFF7ED;transition:all .15s">
 <div style="font-size:28px;margin-bottom:6px">🔴</div><div style="font-weight:700;font-size:12px;color:#9A3412">Unsafe Condition</div><div style="font-size:10px;color:var(--text2);margin-top:3px">Physical hazard</div></div>
-<div class="obs-type-btn" data-type="near_miss" onclick="obsSelectType('near_miss')" style="padding:14px 10px;border-radius:10px;text-align:center;cursor:pointer;border:2px solid #ddd6fe;background:#F5F3FF;transition:all .15s">
-<div style="font-size:28px;margin-bottom:6px">⚡</div><div style="font-weight:700;font-size:12px;color:#5B21B6">Near Miss</div><div style="font-size:10px;color:var(--text2);margin-top:3px">Almost happened</div></div>
-<div class="obs-type-btn" data-type="good_practice" onclick="obsSelectType('good_practice')" style="padding:14px 10px;border-radius:10px;text-align:center;cursor:pointer;border:2px solid #bfdbfe;background:#EFF6FF;transition:all .15s">
-<div style="font-size:28px;margin-bottom:6px">⭐</div><div style="font-weight:700;font-size:12px;color:#1e40af">Good Practice</div><div style="font-size:10px;color:var(--text2);margin-top:3px">Best practice</div></div>
 </div>
 <input type="hidden" id="obs-type" value="unsafe_condition"/>
 </div>
@@ -26650,9 +26646,9 @@ async function obCreate() {
 <!-- Action taken -->
 <div class="card" style="margin-bottom:14px"><div class="card-title" style="color:#185FA5">Immediate Action &amp; Feedback</div>
 <div style="display:flex;gap:20px;flex-wrap:wrap;margin-bottom:10px">
-<label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer;font-weight:600"><input type="checkbox" id="obs-immediate-action" style="accent-color:var(--green)"/> Immediate action taken</label>
-<label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer;font-weight:600"><input type="checkbox" id="obs-stopped-work" style="accent-color:var(--red)"/> Work stopped</label>
-<label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer;font-weight:600"><input type="checkbox" id="obs-feedback-given" style="accent-color:var(--green)"/> Feedback given to person</label>
+<label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer;font-weight:600"><input type="checkbox" id="obs-immediate-action" style="accent-color:var(--green);width:16px;height:16px;padding:0;margin:0;flex-shrink:0"/> Immediate action taken</label>
+<label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer;font-weight:600"><input type="checkbox" id="obs-stopped-work" style="accent-color:var(--red);width:16px;height:16px;padding:0;margin:0;flex-shrink:0"/> Work stopped</label>
+<label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer;font-weight:600"><input type="checkbox" id="obs-feedback-given" style="accent-color:var(--green);width:16px;height:16px;padding:0;margin:0;flex-shrink:0"/> Feedback given to person</label>
 </div>
 <div class="form-group"><label class="form-label">Immediate action description</label><textarea id="obs-immediate-desc" style="min-height:60px" placeholder="Describe what was done immediately to address the observation..."></textarea></div>
 <div class="form-group"><label class="form-label">Feedback notes</label><textarea id="obs-feedback-notes" style="min-height:50px" placeholder="What was communicated to the person observed?"></textarea></div>
@@ -26660,7 +26656,7 @@ async function obCreate() {
 
 <!-- Follow-up action -->
 <div class="card"><div class="card-title" style="color:#E24B4A">Follow-up Action Required</div>
-<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px"><input type="checkbox" id="obs-action-required" style="accent-color:var(--red)" onchange="obsToggleAction()"/><label for="obs-action-required" style="font-size:13px;font-weight:600;cursor:pointer;color:#E24B4A">Further action required</label></div>
+<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px"><input type="checkbox" id="obs-action-required" style="accent-color:var(--red);width:16px;height:16px;padding:0;margin:0;flex-shrink:0;cursor:pointer" onchange="obsToggleAction()"/><label for="obs-action-required" style="font-size:13px;font-weight:600;cursor:pointer;color:#E24B4A">Further action required</label></div>
 <div id="obs-action-fields" style="display:none">
 <div class="form-group"><label class="form-label">Action description</label><textarea id="obs-action-desc" style="min-height:60px" placeholder="What action must be taken to prevent recurrence?"></textarea></div>
 <div class="form-row">
@@ -26675,10 +26671,10 @@ async function obCreate() {
 <!-- PPE -->
 <div class="card" style="margin-bottom:14px"><div class="card-title">PPE Status</div>
 <div style="display:flex;flex-direction:column;gap:8px">
-<label style="display:flex;align-items:center;gap:8px;padding:8px;border-radius:8px;cursor:pointer;background:#f9fafb" onclick="document.getElementById('obs-ppe-worn').value='true'"><input type="radio" name="obs-ppe" value="true" style="accent-color:var(--green)"> <span style="font-size:12px;font-weight:600;color:#166534">✓ PPE worn correctly</span></label>
-<label style="display:flex;align-items:center;gap:8px;padding:8px;border-radius:8px;cursor:pointer;background:#f9fafb" onclick="document.getElementById('obs-ppe-worn').value='partial'"><input type="radio" name="obs-ppe" value="partial" style="accent-color:#EF9F27"> <span style="font-size:12px;font-weight:600;color:#854F0B">⚠ PPE worn but inadequate</span></label>
-<label style="display:flex;align-items:center;gap:8px;padding:8px;border-radius:8px;cursor:pointer;background:#f9fafb" onclick="document.getElementById('obs-ppe-worn').value='false'"><input type="radio" name="obs-ppe" value="false" style="accent-color:var(--red)"> <span style="font-size:12px;font-weight:600;color:#991B1B">✗ PPE not worn</span></label>
-<label style="display:flex;align-items:center;gap:8px;padding:8px;border-radius:8px;cursor:pointer;background:#f9fafb" onclick="document.getElementById('obs-ppe-worn').value='na'"><input type="radio" name="obs-ppe" value="na" style="accent-color:#6B7280" checked> <span style="font-size:12px;font-weight:600;color:#6B7280">— Not applicable</span></label>
+<label style="display:flex;align-items:center;gap:8px;padding:8px;border-radius:8px;cursor:pointer;background:#f9fafb" onclick="document.getElementById('obs-ppe-worn').value='true'"><input type="radio" name="obs-ppe" value="true" style="accent-color:var(--green);width:16px;height:16px;padding:0;margin:0;flex-shrink:0"> <span style="font-size:12px;font-weight:600;color:#166534">✓ PPE worn correctly</span></label>
+<label style="display:flex;align-items:center;gap:8px;padding:8px;border-radius:8px;cursor:pointer;background:#f9fafb" onclick="document.getElementById('obs-ppe-worn').value='partial'"><input type="radio" name="obs-ppe" value="partial" style="accent-color:#EF9F27;width:16px;height:16px;padding:0;margin:0;flex-shrink:0"> <span style="font-size:12px;font-weight:600;color:#854F0B">⚠ PPE worn but inadequate</span></label>
+<label style="display:flex;align-items:center;gap:8px;padding:8px;border-radius:8px;cursor:pointer;background:#f9fafb" onclick="document.getElementById('obs-ppe-worn').value='false'"><input type="radio" name="obs-ppe" value="false" style="accent-color:var(--red);width:16px;height:16px;padding:0;margin:0;flex-shrink:0"> <span style="font-size:12px;font-weight:600;color:#991B1B">✗ PPE not worn</span></label>
+<label style="display:flex;align-items:center;gap:8px;padding:8px;border-radius:8px;cursor:pointer;background:#f9fafb" onclick="document.getElementById('obs-ppe-worn').value='na'"><input type="radio" name="obs-ppe" value="na" style="accent-color:#6B7280;width:16px;height:16px;padding:0;margin:0;flex-shrink:0" checked> <span style="font-size:12px;font-weight:600;color:#6B7280">— Not applicable</span></label>
 </div>
 <input type="hidden" id="obs-ppe-worn" value="na"/>
 <div class="form-group" style="margin-top:10px"><label class="form-label">PPE notes</label><input type="text" id="obs-ppe-notes" placeholder="Which PPE? What was the issue?"/></div>
