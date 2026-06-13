@@ -21175,7 +21175,8 @@ document.addEventListener('click', function(e){
 // Module is "launched" if it's in LAUNCHED_MODULES, OR if user is sephs_admin in dev mode.
 function isModuleLaunched(pageKey) {
   if(LAUNCHED_MODULES.indexOf(pageKey) !== -1) return true;
-  if(devModeOn()) return true;  // sephs_admin in dev mode sees everything
+  if(isSA()) return true;  // sephs_admin always sees all modules
+  if(devModeOn()) return true;  // dev mode also shows all
   return false;
 }
 
