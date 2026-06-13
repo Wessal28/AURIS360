@@ -20752,7 +20752,7 @@ async function usersLoad() {
   el.innerHTML = '<div class="loading-msg">Loading users...</div>';
   try {
     var filter = prof?.company_id&&!isSA() ? '&company_id=eq.'+prof.company_id : '';
-    var d = await api('/profiles?select=*'+filter+'&order=full_name');
+    var d = await api('/profiles?select=*,companies(name)'+filter+'&order=full_name');
     usersAllData = d||[];
     // Metrics
     function sm(id,v){var e=document.getElementById(id);if(e)e.textContent=v;}
@@ -20796,6 +20796,7 @@ function usersRender(data) {
     + '<thead><tr style="background:#185FA5;color:#fff">'
     + '<th style="padding:8px 14px;text-align:left">User</th>'
     + '<th style="padding:8px;text-align:left">Email</th>'
+    + (isSA()?'<th style="padding:8px;text-align:left">Company</th>':'')
     + '<th style="padding:8px">Role</th>'
     + '<th style="padding:8px;text-align:left">Department</th>'
     + '<th style="padding:8px;text-align:left">Job title</th>'
@@ -20815,6 +20816,7 @@ function usersRender(data) {
       + '<div><div style="font-weight:700">'+escH(u.full_name||'—')+(isSelf?'<span style="font-size:9px;background:#185FA5;color:#fff;padding:1px 5px;border-radius:3px;margin-left:4px">YOU</span>':'')+'</div>'
       + '</div></div></td>'
       + '<td style="padding:8px;font-family:monospace;font-size:11px;color:var(--text2)">'+escH(u.email||'—')+'</td>'
+      + (isSA()?'<td style="padding:8px;font-size:11px">'+escH(u.companies?.name||'—')+'</td>':'')
       + '<td style="padding:8px"><span style="background:'+rc.bg+';color:'+rc.color+';padding:3px 10px;border-radius:99px;font-size:10px;font-weight:700;white-space:nowrap">'+rc.emoji+' '+rc.label+'</span></td>'
       + '<td style="padding:8px;font-size:11px">'+escH(u.department||'—')+'</td>'
       + '<td style="padding:8px;font-size:11px">'+escH(u.job_title||'—')+'</td>'
