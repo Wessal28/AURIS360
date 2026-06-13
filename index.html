@@ -21579,7 +21579,7 @@ async function loadAdmin() {
 function adminTab(tab, btn) {
   document.querySelectorAll('[id^="adm-tab-"]').forEach(function(t){t.classList.remove('active');});
   if(btn) btn.classList.add('active');
-  ['overview','companies','sites','hierarchy','oversight','access'].forEach(function(t){
+  ['overview','companies','sites','hierarchy','oversight','access','modules'].forEach(function(t){
     var el = document.getElementById('adm-view-'+t);
     if(el) el.style.display = t===tab ? 'block' : 'none';
   });
@@ -21589,6 +21589,7 @@ function adminTab(tab, btn) {
   else if(tab === 'hierarchy') adminLoadHierarchyData();
   else if(tab === 'oversight') adminLoadOversight();
   else if(tab === 'access')    adminLoadAccessList();
+  else if(tab === 'modules')   adminLoadModuleAccess();
 }
 
 // ── Load all data ──────────────────────────────────────────────────────────────
@@ -22172,6 +22173,99 @@ async function adminGroupAI(type) {
 }
 
 // ── Site access ─────────────────────────────────────────────────────────────────
+// ── MODULE ACCESS MANAGER (per company) ─────────────────────────────────────
+// The catalogue of HSE modules a company can be granted. Admin/account pages
+// (users, settings, executive) are NOT here — company admins always get those.
+var MODULE_CATALOGUE = [
+  {k:'events',      l:'Incident Management'},
+  {k:'observation', l:'BBS Observations'},
+  {k:'kpi',         l:'Objectives & KPIs'},
+  {k:'risk',        l:'Risk Assessments'},
+  {k:'inspection',  l:'Inspections'},
+  {k:'permit',      l:'Permit to Work'},
+  {k:'training',    l:'Training'},
+  {k:'meetings',    l:'HSE Meetings'},
+  {k:'ppe',         l:'PPE'},
+  {k:'emergency',   l:'Emergency'},
+  {k:'ohealth',     l:'Occupational Health'},
+  {k:'noise',       l:'Noise Survey'},
+  {k:'esg',         l:'Environmental / ESG'},
+  {k:'contractor',  l:'Contractors'},
+  {k:'tools',       l:'Tools Register'},
+  {k:'legal',       l:'Legal Compliance'},
+  {k:'sop',         l:'SOP Generator'},
+  {k:'documents',   l:'Document Control'},
+  {k:'people',      l:'People'},
+  {k:'actions',     l:'Master Action Plan'}
+];
+// The default set granted to a new pilot client (matches LAUNCHED_MODULES HSE set).
+var DEFAULT_CLIENT_MODULES = ['dashboard','kpi','events','observation','training','meetings','ppe','emergency','permit'];
+
+async function adminLoadModuleAccess() {
+  var el = document.getElementById('adm-modules-list'); if(!el) return;
+  el.innerHTML = '<div class="loading-msg">Loading...</div>';
+  if(!adminCompaniesData || !adminCompaniesData.length) await adminLoadAll();
+  var cos = (adminCompaniesData||[]).slice().sort(function(a,b){return (a.name||'').localeCompare(b.name||'');});
+  if(!cos.length){ el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)">No companies yet</div>'; return; }
+  var h='';
+  cos.forEach(function(c){
+    var acc = Array.isArray(c.module_access) ? c.module_access : [];
+    var granted = MODULE_CATALOGUE.filter(function(m){return acc.indexOf(m.k)!==-1;}).length;
+    h += '<div class="card" style="margin-bottom:10px;padding:0;overflow:hidden">'
+      + '<div style="background:#185FA5;color:#fff;padding:10px 14px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">'
+      + '<div style="font-weight:700;font-size:13px">'+escH(c.name||'(unnamed)')+'</div>'
+      + '<div style="display:flex;gap:6px;align-items:center">'
+      + '<span style="font-size:11px;opacity:.9">'+granted+' / '+MODULE_CATALOGUE.length+' modules</span>'
+      + '<button class="btn btn-sm" data-id="'+c.id+'" onclick="adminModSetDefault(this.dataset.id)" style="background:#fff;color:#185FA5">Pilot default</button>'
+      + '<button class="btn btn-sm" data-id="'+c.id+'" onclick="adminModSetAll(this.dataset.id,true)" style="background:rgba(255,255,255,.15);color:#fff;border-color:rgba(255,255,255,.4)">All</button>'
+      + '<button class="btn btn-sm" data-id="'+c.id+'" onclick="adminModSetAll(this.dataset.id,false)" style="background:rgba(255,255,255,.15);color:#fff;border-color:rgba(255,255,255,.4)">None</button>'
+      + '</div></div>'
+      + '<div style="padding:12px 14px;display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:6px">';
+    MODULE_CATALOGUE.forEach(function(m){
+      var on = acc.indexOf(m.k)!==-1;
+      h += '<label style="display:flex;align-items:center;gap:8px;font-size:12px;cursor:pointer;padding:4px 6px;border-radius:6px">'
+        + '<input type="checkbox" '+(on?'checked':'')+' data-co="'+c.id+'" data-mod="'+m.k+'" '
+        + 'style="width:15px;height:15px;flex-shrink:0;cursor:pointer;accent-color:#185FA5" onchange="adminModToggle(this)"/>'
+        + '<span>'+escH(m.l)+'</span></label>';
+    });
+    h += '</div></div>';
+  });
+  el.innerHTML = h;
+}
+
+// Persist a company's module list, always keeping 'dashboard' (it's the landing page).
+async function adminModSave(companyId, mods){
+  if(mods.indexOf('dashboard')===-1) mods.unshift('dashboard');
+  try{
+    await api('/companies?id=eq.'+companyId, {m:'PATCH', p:'return=minimal', b:{module_access:mods}});
+    var c=(adminCompaniesData||[]).find(function(x){return x.id===companyId;});
+    if(c) c.module_access = mods;
+    return true;
+  }catch(e){ toast('Save failed: '+e.message, false); return false; }
+}
+
+async function adminModToggle(cb){
+  var companyId=cb.dataset.co, mod=cb.dataset.mod;
+  var c=(adminCompaniesData||[]).find(function(x){return x.id===companyId;});
+  var acc = c && Array.isArray(c.module_access) ? c.module_access.slice() : ['dashboard'];
+  if(cb.checked){ if(acc.indexOf(mod)===-1) acc.push(mod); }
+  else { acc = acc.filter(function(m){return m!==mod;}); }
+  var ok = await adminModSave(companyId, acc);
+  if(ok){ toast('Updated'); adminLoadModuleAccess(); }
+  else { cb.checked = !cb.checked; }
+}
+
+async function adminModSetAll(companyId, all){
+  var mods = all ? ['dashboard'].concat(MODULE_CATALOGUE.map(function(m){return m.k;})) : ['dashboard'];
+  var ok = await adminModSave(companyId, mods);
+  if(ok){ toast(all?'All modules granted':'All modules removed'); adminLoadModuleAccess(); }
+}
+
+async function adminModSetDefault(companyId){
+  var ok = await adminModSave(companyId, DEFAULT_CLIENT_MODULES.slice());
+  if(ok){ toast('Pilot default applied'); adminLoadModuleAccess(); }
+}
+
 async function adminLoadAccessList() {
   var el = document.getElementById('adm-access-list'); if(!el) return;
   el.innerHTML='<div class="loading-msg">Loading...</div>';
@@ -24119,7 +24213,10 @@ async function obCreate() {
       company_type:        'standalone',
       country:             'Mauritius',
       currency:            'MUR',
-      active:              true
+      active:              true,
+      // New clients start with the standard pilot module set (not just
+      // dashboard+kpi). Adjustable afterwards in Companies → Module Access.
+      module_access:       (typeof DEFAULT_CLIENT_MODULES!=='undefined') ? DEFAULT_CLIENT_MODULES.slice() : ['dashboard','kpi','events','observation','training','meetings','ppe','emergency','permit']
     };
 
     var coRes = await api('/companies', { m: 'POST', p: 'return=representation', b: coBody });
@@ -32847,6 +32944,7 @@ async function obCreate() {
 <button class="mtg-tab"        id="adm-tab-hierarchy"  onclick="adminTab('hierarchy',this)"  style="white-space:nowrap">🌳 Hierarchy</button>
 <button class="mtg-tab"        id="adm-tab-oversight"  onclick="adminTab('oversight',this)"  style="white-space:nowrap">📊 Central Oversight</button>
 <button class="mtg-tab"        id="adm-tab-access"     onclick="adminTab('access',this)"     style="white-space:nowrap">🔐 Site Access</button>
+<button class="mtg-tab"        id="adm-tab-modules"    onclick="adminTab('modules',this)"    style="white-space:nowrap">🧩 Module Access</button>
 </div>
 
 <!-- ── OVERVIEW ── -->
@@ -32966,7 +33064,14 @@ async function obCreate() {
 <div id="adm-access-list"><div class="loading-msg">Loading...</div></div>
 </div>
 
-<!-- ── COMPANY FORM MODAL ── -->
+<!-- ── MODULE ACCESS (per company) ── -->
+<div id="adm-view-modules" style="display:none">
+<div class="card" style="margin-bottom:12px;padding:10px 14px">
+<div style="font-size:13px;font-weight:700">Module Access by Company</div>
+<div style="font-size:11px;color:var(--text2)">Tick a module to grant a company access to it. Changes save instantly. Admin pages (Users, Settings) are always available to company admins and aren't listed here.</div>
+</div>
+<div id="adm-modules-list"><div class="loading-msg">Loading...</div></div>
+</div>
 <div id="adm-company-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9999;align-items:flex-start;justify-content:center;padding:40px 20px;overflow-y:auto">
 <div style="background:#fff;border-radius:14px;max-width:620px;width:100%;box-shadow:0 24px 80px rgba(0,0,0,.35)">
 <div style="padding:16px 24px;background:linear-gradient(135deg,#1a3a5c,#185FA5);color:#fff;border-radius:14px 14px 0 0;display:flex;justify-content:space-between;align-items:center">
