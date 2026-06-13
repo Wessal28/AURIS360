@@ -2952,16 +2952,18 @@ var ROLE_ALLOWED = {
 //   3. Role allow-list (ROLE_ALLOWED) — does this user's role permit it?
 // sephs_admin bypasses gate 2 (they see everything they manage).
 function canAccessPage(pageKey) {
-  // Gate 1: Feature flag. Dashboard always accessible.
-  if(pageKey !== 'dashboard' && !isModuleLaunched(pageKey)) return false;
+  // Admin/account pages (Users & Roles, Settings, Companies, Integrations,
+  // Executive Dashboard, AI Insights) are platform functions, NOT HSE
+  // modules. They bypass the launch flag (Gate 1) and the per-company
+  // module list (Gate 2), and are governed by role only (Gate 3).
+  var ADMIN_PAGES = ['users','settings','admin','integrations','executive','ai-insights'];
+  var isAdminPage = ADMIN_PAGES.indexOf(pageKey) !== -1;
+
+  // Gate 1: Feature flag. Dashboard + admin pages always pass.
+  if(pageKey !== 'dashboard' && !isAdminPage && !isModuleLaunched(pageKey)) return false;
   
   // Gate 2: Per-company module access. sephs_admin sees everything.
-  // Dashboard is always accessible (it's the landing page). Admin/account
-  // pages (Users & Roles, Settings, Companies, Integrations) are platform
-  // functions, NOT HSE modules — they are governed by role only (Gate 3),
-  // never by a company's module_access list.
-  var ADMIN_PAGES = ['users','settings','admin','integrations','executive','ai-insights'];
-  if(pageKey !== 'dashboard' && ADMIN_PAGES.indexOf(pageKey) === -1 && !isSA()) {
+  if(pageKey !== 'dashboard' && !isAdminPage && !isSA()) {
     // co is the global company object loaded with the profile.
     // If module_access is NULL/missing → fall back to allowing access (no regression).
     // If module_access is an array → check membership.
