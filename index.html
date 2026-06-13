@@ -23923,6 +23923,15 @@ function openOnboarding() {
   _obStep = 1;
   _obCompanyId = null;
   _obSiteCount = 0;
+  // Clear all fields so a previous (cancelled) onboarding doesn't pre-fill
+  ['ob-co-name','ob-co-regno','ob-co-contact','ob-co-email','ob-co-phone',
+   'ob-co-address','ob-co-headcount','ob-admin-name','ob-admin-email',
+   'ob-admin-title','ob-admin-pw','ob-admin-pw2'].forEach(function(id){
+    var el=document.getElementById(id); if(el) el.value='';
+  });
+  ['ob-co-industry','ob-co-tier','ob-admin-role'].forEach(function(id){
+    var el=document.getElementById(id); if(el) el.selectedIndex=0;
+  });
   obRenderStep();
   // Add first site row
   obResetSites();
