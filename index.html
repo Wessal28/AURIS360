@@ -2960,7 +2960,7 @@ function canAccessPage(pageKey) {
   // pages (Users & Roles, Settings, Companies, Integrations) are platform
   // functions, NOT HSE modules — they are governed by role only (Gate 3),
   // never by a company's module_access list.
-  var ADMIN_PAGES = ['users','settings','admin','integrations'];
+  var ADMIN_PAGES = ['users','settings','admin','integrations','executive','ai-insights'];
   if(pageKey !== 'dashboard' && ADMIN_PAGES.indexOf(pageKey) === -1 && !isSA()) {
     // co is the global company object loaded with the profile.
     // If module_access is NULL/missing → fall back to allowing access (no regression).
@@ -21456,11 +21456,11 @@ function applyRoles() {
   // ── Phase 4: legacy fine-grained rules (preserved from original) ──
   // These run AFTER the bulk allow/hide so they can override edge cases.
   var navRules = {
-    'nav-ai':       level >= 4,
-    'nav-users':    level >= 3,
-    'nav-settings': level >= 4,
-    'nav-admin':    isSA(),
-    'nav-executive':level >= 4 || role === 'executive',
+    'nav-ai':       isSA(),                                  // platform AI — sephs_admin only
+    'nav-users':    isAdm() || role==='hse_manager',         // company admin + HSE manager
+    'nav-settings': isAdm() || role==='hse_manager',         // company admin manages their settings
+    'nav-admin':    isSA(),                                  // multi-company admin — sephs_admin only
+    'nav-executive':isAdm() || role==='executive' || role==='hse_manager',
   };
   Object.entries(navRules).forEach(function(e) {
     var el = document.getElementById(e[0]);
