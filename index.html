@@ -23939,7 +23939,7 @@ async function printMonthlySummary() {
     var cid = prof.company_id ? '&company_id=eq.' + prof.company_id : '';
     var [events, audits, actions, permits] = await Promise.all([
       api('/events?created_at=gte.' + monthStart + '&created_at=lte.' + monthEnd + cid + '&select=*'),
-      api('/inspections?audit_date=gte.' + monthStart + '&audit_date=lte.' + monthEnd + cid + '&select=*'),
+      api('/inspections?inspection_date=gte.' + monthStart + '&inspection_date=lte.' + monthEnd + cid + '&select=*'),
       api('/action_tracker?created_at=gte.' + monthStart + '&created_at=lte.' + monthEnd + cid + '&select=*'),
       api('/permits?created_at=gte.' + monthStart + '&created_at=lte.' + monthEnd + cid + '&select=*'),
     ]);
@@ -23988,7 +23988,7 @@ async function printMonthlySummary() {
         + audits.map(function(a){
             var sc = a.score_good && a.total_items ? Math.round(a.score_good/a.total_items*100)+'%' : (a.score||'—');
             return '<tr><td>' + escH(a.audit_type||'Inspection') + '</td>'
-              + '<td>' + (a.audit_date?new Date(a.audit_date).toLocaleDateString('en-GB'):'—') + '</td>'
+              + '<td>' + (a.inspection_date?new Date(a.inspection_date).toLocaleDateString('en-GB'):'—') + '</td>'
               + '<td>' + escH(a.location||'—') + '</td>'
               + '<td>' + sc + '</td>'
               + '<td><span class="badge ' + (a.status==='closed'?'badge-green':'badge-amber') + '">' + escH(a.status||'') + '</span></td>'
