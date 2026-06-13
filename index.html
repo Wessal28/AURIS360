@@ -2341,6 +2341,12 @@ async function authOnSignIn(authData) {
   authSaveSession(authData);
   authScheduleRefresh(authData);
   await loadProf(authData.user.id);
+  // Stamp last_login on the profile (fresh sign-in only, not page refresh)
+  try {
+    await api('/profiles?id=eq.'+authData.user.id, {
+      m:'PATCH', p:'return=minimal', b:{last_login:new Date().toISOString()}
+    });
+  } catch(e) { /* non-critical */ }
   // Log session
   try {
     await api('/auth_sessions_log',{
@@ -2950,8 +2956,12 @@ function canAccessPage(pageKey) {
   if(pageKey !== 'dashboard' && !isModuleLaunched(pageKey)) return false;
   
   // Gate 2: Per-company module access. sephs_admin sees everything.
-  // Dashboard is always accessible (it's the landing page).
-  if(pageKey !== 'dashboard' && !isSA()) {
+  // Dashboard is always accessible (it's the landing page). Admin/account
+  // pages (Users & Roles, Settings, Companies, Integrations) are platform
+  // functions, NOT HSE modules — they are governed by role only (Gate 3),
+  // never by a company's module_access list.
+  var ADMIN_PAGES = ['users','settings','admin','integrations'];
+  if(pageKey !== 'dashboard' && ADMIN_PAGES.indexOf(pageKey) === -1 && !isSA()) {
     // co is the global company object loaded with the profile.
     // If module_access is NULL/missing → fall back to allowing access (no regression).
     // If module_access is an array → check membership.
@@ -20786,6 +20796,15 @@ function usersFilter() {
   usersRender(filt);
 }
 
+function usersFmtLastLogin(ts){
+  if(!ts) return 'Never';
+  var d=new Date(ts), now=new Date(), diff=(now-d)/1000;
+  if(diff<60) return 'Just now';
+  if(diff<3600) return Math.floor(diff/60)+' min ago';
+  if(diff<86400) return Math.floor(diff/3600)+'h ago';
+  if(diff<604800) return Math.floor(diff/86400)+'d ago';
+  return d.toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});
+}
 function usersRender(data) {
   var el = document.getElementById('users-list'); if(!el) return;
   if(!data.length) {
@@ -20801,6 +20820,7 @@ function usersRender(data) {
     + '<th style="padding:8px;text-align:left">Department</th>'
     + '<th style="padding:8px;text-align:left">Job title</th>'
     + '<th style="padding:8px">Status</th>'
+    + '<th style="padding:8px;text-align:left">Last login</th>'
     + (isMgr()?'<th style="padding:8px;width:80px">Actions</th>':'')
     + '</tr></thead><tbody>';
   data.forEach(function(u, i) {
@@ -20821,6 +20841,7 @@ function usersRender(data) {
       + '<td style="padding:8px;font-size:11px">'+escH(u.department||'—')+'</td>'
       + '<td style="padding:8px;font-size:11px">'+escH(u.job_title||'—')+'</td>'
       + '<td style="padding:8px;text-align:center"><span style="background:'+(isActive?'#EAF3DE':'#f3f4f6')+';color:'+(isActive?'#3B6D11':'#6B7280')+';padding:2px 8px;border-radius:99px;font-size:10px;font-weight:700">'+(isActive?'Active':'Inactive')+'</span></td>'
+      + '<td style="padding:8px;font-size:11px;color:var(--text2)">'+usersFmtLastLogin(u.last_login)+'</td>'
       + (isMgr()
         ? '<td style="padding:8px"><div style="display:flex;gap:4px">'
           + '<button class="btn btn-sm" title="Edit user" data-id="'+u.id+'" onclick="usersEdit(this.dataset.id)"><i class="ti ti-edit"></i></button>'
@@ -21445,6 +21466,11 @@ function applyRoles() {
     var el = document.getElementById(e[0]);
     if(el) el.style.display = e[1] ? 'flex' : 'none';
   });
+
+  // Dev role-preview switcher: sephs_admin only (testing tool, must never
+  // be visible to clients or their staff).
+  var roleChanger = document.getElementById('sb-role-changer');
+  if(roleChanger) roleChanger.style.display = isSA() ? 'flex' : 'none';
 
   // ── Phase 5: hide nav section headers if all their items are hidden ──
   // The .nav-section labels ("Main", "HSE Modules", "Management") look orphaned
@@ -24360,7 +24386,7 @@ async function obCreate() {
 
 <div id="app" style="display:none">
 <div class="layout">
-<div class="sidebar"><div class="sidebar-top"><img id="co-logo-img" class="co-logo" src="" alt="logo"/><div id="co-initials-div" class="co-initials">A</div><div class="sb-company" id="sb-company">AURIS360</div><div class="sb-user" id="sb-user">—</div><span class="sb-role" id="sb-role">—</span></div><div id="sb-role-changer" style="padding:8px 20px;border-bottom:1px solid var(--border);display:flex;gap:6px;align-items:center">
+<div class="sidebar"><div class="sidebar-top"><img id="co-logo-img" class="co-logo" src="" alt="logo"/><div id="co-initials-div" class="co-initials">A</div><div class="sb-company" id="sb-company">AURIS360</div><div class="sb-user" id="sb-user">—</div><span class="sb-role" id="sb-role">—</span></div><div id="sb-role-changer" style="padding:8px 20px;border-bottom:1px solid var(--border);display:none;gap:6px;align-items:center">
 <select id="sb-role-select" style="flex:1;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:11px" onchange="">
 <option value="employee">👤 Employee</option>
 <option value="contractor">🦺 Contractor</option>
