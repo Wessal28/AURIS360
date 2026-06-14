@@ -1885,7 +1885,7 @@ async function obsSave() {
   if (!desc) { toast('Please describe what was observed', false); return; }
   var ppeVal = g('obs-ppe-worn');
   var body = {
-    company_id: prof?.company_id,
+    company_id: ccid(),
     obs_type: type,
     category: g('obs-category')||'general',
     severity: g('obs-severity')||'medium',
@@ -1941,7 +1941,7 @@ async function obsSave() {
         if (['critical','high'].includes(body.severity) && body.action_required && body.action_description) {
           try {
             await api('/action_tracker', {m:'POST',p:'return=minimal',b:{
-              company_id: prof?.company_id,
+              company_id: ccid(),
               title: 'Observation action: '+body.action_description.substring(0,60),
               description: body.action_description,
               source_type: 'observation', source_module: 'observation', source_ref: ref,
@@ -4783,6 +4783,12 @@ function cf(){
   }
   return prof?.company_id ? '&company_id=eq.'+prof.company_id : '&company_id=is.null';
 }
+// Company id to STAMP on new/updated records. When a sephs_admin is viewing a
+// specific client via the switcher, data must be saved under THAT client —
+// not under the admin's own profile company. All save payloads use this.
+function ccid(){
+  return (isSA() && sephsCompanyContext) ? sephsCompanyContext : prof?.company_id;
+}
 function toast(m,ok=true){const t=document.getElementById('toast');if(!t){console.log('Toast:',m);return;}t.textContent=m;t.className='toast '+(ok?'toast-ok':'toast-err');t.style.display='block';setTimeout(()=>t.style.display='none',3500);}
 function fmt(d){return d?new Date(d).toLocaleDateString('en-GB'):'--';}
 function sev(s){const m={low:'bb',medium:'ba',high:'br',critical:'br'};return '<span class="badge '+(m[s]||'bb')+'">'+( s||'--')+'</span>';}
@@ -4919,7 +4925,7 @@ const assId=document.getElementById('ev-assigned-to').value||null;
 const personName=personId?pname(personId):null;
 const repName=repId?pname(repId):prof?.full_name||null;
 const assName=assId?pname(assId):null;
-const body={company_id:prof?.company_id,event_type:evType,severity:sev,event_date:date||null,location:loc,description:desc,immediate_action:document.getElementById('ev-immediate').value||null,person_involved:personName,person_id:personId,department:document.getElementById('ev-department').value||null,reported_by:repName,reported_by_id:repId,assigned_to:assName,assigned_to_id:assId,action_due_date:document.getElementById('ev-due-date').value||null,status:document.getElementById('ev-status').value,created_by:prof?.id,updated_at:new Date().toISOString()};
+const body={company_id:ccid(),event_type:evType,severity:sev,event_date:date||null,location:loc,description:desc,immediate_action:document.getElementById('ev-immediate').value||null,person_involved:personName,person_id:personId,department:document.getElementById('ev-department').value||null,reported_by:repName,reported_by_id:repId,assigned_to:assName,assigned_to_id:assId,action_due_date:document.getElementById('ev-due-date').value||null,status:document.getElementById('ev-status').value,created_by:prof?.id,updated_at:new Date().toISOString()};
 try{
 let savedId=evEditingId;
 if(evEditingId){
@@ -4932,7 +4938,7 @@ const res=await api('/events',{m:'POST',p:'return=representation',b:body});
 savedId=res?.[0]?.id;
 toast('Event reported!');
 if(savedId&&assName){
-await api('/action_tracker',{m:'POST',p:'return=minimal',b:{company_id:prof?.company_id,source_module:'event',source_id:savedId,source_ref:(body.event_ref||'EVT')+' — '+evType,description:'Follow-up: '+evType+' at '+loc,responsible:assName,target_date:body.action_due_date||null,priority:sev==='critical'?'critical':sev==='high'?'high':'medium',status:'open',created_by:prof?.id}});
+await api('/action_tracker',{m:'POST',p:'return=minimal',b:{company_id:ccid(),source_module:'event',source_id:savedId,source_ref:(body.event_ref||'EVT')+' — '+evType,description:'Follow-up: '+evType+' at '+loc,responsible:assName,target_date:body.action_due_date||null,priority:sev==='critical'?'critical':sev==='high'?'high':'medium',status:'open',created_by:prof?.id}});
 }
 }
 evCloseModal();await loadEvents();
@@ -4941,7 +4947,7 @@ evCloseModal();await loadEvents();
 }
 async function evGenRef(yr){
 try{
-const cid=prof?.company_id;if(!cid)return 'EVT-'+yr+'-XXX';
+const cid=ccid();if(!cid)return 'EVT-'+yr+'-XXX';
 const seq=await api('/event_sequence?company_id=eq.'+cid+'&year=eq.'+yr);
 let next=1;
 if(seq&&seq.length){next=seq[0].last_seq+1;await api('/event_sequence?company_id=eq.'+cid+'&year=eq.'+yr,{m:'PATCH',p:'return=minimal',b:{last_seq:next}});}
@@ -4981,7 +4987,7 @@ const yr=new Date().getFullYear();
 const invRef=await invGenRef(yr);
 // Build investigation body pre-filled from event
 const invBody={
-company_id:prof?.company_id,
+company_id:ccid(),
 inv_ref:invRef,
 title:(e.event_type||'Incident')+' — '+(e.location||'site')+' ('+new Date().toLocaleDateString('en-GB')+')',
 inv_type:invType,
@@ -5122,7 +5128,7 @@ function invTypeChange(){
 
 async function invGenRef(yr){
   try{
-    var cid=prof?.company_id;if(!cid)return 'INV-'+yr+'-XXX';
+    var cid=ccid();if(!cid)return 'INV-'+yr+'-XXX';
     var seq=await api('/inv_sequence?company_id=eq.'+cid+'&year=eq.'+yr);
     var next=1;
     if(seq&&seq.length){next=seq[0].last_seq+1;await api('/inv_sequence?company_id=eq.'+cid+'&year=eq.'+yr,{m:'PATCH',p:'return=minimal',b:{last_seq:next}});}
@@ -5247,7 +5253,7 @@ function invCollectData(){
     if(cause||whys.some(function(w){return w;}))ws3rows.push({cause:cause,whys:whys,verify:vs});
   });
   return {
-    company_id:prof?.company_id,
+    company_id:ccid(),
     inv_type:document.getElementById('inv-type-sel')?.value||'basic',
     status:document.getElementById('inv-status-sel')?.value||'draft',
     event_id:g('ws1-event-link')||null,
@@ -5307,7 +5313,7 @@ async function invSyncToMAP(invId,body){
       var ca=body.corrective_actions[i];
       if(!ca.desc)continue;
       await api('/action_tracker',{m:'POST',p:'return=minimal',b:{
-        company_id:prof?.company_id,
+        company_id:ccid(),
         source_module:'investigation',source_id:invId,
         source_ref:invRef+' ('+ca.src+')',
         description:ca.desc,
@@ -5330,7 +5336,7 @@ async function savePermit(){
 if(!isMgr()){toast('Access denied',false);return;}
 try{
 const cid=document.getElementById('pf-contractor').value,iid=document.getElementById('pf-issued').value,aid=document.getElementById('pf-approved').value;
-await api('/permits',{m:'POST',p:'return=minimal',b:{company_id:prof?.company_id,permit_number:document.getElementById('pf-no').value,permit_type:document.getElementById('pf-type').value,work_description:document.getElementById('pf-desc').value,location:document.getElementById('pf-loc').value,contractor:cid?pname(cid):null,start_datetime:document.getElementById('pf-start').value||null,end_datetime:document.getElementById('pf-end').value||null,issued_by:iid?pname(iid):prof?.full_name,approved_by:aid?pname(aid):null,precautions:document.getElementById('pf-precautions').value,ppe_required:document.getElementById('pf-ppe').value,status:document.getElementById('pf-status').value,created_by:prof?.id}});
+await api('/permits',{m:'POST',p:'return=minimal',b:{company_id:ccid(),permit_number:document.getElementById('pf-no').value,permit_type:document.getElementById('pf-type').value,work_description:document.getElementById('pf-desc').value,location:document.getElementById('pf-loc').value,contractor:cid?pname(cid):null,start_datetime:document.getElementById('pf-start').value||null,end_datetime:document.getElementById('pf-end').value||null,issued_by:iid?pname(iid):prof?.full_name,approved_by:aid?pname(aid):null,precautions:document.getElementById('pf-precautions').value,ppe_required:document.getElementById('pf-ppe').value,status:document.getElementById('pf-status').value,created_by:prof?.id}});
 toggleForm('permit-form');toast('Permit saved!');loadPermits();loadDash();
 }catch(e){toast(e.message,false);}
 }
@@ -5349,7 +5355,7 @@ h+='</tbody></table>';el.innerHTML=h;
 async function saveNoise(){
 try{
 const bid=document.getElementById('nf-by').value;
-await api('/noise_surveys',{m:'POST',p:'return=minimal',b:{company_id:prof?.company_id,survey_type:document.getElementById('nf-type').value,site:document.getElementById('nf-site').value,survey_date:document.getElementById('nf-date').value||null,conducted_by:bid?pname(bid):prof?.full_name,instrument_used:document.getElementById('nf-instrument').value,calibration_date:document.getElementById('nf-cal').value||null,weather_conditions:document.getElementById('nf-weather').value,notes:document.getElementById('nf-notes').value,created_by:prof?.id}});
+await api('/noise_surveys',{m:'POST',p:'return=minimal',b:{company_id:ccid(),survey_type:document.getElementById('nf-type').value,site:document.getElementById('nf-site').value,survey_date:document.getElementById('nf-date').value||null,conducted_by:bid?pname(bid):prof?.full_name,instrument_used:document.getElementById('nf-instrument').value,calibration_date:document.getElementById('nf-cal').value||null,weather_conditions:document.getElementById('nf-weather').value,notes:document.getElementById('nf-notes').value,created_by:prof?.id}});
 toggleForm('noise-form');toast('Noise survey saved!');loadNoise();
 }catch(e){toast(e.message,false);}
 }
@@ -5853,7 +5859,7 @@ async function sopSaveDocument(){
   if(!el){toast('No SOP content to save',false);return;}
   var meta=window.sopGeneratedData.meta;
   var body={
-    company_id:prof?.company_id,
+    company_id:ccid(),
     title:meta.title,
     department:meta.dept,
     risk_level:meta.risk,
@@ -6008,7 +6014,7 @@ async function mtgSaveSeries(){
   var title=document.getElementById('ms-title')?.value?.trim();
   if(!title){toast('Please enter a meeting title',false);return;}
   var body={
-    company_id:prof?.company_id,
+    company_id:ccid(),
     meeting_type:document.getElementById('ms-type')?.value||'management_review',
     title:title,
     recurrence:document.getElementById('ms-recurrence')?.value||'quarterly',
@@ -6317,7 +6323,7 @@ async function mtgSaveMom(){
   var recs=mtgCollectRecs();
   var agenda=mtgCollectAgenda();
   var body={
-    company_id:prof?.company_id,
+    company_id:ccid(),
     series_id:document.getElementById('mtg-mom-form').dataset.seriesId||null,
     meeting_type:document.getElementById('mom-type')?.value||'management_review',
     title:title,
@@ -6357,7 +6363,7 @@ async function mtgSaveMom(){
       for(var i=0;i<recs.length;i++){
         var r=recs[i];
         await api('/action_tracker',{m:'POST',p:'return=minimal',b:{
-          company_id:prof?.company_id,source_module:'meeting',source_id:savedId,
+          company_id:ccid(),source_module:'meeting',source_id:savedId,
           source_ref:ref,description:r.desc,responsible:r.resp||null,
           target_date:r.date||null,priority:r.prio||'medium',
           status:r.status||'open',created_by:prof?.id
@@ -6743,7 +6749,7 @@ return'<div class="person-card"><div class="person-avatar '+ac+'">'+ini+'</div><
 async function savePerson(){
 if(!isMgr()){toast('Access denied',false);return;}
 try{
-await api('/people',{m:'POST',p:'return=minimal',b:{company_id:prof?.company_id,person_type:document.getElementById('pef-type').value,first_name:document.getElementById('pef-first').value,last_name:document.getElementById('pef-last').value,id_number:document.getElementById('pef-id').value,date_of_birth:document.getElementById('pef-dob').value||null,gender:document.getElementById('pef-gender').value||null,nationality:document.getElementById('pef-nationality').value,job_title:document.getElementById('pef-jobtitle').value,department:document.getElementById('pef-dept').value,site:document.getElementById('pef-site').value,employee_number:document.getElementById('pef-empno').value,contract_type:document.getElementById('pef-contract').value,start_date:document.getElementById('pef-start').value||null,end_date:document.getElementById('pef-end').value||null,company_name:document.getElementById('pef-coname').value,contract_ref:document.getElementById('pef-cref').value,contract_start:document.getElementById('pef-cstart').value||null,contract_end:document.getElementById('pef-cend').value||null,email:document.getElementById('pef-email').value,phone:document.getElementById('pef-phone').value,emergency_name:document.getElementById('pef-emname').value,emergency_relation:document.getElementById('pef-emrel').value,emergency_phone:document.getElementById('pef-emphone').value,induction_date:document.getElementById('pef-induction').value||null,induction_completed:!!document.getElementById('pef-induction').value,medical_fitness_date:document.getElementById('pef-medical').value||null,status:document.getElementById('pef-status').value,created_by:prof?.id}});
+await api('/people',{m:'POST',p:'return=minimal',b:{company_id:ccid(),person_type:document.getElementById('pef-type').value,first_name:document.getElementById('pef-first').value,last_name:document.getElementById('pef-last').value,id_number:document.getElementById('pef-id').value,date_of_birth:document.getElementById('pef-dob').value||null,gender:document.getElementById('pef-gender').value||null,nationality:document.getElementById('pef-nationality').value,job_title:document.getElementById('pef-jobtitle').value,department:document.getElementById('pef-dept').value,site:document.getElementById('pef-site').value,employee_number:document.getElementById('pef-empno').value,contract_type:document.getElementById('pef-contract').value,start_date:document.getElementById('pef-start').value||null,end_date:document.getElementById('pef-end').value||null,company_name:document.getElementById('pef-coname').value,contract_ref:document.getElementById('pef-cref').value,contract_start:document.getElementById('pef-cstart').value||null,contract_end:document.getElementById('pef-cend').value||null,email:document.getElementById('pef-email').value,phone:document.getElementById('pef-phone').value,emergency_name:document.getElementById('pef-emname').value,emergency_relation:document.getElementById('pef-emrel').value,emergency_phone:document.getElementById('pef-emphone').value,induction_date:document.getElementById('pef-induction').value||null,induction_completed:!!document.getElementById('pef-induction').value,medical_fitness_date:document.getElementById('pef-medical').value||null,status:document.getElementById('pef-status').value,created_by:prof?.id}});
 toggleForm('people-form');toast('Person added!');loadPeople();await loadPeopleCache();
 }catch(e){toast(e.message,false);}
 }
@@ -7683,7 +7689,7 @@ async function sopSave(){
   var title=document.getElementById('sop-title')?.value?.trim();
   if(!title){toast('Please enter a task title first',false);return;}
   var body={
-    company_id:prof?.company_id,
+    company_id:ccid(),
     title:title,
     department:document.getElementById('sop-dept')?.value||null,
     sop_number:document.getElementById('sop-number')?.value||null,
@@ -8180,7 +8186,7 @@ async function wsSave(){
   if(supId){var p=(people||[]).find(function(x){return x.id===supId;});supName=p?(p.last_name+', '+p.first_name):'';}
   var g=function(id){var el=document.getElementById(id);return el?el.value||null:null;};
   var body={
-    company_id:prof?.company_id,title:title,
+    company_id:ccid(),title:title,
     description:g('wsf-desc'),location:g('wsf-location'),department:g('wsf-dept'),
     work_type:g('wsf-type')||'maintenance',status:g('wsf-status')||'planned',
     priority:g('wsf-priority')||'medium',risk_level:g('wsf-risk')||'medium',
@@ -8447,7 +8453,7 @@ async function wsChkSave(){
     if(wsChkToolId){
       // Save proper inspection record
       await api('/tool_inspections',{m:'POST',p:'return=minimal',b:{
-        company_id:prof?.company_id,tool_id:wsChkToolId,
+        company_id:ccid(),tool_id:wsChkToolId,
         inspection_type:document.getElementById('ws-chk-type')?.value||'pre_use',
         inspection_date:document.getElementById('ws-chk-date')?.value||new Date().toISOString().slice(0,10),
         inspected_by:inspId||null,inspected_by_name:inspName||null,
@@ -9778,7 +9784,7 @@ async function imsEvidenceSave(){
   var title=document.getElementById('ims-ev-title')?.value?.trim();
   if(!title){toast('Please enter evidence title/description',false);return;}
   var g=function(id){var el=document.getElementById(id);return el?el.value||null:null;};
-  var body={company_id:prof?.company_id,event_id:g('ims-ev-incident-link')||null,evidence_type:g('ims-ev-type')||'photo',title,file_url:g('ims-ev-url'),file_name:g('ims-ev-filename'),description:g('ims-ev-desc'),collected_by:g('ims-ev-collected-by'),collected_date:g('ims-ev-date')||null,location_description:g('ims-ev-location-desc'),lat:g('ims-ev-lat')?parseFloat(g('ims-ev-lat')):null,lng:g('ims-ev-lng')?parseFloat(g('ims-ev-lng')):null,witness_name:g('ims-ev-witness-name'),witness_contact:g('ims-ev-witness-contact'),witness_statement:g('ims-ev-statement')};
+  var body={company_id:ccid(),event_id:g('ims-ev-incident-link')||null,evidence_type:g('ims-ev-type')||'photo',title,file_url:g('ims-ev-url'),file_name:g('ims-ev-filename'),description:g('ims-ev-desc'),collected_by:g('ims-ev-collected-by'),collected_date:g('ims-ev-date')||null,location_description:g('ims-ev-location-desc'),lat:g('ims-ev-lat')?parseFloat(g('ims-ev-lat')):null,lng:g('ims-ev-lng')?parseFloat(g('ims-ev-lng')):null,witness_name:g('ims-ev-witness-name'),witness_contact:g('ims-ev-witness-contact'),witness_statement:g('ims-ev-statement')};
   try{
     if(imsEvidenceEditId){await api('/incident_evidence?id=eq.'+imsEvidenceEditId,{m:'PATCH',p:'return=minimal',b:body});toast('Updated!');}
     else{body.created_by=prof?.id;await api('/incident_evidence',{m:'POST',p:'return=minimal',b:body});toast('Evidence saved!');}
@@ -10456,7 +10462,7 @@ async function raSave(targetStatus){
     if(rr>maxRR){maxRR=rr;maxLvl=r.rl||'Low';}
   });
   var body={
-    company_id:prof?.company_id,
+    company_id:ccid(),
     ra_type_v2:raEditingType,ra_type:raEditingType,
     title:g('ra-title')||g('ra-activity')||'Untitled RA',
     activity:g('ra-activity')||g('ra-workshop'),
@@ -10527,7 +10533,7 @@ function raSyncToMAP(raId, rows){
     var rl=r.res_rl||r.rl||'';
     if(['Critical','Very High'].includes(rl)){
       api('/action_tracker',{m:'POST',p:'return=minimal',b:{
-        company_id:prof?.company_id,source_module:'risk',source_id:raId,
+        company_id:ccid(),source_module:'risk',source_id:raId,
         description:'High residual risk: '+( r.hazard||'').substring(0,100),
         priority:rl==='Critical'?'critical':'high',status:'open',created_by:prof?.id
       }}).catch(function(){});
@@ -10664,7 +10670,7 @@ async function raCreateRevision(){
   var x=raAllData.find(r=>r.id===raEditingId)||{};
   try{
     await api('/ra_revisions',{m:'POST',p:'return=minimal',b:{
-      company_id:prof?.company_id,ra_id:raEditingId,
+      company_id:ccid(),ra_id:raEditingId,
       revision:raCurrentRevision-1,snapshot:x,
       changed_by:document.getElementById('ra-assessed-by')?.value||prof?.full_name||'User',
       change_notes:notes
@@ -11175,7 +11181,7 @@ async function jsaSave(){
   });
   var g=function(id){var el=document.getElementById(id);return el?el.value||null:null;};
   var body={
-    company_id:prof?.company_id,title:title,
+    company_id:ccid(),title:title,
     job_description:g('jsa-job-desc'),location:g('jsa-location'),
     work_order_ref:g('jsa-wo-ref'),date:g('jsa-date'),
     prepared_by:g('jsa-prepared-by'),reviewed_by:g('jsa-reviewed-by'),
@@ -11830,7 +11836,7 @@ async function ptwSave(targetStatus){
   var issuerId=g('pf-issuer');var issuerName='';
   if(issuerId){var p=(people||[]).find(function(x){return x.id===issuerId;});issuerName=p?(p.last_name+', '+p.first_name):'';}
   var body={
-    company_id:prof?.company_id,
+    company_id:ccid(),
     permit_type_v2:type,permit_type:type,
     work_description:g('pf-desc'),work_location:g('pf-loc'),location:g('pf-loc'),
     department:g('pf-dept'),priority:g('pf-priority')||'medium',risk_level:g('pf-risk')||'medium',
@@ -11853,7 +11859,7 @@ async function ptwSave(targetStatus){
     if(ptwEditingId){
       await api('/permits?id=eq.'+ptwEditingId,{m:'PATCH',p:'return=minimal',b:body});
       // Log
-      try{await api('/permit_activity_log',{m:'POST',p:'return=minimal',b:{company_id:prof?.company_id,permit_id:ptwEditingId,action:'Permit edited',performed_by:prof?.full_name||'User',details:'Status: '+body.status}});}catch(ex){}
+      try{await api('/permit_activity_log',{m:'POST',p:'return=minimal',b:{company_id:ccid(),permit_id:ptwEditingId,action:'Permit edited',performed_by:prof?.full_name||'User',details:'Status: '+body.status}});}catch(ex){}
       toast('Permit updated!');
       var idx=ptwAllData.findIndex(function(x){return x.id===ptwEditingId;});
       if(idx>=0)Object.assign(ptwAllData[idx],body);
@@ -11868,7 +11874,7 @@ async function ptwSave(targetStatus){
         await api('/permits?id=eq.'+res[0].id,{m:'PATCH',p:'return=minimal',b:{permit_number:ref}});
         res[0].permit_number=ref;res[0].permit_type_v2=type;
         ptwAllData.unshift(res[0]);
-        try{await api('/permit_activity_log',{m:'POST',p:'return=minimal',b:{company_id:prof?.company_id,permit_id:res[0].id,action:'Permit created',performed_by:prof?.full_name||'User',new_status:body.status}});}catch(ex){}
+        try{await api('/permit_activity_log',{m:'POST',p:'return=minimal',b:{company_id:ccid(),permit_id:res[0].id,action:'Permit created',performed_by:prof?.full_name||'User',new_status:body.status}});}catch(ex){}
         toast('Permit created! Ref: '+ref);
         ptwCurrentId=res[0].id;
         await ptwShowDetail(res[0].id);
@@ -12083,7 +12089,7 @@ async function ptwApprove(level, action){
   try{
     await api('/permits?id=eq.'+ptwCurrentId,{m:'PATCH',p:'return=minimal',b:update});
     Object.assign(x,update);
-    try{await api('/permit_activity_log',{m:'POST',p:'return=minimal',b:{company_id:prof?.company_id,permit_id:ptwCurrentId,action:'Level '+level+' approval: '+action,performed_by:name,new_status:update.status||x.status}});}catch(ex){}
+    try{await api('/permit_activity_log',{m:'POST',p:'return=minimal',b:{company_id:ccid(),permit_id:ptwCurrentId,action:'Level '+level+' approval: '+action,performed_by:name,new_status:update.status||x.status}});}catch(ex){}
     toast('Level '+level+' '+action+'!');
     ptwOpenApprovalPanel();
     ptwRenderWorkflowBar(x);
@@ -12104,7 +12110,7 @@ async function ptwActivate(){
   try{
     await api('/permits?id=eq.'+ptwCurrentId,{m:'PATCH',p:'return=minimal',b:{status:'active',actual_start:new Date().toISOString(),updated_at:new Date().toISOString()}});
     x.status='active';x.actual_start=new Date().toISOString();
-    try{await api('/permit_activity_log',{m:'POST',p:'return=minimal',b:{company_id:prof?.company_id,permit_id:ptwCurrentId,action:'Permit activated — work commenced',performed_by:prof?.full_name||'User',old_status:'approved',new_status:'active'}});}catch(ex){}
+    try{await api('/permit_activity_log',{m:'POST',p:'return=minimal',b:{company_id:ccid(),permit_id:ptwCurrentId,action:'Permit activated — work commenced',performed_by:prof?.full_name||'User',old_status:'approved',new_status:'active'}});}catch(ex){}
     toast('Permit is now ACTIVE — work may commence');
     ptwShowDetail(ptwCurrentId);
   }catch(e){toast(e.message,false);}
@@ -12135,7 +12141,7 @@ async function ptwConfirmClose(){
   try{
     await api('/permits?id=eq.'+ptwCurrentId,{m:'PATCH',p:'return=minimal',b:{status:'completed',closed_at:new Date().toISOString(),closed_by:closedBy,closure_checklist:checklist,closure_notes:document.getElementById('ptw-closure-notes')?.value||null,actual_end:new Date().toISOString(),updated_at:new Date().toISOString()}});
     var x=ptwAllData.find(function(r){return r.id===ptwCurrentId;});if(x){x.status='completed';x.closed_at=new Date().toISOString();}
-    try{await api('/permit_activity_log',{m:'POST',p:'return=minimal',b:{company_id:prof?.company_id,permit_id:ptwCurrentId,action:'Permit closed',performed_by:closedBy,old_status:'active',new_status:'completed'}});}catch(ex){}
+    try{await api('/permit_activity_log',{m:'POST',p:'return=minimal',b:{company_id:ccid(),permit_id:ptwCurrentId,action:'Permit closed',performed_by:closedBy,old_status:'active',new_status:'completed'}});}catch(ex){}
     toast('Permit CLOSED — all work complete ✓');
     ptwShowDetail(ptwCurrentId);
   }catch(e){toast(e.message,false);}
@@ -12161,7 +12167,7 @@ async function ptwConfirmSuspend(){
   try{
     await api('/permits?id=eq.'+ptwCurrentId,{m:'PATCH',p:'return=minimal',b:update});
     var x=ptwAllData.find(function(r){return r.id===ptwCurrentId;});if(x)Object.assign(x,update);
-    try{await api('/permit_activity_log',{m:'POST',p:'return=minimal',b:{company_id:prof?.company_id,permit_id:ptwCurrentId,action:action==='suspended'?'Permit suspended':'Permit cancelled',performed_by:by,details:reason,new_status:action}});}catch(ex){}
+    try{await api('/permit_activity_log',{m:'POST',p:'return=minimal',b:{company_id:ccid(),permit_id:ptwCurrentId,action:action==='suspended'?'Permit suspended':'Permit cancelled',performed_by:by,details:reason,new_status:action}});}catch(ex){}
     toast('Permit '+action.toUpperCase()+'! Reason: '+reason);
     ptwShowDetail(ptwCurrentId);
   }catch(e){toast(e.message,false);}
@@ -12174,7 +12180,7 @@ async function ptwResume(){
   try{
     await api('/permits?id=eq.'+ptwCurrentId,{m:'PATCH',p:'return=minimal',b:{status:'active',updated_at:new Date().toISOString()}});
     var x=ptwAllData.find(function(r){return r.id===ptwCurrentId;});if(x)x.status='active';
-    try{await api('/permit_activity_log',{m:'POST',p:'return=minimal',b:{company_id:prof?.company_id,permit_id:ptwCurrentId,action:'Permit resumed',performed_by:by,old_status:'suspended',new_status:'active'}});}catch(ex){}
+    try{await api('/permit_activity_log',{m:'POST',p:'return=minimal',b:{company_id:ccid(),permit_id:ptwCurrentId,action:'Permit resumed',performed_by:by,old_status:'suspended',new_status:'active'}});}catch(ex){}
     toast('Permit RESUMED — work may continue');
     ptwShowDetail(ptwCurrentId);
   }catch(e){toast(e.message,false);}
@@ -12377,7 +12383,7 @@ async function conSave(){
   if(!name){toast('Please enter contractor name',false);return;}
   var g=function(id){var el=document.getElementById(id);return el?el.value||null:null;};
   var body={
-    company_id:prof?.company_id,contractor_name:name,
+    company_id:ccid(),contractor_name:name,
     trading_name:g('conf-trading'),registration_number:g('conf-reg'),vat_number:g('conf-vat'),
     address:g('conf-address'),contact_person:g('conf-contact'),contact_email:g('conf-email'),
     contact_phone:g('conf-phone'),website:g('conf-website'),
@@ -12570,7 +12576,7 @@ async function cpaSave(){
   var conId=document.getElementById('cpaf-contractor')?.value;
   if(!conId){toast('Please select a contractor',false);return;}
   var g=function(id){var el=document.getElementById(id);return el?el.value||null:null;};
-  var body={company_id:prof?.company_id,contractor_id:conId,assessment_date:g('cpaf-date'),assessed_by:g('cpaf-assessor'),result:g('cpaf-result')||'pending',conditions_notes:g('cpaf-conditions'),assessor_comments:g('cpaf-comments'),updated_at:new Date().toISOString()};
+  var body={company_id:ccid(),contractor_id:conId,assessment_date:g('cpaf-date'),assessed_by:g('cpaf-assessor'),result:g('cpaf-result')||'pending',conditions_notes:g('cpaf-conditions'),assessor_comments:g('cpaf-comments'),updated_at:new Date().toISOString()};
   CPA_QUESTIONS.forEach(function(q){
     var yes=document.getElementById('cpa-'+q.field+'-y')?.checked;
     var no=document.getElementById('cpa-'+q.field+'-n')?.checked;
@@ -12758,7 +12764,7 @@ async function cevSave(){
   var conId=document.getElementById('cevf-contractor')?.value;
   if(!conId){toast('Please select a contractor',false);return;}
   var g=function(id){var el=document.getElementById(id);return el?el.value||null:null;};
-  var body={company_id:prof?.company_id,contractor_id:conId,evaluation_date:g('cevf-date'),evaluated_by:g('cevf-evaluator'),work_description:g('cevf-work-desc'),work_period_start:g('cevf-start'),work_period_end:g('cevf-end'),incidents_during_work:parseInt(g('cevf-incidents'))||0,incident_details:g('cevf-incident-details'),positive_observations:g('cevf-positive'),areas_improvement:g('cevf-improve'),recommendation_notes:g('cevf-rec-notes'),recommend_future_use:document.getElementById('cevf-recommend')?.value!=='false',updated_at:new Date().toISOString()};
+  var body={company_id:ccid(),contractor_id:conId,evaluation_date:g('cevf-date'),evaluated_by:g('cevf-evaluator'),work_description:g('cevf-work-desc'),work_period_start:g('cevf-start'),work_period_end:g('cevf-end'),incidents_during_work:parseInt(g('cevf-incidents'))||0,incident_details:g('cevf-incident-details'),positive_observations:g('cevf-positive'),areas_improvement:g('cevf-improve'),recommendation_notes:g('cevf-rec-notes'),recommend_future_use:document.getElementById('cevf-recommend')?.value!=='false',updated_at:new Date().toISOString()};
   var total=0;
   CEV_CRITERIA.forEach(function(c){var inp=document.getElementById('cev-score-'+c.field);var v=inp?parseInt(inp.value)||0:0;body[c.field]=v||null;total+=v;});
   body.total_score=total;
@@ -12911,7 +12917,7 @@ async function catwSave(){
   var issuerId=g('catwf-issued-by');
   var issuerName='';if(issuerId){var p=(people||[]).find(function(x){return x.id===issuerId;});issuerName=p?(p.last_name+', '+p.first_name):'';}
   var body={
-    company_id:prof?.company_id,contractor_id:conId,
+    company_id:ccid(),contractor_id:conId,
     work_order_id:g('catwf-wo')||null,permit_id:g('catwf-permit')||null,
     work_description:desc,work_location:g('catwf-location'),
     valid_from:g('catwf-from'),valid_until:g('catwf-until'),
@@ -13056,7 +13062,7 @@ async function cirSave(){
   if(!conId||!desc){toast('Please select contractor and describe the incident',false);return;}
   var g=function(id){var el=document.getElementById(id);return el?el.value||null:null;};
   var body={
-    company_id:prof?.company_id,contractor_id:conId,
+    company_id:ccid(),contractor_id:conId,
     incident_date:g('cirf-date'),incident_time:g('cirf-time'),report_date:g('cirf-report-date'),
     reported_by:g('cirf-reported-by'),incident_type:g('cirf-type')||'near_miss',
     severity:g('cirf-severity')||'low',location:g('cirf-location'),description:desc,
@@ -13085,7 +13091,7 @@ async function cirSave(){
         if(['high','critical'].includes(body.severity)){
           var conName=conAllData.find(function(c){return c.id===conId;})?.contractor_name||'Contractor';
           await api('/action_tracker',{m:'POST',p:'return=minimal',b:{
-            company_id:prof?.company_id,source_module:'contractor',source_id:res[0].id,
+            company_id:ccid(),source_module:'contractor',source_id:res[0].id,
             source_ref:ref+' — '+conName,description:body.corrective_actions||'Investigate contractor incident: '+body.description.substring(0,100),
             responsible:body.action_responsible||null,target_date:body.action_due_date||null,
             priority:body.severity==='critical'?'critical':'high',status:'open',created_by:prof?.id
@@ -13317,7 +13323,7 @@ function esgWasteBack(){
 async function esgWasteSave(){
   var tp=document.getElementById('wf-type')?.value?.trim();if(!tp){toast('Please enter waste type',false);return;}
   var g=function(id){var el=document.getElementById(id);return el?el.value||null:null;};
-  var body={company_id:prof?.company_id,record_date:g('wf-date'),waste_type:tp,category:g('wf-cat')||'general',quantity:parseFloat(g('wf-qty'))||0,unit:g('wf-unit')||'kg',disposal_method:g('wf-disposal'),disposal_contractor:g('wf-contractor'),manifest_number:g('wf-manifest'),location:g('wf-location'),notes:g('wf-notes')};
+  var body={company_id:ccid(),record_date:g('wf-date'),waste_type:tp,category:g('wf-cat')||'general',quantity:parseFloat(g('wf-qty'))||0,unit:g('wf-unit')||'kg',disposal_method:g('wf-disposal'),disposal_contractor:g('wf-contractor'),manifest_number:g('wf-manifest'),location:g('wf-location'),notes:g('wf-notes')};
   try{
     if(esgWasteEditId){await api('/waste_records?id=eq.'+esgWasteEditId,{m:'PATCH',p:'return=minimal',b:body});toast('Updated!');}
     else{body.created_by=prof?.id;await api('/waste_records',{m:'POST',p:'return=minimal',b:body});toast('Waste record saved!');}
@@ -13382,7 +13388,7 @@ function esgHWBack(){document.getElementById('esg-hw-form').style.display='none'
 async function esgHWSave(){
   var name=document.getElementById('hwf-name')?.value?.trim();if(!name){toast('Please enter waste name',false);return;}
   var g=function(id){var el=document.getElementById(id);return el?el.value||null:null;};
-  var body={company_id:prof?.company_id,waste_name:name,un_number:g('hwf-un'),hazard_class:g('hwf-class'),quantity:parseFloat(g('hwf-qty'))||null,unit:g('hwf-unit')||'kg',container_type:g('hwf-container'),storage_location:g('hwf-location'),generation_date:g('hwf-gen-date'),collection_date:g('hwf-collect-date'),disposal_date:g('hwf-disposal-date'),licensed_contractor:g('hwf-contractor'),contractor_license_number:g('hwf-license'),manifest_number:g('hwf-manifest'),disposal_method:g('hwf-disposal-method'),status:g('hwf-status')||'stored',sds_available:document.getElementById('hwf-sds')?.value==='true',notes:g('hwf-notes'),updated_at:new Date().toISOString()};
+  var body={company_id:ccid(),waste_name:name,un_number:g('hwf-un'),hazard_class:g('hwf-class'),quantity:parseFloat(g('hwf-qty'))||null,unit:g('hwf-unit')||'kg',container_type:g('hwf-container'),storage_location:g('hwf-location'),generation_date:g('hwf-gen-date'),collection_date:g('hwf-collect-date'),disposal_date:g('hwf-disposal-date'),licensed_contractor:g('hwf-contractor'),contractor_license_number:g('hwf-license'),manifest_number:g('hwf-manifest'),disposal_method:g('hwf-disposal-method'),status:g('hwf-status')||'stored',sds_available:document.getElementById('hwf-sds')?.value==='true',notes:g('hwf-notes'),updated_at:new Date().toISOString()};
   try{if(esgHWEditId){await api('/hazardous_waste?id=eq.'+esgHWEditId,{m:'PATCH',p:'return=minimal',b:body});toast('Updated!');}else{body.created_by=prof?.id;await api('/hazardous_waste',{m:'POST',p:'return=minimal',b:body});toast('Record saved!');}esgHWBack();}catch(e){toast(e.message,false);}
 }
 async function esgHWDel(id){if(!confirm('Delete?'))return;try{await api('/hazardous_waste?id=eq.'+id,{m:'DELETE'});esgHWData=esgHWData.filter(x=>x.id!==id);toast('Deleted!');esgLoadHW();}catch(e){toast(e.message,false);}}
@@ -13446,7 +13452,7 @@ async function esgFuelSave(){
   var tp=document.getElementById('ff-type')?.value||'diesel';
   var co2=qty*(CO2_FACTORS[tp]||2.5);
   var g=function(id){var el=document.getElementById(id);return el?el.value||null:null;};
-  var body={company_id:prof?.company_id,record_date:g('ff-date'),fuel_type:tp,quantity:qty,unit:g('ff-unit')||'litres',vehicle_equipment:g('ff-vehicle'),meter_reading_start:g('ff-odo-start')?parseFloat(g('ff-odo-start')):null,meter_reading_end:g('ff-odo-end')?parseFloat(g('ff-odo-end')):null,purpose:g('ff-purpose'),department:g('ff-dept'),cost:g('ff-cost')?parseFloat(g('ff-cost')):null,currency:'MUR',carbon_kg:Math.round(co2*100)/100,notes:g('ff-notes')};
+  var body={company_id:ccid(),record_date:g('ff-date'),fuel_type:tp,quantity:qty,unit:g('ff-unit')||'litres',vehicle_equipment:g('ff-vehicle'),meter_reading_start:g('ff-odo-start')?parseFloat(g('ff-odo-start')):null,meter_reading_end:g('ff-odo-end')?parseFloat(g('ff-odo-end')):null,purpose:g('ff-purpose'),department:g('ff-dept'),cost:g('ff-cost')?parseFloat(g('ff-cost')):null,currency:'MUR',carbon_kg:Math.round(co2*100)/100,notes:g('ff-notes')};
   try{if(esgFuelEditId){await api('/fuel_consumption?id=eq.'+esgFuelEditId,{m:'PATCH',p:'return=minimal',b:body});toast('Updated!');}else{body.created_by=prof?.id;await api('/fuel_consumption',{m:'POST',p:'return=minimal',b:body});toast('Fuel record saved! CO₂e: '+co2.toFixed(1)+' kg');}esgFuelBack();}catch(e){toast(e.message,false);}
 }
 async function esgFuelDel(id){if(!confirm('Delete?'))return;try{await api('/fuel_consumption?id=eq.'+id,{m:'DELETE'});esgFuelData=esgFuelData.filter(x=>x.id!==id);toast('Deleted!');esgLoadFuel();}catch(e){toast(e.message,false);}}
@@ -13508,7 +13514,7 @@ async function esgWaterSave(){
   if(qty<=0)qty=parseFloat(document.getElementById('waf-qty')?.value)||0;
   if(qty<=0){toast('Please enter meter readings or quantity',false);return;}
   var g=function(id){var el=document.getElementById(id);return el?el.value||null:null;};
-  var body={company_id:prof?.company_id,record_date:g('waf-date'),source:g('waf-source')||'mains',meter_id:g('waf-meter-id'),meter_reading_start:g('waf-start')?parseFloat(g('waf-start')):null,meter_reading_end:g('waf-end')?parseFloat(g('waf-end')):null,quantity:qty,unit:g('waf-unit')||'m3',purpose:g('waf-purpose'),location:g('waf-location'),cost:g('waf-cost')?parseFloat(g('waf-cost')):null,notes:g('waf-notes')};
+  var body={company_id:ccid(),record_date:g('waf-date'),source:g('waf-source')||'mains',meter_id:g('waf-meter-id'),meter_reading_start:g('waf-start')?parseFloat(g('waf-start')):null,meter_reading_end:g('waf-end')?parseFloat(g('waf-end')):null,quantity:qty,unit:g('waf-unit')||'m3',purpose:g('waf-purpose'),location:g('waf-location'),cost:g('waf-cost')?parseFloat(g('waf-cost')):null,notes:g('waf-notes')};
   try{if(esgWaterEditId){await api('/water_usage?id=eq.'+esgWaterEditId,{m:'PATCH',p:'return=minimal',b:body});toast('Updated!');}else{body.created_by=prof?.id;await api('/water_usage',{m:'POST',p:'return=minimal',b:body});toast('Water record saved!');}esgWaterBack();}catch(e){toast(e.message,false);}
 }
 async function esgWaterDel(id){if(!confirm('Delete?'))return;try{await api('/water_usage?id=eq.'+id,{m:'DELETE'});esgWaterData=esgWaterData.filter(x=>x.id!==id);toast('Deleted!');esgLoadWater();}catch(e){toast(e.message,false);}}
@@ -13577,7 +13583,7 @@ async function esgSpillSave(){
   var location=document.getElementById('spf-location')?.value?.trim();
   if(!substance||!location){toast('Please enter substance and location',false);return;}
   var g=function(id){var el=document.getElementById(id);return el?el.value||null:null;};
-  var body={company_id:prof?.company_id,spill_date:g('spf-date'),spill_time:g('spf-time'),reported_by:g('spf-reporter'),location:location,substance:substance,estimated_quantity:g('spf-qty')?parseFloat(g('spf-qty')):null,unit:g('spf-unit')||'litres',spill_cause:g('spf-cause'),reached_drain_watercourse:document.getElementById('spf-drain')?.checked||false,reached_soil:document.getElementById('spf-soil')?.checked||false,immediate_actions:g('spf-immediate'),containment_method:g('spf-containment'),cleanup_method:g('spf-cleanup'),cleanup_contractor:g('spf-cleanup-con'),waste_generated:g('spf-waste'),root_cause:g('spf-root'),corrective_actions:g('spf-corrective'),environmental_impact:g('spf-impact'),lessons_learned:g('spf-lessons'),regulatory_notification_required:document.getElementById('spf-regulator')?.checked||false,regulatory_body:g('spf-reg-body'),regulatory_ref:g('spf-reg-ref'),severity:g('spf-severity')||'minor',status:g('spf-status')||'open',photos_taken:document.getElementById('spf-photos')?.checked||false,updated_at:new Date().toISOString()};
+  var body={company_id:ccid(),spill_date:g('spf-date'),spill_time:g('spf-time'),reported_by:g('spf-reporter'),location:location,substance:substance,estimated_quantity:g('spf-qty')?parseFloat(g('spf-qty')):null,unit:g('spf-unit')||'litres',spill_cause:g('spf-cause'),reached_drain_watercourse:document.getElementById('spf-drain')?.checked||false,reached_soil:document.getElementById('spf-soil')?.checked||false,immediate_actions:g('spf-immediate'),containment_method:g('spf-containment'),cleanup_method:g('spf-cleanup'),cleanup_contractor:g('spf-cleanup-con'),waste_generated:g('spf-waste'),root_cause:g('spf-root'),corrective_actions:g('spf-corrective'),environmental_impact:g('spf-impact'),lessons_learned:g('spf-lessons'),regulatory_notification_required:document.getElementById('spf-regulator')?.checked||false,regulatory_body:g('spf-reg-body'),regulatory_ref:g('spf-reg-ref'),severity:g('spf-severity')||'minor',status:g('spf-status')||'open',photos_taken:document.getElementById('spf-photos')?.checked||false,updated_at:new Date().toISOString()};
   try{
     if(esgSpillEditId){await api('/spill_reports?id=eq.'+esgSpillEditId,{m:'PATCH',p:'return=minimal',b:body});toast('Updated!');}
     else{
@@ -13587,7 +13593,7 @@ async function esgSpillSave(){
         var yr=new Date().getFullYear();var ref='SPL-'+yr+'-'+String(esgSpillData.length+1).padStart(3,'0');
         await api('/spill_reports?id=eq.'+res[0].id,{m:'PATCH',p:'return=minimal',b:{ref_number:ref}});
         if(['major','critical'].includes(body.severity)){
-          await api('/action_tracker',{m:'POST',p:'return=minimal',b:{company_id:prof?.company_id,source_module:'esg',source_ref:ref,description:'Spill remediation: '+substance+' at '+location+(body.corrective_actions?'\n'+body.corrective_actions:''),priority:body.severity==='critical'?'critical':'high',status:'open',created_by:prof?.id}});
+          await api('/action_tracker',{m:'POST',p:'return=minimal',b:{company_id:ccid(),source_module:'esg',source_ref:ref,description:'Spill remediation: '+substance+' at '+location+(body.corrective_actions?'\n'+body.corrective_actions:''),priority:body.severity==='critical'?'critical':'high',status:'open',created_by:prof?.id}});
           toast('Spill report saved! Ref: '+ref+' — Action added to MAP.');
         }else{toast('Spill report saved! Ref: '+ref);}
       }
@@ -13660,7 +13666,7 @@ async function esgInspSave(){
   var area=document.getElementById('eif-area')?.value?.trim();if(!area){toast('Please enter inspection area',false);return;}
   var g=function(id){var el=document.getElementById(id);return el?el.value||null:null;};
   var checklist=ENV_CHECKLIST.map(function(item,i){var ok=document.getElementById('eic-ok-'+i)?.checked;var nc=document.getElementById('eic-nc-'+i)?.checked;var note=document.getElementById('eic-note-'+i)?.value||'';return{item:item,result:ok?'ok':nc?'nc':'na',note:note};});
-  var body={company_id:prof?.company_id,inspection_date:g('eif-date'),inspector:g('eif-inspector'),area:area,inspection_type:g('eif-type')||'routine',checklist_results:checklist,findings:g('eif-findings'),non_conformances:parseInt(g('eif-nc'))||0,overall_rating:g('eif-rating')||'satisfactory',corrective_actions:g('eif-actions'),next_inspection_date:g('eif-next-date')};
+  var body={company_id:ccid(),inspection_date:g('eif-date'),inspector:g('eif-inspector'),area:area,inspection_type:g('eif-type')||'routine',checklist_results:checklist,findings:g('eif-findings'),non_conformances:parseInt(g('eif-nc'))||0,overall_rating:g('eif-rating')||'satisfactory',corrective_actions:g('eif-actions'),next_inspection_date:g('eif-next-date')};
   try{
     if(esgInspEditId){await api('/environmental_inspections?id=eq.'+esgInspEditId,{m:'PATCH',p:'return=minimal',b:body});toast('Updated!');}
     else{body.created_by=prof?.id;await api('/environmental_inspections',{m:'POST',p:'return=minimal',b:body});toast('Inspection saved!');}
@@ -13959,7 +13965,7 @@ async function emPlanSave(){
   var title=document.getElementById('epf-title')?.value?.trim();
   if(!title){toast('Please enter plan title',false);return;}
   var g=function(id){var el=document.getElementById(id);return el?el.value||null:null;};
-  var body={company_id:prof?.company_id,title:title,emergency_type:g('epf-type')||'fire',severity_level:g('epf-severity')||'major',site_name:g('epf-site'),location:g('epf-site'),version:g('epf-version')||'1.0',status:g('epf-status')||'active',scope:g('epf-scope'),objectives:g('epf-scope'),activation_criteria:g('epf-activation'),immediate_actions:g('epf-immediate'),escalation_procedure:g('epf-escalation'),communication_plan:g('epf-comms'),recovery_actions:g('epf-recovery'),approved_by:g('epf-approved-by'),approved_date:g('epf-approved-date'),review_date:g('epf-review-date'),last_tested:g('epf-last-tested'),key_contacts:emPlanContacts,resources:emPlanResources,updated_at:new Date().toISOString()};
+  var body={company_id:ccid(),title:title,emergency_type:g('epf-type')||'fire',severity_level:g('epf-severity')||'major',site_name:g('epf-site'),location:g('epf-site'),version:g('epf-version')||'1.0',status:g('epf-status')||'active',scope:g('epf-scope'),objectives:g('epf-scope'),activation_criteria:g('epf-activation'),immediate_actions:g('epf-immediate'),escalation_procedure:g('epf-escalation'),communication_plan:g('epf-comms'),recovery_actions:g('epf-recovery'),approved_by:g('epf-approved-by'),approved_date:g('epf-approved-date'),review_date:g('epf-review-date'),last_tested:g('epf-last-tested'),key_contacts:emPlanContacts,resources:emPlanResources,updated_at:new Date().toISOString()};
   try{
     if(emPlanEditId){await api('/emergency_plans?id=eq.'+emPlanEditId,{m:'PATCH',p:'return=minimal',b:body});toast('Plan updated!');}
     else{
@@ -14066,7 +14072,7 @@ function ertEdit(id){
 async function ertSave(){
   var name=document.getElementById('ertf-name')?.value?.trim();if(!name){toast('Please enter member name',false);return;}
   var g=function(id){var el=document.getElementById(id);return el?el.value||null:null;};
-  var body={company_id:prof?.company_id,name:name,job_title:g('ertf-title'),department:g('ertf-dept'),phone_primary:g('ertf-phone1'),phone_secondary:g('ertf-phone2'),email:g('ertf-email'),ert_role:g('ertf-role')||'ert_member',ert_team:g('ertf-team'),coverage_area:g('ertf-area'),first_aid_certified:document.getElementById('ertf-fa-cert')?.checked||false,first_aid_expiry:g('ertf-fa-expiry'),fire_warden_certified:document.getElementById('ertf-fw-cert')?.checked||false,fire_warden_expiry:g('ertf-fw-expiry'),ert_trained:document.getElementById('ertf-ert-trained')?.checked||false,ert_trained_date:g('ertf-ert-date'),status:g('ertf-status')||'active',notes:g('ertf-notes'),updated_at:new Date().toISOString()};
+  var body={company_id:ccid(),name:name,job_title:g('ertf-title'),department:g('ertf-dept'),phone_primary:g('ertf-phone1'),phone_secondary:g('ertf-phone2'),email:g('ertf-email'),ert_role:g('ertf-role')||'ert_member',ert_team:g('ertf-team'),coverage_area:g('ertf-area'),first_aid_certified:document.getElementById('ertf-fa-cert')?.checked||false,first_aid_expiry:g('ertf-fa-expiry'),fire_warden_certified:document.getElementById('ertf-fw-cert')?.checked||false,fire_warden_expiry:g('ertf-fw-expiry'),ert_trained:document.getElementById('ertf-ert-trained')?.checked||false,ert_trained_date:g('ertf-ert-date'),status:g('ertf-status')||'active',notes:g('ertf-notes'),updated_at:new Date().toISOString()};
   try{if(emErtEditId){await api('/ert_members?id=eq.'+emErtEditId,{m:'PATCH',p:'return=minimal',b:body});toast('Updated!');}else{body.created_by=prof?.id;await api('/ert_members',{m:'POST',p:'return=minimal',b:body});toast('ERT member added!');}ertBack();}catch(e){toast(e.message,false);}
 }
 async function ertDelete(){if(!emErtEditId||!confirm('Remove this ERT member?'))return;try{await api('/ert_members?id=eq.'+emErtEditId,{m:'DELETE'});toast('Removed!');ertBack();}catch(e){toast(e.message,false);}}
@@ -14101,7 +14107,7 @@ function musterBack(){document.getElementById('em-muster-form').style.display='n
 
 function musterNew(){emMusterEditId=null;document.getElementById('em-muster-form-title').textContent='New Muster Point';document.getElementById('em-muster-del-btn').style.display='none';['mpf-name','mpf-location','mpf-capacity','mpf-warden','mpf-types','mpf-notes'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});document.getElementById('mpf-status').value='active';musterShowForm();}
 function musterEdit(id){var m=emMusterData.find(x=>x.id===id);if(!m)return;emMusterEditId=id;document.getElementById('em-muster-form-title').textContent='Edit Muster Point';document.getElementById('em-muster-del-btn').style.display=isMgr()?'inline-flex':'none';var gf=function(id,val){var el=document.getElementById(id);if(el)el.value=val||'';};gf('mpf-name',m.name);gf('mpf-location',m.location_description);gf('mpf-capacity',m.capacity||'');gf('mpf-warden',m.warden_assigned);gf('mpf-types',(m.emergency_types||[]).join(', '));gf('mpf-notes',m.notes);var st=document.getElementById('mpf-status');if(st)st.value=m.status||'active';musterShowForm();}
-async function musterSave(){var name=document.getElementById('mpf-name')?.value?.trim();if(!name){toast('Please enter muster point name',false);return;}var g=function(id){var el=document.getElementById(id);return el?el.value||null:null;};var body={company_id:prof?.company_id,name:name,location_description:g('mpf-location'),capacity:parseInt(g('mpf-capacity'))||null,warden_assigned:g('mpf-warden'),emergency_types:g('mpf-types')?g('mpf-types').split(',').map(x=>x.trim()).filter(Boolean):[],notes:g('mpf-notes'),status:g('mpf-status')||'active'};try{if(emMusterEditId){await api('/muster_points?id=eq.'+emMusterEditId,{m:'PATCH',p:'return=minimal',b:body});toast('Updated!');}else{body.created_by=prof?.id;await api('/muster_points',{m:'POST',p:'return=minimal',b:body});toast('Muster point added!');}musterBack();}catch(e){toast(e.message,false);}}
+async function musterSave(){var name=document.getElementById('mpf-name')?.value?.trim();if(!name){toast('Please enter muster point name',false);return;}var g=function(id){var el=document.getElementById(id);return el?el.value||null:null;};var body={company_id:ccid(),name:name,location_description:g('mpf-location'),capacity:parseInt(g('mpf-capacity'))||null,warden_assigned:g('mpf-warden'),emergency_types:g('mpf-types')?g('mpf-types').split(',').map(x=>x.trim()).filter(Boolean):[],notes:g('mpf-notes'),status:g('mpf-status')||'active'};try{if(emMusterEditId){await api('/muster_points?id=eq.'+emMusterEditId,{m:'PATCH',p:'return=minimal',b:body});toast('Updated!');}else{body.created_by=prof?.id;await api('/muster_points',{m:'POST',p:'return=minimal',b:body});toast('Muster point added!');}musterBack();}catch(e){toast(e.message,false);}}
 async function musterDelete(){if(!emMusterEditId||!confirm('Delete?'))return;try{await api('/muster_points?id=eq.'+emMusterEditId,{m:'DELETE'});toast('Deleted!');musterBack();}catch(e){toast(e.message,false);}}
 
 // ── DRILLS ────────────────────────────────────────────────────────────────────
@@ -14141,7 +14147,7 @@ function drillNew(){emDrillEditId=null;document.getElementById('em-drill-form-ti
 
 async function drillEdit(id){var x=emDrillsData.find(r=>r.id===id);if(!x)return;emDrillEditId=id;document.getElementById('em-drill-form-title').textContent='Edit Drill';document.getElementById('em-drill-form-ref').textContent=x.drill_ref||'—';document.getElementById('em-drill-del-btn').style.display=isMgr()?'inline-flex':'none';var gf=function(id,val){var el=document.getElementById(id);if(el)el.value=val||'';};gf('drf-location',x.location);gf('drf-scenario',x.scenario);gf('drf-objectives',x.objectives);gf('drf-depts',x.departments_involved);gf('drf-external',x.external_agencies);gf('drf-strengths',x.strengths);gf('drf-weaknesses',x.weaknesses);gf('drf-observations',x.observations);gf('drf-actions',x.corrective_actions);gf('drf-conducted-by',x.conducted_by);gf('drf-reviewed-by',x.reviewed_by);gf('drf-approved-by',x.approved_by);gf('drf-expected',x.total_expected||'');gf('drf-participated',x.total_participated||'');gf('drf-evac-time',x.evacuation_time_mins||'');gf('drf-planned-dur',x.planned_duration||'');gf('drf-actual-dur',x.actual_duration||'');gf('drf-unaccounted',x.unaccounted_persons||0);var dt=document.getElementById('drf-date');if(dt)dt.value=x.drill_date||'';var tm=document.getElementById('drf-time');if(tm)tm.value=x.drill_time||'';var tp=document.getElementById('drf-type');if(tp)tp.value=x.drill_type||'evacuation';var st=document.getElementById('drf-status');if(st)st.value=x.status||'planned';var rt=document.getElementById('drf-rating');if(rt)rt.value=x.overall_rating||'satisfactory';document.getElementById('drf-all-accounted').checked=!!x.all_accounted_for;drillShowForm();}
 
-async function drillSave(){var g=function(id){var el=document.getElementById(id);return el?el.value||null:null;};var date=g('drf-date');if(!date){toast('Please enter drill date',false);return;}var body={company_id:prof?.company_id,drill_type:g('drf-type')||'evacuation',drill_date:date,drill_time:g('drf-time'),location:g('drf-location'),scenario:g('drf-scenario'),objectives:g('drf-objectives'),total_expected:parseInt(g('drf-expected'))||null,total_participated:parseInt(g('drf-participated'))||null,departments_involved:g('drf-depts'),external_agencies:g('drf-external'),evacuation_time_mins:parseFloat(g('drf-evac-time'))||null,planned_duration:parseInt(g('drf-planned-dur'))||null,actual_duration:parseInt(g('drf-actual-dur'))||null,all_accounted_for:document.getElementById('drf-all-accounted')?.checked||false,unaccounted_persons:parseInt(g('drf-unaccounted'))||0,strengths:g('drf-strengths'),weaknesses:g('drf-weaknesses'),observations:g('drf-observations'),corrective_actions:g('drf-actions'),overall_rating:g('drf-rating')||'satisfactory',conducted_by:g('drf-conducted-by'),reviewed_by:g('drf-reviewed-by'),approved_by:g('drf-approved-by'),status:g('drf-status')||'planned',updated_at:new Date().toISOString()};
+async function drillSave(){var g=function(id){var el=document.getElementById(id);return el?el.value||null:null;};var date=g('drf-date');if(!date){toast('Please enter drill date',false);return;}var body={company_id:ccid(),drill_type:g('drf-type')||'evacuation',drill_date:date,drill_time:g('drf-time'),location:g('drf-location'),scenario:g('drf-scenario'),objectives:g('drf-objectives'),total_expected:parseInt(g('drf-expected'))||null,total_participated:parseInt(g('drf-participated'))||null,departments_involved:g('drf-depts'),external_agencies:g('drf-external'),evacuation_time_mins:parseFloat(g('drf-evac-time'))||null,planned_duration:parseInt(g('drf-planned-dur'))||null,actual_duration:parseInt(g('drf-actual-dur'))||null,all_accounted_for:document.getElementById('drf-all-accounted')?.checked||false,unaccounted_persons:parseInt(g('drf-unaccounted'))||0,strengths:g('drf-strengths'),weaknesses:g('drf-weaknesses'),observations:g('drf-observations'),corrective_actions:g('drf-actions'),overall_rating:g('drf-rating')||'satisfactory',conducted_by:g('drf-conducted-by'),reviewed_by:g('drf-reviewed-by'),approved_by:g('drf-approved-by'),status:g('drf-status')||'planned',updated_at:new Date().toISOString()};
   try{if(emDrillEditId){await api('/emergency_drills?id=eq.'+emDrillEditId,{m:'PATCH',p:'return=minimal',b:body});toast('Drill updated!');}else{body.created_by=prof?.id;var res=await api('/emergency_drills',{m:'POST',p:'return=representation',b:body});if(res?.[0]?.id){var yr=new Date().getFullYear();var ref='DRILL-'+yr+'-'+String(emDrillsData.length+1).padStart(3,'0');await api('/emergency_drills?id=eq.'+res[0].id,{m:'PATCH',p:'return=minimal',b:{drill_ref:ref}});toast('Drill saved! Ref: '+ref);}}drillBack();}catch(e){toast(e.message,false);}
 }
 async function drillDelete(id){if(!confirm('Delete?'))return;try{await api('/emergency_drills?id=eq.'+id,{m:'DELETE'});emDrillsData=emDrillsData.filter(x=>x.id!==id);toast('Deleted!');drillsLoad();}catch(e){toast(e.message,false);}}
@@ -14186,8 +14192,8 @@ function activationNew(){emActEditId=null;document.getElementById('em-act-form-t
 
 async function activationEdit(id){var x=emActivationsData.find(r=>r.id===id);if(!x)return;emActEditId=id;document.getElementById('em-act-form-title').textContent='Edit Activation';document.getElementById('em-act-form-ref').textContent=x.activation_ref||'—';document.getElementById('em-act-del-btn').style.display=isMgr()?'inline-flex':'none';var gf=function(id,val){var el=document.getElementById(id);if(el)el.value=val||'';};gf('actf-location',x.location);gf('actf-desc',x.description);gf('actf-immediate',x.immediate_actions);gf('actf-ert-response',x.ert_response);gf('actf-agencies',x.external_agencies_called);gf('actf-containment',x.containment_method);gf('actf-lessons',x.lessons_learned);gf('actf-damage',x.property_damage);gf('actf-env-impact',x.environmental_impact);gf('actf-business-impact',x.business_impact);gf('actf-cost',x.estimated_cost||'');gf('actf-notes',x.notes);gf('actf-time',x.activation_time||x.time_detected||'');gf('actf-ert-time',x.time_ert_notified||'');gf('actf-evac-time',x.time_evacuated||'');gf('actf-services-time',x.time_services_called||'');gf('actf-allclear-time',x.time_all_clear||'');document.getElementById('actf-injuries').value=x.injuries||0;document.getElementById('actf-fatalities').value=x.fatalities||0;document.getElementById('actf-missing').value=x.missing_persons||0;document.getElementById('actf-date').value=x.activation_date||'';var tp=document.getElementById('actf-type');if(tp)tp.value=x.emergency_type||'fire';var sv=document.getElementById('actf-severity');if(sv)sv.value=x.severity||'moderate';var st=document.getElementById('actf-status');if(st)st.value=x.status||'active';document.getElementById('actf-debrief').checked=!!x.debrief_conducted;document.getElementById('actf-plan-update').checked=!!x.plan_update_required;activationShowForm();}
 
-async function activationSave(){var desc=document.getElementById('actf-desc')?.value?.trim();if(!desc){toast('Please describe the emergency',false);return;}var g=function(id){var el=document.getElementById(id);return el?el.value||null:null;};var body={company_id:prof?.company_id,emergency_type:g('actf-type')||'fire',activation_date:g('actf-date'),activation_time:g('actf-time'),location:g('actf-location'),description:desc,severity:g('actf-severity')||'moderate',time_detected:g('actf-time'),time_ert_notified:g('actf-ert-time'),time_evacuated:g('actf-evac-time'),time_services_called:g('actf-services-time'),time_all_clear:g('actf-allclear-time'),immediate_actions:g('actf-immediate'),ert_response:g('actf-ert-response'),external_agencies_called:g('actf-agencies'),containment_method:g('actf-containment'),injuries:parseInt(g('actf-injuries'))||0,fatalities:parseInt(g('actf-fatalities'))||0,missing_persons:parseInt(g('actf-missing'))||0,property_damage:g('actf-damage'),environmental_impact:g('actf-env-impact'),business_impact:g('actf-business-impact'),estimated_cost:parseFloat(g('actf-cost'))||null,lessons_learned:g('actf-lessons'),debrief_conducted:document.getElementById('actf-debrief')?.checked||false,plan_update_required:document.getElementById('actf-plan-update')?.checked||false,notes:g('actf-notes'),status:g('actf-status')||'active',updated_at:new Date().toISOString()};
-  try{if(emActEditId){await api('/emergency_activations?id=eq.'+emActEditId,{m:'PATCH',p:'return=minimal',b:body});toast('Activation updated!');}else{body.created_by=prof?.id;var res=await api('/emergency_activations',{m:'POST',p:'return=representation',b:body});if(res?.[0]?.id){var yr=new Date().getFullYear();var ref='ACT-'+yr+'-'+String(emActivationsData.length+1).padStart(3,'0');await api('/emergency_activations?id=eq.'+res[0].id,{m:'PATCH',p:'return=minimal',b:{activation_ref:ref}});if(body.fatalities>0||body.severity==='critical'){try{await api('/action_tracker',{m:'POST',p:'return=minimal',b:{company_id:prof?.company_id,source_module:'emergency',source_ref:ref,description:'CRITICAL EMERGENCY: '+desc.substring(0,100),priority:'critical',status:'open',created_by:prof?.id}});}catch(ex){}}toast('Activation logged! Ref: '+ref);}}activationBack();}catch(e){toast(e.message,false);}
+async function activationSave(){var desc=document.getElementById('actf-desc')?.value?.trim();if(!desc){toast('Please describe the emergency',false);return;}var g=function(id){var el=document.getElementById(id);return el?el.value||null:null;};var body={company_id:ccid(),emergency_type:g('actf-type')||'fire',activation_date:g('actf-date'),activation_time:g('actf-time'),location:g('actf-location'),description:desc,severity:g('actf-severity')||'moderate',time_detected:g('actf-time'),time_ert_notified:g('actf-ert-time'),time_evacuated:g('actf-evac-time'),time_services_called:g('actf-services-time'),time_all_clear:g('actf-allclear-time'),immediate_actions:g('actf-immediate'),ert_response:g('actf-ert-response'),external_agencies_called:g('actf-agencies'),containment_method:g('actf-containment'),injuries:parseInt(g('actf-injuries'))||0,fatalities:parseInt(g('actf-fatalities'))||0,missing_persons:parseInt(g('actf-missing'))||0,property_damage:g('actf-damage'),environmental_impact:g('actf-env-impact'),business_impact:g('actf-business-impact'),estimated_cost:parseFloat(g('actf-cost'))||null,lessons_learned:g('actf-lessons'),debrief_conducted:document.getElementById('actf-debrief')?.checked||false,plan_update_required:document.getElementById('actf-plan-update')?.checked||false,notes:g('actf-notes'),status:g('actf-status')||'active',updated_at:new Date().toISOString()};
+  try{if(emActEditId){await api('/emergency_activations?id=eq.'+emActEditId,{m:'PATCH',p:'return=minimal',b:body});toast('Activation updated!');}else{body.created_by=prof?.id;var res=await api('/emergency_activations',{m:'POST',p:'return=representation',b:body});if(res?.[0]?.id){var yr=new Date().getFullYear();var ref='ACT-'+yr+'-'+String(emActivationsData.length+1).padStart(3,'0');await api('/emergency_activations?id=eq.'+res[0].id,{m:'PATCH',p:'return=minimal',b:{activation_ref:ref}});if(body.fatalities>0||body.severity==='critical'){try{await api('/action_tracker',{m:'POST',p:'return=minimal',b:{company_id:ccid(),source_module:'emergency',source_ref:ref,description:'CRITICAL EMERGENCY: '+desc.substring(0,100),priority:'critical',status:'open',created_by:prof?.id}});}catch(ex){}}toast('Activation logged! Ref: '+ref);}}activationBack();}catch(e){toast(e.message,false);}
 }
 async function activationDelete(){if(!emActEditId||!confirm('Delete?'))return;try{await api('/emergency_activations?id=eq.'+emActEditId,{m:'DELETE'});toast('Deleted!');activationBack();}catch(e){toast(e.message,false);}}
 
@@ -14224,7 +14230,7 @@ function bcpBack(){document.getElementById('em-bcp-form').style.display='none';d
 
 function bcpNew(){emBcpEditId=null;document.getElementById('em-bcp-form-title').textContent='New Business Continuity Plan';document.getElementById('em-bcp-form-ref').textContent='BCP-AUTO';document.getElementById('em-bcp-del-btn').style.display='none';['bcpf-title','bcpf-process','bcpf-dept','bcpf-rto','bcpf-rpo','bcpf-fin-impact','bcpf-ops-impact','bcpf-strategy','bcpf-resources','bcpf-alt-location','bcpf-it-deps','bcpf-suppliers','bcpf-steps','bcpf-approved-by','bcpf-test-proc','bcpf-notes'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});document.getElementById('bcpf-version').value='1.0';document.getElementById('bcpf-priority').value='medium';document.getElementById('bcpf-status').value='active';['bcpf-approved-date','bcpf-review-date','bcpf-last-tested','bcpf-next-test'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});bcpShowForm();}
 function bcpEdit(id){var x=emBcpData.find(r=>r.id===id);if(!x)return;emBcpEditId=id;document.getElementById('em-bcp-form-title').textContent='Edit BCP';document.getElementById('em-bcp-form-ref').textContent=x.bcp_ref||'—';document.getElementById('em-bcp-del-btn').style.display=isMgr()?'inline-flex':'none';var gf=function(id,val){var el=document.getElementById(id);if(el)el.value=val||'';};['bcpf-title','bcpf-process','bcpf-dept','bcpf-rto','bcpf-rpo','bcpf-fin-impact','bcpf-ops-impact','bcpf-strategy','bcpf-resources','bcpf-alt-location','bcpf-it-deps','bcpf-suppliers','bcpf-steps','bcpf-approved-by','bcpf-test-proc','bcpf-notes','bcpf-version'].forEach(function(fid){var key=fid.replace('bcpf-','').replace(/-/g,'_');gf(fid,x[key]);});gf('bcpf-rto',x.rto_hours||'');gf('bcpf-rpo',x.rpo_hours||'');gf('bcpf-fin-impact',x.financial_impact);gf('bcpf-ops-impact',x.operational_impact);gf('bcpf-alt-location',x.alternate_location);gf('bcpf-it-deps',x.it_dependencies);gf('bcpf-approved-by',x.approved_by);gf('bcpf-test-proc',x.test_procedure);gf('bcpf-last-tested',x.last_tested);gf('bcpf-next-test',x.next_test_date);gf('bcpf-review-date',x.review_date);gf('bcpf-approved-date',x.approved_date);document.getElementById('bcpf-priority').value=x.priority||'medium';document.getElementById('bcpf-status').value=x.status||'active';bcpShowForm();}
-async function bcpSave(){var title=document.getElementById('bcpf-title')?.value?.trim();if(!title){toast('Please enter BCP title',false);return;}var g=function(id){var el=document.getElementById(id);return el?el.value||null:null;};var body={company_id:prof?.company_id,title:title,business_process:g('bcpf-process'),department:g('bcpf-dept'),priority:g('bcpf-priority')||'medium',rto_hours:parseInt(g('bcpf-rto'))||null,rpo_hours:parseInt(g('bcpf-rpo'))||null,financial_impact:g('bcpf-fin-impact'),operational_impact:g('bcpf-ops-impact'),recovery_strategy:g('bcpf-strategy'),minimum_resources:g('bcpf-resources'),alternate_location:g('bcpf-alt-location'),it_dependencies:g('bcpf-it-deps'),key_suppliers:g('bcpf-suppliers'),recovery_steps:g('bcpf-steps'),approved_by:g('bcpf-approved-by'),approved_date:g('bcpf-approved-date'),review_date:g('bcpf-review-date'),last_tested:g('bcpf-last-tested'),next_test_date:g('bcpf-next-test'),test_procedure:g('bcpf-test-proc'),version:g('bcpf-version')||'1.0',status:g('bcpf-status')||'active',notes:g('bcpf-notes'),updated_at:new Date().toISOString()};
+async function bcpSave(){var title=document.getElementById('bcpf-title')?.value?.trim();if(!title){toast('Please enter BCP title',false);return;}var g=function(id){var el=document.getElementById(id);return el?el.value||null:null;};var body={company_id:ccid(),title:title,business_process:g('bcpf-process'),department:g('bcpf-dept'),priority:g('bcpf-priority')||'medium',rto_hours:parseInt(g('bcpf-rto'))||null,rpo_hours:parseInt(g('bcpf-rpo'))||null,financial_impact:g('bcpf-fin-impact'),operational_impact:g('bcpf-ops-impact'),recovery_strategy:g('bcpf-strategy'),minimum_resources:g('bcpf-resources'),alternate_location:g('bcpf-alt-location'),it_dependencies:g('bcpf-it-deps'),key_suppliers:g('bcpf-suppliers'),recovery_steps:g('bcpf-steps'),approved_by:g('bcpf-approved-by'),approved_date:g('bcpf-approved-date'),review_date:g('bcpf-review-date'),last_tested:g('bcpf-last-tested'),next_test_date:g('bcpf-next-test'),test_procedure:g('bcpf-test-proc'),version:g('bcpf-version')||'1.0',status:g('bcpf-status')||'active',notes:g('bcpf-notes'),updated_at:new Date().toISOString()};
   try{if(emBcpEditId){await api('/bcp_records?id=eq.'+emBcpEditId,{m:'PATCH',p:'return=minimal',b:body});toast('BCP updated!');}else{body.created_by=prof?.id;var res=await api('/bcp_records',{m:'POST',p:'return=representation',b:body});if(res?.[0]?.id){var yr=new Date().getFullYear();var ref='BCP-'+yr+'-'+String(emBcpData.length+1).padStart(3,'0');await api('/bcp_records?id=eq.'+res[0].id,{m:'PATCH',p:'return=minimal',b:{bcp_ref:ref}});toast('BCP saved! Ref: '+ref);}}bcpBack();}catch(e){toast(e.message,false);}
 }
 async function bcpDelete(){if(!emBcpEditId||!confirm('Delete?'))return;try{await api('/bcp_records?id=eq.'+emBcpEditId,{m:'DELETE'});toast('Deleted!');bcpBack();}catch(e){toast(e.message,false);}}
@@ -14267,7 +14273,7 @@ function emEqShowForm(){['em-view-equipment'].forEach(function(id){var el=docume
 function emEqBack(){document.getElementById('em-eq-form').style.display='none';document.getElementById('em-view-equipment').style.display='block';document.querySelectorAll('.mtg-tab').forEach(t=>t.classList.remove('active'));var tab=document.getElementById('em-tab-equipment');if(tab)tab.classList.add('active');emEqLoad();}
 function emEqNew(){emEqEditId=null;document.getElementById('em-eq-form-title').textContent='Add Emergency Equipment';document.getElementById('em-eq-del-btn').style.display='none';['eqf-id','eqf-building','eqf-floor','eqf-location','eqf-serviced-by','eqf-notes'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});['eqf-last-insp','eqf-next-insp','eqf-last-svc','eqf-next-svc'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});document.getElementById('eqf-type').value='fire_extinguisher';document.getElementById('eqf-condition').value='good';document.getElementById('eqf-status').value='operational';emEqShowForm();}
 async function emEqEdit(id){var x=emEqData.find(r=>r.id===id);if(!x)return;emEqEditId=id;document.getElementById('em-eq-form-title').textContent='Edit Equipment';document.getElementById('em-eq-del-btn').style.display=isMgr()?'inline-flex':'none';var gf=function(id,val){var el=document.getElementById(id);if(el)el.value=val||'';};gf('eqf-id',x.identifier);gf('eqf-building',x.building);gf('eqf-floor',x.floor);gf('eqf-location',x.location);gf('eqf-serviced-by',x.serviced_by);gf('eqf-notes',x.notes);gf('eqf-last-insp',x.last_inspection);gf('eqf-next-insp',x.next_inspection);gf('eqf-last-svc',x.last_service);gf('eqf-next-svc',x.next_service);document.getElementById('eqf-type').value=x.equipment_type||'fire_extinguisher';document.getElementById('eqf-condition').value=x.condition||'good';document.getElementById('eqf-status').value=x.status||'operational';emEqShowForm();}
-async function emEqSave(){var loc=document.getElementById('eqf-location')?.value?.trim();if(!loc){toast('Please enter location',false);return;}var g=function(id){var el=document.getElementById(id);return el?el.value||null:null;};var body={company_id:prof?.company_id,equipment_type:g('eqf-type')||'other',identifier:g('eqf-id'),location:loc,building:g('eqf-building'),floor:g('eqf-floor'),last_inspection:g('eqf-last-insp'),next_inspection:g('eqf-next-insp'),last_service:g('eqf-last-svc'),next_service:g('eqf-next-svc'),condition:g('eqf-condition')||'good',serviced_by:g('eqf-serviced-by'),notes:g('eqf-notes'),status:g('eqf-status')||'operational',updated_at:new Date().toISOString()};try{if(emEqEditId){await api('/emergency_equipment?id=eq.'+emEqEditId,{m:'PATCH',p:'return=minimal',b:body});toast('Updated!');}else{body.created_by=prof?.id;await api('/emergency_equipment',{m:'POST',p:'return=minimal',b:body});toast('Equipment added!');}emEqBack();}catch(e){toast(e.message,false);}
+async function emEqSave(){var loc=document.getElementById('eqf-location')?.value?.trim();if(!loc){toast('Please enter location',false);return;}var g=function(id){var el=document.getElementById(id);return el?el.value||null:null;};var body={company_id:ccid(),equipment_type:g('eqf-type')||'other',identifier:g('eqf-id'),location:loc,building:g('eqf-building'),floor:g('eqf-floor'),last_inspection:g('eqf-last-insp'),next_inspection:g('eqf-next-insp'),last_service:g('eqf-last-svc'),next_service:g('eqf-next-svc'),condition:g('eqf-condition')||'good',serviced_by:g('eqf-serviced-by'),notes:g('eqf-notes'),status:g('eqf-status')||'operational',updated_at:new Date().toISOString()};try{if(emEqEditId){await api('/emergency_equipment?id=eq.'+emEqEditId,{m:'PATCH',p:'return=minimal',b:body});toast('Updated!');}else{body.created_by=prof?.id;await api('/emergency_equipment',{m:'POST',p:'return=minimal',b:body});toast('Equipment added!');}emEqBack();}catch(e){toast(e.message,false);}
 }
 async function emEqDelete(){if(!emEqEditId||!confirm('Delete?'))return;try{await api('/emergency_equipment?id=eq.'+emEqEditId,{m:'DELETE'});toast('Deleted!');emEqBack();}catch(e){toast(e.message,false);}}
 async function emEqDeleteRow(id){if(!confirm('Delete?'))return;try{await api('/emergency_equipment?id=eq.'+id,{m:'DELETE'});emEqData=emEqData.filter(x=>x.id!==id);toast('Deleted!');emEqLoad();}catch(e){toast(e.message,false);}}
@@ -14507,7 +14513,7 @@ async function msSave(){
   var g=function(id){var el=document.getElementById(id);return el?el.value||null:null;};
   var h=parseFloat(g('msf-height'))||null;var w=parseFloat(g('msf-weight'))||null;
   var bmi=h&&w?parseFloat((w/((h/100)*(h/100))).toFixed(2)):null;
-  var body={company_id:prof?.company_id,employee_name:name,employee_id:g('msf-eid'),
+  var body={company_id:ccid(),employee_name:name,employee_id:g('msf-eid'),
     department:g('msf-dept'),job_title:g('msf-title'),date_of_birth:g('msf-dob')||null,
     gender:g('msf-gender')||'male',exam_type:g('msf-type')||'periodic',
     exam_date:g('msf-date'),next_exam_date:g('msf-next-date')||null,
@@ -14644,7 +14650,7 @@ async function audSave(){
   var name=document.getElementById('audf-name')?.value?.trim();if(!name){toast('Please enter employee name',false);return;}
   var g=function(id){var el=document.getElementById(id);return el?el.value||null:null;};
   var gn=function(id){var v=parseFloat(g(id));return isNaN(v)?null:v;};
-  var body={company_id:prof?.company_id,employee_name:name,department:g('audf-dept'),job_title:g('audf-title'),test_date:g('audf-date'),next_test_date:g('audf-next-date')||null,examiner:g('audf-examiner'),audiometer_calibration_date:g('audf-cal-date')||null,
+  var body={company_id:ccid(),employee_name:name,department:g('audf-dept'),job_title:g('audf-title'),test_date:g('audf-date'),next_test_date:g('audf-next-date')||null,examiner:g('audf-examiner'),audiometer_calibration_date:g('audf-cal-date')||null,
     noise_exposure_level_dba:gn('audf-noise-level'),years_noise_exposure:gn('audf-noise-years'),
     is_baseline:document.getElementById('audf-baseline')?.checked||false,
     r_500hz:gn('aud-r-500'),r_1000hz:gn('aud-r-1000'),r_2000hz:gn('aud-r-2000'),r_3000hz:gn('aud-r-3000'),r_4000hz:gn('aud-r-4000'),r_6000hz:gn('aud-r-6000'),r_8000hz:gn('aud-r-8000'),
@@ -14776,7 +14782,7 @@ async function spiSave(){
   var fev1P=gn('spi-fev1-pred');var fev1M=gn('spi-fev1-meas');
   var ratioM=gn('spi-ratio-meas');
   var pattern=document.getElementById('spi-interpretation')?.querySelector('div:nth-child(2)')?.textContent?.trim().split(' ')[0]?.toLowerCase()||'normal';
-  var body={company_id:prof?.company_id,employee_name:name,department:g('spif-dept'),examiner:g('spif-examiner'),test_date:g('spif-date'),next_test_date:g('spif-next-date')||null,fvc_predicted:fvcP,fvc_measured:fvcM,fvc_pct_predicted:fvcP&&fvcM?parseFloat((fvcM/fvcP*100).toFixed(1)):null,fev1_predicted:fev1P,fev1_measured:fev1M,fev1_pct_predicted:fev1P&&fev1M?parseFloat((fev1M/fev1P*100).toFixed(1)):null,fev1_fvc_measured:ratioM,pef_measured:gn('spif-pef'),post_bd_test_done:document.getElementById('spif-bd')?.checked||false,post_bd_fev1:gn('spif-bd-fev1'),post_bd_fvc:gn('spif-bd-fvc'),reversibility_pct:gn('spif-rev-pct'),significant_reversibility:document.getElementById('spif-sig-rev')?.checked||false,dust_exposed:document.getElementById('spif-dust')?.checked||false,silica_exposed:document.getElementById('spif-silica')?.checked||false,asbestos_exposed:document.getElementById('spif-asbestos')?.checked||false,chemical_fumes_exposed:document.getElementById('spif-chem-fumes')?.checked||false,referral_required:document.getElementById('spif-referral')?.checked||false,notes:g('spif-notes'),pattern:['normal','obstructive','restrictive','mixed','borderline'].includes(pattern)?pattern:'normal'};
+  var body={company_id:ccid(),employee_name:name,department:g('spif-dept'),examiner:g('spif-examiner'),test_date:g('spif-date'),next_test_date:g('spif-next-date')||null,fvc_predicted:fvcP,fvc_measured:fvcM,fvc_pct_predicted:fvcP&&fvcM?parseFloat((fvcM/fvcP*100).toFixed(1)):null,fev1_predicted:fev1P,fev1_measured:fev1M,fev1_pct_predicted:fev1P&&fev1M?parseFloat((fev1M/fev1P*100).toFixed(1)):null,fev1_fvc_measured:ratioM,pef_measured:gn('spif-pef'),post_bd_test_done:document.getElementById('spif-bd')?.checked||false,post_bd_fev1:gn('spif-bd-fev1'),post_bd_fvc:gn('spif-bd-fvc'),reversibility_pct:gn('spif-rev-pct'),significant_reversibility:document.getElementById('spif-sig-rev')?.checked||false,dust_exposed:document.getElementById('spif-dust')?.checked||false,silica_exposed:document.getElementById('spif-silica')?.checked||false,asbestos_exposed:document.getElementById('spif-asbestos')?.checked||false,chemical_fumes_exposed:document.getElementById('spif-chem-fumes')?.checked||false,referral_required:document.getElementById('spif-referral')?.checked||false,notes:g('spif-notes'),pattern:['normal','obstructive','restrictive','mixed','borderline'].includes(pattern)?pattern:'normal'};
   try{
     if(ohSpiEditId){await api('/spirometry_records?id=eq.'+ohSpiEditId,{m:'PATCH',p:'return=minimal',b:body});toast('Updated!');}
     else{body.created_by=prof?.id;await api('/spirometry_records',{m:'POST',p:'return=minimal',b:body});toast('Spirometry saved!');}
@@ -14825,7 +14831,7 @@ function vaxShowForm(){document.getElementById('oh-view-vaccination').style.disp
 function vaxBack(){document.getElementById('oh-vax-form').style.display='none';document.getElementById('oh-view-vaccination').style.display='block';document.querySelectorAll('[id^="oh-tab-"]').forEach(t=>t.classList.remove('active'));document.getElementById('oh-tab-vaccination')?.classList.add('active');vaxLoad();}
 function vaxNew(){ohVaxEditId=null;document.getElementById('oh-vax-form-title').textContent='New Vaccination Record';document.getElementById('oh-vax-del-btn').style.display='none';['vaxf-name','vaxf-dept','vaxf-vaccine','vaxf-admin-by','vaxf-clinic','vaxf-batch','vaxf-notes','vaxf-reaction-details'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});['vaxf-date','vaxf-next-date','vaxf-expiry'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});document.getElementById('vaxf-date').value=new Date().toISOString().slice(0,10);document.getElementById('vaxf-dose').value='1';document.getElementById('vaxf-total-doses').value='1';document.getElementById('vaxf-type').value='occupational';document.getElementById('vaxf-status').value='completed';document.getElementById('vaxf-reaction').checked=false;vaxShowForm();}
 function vaxEdit(id){var x=ohVaxData.find(r=>r.id===id);if(!x)return;ohVaxEditId=id;document.getElementById('oh-vax-form-title').textContent='Edit Vaccination';document.getElementById('oh-vax-del-btn').style.display=isMgr()?'inline-flex':'none';var gf=function(fid,val){var el=document.getElementById(fid);if(el)el.value=val||'';};gf('vaxf-name',x.employee_name);gf('vaxf-dept',x.department);gf('vaxf-vaccine',x.vaccine_name);gf('vaxf-admin-by',x.administered_by);gf('vaxf-clinic',x.clinic);gf('vaxf-batch',x.batch_number);gf('vaxf-notes',x.notes);gf('vaxf-reaction-details',x.reaction_details);gf('vaxf-date',x.vaccination_date);gf('vaxf-next-date',x.next_dose_date);gf('vaxf-expiry',x.expiry_date);document.getElementById('vaxf-dose').value=x.dose_number||1;document.getElementById('vaxf-total-doses').value=x.total_doses_required||1;document.getElementById('vaxf-type').value=x.vaccine_type||'occupational';document.getElementById('vaxf-status').value=x.status||'completed';document.getElementById('vaxf-reaction').checked=!!x.reaction_noted;vaxShowForm();}
-async function vaxSave(){var name=document.getElementById('vaxf-name')?.value?.trim();var vaccine=document.getElementById('vaxf-vaccine')?.value?.trim();if(!name||!vaccine){toast('Please enter employee name and vaccine',false);return;}var g=function(id){var el=document.getElementById(id);return el?el.value||null:null;};var body={company_id:prof?.company_id,employee_name:name,department:g('vaxf-dept'),vaccine_name:vaccine,vaccine_type:g('vaxf-type')||'occupational',dose_number:parseInt(g('vaxf-dose'))||1,total_doses_required:parseInt(g('vaxf-total-doses'))||1,vaccination_date:g('vaxf-date'),next_dose_date:g('vaxf-next-date')||null,expiry_date:g('vaxf-expiry')||null,administered_by:g('vaxf-admin-by'),clinic:g('vaxf-clinic'),batch_number:g('vaxf-batch'),status:g('vaxf-status')||'completed',reaction_noted:document.getElementById('vaxf-reaction')?.checked||false,reaction_details:g('vaxf-reaction-details'),notes:g('vaxf-notes')};
+async function vaxSave(){var name=document.getElementById('vaxf-name')?.value?.trim();var vaccine=document.getElementById('vaxf-vaccine')?.value?.trim();if(!name||!vaccine){toast('Please enter employee name and vaccine',false);return;}var g=function(id){var el=document.getElementById(id);return el?el.value||null:null;};var body={company_id:ccid(),employee_name:name,department:g('vaxf-dept'),vaccine_name:vaccine,vaccine_type:g('vaxf-type')||'occupational',dose_number:parseInt(g('vaxf-dose'))||1,total_doses_required:parseInt(g('vaxf-total-doses'))||1,vaccination_date:g('vaxf-date'),next_dose_date:g('vaxf-next-date')||null,expiry_date:g('vaxf-expiry')||null,administered_by:g('vaxf-admin-by'),clinic:g('vaxf-clinic'),batch_number:g('vaxf-batch'),status:g('vaxf-status')||'completed',reaction_noted:document.getElementById('vaxf-reaction')?.checked||false,reaction_details:g('vaxf-reaction-details'),notes:g('vaxf-notes')};
   try{if(ohVaxEditId){await api('/vaccination_records?id=eq.'+ohVaxEditId,{m:'PATCH',p:'return=minimal',b:body});toast('Updated!');}else{body.created_by=prof?.id;await api('/vaccination_records',{m:'POST',p:'return=minimal',b:body});toast('Vaccination saved!');}vaxBack();}catch(e){toast(e.message,false);}
 }
 async function vaxDelete(){if(!ohVaxEditId||!confirm('Delete?'))return;try{await api('/vaccination_records?id=eq.'+ohVaxEditId,{m:'DELETE'});toast('Deleted!');vaxBack();}catch(e){toast(e.message,false);}}
@@ -14952,7 +14958,7 @@ async function expSave(){
   var pctOel=twa&&oel?parseFloat((twa/oel*100).toFixed(1)):null;
   var exceeded=pctOel?pctOel>=100:false;
   var risk=pctOel?pctOel>=100?'critical':pctOel>=75?'high':pctOel>=50?'medium':pctOel>=25?'low':'negligible':'low';
-  var body={company_id:prof?.company_id,monitoring_type:g('expf-type')||'noise',monitoring_date:g('expf-date'),location:loc,department:g('expf-dept'),job_role:g('expf-role'),agent:g('expf-agent'),measurement_value:gn('expf-value'),measurement_unit:g('expf-unit'),exposure_duration_hrs:gn('expf-duration'),twa_8hr:twa,stel:gn('expf-stel'),oel_twa:oel,oel_stel:gn('expf-oel-stel'),oel_source:g('expf-oel-source'),exceedance_pct:pctOel,risk_level:risk,exceeded_oel:exceeded,monitoring_method:g('expf-method'),instrument_used:g('expf-instrument'),calibration_ref:g('expf-cal-ref'),sampler_name:g('expf-sampler'),existing_controls:g('expf-controls'),controls_adequate:document.getElementById('expf-controls-ok')?.checked||false,additional_controls_required:g('expf-add-controls'),recommended_actions:g('expf-actions'),reassessment_date:g('expf-reassess')||null,status:g('expf-status')||'open',updated_at:new Date().toISOString()};
+  var body={company_id:ccid(),monitoring_type:g('expf-type')||'noise',monitoring_date:g('expf-date'),location:loc,department:g('expf-dept'),job_role:g('expf-role'),agent:g('expf-agent'),measurement_value:gn('expf-value'),measurement_unit:g('expf-unit'),exposure_duration_hrs:gn('expf-duration'),twa_8hr:twa,stel:gn('expf-stel'),oel_twa:oel,oel_stel:gn('expf-oel-stel'),oel_source:g('expf-oel-source'),exceedance_pct:pctOel,risk_level:risk,exceeded_oel:exceeded,monitoring_method:g('expf-method'),instrument_used:g('expf-instrument'),calibration_ref:g('expf-cal-ref'),sampler_name:g('expf-sampler'),existing_controls:g('expf-controls'),controls_adequate:document.getElementById('expf-controls-ok')?.checked||false,additional_controls_required:g('expf-add-controls'),recommended_actions:g('expf-actions'),reassessment_date:g('expf-reassess')||null,status:g('expf-status')||'open',updated_at:new Date().toISOString()};
   // type-specific
   if(g('expf-type')==='noise'){body.noise_lex8h=gn('expf-lex8h');body.noise_peak_dbc=gn('expf-peak-dbc');}
   if(g('expf-type')==='heat_stress'){body.wbgt_value=gn('expf-wbgt');}
@@ -14966,7 +14972,7 @@ async function expSave(){
         await api('/exposure_monitoring?id=eq.'+res[0].id,{m:'PATCH',p:'return=minimal',b:{monitoring_ref:ref}});
         toast('Saved! Ref: '+ref);
         // Auto MAP if exceeded
-        if(exceeded){try{await api('/action_tracker',{m:'POST',p:'return=minimal',b:{company_id:prof?.company_id,source_module:'ohealth',description:'OEL exceeded: '+(g('expf-agent')||g('expf-type'))+' at '+loc+' ('+pctOel+'% of OEL)',priority:risk==='critical'?'critical':'high',status:'open',created_by:prof?.id}});}catch(ex){}}
+        if(exceeded){try{await api('/action_tracker',{m:'POST',p:'return=minimal',b:{company_id:ccid(),source_module:'ohealth',description:'OEL exceeded: '+(g('expf-agent')||g('expf-type'))+' at '+loc+' ('+pctOel+'% of OEL)',priority:risk==='critical'?'critical':'high',status:'open',created_by:prof?.id}});}catch(ex){}}
       }
     }
     expBack();
@@ -15005,10 +15011,10 @@ function odShowForm(){document.getElementById('oh-view-disease').style.display='
 function odBack(){document.getElementById('oh-od-form').style.display='none';document.getElementById('oh-view-disease').style.display='block';document.querySelectorAll('[id^="oh-tab-"]').forEach(t=>t.classList.remove('active'));document.getElementById('oh-tab-disease')?.classList.add('active');ohOdLoad();}
 function odNew(){ohOdEditId=null;document.getElementById('oh-od-form-title').textContent='New Disease Record';document.getElementById('oh-od-form-ref').textContent='OD-AUTO';document.getElementById('oh-od-del-btn').style.display='none';['odf-name','odf-eid','odf-dept','odf-title','odf-disease','odf-icd','odf-agent','odf-exp-years','odf-work-assess','odf-doctor','odf-clinic','odf-days-lost','odf-treatment','odf-preventive','odf-disability','odf-notif-ref','odf-comp-ref','odf-notes'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});['odf-diag-date','odf-onset-date','odf-rtw-date'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});document.getElementById('odf-days-lost').value='0';document.getElementById('odf-exp-type').value='noise';document.getElementById('odf-outcome').value='ongoing';document.getElementById('odf-status').value='active';['odf-work-related','odf-similar-risk','odf-group-monitor'].forEach(function(id){var el=document.getElementById(id);if(el)el.checked=id==='odf-work-related';});['odf-notified','odf-comp','odf-restricted'].forEach(function(id){var el=document.getElementById(id);if(el)el.checked=false;});odShowForm();}
 function odEdit(id){var x=ohOdData.find(r=>r.id===id);if(!x)return;ohOdEditId=id;document.getElementById('oh-od-form-title').textContent='Edit Disease Record';document.getElementById('oh-od-form-ref').textContent=x.disease_ref||'—';document.getElementById('oh-od-del-btn').style.display=isMgr()?'inline-flex':'none';var gf=function(fid,val){var el=document.getElementById(fid);if(el)el.value=val||'';};gf('odf-name',x.employee_name);gf('odf-eid',x.employee_id);gf('odf-dept',x.department);gf('odf-title',x.job_title);gf('odf-disease',x.disease_type);gf('odf-icd',x.icd_code);gf('odf-diag-date',x.diagnosis_date);gf('odf-onset-date',x.onset_date);gf('odf-agent',x.causative_agent);gf('odf-exp-years',x.exposure_duration_years||'');gf('odf-work-assess',x.work_relatedness_assessment);gf('odf-doctor',x.treating_doctor);gf('odf-clinic',x.hospital_clinic);gf('odf-days-lost',x.days_lost||0);gf('odf-treatment',x.treatment_description);gf('odf-preventive',x.preventive_actions);gf('odf-disability',x.disability_percentage||'');gf('odf-rtw-date',x.return_to_work_date);gf('odf-notif-ref',x.notification_ref);gf('odf-comp-ref',x.compensation_ref);gf('odf-notes',x.notes);document.getElementById('odf-exp-type').value=x.exposure_type||'noise';document.getElementById('odf-outcome').value=x.outcome||'ongoing';document.getElementById('odf-status').value=x.status||'active';var cb=function(id2,val){var el=document.getElementById(id2);if(el)el.checked=!!val;};cb('odf-work-related',x.work_related);cb('odf-similar-risk',x.similar_workers_at_risk);cb('odf-group-monitor',x.group_monitoring_recommended);cb('odf-notified',x.notified_to_authority);cb('odf-comp',x.compensation_claimed);cb('odf-restricted',x.restricted_duties);odShowForm();}
-async function odSave(){var name=document.getElementById('odf-name')?.value?.trim();var disease=document.getElementById('odf-disease')?.value?.trim();if(!name||!disease){toast('Please enter employee name and disease/condition',false);return;}var g=function(id){var el=document.getElementById(id);return el?el.value||null:null;};var body={company_id:prof?.company_id,employee_name:name,employee_id:g('odf-eid'),department:g('odf-dept'),job_title:g('odf-title'),disease_type:disease,icd_code:g('odf-icd'),diagnosis_date:g('odf-diag-date')||null,onset_date:g('odf-onset-date')||null,causative_agent:g('odf-agent'),exposure_type:g('odf-exp-type')||'other',exposure_duration_years:parseFloat(g('odf-exp-years'))||null,work_related:document.getElementById('odf-work-related')?.checked||false,work_relatedness_assessment:g('odf-work-assess'),treating_doctor:g('odf-doctor'),hospital_clinic:g('odf-clinic'),treatment_description:g('odf-treatment'),days_lost:parseInt(g('odf-days-lost'))||0,outcome:g('odf-outcome')||'ongoing',disability_percentage:parseFloat(g('odf-disability'))||null,return_to_work_date:g('odf-rtw-date')||null,restricted_duties:document.getElementById('odf-restricted')?.checked||false,preventive_actions:g('odf-preventive'),similar_workers_at_risk:document.getElementById('odf-similar-risk')?.checked||false,group_monitoring_recommended:document.getElementById('odf-group-monitor')?.checked||false,notified_to_authority:document.getElementById('odf-notified')?.checked||false,notification_ref:g('odf-notif-ref'),compensation_claimed:document.getElementById('odf-comp')?.checked||false,compensation_ref:g('odf-comp-ref'),notes:g('odf-notes'),status:g('odf-status')||'active',updated_at:new Date().toISOString()};
+async function odSave(){var name=document.getElementById('odf-name')?.value?.trim();var disease=document.getElementById('odf-disease')?.value?.trim();if(!name||!disease){toast('Please enter employee name and disease/condition',false);return;}var g=function(id){var el=document.getElementById(id);return el?el.value||null:null;};var body={company_id:ccid(),employee_name:name,employee_id:g('odf-eid'),department:g('odf-dept'),job_title:g('odf-title'),disease_type:disease,icd_code:g('odf-icd'),diagnosis_date:g('odf-diag-date')||null,onset_date:g('odf-onset-date')||null,causative_agent:g('odf-agent'),exposure_type:g('odf-exp-type')||'other',exposure_duration_years:parseFloat(g('odf-exp-years'))||null,work_related:document.getElementById('odf-work-related')?.checked||false,work_relatedness_assessment:g('odf-work-assess'),treating_doctor:g('odf-doctor'),hospital_clinic:g('odf-clinic'),treatment_description:g('odf-treatment'),days_lost:parseInt(g('odf-days-lost'))||0,outcome:g('odf-outcome')||'ongoing',disability_percentage:parseFloat(g('odf-disability'))||null,return_to_work_date:g('odf-rtw-date')||null,restricted_duties:document.getElementById('odf-restricted')?.checked||false,preventive_actions:g('odf-preventive'),similar_workers_at_risk:document.getElementById('odf-similar-risk')?.checked||false,group_monitoring_recommended:document.getElementById('odf-group-monitor')?.checked||false,notified_to_authority:document.getElementById('odf-notified')?.checked||false,notification_ref:g('odf-notif-ref'),compensation_claimed:document.getElementById('odf-comp')?.checked||false,compensation_ref:g('odf-comp-ref'),notes:g('odf-notes'),status:g('odf-status')||'active',updated_at:new Date().toISOString()};
   try{
     if(ohOdEditId){await api('/occupational_diseases?id=eq.'+ohOdEditId,{m:'PATCH',p:'return=minimal',b:body});toast('Updated!');}
-    else{body.created_by=prof?.id;var res=await api('/occupational_diseases',{m:'POST',p:'return=representation',b:body});if(res?.[0]?.id){var yr=new Date().getFullYear();var ref='OD-'+yr+'-'+String(ohOdData.length+1).padStart(3,'0');await api('/occupational_diseases?id=eq.'+res[0].id,{m:'PATCH',p:'return=minimal',b:{disease_ref:ref}});toast('Disease record saved! Ref: '+ref);try{await api('/action_tracker',{m:'POST',p:'return=minimal',b:{company_id:prof?.company_id,source_module:'ohealth',description:'Occupational disease recorded: '+disease+' — '+name,priority:'high',status:'open',created_by:prof?.id}});}catch(ex){}}}
+    else{body.created_by=prof?.id;var res=await api('/occupational_diseases',{m:'POST',p:'return=representation',b:body});if(res?.[0]?.id){var yr=new Date().getFullYear();var ref='OD-'+yr+'-'+String(ohOdData.length+1).padStart(3,'0');await api('/occupational_diseases?id=eq.'+res[0].id,{m:'PATCH',p:'return=minimal',b:{disease_ref:ref}});toast('Disease record saved! Ref: '+ref);try{await api('/action_tracker',{m:'POST',p:'return=minimal',b:{company_id:ccid(),source_module:'ohealth',description:'Occupational disease recorded: '+disease+' — '+name,priority:'high',status:'open',created_by:prof?.id}});}catch(ex){}}}
     odBack();
   }catch(e){toast(e.message,false);}
 }
@@ -15239,7 +15245,7 @@ function ppeCatEdit(id){
 async function ppeCatSave(){
   var name=document.getElementById('pcf-name')?.value?.trim();if(!name){toast('Please enter PPE name',false);return;}
   var g=function(id){var el=document.getElementById(id);return el?el.value||null:null;};
-  var body={company_id:prof?.company_id,name:name,category:g('pcf-category')||'head',sub_category:g('pcf-subcat'),brand:g('pcf-brand'),model:g('pcf-model'),standard:g('pcf-standard'),protection_level:g('pcf-protection'),hazard_types:g('pcf-hazards')?g('pcf-hazards').split(',').map(x=>x.trim()).filter(Boolean):[],notes:g('pcf-notes'),location:g('pcf-location'),supplier:g('pcf-supplier'),has_expiry:document.getElementById('pcf-has-expiry')?.checked||false,service_life_months:parseInt(g('pcf-service-life'))||null,inspection_interval_days:parseInt(g('pcf-insp-interval'))||90,quantity_total:parseInt(g('pcf-qty-total'))||0,quantity_available:parseInt(g('pcf-qty-avail'))||0,reorder_level:parseInt(g('pcf-reorder'))||5,unit_cost:parseFloat(g('pcf-cost'))||null,status:g('pcf-status')||'active',updated_at:new Date().toISOString()};
+  var body={company_id:ccid(),name:name,category:g('pcf-category')||'head',sub_category:g('pcf-subcat'),brand:g('pcf-brand'),model:g('pcf-model'),standard:g('pcf-standard'),protection_level:g('pcf-protection'),hazard_types:g('pcf-hazards')?g('pcf-hazards').split(',').map(x=>x.trim()).filter(Boolean):[],notes:g('pcf-notes'),location:g('pcf-location'),supplier:g('pcf-supplier'),has_expiry:document.getElementById('pcf-has-expiry')?.checked||false,service_life_months:parseInt(g('pcf-service-life'))||null,inspection_interval_days:parseInt(g('pcf-insp-interval'))||90,quantity_total:parseInt(g('pcf-qty-total'))||0,quantity_available:parseInt(g('pcf-qty-avail'))||0,reorder_level:parseInt(g('pcf-reorder'))||5,unit_cost:parseFloat(g('pcf-cost'))||null,status:g('pcf-status')||'active',updated_at:new Date().toISOString()};
   try{
     if(ppeCatEditId){await api('/ppe_catalogue?id=eq.'+ppeCatEditId,{m:'PATCH',p:'return=minimal',b:body});toast('Updated!');}
     else{
@@ -15347,7 +15353,7 @@ async function ppeIssSave(){
   if(ppeId&&ppeSel?.selectedOptions[0]?.text?.includes('Select'))ppeName='PPE';
   var g=function(id){var el=document.getElementById(id);return el?el.value||null:null;};
   var ppe=ppeCatData.find(x=>x.id===ppeId);
-  var body={company_id:prof?.company_id,ppe_id:ppeId||null,ppe_name:ppe?.name||ppeName,ppe_category:ppe?.category||null,employee_name:emp,employee_id:g('pif-emp-id'),department:g('pif-dept'),job_title:g('pif-title'),issued_date:g('pif-issued-date'),issued_by:g('pif-issued-by'),quantity:parseInt(g('pif-qty'))||1,size:g('pif-size'),serial_number:g('pif-serial'),batch_number:g('pif-batch'),condition_on_issue:g('pif-condition')||'new',manufacture_date:g('pif-mfg-date')||null,expiry_date:g('pif-expiry-date')||null,expected_replacement_date:g('pif-replace-date')||null,work_order_ref:g('pif-wo-ref'),ra_ref:g('pif-ra-ref'),hazard_ref:g('pif-hazard'),employee_signature:document.getElementById('pif-ack')?.checked||false,acknowledgement_date:g('pif-ack-date')||null,returned:document.getElementById('pif-returned')?.checked||false,return_date:g('pif-return-date')||null,return_condition:g('pif-return-condition')||null,return_reason:g('pif-return-reason'),notes:g('pif-notes'),status:g('pif-status')||'active',updated_at:new Date().toISOString()};
+  var body={company_id:ccid(),ppe_id:ppeId||null,ppe_name:ppe?.name||ppeName,ppe_category:ppe?.category||null,employee_name:emp,employee_id:g('pif-emp-id'),department:g('pif-dept'),job_title:g('pif-title'),issued_date:g('pif-issued-date'),issued_by:g('pif-issued-by'),quantity:parseInt(g('pif-qty'))||1,size:g('pif-size'),serial_number:g('pif-serial'),batch_number:g('pif-batch'),condition_on_issue:g('pif-condition')||'new',manufacture_date:g('pif-mfg-date')||null,expiry_date:g('pif-expiry-date')||null,expected_replacement_date:g('pif-replace-date')||null,work_order_ref:g('pif-wo-ref'),ra_ref:g('pif-ra-ref'),hazard_ref:g('pif-hazard'),employee_signature:document.getElementById('pif-ack')?.checked||false,acknowledgement_date:g('pif-ack-date')||null,returned:document.getElementById('pif-returned')?.checked||false,return_date:g('pif-return-date')||null,return_condition:g('pif-return-condition')||null,return_reason:g('pif-return-reason'),notes:g('pif-notes'),status:g('pif-status')||'active',updated_at:new Date().toISOString()};
   try{
     if(ppeIssEditId){await api('/ppe_issuance?id=eq.'+ppeIssEditId,{m:'PATCH',p:'return=minimal',b:body});toast('Updated!');}
     else{
@@ -15461,12 +15467,12 @@ async function ppeInspSave(){
   var ppe=ppeCatData.find(x=>x.id===ppeId);
   var chkItems=PPE_INSP_CHECKLISTS[ppe?.category||'other']||[];
   var checklist=chkItems.map(function(item,i){return {item:item,result:checklistMap['chk-'+i]||'pass'};});
-  var body={company_id:prof?.company_id,ppe_id:ppeId||null,ppe_name:ppe?.name||ppeName,employee_name:g('piif-emp-name'),department:g('piif-dept'),inspector:inspector,inspection_date:g('piif-date'),next_inspection_date:g('piif-next-date')||null,checklist:checklist,overall_result:g('piif-result')||'pass',defects_found:g('piif-defects'),action_taken:g('piif-action')||'none',replacement_issued:document.getElementById('piif-repl-issued')?.checked||false,replacement_issuance_ref:g('piif-repl-ref'),notes:g('piif-notes')};
+  var body={company_id:ccid(),ppe_id:ppeId||null,ppe_name:ppe?.name||ppeName,employee_name:g('piif-emp-name'),department:g('piif-dept'),inspector:inspector,inspection_date:g('piif-date'),next_inspection_date:g('piif-next-date')||null,checklist:checklist,overall_result:g('piif-result')||'pass',defects_found:g('piif-defects'),action_taken:g('piif-action')||'none',replacement_issued:document.getElementById('piif-repl-issued')?.checked||false,replacement_issuance_ref:g('piif-repl-ref'),notes:g('piif-notes')};
   try{
     if(ppeInspEditId){await api('/ppe_inspections?id=eq.'+ppeInspEditId,{m:'PATCH',p:'return=minimal',b:body});toast('Updated!');}
     else{body.created_by=prof?.id;var res=await api('/ppe_inspections',{m:'POST',p:'return=representation',b:body});if(res?.[0]?.id){var yr=new Date().getFullYear();var ref='PPEINSP-'+yr+'-'+String(ppeInspData.length+1).padStart(3,'0');await api('/ppe_inspections?id=eq.'+res[0].id,{m:'PATCH',p:'return=minimal',b:{inspection_ref:ref}});toast('Inspection saved! Ref: '+ref);
       // If condemned, trigger replacement request
-      if(body.overall_result==='condemn'&&body.employee_name){try{await api('/ppe_replacements',{m:'POST',p:'return=minimal',b:{company_id:prof?.company_id,ppe_id:ppeId,ppe_name:body.ppe_name,employee_name:body.employee_name,reason:'inspection_fail',reason_notes:'PPE condemned on inspection '+ref,requested_date:g('piif-date'),urgency:'urgent',status:'pending',created_by:prof?.id}});}catch(ex){}}
+      if(body.overall_result==='condemn'&&body.employee_name){try{await api('/ppe_replacements',{m:'POST',p:'return=minimal',b:{company_id:ccid(),ppe_id:ppeId,ppe_name:body.ppe_name,employee_name:body.employee_name,reason:'inspection_fail',reason_notes:'PPE condemned on inspection '+ref,requested_date:g('piif-date'),urgency:'urgent',status:'pending',created_by:prof?.id}});}catch(ex){}}
     }}
     ppeInspBack();
   }catch(e){toast(e.message,false);}
@@ -15504,7 +15510,7 @@ function ppeRepBack(){document.getElementById('ppe-rep-form').style.display='non
 
 async function ppeRepNew(){ppeRepEditId=null;document.getElementById('ppe-rep-form-title').textContent='New Replacement Request';document.getElementById('ppe-rep-form-ref').textContent='REP-AUTO';document.getElementById('ppe-rep-del-btn').style.display='none';['prf-emp-name','prf-dept','prf-old-condition','prf-notes','prf-approved-by','prf-new-iss-ref','prf-requested-by'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});['prf-date','prf-approved-date','prf-fulfilled-date'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});document.getElementById('prf-date').value=new Date().toISOString().slice(0,10);document.getElementById('prf-reason').value='expiry';document.getElementById('prf-urgency').value='normal';document.getElementById('prf-status').value='pending';document.querySelectorAll('[name="prf-status-radio"]').forEach(r=>{r.checked=r.value==='pending';});await ppePopulatePPESelects();document.getElementById('prf-ppe-id').value='';ppeRepShowForm();}
 function ppeRepEdit(id){var x=ppeRepData.find(r=>r.id===id);if(!x)return;ppeRepEditId=id;document.getElementById('ppe-rep-form-title').textContent='Edit Request';document.getElementById('ppe-rep-form-ref').textContent=x.replacement_ref||'—';document.getElementById('ppe-rep-del-btn').style.display=isMgr()?'inline-flex':'none';var gf=function(fid,val){var el=document.getElementById(fid);if(el)el.value=val||'';};gf('prf-emp-name',x.employee_name);gf('prf-dept',x.department);gf('prf-old-condition',x.old_item_condition);gf('prf-notes',x.reason_notes);gf('prf-approved-by',x.approved_by);gf('prf-new-iss-ref',x.new_issuance_ref);gf('prf-requested-by',x.requested_by);gf('prf-date',x.requested_date);gf('prf-approved-date',x.approved_date);gf('prf-fulfilled-date',x.fulfilled_date);document.getElementById('prf-reason').value=x.reason||'expiry';document.getElementById('prf-urgency').value=x.urgency||'normal';document.getElementById('prf-status').value=x.status||'pending';document.querySelectorAll('[name="prf-status-radio"]').forEach(r=>{r.checked=r.value===(x.status||'pending');});ppePopulatePPESelects().then(function(){if(x.ppe_id)document.getElementById('prf-ppe-id').value=x.ppe_id;});ppeRepShowForm();}
-async function ppeRepSave(){var emp=document.getElementById('prf-emp-name')?.value?.trim();if(!emp){toast('Please enter employee name',false);return;}var ppeSel=document.getElementById('prf-ppe-id');var ppeId=ppeSel?.value||null;var ppe=ppeCatData.find(x=>x.id===ppeId);var ppeName=ppe?.name||(ppeSel?.selectedOptions[0]?.text?.replace(/^[^ ]+ /,'')||'PPE');var g=function(id){var el=document.getElementById(id);return el?el.value||null:null;};var body={company_id:prof?.company_id,ppe_id:ppeId||null,ppe_name:ppeName,employee_name:emp,department:g('prf-dept'),reason:g('prf-reason')||'expiry',reason_notes:g('prf-notes'),old_item_condition:g('prf-old-condition'),requested_date:g('prf-date'),requested_by:g('prf-requested-by'),urgency:g('prf-urgency')||'normal',approved_by:g('prf-approved-by'),approved_date:g('prf-approved-date')||null,fulfilled_date:g('prf-fulfilled-date')||null,new_issuance_ref:g('prf-new-iss-ref'),status:g('prf-status')||'pending',updated_at:new Date().toISOString()};
+async function ppeRepSave(){var emp=document.getElementById('prf-emp-name')?.value?.trim();if(!emp){toast('Please enter employee name',false);return;}var ppeSel=document.getElementById('prf-ppe-id');var ppeId=ppeSel?.value||null;var ppe=ppeCatData.find(x=>x.id===ppeId);var ppeName=ppe?.name||(ppeSel?.selectedOptions[0]?.text?.replace(/^[^ ]+ /,'')||'PPE');var g=function(id){var el=document.getElementById(id);return el?el.value||null:null;};var body={company_id:ccid(),ppe_id:ppeId||null,ppe_name:ppeName,employee_name:emp,department:g('prf-dept'),reason:g('prf-reason')||'expiry',reason_notes:g('prf-notes'),old_item_condition:g('prf-old-condition'),requested_date:g('prf-date'),requested_by:g('prf-requested-by'),urgency:g('prf-urgency')||'normal',approved_by:g('prf-approved-by'),approved_date:g('prf-approved-date')||null,fulfilled_date:g('prf-fulfilled-date')||null,new_issuance_ref:g('prf-new-iss-ref'),status:g('prf-status')||'pending',updated_at:new Date().toISOString()};
   try{if(ppeRepEditId){await api('/ppe_replacements?id=eq.'+ppeRepEditId,{m:'PATCH',p:'return=minimal',b:body});toast('Updated!');}else{body.created_by=prof?.id;var res=await api('/ppe_replacements',{m:'POST',p:'return=representation',b:body});if(res?.[0]?.id){var yr=new Date().getFullYear();var ref='REP-'+yr+'-'+String(ppeRepData.length+1).padStart(3,'0');await api('/ppe_replacements?id=eq.'+res[0].id,{m:'PATCH',p:'return=minimal',b:{replacement_ref:ref}});toast('Replacement request created! Ref: '+ref);}}ppeRepBack();}catch(e){toast(e.message,false);}
 }
 async function ppeRepDelete(){if(!ppeRepEditId||!confirm('Delete?'))return;try{await api('/ppe_replacements?id=eq.'+ppeRepEditId,{m:'DELETE'});toast('Deleted!');ppeRepBack();}catch(e){toast(e.message,false);}}
@@ -15780,7 +15786,7 @@ async function toolsSaveEquipment(){
   var personName='';
   if(personId){var p=(people||[]).find(function(x){return x.id===personId;});personName=p?(p.last_name+', '+p.first_name):'';}
   var body={
-    company_id:prof?.company_id,category:cat,name:name,
+    company_id:ccid(),category:cat,name:name,
     brand:g('teq-brand'),model:g('teq-model'),serial_number:g('teq-serial'),
     location:g('teq-location'),assigned_to:personId||null,assigned_to_name:personName||null,
     status:g('teq-status')||'active',inspection_frequency:g('teq-freq')||'weekly',
@@ -16045,7 +16051,7 @@ async function toolsSaveInspection(){
     results.push({item:item,result:ok?'ok':fail?'fail':'na',note:note});
   });
   var body={
-    company_id:prof?.company_id,tool_id:toolsInspEquipId,
+    company_id:ccid(),tool_id:toolsInspEquipId,
     inspection_type:document.getElementById('insp-type')?.value||'periodic',
     inspection_date:date,inspected_by:inspId||null,inspected_by_name:inspName||null,
     overall_result:document.getElementById('insp-result')?.value||'pass',
@@ -16061,7 +16067,7 @@ async function toolsSaveInspection(){
     if(body.overall_result==='fail'&&body.defects_found){
       var tool=toolsAllData.find(x=>x.id===toolsInspEquipId);
       await api('/action_tracker',{m:'POST',p:'return=minimal',b:{
-        company_id:prof?.company_id,source_module:'tools',source_id:toolsInspEquipId,
+        company_id:ccid(),source_module:'tools',source_id:toolsInspEquipId,
         source_ref:(tool?.ref_number||'Equipment')+' — Failed inspection',
         description:'Equipment failed inspection: '+body.defects_found,
         responsible:inspName||null,priority:'high',status:'open',created_by:prof?.id
@@ -16593,7 +16599,7 @@ async function mapSave(draft){
   var verifSel=document.getElementById('mf-verified-by');var verifName='';
   if(verifSel?.value){var vp=(people||[]).find(x=>x.id===verifSel.value);verifName=vp?(vp.last_name+', '+vp.first_name):'';}
   var body={
-    company_id:prof?.company_id,
+    company_id:ccid(),
     title:g('mf-title'),description:g('mf-desc')||g('mf-title'),
     action_type:g('mf-type')||'corrective',priority:g('af-priority')||'medium',
     status:g('af-status')||'open',
@@ -16634,7 +16640,7 @@ async function mapSave(draft){
       var idx=mapAllData.findIndex(x=>x.id===mapEditingId);if(idx>=0)Object.assign(mapAllData[idx],body);
       // Log status change
       if(old.status!==body.status){
-        try{await api('/map_activity_log',{m:'POST',p:'return=minimal',b:{company_id:prof?.company_id,action_id:mapEditingId,activity_type:'Status changed',performed_by:prof?.full_name||'User',old_value:old.status,new_value:body.status}});}catch(ex){}
+        try{await api('/map_activity_log',{m:'POST',p:'return=minimal',b:{company_id:ccid(),action_id:mapEditingId,activity_type:'Status changed',performed_by:prof?.full_name||'User',old_value:old.status,new_value:body.status}});}catch(ex){}
       }
       toast('Action updated!');
     }else{
@@ -16646,7 +16652,7 @@ async function mapSave(draft){
         await api('/action_tracker?id=eq.'+res[0].id,{m:'PATCH',p:'return=minimal',b:{action_ref:ref}});
         res[0].action_ref=ref;mapAllData.unshift(res[0]);mapEditingId=res[0].id;
         document.getElementById('map-form-ref').textContent=ref;refStr=' Ref: '+ref;
-        try{await api('/map_activity_log',{m:'POST',p:'return=minimal',b:{company_id:prof?.company_id,action_id:res[0].id,activity_type:'Action created',performed_by:prof?.full_name||'User',new_value:body.status}});}catch(ex){}
+        try{await api('/map_activity_log',{m:'POST',p:'return=minimal',b:{company_id:ccid(),action_id:res[0].id,activity_type:'Action created',performed_by:prof?.full_name||'User',new_value:body.status}});}catch(ex){}
       }
       toast('Action saved!'+refStr);
       // Update header
@@ -16669,7 +16675,7 @@ async function mapChangeStatus(newStatus){
   try{
     await api('/action_tracker?id=eq.'+mapEditingId,{m:'PATCH',p:'return=minimal',b:extraBody});
     Object.assign(old,extraBody);var st=document.getElementById('af-status');if(st)st.value=newStatus;
-    try{await api('/map_activity_log',{m:'POST',p:'return=minimal',b:{company_id:prof?.company_id,action_id:mapEditingId,activity_type:'Status changed to '+newStatus.replace(/_/g,' '),performed_by:prof?.full_name||'User',old_value:old.status,new_value:newStatus}});}catch(ex){}
+    try{await api('/map_activity_log',{m:'POST',p:'return=minimal',b:{company_id:ccid(),action_id:mapEditingId,activity_type:'Status changed to '+newStatus.replace(/_/g,' '),performed_by:prof?.full_name||'User',old_value:old.status,new_value:newStatus}});}catch(ex){}
     toast('Status updated to: '+newStatus.replace(/_/g,' '));
     mapRenderWorkflowBar(old);mapRenderActionButtons(old);
     mapLoadLog(mapEditingId);
@@ -16687,7 +16693,7 @@ async function mapApproveVerification(){
     var x=mapAllData.find(r=>r.id===mapEditingId);if(x)Object.assign(x,body);
     var stEl=document.getElementById('af-status');if(stEl)stEl.value='pending_closure';
     var vsEl=document.getElementById('mf-verif-status');if(vsEl)vsEl.value='passed';
-    try{await api('/map_activity_log',{m:'POST',p:'return=minimal',b:{company_id:prof?.company_id,action_id:mapEditingId,activity_type:'Verification approved — ready for closure',performed_by:verifName||prof?.full_name||'User'}});}catch(ex){}
+    try{await api('/map_activity_log',{m:'POST',p:'return=minimal',b:{company_id:ccid(),action_id:mapEditingId,activity_type:'Verification approved — ready for closure',performed_by:verifName||prof?.full_name||'User'}});}catch(ex){}
     toast('✓ Verification approved — action moved to Pending Closure');
     var updated=mapAllData.find(r=>r.id===mapEditingId);if(updated){mapRenderWorkflowBar(updated);mapRenderActionButtons(updated);}
     mapFormTab('closure',document.getElementById('map-ftab-closure'));
@@ -16702,7 +16708,7 @@ async function mapFailVerification(){
     await api('/action_tracker?id=eq.'+mapEditingId,{m:'PATCH',p:'return=minimal',b:body});
     var x=mapAllData.find(r=>r.id===mapEditingId);if(x)Object.assign(x,body);
     var stEl=document.getElementById('af-status');if(stEl)stEl.value='in_progress';
-    try{await api('/map_activity_log',{m:'POST',p:'return=minimal',b:{company_id:prof?.company_id,action_id:mapEditingId,activity_type:'Verification failed — action reopened',performed_by:prof?.full_name||'User',notes:reason}});}catch(ex){}
+    try{await api('/map_activity_log',{m:'POST',p:'return=minimal',b:{company_id:ccid(),action_id:mapEditingId,activity_type:'Verification failed — action reopened',performed_by:prof?.full_name||'User',notes:reason}});}catch(ex){}
     toast('✗ Verification failed — action reopened for further work');
     var updated=mapAllData.find(r=>r.id===mapEditingId);if(updated){mapRenderWorkflowBar(updated);mapRenderActionButtons(updated);}
     mapLoadLog(mapEditingId);
@@ -16721,7 +16727,7 @@ async function mapApproveClosure(){
     var x=mapAllData.find(r=>r.id===mapEditingId);if(x)Object.assign(x,body);
     var stEl=document.getElementById('af-status');if(stEl)stEl.value='closed';
     document.getElementById('mf-progress').value=100;mapUpdateProgress(100);
-    try{await api('/map_activity_log',{m:'POST',p:'return=minimal',b:{company_id:prof?.company_id,action_id:mapEditingId,activity_type:'Action CLOSED — closure approved by '+(closeName||'User'),performed_by:closeName||prof?.full_name||'User'}});}catch(ex){}
+    try{await api('/map_activity_log',{m:'POST',p:'return=minimal',b:{company_id:ccid(),action_id:mapEditingId,activity_type:'Action CLOSED — closure approved by '+(closeName||'User'),performed_by:closeName||prof?.full_name||'User'}});}catch(ex){}
     toast('✅ Action CLOSED and approved!');
     var updated=mapAllData.find(r=>r.id===mapEditingId);if(updated){mapRenderWorkflowBar(updated);mapRenderActionButtons(updated);}
     mapLoadLog(mapEditingId);
@@ -16736,7 +16742,7 @@ async function mapRejectClosure(){
     await api('/action_tracker?id=eq.'+mapEditingId,{m:'PATCH',p:'return=minimal',b:body});
     var x=mapAllData.find(r=>r.id===mapEditingId);if(x)Object.assign(x,body);
     var stEl=document.getElementById('af-status');if(stEl)stEl.value='in_progress';
-    try{await api('/map_activity_log',{m:'POST',p:'return=minimal',b:{company_id:prof?.company_id,action_id:mapEditingId,activity_type:'Closure REJECTED — action reopened',performed_by:prof?.full_name||'User',notes:reason}});}catch(ex){}
+    try{await api('/map_activity_log',{m:'POST',p:'return=minimal',b:{company_id:ccid(),action_id:mapEditingId,activity_type:'Closure REJECTED — action reopened',performed_by:prof?.full_name||'User',notes:reason}});}catch(ex){}
     toast('Closure rejected — action reopened. Please address the rejection reason.');
     var updated=mapAllData.find(r=>r.id===mapEditingId);if(updated){mapRenderWorkflowBar(updated);mapRenderActionButtons(updated);}
     mapLoadLog(mapEditingId);
@@ -16754,7 +16760,7 @@ async function mapTriggerEscalation(){
   try{
     await api('/action_tracker?id=eq.'+mapEditingId,{m:'PATCH',p:'return=minimal',b:body});
     var x=mapAllData.find(r=>r.id===mapEditingId);if(x)Object.assign(x,body);
-    try{await api('/map_activity_log',{m:'POST',p:'return=minimal',b:{company_id:prof?.company_id,action_id:mapEditingId,activity_type:'Action ESCALATED to Level '+level+' — '+escName,performed_by:prof?.full_name||'User',notes:reason}});}catch(ex){}
+    try{await api('/map_activity_log',{m:'POST',p:'return=minimal',b:{company_id:ccid(),action_id:mapEditingId,activity_type:'Action ESCALATED to Level '+level+' — '+escName,performed_by:prof?.full_name||'User',notes:reason}});}catch(ex){}
     toast('⬆ Action escalated to: '+escName);
     document.getElementById('mf-escalated').checked=true;
     mapLoadLog(mapEditingId);
@@ -17044,7 +17050,7 @@ async function dcUploadFile(file){
     // Snapshot the existing file into doc_revisions BEFORE we overwrite the form
     try{
       await api('/doc_revisions',{m:'POST',p:'return=minimal',b:{
-        company_id: prof?.company_id,
+        company_id: ccid(),
         document_id: dcEditingId,
         version: current.version || current.doc_version || '1.0',
         revision_type: current.revision_type || 'minor',
@@ -17434,7 +17440,7 @@ async function dcSave(){
   var appSel=document.getElementById('dc-sign-approver');var appId=appSel?.value||null;
   var appName='';if(appId){var appr=(people||[]).find(x=>x.id===appId);appName=appr?(appr.last_name+', '+appr.first_name):'';}
   var body={
-    company_id:prof?.company_id,title:title,
+    company_id:ccid(),title:title,
     document_type:g('df-type')||'procedure',doc_type:g('df-type')||'procedure',
     department:g('df-dept'),dept:g('df-dept'),category:g('df-category'),
     description:g('df-description'),scope:g('df-scope'),
@@ -17516,7 +17522,7 @@ async function dcApprove(){
     var stEl=document.getElementById('df-status');if(stEl)stEl.value='approved';
     var appDate=document.getElementById('dc-sign-approver-date');if(appDate)appDate.value=new Date().toISOString().slice(0,10);
     // Save revision record
-    try{await api('/doc_revisions',{m:'POST',p:'return=minimal',b:{company_id:prof?.company_id,document_id:dcEditingId,version:x?.version||'1.0',revision_type:'minor',summary:'Document approved',changed_by:prof?.full_name||'User',approved_by:appName||'Approver',effective_date:new Date().toISOString().slice(0,10),snapshot:x}});}catch(ex){}
+    try{await api('/doc_revisions',{m:'POST',p:'return=minimal',b:{company_id:ccid(),document_id:dcEditingId,version:x?.version||'1.0',revision_type:'minor',summary:'Document approved',changed_by:prof?.full_name||'User',approved_by:appName||'Approver',effective_date:new Date().toISOString().slice(0,10),snapshot:x}});}catch(ex){}
     toast('✅ Document APPROVED and is now active!');
     dcRenderWorkflowBar(dcAllData.find(r=>r.id===dcEditingId)||{});
     dcRenderActionButtons(dcAllData.find(r=>r.id===dcEditingId)||{});
@@ -17555,7 +17561,7 @@ async function dcCreateNewRevision(){
   var summary=prompt('Revision summary — what is changing in '+newVersion+'?','');if(!summary)return;
   // Save current as a revision snapshot
   try{
-    await api('/doc_revisions',{m:'POST',p:'return=minimal',b:{company_id:prof?.company_id,document_id:dcEditingId,version:oldVersion,revision_type:revType,summary:'Superseded by '+newVersion,changed_by:prof?.full_name||'User',effective_date:new Date().toISOString().slice(0,10),snapshot:x}});
+    await api('/doc_revisions',{m:'POST',p:'return=minimal',b:{company_id:ccid(),document_id:dcEditingId,version:oldVersion,revision_type:revType,summary:'Superseded by '+newVersion,changed_by:prof?.full_name||'User',effective_date:new Date().toISOString().slice(0,10),snapshot:x}});
     await api('/documents?id=eq.'+dcEditingId,{m:'PATCH',p:'return=minimal',b:{version:newVersion,doc_version:newVersion,approval_status:'draft',status:'draft',revision_summary:summary,is_latest:true,updated_at:new Date().toISOString()}});
     Object.assign(x,{version:newVersion,approval_status:'draft',revision_summary:summary});
     document.getElementById('df-version').value=newVersion;
@@ -17784,7 +17790,7 @@ async function dcCopySave(){
   var holder=document.getElementById('dcf-holder')?.value?.trim();if(!holder){toast('Please enter copy holder name',false);return;}
   var docId=document.getElementById('dcf-doc-id')?.value;
   var g=function(id){var el=document.getElementById(id);return el?el.value||null:null;};
-  var body={company_id:prof?.company_id,document_id:docId||null,copy_number:g('dcf-copy-no'),copy_holder:holder,department:g('dcf-dept'),location:g('dcf-location'),format:g('dcf-format')||'electronic',issued_date:g('dcf-issued-date')||null,issued_by:g('dcf-issued-by'),is_master:document.getElementById('dcf-is-master')?.checked||false,notes:g('dcf-notes'),status:'active',created_by:prof?.id};
+  var body={company_id:ccid(),document_id:docId||null,copy_number:g('dcf-copy-no'),copy_holder:holder,department:g('dcf-dept'),location:g('dcf-location'),format:g('dcf-format')||'electronic',issued_date:g('dcf-issued-date')||null,issued_by:g('dcf-issued-by'),is_master:document.getElementById('dcf-is-master')?.checked||false,notes:g('dcf-notes'),status:'active',created_by:prof?.id};
   try{await api('/doc_controlled_copies',{m:'POST',p:'return=minimal',b:body});toast('Controlled copy issued!');dcCopyBack();}catch(e){toast(e.message,false);}
 }
 
@@ -17851,7 +17857,7 @@ async function dcSaveAck(){
   var emp=document.getElementById('daf-emp-name')?.value?.trim();if(!emp){toast('Please enter employee name',false);return;}
   var doc=dcAllData.find(x=>x.id===dcEditingId);
   var g=function(id){var el=document.getElementById(id);return el?el.value||null:null;};
-  var body={company_id:prof?.company_id,document_id:dcEditingId||null,doc_ref:doc?.doc_ref||doc?.reference_no||null,doc_title:doc?.title||null,doc_version:doc?.version||doc?.doc_version||'1.0',employee_name:emp,department:g('daf-dept'),due_date:g('daf-due')||null,status:'pending',created_by:prof?.id};
+  var body={company_id:ccid(),document_id:dcEditingId||null,doc_ref:doc?.doc_ref||doc?.reference_no||null,doc_title:doc?.title||null,doc_version:doc?.version||doc?.doc_version||'1.0',employee_name:emp,department:g('daf-dept'),due_date:g('daf-due')||null,status:'pending',created_by:prof?.id};
   try{await api('/doc_acknowledgements',{m:'POST',p:'return=minimal',b:body});toast('Acknowledgement issued to '+emp+'!');document.getElementById('dc-ack-form').style.display='none';if(dcEditingId)dcLoadDocAck(dcEditingId);}catch(e){toast(e.message,false);}
 }
 
@@ -17884,7 +17890,7 @@ async function dcAckSave(){
   var docId=document.getElementById('saf-doc-id')?.value;
   var doc=dcAllData.find(x=>x.id===docId);
   var g=function(id){var el=document.getElementById(id);return el?el.value||null:null;};
-  var body={company_id:prof?.company_id,document_id:docId||null,doc_ref:doc?.doc_ref||doc?.reference_no||null,doc_title:doc?.title||null,doc_version:doc?.version||'1.0',employee_name:emp,department:g('saf-dept'),due_date:g('saf-due')||null,notes:g('saf-notes'),status:'pending',created_by:prof?.id};
+  var body={company_id:ccid(),document_id:docId||null,doc_ref:doc?.doc_ref||doc?.reference_no||null,doc_title:doc?.title||null,doc_version:doc?.version||'1.0',employee_name:emp,department:g('saf-dept'),due_date:g('saf-due')||null,notes:g('saf-notes'),status:'pending',created_by:prof?.id};
   try{await api('/doc_acknowledgements',{m:'POST',p:'return=minimal',b:body});toast('Acknowledgement issued to '+emp+'!');dcAckBack();}catch(e){toast(e.message,false);}
 }
 
@@ -18128,10 +18134,10 @@ async function legalSaveReq(){
   var g=function(id){var el=document.getElementById(id);return el?el.value||null:null;};
   var score=parseInt(g('lr-compliance-score'))||0;
   var st=g('lr-status')||'non_compliant';
-  var body={company_id:prof?.company_id,legislation:leg,title:g('lr-leg-title'),section:g('lr-section'),subsection:g('lr-subsection'),requirement:g('lr-requirement'),legislation_type:g('lr-leg-type')||'statutory',category:g('lr-category')||'health_safety',jurisdiction:g('lr-jurisdiction')||'Mauritius',authority:g('lr-authority'),obligation_type:g('lr-obligation')||'mandatory',frequency:g('lr-frequency')||'ongoing',applicable:g('lr-applicable')!=='false',status:st,compliance_score:score,controls:g('lr-controls'),evidence_required:g('lr-evidence-req'),evidence_location:g('lr-evidence-loc'),gap:document.getElementById('lr-gap')?.checked||false,gap_identified:document.getElementById('lr-gap')?.checked||false,further_controls:g('lr-further-controls'),penalty_risk:g('lr-penalty'),notes:g('lr-notes'),responsibility:g('lr-responsibility'),responsible_person:g('lr-responsibility'),target_date:g('lr-target-date')||null,effective_date:g('lr-effective-date')||null,review_date:g('lr-review-date')||null,last_assessed_date:g('lr-last-assessed')||null,assessed_by:g('lr-assessed-by'),updated_at:new Date().toISOString()};
+  var body={company_id:ccid(),legislation:leg,title:g('lr-leg-title'),section:g('lr-section'),subsection:g('lr-subsection'),requirement:g('lr-requirement'),legislation_type:g('lr-leg-type')||'statutory',category:g('lr-category')||'health_safety',jurisdiction:g('lr-jurisdiction')||'Mauritius',authority:g('lr-authority'),obligation_type:g('lr-obligation')||'mandatory',frequency:g('lr-frequency')||'ongoing',applicable:g('lr-applicable')!=='false',status:st,compliance_score:score,controls:g('lr-controls'),evidence_required:g('lr-evidence-req'),evidence_location:g('lr-evidence-loc'),gap:document.getElementById('lr-gap')?.checked||false,gap_identified:document.getElementById('lr-gap')?.checked||false,further_controls:g('lr-further-controls'),penalty_risk:g('lr-penalty'),notes:g('lr-notes'),responsibility:g('lr-responsibility'),responsible_person:g('lr-responsibility'),target_date:g('lr-target-date')||null,effective_date:g('lr-effective-date')||null,review_date:g('lr-review-date')||null,last_assessed_date:g('lr-last-assessed')||null,assessed_by:g('lr-assessed-by'),updated_at:new Date().toISOString()};
   try{
     if(lrEditId){await api('/legal_requirements?id=eq.'+lrEditId,{m:'PATCH',p:'return=minimal',b:body});toast('Requirement updated!');}
-    else{body.created_by=prof?.id;var res=await api('/legal_requirements',{m:'POST',p:'return=representation',b:body});if(res?.[0]?.id){var typeCode={statutory:'REQ',regulatory:'REG',iso_standard:'ISO',client_standard:'CLI',industry_code:'IND',other:'LEG'}[body.legislation_type]||'REQ';var ref=typeCode+'-'+String(lrAllData.length+1).padStart(3,'0');await api('/legal_requirements?id=eq.'+res[0].id,{m:'PATCH',p:'return=minimal',b:{req_ref:ref}});toast('Requirement saved! Ref: '+ref);if(body.gap){try{await api('/compliance_gaps',{m:'POST',p:'return=minimal',b:{company_id:prof?.company_id,legislation:leg,section:body.section,gap_description:body.further_controls||'Gap identified — controls inadequate',risk_level:'high',status:'open',created_by:prof?.id}});}catch(ex){}}};}
+    else{body.created_by=prof?.id;var res=await api('/legal_requirements',{m:'POST',p:'return=representation',b:body});if(res?.[0]?.id){var typeCode={statutory:'REQ',regulatory:'REG',iso_standard:'ISO',client_standard:'CLI',industry_code:'IND',other:'LEG'}[body.legislation_type]||'REQ';var ref=typeCode+'-'+String(lrAllData.length+1).padStart(3,'0');await api('/legal_requirements?id=eq.'+res[0].id,{m:'PATCH',p:'return=minimal',b:{req_ref:ref}});toast('Requirement saved! Ref: '+ref);if(body.gap){try{await api('/compliance_gaps',{m:'POST',p:'return=minimal',b:{company_id:ccid(),legislation:leg,section:body.section,gap_description:body.further_controls||'Gap identified — controls inadequate',risk_level:'high',status:'open',created_by:prof?.id}});}catch(ex){}}};}
     legalReqBack();
   }catch(e){toast(e.message,false);}
 }
@@ -18168,7 +18174,7 @@ async function legalLoadChanges(){
 function legalChgBack(){document.getElementById('legal-chg-form').style.display='none';document.getElementById('legal-view-changes').style.display='block';document.querySelectorAll('[id^="legal-tab-"]').forEach(t=>t.classList.remove('active'));document.getElementById('legal-tab-changes')?.classList.add('active');legalLoadChanges();}
 function legalNewChange(){lcEditId=null;document.getElementById('lc-form-title').textContent='New Regulatory Change';document.getElementById('lc-del-btn').style.display='none';['lc-source','lc-legislation','lc-changes','lc-action','lc-comments','lc-responsible'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});['lc-date','lc-effective-date'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});document.getElementById('lc-date').value=new Date().toISOString().slice(0,10);document.getElementById('lc-jurisdiction').value='Mauritius';document.getElementById('lc-category').value='health_safety';document.getElementById('lc-applicable').value='true';document.getElementById('lc-implemented').value='false';document.getElementById('legal-view-changes').style.display='none';document.getElementById('legal-chg-form').style.display='block';}
 function legalOpenChg(id){var x=lcAllData.find(r=>r.id===id);if(!x)return;lcEditId=id;document.getElementById('lc-form-title').textContent=x.legislation||'Edit Change';document.getElementById('lc-del-btn').style.display=isMgr()?'inline-flex':'none';var gf=function(fid,val){var el=document.getElementById(fid);if(el)el.value=val||'';};gf('lc-date',x.date_received);gf('lc-source',x.source);gf('lc-jurisdiction',x.jurisdiction||'Mauritius');gf('lc-legislation',x.legislation);gf('lc-changes',x.changes_identified||x.changes);gf('lc-action',x.action_required||x.action);gf('lc-comments',x.comments);gf('lc-responsible',x.responsible_person);gf('lc-effective-date',x.effective_date);document.getElementById('lc-category').value=x.category||'health_safety';document.getElementById('lc-applicable').value=x.applicable!==false&&x.applicable!=='false'?'true':'false';document.getElementById('lc-implemented').value=x.implemented===true||x.implemented==='true'?'true':'false';document.getElementById('legal-view-changes').style.display='none';document.getElementById('legal-chg-form').style.display='block';}
-async function legalSaveChg(){var g=function(id){var el=document.getElementById(id);return el?el.value||null:null;};var body={company_id:prof?.company_id,date_received:g('lc-date')||null,source:g('lc-source'),jurisdiction:g('lc-jurisdiction')||'Mauritius',legislation:g('lc-legislation'),category:g('lc-category')||'health_safety',changes_identified:g('lc-changes'),changes:g('lc-changes'),action_required:g('lc-action'),action:g('lc-action'),responsible_person:g('lc-responsible'),effective_date:g('lc-effective-date')||null,applicable:g('lc-applicable')!=='false',implemented:g('lc-implemented')==='true',comments:g('lc-comments'),updated_at:new Date().toISOString()};
+async function legalSaveChg(){var g=function(id){var el=document.getElementById(id);return el?el.value||null:null;};var body={company_id:ccid(),date_received:g('lc-date')||null,source:g('lc-source'),jurisdiction:g('lc-jurisdiction')||'Mauritius',legislation:g('lc-legislation'),category:g('lc-category')||'health_safety',changes_identified:g('lc-changes'),changes:g('lc-changes'),action_required:g('lc-action'),action:g('lc-action'),responsible_person:g('lc-responsible'),effective_date:g('lc-effective-date')||null,applicable:g('lc-applicable')!=='false',implemented:g('lc-implemented')==='true',comments:g('lc-comments'),updated_at:new Date().toISOString()};
   try{if(lcEditId){await api('/legal_changes?id=eq.'+lcEditId,{m:'PATCH',p:'return=minimal',b:body});toast('Updated!');}else{body.created_by=prof?.id;await api('/legal_changes',{m:'POST',p:'return=minimal',b:body});toast('Change recorded!');}legalChgBack();}catch(e){toast('Error: '+e.message,false);}
 }
 async function legalDeleteChg(){if(!lcEditId||!confirm('Delete?'))return;try{await api('/legal_changes?id=eq.'+lcEditId,{m:'DELETE'});toast('Deleted!');legalChgBack();}catch(e){toast(e.message,false);}}
@@ -18232,7 +18238,7 @@ function lcaCalcScore(){
 function lcaBack(){document.getElementById('lca-form').style.display='none';document.getElementById('legal-view-assessments').style.display='block';document.querySelectorAll('[id^="legal-tab-"]').forEach(t=>t.classList.remove('active'));document.getElementById('legal-tab-assessments')?.classList.add('active');lcaLoad();}
 function lcaNew(){lcaEditId=null;document.getElementById('lca-form-title').textContent='New Compliance Assessment';document.getElementById('lca-form-ref').textContent='CA-AUTO';document.getElementById('lca-del-btn').style.display='none';['lcaf-title','lcaf-assessor','lcaf-scope','lcaf-methodology','lcaf-findings','lcaf-recommendations','lcaf-approved-by','lcaf-audit-ref'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});['lcaf-date','lcaf-next-date','lcaf-approved-date'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});document.getElementById('lcaf-date').value=new Date().toISOString().slice(0,10);document.getElementById('lcaf-type').value='periodic';document.getElementById('lcaf-status').value='draft';['lcaf-compliant','lcaf-partial','lcaf-noncompliant','lcaf-na'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='0';});document.getElementById('lca-score-number').textContent='—';document.getElementById('legal-view-assessments').style.display='none';document.getElementById('lca-form').style.display='block';}
 function lcaEdit(id){var x=lcaAllData.find(r=>r.id===id);if(!x)return;lcaEditId=id;document.getElementById('lca-form-title').textContent=x.title||'Edit Assessment';document.getElementById('lca-form-ref').textContent=x.assessment_ref||'—';document.getElementById('lca-del-btn').style.display=isMgr()?'inline-flex':'none';var gf=function(fid,val){var el=document.getElementById(fid);if(el)el.value=val||'';};gf('lcaf-title',x.title);gf('lcaf-assessor',x.assessor);gf('lcaf-scope',x.scope);gf('lcaf-methodology',x.methodology);gf('lcaf-findings',x.findings);gf('lcaf-recommendations',x.recommendations);gf('lcaf-approved-by',x.approved_by);gf('lcaf-audit-ref',x.linked_audit_ref);gf('lcaf-date',x.assessment_date);gf('lcaf-next-date',x.next_assessment_date);gf('lcaf-approved-date',x.approved_date);document.getElementById('lcaf-type').value=x.assessment_type||'periodic';document.getElementById('lcaf-status').value=x.status||'draft';document.getElementById('lcaf-compliant').value=x.compliant_count||0;document.getElementById('lcaf-partial').value=x.partial_count||0;document.getElementById('lcaf-noncompliant').value=x.non_compliant_count||0;document.getElementById('lcaf-na').value=x.na_count||0;lcaCalcScore();document.getElementById('legal-view-assessments').style.display='none';document.getElementById('lca-form').style.display='block';}
-async function lcaSave(){var title=document.getElementById('lcaf-title')?.value?.trim();if(!title){toast('Please enter assessment title',false);return;}var g=function(id){var el=document.getElementById(id);return el?el.value||null:null;};var c=parseInt(g('lcaf-compliant'))||0;var p=parseInt(g('lcaf-partial'))||0;var n=parseInt(g('lcaf-noncompliant'))||0;var na=parseInt(g('lcaf-na'))||0;var total=c+p+n;var score=total>0?Math.round((c*100+p*50)/total):0;var body={company_id:prof?.company_id,title,assessment_type:g('lcaf-type')||'periodic',assessment_date:g('lcaf-date'),next_assessment_date:g('lcaf-next-date')||null,assessor:g('lcaf-assessor'),total_requirements:total+na,compliant_count:c,partial_count:p,non_compliant_count:n,na_count:na,overall_score:score,scope:g('lcaf-scope'),methodology:g('lcaf-methodology'),findings:g('lcaf-findings'),recommendations:g('lcaf-recommendations'),status:g('lcaf-status')||'draft',approved_by:g('lcaf-approved-by'),approved_date:g('lcaf-approved-date')||null,linked_audit_ref:g('lcaf-audit-ref'),updated_at:new Date().toISOString()};
+async function lcaSave(){var title=document.getElementById('lcaf-title')?.value?.trim();if(!title){toast('Please enter assessment title',false);return;}var g=function(id){var el=document.getElementById(id);return el?el.value||null:null;};var c=parseInt(g('lcaf-compliant'))||0;var p=parseInt(g('lcaf-partial'))||0;var n=parseInt(g('lcaf-noncompliant'))||0;var na=parseInt(g('lcaf-na'))||0;var total=c+p+n;var score=total>0?Math.round((c*100+p*50)/total):0;var body={company_id:ccid(),title,assessment_type:g('lcaf-type')||'periodic',assessment_date:g('lcaf-date'),next_assessment_date:g('lcaf-next-date')||null,assessor:g('lcaf-assessor'),total_requirements:total+na,compliant_count:c,partial_count:p,non_compliant_count:n,na_count:na,overall_score:score,scope:g('lcaf-scope'),methodology:g('lcaf-methodology'),findings:g('lcaf-findings'),recommendations:g('lcaf-recommendations'),status:g('lcaf-status')||'draft',approved_by:g('lcaf-approved-by'),approved_date:g('lcaf-approved-date')||null,linked_audit_ref:g('lcaf-audit-ref'),updated_at:new Date().toISOString()};
   try{if(lcaEditId){await api('/compliance_assessments?id=eq.'+lcaEditId,{m:'PATCH',p:'return=minimal',b:body});toast('Assessment updated!');}else{body.created_by=prof?.id;var res=await api('/compliance_assessments',{m:'POST',p:'return=representation',b:body});if(res?.[0]?.id){var ref='CA-'+new Date().getFullYear()+'-'+String(lcaAllData.length+1).padStart(3,'0');await api('/compliance_assessments?id=eq.'+res[0].id,{m:'PATCH',p:'return=minimal',b:{assessment_ref:ref}});toast('Assessment saved! Ref: '+ref);}}lcaBack();}catch(e){toast('Error: '+e.message,false);}
 }
 async function lcaDelete(){if(!lcaEditId||!confirm('Delete?'))return;try{await api('/compliance_assessments?id=eq.'+lcaEditId,{m:'DELETE'});toast('Deleted!');lcaBack();}catch(e){toast(e.message,false);}}
@@ -18285,8 +18291,8 @@ async function gapLoad(){
 function gapBack(){document.getElementById('gap-form').style.display='none';document.getElementById('legal-view-gaps').style.display='block';document.querySelectorAll('[id^="legal-tab-"]').forEach(t=>t.classList.remove('active'));document.getElementById('legal-tab-gaps')?.classList.add('active');gapLoad();}
 function gapNew(){gapEditId=null;document.getElementById('gap-form-title').textContent='New Compliance Gap';document.getElementById('gap-form-ref').textContent='GAP-AUTO';document.getElementById('gap-del-btn').style.display='none';['gapf-legislation','gapf-section','gapf-description','gapf-action','gapf-responsible','gapf-action-ref','gapf-closure-notes'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});['gapf-target-date','gapf-completion-date'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});document.getElementById('gapf-type').value='missing_control';document.getElementById('gapf-risk').value='medium';document.getElementById('gapf-status').value='open';document.querySelectorAll('[name="gap-st-r"]').forEach(r=>{r.checked=r.value==='open';});document.getElementById('legal-view-gaps').style.display='none';document.getElementById('gap-form').style.display='block';}
 function gapEdit(id){var x=gapAllData.find(r=>r.id===id);if(!x)return;gapEditId=id;document.getElementById('gap-form-title').textContent=x.legislation||'Edit Gap';document.getElementById('gap-form-ref').textContent=x.gap_ref||'—';document.getElementById('gap-del-btn').style.display=isMgr()?'inline-flex':'none';var gf=function(fid,val){var el=document.getElementById(fid);if(el)el.value=val||'';};gf('gapf-legislation',x.legislation);gf('gapf-section',x.section);gf('gapf-description',x.gap_description);gf('gapf-action',x.action_required);gf('gapf-responsible',x.responsible_person);gf('gapf-action-ref',x.action_ref);gf('gapf-closure-notes',x.closure_notes);gf('gapf-target-date',x.target_date);gf('gapf-completion-date',x.completion_date);document.getElementById('gapf-type').value=x.gap_type||'missing_control';document.getElementById('gapf-risk').value=x.risk_level||'medium';document.getElementById('gapf-status').value=x.status||'open';document.querySelectorAll('[name="gap-st-r"]').forEach(r=>{r.checked=r.value===(x.status||'open');});document.getElementById('legal-view-gaps').style.display='none';document.getElementById('gap-form').style.display='block';}
-async function gapSave(){var desc=document.getElementById('gapf-description')?.value?.trim();var leg=document.getElementById('gapf-legislation')?.value?.trim();if(!desc||!leg){toast('Please enter legislation and gap description',false);return;}var g=function(id){var el=document.getElementById(id);return el?el.value||null:null;};var body={company_id:prof?.company_id,legislation:leg,section:g('gapf-section'),gap_description:desc,gap_type:g('gapf-type')||'missing_control',risk_level:g('gapf-risk')||'medium',action_required:g('gapf-action'),responsible_person:g('gapf-responsible'),target_date:g('gapf-target-date')||null,completion_date:g('gapf-completion-date')||null,action_ref:g('gapf-action-ref'),status:g('gapf-status')||'open',closure_notes:g('gapf-closure-notes'),updated_at:new Date().toISOString()};
-  try{if(gapEditId){await api('/compliance_gaps?id=eq.'+gapEditId,{m:'PATCH',p:'return=minimal',b:body});toast('Gap updated!');}else{body.created_by=prof?.id;var res=await api('/compliance_gaps',{m:'POST',p:'return=representation',b:body});if(res?.[0]?.id){var ref='GAP-'+new Date().getFullYear()+'-'+String(gapAllData.length+1).padStart(3,'0');await api('/compliance_gaps?id=eq.'+res[0].id,{m:'PATCH',p:'return=minimal',b:{gap_ref:ref}});toast('Gap recorded! Ref: '+ref);if(['critical','high'].includes(body.risk_level)){try{await api('/action_tracker',{m:'POST',p:'return=minimal',b:{company_id:prof?.company_id,title:'Close compliance gap: '+desc.substring(0,60),description:desc,source_type:'audit',source_module:'legal',priority:body.risk_level,status:'open',assigned_to_name:body.responsible_person,target_date:body.target_date||null,created_by:prof?.id}});}catch(ex){}}}}gapBack();}catch(e){toast('Error: '+e.message,false);}
+async function gapSave(){var desc=document.getElementById('gapf-description')?.value?.trim();var leg=document.getElementById('gapf-legislation')?.value?.trim();if(!desc||!leg){toast('Please enter legislation and gap description',false);return;}var g=function(id){var el=document.getElementById(id);return el?el.value||null:null;};var body={company_id:ccid(),legislation:leg,section:g('gapf-section'),gap_description:desc,gap_type:g('gapf-type')||'missing_control',risk_level:g('gapf-risk')||'medium',action_required:g('gapf-action'),responsible_person:g('gapf-responsible'),target_date:g('gapf-target-date')||null,completion_date:g('gapf-completion-date')||null,action_ref:g('gapf-action-ref'),status:g('gapf-status')||'open',closure_notes:g('gapf-closure-notes'),updated_at:new Date().toISOString()};
+  try{if(gapEditId){await api('/compliance_gaps?id=eq.'+gapEditId,{m:'PATCH',p:'return=minimal',b:body});toast('Gap updated!');}else{body.created_by=prof?.id;var res=await api('/compliance_gaps',{m:'POST',p:'return=representation',b:body});if(res?.[0]?.id){var ref='GAP-'+new Date().getFullYear()+'-'+String(gapAllData.length+1).padStart(3,'0');await api('/compliance_gaps?id=eq.'+res[0].id,{m:'PATCH',p:'return=minimal',b:{gap_ref:ref}});toast('Gap recorded! Ref: '+ref);if(['critical','high'].includes(body.risk_level)){try{await api('/action_tracker',{m:'POST',p:'return=minimal',b:{company_id:ccid(),title:'Close compliance gap: '+desc.substring(0,60),description:desc,source_type:'audit',source_module:'legal',priority:body.risk_level,status:'open',assigned_to_name:body.responsible_person,target_date:body.target_date||null,created_by:prof?.id}});}catch(ex){}}}}gapBack();}catch(e){toast('Error: '+e.message,false);}
 }
 async function gapDelete(){if(!gapEditId||!confirm('Delete?'))return;try{await api('/compliance_gaps?id=eq.'+gapEditId,{m:'DELETE'});toast('Deleted!');gapBack();}catch(e){toast(e.message,false);}}
 
@@ -18352,7 +18358,7 @@ function calFilter(f,btn){calLoad(f,btn);}
 function calBack(){document.getElementById('cal-form').style.display='none';document.getElementById('legal-view-calendar').style.display='block';document.querySelectorAll('[id^="legal-tab-"]').forEach(t=>t.classList.remove('active'));document.getElementById('legal-tab-calendar')?.classList.add('active');calLoad(calCurrentFilter,document.getElementById('cal-btn-'+calCurrentFilter));}
 function calNew(){calEditId=null;document.getElementById('cal-form-title').textContent='New Compliance Event';document.getElementById('cal-del-btn').style.display='none';['calf-title','calf-legislation','calf-ob-ref','calf-responsible','calf-dept','calf-description','calf-action-ref'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});['calf-due-date','calf-completed-date'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});document.getElementById('calf-type').value='submission';document.getElementById('calf-recurrence').value='annual';document.getElementById('calf-status').value='upcoming';document.getElementById('calf-reminder').value='30';document.getElementById('legal-view-calendar').style.display='none';document.getElementById('cal-form').style.display='block';}
 function calEdit(id){var x=calAllData.find(r=>r.id===id);if(!x)return;calEditId=id;document.getElementById('cal-form-title').textContent=x.title||'Edit Event';document.getElementById('cal-del-btn').style.display=isMgr()?'inline-flex':'none';var gf=function(fid,val){var el=document.getElementById(fid);if(el)el.value=val||'';};gf('calf-title',x.title);gf('calf-legislation',x.legislation);gf('calf-ob-ref',x.obligation_ref);gf('calf-responsible',x.responsible_person);gf('calf-dept',x.department);gf('calf-description',x.description);gf('calf-action-ref',x.linked_action_ref);gf('calf-due-date',x.due_date);gf('calf-completed-date',x.completed_date);document.getElementById('calf-type').value=x.event_type||'submission';document.getElementById('calf-recurrence').value=x.recurrence||'none';document.getElementById('calf-status').value=x.status||'upcoming';document.getElementById('calf-reminder').value=x.reminder_days||30;document.getElementById('legal-view-calendar').style.display='none';document.getElementById('cal-form').style.display='block';}
-async function calSave(){var title=document.getElementById('calf-title')?.value?.trim();if(!title){toast('Please enter event title',false);return;}var g=function(id){var el=document.getElementById(id);return el?el.value||null:null;};var body={company_id:prof?.company_id,title,event_type:g('calf-type')||'submission',legislation:g('calf-legislation'),obligation_ref:g('calf-ob-ref'),due_date:g('calf-due-date'),recurrence:g('calf-recurrence')||'none',responsible_person:g('calf-responsible'),department:g('calf-dept'),description:g('calf-description'),reminder_days:parseInt(g('calf-reminder'))||30,status:g('calf-status')||'upcoming',completed_date:g('calf-completed-date')||null,linked_action_ref:g('calf-action-ref'),updated_at:new Date().toISOString()};
+async function calSave(){var title=document.getElementById('calf-title')?.value?.trim();if(!title){toast('Please enter event title',false);return;}var g=function(id){var el=document.getElementById(id);return el?el.value||null:null;};var body={company_id:ccid(),title,event_type:g('calf-type')||'submission',legislation:g('calf-legislation'),obligation_ref:g('calf-ob-ref'),due_date:g('calf-due-date'),recurrence:g('calf-recurrence')||'none',responsible_person:g('calf-responsible'),department:g('calf-dept'),description:g('calf-description'),reminder_days:parseInt(g('calf-reminder'))||30,status:g('calf-status')||'upcoming',completed_date:g('calf-completed-date')||null,linked_action_ref:g('calf-action-ref'),updated_at:new Date().toISOString()};
   try{if(calEditId){await api('/compliance_calendar?id=eq.'+calEditId,{m:'PATCH',p:'return=minimal',b:body});toast('Event updated!');}else{body.created_by=prof?.id;await api('/compliance_calendar',{m:'POST',p:'return=minimal',b:body});toast('Calendar event added!');}calBack();}catch(e){toast('Error: '+e.message,false);}
 }
 async function calMarkComplete(id){try{await api('/compliance_calendar?id=eq.'+id,{m:'PATCH',p:'return=minimal',b:{status:'completed',completed_date:new Date().toISOString().slice(0,10),updated_at:new Date().toISOString()}});toast('✓ Marked as completed');calLoad(calCurrentFilter,document.getElementById('cal-btn-'+calCurrentFilter));}catch(e){toast(e.message,false);}
@@ -18712,7 +18718,7 @@ async function tbtSave(){
     if(desc)actions_raised.push({description:desc,assigned_to:assigned,due_date:due||null});
   });
   var attCount=Math.max(parseInt(g('tbtf-att-count'))||0,attendees.length);
-  var body={company_id:prof?.company_id,title,topic_category:g('tbtf-category')||'safety_general',talk_date:g('tbtf-date'),location:g('tbtf-location'),department:g('tbtf-dept'),presenter:g('tbtf-presenter'),duration_mins:parseInt(g('tbtf-duration'))||15,key_points:g('tbtf-key-points'),hazards_discussed:g('tbtf-hazards'),incidents_referenced:g('tbtf-incidents'),notes:g('tbtf-notes'),attendance_count:attCount,attendees,actions_raised,status:g('tbtf-status')||'completed',updated_at:new Date().toISOString()};
+  var body={company_id:ccid(),title,topic_category:g('tbtf-category')||'safety_general',talk_date:g('tbtf-date'),location:g('tbtf-location'),department:g('tbtf-dept'),presenter:g('tbtf-presenter'),duration_mins:parseInt(g('tbtf-duration'))||15,key_points:g('tbtf-key-points'),hazards_discussed:g('tbtf-hazards'),incidents_referenced:g('tbtf-incidents'),notes:g('tbtf-notes'),attendance_count:attCount,attendees,actions_raised,status:g('tbtf-status')||'completed',updated_at:new Date().toISOString()};
   try{
     if(tbtEditId){
       await api('/toolbox_talks?id=eq.'+tbtEditId,{m:'PATCH',p:'return=minimal',b:body});
@@ -18720,7 +18726,7 @@ async function tbtSave(){
       // Auto-create MAP actions for any new action items
       for(var act of actions_raised){
         if(act.description&&!tbtEditId){
-          try{await api('/action_tracker',{m:'POST',p:'return=minimal',b:{company_id:prof?.company_id,title:act.description,description:act.description,source_type:'toolbox_talk',source_module:'meeting',priority:'medium',status:'open',assigned_to_name:act.assigned_to||null,target_date:act.due_date||null,created_by:prof?.id}});}catch(ex){}
+          try{await api('/action_tracker',{m:'POST',p:'return=minimal',b:{company_id:ccid(),title:act.description,description:act.description,source_type:'toolbox_talk',source_module:'meeting',priority:'medium',status:'open',assigned_to_name:act.assigned_to||null,target_date:act.due_date||null,created_by:prof?.id}});}catch(ex){}
         }
       }
     }else{
@@ -18733,7 +18739,7 @@ async function tbtSave(){
         // Auto-create MAP actions
         for(var act2 of actions_raised){
           if(act2.description){
-            try{await api('/action_tracker',{m:'POST',p:'return=minimal',b:{company_id:prof?.company_id,title:act2.description,description:act2.description,source_type:'toolbox_talk',source_module:'meeting',source_ref:ref,priority:'medium',status:'open',assigned_to_name:act2.assigned_to||null,target_date:act2.due_date||null,created_by:prof?.id}});}catch(ex){}
+            try{await api('/action_tracker',{m:'POST',p:'return=minimal',b:{company_id:ccid(),title:act2.description,description:act2.description,source_type:'toolbox_talk',source_module:'meeting',source_ref:ref,priority:'medium',status:'open',assigned_to_name:act2.assigned_to||null,target_date:act2.due_date||null,created_by:prof?.id}});}catch(ex){}
           }
         }
       }
@@ -18851,7 +18857,7 @@ async function alertSave(){
   var title=document.getElementById('alertf-title')?.value?.trim();if(!title){toast('Please enter alert title',false);return;}
   var summary=document.getElementById('alertf-summary')?.value?.trim();if(!summary){toast('Please enter alert summary',false);return;}
   var g=function(id){var el=document.getElementById(id);return el?el.value||null:null;};
-  var body={company_id:prof?.company_id,title,alert_type:g('alertf-type')||'hazard_warning',severity:g('alertf-severity')||'medium',summary,background:g('alertf-background'),lessons_learned:g('alertf-lessons'),action_required:g('alertf-action'),departments:g('alertf-depts')?g('alertf-depts').split(',').map(t=>t.trim()).filter(Boolean):[],applies_to:g('alertf-applies'),issued_by:g('alertf-issued-by'),issued_date:g('alertf-issued-date')||new Date().toISOString().slice(0,10),expiry_date:g('alertf-expiry')||null,requires_ack:document.getElementById('alertf-req-ack')?.checked||false,status:g('alertf-status')||'active',updated_at:new Date().toISOString()};
+  var body={company_id:ccid(),title,alert_type:g('alertf-type')||'hazard_warning',severity:g('alertf-severity')||'medium',summary,background:g('alertf-background'),lessons_learned:g('alertf-lessons'),action_required:g('alertf-action'),departments:g('alertf-depts')?g('alertf-depts').split(',').map(t=>t.trim()).filter(Boolean):[],applies_to:g('alertf-applies'),issued_by:g('alertf-issued-by'),issued_date:g('alertf-issued-date')||new Date().toISOString().slice(0,10),expiry_date:g('alertf-expiry')||null,requires_ack:document.getElementById('alertf-req-ack')?.checked||false,status:g('alertf-status')||'active',updated_at:new Date().toISOString()};
   try{
     if(alertEditId){
       await api('/safety_alerts?id=eq.'+alertEditId,{m:'PATCH',p:'return=minimal',b:body});
@@ -18970,7 +18976,7 @@ function bulletinEdit(id){
 async function bulletinSave(){
   var title=document.getElementById('bullf-title')?.value?.trim();if(!title){toast('Please enter bulletin title',false);return;}
   var g=function(id){var el=document.getElementById(id);return el?el.value||null:null;};
-  var body={company_id:prof?.company_id,title,bulletin_type:g('bullf-type')||'safety_bulletin',issue_number:parseInt(g('bullf-issue-no'))||null,publication_date:g('bullf-pub-date')||new Date().toISOString().slice(0,10),summary:g('bullf-summary'),key_messages:g('bullf-key-messages'),content:g('bullf-content'),topics:g('bullf-topics')?g('bullf-topics').split(',').map(t=>t.trim()).filter(Boolean):[],author:g('bullf-author'),approved_by:g('bullf-approved-by'),target_audience:g('bullf-audience'),distribution_method:g('bullf-dist-method')||'email',file_url:g('bullf-file-url'),file_name:g('bullf-file-name'),status:g('bullf-status')||'published',updated_at:new Date().toISOString()};
+  var body={company_id:ccid(),title,bulletin_type:g('bullf-type')||'safety_bulletin',issue_number:parseInt(g('bullf-issue-no'))||null,publication_date:g('bullf-pub-date')||new Date().toISOString().slice(0,10),summary:g('bullf-summary'),key_messages:g('bullf-key-messages'),content:g('bullf-content'),topics:g('bullf-topics')?g('bullf-topics').split(',').map(t=>t.trim()).filter(Boolean):[],author:g('bullf-author'),approved_by:g('bullf-approved-by'),target_audience:g('bullf-audience'),distribution_method:g('bullf-dist-method')||'email',file_url:g('bullf-file-url'),file_name:g('bullf-file-name'),status:g('bullf-status')||'published',updated_at:new Date().toISOString()};
   try{
     if(bulletinEditId){
       await api('/safety_bulletins?id=eq.'+bulletinEditId,{m:'PATCH',p:'return=minimal',b:body});
@@ -19117,7 +19123,7 @@ async function cmEditCell(personId, compId){
   var newReq=prompt('Required level for this role (current: '+req+'):',req);
   if(newReq===null)return;
   try{
-    var body={company_id:prof?.company_id,person_id:personId,competency_id:compId,
+    var body={company_id:ccid(),person_id:personId,competency_id:compId,
       current_level:parseInt(newCur)||0,required_level:parseInt(newReq)||2,updated_at:new Date().toISOString()};
     if(entry){
       await api('/competency_matrix?id=eq.'+entry.id,{m:'PATCH',p:'return=minimal',b:body});
@@ -19134,7 +19140,7 @@ async function cmAddCompetency(){
   if(!name||!name.trim())return;
   var cat=prompt('Category (e.g. Fire Safety, Technical, Personal):','General');
   try{
-    await api('/competencies',{m:'POST',p:'return=minimal',b:{company_id:prof?.company_id,name:name.trim(),category:cat||'General',sort_order:compAllData.length}});
+    await api('/competencies',{m:'POST',p:'return=minimal',b:{company_id:ccid(),name:name.trim(),category:cat||'General',sort_order:compAllData.length}});
     toast('Competency added!');
     cmLoad();
   }catch(e){toast(e.message,false);}
@@ -19195,7 +19201,7 @@ function tnaAddRow(){
   var req=prompt('Requirement (M=Mandatory / D=Desirable / N=Not Required):','D');
   if(!['M','D','N'].includes((req||'').toUpperCase())){toast('Invalid value. Use M, D or N',false);return;}
   api('/training_needs',{m:'POST',p:'return=minimal',b:{
-    company_id:prof?.company_id,role_name:role,training_topic:topic,
+    company_id:ccid(),role_name:role,training_topic:topic,
     category:(cat||'GENERAL').toUpperCase(),requirement:req.toUpperCase()
   }}).then(function(){toast('Added!');tnaLoad();}).catch(function(e){toast(e.message,false);});
 }
@@ -19324,7 +19330,7 @@ async function tpSave(){
   if(!topic){toast('Please enter a training topic',false);return;}
   var g=function(id){var el=document.getElementById(id);return el?el.value||null:null;};
   var body={
-    company_id:prof?.company_id,year:trainYear,
+    company_id:ccid(),year:trainYear,
     training_topic:topic,target_group:g('tp-group'),
     month:document.getElementById('tp-month')?.value?parseInt(document.getElementById('tp-month').value):null,
     training_type:g('tp-type')||'internal',priority:g('tp-priority')||'medium',
@@ -19471,7 +19477,7 @@ async function tfSave(){
   var personId=g('tfr-person');
   var name=g('tfr-name')||((people||[]).find(function(p){return p.id===personId;})||{last_name:'',first_name:''}).last_name;
   var body={
-    company_id:prof?.company_id,person_id:personId||null,
+    company_id:ccid(),person_id:personId||null,
     person_name:name||null,training_topic:course,
     training_date:g('tfr-date'),trainer:g('tfr-trainer'),certificate:g('tfr-cert'),
     expiry_date:g('tfr-expiry'),refresher_due:g('tfr-refresher'),
@@ -19648,7 +19654,7 @@ async function authSave(){
   if(!type||!name){toast('Please enter person name and authorisation type',false);return;}
   var g=function(id){var el=document.getElementById(id);return el?el.value||null:null;};
   var body={
-    company_id:prof?.company_id,
+    company_id:ccid(),
     person_id:g('authr-person')||null,person_name:name,
     authorisation_type:type,status:g('authr-status')||'active',
     issue_date:g('authr-issue'),expiry_date:g('authr-expiry'),
@@ -20115,7 +20121,7 @@ async function auditSave() {
     if(desc)findings.push({finding_type:row.querySelector('.af-type')?.value||'observation',clause:row.querySelector('.af-clause')?.value||'',description:desc,evidence:row.querySelector('.af-evidence')?.value||'',corrective_action:row.querySelector('.af-action')?.value||'',assigned_to:row.querySelector('.af-assigned')?.value||''});
   });
   var body = {
-    company_id:prof?.company_id, inspection_type:type,
+    company_id:ccid(), inspection_type:type,
     site:site, if_site:site, department:g('audit-dept'),
     inspection_date:g('if-date')||null, if_date:g('if-date')||null,
     inspector:g('if-by'), by:g('if-by'), if_by:g('if-by'),
@@ -20154,14 +20160,14 @@ async function auditSave() {
     }
     // Save findings to audit_findings table
     for(var fi of findings){
-      try{await api('/audit_findings',{m:'POST',p:'return=minimal',b:{company_id:prof?.company_id,inspection_id:savedId,finding_ref:'F'+String(findings.indexOf(fi)+1).padStart(3,'0'),...fi,status:'open',created_by:prof?.id}});}catch(ex){}
+      try{await api('/audit_findings',{m:'POST',p:'return=minimal',b:{company_id:ccid(),inspection_id:savedId,finding_ref:'F'+String(findings.indexOf(fi)+1).padStart(3,'0'),...fi,status:'open',created_by:prof?.id}});}catch(ex){}
     }
     // Create MAP actions for insufficient items + action rows
     var allActions = actions.slice();
     if(insufCnt>0){allActions.push({description:'Address '+insufCnt+' insufficient item'+(insufCnt>1?'s':'')+' found during inspection: '+(body.site||''),responsible:'',target_date:null});}
     for(var a of allActions){
       if(!a.description)continue;
-      try{await api('/action_tracker',{m:'POST',p:'return=minimal',b:{company_id:prof?.company_id,title:a.description.substring(0,80),description:a.description,source_type:'inspection',source_module:'inspection',source_ref:body.reference_no||savedId?.slice(0,8)||'',priority:'high',status:'open',assigned_to_name:a.responsible||null,target_date:a.target_date||null,created_by:prof?.id}});}catch(ex){}
+      try{await api('/action_tracker',{m:'POST',p:'return=minimal',b:{company_id:ccid(),title:a.description.substring(0,80),description:a.description,source_type:'inspection',source_module:'inspection',source_ref:body.reference_no||savedId?.slice(0,8)||'',priority:'high',status:'open',assigned_to_name:a.responsible||null,target_date:a.target_date||null,created_by:prof?.id}});}catch(ex){}
     }
     auditBackToList();
   } catch(e) { toast('Error: '+e.message,false); }
@@ -20428,7 +20434,7 @@ async function psSave(){
   var insufCnt=items.filter(function(x){return x.result==='insufficient';}).length;
   var dec=document.querySelector('input[name="ps-dec"]:checked')?.value||'go';
   var dt=g('ps-date');
-  var body={company_id:prof?.company_id,inspection_type:'prestart',site:activity,activity:activity,
+  var body={company_id:ccid(),inspection_type:'prestart',site:activity,activity:activity,
     location:g('ps-location'),inspection_date:dt?dt.split('T')[0]:null,if_date:dt?dt.split('T')[0]:null,
     inspection_time:dt?dt.split('T')[1]:null,duration_hours:g('ps-duration')?parseFloat(g('ps-duration')):null,
     inspector:g('ps-supervisor'),supervisor:g('ps-supervisor'),if_by:g('ps-supervisor'),
@@ -22478,7 +22484,7 @@ async function adminSaveAccess(){
     var users=await api('/profiles?email=eq.'+email+(prof?.company_id&&!isSA()?'&company_id=eq.'+prof.company_id:'')+'&select=id,full_name');
     if(!users||!users.length){toast('User not found: '+email,false);return;}
     var userId=users[0].id;
-    var body={user_id:userId,site_id:siteId,company_id:prof?.company_id,role_override:document.getElementById('adm-acc-role')?.value||null,access_level:document.getElementById('adm-acc-level')?.value||'read_write',granted_by:prof?.id};
+    var body={user_id:userId,site_id:siteId,company_id:ccid(),role_override:document.getElementById('adm-acc-role')?.value||null,access_level:document.getElementById('adm-acc-level')?.value||'read_write',granted_by:prof?.id};
     await api('/user_site_access',{m:'POST',p:'return=minimal',b:body});
     toast('Access granted to '+escH(users[0].full_name||email));
     adminCloseAccessModal(); adminLoadAccessList();
@@ -22842,7 +22848,7 @@ async function integSave() {
   var missing = required.filter(function(f){return !config[f.id];});
   if(missing.length>0){toast('Please fill in: '+missing.map(function(f){return f.label;}).join(', '),false);return;}
   var body = {
-    company_id: prof?.company_id,
+    company_id: ccid(),
     integration_key: key,
     integration_type: integ.type,
     display_name: integ.name,
@@ -22963,18 +22969,18 @@ function integCopyBaseUrl() {
 
 function indBack(){ var el=document.getElementById('ind-form');if(el)el.style.display='none';var v=document.getElementById('train-view-induction');if(v)v.style.display='block';if(typeof indLoad==='function')indLoad(); }
 function indNew(){ window.indEditId=null;var el=document.getElementById('ind-form');if(!el)return;document.getElementById('ind-form-title').textContent='New Induction';if(document.getElementById('ind-del-btn'))document.getElementById('ind-del-btn').style.display='none';['indf-person','indf-emp-id','indf-dept','indf-job-title','indf-inducted-by','indf-extra-topics','indf-notes'].forEach(function(id){var e=document.getElementById(id);if(e)e.value='';});if(document.getElementById('indf-ind-date'))document.getElementById('indf-ind-date').value=new Date().toISOString().slice(0,10);var iv=document.getElementById('train-view-induction');if(iv)iv.style.display='none';el.style.display='block'; }
-async function indSave(){ var person=document.getElementById('indf-person')?.value?.trim();if(!person){toast('Please enter person name',false);return;}var g=function(id){var el=document.getElementById(id);return el?el.value||null:null;};var topics=Array.from(document.querySelectorAll('.ind-topic:checked')).map(function(cb){return cb.value;});var body={company_id:prof?.company_id,person_name:person,employee_id:g('indf-emp-id'),department:g('indf-dept'),job_title:g('indf-job-title'),induction_type:g('indf-type')||'new_employee',induction_date:g('indf-ind-date'),inducted_by:g('indf-inducted-by'),topics_covered:topics,notes:g('indf-notes'),status:g('indf-status')||'completed',completed:g('indf-status')==='completed',updated_at:new Date().toISOString()};try{if(window.indEditId){await api('/induction_records?id=eq.'+window.indEditId,{m:'PATCH',p:'return=minimal',b:body});toast('Updated!');}else{body.created_by=prof?.id;await api('/induction_records',{m:'POST',p:'return=minimal',b:body});toast('Induction saved!');}indBack();}catch(e){toast('Error: '+e.message+'. Run training_schema.sql.',false);} }
+async function indSave(){ var person=document.getElementById('indf-person')?.value?.trim();if(!person){toast('Please enter person name',false);return;}var g=function(id){var el=document.getElementById(id);return el?el.value||null:null;};var topics=Array.from(document.querySelectorAll('.ind-topic:checked')).map(function(cb){return cb.value;});var body={company_id:ccid(),person_name:person,employee_id:g('indf-emp-id'),department:g('indf-dept'),job_title:g('indf-job-title'),induction_type:g('indf-type')||'new_employee',induction_date:g('indf-ind-date'),inducted_by:g('indf-inducted-by'),topics_covered:topics,notes:g('indf-notes'),status:g('indf-status')||'completed',completed:g('indf-status')==='completed',updated_at:new Date().toISOString()};try{if(window.indEditId){await api('/induction_records?id=eq.'+window.indEditId,{m:'PATCH',p:'return=minimal',b:body});toast('Updated!');}else{body.created_by=prof?.id;await api('/induction_records',{m:'POST',p:'return=minimal',b:body});toast('Induction saved!');}indBack();}catch(e){toast('Error: '+e.message+'. Run training_schema.sql.',false);} }
 async function indDelete(){ if(!window.indEditId||!confirm('Delete?'))return;try{await api('/induction_records?id=eq.'+window.indEditId,{m:'DELETE'});toast('Deleted!');indBack();}catch(e){toast(e.message,false);} }
 function elcNew(){ window.elcEditId=null;var el=document.getElementById('elc-form');if(!el)return;document.getElementById('elc-form-title').textContent='New Course';if(document.getElementById('elc-del-btn'))document.getElementById('elc-del-btn').style.display='none';['elcf-title','elcf-code','elcf-desc','elcf-url'].forEach(function(id){var e=document.getElementById(id);if(e)e.value='';});var v=document.getElementById('train-view-elearning');if(v)v.style.display='none';el.style.display='block'; }
 function elcBack(){ var el=document.getElementById('elc-form');if(el)el.style.display='none';var v=document.getElementById('train-view-elearning');if(v)v.style.display='block';if(typeof elcLoad==='function')elcLoad(); }
-async function elcSave(){ var title=document.getElementById('elcf-title')?.value?.trim();if(!title){toast('Please enter course title',false);return;}var g=function(id){var el=document.getElementById(id);return el?el.value||null:null;};var body={company_id:prof?.company_id,title,course_code:g('elcf-code'),description:g('elcf-desc'),course_url:g('elcf-url'),status:g('elcf-status')||'active',updated_at:new Date().toISOString()};(window.elcEditId?api('/elearning_courses?id=eq.'+window.elcEditId,{m:'PATCH',p:'return=minimal',b:body}):api('/elearning_courses',{m:'POST',p:'return=minimal',b:Object.assign(body,{created_by:prof?.id})})).then(function(){toast(window.elcEditId?'Updated!':'Course added!');elcBack();}).catch(function(e){toast('Error: '+e.message,false);}); }
+async function elcSave(){ var title=document.getElementById('elcf-title')?.value?.trim();if(!title){toast('Please enter course title',false);return;}var g=function(id){var el=document.getElementById(id);return el?el.value||null:null;};var body={company_id:ccid(),title,course_code:g('elcf-code'),description:g('elcf-desc'),course_url:g('elcf-url'),status:g('elcf-status')||'active',updated_at:new Date().toISOString()};(window.elcEditId?api('/elearning_courses?id=eq.'+window.elcEditId,{m:'PATCH',p:'return=minimal',b:body}):api('/elearning_courses',{m:'POST',p:'return=minimal',b:Object.assign(body,{created_by:prof?.id})})).then(function(){toast(window.elcEditId?'Updated!':'Course added!');elcBack();}).catch(function(e){toast('Error: '+e.message,false);}); }
 async function elcDelete(){ if(!window.elcEditId||!confirm('Delete?'))return;try{await api('/elearning_courses?id=eq.'+window.elcEditId,{m:'DELETE'});toast('Deleted!');elcBack();}catch(e){toast(e.message,false);} }
 function eleNew(){ window.eleEditId=null;var el=document.getElementById('ele-form');if(!el)return;document.getElementById('ele-form-title').textContent='New Enrolment';if(document.getElementById('ele-del-btn'))document.getElementById('ele-del-btn').style.display='none';if(document.getElementById('elef-enrol-date'))document.getElementById('elef-enrol-date').value=new Date().toISOString().slice(0,10);var v=document.getElementById('train-view-elearning');if(v)v.style.display='none';el.style.display='block'; }
 function eleBack(){ var el=document.getElementById('ele-form');if(el)el.style.display='none';var v=document.getElementById('train-view-elearning');if(v)v.style.display='block'; }
-async function eleSave(){ var person=document.getElementById('elef-person')?.value?.trim();if(!person){toast('Please enter person name',false);return;}var g=function(id){var el=document.getElementById(id);return el?el.value||null:null;};var body={company_id:prof?.company_id,person_name:person,department:g('elef-dept'),course_id:g('elef-course-id')||null,enrolment_date:g('elef-enrol-date')||null,completion_date:g('elef-comp-date')||null,status:g('elef-status')||'enrolled',updated_at:new Date().toISOString()};try{if(window.eleEditId){await api('/elearning_enrolments?id=eq.'+window.eleEditId,{m:'PATCH',p:'return=minimal',b:body});toast('Updated!');}else{body.created_by=prof?.id;await api('/elearning_enrolments',{m:'POST',p:'return=minimal',b:body});toast('Enrolment saved!');}eleBack();}catch(e){toast('Error: '+e.message,false);} }
+async function eleSave(){ var person=document.getElementById('elef-person')?.value?.trim();if(!person){toast('Please enter person name',false);return;}var g=function(id){var el=document.getElementById(id);return el?el.value||null:null;};var body={company_id:ccid(),person_name:person,department:g('elef-dept'),course_id:g('elef-course-id')||null,enrolment_date:g('elef-enrol-date')||null,completion_date:g('elef-comp-date')||null,status:g('elef-status')||'enrolled',updated_at:new Date().toISOString()};try{if(window.eleEditId){await api('/elearning_enrolments?id=eq.'+window.eleEditId,{m:'PATCH',p:'return=minimal',b:body});toast('Updated!');}else{body.created_by=prof?.id;await api('/elearning_enrolments',{m:'POST',p:'return=minimal',b:body});toast('Enrolment saved!');}eleBack();}catch(e){toast('Error: '+e.message,false);} }
 async function eleDelete(){ if(!window.eleEditId||!confirm('Delete?'))return;try{await api('/elearning_enrolments?id=eq.'+window.eleEditId,{m:'DELETE'});toast('Deleted!');eleBack();}catch(e){toast(e.message,false);} }
 function compBack(){ var cf=document.getElementById('comp-form');if(cf)cf.style.display='none';var cv=document.getElementById('train-view-competency');if(cv)cv.style.display='block';if(typeof compFilter==='function')compFilter(); }
-async function compSave(){ var person=document.getElementById('compf-person')?.value?.trim();if(!person){toast('Please enter person name',false);return;}var g=function(id){var el=document.getElementById(id);return el?el.value||null:null;};var body={company_id:prof?.company_id,person_name:person,department:g('compf-dept'),job_title:g('compf-job-title'),competency_name:g('compf-competency-name')||'',level:g('compf-level')||'not_assessed',assessed_date:g('compf-assessed-date')||null,expiry_date:g('compf-expiry')||null,assessor:g('compf-assessor'),notes:g('compf-notes'),updated_at:new Date().toISOString()};try{if(window.compEditId){await api('/competency_matrix?id=eq.'+window.compEditId,{m:'PATCH',p:'return=minimal',b:body});toast('Updated!');}else{body.created_by=prof?.id;await api('/competency_matrix',{m:'POST',p:'return=minimal',b:body});toast('Saved!');}compBack();}catch(e){toast(e.message,false);} }
+async function compSave(){ var person=document.getElementById('compf-person')?.value?.trim();if(!person){toast('Please enter person name',false);return;}var g=function(id){var el=document.getElementById(id);return el?el.value||null:null;};var body={company_id:ccid(),person_name:person,department:g('compf-dept'),job_title:g('compf-job-title'),competency_name:g('compf-competency-name')||'',level:g('compf-level')||'not_assessed',assessed_date:g('compf-assessed-date')||null,expiry_date:g('compf-expiry')||null,assessor:g('compf-assessor'),notes:g('compf-notes'),updated_at:new Date().toISOString()};try{if(window.compEditId){await api('/competency_matrix?id=eq.'+window.compEditId,{m:'PATCH',p:'return=minimal',b:body});toast('Updated!');}else{body.created_by=prof?.id;await api('/competency_matrix',{m:'POST',p:'return=minimal',b:body});toast('Saved!');}compBack();}catch(e){toast(e.message,false);} }
 async function compDelete(){ if(!window.compEditId||!confirm('Delete?'))return;try{await api('/competency_matrix?id=eq.'+window.compEditId,{m:'DELETE'});toast('Deleted!');compBack();}catch(e){toast(e.message,false);} }
 function compNew(){ window.compEditId=null;var el=document.getElementById('comp-form');if(!el)return;document.getElementById('comp-form-title').textContent='New Competency Record';if(document.getElementById('comp-del-btn'))document.getElementById('comp-del-btn').style.display='none';['compf-person','compf-dept','compf-job-title','compf-competency-name','compf-assessor','compf-notes'].forEach(function(id){var e=document.getElementById(id);if(e)e.value='';});var cv=document.getElementById('train-view-competency');if(cv)cv.style.display='none';el.style.display='block'; }
 function trainNewFromTab(){ var active=document.querySelector('[id^="train-tab-"].active');var tab=active?.id?.replace('train-tab-','');if(tab==='competency')compNew();else if(tab==='induction')indNew();else if(tab==='plan')tpNew();else if(tab==='followup')tfNew();else if(tab==='elearning')elcNew();else if(tab==='auth')authNew();else if(tab==='tna')tnaAddRow(); }
