@@ -893,7 +893,39 @@ input[type="button"], input[type="submit"] {
 
 /* Very small phones */
 @media (max-width: 480px) {
-  .page { padding: 10px 10px 24px !important; }
+  #mobile-topbar,
+  #mobile-bottom-nav {
+    z-index: 900 !important;
+  }
+  .main {
+    overflow-x: auto !important;
+    touch-action: pan-x pan-y !important;
+  }
+  .page {
+    padding: 10px 10px 24px !important;
+    overflow-x: visible !important;
+  }
+  .card {
+    min-width: 0 !important;
+  }
+  .page [style*="overflow-x:auto"],
+  .page [style*="overflow-x: auto"],
+  .table-wrap {
+    width: calc(100vw - 20px) !important;
+    max-width: calc(100vw - 20px) !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+  }
+  .page-header > div:last-child,
+  .card-title,
+  .kpi-page-header {
+    min-width: 0 !important;
+  }
+  .btn {
+    max-width: 100% !important;
+    white-space: normal !important;
+    justify-content: center !important;
+  }
   [style*="repeat(2,1fr)"],
   [style*="grid-template-columns:1fr 1fr"] {
     grid-template-columns: 1fr !important;
@@ -3034,7 +3066,7 @@ if(window.innerWidth<=768){
   if(typeof mobileCloseSidebar==='function') mobileCloseSidebar();
   // Scroll the main content area to top
   var mainEl=document.querySelector('.main');
-  if(mainEl){ mainEl.scrollTop=0; mainEl.scrollLeft=0; }
+  if(mainEl){ mainEl.scrollTop=0; if(window.innerWidth>480) mainEl.scrollLeft=0; }
   // Also scroll the window
   window.scrollTo(0,0);
 }
