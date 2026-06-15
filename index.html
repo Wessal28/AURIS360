@@ -2958,6 +2958,20 @@ function canAccessPage(pageKey) {
   // module list (Gate 2), and are governed by role only (Gate 3).
   var ADMIN_PAGES = ['users','settings','admin','integrations','executive','ai-insights'];
   var isAdminPage = ADMIN_PAGES.indexOf(pageKey) !== -1;
+  var isLimitedPilotCompany = co && Array.isArray(co.module_access) && co.module_access.length > 0 && co.module_access.length <= 4;
+  if(pageKey === 'ai-insights') {
+    try {
+      if(typeof AI_AVAILABLE !== 'undefined' && !AI_AVAILABLE && !isSA()) return false;
+    } catch(e) {}
+  }
+
+  // Pilot/client guard: when a company is deliberately limited to a small
+  // module set, keep every non-SEHPS user inside that set plus Dashboard.
+  // This prevents a Company Admin pilot user from seeing Users, Settings,
+  // Integrations, Executive or AI pages just because those are admin pages.
+  if(!isSA() && isLimitedPilotCompany && pageKey !== 'dashboard') {
+    if(co.module_access.indexOf(pageKey) === -1) return false;
+  }
 
   // Gate 1: Feature flag. Dashboard + admin pages always pass.
   if(pageKey !== 'dashboard' && !isAdminPage && !isModuleLaunched(pageKey)) return false;
@@ -4223,6 +4237,29 @@ const AI_PROXY_URL = null;  // e.g. 'https://<your-project>.supabase.co/function
 const ANTHROPIC_URL = AI_PROXY_URL || 'https://api.anthropic.com/v1/messages';
 const CLAUDE_MODEL = 'claude-sonnet-4-20250514';
 const AI_AVAILABLE = !!AI_PROXY_URL;
+
+function applyAIAvailability() {
+  if (AI_AVAILABLE) return;
+  var selectors = [
+    '#nav-ai',
+    '[onclick*="genDashAI"]',
+    '[onclick*="execGenerateReport"]',
+    '[onclick*="invGenerateAISummary"]',
+    '[onclick*="generateSafetyComm"]',
+    '[onclick*="obsAskAI"]',
+    '[onclick*="raAISuggest"]',
+    '[onclick*="aiGenerate"]',
+    '[onclick*="aiComplianceCheck"]',
+    '[onclick*="aiPredictiveRisk"]',
+    '[onclick*="aiScenarioRisk"]',
+    '[onclick*="aiRiskHeatmap"]',
+    '[onclick*="aiAnalyseDocument"]'
+  ];
+  document.querySelectorAll(selectors.join(',')).forEach(function(el) {
+    el.style.display = 'none';
+  });
+}
+window.addEventListener('load', applyAIAvailability);
 
 // Global guard for direct Anthropic fetches. When AI is not configured, every
 // fetch to api.anthropic.com is intercepted and returns a synthetic error
@@ -23277,6 +23314,7 @@ function mobileRenderModulesGrid() {
   var html = '';
   for (var i = 0; i < MOBILE_MODULES.length; i++) {
     var m = MOBILE_MODULES[i];
+    if (typeof canAccessPage === 'function' && !canAccessPage(m.k)) continue;
     if (m.r.indexOf('all') === -1 && m.r.indexOf(role) === -1) continue;
     var color = MODULE_COLORS[m.k] || '#185FA5';
     var isCur = m.k === _mobileCurrentPg;
@@ -23306,6 +23344,7 @@ function mobileSearchModulesRender(q, el) {
   var found = 0;
   for (var i = 0; i < MOBILE_MODULES.length; i++) {
     var m = MOBILE_MODULES[i];
+    if (typeof canAccessPage === 'function' && !canAccessPage(m.k)) continue;
     if (m.r.indexOf('all') === -1 && m.r.indexOf(role) === -1) continue;
     if (m.l.toLowerCase().indexOf(ql) === -1) continue;
     found++;
