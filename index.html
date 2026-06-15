@@ -10330,7 +10330,7 @@ async function imsLoadEvidence(){
         +'<div style="padding:12px 14px">'
         +'<div style="font-size:26px;margin-bottom:6px">'+t.emoji+'</div>'
         +'<div style="font-weight:700;font-size:13px;margin-bottom:4px">'+escH(x.title||t.label)+'</div>'
-        +(x.file_url?'<a href="'+escH(x.file_url)+'" target="_blank" onclick="event.stopPropagation()" style="font-size:11px;color:#185FA5;display:inline-flex;align-items:center;gap:3px"><i class="ti ti-external-link" style="font-size:10px"></i> View file</a>':'')
+        +(x.file_url?'<button type="button" class="btn btn-sm" data-path="'+escH(x.file_url)+'" onclick="event.stopPropagation();imsOpenEvidenceFile(this.dataset.path)" style="font-size:11px;color:#185FA5;display:inline-flex;align-items:center;gap:3px"><i class="ti ti-external-link" style="font-size:10px"></i> View file</button>':'')
         +(x.witness_statement?'<div style="font-size:11px;color:var(--text2);margin-top:6px;font-style:italic">"'+escH(x.witness_statement.substring(0,70))+'…"</div>':'')
         +'<div style="display:flex;gap:8px;font-size:11px;color:var(--text2);margin-top:8px;flex-wrap:wrap">'
         +(x.collected_by?'<span>👤 '+escH(x.collected_by)+'</span>':'')
@@ -10340,6 +10340,21 @@ async function imsLoadEvidence(){
     });
     el.innerHTML=h+'</div>';
   }catch(e){el.innerHTML='<div style="padding:20px;color:var(--text2);text-align:center">Evidence table unavailable.<br><small style="color:var(--text2)">Run incident_schema.sql to create the incident_evidence table.</small></div>';}
+}
+
+async function imsOpenEvidenceFile(path){
+  if(!path)return;
+  if(/^https?:\/\//i.test(path)){window.open(path,'_blank');return;}
+  try{
+    var r=await fetch(SB+'/storage/v1/object/sign/evidence/'+path.split('/').map(encodeURIComponent).join('/'),{
+      method:'POST',
+      headers:{'Authorization':'Bearer '+tok,'apikey':KEY,'Content-Type':'application/json'},
+      body:JSON.stringify({expiresIn:3600})
+    });
+    var d=await r.json();
+    if(d.signedURL) window.open(SB+'/storage/v1'+d.signedURL,'_blank');
+    else toast('Could not open file: '+(d.message||'unknown error'),false);
+  }catch(e){toast(e.message,false);}
 }
 
 function imsNewEvidence(){
