@@ -776,7 +776,7 @@ input[type="button"], input[type="submit"] {
     padding-top: 0 !important;
   }
 
-  /* Pages: proper padding, no overflow */
+  /* Pages: proper padding, no page-level overflow */
   .page {
     padding: 14px 12px 24px !important;
     min-height: auto !important;
@@ -820,9 +820,18 @@ input[type="button"], input[type="submit"] {
     gap: 0 !important;
   }
 
-  /* Tables: horizontal scroll without trapping vertical page swipes */
+  /* Tables and tab strips: horizontal scroll without trapping vertical page swipes */
   .card { overflow-x: visible !important; overflow-y: visible !important; }
-  .table-wrap { overflow-x: auto !important; overflow-y: visible !important; -webkit-overflow-scrolling: touch !important; }
+  .table-wrap,
+  .page [style*="overflow-x:auto"],
+  .page [style*="overflow-x: auto"] {
+    max-width: 100% !important;
+    overflow-x: auto !important;
+    overflow-y: visible !important;
+    -webkit-overflow-scrolling: touch !important;
+    touch-action: pan-x pan-y !important;
+    overscroll-behavior-x: contain !important;
+  }
   table { font-size: 12px !important; min-width: 480px !important; }
   th, td { padding: 8px 10px !important; white-space: nowrap !important; }
 
@@ -23391,6 +23400,22 @@ function mobileSearchModules(q) {
   mobileSearchModulesRender(q, el);
 }
 
+function mobileNormalizeButtons() {
+  if (window.innerWidth > 768) return;
+  document.querySelectorAll('button:not([type])').forEach(function(btn) {
+    btn.setAttribute('type', 'button');
+  });
+}
+
+function mobileStartButtonObserver() {
+  if (window.innerWidth > 768 || window._mobileButtonObserver) return;
+  mobileNormalizeButtons();
+  window._mobileButtonObserver = new MutationObserver(function() {
+    mobileNormalizeButtons();
+  });
+  window._mobileButtonObserver.observe(document.body, { childList: true, subtree: true });
+}
+
 
 // Close sidebar when nav item clicked from sidebar on mobile
 document.addEventListener('click', function(e) {
@@ -23449,6 +23474,7 @@ window.addEventListener('load', function() {
     history.pushState(null, '', window.location.href);
     var titleEl = document.getElementById('mobile-page-title');
     if (titleEl) titleEl.textContent = 'Dashboard';
+    mobileStartButtonObserver();
   }
 });
 
