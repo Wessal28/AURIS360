@@ -7281,6 +7281,9 @@ function loadSettings(){
 if(isAdm())document.getElementById('logo-settings').style.display='block';
 document.getElementById('my-profile-info').innerHTML='<div style="font-size:13px"><strong>'+(prof?.full_name||'--')+'</strong><br><span style="color:var(--text2)">'+(prof?.email||'--')+'</span><br>'+stat(prof?.role)+'</div>';
 try{ brandInit(); }catch(e){ console.error('brandInit:',e); }
+var notifCard=document.getElementById('settings-notif-card');
+if(notifCard) notifCard.style.display=isAdm()?'block':'none';
+if(isAdm()) loadNotifSettings();
 }
 async function saveLogo(){
 const url=document.getElementById('set-logo').value;
@@ -9306,6 +9309,10 @@ function imsIsSimpleReporter(){
   return ['employee','contractor','inspector'].includes(prof?.role || '');
 }
 
+function imsIsReporterLocked(){
+  return !!imsEditId && imsIsSimpleReporter();
+}
+
 function imsSetTypeMode(isExisting){
   var selected=document.getElementById('ev-type')?.value||'';
   var canChange=!isExisting || imsCanChangeType();
@@ -9327,6 +9334,7 @@ function imsSetTypeMode(isExisting){
 
 function imsApplyReportRoleMode(){
   var simple=imsIsSimpleReporter();
+  var locked=imsIsReporterLocked();
   var type=document.getElementById('ev-type')?.value||'';
   var sections=[
     document.getElementById('ev-severity')?.closest('.card'),
@@ -9340,6 +9348,17 @@ function imsApplyReportRoleMode(){
   if(gps) gps.style.display=type==='vehicle'?'':'none';
   var view=document.getElementById('ims-view-report');
   if(view) view.classList.toggle('ims-simple-report',simple);
+  if(view){
+    view.querySelectorAll('input,select,textarea').forEach(function(el){
+      if(el.type==='hidden') return;
+      el.disabled=locked;
+    });
+    view.querySelectorAll('button[onclick="imsSave()"]').forEach(function(btn){
+      btn.style.display=locked?'none':'';
+    });
+  }
+  var lockNote=document.getElementById('ims-report-lock-note');
+  if(lockNote) lockNote.style.display=locked?'block':'none';
 }
 
 function imsNewIncident(){
@@ -9707,6 +9726,10 @@ function imsPrintIncident(){
 }
 
 async function imsSave(){
+  if(imsIsReporterLocked()){
+    toast('Submitted reports are locked for employees. A manager/admin must review changes.',false);
+    return;
+  }
   var type=document.getElementById('ev-type')?.value;
   if(!type){toast('Please select incident type',false);return;}
   var date=document.getElementById('ev-date')?.value;
@@ -9823,7 +9846,7 @@ async function imsLoadInvestigations(){
       el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)"><div style="font-size:40px;margin-bottom:12px">🔍</div><div style="font-weight:600;margin-bottom:8px">No investigations yet</div>'+(isMgr()?'<button class="btn btn-primary" onclick="imsNewInvestigation()"><i class="ti ti-plus"></i>Start investigation</button>':'')+'</div>';
       return;
     }
-    var stCfg={open:['#FEF9EC','#854F0B'],in_progress:['#EFF6FF','#185FA5'],completed:['#EAF3DE','#3B6D11'],closed:['#EAF3DE','#3B6D11']};
+    var stCfg={open:['#FEF9EC','#854F0B'],submitted:['#F5F3FF','#5B21B6'],revision_requested:['#EFF6FF','#185FA5'],in_progress:['#EFF6FF','#185FA5'],completed:['#EAF3DE','#3B6D11'],closed:['#EAF3DE','#3B6D11']};
     var methEmoji={'5why':'❓',fishbone:'🐟',icam:'🔬',taproot:'🌿',timeline:'📅',combined:'🔀'};
     var h='<div style="overflow:auto"><table style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr style="background:#3B0764;color:#fff"><th style="padding:8px 14px;text-align:left">Ref</th><th style="padding:8px;text-align:left">Incident</th><th style="padding:8px;text-align:center">Method</th><th style="padding:8px">Investigator</th><th style="padding:8px">Date</th><th style="padding:8px">Status</th><th style="padding:8px;width:50px"></th></tr></thead><tbody>';
     d.forEach(function(x,i){
@@ -9851,6 +9874,7 @@ function imsNewInvestigation(linkedEventId){
   document.getElementById('inv-form-title').textContent='New Investigation';
   document.getElementById('inv-form-ref').textContent='INV-AUTO';
   document.getElementById('inv-delete-btn').style.display='none';
+  invApplyLockMode(null);
   // Clear all fields
   ['ws1-reported-by','ws1-reported-title','ws1-event-link','ws1-inc-time','ws1-location',
    'ws1-description','ws1-person-name','ws1-person-function','ws1-witnesses','ws1-immediate-actions',
@@ -9892,6 +9916,37 @@ function imsNewInvestigation(linkedEventId){
   var tlBody=document.getElementById('inv-timeline-body'); if(tlBody)tlBody.innerHTML='';
   invSelectMethod('5why');
   invShowTab('ws1', document.getElementById('inv-tab-ws1'));
+  invApplyLockMode(null);
+}
+
+function invCanEditRecord(rec){
+  if(!imsInvEditId) return true;
+  if(isAdm() || prof?.role==='admin' || prof?.role==='sephs_admin') return true;
+  return (rec?.status||'')==='revision_requested';
+}
+
+function invApplyLockMode(rec){
+  var form=document.getElementById('ims-inv-form'); if(!form)return;
+  var locked=!!imsInvEditId && !invCanEditRecord(rec||{status:document.getElementById('inv-status-sel')?.value});
+  form.querySelectorAll('input,select,textarea').forEach(function(el){
+    if(el.type==='hidden') return;
+    el.disabled=locked;
+  });
+  form.querySelectorAll('button').forEach(function(btn){
+    var action=btn.getAttribute('onclick')||'';
+    var keep=action.includes('imsInvBack') || action.includes('invReleaseForEdit') || action.includes('invDeleteCurrent');
+    if(action.includes('invSave')) btn.style.display=locked?'none':'';
+    else if(!keep && locked) btn.disabled=true;
+    else if(!locked) btn.disabled=false;
+  });
+  var note=document.getElementById('inv-lock-note');
+  if(note){
+    note.style.display=locked?'block':'none';
+    note.textContent='Submitted investigation locked. Admin must release it before it can be modified.';
+  }
+  var rel=document.getElementById('inv-release-btn');
+  var adminRole=isAdm() || prof?.role==='admin' || prof?.role==='sephs_admin';
+  if(rel) rel.style.display=(adminRole && imsInvEditId)?'inline-flex':'none';
 }
 
 function imsOpenInvestigation(id){
@@ -9901,7 +9956,9 @@ function imsOpenInvestigation(id){
   document.getElementById('ims-inv-form').style.display='block';
   document.getElementById('inv-form-title').textContent=x.description||x.incident_description||'Investigation';
   document.getElementById('inv-form-ref').textContent=x.investigation_ref||'—';
-  document.getElementById('inv-delete-btn').style.display=isMgr()?'inline-flex':'none';
+  var adminRole=isAdm() || prof?.role==='admin' || prof?.role==='sephs_admin';
+  document.getElementById('inv-delete-btn').style.display=adminRole?'inline-flex':'none';
+  var releaseBtn=document.getElementById('inv-release-btn'); if(releaseBtn) releaseBtn.style.display=adminRole?'inline-flex':'none';
   var gf=function(fid,val){var el=document.getElementById(fid);if(el)el.value=val||'';};
   gf('ws1-reported-by',x.reported_by||x.investigator);
   gf('ws1-event-link',x.linked_event_ref||'');
@@ -9971,6 +10028,7 @@ function imsOpenInvestigation(id){
   invSelectMethod(x.investigation_method||'5why');
   invRefreshSignButtons();
   invShowTab('ws1', document.getElementById('inv-tab-ws1'));
+  invApplyLockMode(x);
 }
 
 function imsAddWhyRow(container, num, answer){
@@ -10270,6 +10328,11 @@ async function invSign(role){
 }
 
 async function invSave(){
+  var currentInv=(imsInvAllData||[]).find(function(r){return r.id===imsInvEditId;})||{};
+  if(imsInvEditId && !invCanEditRecord(currentInv)){
+    toast('Submitted investigations are locked. Admin must release it before modification.',false);
+    return;
+  }
   var g=function(id){var el=document.getElementById(id);return el?el.value||null:null;};
   // Collect 5-Why answers as array (column is jsonb — accepts array directly)
   var whys=Array.from(document.querySelectorAll('.ws3-why-ans')).map(ta=>ta.value.trim()).filter(Boolean);
@@ -10285,9 +10348,11 @@ async function invSave(){
   });
   // Use sephs_admin's selected company if applicable, else user's own
   var effectiveCompanyId = (isSA() && sephsCompanyContext) ? sephsCompanyContext : prof?.company_id;
+  var invStatus=g('inv-status-sel')||'open';
+  if(!(isAdm() || prof?.role==='admin' || prof?.role==='sephs_admin')) invStatus=imsInvEditId?'submitted':'submitted';
   var body={company_id:effectiveCompanyId,
     investigation_type:g('inv-type-sel')||'incident',investigation_method:g('inv-method')||'5why',
-    status:g('inv-status-sel')||'open',reported_by:g('ws1-reported-by'),
+    status:invStatus,reported_by:g('ws1-reported-by'),
     linked_event_ref:g('ws1-event-link'),incident_date:g('ws1-inc-date')||null,
     incident_time:g('ws1-inc-time'),location:g('ws1-location'),description:g('ws1-description'),
     person_name:g('ws1-person-name'),person_function:g('ws1-person-function'),
@@ -10350,6 +10415,19 @@ async function invSave(){
       }
     }
     imsInvBack();
+  }catch(e){toast(e.message,false);}
+}
+
+async function invReleaseForEdit(){
+  if(!(isAdm() || prof?.role==='admin' || prof?.role==='sephs_admin')){toast('Only admin can release an investigation for edit',false);return;}
+  if(!imsInvEditId){toast('Open a saved investigation first',false);return;}
+  try{
+    await api('/investigations?id=eq.'+imsInvEditId,{m:'PATCH',p:'return=minimal',b:{status:'revision_requested',updated_at:new Date().toISOString()}});
+    var sel=document.getElementById('inv-status-sel'); if(sel)sel.value='revision_requested';
+    var rec=(imsInvAllData||[]).find(function(r){return r.id===imsInvEditId;});
+    if(rec)rec.status='revision_requested';
+    invApplyLockMode(rec||{status:'revision_requested'});
+    toast('Investigation released for edit');
   }catch(e){toast(e.message,false);}
 }
 
@@ -26795,6 +26873,7 @@ async function obCreate() {
 <div style="font-size:11px;font-weight:600;text-transform:uppercase;opacity:.8;letter-spacing:.08em;margin-bottom:4px" id="ims-form-type-label">Incident Report</div>
 <div style="font-size:18px;font-weight:800" id="ims-form-title">New Incident</div>
 <div style="font-family:monospace;font-size:12px;color:#fca5a5;margin-top:3px" id="ims-form-ref">INC-AUTO</div>
+<div id="ims-report-lock-note" style="display:none;margin-top:7px;font-size:12px;color:#fff;background:rgba(255,255,255,.16);padding:5px 9px;border-radius:7px">Submitted report locked. A manager or admin must make any changes.</div>
 </div>
 <div style="display:flex;gap:8px;flex-wrap:wrap">
 <button class="btn" style="background:rgba(255,255,255,.2);color:#fff;border-color:rgba(255,255,255,.3)" onclick="imsBackToRegister()"><i class="ti ti-arrow-left"></i>Back</button>
@@ -27009,10 +27088,12 @@ async function obCreate() {
 <div>
 <div style="font-size:17px;font-weight:800" id="inv-form-title">Investigation</div>
 <div style="font-family:monospace;font-size:12px;color:#ddd6fe;margin-top:3px" id="inv-form-ref">INV-AUTO</div>
+<div id="inv-lock-note" style="display:none;margin-top:7px;font-size:12px;color:#fff;background:rgba(255,255,255,.16);padding:5px 9px;border-radius:7px"></div>
 </div>
 <div style="display:flex;gap:8px">
 <button class="btn" style="background:rgba(255,255,255,.2);color:#fff;border-color:rgba(255,255,255,.3)" onclick="imsInvBack()"><i class="ti ti-arrow-left"></i>Back</button>
 <button id="inv-delete-btn" class="btn" style="display:none;background:rgba(0,0,0,.3);color:#fff;border-color:rgba(255,255,255,.3)" onclick="invDeleteCurrent()"><i class="ti ti-trash"></i></button>
+<button id="inv-release-btn" class="btn" style="display:none;background:#fff;color:#5B21B6;font-weight:700" onclick="invReleaseForEdit()"><i class="ti ti-lock-open"></i>Release for edit</button>
 <button class="btn" style="background:#1D9E75;color:#fff;border-color:#1D9E75" onclick="invSave()"><i class="ti ti-device-floppy"></i>Save</button>
 <button class="btn" style="display:none;background:#fff;color:#5B21B6;font-weight:700" onclick="invGenerateAISummary()"><i class="ti ti-robot"></i>AI summary</button>
 </div>
@@ -27060,7 +27141,7 @@ async function obCreate() {
 <div class="form-group"><label class="form-label">Actual severity</label>
 <select id="inv-type-sel"><option value="incident">Incident</option><option value="near_miss">Near Miss</option><option value="dangerous_occurrence">Dangerous Occurrence</option><option value="injury">Injury</option></select></div>
 <div class="form-group"><label class="form-label">Investigation status</label>
-<select id="inv-status-sel"><option value="open">Open</option><option value="in_progress">In progress</option><option value="completed">Completed</option><option value="closed">Closed</option></select></div>
+<select id="inv-status-sel"><option value="open">Open</option><option value="submitted">Submitted / locked</option><option value="revision_requested">Released for edit</option><option value="in_progress">In progress</option><option value="completed">Completed</option><option value="closed">Closed</option></select></div>
 </div>
 <div class="form-row">
 <div class="form-group"><label class="form-label">Person involved name</label><input type="text" id="ws1-person-name"/></div>
@@ -34868,6 +34949,12 @@ I can help you:<br>
 
 <div class="card"><div class="card-title">My profile</div><div id="my-profile-info"></div></div>
 
+<div class="card" id="settings-notif-card" style="display:none">
+  <div class="card-title" style="display:flex;align-items:center;gap:8px"><i class="ti ti-bell" style="color:var(--green)"></i>Email Notifications</div>
+  <div style="font-size:12px;color:var(--text2);margin-bottom:14px">Company Admin can configure who receives incident emails by incident type. Go to the section below called "Incident recipients by event type".</div>
+  <div id="notif-settings-body"><div class="loading">Loading...</div></div>
+</div>
+
 <!-- Legacy logo-settings card kept hidden for backwards compatibility with saveLogo() -->
 <div id="logo-settings" style="display:none"><input type="url" id="set-logo"/></div>
 
@@ -34888,7 +34975,7 @@ I can help you:<br>
     Configure automatic email alerts for incidents, permits, actions and more.
     Uses <a href="https://resend.com" target="_blank" style="color:var(--blue)">Resend</a> (free: 3,000 emails/month).
   </p>
-  <div id="notif-settings-body"><div class="loading">Loading...</div></div>
+  <div id="notif-settings-body-legacy"><div class="loading">Loading...</div></div>
 </div>
 
 </div>
