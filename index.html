@@ -9102,6 +9102,39 @@ function imsPhotoSelected(input){
 function imsRemovePhoto(i){imsPendingPhotos.splice(i,1);imsRenderPhotos();}
 function imsClearPhotos(){imsPendingPhotos=[];var input=document.getElementById('ev-photo-input');if(input)input.value='';imsRenderPhotos();}
 
+function imsClearInlineEvidence(){
+  var card=document.getElementById('ims-inline-evidence-card');
+  var list=document.getElementById('ims-inline-evidence-list');
+  if(card)card.style.display='none';
+  if(list)list.innerHTML='';
+}
+
+async function imsLoadInlineEvidence(eventId){
+  var card=document.getElementById('ims-inline-evidence-card');
+  var list=document.getElementById('ims-inline-evidence-list');
+  if(!card||!list||!eventId)return;
+  card.style.display='block';
+  list.innerHTML='<div class="loading-msg" style="padding:10px">Loading evidence...</div>';
+  try{
+    var d=await api('/incident_evidence?select=*&event_id=eq.'+eventId+'&order=created_at.desc');
+    if(!(d||[]).length){
+      list.innerHTML='<div style="font-size:12px;color:var(--text2);padding:8px 0">No saved evidence attached yet.</div>';
+      return;
+    }
+    list.innerHTML=d.map(function(x){
+      var isPhoto=(x.evidence_type||'')==='photo'||/\.(png|jpe?g|webp|gif|heic)$/i.test(x.file_name||x.file_url||'');
+      return '<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-top:1px solid var(--border)">'
+        +'<i class="ti '+(isPhoto?'ti-photo':'ti-paperclip')+'" style="font-size:18px;color:#185FA5"></i>'
+        +'<div style="flex:1;min-width:0"><div style="font-size:12px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+escH(x.file_name||x.title||'Evidence')+'</div>'
+        +'<div style="font-size:11px;color:var(--text2)">'+escH((x.evidence_type||'evidence').replace(/_/g,' '))+(x.collected_date?' · '+new Date(x.collected_date).toLocaleDateString('en-GB'):'')+'</div></div>'
+        +(x.file_url?'<button type="button" class="btn btn-sm" data-path="'+escH(x.file_url)+'" onclick="imsOpenEvidenceFile(this.dataset.path)"><i class="ti ti-eye"></i>View</button>':'')
+        +'</div>';
+    }).join('');
+  }catch(e){
+    list.innerHTML='<div style="font-size:12px;color:var(--red);padding:8px 0">Could not load evidence: '+escH(e.message)+'</div>';
+  }
+}
+
 async function imsSavePendingPhotos(eventId, companyId, incidentRef){
   if(!eventId||!imsPendingPhotos.length)return;
   var uploaded=0;
@@ -9124,6 +9157,7 @@ async function imsSavePendingPhotos(eventId, companyId, incidentRef){
     uploaded++;
   }
   imsClearPhotos();
+  imsLoadInlineEvidence(eventId);
   if(uploaded) toast(uploaded+' photo'+(uploaded>1?'s':'')+' attached to incident');
 }
 
@@ -9267,6 +9301,7 @@ function imsFilterList(){
 function imsNewIncident(){
   imsEditId=null;
   imsClearPhotos();
+  imsClearInlineEvidence();
   document.getElementById('ims-form-title').textContent='New Incident Report';
   document.getElementById('ims-form-ref').textContent='INC-AUTO';
   document.getElementById('ims-del-btn').style.display='none';
@@ -9306,6 +9341,7 @@ function imsOpenEdit(id){
   var x=imsAllData.find(r=>r.id===id); if(!x)return;
   imsEditId=id;
   imsClearPhotos();
+  imsLoadInlineEvidence(id);
   var type=x.event_type||x.type||'near_miss';
   var cfg=IMS_TYPE_CFG[type]||IMS_TYPE_CFG.near_miss;
   document.getElementById('ims-form-banner').style.background='linear-gradient(135deg,'+cfg.color+'cc,'+cfg.color+')';
@@ -26663,6 +26699,11 @@ async function obCreate() {
 <button type="button" class="btn btn-sm" onclick="imsClearPhotos()"><i class="ti ti-x"></i>Clear</button>
 </div>
 <div id="ev-photo-list" style="font-size:12px;color:var(--text2)">No photos selected</div>
+</div>
+
+<div class="card" id="ims-inline-evidence-card" style="margin-bottom:14px;display:none"><div class="card-title"><i class="ti ti-photo"></i> Saved Evidence</div>
+<div style="font-size:12px;color:var(--text2);margin-bottom:8px">Photos and files already attached to this incident.</div>
+<div id="ims-inline-evidence-list"></div>
 </div>
 
 <!-- Type-specific fields -->
