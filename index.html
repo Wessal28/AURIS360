@@ -913,6 +913,22 @@ input[type="button"], input[type="submit"] {
     height: auto !important;
     display: block !important;
   }
+  .sidebar {
+    height: 100vh !important;
+    height: 100dvh !important;
+    height: calc(var(--auris-vh, 1vh) * 100) !important;
+    max-height: calc(var(--auris-vh, 1vh) * 100) !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    padding-bottom: calc(84px + env(safe-area-inset-bottom, 0)) !important;
+    overscroll-behavior: contain !important;
+  }
+  .sidebar.open {
+    overflow-y: auto !important;
+  }
+  .sidebar .sb-footer {
+    position: static !important;
+  }
   #mobile-topbar,
   #mobile-bottom-nav {
     z-index: 900 !important;
@@ -977,6 +993,27 @@ input[type="button"], input[type="submit"] {
   .card-title,
   .kpi-page-header {
     min-width: 0 !important;
+  }
+  .page [style*="display:grid"],
+  .card [style*="display:grid"] {
+    grid-template-columns: 1fr !important;
+    max-width: 100% !important;
+  }
+  #mobile-modules-grid {
+    grid-template-columns: repeat(3, 1fr) !important;
+  }
+  .metrics,
+  .grid2,
+  .form-row,
+  .form-row3 {
+    grid-template-columns: 1fr !important;
+  }
+  .card-title,
+  .page-header > div:last-child,
+  .kpi-page-header,
+  [style*="justify-content:space-between"] {
+    flex-wrap: wrap !important;
+    gap: 8px !important;
   }
   .btn {
     max-width: 100% !important;
