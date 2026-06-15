@@ -24412,9 +24412,7 @@ document.addEventListener('click', function(e) {
 });
 
 async function saveNotifSettings() {
-  var fromEmail = document.getElementById('notif-from-email')?.value?.trim();
-  var resendKey = document.getElementById('notif-resend-key')?.value?.trim();
-  var updates = { from_email: fromEmail, resend_api_key: resendKey, event_recipients: collectNotifEventRecipients(), updated_at: new Date().toISOString() };
+  var updates = { event_recipients: collectNotifEventRecipients(), updated_at: new Date().toISOString() };
   Object.assign(updates, _notifToggles || {});
   try {
     var existing = await api('/notification_settings?company_id=eq.' + prof.company_id + '&limit=1');
@@ -24434,28 +24432,23 @@ async function saveNotifSettings() {
 }
 
 async function sendTestEmail() {
-  var fromEmail = document.getElementById('notif-from-email')?.value?.trim() || 'noreply@auris360.com';
-  var resendKey = document.getElementById('notif-resend-key')?.value?.trim();
-  if (!resendKey) { toast('Please enter your Resend API key first', false); return; }
+  var companyId=(isSA()&&sephsCompanyContext)?sephsCompanyContext:prof.company_id;
   if (!prof?.email) { toast('No email on your profile', false); return; }
   try {
-    var r = await fetch('https://api.resend.com/emails', {
-      method:'POST',
-      headers:{'Content-Type':'application/json','Authorization':'Bearer ' + resendKey},
-      body: JSON.stringify({
-        from: 'AURIS360 <' + fromEmail + '>',
-        to: [prof.email],
-        subject: 'AURIS360 Test Email',
-        html: '<div style="font-family:Arial,sans-serif;padding:24px;max-width:500px">'
-          + '<div style="background:#1D9E75;padding:16px;color:#fff;border-radius:8px 8px 0 0;font-size:18px;font-weight:700">AURIS360</div>'
-          + '<div style="padding:20px;border:1px solid #e5e7eb;border-top:none;border-radius:0 0 8px 8px">'
-          + '<p>✅ Your email notifications are working correctly!</p>'
-          + '<p style="color:#6b7280;font-size:13px">This test was sent from AURIS360 by SEPHS Consulting.</p>'
-          + '</div></div>'
-      })
-    });
-    if (r.ok) toast('✓ Test email sent to ' + prof.email);
-    else { var d = await r.json(); toast('Error: ' + (d.message||'Send failed'), false); }
+    await api('/notification_queue',{m:'POST',p:'return=minimal',b:{
+      company_id:companyId,
+      type:'test_email',
+      subject:'AURIS360 Test Email',
+      body_html:'<div style="font-family:Arial,sans-serif;padding:24px;max-width:500px">'
+        + '<div style="background:#1D9E75;padding:16px;color:#fff;border-radius:8px 8px 0 0;font-size:18px;font-weight:700">AURIS360</div>'
+        + '<div style="padding:20px;border:1px solid #e5e7eb;border-top:none;border-radius:0 0 8px 8px">'
+        + '<p>Your email notifications are working correctly.</p>'
+        + '<p style="color:#6b7280;font-size:13px">This test was queued from AURIS360 and will be sent by the server email worker.</p>'
+        + '</div></div>',
+      to_email:prof.email,
+      to_name:prof.full_name||''
+    }});
+    toast('Test email queued for '+prof.email+'. It will send when the email worker runs.');
   } catch(e) { toast('Error: ' + e.message, false); }
 }
 
