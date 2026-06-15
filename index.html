@@ -9298,6 +9298,50 @@ function imsFilterList(){
 }
 
 // ─── REPORT FORM ──────────────────────────────────────────────────────────────
+function imsCanChangeType(){
+  return isSA() || prof?.role === 'hse_manager';
+}
+
+function imsIsSimpleReporter(){
+  return ['employee','contractor','inspector'].includes(prof?.role || '');
+}
+
+function imsSetTypeMode(isExisting){
+  var selected=document.getElementById('ev-type')?.value||'';
+  var canChange=!isExisting || imsCanChangeType();
+  document.querySelectorAll('.ims-type-btn').forEach(function(btn){
+    var show=!isExisting || canChange || btn.dataset.type===selected;
+    btn.style.display=show?'':'none';
+    btn.style.pointerEvents=canChange?'auto':'none';
+    btn.style.cursor=canChange?'pointer':'default';
+    btn.setAttribute('aria-disabled',canChange?'false':'true');
+  });
+  var note=document.getElementById('ims-type-mode-note');
+  if(note){
+    if(isExisting && !canChange) note.textContent='Incident type is locked. Only the HSE Manager can change it.';
+    else if(isExisting && canChange) note.textContent='HSE Manager view: you can change the incident type if required.';
+    else note.textContent='';
+    note.style.display=note.textContent?'block':'none';
+  }
+}
+
+function imsApplyReportRoleMode(){
+  var simple=imsIsSimpleReporter();
+  var type=document.getElementById('ev-type')?.value||'';
+  var sections=[
+    document.getElementById('ev-severity')?.closest('.card'),
+    document.getElementById('ev-status')?.closest('.card'),
+    document.getElementById('ev-inv-required')?.closest('.card'),
+    document.getElementById('ev-assigned-name')?.closest('.form-group'),
+    document.getElementById('ev-due-date')?.closest('.form-group')
+  ];
+  sections.forEach(function(el){ if(el) el.style.display=simple?'none':''; });
+  var gps=document.getElementById('ev-gps-address')?.closest('.card');
+  if(gps) gps.style.display=type==='vehicle'?'':'none';
+  var view=document.getElementById('ims-view-report');
+  if(view) view.classList.toggle('ims-simple-report',simple);
+}
+
 function imsNewIncident(){
   imsEditId=null;
   imsClearPhotos();
@@ -9325,6 +9369,8 @@ function imsNewIncident(){
   document.getElementById('ev-regulator-notified').checked=false;
   ['ims-injury-fields','ims-vehicle-fields','ims-env-fields','ims-property-fields'].forEach(id=>{var el=document.getElementById(id);if(el)el.style.display='none';});
   document.querySelectorAll('.ims-type-btn').forEach(b=>{b.style.transform='';b.style.boxShadow='';b.style.borderColor='';});
+  imsSetTypeMode(false);
+  imsApplyReportRoleMode();
   // Auto-fill "Reported by" with the logged-in user (editable if reporting on someone's behalf)
   var rb=document.getElementById('ev-reported-by-name'); if(rb)rb.value=prof?.full_name||prof?.email||'';
   // Populate the Assigned-to typeahead with registered personnel
@@ -9335,6 +9381,7 @@ function imsNewIncident(){
   document.querySelectorAll('[id^="ims-view-"]').forEach(el=>el.style.display='none');
   document.getElementById('ims-view-report').style.display='block';
   imsSetFormMode(true);
+  imsApplyReportRoleMode();
 }
 
 function imsOpenEdit(id){
@@ -9407,14 +9454,22 @@ function imsOpenEdit(id){
   else if(type==='environmental') document.getElementById('ims-env-fields').style.display='block';
   else if(type==='property_damage') document.getElementById('ims-property-fields').style.display='block';
   document.querySelectorAll('.ims-type-btn').forEach(b=>{var t=b.dataset.type;var bcfg=IMS_TYPE_CFG[t]||{};if(t===type){b.style.borderColor=bcfg.color||cfg.color;b.style.transform='scale(1.04)';}else{b.style.borderColor='';b.style.transform='';}});
+  imsSetTypeMode(true);
+  imsApplyReportRoleMode();
   document.querySelectorAll('[id^="ims-tab-"]').forEach(t=>t.classList.remove('active'));
   document.getElementById('ims-tab-report')?.classList.add('active');
   document.querySelectorAll('[id^="ims-view-"]').forEach(el=>el.style.display='none');
   document.getElementById('ims-view-report').style.display='block';
   imsSetFormMode(true);
+  imsApplyReportRoleMode();
 }
 
 function imsSelectType(type){
+  var current=document.getElementById('ev-type')?.value||'';
+  if(imsEditId && current && current!==type && !imsCanChangeType()){
+    toast('Only the HSE Manager can change the incident type',false);
+    return;
+  }
   document.getElementById('ev-type').value=type;
   var cfg=IMS_TYPE_CFG[type]||{color:'#DC2626',bg:'#FEF2F2',label:type};
   document.getElementById('ims-form-banner').style.background='linear-gradient(135deg,'+cfg.color+'cc,'+cfg.color+')';
@@ -9430,6 +9485,8 @@ function imsSelectType(type){
   else if(type==='environmental') document.getElementById('ims-env-fields').style.display='block';
   else if(type==='property_damage') document.getElementById('ims-property-fields').style.display='block';
   document.getElementById('ev-serious-warning').style.display=['injury','dangerous_occurrence','fire'].includes(type)?'block':'none';
+  imsSetTypeMode(!!imsEditId);
+  imsApplyReportRoleMode();
 }
 
 function imsToggleInvReq(){
@@ -9502,6 +9559,49 @@ async function imsNotifyAssignee(assignedName, companyId, ref, desc, location){
 }
 
 // ─── INCIDENT PRINT (clean hidden-document approach, same as KPI print) ──────
+async function imsNotifyIncidentTypeRecipients(companyId, type, ref, desc, location){
+  if(!companyId || !type) return;
+  try{
+    var rows=await api('/notification_settings?company_id=eq.'+companyId+'&limit=1');
+    var settings=rows&&rows[0]?rows[0]:null;
+    if(!settings || settings.email_enabled===false || settings.notify_on_incident===false) return;
+    var rules=settings.event_recipients||{};
+    if(typeof rules==='string'){try{rules=JSON.parse(rules);}catch(_){rules={};}}
+    var recipients=Array.isArray(rules[type])?rules[type]:[];
+    if(!recipients.length) return;
+    var cfg=IMS_TYPE_CFG[type]||{label:type.replace(/_/g,' ')};
+    var seen={};
+    for(var i=0;i<recipients.length;i++){
+      var r=recipients[i]||{};
+      var email=(typeof r==='string'?r:r.email||'').trim();
+      var name=(typeof r==='string'?'':r.name||'').trim();
+      if(!email || seen[email.toLowerCase()]) continue;
+      seen[email.toLowerCase()]=true;
+      var html='<!DOCTYPE html><html><body style="margin:0;font-family:Arial,sans-serif;background:#f4f6f8;padding:20px">'
+        +'<div style="max-width:560px;margin:0 auto;background:#fff;border-radius:12px;overflow:hidden;border:1px solid #e5e7eb">'
+        +'<div style="background:#7F1D1D;padding:18px 24px;color:#fff;font-size:16px;font-weight:700">Incident notification: '+escH(cfg.label)+'</div>'
+        +'<div style="padding:24px">'
+        +'<p style="font-size:14px;color:#1a1a1a">A new incident has been reported in AURIS360.</p>'
+        +'<div style="background:#f9fafb;border-radius:8px;padding:14px;margin:14px 0;font-size:13px">'
+        +'<div><strong>Reference:</strong> '+escH(ref||'(pending)')+'</div>'
+        +'<div style="margin-top:5px"><strong>Type:</strong> '+escH(cfg.label)+'</div>'
+        +(location?'<div style="margin-top:5px"><strong>Location:</strong> '+escH(location)+'</div>':'')
+        +'<div style="margin-top:5px"><strong>Description:</strong> '+escH((desc||'').substring(0,260))+'</div>'
+        +'</div>'
+        +'<div style="margin-top:18px;text-align:center"><a href="https://app.auris360.com" style="background:#1D9E75;color:#fff;padding:10px 24px;border-radius:8px;text-decoration:none;font-weight:600;font-size:13px">Open AURIS360</a></div>'
+        +'</div>'
+        +'<div style="padding:10px 24px;background:#f4f6f8;font-size:11px;color:#6B7280;text-align:center">AURIS360 - Incident Management</div>'
+        +'</div></body></html>';
+      await api('/notification_queue',{m:'POST',p:'return=minimal',b:{
+        company_id:companyId,type:'incident_'+type,
+        subject:'New '+cfg.label+' incident - '+(ref||'AURIS360'),
+        body_html:html,to_email:email,to_name:name,
+        related_table:'events',related_id:imsEditId||null
+      }});
+    }
+  }catch(e){/* non-critical: notification rules must never block incident reporting */}
+}
+
 function imsPrintIncident(){
   if(!imsEditId){toast('Open an incident from the register first',false);return;}
   var x=(imsAllData||[]).find(function(r){return r.id===imsEditId;})||{};
@@ -9678,6 +9778,7 @@ async function imsSave(){
         }
         if(invReq) document.getElementById('ims-start-inv-btn').style.display='inline-flex';
         if(newAssigned) imsNotifyAssignee(newAssigned,effectiveCompanyId,ref,desc,g('ev-location'));
+        imsNotifyIncidentTypeRecipients(effectiveCompanyId,type,ref,desc,g('ev-location'));
         // If an investigation is required, stay on the form so the user can
         // click "Start investigation" immediately instead of re-opening the record.
         if(invReq){
@@ -24129,6 +24230,11 @@ function renderNotifSettings(s, queue) {
     {id:'notify_on_investigation', val: s.notify_on_investigation !== false, label:'Notify investigator when assigned'},
     {id:'notify_on_audit',         val: s.notify_on_audit !== false,         label:'Notify participants when audit scheduled'},
   ];
+  var incidentRules = s.event_recipients || {};
+  if (typeof incidentRules === 'string') {
+    try { incidentRules = JSON.parse(incidentRules); } catch(_) { incidentRules = {}; }
+  }
+  var incidentTypeKeys = ['injury','near_miss','dangerous_occurrence','property_damage','environmental','vehicle','unsafe_act','unsafe_condition','fire','occupational_disease','security'];
 
   var togglesHtml = fields.map(function(f) {
     var bg  = f.val ? 'var(--green)' : 'var(--border)';
@@ -24150,6 +24256,18 @@ function renderNotifSettings(s, queue) {
       + (n.created_at ? new Date(n.created_at).toLocaleString() : '') + '</td>'
       + '</tr>';
   }).join('') : '<tr><td colspan="4" style="padding:16px;text-align:center;color:var(--text2)">No notifications yet</td></tr>';
+  var recipientRows = incidentTypeKeys.map(function(k) {
+    var cfg = (typeof IMS_TYPE_CFG !== 'undefined' && IMS_TYPE_CFG[k]) ? IMS_TYPE_CFG[k] : {label:k.replace(/_/g,' '), emoji:''};
+    var recipients = Array.isArray(incidentRules[k]) ? incidentRules[k] : [];
+    var value = recipients.map(function(r){
+      if (typeof r === 'string') return r;
+      return r.name && r.email ? r.name + ' <' + r.email + '>' : (r.email || r.name || '');
+    }).filter(Boolean).join(', ');
+    return '<div style="display:grid;grid-template-columns:minmax(140px,210px) 1fr;gap:10px;align-items:center;padding:8px 0;border-bottom:1px solid var(--border)">'
+      + '<label for="notif-recip-' + k + '" style="font-size:12px;font-weight:700;color:var(--text)">' + cfg.emoji + ' ' + escH(cfg.label) + '</label>'
+      + '<input type="text" class="notif-event-recips" data-type="' + k + '" id="notif-recip-' + k + '" value="' + escH(value) + '" placeholder="name@company.com, HSE Manager <hse@company.com>" style="font-size:12px"/>'
+      + '</div>';
+  }).join('');
 
   return '<div class="form-row" style="margin-bottom:16px">'
     + '<div class="form-group"><label class="form-label">From Email Address</label>'
@@ -24158,6 +24276,11 @@ function renderNotifSettings(s, queue) {
     + '<input type="password" id="notif-resend-key" value="' + escH(s.resend_api_key||'') + '" placeholder="re_xxxxxxxxxxxx"/></div>'
     + '</div>'
     + '<div id="notif-toggles" style="margin-bottom:16px">' + togglesHtml + '</div>'
+    + '<div style="border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:16px;background:#fff">'
+    + '<div style="font-size:13px;font-weight:800;margin-bottom:4px">Incident recipients by event type</div>'
+    + '<div style="font-size:12px;color:var(--text2);margin-bottom:10px">Company Admin can add the people to notify for each incident type. Use email addresses, separated by commas.</div>'
+    + recipientRows
+    + '</div>'
     + '<div style="display:flex;gap:10px;margin-bottom:20px">'
     + '<button class="btn btn-primary" onclick="saveNotifSettings()"><i class="ti ti-device-floppy"></i>Save Settings</button>'
     + '<button class="btn" onclick="sendTestEmail()"><i class="ti ti-mail"></i>Send Test Email</button>'
@@ -24173,6 +24296,28 @@ function renderNotifSettings(s, queue) {
 
 var _notifToggles = {};
 function notifToggle(el, field) {}  // legacy - see event delegation below
+
+function parseNotifRecipients(text) {
+  return String(text || '').split(',').map(function(part) {
+    var raw = part.trim();
+    if (!raw) return null;
+    var match = raw.match(/^(.*?)<([^>]+)>$/);
+    if (match) return { name: match[1].trim(), email: match[2].trim() };
+    return { name: '', email: raw };
+  }).filter(function(r) {
+    return r && r.email && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(r.email);
+  });
+}
+
+function collectNotifEventRecipients() {
+  var rules = {};
+  document.querySelectorAll('.notif-event-recips').forEach(function(input) {
+    var type = input.getAttribute('data-type');
+    var recipients = parseNotifRecipients(input.value);
+    if (type && recipients.length) rules[type] = recipients;
+  });
+  return rules;
+}
 
 // Event delegation for notification toggles
 document.addEventListener('click', function(e) {
@@ -24192,7 +24337,7 @@ document.addEventListener('click', function(e) {
 async function saveNotifSettings() {
   var fromEmail = document.getElementById('notif-from-email')?.value?.trim();
   var resendKey = document.getElementById('notif-resend-key')?.value?.trim();
-  var updates = { from_email: fromEmail, resend_api_key: resendKey, updated_at: new Date().toISOString() };
+  var updates = { from_email: fromEmail, resend_api_key: resendKey, event_recipients: collectNotifEventRecipients(), updated_at: new Date().toISOString() };
   Object.assign(updates, _notifToggles || {});
   try {
     var existing = await api('/notification_settings?company_id=eq.' + prof.company_id + '&limit=1');
@@ -24205,7 +24350,9 @@ async function saveNotifSettings() {
     toast('✓ Notification settings saved');
     _notifToggles = {};
   } catch(e) {
-    toast('Error: ' + e.message, false);
+    var msg = e.message || '';
+    if (msg.includes('event_recipients')) msg = 'Database update needed: add event_recipients to notification_settings.';
+    toast('Error: ' + msg, false);
   }
 }
 
@@ -26674,6 +26821,7 @@ async function obCreate() {
 <div class="ims-type-btn" data-type="occupational_disease" onclick="imsSelectType('occupational_disease')" style="padding:10px 8px;border-radius:10px;text-align:center;cursor:pointer;border:2px solid #ddd6fe;background:#F5F3FF;transition:all .15s"><div style="font-size:22px;margin-bottom:4px">🏥</div><div style="font-weight:700;font-size:11px;color:#5B21B6">Occ. Disease</div></div>
 <div class="ims-type-btn" data-type="security"             onclick="imsSelectType('security')"             style="padding:10px 8px;border-radius:10px;text-align:center;cursor:pointer;border:2px solid #e5e7eb;background:#f9fafb;transition:all .15s"><div style="font-size:22px;margin-bottom:4px">🔒</div><div style="font-weight:700;font-size:11px;color:#374151">Security</div></div>
 </div>
+<div id="ims-type-mode-note" style="display:none;font-size:11px;color:var(--text2);margin-top:8px"></div>
 <input type="hidden" id="ev-type" value=""/>
 </div>
 
