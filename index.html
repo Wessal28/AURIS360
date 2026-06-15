@@ -1144,14 +1144,20 @@ input[type="button"], input[type="submit"] {
   [style*="grid-template-columns:1fr 1fr"] {
     grid-template-columns: 1fr !important;
   }
+  #page-events .page-header,
+  #page-observation .page-header,
   #page-incidents .page-header,
   #page-bbs .page-header {
     align-items: flex-start !important;
   }
+  #page-events .page-header > div:last-child,
+  #page-observation .page-header > div:last-child,
   #page-incidents .page-header > div:last-child,
   #page-bbs .page-header > div:last-child {
     width: 100% !important;
   }
+  #page-events .module-metrics,
+  #page-observation .module-metrics,
   #page-incidents .metrics,
   #page-bbs .metrics {
     display: flex !important;
@@ -1162,6 +1168,8 @@ input[type="button"], input[type="submit"] {
     scroll-snap-type: x mandatory !important;
     -webkit-overflow-scrolling: touch !important;
   }
+  #page-events .module-metrics .card,
+  #page-observation .module-metrics .card,
   #page-incidents .metrics .metric,
   #page-bbs .metrics .metric {
     min-width: 76px !important;
@@ -1169,22 +1177,40 @@ input[type="button"], input[type="submit"] {
     padding: 8px 7px !important;
     scroll-snap-align: start !important;
   }
+  #page-events .module-metrics .card > div:last-child,
+  #page-observation .module-metrics .card > div:last-child,
   #page-incidents .metrics .metric-value,
   #page-bbs .metrics .metric-value {
     font-size: 22px !important;
     line-height: 1 !important;
   }
+  #page-events .module-metrics .card > div:first-child,
+  #page-observation .module-metrics .card > div:first-child,
   #page-incidents .metrics .metric-label,
   #page-bbs .metrics .metric-label {
     font-size: 9px !important;
     line-height: 1.15 !important;
     white-space: normal !important;
   }
+  #page-events .mtg-tab,
+  #page-observation .mtg-tab,
   #page-incidents .mtg-tab,
   #page-bbs .mtg-tab {
     min-height: 38px !important;
     padding: 8px 10px !important;
     font-size: 13px !important;
+  }
+  #page-events.mobile-form-mode > .page-header,
+  #page-events.mobile-form-mode > .module-metrics,
+  #page-events.mobile-form-mode > .module-tabs,
+  #page-observation.mobile-form-mode > .page-header,
+  #page-observation.mobile-form-mode > .module-metrics,
+  #page-observation.mobile-form-mode > .module-tabs {
+    display: none !important;
+  }
+  #page-events.mobile-form-mode,
+  #page-observation.mobile-form-mode {
+    padding-top: 8px !important;
   }
   #ims-view-report {
     padding-bottom: 74px !important;
@@ -1863,7 +1889,14 @@ async function loadObservation() {
   obsSwitchTab('list', document.getElementById('obs-tab-list'));
 }
 
+function obsSetFormMode(on) {
+  var page = document.getElementById('page-observation');
+  if (page) page.classList.toggle('mobile-form-mode', !!on);
+  if (on) window.scrollTo({ top: 0, behavior: 'auto' });
+}
+
 function obsSwitchTab(tab, btn) {
+  obsSetFormMode(false);
   obsCurrentTab = tab;
   document.querySelectorAll('[id^="obs-tab-"]').forEach(t => t.classList.remove('active'));
   if (btn) btn.classList.add('active');
@@ -1879,6 +1912,7 @@ function obsSwitchTab(tab, btn) {
 }
 
 function obsShowList() {
+  obsSetFormMode(false);
   document.getElementById('obs-form-view').style.display = 'none';
   var view = obsCurrentTab === 'list' ? 'list' : obsCurrentTab;
   obsSwitchTab(view, document.getElementById('obs-tab-'+view));
@@ -2178,6 +2212,7 @@ function obsNew(type) {
   document.getElementById('obs-ppe-worn').value = 'na';
   document.querySelectorAll('[name="obs-ppe"]').forEach(r=>{r.checked=r.value==='na';});
   obsSelectType(type || 'unsafe_condition');
+  obsSetFormMode(true);
   document.getElementById('obs-form-view').style.display = 'block';
   ['list','positive','unsafe','trends'].forEach(t=>{var el=document.getElementById('obs-view-'+t);if(el)el.style.display='none';});
 }
@@ -2224,6 +2259,7 @@ function obsEdit(id) {
   document.getElementById('obs-ppe-worn').value = ppeVal;
   document.querySelectorAll('[name="obs-ppe"]').forEach(r=>{r.checked=r.value===ppeVal;});
   obsSelectType(x.obs_type||'unsafe_condition');
+  obsSetFormMode(true);
   document.getElementById('obs-form-view').style.display = 'block';
   ['list','positive','unsafe','trends'].forEach(t=>{var el=document.getElementById('obs-view-'+t);if(el)el.style.display='none';});
 }
@@ -8970,7 +9006,14 @@ async function loadEvents(){
   imsSwitchTab('register', document.getElementById('ims-tab-register'));
 }
 
+function imsSetFormMode(on) {
+  var page = document.getElementById('page-events');
+  if (page) page.classList.toggle('mobile-form-mode', !!on);
+  if (on) window.scrollTo({ top: 0, behavior: 'auto' });
+}
+
 function imsSwitchTab(tab, btn){
+  imsSetFormMode(tab === 'report');
   document.querySelectorAll('[id^="ims-tab-"]').forEach(t=>t.classList.remove('active'));
   if(btn) btn.classList.add('active');
   ['register','report','investigate','actions','evidence','stats'].forEach(t=>{
@@ -9129,6 +9172,7 @@ function imsNewIncident(){
   document.getElementById('ims-tab-report')?.classList.add('active');
   document.querySelectorAll('[id^="ims-view-"]').forEach(el=>el.style.display='none');
   document.getElementById('ims-view-report').style.display='block';
+  imsSetFormMode(true);
 }
 
 function imsOpenEdit(id){
@@ -9203,6 +9247,7 @@ function imsOpenEdit(id){
   document.getElementById('ims-tab-report')?.classList.add('active');
   document.querySelectorAll('[id^="ims-view-"]').forEach(el=>el.style.display='none');
   document.getElementById('ims-view-report').style.display='block';
+  imsSetFormMode(true);
 }
 
 function imsSelectType(type){
@@ -9239,6 +9284,7 @@ function imsGetGPS(){
 }
 
 function imsBackToRegister(){
+  imsSetFormMode(false);
   document.querySelectorAll('[id^="ims-view-"]').forEach(el=>el.style.display='none');
   document.getElementById('ims-view-register').style.display='block';
   document.querySelectorAll('[id^="ims-tab-"]').forEach(t=>t.classList.remove('active'));
@@ -26350,7 +26396,7 @@ async function obCreate() {
 </div>
 
 <!-- Metrics -->
-<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:10px;margin-bottom:14px">
+<div class="module-metrics" style="display:grid;grid-template-columns:repeat(7,1fr);gap:10px;margin-bottom:14px">
 <div class="card" style="padding:10px 12px;border-left:4px solid #E24B4A"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">Total</div><div style="font-size:22px;font-weight:800;color:#E24B4A" id="ev-m-total">—</div></div>
 <div class="card" style="padding:10px 12px;border-left:4px solid #DC2626"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">Open</div><div style="font-size:22px;font-weight:800;color:#DC2626" id="ev-m-open">—</div></div>
 <div class="card" style="padding:10px 12px;border-left:4px solid #8B5CF6"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">Under Inv.</div><div style="font-size:22px;font-weight:800;color:#8B5CF6" id="ev-m-investigating">—</div></div>
@@ -26361,7 +26407,7 @@ async function obCreate() {
 </div>
 
 <!-- Tab bar -->
-<div style="display:flex;gap:0;margin-bottom:14px;border-bottom:2px solid var(--border);overflow-x:auto">
+<div class="module-tabs" style="display:flex;gap:0;margin-bottom:14px;border-bottom:2px solid var(--border);overflow-x:auto">
 <button class="mtg-tab active" id="ims-tab-register"   onclick="imsSwitchTab('register',this)"   style="white-space:nowrap">📋 Incident Register</button>
 <button class="mtg-tab"        id="ims-tab-report"     onclick="imsSwitchTab('report',this)"     style="white-space:nowrap">🚨 Report</button>
 <button class="mtg-tab"        id="ims-tab-investigate" onclick="imsSwitchTab('investigate',this)" style="white-space:nowrap">🔍 Investigations</button>
@@ -26982,7 +27028,7 @@ async function obCreate() {
 </div>
 
 <!-- Metrics -->
-<div style="display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin-bottom:14px">
+<div class="module-metrics" style="display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin-bottom:14px">
 <div class="card" style="padding:10px 12px;border-left:4px solid #1D9E75"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">Positive</div><div style="font-size:22px;font-weight:800;color:#1D9E75" id="obs-m-positive">—</div></div>
 <div class="card" style="padding:10px 12px;border-left:4px solid #E24B4A"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">Unsafe Acts</div><div style="font-size:22px;font-weight:800;color:#E24B4A" id="obs-m-unsafe-act">—</div></div>
 <div class="card" style="padding:10px 12px;border-left:4px solid #EF9F27"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">Unsafe Conditions</div><div style="font-size:22px;font-weight:800;color:#EF9F27" id="obs-m-unsafe-cond">—</div></div>
@@ -26992,7 +27038,7 @@ async function obCreate() {
 </div>
 
 <!-- Tab bar -->
-<div style="display:flex;gap:0;margin-bottom:14px;border-bottom:2px solid var(--border);overflow-x:auto">
+<div class="module-tabs" style="display:flex;gap:0;margin-bottom:14px;border-bottom:2px solid var(--border);overflow-x:auto">
 <button class="mtg-tab active" id="obs-tab-list" onclick="obsSwitchTab('list',this)" style="white-space:nowrap">📋 All Observations</button>
 <button class="mtg-tab" id="obs-tab-positive" onclick="obsSwitchTab('positive',this)" style="white-space:nowrap">✅ Positive Behaviours</button>
 <button class="mtg-tab" id="obs-tab-unsafe" onclick="obsSwitchTab('unsafe',this)" style="white-space:nowrap">⚠️ Unsafe Acts/Conditions</button>
