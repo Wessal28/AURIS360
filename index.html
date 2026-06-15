@@ -1004,24 +1004,24 @@ input[type="button"], input[type="submit"] {
   }
   .mobile-home-panel {
     display: block !important;
-    margin-bottom: 14px !important;
+    margin-bottom: 10px !important;
   }
   .mobile-home-hero {
     background: linear-gradient(135deg, #0F6E56, #1D9E75) !important;
     color: #fff !important;
-    border-radius: 16px !important;
-    padding: 18px !important;
-    margin-bottom: 12px !important;
-    box-shadow: 0 10px 24px rgba(15,110,86,.22) !important;
+    border-radius: 14px !important;
+    padding: 15px 16px !important;
+    margin-bottom: 10px !important;
+    box-shadow: 0 6px 18px rgba(15,110,86,.18) !important;
   }
   .mobile-home-title {
-    font-size: 22px !important;
+    font-size: 20px !important;
     line-height: 1.15 !important;
     font-weight: 800 !important;
-    margin-bottom: 6px !important;
+    margin-bottom: 5px !important;
   }
   .mobile-home-sub {
-    font-size: 12px !important;
+    font-size: 11px !important;
     line-height: 1.45 !important;
     opacity: .88 !important;
   }
@@ -1033,25 +1033,25 @@ input[type="button"], input[type="submit"] {
   .mobile-home-action {
     display: flex !important;
     align-items: center !important;
-    gap: 12px !important;
-    min-height: 64px !important;
-    padding: 14px !important;
+    gap: 10px !important;
+    min-height: 56px !important;
+    padding: 11px 12px !important;
     border: 1px solid var(--border) !important;
-    border-radius: 14px !important;
+    border-radius: 12px !important;
     background: #fff !important;
     color: var(--text) !important;
     text-align: left !important;
-    box-shadow: 0 2px 10px rgba(15,23,42,.05) !important;
+    box-shadow: 0 1px 6px rgba(15,23,42,.04) !important;
   }
   .mobile-home-action i {
-    width: 42px !important;
-    height: 42px !important;
-    border-radius: 12px !important;
+    width: 38px !important;
+    height: 38px !important;
+    border-radius: 10px !important;
     display: flex !important;
     align-items: center !important;
     justify-content: center !important;
     flex-shrink: 0 !important;
-    font-size: 22px !important;
+    font-size: 20px !important;
   }
   .mobile-home-action div {
     flex: 1 !important;
@@ -1081,7 +1081,8 @@ input[type="button"], input[type="submit"] {
   .sidebar #nav-executive,
   .sidebar #nav-ai,
   .sidebar #nav-integrations,
-  .sidebar #nav-settings {
+  .sidebar #nav-settings,
+  .sidebar .nav-item[onclick*="ai-insights"] {
     display: none !important;
   }
   .sidebar .nav-section {
@@ -1093,6 +1094,9 @@ input[type="button"], input[type="submit"] {
     font-size: 14px !important;
     padding: 11px 22px !important;
   }
+  .ai-panel {
+    display: none !important;
+  }
   .metrics,
   .grid2,
   .form-row,
@@ -1100,21 +1104,27 @@ input[type="button"], input[type="submit"] {
     grid-template-columns: 1fr !important;
   }
   .card {
-    border-radius: 14px !important;
-    padding: 16px !important;
-    box-shadow: 0 1px 6px rgba(15,23,42,.04) !important;
+    border-radius: 12px !important;
+    padding: 12px !important;
+    margin-bottom: 10px !important;
+    box-shadow: none !important;
   }
   .card-title {
-    font-size: 15px !important;
-    margin-bottom: 12px !important;
+    font-size: 14px !important;
+    margin-bottom: 10px !important;
   }
   .form-label {
-    font-size: 13px !important;
+    font-size: 12px !important;
   }
   input,
   select,
   textarea {
-    border-radius: 12px !important;
+    border-radius: 10px !important;
+    min-height: 40px !important;
+    padding: 8px 10px !important;
+  }
+  textarea {
+    min-height: 58px !important;
   }
   .card-title,
   .page-header > div:last-child,
