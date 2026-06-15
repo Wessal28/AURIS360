@@ -893,13 +893,52 @@ input[type="button"], input[type="submit"] {
 
 /* Very small phones */
 @media (max-width: 480px) {
+  html,
+  body {
+    height: 100% !important;
+    overflow: hidden !important;
+  }
+  #app {
+    height: 100vh !important;
+    height: 100dvh !important;
+    height: calc(var(--auris-vh, 1vh) * 100) !important;
+    overflow: hidden !important;
+    position: relative !important;
+  }
   #mobile-topbar,
   #mobile-bottom-nav {
     z-index: 900 !important;
   }
+  #mobile-topbar {
+    top: 0 !important;
+  }
+  #mobile-bottom-nav {
+    bottom: 0 !important;
+    bottom: env(safe-area-inset-bottom, 0) !important;
+  }
   .main {
+    position: absolute !important;
+    top: 52px !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 58px !important;
+    bottom: calc(58px + env(safe-area-inset-bottom, 0)) !important;
+    height: auto !important;
+    max-height: none !important;
     overflow-x: auto !important;
-    touch-action: pan-x pan-y !important;
+    overflow-y: auto !important;
+    touch-action: auto !important;
+    overscroll-behavior: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    transform: translateZ(0) !important;
+  }
+  button,
+  .btn,
+  [onclick],
+  .mob-nav-btn,
+  .mob-module-btn,
+  .mob-search-result {
+    touch-action: manipulation !important;
   }
   .page {
     padding: 10px 10px 24px !important;
@@ -915,6 +954,7 @@ input[type="button"], input[type="submit"] {
     max-width: calc(100vw - 20px) !important;
     margin-left: 0 !important;
     margin-right: 0 !important;
+    touch-action: auto !important;
   }
   .page-header > div:last-child,
   .card-title,
@@ -23439,6 +23479,12 @@ function mobileNormalizeButtons() {
   });
 }
 
+function mobileSetViewportHeight() {
+  if (window.innerWidth > 480) return;
+  var vh = (window.visualViewport ? window.visualViewport.height : window.innerHeight) * 0.01;
+  document.documentElement.style.setProperty('--auris-vh', vh + 'px');
+}
+
 function mobileStartButtonObserver() {
   if (window.innerWidth > 768 || window._mobileButtonObserver) return;
   mobileNormalizeButtons();
@@ -23495,14 +23541,21 @@ if (typeof showPage === 'function') {
 }
 
 window.addEventListener('resize', function() {
+  mobileSetViewportHeight();
   if (window.innerWidth > 768) {
     mobileCloseSidebar();
     mobileCloseModules();
   }
 });
 
+if (window.visualViewport) {
+  window.visualViewport.addEventListener('resize', mobileSetViewportHeight);
+  window.visualViewport.addEventListener('scroll', mobileSetViewportHeight);
+}
+
 window.addEventListener('load', function() {
   if (window.innerWidth <= 768) {
+    mobileSetViewportHeight();
     history.pushState(null, '', window.location.href);
     var titleEl = document.getElementById('mobile-page-title');
     if (titleEl) titleEl.textContent = 'Dashboard';
