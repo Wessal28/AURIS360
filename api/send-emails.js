@@ -40,15 +40,14 @@ async function processEmailQueue() {
         });
         continue;
       }
-      const resendKey = settings.resend_api_key || process.env.RESEND_API_KEY;
+      const resendKey = process.env.RESEND_API_KEY;
       if (!resendKey) throw new Error('RESEND_API_KEY is not configured');
-      const fromEmail = settings.from_email || process.env.EMAIL_FROM || 'onboarding@resend.dev';
-      const fromName = settings.from_name || 'AURIS360 by SEPHS Consulting';
+      const fromAddress = process.env.EMAIL_FROM || 'AURIS360 by SEPHS Consulting <onboarding@resend.dev>';
       const sr = await fetch('https://api.resend.com/emails', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + resendKey },
         body: JSON.stringify({
-          from: fromName + ' <' + fromEmail + '>',
+          from: fromAddress,
           to: [n.to_email],
           subject: n.subject,
           html: n.body_html
