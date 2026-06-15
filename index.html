@@ -1859,6 +1859,7 @@ let invAllData=[], invCurrentTab='ws1';
 // ===================================================================
 
 let obsAllData = [], obsEditId = null, obsCurrentTab = 'list';
+let obsPendingPhotos = [];
 
 const OBS_TYPE_CFG = {
   positive_behaviour: { emoji:'✅', label:'Positive Behaviour', color:'#1D9E75',  bg:'#EAF3DE', banner:'linear-gradient(135deg,#064E3B,#1D9E75)' },
@@ -1916,6 +1917,46 @@ function obsShowList() {
   document.getElementById('obs-form-view').style.display = 'none';
   var view = obsCurrentTab === 'list' ? 'list' : obsCurrentTab;
   obsSwitchTab(view, document.getElementById('obs-tab-'+view));
+}
+
+function obsRenderPhotos(){
+  var el=document.getElementById('obs-photo-list'); if(!el)return;
+  if(!obsPendingPhotos.length){el.textContent='No photos selected';return;}
+  el.innerHTML=obsPendingPhotos.map(function(f,i){
+    return '<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px"><i class="ti ti-photo"></i><span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+escH(f.name)+'</span><span>'+Math.round(f.size/1024)+' KB</span><button type="button" class="btn btn-sm" onclick="obsRemovePhoto('+i+')"><i class="ti ti-x"></i></button></div>';
+  }).join('');
+}
+
+function obsPhotoSelected(input){
+  var files=Array.from(input.files||[]).filter(function(f){return f.type&&f.type.indexOf('image/')===0;});
+  var accepted=[];
+  files.forEach(function(f){
+    if(f.size>10*1024*1024){toast(f.name+' is too large (max 10 MB)',false);}
+    else accepted.push(f);
+  });
+  obsPendingPhotos=obsPendingPhotos.concat(accepted).slice(0,8);
+  input.value='';
+  obsRenderPhotos();
+}
+
+function obsRemovePhoto(i){obsPendingPhotos.splice(i,1);obsRenderPhotos();}
+function obsClearPhotos(){obsPendingPhotos=[];var input=document.getElementById('obs-photo-input');if(input)input.value='';obsRenderPhotos();}
+
+async function obsSavePendingPhotos(obsId, companyId, obsRef){
+  if(!obsId||!obsPendingPhotos.length)return;
+  var links=[];
+  for(var i=0;i<obsPendingPhotos.length;i++){
+    var file=obsPendingPhotos[i];
+    var path=await hseUploadEvidencePhoto(file, companyId, 'observations/'+obsId);
+    links.push(file.name+': '+path);
+  }
+  var note='\n\nPhoto evidence:\n'+links.map(function(x){return '- '+x;}).join('\n');
+  await api('/safety_observations?id=eq.'+obsId,{m:'PATCH',p:'return=minimal',b:{
+    feedback_notes:((document.getElementById('obs-feedback-notes')?.value||'')+note).trim(),
+    updated_at:new Date().toISOString()
+  }});
+  obsClearPhotos();
+  toast(links.length+' photo'+(links.length>1?'s':'')+' attached to observation');
 }
 
 // ── Load & filter ─────────────────────────────────────────────────────────────
@@ -2188,6 +2229,7 @@ async function obsLoadTrends() {
 // ── New / Edit form ───────────────────────────────────────────────────────────
 function obsNew(type) {
   obsEditId = null;
+  obsClearPhotos();
   document.getElementById('obs-form-title').textContent = 'New Safety Observation';
   document.getElementById('obs-form-ref').textContent = 'OBS-AUTO';
   document.getElementById('obs-del-btn').style.display = 'none';
@@ -2220,6 +2262,7 @@ function obsNew(type) {
 function obsEdit(id) {
   var x = obsAllData.find(r=>r.id===id); if(!x)return;
   obsEditId = id;
+  obsClearPhotos();
   var cfg = OBS_TYPE_CFG[x.obs_type] || OBS_TYPE_CFG.unsafe_condition;
   document.getElementById('obs-form-banner').style.background = cfg.banner;
   document.getElementById('obs-form-title').textContent = cfg.label + ' Observation';
@@ -2346,20 +2389,25 @@ async function obsSave() {
     updated_at: new Date().toISOString()
   };
   try {
+    var savedObsId = obsEditId;
+    var savedObsRef = '';
     if (obsEditId) {
       await api('/safety_observations?id=eq.'+obsEditId, {m:'PATCH',p:'return=minimal',b:body});
       var idx = obsAllData.findIndex(x=>x.id===obsEditId);
       if (idx>=0) Object.assign(obsAllData[idx],body);
+      savedObsRef = obsAllData[idx]?.obs_ref || obsEditId;
       toast('Observation updated!');
     } else {
       body.created_by = prof?.id;
       var res = await api('/safety_observations', {m:'POST',p:'return=representation',b:body});
       if (res?.[0]?.id) {
+        savedObsId = res[0].id;
         var yr = new Date().getFullYear();
         var typeCode = {positive_behaviour:'POS',unsafe_behaviour:'UBA',unsafe_condition:'UCC',near_miss:'NM',good_practice:'GP'}[type]||'OBS';
         var ref = 'OBS-'+typeCode+'-'+yr+'-'+String(obsAllData.length+1).padStart(3,'0');
         await api('/safety_observations?id=eq.'+res[0].id, {m:'PATCH',p:'return=minimal',b:{obs_ref:ref}});
         res[0].obs_ref=ref; obsAllData.unshift(res[0]);
+        savedObsRef = ref;
         toast('Observation saved! Ref: '+ref);
         // Auto-create MAP action for critical/high unsafe
         if (['critical','high'].includes(body.severity) && body.action_required && body.action_description) {
@@ -2377,6 +2425,10 @@ async function obsSave() {
           } catch(ex) {}
         }
       }
+    }
+    if(obsPendingPhotos.length){
+      try{await obsSavePendingPhotos(savedObsId, ccid(), savedObsRef);}
+      catch(photoErr){toast('Observation saved, but photo upload failed: '+photoErr.message,false);}
     }
     obsShowList();
   } catch(e) { toast(e.message, false); }
@@ -3455,6 +3507,16 @@ if(window.innerWidth<=768){
 }
 function toggleForm(id){const el=document.getElementById(id);el.style.display=el.style.display==='none'?'block':'none';}
 function toggleContractor(){document.getElementById('contractor-fields').style.display=document.getElementById('pef-type').value!=='employee'?'block':'none';}
+
+function dashOpenIncidentForm(){
+  showPage('events', null);
+  setTimeout(function(){ if(typeof imsNewIncident==='function') imsNewIncident(); }, 60);
+}
+
+function dashOpenObservationForm(){
+  showPage('observation', null);
+  setTimeout(function(){ if(typeof obsNew==='function') obsNew(); }, 60);
+}
 // ===================================================================
 // REAL-TIME HSE DASHBOARD + EXECUTIVE MANAGEMENT DASHBOARD
 // ===================================================================
@@ -9000,6 +9062,70 @@ const IMS_STAT={
   action_required:     {bg:'#FEF9EC',tc:'#854F0B',label:'Action Required'},
   closed:              {bg:'#EAF3DE',tc:'#3B6D11',label:'Closed'},
 };
+let imsPendingPhotos = [];
+
+function hseCleanFileName(name){
+  return (name||'photo').replace(/[^A-Za-z0-9._-]/g,'_').slice(0,120);
+}
+
+async function hseUploadEvidencePhoto(file, companyId, folder){
+  var path=companyId+'/'+folder+'/'+Date.now()+'_'+hseCleanFileName(file.name);
+  var r=await fetch(SB+'/storage/v1/object/evidence/'+path.split('/').map(encodeURIComponent).join('/'),{
+    method:'POST',
+    headers:{'Authorization':'Bearer '+tok,'apikey':KEY,'x-upsert':'true','Content-Type':file.type||'image/jpeg'},
+    body:file
+  });
+  if(!r.ok){var t='';try{t=await r.text();}catch(_){}throw new Error('Photo upload failed: '+t.substring(0,140));}
+  return path;
+}
+
+function imsRenderPhotos(){
+  var el=document.getElementById('ev-photo-list'); if(!el)return;
+  if(!imsPendingPhotos.length){el.textContent='No photos selected';return;}
+  el.innerHTML=imsPendingPhotos.map(function(f,i){
+    return '<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px"><i class="ti ti-photo"></i><span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+escH(f.name)+'</span><span>'+Math.round(f.size/1024)+' KB</span><button type="button" class="btn btn-sm" onclick="imsRemovePhoto('+i+')"><i class="ti ti-x"></i></button></div>';
+  }).join('');
+}
+
+function imsPhotoSelected(input){
+  var files=Array.from(input.files||[]).filter(function(f){return f.type&&f.type.indexOf('image/')===0;});
+  var accepted=[];
+  files.forEach(function(f){
+    if(f.size>10*1024*1024){toast(f.name+' is too large (max 10 MB)',false);}
+    else accepted.push(f);
+  });
+  imsPendingPhotos=imsPendingPhotos.concat(accepted).slice(0,8);
+  input.value='';
+  imsRenderPhotos();
+}
+
+function imsRemovePhoto(i){imsPendingPhotos.splice(i,1);imsRenderPhotos();}
+function imsClearPhotos(){imsPendingPhotos=[];var input=document.getElementById('ev-photo-input');if(input)input.value='';imsRenderPhotos();}
+
+async function imsSavePendingPhotos(eventId, companyId, incidentRef){
+  if(!eventId||!imsPendingPhotos.length)return;
+  var uploaded=0;
+  for(var i=0;i<imsPendingPhotos.length;i++){
+    var file=imsPendingPhotos[i];
+    var path=await hseUploadEvidencePhoto(file, companyId, 'incidents/'+eventId);
+    await api('/incident_evidence',{m:'POST',p:'return=minimal',b:{
+      company_id:companyId,
+      event_id:eventId,
+      evidence_type:'photo',
+      title:'Incident photo - '+(incidentRef||eventId),
+      file_url:path,
+      file_name:file.name,
+      file_size:String(file.size),
+      description:'Uploaded from incident report form',
+      collected_by:prof?.full_name||prof?.email||null,
+      collected_date:new Date().toISOString().slice(0,10),
+      created_by:prof?.id||null
+    }});
+    uploaded++;
+  }
+  imsClearPhotos();
+  if(uploaded) toast(uploaded+' photo'+(uploaded>1?'s':'')+' attached to incident');
+}
 
 // ─── ENTRY POINT ──────────────────────────────────────────────────────────────
 async function loadEvents(){
@@ -9140,6 +9266,7 @@ function imsFilterList(){
 // ─── REPORT FORM ──────────────────────────────────────────────────────────────
 function imsNewIncident(){
   imsEditId=null;
+  imsClearPhotos();
   document.getElementById('ims-form-title').textContent='New Incident Report';
   document.getElementById('ims-form-ref').textContent='INC-AUTO';
   document.getElementById('ims-del-btn').style.display='none';
@@ -9178,6 +9305,7 @@ function imsNewIncident(){
 function imsOpenEdit(id){
   var x=imsAllData.find(r=>r.id===id); if(!x)return;
   imsEditId=id;
+  imsClearPhotos();
   var type=x.event_type||x.type||'near_miss';
   var cfg=IMS_TYPE_CFG[type]||IMS_TYPE_CFG.near_miss;
   document.getElementById('ims-form-banner').style.background='linear-gradient(135deg,'+cfg.color+'cc,'+cfg.color+')';
@@ -9477,6 +9605,11 @@ async function imsSave(){
     if(imsEditId){
       await api('/events?id=eq.'+imsEditId,{m:'PATCH',p:'return=minimal',b:body});
       toast('Incident updated!');
+      if(imsPendingPhotos.length){
+        var recNowForPhotos=(imsAllData||[]).find(function(r){return r.id===imsEditId;});
+        try{await imsSavePendingPhotos(imsEditId, effectiveCompanyId, recNowForPhotos?.event_ref||recNowForPhotos?.incident_number||document.getElementById('ims-form-ref')?.textContent);}
+        catch(photoErr){toast('Incident saved, but photo upload failed: '+photoErr.message,false);}
+      }
       if(newAssigned&&newAssigned.toLowerCase()!==prevAssigned.toLowerCase()){
         var recNow=(imsAllData||[]).find(function(r){return r.id===imsEditId;});
         imsNotifyAssignee(newAssigned,effectiveCompanyId,recNow?.event_ref||recNow?.incident_number||document.getElementById('ims-form-ref')?.textContent,desc,g('ev-location'));
@@ -9503,6 +9636,10 @@ async function imsSave(){
         toast('Incident reported! Ref: '+ref);
         imsEditId=res[0].id;
         document.getElementById('ims-form-ref').textContent=ref;
+        if(imsPendingPhotos.length){
+          try{await imsSavePendingPhotos(res[0].id, effectiveCompanyId, ref);}
+          catch(photoErr){toast('Incident saved, but photo upload failed: '+photoErr.message,false);}
+        }
         if(invReq) document.getElementById('ims-start-inv-btn').style.display='inline-flex';
         if(newAssigned) imsNotifyAssignee(newAssigned,effectiveCompanyId,ref,desc,g('ev-location'));
         // If an investigation is required, stay on the form so the user can
@@ -25136,11 +25273,11 @@ async function obCreate() {
     <div class="mobile-home-sub">Quick access for field reporting, observations, and HSE performance follow-up.</div>
   </div>
   <div class="mobile-home-actions">
-    <button type="button" class="mobile-home-action" onclick="mobileNavTo('events','Incidents',document.getElementById('mob-btn-events'))">
+    <button type="button" class="mobile-home-action" onclick="dashOpenIncidentForm()">
       <i class="ti ti-alert-triangle" style="background:#FCEBEB;color:#DC2626"></i>
       <div><strong>Report an incident</strong><small>Capture injuries, near misses, damage, and follow-up.</small></div>
     </button>
-    <button type="button" class="mobile-home-action" onclick="mobileNavTo('observation','Observations',document.getElementById('mob-btn-observation'))">
+    <button type="button" class="mobile-home-action" onclick="dashOpenObservationForm()">
       <i class="ti ti-eye" style="background:#FFF7ED;color:#C2410C"></i>
       <div><strong>Record BBS observation</strong><small>Log positive behaviour, unsafe acts, or conditions.</small></div>
     </button>
@@ -25196,8 +25333,8 @@ async function obCreate() {
     <div style="font-size:13px;font-weight:600;opacity:0.9;text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px">What can I help you with today?</div>
     <div style="font-size:14px;opacity:0.85;margin-bottom:16px" id="dash-personal-tagline">Report something, log an observation, or check your training.</div>
     <div id="dash-personal-actions" style="display:flex;gap:10px;flex-wrap:wrap">
-      <button class="dash-action-btn" onclick="showPage('events',null)"><i class="ti ti-alert-triangle"></i> Report an incident</button>
-      <button class="dash-action-btn" onclick="showPage('observation',null)"><i class="ti ti-eye"></i> Log an observation</button>
+      <button class="dash-action-btn" onclick="dashOpenIncidentForm()"><i class="ti ti-alert-triangle"></i> Report an incident</button>
+      <button class="dash-action-btn" onclick="dashOpenObservationForm()"><i class="ti ti-eye"></i> Log an observation</button>
       <button class="dash-action-btn" onclick="showPage('training',null)"><i class="ti ti-school"></i> My training</button>
       <button class="dash-action-btn" id="dash-action-permit" onclick="showPage('permit',null)"><i class="ti ti-file-certificate"></i> Request a permit</button>
     </div>
@@ -26502,6 +26639,17 @@ async function obCreate() {
 <div class="form-group"><label class="form-label">Immediate actions taken</label><textarea id="ev-immediate" style="min-height:60px" placeholder="What was done immediately after the incident?"></textarea></div>
 </div>
 
+<!-- Photos -->
+<div class="card" style="margin-bottom:14px"><div class="card-title"><i class="ti ti-camera"></i> Photos / Evidence</div>
+<div style="font-size:12px;color:var(--text2);margin-bottom:10px">Take photos on mobile or upload existing images. They will attach when you save the incident.</div>
+<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px">
+<label class="btn btn-sm btn-primary" style="cursor:pointer;margin:0"><i class="ti ti-camera"></i>Take / upload photos
+<input type="file" id="ev-photo-input" accept="image/*" capture="environment" multiple style="display:none" onchange="imsPhotoSelected(this)"/></label>
+<button type="button" class="btn btn-sm" onclick="imsClearPhotos()"><i class="ti ti-x"></i>Clear</button>
+</div>
+<div id="ev-photo-list" style="font-size:12px;color:var(--text2)">No photos selected</div>
+</div>
+
 <!-- Type-specific fields -->
 <div class="card" style="margin-bottom:14px;display:none" id="ims-injury-fields">
 <div class="card-title" style="color:#DC2626">🩹 Injury Details</div>
@@ -27189,6 +27337,17 @@ async function obCreate() {
 <div class="form-group"><label class="form-label">Observation description</label><textarea id="obs-text" style="min-height:80px" placeholder="Describe clearly what was observed — the unsafe act, condition or near miss..."></textarea></div>
 <div class="form-group"><label class="form-label">Immediate / direct cause</label><textarea id="obs-immediate-cause" style="min-height:60px" placeholder="What was the immediate cause of the unsafe situation?"></textarea></div>
 <div class="form-group"><label class="form-label">Potential consequence (if unaddressed)</label><input type="text" id="obs-consequence" placeholder="e.g. Fall from height, Chemical splash, Crush injury..."/></div>
+</div>
+
+<!-- Photos -->
+<div class="card" style="margin-bottom:14px"><div class="card-title"><i class="ti ti-camera"></i> Photos</div>
+<div style="font-size:12px;color:var(--text2);margin-bottom:10px">Take photos on mobile or upload existing images. They will attach when you save the observation.</div>
+<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px">
+<label class="btn btn-sm btn-primary" style="cursor:pointer;margin:0"><i class="ti ti-camera"></i>Take / upload photos
+<input type="file" id="obs-photo-input" accept="image/*" capture="environment" multiple style="display:none" onchange="obsPhotoSelected(this)"/></label>
+<button type="button" class="btn btn-sm" onclick="obsClearPhotos()"><i class="ti ti-x"></i>Clear</button>
+</div>
+<div id="obs-photo-list" style="font-size:12px;color:var(--text2)">No photos selected</div>
 </div>
 
 <!-- Location & Context -->
