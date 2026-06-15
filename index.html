@@ -820,8 +820,9 @@ input[type="button"], input[type="submit"] {
     gap: 0 !important;
   }
 
-  /* Tables: horizontal scroll */
-  .card, .table-wrap { overflow-x: auto !important; }
+  /* Tables: horizontal scroll without trapping vertical page swipes */
+  .card { overflow-x: visible !important; overflow-y: visible !important; }
+  .table-wrap { overflow-x: auto !important; overflow-y: visible !important; -webkit-overflow-scrolling: touch !important; }
   table { font-size: 12px !important; min-width: 480px !important; }
   th, td { padding: 8px 10px !important; white-space: nowrap !important; }
 
@@ -24570,6 +24571,36 @@ async function obCreate() {
 
 
 <div id="app" style="display:none">
+<div id="mobile-topbar">
+  <button id="mobile-menu-btn" type="button" onclick="mobileToggleSidebar()" aria-label="Open menu"><i class="ti ti-menu-2"></i></button>
+  <button id="mobile-back-btn" type="button" onclick="mobileGoBack()" aria-label="Go back" style="display:none"><i class="ti ti-arrow-left"></i></button>
+  <div class="mobile-logo" id="mobile-page-title">Dashboard</div>
+  <button type="button" onclick="mobileToggleSearch()" aria-label="Search modules" style="background:none;border:none;padding:10px;color:var(--text);border-radius:10px;min-width:44px;min-height:44px;display:flex;align-items:center;justify-content:center"><i class="ti ti-search"></i></button>
+</div>
+<div id="sidebar-backdrop" onclick="mobileCloseSidebar()"></div>
+<div id="mobile-modules-drawer">
+  <div id="mobile-modules-panel">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 18px;border-bottom:1px solid var(--border)">
+      <div style="font-size:14px;font-weight:800;color:var(--text)">Modules</div>
+      <button type="button" onclick="mobileCloseModules()" aria-label="Close modules" style="background:none;border:none;min-width:44px;min-height:44px;border-radius:10px;color:var(--text2)"><i class="ti ti-x"></i></button>
+    </div>
+    <div id="mobile-modules-grid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:14px"></div>
+  </div>
+</div>
+<div id="mobile-search-overlay" style="display:none;position:fixed;inset:0;background:var(--card);z-index:500;padding:14px">
+  <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
+    <button type="button" onclick="mobileToggleSearch()" aria-label="Close search" style="background:none;border:none;min-width:44px;min-height:44px;border-radius:10px;color:var(--text)"><i class="ti ti-arrow-left"></i></button>
+    <input id="mobile-search-input" type="search" placeholder="Search modules..." oninput="mobileSearchModules(this.value)" style="flex:1"/>
+  </div>
+  <div id="mobile-search-results"></div>
+</div>
+<div id="mobile-bottom-nav">
+  <button id="mob-btn-dashboard" class="mob-nav-btn active" type="button" onclick="mobileNavTo('dashboard','Dashboard',this)"><i class="ti ti-layout-dashboard"></i><span>Home</span></button>
+  <button id="mob-btn-events" class="mob-nav-btn" type="button" onclick="mobileNavTo('events','Incidents',this)"><i class="ti ti-alert-triangle"></i><span>Incidents</span></button>
+  <button id="mob-btn-observation" class="mob-nav-btn" type="button" onclick="mobileNavTo('observation','Observations',this)"><i class="ti ti-eye"></i><span>BBS</span></button>
+  <button id="mob-btn-kpi" class="mob-nav-btn" type="button" onclick="mobileNavTo('kpi','KPIs',this)"><i class="ti ti-target"></i><span>KPIs</span></button>
+  <button id="mob-btn-modules" class="mob-nav-btn" type="button" onclick="mobileToggleModules()"><i class="ti ti-apps"></i><span>More</span></button>
+</div>
 <div class="layout">
 <div class="sidebar"><div class="sidebar-top"><img id="co-logo-img" class="co-logo" src="" alt="logo"/><div id="co-initials-div" class="co-initials">A</div><div class="sb-company" id="sb-company">AURIS360</div><div class="sb-user" id="sb-user">—</div><span class="sb-role" id="sb-role">—</span></div><div id="sb-role-changer" style="padding:8px 20px;border-bottom:1px solid var(--border);display:none;gap:6px;align-items:center">
 <select id="sb-role-select" style="flex:1;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:11px" onchange="">
