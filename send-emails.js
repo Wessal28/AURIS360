@@ -18,7 +18,6 @@ module.exports = async function handler(req, res) {
 async function processEmailQueue() {
   const SB = process.env.SUPABASE_URL;
   const KEY = process.env.SUPABASE_SERVICE_KEY;
-  const RESEND = process.env.RESEND_API_KEY;
   const headers = { 'apikey': KEY, 'Authorization': 'Bearer ' + KEY };
 
   const r = await fetch(SB + '/rest/v1/notification_queue?status=eq.pending&order=created_at.asc&limit=50', { headers });
@@ -30,11 +29,26 @@ async function processEmailQueue() {
   let sent = 0, failed = 0;
   for (const n of notifications) {
     try {
+      const settingsRes = await fetch(SB + '/rest/v1/notification_settings?company_id=eq.' + n.company_id + '&limit=1', { headers });
+      const settingsRows = await settingsRes.json();
+      const settings = Array.isArray(settingsRows) && settingsRows[0] ? settingsRows[0] : {};
+      if (settings.email_enabled === false) {
+        await fetch(SB + '/rest/v1/notification_queue?id=eq.' + n.id, {
+          method: 'PATCH',
+          headers: { ...headers, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
+          body: JSON.stringify({ status: 'skipped', error_msg: 'Email notifications disabled for company' })
+        });
+        continue;
+      }
+      const resendKey = settings.resend_api_key || process.env.RESEND_API_KEY;
+      if (!resendKey) throw new Error('RESEND_API_KEY is not configured');
+      const fromEmail = settings.from_email || process.env.EMAIL_FROM || 'onboarding@resend.dev';
+      const fromName = settings.from_name || 'AURIS360 by SEPHS Consulting';
       const sr = await fetch('https://api.resend.com/emails', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + RESEND },
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + resendKey },
         body: JSON.stringify({
-          from: process.env.EMAIL_FROM || 'AURIS360 by SEPHS Consulting <onboarding@resend.dev>',
+          from: fromName + ' <' + fromEmail + '>',
           to: [n.to_email],
           subject: n.subject,
           html: n.body_html
