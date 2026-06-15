@@ -1002,11 +1002,121 @@ input[type="button"], input[type="submit"] {
   #mobile-modules-grid {
     grid-template-columns: repeat(3, 1fr) !important;
   }
+  .mobile-home-panel {
+    display: block !important;
+    margin-bottom: 14px !important;
+  }
+  .mobile-home-hero {
+    background: linear-gradient(135deg, #0F6E56, #1D9E75) !important;
+    color: #fff !important;
+    border-radius: 16px !important;
+    padding: 18px !important;
+    margin-bottom: 12px !important;
+    box-shadow: 0 10px 24px rgba(15,110,86,.22) !important;
+  }
+  .mobile-home-title {
+    font-size: 22px !important;
+    line-height: 1.15 !important;
+    font-weight: 800 !important;
+    margin-bottom: 6px !important;
+  }
+  .mobile-home-sub {
+    font-size: 12px !important;
+    line-height: 1.45 !important;
+    opacity: .88 !important;
+  }
+  .mobile-home-actions {
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    gap: 10px !important;
+  }
+  .mobile-home-action {
+    display: flex !important;
+    align-items: center !important;
+    gap: 12px !important;
+    min-height: 64px !important;
+    padding: 14px !important;
+    border: 1px solid var(--border) !important;
+    border-radius: 14px !important;
+    background: #fff !important;
+    color: var(--text) !important;
+    text-align: left !important;
+    box-shadow: 0 2px 10px rgba(15,23,42,.05) !important;
+  }
+  .mobile-home-action i {
+    width: 42px !important;
+    height: 42px !important;
+    border-radius: 12px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    flex-shrink: 0 !important;
+    font-size: 22px !important;
+  }
+  .mobile-home-action div {
+    flex: 1 !important;
+    min-width: 0 !important;
+  }
+  .mobile-home-action strong {
+    display: block !important;
+    font-size: 14px !important;
+    line-height: 1.2 !important;
+  }
+  .mobile-home-action small {
+    display: block !important;
+    margin-top: 3px !important;
+    font-size: 11px !important;
+    color: var(--text2) !important;
+    line-height: 1.35 !important;
+  }
+  #page-dashboard > div:nth-of-type(2),
+  #dash-org-controls,
+  #role-banner-dash,
+  #dash-org-view .card-title,
+  #dash-org-view .grid2,
+  #dash-org-view [id*="chart"],
+  #dash-org-view [id*="trend"],
+  #dash-personal-view {
+    display: none !important;
+  }
+  .sidebar #sb-role-changer,
+  .sidebar #nav-executive,
+  .sidebar #nav-ai,
+  .sidebar #nav-integrations,
+  .sidebar #nav-settings {
+    display: none !important;
+  }
+  .sidebar .nav-section {
+    padding-top: 18px !important;
+    font-size: 10px !important;
+  }
+  .sidebar .nav-item {
+    min-height: 44px !important;
+    font-size: 14px !important;
+    padding: 11px 22px !important;
+  }
   .metrics,
   .grid2,
   .form-row,
   .form-row3 {
     grid-template-columns: 1fr !important;
+  }
+  .card {
+    border-radius: 14px !important;
+    padding: 16px !important;
+    box-shadow: 0 1px 6px rgba(15,23,42,.04) !important;
+  }
+  .card-title {
+    font-size: 15px !important;
+    margin-bottom: 12px !important;
+  }
+  .form-label {
+    font-size: 13px !important;
+  }
+  input,
+  select,
+  textarea {
+    border-radius: 12px !important;
   }
   .card-title,
   .page-header > div:last-child,
@@ -24831,6 +24941,27 @@ async function obCreate() {
 <!-- DASHBOARD (Real-time HSE)                             -->
 <!-- ══════════════════════════════════════════════════════ -->
 <div id="page-dashboard" class="page active">
+
+<div class="mobile-home-panel" style="display:none">
+  <div class="mobile-home-hero">
+    <div class="mobile-home-title">AURIS360</div>
+    <div class="mobile-home-sub">Quick access for field reporting, observations, and HSE performance follow-up.</div>
+  </div>
+  <div class="mobile-home-actions">
+    <button type="button" class="mobile-home-action" onclick="mobileNavTo('events','Incidents',document.getElementById('mob-btn-events'))">
+      <i class="ti ti-alert-triangle" style="background:#FCEBEB;color:#DC2626"></i>
+      <div><strong>Report an incident</strong><small>Capture injuries, near misses, damage, and follow-up.</small></div>
+    </button>
+    <button type="button" class="mobile-home-action" onclick="mobileNavTo('observation','Observations',document.getElementById('mob-btn-observation'))">
+      <i class="ti ti-eye" style="background:#FFF7ED;color:#C2410C"></i>
+      <div><strong>Record BBS observation</strong><small>Log positive behaviour, unsafe acts, or conditions.</small></div>
+    </button>
+    <button type="button" class="mobile-home-action" onclick="mobileNavTo('kpi','KPIs',document.getElementById('mob-btn-kpi'))">
+      <i class="ti ti-target" style="background:#E6F1FB;color:#185FA5"></i>
+      <div><strong>Review KPIs</strong><small>Check objectives and monthly HSE performance.</small></div>
+    </button>
+  </div>
+</div>
 
 <!-- ════════════════════════════════════════════════════════════════════════
      GREETING BAR — personalised header with name, date, controls
