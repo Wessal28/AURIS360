@@ -892,6 +892,8 @@ input[type="button"], input[type="submit"] {
 }
 
 /* Very small phones */
+.ims-mobile-actions { display: none; }
+
 @media (max-width: 480px) {
   html,
   body {
@@ -1141,6 +1143,138 @@ input[type="button"], input[type="submit"] {
   [style*="repeat(2,1fr)"],
   [style*="grid-template-columns:1fr 1fr"] {
     grid-template-columns: 1fr !important;
+  }
+  #page-incidents .page-header,
+  #page-bbs .page-header {
+    align-items: flex-start !important;
+  }
+  #page-incidents .page-header > div:last-child,
+  #page-bbs .page-header > div:last-child {
+    width: 100% !important;
+  }
+  #page-incidents .metrics,
+  #page-bbs .metrics {
+    display: flex !important;
+    gap: 7px !important;
+    overflow-x: auto !important;
+    padding: 1px 2px 7px !important;
+    margin: 8px -2px 8px !important;
+    scroll-snap-type: x mandatory !important;
+    -webkit-overflow-scrolling: touch !important;
+  }
+  #page-incidents .metrics .metric,
+  #page-bbs .metrics .metric {
+    min-width: 76px !important;
+    max-width: 86px !important;
+    padding: 8px 7px !important;
+    scroll-snap-align: start !important;
+  }
+  #page-incidents .metrics .metric-value,
+  #page-bbs .metrics .metric-value {
+    font-size: 22px !important;
+    line-height: 1 !important;
+  }
+  #page-incidents .metrics .metric-label,
+  #page-bbs .metrics .metric-label {
+    font-size: 9px !important;
+    line-height: 1.15 !important;
+    white-space: normal !important;
+  }
+  #page-incidents .mtg-tab,
+  #page-bbs .mtg-tab {
+    min-height: 38px !important;
+    padding: 8px 10px !important;
+    font-size: 13px !important;
+  }
+  #ims-view-report {
+    padding-bottom: 74px !important;
+  }
+  #ims-view-report > .card:first-child {
+    margin-bottom: 10px !important;
+  }
+  #ims-form-banner {
+    padding: 13px 14px !important;
+    border-radius: 12px !important;
+    align-items: flex-start !important;
+  }
+  #ims-form-banner > div:first-child {
+    min-width: 0 !important;
+    flex: 1 1 100% !important;
+  }
+  #ims-form-title {
+    font-size: 18px !important;
+    line-height: 1.15 !important;
+  }
+  #ims-form-banner > div:last-child {
+    width: 100% !important;
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    gap: 8px !important;
+  }
+  #ims-form-banner > div:last-child .btn {
+    min-height: 42px !important;
+    width: 100% !important;
+  }
+  #ims-form-banner #ims-del-btn {
+    display: none !important;
+  }
+  #ims-form-banner #ims-start-inv-btn {
+    grid-column: 1 / -1 !important;
+  }
+  #ims-type-grid {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 8px !important;
+  }
+  #ims-type-grid .ims-type-btn {
+    min-height: 70px !important;
+    padding: 9px 6px !important;
+    border-radius: 12px !important;
+  }
+  #ims-type-grid .ims-type-btn > div:first-child {
+    font-size: 24px !important;
+    margin-bottom: 4px !important;
+  }
+  #ims-type-grid .ims-type-btn > div:last-child {
+    font-size: 12px !important;
+    line-height: 1.2 !important;
+  }
+  #ims-view-report > div[style*="grid-template-columns:2fr 1fr"] {
+    display: block !important;
+  }
+  #ims-view-report .card[style*="border:2px solid #DC2626"],
+  #ims-view-report .card[style*="border:2px solid #5B21B6"] {
+    border-width: 1px !important;
+  }
+  #ims-view-report .form-row {
+    gap: 9px !important;
+  }
+  #ims-view-report .form-group {
+    margin-bottom: 9px !important;
+  }
+  #ims-view-report select,
+  #ims-view-report input,
+  #ims-view-report textarea {
+    font-size: 16px !important;
+  }
+  .ims-mobile-actions {
+    position: fixed !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: calc(58px + env(safe-area-inset-bottom, 0)) !important;
+    z-index: 910 !important;
+    display: grid !important;
+    grid-template-columns: 1fr 1.2fr !important;
+    gap: 8px !important;
+    padding: 8px 10px !important;
+    background: rgba(255,255,255,.96) !important;
+    border-top: 1px solid var(--border) !important;
+    box-shadow: 0 -8px 20px rgba(15,23,42,.08) !important;
+    backdrop-filter: blur(10px) !important;
+  }
+  .ims-mobile-actions .btn {
+    min-height: 44px !important;
+    border-radius: 10px !important;
   }
 }
 
@@ -26451,6 +26585,12 @@ async function obCreate() {
 </div>
 </div>
 </div>
+
+<div class="ims-mobile-actions" aria-label="Incident report actions">
+<button class="btn" onclick="imsBackToRegister()"><i class="ti ti-arrow-left"></i>Back</button>
+<button class="btn btn-primary" onclick="imsSave()"><i class="ti ti-device-floppy"></i>Save report</button>
+</div>
+
 </div>
 
 <!-- ══ INVESTIGATIONS ══ -->
