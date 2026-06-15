@@ -895,15 +895,23 @@ input[type="button"], input[type="submit"] {
 @media (max-width: 480px) {
   html,
   body {
-    height: 100% !important;
-    overflow: hidden !important;
+    min-height: 100% !important;
+    height: auto !important;
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch !important;
   }
   #app {
-    height: 100vh !important;
-    height: 100dvh !important;
-    height: calc(var(--auris-vh, 1vh) * 100) !important;
-    overflow: hidden !important;
+    min-height: 100vh !important;
+    min-height: 100dvh !important;
+    height: auto !important;
+    overflow: visible !important;
     position: relative !important;
+  }
+  .layout {
+    min-height: 100vh !important;
+    height: auto !important;
+    display: block !important;
   }
   #mobile-topbar,
   #mobile-bottom-nav {
@@ -917,20 +925,17 @@ input[type="button"], input[type="submit"] {
     bottom: env(safe-area-inset-bottom, 0) !important;
   }
   .main {
-    position: absolute !important;
-    top: 52px !important;
-    left: 0 !important;
-    right: 0 !important;
-    bottom: 58px !important;
-    bottom: calc(58px + env(safe-area-inset-bottom, 0)) !important;
+    position: static !important;
     height: auto !important;
+    min-height: calc(100vh - 110px) !important;
     max-height: none !important;
-    overflow-x: auto !important;
-    overflow-y: auto !important;
+    overflow: visible !important;
     touch-action: auto !important;
     overscroll-behavior: auto !important;
     -webkit-overflow-scrolling: touch !important;
-    transform: translateZ(0) !important;
+    transform: none !important;
+    padding-top: 52px !important;
+    padding-bottom: calc(58px + env(safe-area-inset-bottom, 0)) !important;
   }
   button,
   .btn,
@@ -943,6 +948,7 @@ input[type="button"], input[type="submit"] {
   .page {
     padding: 10px 10px 24px !important;
     overflow-x: visible !important;
+    overflow-y: visible !important;
   }
   .card {
     min-width: 0 !important;
@@ -955,6 +961,17 @@ input[type="button"], input[type="submit"] {
     margin-left: 0 !important;
     margin-right: 0 !important;
     touch-action: auto !important;
+  }
+  #mobile-modules-drawer {
+    position: fixed !important;
+    inset: 0 !important;
+    z-index: 1200 !important;
+    pointer-events: none !important;
+  }
+  #mobile-modules-panel {
+    z-index: 1201 !important;
+    pointer-events: auto !important;
+    padding-bottom: env(safe-area-inset-bottom, 0) !important;
   }
   .page-header > div:last-child,
   .card-title,
@@ -23400,7 +23417,8 @@ function mobileRenderModulesGrid() {
     if (m.r.indexOf('all') === -1 && m.r.indexOf(role) === -1) continue;
     var color = MODULE_COLORS[m.k] || '#185FA5';
     var isCur = m.k === _mobileCurrentPg;
-    html += '<button data-page="' + m.k + '" data-label="' + m.l + '" class="mob-module-btn"'
+    html += '<button type="button" data-page="' + m.k + '" data-label="' + m.l + '" class="mob-module-btn"'
+      + ' onclick="mobileNavTo(\'' + m.k + '\',\'' + m.l.replace(/'/g, "\\'") + '\',this)"'
       + ' style="display:flex;flex-direction:column;align-items:center;justify-content:center;'
       + 'gap:6px;padding:14px 6px;border:2px solid ' + (isCur ? color : 'transparent') + ';'
       + 'background:' + (isCur ? color + '18' : 'transparent') + ';'
@@ -23412,11 +23430,6 @@ function mobileRenderModulesGrid() {
       + m.l + '</span></button>';
   }
   grid.innerHTML = html;
-  grid.querySelectorAll('.mob-module-btn').forEach(function(btn) {
-    btn.addEventListener('click', function() {
-      mobileNavTo(btn.getAttribute('data-page'), btn.getAttribute('data-label'), null);
-    });
-  });
 }
 
 function mobileSearchModulesRender(q, el) {
