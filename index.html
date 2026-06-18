@@ -18983,7 +18983,7 @@ function legalFilterRegister(){
     el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)"><div style="font-size:40px;margin-bottom:12px">⚖️</div><div style="font-weight:600;margin-bottom:8px">No requirements found</div>'+(isMgr()?'<button class="btn btn-primary" onclick="legalNewRequirement()"><i class="ti ti-plus"></i>Add first requirement</button>':'')+'</div>';
     return;
   }
-  var h='<table style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr style="background:#1a3a5c;color:#fff"><th style="padding:8px 14px;text-align:left">Ref</th><th style="padding:8px;text-align:left">Legislation</th><th style="padding:8px;text-align:left">Section / Requirement</th><th style="padding:8px;text-align:left">Category</th><th style="padding:8px;text-align:left">Obligation</th><th style="padding:8px;text-align:left">Responsibility</th><th style="padding:8px;text-align:center">Score</th><th style="padding:8px;text-align:left">Status</th><th style="padding:8px;width:50px"></th></tr></thead><tbody>';
+  var h='<table style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr style="background:#1a3a5c;color:#fff"><th style="padding:10px 14px;text-align:left;color:#fff">Ref</th><th style="padding:10px;text-align:left;color:#fff">Legislation</th><th style="padding:10px;text-align:left;color:#fff;min-width:300px">Section / Requirement</th><th style="padding:10px;text-align:left;color:#fff">Category</th><th style="padding:10px;text-align:left;color:#fff">Obligation</th><th style="padding:10px;text-align:left;color:#fff">Responsibility</th><th style="padding:10px;text-align:center;color:#fff">Score</th><th style="padding:10px;text-align:left;color:#fff">Status</th><th style="padding:10px;width:50px;color:#fff"></th></tr></thead><tbody>';
   filt.forEach(function(x,i){
     var bg=i%2===0?'#fff':'#f9fafb';
     var sc=LEG_STATUS_CFG[x.status]||LEG_STATUS_CFG.non_compliant;
@@ -19077,6 +19077,18 @@ function legalScoreUpdate(val){
   var v=parseInt(val);var autoSt=v>=90?'compliant':v>=50?'partial':'non_compliant';
   document.getElementById('lr-status').value=autoSt;
   document.querySelectorAll('[name="lr-status-r"]').forEach(r=>{r.checked=r.value===autoSt;});
+}
+
+function legalSetStatus(status){
+  var hidden=document.getElementById('lr-status');
+  if(hidden)hidden.value=status;
+  document.querySelectorAll('[name="lr-status-r"]').forEach(function(r){r.checked=r.value===status;});
+  var scoreMap={compliant:100,partial:50,non_compliant:0,not_applicable:0};
+  var score=scoreMap[status]??0;
+  var slider=document.getElementById('lr-compliance-score');
+  var display=document.getElementById('lr-score-display');
+  if(slider)slider.value=score;
+  if(display)display.textContent=score+'%';
 }
 
 async function legalSaveReq(){
@@ -29645,7 +29657,10 @@ function fireEquipStatusBadge(s) {
 <div class="form-group"><label class="form-label">Evidence location / document ref</label><input type="text" id="lr-evidence-loc"/></div>
 </div>
 <div class="card"><div class="card-title" style="color:#E24B4A">Gap Identification</div>
-<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px"><input type="checkbox" id="lr-gap" style="accent-color:var(--red)"/><label for="lr-gap" style="font-weight:600;font-size:13px;cursor:pointer;color:var(--red)">Gap identified — controls are inadequate or missing</label></div>
+<label for="lr-gap" style="display:flex;align-items:flex-start;gap:10px;margin-bottom:10px;padding:10px;border-radius:8px;background:#FEF2F2;border:1px solid #fecaca;cursor:pointer">
+<input type="checkbox" id="lr-gap" style="width:18px!important;height:18px!important;min-width:18px;margin-top:1px;accent-color:var(--red);flex:0 0 auto"/>
+<span style="font-weight:700;font-size:13px;line-height:1.35;color:var(--red)">Gap identified<br><span style="font-weight:500;color:#991B1B">Controls are inadequate, missing, or not supported by evidence.</span></span>
+</label>
 <div class="form-group"><label class="form-label">Gap description / Further controls required</label><textarea id="lr-further-controls" style="min-height:70px" placeholder="Describe the compliance gap and what additional controls are needed..."></textarea></div>
 <div class="form-group"><label class="form-label">Penalty / risk if non-compliant</label><input type="text" id="lr-penalty" placeholder="e.g. Fine Rs 50,000, imprisonment 2 years..."/></div>
 <div class="form-group"><label class="form-label">Notes</label><textarea id="lr-notes" style="min-height:50px"></textarea></div>
@@ -29654,10 +29669,10 @@ function fireEquipStatusBadge(s) {
 <div>
 <div class="card" style="margin-bottom:14px;border:2px solid #185FA5"><div class="card-title" style="color:#185FA5">Compliance Status</div>
 <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:12px">
-<label style="display:flex;align-items:center;gap:8px;padding:10px;border-radius:8px;cursor:pointer;background:#f0fdf4;border:1px solid #bbf7d0" onclick="document.getElementById('lr-status').value='compliant'"><input type="radio" name="lr-status-r" value="compliant" style="accent-color:var(--green)" checked><span style="font-weight:700;color:#166534">✓ Compliant</span></label>
-<label style="display:flex;align-items:center;gap:8px;padding:10px;border-radius:8px;cursor:pointer;background:#FFFBEB;border:1px solid #fcd34d" onclick="document.getElementById('lr-status').value='partial'"><input type="radio" name="lr-status-r" value="partial" style="accent-color:#EF9F27"><span style="font-weight:700;color:#854F0B">⚠ Partial compliance</span></label>
-<label style="display:flex;align-items:center;gap:8px;padding:10px;border-radius:8px;cursor:pointer;background:#FEF2F2;border:1px solid #fecaca" onclick="document.getElementById('lr-status').value='non_compliant'"><input type="radio" name="lr-status-r" value="non_compliant" style="accent-color:var(--red)"><span style="font-weight:700;color:var(--red)">✗ Non-compliant</span></label>
-<label style="display:flex;align-items:center;gap:8px;padding:10px;border-radius:8px;cursor:pointer;background:#f3f4f6;border:1px solid #e5e7eb" onclick="document.getElementById('lr-status').value='not_applicable'"><input type="radio" name="lr-status-r" value="not_applicable" style="accent-color:#6B7280"><span style="font-weight:700;color:#6B7280">— Not applicable</span></label>
+<label style="display:flex;align-items:center;gap:10px;padding:12px;border-radius:8px;cursor:pointer;background:#f0fdf4;border:1px solid #bbf7d0" onclick="legalSetStatus('compliant')"><input type="radio" name="lr-status-r" value="compliant" style="width:18px!important;height:18px!important;min-width:18px;margin:0;accent-color:var(--green);flex:0 0 auto" checked><span style="font-weight:800;color:#166534;line-height:1.2">Compliant</span></label>
+<label style="display:flex;align-items:center;gap:10px;padding:12px;border-radius:8px;cursor:pointer;background:#FFFBEB;border:1px solid #fcd34d" onclick="legalSetStatus('partial')"><input type="radio" name="lr-status-r" value="partial" style="width:18px!important;height:18px!important;min-width:18px;margin:0;accent-color:#EF9F27;flex:0 0 auto"><span style="font-weight:800;color:#854F0B;line-height:1.2">Partial compliance</span></label>
+<label style="display:flex;align-items:center;gap:10px;padding:12px;border-radius:8px;cursor:pointer;background:#FEF2F2;border:1px solid #fecaca" onclick="legalSetStatus('non_compliant')"><input type="radio" name="lr-status-r" value="non_compliant" style="width:18px!important;height:18px!important;min-width:18px;margin:0;accent-color:var(--red);flex:0 0 auto"><span style="font-weight:800;color:var(--red);line-height:1.2">Non-compliant</span></label>
+<label style="display:flex;align-items:center;gap:10px;padding:12px;border-radius:8px;cursor:pointer;background:#f3f4f6;border:1px solid #e5e7eb" onclick="legalSetStatus('not_applicable')"><input type="radio" name="lr-status-r" value="not_applicable" style="width:18px!important;height:18px!important;min-width:18px;margin:0;accent-color:#6B7280;flex:0 0 auto"><span style="font-weight:800;color:#6B7280;line-height:1.2">Not applicable</span></label>
 </div>
 <input type="hidden" id="lr-status"/>
 <div class="form-group"><label class="form-label">Applicable to company?</label><select id="lr-applicable"><option value="true">Yes</option><option value="false">No</option></select></div>

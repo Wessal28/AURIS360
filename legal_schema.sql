@@ -9,6 +9,7 @@ create table if not exists public.legal_requirements (
   company_id uuid not null,
   req_ref text,
   legislation text not null,
+  part text,
   title text,
   section text,
   subsection text,
@@ -38,6 +39,8 @@ create table if not exists public.legal_requirements (
   review_date date,
   last_assessed_date date,
   assessed_by text,
+  source_url text,
+  last_verified_at timestamptz,
   created_by uuid,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
@@ -137,10 +140,13 @@ create table if not exists public.compliance_calendar (
 );
 
 alter table public.legal_requirements add column if not exists req_ref text;
+alter table public.legal_requirements add column if not exists part text;
 alter table public.legal_requirements add column if not exists compliance_score numeric default 0;
 alter table public.legal_requirements add column if not exists gap boolean default false;
 alter table public.legal_requirements add column if not exists gap_identified boolean default false;
 alter table public.legal_requirements add column if not exists responsible_person text;
+alter table public.legal_requirements add column if not exists source_url text;
+alter table public.legal_requirements add column if not exists last_verified_at timestamptz;
 
 alter table public.legal_changes add column if not exists changes_identified text;
 alter table public.legal_changes add column if not exists action_required text;
