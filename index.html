@@ -36149,5 +36149,20 @@ I can help you:<br>
 </div>
 <!-- END page-fire -->
 
+<script>
+(function(){
+  function placeFireModuleInMain(){
+    var page = document.getElementById('page-fire');
+    var main = document.querySelector('.main');
+    if(page && main && page.parentElement !== main) main.appendChild(page);
+  }
+  if(document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', placeFireModuleInMain);
+  } else {
+    placeFireModuleInMain();
+  }
+})();
+</script>
+
 </body>
 </html>
