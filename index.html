@@ -17165,6 +17165,7 @@ async function mapLoadList(){
 }
 
 function mapRenderList(){
+  if(typeof mapRenderTableList === 'function') return mapRenderTableList();
   var el=document.getElementById('actions-list');if(!el)return;
   var now=new Date();
   var q=(document.getElementById('map-search')?.value||'').toLowerCase();
@@ -17251,6 +17252,93 @@ function mapRenderList(){
 }
 
 // ── Workflow bar ───────────────────────────────────────────────────────────────
+function mapRenderTableList(){
+  var el=document.getElementById('actions-list');if(!el)return;
+  var now=new Date();
+  var q=(document.getElementById('map-search')?.value||'').toLowerCase();
+  var fsrc=document.getElementById('map-filter-source')?.value||'';
+  var fpri=document.getElementById('filter-priority')?.value||'';
+  var fst=document.getElementById('filter-status')?.value||'';
+  var ftype=document.getElementById('map-filter-type')?.value||'';
+  var currentUser=prof?.full_name||'';
+
+  var filtered=mapAllData.filter(function(x){
+    if(mapCurrentView==='mine')return (x.assigned_to_name||x.responsible||'').toLowerCase().includes(currentUser.toLowerCase())||x.assigned_to_id===prof?.id;
+    if(mapCurrentView==='overdue')return x.target_date&&new Date(x.target_date)<now&&!['closed','cancelled'].includes(x.status);
+    if(mapCurrentView==='verify')return x.status==='pending_verification';
+    if(mapCurrentView==='closure')return x.status==='pending_closure';
+    return true;
+  }).filter(function(x){
+    var mQ=!q||(x.action_ref||'').toLowerCase().includes(q)||(x.title||'').toLowerCase().includes(q)||(x.description||'').toLowerCase().includes(q)||(x.assigned_to_name||x.responsible||'').toLowerCase().includes(q)||(x.source_ref||'').toLowerCase().includes(q);
+    var mSrc=!fsrc||(x.source_type||x.source_module||'')=== fsrc;
+    var mPri=!fpri||x.priority===fpri;
+    var mSt=!fst||x.status===fst;
+    var mType=!ftype||(x.action_type||'corrective')===ftype;
+    return mQ&&mSrc&&mPri&&mSt&&mType;
+  });
+
+  if(!filtered.length){
+    el.innerHTML='<div class="card" style="text-align:center;padding:40px;color:var(--text2)">'
+      +'<div style="font-size:36px;margin-bottom:12px"><i class="ti ti-circle-check"></i></div>'
+      +'<div style="font-weight:700;margin-bottom:8px">No actions found</div>'
+      +(isMgr()&&mapCurrentView==='all'&&!q&&!fsrc&&!fpri&&!fst?'<button class="btn btn-primary" onclick="mapNew()"><i class="ti ti-plus"></i>Create first action</button>':'')
+      +'</div>';
+    return;
+  }
+
+  var cell='padding:10px 12px;border-bottom:1px solid var(--border);vertical-align:middle;font-size:12px';
+  var head='padding:10px 12px;border-bottom:1px solid var(--border);text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:var(--text2);background:#f9fafb;white-space:nowrap';
+  var h='<div class="card" style="padding:0;overflow:hidden">'
+    +'<div style="overflow-x:auto;-webkit-overflow-scrolling:touch">'
+    +'<table style="width:100%;min-width:1120px;border-collapse:collapse;background:#fff">'
+    +'<thead><tr>'
+    +'<th style="'+head+';width:110px">Ref</th>'
+    +'<th style="'+head+';width:135px">Source</th>'
+    +'<th style="'+head+'">Action</th>'
+    +'<th style="'+head+';width:155px">Responsible</th>'
+    +'<th style="'+head+';width:125px">Due date</th>'
+    +'<th style="'+head+';width:105px">Priority</th>'
+    +'<th style="'+head+';width:135px">Status</th>'
+    +'<th style="'+head+';width:115px">Progress</th>'
+    +'<th style="'+head+';width:70px;text-align:center">Open</th>'
+    +'</tr></thead><tbody>';
+
+  filtered.forEach(function(x){
+    var isOverdue=x.target_date&&new Date(x.target_date)<now&&!['closed','cancelled'].includes(x.status);
+    var sc=MAP_STATUS_CFG[x.status]||MAP_STATUS_CFG.open;
+    var pc=MAP_PRIORITY_CFG[x.priority]||MAP_PRIORITY_CFG.medium;
+    var srcCfg=MAP_SOURCE_CFG[x.source_type||x.source_module||'manual']||MAP_SOURCE_CFG.manual;
+    var typeCfg=MAP_TYPE_CFG[x.action_type||'corrective']||MAP_TYPE_CFG.corrective;
+    var daysOverdue=isOverdue?Math.floor((now-new Date(x.target_date))/86400000):0;
+    var progress=parseInt(x.progress_pct)||0;
+    var ref=x.action_ref||x.id.slice(0,8);
+    var title=x.title||x.description||'Untitled action';
+    var responsible=x.assigned_to_name||x.responsible||'-';
+    var due=x.target_date?new Date(x.target_date).toLocaleDateString('en-GB'):'-';
+    var dueExtra=isOverdue?' <span style="color:var(--red);font-weight:700">('+daysOverdue+'d overdue)</span>':'';
+
+    h+='<tr data-id="'+x.id+'" onclick="mapEdit(this.dataset.id)" style="cursor:pointer;border-left:4px solid '+pc.color+';background:'+(isOverdue?'#fff7f7':'#fff')+'" onmouseover="this.style.background=\''+(isOverdue?'#fff1f1':'#f9fafb')+'\'" onmouseout="this.style.background=\''+(isOverdue?'#fff7f7':'#fff')+'\'">'
+      +'<td style="'+cell+';font-family:monospace;font-size:11px;font-weight:700;color:'+pc.color+';white-space:nowrap">'+escH(ref)+'</td>'
+      +'<td style="'+cell+'"><span style="display:inline-flex;align-items:center;gap:6px;background:'+srcCfg.color+'15;color:'+srcCfg.color+';padding:3px 8px;border-radius:99px;font-size:11px;font-weight:700;white-space:nowrap">'+srcCfg.emoji+' '+escH(srcCfg.label)+'</span>'
+      +(x.source_ref?'<div style="font-family:monospace;font-size:10px;color:var(--text2);margin-top:4px">'+escH(x.source_ref)+'</div>':'')+'</td>'
+      +'<td style="'+cell+'"><div style="font-weight:700;font-size:13px;line-height:1.35">'+escH(title)+'</div>'
+      +'<div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-top:4px;color:var(--text2);font-size:11px">'
+      +'<span>'+escH(typeCfg.emoji+' '+typeCfg.label)+'</span>'
+      +(x.department?'<span>- '+escH(x.department)+'</span>':'')
+      +(x.escalated?'<span style="background:#FCEBEB;color:#A32D2D;padding:1px 7px;border-radius:99px;font-size:10px;font-weight:700">ESCALATED</span>':'')
+      +'</div></td>'
+      +'<td style="'+cell+'">'+escH(responsible)+'</td>'
+      +'<td style="'+cell+';font-weight:'+(isOverdue?'700':'500')+';color:'+(isOverdue?'var(--red)':'var(--text)')+';white-space:nowrap">'+due+dueExtra+'</td>'
+      +'<td style="'+cell+'"><span style="background:'+pc.bg+';color:'+pc.tc+';padding:3px 8px;border-radius:99px;font-size:11px;font-weight:700;white-space:nowrap">'+pc.label+'</span></td>'
+      +'<td style="'+cell+'"><span style="background:'+sc.bg+';color:'+sc.tc+';padding:3px 8px;border-radius:99px;font-size:11px;font-weight:700;white-space:nowrap">'+sc.label+'</span></td>'
+      +'<td style="'+cell+'"><div style="display:flex;align-items:center;gap:7px"><div style="width:64px;background:#e5e7eb;border-radius:99px;height:6px;overflow:hidden"><div style="width:'+progress+'%;background:'+(progress===100?'var(--green)':'#185FA5')+';height:100%"></div></div><span style="font-size:11px;font-weight:700;color:#185FA5">'+progress+'%</span></div></td>'
+      +'<td style="'+cell+';text-align:center"><button class="btn btn-sm" onclick="event.stopPropagation();mapEdit(\''+x.id+'\')" title="Open action"><i class="ti ti-chevron-right"></i></button></td>'
+      +'</tr>';
+  });
+  h+='</tbody></table></div></div>';
+  el.innerHTML=h;
+}
+
 function mapRenderWorkflowBar(x){
   var el=document.getElementById('map-workflow-bar');if(!el)return;
   var steps=[
