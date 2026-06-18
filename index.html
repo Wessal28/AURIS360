@@ -26,6 +26,7 @@
 <meta http-equiv="Expires" content="0"/>
 <title>AURIS360 v4 — HSE Management Platform</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <style>
 
 *{box-sizing:border-box;margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif}:root{--green:#1D9E75;--dg:#0F6E56;--red:#E24B4A;--amber:#EF9F27;--blue:#185FA5;--bg:#f4f6f8;--card:#fff;--border:#e5e7eb;--text:#111;--text2:#6b7280;--text3:#9ca3af} body{background:var(--bg);color:var(--text);min-height:100vh} #login-screen{position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;z-index:100} .login-box{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:36px;width:380px;box-shadow:0 4px 24px rgba(0,0,0,.08)} .login-logo{font-size:22px;font-weight:800;color:var(--green);margin-bottom:2px;letter-spacing:-.5px} .login-sub{font-size:12px;color:var(--text2);margin-bottom:24px} .login-err{background:#FCEBEB;color:#A32D2D;font-size:12px;padding:9px 12px;border-radius:8px;margin-bottom:14px;display:none} #app{display:none;height:100vh;overflow:hidden;width:100%} .layout{display:flex;height:100vh;width:100%} .sidebar{width:240px;min-width:240px;background:var(--card);border-right:1px solid var(--border);display:flex;flex-direction:column;height:100vh;overflow-y:auto} .sidebar-top{padding:18px 20px 14px;border-bottom:1px solid var(--border)} .co-logo{width:48px;height:48px;border-radius:10px;object-fit:contain;margin-bottom:8px;border:1px solid var(--border);display:none} .co-initials{width:48px;height:48px;border-radius:10px;background:var(--green);color:#fff;font-size:18px;font-weight:700;display:flex;align-items:center;justify-content:center;margin-bottom:8px} .sb-company{font-size:14px;font-weight:700;color:var(--text)} .sb-user{font-size:11px;color:var(--text2);margin-top:1px} .sb-role{display:inline-block;margin-top:5px;font-size:10px;padding:2px 8px;border-radius:99px;background:#E1F5EE;color:var(--dg);font-weight:600} .nav-section{font-size:9px;text-transform:uppercase;letter-spacing:.1em;color:var(--text3);padding:14px 20px 3px;font-weight:600} .nav-item{display:flex;align-items:center;gap:9px;padding:9px 20px;cursor:pointer;font-size:13px;color:var(--text2);border-left:3px solid transparent;transition:all .12s} .nav-item:hover{background:#f9fafb;color:var(--text)} .nav-item.active{background:#E1F5EE;color:var(--green);border-left-color:var(--green);font-weight:600} .nav-item i{font-size:16px} .sb-footer{margin-top:auto;padding:12px 16px;border-top:1px solid var(--border);display:flex;gap:6px} .main{flex:1;overflow-y:auto;background:var(--bg);height:100vh} .page{display:none;padding:28px 32px;min-height:100%}
@@ -18842,6 +18843,7 @@ function saveDoc(){dcSave();}
 // ===================================================================
 
 var lrAllData=[], lcAllData=[], lcaAllData=[], gapAllData=[], calAllData=[];
+var legalPdfImportRows=[];
 let lrEditId=null, lcEditId=null, lcaEditId=null, gapEditId=null, calEditId=null;
 let calCurrentFilter='overdue';
 
@@ -18880,7 +18882,7 @@ const GAP_RISK_CFG={
 
 // ── Entry ─────────────────────────────────────────────────────────────────────
 async function loadLegal(){
-  ['lr-add-btn','lc-add-btn','lca-add-btn','gap-add-btn','cal-add-btn','legal-new-btn'].forEach(function(id){
+  ['lr-add-btn','lr-import-pdf-btn','lc-add-btn','lca-add-btn','gap-add-btn','cal-add-btn','legal-new-btn'].forEach(function(id){
     var el=document.getElementById(id);if(el)el.style.display=isMgr()?'inline-flex':'none';
   });
   legalRefreshMetrics();
@@ -18939,6 +18941,214 @@ function legalNewFromTab(){
   else if(tab==='assessments')lcaNew();
   else if(tab==='gaps')gapNew();
   else if(tab==='calendar')calNew();
+}
+
+function legalOpenPdfImport(){
+  var panel=document.getElementById('lr-pdf-import-panel');
+  if(panel)panel.style.display='block';
+  var msg=document.getElementById('lr-pdf-status-msg');
+  if(msg)msg.textContent='Choose an official Act or regulation PDF. The app will extract sections for your review.';
+  var preview=document.getElementById('lr-pdf-preview');
+  if(preview)preview.innerHTML='';
+}
+
+function legalCancelPdfImport(){
+  legalPdfImportRows=[];
+  var panel=document.getElementById('lr-pdf-import-panel');
+  var input=document.getElementById('lr-pdf-input');
+  if(panel)panel.style.display='none';
+  if(input)input.value='';
+}
+
+async function legalParsePdfFile(file){
+  if(!file)return;
+  var msg=document.getElementById('lr-pdf-status-msg');
+  var preview=document.getElementById('lr-pdf-preview');
+  if(msg)msg.textContent='Reading PDF... this can take a few seconds for long Acts.';
+  if(preview)preview.innerHTML='<div class="loading-msg">Extracting legal sections...</div>';
+  try{
+    if(!window.pdfjsLib)throw new Error('PDF reader is not loaded. Check your internet connection and try again.');
+    if(window.pdfjsLib.GlobalWorkerOptions){
+      window.pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    }
+    var buffer=await file.arrayBuffer();
+    var pdf=await window.pdfjsLib.getDocument({data:buffer}).promise;
+    var pages=[];
+    for(var p=1;p<=pdf.numPages;p++){
+      var page=await pdf.getPage(p);
+      var content=await page.getTextContent();
+      var lastY=null,line='';
+      content.items.forEach(function(item){
+        var y=Math.round(item.transform[5]);
+        if(lastY!==null&&Math.abs(y-lastY)>4){pages.push(line.trim());line='';}
+        line+=(line?' ':'')+item.str;
+        lastY=y;
+      });
+      if(line.trim())pages.push(line.trim());
+      pages.push('');
+      if(msg)msg.textContent='Reading PDF page '+p+' of '+pdf.numPages+'...';
+    }
+    legalPdfImportRows=legalParseActSections(pages.join('\n'));
+    legalRenderPdfPreview(legalPdfImportRows,file.name);
+  }catch(e){
+    legalPdfImportRows=[];
+    if(msg)msg.textContent='Could not read PDF: '+e.message;
+    if(preview)preview.innerHTML='<div style="padding:14px;color:var(--red);font-size:13px">PDF import failed. '+escH(e.message)+'</div>';
+  }
+}
+
+function legalCleanPdfLine(line){
+  return (line||'').replace(/\s+/g,' ').replace(/\s+([,.;:])/g,'$1').trim();
+}
+
+function legalParseActSections(text){
+  var raw=(text||'').split(/\n+/).map(legalCleanPdfLine).filter(Boolean);
+  var lines=raw.filter(function(line){
+    if(/^Revised Laws of Mauritius$/i.test(line))return false;
+    if(/^Occupational Safety and Health Act$/i.test(line))return false;
+    if(/^\[Issue\s+\d+\]/i.test(line))return false;
+    if(/^O\d+\s+\d+/i.test(line))return false;
+    if(/^\d+\s+\[Issue\s+\d+\]/i.test(line))return false;
+    if(/^SECTION$/i.test(line))return false;
+    return true;
+  });
+  var bodyStart=0, shortTitleHits=0;
+  for(var i=0;i<lines.length;i++){
+    if(/^1\.\s+Short title\b/i.test(lines[i])){
+      shortTitleHits++;
+      if(shortTitleHits>=2){bodyStart=i;break;}
+    }
+  }
+  if(!bodyStart){
+    for(var j=0;j<lines.length;j++){
+      if(/^PART\s+I\b/i.test(lines[j])&&/^1\.\s+Short title\b/i.test(lines[j+1]||'')){bodyStart=j;break;}
+    }
+  }
+  lines=lines.slice(bodyStart);
+  var sections=[], current=null, currentPart='', lastNo=0, inSchedules=false;
+  lines.forEach(function(line){
+    if(inSchedules)return;
+    if(lastNo>=100&&/^(FIRST|SECOND|THIRD|FOURTH|FIFTH|SIXTH|SEVENTH|EIGHTH|NINTH|TENTH|ELEVENTH|TWELFTH|THIRTEENTH|FOURTEENTH|FIFTEENTH|SIXTEENTH|SEVENTEENTH|EIGHTEENTH|NINETEENTH|TWENTIETH|TWENTY-FIRST)\s+SCHEDULE\b/i.test(line)){
+      inSchedules=true;
+      return;
+    }
+    var partMatch=line.match(/^(PART\s+[IVXLC]+)\b\s*(.*)$/i);
+    if(partMatch){currentPart=legalCleanPdfLine(partMatch[1]+' '+(partMatch[2]||''));return;}
+    var sec=line.match(/^(\d{1,3})\.\s+(.{3,})$/);
+    if(sec){
+      var no=parseInt(sec[1],10);
+      if(no>=1&&no<=130&&(lastNo===0||no>lastNo||no===1)){
+        if(current)sections.push(current);
+        current={section:String(no),title:legalCleanPdfLine(sec[2]),part:currentPart,requirement:''};
+        lastNo=no;
+        return;
+      }
+    }
+    if(current)current.requirement+=(current.requirement?' ':'')+line;
+  });
+  if(current)sections.push(current);
+  return sections.filter(function(s){return s.title&&s.requirement&&s.requirement.length>20;}).map(function(s){
+    var inferred=legalInferRequirementMeta(s.title+' '+s.requirement);
+    s.category=inferred.category;
+    s.obligation_type=inferred.obligation_type;
+    s.frequency=inferred.frequency;
+    return s;
+  });
+}
+
+function legalInferRequirementMeta(text){
+  var t=(text||'').toLowerCase();
+  var category='health_safety';
+  if(/fire|flammable|explosive|explosion|means of escape/.test(t))category='fire';
+  else if(/environment|pollution|waste|effluent|emission|spill/.test(t))category='environment';
+  else if(/chemical|hazardous|corrosive|fume|gas|vapour|substance|asbestos|biological/.test(t))category='chemical';
+  else if(/electric|electrical|voltage|wiring/.test(t))category='electrical';
+  else if(/construction|building|scaffold|ladder|excavation|demolition/.test(t))category='construction';
+  else if(/noise|vibration/.test(t))category='noise';
+  var obligation=/\bmay\b/.test(t)&&!/\bshall\b|\bmust\b/.test(t)?'conditional':'mandatory';
+  var frequency=/notify|notification|report|accident|dangerous occurrence|certificate|registration|permit/.test(t)?'as_required':'ongoing';
+  return {category:category,obligation_type:obligation,frequency:frequency};
+}
+
+function legalStatusScore(status){
+  if(status==='compliant')return 100;
+  if(status==='partial')return 50;
+  return 0;
+}
+
+function legalRenderPdfPreview(rows,fileName){
+  var msg=document.getElementById('lr-pdf-status-msg');
+  var preview=document.getElementById('lr-pdf-preview');
+  if(msg)msg.textContent=rows.length+' sections detected from '+fileName+'. Review before importing.';
+  if(!preview)return;
+  if(!rows.length){
+    preview.innerHTML='<div style="padding:14px;color:var(--red);font-size:13px">No legal sections were detected. Try another PDF or a searchable text PDF.</div>';
+    return;
+  }
+  var h='<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px;flex-wrap:wrap">'
+    +'<div style="font-size:12px;color:var(--text2)">Selected rows will be imported as Legal Register requirements.</div>'
+    +'<div style="display:flex;gap:8px;flex-wrap:wrap">'
+    +'<button class="btn btn-sm" onclick="legalTogglePdfRows(true)">Select all</button>'
+    +'<button class="btn btn-sm" onclick="legalTogglePdfRows(false)">Select none</button>'
+    +'<button class="btn btn-primary btn-sm" onclick="legalImportPdfRows()"><i class="ti ti-database-import"></i>Import selected</button>'
+    +'</div></div>';
+  h+='<div style="max-height:420px;overflow:auto;border:1px solid var(--border);border-radius:10px;background:#fff"><table style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr style="background:#1a3a5c;color:#fff"><th style="width:38px;padding:8px;color:#fff"></th><th style="padding:8px;color:#fff;text-align:left">Section</th><th style="padding:8px;color:#fff;text-align:left">Title / requirement preview</th><th style="padding:8px;color:#fff;text-align:left">Category</th></tr></thead><tbody>';
+  rows.forEach(function(r,i){
+    var cat=LEGAL_CAT_CFG[r.category]||LEGAL_CAT_CFG.other;
+    h+='<tr>'
+      +'<td style="padding:8px;text-align:center"><input type="checkbox" class="lr-pdf-row" data-idx="'+i+'" checked style="width:16px!important;height:16px!important;margin:0"/></td>'
+      +'<td style="padding:8px;font-family:monospace;font-weight:800;color:#185FA5;white-space:nowrap">'+escH(r.section)+'</td>'
+      +'<td style="padding:8px"><div style="font-weight:700">'+escH(r.title)+'</div><div style="font-size:11px;color:var(--text2);line-height:1.35">'+escH(r.requirement.substring(0,220))+(r.requirement.length>220?'...':'')+'</div>'+(r.part?'<div style="font-size:10px;color:#6B7280;margin-top:3px">'+escH(r.part)+'</div>':'')+'</td>'
+      +'<td style="padding:8px"><span style="background:'+cat.color+'15;color:'+cat.color+';padding:2px 7px;border-radius:99px;font-size:10px;font-weight:700">'+cat.label+'</span></td>'
+      +'</tr>';
+  });
+  h+='</tbody></table></div>';
+  preview.innerHTML=h;
+}
+
+function legalTogglePdfRows(checked){
+  document.querySelectorAll('.lr-pdf-row').forEach(function(cb){cb.checked=checked;});
+}
+
+async function legalImportPdfRows(){
+  if(!isMgr()){toast('Only managers/admins can import legal requirements',false);return;}
+  var selected=Array.from(document.querySelectorAll('.lr-pdf-row:checked')).map(function(cb){return legalPdfImportRows[parseInt(cb.dataset.idx,10)];}).filter(Boolean);
+  if(!selected.length){toast('Select at least one section to import',false);return;}
+  var legislation=(document.getElementById('lr-pdf-legislation')?.value||'Imported Legal Act').trim();
+  var prefix=(document.getElementById('lr-pdf-prefix')?.value||'LEG').trim().toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,8)||'LEG';
+  var status=document.getElementById('lr-pdf-status')?.value||'partial';
+  var score=legalStatusScore(status);
+  var source=document.getElementById('lr-pdf-input')?.files?.[0]?.name||null;
+  var existing=new Set((lrAllData||[]).filter(function(x){return x.legislation===legislation;}).map(function(x){return String(x.section||'').trim();}));
+  var rows=selected.filter(function(x){return !existing.has(String(x.section||'').trim());}).map(function(x){
+    return {company_id:ccid(),req_ref:prefix+'-'+String(x.section).padStart(3,'0'),legislation:legislation,legislation_type:'statutory',part:x.part||null,title:x.title,section:x.section,requirement:x.requirement,category:x.category||'health_safety',jurisdiction:'Mauritius',authority:legislation.toLowerCase().includes('environment')?'Ministry of Environment':'OSHI',obligation_type:x.obligation_type||'mandatory',frequency:x.frequency||'ongoing',applicable:true,status:status,compliance_score:score,notes:source?'Imported from PDF: '+source:null,source_url:source,last_verified_at:new Date().toISOString(),created_by:prof?.id,updated_at:new Date().toISOString()};
+  });
+  if(!rows.length){toast('All selected sections already exist for this legislation',false);return;}
+  var msg=document.getElementById('lr-pdf-status-msg');
+  try{
+    if(msg)msg.textContent='Importing '+rows.length+' sections...';
+    for(var i=0;i<rows.length;i+=50){await api('/legal_requirements',{m:'POST',p:'return=minimal',b:rows.slice(i,i+50)});}
+    toast('Imported '+rows.length+' legal sections');
+    legalCancelPdfImport();
+    legalLoadRegister();
+  }catch(e){
+    if(/part|source_url|last_verified_at|schema cache|column/i.test(e.message||'')){
+      try{
+        var basicRows=rows.map(function(r){var x=Object.assign({},r);delete x.part;delete x.source_url;delete x.last_verified_at;return x;});
+        for(var j=0;j<basicRows.length;j+=50){await api('/legal_requirements',{m:'POST',p:'return=minimal',b:basicRows.slice(j,j+50)});}
+        toast('Imported '+basicRows.length+' sections. Run the latest legal_schema.sql later to enable source tracking.');
+        legalCancelPdfImport();
+        legalLoadRegister();
+        return;
+      }catch(e2){
+        if(msg)msg.textContent='Import failed: '+e2.message;
+        toast('Import failed: '+e2.message,false);
+        return;
+      }
+    }
+    if(msg)msg.textContent='Import failed: '+e.message;
+    toast('Import failed: '+e.message,false);
+  }
 }
 
 // ── LEGAL REGISTER ────────────────────────────────────────────────────────────
@@ -29473,8 +29683,27 @@ function fireEquipStatusBadge(s) {
 <option value="client">Client Standards</option>
 <option value="other">Other</option>
 </select>
+<button class="btn" id="lr-import-pdf-btn" style="display:none" onclick="legalOpenPdfImport()"><i class="ti ti-file-import"></i>Import Act PDF</button>
+<input type="file" id="lr-pdf-input" accept="application/pdf,.pdf" style="display:none" onchange="legalParsePdfFile(this.files&&this.files[0])"/>
 <button class="btn btn-primary" id="lr-add-btn" style="display:none" onclick="legalNewRequirement()"><i class="ti ti-plus"></i>Add requirement</button>
 </div>
+</div>
+<div id="lr-pdf-import-panel" class="card" style="display:none;margin-bottom:12px;border:2px solid #185FA5;background:#F8FBFF">
+<div style="display:flex;justify-content:space-between;gap:12px;align-items:flex-start;flex-wrap:wrap;margin-bottom:12px">
+<div>
+<div class="card-title" style="margin:0;color:#185FA5"><i class="ti ti-file-type-pdf"></i> Import Act / Regulation PDF</div>
+<div style="font-size:12px;color:var(--text2);margin-top:3px">Upload an official legal PDF, review detected sections, then import them into the Legal Register.</div>
+</div>
+<button class="btn btn-sm" onclick="legalCancelPdfImport()"><i class="ti ti-x"></i>Close</button>
+</div>
+<div style="display:grid;grid-template-columns:2fr 1fr 1fr auto;gap:10px;align-items:end;margin-bottom:12px">
+<div class="form-group" style="margin:0"><label class="form-label">Legislation name</label><input type="text" id="lr-pdf-legislation" value="Occupational Safety and Health Act 2005"/></div>
+<div class="form-group" style="margin:0"><label class="form-label">Reference prefix</label><input type="text" id="lr-pdf-prefix" value="OSH"/></div>
+<div class="form-group" style="margin:0"><label class="form-label">Default status</label><select id="lr-pdf-status"><option value="partial">Partial - to assess</option><option value="non_compliant">Non-compliant</option><option value="compliant">Compliant</option><option value="not_applicable">Not applicable</option></select></div>
+<button class="btn btn-primary" onclick="document.getElementById('lr-pdf-input').click()"><i class="ti ti-upload"></i>Choose PDF</button>
+</div>
+<div id="lr-pdf-status-msg" style="font-size:12px;color:var(--text2);margin-bottom:10px">No PDF selected.</div>
+<div id="lr-pdf-preview"></div>
 </div>
 <div class="card" style="padding:0;overflow:hidden"><div id="lr-table"><div class="loading-msg">Loading...</div></div></div>
 </div>
