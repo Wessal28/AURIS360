@@ -18841,7 +18841,7 @@ function saveDoc(){dcSave();}
 // Smart: auto scoring · AI compliance assistant
 // ===================================================================
 
-// DEDUP: let lrAllData=[], lcAllData=[], lcaAllData=[], gapAllData=[], calAllData=[];
+var lrAllData=[], lcAllData=[], lcaAllData=[], gapAllData=[], calAllData=[];
 let lrEditId=null, lcEditId=null, lcaEditId=null, gapEditId=null, calEditId=null;
 let calCurrentFilter='overdue';
 
@@ -18883,7 +18883,31 @@ async function loadLegal(){
   ['lr-add-btn','lc-add-btn','lca-add-btn','gap-add-btn','cal-add-btn','legal-new-btn'].forEach(function(id){
     var el=document.getElementById(id);if(el)el.style.display=isMgr()?'inline-flex':'none';
   });
+  legalRefreshMetrics();
   legalSwitchTab('register',document.getElementById('legal-tab-register'));
+}
+
+async function legalRefreshMetrics(){
+  var setM=function(id,v){var e=document.getElementById(id);if(e)e.textContent=v;};
+  var safeLegal=function(p){return api(p).catch(function(){return [];});};
+  try{
+    var now=new Date();
+    var soon=new Date(now.getTime()+30*86400000);
+    var results=await Promise.all([
+      safeLegal('/compliance_gaps?select=id,status'+cf()),
+      safeLegal('/compliance_assessments?select=id'+cf()),
+      safeLegal('/compliance_calendar?select=id,status,due_date'+cf())
+    ]);
+    var gaps=results[0]||[], assessments=results[1]||[], calendar=results[2]||[];
+    var due30=calendar.filter(function(x){
+      if(x.status==='completed'||!x.due_date)return false;
+      var d=new Date(x.due_date);
+      return d>=now&&d<=soon;
+    });
+    setM('lr-m-gaps',gaps.filter(function(x){return ['open','in_progress'].includes(x.status);}).length);
+    setM('lr-m-assessments',assessments.length);
+    setM('lr-m-cal-due',due30.length);
+  }catch(e){}
 }
 
 function legalSwitchTab(tab,btn){
