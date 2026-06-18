@@ -3399,20 +3399,20 @@ var ROLE_ALLOWED = {
   'hse_manager': null,
   'executive':   ['dashboard','executive','kpi','workschedule','events','observation',
                   'inspection','risk','tools','permit','contractor','emergency',
-                  'ohealth','ppe','esg','noise','meetings','training','actions',
+                  'fire','ohealth','ppe','esg','noise','meetings','training','actions',
                   'legal','sop','documents','people'],
   'manager':     ['dashboard','executive','kpi','workschedule','events','observation',
                   'inspection','risk','tools','permit','contractor','emergency',
-                  'ohealth','ppe','esg','noise','meetings','training','actions',
+                  'fire','ohealth','ppe','esg','noise','meetings','training','actions',
                   'legal','sop','documents','people'],
   'site_manager':['dashboard','kpi','workschedule','events','observation','inspection',
-                  'risk','tools','permit','contractor','emergency','ppe','esg','noise',
+                  'risk','tools','permit','contractor','emergency','fire','ppe','esg','noise',
                   'meetings','training','actions','sop','people'],
   'supervisor':  ['dashboard','kpi','workschedule','events','observation','inspection',
-                  'risk','tools','permit','contractor','emergency','ppe','noise',
+                  'risk','tools','permit','contractor','emergency','fire','ppe','noise',
                   'meetings','training','actions','sop'],
   'auditor':     ['dashboard','events','observation','inspection','risk','legal',
-                  'documents','meetings','actions'],
+                  'fire','documents','meetings','actions'],
   'hr':          ['dashboard','kpi','training','people','documents','ohealth','meetings'],
   'inspector':   ['dashboard','events','observation','inspection','risk','permit',
                   'tools','ppe','meetings'],
@@ -3493,7 +3493,7 @@ if(target){
   target.classList.add('active');
 }
 if(el&&el.classList)el.classList.add('active');
-const L={dashboard:loadDash,executive:loadExecutive,kpi:kpiLoadAll,workschedule:loadWorkSchedule,events:loadEvents,observation:loadObservation,inspection:()=>{buildChecklist();loadInsps();},risk:loadRA,investigation:loadInvs,legal:loadLegal,sop:loadSOP,tools:loadTools,permit:loadPermits,contractor:loadContractors,esg:loadESG,emergency:loadEmergency,ohealth:loadOHealth,ppe:loadPPE,noise:loadNoise,meetings:loadMtgs,training:loadTraining,actions:loadActions,documents:loadDocs,people:loadPeople,users:loadUsers,admin:loadAdmin,'ai-insights':genFullAI,settings:loadSettings,integrations:loadIntegrations};
+const L={dashboard:loadDash,executive:loadExecutive,kpi:kpiLoadAll,workschedule:loadWorkSchedule,events:loadEvents,observation:loadObservation,inspection:()=>{buildChecklist();loadInsps();},risk:loadRA,investigation:loadInvs,legal:loadLegal,sop:loadSOP,tools:loadTools,permit:loadPermits,contractor:loadContractors,esg:loadESG,emergency:loadEmergency,fire:loadFire,ohealth:loadOHealth,ppe:loadPPE,noise:loadNoise,meetings:loadMtgs,training:loadTraining,actions:loadActions,documents:loadDocs,people:loadPeople,users:loadUsers,admin:loadAdmin,'ai-insights':genFullAI,settings:loadSettings,integrations:loadIntegrations};
 if(L[name])L[name]();
 // Mobile: close sidebar and scroll to top
 if(window.innerWidth<=768){
@@ -21932,6 +21932,7 @@ var LAUNCHED_MODULES = [
   'emergency',     // Emergency — Phase 1
   'permit',        // Permit to Work — Phase 1
   'fire',          // Fire Certificates — Phase 2
+  'sop',           // SOP Generator — internal/admin rollout
   // To activate more: add module key here and redeploy
 ];
 
@@ -22187,6 +22188,7 @@ var MODULES_DIR = [
   {k:'permit',      i:'ti-key',                l:'Permit to Work',      sec:'HSE Modules'},
   {k:'contractor',  i:'ti-hard-hat',           l:'Contractors',         sec:'HSE Modules'},
   {k:'emergency',   i:'ti-alert-square',       l:'Emergency',           sec:'HSE Modules'},
+  {k:'fire',        i:'ti-flame',              l:'Fire Certificates',   sec:'HSE Modules'},
   {k:'ohealth',     i:'ti-stethoscope',        l:'Occupational Health', sec:'HSE Modules'},
   {k:'ppe',         i:'ti-shield-check',       l:'PPE',                 sec:'HSE Modules'},
   {k:'esg',         i:'ti-leaf',               l:'Environmental / ESG', sec:'HSE Modules'},
@@ -23064,6 +23066,7 @@ var MODULE_CATALOGUE = [
   {k:'meetings',    l:'HSE Meetings'},
   {k:'ppe',         l:'PPE'},
   {k:'emergency',   l:'Emergency'},
+  {k:'fire',        l:'Fire Certificates'},
   {k:'ohealth',     l:'Occupational Health'},
   {k:'noise',       l:'Noise Survey'},
   {k:'esg',         l:'Environmental / ESG'},
@@ -23204,6 +23207,7 @@ var MODULE_CATALOG = [
   { key:'ppe',         icon:'ti-shield',           name:'PPE Management' },
   { key:'emergency',   icon:'ti-flame',            name:'Emergency' },
   { key:'permit',      icon:'ti-id-badge',         name:'Permit to Work' },
+  { key:'fire',        icon:'ti-flame',            name:'Fire Certificates' },
   // Coming-soon modules (not in LAUNCHED_MODULES yet — toggle shows but inactive)
   { key:'risk',        icon:'ti-chart-bar',        name:'Risk Assessment' },
   { key:'inspection',  icon:'ti-clipboard-check',  name:'Audits & Inspections' },
@@ -23965,6 +23969,7 @@ var MOBILE_MODULES = [
   {k:'permit',       l:'Permits',      i:'ti-file-certificate',   r:['all']},
   {k:'contractor',   l:'Contractors',  i:'ti-hard-hat',           r:['admin','hse_manager','site_manager','supervisor','sephs_admin']},
   {k:'emergency',    l:'Emergency',    i:'ti-ambulance',          r:['all']},
+  {k:'fire',         l:'Fire Certs',    i:'ti-flame',              r:['admin','hse_manager','site_manager','supervisor','auditor','sephs_admin']},
   {k:'ohealth',      l:'OH&S',         i:'ti-stethoscope',        r:['admin','hse_manager','hr','sephs_admin']},
   {k:'ppe',          l:'PPE',          i:'ti-shield',             r:['all']},
   {k:'esg',          l:'ESG',          i:'ti-leaf',               r:['all']},
@@ -23987,7 +23992,7 @@ var MODULE_COLORS = {
   dashboard:'#185FA5', executive:'#5B21B6', kpi:'#185FA5',
   workschedule:'#065F46', events:'#DC2626', observation:'#9A3412',
   inspection:'#1D9E75', risk:'#C2410C', tools:'#374151',
-  permit:'#854F0B', contractor:'#0891B2', emergency:'#DC2626',
+  permit:'#854F0B', contractor:'#0891B2', emergency:'#DC2626', fire:'#B91C1C',
   ohealth:'#065F46', ppe:'#1D9E75', esg:'#065F46',
   noise:'#EF9F27', meetings:'#185FA5', training:'#5B21B6',
   actions:'#DC2626', legal:'#374151', sop:'#374151',
