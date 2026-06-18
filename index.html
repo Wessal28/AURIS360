@@ -21931,6 +21931,7 @@ var LAUNCHED_MODULES = [
   'ppe',           // PPE — Phase 1
   'emergency',     // Emergency — Phase 1
   'permit',        // Permit to Work — Phase 1
+  'fire',          // Fire Certificates — Phase 2
   // To activate more: add module key here and redeploy
 ];
 
@@ -25288,6 +25289,699 @@ async function obCreate() {
   }
 }
 
+
+
+// ================================================================
+// FIRE CERTIFICATE MANAGEMENT MODULE
+// ================================================================
+
+var fireAllCerts = [];
+var fireAllInsp = [];
+var fireAllEquip = [];
+var fireEditCertId = null;
+var fireEditInspId = null;
+var fireEditEquipId = null;
+var fireCurrentTab = 'certs';
+
+// ── Load ─────────────────────────────────────────────────────────
+async function loadFire() {
+  var addBtns = ['fire-add-cert-btn','fire-add-insp-btn','fire-add-equip-btn'];
+  addBtns.forEach(function(id){
+    var el=document.getElementById(id);
+    if(el) el.style.display = isMgr() ? 'inline-flex' : 'none';
+  });
+  fireSwitchTab(fireCurrentTab, document.getElementById('fire-tab-'+fireCurrentTab));
+}
+
+async function fireLoadAll() {
+  var cid = (isSA() && sephsCompanyContext) ? sephsCompanyContext : prof.company_id;
+  var [certs, insp, equip] = await Promise.all([
+    api('/fire_certificates?company_id=eq.'+cid+'&order=expiry_date.asc'),
+    api('/fire_inspections?company_id=eq.'+cid+'&order=inspection_date.desc'),
+    api('/fire_equipment?company_id=eq.'+cid+'&order=next_service_date.asc')
+  ]);
+  fireAllCerts  = certs  || [];
+  fireAllInsp   = insp   || [];
+  fireAllEquip  = equip  || [];
+  // Auto-update status based on expiry
+  fireAutoUpdateStatus();
+}
+
+function fireAutoUpdateStatus() {
+  var today = new Date();
+  fireAllCerts = fireAllCerts.map(function(c){
+    if (!c.expiry_date) return c;
+    var exp = new Date(c.expiry_date);
+    var days = Math.ceil((exp - today) / 86400000);
+    if (days < 0) c.status = 'expired';
+    else if (days <= 30) c.status = 'expiring_soon';
+    return c;
+  });
+}
+
+// ── Tab switching ─────────────────────────────────────────────────
+function fireSwitchTab(tab, el) {
+  fireCurrentTab = tab;
+  ['certs','inspections','equipment','dashboard'].forEach(function(t){
+    var pane = document.getElementById('fire-pane-'+t);
+    var btn  = document.getElementById('fire-tab-'+t);
+    if(pane) pane.style.display = t===tab ? 'block' : 'none';
+    if(btn)  btn.classList.toggle('active', t===tab);
+  });
+  var addCert = document.getElementById('fire-add-cert-btn');
+  if(addCert) addCert.style.display = (tab==='certs' && isMgr()) ? 'inline-flex' : 'none';
+  switch(tab) {
+    case 'certs':        fireLoadAll().then(fireRenderCerts); break;
+    case 'inspections':  fireLoadAll().then(fireRenderInsp); break;
+    case 'equipment':    fireLoadAll().then(fireRenderEquip); break;
+    case 'dashboard':    fireLoadAll().then(fireRenderDashboard); break;
+  }
+}
+
+// ── Render Certificates ───────────────────────────────────────────
+function fireRenderCerts() {
+  var tbody = document.getElementById('fire-cert-tbody');
+  var empty = document.getElementById('fire-cert-empty');
+  if (!tbody) return;
+  // Stats
+  fireRenderCertStats();
+  if (!fireAllCerts.length) {
+    tbody.innerHTML = '';
+    if (empty) empty.style.display = 'block';
+    return;
+  }
+  if (empty) empty.style.display = 'none';
+  tbody.innerHTML = fireAllCerts.map(function(c){
+    var days = c.expiry_date ? Math.ceil((new Date(c.expiry_date) - new Date()) / 86400000) : null;
+    var daysHtml = days === null ? '<span style="color:var(--text3)">—</span>'
+      : days < 0 ? '<span class="badge badge-red">'+Math.abs(days)+'d overdue</span>'
+      : days <= 30 ? '<span class="badge badge-amber">'+days+'d</span>'
+      : days <= 90 ? '<span class="badge badge-blue">'+days+'d</span>'
+      : '<span class="badge badge-green">'+days+'d</span>';
+    var statusHtml = fireStatusBadge(c.status);
+    var docLink = c.document_url
+      ? '<a href="'+escH(c.document_url)+'" target="_blank" class="btn btn-sm" title="View Document"><i class="ti ti-file-text"></i></a>'
+      : '';
+    return '<tr>'
+      + '<td style="font-weight:600">' + escH(c.cert_number||'—') + '</td>'
+      + '<td>' + escH(c.premises_name) + '</td>'
+      + '<td>' + escH(fireCertTypeLabel(c.cert_type)) + '</td>'
+      + '<td>' + (c.issue_date ? new Date(c.issue_date).toLocaleDateString('en-GB') : '—') + '</td>'
+      + '<td>' + (c.expiry_date ? new Date(c.expiry_date).toLocaleDateString('en-GB') : '—') + '</td>'
+      + '<td>' + daysHtml + '</td>'
+      + '<td>' + statusHtml + '</td>'
+      + '<td style="white-space:nowrap">'
+        + docLink
+        + (isMgr() ? '<button class="btn btn-sm" onclick="fireShowCertForm(\''+c.id+'\')" title="Edit"><i class="ti ti-edit"></i></button>' : '')
+        + (isMgr() ? '<button class="btn btn-sm" onclick="fireDeleteCert(\''+c.id+'\')" title="Delete" style="color:var(--red)"><i class="ti ti-trash"></i></button>' : '')
+      + '</td>'
+      + '</tr>';
+  }).join('');
+}
+
+function fireRenderCertStats() {
+  var el = document.getElementById('fire-cert-stats');
+  if (!el) return;
+  var valid = fireAllCerts.filter(function(c){ return c.status==='valid'; }).length;
+  var expiring = fireAllCerts.filter(function(c){ return c.status==='expiring_soon'; }).length;
+  var expired = fireAllCerts.filter(function(c){ return c.status==='expired'; }).length;
+  var total = fireAllCerts.length;
+  el.innerHTML = [
+    {label:'Total', val:total, color:'var(--blue)', icon:'ti-certificate'},
+    {label:'Valid', val:valid, color:'var(--green)', icon:'ti-circle-check'},
+    {label:'Expiring (30d)', val:expiring, color:'var(--amber)', icon:'ti-alert-triangle'},
+    {label:'Expired', val:expired, color:'var(--red)', icon:'ti-circle-x'}
+  ].map(function(s){
+    return '<div class="card" style="text-align:center;padding:12px">'
+      + '<i class="ti '+s.icon+'" style="font-size:20px;color:'+s.color+'"></i>'
+      + '<div style="font-size:22px;font-weight:700;color:'+s.color+'">'+s.val+'</div>'
+      + '<div style="font-size:11px;color:var(--text2)">'+s.label+'</div>'
+      + '</div>';
+  }).join('');
+}
+
+function fireFilterCerts(q) {
+  q = q.toLowerCase();
+  var rows = document.querySelectorAll('#fire-cert-tbody tr');
+  rows.forEach(function(r){ r.style.display = r.textContent.toLowerCase().includes(q) ? '' : 'none'; });
+}
+
+// ── Render Inspections ────────────────────────────────────────────
+function fireRenderInsp() {
+  var tbody = document.getElementById('fire-insp-tbody');
+  var empty = document.getElementById('fire-insp-empty');
+  if (!tbody) return;
+  if (!fireAllInsp.length) {
+    tbody.innerHTML = '';
+    if (empty) empty.style.display = 'block';
+    return;
+  }
+  if (empty) empty.style.display = 'none';
+  tbody.innerHTML = fireAllInsp.map(function(i){
+    var certName = (fireAllCerts.find(function(c){ return c.id===i.certificate_id; }) || {}).premises_name || '—';
+    var resultBadge = i.overall_result==='satisfactory'
+      ? '<span class="badge badge-green">Satisfactory</span>'
+      : i.overall_result==='unsatisfactory'
+      ? '<span class="badge badge-red">Unsatisfactory</span>'
+      : '<span class="badge badge-amber">' + escH(i.overall_result||'—') + '</span>';
+    return '<tr>'
+      + '<td>' + (i.inspection_date ? new Date(i.inspection_date).toLocaleDateString('en-GB') : '—') + '</td>'
+      + '<td>' + escH(certName) + '</td>'
+      + '<td>' + escH(fireInspTypeLabel(i.inspection_type)) + '</td>'
+      + '<td>' + escH(i.inspector_name||'—') + '</td>'
+      + '<td>' + resultBadge + '</td>'
+      + '<td style="max-width:180px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + escH(i.findings||'—') + '</td>'
+      + '<td>' + fireStatusBadge(i.status) + '</td>'
+      + '<td style="white-space:nowrap">'
+        + (isMgr() ? '<button class="btn btn-sm" onclick="fireShowInspForm(\''+i.id+'\')" title="Edit"><i class="ti ti-edit"></i></button>' : '')
+        + (isMgr() ? '<button class="btn btn-sm" onclick="fireDeleteInsp(\''+i.id+'\')" title="Delete" style="color:var(--red)"><i class="ti ti-trash"></i></button>' : '')
+      + '</td>'
+      + '</tr>';
+  }).join('');
+}
+
+// ── Render Equipment ──────────────────────────────────────────────
+function fireRenderEquip() {
+  var tbody = document.getElementById('fire-equip-tbody');
+  var empty = document.getElementById('fire-equip-empty');
+  if (!tbody) return;
+  // Stats
+  fireRenderEquipStats();
+  if (!fireAllEquip.length) {
+    tbody.innerHTML = '';
+    if (empty) empty.style.display = 'block';
+    return;
+  }
+  if (empty) empty.style.display = 'none';
+  tbody.innerHTML = fireAllEquip.map(function(e){
+    var serviceOverdue = e.next_service_date && new Date(e.next_service_date) < new Date();
+    var nextServiceHtml = e.next_service_date
+      ? (serviceOverdue
+          ? '<span style="color:var(--red);font-weight:600">' + new Date(e.next_service_date).toLocaleDateString('en-GB') + ' ⚠️</span>'
+          : new Date(e.next_service_date).toLocaleDateString('en-GB'))
+      : '—';
+    return '<tr>'
+      + '<td>' + escH(fireEquipTypeLabel(e.equipment_type)) + '</td>'
+      + '<td>' + escH(e.description||'—') + '</td>'
+      + '<td>' + escH(e.location) + '</td>'
+      + '<td>' + escH(e.serial_number||'—') + '</td>'
+      + '<td>' + (e.last_service_date ? new Date(e.last_service_date).toLocaleDateString('en-GB') : '—') + '</td>'
+      + '<td>' + nextServiceHtml + '</td>'
+      + '<td>' + fireEquipStatusBadge(e.status) + '</td>'
+      + '<td style="white-space:nowrap">'
+        + (isMgr() ? '<button class="btn btn-sm" onclick="fireShowEquipForm(\''+e.id+'\')" title="Edit"><i class="ti ti-edit"></i></button>' : '')
+        + (isMgr() ? '<button class="btn btn-sm" onclick="fireDeleteEquip(\''+e.id+'\')" title="Delete" style="color:var(--red)"><i class="ti ti-trash"></i></button>' : '')
+      + '</td>'
+      + '</tr>';
+  }).join('');
+}
+
+function fireRenderEquipStats() {
+  var el = document.getElementById('fire-equip-stats');
+  if (!el) return;
+  var operational = fireAllEquip.filter(function(e){ return e.status==='operational'; }).length;
+  var needsService = fireAllEquip.filter(function(e){ return e.status==='requires_service'; }).length;
+  var overdue = fireAllEquip.filter(function(e){ return e.next_service_date && new Date(e.next_service_date) < new Date(); }).length;
+  var defective = fireAllEquip.filter(function(e){ return e.status==='defective'; }).length;
+  el.innerHTML = [
+    {label:'Total Items', val:fireAllEquip.length, color:'var(--blue)', icon:'ti-flame'},
+    {label:'Operational', val:operational, color:'var(--green)', icon:'ti-circle-check'},
+    {label:'Service Overdue', val:overdue, color:'var(--red)', icon:'ti-alert-triangle'},
+    {label:'Defective', val:defective, color:'var(--red)', icon:'ti-circle-x'}
+  ].map(function(s){
+    return '<div class="card" style="text-align:center;padding:12px">'
+      + '<i class="ti '+s.icon+'" style="font-size:20px;color:'+s.color+'"></i>'
+      + '<div style="font-size:22px;font-weight:700;color:'+s.color+'">'+s.val+'</div>'
+      + '<div style="font-size:11px;color:var(--text2)">'+s.label+'</div>'
+      + '</div>';
+  }).join('');
+}
+
+// ── Dashboard/Overview ────────────────────────────────────────────
+async function fireRenderDashboard() {
+  var el = document.getElementById('fire-overview-content');
+  if (!el) return;
+  var expSoon = fireAllCerts.filter(function(c){ return c.status==='expiring_soon'; });
+  var expired = fireAllCerts.filter(function(c){ return c.status==='expired'; });
+  var overdueEquip = fireAllEquip.filter(function(e){ return e.next_service_date && new Date(e.next_service_date) < new Date(); });
+  var openInsp = fireAllInsp.filter(function(i){ return i.status==='open'||i.status==='follow_up_required'; });
+
+  var html = '';
+
+  // Alert banners
+  if (expired.length) {
+    html += '<div style="background:#FEE2E2;border:1px solid #FCA5A5;border-radius:8px;padding:12px 16px;margin-bottom:12px;display:flex;gap:10px;align-items:center">'
+      + '<i class="ti ti-alert-circle" style="color:#DC2626;font-size:20px"></i>'
+      + '<div><strong style="color:#DC2626">'+expired.length+' Expired Certificate(s)</strong> — Immediate renewal required</div>'
+      + '</div>';
+  }
+  if (expSoon.length) {
+    html += '<div style="background:#FEF3C7;border:1px solid #FCD34D;border-radius:8px;padding:12px 16px;margin-bottom:12px;display:flex;gap:10px;align-items:center">'
+      + '<i class="ti ti-alert-triangle" style="color:#EF9F27;font-size:20px"></i>'
+      + '<div><strong style="color:#92400E">'+expSoon.length+' Certificate(s) expiring within 30 days</strong> — Renewal recommended</div>'
+      + '</div>';
+  }
+  if (overdueEquip.length) {
+    html += '<div style="background:#FEF3C7;border:1px solid #FCD34D;border-radius:8px;padding:12px 16px;margin-bottom:12px;display:flex;gap:10px;align-items:center">'
+      + '<i class="ti ti-tool" style="color:#EF9F27;font-size:20px"></i>'
+      + '<div><strong style="color:#92400E">'+overdueEquip.length+' Equipment item(s) overdue for service</strong></div>'
+      + '</div>';
+  }
+
+  // Summary grid
+  html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">';
+
+  // Certificate summary
+  html += '<div class="card"><div style="font-weight:600;margin-bottom:12px;font-size:14px">🏛️ Certificates</div>'
+    + '<table style="width:100%;font-size:13px"><tbody>'
+    + '<tr><td>Total</td><td style="text-align:right;font-weight:600">'+fireAllCerts.length+'</td></tr>'
+    + '<tr><td style="color:var(--green)">Valid</td><td style="text-align:right">'+fireAllCerts.filter(function(c){return c.status==='valid';}).length+'</td></tr>'
+    + '<tr><td style="color:var(--amber)">Expiring Soon</td><td style="text-align:right">'+expSoon.length+'</td></tr>'
+    + '<tr><td style="color:var(--red)">Expired</td><td style="text-align:right">'+expired.length+'</td></tr>'
+    + '</tbody></table></div>';
+
+  // Equipment summary
+  html += '<div class="card"><div style="font-weight:600;margin-bottom:12px;font-size:14px">🧯 Equipment</div>'
+    + '<table style="width:100%;font-size:13px"><tbody>'
+    + '<tr><td>Total Items</td><td style="text-align:right;font-weight:600">'+fireAllEquip.length+'</td></tr>'
+    + '<tr><td style="color:var(--green)">Operational</td><td style="text-align:right">'+fireAllEquip.filter(function(e){return e.status==='operational';}).length+'</td></tr>'
+    + '<tr><td style="color:var(--red)">Service Overdue</td><td style="text-align:right">'+overdueEquip.length+'</td></tr>'
+    + '<tr><td>Open Inspections</td><td style="text-align:right">'+openInsp.length+'</td></tr>'
+    + '</tbody></table></div>';
+
+  html += '</div>';
+
+  // Expiring soon list
+  if (expSoon.length || expired.length) {
+    html += '<div class="card"><div style="font-weight:600;margin-bottom:12px;font-size:14px">⚠️ Certificates Requiring Attention</div>'
+      + '<table style="width:100%;font-size:13px"><thead><tr><th>Premises</th><th>Cert No.</th><th>Expiry</th><th>Status</th></tr></thead><tbody>'
+      + expSoon.concat(expired).map(function(c){
+          var days = c.expiry_date ? Math.ceil((new Date(c.expiry_date)-new Date())/86400000) : null;
+          return '<tr><td>'+escH(c.premises_name)+'</td><td>'+escH(c.cert_number||'—')+'</td>'
+            +'<td>'+(c.expiry_date?new Date(c.expiry_date).toLocaleDateString('en-GB'):'—')+'</td>'
+            +'<td>'+fireStatusBadge(c.status)+'</td></tr>';
+        }).join('')
+      + '</tbody></table></div>';
+  }
+
+  el.innerHTML = html;
+}
+
+// ── Certificate Form ──────────────────────────────────────────────
+function fireShowCertForm(id) {
+  fireEditCertId = id;
+  var modal = document.getElementById('fire-cert-modal');
+  var title = document.getElementById('fire-cert-modal-title');
+  if (title) title.textContent = id ? 'Edit Fire Certificate' : 'New Fire Certificate';
+  // Clear fields
+  ['fc-number','fc-premises','fc-address','fc-area','fc-maxocc',
+   'fc-conditions','fc-doc-url','fc-notes','fc-renewal-date'].forEach(function(f){
+    var el=document.getElementById(f); if(el) el.value='';
+  });
+  document.getElementById('fc-type').value = 'fire_certificate';
+  document.getElementById('fc-status').value = 'valid';
+  document.getElementById('fc-authority').value = 'Mauritius Fire & Rescue Service';
+  document.getElementById('fc-renewal-submitted').value = 'false';
+  document.getElementById('fc-issue-date').value = '';
+  document.getElementById('fc-expiry-date').value = '';
+  document.getElementById('fc-occupancy').value = '';
+
+  if (id) {
+    var c = fireAllCerts.find(function(x){ return x.id===id; });
+    if (!c) return;
+    document.getElementById('fc-number').value      = c.cert_number||'';
+    document.getElementById('fc-type').value        = c.cert_type||'fire_certificate';
+    document.getElementById('fc-premises').value    = c.premises_name||'';
+    document.getElementById('fc-address').value     = c.address||'';
+    document.getElementById('fc-occupancy').value   = c.occupancy_type||'';
+    document.getElementById('fc-area').value        = c.floor_area||'';
+    document.getElementById('fc-maxocc').value      = c.max_occupancy||'';
+    document.getElementById('fc-authority').value   = c.issuing_authority||'Mauritius Fire & Rescue Service';
+    document.getElementById('fc-status').value      = c.status||'valid';
+    document.getElementById('fc-issue-date').value  = c.issue_date||'';
+    document.getElementById('fc-expiry-date').value = c.expiry_date||'';
+    document.getElementById('fc-renewal-submitted').value = c.renewal_submitted ? 'true' : 'false';
+    document.getElementById('fc-renewal-date').value = c.renewal_date||'';
+    document.getElementById('fc-conditions').value  = c.conditions||'';
+    document.getElementById('fc-doc-url').value     = c.document_url||'';
+    document.getElementById('fc-notes').value       = c.notes||'';
+  }
+  modal.style.display = 'flex';
+}
+
+async function fireSaveCert() {
+  var premises = document.getElementById('fc-premises').value.trim();
+  var expiry   = document.getElementById('fc-expiry-date').value;
+  if (!premises) { toast('Premises name is required', false); return; }
+  if (!expiry)   { toast('Expiry date is required', false); return; }
+
+  var cid = (isSA() && sephsCompanyContext) ? sephsCompanyContext : prof.company_id;
+  var body = {
+    company_id:          cid,
+    cert_number:         document.getElementById('fc-number').value.trim()||null,
+    cert_type:           document.getElementById('fc-type').value,
+    premises_name:       premises,
+    address:             document.getElementById('fc-address').value.trim()||null,
+    occupancy_type:      document.getElementById('fc-occupancy').value||null,
+    floor_area:          parseFloat(document.getElementById('fc-area').value)||null,
+    max_occupancy:       parseInt(document.getElementById('fc-maxocc').value)||null,
+    issuing_authority:   document.getElementById('fc-authority').value.trim()||null,
+    status:              document.getElementById('fc-status').value,
+    issue_date:          document.getElementById('fc-issue-date').value||null,
+    expiry_date:         expiry,
+    renewal_submitted:   document.getElementById('fc-renewal-submitted').value === 'true',
+    renewal_date:        document.getElementById('fc-renewal-date').value||null,
+    conditions:          document.getElementById('fc-conditions').value.trim()||null,
+    document_url:        document.getElementById('fc-doc-url').value.trim()||null,
+    notes:               document.getElementById('fc-notes').value.trim()||null,
+    updated_at:          new Date().toISOString()
+  };
+
+  try {
+    if (fireEditCertId) {
+      await api('/fire_certificates?id=eq.'+fireEditCertId, {m:'PATCH', p:'return=minimal', b:body});
+      toast('Certificate updated');
+    } else {
+      body.created_by = prof.id;
+      body.created_at = new Date().toISOString();
+      await api('/fire_certificates', {m:'POST', p:'return=minimal', b:body});
+      toast('Certificate added');
+    }
+    document.getElementById('fire-cert-modal').style.display = 'none';
+    await fireLoadAll();
+    fireRenderCerts();
+  } catch(e) { toast('Error: '+e.message, false); }
+}
+
+async function fireDeleteCert(id) {
+  if (!confirm('Delete this fire certificate? This cannot be undone.')) return;
+  try {
+    await api('/fire_certificates?id=eq.'+id, {m:'DELETE', p:'return=minimal'});
+    toast('Certificate deleted');
+    await fireLoadAll();
+    fireRenderCerts();
+  } catch(e) { toast('Error: '+e.message, false); }
+}
+
+// ── Inspection Form ───────────────────────────────────────────────
+function fireShowInspForm(id) {
+  fireEditInspId = id;
+  var modal = document.getElementById('fire-insp-modal');
+  var title = document.getElementById('fire-insp-modal-title');
+  if (title) title.textContent = id ? 'Edit Inspection' : 'Record Inspection';
+
+  // Populate cert dropdown
+  var certSel = document.getElementById('fi-cert-id');
+  if (certSel) {
+    certSel.innerHTML = '<option value="">-- None --</option>'
+      + fireAllCerts.map(function(c){
+          return '<option value="'+c.id+'">'+escH(c.premises_name+(c.cert_number?' ('+c.cert_number+')':''))+'</option>';
+        }).join('');
+  }
+
+  // Clear
+  document.getElementById('fi-date').value = new Date().toISOString().split('T')[0];
+  document.getElementById('fi-inspector').value = '';
+  document.getElementById('fi-authority').value = 'Mauritius Fire & Rescue Service';
+  document.getElementById('fi-type').value = 'routine';
+  document.getElementById('fi-result').value = 'satisfactory';
+  document.getElementById('fi-status').value = 'open';
+  document.getElementById('fi-findings').value = '';
+  document.getElementById('fi-recommendations').value = '';
+  document.getElementById('fi-followup').value = '';
+  document.getElementById('fi-cert-id').value = '';
+  document.getElementById('fire-findings-rows').innerHTML = '';
+
+  if (id) {
+    var i = fireAllInsp.find(function(x){ return x.id===id; });
+    if (!i) return;
+    document.getElementById('fi-date').value          = i.inspection_date||'';
+    document.getElementById('fi-inspector').value     = i.inspector_name||'';
+    document.getElementById('fi-authority').value     = i.inspector_authority||'';
+    document.getElementById('fi-type').value          = i.inspection_type||'routine';
+    document.getElementById('fi-result').value        = i.overall_result||'satisfactory';
+    document.getElementById('fi-status').value        = i.status||'open';
+    document.getElementById('fi-findings').value      = i.findings||'';
+    document.getElementById('fi-recommendations').value = i.recommendations||'';
+    document.getElementById('fi-followup').value      = i.follow_up_date||'';
+    document.getElementById('fi-cert-id').value       = i.certificate_id||'';
+  }
+  modal.style.display = 'flex';
+}
+
+function fireAddFindingRow() {
+  var container = document.getElementById('fire-findings-rows');
+  var idx = container.children.length;
+  var div = document.createElement('div');
+  div.style.cssText = 'display:grid;grid-template-columns:2fr 1fr 1fr auto;gap:8px;margin-bottom:8px;align-items:start';
+  div.innerHTML = '<input type="text" class="fi-finding-text" placeholder="Finding description"/>'
+    + '<select class="fi-finding-sev"><option value="minor">Minor</option><option value="major">Major</option><option value="critical">Critical</option></select>'
+    + '<input type="text" class="fi-finding-action" placeholder="Action required"/>'
+    + '<button onclick="this.parentNode.remove()" style="background:none;border:none;color:var(--red);cursor:pointer;padding:4px"><i class="ti ti-x"></i></button>';
+  container.appendChild(div);
+}
+
+async function fireSaveInsp() {
+  var date = document.getElementById('fi-date').value;
+  if (!date) { toast('Inspection date is required', false); return; }
+  var cid = (isSA() && sephsCompanyContext) ? sephsCompanyContext : prof.company_id;
+  var certId = document.getElementById('fi-cert-id').value || null;
+
+  var body = {
+    company_id:         cid,
+    certificate_id:     certId,
+    inspection_date:    date,
+    inspector_name:     document.getElementById('fi-inspector').value.trim()||null,
+    inspector_authority: document.getElementById('fi-authority').value.trim()||null,
+    inspection_type:    document.getElementById('fi-type').value,
+    overall_result:     document.getElementById('fi-result').value,
+    status:             document.getElementById('fi-status').value,
+    findings:           document.getElementById('fi-findings').value.trim()||null,
+    recommendations:    document.getElementById('fi-recommendations').value.trim()||null,
+    follow_up_date:     document.getElementById('fi-followup').value||null,
+    updated_at:         new Date().toISOString()
+  };
+
+  try {
+    var inspId;
+    if (fireEditInspId) {
+      await api('/fire_inspections?id=eq.'+fireEditInspId, {m:'PATCH', p:'return=minimal', b:body});
+      inspId = fireEditInspId;
+      toast('Inspection updated');
+    } else {
+      body.created_by = prof.id;
+      body.created_at = new Date().toISOString();
+      var res = await api('/fire_inspections', {m:'POST', p:'return=representation', b:body});
+      inspId = res && res[0] ? res[0].id : null;
+      toast('Inspection recorded');
+    }
+    // Save findings rows
+    if (inspId) {
+      var rows = document.querySelectorAll('#fire-findings-rows > div');
+      for (var r = 0; r < rows.length; r++) {
+        var text = rows[r].querySelector('.fi-finding-text')?.value?.trim();
+        var sev  = rows[r].querySelector('.fi-finding-sev')?.value;
+        var act  = rows[r].querySelector('.fi-finding-action')?.value?.trim();
+        if (text) {
+          await api('/fire_inspection_findings', {m:'POST', p:'return=minimal', b:{
+            inspection_id: inspId, company_id: cid,
+            finding: text, severity: sev, action_required: act||null,
+            created_at: new Date().toISOString()
+          }});
+        }
+      }
+    }
+    document.getElementById('fire-insp-modal').style.display = 'none';
+    await fireLoadAll();
+    fireRenderInsp();
+  } catch(e) { toast('Error: '+e.message, false); }
+}
+
+async function fireDeleteInsp(id) {
+  if (!confirm('Delete this inspection record?')) return;
+  try {
+    await api('/fire_inspections?id=eq.'+id, {m:'DELETE', p:'return=minimal'});
+    toast('Inspection deleted');
+    await fireLoadAll();
+    fireRenderInsp();
+  } catch(e) { toast('Error: '+e.message, false); }
+}
+
+// ── Equipment Form ────────────────────────────────────────────────
+function fireShowEquipForm(id) {
+  fireEditEquipId = id;
+  var modal = document.getElementById('fire-equip-modal');
+  var title = document.getElementById('fire-equip-modal-title');
+  if (title) title.textContent = id ? 'Edit Equipment' : 'Add Fire Equipment';
+
+  // Populate cert dropdown
+  var certSel = document.getElementById('fe-cert-id');
+  if (certSel) {
+    certSel.innerHTML = '<option value="">-- None --</option>'
+      + fireAllCerts.map(function(c){
+          return '<option value="'+c.id+'">'+escH(c.premises_name+(c.cert_number?' ('+c.cert_number+')':''))+'</option>';
+        }).join('');
+  }
+
+  // Clear
+  document.getElementById('fe-type').value = '';
+  document.getElementById('fe-status').value = 'operational';
+  document.getElementById('fe-desc').value = '';
+  document.getElementById('fe-location').value = '';
+  document.getElementById('fe-make').value = '';
+  document.getElementById('fe-serial').value = '';
+  document.getElementById('fe-capacity').value = '';
+  document.getElementById('fe-last-service').value = '';
+  document.getElementById('fe-next-service').value = '';
+  document.getElementById('fe-notes').value = '';
+  document.getElementById('fe-cert-id').value = '';
+
+  if (id) {
+    var e = fireAllEquip.find(function(x){ return x.id===id; });
+    if (!e) return;
+    document.getElementById('fe-type').value         = e.equipment_type||'';
+    document.getElementById('fe-status').value       = e.status||'operational';
+    document.getElementById('fe-desc').value         = e.description||'';
+    document.getElementById('fe-location').value     = e.location||'';
+    document.getElementById('fe-make').value         = e.make_model||'';
+    document.getElementById('fe-serial').value       = e.serial_number||'';
+    document.getElementById('fe-capacity').value     = e.capacity||'';
+    document.getElementById('fe-last-service').value = e.last_service_date||'';
+    document.getElementById('fe-next-service').value = e.next_service_date||'';
+    document.getElementById('fe-notes').value        = e.notes||'';
+    document.getElementById('fe-cert-id').value      = e.certificate_id||'';
+  }
+  modal.style.display = 'flex';
+}
+
+async function fireSaveEquip() {
+  var type = document.getElementById('fe-type').value;
+  var loc  = document.getElementById('fe-location').value.trim();
+  if (!type) { toast('Equipment type is required', false); return; }
+  if (!loc)  { toast('Location is required', false); return; }
+
+  var cid = (isSA() && sephsCompanyContext) ? sephsCompanyContext : prof.company_id;
+  var body = {
+    company_id:       cid,
+    equipment_type:   type,
+    description:      document.getElementById('fe-desc').value.trim()||null,
+    location:         loc,
+    make_model:       document.getElementById('fe-make').value.trim()||null,
+    serial_number:    document.getElementById('fe-serial').value.trim()||null,
+    capacity:         document.getElementById('fe-capacity').value.trim()||null,
+    status:           document.getElementById('fe-status').value,
+    last_service_date: document.getElementById('fe-last-service').value||null,
+    next_service_date: document.getElementById('fe-next-service').value||null,
+    certificate_id:   document.getElementById('fe-cert-id').value||null,
+    notes:            document.getElementById('fe-notes').value.trim()||null,
+    updated_at:       new Date().toISOString()
+  };
+
+  try {
+    if (fireEditEquipId) {
+      await api('/fire_equipment?id=eq.'+fireEditEquipId, {m:'PATCH', p:'return=minimal', b:body});
+      toast('Equipment updated');
+    } else {
+      body.created_at = new Date().toISOString();
+      await api('/fire_equipment', {m:'POST', p:'return=minimal', b:body});
+      toast('Equipment added');
+    }
+    document.getElementById('fire-equip-modal').style.display = 'none';
+    await fireLoadAll();
+    fireRenderEquip();
+  } catch(e) { toast('Error: '+e.message, false); }
+}
+
+async function fireDeleteEquip(id) {
+  if (!confirm('Delete this equipment record?')) return;
+  try {
+    await api('/fire_equipment?id=eq.'+id, {m:'DELETE', p:'return=minimal'});
+    toast('Equipment deleted');
+    await fireLoadAll();
+    fireRenderEquip();
+  } catch(e) { toast('Error: '+e.message, false); }
+}
+
+// ── PDF Report ────────────────────────────────────────────────────
+function firePrintReport() {
+  var today = new Date().toLocaleDateString('en-GB', {day:'2-digit',month:'short',year:'numeric'});
+  var coName = co && co.name ? co.name : '';
+
+  var expSoon  = fireAllCerts.filter(function(c){ return c.status==='expiring_soon'; });
+  var expired  = fireAllCerts.filter(function(c){ return c.status==='expired'; });
+  var overdueE = fireAllEquip.filter(function(e){ return e.next_service_date && new Date(e.next_service_date) < new Date(); });
+
+  var html = '<div style="font-family:Arial,sans-serif;max-width:210mm;margin:0 auto;padding:12mm;font-size:11pt">'
+    // Header
+    + '<div style="display:flex;justify-content:space-between;align-items:flex-start;border-bottom:3px solid #DC2626;padding-bottom:10px;margin-bottom:16px">'
+    + '<div><div style="font-size:22pt;font-weight:900;color:#DC2626">AURIS360</div><div style="font-size:9pt;color:#6b7280">HSE Management Platform by SEPHS Consulting</div></div>'
+    + '<div style="text-align:right;font-size:9pt;color:#6b7280"><strong>Fire Certificate Compliance Report</strong><br>Generated: '+today+'<br>'+escH(coName)+'</div></div>'
+    // KPIs
+    + '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px">'
+    + '<div style="border:1px solid #e5e7eb;border-radius:6px;padding:10px;text-align:center"><div style="font-size:18pt;font-weight:700;color:#185FA5">'+fireAllCerts.length+'</div><div style="font-size:9pt;color:#6b7280">Total Certificates</div></div>'
+    + '<div style="border:1px solid #e5e7eb;border-radius:6px;padding:10px;text-align:center"><div style="font-size:18pt;font-weight:700;color:#1D9E75">'+fireAllCerts.filter(function(c){return c.status==='valid';}).length+'</div><div style="font-size:9pt;color:#6b7280">Valid</div></div>'
+    + '<div style="border:1px solid #e5e7eb;border-radius:6px;padding:10px;text-align:center"><div style="font-size:18pt;font-weight:700;color:#EF9F27">'+expSoon.length+'</div><div style="font-size:9pt;color:#6b7280">Expiring (30d)</div></div>'
+    + '<div style="border:1px solid #e5e7eb;border-radius:6px;padding:10px;text-align:center"><div style="font-size:18pt;font-weight:700;color:#DC2626">'+expired.length+'</div><div style="font-size:9pt;color:#6b7280">Expired</div></div>'
+    + '</div>'
+    // Certificate table
+    + '<div style="margin-bottom:16px"><div style="font-size:11pt;font-weight:700;background:#DC2626;color:#fff;padding:5px 10px;border-radius:4px;margin-bottom:8px">Certificate Register</div>'
+    + '<table style="width:100%;border-collapse:collapse;font-size:9pt"><thead><tr style="background:#f3f4f6"><th style="padding:5px 8px;border:1px solid #d1d5db;text-align:left">Premises</th><th style="padding:5px 8px;border:1px solid #d1d5db">Cert No.</th><th style="padding:5px 8px;border:1px solid #d1d5db">Type</th><th style="padding:5px 8px;border:1px solid #d1d5db">Expiry</th><th style="padding:5px 8px;border:1px solid #d1d5db">Status</th></tr></thead><tbody>'
+    + (fireAllCerts.length ? fireAllCerts.map(function(c){
+        var bgColor = c.status==='expired'?'#FEE2E2':c.status==='expiring_soon'?'#FEF3C7':'#fff';
+        return '<tr style="background:'+bgColor+'"><td style="padding:5px 8px;border:1px solid #e5e7eb">'+escH(c.premises_name)+'</td>'
+          +'<td style="padding:5px 8px;border:1px solid #e5e7eb;text-align:center">'+escH(c.cert_number||'—')+'</td>'
+          +'<td style="padding:5px 8px;border:1px solid #e5e7eb">'+escH(fireCertTypeLabel(c.cert_type))+'</td>'
+          +'<td style="padding:5px 8px;border:1px solid #e5e7eb;text-align:center">'+(c.expiry_date?new Date(c.expiry_date).toLocaleDateString('en-GB'):'—')+'</td>'
+          +'<td style="padding:5px 8px;border:1px solid #e5e7eb;text-align:center">'+c.status.replace('_',' ').toUpperCase()+'</td></tr>';
+      }).join('') : '<tr><td colspan="5" style="padding:10px;text-align:center;color:#6b7280">No certificates recorded</td></tr>')
+    + '</tbody></table></div>'
+    // Equipment overdue
+    + (overdueE.length ? '<div style="margin-bottom:16px"><div style="font-size:11pt;font-weight:700;background:#EF9F27;color:#fff;padding:5px 10px;border-radius:4px;margin-bottom:8px">Equipment Service Overdue</div>'
+      + '<table style="width:100%;border-collapse:collapse;font-size:9pt"><thead><tr style="background:#f3f4f6"><th style="padding:5px 8px;border:1px solid #d1d5db;text-align:left">Type</th><th style="padding:5px 8px;border:1px solid #d1d5db;text-align:left">Location</th><th style="padding:5px 8px;border:1px solid #d1d5db">Next Service</th><th style="padding:5px 8px;border:1px solid #d1d5db">Status</th></tr></thead><tbody>'
+      + overdueE.map(function(e){
+          return '<tr style="background:#FEF3C7"><td style="padding:5px 8px;border:1px solid #e5e7eb">'+escH(fireEquipTypeLabel(e.equipment_type))+'</td>'
+            +'<td style="padding:5px 8px;border:1px solid #e5e7eb">'+escH(e.location)+'</td>'
+            +'<td style="padding:5px 8px;border:1px solid #e5e7eb;text-align:center">'+new Date(e.next_service_date).toLocaleDateString('en-GB')+'</td>'
+            +'<td style="padding:5px 8px;border:1px solid #e5e7eb;text-align:center">OVERDUE</td></tr>';
+        }).join('')
+      + '</tbody></table></div>' : '')
+    // Signatures
+    + '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-top:20px">'
+    + '<div style="border-top:2px solid #1a1a1a;padding-top:6px"><div style="height:30px"></div><div style="font-size:8pt;color:#6b7280">HSE Manager / Date</div></div>'
+    + '<div style="border-top:2px solid #1a1a1a;padding-top:6px"><div style="height:30px"></div><div style="font-size:8pt;color:#6b7280">Site Manager / Date</div></div>'
+    + '<div style="border-top:2px solid #1a1a1a;padding-top:6px"><div style="height:30px"></div><div style="font-size:8pt;color:#6b7280">Approved By / Date</div></div>'
+    + '</div>'
+    + '</div>';
+
+  aurisPrint(html, 'Fire Certificate Compliance Report');
+}
+
+// ── Helpers ───────────────────────────────────────────────────────
+function fireCertTypeLabel(t) {
+  return {fire_certificate:'Fire Certificate',fire_precaution:'Fire Precaution Certificate',
+    occupation_permit:'Occupation Permit (Fire)',temporary:'Temporary Fire Certificate',other:'Other'}[t] || t || '—';
+}
+function fireInspTypeLabel(t) {
+  return {routine:'Routine',renewal:'Renewal',follow_up:'Follow-up',complaint:'Complaint',internal:'Internal Audit'}[t] || t || '—';
+}
+function fireEquipTypeLabel(t) {
+  return {fire_extinguisher:'Fire Extinguisher',fire_hose_reel:'Fire Hose Reel',fire_alarm_panel:'Fire Alarm Panel',
+    smoke_detector:'Smoke Detector',heat_detector:'Heat Detector',sprinkler_system:'Sprinkler System',
+    emergency_lighting:'Emergency Lighting',fire_door:'Fire Door',fire_blanket:'Fire Blanket',
+    evacuation_sign:'Evacuation Sign',fire_pump:'Fire Pump',other:'Other'}[t] || t || '—';
+}
+function fireStatusBadge(s) {
+  var map = {valid:'badge-green',expiring_soon:'badge-amber',expired:'badge-red',
+    suspended:'badge-red',pending_renewal:'badge-blue',open:'badge-amber',
+    closed:'badge-green',follow_up_required:'badge-amber',satisfactory:'badge-green',unsatisfactory:'badge-red'};
+  var label = (s||'').replace(/_/g,' ');
+  return '<span class="badge '+(map[s]||'badge-grey')+'">'+escH(label)+'</span>';
+}
+function fireEquipStatusBadge(s) {
+  var map = {operational:'badge-green',requires_service:'badge-amber',defective:'badge-red',decommissioned:'badge-grey'};
+  return '<span class="badge '+(map[s]||'badge-grey')+'">'+(s||'').replace(/_/g,' ')+'</span>';
+}
+
 </script>
 </head>
 <body>
@@ -25489,6 +26183,7 @@ async function obCreate() {
 <div class="nav-item" onclick="showPage('contractor',this)"><i class="ti ti-hard-hat"></i>Contractors</div><div class="nav-item" onclick="showPage('emergency',this)"><i class="ti ti-alert-square"></i>Emergency</div>
 <div class="nav-item" onclick="showPage('ohealth',this)"><i class="ti ti-stethoscope"></i>Occupational Health</div>
 <div class="nav-item" onclick="showPage('ppe',this)"><i class="ti ti-shield-check"></i>PPE</div>
+<div class="nav-item" onclick="showPage('fire',this)"><i class="ti ti-flame"></i>Fire Certificates</div>
 <div class="nav-item" onclick="showPage('esg',this)"><i class="ti ti-leaf"></i>Environmental / ESG</div>
 <div class="nav-item" onclick="showPage('noise',this)"><i class="ti ti-volume"></i>Noise Survey</div><div class="nav-item" id="nav-mtg" onclick="showPage('meetings',this)"><i class="ti ti-notes"></i>HSE Meetings</div><div class="nav-item" onclick="showPage('training',this)"><i class="ti ti-certificate"></i>Training</div><span class="nav-section">Management</span><div class="nav-item" onclick="showPage('actions',this)"><i class="ti ti-list-check"></i>Master Action Plan</div><div class="nav-item" onclick="showPage('legal',this)"><i class="ti ti-scale"></i>Legal Compliance</div>
 <div class="nav-item" onclick="showPage('sop',this)"><i class="ti ti-file-description"></i>SOP Generator</div>
@@ -35147,6 +35842,307 @@ I can help you:<br>
 
   </div>
 </div>
+
+
+<!-- ═══════════════════════════════════════════════════════════
+     FIRE CERTIFICATE MANAGEMENT MODULE
+     Tabs: Register | Inspections | Equipment | Reports
+═══════════════════════════════════════════════════════════ -->
+<div id="page-fire" class="page">
+<div class="page-header">
+  <div>
+    <div class="page-title">🔥 Fire Certificate Management</div>
+    <div style="font-size:12px;color:var(--text2)">Certificates · Inspections · Equipment · Compliance tracking</div>
+  </div>
+  <div style="display:flex;gap:8px" id="fire-header-btns">
+    <button class="btn btn-primary" id="fire-add-cert-btn" onclick="fireShowCertForm(null)" style="display:none"><i class="ti ti-plus"></i>New Certificate</button>
+    <button class="btn btn-sm" onclick="firePrintReport()" title="Print Report"><i class="ti ti-printer"></i>Report</button>
+  </div>
+</div>
+
+<!-- Tabs -->
+<div style="display:flex;gap:0;margin-bottom:16px;border-bottom:2px solid var(--border);overflow-x:auto">
+  <button class="mtg-tab active" id="fire-tab-certs" onclick="fireSwitchTab('certs',this)" style="white-space:nowrap">🏛️ Certificates</button>
+  <button class="mtg-tab" id="fire-tab-inspections" onclick="fireSwitchTab('inspections',this)" style="white-space:nowrap">🔍 Inspections</button>
+  <button class="mtg-tab" id="fire-tab-equipment" onclick="fireSwitchTab('equipment',this)" style="white-space:nowrap">🧯 Equipment</button>
+  <button class="mtg-tab" id="fire-tab-dashboard" onclick="fireSwitchTab('dashboard',this)" style="white-space:nowrap">📊 Overview</button>
+</div>
+
+<!-- ── TAB: Certificates ────────────────────────────── -->
+<div id="fire-pane-certs">
+  <!-- Stats row -->
+  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px" id="fire-cert-stats"></div>
+  <!-- Table -->
+  <div class="card" style="padding:0;overflow:hidden">
+    <div style="padding:12px 16px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center">
+      <span style="font-weight:600;font-size:14px">Fire Certificate Register</span>
+      <input type="text" id="fire-cert-search" placeholder="Search..." style="width:200px" oninput="fireFilterCerts(this.value)"/>
+    </div>
+    <div id="fire-cert-table-wrap" style="overflow-x:auto">
+      <table style="width:100%">
+        <thead><tr>
+          <th>Cert No.</th><th>Premises / Site</th><th>Type</th>
+          <th>Issue Date</th><th>Expiry Date</th><th>Days Left</th>
+          <th>Status</th><th>Actions</th>
+        </tr></thead>
+        <tbody id="fire-cert-tbody"></tbody>
+      </table>
+    </div>
+    <div id="fire-cert-empty" style="padding:40px;text-align:center;color:var(--text2);display:none">
+      <i class="ti ti-certificate" style="font-size:32px;opacity:.3"></i>
+      <div style="margin-top:8px">No fire certificates recorded yet.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ── TAB: Inspections ────────────────────────────── -->
+<div id="fire-pane-inspections" style="display:none">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+    <span style="font-weight:600">Inspection Log</span>
+    <button class="btn btn-primary" id="fire-add-insp-btn" onclick="fireShowInspForm(null)" style="display:none"><i class="ti ti-plus"></i>Record Inspection</button>
+  </div>
+  <div class="card" style="padding:0;overflow:hidden">
+    <div style="overflow-x:auto">
+      <table style="width:100%">
+        <thead><tr>
+          <th>Date</th><th>Certificate</th><th>Type</th>
+          <th>Inspector</th><th>Result</th><th>Findings</th><th>Status</th><th>Actions</th>
+        </tr></thead>
+        <tbody id="fire-insp-tbody"></tbody>
+      </table>
+    </div>
+    <div id="fire-insp-empty" style="padding:40px;text-align:center;color:var(--text2);display:none">
+      <i class="ti ti-clipboard-list" style="font-size:32px;opacity:.3"></i>
+      <div style="margin-top:8px">No inspections recorded yet.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ── TAB: Equipment ─────────────────────────────── -->
+<div id="fire-pane-equipment" style="display:none">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+    <span style="font-weight:600">Fire Equipment Register</span>
+    <button class="btn btn-primary" id="fire-add-equip-btn" onclick="fireShowEquipForm(null)" style="display:none"><i class="ti ti-plus"></i>Add Equipment</button>
+  </div>
+  <!-- Equipment stats -->
+  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px" id="fire-equip-stats"></div>
+  <div class="card" style="padding:0;overflow:hidden">
+    <div style="overflow-x:auto">
+      <table style="width:100%">
+        <thead><tr>
+          <th>Type</th><th>Description</th><th>Location</th>
+          <th>Serial No.</th><th>Last Service</th><th>Next Service</th><th>Status</th><th>Actions</th>
+        </tr></thead>
+        <tbody id="fire-equip-tbody"></tbody>
+      </table>
+    </div>
+    <div id="fire-equip-empty" style="padding:40px;text-align:center;color:var(--text2);display:none">
+      <i class="ti ti-flame" style="font-size:32px;opacity:.3"></i>
+      <div style="margin-top:8px">No fire equipment recorded yet.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ── TAB: Overview/Dashboard ───────────────────── -->
+<div id="fire-pane-dashboard" style="display:none">
+  <div id="fire-overview-content"></div>
+</div>
+
+<!-- ────────────────────────────────────────────────
+     MODALS
+──────────────────────────────────────────────── -->
+
+<!-- Certificate Form Modal -->
+<div id="fire-cert-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:200;align-items:center;justify-content:center;padding:16px">
+  <div class="card" style="width:100%;max-width:680px;max-height:90vh;overflow-y:auto;border-radius:12px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+      <div style="font-size:16px;font-weight:700" id="fire-cert-modal-title">New Fire Certificate</div>
+      <button onclick="document.getElementById('fire-cert-modal').style.display='none'" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--text2)">✕</button>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Certificate Number</label><input type="text" id="fc-number" placeholder="e.g. FC/2025/001"/></div>
+      <div class="form-group"><label class="form-label">Certificate Type *</label>
+        <select id="fc-type">
+          <option value="fire_certificate">Fire Certificate</option>
+          <option value="fire_precaution">Fire Precaution Certificate</option>
+          <option value="occupation_permit">Occupation Permit (Fire)</option>
+          <option value="temporary">Temporary Fire Certificate</option>
+          <option value="other">Other</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-group"><label class="form-label">Premises / Site Name *</label><input type="text" id="fc-premises" placeholder="Name of premises or site"/></div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Address</label><input type="text" id="fc-address" placeholder="Full address"/></div>
+      <div class="form-group"><label class="form-label">Occupancy Type</label>
+        <select id="fc-occupancy">
+          <option value="">Select...</option>
+          <option>Office</option><option>Factory / Manufacturing</option>
+          <option>Warehouse / Storage</option><option>Retail</option>
+          <option>Hotel / Hospitality</option><option>Healthcare</option>
+          <option>Educational</option><option>Residential</option>
+          <option>Mixed Use</option><option>Other</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Floor Area (m²)</label><input type="number" id="fc-area" placeholder="0"/></div>
+      <div class="form-group"><label class="form-label">Max Occupancy</label><input type="number" id="fc-maxocc" placeholder="0"/></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Issuing Authority</label><input type="text" id="fc-authority" value="Mauritius Fire & Rescue Service"/></div>
+      <div class="form-group"><label class="form-label">Status</label>
+        <select id="fc-status">
+          <option value="valid">Valid</option>
+          <option value="expiring_soon">Expiring Soon</option>
+          <option value="expired">Expired</option>
+          <option value="suspended">Suspended</option>
+          <option value="pending_renewal">Pending Renewal</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Issue Date</label><input type="date" id="fc-issue-date"/></div>
+      <div class="form-group"><label class="form-label">Expiry Date *</label><input type="date" id="fc-expiry-date"/></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Renewal Submitted</label>
+        <select id="fc-renewal-submitted">
+          <option value="false">No</option><option value="true">Yes</option>
+        </select>
+      </div>
+      <div class="form-group"><label class="form-label">Renewal Date</label><input type="date" id="fc-renewal-date"/></div>
+    </div>
+    <div class="form-group"><label class="form-label">Conditions Attached to Certificate</label><textarea id="fc-conditions" rows="2" placeholder="Any conditions or requirements specified on the certificate..."></textarea></div>
+    <div class="form-group"><label class="form-label">Document URL (link to scanned certificate)</label><input type="text" id="fc-doc-url" placeholder="https://..."/></div>
+    <div class="form-group"><label class="form-label">Notes</label><textarea id="fc-notes" rows="2" placeholder="Additional notes..."></textarea></div>
+    <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:20px">
+      <button class="btn" onclick="document.getElementById('fire-cert-modal').style.display='none'">Cancel</button>
+      <button class="btn btn-primary" onclick="fireSaveCert()"><i class="ti ti-device-floppy"></i>Save Certificate</button>
+    </div>
+  </div>
+</div>
+
+<!-- Inspection Form Modal -->
+<div id="fire-insp-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:200;align-items:center;justify-content:center;padding:16px">
+  <div class="card" style="width:100%;max-width:640px;max-height:90vh;overflow-y:auto;border-radius:12px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+      <div style="font-size:16px;font-weight:700" id="fire-insp-modal-title">Record Inspection</div>
+      <button onclick="document.getElementById('fire-insp-modal').style.display='none'" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--text2)">✕</button>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Inspection Date *</label><input type="date" id="fi-date"/></div>
+      <div class="form-group"><label class="form-label">Inspection Type</label>
+        <select id="fi-type">
+          <option value="routine">Routine Inspection</option>
+          <option value="renewal">Renewal Inspection</option>
+          <option value="follow_up">Follow-up Inspection</option>
+          <option value="complaint">Complaint Investigation</option>
+          <option value="internal">Internal Audit</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Inspector Name</label><input type="text" id="fi-inspector" placeholder="Full name"/></div>
+      <div class="form-group"><label class="form-label">Authority / Organisation</label><input type="text" id="fi-authority" placeholder="e.g. MFRS"/></div>
+    </div>
+    <div class="form-group"><label class="form-label">Related Certificate</label>
+      <select id="fi-cert-id"><option value="">-- None --</option></select>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Overall Result</label>
+        <select id="fi-result">
+          <option value="satisfactory">Satisfactory</option>
+          <option value="satisfactory_with_observations">Satisfactory with Observations</option>
+          <option value="unsatisfactory">Unsatisfactory</option>
+          <option value="pending">Pending</option>
+        </select>
+      </div>
+      <div class="form-group"><label class="form-label">Status</label>
+        <select id="fi-status">
+          <option value="open">Open</option>
+          <option value="closed">Closed</option>
+          <option value="follow_up_required">Follow-up Required</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-group"><label class="form-label">Findings / Observations</label><textarea id="fi-findings" rows="3" placeholder="Key findings from the inspection..."></textarea></div>
+    <div class="form-group"><label class="form-label">Recommendations</label><textarea id="fi-recommendations" rows="2" placeholder="Recommendations made..."></textarea></div>
+    <div class="form-group"><label class="form-label">Follow-up Date</label><input type="date" id="fi-followup"/></div>
+    <!-- Findings table -->
+    <div style="margin-top:16px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <span style="font-weight:600;font-size:13px">Non-Conformances / Findings</span>
+        <button class="btn btn-sm" onclick="fireAddFindingRow()" type="button"><i class="ti ti-plus"></i>Add Finding</button>
+      </div>
+      <div id="fire-findings-rows"></div>
+    </div>
+    <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:20px">
+      <button class="btn" onclick="document.getElementById('fire-insp-modal').style.display='none'">Cancel</button>
+      <button class="btn btn-primary" onclick="fireSaveInsp()"><i class="ti ti-device-floppy"></i>Save Inspection</button>
+    </div>
+  </div>
+</div>
+
+<!-- Equipment Form Modal -->
+<div id="fire-equip-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:200;align-items:center;justify-content:center;padding:16px">
+  <div class="card" style="width:100%;max-width:600px;max-height:90vh;overflow-y:auto;border-radius:12px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+      <div style="font-size:16px;font-weight:700" id="fire-equip-modal-title">Add Fire Equipment</div>
+      <button onclick="document.getElementById('fire-equip-modal').style.display='none'" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--text2)">✕</button>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Equipment Type *</label>
+        <select id="fe-type">
+          <option value="">Select type...</option>
+          <option value="fire_extinguisher">🧯 Fire Extinguisher</option>
+          <option value="fire_hose_reel">🔴 Fire Hose Reel</option>
+          <option value="fire_alarm_panel">🔔 Fire Alarm Panel</option>
+          <option value="smoke_detector">💨 Smoke Detector</option>
+          <option value="heat_detector">🌡️ Heat Detector</option>
+          <option value="sprinkler_system">💧 Sprinkler System</option>
+          <option value="emergency_lighting">💡 Emergency Lighting</option>
+          <option value="fire_door">🚪 Fire Door</option>
+          <option value="fire_blanket">🛡️ Fire Blanket</option>
+          <option value="evacuation_sign">🚨 Evacuation Sign</option>
+          <option value="fire_pump">⚙️ Fire Pump</option>
+          <option value="other">Other</option>
+        </select>
+      </div>
+      <div class="form-group"><label class="form-label">Status</label>
+        <select id="fe-status">
+          <option value="operational">Operational</option>
+          <option value="requires_service">Requires Service</option>
+          <option value="defective">Defective</option>
+          <option value="decommissioned">Decommissioned</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-group"><label class="form-label">Description / Label</label><input type="text" id="fe-desc" placeholder="e.g. CO2 Extinguisher 5kg - Reception"/></div>
+    <div class="form-group"><label class="form-label">Location *</label><input type="text" id="fe-location" placeholder="e.g. Ground Floor, Reception Area"/></div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Make / Model</label><input type="text" id="fe-make" placeholder="Brand and model"/></div>
+      <div class="form-group"><label class="form-label">Serial Number</label><input type="text" id="fe-serial" placeholder="Serial / tag number"/></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Capacity / Rating</label><input type="text" id="fe-capacity" placeholder="e.g. 5kg, 9L, 6A/34B"/></div>
+      <div class="form-group"><label class="form-label">Related Certificate</label>
+        <select id="fe-cert-id"><option value="">-- None --</option></select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Last Service Date</label><input type="date" id="fe-last-service"/></div>
+      <div class="form-group"><label class="form-label">Next Service Date</label><input type="date" id="fe-next-service"/></div>
+    </div>
+    <div class="form-group"><label class="form-label">Notes</label><textarea id="fe-notes" rows="2" placeholder="Additional notes..."></textarea></div>
+    <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:20px">
+      <button class="btn" onclick="document.getElementById('fire-equip-modal').style.display='none'">Cancel</button>
+      <button class="btn btn-primary" onclick="fireSaveEquip()"><i class="ti ti-device-floppy"></i>Save Equipment</button>
+    </div>
+  </div>
+</div>
+</div>
+<!-- END page-fire -->
 
 </body>
 </html>
