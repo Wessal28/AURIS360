@@ -2,6 +2,9 @@
   "name": "auris360",
   "version": "1.0.0",
   "private": true,
+  "dependencies": {
+    "nodemailer": "^6.9.16"
+  },
   "engines": {
     "node": ">=18.x"
   }

@@ -24442,7 +24442,7 @@ function renderNotifSettings(s, queue) {
   }).join('');
 
   return '<div style="background:#EFF6FF;border:1px solid #bfdbfe;border-radius:10px;padding:12px 14px;margin-bottom:16px;font-size:12px;color:#1e40af">'
-    + '<strong>Email sender:</strong> configured securely in Vercel/Resend. This screen controls notification rules and recipients only.'
+    + '<strong>Email sender:</strong> configured securely on the server. This screen controls notification rules and recipients only.'
     + '<input type="hidden" id="notif-from-email" value="' + escH(s.from_email||'') + '"/>'
     + '<input type="hidden" id="notif-resend-key" value="' + escH(s.resend_api_key||'') + '"/>'
     + '</div>'
@@ -35753,7 +35753,7 @@ I can help you:<br>
   </div>
   <p style="font-size:13px;color:var(--text2);margin-bottom:16px">
     Configure automatic email alerts for incidents, permits, actions and more.
-    Uses <a href="https://resend.com" target="_blank" style="color:var(--blue)">Resend</a> (free: 3,000 emails/month).
+    The sender is configured securely on the server, normally using the same SMTP provider as password reset emails.
   </p>
   <div id="notif-settings-body-legacy"><div class="loading">Loading...</div></div>
 </div>

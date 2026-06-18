@@ -1,5 +1,5 @@
 // AURIS360 Email Worker - Vercel Serverless Function
-// CommonJS format - works without extra config
+// Sends queued notifications with SMTP when configured, otherwise falls back to Resend.
 
 module.exports = async function handler(req, res) {
   const cronHeader = req.headers['x-vercel-cron'];
@@ -40,31 +40,16 @@ async function processEmailQueue() {
         });
         continue;
       }
-      const resendKey = process.env.RESEND_API_KEY;
-      if (!resendKey) throw new Error('RESEND_API_KEY is not configured');
-      const fromAddress = process.env.EMAIL_FROM || 'AURIS360 by SEPHS Consulting <onboarding@resend.dev>';
-      const sr = await fetch('https://api.resend.com/emails', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + resendKey },
-        body: JSON.stringify({
-          from: fromAddress,
-          to: [n.to_email],
-          subject: n.subject,
-          html: n.body_html
-        })
-      });
-      if (sr.ok) {
-        let resendId = null;
-        try { const sd = await sr.json(); resendId = sd && sd.id; } catch (_) {}
+      const sendResult = await sendNotificationEmail(n);
+      if (sendResult.ok) {
         await fetch(SB + '/rest/v1/notification_queue?id=eq.' + n.id, {
           method: 'PATCH',
           headers: { ...headers, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
-          body: JSON.stringify({ status: 'sent', sent_at: new Date().toISOString(), resend_id: resendId })
+          body: JSON.stringify({ status: 'sent', sent_at: new Date().toISOString(), resend_id: sendResult.providerId || null })
         });
         sent++;
       } else {
-        const e = await sr.json();
-        throw new Error(e.message || 'Resend error ' + sr.status);
+        throw new Error(sendResult.error || 'Email provider error');
       }
     } catch (err) {
       await fetch(SB + '/rest/v1/notification_queue?id=eq.' + n.id, {
@@ -76,4 +61,67 @@ async function processEmailQueue() {
     }
   }
   return { sent, failed, total: notifications.length };
+}
+
+function smtpConfigured() {
+  return !!(process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS);
+}
+
+async function sendNotificationEmail(n) {
+  if (smtpConfigured()) return sendWithSmtp(n);
+  if (process.env.RESEND_API_KEY) return sendWithResend(n);
+  return {
+    ok: false,
+    error: 'Email sender is not configured. Add SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, EMAIL_FROM in Vercel, or add RESEND_API_KEY.'
+  };
+}
+
+async function sendWithSmtp(n) {
+  const nodemailer = require('nodemailer');
+  const port = Number(process.env.SMTP_PORT || 587);
+  const secure = String(process.env.SMTP_SECURE || '').toLowerCase() === 'true' || port === 465;
+  const fromAddress = process.env.EMAIL_FROM || process.env.SMTP_USER;
+  const transporter = nodemailer.createTransport({
+    host: process.env.SMTP_HOST,
+    port,
+    secure,
+    auth: {
+      user: process.env.SMTP_USER,
+      pass: process.env.SMTP_PASS
+    }
+  });
+
+  const info = await transporter.sendMail({
+    from: fromAddress,
+    to: n.to_name ? '"' + String(n.to_name).replace(/"/g, '') + '" <' + n.to_email + '>' : n.to_email,
+    subject: n.subject,
+    html: n.body_html
+  });
+
+  return { ok: true, providerId: info && info.messageId ? info.messageId : null };
+}
+
+async function sendWithResend(n) {
+  const fromAddress = process.env.EMAIL_FROM || 'AURIS360 by SEPHS Consulting <onboarding@resend.dev>';
+  const sr = await fetch('https://api.resend.com/emails', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + process.env.RESEND_API_KEY },
+    body: JSON.stringify({
+      from: fromAddress,
+      to: [n.to_email],
+      subject: n.subject,
+      html: n.body_html
+    })
+  });
+  if (!sr.ok) {
+    let msg = 'Resend error ' + sr.status;
+    try {
+      const e = await sr.json();
+      msg = e.message || msg;
+    } catch (_) {}
+    return { ok: false, error: msg };
+  }
+  let resendId = null;
+  try { const sd = await sr.json(); resendId = sd && sd.id; } catch (_) {}
+  return { ok: true, providerId: resendId };
 }
