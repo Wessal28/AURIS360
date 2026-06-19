@@ -6159,7 +6159,13 @@ async function chemSave(){
   var r=chemRiskFromForm();
   var body={company_id:ccid(),product_name:product,supplier:g('chem-supplier'),manufacturer:g('chem-manufacturer'),sds_file_name:g('chem-sds-file'),sds_revision_date:g('chem-sds-date')||null,signal_word:g('chem-signal'),hazard_identification:g('chem-hazards'),hazard_statements:chemSplitList(g('chem-hcodes')),hazard_pictograms:[],exposure_routes:chemSplitList(g('chem-routes')),exposure_consequences:g('chem-consequences'),first_aid:g('chem-firstaid'),handling_storage:g('chem-handling'),ppe_required:g('chem-ppe'),location:g('chem-location'),department:g('chem-dept'),process_use:g('chem-use'),quantity_stored:g('chem-qty'),persons_exposed:parseInt(g('chem-persons'))||0,exposure_frequency:g('chem-frequency')||'occasional',exposure_duration:g('chem-duration')||'short',task_type:g('chem-task')||'closed_handling',existing_controls:g('chem-controls'),risk_score:r.score,risk_level:r.level,recommendations:g('chem-recommendations'),status:g('chem-status')||'active',review_date:g('chem-review')||null,updated_at:new Date().toISOString()};
   try{
-    if(chemEditId){await api('/chemical_register?id=eq.'+chemEditId,{m:'PATCH',p:'return=minimal',b:body});toast('Chemical updated');}
+    if(chemEditId){
+      var updated=await api('/chemical_register?id=eq.'+chemEditId,{m:'PATCH',p:'return=representation',b:body});
+      if(updated?.[0]){
+        chemData=chemData.map(function(x){return x.id===chemEditId?updated[0]:x;});
+      }
+      toast('Chemical updated');
+    }
     else{
       body.created_by=prof?.id;
       var res=await api('/chemical_register',{m:'POST',p:'return=representation',b:body});

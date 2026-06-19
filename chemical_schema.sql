@@ -39,18 +39,35 @@ create table if not exists public.chemical_register (
 );
 
 alter table public.chemical_register add column if not exists chemical_ref text;
+alter table public.chemical_register add column if not exists supplier text;
+alter table public.chemical_register add column if not exists manufacturer text;
 alter table public.chemical_register add column if not exists sds_file_name text;
+alter table public.chemical_register add column if not exists sds_revision_date date;
+alter table public.chemical_register add column if not exists signal_word text;
 alter table public.chemical_register add column if not exists hazard_identification text;
 alter table public.chemical_register add column if not exists hazard_statements text[];
 alter table public.chemical_register add column if not exists hazard_pictograms text[];
 alter table public.chemical_register add column if not exists exposure_routes text[];
 alter table public.chemical_register add column if not exists exposure_consequences text;
+alter table public.chemical_register add column if not exists first_aid text;
+alter table public.chemical_register add column if not exists handling_storage text;
+alter table public.chemical_register add column if not exists ppe_required text;
+alter table public.chemical_register add column if not exists location text;
+alter table public.chemical_register add column if not exists department text;
+alter table public.chemical_register add column if not exists process_use text;
+alter table public.chemical_register add column if not exists quantity_stored text;
 alter table public.chemical_register add column if not exists persons_exposed integer default 0;
 alter table public.chemical_register add column if not exists exposure_frequency text default 'occasional';
 alter table public.chemical_register add column if not exists exposure_duration text default 'short';
 alter table public.chemical_register add column if not exists task_type text default 'closed_handling';
+alter table public.chemical_register add column if not exists existing_controls text;
 alter table public.chemical_register add column if not exists risk_score integer default 0;
 alter table public.chemical_register add column if not exists risk_level text default 'medium';
+alter table public.chemical_register add column if not exists recommendations text;
+alter table public.chemical_register add column if not exists status text default 'active';
+alter table public.chemical_register add column if not exists review_date date;
+alter table public.chemical_register add column if not exists created_by uuid;
+alter table public.chemical_register add column if not exists updated_at timestamptz not null default now();
 
 create index if not exists idx_chemical_register_company on public.chemical_register(company_id);
 create index if not exists idx_chemical_register_risk on public.chemical_register(company_id, risk_level);
