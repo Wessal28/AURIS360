@@ -2009,8 +2009,34 @@ function obsFilterList() {
       +'</div>';
     return;
   }
-  el.innerHTML = '<div style="display:flex;flex-direction:column;gap:8px">'
-    + filt.map(x => obsCard(x)).join('') + '</div>';
+  var h='<div style="overflow:auto"><table style="width:100%;min-width:980px;border-collapse:collapse;font-size:12px">'
+    +'<thead><tr style="background:#17446B;color:#fff">'
+    +'<th style="padding:10px;color:#fff;text-align:left">Ref</th>'
+    +'<th style="padding:10px;color:#fff;text-align:left">Date</th>'
+    +'<th style="padding:10px;color:#fff;text-align:left">Type</th>'
+    +'<th style="padding:10px;color:#fff;text-align:left">Observation</th>'
+    +'<th style="padding:10px;color:#fff;text-align:left">Location</th>'
+    +'<th style="padding:10px;color:#fff;text-align:left">Observer</th>'
+    +'<th style="padding:10px;color:#fff;text-align:center">Severity</th>'
+    +'<th style="padding:10px;color:#fff;text-align:center">Status</th>'
+    +'<th style="padding:10px;color:#fff;width:54px"></th>'
+    +'</tr></thead><tbody>';
+  filt.forEach(function(x,i){
+    var cfg=OBS_TYPE_CFG[x.obs_type]||OBS_TYPE_CFG.unsafe_condition;
+    var desc=x.observation_text||x.positive_points||x.unsafe_act_description||x.unsafe_condition_description||'—';
+    h+='<tr style="background:'+(i%2?'#f9fafb':'#fff')+';border-bottom:1px solid #eef2f7;cursor:pointer" data-id="'+x.id+'" onclick="obsEdit(this.dataset.id)">'
+      +'<td style="padding:9px 10px;font-family:monospace;font-weight:800;color:'+cfg.color+'">'+escH(x.obs_ref||x.id?.slice(0,8)||'—')+'</td>'
+      +'<td style="padding:9px 10px;white-space:nowrap">'+(x.observation_date?new Date(x.observation_date).toLocaleDateString('en-GB'):'—')+'</td>'
+      +'<td style="padding:9px 10px"><span style="background:'+cfg.bg+';color:'+cfg.color+';padding:2px 8px;border-radius:99px;font-size:10px;font-weight:800">'+escH(cfg.label)+'</span></td>'
+      +'<td style="padding:9px 10px;min-width:260px"><div style="font-weight:700;line-height:1.25">'+escH(desc.substring(0,130))+(desc.length>130?'...':'')+'</div><div style="font-size:11px;color:var(--text2);margin-top:2px">'+escH(x.category||'general')+'</div></td>'
+      +'<td style="padding:9px 10px">'+escH(x.location||'—')+'</td>'
+      +'<td style="padding:9px 10px">'+escH(x.observer_name||'—')+'</td>'
+      +'<td style="padding:9px 10px;text-align:center">'+sev(x.severity||'medium')+'</td>'
+      +'<td style="padding:9px 10px;text-align:center">'+stat(x.status||'open')+'</td>'
+      +'<td style="padding:9px 10px"><button class="btn btn-sm" onclick="event.stopPropagation();obsEdit(\''+x.id+'\')"><i class="ti ti-edit"></i></button></td>'
+      +'</tr>';
+  });
+  el.innerHTML=h+'</tbody></table></div>';
 }
 
 function obsCard(x) {
@@ -11117,7 +11143,19 @@ function raFilterList(){
       +'</div>';
     return;
   }
-  var h='';
+  var h='<div style="overflow:auto"><table style="width:100%;min-width:1120px;border-collapse:collapse;font-size:12px">'
+    +'<thead><tr style="background:#1a3a5c;color:#fff">'
+    +'<th style="padding:10px 12px;color:#fff;text-align:left">Ref</th>'
+    +'<th style="padding:10px;color:#fff;text-align:left">Type</th>'
+    +'<th style="padding:10px;color:#fff;text-align:left">Title / Activity</th>'
+    +'<th style="padding:10px;color:#fff;text-align:left">Location</th>'
+    +'<th style="padding:10px;color:#fff;text-align:left">Assessor</th>'
+    +'<th style="padding:10px;color:#fff;text-align:left">Date</th>'
+    +'<th style="padding:10px;color:#fff;text-align:center">Risk</th>'
+    +'<th style="padding:10px;color:#fff;text-align:center">Status</th>'
+    +'<th style="padding:10px;color:#fff;text-align:left">Review</th>'
+    +'<th style="padding:10px;color:#fff;width:54px"></th>'
+    +'</tr></thead><tbody>';
   filt.forEach(function(x){
     var type=x.ra_type_v2||x.ra_type||'baseline';
     var cfg=RA_TYPE_CFG[type]||RA_TYPE_CFG.baseline;
@@ -11125,38 +11163,20 @@ function raFilterList(){
     var rl=x.overall_risk_level||x.risk_level||'';
     var rlcfg=RL_CFG[rl]||['#f3f4f6','#6B7280'];
     var isReviewDue=x.review_date&&new Date(x.review_date)<=new Date()&&x.status==='active';
-    h+='<div class="card" style="margin:0 0 10px;padding:0;overflow:hidden;border:1px solid var(--border);cursor:pointer;transition:box-shadow .15s" '
-      +'data-id="'+x.id+'" onclick="raOpen(this.dataset.id)" '
-      +'onmouseover="this.style.boxShadow=\'0 4px 16px rgba(0,0,0,.1)\'" onmouseout="this.style.boxShadow=\'\'">'
-      +'<div style="display:flex;align-items:stretch">'
-      +'<div style="width:5px;background:'+cfg.color+';flex-shrink:0"></div>'
-      +'<div style="padding:12px 14px;display:flex;align-items:center;border-right:1px solid var(--border)">'
-      +'<div style="width:42px;height:42px;border-radius:10px;background:'+cfg.bg+';display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0">'+cfg.emoji+'</div></div>'
-      +'<div style="flex:1;padding:10px 14px;min-width:0">'
-      +'<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-bottom:4px">'
-      +'<div>'
-      +'<div style="display:flex;align-items:center;gap:8px;margin-bottom:2px">'
-      +'<span style="font-family:monospace;font-size:11px;font-weight:700;color:'+cfg.color+'">'+escH(x.ra_ref||'DRAFT')+'</span>'
-      +(x.revision?'<span style="background:#f3f4f6;color:#6B7280;padding:1px 6px;border-radius:4px;font-size:10px;font-weight:600">Rev '+x.revision+'</span>':'')
-      +(isReviewDue?'<span style="background:#FCEBEB;color:#A32D2D;padding:1px 7px;border-radius:4px;font-size:10px;font-weight:700">REVIEW DUE</span>':'')
-      +'</div>'
-      +'<div style="font-weight:700;font-size:14px">'+escH(x.title||x.activity||x.workshop||'Untitled RA')+'</div>'
-      +'</div>'
-      +'<div style="display:flex;gap:6px;flex-wrap:wrap">'
-      +(rl?'<span style="background:'+rlcfg[0]+';color:'+rlcfg[1]+';padding:2px 8px;border-radius:4px;font-size:11px;font-weight:700">'+rl+'</span>':'')
-      +'<span style="background:'+sc[0]+';color:'+sc[1]+';padding:2px 9px;border-radius:99px;font-size:11px;font-weight:700">'+sc[2]+'</span>'
-      +'</div></div>'
-      +'<div style="font-size:12px;color:var(--text2);display:flex;gap:14px;flex-wrap:wrap">'
-      +(x.location||x.workshop?'<span><i class="ti ti-map-pin" style="font-size:10px"></i> '+escH(x.location||x.workshop||'')+'</span>':'')
-      +(x.assessed_by||x.ra_assessor?'<span><i class="ti ti-user" style="font-size:10px"></i> '+escH(x.assessed_by||x.ra_assessor||'')+'</span>':'')
-      +(x.ra_date||x.date?'<span><i class="ti ti-calendar" style="font-size:10px"></i> '+new Date(x.ra_date||x.date).toLocaleDateString('en-GB')+'</span>':'')
-      +(x.review_date?'<span><i class="ti ti-refresh" style="font-size:10px"></i> Review: '+new Date(x.review_date).toLocaleDateString('en-GB')+'</span>':'')
-      +'</div></div>'
-      +'<div style="padding:12px;display:flex;align-items:center;color:var(--text3)">'
-      +'<i class="ti ti-chevron-right" style="font-size:18px"></i></div>'
-      +'</div></div>';
+    h+='<tr style="border-bottom:1px solid #eef2f7;cursor:pointer" data-id="'+x.id+'" onclick="raOpen(this.dataset.id)">'
+      +'<td style="padding:9px 12px;font-family:monospace;font-weight:800;color:'+cfg.color+'">'+escH(x.ra_ref||'DRAFT')+'<div style="font-size:10px;color:var(--text2)">Rev '+escH(x.revision||1)+'</div></td>'
+      +'<td style="padding:9px"><span style="background:'+cfg.bg+';color:'+cfg.color+';border:1px solid '+cfg.color+'33;padding:2px 8px;border-radius:99px;font-size:10px;font-weight:800">'+cfg.emoji+' '+escH(cfg.label)+'</span></td>'
+      +'<td style="padding:9px;min-width:260px"><div style="font-weight:800">'+escH(x.title||x.activity||x.workshop||'Untitled RA')+'</div><div style="font-size:11px;color:var(--text2)">'+escH(x.scope||'').substring(0,90)+'</div></td>'
+      +'<td style="padding:9px">'+escH(x.location||x.workshop||'—')+'</td>'
+      +'<td style="padding:9px">'+escH(x.assessed_by||x.ra_assessor||'—')+'</td>'
+      +'<td style="padding:9px;white-space:nowrap">'+(x.ra_date||x.date?new Date(x.ra_date||x.date).toLocaleDateString('en-GB'):'—')+'</td>'
+      +'<td style="padding:9px;text-align:center">'+(rl?'<span style="background:'+rlcfg[0]+';color:'+rlcfg[1]+';padding:2px 8px;border-radius:4px;font-size:11px;font-weight:800">'+escH(rl)+'</span>':'—')+'</td>'
+      +'<td style="padding:9px;text-align:center"><span style="background:'+sc[0]+';color:'+sc[1]+';padding:2px 9px;border-radius:99px;font-size:11px;font-weight:800">'+sc[2]+'</span></td>'
+      +'<td style="padding:9px;white-space:nowrap">'+(x.review_date?new Date(x.review_date).toLocaleDateString('en-GB'):'—')+(isReviewDue?'<div style="font-size:10px;color:#A32D2D;font-weight:800">REVIEW DUE</div>':'')+'</td>'
+      +'<td style="padding:9px"><button class="btn btn-sm" onclick="event.stopPropagation();raOpen(\''+x.id+'\')"><i class="ti ti-edit"></i></button></td>'
+      +'</tr>';
   });
-  el.innerHTML=h;
+  el.innerHTML=h+'</tbody></table></div>';
 }
 
 function raRenderJSAList(){
@@ -11679,11 +11699,96 @@ function raRenderLegalRefs(){
 }
 
 // ── RAMS Upload (client-side display only — actual upload to be done by user) ─
-function raHandleRAMSUpload(input){
-  var file=input?.files?.[0];if(!file)return;
-  document.getElementById('ra-rams-name').value=file.name;
+function raGuessRiskSeverity(text){
+  text=(text||'').toLowerCase();
+  if(/fatal|death|amputation|explosion|fire|electric shock|collapse|asphyxiation|confined/.test(text))return 5;
+  if(/fracture|serious|burn|chemical|toxic|crush|fall from height|respiratory/.test(text))return 4;
+  if(/injury|strain|sprain|cut|slip|trip|manual handling/.test(text))return 3;
+  return 2;
+}
+function raGuessRiskProbability(text){
+  text=(text||'').toLowerCase();
+  if(/continuous|frequent|daily|regular|likely|high probability/.test(text))return 4;
+  if(/occasional|weekly|possible|may occur/.test(text))return 3;
+  if(/rare|unlikely|infrequent/.test(text))return 1;
+  return 2;
+}
+function raExtractRowsFromText(text){
+  var clean=(text||'').replace(/\r/g,'\n').replace(/[ \t]+/g,' ');
+  var lines=clean.split('\n').map(function(l){return l.trim();}).filter(function(l){return l.length>3;});
+  var rows=[], hazardRe=/(hazard|danger|risk|activity|task|step|control|mitigation|harm|injury|exposure)/i;
+  for(var i=0;i<lines.length;i++){
+    var l=lines[i]; if(!hazardRe.test(l))continue;
+    var joined=[l,lines[i+1]||'',lines[i+2]||''].join(' ');
+    var parts=l.split(/\s{2,}|\t+|\s\|\s|;+/).map(function(p){return p.trim();}).filter(Boolean);
+    var hazard='', harm='', controls='';
+    if(parts.length>=3){hazard=parts[0];harm=parts[1];controls=parts.slice(2).join('; ');}
+    else{
+      var hm=joined.match(/(?:hazard|risk)\s*[:\-]?\s*([^.;]{8,120})/i);
+      var cm=joined.match(/(?:control|mitigation|preventive measures?)\s*[:\-]?\s*([^.;]{8,180})/i);
+      var harmM=joined.match(/(?:harm|consequence|injury)\s*[:\-]?\s*([^.;]{8,120})/i);
+      hazard=(hm&&hm[1])||l.replace(/^(hazard|risk|task|activity)\s*[:\-]?\s*/i,'').substring(0,120);
+      harm=(harmM&&harmM[1])||'Potential injury / ill health';
+      controls=(cm&&cm[1])||'Review existing controls and confirm suitability before work starts.';
+    }
+    if(hazard.length<6)continue;
+    var key=hazard.toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();
+    if(rows.some(function(r){return (r._key||'')===key;}))continue;
+    rows.push({_key:key,hazard:hazard,harm:harm,who:'Workers / affected persons',rs:raGuessRiskSeverity(joined),rop:raGuessRiskProbability(joined),controls:controls,hoc_level:/guard|ventilation|isolation|barrier|interlock/i.test(controls)?'engineering':'administrative',res_s:Math.max(1,raGuessRiskSeverity(joined)-1),res_p:1});
+    if(rows.length>=12)break;
+  }
+  return rows.map(function(r){delete r._key;return r;});
+}
+function raApplyImportedPdf(text,fileName){
+  var rows=raExtractRowsFromText(text);
+  var ramsName=document.getElementById('ra-rams-name'); if(ramsName)ramsName.value=fileName||'Imported RA PDF';
+  var titleEl=document.getElementById('ra-title');
+  if(titleEl&&!titleEl.value){
+    var title=(text.match(/(?:risk assessment|rams|method statement)[^\n]{0,80}/i)||[])[0] || (fileName||'Imported risk assessment').replace(/\.pdf$/i,'').replace(/[_-]+/g,' ');
+    titleEl.value=title.trim();
+    var act=document.getElementById('ra-activity'); if(act)act.value=title.trim();
+    var formTitle=document.getElementById('ra-form-title'); if(formTitle)formTitle.textContent=title.trim();
+  }
+  var scope=document.getElementById('ra-scope'); if(scope&&!scope.value)scope.value=text.replace(/\s+/g,' ').substring(0,700);
+  if(rows.length){
+    if(raEditingType==='dynamic')raSwitchFormType('baseline');
+    if(raEditingType==='task')rows.forEach(function(r){raTaskAddRow({task:r.hazard,hazard:r.hazard,harm:r.harm,rs:r.rs,rop:r.rop,controls:r.controls,res_s:r.res_s,res_p:r.res_p});});
+    else rows.forEach(function(r){raBaselineAddRow(r);});
+    raFormTab('hazards', document.getElementById('ra-ftab-hazards'));
+  }
   var el=document.getElementById('ra-rams-status');
-  if(el)el.innerHTML='<div style="padding:8px 12px;background:#f0fdf4;border-radius:8px;font-size:12px;color:#166534;margin-bottom:8px">📎 '+escH(file.name)+' — selected ('+Math.round(file.size/1024)+' KB)<br><span style="font-size:11px;color:#6B7280">Save the RA to record the document reference. For actual storage, upload to your document system and paste the URL above.</span></div>';
+  if(el)el.innerHTML='<div style="padding:10px 12px;background:#f0fdf4;border-radius:8px;font-size:12px;color:#166534;margin-bottom:8px"><strong>PDF analysed:</strong> '+escH(fileName||'document')+'<br><span style="font-size:11px;color:#166534">'+rows.length+' hazard row'+(rows.length!==1?'s':'')+' extracted. Please review before saving.</span></div>';
+}
+async function raHandleRAMSUpload(input){
+  var file=input?.files?.[0];if(!file)return;
+  var ramsName=document.getElementById('ra-rams-name'); if(ramsName)ramsName.value=file.name;
+  var el=document.getElementById('ra-rams-status');
+  if(el)el.innerHTML='<div style="padding:8px 12px;background:#EFF6FF;border-radius:8px;font-size:12px;color:#185FA5;margin-bottom:8px">Reading '+escH(file.name)+'...</div>';
+  if(!/\.pdf$/i.test(file.name)){
+    if(el)el.innerHTML='<div style="padding:8px 12px;background:#FEF9EC;border-radius:8px;font-size:12px;color:#854F0B;margin-bottom:8px">'+escH(file.name)+' selected. Automatic reading is available for PDF files; save the RA to record this document reference.</div>';
+    return;
+  }
+  try{
+    if(!window.pdfjsLib)throw new Error('PDF reader is not loaded. Check your internet connection and try again.');
+    if(window.pdfjsLib.GlobalWorkerOptions)window.pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    var pdf=await window.pdfjsLib.getDocument({data:await file.arrayBuffer()}).promise;
+    var lines=[];
+    for(var p=1;p<=pdf.numPages;p++){
+      var page=await pdf.getPage(p), content=await page.getTextContent();
+      var lastY=null,line='';
+      content.items.forEach(function(item){
+        var y=Math.round(item.transform[5]);
+        if(lastY!==null&&Math.abs(y-lastY)>4){if(line.trim())lines.push(line.trim());line='';}
+        line+=(line?' ':'')+item.str;lastY=y;
+      });
+      if(line.trim())lines.push(line.trim());
+      if(el)el.innerHTML='<div style="padding:8px 12px;background:#EFF6FF;border-radius:8px;font-size:12px;color:#185FA5;margin-bottom:8px">Reading page '+p+' of '+pdf.numPages+'...</div>';
+    }
+    raApplyImportedPdf(lines.join('\n'),file.name);
+  }catch(e){
+    if(el)el.innerHTML='<div style="padding:8px 12px;background:#FCEBEB;border-radius:8px;font-size:12px;color:#A32D2D;margin-bottom:8px">PDF import failed: '+escH(e.message)+'</div>';
+    toast('RA PDF import failed: '+e.message,false);
+  }
 }
 
 // ── Templates ─────────────────────────────────────────────────────────────────
@@ -21354,7 +21459,6 @@ function auditFilter() {
   var q = (document.getElementById('audit-search')?.value||'').toLowerCase();
   var ft = document.getElementById('audit-filter-type')?.value||'';
   var fs = document.getElementById('audit-filter-status')?.value||'';
-  var now = new Date();
   var filt = (auditAllData||[]).filter(function(x) {
     var mQ = !q || (x.site||'').toLowerCase().includes(q) || (x.inspection_type||'').toLowerCase().includes(q) ||
               (x.reference_no||x.id||'').toLowerCase().includes(q) || (x.inspector||x.by||x.if_by||'').toLowerCase().includes(q);
@@ -21363,10 +21467,21 @@ function auditFilter() {
     return mQ && mT && mS;
   });
   if(!filt.length) {
-    el.innerHTML = '<div style="text-align:center;padding:48px;color:var(--text2)"><div style="font-size:44px;margin-bottom:12px">📋</div><div style="font-weight:700;font-size:14px;margin-bottom:8px">No inspections found</div><button class="btn btn-primary" onclick="auditNew()"><i class="ti ti-plus"></i>Start inspection</button></div>';
+    el.innerHTML = '<div style="text-align:center;padding:48px;color:var(--text2)"><div style="font-size:44px;margin-bottom:12px">-</div><div style="font-weight:700;font-size:14px;margin-bottom:8px">No inspections found</div><button class="btn btn-primary" onclick="auditNew()"><i class="ti ti-plus"></i>Start inspection</button></div>';
     return;
   }
-  var h = '<div style="display:flex;flex-direction:column;gap:8px">';
+  var h = '<div style="overflow:auto"><table style="width:100%;min-width:1060px;border-collapse:collapse;font-size:12px;background:#fff">'
+    + '<thead><tr style="background:#185FA5;color:#fff">'
+    + '<th style="padding:10px;text-align:left;font-weight:700">Ref</th>'
+    + '<th style="padding:10px;text-align:left;font-weight:700">Type</th>'
+    + '<th style="padding:10px;text-align:left;font-weight:700">Site / Department</th>'
+    + '<th style="padding:10px;text-align:left;font-weight:700">Date</th>'
+    + '<th style="padding:10px;text-align:left;font-weight:700">Inspector</th>'
+    + '<th style="padding:10px;text-align:left;font-weight:700">Standard</th>'
+    + '<th style="padding:10px;text-align:center;font-weight:700">Score</th>'
+    + '<th style="padding:10px;text-align:center;font-weight:700">Status</th>'
+    + '<th style="padding:10px;text-align:center;font-weight:700">Action</th>'
+    + '</tr></thead><tbody>';
   filt.forEach(function(x) {
     var type = x.inspection_type || 'workplace';
     var cfg = AUDIT_TYPE_CFG[type] || AUDIT_TYPE_CFG.workplace;
@@ -21375,32 +21490,22 @@ function auditFilter() {
     var stCfg = {open:['#FCEBEB','#A32D2D'],in_progress:['#EFF6FF','#185FA5'],completed:['#EAF3DE','#3B6D11'],closed:['#EAF3DE','#3B6D11']};
     var sc = stCfg[x.status||'open']||stCfg.open;
     var isOverdue = x.status!=='closed'&&x.status!=='completed'&&x.planned_date&&new Date(x.planned_date)<new Date();
-    var ref = x.reference_no||x.id?.slice(0,8)||'—';
-    h += '<div class="card" style="padding:0;overflow:hidden;cursor:pointer;border-left:5px solid '+cfg.border+';transition:box-shadow .15s" data-id="'+x.id+'" onclick="auditOpen(this.dataset.id)" onmouseover="this.style.boxShadow=\'0 4px 16px rgba(0,0,0,.1)\'" onmouseout="this.style.boxShadow=\'\'">'
-      + '<div style="padding:10px 14px;display:flex;align-items:flex-start;justify-content:space-between;gap:10px;flex-wrap:wrap">'
-      + '<div style="display:flex;gap:10px;flex:1;min-width:0">'
-      + '<div style="font-size:24px;flex-shrink:0;line-height:1.2">'+cfg.emoji+'</div>'
-      + '<div style="min-width:0;flex:1">'
-      + '<div style="display:flex;gap:6px;align-items:center;margin-bottom:3px;flex-wrap:wrap">'
-      + '<span style="font-family:monospace;font-size:11px;font-weight:800;color:'+cfg.color+'">'+escH(ref)+'</span>'
-      + '<span style="background:'+cfg.bg+';color:'+cfg.color+';padding:1px 8px;border-radius:99px;font-size:10px;font-weight:700;border:1px solid '+cfg.border+'">'+cfg.label+'</span>'
-      + (isOverdue?'<span style="background:#FCEBEB;color:#DC2626;padding:1px 6px;border-radius:4px;font-size:9px;font-weight:700">OVERDUE</span>':'')
-      + '</div>'
-      + '<div style="font-size:13px;font-weight:600">'+(x.site||'—')+(x.department?' — '+escH(x.department):'')+'</div>'
-      + '<div style="display:flex;gap:12px;font-size:11px;color:var(--text2);margin-top:3px;flex-wrap:wrap">'
-      + (x.inspection_date||x.if_date?'<span>📅 '+new Date(x.inspection_date||x.if_date).toLocaleDateString('en-GB')+'</span>':'')
-      + '<span>👤 '+escH(x.inspector||x.by||x.if_by||'—')+'</span>'
-      + (x.audit_standard?'<span>📋 '+escH(x.audit_standard)+'</span>':'')
-      + '</div></div></div>'
-      + '<div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0">'
-      + (score!=null?'<span style="font-size:18px;font-weight:800;color:'+scoreColor+'">'+score+'%</span>':'')
-      + '<span style="background:'+sc[0]+';color:'+sc[1]+';padding:2px 8px;border-radius:99px;font-size:10px;font-weight:700;text-transform:capitalize">'+(x.status||'open')+'</span>'
-      + '</div></div></div>';
+    var ref = x.reference_no||(x.id?x.id.slice(0,8):'-');
+    h += '<tr style="border-bottom:1px solid var(--border);border-left:5px solid '+cfg.border+';cursor:pointer" data-id="'+x.id+'" onclick="auditOpen(this.dataset.id)">'
+      + '<td style="padding:10px;font-family:monospace;font-weight:800;color:'+cfg.color+'">'+escH(ref)+'</td>'
+      + '<td style="padding:10px"><span style="background:'+cfg.bg+';color:'+cfg.color+';padding:3px 8px;border-radius:99px;font-size:10px;font-weight:700;border:1px solid '+cfg.border+'">'+escH(cfg.label)+'</span></td>'
+      + '<td style="padding:10px;font-weight:600">'+escH(x.site||x.if_site||'-')+(x.department?' <span style="color:var(--text2);font-weight:500">/ '+escH(x.department)+'</span>':'')+(isOverdue?' <span style="background:#FCEBEB;color:#DC2626;padding:1px 6px;border-radius:4px;font-size:9px;font-weight:700">OVERDUE</span>':'')+'</td>'
+      + '<td style="padding:10px;color:var(--text2)">'+escH((x.inspection_date||x.if_date)?new Date(x.inspection_date||x.if_date).toLocaleDateString('en-GB'):'-')+'</td>'
+      + '<td style="padding:10px;color:var(--text2)">'+escH(x.inspector||x.by||x.if_by||'-')+'</td>'
+      + '<td style="padding:10px;color:var(--text2)">'+escH(x.audit_standard||'-')+'</td>'
+      + '<td style="padding:10px;text-align:center;font-weight:800;color:'+scoreColor+'">'+(score!=null?score+'%':'-')+'</td>'
+      + '<td style="padding:10px;text-align:center"><span style="background:'+sc[0]+';color:'+sc[1]+';padding:3px 8px;border-radius:99px;font-size:10px;font-weight:700;text-transform:capitalize">'+escH(x.status||'open')+'</span></td>'
+      + '<td style="padding:10px;text-align:center"><button class="btn btn-sm" onclick="event.stopPropagation();auditOpen(\''+x.id+'\')"><i class="ti ti-edit"></i></button></td>'
+      + '</tr>';
   });
-  el.innerHTML = h + '</div>';
+  el.innerHTML = h + '</tbody></table></div>';
 }
-
-// ── New / Open inspection ──────────────────────────────────────────
+//  ──────────────────────────────────────────
 function auditNew(preType) {
   auditEditId = null;
   var type = preType || 'workplace';
