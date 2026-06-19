@@ -19144,6 +19144,13 @@ function legalStatusScore(status){
   return 0;
 }
 
+function legalRefSortValue(x){
+  var s=String(x?.section||'').trim();
+  var ref=String(x?.req_ref||'').trim();
+  var first=(s.match(/\d+/)||ref.match(/\d+/)||['999999'])[0];
+  return parseInt(first,10)||999999;
+}
+
 function legalRenderPdfPreview(rows,fileName){
   var msg=document.getElementById('lr-pdf-status-msg');
   var preview=document.getElementById('lr-pdf-preview');
@@ -19257,11 +19264,19 @@ function legalFilterRegister(){
     var mC=!fc||(x.category||'')=== fc;
     return mQ&&mS&&mL&&mC;
   });
+  filt.sort(function(a,b){
+    var leg=(a.legislation||'').localeCompare(b.legislation||'');
+    if(leg!==0)return leg;
+    var na=legalRefSortValue(a), nb=legalRefSortValue(b);
+    if(na!==nb)return na-nb;
+    return String(a.req_ref||'').localeCompare(String(b.req_ref||''),undefined,{numeric:true,sensitivity:'base'});
+  });
   if(!filt.length){
     el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)"><div style="font-size:40px;margin-bottom:12px">⚖️</div><div style="font-weight:600;margin-bottom:8px">No requirements found</div>'+(isMgr()?'<button class="btn btn-primary" onclick="legalNewRequirement()"><i class="ti ti-plus"></i>Add first requirement</button>':'')+'</div>';
     return;
   }
-  var h='<table style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr style="background:#1a3a5c;color:#fff"><th style="padding:10px 14px;text-align:left;color:#fff">Ref</th><th style="padding:10px;text-align:left;color:#fff">Legislation</th><th style="padding:10px;text-align:left;color:#fff;min-width:300px">Section / Requirement</th><th style="padding:10px;text-align:left;color:#fff">Category</th><th style="padding:10px;text-align:left;color:#fff">Obligation</th><th style="padding:10px;text-align:left;color:#fff">Responsibility</th><th style="padding:10px;text-align:center;color:#fff">Score</th><th style="padding:10px;text-align:left;color:#fff">Status</th><th style="padding:10px;width:50px;color:#fff"></th></tr></thead><tbody>';
+  var bulk=isMgr()?'<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px;border-bottom:1px solid var(--border);background:#f9fafb;flex-wrap:wrap"><div style="font-size:12px;color:var(--text2)">'+filt.length+' visible requirement'+(filt.length>1?'s':'')+' sorted by legislation and section number</div><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn btn-sm" onclick="legalToggleVisibleSelection(true)"><i class="ti ti-checks"></i>Select visible</button><button class="btn btn-sm" onclick="legalToggleVisibleSelection(false)"><i class="ti ti-square"></i>Clear</button><button class="btn btn-sm" style="color:var(--red);border-color:#fecaca" onclick="legalDeleteSelectedReqs()"><i class="ti ti-trash"></i>Delete selected</button><button class="btn btn-sm" style="background:#FCEBEB;color:#A32D2D;border-color:#fecaca" onclick="legalDeleteCurrentLegislation()"><i class="ti ti-trash-x"></i>Delete legislation</button></div></div>':'';
+  var h=bulk+'<table style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr style="background:#1a3a5c;color:#fff">'+(isMgr()?'<th style="width:38px;padding:10px;color:#fff;text-align:center"><input type="checkbox" id="lr-select-all-visible" onchange="legalToggleVisibleSelection(this.checked)" style="width:16px!important;height:16px!important;margin:0"/></th>':'')+'<th style="padding:10px 14px;text-align:left;color:#fff">Ref</th><th style="padding:10px;text-align:left;color:#fff">Legislation</th><th style="padding:10px;text-align:left;color:#fff;min-width:300px">Section / Requirement</th><th style="padding:10px;text-align:left;color:#fff">Category</th><th style="padding:10px;text-align:left;color:#fff">Obligation</th><th style="padding:10px;text-align:left;color:#fff">Responsibility</th><th style="padding:10px;text-align:center;color:#fff">Score</th><th style="padding:10px;text-align:left;color:#fff">Status</th><th style="padding:10px;width:50px;color:#fff"></th></tr></thead><tbody>';
   filt.forEach(function(x,i){
     var bg=i%2===0?'#fff':'#f9fafb';
     var sc=LEG_STATUS_CFG[x.status]||LEG_STATUS_CFG.non_compliant;
@@ -19270,6 +19285,7 @@ function legalFilterRegister(){
     var score=x.compliance_score!=null?x.compliance_score:sc.score;
     var scoreColor=score==null?'#6B7280':score>=80?'#1D9E75':score>=50?'#EF9F27':score>=20?'#C2410C':'#A32D2D';
     h+='<tr style="border-bottom:1px solid #f0f0f0;background:'+bg+';cursor:pointer" onclick="legalOpenReq(\''+x.id+'\')">'
+      +(isMgr()?'<td style="padding:8px;text-align:center"><input type="checkbox" class="lr-row-select" data-id="'+x.id+'" onclick="event.stopPropagation()" style="width:16px!important;height:16px!important;margin:0"/></td>':'')
       +'<td style="padding:8px 14px;font-family:monospace;font-size:11px;font-weight:700;color:#185FA5">'+escH(x.req_ref||x.id?.slice(0,8)||'—')+'</td>'
       +'<td style="padding:8px;max-width:180px"><div style="font-size:11px;font-weight:600;color:#185FA5">'+escH((x.legislation||'—').substring(0,45))+'</div>'+(x.legislation_type?'<div style="font-size:10px;color:var(--text2);text-transform:capitalize">'+escH(x.legislation_type.replace(/_/g,' '))+'</div>':'')+'</td>'
       +'<td style="padding:8px;max-width:250px"><div style="font-weight:600">'+escH(x.title||('Section '+(x.section||'—')))+'</div><div style="font-size:11px;color:var(--text2)">'+escH((x.requirement||'').substring(0,80))+(x.requirement?.length>80?'…':'')+'</div>'+(hasGap?'<span style="background:#FCEBEB;color:#A32D2D;padding:1px 6px;border-radius:4px;font-size:10px;font-weight:700;margin-top:2px;display:inline-block">⚠ GAP</span>':'')+'</td>'
@@ -19383,6 +19399,51 @@ async function legalSaveReq(){
 }
 async function legalDeleteReq(){if(!lrEditId||!confirm('Delete this requirement?'))return;try{await api('/legal_requirements?id=eq.'+lrEditId,{m:'DELETE'});toast('Deleted!');legalReqBack();}catch(e){toast(e.message,false);}}
 function legalDeleteReqFromList(id){if(!confirm('Delete?'))return;api('/legal_requirements?id=eq.'+id,{m:'DELETE'}).then(function(){lrAllData=lrAllData.filter(x=>x.id!==id);legalFilterRegister();toast('Deleted!');}).catch(function(e){toast(e.message,false);});}
+
+function legalToggleVisibleSelection(checked){
+  document.querySelectorAll('.lr-row-select').forEach(function(cb){cb.checked=checked;});
+  var all=document.getElementById('lr-select-all-visible');
+  if(all)all.checked=checked;
+}
+
+async function legalDeleteIds(ids,label){
+  if(!ids.length)return;
+  for(var i=0;i<ids.length;i+=40){
+    var chunk=ids.slice(i,i+40);
+    await api('/legal_requirements?id=in.('+chunk.join(',')+')'+cf(),{m:'DELETE'});
+  }
+  lrAllData=lrAllData.filter(function(x){return !ids.includes(x.id);});
+  legalFilterRegister();
+  legalRefreshMetrics();
+  toast('Deleted '+ids.length+' '+(label||'requirement')+(ids.length>1?'s':''));
+}
+
+async function legalDeleteSelectedReqs(){
+  if(!isMgr()){toast('Only managers/admins can delete legal requirements',false);return;}
+  var ids=Array.from(document.querySelectorAll('.lr-row-select:checked')).map(function(cb){return cb.dataset.id;}).filter(Boolean);
+  if(!ids.length){toast('Select at least one section to delete',false);return;}
+  if(!confirm('Delete '+ids.length+' selected legal section'+(ids.length>1?'s':'')+'? This cannot be undone.'))return;
+  try{await legalDeleteIds(ids,'section');}
+  catch(e){toast('Delete failed: '+e.message,false);}
+}
+
+async function legalDeleteCurrentLegislation(){
+  if(!isMgr()){toast('Only managers/admins can delete legislation',false);return;}
+  var leg=document.getElementById('lr-filter-leg')?.value||'';
+  if(!leg){toast('Choose one legislation in the filter first',false);return;}
+  var ids=lrAllData.filter(function(x){return x.legislation===leg;}).map(function(x){return x.id;}).filter(Boolean);
+  if(!ids.length){toast('No records found for this legislation',false);return;}
+  var typed=prompt('This will delete all '+ids.length+' sections for "'+leg+'". Type DELETE to confirm.');
+  if(typed!=='DELETE')return;
+  try{
+    await legalDeleteIds(ids,'section');
+    var sel=document.getElementById('lr-filter-leg');
+    if(sel){
+      Array.from(sel.options).forEach(function(o){if(o.value===leg)o.remove();});
+      sel.value='';
+    }
+  }catch(e){toast('Delete failed: '+e.message,false);}
+}
 
 // ── REGULATORY CHANGES ────────────────────────────────────────────────────────
 async function legalLoadChanges(){
