@@ -55,3 +55,98 @@ alter table public.chemical_register add column if not exists risk_level text de
 create index if not exists idx_chemical_register_company on public.chemical_register(company_id);
 create index if not exists idx_chemical_register_risk on public.chemical_register(company_id, risk_level);
 create index if not exists idx_chemical_register_product on public.chemical_register(company_id, product_name);
+
+alter table public.chemical_register enable row level security;
+
+drop policy if exists "chemical_register_select_company" on public.chemical_register;
+create policy "chemical_register_select_company"
+on public.chemical_register
+for select
+to authenticated
+using (
+  exists (
+    select 1
+    from public.profiles p
+    where p.id = auth.uid()
+      and (
+        p.role = 'sephs_admin'
+        or p.company_id = chemical_register.company_id
+      )
+  )
+);
+
+drop policy if exists "chemical_register_insert_company" on public.chemical_register;
+create policy "chemical_register_insert_company"
+on public.chemical_register
+for insert
+to authenticated
+with check (
+  exists (
+    select 1
+    from public.profiles p
+    where p.id = auth.uid()
+      and (
+        p.role = 'sephs_admin'
+        or (
+          p.company_id = chemical_register.company_id
+          and p.role in ('company_admin','hse_manager','site_manager','supervisor','manager','admin')
+        )
+      )
+  )
+);
+
+drop policy if exists "chemical_register_update_company" on public.chemical_register;
+create policy "chemical_register_update_company"
+on public.chemical_register
+for update
+to authenticated
+using (
+  exists (
+    select 1
+    from public.profiles p
+    where p.id = auth.uid()
+      and (
+        p.role = 'sephs_admin'
+        or (
+          p.company_id = chemical_register.company_id
+          and p.role in ('company_admin','hse_manager','site_manager','supervisor','manager','admin')
+        )
+      )
+  )
+)
+with check (
+  exists (
+    select 1
+    from public.profiles p
+    where p.id = auth.uid()
+      and (
+        p.role = 'sephs_admin'
+        or (
+          p.company_id = chemical_register.company_id
+          and p.role in ('company_admin','hse_manager','site_manager','supervisor','manager','admin')
+        )
+      )
+  )
+);
+
+drop policy if exists "chemical_register_delete_company" on public.chemical_register;
+create policy "chemical_register_delete_company"
+on public.chemical_register
+for delete
+to authenticated
+using (
+  exists (
+    select 1
+    from public.profiles p
+    where p.id = auth.uid()
+      and (
+        p.role = 'sephs_admin'
+        or (
+          p.company_id = chemical_register.company_id
+          and p.role in ('company_admin','hse_manager','manager','admin')
+        )
+      )
+  )
+);
+
+notify pgrst, 'reload schema';
