@@ -12521,10 +12521,18 @@ function ptwFillIssuerDisplay(saved){
 }
 
 function ptwPrecautionRow(item, checked){
-  return '<label style="display:grid;grid-template-columns:20px minmax(0,1fr);align-items:start;gap:10px;padding:9px 12px;background:#f9fafb;border-radius:8px;margin-bottom:6px;max-width:760px;cursor:pointer">'
+  return '<label style="display:grid;grid-template-columns:20px minmax(0,1fr);align-items:start;gap:10px;padding:9px 12px;background:#f9fafb;border-radius:8px;cursor:pointer;min-height:44px">'
     +'<input type="checkbox" style="accent-color:var(--green);width:16px;height:16px;margin:1px 0 0 0" '+(checked?'checked':'')+'>'
     +'<span style="font-size:12px;line-height:1.35;color:var(--text);white-space:normal;overflow-wrap:anywhere">'+escH(item||'')+'</span>'
     +'</label>';
+}
+
+function ptwPreparePrecautionGrid(el){
+  if(!el)return;
+  el.style.display='grid';
+  el.style.gridTemplateColumns='repeat(auto-fit,minmax(320px,1fr))';
+  el.style.gap='8px 12px';
+  el.style.alignItems='stretch';
 }
 
 async function ptwLoadReferenceOptions(selectedRA, selectedMS){
@@ -13035,6 +13043,7 @@ function ptwSelectType(type){
   document.getElementById('pf-type-display').textContent=cfg.emoji+' '+cfg.label;
   // Build precautions
   var el=document.getElementById('ptw-precautions-list');
+  ptwPreparePrecautionGrid(el);
   el.innerHTML=cfg.precautions.map(function(p){
     return ptwPrecautionRow(p,true);
   }).join('');
@@ -13236,6 +13245,7 @@ function ptwEditCurrent(){
   ptwBuildTypeForm(type);
   var el3=document.getElementById('ptw-precautions-list');
   if(el3&&Array.isArray(x.precautions_checklist)&&x.precautions_checklist.length){
+    ptwPreparePrecautionGrid(el3);
     el3.innerHTML=x.precautions_checklist.map(function(p){
       var item=typeof p==='string'?p:(p.item||p);var checked=typeof p==='object'&&p.checked;
       return ptwPrecautionRow(item,checked);
