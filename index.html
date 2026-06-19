@@ -3406,7 +3406,7 @@ try{ Brand.paintFromCache(); }catch(_){}
 
 async function loadPeopleCache(){
 try{
-const d=await api('/people?select=id,first_name,last_name,job_title,person_type'+cf()+'&status=eq.active&order=last_name');
+const d=await api('/people?select=id,first_name,last_name,job_title,person_type,email,phone'+cf()+'&status=eq.active&order=last_name');
 people=d||[];fillPplDrops();
 }catch(e){people=[];}
 }
@@ -7567,6 +7567,9 @@ document.getElementById('my-profile-info').innerHTML='<div style="font-size:13px
 try{ brandInit(); }catch(e){ console.error('brandInit:',e); }
 var notifCard=document.getElementById('settings-notif-card');
 if(notifCard) notifCard.style.display=isAdm()?'block':'none';
+var ptwCard=document.getElementById('settings-ptw-approver-card');
+if(ptwCard) ptwCard.style.display=isAdm()?'block':'none';
+if(isAdm()) loadPeopleCache().then(function(){loadPTWApprovalSettings();});
 if(isAdm()) loadNotifSettings();
 }
 async function saveLogo(){
@@ -7578,6 +7581,65 @@ toast('Logo updated! Refresh to see it.');
 }catch(e){toast(e.message,false);}
 }
 
+function ptwApproverOptions(selected){
+var opts='<option value="">Select approver...</option>';
+(people||[]).forEach(function(p){
+var name=[p.last_name,p.first_name].filter(Boolean).join(', ');
+var label=name+(p.job_title?' - '+p.job_title:'')+(p.email?' ('+p.email+')':'');
+opts+='<option value="'+escH(p.id)+'" '+(selected===p.id?'selected':'')+'>'+escH(label)+'</option>';
+});
+return opts;
+}
+
+async function loadPTWApprovalSettings(){
+var el=document.getElementById('ptw-approver-settings-body');if(!el)return;
+el.innerHTML='<div class="loading">Loading approvers...</div>';
+try{
+var rows=await api('/notification_settings?company_id=eq.'+prof.company_id+'&limit=1');
+var s=rows&&rows[0]?rows[0]:{};
+var rules=s.event_recipients||{};
+if(typeof rules==='string'){try{rules=JSON.parse(rules);}catch(_){rules={};}}
+var a=rules.permit_approvers||{};
+el.innerHTML='<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px">'
++'<div class="form-group"><label class="form-label">Level 1 approver</label><select id="ptw-app-l1">'+ptwApproverOptions(a.level1_id||'')+'</select><div style="font-size:11px;color:var(--text2);margin-top:4px">Usually Area Supervisor</div></div>'
++'<div class="form-group"><label class="form-label">Level 2 approver</label><select id="ptw-app-l2">'+ptwApproverOptions(a.level2_id||'')+'</select><div style="font-size:11px;color:var(--text2);margin-top:4px">Usually Department / Site Manager</div></div>'
++'<div class="form-group"><label class="form-label">Level 3 approver</label><select id="ptw-app-l3">'+ptwApproverOptions(a.level3_id||'')+'</select><div style="font-size:11px;color:var(--text2);margin-top:4px">Usually HSE Manager</div></div>'
++'</div>'
++'<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:12px">'
++'<button class="btn btn-primary" onclick="savePTWApprovalSettings()"><i class="ti ti-device-floppy"></i>Save PTW approvers</button>'
++'<div style="font-size:12px;color:var(--text2)">These names will be used for permit approval routing and later email / WhatsApp notifications.</div>'
++'</div>';
+}catch(e){el.innerHTML='<div style="color:var(--red);padding:12px">Error loading PTW approver settings: '+escH(e.message)+'</div>';}
+}
+
+function ptwApproverPayload(level,id){
+var p=(people||[]).find(function(x){return x.id===id;})||{};
+var o={};
+o['level'+level+'_id']=id||'';
+o['level'+level+'_name']=id?([p.first_name,p.last_name].filter(Boolean).join(' ')||p.email||''):'';
+o['level'+level+'_email']=id?(p.email||''):'';
+o['level'+level+'_phone']=id?(p.phone||''):'';
+return o;
+}
+
+async function savePTWApprovalSettings(){
+try{
+var l1=document.getElementById('ptw-app-l1')?.value||'';
+var l2=document.getElementById('ptw-app-l2')?.value||'';
+var l3=document.getElementById('ptw-app-l3')?.value||'';
+var existing=await api('/notification_settings?company_id=eq.'+prof.company_id+'&limit=1');
+var row=existing&&existing[0]?existing[0]:null;
+var rules=row?.event_recipients||{};
+if(typeof rules==='string'){try{rules=JSON.parse(rules);}catch(_){rules={};}}
+var approvers={};
+Object.assign(approvers,ptwApproverPayload(1,l1),ptwApproverPayload(2,l2),ptwApproverPayload(3,l3));
+rules.permit_approvers=approvers;
+var updates={event_recipients:rules,updated_at:new Date().toISOString()};
+if(row)await api('/notification_settings?company_id=eq.'+prof.company_id,{m:'PATCH',p:'return=minimal',b:updates});
+else{updates.company_id=prof.company_id;await api('/notification_settings',{m:'POST',p:'return=minimal',b:updates});}
+toast('PTW approver settings saved');
+}catch(e){toast('Error saving PTW approvers: '+e.message,false);}
+}
 /* ═══════════════════════════════════════════════════════════════════
    BRANDING STUDIO CONTROLLER
    - Populates editor with current brand
@@ -12458,6 +12520,51 @@ function ptwFillIssuerDisplay(saved){
   if(txt)txt.value=name;
 }
 
+function ptwPrecautionRow(item, checked){
+  return '<label style="display:grid;grid-template-columns:20px minmax(0,1fr);align-items:start;gap:10px;padding:9px 12px;background:#f9fafb;border-radius:8px;margin-bottom:6px;max-width:760px;cursor:pointer">'
+    +'<input type="checkbox" style="accent-color:var(--green);width:16px;height:16px;margin:1px 0 0 0" '+(checked?'checked':'')+'>'
+    +'<span style="font-size:12px;line-height:1.35;color:var(--text);white-space:normal;overflow-wrap:anywhere">'+escH(item||'')+'</span>'
+    +'</label>';
+}
+
+async function ptwLoadReferenceOptions(selectedRA, selectedMS){
+  var raSel=document.getElementById('pf-ra-ref');
+  var msSel=document.getElementById('pf-ms-ref');
+  if(raSel){
+    raSel.innerHTML='<option value="">Select risk assessment...</option>';
+    try{
+      var ras=await api('/risk_assessments?select=id,ra_ref,title,activity,status'+cf()+'&order=created_at.desc&limit=100');
+      (ras||[]).forEach(function(r){
+        var ref=r.ra_ref||r.id;
+        var o=document.createElement('option');
+        o.value=ref;
+        o.textContent=(r.ra_ref||'RA')+' - '+(r.title||r.activity||'Risk assessment')+(r.status?' ('+r.status+')':'');
+        raSel.appendChild(o);
+      });
+    }catch(e){
+      var o=document.createElement('option');o.value='';o.textContent='Unable to load RA list';raSel.appendChild(o);
+    }
+    if(selectedRA)raSel.value=selectedRA;
+  }
+  if(msSel){
+    msSel.innerHTML='<option value="">Select method statement / SOP...</option>';
+    try{
+      var docs=await api('/sop_documents?select=*'+cf()+'&order=created_at.desc&limit=100');
+      (docs||[]).forEach(function(d){
+        var ref=d.sop_number||d.reference_no||d.doc_ref||d.id;
+        var title=d.title||d.sop_title||d.name||'Method statement / SOP';
+        var o=document.createElement('option');
+        o.value=ref;
+        o.textContent=ref+' - '+title;
+        msSel.appendChild(o);
+      });
+    }catch(e){
+      var o=document.createElement('option');o.value='';o.textContent='Unable to load method statement list';msSel.appendChild(o);
+    }
+    if(selectedMS)msSel.value=selectedMS;
+  }
+}
+
 const PTW_TYPE_CFG={
   hot_work:        {label:'Hot Work',        emoji:'🔥', color:'#DC2626', bg:'#FEF2F2', precautions:['Area clear of flammable materials within 10m','Fire extinguisher standby — CO₂ or dry powder','Fire watch posted during and 30min after work','Hot work permit displayed at work location','Welding screens / flash barriers in place','Fire alarm isolated if required and re-activated after','All drains / openings covered to prevent spark entry']},
   confined_space:  {label:'Confined Space',  emoji:'🚪', color:'#7C3AED', bg:'#F5F3FF', precautions:['Atmosphere tested — O₂ 19.5-23.5%, LEL<10%, H₂S<5ppm, CO<25ppm','Rescue equipment and standby person in place','Continuous gas monitoring required during entry','Non-sparking tools to be used','Adequate ventilation established','Entry/exit log maintained at entry point','Emergency retrieval system rigged and tested']},
@@ -12916,6 +13023,7 @@ function ptwNew(){
   if(conSel){conSel.innerHTML='<option value="">Internal / No contractor</option>';try{api('/contractors?select=id,contractor_name&status=eq.approved'+cf()).then(function(d){(d||[]).forEach(function(c){var o=document.createElement('option');o.value=c.id;o.textContent=c.contractor_name;conSel.appendChild(o);});});}catch(ex){}}
   var woSel=document.getElementById('pf-wo');
   if(woSel){woSel.innerHTML='<option value="">None</option>';try{api('/work_schedule?select=id,title,ref_number'+cf()+'&order=planned_start.desc&limit=30').then(function(d){(d||[]).forEach(function(w){var o=document.createElement('option');o.value=w.id;o.textContent=(w.ref_number||'WO')+' — '+w.title;woSel.appendChild(o);});});}catch(ex){}}
+  ptwLoadReferenceOptions();
   ptwSetView('form');
 }
 
@@ -12928,9 +13036,7 @@ function ptwSelectType(type){
   // Build precautions
   var el=document.getElementById('ptw-precautions-list');
   el.innerHTML=cfg.precautions.map(function(p){
-    return '<div style="display:flex;align-items:center;gap:8px;padding:7px 12px;background:#f9fafb;border-radius:6px;margin-bottom:4px">'
-      +'<input type="checkbox" style="accent-color:var(--green);flex-shrink:0" checked>'
-      +'<span style="font-size:12px">'+escH(p)+'</span></div>';
+    return ptwPrecautionRow(p,true);
   }).join('');
   // Type-specific form
   ptwBuildTypeForm(type);
@@ -13117,8 +13223,7 @@ function ptwEditCurrent(){
   g('pf-dept',x.department);
   g('pf-receiver',x.permit_receiver_name||x.permit_receiver);
   g('pf-team',x.team_members);
-  g('pf-ra-ref',x.ra_ref);
-  g('pf-ms-ref',x.method_statement_ref);
+  ptwLoadReferenceOptions(x.ra_ref,x.method_statement_ref);
   g('pf-priority',x.priority||'medium');
   g('pf-risk',x.risk_level||'medium');
   g('pf-approval-levels',String(x.approval_level_required||3));
@@ -13133,9 +13238,7 @@ function ptwEditCurrent(){
   if(el3&&Array.isArray(x.precautions_checklist)&&x.precautions_checklist.length){
     el3.innerHTML=x.precautions_checklist.map(function(p){
       var item=typeof p==='string'?p:(p.item||p);var checked=typeof p==='object'&&p.checked;
-      return '<div style="display:flex;align-items:center;gap:8px;padding:7px 12px;background:#f9fafb;border-radius:6px;margin-bottom:4px">'
-        +'<input type="checkbox" style="accent-color:var(--green);flex-shrink:0" '+(checked?'checked':'')+'>'
-        +'<span style="font-size:12px">'+escH(item)+'</span></div>';
+      return ptwPrecautionRow(item,checked);
     }).join('');
   }else if(el3)ptwSelectType(type);
   ptwSetView('form');
@@ -25261,10 +25364,16 @@ document.addEventListener('click', function(e) {
 });
 
 async function saveNotifSettings() {
-  var updates = { event_recipients: collectNotifEventRecipients(), updated_at: new Date().toISOString() };
-  Object.assign(updates, _notifToggles || {});
   try {
     var existing = await api('/notification_settings?company_id=eq.' + prof.company_id + '&limit=1');
+    var mergedRules = collectNotifEventRecipients();
+    if (existing && existing[0] && existing[0].event_recipients) {
+      var oldRules = existing[0].event_recipients;
+      if (typeof oldRules === 'string') { try { oldRules = JSON.parse(oldRules); } catch(_) { oldRules = {}; } }
+      if (oldRules.permit_approvers) mergedRules.permit_approvers = oldRules.permit_approvers;
+    }
+    var updates = { event_recipients: mergedRules, updated_at: new Date().toISOString() };
+    Object.assign(updates, _notifToggles || {});
     if (existing && existing[0]) {
       await api('/notification_settings?company_id=eq.' + prof.company_id, {m:'PATCH', p:'return=minimal', b:updates});
     } else {
@@ -31249,8 +31358,8 @@ function fireEquipStatusBadge(s) {
 <div class="card" style="margin-bottom:14px;border-left:4px solid #1D9E75">
 <div class="card-title" style="color:#1D9E75"><i class="ti ti-link"></i> Linked Documents &amp; Smart Checks</div>
 <div class="form-row">
-<div class="form-group"><label class="form-label">Risk Assessment ref.</label><input type="text" id="pf-ra-ref" style="font-family:monospace" placeholder="Required — RA must exist"/></div>
-<div class="form-group"><label class="form-label">Method Statement ref.</label><input type="text" id="pf-ms-ref" style="font-family:monospace"/></div>
+<div class="form-group"><label class="form-label">Risk Assessment ref.</label><select id="pf-ra-ref" style="font-family:monospace"><option value="">Select risk assessment...</option></select></div>
+<div class="form-group"><label class="form-label">Method Statement ref.</label><select id="pf-ms-ref" style="font-family:monospace"><option value="">Select method statement / SOP...</option></select></div>
 <div class="form-group"><label class="form-label">Work Order ref.</label><select id="pf-wo"><option value="">None</option></select></div>
 </div>
 <div id="ptw-smart-check-panel" style="margin-top:10px"></div>
@@ -36637,6 +36746,12 @@ I can help you:<br>
 </style>
 
 <div class="card"><div class="card-title">My profile</div><div id="my-profile-info"></div></div>
+
+<div class="card" id="settings-ptw-approver-card" style="display:none">
+  <div class="card-title" style="display:flex;align-items:center;gap:8px"><i class="ti ti-certificate" style="color:#185FA5"></i>Permit Approval Settings</div>
+  <div style="font-size:12px;color:var(--text2);margin-bottom:14px">Define who approves Permit to Work requests at Level 1, Level 2 and Level 3.</div>
+  <div id="ptw-approver-settings-body"><div class="loading">Loading approvers...</div></div>
+</div>
 
 <div class="card" id="settings-notif-card" style="display:none">
   <div class="card-title" style="display:flex;align-items:center;gap:8px"><i class="ti ti-bell" style="color:var(--green)"></i>Email Notifications</div>
