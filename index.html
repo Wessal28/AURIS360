@@ -18988,7 +18988,9 @@ async function legalParsePdfFile(file){
       pages.push('');
       if(msg)msg.textContent='Reading PDF page '+p+' of '+pdf.numPages+'...';
     }
-    legalPdfImportRows=legalParseActSections(pages.join('\n'));
+    var fullText=pages.join('\n');
+    legalApplyPdfMetadata(fullText,file.name);
+    legalPdfImportRows=legalParseActSections(fullText);
     legalRenderPdfPreview(legalPdfImportRows,file.name);
   }catch(e){
     legalPdfImportRows=[];
@@ -18999,6 +19001,72 @@ async function legalParsePdfFile(file){
 
 function legalCleanPdfLine(line){
   return (line||'').replace(/\s+/g,' ').replace(/\s+([,.;:])/g,'$1').trim();
+}
+
+function legalApplyPdfMetadata(text,fileName){
+  var meta=legalDetectLegislationMeta(text,fileName);
+  var legEl=document.getElementById('lr-pdf-legislation');
+  var prefixEl=document.getElementById('lr-pdf-prefix');
+  if(meta.legislation&&legEl)legEl.value=meta.legislation;
+  if(meta.prefix&&prefixEl)prefixEl.value=meta.prefix;
+}
+
+function legalDetectLegislationMeta(text,fileName){
+  var cleaned=(text||'').replace(/\s+/g,' ').trim();
+  var upper=cleaned.toUpperCase();
+  var name='';
+  var known=[
+    {re:/OCCUPATIONAL\s+SAFETY\s+AND\s+HEALTH\s+ACT/i,name:'Occupational Safety and Health Act 2005',prefix:'OSH'},
+    {re:/ENVIRONMENT\s+PROTECTION\s+ACT/i,name:'Environment Protection Act 2002',prefix:'EPA'},
+    {re:/FIRE\s+SERVICES\s+ACT/i,name:'Fire Services Act',prefix:'FIRE'},
+    {re:/WORKERS'?[\s-]+RIGHTS\s+ACT/i,name:'Workers Rights Act',prefix:'WRA'},
+    {re:/EMPLOYMENT\s+RIGHTS\s+ACT/i,name:'Employment Rights Act',prefix:'ERA'}
+  ];
+  for(var i=0;i<known.length;i++){
+    if(known[i].re.test(cleaned))return {legislation:known[i].name,prefix:known[i].prefix};
+  }
+  var shortTitle=cleaned.match(/This\s+(Act|Regulation|Regulations)\s+may\s+be\s+cited\s+as\s+the\s+([^.;]+?)(?:\.|,| and shall|$)/i);
+  if(shortTitle&&shortTitle[2])name=legalCleanLegislationName(shortTitle[2]);
+  if(!name){
+    var title=upper.match(/([A-Z][A-Z\s,'()&-]{8,}?(?:ACT|REGULATIONS?|ORDER|RULES)(?:\s+NO\.?\s*\d+\s+OF\s+\d{4}|\s+\d{4})?)/);
+    if(title&&title[1])name=legalTitleCase(legalCleanLegislationName(title[1]));
+  }
+  if(!name&&fileName){
+    name=legalTitleCase(legalCleanLegislationName(fileName.replace(/\.pdf$/i,'').replace(/^\d+[\.\-\s]*/,'')));
+  }
+  return {legislation:name||'Imported Legal Act',prefix:legalMakeLegislationPrefix(name||fileName||'LEG')};
+}
+
+function legalCleanLegislationName(name){
+  return (name||'')
+    .replace(/\s*\(\d+\)\s*$/,'')
+    .replace(/\s+No\.?\s*\d+\s+of\s+\d{4}/i,'')
+    .replace(/[,;]\s*$/,'')
+    .replace(/\s+/g,' ')
+    .trim();
+}
+
+function legalTitleCase(s){
+  var small={and:1,of:1,the:1,in:1,on:1,for:1,to:1,a:1,an:1};
+  return (s||'').toLowerCase().split(/\s+/).map(function(w,i){
+    if(i>0&&small[w])return w;
+    return w.charAt(0).toUpperCase()+w.slice(1);
+  }).join(' ').replace(/\bOsha\b/g,'OSHA').replace(/\bOsh\b/g,'OSH').replace(/\bIso\b/g,'ISO');
+}
+
+function legalMakeLegislationPrefix(name){
+  var n=(name||'').toUpperCase();
+  if(/OCCUPATIONAL\s+SAFETY\s+AND\s+HEALTH|OSH\b/.test(n))return 'OSH';
+  if(/ENVIRONMENT\s+PROTECTION/.test(n))return 'EPA';
+  if(/FIRE/.test(n))return 'FIRE';
+  if(/WORKERS'?[\s-]+RIGHTS/.test(n))return 'WRA';
+  if(/EMPLOYMENT\s+RIGHTS/.test(n))return 'ERA';
+  var words=n.replace(/[^A-Z0-9\s]/g,' ').split(/\s+/).filter(function(w){
+    return w&&!['THE','OF','AND','ACT','REGULATION','REGULATIONS','NO','NUMBER','REVISED','LAWS','MAURITIUS'].includes(w)&&!/^\d+$/.test(w);
+  });
+  var prefix=words.slice(0,3).map(function(w){return w.charAt(0);}).join('');
+  if(prefix.length<2)prefix=(words[0]||'LEG').slice(0,4);
+  return (prefix||'LEG').slice(0,8);
 }
 
 function legalParseActSections(text){
