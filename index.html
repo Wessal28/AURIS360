@@ -12441,6 +12441,23 @@ function raFormTab_withBowtie(tab, btn){
 let ptwAllData=[], ptwEditingId=null, ptwCurrentId=null, ptwActiveFilter='active';
 let ptwGasTests=[], ptwIsolations=[];
 
+function ptwCurrentIssuer(){
+  return {
+    id: prof?.id || null,
+    name: prof?.full_name || prof?.email || 'Current user'
+  };
+}
+
+function ptwFillIssuerDisplay(saved){
+  var issuer=ptwCurrentIssuer();
+  var id=(saved&&saved.id)||issuer.id||'';
+  var name=(saved&&saved.name)||issuer.name||'Current user';
+  var hid=document.getElementById('pf-issuer');
+  var txt=document.getElementById('pf-issuer-name');
+  if(hid)hid.value=id;
+  if(txt)txt.value=name;
+}
+
 const PTW_TYPE_CFG={
   hot_work:        {label:'Hot Work',        emoji:'🔥', color:'#DC2626', bg:'#FEF2F2', precautions:['Area clear of flammable materials within 10m','Fire extinguisher standby — CO₂ or dry powder','Fire watch posted during and 30min after work','Hot work permit displayed at work location','Welding screens / flash barriers in place','Fire alarm isolated if required and re-activated after','All drains / openings covered to prevent spark entry']},
   confined_space:  {label:'Confined Space',  emoji:'🚪', color:'#7C3AED', bg:'#F5F3FF', precautions:['Atmosphere tested — O₂ 19.5-23.5%, LEL<10%, H₂S<5ppm, CO<25ppm','Rescue equipment and standby person in place','Continuous gas monitoring required during entry','Non-sparking tools to be used','Adequate ventilation established','Entry/exit log maintained at entry point','Emergency retrieval system rigged and tested']},
@@ -12525,7 +12542,7 @@ function ptwRenderList(){
 
   var filtered=ptwAllData.filter(function(x){
     var mFilter=ptwActiveFilter==='active'?['active','pending_approval','approved','suspended'].includes(x.status):true;
-    var mSearch=!search||(x.permit_number||'').toLowerCase().includes(search)||(x.location||'').toLowerCase().includes(search)||(x.work_location||'').toLowerCase().includes(search)||(x.permit_type||'').toLowerCase().includes(search);
+    var mSearch=!search||(x.permit_number||'').toLowerCase().includes(search)||(x.location||'').toLowerCase().includes(search)||(x.work_location||'').toLowerCase().includes(search)||(x.permit_type||'').toLowerCase().includes(search)||(x.work_description||'').toLowerCase().includes(search);
     var mType=!ftype||(x.permit_type===ftype||x.permit_type_v2===ftype);
     var mStatus=!fstatus||x.status===fstatus;
     return mFilter&&mSearch&&mType&&mStatus;
@@ -12533,52 +12550,50 @@ function ptwRenderList(){
 
   if(!filtered.length){
     el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)">'
-      +'<div style="font-size:40px;margin-bottom:12px">🔑</div>'
+      +'<div style="font-size:40px;margin-bottom:12px">-</div>'
       +'<div style="font-weight:600;margin-bottom:8px">No permits found</div>'
       +(isMgr()?'<button class="btn btn-primary" onclick="ptwNew()"><i class="ti ti-plus"></i>Issue first permit</button>':'')
       +'</div>';
     return;
   }
 
-  var h='';
-  filtered.forEach(function(x){
+  var h='<div style="overflow:auto"><table style="width:100%;min-width:1180px;border-collapse:collapse;font-size:12px;background:#fff">'
+    +'<thead><tr style="background:#1a3a5c;color:#fff">'
+    +'<th style="padding:10px;text-align:left;font-weight:700">Permit No.</th>'
+    +'<th style="padding:10px;text-align:left;font-weight:700">Type</th>'
+    +'<th style="padding:10px;text-align:left;font-weight:700">Work / Location</th>'
+    +'<th style="padding:10px;text-align:left;font-weight:700">Issuer</th>'
+    +'<th style="padding:10px;text-align:left;font-weight:700">Receiver</th>'
+    +'<th style="padding:10px;text-align:left;font-weight:700">Start</th>'
+    +'<th style="padding:10px;text-align:left;font-weight:700">End</th>'
+    +'<th style="padding:10px;text-align:center;font-weight:700">Risk</th>'
+    +'<th style="padding:10px;text-align:center;font-weight:700">Status</th>'
+    +'<th style="padding:10px;text-align:center;font-weight:700">Action</th>'
+    +'</tr></thead><tbody>';
+  filtered.forEach(function(x,i){
     var type=x.permit_type_v2||x.permit_type||'hot_work';
     var cfg=PTW_TYPE_CFG[type]||PTW_TYPE_CFG.hot_work;
     var sc=PTW_STATUS_CFG[x.status]||PTW_STATUS_CFG.draft;
     var isOverdue=['active','approved'].includes(x.status)&&x.planned_end&&new Date(x.planned_end)<now;
-    var startStr=x.planned_start?new Date(x.planned_start).toLocaleDateString('en-GB'):'—';
-    var endStr=x.planned_end?new Date(x.planned_end).toLocaleDateString('en-GB'):'—';
-    h+='<div class="card" style="margin:0 0 10px;padding:0;overflow:hidden;border:1px solid '+(isOverdue?cfg.color:'var(--border)')+';cursor:pointer;transition:box-shadow .15s" '
-      +'data-id="'+x.id+'" onclick="ptwShowDetail(this.dataset.id)" '
-      +'onmouseover="this.style.boxShadow=\'0 4px 16px rgba(0,0,0,.1)\'" onmouseout="this.style.boxShadow=\'\'">'
-      +'<div style="display:flex;align-items:stretch">'
-      +'<div style="width:6px;background:'+cfg.color+';flex-shrink:0"></div>'
-      +'<div style="padding:14px;display:flex;align-items:center;border-right:1px solid var(--border)">'
-      +'<div style="width:46px;height:46px;border-radius:12px;background:'+cfg.bg+';display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0">'+cfg.emoji+'</div></div>'
-      +'<div style="flex:1;padding:12px 16px;min-width:0">'
-      +'<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:6px">'
-      +'<div>'
-      +'<div style="display:flex;align-items:center;gap:8px;margin-bottom:3px">'
-      +'<span style="font-family:monospace;font-size:12px;font-weight:700;color:'+cfg.color+'">'+escH(x.permit_number||'DRAFT')+'</span>'
-      +(isOverdue?'<span style="background:#FCEBEB;color:#A32D2D;padding:1px 7px;border-radius:4px;font-size:10px;font-weight:700">OVERDUE</span>':'')
-      +'</div>'
-      +'<div style="font-weight:700;font-size:14px">'+escH(cfg.emoji+' '+cfg.label)+'</div>'
-      +'</div>'
-      +'<div style="display:flex;gap:6px;flex-wrap:wrap">'
-      +'<span style="background:'+sc[0]+';color:'+sc[1]+';padding:2px 9px;border-radius:99px;font-size:11px;font-weight:700">'+sc[2]+'</span>'
-      +'</div></div>'
-      +'<div style="font-size:12px;color:var(--text2);display:flex;gap:14px;flex-wrap:wrap">'
-      +(x.work_location||x.location?'<span><i class="ti ti-map-pin" style="font-size:10px"></i> '+escH(x.work_location||x.location||'')+'</span>':'')
-      +(x.permit_receiver_name||x.permit_receiver?'<span><i class="ti ti-user" style="font-size:10px"></i> '+escH(x.permit_receiver_name||x.permit_receiver||'')+'</span>':'')
-      +'<span><i class="ti ti-calendar" style="font-size:10px"></i> '+startStr+(x.planned_end?' → '+endStr:'')+'</span>'
-      +'</div></div>'
-      +'<div style="padding:14px;display:flex;align-items:center;color:var(--text3)">'
-      +'<i class="ti ti-chevron-right" style="font-size:18px"></i></div>'
-      +'</div></div>';
+    var startStr=x.planned_start?new Date(x.planned_start).toLocaleString('en-GB'):'-';
+    var endStr=x.planned_end?new Date(x.planned_end).toLocaleString('en-GB'):'-';
+    var risk=x.risk_level||x.priority||'medium';
+    var riskCfg={low:['#EAF3DE','#3B6D11'],medium:['#FEF9EC','#854F0B'],high:['#FEF6E7','#C2410C'],critical:['#FCEBEB','#A32D2D']}[risk]||['#f3f4f6','#6B7280'];
+    h+='<tr style="background:'+(i%2?'#f9fafb':'#fff')+';border-bottom:1px solid #eef2f7;border-left:5px solid '+(isOverdue?'#A32D2D':cfg.color)+';cursor:pointer" data-id="'+x.id+'" onclick="ptwShowDetail(this.dataset.id)">'
+      +'<td style="padding:9px 10px;font-family:monospace;font-weight:800;color:'+cfg.color+'">'+escH(x.permit_number||'DRAFT')+(isOverdue?'<div style="font-size:10px;color:#A32D2D;font-weight:800">OVERDUE</div>':'')+'</td>'
+      +'<td style="padding:9px 10px"><span style="background:'+cfg.bg+';color:'+cfg.color+';padding:3px 8px;border-radius:99px;font-size:10px;font-weight:800">'+escH(cfg.label)+'</span></td>'
+      +'<td style="padding:9px 10px;min-width:280px"><div style="font-weight:700;line-height:1.25">'+escH((x.work_description||'Permit work').substring(0,110))+(x.work_description&&x.work_description.length>110?'...':'')+'</div><div style="font-size:11px;color:var(--text2);margin-top:2px">'+escH(x.work_location||x.location||'-')+'</div></td>'
+      +'<td style="padding:9px 10px">'+escH(x.permit_issuer_name||x.issued_by||'-')+'</td>'
+      +'<td style="padding:9px 10px">'+escH(x.permit_receiver_name||x.permit_receiver||'-')+'</td>'
+      +'<td style="padding:9px 10px;white-space:nowrap">'+escH(startStr)+'</td>'
+      +'<td style="padding:9px 10px;white-space:nowrap">'+escH(endStr)+'</td>'
+      +'<td style="padding:9px 10px;text-align:center"><span style="background:'+riskCfg[0]+';color:'+riskCfg[1]+';padding:3px 8px;border-radius:99px;font-size:10px;font-weight:800;text-transform:capitalize">'+escH(risk)+'</span></td>'
+      +'<td style="padding:9px 10px;text-align:center"><span style="background:'+sc[0]+';color:'+sc[1]+';padding:3px 8px;border-radius:99px;font-size:10px;font-weight:800">'+escH(sc[2])+'</span></td>'
+      +'<td style="padding:9px 10px;text-align:center"><button class="btn btn-sm" onclick="event.stopPropagation();ptwShowDetail(\''+x.id+'\')"><i class="ti ti-eye"></i></button></td>'
+      +'</tr>';
   });
-  el.innerHTML=h;
+  el.innerHTML=h+'</tbody></table></div>';
 }
-
 function ptwShowList(){
   ptwSetView('list');
   ptwRenderList();
@@ -12895,9 +12910,8 @@ function ptwNew(){
   var weather=document.getElementById('pf-weather-check');if(weather)weather.checked=false;
   // Uncheck all PPE
   document.querySelectorAll('#ptw-ppe-checks input[type="checkbox"]').forEach(function(cb){cb.checked=false;});
-  // Populate dropdowns
-  var issuerSel=document.getElementById('pf-issuer');
-  if(issuerSel){issuerSel.innerHTML='<option value="">Select issuer...</option>';(people||[]).forEach(function(p){var o=document.createElement('option');o.value=p.id;o.textContent=p.last_name+', '+p.first_name+(p.job_title?' — '+p.job_title:'');issuerSel.appendChild(o);});}
+  // Permit issuer is automatically captured from the logged-in user.
+  ptwFillIssuerDisplay();
   var conSel=document.getElementById('pf-contractor');
   if(conSel){conSel.innerHTML='<option value="">Internal / No contractor</option>';try{api('/contractors?select=id,contractor_name&status=eq.approved'+cf()).then(function(d){(d||[]).forEach(function(c){var o=document.createElement('option');o.value=c.id;o.textContent=c.contractor_name;conSel.appendChild(o);});});}catch(ex){}}
   var woSel=document.getElementById('pf-wo');
@@ -13033,9 +13047,10 @@ async function ptwSave(targetStatus){
   // Blocked if no RA ref
   var blocks=[];
   if(!g('pf-ra-ref'))blocks.push('Risk Assessment reference missing');
-  // Issuer
-  var issuerId=g('pf-issuer');var issuerName='';
-  if(issuerId){var p=(people||[]).find(function(x){return x.id===issuerId;});issuerName=p?(p.last_name+', '+p.first_name):'';}
+  // Issuer is automatically captured from the logged-in user.
+  var issuer=ptwCurrentIssuer();
+  var issuerId=issuer.id;
+  var issuerName=issuer.name;
   var body={
     company_id:ccid(),
     permit_type_v2:type,permit_type:type,
@@ -13110,8 +13125,7 @@ function ptwEditCurrent(){
   if(x.planned_start){var el=document.getElementById('pf-start');if(el)el.value=x.planned_start.slice(0,16);}
   if(x.planned_end){var el2=document.getElementById('pf-end');if(el2)el2.value=x.planned_end.slice(0,16);}
   var wc=document.getElementById('pf-weather-check');if(wc)wc.checked=!!x.requires_weather_check;
-  var issuerSel=document.getElementById('pf-issuer');
-  if(issuerSel){issuerSel.innerHTML='<option value="">Select...</option>';(people||[]).forEach(function(p){var o=document.createElement('option');o.value=p.id;o.textContent=p.last_name+', '+p.first_name;issuerSel.appendChild(o);});issuerSel.value=x.permit_issuer_id||'';}
+  ptwFillIssuerDisplay({id:x.permit_issuer_id||prof?.id||'',name:x.permit_issuer_name||x.issued_by||prof?.full_name||prof?.email||'Current user'});
   // PPE
   if(Array.isArray(x.ppe_required)){document.querySelectorAll('#ptw-ppe-checks input[type="checkbox"]').forEach(function(cb){cb.checked=x.ppe_required.includes(cb.value);});}
   ptwBuildTypeForm(type);
@@ -31224,7 +31238,7 @@ function fireEquipStatusBadge(s) {
 <div class="card" style="margin-bottom:14px;border-left:4px solid #8B5CF6">
 <div class="card-title" style="color:#8B5CF6"><i class="ti ti-users"></i> Personnel</div>
 <div class="form-row">
-<div class="form-group"><label class="form-label">Permit issuer</label><select id="pf-issuer"><option value="">Select issuer...</option></select></div>
+<div class="form-group"><label class="form-label">Permit issuer</label><input type="text" id="pf-issuer-name" readonly style="background:#f9fafb;font-weight:700" placeholder="Filled automatically"/><input type="hidden" id="pf-issuer"/></div>
 <div class="form-group"><label class="form-label">Permit receiver / Site supervisor</label><input type="text" id="pf-receiver" placeholder="Name of person accepting the permit"/></div>
 <div class="form-group"><label class="form-label">Contractor (if applicable)</label><select id="pf-contractor"><option value="">Internal / No contractor</option></select></div>
 </div>
@@ -31253,7 +31267,7 @@ function fireEquipStatusBadge(s) {
 <label style="display:flex;align-items:center;gap:6px;font-size:12px;background:#f9fafb;padding:6px 10px;border-radius:8px;border:1px solid var(--border);cursor:pointer"><input type="checkbox" value="Safety helmet" style="accent-color:var(--green)"> Safety helmet</label>
 <label style="display:flex;align-items:center;gap:6px;font-size:12px;background:#f9fafb;padding:6px 10px;border-radius:8px;border:1px solid var(--border);cursor:pointer"><input type="checkbox" value="Safety glasses" style="accent-color:var(--green)"> Safety glasses</label>
 <label style="display:flex;align-items:center;gap:6px;font-size:12px;background:#f9fafb;padding:6px 10px;border-radius:8px;border:1px solid var(--border);cursor:pointer"><input type="checkbox" value="Face shield" style="accent-color:var(--green)"> Face shield</label>
-<label style="display:flex;align-items:center;gap=6px;font-size:12px;background:#f9fafb;padding:6px 10px;border-radius:8px;border:1px solid var(--border);cursor:pointer"><input type="checkbox" value="Flame-resistant clothing" style="accent-color:var(--green)"> FR clothing</label>
+<label style="display:flex;align-items:center;gap:6px;font-size:12px;background:#f9fafb;padding:6px 10px;border-radius:8px;border:1px solid var(--border);cursor:pointer"><input type="checkbox" value="Flame-resistant clothing" style="accent-color:var(--green)"> FR clothing</label>
 <label style="display:flex;align-items:center;gap:6px;font-size:12px;background:#f9fafb;padding:6px 10px;border-radius:8px;border:1px solid var(--border);cursor:pointer"><input type="checkbox" value="Safety gloves" style="accent-color:var(--green)"> Safety gloves</label>
 <label style="display:flex;align-items:center;gap:6px;font-size:12px;background:#f9fafb;padding:6px 10px;border-radius:8px;border:1px solid var(--border);cursor:pointer"><input type="checkbox" value="Safety boots" style="accent-color:var(--green)"> Safety boots</label>
 <label style="display:flex;align-items:center;gap:6px;font-size:12px;background:#f9fafb;padding:6px 10px;border-radius:8px;border:1px solid var(--border);cursor:pointer"><input type="checkbox" value="SCBA / Breathing apparatus" style="accent-color:var(--green)"> SCBA / BA</label>
