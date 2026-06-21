@@ -5971,7 +5971,7 @@ async function chemLoad(){
   el.innerHTML='<div class="loading-msg">Loading...</div>';
   try{
     var d=await api('/chemical_register?select=*'+cf()+'&order=product_name.asc');
-    chemData=d||[];
+    chemData=(d||[]).filter(function(x){return x.status!=='deleted';});
     chemRenderMetrics();
     chemRenderTable();
   }catch(e){
@@ -6231,7 +6231,10 @@ async function chemDelete(){
   if(!chemEditId||!confirm('Delete this chemical record?'))return;
   try{
     var deleted=await api('/chemical_register?id=eq.'+encodeURIComponent(chemEditId),{m:'DELETE',p:'return=representation'});
-    if(Array.isArray(deleted)&&!deleted.length){toast('Delete failed: record not found or permission denied',false);return;}
+    if(Array.isArray(deleted)&&!deleted.length){
+      var archived=await api('/chemical_register?id=eq.'+encodeURIComponent(chemEditId),{m:'PATCH',p:'return=representation',b:{status:'deleted',updated_at:new Date().toISOString()}});
+      if(Array.isArray(archived)&&!archived.length){toast('Delete failed: record not found or permission denied',false);return;}
+    }
     chemData=chemData.filter(function(x){return x.id!==chemEditId;});
     toast('Deleted');
     chemBack();

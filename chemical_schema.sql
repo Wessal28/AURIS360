@@ -160,7 +160,7 @@ using (
         p.role = 'sephs_admin'
         or (
           p.company_id = chemical_register.company_id
-          and p.role in ('company_admin','hse_manager','manager','admin')
+          and p.role in ('company_admin','hse_manager','site_manager','supervisor','manager','admin')
         )
       )
   )
