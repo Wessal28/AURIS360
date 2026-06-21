@@ -6229,7 +6229,13 @@ async function chemSave(){
 
 async function chemDelete(){
   if(!chemEditId||!confirm('Delete this chemical record?'))return;
-  try{await api('/chemical_register?id=eq.'+chemEditId+cf(),{m:'DELETE'});toast('Deleted');chemBack();}
+  try{
+    var deleted=await api('/chemical_register?id=eq.'+encodeURIComponent(chemEditId),{m:'DELETE',p:'return=representation'});
+    if(Array.isArray(deleted)&&!deleted.length){toast('Delete failed: record not found or permission denied',false);return;}
+    chemData=chemData.filter(function(x){return x.id!==chemEditId;});
+    toast('Deleted');
+    chemBack();
+  }
   catch(e){toast('Delete failed: '+e.message,false);}
 }
 
