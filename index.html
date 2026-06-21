@@ -6212,6 +6212,7 @@ async function chemSave(){
       var updateBody=Object.assign({},body);
       delete updateBody.company_id;
       var updated=await api('/chemical_register?id=eq.'+chemEditId,{m:'PATCH',p:'return=representation',b:updateBody});
+      if(Array.isArray(updated)&&!updated.length){throw new Error('Supabase policy blocked the update. Run chemical_rls_fix.sql in Supabase SQL Editor.');}
       var original=chemData.find(function(x){return x.id===chemEditId;})||{};
       var saved=Object.assign({},original,updateBody,updated?.[0]||{});
       chemData=chemData.map(function(x){return x.id===chemEditId?saved:x;});
