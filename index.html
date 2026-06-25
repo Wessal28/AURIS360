@@ -11932,8 +11932,11 @@ async function raLoadTemplates(){
     {id:'tpl-manual-handling',name:'Manual Handling',type:'baseline',emoji:'💪',desc:'Manual handling risk assessment'},
     {id:'tpl-confined',name:'Confined Space Entry',type:'task',emoji:'🚪',desc:'Task-based RA for confined space entry'},
     {id:'tpl-hot-work',name:'Hot Work',type:'baseline',emoji:'🔥',desc:'Welding, cutting and grinding operations'},
+    {id:'tpl-fire',name:'Fire Risk Assessment',type:'baseline',emoji:'FR',desc:'Fire hazards, escape routes, ignition sources and emergency controls'},
     {id:'tpl-lifting',name:'Lifting Operations',type:'task',emoji:'🏗️',desc:'Crane and lifting equipment operations'},
     {id:'tpl-chemical',name:'Chemical Handling',type:'baseline',emoji:'🧪',desc:'Chemical use, storage and disposal'},
+    {id:'tpl-machinery',name:'Machinery Risk Assessment',type:'task',emoji:'MR',desc:'Machine guarding, isolation, entanglement and maintenance risks'},
+    {id:'tpl-atex',name:'ATEX / Hazardous Area',type:'baseline',emoji:'EX',desc:'Explosive atmospheres, ignition sources and zoned area controls'},
     {id:'tpl-excavation',name:'Excavation',type:'task',emoji:'⛏️',desc:'Excavation and trenching operations'},
     {id:'tpl-driving',name:'Driving / Vehicle',type:'baseline',emoji:'🚗',desc:'Fleet and site vehicle risk assessment'},
     {id:'tpl-environmental',name:'Environmental RA',type:'environmental',emoji:'🌿',desc:'Environmental impact assessment'}
@@ -11973,6 +11976,56 @@ function raLoadTemplate(tplId){
       {hazard:'Inhalation of welding fumes',harm:'Respiratory disease, lung cancer',who:'Welder',rs:4,rop:4,controls:'LEV system or forced ventilation. RPE: FFP3 or welding fume mask. Work upwind.',hoc_level:'engineering',res_s:4,res_p:1},
       {hazard:'UV radiation from welding arc',harm:'Arc eye, skin burns',who:'Welder and nearby workers',rs:3,rop:4,controls:'Welding screens. Welding helmet auto-darkening. Bystanders excluded from arc zone.',hoc_level:'engineering',res_s:3,res_p:1},
       {hazard:'Contact with hot surfaces/spatter',harm:'Burns',who:'Welder',rs:3,rop:4,controls:'FR clothing. Leather welding gloves. Welding apron. Hot work warning signs.',hoc_level:'ppe',res_s:3,res_p:2}
+    ]},
+    'tpl-fire':{type:'baseline',title:'Fire Risk Assessment',rows:[
+      {hazard:'Ignition sources near combustible materials',harm:'Fire, burns, smoke inhalation, property damage',who:'All occupants',rs:5,rop:3,controls:'Control smoking and hot work. Keep combustibles away from ignition sources. Routine housekeeping inspections.',hoc_level:'administrative',res_s:5,res_p:1},
+      {hazard:'Blocked or inadequate escape routes',harm:'Delayed evacuation, injury during emergency',who:'Employees, visitors, contractors',rs:5,rop:3,controls:'Escape routes kept clear and signed. Emergency lighting maintained. Monthly inspection of exits and assembly point.',hoc_level:'engineering',res_s:5,res_p:1},
+      {hazard:'Fire detection or alarm failure',harm:'Delayed warning and evacuation',who:'All occupants',rs:5,rop:2,controls:'Fire alarm tested at defined frequency. Defects logged and closed. Manual call points accessible.',hoc_level:'engineering',res_s:5,res_p:1},
+      {hazard:'Insufficient extinguisher coverage or wrong extinguisher type',harm:'Small fire not controlled at early stage',who:'Trained fire wardens',rs:4,rop:3,controls:'Extinguishers selected by fire class. Monthly visual checks. Annual service by competent provider.',hoc_level:'engineering',res_s:4,res_p:1},
+      {hazard:'Untrained occupants and weak emergency response',harm:'Panic, poor evacuation, delayed accountability',who:'All occupants',rs:4,rop:3,controls:'Fire induction, periodic drills, named fire wardens, evacuation roll call and drill lessons recorded.',hoc_level:'administrative',res_s:4,res_p:1}
+    ]},
+    'tpl-chemical':{type:'baseline',title:'Chemical / COSHH Risk Assessment',rows:[
+      {hazard:'Inhalation of vapours, fumes, mist or dust',harm:'Respiratory irritation, poisoning, occupational disease',who:'Chemical users and nearby workers',rs:5,rop:3,controls:'Review current SDS. Use closed handling or LEV/ventilation. Limit quantities in use. Air monitoring where required.',hoc_level:'engineering',res_s:5,res_p:1},
+      {hazard:'Skin or eye contact with hazardous substance',harm:'Chemical burns, dermatitis, eye injury',who:'Chemical users',rs:4,rop:3,controls:'Chemical-resistant gloves, goggles/face shield, apron. Eyewash/shower available. Good hygiene and no eating in work area.',hoc_level:'ppe',res_s:4,res_p:1},
+      {hazard:'Incorrect storage or incompatible chemicals stored together',harm:'Reaction, fire, toxic release, container failure',who:'Store users and site occupants',rs:5,rop:2,controls:'Segregate incompatible chemicals. Label containers. Bund/spill tray. Keep SDS and inventory available.',hoc_level:'engineering',res_s:5,res_p:1},
+      {hazard:'Chemical spill during transfer or use',harm:'Exposure, slip, environmental release',who:'Chemical users and cleaners',rs:4,rop:3,controls:'Use transfer aids. Spill kit and trained responders available. Protect drains. Dispose waste as hazardous waste.',hoc_level:'administrative',res_s:4,res_p:1},
+      {hazard:'Decanting into unlabelled or unsuitable containers',harm:'Misuse, accidental exposure, incompatible container failure',who:'All workers',rs:4,rop:3,controls:'Only approved labelled containers used. No food/drink containers. Supervisor checks and toolbox talk.',hoc_level:'administrative',res_s:4,res_p:1}
+    ]},
+    'tpl-machinery':{type:'task',title:'Machinery Risk Assessment',rows:[
+      {task:'Normal operation',hazard:'Entanglement, drawing-in or contact with moving parts',harm:'Amputation, crush injury, laceration',rs:5,rop:3,controls:'Fixed/interlocked guards in place. Emergency stop accessible. Operators trained and authorised.',hoc_level:'engineering',res_s:5,res_p:1},
+      {task:'Clearing jams or blockages',hazard:'Unexpected start-up or stored energy release',harm:'Crush injury, amputation, fatality',rs:5,rop:3,controls:'Stop machine, isolate energy, lock-out/tag-out, release stored energy, verify zero energy before intervention.',hoc_level:'elimination',res_s:5,res_p:1},
+      {task:'Maintenance or adjustment',hazard:'Exposure to moving parts with guards removed',harm:'Serious injury or fatality',rs:5,rop:3,controls:'Permit/LOTO for maintenance. Competent maintenance personnel only. Guards reinstated before restart.',hoc_level:'administrative',res_s:5,res_p:1},
+      {task:'Cleaning machinery',hazard:'Contact with sharp edges, hot surfaces or hazardous residues',harm:'Cuts, burns, chemical exposure',rs:4,rop:3,controls:'Cleaning method statement. Cool-down time. Correct tools and PPE. No cleaning while machine is running unless designed for it.',hoc_level:'administrative',res_s:4,res_p:1},
+      {task:'Material feed or discharge',hazard:'Manual handling and pinch points',harm:'Strains, crushed fingers, trapped hands',rs:4,rop:3,controls:'Use feed tools/fixtures. Keep hands clear. Team lifting or mechanical handling for heavy items.',hoc_level:'engineering',res_s:4,res_p:1}
+    ]},
+    'tpl-atex':{type:'baseline',title:'ATEX / Hazardous Area Risk Assessment',rows:[
+      {hazard:'Explosive atmosphere present in zoned area',harm:'Explosion, fire, fatality, major asset damage',who:'Workers, contractors and site occupants',rs:5,rop:3,controls:'Area classified by competent person. Zone drawings available. Access controlled and work authorised.',hoc_level:'administrative',res_s:5,res_p:1},
+      {hazard:'Ignition sources introduced into ATEX zone',harm:'Explosion or flash fire',who:'Workers and contractors',rs:5,rop:3,controls:'ATEX-rated equipment only. Hot work permit. No unauthorised phones/tools. Bonding/earthing verified.',hoc_level:'engineering',res_s:5,res_p:1},
+      {hazard:'Non-certified electrical or mechanical equipment installed',harm:'Ignition of flammable atmosphere',who:'Maintenance and operations',rs:5,rop:2,controls:'Equipment register maintained. Ex rating checked against zone. Inspection and maintenance regime in place.',hoc_level:'engineering',res_s:5,res_p:1},
+      {hazard:'Poor housekeeping or dust accumulation',harm:'Dust explosion or rapid fire spread',who:'Operations and cleaners',rs:5,rop:3,controls:'Cleaning schedule. Dust layers monitored. Vacuum/cleaning method suitable for hazardous area.',hoc_level:'administrative',res_s:5,res_p:1},
+      {hazard:'Loss of ventilation or gas detection failure',harm:'Undetected flammable atmosphere',who:'All persons in area',rs:5,rop:2,controls:'Ventilation alarms maintained. Gas detectors calibrated. Stop-work trigger defined for alarm/failure.',hoc_level:'engineering',res_s:5,res_p:1}
+    ]},
+    'tpl-driving':{type:'baseline',title:'Fleet / Vehicle Risk Assessment',rows:[
+      {hazard:'Vehicle not roadworthy or pre-use defects not identified',harm:'Road traffic accident, breakdown, injury',who:'Drivers, passengers and public',rs:5,rop:3,controls:'Daily/weekly vehicle checks. Defects reported and vehicle removed from service where safety critical.',hoc_level:'administrative',res_s:5,res_p:1},
+      {hazard:'Driver fatigue or excessive journey time',harm:'Loss of control, collision, fatality',who:'Drivers and road users',rs:5,rop:3,controls:'Journey planning. Rest breaks. No driving when fatigued. Working time monitored.',hoc_level:'administrative',res_s:5,res_p:1},
+      {hazard:'Reversing or manoeuvring on site',harm:'Struck-by incident, property damage',who:'Pedestrians, banksmen and drivers',rs:5,rop:3,controls:'Segregated traffic routes. Reversing aids. Banksman where required. Speed limits enforced.',hoc_level:'engineering',res_s:5,res_p:1},
+      {hazard:'Load shift or unsecured materials',harm:'Loss of vehicle control, falling objects',who:'Drivers, loaders and public',rs:4,rop:3,controls:'Load securing procedure. Rated straps/chains. Load check before departure and after stops.',hoc_level:'engineering',res_s:4,res_p:1},
+      {hazard:'Mobile phone use or distraction while driving',harm:'Collision, injury or fatality',who:'Drivers and road users',rs:5,rop:3,controls:'No phone use while driving. Hands-free only if company policy allows. Pull over safely before calls/messages.',hoc_level:'administrative',res_s:5,res_p:1}
+    ]},
+    'tpl-lifting':{type:'task',title:'Lifting Operations Risk Assessment',rows:[
+      {task:'Planning the lift',hazard:'Poor lift plan or incorrect equipment selection',harm:'Dropped load, overturn, crush injury',rs:5,rop:3,controls:'Lift plan prepared by competent person. Load weight, radius, ground conditions and exclusion zone confirmed.',hoc_level:'administrative',res_s:5,res_p:1},
+      {task:'Slinging and rigging',hazard:'Incorrect slinging, damaged accessories or poor load balance',harm:'Dropped load, struck-by injury',rs:5,rop:3,controls:'Certified lifting gear inspected before use. Competent slinger/signaller. Correct lifting points used.',hoc_level:'engineering',res_s:5,res_p:1},
+      {task:'Lifting and travelling load',hazard:'Personnel under suspended load',harm:'Fatal crush injury',rs:5,rop:3,controls:'Exclusion zone enforced. No person under suspended load. Clear communication between operator and signaller.',hoc_level:'administrative',res_s:5,res_p:1}
+    ]},
+    'tpl-excavation':{type:'task',title:'Excavation Risk Assessment',rows:[
+      {task:'Pre-dig checks',hazard:'Underground services struck during excavation',harm:'Electric shock, explosion, flooding, service outage',rs:5,rop:3,controls:'Permit to dig. Drawings reviewed. CAT scan and trial holes. Services marked before work starts.',hoc_level:'engineering',res_s:5,res_p:1},
+      {task:'Excavating trench',hazard:'Collapse of sides',harm:'Burial, crush injury, fatality',rs:5,rop:3,controls:'Shoring/battering/benching as required. Competent inspection. Spoil kept away from edge.',hoc_level:'engineering',res_s:5,res_p:1},
+      {task:'Access/egress and work near excavation',hazard:'Fall into excavation or poor emergency escape',harm:'Fracture, crush injury, delayed rescue',rs:4,rop:3,controls:'Edge protection, barriers and signage. Safe ladder access. Emergency arrangements in place.',hoc_level:'engineering',res_s:4,res_p:1}
+    ]},
+    'tpl-environmental':{type:'environmental',title:'Environmental Risk Assessment',rows:[
+      {hazard:'Spill or leak reaching drains/soil',harm:'Water or soil contamination, regulatory breach',who:'Site and environment',rs:4,rop:3,controls:'Bunding, drain covers, spill kits and trained responders. Store chemicals away from drains.',hoc_level:'engineering',res_s:4,res_p:1},
+      {hazard:'Waste incorrectly segregated or disposed',harm:'Pollution, fire risk, legal non-compliance',who:'Site and waste handlers',rs:3,rop:3,controls:'Waste streams labelled. Licensed contractor. Waste transfer notes/manifests retained.',hoc_level:'administrative',res_s:3,res_p:1},
+      {hazard:'Dust, noise or emissions affecting neighbours',harm:'Nuisance, complaints, enforcement action',who:'Community and workers',rs:3,rop:3,controls:'Control at source, monitoring, maintenance and complaint response process.',hoc_level:'engineering',res_s:3,res_p:1}
     ]}
   };
   var tpl=TEMPLATES[tplId];
