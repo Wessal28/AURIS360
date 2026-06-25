@@ -17036,7 +17036,7 @@ async function ppeQuickReplace(issId,empName,ppeName){
 // ===== TOOLS_JS.JS =====
 
 // ===== TOOLS & EQUIPMENT MODULE =====
-let toolsAllData=[], toolsEditingId=null, toolsInspEditingId=null, toolsInspEquipId=null;
+let toolsAllData=[], toolsEditingId=null, toolsInspEditingId=null, toolsInspEquipId=null, toolsRcdData=[];
 
 const TOOL_CAT_LABELS={hand_tool:'Hand tool',power_tool:'Power tool',equipment:'Equipment',vehicle:'Vehicle',lifting:'Lifting equipment',electrical:'Electrical',ppe:'PPE',other:'Other'};
 const TOOL_CAT_COLORS={hand_tool:'#185FA5',power_tool:'#854F0B',equipment:'#3B6D11',vehicle:'#185FA5',lifting:'#8B5CF6',electrical:'#EF9F27',ppe:'#1D9E75',other:'#6B7280'};
@@ -17045,15 +17045,16 @@ const TOOL_CAT_ICONS={hand_tool:'ti-hammer',power_tool:'ti-bolt',equipment:'ti-s
 function toolsSwitchTab(tab,btn){
   document.querySelectorAll('.mtg-tab').forEach(t=>t.classList.remove('active'));
   btn.classList.add('active');
-  ['register','personal','inspection','statutory','vehicles'].forEach(function(t){
+  ['register','personal','inspection','statutory','vehicles','rcd'].forEach(function(t){
     var el=document.getElementById('tools-view-'+t);if(el)el.style.display=t===tab?'block':'none';
   });
-  ['tools-form','tools-insp-form'].forEach(function(id){var el=document.getElementById(id);if(el)el.style.display='none';});
+  ['tools-form','tools-insp-form','tools-rcd-form'].forEach(function(id){var el=document.getElementById(id);if(el)el.style.display='none';});
   if(tab==='register')toolsLoadRegister();
   else if(tab==='personal')toolsLoadPersonal();
   else if(tab==='inspection')toolsLoadInspections();
   else if(tab==='statutory')toolsLoadStatutory();
   else if(tab==='vehicles')toolsLoadVehicles();
+  else if(tab==='rcd')toolsLoadRCD();
 }
 
 async function loadTools(){
@@ -17063,6 +17064,8 @@ async function loadTools(){
   if(inspBtn)inspBtn.style.display=isMgr()?'inline-flex':'none';
   var vehBtn=document.getElementById('veh-insp-btn');
   if(vehBtn)vehBtn.style.display=isMgr()?'inline-flex':'none';
+  var rcdBtn=document.getElementById('rcd-add-btn');
+  if(rcdBtn)rcdBtn.style.display=isMgr()?'inline-flex':'none';
   toolsLoadRegister();
 }
 
@@ -17214,8 +17217,9 @@ function toolsStatutoryChange(){
 }
 
 function toolsShowForm(){
-  ['tools-view-register','tools-view-personal','tools-view-inspection','tools-view-statutory','tools-view-vehicles'].forEach(function(id){var el=document.getElementById(id);if(el)el.style.display='none';});
+  ['tools-view-register','tools-view-personal','tools-view-inspection','tools-view-statutory','tools-view-vehicles','tools-view-rcd'].forEach(function(id){var el=document.getElementById(id);if(el)el.style.display='none';});
   document.getElementById('tools-insp-form').style.display='none';
+  var rcdForm=document.getElementById('tools-rcd-form');if(rcdForm)rcdForm.style.display='none';
   document.getElementById('tools-form').style.display='block';
 }
 
@@ -17428,7 +17432,7 @@ async function toolsStartInspection(toolId){
   // Load checklist
   await toolsLoadChecklist(tool.category);
   // Show form
-  ['tools-view-register','tools-view-personal','tools-view-inspection','tools-view-statutory','tools-view-vehicles'].forEach(function(id){var el=document.getElementById(id);if(el)el.style.display='none';});
+  ['tools-view-register','tools-view-personal','tools-view-inspection','tools-view-statutory','tools-view-vehicles','tools-view-rcd'].forEach(function(id){var el=document.getElementById(id);if(el)el.style.display='none';});
   document.getElementById('tools-form').style.display='none';
   document.getElementById('tools-insp-form').style.display='block';
 }
@@ -17531,6 +17535,138 @@ async function toolsSaveInspection(){
 }
 
 // ── STATUTORY VERIFICATION ───────────────────────────────────────────────────
+async function toolsLoadRCD(){
+  var el=document.getElementById('tools-rcd-list');
+  if(!el)return;
+  el.innerHTML='<div class="loading-msg">Loading...</div>';
+  try{
+    var tools=await api('/tools_register?category=eq.electrical'+cf()+'&order=name&select=*');
+    var tests=await api('/tool_inspections?inspection_type=eq.rcd_monthly'+cf()+'&order=inspection_date.desc&limit=300&select=*');
+    toolsRcdData=(tools||[]).filter(function(x){
+      var txt=((x.name||'')+' '+(x.ref_number||'')+' '+(x.model||'')+' '+(x.notes||'')+' '+(x.statutory_type||'')).toLowerCase();
+      return txt.indexOf('rcd')!==-1 || txt.indexOf('residual current')!==-1 || x.inspection_frequency==='monthly';
+    });
+    var lastByTool={};
+    (tests||[]).forEach(function(t){if(t.tool_id&&!lastByTool[t.tool_id])lastByTool[t.tool_id]=t;});
+    if(!toolsRcdData.length){
+      el.innerHTML='<div style="text-align:center;padding:42px;color:var(--text2)">'
+        +'<div style="font-size:38px;margin-bottom:10px"><i class="ti ti-plug-connected"></i></div>'
+        +'<div style="font-weight:700;margin-bottom:8px;color:var(--text)">No RCDs registered yet</div>'
+        +'<div style="font-size:12px;margin-bottom:14px">Add distribution boards or RCD devices, then record monthly push-button tests.</div>'
+        +(isMgr()?'<button class="btn btn-primary" onclick="toolsNewRCD()"><i class="ti ti-plus"></i>Add RCD / DB</button>':'')
+        +'</div>';
+      return;
+    }
+    var today=new Date();today.setHours(0,0,0,0);
+    var h='<div class="card" style="padding:0;overflow:hidden"><table style="width:100%;border-collapse:collapse;font-size:12px;min-width:980px">'
+      +'<thead><tr style="background:#1a3a5c;color:#fff">'
+      +'<th style="padding:9px 12px;text-align:left">Ref</th>'
+      +'<th style="padding:9px 12px;text-align:left">RCD / Distribution board</th>'
+      +'<th style="padding:9px 12px;text-align:left">Location</th>'
+      +'<th style="padding:9px 12px;text-align:left">Rating / type</th>'
+      +'<th style="padding:9px 12px;text-align:left">Last test</th>'
+      +'<th style="padding:9px 12px;text-align:left">Next due</th>'
+      +'<th style="padding:9px 12px;text-align:center">Result</th>'
+      +'<th style="padding:9px 12px;text-align:right">Actions</th>'
+      +'</tr></thead><tbody>';
+    toolsRcdData.forEach(function(x,i){
+      var last=lastByTool[x.id];
+      var next=last&&last.next_inspection_date?new Date(last.next_inspection_date):null;
+      var overdue=next&&next<today;
+      var result=last?.overall_result||'not_tested';
+      var cfg={pass:['#EAF3DE','#3B6D11','Pass'],conditional:['#FEF9EC','#854F0B','Conditional'],fail:['#FCEBEB','#A32D2D','Fail'],not_tested:['#f3f4f6','#6B7280','No test']};
+      var rc=cfg[result]||cfg.not_tested;
+      h+='<tr style="border-bottom:1px solid #f0f0f0;background:'+(i%2?'#fafafa':'#fff')+(overdue?';border-left:4px solid var(--red)':'')+'">'
+        +'<td style="padding:9px 12px;font-family:monospace;font-weight:700;color:var(--green)">'+escH(x.ref_number||'AUTO')+'</td>'
+        +'<td style="padding:9px 12px;font-weight:700">'+escH(x.name||'RCD')+'</td>'
+        +'<td style="padding:9px 12px">'+escH(x.location||'--')+'</td>'
+        +'<td style="padding:9px 12px">'+escH(x.model||x.brand||'--')+'</td>'
+        +'<td style="padding:9px 12px">'+(last?.inspection_date?new Date(last.inspection_date).toLocaleDateString('en-GB'):'--')+'</td>'
+        +'<td style="padding:9px 12px;'+(overdue?'color:var(--red);font-weight:700':'')+'">'+(next?next.toLocaleDateString('en-GB'):'--')+(overdue?' overdue':'')+'</td>'
+        +'<td style="padding:9px 12px;text-align:center"><span style="background:'+rc[0]+';color:'+rc[1]+';padding:3px 10px;border-radius:99px;font-size:11px;font-weight:700">'+rc[2]+'</span></td>'
+        +'<td style="padding:9px 12px;text-align:right;white-space:nowrap">'
+        +'<button class="btn btn-sm btn-primary" data-id="'+x.id+'" onclick="toolsStartRCDTest(this.getAttribute(\'data-id\'))"><i class="ti ti-clipboard-check"></i>Test</button> '
+        +'<button class="btn btn-sm" data-id="'+x.id+'" onclick="toolsEdit(this.getAttribute(\'data-id\'))"><i class="ti ti-edit"></i></button>'
+        +'</td></tr>';
+    });
+    h+='</tbody></table></div>';
+    el.innerHTML='<div style="overflow-x:auto">'+h+'</div>';
+  }catch(e){
+    el.innerHTML='<div style="padding:20px;color:var(--red)">RCD register unavailable: '+escH(e.message)+'</div>';
+  }
+}
+
+function toolsNewRCD(){
+  toolsNew();
+  var cat=document.getElementById('teq-cat');if(cat){cat.value='electrical';toolsCatChange();}
+  var name=document.getElementById('teq-name');if(name&&!name.value)name.value='RCD / Distribution board';
+  var freq=document.getElementById('teq-freq');if(freq)freq.value='monthly';
+  var stat=document.getElementById('teq-statutory');if(stat)stat.checked=false;
+  var notes=document.getElementById('teq-notes');if(notes&&!notes.value)notes.value='RCD monthly push-button testing required.';
+}
+
+function toolsStartRCDTest(toolId){
+  var tool=toolsRcdData.find(function(x){return x.id===toolId;})||toolsAllData.find(function(x){return x.id===toolId;});
+  if(!tool){toast('RCD not found',false);return;}
+  toolsInspEquipId=toolId;
+  document.getElementById('rcd-equip-name').textContent=tool.name||'RCD';
+  document.getElementById('rcd-equip-ref').textContent=(tool.ref_number||'')+(tool.location?' - '+tool.location:'');
+  var dt=document.getElementById('rcd-date');if(dt)dt.value=new Date().toISOString().slice(0,10);
+  var nd=new Date();nd.setMonth(nd.getMonth()+1);
+  var next=document.getElementById('rcd-next-date');if(next)next.value=nd.toISOString().slice(0,10);
+  var tester=document.getElementById('rcd-tester');
+  if(tester){tester.innerHTML='<option value="">Select tester...</option>';(people||[]).forEach(function(p){var o=document.createElement('option');o.value=p.id;o.textContent=p.last_name+', '+p.first_name;tester.appendChild(o);});}
+  ['tools-view-register','tools-view-personal','tools-view-inspection','tools-view-statutory','tools-view-vehicles','tools-view-rcd'].forEach(function(id){var el=document.getElementById(id);if(el)el.style.display='none';});
+  document.getElementById('tools-form').style.display='none';
+  document.getElementById('tools-insp-form').style.display='none';
+  document.getElementById('tools-rcd-form').style.display='block';
+}
+
+function toolsRCDBack(){
+  document.getElementById('tools-rcd-form').style.display='none';
+  document.getElementById('tools-view-rcd').style.display='block';
+  document.querySelectorAll('.mtg-tab').forEach(t=>t.classList.remove('active'));
+  var tab=document.getElementById('tools-tab-rcd');if(tab)tab.classList.add('active');
+  toolsLoadRCD();
+}
+
+async function toolsSaveRCDTest(){
+  var date=document.getElementById('rcd-date')?.value;
+  if(!date){toast('Please set test date',false);return;}
+  var testerId=document.getElementById('rcd-tester')?.value;
+  var testerName='';
+  if(testerId){var p=(people||[]).find(function(x){return x.id===testerId;});testerName=p?(p.last_name+', '+p.first_name):'';}
+  var g=function(id){var el=document.getElementById(id);return el?el.value||null:null;};
+  var visual=g('rcd-visual')||'ok', button=g('rcd-button')||'pass', label=g('rcd-label')||'ok';
+  var fail=visual==='fail'||button==='fail'||label==='fail';
+  var body={
+    company_id:ccid(),tool_id:toolsInspEquipId,inspection_type:'rcd_monthly',
+    inspection_date:date,inspected_by:testerId||null,inspected_by_name:testerName||null,
+    overall_result:fail?'fail':'pass',
+    checklist_results:[
+      {item:'Visual condition',result:visual,note:g('rcd-visual-note')||''},
+      {item:'Test button operates and trips correctly',result:button==='pass'?'ok':'fail',note:g('rcd-trip-time')?('Trip time: '+g('rcd-trip-time')+' ms'):''},
+      {item:'RCD/DB labelled and accessible',result:label,note:g('rcd-label-note')||''}
+    ],
+    defects_found:g('rcd-defects'),actions_taken:g('rcd-actions'),
+    next_inspection_date:g('rcd-next-date'),created_by:prof?.id
+  };
+  try{
+    await api('/tool_inspections',{m:'POST',p:'return=minimal',b:body});
+    if(fail&&body.defects_found){
+      var tool=toolsRcdData.find(function(x){return x.id===toolsInspEquipId;});
+      await api('/action_tracker',{m:'POST',p:'return=minimal',b:{
+        company_id:ccid(),source_module:'tools',source_id:toolsInspEquipId,
+        source_ref:(tool?.ref_number||'RCD')+' - Failed RCD test',
+        description:'RCD monthly test failed: '+body.defects_found,
+        responsible:testerName||null,priority:'high',status:'open',created_by:prof?.id
+      }});
+      toast('RCD test saved - failure added to MAP.');
+    }else toast('RCD test saved!');
+    toolsRCDBack();
+  }catch(e){toast(e.message,false);console.error(e);}
+}
+
 async function toolsLoadStatutory(){
   var el=document.getElementById('tools-stat-list');
   var alertEl=document.getElementById('tools-stat-alerts');
@@ -31031,6 +31167,7 @@ function fireEquipStatusBadge(s) {
 <button class="mtg-tab" id="tools-tab-inspection" onclick="toolsSwitchTab('inspection',this)">✅ Inspection Checklist</button>
 <button class="mtg-tab" id="tools-tab-statutory" onclick="toolsSwitchTab('statutory',this)">⚖️ Statutory Verification</button>
 <button class="mtg-tab" id="tools-tab-vehicles" onclick="toolsSwitchTab('vehicles',this)">🚗 Vehicles</button>
+<button class="mtg-tab" id="tools-tab-rcd" onclick="toolsSwitchTab('rcd',this)"><i class="ti ti-plug-connected"></i> RCD Monthly Testing</button>
 </div>
 
 <!-- ── EQUIPMENT REGISTER ── -->
@@ -31124,6 +31261,19 @@ function fireEquipStatusBadge(s) {
 </div>
 
 <!-- ── FORM: ADD/EDIT EQUIPMENT ── -->
+<div id="tools-view-rcd" style="display:none">
+<div class="card" style="margin-bottom:12px;padding:10px 14px">
+<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
+<div>
+<div class="card-title" style="margin:0">RCD Monthly Testing Register</div>
+<div style="font-size:12px;color:var(--text2);margin-top:3px">Monthly push-button tests for RCDs and distribution boards.</div>
+</div>
+<button class="btn btn-primary" id="rcd-add-btn" style="display:none" onclick="toolsNewRCD()"><i class="ti ti-plus"></i>Add RCD / DB</button>
+</div>
+</div>
+<div id="tools-rcd-list"><div class="loading-msg">Loading...</div></div>
+</div>
+
 <div id="tools-form" style="display:none">
 <div class="card" style="margin-bottom:14px;padding:14px 20px">
 <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
@@ -31274,6 +31424,52 @@ function fireEquipStatusBadge(s) {
 </div>
 <div class="form-group"><label class="form-label" style="color:var(--red)">Defects / Issues found</label><textarea id="insp-defects" style="min-height:70px" placeholder="Describe any defects, damage or issues observed..."></textarea></div>
 <div class="form-group"><label class="form-label">Actions taken</label><textarea id="insp-actions" style="min-height:60px" placeholder="Corrective actions taken or planned..."></textarea></div>
+</div>
+</div>
+
+<div id="tools-rcd-form" style="display:none">
+<div class="card" style="margin-bottom:14px;padding:14px 20px">
+<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
+<div><div style="font-size:16px;font-weight:700">RCD Monthly Test</div>
+<div style="font-size:12px;color:var(--text2)" id="rcd-equip-ref"></div></div>
+<div style="display:flex;gap:8px">
+<button class="btn" onclick="toolsRCDBack()"><i class="ti ti-arrow-left"></i>Back</button>
+<button class="btn btn-primary" onclick="toolsSaveRCDTest()"><i class="ti ti-device-floppy"></i>Save test</button>
+</div>
+</div>
+</div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+<div class="card">
+<div class="card-title">Test Details</div>
+<div class="form-group"><label class="form-label">RCD / Distribution board</label><div id="rcd-equip-name" style="font-weight:800;font-size:15px">--</div></div>
+<div class="form-row">
+<div class="form-group"><label class="form-label">Test date</label><input type="date" id="rcd-date"/></div>
+<div class="form-group"><label class="form-label">Tested by</label><select id="rcd-tester"><option value="">Select tester...</option></select></div>
+</div>
+<div class="form-row">
+<div class="form-group"><label class="form-label">Trip time (ms)</label><input type="number" id="rcd-trip-time" min="0" step="1" placeholder="e.g. 28"/></div>
+<div class="form-group"><label class="form-label">Next due date</label><input type="date" id="rcd-next-date"/></div>
+</div>
+</div>
+<div class="card">
+<div class="card-title">Checks</div>
+<div class="form-row">
+<div class="form-group"><label class="form-label">Visual condition</label><select id="rcd-visual"><option value="ok">OK</option><option value="fail">Fail</option><option value="na">N/A</option></select></div>
+<div class="form-group"><label class="form-label">Test button</label><select id="rcd-button"><option value="pass">Trips correctly</option><option value="fail">Does not trip</option></select></div>
+</div>
+<div class="form-row">
+<div class="form-group"><label class="form-label">Labelled / accessible</label><select id="rcd-label"><option value="ok">OK</option><option value="fail">Fail</option><option value="na">N/A</option></select></div>
+<div class="form-group"><label class="form-label">Visual note</label><input type="text" id="rcd-visual-note" placeholder="Damage, loose cover, missing blank..."/></div>
+</div>
+<div class="form-group"><label class="form-label">Label/access note</label><input type="text" id="rcd-label-note" placeholder="Not labelled, blocked, difficult to access..."/></div>
+</div>
+</div>
+<div class="card" style="margin-top:14px">
+<div class="card-title">Defects / Actions</div>
+<div class="form-row">
+<div class="form-group"><label class="form-label" style="color:var(--red)">Defects found</label><textarea id="rcd-defects" style="min-height:70px" placeholder="Describe failure or defect if any..."></textarea></div>
+<div class="form-group"><label class="form-label">Actions taken / required</label><textarea id="rcd-actions" style="min-height:70px" placeholder="Removed from service, electrician informed, repair arranged..."></textarea></div>
+</div>
 </div>
 </div>
 
