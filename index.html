@@ -11192,7 +11192,7 @@ async function loadRA(){
 }
 
 function raShowList(){
-  ['ra-new-panel','ra-form-view','ra-jsa-form','ra-library-view'].forEach(function(id){
+  ['ra-new-panel','ra-form-view','ra-jsa-form','ra-library-view','ra-manual-form'].forEach(function(id){
     var el=document.getElementById(id);if(el)el.style.display='none';
   });
   document.getElementById('ra-list-view').style.display='block';
@@ -11202,12 +11202,17 @@ function raShowList(){
 
 function raShowNewPanel(){
   document.getElementById('ra-list-view').style.display='none';
+  var mf=document.getElementById('ra-manual-form');if(mf)mf.style.display='none';
+  var fv=document.getElementById('ra-form-view');if(fv)fv.style.display='none';
+  var jv=document.getElementById('ra-jsa-form');if(jv)jv.style.display='none';
+  var lv=document.getElementById('ra-library-view');if(lv)lv.style.display='none';
   document.getElementById('ra-new-panel').style.display='block';
   raLoadTemplates();
 }
 
 function raShowLibrary(){
   document.getElementById('ra-list-view').style.display='none';
+  var mf=document.getElementById('ra-manual-form');if(mf)mf.style.display='none';
   document.getElementById('ra-library-view').style.display='block';
   libTab('hazards', document.getElementById('lib-tab-hazards'));
 }
@@ -11420,6 +11425,7 @@ function raNew(type){
   // Show form
   document.getElementById('ra-list-view').style.display='none';
   document.getElementById('ra-new-panel').style.display='none';
+  var mf=document.getElementById('ra-manual-form');if(mf)mf.style.display='none';
   document.getElementById('ra-form-view').style.display='block';
   // Switch to info tab
   raFormTab('info', document.getElementById('ra-ftab-info'));
@@ -11486,6 +11492,7 @@ function raOpen(id){
   else raBaselineRender(x.rows||x.baseline_rows||[]);
   // Show form
   document.getElementById('ra-list-view').style.display='none';
+  var mf=document.getElementById('ra-manual-form');if(mf)mf.style.display='none';
   document.getElementById('ra-form-view').style.display='block';
   raFormTab('info', document.getElementById('ra-ftab-info'));
   // AI output
@@ -11951,6 +11958,108 @@ async function raLoadTemplates(){
       +'<div style="font-size:11px;color:var(--text2)">'+escH(t.desc)+'</div>'
       +'</div>';
   }).join('');
+}
+
+
+function raManualHandlingNew(){
+  document.getElementById('ra-list-view').style.display='none';
+  document.getElementById('ra-new-panel').style.display='none';
+  document.getElementById('ra-form-view').style.display='none';
+  var jv=document.getElementById('ra-jsa-form');if(jv)jv.style.display='none';
+  var lv=document.getElementById('ra-library-view');if(lv)lv.style.display='none';
+  var panel=document.getElementById('ra-manual-form');if(panel)panel.style.display='block';
+  ['mh-task','mh-location','mh-dept','mh-load','mh-existing-controls','mh-extra-controls'].forEach(function(id){
+    var el=document.getElementById(id);if(el)el.value='';
+  });
+  var assessed=document.getElementById('mh-assessed-by');
+  if(assessed&&!assessed.value)assessed.value=(typeof prof!=='undefined'&&(prof.full_name||prof.email))||'';
+  ['mh-weight','mh-frequency','mh-distance','mh-posture','mh-twist','mh-grip','mh-route','mh-aid','mh-team'].forEach(function(id){
+    var el=document.getElementById(id);if(el)el.selectedIndex=0;
+  });
+  raManualUpdatePreview();
+}
+
+function raManualScore(){
+  var v=function(id){return document.getElementById(id)?.value||'';};
+  var score=0;
+  var weight=v('mh-weight');
+  score+=weight==='under5'?1:weight==='5to10'?2:weight==='10to20'?3:weight==='20to25'?4:5;
+  var frequency=v('mh-frequency');
+  score+=frequency==='occasional'?1:frequency==='repeated'?2:frequency==='frequent'?3:4;
+  var distance=v('mh-distance');
+  score+=distance==='short'?1:distance==='moderate'?2:3;
+  var posture=v('mh-posture');
+  score+=posture==='neutral'?0:posture==='bending'?2:3;
+  if(v('mh-twist')==='yes')score+=2;
+  if(v('mh-grip')==='poor')score+=2;
+  if(v('mh-route')==='uneven')score+=2;
+  if(v('mh-route')==='stairs')score+=3;
+  if(v('mh-aid')==='none'&&(weight==='20to25'||weight==='over25'))score+=2;
+  if(v('mh-team')==='yes')score-=1;
+  var severity=score>=17?5:score>=13?4:score>=8?3:2;
+  var probability=score>=17?4:score>=13?3:score>=8?3:2;
+  var residualP=Math.max(1,probability-2);
+  var level=severity*probability>=20?'Critical':severity*probability>=12?'Very High':severity*probability>=6?'High':severity*probability>=3?'Medium':'Low';
+  return {score:score,severity:severity,probability:probability,residualP:residualP,level:level};
+}
+
+function raManualUpdatePreview(){
+  var box=document.getElementById('mh-risk-preview');if(!box)return;
+  var s=raManualScore();
+  var cfg=RL_CFG[s.level]||['#f3f4f6','#6B7280'];
+  box.innerHTML='<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">'
+    +'<div><div style="font-size:12px;color:var(--text2);font-weight:700;text-transform:uppercase">Automatic initial risk</div>'
+    +'<div style="font-size:13px;color:var(--text2)">Based on weight, posture, frequency, distance and route conditions.</div></div>'
+    +'<div style="background:'+cfg[0]+';color:'+cfg[1]+';padding:8px 12px;border-radius:8px;font-weight:800">S'+s.severity+' x P'+s.probability+' = '+(s.severity*s.probability)+' '+s.level+'</div>'
+    +'</div>';
+}
+
+function raManualBuildRows(){
+  var v=function(id){return document.getElementById(id)?.value||'';};
+  var score=raManualScore();
+  var existing=v('mh-existing-controls')||'Manual handling training. Loads assessed before lifting. Keep route clear. Use good lifting technique.';
+  var extra=v('mh-extra-controls');
+  var controls=existing+(extra?'\nAdditional controls: '+extra:'');
+  var weightText=document.getElementById('mh-weight')?.selectedOptions[0]?.textContent||'';
+  var freqText=document.getElementById('mh-frequency')?.selectedOptions[0]?.textContent||'';
+  var distText=document.getElementById('mh-distance')?.selectedOptions[0]?.textContent||'';
+  var rows=[
+    {hazard:'Manual lifting and carrying of '+(v('mh-load')||'load')+' ('+weightText+', '+freqText+', '+distText+')',harm:'Back injury, shoulder strain, sprain, musculoskeletal disorder',who:'Employees, contractors',rs:score.severity,rop:score.probability,controls:controls,hoc_level:v('mh-aid')==='none'?'administrative':'engineering',res_s:score.severity,res_p:score.residualP,legal_ref:'OSH Act 2005'},
+    {hazard:'Awkward posture during lifting, lowering or carrying',harm:'Back strain, neck/shoulder injury, cumulative MSD',who:'Persons handling the load',rs:Math.max(3,score.severity-1),rop:score.probability,controls:'Plan lift before starting. Keep load close to body. Avoid over-reaching and lifting below knee or above shoulder height. Adjust storage height where practical.',hoc_level:'engineering',res_s:3,res_p:score.residualP,legal_ref:'OSH Act 2005'},
+    {hazard:'Twisting, poor grip or unstable load during handling',harm:'Dropped load, hand injury, sudden strain',who:'Handler and nearby persons',rs:3,rop:(v('mh-twist')==='yes'||v('mh-grip')==='poor')?4:2,controls:'Improve grip/packaging. Use handles, straps or suitable container. Turn with feet instead of twisting the back. Use team lift where load is bulky.',hoc_level:'administrative',res_s:3,res_p:1,legal_ref:'OSH Act 2005'},
+    {hazard:'Carrying route condition',harm:'Slip, trip, fall while carrying load',who:'Handler and nearby persons',rs:3,rop:(v('mh-route')==='clear')?2:4,controls:'Keep route clean, dry and unobstructed. Provide adequate lighting. Avoid stairs where possible. Use trolley or mechanical aid for long routes.',hoc_level:'engineering',res_s:3,res_p:1,legal_ref:'OSH Act 2005'},
+    {hazard:'Repetition and fatigue from manual handling activity',harm:'Fatigue, reduced attention, cumulative injury',who:'Employees performing repeated handling',rs:3,rop:(v('mh-frequency')==='frequent'||v('mh-frequency')==='continuous')?4:2,controls:'Rotate tasks. Provide rest breaks. Reduce handling frequency by changing layout, delivery size or storage location.',hoc_level:'administrative',res_s:3,res_p:1,legal_ref:'OSH Act 2005'}
+  ];
+  if(v('mh-aid')==='none'){
+    rows.push({hazard:'No mechanical handling aid available for the task',harm:'Overexertion, back injury and dropped load',who:'Handler',rs:score.severity,rop:score.probability,controls:'Assess whether trolley, pallet jack, hoist or lifting aid can be provided. Do not lift loads beyond individual capability. Escalate heavy/bulky items to supervisor.',hoc_level:'substitution',res_s:score.severity,res_p:Math.max(1,score.residualP-1),legal_ref:'OSH Act 2005'});
+  }
+  return rows;
+}
+
+function raManualCreateRA(){
+  var task=(document.getElementById('mh-task')?.value||'').trim();
+  if(!task){toast('Please enter the manual handling task first',false);return;}
+  var rows=raManualBuildRows();
+  raNew('baseline');
+  var set=function(id,val){var el=document.getElementById(id);if(el)el.value=val||'';};
+  set('ra-title','Manual Handling Risk Assessment - '+task);
+  set('ra-activity',task);
+  set('ra-dept',document.getElementById('mh-dept')?.value||'');
+  set('ra-workshop',document.getElementById('mh-location')?.value||'');
+  set('ra-assessed-by',document.getElementById('mh-assessed-by')?.value||'');
+  var details=[
+    'Load: '+(document.getElementById('mh-load')?.value||''),
+    'Weight: '+(document.getElementById('mh-weight')?.selectedOptions[0]?.textContent||''),
+    'Frequency: '+(document.getElementById('mh-frequency')?.selectedOptions[0]?.textContent||''),
+    'Carry distance: '+(document.getElementById('mh-distance')?.selectedOptions[0]?.textContent||''),
+    'Posture: '+(document.getElementById('mh-posture')?.selectedOptions[0]?.textContent||''),
+    'Mechanical aid: '+(document.getElementById('mh-aid')?.selectedOptions[0]?.textContent||'')
+  ].filter(Boolean).join('\n');
+  set('ra-scope',details);
+  raBaselineRender(rows);
+  var tab=document.getElementById('ra-ftab-hazards');
+  if(tab)raFormTab('hazards',tab);
+  toast('Manual Handling RA generated. Review the table, then save or submit.');
 }
 
 function raLoadTemplate(tplId){
@@ -30306,6 +30415,11 @@ function fireEquipStatusBadge(s) {
 <div style="font-weight:700;font-size:14px;color:#6D28D9;margin-bottom:6px">JSA / JHA</div>
 <div style="font-size:12px;color:var(--text2)">Job Safety Analysis / Job Hazard Analysis — task-by-task safety breakdown</div>
 </div>
+<div class="card" style="cursor:pointer;transition:all .15s;border:2px solid var(--border);text-align:center;padding:20px" onclick="raManualHandlingNew()" onmouseover="this.style.borderColor='#0F766E';this.style.background='#ECFDF5'" onmouseout="this.style.borderColor='var(--border)';this.style.background='#fff'">
+<div style="font-size:36px;margin-bottom:10px"><i class="ti ti-weight"></i></div>
+<div style="font-weight:700;font-size:14px;color:#0F766E;margin-bottom:6px">Manual Handling RA</div>
+<div style="font-size:12px;color:var(--text2)">Guided lifting and carrying assessment with automatic risk rows</div>
+</div>
 <div class="card" style="cursor:pointer;transition:all .15s;border:2px solid var(--border);text-align:center;padding:20px" onclick="raAIGenerate()" onmouseover="this.style.borderColor='#8B5CF6';this.style.background='#F5F3FF'" onmouseout="this.style.borderColor='var(--border)';this.style.background='#fff'">
 <div style="font-size:36px;margin-bottom:10px">🤖</div>
 <div style="font-weight:700;font-size:14px;color:#8B5CF6;margin-bottom:6px">AI-Assisted RA</div>
@@ -30320,6 +30434,64 @@ function fireEquipStatusBadge(s) {
 </div>
 
 <!-- ── RA FORM VIEW ── -->
+<div id="ra-manual-form" style="display:none">
+<div class="card" style="margin-bottom:14px;padding:0;overflow:hidden">
+<div style="padding:16px 22px;background:linear-gradient(135deg,#0F766E,#1D9E75);color:#fff;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">
+<div>
+<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;opacity:.82;margin-bottom:4px">Specific Risk Assessment</div>
+<div style="font-size:18px;font-weight:800">Manual Handling RA Builder</div>
+<div style="font-size:12px;opacity:.86;margin-top:4px">Complete the key handling factors, then generate a table-style RA for review.</div>
+</div>
+<div style="display:flex;gap:8px;flex-wrap:wrap">
+<button class="btn" style="background:rgba(255,255,255,.18);color:#fff;border-color:rgba(255,255,255,.3)" onclick="raShowNewPanel()"><i class="ti ti-arrow-left"></i>Back</button>
+<button class="btn" style="background:#fff;color:#0F766E;border-color:#fff" onclick="raManualCreateRA()"><i class="ti ti-table-plus"></i>Generate RA</button>
+</div>
+</div>
+</div>
+<div style="display:grid;grid-template-columns:minmax(0,2fr) minmax(260px,1fr);gap:14px">
+<div class="card">
+<div class="card-title"><i class="ti ti-clipboard-list"></i> Task Details</div>
+<div class="form-row">
+<div class="form-group"><label class="form-label">Manual handling task</label><input type="text" id="mh-task" placeholder="e.g. Moving boxes from delivery area to store room" oninput="raManualUpdatePreview()"/></div>
+<div class="form-group"><label class="form-label">Load / object handled</label><input type="text" id="mh-load" placeholder="e.g. sealed cartons, chemical drums, gas cylinders"/></div>
+</div>
+<div class="form-row">
+<div class="form-group"><label class="form-label">Location</label><input type="text" id="mh-location"/></div>
+<div class="form-group"><label class="form-label">Department</label><input type="text" id="mh-dept"/></div>
+<div class="form-group"><label class="form-label">Assessed by</label><input type="text" id="mh-assessed-by"/></div>
+</div>
+</div>
+<div class="card" style="border:2px solid #0F766E33;background:#F0FDF4">
+<div class="card-title" style="color:#0F766E"><i class="ti ti-chart-bar"></i> Risk Preview</div>
+<div id="mh-risk-preview"></div>
+</div>
+</div>
+<div class="card" style="margin-top:14px">
+<div class="card-title"><i class="ti ti-adjustments-horizontal"></i> Handling Factors</div>
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px">
+<div class="form-group"><label class="form-label">Approximate load weight</label><select id="mh-weight" onchange="raManualUpdatePreview()"><option value="under5">&lt; 5 kg</option><option value="5to10">5 - 10 kg</option><option value="10to20">10 - 20 kg</option><option value="20to25">20 - 25 kg</option><option value="over25">&gt; 25 kg</option></select></div>
+<div class="form-group"><label class="form-label">Frequency</label><select id="mh-frequency" onchange="raManualUpdatePreview()"><option value="occasional">Occasional</option><option value="repeated">Repeated during shift</option><option value="frequent">Frequent</option><option value="continuous">Continuous / very frequent</option></select></div>
+<div class="form-group"><label class="form-label">Carry distance</label><select id="mh-distance" onchange="raManualUpdatePreview()"><option value="short">Short, under 5 m</option><option value="moderate">Moderate, 5 - 20 m</option><option value="long">Long, over 20 m</option></select></div>
+<div class="form-group"><label class="form-label">Posture</label><select id="mh-posture" onchange="raManualUpdatePreview()"><option value="neutral">Neutral / good working height</option><option value="bending">Bending, reaching or low lift</option><option value="awkward">Above shoulder, below knee or constrained space</option></select></div>
+<div class="form-group"><label class="form-label">Twisting required?</label><select id="mh-twist" onchange="raManualUpdatePreview()"><option value="no">No</option><option value="yes">Yes</option></select></div>
+<div class="form-group"><label class="form-label">Grip / load stability</label><select id="mh-grip" onchange="raManualUpdatePreview()"><option value="good">Good grip and stable load</option><option value="poor">Poor grip, bulky or unstable load</option></select></div>
+<div class="form-group"><label class="form-label">Route / floor condition</label><select id="mh-route" onchange="raManualUpdatePreview()"><option value="clear">Clear, level and dry</option><option value="uneven">Uneven, wet or obstructed</option><option value="stairs">Stairs, ramps or level changes</option></select></div>
+<div class="form-group"><label class="form-label">Mechanical aid available</label><select id="mh-aid" onchange="raManualUpdatePreview()"><option value="none">None</option><option value="trolley">Trolley / dolly</option><option value="pallet">Pallet jack / forklift / hoist</option></select></div>
+<div class="form-group"><label class="form-label">Team lift required?</label><select id="mh-team" onchange="raManualUpdatePreview()"><option value="no">No</option><option value="yes">Yes</option></select></div>
+</div>
+</div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:14px">
+<div class="card">
+<div class="card-title"><i class="ti ti-shield-check"></i> Existing Controls</div>
+<textarea id="mh-existing-controls" style="min-height:120px" placeholder="Training, trolley, team lifting, clear route, supervision..."></textarea>
+</div>
+<div class="card">
+<div class="card-title"><i class="ti ti-plus"></i> Additional Controls Needed</div>
+<textarea id="mh-extra-controls" style="min-height:120px" placeholder="Extra measures to reduce the residual risk..."></textarea>
+</div>
+</div>
+</div>
+
 <div id="ra-form-view" style="display:none">
 <!-- Form header -->
 <div class="card" style="margin-bottom:14px;padding:0;overflow:hidden">
