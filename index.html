@@ -3427,26 +3427,26 @@ var ROLE_ALLOWED = {
   'admin':       null,
   'hse_manager': null,
   'executive':   ['dashboard','executive','kpi','workschedule','events','observation',
-                  'inspection','risk','tools','fleet','permit','contractor','emergency',
+                  'inspection','risk','tools','fleet','atex','permit','contractor','emergency',
                   'fire','chemical','ohealth','ppe','esg','noise','meetings','training','actions',
                   'legal','sop','documents','people'],
   'manager':     ['dashboard','executive','kpi','workschedule','events','observation',
-                  'inspection','risk','tools','fleet','permit','contractor','emergency',
+                  'inspection','risk','tools','fleet','atex','permit','contractor','emergency',
                   'fire','chemical','ohealth','ppe','esg','noise','meetings','training','actions',
                   'legal','sop','documents','people'],
   'site_manager':['dashboard','kpi','workschedule','events','observation','inspection',
-                  'risk','tools','fleet','permit','contractor','emergency','fire','chemical','ppe','esg','noise',
+                  'risk','tools','fleet','atex','permit','contractor','emergency','fire','chemical','ppe','esg','noise',
                   'meetings','training','actions','sop','people'],
   'supervisor':  ['dashboard','kpi','workschedule','events','observation','inspection',
-                  'risk','tools','fleet','permit','contractor','emergency','fire','chemical','ppe','noise',
+                  'risk','tools','fleet','atex','permit','contractor','emergency','fire','chemical','ppe','noise',
                   'meetings','training','actions','sop'],
   'auditor':     ['dashboard','events','observation','inspection','risk','legal',
                   'fire','documents','meetings','actions'],
   'hr':          ['dashboard','kpi','training','people','documents','ohealth','meetings'],
   'inspector':   ['dashboard','events','observation','inspection','risk','permit',
-                  'tools','fleet','ppe','meetings'],
+                  'tools','fleet','atex','ppe','meetings'],
   'employee':    ['dashboard','events','observation','training','meetings','ppe','emergency','permit'],
-  'contractor':  ['dashboard','events','observation','permit','tools','fleet','ppe','emergency','meetings'],
+  'contractor':  ['dashboard','events','observation','permit','tools','fleet','atex','ppe','emergency','meetings'],
   'user':        ['dashboard','events','observation','meetings'],
 };
 
@@ -3522,7 +3522,7 @@ if(target){
   target.classList.add('active');
 }
 if(el&&el.classList)el.classList.add('active');
-const L={dashboard:loadDash,executive:loadExecutive,kpi:kpiLoadAll,workschedule:loadWorkSchedule,events:loadEvents,observation:loadObservation,inspection:()=>{buildChecklist();loadInsps();},risk:loadRA,investigation:loadInvs,legal:loadLegal,sop:loadSOP,tools:loadTools,fleet:loadFleet,permit:loadPermits,contractor:loadContractors,esg:loadESG,emergency:loadEmergency,fire:loadFire,chemical:loadChemical,ohealth:loadOHealth,ppe:loadPPE,noise:loadNoise,meetings:loadMtgs,training:loadTraining,actions:loadActions,documents:loadDocs,people:loadPeople,users:loadUsers,admin:loadAdmin,'ai-insights':genFullAI,settings:loadSettings,integrations:loadIntegrations};
+const L={dashboard:loadDash,executive:loadExecutive,kpi:kpiLoadAll,workschedule:loadWorkSchedule,events:loadEvents,observation:loadObservation,inspection:()=>{buildChecklist();loadInsps();},risk:loadRA,investigation:loadInvs,legal:loadLegal,sop:loadSOP,tools:loadTools,fleet:loadFleet,atex:loadATEX,permit:loadPermits,contractor:loadContractors,esg:loadESG,emergency:loadEmergency,fire:loadFire,chemical:loadChemical,ohealth:loadOHealth,ppe:loadPPE,noise:loadNoise,meetings:loadMtgs,training:loadTraining,actions:loadActions,documents:loadDocs,people:loadPeople,users:loadUsers,admin:loadAdmin,'ai-insights':genFullAI,settings:loadSettings,integrations:loadIntegrations};
 if(L[name])L[name]();
 // Mobile: close sidebar and scroll to top
 if(window.innerWidth<=768){
@@ -17901,6 +17901,127 @@ function fleetEditVehicle(id){showPage('tools',null);setTimeout(function(){if(ty
 function fleetMonthlyCheck(id){showPage('tools',null);setTimeout(function(){if(typeof toolsStartInspection==='function')toolsStartInspection(id);},160);}
 function fleetFuelNew(label){showPage('esg',null);setTimeout(function(){if(typeof esgFuelNew==='function'){esgFuelNew();var el=document.getElementById('ff-vehicle');if(el)el.value=label||'';}},180);}
 
+// ===== ATEX / HAZARDOUS AREA MODULE =====
+let atexAreas=[], atexEditId=null;
+const ATEX_ZONE_LABELS={zone_0:'Zone 0',zone_1:'Zone 1',zone_2:'Zone 2',zone_20:'Zone 20',zone_21:'Zone 21',zone_22:'Zone 22'};
+const ATEX_STATUS_CFG={controlled:['#EAF3DE','#3B6D11','Controlled'],action_required:['#FEF9EC','#854F0B','Action required'],out_of_service:['#FCEBEB','#A32D2D','Out of service']};
+
+async function loadATEX(){
+  var add=document.getElementById('atex-add-btn');
+  if(add)add.style.display=isMgr()?'inline-flex':'none';
+  await atexLoadRegister();
+}
+
+async function atexLoadRegister(){
+  var el=document.getElementById('atex-list');
+  if(!el)return;
+  el.innerHTML='<div class="loading-msg">Loading ATEX areas...</div>';
+  try{
+    var d=await api('/atex_areas?select=*'+cf()+'&order=zone_type,area_name');
+    atexAreas=d||[];
+    atexRender();
+  }catch(e){
+    el.innerHTML='<div class="card" style="padding:22px;color:var(--text2);line-height:1.5"><div style="font-weight:800;color:#A32D2D;margin-bottom:6px">ATEX table is not ready yet.</div><div>Run <code>atex_schema.sql</code> in Supabase SQL Editor, then refresh this page.</div><div style="margin-top:10px;font-size:12px;color:var(--text3)">'+escH(e.message)+'</div></div>';
+  }
+}
+
+function atexRender(){
+  var el=document.getElementById('atex-list');
+  if(!el)return;
+  var q=(document.getElementById('atex-search')?.value||'').toLowerCase();
+  var zone=document.getElementById('atex-filter-zone')?.value||'';
+  var status=document.getElementById('atex-filter-status')?.value||'';
+  var today=new Date();today.setHours(0,0,0,0);
+  var filtered=atexAreas.filter(function(x){
+    var text=((x.area_ref||'')+' '+(x.area_name||'')+' '+(x.location||'')+' '+(x.substance||'')).toLowerCase();
+    return (!q||text.indexOf(q)!==-1)&&(!zone||x.zone_type===zone)&&(!status||x.status===status);
+  });
+  var setM=function(id,v){var m=document.getElementById(id);if(m)m.textContent=v;};
+  setM('atex-m-total',atexAreas.length);
+  setM('atex-m-action',atexAreas.filter(x=>x.status==='action_required').length);
+  setM('atex-m-oos',atexAreas.filter(x=>x.status==='out_of_service').length);
+  setM('atex-m-due',atexAreas.filter(x=>x.next_inspection_date&&new Date(x.next_inspection_date)<=today).length);
+  if(!filtered.length){
+    el.innerHTML='<div class="card" style="text-align:center;padding:42px;color:var(--text2)"><div style="font-size:38px;margin-bottom:10px"><i class="ti ti-flame"></i></div><div style="font-weight:700;color:var(--text);margin-bottom:8px">No ATEX areas found</div>'+(isMgr()?'<button class="btn btn-primary" onclick="atexNew()"><i class="ti ti-plus"></i>Add ATEX area</button>':'')+'</div>';
+    return;
+  }
+  var h='<div class="card" style="padding:0;overflow:hidden"><div style="overflow-x:auto"><table style="width:100%;min-width:1180px;border-collapse:collapse;font-size:12px">'
+    +'<thead><tr style="background:#1a3a5c;color:#fff">'
+    +'<th style="padding:9px 12px;text-align:left">Ref</th><th style="padding:9px 12px;text-align:left">Area / location</th>'
+    +'<th style="padding:9px 12px;text-align:left">Zone</th><th style="padding:9px 12px;text-align:left">Substance</th>'
+    +'<th style="padding:9px 12px;text-align:left">Main controls</th><th style="padding:9px 12px;text-align:left">Next inspection</th>'
+    +'<th style="padding:9px 12px;text-align:center">Status</th><th style="padding:9px 12px;text-align:right">Actions</th>'
+    +'</tr></thead><tbody>';
+  filtered.forEach(function(x,i){
+    var cfg=ATEX_STATUS_CFG[x.status]||ATEX_STATUS_CFG.controlled;
+    var due=x.next_inspection_date&&new Date(x.next_inspection_date)<=today;
+    h+='<tr style="border-bottom:1px solid #f0f0f0;background:'+(i%2?'#fafafa':'#fff')+(due?';border-left:4px solid var(--red)':'')+'">'
+      +'<td style="padding:10px 12px;font-family:monospace;font-weight:800;color:#C2410C">'+escH(x.area_ref||'ATEX')+'</td>'
+      +'<td style="padding:10px 12px"><div style="font-weight:800">'+escH(x.area_name||'--')+'</div><div style="font-size:11px;color:var(--text2)">'+escH((x.location||'')+(x.plant_area?' - '+x.plant_area:''))+'</div></td>'
+      +'<td style="padding:10px 12px"><span style="background:#FEE2E2;color:#991B1B;padding:3px 9px;border-radius:99px;font-weight:800;font-size:11px">'+escH(ATEX_ZONE_LABELS[x.zone_type]||x.zone_type||'--')+'</span><div style="font-size:11px;color:var(--text2);margin-top:3px">'+escH((x.material_type||'').replace(/_/g,' '))+'</div></td>'
+      +'<td style="padding:10px 12px">'+escH(x.substance||'--')+'<div style="font-size:11px;color:var(--text2)">'+escH(x.source_of_release||'')+'</div></td>'
+      +'<td style="padding:10px 12px;font-size:11px;line-height:1.35">'+escH([x.ventilation_controls,x.ignition_controls,x.detection_controls].filter(Boolean).join(' | ')||'--')+'</td>'
+      +'<td style="padding:10px 12px;'+(due?'color:var(--red);font-weight:800':'')+'">'+(x.next_inspection_date?new Date(x.next_inspection_date).toLocaleDateString('en-GB'):'--')+(due?' overdue':'')+'</td>'
+      +'<td style="padding:10px 12px;text-align:center"><span style="background:'+cfg[0]+';color:'+cfg[1]+';padding:3px 9px;border-radius:99px;font-weight:800;font-size:11px">'+cfg[2]+'</span></td>'
+      +'<td style="padding:10px 12px;text-align:right;white-space:nowrap"><button class="btn btn-sm" data-id="'+x.id+'" onclick="atexEdit(this.getAttribute(\'data-id\'))"><i class="ti ti-edit"></i></button> <button class="btn btn-sm" onclick="atexOpenRA()"><i class="ti ti-shield-check"></i>RA</button> <button class="btn btn-sm" onclick="atexOpenPTW()"><i class="ti ti-key"></i>PTW</button></td>'
+      +'</tr>';
+  });
+  h+='</tbody></table></div></div>';
+  el.innerHTML=h;
+}
+
+function atexShowForm(show){
+  document.getElementById('atex-register-view').style.display=show?'none':'block';
+  document.getElementById('atex-form').style.display=show?'block':'none';
+}
+
+function atexNew(){
+  atexEditId=null;
+  document.getElementById('atex-form-title').textContent='New ATEX Area';
+  document.getElementById('atex-del-btn').style.display='none';
+  ['atex-ref','atex-name','atex-location','atex-plant','atex-substance','atex-release','atex-ventilation','atex-ignition','atex-detection','atex-equipment','atex-ra','atex-permit','atex-last','atex-next','atex-resp','atex-notes'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
+  document.getElementById('atex-zone').value='zone_2';
+  document.getElementById('atex-material').value='gas_vapour';
+  document.getElementById('atex-status').value='controlled';
+  atexShowForm(true);
+}
+
+function atexEdit(id){
+  var x=atexAreas.find(r=>r.id===id);if(!x)return;
+  atexEditId=id;
+  document.getElementById('atex-form-title').textContent='Edit ATEX Area';
+  document.getElementById('atex-del-btn').style.display=isMgr()?'inline-flex':'none';
+  var f={'atex-ref':'area_ref','atex-name':'area_name','atex-location':'location','atex-plant':'plant_area','atex-substance':'substance','atex-release':'source_of_release','atex-ventilation':'ventilation_controls','atex-ignition':'ignition_controls','atex-detection':'detection_controls','atex-equipment':'linked_equipment','atex-ra':'linked_ra_ref','atex-permit':'linked_permit_type','atex-last':'last_inspection_date','atex-next':'next_inspection_date','atex-resp':'responsible_person','atex-notes':'notes'};
+  Object.entries(f).forEach(function(e){var el=document.getElementById(e[0]);if(el)el.value=x[e[1]]||'';});
+  document.getElementById('atex-zone').value=x.zone_type||'zone_2';
+  document.getElementById('atex-material').value=x.material_type||'gas_vapour';
+  document.getElementById('atex-status').value=x.status||'controlled';
+  atexShowForm(true);
+}
+
+function atexBack(){atexShowForm(false);atexLoadRegister();}
+
+async function atexSave(){
+  var name=document.getElementById('atex-name')?.value?.trim();
+  if(!name){toast('Please enter area name',false);return;}
+  var g=function(id){var el=document.getElementById(id);return el?el.value||null:null;};
+  var body={company_id:ccid(),area_ref:g('atex-ref'),area_name:name,location:g('atex-location'),plant_area:g('atex-plant'),zone_type:g('atex-zone')||'zone_2',material_type:g('atex-material')||'gas_vapour',substance:g('atex-substance'),source_of_release:g('atex-release'),ventilation_controls:g('atex-ventilation'),ignition_controls:g('atex-ignition'),detection_controls:g('atex-detection'),linked_equipment:g('atex-equipment'),linked_ra_ref:g('atex-ra'),linked_permit_type:g('atex-permit'),last_inspection_date:g('atex-last'),next_inspection_date:g('atex-next'),status:g('atex-status')||'controlled',responsible_person:g('atex-resp'),notes:g('atex-notes'),updated_at:new Date().toISOString()};
+  try{
+    if(atexEditId)await api('/atex_areas?id=eq.'+atexEditId,{m:'PATCH',p:'return=minimal',b:body});
+    else{body.created_by=prof?.id;await api('/atex_areas',{m:'POST',p:'return=minimal',b:body});}
+    toast('ATEX area saved');atexBack();
+  }catch(e){toast(e.message,false);}
+}
+
+async function atexDelete(){
+  if(!atexEditId||!confirm('Delete this ATEX area?'))return;
+  try{await api('/atex_areas?id=eq.'+atexEditId,{m:'DELETE',p:'return=minimal'});toast('Deleted');atexBack();}
+  catch(e){toast(e.message,false);}
+}
+
+function atexOpenRA(){showPage('risk',null);setTimeout(function(){if(typeof raLoadTemplate==='function')raLoadTemplate('tpl-atex');},180);}
+function atexOpenPTW(){showPage('permit',null);}
+
 // ===== MAP_JS.JS =====
 // ===================================================================
 // MASTER ACTION PLAN (MAP) / CAPA MODULE — Full Rebuild
@@ -23247,6 +23368,7 @@ var LAUNCHED_MODULES = [
   'fire',          // Fire Certificates — Phase 2
   'chemical',      // Chemical Control / COSHH
   'fleet',         // Fleet Management
+  'atex',          // ATEX / Hazardous Areas
   'sop',           // SOP Generator — internal/admin rollout
   // To activate more: add module key here and redeploy
 ];
@@ -23501,6 +23623,7 @@ var MODULES_DIR = [
   {k:'risk',        i:'ti-shield-check',       l:'Risk Assessment',     sec:'HSE Modules'},
   {k:'tools',       i:'ti-tools',              l:'Tools & Equipment',   sec:'HSE Modules'},
   {k:'fleet',       i:'ti-car',                l:'Fleet Management',    sec:'HSE Modules'},
+  {k:'atex',        i:'ti-flame',              l:'ATEX Areas',          sec:'HSE Modules'},
   {k:'permit',      i:'ti-key',                l:'Permit to Work',      sec:'HSE Modules'},
   {k:'contractor',  i:'ti-hard-hat',           l:'Contractors',         sec:'HSE Modules'},
   {k:'emergency',   i:'ti-alert-square',       l:'Emergency',           sec:'HSE Modules'},
@@ -24390,6 +24513,7 @@ var MODULE_CATALOGUE = [
   {k:'contractor',  l:'Contractors'},
   {k:'tools',       l:'Tools Register'},
   {k:'fleet',       l:'Fleet Management'},
+  {k:'atex',        l:'ATEX Areas'},
   {k:'legal',       l:'Legal Compliance'},
   {k:'sop',         l:'SOP Generator'},
   {k:'documents',   l:'Document Control'},
@@ -24528,6 +24652,7 @@ var MODULE_CATALOG = [
   { key:'fire',        icon:'ti-flame',            name:'Fire Certificates' },
   { key:'chemical',    icon:'ti-flask',            name:'Chemical Control' },
   { key:'fleet',       icon:'ti-car',              name:'Fleet Management' },
+  { key:'atex',        icon:'ti-flame',            name:'ATEX Areas' },
   // Coming-soon modules (not in LAUNCHED_MODULES yet — toggle shows but inactive)
   { key:'risk',        icon:'ti-chart-bar',        name:'Risk Assessment' },
   { key:'inspection',  icon:'ti-clipboard-check',  name:'Audits & Inspections' },
@@ -25287,6 +25412,7 @@ var MOBILE_MODULES = [
   {k:'risk',         l:'Risk',         i:'ti-shield-exclamation', r:['all']},
   {k:'tools',        l:'Tools',        i:'ti-tool',               r:['all']},
   {k:'fleet',        l:'Fleet',        i:'ti-car',                r:['admin','hse_manager','site_manager','supervisor','contractor','sephs_admin']},
+  {k:'atex',         l:'ATEX',         i:'ti-flame',              r:['admin','hse_manager','site_manager','supervisor','contractor','sephs_admin']},
   {k:'permit',       l:'Permits',      i:'ti-file-certificate',   r:['all']},
   {k:'contractor',   l:'Contractors',  i:'ti-hard-hat',           r:['admin','hse_manager','site_manager','supervisor','sephs_admin']},
   {k:'emergency',    l:'Emergency',    i:'ti-ambulance',          r:['all']},
@@ -25313,7 +25439,7 @@ var MOBILE_MODULES = [
 var MODULE_COLORS = {
   dashboard:'#185FA5', executive:'#5B21B6', kpi:'#185FA5',
   workschedule:'#065F46', events:'#DC2626', observation:'#9A3412',
-  inspection:'#1D9E75', risk:'#C2410C', tools:'#374151', fleet:'#185FA5',
+  inspection:'#1D9E75', risk:'#C2410C', tools:'#374151', fleet:'#185FA5', atex:'#C2410C',
   permit:'#854F0B', contractor:'#0891B2', emergency:'#DC2626', fire:'#B91C1C', chemical:'#7C3AED',
   ohealth:'#065F46', ppe:'#1D9E75', esg:'#065F46',
   noise:'#EF9F27', meetings:'#185FA5', training:'#5B21B6',
@@ -27511,7 +27637,7 @@ function fireEquipStatusBadge(s) {
 <span class="nav-section">Main</span><div class="nav-item active" onclick="showPage('dashboard',this)"><i class="ti ti-layout-dashboard"></i>Dashboard</div>
 <div class="nav-item" id="nav-executive" onclick="showPage('executive',this)"><i class="ti ti-chart-bar"></i>Executive Dashboard</div><div class="nav-item" id="nav-ai" onclick="showPage('ai-insights',this)"><i class="ti ti-brain"></i>AI Insights</div><span class="nav-section">HSE Modules</span><div class="nav-item" onclick="showPage('kpi',this)"><i class="ti ti-target"></i>Objectives & KPIs</div><div class="nav-item" onclick="showPage('workschedule',this)"><i class="ti ti-calendar-event"></i>Work Schedule</div>
 <div class="nav-item" onclick="showPage('events',this)"><i class="ti ti-alert-triangle"></i>Incident Management</div><div class="nav-item" onclick="showPage('observation',this)"><i class="ti ti-eye"></i>BBS Observations</div>
-<div class="nav-item" onclick="showPage('inspection',this)"><i class="ti ti-clipboard-check"></i>Audits &amp; Inspections</div><div class="nav-item" onclick="showPage('risk',this)"><i class="ti ti-shield-check"></i>Risk Assessment</div><div class="nav-item" onclick="showPage('tools',this)"><i class="ti ti-tools"></i>Tools & Equipment</div><div class="nav-item" onclick="showPage('fleet',this)"><i class="ti ti-car"></i>Fleet Management</div>
+<div class="nav-item" onclick="showPage('inspection',this)"><i class="ti ti-clipboard-check"></i>Audits &amp; Inspections</div><div class="nav-item" onclick="showPage('risk',this)"><i class="ti ti-shield-check"></i>Risk Assessment</div><div class="nav-item" onclick="showPage('tools',this)"><i class="ti ti-tools"></i>Tools & Equipment</div><div class="nav-item" onclick="showPage('fleet',this)"><i class="ti ti-car"></i>Fleet Management</div><div class="nav-item" onclick="showPage('atex',this)"><i class="ti ti-flame"></i>ATEX Areas</div>
 <div class="nav-item" onclick="showPage('permit',this)"><i class="ti ti-key"></i>Permit to Work</div>
 <div class="nav-item" onclick="showPage('contractor',this)"><i class="ti ti-hard-hat"></i>Contractors</div><div class="nav-item" onclick="showPage('emergency',this)"><i class="ti ti-alert-square"></i>Emergency</div>
 <div class="nav-item" onclick="showPage('ohealth',this)"><i class="ti ti-stethoscope"></i>Occupational Health</div>
@@ -31276,6 +31402,98 @@ function fireEquipStatusBadge(s) {
 <div class="card" style="padding:12px 14px;border-left:4px solid #6D28D9"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">CO2e</div><div style="font-size:24px;font-weight:800;color:#6D28D9"><span id="fleet-m-co2">--</span> kg</div></div>
 </div>
 <div id="fleet-list"><div class="loading-msg">Loading fleet...</div></div>
+</div>
+
+<div id="page-atex" class="page">
+<div class="page-header">
+<div><div class="page-title">ATEX Areas</div><div style="font-size:12px;color:var(--text2)">Hazardous area zones, explosive atmospheres, controls and inspection tracking</div></div>
+<div style="display:flex;gap:8px">
+<button class="btn btn-primary" id="atex-add-btn" style="display:none" onclick="atexNew()"><i class="ti ti-plus"></i>Add ATEX area</button>
+</div>
+</div>
+<div id="atex-register-view">
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:14px">
+<div class="card" style="padding:12px 14px;border-left:4px solid #C2410C"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">ATEX areas</div><div style="font-size:24px;font-weight:800;color:#C2410C" id="atex-m-total">--</div></div>
+<div class="card" style="padding:12px 14px;border-left:4px solid #EF9F27"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">Action required</div><div style="font-size:24px;font-weight:800;color:#EF9F27" id="atex-m-action">--</div></div>
+<div class="card" style="padding:12px 14px;border-left:4px solid #E24B4A"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">Out of service</div><div style="font-size:24px;font-weight:800;color:#E24B4A" id="atex-m-oos">--</div></div>
+<div class="card" style="padding:12px 14px;border-left:4px solid #8B5CF6"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">Inspections due</div><div style="font-size:24px;font-weight:800;color:#8B5CF6" id="atex-m-due">--</div></div>
+</div>
+<div class="card" style="margin-bottom:12px;padding:10px 14px">
+<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+<input type="text" id="atex-search" placeholder="Search ref, area, location, substance..." oninput="atexRender()" style="flex:1;min-width:220px;padding:7px 12px;border:1px solid var(--border);border-radius:8px;font-size:12px"/>
+<select id="atex-filter-zone" onchange="atexRender()" style="padding:7px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px">
+<option value="">All zones</option><option value="zone_0">Zone 0</option><option value="zone_1">Zone 1</option><option value="zone_2">Zone 2</option><option value="zone_20">Zone 20</option><option value="zone_21">Zone 21</option><option value="zone_22">Zone 22</option>
+</select>
+<select id="atex-filter-status" onchange="atexRender()" style="padding:7px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px">
+<option value="">All statuses</option><option value="controlled">Controlled</option><option value="action_required">Action required</option><option value="out_of_service">Out of service</option>
+</select>
+</div>
+</div>
+<div id="atex-list"><div class="loading-msg">Loading ATEX areas...</div></div>
+</div>
+
+<div id="atex-form" style="display:none">
+<div class="card" style="margin-bottom:14px;padding:14px 20px">
+<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
+<div><div style="font-size:16px;font-weight:700" id="atex-form-title">New ATEX Area</div><div style="font-size:12px;color:var(--text2)">Zone classification and control register</div></div>
+<div style="display:flex;gap:8px">
+<button class="btn" onclick="atexBack()"><i class="ti ti-arrow-left"></i>Back</button>
+<button class="btn" id="atex-del-btn" style="display:none;color:var(--red);border-color:var(--red)" onclick="atexDelete()"><i class="ti ti-trash"></i>Delete</button>
+<button class="btn btn-primary" onclick="atexSave()"><i class="ti ti-device-floppy"></i>Save</button>
+</div>
+</div>
+</div>
+<div style="display:grid;grid-template-columns:2fr 1fr;gap:16px">
+<div>
+<div class="card" style="margin-bottom:14px">
+<div class="card-title">Area Details</div>
+<div class="form-row">
+<div class="form-group"><label class="form-label">Reference</label><input type="text" id="atex-ref" placeholder="ATEX-001"/></div>
+<div class="form-group"><label class="form-label">Area name *</label><input type="text" id="atex-name" placeholder="Paint mixing room"/></div>
+<div class="form-group"><label class="form-label">Location</label><input type="text" id="atex-location"/></div>
+<div class="form-group"><label class="form-label">Plant area</label><input type="text" id="atex-plant"/></div>
+</div>
+<div class="form-row">
+<div class="form-group"><label class="form-label">Zone type</label><select id="atex-zone"><option value="zone_0">Zone 0</option><option value="zone_1">Zone 1</option><option value="zone_2" selected>Zone 2</option><option value="zone_20">Zone 20</option><option value="zone_21">Zone 21</option><option value="zone_22">Zone 22</option></select></div>
+<div class="form-group"><label class="form-label">Material type</label><select id="atex-material"><option value="gas_vapour">Gas / vapour</option><option value="dust">Combustible dust</option><option value="hybrid">Hybrid mixture</option></select></div>
+<div class="form-group"><label class="form-label">Substance / dust</label><input type="text" id="atex-substance" placeholder="LPG, solvent vapour, flour dust..."/></div>
+<div class="form-group"><label class="form-label">Source of release</label><input type="text" id="atex-release" placeholder="Valve, filling point, open container..."/></div>
+</div>
+</div>
+<div class="card" style="margin-bottom:14px">
+<div class="card-title">Controls</div>
+<div class="form-row">
+<div class="form-group"><label class="form-label">Ventilation controls</label><textarea id="atex-ventilation" style="min-height:70px"></textarea></div>
+<div class="form-group"><label class="form-label">Ignition source controls</label><textarea id="atex-ignition" style="min-height:70px"></textarea></div>
+<div class="form-group"><label class="form-label">Detection / monitoring controls</label><textarea id="atex-detection" style="min-height:70px"></textarea></div>
+</div>
+</div>
+<div class="card">
+<div class="card-title">Links</div>
+<div class="form-row">
+<div class="form-group"><label class="form-label">Linked equipment</label><input type="text" id="atex-equipment" placeholder="Ex motors, gas detector, ventilation fan..."/></div>
+<div class="form-group"><label class="form-label">Linked RA reference</label><input type="text" id="atex-ra"/></div>
+<div class="form-group"><label class="form-label">Linked permit type</label><input type="text" id="atex-permit" placeholder="Hot work, confined space, excavation..."/></div>
+</div>
+</div>
+</div>
+<div>
+<div class="card" style="margin-bottom:14px">
+<div class="card-title">Inspection & Status</div>
+<div class="form-group"><label class="form-label">Status</label><select id="atex-status"><option value="controlled">Controlled</option><option value="action_required">Action required</option><option value="out_of_service">Out of service</option></select></div>
+<div class="form-group"><label class="form-label">Responsible person</label><input type="text" id="atex-resp"/></div>
+<div class="form-row">
+<div class="form-group"><label class="form-label">Last inspection</label><input type="date" id="atex-last"/></div>
+<div class="form-group"><label class="form-label">Next inspection</label><input type="date" id="atex-next"/></div>
+</div>
+</div>
+<div class="card">
+<div class="card-title">Notes</div>
+<textarea id="atex-notes" style="min-height:170px" placeholder="Zone assumptions, restrictions, drawing reference, access limits..."></textarea>
+</div>
+</div>
+</div>
+</div>
 </div>
 
 <div id="page-tools" class="page">
