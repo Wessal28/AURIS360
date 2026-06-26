@@ -3427,26 +3427,26 @@ var ROLE_ALLOWED = {
   'admin':       null,
   'hse_manager': null,
   'executive':   ['dashboard','executive','kpi','workschedule','events','observation',
-                  'inspection','risk','tools','permit','contractor','emergency',
+                  'inspection','risk','tools','fleet','permit','contractor','emergency',
                   'fire','chemical','ohealth','ppe','esg','noise','meetings','training','actions',
                   'legal','sop','documents','people'],
   'manager':     ['dashboard','executive','kpi','workschedule','events','observation',
-                  'inspection','risk','tools','permit','contractor','emergency',
+                  'inspection','risk','tools','fleet','permit','contractor','emergency',
                   'fire','chemical','ohealth','ppe','esg','noise','meetings','training','actions',
                   'legal','sop','documents','people'],
   'site_manager':['dashboard','kpi','workschedule','events','observation','inspection',
-                  'risk','tools','permit','contractor','emergency','fire','chemical','ppe','esg','noise',
+                  'risk','tools','fleet','permit','contractor','emergency','fire','chemical','ppe','esg','noise',
                   'meetings','training','actions','sop','people'],
   'supervisor':  ['dashboard','kpi','workschedule','events','observation','inspection',
-                  'risk','tools','permit','contractor','emergency','fire','chemical','ppe','noise',
+                  'risk','tools','fleet','permit','contractor','emergency','fire','chemical','ppe','noise',
                   'meetings','training','actions','sop'],
   'auditor':     ['dashboard','events','observation','inspection','risk','legal',
                   'fire','documents','meetings','actions'],
   'hr':          ['dashboard','kpi','training','people','documents','ohealth','meetings'],
   'inspector':   ['dashboard','events','observation','inspection','risk','permit',
-                  'tools','ppe','meetings'],
+                  'tools','fleet','ppe','meetings'],
   'employee':    ['dashboard','events','observation','training','meetings','ppe','emergency','permit'],
-  'contractor':  ['dashboard','events','observation','permit','tools','ppe','emergency','meetings'],
+  'contractor':  ['dashboard','events','observation','permit','tools','fleet','ppe','emergency','meetings'],
   'user':        ['dashboard','events','observation','meetings'],
 };
 
@@ -3522,7 +3522,7 @@ if(target){
   target.classList.add('active');
 }
 if(el&&el.classList)el.classList.add('active');
-const L={dashboard:loadDash,executive:loadExecutive,kpi:kpiLoadAll,workschedule:loadWorkSchedule,events:loadEvents,observation:loadObservation,inspection:()=>{buildChecklist();loadInsps();},risk:loadRA,investigation:loadInvs,legal:loadLegal,sop:loadSOP,tools:loadTools,permit:loadPermits,contractor:loadContractors,esg:loadESG,emergency:loadEmergency,fire:loadFire,chemical:loadChemical,ohealth:loadOHealth,ppe:loadPPE,noise:loadNoise,meetings:loadMtgs,training:loadTraining,actions:loadActions,documents:loadDocs,people:loadPeople,users:loadUsers,admin:loadAdmin,'ai-insights':genFullAI,settings:loadSettings,integrations:loadIntegrations};
+const L={dashboard:loadDash,executive:loadExecutive,kpi:kpiLoadAll,workschedule:loadWorkSchedule,events:loadEvents,observation:loadObservation,inspection:()=>{buildChecklist();loadInsps();},risk:loadRA,investigation:loadInvs,legal:loadLegal,sop:loadSOP,tools:loadTools,fleet:loadFleet,permit:loadPermits,contractor:loadContractors,esg:loadESG,emergency:loadEmergency,fire:loadFire,chemical:loadChemical,ohealth:loadOHealth,ppe:loadPPE,noise:loadNoise,meetings:loadMtgs,training:loadTraining,actions:loadActions,documents:loadDocs,people:loadPeople,users:loadUsers,admin:loadAdmin,'ai-insights':genFullAI,settings:loadSettings,integrations:loadIntegrations};
 if(L[name])L[name]();
 // Mobile: close sidebar and scroll to top
 if(window.innerWidth<=768){
@@ -17798,6 +17798,108 @@ function toolsViewInspection(id){
   toast('Inspection details — feature coming soon');
 }
 
+// ===== FLEET MANAGEMENT MODULE =====
+let fleetVehicles=[], fleetFuel=[], fleetInspections=[], fleetIncidents=[];
+
+function fleetLabel(v){
+  return (v.registration_number||v.ref_number||v.name||'Vehicle').trim();
+}
+
+function fleetFuelMatchesVehicle(f,v){
+  var hay=(f.vehicle_equipment||'').toLowerCase();
+  if(!hay)return false;
+  return [v.registration_number,v.ref_number,v.name].some(function(x){return x&&hay.indexOf(String(x).toLowerCase())!==-1;});
+}
+
+async function loadFleet(){
+  var addBtn=document.getElementById('fleet-add-vehicle-btn');
+  if(addBtn)addBtn.style.display=isMgr()?'inline-flex':'none';
+  var el=document.getElementById('fleet-list');
+  if(!el)return;
+  el.innerHTML='<div class="loading-msg">Loading fleet...</div>';
+  try{
+    var res=await Promise.all([
+      api('/tools_register?is_vehicle=eq.true'+cf()+'&order=name&select=*'),
+      api('/tool_inspections?select=*'+cf()+'&order=inspection_date.desc&limit=500'),
+      api('/fuel_consumption?select=*'+cf()+'&order=record_date.desc&limit=500'),
+      api('/events?type=eq.vehicle'+cf()+'&order=created_at.desc&limit=200')
+    ]);
+    fleetVehicles=res[0]||[]; fleetInspections=res[1]||[]; fleetFuel=res[2]||[]; fleetIncidents=res[3]||[];
+    fleetRender();
+  }catch(e){
+    el.innerHTML='<div style="padding:20px;color:var(--red)">Fleet module unavailable: '+escH(e.message)+'</div>';
+  }
+}
+
+function fleetRender(){
+  var el=document.getElementById('fleet-list');
+  if(!el)return;
+  var today=new Date();today.setHours(0,0,0,0);
+  var lastInsp={};
+  fleetInspections.forEach(function(x){if(x.tool_id&&!lastInsp[x.tool_id])lastInsp[x.tool_id]=x;});
+  var active=fleetVehicles.filter(function(v){return (v.status||'active')==='active';}).length;
+  var overdue=0,totalFuel=0,totalCo2=0;
+  fleetVehicles.forEach(function(v){
+    var li=lastInsp[v.id], dt=li&&li.inspection_date?new Date(li.inspection_date):null;
+    if(!dt || Math.floor((today-dt)/(1000*60*60*24))>35)overdue++;
+    fleetFuel.filter(function(f){return fleetFuelMatchesVehicle(f,v);}).forEach(function(f){
+      totalFuel+=parseFloat(f.quantity)||0; totalCo2+=parseFloat(f.carbon_kg)||0;
+    });
+  });
+  var setM=function(id,v){var m=document.getElementById(id);if(m)m.textContent=v;};
+  setM('fleet-m-total',fleetVehicles.length);
+  setM('fleet-m-active',active);
+  setM('fleet-m-overdue',overdue);
+  setM('fleet-m-fuel',Math.round(totalFuel));
+  setM('fleet-m-co2',Math.round(totalCo2));
+  if(!fleetVehicles.length){
+    el.innerHTML='<div class="card" style="text-align:center;padding:42px;color:var(--text2)"><div style="font-size:40px;margin-bottom:10px"><i class="ti ti-car"></i></div><div style="font-weight:700;color:var(--text);margin-bottom:8px">No vehicles registered yet</div><div style="font-size:12px;margin-bottom:14px">Add company vehicles from here, then track inspections, fuel and incidents.</div>'+(isMgr()?'<button class="btn btn-primary" onclick="fleetNewVehicle()"><i class="ti ti-plus"></i>Add vehicle</button>':'')+'</div>';
+    return;
+  }
+  var h='<div class="card" style="padding:0;overflow:hidden"><div style="overflow-x:auto"><table style="width:100%;min-width:1180px;border-collapse:collapse;font-size:12px">'
+    +'<thead><tr style="background:#1a3a5c;color:#fff">'
+    +'<th style="padding:9px 12px;text-align:left">Vehicle</th>'
+    +'<th style="padding:9px 12px;text-align:left">Assigned / location</th>'
+    +'<th style="padding:9px 12px;text-align:left">Status</th>'
+    +'<th style="padding:9px 12px;text-align:left">Last monthly check</th>'
+    +'<th style="padding:9px 12px;text-align:left">Fuel logged</th>'
+    +'<th style="padding:9px 12px;text-align:center">Vehicle incidents</th>'
+    +'<th style="padding:9px 12px;text-align:right">Actions</th>'
+    +'</tr></thead><tbody>';
+  fleetVehicles.forEach(function(v,i){
+    var li=lastInsp[v.id], lastDt=li&&li.inspection_date?new Date(li.inspection_date):null;
+    var days=lastDt?Math.floor((today-lastDt)/(1000*60*60*24)):999;
+    var due=days>35, soon=days>21&&days<=35;
+    var fList=fleetFuel.filter(function(f){return fleetFuelMatchesVehicle(f,v);});
+    var fuelSum=fList.reduce(function(s,f){return s+(parseFloat(f.quantity)||0);},0);
+    var incCount=fleetIncidents.filter(function(ev){
+      var reg=(ev.vehicle_reg||'').toLowerCase(), lab=fleetLabel(v).toLowerCase();
+      return reg&&(reg===lab||lab.indexOf(reg)!==-1||reg.indexOf(lab)!==-1);
+    }).length;
+    var status=(v.status||'active').replace(/_/g,' ');
+    var stCfg=(v.status||'active')==='active'?['#EAF3DE','#3B6D11']:(v.status==='out_of_service'?['#FCEBEB','#A32D2D']:['#FEF9EC','#854F0B']);
+    h+='<tr style="border-bottom:1px solid #f0f0f0;background:'+(i%2?'#fafafa':'#fff')+(due?';border-left:4px solid var(--red)':soon?';border-left:4px solid var(--amber)':'')+'">'
+      +'<td style="padding:10px 12px"><div style="font-weight:800;font-size:13px">'+escH(fleetLabel(v))+'</div><div style="font-size:11px;color:var(--text2)">'+escH((v.name||'')+(v.brand?' - '+v.brand:'')+(v.model?' '+v.model:''))+'</div></td>'
+      +'<td style="padding:10px 12px"><div>'+escH(v.assigned_to_name||'General use')+'</div><div style="font-size:11px;color:var(--text2)">'+escH(v.location||'--')+'</div></td>'
+      +'<td style="padding:10px 12px"><span style="background:'+stCfg[0]+';color:'+stCfg[1]+';padding:3px 9px;border-radius:99px;font-size:11px;font-weight:700;text-transform:capitalize">'+escH(status)+'</span></td>'
+      +'<td style="padding:10px 12px;'+(due?'color:var(--red);font-weight:700':'')+'">'+(lastDt?lastDt.toLocaleDateString('en-GB'):'Never')+'<div style="font-size:11px;color:'+(due?'var(--red)':'var(--text2)')+'">'+(lastDt?(days+' days ago'):'Check due')+'</div></td>'
+      +'<td style="padding:10px 12px;font-weight:700">'+(fuelSum?fuelSum.toFixed(1):'0')+' L<div style="font-size:11px;color:var(--text2);font-weight:400">'+fList.length+' entries</div></td>'
+      +'<td style="padding:10px 12px;text-align:center;font-weight:800;color:'+(incCount?'var(--red)':'var(--text2)')+'">'+incCount+'</td>'
+      +'<td style="padding:10px 12px;text-align:right;white-space:nowrap">'
+      +'<button class="btn btn-sm" data-id="'+v.id+'" onclick="fleetMonthlyCheck(this.getAttribute(\'data-id\'))"><i class="ti ti-clipboard-check"></i>Check</button> '
+      +'<button class="btn btn-sm" data-label="'+escH(fleetLabel(v))+'" onclick="fleetFuelNew(this.getAttribute(\'data-label\'))"><i class="ti ti-gas-station"></i>Fuel</button> '
+      +'<button class="btn btn-sm" data-id="'+v.id+'" onclick="fleetEditVehicle(this.getAttribute(\'data-id\'))"><i class="ti ti-edit"></i></button>'
+      +'</td></tr>';
+  });
+  h+='</tbody></table></div></div>';
+  el.innerHTML=h;
+}
+
+function fleetNewVehicle(){showPage('tools',null);setTimeout(function(){if(typeof toolsNewVehicle==='function')toolsNewVehicle();},120);}
+function fleetEditVehicle(id){showPage('tools',null);setTimeout(function(){if(typeof toolsEdit==='function')toolsEdit(id);},160);}
+function fleetMonthlyCheck(id){showPage('tools',null);setTimeout(function(){if(typeof toolsStartInspection==='function')toolsStartInspection(id);},160);}
+function fleetFuelNew(label){showPage('esg',null);setTimeout(function(){if(typeof esgFuelNew==='function'){esgFuelNew();var el=document.getElementById('ff-vehicle');if(el)el.value=label||'';}},180);}
+
 // ===== MAP_JS.JS =====
 // ===================================================================
 // MASTER ACTION PLAN (MAP) / CAPA MODULE — Full Rebuild
@@ -23143,6 +23245,7 @@ var LAUNCHED_MODULES = [
   'permit',        // Permit to Work — Phase 1
   'fire',          // Fire Certificates — Phase 2
   'chemical',      // Chemical Control / COSHH
+  'fleet',         // Fleet Management
   'sop',           // SOP Generator — internal/admin rollout
   // To activate more: add module key here and redeploy
 ];
@@ -23396,6 +23499,7 @@ var MODULES_DIR = [
   {k:'inspection',  i:'ti-clipboard-check',    l:'Audits & Inspections',sec:'HSE Modules'},
   {k:'risk',        i:'ti-shield-check',       l:'Risk Assessment',     sec:'HSE Modules'},
   {k:'tools',       i:'ti-tools',              l:'Tools & Equipment',   sec:'HSE Modules'},
+  {k:'fleet',       i:'ti-car',                l:'Fleet Management',    sec:'HSE Modules'},
   {k:'permit',      i:'ti-key',                l:'Permit to Work',      sec:'HSE Modules'},
   {k:'contractor',  i:'ti-hard-hat',           l:'Contractors',         sec:'HSE Modules'},
   {k:'emergency',   i:'ti-alert-square',       l:'Emergency',           sec:'HSE Modules'},
@@ -24284,6 +24388,7 @@ var MODULE_CATALOGUE = [
   {k:'esg',         l:'Environmental / ESG'},
   {k:'contractor',  l:'Contractors'},
   {k:'tools',       l:'Tools Register'},
+  {k:'fleet',       l:'Fleet Management'},
   {k:'legal',       l:'Legal Compliance'},
   {k:'sop',         l:'SOP Generator'},
   {k:'documents',   l:'Document Control'},
@@ -24421,6 +24526,7 @@ var MODULE_CATALOG = [
   { key:'permit',      icon:'ti-id-badge',         name:'Permit to Work' },
   { key:'fire',        icon:'ti-flame',            name:'Fire Certificates' },
   { key:'chemical',    icon:'ti-flask',            name:'Chemical Control' },
+  { key:'fleet',       icon:'ti-car',              name:'Fleet Management' },
   // Coming-soon modules (not in LAUNCHED_MODULES yet — toggle shows but inactive)
   { key:'risk',        icon:'ti-chart-bar',        name:'Risk Assessment' },
   { key:'inspection',  icon:'ti-clipboard-check',  name:'Audits & Inspections' },
@@ -25179,6 +25285,7 @@ var MOBILE_MODULES = [
   {k:'inspection',   l:'Inspections',  i:'ti-clipboard-check',    r:['all']},
   {k:'risk',         l:'Risk',         i:'ti-shield-exclamation', r:['all']},
   {k:'tools',        l:'Tools',        i:'ti-tool',               r:['all']},
+  {k:'fleet',        l:'Fleet',        i:'ti-car',                r:['admin','hse_manager','site_manager','supervisor','contractor','sephs_admin']},
   {k:'permit',       l:'Permits',      i:'ti-file-certificate',   r:['all']},
   {k:'contractor',   l:'Contractors',  i:'ti-hard-hat',           r:['admin','hse_manager','site_manager','supervisor','sephs_admin']},
   {k:'emergency',    l:'Emergency',    i:'ti-ambulance',          r:['all']},
@@ -25205,7 +25312,7 @@ var MOBILE_MODULES = [
 var MODULE_COLORS = {
   dashboard:'#185FA5', executive:'#5B21B6', kpi:'#185FA5',
   workschedule:'#065F46', events:'#DC2626', observation:'#9A3412',
-  inspection:'#1D9E75', risk:'#C2410C', tools:'#374151',
+  inspection:'#1D9E75', risk:'#C2410C', tools:'#374151', fleet:'#185FA5',
   permit:'#854F0B', contractor:'#0891B2', emergency:'#DC2626', fire:'#B91C1C', chemical:'#7C3AED',
   ohealth:'#065F46', ppe:'#1D9E75', esg:'#065F46',
   noise:'#EF9F27', meetings:'#185FA5', training:'#5B21B6',
@@ -27403,7 +27510,7 @@ function fireEquipStatusBadge(s) {
 <span class="nav-section">Main</span><div class="nav-item active" onclick="showPage('dashboard',this)"><i class="ti ti-layout-dashboard"></i>Dashboard</div>
 <div class="nav-item" id="nav-executive" onclick="showPage('executive',this)"><i class="ti ti-chart-bar"></i>Executive Dashboard</div><div class="nav-item" id="nav-ai" onclick="showPage('ai-insights',this)"><i class="ti ti-brain"></i>AI Insights</div><span class="nav-section">HSE Modules</span><div class="nav-item" onclick="showPage('kpi',this)"><i class="ti ti-target"></i>Objectives & KPIs</div><div class="nav-item" onclick="showPage('workschedule',this)"><i class="ti ti-calendar-event"></i>Work Schedule</div>
 <div class="nav-item" onclick="showPage('events',this)"><i class="ti ti-alert-triangle"></i>Incident Management</div><div class="nav-item" onclick="showPage('observation',this)"><i class="ti ti-eye"></i>BBS Observations</div>
-<div class="nav-item" onclick="showPage('inspection',this)"><i class="ti ti-clipboard-check"></i>Audits &amp; Inspections</div><div class="nav-item" onclick="showPage('risk',this)"><i class="ti ti-shield-check"></i>Risk Assessment</div><div class="nav-item" onclick="showPage('tools',this)"><i class="ti ti-tools"></i>Tools & Equipment</div>
+<div class="nav-item" onclick="showPage('inspection',this)"><i class="ti ti-clipboard-check"></i>Audits &amp; Inspections</div><div class="nav-item" onclick="showPage('risk',this)"><i class="ti ti-shield-check"></i>Risk Assessment</div><div class="nav-item" onclick="showPage('tools',this)"><i class="ti ti-tools"></i>Tools & Equipment</div><div class="nav-item" onclick="showPage('fleet',this)"><i class="ti ti-car"></i>Fleet Management</div>
 <div class="nav-item" onclick="showPage('permit',this)"><i class="ti ti-key"></i>Permit to Work</div>
 <div class="nav-item" onclick="showPage('contractor',this)"><i class="ti ti-hard-hat"></i>Contractors</div><div class="nav-item" onclick="showPage('emergency',this)"><i class="ti ti-alert-square"></i>Emergency</div>
 <div class="nav-item" onclick="showPage('ohealth',this)"><i class="ti ti-stethoscope"></i>Occupational Health</div>
@@ -31151,6 +31258,24 @@ function fireEquipStatusBadge(s) {
 </div>
 
 </div><!-- end page-legal -->
+
+<div id="page-fleet" class="page">
+<div class="page-header">
+<div><div class="page-title">Fleet Management</div><div style="font-size:12px;color:var(--text2)">Vehicle register, monthly checks, fuel usage and incident links</div></div>
+<div style="display:flex;gap:8px">
+<button class="btn btn-primary" id="fleet-add-vehicle-btn" style="display:none" onclick="fleetNewVehicle()"><i class="ti ti-plus"></i>Add vehicle</button>
+<button class="btn" onclick="fleetFuelNew('')"><i class="ti ti-gas-station"></i>Fuel log</button>
+</div>
+</div>
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:14px">
+<div class="card" style="padding:12px 14px;border-left:4px solid #185FA5"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">Vehicles</div><div style="font-size:24px;font-weight:800;color:#185FA5" id="fleet-m-total">--</div></div>
+<div class="card" style="padding:12px 14px;border-left:4px solid #1D9E75"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">Active</div><div style="font-size:24px;font-weight:800;color:#1D9E75" id="fleet-m-active">--</div></div>
+<div class="card" style="padding:12px 14px;border-left:4px solid #E24B4A"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">Checks overdue</div><div style="font-size:24px;font-weight:800;color:#E24B4A" id="fleet-m-overdue">--</div></div>
+<div class="card" style="padding:12px 14px;border-left:4px solid #EF9F27"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">Fuel logged</div><div style="font-size:24px;font-weight:800;color:#EF9F27"><span id="fleet-m-fuel">--</span> L</div></div>
+<div class="card" style="padding:12px 14px;border-left:4px solid #6D28D9"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">CO2e</div><div style="font-size:24px;font-weight:800;color:#6D28D9"><span id="fleet-m-co2">--</span> kg</div></div>
+</div>
+<div id="fleet-list"><div class="loading-msg">Loading fleet...</div></div>
+</div>
 
 <div id="page-tools" class="page">
 <div class="page-header">
