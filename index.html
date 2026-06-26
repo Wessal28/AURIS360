@@ -17822,7 +17822,7 @@ async function loadFleet(){
       api('/tools_register?is_vehicle=eq.true'+cf()+'&order=name&select=*'),
       api('/tool_inspections?select=*'+cf()+'&order=inspection_date.desc&limit=500'),
       api('/fuel_consumption?select=*'+cf()+'&order=record_date.desc&limit=500'),
-      api('/events?type=eq.vehicle'+cf()+'&order=created_at.desc&limit=200')
+      api('/events?select=id,event_type,vehicle_reg,created_at,event_date'+cf()+'&order=created_at.desc&limit=200')
     ]);
     fleetVehicles=res[0]||[]; fleetInspections=res[1]||[]; fleetFuel=res[2]||[]; fleetIncidents=res[3]||[];
     fleetRender();
@@ -17873,6 +17873,7 @@ function fleetRender(){
     var fList=fleetFuel.filter(function(f){return fleetFuelMatchesVehicle(f,v);});
     var fuelSum=fList.reduce(function(s,f){return s+(parseFloat(f.quantity)||0);},0);
     var incCount=fleetIncidents.filter(function(ev){
+      if((ev.event_type||'')!=='vehicle')return false;
       var reg=(ev.vehicle_reg||'').toLowerCase(), lab=fleetLabel(v).toLowerCase();
       return reg&&(reg===lab||lab.indexOf(reg)!==-1||reg.indexOf(lab)!==-1);
     }).length;
