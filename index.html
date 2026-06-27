@@ -3441,7 +3441,7 @@ function fillPplDrops(){
 const opts='<option value="">Select person...</option>'+people.map(p=>'<option value="'+p.id+'">'+p.last_name+', '+p.first_name+(p.job_title?' -- '+p.job_title:'')+'</option>').join('');
 const nameOpts='<option value="">Select person...</option>'+people.map(function(p){var nm=[p.first_name,p.last_name].filter(Boolean).join(' ')||p.email||'';return '<option value="'+escH(nm)+'">'+escH([p.last_name,p.first_name].filter(Boolean).join(', ')||nm)+(p.job_title?' -- '+escH(p.job_title):'')+'</option>';}).join('');
 ['ef-person','ef-by','ef-assigned','rf-by','invf-by','invf-persons','pf-contractor','pf-issued','pf-approved','nf-by','mf-chair','kf-resp','af-resp','df-owner'].forEach(id=>{const el=document.getElementById(id);if(el&&!el.multiple)el.innerHTML=opts;});
-['if-by','if-sign-inspector','if-sign-reviewer','obs-action-assigned','obs-observer','obs-person-observed','lc-responsible','lcaf-assessor','lcaf-approved-by','gapf-responsible','calf-responsible','ms-chaired-by','ms-responsible','kpi-resp','prf-requested-by','prf-approved-by','bullf-author','bullf-approved-by','mom-sign-chair','mom-sign-approver','sop-author','sop-approver','adm-site-manager','tp-trainer','tfr-trainer','compf-person','compf-assessor','indf-person','indf-inducted-by','elef-person','ertf-name','mpf-warden','drf-conducted-by','drf-reviewed-by','drf-approved-by','bcpf-approved-by','msf-name','audf-name','spif-name','vaxf-name','odf-name'].forEach(id=>{document.querySelectorAll('[id="'+id+'"]').forEach(el=>{if(el&&!el.multiple&&el.tagName==='SELECT'){var cur=el.value;el.innerHTML=nameOpts;if(cur){el.value=cur;if(el.value!==cur){var o=document.createElement('option');o.value=cur;o.textContent=cur+' (saved text)';el.appendChild(o);el.value=cur;}}}});});
+['if-by','if-sign-inspector','if-sign-reviewer','obs-action-assigned','obs-observer','obs-person-observed','mf-assigned-by','lc-responsible','lcaf-assessor','lcaf-approved-by','gapf-responsible','calf-responsible','ms-chaired-by','ms-responsible','kpi-resp','prf-requested-by','prf-approved-by','bullf-author','bullf-approved-by','mom-sign-chair','mom-sign-approver','sop-author','sop-approver','adm-site-manager','tp-trainer','tfr-trainer','compf-person','compf-assessor','indf-person','indf-inducted-by','elef-person','ertf-name','mpf-warden','drf-conducted-by','drf-reviewed-by','drf-approved-by','bcpf-approved-by','msf-name','audf-name','spif-name','vaxf-name','odf-name'].forEach(id=>{document.querySelectorAll('[id="'+id+'"]').forEach(el=>{if(el&&!el.multiple&&el.tagName==='SELECT'){var cur=el.value;el.innerHTML=nameOpts;if(cur){el.value=cur;if(el.value!==cur){var o=document.createElement('option');o.value=cur;o.textContent=cur+' (saved text)';el.appendChild(o);el.value=cur;}}}});});
 const ms=document.getElementById('tf-attendees');
 if(ms)ms.innerHTML=people.map(p=>'<option value="'+p.id+'">'+p.last_name+', '+p.first_name+'</option>').join('');
 }
@@ -19065,6 +19065,7 @@ function mapNew(){
   document.getElementById('mf-start-date').value=new Date().toISOString().slice(0,10);
   mapUpdateEffectivenessStars(0);
   mapPopulatePeopleSelects();
+  fillPersonSelect('mf-assigned-by',prof?.full_name||'');
   document.getElementById('map-action-btns').innerHTML='';
   document.getElementById('map-workflow-bar').innerHTML='';
   document.getElementById('map-form-type-label').textContent='New CAPA Action';
@@ -19114,7 +19115,11 @@ async function mapEdit(id){
   // Recurrence
   var recEl=document.getElementById('mf-recurrence');if(recEl)recEl.value=x.recurrence_prevented==null?'':(x.recurrence_prevented?'true':'false');
   await mapPopulatePeopleSelects();
-  var assSel=document.getElementById('mf-assigned-to');if(assSel&&x.assigned_to_id)assSel.value=x.assigned_to_id;
+  fillPersonSelect('mf-assigned-by',x.assigned_by||x.issuer);
+  var assSel=document.getElementById('mf-assigned-to');
+  if(assSel&&x.assigned_to_id)assSel.value=x.assigned_to_id;
+  else if(assSel&&(x.assigned_to_name||x.responsible)){var optA=Array.from(assSel.options).find(o=>o.text.includes(x.assigned_to_name||x.responsible));if(optA)assSel.value=optA.value;}
+  mapAssignedToSelect();
   var escSel=document.getElementById('mf-escalated-to');if(escSel&&x.escalated_to){var opt=Array.from(escSel.options).find(o=>o.text.includes(x.escalated_to));if(opt)escSel.value=opt.value;}
   var closeSel=document.getElementById('mf-closure-by');if(closeSel&&x.closure_approved_by){var opt2=Array.from(closeSel.options).find(o=>o.text.includes(x.closure_approved_by));if(opt2)closeSel.value=opt2.value;}
   var verifSel=document.getElementById('mf-verified-by');if(verifSel&&x.verified_by){var opt3=Array.from(verifSel.options).find(o=>o.text.includes(x.verified_by));if(opt3)verifSel.value=opt3.value;}
@@ -19131,6 +19136,13 @@ async function mapPopulatePeopleSelects(){
   if(!people||!people.length){try{var d=await api('/people?select=id,first_name,last_name,job_title'+cf());if(d&&d.length)window.people=d;}catch(ex){}}
   var opts='<option value="">Select person...</option>'+(people||[]).map(function(p){return '<option value="'+p.id+'">'+escH(p.last_name+', '+p.first_name+(p.job_title?' — '+p.job_title:''))+'</option>';}).join('');
   ['mf-assigned-to','mf-escalated-to','mf-verified-by','mf-closure-by'].forEach(function(id){var el=document.getElementById(id);if(el)el.innerHTML=opts;});
+}
+
+function mapAssignedToSelect(){
+  var assId=document.getElementById('mf-assigned-to')?.value||'';
+  var p=(people||[]).find(function(x){return x.id===assId;});
+  var dept=document.getElementById('mf-dept');
+  if(p&&dept)dept.value=p.department||'';
 }
 
 function mapRenderActionButtons(x){
@@ -36171,10 +36183,10 @@ function fireEquipStatusBadge(s) {
 <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
 <div>
 <div class="card" style="margin-bottom:14px;border:2px solid #1D9E75"><div class="card-title" style="color:#1D9E75"><i class="ti ti-user-check"></i> Primary Assignment</div>
-<div class="form-group"><label class="form-label">Assigned to</label><select id="mf-assigned-to"><option value="">Select person...</option></select></div>
+<div class="form-group"><label class="form-label">Assigned to</label><select id="mf-assigned-to" onchange="mapAssignedToSelect()"><option value="">Select person...</option></select></div>
 <div class="form-group"><label class="form-label">Department</label><input type="text" id="mf-dept"/></div>
 <div class="form-row">
-<div class="form-group"><label class="form-label">Assigned by</label><input type="text" id="mf-assigned-by"/></div>
+<div class="form-group"><label class="form-label">Assigned by</label><select id="mf-assigned-by"><option value="">Select person...</option></select></div>
 <div class="form-group"><label class="form-label">Assignment date</label><input type="date" id="mf-assigned-date"/></div>
 </div>
 <div class="form-group"><label class="form-label">Instructions to assignee</label><textarea id="mf-instructions" style="min-height:70px" placeholder="What specifically does the assignee need to do?"></textarea></div>
