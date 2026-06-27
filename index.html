@@ -3441,7 +3441,7 @@ function fillPplDrops(){
 const opts='<option value="">Select person...</option>'+people.map(p=>'<option value="'+p.id+'">'+p.last_name+', '+p.first_name+(p.job_title?' -- '+p.job_title:'')+'</option>').join('');
 const nameOpts='<option value="">Select person...</option>'+people.map(function(p){var nm=[p.first_name,p.last_name].filter(Boolean).join(' ')||p.email||'';return '<option value="'+escH(nm)+'">'+escH([p.last_name,p.first_name].filter(Boolean).join(', ')||nm)+(p.job_title?' -- '+escH(p.job_title):'')+'</option>';}).join('');
 ['ef-person','ef-by','ef-assigned','rf-by','invf-by','invf-persons','pf-contractor','pf-issued','pf-approved','nf-by','mf-chair','kf-resp','af-resp','df-owner'].forEach(id=>{const el=document.getElementById(id);if(el&&!el.multiple)el.innerHTML=opts;});
-['if-by','if-sign-inspector','if-sign-reviewer','obs-action-assigned','obs-observer','obs-person-observed','mf-assigned-by','ra-assessed-by','ra-approved-by','ra-reviewed-by','ra-sign-assessor','ra-sign-reviewer','ra-sign-approver','lc-responsible','lcaf-assessor','lcaf-approved-by','gapf-responsible','calf-responsible','ms-chaired-by','ms-responsible','kpi-resp','prf-emp-name','prf-requested-by','prf-approved-by','bullf-author','bullf-approved-by','mom-sign-chair','mom-sign-approver','sop-author','sop-approver','adm-site-manager','tp-trainer','tfr-trainer','compf-person','compf-assessor','indf-person','indf-inducted-by','elef-person','ertf-name','mpf-warden','drf-conducted-by','drf-reviewed-by','drf-approved-by','bcpf-approved-by','msf-name','audf-name','spif-name','vaxf-name','odf-name'].forEach(id=>{document.querySelectorAll('[id="'+id+'"]').forEach(el=>{if(el&&!el.multiple&&el.tagName==='SELECT'){var cur=el.value;el.innerHTML=nameOpts;if(cur){el.value=cur;if(el.value!==cur){var o=document.createElement('option');o.value=cur;o.textContent=cur+' (saved text)';el.appendChild(o);el.value=cur;}}}});});
+['if-by','if-sign-inspector','if-sign-reviewer','obs-action-assigned','obs-observer','obs-person-observed','mf-assigned-by','ra-assessed-by','ra-approved-by','ra-reviewed-by','ra-sign-assessor','ra-sign-reviewer','ra-sign-approver','lc-responsible','lcaf-assessor','lcaf-approved-by','gapf-responsible','calf-responsible','ms-chaired-by','ms-responsible','kpi-resp','pif-emp-name','pif-issued-by','piif-emp-name','piif-inspector','prf-emp-name','prf-requested-by','prf-approved-by','bullf-author','bullf-approved-by','mom-sign-chair','mom-sign-approver','sop-author','sop-approver','adm-site-manager','tp-trainer','tfr-trainer','compf-person','compf-assessor','indf-person','indf-inducted-by','elef-person','ertf-name','mpf-warden','drf-conducted-by','drf-reviewed-by','drf-approved-by','bcpf-approved-by','msf-name','audf-name','spif-name','vaxf-name','odf-name'].forEach(id=>{document.querySelectorAll('[id="'+id+'"]').forEach(el=>{if(el&&!el.multiple&&el.tagName==='SELECT'){var cur=el.value;el.innerHTML=nameOpts;if(cur){el.value=cur;if(el.value!==cur){var o=document.createElement('option');o.value=cur;o.textContent=cur+' (saved text)';el.appendChild(o);el.value=cur;}}}});});
 const ms=document.getElementById('tf-attendees');
 if(ms)ms.innerHTML=people.map(p=>'<option value="'+p.id+'">'+p.last_name+', '+p.first_name+'</option>').join('');
 }
@@ -3519,6 +3519,20 @@ function ppeRepPersonSelect(){
   var name=document.getElementById('prf-emp-name')?.value||'';
   var p=trainPersonByName(name);
   var dept=document.getElementById('prf-dept');
+  if(p&&dept)dept.value=p.department||'';
+}
+function ppeIssPersonSelect(){
+  var name=document.getElementById('pif-emp-name')?.value||'';
+  var p=trainPersonByName(name);
+  if(!p)return;
+  var emp=document.getElementById('pif-emp-id');if(emp)emp.value=p.employee_number||p.id_number||'';
+  var dept=document.getElementById('pif-dept');if(dept)dept.value=p.department||'';
+  var title=document.getElementById('pif-title');if(title)title.value=p.job_title||'';
+}
+function ppeInspPersonSelect(){
+  var name=document.getElementById('piif-emp-name')?.value||'';
+  var p=trainPersonByName(name);
+  var dept=document.getElementById('piif-dept');
   if(p&&dept)dept.value=p.department||'';
 }
 // ── Role → allowed pages map ────────────────────────────────────────
@@ -17450,6 +17464,7 @@ async function ppeIssLoadReferenceOptions(selectedWO,selectedRA){
 async function ppeIssNew(){
   ppeIssEditId=null;document.getElementById('ppe-iss-form-title').textContent='Issue PPE';document.getElementById('ppe-iss-form-ref').textContent='ISS-AUTO';document.getElementById('ppe-iss-del-btn').style.display='none';
   ['pif-emp-name','pif-emp-id','pif-dept','pif-title','pif-issued-by','pif-size','pif-serial','pif-batch','pif-wo-ref','pif-ra-ref','pif-hazard','pif-notes','pif-return-reason','pif-mfg-date'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
+  fillPersonSelect('pif-emp-name');fillPersonSelect('pif-issued-by',prof?.full_name||personFullName(prof));
   await ppeIssLoadReferenceOptions();
   ['pif-expiry-date','pif-replace-date','pif-ack-date','pif-return-date'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
   document.getElementById('pif-issued-date').value=new Date().toISOString().slice(0,10);
@@ -17465,7 +17480,7 @@ async function ppeIssEdit(id){
   ppeIssEditId=id;document.getElementById('ppe-iss-form-title').textContent='Edit Issuance';document.getElementById('ppe-iss-form-ref').textContent=x.issuance_ref||'—';document.getElementById('ppe-iss-del-btn').style.display=isMgr()?'inline-flex':'none';
   await ppeIssLoadReferenceOptions(x.work_order_ref,x.ra_ref);
   var gf=function(fid,val){var el=document.getElementById(fid);if(el)el.value=val||'';};
-  gf('pif-emp-name',x.employee_name);gf('pif-emp-id',x.employee_id);gf('pif-dept',x.department);gf('pif-title',x.job_title);gf('pif-issued-by',x.issued_by);gf('pif-size',x.size);gf('pif-serial',x.serial_number);gf('pif-batch',x.batch_number);gf('pif-wo-ref',x.work_order_ref);gf('pif-ra-ref',x.ra_ref);gf('pif-hazard',x.hazard_ref);gf('pif-notes',x.notes);gf('pif-issued-date',x.issued_date);gf('pif-mfg-date',x.manufacture_date);gf('pif-expiry-date',x.expiry_date);gf('pif-replace-date',x.expected_replacement_date);gf('pif-ack-date',x.acknowledgement_date);gf('pif-return-date',x.return_date);gf('pif-return-reason',x.return_reason);
+  fillPersonSelect('pif-emp-name',x.employee_name);gf('pif-emp-id',x.employee_id);gf('pif-dept',x.department);gf('pif-title',x.job_title);fillPersonSelect('pif-issued-by',x.issued_by);gf('pif-size',x.size);gf('pif-serial',x.serial_number);gf('pif-batch',x.batch_number);gf('pif-wo-ref',x.work_order_ref);gf('pif-ra-ref',x.ra_ref);gf('pif-hazard',x.hazard_ref);gf('pif-notes',x.notes);gf('pif-issued-date',x.issued_date);gf('pif-mfg-date',x.manufacture_date);gf('pif-expiry-date',x.expiry_date);gf('pif-replace-date',x.expected_replacement_date);gf('pif-ack-date',x.acknowledgement_date);gf('pif-return-date',x.return_date);gf('pif-return-reason',x.return_reason);
   document.getElementById('pif-qty').value=x.quantity||1;document.getElementById('pif-condition').value=x.condition_on_issue||'new';document.getElementById('pif-status').value=x.status||'active';document.getElementById('pif-returned').checked=!!x.returned;document.getElementById('pif-ack').checked=!!x.employee_signature;
   var rcEl=document.getElementById('pif-return-condition');if(rcEl&&x.return_condition)rcEl.value=x.return_condition;
   document.getElementById('pif-return-fields').style.display=x.returned?'block':'none';
@@ -17555,6 +17570,7 @@ function ppeInspBack(){document.getElementById('ppe-insp-form').style.display='n
 async function ppeInspNew(){
   ppeInspEditId=null;document.getElementById('ppe-insp-form-title').textContent='New PPE Inspection';document.getElementById('ppe-insp-form-ref').textContent='PPEINSP-AUTO';document.getElementById('ppe-insp-del-btn').style.display='none';
   ['piif-emp-name','piif-dept','piif-inspector','piif-defects','piif-notes','piif-repl-ref'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
+  fillPersonSelect('piif-emp-name');fillPersonSelect('piif-inspector',prof?.full_name||personFullName(prof));
   ['piif-date','piif-next-date'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
   document.getElementById('piif-date').value=new Date().toISOString().slice(0,10);
   document.getElementById('piif-action').value='cleared_for_use';document.getElementById('piif-result').value='pass';document.getElementById('piif-repl-issued').checked=false;
@@ -17568,7 +17584,7 @@ async function ppeInspEdit(id){
   var x=ppeInspData.find(r=>r.id===id);if(!x)return;
   ppeInspEditId=id;document.getElementById('ppe-insp-form-title').textContent='Edit Inspection';document.getElementById('ppe-insp-form-ref').textContent=x.inspection_ref||'—';document.getElementById('ppe-insp-del-btn').style.display=isMgr()?'inline-flex':'none';
   var gf=function(fid,val){var el=document.getElementById(fid);if(el)el.value=val||'';};
-  gf('piif-emp-name',x.employee_name);gf('piif-dept',x.department);gf('piif-inspector',x.inspector);gf('piif-date',x.inspection_date);gf('piif-next-date',x.next_inspection_date);gf('piif-defects',x.defects_found);gf('piif-notes',x.notes);gf('piif-repl-ref',x.replacement_issuance_ref);
+  fillPersonSelect('piif-emp-name',x.employee_name);gf('piif-dept',x.department);fillPersonSelect('piif-inspector',x.inspector);gf('piif-date',x.inspection_date);gf('piif-next-date',x.next_inspection_date);gf('piif-defects',x.defects_found);gf('piif-notes',x.notes);gf('piif-repl-ref',x.replacement_issuance_ref);
   document.getElementById('piif-action').value=x.action_taken||'none';document.getElementById('piif-result').value=x.overall_result||'pass';document.getElementById('piif-repl-issued').checked=!!x.replacement_issued;
   document.querySelectorAll('[name^="piif-result-radio"]').forEach(r=>{r.checked=r.value===(x.overall_result||'pass');});
   await ppePopulatePPESelects();
@@ -34816,7 +34832,7 @@ function fireEquipStatusBadge(s) {
 </div>
 <div id="pif-ppe-info" style="margin-bottom:12px"></div>
 <div class="form-row">
-<div class="form-group"><label class="form-label">Employee name</label><input type="text" id="pif-emp-name" placeholder="Who is receiving this PPE?"/></div>
+<div class="form-group"><label class="form-label">Employee name</label><select id="pif-emp-name" onchange="ppeIssPersonSelect()"><option value="">Select person...</option></select></div>
 <div class="form-group"><label class="form-label">Employee ID</label><input type="text" id="pif-emp-id"/></div>
 <div class="form-group"><label class="form-label">Department</label><input type="text" id="pif-dept"/></div>
 <div class="form-group"><label class="form-label">Job title</label><input type="text" id="pif-title"/></div>
@@ -34825,7 +34841,7 @@ function fireEquipStatusBadge(s) {
 <div class="card" style="margin-bottom:14px"><div class="card-title">Issuance Details</div>
 <div class="form-row">
 <div class="form-group"><label class="form-label">Issued date</label><input type="date" id="pif-issued-date"/></div>
-<div class="form-group"><label class="form-label">Issued by</label><input type="text" id="pif-issued-by"/></div>
+<div class="form-group"><label class="form-label">Issued by</label><select id="pif-issued-by"><option value="">Select person...</option></select></div>
 <div class="form-group"><label class="form-label">Quantity</label><input type="number" id="pif-qty" value="1" min="1"/></div>
 <div class="form-group"><label class="form-label">Size</label><input type="text" id="pif-size" placeholder="S / M / L / XL / 42 etc."/></div>
 </div>
@@ -34884,9 +34900,9 @@ function fireEquipStatusBadge(s) {
 <div class="card" style="margin-bottom:14px">
 <div class="form-row">
 <div class="form-group"><label class="form-label">PPE item</label><select id="piif-ppe-id" onchange="ppeInspSelectItem()"><option value="">Select PPE...</option></select></div>
-<div class="form-group"><label class="form-label">Employee name</label><input type="text" id="piif-emp-name"/></div>
+<div class="form-group"><label class="form-label">Employee name</label><select id="piif-emp-name" onchange="ppeInspPersonSelect()"><option value="">Select person...</option></select></div>
 <div class="form-group"><label class="form-label">Department</label><input type="text" id="piif-dept"/></div>
-<div class="form-group"><label class="form-label">Inspector</label><input type="text" id="piif-inspector"/></div>
+<div class="form-group"><label class="form-label">Inspector</label><select id="piif-inspector"><option value="">Select person...</option></select></div>
 <div class="form-group"><label class="form-label">Inspection date</label><input type="date" id="piif-date"/></div>
 <div class="form-group"><label class="form-label">Next inspection date</label><input type="date" id="piif-next-date"/></div>
 </div>
