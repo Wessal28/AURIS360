@@ -5355,6 +5355,46 @@ function ccid(){
   return (isSA() && sephsCompanyContext) ? sephsCompanyContext : prof?.company_id;
 }
 function toast(m,ok=true){const t=document.getElementById('toast');if(!t){console.log('Toast:',m);return;}t.textContent=m;t.className='toast '+(ok?'toast-ok':'toast-err');t.style.display='block';setTimeout(()=>t.style.display='none',3500);}
+function appConfirm(opts){
+  opts=opts||{};
+  var modal=document.getElementById('app-confirm-modal');
+  if(!modal){
+    return Promise.resolve(window.confirm(opts.message||'Are you sure?'));
+  }
+  var title=document.getElementById('app-confirm-title');
+  var message=document.getElementById('app-confirm-message');
+  var detail=document.getElementById('app-confirm-detail');
+  var cancelBtn=document.getElementById('app-confirm-cancel');
+  var okBtn=document.getElementById('app-confirm-ok');
+  if(title)title.textContent=opts.title||'Please confirm';
+  if(message)message.textContent=opts.message||'Are you sure you want to continue?';
+  if(detail){
+    detail.textContent=opts.detail||'';
+    detail.style.display=opts.detail?'block':'none';
+  }
+  if(cancelBtn)cancelBtn.textContent=opts.cancelText||'Cancel';
+  if(okBtn){
+    okBtn.textContent=opts.confirmText||'Confirm';
+    okBtn.style.background=opts.danger===false?'var(--green)':'var(--red)';
+  }
+  modal.style.display='flex';
+  return new Promise(function(resolve){
+    function close(answer){
+      modal.style.display='none';
+      if(cancelBtn)cancelBtn.onclick=null;
+      if(okBtn)okBtn.onclick=null;
+      modal.onclick=null;
+      document.removeEventListener('keydown',onKey);
+      resolve(answer);
+    }
+    function onKey(e){if(e.key==='Escape')close(false);}
+    if(cancelBtn)cancelBtn.onclick=function(){close(false);};
+    if(okBtn)okBtn.onclick=function(){close(true);};
+    modal.onclick=function(e){if(e.target===modal)close(false);};
+    document.addEventListener('keydown',onKey);
+    setTimeout(function(){if(cancelBtn)cancelBtn.focus();},0);
+  });
+}
 function fmt(d){return d?new Date(d).toLocaleDateString('en-GB'):'--';}
 function sev(s){const m={low:'bb',medium:'ba',high:'br',critical:'br'};return '<span class="badge '+(m[s]||'bb')+'">'+( s||'--')+'</span>';}
 function stat(s){const c={open:'ba',in_progress:'ba',closed:'bg',on_track:'bg',at_risk:'ba',off_track:'br',completed:'bb',approved:'bg',active:'bg',draft:'bgr',pending_approval:'ba',cancelled:'br',review:'ba',current:'bg',superseded:'br',valid:'bg',expired:'br',pending:'ba',active:'bg',inactive:'bgr',suspended:'br'};return '<span class="badge '+(c[s]||'bgr')+'">'+( s||'').replace(/_/g,' ')+'</span>';}
@@ -6244,7 +6284,16 @@ async function chemSave(){
 }
 
 async function chemDelete(){
-  if(!chemEditId||!confirm('Delete this chemical record?'))return;
+  if(!chemEditId)return;
+  var ok=await appConfirm({
+    title:'Delete chemical',
+    message:'Delete this chemical record?',
+    detail:'AURIS360 will remove it from the active chemical register. If your database policy blocks permanent deletion, the record will be archived instead.',
+    confirmText:'Delete chemical',
+    cancelText:'Keep record',
+    danger:true
+  });
+  if(!ok)return;
   try{
     var deleted=await api('/chemical_register?id=eq.'+encodeURIComponent(chemEditId),{m:'DELETE',p:'return=representation'});
     if(Array.isArray(deleted)&&!deleted.length){
@@ -37910,6 +37959,23 @@ I can help you:<br>
 </div>
 
 <!-- ═══════ CLIENT ONBOARDING WIZARD ═══════ -->
+<div id="app-confirm-modal" style="display:none;position:fixed;inset:0;background:rgba(15,23,42,.55);z-index:900;align-items:center;justify-content:center;padding:16px">
+  <div class="card" role="dialog" aria-modal="true" aria-labelledby="app-confirm-title" style="width:100%;max-width:440px;border-radius:12px;box-shadow:0 20px 70px rgba(15,23,42,.28);padding:0;overflow:hidden">
+    <div style="padding:18px 20px;border-bottom:1px solid var(--border);display:flex;gap:12px;align-items:flex-start">
+      <div style="width:36px;height:36px;border-radius:10px;background:#FEF2F2;color:var(--red);display:flex;align-items:center;justify-content:center;flex-shrink:0"><i class="ti ti-alert-triangle"></i></div>
+      <div>
+        <div id="app-confirm-title" style="font-size:16px;font-weight:900;color:var(--text)">Please confirm</div>
+        <div id="app-confirm-message" style="font-size:13px;color:var(--text2);margin-top:4px;line-height:1.45">Are you sure?</div>
+      </div>
+    </div>
+    <div id="app-confirm-detail" style="display:none;padding:14px 20px;font-size:12px;color:var(--text2);line-height:1.45;background:#F8FAFC;border-bottom:1px solid var(--border)"></div>
+    <div style="padding:14px 20px;display:flex;justify-content:flex-end;gap:10px;flex-wrap:wrap">
+      <button class="btn" id="app-confirm-cancel" type="button">Cancel</button>
+      <button class="btn" id="app-confirm-ok" type="button" style="background:var(--red);color:#fff;border-color:var(--red)">Confirm</button>
+    </div>
+  </div>
+</div>
+
 <div id="onboard-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:500;align-items:center;justify-content:center;padding:16px">
   <div style="background:var(--card);border-radius:16px;width:100%;max-width:640px;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.3)">
 
