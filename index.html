@@ -2672,7 +2672,7 @@ async function doRegister() {
   if(authCheckStrength(pw)<2){authShowErr('Please choose a stronger password (mix of letters, numbers and symbols).');return;}
   // Resolve company: handle "+ Create a new company..." option
   if(cid==='__new__'){
-    var coName = prompt('Enter your company name:', '');
+    var coName = await appPrompt({title:'Create company',message:'Enter your company name.',placeholder:'Company name'});
     if(!coName||!coName.trim()){authShowErr('A company name is required to create a new company.');return;}
     coName = coName.trim();
     authShowErr(''); authShowLoading('Creating company...');
@@ -5423,6 +5423,57 @@ function appConfirmAction(opts){
     confirmText:opts.confirmText||'Continue',
     cancelText:opts.cancelText||'Cancel',
     danger:opts.danger!==false
+  });
+}
+function appPrompt(opts){
+  opts=opts||{};
+  if(!document.body){
+    return Promise.resolve(window.prompt(opts.message||opts.title||'Enter value', opts.value||''));
+  }
+  var modal=document.getElementById('app-prompt-modal');
+  if(!modal){
+    modal=document.createElement('div');
+    modal.id='app-prompt-modal';
+    modal.style.cssText='display:none;position:fixed;inset:0;background:rgba(15,23,42,.55);z-index:910;align-items:center;justify-content:center;padding:16px';
+    modal.innerHTML='<div class="card" role="dialog" aria-modal="true" aria-labelledby="app-prompt-title" style="width:100%;max-width:480px;border-radius:12px;box-shadow:0 20px 70px rgba(15,23,42,.28);padding:0;overflow:hidden">'
+      +'<div style="padding:18px 20px;border-bottom:1px solid var(--border);display:flex;gap:12px;align-items:flex-start"><div style="width:36px;height:36px;border-radius:10px;background:#E1F5EE;color:var(--green);display:flex;align-items:center;justify-content:center;flex-shrink:0"><i class="ti ti-pencil"></i></div><div><div id="app-prompt-title" style="font-size:16px;font-weight:900;color:var(--text)">Enter value</div><div id="app-prompt-message" style="font-size:13px;color:var(--text2);margin-top:4px;line-height:1.45"></div></div></div>'
+      +'<div style="padding:16px 20px"><input id="app-prompt-input" style="display:none;width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px"><textarea id="app-prompt-textarea" style="display:none;width:100%;min-height:110px;padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;resize:vertical"></textarea></div>'
+      +'<div style="padding:14px 20px;display:flex;justify-content:flex-end;gap:10px;background:#fff"><button id="app-prompt-cancel" class="btn" type="button">Cancel</button><button id="app-prompt-ok" class="btn btn-primary" type="button">Continue</button></div>'
+      +'</div>';
+    document.body.appendChild(modal);
+  }
+  var title=document.getElementById('app-prompt-title');
+  var message=document.getElementById('app-prompt-message');
+  var input=document.getElementById('app-prompt-input');
+  var textarea=document.getElementById('app-prompt-textarea');
+  var cancelBtn=document.getElementById('app-prompt-cancel');
+  var okBtn=document.getElementById('app-prompt-ok');
+  var field=opts.multiline?textarea:input;
+  if(title)title.textContent=opts.title||'Enter value';
+  if(message)message.textContent=opts.message||'';
+  if(input){input.style.display=opts.multiline?'none':'block';input.value=opts.value||'';input.placeholder=opts.placeholder||'';}
+  if(textarea){textarea.style.display=opts.multiline?'block':'none';textarea.value=opts.value||'';textarea.placeholder=opts.placeholder||'';}
+  if(cancelBtn)cancelBtn.textContent=opts.cancelText||'Cancel';
+  if(okBtn)okBtn.textContent=opts.confirmText||'Continue';
+  modal.style.display='flex';
+  return new Promise(function(resolve){
+    function close(value){
+      modal.style.display='none';
+      if(cancelBtn)cancelBtn.onclick=null;
+      if(okBtn)okBtn.onclick=null;
+      modal.onclick=null;
+      document.removeEventListener('keydown',onKey);
+      resolve(value);
+    }
+    function onKey(e){
+      if(e.key==='Escape')close(null);
+      if(e.key==='Enter'&&!opts.multiline){e.preventDefault();close(field?field.value:null);}
+    }
+    if(cancelBtn)cancelBtn.onclick=function(){close(null);};
+    if(okBtn)okBtn.onclick=function(){close(field?field.value:null);};
+    modal.onclick=function(e){if(e.target===modal)close(null);};
+    document.addEventListener('keydown',onKey);
+    setTimeout(function(){if(field)field.focus();},0);
   });
 }
 function fmt(d){return d?new Date(d).toLocaleDateString('en-GB'):'--';}
@@ -9369,15 +9420,15 @@ function wsTEAddFromRegister(toolId){
   toast(escH(t.name)+' added to equipment list');
 }
 
-function wsTEAddManual(){
-  var name=prompt('Equipment name:');if(!name||!name.trim())return;
-  var cat=prompt('Category (hand_tool/power_tool/equipment/vehicle/lifting/electrical/other):','equipment');
+async function wsTEAddManual(){
+  var name=await appPrompt({title:'Add equipment',message:'Equipment name',placeholder:'e.g. Grinder, ladder, lifting chain'});if(!name||!name.trim())return;
+  var cat=await appPrompt({title:'Equipment category',message:'Category',value:'equipment',placeholder:'hand_tool, power_tool, equipment, vehicle, lifting, electrical or other'});
   wsTEItems.push({tool_id:null,ref:'MANUAL',name:name.trim(),category:cat||'equipment',source:'manual',checked:false});
   wsTERenderItems();
 }
 
-function wsTEAddItem(){
-  var name=prompt('Equipment name (or use search):');
+async function wsTEAddItem(){
+  var name=await appPrompt({title:'Add equipment',message:'Equipment name or search term',placeholder:'Equipment name'});
   if(!name||!name.trim())return;
   wsTEItems.push({tool_id:null,ref:'MANUAL',name:name.trim(),category:'equipment',source:'manual',checked:false});
   wsTERenderItems();
@@ -12783,7 +12834,7 @@ function raAddSingleAISuggestion(idx){
 
 // Full AI RA generation from new panel
 async function raAIGenerate(){
-  var activity=prompt('Describe the work activity for AI to generate a complete risk assessment:','');
+  var activity=await appPrompt({title:'Generate risk assessment',message:'Describe the work activity for AI to generate a complete risk assessment.',placeholder:'e.g. Hot work on roof structure',multiline:true});
   if(!activity||!activity.trim())return;
   raNew('baseline');
   document.getElementById('ra-activity').value=activity;
@@ -13965,7 +14016,7 @@ function ptwApprovalBack(){ptwShowDetail(ptwCurrentId);}
 async function ptwActivate(){
   var x=ptwAllData.find(function(r){return r.id===ptwCurrentId;});if(!x)return;
   if(x.requires_weather_check&&!x.weather_conditions){
-    var weather=prompt('Weather conditions (required for outdoor work):','Sunny, wind <5m/s');
+    var weather=await appPrompt({title:'Weather check',message:'Weather conditions are required for outdoor work.',value:'Sunny, wind <5m/s',placeholder:'Weather conditions'});
     if(!weather)return;
     await api('/permits?id=eq.'+ptwCurrentId,{m:'PATCH',p:'return=minimal',b:{weather_conditions:weather,weather_checked_at:new Date().toISOString()}});
   }
@@ -14038,7 +14089,7 @@ async function ptwConfirmSuspend(){
 function ptwSuspendBack(){ptwShowDetail(ptwCurrentId);}
 
 async function ptwResume(){
-  var by=prompt('Your name (resuming permit):',prof?.full_name||'');if(!by)return;
+  var by=await appPrompt({title:'Resume permit',message:'Your name',value:prof?.full_name||'',placeholder:'Person resuming the permit'});if(!by)return;
   try{
     await api('/permits?id=eq.'+ptwCurrentId,{m:'PATCH',p:'return=minimal',b:{status:'active',updated_at:new Date().toISOString()}});
     var x=ptwAllData.find(function(r){return r.id===ptwCurrentId;});if(x)x.status='active';
@@ -14645,9 +14696,9 @@ async function cevDeleteRow(id){
 }
 
 // ── AUTHORISATION TO WORK ─────────────────────────────────────────────────────
-function catwAddPerson(){
-  var name=prompt('Person name:');if(!name||!name.trim())return;
-  var role=prompt('Role / Job title:','');
+async function catwAddPerson(){
+  var name=await appPrompt({title:'Add authorised person',message:'Person name',placeholder:'Full name'});if(!name||!name.trim())return;
+  var role=await appPrompt({title:'Add authorised person',message:'Role / job title',placeholder:'Role or job title'});
   catwPersons.push({name:name.trim(),role:role||'',id_number:''});
   catwRenderPersons();
 }
@@ -17813,7 +17864,7 @@ async function toolsLoadInspections(){
 
 async function toolsNewInspection(){
   // Show equipment picker first
-  var id=prompt('Enter equipment Ref No. or name to inspect:');
+  var id=await appPrompt({title:'Start inspection',message:'Enter equipment Ref No. or name to inspect.',placeholder:'Ref No. or equipment name'});
   if(!id)return;
   var found=toolsAllData.find(function(x){return (x.ref_number||'').toLowerCase()===id.toLowerCase()||(x.name||'').toLowerCase().includes(id.toLowerCase());});
   if(!found){toast('Equipment not found. Please check the register.',false);return;}
@@ -19014,7 +19065,7 @@ async function mapApproveVerification(){
 }
 
 async function mapFailVerification(){
-  var reason=prompt('Reason for verification failure — what needs to be done again?');if(!reason)return;
+  var reason=await appPrompt({title:'Verification failed',message:'Reason for verification failure. What needs to be done again?',placeholder:'Reason',multiline:true});if(!reason)return;
   var body={status:'in_progress',verification_status:'failed',verification_notes:(document.getElementById('mf-verif-notes')?.value||'')+'\nFAILED: '+reason,updated_at:new Date().toISOString()};
   try{
     await api('/action_tracker?id=eq.'+mapEditingId,{m:'PATCH',p:'return=minimal',b:body});
@@ -19048,7 +19099,7 @@ async function mapApproveClosure(){
 
 async function mapRejectClosure(){
   var reason=document.getElementById('mf-closure-rejected')?.value?.trim();
-  if(!reason)reason=prompt('Reason for rejecting closure:');if(!reason)return;
+  if(!reason)reason=await appPrompt({title:'Reject closure',message:'Reason for rejecting closure',placeholder:'Reason',multiline:true});if(!reason)return;
   var body={status:'in_progress',closure_rejected_reason:reason,updated_at:new Date().toISOString()};
   try{
     await api('/action_tracker?id=eq.'+mapEditingId,{m:'PATCH',p:'return=minimal',b:body});
@@ -19844,7 +19895,7 @@ async function dcApprove(){
 
 async function dcReject(){
   var reason=document.getElementById('dc-rejection-reason')?.value?.trim();
-  if(!reason)reason=prompt('Reason for rejection — what needs to change?');if(!reason)return;
+  if(!reason)reason=await appPrompt({title:'Reject document',message:'Reason for rejection. What needs to change?',placeholder:'Reason',multiline:true});if(!reason)return;
   try{
     await api('/documents?id=eq.'+dcEditingId,{m:'PATCH',p:'return=minimal',b:{approval_status:'rejected',status:'rejected',rejected_at:new Date().toISOString(),rejection_reason:reason,updated_at:new Date().toISOString()}});
     var x=dcAllData.find(r=>r.id===dcEditingId);if(x){x.approval_status='rejected';x.rejection_reason=reason;}
@@ -19871,7 +19922,7 @@ async function dcCreateNewRevision(){
   var oldVersion=x.version||x.doc_version||'1.0';
   var parts=oldVersion.split('.');var major=parseInt(parts[0])||1;var minor=parseInt(parts[1])||0;
   var revType=x.revision_type||'minor';var newVersion=revType==='major'?(major+1)+'.0':major+'.'+(minor+1);
-  var summary=prompt('Revision summary — what is changing in '+newVersion+'?','');if(!summary)return;
+  var summary=await appPrompt({title:'New document revision',message:'Revision summary. What is changing in '+newVersion+'?',placeholder:'Revision summary',multiline:true});if(!summary)return;
   // Save current as a revision snapshot
   try{
     await api('/doc_revisions',{m:'POST',p:'return=minimal',b:{company_id:ccid(),document_id:dcEditingId,version:oldVersion,revision_type:revType,summary:'Superseded by '+newVersion,changed_by:prof?.full_name||'User',effective_date:new Date().toISOString().slice(0,10),snapshot:x}});
@@ -21824,11 +21875,9 @@ async function cmEditCell(personId, compId){
   var comp=compAllData.find(function(c){return c.id===compId;});
   var cur=entry?entry.current_level:0;
   var req=entry?entry.required_level:2;
-  var newCur=prompt('Competency: '+( comp?.name||'')
-    +'\n\nCurrent level (0-4):\n0=No knowledge\n1=Theoretical\n2=First experience\n3=Good level\n4=Expert'
-    +'\n\nEnter current level (current: '+cur+'):',cur);
+  var newCur=await appPrompt({title:'Update competency',message:'Competency: '+(comp?.name||'')+'. Enter current level (0-4): 0 No knowledge, 1 Theoretical, 2 First experience, 3 Good level, 4 Expert.',value:String(cur),placeholder:'0-4'});
   if(newCur===null)return;
-  var newReq=prompt('Required level for this role (current: '+req+'):',req);
+  var newReq=await appPrompt({title:'Update competency',message:'Required level for this role',value:String(req),placeholder:'0-4'});
   if(newReq===null)return;
   try{
     var body={company_id:ccid(),person_id:personId,competency_id:compId,
@@ -21844,9 +21893,9 @@ async function cmEditCell(personId, compId){
 }
 
 async function cmAddCompetency(){
-  var name=prompt('Competency name:');
+  var name=await appPrompt({title:'Add competency',message:'Competency name',placeholder:'e.g. Fire extinguisher use'});
   if(!name||!name.trim())return;
-  var cat=prompt('Category (e.g. Fire Safety, Technical, Personal):','General');
+  var cat=await appPrompt({title:'Add competency',message:'Category',value:'General',placeholder:'e.g. Fire Safety, Technical, Personal'});
   try{
     await api('/competencies',{m:'POST',p:'return=minimal',b:{company_id:ccid(),name:name.trim(),category:cat||'General',sort_order:compAllData.length}});
     toast('Competency added!');
@@ -21902,11 +21951,11 @@ async function tnaLoad(){
   }catch(e){el.innerHTML='<p style="padding:20px;color:red">'+e.message+'</p>';console.error(e);}
 }
 
-function tnaAddRow(){
-  var role=prompt('Role name:');if(!role)return;
-  var topic=prompt('Training topic:');if(!topic)return;
-  var cat=prompt('Category (INDUCTION/EMERGENCY/HIGH RISK WORK/GENERAL):','GENERAL');
-  var req=prompt('Requirement (M=Mandatory / D=Desirable / N=Not Required):','D');
+async function tnaAddRow(){
+  var role=await appPrompt({title:'Add training need',message:'Role name',placeholder:'e.g. Supervisor'});if(!role)return;
+  var topic=await appPrompt({title:'Add training need',message:'Training topic',placeholder:'e.g. Permit to Work'});if(!topic)return;
+  var cat=await appPrompt({title:'Add training need',message:'Category',value:'GENERAL',placeholder:'INDUCTION, EMERGENCY, HIGH RISK WORK or GENERAL'});
+  var req=await appPrompt({title:'Add training need',message:'Requirement',value:'D',placeholder:'M, D or N'});
   if(!['M','D','N'].includes((req||'').toUpperCase())){toast('Invalid value. Use M, D or N',false);return;}
   api('/training_needs',{m:'POST',p:'return=minimal',b:{
     company_id:ccid(),role_name:role,training_topic:topic,
@@ -23657,7 +23706,7 @@ async function usersDelete(id) {
     + 'Records they created (incidents, investigations, training) keep their name as text but lose the account link.\n\n'
     + 'If this person simply left the company, use Deactivate instead.\n\n'
     + 'To confirm deletion, type their full name exactly:';
-  var typed = prompt(warn);
+  var typed = await appPrompt({title:'Permanently delete user',message:warn,placeholder:'Type the full name exactly',multiline:false,confirmText:'Delete user'});
   if(typed===null) return;
   if((typed||'').trim().toLowerCase() !== (u.full_name||'').trim().toLowerCase()){
     toast('Name did not match — deletion cancelled', false); return;
