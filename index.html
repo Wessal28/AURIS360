@@ -1387,13 +1387,23 @@ input[type="button"], input[type="submit"] {
 const SB='https://iarfxjhahzbhncsaohbg.supabase.co';
 const KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlhcmZ4amhhaHpiaG5jc2FvaGJnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg2OTM1MzAsImV4cCI6MjA5NDI2OTUzMH0.qSjahuX-RwnjWEDmo-LkcorAxpsmyVoaXt4AO4_A9BM';
 let tok=null,prof=null,co=null,chkItems=[],people=[];
+let rolePreview=null;
 const RL={inspector:1,manager:2,admin:3,sephs_admin:4};
-function rlv(){return RL[prof?.role]||0;}
+function isInternalSephsAdminAccount(){
+  var role=prof?.role||'';
+  var companyName=(co?.name||prof?.company_name||'').toLowerCase().trim();
+  return role==='sephs_admin' || (role==='admin' && (companyName==='sephs consulting' || companyName==='auris360' || companyName==='auris 360'));
+}
+function activeRole(){
+  if(isInternalSephsAdminAccount()) return rolePreview || 'sephs_admin';
+  return prof?.role||'employee';
+}
+function rlv(){return RL[activeRole()]||0;}
 function can(r){return rlv()>=RL[r];}
-function isInsp(){return prof?.role==='inspector';}
+function isInsp(){return activeRole()==='inspector';}
 function isMgr(){return can('manager');}
 function isAdm(){return can('admin');}
-function isSA(){return prof?.role==='sephs_admin';}
+function isSA(){return activeRole()==='sephs_admin';}
 async function api(path,o={}
 ){
 const headers={'Content-Type':'application/json','apikey':KEY,'Authorization':'Bearer '+(tok||KEY),'Accept':'application/json'};
@@ -3163,11 +3173,14 @@ prof=d[0];co=d[0].companies;
 // Sidebar branding rule:
 //   - sephs_admin → ALWAYS shows AURIS360 (they own the platform, not a single client)
 //   - Other users → shows their company name + logo (white-label experience)
-var isSephsAdmin = prof?.role === 'sephs_admin';
+rolePreview=null;
+var isSephsAdmin = isSA();
 document.getElementById('sb-company').textContent = isSephsAdmin ? 'AURIS360' : (co?.name||'AURIS360');
 document.getElementById('sb-user').textContent=prof.full_name||prof.email||'--';
-var _rc=typeof HSE_ROLES!=='undefined'?HSE_ROLES[prof.role]:null;
-document.getElementById('sb-role').textContent=_rc?_rc.emoji+' '+_rc.label:(prof.role||'user').replace(/_/g,' ');
+var _rc=typeof HSE_ROLES!=='undefined'?HSE_ROLES[activeRole()]:null;
+document.getElementById('sb-role').textContent=_rc?_rc.emoji+' '+_rc.label:(activeRole()||'user').replace(/_/g,' ');
+var roleSel=document.getElementById('sb-role-select');
+if(roleSel) roleSel.value=activeRole();
 document.getElementById('dash-label').textContent= isSephsAdmin ? 'Platform administration' : (co?.name||'');
 // White-label: only apply client branding for non-sephs-admin users
 if (isSephsAdmin) {
@@ -3492,7 +3505,7 @@ function canAccessPage(pageKey) {
   }
   
   // Gate 3: Role allow-list.
-  var role = prof?.role || 'employee';
+  var role = activeRole();
   var allowed = ROLE_ALLOWED[role];
   if(allowed === null || allowed === undefined) return true;  // null = sees all; undefined role = treat as allowed by default
   return allowed.indexOf(pageKey) !== -1;
@@ -8102,6 +8115,12 @@ return Math.min(100,Math.max(0,(actual/t)*100));
 
 function kpiProgColor(prog){return prog>=100?'#1D9E75':prog>=70?'#EF9F27':'#E24B4A';}
 
+function kpiFmtNumberOnly(v){
+const n=parseFloat(v);
+if(isNaN(n))return v===null||v===undefined?'--':String(v);
+return Number.isInteger(n)?String(n):String(Math.round(n*100)/100);
+}
+
 
 function kpiRenderOverview(){
 const c=document.getElementById('kpi-objectives-container');
@@ -8156,12 +8175,12 @@ if(!objKPIs.length){
 body.innerHTML='<div style="text-align:center;padding:20px;color:var(--text3);font-size:13px">No KPIs yet'+(isMgr()?' — click + Add KPI above':'')+'</div>';
 }else{
 const tbl=document.createElement('table');
-tbl.style.cssText='width:100%;border-collapse:collapse;font-size:13px';
-tbl.innerHTML='<thead><tr>'
-+'<th style="text-align:left;font-weight:600;color:var(--text2);padding:9px 12px;border-bottom:1px solid var(--border);font-size:11px;text-transform:uppercase;background:#fafafa;width:50px">Code</th>'
+tbl.style.cssText='width:100%;min-width:1280px;border-collapse:collapse;font-size:13px;table-layout:fixed';
+tbl.innerHTML='<colgroup><col style="width:58px"><col style="width:24%"><col style="width:34%"><col style="width:220px"><col style="width:160px"><col style="width:130px"></colgroup><thead><tr>'
++'<th style="text-align:left;font-weight:600;color:var(--text2);padding:9px 12px;border-bottom:1px solid var(--border);font-size:11px;text-transform:uppercase;background:#fafafa">Code</th>'
 +'<th style="text-align:left;font-weight:600;color:var(--text2);padding:9px 12px;border-bottom:1px solid var(--border);font-size:11px;text-transform:uppercase;background:#fafafa">KPI name</th>'
 +'<th style="text-align:left;font-weight:600;color:var(--text2);padding:9px 12px;border-bottom:1px solid var(--border);font-size:11px;text-transform:uppercase;background:#fafafa">Measurement indicator</th>'
-+'<th style="text-align:left;font-weight:600;color:var(--text2);padding:9px 12px;border-bottom:1px solid var(--border);font-size:11px;text-transform:uppercase;background:#fafafa;width:90px">Target</th>'
++'<th style="text-align:left;font-weight:600;color:var(--text2);padding:9px 12px;border-bottom:1px solid var(--border);font-size:11px;text-transform:uppercase;background:#fafafa">Target</th>'
 +'<th style="text-align:left;font-weight:600;color:var(--text2);padding:9px 12px;border-bottom:1px solid var(--border);font-size:11px;text-transform:uppercase;background:#fafafa">Responsible</th>'
 +'<th style="text-align:left;font-weight:600;color:var(--text2);padding:9px 12px;border-bottom:1px solid var(--border);font-size:11px;text-transform:uppercase;background:#fafafa">Status</th>'
 +'</tr></thead>';
@@ -8189,15 +8208,19 @@ const bdr=isLast?'border-bottom:2px solid var(--border)':'border-bottom:1px soli
 indRow.innerHTML=
 (indIdx===0?'<td style="padding:10px 12px;'+bdr+';color:var(--text2);font-size:11px;font-weight:700;vertical-align:middle" rowspan="'+inds.length+'">'+(k.code||'')+'</td>'
 +'<td style="padding:10px 12px;'+bdr+';vertical-align:middle" rowspan="'+inds.length+'"><strong>'+k.name+'</strong><br><span style="font-size:11px;color:var(--text3)">'+(k.frequency||'monthly')+'</span></td>':'')
-+'<td style="padding:8px 12px;'+bdr+';font-size:12px;color:var(--text2)">'+ind.name+'</td>'
-+'<td style="padding:8px 12px;'+bdr+';font-size:12px;font-weight:600;color:var(--text)">'+kpiFmtTarget(ind)+'</td>'
-+(indIdx===0?'<td style="padding:10px 12px;'+bdr+';font-size:12px" rowspan="'+inds.length+'">'+(k.responsible||'--')+'</td>'
-+'<td style="padding:10px 12px;'+bdr+'" rowspan="'+inds.length+'">'+kpiStatBadge(k.status)+'</td>':'');
++'<td style="padding:8px 12px;'+bdr+';font-size:12px;color:var(--text2);vertical-align:middle;line-height:1.4;overflow-wrap:anywhere">'+ind.name+'</td>'
++'<td style="padding:8px 12px;'+bdr+';font-size:12px;font-weight:600;color:var(--text);vertical-align:middle;line-height:1.35;word-break:normal;overflow-wrap:break-word">'+kpiFmtTarget(ind)+'</td>'
++(indIdx===0?'<td style="padding:10px 12px;'+bdr+';font-size:12px;vertical-align:middle;line-height:1.35" rowspan="'+inds.length+'">'+(k.responsible||'--')+'</td>'
++'<td style="padding:10px 12px;'+bdr+';vertical-align:middle" rowspan="'+inds.length+'">'+kpiStatBadge(k.status)+'</td>':'');
 tbody.appendChild(indRow);
 });
 }
 });
-tbl.appendChild(tbody);body.appendChild(tbl);
+tbl.appendChild(tbody);
+const tableWrap=document.createElement('div');
+tableWrap.style.cssText='overflow-x:auto;width:100%';
+tableWrap.appendChild(tbl);
+body.appendChild(tableWrap);
 }
 block.appendChild(body);c.appendChild(block);
 });
@@ -8260,7 +8283,7 @@ td.title='Click to '+(entry?'edit':'enter value');
 if(entry&&entry.actual!==null&&entry.actual!==undefined){
 hasData=true;const val=parseFloat(entry.actual);ytdSum+=val;
 const sty=kpiCellStyle(ind,val);if(sty)td.style.cssText+=';'+sty;
-td.textContent=val+(ind.unit||'');
+td.textContent=kpiFmtNumberOnly(val);
 }else{td.style.color='var(--text3)';td.textContent='--';}
 (function(indId,kId,mn){td.onclick=function(){kpiOpenEntry(indId,kId,mn);};})(ind.id,k.id,m);
 tr.appendChild(td);
@@ -8270,7 +8293,7 @@ const ytd=ytdVals.length?parseFloat(ytdVals[ytdVals.length-1].ytd):ytdSum;
 const ytdTd=document.createElement('td');
 const ytdSty=hasData?kpiCellStyle(ind,ytd):'';
 ytdTd.style.cssText='border:1px solid var(--border);padding:6px 8px;text-align:center;font-weight:700'+(ytdSty?';'+ytdSty:'');
-ytdTd.textContent=hasData?ytd+(ind.unit||''):'--';tr.appendChild(ytdTd);
+ytdTd.textContent=hasData?kpiFmtNumberOnly(ytd):'--';tr.appendChild(ytdTd);
 if(indIdx===0){
 const stTd=document.createElement('td');
 stTd.style.cssText='border:1px solid var(--border);padding:6px 8px;text-align:center;vertical-align:middle';
@@ -11964,7 +11987,6 @@ async function raLoadTemplates(){
   }).join('');
 }
 
-
 function raManualHandlingNew(){
   document.getElementById('ra-list-view').style.display='none';
   document.getElementById('ra-new-panel').style.display='none';
@@ -12066,33 +12088,97 @@ function raManualCreateRA(){
   toast('Manual Handling RA generated. Review the table, then save or submit.');
 }
 
-
 const RA_SPECIFIC_CFG={
-  fire:{label:'Fire Risk Assessment',accent:'#DC2626',icon:'ti-flame',activity:'Fire risk assessment',factors:[['Combustible load','sp-combustible',[['low','Low'],['medium','Medium'],['high','High']]],['Ignition sources','sp-ignition',[['controlled','Controlled'],['some','Some present'],['many','Many / hot work present']]],['Occupancy / evacuation','sp-evac',[['simple','Simple / low occupancy'],['normal','Normal occupancy'],['complex','Complex, visitors or vulnerable persons']]]],rows:function(v){var high=v('sp-combustible')==='high'||v('sp-ignition')==='many'||v('sp-evac')==='complex';return [
-    {hazard:'Ignition sources near combustible materials',harm:'Fire, burns, smoke inhalation, property damage',who:'Employees, visitors, contractors',rs:5,rop:high?4:3,controls:'Control smoking and hot work. Keep combustibles away from ignition sources. Maintain housekeeping and remove waste routinely. '+v('sp-controls'),hoc_level:'administrative',res_s:5,res_p:1,legal_ref:'OSH Act 2005'},
-    {hazard:'Blocked, inadequate or poorly signed escape routes',harm:'Delayed evacuation and injury during emergency',who:'All occupants',rs:5,rop:v('sp-evac')==='complex'?4:3,controls:'Keep escape routes clear. Provide exit signage and emergency lighting. Inspect exits and assembly point at planned frequency.',hoc_level:'engineering',res_s:5,res_p:1,legal_ref:'Fire safety requirements'},
-    {hazard:'Fire detection, alarm or emergency response weakness',harm:'Delayed warning, uncontrolled fire spread',who:'All occupants',rs:5,rop:3,controls:'Test alarm and detection systems. Maintain extinguishers. Nominate fire wardens and complete evacuation drills.',hoc_level:'engineering',res_s:5,res_p:1,legal_ref:'OSH Act 2005'},
-    {hazard:'Poor control of flammable materials and waste',harm:'Rapid fire spread, exposure to smoke and heat',who:'Work area occupants',rs:4,rop:v('sp-combustible')==='high'?4:2,controls:'Store flammables in suitable cabinets or designated areas. Keep quantities at point of use low. Segregate incompatible materials.',hoc_level:'substitution',res_s:4,res_p:1,legal_ref:'OSH Act 2005'}];}},
-  machinery:{label:'Machinery Risk Assessment',accent:'#185FA5',icon:'ti-settings',activity:'Machinery operation / maintenance',factors:[['Machine activity','sp-machine-task',[['operation','Normal operation'],['maintenance','Maintenance / adjustment'],['clearing','Clearing jams or blockages']]],['Guarding status','sp-guarding',[['guarded','Fixed/interlocked guards in place'],['partial','Partial guarding'],['unguarded','Guard missing or bypassed']]],['Energy isolation','sp-isolation',[['formal','Formal LOTO available'],['informal','Informal isolation only'],['none','No isolation process']]]],rows:function(v){var critical=v('sp-guarding')==='unguarded'||v('sp-isolation')==='none';return [
-    {hazard:'Contact with moving machinery parts',harm:'Crush injury, amputation, entanglement or fatality',who:'Operators and maintenance staff',rs:5,rop:critical?4:3,controls:'Keep guards fitted and functioning. Do not bypass interlocks. Authorised trained operators only. '+v('sp-controls'),hoc_level:'engineering',res_s:5,res_p:1,legal_ref:'OSH Act 2005'},
-    {hazard:'Unexpected start-up or stored energy release',harm:'Crush injury, electric shock, hydraulic/pneumatic release injury',who:'Maintenance and cleaning staff',rs:5,rop:v('sp-isolation')==='formal'?2:4,controls:'Apply lock-out/tag-out before maintenance, cleaning or jam clearing. Release stored energy and verify zero energy.',hoc_level:'elimination',res_s:5,res_p:1,legal_ref:'OSH Act 2005'},
-    {hazard:'Clearing jams or adjustments with machine energised',harm:'Hand injury, amputation or crush injury',who:'Operators',rs:5,rop:v('sp-machine-task')==='clearing'?4:2,controls:'Stop machine before intervention. Use tools designed for clearing. Escalate repeated jams to maintenance.',hoc_level:'administrative',res_s:5,res_p:1,legal_ref:'OSH Act 2005'},
-    {hazard:'Inadequate emergency stop or operator supervision',harm:'Delayed response during machinery incident',who:'Operators and nearby workers',rs:4,rop:3,controls:'Test emergency stops. Keep access clear. Supervisors verify pre-start checks and defect reporting.',hoc_level:'engineering',res_s:4,res_p:1,legal_ref:'OSH Act 2005'}];}},
-  chemical:{label:'Chemical / COSHH Risk Assessment',accent:'#7C3AED',icon:'ti-flask',activity:'Chemical handling and use',factors:[['Hazard classification','sp-chem-hazard',[['irritant','Irritant / low hazard'],['harmful','Harmful / corrosive'],['toxic','Toxic, carcinogenic or highly flammable']]],['Exposure route','sp-chem-route',[['skin','Skin / eye contact'],['inhalation','Inhalation'],['both','Skin and inhalation']]],['Control standard','sp-chem-control',[['good','SDS available and controls in place'],['partial','Partial controls'],['poor','Weak controls or no SDS']]]],rows:function(v){var severe=v('sp-chem-hazard')==='toxic'||v('sp-chem-control')==='poor';return [
-    {hazard:'Exposure to hazardous chemical during use',harm:'Irritation, burns, poisoning or occupational disease',who:'Chemical users and nearby workers',rs:severe?5:4,rop:v('sp-chem-control')==='good'?2:4,controls:'Review SDS before use. Use smallest practical quantity. Follow label and compatibility requirements. '+v('sp-controls'),hoc_level:'administrative',res_s:severe?5:4,res_p:1,legal_ref:'OSH Act 2005'},
-    {hazard:'Inhalation of vapour, mist, fume or dust',harm:'Respiratory irritation, sensitisation, toxic exposure',who:'Chemical users',rs:severe?5:4,rop:(v('sp-chem-route')==='inhalation'||v('sp-chem-route')==='both')?4:2,controls:'Use closed handling, local exhaust ventilation or adequate natural ventilation. Use suitable RPE where required by SDS.',hoc_level:'engineering',res_s:severe?5:4,res_p:1,legal_ref:'SDS / OSH Act 2005'},
-    {hazard:'Skin or eye contact with chemical',harm:'Dermatitis, chemical burns, eye damage',who:'Chemical users and cleaners',rs:4,rop:(v('sp-chem-route')==='skin'||v('sp-chem-route')==='both')?4:2,controls:'Wear chemical-resistant gloves, goggles/face shield and apron as required. Provide eyewash and washing facilities.',hoc_level:'ppe',res_s:4,res_p:1,legal_ref:'SDS / OSH Act 2005'},
-    {hazard:'Spill, leakage or incorrect storage',harm:'Exposure, fire, environmental release, incompatible reaction',who:'Site occupants and environment',rs:severe?5:4,rop:3,controls:'Store in labelled compatible containers. Segregate incompatibles. Provide bunding/spill kit and trained spill responders.',hoc_level:'engineering',res_s:severe?5:4,res_p:1,legal_ref:'Environmental and OSH requirements'}];}},
-  atex:{label:'ATEX / Hazardous Area RA',accent:'#B45309',icon:'ti-explosion',activity:'Work in or near hazardous area',factors:[['Zone / likelihood','sp-atex-zone',[['2','Zone 2 / unlikely'],['1','Zone 1 / likely during normal operation'],['0','Zone 0 / continuous']]],['Ignition source control','sp-atex-ignition',[['controlled','Controlled'],['partial','Partial'],['poor','Poor / unknown']]],['Equipment suitability','sp-atex-equipment',[['certified','Certified equipment'],['mixed','Mixed / needs verification'],['unknown','Unknown or unsuitable']]]],rows:function(v){var severe=v('sp-atex-zone')==='0'||v('sp-atex-ignition')==='poor'||v('sp-atex-equipment')==='unknown';return [
-    {hazard:'Explosive atmosphere present in hazardous area',harm:'Explosion, burns, fatality and major asset damage',who:'Workers, contractors and nearby persons',rs:5,rop:severe?4:3,controls:'Confirm area classification and zone boundaries. Avoid unnecessary entry. Control work through permit where required. '+v('sp-controls'),hoc_level:'elimination',res_s:5,res_p:1,legal_ref:'ATEX / DSEAR principles'},
-    {hazard:'Ignition source introduced into zoned area',harm:'Explosion or flash fire',who:'Workers and site occupants',rs:5,rop:v('sp-atex-ignition')==='controlled'?2:4,controls:'Control hot work, static electricity, sparks, phones and non-rated equipment. Use gas testing and continuous monitoring where required.',hoc_level:'administrative',res_s:5,res_p:1,legal_ref:'ATEX / OSH Act 2005'},
-    {hazard:'Unsuitable electrical or mechanical equipment',harm:'Ignition of flammable atmosphere',who:'Operators and maintenance staff',rs:5,rop:v('sp-atex-equipment')==='certified'?2:4,controls:'Use equipment suitable for the zone and gas/dust group. Maintain inspection records and defect isolation process.',hoc_level:'engineering',res_s:5,res_p:1,legal_ref:'ATEX equipment requirements'},
-    {hazard:'Poor ventilation or loss of containment',harm:'Build-up of flammable gas, vapour or dust',who:'Area occupants',rs:5,rop:3,controls:'Maintain ventilation. Inspect seals, hoses, valves and containment. Respond immediately to alarms, leaks or odours.',hoc_level:'engineering',res_s:5,res_p:1,legal_ref:'OSH Act 2005'}];}},
-  fleet:{label:'Fleet / Vehicle Risk Assessment',accent:'#0F766E',icon:'ti-car',activity:'Vehicle use and fleet operation',factors:[['Vehicle activity','sp-fleet-task',[['road','Road driving'],['site','Site vehicle movement'],['loading','Loading / unloading']]],['Journey exposure','sp-fleet-exposure',[['low','Low'],['medium','Medium'],['high','High / frequent']]],['Driver / vehicle control','sp-fleet-control',[['good','Licensed driver, checks complete'],['partial','Some controls'],['poor','Weak controls or defects']]]],rows:function(v){var high=v('sp-fleet-exposure')==='high'||v('sp-fleet-control')==='poor';return [
-    {hazard:'Vehicle collision during road or site movement',harm:'Injury, fatality, property damage',who:'Driver, passengers, pedestrians and other road users',rs:5,rop:high?4:3,controls:'Authorised licensed drivers only. Follow speed limits and traffic rules. Plan journeys and avoid fatigue. '+v('sp-controls'),hoc_level:'administrative',res_s:5,res_p:1,legal_ref:'Road traffic / OSH requirements'},
-    {hazard:'Poor vehicle condition or missed pre-use checks',harm:'Breakdown, loss of control, collision',who:'Driver and road users',rs:5,rop:v('sp-fleet-control')==='good'?2:4,controls:'Complete daily/pre-use vehicle checks. Defects reported and vehicle removed from service where safety critical.',hoc_level:'engineering',res_s:5,res_p:1,legal_ref:'Fleet safety requirements'},
-    {hazard:'Reversing and pedestrian interaction',harm:'Pedestrian struck or crushed',who:'Pedestrians, banksmen, site workers',rs:5,rop:v('sp-fleet-task')==='site'?4:2,controls:'Segregate pedestrians and vehicles. Use banksman, reversing alarms, mirrors/cameras and marked routes where required.',hoc_level:'engineering',res_s:5,res_p:1,legal_ref:'OSH Act 2005'},
-    {hazard:'Loading, unloading or unsecured load',harm:'Falling load, crush injury, vehicle instability',who:'Driver, loaders and nearby persons',rs:4,rop:v('sp-fleet-task')==='loading'?4:2,controls:'Use safe loading method, load restraint and exclusion zones. Verify load security before travel.',hoc_level:'administrative',res_s:4,res_p:1,legal_ref:'OSH Act 2005'}];}}
+  fire:{
+    label:'Fire Risk Assessment',accent:'#DC2626',icon:'ti-flame',
+    activity:'Fire risk assessment',
+    factors:[
+      ['Combustible load','sp-combustible',[['low','Low'],['medium','Medium'],['high','High']]],
+      ['Ignition sources','sp-ignition',[['controlled','Controlled'],['some','Some present'],['many','Many / hot work present']]],
+      ['Occupancy / evacuation','sp-evac',[['simple','Simple / low occupancy'],['normal','Normal occupancy'],['complex','Complex, visitors or vulnerable persons']]]
+    ],
+    rows:function(v,s){
+      var high=v('sp-combustible')==='high'||v('sp-ignition')==='many'||v('sp-evac')==='complex';
+      return [
+        {hazard:'Ignition sources near combustible materials',harm:'Fire, burns, smoke inhalation, property damage',who:'Employees, visitors, contractors',rs:5,rop:high?4:3,controls:'Control smoking and hot work. Keep combustibles away from ignition sources. Maintain housekeeping and remove waste routinely. '+v('sp-controls'),hoc_level:'administrative',res_s:5,res_p:1,legal_ref:'OSH Act 2005'},
+        {hazard:'Blocked, inadequate or poorly signed escape routes',harm:'Delayed evacuation and injury during emergency',who:'All occupants',rs:5,rop:v('sp-evac')==='complex'?4:3,controls:'Keep escape routes clear. Provide exit signage and emergency lighting. Inspect exits and assembly point at planned frequency.',hoc_level:'engineering',res_s:5,res_p:1,legal_ref:'Fire safety requirements'},
+        {hazard:'Fire detection, alarm or emergency response weakness',harm:'Delayed warning, uncontrolled fire spread',who:'All occupants',rs:5,rop:3,controls:'Test alarm and detection systems. Maintain extinguishers. Nominate fire wardens and complete evacuation drills.',hoc_level:'engineering',res_s:5,res_p:1,legal_ref:'OSH Act 2005'},
+        {hazard:'Poor control of flammable materials and waste',harm:'Rapid fire spread, exposure to smoke and heat',who:'Work area occupants',rs:4,rop:v('sp-combustible')==='high'?4:2,controls:'Store flammables in suitable cabinets or designated areas. Keep quantities at point of use low. Segregate incompatible materials.',hoc_level:'substitution',res_s:4,res_p:1,legal_ref:'OSH Act 2005'}
+      ];
+    }
+  },
+  machinery:{
+    label:'Machinery Risk Assessment',accent:'#185FA5',icon:'ti-settings',
+    activity:'Machinery operation / maintenance',
+    factors:[
+      ['Machine activity','sp-machine-task',[['operation','Normal operation'],['maintenance','Maintenance / adjustment'],['clearing','Clearing jams or blockages']]],
+      ['Guarding status','sp-guarding',[['guarded','Fixed/interlocked guards in place'],['partial','Partial guarding'],['unguarded','Guard missing or bypassed']]],
+      ['Energy isolation','sp-isolation',[['formal','Formal LOTO available'],['informal','Informal isolation only'],['none','No isolation process']]]
+    ],
+    rows:function(v,s){
+      var critical=v('sp-guarding')==='unguarded'||v('sp-isolation')==='none';
+      return [
+        {hazard:'Contact with moving machinery parts',harm:'Crush injury, amputation, entanglement or fatality',who:'Operators and maintenance staff',rs:5,rop:critical?4:3,controls:'Keep guards fitted and functioning. Do not bypass interlocks. Authorised trained operators only. '+v('sp-controls'),hoc_level:'engineering',res_s:5,res_p:1,legal_ref:'OSH Act 2005'},
+        {hazard:'Unexpected start-up or stored energy release',harm:'Crush injury, electric shock, hydraulic/pneumatic release injury',who:'Maintenance and cleaning staff',rs:5,rop:v('sp-isolation')==='formal'?2:4,controls:'Apply lock-out/tag-out before maintenance, cleaning or jam clearing. Release stored energy and verify zero energy.',hoc_level:'elimination',res_s:5,res_p:1,legal_ref:'OSH Act 2005'},
+        {hazard:'Clearing jams or adjustments with machine energised',harm:'Hand injury, amputation or crush injury',who:'Operators',rs:5,rop:v('sp-machine-task')==='clearing'?4:2,controls:'Stop machine before intervention. Use tools designed for clearing. Escalate repeated jams to maintenance.',hoc_level:'administrative',res_s:5,res_p:1,legal_ref:'OSH Act 2005'},
+        {hazard:'Inadequate emergency stop or operator supervision',harm:'Delayed response during machinery incident',who:'Operators and nearby workers',rs:4,rop:3,controls:'Test emergency stops. Keep access clear. Supervisors verify pre-start checks and defect reporting.',hoc_level:'engineering',res_s:4,res_p:1,legal_ref:'OSH Act 2005'}
+      ];
+    }
+  },
+  chemical:{
+    label:'Chemical / COSHH Risk Assessment',accent:'#7C3AED',icon:'ti-flask',
+    activity:'Chemical handling and use',
+    factors:[
+      ['Hazard classification','sp-chem-hazard',[['irritant','Irritant / low hazard'],['harmful','Harmful / corrosive'],['toxic','Toxic, carcinogenic or highly flammable']]],
+      ['Exposure route','sp-chem-route',[['skin','Skin / eye contact'],['inhalation','Inhalation'],['both','Skin and inhalation']]],
+      ['Control standard','sp-chem-control',[['good','SDS available and controls in place'],['partial','Partial controls'],['poor','Weak controls or no SDS']]]
+    ],
+    rows:function(v,s){
+      var severe=v('sp-chem-hazard')==='toxic'||v('sp-chem-control')==='poor';
+      return [
+        {hazard:'Exposure to hazardous chemical during use',harm:'Irritation, burns, poisoning or occupational disease',who:'Chemical users and nearby workers',rs:severe?5:4,rop:v('sp-chem-control')==='good'?2:4,controls:'Review SDS before use. Use smallest practical quantity. Follow label and compatibility requirements. '+v('sp-controls'),hoc_level:'administrative',res_s:severe?5:4,res_p:1,legal_ref:'OSH Act 2005'},
+        {hazard:'Inhalation of vapour, mist, fume or dust',harm:'Respiratory irritation, sensitisation, toxic exposure',who:'Chemical users',rs:severe?5:4,rop:(v('sp-chem-route')==='inhalation'||v('sp-chem-route')==='both')?4:2,controls:'Use closed handling, local exhaust ventilation or adequate natural ventilation. Use suitable RPE where required by SDS.',hoc_level:'engineering',res_s:severe?5:4,res_p:1,legal_ref:'SDS / OSH Act 2005'},
+        {hazard:'Skin or eye contact with chemical',harm:'Dermatitis, chemical burns, eye damage',who:'Chemical users and cleaners',rs:4,rop:(v('sp-chem-route')==='skin'||v('sp-chem-route')==='both')?4:2,controls:'Wear chemical-resistant gloves, goggles/face shield and apron as required. Provide eyewash and washing facilities.',hoc_level:'ppe',res_s:4,res_p:1,legal_ref:'SDS / OSH Act 2005'},
+        {hazard:'Spill, leakage or incorrect storage',harm:'Exposure, fire, environmental release, incompatible reaction',who:'Site occupants and environment',rs:severe?5:4,rop:3,controls:'Store in labelled compatible containers. Segregate incompatibles. Provide bunding/spill kit and trained spill responders.',hoc_level:'engineering',res_s:severe?5:4,res_p:1,legal_ref:'Environmental and OSH requirements'}
+      ];
+    }
+  },
+  atex:{
+    label:'ATEX / Hazardous Area RA',accent:'#B45309',icon:'ti-explosion',
+    activity:'Work in or near hazardous area',
+    factors:[
+      ['Zone / likelihood','sp-atex-zone',[['2','Zone 2 / unlikely'],['1','Zone 1 / likely during normal operation'],['0','Zone 0 / continuous']]],
+      ['Ignition source control','sp-atex-ignition',[['controlled','Controlled'],['partial','Partial'],['poor','Poor / unknown']]],
+      ['Equipment suitability','sp-atex-equipment',[['certified','Certified equipment'],['mixed','Mixed / needs verification'],['unknown','Unknown or unsuitable']]]
+    ],
+    rows:function(v,s){
+      var severe=v('sp-atex-zone')==='0'||v('sp-atex-ignition')==='poor'||v('sp-atex-equipment')==='unknown';
+      return [
+        {hazard:'Explosive atmosphere present in hazardous area',harm:'Explosion, burns, fatality and major asset damage',who:'Workers, contractors and nearby persons',rs:5,rop:severe?4:3,controls:'Confirm area classification and zone boundaries. Avoid unnecessary entry. Control work through permit where required. '+v('sp-controls'),hoc_level:'elimination',res_s:5,res_p:1,legal_ref:'ATEX / DSEAR principles'},
+        {hazard:'Ignition source introduced into zoned area',harm:'Explosion or flash fire',who:'Workers and site occupants',rs:5,rop:v('sp-atex-ignition')==='controlled'?2:4,controls:'Control hot work, static electricity, sparks, phones and non-rated equipment. Use gas testing and continuous monitoring where required.',hoc_level:'administrative',res_s:5,res_p:1,legal_ref:'ATEX / OSH Act 2005'},
+        {hazard:'Unsuitable electrical or mechanical equipment',harm:'Ignition of flammable atmosphere',who:'Operators and maintenance staff',rs:5,rop:v('sp-atex-equipment')==='certified'?2:4,controls:'Use equipment suitable for the zone and gas/dust group. Maintain inspection records and defect isolation process.',hoc_level:'engineering',res_s:5,res_p:1,legal_ref:'ATEX equipment requirements'},
+        {hazard:'Poor ventilation or loss of containment',harm:'Build-up of flammable gas, vapour or dust',who:'Area occupants',rs:5,rop:3,controls:'Maintain ventilation. Inspect seals, hoses, valves and containment. Respond immediately to alarms, leaks or odours.',hoc_level:'engineering',res_s:5,res_p:1,legal_ref:'OSH Act 2005'}
+      ];
+    }
+  },
+  fleet:{
+    label:'Fleet / Vehicle Risk Assessment',accent:'#0F766E',icon:'ti-car',
+    activity:'Vehicle use and fleet operation',
+    factors:[
+      ['Vehicle activity','sp-fleet-task',[['road','Road driving'],['site','Site vehicle movement'],['loading','Loading / unloading']]],
+      ['Journey exposure','sp-fleet-exposure',[['low','Low'],['medium','Medium'],['high','High / frequent']]],
+      ['Driver / vehicle control','sp-fleet-control',[['good','Licensed driver, checks complete'],['partial','Some controls'],['poor','Weak controls or defects']]]
+    ],
+    rows:function(v,s){
+      var high=v('sp-fleet-exposure')==='high'||v('sp-fleet-control')==='poor';
+      return [
+        {hazard:'Vehicle collision during road or site movement',harm:'Injury, fatality, property damage',who:'Driver, passengers, pedestrians and other road users',rs:5,rop:high?4:3,controls:'Authorised licensed drivers only. Follow speed limits and traffic rules. Plan journeys and avoid fatigue. '+v('sp-controls'),hoc_level:'administrative',res_s:5,res_p:1,legal_ref:'Road traffic / OSH requirements'},
+        {hazard:'Poor vehicle condition or missed pre-use checks',harm:'Breakdown, loss of control, collision',who:'Driver and road users',rs:5,rop:v('sp-fleet-control')==='good'?2:4,controls:'Complete daily/pre-use vehicle checks. Defects reported and vehicle removed from service where safety critical.',hoc_level:'engineering',res_s:5,res_p:1,legal_ref:'Fleet safety requirements'},
+        {hazard:'Reversing and pedestrian interaction',harm:'Pedestrian struck or crushed',who:'Pedestrians, banksmen, site workers',rs:5,rop:v('sp-fleet-task')==='site'?4:2,controls:'Segregate pedestrians and vehicles. Use banksman, reversing alarms, mirrors/cameras and marked routes where required.',hoc_level:'engineering',res_s:5,res_p:1,legal_ref:'OSH Act 2005'},
+        {hazard:'Loading, unloading or unsecured load',harm:'Falling load, crush injury, vehicle instability',who:'Driver, loaders and nearby persons',rs:4,rop:v('sp-fleet-task')==='loading'?4:2,controls:'Use safe loading method, load restraint and exclusion zones. Verify load security before travel.',hoc_level:'administrative',res_s:4,res_p:1,legal_ref:'OSH Act 2005'}
+      ];
+    }
+  }
 };
 
 function raSpecificNew(kind){
@@ -12103,20 +12189,31 @@ function raSpecificNew(kind){
   var mf=document.getElementById('ra-manual-form');if(mf)mf.style.display='none';
   var panel=document.getElementById('ra-specific-form');if(panel)panel.style.display='block';
   document.getElementById('sp-kind').value=kind;
-  ['sp-title','sp-location','sp-dept','sp-context','sp-controls'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
+  document.getElementById('sp-title').value='';
+  document.getElementById('sp-location').value='';
+  document.getElementById('sp-dept').value='';
+  document.getElementById('sp-context').value='';
+  document.getElementById('sp-controls').value='';
   document.getElementById('sp-assessed-by').value=(typeof prof!=='undefined'&&(prof.full_name||prof.email))||'';
   document.getElementById('sp-heading').textContent=cfg.label+' Builder';
   document.getElementById('sp-icon').className='ti '+cfg.icon;
   document.getElementById('sp-hero').style.background='linear-gradient(135deg,'+cfg.accent+',#1D9E75)';
   document.getElementById('sp-accent-title').style.color=cfg.accent;
-  document.getElementById('sp-factor-fields').innerHTML=cfg.factors.map(function(f){return '<div class="form-group"><label class="form-label">'+escH(f[0])+'</label><select id="'+f[1]+'" onchange="raSpecificUpdatePreview()">'+f[2].map(function(o){return '<option value="'+o[0]+'">'+escH(o[1])+'</option>';}).join('')+'</select></div>';}).join('');
+  var fields=document.getElementById('sp-factor-fields');
+  fields.innerHTML=cfg.factors.map(function(f){
+    return '<div class="form-group"><label class="form-label">'+escH(f[0])+'</label><select id="'+f[1]+'" onchange="raSpecificUpdatePreview()">'+f[2].map(function(o){return '<option value="'+o[0]+'">'+escH(o[1])+'</option>';}).join('')+'</select></div>';
+  }).join('');
   raSpecificUpdatePreview();
 }
 
 function raSpecificScore(){
   var kind=document.getElementById('sp-kind')?.value||'fire';
-  var cfg=RA_SPECIFIC_CFG[kind];var score=0;
-  (cfg?.factors||[]).forEach(function(f){var el=document.getElementById(f[1]);var idx=el?el.selectedIndex:0;score+=idx===0?1:idx===1?3:5;});
+  var cfg=RA_SPECIFIC_CFG[kind];
+  var score=0;
+  (cfg?.factors||[]).forEach(function(f){
+    var el=document.getElementById(f[1]);var idx=el?el.selectedIndex:0;
+    score+=idx===0?1:idx===1?3:5;
+  });
   var severity=score>=11?5:score>=8?4:3;
   var probability=score>=11?4:score>=8?3:2;
   var level=severity*probability>=20?'Critical':severity*probability>=12?'Very High':severity*probability>=6?'High':severity*probability>=3?'Medium':'Low';
@@ -12126,7 +12223,11 @@ function raSpecificScore(){
 function raSpecificUpdatePreview(){
   var box=document.getElementById('sp-risk-preview');if(!box)return;
   var s=raSpecificScore();var cfg=RL_CFG[s.level]||['#f3f4f6','#6B7280'];
-  box.innerHTML='<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap"><div><div style="font-size:12px;color:var(--text2);font-weight:700;text-transform:uppercase">Automatic initial risk</div><div style="font-size:13px;color:var(--text2)">Based on the selected specific risk factors.</div></div><div style="background:'+cfg[0]+';color:'+cfg[1]+';padding:8px 12px;border-radius:8px;font-weight:800">S'+s.severity+' x P'+s.probability+' = '+(s.severity*s.probability)+' '+s.level+'</div></div>';
+  box.innerHTML='<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">'
+    +'<div><div style="font-size:12px;color:var(--text2);font-weight:700;text-transform:uppercase">Automatic initial risk</div>'
+    +'<div style="font-size:13px;color:var(--text2)">Based on the selected specific risk factors.</div></div>'
+    +'<div style="background:'+cfg[0]+';color:'+cfg[1]+';padding:8px 12px;border-radius:8px;font-weight:800">S'+s.severity+' x P'+s.probability+' = '+(s.severity*s.probability)+' '+s.level+'</div>'
+    +'</div>';
 }
 
 function raSpecificCreateRA(){
@@ -12145,7 +12246,8 @@ function raSpecificCreateRA(){
   var summary=(cfg.factors||[]).map(function(f){var el=document.getElementById(f[1]);return f[0]+': '+(el?.selectedOptions[0]?.textContent||'');}).join('\n');
   set('ra-scope',(v('sp-context')?v('sp-context')+'\n\n':'')+summary);
   raBaselineRender(rows);
-  var tab=document.getElementById('ra-ftab-hazards');if(tab)raFormTab('hazards',tab);
+  var tab=document.getElementById('ra-ftab-hazards');
+  if(tab)raFormTab('hazards',tab);
   toast(cfg.label+' generated. Review the table, then save or submit.');
 }
 
@@ -23902,7 +24004,7 @@ document.addEventListener('click', function(e){
 });
 
 function applyRoles() {
-  var role = prof?.role || 'employee';
+  var role = activeRole();
   var level = getRoleLevel(role);
 
   // ── Phase 1: ensure every nav-item has an ID we can target ──
@@ -23995,6 +24097,27 @@ function applyRoles() {
       if(btn.id!=='ims-report-btn') btn.style.display='none';
     });
   }
+}
+
+function sbChangeRole() {
+  if(!isInternalSephsAdminAccount()) {
+    toast('Role preview is only available to SEPHS admins', false);
+    return;
+  }
+  var sel = document.getElementById('sb-role-select');
+  rolePreview = sel ? (sel.value || null) : null;
+  var role = activeRole();
+  var rc = (typeof HSE_ROLES !== 'undefined') ? HSE_ROLES[role] : null;
+  var badge = document.getElementById('sb-role');
+  if(badge) badge.textContent = rc ? rc.emoji + ' ' + rc.label : role.replace(/_/g,' ');
+  applyRoles();
+  modulesMenuBuild();
+  if(typeof mobileBuildModules === 'function') mobileBuildModules();
+  var activePage = document.querySelector('.page.active');
+  var activeId = activePage ? activePage.id.replace('page-','') : 'dashboard';
+  if(!canAccessPage(activeId)) showPage('dashboard', null);
+  else if(activeId && typeof showPage === 'function') showPage(activeId, null);
+  toast('Previewing role: ' + (rc ? rc.label : role.replace(/_/g,' ')), true);
 }
 
 function getRoleAccessNote(role) {
@@ -30507,11 +30630,31 @@ function fireEquipStatusBadge(s) {
 <div style="font-weight:700;font-size:14px;color:#0F766E;margin-bottom:6px">Manual Handling RA</div>
 <div style="font-size:12px;color:var(--text2)">Guided lifting and carrying assessment with automatic risk rows</div>
 </div>
-<div class="card" style="cursor:pointer;transition:all .15s;border:2px solid var(--border);text-align:center;padding:20px" onclick="raSpecificNew('fire')" onmouseover="this.style.borderColor='#DC2626';this.style.background='#FEF2F2'" onmouseout="this.style.borderColor='var(--border)';this.style.background='#fff'"><div style="font-size:36px;margin-bottom:10px"><i class="ti ti-flame"></i></div><div style="font-weight:700;font-size:14px;color:#DC2626;margin-bottom:6px">Fire RA</div><div style="font-size:12px;color:var(--text2)">Fire load, ignition sources, escape and emergency controls</div></div>
-<div class="card" style="cursor:pointer;transition:all .15s;border:2px solid var(--border);text-align:center;padding:20px" onclick="raSpecificNew('machinery')" onmouseover="this.style.borderColor='#185FA5';this.style.background='#EFF6FF'" onmouseout="this.style.borderColor='var(--border)';this.style.background='#fff'"><div style="font-size:36px;margin-bottom:10px"><i class="ti ti-settings"></i></div><div style="font-weight:700;font-size:14px;color:#185FA5;margin-bottom:6px">Machinery RA</div><div style="font-size:12px;color:var(--text2)">Guarding, isolation, jam clearing and emergency stop risks</div></div>
-<div class="card" style="cursor:pointer;transition:all .15s;border:2px solid var(--border);text-align:center;padding:20px" onclick="raSpecificNew('chemical')" onmouseover="this.style.borderColor='#7C3AED';this.style.background='#F5F3FF'" onmouseout="this.style.borderColor='var(--border)';this.style.background='#fff'"><div style="font-size:36px;margin-bottom:10px"><i class="ti ti-flask"></i></div><div style="font-weight:700;font-size:14px;color:#7C3AED;margin-bottom:6px">Chemical / COSHH RA</div><div style="font-size:12px;color:var(--text2)">Exposure routes, SDS controls, storage and spill risks</div></div>
-<div class="card" style="cursor:pointer;transition:all .15s;border:2px solid var(--border);text-align:center;padding:20px" onclick="raSpecificNew('atex')" onmouseover="this.style.borderColor='#B45309';this.style.background='#FFFBEB'" onmouseout="this.style.borderColor='var(--border)';this.style.background='#fff'"><div style="font-size:36px;margin-bottom:10px"><i class="ti ti-explosion"></i></div><div style="font-weight:700;font-size:14px;color:#B45309;margin-bottom:6px">ATEX RA</div><div style="font-size:12px;color:var(--text2)">Zoned area, ignition source and equipment suitability controls</div></div>
-<div class="card" style="cursor:pointer;transition:all .15s;border:2px solid var(--border);text-align:center;padding:20px" onclick="raSpecificNew('fleet')" onmouseover="this.style.borderColor='#0F766E';this.style.background='#ECFDF5'" onmouseout="this.style.borderColor='var(--border)';this.style.background='#fff'"><div style="font-size:36px;margin-bottom:10px"><i class="ti ti-car"></i></div><div style="font-weight:700;font-size:14px;color:#0F766E;margin-bottom:6px">Fleet / Vehicle RA</div><div style="font-size:12px;color:var(--text2)">Driving, site movement, vehicle checks and loading risks</div></div>
+<div class="card" style="cursor:pointer;transition:all .15s;border:2px solid var(--border);text-align:center;padding:20px" onclick="raSpecificNew('fire')" onmouseover="this.style.borderColor='#DC2626';this.style.background='#FEF2F2'" onmouseout="this.style.borderColor='var(--border)';this.style.background='#fff'">
+<div style="font-size:36px;margin-bottom:10px"><i class="ti ti-flame"></i></div>
+<div style="font-weight:700;font-size:14px;color:#DC2626;margin-bottom:6px">Fire RA</div>
+<div style="font-size:12px;color:var(--text2)">Fire load, ignition sources, escape and emergency controls</div>
+</div>
+<div class="card" style="cursor:pointer;transition:all .15s;border:2px solid var(--border);text-align:center;padding:20px" onclick="raSpecificNew('machinery')" onmouseover="this.style.borderColor='#185FA5';this.style.background='#EFF6FF'" onmouseout="this.style.borderColor='var(--border)';this.style.background='#fff'">
+<div style="font-size:36px;margin-bottom:10px"><i class="ti ti-settings"></i></div>
+<div style="font-weight:700;font-size:14px;color:#185FA5;margin-bottom:6px">Machinery RA</div>
+<div style="font-size:12px;color:var(--text2)">Guarding, isolation, jam clearing and emergency stop risks</div>
+</div>
+<div class="card" style="cursor:pointer;transition:all .15s;border:2px solid var(--border);text-align:center;padding:20px" onclick="raSpecificNew('chemical')" onmouseover="this.style.borderColor='#7C3AED';this.style.background='#F5F3FF'" onmouseout="this.style.borderColor='var(--border)';this.style.background='#fff'">
+<div style="font-size:36px;margin-bottom:10px"><i class="ti ti-flask"></i></div>
+<div style="font-weight:700;font-size:14px;color:#7C3AED;margin-bottom:6px">Chemical / COSHH RA</div>
+<div style="font-size:12px;color:var(--text2)">Exposure routes, SDS controls, storage and spill risks</div>
+</div>
+<div class="card" style="cursor:pointer;transition:all .15s;border:2px solid var(--border);text-align:center;padding:20px" onclick="raSpecificNew('atex')" onmouseover="this.style.borderColor='#B45309';this.style.background='#FFFBEB'" onmouseout="this.style.borderColor='var(--border)';this.style.background='#fff'">
+<div style="font-size:36px;margin-bottom:10px"><i class="ti ti-explosion"></i></div>
+<div style="font-weight:700;font-size:14px;color:#B45309;margin-bottom:6px">ATEX RA</div>
+<div style="font-size:12px;color:var(--text2)">Zoned area, ignition source and equipment suitability controls</div>
+</div>
+<div class="card" style="cursor:pointer;transition:all .15s;border:2px solid var(--border);text-align:center;padding:20px" onclick="raSpecificNew('fleet')" onmouseover="this.style.borderColor='#0F766E';this.style.background='#ECFDF5'" onmouseout="this.style.borderColor='var(--border)';this.style.background='#fff'">
+<div style="font-size:36px;margin-bottom:10px"><i class="ti ti-car"></i></div>
+<div style="font-weight:700;font-size:14px;color:#0F766E;margin-bottom:6px">Fleet / Vehicle RA</div>
+<div style="font-size:12px;color:var(--text2)">Driving, site movement, vehicle checks and loading risks</div>
+</div>
 <div class="card" style="cursor:pointer;transition:all .15s;border:2px solid var(--border);text-align:center;padding:20px" onclick="raAIGenerate()" onmouseover="this.style.borderColor='#8B5CF6';this.style.background='#F5F3FF'" onmouseout="this.style.borderColor='var(--border)';this.style.background='#fff'">
 <div style="font-size:36px;margin-bottom:10px">🤖</div>
 <div style="font-weight:700;font-size:14px;color:#8B5CF6;margin-bottom:6px">AI-Assisted RA</div>
@@ -30584,7 +30727,52 @@ function fireEquipStatusBadge(s) {
 </div>
 </div>
 
-<div id="ra-specific-form" style="display:none"><input type="hidden" id="sp-kind"/><div class="card" style="margin-bottom:14px;padding:0;overflow:hidden"><div id="sp-hero" style="padding:16px 22px;background:linear-gradient(135deg,#185FA5,#1D9E75);color:#fff;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap"><div style="display:flex;align-items:center;gap:12px"><div style="width:42px;height:42px;border-radius:12px;background:rgba(255,255,255,.18);display:flex;align-items:center;justify-content:center;font-size:24px"><i id="sp-icon" class="ti ti-shield-check"></i></div><div><div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;opacity:.82;margin-bottom:4px">Specific Risk Assessment</div><div style="font-size:18px;font-weight:800" id="sp-heading">Specific RA Builder</div><div style="font-size:12px;opacity:.86;margin-top:4px">Answer the key prompts, then generate a table-style RA for review.</div></div></div><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn" style="background:rgba(255,255,255,.18);color:#fff;border-color:rgba(255,255,255,.3)" onclick="raShowNewPanel()"><i class="ti ti-arrow-left"></i>Back</button><button class="btn" style="background:#fff;color:#0F766E;border-color:#fff" onclick="raSpecificCreateRA()"><i class="ti ti-table-plus"></i>Generate RA</button></div></div></div><div style="display:grid;grid-template-columns:minmax(0,2fr) minmax(260px,1fr);gap:14px"><div class="card"><div class="card-title" id="sp-accent-title"><i class="ti ti-clipboard-list"></i> Assessment Details</div><div class="form-row"><div class="form-group"><label class="form-label">Activity / assessment title</label><input type="text" id="sp-title" placeholder="e.g. Workshop fire risk assessment, forklift operation, solvent use..."/></div><div class="form-group"><label class="form-label">Location</label><input type="text" id="sp-location"/></div></div><div class="form-row"><div class="form-group"><label class="form-label">Department</label><input type="text" id="sp-dept"/></div><div class="form-group"><label class="form-label">Assessed by</label><input type="text" id="sp-assessed-by"/></div></div><div class="form-group"><label class="form-label">Context / scope</label><textarea id="sp-context" style="min-height:72px" placeholder="Describe the process, area, equipment, material or vehicle activity..."></textarea></div></div><div class="card" style="border:2px solid #0F766E33;background:#F0FDF4"><div class="card-title" style="color:#0F766E"><i class="ti ti-chart-bar"></i> Risk Preview</div><div id="sp-risk-preview"></div></div></div><div class="card" style="margin-top:14px"><div class="card-title"><i class="ti ti-adjustments-horizontal"></i> Specific Risk Factors</div><div id="sp-factor-fields" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px"></div></div><div class="card" style="margin-top:14px"><div class="card-title"><i class="ti ti-shield-check"></i> Existing or Additional Controls</div><textarea id="sp-controls" style="min-height:110px" placeholder="Add any controls already in place or required at this site..."></textarea></div></div>
+<div id="ra-specific-form" style="display:none">
+<input type="hidden" id="sp-kind"/>
+<div class="card" style="margin-bottom:14px;padding:0;overflow:hidden">
+<div id="sp-hero" style="padding:16px 22px;background:linear-gradient(135deg,#185FA5,#1D9E75);color:#fff;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">
+<div style="display:flex;align-items:center;gap:12px">
+<div style="width:42px;height:42px;border-radius:12px;background:rgba(255,255,255,.18);display:flex;align-items:center;justify-content:center;font-size:24px"><i id="sp-icon" class="ti ti-shield-check"></i></div>
+<div>
+<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;opacity:.82;margin-bottom:4px">Specific Risk Assessment</div>
+<div style="font-size:18px;font-weight:800" id="sp-heading">Specific RA Builder</div>
+<div style="font-size:12px;opacity:.86;margin-top:4px">Answer the key prompts, then generate a table-style RA for review.</div>
+</div>
+</div>
+<div style="display:flex;gap:8px;flex-wrap:wrap">
+<button class="btn" style="background:rgba(255,255,255,.18);color:#fff;border-color:rgba(255,255,255,.3)" onclick="raShowNewPanel()"><i class="ti ti-arrow-left"></i>Back</button>
+<button class="btn" style="background:#fff;color:#0F766E;border-color:#fff" onclick="raSpecificCreateRA()"><i class="ti ti-table-plus"></i>Generate RA</button>
+</div>
+</div>
+</div>
+<div style="display:grid;grid-template-columns:minmax(0,2fr) minmax(260px,1fr);gap:14px">
+<div class="card">
+<div class="card-title" id="sp-accent-title"><i class="ti ti-clipboard-list"></i> Assessment Details</div>
+<div class="form-row">
+<div class="form-group"><label class="form-label">Activity / assessment title</label><input type="text" id="sp-title" placeholder="e.g. Workshop fire risk assessment, forklift operation, solvent use..."/></div>
+<div class="form-group"><label class="form-label">Location</label><input type="text" id="sp-location"/></div>
+</div>
+<div class="form-row">
+<div class="form-group"><label class="form-label">Department</label><input type="text" id="sp-dept"/></div>
+<div class="form-group"><label class="form-label">Assessed by</label><input type="text" id="sp-assessed-by"/></div>
+</div>
+<div class="form-group"><label class="form-label">Context / scope</label><textarea id="sp-context" style="min-height:72px" placeholder="Describe the process, area, equipment, material or vehicle activity..."></textarea></div>
+</div>
+<div class="card" style="border:2px solid #0F766E33;background:#F0FDF4">
+<div class="card-title" style="color:#0F766E"><i class="ti ti-chart-bar"></i> Risk Preview</div>
+<div id="sp-risk-preview"></div>
+</div>
+</div>
+<div class="card" style="margin-top:14px">
+<div class="card-title"><i class="ti ti-adjustments-horizontal"></i> Specific Risk Factors</div>
+<div id="sp-factor-fields" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px"></div>
+</div>
+<div class="card" style="margin-top:14px">
+<div class="card-title"><i class="ti ti-shield-check"></i> Existing or Additional Controls</div>
+<textarea id="sp-controls" style="min-height:110px" placeholder="Add any controls already in place or required at this site..."></textarea>
+</div>
+</div>
+
 <div id="ra-form-view" style="display:none">
 <!-- Form header -->
 <div class="card" style="margin-bottom:14px;padding:0;overflow:hidden">
