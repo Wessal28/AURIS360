@@ -3439,7 +3439,7 @@ function fillPplDrops(){
 const opts='<option value="">Select person...</option>'+people.map(p=>'<option value="'+p.id+'">'+p.last_name+', '+p.first_name+(p.job_title?' -- '+p.job_title:'')+'</option>').join('');
 const nameOpts='<option value="">Select person...</option>'+people.map(function(p){var nm=[p.first_name,p.last_name].filter(Boolean).join(' ')||p.email||'';return '<option value="'+escH(nm)+'">'+escH([p.last_name,p.first_name].filter(Boolean).join(', ')||nm)+(p.job_title?' -- '+escH(p.job_title):'')+'</option>';}).join('');
 ['ef-person','ef-by','ef-assigned','if-by','rf-by','invf-by','invf-persons','pf-contractor','pf-issued','pf-approved','nf-by','mf-chair','kf-resp','af-resp','df-owner'].forEach(id=>{const el=document.getElementById(id);if(el&&!el.multiple)el.innerHTML=opts;});
-['obs-action-assigned','lc-responsible','lcaf-assessor','lcaf-approved-by','gapf-responsible','calf-responsible','ms-chaired-by','ms-responsible','kpi-resp'].forEach(id=>{const el=document.getElementById(id);if(el&&!el.multiple){var cur=el.value;el.innerHTML=nameOpts;if(cur){el.value=cur;if(el.value!==cur){var o=document.createElement('option');o.value=cur;o.textContent=cur+' (saved text)';el.appendChild(o);el.value=cur;}}}});
+['obs-action-assigned','lc-responsible','lcaf-assessor','lcaf-approved-by','gapf-responsible','calf-responsible','ms-chaired-by','ms-responsible','kpi-resp','prf-requested-by','prf-approved-by','bullf-author','bullf-approved-by','mom-sign-chair','mom-sign-approver','sop-author','sop-approver','adm-site-manager'].forEach(id=>{document.querySelectorAll('[id="'+id+'"]').forEach(el=>{if(el&&!el.multiple&&el.tagName==='SELECT'){var cur=el.value;el.innerHTML=nameOpts;if(cur){el.value=cur;if(el.value!==cur){var o=document.createElement('option');o.value=cur;o.textContent=cur+' (saved text)';el.appendChild(o);el.value=cur;}}}});});
 const ms=document.getElementById('tf-attendees');
 if(ms)ms.innerHTML=people.map(p=>'<option value="'+p.id+'">'+p.last_name+', '+p.first_name+'</option>').join('');
 }
@@ -34857,7 +34857,7 @@ function fireEquipStatusBadge(s) {
 <div class="form-group"><label class="form-label">Urgency</label>
 <select id="prf-urgency"><option value="immediate">🔴 Immediate</option><option value="urgent">🟠 Urgent</option><option value="normal" selected>🟡 Normal</option><option value="planned">🟢 Planned</option></select></div>
 <div class="form-group"><label class="form-label">Date requested</label><input type="date" id="prf-date"/></div>
-<div class="form-group"><label class="form-label">Requested by</label><input type="text" id="prf-requested-by"/></div>
+<div class="form-group"><label class="form-label">Requested by</label><select id="prf-requested-by"><option value="">Select person...</option></select></div>
 </div>
 <div class="form-row">
 <div class="form-group"><label class="form-label">Old item condition</label><input type="text" id="prf-old-condition" placeholder="Describe current state of the PPE..."/></div>
@@ -34866,7 +34866,7 @@ function fireEquipStatusBadge(s) {
 </div>
 <div class="card"><div class="card-title">Approval &amp; Fulfilment</div>
 <div class="form-row">
-<div class="form-group"><label class="form-label">Approved by</label><input type="text" id="prf-approved-by"/></div>
+<div class="form-group"><label class="form-label">Approved by</label><select id="prf-approved-by"><option value="">Select person...</option></select></div>
 <div class="form-group"><label class="form-label">Approved date</label><input type="date" id="prf-approved-date"/></div>
 </div>
 <div class="form-row">
@@ -35194,8 +35194,8 @@ function fireEquipStatusBadge(s) {
 </div>
 <div>
 <div class="card" style="margin-bottom:14px;border:2px solid #5B21B6"><div class="card-title" style="color:#5B21B6">Publication Details</div>
-<div class="form-group"><label class="form-label">Author</label><input type="text" id="bullf-author"/></div>
-<div class="form-group"><label class="form-label">Approved by</label><input type="text" id="bullf-approved-by"/></div>
+<div class="form-group"><label class="form-label">Author</label><select id="bullf-author"><option value="">Select person...</option></select></div>
+<div class="form-group"><label class="form-label">Approved by</label><select id="bullf-approved-by"><option value="">Select person...</option></select></div>
 <div class="form-group"><label class="form-label">Target audience</label><input type="text" id="bullf-audience" placeholder="e.g. All staff, Management, Supervisors"/></div>
 <div class="form-group"><label class="form-label">Distribution method</label>
 <select id="bullf-dist-method">
@@ -35392,9 +35392,9 @@ function fireEquipStatusBadge(s) {
 <div class="card">
 <div class="card-title">Sign-off</div>
 <div class="form-row">
-<div class="form-group"><label class="form-label">Chairperson</label><input type="text" id="mom-sign-chair"/></div>
+<div class="form-group"><label class="form-label">Chairperson</label><select id="mom-sign-chair"><option value="">Select person...</option></select></div>
 <div class="form-group"><label class="form-label">Date</label><input type="date" id="mom-sign-date"/></div>
-<div class="form-group"><label class="form-label">Minutes approved by</label><input type="text" id="mom-sign-approver"/></div>
+<div class="form-group"><label class="form-label">Minutes approved by</label><select id="mom-sign-approver"><option value="">Select person...</option></select></div>
 <div class="form-group"><label class="form-label">Date</label><input type="date" id="mom-sign-approver-date"/></div>
 </div>
 </div>
@@ -36295,7 +36295,7 @@ function fireEquipStatusBadge(s) {
 <option value="High">High</option>
 <option value="Critical">Critical</option>
 </select></div>
-<div class="form-group"><label class="form-label">Prepared by</label><input type="text" id="sop-author"/></div>
+<div class="form-group"><label class="form-label">Prepared by</label><select id="sop-author"><option value="">Select person...</option></select></div>
 <div class="form-group"><label class="form-label">Review date</label><input type="date" id="sop-review-date"/></div>
 <div class="form-group"><label class="form-label">Version</label><input type="text" id="sop-version" value="Rev 00"/></div>
 </div>
@@ -36451,10 +36451,10 @@ function fireEquipStatusBadge(s) {
 </select></div>
 </div>
 <div class="form-row">
-<div class="form-group"><label class="form-label">Prepared by</label><input type="text" id="sop-author"/></div>
+<div class="form-group"><label class="form-label">Prepared by</label><select id="sop-author"><option value="">Select person...</option></select></div>
 <div class="form-group"><label class="form-label">Date</label><input type="date" id="sop-date"/></div>
 <div class="form-group"><label class="form-label">Revision</label><input type="text" id="sop-revision" placeholder="Rev 00" value="Rev 00"/></div>
-<div class="form-group"><label class="form-label">Approved by</label><input type="text" id="sop-approver"/></div>
+<div class="form-group"><label class="form-label">Approved by</label><select id="sop-approver"><option value="">Select person...</option></select></div>
 </div>
 <div class="form-group"><label class="form-label">Brief task description</label><textarea id="sop-description" style="min-height:70px" placeholder="Briefly describe what this task involves, its purpose and scope (2-3 sentences)..."></textarea></div>
 <div class="form-row">
@@ -37511,7 +37511,7 @@ function fireEquipStatusBadge(s) {
 <div class="form-group" style="display:flex;align-items:flex-end"><button class="btn btn-sm" onclick="adminSiteGetGPS()" style="width:100%"><i class="ti ti-map-pin"></i>GPS</button></div>
 </div>
 <div class="form-row">
-<div class="form-group"><label class="form-label">Site manager</label><input type="text" id="adm-site-manager"/></div>
+<div class="form-group"><label class="form-label">Site manager</label><select id="adm-site-manager"><option value="">Select person...</option></select></div>
 <div class="form-group"><label class="form-label">Manager email</label><input type="email" id="adm-site-mgr-email"/></div>
 </div>
 <div class="form-row">
