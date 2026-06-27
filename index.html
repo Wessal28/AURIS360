@@ -3439,7 +3439,7 @@ function fillPplDrops(){
 const opts='<option value="">Select person...</option>'+people.map(p=>'<option value="'+p.id+'">'+p.last_name+', '+p.first_name+(p.job_title?' -- '+p.job_title:'')+'</option>').join('');
 const nameOpts='<option value="">Select person...</option>'+people.map(function(p){var nm=[p.first_name,p.last_name].filter(Boolean).join(' ')||p.email||'';return '<option value="'+escH(nm)+'">'+escH([p.last_name,p.first_name].filter(Boolean).join(', ')||nm)+(p.job_title?' -- '+escH(p.job_title):'')+'</option>';}).join('');
 ['ef-person','ef-by','ef-assigned','if-by','rf-by','invf-by','invf-persons','pf-contractor','pf-issued','pf-approved','nf-by','mf-chair','kf-resp','af-resp','df-owner'].forEach(id=>{const el=document.getElementById(id);if(el&&!el.multiple)el.innerHTML=opts;});
-['obs-action-assigned','lc-responsible','lcaf-assessor','lcaf-approved-by','gapf-responsible','calf-responsible','ms-chaired-by','ms-responsible','kpi-resp','prf-requested-by','prf-approved-by','bullf-author','bullf-approved-by','mom-sign-chair','mom-sign-approver','sop-author','sop-approver','adm-site-manager','tp-trainer','tfr-trainer','compf-person','compf-assessor','indf-person','indf-inducted-by','elef-person'].forEach(id=>{document.querySelectorAll('[id="'+id+'"]').forEach(el=>{if(el&&!el.multiple&&el.tagName==='SELECT'){var cur=el.value;el.innerHTML=nameOpts;if(cur){el.value=cur;if(el.value!==cur){var o=document.createElement('option');o.value=cur;o.textContent=cur+' (saved text)';el.appendChild(o);el.value=cur;}}}});});
+['obs-action-assigned','lc-responsible','lcaf-assessor','lcaf-approved-by','gapf-responsible','calf-responsible','ms-chaired-by','ms-responsible','kpi-resp','prf-requested-by','prf-approved-by','bullf-author','bullf-approved-by','mom-sign-chair','mom-sign-approver','sop-author','sop-approver','adm-site-manager','tp-trainer','tfr-trainer','compf-person','compf-assessor','indf-person','indf-inducted-by','elef-person','ertf-name','mpf-warden','drf-conducted-by','drf-reviewed-by','drf-approved-by'].forEach(id=>{document.querySelectorAll('[id="'+id+'"]').forEach(el=>{if(el&&!el.multiple&&el.tagName==='SELECT'){var cur=el.value;el.innerHTML=nameOpts;if(cur){el.value=cur;if(el.value!==cur){var o=document.createElement('option');o.value=cur;o.textContent=cur+' (saved text)';el.appendChild(o);el.value=cur;}}}});});
 const ms=document.getElementById('tf-attendees');
 if(ms)ms.innerHTML=people.map(p=>'<option value="'+p.id+'">'+p.last_name+', '+p.first_name+'</option>').join('');
 }
@@ -3489,6 +3489,15 @@ function dcPersonSelect(nameId,deptId){
   var p=trainPersonByName(name);
   var dept=document.getElementById(deptId);
   if(p&&dept)dept.value=p.department||'';
+}
+function emergencyErtPersonSelect(){
+  var name=document.getElementById('ertf-name')?.value||'';
+  var p=trainPersonByName(name);
+  if(!p)return;
+  var title=document.getElementById('ertf-title');if(title)title.value=p.job_title||'';
+  var dept=document.getElementById('ertf-dept');if(dept)dept.value=p.department||'';
+  var phone=document.getElementById('ertf-phone1');if(phone)phone.value=p.phone||'';
+  var email=document.getElementById('ertf-email');if(email)email.value=p.email||'';
 }
 // ── Role → allowed pages map ────────────────────────────────────────
 // Used by applyRoles() (hides sidebar items) AND showPage() (blocks navigation
@@ -16100,6 +16109,7 @@ function ertNew(){
   ['ertf-fa-cert','ertf-fw-cert','ertf-ert-trained'].forEach(function(id){var el=document.getElementById(id);if(el)el.checked=false;});
   document.getElementById('ertf-role').value='ert_member';
   document.getElementById('ertf-status').value='active';
+  fillPersonSelect('ertf-name');
   ertShowForm();
 }
 
@@ -16109,7 +16119,7 @@ function ertEdit(id){
   document.getElementById('em-ert-form-title').textContent='Edit ERT Member';
   document.getElementById('em-ert-del-btn').style.display=isMgr()?'inline-flex':'none';
   var gf=function(id,val){var el=document.getElementById(id);if(el)el.value=val||'';};
-  gf('ertf-name',m.name);gf('ertf-title',m.job_title);gf('ertf-dept',m.department);
+  fillPersonSelect('ertf-name',m.name);gf('ertf-title',m.job_title);gf('ertf-dept',m.department);
   gf('ertf-phone1',m.phone_primary);gf('ertf-phone2',m.phone_secondary);gf('ertf-email',m.email);
   gf('ertf-team',m.ert_team);gf('ertf-area',m.coverage_area);gf('ertf-notes',m.notes);
   gf('ertf-fa-expiry',m.first_aid_expiry);gf('ertf-fw-expiry',m.fire_warden_expiry);gf('ertf-ert-date',m.ert_trained_date);
@@ -16157,8 +16167,8 @@ async function musterLoad(){
 function musterShowForm(){['em-view-muster'].forEach(function(id){var el=document.getElementById(id);if(el)el.style.display='none';});document.getElementById('em-muster-form').style.display='block';}
 function musterBack(){document.getElementById('em-muster-form').style.display='none';document.getElementById('em-view-muster').style.display='block';document.querySelectorAll('.mtg-tab').forEach(t=>t.classList.remove('active'));var tab=document.getElementById('em-tab-muster');if(tab)tab.classList.add('active');musterLoad();}
 
-function musterNew(){emMusterEditId=null;document.getElementById('em-muster-form-title').textContent='New Muster Point';document.getElementById('em-muster-del-btn').style.display='none';['mpf-name','mpf-location','mpf-capacity','mpf-warden','mpf-types','mpf-notes'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});document.getElementById('mpf-status').value='active';musterShowForm();}
-function musterEdit(id){var m=emMusterData.find(x=>x.id===id);if(!m)return;emMusterEditId=id;document.getElementById('em-muster-form-title').textContent='Edit Muster Point';document.getElementById('em-muster-del-btn').style.display=isMgr()?'inline-flex':'none';var gf=function(id,val){var el=document.getElementById(id);if(el)el.value=val||'';};gf('mpf-name',m.name);gf('mpf-location',m.location_description);gf('mpf-capacity',m.capacity||'');gf('mpf-warden',m.warden_assigned);gf('mpf-types',(m.emergency_types||[]).join(', '));gf('mpf-notes',m.notes);var st=document.getElementById('mpf-status');if(st)st.value=m.status||'active';musterShowForm();}
+function musterNew(){emMusterEditId=null;document.getElementById('em-muster-form-title').textContent='New Muster Point';document.getElementById('em-muster-del-btn').style.display='none';['mpf-name','mpf-location','mpf-capacity','mpf-warden','mpf-types','mpf-notes'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});fillPersonSelect('mpf-warden');document.getElementById('mpf-status').value='active';musterShowForm();}
+function musterEdit(id){var m=emMusterData.find(x=>x.id===id);if(!m)return;emMusterEditId=id;document.getElementById('em-muster-form-title').textContent='Edit Muster Point';document.getElementById('em-muster-del-btn').style.display=isMgr()?'inline-flex':'none';var gf=function(id,val){var el=document.getElementById(id);if(el)el.value=val||'';};gf('mpf-name',m.name);gf('mpf-location',m.location_description);gf('mpf-capacity',m.capacity||'');fillPersonSelect('mpf-warden',m.warden_assigned);gf('mpf-types',(m.emergency_types||[]).join(', '));gf('mpf-notes',m.notes);var st=document.getElementById('mpf-status');if(st)st.value=m.status||'active';musterShowForm();}
 async function musterSave(){var name=document.getElementById('mpf-name')?.value?.trim();if(!name){toast('Please enter muster point name',false);return;}var g=function(id){var el=document.getElementById(id);return el?el.value||null:null;};var body={company_id:ccid(),name:name,location_description:g('mpf-location'),capacity:parseInt(g('mpf-capacity'))||null,warden_assigned:g('mpf-warden'),emergency_types:g('mpf-types')?g('mpf-types').split(',').map(x=>x.trim()).filter(Boolean):[],notes:g('mpf-notes'),status:g('mpf-status')||'active'};try{if(emMusterEditId){await api('/muster_points?id=eq.'+emMusterEditId,{m:'PATCH',p:'return=minimal',b:body});toast('Updated!');}else{body.created_by=prof?.id;await api('/muster_points',{m:'POST',p:'return=minimal',b:body});toast('Muster point added!');}musterBack();}catch(e){toast(e.message,false);}}
 async function musterDelete(){if(!emMusterEditId)return;if(!(await appConfirmDelete('muster point')))return;try{await api('/muster_points?id=eq.'+emMusterEditId,{m:'DELETE'});toast('Deleted!');musterBack();}catch(e){toast(e.message,false);}}
 
@@ -16195,9 +16205,9 @@ async function drillsLoad(){
 function drillShowForm(){['em-view-drills'].forEach(function(id){var el=document.getElementById(id);if(el)el.style.display='none';});document.getElementById('em-drill-form').style.display='block';}
 function drillBack(){document.getElementById('em-drill-form').style.display='none';document.getElementById('em-view-drills').style.display='block';document.querySelectorAll('.mtg-tab').forEach(t=>t.classList.remove('active'));var tab=document.getElementById('em-tab-drills');if(tab)tab.classList.add('active');drillsLoad();}
 
-function drillNew(){emDrillEditId=null;document.getElementById('em-drill-form-title').textContent='New Drill';document.getElementById('em-drill-form-ref').textContent='DRILL-AUTO';document.getElementById('em-drill-del-btn').style.display='none';['drf-location','drf-scenario','drf-objectives','drf-depts','drf-external','drf-strengths','drf-weaknesses','drf-observations','drf-actions','drf-conducted-by','drf-reviewed-by','drf-approved-by'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});['drf-expected','drf-participated','drf-evac-time','drf-planned-dur','drf-actual-dur'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});var dt=document.getElementById('drf-date');if(dt)dt.value=new Date().toISOString().slice(0,10);document.getElementById('drf-type').value='evacuation';document.getElementById('drf-status').value='planned';document.getElementById('drf-rating').value='satisfactory';document.getElementById('drf-all-accounted').checked=false;document.getElementById('drf-unaccounted').value='0';drillShowForm();}
+function drillNew(){emDrillEditId=null;document.getElementById('em-drill-form-title').textContent='New Drill';document.getElementById('em-drill-form-ref').textContent='DRILL-AUTO';document.getElementById('em-drill-del-btn').style.display='none';['drf-location','drf-scenario','drf-objectives','drf-depts','drf-external','drf-strengths','drf-weaknesses','drf-observations','drf-actions','drf-conducted-by','drf-reviewed-by','drf-approved-by'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});['drf-conducted-by','drf-reviewed-by','drf-approved-by'].forEach(function(id){fillPersonSelect(id);});['drf-expected','drf-participated','drf-evac-time','drf-planned-dur','drf-actual-dur'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});var dt=document.getElementById('drf-date');if(dt)dt.value=new Date().toISOString().slice(0,10);document.getElementById('drf-type').value='evacuation';document.getElementById('drf-status').value='planned';document.getElementById('drf-rating').value='satisfactory';document.getElementById('drf-all-accounted').checked=false;document.getElementById('drf-unaccounted').value='0';drillShowForm();}
 
-async function drillEdit(id){var x=emDrillsData.find(r=>r.id===id);if(!x)return;emDrillEditId=id;document.getElementById('em-drill-form-title').textContent='Edit Drill';document.getElementById('em-drill-form-ref').textContent=x.drill_ref||'—';document.getElementById('em-drill-del-btn').style.display=isMgr()?'inline-flex':'none';var gf=function(id,val){var el=document.getElementById(id);if(el)el.value=val||'';};gf('drf-location',x.location);gf('drf-scenario',x.scenario);gf('drf-objectives',x.objectives);gf('drf-depts',x.departments_involved);gf('drf-external',x.external_agencies);gf('drf-strengths',x.strengths);gf('drf-weaknesses',x.weaknesses);gf('drf-observations',x.observations);gf('drf-actions',x.corrective_actions);gf('drf-conducted-by',x.conducted_by);gf('drf-reviewed-by',x.reviewed_by);gf('drf-approved-by',x.approved_by);gf('drf-expected',x.total_expected||'');gf('drf-participated',x.total_participated||'');gf('drf-evac-time',x.evacuation_time_mins||'');gf('drf-planned-dur',x.planned_duration||'');gf('drf-actual-dur',x.actual_duration||'');gf('drf-unaccounted',x.unaccounted_persons||0);var dt=document.getElementById('drf-date');if(dt)dt.value=x.drill_date||'';var tm=document.getElementById('drf-time');if(tm)tm.value=x.drill_time||'';var tp=document.getElementById('drf-type');if(tp)tp.value=x.drill_type||'evacuation';var st=document.getElementById('drf-status');if(st)st.value=x.status||'planned';var rt=document.getElementById('drf-rating');if(rt)rt.value=x.overall_rating||'satisfactory';document.getElementById('drf-all-accounted').checked=!!x.all_accounted_for;drillShowForm();}
+async function drillEdit(id){var x=emDrillsData.find(r=>r.id===id);if(!x)return;emDrillEditId=id;document.getElementById('em-drill-form-title').textContent='Edit Drill';document.getElementById('em-drill-form-ref').textContent=x.drill_ref||'—';document.getElementById('em-drill-del-btn').style.display=isMgr()?'inline-flex':'none';var gf=function(id,val){var el=document.getElementById(id);if(el)el.value=val||'';};gf('drf-location',x.location);gf('drf-scenario',x.scenario);gf('drf-objectives',x.objectives);gf('drf-depts',x.departments_involved);gf('drf-external',x.external_agencies);gf('drf-strengths',x.strengths);gf('drf-weaknesses',x.weaknesses);gf('drf-observations',x.observations);gf('drf-actions',x.corrective_actions);fillPersonSelect('drf-conducted-by',x.conducted_by);fillPersonSelect('drf-reviewed-by',x.reviewed_by);fillPersonSelect('drf-approved-by',x.approved_by);gf('drf-expected',x.total_expected||'');gf('drf-participated',x.total_participated||'');gf('drf-evac-time',x.evacuation_time_mins||'');gf('drf-planned-dur',x.planned_duration||'');gf('drf-actual-dur',x.actual_duration||'');gf('drf-unaccounted',x.unaccounted_persons||0);var dt=document.getElementById('drf-date');if(dt)dt.value=x.drill_date||'';var tm=document.getElementById('drf-time');if(tm)tm.value=x.drill_time||'';var tp=document.getElementById('drf-type');if(tp)tp.value=x.drill_type||'evacuation';var st=document.getElementById('drf-status');if(st)st.value=x.status||'planned';var rt=document.getElementById('drf-rating');if(rt)rt.value=x.overall_rating||'satisfactory';document.getElementById('drf-all-accounted').checked=!!x.all_accounted_for;drillShowForm();}
 
 async function drillSave(){var g=function(id){var el=document.getElementById(id);return el?el.value||null:null;};var date=g('drf-date');if(!date){toast('Please enter drill date',false);return;}var body={company_id:ccid(),drill_type:g('drf-type')||'evacuation',drill_date:date,drill_time:g('drf-time'),location:g('drf-location'),scenario:g('drf-scenario'),objectives:g('drf-objectives'),total_expected:parseInt(g('drf-expected'))||null,total_participated:parseInt(g('drf-participated'))||null,departments_involved:g('drf-depts'),external_agencies:g('drf-external'),evacuation_time_mins:parseFloat(g('drf-evac-time'))||null,planned_duration:parseInt(g('drf-planned-dur'))||null,actual_duration:parseInt(g('drf-actual-dur'))||null,all_accounted_for:document.getElementById('drf-all-accounted')?.checked||false,unaccounted_persons:parseInt(g('drf-unaccounted'))||0,strengths:g('drf-strengths'),weaknesses:g('drf-weaknesses'),observations:g('drf-observations'),corrective_actions:g('drf-actions'),overall_rating:g('drf-rating')||'satisfactory',conducted_by:g('drf-conducted-by'),reviewed_by:g('drf-reviewed-by'),approved_by:g('drf-approved-by'),status:g('drf-status')||'planned',updated_at:new Date().toISOString()};
   try{if(emDrillEditId){await api('/emergency_drills?id=eq.'+emDrillEditId,{m:'PATCH',p:'return=minimal',b:body});toast('Drill updated!');}else{body.created_by=prof?.id;var res=await api('/emergency_drills',{m:'POST',p:'return=representation',b:body});if(res?.[0]?.id){var yr=new Date().getFullYear();var ref='DRILL-'+yr+'-'+String(emDrillsData.length+1).padStart(3,'0');await api('/emergency_drills?id=eq.'+res[0].id,{m:'PATCH',p:'return=minimal',b:{drill_ref:ref}});toast('Drill saved! Ref: '+ref);}}drillBack();}catch(e){toast(e.message,false);}
@@ -33544,7 +33554,7 @@ function fireEquipStatusBadge(s) {
 <div>
 <div class="card" style="margin-bottom:14px"><div class="card-title">Personal Details</div>
 <div class="form-row">
-<div class="form-group"><label class="form-label">Full name</label><input type="text" id="ertf-name"/></div>
+<div class="form-group"><label class="form-label">Full name</label><select id="ertf-name" onchange="emergencyErtPersonSelect()"><option value="">Select person...</option></select></div>
 <div class="form-group"><label class="form-label">Job title</label><input type="text" id="ertf-title"/></div>
 <div class="form-group"><label class="form-label">Department</label><input type="text" id="ertf-dept"/></div>
 </div>
@@ -33611,7 +33621,7 @@ function fireEquipStatusBadge(s) {
 <div class="form-group"><label class="form-label">Muster point name</label><input type="text" id="mpf-name" placeholder="e.g. Car Park A, Main Gate, Sports Field"/></div>
 <div class="form-group"><label class="form-label">Location description</label><input type="text" id="mpf-location" placeholder="Detailed location instructions..."/></div>
 <div class="form-group"><label class="form-label">Capacity (persons)</label><input type="number" id="mpf-capacity" min="1"/></div>
-<div class="form-group"><label class="form-label">Assigned warden</label><input type="text" id="mpf-warden"/></div>
+<div class="form-group"><label class="form-label">Assigned warden</label><select id="mpf-warden"><option value="">Select person...</option></select></div>
 </div>
 <div class="form-row">
 <div class="form-group"><label class="form-label">Applicable emergencies</label><input type="text" id="mpf-types" placeholder="e.g. Fire, Chemical spill, All emergencies"/></div>
@@ -33706,9 +33716,9 @@ function fireEquipStatusBadge(s) {
 <input type="hidden" id="drf-rating" value="satisfactory"/>
 </div>
 <div class="card" style="border:2px solid #185FA5"><div class="card-title" style="color:#185FA5">Sign-off</div>
-<div class="form-group"><label class="form-label">Conducted by</label><input type="text" id="drf-conducted-by"/></div>
-<div class="form-group"><label class="form-label">Reviewed by</label><input type="text" id="drf-reviewed-by"/></div>
-<div class="form-group"><label class="form-label">Approved by</label><input type="text" id="drf-approved-by"/></div>
+<div class="form-group"><label class="form-label">Conducted by</label><select id="drf-conducted-by"><option value="">Select person...</option></select></div>
+<div class="form-group"><label class="form-label">Reviewed by</label><select id="drf-reviewed-by"><option value="">Select person...</option></select></div>
+<div class="form-group"><label class="form-label">Approved by</label><select id="drf-approved-by"><option value="">Select person...</option></select></div>
 </div>
 </div>
 </div>
