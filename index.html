@@ -5404,6 +5404,27 @@ function appConfirm(opts){
     setTimeout(function(){if(cancelBtn)cancelBtn.focus();},0);
   });
 }
+function appConfirmDelete(label, detail){
+  return appConfirm({
+    title:'Delete '+label,
+    message:'Delete this '+label+'?',
+    detail:detail||'This will remove the record from AURIS360.',
+    confirmText:'Delete',
+    cancelText:'Cancel',
+    danger:true
+  });
+}
+function appConfirmAction(opts){
+  opts=opts||{};
+  return appConfirm({
+    title:opts.title||'Please confirm',
+    message:opts.message||'Continue?',
+    detail:opts.detail||'',
+    confirmText:opts.confirmText||'Continue',
+    cancelText:opts.cancelText||'Cancel',
+    danger:opts.danger!==false
+  });
+}
 function fmt(d){return d?new Date(d).toLocaleDateString('en-GB'):'--';}
 function sev(s){const m={low:'bb',medium:'ba',high:'br',critical:'br'};return '<span class="badge '+(m[s]||'bb')+'">'+( s||'--')+'</span>';}
 function stat(s){const c={open:'ba',in_progress:'ba',closed:'bg',on_track:'bg',at_risk:'ba',off_track:'br',completed:'bb',approved:'bg',active:'bg',draft:'bgr',pending_approval:'ba',cancelled:'br',review:'ba',current:'bg',superseded:'br',valid:'bg',expired:'br',pending:'ba',active:'bg',inactive:'bgr',suspended:'br'};return '<span class="badge '+(c[s]||'bgr')+'">'+( s||'').replace(/_/g,' ')+'</span>';}
@@ -6991,7 +7012,7 @@ async function mtgSaveSeries(){
 
 async function mtgDeleteSeries(){
   if(!mtgEditingSeriesId)return;
-  if(!confirm('Delete this meeting schedule? Past minutes will not be deleted.'))return;
+  if(!(await appConfirmAction({title:'Delete meeting schedule',message:'Delete this meeting schedule?',detail:'Past minutes will not be deleted.',confirmText:'Delete schedule',cancelText:'Keep schedule'})))return;
   try{
     await api('/meeting_series?id=eq.'+mtgEditingSeriesId,{m:'DELETE'});
     toast('Schedule deleted!');
@@ -7332,7 +7353,7 @@ async function mtgSaveMom(){
 
 async function mtgDeleteMom(){
   if(!mtgEditingMomId)return;
-  if(!confirm('Delete these minutes? This cannot be undone.'))return;
+  if(!(await appConfirmDelete('meeting minutes','This cannot be undone. Linked meeting actions will also be removed.')))return;
   try{
     await api('/action_tracker?source_module=eq.meeting&source_id=eq.'+mtgEditingMomId,{m:'DELETE'});
     await api('/hse_meetings?id=eq.'+mtgEditingMomId,{m:'DELETE'});
@@ -7655,7 +7676,7 @@ async function mtgOpenMom(id){
 }
 
 async function mtgDeleteMomFromList(id){
-  if(!confirm('Delete these minutes? This cannot be undone.'))return;
+  if(!(await appConfirmDelete('meeting minutes','This cannot be undone. Linked meeting actions will also be removed.')))return;
   try{
     await api('/action_tracker?source_module=eq.meeting&source_id=eq.'+id,{m:'DELETE'});
     await api('/hse_meetings?id=eq.'+id,{m:'DELETE'});
@@ -7991,7 +8012,7 @@ async function brandSave(){
 
   // Warn if logo is base64 and very large (won't fit Supabase column comfortably)
   if((body.logo_url && body.logo_url.length>200000) || (body.logo_dark_url && body.logo_dark_url.length>200000)){
-    if(!confirm('One of your logos is large (>150 KB encoded). For best performance, host on a CDN and paste the URL. Save anyway?')) return;
+    if(!(await appConfirmAction({title:'Large logo file',message:'Save this large logo anyway?',detail:'One of your logos is large (>150 KB encoded). For best performance, host it on a CDN and paste the URL.',confirmText:'Save anyway',cancelText:'Cancel',danger:false}))) return;
   }
 
   try{
@@ -8011,8 +8032,8 @@ async function brandSave(){
   }
 }
 
-function brandResetDefaults(){
-  if(!confirm('Reset to AURIS360 default branding? Your custom logos and colours will be cleared.')) return;
+async function brandResetDefaults(){
+  if(!(await appConfirmAction({title:'Reset branding',message:'Reset to AURIS360 default branding?',detail:'Your custom logos and colours will be cleared.',confirmText:'Reset branding',cancelText:'Cancel'}))) return;
   _brandLogoData = {light:null, dark:null};
   // Apply defaults to editor
   var d = Brand.DEFAULTS;
@@ -8401,7 +8422,8 @@ function openKpiModal(id){const e=document.getElementById(id);if(e)e.style.displ
 
 
 async function kpiDeleteObjective(){
-if(!kpiEditObjId||!confirm("Delete this objective and all its KPIs?"))return;
+if(!kpiEditObjId)return;
+if(!(await appConfirmAction({title:'Delete objective',message:'Delete this objective and all its KPIs?',detail:'This will remove the objective, its KPIs and measurement data.',confirmText:'Delete objective',cancelText:'Keep objective'})))return;
 try{
 const kpiIds=kpiKPIs.filter(k=>k.objective_id===kpiEditObjId).map(k=>k.id);
 for(const kid of kpiIds){
@@ -8562,7 +8584,8 @@ toast(kpiEditKpiId?'KPI updated!':'KPI added!');closeKpiModal('kpi-edit-modal');
 }catch(e){toast(e.message,false);}
 }
 async function kpiDeleteKPI(){
-if(!kpiEditKpiId||!confirm("Delete this KPI and all its data?"))return;
+if(!kpiEditKpiId)return;
+if(!(await appConfirmAction({title:'Delete KPI',message:'Delete this KPI and all its data?',detail:'This will remove the KPI, its indicators and monthly data.',confirmText:'Delete KPI',cancelText:'Keep KPI'})))return;
 try{
 await api('/kpi_indicators?kpi_id=eq.'+kpiEditKpiId,{m:'DELETE'});
 await api('/kpi_monthly_data?kpi_id=eq.'+kpiEditKpiId,{m:'DELETE'});
@@ -8667,7 +8690,7 @@ for(var mi=0;mi<fresh.length;mi++){
 
 
 async function kpiClearEntry(){
-if(!confirm("Clear this month's data? This cannot be undone."))return;
+if(!(await appConfirmAction({title:'Clear KPI data',message:"Clear this month's data?",detail:'This cannot be undone.',confirmText:'Clear data',cancelText:'Keep data'})))return;
 try{
 await api('/kpi_monthly_data?indicator_id=eq.'+kpiEntryIndicatorId+'&year=eq.'+kpiEntryYear+'&month=eq.'+kpiEntryMonth,{m:'DELETE'});
 toast('Data cleared!');
@@ -8744,7 +8767,7 @@ async function sopSave(){
 
 async function sopDelete(){
   if(!sopEditingId)return;
-  if(!confirm('Delete this SOP draft?'))return;
+  if(!(await appConfirmDelete('SOP draft','This will remove the SOP draft from the generator.')))return;
   try{
     await api('/sop_documents?id=eq.'+sopEditingId,{m:'DELETE'});
     toast('Deleted!');
@@ -9253,7 +9276,7 @@ async function wsSave(){
 
 async function wsDelete(){
   if(!wsEditingId)return;
-  if(!confirm('Delete this work order?'))return;
+  if(!(await appConfirmDelete('work order','This will remove the work order from the schedule.')))return;
   try{
     await api('/work_schedule?id=eq.'+wsEditingId,{m:'DELETE'});
     wsAllData=wsAllData.filter(function(x){return x.id!==wsEditingId;});
@@ -13976,7 +13999,7 @@ async function ptwConfirmClose(){
   var items=document.querySelectorAll('[id^="close-chk-"]');
   var checklist=[];items.forEach(function(cb,i){checklist.push({item:cb.nextElementSibling?.textContent||'Item '+i,checked:cb.checked});});
   var unchecked=checklist.filter(function(c){return !c.checked;}).length;
-  if(unchecked>0&&!confirm(unchecked+' items not confirmed. Close permit anyway?'))return;
+  if(unchecked>0&&!(await appConfirmAction({title:'Close permit with unchecked items',message:unchecked+' items are not confirmed. Close permit anyway?',detail:'Use this only if the remaining checklist items are not applicable or have been verified another way.',confirmText:'Close permit',cancelText:'Review checklist'})))return;
   try{
     await api('/permits?id=eq.'+ptwCurrentId,{m:'PATCH',p:'return=minimal',b:{status:'completed',closed_at:new Date().toISOString(),closed_by:closedBy,closure_checklist:checklist,closure_notes:document.getElementById('ptw-closure-notes')?.value||null,actual_end:new Date().toISOString(),updated_at:new Date().toISOString()}});
     var x=ptwAllData.find(function(r){return r.id===ptwCurrentId;});if(x){x.status='completed';x.closed_at=new Date().toISOString();}
@@ -14243,12 +14266,12 @@ async function conSave(){
 
 async function conDelete(){
   if(!conEditingId)return;
-  if(!confirm('Delete this contractor? This will also remove all assessments and evaluations.'))return;
+  if(!(await appConfirmDelete('contractor','This will also remove related assessments and evaluations.')))return;
   try{await api('/contractors?id=eq.'+conEditingId,{m:'DELETE'});toast('Deleted!');conFormBack();}
   catch(e){toast(e.message,false);}
 }
 async function conDeleteFromList(id){
-  if(!confirm('Delete this contractor?'))return;
+  if(!(await appConfirmDelete('contractor')))return;
   try{await api('/contractors?id=eq.'+id,{m:'DELETE'});conAllData=conAllData.filter(x=>x.id!==id);toast('Deleted!');conFilterRegister();}
   catch(e){toast(e.message,false);}
 }
@@ -14438,7 +14461,7 @@ async function cpaSave(){
 }
 
 async function cpaDeleteRow(id){
-  if(!confirm('Delete this assessment?'))return;
+  if(!(await appConfirmDelete('contractor assessment')))return;
   try{await api('/contractor_preassessments?id=eq.'+id,{m:'DELETE'});conPAData=conPAData.filter(x=>x.id!==id);toast('Deleted!');cpaLoad();}
   catch(e){toast(e.message,false);}
 }
@@ -14616,7 +14639,7 @@ async function cevSave(){
   }catch(e){toast(e.message,false);console.error(e);}
 }
 async function cevDeleteRow(id){
-  if(!confirm('Delete?'))return;
+  if(!(await appConfirmDelete('contractor evaluation')))return;
   try{await api('/contractor_evaluations?id=eq.'+id,{m:'DELETE'});conEvalData=conEvalData.filter(x=>x.id!==id);toast('Deleted!');cevLoad();}
   catch(e){toast(e.message,false);}
 }
@@ -14790,12 +14813,12 @@ async function catwSave(){
 
 async function catwDelete(){
   if(!catwEditingId)return;
-  if(!confirm('Revoke this authorisation?'))return;
+  if(!(await appConfirmAction({title:'Revoke authorisation',message:'Revoke this authorisation?',detail:'This will remove the contractor authorisation record.',confirmText:'Revoke',cancelText:'Cancel'})))return;
   try{await api('/contractor_authorisations?id=eq.'+catwEditingId,{m:'DELETE'});toast('Deleted!');catwFormBack();}
   catch(e){toast(e.message,false);}
 }
 async function catwDeleteRow(id){
-  if(!confirm('Delete?'))return;
+  if(!(await appConfirmDelete('contractor authorisation')))return;
   try{await api('/contractor_authorisations?id=eq.'+id,{m:'DELETE'});conATWData=conATWData.filter(x=>x.id!==id);toast('Deleted!');catwLoad();}
   catch(e){toast(e.message,false);}
 }
@@ -14947,12 +14970,12 @@ async function cirSave(){
 
 async function cirDelete(){
   if(!cirEditingId)return;
-  if(!confirm('Delete this incident report?'))return;
+  if(!(await appConfirmDelete('contractor incident report')))return;
   try{await api('/contractor_incidents?id=eq.'+cirEditingId,{m:'DELETE'});toast('Deleted!');cirFormBack();}
   catch(e){toast(e.message,false);}
 }
 async function cirDeleteRow(id){
-  if(!confirm('Delete?'))return;
+  if(!(await appConfirmDelete('contractor incident report')))return;
   try{await api('/contractor_incidents?id=eq.'+id,{m:'DELETE'});conIncData=conIncData.filter(x=>x.id!==id);toast('Deleted!');cirLoad();}
   catch(e){toast(e.message,false);}
 }
@@ -15169,7 +15192,7 @@ async function esgWasteSave(){
     esgWasteBack();
   }catch(e){toast(e.message,false);}
 }
-async function esgWasteDel(id){if(!confirm('Delete?'))return;try{await api('/waste_records?id=eq.'+id,{m:'DELETE'});esgWasteData=esgWasteData.filter(x=>x.id!==id);toast('Deleted!');esgLoadWaste();}catch(e){toast(e.message,false);}}
+async function esgWasteDel(id){if(!(await appConfirmDelete('waste record')))return;try{await api('/waste_records?id=eq.'+id,{m:'DELETE'});esgWasteData=esgWasteData.filter(x=>x.id!==id);toast('Deleted!');esgLoadWaste();}catch(e){toast(e.message,false);}}
 
 // ── HAZARDOUS WASTE ───────────────────────────────────────────────────────────
 async function esgLoadHW(){
@@ -15230,7 +15253,7 @@ async function esgHWSave(){
   var body={company_id:ccid(),waste_name:name,un_number:g('hwf-un'),hazard_class:g('hwf-class'),quantity:parseFloat(g('hwf-qty'))||null,unit:g('hwf-unit')||'kg',container_type:g('hwf-container'),storage_location:g('hwf-location'),generation_date:g('hwf-gen-date'),collection_date:g('hwf-collect-date'),disposal_date:g('hwf-disposal-date'),licensed_contractor:g('hwf-contractor'),contractor_license_number:g('hwf-license'),manifest_number:g('hwf-manifest'),disposal_method:g('hwf-disposal-method'),status:g('hwf-status')||'stored',sds_available:document.getElementById('hwf-sds')?.value==='true',notes:g('hwf-notes'),updated_at:new Date().toISOString()};
   try{if(esgHWEditId){await api('/hazardous_waste?id=eq.'+esgHWEditId,{m:'PATCH',p:'return=minimal',b:body});toast('Updated!');}else{body.created_by=prof?.id;await api('/hazardous_waste',{m:'POST',p:'return=minimal',b:body});toast('Record saved!');}esgHWBack();}catch(e){toast(e.message,false);}
 }
-async function esgHWDel(id){if(!confirm('Delete?'))return;try{await api('/hazardous_waste?id=eq.'+id,{m:'DELETE'});esgHWData=esgHWData.filter(x=>x.id!==id);toast('Deleted!');esgLoadHW();}catch(e){toast(e.message,false);}}
+async function esgHWDel(id){if(!(await appConfirmDelete('hazardous waste record')))return;try{await api('/hazardous_waste?id=eq.'+id,{m:'DELETE'});esgHWData=esgHWData.filter(x=>x.id!==id);toast('Deleted!');esgLoadHW();}catch(e){toast(e.message,false);}}
 
 // ── FUEL ──────────────────────────────────────────────────────────────────────
 function esgCalcCO2(){
@@ -15294,7 +15317,7 @@ async function esgFuelSave(){
   var body={company_id:ccid(),record_date:g('ff-date'),fuel_type:tp,quantity:qty,unit:g('ff-unit')||'litres',vehicle_equipment:g('ff-vehicle'),meter_reading_start:g('ff-odo-start')?parseFloat(g('ff-odo-start')):null,meter_reading_end:g('ff-odo-end')?parseFloat(g('ff-odo-end')):null,purpose:g('ff-purpose'),department:g('ff-dept'),cost:g('ff-cost')?parseFloat(g('ff-cost')):null,currency:'MUR',carbon_kg:Math.round(co2*100)/100,notes:g('ff-notes')};
   try{if(esgFuelEditId){await api('/fuel_consumption?id=eq.'+esgFuelEditId,{m:'PATCH',p:'return=minimal',b:body});toast('Updated!');}else{body.created_by=prof?.id;await api('/fuel_consumption',{m:'POST',p:'return=minimal',b:body});toast('Fuel record saved! CO₂e: '+co2.toFixed(1)+' kg');}esgFuelBack();}catch(e){toast(e.message,false);}
 }
-async function esgFuelDel(id){if(!confirm('Delete?'))return;try{await api('/fuel_consumption?id=eq.'+id,{m:'DELETE'});esgFuelData=esgFuelData.filter(x=>x.id!==id);toast('Deleted!');esgLoadFuel();}catch(e){toast(e.message,false);}}
+async function esgFuelDel(id){if(!(await appConfirmDelete('fuel record')))return;try{await api('/fuel_consumption?id=eq.'+id,{m:'DELETE'});esgFuelData=esgFuelData.filter(x=>x.id!==id);toast('Deleted!');esgLoadFuel();}catch(e){toast(e.message,false);}}
 
 // ── WATER ─────────────────────────────────────────────────────────────────────
 function esgCalcWater(){
@@ -15356,7 +15379,7 @@ async function esgWaterSave(){
   var body={company_id:ccid(),record_date:g('waf-date'),source:g('waf-source')||'mains',meter_id:g('waf-meter-id'),meter_reading_start:g('waf-start')?parseFloat(g('waf-start')):null,meter_reading_end:g('waf-end')?parseFloat(g('waf-end')):null,quantity:qty,unit:g('waf-unit')||'m3',purpose:g('waf-purpose'),location:g('waf-location'),cost:g('waf-cost')?parseFloat(g('waf-cost')):null,notes:g('waf-notes')};
   try{if(esgWaterEditId){await api('/water_usage?id=eq.'+esgWaterEditId,{m:'PATCH',p:'return=minimal',b:body});toast('Updated!');}else{body.created_by=prof?.id;await api('/water_usage',{m:'POST',p:'return=minimal',b:body});toast('Water record saved!');}esgWaterBack();}catch(e){toast(e.message,false);}
 }
-async function esgWaterDel(id){if(!confirm('Delete?'))return;try{await api('/water_usage?id=eq.'+id,{m:'DELETE'});esgWaterData=esgWaterData.filter(x=>x.id!==id);toast('Deleted!');esgLoadWater();}catch(e){toast(e.message,false);}}
+async function esgWaterDel(id){if(!(await appConfirmDelete('water usage record')))return;try{await api('/water_usage?id=eq.'+id,{m:'DELETE'});esgWaterData=esgWaterData.filter(x=>x.id!==id);toast('Deleted!');esgLoadWater();}catch(e){toast(e.message,false);}}
 
 // ── SPILLS ────────────────────────────────────────────────────────────────────
 async function esgLoadSpills(){
@@ -15440,7 +15463,7 @@ async function esgSpillSave(){
     esgSpillBack();
   }catch(e){toast(e.message,false);console.error(e);}
 }
-async function esgSpillDel(id){if(!confirm('Delete?'))return;try{await api('/spill_reports?id=eq.'+id,{m:'DELETE'});esgSpillData=esgSpillData.filter(x=>x.id!==id);toast('Deleted!');esgLoadSpills();}catch(e){toast(e.message,false);}}
+async function esgSpillDel(id){if(!(await appConfirmDelete('spill report')))return;try{await api('/spill_reports?id=eq.'+id,{m:'DELETE'});esgSpillData=esgSpillData.filter(x=>x.id!==id);toast('Deleted!');esgLoadSpills();}catch(e){toast(e.message,false);}}
 
 // ── ENVIRONMENTAL INSPECTIONS ─────────────────────────────────────────────────
 function esgBuildInspChecklist(saved){
@@ -15512,7 +15535,7 @@ async function esgInspSave(){
     esgInspBack();
   }catch(e){toast(e.message,false);console.error(e);}
 }
-async function esgInspDel(id){if(!confirm('Delete?'))return;try{await api('/environmental_inspections?id=eq.'+id,{m:'DELETE'});esgInspData=esgInspData.filter(x=>x.id!==id);toast('Deleted!');esgLoadInsp();}catch(e){toast(e.message,false);}}
+async function esgInspDel(id){if(!(await appConfirmDelete('environmental inspection')))return;try{await api('/environmental_inspections?id=eq.'+id,{m:'DELETE'});esgInspData=esgInspData.filter(x=>x.id!==id);toast('Deleted!');esgLoadInsp();}catch(e){toast(e.message,false);}}
 
 // ===== EMERGENCY_JS.JS =====
 // ===== EMERGENCY MANAGEMENT MODULE =====
@@ -15661,8 +15684,8 @@ async function emLoadDash(){
 }
 
 // ── EMERGENCY ACTIVATE ────────────────────────────────────────────────────────
-function emActivateEmergency(){
-  if(!confirm('⚠️ EMERGENCY ACTIVATION\n\nThis will log an emergency activation. Press OK to proceed to the activation form.'))return;
+async function emActivateEmergency(){
+  if(!(await appConfirmAction({title:'Emergency activation',message:'Log an emergency activation?',detail:'This will open the activation form and create an emergency activation record when saved.',confirmText:'Proceed',cancelText:'Cancel'})))return;
   var tab=document.getElementById('em-tab-activations');
   emSwitchTab('activations',tab);
   setTimeout(function(){activationNew();},300);
@@ -15821,7 +15844,8 @@ async function emPlanSave(){
   }catch(e){toast(e.message,false);}
 }
 async function emPlanDelete(){
-  if(!emPlanEditId||!confirm('Delete this plan?'))return;
+  if(!emPlanEditId)return;
+  if(!(await appConfirmDelete('emergency plan')))return;
   try{await api('/emergency_plans?id=eq.'+emPlanEditId,{m:'DELETE'});toast('Deleted!');emPlanBack();}catch(e){toast(e.message,false);}
 }
 
@@ -15914,7 +15938,7 @@ async function ertSave(){
   var body={company_id:ccid(),name:name,job_title:g('ertf-title'),department:g('ertf-dept'),phone_primary:g('ertf-phone1'),phone_secondary:g('ertf-phone2'),email:g('ertf-email'),ert_role:g('ertf-role')||'ert_member',ert_team:g('ertf-team'),coverage_area:g('ertf-area'),first_aid_certified:document.getElementById('ertf-fa-cert')?.checked||false,first_aid_expiry:g('ertf-fa-expiry'),fire_warden_certified:document.getElementById('ertf-fw-cert')?.checked||false,fire_warden_expiry:g('ertf-fw-expiry'),ert_trained:document.getElementById('ertf-ert-trained')?.checked||false,ert_trained_date:g('ertf-ert-date'),status:g('ertf-status')||'active',notes:g('ertf-notes'),updated_at:new Date().toISOString()};
   try{if(emErtEditId){await api('/ert_members?id=eq.'+emErtEditId,{m:'PATCH',p:'return=minimal',b:body});toast('Updated!');}else{body.created_by=prof?.id;await api('/ert_members',{m:'POST',p:'return=minimal',b:body});toast('ERT member added!');}ertBack();}catch(e){toast(e.message,false);}
 }
-async function ertDelete(){if(!emErtEditId||!confirm('Remove this ERT member?'))return;try{await api('/ert_members?id=eq.'+emErtEditId,{m:'DELETE'});toast('Removed!');ertBack();}catch(e){toast(e.message,false);}}
+async function ertDelete(){if(!emErtEditId)return;if(!(await appConfirmAction({title:'Remove ERT member',message:'Remove this ERT member?',detail:'This will remove the person from the emergency response team list.',confirmText:'Remove',cancelText:'Cancel'})))return;try{await api('/ert_members?id=eq.'+emErtEditId,{m:'DELETE'});toast('Removed!');ertBack();}catch(e){toast(e.message,false);}}
 
 // ── MUSTER POINTS ─────────────────────────────────────────────────────────────
 async function musterLoad(){
@@ -15947,7 +15971,7 @@ function musterBack(){document.getElementById('em-muster-form').style.display='n
 function musterNew(){emMusterEditId=null;document.getElementById('em-muster-form-title').textContent='New Muster Point';document.getElementById('em-muster-del-btn').style.display='none';['mpf-name','mpf-location','mpf-capacity','mpf-warden','mpf-types','mpf-notes'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});document.getElementById('mpf-status').value='active';musterShowForm();}
 function musterEdit(id){var m=emMusterData.find(x=>x.id===id);if(!m)return;emMusterEditId=id;document.getElementById('em-muster-form-title').textContent='Edit Muster Point';document.getElementById('em-muster-del-btn').style.display=isMgr()?'inline-flex':'none';var gf=function(id,val){var el=document.getElementById(id);if(el)el.value=val||'';};gf('mpf-name',m.name);gf('mpf-location',m.location_description);gf('mpf-capacity',m.capacity||'');gf('mpf-warden',m.warden_assigned);gf('mpf-types',(m.emergency_types||[]).join(', '));gf('mpf-notes',m.notes);var st=document.getElementById('mpf-status');if(st)st.value=m.status||'active';musterShowForm();}
 async function musterSave(){var name=document.getElementById('mpf-name')?.value?.trim();if(!name){toast('Please enter muster point name',false);return;}var g=function(id){var el=document.getElementById(id);return el?el.value||null:null;};var body={company_id:ccid(),name:name,location_description:g('mpf-location'),capacity:parseInt(g('mpf-capacity'))||null,warden_assigned:g('mpf-warden'),emergency_types:g('mpf-types')?g('mpf-types').split(',').map(x=>x.trim()).filter(Boolean):[],notes:g('mpf-notes'),status:g('mpf-status')||'active'};try{if(emMusterEditId){await api('/muster_points?id=eq.'+emMusterEditId,{m:'PATCH',p:'return=minimal',b:body});toast('Updated!');}else{body.created_by=prof?.id;await api('/muster_points',{m:'POST',p:'return=minimal',b:body});toast('Muster point added!');}musterBack();}catch(e){toast(e.message,false);}}
-async function musterDelete(){if(!emMusterEditId||!confirm('Delete?'))return;try{await api('/muster_points?id=eq.'+emMusterEditId,{m:'DELETE'});toast('Deleted!');musterBack();}catch(e){toast(e.message,false);}}
+async function musterDelete(){if(!emMusterEditId)return;if(!(await appConfirmDelete('muster point')))return;try{await api('/muster_points?id=eq.'+emMusterEditId,{m:'DELETE'});toast('Deleted!');musterBack();}catch(e){toast(e.message,false);}}
 
 // ── DRILLS ────────────────────────────────────────────────────────────────────
 async function drillsLoad(){
@@ -15989,7 +16013,7 @@ async function drillEdit(id){var x=emDrillsData.find(r=>r.id===id);if(!x)return;
 async function drillSave(){var g=function(id){var el=document.getElementById(id);return el?el.value||null:null;};var date=g('drf-date');if(!date){toast('Please enter drill date',false);return;}var body={company_id:ccid(),drill_type:g('drf-type')||'evacuation',drill_date:date,drill_time:g('drf-time'),location:g('drf-location'),scenario:g('drf-scenario'),objectives:g('drf-objectives'),total_expected:parseInt(g('drf-expected'))||null,total_participated:parseInt(g('drf-participated'))||null,departments_involved:g('drf-depts'),external_agencies:g('drf-external'),evacuation_time_mins:parseFloat(g('drf-evac-time'))||null,planned_duration:parseInt(g('drf-planned-dur'))||null,actual_duration:parseInt(g('drf-actual-dur'))||null,all_accounted_for:document.getElementById('drf-all-accounted')?.checked||false,unaccounted_persons:parseInt(g('drf-unaccounted'))||0,strengths:g('drf-strengths'),weaknesses:g('drf-weaknesses'),observations:g('drf-observations'),corrective_actions:g('drf-actions'),overall_rating:g('drf-rating')||'satisfactory',conducted_by:g('drf-conducted-by'),reviewed_by:g('drf-reviewed-by'),approved_by:g('drf-approved-by'),status:g('drf-status')||'planned',updated_at:new Date().toISOString()};
   try{if(emDrillEditId){await api('/emergency_drills?id=eq.'+emDrillEditId,{m:'PATCH',p:'return=minimal',b:body});toast('Drill updated!');}else{body.created_by=prof?.id;var res=await api('/emergency_drills',{m:'POST',p:'return=representation',b:body});if(res?.[0]?.id){var yr=new Date().getFullYear();var ref='DRILL-'+yr+'-'+String(emDrillsData.length+1).padStart(3,'0');await api('/emergency_drills?id=eq.'+res[0].id,{m:'PATCH',p:'return=minimal',b:{drill_ref:ref}});toast('Drill saved! Ref: '+ref);}}drillBack();}catch(e){toast(e.message,false);}
 }
-async function drillDelete(id){if(!confirm('Delete?'))return;try{await api('/emergency_drills?id=eq.'+id,{m:'DELETE'});emDrillsData=emDrillsData.filter(x=>x.id!==id);toast('Deleted!');drillsLoad();}catch(e){toast(e.message,false);}}
+async function drillDelete(id){if(!(await appConfirmDelete('emergency drill')))return;try{await api('/emergency_drills?id=eq.'+id,{m:'DELETE'});emDrillsData=emDrillsData.filter(x=>x.id!==id);toast('Deleted!');drillsLoad();}catch(e){toast(e.message,false);}}
 
 // ── ACTIVATIONS ───────────────────────────────────────────────────────────────
 async function activationsLoad(){
@@ -16034,7 +16058,7 @@ async function activationEdit(id){var x=emActivationsData.find(r=>r.id===id);if(
 async function activationSave(){var desc=document.getElementById('actf-desc')?.value?.trim();if(!desc){toast('Please describe the emergency',false);return;}var g=function(id){var el=document.getElementById(id);return el?el.value||null:null;};var body={company_id:ccid(),emergency_type:g('actf-type')||'fire',activation_date:g('actf-date'),activation_time:g('actf-time'),location:g('actf-location'),description:desc,severity:g('actf-severity')||'moderate',time_detected:g('actf-time'),time_ert_notified:g('actf-ert-time'),time_evacuated:g('actf-evac-time'),time_services_called:g('actf-services-time'),time_all_clear:g('actf-allclear-time'),immediate_actions:g('actf-immediate'),ert_response:g('actf-ert-response'),external_agencies_called:g('actf-agencies'),containment_method:g('actf-containment'),injuries:parseInt(g('actf-injuries'))||0,fatalities:parseInt(g('actf-fatalities'))||0,missing_persons:parseInt(g('actf-missing'))||0,property_damage:g('actf-damage'),environmental_impact:g('actf-env-impact'),business_impact:g('actf-business-impact'),estimated_cost:parseFloat(g('actf-cost'))||null,lessons_learned:g('actf-lessons'),debrief_conducted:document.getElementById('actf-debrief')?.checked||false,plan_update_required:document.getElementById('actf-plan-update')?.checked||false,notes:g('actf-notes'),status:g('actf-status')||'active',updated_at:new Date().toISOString()};
   try{if(emActEditId){await api('/emergency_activations?id=eq.'+emActEditId,{m:'PATCH',p:'return=minimal',b:body});toast('Activation updated!');}else{body.created_by=prof?.id;var res=await api('/emergency_activations',{m:'POST',p:'return=representation',b:body});if(res?.[0]?.id){var yr=new Date().getFullYear();var ref='ACT-'+yr+'-'+String(emActivationsData.length+1).padStart(3,'0');await api('/emergency_activations?id=eq.'+res[0].id,{m:'PATCH',p:'return=minimal',b:{activation_ref:ref}});if(body.fatalities>0||body.severity==='critical'){try{await api('/action_tracker',{m:'POST',p:'return=minimal',b:{company_id:ccid(),source_module:'emergency',source_ref:ref,description:'CRITICAL EMERGENCY: '+desc.substring(0,100),priority:'critical',status:'open',created_by:prof?.id}});}catch(ex){}}toast('Activation logged! Ref: '+ref);}}activationBack();}catch(e){toast(e.message,false);}
 }
-async function activationDelete(){if(!emActEditId||!confirm('Delete?'))return;try{await api('/emergency_activations?id=eq.'+emActEditId,{m:'DELETE'});toast('Deleted!');activationBack();}catch(e){toast(e.message,false);}}
+async function activationDelete(){if(!emActEditId)return;if(!(await appConfirmDelete('emergency activation')))return;try{await api('/emergency_activations?id=eq.'+emActEditId,{m:'DELETE'});toast('Deleted!');activationBack();}catch(e){toast(e.message,false);}}
 
 // ── BCP ───────────────────────────────────────────────────────────────────────
 async function bcpLoad(){
@@ -16072,7 +16096,7 @@ function bcpEdit(id){var x=emBcpData.find(r=>r.id===id);if(!x)return;emBcpEditId
 async function bcpSave(){var title=document.getElementById('bcpf-title')?.value?.trim();if(!title){toast('Please enter BCP title',false);return;}var g=function(id){var el=document.getElementById(id);return el?el.value||null:null;};var body={company_id:ccid(),title:title,business_process:g('bcpf-process'),department:g('bcpf-dept'),priority:g('bcpf-priority')||'medium',rto_hours:parseInt(g('bcpf-rto'))||null,rpo_hours:parseInt(g('bcpf-rpo'))||null,financial_impact:g('bcpf-fin-impact'),operational_impact:g('bcpf-ops-impact'),recovery_strategy:g('bcpf-strategy'),minimum_resources:g('bcpf-resources'),alternate_location:g('bcpf-alt-location'),it_dependencies:g('bcpf-it-deps'),key_suppliers:g('bcpf-suppliers'),recovery_steps:g('bcpf-steps'),approved_by:g('bcpf-approved-by'),approved_date:g('bcpf-approved-date'),review_date:g('bcpf-review-date'),last_tested:g('bcpf-last-tested'),next_test_date:g('bcpf-next-test'),test_procedure:g('bcpf-test-proc'),version:g('bcpf-version')||'1.0',status:g('bcpf-status')||'active',notes:g('bcpf-notes'),updated_at:new Date().toISOString()};
   try{if(emBcpEditId){await api('/bcp_records?id=eq.'+emBcpEditId,{m:'PATCH',p:'return=minimal',b:body});toast('BCP updated!');}else{body.created_by=prof?.id;var res=await api('/bcp_records',{m:'POST',p:'return=representation',b:body});if(res?.[0]?.id){var yr=new Date().getFullYear();var ref='BCP-'+yr+'-'+String(emBcpData.length+1).padStart(3,'0');await api('/bcp_records?id=eq.'+res[0].id,{m:'PATCH',p:'return=minimal',b:{bcp_ref:ref}});toast('BCP saved! Ref: '+ref);}}bcpBack();}catch(e){toast(e.message,false);}
 }
-async function bcpDelete(){if(!emBcpEditId||!confirm('Delete?'))return;try{await api('/bcp_records?id=eq.'+emBcpEditId,{m:'DELETE'});toast('Deleted!');bcpBack();}catch(e){toast(e.message,false);}}
+async function bcpDelete(){if(!emBcpEditId)return;if(!(await appConfirmDelete('BCP record')))return;try{await api('/bcp_records?id=eq.'+emBcpEditId,{m:'DELETE'});toast('Deleted!');bcpBack();}catch(e){toast(e.message,false);}}
 
 // ── EQUIPMENT ─────────────────────────────────────────────────────────────────
 async function emEqLoad(){
@@ -16114,8 +16138,8 @@ function emEqNew(){emEqEditId=null;document.getElementById('em-eq-form-title').t
 async function emEqEdit(id){var x=emEqData.find(r=>r.id===id);if(!x)return;emEqEditId=id;document.getElementById('em-eq-form-title').textContent='Edit Equipment';document.getElementById('em-eq-del-btn').style.display=isMgr()?'inline-flex':'none';var gf=function(id,val){var el=document.getElementById(id);if(el)el.value=val||'';};gf('eqf-id',x.identifier);gf('eqf-building',x.building);gf('eqf-floor',x.floor);gf('eqf-location',x.location);gf('eqf-serviced-by',x.serviced_by);gf('eqf-notes',x.notes);gf('eqf-last-insp',x.last_inspection);gf('eqf-next-insp',x.next_inspection);gf('eqf-last-svc',x.last_service);gf('eqf-next-svc',x.next_service);document.getElementById('eqf-type').value=x.equipment_type||'fire_extinguisher';document.getElementById('eqf-condition').value=x.condition||'good';document.getElementById('eqf-status').value=x.status||'operational';emEqShowForm();}
 async function emEqSave(){var loc=document.getElementById('eqf-location')?.value?.trim();if(!loc){toast('Please enter location',false);return;}var g=function(id){var el=document.getElementById(id);return el?el.value||null:null;};var body={company_id:ccid(),equipment_type:g('eqf-type')||'other',identifier:g('eqf-id'),location:loc,building:g('eqf-building'),floor:g('eqf-floor'),last_inspection:g('eqf-last-insp'),next_inspection:g('eqf-next-insp'),last_service:g('eqf-last-svc'),next_service:g('eqf-next-svc'),condition:g('eqf-condition')||'good',serviced_by:g('eqf-serviced-by'),notes:g('eqf-notes'),status:g('eqf-status')||'operational',updated_at:new Date().toISOString()};try{if(emEqEditId){await api('/emergency_equipment?id=eq.'+emEqEditId,{m:'PATCH',p:'return=minimal',b:body});toast('Updated!');}else{body.created_by=prof?.id;await api('/emergency_equipment',{m:'POST',p:'return=minimal',b:body});toast('Equipment added!');}emEqBack();}catch(e){toast(e.message,false);}
 }
-async function emEqDelete(){if(!emEqEditId||!confirm('Delete?'))return;try{await api('/emergency_equipment?id=eq.'+emEqEditId,{m:'DELETE'});toast('Deleted!');emEqBack();}catch(e){toast(e.message,false);}}
-async function emEqDeleteRow(id){if(!confirm('Delete?'))return;try{await api('/emergency_equipment?id=eq.'+id,{m:'DELETE'});emEqData=emEqData.filter(x=>x.id!==id);toast('Deleted!');emEqLoad();}catch(e){toast(e.message,false);}}
+async function emEqDelete(){if(!emEqEditId)return;if(!(await appConfirmDelete('emergency equipment')))return;try{await api('/emergency_equipment?id=eq.'+emEqEditId,{m:'DELETE'});toast('Deleted!');emEqBack();}catch(e){toast(e.message,false);}}
+async function emEqDeleteRow(id){if(!(await appConfirmDelete('emergency equipment')))return;try{await api('/emergency_equipment?id=eq.'+id,{m:'DELETE'});emEqData=emEqData.filter(x=>x.id!==id);toast('Deleted!');emEqLoad();}catch(e){toast(e.message,false);}}
 
 // ===== OH_JS.JS =====
 // ===================================================================
@@ -16383,8 +16407,8 @@ async function msSave(){
     msBack();
   }catch(e){toast(e.message,false);}
 }
-async function msDelete(){if(!ohMsEditId||!confirm('Delete?'))return;try{await api('/medical_surveillance?id=eq.'+ohMsEditId,{m:'DELETE'});toast('Deleted!');msBack();}catch(e){toast(e.message,false);}}
-async function msDeleteRow(id){if(!confirm('Delete?'))return;try{await api('/medical_surveillance?id=eq.'+id,{m:'DELETE'});ohMsData=ohMsData.filter(x=>x.id!==id);toast('Deleted!');ohMsLoad();}catch(e){toast(e.message,false);}}
+async function msDelete(){if(!ohMsEditId)return;if(!(await appConfirmDelete('medical surveillance record')))return;try{await api('/medical_surveillance?id=eq.'+ohMsEditId,{m:'DELETE'});toast('Deleted!');msBack();}catch(e){toast(e.message,false);}}
+async function msDeleteRow(id){if(!(await appConfirmDelete('medical surveillance record')))return;try{await api('/medical_surveillance?id=eq.'+id,{m:'DELETE'});ohMsData=ohMsData.filter(x=>x.id!==id);toast('Deleted!');ohMsLoad();}catch(e){toast(e.message,false);}}
 
 // ── AUDIOMETRY ────────────────────────────────────────────────────────────────
 async function ohAudLoad(){
@@ -16506,8 +16530,8 @@ async function audSave(){
     audBack();
   }catch(e){toast(e.message,false);}
 }
-async function audDelete(){if(!ohAudEditId||!confirm('Delete?'))return;try{await api('/audiometry_records?id=eq.'+ohAudEditId,{m:'DELETE'});toast('Deleted!');audBack();}catch(e){toast(e.message,false);}}
-async function audDeleteRow(id){if(!confirm('Delete?'))return;try{await api('/audiometry_records?id=eq.'+id,{m:'DELETE'});ohAudData=ohAudData.filter(x=>x.id!==id);toast('Deleted!');ohAudLoad();}catch(e){toast(e.message,false);}}
+async function audDelete(){if(!ohAudEditId)return;if(!(await appConfirmDelete('audiometry record')))return;try{await api('/audiometry_records?id=eq.'+ohAudEditId,{m:'DELETE'});toast('Deleted!');audBack();}catch(e){toast(e.message,false);}}
+async function audDeleteRow(id){if(!(await appConfirmDelete('audiometry record')))return;try{await api('/audiometry_records?id=eq.'+id,{m:'DELETE'});ohAudData=ohAudData.filter(x=>x.id!==id);toast('Deleted!');ohAudLoad();}catch(e){toast(e.message,false);}}
 
 // ── SPIROMETRY ────────────────────────────────────────────────────────────────
 async function ohSpiLoad(){
@@ -16628,8 +16652,8 @@ async function spiSave(){
     spiBack();
   }catch(e){toast(e.message,false);}
 }
-async function spiDelete(){if(!ohSpiEditId||!confirm('Delete?'))return;try{await api('/spirometry_records?id=eq.'+ohSpiEditId,{m:'DELETE'});toast('Deleted!');spiBack();}catch(e){toast(e.message,false);}}
-async function spiDeleteRow(id){if(!confirm('Delete?'))return;try{await api('/spirometry_records?id=eq.'+id,{m:'DELETE'});ohSpiData=ohSpiData.filter(x=>x.id!==id);toast('Deleted!');ohSpiLoad();}catch(e){toast(e.message,false);}}
+async function spiDelete(){if(!ohSpiEditId)return;if(!(await appConfirmDelete('spirometry record')))return;try{await api('/spirometry_records?id=eq.'+ohSpiEditId,{m:'DELETE'});toast('Deleted!');spiBack();}catch(e){toast(e.message,false);}}
+async function spiDeleteRow(id){if(!(await appConfirmDelete('spirometry record')))return;try{await api('/spirometry_records?id=eq.'+id,{m:'DELETE'});ohSpiData=ohSpiData.filter(x=>x.id!==id);toast('Deleted!');ohSpiLoad();}catch(e){toast(e.message,false);}}
 
 // ── VACCINATION ───────────────────────────────────────────────────────────────
 async function vaxLoad(){
@@ -16673,8 +16697,8 @@ function vaxEdit(id){var x=ohVaxData.find(r=>r.id===id);if(!x)return;ohVaxEditId
 async function vaxSave(){var name=document.getElementById('vaxf-name')?.value?.trim();var vaccine=document.getElementById('vaxf-vaccine')?.value?.trim();if(!name||!vaccine){toast('Please enter employee name and vaccine',false);return;}var g=function(id){var el=document.getElementById(id);return el?el.value||null:null;};var body={company_id:ccid(),employee_name:name,department:g('vaxf-dept'),vaccine_name:vaccine,vaccine_type:g('vaxf-type')||'occupational',dose_number:parseInt(g('vaxf-dose'))||1,total_doses_required:parseInt(g('vaxf-total-doses'))||1,vaccination_date:g('vaxf-date'),next_dose_date:g('vaxf-next-date')||null,expiry_date:g('vaxf-expiry')||null,administered_by:g('vaxf-admin-by'),clinic:g('vaxf-clinic'),batch_number:g('vaxf-batch'),status:g('vaxf-status')||'completed',reaction_noted:document.getElementById('vaxf-reaction')?.checked||false,reaction_details:g('vaxf-reaction-details'),notes:g('vaxf-notes')};
   try{if(ohVaxEditId){await api('/vaccination_records?id=eq.'+ohVaxEditId,{m:'PATCH',p:'return=minimal',b:body});toast('Updated!');}else{body.created_by=prof?.id;await api('/vaccination_records',{m:'POST',p:'return=minimal',b:body});toast('Vaccination saved!');}vaxBack();}catch(e){toast(e.message,false);}
 }
-async function vaxDelete(){if(!ohVaxEditId||!confirm('Delete?'))return;try{await api('/vaccination_records?id=eq.'+ohVaxEditId,{m:'DELETE'});toast('Deleted!');vaxBack();}catch(e){toast(e.message,false);}}
-async function vaxDeleteRow(id){if(!confirm('Delete?'))return;try{await api('/vaccination_records?id=eq.'+id,{m:'DELETE'});ohVaxData=ohVaxData.filter(x=>x.id!==id);toast('Deleted!');vaxLoad();}catch(e){toast(e.message,false);}}
+async function vaxDelete(){if(!ohVaxEditId)return;if(!(await appConfirmDelete('vaccination record')))return;try{await api('/vaccination_records?id=eq.'+ohVaxEditId,{m:'DELETE'});toast('Deleted!');vaxBack();}catch(e){toast(e.message,false);}}
+async function vaxDeleteRow(id){if(!(await appConfirmDelete('vaccination record')))return;try{await api('/vaccination_records?id=eq.'+id,{m:'DELETE'});ohVaxData=ohVaxData.filter(x=>x.id!==id);toast('Deleted!');vaxLoad();}catch(e){toast(e.message,false);}}
 
 // ── EXPOSURE MONITORING ───────────────────────────────────────────────────────
 async function expLoad(){
@@ -16817,8 +16841,8 @@ async function expSave(){
     expBack();
   }catch(e){toast(e.message,false);}
 }
-async function expDelete(){if(!ohExpEditId||!confirm('Delete?'))return;try{await api('/exposure_monitoring?id=eq.'+ohExpEditId,{m:'DELETE'});toast('Deleted!');expBack();}catch(e){toast(e.message,false);}}
-async function expDeleteRow(id){if(!confirm('Delete?'))return;try{await api('/exposure_monitoring?id=eq.'+id,{m:'DELETE'});ohExpData=ohExpData.filter(x=>x.id!==id);toast('Deleted!');expLoad();}catch(e){toast(e.message,false);}}
+async function expDelete(){if(!ohExpEditId)return;if(!(await appConfirmDelete('exposure monitoring record')))return;try{await api('/exposure_monitoring?id=eq.'+ohExpEditId,{m:'DELETE'});toast('Deleted!');expBack();}catch(e){toast(e.message,false);}}
+async function expDeleteRow(id){if(!(await appConfirmDelete('exposure monitoring record')))return;try{await api('/exposure_monitoring?id=eq.'+id,{m:'DELETE'});ohExpData=ohExpData.filter(x=>x.id!==id);toast('Deleted!');expLoad();}catch(e){toast(e.message,false);}}
 
 // ── OCCUPATIONAL DISEASE ──────────────────────────────────────────────────────
 async function ohOdLoad(){
@@ -16857,8 +16881,8 @@ async function odSave(){var name=document.getElementById('odf-name')?.value?.tri
     odBack();
   }catch(e){toast(e.message,false);}
 }
-async function odDelete(){if(!ohOdEditId||!confirm('Delete?'))return;try{await api('/occupational_diseases?id=eq.'+ohOdEditId,{m:'DELETE'});toast('Deleted!');odBack();}catch(e){toast(e.message,false);}}
-async function odDeleteRow(id){if(!confirm('Delete?'))return;try{await api('/occupational_diseases?id=eq.'+id,{m:'DELETE'});ohOdData=ohOdData.filter(x=>x.id!==id);toast('Deleted!');ohOdLoad();}catch(e){toast(e.message,false);}}
+async function odDelete(){if(!ohOdEditId)return;if(!(await appConfirmDelete('occupational disease record')))return;try{await api('/occupational_diseases?id=eq.'+ohOdEditId,{m:'DELETE'});toast('Deleted!');odBack();}catch(e){toast(e.message,false);}}
+async function odDeleteRow(id){if(!(await appConfirmDelete('occupational disease record')))return;try{await api('/occupational_diseases?id=eq.'+id,{m:'DELETE'});ohOdData=ohOdData.filter(x=>x.id!==id);toast('Deleted!');ohOdLoad();}catch(e){toast(e.message,false);}}
 
 // ===== PPE_JS.JS =====
 // ===================================================================
@@ -17094,7 +17118,7 @@ async function ppeCatSave(){
     ppeCatBack();
   }catch(e){toast(e.message,false);}
 }
-async function ppeCatDelete(){if(!ppeCatEditId||!confirm('Delete this PPE type?'))return;try{await api('/ppe_catalogue?id=eq.'+ppeCatEditId,{m:'DELETE'});toast('Deleted!');ppeCatBack();}catch(e){toast(e.message,false);}}
+async function ppeCatDelete(){if(!ppeCatEditId)return;if(!(await appConfirmDelete('PPE type')))return;try{await api('/ppe_catalogue?id=eq.'+ppeCatEditId,{m:'DELETE'});toast('Deleted!');ppeCatBack();}catch(e){toast(e.message,false);}}
 
 // ── ISSUANCE ──────────────────────────────────────────────────────────────────
 async function ppeLoadIssuance(){
@@ -17205,8 +17229,8 @@ async function ppeIssSave(){
     ppeIssBack();
   }catch(e){toast(e.message,false);}
 }
-async function ppeIssDelete(){if(!ppeIssEditId||!confirm('Delete?'))return;try{await api('/ppe_issuance?id=eq.'+ppeIssEditId,{m:'DELETE'});toast('Deleted!');ppeIssBack();}catch(e){toast(e.message,false);}}
-async function ppeIssDeleteRow(id){if(!confirm('Delete?'))return;try{await api('/ppe_issuance?id=eq.'+id,{m:'DELETE'});ppeIssData=ppeIssData.filter(x=>x.id!==id);toast('Deleted!');ppeLoadIssuance();}catch(e){toast(e.message,false);}}
+async function ppeIssDelete(){if(!ppeIssEditId)return;if(!(await appConfirmDelete('PPE issuance record')))return;try{await api('/ppe_issuance?id=eq.'+ppeIssEditId,{m:'DELETE'});toast('Deleted!');ppeIssBack();}catch(e){toast(e.message,false);}}
+async function ppeIssDeleteRow(id){if(!(await appConfirmDelete('PPE issuance record')))return;try{await api('/ppe_issuance?id=eq.'+id,{m:'DELETE'});ppeIssData=ppeIssData.filter(x=>x.id!==id);toast('Deleted!');ppeLoadIssuance();}catch(e){toast(e.message,false);}}
 
 // ── INSPECTIONS ───────────────────────────────────────────────────────────────
 async function ppeLoadInspections(){
@@ -17316,8 +17340,8 @@ async function ppeInspSave(){
     ppeInspBack();
   }catch(e){toast(e.message,false);}
 }
-async function ppeInspDelete(){if(!ppeInspEditId||!confirm('Delete?'))return;try{await api('/ppe_inspections?id=eq.'+ppeInspEditId,{m:'DELETE'});toast('Deleted!');ppeInspBack();}catch(e){toast(e.message,false);}}
-async function ppeInspDeleteRow(id){if(!confirm('Delete?'))return;try{await api('/ppe_inspections?id=eq.'+id,{m:'DELETE'});ppeInspData=ppeInspData.filter(x=>x.id!==id);toast('Deleted!');ppeLoadInspections();}catch(e){toast(e.message,false);}}
+async function ppeInspDelete(){if(!ppeInspEditId)return;if(!(await appConfirmDelete('PPE inspection')))return;try{await api('/ppe_inspections?id=eq.'+ppeInspEditId,{m:'DELETE'});toast('Deleted!');ppeInspBack();}catch(e){toast(e.message,false);}}
+async function ppeInspDeleteRow(id){if(!(await appConfirmDelete('PPE inspection')))return;try{await api('/ppe_inspections?id=eq.'+id,{m:'DELETE'});ppeInspData=ppeInspData.filter(x=>x.id!==id);toast('Deleted!');ppeLoadInspections();}catch(e){toast(e.message,false);}}
 
 // ── REPLACEMENTS ──────────────────────────────────────────────────────────────
 async function ppeLoadReplacements(){
@@ -17352,8 +17376,8 @@ function ppeRepEdit(id){var x=ppeRepData.find(r=>r.id===id);if(!x)return;ppeRepE
 async function ppeRepSave(){var emp=document.getElementById('prf-emp-name')?.value?.trim();if(!emp){toast('Please enter employee name',false);return;}var ppeSel=document.getElementById('prf-ppe-id');var ppeId=ppeSel?.value||null;var ppe=ppeCatData.find(x=>x.id===ppeId);var ppeName=ppe?.name||(ppeSel?.selectedOptions[0]?.text?.replace(/^[^ ]+ /,'')||'PPE');var g=function(id){var el=document.getElementById(id);return el?el.value||null:null;};var body={company_id:ccid(),ppe_id:ppeId||null,ppe_name:ppeName,employee_name:emp,department:g('prf-dept'),reason:g('prf-reason')||'expiry',reason_notes:g('prf-notes'),old_item_condition:g('prf-old-condition'),requested_date:g('prf-date'),requested_by:g('prf-requested-by'),urgency:g('prf-urgency')||'normal',approved_by:g('prf-approved-by'),approved_date:g('prf-approved-date')||null,fulfilled_date:g('prf-fulfilled-date')||null,new_issuance_ref:g('prf-new-iss-ref'),status:g('prf-status')||'pending',updated_at:new Date().toISOString()};
   try{if(ppeRepEditId){await api('/ppe_replacements?id=eq.'+ppeRepEditId,{m:'PATCH',p:'return=minimal',b:body});toast('Updated!');}else{body.created_by=prof?.id;var res=await api('/ppe_replacements',{m:'POST',p:'return=representation',b:body});if(res?.[0]?.id){var yr=new Date().getFullYear();var ref='REP-'+yr+'-'+String(ppeRepData.length+1).padStart(3,'0');await api('/ppe_replacements?id=eq.'+res[0].id,{m:'PATCH',p:'return=minimal',b:{replacement_ref:ref}});toast('Replacement request created! Ref: '+ref);}}ppeRepBack();}catch(e){toast(e.message,false);}
 }
-async function ppeRepDelete(){if(!ppeRepEditId||!confirm('Delete?'))return;try{await api('/ppe_replacements?id=eq.'+ppeRepEditId,{m:'DELETE'});toast('Deleted!');ppeRepBack();}catch(e){toast(e.message,false);}}
-async function ppeRepDeleteRow(id){if(!confirm('Delete?'))return;try{await api('/ppe_replacements?id=eq.'+id,{m:'DELETE'});ppeRepData=ppeRepData.filter(x=>x.id!==id);toast('Deleted!');ppeLoadReplacements();}catch(e){toast(e.message,false);}}
+async function ppeRepDelete(){if(!ppeRepEditId)return;if(!(await appConfirmDelete('PPE replacement record')))return;try{await api('/ppe_replacements?id=eq.'+ppeRepEditId,{m:'DELETE'});toast('Deleted!');ppeRepBack();}catch(e){toast(e.message,false);}}
+async function ppeRepDeleteRow(id){if(!(await appConfirmDelete('PPE replacement record')))return;try{await api('/ppe_replacements?id=eq.'+id,{m:'DELETE'});ppeRepData=ppeRepData.filter(x=>x.id!==id);toast('Deleted!');ppeLoadReplacements();}catch(e){toast(e.message,false);}}
 
 // ── EXPIRY ALERTS ─────────────────────────────────────────────────────────────
 function ppeExpiryFilter(days,btn){
@@ -17663,13 +17687,13 @@ async function toolsSaveEquipment(){
 
 async function toolsDelete(){
   if(!toolsEditingId)return;
-  if(!confirm('Delete this equipment?'))return;
+  if(!(await appConfirmDelete('equipment')))return;
   try{await api('/tools_register?id=eq.'+toolsEditingId,{m:'DELETE'});toast('Deleted!');toolsFormBack();}
   catch(e){toast(e.message,false);}
 }
 
 async function toolsDeleteFromList(id){
-  if(!confirm('Delete this equipment?'))return;
+  if(!(await appConfirmDelete('equipment')))return;
   try{
     await api('/tools_register?id=eq.'+id,{m:'DELETE'});
     toolsAllData=toolsAllData.filter(x=>x.id!==id);
@@ -18403,7 +18427,8 @@ async function atexSave(){
 }
 
 async function atexDelete(){
-  if(!atexEditId||!confirm('Delete this ATEX area?'))return;
+  if(!atexEditId)return;
+  if(!(await appConfirmDelete('ATEX area')))return;
   try{await api('/atex_areas?id=eq.'+atexEditId,{m:'DELETE',p:'return=minimal'});toast('Deleted');atexBack();}
   catch(e){toast(e.message,false);}
 }
@@ -19076,8 +19101,9 @@ async function mapLoadLog(id){
 }
 
 // ── Delete ────────────────────────────────────────────────────────────────────
-function mapDelete(){
-  if(!mapEditingId||!confirm('Delete this action?'))return;
+async function mapDelete(){
+  if(!mapEditingId)return;
+  if(!(await appConfirmDelete('action','This will remove the action from the Master Action Plan.')))return;
   api('/action_tracker?id=eq.'+mapEditingId,{m:'DELETE'}).then(function(){
     mapAllData=mapAllData.filter(x=>x.id!==mapEditingId);
     toast('Action deleted!');mapEditingId=null;mapShowList();
@@ -19332,7 +19358,7 @@ async function dcUploadFile(file){
   var existingUrl = document.getElementById('df-url').value;
   var current = dcEditingId ? (dcAllData.find(function(r){return r.id===dcEditingId;})||{}) : null;
   if(dcEditingId && existingUrl && current && (current.approval_status==='approved' || current.status==='approved')){
-    var ok = confirm('This document has an approved file already.\n\nReplacing it will archive the current version to revision history.\n\nContinue?');
+    var ok = await appConfirmAction({title:'Replace approved document',message:'Replace the approved file?',detail:'The current approved file will be archived to revision history before the new file is attached.',confirmText:'Replace file',cancelText:'Cancel'});
     if(!ok) return;
     // Snapshot the existing file into doc_revisions BEFORE we overwrite the form
     try{
@@ -19830,7 +19856,7 @@ async function dcReject(){
 }
 
 async function dcWithdraw(){
-  if(!confirm('Withdraw this document? It will no longer be active.'))return;
+  if(!(await appConfirmAction({title:'Withdraw document',message:'Withdraw this document?',detail:'It will no longer be active.',confirmText:'Withdraw',cancelText:'Cancel'})))return;
   try{
     await api('/documents?id=eq.'+dcEditingId,{m:'PATCH',p:'return=minimal',b:{approval_status:'withdrawn',status:'withdrawn',updated_at:new Date().toISOString()}});
     var x=dcAllData.find(r=>r.id===dcEditingId);if(x)x.approval_status='withdrawn';
@@ -19860,8 +19886,9 @@ async function dcCreateNewRevision(){
   }catch(e){toast(e.message,false);}
 }
 
-function dcDelete(){
-  if(!dcEditingId||!confirm('Delete this document permanently?'))return;
+async function dcDelete(){
+  if(!dcEditingId)return;
+  if(!(await appConfirmDelete('document','This will permanently delete the document record.')))return;
   api('/documents?id=eq.'+dcEditingId,{m:'DELETE'}).then(function(){
     dcAllData=dcAllData.filter(x=>x.id!==dcEditingId);
     toast('Deleted!');dcEditingId=null;dcShowList();
@@ -20855,8 +20882,8 @@ function legalOpenChg(id){var x=lcAllData.find(r=>r.id===id);if(!x)return;lcEdit
 async function legalSaveChg(){var g=function(id){var el=document.getElementById(id);return el?el.value||null:null;};var body={company_id:ccid(),date_received:g('lc-date')||null,source:g('lc-source'),jurisdiction:g('lc-jurisdiction')||'Mauritius',legislation:g('lc-legislation'),category:g('lc-category')||'health_safety',changes_identified:g('lc-changes'),changes:g('lc-changes'),action_required:g('lc-action'),action:g('lc-action'),responsible_person:g('lc-responsible'),effective_date:g('lc-effective-date')||null,applicable:g('lc-applicable')!=='false',implemented:g('lc-implemented')==='true',comments:g('lc-comments'),updated_at:new Date().toISOString()};
   try{if(lcEditId){await api('/legal_changes?id=eq.'+lcEditId,{m:'PATCH',p:'return=minimal',b:body});toast('Updated!');}else{body.created_by=prof?.id;await api('/legal_changes',{m:'POST',p:'return=minimal',b:body});toast('Change recorded!');}legalChgBack();}catch(e){toast('Error: '+e.message,false);}
 }
-async function legalDeleteChg(){if(!lcEditId||!confirm('Delete?'))return;try{await api('/legal_changes?id=eq.'+lcEditId,{m:'DELETE'});toast('Deleted!');legalChgBack();}catch(e){toast(e.message,false);}}
-function legalDeleteChgFromList(id){if(!confirm('Delete?'))return;api('/legal_changes?id=eq.'+id,{m:'DELETE'}).then(function(){lcAllData=lcAllData.filter(x=>x.id!==id);legalLoadChanges();toast('Deleted!');}).catch(function(e){toast(e.message,false);});}
+async function legalDeleteChg(){if(!lcEditId)return;if(!(await appConfirmDelete('regulatory change')))return;try{await api('/legal_changes?id=eq.'+lcEditId,{m:'DELETE'});toast('Deleted!');legalChgBack();}catch(e){toast(e.message,false);}}
+async function legalDeleteChgFromList(id){if(!(await appConfirmDelete('regulatory change')))return;api('/legal_changes?id=eq.'+id,{m:'DELETE'}).then(function(){lcAllData=lcAllData.filter(x=>x.id!==id);legalLoadChanges();toast('Deleted!');}).catch(function(e){toast(e.message,false);});}
 
 // ── COMPLIANCE ASSESSMENTS ────────────────────────────────────────────────────
 async function lcaLoad(){
@@ -20919,7 +20946,7 @@ function lcaEdit(id){var x=lcaAllData.find(r=>r.id===id);if(!x)return;lcaEditId=
 async function lcaSave(){var title=document.getElementById('lcaf-title')?.value?.trim();if(!title){toast('Please enter assessment title',false);return;}var g=function(id){var el=document.getElementById(id);return el?el.value||null:null;};var c=parseInt(g('lcaf-compliant'))||0;var p=parseInt(g('lcaf-partial'))||0;var n=parseInt(g('lcaf-noncompliant'))||0;var na=parseInt(g('lcaf-na'))||0;var total=c+p+n;var score=total>0?Math.round((c*100+p*50)/total):0;var body={company_id:ccid(),title,assessment_type:g('lcaf-type')||'periodic',assessment_date:g('lcaf-date'),next_assessment_date:g('lcaf-next-date')||null,assessor:g('lcaf-assessor'),total_requirements:total+na,compliant_count:c,partial_count:p,non_compliant_count:n,na_count:na,overall_score:score,scope:g('lcaf-scope'),methodology:g('lcaf-methodology'),findings:g('lcaf-findings'),recommendations:g('lcaf-recommendations'),status:g('lcaf-status')||'draft',approved_by:g('lcaf-approved-by'),approved_date:g('lcaf-approved-date')||null,linked_audit_ref:g('lcaf-audit-ref'),updated_at:new Date().toISOString()};
   try{if(lcaEditId){await api('/compliance_assessments?id=eq.'+lcaEditId,{m:'PATCH',p:'return=minimal',b:body});toast('Assessment updated!');}else{body.created_by=prof?.id;var res=await api('/compliance_assessments',{m:'POST',p:'return=representation',b:body});if(res?.[0]?.id){var ref='CA-'+new Date().getFullYear()+'-'+String(lcaAllData.length+1).padStart(3,'0');await api('/compliance_assessments?id=eq.'+res[0].id,{m:'PATCH',p:'return=minimal',b:{assessment_ref:ref}});toast('Assessment saved! Ref: '+ref);}}lcaBack();}catch(e){toast('Error: '+e.message,false);}
 }
-async function lcaDelete(){if(!lcaEditId||!confirm('Delete?'))return;try{await api('/compliance_assessments?id=eq.'+lcaEditId,{m:'DELETE'});toast('Deleted!');lcaBack();}catch(e){toast(e.message,false);}}
+async function lcaDelete(){if(!lcaEditId)return;if(!(await appConfirmDelete('compliance assessment')))return;try{await api('/compliance_assessments?id=eq.'+lcaEditId,{m:'DELETE'});toast('Deleted!');lcaBack();}catch(e){toast(e.message,false);}}
 
 // ── GAP ANALYSIS ──────────────────────────────────────────────────────────────
 async function gapLoad(){
@@ -20972,7 +20999,7 @@ function gapEdit(id){var x=gapAllData.find(r=>r.id===id);if(!x)return;gapEditId=
 async function gapSave(){var desc=document.getElementById('gapf-description')?.value?.trim();var leg=document.getElementById('gapf-legislation')?.value?.trim();if(!desc||!leg){toast('Please enter legislation and gap description',false);return;}var g=function(id){var el=document.getElementById(id);return el?el.value||null:null;};var body={company_id:ccid(),legislation:leg,section:g('gapf-section'),gap_description:desc,gap_type:g('gapf-type')||'missing_control',risk_level:g('gapf-risk')||'medium',action_required:g('gapf-action'),responsible_person:g('gapf-responsible'),target_date:g('gapf-target-date')||null,completion_date:g('gapf-completion-date')||null,action_ref:g('gapf-action-ref'),status:g('gapf-status')||'open',closure_notes:g('gapf-closure-notes'),updated_at:new Date().toISOString()};
   try{if(gapEditId){await api('/compliance_gaps?id=eq.'+gapEditId,{m:'PATCH',p:'return=minimal',b:body});toast('Gap updated!');}else{body.created_by=prof?.id;var res=await api('/compliance_gaps',{m:'POST',p:'return=representation',b:body});if(res?.[0]?.id){var ref='GAP-'+new Date().getFullYear()+'-'+String(gapAllData.length+1).padStart(3,'0');await api('/compliance_gaps?id=eq.'+res[0].id,{m:'PATCH',p:'return=minimal',b:{gap_ref:ref}});toast('Gap recorded! Ref: '+ref);if(['critical','high'].includes(body.risk_level)){try{await api('/action_tracker',{m:'POST',p:'return=minimal',b:{company_id:ccid(),title:'Close compliance gap: '+desc.substring(0,60),description:desc,source_type:'audit',source_module:'legal',priority:body.risk_level,status:'open',assigned_to_name:body.responsible_person,target_date:body.target_date||null,created_by:prof?.id}});}catch(ex){}}}}gapBack();}catch(e){toast('Error: '+e.message,false);}
 }
-async function gapDelete(){if(!gapEditId||!confirm('Delete?'))return;try{await api('/compliance_gaps?id=eq.'+gapEditId,{m:'DELETE'});toast('Deleted!');gapBack();}catch(e){toast(e.message,false);}}
+async function gapDelete(){if(!gapEditId)return;if(!(await appConfirmDelete('compliance gap')))return;try{await api('/compliance_gaps?id=eq.'+gapEditId,{m:'DELETE'});toast('Deleted!');gapBack();}catch(e){toast(e.message,false);}}
 
 // ── COMPLIANCE CALENDAR ───────────────────────────────────────────────────────
 async function calLoad(filter, btn){
@@ -21041,7 +21068,7 @@ async function calSave(){var title=document.getElementById('calf-title')?.value?
 }
 async function calMarkComplete(id){try{await api('/compliance_calendar?id=eq.'+id,{m:'PATCH',p:'return=minimal',b:{status:'completed',completed_date:new Date().toISOString().slice(0,10),updated_at:new Date().toISOString()}});toast('✓ Marked as completed');calLoad(calCurrentFilter,document.getElementById('cal-btn-'+calCurrentFilter));}catch(e){toast(e.message,false);}
 }
-async function calDelete(){if(!calEditId||!confirm('Delete?'))return;try{await api('/compliance_calendar?id=eq.'+calEditId,{m:'DELETE'});toast('Deleted!');calBack();}catch(e){toast(e.message,false);}}
+async function calDelete(){if(!calEditId)return;if(!(await appConfirmDelete('compliance calendar entry')))return;try{await api('/compliance_calendar?id=eq.'+calEditId,{m:'DELETE'});toast('Deleted!');calBack();}catch(e){toast(e.message,false);}}
 
 // ── DASHBOARD ─────────────────────────────────────────────────────────────────
 async function legalRenderDashboard(){
@@ -21427,7 +21454,8 @@ async function tbtSave(){
 }
 
 async function tbtDelete(){
-  if(!tbtEditId||!confirm('Delete this toolbox talk record?'))return;
+  if(!tbtEditId)return;
+  if(!(await appConfirmDelete('toolbox talk record')))return;
   try{await api('/toolbox_talks?id=eq.'+tbtEditId,{m:'DELETE'});toast('Deleted!');tbtBack();}catch(e){toast(e.message,false);}
 }
 
@@ -21550,7 +21578,8 @@ async function alertSave(){
 }
 
 async function alertDelete(){
-  if(!alertEditId||!confirm('Delete this safety alert?'))return;
+  if(!alertEditId)return;
+  if(!(await appConfirmDelete('safety alert')))return;
   try{await api('/safety_alerts?id=eq.'+alertEditId,{m:'DELETE'});toast('Deleted!');alertBack();}catch(e){toast(e.message,false);}
 }
 
@@ -21669,7 +21698,8 @@ async function bulletinSave(){
 }
 
 async function bulletinDelete(){
-  if(!bulletinEditId||!confirm('Delete this bulletin?'))return;
+  if(!bulletinEditId)return;
+  if(!(await appConfirmDelete('bulletin')))return;
   try{await api('/safety_bulletins?id=eq.'+bulletinEditId,{m:'DELETE'});toast('Deleted!');bulletinBack();}catch(e){toast(e.message,false);}
 }
 
@@ -22027,13 +22057,13 @@ async function tpSave(){
 
 async function tpDelete(){
   if(!tpEditingId)return;
-  if(!confirm('Delete this training?'))return;
+  if(!(await appConfirmDelete('training plan item')))return;
   try{await api('/training_plan?id=eq.'+tpEditingId,{m:'DELETE'});toast('Deleted!');tpBack();}
   catch(e){toast(e.message,false);}
 }
 
 async function tpDeleteFromList(id){
-  if(!confirm('Delete this training?'))return;
+  if(!(await appConfirmDelete('training plan item')))return;
   try{await api('/training_plan?id=eq.'+id,{m:'DELETE'});tpAllData=tpAllData.filter(function(x){return x.id!==id;});toast('Deleted!');tpLoad();}
   catch(e){toast(e.message,false);}
 }
@@ -22172,13 +22202,13 @@ async function tfSave(){
 
 async function tfDelete(){
   if(!tfEditingId)return;
-  if(!confirm('Delete this record?'))return;
+  if(!(await appConfirmDelete('training follow-up record')))return;
   try{await api('/training_followup?id=eq.'+tfEditingId,{m:'DELETE'});toast('Deleted!');tfBack();}
   catch(e){toast(e.message,false);}
 }
 
 async function tfDeleteFromList(id){
-  if(!confirm('Delete this record?'))return;
+  if(!(await appConfirmDelete('training follow-up record')))return;
   try{await api('/training_followup?id=eq.'+id,{m:'DELETE'});tfAllData=tfAllData.filter(function(x){return x.id!==id;});toast('Deleted!');tfRender(tfAllData);}
   catch(e){toast(e.message,false);}
 }
@@ -22348,13 +22378,13 @@ async function authSave(){
 
 async function authDelete(){
   if(!authEditingId)return;
-  if(!confirm('Delete this authorisation?'))return;
+  if(!(await appConfirmDelete('authorisation')))return;
   try{await api('/authorisations?id=eq.'+authEditingId,{m:'DELETE'});toast('Deleted!');authBack();}
   catch(e){toast(e.message,false);}
 }
 
 async function authDeleteFromList(id){
-  if(!confirm('Delete this authorisation?'))return;
+  if(!(await appConfirmDelete('authorisation')))return;
   try{await api('/authorisations?id=eq.'+id,{m:'DELETE'});authAllData=authAllData.filter(function(x){return x.id!==id;});toast('Deleted!');authRender(authAllData);}
   catch(e){toast(e.message,false);}
 }
@@ -22854,7 +22884,8 @@ async function auditSave() {
 function saveInspection(){auditSave();}  // backward compat
 
 async function auditDelete() {
-  if(!auditEditId||!confirm('Delete this inspection?'))return;
+  if(!auditEditId)return;
+  if(!(await appConfirmDelete('inspection')))return;
   try{await api('/inspections?id=eq.'+auditEditId,{m:'DELETE'});toast('Deleted!');auditBackToList();}
   catch(e){toast(e.message,false);}
 }
@@ -23131,12 +23162,13 @@ async function psSave(){
 }
 
 async function psDelete(){
-  if(!window.psEditId||!confirm('Delete?'))return;
+  if(!window.psEditId)return;
+  if(!(await appConfirmDelete('pre-start inspection')))return;
   try{await api('/inspections?id=eq.'+window.psEditId,{m:'DELETE'});toast('Deleted!');psShowList();}catch(e){toast(e.message,false);}
 }
 
-function psDeleteFromList(id){
-  if(!confirm('Delete?'))return;
+async function psDeleteFromList(id){
+  if(!(await appConfirmDelete('pre-start inspection')))return;
   api('/inspections?id=eq.'+id,{m:'DELETE'}).then(function(){psLoad();toast('Deleted!');}).catch(function(e){toast(e.message,false);});
 }
 
@@ -23606,7 +23638,7 @@ async function usersToggleStatus(id, isActive) {
   var msg = newStatus==='inactive'
     ? 'Deactivate '+userName+'?\n\nThey will no longer be able to log in. Their records (incidents, training, sign-offs) are kept. This is reversible.'
     : 'Reactivate '+userName+'? They will be able to log in again.';
-  if(!confirm(msg)) return;
+  if(!(await appConfirmAction({title:newStatus==='inactive'?'Deactivate user':'Reactivate user',message:msg.replace(/\n\n/g,' '),detail:newStatus==='inactive'?'Their records are kept. This is reversible.':'The user will be able to log in again.',confirmText:newStatus==='inactive'?'Deactivate':'Reactivate',cancelText:'Cancel'}))) return;
   try {
     // Goes through the admin-users Edge Function so the LOGIN is actually
     // banned/unbanned server-side — not just the profile label.
@@ -23642,7 +23674,7 @@ async function usersResetPw(id) {
   var u = usersAllData.find(function(x){return x.id===id;});
   if(!u || !u.email) return;
   if(u.synthetic_email){toast('This account uses a generated username, not a real email — set a new password via Edit instead',false);return;}
-  if(!confirm('Send a password-reset email to '+u.email+'?')) return;
+  if(!(await appConfirmAction({title:'Send password reset',message:'Send a password-reset email to '+u.email+'?',detail:'The user will receive the reset link by email.',confirmText:'Send reset email',cancelText:'Cancel',danger:false}))) return;
   try {
     await adminFnCall('reset_password', {email:u.email});
     toast('Password reset email sent to '+u.email);
@@ -24628,7 +24660,8 @@ async function adminSaveCompany() {
 }
 
 async function adminDeleteCompany() {
-  if(!adminEditCoId||!confirm('Delete this company? This is irreversible.'))return;
+  if(!adminEditCoId)return;
+  if(!(await appConfirmDelete('company','This is irreversible and should only be used for test or incorrect company records.')))return;
   try{await api('/companies?id=eq.'+adminEditCoId,{m:'DELETE'});toast('Company deleted!');adminCloseCoModal();adminLoadAll().then(function(){adminLoadCompanies();});}
   catch(e){toast(e.message,false);}
 }
@@ -24747,7 +24780,8 @@ async function adminSaveSite() {
 }
 
 async function adminDeleteSite(){
-  if(!adminEditSiteId||!confirm('Delete this site?'))return;
+  if(!adminEditSiteId)return;
+  if(!(await appConfirmDelete('site')))return;
   try{await api('/sites?id=eq.'+adminEditSiteId,{m:'DELETE'});toast('Site deleted!');adminCloseSiteModal();await adminLoadAll();adminLoadSites();}
   catch(e){toast(e.message,false);}
 }
@@ -25207,7 +25241,7 @@ async function adminSaveAccess(){
 }
 
 async function adminRevokeAccess(id){
-  if(!confirm('Revoke this site access?'))return;
+  if(!(await appConfirmAction({title:'Revoke site access',message:'Revoke this site access?',detail:'The user will no longer have this site-specific access entry.',confirmText:'Revoke access',cancelText:'Cancel'})))return;
   try{await api('/user_site_access?id=eq.'+id,{m:'DELETE'});toast('Access revoked!');adminLoadAccessList();}
   catch(e){toast(e.message,false);}
 }
@@ -25622,7 +25656,7 @@ async function integTest() {
 // ── Disconnect ────────────────────────────────────────────────────────────────
 async function integDisconnect() {
   var key = integCurrentKey; if(!key) return;
-  if(!confirm('Disconnect this integration? Your configuration will be saved but the connection will stop.')) return;
+  if(!(await appConfirmAction({title:'Disconnect integration',message:'Disconnect this integration?',detail:'Your configuration will be saved but the connection will stop.',confirmText:'Disconnect',cancelText:'Cancel'}))) return;
   try {
     var existing = integAllData.find(function(s){return s.integration_key===key;});
     if(existing) await api('/integrations?id=eq.'+existing.id, {m:'PATCH', p:'return=minimal', b:{status:'disconnected',enabled:false,updated_at:new Date().toISOString()}});
@@ -25685,18 +25719,18 @@ function integCopyBaseUrl() {
 function indBack(){ var el=document.getElementById('ind-form');if(el)el.style.display='none';var v=document.getElementById('train-view-induction');if(v)v.style.display='block';if(typeof indLoad==='function')indLoad(); }
 function indNew(){ window.indEditId=null;var el=document.getElementById('ind-form');if(!el)return;document.getElementById('ind-form-title').textContent='New Induction';if(document.getElementById('ind-del-btn'))document.getElementById('ind-del-btn').style.display='none';['indf-person','indf-emp-id','indf-dept','indf-job-title','indf-inducted-by','indf-extra-topics','indf-notes'].forEach(function(id){var e=document.getElementById(id);if(e)e.value='';});if(document.getElementById('indf-ind-date'))document.getElementById('indf-ind-date').value=new Date().toISOString().slice(0,10);var iv=document.getElementById('train-view-induction');if(iv)iv.style.display='none';el.style.display='block'; }
 async function indSave(){ var person=document.getElementById('indf-person')?.value?.trim();if(!person){toast('Please enter person name',false);return;}var g=function(id){var el=document.getElementById(id);return el?el.value||null:null;};var topics=Array.from(document.querySelectorAll('.ind-topic:checked')).map(function(cb){return cb.value;});var body={company_id:ccid(),person_name:person,employee_id:g('indf-emp-id'),department:g('indf-dept'),job_title:g('indf-job-title'),induction_type:g('indf-type')||'new_employee',induction_date:g('indf-ind-date'),inducted_by:g('indf-inducted-by'),topics_covered:topics,notes:g('indf-notes'),status:g('indf-status')||'completed',completed:g('indf-status')==='completed',updated_at:new Date().toISOString()};try{if(window.indEditId){await api('/induction_records?id=eq.'+window.indEditId,{m:'PATCH',p:'return=minimal',b:body});toast('Updated!');}else{body.created_by=prof?.id;await api('/induction_records',{m:'POST',p:'return=minimal',b:body});toast('Induction saved!');}indBack();}catch(e){toast('Error: '+e.message+'. Run training_schema.sql.',false);} }
-async function indDelete(){ if(!window.indEditId||!confirm('Delete?'))return;try{await api('/induction_records?id=eq.'+window.indEditId,{m:'DELETE'});toast('Deleted!');indBack();}catch(e){toast(e.message,false);} }
+async function indDelete(){ if(!window.indEditId)return;if(!(await appConfirmDelete('induction record')))return;try{await api('/induction_records?id=eq.'+window.indEditId,{m:'DELETE'});toast('Deleted!');indBack();}catch(e){toast(e.message,false);} }
 function elcNew(){ window.elcEditId=null;var el=document.getElementById('elc-form');if(!el)return;document.getElementById('elc-form-title').textContent='New Course';if(document.getElementById('elc-del-btn'))document.getElementById('elc-del-btn').style.display='none';['elcf-title','elcf-code','elcf-desc','elcf-url'].forEach(function(id){var e=document.getElementById(id);if(e)e.value='';});var v=document.getElementById('train-view-elearning');if(v)v.style.display='none';el.style.display='block'; }
 function elcBack(){ var el=document.getElementById('elc-form');if(el)el.style.display='none';var v=document.getElementById('train-view-elearning');if(v)v.style.display='block';if(typeof elcLoad==='function')elcLoad(); }
 async function elcSave(){ var title=document.getElementById('elcf-title')?.value?.trim();if(!title){toast('Please enter course title',false);return;}var g=function(id){var el=document.getElementById(id);return el?el.value||null:null;};var body={company_id:ccid(),title,course_code:g('elcf-code'),description:g('elcf-desc'),course_url:g('elcf-url'),status:g('elcf-status')||'active',updated_at:new Date().toISOString()};(window.elcEditId?api('/elearning_courses?id=eq.'+window.elcEditId,{m:'PATCH',p:'return=minimal',b:body}):api('/elearning_courses',{m:'POST',p:'return=minimal',b:Object.assign(body,{created_by:prof?.id})})).then(function(){toast(window.elcEditId?'Updated!':'Course added!');elcBack();}).catch(function(e){toast('Error: '+e.message,false);}); }
-async function elcDelete(){ if(!window.elcEditId||!confirm('Delete?'))return;try{await api('/elearning_courses?id=eq.'+window.elcEditId,{m:'DELETE'});toast('Deleted!');elcBack();}catch(e){toast(e.message,false);} }
+async function elcDelete(){ if(!window.elcEditId)return;if(!(await appConfirmDelete('e-learning course')))return;try{await api('/elearning_courses?id=eq.'+window.elcEditId,{m:'DELETE'});toast('Deleted!');elcBack();}catch(e){toast(e.message,false);} }
 function eleNew(){ window.eleEditId=null;var el=document.getElementById('ele-form');if(!el)return;document.getElementById('ele-form-title').textContent='New Enrolment';if(document.getElementById('ele-del-btn'))document.getElementById('ele-del-btn').style.display='none';if(document.getElementById('elef-enrol-date'))document.getElementById('elef-enrol-date').value=new Date().toISOString().slice(0,10);var v=document.getElementById('train-view-elearning');if(v)v.style.display='none';el.style.display='block'; }
 function eleBack(){ var el=document.getElementById('ele-form');if(el)el.style.display='none';var v=document.getElementById('train-view-elearning');if(v)v.style.display='block'; }
 async function eleSave(){ var person=document.getElementById('elef-person')?.value?.trim();if(!person){toast('Please enter person name',false);return;}var g=function(id){var el=document.getElementById(id);return el?el.value||null:null;};var body={company_id:ccid(),person_name:person,department:g('elef-dept'),course_id:g('elef-course-id')||null,enrolment_date:g('elef-enrol-date')||null,completion_date:g('elef-comp-date')||null,status:g('elef-status')||'enrolled',updated_at:new Date().toISOString()};try{if(window.eleEditId){await api('/elearning_enrolments?id=eq.'+window.eleEditId,{m:'PATCH',p:'return=minimal',b:body});toast('Updated!');}else{body.created_by=prof?.id;await api('/elearning_enrolments',{m:'POST',p:'return=minimal',b:body});toast('Enrolment saved!');}eleBack();}catch(e){toast('Error: '+e.message,false);} }
-async function eleDelete(){ if(!window.eleEditId||!confirm('Delete?'))return;try{await api('/elearning_enrolments?id=eq.'+window.eleEditId,{m:'DELETE'});toast('Deleted!');eleBack();}catch(e){toast(e.message,false);} }
+async function eleDelete(){ if(!window.eleEditId)return;if(!(await appConfirmDelete('e-learning enrolment')))return;try{await api('/elearning_enrolments?id=eq.'+window.eleEditId,{m:'DELETE'});toast('Deleted!');eleBack();}catch(e){toast(e.message,false);} }
 function compBack(){ var cf=document.getElementById('comp-form');if(cf)cf.style.display='none';var cv=document.getElementById('train-view-competency');if(cv)cv.style.display='block';if(typeof compFilter==='function')compFilter(); }
 async function compSave(){ var person=document.getElementById('compf-person')?.value?.trim();if(!person){toast('Please enter person name',false);return;}var g=function(id){var el=document.getElementById(id);return el?el.value||null:null;};var body={company_id:ccid(),person_name:person,department:g('compf-dept'),job_title:g('compf-job-title'),competency_name:g('compf-competency-name')||'',level:g('compf-level')||'not_assessed',assessed_date:g('compf-assessed-date')||null,expiry_date:g('compf-expiry')||null,assessor:g('compf-assessor'),notes:g('compf-notes'),updated_at:new Date().toISOString()};try{if(window.compEditId){await api('/competency_matrix?id=eq.'+window.compEditId,{m:'PATCH',p:'return=minimal',b:body});toast('Updated!');}else{body.created_by=prof?.id;await api('/competency_matrix',{m:'POST',p:'return=minimal',b:body});toast('Saved!');}compBack();}catch(e){toast(e.message,false);} }
-async function compDelete(){ if(!window.compEditId||!confirm('Delete?'))return;try{await api('/competency_matrix?id=eq.'+window.compEditId,{m:'DELETE'});toast('Deleted!');compBack();}catch(e){toast(e.message,false);} }
+async function compDelete(){ if(!window.compEditId)return;if(!(await appConfirmDelete('competency record')))return;try{await api('/competency_matrix?id=eq.'+window.compEditId,{m:'DELETE'});toast('Deleted!');compBack();}catch(e){toast(e.message,false);} }
 function compNew(){ window.compEditId=null;var el=document.getElementById('comp-form');if(!el)return;document.getElementById('comp-form-title').textContent='New Competency Record';if(document.getElementById('comp-del-btn'))document.getElementById('comp-del-btn').style.display='none';['compf-person','compf-dept','compf-job-title','compf-competency-name','compf-assessor','compf-notes'].forEach(function(id){var e=document.getElementById(id);if(e)e.value='';});var cv=document.getElementById('train-view-competency');if(cv)cv.style.display='none';el.style.display='block'; }
 function trainNewFromTab(){ var active=document.querySelector('[id^="train-tab-"].active');var tab=active?.id?.replace('train-tab-','');if(tab==='competency')compNew();else if(tab==='induction')indNew();else if(tab==='plan')tpNew();else if(tab==='followup')tfNew();else if(tab==='elearning')elcNew();else if(tab==='auth')authNew();else if(tab==='tna')tnaAddRow(); }
 
