@@ -2471,7 +2471,16 @@ async function obsSave() {
 }
 
 async function obsDelete() {
-  if (!obsEditId||!confirm('Delete this observation?')) return;
+  if (!obsEditId) return;
+  var ok=await appConfirm({
+    title:'Delete BBS observation',
+    message:'Delete this observation?',
+    detail:'This will remove the observation record from the BBS register.',
+    confirmText:'Delete observation',
+    cancelText:'Keep observation',
+    danger:true
+  });
+  if(!ok)return;
   try {
     await api('/safety_observations?id=eq.'+obsEditId, {m:'DELETE'});
     obsAllData = obsAllData.filter(x=>x.id!==obsEditId);
@@ -5564,7 +5573,9 @@ async function evQuickClose(id){
 try{await api('/events?id=eq.'+id,{m:'PATCH',p:'return=minimal',b:{status:'closed',closed_date:new Date().toISOString().slice(0,10),updated_at:new Date().toISOString()}});toast('Event closed!');evCloseModal();await loadEvents();}catch(e){toast(e.message,false);}
 }
 async function evDelete(){
-if(!evEditingId||!confirm('Delete this event?'))return;
+if(!evEditingId)return;
+var ok=await appConfirm({title:'Delete event',message:'Delete this event?',detail:'This will remove the event record from the register.',confirmText:'Delete event',cancelText:'Keep event',danger:true});
+if(!ok)return;
 try{await api('/events?id=eq.'+evEditingId,{m:'DELETE'});toast('Event deleted!');evCloseModal();await loadEvents();}catch(e){toast(e.message,false);}
 }
 async function evStartInvestigation(eventId){
@@ -5896,7 +5907,8 @@ function invCollectData(){
 
 
 async function invDelete(id){
-  if(!confirm('Delete this investigation? This cannot be undone.'))return;
+  var ok=await appConfirm({title:'Delete investigation',message:'Delete this investigation?',detail:'This cannot be undone and will remove the investigation record.',confirmText:'Delete investigation',cancelText:'Keep investigation',danger:true});
+  if(!ok)return;
   try{
     await api('/investigations?id=eq.'+id,{m:'DELETE'});
     invAllData=invAllData.filter(function(x){return x.id!==id;});
@@ -10303,7 +10315,16 @@ async function imsSave(){
 }
 
 async function imsDelete(){
-  if(!imsEditId||!confirm('Delete this incident record?'))return;
+  if(!imsEditId)return;
+  var ok=await appConfirm({
+    title:'Delete incident',
+    message:'Delete this incident record?',
+    detail:'This will remove the incident from the register. Use only for test or incorrect entries.',
+    confirmText:'Delete incident',
+    cancelText:'Keep incident',
+    danger:true
+  });
+  if(!ok)return;
   try{await api('/events?id=eq.'+imsEditId,{m:'DELETE'});toast('Deleted!');imsBackToRegister();}
   catch(e){toast(e.message,false);}
 }
@@ -10653,7 +10674,8 @@ async function invDeleteWitnessRow(btn){
   var row=btn.closest('.inv-witness-row'); if(!row)return;
   var evid=row.dataset.evid;
   if(evid){
-    if(!confirm('Remove this witness record? The saved record and any attached file will be deleted.'))return;
+    var ok=await appConfirm({title:'Remove witness record',message:'Remove this witness record?',detail:'The saved witness record and any attached file will be deleted.',confirmText:'Remove witness',cancelText:'Keep witness',danger:true});
+    if(!ok)return;
     try{
       var fp=row.dataset.filepath;
       await api('/incident_evidence?id=eq.'+evid,{m:'DELETE'});
@@ -10919,7 +10941,9 @@ async function invReleaseForEdit(){
 }
 
 async function invDeleteCurrent(){
-  if(!imsInvEditId||!confirm('Delete this investigation?'))return;
+  if(!imsInvEditId)return;
+  var ok=await appConfirm({title:'Delete investigation',message:'Delete this investigation?',detail:'This will remove the investigation record linked to the incident.',confirmText:'Delete investigation',cancelText:'Keep investigation',danger:true});
+  if(!ok)return;
   try{await api('/investigations?id=eq.'+imsInvEditId,{m:'DELETE'});toast('Deleted!');imsInvBack();}
   catch(e){toast(e.message,false);}
 }
@@ -11118,7 +11142,9 @@ async function imsEvidenceSave(){
 }
 
 async function imsDeleteEvidence(){
-  if(!imsEvidenceEditId||!confirm('Delete this evidence?'))return;
+  if(!imsEvidenceEditId)return;
+  var ok=await appConfirm({title:'Delete evidence',message:'Delete this evidence?',detail:'This will remove the evidence record from the incident file.',confirmText:'Delete evidence',cancelText:'Keep evidence',danger:true});
+  if(!ok)return;
   try{await api('/incident_evidence?id=eq.'+imsEvidenceEditId,{m:'DELETE'});toast('Deleted!');imsEvidenceBack();}
   catch(e){toast(e.message,false);}
 }
@@ -11878,9 +11904,17 @@ function raClearForm(){
 }
 
 // ── Delete ────────────────────────────────────────────────────────────────────
-function raDeleteCurrent(){
+async function raDeleteCurrent(){
   if(!raEditingId)return;
-  if(!confirm('Delete this risk assessment? This cannot be undone.'))return;
+  var ok=await appConfirm({
+    title:'Delete risk assessment',
+    message:'Delete this risk assessment?',
+    detail:'This cannot be undone and should only be used for draft/test records.',
+    confirmText:'Delete RA',
+    cancelText:'Keep RA',
+    danger:true
+  });
+  if(!ok)return;
   api('/risk_assessments?id=eq.'+raEditingId,{m:'DELETE'}).then(function(){
     raAllData=raAllData.filter(x=>x.id!==raEditingId);
     toast('Deleted!');raEditingId=null;raShowList();
@@ -13731,7 +13765,15 @@ function ptwFormBack(){
 
 async function ptwDelete(){
   if(!ptwEditingId)return;
-  if(!confirm('Delete this permit?'))return;
+  var ok=await appConfirm({
+    title:'Delete permit',
+    message:'Delete this permit?',
+    detail:'This will remove the permit from the permit register. Approved or issued permits should normally be closed or cancelled instead.',
+    confirmText:'Delete permit',
+    cancelText:'Keep permit',
+    danger:true
+  });
+  if(!ok)return;
   try{
     await api('/permits?id=eq.'+ptwEditingId,{m:'DELETE'});
     ptwAllData=ptwAllData.filter(function(x){return x.id!==ptwEditingId;});
@@ -20715,8 +20757,17 @@ async function legalSaveReq(){
     legalReqBack();
   }catch(e){toast(e.message,false);}
 }
-async function legalDeleteReq(){if(!lrEditId||!confirm('Delete this requirement?'))return;try{await api('/legal_requirements?id=eq.'+lrEditId,{m:'DELETE'});toast('Deleted!');legalReqBack();}catch(e){toast(e.message,false);}}
-function legalDeleteReqFromList(id){if(!confirm('Delete?'))return;api('/legal_requirements?id=eq.'+id,{m:'DELETE'}).then(function(){lrAllData=lrAllData.filter(x=>x.id!==id);legalFilterRegister();toast('Deleted!');}).catch(function(e){toast(e.message,false);});}
+async function legalDeleteReq(){
+  if(!lrEditId)return;
+  var ok=await appConfirm({title:'Delete legal section',message:'Delete this legal requirement?',detail:'This will remove the section from the legal register.',confirmText:'Delete section',cancelText:'Keep section',danger:true});
+  if(!ok)return;
+  try{await api('/legal_requirements?id=eq.'+lrEditId,{m:'DELETE'});toast('Deleted!');legalReqBack();}catch(e){toast(e.message,false);}
+}
+async function legalDeleteReqFromList(id){
+  var ok=await appConfirm({title:'Delete legal section',message:'Delete this legal requirement?',detail:'This will remove the section from the legal register.',confirmText:'Delete section',cancelText:'Keep section',danger:true});
+  if(!ok)return;
+  api('/legal_requirements?id=eq.'+id,{m:'DELETE'}).then(function(){lrAllData=lrAllData.filter(x=>x.id!==id);legalFilterRegister();toast('Deleted!');}).catch(function(e){toast(e.message,false);});
+}
 
 function legalToggleVisibleSelection(checked){
   document.querySelectorAll('.lr-row-select').forEach(function(cb){cb.checked=checked;});
@@ -20740,7 +20791,8 @@ async function legalDeleteSelectedReqs(){
   if(!isMgr()){toast('Only managers/admins can delete legal requirements',false);return;}
   var ids=Array.from(document.querySelectorAll('.lr-row-select:checked')).map(function(cb){return cb.dataset.id;}).filter(Boolean);
   if(!ids.length){toast('Select at least one section to delete',false);return;}
-  if(!confirm('Delete '+ids.length+' selected legal section'+(ids.length>1?'s':'')+'? This cannot be undone.'))return;
+  var ok=await appConfirm({title:'Delete selected legal sections',message:'Delete '+ids.length+' selected legal section'+(ids.length>1?'s':'')+'?',detail:'This cannot be undone and will remove the selected rows from the legal register.',confirmText:'Delete selected',cancelText:'Keep sections',danger:true});
+  if(!ok)return;
   try{await legalDeleteIds(ids,'section');}
   catch(e){toast('Delete failed: '+e.message,false);}
 }
@@ -20751,8 +20803,15 @@ async function legalDeleteCurrentLegislation(){
   if(!leg){toast('Choose one legislation in the filter first',false);return;}
   var ids=lrAllData.filter(function(x){return x.legislation===leg;}).map(function(x){return x.id;}).filter(Boolean);
   if(!ids.length){toast('No records found for this legislation',false);return;}
-  var typed=prompt('This will delete all '+ids.length+' sections for "'+leg+'". Type DELETE to confirm.');
-  if(typed!=='DELETE')return;
+  var ok=await appConfirm({
+    title:'Delete full legislation',
+    message:'Delete all '+ids.length+' sections for "'+leg+'"?',
+    detail:'This will remove the full legislation from the legal register. Use this only when the legislation was imported incorrectly or is no longer needed.',
+    confirmText:'Delete legislation',
+    cancelText:'Keep legislation',
+    danger:true
+  });
+  if(!ok)return;
   try{
     await legalDeleteIds(ids,'section');
     var sel=document.getElementById('lr-filter-leg');
@@ -27501,7 +27560,15 @@ async function fireSaveCert() {
 }
 
 async function fireDeleteCert(id) {
-  if (!confirm('Delete this fire certificate? This cannot be undone.')) return;
+  var ok=await appConfirm({
+    title:'Delete fire certificate',
+    message:'Delete this fire certificate?',
+    detail:'This cannot be undone and will remove the certificate from the fire register.',
+    confirmText:'Delete certificate',
+    cancelText:'Keep certificate',
+    danger:true
+  });
+  if(!ok)return;
   try {
     await api('/fire_certificates?id=eq.'+id, {m:'DELETE', p:'return=minimal'});
     toast('Certificate deleted');
@@ -27625,7 +27692,15 @@ async function fireSaveInsp() {
 }
 
 async function fireDeleteInsp(id) {
-  if (!confirm('Delete this inspection record?')) return;
+  var ok=await appConfirm({
+    title:'Delete fire inspection',
+    message:'Delete this inspection record?',
+    detail:'This will remove the inspection log entry from the fire module.',
+    confirmText:'Delete inspection',
+    cancelText:'Keep inspection',
+    danger:true
+  });
+  if(!ok)return;
   try {
     await api('/fire_inspections?id=eq.'+id, {m:'DELETE', p:'return=minimal'});
     toast('Inspection deleted');
@@ -27720,7 +27795,15 @@ async function fireSaveEquip() {
 }
 
 async function fireDeleteEquip(id) {
-  if (!confirm('Delete this equipment record?')) return;
+  var ok=await appConfirm({
+    title:'Delete fire equipment',
+    message:'Delete this equipment record?',
+    detail:'This will remove the equipment item from the fire equipment register.',
+    confirmText:'Delete equipment',
+    cancelText:'Keep equipment',
+    danger:true
+  });
+  if(!ok)return;
   try {
     await api('/fire_equipment?id=eq.'+id, {m:'DELETE', p:'return=minimal'});
     toast('Equipment deleted');
