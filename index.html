@@ -9229,13 +9229,52 @@ function tbtRenderAttendees(){
 
 
 // ── ADD / EDIT WORK ORDER ────────────────────────────────────────────────────
-function wsNew(){
+async function wsLoadReferenceOptions(selectedRA,selectedPTW){
+  var raSel=document.getElementById('wsf-ra-ref');
+  var ptwSel=document.getElementById('wsf-ptw-ref');
+  if(raSel){
+    raSel.innerHTML='<option value="">Select risk assessment...</option>';
+    try{
+      var ras=await api('/risk_assessments?select=id,ra_ref,title,activity,status'+cf()+'&order=created_at.desc');
+      (ras||[]).forEach(function(r){
+        var ref=r.ra_ref||r.id;
+        var title=r.title||r.activity||'Risk assessment';
+        var o=document.createElement('option');
+        o.value=ref;o.textContent=ref+' - '+title+(r.status?' ['+r.status+']':'');
+        raSel.appendChild(o);
+      });
+    }catch(e){
+      var ro=document.createElement('option');ro.value='';ro.textContent='Unable to load risk assessments';raSel.appendChild(ro);
+    }
+    if(selectedRA){raSel.value=selectedRA;if(raSel.value!==selectedRA){var savedRA=document.createElement('option');savedRA.value=selectedRA;savedRA.textContent=selectedRA+' (saved text)';raSel.appendChild(savedRA);raSel.value=selectedRA;}}
+  }
+  if(ptwSel){
+    ptwSel.innerHTML='<option value="">Select permit...</option>';
+    try{
+      var permits=await api('/permits?select=id,permit_number,permit_type,permit_type_v2,status'+cf()+'&order=created_at.desc');
+      (permits||[]).forEach(function(p){
+        var ref=p.permit_number||p.id;
+        var pType=p.permit_type_v2||p.permit_type;
+        var label=(PTW_TYPE_CFG[pType]?.label||pType||'Permit');
+        var o=document.createElement('option');
+        o.value=ref;o.textContent=ref+' - '+label+(p.status?' ['+p.status+']':'');
+        ptwSel.appendChild(o);
+      });
+    }catch(e){
+      var po=document.createElement('option');po.value='';po.textContent='Unable to load permits';ptwSel.appendChild(po);
+    }
+    if(selectedPTW){ptwSel.value=selectedPTW;if(ptwSel.value!==selectedPTW){var savedPTW=document.createElement('option');savedPTW.value=selectedPTW;savedPTW.textContent=selectedPTW+' (saved text)';ptwSel.appendChild(savedPTW);ptwSel.value=selectedPTW;}}
+  }
+}
+
+async function wsNew(){
   wsEditingId=null;
   document.getElementById('ws-form-title').textContent='New Work Order';
   document.getElementById('ws-form-ref').textContent='';
   document.getElementById('ws-del-btn').style.display='none';
   document.getElementById('wsf-ref-display').textContent='WO-AUTO';
   ['wsf-title','wsf-desc','wsf-location','wsf-dept','wsf-duration','wsf-team','wsf-notes','wsf-ra-ref','wsf-ptw-ref'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
+  await wsLoadReferenceOptions();
   ['wsf-start','wsf-end'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
   var t=document.getElementById('wsf-type');if(t)t.value='maintenance';
   var s=document.getElementById('wsf-status');if(s)s.value='planned';
@@ -9249,7 +9288,7 @@ function wsNew(){
   document.getElementById('ws-form-view').style.display='block';
 }
 
-function wsEdit(id){
+async function wsEdit(id){
   var x=wsAllData.find(function(r){return r.id===id;});
   if(!x)return;
   wsEditingId=id;
@@ -9257,6 +9296,7 @@ function wsEdit(id){
   document.getElementById('ws-form-ref').textContent=x.ref_number||'';
   document.getElementById('ws-del-btn').style.display=isMgr()?'inline-flex':'none';
   document.getElementById('wsf-ref-display').textContent=x.ref_number||'WO-AUTO';
+  await wsLoadReferenceOptions(x.ra_ref,x.permit_ref);
   var flds={'wsf-title':'title','wsf-desc':'description','wsf-location':'location','wsf-dept':'department','wsf-duration':'estimated_duration','wsf-team':'team_members','wsf-notes':'notes','wsf-ra-ref':'ra_ref','wsf-ptw-ref':'permit_ref'};
   Object.entries(flds).forEach(function(e){var el=document.getElementById(e[0]);if(el)el.value=x[e[1]]||'';});
   var st=document.getElementById('wsf-start');if(st)st.value=x.planned_start||'';
@@ -17287,9 +17327,46 @@ function ppeIssToggleReturn(){
   if(rf)rf.style.display=cb?.checked?'block':'none';
 }
 
+async function ppeIssLoadReferenceOptions(selectedWO,selectedRA){
+  var woSel=document.getElementById('pif-wo-ref');
+  var raSel=document.getElementById('pif-ra-ref');
+  if(woSel){
+    woSel.innerHTML='<option value="">Select work order...</option>';
+    try{
+      var work=await api('/work_schedule?select=id,ref_number,title,status'+cf()+'&order=created_at.desc');
+      (work||[]).forEach(function(w){
+        var ref=w.ref_number||w.id;
+        var o=document.createElement('option');
+        o.value=ref;o.textContent=ref+' - '+(w.title||'Work order')+(w.status?' ['+w.status+']':'');
+        woSel.appendChild(o);
+      });
+    }catch(e){
+      var wo=document.createElement('option');wo.value='';wo.textContent='Unable to load work orders';woSel.appendChild(wo);
+    }
+    if(selectedWO){woSel.value=selectedWO;if(woSel.value!==selectedWO){var savedWO=document.createElement('option');savedWO.value=selectedWO;savedWO.textContent=selectedWO+' (saved text)';woSel.appendChild(savedWO);woSel.value=selectedWO;}}
+  }
+  if(raSel){
+    raSel.innerHTML='<option value="">Select risk assessment...</option>';
+    try{
+      var ras=await api('/risk_assessments?select=id,ra_ref,title,activity,status'+cf()+'&order=created_at.desc');
+      (ras||[]).forEach(function(r){
+        var ref=r.ra_ref||r.id;
+        var title=r.title||r.activity||'Risk assessment';
+        var o=document.createElement('option');
+        o.value=ref;o.textContent=ref+' - '+title+(r.status?' ['+r.status+']':'');
+        raSel.appendChild(o);
+      });
+    }catch(e){
+      var ro=document.createElement('option');ro.value='';ro.textContent='Unable to load risk assessments';raSel.appendChild(ro);
+    }
+    if(selectedRA){raSel.value=selectedRA;if(raSel.value!==selectedRA){var savedRA=document.createElement('option');savedRA.value=selectedRA;savedRA.textContent=selectedRA+' (saved text)';raSel.appendChild(savedRA);raSel.value=selectedRA;}}
+  }
+}
+
 async function ppeIssNew(){
   ppeIssEditId=null;document.getElementById('ppe-iss-form-title').textContent='Issue PPE';document.getElementById('ppe-iss-form-ref').textContent='ISS-AUTO';document.getElementById('ppe-iss-del-btn').style.display='none';
   ['pif-emp-name','pif-emp-id','pif-dept','pif-title','pif-issued-by','pif-size','pif-serial','pif-batch','pif-wo-ref','pif-ra-ref','pif-hazard','pif-notes','pif-return-reason','pif-mfg-date'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
+  await ppeIssLoadReferenceOptions();
   ['pif-expiry-date','pif-replace-date','pif-ack-date','pif-return-date'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
   document.getElementById('pif-issued-date').value=new Date().toISOString().slice(0,10);
   document.getElementById('pif-qty').value='1';document.getElementById('pif-condition').value='new';document.getElementById('pif-status').value='active';
@@ -17299,15 +17376,16 @@ async function ppeIssNew(){
   ppeIssShowForm();
 }
 
-function ppeIssEdit(id){
+async function ppeIssEdit(id){
   var x=ppeIssData.find(r=>r.id===id);if(!x)return;
   ppeIssEditId=id;document.getElementById('ppe-iss-form-title').textContent='Edit Issuance';document.getElementById('ppe-iss-form-ref').textContent=x.issuance_ref||'—';document.getElementById('ppe-iss-del-btn').style.display=isMgr()?'inline-flex':'none';
+  await ppeIssLoadReferenceOptions(x.work_order_ref,x.ra_ref);
   var gf=function(fid,val){var el=document.getElementById(fid);if(el)el.value=val||'';};
   gf('pif-emp-name',x.employee_name);gf('pif-emp-id',x.employee_id);gf('pif-dept',x.department);gf('pif-title',x.job_title);gf('pif-issued-by',x.issued_by);gf('pif-size',x.size);gf('pif-serial',x.serial_number);gf('pif-batch',x.batch_number);gf('pif-wo-ref',x.work_order_ref);gf('pif-ra-ref',x.ra_ref);gf('pif-hazard',x.hazard_ref);gf('pif-notes',x.notes);gf('pif-issued-date',x.issued_date);gf('pif-mfg-date',x.manufacture_date);gf('pif-expiry-date',x.expiry_date);gf('pif-replace-date',x.expected_replacement_date);gf('pif-ack-date',x.acknowledgement_date);gf('pif-return-date',x.return_date);gf('pif-return-reason',x.return_reason);
   document.getElementById('pif-qty').value=x.quantity||1;document.getElementById('pif-condition').value=x.condition_on_issue||'new';document.getElementById('pif-status').value=x.status||'active';document.getElementById('pif-returned').checked=!!x.returned;document.getElementById('pif-ack').checked=!!x.employee_signature;
   var rcEl=document.getElementById('pif-return-condition');if(rcEl&&x.return_condition)rcEl.value=x.return_condition;
   document.getElementById('pif-return-fields').style.display=x.returned?'block':'none';
-  ppePopulatePPESelects().then(function(){var sel=document.getElementById('pif-ppe-id');if(sel&&x.ppe_id)sel.value=x.ppe_id;ppeIssSelectItem();});
+  await ppePopulatePPESelects();var sel=document.getElementById('pif-ppe-id');if(sel&&x.ppe_id)sel.value=x.ppe_id;ppeIssSelectItem();
   ppeIssShowForm();
 }
 
@@ -18490,22 +18568,54 @@ function atexShowForm(show){
   document.getElementById('atex-form').style.display=show?'block':'none';
 }
 
-function atexNew(){
+async function atexLoadReferenceOptions(selectedRA,selectedPermitType){
+  var raSel=document.getElementById('atex-ra');
+  var permitSel=document.getElementById('atex-permit');
+  if(raSel){
+    raSel.innerHTML='<option value="">Select risk assessment...</option>';
+    try{
+      var ras=await api('/risk_assessments?select=id,ra_ref,title,activity,status'+cf()+'&order=created_at.desc');
+      (ras||[]).forEach(function(r){
+        var ref=r.ra_ref||r.id;
+        var title=r.title||r.activity||'Risk assessment';
+        var o=document.createElement('option');
+        o.value=ref;o.textContent=ref+' - '+title+(r.status?' ['+r.status+']':'');
+        raSel.appendChild(o);
+      });
+    }catch(e){
+      var ro=document.createElement('option');ro.value='';ro.textContent='Unable to load risk assessments';raSel.appendChild(ro);
+    }
+    if(selectedRA){raSel.value=selectedRA;if(raSel.value!==selectedRA){var savedRA=document.createElement('option');savedRA.value=selectedRA;savedRA.textContent=selectedRA+' (saved text)';raSel.appendChild(savedRA);raSel.value=selectedRA;}}
+  }
+  if(permitSel){
+    permitSel.innerHTML='<option value="">Select permit type...</option>';
+    Object.entries(PTW_TYPE_CFG||{}).forEach(function(entry){
+      var o=document.createElement('option');
+      o.value=entry[0];o.textContent=entry[1].label||entry[0].replace(/_/g,' ');
+      permitSel.appendChild(o);
+    });
+    if(selectedPermitType){permitSel.value=selectedPermitType;if(permitSel.value!==selectedPermitType){var savedPT=document.createElement('option');savedPT.value=selectedPermitType;savedPT.textContent=selectedPermitType+' (saved text)';permitSel.appendChild(savedPT);permitSel.value=selectedPermitType;}}
+  }
+}
+
+async function atexNew(){
   atexEditId=null;
   document.getElementById('atex-form-title').textContent='New ATEX Area';
   document.getElementById('atex-del-btn').style.display='none';
   ['atex-ref','atex-name','atex-location','atex-plant','atex-substance','atex-release','atex-ventilation','atex-ignition','atex-detection','atex-equipment','atex-ra','atex-permit','atex-last','atex-next','atex-resp','atex-notes'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
+  await atexLoadReferenceOptions();
   document.getElementById('atex-zone').value='zone_2';
   document.getElementById('atex-material').value='gas_vapour';
   document.getElementById('atex-status').value='controlled';
   atexShowForm(true);
 }
 
-function atexEdit(id){
+async function atexEdit(id){
   var x=atexAreas.find(r=>r.id===id);if(!x)return;
   atexEditId=id;
   document.getElementById('atex-form-title').textContent='Edit ATEX Area';
   document.getElementById('atex-del-btn').style.display=isMgr()?'inline-flex':'none';
+  await atexLoadReferenceOptions(x.linked_ra_ref,x.linked_permit_type);
   var f={'atex-ref':'area_ref','atex-name':'area_name','atex-location':'location','atex-plant':'plant_area','atex-substance':'substance','atex-release':'source_of_release','atex-ventilation':'ventilation_controls','atex-ignition':'ignition_controls','atex-detection':'detection_controls','atex-equipment':'linked_equipment','atex-ra':'linked_ra_ref','atex-permit':'linked_permit_type','atex-last':'last_inspection_date','atex-next':'next_inspection_date','atex-resp':'responsible_person','atex-notes':'notes'};
   Object.entries(f).forEach(function(e){var el=document.getElementById(e[0]);if(el)el.value=x[e[1]]||'';});
   document.getElementById('atex-zone').value=x.zone_type||'zone_2';
@@ -29172,8 +29282,8 @@ function fireEquipStatusBadge(s) {
 <label style="display:flex;align-items:center;gap:6px;font-size:12px;font-weight:600;cursor:pointer">
 <input type="checkbox" id="wsf-requires-permit" style="accent-color:var(--green);width:15px;height:15px">Permit to work required</label>
 </div>
-<div class="form-group"><label class="form-label">RA reference</label><input type="text" id="wsf-ra-ref" placeholder="e.g. GRA-2026-001" style="font-family:monospace"/></div>
-<div class="form-group"><label class="form-label">Permit reference</label><input type="text" id="wsf-ptw-ref" placeholder="e.g. PTW-2026-001" style="font-family:monospace"/></div>
+<div class="form-group"><label class="form-label">RA reference</label><select id="wsf-ra-ref" style="font-family:monospace"><option value="">Select risk assessment...</option></select></div>
+<div class="form-group"><label class="form-label">Permit reference</label><select id="wsf-ptw-ref" style="font-family:monospace"><option value="">Select permit...</option></select></div>
 </div>
 <!-- Ref number display -->
 <div class="card" style="background:linear-gradient(135deg,#1a3a5c,#185FA5);color:#fff;border:none;text-align:center;padding:20px">
@@ -32191,8 +32301,8 @@ function fireEquipStatusBadge(s) {
 <div class="card-title">Links</div>
 <div class="form-row">
 <div class="form-group"><label class="form-label">Linked equipment</label><input type="text" id="atex-equipment" placeholder="Ex motors, gas detector, ventilation fan..."/></div>
-<div class="form-group"><label class="form-label">Linked RA reference</label><input type="text" id="atex-ra"/></div>
-<div class="form-group"><label class="form-label">Linked permit type</label><input type="text" id="atex-permit" placeholder="Hot work, confined space, excavation..."/></div>
+<div class="form-group"><label class="form-label">Linked RA reference</label><select id="atex-ra"><option value="">Select risk assessment...</option></select></div>
+<div class="form-group"><label class="form-label">Linked permit type</label><select id="atex-permit"><option value="">Select permit type...</option></select></div>
 </div>
 </div>
 </div>
@@ -34619,8 +34729,8 @@ function fireEquipStatusBadge(s) {
 </div>
 <div class="card" style="margin-bottom:14px"><div class="card-title">Linked References</div>
 <div class="form-row">
-<div class="form-group"><label class="form-label">Work order ref</label><input type="text" id="pif-wo-ref" style="font-family:monospace"/></div>
-<div class="form-group"><label class="form-label">Risk Assessment ref</label><input type="text" id="pif-ra-ref" style="font-family:monospace"/></div>
+<div class="form-group"><label class="form-label">Work order ref</label><select id="pif-wo-ref" style="font-family:monospace"><option value="">Select work order...</option></select></div>
+<div class="form-group"><label class="form-label">Risk Assessment ref</label><select id="pif-ra-ref" style="font-family:monospace"><option value="">Select risk assessment...</option></select></div>
 <div class="form-group"><label class="form-label">Hazard type</label><input type="text" id="pif-hazard" placeholder="e.g. noise, height, chemical..."/></div>
 </div></div>
 <div class="card"><div class="card-title">Return Details (fill on return)</div>
