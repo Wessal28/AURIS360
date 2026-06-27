@@ -3470,6 +3470,26 @@ function setSelectValueWithFallback(id,val){
   el.value=val||'';
   if(val&&el.tagName==='SELECT'&&el.value!==val){var o=document.createElement('option');o.value=val;o.textContent=val+' (saved text)';el.appendChild(o);el.value=val;}
 }
+function fillPersonSelect(id,selectedName){
+  var el=document.getElementById(id);if(!el)return;
+  var cur=selectedName||el.value||'';
+  var opts='<option value="">Select person...</option>'+(people||[]).map(function(p){var nm=personFullName(p);return '<option value="'+escH(nm)+'">'+escH([p.last_name,p.first_name].filter(Boolean).join(', ')||nm)+(p.job_title?' -- '+escH(p.job_title):'')+'</option>';}).join('');
+  el.innerHTML=opts;
+  setSelectValueWithFallback(id,cur);
+}
+function fillDocumentSelect(id,selectedRef,excludeId){
+  var el=document.getElementById(id);if(!el)return;
+  var cur=selectedRef||el.value||'';
+  var opts='<option value="">Select document...</option>'+(dcAllData||[]).filter(function(d){return !excludeId||d.id!==excludeId;}).map(function(d){var ref=d.doc_ref||d.reference_no||d.id;return '<option value="'+escH(ref)+'">'+escH(ref+' - '+(d.title||'Document'))+'</option>';}).join('');
+  el.innerHTML=opts;
+  setSelectValueWithFallback(id,cur);
+}
+function dcPersonSelect(nameId,deptId){
+  var name=document.getElementById(nameId)?.value||'';
+  var p=trainPersonByName(name);
+  var dept=document.getElementById(deptId);
+  if(p&&dept)dept.value=p.department||'';
+}
 // ── Role → allowed pages map ────────────────────────────────────────
 // Used by applyRoles() (hides sidebar items) AND showPage() (blocks navigation
 // to pages a role isn't allowed to access, no matter how the call was made).
@@ -19863,6 +19883,7 @@ function dcNew(){
   document.getElementById('dc-workflow-bar').innerHTML='';
   document.getElementById('dc-action-btns').innerHTML='';
   dcPopulatePeopleSelects();
+  fillDocumentSelect('df-supersedes',null,null);
   document.getElementById('dc-view-all').style.display='none';
   document.getElementById('dc-form-view').style.display='block';
   try{ dcUploadClearUI(); }catch(_){}
@@ -19900,6 +19921,7 @@ async function dcEdit(id){
   dcRenderWorkflowBar(x);
   dcRenderActionButtons(x);
   await dcPopulatePeopleSelects();
+  fillDocumentSelect('df-supersedes',x.supersedes_ref||x.supersedes,id);
   var ownerSel=document.getElementById('df-owner');if(ownerSel&&x.owner_id)ownerSel.value=x.owner_id;
   var authSel=document.getElementById('df-author');if(authSel&&x.author_id)authSel.value=x.author_id;
   var authSignSel=document.getElementById('dc-sign-author');if(authSignSel&&x.author_id)authSignSel.value=x.author_id;
@@ -20309,6 +20331,8 @@ function dcCopyNew(){
   document.getElementById('dc-copy-issue-form').style.display='block';
   document.getElementById('dc-copy-form-title').textContent='Issue Controlled Copy';
   ['dcf-copy-no','dcf-holder','dcf-dept','dcf-location','dcf-issued-by','dcf-notes'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
+  fillPersonSelect('dcf-holder');
+  fillPersonSelect('dcf-issued-by',prof?.full_name||'');
   document.getElementById('dcf-issued-date').value=new Date().toISOString().slice(0,10);
   document.getElementById('dcf-format').value='electronic';document.getElementById('dcf-is-master').checked=false;
   // Populate doc select
@@ -20332,6 +20356,8 @@ function dcIssueCopy(){
   var doc=dcAllData.find(x=>x.id===dcEditingId);
   document.getElementById('dc-copy-form-title').textContent='Issue Copy — '+(doc?.title||'Document');
   ['dcf-holder','dcf-dept','dcf-location','dcf-issued-by','dcf-notes'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
+  fillPersonSelect('dcf-holder');
+  fillPersonSelect('dcf-issued-by',prof?.full_name||'');
   document.getElementById('dcf-issued-date').value=new Date().toISOString().slice(0,10);
   document.getElementById('dcf-format').value='electronic';document.getElementById('dcf-is-master').checked=false;
   var sel=document.getElementById('dcf-doc-id');
@@ -20404,6 +20430,7 @@ function dcIssueAck(){
   document.getElementById('dc-ack-form').style.display='block';
   var daf=document.getElementById('daf-due');if(daf){var d=new Date();d.setDate(d.getDate()+14);daf.value=d.toISOString().slice(0,10);}
   ['daf-emp-name','daf-dept'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
+  fillPersonSelect('daf-emp-name');
 }
 
 async function dcSaveAck(){
@@ -20427,6 +20454,7 @@ function dcAckNew(){
   document.getElementById('dc-standalone-ack-form').style.display='block';
   var dafDue=document.getElementById('saf-due');if(dafDue){var d=new Date();d.setDate(d.getDate()+14);dafDue.value=d.toISOString().slice(0,10);}
   ['saf-emp-name','saf-dept','saf-notes'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
+  fillPersonSelect('saf-emp-name');
   var sel=document.getElementById('saf-doc-id');
   if(sel){sel.innerHTML='<option value="">Select document...</option>'+dcAllData.filter(x=>x.approval_status==='approved'||x.status==='approved').map(function(d){var cfg=DC_TYPE_CFG[d.document_type||d.doc_type||'other']||DC_TYPE_CFG.other;return '<option value="'+d.id+'">'+cfg.emoji+' '+escH(d.doc_ref||d.reference_no||'')+' — '+escH(d.title||'')+'</option>';}).join('');}
 }
@@ -36776,7 +36804,7 @@ function fireEquipStatusBadge(s) {
 <div class="form-group"><label class="form-label">Revision summary — what changed?</label><textarea id="df-rev-summary" style="min-height:60px" placeholder="Describe what changed from the previous version..."></textarea></div>
 </div>
 <div class="card"><div class="card-title" style="color:#185FA5">Related Documents</div>
-<div class="form-group"><label class="form-label">Supersedes document ref</label><input type="text" id="df-supersedes" style="font-family:monospace" placeholder="Ref of the document this replaces..."/></div>
+<div class="form-group"><label class="form-label">Supersedes document ref</label><select id="df-supersedes" style="font-family:monospace"><option value="">Select document...</option></select></div>
 <div class="form-group"><label class="form-label">Legal references</label><input type="text" id="df-legal-refs" placeholder="e.g. OSH Act 2005 s.14, ISO 45001:2018..."/></div>
 </div>
 </div>
@@ -36946,7 +36974,7 @@ function fireEquipStatusBadge(s) {
 <div class="card" style="border:2px solid #8B5CF6">
 <div class="card-title" style="color:#8B5CF6">Issue Acknowledgement Request</div>
 <div class="form-row">
-<div class="form-group"><label class="form-label">Employee name</label><input type="text" id="daf-emp-name"/></div>
+<div class="form-group"><label class="form-label">Employee name</label><select id="daf-emp-name" onchange="dcPersonSelect('daf-emp-name','daf-dept')"><option value="">Select person...</option></select></div>
 <div class="form-group"><label class="form-label">Department</label><input type="text" id="daf-dept"/></div>
 <div class="form-group"><label class="form-label">Due date</label><input type="date" id="daf-due"/></div>
 </div>
@@ -36975,14 +37003,14 @@ function fireEquipStatusBadge(s) {
 <div class="form-row">
 <div class="form-group"><label class="form-label">Document</label><select id="dcf-doc-id" onchange="dcCopySelectDoc()"><option value="">Select document...</option></select></div>
 <div class="form-group"><label class="form-label">Copy number</label><input type="text" id="dcf-copy-no" placeholder="e.g. CC-001, MASTER"/></div>
-<div class="form-group"><label class="form-label">Copy holder / recipient</label><input type="text" id="dcf-holder" placeholder="Name of person or department holding copy"/></div>
+<div class="form-group"><label class="form-label">Copy holder / recipient</label><select id="dcf-holder" onchange="dcPersonSelect('dcf-holder','dcf-dept')"><option value="">Select person...</option></select></div>
 <div class="form-group"><label class="form-label">Department</label><input type="text" id="dcf-dept"/></div>
 </div>
 <div class="form-row">
 <div class="form-group"><label class="form-label">Physical location</label><input type="text" id="dcf-location" placeholder="Where is this copy stored?"/></div>
 <div class="form-group"><label class="form-label">Format</label><select id="dcf-format"><option value="electronic">Electronic</option><option value="print">Print / Hard copy</option><option value="both">Both</option></select></div>
 <div class="form-group"><label class="form-label">Issued date</label><input type="date" id="dcf-issued-date"/></div>
-<div class="form-group"><label class="form-label">Issued by</label><input type="text" id="dcf-issued-by"/></div>
+<div class="form-group"><label class="form-label">Issued by</label><select id="dcf-issued-by"><option value="">Select person...</option></select></div>
 </div>
 <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px"><input type="checkbox" id="dcf-is-master" style="accent-color:var(--green)"/><label for="dcf-is-master" style="font-size:13px;font-weight:600;cursor:pointer">This is the master copy</label></div>
 <div class="form-group"><label class="form-label">Notes</label><textarea id="dcf-notes" style="min-height:40px"></textarea></div>
@@ -37003,7 +37031,7 @@ function fireEquipStatusBadge(s) {
 <div class="card">
 <div class="form-row">
 <div class="form-group"><label class="form-label">Document</label><select id="saf-doc-id"><option value="">Select document...</option></select></div>
-<div class="form-group"><label class="form-label">Employee name</label><input type="text" id="saf-emp-name"/></div>
+<div class="form-group"><label class="form-label">Employee name</label><select id="saf-emp-name" onchange="dcPersonSelect('saf-emp-name','saf-dept')"><option value="">Select person...</option></select></div>
 <div class="form-group"><label class="form-label">Department</label><input type="text" id="saf-dept"/></div>
 <div class="form-group"><label class="form-label">Due date</label><input type="date" id="saf-due"/></div>
 </div>
