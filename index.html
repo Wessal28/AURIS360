@@ -3441,7 +3441,7 @@ function fillPplDrops(){
 const opts='<option value="">Select person...</option>'+people.map(p=>'<option value="'+p.id+'">'+p.last_name+', '+p.first_name+(p.job_title?' -- '+p.job_title:'')+'</option>').join('');
 const nameOpts='<option value="">Select person...</option>'+people.map(function(p){var nm=[p.first_name,p.last_name].filter(Boolean).join(' ')||p.email||'';return '<option value="'+escH(nm)+'">'+escH([p.last_name,p.first_name].filter(Boolean).join(', ')||nm)+(p.job_title?' -- '+escH(p.job_title):'')+'</option>';}).join('');
 ['ef-person','ef-by','ef-assigned','rf-by','invf-by','invf-persons','pf-contractor','pf-issued','pf-approved','nf-by','mf-chair','kf-resp','af-resp','df-owner'].forEach(id=>{const el=document.getElementById(id);if(el&&!el.multiple)el.innerHTML=opts;});
-['if-by','if-sign-inspector','if-sign-reviewer','obs-action-assigned','obs-observer','obs-person-observed','mf-assigned-by','lc-responsible','lcaf-assessor','lcaf-approved-by','gapf-responsible','calf-responsible','ms-chaired-by','ms-responsible','kpi-resp','prf-requested-by','prf-approved-by','bullf-author','bullf-approved-by','mom-sign-chair','mom-sign-approver','sop-author','sop-approver','adm-site-manager','tp-trainer','tfr-trainer','compf-person','compf-assessor','indf-person','indf-inducted-by','elef-person','ertf-name','mpf-warden','drf-conducted-by','drf-reviewed-by','drf-approved-by','bcpf-approved-by','msf-name','audf-name','spif-name','vaxf-name','odf-name'].forEach(id=>{document.querySelectorAll('[id="'+id+'"]').forEach(el=>{if(el&&!el.multiple&&el.tagName==='SELECT'){var cur=el.value;el.innerHTML=nameOpts;if(cur){el.value=cur;if(el.value!==cur){var o=document.createElement('option');o.value=cur;o.textContent=cur+' (saved text)';el.appendChild(o);el.value=cur;}}}});});
+['if-by','if-sign-inspector','if-sign-reviewer','obs-action-assigned','obs-observer','obs-person-observed','mf-assigned-by','ra-assessed-by','ra-approved-by','ra-reviewed-by','ra-sign-assessor','ra-sign-reviewer','ra-sign-approver','lc-responsible','lcaf-assessor','lcaf-approved-by','gapf-responsible','calf-responsible','ms-chaired-by','ms-responsible','kpi-resp','prf-requested-by','prf-approved-by','bullf-author','bullf-approved-by','mom-sign-chair','mom-sign-approver','sop-author','sop-approver','adm-site-manager','tp-trainer','tfr-trainer','compf-person','compf-assessor','indf-person','indf-inducted-by','elef-person','ertf-name','mpf-warden','drf-conducted-by','drf-reviewed-by','drf-approved-by','bcpf-approved-by','msf-name','audf-name','spif-name','vaxf-name','odf-name'].forEach(id=>{document.querySelectorAll('[id="'+id+'"]').forEach(el=>{if(el&&!el.multiple&&el.tagName==='SELECT'){var cur=el.value;el.innerHTML=nameOpts;if(cur){el.value=cur;if(el.value!==cur){var o=document.createElement('option');o.value=cur;o.textContent=cur+' (saved text)';el.appendChild(o);el.value=cur;}}}});});
 const ms=document.getElementById('tf-attendees');
 if(ms)ms.innerHTML=people.map(p=>'<option value="'+p.id+'">'+p.last_name+', '+p.first_name+'</option>').join('');
 }
@@ -11692,6 +11692,8 @@ function raNew(type){
   var rev=new Date();rev.setFullYear(rev.getFullYear()+1);
   var rd=document.getElementById('ra-review-date');if(rd)rd.value=rev.toISOString().slice(0,10);
   var st=document.getElementById('ra-status-sel');if(st)st.value='draft';
+  ['ra-assessed-by','ra-approved-by','ra-reviewed-by','ra-sign-assessor','ra-sign-reviewer','ra-sign-approver'].forEach(function(id){fillPersonSelect(id);});
+  fillPersonSelect('ra-assessed-by',prof?.full_name||'');
   // Update header
   document.getElementById('ra-type-label').textContent=cfg.emoji+' '+cfg.label;
   document.getElementById('ra-form-title').textContent='New '+cfg.label;
@@ -11752,14 +11754,14 @@ function raOpen(id){
   gf('ra-title',x.title||x.activity);gf('ra-activity',x.activity||x.workshop);
   gf('ra-dept',x.department||x.dept);gf('ra-workshop',x.location||x.workshop);
   gf('ra-site-name',x.site_name);gf('ra-scope',x.scope);
-  gf('ra-assessed-by',x.assessed_by||x.ra_assessor);
+  fillPersonSelect('ra-assessed-by',x.assessed_by||x.ra_assessor);
   gf('ra-date',x.ra_date||x.date||x.assessment_date);
   gf('ra-review-date',x.review_date||x.ra_review_date);
-  gf('ra-approved-by',x.approved_by||x.ra_approver);
-  gf('ra-reviewed-by',x.reviewed_by);
-  gf('ra-sign-assessor',x.ra_sign_assessor);gf('ra-sign-assessor-date',x.ra_sign_assessor_date);
-  gf('ra-sign-reviewer',x.ra_sign_reviewer);gf('ra-sign-reviewer-date',x.ra_sign_reviewer_date);
-  gf('ra-sign-approver',x.ra_sign_approver);gf('ra-sign-approver-date',x.ra_sign_approver_date);
+  fillPersonSelect('ra-approved-by',x.approved_by||x.ra_approver);
+  fillPersonSelect('ra-reviewed-by',x.reviewed_by);
+  fillPersonSelect('ra-sign-assessor',x.ra_sign_assessor);gf('ra-sign-assessor-date',x.ra_sign_assessor_date);
+  fillPersonSelect('ra-sign-reviewer',x.ra_sign_reviewer);gf('ra-sign-reviewer-date',x.ra_sign_reviewer_date);
+  fillPersonSelect('ra-sign-approver',x.ra_sign_approver);gf('ra-sign-approver-date',x.ra_sign_approver_date);
   gf('ra-briefed-persons',x.ra_briefed);
   gf('ra-rams-url',x.rams_document_url);gf('ra-rams-name',x.rams_document_name);
   gf('ra-linked-permit',x.permit_ref||x.permit_id);
@@ -31312,13 +31314,13 @@ function fireEquipStatusBadge(s) {
 <div class="card" style="margin-bottom:14px">
 <div class="card-title">Personnel &amp; Dates</div>
 <div class="form-row">
-<div class="form-group"><label class="form-label">Assessed by</label><input type="text" id="ra-assessed-by"/></div>
+<div class="form-group"><label class="form-label">Assessed by</label><select id="ra-assessed-by"><option value="">Select person...</option></select></div>
 <div class="form-group"><label class="form-label">Assessment date</label><input type="date" id="ra-date"/></div>
 <div class="form-group"><label class="form-label">Review date</label><input type="date" id="ra-review-date"/></div>
 </div>
 <div class="form-row">
-<div class="form-group"><label class="form-label">Approved by</label><input type="text" id="ra-approved-by"/></div>
-<div class="form-group"><label class="form-label">Reviewed by</label><input type="text" id="ra-reviewed-by"/></div>
+<div class="form-group"><label class="form-label">Approved by</label><select id="ra-approved-by"><option value="">Select person...</option></select></div>
+<div class="form-group"><label class="form-label">Reviewed by</label><select id="ra-reviewed-by"><option value="">Select person...</option></select></div>
 </div>
 </div>
 </div>
@@ -31496,21 +31498,21 @@ function fireEquipStatusBadge(s) {
 <div style="padding:12px;border:1px solid var(--border);border-radius:8px">
 <div style="font-weight:700;font-size:13px;margin-bottom:8px">Step 1 — Risk Assessor</div>
 <div class="form-row">
-<div class="form-group"><label class="form-label">Assessor name</label><input type="text" id="ra-sign-assessor"/></div>
+<div class="form-group"><label class="form-label">Assessor name</label><select id="ra-sign-assessor"><option value="">Select person...</option></select></div>
 <div class="form-group"><label class="form-label">Date</label><input type="date" id="ra-sign-assessor-date"/></div>
 </div>
 </div>
 <div style="padding:12px;border:1px solid var(--border);border-radius:8px">
 <div style="font-weight:700;font-size:13px;margin-bottom:8px">Step 2 — Reviewer</div>
 <div class="form-row">
-<div class="form-group"><label class="form-label">Reviewer name</label><input type="text" id="ra-sign-reviewer"/></div>
+<div class="form-group"><label class="form-label">Reviewer name</label><select id="ra-sign-reviewer"><option value="">Select person...</option></select></div>
 <div class="form-group"><label class="form-label">Date</label><input type="date" id="ra-sign-reviewer-date"/></div>
 </div>
 </div>
 <div style="padding:12px;border:1px solid var(--border);border-radius:8px">
 <div style="font-weight:700;font-size:13px;margin-bottom:8px">Step 3 — Approver</div>
 <div class="form-row">
-<div class="form-group"><label class="form-label">Approver name</label><input type="text" id="ra-sign-approver"/></div>
+<div class="form-group"><label class="form-label">Approver name</label><select id="ra-sign-approver"><option value="">Select person...</option></select></div>
 <div class="form-group"><label class="form-label">Date</label><input type="date" id="ra-sign-approver-date"/></div>
 </div>
 </div>
