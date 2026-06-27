@@ -3439,7 +3439,7 @@ function fillPplDrops(){
 const opts='<option value="">Select person...</option>'+people.map(p=>'<option value="'+p.id+'">'+p.last_name+', '+p.first_name+(p.job_title?' -- '+p.job_title:'')+'</option>').join('');
 const nameOpts='<option value="">Select person...</option>'+people.map(function(p){var nm=[p.first_name,p.last_name].filter(Boolean).join(' ')||p.email||'';return '<option value="'+escH(nm)+'">'+escH([p.last_name,p.first_name].filter(Boolean).join(', ')||nm)+(p.job_title?' -- '+escH(p.job_title):'')+'</option>';}).join('');
 ['ef-person','ef-by','ef-assigned','if-by','rf-by','invf-by','invf-persons','pf-contractor','pf-issued','pf-approved','nf-by','mf-chair','kf-resp','af-resp','df-owner'].forEach(id=>{const el=document.getElementById(id);if(el&&!el.multiple)el.innerHTML=opts;});
-['obs-action-assigned','lc-responsible','lcaf-assessor','lcaf-approved-by','gapf-responsible','calf-responsible','ms-chaired-by','ms-responsible','kpi-resp','prf-requested-by','prf-approved-by','bullf-author','bullf-approved-by','mom-sign-chair','mom-sign-approver','sop-author','sop-approver','adm-site-manager','tp-trainer','tfr-trainer','compf-person','compf-assessor','indf-person','indf-inducted-by','elef-person','ertf-name','mpf-warden','drf-conducted-by','drf-reviewed-by','drf-approved-by','bcpf-approved-by'].forEach(id=>{document.querySelectorAll('[id="'+id+'"]').forEach(el=>{if(el&&!el.multiple&&el.tagName==='SELECT'){var cur=el.value;el.innerHTML=nameOpts;if(cur){el.value=cur;if(el.value!==cur){var o=document.createElement('option');o.value=cur;o.textContent=cur+' (saved text)';el.appendChild(o);el.value=cur;}}}});});
+['obs-action-assigned','lc-responsible','lcaf-assessor','lcaf-approved-by','gapf-responsible','calf-responsible','ms-chaired-by','ms-responsible','kpi-resp','prf-requested-by','prf-approved-by','bullf-author','bullf-approved-by','mom-sign-chair','mom-sign-approver','sop-author','sop-approver','adm-site-manager','tp-trainer','tfr-trainer','compf-person','compf-assessor','indf-person','indf-inducted-by','elef-person','ertf-name','mpf-warden','drf-conducted-by','drf-reviewed-by','drf-approved-by','bcpf-approved-by','msf-name','audf-name','spif-name','vaxf-name','odf-name'].forEach(id=>{document.querySelectorAll('[id="'+id+'"]').forEach(el=>{if(el&&!el.multiple&&el.tagName==='SELECT'){var cur=el.value;el.innerHTML=nameOpts;if(cur){el.value=cur;if(el.value!==cur){var o=document.createElement('option');o.value=cur;o.textContent=cur+' (saved text)';el.appendChild(o);el.value=cur;}}}});});
 const ms=document.getElementById('tf-attendees');
 if(ms)ms.innerHTML=people.map(p=>'<option value="'+p.id+'">'+p.last_name+', '+p.first_name+'</option>').join('');
 }
@@ -3498,6 +3498,14 @@ function emergencyErtPersonSelect(){
   var dept=document.getElementById('ertf-dept');if(dept)dept.value=p.department||'';
   var phone=document.getElementById('ertf-phone1');if(phone)phone.value=p.phone||'';
   var email=document.getElementById('ertf-email');if(email)email.value=p.email||'';
+}
+function healthPersonSelect(prefix){
+  var name=document.getElementById(prefix+'-name')?.value||'';
+  var p=trainPersonByName(name);
+  if(!p)return;
+  var eid=document.getElementById(prefix+'-eid');if(eid)eid.value=p.employee_number||p.id_number||'';
+  var dept=document.getElementById(prefix+'-dept');if(dept)dept.value=p.department||'';
+  var title=document.getElementById(prefix+'-title');if(title)title.value=p.job_title||'';
 }
 // ── Role → allowed pages map ────────────────────────────────────────
 // Used by applyRoles() (hides sidebar items) AND showPage() (blocks navigation
@@ -16526,6 +16534,7 @@ function msNew(){
    'msf-htn','msf-dm','msf-resp','msf-cardiac','msf-msk','msf-skin'].forEach(function(id){
     var el=document.getElementById(id);if(el)el.checked=false;
   });
+  fillPersonSelect('msf-name');
   msShowForm();
 }
 
@@ -16535,7 +16544,7 @@ function msEdit(id){
   document.getElementById('oh-ms-form-title').textContent='Edit Medical Examination';
   document.getElementById('oh-ms-del-btn').style.display=isMgr()?'inline-flex':'none';
   var gf=function(fid,val){var el=document.getElementById(fid);if(el)el.value=val||'';};
-  gf('msf-name',x.employee_name);gf('msf-eid',x.employee_id);gf('msf-dept',x.department);
+  fillPersonSelect('msf-name',x.employee_name);gf('msf-eid',x.employee_id);gf('msf-dept',x.department);
   gf('msf-title',x.job_title);gf('msf-dob',x.date_of_birth);gf('msf-doctor',x.examining_doctor);
   gf('msf-clinic',x.clinic_hospital);gf('msf-notes',x.medical_notes);
   gf('msf-restrictions',x.restrictions);gf('msf-referral-details',x.referral_details);
@@ -16688,6 +16697,7 @@ function audNew(){
   ['audf-sts-r','audf-sts-l','audf-age-corr','audf-referral'].forEach(function(id){var el=document.getElementById(id);if(el)el.checked=false;});
   document.getElementById('audf-hp-worn').checked=true;document.getElementById('audf-baseline').checked=false;
   document.getElementById('aud-overall-result').innerHTML='<div style="font-size:40px;margin-bottom:8px">👂</div><div style="font-size:13px;color:var(--text2)">Enter threshold values to see assessment</div>';
+  fillPersonSelect('audf-name');
   audShowForm();
 }
 
@@ -16695,7 +16705,7 @@ function audEdit(id){
   var x=ohAudData.find(r=>r.id===id);if(!x)return;
   ohAudEditId=id;document.getElementById('oh-aud-form-title').textContent='Edit Audiogram';document.getElementById('oh-aud-del-btn').style.display=isMgr()?'inline-flex':'none';
   var gf=function(fid,val){var el=document.getElementById(fid);if(el)el.value=val||'';};
-  gf('audf-name',x.employee_name);gf('audf-dept',x.department);gf('audf-title',x.job_title);
+  fillPersonSelect('audf-name',x.employee_name);gf('audf-dept',x.department);gf('audf-title',x.job_title);
   gf('audf-examiner',x.examiner);gf('audf-ppe',x.ppe_recommendation);gf('audf-notes',x.notes);
   gf('audf-date',x.test_date);gf('audf-next-date',x.next_test_date);gf('audf-cal-date',x.audiometer_calibration_date);
   gf('audf-noise-level',x.noise_exposure_level_dba||'');gf('audf-noise-years',x.years_noise_exposure||'');
@@ -16815,6 +16825,7 @@ function spiNew(){
   document.getElementById('spif-date').value=new Date().toISOString().slice(0,10);
   ['spif-bd','spif-sig-rev','spif-dust','spif-silica','spif-asbestos','spif-chem-fumes','spif-referral'].forEach(function(id){var el=document.getElementById(id);if(el)el.checked=false;});
   document.getElementById('spi-interpretation').innerHTML='<div style="font-size:40px;margin-bottom:8px">🫁</div><div style="font-size:13px;color:var(--text2)">Enter FVC and FEV₁ values to see interpretation</div>';
+  fillPersonSelect('spif-name');
   spiShowForm();
 }
 
@@ -16822,7 +16833,7 @@ function spiEdit(id){
   var x=ohSpiData.find(r=>r.id===id);if(!x)return;
   ohSpiEditId=id;document.getElementById('oh-spi-form-title').textContent='Edit Spirometry';document.getElementById('oh-spi-del-btn').style.display=isMgr()?'inline-flex':'none';
   var gf=function(fid,val){var el=document.getElementById(fid);if(el)el.value=val||'';};
-  gf('spif-name',x.employee_name);gf('spif-dept',x.department);gf('spif-examiner',x.examiner);
+  fillPersonSelect('spif-name',x.employee_name);gf('spif-dept',x.department);gf('spif-examiner',x.examiner);
   gf('spif-date',x.test_date);gf('spif-next-date',x.next_test_date);
   gf('spi-fvc-pred',x.fvc_predicted||'');gf('spi-fvc-meas',x.fvc_measured||'');
   gf('spi-fev1-pred',x.fev1_predicted||'');gf('spi-fev1-meas',x.fev1_measured||'');
@@ -16891,8 +16902,8 @@ async function vaxLoad(){
 
 function vaxShowForm(){document.getElementById('oh-view-vaccination').style.display='none';document.getElementById('oh-vax-form').style.display='block';}
 function vaxBack(){document.getElementById('oh-vax-form').style.display='none';document.getElementById('oh-view-vaccination').style.display='block';document.querySelectorAll('[id^="oh-tab-"]').forEach(t=>t.classList.remove('active'));document.getElementById('oh-tab-vaccination')?.classList.add('active');vaxLoad();}
-function vaxNew(){ohVaxEditId=null;document.getElementById('oh-vax-form-title').textContent='New Vaccination Record';document.getElementById('oh-vax-del-btn').style.display='none';['vaxf-name','vaxf-dept','vaxf-vaccine','vaxf-admin-by','vaxf-clinic','vaxf-batch','vaxf-notes','vaxf-reaction-details'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});['vaxf-date','vaxf-next-date','vaxf-expiry'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});document.getElementById('vaxf-date').value=new Date().toISOString().slice(0,10);document.getElementById('vaxf-dose').value='1';document.getElementById('vaxf-total-doses').value='1';document.getElementById('vaxf-type').value='occupational';document.getElementById('vaxf-status').value='completed';document.getElementById('vaxf-reaction').checked=false;vaxShowForm();}
-function vaxEdit(id){var x=ohVaxData.find(r=>r.id===id);if(!x)return;ohVaxEditId=id;document.getElementById('oh-vax-form-title').textContent='Edit Vaccination';document.getElementById('oh-vax-del-btn').style.display=isMgr()?'inline-flex':'none';var gf=function(fid,val){var el=document.getElementById(fid);if(el)el.value=val||'';};gf('vaxf-name',x.employee_name);gf('vaxf-dept',x.department);gf('vaxf-vaccine',x.vaccine_name);gf('vaxf-admin-by',x.administered_by);gf('vaxf-clinic',x.clinic);gf('vaxf-batch',x.batch_number);gf('vaxf-notes',x.notes);gf('vaxf-reaction-details',x.reaction_details);gf('vaxf-date',x.vaccination_date);gf('vaxf-next-date',x.next_dose_date);gf('vaxf-expiry',x.expiry_date);document.getElementById('vaxf-dose').value=x.dose_number||1;document.getElementById('vaxf-total-doses').value=x.total_doses_required||1;document.getElementById('vaxf-type').value=x.vaccine_type||'occupational';document.getElementById('vaxf-status').value=x.status||'completed';document.getElementById('vaxf-reaction').checked=!!x.reaction_noted;vaxShowForm();}
+function vaxNew(){ohVaxEditId=null;document.getElementById('oh-vax-form-title').textContent='New Vaccination Record';document.getElementById('oh-vax-del-btn').style.display='none';['vaxf-name','vaxf-dept','vaxf-vaccine','vaxf-admin-by','vaxf-clinic','vaxf-batch','vaxf-notes','vaxf-reaction-details'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});['vaxf-date','vaxf-next-date','vaxf-expiry'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});document.getElementById('vaxf-date').value=new Date().toISOString().slice(0,10);document.getElementById('vaxf-dose').value='1';document.getElementById('vaxf-total-doses').value='1';document.getElementById('vaxf-type').value='occupational';document.getElementById('vaxf-status').value='completed';document.getElementById('vaxf-reaction').checked=false;fillPersonSelect('vaxf-name');vaxShowForm();}
+function vaxEdit(id){var x=ohVaxData.find(r=>r.id===id);if(!x)return;ohVaxEditId=id;document.getElementById('oh-vax-form-title').textContent='Edit Vaccination';document.getElementById('oh-vax-del-btn').style.display=isMgr()?'inline-flex':'none';var gf=function(fid,val){var el=document.getElementById(fid);if(el)el.value=val||'';};fillPersonSelect('vaxf-name',x.employee_name);gf('vaxf-dept',x.department);gf('vaxf-vaccine',x.vaccine_name);gf('vaxf-admin-by',x.administered_by);gf('vaxf-clinic',x.clinic);gf('vaxf-batch',x.batch_number);gf('vaxf-notes',x.notes);gf('vaxf-reaction-details',x.reaction_details);gf('vaxf-date',x.vaccination_date);gf('vaxf-next-date',x.next_dose_date);gf('vaxf-expiry',x.expiry_date);document.getElementById('vaxf-dose').value=x.dose_number||1;document.getElementById('vaxf-total-doses').value=x.total_doses_required||1;document.getElementById('vaxf-type').value=x.vaccine_type||'occupational';document.getElementById('vaxf-status').value=x.status||'completed';document.getElementById('vaxf-reaction').checked=!!x.reaction_noted;vaxShowForm();}
 async function vaxSave(){var name=document.getElementById('vaxf-name')?.value?.trim();var vaccine=document.getElementById('vaxf-vaccine')?.value?.trim();if(!name||!vaccine){toast('Please enter employee name and vaccine',false);return;}var g=function(id){var el=document.getElementById(id);return el?el.value||null:null;};var body={company_id:ccid(),employee_name:name,department:g('vaxf-dept'),vaccine_name:vaccine,vaccine_type:g('vaxf-type')||'occupational',dose_number:parseInt(g('vaxf-dose'))||1,total_doses_required:parseInt(g('vaxf-total-doses'))||1,vaccination_date:g('vaxf-date'),next_dose_date:g('vaxf-next-date')||null,expiry_date:g('vaxf-expiry')||null,administered_by:g('vaxf-admin-by'),clinic:g('vaxf-clinic'),batch_number:g('vaxf-batch'),status:g('vaxf-status')||'completed',reaction_noted:document.getElementById('vaxf-reaction')?.checked||false,reaction_details:g('vaxf-reaction-details'),notes:g('vaxf-notes')};
   try{if(ohVaxEditId){await api('/vaccination_records?id=eq.'+ohVaxEditId,{m:'PATCH',p:'return=minimal',b:body});toast('Updated!');}else{body.created_by=prof?.id;await api('/vaccination_records',{m:'POST',p:'return=minimal',b:body});toast('Vaccination saved!');}vaxBack();}catch(e){toast(e.message,false);}
 }
@@ -17071,8 +17082,8 @@ async function ohOdLoad(){
 
 function odShowForm(){document.getElementById('oh-view-disease').style.display='none';document.getElementById('oh-od-form').style.display='block';}
 function odBack(){document.getElementById('oh-od-form').style.display='none';document.getElementById('oh-view-disease').style.display='block';document.querySelectorAll('[id^="oh-tab-"]').forEach(t=>t.classList.remove('active'));document.getElementById('oh-tab-disease')?.classList.add('active');ohOdLoad();}
-function odNew(){ohOdEditId=null;document.getElementById('oh-od-form-title').textContent='New Disease Record';document.getElementById('oh-od-form-ref').textContent='OD-AUTO';document.getElementById('oh-od-del-btn').style.display='none';['odf-name','odf-eid','odf-dept','odf-title','odf-disease','odf-icd','odf-agent','odf-exp-years','odf-work-assess','odf-doctor','odf-clinic','odf-days-lost','odf-treatment','odf-preventive','odf-disability','odf-notif-ref','odf-comp-ref','odf-notes'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});['odf-diag-date','odf-onset-date','odf-rtw-date'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});document.getElementById('odf-days-lost').value='0';document.getElementById('odf-exp-type').value='noise';document.getElementById('odf-outcome').value='ongoing';document.getElementById('odf-status').value='active';['odf-work-related','odf-similar-risk','odf-group-monitor'].forEach(function(id){var el=document.getElementById(id);if(el)el.checked=id==='odf-work-related';});['odf-notified','odf-comp','odf-restricted'].forEach(function(id){var el=document.getElementById(id);if(el)el.checked=false;});odShowForm();}
-function odEdit(id){var x=ohOdData.find(r=>r.id===id);if(!x)return;ohOdEditId=id;document.getElementById('oh-od-form-title').textContent='Edit Disease Record';document.getElementById('oh-od-form-ref').textContent=x.disease_ref||'—';document.getElementById('oh-od-del-btn').style.display=isMgr()?'inline-flex':'none';var gf=function(fid,val){var el=document.getElementById(fid);if(el)el.value=val||'';};gf('odf-name',x.employee_name);gf('odf-eid',x.employee_id);gf('odf-dept',x.department);gf('odf-title',x.job_title);gf('odf-disease',x.disease_type);gf('odf-icd',x.icd_code);gf('odf-diag-date',x.diagnosis_date);gf('odf-onset-date',x.onset_date);gf('odf-agent',x.causative_agent);gf('odf-exp-years',x.exposure_duration_years||'');gf('odf-work-assess',x.work_relatedness_assessment);gf('odf-doctor',x.treating_doctor);gf('odf-clinic',x.hospital_clinic);gf('odf-days-lost',x.days_lost||0);gf('odf-treatment',x.treatment_description);gf('odf-preventive',x.preventive_actions);gf('odf-disability',x.disability_percentage||'');gf('odf-rtw-date',x.return_to_work_date);gf('odf-notif-ref',x.notification_ref);gf('odf-comp-ref',x.compensation_ref);gf('odf-notes',x.notes);document.getElementById('odf-exp-type').value=x.exposure_type||'noise';document.getElementById('odf-outcome').value=x.outcome||'ongoing';document.getElementById('odf-status').value=x.status||'active';var cb=function(id2,val){var el=document.getElementById(id2);if(el)el.checked=!!val;};cb('odf-work-related',x.work_related);cb('odf-similar-risk',x.similar_workers_at_risk);cb('odf-group-monitor',x.group_monitoring_recommended);cb('odf-notified',x.notified_to_authority);cb('odf-comp',x.compensation_claimed);cb('odf-restricted',x.restricted_duties);odShowForm();}
+function odNew(){ohOdEditId=null;document.getElementById('oh-od-form-title').textContent='New Disease Record';document.getElementById('oh-od-form-ref').textContent='OD-AUTO';document.getElementById('oh-od-del-btn').style.display='none';['odf-name','odf-eid','odf-dept','odf-title','odf-disease','odf-icd','odf-agent','odf-exp-years','odf-work-assess','odf-doctor','odf-clinic','odf-days-lost','odf-treatment','odf-preventive','odf-disability','odf-notif-ref','odf-comp-ref','odf-notes'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});['odf-diag-date','odf-onset-date','odf-rtw-date'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});document.getElementById('odf-days-lost').value='0';document.getElementById('odf-exp-type').value='noise';document.getElementById('odf-outcome').value='ongoing';document.getElementById('odf-status').value='active';['odf-work-related','odf-similar-risk','odf-group-monitor'].forEach(function(id){var el=document.getElementById(id);if(el)el.checked=id==='odf-work-related';});['odf-notified','odf-comp','odf-restricted'].forEach(function(id){var el=document.getElementById(id);if(el)el.checked=false;});fillPersonSelect('odf-name');odShowForm();}
+function odEdit(id){var x=ohOdData.find(r=>r.id===id);if(!x)return;ohOdEditId=id;document.getElementById('oh-od-form-title').textContent='Edit Disease Record';document.getElementById('oh-od-form-ref').textContent=x.disease_ref||'—';document.getElementById('oh-od-del-btn').style.display=isMgr()?'inline-flex':'none';var gf=function(fid,val){var el=document.getElementById(fid);if(el)el.value=val||'';};fillPersonSelect('odf-name',x.employee_name);gf('odf-eid',x.employee_id);gf('odf-dept',x.department);gf('odf-title',x.job_title);gf('odf-disease',x.disease_type);gf('odf-icd',x.icd_code);gf('odf-diag-date',x.diagnosis_date);gf('odf-onset-date',x.onset_date);gf('odf-agent',x.causative_agent);gf('odf-exp-years',x.exposure_duration_years||'');gf('odf-work-assess',x.work_relatedness_assessment);gf('odf-doctor',x.treating_doctor);gf('odf-clinic',x.hospital_clinic);gf('odf-days-lost',x.days_lost||0);gf('odf-treatment',x.treatment_description);gf('odf-preventive',x.preventive_actions);gf('odf-disability',x.disability_percentage||'');gf('odf-rtw-date',x.return_to_work_date);gf('odf-notif-ref',x.notification_ref);gf('odf-comp-ref',x.compensation_ref);gf('odf-notes',x.notes);document.getElementById('odf-exp-type').value=x.exposure_type||'noise';document.getElementById('odf-outcome').value=x.outcome||'ongoing';document.getElementById('odf-status').value=x.status||'active';var cb=function(id2,val){var el=document.getElementById(id2);if(el)el.checked=!!val;};cb('odf-work-related',x.work_related);cb('odf-similar-risk',x.similar_workers_at_risk);cb('odf-group-monitor',x.group_monitoring_recommended);cb('odf-notified',x.notified_to_authority);cb('odf-comp',x.compensation_claimed);cb('odf-restricted',x.restricted_duties);odShowForm();}
 async function odSave(){var name=document.getElementById('odf-name')?.value?.trim();var disease=document.getElementById('odf-disease')?.value?.trim();if(!name||!disease){toast('Please enter employee name and disease/condition',false);return;}var g=function(id){var el=document.getElementById(id);return el?el.value||null:null;};var body={company_id:ccid(),employee_name:name,employee_id:g('odf-eid'),department:g('odf-dept'),job_title:g('odf-title'),disease_type:disease,icd_code:g('odf-icd'),diagnosis_date:g('odf-diag-date')||null,onset_date:g('odf-onset-date')||null,causative_agent:g('odf-agent'),exposure_type:g('odf-exp-type')||'other',exposure_duration_years:parseFloat(g('odf-exp-years'))||null,work_related:document.getElementById('odf-work-related')?.checked||false,work_relatedness_assessment:g('odf-work-assess'),treating_doctor:g('odf-doctor'),hospital_clinic:g('odf-clinic'),treatment_description:g('odf-treatment'),days_lost:parseInt(g('odf-days-lost'))||0,outcome:g('odf-outcome')||'ongoing',disability_percentage:parseFloat(g('odf-disability'))||null,return_to_work_date:g('odf-rtw-date')||null,restricted_duties:document.getElementById('odf-restricted')?.checked||false,preventive_actions:g('odf-preventive'),similar_workers_at_risk:document.getElementById('odf-similar-risk')?.checked||false,group_monitoring_recommended:document.getElementById('odf-group-monitor')?.checked||false,notified_to_authority:document.getElementById('odf-notified')?.checked||false,notification_ref:g('odf-notif-ref'),compensation_claimed:document.getElementById('odf-comp')?.checked||false,compensation_ref:g('odf-comp-ref'),notes:g('odf-notes'),status:g('odf-status')||'active',updated_at:new Date().toISOString()};
   try{
     if(ohOdEditId){await api('/occupational_diseases?id=eq.'+ohOdEditId,{m:'PATCH',p:'return=minimal',b:body});toast('Updated!');}
@@ -34090,7 +34101,7 @@ function fireEquipStatusBadge(s) {
 <div>
 <div class="card" style="margin-bottom:14px"><div class="card-title">Employee Information</div>
 <div class="form-row">
-<div class="form-group"><label class="form-label">Employee name</label><input type="text" id="msf-name"/></div>
+<div class="form-group"><label class="form-label">Employee name</label><select id="msf-name" onchange="healthPersonSelect('msf')"><option value="">Select person...</option></select></div>
 <div class="form-group"><label class="form-label">Employee ID</label><input type="text" id="msf-eid"/></div>
 <div class="form-group"><label class="form-label">Department</label><input type="text" id="msf-dept"/></div>
 <div class="form-group"><label class="form-label">Job title</label><input type="text" id="msf-title"/></div>
@@ -34183,7 +34194,7 @@ function fireEquipStatusBadge(s) {
 </div>
 <div class="card" style="margin-bottom:14px">
 <div class="form-row">
-<div class="form-group"><label class="form-label">Employee name</label><input type="text" id="audf-name"/></div>
+<div class="form-group"><label class="form-label">Employee name</label><select id="audf-name" onchange="healthPersonSelect('audf')"><option value="">Select person...</option></select></div>
 <div class="form-group"><label class="form-label">Department</label><input type="text" id="audf-dept"/></div>
 <div class="form-group"><label class="form-label">Job title</label><input type="text" id="audf-title"/></div>
 <div class="form-group"><label class="form-label">Test date</label><input type="date" id="audf-date"/></div>
@@ -34286,7 +34297,7 @@ function fireEquipStatusBadge(s) {
 </div>
 <div class="card" style="margin-bottom:14px">
 <div class="form-row">
-<div class="form-group"><label class="form-label">Employee name</label><input type="text" id="spif-name"/></div>
+<div class="form-group"><label class="form-label">Employee name</label><select id="spif-name" onchange="healthPersonSelect('spif')"><option value="">Select person...</option></select></div>
 <div class="form-group"><label class="form-label">Department</label><input type="text" id="spif-dept"/></div>
 <div class="form-group"><label class="form-label">Test date</label><input type="date" id="spif-date"/></div>
 <div class="form-group"><label class="form-label">Next test date</label><input type="date" id="spif-next-date"/></div>
@@ -34375,7 +34386,7 @@ function fireEquipStatusBadge(s) {
 </div>
 <div class="card">
 <div class="form-row">
-<div class="form-group"><label class="form-label">Employee name</label><input type="text" id="vaxf-name"/></div>
+<div class="form-group"><label class="form-label">Employee name</label><select id="vaxf-name" onchange="healthPersonSelect('vaxf')"><option value="">Select person...</option></select></div>
 <div class="form-group"><label class="form-label">Department</label><input type="text" id="vaxf-dept"/></div>
 <div class="form-group"><label class="form-label">Vaccine name</label><input type="text" id="vaxf-vaccine" placeholder="e.g. Hepatitis B, Tetanus, Yellow Fever..."/></div>
 <div class="form-group"><label class="form-label">Vaccine type</label><select id="vaxf-type"><option value="occupational">Occupational</option><option value="travel">Travel</option><option value="routine">Routine</option><option value="pandemic">Pandemic</option><option value="other">Other</option></select></div>
@@ -34520,7 +34531,7 @@ function fireEquipStatusBadge(s) {
 <div>
 <div class="card" style="margin-bottom:14px"><div class="card-title">Employee &amp; Disease Information</div>
 <div class="form-row">
-<div class="form-group"><label class="form-label">Employee name</label><input type="text" id="odf-name"/></div>
+<div class="form-group"><label class="form-label">Employee name</label><select id="odf-name" onchange="healthPersonSelect('odf')"><option value="">Select person...</option></select></div>
 <div class="form-group"><label class="form-label">Employee ID</label><input type="text" id="odf-eid"/></div>
 <div class="form-group"><label class="form-label">Department</label><input type="text" id="odf-dept"/></div>
 <div class="form-group"><label class="form-label">Job title</label><input type="text" id="odf-title"/></div>
