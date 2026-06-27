@@ -3440,8 +3440,8 @@ people=d||[];fillPplDrops();
 function fillPplDrops(){
 const opts='<option value="">Select person...</option>'+people.map(p=>'<option value="'+p.id+'">'+p.last_name+', '+p.first_name+(p.job_title?' -- '+p.job_title:'')+'</option>').join('');
 const nameOpts='<option value="">Select person...</option>'+people.map(function(p){var nm=[p.first_name,p.last_name].filter(Boolean).join(' ')||p.email||'';return '<option value="'+escH(nm)+'">'+escH([p.last_name,p.first_name].filter(Boolean).join(', ')||nm)+(p.job_title?' -- '+escH(p.job_title):'')+'</option>';}).join('');
-['ef-person','ef-by','ef-assigned','if-by','rf-by','invf-by','invf-persons','pf-contractor','pf-issued','pf-approved','nf-by','mf-chair','kf-resp','af-resp','df-owner'].forEach(id=>{const el=document.getElementById(id);if(el&&!el.multiple)el.innerHTML=opts;});
-['obs-action-assigned','obs-observer','obs-person-observed','lc-responsible','lcaf-assessor','lcaf-approved-by','gapf-responsible','calf-responsible','ms-chaired-by','ms-responsible','kpi-resp','prf-requested-by','prf-approved-by','bullf-author','bullf-approved-by','mom-sign-chair','mom-sign-approver','sop-author','sop-approver','adm-site-manager','tp-trainer','tfr-trainer','compf-person','compf-assessor','indf-person','indf-inducted-by','elef-person','ertf-name','mpf-warden','drf-conducted-by','drf-reviewed-by','drf-approved-by','bcpf-approved-by','msf-name','audf-name','spif-name','vaxf-name','odf-name'].forEach(id=>{document.querySelectorAll('[id="'+id+'"]').forEach(el=>{if(el&&!el.multiple&&el.tagName==='SELECT'){var cur=el.value;el.innerHTML=nameOpts;if(cur){el.value=cur;if(el.value!==cur){var o=document.createElement('option');o.value=cur;o.textContent=cur+' (saved text)';el.appendChild(o);el.value=cur;}}}});});
+['ef-person','ef-by','ef-assigned','rf-by','invf-by','invf-persons','pf-contractor','pf-issued','pf-approved','nf-by','mf-chair','kf-resp','af-resp','df-owner'].forEach(id=>{const el=document.getElementById(id);if(el&&!el.multiple)el.innerHTML=opts;});
+['if-by','if-sign-inspector','if-sign-reviewer','obs-action-assigned','obs-observer','obs-person-observed','lc-responsible','lcaf-assessor','lcaf-approved-by','gapf-responsible','calf-responsible','ms-chaired-by','ms-responsible','kpi-resp','prf-requested-by','prf-approved-by','bullf-author','bullf-approved-by','mom-sign-chair','mom-sign-approver','sop-author','sop-approver','adm-site-manager','tp-trainer','tfr-trainer','compf-person','compf-assessor','indf-person','indf-inducted-by','elef-person','ertf-name','mpf-warden','drf-conducted-by','drf-reviewed-by','drf-approved-by','bcpf-approved-by','msf-name','audf-name','spif-name','vaxf-name','odf-name'].forEach(id=>{document.querySelectorAll('[id="'+id+'"]').forEach(el=>{if(el&&!el.multiple&&el.tagName==='SELECT'){var cur=el.value;el.innerHTML=nameOpts;if(cur){el.value=cur;if(el.value!==cur){var o=document.createElement('option');o.value=cur;o.textContent=cur+' (saved text)';el.appendChild(o);el.value=cur;}}}});});
 const ms=document.getElementById('tf-attendees');
 if(ms)ms.innerHTML=people.map(p=>'<option value="'+p.id+'">'+p.last_name+', '+p.first_name+'</option>').join('');
 }
@@ -9268,7 +9268,7 @@ function wsOpenSiteInspection(){
       setTimeout(function(){
         var site=document.getElementById('if-site');if(site)site.value=x.location||'';
         var dt=document.getElementById('if-date');if(dt)dt.value=x.planned_start||new Date().toISOString().slice(0,10);
-        var sup=document.getElementById('if-by');if(sup&&x.supervisor_id)sup.value=x.supervisor_id;
+        var sup=document.getElementById('if-by');if(sup&&x.supervisor_id)fillPersonSelect('if-by',pname(x.supervisor_id));
       },100);
     },150);
   },200);
@@ -22861,6 +22861,7 @@ function auditNew(preType) {
   ['if-site','if-by','if-pos','if-neg','if-sign-inspector','if-sign-reviewer',
    'audit-dept','audit-scope','audit-lead-auditor','audit-team','audit-auditee',
    'audit-gps-address','audit-lat','audit-lng'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
+  ['if-by','if-sign-inspector','if-sign-reviewer'].forEach(function(id){fillPersonSelect(id);});
   ['if-date','if-sign-date','if-sign-reviewer-date'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
   document.getElementById('if-date').value = new Date().toISOString().slice(0,10);
   document.getElementById('audit-priority').value = 'medium';
@@ -22889,10 +22890,10 @@ function auditOpen(id) {
   document.getElementById('audit-view-register').style.display = 'none';
   document.getElementById('audit-view-prestart').style.display = 'none';
   var gf=function(fid,val){var el=document.getElementById(fid);if(el)el.value=val||'';};
-  gf('if-site',x.site||x.if_site); gf('if-by',x.inspector||x.by||x.if_by);
+  gf('if-site',x.site||x.if_site); fillPersonSelect('if-by',x.inspector||x.by||x.if_by);
   gf('if-date',x.inspection_date||x.if_date); gf('if-pos',x.positive_obs||x.if_pos);
-  gf('if-neg',x.negative_obs||x.if_neg); gf('if-sign-inspector',x.sign_inspector);
-  gf('if-sign-date',x.sign_date); gf('if-sign-reviewer',x.sign_reviewer);
+  gf('if-neg',x.negative_obs||x.if_neg); fillPersonSelect('if-sign-inspector',x.sign_inspector);
+  gf('if-sign-date',x.sign_date); fillPersonSelect('if-sign-reviewer',x.sign_reviewer);
   gf('if-sign-reviewer-date',x.sign_reviewer_date); gf('audit-dept',x.department);
   gf('audit-scope',x.audit_scope); gf('audit-lead-auditor',x.lead_auditor);
   gf('audit-team',x.audit_team); gf('audit-auditee',x.auditee);
@@ -30884,7 +30885,7 @@ function fireEquipStatusBadge(s) {
 <div class="form-group"><label class="form-label">Date</label><input type="date" id="if-date"/></div>
 </div>
 <div class="form-row">
-<div class="form-group"><label class="form-label">Inspector / auditor</label><input type="text" id="if-by" placeholder="Name of inspector..."/></div>
+<div class="form-group"><label class="form-label">Inspector / auditor</label><select id="if-by"><option value="">Select person...</option></select></div>
 <div class="form-group"><label class="form-label">Priority</label>
 <select id="audit-priority"><option value="critical">Critical</option><option value="high">High</option><option value="medium" selected>Medium</option><option value="low">Low</option></select></div>
 <div class="form-group"><label class="form-label">Status</label>
@@ -30949,9 +30950,9 @@ function fireEquipStatusBadge(s) {
 <div>
 <!-- Sign-off -->
 <div class="card" style="margin-bottom:14px"><div class="card-title">Sign-off</div>
-<div class="form-group"><label class="form-label">Inspector / Lead auditor</label><input type="text" id="if-sign-inspector"/></div>
+<div class="form-group"><label class="form-label">Inspector / Lead auditor</label><select id="if-sign-inspector"><option value="">Select person...</option></select></div>
 <div class="form-group"><label class="form-label">Date signed</label><input type="date" id="if-sign-date"/></div>
-<div class="form-group"><label class="form-label">Reviewer</label><input type="text" id="if-sign-reviewer"/></div>
+<div class="form-group"><label class="form-label">Reviewer</label><select id="if-sign-reviewer"><option value="">Select person...</option></select></div>
 <div class="form-group"><label class="form-label">Review date</label><input type="date" id="if-sign-reviewer-date"/></div>
 </div>
 
