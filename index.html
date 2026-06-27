@@ -3431,7 +3431,7 @@ try{ Brand.paintFromCache(); }catch(_){}
 
 async function loadPeopleCache(){
 try{
-const d=await api('/people?select=id,first_name,last_name,job_title,person_type,email,phone'+cf()+'&status=eq.active&order=last_name');
+const d=await api('/people?select=id,first_name,last_name,job_title,department,employee_number,id_number,person_type,email,phone'+cf()+'&status=eq.active&order=last_name');
 people=d||[];fillPplDrops();
 }catch(e){people=[];}
 }
@@ -3439,9 +3439,36 @@ function fillPplDrops(){
 const opts='<option value="">Select person...</option>'+people.map(p=>'<option value="'+p.id+'">'+p.last_name+', '+p.first_name+(p.job_title?' -- '+p.job_title:'')+'</option>').join('');
 const nameOpts='<option value="">Select person...</option>'+people.map(function(p){var nm=[p.first_name,p.last_name].filter(Boolean).join(' ')||p.email||'';return '<option value="'+escH(nm)+'">'+escH([p.last_name,p.first_name].filter(Boolean).join(', ')||nm)+(p.job_title?' -- '+escH(p.job_title):'')+'</option>';}).join('');
 ['ef-person','ef-by','ef-assigned','if-by','rf-by','invf-by','invf-persons','pf-contractor','pf-issued','pf-approved','nf-by','mf-chair','kf-resp','af-resp','df-owner'].forEach(id=>{const el=document.getElementById(id);if(el&&!el.multiple)el.innerHTML=opts;});
-['obs-action-assigned','lc-responsible','lcaf-assessor','lcaf-approved-by','gapf-responsible','calf-responsible','ms-chaired-by','ms-responsible','kpi-resp','prf-requested-by','prf-approved-by','bullf-author','bullf-approved-by','mom-sign-chair','mom-sign-approver','sop-author','sop-approver','adm-site-manager'].forEach(id=>{document.querySelectorAll('[id="'+id+'"]').forEach(el=>{if(el&&!el.multiple&&el.tagName==='SELECT'){var cur=el.value;el.innerHTML=nameOpts;if(cur){el.value=cur;if(el.value!==cur){var o=document.createElement('option');o.value=cur;o.textContent=cur+' (saved text)';el.appendChild(o);el.value=cur;}}}});});
+['obs-action-assigned','lc-responsible','lcaf-assessor','lcaf-approved-by','gapf-responsible','calf-responsible','ms-chaired-by','ms-responsible','kpi-resp','prf-requested-by','prf-approved-by','bullf-author','bullf-approved-by','mom-sign-chair','mom-sign-approver','sop-author','sop-approver','adm-site-manager','tp-trainer','tfr-trainer','compf-person','compf-assessor','indf-person','indf-inducted-by','elef-person'].forEach(id=>{document.querySelectorAll('[id="'+id+'"]').forEach(el=>{if(el&&!el.multiple&&el.tagName==='SELECT'){var cur=el.value;el.innerHTML=nameOpts;if(cur){el.value=cur;if(el.value!==cur){var o=document.createElement('option');o.value=cur;o.textContent=cur+' (saved text)';el.appendChild(o);el.value=cur;}}}});});
 const ms=document.getElementById('tf-attendees');
 if(ms)ms.innerHTML=people.map(p=>'<option value="'+p.id+'">'+p.last_name+', '+p.first_name+'</option>').join('');
+}
+
+function personFullName(p){
+  return p?[p.first_name,p.last_name].filter(Boolean).join(' ')||p.email||'':'';
+}
+function trainPersonByName(name){
+  return (people||[]).find(function(p){return personFullName(p)===name;});
+}
+function tfPersonSelect(){
+  var id=document.getElementById('tfr-person')?.value||'';
+  var p=(people||[]).find(function(x){return x.id===id;});
+  if(!p)return;
+  var name=document.getElementById('tfr-name');if(name)name.value=personFullName(p);
+  var dept=document.getElementById('tfr-dept');if(dept)dept.value=p.department||'';
+}
+function trainingPersonSelect(prefix){
+  var name=document.getElementById(prefix+'-person')?.value||'';
+  var p=trainPersonByName(name);
+  if(!p)return;
+  var dept=document.getElementById(prefix+'-dept');if(dept)dept.value=p.department||'';
+  var job=document.getElementById(prefix+'-job-title');if(job)job.value=p.job_title||'';
+  var emp=document.getElementById(prefix+'-emp-id');if(emp)emp.value=p.employee_number||p.id_number||'';
+}
+function setSelectValueWithFallback(id,val){
+  var el=document.getElementById(id);if(!el)return;
+  el.value=val||'';
+  if(val&&el.tagName==='SELECT'&&el.value!==val){var o=document.createElement('option');o.value=val;o.textContent=val+' (saved text)';el.appendChild(o);el.value=val;}
 }
 // ── Role → allowed pages map ────────────────────────────────────────
 // Used by applyRoles() (hides sidebar items) AND showPage() (blocks navigation
@@ -22232,6 +22259,7 @@ function tpOpen(id){
   document.getElementById('tp-del-btn').style.display=isMgr()?'inline-flex':'none';
   var flds={'tp-topic':'training_topic','tp-group':'target_group','tp-trainer':'trainer','tp-location':'location','tp-objective':'objective','tp-notes':'notes'};
   Object.entries(flds).forEach(function(e){var el=document.getElementById(e[0]);if(el)el.value=x[e[1]]||'';});
+  setSelectValueWithFallback('tp-trainer',x.trainer);
   var pd=document.getElementById('tp-planned-date');if(pd)pd.value=x.planned_date||'';
   var ad=document.getElementById('tp-actual-date');if(ad)ad.value=x.actual_date||'';
   var tp=document.getElementById('tp-type');if(tp)tp.value=x.training_type||'internal';
@@ -22378,6 +22406,7 @@ function tfOpen(id){
   document.getElementById('tf-del-btn').style.display=isMgr()?'inline-flex':'none';
   var flds={'tfr-name':'person_name','tfr-course':'training_topic','tfr-trainer':'trainer','tfr-cert':'certificate','tfr-notes':'notes'};
   Object.entries(flds).forEach(function(e){var el=document.getElementById(e[0]);if(el)el.value=x[e[1]]||'';});
+  setSelectValueWithFallback('tfr-trainer',x.trainer);
   ['tfr-date','tfr-expiry','tfr-refresher'].forEach(function(id){
     var key={'tfr-date':'training_date','tfr-expiry':'expiry_date','tfr-refresher':'refresher_due'}[id];
     var el=document.getElementById(id);if(el)el.value=x[key]||'';
@@ -22393,7 +22422,8 @@ async function tfSave(){
   if(!course){toast('Please enter a training topic',false);return;}
   var g=function(id){var el=document.getElementById(id);return el?el.value||null:null;};
   var personId=g('tfr-person');
-  var name=g('tfr-name')||((people||[]).find(function(p){return p.id===personId;})||{last_name:'',first_name:''}).last_name;
+  var pickedPerson=(people||[]).find(function(p){return p.id===personId;});
+  var name=g('tfr-name')||personFullName(pickedPerson);
   var body={
     company_id:ccid(),person_id:personId||null,
     person_name:name||null,training_topic:course,
@@ -35611,7 +35641,7 @@ function fireEquipStatusBadge(s) {
 </div>
 <div>
 <div class="card" style="margin-bottom:14px"><div class="card-title">Delivery</div>
-<div class="form-group"><label class="form-label">Trainer / facilitator</label><input type="text" id="tp-trainer"/></div>
+<div class="form-group"><label class="form-label">Trainer / facilitator</label><select id="tp-trainer"><option value="">Select person...</option></select></div>
 <div class="form-group"><label class="form-label">Location / venue</label><input type="text" id="tp-location"/></div>
 <div class="form-group"><label class="form-label">Budget (Rs)</label><input type="number" id="tp-budget" step="100"/></div>
 </div>
@@ -35640,7 +35670,7 @@ function fireEquipStatusBadge(s) {
 <div class="form-row">
 <div class="form-group"><label class="form-label">Training / course name</label><input type="text" id="tfr-course"/></div>
 <div class="form-group"><label class="form-label">Training date</label><input type="date" id="tfr-date"/></div>
-<div class="form-group"><label class="form-label">Trainer</label><input type="text" id="tfr-trainer"/></div>
+<div class="form-group"><label class="form-label">Trainer</label><select id="tfr-trainer"><option value="">Select person...</option></select></div>
 <div class="form-group"><label class="form-label">Duration (hrs)</label><input type="number" id="tfr-duration" step="0.5" min="0.5"/></div>
 </div>
 <div class="form-row">
@@ -35671,7 +35701,7 @@ function fireEquipStatusBadge(s) {
 </div>
 <div class="card">
 <div class="form-row">
-<div class="form-group"><label class="form-label">Person name</label><input type="text" id="compf-person"/></div>
+<div class="form-group"><label class="form-label">Person name</label><select id="compf-person" onchange="trainingPersonSelect('compf')"><option value="">Select person...</option></select></div>
 <div class="form-group"><label class="form-label">Department</label><input type="text" id="compf-dept"/></div>
 <div class="form-group"><label class="form-label">Job title</label><input type="text" id="compf-job-title"/></div>
 </div>
@@ -35692,7 +35722,7 @@ function fireEquipStatusBadge(s) {
 <div class="form-group"><label class="form-label">Expiry date</label><input type="date" id="compf-expiry"/></div>
 </div>
 <div class="form-row">
-<div class="form-group"><label class="form-label">Assessor</label><input type="text" id="compf-assessor"/></div>
+<div class="form-group"><label class="form-label">Assessor</label><select id="compf-assessor"><option value="">Select person...</option></select></div>
 <div class="form-group"><label class="form-label">Evidence / certificate ref</label><input type="text" id="compf-evidence"/></div>
 </div>
 <div class="form-group"><label class="form-label">Notes</label><textarea id="compf-notes" style="min-height:40px"></textarea></div>
@@ -35718,7 +35748,7 @@ function fireEquipStatusBadge(s) {
 <div>
 <div class="card" style="margin-bottom:14px"><div class="card-title">Person Details</div>
 <div class="form-row">
-<div class="form-group"><label class="form-label">Person name</label><input type="text" id="indf-person"/></div>
+<div class="form-group"><label class="form-label">Person name</label><select id="indf-person" onchange="trainingPersonSelect('indf')"><option value="">Select person...</option></select></div>
 <div class="form-group"><label class="form-label">Employee / Contractor ID</label><input type="text" id="indf-emp-id"/></div>
 <div class="form-group"><label class="form-label">Department</label><input type="text" id="indf-dept"/></div>
 <div class="form-group"><label class="form-label">Job title</label><input type="text" id="indf-job-title"/></div>
@@ -35748,7 +35778,7 @@ function fireEquipStatusBadge(s) {
 </div>
 <div>
 <div class="card" style="margin-bottom:14px;border:2px solid #185FA5"><div class="card-title" style="color:#185FA5">Delivery</div>
-<div class="form-group"><label class="form-label">Inducted by</label><input type="text" id="indf-inducted-by"/></div>
+<div class="form-group"><label class="form-label">Inducted by</label><select id="indf-inducted-by"><option value="">Select person...</option></select></div>
 <div class="form-group"><label class="form-label">Duration (hours)</label><input type="number" id="indf-duration" step="0.5" value="1"/></div>
 <div class="form-group"><label class="form-label">Score (%)</label><input type="number" id="indf-score" min="0" max="100"/></div>
 </div>
@@ -35876,7 +35906,7 @@ function fireEquipStatusBadge(s) {
 </div>
 <div class="card">
 <div class="form-row">
-<div class="form-group"><label class="form-label">Person name</label><input type="text" id="elef-person"/></div>
+<div class="form-group"><label class="form-label">Person name</label><select id="elef-person" onchange="trainingPersonSelect('elef')"><option value="">Select person...</option></select></div>
 <div class="form-group"><label class="form-label">Department</label><input type="text" id="elef-dept"/></div>
 <div class="form-group"><label class="form-label">Course</label><select id="elef-course-id"><option value="">Select course...</option></select></div>
 </div>
