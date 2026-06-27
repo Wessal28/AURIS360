@@ -13134,7 +13134,7 @@ async function ptwLoadReferenceOptions(selectedRA, selectedMS){
     }catch(e){
       var o=document.createElement('option');o.value='';o.textContent='Unable to load RA list';raSel.appendChild(o);
     }
-    if(selectedRA)raSel.value=selectedRA;
+    if(selectedRA){raSel.value=selectedRA;if(raSel.value!==selectedRA){var savedRA=document.createElement('option');savedRA.value=selectedRA;savedRA.textContent=selectedRA+' (saved text)';raSel.appendChild(savedRA);raSel.value=selectedRA;}}
   }
   if(msSel){
     msSel.innerHTML='<option value="">Select method statement / SOP...</option>';
@@ -13151,7 +13151,7 @@ async function ptwLoadReferenceOptions(selectedRA, selectedMS){
     }catch(e){
       var o=document.createElement('option');o.value='';o.textContent='Unable to load method statement list';msSel.appendChild(o);
     }
-    if(selectedMS)msSel.value=selectedMS;
+    if(selectedMS){msSel.value=selectedMS;if(msSel.value!==selectedMS){var savedMS=document.createElement('option');savedMS.value=selectedMS;savedMS.textContent=selectedMS+' (saved text)';msSel.appendChild(savedMS);msSel.value=selectedMS;}}
   }
 }
 
@@ -14795,6 +14795,7 @@ async function catwNew(){
   var ptSel=document.getElementById('catwf-permit');
   if(ptSel){ptSel.innerHTML='<option value="">None required</option>';try{var pts=await api('/permits?select=id,permit_type,permit_number'+cf()+'&order=created_at.desc&limit=20');(pts||[]).forEach(function(p){var o=document.createElement('option');o.value=p.id;o.textContent=(p.permit_number||'PTW')+' — '+p.permit_type;ptSel.appendChild(o);});}catch(ex){}}
   // Populate issued-by
+  await catwLoadReferenceOptions();
   var issSel=document.getElementById('catwf-issued-by');
   if(issSel){issSel.innerHTML='<option value="">Select...</option>';(people||[]).forEach(function(p){var o=document.createElement('option');o.value=p.id;o.textContent=p.last_name+', '+p.first_name;issSel.appendChild(o);});}
   ['catwf-desc','catwf-location','catwf-conditions','catwf-ppe','catwf-supervision','catwf-ra-ref','catwf-ms-ref','catwf-induction-topics','catwf-con-sig','catwf-notes','catwf-induction-by'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
@@ -14803,6 +14804,50 @@ async function catwNew(){
   var st=document.getElementById('catwf-status');if(st)st.value='active';
   catwRenderPersons();
   catwShowForm();
+}
+
+async function catwLoadReferenceOptions(selectedRA, selectedMS){
+  var raSel=document.getElementById('catwf-ra-ref');
+  var msSel=document.getElementById('catwf-ms-ref');
+  if(raSel){
+    raSel.innerHTML='<option value="">Select risk assessment...</option>';
+    try{
+      var ras=await api('/risk_assessments?select=id,ra_ref,title,activity,status'+cf()+'&order=created_at.desc&limit=100');
+      (ras||[]).forEach(function(r){
+        var ref=r.ra_ref||r.id;
+        var o=document.createElement('option');
+        o.value=ref;
+        o.textContent=(r.ra_ref||'RA')+' - '+(r.title||r.activity||'Risk assessment')+(r.status?' ('+r.status+')':'');
+        raSel.appendChild(o);
+      });
+    }catch(e){
+      var ro=document.createElement('option');ro.value='';ro.textContent='Unable to load RA list';raSel.appendChild(ro);
+    }
+    if(selectedRA){
+      raSel.value=selectedRA;
+      if(raSel.value!==selectedRA){var savedRA=document.createElement('option');savedRA.value=selectedRA;savedRA.textContent=selectedRA+' (saved text)';raSel.appendChild(savedRA);raSel.value=selectedRA;}
+    }
+  }
+  if(msSel){
+    msSel.innerHTML='<option value="">Select method statement / SOP...</option>';
+    try{
+      var docs=await api('/sop_documents?select=*'+cf()+'&order=created_at.desc&limit=100');
+      (docs||[]).forEach(function(d){
+        var ref=d.sop_number||d.reference_no||d.doc_ref||d.id;
+        var title=d.title||d.sop_title||d.name||'Method statement / SOP';
+        var o=document.createElement('option');
+        o.value=ref;
+        o.textContent=ref+' - '+title;
+        msSel.appendChild(o);
+      });
+    }catch(e){
+      var mo=document.createElement('option');mo.value='';mo.textContent='Unable to load method statement list';msSel.appendChild(mo);
+    }
+    if(selectedMS){
+      msSel.value=selectedMS;
+      if(msSel.value!==selectedMS){var savedMS=document.createElement('option');savedMS.value=selectedMS;savedMS.textContent=selectedMS+' (saved text)';msSel.appendChild(savedMS);msSel.value=selectedMS;}
+    }
+  }
 }
 
 async function catwEdit(id){
@@ -14815,6 +14860,7 @@ async function catwEdit(id){
   await catwNew(); // Reuse setup
   catwEditingId=id; // Reset after catwNew clears it
   catwPersons=x.authorised_persons||[];
+  await catwLoadReferenceOptions(x.risk_assessment_ref,x.method_statement_ref);
   var conSel=document.getElementById('catwf-contractor');if(conSel)conSel.value=x.contractor_id||'';
   var flds={'catwf-desc':'work_description','catwf-location':'work_location','catwf-conditions':'conditions','catwf-ppe':'ppe_requirements','catwf-supervision':'supervision_requirements','catwf-ra-ref':'risk_assessment_ref','catwf-ms-ref':'method_statement_ref','catwf-induction-topics':'induction_topics','catwf-con-sig':'contractor_signature','catwf-notes':'notes','catwf-induction-by':'induction_conducted_by'};
   Object.entries(flds).forEach(function(e){var el=document.getElementById(e[0]);if(el)el.value=x[e[1]]||'';});
@@ -32977,7 +33023,7 @@ function fireEquipStatusBadge(s) {
 <div class="card" style="margin-bottom:14px"><div class="card-title">Conditions</div>
 <div class="form-group"><label class="form-label">Conditions</label><textarea id="catwf-conditions" style="min-height:60px"></textarea></div>
 <div class="form-row"><div class="form-group"><label class="form-label">PPE required</label><input type="text" id="catwf-ppe"/></div><div class="form-group"><label class="form-label">Supervision</label><input type="text" id="catwf-supervision"/></div></div>
-<div class="form-row"><div class="form-group"><label class="form-label">RA ref</label><input type="text" id="catwf-ra-ref" style="font-family:monospace"/></div><div class="form-group"><label class="form-label">Method Statement</label><input type="text" id="catwf-ms-ref" style="font-family:monospace"/></div></div></div>
+<div class="form-row"><div class="form-group"><label class="form-label">RA ref</label><select id="catwf-ra-ref" style="font-family:monospace"><option value="">Select risk assessment...</option></select></div><div class="form-group"><label class="form-label">Method Statement</label><select id="catwf-ms-ref" style="font-family:monospace"><option value="">Select method statement / SOP...</option></select></div></div></div>
 </div>
 <div>
 <div class="card" style="margin-bottom:14px;border:2px solid #1D9E75"><div class="card-title" style="color:#1D9E75">Site Induction</div>
