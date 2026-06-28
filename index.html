@@ -13394,6 +13394,10 @@ function ptwCurrentIssuer(){
   };
 }
 
+function ptwCurrentUserName(){
+  return prof?.full_name||prof?.email||'Current user';
+}
+
 function ptwFillIssuerDisplay(saved){
   var issuer=ptwCurrentIssuer();
   var id=(saved&&saved.id)||issuer.id||'';
@@ -14419,13 +14423,12 @@ function ptwOpenClosurePanel(){
       +'<label for="close-chk-'+i+'" style="font-size:13px;cursor:pointer">'+escH(item)+'</label>'
       +'</div>';
   }).join('');
-  var cb=document.getElementById('ptw-close-by');if(cb)cb.value='';
+  var cb=document.getElementById('ptw-close-by');if(cb)cb.value=ptwCurrentUserName();
   var cn=document.getElementById('ptw-closure-notes');if(cn)cn.value='';
 }
 
 async function ptwConfirmClose(){
-  var closedBy=document.getElementById('ptw-close-by')?.value?.trim();
-  if(!closedBy){toast('Please enter your name',false);return;}
+  var closedBy=ptwCurrentUserName();
   var items=document.querySelectorAll('[id^="close-chk-"]');
   var checklist=[];items.forEach(function(cb,i){checklist.push({item:cb.nextElementSibling?.textContent||'Item '+i,checked:cb.checked});});
   var unchecked=checklist.filter(function(c){return !c.checked;}).length;
@@ -14444,15 +14447,15 @@ function ptwClosureBack(){ptwShowDetail(ptwCurrentId);}
 // ── SUSPENSION/CANCELLATION ───────────────────────────────────────────────────
 function ptwOpenSuspensionPanel(){
   ptwSetView('suspension');
-  var sb=document.getElementById('ptw-suspend-by');if(sb)sb.value='';
+  var sb=document.getElementById('ptw-suspend-by');if(sb)sb.value=ptwCurrentUserName();
   var sr=document.getElementById('ptw-suspend-reason');if(sr)sr.value='';
 }
 
 async function ptwConfirmSuspend(){
   var action=document.getElementById('ptw-suspend-action')?.value||'suspended';
-  var by=document.getElementById('ptw-suspend-by')?.value?.trim();
+  var by=ptwCurrentUserName();
   var reason=document.getElementById('ptw-suspend-reason')?.value?.trim();
-  if(!by||!reason){toast('Please enter your name and reason',false);return;}
+  if(!reason){toast('Please enter the reason',false);return;}
   var update={status:action,updated_at:new Date().toISOString()};
   if(action==='suspended'){update.suspended_at=new Date().toISOString();update.suspended_by=by;update.suspension_reason=reason;}
   else{update.cancelled_at=new Date().toISOString();update.cancelled_by=by;update.cancellation_reason=reason;}
@@ -14468,7 +14471,7 @@ async function ptwConfirmSuspend(){
 function ptwSuspendBack(){ptwShowDetail(ptwCurrentId);}
 
 async function ptwResume(){
-  var by=await appPrompt({title:'Resume permit',message:'Your name',value:prof?.full_name||'',placeholder:'Person resuming the permit'});if(!by)return;
+  var by=ptwCurrentUserName();
   try{
     await api('/permits?id=eq.'+ptwCurrentId,{m:'PATCH',p:'return=minimal',b:{status:'active',updated_at:new Date().toISOString()}});
     var x=ptwAllData.find(function(r){return r.id===ptwCurrentId;});if(x)x.status='active';
@@ -33332,7 +33335,7 @@ function fireEquipStatusBadge(s) {
 <div class="card-title">Closure Checklist</div>
 <div id="ptw-closure-checklist"></div>
 <div class="form-group" style="margin-top:12px"><label class="form-label">Closure notes / observations</label><textarea id="ptw-closure-notes" style="min-height:70px" placeholder="Confirm work is complete, area is clean, all isolations removed, equipment restored..."></textarea></div>
-<div class="form-group"><label class="form-label">Closed by (signature)</label><input type="text" id="ptw-close-by"/></div>
+<div class="form-group"><label class="form-label">Closed by</label><input type="text" id="ptw-close-by" readonly style="background:#f9fafb;font-weight:700" placeholder="Filled automatically"/></div>
 <button class="btn btn-primary" style="background:#1D9E75;border-color:#1D9E75;margin-top:10px;width:100%;justify-content:center" onclick="ptwConfirmClose()"><i class="ti ti-check"></i>Confirm permit closure</button>
 </div>
 </div>
@@ -33349,7 +33352,7 @@ function fireEquipStatusBadge(s) {
 <div class="form-row">
 <div class="form-group"><label class="form-label">Action</label>
 <select id="ptw-suspend-action"><option value="suspended">Suspend (can be resumed)</option><option value="cancelled">Cancel (permanently)</option></select></div>
-<div class="form-group"><label class="form-label">Action by</label><input type="text" id="ptw-suspend-by"/></div>
+<div class="form-group"><label class="form-label">Action by</label><input type="text" id="ptw-suspend-by" readonly style="background:#f9fafb;font-weight:700" placeholder="Filled automatically"/></div>
 </div>
 <div class="form-group"><label class="form-label" style="color:var(--red)">Reason</label><textarea id="ptw-suspend-reason" style="min-height:70px" placeholder="Explain why the permit is being suspended or cancelled..."></textarea></div>
 <button class="btn" style="background:#C2410C;color:#fff;border-color:#C2410C;margin-top:10px" onclick="ptwConfirmSuspend()"><i class="ti ti-alert-triangle"></i>Confirm action</button>
