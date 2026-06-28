@@ -14121,10 +14121,12 @@ async function ptwSave(targetStatus){
   if(blocks.length&&targetStatus!=='draft')toast('Saved as draft — RA reference is missing',false);
   try{
     if(ptwEditingId){
+      var prev=ptwAllData.find(function(x){return x.id===ptwEditingId;})||{};
+      var shouldNotifyL1=body.status==='pending_approval'&&prev.status!=='pending_approval';
       await api('/permits?id=eq.'+ptwEditingId,{m:'PATCH',p:'return=minimal',b:body});
       // Log
       try{await api('/permit_activity_log',{m:'POST',p:'return=minimal',b:{company_id:ccid(),permit_id:ptwEditingId,action:'Permit edited',performed_by:prof?.full_name||'User',details:'Status: '+body.status}});}catch(ex){}
-      if(body.status==='pending_approval')await ptwQueueApprovalEmail(Object.assign({id:ptwEditingId},body),1);
+      if(shouldNotifyL1)await ptwQueueApprovalEmail(Object.assign({id:ptwEditingId},body),1);
       toast('Permit updated!');
       var idx=ptwAllData.findIndex(function(x){return x.id===ptwEditingId;});
       if(idx>=0)Object.assign(ptwAllData[idx],body);
