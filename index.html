@@ -14259,6 +14259,7 @@ async function ptwAddGasTest(){
     await api('/permits?id=eq.'+ptwCurrentId,{m:'PATCH',p:'return=minimal',b:{gas_tests:ptwGasTests,updated_at:new Date().toISOString()}});
     var idx=ptwAllData.findIndex(function(x){return x.id===ptwCurrentId;});
     if(idx>=0)ptwAllData[idx].gas_tests=ptwGasTests;
+    try{await api('/permit_activity_log',{m:'POST',p:'return=minimal',b:{company_id:ccid(),permit_id:ptwCurrentId,action:'Gas test recorded',performed_by:test.tester,details:'O2 '+(test.o2||'-')+'%, LEL '+(test.lel||'-')+'%, H2S '+(test.h2s||'-')+' ppm, CO '+(test.co||'-')+' ppm, result '+(test.result||'-')}});}catch(ex){}
     toast('Gas test recorded! O₂: '+test.o2+'% LEL: '+test.lel+'%');
     ['gas-o2','gas-lel','gas-h2s','gas-co','gas-notes','gas-location'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
   }catch(e){toast(e.message,false);}
@@ -14305,6 +14306,7 @@ async function ptwAddIsolation(){
     await api('/permits?id=eq.'+ptwCurrentId,{m:'PATCH',p:'return=minimal',b:{isolations:ptwIsolations,updated_at:new Date().toISOString()}});
     var idx=ptwAllData.findIndex(function(x){return x.id===ptwCurrentId;});
     if(idx>=0)ptwAllData[idx].isolations=ptwIsolations;
+    try{await api('/permit_activity_log',{m:'POST',p:'return=minimal',b:{company_id:ccid(),permit_id:ptwCurrentId,action:'Isolation point added',performed_by:iso.by,details:'Tag '+tag+' - '+(iso.description||'No description')+'; status '+(iso.status||'-')+(iso.verified_by?'; verified by '+iso.verified_by:'')}});}catch(ex){}
     toast('Isolation point added: '+tag);
     ['iso-tag','iso-desc','iso-by','iso-verified-by'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
     var ib=document.getElementById('iso-by');if(ib)ib.value=ptwCurrentUserName();
