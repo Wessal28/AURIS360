@@ -6570,10 +6570,10 @@ async function sopLoadList(){
 function sopNew(){
   sopVideo=null; sopFrames=[]; sopEditingId=null; sopCurrentStep=1;
   // Reset form
-  ['sop-title','sop-dept','sop-author','sop-desc','sop-ppe-extra'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
-  document.getElementById('sop-revision').value='Rev 00';
+  ['sop-title','sop-dept','sop-video-author','sop-desc','sop-ppe-extra'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
+  document.getElementById('sop-version').value='Rev 00';
   document.getElementById('sop-risk').value='Medium';
-  document.getElementById('sop-date').value='';
+  document.getElementById('sop-review-date').value='';
   document.querySelectorAll('#sop-ppe-list input[type=checkbox]').forEach(function(c){c.checked=false;});
   var vp=document.getElementById('sop-video-preview');if(vp){vp.style.display='none';vp.src='';}
   var vi=document.getElementById('sop-video-info');if(vi)vi.textContent='';
@@ -6582,10 +6582,27 @@ function sopNew(){
   document.getElementById('sop-frames-container').innerHTML='';
   document.getElementById('sop-preview-container').innerHTML='';
   // Auto-fill author
-  fillPersonSelect('sop-author', prof ? (prof.full_name||personFullName(prof)||'') : '');
+  fillPersonSelect('sop-video-author', prof ? (prof.full_name||personFullName(prof)||'') : '');
   sopGoStep(1);
   // Switch to create tab
   sopSwitchTab('create', document.getElementById('sop-tab-create'));
+}
+
+function sopGoStep(n){
+  sopCurrentStep=n;
+  document.querySelectorAll('#sop-view-create .sop-step-panel').forEach(function(panel){
+    panel.style.display=panel.id==='sop-step-'+n?'block':'none';
+  });
+  for(var i=1;i<=5;i++){
+    var dot=document.getElementById('sop-dot-'+i);
+    if(dot)dot.classList.toggle('active',i===n);
+  }
+  var bar=document.getElementById('sop-step-bar');
+  if(bar)bar.style.width=(Math.max(0,n-1)*22.5)+'%';
+}
+
+function sopShowPreview(){
+  sopGoStep(5);
 }
 
 
@@ -6774,11 +6791,11 @@ async function sopGenerate(){
   var title=document.getElementById('sop-title').value;
   var dept=document.getElementById('sop-dept').value;
   var risk=document.getElementById('sop-risk').value;
-  var desc=document.getElementById('sop-description').value;
-  var author=document.getElementById('sop-author').value;
-  var version=document.getElementById('sop-revision').value;
-  var reviewDate=document.getElementById('sop-date').value;
-  var ppeChecked=Array.from(document.querySelectorAll('#sop-ppe-checks input:checked')).map(function(c){return c.value;});
+  var desc=document.getElementById('sop-desc').value;
+  var author=document.getElementById('sop-video-author').value;
+  var version=document.getElementById('sop-version').value;
+  var reviewDate=document.getElementById('sop-review-date').value;
+  var ppeChecked=Array.from(document.querySelectorAll('#sop-ppe-list input:checked')).map(function(c){return c.value;});
   var ppeExtra=document.getElementById('sop-ppe-extra').value;
   var allPPE=ppeChecked.concat(ppeExtra?[ppeExtra]:[]).join(', ')||'As per risk assessment';
 
@@ -8860,19 +8877,19 @@ await kpiLoadAll();
 }
 
 // ── SOP MODULE HELPERS ────────────────────────────────────────────────────────
-function sopShowList(){
+function sopDuplicateShowList(){
   document.getElementById('sop-list-view').style.display='block';
   document.getElementById('sop-gen-view').style.display='none';
   sopLoadList();
 }
 
-function sopShowPreview(){
+function sopDuplicateShowPreview(){
   document.getElementById('sop-generate-panel').style.display='none';
   document.getElementById('sop-preview').style.display='block';
   document.getElementById('sop-step4-back').style.display='none';
 }
 
-function sopGoStep(n){
+function sopDuplicateGoStep(n){
   for(var i=1;i<=4;i++){
     var s=document.getElementById('sop-step-'+i);
     var b=document.getElementById('sop-step-btn-'+i);
@@ -8892,7 +8909,7 @@ function sopGoStep(n){
   }
 }
 
-async function sopSave(){
+async function sopDuplicateSave(){
   var title=document.getElementById('sop-title')?.value?.trim();
   if(!title){toast('Please enter a task title first',false);return;}
   var body={
@@ -8924,7 +8941,7 @@ async function sopSave(){
   }catch(e){toast(e.message,false);console.error(e);}
 }
 
-async function sopDelete(){
+async function sopDuplicateDelete(){
   if(!sopEditingId)return;
   if(!(await appConfirmDelete('SOP draft','This will remove the SOP draft from the generator.')))return;
   try{
@@ -8934,7 +8951,7 @@ async function sopDelete(){
   }catch(e){toast(e.message,false);}
 }
 
-async function sopExportPDF(){
+async function sopDuplicateExportPDF(){
   var html=document.getElementById('sop-doc-output')?.innerHTML||'';
   if(!html){toast('Generate the SOP first',false);return;}
   var w=window.open('','_blank','width=900,height=700,scrollbars=yes');
@@ -8945,9 +8962,19 @@ async function sopExportPDF(){
   w.document.close();
 }
 
-function sopSaveToDocControl(){
+function sopDuplicateSaveToDocControl(){
   toast('SOP saved to Document Control!');
-  sopSave();
+  sopDuplicateSave();
+}
+
+async function sopDelete(id){
+  if(!id)return;
+  if(!(await appConfirmDelete('SOP','This will permanently delete this SOP draft/document.')))return;
+  try{
+    await api('/sop_documents?id=eq.'+id,{m:'DELETE'});
+    toast('SOP deleted!');
+    sopLoadList();
+  }catch(e){toast(e.message,false);console.error(e);}
 }
 
 
@@ -36568,7 +36595,7 @@ function fireEquipStatusBadge(s) {
 </div><!-- end sop-view-create -->
 </div><!-- end page-sop -->
 
-<div id="page-sop" class="page">
+<div id="page-sop-duplicate-disabled" class="page" style="display:none">
 <div class="page-header">
 <div><div class="page-title">SOP Generator</div><div style="font-size:12px;color:var(--text2)">Generate Standard Operating Procedures from video recordings</div></div>
 <div style="display:flex;gap:8px">
