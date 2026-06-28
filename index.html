@@ -8062,6 +8062,48 @@ else{updates.company_id=prof.company_id;await api('/notification_settings',{m:'P
 toast('PTW approver settings saved');
 }catch(e){toast('Error saving PTW approvers: '+e.message,false);}
 }
+
+async function ptwGetApprovalSettings(){
+try{
+var rows=await api('/notification_settings?company_id=eq.'+ccid()+'&limit=1');
+var rules=(rows&&rows[0]?rows[0].event_recipients:null)||{};
+if(typeof rules==='string'){try{rules=JSON.parse(rules);}catch(_){rules={};}}
+return rules.permit_approvers||{};
+}catch(e){return{};}
+}
+
+function ptwApproverForLevel(settings,level){
+settings=settings||{};
+return {
+id:settings['level'+level+'_id']||'',
+name:settings['level'+level+'_name']||'',
+email:settings['level'+level+'_email']||'',
+phone:settings['level'+level+'_phone']||''
+};
+}
+
+async function ptwQueueApprovalEmail(permit,level){
+try{
+var settings=await ptwGetApprovalSettings();
+var a=ptwApproverForLevel(settings,level);
+if(!a.email)return;
+var ref=permit.permit_number||permit.id?.slice(0,8)||'PTW';
+var type=permit.permit_type_v2||permit.permit_type||'Permit';
+var cfg=PTW_TYPE_CFG[type]||{};
+var subject='[AURIS360] Permit approval required: '+ref+' - Level '+level;
+var body='<div style="font-family:Arial,sans-serif;background:#f4f6f8;padding:20px"><div style="max-width:620px;margin:0 auto;background:#fff;border-radius:12px;overflow:hidden;border:1px solid #e5e7eb">'
+  +'<div style="background:#185FA5;color:#fff;padding:18px 22px"><div style="font-size:20px;font-weight:700">AURIS360</div><div style="font-size:13px;opacity:.85">Permit to Work approval request</div></div>'
+  +'<div style="padding:22px"><h2 style="margin:0 0 14px;font-size:18px">Level '+level+' approval required</h2>'
+  +'<table style="width:100%;border-collapse:collapse;font-size:14px">'
+  +'<tr><td style="padding:8px;background:#f9fafb;font-weight:600;width:150px">Permit</td><td style="padding:8px">'+escH(ref)+'</td></tr>'
+  +'<tr><td style="padding:8px;background:#f9fafb;font-weight:600">Type</td><td style="padding:8px">'+escH(cfg.label||type)+'</td></tr>'
+  +'<tr><td style="padding:8px;background:#f9fafb;font-weight:600">Location</td><td style="padding:8px">'+escH(permit.work_location||permit.location||'-')+'</td></tr>'
+  +'<tr><td style="padding:8px;background:#f9fafb;font-weight:600">Work</td><td style="padding:8px">'+escH(permit.work_description||'-')+'</td></tr>'
+  +'</table><div style="margin-top:18px;text-align:center"><a href="https://auris-360.vercel.app/?goto=permit" style="display:inline-block;background:#1D9E75;color:#fff;padding:11px 22px;border-radius:8px;text-decoration:none;font-weight:700">Open Permit in AURIS360</a></div></div>'
+  +'<div style="padding:12px 22px;background:#f4f6f8;font-size:11px;color:#6B7280;text-align:center">Automated notification from AURIS360.</div></div></div>';
+await api('/notification_queue',{m:'POST',p:'return=minimal',b:{company_id:ccid(),type:'permit',subject:subject,body_html:body,to_email:a.email,to_name:a.name||a.email,from_name:'AURIS360 by SEPHS Consulting',related_id:permit.id,related_table:'permits',status:'pending'}});
+}catch(e){/* notification must never block permit workflow */}
+}
 /* ═══════════════════════════════════════════════════════════════════
    BRANDING STUDIO CONTROLLER
    - Populates editor with current brand
@@ -14006,6 +14048,7 @@ async function ptwSave(targetStatus){
       await api('/permits?id=eq.'+ptwEditingId,{m:'PATCH',p:'return=minimal',b:body});
       // Log
       try{await api('/permit_activity_log',{m:'POST',p:'return=minimal',b:{company_id:ccid(),permit_id:ptwEditingId,action:'Permit edited',performed_by:prof?.full_name||'User',details:'Status: '+body.status}});}catch(ex){}
+      if(body.status==='pending_approval')await ptwQueueApprovalEmail(Object.assign({id:ptwEditingId},body),1);
       toast('Permit updated!');
       var idx=ptwAllData.findIndex(function(x){return x.id===ptwEditingId;});
       if(idx>=0)Object.assign(ptwAllData[idx],body);
@@ -14021,6 +14064,7 @@ async function ptwSave(targetStatus){
         res[0].permit_number=ref;res[0].permit_type_v2=type;
         ptwAllData.unshift(res[0]);
         try{await api('/permit_activity_log',{m:'POST',p:'return=minimal',b:{company_id:ccid(),permit_id:res[0].id,action:'Permit created',performed_by:prof?.full_name||'User',new_status:body.status}});}catch(ex){}
+        if(body.status==='pending_approval')await ptwQueueApprovalEmail(res[0],1);
         toast('Permit created! Ref: '+ref);
         ptwCurrentId=res[0].id;
         await ptwShowDetail(res[0].id);
@@ -14189,10 +14233,12 @@ function ptwOpenApprovalPanel(){
   ptwRenderApprovalLevelsPanel(x);
 }
 
-function ptwRenderApprovalLevelsPanel(x){
+async function ptwRenderApprovalLevelsPanel(x){
   var el=document.getElementById('ptw-approval-levels-display');if(!el)return;
   el.innerHTML='';
   var levels=parseInt(x.approval_level_required)||3;
+  var settings=await ptwGetApprovalSettings();
+  var firstPending=ptwFirstPendingApprovalLevel(x);
   var lvls=[
     {n:1,label:'Level 1 — Area Supervisor',by_field:'approval_l1_by',at_field:'approval_l1_at',status_field:'approval_l1_status'},
     {n:2,label:'Level 2 — Department Manager',by_field:'approval_l2_by',at_field:'approval_l2_at',status_field:'approval_l2_status'},
@@ -14201,28 +14247,43 @@ function ptwRenderApprovalLevelsPanel(x){
   for(var i=0;i<levels;i++){
     var lv=lvls[i];
     var status=x[lv.status_field]||'pending';
+    var approver=ptwApproverForLevel(settings,lv.n);
+    var canAct=status==='pending'&&isMgr()&&x.status==='pending_approval'&&lv.n===firstPending;
     var card=document.createElement('div');
     card.className='card';card.style.marginBottom='12px';
     var sc=status==='approved'?['#EAF3DE','#3B6D11']:status==='rejected'?['#FCEBEB','#A32D2D']:['#FEF9EC','#854F0B'];
     card.innerHTML='<div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:10px">'
       +'<div><div style="font-weight:700;font-size:14px">'+escH(lv.label)+'</div>'
       +(x[lv.by_field]?'<div style="font-size:12px;color:var(--text2)">'+escH(x[lv.by_field])+(x[lv.at_field]?' · '+new Date(x[lv.at_field]).toLocaleDateString('en-GB'):'')+'</div>':'')
+      +'<div style="font-size:12px;color:var(--text2);margin-top:3px">Expected approver: <strong>'+escH(approver.name||approver.email||'Not configured')+'</strong></div>'
       +'</div>'
       +'<span style="background:'+sc[0]+';color:'+sc[1]+';padding:4px 12px;border-radius:99px;font-weight:700;font-size:12px;text-transform:capitalize">'+status+'</span>'
       +'</div>'
-      +(status==='pending'&&isMgr()
-        ?'<div style="margin-top:12px"><div class="form-group"><label class="form-label">Your name</label><input type="text" id="approve-name-'+lv.n+'" placeholder="Your full name..." style="font-size:13px"/></div>'
-        +'<div style="display:flex;gap:8px;margin-top:8px">'
+      +(canAct
+        ?'<div style="margin-top:12px"><div style="font-size:12px;color:var(--text2);margin-bottom:8px">This is the current approval step. The audit trail will use the configured approver name, or your logged-in name if no approver is configured.</div>'
+        +'<div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap">'
         +'<button class="btn btn-primary" style="background:var(--green);border-color:var(--green)" onclick="ptwApprove('+lv.n+',\'approved\')"><i class="ti ti-check"></i>Approve Level '+lv.n+'</button>'
         +'<button class="btn" style="color:var(--red);border-color:var(--red)" onclick="ptwApprove('+lv.n+',\'rejected\')"><i class="ti ti-x"></i>Reject</button>'
-        +'</div></div>':'');
+        +'</div></div>':(status==='pending'&&x.status==='pending_approval'?'<div style="margin-top:10px;font-size:12px;color:var(--text2)">Waiting for previous approval level.</div>':''));
     el.appendChild(card);
   }
 }
 
+function ptwFirstPendingApprovalLevel(x){
+  var levels=parseInt(x.approval_level_required)||3;
+  for(var i=1;i<=levels;i++){
+    if((x['approval_l'+i+'_status']||'pending')!=='approved')return i;
+  }
+  return null;
+}
+
 async function ptwApprove(level, action){
   var x=ptwAllData.find(function(r){return r.id===ptwCurrentId;});if(!x)return;
-  var name=document.getElementById('approve-name-'+level)?.value?.trim()||prof?.full_name||'Approver';
+  var firstPending=ptwFirstPendingApprovalLevel(x);
+  if(action==='approved'&&firstPending&&level!==firstPending){toast('Approval must follow the Level 1, Level 2, Level 3 sequence.',false);return;}
+  var settings=await ptwGetApprovalSettings();
+  var approver=ptwApproverForLevel(settings,level);
+  var name=approver.name||prof?.full_name||prof?.email||'Approver';
   var update={updated_at:new Date().toISOString()};
   update['approval_l'+level+'_by']=name;
   update['approval_l'+level+'_at']=new Date().toISOString();
@@ -14241,6 +14302,7 @@ async function ptwApprove(level, action){
     await api('/permits?id=eq.'+ptwCurrentId,{m:'PATCH',p:'return=minimal',b:update});
     Object.assign(x,update);
     try{await api('/permit_activity_log',{m:'POST',p:'return=minimal',b:{company_id:ccid(),permit_id:ptwCurrentId,action:'Level '+level+' approval: '+action,performed_by:name,new_status:update.status||x.status}});}catch(ex){}
+    if(action==='approved'&&!update.status&&level<levels)await ptwQueueApprovalEmail(x,level+1);
     toast('Level '+level+' '+action+'!');
     ptwOpenApprovalPanel();
     ptwRenderWorkflowBar(x);
