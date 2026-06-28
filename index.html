@@ -3445,6 +3445,7 @@ const nameOpts='<option value="">Select person...</option>'+people.map(function(
 ['if-by','if-sign-inspector','if-sign-reviewer','obs-action-assigned','obs-observer','obs-person-observed','mf-assigned-by','ra-assessed-by','ra-approved-by','ra-reviewed-by','ra-sign-assessor','ra-sign-reviewer','ra-sign-approver','jsa-prepared-by','jsa-reviewed-by','jsa-approved-by','lc-responsible','lcaf-assessor','lcaf-approved-by','gapf-responsible','calf-responsible','ms-chaired-by','ms-responsible','kpi-resp','pif-emp-name','pif-issued-by','piif-emp-name','piif-inspector','prf-emp-name','prf-requested-by','prf-approved-by','epf-approved-by','bullf-author','bullf-approved-by','mom-chaired-by','mom-sign-chair','mom-sign-approver','sop-video-author','sop-author','sop-approver','adm-site-manager','tp-trainer','tfr-trainer','compf-person','compf-assessor','indf-person','indf-inducted-by','elef-person','ertf-name','mpf-warden','drf-conducted-by','drf-reviewed-by','drf-approved-by','bcpf-approved-by','msf-name','audf-name','spif-name','vaxf-name','odf-name','atex-resp','cpaf-assessor','eif-inspector'].forEach(id=>{document.querySelectorAll('[id="'+id+'"]').forEach(el=>{if(el&&!el.multiple&&el.tagName==='SELECT'){var cur=el.value;el.innerHTML=nameOpts;if(cur){el.value=cur;if(el.value!==cur){var o=document.createElement('option');o.value=cur;o.textContent=cur+' (saved text)';el.appendChild(o);el.value=cur;}}}});});
 const ms=document.getElementById('tf-attendees');
 if(ms)ms.innerHTML=people.map(p=>'<option value="'+p.id+'">'+p.last_name+', '+p.first_name+'</option>').join('');
+if(typeof ptwPopulatePeopleFields==='function')ptwPopulatePeopleFields();
 }
 
 function personFullName(p){
@@ -13403,6 +13404,79 @@ function ptwFillIssuerDisplay(saved){
   if(txt)txt.value=name;
 }
 
+function ptwPersonName(p){
+  return p?[p.first_name,p.last_name].filter(Boolean).join(' ')||p.email||'':'';
+}
+
+function ptwPersonOption(p){
+  var name=ptwPersonName(p);
+  var label=[p.last_name,p.first_name].filter(Boolean).join(', ')||name||p.id;
+  if(p.job_title)label+=' - '+p.job_title;
+  if(p.department)label+=' ('+p.department+')';
+  return '<option value="'+escH(p.id)+'" data-name="'+escH(name)+'" data-email="'+escH(p.email||'')+'" data-dept="'+escH(p.department||'')+'">'+escH(label)+'</option>';
+}
+
+function ptwPopulatePeopleFields(){
+  var list=(people||[]).map(ptwPersonOption).join('');
+  var receiver=document.getElementById('pf-receiver');
+  if(receiver){
+    var cur=receiver.value;
+    receiver.innerHTML='<option value="">Select receiver / supervisor...</option>'+list+'<option value="__manual__">Other / type manually...</option>';
+    if(cur){receiver.value=cur;if(receiver.value!==cur)receiver.value='__manual__';}
+    ptwReceiverChanged();
+  }
+  var team=document.getElementById('pf-team');
+  if(team){
+    var selected=Array.from(team.selectedOptions||[]).map(function(o){return o.value;});
+    team.innerHTML=list;
+    Array.from(team.options||[]).forEach(function(opt){opt.selected=selected.includes(opt.value);});
+  }
+}
+
+function ptwReceiverChanged(){
+  var sel=document.getElementById('pf-receiver');
+  var manual=document.getElementById('pf-receiver-manual-wrap');
+  if(manual)manual.style.display=sel&&sel.value==='__manual__'?'block':'none';
+  if(sel&&sel.value&&sel.value!=='__manual__'){
+    var opt=sel.selectedOptions&&sel.selectedOptions[0];
+    var dept=opt?.dataset?.dept||'';
+    var deptEl=document.getElementById('pf-dept');
+    if(dept&&deptEl&&!deptEl.value)deptEl.value=dept;
+  }
+}
+
+function ptwReceiverValue(){
+  var sel=document.getElementById('pf-receiver');
+  var manual=(document.getElementById('pf-receiver-manual')?.value||'').trim();
+  if(!sel||!sel.value)return {id:null,name:manual||null,email:null};
+  if(sel.value==='__manual__')return {id:null,name:manual||null,email:null};
+  var opt=sel.selectedOptions&&sel.selectedOptions[0];
+  return {id:sel.value,name:opt?.dataset?.name||opt?.textContent||sel.value,email:opt?.dataset?.email||null};
+}
+
+function ptwSetReceiverValue(idOrName,name){
+  var sel=document.getElementById('pf-receiver');
+  var manual=document.getElementById('pf-receiver-manual');
+  if(!sel)return;
+  var val=idOrName||'';
+  sel.value=val;
+  if(val&&sel.value!==val){
+    sel.value='__manual__';
+    if(manual)manual.value=name||idOrName||'';
+  }else if(manual){
+    manual.value='';
+  }
+  ptwReceiverChanged();
+}
+
+function ptwTeamValue(){
+  var sel=document.getElementById('pf-team');
+  var selected=sel?Array.from(sel.selectedOptions||[]).map(function(o){return o.dataset.name||o.textContent||o.value;}):[];
+  var extra=(document.getElementById('pf-team-extra')?.value||'').trim();
+  if(extra)selected.push(extra);
+  return selected.join(', ');
+}
+
 function ptwPrecautionRow(item, checked){
   return '<label style="display:grid;grid-template-columns:20px minmax(0,1fr);align-items:start;gap:10px;padding:9px 12px;background:#f9fafb;border-radius:8px;cursor:pointer;min-height:44px">'
     +'<input type="checkbox" style="accent-color:var(--green);width:16px;height:16px;margin:1px 0 0 0" '+(checked?'checked':'')+'>'
@@ -13874,7 +13948,7 @@ function ptwNew(){
   document.getElementById('ptw-precautions-list').innerHTML='';
   document.getElementById('ptw-smart-check-panel').innerHTML='';
   // Clear fields
-  ['pf-no','pf-loc','pf-dept','pf-desc','pf-receiver','pf-team','pf-ra-ref','pf-ms-ref','pf-ppe-extra','pf-precautions'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
+  ['pf-no','pf-loc','pf-dept','pf-desc','pf-receiver','pf-receiver-manual','pf-team','pf-team-extra','pf-ra-ref','pf-ms-ref','pf-ppe-extra','pf-precautions'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
   ['pf-start','pf-end'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
   var priority=document.getElementById('pf-priority');if(priority)priority.value='medium';
   var risk=document.getElementById('pf-risk');if(risk)risk.value='medium';
@@ -13884,6 +13958,7 @@ function ptwNew(){
   document.querySelectorAll('#ptw-ppe-checks input[type="checkbox"]').forEach(function(cb){cb.checked=false;});
   // Permit issuer is automatically captured from the logged-in user.
   ptwFillIssuerDisplay();
+  ptwPopulatePeopleFields();
   var conSel=document.getElementById('pf-contractor');
   if(conSel){conSel.innerHTML='<option value="">Internal / No contractor</option>';try{api('/contractors?select=id,contractor_name&status=eq.approved'+cf()).then(function(d){(d||[]).forEach(function(c){var o=document.createElement('option');o.value=c.id;o.textContent=c.contractor_name;conSel.appendChild(o);});});}catch(ex){}}
   var woSel=document.getElementById('pf-wo');
@@ -14023,6 +14098,7 @@ async function ptwSave(targetStatus){
   var issuer=ptwCurrentIssuer();
   var issuerId=issuer.id;
   var issuerName=issuer.name;
+  var receiver=ptwReceiverValue();
   var body={
     company_id:ccid(),
     permit_type_v2:type,permit_type:type,
@@ -14031,9 +14107,9 @@ async function ptwSave(targetStatus){
     planned_start:g('pf-start'),planned_end:g('pf-end'),
     permit_issuer_id:issuerId||null,permit_issuer_name:issuerName||null,
     issued_by:issuerName||null,
-    permit_receiver_name:g('pf-receiver'),permit_receiver:g('pf-receiver'),
+    permit_receiver_name:receiver.name,permit_receiver:receiver.id||receiver.name,
     contractor_id:g('pf-contractor')||null,
-    team_members:g('pf-team'),
+    team_members:ptwTeamValue(),
     ra_ref:g('pf-ra-ref'),method_statement_ref:g('pf-ms-ref'),
     ppe_required:ppe,precautions_checklist:precautions,
     approval_level_required:parseInt(g('pf-approval-levels'))||3,
@@ -14089,8 +14165,9 @@ function ptwEditCurrent(){
   g('pf-desc',x.work_description||x.precautions||x.description);
   g('pf-loc',x.work_location||x.location);
   g('pf-dept',x.department);
-  g('pf-receiver',x.permit_receiver_name||x.permit_receiver);
-  g('pf-team',x.team_members);
+  ptwPopulatePeopleFields();
+  ptwSetReceiverValue(x.permit_receiver,x.permit_receiver_name||x.permit_receiver);
+  g('pf-team-extra',x.team_members);
   ptwLoadReferenceOptions(x.ra_ref,x.method_statement_ref);
   g('pf-priority',x.priority||'medium');
   g('pf-risk',x.risk_level||'medium');
@@ -33099,10 +33176,11 @@ function fireEquipStatusBadge(s) {
 <div class="card-title" style="color:#8B5CF6"><i class="ti ti-users"></i> Personnel</div>
 <div class="form-row">
 <div class="form-group"><label class="form-label">Permit issuer</label><input type="text" id="pf-issuer-name" readonly style="background:#f9fafb;font-weight:700" placeholder="Filled automatically"/><input type="hidden" id="pf-issuer"/></div>
-<div class="form-group"><label class="form-label">Permit receiver / Site supervisor</label><input type="text" id="pf-receiver" placeholder="Name of person accepting the permit"/></div>
+<div class="form-group"><label class="form-label">Permit receiver / Site supervisor</label><select id="pf-receiver" onchange="ptwReceiverChanged()"><option value="">Select receiver / supervisor...</option></select><div id="pf-receiver-manual-wrap" style="display:none;margin-top:8px"><input type="text" id="pf-receiver-manual" placeholder="Type receiver name..."/></div></div>
 <div class="form-group"><label class="form-label">Contractor (if applicable)</label><select id="pf-contractor"><option value="">Internal / No contractor</option></select></div>
 </div>
-<div class="form-group"><label class="form-label">Work team members</label><textarea id="pf-team" style="min-height:50px" placeholder="Names of all persons working under this permit..."></textarea></div>
+<div class="form-group"><label class="form-label">Work team members</label><select id="pf-team" multiple size="4" style="min-height:94px"></select><div style="font-size:11px;color:var(--text2);margin-top:4px">Hold Ctrl to select several people. Use the box below for visitors or workers not yet in People.</div></div>
+<div class="form-group"><label class="form-label">Additional team names</label><textarea id="pf-team-extra" style="min-height:46px" placeholder="Visitors or workers not listed above..."></textarea></div>
 </div>
 
 <!-- Section 3: Linked documents -->
