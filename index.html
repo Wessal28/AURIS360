@@ -3441,7 +3441,7 @@ function fillPplDrops(){
 const opts='<option value="">Select person...</option>'+people.map(p=>'<option value="'+p.id+'">'+p.last_name+', '+p.first_name+(p.job_title?' -- '+p.job_title:'')+'</option>').join('');
 const nameOpts='<option value="">Select person...</option>'+people.map(function(p){var nm=[p.first_name,p.last_name].filter(Boolean).join(' ')||p.email||'';return '<option value="'+escH(nm)+'">'+escH([p.last_name,p.first_name].filter(Boolean).join(', ')||nm)+(p.job_title?' -- '+escH(p.job_title):'')+'</option>';}).join('');
 ['ef-person','ef-by','ef-assigned','rf-by','invf-by','invf-persons','pf-contractor','pf-issued','pf-approved','nf-by','mf-chair','kf-resp','af-resp','df-owner'].forEach(id=>{const el=document.getElementById(id);if(el&&!el.multiple)el.innerHTML=opts;});
-['if-by','if-sign-inspector','if-sign-reviewer','obs-action-assigned','obs-observer','obs-person-observed','mf-assigned-by','ra-assessed-by','ra-approved-by','ra-reviewed-by','ra-sign-assessor','ra-sign-reviewer','ra-sign-approver','lc-responsible','lcaf-assessor','lcaf-approved-by','gapf-responsible','calf-responsible','ms-chaired-by','ms-responsible','kpi-resp','pif-emp-name','pif-issued-by','piif-emp-name','piif-inspector','prf-emp-name','prf-requested-by','prf-approved-by','epf-approved-by','bullf-author','bullf-approved-by','mom-sign-chair','mom-sign-approver','sop-author','sop-approver','adm-site-manager','tp-trainer','tfr-trainer','compf-person','compf-assessor','indf-person','indf-inducted-by','elef-person','ertf-name','mpf-warden','drf-conducted-by','drf-reviewed-by','drf-approved-by','bcpf-approved-by','msf-name','audf-name','spif-name','vaxf-name','odf-name'].forEach(id=>{document.querySelectorAll('[id="'+id+'"]').forEach(el=>{if(el&&!el.multiple&&el.tagName==='SELECT'){var cur=el.value;el.innerHTML=nameOpts;if(cur){el.value=cur;if(el.value!==cur){var o=document.createElement('option');o.value=cur;o.textContent=cur+' (saved text)';el.appendChild(o);el.value=cur;}}}});});
+['if-by','if-sign-inspector','if-sign-reviewer','obs-action-assigned','obs-observer','obs-person-observed','mf-assigned-by','ra-assessed-by','ra-approved-by','ra-reviewed-by','ra-sign-assessor','ra-sign-reviewer','ra-sign-approver','jsa-prepared-by','jsa-reviewed-by','jsa-approved-by','lc-responsible','lcaf-assessor','lcaf-approved-by','gapf-responsible','calf-responsible','ms-chaired-by','ms-responsible','kpi-resp','pif-emp-name','pif-issued-by','piif-emp-name','piif-inspector','prf-emp-name','prf-requested-by','prf-approved-by','epf-approved-by','bullf-author','bullf-approved-by','mom-sign-chair','mom-sign-approver','sop-author','sop-approver','adm-site-manager','tp-trainer','tfr-trainer','compf-person','compf-assessor','indf-person','indf-inducted-by','elef-person','ertf-name','mpf-warden','drf-conducted-by','drf-reviewed-by','drf-approved-by','bcpf-approved-by','msf-name','audf-name','spif-name','vaxf-name','odf-name'].forEach(id=>{document.querySelectorAll('[id="'+id+'"]').forEach(el=>{if(el&&!el.multiple&&el.tagName==='SELECT'){var cur=el.value;el.innerHTML=nameOpts;if(cur){el.value=cur;if(el.value!==cur){var o=document.createElement('option');o.value=cur;o.textContent=cur+' (saved text)';el.appendChild(o);el.value=cur;}}}});});
 const ms=document.getElementById('tf-attendees');
 if(ms)ms.innerHTML=people.map(p=>'<option value="'+p.id+'">'+p.last_name+', '+p.first_name+'</option>').join('');
 }
@@ -13055,11 +13055,28 @@ function raShowBowtie(){
 }
 
 // ── JSA / JHA Builder ─────────────────────────────────────────────────────────
+async function jsaLoadWorkOrderOptions(selectedWO){
+  var sel=document.getElementById('jsa-wo-ref');if(!sel)return;
+  sel.innerHTML='<option value="">Select work order...</option>';
+  try{
+    var work=await api('/work_schedule?select=id,ref_number,title,status'+cf()+'&order=created_at.desc');
+    (work||[]).forEach(function(w){
+      var ref=w.ref_number||w.id;
+      var o=document.createElement('option');
+      o.value=ref;o.textContent=ref+' - '+(w.title||'Work order')+(w.status?' ['+w.status+']':'');
+      sel.appendChild(o);
+    });
+  }catch(e){
+    var fail=document.createElement('option');fail.value='';fail.textContent='Unable to load work orders';sel.appendChild(fail);
+  }
+  if(selectedWO){setSelectValueWithFallback('jsa-wo-ref',selectedWO);}
+}
 function jsaNew(){
   jsaEditingId=null;jsaSteps=[];
   ['jsa-title','jsa-location','jsa-wo-ref','jsa-job-desc','jsa-prepared-by','jsa-reviewed-by','jsa-approved-by'].forEach(function(id){
     var el=document.getElementById(id);if(el)el.value='';
   });
+  fillPersonSelect('jsa-prepared-by',prof?.full_name||personFullName(prof));fillPersonSelect('jsa-reviewed-by');fillPersonSelect('jsa-approved-by');jsaLoadWorkOrderOptions();
   var dt=document.getElementById('jsa-date');if(dt)dt.value=new Date().toISOString().slice(0,10);
   var st=document.getElementById('jsa-status');if(st)st.value='draft';
   document.getElementById('jsa-form-title').textContent='New JSA / JHA';
@@ -13082,12 +13099,12 @@ function jsaEdit(id){
   document.getElementById('jsa-title').value=x.title||'';
   document.getElementById('jsa-location').value=x.location||'';
   document.getElementById('jsa-date').value=x.date||'';
-  document.getElementById('jsa-prepared-by').value=x.prepared_by||'';
-  document.getElementById('jsa-reviewed-by').value=x.reviewed_by||'';
-  document.getElementById('jsa-approved-by').value=x.approved_by||'';
+  fillPersonSelect('jsa-prepared-by',x.prepared_by||'');
+  fillPersonSelect('jsa-reviewed-by',x.reviewed_by||'');
+  fillPersonSelect('jsa-approved-by',x.approved_by||'');
   document.getElementById('jsa-status').value=x.status||'draft';
   document.getElementById('jsa-job-desc').value=x.job_description||'';
-  document.getElementById('jsa-wo-ref').value=x.work_order_ref||'';
+  jsaLoadWorkOrderOptions(x.work_order_ref||'');
   document.getElementById('jsa-form-title').textContent='Edit JSA';
   document.getElementById('jsa-form-ref').textContent=x.jsa_ref||'—';
   document.getElementById('jsa-steps-container').innerHTML='';
@@ -31645,15 +31662,15 @@ function fireEquipStatusBadge(s) {
 <div class="form-group"><label class="form-label">JSA Title</label><input type="text" id="jsa-title" placeholder="e.g. Installation of new electrical panel"/></div>
 <div class="form-group"><label class="form-label">Date</label><input type="date" id="jsa-date"/></div>
 <div class="form-group"><label class="form-label">Location</label><input type="text" id="jsa-location"/></div>
-<div class="form-group"><label class="form-label">Work order ref</label><input type="text" id="jsa-wo-ref" style="font-family:monospace"/></div>
+<div class="form-group"><label class="form-label">Work order ref</label><select id="jsa-wo-ref" style="font-family:monospace"><option value="">Select work order...</option></select></div>
 </div>
 <div class="form-row">
 <div class="form-group"><label class="form-label">Job description</label><textarea id="jsa-job-desc" style="min-height:60px"></textarea></div>
 </div>
 <div class="form-row">
-<div class="form-group"><label class="form-label">Prepared by</label><input type="text" id="jsa-prepared-by"/></div>
-<div class="form-group"><label class="form-label">Reviewed by</label><input type="text" id="jsa-reviewed-by"/></div>
-<div class="form-group"><label class="form-label">Approved by</label><input type="text" id="jsa-approved-by"/></div>
+<div class="form-group"><label class="form-label">Prepared by</label><select id="jsa-prepared-by"><option value="">Select person...</option></select></div>
+<div class="form-group"><label class="form-label">Reviewed by</label><select id="jsa-reviewed-by"><option value="">Select person...</option></select></div>
+<div class="form-group"><label class="form-label">Approved by</label><select id="jsa-approved-by"><option value="">Select person...</option></select></div>
 <div class="form-group"><label class="form-label">Status</label><select id="jsa-status"><option value="draft">Draft</option><option value="active">Active</option><option value="superseded">Superseded</option></select></div>
 </div>
 </div>
