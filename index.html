@@ -3494,6 +3494,29 @@ function fillDocumentSelect(id,selectedRef,excludeId){
   el.innerHTML=opts;
   setSelectValueWithFallback(id,cur);
 }
+async function fillMethodStatementSelect(id,selectedRef){
+  var el=document.getElementById(id);if(!el)return;
+  var cur=selectedRef||el.value||'';
+  el.innerHTML='<option value="">Select method statement / SOP...</option>';
+  var seen={};
+  var addOpt=function(ref,title,status,source){
+    if(!ref||seen[ref])return;
+    seen[ref]=true;
+    var o=document.createElement('option');
+    o.value=ref;
+    o.textContent=ref+' - '+(title||'Method statement / SOP')+(status?' ('+status+')':'')+(source?' - '+source:'');
+    el.appendChild(o);
+  };
+  try{
+    var docs=await api('/documents?select=id,doc_ref,reference_no,title,document_type,doc_type,status,approval_status'+cf()+'&or=(document_type.eq.sop,doc_type.eq.sop,document_type.eq.procedure,doc_type.eq.procedure,document_type.eq.work_instruction,doc_type.eq.work_instruction)&order=created_at.desc&limit=100');
+    (docs||[]).forEach(function(d){addOpt(d.doc_ref||d.reference_no||d.id,d.title,d.approval_status||d.status,'Document Control');});
+  }catch(e){console.warn('Document Control SOP list failed:',e.message);}
+  try{
+    var sops=await api('/sop_documents?select=*'+cf()+'&order=created_at.desc&limit=100');
+    (sops||[]).forEach(function(d){addOpt(d.sop_number||d.reference_no||d.doc_ref||d.id,d.title||d.sop_title||d.name,d.status,'SOP Generator');});
+  }catch(e){console.warn('SOP document list failed:',e.message);}
+  if(cur)setSelectValueWithFallback(id,cur);
+}
 function dcPersonSelect(nameId,deptId){
   var name=document.getElementById(nameId)?.value||'';
   var p=trainPersonByName(name);
@@ -13364,20 +13387,7 @@ async function ptwLoadReferenceOptions(selectedRA, selectedMS){
     if(selectedRA){raSel.value=selectedRA;if(raSel.value!==selectedRA){var savedRA=document.createElement('option');savedRA.value=selectedRA;savedRA.textContent=selectedRA+' (saved text)';raSel.appendChild(savedRA);raSel.value=selectedRA;}}
   }
   if(msSel){
-    msSel.innerHTML='<option value="">Select method statement / SOP...</option>';
-    try{
-      var docs=await api('/sop_documents?select=*'+cf()+'&order=created_at.desc&limit=100');
-      (docs||[]).forEach(function(d){
-        var ref=d.sop_number||d.reference_no||d.doc_ref||d.id;
-        var title=d.title||d.sop_title||d.name||'Method statement / SOP';
-        var o=document.createElement('option');
-        o.value=ref;
-        o.textContent=ref+' - '+title;
-        msSel.appendChild(o);
-      });
-    }catch(e){
-      var o=document.createElement('option');o.value='';o.textContent='Unable to load method statement list';msSel.appendChild(o);
-    }
+    await fillMethodStatementSelect('pf-ms-ref',selectedMS);
     if(selectedMS){msSel.value=selectedMS;if(msSel.value!==selectedMS){var savedMS=document.createElement('option');savedMS.value=selectedMS;savedMS.textContent=selectedMS+' (saved text)';msSel.appendChild(savedMS);msSel.value=selectedMS;}}
   }
 }
@@ -15056,20 +15066,7 @@ async function catwLoadReferenceOptions(selectedRA, selectedMS){
     }
   }
   if(msSel){
-    msSel.innerHTML='<option value="">Select method statement / SOP...</option>';
-    try{
-      var docs=await api('/sop_documents?select=*'+cf()+'&order=created_at.desc&limit=100');
-      (docs||[]).forEach(function(d){
-        var ref=d.sop_number||d.reference_no||d.doc_ref||d.id;
-        var title=d.title||d.sop_title||d.name||'Method statement / SOP';
-        var o=document.createElement('option');
-        o.value=ref;
-        o.textContent=ref+' - '+title;
-        msSel.appendChild(o);
-      });
-    }catch(e){
-      var mo=document.createElement('option');mo.value='';mo.textContent='Unable to load method statement list';msSel.appendChild(mo);
-    }
+    await fillMethodStatementSelect('catwf-ms-ref',selectedMS);
     if(selectedMS){
       msSel.value=selectedMS;
       if(msSel.value!==selectedMS){var savedMS=document.createElement('option');savedMS.value=selectedMS;savedMS.textContent=selectedMS+' (saved text)';msSel.appendChild(savedMS);msSel.value=selectedMS;}
