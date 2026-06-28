@@ -3517,6 +3517,27 @@ async function fillMethodStatementSelect(id,selectedRef){
   }catch(e){console.warn('SOP document list failed:',e.message);}
   if(cur)setSelectValueWithFallback(id,cur);
 }
+async function fillRiskAssessmentSelect(id,selectedRef){
+  var el=document.getElementById(id);if(!el)return;
+  var cur=selectedRef||el.value||'';
+  el.innerHTML='<option value="">Select risk assessment...</option>';
+  try{
+    var ras=await api('/risk_assessments?select=id,ra_ref,title,activity,status,revision'+cf()+'&order=created_at.desc&limit=150');
+    (ras||[]).forEach(function(r){
+      var ref=r.ra_ref||r.id;
+      var title=r.title||r.activity||'Risk assessment';
+      var status=r.status||'';
+      var rev=r.revision?(' rev '+r.revision):'';
+      var o=document.createElement('option');
+      o.value=ref;
+      o.textContent=ref+' - '+title+(status?' ('+status+')':'')+rev;
+      el.appendChild(o);
+    });
+  }catch(e){
+    var ro=document.createElement('option');ro.value='';ro.textContent='Unable to load risk assessments';el.appendChild(ro);
+  }
+  if(cur)setSelectValueWithFallback(id,cur);
+}
 function dcPersonSelect(nameId,deptId){
   var name=document.getElementById(nameId)?.value||'';
   var p=trainPersonByName(name);
@@ -9424,20 +9445,7 @@ async function wsLoadReferenceOptions(selectedRA,selectedPTW){
   var raSel=document.getElementById('wsf-ra-ref');
   var ptwSel=document.getElementById('wsf-ptw-ref');
   if(raSel){
-    raSel.innerHTML='<option value="">Select risk assessment...</option>';
-    try{
-      var ras=await api('/risk_assessments?select=id,ra_ref,title,activity,status'+cf()+'&order=created_at.desc');
-      (ras||[]).forEach(function(r){
-        var ref=r.ra_ref||r.id;
-        var title=r.title||r.activity||'Risk assessment';
-        var o=document.createElement('option');
-        o.value=ref;o.textContent=ref+' - '+title+(r.status?' ['+r.status+']':'');
-        raSel.appendChild(o);
-      });
-    }catch(e){
-      var ro=document.createElement('option');ro.value='';ro.textContent='Unable to load risk assessments';raSel.appendChild(ro);
-    }
-    if(selectedRA){raSel.value=selectedRA;if(raSel.value!==selectedRA){var savedRA=document.createElement('option');savedRA.value=selectedRA;savedRA.textContent=selectedRA+' (saved text)';raSel.appendChild(savedRA);raSel.value=selectedRA;}}
+    await fillRiskAssessmentSelect('wsf-ra-ref',selectedRA);
   }
   if(ptwSel){
     ptwSel.innerHTML='<option value="">Select permit...</option>';
@@ -13371,20 +13379,7 @@ async function ptwLoadReferenceOptions(selectedRA, selectedMS){
   var raSel=document.getElementById('pf-ra-ref');
   var msSel=document.getElementById('pf-ms-ref');
   if(raSel){
-    raSel.innerHTML='<option value="">Select risk assessment...</option>';
-    try{
-      var ras=await api('/risk_assessments?select=id,ra_ref,title,activity,status'+cf()+'&order=created_at.desc&limit=100');
-      (ras||[]).forEach(function(r){
-        var ref=r.ra_ref||r.id;
-        var o=document.createElement('option');
-        o.value=ref;
-        o.textContent=(r.ra_ref||'RA')+' - '+(r.title||r.activity||'Risk assessment')+(r.status?' ('+r.status+')':'');
-        raSel.appendChild(o);
-      });
-    }catch(e){
-      var o=document.createElement('option');o.value='';o.textContent='Unable to load RA list';raSel.appendChild(o);
-    }
-    if(selectedRA){raSel.value=selectedRA;if(raSel.value!==selectedRA){var savedRA=document.createElement('option');savedRA.value=selectedRA;savedRA.textContent=selectedRA+' (saved text)';raSel.appendChild(savedRA);raSel.value=selectedRA;}}
+    await fillRiskAssessmentSelect('pf-ra-ref',selectedRA);
   }
   if(msSel){
     await fillMethodStatementSelect('pf-ms-ref',selectedMS);
@@ -15047,23 +15042,7 @@ async function catwLoadReferenceOptions(selectedRA, selectedMS){
   var raSel=document.getElementById('catwf-ra-ref');
   var msSel=document.getElementById('catwf-ms-ref');
   if(raSel){
-    raSel.innerHTML='<option value="">Select risk assessment...</option>';
-    try{
-      var ras=await api('/risk_assessments?select=id,ra_ref,title,activity,status'+cf()+'&order=created_at.desc&limit=100');
-      (ras||[]).forEach(function(r){
-        var ref=r.ra_ref||r.id;
-        var o=document.createElement('option');
-        o.value=ref;
-        o.textContent=(r.ra_ref||'RA')+' - '+(r.title||r.activity||'Risk assessment')+(r.status?' ('+r.status+')':'');
-        raSel.appendChild(o);
-      });
-    }catch(e){
-      var ro=document.createElement('option');ro.value='';ro.textContent='Unable to load RA list';raSel.appendChild(ro);
-    }
-    if(selectedRA){
-      raSel.value=selectedRA;
-      if(raSel.value!==selectedRA){var savedRA=document.createElement('option');savedRA.value=selectedRA;savedRA.textContent=selectedRA+' (saved text)';raSel.appendChild(savedRA);raSel.value=selectedRA;}
-    }
+    await fillRiskAssessmentSelect('catwf-ra-ref',selectedRA);
   }
   if(msSel){
     await fillMethodStatementSelect('catwf-ms-ref',selectedMS);
@@ -17535,20 +17514,7 @@ async function ppeIssLoadReferenceOptions(selectedWO,selectedRA){
     if(selectedWO){woSel.value=selectedWO;if(woSel.value!==selectedWO){var savedWO=document.createElement('option');savedWO.value=selectedWO;savedWO.textContent=selectedWO+' (saved text)';woSel.appendChild(savedWO);woSel.value=selectedWO;}}
   }
   if(raSel){
-    raSel.innerHTML='<option value="">Select risk assessment...</option>';
-    try{
-      var ras=await api('/risk_assessments?select=id,ra_ref,title,activity,status'+cf()+'&order=created_at.desc');
-      (ras||[]).forEach(function(r){
-        var ref=r.ra_ref||r.id;
-        var title=r.title||r.activity||'Risk assessment';
-        var o=document.createElement('option');
-        o.value=ref;o.textContent=ref+' - '+title+(r.status?' ['+r.status+']':'');
-        raSel.appendChild(o);
-      });
-    }catch(e){
-      var ro=document.createElement('option');ro.value='';ro.textContent='Unable to load risk assessments';raSel.appendChild(ro);
-    }
-    if(selectedRA){raSel.value=selectedRA;if(raSel.value!==selectedRA){var savedRA=document.createElement('option');savedRA.value=selectedRA;savedRA.textContent=selectedRA+' (saved text)';raSel.appendChild(savedRA);raSel.value=selectedRA;}}
+    await fillRiskAssessmentSelect('pif-ra-ref',selectedRA);
   }
 }
 
@@ -18763,20 +18729,7 @@ async function atexLoadReferenceOptions(selectedRA,selectedPermitType){
   var raSel=document.getElementById('atex-ra');
   var permitSel=document.getElementById('atex-permit');
   if(raSel){
-    raSel.innerHTML='<option value="">Select risk assessment...</option>';
-    try{
-      var ras=await api('/risk_assessments?select=id,ra_ref,title,activity,status'+cf()+'&order=created_at.desc');
-      (ras||[]).forEach(function(r){
-        var ref=r.ra_ref||r.id;
-        var title=r.title||r.activity||'Risk assessment';
-        var o=document.createElement('option');
-        o.value=ref;o.textContent=ref+' - '+title+(r.status?' ['+r.status+']':'');
-        raSel.appendChild(o);
-      });
-    }catch(e){
-      var ro=document.createElement('option');ro.value='';ro.textContent='Unable to load risk assessments';raSel.appendChild(ro);
-    }
-    if(selectedRA){raSel.value=selectedRA;if(raSel.value!==selectedRA){var savedRA=document.createElement('option');savedRA.value=selectedRA;savedRA.textContent=selectedRA+' (saved text)';raSel.appendChild(savedRA);raSel.value=selectedRA;}}
+    await fillRiskAssessmentSelect('atex-ra',selectedRA);
   }
   if(permitSel){
     permitSel.innerHTML='<option value="">Select permit type...</option>';
