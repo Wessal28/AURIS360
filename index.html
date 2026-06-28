@@ -14248,10 +14248,20 @@ function ptwRenderGasHistoryPanel(){
     }).join('')+'</div>';
 }
 
+function ptwClassifyGasTest(test){
+  var o2=parseFloat(test.o2),lel=parseFloat(test.lel),h2s=parseFloat(test.h2s),co=parseFloat(test.co);
+  if(isNaN(o2)||isNaN(lel))return 'borderline';
+  if(o2<19.5||o2>23.5||lel>=10||(!isNaN(h2s)&&h2s>=5)||(!isNaN(co)&&co>=25))return 'fail';
+  if(o2<20||o2>23||lel>=5||(!isNaN(h2s)&&h2s>0)||(!isNaN(co)&&co>=10))return 'borderline';
+  return 'pass';
+}
+
 async function ptwAddGasTest(){
   var g=function(id){var el=document.getElementById(id);return el?el.value||'':null;};
   var test={datetime:g('gas-datetime'),tester:ptwCurrentUserName(),equipment:g('gas-equipment'),cal_date:g('gas-cal-date'),o2:g('gas-o2'),lel:g('gas-lel'),h2s:g('gas-h2s'),co:g('gas-co'),location:g('gas-location'),result:g('gas-result'),notes:g('gas-notes')};
   if(!test.o2||!test.lel)return toast('Please enter both O₂ and LEL readings',false);
+  var calculated=ptwClassifyGasTest(test);
+  if(test.result==='pass'&&calculated!=='pass')test.result=calculated;
   ptwGasTests.push(test);
   ptwRenderGasHistoryPanel();
   // Save to DB
@@ -33282,7 +33292,7 @@ function fireEquipStatusBadge(s) {
 <div class="form-row">
 <div class="form-group"><label class="form-label">Test location / point</label><input type="text" id="gas-location" placeholder="e.g. Top, middle, bottom of vessel"/></div>
 <div class="form-group"><label class="form-label">Result</label>
-<select id="gas-result"><option value="pass">✓ PASS — Safe to proceed</option><option value="fail">✗ FAIL — Unsafe, do not enter</option><option value="borderline">⚠ Borderline — Monitor closely</option></select></div>
+<select id="gas-result" disabled style="background:#f9fafb"><option value="pass">✓ PASS — Safe to proceed</option><option value="fail">✗ FAIL — Unsafe, do not enter</option><option value="borderline">⚠ Borderline — Monitor closely</option></select><div style="font-size:10px;color:var(--text2);margin-top:4px">Calculated automatically from gas readings</div></div>
 </div>
 <div class="form-group"><label class="form-label">Notes</label><textarea id="gas-notes" style="min-height:40px"></textarea></div>
 <button class="btn btn-primary" onclick="ptwAddGasTest()"><i class="ti ti-plus"></i>Add this gas test</button>
