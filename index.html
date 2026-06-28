@@ -14256,6 +14256,12 @@ function ptwClassifyGasTest(test){
   return 'pass';
 }
 
+function ptwUpdateGasResultPreview(){
+  var g=function(id){var el=document.getElementById(id);return el?el.value||'':null;};
+  var result=document.getElementById('gas-result');
+  if(result)result.value=ptwClassifyGasTest({o2:g('gas-o2'),lel:g('gas-lel'),h2s:g('gas-h2s'),co:g('gas-co')});
+}
+
 async function ptwAddGasTest(){
   var g=function(id){var el=document.getElementById(id);return el?el.value||'':null;};
   var test={datetime:g('gas-datetime'),tester:ptwCurrentUserName(),equipment:g('gas-equipment'),cal_date:g('gas-cal-date'),o2:g('gas-o2'),lel:g('gas-lel'),h2s:g('gas-h2s'),co:g('gas-co'),location:g('gas-location'),result:g('gas-result'),notes:g('gas-notes')};
@@ -33280,13 +33286,13 @@ function fireEquipStatusBadge(s) {
 <div class="form-group"><label class="form-label">Calibration date</label><input type="date" id="gas-cal-date"/></div>
 </div>
 <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px">
-<div class="form-group" style="margin:0"><label class="form-label">O₂ (%)</label><input type="number" id="gas-o2" step="0.1" min="0" max="100" placeholder="19.5–23.5"/>
+<div class="form-group" style="margin:0"><label class="form-label">O₂ (%)</label><input type="number" id="gas-o2" step="0.1" min="0" max="100" placeholder="19.5–23.5" oninput="ptwUpdateGasResultPreview()"/>
 <div style="font-size:10px;color:var(--text2)">Safe: 19.5–23.5%</div></div>
-<div class="form-group" style="margin:0"><label class="form-label">LEL (%)</label><input type="number" id="gas-lel" step="0.1" min="0" max="100" placeholder="&lt;10%"/>
+<div class="form-group" style="margin:0"><label class="form-label">LEL (%)</label><input type="number" id="gas-lel" step="0.1" min="0" max="100" placeholder="&lt;10%" oninput="ptwUpdateGasResultPreview()"/>
 <div style="font-size:10px;color:var(--text2)">Safe: &lt;10%</div></div>
-<div class="form-group" style="margin:0"><label class="form-label">H₂S (ppm)</label><input type="number" id="gas-h2s" step="0.1" min="0" placeholder="&lt;5 ppm"/>
+<div class="form-group" style="margin:0"><label class="form-label">H₂S (ppm)</label><input type="number" id="gas-h2s" step="0.1" min="0" placeholder="&lt;5 ppm" oninput="ptwUpdateGasResultPreview()"/>
 <div style="font-size:10px;color:var(--text2)">Safe: &lt;5 ppm</div></div>
-<div class="form-group" style="margin:0"><label class="form-label">CO (ppm)</label><input type="number" id="gas-co" step="0.1" min="0" placeholder="&lt;25 ppm"/>
+<div class="form-group" style="margin:0"><label class="form-label">CO (ppm)</label><input type="number" id="gas-co" step="0.1" min="0" placeholder="&lt;25 ppm" oninput="ptwUpdateGasResultPreview()"/>
 <div style="font-size:10px;color:var(--text2)">Safe: &lt;25 ppm</div></div>
 </div>
 <div class="form-row">
