@@ -14229,6 +14229,7 @@ function ptwOpenGasPanel(){
   ptwGasTests=Array.isArray(x.gas_tests)?JSON.parse(JSON.stringify(x.gas_tests)):[];
   document.getElementById('gas-datetime').value=new Date().toISOString().slice(0,16);
   ['gas-tester','gas-equipment','gas-cal-date','gas-o2','gas-lel','gas-h2s','gas-co','gas-location','gas-notes'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
+  var gt=document.getElementById('gas-tester');if(gt)gt.value=ptwCurrentUserName();
   var gr=document.getElementById('gas-result');if(gr)gr.value='pass';
   ptwRenderGasHistoryPanel();
 }
@@ -14249,7 +14250,7 @@ function ptwRenderGasHistoryPanel(){
 
 async function ptwAddGasTest(){
   var g=function(id){var el=document.getElementById(id);return el?el.value||'':null;};
-  var test={datetime:g('gas-datetime'),tester:g('gas-tester'),equipment:g('gas-equipment'),cal_date:g('gas-cal-date'),o2:g('gas-o2'),lel:g('gas-lel'),h2s:g('gas-h2s'),co:g('gas-co'),location:g('gas-location'),result:g('gas-result'),notes:g('gas-notes')};
+  var test={datetime:g('gas-datetime'),tester:ptwCurrentUserName(),equipment:g('gas-equipment'),cal_date:g('gas-cal-date'),o2:g('gas-o2'),lel:g('gas-lel'),h2s:g('gas-h2s'),co:g('gas-co'),location:g('gas-location'),result:g('gas-result'),notes:g('gas-notes')};
   if(!test.o2&&!test.lel)return toast('Please enter at least O₂ and LEL readings',false);
   ptwGasTests.push(test);
   ptwRenderGasHistoryPanel();
@@ -14271,6 +14272,7 @@ function ptwOpenIsolationPanel(){
   var x=ptwAllData.find(function(r){return r.id===ptwCurrentId;})||{};
   ptwIsolations=Array.isArray(x.isolations)?JSON.parse(JSON.stringify(x.isolations)):[];
   ['iso-tag','iso-desc','iso-by','iso-verified-by'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
+  var ib=document.getElementById('iso-by');if(ib)ib.value=ptwCurrentUserName();
   var dt=document.getElementById('iso-datetime');if(dt)dt.value=new Date().toISOString().slice(0,16);
   var tp=document.getElementById('iso-type');if(tp)tp.value='electrical';
   var st=document.getElementById('iso-status');if(st)st.value='isolated';
@@ -14295,7 +14297,7 @@ function ptwRenderIsolationListPanel(){
 async function ptwAddIsolation(){
   var g=function(id){var el=document.getElementById(id);return el?el.value||'':null;};
   var tag=g('iso-tag');if(!tag){toast('Please enter isolation tag/ID',false);return;}
-  var iso={tag:tag,description:g('iso-desc'),type:g('iso-type'),by:g('iso-by'),datetime:g('iso-datetime'),verified_by:g('iso-verified-by'),status:g('iso-status')||'isolated'};
+  var iso={tag:tag,description:g('iso-desc'),type:g('iso-type'),by:ptwCurrentUserName(),datetime:g('iso-datetime'),verified_by:g('iso-verified-by'),status:g('iso-status')||'isolated'};
   ptwIsolations.push(iso);
   ptwRenderIsolationListPanel();
   try{
@@ -14304,6 +14306,7 @@ async function ptwAddIsolation(){
     if(idx>=0)ptwAllData[idx].isolations=ptwIsolations;
     toast('Isolation point added: '+tag);
     ['iso-tag','iso-desc','iso-by','iso-verified-by'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
+    var ib=document.getElementById('iso-by');if(ib)ib.value=ptwCurrentUserName();
   }catch(e){toast(e.message,false);}
 }
 
@@ -33259,7 +33262,7 @@ function fireEquipStatusBadge(s) {
 <div class="card-title">New Gas Test Reading</div>
 <div class="form-row">
 <div class="form-group"><label class="form-label">Test date &amp; time</label><input type="datetime-local" id="gas-datetime"/></div>
-<div class="form-group"><label class="form-label">Tested by</label><input type="text" id="gas-tester"/></div>
+<div class="form-group"><label class="form-label">Tested by</label><input type="text" id="gas-tester" readonly style="background:#f9fafb;font-weight:700" placeholder="Filled automatically"/></div>
 <div class="form-group"><label class="form-label">Equipment used</label><input type="text" id="gas-equipment" placeholder="e.g. Multi-gas detector XA-3000"/></div>
 <div class="form-group"><label class="form-label">Calibration date</label><input type="date" id="gas-cal-date"/></div>
 </div>
@@ -33301,7 +33304,7 @@ function fireEquipStatusBadge(s) {
 <select id="iso-type"><option value="electrical">Electrical isolation</option><option value="valve">Valve — closed</option><option value="valve_blind">Valve — blinded</option><option value="mechanical">Mechanical block</option><option value="lock">LOTO lock applied</option><option value="tag">LOTO tag applied</option><option value="pressure">Pressure bled/vented</option><option value="other">Other</option></select></div>
 </div>
 <div class="form-row">
-<div class="form-group"><label class="form-label">Isolated by</label><input type="text" id="iso-by"/></div>
+<div class="form-group"><label class="form-label">Isolated by</label><input type="text" id="iso-by" readonly style="background:#f9fafb;font-weight:700" placeholder="Filled automatically"/></div>
 <div class="form-group"><label class="form-label">Date &amp; time isolated</label><input type="datetime-local" id="iso-datetime"/></div>
 <div class="form-group"><label class="form-label">Verified by</label><input type="text" id="iso-verified-by" placeholder="Second person verification"/></div>
 <div class="form-group"><label class="form-label">Status</label>
