@@ -3441,7 +3441,7 @@ function fillPplDrops(){
 const opts='<option value="">Select person...</option>'+people.map(p=>'<option value="'+p.id+'">'+p.last_name+', '+p.first_name+(p.job_title?' -- '+p.job_title:'')+'</option>').join('');
 const nameOpts='<option value="">Select person...</option>'+people.map(function(p){var nm=[p.first_name,p.last_name].filter(Boolean).join(' ')||p.email||'';return '<option value="'+escH(nm)+'">'+escH([p.last_name,p.first_name].filter(Boolean).join(', ')||nm)+(p.job_title?' -- '+escH(p.job_title):'')+'</option>';}).join('');
 ['ef-person','ef-by','ef-assigned','rf-by','invf-by','invf-persons','pf-contractor','pf-issued','pf-approved','nf-by','mf-chair','kf-resp','af-resp','df-owner'].forEach(id=>{const el=document.getElementById(id);if(el&&!el.multiple)el.innerHTML=opts;});
-['if-by','if-sign-inspector','if-sign-reviewer','obs-action-assigned','obs-observer','obs-person-observed','mf-assigned-by','ra-assessed-by','ra-approved-by','ra-reviewed-by','ra-sign-assessor','ra-sign-reviewer','ra-sign-approver','jsa-prepared-by','jsa-reviewed-by','jsa-approved-by','lc-responsible','lcaf-assessor','lcaf-approved-by','gapf-responsible','calf-responsible','ms-chaired-by','ms-responsible','kpi-resp','pif-emp-name','pif-issued-by','piif-emp-name','piif-inspector','prf-emp-name','prf-requested-by','prf-approved-by','epf-approved-by','bullf-author','bullf-approved-by','mom-chaired-by','mom-sign-chair','mom-sign-approver','sop-author','sop-approver','adm-site-manager','tp-trainer','tfr-trainer','compf-person','compf-assessor','indf-person','indf-inducted-by','elef-person','ertf-name','mpf-warden','drf-conducted-by','drf-reviewed-by','drf-approved-by','bcpf-approved-by','msf-name','audf-name','spif-name','vaxf-name','odf-name'].forEach(id=>{document.querySelectorAll('[id="'+id+'"]').forEach(el=>{if(el&&!el.multiple&&el.tagName==='SELECT'){var cur=el.value;el.innerHTML=nameOpts;if(cur){el.value=cur;if(el.value!==cur){var o=document.createElement('option');o.value=cur;o.textContent=cur+' (saved text)';el.appendChild(o);el.value=cur;}}}});});
+['if-by','if-sign-inspector','if-sign-reviewer','obs-action-assigned','obs-observer','obs-person-observed','mf-assigned-by','ra-assessed-by','ra-approved-by','ra-reviewed-by','ra-sign-assessor','ra-sign-reviewer','ra-sign-approver','jsa-prepared-by','jsa-reviewed-by','jsa-approved-by','lc-responsible','lcaf-assessor','lcaf-approved-by','gapf-responsible','calf-responsible','ms-chaired-by','ms-responsible','kpi-resp','pif-emp-name','pif-issued-by','piif-emp-name','piif-inspector','prf-emp-name','prf-requested-by','prf-approved-by','epf-approved-by','bullf-author','bullf-approved-by','mom-chaired-by','mom-sign-chair','mom-sign-approver','sop-video-author','sop-author','sop-approver','adm-site-manager','tp-trainer','tfr-trainer','compf-person','compf-assessor','indf-person','indf-inducted-by','elef-person','ertf-name','mpf-warden','drf-conducted-by','drf-reviewed-by','drf-approved-by','bcpf-approved-by','msf-name','audf-name','spif-name','vaxf-name','odf-name'].forEach(id=>{document.querySelectorAll('[id="'+id+'"]').forEach(el=>{if(el&&!el.multiple&&el.tagName==='SELECT'){var cur=el.value;el.innerHTML=nameOpts;if(cur){el.value=cur;if(el.value!==cur){var o=document.createElement('option');o.value=cur;o.textContent=cur+' (saved text)';el.appendChild(o);el.value=cur;}}}});});
 const ms=document.getElementById('tf-attendees');
 if(ms)ms.innerHTML=people.map(p=>'<option value="'+p.id+'">'+p.last_name+', '+p.first_name+'</option>').join('');
 }
@@ -6582,7 +6582,7 @@ function sopNew(){
   document.getElementById('sop-frames-container').innerHTML='';
   document.getElementById('sop-preview-container').innerHTML='';
   // Auto-fill author
-  var au=document.getElementById('sop-author');if(au&&prof)au.value=prof.full_name||'';
+  fillPersonSelect('sop-author', prof ? (prof.full_name||personFullName(prof)||'') : '');
   sopGoStep(1);
   // Switch to create tab
   sopSwitchTab('create', document.getElementById('sop-tab-create'));
@@ -36464,7 +36464,7 @@ function fireEquipStatusBadge(s) {
 <option value="High">High</option>
 <option value="Critical">Critical</option>
 </select></div>
-<div class="form-group"><label class="form-label">Prepared by</label><select id="sop-author"><option value="">Select person...</option></select></div>
+<div class="form-group"><label class="form-label">Prepared by</label><select id="sop-video-author"><option value="">Select person...</option></select></div>
 <div class="form-group"><label class="form-label">Review date</label><input type="date" id="sop-review-date"/></div>
 <div class="form-group"><label class="form-label">Version</label><input type="text" id="sop-version" value="Rev 00"/></div>
 </div>
