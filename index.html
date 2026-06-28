@@ -3441,7 +3441,7 @@ function fillPplDrops(){
 const opts='<option value="">Select person...</option>'+people.map(p=>'<option value="'+p.id+'">'+p.last_name+', '+p.first_name+(p.job_title?' -- '+p.job_title:'')+'</option>').join('');
 const nameOpts='<option value="">Select person...</option>'+people.map(function(p){var nm=[p.first_name,p.last_name].filter(Boolean).join(' ')||p.email||'';return '<option value="'+escH(nm)+'">'+escH([p.last_name,p.first_name].filter(Boolean).join(', ')||nm)+(p.job_title?' -- '+escH(p.job_title):'')+'</option>';}).join('');
 ['ef-person','ef-by','ef-assigned','rf-by','invf-by','invf-persons','pf-contractor','pf-issued','pf-approved','nf-by','mf-chair','kf-resp','af-resp','df-owner'].forEach(id=>{const el=document.getElementById(id);if(el&&!el.multiple)el.innerHTML=opts;});
-['if-by','if-sign-inspector','if-sign-reviewer','obs-action-assigned','obs-observer','obs-person-observed','mf-assigned-by','ra-assessed-by','ra-approved-by','ra-reviewed-by','ra-sign-assessor','ra-sign-reviewer','ra-sign-approver','jsa-prepared-by','jsa-reviewed-by','jsa-approved-by','lc-responsible','lcaf-assessor','lcaf-approved-by','gapf-responsible','calf-responsible','ms-chaired-by','ms-responsible','kpi-resp','pif-emp-name','pif-issued-by','piif-emp-name','piif-inspector','prf-emp-name','prf-requested-by','prf-approved-by','epf-approved-by','bullf-author','bullf-approved-by','mom-sign-chair','mom-sign-approver','sop-author','sop-approver','adm-site-manager','tp-trainer','tfr-trainer','compf-person','compf-assessor','indf-person','indf-inducted-by','elef-person','ertf-name','mpf-warden','drf-conducted-by','drf-reviewed-by','drf-approved-by','bcpf-approved-by','msf-name','audf-name','spif-name','vaxf-name','odf-name'].forEach(id=>{document.querySelectorAll('[id="'+id+'"]').forEach(el=>{if(el&&!el.multiple&&el.tagName==='SELECT'){var cur=el.value;el.innerHTML=nameOpts;if(cur){el.value=cur;if(el.value!==cur){var o=document.createElement('option');o.value=cur;o.textContent=cur+' (saved text)';el.appendChild(o);el.value=cur;}}}});});
+['if-by','if-sign-inspector','if-sign-reviewer','obs-action-assigned','obs-observer','obs-person-observed','mf-assigned-by','ra-assessed-by','ra-approved-by','ra-reviewed-by','ra-sign-assessor','ra-sign-reviewer','ra-sign-approver','jsa-prepared-by','jsa-reviewed-by','jsa-approved-by','lc-responsible','lcaf-assessor','lcaf-approved-by','gapf-responsible','calf-responsible','ms-chaired-by','ms-responsible','kpi-resp','pif-emp-name','pif-issued-by','piif-emp-name','piif-inspector','prf-emp-name','prf-requested-by','prf-approved-by','epf-approved-by','bullf-author','bullf-approved-by','mom-chaired-by','mom-sign-chair','mom-sign-approver','sop-author','sop-approver','adm-site-manager','tp-trainer','tfr-trainer','compf-person','compf-assessor','indf-person','indf-inducted-by','elef-person','ertf-name','mpf-warden','drf-conducted-by','drf-reviewed-by','drf-approved-by','bcpf-approved-by','msf-name','audf-name','spif-name','vaxf-name','odf-name'].forEach(id=>{document.querySelectorAll('[id="'+id+'"]').forEach(el=>{if(el&&!el.multiple&&el.tagName==='SELECT'){var cur=el.value;el.innerHTML=nameOpts;if(cur){el.value=cur;if(el.value!==cur){var o=document.createElement('option');o.value=cur;o.textContent=cur+' (saved text)';el.appendChild(o);el.value=cur;}}}});});
 const ms=document.getElementById('tf-attendees');
 if(ms)ms.innerHTML=people.map(p=>'<option value="'+p.id+'">'+p.last_name+', '+p.first_name+'</option>').join('');
 }
@@ -7120,6 +7120,7 @@ function mtgEditSeries(id){
   document.getElementById('mtg-series-del-btn').style.display='inline-flex';
   var flds={'ms-title':'title','ms-location':'location','ms-chaired-by':'chaired_by','ms-responsible':'responsible','ms-notes':'notes'};
   Object.entries(flds).forEach(function(e){var el=document.getElementById(e[0]);if(el)el.value=s[e[1]]||'';});
+  fillPersonSelect('ms-chaired-by',s.chaired_by);fillPersonSelect('ms-responsible',s.responsible);
   var nd=document.getElementById('ms-next-date');if(nd)nd.value=s.next_date||'';
   var tp=document.getElementById('ms-type');if(tp)tp.value=s.meeting_type||'management_review';
   var rc=document.getElementById('ms-recurrence');if(rc)rc.value=s.recurrence||'quarterly';
@@ -7186,8 +7187,8 @@ function mtgScheduleMeeting(seriesId){
     var tp=document.getElementById('mom-type');if(tp)tp.value=s.meeting_type||'management_review';
     var ti=document.getElementById('mom-title');if(ti){ti.value=s.title||'';document.getElementById('mom-header-title').textContent=s.title||'HSE Meeting';}
     var loc=document.getElementById('mom-location');if(loc)loc.value=s.location||'';
-    var ch=document.getElementById('mom-chaired-by');if(ch)ch.value=s.chaired_by||'';
-    var sc=document.getElementById('mom-sign-chair');if(sc)sc.value=s.chaired_by||'';
+    fillPersonSelect('mom-chaired-by',s.chaired_by||'');
+    fillPersonSelect('mom-sign-chair',s.chaired_by||'');
     // Set date to next scheduled date or today
     var dt=document.getElementById('mom-date');
     if(dt)dt.value=(s.next_date?s.next_date+'T09:00':new Date().toISOString().slice(0,16));
@@ -7218,6 +7219,7 @@ function mtgCalcNextDate(fromDate, recurrence){
 
 function mtgClearMom(){
   ['mom-title','mom-location','mom-chaired-by','mom-recorder','mom-attendees','mom-apologies','mom-notes','mom-sign-chair','mom-sign-approver','mom-attendees-extra','mom-apologies-extra'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
+  fillPersonSelect('mom-chaired-by');fillPersonSelect('mom-sign-chair');fillPersonSelect('mom-sign-approver');
   var at=document.getElementById('mom-attendees-tags');if(at)at.innerHTML='';
   var apt=document.getElementById('mom-apologies-tags');if(apt)apt.innerHTML='';
   var sendBtn=document.getElementById('mtg-mom-send-btn');if(sendBtn)sendBtn.style.display='none';
@@ -7781,6 +7783,7 @@ async function mtgOpenMom(id){
   var flds={'mom-title':'title','mom-location':'location','mom-chaired-by':'chaired_by',
     'mom-notes':'minutes','mom-sign-chair':'chaired_by'};
   Object.entries(flds).forEach(function(e){var el=document.getElementById(e[0]);if(el)el.value=m[e[1]]||'';});
+  fillPersonSelect('mom-chaired-by',m.chaired_by);fillPersonSelect('mom-sign-chair',m.chaired_by);
   var hdr=document.getElementById('mom-header-title');if(hdr)hdr.textContent=m.title||'HSE Meeting';
   momPopulateDropdowns();
   if(m.attendees)momSetAttendees(m.attendees);
@@ -35462,7 +35465,7 @@ function fireEquipStatusBadge(s) {
 <div class="form-group"><label class="form-label">Location</label><input type="text" id="mom-location"/></div>
 </div>
 <div class="form-row" style="padding:0 4px">
-<div class="form-group"><label class="form-label">Chaired by</label><input type="text" id="mom-chaired-by"/></div>
+<div class="form-group"><label class="form-label">Chaired by</label><select id="mom-chaired-by"><option value="">Select person...</option></select></div>
 <div class="form-group"><label class="form-label">Minutes recorded by</label><input type="text" id="mom-recorder"/></div>
 <div class="form-group"><label class="form-label">Next meeting date</label><input type="date" id="mom-next-date"/></div>
 </div>
