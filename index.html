@@ -14251,7 +14251,7 @@ function ptwRenderGasHistoryPanel(){
 async function ptwAddGasTest(){
   var g=function(id){var el=document.getElementById(id);return el?el.value||'':null;};
   var test={datetime:g('gas-datetime'),tester:ptwCurrentUserName(),equipment:g('gas-equipment'),cal_date:g('gas-cal-date'),o2:g('gas-o2'),lel:g('gas-lel'),h2s:g('gas-h2s'),co:g('gas-co'),location:g('gas-location'),result:g('gas-result'),notes:g('gas-notes')};
-  if(!test.o2&&!test.lel)return toast('Please enter at least O₂ and LEL readings',false);
+  if(!test.o2||!test.lel)return toast('Please enter both O₂ and LEL readings',false);
   ptwGasTests.push(test);
   ptwRenderGasHistoryPanel();
   // Save to DB
