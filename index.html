@@ -7000,6 +7000,7 @@ async function sopSaveDocument(){
   var el=document.getElementById('sop-printable');
   if(!el){toast('No SOP content to save',false);return;}
   var meta=window.sopGeneratedData.meta;
+  var today=new Date().toISOString().slice(0,10);
   var body={
     company_id:ccid(),
     title:meta.title,
@@ -7014,8 +7015,45 @@ async function sopSaveDocument(){
     updated_at:new Date().toISOString()
   };
   try{
-    await api('/sop_documents',{m:'POST',p:'return=minimal',b:body});
-    toast('SOP saved to Document Control!');
+    var sopRows=await api('/sop_documents',{m:'POST',p:'return=representation',b:body});
+    var sopId=sopRows?.[0]?.id||null;
+    var docBody={
+      company_id:ccid(),
+      title:meta.title,
+      document_type:'sop',
+      doc_type:'sop',
+      department:meta.dept||null,
+      dept:meta.dept||null,
+      category:'Standard Operating Procedure',
+      description:'Generated SOP from the SOP Generator module'+(sopId?' (SOP record: '+sopId+')':''),
+      scope:'Applies to the task described in the generated SOP.',
+      tags:['SOP','Generated'],
+      version:meta.version||'Rev 00',
+      doc_version:meta.version||'Rev 00',
+      issue_date:today,
+      effective_date:today,
+      review_date:meta.reviewDate||null,
+      review_interval_months:12,
+      controlled_copy:true,
+      is_controlled:true,
+      author:meta.author||null,
+      owner:meta.author||null,
+      doc_owner:meta.author||null,
+      location:'SOP Generator',
+      approval_status:'draft',
+      status:'draft',
+      created_by:prof?.id,
+      updated_at:new Date().toISOString()
+    };
+    try{
+      var docs=await api('/documents?select=id,document_type,doc_type'+cf());
+      var seq=((docs||[]).filter(function(d){return (d.document_type||d.doc_type)==='sop';}).length+1);
+      var ref='SOP-'+new Date().getFullYear()+'-'+String(seq).padStart(3,'0');
+      docBody.doc_ref=ref;
+      docBody.reference_no=ref;
+    }catch(_){}
+    await api('/documents',{m:'POST',p:'return=minimal',b:docBody});
+    toast('SOP saved and registered in Document Control!');
     sopSwitchTab('list',document.getElementById('sop-tab-list'));
   }catch(e){toast(e.message,false);console.error(e);}
 }
