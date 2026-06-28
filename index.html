@@ -3459,6 +3459,14 @@ function tfPersonSelect(){
   var name=document.getElementById('tfr-name');if(name)name.value=personFullName(p);
   var dept=document.getElementById('tfr-dept');if(dept)dept.value=p.department||'';
 }
+function authPersonSelect(){
+  var id=document.getElementById('authr-person')?.value||'';
+  var p=(people||[]).find(function(x){return x.id===id;});
+  if(!p)return;
+  var name=document.getElementById('authr-name');if(name)name.value=personFullName(p);
+  var dept=document.getElementById('authr-dept');if(dept)dept.value=p.department||'';
+  var title=document.getElementById('authr-job-title');if(title)title.value=p.job_title||'';
+}
 function trainingPersonSelect(prefix){
   var name=document.getElementById(prefix+'-person')?.value||'';
   var p=trainPersonByName(name);
@@ -22352,6 +22360,7 @@ function tpNew(){
   document.getElementById('tp-form-title').textContent='New Training';
   document.getElementById('tp-del-btn').style.display='none';
   ['tp-topic','tp-group','tp-trainer','tp-location','tp-objective','tp-notes'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
+  fillPersonSelect('tp-trainer');
   ['tp-planned-date','tp-actual-date'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
   var tp=document.getElementById('tp-type');if(tp)tp.value='internal';
   var pp=document.getElementById('tp-priority');if(pp)pp.value='medium';
@@ -22370,6 +22379,7 @@ function tpOpen(id){
   document.getElementById('tp-del-btn').style.display=isMgr()?'inline-flex':'none';
   var flds={'tp-topic':'training_topic','tp-group':'target_group','tp-trainer':'trainer','tp-location':'location','tp-objective':'objective','tp-notes':'notes'};
   Object.entries(flds).forEach(function(e){var el=document.getElementById(e[0]);if(el)el.value=x[e[1]]||'';});
+  fillPersonSelect('tp-trainer',x.trainer);
   setSelectValueWithFallback('tp-trainer',x.trainer);
   var pd=document.getElementById('tp-planned-date');if(pd)pd.value=x.planned_date||'';
   var ad=document.getElementById('tp-actual-date');if(ad)ad.value=x.actual_date||'';
@@ -22502,6 +22512,7 @@ function tfNew(){
   document.getElementById('tf-form-title').textContent='New Training Record';
   document.getElementById('tf-del-btn').style.display='none';
   ['tfr-name','tfr-course','tfr-trainer','tfr-cert','tfr-notes'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
+  fillPersonSelect('tfr-trainer');
   ['tfr-date','tfr-expiry','tfr-refresher'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
   var sc=document.getElementById('tfr-score');if(sc)sc.value='';
   var ps=document.getElementById('tfr-passed');if(ps)ps.value='true';
@@ -22517,6 +22528,7 @@ function tfOpen(id){
   document.getElementById('tf-del-btn').style.display=isMgr()?'inline-flex':'none';
   var flds={'tfr-name':'person_name','tfr-course':'training_topic','tfr-trainer':'trainer','tfr-cert':'certificate','tfr-notes':'notes'};
   Object.entries(flds).forEach(function(e){var el=document.getElementById(e[0]);if(el)el.value=x[e[1]]||'';});
+  fillPersonSelect('tfr-trainer',x.trainer);
   setSelectValueWithFallback('tfr-trainer',x.trainer);
   ['tfr-date','tfr-expiry','tfr-refresher'].forEach(function(id){
     var key={'tfr-date':'training_date','tfr-expiry':'expiry_date','tfr-refresher':'refresher_due'}[id];
@@ -22572,6 +22584,9 @@ async function authLoad(){
   try{
     var d=await api('/authorisations?select=*'+cf()+'&order=expiry_date,person_name');
     authAllData=d||[];
+    var popts='<option value="">Select person...</option>';
+    (people||[]).forEach(function(p){popts+='<option value="'+p.id+'">'+p.last_name+', '+p.first_name+(p.job_title?' -- '+p.job_title:'')+'</option>';});
+    var psel=document.getElementById('authr-person');if(psel)psel.innerHTML=popts;
     // Populate type filter
     var types=[...new Set(authAllData.map(function(x){return x.authorisation_type;}).filter(Boolean))];
     var typeSel=document.getElementById('auth-filter-type');
@@ -22686,6 +22701,10 @@ function authNew(){
   document.getElementById('auth-form-title').textContent='New Authorisation';
   document.getElementById('auth-del-btn').style.display='none';
   ['authr-name','authr-type','authr-ref','authr-issuer','authr-notes'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
+  var popts='<option value="">Select person...</option>';
+  (people||[]).forEach(function(p){popts+='<option value="'+p.id+'">'+p.last_name+', '+p.first_name+(p.job_title?' -- '+p.job_title:'')+'</option>';});
+  var psel=document.getElementById('authr-person');if(psel)psel.innerHTML=popts;
+  ['authr-dept','authr-job-title'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
   ['authr-issue','authr-expiry'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
   var st=document.getElementById('authr-status');if(st)st.value='active';
   var per=document.getElementById('authr-person');if(per)per.value='';
@@ -22700,10 +22719,15 @@ function authOpen(id){
   document.getElementById('auth-del-btn').style.display=isMgr()?'inline-flex':'none';
   var flds={'authr-name':'person_name','authr-type':'authorisation_type','authr-ref':'reference','authr-issuer':'issuing_body','authr-notes':'notes'};
   Object.entries(flds).forEach(function(e){var el=document.getElementById(e[0]);if(el)el.value=x[e[1]]||'';});
+  var popts='<option value="">Select person...</option>';
+  (people||[]).forEach(function(p){popts+='<option value="'+p.id+'">'+p.last_name+', '+p.first_name+(p.job_title?' -- '+p.job_title:'')+'</option>';});
+  var psel=document.getElementById('authr-person');if(psel)psel.innerHTML=popts;
+  var p=(people||[]).find(function(p){return p.id===x.person_id||personFullName(p)===x.person_name;});
+  if(p){var dept=document.getElementById('authr-dept');if(dept)dept.value=p.department||'';var title=document.getElementById('authr-job-title');if(title)title.value=p.job_title||'';}
   var iss=document.getElementById('authr-issue');if(iss)iss.value=x.issue_date||'';
   var exp=document.getElementById('authr-expiry');if(exp)exp.value=x.expiry_date||'';
   var st=document.getElementById('authr-status');if(st)st.value=x.status||'active';
-  var per=document.getElementById('authr-person');if(per)per.value=x.person_id||'';
+  var per=document.getElementById('authr-person');if(per)per.value=x.person_id||p?.id||'';
   authShowForm();
 }
 
@@ -26069,21 +26093,21 @@ function integCopyBaseUrl() {
 // ===== TRAINING & WORKSCHEDULE STUBS =====
 
 function indBack(){ var el=document.getElementById('ind-form');if(el)el.style.display='none';var v=document.getElementById('train-view-induction');if(v)v.style.display='block';if(typeof indLoad==='function')indLoad(); }
-function indNew(){ window.indEditId=null;var el=document.getElementById('ind-form');if(!el)return;document.getElementById('ind-form-title').textContent='New Induction';if(document.getElementById('ind-del-btn'))document.getElementById('ind-del-btn').style.display='none';['indf-person','indf-emp-id','indf-dept','indf-job-title','indf-inducted-by','indf-extra-topics','indf-notes'].forEach(function(id){var e=document.getElementById(id);if(e)e.value='';});if(document.getElementById('indf-ind-date'))document.getElementById('indf-ind-date').value=new Date().toISOString().slice(0,10);var iv=document.getElementById('train-view-induction');if(iv)iv.style.display='none';el.style.display='block'; }
+function indNew(){ window.indEditId=null;var el=document.getElementById('ind-form');if(!el)return;document.getElementById('ind-form-title').textContent='New Induction';if(document.getElementById('ind-del-btn'))document.getElementById('ind-del-btn').style.display='none';['indf-person','indf-emp-id','indf-dept','indf-job-title','indf-inducted-by','indf-extra-topics','indf-notes'].forEach(function(id){var e=document.getElementById(id);if(e)e.value='';});fillPersonSelect('indf-person');fillPersonSelect('indf-inducted-by',prof?.full_name||personFullName(prof));if(document.getElementById('indf-ind-date'))document.getElementById('indf-ind-date').value=new Date().toISOString().slice(0,10);var iv=document.getElementById('train-view-induction');if(iv)iv.style.display='none';el.style.display='block'; }
 async function indSave(){ var person=document.getElementById('indf-person')?.value?.trim();if(!person){toast('Please enter person name',false);return;}var g=function(id){var el=document.getElementById(id);return el?el.value||null:null;};var topics=Array.from(document.querySelectorAll('.ind-topic:checked')).map(function(cb){return cb.value;});var body={company_id:ccid(),person_name:person,employee_id:g('indf-emp-id'),department:g('indf-dept'),job_title:g('indf-job-title'),induction_type:g('indf-type')||'new_employee',induction_date:g('indf-ind-date'),inducted_by:g('indf-inducted-by'),topics_covered:topics,notes:g('indf-notes'),status:g('indf-status')||'completed',completed:g('indf-status')==='completed',updated_at:new Date().toISOString()};try{if(window.indEditId){await api('/induction_records?id=eq.'+window.indEditId,{m:'PATCH',p:'return=minimal',b:body});toast('Updated!');}else{body.created_by=prof?.id;await api('/induction_records',{m:'POST',p:'return=minimal',b:body});toast('Induction saved!');}indBack();}catch(e){toast('Error: '+e.message+'. Run training_schema.sql.',false);} }
 async function indDelete(){ if(!window.indEditId)return;if(!(await appConfirmDelete('induction record')))return;try{await api('/induction_records?id=eq.'+window.indEditId,{m:'DELETE'});toast('Deleted!');indBack();}catch(e){toast(e.message,false);} }
 function elcNew(){ window.elcEditId=null;var el=document.getElementById('elc-form');if(!el)return;document.getElementById('elc-form-title').textContent='New Course';if(document.getElementById('elc-del-btn'))document.getElementById('elc-del-btn').style.display='none';['elcf-title','elcf-code','elcf-desc','elcf-url'].forEach(function(id){var e=document.getElementById(id);if(e)e.value='';});var v=document.getElementById('train-view-elearning');if(v)v.style.display='none';el.style.display='block'; }
 function elcBack(){ var el=document.getElementById('elc-form');if(el)el.style.display='none';var v=document.getElementById('train-view-elearning');if(v)v.style.display='block';if(typeof elcLoad==='function')elcLoad(); }
 async function elcSave(){ var title=document.getElementById('elcf-title')?.value?.trim();if(!title){toast('Please enter course title',false);return;}var g=function(id){var el=document.getElementById(id);return el?el.value||null:null;};var body={company_id:ccid(),title,course_code:g('elcf-code'),description:g('elcf-desc'),course_url:g('elcf-url'),status:g('elcf-status')||'active',updated_at:new Date().toISOString()};(window.elcEditId?api('/elearning_courses?id=eq.'+window.elcEditId,{m:'PATCH',p:'return=minimal',b:body}):api('/elearning_courses',{m:'POST',p:'return=minimal',b:Object.assign(body,{created_by:prof?.id})})).then(function(){toast(window.elcEditId?'Updated!':'Course added!');elcBack();}).catch(function(e){toast('Error: '+e.message,false);}); }
 async function elcDelete(){ if(!window.elcEditId)return;if(!(await appConfirmDelete('e-learning course')))return;try{await api('/elearning_courses?id=eq.'+window.elcEditId,{m:'DELETE'});toast('Deleted!');elcBack();}catch(e){toast(e.message,false);} }
-function eleNew(){ window.eleEditId=null;var el=document.getElementById('ele-form');if(!el)return;document.getElementById('ele-form-title').textContent='New Enrolment';if(document.getElementById('ele-del-btn'))document.getElementById('ele-del-btn').style.display='none';if(document.getElementById('elef-enrol-date'))document.getElementById('elef-enrol-date').value=new Date().toISOString().slice(0,10);var v=document.getElementById('train-view-elearning');if(v)v.style.display='none';el.style.display='block'; }
+function eleNew(){ window.eleEditId=null;var el=document.getElementById('ele-form');if(!el)return;document.getElementById('ele-form-title').textContent='New Enrolment';if(document.getElementById('ele-del-btn'))document.getElementById('ele-del-btn').style.display='none';fillPersonSelect('elef-person');if(document.getElementById('elef-enrol-date'))document.getElementById('elef-enrol-date').value=new Date().toISOString().slice(0,10);var v=document.getElementById('train-view-elearning');if(v)v.style.display='none';el.style.display='block'; }
 function eleBack(){ var el=document.getElementById('ele-form');if(el)el.style.display='none';var v=document.getElementById('train-view-elearning');if(v)v.style.display='block'; }
 async function eleSave(){ var person=document.getElementById('elef-person')?.value?.trim();if(!person){toast('Please enter person name',false);return;}var g=function(id){var el=document.getElementById(id);return el?el.value||null:null;};var body={company_id:ccid(),person_name:person,department:g('elef-dept'),course_id:g('elef-course-id')||null,enrolment_date:g('elef-enrol-date')||null,completion_date:g('elef-comp-date')||null,status:g('elef-status')||'enrolled',updated_at:new Date().toISOString()};try{if(window.eleEditId){await api('/elearning_enrolments?id=eq.'+window.eleEditId,{m:'PATCH',p:'return=minimal',b:body});toast('Updated!');}else{body.created_by=prof?.id;await api('/elearning_enrolments',{m:'POST',p:'return=minimal',b:body});toast('Enrolment saved!');}eleBack();}catch(e){toast('Error: '+e.message,false);} }
 async function eleDelete(){ if(!window.eleEditId)return;if(!(await appConfirmDelete('e-learning enrolment')))return;try{await api('/elearning_enrolments?id=eq.'+window.eleEditId,{m:'DELETE'});toast('Deleted!');eleBack();}catch(e){toast(e.message,false);} }
 function compBack(){ var cf=document.getElementById('comp-form');if(cf)cf.style.display='none';var cv=document.getElementById('train-view-competency');if(cv)cv.style.display='block';if(typeof compFilter==='function')compFilter(); }
 async function compSave(){ var person=document.getElementById('compf-person')?.value?.trim();if(!person){toast('Please enter person name',false);return;}var g=function(id){var el=document.getElementById(id);return el?el.value||null:null;};var body={company_id:ccid(),person_name:person,department:g('compf-dept'),job_title:g('compf-job-title'),competency_name:g('compf-competency-name')||'',level:g('compf-level')||'not_assessed',assessed_date:g('compf-assessed-date')||null,expiry_date:g('compf-expiry')||null,assessor:g('compf-assessor'),notes:g('compf-notes'),updated_at:new Date().toISOString()};try{if(window.compEditId){await api('/competency_matrix?id=eq.'+window.compEditId,{m:'PATCH',p:'return=minimal',b:body});toast('Updated!');}else{body.created_by=prof?.id;await api('/competency_matrix',{m:'POST',p:'return=minimal',b:body});toast('Saved!');}compBack();}catch(e){toast(e.message,false);} }
 async function compDelete(){ if(!window.compEditId)return;if(!(await appConfirmDelete('competency record')))return;try{await api('/competency_matrix?id=eq.'+window.compEditId,{m:'DELETE'});toast('Deleted!');compBack();}catch(e){toast(e.message,false);} }
-function compNew(){ window.compEditId=null;var el=document.getElementById('comp-form');if(!el)return;document.getElementById('comp-form-title').textContent='New Competency Record';if(document.getElementById('comp-del-btn'))document.getElementById('comp-del-btn').style.display='none';['compf-person','compf-dept','compf-job-title','compf-competency-name','compf-assessor','compf-notes'].forEach(function(id){var e=document.getElementById(id);if(e)e.value='';});var cv=document.getElementById('train-view-competency');if(cv)cv.style.display='none';el.style.display='block'; }
+function compNew(){ window.compEditId=null;var el=document.getElementById('comp-form');if(!el)return;document.getElementById('comp-form-title').textContent='New Competency Record';if(document.getElementById('comp-del-btn'))document.getElementById('comp-del-btn').style.display='none';['compf-person','compf-dept','compf-job-title','compf-competency-name','compf-assessor','compf-notes'].forEach(function(id){var e=document.getElementById(id);if(e)e.value='';});fillPersonSelect('compf-person');fillPersonSelect('compf-assessor',prof?.full_name||personFullName(prof));var cv=document.getElementById('train-view-competency');if(cv)cv.style.display='none';el.style.display='block'; }
 function trainNewFromTab(){ var active=document.querySelector('[id^="train-tab-"].active');var tab=active?.id?.replace('train-tab-','');if(tab==='competency')compNew();else if(tab==='induction')indNew();else if(tab==='plan')tpNew();else if(tab==='followup')tfNew();else if(tab==='elearning')elcNew();else if(tab==='auth')authNew();else if(tab==='tna')tnaAddRow(); }
 
 // WS TBT stubs
@@ -35928,8 +35952,8 @@ function fireEquipStatusBadge(s) {
 </div>
 <div class="card">
 <div class="form-row">
-<div class="form-group"><label class="form-label">Holder name</label><input type="text" id="authr-person" placeholder="Person name"/></div>
-<div class="form-group"><label class="form-label">Employee ID</label><input type="text" id="authr-name"/></div>
+<div class="form-group"><label class="form-label">Holder</label><select id="authr-person" onchange="authPersonSelect()"><option value="">Select person...</option></select></div>
+<div class="form-group"><label class="form-label">Name on certificate</label><input type="text" id="authr-name" placeholder="Name if different from People record"/></div>
 <div class="form-group"><label class="form-label">Department</label><input type="text" id="authr-dept"/></div>
 <div class="form-group"><label class="form-label">Job title</label><input type="text" id="authr-job-title"/></div>
 </div>
