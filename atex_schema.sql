@@ -59,7 +59,7 @@ with check (
         p.role = 'sephs_admin'
         or (
           p.company_id = atex_areas.company_id
-          and p.role in ('admin','hse_manager','site_manager','supervisor')
+          and p.role in ('company_admin','admin','hse_manager','site_manager','supervisor')
         )
       )
   )
@@ -76,7 +76,7 @@ using (
         p.role = 'sephs_admin'
         or (
           p.company_id = atex_areas.company_id
-          and p.role in ('admin','hse_manager','site_manager','supervisor')
+          and p.role in ('company_admin','admin','hse_manager','site_manager','supervisor')
         )
       )
   )
@@ -89,7 +89,7 @@ with check (
         p.role = 'sephs_admin'
         or (
           p.company_id = atex_areas.company_id
-          and p.role in ('admin','hse_manager','site_manager','supervisor')
+          and p.role in ('company_admin','admin','hse_manager','site_manager','supervisor')
         )
       )
   )
@@ -106,7 +106,7 @@ using (
         p.role = 'sephs_admin'
         or (
           p.company_id = atex_areas.company_id
-          and p.role in ('admin','hse_manager')
+          and p.role in ('company_admin','admin','hse_manager')
         )
       )
   )

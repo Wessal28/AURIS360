@@ -178,3 +178,5 @@ create index if not exists idx_compliance_calendar_company_due on public.complia
 --   ('00000000-0000-0000-0000-000000000000', 'OSH-001', 'Occupational Safety and Health Act 2005', 'General duties of employer', '5', 'Employer must ensure, so far as reasonably practicable, the safety, health and welfare at work of employees.', 'health_safety', 'mandatory', 'ongoing', 'partial', 50),
 --   ('00000000-0000-0000-0000-000000000000', 'OSH-002', 'Occupational Safety and Health Act 2005', 'Risk assessment', '10', 'Employer must identify hazards, assess risks and implement suitable controls.', 'health_safety', 'mandatory', 'annual', 'partial', 50),
 --   ('00000000-0000-0000-0000-000000000000', 'FIRE-001', 'Fire Services Act', 'Fire certificate', null, 'Premises requiring a fire certificate must maintain valid certification and comply with conditions.', 'fire', 'mandatory', 'annual', 'non_compliant', 0);
+
+-- After running this schema, run legal_rls_fix.sql to enable company-isolated RLS policies.
