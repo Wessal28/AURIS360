@@ -16437,6 +16437,14 @@ const ERT_ROLE_CFG={
   external_coordinator:{label:'External Coordinator',  color:'#6B7280',bg:'#f3f4f6'}
 };
 
+function emDateState(dateStr,days){
+  if(!dateStr)return {missing:true,overdue:false,soon:false,label:'—'};
+  var today=new Date();today.setHours(0,0,0,0);
+  var dt=new Date(dateStr);dt.setHours(0,0,0,0);
+  var soon=new Date(today);soon.setDate(soon.getDate()+(days||30));
+  return {missing:false,overdue:dt<today,soon:dt>=today&&dt<=soon,label:dt.toLocaleDateString('en-GB')};
+}
+
 function emSwitchTab(tab, btn){
   document.querySelectorAll('.mtg-tab').forEach(t=>t.classList.remove('active'));
   btn.classList.add('active');
@@ -16839,7 +16847,7 @@ async function musterSave(){var name=document.getElementById('mpf-name')?.value?
 async function musterDelete(){if(!emMusterEditId)return;if(!(await appConfirmDelete('muster point')))return;try{await api('/muster_points?id=eq.'+emMusterEditId,{m:'DELETE'});toast('Deleted!');musterBack();}catch(e){toast(e.message,false);}}
 
 // ── DRILLS ────────────────────────────────────────────────────────────────────
-async function drillsLoad(){
+async function drillsLoadLegacy(){
   var el=document.getElementById('em-drills-list');if(!el)return;el.innerHTML='<div class="loading-msg">Loading...</div>';
   try{
     var d=await api('/emergency_drills?select=*'+cf()+'&order=drill_date.desc');emDrillsData=d||[];
@@ -16868,6 +16876,40 @@ async function drillsLoad(){
   }catch(e){el.innerHTML='<p style="padding:20px;color:red">'+e.message+'</p>';}
 }
 
+async function drillsLoad(){
+  var el=document.getElementById('em-drills-list');if(!el)return;el.innerHTML='<div class="loading-msg">Loading...</div>';
+  try{
+    var d=await api('/emergency_drills?select=*'+cf()+'&order=drill_date.desc');emDrillsData=d||[];
+    var setM=function(id,v){var e=document.getElementById(id);if(e)e.textContent=v;};
+    setM('em-drill-total',d?d.length:0);
+    setM('em-drill-done',d?d.filter(function(x){return x.status==='completed';}).length:0);
+    setM('em-drill-planned',d?d.filter(function(x){return x.status==='planned';}).length:0);
+    var completed=d?d.filter(function(x){return x.status==='completed'&&x.evacuation_time_mins;}):[];
+    if(completed.length){var avg=completed.reduce(function(s,x){return s+(parseFloat(x.evacuation_time_mins)||0);},0)/completed.length;setM('em-drill-avg-evac',avg.toFixed(1)+' min');}
+    if(!d||!d.length){el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)"><div style="font-size:40px;margin-bottom:12px"><i class="ti ti-bell-ringing"></i></div><div style="font-weight:600;margin-bottom:8px">No drills recorded</div>'+(isMgr()?'<button class="btn btn-primary" onclick="drillNew()"><i class="ti ti-plus"></i>Schedule first drill</button>':'')+'</div>';return;}
+    var stCfg={planned:['#FEF9EC','#854F0B'],completed:['#EAF3DE','#3B6D11'],cancelled:['#f3f4f6','#6B7280'],postponed:['#EDE9FE','#7C3AED']};
+    var ratCfg={excellent:['#EAF3DE','#3B6D11'],good:['#E6F1FB','#185FA5'],satisfactory:['#FEF9EC','#854F0B'],needs_improvement:['#FEF6E7','#C2410C'],failed:['#FCEBEB','#A32D2D']};
+    var h='<div style="overflow-x:auto"><div class="card" style="padding:0;overflow:hidden"><table style="width:100%;border-collapse:collapse;font-size:12px;min-width:980px"><thead><tr style="background:#1a3a5c;color:#fff"><th style="padding:8px 14px;text-align:left">Ref</th><th style="padding:8px;text-align:left">Date</th><th style="padding:8px;text-align:left">Type</th><th style="padding:8px;text-align:left">Location</th><th style="padding:8px;text-align:center">Evac time</th><th style="padding:8px;text-align:center">Participants</th><th style="padding:8px;text-align:left">Rating</th><th style="padding:8px;text-align:left">Status</th><th style="padding:8px;width:70px"></th></tr></thead><tbody>';
+    d.forEach(function(x,i){
+      var bg=i%2===0?'#fff':'#f9fafb', sc=stCfg[x.status]||stCfg.planned, rc=ratCfg[x.overall_rating]||ratCfg.satisfactory;
+      var ds=emDateState(x.drill_date,7);
+      var overdue=x.status==='planned'&&ds.overdue;
+      var weak=['needs_improvement','failed'].includes(x.overall_rating)||x.unaccounted_persons>0;
+      h+='<tr style="border-bottom:1px solid #f0f0f0;background:'+bg+(overdue||weak?';border-left:4px solid var(--red)':'')+'">'
+        +'<td style="padding:8px 14px;font-family:monospace;font-weight:700;color:#EF9F27">'+escH(x.drill_ref||'--')+'</td>'
+        +'<td style="padding:8px;font-weight:600;color:'+(overdue?'var(--red)':'inherit')+'">'+(x.drill_date?new Date(x.drill_date).toLocaleDateString('en-GB'):'--')+(overdue?' overdue':'')+'</td>'
+        +'<td style="padding:8px;text-transform:capitalize">'+escH((x.drill_type||'--').replace(/_/g,' '))+'</td>'
+        +'<td style="padding:8px;font-size:11px">'+escH(x.location||'--')+'</td>'
+        +'<td style="padding:8px;text-align:center;font-weight:700;color:'+(x.evacuation_time_mins&&x.evacuation_time_mins>10?'var(--red)':'var(--green)')+'">'+(x.evacuation_time_mins?x.evacuation_time_mins+' min':'--')+'</td>'
+        +'<td style="padding:8px;text-align:center">'+(x.total_participated||'--')+(x.total_expected?'/'+x.total_expected:'')+(x.unaccounted_persons>0?'<div style="color:var(--red);font-weight:800">'+x.unaccounted_persons+' unaccounted</div>':'')+'</td>'
+        +'<td style="padding:8px">'+(x.overall_rating?'<span style="background:'+rc[0]+';color:'+rc[1]+';padding:2px 8px;border-radius:99px;font-size:10px;font-weight:700;text-transform:capitalize">'+x.overall_rating.replace('_',' ')+'</span>':'--')+'</td>'
+        +'<td style="padding:8px"><span style="background:'+(overdue?'#FCEBEB':sc[0])+';color:'+(overdue?'#A32D2D':sc[1])+';padding:2px 8px;border-radius:99px;font-size:10px;font-weight:700;text-transform:capitalize">'+(overdue?'overdue':x.status)+'</span></td>'
+        +'<td style="padding:8px"><div style="display:flex;gap:4px"><button class="btn btn-sm" data-id="'+x.id+'" onclick="drillEdit(this.getAttribute(\'data-id\'))"><i class="ti ti-edit"></i></button>'+(isMgr()?'<button class="btn btn-sm" style="color:var(--red)" data-id="'+x.id+'" onclick="drillDelete(this.getAttribute(\'data-id\'))"><i class="ti ti-trash"></i></button>':'')+'</div></td></tr>';
+    });
+    h+='</tbody></table></div></div>';el.innerHTML=h;
+  }catch(e){el.innerHTML='<p style="padding:20px;color:red">'+e.message+'</p>';}
+}
+
 function drillShowForm(){['em-view-drills'].forEach(function(id){var el=document.getElementById(id);if(el)el.style.display='none';});document.getElementById('em-drill-form').style.display='block';}
 function drillBack(){document.getElementById('em-drill-form').style.display='none';document.getElementById('em-view-drills').style.display='block';document.querySelectorAll('.mtg-tab').forEach(t=>t.classList.remove('active'));var tab=document.getElementById('em-tab-drills');if(tab)tab.classList.add('active');drillsLoad();}
 
@@ -16876,7 +16918,7 @@ function drillNew(){emDrillEditId=null;document.getElementById('em-drill-form-ti
 async function drillEdit(id){var x=emDrillsData.find(r=>r.id===id);if(!x)return;emDrillEditId=id;document.getElementById('em-drill-form-title').textContent='Edit Drill';document.getElementById('em-drill-form-ref').textContent=x.drill_ref||'—';document.getElementById('em-drill-del-btn').style.display=isMgr()?'inline-flex':'none';var gf=function(id,val){var el=document.getElementById(id);if(el)el.value=val||'';};gf('drf-location',x.location);gf('drf-scenario',x.scenario);gf('drf-objectives',x.objectives);gf('drf-depts',x.departments_involved);gf('drf-external',x.external_agencies);gf('drf-strengths',x.strengths);gf('drf-weaknesses',x.weaknesses);gf('drf-observations',x.observations);gf('drf-actions',x.corrective_actions);fillPersonSelect('drf-conducted-by',x.conducted_by);fillPersonSelect('drf-reviewed-by',x.reviewed_by);fillPersonSelect('drf-approved-by',x.approved_by);gf('drf-expected',x.total_expected||'');gf('drf-participated',x.total_participated||'');gf('drf-evac-time',x.evacuation_time_mins||'');gf('drf-planned-dur',x.planned_duration||'');gf('drf-actual-dur',x.actual_duration||'');gf('drf-unaccounted',x.unaccounted_persons||0);var dt=document.getElementById('drf-date');if(dt)dt.value=x.drill_date||'';var tm=document.getElementById('drf-time');if(tm)tm.value=x.drill_time||'';var tp=document.getElementById('drf-type');if(tp)tp.value=x.drill_type||'evacuation';var st=document.getElementById('drf-status');if(st)st.value=x.status||'planned';var rt=document.getElementById('drf-rating');if(rt)rt.value=x.overall_rating||'satisfactory';document.getElementById('drf-all-accounted').checked=!!x.all_accounted_for;drillShowForm();}
 
 async function drillSave(){var g=function(id){var el=document.getElementById(id);return el?el.value||null:null;};var date=g('drf-date');if(!date){toast('Please enter drill date',false);return;}var body={company_id:ccid(),drill_type:g('drf-type')||'evacuation',drill_date:date,drill_time:g('drf-time'),location:g('drf-location'),scenario:g('drf-scenario'),objectives:g('drf-objectives'),total_expected:parseInt(g('drf-expected'))||null,total_participated:parseInt(g('drf-participated'))||null,departments_involved:g('drf-depts'),external_agencies:g('drf-external'),evacuation_time_mins:parseFloat(g('drf-evac-time'))||null,planned_duration:parseInt(g('drf-planned-dur'))||null,actual_duration:parseInt(g('drf-actual-dur'))||null,all_accounted_for:document.getElementById('drf-all-accounted')?.checked||false,unaccounted_persons:parseInt(g('drf-unaccounted'))||0,strengths:g('drf-strengths'),weaknesses:g('drf-weaknesses'),observations:g('drf-observations'),corrective_actions:g('drf-actions'),overall_rating:g('drf-rating')||'satisfactory',conducted_by:g('drf-conducted-by'),reviewed_by:g('drf-reviewed-by'),approved_by:g('drf-approved-by'),status:g('drf-status')||'planned',updated_at:new Date().toISOString()};
-  try{if(emDrillEditId){await api('/emergency_drills?id=eq.'+emDrillEditId,{m:'PATCH',p:'return=minimal',b:body});toast('Drill updated!');}else{body.created_by=prof?.id;var res=await api('/emergency_drills',{m:'POST',p:'return=representation',b:body});if(res?.[0]?.id){var yr=new Date().getFullYear();var ref='DRILL-'+yr+'-'+String(emDrillsData.length+1).padStart(3,'0');await api('/emergency_drills?id=eq.'+res[0].id,{m:'PATCH',p:'return=minimal',b:{drill_ref:ref}});toast('Drill saved! Ref: '+ref);}}drillBack();}catch(e){toast(e.message,false);}
+  try{if(emDrillEditId){await api('/emergency_drills?id=eq.'+emDrillEditId,{m:'PATCH',p:'return=minimal',b:body});toast('Drill updated!');}else{body.created_by=prof?.id;var res=await api('/emergency_drills',{m:'POST',p:'return=representation',b:body});if(res?.[0]?.id){var yr=new Date().getFullYear();var ref='DRILL-'+yr+'-'+String(emDrillsData.length+1).padStart(3,'0');await api('/emergency_drills?id=eq.'+res[0].id,{m:'PATCH',p:'return=minimal',b:{drill_ref:ref}});var weak=body.status==='completed'&&(['needs_improvement','failed'].includes(body.overall_rating)||body.unaccounted_persons>0||body.corrective_actions);if(weak){try{await api('/action_tracker',{m:'POST',p:'return=minimal',b:{company_id:ccid(),source_module:'emergency',source_id:res[0].id,source_ref:ref+' - Emergency drill',description:body.corrective_actions||body.weaknesses||'Emergency drill needs improvement',responsible:body.reviewed_by||body.conducted_by||null,priority:body.overall_rating==='failed'||body.unaccounted_persons>0?'high':'medium',status:'open',created_by:prof?.id}});}catch(ex){console.warn('Emergency drill MAP action failed',ex);}}toast('Drill saved! Ref: '+ref+(weak?' - action added to MAP':''));}}drillBack();}catch(e){toast(e.message,false);}
 }
 async function drillDelete(id){if(!(await appConfirmDelete('emergency drill')))return;try{await api('/emergency_drills?id=eq.'+id,{m:'DELETE'});emDrillsData=emDrillsData.filter(x=>x.id!==id);toast('Deleted!');drillsLoad();}catch(e){toast(e.message,false);}}
 
@@ -16964,7 +17006,7 @@ async function bcpSave(){var title=document.getElementById('bcpf-title')?.value?
 async function bcpDelete(){if(!emBcpEditId)return;if(!(await appConfirmDelete('BCP record')))return;try{await api('/bcp_records?id=eq.'+emBcpEditId,{m:'DELETE'});toast('Deleted!');bcpBack();}catch(e){toast(e.message,false);}}
 
 // ── EQUIPMENT ─────────────────────────────────────────────────────────────────
-async function emEqLoad(){
+async function emEqLoadLegacy(){
   var el=document.getElementById('em-eq-list');if(!el)return;el.innerHTML='<div class="loading-msg">Loading...</div>';
   var ft=document.getElementById('em-eq-filter-type')?.value||'';
   try{
@@ -16973,7 +17015,7 @@ async function emEqLoad(){
     var d=await api(q);emEqData=d||[];
     var now=new Date();var soon=new Date();soon.setDate(soon.getDate()+30);
     var setM=function(id,v){var e=document.getElementById(id);if(e)e.textContent=v;};
-    setM('em-eq-total',d?d.length:0);setM('em-eq-ok',d?d.filter(x=>x.status==='operational').length:0);setM('em-eq-bad',d?d.filter(x=>x.status!=='operational').length:0);setM('em-eq-due',d?d.filter(x=>x.next_inspection&&new Date(x.next_inspection)<=soon).length:0);setM('em-eq-fe',d?d.filter(x=>x.equipment_type==='fire_extinguisher').length:0);
+    setM('em-eq-total',d?d.length:0);setM('em-eq-ok',d?d.filter(x=>x.status==='operational').length:0);setM('em-eq-bad',d?d.filter(x=>x.status!=='operational').length:0);setM('em-eq-due',d?d.filter(x=>(x.next_inspection&&new Date(x.next_inspection)<=soon)||(x.next_service&&new Date(x.next_service)<=soon)).length:0);setM('em-eq-fe',d?d.filter(x=>x.equipment_type==='fire_extinguisher').length:0);
     if(!d||!d.length){el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)"><div style="font-size:40px;margin-bottom:12px">🧯</div><div style="font-weight:600;margin-bottom:8px">No emergency equipment registered</div>'+(isMgr()?'<button class="btn btn-primary" onclick="emEqNew()"><i class="ti ti-plus"></i>Add equipment</button>':'')+'</div>';return;}
     var eqEmoji={fire_extinguisher:'🧯',fire_hose:'🔥',first_aid_kit:'🩺',aed:'❤️',eyewash:'👁️',spill_kit:'🧽',ppe_kit:'🦺',alarm_panel:'🔔',emergency_light:'💡',pa_system:'📢',stretcher:'🛏️',oxygen_kit:'💨',other:'📦'};
     var condCfg={excellent:['#EAF3DE','#3B6D11'],good:['#EAF3DE','#3B6D11'],fair:['#FEF9EC','#854F0B'],poor:['#FEF6E7','#C2410C'],condemned:['#FCEBEB','#A32D2D']};
@@ -16997,11 +17039,78 @@ async function emEqLoad(){
   }catch(e){el.innerHTML='<p style="padding:20px;color:red">'+e.message+'</p>';}
 }
 
+async function emEqLoad(){
+  var el=document.getElementById('em-eq-list');if(!el)return;el.innerHTML='<div class="loading-msg">Loading...</div>';
+  var ft=document.getElementById('em-eq-filter-type')?.value||'';
+  try{
+    var q='/emergency_equipment?select=*'+cf()+'&order=equipment_type,location';
+    if(ft)q+='&equipment_type=eq.'+ft;
+    var d=await api(q);emEqData=d||[];
+    var today=new Date();today.setHours(0,0,0,0);
+    var soon=new Date(today);soon.setDate(soon.getDate()+30);
+    var setM=function(id,v){var e=document.getElementById(id);if(e)e.textContent=v;};
+    setM('em-eq-total',d?d.length:0);
+    setM('em-eq-ok',d?d.filter(function(x){return x.status==='operational';}).length:0);
+    setM('em-eq-bad',d?d.filter(function(x){return x.status!=='operational';}).length:0);
+    setM('em-eq-due',d?d.filter(function(x){return (x.next_inspection&&new Date(x.next_inspection)<=soon)||(x.next_service&&new Date(x.next_service)<=soon);}).length:0);
+    setM('em-eq-fe',d?d.filter(function(x){return x.equipment_type==='fire_extinguisher';}).length:0);
+    if(!d||!d.length){el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)"><div style="font-size:40px;margin-bottom:12px"><i class="ti ti-fire-extinguisher"></i></div><div style="font-weight:600;margin-bottom:8px">No emergency equipment registered</div>'+(isMgr()?'<button class="btn btn-primary" onclick="emEqNew()"><i class="ti ti-plus"></i>Add equipment</button>':'')+'</div>';return;}
+    var eqIcon={fire_extinguisher:'ti-fire-extinguisher',fire_hose:'ti-flame',first_aid_kit:'ti-first-aid-kit',aed:'ti-heartbeat',eyewash:'ti-eye',spill_kit:'ti-droplet',ppe_kit:'ti-shield',alarm_panel:'ti-bell-ringing',emergency_light:'ti-bulb',pa_system:'ti-speakerphone',stretcher:'ti-bed',oxygen_kit:'ti-wind',other:'ti-package'};
+    var condCfg={excellent:['#EAF3DE','#3B6D11'],good:['#EAF3DE','#3B6D11'],fair:['#FEF9EC','#854F0B'],poor:['#FEF6E7','#C2410C'],condemned:['#FCEBEB','#A32D2D']};
+    var h='<div style="overflow-x:auto"><div class="card" style="padding:0;overflow:hidden"><table style="width:100%;border-collapse:collapse;font-size:12px;min-width:980px"><thead><tr style="background:#7F1D1D;color:#fff"><th style="padding:8px 14px;text-align:left">Equipment</th><th style="padding:8px;text-align:left">ID/Tag</th><th style="padding:8px;text-align:left">Building/Floor</th><th style="padding:8px;text-align:left">Location</th><th style="padding:8px;text-align:left">Condition</th><th style="padding:8px;text-align:left">Inspection / Service</th><th style="padding:8px;text-align:left">Status</th><th style="padding:8px;width:70px"></th></tr></thead><tbody>';
+    d.forEach(function(x,i){
+      var bg=i%2===0?'#fff':'#f9fafb', cc=condCfg[x.condition]||condCfg.good;
+      var insp=emDateState(x.next_inspection,30), svc=emDateState(x.next_service,30);
+      var overdue=insp.overdue||svc.overdue, due=insp.soon||svc.soon, bad=x.status!=='operational'||['poor','condemned'].includes(x.condition);
+      var stcol=x.status==='operational'?'var(--green)':'var(--red)';
+      var eqLabel=(x.equipment_type||'other').replace(/_/g,' ');
+      h+='<tr style="border-bottom:1px solid #f0f0f0;background:'+bg+(overdue||bad?';border-left:4px solid var(--red)':due?';border-left:4px solid #C2410C':'')+'">'
+        +'<td style="padding:8px 14px;font-weight:600"><i class="ti '+(eqIcon[x.equipment_type]||'ti-package')+'" style="color:#B45309"></i> '+escH(eqLabel)+'</td>'
+        +'<td style="padding:8px;font-family:monospace;color:#B45309;font-weight:700">'+escH(x.identifier||'--')+'</td>'
+        +'<td style="padding:8px;font-size:11px">'+escH((x.building||'')+(x.floor?' F'+x.floor:''))+'</td>'
+        +'<td style="padding:8px;font-size:11px">'+escH(x.location||'--')+'</td>'
+        +'<td style="padding:8px"><span style="background:'+cc[0]+';color:'+cc[1]+';padding:2px 7px;border-radius:4px;font-size:10px;font-weight:700;text-transform:capitalize">'+escH(x.condition||'good')+'</span></td>'
+        +'<td style="padding:8px;font-weight:'+(due||overdue?'700':'400')+';color:'+(overdue?'var(--red)':due?'#C2410C':'inherit')+'">Insp: '+(insp.missing?'--':insp.label)+(insp.overdue?' overdue':insp.soon?' due':'')+'<br>Svc: '+(svc.missing?'--':svc.label)+(svc.overdue?' overdue':svc.soon?' due':'')+'</td>'
+        +'<td style="padding:8px"><span style="font-weight:700;font-size:11px;color:'+stcol+'">'+escH(x.status||'--')+'</span></td>'
+        +'<td style="padding:8px"><div style="display:flex;gap:4px"><button class="btn btn-sm" data-id="'+x.id+'" onclick="emEqEdit(this.getAttribute(\'data-id\'))"><i class="ti ti-edit"></i></button>'+(isMgr()?'<button class="btn btn-sm" style="color:var(--red)" data-id="'+x.id+'" onclick="emEqDeleteRow(this.getAttribute(\'data-id\'))"><i class="ti ti-trash"></i></button>':'')+'</div></td></tr>';
+    });
+    h+='</tbody></table></div></div>';el.innerHTML=h;
+  }catch(e){el.innerHTML='<p style="padding:20px;color:red">'+e.message+'</p>';}
+}
+
 function emEqShowForm(){['em-view-equipment'].forEach(function(id){var el=document.getElementById(id);if(el)el.style.display='none';});document.getElementById('em-eq-form').style.display='block';}
 function emEqBack(){document.getElementById('em-eq-form').style.display='none';document.getElementById('em-view-equipment').style.display='block';document.querySelectorAll('.mtg-tab').forEach(t=>t.classList.remove('active'));var tab=document.getElementById('em-tab-equipment');if(tab)tab.classList.add('active');emEqLoad();}
 function emEqNew(){emEqEditId=null;document.getElementById('em-eq-form-title').textContent='Add Emergency Equipment';document.getElementById('em-eq-del-btn').style.display='none';['eqf-id','eqf-building','eqf-floor','eqf-location','eqf-serviced-by','eqf-notes'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});['eqf-last-insp','eqf-next-insp','eqf-last-svc','eqf-next-svc'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});document.getElementById('eqf-type').value='fire_extinguisher';document.getElementById('eqf-condition').value='good';document.getElementById('eqf-status').value='operational';emEqShowForm();}
 async function emEqEdit(id){var x=emEqData.find(r=>r.id===id);if(!x)return;emEqEditId=id;document.getElementById('em-eq-form-title').textContent='Edit Equipment';document.getElementById('em-eq-del-btn').style.display=isMgr()?'inline-flex':'none';var gf=function(id,val){var el=document.getElementById(id);if(el)el.value=val||'';};gf('eqf-id',x.identifier);gf('eqf-building',x.building);gf('eqf-floor',x.floor);gf('eqf-location',x.location);gf('eqf-serviced-by',x.serviced_by);gf('eqf-notes',x.notes);gf('eqf-last-insp',x.last_inspection);gf('eqf-next-insp',x.next_inspection);gf('eqf-last-svc',x.last_service);gf('eqf-next-svc',x.next_service);document.getElementById('eqf-type').value=x.equipment_type||'fire_extinguisher';document.getElementById('eqf-condition').value=x.condition||'good';document.getElementById('eqf-status').value=x.status||'operational';emEqShowForm();}
-async function emEqSave(){var loc=document.getElementById('eqf-location')?.value?.trim();if(!loc){toast('Please enter location',false);return;}var g=function(id){var el=document.getElementById(id);return el?el.value||null:null;};var body={company_id:ccid(),equipment_type:g('eqf-type')||'other',identifier:g('eqf-id'),location:loc,building:g('eqf-building'),floor:g('eqf-floor'),last_inspection:g('eqf-last-insp'),next_inspection:g('eqf-next-insp'),last_service:g('eqf-last-svc'),next_service:g('eqf-next-svc'),condition:g('eqf-condition')||'good',serviced_by:g('eqf-serviced-by'),notes:g('eqf-notes'),status:g('eqf-status')||'operational',updated_at:new Date().toISOString()};try{if(emEqEditId){await api('/emergency_equipment?id=eq.'+emEqEditId,{m:'PATCH',p:'return=minimal',b:body});toast('Updated!');}else{body.created_by=prof?.id;await api('/emergency_equipment',{m:'POST',p:'return=minimal',b:body});toast('Equipment added!');}emEqBack();}catch(e){toast(e.message,false);}
+async function emEqSave(){
+  var loc=document.getElementById('eqf-location')?.value?.trim();
+  if(!loc){toast('Please enter location',false);return;}
+  var g=function(id){var el=document.getElementById(id);return el?el.value||null:null;};
+  var body={company_id:ccid(),equipment_type:g('eqf-type')||'other',identifier:g('eqf-id'),location:loc,building:g('eqf-building'),floor:g('eqf-floor'),last_inspection:g('eqf-last-insp'),next_inspection:g('eqf-next-insp'),last_service:g('eqf-last-svc'),next_service:g('eqf-next-svc'),condition:g('eqf-condition')||'good',serviced_by:g('eqf-serviced-by'),notes:g('eqf-notes'),status:g('eqf-status')||'operational',updated_at:new Date().toISOString()};
+  var needsAction=body.status!=='operational'||['poor','condemned'].includes(body.condition);
+  try{
+    var savedId=emEqEditId;
+    if(emEqEditId){
+      await api('/emergency_equipment?id=eq.'+emEqEditId,{m:'PATCH',p:'return=minimal',b:body});
+      toast('Updated!'+(needsAction?' Please ensure corrective action is tracked.':''));
+    }else{
+      body.created_by=prof?.id;
+      var res=await api('/emergency_equipment',{m:'POST',p:'return=representation',b:body});
+      savedId=res?.[0]?.id||null;
+      toast('Equipment added!');
+    }
+    if(needsAction&&savedId){
+      try{
+        await api('/action_tracker',{m:'POST',p:'return=minimal',b:{
+          company_id:ccid(),source_module:'emergency',source_id:savedId,
+          source_ref:(body.identifier||body.equipment_type||'Emergency equipment')+' - Emergency equipment',
+          description:'Emergency equipment requires action: '+(body.notes||body.condition+' / '+body.status),
+          responsible:body.serviced_by||null,priority:body.condition==='condemned'?'high':'medium',status:'open',created_by:prof?.id
+        }});
+      }catch(ex){console.warn('Emergency equipment MAP action failed',ex);}
+    }
+    emEqBack();
+  }catch(e){toast(e.message,false);}
 }
 async function emEqDelete(){if(!emEqEditId)return;if(!(await appConfirmDelete('emergency equipment')))return;try{await api('/emergency_equipment?id=eq.'+emEqEditId,{m:'DELETE'});toast('Deleted!');emEqBack();}catch(e){toast(e.message,false);}}
 async function emEqDeleteRow(id){if(!(await appConfirmDelete('emergency equipment')))return;try{await api('/emergency_equipment?id=eq.'+id,{m:'DELETE'});emEqData=emEqData.filter(x=>x.id!==id);toast('Deleted!');emEqLoad();}catch(e){toast(e.message,false);}}
