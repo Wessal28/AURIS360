@@ -14272,11 +14272,26 @@ async function ptwAddGasTest(){
   ptwRenderGasHistoryPanel();
   // Save to DB
   try{
-    await api('/permits?id=eq.'+ptwCurrentId,{m:'PATCH',p:'return=minimal',b:{gas_tests:ptwGasTests,updated_at:new Date().toISOString()}});
+    var permit=ptwAllData.find(function(x){return x.id===ptwCurrentId;})||{};
+    var body={gas_tests:ptwGasTests,updated_at:new Date().toISOString()};
+    if(test.result==='fail'){
+      var reason='Failed gas test - stop work and re-assess atmosphere';
+      var blocks=Array.isArray(permit.blocked_reasons)?permit.blocked_reasons.slice():[];
+      if(!blocks.includes(reason))blocks.push(reason);
+      body.blocked_reasons=blocks;
+      if(permit.status==='active'){
+        body.status='suspended';
+        body.suspended_at=new Date().toISOString();
+        body.suspended_by=test.tester;
+        body.suspension_reason=reason;
+      }
+    }
+    await api('/permits?id=eq.'+ptwCurrentId,{m:'PATCH',p:'return=minimal',b:body});
     var idx=ptwAllData.findIndex(function(x){return x.id===ptwCurrentId;});
-    if(idx>=0)ptwAllData[idx].gas_tests=ptwGasTests;
+    if(idx>=0)Object.assign(ptwAllData[idx],body);
     try{await api('/permit_activity_log',{m:'POST',p:'return=minimal',b:{company_id:ccid(),permit_id:ptwCurrentId,action:'Gas test recorded',performed_by:test.tester,details:'O2 '+(test.o2||'-')+'%, LEL '+(test.lel||'-')+'%, H2S '+(test.h2s||'-')+' ppm, CO '+(test.co||'-')+' ppm, result '+(test.result||'-')}});}catch(ex){}
-    toast('Gas test recorded! O₂: '+test.o2+'% LEL: '+test.lel+'%');
+    if(test.result==='fail')try{await api('/permit_activity_log',{m:'POST',p:'return=minimal',b:{company_id:ccid(),permit_id:ptwCurrentId,action:'Failed gas test - work stopped',performed_by:test.tester,details:'Permit '+(body.status==='suspended'?'suspended':'blocked')+' due to unsafe atmosphere',new_status:body.status||permit.status}});}catch(ex){}
+    toast(test.result==='fail'?'FAILED gas test - work must stop and permit is blocked':'Gas test recorded! O₂: '+test.o2+'% LEL: '+test.lel+'%',test.result!=='fail');
     ['gas-o2','gas-lel','gas-h2s','gas-co','gas-notes','gas-location'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
   }catch(e){toast(e.message,false);}
 }
