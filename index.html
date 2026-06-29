@@ -19027,15 +19027,30 @@ function fleetLabel(v){
   return (v.registration_number||v.ref_number||v.name||'Vehicle').trim();
 }
 
+function fleetKey(v){
+  return String(v||'').toLowerCase().replace(/[^a-z0-9]/g,'');
+}
+
 function fleetFuelMatchesVehicle(f,v){
-  var hay=(f.vehicle_equipment||'').toLowerCase();
+  var hay=fleetKey(f.vehicle_equipment||'');
   if(!hay)return false;
-  return [v.registration_number,v.ref_number,v.name].some(function(x){return x&&hay.indexOf(String(x).toLowerCase())!==-1;});
+  return [v.registration_number,v.ref_number,v.name].some(function(x){
+    var key=fleetKey(x);
+    return key&&(hay.indexOf(key)!==-1||key.indexOf(hay)!==-1);
+  });
+}
+
+function fleetIncidentMatchesVehicle(ev,v){
+  if((ev.event_type||'')!=='vehicle')return false;
+  var reg=fleetKey(ev.vehicle_reg||''), label=fleetKey(fleetLabel(v));
+  if(!reg||!label)return false;
+  return reg===label||label.indexOf(reg)!==-1||reg.indexOf(label)!==-1;
 }
 
 async function loadFleet(){
   var addBtn=document.getElementById('fleet-add-vehicle-btn');
   if(addBtn)addBtn.style.display=isMgr()?'inline-flex':'none';
+  var fuelBtn=document.getElementById('fleet-fuel-log-btn');if(fuelBtn)fuelBtn.style.display=isMgr()?'inline-flex':'none';
   var el=document.getElementById('fleet-list');
   if(!el)return;
   el.innerHTML='<div class="loading-msg">Loading fleet...</div>';
@@ -19056,6 +19071,9 @@ async function loadFleet(){
 function fleetRender(){
   var el=document.getElementById('fleet-list');
   if(!el)return;
+  var q=(document.getElementById('fleet-search')?.value||'').toLowerCase();
+  var statusFilter=document.getElementById('fleet-filter-status')?.value||'';
+  var checkFilter=document.getElementById('fleet-filter-check')?.value||'';
   var today=new Date();today.setHours(0,0,0,0);
   var lastInsp={};
   fleetInspections.forEach(function(x){if(x.tool_id&&!lastInsp[x.tool_id])lastInsp[x.tool_id]=x;});
@@ -19074,8 +19092,25 @@ function fleetRender(){
   setM('fleet-m-overdue',overdue);
   setM('fleet-m-fuel',Math.round(totalFuel));
   setM('fleet-m-co2',Math.round(totalCo2));
+  var rows=fleetVehicles.filter(function(v){
+    var li=lastInsp[v.id], lastDt=li&&li.inspection_date?new Date(li.inspection_date):null;
+    var days=lastDt?Math.floor((today-lastDt)/(1000*60*60*24)):999;
+    var due=days>35, soon=days>21&&days<=35;
+    var incCount=fleetIncidents.filter(function(ev){return fleetIncidentMatchesVehicle(ev,v);}).length;
+    var text=[fleetLabel(v),v.name,v.brand,v.model,v.location,v.assigned_to_name,v.status].join(' ').toLowerCase();
+    if(q&&text.indexOf(q)===-1)return false;
+    if(statusFilter&&(v.status||'active')!==statusFilter)return false;
+    if(checkFilter==='overdue'&&!due)return false;
+    if(checkFilter==='due_soon'&&!soon)return false;
+    if(checkFilter==='with_incidents'&&!incCount)return false;
+    return true;
+  });
   if(!fleetVehicles.length){
     el.innerHTML='<div class="card" style="text-align:center;padding:42px;color:var(--text2)"><div style="font-size:40px;margin-bottom:10px"><i class="ti ti-car"></i></div><div style="font-weight:700;color:var(--text);margin-bottom:8px">No vehicles registered yet</div><div style="font-size:12px;margin-bottom:14px">Add company vehicles from here, then track inspections, fuel and incidents.</div>'+(isMgr()?'<button class="btn btn-primary" onclick="fleetNewVehicle()"><i class="ti ti-plus"></i>Add vehicle</button>':'')+'</div>';
+    return;
+  }
+  if(!rows.length){
+    el.innerHTML='<div class="card" style="text-align:center;padding:34px;color:var(--text2)"><div style="font-weight:800;color:var(--text);margin-bottom:6px">No vehicles match the current filters</div><button class="btn btn-sm" onclick="document.getElementById(\'fleet-search\').value=\'\';document.getElementById(\'fleet-filter-status\').value=\'\';document.getElementById(\'fleet-filter-check\').value=\'\';fleetRender()">Clear filters</button></div>';
     return;
   }
   var h='<div class="card" style="padding:0;overflow:hidden"><div style="overflow-x:auto"><table style="width:100%;min-width:1180px;border-collapse:collapse;font-size:12px">'
@@ -19088,30 +19123,26 @@ function fleetRender(){
     +'<th style="padding:9px 12px;text-align:center">Vehicle incidents</th>'
     +'<th style="padding:9px 12px;text-align:right">Actions</th>'
     +'</tr></thead><tbody>';
-  fleetVehicles.forEach(function(v,i){
+  rows.forEach(function(v,i){
     var li=lastInsp[v.id], lastDt=li&&li.inspection_date?new Date(li.inspection_date):null;
     var days=lastDt?Math.floor((today-lastDt)/(1000*60*60*24)):999;
     var due=days>35, soon=days>21&&days<=35;
     var fList=fleetFuel.filter(function(f){return fleetFuelMatchesVehicle(f,v);});
     var fuelSum=fList.reduce(function(s,f){return s+(parseFloat(f.quantity)||0);},0);
-    var incCount=fleetIncidents.filter(function(ev){
-      if((ev.event_type||'')!=='vehicle')return false;
-      var reg=(ev.vehicle_reg||'').toLowerCase(), lab=fleetLabel(v).toLowerCase();
-      return reg&&(reg===lab||lab.indexOf(reg)!==-1||reg.indexOf(lab)!==-1);
-    }).length;
+    var incCount=fleetIncidents.filter(function(ev){return fleetIncidentMatchesVehicle(ev,v);}).length;
     var status=(v.status||'active').replace(/_/g,' ');
     var stCfg=(v.status||'active')==='active'?['#EAF3DE','#3B6D11']:(v.status==='out_of_service'?['#FCEBEB','#A32D2D']:['#FEF9EC','#854F0B']);
     h+='<tr style="border-bottom:1px solid #f0f0f0;background:'+(i%2?'#fafafa':'#fff')+(due?';border-left:4px solid var(--red)':soon?';border-left:4px solid var(--amber)':'')+'">'
       +'<td style="padding:10px 12px"><div style="font-weight:800;font-size:13px">'+escH(fleetLabel(v))+'</div><div style="font-size:11px;color:var(--text2)">'+escH((v.name||'')+(v.brand?' - '+v.brand:'')+(v.model?' '+v.model:''))+'</div></td>'
       +'<td style="padding:10px 12px"><div>'+escH(v.assigned_to_name||'General use')+'</div><div style="font-size:11px;color:var(--text2)">'+escH(v.location||'--')+'</div></td>'
       +'<td style="padding:10px 12px"><span style="background:'+stCfg[0]+';color:'+stCfg[1]+';padding:3px 9px;border-radius:99px;font-size:11px;font-weight:700;text-transform:capitalize">'+escH(status)+'</span></td>'
-      +'<td style="padding:10px 12px;'+(due?'color:var(--red);font-weight:700':'')+'">'+(lastDt?lastDt.toLocaleDateString('en-GB'):'Never')+'<div style="font-size:11px;color:'+(due?'var(--red)':'var(--text2)')+'">'+(lastDt?(days+' days ago'):'Check due')+'</div></td>'
+      +'<td style="padding:10px 12px;'+(due?'color:var(--red);font-weight:700':'')+'">'+(lastDt?lastDt.toLocaleDateString('en-GB'):'Never')+'<div style="font-size:11px;color:'+(due?'var(--red)':soon?'#C2410C':'var(--text2)')+'">'+(lastDt?(days+' days ago'):'Check due')+(due?'<br><strong>OVERDUE</strong>':soon?'<br><strong>DUE SOON</strong>':'')+'</div></td>'
       +'<td style="padding:10px 12px;font-weight:700">'+(fuelSum?fuelSum.toFixed(1):'0')+' L<div style="font-size:11px;color:var(--text2);font-weight:400">'+fList.length+' entries</div></td>'
       +'<td style="padding:10px 12px;text-align:center;font-weight:800;color:'+(incCount?'var(--red)':'var(--text2)')+'">'+incCount+'</td>'
       +'<td style="padding:10px 12px;text-align:right;white-space:nowrap">'
-      +'<button class="btn btn-sm" data-id="'+v.id+'" onclick="fleetMonthlyCheck(this.getAttribute(\'data-id\'))"><i class="ti ti-clipboard-check"></i>Check</button> '
-      +'<button class="btn btn-sm" data-label="'+escH(fleetLabel(v))+'" onclick="fleetFuelNew(this.getAttribute(\'data-label\'))"><i class="ti ti-gas-station"></i>Fuel</button> '
-      +'<button class="btn btn-sm" data-id="'+v.id+'" onclick="fleetEditVehicle(this.getAttribute(\'data-id\'))"><i class="ti ti-edit"></i></button>'
+      +(isMgr()?'<button class="btn btn-sm" data-id="'+v.id+'" onclick="event.stopPropagation();fleetMonthlyCheck(this.getAttribute(\'data-id\'))"><i class="ti ti-clipboard-check"></i>Check</button> ':'')
+      +(isMgr()?'<button class="btn btn-sm" data-label="'+escH(fleetLabel(v))+'" onclick="event.stopPropagation();fleetFuelNew(this.getAttribute(\'data-label\'))"><i class="ti ti-gas-station"></i>Fuel</button> ':'')
+      +(isMgr()?'<button class="btn btn-sm" data-id="'+v.id+'" onclick="event.stopPropagation();fleetEditVehicle(this.getAttribute(\'data-id\'))"><i class="ti ti-edit"></i></button>':'')
       +'</td></tr>';
   });
   h+='</tbody></table></div></div>';
@@ -32968,7 +32999,7 @@ function fireEquipStatusBadge(s) {
 <div><div class="page-title">Fleet Management</div><div style="font-size:12px;color:var(--text2)">Vehicle register, monthly checks, fuel usage and incident links</div></div>
 <div style="display:flex;gap:8px">
 <button class="btn btn-primary" id="fleet-add-vehicle-btn" style="display:none" onclick="fleetNewVehicle()"><i class="ti ti-plus"></i>Add vehicle</button>
-<button class="btn" onclick="fleetFuelNew('')"><i class="ti ti-gas-station"></i>Fuel log</button>
+<button class="btn" id="fleet-fuel-log-btn" onclick="fleetFuelNew('')"><i class="ti ti-gas-station"></i>Fuel log</button>
 </div>
 </div>
 <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:14px">
@@ -32977,6 +33008,17 @@ function fireEquipStatusBadge(s) {
 <div class="card" style="padding:12px 14px;border-left:4px solid #E24B4A"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">Checks overdue</div><div style="font-size:24px;font-weight:800;color:#E24B4A" id="fleet-m-overdue">--</div></div>
 <div class="card" style="padding:12px 14px;border-left:4px solid #EF9F27"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">Fuel logged</div><div style="font-size:24px;font-weight:800;color:#EF9F27"><span id="fleet-m-fuel">--</span> L</div></div>
 <div class="card" style="padding:12px 14px;border-left:4px solid #6D28D9"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">CO2e</div><div style="font-size:24px;font-weight:800;color:#6D28D9"><span id="fleet-m-co2">--</span> kg</div></div>
+</div>
+<div class="card" style="margin-bottom:12px;padding:10px 14px">
+<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+<input type="text" id="fleet-search" placeholder="Search vehicle, registration, location, driver..." oninput="fleetRender()" style="flex:1;min-width:220px;padding:7px 12px;border:1px solid var(--border);border-radius:8px;font-size:12px"/>
+<select id="fleet-filter-status" onchange="fleetRender()" style="padding:7px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px">
+<option value="">All statuses</option><option value="active">Active</option><option value="out_of_service">Out of service</option><option value="maintenance">Maintenance</option><option value="archived">Archived</option>
+</select>
+<select id="fleet-filter-check" onchange="fleetRender()" style="padding:7px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px">
+<option value="">All checks</option><option value="overdue">Monthly check overdue</option><option value="due_soon">Monthly check due soon</option><option value="with_incidents">With vehicle incidents</option>
+</select>
+</div>
 </div>
 <div id="fleet-list"><div class="loading-msg">Loading fleet...</div></div>
 </div>
