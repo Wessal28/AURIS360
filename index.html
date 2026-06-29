@@ -14268,6 +14268,7 @@ async function ptwAddGasTest(){
   var test={datetime:g('gas-datetime'),tester:ptwCurrentUserName(),equipment:g('gas-equipment'),cal_date:g('gas-cal-date'),o2:g('gas-o2'),lel:g('gas-lel'),h2s:g('gas-h2s'),co:g('gas-co'),location:g('gas-location'),result:g('gas-result'),notes:g('gas-notes')};
   if(!test.equipment)return toast('Please enter the gas detector / equipment used',false);
   if(!test.cal_date)return toast('Please enter the gas detector calibration date',false);
+  if(new Date(test.cal_date)>new Date())return toast('Calibration date cannot be in the future',false);
   if(!test.o2||!test.lel)return toast('Please enter both O₂ and LEL readings',false);
   var calculated=ptwClassifyGasTest(test);
   if(test.result==='pass'&&calculated!=='pass')test.result=calculated;
