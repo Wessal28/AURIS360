@@ -11702,6 +11702,8 @@ async function loadRA(){
   var btn=document.getElementById('risk-add-btn');
   if(btn&&isMgr())document.getElementById('ra-new-main-btn').style.display='inline-flex';
   if(btn&&!isMgr())document.getElementById('ra-lib-btn').style.display='none';
+  var importBtn=document.getElementById('ra-import-pdf-btn');
+  if(importBtn)importBtn.style.display=isMgr()?'inline-flex':'none';
   raShowList();
 }
 
@@ -12004,6 +12006,15 @@ function raNew(type){
   document.getElementById('ra-form-view').style.display='block';
   // Switch to info tab
   raFormTab('info', document.getElementById('ra-ftab-info'));
+}
+
+function raImportExistingPDF(type){
+  if(!isMgr()){toast('Only managers/admins can import risk assessments',false);return;}
+  raNew(type||'baseline');
+  setTimeout(function(){
+    var input=document.getElementById('ra-rams-file');
+    if(input){input.value='';input.click();}
+  },80);
 }
 
 function raSwitchFormType(type){
@@ -12393,6 +12404,11 @@ function raClearForm(){
 // ── Delete ────────────────────────────────────────────────────────────────────
 async function raDeleteCurrent(){
   if(!raEditingId)return;
+  var current=raAllData.find(function(x){return x.id===raEditingId;})||{};
+  if(!isSA()&&!['draft','rejected','archived'].includes(current.status||'draft')){
+    toast('For audit trail, active or submitted RAs should be archived/revised instead of deleted.',false);
+    return;
+  }
   var ok=await appConfirm({
     title:'Delete risk assessment',
     message:'Delete this risk assessment?',
@@ -12402,7 +12418,8 @@ async function raDeleteCurrent(){
     danger:true
   });
   if(!ok)return;
-  api('/risk_assessments?id=eq.'+raEditingId,{m:'DELETE'}).then(function(){
+  api('/risk_assessments?id=eq.'+raEditingId,{m:'DELETE',p:'return=representation'}).then(function(deleted){
+    if(!deleted||!deleted.length)throw new Error('Delete failed: record not found or permission denied');
     raAllData=raAllData.filter(x=>x.id!==raEditingId);
     toast('Deleted!');raEditingId=null;raShowList();
   }).catch(function(e){toast(e.message,false);});
@@ -12471,6 +12488,18 @@ function raExtractRowsFromText(text){
     if(rows.some(function(r){return (r._key||'')===key;}))continue;
     rows.push({_key:key,hazard:hazard,harm:harm,who:'Workers / affected persons',rs:raGuessRiskSeverity(joined),rop:raGuessRiskProbability(joined),controls:controls,hoc_level:/guard|ventilation|isolation|barrier|interlock/i.test(controls)?'engineering':'administrative',res_s:Math.max(1,raGuessRiskSeverity(joined)-1),res_p:1});
     if(rows.length>=12)break;
+  }
+  var tableRe=/^(.{6,90}?)\s{2,}(.{6,120}?)\s{2,}(.{10,260})$/i;
+  for(var j=0;j<lines.length&&rows.length<18;j++){
+    var m=lines[j].match(tableRe);
+    if(!m)continue;
+    var skip=/^(ref|no\.?|hazard|activity|task|risk|control|severity|probability|score)$/i;
+    if(skip.test(m[1])||skip.test(m[2]))continue;
+    var hazard2=m[1].trim(), harm2=m[2].trim(), controls2=m[3].trim();
+    if(!/(injury|harm|burn|fall|exposure|strain|cut|impact|ill|damage|shock|fire|spill|crush|slip|trip|control|ppe|guard|training|supervision|isolation)/i.test(harm2+' '+controls2))continue;
+    var key2=hazard2.toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();
+    if(rows.some(function(r){return (r._key||'')===key2||(r.hazard||'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim()===key2;}))continue;
+    rows.push({_key:key2,hazard:hazard2,harm:harm2,who:'Workers / affected persons',rs:raGuessRiskSeverity(hazard2+' '+harm2),rop:raGuessRiskProbability(hazard2+' '+harm2),controls:controls2,hoc_level:/guard|ventilation|isolation|barrier|interlock/i.test(controls2)?'engineering':'administrative',res_s:Math.max(1,raGuessRiskSeverity(hazard2+' '+harm2)-1),res_p:1});
   }
   return rows.map(function(r){delete r._key;return r;});
 }
@@ -31546,6 +31575,7 @@ function fireEquipStatusBadge(s) {
 <div><div class="page-title">Risk Assessment</div><div style="font-size:12px;color:var(--text2)">RAMS · Baseline RA · Task-Based RA · Dynamic RA · HIRA · JSA/JHA</div></div>
 <div style="display:flex;gap:8px" id="risk-add-btn">
 <button class="btn btn-sm" id="ra-lib-btn" onclick="raShowLibrary()"><i class="ti ti-books"></i>Libraries</button>
+<button class="btn btn-sm" id="ra-import-pdf-btn" onclick="raImportExistingPDF('baseline')"><i class="ti ti-file-import"></i>Import RA PDF</button>
 <button class="btn btn-primary" onclick="raShowNewPanel()" id="ra-new-main-btn" style="display:none"><i class="ti ti-plus"></i>New RA</button>
 <button class="btn btn-sm" onclick="if(raEditingId)printRiskAssessment(raEditingId);else toast('Open a risk assessment first',false)" title="Print PDF"><i class="ti ti-printer"></i>Print PDF</button>
 </div>
