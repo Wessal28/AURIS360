@@ -14858,6 +14858,14 @@ const INC_TYPE_CFG={
   fatality:['#1a0000','#ff0000','Fatality']
 };
 
+function conDateState(dateStr,days){
+  if(!dateStr)return {missing:true,expired:false,soon:false,label:'Missing'};
+  var today=new Date();today.setHours(0,0,0,0);
+  var dt=new Date(dateStr);dt.setHours(0,0,0,0);
+  var soon=new Date(today);soon.setDate(soon.getDate()+(days||60));
+  return {missing:false,expired:dt<today,soon:dt>=today&&dt<=soon,label:dt.toLocaleDateString('en-GB')};
+}
+
 function conSwitchTab(tab,btn){
   document.querySelectorAll('.mtg-tab').forEach(t=>t.classList.remove('active'));
   btn.classList.add('active');
@@ -14888,12 +14896,18 @@ async function conLoadRegister(){
     setM('con-m-approved',conAllData.filter(x=>x.status==='approved').length);
     setM('con-m-pending',conAllData.filter(x=>x.status==='pending'||x.status==='pre_assessed').length);
     setM('con-m-suspended',conAllData.filter(x=>x.status==='suspended'||x.status==='rejected').length);
-    setM('con-m-expiring',conAllData.filter(x=>x.expiry_date&&new Date(x.expiry_date)<=soon&&x.status==='approved').length);
+    setM('con-m-expiring',conAllData.filter(function(x){
+      return x.status==='approved'&&(
+        (x.expiry_date&&new Date(x.expiry_date)<=soon)||
+        (x.insurance_expiry&&new Date(x.insurance_expiry)<=soon)||
+        (x.next_review_date&&new Date(x.next_review_date)<=soon)
+      );
+    }).length);
     conFilterRegister();
   }catch(e){el.innerHTML='<p style="padding:20px;color:red">'+e.message+'</p>';console.error(e);}
 }
 
-function conFilterRegister(){
+function conFilterRegisterLegacy(){
   var el=document.getElementById('con-register-list');if(!el)return;
   var q=(document.getElementById('con-search')?.value||'').toLowerCase();
   var fst=document.getElementById('con-filter-status')?.value||'';
@@ -14944,6 +14958,70 @@ function conFilterRegister(){
       +'</div>';
   });
   el.innerHTML=h;
+}
+
+function conFilterRegister(){
+  var el=document.getElementById('con-register-list');if(!el)return;
+  var q=(document.getElementById('con-search')?.value||'').toLowerCase();
+  var fst=document.getElementById('con-filter-status')?.value||'';
+  var fcat=document.getElementById('con-filter-cat')?.value||'';
+  var fcomp=document.getElementById('con-filter-compliance')?.value||'';
+  var filtered=conAllData.filter(function(x){
+    var expiry=conDateState(x.expiry_date,60);
+    var insurance=conDateState(x.insurance_expiry,60);
+    var review=conDateState(x.next_review_date,60);
+    var mQ=!q||(x.contractor_name||'').toLowerCase().includes(q)||(x.trading_name||'').toLowerCase().includes(q)||(x.contact_person||'').toLowerCase().includes(q)||(x.contact_email||'').toLowerCase().includes(q)||(x.contact_phone||'').toLowerCase().includes(q)||(x.specialisation||'').toLowerCase().includes(q)||(x.registration_number||'').toLowerCase().includes(q);
+    var mSt=!fst||x.status===fst;
+    var mC=!fcat||x.category===fcat;
+    var mComp=!fcomp||(fcomp==='expired'&&(expiry.expired||insurance.expired))||(fcomp==='expiring'&&(expiry.soon||insurance.soon||review.soon))||(fcomp==='missing_insurance'&&!x.insurance_expiry)||(fcomp==='review_due'&&(review.expired||review.soon));
+    return mQ&&mSt&&mC&&mComp;
+  });
+  if(!filtered.length){
+    el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)">'
+      +'<div style="font-size:40px;margin-bottom:12px"><i class="ti ti-building"></i></div>'
+      +'<div style="font-weight:600;margin-bottom:8px">No contractors match the selected filters</div>'
+      +(isMgr()?'<button class="btn btn-primary" onclick="conNew()"><i class="ti ti-plus"></i>Register contractor</button>':'')
+      +'</div>';
+    return;
+  }
+  var dateBadge=function(st,missingText){
+    if(st.missing)return '<span style="color:#6B7280">'+missingText+'</span>';
+    return '<span style="font-weight:700;color:'+(st.expired?'#A32D2D':st.soon?'#C2410C':'#3B6D11')+'">'+st.label+(st.expired?' expired':st.soon?' due soon':'')+'</span>';
+  };
+  var h='<table style="width:100%;border-collapse:collapse;font-size:12px;min-width:1050px"><thead><tr style="background:#1a3a5c;color:#fff">'
+    +'<th style="padding:9px 12px;text-align:left">Contractor</th>'
+    +'<th style="padding:9px 10px;text-align:left">Category</th>'
+    +'<th style="padding:9px 10px;text-align:left">Contact</th>'
+    +'<th style="padding:9px 10px;text-align:left">Insurance</th>'
+    +'<th style="padding:9px 10px;text-align:left">Approval expiry</th>'
+    +'<th style="padding:9px 10px;text-align:left">Review</th>'
+    +'<th style="padding:9px 10px;text-align:center">Status</th>'
+    +'<th style="padding:9px 10px;text-align:right">Actions</th>'
+    +'</tr></thead><tbody>';
+  filtered.forEach(function(x,i){
+    var sc=CON_STATUS_CFG[x.status]||CON_STATUS_CFG.pending;
+    var icon=CON_CAT_ICONS[x.category]||'ti-briefcase';
+    var expiry=conDateState(x.expiry_date,60);
+    var insurance=conDateState(x.insurance_expiry,60);
+    var review=conDateState(x.next_review_date,60);
+    var rowWarn=expiry.expired||insurance.expired?';border-left:4px solid var(--red)':expiry.soon||insurance.soon||review.soon?';border-left:4px solid #C2410C':'';
+    h+='<tr style="border-bottom:1px solid #f0f0f0;background:'+(i%2?'#fafafa':'#fff')+rowWarn+';cursor:pointer" onclick="conOpenDetail(\''+x.id+'\')">'
+      +'<td style="padding:10px 12px"><div style="display:flex;align-items:center;gap:10px">'
+      +'<div style="width:34px;height:34px;border-radius:9px;background:#185FA520;display:flex;align-items:center;justify-content:center;flex-shrink:0"><i class="ti '+icon+'" style="font-size:17px;color:#185FA5"></i></div>'
+      +'<div><div style="font-weight:800;font-size:13px">'+escH(x.contractor_name||'—')+'</div><div style="font-size:11px;color:var(--text2)">'+escH(x.trading_name&&x.trading_name!==x.contractor_name?x.trading_name:(x.registration_number||x.specialisation||'—'))+'</div></div></div></td>'
+      +'<td style="padding:10px">'+escH((x.category||'general').replace(/_/g,' '))+'</td>'
+      +'<td style="padding:10px"><div style="font-weight:600">'+escH(x.contact_person||'—')+'</div><div style="font-size:11px;color:var(--text2)">'+escH(x.contact_email||x.contact_phone||'No contact recorded')+'</div></td>'
+      +'<td style="padding:10px">'+dateBadge(insurance,'No insurance date')+'</td>'
+      +'<td style="padding:10px">'+dateBadge(expiry,'No approval expiry')+'</td>'
+      +'<td style="padding:10px">'+dateBadge(review,'No review date')+'</td>'
+      +'<td style="padding:10px;text-align:center"><span style="background:'+sc[0]+';color:'+sc[1]+';padding:3px 9px;border-radius:99px;font-size:11px;font-weight:800">'+sc[2]+'</span></td>'
+      +'<td style="padding:10px;text-align:right;white-space:nowrap">'
+      +'<button class="btn btn-sm" data-id="'+x.id+'" onclick="event.stopPropagation();conEdit(this.getAttribute(\'data-id\'))"><i class="ti ti-edit"></i></button> '
+      +(isMgr()?'<button class="btn btn-sm" style="color:var(--red)" data-id="'+x.id+'" onclick="event.stopPropagation();conDeleteFromList(this.getAttribute(\'data-id\'))"><i class="ti ti-trash"></i></button>':'')
+      +'</td></tr>';
+  });
+  h+='</tbody></table>';
+  el.innerHTML='<div style="overflow-x:auto">'+h+'</div>';
 }
 
 function conOpenDetail(id){
@@ -15025,13 +15103,17 @@ async function conSave(){
 
 async function conDelete(){
   if(!conEditingId)return;
-  if(!(await appConfirmDelete('contractor','This will also remove related assessments and evaluations.')))return;
-  try{await api('/contractors?id=eq.'+conEditingId,{m:'DELETE'});toast('Deleted!');conFormBack();}
+  if(!(await appConfirmAction({title:'Suspend contractor',message:'Suspend this contractor instead of deleting the record?',detail:'The contractor stays in the register for audit history and will not be treated as approved.',confirmText:'Suspend',cancelText:'Cancel'})))return;
+  try{await api('/contractors?id=eq.'+conEditingId,{m:'PATCH',p:'return=minimal',b:{status:'suspended',updated_at:new Date().toISOString()}});toast('Contractor suspended.');conFormBack();}
   catch(e){toast(e.message,false);}
 }
 async function conDeleteFromList(id){
-  if(!(await appConfirmDelete('contractor')))return;
-  try{await api('/contractors?id=eq.'+id,{m:'DELETE'});conAllData=conAllData.filter(x=>x.id!==id);toast('Deleted!');conFilterRegister();}
+  if(!(await appConfirmAction({title:'Suspend contractor',message:'Suspend this contractor?',detail:'This keeps assessments, permits and authorisations linked for audit history.',confirmText:'Suspend',cancelText:'Cancel'})))return;
+  try{
+    await api('/contractors?id=eq.'+id,{m:'PATCH',p:'return=minimal',b:{status:'suspended',updated_at:new Date().toISOString()}});
+    var row=conAllData.find(function(x){return x.id===id;});if(row)row.status='suspended';
+    toast('Contractor suspended.');conFilterRegister();
+  }
   catch(e){toast(e.message,false);}
 }
 
@@ -15589,13 +15671,17 @@ async function catwSave(){
 
 async function catwDelete(){
   if(!catwEditingId)return;
-  if(!(await appConfirmAction({title:'Revoke authorisation',message:'Revoke this authorisation?',detail:'This will remove the contractor authorisation record.',confirmText:'Revoke',cancelText:'Cancel'})))return;
-  try{await api('/contractor_authorisations?id=eq.'+catwEditingId,{m:'DELETE'});toast('Deleted!');catwFormBack();}
+  if(!(await appConfirmAction({title:'Revoke authorisation',message:'Revoke this authorisation?',detail:'The record will stay available for audit history.',confirmText:'Revoke',cancelText:'Cancel'})))return;
+  try{await api('/contractor_authorisations?id=eq.'+catwEditingId,{m:'PATCH',p:'return=minimal',b:{status:'revoked',updated_at:new Date().toISOString()}});toast('Authorisation revoked.');catwFormBack();}
   catch(e){toast(e.message,false);}
 }
 async function catwDeleteRow(id){
-  if(!(await appConfirmDelete('contractor authorisation')))return;
-  try{await api('/contractor_authorisations?id=eq.'+id,{m:'DELETE'});conATWData=conATWData.filter(x=>x.id!==id);toast('Deleted!');catwLoad();}
+  if(!(await appConfirmAction({title:'Revoke authorisation',message:'Revoke this contractor authorisation?',detail:'The record will stay available for audit history.',confirmText:'Revoke',cancelText:'Cancel'})))return;
+  try{
+    await api('/contractor_authorisations?id=eq.'+id,{m:'PATCH',p:'return=minimal',b:{status:'revoked',updated_at:new Date().toISOString()}});
+    var row=conATWData.find(function(x){return x.id===id;});if(row)row.status='revoked';
+    toast('Authorisation revoked.');catwLoad();
+  }
   catch(e){toast(e.message,false);}
 }
 
@@ -33889,8 +33975,9 @@ function fireEquipStatusBadge(s) {
 <div class="card" style="padding:12px 14px;border-left:4px solid #185FA5"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">Total</div><div style="font-size:24px;font-weight:800;color:#185FA5" id="con-m-total">—</div></div>
 </div>
 <div class="card" style="margin-bottom:12px;padding:10px 14px"><div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
-<input type="text" id="con-search" placeholder="Search contractor name..." oninput="conFilterRegister()" style="flex:1;min-width:180px;padding:7px 12px;border:1px solid var(--border);border-radius:8px;font-size:12px"/>
+<input type="text" id="con-search" placeholder="Search name, contact, email, phone, speciality..." oninput="conFilterRegister()" style="flex:1;min-width:180px;padding:7px 12px;border:1px solid var(--border);border-radius:8px;font-size:12px"/>
 <select id="con-filter-status" onchange="conFilterRegister()" style="padding:7px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px"><option value="">All statuses</option><option value="approved">Approved</option><option value="pending">Pending</option><option value="pre_assessed">Pre-assessed</option><option value="suspended">Suspended</option></select>
+<select id="con-filter-compliance" onchange="conFilterRegister()" style="padding:7px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px"><option value="">All compliance</option><option value="expired">Expired insurance/approval</option><option value="expiring">Expiring or review due soon</option><option value="missing_insurance">Missing insurance date</option><option value="review_due">Review due</option></select>
 <select id="con-filter-cat" onchange="conFilterRegister()" style="padding:7px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px"><option value="">All categories</option><option value="electrical">Electrical</option><option value="mechanical">Mechanical</option><option value="civil">Civil</option><option value="construction">Construction</option></select>
 </div></div>
 <div class="card" style="padding:0;overflow:hidden"><div id="con-register-list"><div class="loading-msg">Loading...</div></div></div>
