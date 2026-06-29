@@ -18258,11 +18258,24 @@ async function ppeQuickReplace(issId,empName,ppeName){
 // ===== TOOLS_JS.JS =====
 
 // ===== TOOLS & EQUIPMENT MODULE =====
-let toolsAllData=[], toolsEditingId=null, toolsInspEditingId=null, toolsInspEquipId=null, toolsRcdData=[];
+let toolsAllData=[], toolsEditingId=null, toolsInspEditingId=null, toolsInspEquipId=null, toolsRcdData=[], toolsLastInspectionByTool={};
 
 const TOOL_CAT_LABELS={hand_tool:'Hand tool',power_tool:'Power tool',equipment:'Equipment',vehicle:'Vehicle',lifting:'Lifting equipment',electrical:'Electrical',ppe:'PPE',other:'Other'};
 const TOOL_CAT_COLORS={hand_tool:'#185FA5',power_tool:'#854F0B',equipment:'#3B6D11',vehicle:'#185FA5',lifting:'#8B5CF6',electrical:'#EF9F27',ppe:'#1D9E75',other:'#6B7280'};
 const TOOL_CAT_ICONS={hand_tool:'ti-hammer',power_tool:'ti-bolt',equipment:'ti-settings',vehicle:'ti-car',lifting:'ti-crane',electrical:'ti-plug',ppe:'ti-shield',other:'ti-package'};
+
+function toolsInspectionIntervalDays(freq){
+  return {daily:1,weekly:7,monthly:31,quarterly:92,six_monthly:183,annual:366,yearly:366}[freq||'']||30;
+}
+
+function toolsInspectionState(x,today){
+  var last=toolsLastInspectionByTool[x.id];
+  var dt=last&&last.inspection_date?new Date(last.inspection_date):null;
+  var interval=toolsInspectionIntervalDays(x.inspection_frequency||'monthly');
+  if(!dt)return {last:null,days:999,due:true,soon:false,label:'Never inspected'};
+  var days=Math.floor((today-dt)/(1000*60*60*24));
+  return {last:dt,days:days,due:days>interval,soon:days>Math.max(1,interval-7)&&days<=interval,label:days+' days ago'};
+}
 
 function toolsSwitchTab(tab,btn){
   document.querySelectorAll('.mtg-tab').forEach(t=>t.classList.remove('active'));
@@ -18297,15 +18310,20 @@ async function toolsLoadRegister(){
   if(!el)return;
   el.innerHTML='<div class="loading-msg">Loading...</div>';
   try{
-    var d=await api('/tools_register?select=*'+cf()+'&order=category,name');
-    toolsAllData=d||[];
+    var res=await Promise.all([
+      api('/tools_register?select=*'+cf()+'&order=category,name'),
+      api('/tool_inspections?select=tool_id,inspection_date,overall_result'+cf()+'&order=inspection_date.desc&limit=800')
+    ]);
+    toolsAllData=res[0]||[];
+    toolsLastInspectionByTool={};
+    (res[1]||[]).forEach(function(x){if(x.tool_id&&!toolsLastInspectionByTool[x.tool_id])toolsLastInspectionByTool[x.tool_id]=x;});
     var today=new Date(); var soon=new Date(); soon.setDate(soon.getDate()+30);
     var setM=function(id,v){var e=document.getElementById(id);if(e)e.textContent=v;};
     setM('tools-m-active',toolsAllData.filter(x=>x.status==='active').length);
     setM('tools-m-oos',toolsAllData.filter(x=>x.status==='out_of_service').length);
     setM('tools-m-veh',toolsAllData.filter(x=>x.category==='vehicle').length);
     setM('tools-m-stat',toolsAllData.filter(x=>x.requires_statutory&&x.next_statutory_date&&new Date(x.next_statutory_date)<=soon).length);
-    setM('tools-m-due',0);
+    setM('tools-m-due',toolsAllData.filter(function(x){return (x.status||'active')==='active'&&toolsInspectionState(x,today).due;}).length);
     toolsFilterRegister();
   }catch(e){el.innerHTML='<p style="padding:20px;color:red">'+e.message+'</p>';console.error(e);}
 }
@@ -18316,11 +18334,15 @@ function toolsFilterRegister(){
   var search=(document.getElementById('tools-search')?.value||'').toLowerCase();
   var cat=document.getElementById('tools-filter-cat')?.value||'';
   var status=document.getElementById('tools-filter-status')?.value||'';
+  var insp=document.getElementById('tools-filter-inspection')?.value||'';
+  var today=new Date();today.setHours(0,0,0,0);
   var filtered=toolsAllData.filter(function(x){
-    var mS=!search||(x.name||'').toLowerCase().includes(search)||(x.ref_number||'').toLowerCase().includes(search)||(x.serial_number||'').toLowerCase().includes(search);
+    var mS=!search||(x.name||'').toLowerCase().includes(search)||(x.ref_number||'').toLowerCase().includes(search)||(x.serial_number||'').toLowerCase().includes(search)||(x.location||'').toLowerCase().includes(search)||(x.assigned_to_name||'').toLowerCase().includes(search);
     var mC=!cat||x.category===cat;
     var mSt=!status||x.status===status;
-    return mS&&mC&&mSt;
+    var st=toolsInspectionState(x,today);
+    var mI=!insp||(insp==='overdue'&&st.due)||(insp==='due_soon'&&st.soon)||(insp==='never'&&!st.last)||(insp==='statutory_due'&&x.requires_statutory&&x.next_statutory_date&&new Date(x.next_statutory_date)<=new Date(Date.now()+30*86400000));
+    return mS&&mC&&mSt&&mI;
   });
   if(!filtered.length){
     el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)">'
@@ -18333,7 +18355,7 @@ function toolsFilterRegister(){
   // Group by category
   var bycat={};
   filtered.forEach(x=>{if(!bycat[x.category])bycat[x.category]=[];bycat[x.category].push(x);});
-  var today=new Date(); var soon=new Date(); soon.setDate(soon.getDate()+30);
+  var soon=new Date(); soon.setDate(soon.getDate()+30);
   var html='';
   Object.entries(bycat).forEach(function(e){
     var cat=e[0],items=e[1];
@@ -18346,10 +18368,11 @@ function toolsFilterRegister(){
     items.forEach(function(x,i){
       var bg=i%2===0?'#fff':'#fafafa';
       var isStatDue=x.requires_statutory&&x.next_statutory_date&&new Date(x.next_statutory_date)<=soon;
+      var inspState=toolsInspectionState(x,today);
       var isOos=x.status!=='active';
       var statusCfg={active:['#EAF3DE','#3B6D11'],out_of_service:['#FCEBEB','#A32D2D'],under_maintenance:['#FEF9EC','#854F0B'],disposed:['#f3f4f6','#6B7280']};
       var sc=statusCfg[x.status]||statusCfg.active;
-      html+='<div style="padding:12px 16px;border-bottom:1px solid #f3f4f6;background:'+bg+';display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px'+(isOos?';opacity:.7':'')+(isStatDue?';border-left:3px solid #8B5CF6':'')+'">'
+      html+='<div style="padding:12px 16px;border-bottom:1px solid #f3f4f6;background:'+bg+';display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px'+(isOos?';opacity:.7':'')+(isStatDue?';border-left:3px solid #8B5CF6':inspState.due?';border-left:3px solid var(--red)':inspState.soon?';border-left:3px solid #C2410C':'')+'">'
         +'<div style="display:flex;align-items:center;gap:14px;flex:1">'
         +'<div style="width:44px;height:44px;border-radius:10px;background:'+col+'20;display:flex;align-items:center;justify-content:center;flex-shrink:0">'
         +'<i class="ti '+(TOOL_CAT_ICONS[cat]||'ti-package')+'" style="font-size:20px;color:'+col+'"></i></div>'
@@ -18358,6 +18381,7 @@ function toolsFilterRegister(){
         +'<span style="font-weight:700;font-size:13px">'+escH(x.name||'—')+'</span>'
         +'<span style="font-family:monospace;font-size:11px;font-weight:700;background:'+col+'20;color:'+col+';padding:2px 7px;border-radius:4px">'+escH(x.ref_number||'—')+'</span>'
         +'<span style="background:'+sc[0]+';color:'+sc[1]+';padding:2px 8px;border-radius:99px;font-size:10px;font-weight:700">'+(x.status||'active').replace(/_/g,' ')+'</span>'
+        +(inspState.due?'<span style="background:#FCEBEB;color:#A32D2D;padding:2px 8px;border-radius:99px;font-size:10px;font-weight:800">Inspection overdue</span>':inspState.soon?'<span style="background:#FEF6E7;color:#C2410C;padding:2px 8px;border-radius:99px;font-size:10px;font-weight:800">Inspection due soon</span>':'')
         +(isStatDue?'<span style="background:#F3E8FF;color:#8B5CF6;padding:2px 8px;border-radius:99px;font-size:10px;font-weight:700">Statutory due</span>':'')
         +'</div>'
         +'<div style="font-size:11px;color:var(--text2);display:flex;gap:12px;flex-wrap:wrap">'
@@ -18365,12 +18389,13 @@ function toolsFilterRegister(){
         +(x.serial_number?'<span>S/N: '+escH(x.serial_number)+'</span>':'')
         +(x.location?'<span><i class="ti ti-map-pin" style="font-size:10px"></i> '+escH(x.location)+'</span>':'')
         +(x.assigned_to_name?'<span><i class="ti ti-user" style="font-size:10px"></i> '+escH(x.assigned_to_name)+'</span>':'')
+        +'<span><i class="ti ti-clipboard-check" style="font-size:10px"></i> '+escH(inspState.last?('Last check '+inspState.label):inspState.label)+'</span>'
         +'</div>'
         +'</div></div>'
         +'<div style="display:flex;gap:6px;align-items:center">'
-        +'<button class="btn btn-sm" style="background:#1D9E7515;color:#1D9E75;border-color:#1D9E7540" data-id="'+x.id+'" onclick="toolsStartInspection(this.getAttribute(\'data-id\'))"><i class="ti ti-clipboard-check"></i>Inspect</button>'
-        +'<button class="btn btn-sm" data-id="'+x.id+'" onclick="toolsEdit(this.getAttribute(\'data-id\'))"><i class="ti ti-edit"></i></button>'
-        +(isMgr()?'<button class="btn btn-sm" style="color:var(--red)" data-id="'+x.id+'" onclick="toolsDeleteFromList(this.getAttribute(\'data-id\'))"><i class="ti ti-trash"></i></button>':'')
+        +'<button class="btn btn-sm" style="background:#1D9E7515;color:#1D9E75;border-color:#1D9E7540" data-id="'+x.id+'" onclick="event.stopPropagation();toolsStartInspection(this.getAttribute(\'data-id\'))"><i class="ti ti-clipboard-check"></i>Inspect</button>'
+        +'<button class="btn btn-sm" data-id="'+x.id+'" onclick="event.stopPropagation();toolsEdit(this.getAttribute(\'data-id\'))"><i class="ti ti-edit"></i></button>'
+        +(isMgr()?'<button class="btn btn-sm" style="color:var(--red)" data-id="'+x.id+'" onclick="event.stopPropagation();toolsDeleteFromList(this.getAttribute(\'data-id\'))"><i class="ti ti-trash"></i></button>':'')
         +'</div>'
         +'</div>';
     });
@@ -18794,21 +18819,23 @@ async function toolsLoadRCD(){
     toolsRcdData.forEach(function(x,i){
       var last=lastByTool[x.id];
       var next=last&&last.next_inspection_date?new Date(last.next_inspection_date):null;
-      var overdue=next&&next<today;
+      var soon=new Date(today);soon.setDate(soon.getDate()+7);
+      var overdue=!next||next<today;
+      var dueSoon=next&&next>=today&&next<=soon;
       var result=last?.overall_result||'not_tested';
       var cfg={pass:['#EAF3DE','#3B6D11','Pass'],conditional:['#FEF9EC','#854F0B','Conditional'],fail:['#FCEBEB','#A32D2D','Fail'],not_tested:['#f3f4f6','#6B7280','No test']};
       var rc=cfg[result]||cfg.not_tested;
-      h+='<tr style="border-bottom:1px solid #f0f0f0;background:'+(i%2?'#fafafa':'#fff')+(overdue?';border-left:4px solid var(--red)':'')+'">'
+      h+='<tr style="border-bottom:1px solid #f0f0f0;background:'+(i%2?'#fafafa':'#fff')+(overdue?';border-left:4px solid var(--red)':dueSoon?';border-left:4px solid #C2410C':'')+'">'
         +'<td style="padding:9px 12px;font-family:monospace;font-weight:700;color:var(--green)">'+escH(x.ref_number||'AUTO')+'</td>'
         +'<td style="padding:9px 12px;font-weight:700">'+escH(x.name||'RCD')+'</td>'
         +'<td style="padding:9px 12px">'+escH(x.location||'--')+'</td>'
         +'<td style="padding:9px 12px">'+escH(x.model||x.brand||'--')+'</td>'
         +'<td style="padding:9px 12px">'+(last?.inspection_date?new Date(last.inspection_date).toLocaleDateString('en-GB'):'--')+'</td>'
-        +'<td style="padding:9px 12px;'+(overdue?'color:var(--red);font-weight:700':'')+'">'+(next?next.toLocaleDateString('en-GB'):'--')+(overdue?' overdue':'')+'</td>'
+        +'<td style="padding:9px 12px;'+(overdue?'color:var(--red);font-weight:700':dueSoon?'color:#C2410C;font-weight:700':'')+'">'+(next?next.toLocaleDateString('en-GB'):'No test recorded')+(next&&overdue?' overdue':dueSoon?' due soon':'')+'</td>'
         +'<td style="padding:9px 12px;text-align:center"><span style="background:'+rc[0]+';color:'+rc[1]+';padding:3px 10px;border-radius:99px;font-size:11px;font-weight:700">'+rc[2]+'</span></td>'
         +'<td style="padding:9px 12px;text-align:right;white-space:nowrap">'
-        +'<button class="btn btn-sm btn-primary" data-id="'+x.id+'" onclick="toolsStartRCDTest(this.getAttribute(\'data-id\'))"><i class="ti ti-clipboard-check"></i>Test</button> '
-        +'<button class="btn btn-sm" data-id="'+x.id+'" onclick="toolsEdit(this.getAttribute(\'data-id\'))"><i class="ti ti-edit"></i></button>'
+        +(isMgr()?'<button class="btn btn-sm btn-primary" data-id="'+x.id+'" onclick="event.stopPropagation();toolsStartRCDTest(this.getAttribute(\'data-id\'))"><i class="ti ti-clipboard-check"></i>Test</button> ':'')
+        +(isMgr()?'<button class="btn btn-sm" data-id="'+x.id+'" onclick="event.stopPropagation();toolsEdit(this.getAttribute(\'data-id\'))"><i class="ti ti-edit"></i></button>':'')
         +'</td></tr>';
     });
     h+='</tbody></table></div>';
@@ -18828,6 +18855,7 @@ function toolsNewRCD(){
 }
 
 function toolsStartRCDTest(toolId){
+  if(!isMgr()){toast('Only supervisors, HSE managers and admins can record RCD tests.',false);return;}
   var tool=toolsRcdData.find(function(x){return x.id===toolId;})||toolsAllData.find(function(x){return x.id===toolId;});
   if(!tool){toast('RCD not found',false);return;}
   toolsInspEquipId=toolId;
@@ -18838,6 +18866,10 @@ function toolsStartRCDTest(toolId){
   var next=document.getElementById('rcd-next-date');if(next)next.value=nd.toISOString().slice(0,10);
   var tester=document.getElementById('rcd-tester');
   if(tester){tester.innerHTML='<option value="">Select tester...</option>';(people||[]).forEach(function(p){var o=document.createElement('option');o.value=p.id;o.textContent=p.last_name+', '+p.first_name;tester.appendChild(o);});}
+  var currentPersonId=prof?.person_id||prof?.id||'';
+  if(tester&&currentPersonId&&Array.from(tester.options).some(function(o){return o.value===currentPersonId;}))tester.value=currentPersonId;
+  [['rcd-visual','ok'],['rcd-button','pass'],['rcd-label','ok']].forEach(function(x){var el=document.getElementById(x[0]);if(el)el.value=x[1];});
+  ['rcd-trip-time','rcd-visual-note','rcd-label-note','rcd-defects','rcd-actions'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
   ['tools-view-register','tools-view-personal','tools-view-inspection','tools-view-statutory','tools-view-vehicles','tools-view-rcd'].forEach(function(id){var el=document.getElementById(id);if(el)el.style.display='none';});
   document.getElementById('tools-form').style.display='none';
   document.getElementById('tools-insp-form').style.display='none';
@@ -18853,14 +18885,22 @@ function toolsRCDBack(){
 }
 
 async function toolsSaveRCDTest(){
+  if(!isMgr()){toast('Only supervisors, HSE managers and admins can record RCD tests.',false);return;}
   var date=document.getElementById('rcd-date')?.value;
   if(!date){toast('Please set test date',false);return;}
   var testerId=document.getElementById('rcd-tester')?.value;
+  if(!testerId){toast('Please select the tester',false);return;}
   var testerName='';
   if(testerId){var p=(people||[]).find(function(x){return x.id===testerId;});testerName=p?(p.last_name+', '+p.first_name):'';}
   var g=function(id){var el=document.getElementById(id);return el?el.value||null:null;};
   var visual=g('rcd-visual')||'ok', button=g('rcd-button')||'pass', label=g('rcd-label')||'ok';
-  var fail=visual==='fail'||button==='fail'||label==='fail';
+  var tripMs=parseFloat(g('rcd-trip-time')||'');
+  var fail=visual==='fail'||button==='fail'||label==='fail'||(!isNaN(tripMs)&&tripMs>300);
+  if(!g('rcd-next-date')){
+    var nd=new Date(date);nd.setMonth(nd.getMonth()+1);
+    var next=document.getElementById('rcd-next-date');if(next)next.value=nd.toISOString().slice(0,10);
+  }
+  if(fail&&(!g('rcd-defects')||!g('rcd-actions'))){toast('Failed RCD tests need defects and corrective actions before saving.',false);return;}
   var body={
     company_id:ccid(),tool_id:toolsInspEquipId,inspection_type:'rcd_monthly',
     inspection_date:date,inspected_by:testerId||null,inspected_by_name:testerName||null,
@@ -18877,6 +18917,7 @@ async function toolsSaveRCDTest(){
     await api('/tool_inspections',{m:'POST',p:'return=minimal',b:body});
     if(fail&&body.defects_found){
       var tool=toolsRcdData.find(function(x){return x.id===toolsInspEquipId;});
+      await api('/tools_register?id=eq.'+toolsInspEquipId,{m:'PATCH',p:'return=minimal',b:{status:'out_of_service'}});
       await api('/action_tracker',{m:'POST',p:'return=minimal',b:{
         company_id:ccid(),source_module:'tools',source_id:toolsInspEquipId,
         source_ref:(tool?.ref_number||'RCD')+' - Failed RCD test',
@@ -33163,6 +33204,13 @@ function fireEquipStatusBadge(s) {
 <option value="active">Active</option>
 <option value="out_of_service">Out of service</option>
 <option value="under_maintenance">Under maintenance</option>
+</select>
+<select id="tools-filter-inspection" onchange="toolsFilterRegister()" style="padding:7px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px">
+<option value="">All inspections</option>
+<option value="overdue">Inspection overdue</option>
+<option value="due_soon">Inspection due soon</option>
+<option value="never">Never inspected</option>
+<option value="statutory_due">Statutory due 30d</option>
 </select>
 </div>
 </div>
