@@ -6305,6 +6305,7 @@ function chemExposureValues(x){
 async function loadChemical(){
   var add=document.getElementById('chem-add-btn');
   if(add)add.style.display=isMgr()?'inline-flex':'none';
+  var sf=document.getElementById('chem-status-filter');if(sf&&!sf.value)sf.value='active';
   chemLoad();
 }
 
@@ -6334,20 +6335,37 @@ function chemRiskBadge(level){
   return '<span style="background:'+c.bg+';color:'+c.tc+';padding:2px 8px;border-radius:99px;font-size:10px;font-weight:800">'+c.label+'</span>';
 }
 
+function chemDateBadge(x){
+  var parts=[];
+  var now=new Date(), soon=new Date(Date.now()+30*86400000);
+  if(x.review_date){
+    var rd=new Date(x.review_date);
+    if(rd<=now)parts.push('<div style="font-size:10px;color:#A32D2D;font-weight:900">REVIEW OVERDUE</div>');
+    else if(rd<=soon)parts.push('<div style="font-size:10px;color:#C2410C;font-weight:900">REVIEW DUE SOON</div>');
+  }else parts.push('<div style="font-size:10px;color:#854F0B;font-weight:900">NO REVIEW DATE</div>');
+  if(x.sds_revision_date){
+    var sds=new Date(x.sds_revision_date), stale=new Date();stale.setFullYear(stale.getFullYear()-5);
+    if(sds<stale)parts.push('<div style="font-size:10px;color:#A32D2D;font-weight:900">SDS MAY BE STALE</div>');
+  }else parts.push('<div style="font-size:10px;color:#854F0B;font-weight:900">NO SDS DATE</div>');
+  return parts.join('');
+}
+
 function chemRenderTable(){
   var el=document.getElementById('chem-table');if(!el)return;
   var q=(document.getElementById('chem-search')?.value||'').toLowerCase();
   var risk=document.getElementById('chem-risk-filter')?.value||'';
+  var status=document.getElementById('chem-status-filter')?.value||'';
   var rows=chemData.filter(function(x){
     var mq=!q||(x.product_name||'').toLowerCase().includes(q)||(x.supplier||'').toLowerCase().includes(q)||(x.department||'').toLowerCase().includes(q)||(x.location||'').toLowerCase().includes(q)||(x.hazard_identification||'').toLowerCase().includes(q);
     var mr=!risk||x.risk_level===risk;
-    return mq&&mr;
+    var ms=!status||x.status===status;
+    return mq&&mr&&ms;
   }).sort(function(a,b){return (a.product_name||'').localeCompare(b.product_name||'');});
   if(!rows.length){
     el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)"><div style="font-size:36px;margin-bottom:8px"><i class="ti ti-flask"></i></div><div style="font-weight:700;margin-bottom:8px">No chemicals found</div>'+(isMgr()?'<button class="btn btn-primary" onclick="chemNew()"><i class="ti ti-plus"></i>Add chemical</button>':'')+'</div>';
     return;
   }
-  var h='<table style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr style="background:#3B255F;color:#fff"><th style="padding:10px;color:#fff;text-align:left">Ref</th><th style="padding:10px;color:#fff;text-align:left">Product</th><th style="padding:10px;color:#fff;text-align:left">Hazards</th><th style="padding:10px;color:#fff;text-align:left">Exposure</th><th style="padding:10px;color:#fff;text-align:center">Persons</th><th style="padding:10px;color:#fff;text-align:left">Risk</th><th style="padding:10px;color:#fff;text-align:left">Review</th><th style="padding:10px;color:#fff;width:70px"></th></tr></thead><tbody>';
+  var h='<table style="width:100%;min-width:1120px;border-collapse:collapse;font-size:12px"><thead><tr style="background:#3B255F;color:#fff"><th style="padding:10px;color:#fff;text-align:left">Ref</th><th style="padding:10px;color:#fff;text-align:left">Product</th><th style="padding:10px;color:#fff;text-align:left">Hazards</th><th style="padding:10px;color:#fff;text-align:left">Exposure</th><th style="padding:10px;color:#fff;text-align:center">Persons</th><th style="padding:10px;color:#fff;text-align:left">Risk</th><th style="padding:10px;color:#fff;text-align:left">Review / SDS</th><th style="padding:10px;color:#fff;width:70px"></th></tr></thead><tbody>';
   rows.forEach(function(x,i){
     var bg=i%2===0?'#fff':'#f9fafb';
     var hs=Array.isArray(x.hazard_statements)?x.hazard_statements:[];
@@ -6359,7 +6377,7 @@ function chemRenderTable(){
       +'<td style="padding:8px 10px;font-size:11px;text-transform:capitalize">'+escH((exp.exposure_frequency||'--').replace(/_/g,' '))+' / '+escH((exp.task_type||'--').replace(/_/g,' '))+'</td>'
       +'<td style="padding:8px 10px;text-align:center;font-weight:800">'+escH(exp.persons_exposed||0)+'</td>'
       +'<td style="padding:8px 10px">'+chemRiskBadge(x.risk_level)+'<div style="font-size:10px;color:var(--text2);margin-top:2px">Score '+escH(x.risk_score||0)+'</div></td>'
-      +'<td style="padding:8px 10px;font-size:11px">'+(x.review_date?new Date(x.review_date).toLocaleDateString('en-GB'):'--')+'</td>'
+      +'<td style="padding:8px 10px;font-size:11px">'+(x.review_date?new Date(x.review_date).toLocaleDateString('en-GB'):'--')+chemDateBadge(x)+'</td>'
       +'<td style="padding:8px 10px"><button class="btn btn-sm" onclick="event.stopPropagation();chemEdit(\''+x.id+'\')"><i class="ti ti-edit"></i></button></td>'
       +'</tr>';
   });
@@ -6379,6 +6397,9 @@ function chemNew(){
   document.getElementById('chem-duration').value='short';
   document.getElementById('chem-task').value='closed_handling';
   document.getElementById('chem-status').value='active';
+  var review=new Date();review.setFullYear(review.getFullYear()+1);
+  var rd=document.getElementById('chem-review');if(rd)rd.value=review.toISOString().slice(0,10);
+  var msg=document.getElementById('chem-sds-msg');if(msg)msg.textContent='';
   chemUpdateRiskPreview();
   chemShowForm();
 }
@@ -6507,6 +6528,18 @@ function chemSection(text,startRe,endRe){
   return (e>=0?rest.slice(0,e+20):rest).replace(/\s+/g,' ').trim();
 }
 
+function chemParseSdsDate(text){
+  var m=(text||'').match(/(?:Revision|Issue|Print|SDS|Date)\s*(?:date|Date)?\s*[:\-]?\s*([0-3]?\d[\/\-. ][01]?\d[\/\-. ](?:20)?\d{2}|(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Sept|Oct|Nov|Dec)[a-z]*\s+[0-3]?\d,?\s+(?:20)?\d{2}|[0-3]?\d\s+(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Sept|Oct|Nov|Dec)[a-z]*\s+(?:20)?\d{2})/i);
+  if(!m)return '';
+  var raw=m[1].replace(/\./g,'/').trim();
+  var d=new Date(raw);
+  if(isNaN(d.getTime())){
+    var p=raw.match(/^([0-3]?\d)[\/\- ]([01]?\d)[\/\- ](\d{2,4})$/);
+    if(p){var yr=p[3].length===2?'20'+p[3]:p[3];d=new Date(parseInt(yr,10),parseInt(p[2],10)-1,parseInt(p[1],10));}
+  }
+  return isNaN(d.getTime())?'':d.toISOString().slice(0,10);
+}
+
 function chemApplySdsText(text,fileName){
   var clean=(text||'').replace(/\r/g,'\n');
   var flat=clean.replace(/\s+/g,' ');
@@ -6522,6 +6555,7 @@ function chemApplySdsText(text,fileName){
   var supplier=(sec1.match(/(?:Supplier|Company|Manufacturer)\s*[:\-]?\s*([^.;\n]{3,100})/i)||[])[1]||'';
   var signal=(sec2.match(/\b(Danger|Warning)\b/i)||[])[1]||'';
   var hcodes=[...new Set((flat.match(/\bH[0-9]{3}[A-Z]?\b/g)||[]))];
+  var sdsDate=chemParseSdsDate(sec1+' '+flat.slice(0,2000));
   var routes=[];
   if(/inhalation|breathing|respiratory/i.test(flat))routes.push('Inhalation');
   if(/skin contact|dermal|skin irritation/i.test(flat))routes.push('Skin');
@@ -6530,6 +6564,7 @@ function chemApplySdsText(text,fileName){
   document.getElementById('chem-product').value=(product||'').trim();
   document.getElementById('chem-supplier').value=(supplier||'').trim();
   document.getElementById('chem-sds-file').value=fileName||'';
+  if(sdsDate)document.getElementById('chem-sds-date').value=sdsDate;
   document.getElementById('chem-signal').value=signal;
   document.getElementById('chem-hcodes').value=hcodes.join(', ');
   document.getElementById('chem-routes').value=routes.join(', ');
@@ -6548,7 +6583,10 @@ async function chemSave(){
   if(!product){toast('Please enter product name',false);return;}
   var g=function(id){var el=document.getElementById(id);return el?el.value||null:null;};
   var r=chemRiskFromForm();
-  var body={company_id:ccid(),product_name:product,supplier:g('chem-supplier'),manufacturer:g('chem-manufacturer'),sds_file_name:g('chem-sds-file'),sds_revision_date:g('chem-sds-date')||null,signal_word:g('chem-signal'),hazard_identification:g('chem-hazards'),hazard_statements:chemSplitList(g('chem-hcodes')),hazard_pictograms:chemHazardPictogramPayload(g),exposure_routes:chemSplitList(g('chem-routes')),exposure_consequences:g('chem-consequences'),first_aid:g('chem-firstaid'),handling_storage:g('chem-handling'),ppe_required:g('chem-ppe'),location:g('chem-location'),department:g('chem-dept'),process_use:g('chem-use'),quantity_stored:g('chem-qty'),persons_exposed:parseInt(g('chem-persons'))||0,exposure_frequency:g('chem-frequency')||'occasional',exposure_duration:g('chem-duration')||'short',task_type:g('chem-task')||'closed_handling',existing_controls:g('chem-controls'),risk_score:r.score,risk_level:r.level,recommendations:g('chem-recommendations'),status:g('chem-status')||'active',review_date:g('chem-review')||null,updated_at:new Date().toISOString()};
+  if(['high','critical'].includes(r.level)&&!g('chem-controls')){toast('Please enter existing exposure controls for high/critical chemical risk.',false);return;}
+  var reviewDate=g('chem-review');
+  if(!reviewDate){var d=new Date();d.setFullYear(d.getFullYear()+1);reviewDate=d.toISOString().slice(0,10);}
+  var body={company_id:ccid(),product_name:product,supplier:g('chem-supplier'),manufacturer:g('chem-manufacturer'),sds_file_name:g('chem-sds-file'),sds_revision_date:g('chem-sds-date')||null,signal_word:g('chem-signal'),hazard_identification:g('chem-hazards'),hazard_statements:chemSplitList(g('chem-hcodes')),hazard_pictograms:chemHazardPictogramPayload(g),exposure_routes:chemSplitList(g('chem-routes')),exposure_consequences:g('chem-consequences'),first_aid:g('chem-firstaid'),handling_storage:g('chem-handling'),ppe_required:g('chem-ppe'),location:g('chem-location'),department:g('chem-dept'),process_use:g('chem-use'),quantity_stored:g('chem-qty'),persons_exposed:parseInt(g('chem-persons'))||0,exposure_frequency:g('chem-frequency')||'occasional',exposure_duration:g('chem-duration')||'short',task_type:g('chem-task')||'closed_handling',existing_controls:g('chem-controls'),risk_score:r.score,risk_level:r.level,recommendations:g('chem-recommendations'),status:g('chem-status')||'active',review_date:reviewDate,updated_at:new Date().toISOString()};
   try{
     if(chemEditId){
       var updateBody=Object.assign({},body);
@@ -6572,23 +6610,27 @@ async function chemSave(){
 
 async function chemDelete(){
   if(!chemEditId)return;
+  if(!isMgr()){toast('Only managers/admins can delete or archive chemicals',false);return;}
+  var current=chemData.find(function(x){return x.id===chemEditId;})||{};
   var ok=await appConfirm({
-    title:'Delete chemical',
-    message:'Delete this chemical record?',
-    detail:'AURIS360 will remove it from the active chemical register. If your database policy blocks permanent deletion, the record will be archived instead.',
-    confirmText:'Delete chemical',
+    title:current.status==='archived'||isSA()?'Delete chemical':'Archive chemical',
+    message:(current.status==='archived'||isSA())?'Delete this chemical record?':'Archive this chemical record?',
+    detail:(current.status==='archived'||isSA())?'This removes the record from the database.':'The chemical will be removed from the active register but retained for traceability.',
+    confirmText:current.status==='archived'||isSA()?'Delete chemical':'Archive chemical',
     cancelText:'Keep record',
     danger:true
   });
   if(!ok)return;
   try{
-    var deleted=await api('/chemical_register?id=eq.'+encodeURIComponent(chemEditId),{m:'DELETE',p:'return=representation'});
-    if(Array.isArray(deleted)&&!deleted.length){
-      var archived=await api('/chemical_register?id=eq.'+encodeURIComponent(chemEditId),{m:'PATCH',p:'return=representation',b:{status:'deleted',updated_at:new Date().toISOString()}});
-      if(Array.isArray(archived)&&!archived.length){toast('Delete failed: record not found or permission denied',false);return;}
+    if(current.status!=='archived'&&!isSA()){
+      var archived=await api('/chemical_register?id=eq.'+encodeURIComponent(chemEditId),{m:'PATCH',p:'return=representation',b:{status:'archived',updated_at:new Date().toISOString()}});
+      if(Array.isArray(archived)&&!archived.length){toast('Archive failed: record not found or permission denied',false);return;}
+    }else{
+      var deleted=await api('/chemical_register?id=eq.'+encodeURIComponent(chemEditId),{m:'DELETE',p:'return=representation'});
+      if(Array.isArray(deleted)&&!deleted.length){toast('Delete failed: record not found or permission denied',false);return;}
     }
     chemData=chemData.filter(function(x){return x.id!==chemEditId;});
-    toast('Deleted');
+    toast(current.status==='archived'||isSA()?'Deleted':'Archived');
     chemBack();
   }
   catch(e){toast('Delete failed: '+e.message,false);}
@@ -32270,6 +32312,11 @@ function fireEquipStatusBadge(s) {
 <option value="high">High</option>
 <option value="medium">Medium</option>
 <option value="low">Low</option>
+</select>
+<select id="chem-status-filter" onchange="chemRenderTable()" style="padding:9px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px">
+<option value="active" selected>Active</option>
+<option value="">All statuses</option>
+<option value="archived">Archived</option>
 </select>
 </div>
 </div>
