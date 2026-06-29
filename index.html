@@ -19126,11 +19126,12 @@ function fleetFuelNew(label){showPage('esg',null);setTimeout(function(){if(typeo
 // ===== ATEX / HAZARDOUS AREA MODULE =====
 let atexAreas=[], atexEditId=null;
 const ATEX_ZONE_LABELS={zone_0:'Zone 0',zone_1:'Zone 1',zone_2:'Zone 2',zone_20:'Zone 20',zone_21:'Zone 21',zone_22:'Zone 22'};
-const ATEX_STATUS_CFG={controlled:['#EAF3DE','#3B6D11','Controlled'],action_required:['#FEF9EC','#854F0B','Action required'],out_of_service:['#FCEBEB','#A32D2D','Out of service']};
+const ATEX_STATUS_CFG={controlled:['#EAF3DE','#3B6D11','Controlled'],action_required:['#FEF9EC','#854F0B','Action required'],out_of_service:['#FCEBEB','#A32D2D','Out of service'],archived:['#f3f4f6','#6B7280','Archived']};
 
 async function loadATEX(){
   var add=document.getElementById('atex-add-btn');
   if(add)add.style.display=isMgr()?'inline-flex':'none';
+  var sf=document.getElementById('atex-filter-status');if(sf&&!sf.value)sf.value='active';
   await atexLoadRegister();
 }
 
@@ -19156,13 +19157,14 @@ function atexRender(){
   var today=new Date();today.setHours(0,0,0,0);
   var filtered=atexAreas.filter(function(x){
     var text=((x.area_ref||'')+' '+(x.area_name||'')+' '+(x.location||'')+' '+(x.substance||'')).toLowerCase();
-    return (!q||text.indexOf(q)!==-1)&&(!zone||x.zone_type===zone)&&(!status||x.status===status);
+    var statusOk=status==='active'?x.status!=='archived':(!status||x.status===status);
+    return (!q||text.indexOf(q)!==-1)&&(!zone||x.zone_type===zone)&&statusOk;
   });
   var setM=function(id,v){var m=document.getElementById(id);if(m)m.textContent=v;};
-  setM('atex-m-total',atexAreas.length);
+  setM('atex-m-total',atexAreas.filter(x=>x.status!=='archived').length);
   setM('atex-m-action',atexAreas.filter(x=>x.status==='action_required').length);
   setM('atex-m-oos',atexAreas.filter(x=>x.status==='out_of_service').length);
-  setM('atex-m-due',atexAreas.filter(x=>x.next_inspection_date&&new Date(x.next_inspection_date)<=today).length);
+  setM('atex-m-due',atexAreas.filter(x=>x.status!=='archived'&&x.next_inspection_date&&new Date(x.next_inspection_date)<=today).length);
   if(!filtered.length){
     el.innerHTML='<div class="card" style="text-align:center;padding:42px;color:var(--text2)"><div style="font-size:38px;margin-bottom:10px"><i class="ti ti-flame"></i></div><div style="font-weight:700;color:var(--text);margin-bottom:8px">No ATEX areas found</div>'+(isMgr()?'<button class="btn btn-primary" onclick="atexNew()"><i class="ti ti-plus"></i>Add ATEX area</button>':'')+'</div>';
     return;
@@ -19177,15 +19179,16 @@ function atexRender(){
   filtered.forEach(function(x,i){
     var cfg=ATEX_STATUS_CFG[x.status]||ATEX_STATUS_CFG.controlled;
     var due=x.next_inspection_date&&new Date(x.next_inspection_date)<=today;
+    var soon=x.next_inspection_date&&new Date(x.next_inspection_date)<=new Date(Date.now()+30*86400000)&&!due;
     h+='<tr style="border-bottom:1px solid #f0f0f0;background:'+(i%2?'#fafafa':'#fff')+(due?';border-left:4px solid var(--red)':'')+'">'
       +'<td style="padding:10px 12px;font-family:monospace;font-weight:800;color:#C2410C">'+escH(x.area_ref||'ATEX')+'</td>'
       +'<td style="padding:10px 12px"><div style="font-weight:800">'+escH(x.area_name||'--')+'</div><div style="font-size:11px;color:var(--text2)">'+escH((x.location||'')+(x.plant_area?' - '+x.plant_area:''))+'</div></td>'
       +'<td style="padding:10px 12px"><span style="background:#FEE2E2;color:#991B1B;padding:3px 9px;border-radius:99px;font-weight:800;font-size:11px">'+escH(ATEX_ZONE_LABELS[x.zone_type]||x.zone_type||'--')+'</span><div style="font-size:11px;color:var(--text2);margin-top:3px">'+escH((x.material_type||'').replace(/_/g,' '))+'</div></td>'
       +'<td style="padding:10px 12px">'+escH(x.substance||'--')+'<div style="font-size:11px;color:var(--text2)">'+escH(x.source_of_release||'')+'</div></td>'
       +'<td style="padding:10px 12px;font-size:11px;line-height:1.35">'+escH([x.ventilation_controls,x.ignition_controls,x.detection_controls].filter(Boolean).join(' | ')||'--')+'</td>'
-      +'<td style="padding:10px 12px;'+(due?'color:var(--red);font-weight:800':'')+'">'+(x.next_inspection_date?new Date(x.next_inspection_date).toLocaleDateString('en-GB'):'--')+(due?' overdue':'')+'</td>'
+      +'<td style="padding:10px 12px;'+(due?'color:var(--red);font-weight:800':'')+'">'+(x.next_inspection_date?new Date(x.next_inspection_date).toLocaleDateString('en-GB'):'--')+(due?'<div style="font-size:10px;color:#A32D2D;font-weight:900">OVERDUE</div>':soon?'<div style="font-size:10px;color:#C2410C;font-weight:900">DUE SOON</div>':'')+'</td>'
       +'<td style="padding:10px 12px;text-align:center"><span style="background:'+cfg[0]+';color:'+cfg[1]+';padding:3px 9px;border-radius:99px;font-weight:800;font-size:11px">'+cfg[2]+'</span></td>'
-      +'<td style="padding:10px 12px;text-align:right;white-space:nowrap"><button class="btn btn-sm" data-id="'+x.id+'" onclick="atexEdit(this.getAttribute(\'data-id\'))"><i class="ti ti-edit"></i></button> <button class="btn btn-sm" onclick="atexOpenRA()"><i class="ti ti-shield-check"></i>RA</button> <button class="btn btn-sm" onclick="atexOpenPTW()"><i class="ti ti-key"></i>PTW</button></td>'
+      +'<td style="padding:10px 12px;text-align:right;white-space:nowrap"><button class="btn btn-sm" data-id="'+x.id+'" onclick="event.stopPropagation();atexEdit(this.getAttribute(\'data-id\'))"><i class="ti ti-edit"></i></button> <button class="btn btn-sm" onclick="event.stopPropagation();atexOpenRA()"><i class="ti ti-shield-check"></i>RA</button> <button class="btn btn-sm" onclick="event.stopPropagation();atexOpenPTW()"><i class="ti ti-key"></i>PTW</button></td>'
       +'</tr>';
   });
   h+='</tbody></table></div></div>';
@@ -19224,6 +19227,8 @@ async function atexNew(){
   document.getElementById('atex-zone').value='zone_2';
   document.getElementById('atex-material').value='gas_vapour';
   document.getElementById('atex-status').value='controlled';
+  var next=new Date();next.setFullYear(next.getFullYear()+1);
+  var nx=document.getElementById('atex-next');if(nx)nx.value=next.toISOString().slice(0,10);
   atexShowForm(true);
 }
 
@@ -19245,21 +19250,54 @@ async function atexEdit(id){
 function atexBack(){atexShowForm(false);atexLoadRegister();}
 
 async function atexSave(){
+  if(!isMgr()){toast('Only managers/admins can save ATEX areas',false);return;}
   var name=document.getElementById('atex-name')?.value?.trim();
   if(!name){toast('Please enter area name',false);return;}
   var g=function(id){var el=document.getElementById(id);return el?el.value||null:null;};
-  var body={company_id:ccid(),area_ref:g('atex-ref'),area_name:name,location:g('atex-location'),plant_area:g('atex-plant'),zone_type:g('atex-zone')||'zone_2',material_type:g('atex-material')||'gas_vapour',substance:g('atex-substance'),source_of_release:g('atex-release'),ventilation_controls:g('atex-ventilation'),ignition_controls:g('atex-ignition'),detection_controls:g('atex-detection'),linked_equipment:g('atex-equipment'),linked_ra_ref:g('atex-ra'),linked_permit_type:g('atex-permit'),last_inspection_date:g('atex-last'),next_inspection_date:g('atex-next'),status:g('atex-status')||'controlled',responsible_person:g('atex-resp'),notes:g('atex-notes'),updated_at:new Date().toISOString()};
+  if(!g('atex-location')){toast('Please enter the ATEX area location',false);return;}
+  if(!g('atex-substance')){toast('Please enter the flammable substance or combustible dust',false);return;}
+  if(!g('atex-ventilation')||!g('atex-ignition')){toast('Please describe ventilation and ignition source controls',false);return;}
+  var nextDate=g('atex-next');
+  if(!nextDate){var d=new Date();d.setFullYear(d.getFullYear()+1);nextDate=d.toISOString().slice(0,10);}
+  var body={company_id:ccid(),area_ref:g('atex-ref'),area_name:name,location:g('atex-location'),plant_area:g('atex-plant'),zone_type:g('atex-zone')||'zone_2',material_type:g('atex-material')||'gas_vapour',substance:g('atex-substance'),source_of_release:g('atex-release'),ventilation_controls:g('atex-ventilation'),ignition_controls:g('atex-ignition'),detection_controls:g('atex-detection'),linked_equipment:g('atex-equipment'),linked_ra_ref:g('atex-ra'),linked_permit_type:g('atex-permit'),last_inspection_date:g('atex-last'),next_inspection_date:nextDate,status:g('atex-status')||'controlled',responsible_person:g('atex-resp'),notes:g('atex-notes'),updated_at:new Date().toISOString()};
   try{
-    if(atexEditId)await api('/atex_areas?id=eq.'+atexEditId,{m:'PATCH',p:'return=minimal',b:body});
-    else{body.created_by=prof?.id;await api('/atex_areas',{m:'POST',p:'return=minimal',b:body});}
+    if(atexEditId){
+      var updated=await api('/atex_areas?id=eq.'+atexEditId,{m:'PATCH',p:'return=representation',b:body});
+      if(Array.isArray(updated)&&!updated.length)throw new Error('Update failed: record not found or permission denied');
+    }
+    else{
+      body.created_by=prof?.id;
+      var res=await api('/atex_areas',{m:'POST',p:'return=representation',b:body});
+      if(res?.[0]?.id&&!body.area_ref){await api('/atex_areas?id=eq.'+res[0].id,{m:'PATCH',p:'return=minimal',b:{area_ref:'ATEX-'+String(atexAreas.length+1).padStart(3,'0')}});}
+    }
     toast('ATEX area saved');atexBack();
   }catch(e){toast(e.message,false);}
 }
 
 async function atexDelete(){
   if(!atexEditId)return;
-  if(!(await appConfirmDelete('ATEX area')))return;
-  try{await api('/atex_areas?id=eq.'+atexEditId,{m:'DELETE',p:'return=minimal'});toast('Deleted');atexBack();}
+  if(!isMgr()){toast('Only managers/admins can archive ATEX areas',false);return;}
+  var current=atexAreas.find(function(x){return x.id===atexEditId;})||{};
+  var hard=current.status==='archived'||isSA();
+  var ok=await appConfirm({
+    title:hard?'Delete ATEX area':'Archive ATEX area',
+    message:hard?'Delete this ATEX area?':'Archive this ATEX area?',
+    detail:hard?'This removes the record from the database.':'The area will be hidden from the active register but retained for traceability.',
+    confirmText:hard?'Delete':'Archive',
+    cancelText:'Keep record',
+    danger:true
+  });
+  if(!ok)return;
+  try{
+    if(hard){
+      var deleted=await api('/atex_areas?id=eq.'+atexEditId,{m:'DELETE',p:'return=representation'});
+      if(Array.isArray(deleted)&&!deleted.length)throw new Error('Delete failed: record not found or permission denied');
+    }else{
+      var archived=await api('/atex_areas?id=eq.'+atexEditId,{m:'PATCH',p:'return=representation',b:{status:'archived',updated_at:new Date().toISOString()}});
+      if(Array.isArray(archived)&&!archived.length)throw new Error('Archive failed: record not found or permission denied');
+    }
+    toast(hard?'Deleted':'Archived');atexBack();
+  }
   catch(e){toast(e.message,false);}
 }
 
@@ -32964,7 +33002,7 @@ function fireEquipStatusBadge(s) {
 <option value="">All zones</option><option value="zone_0">Zone 0</option><option value="zone_1">Zone 1</option><option value="zone_2">Zone 2</option><option value="zone_20">Zone 20</option><option value="zone_21">Zone 21</option><option value="zone_22">Zone 22</option>
 </select>
 <select id="atex-filter-status" onchange="atexRender()" style="padding:7px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px">
-<option value="">All statuses</option><option value="controlled">Controlled</option><option value="action_required">Action required</option><option value="out_of_service">Out of service</option>
+<option value="active" selected>Active areas</option><option value="">All statuses</option><option value="controlled">Controlled</option><option value="action_required">Action required</option><option value="out_of_service">Out of service</option><option value="archived">Archived</option>
 </select>
 </div>
 </div>
@@ -33019,7 +33057,7 @@ function fireEquipStatusBadge(s) {
 <div>
 <div class="card" style="margin-bottom:14px">
 <div class="card-title">Inspection & Status</div>
-<div class="form-group"><label class="form-label">Status</label><select id="atex-status"><option value="controlled">Controlled</option><option value="action_required">Action required</option><option value="out_of_service">Out of service</option></select></div>
+<div class="form-group"><label class="form-label">Status</label><select id="atex-status"><option value="controlled">Controlled</option><option value="action_required">Action required</option><option value="out_of_service">Out of service</option><option value="archived">Archived</option></select></div>
 <div class="form-group"><label class="form-label">Responsible person</label><select id="atex-resp"><option value="">Select person...</option></select></div>
 <div class="form-row">
 <div class="form-group"><label class="form-label">Last inspection</label><input type="date" id="atex-last"/></div>
