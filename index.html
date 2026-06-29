@@ -6237,19 +6237,48 @@ const el=document.getElementById('noise-list');
 if(!el)return;
 try{
 const d=await api('/noise_surveys?select=*'+cf()+'&order=survey_date.desc');
-if(!d||!d.length){el.innerHTML='<p style="padding:20px;color:#666">No noise surveys yet</p>';return;}
-let h='<table style="width:100%;border-collapse:collapse"><thead><tr style="background:#f9fafb"><th style="padding:10px;text-align:left;border-bottom:1px solid #e5e7eb">Date</th><th style="padding:10px;text-align:left;border-bottom:1px solid #e5e7eb">Type</th><th style="padding:10px;text-align:left;border-bottom:1px solid #e5e7eb">Site</th><th style="padding:10px;text-align:left;border-bottom:1px solid #e5e7eb">Conducted by</th></tr></thead><tbody>';
-for(var i=0;i<d.length;i++){var x=d[i];var dt=x.survey_date?new Date(x.survey_date).toLocaleDateString('en-GB'):'--';h+='<tr style="border-bottom:1px solid #f3f4f6"><td style="padding:10px">'+dt+'</td><td style="padding:10px">'+(x.survey_type||'--')+'</td><td style="padding:10px">'+(x.site||'--')+'</td><td style="padding:10px">'+(x.conducted_by||'--')+'</td></tr>';}
-h+='</tbody></table>';el.innerHTML=h;
+if(!d||!d.length){el.innerHTML='<div style="text-align:center;padding:36px;color:var(--text2)"><div style="font-weight:700;margin-bottom:6px">No noise surveys yet</div><div style="font-size:12px">Record workplace or environmental noise surveys here.</div></div>';return;}
+var now=new Date();
+var h='<div style="overflow-x:auto"><table style="width:100%;min-width:900px;border-collapse:collapse;font-size:12px"><thead><tr style="background:#164E63;color:#fff"><th style="padding:9px 12px;text-align:left">Date</th><th style="padding:9px 12px;text-align:left">Type</th><th style="padding:9px 12px;text-align:left">Site / area</th><th style="padding:9px 12px;text-align:left">Conducted by</th><th style="padding:9px 12px;text-align:left">Instrument</th><th style="padding:9px 12px;text-align:left">Calibration</th><th style="padding:9px 12px;text-align:left">Notes</th><th style="padding:9px 12px;width:60px"></th></tr></thead><tbody>';
+for(var i=0;i<d.length;i++){
+  var x=d[i];var dt=x.survey_date?new Date(x.survey_date).toLocaleDateString('en-GB'):'--';
+  var cal=x.calibration_date?new Date(x.calibration_date):null;
+  var calAge=cal?Math.floor((now-cal)/86400000):null;
+  var calBad=!cal||calAge>365;
+  var bg=i%2===0?'#fff':'#f9fafb';
+  h+='<tr style="border-bottom:1px solid #f0f0f0;background:'+bg+(calBad?';border-left:4px solid #C2410C':'')+'">'
+    +'<td style="padding:9px 12px;font-weight:700">'+dt+'</td>'
+    +'<td style="padding:9px 12px;text-transform:capitalize">'+escH(x.survey_type||'--')+'</td>'
+    +'<td style="padding:9px 12px;font-weight:600">'+escH(x.site||'--')+'</td>'
+    +'<td style="padding:9px 12px">'+escH(x.conducted_by||'--')+'</td>'
+    +'<td style="padding:9px 12px">'+escH(x.instrument_used||'--')+'</td>'
+    +'<td style="padding:9px 12px;'+(calBad?'color:#C2410C;font-weight:800':'')+'">'+(cal?cal.toLocaleDateString('en-GB'):'Not recorded')+(calBad?' - check':'')+'</td>'
+    +'<td style="padding:9px 12px;max-width:260px;color:var(--text2)">'+escH((x.notes||'').substring(0,120))+'</td>'
+    +'<td style="padding:9px 12px;text-align:right">'+(isMgr()?'<button class="btn btn-sm" style="color:var(--red)" data-id="'+x.id+'" onclick="deleteNoiseSurvey(this.getAttribute(\'data-id\'))"><i class="ti ti-trash"></i></button>':'')+'</td>'
+    +'</tr>';
+}
+h+='</tbody></table></div>';el.innerHTML=h;
 }catch(e){el.innerHTML='<p style="padding:20px;color:red">'+e.message+'</p>';console.error(e);}
 }
 
 async function saveNoise(){
 try{
 const bid=document.getElementById('nf-by').value;
-await api('/noise_surveys',{m:'POST',p:'return=minimal',b:{company_id:ccid(),survey_type:document.getElementById('nf-type').value,site:document.getElementById('nf-site').value,survey_date:document.getElementById('nf-date').value||null,conducted_by:bid?pname(bid):prof?.full_name,instrument_used:document.getElementById('nf-instrument').value,calibration_date:document.getElementById('nf-cal').value||null,weather_conditions:document.getElementById('nf-weather').value,notes:document.getElementById('nf-notes').value,created_by:prof?.id}});
-toggleForm('noise-form');toast('Noise survey saved!');loadNoise();
+var cal=document.getElementById('nf-cal').value||null;
+var body={company_id:ccid(),survey_type:document.getElementById('nf-type').value,site:document.getElementById('nf-site').value,survey_date:document.getElementById('nf-date').value||null,conducted_by:bid?pname(bid):prof?.full_name,instrument_used:document.getElementById('nf-instrument').value,calibration_date:cal,weather_conditions:document.getElementById('nf-weather').value,notes:document.getElementById('nf-notes').value,created_by:prof?.id};
+await api('/noise_surveys',{m:'POST',p:'return=minimal',b:body});
+var calBad=!cal||((new Date()-new Date(cal))/86400000>365);
+if(calBad){
+  try{await api('/action_tracker',{m:'POST',p:'return=minimal',b:{company_id:ccid(),source_module:'noise',source_ref:'Noise survey - '+(body.site||'site'),description:'Noise survey instrument calibration is missing or older than 12 months. Verify calibration before relying on results.',responsible:body.conducted_by||null,priority:'medium',status:'open',created_by:prof?.id}});}catch(ex){console.warn('Noise MAP action failed',ex);}
+}
+toggleForm('noise-form');toast('Noise survey saved!'+(calBad?' Calibration action added to MAP.':''));loadNoise();
 }catch(e){toast(e.message,false);}
+}
+async function deleteNoiseSurvey(id){
+if(!isMgr())return;
+if(!(await appConfirmDelete('noise survey')))return;
+try{await api('/noise_surveys?id=eq.'+id,{m:'DELETE'});toast('Deleted!');loadNoise();}
+catch(e){toast(e.message,false);}
 }
 // ===== HSE MEETINGS MODULE =====
 // DEDUP: mtg variables declared elsewhere
@@ -16394,7 +16423,31 @@ async function esgInspSave(){
   var body={company_id:ccid(),inspection_date:g('eif-date'),inspector:g('eif-inspector'),area:area,inspection_type:g('eif-type')||'routine',checklist_results:checklist,findings:g('eif-findings'),non_conformances:parseInt(g('eif-nc'))||0,overall_rating:g('eif-rating')||'satisfactory',corrective_actions:g('eif-actions'),next_inspection_date:g('eif-next-date')};
   try{
     if(esgInspEditId){await api('/environmental_inspections?id=eq.'+esgInspEditId,{m:'PATCH',p:'return=minimal',b:body});toast('Updated!');}
-    else{body.created_by=prof?.id;await api('/environmental_inspections',{m:'POST',p:'return=minimal',b:body});toast('Inspection saved!');}
+    else{
+      body.created_by=prof?.id;
+      var res=await api('/environmental_inspections',{m:'POST',p:'return=representation',b:body});
+      var weak=body.non_conformances>0||['poor','unacceptable'].includes(body.overall_rating)||(body.corrective_actions&&body.corrective_actions.trim());
+      var added=false;
+      if(weak&&res?.[0]?.id){
+        var ncItems=checklist.filter(function(c){return c.result==='nc';}).map(function(c){return c.item+(c.note?' - '+c.note:'');}).slice(0,5).join('; ');
+        try{
+          await api('/action_tracker',{m:'POST',p:'return=minimal',b:{
+            company_id:ccid(),
+            source_module:'esg',
+            source_id:res[0].id,
+            source_ref:'Environmental inspection - '+area,
+            description:body.corrective_actions||ncItems||('Environmental inspection rated '+body.overall_rating),
+            responsible:body.inspector||null,
+            target_date:body.next_inspection_date||null,
+            priority:body.overall_rating==='unacceptable'?'high':'medium',
+            status:'open',
+            created_by:prof?.id
+          }});
+          added=true;
+        }catch(ex){console.warn('Environmental inspection MAP action failed',ex);}
+      }
+      toast('Inspection saved!'+(added?' Action added to MAP.':''));
+    }
     esgInspBack();
   }catch(e){toast(e.message,false);console.error(e);}
 }
@@ -17903,6 +17956,26 @@ const PPE_INSP_CHECKLISTS={
   other:['Item undamaged and functional','Within service life / not expired','Labels and markings legible','No contamination or damage visible','Correct for intended hazard']
 };
 
+async function ppeCreateMapAction(sourceRef, description, responsible, priority, sourceId){
+  try{
+    await api('/action_tracker',{m:'POST',p:'return=minimal',b:{
+      company_id:ccid(),
+      source_module:'ppe',
+      source_id:sourceId||null,
+      source_ref:sourceRef||'PPE',
+      description:description,
+      responsible:responsible||null,
+      priority:priority||'medium',
+      status:'open',
+      created_by:prof?.id
+    }});
+    return true;
+  }catch(ex){
+    console.warn('PPE MAP action failed',ex);
+    return false;
+  }
+}
+
 // ── Entry ─────────────────────────────────────────────────────────────────────
 async function loadPPE(){
   ['ppe-cat-add-btn','ppe-iss-add-btn','ppe-insp-add-btn','ppe-rep-add-btn'].forEach(function(id){
@@ -18343,8 +18416,16 @@ async function ppeInspSave(){
   try{
     if(ppeInspEditId){await api('/ppe_inspections?id=eq.'+ppeInspEditId,{m:'PATCH',p:'return=minimal',b:body});toast('Updated!');}
     else{body.created_by=prof?.id;var res=await api('/ppe_inspections',{m:'POST',p:'return=representation',b:body});if(res?.[0]?.id){var yr=new Date().getFullYear();var ref='PPEINSP-'+yr+'-'+String(ppeInspData.length+1).padStart(3,'0');await api('/ppe_inspections?id=eq.'+res[0].id,{m:'PATCH',p:'return=minimal',b:{inspection_ref:ref}});toast('Inspection saved! Ref: '+ref);
-      // If condemned, trigger replacement request
-      if(body.overall_result==='condemn'&&body.employee_name){try{await api('/ppe_replacements',{m:'POST',p:'return=minimal',b:{company_id:ccid(),ppe_id:ppeId,ppe_name:body.ppe_name,employee_name:body.employee_name,reason:'inspection_fail',reason_notes:'PPE condemned on inspection '+ref,requested_date:g('piif-date'),urgency:'urgent',status:'pending',created_by:prof?.id}});}catch(ex){}}
+      // If failed/condemned, keep the follow-up visible in MAP. Condemned items also create a replacement request.
+      if(['fail','condemn'].includes(body.overall_result)){
+        var badItems=checklist.filter(function(c){return c.result==='fail';}).map(function(c){return c.item;}).slice(0,4).join('; ');
+        var desc='PPE inspection '+body.overall_result+': '+(body.ppe_name||'PPE')+(body.employee_name?' issued to '+body.employee_name:'')+'. '+(body.defects_found||badItems||'Corrective action required.');
+        var added=await ppeCreateMapAction(ref+' - '+(body.ppe_name||'PPE'),desc,inspector,body.overall_result==='condemn'?'high':'medium',res[0].id);
+        if(body.overall_result==='condemn'&&body.employee_name){
+          try{await api('/ppe_replacements',{m:'POST',p:'return=minimal',b:{company_id:ccid(),ppe_id:ppeId,ppe_name:body.ppe_name,employee_name:body.employee_name,reason:'inspection_fail',reason_notes:'PPE condemned on inspection '+ref,requested_date:g('piif-date'),urgency:'urgent',status:'pending',created_by:prof?.id}});}catch(ex){}
+        }
+        if(added)toast('Inspection saved! Ref: '+ref+' - action added to MAP.');
+      }
     }}
     ppeInspBack();
   }catch(e){toast(e.message,false);}
@@ -18383,7 +18464,7 @@ function ppeRepBack(){document.getElementById('ppe-rep-form').style.display='non
 async function ppeRepNew(){ppeRepEditId=null;document.getElementById('ppe-rep-form-title').textContent='New Replacement Request';document.getElementById('ppe-rep-form-ref').textContent='REP-AUTO';document.getElementById('ppe-rep-del-btn').style.display='none';['prf-emp-name','prf-dept','prf-old-condition','prf-notes','prf-approved-by','prf-new-iss-ref','prf-requested-by'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});['prf-date','prf-approved-date','prf-fulfilled-date'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});fillPersonSelect('prf-emp-name');fillPersonSelect('prf-requested-by',prof?.full_name||personFullName(prof));fillPersonSelect('prf-approved-by');document.getElementById('prf-date').value=new Date().toISOString().slice(0,10);document.getElementById('prf-reason').value='expiry';document.getElementById('prf-urgency').value='normal';document.getElementById('prf-status').value='pending';document.querySelectorAll('[name="prf-status-radio"]').forEach(r=>{r.checked=r.value==='pending';});await ppePopulatePPESelects();document.getElementById('prf-ppe-id').value='';ppeRepShowForm();}
 function ppeRepEdit(id){var x=ppeRepData.find(r=>r.id===id);if(!x)return;ppeRepEditId=id;document.getElementById('ppe-rep-form-title').textContent='Edit Request';document.getElementById('ppe-rep-form-ref').textContent=x.replacement_ref||'—';document.getElementById('ppe-rep-del-btn').style.display=isMgr()?'inline-flex':'none';var gf=function(fid,val){var el=document.getElementById(fid);if(el)el.value=val||'';};fillPersonSelect('prf-emp-name',x.employee_name);gf('prf-dept',x.department);gf('prf-old-condition',x.old_item_condition);gf('prf-notes',x.reason_notes);fillPersonSelect('prf-approved-by',x.approved_by);gf('prf-new-iss-ref',x.new_issuance_ref);fillPersonSelect('prf-requested-by',x.requested_by);gf('prf-date',x.requested_date);gf('prf-approved-date',x.approved_date);gf('prf-fulfilled-date',x.fulfilled_date);document.getElementById('prf-reason').value=x.reason||'expiry';document.getElementById('prf-urgency').value=x.urgency||'normal';document.getElementById('prf-status').value=x.status||'pending';document.querySelectorAll('[name="prf-status-radio"]').forEach(r=>{r.checked=r.value===(x.status||'pending');});ppePopulatePPESelects().then(function(){if(x.ppe_id)document.getElementById('prf-ppe-id').value=x.ppe_id;});ppeRepShowForm();}
 async function ppeRepSave(){var emp=document.getElementById('prf-emp-name')?.value?.trim();if(!emp){toast('Please enter employee name',false);return;}var ppeSel=document.getElementById('prf-ppe-id');var ppeId=ppeSel?.value||null;var ppe=ppeCatData.find(x=>x.id===ppeId);var ppeName=ppe?.name||(ppeSel?.selectedOptions[0]?.text?.replace(/^[^ ]+ /,'')||'PPE');var g=function(id){var el=document.getElementById(id);return el?el.value||null:null;};var body={company_id:ccid(),ppe_id:ppeId||null,ppe_name:ppeName,employee_name:emp,department:g('prf-dept'),reason:g('prf-reason')||'expiry',reason_notes:g('prf-notes'),old_item_condition:g('prf-old-condition'),requested_date:g('prf-date'),requested_by:g('prf-requested-by'),urgency:g('prf-urgency')||'normal',approved_by:g('prf-approved-by'),approved_date:g('prf-approved-date')||null,fulfilled_date:g('prf-fulfilled-date')||null,new_issuance_ref:g('prf-new-iss-ref'),status:g('prf-status')||'pending',updated_at:new Date().toISOString()};
-  try{if(ppeRepEditId){await api('/ppe_replacements?id=eq.'+ppeRepEditId,{m:'PATCH',p:'return=minimal',b:body});toast('Updated!');}else{body.created_by=prof?.id;var res=await api('/ppe_replacements',{m:'POST',p:'return=representation',b:body});if(res?.[0]?.id){var yr=new Date().getFullYear();var ref='REP-'+yr+'-'+String(ppeRepData.length+1).padStart(3,'0');await api('/ppe_replacements?id=eq.'+res[0].id,{m:'PATCH',p:'return=minimal',b:{replacement_ref:ref}});toast('Replacement request created! Ref: '+ref);}}ppeRepBack();}catch(e){toast(e.message,false);}
+  try{if(ppeRepEditId){await api('/ppe_replacements?id=eq.'+ppeRepEditId,{m:'PATCH',p:'return=minimal',b:body});toast('Updated!');}else{body.created_by=prof?.id;var res=await api('/ppe_replacements',{m:'POST',p:'return=representation',b:body});if(res?.[0]?.id){var yr=new Date().getFullYear();var ref='REP-'+yr+'-'+String(ppeRepData.length+1).padStart(3,'0');await api('/ppe_replacements?id=eq.'+res[0].id,{m:'PATCH',p:'return=minimal',b:{replacement_ref:ref}});var needsMap=['immediate','urgent'].includes(body.urgency)||body.reason==='inspection_fail';var added=false;if(needsMap){added=await ppeCreateMapAction(ref+' - PPE replacement','PPE replacement required for '+emp+': '+ppeName+' ('+(body.reason||'replacement').replace(/_/g,' ')+'). '+(body.reason_notes||''),body.requested_by||body.approved_by||null,body.urgency==='immediate'?'high':'medium',res[0].id);}toast('Replacement request created! Ref: '+ref+(added?' - action added to MAP.':''));}}ppeRepBack();}catch(e){toast(e.message,false);}
 }
 async function ppeRepDelete(){if(!ppeRepEditId)return;if(!(await appConfirmDelete('PPE replacement record')))return;try{await api('/ppe_replacements?id=eq.'+ppeRepEditId,{m:'DELETE'});toast('Deleted!');ppeRepBack();}catch(e){toast(e.message,false);}}
 async function ppeRepDeleteRow(id){if(!(await appConfirmDelete('PPE replacement record')))return;try{await api('/ppe_replacements?id=eq.'+id,{m:'DELETE'});ppeRepData=ppeRepData.filter(x=>x.id!==id);toast('Deleted!');ppeLoadReplacements();}catch(e){toast(e.message,false);}}
@@ -22996,7 +23077,22 @@ async function cmEditCell(personId, compId){
     }else{
       await api('/competency_matrix',{m:'POST',p:'return=minimal',b:body});
     }
-    toast('Updated!');
+    if(body.current_level<body.required_level){
+      try{
+        var person=(people||[]).find(function(p){return p.id===personId;});
+        await api('/action_tracker',{m:'POST',p:'return=minimal',b:{
+          company_id:ccid(),
+          source_module:'training',
+          source_ref:'Competency gap - '+(comp?.name||'Competency'),
+          description:'Competency gap identified for '+(personFullName(person)||'person')+': '+(comp?.name||'competency')+' current level '+body.current_level+', required level '+body.required_level+'.',
+          responsible:null,
+          priority:'medium',
+          status:'open',
+          created_by:prof?.id
+        }});
+        toast('Updated! Competency gap added to MAP.');
+      }catch(ex){toast('Updated!');console.warn('Competency MAP action failed',ex);}
+    }else toast('Updated!');
     cmLoad();
   }catch(e){toast(e.message,false);}
 }
@@ -23360,7 +23456,29 @@ async function tfSave(){
   };
   try{
     if(tfEditingId){await api('/training_followup?id=eq.'+tfEditingId,{m:'PATCH',p:'return=minimal',b:body});toast('Updated!');}
-    else{body.created_by=prof?.id;await api('/training_followup',{m:'POST',p:'return=minimal',b:body});toast('Record saved!');}
+    else{
+      body.created_by=prof?.id;
+      var res=await api('/training_followup',{m:'POST',p:'return=representation',b:body});
+      var added=false;
+      if(body.passed===false&&res?.[0]?.id){
+        try{
+          await api('/action_tracker',{m:'POST',p:'return=minimal',b:{
+            company_id:ccid(),
+            source_module:'training',
+            source_id:res[0].id,
+            source_ref:'Failed training - '+course,
+            description:'Training follow-up required: '+(name||'Person')+' failed '+course+'. '+(body.notes||'Arrange retraining or reassessment.'),
+            responsible:body.trainer||null,
+            target_date:body.refresher_due||body.expiry_date||null,
+            priority:'medium',
+            status:'open',
+            created_by:prof?.id
+          }});
+          added=true;
+        }catch(ex){console.warn('Training MAP action failed',ex);}
+      }
+      toast('Record saved!'+(added?' Action added to MAP.':''));
+    }
     tfBack();
   }catch(e){toast(e.message,false);console.error(e);}
 }
