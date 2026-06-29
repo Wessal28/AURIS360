@@ -17161,7 +17161,7 @@ async function ohLoadDash(){
   try{
     var yr=new Date().getFullYear();
     var [ms,aud,exp,od,vax]=await Promise.all([
-      api('/medical_surveillance?select=id,exam_date,next_exam_date,fitness_status'+cf()),
+      api('/medical_surveillance?select=id,employee_name,department,exam_date,next_exam_date,fitness_status'+cf()),
       api('/audiometry_records?select=id,sts_right,sts_left'+cf()),
       api('/exposure_monitoring?select=id,exceeded_oel,risk_level,status'+cf()),
       api('/occupational_diseases?select=id,status'+cf()),
@@ -17251,8 +17251,13 @@ async function ohMsLoad(){
   var ft=document.getElementById('oh-ms-filter')?.value||'';
   try{
     var q='/medical_surveillance?select=*'+cf()+'&order=exam_date.desc';
-    if(ft)q+='&exam_type=eq.'+ft;
+    if(ft&&ft!=='due_60'&&ft!=='overdue')q+='&exam_type=eq.'+ft;
     var d=await api(q);ohMsData=d||[];
+    if(ft==='due_60'||ft==='overdue'){
+      var today=new Date();today.setHours(0,0,0,0);
+      var soon=new Date(today);soon.setDate(soon.getDate()+60);
+      d=(d||[]).filter(function(x){var nd=x.next_exam_date?new Date(x.next_exam_date):null;return nd&&(ft==='overdue'?nd<today:nd<=soon);});
+    }
     if(!d||!d.length){
       el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)"><div style="font-size:40px;margin-bottom:12px">🩺</div><div style="font-weight:600;margin-bottom:8px">No medical examinations recorded</div>'+(isMgr()?'<button class="btn btn-primary" onclick="msNew()"><i class="ti ti-plus"></i>New examination</button>':'')+'</div>';
       return;
@@ -17378,7 +17383,7 @@ async function msSave(){
     status:'completed',updated_at:new Date().toISOString()};
   try{
     if(ohMsEditId){await api('/medical_surveillance?id=eq.'+ohMsEditId,{m:'PATCH',p:'return=minimal',b:body});toast('Updated!');}
-    else{body.created_by=prof?.id;await api('/medical_surveillance',{m:'POST',p:'return=minimal',b:body});toast('Examination saved!');}
+    else{body.created_by=prof?.id;await api('/medical_surveillance',{m:'POST',p:'return=minimal',b:body});var needsAction=body.fitness_status!=='fit'||body.follow_up_required||body.referral_required;if(needsAction){try{await api('/action_tracker',{m:'POST',p:'return=minimal',b:{company_id:ccid(),source_module:'ohealth',source_ref:'Medical surveillance - '+name,description:'Occupational health follow-up required for '+name+': '+(body.restrictions||body.referral_details||body.fitness_status),responsible:body.examining_doctor||null,target_date:body.follow_up_date||null,priority:['temporarily_unfit','permanently_unfit'].includes(body.fitness_status)?'high':'medium',status:'open',created_by:prof?.id}});}catch(ex){console.warn('Medical surveillance MAP action failed',ex);}}toast('Examination saved!'+(needsAction?' Action added to MAP.':''));}
     msBack();
   }catch(e){toast(e.message,false);}
 }
@@ -17502,7 +17507,7 @@ async function audSave(){
     ppe_recommendation:g('audf-ppe'),referral_required:document.getElementById('audf-referral')?.checked||false,notes:g('audf-notes')};
   try{
     if(ohAudEditId){await api('/audiometry_records?id=eq.'+ohAudEditId,{m:'PATCH',p:'return=minimal',b:body});toast('Updated!');}
-    else{body.created_by=prof?.id;await api('/audiometry_records',{m:'POST',p:'return=minimal',b:body});toast('Audiogram saved!');}
+    else{body.created_by=prof?.id;await api('/audiometry_records',{m:'POST',p:'return=minimal',b:body});var needsAction=body.sts_right||body.sts_left||body.referral_required||body.right_ear_result!=='normal'||body.left_ear_result!=='normal';if(needsAction){try{await api('/action_tracker',{m:'POST',p:'return=minimal',b:{company_id:ccid(),source_module:'ohealth',source_ref:'Audiometry - '+name,description:'Audiometry follow-up required for '+name+': '+(body.sts_right||body.sts_left?'Standard Threshold Shift detected':'abnormal hearing result'),responsible:body.examiner||null,priority:(body.sts_right||body.sts_left)?'high':'medium',status:'open',created_by:prof?.id}});}catch(ex){console.warn('Audiometry MAP action failed',ex);}}toast('Audiogram saved!'+(needsAction?' Action added to MAP.':''));}
     audBack();
   }catch(e){toast(e.message,false);}
 }
@@ -17625,7 +17630,7 @@ async function spiSave(){
   var body={company_id:ccid(),employee_name:name,department:g('spif-dept'),examiner:g('spif-examiner'),test_date:g('spif-date'),next_test_date:g('spif-next-date')||null,fvc_predicted:fvcP,fvc_measured:fvcM,fvc_pct_predicted:fvcP&&fvcM?parseFloat((fvcM/fvcP*100).toFixed(1)):null,fev1_predicted:fev1P,fev1_measured:fev1M,fev1_pct_predicted:fev1P&&fev1M?parseFloat((fev1M/fev1P*100).toFixed(1)):null,fev1_fvc_measured:ratioM,pef_measured:gn('spif-pef'),post_bd_test_done:document.getElementById('spif-bd')?.checked||false,post_bd_fev1:gn('spif-bd-fev1'),post_bd_fvc:gn('spif-bd-fvc'),reversibility_pct:gn('spif-rev-pct'),significant_reversibility:document.getElementById('spif-sig-rev')?.checked||false,dust_exposed:document.getElementById('spif-dust')?.checked||false,silica_exposed:document.getElementById('spif-silica')?.checked||false,asbestos_exposed:document.getElementById('spif-asbestos')?.checked||false,chemical_fumes_exposed:document.getElementById('spif-chem-fumes')?.checked||false,referral_required:document.getElementById('spif-referral')?.checked||false,notes:g('spif-notes'),pattern:['normal','obstructive','restrictive','mixed','borderline'].includes(pattern)?pattern:'normal'};
   try{
     if(ohSpiEditId){await api('/spirometry_records?id=eq.'+ohSpiEditId,{m:'PATCH',p:'return=minimal',b:body});toast('Updated!');}
-    else{body.created_by=prof?.id;await api('/spirometry_records',{m:'POST',p:'return=minimal',b:body});toast('Spirometry saved!');}
+    else{body.created_by=prof?.id;await api('/spirometry_records',{m:'POST',p:'return=minimal',b:body});var needsAction=body.pattern&&body.pattern!=='normal'||body.referral_required||body.fvc_pct_predicted<80||body.fev1_pct_predicted<80||body.fev1_fvc_measured<70;if(needsAction){try{await api('/action_tracker',{m:'POST',p:'return=minimal',b:{company_id:ccid(),source_module:'ohealth',source_ref:'Spirometry - '+name,description:'Spirometry follow-up required for '+name+': '+(body.pattern||'abnormal result'),responsible:body.examiner||null,priority:body.pattern==='mixed'||body.referral_required?'high':'medium',status:'open',created_by:prof?.id}});}catch(ex){console.warn('Spirometry MAP action failed',ex);}}toast('Spirometry saved!'+(needsAction?' Action added to MAP.':''));}
     spiBack();
   }catch(e){toast(e.message,false);}
 }
@@ -34954,6 +34959,8 @@ function fireEquipStatusBadge(s) {
 <option value="return_to_work">Return to work</option>
 <option value="exit">Exit</option>
 <option value="fitness_for_duty">Fitness for duty</option>
+<option value="due_60">Due within 60 days</option>
+<option value="overdue">Overdue</option>
 </select>
 <button class="btn btn-primary" id="oh-ms-add-btn" style="display:none" onclick="msNew()"><i class="ti ti-plus"></i>New examination</button>
 </div>
