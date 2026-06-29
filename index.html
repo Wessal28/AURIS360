@@ -2049,6 +2049,46 @@ function obsFilterList() {
   el.innerHTML=h+'</tbody></table></div>';
 }
 
+function obsEmptyState(title, buttonLabel, action) {
+  return '<div style="text-align:center;padding:40px;color:var(--text2)">'
+    +'<div style="font-size:40px;margin-bottom:12px"><i class="ti ti-eye"></i></div>'
+    +'<div style="font-weight:600;margin-bottom:8px">'+escH(title||'No observations found')+'</div>'
+    +(buttonLabel?'<button class="btn btn-primary" onclick="'+escH(action||'obsNew()')+'"><i class="ti ti-plus"></i>'+escH(buttonLabel)+'</button>':'')
+    +'</div>';
+}
+
+function obsTableHtml(rows, emptyTitle, emptyButtonLabel, emptyAction) {
+  if (!rows.length) return obsEmptyState(emptyTitle||'No observations found', emptyButtonLabel||'', emptyAction||'');
+  var h='<div style="overflow:auto"><table style="width:100%;min-width:980px;border-collapse:collapse;font-size:12px">'
+    +'<thead><tr style="background:#17446B;color:#fff">'
+    +'<th style="padding:10px;color:#fff;text-align:left">Ref</th>'
+    +'<th style="padding:10px;color:#fff;text-align:left">Date</th>'
+    +'<th style="padding:10px;color:#fff;text-align:left">Type</th>'
+    +'<th style="padding:10px;color:#fff;text-align:left">Observation</th>'
+    +'<th style="padding:10px;color:#fff;text-align:left">Location</th>'
+    +'<th style="padding:10px;color:#fff;text-align:left">Observer</th>'
+    +'<th style="padding:10px;color:#fff;text-align:center">Severity</th>'
+    +'<th style="padding:10px;color:#fff;text-align:center">Status</th>'
+    +'<th style="padding:10px;color:#fff;width:54px"></th>'
+    +'</tr></thead><tbody>';
+  rows.forEach(function(x,i){
+    var cfg=OBS_TYPE_CFG[x.obs_type]||OBS_TYPE_CFG.unsafe_condition;
+    var desc=x.observation_text||x.positive_points||x.unsafe_act_description||x.unsafe_condition_description||'-';
+    h+='<tr style="background:'+(i%2?'#f9fafb':'#fff')+';border-bottom:1px solid #eef2f7;cursor:pointer" data-id="'+x.id+'" onclick="obsEdit(this.dataset.id)">'
+      +'<td style="padding:9px 10px;font-family:monospace;font-weight:800;color:'+cfg.color+'">'+escH(x.obs_ref||x.id?.slice(0,8)||'-')+'</td>'
+      +'<td style="padding:9px 10px;white-space:nowrap">'+(x.observation_date?new Date(x.observation_date).toLocaleDateString('en-GB'):'-')+'</td>'
+      +'<td style="padding:9px 10px"><span style="background:'+cfg.bg+';color:'+cfg.color+';padding:2px 8px;border-radius:99px;font-size:10px;font-weight:800">'+escH(cfg.label)+'</span></td>'
+      +'<td style="padding:9px 10px;min-width:260px"><div style="font-weight:700;line-height:1.25">'+escH(desc.substring(0,130))+(desc.length>130?'...':'')+'</div><div style="font-size:11px;color:var(--text2);margin-top:2px">'+escH(x.category||'general')+'</div></td>'
+      +'<td style="padding:9px 10px">'+escH(x.location||'-')+'</td>'
+      +'<td style="padding:9px 10px">'+escH(x.observer_name||'-')+'</td>'
+      +'<td style="padding:9px 10px;text-align:center">'+sev(x.severity||'medium')+'</td>'
+      +'<td style="padding:9px 10px;text-align:center">'+stat(x.status||'open')+'</td>'
+      +'<td style="padding:9px 10px"><button class="btn btn-sm" onclick="event.stopPropagation();obsEdit(\''+x.id+'\')"><i class="ti ti-edit"></i></button></td>'
+      +'</tr>';
+  });
+  return h+'</tbody></table></div>';
+}
+
 function obsCard(x) {
   var cfg = OBS_TYPE_CFG[x.obs_type] || OBS_TYPE_CFG.unsafe_condition;
   var sev = OBS_SEV_CFG[x.severity||'medium'] || OBS_SEV_CFG.medium;
@@ -2090,6 +2130,8 @@ async function obsLoadPositive() {
   var el = document.getElementById('obs-positive-list'); if (!el) return;
   if (!obsAllData.length) await obsLoadAll();
   var positives = obsAllData.filter(x => ['positive_behaviour','good_practice'].includes(x.obs_type));
+  el.innerHTML = obsTableHtml(positives, 'No positive observations yet', 'Add positive observation', "obsNew('positive_behaviour')");
+  return;
   if (!positives.length) {
     el.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text2)"><div style="font-size:48px;margin-bottom:12px">✅</div><div style="font-weight:600;margin-bottom:8px">No positive observations yet</div><button class="btn btn-primary" onclick="obsNew(\'positive_behaviour\')"><i class="ti ti-plus"></i>Add positive observation</button></div>';
     return;
@@ -2123,6 +2165,8 @@ async function obsLoadUnsafe() {
       +'<i class="ti ti-alert-triangle"></i> '+critical.length+' critical/high severity observation'+(critical.length>1?'s':'')+' require immediate attention: '
       +critical.map(x=>escH(x.obs_ref||x.obs_type.replace(/_/g,' '))).join(', ')+'</div>';
   } else if (alertEl) alertEl.innerHTML = '';
+  el.innerHTML = obsTableHtml(unsafes, 'No unsafe acts or conditions reported', '', '');
+  return;
   if (!unsafes.length) {
     el.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text2)"><div style="font-size:48px;margin-bottom:12px">🎉</div><div style="font-weight:600">No unsafe acts or conditions reported</div></div>';
     return;
@@ -2280,6 +2324,7 @@ function obsNew(type) {
   });
   fillPersonSelect('obs-observer');
   fillPersonSelect('obs-person-observed');
+  fillPersonSelect('obs-action-assigned');
   ['obs-action-due'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
   document.getElementById('obs-date').value = new Date().toISOString().slice(0,10);
   document.getElementById('obs-num-persons').value = '1';
@@ -2323,7 +2368,7 @@ function obsEdit(id) {
   gf('obs-immediate-desc', x.immediate_action_desc);
   gf('obs-feedback-notes', x.feedback_notes);
   gf('obs-action-desc', x.action_description);
-  gf('obs-action-assigned', x.action_assigned_to);
+  fillPersonSelect('obs-action-assigned', x.action_assigned_to);
   gf('obs-action-due', x.action_due_date);
   fillPersonSelect('obs-observer', x.observer_name);
   gf('obs-observer-dept', x.observer_dept);
@@ -2390,6 +2435,14 @@ async function obsSave() {
   var isPositive = ['positive_behaviour','good_practice'].includes(type);
   var desc = isPositive ? (g('obs-positive-text')||g('obs-positive-reinforce')) : (g('obs-text')||g('obs-immediate-cause'));
   if (!desc) { toast('Please describe what was observed', false); return; }
+  if (!g('obs-date')) { toast('Please select the observation date', false); return; }
+  if (!g('obs-location')) { toast('Please enter the location or area', false); return; }
+  if (!g('obs-observer')) { toast('Please select the observer', false); return; }
+  var actionRequired = document.getElementById('obs-action-required')?.checked||false;
+  if (actionRequired && !g('obs-action-desc')) { toast('Please describe the follow-up action required', false); return; }
+  if (actionRequired && !g('obs-action-assigned')) { toast('Please assign the follow-up action to a person', false); return; }
+  if (actionRequired && !g('obs-action-due')) { toast('Please select the action due date', false); return; }
+  if (g('obs-action-due') && g('obs-date') && g('obs-action-due') < g('obs-date')) { toast('Action due date cannot be before the observation date', false); return; }
   var ppeVal = g('obs-ppe-worn');
   var body = {
     company_id: ccid(),
@@ -2420,7 +2473,7 @@ async function obsSave() {
     stopped_work: document.getElementById('obs-stopped-work')?.checked||false,
     feedback_given: document.getElementById('obs-feedback-given')?.checked||false,
     feedback_notes: g('obs-feedback-notes'),
-    action_required: document.getElementById('obs-action-required')?.checked||false,
+    action_required: actionRequired,
     action_description: g('obs-action-desc'),
     action_assigned_to: g('obs-action-assigned'),
     action_due_date: g('obs-action-due')||null,
@@ -2486,7 +2539,8 @@ async function obsDelete() {
   });
   if(!ok)return;
   try {
-    await api('/safety_observations?id=eq.'+obsEditId, {m:'DELETE'});
+    var deleted = await api('/safety_observations?id=eq.'+obsEditId, {m:'DELETE',p:'return=representation'});
+    if (Array.isArray(deleted) && !deleted.length) throw new Error('Record not found or permission denied');
     obsAllData = obsAllData.filter(x=>x.id!==obsEditId);
     toast('Deleted!'); obsEditId=null; obsShowList();
   } catch(e) { toast(e.message, false); }
