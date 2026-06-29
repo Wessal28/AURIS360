@@ -14266,6 +14266,8 @@ function ptwUpdateGasResultPreview(){
 async function ptwAddGasTest(){
   var g=function(id){var el=document.getElementById(id);return el?el.value||'':null;};
   var test={datetime:g('gas-datetime'),tester:ptwCurrentUserName(),equipment:g('gas-equipment'),cal_date:g('gas-cal-date'),o2:g('gas-o2'),lel:g('gas-lel'),h2s:g('gas-h2s'),co:g('gas-co'),location:g('gas-location'),result:g('gas-result'),notes:g('gas-notes')};
+  if(!test.equipment)return toast('Please enter the gas detector / equipment used',false);
+  if(!test.cal_date)return toast('Please enter the gas detector calibration date',false);
   if(!test.o2||!test.lel)return toast('Please enter both O₂ and LEL readings',false);
   var calculated=ptwClassifyGasTest(test);
   if(test.result==='pass'&&calculated!=='pass')test.result=calculated;
@@ -14297,7 +14299,7 @@ async function ptwAddGasTest(){
     await api('/permits?id=eq.'+ptwCurrentId,{m:'PATCH',p:'return=minimal',b:body});
     var idx=ptwAllData.findIndex(function(x){return x.id===ptwCurrentId;});
     if(idx>=0)Object.assign(ptwAllData[idx],body);
-    try{await api('/permit_activity_log',{m:'POST',p:'return=minimal',b:{company_id:ccid(),permit_id:ptwCurrentId,action:'Gas test recorded',performed_by:test.tester,details:'O2 '+(test.o2||'-')+'%, LEL '+(test.lel||'-')+'%, H2S '+(test.h2s||'-')+' ppm, CO '+(test.co||'-')+' ppm, result '+(test.result||'-')}});}catch(ex){}
+    try{await api('/permit_activity_log',{m:'POST',p:'return=minimal',b:{company_id:ccid(),permit_id:ptwCurrentId,action:'Gas test recorded',performed_by:test.tester,details:'Equipment '+(test.equipment||'-')+', calibrated '+(test.cal_date||'-')+'. O2 '+(test.o2||'-')+'%, LEL '+(test.lel||'-')+'%, H2S '+(test.h2s||'-')+' ppm, CO '+(test.co||'-')+' ppm, result '+(test.result||'-')}});}catch(ex){}
     if(test.result==='fail')try{await api('/permit_activity_log',{m:'POST',p:'return=minimal',b:{company_id:ccid(),permit_id:ptwCurrentId,action:'Failed gas test - work stopped',performed_by:test.tester,details:'Permit '+(body.status==='suspended'?'suspended':'blocked')+' due to unsafe atmosphere',new_status:body.status||permit.status}});}catch(ex){}
     if(clearedGasBlock)try{await api('/permit_activity_log',{m:'POST',p:'return=minimal',b:{company_id:ccid(),permit_id:ptwCurrentId,action:'Gas test block cleared',performed_by:test.tester,details:'Passing gas test recorded. Permit may be resumed after supervisor review.',new_status:permit.status}});}catch(ex){}
     toast(test.result==='fail'?'FAILED gas test - work must stop and permit is blocked':'Gas test recorded! O₂: '+test.o2+'% LEL: '+test.lel+'%',test.result!=='fail');
@@ -33311,8 +33313,8 @@ function fireEquipStatusBadge(s) {
 <div class="form-row">
 <div class="form-group"><label class="form-label">Test date &amp; time</label><input type="datetime-local" id="gas-datetime"/></div>
 <div class="form-group"><label class="form-label">Tested by</label><input type="text" id="gas-tester" readonly style="background:#f9fafb;font-weight:700" placeholder="Filled automatically"/></div>
-<div class="form-group"><label class="form-label">Equipment used</label><input type="text" id="gas-equipment" placeholder="e.g. Multi-gas detector XA-3000"/></div>
-<div class="form-group"><label class="form-label">Calibration date</label><input type="date" id="gas-cal-date"/></div>
+<div class="form-group"><label class="form-label">Equipment used *</label><input type="text" id="gas-equipment" placeholder="e.g. Multi-gas detector XA-3000"/></div>
+<div class="form-group"><label class="form-label">Calibration date *</label><input type="date" id="gas-cal-date"/></div>
 </div>
 <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px">
 <div class="form-group" style="margin:0"><label class="form-label">O₂ (%)</label><input type="number" id="gas-o2" step="0.1" min="0" max="100" placeholder="19.5–23.5" oninput="ptwUpdateGasResultPreview()"/>
