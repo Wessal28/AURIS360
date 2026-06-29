@@ -13632,6 +13632,60 @@ async function ptwLoadReferenceOptions(selectedRA, selectedMS){
   }
 }
 
+function ptwSelectWithFallback(id,val,label){
+  var el=document.getElementById(id);if(!el)return;
+  el.value=val||'';
+  if(val&&el.tagName==='SELECT'&&el.value!==val){
+    var o=document.createElement('option');
+    o.value=val;o.textContent=label||String(val)+' (saved)';
+    el.appendChild(o);el.value=val;
+  }
+}
+
+async function ptwLoadContractorOptions(selectedId){
+  var conSel=document.getElementById('pf-contractor');if(!conSel)return;
+  conSel.innerHTML='<option value="">Internal / No contractor</option>';
+  try{
+    var d=await api('/contractors?select=id,contractor_name&status=eq.approved'+cf()+'&order=contractor_name');
+    (d||[]).forEach(function(c){
+      var o=document.createElement('option');o.value=c.id;o.textContent=c.contractor_name||c.id;conSel.appendChild(o);
+    });
+  }catch(ex){}
+  ptwSelectWithFallback('pf-contractor',selectedId);
+}
+
+async function ptwLoadWorkOrderOptions(selectedId){
+  var woSel=document.getElementById('pf-wo');if(!woSel)return;
+  woSel.innerHTML='<option value="">None</option>';
+  try{
+    var d=await api('/work_schedule?select=id,title,ref_number'+cf()+'&order=planned_start.desc&limit=50');
+    (d||[]).forEach(function(w){
+      var o=document.createElement('option');o.value=w.id;o.textContent=(w.ref_number||'WO')+' - '+(w.title||'Work order');woSel.appendChild(o);
+    });
+  }catch(ex){}
+  ptwSelectWithFallback('pf-wo',selectedId);
+}
+
+function ptwCanRecordControls(x){
+  if(isMgr())return true;
+  var uid=prof?.id||'';
+  var uname=ptwCurrentUserName();
+  return !!x&&(x.permit_issuer_id===uid||x.permit_receiver===uid||x.permit_receiver_name===uname||x.issued_by===uname);
+}
+
+function ptwValidateBeforeSave(targetStatus, body, precautions){
+  if(targetStatus!=='pending_approval')return null;
+  if(!body.work_description)return 'Please enter the work description before submitting.';
+  if(!body.work_location)return 'Please enter the exact work location before submitting.';
+  if(!body.permit_receiver_name&&!body.permit_receiver)return 'Please select the permit receiver / site supervisor.';
+  if(!body.planned_start||!body.planned_end)return 'Please enter planned start and planned end dates.';
+  if(new Date(body.planned_end)<=new Date(body.planned_start))return 'Planned end must be after planned start.';
+  if(!body.ra_ref)return 'Please select the Risk Assessment reference before submitting.';
+  var unchecked=(precautions||[]).filter(function(p){return !p.checked;});
+  if(unchecked.length)return 'Please confirm all required precautions before submitting for approval.';
+  return null;
+}
+
 const PTW_TYPE_CFG={
   hot_work:        {label:'Hot Work',        emoji:'🔥', color:'#DC2626', bg:'#FEF2F2', precautions:['Fire system confirmed functional before work starts','Protect or remove combustible materials within 10m','Fire blanket or welding screen provided where sparks or heat may spread','Suitable extinguisher placed close to the job','Gas bottles and pipework removed or protected from hot work area','Fire alarm call points and emergency routes identified','Area isolated or controlled to prevent unauthorised access','Forced ventilation provided where fumes may be generated','Permanent fire watch appointed during hot work','Continuous fire watch maintained for at least 1 hour after work','Periodic fire watch continued for up to 3 hours based on risk','Adjoining areas, voids and false floors checked for smouldering fire','Final inspection completed before permit closure']},
   confined_space:  {label:'Confined Space',  emoji:'🚪', color:'#7C3AED', bg:'#F5F3FF', precautions:['Space isolated from all energy and material sources','Contents drained, cleaned and residues tested where applicable','Initial atmosphere test completed by authorised gas tester','Atmosphere within safe limits before entry','Forced ventilation established where required','Continuous gas monitoring maintained during entry','Standby person remains at entry point throughout work','Standby person has reliable communication with entrants and rescue support','Rescue plan, tripod and retrieval equipment available and checked','Suitable access and egress provided and kept clear','Additional lighting suitable for the space provided','Harness and lifeline used where retrieval may be required','Maximum number of entrants defined and controlled','Maximum single-entry duration and minimum break period defined','Entry and exit times recorded for every entrant']},
@@ -13868,15 +13922,17 @@ function ptwRenderActionButtons(x){
   var btn=function(icon,label,onclick,col){
     return '<button class="btn" style="background:'+col+';color:#fff;border-color:'+col+'" onclick="'+onclick+'"><i class="ti '+icon+'"></i>'+label+'</button>';
   };
-  if(['active','approved','pending_approval'].includes(x.status)){
+  var canRecord=ptwCanRecordControls(x);
+  var canControl=isMgr();
+  if(canRecord&&['active','approved','pending_approval'].includes(x.status)){
     h+=btn('ti-flask','Gas Tests',"ptwOpenGasPanel()",'#065F46');
     h+=btn('ti-lock','Isolations',"ptwOpenIsolationPanel()",'#B45309');
   }
-  if(x.status==='pending_approval')h+=btn('ti-certificate','Approve/Reject',"ptwOpenApprovalPanel()",'#185FA5');
-  if(x.status==='approved')h+=btn('ti-player-play','Activate Permit',"ptwActivate()",'#185FA5');
-  if(x.status==='active')h+=btn('ti-circle-check','Close Permit',"ptwOpenClosurePanel()",'#1D9E75');
-  if(['active','approved'].includes(x.status))h+=btn('ti-player-pause','Suspend/Cancel',"ptwOpenSuspensionPanel()",'#C2410C');
-  if(x.status==='suspended')h+=btn('ti-player-play','Resume Permit',"ptwResume()",'#185FA5');
+  if(canControl&&x.status==='pending_approval')h+=btn('ti-certificate','Approve/Reject',"ptwOpenApprovalPanel()",'#185FA5');
+  if(canControl&&x.status==='approved')h+=btn('ti-player-play','Activate Permit',"ptwActivate()",'#185FA5');
+  if(canControl&&x.status==='active')h+=btn('ti-circle-check','Close Permit',"ptwOpenClosurePanel()",'#1D9E75');
+  if(canControl&&['active','approved'].includes(x.status))h+=btn('ti-player-pause','Suspend/Cancel',"ptwOpenSuspensionPanel()",'#C2410C');
+  if(canControl&&x.status==='suspended')h+=btn('ti-player-play','Resume Permit',"ptwResume()",'#185FA5');
   el.innerHTML=h;
 }
 
@@ -14076,7 +14132,7 @@ function ptwNew(){
   document.getElementById('ptw-precautions-list').innerHTML='';
   document.getElementById('ptw-smart-check-panel').innerHTML='';
   // Clear fields
-  ['pf-no','pf-loc','pf-dept','pf-desc','pf-receiver','pf-receiver-manual','pf-team','pf-team-extra','pf-ra-ref','pf-ms-ref','pf-ppe-extra','pf-precautions'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
+  ['pf-no','pf-loc','pf-dept','pf-desc','pf-receiver','pf-receiver-manual','pf-team','pf-team-extra','pf-ra-ref','pf-ms-ref','pf-wo','pf-ppe-extra','pf-precautions'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
   ['pf-start','pf-end'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
   var priority=document.getElementById('pf-priority');if(priority)priority.value='medium';
   var risk=document.getElementById('pf-risk');if(risk)risk.value='medium';
@@ -14135,13 +14191,13 @@ function ptwBuildTypeForm(type){
     formHtml='<div class="card" style="margin-bottom:14px;border-left:4px solid #7C3AED"><div class="card-title" style="color:#7C3AED">🚪 Confined Space Details</div>'
       +'<div class="form-row"><div class="form-group"><label class="form-label">Space name / ID</label><input type="text" id="pf-cs-name" placeholder="e.g. Tank T-01, Sewer manhole 4"/></div>'
       +'<div class="form-group"><label class="form-label">Classification</label><select id="pf-cs-class"><option value="permit_required">Permit-required confined space</option><option value="non_permit">Non-permit confined space</option></select></div>'
-      +'<div class="form-group"><label class="form-label">Standby person</label><input type="text" id="pf-cs-standby" placeholder="Name of entry standby person"/></div>'
+      +'<div class="form-group"><label class="form-label">Standby person</label><select id="pf-cs-standby"><option value="">Select standby person...</option></select></div>'
       +'<div class="form-group"><label class="form-label">Rescue equipment</label><input type="text" id="pf-cs-rescue" placeholder="Retrieval tripod, harness, comms..."/></div></div></div>';
   } else if(type==='electrical_isolation'){
     formHtml='<div class="card" style="margin-bottom:14px;border-left:4px solid #1D4ED8"><div class="card-title" style="color:#1D4ED8">⚡ Electrical Details</div>'
       +'<div class="form-row"><div class="form-group"><label class="form-label">Voltage level</label><select id="pf-el-voltage"><option value="lv">LV (&lt;1000V)</option><option value="mv">MV (1-36kV)</option><option value="hv">HV (&gt;36kV)</option></select></div>'
       +'<div class="form-group"><label class="form-label">Circuit/Equipment ID</label><input type="text" id="pf-el-circuit" placeholder="e.g. Panel MCC-01, CB-15"/></div>'
-      +'<div class="form-group"><label class="form-label">Competent electrician</label><input type="text" id="pf-el-competent" placeholder="Name and qualification"/></div></div></div>';
+      +'<div class="form-group"><label class="form-label">Competent electrician</label><select id="pf-el-competent"><option value="">Select competent electrician...</option></select></div></div></div>';
   } else if(type==='work_at_height'){
     formHtml='<div class="card" style="margin-bottom:14px;border-left:4px solid #065F46"><div class="card-title" style="color:#065F46">🧗 Work at Height Details</div>'
       +'<div class="form-row"><div class="form-group"><label class="form-label">Height above ground</label><input type="text" id="pf-wah-height" placeholder="e.g. 5m, 12m"/></div>'
@@ -14163,6 +14219,7 @@ function ptwBuildTypeForm(type){
       +'<div class="form-group"><label class="form-label">Additional details specific to this work</label><textarea id="pf-type-extra" style="min-height:80px" placeholder="Provide any additional technical details specific to this '+cfg2.label+' operation..."></textarea></div></div>';
   }
   el.innerHTML=formHtml;
+  ['pf-cs-standby','pf-el-competent','pf-lift-super'].forEach(function(id){fillPersonSelect(id);});
 }
 
 async function ptwRunSmartChecks(){
@@ -14237,6 +14294,7 @@ async function ptwSave(targetStatus){
     issued_by:issuerName||null,
     permit_receiver_name:receiver.name,permit_receiver:receiver.id||receiver.name,
     contractor_id:g('pf-contractor')||null,
+    work_order_ref:g('pf-wo')||null,
     team_members:ptwTeamValue(),
     ra_ref:g('pf-ra-ref'),method_statement_ref:g('pf-ms-ref'),
     ppe_required:ppe,precautions_checklist:precautions,
@@ -14246,7 +14304,9 @@ async function ptwSave(targetStatus){
     status:blocks.length&&targetStatus!=='draft'?'draft':targetStatus,
     updated_at:new Date().toISOString()
   };
-  if(blocks.length&&targetStatus!=='draft')toast('Saved as draft — RA reference is missing',false);
+  var validation=ptwValidateBeforeSave(targetStatus,body,precautions);
+  if(validation){toast(validation,false);return;}
+  if(blocks.length&&targetStatus!=='draft')toast('Saved as draft - RA reference is missing',false);
   try{
     if(ptwEditingId){
       var prev=ptwAllData.find(function(x){return x.id===ptwEditingId;})||{};
@@ -14299,6 +14359,8 @@ function ptwEditCurrent(){
   ptwSetReceiverValue(x.permit_receiver,x.permit_receiver_name||x.permit_receiver);
   g('pf-team-extra',x.team_members);
   ptwLoadReferenceOptions(x.ra_ref,x.method_statement_ref);
+  ptwLoadContractorOptions(x.contractor_id);
+  ptwLoadWorkOrderOptions(x.work_order_ref);
   g('pf-priority',x.priority||'medium');
   g('pf-risk',x.risk_level||'medium');
   g('pf-approval-levels',String(x.approval_level_required||3));
@@ -14328,6 +14390,11 @@ function ptwFormBack(){
 
 async function ptwDelete(){
   if(!ptwEditingId)return;
+  var current=ptwAllData.find(function(x){return x.id===ptwEditingId;})||{};
+  if(!isSA()&&!['draft','cancelled','rejected'].includes(current.status||'draft')){
+    toast('Issued permits must be cancelled or closed for audit trail. Only draft, cancelled or rejected permits can be deleted.',false);
+    return;
+  }
   var ok=await appConfirm({
     title:'Delete permit',
     message:'Delete this permit?',
@@ -14338,7 +14405,8 @@ async function ptwDelete(){
   });
   if(!ok)return;
   try{
-    await api('/permits?id=eq.'+ptwEditingId,{m:'DELETE'});
+    var deleted=await api('/permits?id=eq.'+ptwEditingId,{m:'DELETE',p:'return=representation'});
+    if(!deleted||!deleted.length)throw new Error('Delete failed: record not found or permission denied');
     ptwAllData=ptwAllData.filter(function(x){return x.id!==ptwEditingId;});
     toast('Permit deleted!');ptwEditingId=null;ptwCurrentId=null;
     ptwSetView('list');ptwRenderList();
@@ -14465,6 +14533,8 @@ function ptwRenderIsolationListPanel(){
 async function ptwAddIsolation(){
   var g=function(id){var el=document.getElementById(id);return el?el.value||'':null;};
   var tag=g('iso-tag');if(!tag){toast('Please enter isolation tag/ID',false);return;}
+  if(!g('iso-desc')){toast('Please describe the isolation point or equipment.',false);return;}
+  if((g('iso-status')||'isolated')==='isolated'&&!g('iso-verified-by')){toast('Please select who verified the isolation.',false);return;}
   var iso={tag:tag,description:g('iso-desc'),type:g('iso-type'),by:ptwCurrentUserName(),datetime:g('iso-datetime'),verified_by:g('iso-verified-by'),status:g('iso-status')||'isolated'};
   ptwIsolations.push(iso);
   ptwRenderIsolationListPanel();
@@ -14570,6 +14640,14 @@ function ptwApprovalBack(){ptwShowDetail(ptwCurrentId);}
 // ── ACTIVATE ──────────────────────────────────────────────────────────────────
 async function ptwActivate(){
   var x=ptwAllData.find(function(r){return r.id===ptwCurrentId;});if(!x)return;
+  if(Array.isArray(x.blocked_reasons)&&x.blocked_reasons.length){toast('Permit cannot be activated until all smart blocks are cleared.',false);return;}
+  var type=x.permit_type_v2||x.permit_type||'';
+  var tests=Array.isArray(x.gas_tests)?x.gas_tests:[];
+  var hasPassingGas=tests.some(function(t){return t.result==='pass';});
+  if(['confined_space','line_breaking'].includes(type)&&!hasPassingGas){toast('A passing gas test is required before activating this permit.',false);return;}
+  var isos=Array.isArray(x.isolations)?x.isolations:[];
+  if(['electrical_isolation','loto'].includes(type)&&!isos.length){toast('At least one isolation point must be recorded before activating this permit.',false);return;}
+  if(x.planned_end&&new Date(x.planned_end)<new Date()){toast('Permit planned end date has passed. Please amend the permit before activation.',false);return;}
   if(x.requires_weather_check&&!x.weather_conditions){
     var weather=await appPrompt({title:'Weather check',message:'Weather conditions are required for outdoor work.',value:'Sunny, wind <5m/s',placeholder:'Weather conditions'});
     if(!weather)return;
