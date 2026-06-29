@@ -14275,6 +14275,7 @@ async function ptwAddGasTest(){
   try{
     var permit=ptwAllData.find(function(x){return x.id===ptwCurrentId;})||{};
     var body={gas_tests:ptwGasTests,updated_at:new Date().toISOString()};
+    var clearedGasBlock=false;
     if(test.result==='fail'){
       var reason=PTW_FAILED_GAS_BLOCK;
       var blocks=Array.isArray(permit.blocked_reasons)?permit.blocked_reasons.slice():[];
@@ -14288,13 +14289,17 @@ async function ptwAddGasTest(){
       }
     }else if(test.result==='pass'){
       var existingBlocks=Array.isArray(permit.blocked_reasons)?permit.blocked_reasons:[];
-      if(existingBlocks.includes(PTW_FAILED_GAS_BLOCK))body.blocked_reasons=existingBlocks.filter(function(b){return b!==PTW_FAILED_GAS_BLOCK;});
+      if(existingBlocks.includes(PTW_FAILED_GAS_BLOCK)){
+        body.blocked_reasons=existingBlocks.filter(function(b){return b!==PTW_FAILED_GAS_BLOCK;});
+        clearedGasBlock=true;
+      }
     }
     await api('/permits?id=eq.'+ptwCurrentId,{m:'PATCH',p:'return=minimal',b:body});
     var idx=ptwAllData.findIndex(function(x){return x.id===ptwCurrentId;});
     if(idx>=0)Object.assign(ptwAllData[idx],body);
     try{await api('/permit_activity_log',{m:'POST',p:'return=minimal',b:{company_id:ccid(),permit_id:ptwCurrentId,action:'Gas test recorded',performed_by:test.tester,details:'O2 '+(test.o2||'-')+'%, LEL '+(test.lel||'-')+'%, H2S '+(test.h2s||'-')+' ppm, CO '+(test.co||'-')+' ppm, result '+(test.result||'-')}});}catch(ex){}
     if(test.result==='fail')try{await api('/permit_activity_log',{m:'POST',p:'return=minimal',b:{company_id:ccid(),permit_id:ptwCurrentId,action:'Failed gas test - work stopped',performed_by:test.tester,details:'Permit '+(body.status==='suspended'?'suspended':'blocked')+' due to unsafe atmosphere',new_status:body.status||permit.status}});}catch(ex){}
+    if(clearedGasBlock)try{await api('/permit_activity_log',{m:'POST',p:'return=minimal',b:{company_id:ccid(),permit_id:ptwCurrentId,action:'Gas test block cleared',performed_by:test.tester,details:'Passing gas test recorded. Permit may be resumed after supervisor review.',new_status:permit.status}});}catch(ex){}
     toast(test.result==='fail'?'FAILED gas test - work must stop and permit is blocked':'Gas test recorded! O₂: '+test.o2+'% LEL: '+test.lel+'%',test.result!=='fail');
     ['gas-o2','gas-lel','gas-h2s','gas-co','gas-notes','gas-location'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
   }catch(e){toast(e.message,false);}
