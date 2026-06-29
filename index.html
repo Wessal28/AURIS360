@@ -13386,6 +13386,7 @@ function raFormTab_withBowtie(tab, btn){
 // ===== PERMIT TO WORK — FULL DIGITAL SYSTEM =====
 let ptwAllData=[], ptwEditingId=null, ptwCurrentId=null, ptwActiveFilter='active';
 let ptwGasTests=[], ptwIsolations=[];
+const PTW_FAILED_GAS_BLOCK='Failed gas test - stop work and re-assess atmosphere';
 
 function ptwCurrentIssuer(){
   return {
@@ -14275,7 +14276,7 @@ async function ptwAddGasTest(){
     var permit=ptwAllData.find(function(x){return x.id===ptwCurrentId;})||{};
     var body={gas_tests:ptwGasTests,updated_at:new Date().toISOString()};
     if(test.result==='fail'){
-      var reason='Failed gas test - stop work and re-assess atmosphere';
+      var reason=PTW_FAILED_GAS_BLOCK;
       var blocks=Array.isArray(permit.blocked_reasons)?permit.blocked_reasons.slice():[];
       if(!blocks.includes(reason))blocks.push(reason);
       body.blocked_reasons=blocks;
@@ -14285,6 +14286,9 @@ async function ptwAddGasTest(){
         body.suspended_by=test.tester;
         body.suspension_reason=reason;
       }
+    }else if(test.result==='pass'){
+      var existingBlocks=Array.isArray(permit.blocked_reasons)?permit.blocked_reasons:[];
+      if(existingBlocks.includes(PTW_FAILED_GAS_BLOCK))body.blocked_reasons=existingBlocks.filter(function(b){return b!==PTW_FAILED_GAS_BLOCK;});
     }
     await api('/permits?id=eq.'+ptwCurrentId,{m:'PATCH',p:'return=minimal',b:body});
     var idx=ptwAllData.findIndex(function(x){return x.id===ptwCurrentId;});
@@ -14509,6 +14513,11 @@ function ptwSuspendBack(){ptwShowDetail(ptwCurrentId);}
 
 async function ptwResume(){
   var by=ptwCurrentUserName();
+  var current=ptwAllData.find(function(r){return r.id===ptwCurrentId;})||{};
+  if(Array.isArray(current.blocked_reasons)&&current.blocked_reasons.includes(PTW_FAILED_GAS_BLOCK)){
+    toast('Cannot resume yet - record a passing gas test first',false);
+    return;
+  }
   try{
     await api('/permits?id=eq.'+ptwCurrentId,{m:'PATCH',p:'return=minimal',b:{status:'active',updated_at:new Date().toISOString()}});
     var x=ptwAllData.find(function(r){return r.id===ptwCurrentId;});if(x)x.status='active';
