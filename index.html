@@ -11777,6 +11777,45 @@ function raFilterList(){
   el.innerHTML=h+'</tbody></table></div>';
 }
 
+function raRenderTableRows(el,rows,emptyHtml){
+  if(!el)return;
+  if(!rows.length){el.innerHTML=emptyHtml;return;}
+  var h='<div style="overflow:auto"><table style="width:100%;min-width:1120px;border-collapse:collapse;font-size:12px">'
+    +'<thead><tr style="background:#1a3a5c;color:#fff">'
+    +'<th style="padding:10px 12px;color:#fff;text-align:left">Ref</th>'
+    +'<th style="padding:10px;color:#fff;text-align:left">Type</th>'
+    +'<th style="padding:10px;color:#fff;text-align:left">Title / Activity</th>'
+    +'<th style="padding:10px;color:#fff;text-align:left">Location</th>'
+    +'<th style="padding:10px;color:#fff;text-align:left">Assessor</th>'
+    +'<th style="padding:10px;color:#fff;text-align:left">Date</th>'
+    +'<th style="padding:10px;color:#fff;text-align:center">Risk</th>'
+    +'<th style="padding:10px;color:#fff;text-align:center">Status</th>'
+    +'<th style="padding:10px;color:#fff;text-align:left">Review</th>'
+    +'<th style="padding:10px;color:#fff;width:54px"></th>'
+    +'</tr></thead><tbody>';
+  rows.forEach(function(x){
+    var type=x.ra_type_v2||x.ra_type||'baseline';
+    var cfg=RA_TYPE_CFG[type]||RA_TYPE_CFG.baseline;
+    var sc=RA_STATUS_CFG[x.status]||RA_STATUS_CFG.draft;
+    var rl=x.overall_risk_level||x.risk_level||'';
+    var rlcfg=RL_CFG[rl]||['#f3f4f6','#6B7280'];
+    var isReviewDue=x.review_date&&new Date(x.review_date)<=new Date()&&x.status==='active';
+    h+='<tr style="border-bottom:1px solid #eef2f7;cursor:pointer" data-id="'+x.id+'" onclick="raOpen(this.dataset.id)">'
+      +'<td style="padding:9px 12px;font-family:monospace;font-weight:800;color:'+cfg.color+'">'+escH(x.ra_ref||'DRAFT')+'<div style="font-size:10px;color:var(--text2)">Rev '+escH(x.revision||1)+'</div></td>'
+      +'<td style="padding:9px"><span style="background:'+cfg.bg+';color:'+cfg.color+';border:1px solid '+cfg.color+'33;padding:2px 8px;border-radius:99px;font-size:10px;font-weight:800">'+cfg.emoji+' '+escH(cfg.label)+'</span></td>'
+      +'<td style="padding:9px;min-width:260px"><div style="font-weight:800">'+escH(x.title||x.activity||x.workshop||'Untitled RA')+'</div><div style="font-size:11px;color:var(--text2)">'+escH(x.scope||'').substring(0,90)+'</div></td>'
+      +'<td style="padding:9px">'+escH(x.location||x.workshop||'—')+'</td>'
+      +'<td style="padding:9px">'+escH(x.assessed_by||x.ra_assessor||'—')+'</td>'
+      +'<td style="padding:9px;white-space:nowrap">'+(x.ra_date||x.date?new Date(x.ra_date||x.date).toLocaleDateString('en-GB'):'—')+'</td>'
+      +'<td style="padding:9px;text-align:center">'+(rl?'<span style="background:'+rlcfg[0]+';color:'+rlcfg[1]+';padding:2px 8px;border-radius:4px;font-size:11px;font-weight:800">'+escH(rl)+'</span>':'—')+'</td>'
+      +'<td style="padding:9px;text-align:center"><span style="background:'+sc[0]+';color:'+sc[1]+';padding:2px 9px;border-radius:99px;font-size:11px;font-weight:800">'+sc[2]+'</span></td>'
+      +'<td style="padding:9px;white-space:nowrap">'+(x.review_date?new Date(x.review_date).toLocaleDateString('en-GB'):'—')+(isReviewDue?'<div style="font-size:10px;color:#A32D2D;font-weight:800">REVIEW DUE</div>':'')+'</td>'
+      +'<td style="padding:9px"><button class="btn btn-sm" onclick="event.stopPropagation();raOpen(\''+x.id+'\')"><i class="ti ti-edit"></i></button></td>'
+      +'</tr>';
+  });
+  el.innerHTML=h+'</tbody></table></div>';
+}
+
 function raRenderJSAList(){
   var el=document.getElementById('ra-jsa-list');if(!el)return;
   if(!raAllJSA.length){
@@ -11787,29 +11826,30 @@ function raRenderJSAList(){
       +'</div>';
     return;
   }
-  var h='<div style="display:flex;flex-direction:column;gap:10px">';
+  var h='<div style="overflow:auto"><table style="width:100%;min-width:980px;border-collapse:collapse;font-size:12px">'
+    +'<thead><tr style="background:#1a3a5c;color:#fff">'
+    +'<th style="padding:10px 12px;color:#fff;text-align:left">Ref</th>'
+    +'<th style="padding:10px;color:#fff;text-align:left">Title / Job</th>'
+    +'<th style="padding:10px;color:#fff;text-align:left">Location</th>'
+    +'<th style="padding:10px;color:#fff;text-align:left">Prepared by</th>'
+    +'<th style="padding:10px;color:#fff;text-align:center">Steps</th>'
+    +'<th style="padding:10px;color:#fff;text-align:center">Status</th>'
+    +'<th style="padding:10px;color:#fff;width:54px"></th>'
+    +'</tr></thead><tbody>';
   raAllJSA.forEach(function(x){
     var sc=x.status==='active'?['#EAF3DE','#3B6D11','Active']:x.status==='superseded'?['#f3f4f6','#6B7280','Superseded']:['#FEF9EC','#854F0B','Draft'];
     var steps=x.steps||[];
-    h+='<div class="card" style="padding:0;overflow:hidden;cursor:pointer" data-id="'+x.id+'" onclick="jsaEdit(this.dataset.id)" onmouseover="this.style.boxShadow=\'0 4px 16px rgba(0,0,0,.08)\'" onmouseout="this.style.boxShadow=\'\'">'
-      +'<div style="display:flex;align-items:center;gap:14px;padding:12px 16px">'
-      +'<div style="width:42px;height:42px;border-radius:10px;background:#F5F3FF;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0">🔧</div>'
-      +'<div style="flex:1">'
-      +'<div style="display:flex;align-items:center;gap:8px;margin-bottom:3px">'
-      +'<span style="font-family:monospace;font-size:11px;font-weight:700;color:#6D28D9">'+escH(x.jsa_ref||'DRAFT')+'</span>'
-      +(x.revision&&x.revision>1?'<span style="background:#f3f4f6;color:#6B7280;padding:1px 6px;border-radius:4px;font-size:10px">Rev '+x.revision+'</span>':'')
-      +'</div>'
-      +'<div style="font-weight:700;font-size:14px">'+escH(x.title||'Untitled JSA')+'</div>'
-      +'<div style="font-size:12px;color:var(--text2);display:flex;gap:12px;flex-wrap:wrap;margin-top:3px">'
-      +(x.location?'<span><i class="ti ti-map-pin" style="font-size:10px"></i> '+escH(x.location)+'</span>':'')
-      +(x.prepared_by?'<span><i class="ti ti-user" style="font-size:10px"></i> '+escH(x.prepared_by)+'</span>':'')
-      +'<span>'+steps.length+' step'+(steps.length!==1?'s':'')+'</span>'
-      +'</div></div>'
-      +'<span style="background:'+sc[0]+';color:'+sc[1]+';padding:2px 9px;border-radius:99px;font-size:11px;font-weight:700">'+sc[2]+'</span>'
-      +'<i class="ti ti-chevron-right" style="color:var(--text3)"></i>'
-      +'</div></div>';
+    h+='<tr style="border-bottom:1px solid #eef2f7;cursor:pointer" data-id="'+x.id+'" onclick="jsaEdit(this.dataset.id)">'
+      +'<td style="padding:9px 12px;font-family:monospace;font-weight:800;color:#6D28D9">'+escH(x.jsa_ref||'DRAFT')+(x.revision&&x.revision>1?'<div style="font-size:10px;color:var(--text2)">Rev '+escH(x.revision)+'</div>':'')+'</td>'
+      +'<td style="padding:9px;min-width:260px"><div style="font-weight:800">'+escH(x.title||'Untitled JSA')+'</div><div style="font-size:11px;color:var(--text2)">'+escH(x.scope||x.description||'').substring(0,90)+'</div></td>'
+      +'<td style="padding:9px">'+escH(x.location||'—')+'</td>'
+      +'<td style="padding:9px">'+escH(x.prepared_by||'—')+'</td>'
+      +'<td style="padding:9px;text-align:center;font-weight:800">'+steps.length+'</td>'
+      +'<td style="padding:9px;text-align:center"><span style="background:'+sc[0]+';color:'+sc[1]+';padding:2px 9px;border-radius:99px;font-size:11px;font-weight:800">'+sc[2]+'</span></td>'
+      +'<td style="padding:9px"><button class="btn btn-sm" onclick="event.stopPropagation();jsaEdit(\''+x.id+'\')"><i class="ti ti-edit"></i></button></td>'
+      +'</tr>';
   });
-  h+='</div>';
+  h+='</tbody></table></div>';
   el.innerHTML=h;
 }
 
@@ -11824,11 +11864,7 @@ function raRenderHIRAList(){
       +'</div>';
     return;
   }
-  el.innerHTML='<div id="ra-list">'+''+'</div>';
-  // Reuse same list render for filtered HIRAs
-  var saved=raAllData; raAllData=hiras;
-  raFilterList();
-  raAllData=saved;
+  raRenderTableRows(el,hiras,'');
 }
 
 // ===== RA_JS_PART2.JS =====
@@ -11840,6 +11876,25 @@ function raFormTab(tab, btn){
     var el=document.getElementById('ra-ftview-'+t);if(el)el.style.display=t===tab?'block':'none';
   });
   if(tab==='revisions')raLoadRevisions();
+}
+
+async function raLoadPermitOptions(selected){
+  var sel=document.getElementById('ra-linked-permit');if(!sel)return;
+  sel.innerHTML='<option value="">None</option>';
+  try{
+    var d=await api('/permits?select=id,permit_number,permit_type,permit_type_v2,status,work_description'+cf()+'&order=created_at.desc&limit=80');
+    (d||[]).forEach(function(p){
+      var ref=p.permit_number||p.id;
+      var typ=p.permit_type_v2||p.permit_type||'permit';
+      var o=document.createElement('option');
+      o.value=ref;
+      o.textContent=ref+' - '+typ.replace(/_/g,' ')+(p.status?' ('+p.status.replace(/_/g,' ')+')':'');
+      sel.appendChild(o);
+    });
+    if(selected){sel.value=selected;if(sel.value!==selected){var saved=document.createElement('option');saved.value=selected;saved.textContent=selected+' (saved text)';sel.appendChild(saved);sel.value=selected;}}
+  }catch(e){
+    var o=document.createElement('option');o.value='';o.textContent='Unable to load permits';sel.appendChild(o);
+  }
 }
 
 // ── New / Open RA ─────────────────────────────────────────────────────────────
@@ -11886,6 +11941,7 @@ function raNew(type){
       (d||[]).forEach(function(w){var o=document.createElement('option');o.value=w.id;o.textContent=(w.ref_number||'WO')+' — '+w.title;woSel.appendChild(o);});
     });}catch(ex){}
   }
+  raLoadPermitOptions();
   // Show form
   document.getElementById('ra-list-view').style.display='none';
   document.getElementById('ra-new-panel').style.display='none';
@@ -11935,7 +11991,7 @@ function raOpen(id){
   fillPersonSelect('ra-sign-approver',x.ra_sign_approver);gf('ra-sign-approver-date',x.ra_sign_approver_date);
   gf('ra-briefed-persons',x.ra_briefed);
   gf('ra-rams-url',x.rams_document_url);gf('ra-rams-name',x.rams_document_name);
-  gf('ra-linked-permit',x.permit_ref||x.permit_id);
+  raLoadPermitOptions(x.permit_ref||x.permit_id);
   gf('ra-job-seg',x.job_segment||x.ra_job_seg);
   gf('ra-rejection-reason',x.rejection_reason);
   gf('ra-rev-notes',x.revision_notes);
@@ -12170,11 +12226,24 @@ function raCollectRows(){
   });
 }
 
+function raRowHasContent(r){
+  return !!((r.hazard||r.task||r.condition||'').trim()||(r.harm||r.observed_risk||'').trim()||(r.controls||'').trim());
+}
+
 // ===== RA_JS_PART3.JS =====
 // ── Save RA ───────────────────────────────────────────────────────────────────
 async function raSave(targetStatus){
   var g=function(id){var el=document.getElementById(id);return el?el.value||null:null;};
-  var rows=raCollectRows();
+  var rows=raCollectRows().filter(raRowHasContent);
+  var status=targetStatus||g('ra-status-sel')||'draft';
+  if(status!=='draft'){
+    if(!(g('ra-title')||g('ra-activity')))return toast('Please enter an RA title or activity before submitting',false);
+    if(!g('ra-assessed-by'))return toast('Please select the assessor before submitting',false);
+    if(!g('ra-date'))return toast('Please enter the assessment date before submitting',false);
+    if(!g('ra-review-date'))return toast('Please enter the review date before submitting',false);
+    if(!rows.length)return toast('Please add at least one hazard/control row before submitting',false);
+  }
+  if(g('ra-date')&&g('ra-review-date')&&new Date(g('ra-review-date'))<new Date(g('ra-date')))return toast('Review date cannot be before assessment date',false);
   // Calculate overall risk
   var maxRR=0;var maxLvl='Low';
   rows.forEach(function(r){
@@ -12206,7 +12275,7 @@ async function raSave(targetStatus){
     legal_refs:raLegalRefs,
     rows:rows,baseline_rows:rows,
     overall_risk_level:maxLvl,overall_risk_score:maxRR,
-    status:targetStatus||g('ra-status-sel')||'draft',
+    status:status,
     revision:raCurrentRevision,
     updated_at:new Date().toISOString()
   };
@@ -31613,7 +31682,7 @@ function fireEquipStatusBadge(s) {
 <div class="card" style="margin-bottom:14px;border:2px solid #185FA5">
 <div class="card-title" style="color:#185FA5"><i class="ti ti-link"></i> Site &amp; Document Links</div>
 <div class="form-group"><label class="form-label">Linked work order</label><select id="ra-linked-wo"><option value="">None</option></select></div>
-<div class="form-group"><label class="form-label">Linked permit ref</label><input type="text" id="ra-linked-permit" style="font-family:monospace"/></div>
+<div class="form-group"><label class="form-label">Linked permit ref</label><select id="ra-linked-permit" style="font-family:monospace"><option value="">None</option></select></div>
 <div class="form-group"><label class="form-label">Related job segment</label><input type="text" id="ra-job-seg" placeholder="e.g. Phase 2, Zone B..."/></div>
 </div>
 <!-- AI Assist -->
