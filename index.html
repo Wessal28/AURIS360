@@ -9485,10 +9485,10 @@ function wsOpenPreStart(){
       setTimeout(function(){
         var act=document.getElementById('ps-activity');if(act)act.value=x.title||'';
         var loc=document.getElementById('ps-location');if(loc)loc.value=x.location||'';
-        var ra=document.getElementById('ps-ra-ref');if(ra)ra.value=x.ra_ref||'';
+        if(x.ra_ref)fillRiskAssessmentSelect('ps-ra-ref',x.ra_ref);
         var ptw=document.getElementById('ps-ptw-ref');if(ptw)ptw.value=x.permit_ref||'';
         var tm=document.getElementById('ps-team');if(tm)tm.value=x.team_members||'';
-        var sup=document.getElementById('ps-supervisor');if(sup&&x.supervisor_id)sup.value=x.supervisor_id;
+        if(x.supervisor_id)fillPersonSelect('ps-supervisor',pname(x.supervisor_id));
       },100);
     },150);
   },200);
@@ -23323,7 +23323,11 @@ function auditOpen(id) {
   document.getElementById('audit-priority').value = x.priority||'medium';
   document.getElementById('audit-status').value = x.status||'open';
   // Rebuild checklist from saved items
-  if(x.items) buildChecklist(x.items);
+  if(x.items){
+    window.chkItems=(x.items||[]).map(function(i){return{ca:i.category||'',item:i.item||i.item_name||'',guidance:i.guidance||''};});
+    buildChecklist(x.items);
+  }
+  else auditAutoLoadTemplate(type);
   // Photos
   var photosEl = document.getElementById('audit-photos-list');
   if(photosEl) {
@@ -23503,7 +23507,7 @@ function auditAddFinding() {
     + '<div><label style="font-size:10px;font-weight:600;text-transform:uppercase;color:var(--text2)">Clause / reference</label>'
     + '<input type="text" class="af-clause" placeholder="e.g. 8.1.3, §14..." style="width:100%;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;margin-top:2px"/></div>'
     + '<div><label style="font-size:10px;font-weight:600;text-transform:uppercase;color:var(--text2)">Assigned to</label>'
-    + '<input type="text" class="af-assigned" style="width:100%;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;margin-top:2px"/></div>'
+    + '<select class="af-assigned" style="width:100%;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;margin-top:2px">'+auditPersonOptions('')+'</select></div>'
     + '</div>'
     + '<div style="margin-bottom:6px"><label style="font-size:10px;font-weight:600;text-transform:uppercase;color:var(--text2)">Finding description</label>'
     + '<textarea class="af-desc" style="width:100%;min-height:60px;padding:6px;border:1px solid var(--border);border-radius:6px;font-size:12px;resize:vertical;margin-top:2px" placeholder="Describe the finding / non-conformance..."></textarea></div>'
@@ -23523,12 +23527,16 @@ async function auditSave() {
   var type = document.getElementById('audit-type')?.value||'workplace';
   if(!site){toast('Please enter location / site',false);return;}
   var g=function(id){var el=document.getElementById(id);return el?el.value||null:null;};
+  if(!g('if-date')){toast('Please select inspection date',false);return;}
+  if(!g('if-by')){toast('Please select inspector / auditor',false);return;}
   // Collect checklist items
   var items = (window.chkItems||[]).map(function(c,i){
     var gEl=document.getElementById('cg-'+i); var iEl=document.getElementById('ci-'+i);
     var nEl=document.getElementById('cn-'+i); var oEl=document.getElementById('co-'+i);
-    return{category:c.ca||'',item:c.item||'',result:gEl?.checked?'good':(iEl?.checked?'insufficient':(nEl?.checked?'na':''))};
+    return{category:c.ca||'',item:c.item||'',result:gEl?.checked?'good':(iEl?.checked?'insufficient':(nEl?.checked?'na':'')),observation:oEl?.value?.trim()||''};
   }).filter(function(x){return x.item;});
+  if(!items.length){toast('Please add at least one checklist item',false);return;}
+  if(items.some(function(x){return !x.result;})){toast('Please mark each checklist item as Good, Insufficient, or N/A',false);return;}
   var goodCnt=items.filter(function(x){return x.result==='good';}).length;
   var insufCnt=items.filter(function(x){return x.result==='insufficient';}).length;
   // Collect photos
@@ -23541,6 +23549,8 @@ async function auditSave() {
     var desc=row.querySelector('.ia-desc')?.value?.trim();
     if(desc)actions.push({description:desc,responsible:row.querySelector('.ia-who')?.value||'',target_date:row.querySelector('.ia-due')?.value||null});
   });
+  var incompleteAction = actions.some(function(a){return !a.responsible||!a.target_date;});
+  if(incompleteAction){toast('Please assign every corrective action and select a due date',false);return;}
   // Collect findings
   var findings = [];
   document.querySelectorAll('.audit-finding-row').forEach(function(row){
@@ -23567,8 +23577,11 @@ async function auditSave() {
   };
   try {
     var savedId = auditEditId;
+    var savedRef = '';
     if(auditEditId){
       await api('/inspections?id=eq.'+auditEditId,{m:'PATCH',p:'return=minimal',b:body});
+      var existing = auditAllData.find(function(x){return x.id===auditEditId;});
+      savedRef = existing?.reference_no || auditEditId;
       toast('Inspection updated!');
     } else {
       body.created_by=prof?.id;
@@ -23580,8 +23593,10 @@ async function auditSave() {
                       contractor_audit:'CA',regulatory:'REG',behavioral:'BBO'}[type]||'INS';
         var ref = prefix+'-'+yr+'-'+n;
         await api('/inspections?id=eq.'+res[0].id,{m:'PATCH',p:'return=minimal',b:{reference_no:ref}});
+        body.reference_no = ref;
         toast('Saved! Ref: '+ref);
         savedId=res[0].id; auditEditId=res[0].id;
+        savedRef=ref;
         document.getElementById('audit-form-ref').textContent=ref;
       }
     }
@@ -23594,7 +23609,7 @@ async function auditSave() {
     if(insufCnt>0){allActions.push({description:'Address '+insufCnt+' insufficient item'+(insufCnt>1?'s':'')+' found during inspection: '+(body.site||''),responsible:'',target_date:null});}
     for(var a of allActions){
       if(!a.description)continue;
-      try{await api('/action_tracker',{m:'POST',p:'return=minimal',b:{company_id:ccid(),title:a.description.substring(0,80),description:a.description,source_type:'inspection',source_module:'inspection',source_ref:body.reference_no||savedId?.slice(0,8)||'',priority:'high',status:'open',assigned_to_name:a.responsible||null,target_date:a.target_date||null,created_by:prof?.id}});}catch(ex){}
+      try{await api('/action_tracker',{m:'POST',p:'return=minimal',b:{company_id:ccid(),title:a.description.substring(0,80),description:a.description,source_type:'inspection',source_module:'inspection',source_ref:savedRef||body.reference_no||savedId?.slice(0,8)||'',priority:'high',status:'open',assigned_to_name:a.responsible||null,target_date:a.target_date||null,created_by:prof?.id}});}catch(ex){}
     }
     auditBackToList();
   } catch(e) { toast('Error: '+e.message,false); }
@@ -23605,7 +23620,11 @@ function saveInspection(){auditSave();}  // backward compat
 async function auditDelete() {
   if(!auditEditId)return;
   if(!(await appConfirmDelete('inspection')))return;
-  try{await api('/inspections?id=eq.'+auditEditId,{m:'DELETE'});toast('Deleted!');auditBackToList();}
+  try{
+    var deleted=await api('/inspections?id=eq.'+auditEditId,{m:'DELETE',p:'return=representation'});
+    if(Array.isArray(deleted)&&!deleted.length)throw new Error('Record not found or permission denied');
+    toast('Deleted!');auditBackToList();
+  }
   catch(e){toast(e.message,false);}
 }
 
@@ -23642,8 +23661,8 @@ function updateScore() {
 function inspScore(){updateScore();}  // backward compat
 
 function syncChk(i,t){
-  if(t==='g'){var e=document.getElementById('ci-'+i);if(e)e.checked=false;}
-  else if(t==='i'){var e=document.getElementById('cg-'+i);if(e)e.checked=false;}
+  if(t==='g'){var e=document.getElementById('ci-'+i);if(e)e.checked=false;var n=document.getElementById('cn-'+i);if(n)n.checked=false;}
+  else if(t==='i'){var e=document.getElementById('cg-'+i);if(e)e.checked=false;var n=document.getElementById('cn-'+i);if(n)n.checked=false;}
   else{var eg=document.getElementById('cg-'+i);var ei=document.getElementById('ci-'+i);if(eg)eg.checked=false;if(ei)ei.checked=false;}
   updateScore();
 }
@@ -23653,10 +23672,20 @@ function inspAddAction(){
   var empty=document.getElementById('if-actions-empty'); if(empty)empty.style.display='none';
   body.insertAdjacentHTML('beforeend',inspActionRowHTML({}));
 }
+function auditPersonOptions(selected){
+  var cur=selected||'';
+  var html='<option value="">Select person...</option>';
+  (people||[]).forEach(function(p){
+    var nm=personFullName(p);
+    html+='<option value="'+escH(nm)+'" '+(nm===cur?'selected':'')+'>'+escH([p.last_name,p.first_name].filter(Boolean).join(', ')||nm)+(p.job_title?' -- '+escH(p.job_title):'')+'</option>';
+  });
+  if(cur && !html.includes('value="'+escH(cur)+'"')) html+='<option value="'+escH(cur)+'" selected>'+escH(cur)+' (saved text)</option>';
+  return html;
+}
 function inspActionRowHTML(a){
   return '<div class="if-action-row" style="display:grid;grid-template-columns:3fr 2fr 1fr auto;gap:6px;margin-bottom:6px;align-items:center">'
     +'<input type="text" class="ia-desc" value="'+escH((a.description||''))+'" placeholder="Action description..." style="padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px"/>'
-    +'<input type="text" class="ia-who" value="'+escH((a.responsible||a.assigned_to||''))+'" placeholder="Responsible person..." style="padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px"/>'
+    +'<select class="ia-who" style="padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px">'+auditPersonOptions(a.responsible||a.assigned_to||'')+'</select>'
     +'<input type="date" class="ia-due" value="'+escH((a.target_date||a.due_date||''))+'" style="padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px"/>'
     +'<button class="btn btn-sm" style="color:var(--red)" onclick="this.closest(\'.if-action-row\').remove()"><i class="ti ti-x"></i></button>'
     +'</div>';
@@ -23799,6 +23828,8 @@ function psNew(){
   ['ps-activity','ps-location','ps-supervisor','ps-team','ps-ra-ref','ps-ptw-ref',
    'ps-tbt-topics','ps-decision-notes','ps-sign-name'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
   document.getElementById('ps-date').value=new Date().toISOString().slice(0,16);
+  fillPersonSelect('ps-supervisor', prof?.full_name||personFullName(prof)||'');
+  fillRiskAssessmentSelect('ps-ra-ref','');
   document.getElementById('ps-duration').value='';
   document.getElementById('ps-score').textContent='—';
   document.getElementById('ps-tbt-done').checked=false;
@@ -23835,8 +23866,8 @@ function psOpenData(x){
   gf('ps-activity',x.site||x.activity); gf('ps-location',x.location);
   var dt=x.inspection_date||x.if_date||'';
   gf('ps-date',dt?dt+'T'+(x.inspection_time||'08:00'):new Date().toISOString().slice(0,16));
-  gf('ps-duration',x.duration_hours||''); gf('ps-supervisor',x.inspector||x.supervisor||'');
-  gf('ps-team',x.team_members||''); gf('ps-ra-ref',x.ra_ref||''); gf('ps-ptw-ref',x.ptw_ref||'');
+  gf('ps-duration',x.duration_hours||''); fillPersonSelect('ps-supervisor',x.inspector||x.supervisor||'');
+  gf('ps-team',x.team_members||''); fillRiskAssessmentSelect('ps-ra-ref',x.ra_ref||''); gf('ps-ptw-ref',x.ptw_ref||'');
   gf('ps-tbt-topics',x.tbt_topics||''); gf('ps-decision-notes',x.decision_notes||'');
   gf('ps-sign-name',x.sign_inspector||'');
   if(document.getElementById('ps-sign-datetime'))document.getElementById('ps-sign-datetime').value=x.sign_date||'';
@@ -23845,7 +23876,13 @@ function psOpenData(x){
   var dec=x.decision||'go';
   document.querySelectorAll('input[name="ps-dec"]').forEach(function(r){r.checked=r.value===dec;});
   if(x.items){window.chkItems=(x.items||[]).map(function(i){return{ca:i.category||'',item:i.item||''};});buildChecklist(x.items);}
-  else psNew();
+  else{
+    window.chkItems=AUDIT_DEFAULT_CHECKLISTS.prestart||[
+      {ca:'Equipment',item:'Equipment is in good working condition'},{ca:'Area',item:'Work area is clear of hazards'},
+      {ca:'Personnel',item:'All team members are competent for the task'},{ca:'Documentation',item:'Risk assessment has been reviewed'}
+    ];
+    buildChecklist([]);
+  }
   document.getElementById('ps-list-view').style.display='none';
   document.getElementById('ps-form-view').style.display='block';
 }
@@ -23854,10 +23891,15 @@ async function psSave(){
   var activity=document.getElementById('ps-activity')?.value?.trim();
   if(!activity){toast('Please enter activity / task',false);return;}
   var g=function(id){var el=document.getElementById(id);return el?el.value||null:null;};
+  if(!g('ps-location')){toast('Please enter pre-start location',false);return;}
+  if(!g('ps-date')){toast('Please select pre-start date and time',false);return;}
+  if(!g('ps-supervisor')){toast('Please select supervisor / inspector',false);return;}
   var items=(window.chkItems||[]).map(function(c,i){
     var gEl=document.getElementById('cg-'+i);var iEl=document.getElementById('ci-'+i);var nEl=document.getElementById('cn-'+i);var oEl=document.getElementById('co-'+i);
-    return{category:c.ca||'',item:c.item||'',result:gEl?.checked?'good':(iEl?.checked?'insufficient':(nEl?.checked?'na':''))};
+    return{category:c.ca||'',item:c.item||'',result:gEl?.checked?'good':(iEl?.checked?'insufficient':(nEl?.checked?'na':'')),observation:oEl?.value?.trim()||''};
   }).filter(function(x){return x.item;});
+  if(!items.length){toast('Please add at least one pre-start checklist item',false);return;}
+  if(items.some(function(x){return !x.result;})){toast('Please mark each pre-start checklist item as Good, Insufficient, or N/A',false);return;}
   var goodCnt=items.filter(function(x){return x.result==='good';}).length;
   var insufCnt=items.filter(function(x){return x.result==='insufficient';}).length;
   var dec=document.querySelector('input[name="ps-dec"]:checked')?.value||'go';
@@ -23883,18 +23925,22 @@ async function psSave(){
 async function psDelete(){
   if(!window.psEditId)return;
   if(!(await appConfirmDelete('pre-start inspection')))return;
-  try{await api('/inspections?id=eq.'+window.psEditId,{m:'DELETE'});toast('Deleted!');psShowList();}catch(e){toast(e.message,false);}
+  try{
+    var deleted=await api('/inspections?id=eq.'+window.psEditId,{m:'DELETE',p:'return=representation'});
+    if(Array.isArray(deleted)&&!deleted.length)throw new Error('Record not found or permission denied');
+    toast('Deleted!');psShowList();
+  }catch(e){toast(e.message,false);}
 }
 
 async function psDeleteFromList(id){
   if(!(await appConfirmDelete('pre-start inspection')))return;
-  api('/inspections?id=eq.'+id,{m:'DELETE'}).then(function(){psLoad();toast('Deleted!');}).catch(function(e){toast(e.message,false);});
+  api('/inspections?id=eq.'+id,{m:'DELETE',p:'return=representation'}).then(function(d){if(Array.isArray(d)&&!d.length)throw new Error('Record not found or permission denied');psLoad();toast('Deleted!');}).catch(function(e){toast(e.message,false);});
 }
 
 function psDecisionChange(){}  // handled by radio onchange
 function psBuildChecklist(){buildChecklist([]);}
 function psScore(){updateScore();}
-function psCollectChecklist(){return (window.chkItems||[]).map(function(c,i){return{category:c.ca,item:c.item,result:document.getElementById('cg-'+i)?.checked?'good':(document.getElementById('ci-'+i)?.checked?'insufficient':'na')};});}
+function psCollectChecklist(){return (window.chkItems||[]).map(function(c,i){return{category:c.ca,item:c.item,result:document.getElementById('cg-'+i)?.checked?'good':(document.getElementById('ci-'+i)?.checked?'insufficient':'na'),observation:document.getElementById('co-'+i)?.value||''};});}
 
 // ── Misc backward compat ────────────────────────────────────────────
 function psShowList_alt(){psShowList();}
@@ -31091,7 +31137,7 @@ function fireEquipStatusBadge(s) {
 </div>
 <div style="display:flex;gap:8px" id="insp-header-btns">
 <button class="btn btn-primary" id="insp-new-btn" onclick="auditNew()"><i class="ti ti-plus"></i>New inspection</button>
-<button class="btn btn-sm" onclick="if(typeof auditCurrentId!=='undefined'&&auditCurrentId)printAuditReport(auditCurrentId);else toast('Open an audit first',false)" title="Print PDF"><i class="ti ti-printer"></i>Print PDF</button>
+<button class="btn btn-sm" onclick="if(typeof auditEditId!=='undefined'&&auditEditId)printAuditReport(auditEditId);else toast('Open an audit first',false)" title="Print PDF"><i class="ti ti-printer"></i>Print PDF</button>
 </div>
 </div>
 
@@ -31174,11 +31220,11 @@ function fireEquipStatusBadge(s) {
 </div>
 <div class="form-row">
 <div class="form-group"><label class="form-label">Duration (hrs)</label><input type="number" id="ps-duration" min="0.5" step="0.5"/></div>
-<div class="form-group"><label class="form-label">Supervisor</label><input type="text" id="ps-supervisor"/></div>
+<div class="form-group"><label class="form-label">Supervisor</label><select id="ps-supervisor"><option value="">Select person...</option></select></div>
 <div class="form-group"><label class="form-label">Team members</label><input type="text" id="ps-team" placeholder="Names of team..."/></div>
 </div>
 <div class="form-row">
-<div class="form-group"><label class="form-label">Risk assessment ref</label><input type="text" id="ps-ra-ref" style="font-family:monospace"/></div>
+<div class="form-group"><label class="form-label">Risk assessment ref</label><select id="ps-ra-ref" style="font-family:monospace"><option value="">Select risk assessment...</option></select></div>
 <div class="form-group"><label class="form-label">Permit to Work ref</label><input type="text" id="ps-ptw-ref" style="font-family:monospace"/></div>
 </div>
 </div>
