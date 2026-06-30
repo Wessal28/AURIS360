@@ -2521,16 +2521,35 @@ async function obsSave() {
         // Auto-create MAP action for critical/high unsafe
         if (['critical','high'].includes(body.severity) && body.action_required && body.action_description) {
           try {
+            var assignedPerson = personByDisplayName(body.action_assigned_to);
             await api('/action_tracker', {m:'POST',p:'return=minimal',b:{
               company_id: ccid(),
               title: 'Observation action: '+body.action_description.substring(0,60),
               description: body.action_description,
-              source_type: 'observation', source_module: 'observation', source_ref: ref,
+              source_type: 'observation', source_module: 'observation', source_id: savedObsId, source_ref: ref,
+              action_type: 'corrective',
               priority: body.severity, status: 'open',
+              location: body.location||null,
+              department: body.department||body.observer_dept||null,
+              assigned_to_id: assignedPerson?.id||null,
               assigned_to_name: body.action_assigned_to||null,
+              responsible: body.action_assigned_to||null,
               target_date: body.action_due_date||null,
               created_by: prof?.id
             }});
+            if(assignedPerson?.email){
+              try{
+                await api('/notification_queue',{m:'POST',p:'return=minimal',b:{
+                  company_id:ccid(),type:'bbs_action_assigned',
+                  subject:'BBS action assigned - '+ref,
+                  body_html:'<div style="font-family:Arial,sans-serif;padding:20px"><h2 style="color:#1D9E75;margin:0 0 12px">AURIS360 BBS Action</h2><p>A follow-up action has been assigned to you from a safety observation.</p><p><strong>Reference:</strong> '+escH(ref)+'</p><p><strong>Location:</strong> '+escH(body.location||'')+'</p><p><strong>Action:</strong> '+escH(body.action_description)+'</p><p><strong>Due date:</strong> '+escH(body.action_due_date||'Not set')+'</p></div>',
+                  to_email:assignedPerson.email,to_name:personFullName(assignedPerson),
+                  from_name:'AURIS360 by SEPHS Consulting',
+                  related_table:'safety_observations',related_id:savedObsId,status:'pending'
+                }});
+              }catch(mailEx){}
+            }
+            toast('Observation saved! Ref: '+ref+' - action added to MAP');
           } catch(ex) {}
         }
       }
@@ -3523,6 +3542,16 @@ function personFullName(p){
 }
 function trainPersonByName(name){
   return (people||[]).find(function(p){return personFullName(p)===name;});
+}
+function personByDisplayName(name){
+  var needle=String(name||'').trim().toLowerCase();
+  if(!needle)return null;
+  return (people||[]).find(function(p){
+    var full=personFullName(p).toLowerCase();
+    var reverse=[p.last_name,p.first_name].filter(Boolean).join(', ').toLowerCase();
+    var email=String(p.email||'').toLowerCase();
+    return needle===full||needle===reverse||needle===email;
+  })||null;
 }
 function tfPersonSelect(){
   var id=document.getElementById('tfr-person')?.value||'';
