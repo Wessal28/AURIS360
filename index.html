@@ -14086,7 +14086,10 @@ function ptwSetView(view){
     var el=document.getElementById(id);if(el)el.style.display='none';
   });
   var el=document.getElementById('ptw-'+view+'-view')||document.getElementById('ptw-'+view+'-panel');
-  if(el)el.style.display='block';
+  if(el){
+    el.style.display='block';
+    if(view!=='list')setTimeout(function(){try{el.scrollIntoView({block:'start',behavior:'smooth'});}catch(e){}},50);
+  }
 }
 
 function ptwFilterSet(filter, btn){
@@ -18837,7 +18840,7 @@ function toolsSwitchTab(tab,btn){
 async function loadTools(){
   var addBtn=document.getElementById('tools-add-btn');
   if(addBtn)addBtn.style.display=isMgr()?'inline-flex':'none';
-  var inspBtn=document.getElementById('insp-new-btn');
+  var inspBtn=document.getElementById('tools-insp-new-btn');
   if(inspBtn)inspBtn.style.display=isMgr()?'inline-flex':'none';
   var vehBtn=document.getElementById('veh-insp-btn');
   if(vehBtn)vehBtn.style.display=isMgr()?'inline-flex':'none';
@@ -34077,7 +34080,7 @@ function fireEquipStatusBadge(s) {
 <div class="card" style="margin-bottom:12px;padding:10px 14px">
 <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
 <div class="card-title" style="margin:0">Recent Inspections</div>
-<button class="btn btn-primary" id="insp-new-btn" style="display:none" onclick="toolsNewInspection()"><i class="ti ti-plus"></i>New inspection</button>
+<button class="btn btn-primary" id="tools-insp-new-btn" style="display:none" onclick="toolsNewInspection()"><i class="ti ti-plus"></i>New inspection</button>
 </div>
 </div>
 <div id="tools-insp-list"><div class="loading-msg">Loading...</div></div>
