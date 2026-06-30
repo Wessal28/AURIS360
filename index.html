@@ -5024,14 +5024,11 @@ let aiOpen=false,aiHist=[];
 function toggleAI(){aiOpen=!aiOpen;document.getElementById('ai-window').className='ai-window'+(aiOpen?' open':'');}
 const SYS='You are AURIS, an expert HSE AI assistant for AURIS360 by SEPHS Consulting (Mauritius). Analyse real HSE data and give specific, actionable recommendations. Be concise and professional.';
 // ── AI configuration ──────────────────────────────────────────────────────────
-// Direct browser-to-Anthropic calls don't work — the Anthropic API requires
-// an API key, and exposing one client-side is insecure. For production AI,
-// set AI_PROXY_URL to a Supabase Edge Function (or any backend) that holds
-// the key. Until then, AI features show a friendly "configure proxy" message
-// rather than failing with cryptic network errors.
+// Direct browser-to-AI-provider calls do not work safely because provider API
+// keys must stay server-side. All AURIS AI calls go through /api/ai, where the
+// provider is selected by Vercel environment variables.
 const AI_PROXY_URL = '/api/ai';
-const ANTHROPIC_URL = AI_PROXY_URL || 'https://api.anthropic.com/v1/messages';
-const CLAUDE_MODEL = 'claude-sonnet-4-20250514';
+const AI_URL = AI_PROXY_URL || '/api/ai';
 const AI_AVAILABLE = !!AI_PROXY_URL;
 
 function applyAIAvailability() {
@@ -5057,7 +5054,7 @@ function applyAIAvailability() {
 }
 window.addEventListener('load', applyAIAvailability);
 
-// Global guard for direct Anthropic fetches. When AI is not configured, every
+// Global guard for old direct provider fetches. When AI is not configured, every
 // fetch to api.anthropic.com is intercepted and returns a synthetic error
 // response so the calling code can handle it gracefully with try/catch.
 (function() {
@@ -5109,17 +5106,16 @@ var aiRamsHistory = [];
 var aiCurrentTab = 'insights';
 
 // ── Real callAI implementation ────────────────────────────────────────────────
-// Replaces the stub with actual Anthropic API calls
+// Replaces the stub with secure backend AI calls.
 async function callAI(msgs, systemOverride) {
   if(!AI_AVAILABLE) {
     throw new Error('AI features require a backend proxy. Ask your administrator to configure AI_PROXY_URL in Settings → AI Setup.');
   }
   var sys = systemOverride || SYS;
-  var response = await fetch(ANTHROPIC_URL, {
+  var response = await fetch(AI_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + (tok || '') },
     body: JSON.stringify({
-      model: CLAUDE_MODEL || 'claude-sonnet-4-20250514',
       max_tokens: 2000,
       system: sys,
       messages: msgs
@@ -5194,7 +5190,7 @@ async function genFullAI() {
     contentEl.innerHTML = '<div style="padding:20px;background:#FCEBEB;border-radius:10px;border:1px solid #fecaca">'
       + '<div style="font-weight:700;color:#DC2626;margin-bottom:8px">⚠️ AI analysis unavailable</div>'
       + '<div style="font-size:12px;color:#991B1B">'+escH(e.message)+'</div>'
-      + '<div style="margin-top:10px;font-size:12px;color:var(--text2)">Ensure ANTHROPIC_URL and CLAUDE_MODEL are configured correctly.</div>'
+      + '<div style="margin-top:10px;font-size:12px;color:var(--text2)">Ensure the AI provider environment variables are configured correctly.</div>'
       + '</div>';
   }
 }
@@ -7073,7 +7069,7 @@ async function sopGenerate(){
   var taskIntro='Generate a complete SOP for the following task:\n\nTitle: '+title+'\nDepartment: '+dept+'\nRisk Level: '+risk+'\nDescription: '+desc+'\nPPE Required: '+allPPE+'\n\nBelow are the video frames with narrations from the person demonstrating the task:';
   var userContent=[{type:'text',text:taskIntro}].concat(stepsContent).concat([{type:'text',text:'Write a professional, detailed SOP. Each step should align with the frame image and narration provided. Include all safety warnings. Be specific and practical.'}]);
 
-  setStatus(30,'Sending to Claude AI...');
+  setStatus(30,'Sending to AURIS AI...');
 
   try{
     var response=await fetch('https://api.anthropic.com/v1/messages',{
@@ -38383,7 +38379,7 @@ function fireEquipStatusBadge(s) {
 <div class="card" style="margin-bottom:12px;text-align:center;padding:30px" id="sop-generate-panel">
 <div style="font-size:40px;margin-bottom:12px">🤖</div>
 <div style="font-size:16px;font-weight:700;margin-bottom:8px">Ready to generate your SOP</div>
-<div style="font-size:13px;color:var(--text2);margin-bottom:20px;max-width:500px;margin-left:auto;margin-right:auto">Claude AI will analyse your frames and narration to produce a complete, professional SOP document with embedded screenshots</div>
+<div style="font-size:13px;color:var(--text2);margin-bottom:20px;max-width:500px;margin-left:auto;margin-right:auto">AURIS AI will analyse your frames and narration to produce a complete, professional SOP document with embedded screenshots</div>
 <div id="sop-gen-summary" style="background:#f9fafb;border:1px solid var(--border);border-radius:8px;padding:14px;margin-bottom:20px;text-align:left;font-size:13px;max-width:500px;margin-left:auto;margin-right:auto"></div>
 <button class="btn btn-primary" style="font-size:15px;padding:12px 32px" onclick="sopGenerate()" id="sop-gen-btn"><i class="ti ti-sparkles"></i>Generate SOP with AI</button>
 <div id="sop-gen-progress" style="display:none;margin-top:16px">
@@ -39596,7 +39592,7 @@ Pick the modules this client can see. Sephs admin (you) always sees everything r
 <div class="page-header">
 <div>
 <div class="page-title">AURIS AI — Intelligent Safety</div>
-<div style="font-size:12px;color:var(--text2)" id="ai-insights-date">Powered by Claude claude-sonnet-4 · Real HSE data · Instant analysis</div>
+<div style="font-size:12px;color:var(--text2)" id="ai-insights-date">Powered by AURIS AI · Real HSE data · Instant analysis</div>
 </div>
 <div style="display:flex;gap:8px;align-items:center">
 <button class="btn btn-sm" onclick="genFullAI()"><i class="ti ti-refresh"></i>Refresh analysis</button>
@@ -39613,7 +39609,7 @@ Pick the modules this client can see. Sephs admin (you) always sees everything r
 </div>
 <div style="display:flex;gap:6px;flex-wrap:wrap">
 <span style="background:rgba(29,158,117,.2);color:#34d399;padding:3px 10px;border-radius:99px;font-size:11px;font-weight:700;border:1px solid rgba(29,158,117,.3)">● Live data</span>
-<span style="background:rgba(24,95,165,.2);color:#60a5fa;padding:3px 10px;border-radius:99px;font-size:11px;font-weight:700;border:1px solid rgba(24,95,165,.3)">Claude claude-sonnet-4</span>
+<span style="background:rgba(24,95,165,.2);color:#60a5fa;padding:3px 10px;border-radius:99px;font-size:11px;font-weight:700;border:1px solid rgba(24,95,165,.3)">AURIS AI</span>
 </div>
 </div>
 
@@ -39876,7 +39872,7 @@ Pick the modules this client can see. Sephs admin (you) always sees everything r
 <div class="card" style="height:480px;display:flex;flex-direction:column;padding:0;overflow:hidden">
 <div style="padding:12px 16px;background:linear-gradient(135deg,#0d1b2a,#1a3a5c);color:#fff;display:flex;align-items:center;gap:10px;flex-shrink:0">
 <div style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,#185FA5,#5B21B6);display:flex;align-items:center;justify-content:center;font-size:16px">🤖</div>
-<div><div style="font-weight:700;font-size:13px">AURIS — HSE AI Assistant</div><div style="font-size:10px;opacity:.7">Powered by Claude claude-sonnet-4 · Live data</div></div>
+<div><div style="font-weight:700;font-size:13px">AURIS — HSE AI Assistant</div><div style="font-size:10px;opacity:.7">Powered by AURIS AI · Live data</div></div>
 </div>
 <div id="ai-chat-messages" style="flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:10px">
 <div style="background:#EFF6FF;border-radius:12px 12px 12px 2px;padding:12px 14px;max-width:80%;font-size:13px;line-height:1.6;color:#1a1a1a">
@@ -40130,7 +40126,7 @@ I can help you:<br>
 </div>
 </div>
 </div>
-<div class="ai-panel" id="ai-panel" style="display:none"><div class="ai-window" id="ai-window"><div class="ai-header"><div style="width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;font-size:18px"><i class="ti ti-brain" style="color:#fff"></i></div><div style="font-size:11px;color:rgba(255,255,255,.8)">Powered by Claude AI</div><button class="ai-close" onclick="document.getElementById('ai-window').classList.remove('open')"><i class="ti ti-x"></i></button></div><div class="ai-messages" id="ai-messages"></div><div class="ai-suggestions" id="ai-suggestions"></div><div class="ai-input-row"><input type="text" class="ai-input" id="ai-input" placeholder="Ask about HSE performance..." onkeydown="if(event.key==='Enter')sendAIMsg()"/><button class="ai-send" onclick="sendAIMsg()">Send</button></div></div><button class="ai-toggle" onclick="document.getElementById('ai-window').classList.toggle('open')"><i class="ti ti-brain"></i></button></div>
+<div class="ai-panel" id="ai-panel" style="display:none"><div class="ai-window" id="ai-window"><div class="ai-header"><div style="width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;font-size:18px"><i class="ti ti-brain" style="color:#fff"></i></div><div style="font-size:11px;color:rgba(255,255,255,.8)">Powered by AURIS AI</div><button class="ai-close" onclick="document.getElementById('ai-window').classList.remove('open')"><i class="ti ti-x"></i></button></div><div class="ai-messages" id="ai-messages"></div><div class="ai-suggestions" id="ai-suggestions"></div><div class="ai-input-row"><input type="text" class="ai-input" id="ai-input" placeholder="Ask about HSE performance..." onkeydown="if(event.key==='Enter')sendAIMsg()"/><button class="ai-send" onclick="sendAIMsg()">Send</button></div></div><button class="ai-toggle" onclick="document.getElementById('ai-window').classList.toggle('open')"><i class="ti ti-brain"></i></button></div>
 <div class="toast" id="toast">
 
 <!-- NOTIFICATIONS TAB CONTENT -->
