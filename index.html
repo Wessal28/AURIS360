@@ -4058,6 +4058,7 @@ async function dashRenderPersonal(events, actions, people, permits, training) {
   var myReports = (events||[]).filter(function(x){
     return x.reported_by_id === prof.id 
         || (x.reported_by && (x.reported_by===prof.email || x.reported_by===prof.full_name))
+        || (x.reported_by_name && x.reported_by_name===prof.full_name)
         || x.created_by === prof.id;
   }).slice(0, 5);
   renderPersonalList('dp-my-reports', myReports, function(x){
@@ -4072,17 +4073,18 @@ async function dashRenderPersonal(events, actions, people, permits, training) {
   // 4. My Observations — BBS observations
   var myObsRaw = await (async function(){
     try {
-      return await api('/observations?select=*'+cf()+'&order=created_at.desc&limit=20');
+      return await api('/safety_observations?select=*'+cf()+'&order=created_at.desc&limit=20');
     } catch(e) { return []; }
   })();
   var myObs = (myObsRaw||[]).filter(function(x){
     return x.observer_id === prof.id 
         || (x.observer && (x.observer===prof.email || x.observer===prof.full_name))
+        || (x.observer_name && x.observer_name===prof.full_name)
         || x.created_by === prof.id;
   }).slice(0, 5);
   renderPersonalList('dp-my-observations', myObs, function(x){
     return {
-      title: x.unsafe_act || x.observation || x.behavior || 'Observation',
+      title: x.observation_text || x.positive_points || x.unsafe_act_description || x.unsafe_condition_description || 'Observation',
       meta: (x.observation_date||x.created_at||'').slice(0,10) + ' · ' + (x.category||'general'),
       status: x.status==='closed' ? 'closed' : 'open',
       statusLabel: x.status==='closed' ? 'Closed' : 'Logged',
