@@ -7188,6 +7188,7 @@ async function sopSaveDocument(){
   try{
     var sopRows=await api('/sop_documents',{m:'POST',p:'return=representation',b:body});
     var sopId=sopRows?.[0]?.id||null;
+    var sopReviewDate=meta.reviewDate||new Date(new Date().setFullYear(new Date().getFullYear()+1)).toISOString().slice(0,10);
     var docBody={
       company_id:ccid(),
       title:meta.title,
@@ -7203,7 +7204,7 @@ async function sopSaveDocument(){
       doc_version:meta.version||'Rev 00',
       issue_date:today,
       effective_date:today,
-      review_date:meta.reviewDate||null,
+      review_date:sopReviewDate,
       review_interval_months:12,
       controlled_copy:true,
       is_controlled:true,
@@ -20392,6 +20393,47 @@ const DC_STATUS_CFG={
 };
 
 // ── Entry ─────────────────────────────────────────────────────────────────────
+function dcDocumentDueState(x){
+  var now=new Date();
+  var reviewDate=x.review_date?new Date(x.review_date):null;
+  var expiryDate=x.expiry_date?new Date(x.expiry_date):null;
+  var reviewOverdue=reviewDate&&reviewDate<now;
+  var expiryOverdue=expiryDate&&expiryDate<now;
+  var target=reviewDate&&expiryDate?new Date(Math.min(reviewDate,expiryDate)):reviewDate||expiryDate||null;
+  return {
+    due:!!(reviewOverdue||expiryOverdue),
+    reviewOverdue:reviewOverdue,
+    expiryOverdue:expiryOverdue,
+    targetDate:target?target.toISOString().slice(0,10):null,
+    reason:expiryOverdue?'expired':reviewOverdue?'review overdue':''
+  };
+}
+
+async function dcEnsureDocumentMapActions(docs){
+  var due=(docs||[]).filter(function(x){
+    return (x.approval_status||x.status)==='approved'&&dcDocumentDueState(x).due;
+  }).slice(0,20);
+  for(var i=0;i<due.length;i++){
+    var x=due[i], state=dcDocumentDueState(x);
+    try{
+      var existing=await api('/action_tracker?select=id&source_module=eq.documents&source_id=eq.'+x.id+'&status=neq.closed'+cf()+'&limit=1');
+      if(existing&&existing.length)continue;
+      await api('/action_tracker',{m:'POST',p:'return=minimal',b:{
+        company_id:ccid(),
+        source_module:'documents',
+        source_id:x.id,
+        source_ref:(x.doc_ref||x.reference_no||'Document')+' - '+(state.reason||'review'),
+        description:'Document control follow-up required: '+(x.title||'Untitled document')+' is '+state.reason+'. Review, update, supersede, or withdraw the document.',
+        responsible:x.owner||x.doc_owner||null,
+        target_date:state.targetDate,
+        priority:state.expiryOverdue?'high':'medium',
+        status:'open',
+        created_by:prof?.id
+      }});
+    }catch(ex){console.warn('Document MAP action failed',ex);}
+  }
+}
+
 async function loadDocs(){
   var btn=document.getElementById('dc-new-btn');
   if(btn)btn.style.display=isMgr()?'inline-flex':'none';
@@ -20444,6 +20486,7 @@ async function dcLoadList(){
     setM('dc-m-review',reviewDue);
     var expired=(d||[]).filter(x=>{var ed=x.expiry_date;return ed&&new Date(ed)<now;}).length;
     setM('dc-m-expired',expired);
+    dcEnsureDocumentMapActions(d||[]);
     // Populate dept filter
     var depts=new Set((d||[]).map(x=>x.department||x.dept).filter(Boolean));
     var deptSel=document.getElementById('dc-filter-dept');
@@ -21062,7 +21105,7 @@ async function dcApprove(){
   if(!dcEditingId)return;
   var appSel=document.getElementById('dc-sign-approver');var appId=appSel?.value||null;
   var appName='';if(appId){var ap=(people||[]).find(x=>x.id===appId);appName=ap?(ap.last_name+', '+ap.first_name):prof?.full_name||'Approver';}
-  var body={approval_status:'approved',status:'approved',approved_at:new Date().toISOString(),approved_at:new Date().toISOString(),approver:appName||null,approver_id:appId||null,last_reviewed_date:new Date().toISOString().slice(0,10),updated_at:new Date().toISOString()};
+  var body={approval_status:'approved',status:'approved',approved_at:new Date().toISOString(),approver:appName||null,approver_id:appId||null,last_reviewed_date:new Date().toISOString().slice(0,10),updated_at:new Date().toISOString()};
   if(!document.getElementById('df-effective')?.value){body.effective_date=new Date().toISOString().slice(0,10);}
   try{
     await api('/documents?id=eq.'+dcEditingId,{m:'PATCH',p:'return=minimal',b:body});
