@@ -6672,6 +6672,9 @@ async function chemSave(){
   var reviewDate=g('chem-review');
   if(!reviewDate){var d=new Date();d.setFullYear(d.getFullYear()+1);reviewDate=d.toISOString().slice(0,10);}
   var body={company_id:ccid(),product_name:product,supplier:g('chem-supplier'),manufacturer:g('chem-manufacturer'),sds_file_name:g('chem-sds-file'),sds_revision_date:g('chem-sds-date')||null,signal_word:g('chem-signal'),hazard_identification:g('chem-hazards'),hazard_statements:chemSplitList(g('chem-hcodes')),hazard_pictograms:chemHazardPictogramPayload(g),exposure_routes:chemSplitList(g('chem-routes')),exposure_consequences:g('chem-consequences'),first_aid:g('chem-firstaid'),handling_storage:g('chem-handling'),ppe_required:g('chem-ppe'),location:g('chem-location'),department:g('chem-dept'),process_use:g('chem-use'),quantity_stored:g('chem-qty'),persons_exposed:parseInt(g('chem-persons'))||0,exposure_frequency:g('chem-frequency')||'occasional',exposure_duration:g('chem-duration')||'short',task_type:g('chem-task')||'closed_handling',existing_controls:g('chem-controls'),risk_score:r.score,risk_level:r.level,recommendations:g('chem-recommendations'),status:g('chem-status')||'active',review_date:reviewDate,updated_at:new Date().toISOString()};
+  var previous=chemEditId?(chemData.find(function(x){return x.id===chemEditId;})||{}):{};
+  var shouldCreateAction=['high','critical'].includes(r.level)&&previous.risk_level!==r.level;
+  var savedChemId=null, savedChemRef=null;
   try{
     if(chemEditId){
       var updateBody=Object.assign({},body);
@@ -6681,13 +6684,29 @@ async function chemSave(){
       var original=chemData.find(function(x){return x.id===chemEditId;})||{};
       var saved=Object.assign({},original,updateBody,updated?.[0]||{});
       chemData=chemData.map(function(x){return x.id===chemEditId?saved:x;});
+      savedChemId=chemEditId;
+      savedChemRef=saved.chemical_ref||saved.id?.slice(0,8)||product;
       toast('Chemical updated');
     }
     else{
       body.created_by=prof?.id;
       var res=await api('/chemical_register',{m:'POST',p:'return=representation',b:body});
-      if(res?.[0]?.id){await api('/chemical_register?id=eq.'+res[0].id,{m:'PATCH',p:'return=minimal',b:{chemical_ref:'CHEM-'+String(chemData.length+1).padStart(3,'0')}});}
+      if(res?.[0]?.id){
+        var ref='CHEM-'+String(chemData.length+1).padStart(3,'0');
+        await api('/chemical_register?id=eq.'+res[0].id,{m:'PATCH',p:'return=minimal',b:{chemical_ref:ref}});
+        savedChemId=res[0].id;
+        savedChemRef=ref;
+      }
       toast('Chemical saved');
+    }
+    if(shouldCreateAction){
+      try{
+        await api('/action_tracker',{m:'POST',p:'return=minimal',b:{
+          company_id:ccid(),source_module:'chemical',source_id:savedChemId,source_ref:savedChemRef||product,
+          description:'Review chemical exposure controls for '+product+' ('+r.level+' risk). '+(g('chem-recommendations')||g('chem-controls')||'Confirm controls, PPE, storage, training and exposure monitoring.'),
+          priority:r.level==='critical'?'critical':'high',status:'open',created_by:prof?.id
+        }});
+      }catch(ex){console.warn('Chemical MAP action failed',ex);}
     }
     chemBack();
   }catch(e){toast('Save failed: '+e.message,false);}
@@ -12011,8 +12030,10 @@ const HAZARD_CATEGORIES=['Physical','Mechanical','Electrical','Chemical','Biolog
 // ── Entry Point ───────────────────────────────────────────────────────────────
 async function loadRA(){
   var btn=document.getElementById('risk-add-btn');
-  if(btn&&isMgr())document.getElementById('ra-new-main-btn').style.display='inline-flex';
-  if(btn&&!isMgr())document.getElementById('ra-lib-btn').style.display='none';
+  var newBtn=document.getElementById('ra-new-main-btn');
+  var libBtn=document.getElementById('ra-lib-btn');
+  if(newBtn)newBtn.style.display=isMgr()?'inline-flex':'none';
+  if(libBtn)libBtn.style.display=isMgr()?'inline-flex':'none';
   var importBtn=document.getElementById('ra-import-pdf-btn');
   if(importBtn)importBtn.style.display=isMgr()?'inline-flex':'none';
   raShowList();
@@ -14573,7 +14594,7 @@ async function ptwRunSmartChecks(){
   else{
     // Check RA exists
     try{
-      var ras=await api('/risk_assessments?ra_ref=eq.'+raRef+cf()+'&select=id,status&limit=1');
+      var ras=await api('/risk_assessments?ra_ref=eq.'+encodeURIComponent(raRef)+cf()+'&select=id,status&limit=1');
       if(!ras||!ras.length)warnings.push({icon:'ti-info-circle',color:'#EF9F27',msg:'RA reference "'+raRef+'" not found in system — verify it exists'});
       else if(ras[0].status!=='active')warnings.push({icon:'ti-refresh',color:'#EF9F27',msg:'Linked RA status is "'+ras[0].status+'" — ensure it is current and active'});
     }catch(ex){}
@@ -19120,8 +19141,8 @@ function toolsStartPersonalCheck(personName){
   // Switch to inspection tab and filter by person
   document.querySelectorAll('.mtg-tab').forEach(t=>t.classList.remove('active'));
   var btn=document.getElementById('tools-tab-inspection');if(btn)btn.classList.add('active');
-  ['register','personal','statutory','vehicles'].forEach(function(t){var el=document.getElementById('tools-view-'+t);if(el)el.style.display='none';});
-  document.getElementById('tools-view-inspection').style.display='block';
+  ['register','personal','statutory','vehicles','rcd'].forEach(function(t){var el=document.getElementById('tools-view-'+t);if(el)el.style.display='none';});
+  var insp=document.getElementById('tools-view-inspection');if(insp)insp.style.display='block';
   toolsLoadInspections();
 }
 
@@ -19603,10 +19624,12 @@ function fleetFuelMatchesVehicle(f,v){
 }
 
 function fleetIncidentMatchesVehicle(ev,v){
-  if((ev.event_type||'')!=='vehicle')return false;
-  var reg=fleetKey(ev.vehicle_reg||''), label=fleetKey(fleetLabel(v));
-  if(!reg||!label)return false;
-  return reg===label||label.indexOf(reg)!==-1||reg.indexOf(label)!==-1;
+  var type=String(ev.event_type||ev.type||'').toLowerCase();
+  if(type&&type.indexOf('vehicle')===-1&&type.indexOf('traffic')===-1&&type.indexOf('transport')===-1)return false;
+  var reg=fleetKey(ev.vehicle_reg||ev.vehicle_registration||ev.registration||''), label=fleetKey(fleetLabel(v));
+  var text=fleetKey([ev.description,ev.location,ev.title,ev.event_ref].join(' '));
+  if(reg&&label&&(reg===label||label.indexOf(reg)!==-1||reg.indexOf(label)!==-1))return true;
+  return !!(label&&text&&text.indexOf(label)!==-1);
 }
 
 async function loadFleet(){
@@ -19617,11 +19640,12 @@ async function loadFleet(){
   if(!el)return;
   el.innerHTML='<div class="loading-msg">Loading fleet...</div>';
   try{
+    var optional=function(p,label){return p.catch(function(e){console.warn('Fleet optional data unavailable: '+label,e);return[];});};
     var res=await Promise.all([
       api('/tools_register?is_vehicle=eq.true'+cf()+'&order=name&select=*'),
-      api('/tool_inspections?select=*'+cf()+'&order=inspection_date.desc&limit=500'),
-      api('/fuel_consumption?select=*'+cf()+'&order=record_date.desc&limit=500'),
-      api('/events?select=id,event_type,vehicle_reg,created_at,event_date'+cf()+'&order=created_at.desc&limit=200')
+      optional(api('/tool_inspections?select=*'+cf()+'&order=inspection_date.desc&limit=500'),'vehicle inspections'),
+      optional(api('/fuel_consumption?select=*'+cf()+'&order=record_date.desc&limit=500'),'fuel log'),
+      optional(api('/events?select=id,event_type,vehicle_reg,created_at,event_date,description,location'+cf()+'&order=created_at.desc&limit=200'),'vehicle incidents')
     ]);
     fleetVehicles=res[0]||[]; fleetInspections=res[1]||[]; fleetFuel=res[2]||[]; fleetIncidents=res[3]||[];
     fleetRender();
@@ -19853,15 +19877,36 @@ async function atexSave(){
   var nextDate=g('atex-next');
   if(!nextDate){var d=new Date();d.setFullYear(d.getFullYear()+1);nextDate=d.toISOString().slice(0,10);}
   var body={company_id:ccid(),area_ref:g('atex-ref'),area_name:name,location:g('atex-location'),plant_area:g('atex-plant'),zone_type:g('atex-zone')||'zone_2',material_type:g('atex-material')||'gas_vapour',substance:g('atex-substance'),source_of_release:g('atex-release'),ventilation_controls:g('atex-ventilation'),ignition_controls:g('atex-ignition'),detection_controls:g('atex-detection'),linked_equipment:g('atex-equipment'),linked_ra_ref:g('atex-ra'),linked_permit_type:g('atex-permit'),last_inspection_date:g('atex-last'),next_inspection_date:nextDate,status:g('atex-status')||'controlled',responsible_person:g('atex-resp'),notes:g('atex-notes'),updated_at:new Date().toISOString()};
+  var previous=atexEditId?(atexAreas.find(function(x){return x.id===atexEditId;})||{}):{};
+  var shouldCreateAction=['action_required','out_of_service'].includes(body.status)&&previous.status!==body.status;
+  var savedAtexId=atexEditId||null, savedAtexRef=body.area_ref||name;
   try{
     if(atexEditId){
       var updated=await api('/atex_areas?id=eq.'+atexEditId,{m:'PATCH',p:'return=representation',b:body});
       if(Array.isArray(updated)&&!updated.length)throw new Error('Update failed: record not found or permission denied');
+      savedAtexRef=updated?.[0]?.area_ref||savedAtexRef;
     }
     else{
       body.created_by=prof?.id;
       var res=await api('/atex_areas',{m:'POST',p:'return=representation',b:body});
-      if(res?.[0]?.id&&!body.area_ref){await api('/atex_areas?id=eq.'+res[0].id,{m:'PATCH',p:'return=minimal',b:{area_ref:'ATEX-'+String(atexAreas.length+1).padStart(3,'0')}});}
+      if(res?.[0]?.id){
+        savedAtexId=res[0].id;
+        if(!body.area_ref){
+          savedAtexRef='ATEX-'+String(atexAreas.length+1).padStart(3,'0');
+          await api('/atex_areas?id=eq.'+res[0].id,{m:'PATCH',p:'return=minimal',b:{area_ref:savedAtexRef}});
+        }else{
+          savedAtexRef=body.area_ref;
+        }
+      }
+    }
+    if(shouldCreateAction){
+      try{
+        await api('/action_tracker',{m:'POST',p:'return=minimal',b:{
+          company_id:ccid(),source_module:'atex',source_id:savedAtexId,source_ref:savedAtexRef,
+          description:'ATEX area requires action: '+name+' at '+(body.location||'location')+'. '+(body.notes||body.ignition_controls||'Review controls and inspection status.'),
+          responsible:body.responsible_person||null,priority:body.status==='out_of_service'?'high':'medium',status:'open',created_by:prof?.id
+        }});
+      }catch(ex){console.warn('ATEX MAP action failed',ex);}
     }
     toast('ATEX area saved');atexBack();
   }catch(e){toast(e.message,false);}
