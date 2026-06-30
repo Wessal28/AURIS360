@@ -24999,7 +24999,7 @@ async function usersLoad() {
     function sm(id,v){var e=document.getElementById(id);if(e)e.textContent=v;}
     sm('um-total', usersAllData.length);
     sm('um-active', usersAllData.filter(function(u){return u.status!=='inactive';}).length);
-    var mgrs = usersAllData.filter(function(u){return ['hse_manager','site_manager','manager','admin'].includes(u.role);});
+    var mgrs = usersAllData.filter(function(u){return ['hse_manager','site_manager','manager','supervisor','admin','sephs_admin'].includes(u.role);});
     sm('um-managers', mgrs.length);
     sm('um-contractors', usersAllData.filter(function(u){return u.role==='contractor';}).length);
     sm('um-pending', 0); // will update from invites if tracked
@@ -25017,7 +25017,8 @@ function usersFilter() {
   var filt = usersAllData.filter(function(u) {
     var mQ = !q || (u.full_name||'').toLowerCase().includes(q) ||
               (u.email||'').toLowerCase().includes(q) ||
-              (u.department||'').toLowerCase().includes(q);
+              (u.department||'').toLowerCase().includes(q) ||
+              (u.companies?.name||'').toLowerCase().includes(q);
     var mR = !fr || u.role===fr;
     var mS = !fs || (fs==='active' ? u.status!=='inactive' : u.status==='inactive');
     return mQ && mR && mS;
@@ -25052,7 +25053,7 @@ function usersRender(data) {
     + '<th style="padding:8px;text-align:left">Job title</th>'
     + '<th style="padding:8px">Status</th>'
     + '<th style="padding:8px;text-align:left">Last login</th>'
-    + (isMgr()?'<th style="padding:8px;width:80px">Actions</th>':'')
+    + (isMgr()?'<th style="padding:8px;width:170px">Actions</th>':'')
     + '</tr></thead><tbody>';
   data.forEach(function(u, i) {
     var bg = i%2===0?'#fff':'#f9fafb';
@@ -25074,7 +25075,7 @@ function usersRender(data) {
       + '<td style="padding:8px;text-align:center"><span style="background:'+(isActive?'#EAF3DE':'#f3f4f6')+';color:'+(isActive?'#3B6D11':'#6B7280')+';padding:2px 8px;border-radius:99px;font-size:10px;font-weight:700">'+(isActive?'Active':'Inactive')+'</span></td>'
       + '<td style="padding:8px;font-size:11px;color:var(--text2)">'+usersFmtLastLogin(u.last_login)+'</td>'
       + (isMgr()
-        ? '<td style="padding:8px"><div style="display:flex;gap:4px">'
+        ? '<td style="padding:8px"><div style="display:flex;gap:4px;flex-wrap:wrap;justify-content:center">'
           + '<button class="btn btn-sm" title="Edit user" data-id="'+u.id+'" onclick="usersEdit(this.dataset.id)"><i class="ti ti-edit"></i></button>'
           + (isAdm()&&!isSelf&&!u.synthetic_email?'<button class="btn btn-sm" title="Send password reset email" data-id="'+u.id+'" onclick="usersResetPw(this.dataset.id)"><i class="ti ti-key"></i></button>':'')
           + (isAdm()&&!isSelf?'<button class="btn btn-sm" style="color:'+(!isActive?'var(--green)':'var(--red)')+'" title="'+(isActive?'Deactivate (block login)':'Reactivate')+'" data-id="'+u.id+'" data-active="'+(isActive?'1':'0')+'" onclick="usersToggleStatus(this.dataset.id,this.dataset.active)"><i class="ti ti-'+(isActive?'user-off':'user-check')+'"></i></button>':'')
@@ -25202,12 +25203,17 @@ async function updateRole() {
   var jt    = document.getElementById('ur-job-title')?.value?.trim();
   var dept  = document.getElementById('ur-department')?.value?.trim();
   if(!email){toast('Enter user email',false);return;}
+  if(!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)){toast('Please enter a valid user email',false);return;}
   try {
-    var body = {role};
+    var filter = prof?.company_id&&!isSA()?'&company_id=eq.'+prof.company_id:'';
+    var found = await api('/profiles?select=id,email,full_name'+filter+'&email=eq.'+encodeURIComponent(email));
+    if(!found||!found.length){toast('No user found with this email in the current company view',false);return;}
+    var body = {role:role};
     if(jt) body.job_title = jt;
     if(dept) body.department = dept;
-    await api('/profiles?email=eq.'+email+(prof?.company_id&&!isSA()?'&company_id=eq.'+prof.company_id:''), {m:'PATCH', p:'return=minimal', b:body});
-    toast('Role updated for '+email+'!');
+    var updated = await api('/profiles?id=eq.'+found[0].id, {m:'PATCH', p:'return=representation', b:body});
+    if(!updated||!updated.length){toast('Role update was not saved. Please check permissions.',false);return;}
+    toast('Role updated for '+(found[0].full_name||email)+'!');
     document.getElementById('ur-email').value = '';
     usersLoad();
   } catch(e) { toast(e.message, false); }
