@@ -215,7 +215,7 @@ module.exports = async function handler(req, res) {
     }
 
     const configuredProvider = String(process.env.AI_PROVIDER || '').toLowerCase();
-    const provider = configuredProvider || (process.env.OPENAI_API_KEY ? 'openai' : 'anthropic');
+    const provider = configuredProvider || 'openai';
     const result = provider === 'openai'
       ? await callOpenAI(input, messages)
       : await callAnthropic(input, messages);
