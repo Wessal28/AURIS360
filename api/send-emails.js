@@ -29,6 +29,18 @@ async function processEmailQueue() {
   let sent = 0, failed = 0;
   for (const n of notifications) {
     try {
+      if (!isDeliverableEmail(n.to_email)) {
+        await fetch(SB + '/rest/v1/notification_queue?id=eq.' + n.id, {
+          method: 'PATCH',
+          headers: { ...headers, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
+          body: JSON.stringify({
+            status: 'skipped',
+            error_msg: 'No real email address for this user. Use in-app, WhatsApp, or SMS notification.',
+            sent_at: new Date().toISOString()
+          })
+        });
+        continue;
+      }
       const settingsRes = await fetch(SB + '/rest/v1/notification_settings?company_id=eq.' + n.company_id + '&limit=1', { headers });
       const settingsRows = await settingsRes.json();
       const settings = Array.isArray(settingsRows) && settingsRows[0] ? settingsRows[0] : {};
@@ -61,6 +73,12 @@ async function processEmailQueue() {
     }
   }
   return { sent, failed, total: notifications.length };
+}
+
+function isDeliverableEmail(email) {
+  const value = String(email || '').trim().toLowerCase();
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) return false;
+  return !value.endsWith('.local');
 }
 
 function smtpConfigured() {
