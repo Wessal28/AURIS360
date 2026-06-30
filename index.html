@@ -6702,7 +6702,9 @@ async function chemSave(){
     if(shouldCreateAction){
       try{
         await api('/action_tracker',{m:'POST',p:'return=minimal',b:{
-          company_id:ccid(),source_module:'chemical',source_id:savedChemId,source_ref:savedChemRef||product,
+          company_id:ccid(),title:'Review chemical exposure controls: '+product.substring(0,60),
+          source_type:'chemical',source_module:'chemical',source_id:savedChemId,source_ref:savedChemRef||product,
+          action_type:'corrective',
           description:'Review chemical exposure controls for '+product+' ('+r.level+' risk). '+(g('chem-recommendations')||g('chem-controls')||'Confirm controls, PPE, storage, training and exposure monitoring.'),
           priority:r.level==='critical'?'critical':'high',status:'open',created_by:prof?.id
         }});
@@ -19905,9 +19907,12 @@ async function atexSave(){
     if(shouldCreateAction){
       try{
         await api('/action_tracker',{m:'POST',p:'return=minimal',b:{
-          company_id:ccid(),source_module:'atex',source_id:savedAtexId,source_ref:savedAtexRef,
+          company_id:ccid(),title:'ATEX action required: '+name.substring(0,60),
+          source_type:'atex',source_module:'atex',source_id:savedAtexId,source_ref:savedAtexRef,
+          action_type:'corrective',
           description:'ATEX area requires action: '+name+' at '+(body.location||'location')+'. '+(body.notes||body.ignition_controls||'Review controls and inspection status.'),
-          responsible:body.responsible_person||null,priority:body.status==='out_of_service'?'high':'medium',status:'open',created_by:prof?.id
+          responsible:body.responsible_person||null,assigned_to_name:body.responsible_person||null,
+          priority:body.status==='out_of_service'?'high':'medium',status:'open',created_by:prof?.id
         }});
       }catch(ex){console.warn('ATEX MAP action failed',ex);}
     }
