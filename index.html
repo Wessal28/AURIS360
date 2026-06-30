@@ -5029,7 +5029,7 @@ const SYS='You are AURIS, an expert HSE AI assistant for AURIS360 by SEPHS Consu
 // set AI_PROXY_URL to a Supabase Edge Function (or any backend) that holds
 // the key. Until then, AI features show a friendly "configure proxy" message
 // rather than failing with cryptic network errors.
-const AI_PROXY_URL = null;  // e.g. 'https://<your-project>.supabase.co/functions/v1/ai-proxy'
+const AI_PROXY_URL = '/api/ai';
 const ANTHROPIC_URL = AI_PROXY_URL || 'https://api.anthropic.com/v1/messages';
 const CLAUDE_MODEL = 'claude-sonnet-4-20250514';
 const AI_AVAILABLE = !!AI_PROXY_URL;
@@ -5061,11 +5061,18 @@ window.addEventListener('load', applyAIAvailability);
 // fetch to api.anthropic.com is intercepted and returns a synthetic error
 // response so the calling code can handle it gracefully with try/catch.
 (function() {
-  if (AI_AVAILABLE) return;
   var _origFetch = window.fetch;
   window.fetch = function(input, init) {
     var url = (typeof input === 'string') ? input : (input && input.url);
     if (url && url.indexOf('api.anthropic.com') !== -1) {
+      if (AI_PROXY_URL) {
+        var nextInit = Object.assign({}, init || {});
+        nextInit.headers = Object.assign({}, nextInit.headers || {}, {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + (tok || '')
+        });
+        return _origFetch.call(this, AI_PROXY_URL, nextInit);
+      }
       // Synthetic 503 response so caller's try/catch gets a sensible error
       return Promise.resolve(new Response(
         JSON.stringify({ error: { message: 'AI features require a backend proxy. Ask your administrator to set up AI_PROXY_URL.' } }),
@@ -5110,7 +5117,7 @@ async function callAI(msgs, systemOverride) {
   var sys = systemOverride || SYS;
   var response = await fetch(ANTHROPIC_URL, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + (tok || '') },
     body: JSON.stringify({
       model: CLAUDE_MODEL || 'claude-sonnet-4-20250514',
       max_tokens: 2000,
