@@ -10727,12 +10727,16 @@ async function imsLoadPersonnel(){
 async function imsNotifyAssignee(assignedName, companyId, ref, desc, location){
   if(!assignedName)return;
   var p=(imsPersonnel||[]).find(function(x){return (x.full_name||'').toLowerCase()===assignedName.toLowerCase();});
+  if(!p){
+    var person=personByDisplayName(assignedName);
+    if(person)p={full_name:personFullName(person),email:person.email};
+  }
   if(!p||!p.email)return;
   var html='<!DOCTYPE html><html><body style="margin:0;font-family:Arial,sans-serif;background:#f4f6f8;padding:20px">'
     +'<div style="max-width:560px;margin:0 auto;background:#fff;border-radius:12px;overflow:hidden;border:1px solid #e5e7eb">'
     +'<div style="background:#7F1D1D;padding:18px 24px;color:#fff;font-size:16px;font-weight:700">🚨 Incident assigned to you</div>'
     +'<div style="padding:24px">'
-    +'<p style="font-size:14px;color:#1a1a1a">Hi <strong>'+escH(p.full_name||'')+'</strong>,</p>'
+    +'<p style="font-size:14px;color:#1a1a1a">Hi <strong>'+escH(p.full_name||assignedName||'')+'</strong>,</p>'
     +'<p style="color:#374151;font-size:13px">An incident has been assigned to you in AURIS360:</p>'
     +'<div style="background:#f9fafb;border-radius:8px;padding:14px;margin:14px 0;font-size:13px">'
     +'<div><strong>Reference:</strong> '+escH(ref||'(pending)')+'</div>'
@@ -10747,7 +10751,7 @@ async function imsNotifyAssignee(assignedName, companyId, ref, desc, location){
     await api('/notification_queue',{m:'POST',p:'return=minimal',b:{
       company_id:companyId,type:'incident_assigned',
       subject:'Incident assigned to you — '+(ref||'New incident'),
-      body_html:html,to_email:p.email,to_name:p.full_name||'',
+      body_html:html,to_email:p.email,to_name:p.full_name||assignedName||'',
       related_table:'events',related_id:imsEditId||null
     }});
     toast('📧 Notification queued for '+(p.full_name||p.email));
@@ -10932,12 +10936,15 @@ async function imsSave(){
   // Without this, sephs_admin saves under their profile company (BuildCo) even when
   // viewing another client's data via the switcher.
   var effectiveCompanyId = (isSA() && sephsCompanyContext) ? sephsCompanyContext : prof?.company_id;
+  var assignedPerson = personByDisplayName(g('ev-assigned-name'));
+  var reporterPerson = personByDisplayName(g('ev-reported-by-name'));
   var body={company_id:effectiveCompanyId,event_type:type,event_date:date.includes('T')?date.split('T')[0]:date,
     event_time:date.includes('T')?date.split('T')[1]:null,severity:severity,
     status:g('ev-status')||'open',location:g('ev-location'),department:g('ev-department'),
     description:desc,immediate_action:g('ev-immediate'),root_cause:g('ev-root-cause'),
     witnesses:g('ev-witnesses'),reported_by_name:g('ev-reported-by-name'),
-    assigned_to_name:g('ev-assigned-name'),due_date:g('ev-due-date')||null,
+    reported_by_id:reporterPerson?.id||null,
+    assigned_to_name:g('ev-assigned-name'),assigned_to_id:assignedPerson?.id||null,due_date:g('ev-due-date')||null,
     injured_person:g('ev-person-name'),
     injury_type:g('ev-injury-type'),body_part:g('ev-body-part'),treatment:g('ev-treatment'),
     lost_time_days:parseInt(g('ev-lost-time'))||0,restricted_work_days:parseInt(g('ev-restricted-days'))||0,
