@@ -2526,7 +2526,7 @@ async function obsSave() {
               company_id: ccid(),
               title: 'Observation action: '+body.action_description.substring(0,60),
               description: body.action_description,
-              source_type: 'observation', source_module: 'observation', source_id: savedObsId, source_ref: ref,
+              source_type: 'manual', source_module: 'manual', source_id: savedObsId, source_ref: 'BBS observation - '+ref,
               action_type: 'corrective',
               priority: body.severity, status: 'open',
               location: body.location||null,
@@ -6703,7 +6703,7 @@ async function chemSave(){
       try{
         await api('/action_tracker',{m:'POST',p:'return=minimal',b:{
           company_id:ccid(),title:'Review chemical exposure controls: '+product.substring(0,60),
-          source_type:'chemical',source_module:'chemical',source_id:savedChemId,source_ref:savedChemRef||product,
+          source_type:'manual',source_module:'manual',source_id:savedChemId,source_ref:'Chemical - '+(savedChemRef||product),
           action_type:'corrective',
           description:'Review chemical exposure controls for '+product+' ('+r.level+' risk). '+(g('chem-recommendations')||g('chem-controls')||'Confirm controls, PPE, storage, training and exposure monitoring.'),
           priority:r.level==='critical'?'critical':'high',status:'open',created_by:prof?.id
@@ -19335,7 +19335,7 @@ async function toolsLoadRCD(){
   el.innerHTML='<div class="loading-msg">Loading...</div>';
   try{
     var tools=await api('/tools_register?category=eq.electrical'+cf()+'&order=name&select=*');
-    var tests=await api('/tool_inspections?inspection_type=eq.rcd_monthly'+cf()+'&order=inspection_date.desc&limit=300&select=*');
+    var tests=await api('/tool_inspections?inspection_type=in.(rcd_monthly,periodic)'+cf()+'&order=inspection_date.desc&limit=300&select=*');
     toolsRcdData=(tools||[]).filter(function(x){
       var txt=((x.name||'')+' '+(x.ref_number||'')+' '+(x.model||'')+' '+(x.notes||'')+' '+(x.statutory_type||'')).toLowerCase();
       return txt.indexOf('rcd')!==-1 || txt.indexOf('residual current')!==-1 || x.inspection_frequency==='monthly';
@@ -19449,7 +19449,7 @@ async function toolsSaveRCDTest(){
   }
   if(fail&&(!g('rcd-defects')||!g('rcd-actions'))){toast('Failed RCD tests need defects and corrective actions before saving.',false);return;}
   var body={
-    company_id:ccid(),tool_id:toolsInspEquipId,inspection_type:'rcd_monthly',
+    company_id:ccid(),tool_id:toolsInspEquipId,inspection_type:'periodic',
     inspection_date:date,inspected_by:testerId||null,inspected_by_name:testerName||null,
     overall_result:fail?'fail':'pass',
     checklist_results:[
@@ -19908,7 +19908,7 @@ async function atexSave(){
       try{
         await api('/action_tracker',{m:'POST',p:'return=minimal',b:{
           company_id:ccid(),title:'ATEX action required: '+name.substring(0,60),
-          source_type:'atex',source_module:'atex',source_id:savedAtexId,source_ref:savedAtexRef,
+          source_type:'manual',source_module:'manual',source_id:savedAtexId,source_ref:'ATEX - '+savedAtexRef,
           action_type:'corrective',
           description:'ATEX area requires action: '+name+' at '+(body.location||'location')+'. '+(body.notes||body.ignition_controls||'Review controls and inspection status.'),
           responsible:body.responsible_person||null,assigned_to_name:body.responsible_person||null,
