@@ -3787,6 +3787,14 @@ function dashOpenObservationForm(){
   showPage('observation', null);
   setTimeout(function(){ if(typeof obsNew==='function') obsNew(); }, 60);
 }
+
+function dashOpenMyActions(){
+  showPage('actions', null);
+  setTimeout(function(){
+    var tab=document.getElementById('map-tab-mine');
+    if(typeof mapSetView==='function') mapSetView('mine', tab);
+  }, 120);
+}
 // ===================================================================
 // REAL-TIME HSE DASHBOARD + EXECUTIVE MANAGEMENT DASHBOARD
 // ===================================================================
@@ -4092,12 +4100,13 @@ async function dashRenderPersonal(events, actions, people, permits, training) {
   }, 'No observations yet — tap "Log an observation" above.');
 
   // 5. Actions Assigned to Me
+  var meName = (prof?.full_name||'').toLowerCase();
+  var meEmail = (prof?.email||'').toLowerCase();
   var myActions = (actions||[]).filter(function(a){
     return a.assigned_to_id === prof.id 
-        || a.assigned_to === prof.email 
-        || a.assigned_to_name === prof.full_name 
-        || a.responsible === prof.full_name
-        || a.responsible === prof.email;
+        || (a.assigned_to && String(a.assigned_to).toLowerCase() === meEmail)
+        || (a.assigned_to_name && String(a.assigned_to_name).toLowerCase() === meName)
+        || (a.responsible && [meName,meEmail].includes(String(a.responsible).toLowerCase()));
   }).filter(function(a){return a.status!=='closed';}).slice(0, 5);
   renderPersonalList('dp-my-actions', myActions, function(x){
     var due = x.target_date || x.due_date;
@@ -29981,7 +29990,7 @@ function fireEquipStatusBadge(s) {
     <div class="card" style="padding:18px 20px">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
         <div style="font-size:13px;font-weight:600;color:var(--text)">✅ Actions Assigned to Me</div>
-        <button class="btn btn-sm" onclick="showPage('actions',null)" style="font-size:10px">View all</button>
+        <button class="btn btn-sm" onclick="dashOpenMyActions()" style="font-size:10px">View mine</button>
       </div>
       <div id="dp-my-actions" style="font-size:12px"><div class="loading-msg">Loading...</div></div>
     </div>
