@@ -8262,7 +8262,8 @@ function ptwApproverOptions(selected){
 var opts='<option value="">Select approver...</option>';
 (people||[]).forEach(function(p){
 var name=[p.last_name,p.first_name].filter(Boolean).join(', ');
-var label=name+(p.job_title?' - '+p.job_title:'')+(p.email?' ('+p.email+')':'');
+var hasEmail=!!p.email;
+var label=name+(p.job_title?' - '+p.job_title:'')+(hasEmail?' ('+p.email+')':' - no email on profile');
 opts+='<option value="'+escH(p.id)+'" '+(selected===p.id?'selected':'')+'>'+escH(label)+'</option>';
 });
 return opts;
@@ -8304,6 +8305,11 @@ try{
 var l1=document.getElementById('ptw-app-l1')?.value||'';
 var l2=document.getElementById('ptw-app-l2')?.value||'';
 var l3=document.getElementById('ptw-app-l3')?.value||'';
+var selected=[l1,l2,l3].filter(Boolean);
+for(var i=0;i<selected.length;i++){
+var p=(people||[]).find(function(x){return x.id===selected[i];});
+if(p&&!p.email){toast('Cannot save PTW approver without email: '+peopleName(p),false);return;}
+}
 var existing=await api('/notification_settings?company_id=eq.'+prof.company_id+'&limit=1');
 var row=existing&&existing[0]?existing[0]:null;
 var rules=row?.event_recipients||{};
@@ -27874,6 +27880,33 @@ function parseNotifRecipients(text) {
   });
 }
 
+function validateNotifRecipientsInput(text) {
+  var invalid=[];
+  String(text||'').split(',').forEach(function(part){
+    var raw=part.trim();
+    if(!raw)return;
+    var match=raw.match(/^(.*?)<([^>]+)>$/);
+    var email=match?match[2].trim():raw;
+    if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))invalid.push(raw);
+  });
+  return invalid;
+}
+
+function validateNotifRecipientFields() {
+  var bad=[];
+  document.querySelectorAll('.notif-event-recips').forEach(function(input){
+    var invalid=validateNotifRecipientsInput(input.value);
+    if(invalid.length){
+      var type=input.getAttribute('data-type')||'event';
+      bad.push(type.replace(/_/g,' ')+': '+invalid.join(', '));
+      input.style.borderColor='var(--red)';
+    } else {
+      input.style.borderColor='';
+    }
+  });
+  return bad;
+}
+
 function collectNotifEventRecipients() {
   var rules = {};
   document.querySelectorAll('.notif-event-recips').forEach(function(input) {
@@ -27901,6 +27934,8 @@ document.addEventListener('click', function(e) {
 
 async function saveNotifSettings() {
   try {
+    var bad=validateNotifRecipientFields();
+    if(bad.length){toast('Invalid notification email(s): '+bad[0],false);return;}
     var existing = await api('/notification_settings?company_id=eq.' + prof.company_id + '&limit=1');
     var mergedRules = collectNotifEventRecipients();
     if (existing && existing[0] && existing[0].event_recipients) {
