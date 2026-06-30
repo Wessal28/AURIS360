@@ -8110,6 +8110,134 @@ toggleForm('people-form');toast('Person added!');loadPeople();await loadPeopleCa
 }catch(e){toast(e.message,false);}
 }
 
+let peAllData=[], peEditingId=null;
+
+function peopleName(p){
+return [p?.first_name,p?.last_name].filter(Boolean).join(' ').trim()||p?.email||'Person';
+}
+function peopleSetFormTitle(text){
+const t=document.querySelector('#people-form .card-title');
+if(t)t.textContent=text;
+}
+function peopleFormVisible(show){
+const el=document.getElementById('people-form');
+if(el)el.style.display=show?'block':'none';
+}
+function peopleClearForm(){
+['pef-first','pef-last','pef-id','pef-dob','pef-gender','pef-nationality','pef-jobtitle','pef-dept','pef-site','pef-empno','pef-start','pef-end','pef-coname','pef-cref','pef-cstart','pef-cend','pef-email','pef-phone','pef-emname','pef-emrel','pef-emphone','pef-induction','pef-medical'].forEach(function(id){
+const el=document.getElementById(id);if(el)el.value='';
+});
+const type=document.getElementById('pef-type');if(type)type.value='employee';
+const contract=document.getElementById('pef-contract');if(contract)contract.value='permanent';
+const status=document.getElementById('pef-status');if(status)status.value='active';
+if(typeof toggleContractor==='function')toggleContractor();
+}
+function peopleNew(){
+if(!isMgr()){toast('Access denied',false);return;}
+peEditingId=null;peopleClearForm();peopleSetFormTitle('Add person');peopleFormVisible(true);
+setTimeout(()=>document.getElementById('pef-first')?.focus(),30);
+}
+function peopleCancel(){
+peEditingId=null;peopleSetFormTitle('Add person');peopleFormVisible(false);
+}
+function peopleBodyFromForm(){
+const g=id=>document.getElementById(id)?.value?.trim()||'';
+const type=g('pef-type')||'employee';
+return {
+company_id:ccid(),person_type:type,first_name:g('pef-first'),last_name:g('pef-last'),id_number:g('pef-id'),
+date_of_birth:g('pef-dob')||null,gender:g('pef-gender')||null,nationality:g('pef-nationality'),
+job_title:g('pef-jobtitle'),department:g('pef-dept'),site:g('pef-site'),employee_number:g('pef-empno'),
+contract_type:type==='employee'?(g('pef-contract')||'permanent'):'contract',start_date:g('pef-start')||null,end_date:g('pef-end')||null,
+company_name:g('pef-coname'),contract_ref:g('pef-cref'),contract_start:g('pef-cstart')||null,contract_end:g('pef-cend')||null,
+email:g('pef-email'),phone:g('pef-phone'),emergency_name:g('pef-emname'),emergency_relation:g('pef-emrel'),emergency_phone:g('pef-emphone'),
+induction_date:g('pef-induction')||null,induction_completed:!!g('pef-induction'),medical_fitness_date:g('pef-medical')||null,status:g('pef-status')||'active'
+};
+}
+function peopleValidate(b){
+if(!b.first_name&&!b.last_name)return 'Please enter at least a first name or last name.';
+if(b.email&&!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(b.email))return 'Please enter a valid email address.';
+if(b.person_type!=='employee'&&!b.company_name)return 'Please enter the contractor company name.';
+if(b.start_date&&b.end_date&&b.end_date<b.start_date)return 'End date cannot be before start date.';
+if(b.contract_start&&b.contract_end&&b.contract_end<b.contract_start)return 'Contract end cannot be before contract start.';
+return '';
+}
+function peopleFillForm(p){
+const s=(id,v)=>{const el=document.getElementById(id);if(el)el.value=v||'';};
+peEditingId=p.id;
+s('pef-first',p.first_name);s('pef-last',p.last_name);s('pef-id',p.id_number);s('pef-dob',p.date_of_birth);s('pef-gender',p.gender);
+s('pef-nationality',p.nationality);s('pef-type',p.person_type||'employee');s('pef-jobtitle',p.job_title);s('pef-dept',p.department);
+s('pef-site',p.site);s('pef-empno',p.employee_number);s('pef-contract',p.contract_type||'permanent');s('pef-start',p.start_date);s('pef-end',p.end_date);
+s('pef-coname',p.company_name);s('pef-cref',p.contract_ref);s('pef-cstart',p.contract_start);s('pef-cend',p.contract_end);s('pef-email',p.email);
+s('pef-phone',p.phone);s('pef-emname',p.emergency_name);s('pef-emrel',p.emergency_relation);s('pef-emphone',p.emergency_phone);
+s('pef-induction',p.induction_date);s('pef-medical',p.medical_fitness_date);s('pef-status',p.status||'active');
+if(typeof toggleContractor==='function')toggleContractor();
+peopleSetFormTitle('Edit person');
+peopleFormVisible(true);
+document.getElementById('people-form')?.scrollIntoView({behavior:'smooth',block:'start'});
+}
+function peopleEdit(id){
+const p=peAllData.find(x=>x.id===id);
+if(!p){toast('Person not found',false);return;}
+peopleFillForm(p);
+}
+function peopleRender(){
+const el=document.getElementById('people-list');if(!el)return;
+const type=document.getElementById('filter-ptype')?.value||'';
+const status=document.getElementById('filter-pstatus')?.value||'';
+let rows=(peAllData||[]).filter(p=>(!type||p.person_type===type)&&(!status||p.status===status));
+if(!rows.length){el.innerHTML='<div class="empty">No people match the selected filters</div>';return;}
+const dateText=v=>v?new Date(v).toLocaleDateString('en-GB'):'--';
+el.innerHTML='<div style="overflow-x:auto"><table class="data-table" style="min-width:980px"><thead><tr><th>Name</th><th>Type</th><th>Department / Site</th><th>Contact</th><th>Employment</th><th>HSE</th><th>Status</th><th>Actions</th></tr></thead><tbody>'
++rows.map(p=>{
+const typeBadge=p.person_type==='employee'?'bg':p.person_type==='contractor'?'bb':'ba';
+const hse=(p.induction_completed?'<span style="color:var(--green);font-weight:700">Inducted</span>':'<span style="color:var(--amber);font-weight:700">Induction pending</span>')+'<br><span style="font-size:11px;color:var(--text2)">Medical: '+dateText(p.medical_fitness_date)+'</span>';
+const employment='<div>'+(p.job_title?escH(p.job_title):'--')+'</div><div style="font-size:11px;color:var(--text2)">Start: '+dateText(p.start_date)+(p.end_date?' | End: '+dateText(p.end_date):'')+'</div>';
+const contractor=p.person_type!=='employee'&&p.company_name?'<div style="font-size:11px;color:var(--blue);font-weight:700">'+escH(p.company_name)+'</div>':'';
+return '<tr><td><strong>'+escH(peopleName(p))+'</strong>'+contractor+'<div style="font-size:11px;color:var(--text2)">ID: '+escH(p.id_number||'--')+'</div></td><td><span class="badge '+typeBadge+'">'+escH(p.person_type||'person')+'</span></td><td>'+escH(p.department||'--')+'<br><span style="font-size:11px;color:var(--text2)">'+escH(p.site||'--')+'</span></td><td>'+escH(p.email||'--')+'<br><span style="font-size:11px;color:var(--text2)">'+escH(p.phone||'--')+'</span></td><td>'+employment+'</td><td>'+hse+'</td><td>'+stat(p.status||'active')+'</td><td><div style="display:flex;gap:6px;flex-wrap:wrap"><button class="btn btn-sm" onclick="peopleEdit(\''+p.id+'\')"><i class="ti ti-edit"></i>Edit</button>'+(p.status==='inactive'?'<button class="btn btn-sm" onclick="peopleReactivate(\''+p.id+'\')">Reactivate</button>':'<button class="btn btn-sm danger" onclick="peopleDeactivate(\''+p.id+'\')">Deactivate</button>')+'</div></td></tr>';
+}).join('')+'</tbody></table></div>';
+}
+async function loadPeople(){
+const btn=document.getElementById('people-add-btn');
+if(isMgr()&&btn)btn.innerHTML='<button class="btn btn-primary" onclick="peopleNew()"><i class="ti ti-plus"></i>Add person</button>';
+const el=document.getElementById('people-list');if(el)el.innerHTML='<div class="loading-msg">Loading...</div>';
+try{
+let path='/people?select=*'+cf()+'&order=last_name';
+peAllData=await api(path)||[];
+const all=await api('/people?select=person_type,status'+cf())||[];
+document.getElementById('pe-total').textContent=all.filter(x=>x.status==='active').length;
+document.getElementById('pe-emp').textContent=all.filter(x=>x.person_type==='employee'&&x.status==='active').length;
+document.getElementById('pe-con').textContent=all.filter(x=>x.person_type==='contractor'&&x.status==='active').length;
+document.getElementById('pe-sub').textContent=all.filter(x=>x.person_type==='subcontractor'&&x.status==='active').length;
+peopleRender();
+}catch(e){if(el)el.innerHTML='<div class="empty" style="color:var(--red)">'+escH(e.message)+'</div>';}
+}
+async function savePerson(){
+if(!isMgr()){toast('Access denied',false);return;}
+const body=peopleBodyFromForm();
+const err=peopleValidate(body);
+if(err){toast(err,false);return;}
+try{
+if(peEditingId){
+await api('/people?id=eq.'+peEditingId,{m:'PATCH',p:'return=minimal',b:body});
+toast('Person updated!');
+}else{
+body.created_by=prof?.id;
+await api('/people',{m:'POST',p:'return=minimal',b:body});
+toast('Person added!');
+}
+peopleCancel();await loadPeople();await loadPeopleCache();
+}catch(e){toast(e.message,false);}
+}
+async function peopleDeactivate(id){
+if(!isMgr()){toast('Access denied',false);return;}
+if(!(await appConfirmDelete('person','This will set the person to inactive and keep linked records for traceability.')))return;
+try{await api('/people?id=eq.'+id,{m:'PATCH',p:'return=minimal',b:{status:'inactive'}});toast('Person deactivated');await loadPeople();await loadPeopleCache();}catch(e){toast(e.message,false);}
+}
+async function peopleReactivate(id){
+if(!isMgr()){toast('Access denied',false);return;}
+try{await api('/people?id=eq.'+id,{m:'PATCH',p:'return=minimal',b:{status:'active'}});toast('Person reactivated');await loadPeople();await loadPeopleCache();}catch(e){toast(e.message,false);}
+}
+
 function loadSettings(){
 if(isAdm())document.getElementById('logo-settings').style.display='block';
 document.getElementById('my-profile-info').innerHTML='<div style="font-size:13px"><strong>'+(prof?.full_name||'--')+'</strong><br><span style="color:var(--text2)">'+(prof?.email||'--')+'</span><br>'+stat(prof?.role)+'</div>';
@@ -38211,7 +38339,7 @@ function fireEquipStatusBadge(s) {
 </style>
 
 <div id="page-people" class="page">
-<div class="page-header"><div class="page-title">People</div><div id="people-add-btn"></div></div><div class="card" id="people-form" style="display:none"><div class="card-title">Add person</div><div style="font-size:11px;font-weight:700;color:var(--text2);margin-bottom:10px;text-transform:uppercase;letter-spacing:.05em">Personal information</div><div class="form-row3"><div class="form-group"><label class="form-label">First name</label><input type="text" id="pef-first"/></div><div class="form-group"><label class="form-label">Last name</label><input type="text" id="pef-last"/></div><div class="form-group"><label class="form-label">ID number</label><input type="text" id="pef-id"/></div></div><div class="form-row3"><div class="form-group"><label class="form-label">Date of birth</label><input type="date" id="pef-dob"/></div><div class="form-group"><label class="form-label">Gender</label><select id="pef-gender"><option value="">—</option><option value="male">Male</option><option value="female">Female</option><option value="other">Other</option></select></div><div class="form-group"><label class="form-label">Nationality</label><input type="text" id="pef-nationality"/></div></div><div style="font-size:11px;font-weight:700;color:var(--text2);margin:14px 0 10px;text-transform:uppercase;letter-spacing:.05em">Employment</div><div class="form-row3"><div class="form-group"><label class="form-label">Person type</label><select id="pef-type" onchange="toggleContractor()"><option value="employee">Employee</option><option value="contractor">Contractor</option><option value="subcontractor">Subcontractor</option></select></div><div class="form-group"><label class="form-label">Job title</label><input type="text" id="pef-jobtitle"/></div><div class="form-group"><label class="form-label">Department</label><input type="text" id="pef-dept"/></div></div><div class="form-row3"><div class="form-group"><label class="form-label">Site</label><input type="text" id="pef-site"/></div><div class="form-group"><label class="form-label">Staff no.</label><input type="text" id="pef-empno"/></div><div class="form-group"><label class="form-label">Contract type</label><select id="pef-contract"><option value="permanent">Permanent</option><option value="fixed_term">Fixed term</option><option value="casual">Casual</option><option value="contract">Contract</option></select></div></div><div class="form-row"><div class="form-group"><label class="form-label">Start date</label><input type="date" id="pef-start"/></div><div class="form-group"><label class="form-label">End date</label><input type="date" id="pef-end"/></div></div><div id="contractor-fields" style="display:none"><div style="font-size:11px;font-weight:700;color:var(--text2);margin:14px 0 10px;text-transform:uppercase;letter-spacing:.05em">Contractor details</div><div class="form-row"><div class="form-group"><label class="form-label">Company name</label><input type="text" id="pef-coname"/></div><div class="form-group"><label class="form-label">Contract reference</label><input type="text" id="pef-cref"/></div></div><div class="form-row"><div class="form-group"><label class="form-label">Contract start</label><input type="date" id="pef-cstart"/></div><div class="form-group"><label class="form-label">Contract end</label><input type="date" id="pef-cend"/></div></div></div><div style="font-size:11px;font-weight:700;color:var(--text2);margin:14px 0 10px;text-transform:uppercase;letter-spacing:.05em">Contact & HSE</div><div class="form-row"><div class="form-group"><label class="form-label">Email</label><input type="email" id="pef-email"/></div><div class="form-group"><label class="form-label">Phone</label><input type="text" id="pef-phone"/></div></div><div class="form-row3"><div class="form-group"><label class="form-label">Emergency contact</label><input type="text" id="pef-emname"/></div><div class="form-group"><label class="form-label">Relation</label><input type="text" id="pef-emrel"/></div><div class="form-group"><label class="form-label">Emergency phone</label><input type="text" id="pef-emphone"/></div></div><div class="form-row"><div class="form-group"><label class="form-label">Induction date</label><input type="date" id="pef-induction"/></div><div class="form-group"><label class="form-label">Medical fitness date</label><input type="date" id="pef-medical"/></div></div><div class="form-group"><label class="form-label">Status</label><select id="pef-status"><option value="active">Active</option><option value="inactive">Inactive</option><option value="suspended">Suspended</option></select></div><div style="display:flex;gap:8px"><button class="btn btn-primary" onclick="savePerson()"><i class="ti ti-device-floppy"></i>Save person</button><button class="btn" onclick="toggleForm('people-form')">Cancel</button></div></div><div class="metrics" style="margin-bottom:16px"><div class="metric"><div class="metric-label">Total active</div><div class="metric-value" id="pe-total">—</div></div><div class="metric"><div class="metric-label">Employees</div><div class="metric-value" id="pe-emp" style="color:var(--green)">—</div></div><div class="metric"><div class="metric-label">Contractors</div><div class="metric-value" id="pe-con" style="color:var(--blue)">—</div></div><div class="metric"><div class="metric-label">Subcontractors</div><div class="metric-value" id="pe-sub" style="color:var(--amber)">—</div></div></div><div class="card"><div class="card-title">People register<div style="display:flex;gap:8px"><select id="filter-ptype" onchange="loadPeople()" style="width:auto;padding:5px 9px;font-size:12px"><option value="">All types</option><option value="employee">Employees</option><option value="contractor">Contractors</option><option value="subcontractor">Subcontractors</option></select><select id="filter-pstatus" onchange="loadPeople()" style="width:auto;padding:5px 9px;font-size:12px"><option value="">All statuses</option><option value="active">Active</option><option value="inactive">Inactive</option></select></div></div><div id="people-list"><div class="loading-msg">Loading...</div></div></div></div>
+<div class="page-header"><div class="page-title">People</div><div id="people-add-btn"></div></div><div class="card" id="people-form" style="display:none"><div class="card-title">Add person</div><div style="font-size:11px;font-weight:700;color:var(--text2);margin-bottom:10px;text-transform:uppercase;letter-spacing:.05em">Personal information</div><div class="form-row3"><div class="form-group"><label class="form-label">First name</label><input type="text" id="pef-first"/></div><div class="form-group"><label class="form-label">Last name</label><input type="text" id="pef-last"/></div><div class="form-group"><label class="form-label">ID number</label><input type="text" id="pef-id"/></div></div><div class="form-row3"><div class="form-group"><label class="form-label">Date of birth</label><input type="date" id="pef-dob"/></div><div class="form-group"><label class="form-label">Gender</label><select id="pef-gender"><option value="">—</option><option value="male">Male</option><option value="female">Female</option><option value="other">Other</option></select></div><div class="form-group"><label class="form-label">Nationality</label><input type="text" id="pef-nationality"/></div></div><div style="font-size:11px;font-weight:700;color:var(--text2);margin:14px 0 10px;text-transform:uppercase;letter-spacing:.05em">Employment</div><div class="form-row3"><div class="form-group"><label class="form-label">Person type</label><select id="pef-type" onchange="toggleContractor()"><option value="employee">Employee</option><option value="contractor">Contractor</option><option value="subcontractor">Subcontractor</option></select></div><div class="form-group"><label class="form-label">Job title</label><input type="text" id="pef-jobtitle"/></div><div class="form-group"><label class="form-label">Department</label><input type="text" id="pef-dept"/></div></div><div class="form-row3"><div class="form-group"><label class="form-label">Site</label><input type="text" id="pef-site"/></div><div class="form-group"><label class="form-label">Staff no.</label><input type="text" id="pef-empno"/></div><div class="form-group"><label class="form-label">Contract type</label><select id="pef-contract"><option value="permanent">Permanent</option><option value="fixed_term">Fixed term</option><option value="casual">Casual</option><option value="contract">Contract</option></select></div></div><div class="form-row"><div class="form-group"><label class="form-label">Start date</label><input type="date" id="pef-start"/></div><div class="form-group"><label class="form-label">End date</label><input type="date" id="pef-end"/></div></div><div id="contractor-fields" style="display:none"><div style="font-size:11px;font-weight:700;color:var(--text2);margin:14px 0 10px;text-transform:uppercase;letter-spacing:.05em">Contractor details</div><div class="form-row"><div class="form-group"><label class="form-label">Company name</label><input type="text" id="pef-coname"/></div><div class="form-group"><label class="form-label">Contract reference</label><input type="text" id="pef-cref"/></div></div><div class="form-row"><div class="form-group"><label class="form-label">Contract start</label><input type="date" id="pef-cstart"/></div><div class="form-group"><label class="form-label">Contract end</label><input type="date" id="pef-cend"/></div></div></div><div style="font-size:11px;font-weight:700;color:var(--text2);margin:14px 0 10px;text-transform:uppercase;letter-spacing:.05em">Contact & HSE</div><div class="form-row"><div class="form-group"><label class="form-label">Email</label><input type="email" id="pef-email"/></div><div class="form-group"><label class="form-label">Phone</label><input type="text" id="pef-phone"/></div></div><div class="form-row3"><div class="form-group"><label class="form-label">Emergency contact</label><input type="text" id="pef-emname"/></div><div class="form-group"><label class="form-label">Relation</label><input type="text" id="pef-emrel"/></div><div class="form-group"><label class="form-label">Emergency phone</label><input type="text" id="pef-emphone"/></div></div><div class="form-row"><div class="form-group"><label class="form-label">Induction date</label><input type="date" id="pef-induction"/></div><div class="form-group"><label class="form-label">Medical fitness date</label><input type="date" id="pef-medical"/></div></div><div class="form-group"><label class="form-label">Status</label><select id="pef-status"><option value="active">Active</option><option value="inactive">Inactive</option><option value="suspended">Suspended</option></select></div><div style="display:flex;gap:8px"><button class="btn btn-primary" onclick="savePerson()"><i class="ti ti-device-floppy"></i>Save person</button><button class="btn" onclick="peopleCancel()">Cancel</button></div></div><div class="metrics" style="margin-bottom:16px"><div class="metric"><div class="metric-label">Total active</div><div class="metric-value" id="pe-total">—</div></div><div class="metric"><div class="metric-label">Employees</div><div class="metric-value" id="pe-emp" style="color:var(--green)">—</div></div><div class="metric"><div class="metric-label">Contractors</div><div class="metric-value" id="pe-con" style="color:var(--blue)">—</div></div><div class="metric"><div class="metric-label">Subcontractors</div><div class="metric-value" id="pe-sub" style="color:var(--amber)">—</div></div></div><div class="card"><div class="card-title">People register<div style="display:flex;gap:8px"><select id="filter-ptype" onchange="loadPeople()" style="width:auto;padding:5px 9px;font-size:12px"><option value="">All types</option><option value="employee">Employees</option><option value="contractor">Contractors</option><option value="subcontractor">Subcontractors</option></select><select id="filter-pstatus" onchange="loadPeople()" style="width:auto;padding:5px 9px;font-size:12px"><option value="">All statuses</option><option value="active">Active</option><option value="inactive">Inactive</option></select></div></div><div id="people-list"><div class="loading-msg">Loading...</div></div></div></div>
 <div id="page-users" class="page">
 <div class="page-header">
 <div>
