@@ -23335,13 +23335,19 @@ async function tnaLoad(){
 
 async function tnaAddRow(){
   var role=await appPrompt({title:'Add training need',message:'Role name',placeholder:'e.g. Supervisor'});if(!role)return;
+  role=obNormText(role);
   var topic=await appPrompt({title:'Add training need',message:'Training topic',placeholder:'e.g. Permit to Work'});if(!topic)return;
+  topic=obNormText(topic);
   var cat=await appPrompt({title:'Add training need',message:'Category',value:'GENERAL',placeholder:'INDUCTION, EMERGENCY, HIGH RISK WORK or GENERAL'});
   var req=await appPrompt({title:'Add training need',message:'Requirement',value:'D',placeholder:'M, D or N'});
+  cat=obNormText(cat||'GENERAL').toUpperCase();
+  req=obNormText(req||'').toUpperCase();
   if(!['M','D','N'].includes((req||'').toUpperCase())){toast('Invalid value. Use M, D or N',false);return;}
+  var dup=(tnAllData||[]).find(function(x){return obNormText(x.role_name).toLowerCase()===role.toLowerCase()&&obNormText(x.training_topic).toLowerCase()===topic.toLowerCase();});
+  if(dup){toast('This training need already exists for the selected role',false);return;}
   api('/training_needs',{m:'POST',p:'return=minimal',b:{
     company_id:ccid(),role_name:role,training_topic:topic,
-    category:(cat||'GENERAL').toUpperCase(),requirement:req.toUpperCase()
+    category:cat,requirement:req
   }}).then(function(){toast('Added!');tnaLoad();}).catch(function(e){toast(e.message,false);});
 }
 
@@ -23468,18 +23474,25 @@ function tpOpen(id){
 }
 
 async function tpSave(){
-  var topic=document.getElementById('tp-topic')?.value?.trim();
+  var topic=obNormText(document.getElementById('tp-topic')?.value);
   if(!topic){toast('Please enter a training topic',false);return;}
-  var g=function(id){var el=document.getElementById(id);return el?el.value||null:null;};
+  var g=function(id){var el=document.getElementById(id);return el?obNormText(el.value)||null:null;};
+  var planned=g('tp-planned-date'), actual=g('tp-actual-date'), status=g('tp-status')||'planned';
+  var duration=g('tp-duration'), budget=g('tp-budget'), monthVal=document.getElementById('tp-month')?.value;
+  if(planned&&actual&&actual<planned){toast('Actual date cannot be before planned date',false);return;}
+  if(status==='completed'&&!actual){toast('Completed training must have an actual date',false);return;}
+  if(duration&&Number(duration)<0){toast('Duration cannot be negative',false);return;}
+  if(budget&&Number(budget)<0){toast('Budget cannot be negative',false);return;}
+  if(!monthVal&&planned)monthVal=String(new Date(planned).getMonth()+1);
   var body={
     company_id:ccid(),year:trainYear,
     training_topic:topic,target_group:g('tp-group'),
-    month:document.getElementById('tp-month')?.value?parseInt(document.getElementById('tp-month').value):null,
+    month:monthVal?parseInt(monthVal):null,
     training_type:g('tp-type')||'internal',priority:g('tp-priority')||'medium',
-    status:g('tp-status')||'planned',trainer:g('tp-trainer'),location:g('tp-location'),
-    planned_date:g('tp-planned-date'),actual_date:g('tp-actual-date'),
-    duration_hours:g('tp-duration')?parseFloat(g('tp-duration')):null,
-    budget:g('tp-budget')?parseFloat(g('tp-budget')):null,
+    status:status,trainer:g('tp-trainer'),location:g('tp-location'),
+    planned_date:planned,actual_date:actual,
+    duration_hours:duration?parseFloat(duration):null,
+    budget:budget?parseFloat(budget):null,
     objective:g('tp-objective'),notes:g('tp-notes'),updated_at:new Date().toISOString()
   };
   try{
@@ -23491,14 +23504,14 @@ async function tpSave(){
 
 async function tpDelete(){
   if(!tpEditingId)return;
-  if(!(await appConfirmDelete('training plan item')))return;
-  try{await api('/training_plan?id=eq.'+tpEditingId,{m:'DELETE'});toast('Deleted!');tpBack();}
+  if(!(await appConfirmAction({title:'Cancel training plan item',message:'Cancel this planned training?',detail:'The plan item is kept for history and marked as cancelled.',confirmText:'Cancel training',cancelText:'Back'})))return;
+  try{await api('/training_plan?id=eq.'+tpEditingId,{m:'PATCH',p:'return=minimal',b:{status:'cancelled',updated_at:new Date().toISOString()}});toast('Training plan item cancelled');tpBack();}
   catch(e){toast(e.message,false);}
 }
 
 async function tpDeleteFromList(id){
-  if(!(await appConfirmDelete('training plan item')))return;
-  try{await api('/training_plan?id=eq.'+id,{m:'DELETE'});tpAllData=tpAllData.filter(function(x){return x.id!==id;});toast('Deleted!');tpLoad();}
+  if(!(await appConfirmAction({title:'Cancel training plan item',message:'Cancel this planned training?',detail:'The plan item is kept for history and marked as cancelled.',confirmText:'Cancel training',cancelText:'Back'})))return;
+  try{await api('/training_plan?id=eq.'+id,{m:'PATCH',p:'return=minimal',b:{status:'cancelled',updated_at:new Date().toISOString()}});toast('Training plan item cancelled');tpLoad();}
   catch(e){toast(e.message,false);}
 }
 
@@ -23616,18 +23629,24 @@ function tfOpen(id){
 }
 
 async function tfSave(){
-  var course=document.getElementById('tfr-course')?.value?.trim();
+  var course=obNormText(document.getElementById('tfr-course')?.value);
   if(!course){toast('Please enter a training topic',false);return;}
-  var g=function(id){var el=document.getElementById(id);return el?el.value||null:null;};
+  var g=function(id){var el=document.getElementById(id);return el?obNormText(el.value)||null:null;};
   var personId=g('tfr-person');
   var pickedPerson=(people||[]).find(function(p){return p.id===personId;});
   var name=g('tfr-name')||personFullName(pickedPerson);
+  var trainingDate=g('tfr-date'), expiry=g('tfr-expiry'), refresher=g('tfr-refresher'), score=g('tfr-score');
+  if(!personId&&!name){toast('Please select or enter the person trained',false);return;}
+  if(!trainingDate){toast('Please enter the training date',false);return;}
+  if(expiry&&expiry<trainingDate){toast('Certificate expiry cannot be before training date',false);return;}
+  if(refresher&&refresher<trainingDate){toast('Refresher due date cannot be before training date',false);return;}
+  if(score&&(Number(score)<0||Number(score)>100)){toast('Score must be between 0 and 100',false);return;}
   var body={
     company_id:ccid(),person_id:personId||null,
     person_name:name||null,training_topic:course,
-    training_date:g('tfr-date'),trainer:g('tfr-trainer'),certificate:g('tfr-cert'),
-    expiry_date:g('tfr-expiry'),refresher_due:g('tfr-refresher'),
-    score:g('tfr-score')?parseFloat(g('tfr-score')):null,
+    training_date:trainingDate,trainer:g('tfr-trainer'),certificate:g('tfr-cert'),
+    expiry_date:expiry,refresher_due:refresher,
+    score:score?parseFloat(score):null,
     passed:document.getElementById('tfr-passed')?.value!=='false',
     notes:g('tfr-notes'),updated_at:new Date().toISOString()
   };
@@ -23829,15 +23848,18 @@ function authOpen(id){
 }
 
 async function authSave(){
-  var type=document.getElementById('authr-type')?.value?.trim();
-  var name=document.getElementById('authr-name')?.value?.trim();
+  var type=obNormText(document.getElementById('authr-type')?.value);
+  var name=obNormText(document.getElementById('authr-name')?.value);
   if(!type||!name){toast('Please enter person name and authorisation type',false);return;}
-  var g=function(id){var el=document.getElementById(id);return el?el.value||null:null;};
+  var g=function(id){var el=document.getElementById(id);return el?obNormText(el.value)||null:null;};
+  var issue=g('authr-issue'), expiry=g('authr-expiry'), status=g('authr-status')||'active';
+  if(issue&&expiry&&expiry<issue){toast('Expiry date cannot be before issue date',false);return;}
+  if(expiry&&new Date(expiry)<new Date()&&status==='active')status='expired';
   var body={
     company_id:ccid(),
     person_id:g('authr-person')||null,person_name:name,
-    authorisation_type:type,status:g('authr-status')||'active',
-    issue_date:g('authr-issue'),expiry_date:g('authr-expiry'),
+    authorisation_type:type,status:status,
+    issue_date:issue,expiry_date:expiry,
     reference:g('authr-ref'),issuing_body:g('authr-issuer'),notes:g('authr-notes'),
     updated_at:new Date().toISOString()
   };
@@ -23850,14 +23872,14 @@ async function authSave(){
 
 async function authDelete(){
   if(!authEditingId)return;
-  if(!(await appConfirmDelete('authorisation')))return;
-  try{await api('/authorisations?id=eq.'+authEditingId,{m:'DELETE'});toast('Deleted!');authBack();}
+  if(!(await appConfirmAction({title:'Expire authorisation',message:'Mark this authorisation as expired?',detail:'The record is kept for evidence and audit history.',confirmText:'Expire',cancelText:'Back'})))return;
+  try{await api('/authorisations?id=eq.'+authEditingId,{m:'PATCH',p:'return=minimal',b:{status:'expired',updated_at:new Date().toISOString()}});toast('Authorisation expired');authBack();}
   catch(e){toast(e.message,false);}
 }
 
 async function authDeleteFromList(id){
-  if(!(await appConfirmDelete('authorisation')))return;
-  try{await api('/authorisations?id=eq.'+id,{m:'DELETE'});authAllData=authAllData.filter(function(x){return x.id!==id;});toast('Deleted!');authRender(authAllData);}
+  if(!(await appConfirmAction({title:'Expire authorisation',message:'Mark this authorisation as expired?',detail:'The record is kept for evidence and audit history.',confirmText:'Expire',cancelText:'Back'})))return;
+  try{await api('/authorisations?id=eq.'+id,{m:'PATCH',p:'return=minimal',b:{status:'expired',updated_at:new Date().toISOString()}});toast('Authorisation expired');authLoad();}
   catch(e){toast(e.message,false);}
 }
 
