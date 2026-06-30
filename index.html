@@ -26138,7 +26138,7 @@ if(typeof RL !== 'undefined') {
 // Companies · Sites · Hierarchy · Central Oversight · Access Control
 // ===================================================================
 
-let adminCompaniesData = [], adminSitesData = [], adminAccessData = [];
+let adminCompaniesData = [], adminSitesData = [], adminAccessData = [], adminUsersData = [];
 let adminEditCoId = null, adminEditSiteId = null;
 let adminActiveSiteFilter = null;  // currently selected site for data filtering
 
@@ -26187,9 +26187,11 @@ async function adminLoadAll() {
   var results = await Promise.all([
     safe(api('/companies?select=*&order=name')),
     safe(api('/sites?select=*&order=name')),
+    safe(api('/profiles?select=id,full_name,email,role,status,company_id,department,job_title,last_login&order=full_name')),
   ]);
   adminCompaniesData = results[0]||[];
   adminSitesData     = results[1]||[];
+  adminUsersData     = results[2]||[];
   // Metrics
   function sm(id,v){var e=document.getElementById(id);if(e)e.textContent=v;}
   sm('adm-m-companies', adminCompaniesData.length);
@@ -26197,6 +26199,14 @@ async function adminLoadAll() {
   sm('adm-m-workers', adminSitesData.reduce(function(s,x){return s+(parseInt(x.headcount)||0);},0) || adminCompaniesData.reduce(function(s,x){return s+(parseInt(x.headcount)||0);},0));
   // Populate dropdowns across the page
   adminPopulateDropdowns();
+}
+
+function adminCompanyUsers(companyId){
+  return (adminUsersData||[]).filter(function(u){return u.company_id===companyId;});
+}
+
+function adminCompanyUserCount(companyId){
+  return adminCompanyUsers(companyId).length;
 }
 
 function adminPopulateDropdowns() {
@@ -26321,8 +26331,9 @@ function adminRenderOverviewCards(data) {
       + '</div></div>'
       + '<span style="background:'+tc[1]+';color:'+tc[0]+';padding:2px 7px;border-radius:99px;font-size:9px;font-weight:700;text-transform:uppercase">'+escH(co.subscription_tier||'pro')+'</span>'
       + '</div>'
-      + '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;text-align:center">'
+      + '<div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:6px;text-align:center">'
       + '<div style="background:#f9fafb;border-radius:6px;padding:5px 4px"><div style="font-size:15px;font-weight:800;color:#185FA5">'+sites.length+'</div><div style="font-size:9px;color:var(--text2)">Sites</div></div>'
+      + '<div style="background:#f9fafb;border-radius:6px;padding:5px 4px"><div style="font-size:15px;font-weight:800;color:#5B21B6">'+adminCompanyUserCount(co.id)+'</div><div style="font-size:9px;color:var(--text2)">Users</div></div>'
       + '<div style="background:#f9fafb;border-radius:6px;padding:5px 4px"><div style="font-size:15px;font-weight:800;color:#1D9E75">'+headcount+'</div><div style="font-size:9px;color:var(--text2)">Workers</div></div>'
       + '<div style="background:#f9fafb;border-radius:6px;padding:5px 4px"><div style="font-size:15px;font-weight:800;color:'+(co.active!==false?'#1D9E75':'#6B7280')+'">'+(co.active!==false?'✓':'✗')+'</div><div style="font-size:9px;color:var(--text2)">Status</div></div>'
       + '</div>'
@@ -26388,6 +26399,7 @@ async function adminLoadCompanies() {
     + '<th style="padding:8px">Industry</th>'
     + '<th style="padding:8px">Country</th>'
     + '<th style="padding:8px">Sites</th>'
+    + '<th style="padding:8px">Users</th>'
     + '<th style="padding:8px">Workers</th>'
     + '<th style="padding:8px">Tier</th>'
     + '<th style="padding:8px">Status</th>'
@@ -26409,6 +26421,7 @@ async function adminLoadCompanies() {
       +'<td style="padding:8px;font-size:11px">'+escH(co.industry||'—')+'</td>'
       +'<td style="padding:8px;font-size:11px">'+escH(co.country||'—')+'</td>'
       +'<td style="padding:8px;text-align:center;font-weight:700;color:#185FA5">'+sites+'</td>'
+      +'<td style="padding:8px;text-align:center;font-weight:700;color:#5B21B6">'+adminCompanyUserCount(co.id)+'</td>'
       +'<td style="padding:8px;text-align:center;font-weight:700">'+escH(String(co.headcount||0))+'</td>'
       +'<td style="padding:8px"><span style="color:'+(tierColors[co.subscription_tier||'professional'])+';font-size:10px;font-weight:700;text-transform:capitalize">'+escH(co.subscription_tier||'pro')+'</span></td>'
       +'<td style="padding:8px"><span style="background:'+(co.active!==false?'#EAF3DE':'#f3f4f6')+';color:'+(co.active!==false?'#3B6D11':'#6B7280')+';padding:2px 8px;border-radius:99px;font-size:10px;font-weight:700">'+(co.active!==false?'Active':'Inactive')+'</span></td>'
@@ -26422,6 +26435,8 @@ function adminNewCompany() {
   adminEditCoId = null;
   document.getElementById('adm-co-modal-title').textContent = 'New Company';
   document.getElementById('adm-co-del-btn').style.display = 'none';
+  var uc=document.getElementById('adm-co-users-count'); if(uc)uc.textContent='0 users';
+  var ul=document.getElementById('adm-co-users-list'); if(ul)ul.innerHTML='<div style="padding:18px;text-align:center;color:var(--text2);background:#f9fafb;border-radius:8px">Save the company first, then add users from Users & Roles.</div>';
   ['adm-co-name','adm-co-regno','adm-co-address','adm-co-contact','adm-co-email','adm-co-phone','adm-co-logo'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
   document.getElementById('adm-co-headcount').value='';
   document.getElementById('adm-co-country').value='Mauritius';
@@ -26450,10 +26465,41 @@ function adminEditCompany(id) {
   document.getElementById('adm-co-tier').value=co.subscription_tier||'professional';
   document.getElementById('adm-co-parent').value=co.parent_company_id||'';
   document.getElementById('adm-co-industry').value=co.industry||'Manufacturing';
+  adminRenderCompanyUsers(id);
   document.getElementById('adm-company-modal').style.display='flex';
 }
 
 function adminCloseCoModal(){ document.getElementById('adm-company-modal').style.display='none'; }
+
+function adminRenderCompanyUsers(companyId){
+  var el=document.getElementById('adm-co-users-list');
+  var countEl=document.getElementById('adm-co-users-count');
+  if(!el)return;
+  var users=adminCompanyUsers(companyId);
+  if(countEl)countEl.textContent=users.length+' user'+(users.length!==1?'s':'');
+  if(!users.length){
+    el.innerHTML='<div style="padding:18px;text-align:center;color:var(--text2);background:#f9fafb;border-radius:8px">No users have been added for this company yet.</div>';
+    return;
+  }
+  var roleLabel=function(role){
+    var rc=(typeof HSE_ROLES!=='undefined'&&HSE_ROLES[role])?HSE_ROLES[role]:null;
+    return rc?(rc.emoji+' '+rc.label):(role||'user').replace(/_/g,' ');
+  };
+  el.innerHTML='<div style="overflow:auto"><table style="width:100%;min-width:720px;border-collapse:collapse;font-size:12px">'
+    +'<thead><tr style="background:#f8fafc"><th style="padding:8px;text-align:left">User</th><th style="padding:8px;text-align:left">Login</th><th style="padding:8px">Role</th><th style="padding:8px;text-align:left">Department</th><th style="padding:8px;text-align:left">Job title</th><th style="padding:8px">Status</th></tr></thead><tbody>'
+    +users.map(function(u){
+      var active=u.status!=='inactive';
+      return '<tr style="border-bottom:1px solid var(--border)">'
+        +'<td style="padding:8px"><strong>'+escH(u.full_name||'--')+'</strong></td>'
+        +'<td style="padding:8px;font-family:monospace;font-size:11px;color:var(--text2)">'+escH(u.email||'--')+'</td>'
+        +'<td style="padding:8px;text-align:center"><span class="badge bgr">'+escH(roleLabel(u.role))+'</span></td>'
+        +'<td style="padding:8px">'+escH(u.department||'--')+'</td>'
+        +'<td style="padding:8px">'+escH(u.job_title||'--')+'</td>'
+        +'<td style="padding:8px;text-align:center"><span class="badge '+(active?'bg':'bgr')+'">'+(active?'Active':'Inactive')+'</span></td>'
+        +'</tr>';
+    }).join('')
+    +'</tbody></table></div>';
+}
 
 // Upload a client's logo to the public 'logos' bucket (for clients with no website).
 async function adminCoLogoUpload(input){
@@ -39205,7 +39251,7 @@ function fireEquipStatusBadge(s) {
 <div id="adm-modules-list"><div class="loading-msg">Loading...</div></div>
 </div>
 <div id="adm-company-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9999;align-items:flex-start;justify-content:center;padding:40px 20px;overflow-y:auto">
-<div style="background:#fff;border-radius:14px;max-width:620px;width:100%;box-shadow:0 24px 80px rgba(0,0,0,.35)">
+<div style="background:#fff;border-radius:14px;max-width:980px;width:100%;box-shadow:0 24px 80px rgba(0,0,0,.35)">
 <div style="padding:16px 24px;background:linear-gradient(135deg,#1a3a5c,#185FA5);color:#fff;border-radius:14px 14px 0 0;display:flex;justify-content:space-between;align-items:center">
 <div style="font-size:17px;font-weight:800" id="adm-co-modal-title">New Company</div>
 <button class="btn btn-sm" style="background:rgba(255,255,255,.2);color:#fff;border-color:rgba(255,255,255,.3)" onclick="adminCloseCoModal()"><i class="ti ti-x"></i></button>
@@ -39263,6 +39309,16 @@ function fireEquipStatusBadge(s) {
 </div>
 <div class="form-group"><label class="form-label">Subscription tier</label>
 <select id="adm-co-tier"><option value="starter">Starter</option><option value="professional" selected>Professional</option><option value="enterprise">Enterprise</option></select></div>
+</div>
+<div id="adm-co-users-panel" style="margin-top:16px;border:1px solid var(--border);border-radius:10px;overflow:hidden;background:#fff">
+<div style="padding:12px 14px;background:#f8fafc;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:10px">
+<div>
+<div style="font-size:13px;font-weight:800">Company users</div>
+<div style="font-size:11px;color:var(--text2)">Users attached to this company</div>
+</div>
+<span id="adm-co-users-count" class="badge bb">0 users</span>
+</div>
+<div id="adm-co-users-list" style="padding:12px"><div class="loading-msg">Open a company to view users</div></div>
 </div>
 <div style="display:flex;gap:8px;margin-top:16px;justify-content:flex-end">
 <button class="btn" onclick="adminCloseCoModal()">Cancel</button>
