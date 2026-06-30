@@ -28426,6 +28426,13 @@ var _obStep = 1;
 var _obCompanyId = null;
 var _obSiteCount = 0;
 
+function obEmailOk(email){
+  return /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(String(email||'').trim());
+}
+function obNormText(v){
+  return String(v||'').trim().replace(/\s+/g,' ');
+}
+
 // ── Open / Close ────────────────────────────────────────────────
 function openOnboarding() {
   if (!isSA()) { toast('Only SEPHS admins can onboard new clients', false); return; }
@@ -28500,32 +28507,42 @@ function obBack() {
 
 // ── Validation ───────────────────────────────────────────────────
 function obValidateStep1() {
-  var name  = document.getElementById('ob-co-name')?.value?.trim();
+  var name  = obNormText(document.getElementById('ob-co-name')?.value);
   var ind   = document.getElementById('ob-co-industry')?.value;
-  var cont  = document.getElementById('ob-co-contact')?.value?.trim();
-  var email = document.getElementById('ob-co-email')?.value?.trim();
+  var cont  = obNormText(document.getElementById('ob-co-contact')?.value);
+  var email = obNormText(document.getElementById('ob-co-email')?.value).toLowerCase();
+  var headcount = document.getElementById('ob-co-headcount')?.value;
   if (!name)  { toast('Company name is required', false); return false; }
   if (!ind)   { toast('Please select an industry', false); return false; }
   if (!cont)  { toast('Contact person name is required', false); return false; }
-  if (!email || !email.includes('@')) { toast('Valid contact email is required', false); return false; }
+  if (!obEmailOk(email)) { toast('Valid contact email is required', false); return false; }
+  if (headcount && Number(headcount) < 0) { toast('Headcount cannot be negative', false); return false; }
   return true;
 }
 
 function obValidateStep2() {
   var sites = document.querySelectorAll('.ob-site-name');
-  var valid = Array.from(sites).some(function(s) { return s.value.trim(); });
+  var names = Array.from(sites).map(function(s){return obNormText(s.value);}).filter(Boolean);
+  var valid = names.length>0;
   if (!valid) { toast('Add at least one site name', false); return false; }
+  var seen={};
+  for(var i=0;i<names.length;i++){
+    var k=names[i].toLowerCase();
+    if(seen[k]){toast('Duplicate site name: '+names[i],false);return false;}
+    seen[k]=true;
+  }
   return true;
 }
 
 function obValidateStep3() {
-  var name  = document.getElementById('ob-admin-name')?.value?.trim();
-  var email = document.getElementById('ob-admin-email')?.value?.trim();
+  var name  = obNormText(document.getElementById('ob-admin-name')?.value);
+  var email = obNormText(document.getElementById('ob-admin-email')?.value).toLowerCase();
   var pw    = document.getElementById('ob-admin-pw')?.value;
   var pw2   = document.getElementById('ob-admin-pw2')?.value;
   if (!name)  { toast('Admin name is required', false); return false; }
-  if (!email || !email.includes('@')) { toast('Valid admin email is required', false); return false; }
+  if (!obEmailOk(email)) { toast('Valid admin email is required', false); return false; }
   if (!pw || pw.length < 8) { toast('Password must be at least 8 characters', false); return false; }
+  if (!/[A-Za-z]/.test(pw) || !/[0-9]/.test(pw)) { toast('Password should include letters and numbers', false); return false; }
   if (pw !== pw2) { toast('Passwords do not match', false); return false; }
   return true;
 }
@@ -28609,17 +28626,27 @@ async function obCreate() {
   if (nextBtn) { nextBtn.disabled = true; nextBtn.innerHTML = '<i class="ti ti-loader-2"></i>Creating...'; }
 
   try {
-    var g = function(id) { var el = document.getElementById(id); return el ? el.value?.trim() || null : null; };
+    var g = function(id) { var el = document.getElementById(id); return el ? obNormText(el.value) || null : null; };
+    var companyName = g('ob-co-name');
+    var contactEmail = (g('ob-co-email')||'').toLowerCase();
+    var adminEmailPre = (g('ob-admin-email')||'').toLowerCase();
+
+    if(!obValidateStep1()||!obValidateStep2()||!obValidateStep3()) throw new Error('Please correct the highlighted onboarding details first.');
+    if(!adminCompaniesData||!adminCompaniesData.length){try{await adminLoadAll();}catch(_){adminCompaniesData=[];}}
+    var existingCo=(adminCompaniesData||[]).find(function(c){return obNormText(c.name).toLowerCase()===companyName.toLowerCase();});
+    if(existingCo) throw new Error('A company named "'+companyName+'" already exists. Open it from Companies instead of onboarding a duplicate.');
+    var existingAdmin=await api('/profiles?select=id,email,full_name&email=eq.'+encodeURIComponent(adminEmailPre)+'&limit=1');
+    if(existingAdmin&&existingAdmin.length) throw new Error('A user with admin email '+adminEmailPre+' already exists. Use Users & Roles to move or update the user.');
 
     // ── Step 1: Create company ──────────────────────────────────
     toast('Creating company...');
     var coBody = {
-      name:                g('ob-co-name'),
+      name:                companyName,
       industry:            g('ob-co-industry'),
       registration_no:     g('ob-co-regno'),
       headcount:           g('ob-co-headcount') ? parseInt(g('ob-co-headcount')) : null,
       contact_name:        g('ob-co-contact'),
-      contact_email:       g('ob-co-email'),
+      contact_email:       contactEmail,
       phone:               g('ob-co-phone'),
       address:             g('ob-co-address'),
       subscription_tier:   g('ob-co-tier') || 'professional',
@@ -28629,7 +28656,7 @@ async function obCreate() {
       active:              true,
       // New clients start with the standard pilot module set (not just
       // dashboard+kpi). Adjustable afterwards in Companies → Module Access.
-      module_access:       (typeof DEFAULT_CLIENT_MODULES!=='undefined') ? DEFAULT_CLIENT_MODULES.slice() : ['dashboard','kpi','events','observation','training','meetings','ppe','emergency','permit']
+      module_access:       (typeof moduleSanitizeAccess==='function') ? moduleSanitizeAccess(DEFAULT_CLIENT_MODULES.slice(),{liveOnly:true}) : ((typeof DEFAULT_CLIENT_MODULES!=='undefined') ? DEFAULT_CLIENT_MODULES.slice() : ['dashboard','kpi','events','observation','training','meetings','ppe','emergency','permit'])
     };
 
     var coRes = await api('/companies', { m: 'POST', p: 'return=representation', b: coBody });
@@ -28642,9 +28669,9 @@ async function obCreate() {
       .filter(function(s) { return s.value.trim(); });
 
     for (var i = 0; i < siteInputs.length; i++) {
-      var siteN   = siteInputs[i].value.trim();
+      var siteN   = obNormText(siteInputs[i].value);
       var siteT   = document.querySelector('.ob-site-type[data-site="' + siteInputs[i].dataset.site + '"]')?.value || 'office';
-      var siteA   = document.querySelector('.ob-site-address[data-site="' + siteInputs[i].dataset.site + '"]')?.value?.trim() || null;
+      var siteA   = obNormText(document.querySelector('.ob-site-address[data-site="' + siteInputs[i].dataset.site + '"]')?.value) || null;
       await api('/sites', { m: 'POST', p: 'return=minimal', b: {
         name:       siteN,
         site_type:  siteT,
@@ -28656,7 +28683,7 @@ async function obCreate() {
     toast(siteInputs.length + ' site(s) created ✓');
 
     // ── Step 3: Create admin user via Supabase Auth ─────────────
-    var adminEmail = g('ob-admin-email');
+    var adminEmail = adminEmailPre;
     var adminPw    = document.getElementById('ob-admin-pw')?.value;
     var adminName  = g('ob-admin-name');
     var adminRole  = g('ob-admin-role') || 'admin';
@@ -28666,7 +28693,7 @@ async function obCreate() {
     var signupRes = await authQ('/signup', {
       email:    adminEmail,
       password: adminPw,
-      data:     { full_name: adminName, role: adminRole }
+      data:     { full_name: adminName, role: adminRole, company_id: _obCompanyId }
     });
 
     if (!signupRes || (!signupRes.user && !signupRes.id)) {
@@ -28711,7 +28738,8 @@ async function obCreate() {
 
     // ── Step 5: Queue welcome email ──────────────────────────────
     try {
-      var coName = g('ob-co-name');
+      var coName = companyName;
+      var appUrl = location.origin || 'https://auris-360.vercel.app';
       var welcomeHtml = '<!DOCTYPE html><html><body style="font-family:Arial,sans-serif;background:#f4f6f8;padding:20px">'
         + '<div style="max-width:600px;margin:0 auto;background:#fff;border-radius:12px;overflow:hidden">'
         + '<div style="background:#1D9E75;padding:20px 24px;color:#fff">'
@@ -28722,13 +28750,13 @@ async function obCreate() {
         + '<p style="font-size:15px;color:#1a1a1a">Hi <strong>' + escH(adminName) + '</strong>,</p>'
         + '<p style="color:#374151;margin-top:10px">Your AURIS360 account has been set up for <strong>' + escH(coName) + '</strong>. You can now log in and start managing your HSE operations.</p>'
         + '<div style="background:#f9fafb;border-radius:8px;padding:16px;margin:16px 0;font-size:14px">'
-        + '<div><strong>Login URL:</strong> <a href="https://app.auris360.com">app.auris360.com</a></div>'
+        + '<div><strong>Login URL:</strong> <a href="' + escH(appUrl) + '">' + escH(appUrl.replace(/^https?:\/\//,'')) + '</a></div>'
         + '<div style="margin-top:6px"><strong>Email:</strong> ' + escH(adminEmail) + '</div>'
         + '<div style="margin-top:6px"><strong>Temporary Password:</strong> (as provided by SEPHS Consulting)</div>'
         + '</div>'
         + '<p style="color:#374151;font-size:13px">Please change your password after your first login.</p>'
         + '<div style="margin-top:20px;text-align:center">'
-        + '<a href="https://app.auris360.com" style="background:#1D9E75;color:#fff;padding:12px 28px;border-radius:8px;text-decoration:none;font-weight:600;font-size:14px">Login to AURIS360</a>'
+        + '<a href="' + escH(appUrl) + '" style="background:#1D9E75;color:#fff;padding:12px 28px;border-radius:8px;text-decoration:none;font-weight:600;font-size:14px">Login to AURIS360</a>'
         + '</div></div>'
         + '<div style="padding:12px 24px;background:#f4f6f8;font-size:11px;color:#6B7280;text-align:center">AURIS360 by SEPHS Consulting — ' + escH(coName) + '</div>'
         + '</div></body></html>';
