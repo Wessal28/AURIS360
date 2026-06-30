@@ -825,7 +825,9 @@ input[type="button"], input[type="submit"] {
   .card { overflow-x: visible !important; overflow-y: visible !important; }
   .table-wrap,
   .page [style*="overflow-x:auto"],
-  .page [style*="overflow-x: auto"] {
+  .page [style*="overflow-x: auto"],
+  .page [style*="overflow:auto"],
+  .page [style*="overflow: auto"] {
     max-width: 100% !important;
     overflow-x: auto !important;
     overflow-y: visible !important;
@@ -974,6 +976,8 @@ input[type="button"], input[type="submit"] {
   }
   .page [style*="overflow-x:auto"],
   .page [style*="overflow-x: auto"],
+  .page [style*="overflow:auto"],
+  .page [style*="overflow: auto"],
   .table-wrap {
     width: calc(100vw - 20px) !important;
     max-width: calc(100vw - 20px) !important;
@@ -2433,12 +2437,24 @@ async function obsSave() {
   var g = function(id){var el=document.getElementById(id);return el?el.value||null:null;};
   var type = g('obs-type')||'unsafe_condition';
   var isPositive = ['positive_behaviour','good_practice'].includes(type);
-  var desc = isPositive ? (g('obs-positive-text')||g('obs-positive-reinforce')) : (g('obs-text')||g('obs-immediate-cause'));
+  var desc = isPositive ? (g('obs-positive-text')||g('obs-positive-reinforce')) : g('obs-text');
   if (!desc) { toast('Please describe what was observed', false); return; }
   if (!g('obs-date')) { toast('Please select the observation date', false); return; }
   if (!g('obs-location')) { toast('Please enter the location or area', false); return; }
   if (!g('obs-observer')) { toast('Please select the observer', false); return; }
   var actionRequired = document.getElementById('obs-action-required')?.checked||false;
+  var obsSeverity = g('obs-severity')||'medium';
+  if (!isPositive && ['critical','high'].includes(obsSeverity) && !actionRequired) {
+    var proceedWithoutAction = await appConfirm({
+      title:'Save without follow-up action?',
+      message:'This is a high-risk observation without an assigned corrective action.',
+      detail:'For pilot data quality, high and critical unsafe observations should normally create a follow-up action.',
+      confirmText:'Save without action',
+      cancelText:'Add action',
+      danger:true
+    });
+    if(!proceedWithoutAction) return;
+  }
   if (actionRequired && !g('obs-action-desc')) { toast('Please describe the follow-up action required', false); return; }
   if (actionRequired && !g('obs-action-assigned')) { toast('Please assign the follow-up action to a person', false); return; }
   if (actionRequired && !g('obs-action-due')) { toast('Please select the action due date', false); return; }
@@ -2448,7 +2464,7 @@ async function obsSave() {
     company_id: ccid(),
     obs_type: type,
     category: g('obs-category')||'general',
-    severity: g('obs-severity')||'medium',
+    severity: obsSeverity,
     observation_date: g('obs-date'),
     observation_time: g('obs-time'),
     location: g('obs-location'),
@@ -10858,13 +10874,26 @@ async function imsSave(){
   var desc=document.getElementById('ev-description')?.value?.trim();
   if(!desc){toast('Please describe what happened',false);return;}
   var g=function(id){var el=document.getElementById(id);return el?el.value||null:null;};
+  if(!g('ev-location')){toast('Please enter the incident location',false);return;}
   var invReq=document.getElementById('ev-inv-required')?.checked||false;
+  var severity=g('ev-severity')||'medium';
+  if(isMgr() && ['high','critical'].includes(severity) && !invReq){
+    var proceedWithoutInv=await appConfirm({
+      title:'Save without investigation?',
+      message:'This incident is marked as high/critical severity without an investigation requirement.',
+      detail:'For pilot data quality, serious incidents should normally trigger an investigation workflow.',
+      confirmText:'Save without investigation',
+      cancelText:'Mark investigation required',
+      danger:true
+    });
+    if(!proceedWithoutInv)return;
+  }
   // Use sephs_admin's selected company context when applicable, otherwise user's own.
   // Without this, sephs_admin saves under their profile company (BuildCo) even when
   // viewing another client's data via the switcher.
   var effectiveCompanyId = (isSA() && sephsCompanyContext) ? sephsCompanyContext : prof?.company_id;
   var body={company_id:effectiveCompanyId,event_type:type,event_date:date.includes('T')?date.split('T')[0]:date,
-    event_time:date.includes('T')?date.split('T')[1]:null,severity:g('ev-severity')||'medium',
+    event_time:date.includes('T')?date.split('T')[1]:null,severity:severity,
     status:g('ev-status')||'open',location:g('ev-location'),department:g('ev-department'),
     description:desc,immediate_action:g('ev-immediate'),root_cause:g('ev-root-cause'),
     witnesses:g('ev-witnesses'),reported_by_name:g('ev-reported-by-name'),
