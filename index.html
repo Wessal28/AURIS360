@@ -26475,11 +26475,13 @@ async function adminGroupAI(type) {
 // The catalogue of HSE modules a company can be granted. Admin/account pages
 // (users, settings, executive) are NOT here — company admins always get those.
 var MODULE_CATALOGUE = [
+  {k:'dashboard',    l:'Dashboard'},
   {k:'events',      l:'Incident Management'},
   {k:'observation', l:'BBS Observations'},
   {k:'kpi',         l:'Objectives & KPIs'},
+  {k:'workschedule',l:'Work Schedule'},
   {k:'risk',        l:'Risk Assessments'},
-  {k:'inspection',  l:'Inspections'},
+  {k:'inspection',  l:'Audits & Inspections'},
   {k:'permit',      l:'Permit to Work'},
   {k:'training',    l:'Training'},
   {k:'meetings',    l:'HSE Meetings'},
@@ -26503,6 +26505,33 @@ var MODULE_CATALOGUE = [
 // The default set granted to a new pilot client (matches LAUNCHED_MODULES HSE set).
 var DEFAULT_CLIENT_MODULES = ['dashboard','kpi','events','observation','training','meetings','ppe','emergency','permit'];
 
+function moduleCatalogueKeys(){
+  var keys=[];
+  (MODULE_CATALOGUE||[]).forEach(function(m){var k=m.k||m.key;if(k&&keys.indexOf(k)===-1)keys.push(k);});
+  if(typeof MODULE_CATALOG!=='undefined')(MODULE_CATALOG||[]).forEach(function(m){var k=m.key||m.k;if(k&&keys.indexOf(k)===-1)keys.push(k);});
+  return keys;
+}
+function moduleLiveKeys(){
+  var live=(typeof LAUNCHED_MODULES!=='undefined'&&Array.isArray(LAUNCHED_MODULES))?LAUNCHED_MODULES.slice():DEFAULT_CLIENT_MODULES.slice();
+  if(live.indexOf('dashboard')===-1)live.unshift('dashboard');
+  return live.filter(function(k,i,a){return k&&a.indexOf(k)===i;});
+}
+function moduleSanitizeAccess(mods,opts){
+  opts=opts||{};
+  var known=moduleCatalogueKeys();
+  var live=moduleLiveKeys();
+  var src=Array.isArray(mods)?mods:[];
+  var out=[];
+  src.forEach(function(k){
+    if(!k||out.indexOf(k)!==-1)return;
+    if(known.length&&known.indexOf(k)===-1&&k!=='dashboard')return;
+    if(opts.liveOnly&&live.indexOf(k)===-1)return;
+    out.push(k);
+  });
+  if(out.indexOf('dashboard')===-1)out.unshift('dashboard');
+  return out;
+}
+
 async function adminLoadModuleAccess() {
   var el = document.getElementById('adm-modules-list'); if(!el) return;
   el.innerHTML = '<div class="loading-msg">Loading...</div>';
@@ -26511,15 +26540,17 @@ async function adminLoadModuleAccess() {
   if(!cos.length){ el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)">No companies yet</div>'; return; }
   var h='';
   cos.forEach(function(c){
-    var acc = Array.isArray(c.module_access) ? c.module_access : [];
-    var granted = MODULE_CATALOGUE.filter(function(m){return acc.indexOf(m.k)!==-1;}).length;
+    var acc = moduleSanitizeAccess(c.module_access||[]);
+    var liveGranted = moduleLiveKeys().filter(function(k){return acc.indexOf(k)!==-1;}).length;
+    var totalLive = moduleLiveKeys().length;
+    var granted = MODULE_CATALOGUE.filter(function(m){return m.k!=='dashboard'&&acc.indexOf(m.k)!==-1;}).length;
     h += '<div class="card" style="margin-bottom:10px;padding:0;overflow:hidden">'
       + '<div style="background:#185FA5;color:#fff;padding:10px 14px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">'
       + '<div style="font-weight:700;font-size:13px">'+escH(c.name||'(unnamed)')+'</div>'
       + '<div style="display:flex;gap:6px;align-items:center">'
-      + '<span style="font-size:11px;opacity:.9">'+granted+' / '+MODULE_CATALOGUE.length+' modules</span>'
+      + '<span style="font-size:11px;opacity:.9">'+liveGranted+' / '+totalLive+' live · '+granted+' selected</span>'
       + '<button class="btn btn-sm" data-id="'+c.id+'" onclick="adminModSetDefault(this.dataset.id)" style="background:#fff;color:#185FA5">Pilot default</button>'
-      + '<button class="btn btn-sm" data-id="'+c.id+'" onclick="adminModSetAll(this.dataset.id,true)" style="background:rgba(255,255,255,.15);color:#fff;border-color:rgba(255,255,255,.4)">All</button>'
+      + '<button class="btn btn-sm" data-id="'+c.id+'" onclick="adminModSetAll(this.dataset.id,true)" style="background:rgba(255,255,255,.15);color:#fff;border-color:rgba(255,255,255,.4)">All live</button>'
       + '<button class="btn btn-sm" data-id="'+c.id+'" onclick="adminModSetAll(this.dataset.id,false)" style="background:rgba(255,255,255,.15);color:#fff;border-color:rgba(255,255,255,.4)">None</button>'
       + '</div></div>'
       + '<div style="padding:12px 14px;display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:6px">';
@@ -26537,7 +26568,7 @@ async function adminLoadModuleAccess() {
 
 // Persist a company's module list, always keeping 'dashboard' (it's the landing page).
 async function adminModSave(companyId, mods){
-  if(mods.indexOf('dashboard')===-1) mods.unshift('dashboard');
+  mods=moduleSanitizeAccess(mods||[]);
   try{
     await api('/companies?id=eq.'+companyId, {m:'PATCH', p:'return=minimal', b:{module_access:mods}});
     var c=(adminCompaniesData||[]).find(function(x){return x.id===companyId;});
@@ -26558,9 +26589,9 @@ async function adminModToggle(cb){
 }
 
 async function adminModSetAll(companyId, all){
-  var mods = all ? ['dashboard'].concat(MODULE_CATALOGUE.map(function(m){return m.k;})) : ['dashboard'];
+  var mods = all ? moduleLiveKeys() : ['dashboard'];
   var ok = await adminModSave(companyId, mods);
-  if(ok){ toast(all?'All modules granted':'All modules removed'); adminLoadModuleAccess(); }
+  if(ok){ toast(all?'All live modules granted':'All modules removed'); adminLoadModuleAccess(); }
 }
 
 async function adminModSetDefault(companyId){
@@ -26664,7 +26695,7 @@ function openModuleAccess(coId) {
   var co = (adminCompaniesData||[]).find(function(c){return c.id===coId;});
   if (!co) { toast('Company not found', false); return; }
   currentModuleCompanyId = coId;
-  currentModuleAccess = Array.isArray(co.module_access) ? co.module_access.slice() : ['dashboard'];
+  currentModuleAccess = moduleSanitizeAccess(co.module_access||[]);
   document.getElementById('adm-modules-co-name').textContent = co.name;
   renderModuleAccessList();
   document.getElementById('adm-modules-modal').style.display = 'flex';
@@ -26710,9 +26741,9 @@ function toggleModuleAccess(key, checked) {
 
 function moduleAccessSelectPreset(name) {
   if (name === 'all') {
-    currentModuleAccess = (typeof LAUNCHED_MODULES !== 'undefined') ? LAUNCHED_MODULES.slice() : ['dashboard'];
+    currentModuleAccess = moduleLiveKeys();
   } else if (MODULE_PRESETS[name]) {
-    currentModuleAccess = MODULE_PRESETS[name].slice();
+    currentModuleAccess = moduleSanitizeAccess(MODULE_PRESETS[name].slice());
   }
   // Always include dashboard
   if (currentModuleAccess.indexOf('dashboard') === -1) currentModuleAccess.unshift('dashboard');
@@ -26722,7 +26753,7 @@ function moduleAccessSelectPreset(name) {
 async function saveModuleAccess() {
   if (!currentModuleCompanyId) { toast('No company selected', false); return; }
   // Always ensure dashboard is in the list
-  if (currentModuleAccess.indexOf('dashboard') === -1) currentModuleAccess.unshift('dashboard');
+  currentModuleAccess = moduleSanitizeAccess(currentModuleAccess||[]);
   try {
     await api('/companies?id=eq.'+currentModuleCompanyId, {
       m:'PATCH',
@@ -38887,7 +38918,7 @@ Pick the modules this client can see. Sephs admin (you) always sees everything r
 <button class="btn btn-sm" onclick="moduleAccessSelectPreset('starter')">📦 Starter (Dashboard + KPI)</button>
 <button class="btn btn-sm" onclick="moduleAccessSelectPreset('pilot')">🚀 Pilot pack (9 modules)</button>
 <button class="btn btn-sm" onclick="moduleAccessSelectPreset('none')">❌ None</button>
-<button class="btn btn-sm" onclick="moduleAccessSelectPreset('all')">✅ All launched</button>
+<button class="btn btn-sm" onclick="moduleAccessSelectPreset('all')">✅ All live</button>
 </div>
 
 <!-- Module checkbox grid -->
