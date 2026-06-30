@@ -8820,6 +8820,9 @@ if(isNaN(n))return v===null||v===undefined?'--':String(v);
 return Number.isInteger(n)?String(n):String(Math.round(n*100)/100);
 }
 
+function kpiCanEdit(){
+return isMgr();
+}
 
 function kpiRenderOverview(){
 const c=document.getElementById('kpi-objectives-container');
@@ -8931,6 +8934,9 @@ function kpiRenderMonthly(){
 const tbody=document.getElementById('kpi-monthly-body');
 if(!tbody)return;
 tbody.innerHTML='';
+const canEdit=kpiCanEdit();
+const monthlyNote=document.querySelector('#kpi-tab-monthly .card > div:first-child div:last-child');
+if(monthlyNote)monthlyNote.textContent=canEdit?'Click any cell to enter value':'Monthly values are read-only for this role';
 if(!kpiObjectives.length){
 tbody.innerHTML='<tr><td colspan="18" style="padding:36px 20px;text-align:center;color:var(--text2)"><i class="ti ti-calendar-stats" style="font-size:32px;color:#D1D5DB;display:block;margin-bottom:10px"></i><div style="font-size:14px;font-weight:600;color:var(--text);margin-bottom:4px">No data to display</div><div style="font-size:12px;color:var(--text2)">Set up objectives and KPIs first, then monthly values will appear here.</div></td></tr>';
 return;
@@ -8977,14 +8983,14 @@ tgtTd.textContent=kpiFmtTarget(ind);tr.appendChild(tgtTd);
 KPI_MONTHS.forEach(function(_,mi){
 const m=mi+1;const entry=mdata[m];
 const td=document.createElement('td');
-td.style.cssText='border:1px solid var(--border);padding:6px 8px;text-align:center;cursor:pointer';
-td.title='Click to '+(entry?'edit':'enter value');
+td.style.cssText='border:1px solid var(--border);padding:6px 8px;text-align:center'+(canEdit?';cursor:pointer':'');
+td.title=canEdit?('Click to '+(entry?'edit':'enter value')):'Read-only';
 if(entry&&entry.actual!==null&&entry.actual!==undefined){
 hasData=true;const val=parseFloat(entry.actual);ytdSum+=val;
 const sty=kpiCellStyle(ind,val);if(sty)td.style.cssText+=';'+sty;
 td.textContent=kpiFmtNumberOnly(val);
 }else{td.style.color='var(--text3)';td.textContent='--';}
-(function(indId,kId,mn){td.onclick=function(){kpiOpenEntry(indId,kId,mn);};})(ind.id,k.id,m);
+if(canEdit){(function(indId,kId,mn){td.onclick=function(){kpiOpenEntry(indId,kId,mn);};})(ind.id,k.id,m);}
 tr.appendChild(td);
 });
 const ytdVals=Object.values(mdata).filter(function(v){return v.ytd!==null&&v.ytd!==undefined;});
@@ -9228,6 +9234,7 @@ if(method==='min')return Math.min(...vals);
 return Math.round(vals.reduce((a,b)=>a+b,0)*100)/100;
 }
 function kpiOpenEntry(indicatorId,kpiId,month){
+if(!kpiCanEdit()){toast('Only managers can enter KPI monthly values.',false);return;}
 kpiEntryIndicatorId=indicatorId;
 kpiEntryYear=parseInt(document.getElementById('year-sel')?.value)||new Date().getFullYear();
 kpiEntryMonth=month;
@@ -9256,6 +9263,7 @@ if(clearBtn)clearBtn.style.display=ex?'flex':'none';
 openKpiModal('kpi-entry-modal');
 }
 async function kpiSaveEntry(){
+if(!kpiCanEdit()){toast('Only managers can save KPI monthly values.',false);return;}
 const actual=document.getElementById('entry-actual').value;
 if(actual===''){toast('Please enter a value',false);return;}
 const manualYtd=document.getElementById('entry-ytd').value;
@@ -9287,6 +9295,21 @@ await kpiLoadAll();
 }catch(e){toast(e.message,false);}
 }
 
+function kpiCalcYTDFromRows(ind,rows,upToMonth){
+const vals=(rows||[])
+.filter(function(x){return x.month<=upToMonth&&x.actual!==null&&x.actual!==undefined;})
+.sort(function(a,b){return a.month-b.month;})
+.map(function(x){return parseFloat(x.actual);})
+.filter(function(v){return !isNaN(v);});
+if(!vals.length)return null;
+const method=ind?.ytd_method||'sum';
+if(method==='last')return vals[vals.length-1];
+if(method==='average')return Math.round((vals.reduce(function(a,b){return a+b;},0)/vals.length)*100)/100;
+if(method==='max')return Math.max.apply(null,vals);
+if(method==='min')return Math.min.apply(null,vals);
+return Math.round(vals.reduce(function(a,b){return a+b;},0)*100)/100;
+}
+
 async function kpiRecalcAllYTD(indicatorId,year){
 const ind=kpiIndicators.find(x=>x.id===indicatorId);
 if(!ind)return;
@@ -9295,9 +9318,8 @@ const fresh=await api('/kpi_monthly_data?indicator_id=eq.'+indicatorId+'&year=eq
 if(!fresh||!fresh.length)return;
 for(var mi=0;mi<fresh.length;mi++){
   var m=fresh[mi].month;
-  var prevVals=fresh.filter(function(x){return x.month<=m&&x.actual!==null&&x.actual!==undefined;}).map(function(x){return parseFloat(x.actual);});
-  if(!prevVals.length)continue;
-  var newYTD=kpiCalcYTD(indicatorId,m,parseFloat(fresh[mi].actual));
+  var newYTD=kpiCalcYTDFromRows(ind,fresh,m);
+  if(newYTD===null)continue;
   var entry=fresh[mi];
   if(Math.abs(newYTD-(parseFloat(entry.ytd)||0))>0.001){
     await api('/kpi_monthly_data?indicator_id=eq.'+indicatorId+'&year=eq.'+year+'&month=eq.'+m,{m:'PATCH',p:'return=minimal',b:{ytd:newYTD}});
@@ -9308,6 +9330,7 @@ for(var mi=0;mi<fresh.length;mi++){
 
 
 async function kpiClearEntry(){
+if(!kpiCanEdit()){toast('Only managers can clear KPI monthly values.',false);return;}
 if(!(await appConfirmAction({title:'Clear KPI data',message:"Clear this month's data?",detail:'This cannot be undone.',confirmText:'Clear data',cancelText:'Keep data'})))return;
 try{
 await api('/kpi_monthly_data?indicator_id=eq.'+kpiEntryIndicatorId+'&year=eq.'+kpiEntryYear+'&month=eq.'+kpiEntryMonth,{m:'DELETE'});
