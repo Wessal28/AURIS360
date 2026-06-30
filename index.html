@@ -8168,6 +8168,10 @@ toggleForm('people-form');toast('Person added!');loadPeople();await loadPeopleCa
 
 let peAllData=[], peEditingId=null;
 
+function peopleCanManage(){
+const role=activeRole();
+return isSA()||role==='admin'||role==='hse_manager'||role==='hr';
+}
 function peopleName(p){
 return [p?.first_name,p?.last_name].filter(Boolean).join(' ').trim()||p?.email||'Person';
 }
@@ -8189,7 +8193,7 @@ const status=document.getElementById('pef-status');if(status)status.value='activ
 if(typeof toggleContractor==='function')toggleContractor();
 }
 function peopleNew(){
-if(!isMgr()){toast('Access denied',false);return;}
+if(!peopleCanManage()){toast('Access denied',false);return;}
 peEditingId=null;peopleClearForm();peopleSetFormTitle('Add person');peopleFormVisible(true);
 setTimeout(()=>document.getElementById('pef-first')?.focus(),30);
 }
@@ -8232,6 +8236,7 @@ peopleFormVisible(true);
 document.getElementById('people-form')?.scrollIntoView({behavior:'smooth',block:'start'});
 }
 function peopleEdit(id){
+if(!peopleCanManage()){toast('Access denied',false);return;}
 const p=peAllData.find(x=>x.id===id);
 if(!p){toast('Person not found',false);return;}
 peopleFillForm(p);
@@ -8249,12 +8254,13 @@ const typeBadge=p.person_type==='employee'?'bg':p.person_type==='contractor'?'bb
 const hse=(p.induction_completed?'<span style="color:var(--green);font-weight:700">Inducted</span>':'<span style="color:var(--amber);font-weight:700">Induction pending</span>')+'<br><span style="font-size:11px;color:var(--text2)">Medical: '+dateText(p.medical_fitness_date)+'</span>';
 const employment='<div>'+(p.job_title?escH(p.job_title):'--')+'</div><div style="font-size:11px;color:var(--text2)">Start: '+dateText(p.start_date)+(p.end_date?' | End: '+dateText(p.end_date):'')+'</div>';
 const contractor=p.person_type!=='employee'&&p.company_name?'<div style="font-size:11px;color:var(--blue);font-weight:700">'+escH(p.company_name)+'</div>':'';
-return '<tr><td><strong>'+escH(peopleName(p))+'</strong>'+contractor+'<div style="font-size:11px;color:var(--text2)">ID: '+escH(p.id_number||'--')+'</div></td><td><span class="badge '+typeBadge+'">'+escH(p.person_type||'person')+'</span></td><td>'+escH(p.department||'--')+'<br><span style="font-size:11px;color:var(--text2)">'+escH(p.site||'--')+'</span></td><td>'+escH(p.email||'--')+'<br><span style="font-size:11px;color:var(--text2)">'+escH(p.phone||'--')+'</span></td><td>'+employment+'</td><td>'+hse+'</td><td>'+stat(p.status||'active')+'</td><td><div style="display:flex;gap:6px;flex-wrap:wrap"><button class="btn btn-sm" onclick="peopleEdit(\''+p.id+'\')"><i class="ti ti-edit"></i>Edit</button>'+(p.status==='inactive'?'<button class="btn btn-sm" onclick="peopleReactivate(\''+p.id+'\')">Reactivate</button>':'<button class="btn btn-sm danger" onclick="peopleDeactivate(\''+p.id+'\')">Deactivate</button>')+'</div></td></tr>';
+const actions=peopleCanManage()?'<div style="display:flex;gap:6px;flex-wrap:wrap"><button class="btn btn-sm" onclick="peopleEdit(\''+p.id+'\')"><i class="ti ti-edit"></i>Edit</button>'+(p.status==='inactive'?'<button class="btn btn-sm" onclick="peopleReactivate(\''+p.id+'\')">Reactivate</button>':'<button class="btn btn-sm danger" onclick="peopleDeactivate(\''+p.id+'\')">Deactivate</button>')+'</div>':'<span style="font-size:11px;color:var(--text3)">View only</span>';
+return '<tr><td><strong>'+escH(peopleName(p))+'</strong>'+contractor+'<div style="font-size:11px;color:var(--text2)">ID: '+escH(p.id_number||'--')+'</div></td><td><span class="badge '+typeBadge+'">'+escH(p.person_type||'person')+'</span></td><td>'+escH(p.department||'--')+'<br><span style="font-size:11px;color:var(--text2)">'+escH(p.site||'--')+'</span></td><td>'+escH(p.email||'--')+'<br><span style="font-size:11px;color:var(--text2)">'+escH(p.phone||'--')+'</span></td><td>'+employment+'</td><td>'+hse+'</td><td>'+stat(p.status||'active')+'</td><td>'+actions+'</td></tr>';
 }).join('')+'</tbody></table></div>';
 }
 async function loadPeople(){
 const btn=document.getElementById('people-add-btn');
-if(isMgr()&&btn)btn.innerHTML='<button class="btn btn-primary" onclick="peopleNew()"><i class="ti ti-plus"></i>Add person</button>';
+if(btn)btn.innerHTML=peopleCanManage()?'<button class="btn btn-primary" onclick="peopleNew()"><i class="ti ti-plus"></i>Add person</button>':'';
 const el=document.getElementById('people-list');if(el)el.innerHTML='<div class="loading-msg">Loading...</div>';
 try{
 let path='/people?select=*'+cf()+'&order=last_name';
@@ -8268,7 +8274,7 @@ peopleRender();
 }catch(e){if(el)el.innerHTML='<div class="empty" style="color:var(--red)">'+escH(e.message)+'</div>';}
 }
 async function savePerson(){
-if(!isMgr()){toast('Access denied',false);return;}
+if(!peopleCanManage()){toast('Access denied',false);return;}
 const body=peopleBodyFromForm();
 const err=peopleValidate(body);
 if(err){toast(err,false);return;}
@@ -8285,12 +8291,12 @@ peopleCancel();await loadPeople();await loadPeopleCache();
 }catch(e){toast(e.message,false);}
 }
 async function peopleDeactivate(id){
-if(!isMgr()){toast('Access denied',false);return;}
+if(!peopleCanManage()){toast('Access denied',false);return;}
 if(!(await appConfirmDelete('person','This will set the person to inactive and keep linked records for traceability.')))return;
 try{await api('/people?id=eq.'+id,{m:'PATCH',p:'return=minimal',b:{status:'inactive'}});toast('Person deactivated');await loadPeople();await loadPeopleCache();}catch(e){toast(e.message,false);}
 }
 async function peopleReactivate(id){
-if(!isMgr()){toast('Access denied',false);return;}
+if(!peopleCanManage()){toast('Access denied',false);return;}
 try{await api('/people?id=eq.'+id,{m:'PATCH',p:'return=minimal',b:{status:'active'}});toast('Person reactivated');await loadPeople();await loadPeopleCache();}catch(e){toast(e.message,false);}
 }
 
