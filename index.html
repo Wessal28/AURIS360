@@ -26160,14 +26160,20 @@ async function adminCoLogoUpload(input){
 }
 
 async function adminSaveCompany() {
-  var name = document.getElementById('adm-co-name')?.value?.trim();
+  var name = obNormText(document.getElementById('adm-co-name')?.value);
   if(!name){toast('Company name required',false);return;}
-  var g=function(id){var el=document.getElementById(id);return el?el.value||null:null;};
+  var g=function(id){var el=document.getElementById(id);return el?obNormText(el.value)||null:null;};
+  var email=g('adm-co-email');
+  var headcount=g('adm-co-headcount');
+  if(email&&!obEmailOk(email)){toast('Please enter a valid company contact email',false);return;}
+  if(headcount&&Number(headcount)<0){toast('Headcount cannot be negative',false);return;}
+  var duplicate=(adminCompaniesData||[]).find(function(c){return c.id!==adminEditCoId&&obNormText(c.name).toLowerCase()===name.toLowerCase();});
+  if(duplicate){toast('A company with this name already exists',false);return;}
   var body={name,company_type:g('adm-co-type')||'standalone',parent_company_id:g('adm-co-parent')||null,
     industry:g('adm-co-industry'),registration_no:g('adm-co-regno'),address:g('adm-co-address'),
     country:g('adm-co-country')||'Mauritius',currency:g('adm-co-currency')||'MUR',
-    phone:g('adm-co-phone'),contact_name:g('adm-co-contact'),contact_email:g('adm-co-email'),
-    headcount:g('adm-co-headcount')?parseInt(g('adm-co-headcount')):null,
+    phone:g('adm-co-phone'),contact_name:g('adm-co-contact'),contact_email:email,
+    headcount:headcount?parseInt(headcount):null,
     logo_url:g('adm-co-logo'),subscription_tier:g('adm-co-tier')||'professional',
     active:true,updated_at:new Date().toISOString()};
   try{
@@ -26180,8 +26186,9 @@ async function adminSaveCompany() {
 
 async function adminDeleteCompany() {
   if(!adminEditCoId)return;
-  if(!(await appConfirmDelete('company','This is irreversible and should only be used for test or incorrect company records.')))return;
-  try{await api('/companies?id=eq.'+adminEditCoId,{m:'DELETE'});toast('Company deleted!');adminCloseCoModal();adminLoadAll().then(function(){adminLoadCompanies();});}
+  var co=adminCompaniesData.find(function(c){return c.id===adminEditCoId;});
+  if(!(await appConfirmAction({title:'Deactivate company',message:'Deactivate '+(co?.name||'this company')+'?',detail:'This keeps all linked incidents, permits, users and historical records. Use database admin only for permanent test-data deletion.',confirmText:'Deactivate',cancelText:'Cancel'})))return;
+  try{await api('/companies?id=eq.'+adminEditCoId,{m:'PATCH',p:'return=minimal',b:{active:false,updated_at:new Date().toISOString()}});toast('Company deactivated');adminCloseCoModal();adminLoadAll().then(function(){adminLoadCompanies();adminRenderOverviewCards();});}
   catch(e){toast(e.message,false);}
 }
 
@@ -26280,16 +26287,28 @@ function adminSiteGetGPS(){
 }
 
 async function adminSaveSite() {
-  var name=document.getElementById('adm-site-name')?.value?.trim();
+  var name=obNormText(document.getElementById('adm-site-name')?.value);
   var coId=document.getElementById('adm-site-company')?.value;
   if(!name){toast('Site name required',false);return;}
   if(!coId){toast('Please select a company',false);return;}
-  var g=function(id){var el=document.getElementById(id);return el?el.value||null:null;};
+  var g=function(id){var el=document.getElementById(id);return el?obNormText(el.value)||null:null;};
+  var email=g('adm-site-mgr-email'), lat=g('adm-site-lat'), lng=g('adm-site-lng'), headcount=g('adm-site-headcount'), code=g('adm-site-code'), parentId=g('adm-site-parent');
+  if(email&&!obEmailOk(email)){toast('Please enter a valid site manager email',false);return;}
+  if(headcount&&Number(headcount)<0){toast('Site headcount cannot be negative',false);return;}
+  if(lat&&(Number(lat)<-90||Number(lat)>90)){toast('Latitude must be between -90 and 90',false);return;}
+  if(lng&&(Number(lng)<-180||Number(lng)>180)){toast('Longitude must be between -180 and 180',false);return;}
+  if(parentId===adminEditSiteId){toast('A site cannot be its own parent',false);return;}
+  var duplicateName=(adminSitesData||[]).find(function(s){return s.id!==adminEditSiteId&&s.company_id===coId&&obNormText(s.name).toLowerCase()===name.toLowerCase();});
+  if(duplicateName){toast('A site with this name already exists for the selected company',false);return;}
+  if(code){
+    var duplicateCode=(adminSitesData||[]).find(function(s){return s.id!==adminEditSiteId&&obNormText(s.site_code).toLowerCase()===code.toLowerCase();});
+    if(duplicateCode){toast('This site code is already used',false);return;}
+  }
   var body={company_id:coId,name,site_code:g('adm-site-code'),site_type:g('adm-site-type')||'site',
-    parent_site_id:g('adm-site-parent')||null,address:g('adm-site-address'),city:g('adm-site-city'),
-    country:g('adm-site-country')||'Mauritius',lat:g('adm-site-lat')?parseFloat(g('adm-site-lat')):null,
-    lng:g('adm-site-lng')?parseFloat(g('adm-site-lng')):null,manager_name:g('adm-site-manager'),
-    manager_email:g('adm-site-mgr-email'),headcount:g('adm-site-headcount')?parseInt(g('adm-site-headcount')):0,
+    parent_site_id:parentId||null,address:g('adm-site-address'),city:g('adm-site-city'),
+    country:g('adm-site-country')||'Mauritius',lat:lat?parseFloat(lat):null,
+    lng:lng?parseFloat(lng):null,manager_name:g('adm-site-manager'),
+    manager_email:email,headcount:headcount?parseInt(headcount):0,
     risk_level:g('adm-site-risk')||'medium',status:g('adm-site-status')||'active',updated_at:new Date().toISOString()};
   try{
     if(adminEditSiteId){await api('/sites?id=eq.'+adminEditSiteId,{m:'PATCH',p:'return=minimal',b:body});toast('Site updated!');}
@@ -26300,8 +26319,9 @@ async function adminSaveSite() {
 
 async function adminDeleteSite(){
   if(!adminEditSiteId)return;
-  if(!(await appConfirmDelete('site')))return;
-  try{await api('/sites?id=eq.'+adminEditSiteId,{m:'DELETE'});toast('Site deleted!');adminCloseSiteModal();await adminLoadAll();adminLoadSites();}
+  var s=adminSitesData.find(function(x){return x.id===adminEditSiteId;});
+  if(!(await appConfirmAction({title:'Deactivate site',message:'Deactivate '+(s?.name||'this site')+'?',detail:'This keeps linked incidents, permits, inspections and historical records for traceability.',confirmText:'Deactivate',cancelText:'Cancel'})))return;
+  try{await api('/sites?id=eq.'+adminEditSiteId,{m:'PATCH',p:'return=minimal',b:{status:'inactive',updated_at:new Date().toISOString()}});toast('Site deactivated');adminCloseSiteModal();await adminLoadAll();adminLoadSites();adminRenderHierarchy();}
   catch(e){toast(e.message,false);}
 }
 
@@ -26775,14 +26795,17 @@ async function saveModuleAccess() {
 }
 
 async function adminSaveAccess(){
-  var email=document.getElementById('adm-acc-email')?.value?.trim();
+  var email=obNormText(document.getElementById('adm-acc-email')?.value).toLowerCase();
   var siteId=document.getElementById('adm-acc-site')?.value;
   if(!email||!siteId){toast('Email and site required',false);return;}
+  if(!obEmailOk(email)){toast('Please enter a valid user email',false);return;}
   // Lookup user profile
   try{
-    var users=await api('/profiles?email=eq.'+email+(prof?.company_id&&!isSA()?'&company_id=eq.'+prof.company_id:'')+'&select=id,full_name');
+    var users=await api('/profiles?email=eq.'+encodeURIComponent(email)+(prof?.company_id&&!isSA()?'&company_id=eq.'+prof.company_id:'')+'&select=id,full_name');
     if(!users||!users.length){toast('User not found: '+email,false);return;}
     var userId=users[0].id;
+    var existing=await api('/user_site_access?select=id&user_id=eq.'+userId+'&site_id=eq.'+siteId+'&limit=1');
+    if(existing&&existing.length){toast('This user already has access to the selected site',false);return;}
     var body={user_id:userId,site_id:siteId,company_id:ccid(),role_override:document.getElementById('adm-acc-role')?.value||null,access_level:document.getElementById('adm-acc-level')?.value||'read_write',granted_by:prof?.id};
     await api('/user_site_access',{m:'POST',p:'return=minimal',b:body});
     toast('Access granted to '+escH(users[0].full_name||email));
