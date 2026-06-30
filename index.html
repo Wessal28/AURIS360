@@ -81,11 +81,17 @@
   .sidebar.collapsed .nav-item {
     padding: 10px 0;
     justify-content: center;
+    gap: 0;
+    font-size: 0;
+    line-height: 1;
+    min-height: 42px;
+    width: 56px;
+    overflow: hidden;
     border-left-width: 0;
     border-right: 3px solid transparent;
   }
   .sidebar.collapsed .nav-item.active { border-right-color: var(--green); }
-  .sidebar.collapsed .nav-item i { font-size: 18px; }
+  .sidebar.collapsed .nav-item i { font-size: 20px; line-height: 1; margin: 0; flex: 0 0 auto; }
   .sidebar.collapsed .sb-footer { padding: 8px 4px; flex-direction: column; gap: 4px; }
   .sidebar.collapsed .sb-footer .btn { padding: 6px; font-size: 0; }
   .sidebar.collapsed .sb-footer .btn i { font-size: 16px; margin: 0; }
