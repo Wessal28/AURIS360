@@ -1417,6 +1417,10 @@ function isInsp(){return activeRole()==='inspector';}
 function isMgr(){return can('manager');}
 function isAdm(){return can('admin');}
 function isSA(){return activeRole()==='sephs_admin';}
+var AI_ALLOWED_ROLES = ['sephs_admin','admin','hse_manager','hse_officer'];
+function canUseAI(){
+  return AI_ALLOWED_ROLES.indexOf(activeRole()) !== -1;
+}
 async function api(path,o={}
 ){
 const headers={'Content-Type':'application/json','apikey':KEY,'Authorization':'Bearer '+(tok||KEY),'Accept':'application/json'};
@@ -3704,6 +3708,10 @@ var ROLE_ALLOWED = {
   'sephs_admin': null,
   'admin':       null,
   'hse_manager': null,
+  'hse_officer': ['dashboard','executive','ai-insights','kpi','workschedule','events','observation',
+                  'inspection','risk','tools','fleet','atex','permit','contractor','emergency',
+                  'fire','chemical','ohealth','ppe','esg','noise','meetings','training','actions',
+                  'legal','sop','documents','people'],
   'executive':   ['dashboard','executive','kpi','workschedule','events','observation',
                   'inspection','risk','tools','fleet','atex','permit','contractor','emergency',
                   'fire','chemical','ohealth','ppe','esg','noise','meetings','training','actions',
@@ -3743,6 +3751,7 @@ function canAccessPage(pageKey) {
   var isAdminPage = ADMIN_PAGES.indexOf(pageKey) !== -1;
   var isLimitedPilotCompany = co && Array.isArray(co.module_access) && co.module_access.length > 0 && co.module_access.length <= 4;
   if(pageKey === 'ai-insights') {
+    if(typeof canUseAI === 'function' && !canUseAI()) return false;
     try {
       if(typeof AI_AVAILABLE !== 'undefined' && !AI_AVAILABLE && !isSA()) return false;
     } catch(e) {}
@@ -5040,8 +5049,10 @@ const AI_URL = AI_PROXY_URL || '/api/ai';
 const AI_AVAILABLE = !!AI_PROXY_URL;
 
 function applyAIAvailability() {
-  if (AI_AVAILABLE) return;
+  var allowed = AI_AVAILABLE && (typeof canUseAI !== 'function' || canUseAI());
+  if (allowed) return;
   var selectors = [
+    '#ai-panel',
     '#nav-ai',
     '[onclick*="genDashAI"]',
     '[onclick*="execGenerateReport"]',
@@ -5116,6 +5127,9 @@ var aiCurrentTab = 'insights';
 // ── Real callAI implementation ────────────────────────────────────────────────
 // Replaces the stub with secure backend AI calls.
 async function callAI(msgs, systemOverride) {
+  if(typeof canUseAI === 'function' && !canUseAI()) {
+    throw new Error('AURIS AI is restricted to SEPHS admin, company admin, HSE manager and HSE officer roles.');
+  }
   if(!AI_AVAILABLE) {
     throw new Error('AI features require a backend proxy. Ask your administrator to configure AI_PROXY_URL in Settings → AI Setup.');
   }
@@ -24901,7 +24915,9 @@ function psShowList_alt(){psShowList();}
 const HSE_ROLES = {
   executive:    {label:'Executive Management', emoji:'📊', color:'#185FA5',  bg:'#EFF6FF',  level:5, desc:'Board & executive — read-only dashboards, executive reports, ESG'},
   admin:        {label:'Company Admin',         emoji:'🔑', color:'#374151',  bg:'#f9fafb',  level:5, desc:'Full platform access including system configuration'},
-  hse_manager:  {label:'HSE Manager',           emoji:'🛡️',  color:'#065F46',  bg:'#ECFDF5',  level:4, desc:'Full HSE module access, can manage users and settings'},
+  
+  hse_manager:  {label:'HSE Manager',           emoji:'HSE', color:'#065F46',  bg:'#ECFDF5',  level:4, desc:'Full HSE module access, can manage users and settings'},
+  hse_officer:  {label:'HSE Officer',           emoji:'HSE', color:'#0F766E',  bg:'#ECFDF5',  level:4, desc:'Operational HSE access including AI support, inspections, actions and compliance'},
   site_manager: {label:'Site Manager',          emoji:'🏗️',  color:'#9A3412',  bg:'#FFF7ED',  level:3, desc:'Incidents, PTW, inspections, actions and people on their site'},
   auditor:      {label:'Auditor',               emoji:'🔍', color:'#5B21B6',  bg:'#F5F3FF',  level:3, desc:'Read-only all modules + write access to audits and inspections'},
   hr:           {label:'HR',                    emoji:'👩‍💼', color:'#854F0B',  bg:'#FFFBEB',  level:3, desc:'People management, training, occupational health, certifications'},
@@ -24951,7 +24967,7 @@ const ROLE_KEYS = ['executive','admin','hse_manager','site_manager','auditor','h
 // Map new roles to numeric levels for isMgr()/isAdm() checks
 function getRoleLevel(role) {
   var rlMap = {
-    sephs_admin:4, admin:4, hse_manager:4, manager:4,
+    sephs_admin:4, admin:4, hse_manager:4, hse_officer:4, manager:4,
     site_manager:3, auditor:3, hr:3,
     supervisor:2, inspector:2,
     employee:1, contractor:1, executive:1
@@ -26037,7 +26053,7 @@ function applyRoles() {
   // ── Phase 4: legacy fine-grained rules (preserved from original) ──
   // These run AFTER the bulk allow/hide so they can override edge cases.
   var navRules = {
-    'nav-ai':       isSA(),                                  // platform AI — sephs_admin only
+    'nav-ai':       canUseAI(),                              // AURIS AI - admin + HSE leadership only
     'nav-users':    isAdm() || role==='hse_manager',         // company admin + HSE manager
     'nav-settings': isAdm() || role==='hse_manager',         // company admin manages their settings
     'nav-admin':    isSA(),                                  // multi-company admin — sephs_admin only
@@ -26047,6 +26063,8 @@ function applyRoles() {
     var el = document.getElementById(e[0]);
     if(el) el.style.display = e[1] ? 'flex' : 'none';
   });
+  var aiPanel = document.getElementById('ai-panel');
+  if(aiPanel) aiPanel.style.display = (AI_AVAILABLE && canUseAI()) ? 'block' : 'none';
 
   // Dev role-preview switcher: sephs_admin only (testing tool, must never
   // be visible to clients or their staff).
@@ -26132,7 +26150,8 @@ function getRoleAccessNote(role) {
 // The app uses RL[prof.role] for can() checks — we must map new roles
 // Patch RL to include new role values
 if(typeof RL !== 'undefined') {
-  RL.hse_manager  = 2;  // maps to 'manager' level (can())
+  RL.hse_manager  = 2;
+  RL.hse_officer  = 2;  // maps to 'manager' level (can())
   RL.site_manager = 2;
   RL.auditor      = 2;
   RL.hr           = 2;
@@ -27848,7 +27867,7 @@ var MOBILE_MODULES = [
   {k:'users',        l:'Users',        i:'ti-user-cog',           r:['admin','hse_manager','sephs_admin']},
   {k:'admin',        l:'Company',      i:'ti-building',           r:['admin','sephs_admin']},
   {k:'integrations', l:'Integrations', i:'ti-plug',               r:['admin','hse_manager','sephs_admin']},
-  {k:'ai-insights',  l:'AI Insights',  i:'ti-robot',              r:['admin','hse_manager','auditor','sephs_admin']},
+  {k:'ai-insights',  l:'AI Insights',  i:'ti-robot',              r:['admin','hse_manager','hse_officer','sephs_admin']},
   {k:'settings',     l:'Settings',     i:'ti-settings',           r:['admin','hse_manager','sephs_admin']},
 ];
 

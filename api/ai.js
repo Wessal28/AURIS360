@@ -66,6 +66,30 @@ function getOutputText(data) {
   return '';
 }
 
+const AI_ALLOWED_ROLES = ['sephs_admin', 'admin', 'hse_manager', 'hse_officer'];
+
+async function getUserRole(supabaseUrl, supabaseKey, user, userToken) {
+  const metaRole = user && user.user_metadata && user.user_metadata.role;
+  const appMetaRole = user && user.app_metadata && user.app_metadata.role;
+  if (AI_ALLOWED_ROLES.indexOf(metaRole) !== -1) return metaRole;
+  if (AI_ALLOWED_ROLES.indexOf(appMetaRole) !== -1) return appMetaRole;
+  if (!user || !user.id) return '';
+
+  const profileRes = await fetch(
+    supabaseUrl + '/rest/v1/profiles?id=eq.' + encodeURIComponent(user.id) + '&select=role&limit=1',
+    {
+      headers: {
+        apikey: supabaseKey,
+        Authorization: 'Bearer ' + (process.env.SUPABASE_SERVICE_KEY || userToken),
+        Accept: 'application/json'
+      }
+    }
+  );
+  if (!profileRes.ok) return metaRole || appMetaRole || '';
+  const rows = await profileRes.json().catch(function() { return []; });
+  return rows && rows[0] && rows[0].role ? rows[0].role : (metaRole || appMetaRole || '');
+}
+
 async function callOpenAI(input, messages) {
   const apiKey = process.env.OPENAI_API_KEY;
   const model = process.env.OPENAI_MODEL || process.env.AI_MODEL;
@@ -206,6 +230,13 @@ module.exports = async function handler(req, res) {
     });
     if (!userRes.ok) {
       return res.status(401).json({ error: 'Invalid session' });
+    }
+    const user = await userRes.json();
+    const role = await getUserRole(supabaseUrl, supabaseKey, user, userToken);
+    if (AI_ALLOWED_ROLES.indexOf(role) === -1) {
+      return res.status(403).json({
+        error: 'AURIS AI is restricted to SEPHS admin, company admin, HSE manager and HSE officer roles.'
+      });
     }
 
     const input = req.body || {};
