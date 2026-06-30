@@ -24905,6 +24905,29 @@ function canAccess(minRole) {
 // ── Entry point ─────────────────────────────────────────────────────
 let usersAllData = [];
 
+function usersCanEditUser(u){
+if(!u||!isMgr())return false;
+if(!isSA()&&u.role==='sephs_admin')return false;
+if(!isSA()&&prof?.company_id&&u.company_id&&u.company_id!==prof.company_id)return false;
+return true;
+}
+
+function usersCanAdminUser(u){
+if(!u||!isAdm())return false;
+if(u.id===prof?.id)return false;
+if(!isSA()&&u.role==='sephs_admin')return false;
+if(!isSA()&&prof?.company_id&&u.company_id&&u.company_id!==prof.company_id)return false;
+return true;
+}
+
+function usersRoleChangeAllowed(target,newRole){
+if(!target)return false;
+if(target.id===prof?.id&&newRole!==target.role)return false;
+if(!isAdm()&&newRole!==target.role)return false;
+if(!isSA()&&newRole==='sephs_admin')return false;
+return true;
+}
+
 async function loadUsers() {
   var invBtn = document.getElementById('users-invite-btn');
   if(invBtn) invBtn.style.display = isMgr()?'inline-flex':'none';
@@ -25193,6 +25216,8 @@ function usersRender(data) {
     var rc = HSE_ROLES[u.role] || {label:u.role||'—',emoji:'❓',color:'#6B7280',bg:'#f3f4f6'};
     var isActive = u.status !== 'inactive';
     var isSelf = u.id === prof?.id;
+    var canEdit = usersCanEditUser(u);
+    var canAdmin = usersCanAdminUser(u);
     h += '<tr style="border-bottom:1px solid #f0f0f0;background:'+bg+(isSelf?';outline:2px solid #185FA5 inset':'')+';">'
       + '<td style="padding:8px 14px">'
       + '<div style="display:flex;align-items:center;gap:8px">'
@@ -25209,10 +25234,10 @@ function usersRender(data) {
       + '<td style="padding:8px;font-size:11px;color:var(--text2)">'+usersFmtLastLogin(u.last_login)+'</td>'
       + (isMgr()
         ? '<td style="padding:8px"><div style="display:flex;gap:4px;flex-wrap:wrap;justify-content:center">'
-          + '<button class="btn btn-sm" title="Edit user" data-id="'+u.id+'" onclick="usersEdit(this.dataset.id)"><i class="ti ti-edit"></i></button>'
-          + (isAdm()&&!isSelf&&!u.synthetic_email?'<button class="btn btn-sm" title="Send password reset email" data-id="'+u.id+'" onclick="usersResetPw(this.dataset.id)"><i class="ti ti-key"></i></button>':'')
-          + (isAdm()&&!isSelf?'<button class="btn btn-sm" style="color:'+(!isActive?'var(--green)':'var(--red)')+'" title="'+(isActive?'Deactivate (block login)':'Reactivate')+'" data-id="'+u.id+'" data-active="'+(isActive?'1':'0')+'" onclick="usersToggleStatus(this.dataset.id,this.dataset.active)"><i class="ti ti-'+(isActive?'user-off':'user-check')+'"></i></button>':'')
-          + (isAdm()&&!isSelf?'<button class="btn btn-sm" style="color:var(--red)" title="Permanently delete user" data-id="'+u.id+'" onclick="usersDelete(this.dataset.id)"><i class="ti ti-trash"></i></button>':'')
+          + (canEdit?'<button class="btn btn-sm" title="Edit user" data-id="'+u.id+'" onclick="usersEdit(this.dataset.id)"><i class="ti ti-edit"></i></button>':'<span style="font-size:11px;color:var(--text3)">Protected</span>')
+          + (canAdmin&&!u.synthetic_email?'<button class="btn btn-sm" title="Send password reset email" data-id="'+u.id+'" onclick="usersResetPw(this.dataset.id)"><i class="ti ti-key"></i></button>':'')
+          + (canAdmin?'<button class="btn btn-sm" style="color:'+(!isActive?'var(--green)':'var(--red)')+'" title="'+(isActive?'Deactivate (block login)':'Reactivate')+'" data-id="'+u.id+'" data-active="'+(isActive?'1':'0')+'" onclick="usersToggleStatus(this.dataset.id,this.dataset.active)"><i class="ti ti-'+(isActive?'user-off':'user-check')+'"></i></button>':'')
+          + (canAdmin?'<button class="btn btn-sm" style="color:var(--red)" title="Permanently delete user" data-id="'+u.id+'" onclick="usersDelete(this.dataset.id)"><i class="ti ti-trash"></i></button>':'')
           + '</div></td>'
         : '')
       + '</tr>';
@@ -25223,6 +25248,7 @@ function usersRender(data) {
 // ── Edit user ────────────────────────────────────────────────────────
 function usersEdit(id) {
   var u = usersAllData.find(function(x){return x.id===id;}); if(!u) return;
+  if(!usersCanEditUser(u)){toast('This user is protected or outside your company scope.',false);return;}
   document.getElementById('uem-id').value = id;
   document.getElementById('uem-title').textContent = u.full_name || 'Edit User';
   document.getElementById('uem-name').value = u.full_name||'';
@@ -25250,8 +25276,13 @@ function usersCloseModal() {
 async function usersSaveEdit() {
   var id = document.getElementById('uem-id')?.value;
   if(!id){toast('No user selected',false);return;}
+  var target = usersAllData.find(function(x){return x.id===id;});
+  if(!usersCanEditUser(target)){toast('This user is protected or outside your company scope.',false);return;}
   var g = function(fid){var el=document.getElementById(fid);return el?el.value||null:null;};
   var email = (g('uem-email')||'').trim();
+  var newRole = g('uem-role')||target.role||'employee';
+  if(!usersRoleChangeAllowed(target,newRole)){toast('You cannot change this user role.',false);return;}
+  if(target.id===prof?.id&&g('uem-status')&&g('uem-status')!==target.status){toast('You cannot change your own account status.',false);return;}
   if(email && !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)){
     toast('Please enter a valid email address (e.g. name@company.com)',false);return;
   }
@@ -25261,7 +25292,7 @@ async function usersSaveEdit() {
     //  - email change also updates the LOGIN email in Supabase Auth
     await adminFnCall('update_user', {
       user_id: id,
-      full_name: g('uem-name'), email: email, role: g('uem-role'),
+      full_name: g('uem-name'), email: email, role: newRole,
       job_title: g('uem-job-title'), department: g('uem-dept'),
       phone: g('uem-phone'), site: g('uem-site'),
       contractor_company: g('uem-contractor-co'), status: g('uem-status')||'active'
@@ -25280,8 +25311,10 @@ async function usersSaveEdit() {
 }
 
 async function usersToggleStatus(id, isActive) {
+  var target = usersAllData.find(function(u){return u.id===id;});
+  if(!usersCanAdminUser(target)){toast('Admin access required or user is protected.',false);return;}
   var newStatus = isActive==='1' ? 'inactive' : 'active';
-  var userName = usersAllData.find(function(u){return u.id===id;})?.full_name||'this user';
+  var userName = target?.full_name||'this user';
   var msg = newStatus==='inactive'
     ? 'Deactivate '+userName+'?\n\nThey will no longer be able to log in. Their records (incidents, training, sign-offs) are kept. This is reversible.'
     : 'Reactivate '+userName+'? They will be able to log in again.';
@@ -25299,6 +25332,7 @@ async function usersToggleStatus(id, isActive) {
 async function usersDelete(id) {
   var u = usersAllData.find(function(x){return x.id===id;});
   if(!u) return;
+  if(!usersCanAdminUser(u)){toast('Admin access required or user is protected.',false);return;}
   var warn = 'PERMANENTLY DELETE '+(u.full_name||u.email)+'?\n\n'
     + 'Their login account and profile will be removed and CANNOT be recovered.\n'
     + 'Records they created (incidents, investigations, training) keep their name as text but lose the account link.\n\n'
@@ -25320,6 +25354,7 @@ async function usersDelete(id) {
 async function usersResetPw(id) {
   var u = usersAllData.find(function(x){return x.id===id;});
   if(!u || !u.email) return;
+  if(!usersCanAdminUser(u)){toast('Admin access required or user is protected.',false);return;}
   if(u.synthetic_email){toast('This account uses a generated username, not a real email — set a new password via Edit instead',false);return;}
   if(!(await appConfirmAction({title:'Send password reset',message:'Send a password-reset email to '+u.email+'?',detail:'The user will receive the reset link by email.',confirmText:'Send reset email',cancelText:'Cancel',danger:false}))) return;
   try {
@@ -25341,6 +25376,8 @@ async function updateRole() {
     var filter = prof?.company_id&&!isSA()?'&company_id=eq.'+prof.company_id:'';
     var found = await api('/profiles?select=id,email,full_name'+filter+'&email=eq.'+encodeURIComponent(email));
     if(!found||!found.length){toast('No user found with this email in the current company view',false);return;}
+    var target = usersAllData.find(function(x){return x.id===found[0].id;})||found[0];
+    if(!usersCanEditUser(target)||!usersRoleChangeAllowed(target,role)){toast('This role change is not allowed for the selected user.',false);return;}
     var body = {role:role};
     if(jt) body.job_title = jt;
     if(dept) body.department = dept;
@@ -27906,14 +27943,20 @@ window.addEventListener('load', function() {
 // EMAIL NOTIFICATIONS — Settings, queue display, test send
 // ═══════════════════════════════════════════════════════════
 
+function notifCompanyId(){
+return (isSA()&&sephsCompanyContext)?sephsCompanyContext:prof?.company_id;
+}
+
 async function loadNotifSettings() {
   var el = document.getElementById('notif-settings-body');
   if (!el) return;
   el.innerHTML = '<div class="loading">Loading...</div>';
   try {
-    var rows = await api('/notification_settings?company_id=eq.' + prof.company_id + '&limit=1');
+    var companyId=notifCompanyId();
+    if(!companyId){el.innerHTML='<div style="color:var(--red);padding:12px">No company selected for notification settings.</div>';return;}
+    var rows = await api('/notification_settings?company_id=eq.' + companyId + '&limit=1');
     var s = rows && rows[0] ? rows[0] : {};
-    var queue = await api('/notification_queue?company_id=eq.' + prof.company_id + '&order=created_at.desc&limit=10');
+    var queue = await api('/notification_queue?company_id=eq.' + companyId + '&order=created_at.desc&limit=10');
     el.innerHTML = renderNotifSettings(s, queue || []);
   } catch(e) {
     el.innerHTML = '<div style="color:var(--red);padding:12px">Error loading settings: ' + escH(e.message) + '</div>';
@@ -27944,10 +27987,14 @@ function renderNotifSettings(s, queue) {
       + '<span style="font-size:13px;color:var(--text)">' + f.label + '</span></label>';
   }).join('');
 
+  var qPending=queue.filter(function(n){return (n.status||'pending')==='pending';}).length;
+  var qSent=queue.filter(function(n){return ['sent','delivered'].includes(n.status||'');}).length;
+  var qFailed=queue.filter(function(n){return ['failed','bounced'].includes(n.status||'');}).length;
   var recentRows = queue.length ? queue.map(function(n) {
     var color = (n.status==='sent'||n.status==='delivered') ? 'var(--green)' : (n.status==='failed'||n.status==='bounced') ? 'var(--red)' : 'var(--text2)';
+    var err = n.error_msg ? '<div style="font-size:10px;color:var(--red);margin-top:3px;max-width:360px;white-space:normal">'+escH(n.error_msg)+'</div>' : '';
     return '<tr>'
-      + '<td style="padding:8px 10px">' + escH((n.subject||'').substring(0,50)) + '</td>'
+      + '<td style="padding:8px 10px">' + escH((n.subject||'').substring(0,50)) + err + '</td>'
       + '<td style="padding:8px 10px">' + escH(n.to_email||'') + '</td>'
       + '<td style="padding:8px 10px"><span style="color:' + color + ';font-weight:600;font-size:12px">'
       + (n.status||'').toUpperCase() + '</span></td>'
@@ -27983,7 +28030,10 @@ function renderNotifSettings(s, queue) {
     + '<button class="btn btn-primary" onclick="saveNotifSettings()"><i class="ti ti-device-floppy"></i>Save Settings</button>'
     + '<button class="btn" onclick="sendTestEmail()"><i class="ti ti-mail"></i>Send Test Email</button>'
     + '</div>'
-    + '<div style="font-size:13px;font-weight:600;margin-bottom:10px">Recent Notifications</div>'
+    + '<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:10px">'
+    + '<div style="font-size:13px;font-weight:600">Recent Notifications</div>'
+    + '<div style="display:flex;gap:6px;flex-wrap:wrap;font-size:11px"><span class="badge bgr">Pending '+qPending+'</span><span class="badge bg">Sent '+qSent+'</span><span class="badge br">Failed '+qFailed+'</span></div>'
+    + '</div>'
     + '<div style="overflow-x:auto"><table style="width:100%;font-size:12px;min-width:500px">'
     + '<thead><tr style="border-bottom:2px solid var(--border)">'
     + '<th style="padding:8px 10px;text-align:left">Subject</th><th style="padding:8px 10px;text-align:left">To</th>'
@@ -28061,9 +28111,11 @@ document.addEventListener('click', function(e) {
 
 async function saveNotifSettings() {
   try {
+    var companyId=notifCompanyId();
+    if(!companyId){toast('No company selected for notification settings.',false);return;}
     var bad=validateNotifRecipientFields();
     if(bad.length){toast('Invalid notification email(s): '+bad[0],false);return;}
-    var existing = await api('/notification_settings?company_id=eq.' + prof.company_id + '&limit=1');
+    var existing = await api('/notification_settings?company_id=eq.' + companyId + '&limit=1');
     var mergedRules = collectNotifEventRecipients();
     if (existing && existing[0] && existing[0].event_recipients) {
       var oldRules = existing[0].event_recipients;
@@ -28073,13 +28125,14 @@ async function saveNotifSettings() {
     var updates = { event_recipients: mergedRules, updated_at: new Date().toISOString() };
     Object.assign(updates, _notifToggles || {});
     if (existing && existing[0]) {
-      await api('/notification_settings?company_id=eq.' + prof.company_id, {m:'PATCH', p:'return=minimal', b:updates});
+      await api('/notification_settings?company_id=eq.' + companyId, {m:'PATCH', p:'return=minimal', b:updates});
     } else {
-      updates.company_id = prof.company_id;
+      updates.company_id = companyId;
       await api('/notification_settings', {m:'POST', p:'return=minimal', b:updates});
     }
     toast('✓ Notification settings saved');
     _notifToggles = {};
+    loadNotifSettings();
   } catch(e) {
     var msg = e.message || '';
     if (msg.includes('event_recipients')) msg = 'Database update needed: add event_recipients to notification_settings.';
@@ -28088,8 +28141,9 @@ async function saveNotifSettings() {
 }
 
 async function sendTestEmail() {
-  var companyId=(isSA()&&sephsCompanyContext)?sephsCompanyContext:prof.company_id;
+  var companyId=notifCompanyId();
   if (!prof?.email) { toast('No email on your profile', false); return; }
+  if (!companyId) { toast('No company selected for test email', false); return; }
   try {
     await api('/notification_queue',{m:'POST',p:'return=minimal',b:{
       company_id:companyId,
@@ -28104,7 +28158,8 @@ async function sendTestEmail() {
       to_email:prof.email,
       to_name:prof.full_name||''
     }});
-    toast('Test email queued for '+prof.email+'. It will send when the email worker runs.');
+    toast('Test email queued for '+prof.email+'. Check Recent Notifications for status.');
+    loadNotifSettings();
   } catch(e) { toast('Error: ' + e.message, false); }
 }
 
