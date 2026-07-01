@@ -1480,7 +1480,10 @@ const method=o.m||'GET';
 const r=await fetch(SB+'/rest/v1'+path,{method:o.m||'GET',headers:headers,body:o.b?JSON.stringify(o.b):undefined});
 if(r.status===204||r.status===205){auditApiMutation(path,method,o,null);return null;}
 const txt=await r.text();
-if(!txt||txt.trim()==='')return null;
+if(!txt||txt.trim()===''){
+  if(r.ok){auditApiMutation(path,method,o,null);return null;}
+  throw new Error(r.statusText||'Request failed');
+}
 let d;
 try{d=JSON.parse(txt);}catch(e){console.error('JSON parse error:',txt.slice(0,200));throw new Error('Invalid server response');}
 if(!r.ok){const msg=(Array.isArray(d)?d[0]?.message:d.message)||d.error_description||d.hint||r.statusText;console.error('API error '+r.status+':',msg,path);throw new Error(msg);}
@@ -1496,10 +1499,28 @@ function auditRelatedIdFromPath(path){
   var m=String(path||'').match(/[?&]id=eq\.([0-9a-fA-F-]{36})/);
   return m?m[1]:null;
 }
-function auditCompanyId(body){
+function auditPathEq(path,key){
+  var re=new RegExp('[?&]'+key+'=eq\\.([^&]+)');
+  var m=String(path||'').match(re);
+  return m?decodeURIComponent(m[1]):null;
+}
+function auditCompanyId(body,path){
   try{
-    return body?.company_id || (typeof ccid==='function'?ccid():null) || prof?.company_id || null;
-  }catch(_){return body?.company_id || prof?.company_id || null;}
+    return body?.company_id || auditPathEq(path,'company_id') || (typeof ccid==='function'?ccid():null) || prof?.company_id || null;
+  }catch(_){return body?.company_id || auditPathEq(path,'company_id') || prof?.company_id || null;}
+}
+function auditRecordLabel(body){
+  body=body||{};
+  var keys=['reference_no','permit_number','event_ref','incident_number','ra_ref','chemical_name','product_name','title','name','full_name','subject','description'];
+  for(var i=0;i<keys.length;i++){
+    var v=body[keys[i]];
+    if(v)return String(v).substring(0,90);
+  }
+  return '';
+}
+function auditChangedFields(body){
+  var hidden={password:1,temporary_password:1,resend_api_key:1,api_key:1,secret:1,token:1,body_html:1};
+  return Object.keys(body||{}).filter(function(k){return !hidden[k];});
 }
 function auditApiMutation(path,method,o,response){
   try{
@@ -1512,8 +1533,9 @@ function auditApiMutation(path,method,o,response){
     var action={POST:'create',PATCH:'update',PUT:'update',DELETE:'delete'}[method]||method.toLowerCase();
     var first=Array.isArray(response)?response[0]:response;
     var relatedId=first?.id||body?.id||auditRelatedIdFromPath(path);
+    var label=auditRecordLabel(first||body);
     var entry={
-      company_id:auditCompanyId(body),
+      company_id:auditCompanyId(body,path),
       actor_user_id:prof?.id||null,
       actor_name:prof?.full_name||prof?.email||'User',
       actor_role:activeRole(),
@@ -1521,8 +1543,8 @@ function auditApiMutation(path,method,o,response){
       module_name:table,
       related_table:table,
       related_id:relatedId,
-      summary:action+' '+table,
-      details:{method:method,path:path,changed_fields:Object.keys(body||{})}
+      summary:auditLabel(action)+' '+auditLabel(table)+(label?' - '+label:''),
+      details:{method:method,path:path,changed_fields:auditChangedFields(body),record_label:label}
     };
     fetch(SB+'/rest/v1/audit_events',{
       method:'POST',
@@ -29064,11 +29086,43 @@ function auditCopyDetails(id){
   var x=(auditRows||[]).find(function(r){return r.id===id;});
   if(!x)return;
   var txt=JSON.stringify(x,null,2);
-  if(navigator.clipboard&&navigator.clipboard.writeText){
-    navigator.clipboard.writeText(txt).then(function(){toast('Audit details copied');}).catch(function(){toast(txt);});
-  }else{
-    toast(txt);
+  var modal=document.getElementById('audit-detail-modal');
+  if(!modal){
+    modal=document.createElement('div');
+    modal.id='audit-detail-modal';
+    modal.style.cssText='display:none;position:fixed;inset:0;background:rgba(15,23,42,.55);z-index:920;align-items:center;justify-content:center;padding:16px';
+    modal.innerHTML='<div class="card" style="width:100%;max-width:760px;max-height:88vh;overflow:auto;border-radius:12px;padding:0;box-shadow:0 20px 70px rgba(15,23,42,.30)">'
+      +'<div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;gap:12px;align-items:flex-start"><div><div style="font-size:16px;font-weight:900">Audit event details</div><div id="audit-detail-sub" style="font-size:12px;color:var(--text2);margin-top:3px"></div></div><button class="btn btn-sm" id="audit-detail-close"><i class="ti ti-x"></i></button></div>'
+      +'<div id="audit-detail-body" style="padding:18px 20px"></div>'
+      +'<div style="padding:14px 20px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:8px;background:#fff"><button class="btn" id="audit-detail-copy"><i class="ti ti-copy"></i>Copy JSON</button><button class="btn btn-primary" id="audit-detail-done">Done</button></div>'
+      +'</div>';
+    document.body.appendChild(modal);
   }
+  var details=x.details||{};
+  var fields=Array.isArray(details.changed_fields)?details.changed_fields:[];
+  var sub=document.getElementById('audit-detail-sub');
+  if(sub)sub.textContent=(x.created_at?new Date(x.created_at).toLocaleString():'-')+' - '+(x.actor_name||'User');
+  var body=document.getElementById('audit-detail-body');
+  if(body)body.innerHTML='<div style="display:grid;grid-template-columns:130px 1fr;gap:9px 14px;font-size:13px">'
+    +'<div style="color:var(--text2);font-weight:700">Action</div><div>'+auditActionBadge(x.action)+'</div>'
+    +'<div style="color:var(--text2);font-weight:700">Module</div><div style="font-weight:800">'+escH(auditLabel(x.module_name||x.related_table||'-'))+'</div>'
+    +'<div style="color:var(--text2);font-weight:700">User</div><div>'+escH(x.actor_name||'-')+' <span style="color:var(--text2)">('+escH(auditLabel(x.actor_role||''))+')</span></div>'
+    +'<div style="color:var(--text2);font-weight:700">Record</div><div style="font-family:monospace;font-size:12px">'+escH(x.related_id||'-')+'</div>'
+    +'<div style="color:var(--text2);font-weight:700">Summary</div><div>'+escH(x.summary||'-')+'</div>'
+    +'<div style="color:var(--text2);font-weight:700">Changed fields</div><div>'+escH(fields.length?fields.join(', '):'No field list recorded')+'</div>'
+    +'</div><details style="margin-top:16px"><summary style="cursor:pointer;font-weight:800;color:var(--text2)">Raw event JSON</summary><pre style="margin-top:10px;white-space:pre-wrap;background:#0f172a;color:#e5e7eb;border-radius:8px;padding:12px;font-size:11px;max-height:260px;overflow:auto">'+escH(txt)+'</pre></details>';
+  var close=function(){modal.style.display='none';};
+  var closeBtn=document.getElementById('audit-detail-close');
+  var doneBtn=document.getElementById('audit-detail-done');
+  var copyBtn=document.getElementById('audit-detail-copy');
+  if(closeBtn)closeBtn.onclick=close;
+  if(doneBtn)doneBtn.onclick=close;
+  if(copyBtn)copyBtn.onclick=function(){
+    if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(txt).then(function(){toast('Audit details copied');});
+    else toast(txt);
+  };
+  modal.onclick=function(e){if(e.target===modal)close();};
+  modal.style.display='flex';
 }
 
 function auditExportCsv(){
@@ -40665,6 +40719,10 @@ I can help you:<br>
     <div style="font-size:11px;text-transform:uppercase;color:var(--text2);font-weight:700">Scope</div>
     <div style="font-size:14px;font-weight:800;margin-top:8px" id="approvals-scope-label">Current company</div>
   </div>
+</div>
+
+<div style="background:#EFF6FF;border:1px solid #bfdbfe;border-radius:10px;padding:11px 14px;margin-bottom:16px;color:#1e40af;font-size:12px">
+  <strong>Audit coverage:</strong> successful create, update and delete actions are logged with user, role, module, record reference and changed fields. Passwords, API keys and email HTML are excluded from the visible field list.
 </div>
 
 <div class="card" style="padding:14px;margin-bottom:16px">
