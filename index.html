@@ -8407,10 +8407,9 @@ try{ brandInit(); }catch(e){ console.error('brandInit:',e); }
 var notifCard=document.getElementById('settings-notif-card');
 if(notifCard) notifCard.style.display=isAdm()?'block':'none';
 var ptwCard=document.getElementById('settings-ptw-approver-card');
-if(ptwCard) ptwCard.style.display=isAdm()?'block':'none';
+if(ptwCard) ptwCard.style.display='none';
 var workflowCard=document.getElementById('settings-workflow-card');
 if(workflowCard) workflowCard.style.display=(isAdm()||activeRole()==='hse_manager')?'block':'none';
-if(isAdm()) loadPeopleCache().then(function(){loadPTWApprovalSettings();});
 if(isAdm()||activeRole()==='hse_manager') loadPeopleCache().then(function(){loadApprovalWorkflows();});
 if(isAdm()) loadNotifSettings();
 }
@@ -8491,6 +8490,20 @@ toast('PTW approver settings saved');
 
 async function ptwGetApprovalSettings(){
 try{
+var companyId=ccid();
+var workflows=await api('/approval_workflows?company_id=eq.'+companyId+'&module_name=eq.permit&is_active=eq.true&order=created_at.desc&limit=1');
+if(workflows&&workflows[0]){
+var steps=await api('/approval_workflow_steps?workflow_id=eq.'+workflows[0].id+'&order=step_no.asc')||[];
+var out={};
+steps.forEach(function(s){
+var n=parseInt(s.step_no)||1;
+out['level'+n+'_id']=s.approver_person_id||'';
+out['level'+n+'_name']=s.approver_name||s.approver_role||'';
+out['level'+n+'_email']=s.approver_email||'';
+out['level'+n+'_phone']='';
+});
+return out;
+}
 var rows=await api('/notification_settings?company_id=eq.'+ccid()+'&limit=1');
 var rules=(rows&&rows[0]?rows[0].event_recipients:null)||{};
 if(typeof rules==='string'){try{rules=JSON.parse(rules);}catch(_){rules={};}}
@@ -40753,7 +40766,7 @@ I can help you:<br>
 
 <div class="card" id="settings-workflow-card" style="display:none">
   <div class="card-title" style="display:flex;align-items:center;gap:8px"><i class="ti ti-route" style="color:#5B21B6"></i>Approval Workflow Settings</div>
-  <div style="font-size:12px;color:var(--text2);margin-bottom:14px">Create reusable approval routes for permits, documents, risk assessments, investigations and other controlled records.</div>
+  <div style="font-size:12px;color:var(--text2);margin-bottom:14px">Create reusable approval routes for permits, documents, risk assessments, investigations and other controlled records. For PTW, this replaces the old permit-only approver setup.</div>
   <div id="workflow-settings-body"><div class="loading">Loading workflows...</div></div>
 </div>
 
