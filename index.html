@@ -3758,7 +3758,7 @@ var ROLE_ALLOWED = {
   'hse_officer': ['dashboard','executive','ai-insights','kpi','workschedule','events','observation',
                   'inspection','risk','tools','fleet','atex','permit','contractor','emergency',
                   'fire','chemical','ohealth','ppe','esg','noise','meetings','training','actions',
-                  'legal','sop','documents','people'],
+                  'legal','sop','documents','people','audit'],
   'executive':   ['dashboard','executive','kpi','workschedule','events','observation',
                   'inspection','risk','tools','fleet','atex','permit','contractor','emergency',
                   'fire','chemical','ohealth','ppe','esg','noise','meetings','training','actions',
@@ -3794,7 +3794,7 @@ function canAccessPage(pageKey) {
   // Executive Dashboard, AI Insights) are platform functions, NOT HSE
   // modules. They bypass the launch flag (Gate 1) and the per-company
   // module list (Gate 2), and are governed by role only (Gate 3).
-  var ADMIN_PAGES = ['users','settings','admin','integrations','executive','ai-insights'];
+  var ADMIN_PAGES = ['users','settings','admin','integrations','executive','ai-insights','audit'];
   var isAdminPage = ADMIN_PAGES.indexOf(pageKey) !== -1;
   var isLimitedPilotCompany = co && Array.isArray(co.module_access) && co.module_access.length > 0 && co.module_access.length <= 4;
   if(pageKey === 'ai-insights') {
@@ -3802,6 +3802,9 @@ function canAccessPage(pageKey) {
     try {
       if(typeof AI_AVAILABLE !== 'undefined' && !AI_AVAILABLE && !isSA()) return false;
     } catch(e) {}
+  }
+  if(pageKey === 'audit') {
+    if(['sephs_admin','admin','hse_manager','hse_officer'].indexOf(activeRole()) === -1) return false;
   }
 
   // Pilot/client guard: when a company is deliberately limited to a small
@@ -3856,7 +3859,7 @@ if(target){
   target.classList.add('active');
 }
 if(el&&el.classList)el.classList.add('active');
-const L={dashboard:loadDash,executive:loadExecutive,kpi:kpiLoadAll,workschedule:loadWorkSchedule,events:loadEvents,observation:loadObservation,inspection:()=>{buildChecklist();loadInsps();},risk:loadRA,investigation:loadInvs,legal:loadLegal,sop:loadSOP,tools:loadTools,fleet:loadFleet,atex:loadATEX,permit:loadPermits,contractor:loadContractors,esg:loadESG,emergency:loadEmergency,fire:loadFire,chemical:loadChemical,ohealth:loadOHealth,ppe:loadPPE,noise:loadNoise,meetings:loadMtgs,training:loadTraining,actions:loadActions,documents:loadDocs,people:loadPeople,users:loadUsers,admin:loadAdmin,'ai-insights':genFullAI,settings:loadSettings,integrations:loadIntegrations};
+const L={dashboard:loadDash,executive:loadExecutive,kpi:kpiLoadAll,workschedule:loadWorkSchedule,events:loadEvents,observation:loadObservation,inspection:()=>{buildChecklist();loadInsps();},risk:loadRA,investigation:loadInvs,legal:loadLegal,sop:loadSOP,tools:loadTools,fleet:loadFleet,atex:loadATEX,permit:loadPermits,contractor:loadContractors,esg:loadESG,emergency:loadEmergency,fire:loadFire,chemical:loadChemical,ohealth:loadOHealth,ppe:loadPPE,noise:loadNoise,meetings:loadMtgs,training:loadTraining,actions:loadActions,documents:loadDocs,people:loadPeople,users:loadUsers,admin:loadAdmin,'ai-insights':genFullAI,audit:loadAudit,settings:loadSettings,integrations:loadIntegrations};
 if(L[name])L[name]();
 // Mobile: close sidebar and scroll to top
 if(window.innerWidth<=768){
@@ -26000,6 +26003,7 @@ var MODULES_DIR = [
   {k:'users',       i:'ti-users',              l:'Users & Roles',       sec:'Management'},
   {k:'admin',       i:'ti-building',           l:'Companies',           sec:'Management'},
   {k:'integrations',i:'ti-plug',               l:'Integrations',        sec:'Management'},
+  {k:'audit',       i:'ti-history',            l:'Audit Trail',         sec:'Management'},
   {k:'settings',    i:'ti-settings',           l:'Settings',            sec:'Management'},
 ];
 
@@ -27917,6 +27921,7 @@ var MOBILE_MODULES = [
   {k:'admin',        l:'Company',      i:'ti-building',           r:['admin','sephs_admin']},
   {k:'integrations', l:'Integrations', i:'ti-plug',               r:['admin','hse_manager','sephs_admin']},
   {k:'ai-insights',  l:'AI Insights',  i:'ti-robot',              r:['admin','hse_manager','hse_officer','sephs_admin']},
+  {k:'audit',        l:'Audit Trail',  i:'ti-history',            r:['admin','hse_manager','hse_officer','sephs_admin']},
   {k:'settings',     l:'Settings',     i:'ti-settings',           r:['admin','hse_manager','sephs_admin']},
 ];
 
@@ -27929,7 +27934,7 @@ var MODULE_COLORS = {
   noise:'#EF9F27', meetings:'#185FA5', training:'#5B21B6',
   actions:'#DC2626', legal:'#374151', sop:'#374151',
   documents:'#374151', people:'#185FA5', users:'#5B21B6',
-  admin:'#185FA5', integrations:'#0891B2', 'ai-insights':'#5B21B6',
+  admin:'#185FA5', integrations:'#0891B2', 'ai-insights':'#5B21B6', audit:'#374151',
   settings:'#374151'
 };
 
@@ -28441,6 +28446,137 @@ async function sendTestEmail() {
     toast('Test email queued for '+prof.email+'. Check Recent Notifications for status.');
     loadNotifSettings();
   } catch(e) { toast('Error: ' + e.message, false); }
+}
+
+// ================================================================
+// AUDIT TRAIL
+// Chronological record of create/update/delete activity across modules.
+// ================================================================
+var auditRows = [];
+
+function auditCanView(){
+  return ['sephs_admin','admin','hse_manager','hse_officer'].indexOf(activeRole()) !== -1;
+}
+
+function auditCompanyFilter(){
+  if(isSA() && sephsCompanyContext) return sephsCompanyContext;
+  if(isSA()) return null;
+  return prof?.company_id || null;
+}
+
+async function loadAudit(){
+  var el=document.getElementById('audit-table-body');
+  if(!el)return;
+  if(!auditCanView()){
+    el.innerHTML='<tr><td colspan="7" style="padding:18px;color:var(--red);text-align:center">Access denied</td></tr>';
+    return;
+  }
+  el.innerHTML='<tr><td colspan="7" style="padding:20px;text-align:center;color:var(--text2)">Loading audit trail...</td></tr>';
+  try{
+    var companyId=auditCompanyFilter();
+    var scope=document.getElementById('audit-scope-label');
+    if(scope)scope.textContent=isSA()?(companyId?'Selected company':'All companies'):(co?.name||'Current company');
+    var path='/audit_events?select=*&order=created_at.desc&limit=300';
+    if(companyId)path+='&company_id=eq.'+companyId;
+    auditRows=await api(path)||[];
+    auditPopulateFilters();
+    auditRender();
+  }catch(e){
+    el.innerHTML='<tr><td colspan="7" style="padding:18px;color:var(--red)">Audit trail unavailable: '+escH(e.message)+'</td></tr>';
+  }
+}
+
+function auditPopulateFilters(){
+  var moduleSel=document.getElementById('audit-filter-module');
+  if(moduleSel){
+    var current=moduleSel.value||'';
+    var mods=[].concat(new Set((auditRows||[]).map(function(x){return x.module_name||x.related_table||'';}).filter(Boolean))).sort();
+    moduleSel.innerHTML='<option value="">All modules</option>'+mods.map(function(m){return '<option value="'+escH(m)+'">'+escH(auditLabel(m))+'</option>';}).join('');
+    moduleSel.value=current;
+  }
+  var count=document.getElementById('audit-count');
+  if(count)count.textContent=String((auditRows||[]).length);
+}
+
+function auditLabel(v){
+  return String(v||'').replace(/_/g,' ').replace(/\b\w/g,function(c){return c.toUpperCase();});
+}
+
+function auditActionBadge(action){
+  var a=String(action||'').toLowerCase();
+  var bg=a==='create'?'#EAF3DE':a==='update'?'#EFF6FF':a==='delete'?'#FCEBEB':'#f3f4f6';
+  var c=a==='create'?'#3B6D11':a==='update'?'#185FA5':a==='delete'?'#A32D2D':'#6B7280';
+  return '<span style="display:inline-flex;align-items:center;padding:3px 8px;border-radius:999px;background:'+bg+';color:'+c+';font-size:11px;font-weight:700">'+escH(auditLabel(a||'action'))+'</span>';
+}
+
+function auditFilteredRows(){
+  var q=(document.getElementById('audit-search')?.value||'').toLowerCase();
+  var action=document.getElementById('audit-filter-action')?.value||'';
+  var module=document.getElementById('audit-filter-module')?.value||'';
+  return (auditRows||[]).filter(function(x){
+    if(action && String(x.action||'')!==action)return false;
+    if(module && String(x.module_name||x.related_table||'')!==module)return false;
+    if(q){
+      var hay=[x.actor_name,x.actor_role,x.action,x.module_name,x.related_table,x.summary,JSON.stringify(x.details||{})].join(' ').toLowerCase();
+      if(hay.indexOf(q)===-1)return false;
+    }
+    return true;
+  });
+}
+
+function auditRender(){
+  var el=document.getElementById('audit-table-body');if(!el)return;
+  var rows=auditFilteredRows();
+  var shown=document.getElementById('audit-shown-count');
+  if(shown)shown.textContent=String(rows.length);
+  if(!rows.length){
+    el.innerHTML='<tr><td colspan="7" style="padding:24px;text-align:center;color:var(--text2)">No audit events found</td></tr>';
+    return;
+  }
+  el.innerHTML=rows.map(function(x){
+    var details=x.details||{};
+    var fields=Array.isArray(details.changed_fields)?details.changed_fields.join(', '):'';
+    return '<tr style="border-bottom:1px solid var(--border)">'
+      +'<td style="padding:10px 12px;white-space:nowrap;color:var(--text2);font-size:12px">'+(x.created_at?new Date(x.created_at).toLocaleString():'-')+'</td>'
+      +'<td style="padding:10px 12px">'+auditActionBadge(x.action)+'</td>'
+      +'<td style="padding:10px 12px;font-weight:700">'+escH(auditLabel(x.module_name||x.related_table||'-'))+'</td>'
+      +'<td style="padding:10px 12px">'+escH(x.actor_name||'-')+'<div style="font-size:11px;color:var(--text2)">'+escH(auditLabel(x.actor_role||''))+'</div></td>'
+      +'<td style="padding:10px 12px;max-width:360px">'+escH(x.summary||'')+'<div style="font-size:11px;color:var(--text2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+escH(fields||details.path||'')+'</div></td>'
+      +'<td style="padding:10px 12px;font-family:monospace;font-size:11px;color:var(--text2)">'+escH(x.related_id||'-')+'</td>'
+      +'<td style="padding:10px 12px;text-align:right"><button class="btn btn-sm" onclick="auditCopyDetails(\''+escH(x.id)+'\')"><i class="ti ti-copy"></i>Details</button></td>'
+      +'</tr>';
+  }).join('');
+}
+
+function auditCopyDetails(id){
+  var x=(auditRows||[]).find(function(r){return r.id===id;});
+  if(!x)return;
+  var txt=JSON.stringify(x,null,2);
+  if(navigator.clipboard&&navigator.clipboard.writeText){
+    navigator.clipboard.writeText(txt).then(function(){toast('Audit details copied');}).catch(function(){toast(txt);});
+  }else{
+    toast(txt);
+  }
+}
+
+function auditExportCsv(){
+  var rows=auditFilteredRows();
+  if(!rows.length){toast('No audit rows to export',false);return;}
+  var cols=['created_at','action','module_name','actor_name','actor_role','summary','related_table','related_id'];
+  var csv=[cols.join(',')].concat(rows.map(function(r){
+    return cols.map(function(c){
+      var v=r[c]||'';
+      return '"'+String(v).replace(/"/g,'""')+'"';
+    }).join(',');
+  })).join('\n');
+  var blob=new Blob([csv],{type:'text/csv;charset=utf-8'});
+  var url=URL.createObjectURL(blob);
+  var a=document.createElement('a');
+  a.href=url;
+  a.download='auris360-audit-trail-'+new Date().toISOString().slice(0,10)+'.csv';
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(function(){URL.revokeObjectURL(url);a.remove();},500);
 }
 
 
@@ -30231,7 +30367,7 @@ function fireEquipStatusBadge(s) {
 <div class="nav-item" onclick="showPage('noise',this)"><i class="ti ti-volume"></i>Noise Survey</div><div class="nav-item" id="nav-mtg" onclick="showPage('meetings',this)"><i class="ti ti-notes"></i>HSE Meetings</div><div class="nav-item" onclick="showPage('training',this)"><i class="ti ti-certificate"></i>Training</div><span class="nav-section">Management</span><div class="nav-item" onclick="showPage('actions',this)"><i class="ti ti-list-check"></i>Master Action Plan</div><div class="nav-item" onclick="showPage('legal',this)"><i class="ti ti-scale"></i>Legal Compliance</div>
 <div class="nav-item" onclick="showPage('sop',this)"><i class="ti ti-file-description"></i>SOP Generator</div>
 <div class="nav-item" id="nav-docs" onclick="showPage('documents',this)"><i class="ti ti-files"></i>Document Control</div><div class="nav-item" onclick="showPage('people',this)"><i class="ti ti-id-badge"></i>People</div><div class="nav-item" id="nav-users" onclick="showPage('users',this)"><i class="ti ti-users"></i>Users &amp; Roles</div><div class="nav-item" id="nav-admin" style="display:none" onclick="showPage('admin',this)"><i class="ti ti-building"></i>Companies</div><div class="nav-item" id="nav-integrations" onclick="showPage('integrations',this)"><i class="ti ti-plug"></i>Integrations</div>
-<div class="nav-item" id="nav-settings" onclick="showPage('settings',this)"><i class="ti ti-settings"></i>Settings</div><div class="sb-footer"><button class="btn btn-sm" style="flex:1;justify-content:center;color:var(--red)" onclick="doLogout()"><i class="ti ti-logout"></i>Sign out</button></div>
+<div class="nav-item" id="nav-audit" onclick="showPage('audit',this)"><i class="ti ti-history"></i>Audit Trail</div><div class="nav-item" id="nav-settings" onclick="showPage('settings',this)"><i class="ti ti-settings"></i>Settings</div><div class="sb-footer"><button class="btn btn-sm" style="flex:1;justify-content:center;color:var(--red)" onclick="doLogout()"><i class="ti ti-logout"></i>Sign out</button></div>
 <div id="pwa-install-btn" onclick="pwaInstall()" style="display:none;align-items:center;gap:10px;padding:10px 20px;cursor:pointer;font-size:13px;color:var(--green);font-weight:600;border-top:1px solid var(--border);margin-top:auto"><i class="ti ti-download" style="font-size:16px"></i>Install app</div></div>
 <div class="main">
 
@@ -39981,6 +40117,82 @@ I can help you:<br>
 </div>
 
 </div><!-- end page-ai-insights -->
+
+<div id="page-audit" class="page">
+<div class="page-header">
+  <div>
+    <div class="page-title">Audit Trail</div>
+    <div style="font-size:12px;color:var(--text2);margin-top:3px">Chronological record of key actions across AURIS360</div>
+  </div>
+  <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+    <button class="btn" onclick="loadAudit()"><i class="ti ti-refresh"></i>Refresh</button>
+    <button class="btn btn-primary" onclick="auditExportCsv()"><i class="ti ti-download"></i>Export CSV</button>
+  </div>
+</div>
+
+<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px">
+  <div class="card" style="padding:14px;border-left:4px solid #185FA5">
+    <div style="font-size:11px;text-transform:uppercase;color:var(--text2);font-weight:700">Loaded Events</div>
+    <div style="font-size:28px;font-weight:800" id="audit-count">0</div>
+  </div>
+  <div class="card" style="padding:14px;border-left:4px solid #1D9E75">
+    <div style="font-size:11px;text-transform:uppercase;color:var(--text2);font-weight:700">Filtered View</div>
+    <div style="font-size:28px;font-weight:800" id="audit-shown-count">0</div>
+  </div>
+  <div class="card" style="padding:14px;border-left:4px solid #EF9F27">
+    <div style="font-size:11px;text-transform:uppercase;color:var(--text2);font-weight:700">Scope</div>
+    <div style="font-size:14px;font-weight:800;margin-top:8px" id="audit-scope-label">Current company</div>
+  </div>
+  <div class="card" style="padding:14px;border-left:4px solid #374151">
+    <div style="font-size:11px;text-transform:uppercase;color:var(--text2);font-weight:700">Purpose</div>
+    <div style="font-size:13px;color:var(--text2);margin-top:8px">Accountability, traceability, and client confidence</div>
+  </div>
+</div>
+
+<div class="card" style="padding:14px;margin-bottom:16px">
+  <div style="display:grid;grid-template-columns:2fr 1fr 1fr auto;gap:10px;align-items:end">
+    <div class="form-group" style="margin:0">
+      <label class="form-label">Search</label>
+      <input id="audit-search" type="search" placeholder="Search user, module, action, details..." oninput="auditRender()"/>
+    </div>
+    <div class="form-group" style="margin:0">
+      <label class="form-label">Action</label>
+      <select id="audit-filter-action" onchange="auditRender()">
+        <option value="">All actions</option>
+        <option value="create">Create</option>
+        <option value="update">Update</option>
+        <option value="delete">Delete</option>
+      </select>
+    </div>
+    <div class="form-group" style="margin:0">
+      <label class="form-label">Module</label>
+      <select id="audit-filter-module" onchange="auditRender()"><option value="">All modules</option></select>
+    </div>
+    <button class="btn" onclick="document.getElementById('audit-search').value='';document.getElementById('audit-filter-action').value='';document.getElementById('audit-filter-module').value='';auditRender()"><i class="ti ti-filter-off"></i>Clear</button>
+  </div>
+</div>
+
+<div class="card" style="padding:0;overflow:hidden">
+  <div style="overflow-x:auto">
+    <table style="width:100%;min-width:980px;border-collapse:collapse;font-size:12px">
+      <thead>
+        <tr style="background:#1a3a5c;color:#fff">
+          <th style="padding:10px 12px;text-align:left">Time</th>
+          <th style="padding:10px 12px;text-align:left">Action</th>
+          <th style="padding:10px 12px;text-align:left">Module</th>
+          <th style="padding:10px 12px;text-align:left">User</th>
+          <th style="padding:10px 12px;text-align:left">Summary</th>
+          <th style="padding:10px 12px;text-align:left">Record ID</th>
+          <th style="padding:10px 12px;text-align:right">Details</th>
+        </tr>
+      </thead>
+      <tbody id="audit-table-body">
+        <tr><td colspan="7" style="padding:24px;text-align:center;color:var(--text2)">Open Audit Trail to load events</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+</div><!-- end page-audit -->
 
 <div id="page-settings" class="page">
 <div class="page-header"><div class="page-title">Settings</div></div>
