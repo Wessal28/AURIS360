@@ -1418,6 +1418,51 @@ function isInsp(){return activeRole()==='inspector';}
 function isMgr(){return can('manager');}
 function isAdm(){return can('admin');}
 function isSA(){return activeRole()==='sephs_admin';}
+function canAdministerControlledRecord(){
+  var r=activeRole();
+  return r==='sephs_admin'||r==='admin'||r==='hse_manager';
+}
+function controlledStatusIsLocked(status){
+  return ['submitted','pending_review','under_review','pending_approval','approved','active','completed','closed'].indexOf(String(status||'').toLowerCase())!==-1;
+}
+function controlledRecordCanEdit(rec){
+  var st=String(rec?.approval_status||rec?.status||'draft').toLowerCase();
+  return !controlledStatusIsLocked(st)||st==='revision_requested'||st==='rejected'||st==='draft'||canAdministerControlledRecord();
+}
+function controlledLockMessage(label, rec){
+  var st=String(rec?.approval_status||rec?.status||'controlled').replace(/_/g,' ');
+  return (label||'Record')+' is '+st+' and is locked. Admin/HSE Manager can release or revise it before changes are made.';
+}
+function controlledEnsureNotice(containerId, noticeId){
+  var container=document.getElementById(containerId);if(!container)return null;
+  var note=document.getElementById(noticeId);
+  if(!note){
+    note=document.createElement('div');
+    note.id=noticeId;
+    note.style.cssText='display:none;margin:10px 0;padding:10px 12px;border-radius:8px;background:#FEF9EC;border:1px solid #FCD34D;color:#854F0B;font-size:13px;font-weight:700';
+    container.insertBefore(note,container.firstChild);
+  }
+  return note;
+}
+function controlledApplyFormLock(containerId, noticeId, rec, label){
+  var container=document.getElementById(containerId);if(!container)return;
+  var locked=!!rec&&!controlledRecordCanEdit(rec);
+  var note=controlledEnsureNotice(containerId,noticeId);
+  if(note){note.style.display=locked?'block':'none';note.textContent=locked?controlledLockMessage(label,rec):'';}
+  container.querySelectorAll('input,select,textarea').forEach(function(el){
+    if(el.type==='hidden')return;
+    el.disabled=locked;
+  });
+  container.querySelectorAll('button').forEach(function(btn){
+    var action=btn.getAttribute('onclick')||'';
+    var keep=action.includes('Back')||action.includes('ShowList')||action.includes('FormTab')||action.includes('print')||action.includes('Print')||action.includes('Viewer')||action.includes('CreateNewRevision')||action.includes('Approve')||action.includes('Reject')||action.includes('Release');
+    var isSave=action.includes('Save')||action.includes('SubmitForApproval');
+    if(locked&&isSave)btn.style.display='none';
+    else if(!locked&&isSave)btn.style.display='';
+    if(locked&&!keep)btn.disabled=true;
+    if(!locked)btn.disabled=false;
+  });
+}
 var AI_ALLOWED_ROLES = ['sephs_admin','admin','hse_manager','hse_officer'];
 function canUseAI(){
   return AI_ALLOWED_ROLES.indexOf(activeRole()) !== -1;
@@ -5816,7 +5861,7 @@ function appPrompt(opts){
 }
 function fmt(d){return d?new Date(d).toLocaleDateString('en-GB'):'--';}
 function sev(s){const m={low:'bb',medium:'ba',high:'br',critical:'br'};return '<span class="badge '+(m[s]||'bb')+'">'+( s||'--')+'</span>';}
-function stat(s){const c={open:'ba',in_progress:'ba',closed:'bg',on_track:'bg',at_risk:'ba',off_track:'br',completed:'bb',approved:'bg',active:'bg',draft:'bgr',pending_approval:'ba',cancelled:'br',review:'ba',current:'bg',superseded:'br',valid:'bg',expired:'br',pending:'ba',active:'bg',inactive:'bgr',suspended:'br'};return '<span class="badge '+(c[s]||'bgr')+'">'+( s||'').replace(/_/g,' ')+'</span>';}
+function stat(s){const c={open:'ba',in_progress:'ba',closed:'bg',on_track:'bg',at_risk:'ba',off_track:'br',completed:'bb',approved:'bg',active:'bg',draft:'bgr',pending_approval:'ba',pending_review:'ba',under_review:'ba',submitted:'bb',revision_requested:'ba',rejected:'br',cancelled:'br',review:'ba',current:'bg',superseded:'br',valid:'bg',expired:'br',pending:'ba',active:'bg',inactive:'bgr',suspended:'br'};return '<span class="badge '+(c[s]||'bgr')+'">'+( s||'').replace(/_/g,' ')+'</span>';}
 function prio(p){const c={critical:'br',high:'ba',medium:'bb',low:'bg'};return '<span class="badge '+(c[p]||'bgr')+'">'+(p||'--')+'</span>';}
 function denied(){return '<div class="access-denied"><i class="ti ti-lock"></i><h3>Access restricted</h3><p>Your role does not have permission to view this section.</p></div>';}
 function pname(id){const p=people.find(x=>x.id===id);return p?p.first_name+' '+p.last_name:'--';}
@@ -11410,8 +11455,7 @@ function imsNewInvestigation(linkedEventId){
 
 function invCanEditRecord(rec){
   if(!imsInvEditId) return true;
-  if(isAdm() || prof?.role==='admin' || prof?.role==='sephs_admin') return true;
-  return (rec?.status||'')==='revision_requested';
+  return controlledRecordCanEdit(rec);
 }
 
 function invApplyLockMode(rec){
@@ -11434,7 +11478,7 @@ function invApplyLockMode(rec){
     note.textContent='Submitted investigation locked. Admin must release it before it can be modified.';
   }
   var rel=document.getElementById('inv-release-btn');
-  var adminRole=isAdm() || prof?.role==='admin' || prof?.role==='sephs_admin';
+  var adminRole=canAdministerControlledRecord();
   if(rel) rel.style.display=(adminRole && imsInvEditId)?'inline-flex':'none';
 }
 
@@ -11445,7 +11489,7 @@ function imsOpenInvestigation(id){
   document.getElementById('ims-inv-form').style.display='block';
   document.getElementById('inv-form-title').textContent=x.description||x.incident_description||'Investigation';
   document.getElementById('inv-form-ref').textContent=x.investigation_ref||'—';
-  var adminRole=isAdm() || prof?.role==='admin' || prof?.role==='sephs_admin';
+  var adminRole=canAdministerControlledRecord();
   document.getElementById('inv-delete-btn').style.display=adminRole?'inline-flex':'none';
   var releaseBtn=document.getElementById('inv-release-btn'); if(releaseBtn) releaseBtn.style.display=adminRole?'inline-flex':'none';
   var gf=function(fid,val){var el=document.getElementById(fid);if(el)el.value=val||'';};
@@ -11909,7 +11953,7 @@ async function invSave(){
 }
 
 async function invReleaseForEdit(){
-  if(!(isAdm() || prof?.role==='admin' || prof?.role==='sephs_admin')){toast('Only admin can release an investigation for edit',false);return;}
+  if(!canAdministerControlledRecord()){toast('Only admin/HSE Manager can release an investigation for edit',false);return;}
   if(!imsInvEditId){toast('Open a saved investigation first',false);return;}
   try{
     await api('/investigations?id=eq.'+imsInvEditId,{m:'PATCH',p:'return=minimal',b:{status:'revision_requested',updated_at:new Date().toISOString()}});
@@ -12573,6 +12617,7 @@ function raNew(type){
   document.getElementById('ra-form-view').style.display='block';
   // Switch to info tab
   raFormTab('info', document.getElementById('ra-ftab-info'));
+  controlledApplyFormLock('ra-form-view','ra-controlled-lock-note',null,'Risk assessment');
 }
 
 function raImportExistingPDF(type){
@@ -12652,6 +12697,7 @@ function raOpen(id){
   // AI output
   document.getElementById('ra-ai-output').innerHTML='';
   if(x.ai_suggestions&&x.ai_suggestions.length)raRenderAISuggestions(x.ai_suggestions);
+  controlledApplyFormLock('ra-form-view','ra-controlled-lock-note',x,'Risk assessment');
 }
 
 // ── Risk Scoring ─────────────────────────────────────────────────────────────
@@ -12865,6 +12911,11 @@ function raRowHasContent(r){
 // ===== RA_JS_PART3.JS =====
 // ── Save RA ───────────────────────────────────────────────────────────────────
 async function raSave(targetStatus){
+  var currentRa=raEditingId?(raAllData.find(function(x){return x.id===raEditingId;})||{}):null;
+  if(currentRa&&!controlledRecordCanEdit(currentRa)){
+    toast('This risk assessment is locked. Admin/HSE Manager must release or create a revision before changes.',false);
+    return;
+  }
   var g=function(id){var el=document.getElementById(id);return el?el.value||null:null;};
   var rows=raCollectRows().filter(raRowHasContent);
   var status=targetStatus||g('ra-status-sel')||'draft';
@@ -14748,6 +14799,7 @@ function ptwNew(){
   if(woSel){woSel.innerHTML='<option value="">None</option>';try{api('/work_schedule?select=id,title,ref_number'+cf()+'&order=planned_start.desc&limit=30').then(function(d){(d||[]).forEach(function(w){var o=document.createElement('option');o.value=w.id;o.textContent=(w.ref_number||'WO')+' — '+w.title;woSel.appendChild(o);});});}catch(ex){}}
   ptwLoadReferenceOptions();
   ptwSetView('form');
+  controlledApplyFormLock('ptw-form-view','ptw-controlled-lock-note',null,'Permit');
 }
 
 function ptwSelectType(type){
@@ -14862,6 +14914,11 @@ async function ptwRunSmartChecks(){
 
 // ── SAVE PERMIT ───────────────────────────────────────────────────────────────
 async function ptwSave(targetStatus){
+  var currentPermit=ptwEditingId?(ptwAllData.find(function(x){return x.id===ptwEditingId;})||{}):null;
+  if(currentPermit&&!controlledRecordCanEdit(currentPermit)){
+    toast('This permit is controlled and locked. Use the approval, suspension, cancellation or closure workflow.',false);
+    return;
+  }
   var type=document.getElementById('pf-type')?.value;
   if(!type){toast('Please select a permit type',false);return;}
   var g=function(id){var el=document.getElementById(id);return el?el.value||null:null;};
@@ -14979,6 +15036,7 @@ function ptwEditCurrent(){
     }).join('');
   }else if(el3)ptwSelectType(type);
   ptwSetView('form');
+  controlledApplyFormLock('ptw-form-view','ptw-controlled-lock-note',x,'Permit');
 }
 
 function ptwFormBack(){
@@ -21430,6 +21488,7 @@ function dcNew(){
   document.getElementById('dc-form-view').style.display='block';
   try{ dcUploadClearUI(); }catch(_){}
   dcFormTab('details', document.getElementById('dc-ftab-details'));
+  controlledApplyFormLock('dc-form-view','dc-controlled-lock-note',null,'Document');
 }
 
 async function dcEdit(id){
@@ -21493,6 +21552,7 @@ async function dcEdit(id){
   document.getElementById('dc-view-all').style.display='none';
   document.getElementById('dc-form-view').style.display='block';
   dcFormTab('details', document.getElementById('dc-ftab-details'));
+  controlledApplyFormLock('dc-form-view','dc-controlled-lock-note',x,'Document');
 }
 
 async function dcPopulatePeopleSelects(){
@@ -21538,13 +21598,18 @@ function dcRenderActionButtons(x){
   if(approvalSt==='under_review')h+=btn('ti-check','Submit for Approval',"dcSubmitForApproval()",'#8B5CF6');
   if(approvalSt==='pending_approval'&&isMgr())h+=btn('ti-certificate','Approve Document',"dcApprove()",'#1D9E75');
   if(approvalSt==='pending_approval'&&isMgr())h+=btn('ti-x','Reject',"dcReject()",'#E24B4A');
-  if(approvalSt==='approved')h+=btn('ti-refresh','Create New Revision',"dcCreateNewRevision()",'#185FA5');
-  if(approvalSt==='approved')h+=btn('ti-send','Issue Acknowledgements',"dcFormTab('ack',document.getElementById('dc-ftab-ack'));dcIssueAck()",'#8B5CF6');
+  if(approvalSt==='approved'&&(isMgr()||canAdministerControlledRecord()))h+=btn('ti-refresh','Create New Revision',"dcCreateNewRevision()",'#185FA5');
+  if(approvalSt==='approved'&&(isMgr()||canAdministerControlledRecord()))h+=btn('ti-send','Issue Acknowledgements',"dcFormTab('ack',document.getElementById('dc-ftab-ack'));dcIssueAck()",'#8B5CF6');
   el.innerHTML=h;
 }
 
 // ── Save ──────────────────────────────────────────────────────────────────────
 async function dcSave(){
+  var currentDoc=dcEditingId?(dcAllData.find(function(x){return x.id===dcEditingId;})||{}):null;
+  if(currentDoc&&!controlledRecordCanEdit(currentDoc)){
+    toast('This document is controlled. Create a new revision before changing approved/submitted content.',false);
+    return;
+  }
   var title=document.getElementById('df-title')?.value?.trim();if(!title){toast('Please enter document title',false);return;}
   var g=function(id){var el=document.getElementById(id);return el?el.value||null:null;};
   var ownerSel=document.getElementById('df-owner');var ownerId=ownerSel?.value||null;
@@ -21612,6 +21677,11 @@ async function dcSave(){
 }
 
 async function dcSubmitForApproval(){
+  var currentDoc=dcEditingId?(dcAllData.find(function(x){return x.id===dcEditingId;})||{}):null;
+  if(currentDoc&&!controlledRecordCanEdit(currentDoc)){
+    toast('This document is locked. Create a new revision before resubmitting.',false);
+    return;
+  }
   await dcSave();
   if(!dcEditingId)return;
   var x=dcAllData.find(r=>r.id===dcEditingId)||{};
