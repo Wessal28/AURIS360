@@ -4009,11 +4009,15 @@ async function loadDash() {
       safe(api('/legal_requirements?select=id,compliance_score,category'+cf())),
       safe(api('/training_followup?select=id,person_name,expiry_date'+cf())),
       safe(api('/kpi_monthly_data?select=*'+cf()+'&order=year.desc,month.desc&limit=50')),
+      safe(api('/safety_observations?select=id'+cf()+'&limit=10')),
+      safe(api('/risk_assessments?select=id'+cf()+'&limit=10')),
+      safe(api('/chemical_register?select=id,status'+cf()+'&status=neq.deleted&limit=10')),
     ]);
-    var [events, actions, people, permits, certs, insps, legal, training, kpiData] = results;
+    var [events, actions, people, permits, certs, insps, legal, training, kpiData, observations, riskAssessments, chemicals] = results;
     events = events||[]; actions = actions||[]; people = people||[];
     permits = permits||[]; certs = certs||[]; insps = insps||[];
     legal = legal||[]; training = training||[]; kpiData = kpiData||[];
+    observations = observations||[]; riskAssessments = riskAssessments||[]; chemicals = chemicals||[];
 
     var thisMonth = events.filter(function(x) {
       var d = x.event_date||x.created_at||''; return d.startsWith(yr+'-'+String(now.getMonth()+1).padStart(2,'0'));
@@ -4086,6 +4090,7 @@ async function loadDash() {
     dashRenderTrendChart(events);
     dashRenderSeverityChart(events);
     dashRenderComplianceRings(compPct, trainPct, permits.length);
+    dashRenderDemoReadiness({events:events, actions:actions, people:people, permits:permits, inspections:insps, legal:legal, training:training, kpiData:kpiData, observations:observations, riskAssessments:riskAssessments, chemicals:chemicals});
     
     // ─── Dashboard redesign hooks (Stage 1-5) ───
     dashRouteView();      // toggle org vs personal view based on role
@@ -4174,6 +4179,42 @@ function dashRouteView() {
 }
 
 // ── Personal dashboard render ───────────────────────────────────────────
+function dashRenderDemoReadiness(data){
+  var panel=document.getElementById('dash-demo-readiness');
+  if(!panel)return;
+  var canSee=isAdm()||activeRole()==='hse_manager'||activeRole()==='hse_officer';
+  panel.style.display=canSee&&!isPersonalDashRole()?'block':'none';
+  if(panel.style.display==='none')return;
+  data=data||{};
+  var checks=[
+    {label:'People register', count:(data.people||[]).length, target:3, page:'people', action:'Add people'},
+    {label:'Incident example', count:(data.events||[]).length, target:1, page:'events', action:'Open incidents'},
+    {label:'BBS observations', count:(data.observations||[]).length, target:1, page:'observation', action:'Open BBS'},
+    {label:'Master actions', count:(data.actions||[]).length, target:1, page:'actions', action:'Open MAP'},
+    {label:'Risk assessments', count:(data.riskAssessments||[]).length, target:1, page:'risk', action:'Open RA'},
+    {label:'Legal register', count:(data.legal||[]).length, target:5, page:'legal', action:'Open legal'},
+    {label:'Chemical register', count:(data.chemicals||[]).length, target:1, page:'chemical', action:'Open chemicals'},
+    {label:'Inspection records', count:(data.inspections||[]).length, target:1, page:'inspection', action:'Open audits'}
+  ].filter(function(x){return canAccessPage(x.page);});
+  var ready=checks.filter(function(x){return x.count>=x.target;}).length;
+  var pct=checks.length?Math.round(ready/checks.length*100):0;
+  var tone=pct>=80?'#1D9E75':pct>=50?'#EF9F27':'#DC2626';
+  var body=document.getElementById('dash-demo-readiness-body');
+  var score=document.getElementById('dash-demo-readiness-score');
+  var bar=document.getElementById('dash-demo-readiness-bar');
+  if(score)score.textContent=pct+'% ready';
+  if(bar){bar.style.width=pct+'%';bar.style.background=tone;}
+  if(body)body.innerHTML=checks.map(function(x){
+    var ok=x.count>=x.target;
+    return '<div style="display:grid;grid-template-columns:26px 1fr auto auto;gap:10px;align-items:center;padding:9px 0;border-top:1px solid var(--border)">'
+      +'<div style="width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:'+(ok?'#E1F5EE':'#FEF9EC')+';color:'+(ok?'#0F6E56':'#854F0B')+'"><i class="ti '+(ok?'ti-check':'ti-alert-circle')+'"></i></div>'
+      +'<div><div style="font-size:13px;font-weight:800">'+escH(x.label)+'</div><div style="font-size:11px;color:var(--text2)">'+x.count+' of '+x.target+' minimum demo record'+(x.target>1?'s':'')+'</div></div>'
+      +'<span class="badge '+(ok?'bg':'ba')+'">'+(ok?'Ready':'Needs data')+'</span>'
+      +'<button class="btn btn-sm" onclick="showPage(\''+x.page+'\',null)">'+escH(x.action)+'</button>'
+      +'</div>';
+  }).join('');
+}
+
 async function dashRenderPersonal(events, actions, people, permits, training) {
   if(!isPersonalDashRole()) return;  // safety: don't run if user is admin
 
@@ -31182,6 +31223,20 @@ function fireEquipStatusBadge(s) {
      KPI GRID — status-tinted cards with icons and sparklines
      Row 1: 4 primary safety KPIs
      ════════════════════════════════════════════════════════════════════════ -->
+<div id="dash-demo-readiness" class="card" style="display:none;margin-bottom:16px;padding:0;overflow:hidden">
+  <div style="padding:14px 18px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap">
+    <div>
+      <div style="font-size:15px;font-weight:900">Client demo readiness</div>
+      <div style="font-size:12px;color:var(--text2);margin-top:2px">Core records that make AURIS360 feel alive and credible during a client walkthrough.</div>
+    </div>
+    <div style="min-width:180px">
+      <div style="display:flex;justify-content:space-between;font-size:12px;font-weight:800;margin-bottom:5px"><span>Readiness</span><span id="dash-demo-readiness-score">0% ready</span></div>
+      <div style="height:8px;background:#f3f4f6;border-radius:99px;overflow:hidden"><div id="dash-demo-readiness-bar" style="height:100%;width:0%;background:#DC2626;border-radius:99px;transition:width .3s"></div></div>
+    </div>
+  </div>
+  <div id="dash-demo-readiness-body" style="padding:4px 18px 10px"></div>
+</div>
+
 <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:12px">
 
   <div class="kpi-card" data-id="d-events" data-tone="red" style="cursor:pointer" onclick="showPage('events',null)">
