@@ -2649,14 +2649,14 @@ async function obsSave() {
             }});
             if(assignedPerson?.email){
               try{
-                await api('/notification_queue',{m:'POST',p:'return=minimal',b:{
+                await queueNotification({
                   company_id:ccid(),type:'bbs_action_assigned',
                   subject:'BBS action assigned - '+ref,
                   body_html:'<div style="font-family:Arial,sans-serif;padding:20px"><h2 style="color:#1D9E75;margin:0 0 12px">AURIS360 BBS Action</h2><p>A follow-up action has been assigned to you from a safety observation.</p><p><strong>Reference:</strong> '+escH(ref)+'</p><p><strong>Location:</strong> '+escH(body.location||'')+'</p><p><strong>Action:</strong> '+escH(body.action_description)+'</p><p><strong>Due date:</strong> '+escH(body.action_due_date||'Not set')+'</p></div>',
                   to_email:assignedPerson.email,to_name:personFullName(assignedPerson),
                   from_name:'AURIS360 by SEPHS Consulting',
                   related_table:'safety_observations',related_id:savedObsId,status:'pending'
-                }});
+                });
               }catch(mailEx){}
             }
             toast('Observation saved! Ref: '+ref+' - action added to MAP');
@@ -8615,7 +8615,7 @@ var body='<div style="font-family:Arial,sans-serif;background:#f4f6f8;padding:20
   +'<tr><td style="padding:8px;background:#f9fafb;font-weight:600">Work</td><td style="padding:8px">'+escH(permit.work_description||'-')+'</td></tr>'
   +'</table><div style="margin-top:18px;text-align:center"><a href="https://auris-360.vercel.app/?goto=permit" style="display:inline-block;background:#1D9E75;color:#fff;padding:11px 22px;border-radius:8px;text-decoration:none;font-weight:700">Open Permit in AURIS360</a></div></div>'
   +'<div style="padding:12px 22px;background:#f4f6f8;font-size:11px;color:#6B7280;text-align:center">Automated notification from AURIS360.</div></div></div>';
-await api('/notification_queue',{m:'POST',p:'return=minimal',b:{company_id:ccid(),type:'permit',subject:subject,body_html:body,to_email:a.email,to_name:a.name||a.email,from_name:'AURIS360 by SEPHS Consulting',related_id:permit.id,related_table:'permits',status:'pending'}});
+await queueNotification({company_id:ccid(),type:'permit',subject:subject,body_html:body,to_email:a.email,to_name:a.name||a.email,from_name:'AURIS360 by SEPHS Consulting',related_id:permit.id,related_table:'permits',status:'pending'});
 }catch(e){/* notification must never block permit workflow */}
 }
 /* ═══════════════════════════════════════════════════════════════════
@@ -11106,12 +11106,12 @@ async function imsNotifyAssignee(assignedName, companyId, ref, desc, location){
     +'<div style="padding:10px 24px;background:#f4f6f8;font-size:11px;color:#6B7280;text-align:center">AURIS360 — Incident Management</div>'
     +'</div></body></html>';
   try{
-    await api('/notification_queue',{m:'POST',p:'return=minimal',b:{
+    await queueNotification({
       company_id:companyId,type:'incident_assigned',
       subject:'Incident assigned to you — '+(ref||'New incident'),
       body_html:html,to_email:p.email,to_name:p.full_name||assignedName||'',
       related_table:'events',related_id:imsEditId||null
-    }});
+    });
     toast('📧 Notification queued for '+(p.full_name||p.email));
   }catch(e){/* non-critical */}
 }
@@ -11150,12 +11150,12 @@ async function imsNotifyIncidentTypeRecipients(companyId, type, ref, desc, locat
         +'</div>'
         +'<div style="padding:10px 24px;background:#f4f6f8;font-size:11px;color:#6B7280;text-align:center">AURIS360 - Incident Management</div>'
         +'</div></body></html>';
-      await api('/notification_queue',{m:'POST',p:'return=minimal',b:{
+      await queueNotification({
         company_id:companyId,type:'incident_'+type,
         subject:'New '+cfg.label+' incident - '+(ref||'AURIS360'),
         body_html:html,to_email:email,to_name:name,
         related_table:'events',related_id:imsEditId||null
-      }});
+      });
     }
   }catch(e){/* non-critical: notification rules must never block incident reporting */}
 }
@@ -11844,11 +11844,11 @@ async function invNotifySign(toName, companyId, invRef, stageLabel){
     +'</div><div style="padding:10px 24px;background:#f4f6f8;font-size:11px;color:#6B7280;text-align:center">AURIS360 - Investigation Sign-off</div>'
     +'</div></body></html>';
   try{
-    await api('/notification_queue',{m:'POST',p:'return=minimal',b:{
+    await queueNotification({
       company_id:companyId,type:'investigation_signoff',
       subject:'Investigation '+(invRef||'')+' - awaiting your '+stageLabel,
       body_html:html,to_email:p.email,to_name:p.full_name||'',
-      related_table:'investigations',related_id:imsInvEditId||null}});
+      related_table:'investigations',related_id:imsInvEditId||null});
     return true;
   }catch(e){return false;}
 }
@@ -25626,6 +25626,24 @@ function isDeliverableEmail(email){
   var v=String(email||'').trim().toLowerCase();
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)&&!v.endsWith('.local');
 }
+function notificationRecipientIssue(email){
+  var v=String(email||'').trim();
+  if(!v)return 'Missing recipient email address. Add a real email address or use a future WhatsApp/SMS contact.';
+  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v))return 'Invalid recipient email address. Check the user profile or notification setting.';
+  if(v.toLowerCase().endsWith('.local'))return 'Login-only address. This user needs a real notification email, or a future WhatsApp/SMS contact.';
+  return '';
+}
+async function queueNotification(payload){
+  var body=Object.assign({status:'pending'}, payload||{});
+  var issue=notificationRecipientIssue(body.to_email);
+  if(issue){
+    body.status='failed';
+    body.error_msg=body.error_msg||issue;
+    body.retry_count=body.retry_count||1;
+    body.to_email=String(body.to_email||'undeliverable@auris360.local').trim();
+  }
+  return api('/notification_queue',{m:'POST',p:'return=minimal',b:body});
+}
 function usersContactEmail(u){
   return u?.real_email||u?.notification_email||(isDeliverableEmail(u?.email)?u.email:'');
 }
@@ -28593,7 +28611,7 @@ async function loadNotifSettings() {
     if(!companyId){el.innerHTML='<div style="color:var(--red);padding:12px">No company selected for notification settings.</div>';return;}
     var rows = await api('/notification_settings?company_id=eq.' + companyId + '&limit=1');
     var s = rows && rows[0] ? rows[0] : {};
-    var queue = await api('/notification_queue?company_id=eq.' + companyId + '&order=created_at.desc&limit=10');
+    var queue = await api('/notification_queue?company_id=eq.' + companyId + '&order=created_at.desc&limit=25');
     el.innerHTML = renderNotifSettings(s, queue || []);
   } catch(e) {
     el.innerHTML = '<div style="color:var(--red);padding:12px">Error loading settings: ' + escH(e.message) + '</div>';
@@ -28624,6 +28642,16 @@ function renderNotifSettings(s, queue) {
       + '<span style="font-size:13px;color:var(--text)">' + f.label + '</span></label>';
   }).join('');
 
+  function notifStatusBadge(n){
+    var st=String(n.status||'pending').toLowerCase();
+    var cls=(st==='sent'||st==='delivered')?'bg':(st==='failed'||st==='bounced')?'br':'bgr';
+    return '<span class="badge '+cls+'">'+escH(st.toUpperCase())+'</span>';
+  }
+  function notifToCell(n){
+    var email=String(n.to_email||'').trim();
+    var warn=!isDeliverableEmail(email)?'<div style="font-size:10px;color:var(--orange);margin-top:3px">Login-only or invalid address</div>':'';
+    return escH(email||'-')+warn;
+  }
   var qPending=queue.filter(function(n){return (n.status||'pending')==='pending';}).length;
   var qSent=queue.filter(function(n){return ['sent','delivered'].includes(n.status||'');}).length;
   var qFailed=queue.filter(function(n){return ['failed','bounced'].includes(n.status||'');}).length;
@@ -28632,9 +28660,8 @@ function renderNotifSettings(s, queue) {
     var err = n.error_msg ? '<div style="font-size:10px;color:var(--red);margin-top:3px;max-width:360px;white-space:normal">'+escH(n.error_msg)+'</div>' : '';
     return '<tr>'
       + '<td style="padding:8px 10px">' + escH((n.subject||'').substring(0,50)) + err + '</td>'
-      + '<td style="padding:8px 10px">' + escH(n.to_email||'') + '</td>'
-      + '<td style="padding:8px 10px"><span style="color:' + color + ';font-weight:600;font-size:12px">'
-      + (n.status||'').toUpperCase() + '</span></td>'
+      + '<td style="padding:8px 10px">' + notifToCell(n) + '</td>'
+      + '<td style="padding:8px 10px">' + notifStatusBadge(n) + '</td>'
       + '<td style="padding:8px 10px;color:var(--text2);font-size:11px">'
       + (n.created_at ? new Date(n.created_at).toLocaleString() : '') + '</td>'
       + '</tr>';
@@ -28653,19 +28680,20 @@ function renderNotifSettings(s, queue) {
   }).join('');
 
   return '<div style="background:#EFF6FF;border:1px solid #bfdbfe;border-radius:10px;padding:12px 14px;margin-bottom:16px;font-size:12px;color:#1e40af">'
-    + '<strong>Email sender:</strong> configured securely on the server. This screen controls notification rules and recipients only.'
+    + '<strong>Email sender:</strong> configured securely on the server. This screen controls notification rules and recipients only. Login-only addresses ending in <strong>.local</strong> cannot receive email; add a real notification email now, or WhatsApp/SMS when that integration is activated.'
     + '<input type="hidden" id="notif-from-email" value="' + escH(s.from_email||'') + '"/>'
     + '<input type="hidden" id="notif-resend-key" value="' + escH(s.resend_api_key||'') + '"/>'
     + '</div>'
     + '<div id="notif-toggles" style="margin-bottom:16px">' + togglesHtml + '</div>'
     + '<div style="border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:16px;background:#fff">'
     + '<div style="font-size:13px;font-weight:800;margin-bottom:4px">Incident recipients by event type</div>'
-    + '<div style="font-size:12px;color:var(--text2);margin-bottom:10px">Company Admin can add the people to notify for each incident type. Use email addresses, separated by commas.</div>'
+    + '<div style="font-size:12px;color:var(--text2);margin-bottom:10px">Company Admin can add the people to notify for each incident type. Use real email addresses, separated by commas.</div>'
     + recipientRows
     + '</div>'
     + '<div style="display:flex;gap:10px;margin-bottom:20px">'
     + '<button class="btn btn-primary" onclick="saveNotifSettings()"><i class="ti ti-device-floppy"></i>Save Settings</button>'
     + '<button class="btn" onclick="sendTestEmail()"><i class="ti ti-mail"></i>Send Test Email</button>'
+    + '<button class="btn" onclick="loadNotifSettings()"><i class="ti ti-refresh"></i>Refresh Status</button>'
     + '</div>'
     + '<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:10px">'
     + '<div style="font-size:13px;font-weight:600">Recent Notifications</div>'
@@ -28781,8 +28809,12 @@ async function sendTestEmail() {
   var companyId=notifCompanyId();
   if (!prof?.email) { toast('No email on your profile', false); return; }
   if (!companyId) { toast('No company selected for test email', false); return; }
+  if (!isDeliverableEmail(prof.email)) {
+    toast('This profile uses a login-only email. Add a real notification email before sending a test.', false);
+    return;
+  }
   try {
-    await api('/notification_queue',{m:'POST',p:'return=minimal',b:{
+    await queueNotification({
       company_id:companyId,
       type:'test_email',
       subject:'AURIS360 Test Email',
@@ -28794,7 +28826,7 @@ async function sendTestEmail() {
         + '</div></div>',
       to_email:prof.email,
       to_name:prof.full_name||''
-    }});
+    });
     toast('Test email queued for '+prof.email+'. Check Recent Notifications for status.');
     loadNotifSettings();
   } catch(e) { toast('Error: ' + e.message, false); }
@@ -29897,7 +29929,7 @@ async function obCreate() {
         + '<div style="padding:12px 24px;background:#f4f6f8;font-size:11px;color:#6B7280;text-align:center">AURIS360 by SEPHS Consulting — ' + escH(coName) + '</div>'
         + '</div></body></html>';
 
-      await api('/notification_queue', { m: 'POST', p: 'return=minimal', b: {
+      await queueNotification({
         company_id:    _obCompanyId,
         type:          'welcome',
         subject:       'Welcome to AURIS360 — ' + coName,
@@ -29906,7 +29938,7 @@ async function obCreate() {
         to_name:       adminName,
         related_table: 'companies',
         related_id:    _obCompanyId
-      }});
+      });
     } catch (e) {} // Welcome email is non-critical
 
     // ── Done! ────────────────────────────────────────────────────
