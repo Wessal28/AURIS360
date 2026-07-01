@@ -66,7 +66,8 @@
   .sidebar.collapsed {
     width: 56px;
     min-width: 56px;
-    overflow: hidden;
+    overflow-x: hidden;
+    overflow-y: auto;
   }
   .sidebar.collapsed .sidebar-top { padding: 10px 4px; text-align: center; }
   .sidebar.collapsed .sb-company,
@@ -14635,7 +14636,7 @@ async function ptwRunSmartChecks(){
       var con=await api('/contractors?id=eq.'+contractorId+cf()+'&select=status,expiry_date,contractor_name&limit=1');
       if(con?.[0]){
         var c=con[0];
-        if(c.status!=='approved')blocks.push({icon:'ti-hard-hat',color:'#E24B4A',msg:'Contractor status is "'+c.status+'" — must be "approved" before work can proceed'});
+        if(c.status!=='approved')blocks.push({icon:'ti-helmet',color:'#E24B4A',msg:'Contractor status is "'+c.status+'" — must be "approved" before work can proceed'});
         else if(c.expiry_date&&new Date(c.expiry_date)<new Date())blocks.push({icon:'ti-calendar-x',color:'#E24B4A',msg:'Contractor approval has expired ('+new Date(c.expiry_date).toLocaleDateString('en-GB')+') — renewal required'});
         else if(c.expiry_date&&new Date(c.expiry_date)<new Date(Date.now()+30*86400000))warnings.push({icon:'ti-calendar-event',color:'#EF9F27',msg:'Contractor approval expires within 30 days ('+new Date(c.expiry_date).toLocaleDateString('en-GB')+')'});
       }
@@ -25934,7 +25935,7 @@ var MODULES_DIR = [
   {k:'fleet',       i:'ti-car',                l:'Fleet Management',    sec:'HSE Modules'},
   {k:'atex',        i:'ti-flame',              l:'ATEX Areas',          sec:'HSE Modules'},
   {k:'permit',      i:'ti-key',                l:'Permit to Work',      sec:'HSE Modules'},
-  {k:'contractor',  i:'ti-hard-hat',           l:'Contractors',         sec:'HSE Modules'},
+  {k:'contractor',  i:'ti-helmet',           l:'Contractors',         sec:'HSE Modules'},
   {k:'emergency',   i:'ti-alert-square',       l:'Emergency',           sec:'HSE Modules'},
   {k:'fire',        i:'ti-flame',              l:'Fire Certificates',   sec:'HSE Modules'},
   {k:'ohealth',     i:'ti-stethoscope',        l:'Occupational Health', sec:'HSE Modules'},
@@ -27849,7 +27850,7 @@ var MOBILE_MODULES = [
   {k:'fleet',        l:'Fleet',        i:'ti-car',                r:['admin','hse_manager','site_manager','supervisor','contractor','sephs_admin']},
   {k:'atex',         l:'ATEX',         i:'ti-flame',              r:['admin','hse_manager','site_manager','supervisor','contractor','sephs_admin']},
   {k:'permit',       l:'Permits',      i:'ti-file-certificate',   r:['all']},
-  {k:'contractor',   l:'Contractors',  i:'ti-hard-hat',           r:['admin','hse_manager','site_manager','supervisor','sephs_admin']},
+  {k:'contractor',   l:'Contractors',  i:'ti-helmet',           r:['admin','hse_manager','site_manager','supervisor','sephs_admin']},
   {k:'emergency',    l:'Emergency',    i:'ti-ambulance',          r:['all']},
   {k:'fire',         l:'Fire Certs',    i:'ti-flame',              r:['admin','hse_manager','site_manager','supervisor','auditor','sephs_admin']},
   {k:'chemical',     l:'Chemicals',     i:'ti-flask',              r:['admin','hse_manager','site_manager','supervisor','sephs_admin']},
@@ -30173,7 +30174,7 @@ function fireEquipStatusBadge(s) {
 <div class="nav-item" onclick="showPage('events',this)"><i class="ti ti-alert-triangle"></i>Incident Management</div><div class="nav-item" onclick="showPage('observation',this)"><i class="ti ti-eye"></i>BBS Observations</div>
 <div class="nav-item" onclick="showPage('inspection',this)"><i class="ti ti-clipboard-check"></i>Audits &amp; Inspections</div><div class="nav-item" onclick="showPage('risk',this)"><i class="ti ti-shield-check"></i>Risk Assessment</div><div class="nav-item" onclick="showPage('tools',this)"><i class="ti ti-tools"></i>Tools & Equipment</div><div class="nav-item" onclick="showPage('fleet',this)"><i class="ti ti-car"></i>Fleet Management</div><div class="nav-item" onclick="showPage('atex',this)"><i class="ti ti-flame"></i>ATEX Areas</div>
 <div class="nav-item" onclick="showPage('permit',this)"><i class="ti ti-key"></i>Permit to Work</div>
-<div class="nav-item" onclick="showPage('contractor',this)"><i class="ti ti-hard-hat"></i>Contractors</div><div class="nav-item" onclick="showPage('emergency',this)"><i class="ti ti-alert-square"></i>Emergency</div>
+<div class="nav-item" onclick="showPage('contractor',this)"><i class="ti ti-helmet"></i>Contractors</div><div class="nav-item" onclick="showPage('emergency',this)"><i class="ti ti-alert-square"></i>Emergency</div>
 <div class="nav-item" onclick="showPage('ohealth',this)"><i class="ti ti-stethoscope"></i>Occupational Health</div>
 <div class="nav-item" onclick="showPage('ppe',this)"><i class="ti ti-shield-check"></i>PPE</div>
 <div class="nav-item" onclick="showPage('fire',this)"><i class="ti ti-flame"></i>Fire Certificates</div>
