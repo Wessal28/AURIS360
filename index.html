@@ -3804,7 +3804,10 @@ function ppeInspPersonSelect(){
 var ROLE_ALLOWED = {
   'sephs_admin': null,
   'admin':       null,
-  'hse_manager': null,
+  'hse_manager': ['dashboard','executive','ai-insights','kpi','workschedule','events','observation',
+                  'inspection','risk','tools','fleet','atex','permit','contractor','emergency',
+                  'fire','chemical','ohealth','ppe','esg','noise','meetings','training','actions',
+                  'legal','sop','documents','people','users','settings','integrations','approvals','audit'],
   'hse_officer': ['dashboard','executive','ai-insights','kpi','workschedule','events','observation',
                   'inspection','risk','tools','fleet','atex','permit','contractor','emergency',
                   'fire','chemical','ohealth','ppe','esg','noise','meetings','training','actions',
@@ -3883,8 +3886,8 @@ function canAccessPage(pageKey) {
   
   // Gate 3: Role allow-list.
   var role = activeRole();
-  var allowed = ROLE_ALLOWED[role];
-  if(allowed === null || allowed === undefined) return true;  // null = sees all; undefined role = treat as allowed by default
+  var allowed = Object.prototype.hasOwnProperty.call(ROLE_ALLOWED, role) ? ROLE_ALLOWED[role] : (ROLE_ALLOWED.user || ['dashboard']);
+  if(allowed === null) return true;  // null = sees all.
   return allowed.indexOf(pageKey) !== -1;
 }
 
@@ -26367,6 +26370,7 @@ function applyRoles() {
   if(aiPanel) aiPanel.style.display = (AI_AVAILABLE && canUseAI()) ? 'block' : 'none';
   if(typeof applyAIAvailability === 'function') applyAIAvailability();
   if(typeof mobileApplyAccess === 'function') mobileApplyAccess();
+  if(typeof applyQuickAccessVisibility === 'function') applyQuickAccessVisibility();
 
   // Dev role-preview switcher: sephs_admin only (testing tool, must never
   // be visible to clients or their staff).
@@ -28202,6 +28206,30 @@ function mobileApplyAccess() {
   }
 }
 
+function applyQuickAccessVisibility() {
+  var pairs = [
+    ['dash-action-incident','events'],
+    ['dash-action-bbs','observation'],
+    ['dash-action-training','training'],
+    ['dash-action-permit','permit'],
+    ['mobile-home-incident','events'],
+    ['mobile-home-bbs','observation'],
+    ['mobile-home-kpi','kpi']
+  ];
+  pairs.forEach(function(pair){
+    var el = document.getElementById(pair[0]);
+    if(el) el.style.display = (typeof canAccessPage !== 'function' || canAccessPage(pair[1])) ? '' : 'none';
+  });
+  var dashboard = document.getElementById('page-dashboard');
+  if(dashboard && typeof canAccessPage === 'function') {
+    dashboard.querySelectorAll('[onclick*="showPage("]').forEach(function(el){
+      var oc = el.getAttribute('onclick') || '';
+      var m = oc.match(/showPage\(['"]([^'"]+)['"]/);
+      if(m) el.style.display = canAccessPage(m[1]) ? '' : 'none';
+    });
+  }
+}
+
 function mobileNavTo(page, title, btnEl) {
   if(typeof canAccessPage === 'function' && !canAccessPage(page)){
     toast('Your role does not have access to this module', false);
@@ -28324,12 +28352,10 @@ function mobileCloseModules() {
 function mobileRenderModulesGrid() {
   var grid = document.getElementById('mobile-modules-grid');
   if (!grid) return;
-  var role = (typeof activeRole === 'function') ? activeRole() : ((typeof prof !== 'undefined' && prof) ? (prof.role || 'employee') : 'employee');
   var html = '';
   for (var i = 0; i < MOBILE_MODULES.length; i++) {
     var m = MOBILE_MODULES[i];
     if (typeof canAccessPage === 'function' && !canAccessPage(m.k)) continue;
-    if (m.r.indexOf('all') === -1 && m.r.indexOf(role) === -1) continue;
     var color = MODULE_COLORS[m.k] || '#185FA5';
     var isCur = m.k === _mobileCurrentPg;
     html += '<button type="button" data-page="' + m.k + '" data-label="' + m.l + '" class="mob-module-btn"'
@@ -28348,14 +28374,12 @@ function mobileRenderModulesGrid() {
 }
 
 function mobileSearchModulesRender(q, el) {
-  var role = (typeof activeRole === 'function') ? activeRole() : ((typeof prof !== 'undefined' && prof) ? (prof.role || 'employee') : 'employee');
   var ql = q.toLowerCase();
   var html = '';
   var found = 0;
   for (var i = 0; i < MOBILE_MODULES.length; i++) {
     var m = MOBILE_MODULES[i];
     if (typeof canAccessPage === 'function' && !canAccessPage(m.k)) continue;
-    if (m.r.indexOf('all') === -1 && m.r.indexOf(role) === -1) continue;
     if (m.l.toLowerCase().indexOf(ql) === -1) continue;
     found++;
     var color = MODULE_COLORS[m.k] || '#185FA5';
@@ -30636,6 +30660,7 @@ function fireEquipStatusBadge(s) {
       <option value="supervisor">👷 Supervisor</option>
       <option value="site_manager">🏗️ Site Manager</option>
       <option value="hse_manager">🛡️ HSE Manager</option>
+      <option value="hse_officer">HSE Officer</option>
       <option value="auditor">🔍 Auditor</option>
       <option value="hr">👩 HR</option>
       <option value="executive">📊 Executive Management</option>
@@ -30743,6 +30768,7 @@ function fireEquipStatusBadge(s) {
 <option value="supervisor">👷 Supervisor</option>
 <option value="site_manager">🏗️ Site Manager</option>
 <option value="hse_manager">🛡️ HSE Manager</option>
+<option value="hse_officer">HSE Officer</option>
 <option value="auditor">🔍 Auditor</option>
 <option value="hr">👩 HR</option>
 <option value="executive">📊 Executive</option>
@@ -30751,7 +30777,7 @@ function fireEquipStatusBadge(s) {
 </select>
 <button class="btn btn-sm" style="flex-shrink:0;padding:4px 8px;font-size:10px" onclick="sbChangeRole()">Apply</button>
 </div>
-<span class="nav-section">Main</span><div class="nav-item active" onclick="showPage('dashboard',this)"><i class="ti ti-layout-dashboard"></i>Dashboard</div>
+<span class="nav-section">Main</span><div class="nav-item active" id="nav-dashboard" onclick="showPage('dashboard',this)"><i class="ti ti-layout-dashboard"></i>Dashboard</div>
 <div class="nav-item" id="nav-executive" onclick="showPage('executive',this)"><i class="ti ti-chart-bar"></i>Executive Dashboard</div><div class="nav-item" id="nav-ai" onclick="showPage('ai-insights',this)"><i class="ti ti-brain"></i>AI Insights</div><span class="nav-section">HSE Modules</span><div class="nav-item" onclick="showPage('kpi',this)"><i class="ti ti-target"></i>Objectives & KPIs</div><div class="nav-item" onclick="showPage('workschedule',this)"><i class="ti ti-calendar-event"></i>Work Schedule</div>
 <div class="nav-item" onclick="showPage('events',this)"><i class="ti ti-alert-triangle"></i>Incident Management</div><div class="nav-item" onclick="showPage('observation',this)"><i class="ti ti-eye"></i>BBS Observations</div>
 <div class="nav-item" onclick="showPage('inspection',this)"><i class="ti ti-clipboard-check"></i>Audits &amp; Inspections</div><div class="nav-item" onclick="showPage('risk',this)"><i class="ti ti-shield-check"></i>Risk Assessment</div><div class="nav-item" onclick="showPage('tools',this)"><i class="ti ti-tools"></i>Tools & Equipment</div><div class="nav-item" onclick="showPage('fleet',this)"><i class="ti ti-car"></i>Fleet Management</div><div class="nav-item" onclick="showPage('atex',this)"><i class="ti ti-flame"></i>ATEX Areas</div>
@@ -30813,15 +30839,15 @@ function fireEquipStatusBadge(s) {
     <div class="mobile-home-sub">Quick access for field reporting, observations, and HSE performance follow-up.</div>
   </div>
   <div class="mobile-home-actions">
-    <button type="button" class="mobile-home-action" onclick="dashOpenIncidentForm()">
+    <button type="button" class="mobile-home-action" id="mobile-home-incident" onclick="dashOpenIncidentForm()">
       <i class="ti ti-alert-triangle" style="background:#FCEBEB;color:#DC2626"></i>
       <div><strong>Report an incident</strong><small>Capture injuries, near misses, damage, and follow-up.</small></div>
     </button>
-    <button type="button" class="mobile-home-action" onclick="dashOpenObservationForm()">
+    <button type="button" class="mobile-home-action" id="mobile-home-bbs" onclick="dashOpenObservationForm()">
       <i class="ti ti-eye" style="background:#FFF7ED;color:#C2410C"></i>
       <div><strong>Record BBS observation</strong><small>Log positive behaviour, unsafe acts, or conditions.</small></div>
     </button>
-    <button type="button" class="mobile-home-action" onclick="mobileNavTo('kpi','KPIs',document.getElementById('mob-btn-kpi'))">
+    <button type="button" class="mobile-home-action" id="mobile-home-kpi" onclick="mobileNavTo('kpi','KPIs',document.getElementById('mob-btn-kpi'))">
       <i class="ti ti-target" style="background:#E6F1FB;color:#185FA5"></i>
       <div><strong>Review KPIs</strong><small>Check objectives and monthly HSE performance.</small></div>
     </button>
@@ -39495,6 +39521,7 @@ function fireEquipStatusBadge(s) {
 <select id="users-filter-role" onchange="usersFilter()" style="padding:7px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px">
 <option value="">All roles</option>
 <option value="hse_manager">HSE Manager</option>
+<option value="hse_officer">HSE Officer</option>
 <option value="site_manager">Site Manager</option>
 <option value="supervisor">Supervisor</option>
 <option value="employee">Employee</option>
@@ -39547,6 +39574,7 @@ function fireEquipStatusBadge(s) {
 <option value="supervisor">👷 Supervisor</option>
 <option value="site_manager">🏗️ Site Manager</option>
 <option value="hse_manager">🛡️ HSE Manager</option>
+<option value="hse_officer">HSE Officer</option>
 <option value="auditor">🔍 Auditor</option>
 <option value="hr">👩‍💼 HR</option>
 <option value="executive">📊 Executive Management</option>
@@ -39600,6 +39628,7 @@ function fireEquipStatusBadge(s) {
 <option value="supervisor">👷 Supervisor</option>
 <option value="site_manager">🏗️ Site Manager</option>
 <option value="hse_manager">🛡️ HSE Manager</option>
+<option value="hse_officer">HSE Officer</option>
 <option value="auditor">🔍 Auditor</option>
 <option value="hr">👩‍💼 HR</option>
 <option value="executive">📊 Executive Management</option>
@@ -39677,6 +39706,7 @@ function fireEquipStatusBadge(s) {
 <option value="supervisor">👷 Supervisor</option>
 <option value="site_manager">🏗️ Site Manager</option>
 <option value="hse_manager">🛡️ HSE Manager</option>
+<option value="hse_officer">HSE Officer</option>
 <option value="auditor">🔍 Auditor</option>
 <option value="hr">👩‍💼 HR</option>
 <option value="executive">📊 Executive Management</option>
@@ -40047,7 +40077,7 @@ Pick the modules this client can see. Sephs admin (you) always sees everything r
 <div class="form-group"><label class="form-label">Role at this site</label>
 <select id="adm-acc-role">
 <option value="">Use default role</option>
-<option value="hse_manager">HSE Manager</option><option value="site_manager">Site Manager</option>
+<option value="hse_manager">HSE Manager</option><option value="hse_officer">HSE Officer</option><option value="site_manager">Site Manager</option>
 <option value="supervisor">Supervisor</option><option value="auditor">Auditor</option>
 <option value="employee">Employee</option><option value="contractor">Contractor</option>
 </select></div>
@@ -41052,6 +41082,7 @@ I can help you:<br>
             <select id="ob-admin-role">
               <option value="admin">🔑 Company Admin</option>
               <option value="hse_manager">🛡️ HSE Manager</option>
+              <option value="hse_officer">HSE Officer</option>
               <option value="site_manager">🏗️ Site Manager</option>
             </select>
           </div>
