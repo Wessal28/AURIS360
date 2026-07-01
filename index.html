@@ -1472,11 +1472,26 @@ var AI_ALLOWED_ROLES = ['sephs_admin','admin','hse_manager','hse_officer'];
 function canUseAI(){
   return AI_ALLOWED_ROLES.indexOf(activeRole()) !== -1;
 }
+function apiCompanyScopeIssue(path,o,method){
+  try{
+    method=String(method||'GET').toUpperCase();
+    if(method==='GET'||isSA()||!prof?.company_id)return '';
+    var body=o?.b||{};
+    var bodyCompany=body.company_id?String(body.company_id):'';
+    var pathCompany=auditPathEq(path,'company_id')||'';
+    var own=String(prof.company_id);
+    if(bodyCompany&&bodyCompany!==own)return 'Blocked cross-company write. This record belongs to another company.';
+    if(pathCompany&&pathCompany!==own)return 'Blocked cross-company update. This request targets another company.';
+  }catch(_){}
+  return '';
+}
 async function api(path,o={}
 ){
 const headers={'Content-Type':'application/json','apikey':KEY,'Authorization':'Bearer '+(tok||KEY),'Accept':'application/json'};
 if(o.p)headers['Prefer']=o.p;
 const method=o.m||'GET';
+const scopeIssue=apiCompanyScopeIssue(path,o,method);
+if(scopeIssue)throw new Error(scopeIssue);
 const r=await fetch(SB+'/rest/v1'+path,{method:o.m||'GET',headers:headers,body:o.b?JSON.stringify(o.b):undefined});
 if(r.status===204||r.status===205){auditApiMutation(path,method,o,null);return null;}
 const txt=await r.text();
@@ -8512,9 +8527,10 @@ if(isAdm()) loadNotifSettings();
 }
 async function saveLogo(){
 const url=document.getElementById('set-logo').value;
-if(!prof?.company_id){toast('No company linked',false);return;}
+var companyId=ccid();
+if(!companyId){toast('No company selected',false);return;}
 try{
-await api('/companies?id=eq.'+prof.company_id,{m:'PATCH',p:'return=minimal',b:{logo_url:url||null}});
+await api('/companies?id=eq.'+companyId,{m:'PATCH',p:'return=minimal',b:{logo_url:url||null}});
 toast('Logo updated! Refresh to see it.');
 }catch(e){toast(e.message,false);}
 }
@@ -8534,7 +8550,9 @@ async function loadPTWApprovalSettings(){
 var el=document.getElementById('ptw-approver-settings-body');if(!el)return;
 el.innerHTML='<div class="loading">Loading approvers...</div>';
 try{
-var rows=await api('/notification_settings?company_id=eq.'+prof.company_id+'&limit=1');
+var companyId=ccid();
+if(!companyId){el.innerHTML='<div style="color:var(--red);padding:12px">No company selected.</div>';return;}
+var rows=await api('/notification_settings?company_id=eq.'+companyId+'&limit=1');
 var s=rows&&rows[0]?rows[0]:{};
 var rules=s.event_recipients||{};
 if(typeof rules==='string'){try{rules=JSON.parse(rules);}catch(_){rules={};}}
@@ -8571,7 +8589,9 @@ for(var i=0;i<selected.length;i++){
 var p=(people||[]).find(function(x){return x.id===selected[i];});
 if(p&&!p.email){toast('Cannot save PTW approver without email: '+peopleName(p),false);return;}
 }
-var existing=await api('/notification_settings?company_id=eq.'+prof.company_id+'&limit=1');
+var companyId=ccid();
+if(!companyId){toast('No company selected',false);return;}
+var existing=await api('/notification_settings?company_id=eq.'+companyId+'&limit=1');
 var row=existing&&existing[0]?existing[0]:null;
 var rules=row?.event_recipients||{};
 if(typeof rules==='string'){try{rules=JSON.parse(rules);}catch(_){rules={};}}
@@ -8579,8 +8599,8 @@ var approvers={};
 Object.assign(approvers,ptwApproverPayload(1,l1),ptwApproverPayload(2,l2),ptwApproverPayload(3,l3));
 rules.permit_approvers=approvers;
 var updates={event_recipients:rules,updated_at:new Date().toISOString()};
-if(row)await api('/notification_settings?company_id=eq.'+prof.company_id,{m:'PATCH',p:'return=minimal',b:updates});
-else{updates.company_id=prof.company_id;await api('/notification_settings',{m:'POST',p:'return=minimal',b:updates});}
+if(row)await api('/notification_settings?company_id=eq.'+companyId,{m:'PATCH',p:'return=minimal',b:updates});
+else{updates.company_id=companyId;await api('/notification_settings',{m:'POST',p:'return=minimal',b:updates});}
 toast('PTW approver settings saved');
 }catch(e){toast('Error saving PTW approvers: '+e.message,false);}
 }
