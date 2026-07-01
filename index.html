@@ -68,6 +68,10 @@
     min-width: 56px;
     overflow-x: hidden;
     overflow-y: auto;
+    height: 100dvh;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
   }
   .sidebar.collapsed .sidebar-top { padding: 10px 4px; text-align: center; }
   .sidebar.collapsed .sb-company,
@@ -90,6 +94,7 @@
     overflow: hidden;
     border-left-width: 0;
     border-right: 3px solid transparent;
+    flex-shrink: 0;
   }
   .sidebar.collapsed .nav-item.active { border-right-color: var(--green); }
   .sidebar.collapsed .nav-item i { font-size: 20px; line-height: 1; margin: 0; flex: 0 0 auto; }
@@ -4144,6 +4149,12 @@ async function dashRenderPersonal(events, actions, people, permits, training) {
   // Hide permit button if role doesn't have access (canAccessPage handles this)
   var permitBtn = document.getElementById('dash-action-permit');
   if(permitBtn) permitBtn.style.display = canAccessPage('permit') ? '' : 'none';
+  var trainingBtn = document.getElementById('dash-action-training');
+  if(trainingBtn) trainingBtn.style.display = canAccessPage('training') ? '' : 'none';
+  var incidentBtn = document.getElementById('dash-action-incident');
+  if(incidentBtn) incidentBtn.style.display = canAccessPage('events') ? '' : 'none';
+  var bbsBtn = document.getElementById('dash-action-bbs');
+  if(bbsBtn) bbsBtn.style.display = canAccessPage('observation') ? '' : 'none';
 
   // Find current user's person record (matches profile by email or full_name)
   var myPerson = (people||[]).find(function(p){
@@ -26140,22 +26151,26 @@ function isModuleLaunched(pageKey) {
 // States: '' (expanded, default) → 'collapsed' (icons only) → 'hidden' (off)
 // ═══════════════════════════════════════════════════════════════════════
 var SIDEBAR_STATE_KEY = 'auris360_sidebar_state';
-var SIDEBAR_STATES = ['', 'collapsed', 'hidden'];
+var SIDEBAR_STATES = ['', 'collapsed'];
 
 function sidebarGetState() {
-  try { return localStorage.getItem(SIDEBAR_STATE_KEY) || ''; }
+  try {
+    var s = localStorage.getItem(SIDEBAR_STATE_KEY) || '';
+    return SIDEBAR_STATES.indexOf(s) === -1 ? '' : s;
+  }
   catch(e) { return ''; }
 }
 function sidebarSetState(s) {
+  if(SIDEBAR_STATES.indexOf(s) === -1) s = '';
   try { localStorage.setItem(SIDEBAR_STATE_KEY, s); } catch(e){}
   sidebarApplyState(s);
 }
 function sidebarApplyState(s) {
+  if(SIDEBAR_STATES.indexOf(s) === -1) s = '';
   var sb = document.querySelector('.sidebar');
   if(!sb) return;
   sb.classList.remove('collapsed','hidden');
   if(s === 'collapsed') sb.classList.add('collapsed');
-  else if(s === 'hidden') sb.classList.add('hidden');
   // Tooltip data — needs nav items annotated with their label for icon-only mode
   if(s === 'collapsed') {
     document.querySelectorAll('.sidebar .nav-item').forEach(function(el){
@@ -26168,8 +26183,7 @@ function sidebarApplyState(s) {
   // Update toggle icon
   var icon = document.getElementById('sidebar-toggle-icon');
   if(icon) {
-    if(s === 'hidden') icon.className = 'ti ti-layout-sidebar-left-expand';
-    else if(s === 'collapsed') icon.className = 'ti ti-layout-sidebar-left-collapse';
+    if(s === 'collapsed') icon.className = 'ti ti-layout-sidebar-left-collapse';
     else icon.className = 'ti ti-menu-2';
   }
 }
@@ -26328,6 +26342,12 @@ function applyRoles() {
     var pageKey = navPageKey(el);
     if(!pageKey) return;
     el.style.display = canAccessPage(pageKey) ? 'flex' : 'none';
+    var label = el.textContent.trim();
+    if(label){
+      el.dataset.tip = label;
+      el.setAttribute('title', label);
+      el.setAttribute('aria-label', label);
+    }
   });
 
   // ── Phase 4: legacy fine-grained rules (preserved from original) ──
@@ -26346,6 +26366,7 @@ function applyRoles() {
   var aiPanel = document.getElementById('ai-panel');
   if(aiPanel) aiPanel.style.display = (AI_AVAILABLE && canUseAI()) ? 'block' : 'none';
   if(typeof applyAIAvailability === 'function') applyAIAvailability();
+  if(typeof mobileApplyAccess === 'function') mobileApplyAccess();
 
   // Dev role-preview switcher: sephs_admin only (testing tool, must never
   // be visible to clients or their staff).
@@ -28130,7 +28151,7 @@ var MOBILE_MODULES = [
   {k:'fleet',        l:'Fleet',        i:'ti-car',                r:['admin','hse_manager','site_manager','supervisor','contractor','sephs_admin']},
   {k:'atex',         l:'ATEX',         i:'ti-flame',              r:['admin','hse_manager','site_manager','supervisor','contractor','sephs_admin']},
   {k:'permit',       l:'Permits',      i:'ti-file-certificate',   r:['all']},
-  {k:'contractor',   l:'Contractors',  i:'ti-helmet',           r:['admin','hse_manager','site_manager','supervisor','sephs_admin']},
+  {k:'contractor',   l:'Contractors',  i:'ti-users-group',        r:['admin','hse_manager','site_manager','supervisor','sephs_admin']},
   {k:'emergency',    l:'Emergency',    i:'ti-ambulance',          r:['all']},
   {k:'fire',         l:'Fire Certs',    i:'ti-flame',              r:['admin','hse_manager','site_manager','supervisor','auditor','sephs_admin']},
   {k:'chemical',     l:'Chemicals',     i:'ti-flask',              r:['admin','hse_manager','site_manager','supervisor','sephs_admin']},
@@ -28167,7 +28188,27 @@ var MODULE_COLORS = {
   settings:'#374151'
 };
 
+function mobileApplyAccess() {
+  ['dashboard','events','observation','kpi'].forEach(function(page){
+    var btn=document.getElementById('mob-btn-'+page);
+    if(btn) btn.style.display = (typeof canAccessPage !== 'function' || canAccessPage(page)) ? 'flex' : 'none';
+  });
+  var more=document.getElementById('mob-btn-modules');
+  if(more){
+    var extras=(MOBILE_MODULES||[]).some(function(m){
+      return ['dashboard','events','observation','kpi'].indexOf(m.k)===-1 && (typeof canAccessPage !== 'function' || canAccessPage(m.k));
+    });
+    more.style.display=extras?'flex':'none';
+  }
+}
+
 function mobileNavTo(page, title, btnEl) {
+  if(typeof canAccessPage === 'function' && !canAccessPage(page)){
+    toast('Your role does not have access to this module', false);
+    mobileCloseModules();
+    mobileCloseSidebar();
+    return;
+  }
   if (_mobileCurrentPg !== page) {
     _mobileHistory.push(page);
     if (_mobileHistory.length > 30) _mobileHistory.shift();
@@ -28283,7 +28324,7 @@ function mobileCloseModules() {
 function mobileRenderModulesGrid() {
   var grid = document.getElementById('mobile-modules-grid');
   if (!grid) return;
-  var role = (typeof prof !== 'undefined' && prof) ? (prof.role || 'employee') : 'employee';
+  var role = (typeof activeRole === 'function') ? activeRole() : ((typeof prof !== 'undefined' && prof) ? (prof.role || 'employee') : 'employee');
   var html = '';
   for (var i = 0; i < MOBILE_MODULES.length; i++) {
     var m = MOBILE_MODULES[i];
@@ -28307,7 +28348,7 @@ function mobileRenderModulesGrid() {
 }
 
 function mobileSearchModulesRender(q, el) {
-  var role = (typeof prof !== 'undefined' && prof) ? (prof.role || 'employee') : 'employee';
+  var role = (typeof activeRole === 'function') ? activeRole() : ((typeof prof !== 'undefined' && prof) ? (prof.role || 'employee') : 'employee');
   var ql = q.toLowerCase();
   var html = '';
   var found = 0;
@@ -30715,7 +30756,7 @@ function fireEquipStatusBadge(s) {
 <div class="nav-item" onclick="showPage('events',this)"><i class="ti ti-alert-triangle"></i>Incident Management</div><div class="nav-item" onclick="showPage('observation',this)"><i class="ti ti-eye"></i>BBS Observations</div>
 <div class="nav-item" onclick="showPage('inspection',this)"><i class="ti ti-clipboard-check"></i>Audits &amp; Inspections</div><div class="nav-item" onclick="showPage('risk',this)"><i class="ti ti-shield-check"></i>Risk Assessment</div><div class="nav-item" onclick="showPage('tools',this)"><i class="ti ti-tools"></i>Tools & Equipment</div><div class="nav-item" onclick="showPage('fleet',this)"><i class="ti ti-car"></i>Fleet Management</div><div class="nav-item" onclick="showPage('atex',this)"><i class="ti ti-flame"></i>ATEX Areas</div>
 <div class="nav-item" onclick="showPage('permit',this)"><i class="ti ti-key"></i>Permit to Work</div>
-<div class="nav-item" onclick="showPage('contractor',this)"><i class="ti ti-helmet"></i>Contractors</div><div class="nav-item" onclick="showPage('emergency',this)"><i class="ti ti-alert-square"></i>Emergency</div>
+<div class="nav-item" onclick="showPage('contractor',this)"><i class="ti ti-users-group"></i>Contractors</div><div class="nav-item" onclick="showPage('emergency',this)"><i class="ti ti-alert-square"></i>Emergency</div>
 <div class="nav-item" onclick="showPage('ohealth',this)"><i class="ti ti-stethoscope"></i>Occupational Health</div>
 <div class="nav-item" onclick="showPage('ppe',this)"><i class="ti ti-shield-check"></i>PPE</div>
 <div class="nav-item" onclick="showPage('fire',this)"><i class="ti ti-flame"></i>Fire Certificates</div>
@@ -30832,9 +30873,9 @@ function fireEquipStatusBadge(s) {
     <div style="font-size:13px;font-weight:600;opacity:0.9;text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px">What can I help you with today?</div>
     <div style="font-size:14px;opacity:0.85;margin-bottom:16px" id="dash-personal-tagline">Report something, log an observation, or check your training.</div>
     <div id="dash-personal-actions" style="display:flex;gap:10px;flex-wrap:wrap">
-      <button class="dash-action-btn" onclick="dashOpenIncidentForm()"><i class="ti ti-alert-triangle"></i> Report an incident</button>
-      <button class="dash-action-btn" onclick="dashOpenObservationForm()"><i class="ti ti-eye"></i> Log an observation</button>
-      <button class="dash-action-btn" onclick="showPage('training',null)"><i class="ti ti-school"></i> My training</button>
+      <button class="dash-action-btn" id="dash-action-incident" onclick="dashOpenIncidentForm()"><i class="ti ti-alert-triangle"></i> Report an incident</button>
+      <button class="dash-action-btn" id="dash-action-bbs" onclick="dashOpenObservationForm()"><i class="ti ti-eye"></i> Log an observation</button>
+      <button class="dash-action-btn" id="dash-action-training" onclick="showPage('training',null)"><i class="ti ti-school"></i> My training</button>
       <button class="dash-action-btn" id="dash-action-permit" onclick="showPage('permit',null)"><i class="ti ti-file-certificate"></i> Request a permit</button>
     </div>
   </div>
