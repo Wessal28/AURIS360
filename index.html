@@ -1426,14 +1426,60 @@ async function api(path,o={}
 ){
 const headers={'Content-Type':'application/json','apikey':KEY,'Authorization':'Bearer '+(tok||KEY),'Accept':'application/json'};
 if(o.p)headers['Prefer']=o.p;
+const method=o.m||'GET';
 const r=await fetch(SB+'/rest/v1'+path,{method:o.m||'GET',headers:headers,body:o.b?JSON.stringify(o.b):undefined});
-if(r.status===204||r.status===205)return null;
+if(r.status===204||r.status===205){auditApiMutation(path,method,o,null);return null;}
 const txt=await r.text();
 if(!txt||txt.trim()==='')return null;
 let d;
 try{d=JSON.parse(txt);}catch(e){console.error('JSON parse error:',txt.slice(0,200));throw new Error('Invalid server response');}
 if(!r.ok){const msg=(Array.isArray(d)?d[0]?.message:d.message)||d.error_description||d.hint||r.statusText;console.error('API error '+r.status+':',msg,path);throw new Error(msg);}
+auditApiMutation(path,method,o,d);
 return d;
+}
+
+function auditTableFromPath(path){
+  var clean=(path||'').split('?')[0].replace(/^\/+/,'');
+  return clean.split('/')[0]||'';
+}
+function auditRelatedIdFromPath(path){
+  var m=String(path||'').match(/[?&]id=eq\.([0-9a-fA-F-]{36})/);
+  return m?m[1]:null;
+}
+function auditCompanyId(body){
+  try{
+    return body?.company_id || (typeof ccid==='function'?ccid():null) || prof?.company_id || null;
+  }catch(_){return body?.company_id || prof?.company_id || null;}
+}
+function auditApiMutation(path,method,o,response){
+  try{
+    method=(method||'GET').toUpperCase();
+    if(method==='GET')return;
+    var table=auditTableFromPath(path);
+    if(!table||table==='audit_events')return;
+    if(!tok||!prof)return;
+    var body=o?.b||{};
+    var action={POST:'create',PATCH:'update',PUT:'update',DELETE:'delete'}[method]||method.toLowerCase();
+    var first=Array.isArray(response)?response[0]:response;
+    var relatedId=first?.id||body?.id||auditRelatedIdFromPath(path);
+    var entry={
+      company_id:auditCompanyId(body),
+      actor_user_id:prof?.id||null,
+      actor_name:prof?.full_name||prof?.email||'User',
+      actor_role:activeRole(),
+      action:action,
+      module_name:table,
+      related_table:table,
+      related_id:relatedId,
+      summary:action+' '+table,
+      details:{method:method,path:path,changed_fields:Object.keys(body||{})}
+    };
+    fetch(SB+'/rest/v1/audit_events',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','apikey':KEY,'Authorization':'Bearer '+tok,'Prefer':'return=minimal'},
+      body:JSON.stringify(entry)
+    }).catch(function(){});
+  }catch(_){}
 }
 // ===================================================================
 // MISSING FUNCTION FIXES
