@@ -3758,7 +3758,7 @@ var ROLE_ALLOWED = {
   'hse_officer': ['dashboard','executive','ai-insights','kpi','workschedule','events','observation',
                   'inspection','risk','tools','fleet','atex','permit','contractor','emergency',
                   'fire','chemical','ohealth','ppe','esg','noise','meetings','training','actions',
-                  'legal','sop','documents','people','audit'],
+                  'legal','sop','documents','people','approvals','audit'],
   'executive':   ['dashboard','executive','kpi','workschedule','events','observation',
                   'inspection','risk','tools','fleet','atex','permit','contractor','emergency',
                   'fire','chemical','ohealth','ppe','esg','noise','meetings','training','actions',
@@ -3794,7 +3794,7 @@ function canAccessPage(pageKey) {
   // Executive Dashboard, AI Insights) are platform functions, NOT HSE
   // modules. They bypass the launch flag (Gate 1) and the per-company
   // module list (Gate 2), and are governed by role only (Gate 3).
-  var ADMIN_PAGES = ['users','settings','admin','integrations','executive','ai-insights','audit'];
+  var ADMIN_PAGES = ['users','settings','admin','integrations','executive','ai-insights','approvals','audit'];
   var isAdminPage = ADMIN_PAGES.indexOf(pageKey) !== -1;
   var isLimitedPilotCompany = co && Array.isArray(co.module_access) && co.module_access.length > 0 && co.module_access.length <= 4;
   if(pageKey === 'ai-insights') {
@@ -3804,6 +3804,9 @@ function canAccessPage(pageKey) {
     } catch(e) {}
   }
   if(pageKey === 'audit') {
+    if(['sephs_admin','admin','hse_manager','hse_officer'].indexOf(activeRole()) === -1) return false;
+  }
+  if(pageKey === 'approvals') {
     if(['sephs_admin','admin','hse_manager','hse_officer'].indexOf(activeRole()) === -1) return false;
   }
 
@@ -3859,7 +3862,7 @@ if(target){
   target.classList.add('active');
 }
 if(el&&el.classList)el.classList.add('active');
-const L={dashboard:loadDash,executive:loadExecutive,kpi:kpiLoadAll,workschedule:loadWorkSchedule,events:loadEvents,observation:loadObservation,inspection:()=>{buildChecklist();loadInsps();},risk:loadRA,investigation:loadInvs,legal:loadLegal,sop:loadSOP,tools:loadTools,fleet:loadFleet,atex:loadATEX,permit:loadPermits,contractor:loadContractors,esg:loadESG,emergency:loadEmergency,fire:loadFire,chemical:loadChemical,ohealth:loadOHealth,ppe:loadPPE,noise:loadNoise,meetings:loadMtgs,training:loadTraining,actions:loadActions,documents:loadDocs,people:loadPeople,users:loadUsers,admin:loadAdmin,'ai-insights':genFullAI,audit:loadAudit,settings:loadSettings,integrations:loadIntegrations};
+const L={dashboard:loadDash,executive:loadExecutive,kpi:kpiLoadAll,workschedule:loadWorkSchedule,events:loadEvents,observation:loadObservation,inspection:()=>{buildChecklist();loadInsps();},risk:loadRA,investigation:loadInvs,legal:loadLegal,sop:loadSOP,tools:loadTools,fleet:loadFleet,atex:loadATEX,permit:loadPermits,contractor:loadContractors,esg:loadESG,emergency:loadEmergency,fire:loadFire,chemical:loadChemical,ohealth:loadOHealth,ppe:loadPPE,noise:loadNoise,meetings:loadMtgs,training:loadTraining,actions:loadActions,documents:loadDocs,people:loadPeople,users:loadUsers,admin:loadAdmin,'ai-insights':genFullAI,approvals:loadApprovals,audit:loadAudit,settings:loadSettings,integrations:loadIntegrations};
 if(L[name])L[name]();
 // Mobile: close sidebar and scroll to top
 if(window.innerWidth<=768){
@@ -26144,6 +26147,7 @@ var MODULES_DIR = [
   {k:'users',       i:'ti-users',              l:'Users & Roles',       sec:'Management'},
   {k:'admin',       i:'ti-building',           l:'Companies',           sec:'Management'},
   {k:'integrations',i:'ti-plug',               l:'Integrations',        sec:'Management'},
+  {k:'approvals',   i:'ti-circle-check',       l:'Approval Center',     sec:'Management'},
   {k:'audit',       i:'ti-history',            l:'Audit Trail',         sec:'Management'},
   {k:'settings',    i:'ti-settings',           l:'Settings',            sec:'Management'},
 ];
@@ -28062,6 +28066,7 @@ var MOBILE_MODULES = [
   {k:'admin',        l:'Company',      i:'ti-building',           r:['admin','sephs_admin']},
   {k:'integrations', l:'Integrations', i:'ti-plug',               r:['admin','hse_manager','sephs_admin']},
   {k:'ai-insights',  l:'AI Insights',  i:'ti-robot',              r:['admin','hse_manager','hse_officer','sephs_admin']},
+  {k:'approvals',    l:'Approvals',    i:'ti-circle-check',       r:['admin','hse_manager','hse_officer','sephs_admin']},
   {k:'audit',        l:'Audit Trail',  i:'ti-history',            r:['admin','hse_manager','hse_officer','sephs_admin']},
   {k:'settings',     l:'Settings',     i:'ti-settings',           r:['admin','hse_manager','sephs_admin']},
 ];
@@ -28075,7 +28080,7 @@ var MODULE_COLORS = {
   noise:'#EF9F27', meetings:'#185FA5', training:'#5B21B6',
   actions:'#DC2626', legal:'#374151', sop:'#374151',
   documents:'#374151', people:'#185FA5', users:'#5B21B6',
-  admin:'#185FA5', integrations:'#0891B2', 'ai-insights':'#5B21B6', audit:'#374151',
+  admin:'#185FA5', integrations:'#0891B2', 'ai-insights':'#5B21B6', approvals:'#1D9E75', audit:'#374151',
   settings:'#374151'
 };
 
@@ -28587,6 +28592,134 @@ async function sendTestEmail() {
     toast('Test email queued for '+prof.email+'. Check Recent Notifications for status.');
     loadNotifSettings();
   } catch(e) { toast('Error: ' + e.message, false); }
+}
+
+// ================================================================
+// APPROVAL CENTER
+// Central view for records waiting for review, approval or release.
+// ================================================================
+var approvalCenterRows = [];
+
+function approvalsCanView(){
+  return ['sephs_admin','admin','hse_manager','hse_officer'].indexOf(activeRole()) !== -1;
+}
+function approvalsCompanyFilter(){
+  if(isSA() && sephsCompanyContext) return sephsCompanyContext;
+  if(isSA()) return null;
+  return prof?.company_id || null;
+}
+async function approvalsSafe(promise){
+  try{return await promise;}catch(e){console.warn('Approval Center source skipped:',e.message);return [];}
+}
+function approvalsStatusLabel(s){
+  return auditLabel(String(s||'pending').replace(/_/g,' '));
+}
+function approvalsStatusBadge(s){
+  var raw=String(s||'pending').toLowerCase();
+  var bg=raw.indexOf('approved')>=0?'#EAF3DE':raw.indexOf('reject')>=0?'#FCEBEB':raw.indexOf('review')>=0?'#EFF6FF':'#FEF9EC';
+  var c=raw.indexOf('approved')>=0?'#3B6D11':raw.indexOf('reject')>=0?'#A32D2D':raw.indexOf('review')>=0?'#185FA5':'#854F0B';
+  return '<span style="display:inline-flex;align-items:center;padding:3px 8px;border-radius:999px;background:'+bg+';color:'+c+';font-size:11px;font-weight:700">'+escH(approvalsStatusLabel(raw))+'</span>';
+}
+function approvalsCompanyPath(base){
+  var cid=approvalsCompanyFilter();
+  return base + (cid ? '&company_id=eq.'+cid : '');
+}
+
+async function loadApprovals(){
+  var el=document.getElementById('approvals-table-body');if(!el)return;
+  if(!approvalsCanView()){
+    el.innerHTML='<tr><td colspan="7" style="padding:18px;color:var(--red);text-align:center">Access denied</td></tr>';
+    return;
+  }
+  el.innerHTML='<tr><td colspan="7" style="padding:22px;text-align:center;color:var(--text2)">Loading approvals...</td></tr>';
+  try{
+    var cid=approvalsCompanyFilter();
+    var scope=document.getElementById('approvals-scope-label');
+    if(scope)scope.textContent=isSA()?(cid?'Selected company':'All companies'):(co?.name||'Current company');
+
+    var generic = await approvalsSafe(api(approvalsCompanyPath('/approval_requests?select=*&order=created_at.desc&limit=200')));
+    var permits = await approvalsSafe(api(approvalsCompanyPath('/permits?select=id,permit_number,permit_type,permit_type_v2,status,work_location,work_description,approval_level_required,approval_l1_status,approval_l2_status,approval_l3_status,created_at,updated_at&order=updated_at.desc&limit=200')));
+    var docs = await approvalsSafe(api(approvalsCompanyPath('/documents?select=id,doc_ref,reference_no,title,document_type,doc_type,status,approval_status,owner,created_at,updated_at&order=updated_at.desc&limit=200')));
+    var ras = await approvalsSafe(api(approvalsCompanyPath('/risk_assessments?select=id,ra_ref,title,ra_type,ra_type_v2,status,overall_risk_level,created_at,updated_at&order=updated_at.desc&limit=200')));
+
+    approvalCenterRows=[];
+    (generic||[]).forEach(function(x){
+      approvalCenterRows.push({
+        source:'workflow',
+        module:x.module_name||x.related_table||'workflow',
+        ref:(x.related_id||'').slice(0,8),
+        title:x.related_table||'Approval request',
+        status:x.status||'pending',
+        step:x.current_step_no?('Level '+x.current_step_no):'',
+        updated_at:x.updated_at||x.created_at,
+        id:x.related_id||x.id,
+        page:x.module_name||''
+      });
+    });
+    (permits||[]).filter(function(x){return x.status==='pending_approval';}).forEach(function(x){
+      var first=1;
+      for(var i=1;i<=3;i++){if((x['approval_l'+i+'_status']||'pending')!=='approved'){first=i;break;}}
+      approvalCenterRows.push({source:'permit',module:'Permit to Work',ref:x.permit_number||String(x.id).slice(0,8),title:x.work_description||x.work_location||'Permit awaiting approval',status:x.status,step:'Level '+first,updated_at:x.updated_at||x.created_at,id:x.id,page:'permit'});
+    });
+    (docs||[]).filter(function(x){return ['pending_review','under_review','pending_approval'].indexOf(x.approval_status||x.status||'')!==-1;}).forEach(function(x){
+      approvalCenterRows.push({source:'documents',module:'Document Control',ref:x.doc_ref||x.reference_no||String(x.id).slice(0,8),title:x.title||'Document awaiting approval',status:x.approval_status||x.status,step:(x.approval_status||x.status)==='pending_approval'?'Approval':'Review',updated_at:x.updated_at||x.created_at,id:x.id,page:'documents'});
+    });
+    (ras||[]).filter(function(x){return ['pending_review','pending_approval','review'].indexOf(x.status||'')!==-1;}).forEach(function(x){
+      approvalCenterRows.push({source:'risk',module:'Risk Assessment',ref:x.ra_ref||String(x.id).slice(0,8),title:x.title||'Risk assessment awaiting approval',status:x.status,step:x.status==='pending_approval'?'Approval':'Review',updated_at:x.updated_at||x.created_at,id:x.id,page:'risk'});
+    });
+    approvalCenterRows.sort(function(a,b){return new Date(b.updated_at||0)-new Date(a.updated_at||0);});
+    approvalsRender();
+  }catch(e){
+    el.innerHTML='<tr><td colspan="7" style="padding:18px;color:var(--red)">Approval Center unavailable: '+escH(e.message)+'</td></tr>';
+  }
+}
+
+function approvalsFilteredRows(){
+  var q=(document.getElementById('approvals-search')?.value||'').toLowerCase();
+  var status=document.getElementById('approvals-filter-status')?.value||'';
+  var module=document.getElementById('approvals-filter-module')?.value||'';
+  return (approvalCenterRows||[]).filter(function(x){
+    if(status && String(x.status||'')!==status)return false;
+    if(module && String(x.source||x.module||'')!==module)return false;
+    if(q){
+      var hay=[x.module,x.ref,x.title,x.status,x.step].join(' ').toLowerCase();
+      if(hay.indexOf(q)===-1)return false;
+    }
+    return true;
+  });
+}
+
+function approvalsRender(){
+  var rows=approvalsFilteredRows();
+  var tbody=document.getElementById('approvals-table-body');if(!tbody)return;
+  var total=document.getElementById('approvals-count');if(total)total.textContent=String((approvalCenterRows||[]).length);
+  var shown=document.getElementById('approvals-shown-count');if(shown)shown.textContent=String(rows.length);
+  var pending=document.getElementById('approvals-pending-count');if(pending)pending.textContent=String((approvalCenterRows||[]).filter(function(x){return ['pending','pending_review','under_review','pending_approval'].indexOf(x.status||'')!==-1;}).length);
+  var modSel=document.getElementById('approvals-filter-module');
+  if(modSel && !modSel.dataset.ready){
+    modSel.innerHTML='<option value="">All modules</option><option value="workflow">Workflow requests</option><option value="permit">Permit to Work</option><option value="documents">Document Control</option><option value="risk">Risk Assessment</option>';
+    modSel.dataset.ready='1';
+  }
+  if(!rows.length){
+    tbody.innerHTML='<tr><td colspan="7" style="padding:26px;text-align:center;color:var(--text2)">No approvals waiting for action</td></tr>';
+    return;
+  }
+  tbody.innerHTML=rows.map(function(x){
+    return '<tr style="border-bottom:1px solid var(--border)">'
+      +'<td style="padding:10px 12px;font-weight:800">'+escH(x.ref||'-')+'<div style="font-size:11px;color:var(--text2);font-weight:400">'+escH(x.module||'-')+'</div></td>'
+      +'<td style="padding:10px 12px;max-width:420px">'+escH(x.title||'-')+'</td>'
+      +'<td style="padding:10px 12px">'+approvalsStatusBadge(x.status)+'</td>'
+      +'<td style="padding:10px 12px">'+escH(x.step||'-')+'</td>'
+      +'<td style="padding:10px 12px;color:var(--text2);white-space:nowrap">'+(x.updated_at?new Date(x.updated_at).toLocaleString():'-')+'</td>'
+      +'<td style="padding:10px 12px;color:var(--text2);font-size:11px">'+escH(auditLabel(x.source||''))+'</td>'
+      +'<td style="padding:10px 12px;text-align:right"><button class="btn btn-sm" onclick="approvalsOpen(\''+escH(x.page||'')+'\')"><i class="ti ti-arrow-right"></i>Open</button></td>'
+      +'</tr>';
+  }).join('');
+}
+
+function approvalsOpen(page){
+  if(page&&canAccessPage(page))showPage(page,null);
+  else toast('Open the related module to review this approval.',false);
 }
 
 // ================================================================
@@ -30508,7 +30641,7 @@ function fireEquipStatusBadge(s) {
 <div class="nav-item" onclick="showPage('noise',this)"><i class="ti ti-volume"></i>Noise Survey</div><div class="nav-item" id="nav-mtg" onclick="showPage('meetings',this)"><i class="ti ti-notes"></i>HSE Meetings</div><div class="nav-item" onclick="showPage('training',this)"><i class="ti ti-certificate"></i>Training</div><span class="nav-section">Management</span><div class="nav-item" onclick="showPage('actions',this)"><i class="ti ti-list-check"></i>Master Action Plan</div><div class="nav-item" onclick="showPage('legal',this)"><i class="ti ti-scale"></i>Legal Compliance</div>
 <div class="nav-item" onclick="showPage('sop',this)"><i class="ti ti-file-description"></i>SOP Generator</div>
 <div class="nav-item" id="nav-docs" onclick="showPage('documents',this)"><i class="ti ti-files"></i>Document Control</div><div class="nav-item" onclick="showPage('people',this)"><i class="ti ti-id-badge"></i>People</div><div class="nav-item" id="nav-users" onclick="showPage('users',this)"><i class="ti ti-users"></i>Users &amp; Roles</div><div class="nav-item" id="nav-admin" style="display:none" onclick="showPage('admin',this)"><i class="ti ti-building"></i>Companies</div><div class="nav-item" id="nav-integrations" onclick="showPage('integrations',this)"><i class="ti ti-plug"></i>Integrations</div>
-<div class="nav-item" id="nav-audit" onclick="showPage('audit',this)"><i class="ti ti-history"></i>Audit Trail</div><div class="nav-item" id="nav-settings" onclick="showPage('settings',this)"><i class="ti ti-settings"></i>Settings</div><div class="sb-footer"><button class="btn btn-sm" style="flex:1;justify-content:center;color:var(--red)" onclick="doLogout()"><i class="ti ti-logout"></i>Sign out</button></div>
+<div class="nav-item" id="nav-approvals" onclick="showPage('approvals',this)"><i class="ti ti-circle-check"></i>Approval Center</div><div class="nav-item" id="nav-audit" onclick="showPage('audit',this)"><i class="ti ti-history"></i>Audit Trail</div><div class="nav-item" id="nav-settings" onclick="showPage('settings',this)"><i class="ti ti-settings"></i>Settings</div><div class="sb-footer"><button class="btn btn-sm" style="flex:1;justify-content:center;color:var(--red)" onclick="doLogout()"><i class="ti ti-logout"></i>Sign out</button></div>
 <div id="pwa-install-btn" onclick="pwaInstall()" style="display:none;align-items:center;gap:10px;padding:10px 20px;cursor:pointer;font-size:13px;color:var(--green);font-weight:600;border-top:1px solid var(--border);margin-top:auto"><i class="ti ti-download" style="font-size:16px"></i>Install app</div></div>
 <div class="main">
 
@@ -40258,6 +40391,83 @@ I can help you:<br>
 </div>
 
 </div><!-- end page-ai-insights -->
+
+<div id="page-approvals" class="page">
+<div class="page-header">
+  <div>
+    <div class="page-title">Approval Center</div>
+    <div style="font-size:12px;color:var(--text2);margin-top:3px">Central queue for submitted permits, documents, risk assessments and workflow approvals</div>
+  </div>
+  <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+    <button class="btn" onclick="loadApprovals()"><i class="ti ti-refresh"></i>Refresh</button>
+    <button class="btn btn-primary" onclick="showPage('settings',document.getElementById('nav-settings'))"><i class="ti ti-route"></i>Workflow settings</button>
+  </div>
+</div>
+
+<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px">
+  <div class="card" style="padding:14px;border-left:4px solid #1D9E75">
+    <div style="font-size:11px;text-transform:uppercase;color:var(--text2);font-weight:700">Total Queue</div>
+    <div style="font-size:28px;font-weight:800" id="approvals-count">0</div>
+  </div>
+  <div class="card" style="padding:14px;border-left:4px solid #EF9F27">
+    <div style="font-size:11px;text-transform:uppercase;color:var(--text2);font-weight:700">Pending Action</div>
+    <div style="font-size:28px;font-weight:800" id="approvals-pending-count">0</div>
+  </div>
+  <div class="card" style="padding:14px;border-left:4px solid #185FA5">
+    <div style="font-size:11px;text-transform:uppercase;color:var(--text2);font-weight:700">Filtered View</div>
+    <div style="font-size:28px;font-weight:800" id="approvals-shown-count">0</div>
+  </div>
+  <div class="card" style="padding:14px;border-left:4px solid #374151">
+    <div style="font-size:11px;text-transform:uppercase;color:var(--text2);font-weight:700">Scope</div>
+    <div style="font-size:14px;font-weight:800;margin-top:8px" id="approvals-scope-label">Current company</div>
+  </div>
+</div>
+
+<div class="card" style="padding:14px;margin-bottom:16px">
+  <div style="display:grid;grid-template-columns:2fr 1fr 1fr auto;gap:10px;align-items:end">
+    <div class="form-group" style="margin:0">
+      <label class="form-label">Search</label>
+      <input id="approvals-search" type="search" placeholder="Search reference, title, module..." oninput="approvalsRender()"/>
+    </div>
+    <div class="form-group" style="margin:0">
+      <label class="form-label">Status</label>
+      <select id="approvals-filter-status" onchange="approvalsRender()">
+        <option value="">All statuses</option>
+        <option value="pending">Pending</option>
+        <option value="pending_review">Pending review</option>
+        <option value="under_review">Under review</option>
+        <option value="pending_approval">Pending approval</option>
+      </select>
+    </div>
+    <div class="form-group" style="margin:0">
+      <label class="form-label">Module</label>
+      <select id="approvals-filter-module" onchange="approvalsRender()"><option value="">All modules</option></select>
+    </div>
+    <button class="btn" onclick="document.getElementById('approvals-search').value='';document.getElementById('approvals-filter-status').value='';document.getElementById('approvals-filter-module').value='';approvalsRender()"><i class="ti ti-filter-off"></i>Clear</button>
+  </div>
+</div>
+
+<div class="card" style="padding:0;overflow:hidden">
+  <div style="overflow-x:auto">
+    <table style="width:100%;min-width:980px;border-collapse:collapse;font-size:12px">
+      <thead>
+        <tr style="background:#1a3a5c;color:#fff">
+          <th style="padding:10px 12px;text-align:left">Reference</th>
+          <th style="padding:10px 12px;text-align:left">Record</th>
+          <th style="padding:10px 12px;text-align:left">Status</th>
+          <th style="padding:10px 12px;text-align:left">Step</th>
+          <th style="padding:10px 12px;text-align:left">Updated</th>
+          <th style="padding:10px 12px;text-align:left">Source</th>
+          <th style="padding:10px 12px;text-align:right">Action</th>
+        </tr>
+      </thead>
+      <tbody id="approvals-table-body">
+        <tr><td colspan="7" style="padding:24px;text-align:center;color:var(--text2)">Open Approval Center to load approvals</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+</div><!-- end page-approvals -->
 
 <div id="page-audit" class="page">
 <div class="page-header">
