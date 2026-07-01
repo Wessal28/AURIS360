@@ -8405,7 +8405,10 @@ var notifCard=document.getElementById('settings-notif-card');
 if(notifCard) notifCard.style.display=isAdm()?'block':'none';
 var ptwCard=document.getElementById('settings-ptw-approver-card');
 if(ptwCard) ptwCard.style.display=isAdm()?'block':'none';
+var workflowCard=document.getElementById('settings-workflow-card');
+if(workflowCard) workflowCard.style.display=(isAdm()||activeRole()==='hse_manager')?'block':'none';
 if(isAdm()) loadPeopleCache().then(function(){loadPTWApprovalSettings();});
+if(isAdm()||activeRole()==='hse_manager') loadPeopleCache().then(function(){loadApprovalWorkflows();});
 if(isAdm()) loadNotifSettings();
 }
 async function saveLogo(){
@@ -8532,6 +8535,144 @@ await api('/notification_queue',{m:'POST',p:'return=minimal',b:{company_id:ccid(
    - Live preview applies brand via Brand.apply without saving
    - Save persists to companies table and re-applies
 ═══════════════════════════════════════════════════════════════════ */
+// Generic approval workflow settings. These reusable rules will drive PTW,
+// documents, risk assessments, incident investigations and other approvals.
+var approvalWorkflowRows=[];
+var approvalWorkflowSteps={};
+var approvalEditingId=null;
+
+function approvalCompanyId(){
+  if(isSA()&&sephsCompanyContext)return sephsCompanyContext;
+  return prof?.company_id||null;
+}
+function approvalCanManage(){return isAdm()||activeRole()==='hse_manager';}
+function approvalPersonLabel(p){
+  if(!p)return '';
+  return ([p.first_name,p.last_name].filter(Boolean).join(' ')||p.email||p.id)+(p.job_title?' - '+p.job_title:'');
+}
+function approvalPersonOptions(selected){
+  var opts='<option value="">Select person...</option>';
+  (people||[]).forEach(function(p){
+    opts+='<option value="'+escH(p.id)+'" '+(selected===p.id?'selected':'')+'>'+escH(approvalPersonLabel(p))+'</option>';
+  });
+  return opts;
+}
+function approvalRoleOptions(selected){
+  var roles=[['','Specific person only'],['supervisor','Supervisor'],['site_manager','Site Manager'],['hse_officer','HSE Officer'],['hse_manager','HSE Manager'],['admin','Company Admin'],['sephs_admin','SEPHS Admin']];
+  return roles.map(function(r){return '<option value="'+r[0]+'" '+(selected===r[0]?'selected':'')+'>'+r[1]+'</option>';}).join('');
+}
+function approvalModuleOptions(selected){
+  var modules=[['permit','Permit to Work'],['documents','Document Control'],['risk','Risk Assessment'],['events','Incident Management'],['investigation','Incident Investigation'],['legal','Legal Compliance'],['chemical','Chemical Control'],['actions','Master Action Plan']];
+  return modules.map(function(m){return '<option value="'+m[0]+'" '+(selected===m[0]?'selected':'')+'>'+m[1]+'</option>';}).join('');
+}
+
+async function loadApprovalWorkflows(){
+  var el=document.getElementById('workflow-settings-body');if(!el)return;
+  if(!approvalCanManage()){el.innerHTML='';return;}
+  var companyId=approvalCompanyId();
+  if(!companyId){el.innerHTML='<div style="color:var(--text2);padding:12px">Select a company first to configure approval workflows.</div>';return;}
+  el.innerHTML='<div class="loading">Loading workflows...</div>';
+  try{
+    approvalWorkflowRows=await api('/approval_workflows?company_id=eq.'+companyId+'&order=module_name.asc,workflow_name.asc')||[];
+    approvalWorkflowSteps={};
+    for(var i=0;i<approvalWorkflowRows.length;i++){
+      var w=approvalWorkflowRows[i];
+      approvalWorkflowSteps[w.id]=await api('/approval_workflow_steps?workflow_id=eq.'+w.id+'&order=step_no.asc')||[];
+    }
+    approvalRenderWorkflows();
+  }catch(e){
+    el.innerHTML='<div style="color:var(--red);padding:12px">Error loading approval workflows: '+escH(e.message)+'</div>';
+  }
+}
+
+function approvalRenderWorkflows(){
+  var el=document.getElementById('workflow-settings-body');if(!el)return;
+  var rows=approvalWorkflowRows||[];
+  var cards=rows.length?rows.map(function(w){
+    var steps=approvalWorkflowSteps[w.id]||[];
+    var stepText=steps.length?steps.map(function(s){return 'L'+s.step_no+': '+escH(s.approver_name||s.approver_role||'Not assigned');}).join(' | '):'No steps configured';
+    return '<div style="border:1px solid var(--border);border-radius:10px;padding:12px;background:#fff;display:flex;justify-content:space-between;gap:12px;align-items:center">'
+      +'<div><div style="font-size:13px;font-weight:800">'+escH(w.workflow_name||'Workflow')+' <span class="badge bg">'+escH(auditLabel(w.module_name||''))+'</span></div>'
+      +'<div style="font-size:11px;color:var(--text2);margin-top:5px">'+stepText+'</div></div>'
+      +'<div style="display:flex;gap:6px;flex-shrink:0"><button class="btn btn-sm" onclick="approvalEditWorkflow(\''+w.id+'\')"><i class="ti ti-edit"></i>Edit</button><button class="btn btn-sm danger" onclick="approvalDeleteWorkflow(\''+w.id+'\')"><i class="ti ti-trash"></i></button></div>'
+      +'</div>';
+  }).join(''):'<div style="padding:18px;text-align:center;color:var(--text2);border:1px dashed var(--border);border-radius:10px">No approval workflows yet. Add one for PTW, documents, risk assessments, or incidents.</div>';
+  el.innerHTML='<div style="display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:12px">'
+    +'<div style="font-size:12px;color:var(--text2)">Define who approves controlled records before they become final. These rules are reusable across modules.</div>'
+    +'<button class="btn btn-primary" onclick="approvalNewWorkflow()"><i class="ti ti-plus"></i>Add workflow</button>'
+    +'</div><div style="display:flex;flex-direction:column;gap:8px">'+cards+'</div><div id="workflow-form-host" style="margin-top:14px"></div>';
+}
+
+function approvalNewWorkflow(){
+  approvalEditingId=null;
+  approvalRenderWorkflowForm({module_name:'permit',workflow_name:'Permit to Work Approval',applies_to:'all permits',is_active:true},[]);
+}
+function approvalEditWorkflow(id){
+  approvalEditingId=id;
+  var w=(approvalWorkflowRows||[]).find(function(x){return x.id===id;})||{};
+  approvalRenderWorkflowForm(w,approvalWorkflowSteps[id]||[]);
+}
+function approvalRenderWorkflowForm(w,steps){
+  var host=document.getElementById('workflow-form-host');if(!host)return;
+  steps=steps||[];
+  function step(n){
+    var s=steps.find(function(x){return parseInt(x.step_no)===n;})||{};
+    return '<div style="border:1px solid var(--border);border-radius:10px;padding:12px;background:#f9fafb">'
+      +'<div style="font-size:12px;font-weight:800;margin-bottom:8px">Level '+n+'</div>'
+      +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">'
+      +'<div class="form-group" style="margin:0"><label class="form-label">Approver role</label><select id="aw-step-role-'+n+'">'+approvalRoleOptions(s.approver_role||'')+'</select></div>'
+      +'<div class="form-group" style="margin:0"><label class="form-label">Specific approver</label><select id="aw-step-person-'+n+'">'+approvalPersonOptions(s.approver_person_id||'')+'</select></div>'
+      +'</div><label style="display:flex;align-items:center;gap:8px;margin-top:10px;font-size:12px"><input type="checkbox" id="aw-step-required-'+n+'" '+(s.required!==false?'checked':'')+'/> Required step</label></div>';
+  }
+  host.innerHTML='<div style="border:2px solid #bfdbfe;border-radius:12px;padding:14px;background:#fff">'
+    +'<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:12px"><div style="font-size:14px;font-weight:800">'+(approvalEditingId?'Edit workflow':'New workflow')+'</div><button class="btn btn-sm" onclick="approvalRenderWorkflows()"><i class="ti ti-x"></i>Close</button></div>'
+    +'<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:12px">'
+    +'<div class="form-group" style="margin:0"><label class="form-label">Module</label><select id="aw-module">'+approvalModuleOptions(w.module_name||'permit')+'</select></div>'
+    +'<div class="form-group" style="margin:0"><label class="form-label">Workflow name</label><input id="aw-name" value="'+escH(w.workflow_name||'')+'" placeholder="e.g. Hot Work Permit Approval"/></div>'
+    +'<div class="form-group" style="margin:0"><label class="form-label">Applies to</label><input id="aw-applies" value="'+escH(w.applies_to||'')+'" placeholder="e.g. hot work, all permits"/></div></div>'
+    +'<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:12px">'+step(1)+step(2)+step(3)+'</div>'
+    +'<div style="display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap"><label style="display:flex;align-items:center;gap:8px;font-size:12px"><input type="checkbox" id="aw-active" '+(w.is_active!==false?'checked':'')+'/> Active workflow</label><button class="btn btn-primary" onclick="approvalSaveWorkflow()"><i class="ti ti-device-floppy"></i>Save workflow</button></div></div>';
+}
+
+async function approvalSaveWorkflow(){
+  try{
+    var companyId=approvalCompanyId();
+    if(!companyId){toast('Select a company first',false);return;}
+    var name=document.getElementById('aw-name')?.value?.trim();
+    if(!name){toast('Enter a workflow name',false);return;}
+    var body={company_id:companyId,module_name:document.getElementById('aw-module')?.value||'permit',workflow_name:name,applies_to:document.getElementById('aw-applies')?.value||null,is_active:document.getElementById('aw-active')?.checked!==false,updated_at:new Date().toISOString()};
+    var workflowId=approvalEditingId;
+    if(workflowId){
+      await api('/approval_workflows?id=eq.'+workflowId,{m:'PATCH',p:'return=minimal',b:body});
+      await api('/approval_workflow_steps?workflow_id=eq.'+workflowId,{m:'DELETE'});
+    }else{
+      body.created_by=prof?.id||null;
+      var res=await api('/approval_workflows',{m:'POST',p:'return=representation',b:body});
+      workflowId=res&&res[0]?res[0].id:null;
+    }
+    if(!workflowId)throw new Error('Workflow was not saved');
+    for(var n=1;n<=3;n++){
+      var personId=document.getElementById('aw-step-person-'+n)?.value||null;
+      var role=document.getElementById('aw-step-role-'+n)?.value||null;
+      if(!personId&&!role)continue;
+      var p=personId?(people||[]).find(function(x){return x.id===personId;}):null;
+      await api('/approval_workflow_steps',{m:'POST',p:'return=minimal',b:{workflow_id:workflowId,step_no:n,approver_role:role,approver_person_id:personId,approver_name:p?approvalPersonLabel(p):(role||''),approver_email:p?(p.email||null):null,required:document.getElementById('aw-step-required-'+n)?.checked!==false,notify_channels:['email','in_app']}});
+    }
+    toast('Approval workflow saved');
+    approvalEditingId=null;
+    await loadApprovalWorkflows();
+  }catch(e){toast('Workflow save failed: '+e.message,false);}
+}
+
+async function approvalDeleteWorkflow(id){
+  if(!(await appConfirmDelete('approval workflow','This will remove the workflow rule. Existing records will not be deleted.')))return;
+  try{
+    await api('/approval_workflows?id=eq.'+id,{m:'DELETE'});
+    toast('Approval workflow deleted');
+    await loadApprovalWorkflows();
+  }catch(e){toast('Delete failed: '+e.message,false);}
+}
+
 var _brandLogoData = { light:null, dark:null };  // base64 data URIs captured before save
 
 function brandInit(){
@@ -40398,6 +40539,12 @@ I can help you:<br>
   <div class="card-title" style="display:flex;align-items:center;gap:8px"><i class="ti ti-certificate" style="color:#185FA5"></i>Permit Approval Settings</div>
   <div style="font-size:12px;color:var(--text2);margin-bottom:14px">Define who approves Permit to Work requests at Level 1, Level 2 and Level 3.</div>
   <div id="ptw-approver-settings-body"><div class="loading">Loading approvers...</div></div>
+</div>
+
+<div class="card" id="settings-workflow-card" style="display:none">
+  <div class="card-title" style="display:flex;align-items:center;gap:8px"><i class="ti ti-route" style="color:#5B21B6"></i>Approval Workflow Settings</div>
+  <div style="font-size:12px;color:var(--text2);margin-bottom:14px">Create reusable approval routes for permits, documents, risk assessments, investigations and other controlled records.</div>
+  <div id="workflow-settings-body"><div class="loading">Loading workflows...</div></div>
 </div>
 
 <div class="card" id="settings-notif-card" style="display:none">
