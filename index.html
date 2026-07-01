@@ -2543,6 +2543,7 @@ function obsToggleAction() {
 
 // ── Save ──────────────────────────────────────────────────────────────────────
 async function obsSave() {
+  if(!workflowCanMutate('observation','BBS observations'))return;
   var g = function(id){var el=document.getElementById(id);return el?el.value||null:null;};
   var type = g('obs-type')||'unsafe_condition';
   var isPositive = ['positive_behaviour','good_practice'].includes(type);
@@ -2672,6 +2673,8 @@ async function obsSave() {
 }
 
 async function obsDelete() {
+  if(!workflowCanMutate('observation','BBS observations'))return;
+  if(!isMgr()){toast('Only managers/admins can delete BBS observations.',false);return;}
   if (!obsEditId) return;
   var ok=await appConfirm({
     title:'Delete BBS observation',
@@ -5879,6 +5882,13 @@ function stat(s){const c={open:'ba',in_progress:'ba',closed:'bg',on_track:'bg',a
 function prio(p){const c={critical:'br',high:'ba',medium:'bb',low:'bg'};return '<span class="badge '+(c[p]||'bgr')+'">'+(p||'--')+'</span>';}
 function denied(){return '<div class="access-denied"><i class="ti ti-lock"></i><h3>Access restricted</h3><p>Your role does not have permission to view this section.</p></div>';}
 function pname(id){const p=people.find(x=>x.id===id);return p?p.first_name+' '+p.last_name:'--';}
+function workflowCanMutate(pageKey, label){
+  if(typeof canAccessPage === 'function' && !canAccessPage(pageKey)){
+    toast('You do not have permission to change '+(label||'this record')+'.', false);
+    return false;
+  }
+  return true;
+}
 
 // DEDUP: aiOpen and aiHist already declared at L2471
 
@@ -5993,6 +6003,7 @@ document.getElementById('ev-serious-warning').style.display=(e.severity==='high'
 document.getElementById('ev-severity').onchange=function(){document.getElementById('ev-serious-warning').style.display=(this.value==='high'||this.value==='critical')?'block':'none';};
 }
 async function evSave(){
+if(!workflowCanMutate('events','events'))return;
 const evType=document.getElementById('ev-type').value;
 const sev=document.getElementById('ev-severity').value;
 const date=document.getElementById('ev-date').value;
@@ -6042,6 +6053,8 @@ async function evQuickClose(id){
 try{await api('/events?id=eq.'+id,{m:'PATCH',p:'return=minimal',b:{status:'closed',closed_date:new Date().toISOString().slice(0,10),updated_at:new Date().toISOString()}});toast('Event closed!');evCloseModal();await loadEvents();}catch(e){toast(e.message,false);}
 }
 async function evDelete(){
+if(!workflowCanMutate('events','events'))return;
+if(!isMgr()){toast('Only managers/admins can delete events.',false);return;}
 if(!evEditingId)return;
 var ok=await appConfirm({title:'Delete event',message:'Delete this event?',detail:'This will remove the event record from the register.',confirmText:'Delete event',cancelText:'Keep event',danger:true});
 if(!ok)return;
@@ -6419,6 +6432,7 @@ async function saveInv(){invSave();}
 
 
 async function savePermit(){
+if(!workflowCanMutate('permit','permits'))return;
 if(!isMgr()){toast('Access denied',false);return;}
 try{
 const cid=document.getElementById('pf-contractor').value,iid=document.getElementById('pf-issued').value,aid=document.getElementById('pf-approved').value;
@@ -6801,6 +6815,7 @@ function chemApplySdsText(text,fileName){
 }
 
 async function chemSave(){
+  if(!workflowCanMutate('chemical','chemicals'))return;
   if(!isMgr()){toast('Only managers/admins can save chemicals',false);return;}
   var product=document.getElementById('chem-product')?.value?.trim();
   if(!product){toast('Please enter product name',false);return;}
@@ -6853,6 +6868,7 @@ async function chemSave(){
 }
 
 async function chemDelete(){
+  if(!workflowCanMutate('chemical','chemicals'))return;
   if(!chemEditId)return;
   if(!isMgr()){toast('Only managers/admins can delete or archive chemicals',false);return;}
   var current=chemData.find(function(x){return x.id===chemEditId;})||{};
@@ -11249,6 +11265,7 @@ function imsPrintIncident(){
 }
 
 async function imsSave(){
+  if(!workflowCanMutate('events','incidents'))return;
   if(imsIsReporterLocked()){
     toast('Submitted reports are locked for employees. A manager/admin must review changes.',false);
     return;
@@ -11355,6 +11372,8 @@ async function imsSave(){
 }
 
 async function imsDelete(){
+  if(!workflowCanMutate('events','incidents'))return;
+  if(!isMgr()){toast('Only managers/admins can delete incident reports.',false);return;}
   if(!imsEditId)return;
   var ok=await appConfirm({
     title:'Delete incident',
@@ -11876,6 +11895,7 @@ async function invSign(role){
 }
 
 async function invSave(){
+  if(!workflowCanMutate('events','investigations'))return;
   var currentInv=(imsInvAllData||[]).find(function(r){return r.id===imsInvEditId;})||{};
   if(imsInvEditId && !invCanEditRecord(currentInv)){
     toast('Submitted investigations are locked. Admin must release it before modification.',false);
@@ -11980,6 +12000,8 @@ async function invReleaseForEdit(){
 }
 
 async function invDeleteCurrent(){
+  if(!workflowCanMutate('events','investigations'))return;
+  if(!isMgr()){toast('Only managers/admins can delete investigations.',false);return;}
   if(!imsInvEditId)return;
   var ok=await appConfirm({title:'Delete investigation',message:'Delete this investigation?',detail:'This will remove the investigation record linked to the incident.',confirmText:'Delete investigation',cancelText:'Keep investigation',danger:true});
   if(!ok)return;
@@ -12925,6 +12947,7 @@ function raRowHasContent(r){
 // ===== RA_JS_PART3.JS =====
 // ── Save RA ───────────────────────────────────────────────────────────────────
 async function raSave(targetStatus){
+  if(!workflowCanMutate('risk','risk assessments'))return;
   var currentRa=raEditingId?(raAllData.find(function(x){return x.id===raEditingId;})||{}):null;
   if(currentRa&&!controlledRecordCanEdit(currentRa)){
     toast('This risk assessment is locked. Admin/HSE Manager must release or create a revision before changes.',false);
@@ -13035,6 +13058,7 @@ function raClearForm(){
 
 // ── Delete ────────────────────────────────────────────────────────────────────
 async function raDeleteCurrent(){
+  if(!workflowCanMutate('risk','risk assessments'))return;
   if(!raEditingId)return;
   var current=raAllData.find(function(x){return x.id===raEditingId;})||{};
   if(!isSA()&&!['draft','rejected','archived'].includes(current.status||'draft')){
@@ -14928,6 +14952,7 @@ async function ptwRunSmartChecks(){
 
 // ── SAVE PERMIT ───────────────────────────────────────────────────────────────
 async function ptwSave(targetStatus){
+  if(!workflowCanMutate('permit','permits'))return;
   var currentPermit=ptwEditingId?(ptwAllData.find(function(x){return x.id===ptwEditingId;})||{}):null;
   if(currentPermit&&!controlledRecordCanEdit(currentPermit)){
     toast('This permit is controlled and locked. Use the approval, suspension, cancellation or closure workflow.',false);
@@ -15060,6 +15085,7 @@ function ptwFormBack(){
 }
 
 async function ptwDelete(){
+  if(!workflowCanMutate('permit','permits'))return;
   if(!ptwEditingId)return;
   var current=ptwAllData.find(function(x){return x.id===ptwEditingId;})||{};
   if(!isSA()&&!['draft','cancelled','rejected'].includes(current.status||'draft')){
@@ -15126,6 +15152,7 @@ function ptwUpdateGasResultPreview(){
 }
 
 async function ptwAddGasTest(){
+  if(!workflowCanMutate('permit','permits'))return;
   var g=function(id){var el=document.getElementById(id);return el?el.value||'':null;};
   var test={datetime:g('gas-datetime'),tester:ptwCurrentUserName(),equipment:g('gas-equipment'),cal_date:g('gas-cal-date'),o2:g('gas-o2'),lel:g('gas-lel'),h2s:g('gas-h2s'),co:g('gas-co'),location:g('gas-location'),result:g('gas-result'),notes:g('gas-notes')};
   if(!test.equipment)return toast('Please enter the gas detector / equipment used',false);
@@ -15202,6 +15229,7 @@ function ptwRenderIsolationListPanel(){
 }
 
 async function ptwAddIsolation(){
+  if(!workflowCanMutate('permit','permits'))return;
   var g=function(id){var el=document.getElementById(id);return el?el.value||'':null;};
   var tag=g('iso-tag');if(!tag){toast('Please enter isolation tag/ID',false);return;}
   if(!g('iso-desc')){toast('Please describe the isolation point or equipment.',false);return;}
@@ -15274,6 +15302,7 @@ function ptwFirstPendingApprovalLevel(x){
 }
 
 async function ptwApprove(level, action){
+  if(!workflowCanMutate('permit','permits'))return;
   var x=ptwAllData.find(function(r){return r.id===ptwCurrentId;});if(!x)return;
   var firstPending=ptwFirstPendingApprovalLevel(x);
   if(action==='approved'&&firstPending&&level!==firstPending){toast('Approval must follow the Level 1, Level 2, Level 3 sequence.',false);return;}
@@ -15310,6 +15339,7 @@ function ptwApprovalBack(){ptwShowDetail(ptwCurrentId);}
 
 // ── ACTIVATE ──────────────────────────────────────────────────────────────────
 async function ptwActivate(){
+  if(!workflowCanMutate('permit','permits'))return;
   var x=ptwAllData.find(function(r){return r.id===ptwCurrentId;});if(!x)return;
   if(Array.isArray(x.blocked_reasons)&&x.blocked_reasons.length){toast('Permit cannot be activated until all smart blocks are cleared.',false);return;}
   var type=x.permit_type_v2||x.permit_type||'';
@@ -15349,6 +15379,7 @@ function ptwOpenClosurePanel(){
 }
 
 async function ptwConfirmClose(){
+  if(!workflowCanMutate('permit','permits'))return;
   var closedBy=ptwCurrentUserName();
   var items=document.querySelectorAll('[id^="close-chk-"]');
   var checklist=[];items.forEach(function(cb,i){checklist.push({item:cb.nextElementSibling?.textContent||'Item '+i,checked:cb.checked});});
@@ -15373,6 +15404,7 @@ function ptwOpenSuspensionPanel(){
 }
 
 async function ptwConfirmSuspend(){
+  if(!workflowCanMutate('permit','permits'))return;
   var action=document.getElementById('ptw-suspend-action')?.value||'suspended';
   var by=ptwCurrentUserName();
   var reason=document.getElementById('ptw-suspend-reason')?.value?.trim();
@@ -15392,6 +15424,7 @@ async function ptwConfirmSuspend(){
 function ptwSuspendBack(){ptwShowDetail(ptwCurrentId);}
 
 async function ptwResume(){
+  if(!workflowCanMutate('permit','permits'))return;
   var by=ptwCurrentUserName();
   var current=ptwAllData.find(function(r){return r.id===ptwCurrentId;})||{};
   if(Array.isArray(current.blocked_reasons)&&current.blocked_reasons.includes(PTW_FAILED_GAS_BLOCK)){
@@ -20732,6 +20765,7 @@ function mapUpdateEffectivenessStars(val){
 
 // ── Save ──────────────────────────────────────────────────────────────────────
 async function mapSave(draft){
+  if(!workflowCanMutate('actions','actions'))return;
   var g=function(id){var el=document.getElementById(id);return el?el.value||null:null;};
   var assSel=document.getElementById('mf-assigned-to');var assId=assSel?.value||null;
   var assName='';if(assId){var p=(people||[]).find(x=>x.id===assId);assName=p?(p.last_name+', '+p.first_name):'';}
@@ -20811,6 +20845,7 @@ async function mapSave(draft){
 
 // ── Status changes ────────────────────────────────────────────────────────────
 async function mapChangeStatus(newStatus){
+  if(!workflowCanMutate('actions','actions'))return;
   var old=mapAllData.find(x=>x.id===mapEditingId)||{};
   var extraBody={status:newStatus,updated_at:new Date().toISOString()};
   if(newStatus==='in_progress'&&!old.start_date)extraBody.start_date=new Date().toISOString().slice(0,10);
@@ -20826,6 +20861,7 @@ async function mapChangeStatus(newStatus){
 }
 
 async function mapApproveVerification(){
+  if(!workflowCanMutate('actions','actions'))return;
   var notesEl=document.getElementById('mf-verif-notes');var verifEl=document.getElementById('mf-verified-by');
   var notes=notesEl?.value?.trim();if(!notes){toast('Please add verification notes before approving',false);return;}
   var verifSel=document.getElementById('mf-verified-by');var verifName='';
@@ -20845,6 +20881,7 @@ async function mapApproveVerification(){
 }
 
 async function mapFailVerification(){
+  if(!workflowCanMutate('actions','actions'))return;
   var reason=await appPrompt({title:'Verification failed',message:'Reason for verification failure. What needs to be done again?',placeholder:'Reason',multiline:true});if(!reason)return;
   var body={status:'in_progress',verification_status:'failed',verification_notes:(document.getElementById('mf-verif-notes')?.value||'')+'\nFAILED: '+reason,updated_at:new Date().toISOString()};
   try{
@@ -20859,6 +20896,7 @@ async function mapFailVerification(){
 }
 
 async function mapApproveClosure(){
+  if(!workflowCanMutate('actions','actions'))return;
   var closeName='';var closeSel=document.getElementById('mf-closure-by');
   if(closeSel?.value){var cp=(people||[]).find(x=>x.id===closeSel.value);closeName=cp?(cp.last_name+', '+cp.first_name):'';}
   var notes=document.getElementById('mf-closure-notes')?.value?.trim();
@@ -20878,6 +20916,7 @@ async function mapApproveClosure(){
 }
 
 async function mapRejectClosure(){
+  if(!workflowCanMutate('actions','actions'))return;
   var reason=document.getElementById('mf-closure-rejected')?.value?.trim();
   if(!reason)reason=await appPrompt({title:'Reject closure',message:'Reason for rejecting closure',placeholder:'Reason',multiline:true});if(!reason)return;
   var body={status:'in_progress',closure_rejected_reason:reason,updated_at:new Date().toISOString()};
@@ -20893,6 +20932,7 @@ async function mapRejectClosure(){
 }
 
 async function mapTriggerEscalation(){
+  if(!workflowCanMutate('actions','actions'))return;
   var escSel=document.getElementById('mf-escalated-to');var escName='';
   if(escSel?.value){var ep=(people||[]).find(x=>x.id===escSel.value);escName=ep?(ep.last_name+', '+ep.first_name):'';}
   var reason=document.getElementById('mf-esc-reason')?.value?.trim();
@@ -20933,6 +20973,7 @@ async function mapLoadLog(id){
 
 // ── Delete ────────────────────────────────────────────────────────────────────
 async function mapDelete(){
+  if(!workflowCanMutate('actions','actions'))return;
   if(!mapEditingId)return;
   if(!(await appConfirmDelete('action','This will remove the action from the Master Action Plan.')))return;
   api('/action_tracker?id=eq.'+mapEditingId,{m:'DELETE'}).then(function(){
@@ -20944,6 +20985,7 @@ async function mapDelete(){
 // Keep legacy function aliases for backward compatibility with auto-actions from other modules
 function saveAction(){mapSave();}
 function cycleAction(id, currentStatus){
+  if(!workflowCanMutate('actions','actions'))return;
   var next={open:'in_progress',in_progress:'pending_closure',pending_closure:'closed',closed:'closed'}[currentStatus]||'in_progress';
   api('/action_tracker?id=eq.'+id,{m:'PATCH',p:'return=minimal',b:{status:next,updated_at:new Date().toISOString()}}).then(function(){
     var x=mapAllData.find(r=>r.id===id);if(x)x.status=next;mapRenderList();mapLoadList();
@@ -21619,6 +21661,7 @@ function dcRenderActionButtons(x){
 
 // ── Save ──────────────────────────────────────────────────────────────────────
 async function dcSave(){
+  if(!workflowCanMutate('documents','documents'))return;
   var currentDoc=dcEditingId?(dcAllData.find(function(x){return x.id===dcEditingId;})||{}):null;
   if(currentDoc&&!controlledRecordCanEdit(currentDoc)){
     toast('This document is controlled. Create a new revision before changing approved/submitted content.',false);
@@ -21691,6 +21734,7 @@ async function dcSave(){
 }
 
 async function dcSubmitForApproval(){
+  if(!workflowCanMutate('documents','documents'))return;
   var currentDoc=dcEditingId?(dcAllData.find(function(x){return x.id===dcEditingId;})||{}):null;
   if(currentDoc&&!controlledRecordCanEdit(currentDoc)){
     toast('This document is locked. Create a new revision before resubmitting.',false);
@@ -21711,6 +21755,7 @@ async function dcSubmitForApproval(){
 }
 
 async function dcApprove(){
+  if(!workflowCanMutate('documents','documents'))return;
   if(!dcEditingId)return;
   var appSel=document.getElementById('dc-sign-approver');var appId=appSel?.value||null;
   var appName='';if(appId){var ap=(people||[]).find(x=>x.id===appId);appName=ap?(ap.last_name+', '+ap.first_name):prof?.full_name||'Approver';}
@@ -21730,6 +21775,7 @@ async function dcApprove(){
 }
 
 async function dcReject(){
+  if(!workflowCanMutate('documents','documents'))return;
   var reason=document.getElementById('dc-rejection-reason')?.value?.trim();
   if(!reason)reason=await appPrompt({title:'Reject document',message:'Reason for rejection. What needs to change?',placeholder:'Reason',multiline:true});if(!reason)return;
   try{
@@ -21743,6 +21789,7 @@ async function dcReject(){
 }
 
 async function dcWithdraw(){
+  if(!workflowCanMutate('documents','documents'))return;
   if(!(await appConfirmAction({title:'Withdraw document',message:'Withdraw this document?',detail:'It will no longer be active.',confirmText:'Withdraw',cancelText:'Cancel'})))return;
   try{
     await api('/documents?id=eq.'+dcEditingId,{m:'PATCH',p:'return=minimal',b:{approval_status:'withdrawn',status:'withdrawn',updated_at:new Date().toISOString()}});
@@ -21753,6 +21800,7 @@ async function dcWithdraw(){
 }
 
 async function dcCreateNewRevision(){
+  if(!workflowCanMutate('documents','documents'))return;
   if(!dcEditingId)return;
   var x=dcAllData.find(r=>r.id===dcEditingId)||{};
   var oldVersion=x.version||x.doc_version||'1.0';
@@ -21774,6 +21822,8 @@ async function dcCreateNewRevision(){
 }
 
 async function dcDelete(){
+  if(!workflowCanMutate('documents','documents'))return;
+  if(!isMgr()){toast('Only managers/admins can delete documents.',false);return;}
   if(!dcEditingId)return;
   if(!(await appConfirmDelete('document','This will permanently delete the document record.')))return;
   api('/documents?id=eq.'+dcEditingId,{m:'DELETE'}).then(function(){
@@ -22666,6 +22716,8 @@ function legalSetStatus(status){
 }
 
 async function legalSaveReq(){
+  if(!workflowCanMutate('legal','legal compliance'))return;
+  if(!isMgr()){toast('Only managers/admins can change the legal register.',false);return;}
   var leg=document.getElementById('lr-leg-main')?.value?.trim();if(!leg){toast('Please enter legislation name',false);return;}
   var g=function(id){var el=document.getElementById(id);return el?el.value||null:null;};
   var score=parseInt(g('lr-compliance-score'))||0;
@@ -22678,12 +22730,16 @@ async function legalSaveReq(){
   }catch(e){toast(e.message,false);}
 }
 async function legalDeleteReq(){
+  if(!workflowCanMutate('legal','legal compliance'))return;
+  if(!isMgr()){toast('Only managers/admins can delete legal requirements.',false);return;}
   if(!lrEditId)return;
   var ok=await appConfirm({title:'Delete legal section',message:'Delete this legal requirement?',detail:'This will remove the section from the legal register.',confirmText:'Delete section',cancelText:'Keep section',danger:true});
   if(!ok)return;
   try{await api('/legal_requirements?id=eq.'+lrEditId,{m:'DELETE'});toast('Deleted!');legalReqBack();}catch(e){toast(e.message,false);}
 }
 async function legalDeleteReqFromList(id){
+  if(!workflowCanMutate('legal','legal compliance'))return;
+  if(!isMgr()){toast('Only managers/admins can delete legal requirements.',false);return;}
   var ok=await appConfirm({title:'Delete legal section',message:'Delete this legal requirement?',detail:'This will remove the section from the legal register.',confirmText:'Delete section',cancelText:'Keep section',danger:true});
   if(!ok)return;
   api('/legal_requirements?id=eq.'+id,{m:'DELETE'}).then(function(){lrAllData=lrAllData.filter(x=>x.id!==id);legalFilterRegister();toast('Deleted!');}).catch(function(e){toast(e.message,false);});
@@ -22696,6 +22752,7 @@ function legalToggleVisibleSelection(checked){
 }
 
 async function legalDeleteIds(ids,label){
+  if(!workflowCanMutate('legal','legal compliance'))return;
   if(!ids.length)return;
   for(var i=0;i<ids.length;i+=40){
     var chunk=ids.slice(i,i+40);
@@ -25970,6 +26027,7 @@ var LAUNCHED_MODULES = [
   'chemical',      // Chemical Control / COSHH
   'fleet',         // Fleet Management
   'atex',          // ATEX / Hazardous Areas
+  'actions',       // Master Action Plan - core workflow follow-up
   'sop',           // SOP Generator — internal/admin rollout
   // To activate more: add module key here and redeploy
 ];
