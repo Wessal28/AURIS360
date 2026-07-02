@@ -2492,6 +2492,7 @@ function obsNew(type) {
   obsSetFormMode(true);
   document.getElementById('obs-form-view').style.display = 'block';
   ['list','positive','unsafe','trends'].forEach(t=>{var el=document.getElementById('obs-view-'+t);if(el)el.style.display='none';});
+  customRenderRecordFields('observation','safety_observations',null);
 }
 
 function obsEdit(id) {
@@ -2540,6 +2541,7 @@ function obsEdit(id) {
   obsSetFormMode(true);
   document.getElementById('obs-form-view').style.display = 'block';
   ['list','positive','unsafe','trends'].forEach(t=>{var el=document.getElementById('obs-view-'+t);if(el)el.style.display='none';});
+  customRenderRecordFields('observation','safety_observations',id);
 }
 
 function obsSelectType(type) {
@@ -2589,6 +2591,7 @@ async function obsSave() {
   if (!g('obs-date')) { toast('Please select the observation date', false); return; }
   if (!g('obs-location')) { toast('Please enter the location or area', false); return; }
   if (!g('obs-observer')) { toast('Please select the observer', false); return; }
+  try{await customValidateRecordValues('observation');}catch(e){toast(e.message,false);return;}
   var actionRequired = document.getElementById('obs-action-required')?.checked||false;
   var obsSeverity = g('obs-severity')||'medium';
   if (!isPositive && ['critical','high'].includes(obsSeverity) && !actionRequired) {
@@ -2649,6 +2652,7 @@ async function obsSave() {
     var savedObsRef = '';
     if (obsEditId) {
       await api('/safety_observations?id=eq.'+obsEditId, {m:'PATCH',p:'return=minimal',b:body});
+      await customSaveRecordValues('observation','safety_observations',obsEditId,ccid());
       var idx = obsAllData.findIndex(x=>x.id===obsEditId);
       if (idx>=0) Object.assign(obsAllData[idx],body);
       savedObsRef = obsAllData[idx]?.obs_ref || obsEditId;
@@ -2662,6 +2666,7 @@ async function obsSave() {
         var typeCode = {positive_behaviour:'POS',unsafe_behaviour:'UBA',unsafe_condition:'UCC',near_miss:'NM',good_practice:'GP'}[type]||'OBS';
         var ref = 'OBS-'+typeCode+'-'+yr+'-'+String(obsAllData.length+1).padStart(3,'0');
         await api('/safety_observations?id=eq.'+res[0].id, {m:'PATCH',p:'return=minimal',b:{obs_ref:ref}});
+        await customSaveRecordValues('observation','safety_observations',res[0].id,ccid());
         res[0].obs_ref=ref; obsAllData.unshift(res[0]);
         savedObsRef = ref;
         toast('Observation saved! Ref: '+ref);
@@ -8818,7 +8823,7 @@ toast(msg,false);
 
 const CUSTOM_FIELD_MODULES=[
   {key:'events',label:'Incident Management',recordTable:'events'},
-  {key:'observation',label:'BBS Observations',recordTable:'observations',future:true},
+  {key:'observation',label:'BBS Observations',recordTable:'safety_observations'},
   {key:'inspection',label:'Audits & Inspections',recordTable:'inspections',future:true},
   {key:'permit',label:'Permit to Work',recordTable:'permits',future:true},
   {key:'risk',label:'Risk Assessment',recordTable:'risk_assessments',future:true}
@@ -8887,9 +8892,14 @@ async function customLoadValues(recordTable,recordId){
   (rows||[]).forEach(function(r){map[r.field_id]=customFieldValueFromJson(r.value);});
   return map;
 }
+function customFieldDomIds(moduleKey){
+  if(moduleKey==='observation')return {card:'obs-custom-fields-card',body:'obs-custom-fields-body'};
+  return {card:'ims-custom-fields-card',body:'ims-custom-fields-body'};
+}
 async function customRenderRecordFields(moduleKey,recordTable,recordId){
-  var card=document.getElementById('ims-custom-fields-card');
-  var body=document.getElementById('ims-custom-fields-body');
+  var ids=customFieldDomIds(moduleKey);
+  var card=document.getElementById(ids.card);
+  var body=document.getElementById(ids.body);
   if(!card||!body)return;
   try{
     var defs=await customLoadDefinitions(moduleKey,false);
@@ -33650,6 +33660,13 @@ function fireEquipStatusBadge(s) {
 <div id="obs-photo-list" style="font-size:12px;color:var(--text2)">No photos selected</div>
 </div>
 
+<!-- Company custom fields -->
+<div class="card" id="obs-custom-fields-card" style="margin-bottom:14px;display:none">
+<div class="card-title"><i class="ti ti-adjustments"></i> Company Specific Fields</div>
+<div style="font-size:12px;color:var(--text2);margin-bottom:10px">Additional fields configured by your company admin for BBS observations.</div>
+<div id="obs-custom-fields-body"></div>
+</div>
+
 <!-- Location & Context -->
 <div class="card" style="margin-bottom:14px"><div class="card-title">Location &amp; Context</div>
 <div class="form-row">
@@ -41650,7 +41667,7 @@ I can help you:<br>
 
 <div class="card" id="settings-custom-fields-card" style="display:none">
   <div class="card-title" style="display:flex;align-items:center;gap:8px"><i class="ti ti-adjustments" style="color:#1D9E75"></i>No-code Custom Fields</div>
-  <div style="font-size:12px;color:var(--text2);margin-bottom:14px">Add company-specific fields without changing the software code. First module enabled: Incident Management.</div>
+  <div style="font-size:12px;color:var(--text2);margin-bottom:14px">Add company-specific fields without changing the software code. Enabled for Incident Management and BBS Observations.</div>
   <div id="custom-fields-settings-body"><div class="loading">Loading custom fields...</div></div>
 </div>
 
