@@ -4216,6 +4216,53 @@ function dashRenderDemoReadiness(data){
   }).join('');
 }
 
+function dashOpenMeetingChecklist(){
+  var modal=document.getElementById('client-meeting-checklist-modal');
+  if(!modal){
+    modal=document.createElement('div');
+    modal.id='client-meeting-checklist-modal';
+    modal.style.cssText='display:none;position:fixed;inset:0;background:rgba(15,23,42,.55);z-index:930;align-items:center;justify-content:center;padding:18px';
+    modal.innerHTML='<div class="card" role="dialog" aria-modal="true" aria-labelledby="client-meeting-checklist-title" style="width:100%;max-width:760px;max-height:86vh;overflow:hidden;border-radius:12px;box-shadow:0 20px 70px rgba(15,23,42,.28);padding:0">'
+      +'<div style="padding:16px 18px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:flex-start;gap:12px">'
+      +'<div><div id="client-meeting-checklist-title" style="font-size:18px;font-weight:900">Client meeting checklist</div><div style="font-size:12px;color:var(--text2);margin-top:3px">Use this before a pilot-client walkthrough to keep the demo controlled and professional.</div></div>'
+      +'<button class="btn btn-sm" onclick="dashCloseMeetingChecklist()"><i class="ti ti-x"></i></button>'
+      +'</div>'
+      +'<div style="padding:16px 18px;overflow:auto;max-height:calc(86vh - 120px)">'
+      +'<div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px" id="client-meeting-checklist-body"></div>'
+      +'<div style="margin-top:14px;padding:12px;border:1px solid #bfdbfe;background:#EFF6FF;border-radius:10px;color:#1e40af;font-size:12px;line-height:1.55"><strong>Demo rule:</strong> show the client a complete story, not every module. Start with Dashboard, then Incident/BBS, then Action Plan, then Audit Trail. Keep future roadmap modules visible only if asked.</div>'
+      +'</div>'
+      +'<div style="padding:12px 18px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:8px"><button class="btn" onclick="window.print()"><i class="ti ti-printer"></i>Print</button><button class="btn btn-primary" onclick="dashCloseMeetingChecklist()">Done</button></div>'
+      +'</div>';
+    modal.onclick=function(e){if(e.target===modal)dashCloseMeetingChecklist();};
+    document.body.appendChild(modal);
+  }
+  var items=[
+    ['Company context','Select the correct client company or All companies before presenting. Confirm the sidebar name and dashboard context match the story.'],
+    ['Minimum demo records','Prepare at least 3 people, 1 incident with evidence, 1 BBS observation, 1 MAP action, 1 risk assessment, 1 chemical and 1 legal register import.'],
+    ['Incident workflow','Show Report incident, evidence/photos, saved incident view, manager classification and action follow-up. Avoid editing submitted employee records during the demo.'],
+    ['BBS workflow','Show a positive observation and one unsafe condition with a corrective action link to the Master Action Plan.'],
+    ['Master Action Plan','Show table filters, owner/due date, priority, source link, verification and closure concept. This is the central follow-up register.'],
+    ['Permit to Work','Show the register, permit type selection, RA/method statement references, two-column controls and approval routing settings.'],
+    ['Legal compliance','Show imported legislation sections, ascending references, compliance status and how gaps create actions.'],
+    ['Chemical control','Show SDS/MSDS extraction, use/exposure fields, persons exposed, risk rating and control recommendations.'],
+    ['Approval and audit','Show Approval Center and Audit Trail as professional governance features: who did what, when, and what changed.'],
+    ['Mobile story','Explain mobile is primarily for field reporting: incident, BBS, photo evidence and quick access. Keep desktop for admin-heavy workflows.']
+  ];
+  var body=document.getElementById('client-meeting-checklist-body');
+  if(body)body.innerHTML=items.map(function(x){
+    return '<div style="border:1px solid var(--border);border-radius:10px;padding:12px;background:#fff">'
+      +'<div style="font-size:13px;font-weight:900;margin-bottom:6px;display:flex;align-items:center;gap:7px"><i class="ti ti-check" style="color:var(--green)"></i>'+escH(x[0])+'</div>'
+      +'<div style="font-size:12px;color:var(--text2);line-height:1.5">'+escH(x[1])+'</div>'
+      +'</div>';
+  }).join('');
+  modal.style.display='flex';
+}
+
+function dashCloseMeetingChecklist(){
+  var modal=document.getElementById('client-meeting-checklist-modal');
+  if(modal)modal.style.display='none';
+}
+
 async function dashRenderPersonal(events, actions, people, permits, training) {
   if(!isPersonalDashRole()) return;  // safety: don't run if user is admin
 
@@ -31230,9 +31277,12 @@ function fireEquipStatusBadge(s) {
       <div style="font-size:15px;font-weight:900">Client demo readiness</div>
       <div style="font-size:12px;color:var(--text2);margin-top:2px">Core records that make AURIS360 feel alive and credible during a client walkthrough.</div>
     </div>
-    <div style="min-width:180px">
-      <div style="display:flex;justify-content:space-between;font-size:12px;font-weight:800;margin-bottom:5px"><span>Readiness</span><span id="dash-demo-readiness-score">0% ready</span></div>
-      <div style="height:8px;background:#f3f4f6;border-radius:99px;overflow:hidden"><div id="dash-demo-readiness-bar" style="height:100%;width:0%;background:#DC2626;border-radius:99px;transition:width .3s"></div></div>
+    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+      <button class="btn btn-sm" onclick="dashOpenMeetingChecklist()"><i class="ti ti-clipboard-check"></i>Meeting checklist</button>
+      <div style="min-width:180px">
+        <div style="display:flex;justify-content:space-between;font-size:12px;font-weight:800;margin-bottom:5px"><span>Readiness</span><span id="dash-demo-readiness-score">0% ready</span></div>
+        <div style="height:8px;background:#f3f4f6;border-radius:99px;overflow:hidden"><div id="dash-demo-readiness-bar" style="height:100%;width:0%;background:#DC2626;border-radius:99px;transition:width .3s"></div></div>
+      </div>
     </div>
   </div>
   <div id="dash-demo-readiness-body" style="padding:4px 18px 10px"></div>
