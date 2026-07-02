@@ -1,0 +1,50 @@
+AURIS360 client video storyboard
+Prepared for SEPHS Consulting
+
+Suggested video length: 4 to 6 minutes
+Tone: professional, practical, confident
+
+Scene 1 - Opening promise
+Visual: AURIS360 logo and dashboard.
+Voiceover: "AURIS360 is a modern HSE management platform designed to turn safety reporting, compliance obligations and management follow-up into one controlled system."
+
+Scene 2 - The problem
+Visual: Split view of spreadsheets, paper, emails and messaging.
+Voiceover: "Many organisations are not short of HSE effort. The real problem is fragmentation. Reports are captured in one place, actions are tracked elsewhere, evidence is stored separately, and management often sees risk too late."
+
+Scene 3 - The AURIS360 approach
+Visual: Dashboard showing incidents, actions, compliance and KPIs.
+Voiceover: "AURIS360 connects field reporting to management control. Workers can report incidents or observations quickly. HSE teams can investigate, assign actions, monitor compliance and prove what has been done."
+
+Scene 4 - Incident and BBS workflows
+Visual: Open Incident Management, then BBS Observations.
+Voiceover: "The system supports simple reporting from the field, including evidence photos, while keeping investigation and classification controls at supervisor or HSE manager level. Behaviour-based safety observations can also move directly into corrective action tracking."
+
+Scene 5 - Master Action Plan
+Visual: Show the Master Action Plan table and filters.
+Voiceover: "The Master Action Plan becomes the central follow-up register. Each action has an owner, priority, source, due date, verification and closure status."
+
+Scene 6 - Permits, risk and compliance
+Visual: Show Permit to Work, Risk Assessment and Legal Compliance.
+Voiceover: "AURIS360 brings together permit control, risk assessments, legal registers and compliance evidence. This helps teams prepare for audits and demonstrate that controls are not only planned, but followed."
+
+Scene 7 - Chemical and specialist modules
+Visual: Show Chemical Control and roadmap icons for ATEX, Fleet, RCD, specialist RA.
+Voiceover: "Chemical Control supports SDS review, exposure profile and risk scoring. The roadmap extends this into specialist risk assessments, ATEX area management, fleet management, RCD testing and more."
+
+Scene 8 - Governance and proof
+Visual: Approval Center, Audit Trail and Settings.
+Voiceover: "Professional HSE software must prove accountability. AURIS360 includes approval workflows, notification settings and audit trail records showing who did what, when, and what changed."
+
+Scene 9 - AI support
+Visual: AI Insights and Ask AURIS.
+Voiceover: "AURIS AI helps analyse HSE performance, draft RAMS and toolbox talks, review compliance gaps and identify risk patterns. It supports competent persons. It does not replace professional judgement."
+
+Scene 10 - Why choose AURIS360
+Visual: Final brand slide.
+Voiceover: "Choose AURIS360 because it is practical, expandable and built around real HSE work. It helps organisations move from scattered records to visible control, accountability and continuous improvement."
+
+Suggested on-screen closing text:
+AURIS360
+HSE management made visible, controlled and actionable.
+By SEPHS Consulting
