@@ -1,0 +1,41 @@
+AURIS360 WOW showcase video script
+
+Purpose:
+Create an inspiring 4-6 minute product showcase for prospective pilot clients.
+
+Creative direction:
+Premium, energetic, modern HSE technology. Use screen recordings of the app where possible, mixed with animated zooms on dashboard metrics, module chips and workflow transitions.
+
+Suggested structure:
+
+1. Opening impact
+On screen: AURIS360 hero slide / dashboard cockpit.
+Voiceover: "Imagine an HSE system where every incident, observation, permit, action, legal duty and evidence file is connected."
+
+2. The problem
+On screen: Fragmented records moving into one AURIS360 platform.
+Voiceover: "Most companies do not lack HSE effort. They lack visibility. AURIS360 brings that effort into one controlled operating system."
+
+3. The ecosystem
+On screen: Module universe slide, zooming through Incidents, BBS, PTW, Risk, Legal, Chemicals, Audit Trail, AI and future modules.
+Voiceover: "AURIS360 is not one register. It is a full HSE ecosystem covering safety, health, environment, compliance, assets, governance and intelligence."
+
+4. Figures and dashboards
+On screen: Dashboard metrics and charts.
+Voiceover: "The platform turns data into decisions: open incidents, overdue actions, training compliance, legal score, chemical exposure, permits and audit evidence."
+
+5. Field to boardroom
+On screen: Report incident, add evidence, assign action, verify closure, show executive dashboard.
+Voiceover: "A worker reports from the field. The HSE manager investigates. Actions are assigned. Evidence is retained. Leadership sees the risk picture."
+
+6. Governance proof
+On screen: Approval Center and Audit Trail.
+Voiceover: "Every serious system must answer the auditor's question: who did what, when, and what changed?"
+
+7. AI and future roadmap
+On screen: Ask AURIS, predictive risk, specialist RA, fleet, ATEX, RCD, integrations and portals.
+Voiceover: "AURIS AI and the roadmap make the platform even more powerful, moving clients from reactive compliance to predictive prevention."
+
+8. Closing
+On screen: Final brand slide.
+Voiceover: "AURIS360. Visible risk. Controlled action. Proved compliance."
