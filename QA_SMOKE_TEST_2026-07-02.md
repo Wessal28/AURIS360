@@ -25,6 +25,14 @@ Recommended demo scope:
 - Current app structure includes central company scoping, audit logging, notification queue handling, and role-gated access checks.
 - Dashboard now includes a client demo readiness panel for admins and HSE roles.
 
+## Live Walkthrough Notes - 2 July 2026
+- Dashboard, Executive Dashboard, Objectives & KPIs, Incident Management, BBS Observations, Audits & Inspections, Risk Assessment, Fleet Management, ATEX Areas, Permit to Work, Chemical Control, Master Action Plan, Legal Compliance, People and Companies opened without browser console errors.
+- Dashboard correctly shows the client demo readiness panel. The current data set is still light for a convincing demo, so seed/demo records remain important before client meetings.
+- Fleet and ATEX modules are visible and no longer show the previous missing-column error during the basic page load.
+- Chemical Control opens with existing chemical records and the saved exposure fields appear in the table summary.
+- Legal Compliance opens with imported legislation sections and compliance counts.
+- Found and fixed an access-routing issue where compulsory platform/admin pages such as Approval Center, Audit Trail and Settings could be blocked by a limited company module list instead of being governed by role access.
+
 ## Critical Smoke Test Path
 
 ### 1. Login and Company Context

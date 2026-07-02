@@ -3904,10 +3904,11 @@ function canAccessPage(pageKey) {
   }
 
   // Pilot/client guard: when a company is deliberately limited to a small
-  // module set, keep every non-SEHPS user inside that set plus Dashboard.
-  // This prevents a Company Admin pilot user from seeing Users, Settings,
-  // Integrations, Executive or AI pages just because those are admin pages.
-  if(!isSA() && isLimitedPilotCompany && pageKey !== 'dashboard') {
+  // module set, keep every non-SEPHS user inside that set plus Dashboard.
+  // Platform/admin pages still bypass the module list and are governed by
+  // the role allow-list above, otherwise admins lose Settings, Approvals,
+  // Audit Trail and other compulsory management screens.
+  if(!isSA() && isLimitedPilotCompany && pageKey !== 'dashboard' && !isAdminPage) {
     if(co.module_access.indexOf(pageKey) === -1) return false;
   }
 
