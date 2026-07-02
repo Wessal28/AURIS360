@@ -8966,9 +8966,10 @@ function customRenderFieldSettings(moduleKey,rows){
   table+='</tbody></table></div>';
   el.innerHTML='<div style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:flex-end">'
     +'<div class="form-group" style="min-width:260px;margin:0"><label class="form-label">Module</label><select id="cf-module-select" onchange="loadCustomFieldSettings()">'+moduleOptions+'</select></div>'
-    +'<button class="btn" onclick="customClearFieldForm()"><i class="ti ti-plus"></i>New field</button></div>'
+    +'<button class="btn btn-primary" onclick="customNewField()"><i class="ti ti-plus"></i>New field</button></div>'
     +table
-    +'<div style="margin-top:14px;padding:14px;border:1px solid var(--border);border-radius:10px;background:#fff">'
+    +'<div id="cf-form-panel" style="display:none;margin-top:14px;padding:14px;border:1px solid var(--border);border-radius:10px;background:#fff">'
+    +'<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:12px"><div style="font-weight:900;color:var(--text)" id="cf-form-heading">New custom field</div><button class="btn btn-sm" onclick="customHideFieldForm()"><i class="ti ti-x"></i>Close</button></div>'
     +'<input type="hidden" id="cf-edit-id"/>'
     +'<div class="form-row">'
     +'<div class="form-group"><label class="form-label">Field label</label><input id="cf-label" placeholder="e.g. Contractor company, Shift, Machine number"/></div>'
@@ -8983,6 +8984,22 @@ function customRenderFieldSettings(moduleKey,rows){
     +'<button class="btn btn-primary" onclick="customSaveField()"><i class="ti ti-device-floppy"></i>Save custom field</button>'
     +'</div>';
   customToggleOptionsHelp();
+}
+function customShowFieldForm(title){
+  var panel=document.getElementById('cf-form-panel');
+  if(panel)panel.style.display='block';
+  var heading=document.getElementById('cf-form-heading');
+  if(heading)heading.textContent=title||'New custom field';
+  panel?.scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+function customHideFieldForm(){
+  var panel=document.getElementById('cf-form-panel');
+  if(panel)panel.style.display='none';
+}
+function customNewField(){
+  customClearFieldForm();
+  customShowFieldForm('New custom field');
+  setTimeout(function(){document.getElementById('cf-label')?.focus();},50);
 }
 function customClearFieldForm(){
   ['cf-edit-id','cf-label','cf-options'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
@@ -9008,6 +9025,7 @@ function customEditField(id){
   document.getElementById('cf-active').checked=f.active!==false;
   document.getElementById('cf-options').value=customFieldOptions(f).join('\n');
   customToggleOptionsHelp();
+  customShowFieldForm('Edit custom field');
 }
 async function customSaveField(){
   if(!customFieldsCanManage()){toast('Only admins or HSE managers can manage custom fields',false);return;}
