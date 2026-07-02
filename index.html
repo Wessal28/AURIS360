@@ -28769,6 +28769,19 @@ function wsTBTSave(){ if(typeof tbtSave==='function')tbtSave(); }
 // ===================================================================
 
 var _pwaInstallPrompt = null;
+function pwaIsIOSDevice(){
+  return /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform==='MacIntel' && navigator.maxTouchPoints>1);
+}
+function pwaIsStandalone(){
+  return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone===true;
+}
+function pwaRefreshInstallButton(){
+  var installBtn = document.getElementById('pwa-install-btn');
+  if(!installBtn)return;
+  var shouldShow = !pwaIsStandalone() && (!!_pwaInstallPrompt || pwaIsIOSDevice());
+  installBtn.style.display = shouldShow ? 'flex' : 'none';
+  installBtn.title = pwaIsIOSDevice() ? 'Install on iPad/iPhone using Share > Add to Home Screen' : 'Install AURIS360 as an app';
+}
 
 // Register service worker
 if('serviceWorker' in navigator) {
@@ -28803,15 +28816,13 @@ window.addEventListener('beforeinstallprompt', function(e) {
   e.preventDefault();
   _pwaInstallPrompt = e;
   // Show install button in sidebar if visible
-  var installBtn = document.getElementById('pwa-install-btn');
-  if(installBtn) installBtn.style.display = 'flex';
+  pwaRefreshInstallButton();
 });
 
 // Handle app installed event
 window.addEventListener('appinstalled', function() {
   _pwaInstallPrompt = null;
-  var installBtn = document.getElementById('pwa-install-btn');
-  if(installBtn) installBtn.style.display = 'none';
+  pwaRefreshInstallButton();
   if(typeof toast === 'function') toast('✓ AURIS360 installed as app!');
 });
 
@@ -28819,7 +28830,7 @@ window.addEventListener('appinstalled', function() {
 function pwaInstall() {
   if(!_pwaInstallPrompt) {
     // iOS instructions
-    var isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+    var isIOS = pwaIsIOSDevice();
     if(isIOS) {
       alert('To install AURIS360 on iOS:\n\n1. Tap the Share button (box with arrow) at the bottom of Safari\n2. Scroll down and tap "Add to Home Screen"\n3. Tap "Add" — AURIS360 will appear on your home screen');
     } else {
@@ -28833,10 +28844,11 @@ function pwaInstall() {
       if(typeof toast === 'function') toast('✓ AURIS360 installed!');
     }
     _pwaInstallPrompt = null;
-    var installBtn = document.getElementById('pwa-install-btn');
-    if(installBtn) installBtn.style.display = 'none';
+    pwaRefreshInstallButton();
   });
 }
+
+window.addEventListener('load', pwaRefreshInstallButton);
 
 // Handle deep links from PWA shortcuts (?goto=xxx)
 window.addEventListener('load', function() {
