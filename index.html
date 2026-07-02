@@ -14519,6 +14519,81 @@ function raAddSingleAISuggestion(idx){
   raFormTab('hazards', document.getElementById('ra-ftab-hazards'));
 }
 
+// Override legacy RA AI generator to use the secure AURIS AI proxy instead of
+// the old direct Claude browser call. Keep this after the legacy declaration so
+// it wins at runtime without touching the encoded legacy block above.
+function raParseAIRows(text){
+  var raw=String(text||'').trim();
+  if(!raw)return [];
+  raw=raw.replace(/```json\s*/gi,'').replace(/```\s*/g,'').trim();
+  var candidates=[raw];
+  var arrStart=raw.indexOf('['), arrEnd=raw.lastIndexOf(']');
+  if(arrStart!==-1&&arrEnd>arrStart)candidates.push(raw.slice(arrStart,arrEnd+1));
+  var objStart=raw.indexOf('{'), objEnd=raw.lastIndexOf('}');
+  if(objStart!==-1&&objEnd>objStart)candidates.push(raw.slice(objStart,objEnd+1));
+  for(var i=0;i<candidates.length;i++){
+    try{
+      var parsed=JSON.parse(candidates[i]);
+      var rows=Array.isArray(parsed)?parsed:(Array.isArray(parsed.rows)?parsed.rows:Array.isArray(parsed.hazards)?parsed.hazards:[]);
+      if(rows.length)return rows.map(raNormalizeAIRow).filter(function(r){return r.hazard||r.harm||r.controls;});
+    }catch(_){}
+  }
+  return [];
+}
+function raNormalizeAIRow(r){
+  r=r||{};
+  var rs=parseInt(r.rs??r.severity??r.initial_severity??3)||3;
+  var rop=parseInt(r.rop??r.probability??r.likelihood??r.initial_probability??3)||3;
+  var resS=parseInt(r.res_s??r.residual_severity??r.residual_s??rs)||rs;
+  var resP=parseInt(r.res_p??r.residual_probability??r.residual_likelihood??r.residual_p??1)||1;
+  function clamp(n){return Math.max(1,Math.min(5,parseInt(n)||1));}
+  return {
+    hazard:r.hazard||r.hazard_description||r.task_step||'',
+    harm:r.harm||r.consequence||r.potential_harm||'',
+    who:r.who||r.persons_at_risk||r.exposed_persons||'',
+    rs:clamp(rs),
+    rop:clamp(rop),
+    controls:Array.isArray(r.controls)?r.controls.join('; '):(r.controls||r.control_measures||r.existing_controls||''),
+    hoc_level:String(r.hoc_level||r.hierarchy||r.control_type||'administrative').toLowerCase().replace(/\s+/g,'_'),
+    res_s:clamp(resS),
+    res_p:clamp(resP),
+    legal_ref:r.legal_ref||r.legal_reference||r.standard||''
+  };
+}
+async function raAISuggest(){
+  var prompt=(document.getElementById('ra-ai-prompt')?.value||'').trim();
+  if(!prompt){toast('Please describe the work activity first',false);return;}
+  var el=document.getElementById('ra-ai-output');
+  if(el)el.innerHTML='<div style="padding:12px;background:#f3e8ff;border-radius:8px;display:flex;align-items:center;gap:10px;font-size:13px"><i class="ti ti-loader-2 ti-spin" style="color:#8B5CF6"></i>AI is generating risk assessment...</div>';
+  try{
+    var txt=await callAI([{role:'user',content:`For the following work activity, generate a risk assessment with 4-6 hazard rows.
+
+Activity: ${prompt}
+
+Return ONLY valid JSON array. Do not use markdown and do not add explanation.
+[{"hazard":"...","harm":"...","who":"...","rs":3,"rop":3,"controls":"...","hoc_level":"engineering","res_s":3,"res_p":1,"legal_ref":"..."}]
+
+Rules:
+- rs and rop are 1-5 integers (severity x probability = risk rating)
+- hoc_level: elimination|substitution|engineering|administrative|ppe
+- legal_ref: relevant OSH legislation or ISO standard
+- controls: specific, actionable, practical control measures
+- res_s and res_p are residual severity/probability after controls`}],
+      'You are an expert HSE risk assessor. Generate structured, practical risk assessment rows for AURIS360. Return only JSON.');
+    var rows=raParseAIRows(txt);
+    if(!Array.isArray(rows)||!rows.length)throw new Error('No rows generated');
+    raRenderAISuggestions(rows);
+    if(raEditingId){
+      await api('/risk_assessments?id=eq.'+raEditingId,{m:'PATCH',p:'return=minimal',b:{ai_suggestions:rows,ai_generated:true,updated_at:new Date().toISOString()}});
+    }
+    toast('AI generated '+rows.length+' hazard rows - review and add to RA');
+  }catch(e){
+    var el2=document.getElementById('ra-ai-output');
+    if(el2)el2.innerHTML='<div style="padding:12px;background:#FEF2F2;border-radius:8px;font-size:12px;color:#A32D2D">AI error: '+escH(e.message)+'</div>';
+    console.error(e);
+  }
+}
+
 // Full AI RA generation from new panel
 async function raAIGenerate(){
   var activity=await appPrompt({title:'Generate risk assessment',message:'Describe the work activity for AI to generate a complete risk assessment.',placeholder:'e.g. Hot work on roof structure',multiline:true});
