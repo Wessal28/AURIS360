@@ -8605,6 +8605,7 @@ function loadSettings(){
 if(isAdm())document.getElementById('logo-settings').style.display='block';
 document.getElementById('my-profile-info').innerHTML='<div style="font-size:13px"><strong>'+(prof?.full_name||'--')+'</strong><br><span style="color:var(--text2)">'+(prof?.email||'--')+'</span><br>'+stat(prof?.role)+'</div>';
 try{ brandInit(); }catch(e){ console.error('brandInit:',e); }
+try{ loadSecuritySlaSettings(); }catch(e){ console.error('loadSecuritySlaSettings:',e); }
 var notifCard=document.getElementById('settings-notif-card');
 if(notifCard) notifCard.style.display=isAdm()?'block':'none';
 var ptwCard=document.getElementById('settings-ptw-approver-card');
@@ -8613,6 +8614,205 @@ var workflowCard=document.getElementById('settings-workflow-card');
 if(workflowCard) workflowCard.style.display=(isAdm()||activeRole()==='hse_manager')?'block':'none';
 if(isAdm()||activeRole()==='hse_manager') loadPeopleCache().then(function(){loadApprovalWorkflows();});
 if(isAdm()) loadNotifSettings();
+}
+
+function securityReadinessItems(){
+return [
+{area:'Data protection',status:'in_place',label:'Company data separation',detail:'Company-scoped records and role-based access are part of the current application design.'},
+{area:'Data protection',status:'in_place',label:'Role-based access',detail:'Modules and sensitive features can be restricted by role, including AI access and admin screens.'},
+{area:'Governance',status:'in_place',label:'Audit Trail',detail:'A dedicated audit trail module exists to evidence key user and system activity.'},
+{area:'Governance',status:'in_place',label:'Approval Center',detail:'Reusable approval workflows are available for controlled records and permit governance.'},
+{area:'Business continuity',status:'planned',label:'Backup & restore policy',detail:'Formal backup frequency, restore test and retention statement to be documented for client packs.'},
+{area:'Reliability',status:'planned',label:'SLA statement',detail:'Define target availability, support response times, incident priority levels and escalation route.'},
+{area:'Security',status:'planned',label:'Security page / client pack',detail:'Publish a clear customer-facing page covering hosting, access controls, privacy and data export.'},
+{area:'Monitoring',status:'planned',label:'Operational monitoring',detail:'Add monitoring for email queue, AI API, database errors and background jobs.'}
+];
+}
+function securityStatusBadge(status){
+var map={in_place:['Available','#065F46','#ECFDF5'],planned:['To formalise','#92400E','#FFFBEB'],roadmap:['Roadmap','#1D4ED8','#EFF6FF']};
+var m=map[status]||map.roadmap;
+return '<span style="display:inline-flex;align-items:center;gap:5px;padding:4px 9px;border-radius:999px;font-size:11px;font-weight:700;color:'+m[1]+';background:'+m[2]+'">'+escH(m[0])+'</span>';
+}
+function renderSecurityReadiness(settings,tableReady){
+var el=document.getElementById('security-readiness-body');
+if(!el)return;
+settings=Object.assign(securitySlaDefaults(),settings||{});
+var items=securityReadinessItems();
+var grouped={};
+items.forEach(function(it){(grouped[it.area]=grouped[it.area]||[]).push(it);});
+var html='';
+if(tableReady===false){
+html+='<div style="padding:12px 14px;border:1px solid #FCD34D;background:#FFFBEB;border-radius:10px;color:#92400E;font-size:12px;line-height:1.45;margin-bottom:14px"><strong>Database setup needed:</strong> run <code>security_sla_settings.sql</code> in Supabase to save these settings. Until then, this screen shows defaults only.</div>';
+}
+html+='<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-bottom:16px">'
++'<div style="padding:14px;border:1px solid var(--border);border-radius:10px;background:#F8FAFC"><div style="font-size:22px;font-weight:900;color:var(--green)">4</div><div style="font-size:12px;color:var(--text2);font-weight:700">foundations already in place</div></div>'
++'<div style="padding:14px;border:1px solid var(--border);border-radius:10px;background:#FFFBEB"><div style="font-size:22px;font-weight:900;color:#B45309">4</div><div style="font-size:12px;color:var(--text2);font-weight:700">items to formalise before larger clients</div></div>'
++'<div style="padding:14px;border:1px solid var(--border);border-radius:10px;background:#EFF6FF"><div style="font-size:22px;font-weight:900;color:#1D4ED8">'+escH(settings.target_uptime||'99.5%')+'</div><div style="font-size:12px;color:var(--text2);font-weight:700">draft availability target</div></div>'
++'</div>';
+Object.keys(grouped).forEach(function(area){
+html+='<div style="margin-top:12px;border:1px solid var(--border);border-radius:10px;overflow:hidden;background:#fff">'
++'<div style="padding:10px 12px;background:#F8FAFC;border-bottom:1px solid var(--border);font-size:12px;font-weight:900;color:var(--text);text-transform:uppercase;letter-spacing:.04em">'+escH(area)+'</div>';
+grouped[area].forEach(function(it){
+html+='<div style="display:grid;grid-template-columns:minmax(180px,260px) 120px 1fr;gap:12px;align-items:start;padding:12px;border-bottom:1px solid var(--border)">'
++'<div style="font-size:13px;font-weight:800;color:var(--text)">'+escH(it.label)+'</div>'
++'<div>'+securityStatusBadge(it.status)+'</div>'
++'<div style="font-size:12px;color:var(--text2);line-height:1.45">'+escH(it.detail)+'</div>'
++'</div>';
+});
+html+='</div>';
+});
+html+='<div style="margin-top:16px;border:1px solid var(--border);border-radius:12px;background:#fff;overflow:hidden">'
++'<div style="padding:14px 16px;border-bottom:1px solid var(--border);background:#F8FAFC;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">'
++'<div><div style="font-weight:900;color:var(--text)">Client security and SLA statement</div><div style="font-size:12px;color:var(--text2);margin-top:2px">Configure the wording you can share with clients once validated contractually.</div></div>'
++'<button class="btn btn-primary" onclick="saveSecuritySlaSettings()"><i class="ti ti-device-floppy"></i>Save security/SLA settings</button>'
++'</div>'
++'<div style="padding:16px;display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px">'
++securitySlaInput('sec-target-uptime','Target availability',settings.target_uptime,'text','Use a realistic target until paid plans/SLA are confirmed.')
++securitySlaInput('sec-support-hours','Support hours',settings.support_hours)
++securitySlaInput('sec-critical-response','Critical issue response',settings.critical_response)
++securitySlaInput('sec-high-response','High priority response',settings.high_response)
++securitySlaInput('sec-standard-response','Standard response',settings.standard_response)
++securitySlaInput('sec-hosting-region','Hosting statement',settings.hosting_region)
++securitySlaInput('sec-backup-frequency','Backup frequency',settings.backup_frequency,'textarea')
++securitySlaInput('sec-backup-retention','Backup retention',settings.backup_retention)
++securitySlaInput('sec-restore-test-frequency','Restore test frequency',settings.restore_test_frequency)
++securitySlaInput('sec-monitoring-scope','Monitoring scope',settings.monitoring_scope,'textarea')
++securitySlaInput('sec-data-retention','Data retention',settings.data_retention,'textarea')
++securitySlaInput('sec-export-period','Data export / exit',settings.export_period,'textarea')
++securitySlaInput('sec-subprocessors','Sub-processors',settings.subprocessors,'textarea')
++securitySlaInput('sec-security-contact-name','Security contact name',settings.security_contact_name)
++securitySlaInput('sec-security-contact-email','Security contact email',settings.security_contact_email,'email')
++securitySlaInput('sec-status-page-url','Status page URL',settings.status_page_url,'url','Optional. Add later if we create a public status page.')
++securitySlaInput('sec-incident-escalation','Incident escalation route',settings.incident_escalation,'textarea')
++securitySlaInput('sec-sla-notes','SLA notes / disclaimer',settings.sla_notes,'textarea')
++'</div></div>';
+html+='<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:16px">'
++'<button class="btn btn-primary" onclick="copySecurityClientSummary()"><i class="ti ti-copy"></i>Copy client summary</button>'
++'<button class="btn" onclick="previewSecurityClientSummary()"><i class="ti ti-file-description"></i>Preview summary</button>'
++'<button class="btn" onclick="showPage(\\'audit\\',document.getElementById(\\'nav-audit\\'))"><i class="ti ti-history"></i>Open Audit Trail</button>'
++'<button class="btn" onclick="showPage(\\'approvals\\',document.getElementById(\\'nav-approvals\\'))"><i class="ti ti-circle-check"></i>Open Approval Center</button>'
++'</div>';
+el.innerHTML=html;
+}
+function copySecurityClientSummary(){
+var txt=securityClientSummaryText(securitySlaReadForm());
+if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(txt).then(function(){toast('Security summary copied');}).catch(function(){toast(txt);});}
+else toast(txt);
+}
+function securitySlaDefaults(){
+return {
+target_uptime:'99.5%',
+support_hours:'Business hours, Monday to Friday',
+critical_response:'4 business hours',
+high_response:'1 business day',
+standard_response:'2 business days',
+backup_frequency:'Daily platform/database backups, subject to provider plan',
+backup_retention:'30 days target retention',
+restore_test_frequency:'Quarterly restore test',
+data_retention:'Active subscription period plus agreed retention period',
+export_period:'Client export available on request before contract exit',
+hosting_region:'Cloud-hosted SaaS infrastructure',
+security_contact_name:prof?.full_name||'SEPHS Consulting',
+security_contact_email:prof?.email||'',
+incident_escalation:'Critical service incidents escalated to SEPHS admin and technical support',
+status_page_url:'',
+sla_notes:'SLA targets become contractual only when included in the signed client agreement.',
+monitoring_scope:'Email queue, AI API, database/API errors and scheduled jobs',
+subprocessors:'Supabase, Vercel, Resend/OpenAI where enabled'
+};
+}
+function securitySlaCurrentCompany(){
+return (typeof isSA==='function'&&isSA()&&sephsCompanyContext)?sephsCompanyContext:ccid();
+}
+function securitySlaInput(id,label,value,type,help){
+return '<div class="form-group" style="margin:0">'
++'<label class="form-label" style="font-size:11px">'+escH(label)+'</label>'
++(type==='textarea'
+?'<textarea id="'+id+'" style="min-height:66px">'+escH(value||'')+'</textarea>'
+:'<input id="'+id+'" type="'+(type||'text')+'" value="'+escH(value||'')+'"/>')
++(help?'<div style="font-size:10px;color:var(--text3);margin-top:3px">'+escH(help)+'</div>':'')
++'</div>';
+}
+function securitySlaReadForm(){
+var d=securitySlaDefaults();
+Object.keys(d).forEach(function(k){
+var el=document.getElementById('sec-'+k.replace(/_/g,'-'));
+if(el)d[k]=el.value||'';
+});
+return d;
+}
+function securityClientSummaryText(s){
+s=s||securitySlaDefaults();
+return 'AURIS360 - Security, Infrastructure and SLA Summary\n\n'
++'Security foundations\n'
++'- Company-scoped data and role-based module access.\n'
++'- Audit Trail for traceability of key activity.\n'
++'- Approval Center for controlled workflow validation.\n'
++'- Admin-controlled notification and user governance.\n\n'
++'Infrastructure and continuity\n'
++'- Hosting: '+(s.hosting_region||'Cloud-hosted SaaS infrastructure')+'\n'
++'- Backup frequency: '+(s.backup_frequency||'To be defined')+'\n'
++'- Backup retention: '+(s.backup_retention||'To be defined')+'\n'
++'- Restore testing: '+(s.restore_test_frequency||'To be defined')+'\n'
++'- Monitoring scope: '+(s.monitoring_scope||'To be defined')+'\n\n'
++'Support and SLA targets\n'
++'- Target availability: '+(s.target_uptime||'To be defined')+'\n'
++'- Support hours: '+(s.support_hours||'To be defined')+'\n'
++'- Critical response: '+(s.critical_response||'To be defined')+'\n'
++'- High priority response: '+(s.high_response||'To be defined')+'\n'
++'- Standard response: '+(s.standard_response||'To be defined')+'\n\n'
++'Data lifecycle\n'
++'- Data retention: '+(s.data_retention||'To be defined')+'\n'
++'- Data export / exit: '+(s.export_period||'To be defined')+'\n'
++'- Sub-processors: '+(s.subprocessors||'To be defined')+'\n\n'
++'Security contact\n'
++'- '+(s.security_contact_name||'Security contact')+(s.security_contact_email?' <'+s.security_contact_email+'>':'')+'\n'
++'- Escalation: '+(s.incident_escalation||'To be defined')+'\n\n'
++'Note: '+(s.sla_notes||'SLA targets become contractual only when included in a signed agreement.');
+}
+async function loadSecuritySlaSettings(){
+var el=document.getElementById('security-readiness-body');
+if(!el)return;
+el.innerHTML='<div class="loading">Loading security readiness...</div>';
+var d=securitySlaDefaults();
+var tableReady=true;
+try{
+var companyId=securitySlaCurrentCompany();
+if(companyId){
+var rows=await api('/security_sla_settings?company_id=eq.'+companyId+'&limit=1');
+if(rows&&rows[0]&&rows[0].settings)d=Object.assign(d,rows[0].settings||{});
+}
+}catch(e){
+tableReady=false;
+console.warn('security_sla_settings unavailable:',e.message);
+}
+renderSecurityReadiness(d,tableReady);
+}
+function previewSecurityClientSummary(){
+var txt=securityClientSummaryText(securitySlaReadForm());
+var w=window.open('','_blank');
+if(!w){toast('Popup blocked. Use Copy client summary instead.',false);return;}
+w.document.write('<pre style="font-family:Arial,sans-serif;white-space:pre-wrap;line-height:1.5;padding:24px;max-width:900px;margin:auto">'+escH(txt)+'</pre>');
+w.document.title='AURIS360 Security Summary';
+w.document.close();
+}
+async function saveSecuritySlaSettings(){
+if(!(isAdm()||activeRole()==='hse_manager')){toast('Only admins or HSE managers can save security settings',false);return;}
+var companyId=securitySlaCurrentCompany();
+if(!companyId){toast('No company selected',false);return;}
+var settings=securitySlaReadForm();
+try{
+var existing=await api('/security_sla_settings?company_id=eq.'+companyId+'&limit=1');
+var body={settings:settings,updated_at:new Date().toISOString(),updated_by:prof?.id||null};
+if(existing&&existing[0])await api('/security_sla_settings?company_id=eq.'+companyId,{m:'PATCH',p:'return=minimal',b:body});
+else{body.company_id=companyId;await api('/security_sla_settings',{m:'POST',p:'return=minimal',b:body});}
+toast('Security/SLA settings saved');
+loadSecuritySlaSettings();
+}catch(e){
+var msg=e.message||'Save failed';
+if(msg.includes('schema cache')||msg.includes('security_sla_settings'))msg='Database setup needed: run security_sla_settings.sql in Supabase first.';
+toast(msg,false);
+}
 }
 async function saveLogo(){
 const url=document.getElementById('set-logo').value;
@@ -41172,6 +41372,14 @@ I can help you:<br>
 </style>
 
 <div class="card"><div class="card-title">My profile</div><div id="my-profile-info"></div></div>
+
+<div class="card" id="settings-security-readiness-card">
+  <div class="card-title" style="display:flex;align-items:center;gap:8px"><i class="ti ti-shield-lock" style="color:#185FA5"></i>Security, Infrastructure &amp; SLA Readiness</div>
+  <div style="font-size:12px;color:var(--text2);margin-bottom:14px;line-height:1.5">
+    Internal readiness view for client confidence. This is not a public promise by itself; it helps prepare the security, backup, SLA and governance statements needed for professional rollout.
+  </div>
+  <div id="security-readiness-body"><div class="loading">Loading readiness...</div></div>
+</div>
 
 <div class="card" id="settings-ptw-approver-card" style="display:none">
   <div class="card-title" style="display:flex;align-items:center;gap:8px"><i class="ti ti-certificate" style="color:#185FA5"></i>Permit Approval Settings</div>
