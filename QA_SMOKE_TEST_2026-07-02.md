@@ -32,6 +32,7 @@ Recommended demo scope:
 - Chemical Control opens with existing chemical records and the saved exposure fields appear in the table summary.
 - Legal Compliance opens with imported legislation sections and compliance counts.
 - Found and fixed an access-routing issue where compulsory platform/admin pages such as Approval Center, Audit Trail and Settings could be blocked by a limited company module list instead of being governed by role access.
+- Follow-up deployment check: the already-open live browser tab was still serving the pre-fix source after push, so Vercel deployment status/cache should be checked before retesting those three pages.
 
 ## Critical Smoke Test Path
 
