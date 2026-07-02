@@ -8606,6 +8606,7 @@ if(isAdm())document.getElementById('logo-settings').style.display='block';
 document.getElementById('my-profile-info').innerHTML='<div style="font-size:13px"><strong>'+(prof?.full_name||'--')+'</strong><br><span style="color:var(--text2)">'+(prof?.email||'--')+'</span><br>'+stat(prof?.role)+'</div>';
 try{ brandInit(); }catch(e){ console.error('brandInit:',e); }
 try{ loadSecuritySlaSettings(); }catch(e){ console.error('loadSecuritySlaSettings:',e); }
+try{ loadCustomFieldSettings(); }catch(e){ console.error('loadCustomFieldSettings:',e); }
 var notifCard=document.getElementById('settings-notif-card');
 if(notifCard) notifCard.style.display=isAdm()?'block':'none';
 var ptwCard=document.getElementById('settings-ptw-approver-card');
@@ -8813,6 +8814,230 @@ var msg=e.message||'Save failed';
 if(msg.includes('schema cache')||msg.includes('security_sla_settings'))msg='Database setup needed: run security_sla_settings.sql in Supabase first.';
 toast(msg,false);
 }
+}
+
+const CUSTOM_FIELD_MODULES=[
+  {key:'events',label:'Incident Management',recordTable:'events'},
+  {key:'observation',label:'BBS Observations',recordTable:'observations',future:true},
+  {key:'inspection',label:'Audits & Inspections',recordTable:'inspections',future:true},
+  {key:'permit',label:'Permit to Work',recordTable:'permits',future:true},
+  {key:'risk',label:'Risk Assessment',recordTable:'risk_assessments',future:true}
+];
+let customFieldDefsCache={};
+function customFieldsCanManage(){
+  return isAdm()||activeRole()==='hse_manager';
+}
+function customFieldsCompanyId(){
+  return (isSA()&&sephsCompanyContext)?sephsCompanyContext:prof?.company_id;
+}
+function customFieldMakeKey(label){
+  return String(label||'field').toLowerCase().trim()
+    .replace(/[^a-z0-9]+/g,'_').replace(/^_+|_+$/g,'').substring(0,48)||'field';
+}
+function customFieldModuleLabel(key){
+  var m=CUSTOM_FIELD_MODULES.find(function(x){return x.key===key;});
+  return m?m.label:key;
+}
+async function customLoadDefinitions(moduleKey,includeInactive){
+  var companyId=customFieldsCompanyId();
+  if(!companyId)return [];
+  var path='/custom_fields?company_id=eq.'+companyId+'&module_key=eq.'+encodeURIComponent(moduleKey)+'&order=sort_order.asc,field_label.asc';
+  if(!includeInactive)path+='&active=eq.true';
+  var rows=await api(path);
+  customFieldDefsCache[moduleKey]=rows||[];
+  return rows||[];
+}
+function customFieldValueFromJson(v){
+  if(v===null||v===undefined)return '';
+  if(typeof v==='object'&&Object.prototype.hasOwnProperty.call(v,'value'))return v.value;
+  return v;
+}
+function customFieldOptions(field){
+  var opts=field.options||[];
+  if(typeof opts==='string'){
+    try{opts=JSON.parse(opts);}catch(_){opts=opts.split(',');}
+  }
+  if(!Array.isArray(opts))opts=[];
+  return opts.map(function(x){return String(x||'').trim();}).filter(Boolean);
+}
+function customFieldInputHtml(field,value){
+  var id='cfv-'+field.id;
+  var base=' id="'+id+'" data-custom-field-id="'+escH(field.id)+'" data-custom-field-key="'+escH(field.field_key)+'" data-custom-field-type="'+escH(field.field_type)+'"';
+  value=customFieldValueFromJson(value);
+  var required=field.required?' <span style="color:var(--red)">*</span>':'';
+  var label='<label class="form-label">'+escH(field.field_label)+required+'</label>';
+  if(field.field_type==='textarea'){
+    return '<div class="form-group">'+label+'<textarea'+base+' style="min-height:70px">'+escH(value||'')+'</textarea></div>';
+  }
+  if(field.field_type==='select'){
+    var opts=customFieldOptions(field);
+    return '<div class="form-group">'+label+'<select'+base+'><option value="">Select...</option>'+opts.map(function(o){return '<option value="'+escH(o)+'" '+(String(value)===o?'selected':'')+'>'+escH(o)+'</option>';}).join('')+'</select></div>';
+  }
+  if(field.field_type==='checkbox'){
+    var checked=(value===true||value==='true'||value==='yes')?'checked':'';
+    return '<div class="form-group" style="display:flex;align-items:center;gap:8px;padding-top:22px"><input type="checkbox"'+base+' '+checked+' style="width:16px;height:16px;padding:0;margin:0;accent-color:var(--green)"/><label for="'+id+'" style="font-size:12px;font-weight:700;margin:0;cursor:pointer">'+escH(field.field_label)+required+'</label></div>';
+  }
+  var type=field.field_type==='number'?'number':(field.field_type==='date'?'date':'text');
+  return '<div class="form-group">'+label+'<input type="'+type+'"'+base+' value="'+escH(value||'')+'"/></div>';
+}
+async function customLoadValues(recordTable,recordId){
+  if(!recordId)return {};
+  var rows=await api('/custom_field_values?record_table=eq.'+encodeURIComponent(recordTable)+'&record_id=eq.'+recordId);
+  var map={};
+  (rows||[]).forEach(function(r){map[r.field_id]=customFieldValueFromJson(r.value);});
+  return map;
+}
+async function customRenderRecordFields(moduleKey,recordTable,recordId){
+  var card=document.getElementById('ims-custom-fields-card');
+  var body=document.getElementById('ims-custom-fields-body');
+  if(!card||!body)return;
+  try{
+    var defs=await customLoadDefinitions(moduleKey,false);
+    if(!defs.length){card.style.display='none';body.innerHTML='';return;}
+    var values=recordId?await customLoadValues(recordTable,recordId):{};
+    card.style.display='block';
+    body.innerHTML='<div class="form-row">'+defs.map(function(f){return customFieldInputHtml(f,values[f.id]);}).join('')+'</div>';
+  }catch(e){
+    console.warn('custom fields unavailable:',e.message);
+    card.style.display='none';
+    body.innerHTML='';
+  }
+}
+function customReadRecordFieldValue(field){
+  var el=document.querySelector('[data-custom-field-id="'+field.id+'"]');
+  if(!el)return null;
+  if(field.field_type==='checkbox')return !!el.checked;
+  var val=el.value;
+  if(field.field_type==='number')return val===''?null:Number(val);
+  return val===''?null:val;
+}
+async function customValidateRecordValues(moduleKey){
+  var defs=customFieldDefsCache[moduleKey]||await customLoadDefinitions(moduleKey,false);
+  if(!defs.length)return;
+  for(var i=0;i<defs.length;i++){
+    var f=defs[i];
+    var value=customReadRecordFieldValue(f);
+    if(f.required&&(value===null||value===''||value===false)){
+      throw new Error('Please complete custom field: '+f.field_label);
+    }
+  }
+}
+async function customSaveRecordValues(moduleKey,recordTable,recordId,companyId){
+  var defs=customFieldDefsCache[moduleKey]||await customLoadDefinitions(moduleKey,false);
+  if(!defs.length||!recordId)return;
+  await customValidateRecordValues(moduleKey);
+  for(var i=0;i<defs.length;i++){
+    var f=defs[i];
+    var value=customReadRecordFieldValue(f);
+    var existing=await api('/custom_field_values?record_table=eq.'+encodeURIComponent(recordTable)+'&record_id=eq.'+recordId+'&field_id=eq.'+f.id+'&limit=1');
+    var body={company_id:companyId,record_table:recordTable,record_id:recordId,field_id:f.id,field_key:f.field_key,value:value,updated_at:new Date().toISOString()};
+    if(existing&&existing[0])await api('/custom_field_values?id=eq.'+existing[0].id,{m:'PATCH',p:'return=minimal',b:body});
+    else await api('/custom_field_values',{m:'POST',p:'return=minimal',b:body});
+  }
+}
+function customFieldSettingsUnavailable(msg){
+  return '<div style="padding:12px 14px;border:1px solid #FCD34D;background:#FFFBEB;border-radius:10px;color:#92400E;font-size:12px;line-height:1.45"><strong>Database setup needed:</strong> run <code>custom_fields.sql</code> in Supabase to enable no-code custom fields.<br>'+escH(msg||'')+'</div>';
+}
+async function loadCustomFieldSettings(){
+  var card=document.getElementById('settings-custom-fields-card');
+  var el=document.getElementById('custom-fields-settings-body');
+  if(!card||!el)return;
+  card.style.display=customFieldsCanManage()?'block':'none';
+  if(!customFieldsCanManage())return;
+  var moduleKey=document.getElementById('cf-module-select')?.value||'events';
+  try{
+    var rows=await customLoadDefinitions(moduleKey,true);
+    customRenderFieldSettings(moduleKey,rows);
+  }catch(e){
+    el.innerHTML=customFieldSettingsUnavailable(e.message);
+  }
+}
+function customRenderFieldSettings(moduleKey,rows){
+  var el=document.getElementById('custom-fields-settings-body');
+  if(!el)return;
+  var moduleOptions=CUSTOM_FIELD_MODULES.map(function(m){
+    return '<option value="'+escH(m.key)+'" '+(moduleKey===m.key?'selected':'')+' '+(m.future?'disabled':'')+'>'+escH(m.label)+(m.future?' - coming next':'')+'</option>';
+  }).join('');
+  var table='<div style="overflow:auto;border:1px solid var(--border);border-radius:10px;margin-top:12px"><table style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr style="background:#F8FAFC"><th style="padding:9px;text-align:left">Field</th><th style="padding:9px;text-align:left">Type</th><th style="padding:9px;text-align:left">Required</th><th style="padding:9px;text-align:left">Status</th><th style="padding:9px;text-align:right">Actions</th></tr></thead><tbody>';
+  if(!rows.length)table+='<tr><td colspan="5" style="padding:18px;text-align:center;color:var(--text2)">No custom fields yet for '+escH(customFieldModuleLabel(moduleKey))+'.</td></tr>';
+  rows.forEach(function(f){
+    table+='<tr style="border-top:1px solid var(--border)"><td style="padding:9px;font-weight:700">'+escH(f.field_label)+'<div style="font-size:10px;color:var(--text3);font-family:monospace">'+escH(f.field_key)+'</div></td><td style="padding:9px;text-transform:capitalize">'+escH(f.field_type)+'</td><td style="padding:9px">'+(f.required?'Yes':'No')+'</td><td style="padding:9px">'+(f.active?'<span style="color:var(--green);font-weight:700">Active</span>':'Inactive')+'</td><td style="padding:9px;text-align:right"><button class="btn btn-sm" onclick="customEditField(&quot;'+f.id+'&quot;)"><i class="ti ti-edit"></i></button> <button class="btn btn-sm" style="color:var(--red);border-color:#fecaca" onclick="customDeleteField(&quot;'+f.id+'&quot;)"><i class="ti ti-trash"></i></button></td></tr>';
+  });
+  table+='</tbody></table></div>';
+  el.innerHTML='<div style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:flex-end">'
+    +'<div class="form-group" style="min-width:260px;margin:0"><label class="form-label">Module</label><select id="cf-module-select" onchange="loadCustomFieldSettings()">'+moduleOptions+'</select></div>'
+    +'<button class="btn" onclick="customClearFieldForm()"><i class="ti ti-plus"></i>New field</button></div>'
+    +table
+    +'<div style="margin-top:14px;padding:14px;border:1px solid var(--border);border-radius:10px;background:#fff">'
+    +'<input type="hidden" id="cf-edit-id"/>'
+    +'<div class="form-row">'
+    +'<div class="form-group"><label class="form-label">Field label</label><input id="cf-label" placeholder="e.g. Contractor company, Shift, Machine number"/></div>'
+    +'<div class="form-group"><label class="form-label">Field type</label><select id="cf-type" onchange="customToggleOptionsHelp()"><option value="text">Text</option><option value="textarea">Long text</option><option value="number">Number</option><option value="date">Date</option><option value="select">Dropdown</option><option value="checkbox">Checkbox</option></select></div>'
+    +'<div class="form-group"><label class="form-label">Order</label><input id="cf-order" type="number" value="0"/></div>'
+    +'</div>'
+    +'<div class="form-group"><label class="form-label">Dropdown options</label><input id="cf-options" placeholder="One option per line or separated by commas"/><div id="cf-options-help" style="font-size:10px;color:var(--text3);margin-top:3px">Used only when type is Dropdown.</div></div>'
+    +'<div style="display:flex;gap:14px;align-items:center;flex-wrap:wrap;margin-bottom:12px">'
+    +'<label style="display:flex;gap:7px;align-items:center;font-size:12px;font-weight:700"><input type="checkbox" id="cf-required" style="width:16px;height:16px;margin:0;padding:0;accent-color:var(--green)"/> Required</label>'
+    +'<label style="display:flex;gap:7px;align-items:center;font-size:12px;font-weight:700"><input type="checkbox" id="cf-active" checked style="width:16px;height:16px;margin:0;padding:0;accent-color:var(--green)"/> Active</label>'
+    +'</div>'
+    +'<button class="btn btn-primary" onclick="customSaveField()"><i class="ti ti-device-floppy"></i>Save custom field</button>'
+    +'</div>';
+  customToggleOptionsHelp();
+}
+function customClearFieldForm(){
+  ['cf-edit-id','cf-label','cf-options'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
+  var t=document.getElementById('cf-type');if(t)t.value='text';
+  var o=document.getElementById('cf-order');if(o)o.value='0';
+  var r=document.getElementById('cf-required');if(r)r.checked=false;
+  var a=document.getElementById('cf-active');if(a)a.checked=true;
+  customToggleOptionsHelp();
+}
+function customToggleOptionsHelp(){
+  var wrap=document.getElementById('cf-options')?.closest('.form-group');
+  if(wrap)wrap.style.display=document.getElementById('cf-type')?.value==='select'?'block':'none';
+}
+function customEditField(id){
+  var moduleKey=document.getElementById('cf-module-select')?.value||'events';
+  var f=(customFieldDefsCache[moduleKey]||[]).find(function(x){return x.id===id;});
+  if(!f)return;
+  document.getElementById('cf-edit-id').value=f.id;
+  document.getElementById('cf-label').value=f.field_label||'';
+  document.getElementById('cf-type').value=f.field_type||'text';
+  document.getElementById('cf-order').value=f.sort_order||0;
+  document.getElementById('cf-required').checked=!!f.required;
+  document.getElementById('cf-active').checked=f.active!==false;
+  document.getElementById('cf-options').value=customFieldOptions(f).join('\n');
+  customToggleOptionsHelp();
+}
+async function customSaveField(){
+  if(!customFieldsCanManage()){toast('Only admins or HSE managers can manage custom fields',false);return;}
+  var companyId=customFieldsCompanyId();
+  if(!companyId){toast('No company selected',false);return;}
+  var moduleKey=document.getElementById('cf-module-select')?.value||'events';
+  var id=document.getElementById('cf-edit-id')?.value||'';
+  var label=(document.getElementById('cf-label')?.value||'').trim();
+  if(!label){toast('Please enter a field label',false);return;}
+  var type=document.getElementById('cf-type')?.value||'text';
+  var options=(document.getElementById('cf-options')?.value||'').split(/\n|,/).map(function(x){return x.trim();}).filter(Boolean);
+  var body={company_id:companyId,module_key:moduleKey,field_label:label,field_type:type,options:options,required:document.getElementById('cf-required')?.checked||false,active:document.getElementById('cf-active')?.checked!==false,sort_order:parseInt(document.getElementById('cf-order')?.value)||0,updated_at:new Date().toISOString()};
+  if(!id){body.field_key=customFieldMakeKey(label);body.created_by=prof?.id||null;}
+  try{
+    if(id)await api('/custom_fields?id=eq.'+id,{m:'PATCH',p:'return=minimal',b:body});
+    else await api('/custom_fields',{m:'POST',p:'return=minimal',b:body});
+    toast('Custom field saved');
+    loadCustomFieldSettings();
+  }catch(e){
+    var msg=e.message||'Save failed';
+    if(msg.includes('schema cache')||msg.includes('custom_fields'))msg='Database setup needed: run custom_fields.sql in Supabase first.';
+    toast(msg,false);
+  }
+}
+async function customDeleteField(id){
+  if(!customFieldsCanManage()){toast('Access denied',false);return;}
+  var ok=await appConfirm({title:'Delete custom field',message:'Delete this custom field?',detail:'Existing values for this field will also be removed.',confirmText:'Delete field',cancelText:'Keep field',danger:true});
+  if(!ok)return;
+  try{await api('/custom_fields?id=eq.'+id,{m:'DELETE'});toast('Custom field deleted');loadCustomFieldSettings();}
+  catch(e){toast(e.message,false);}
 }
 async function saveLogo(){
 const url=document.getElementById('set-logo').value;
@@ -11267,6 +11492,7 @@ function imsNewIncident(){
   document.getElementById('ims-view-report').style.display='block';
   imsSetFormMode(true);
   imsApplyReportRoleMode();
+  customRenderRecordFields('events','events',null);
 }
 
 function imsOpenEdit(id){
@@ -11347,6 +11573,7 @@ function imsOpenEdit(id){
   document.getElementById('ims-view-report').style.display='block';
   imsSetFormMode(true);
   imsApplyReportRoleMode();
+  customRenderRecordFields('events','events',id);
 }
 
 function imsSelectType(type){
@@ -11609,6 +11836,7 @@ async function imsSave(){
   if(!desc){toast('Please describe what happened',false);return;}
   var g=function(id){var el=document.getElementById(id);return el?el.value||null:null;};
   if(!g('ev-location')){toast('Please enter the incident location',false);return;}
+  try{await customValidateRecordValues('events');}catch(e){toast(e.message,false);return;}
   var invReq=document.getElementById('ev-inv-required')?.checked||false;
   var severity=g('ev-severity')||'medium';
   if(isMgr() && ['high','critical'].includes(severity) && !invReq){
@@ -11650,6 +11878,7 @@ async function imsSave(){
     var newAssigned=g('ev-assigned-name')||'';
     if(imsEditId){
       await api('/events?id=eq.'+imsEditId,{m:'PATCH',p:'return=minimal',b:body});
+      await customSaveRecordValues('events','events',imsEditId,effectiveCompanyId);
       toast('Incident updated!');
       if(imsPendingPhotos.length){
         var recNowForPhotos=(imsAllData||[]).find(function(r){return r.id===imsEditId;});
@@ -11682,6 +11911,7 @@ async function imsSave(){
         toast('Incident reported! Ref: '+ref);
         imsEditId=res[0].id;
         document.getElementById('ims-form-ref').textContent=ref;
+        await customSaveRecordValues('events','events',res[0].id,effectiveCompanyId);
         if(imsPendingPhotos.length){
           try{await imsSavePendingPhotos(res[0].id, effectiveCompanyId, ref);}
           catch(photoErr){toast('Incident saved, but photo upload failed: '+photoErr.message,false);}
@@ -32693,6 +32923,13 @@ function fireEquipStatusBadge(s) {
 <div id="ims-inline-evidence-list"></div>
 </div>
 
+<!-- Company custom fields -->
+<div class="card" id="ims-custom-fields-card" style="margin-bottom:14px;display:none">
+<div class="card-title"><i class="ti ti-adjustments"></i> Company Specific Fields</div>
+<div style="font-size:12px;color:var(--text2);margin-bottom:10px">Additional fields configured by your company admin for incident reporting.</div>
+<div id="ims-custom-fields-body"></div>
+</div>
+
 <!-- Type-specific fields -->
 <div class="card" style="margin-bottom:14px;display:none" id="ims-injury-fields">
 <div class="card-title" style="color:#DC2626">🩹 Injury Details</div>
@@ -41391,6 +41628,12 @@ I can help you:<br>
   <div class="card-title" style="display:flex;align-items:center;gap:8px"><i class="ti ti-route" style="color:#5B21B6"></i>Approval Workflow Settings</div>
   <div style="font-size:12px;color:var(--text2);margin-bottom:14px">Create reusable approval routes for permits, documents, risk assessments, investigations and other controlled records. For PTW, this replaces the old permit-only approver setup.</div>
   <div id="workflow-settings-body"><div class="loading">Loading workflows...</div></div>
+</div>
+
+<div class="card" id="settings-custom-fields-card" style="display:none">
+  <div class="card-title" style="display:flex;align-items:center;gap:8px"><i class="ti ti-adjustments" style="color:#1D9E75"></i>No-code Custom Fields</div>
+  <div style="font-size:12px;color:var(--text2);margin-bottom:14px">Add company-specific fields without changing the software code. First module enabled: Incident Management.</div>
+  <div id="custom-fields-settings-body"><div class="loading">Loading custom fields...</div></div>
 </div>
 
 <div class="card" id="settings-notif-card" style="display:none">
