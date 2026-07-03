@@ -69,9 +69,12 @@
     overflow-x: hidden;
     overflow-y: auto;
     height: 100dvh;
+    max-height: 100dvh;
     overscroll-behavior: contain;
     -webkit-overflow-scrolling: touch;
+    touch-action: pan-y;
     scrollbar-width: thin;
+    padding-bottom: 10px;
   }
   .sidebar.collapsed .sidebar-top { padding: 10px 4px; text-align: center; }
   .sidebar.collapsed .sb-company,
@@ -99,6 +102,8 @@
   .sidebar.collapsed .nav-item.active { border-right-color: var(--green); }
   .sidebar.collapsed .nav-item i { font-size: 20px; line-height: 1; margin: 0; flex: 0 0 auto; }
   .sidebar.collapsed .sb-footer { padding: 8px 4px; flex-direction: column; gap: 4px; }
+  .sidebar.collapsed .sb-footer,
+  .sidebar.collapsed #pwa-install-btn { margin-top: 0 !important; }
   .sidebar.collapsed .sb-footer .btn { padding: 6px; font-size: 0; }
   .sidebar.collapsed .sb-footer .btn i { font-size: 16px; margin: 0; }
 
@@ -27605,15 +27610,15 @@ function sidebarApplyState(s) {
   if(!sb) return;
   sb.classList.remove('collapsed','hidden');
   if(s === 'collapsed') sb.classList.add('collapsed');
-  // Tooltip data — needs nav items annotated with their label for icon-only mode
-  if(s === 'collapsed') {
-    document.querySelectorAll('.sidebar .nav-item').forEach(function(el){
-      if(el.dataset.tip) return;
-      // The text-only label is the trimmed contents after the icon
-      var txt = el.textContent.trim();
-      if(txt) el.dataset.tip = txt;
-    });
-  }
+  // Tooltip data — annotate every nav item for icon-only mode.
+  document.querySelectorAll('.sidebar .nav-item').forEach(function(el){
+    var txt=(el.textContent||'').trim();
+    if(txt){
+      el.dataset.tip=txt;
+      el.setAttribute('title',txt);
+      el.setAttribute('aria-label',txt);
+    }
+  });
   // Update toggle icon
   var icon = document.getElementById('sidebar-toggle-icon');
   if(icon) {
@@ -32589,7 +32594,7 @@ function fireEquipStatusBadge(s) {
 <div class="nav-item" onclick="showPage('events',this)"><i class="ti ti-alert-triangle"></i>Incident Management</div><div class="nav-item" onclick="showPage('observation',this)"><i class="ti ti-eye"></i>BBS Observations</div>
 <div class="nav-item" onclick="showPage('inspection',this)"><i class="ti ti-clipboard-check"></i>Audits &amp; Inspections</div><div class="nav-item" onclick="showPage('risk',this)"><i class="ti ti-shield-check"></i>Risk Assessment</div><div class="nav-item" onclick="showPage('tools',this)"><i class="ti ti-tools"></i>Tools & Equipment</div><div class="nav-item" onclick="showPage('fleet',this)"><i class="ti ti-car"></i>Fleet Management</div><div class="nav-item" onclick="showPage('atex',this)"><i class="ti ti-flame"></i>ATEX Areas</div>
 <div class="nav-item" onclick="showPage('permit',this)"><i class="ti ti-key"></i>Permit to Work</div>
-<div class="nav-item" onclick="showPage('contractor',this)"><i class="ti ti-users-group"></i>Contractors</div><div class="nav-item" onclick="showPage('emergency',this)"><i class="ti ti-alert-square"></i>Emergency</div>
+<div class="nav-item" onclick="showPage('contractor',this)"><i class="ti ti-helmet"></i>Contractors</div><div class="nav-item" onclick="showPage('emergency',this)"><i class="ti ti-alert-square"></i>Emergency</div>
 <div class="nav-item" onclick="showPage('ohealth',this)"><i class="ti ti-stethoscope"></i>Occupational Health</div>
 <div class="nav-item" onclick="showPage('ppe',this)"><i class="ti ti-shield-check"></i>PPE</div>
 <div class="nav-item" onclick="showPage('fire',this)"><i class="ti ti-flame"></i>Fire Certificates</div>
