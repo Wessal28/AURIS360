@@ -8736,6 +8736,7 @@ if(isAdm())document.getElementById('logo-settings').style.display='block';
 document.getElementById('my-profile-info').innerHTML='<div style="font-size:13px"><strong>'+(prof?.full_name||'--')+'</strong><br><span style="color:var(--text2)">'+(prof?.email||'--')+'</span><br>'+stat(prof?.role)+'</div>';
 try{ brandInit(); }catch(e){ console.error('brandInit:',e); }
 try{ loadSecuritySlaSettings(); }catch(e){ console.error('loadSecuritySlaSettings:',e); }
+try{ loadSystemHealth(); }catch(e){ console.error('loadSystemHealth:',e); }
 try{ loadCustomFieldSettings(); }catch(e){ console.error('loadCustomFieldSettings:',e); }
 try{ offlineRenderQueueSettings(); }catch(e){ console.error('offlineRenderQueueSettings:',e); }
 try{ renderClientDemoCommandCenter(); }catch(e){ console.error('renderClientDemoCommandCenter:',e); }
@@ -8747,6 +8748,97 @@ var workflowCard=document.getElementById('settings-workflow-card');
 if(workflowCard) workflowCard.style.display=(isAdm()||activeRole()==='hse_manager')?'block':'none';
 if(isAdm()||activeRole()==='hse_manager') loadPeopleCache().then(function(){loadApprovalWorkflows();});
 if(isAdm()) loadNotifSettings();
+}
+
+function systemHealthCanView(){
+var r=activeRole();
+return isSA()||isAdm()||r==='hse_manager'||r==='hse_officer';
+}
+function systemHealthBadge(status){
+var map={
+ok:['OK','#065F46','#ECFDF5','ti-circle-check'],
+warning:['Review','#92400E','#FFFBEB','ti-alert-triangle'],
+setup:['Setup required','#991B1B','#FEF2F2','ti-plug-connected-x'],
+info:['Info','#1D4ED8','#EFF6FF','ti-info-circle']
+};
+var m=map[status]||map.info;
+return '<span style="display:inline-flex;align-items:center;gap:5px;padding:4px 9px;border-radius:999px;font-size:11px;font-weight:800;color:'+m[1]+';background:'+m[2]+'"><i class="ti '+m[3]+'"></i>'+escH(m[0])+'</span>';
+}
+function systemHealthExplainError(msg){
+msg=String(msg||'').trim();
+if(!msg)return 'Request failed';
+if(msg.indexOf('schema cache')!==-1||msg.indexOf('does not exist')!==-1||msg.indexOf('relation')!==-1)return 'Missing database object: '+msg;
+if(msg.indexOf('permission denied')!==-1||msg.indexOf('row-level security')!==-1)return 'Permission/RLS review needed: '+msg;
+return msg;
+}
+async function systemHealthCheckTable(label,table,select){
+try{
+await api('/'+table+'?select='+(select||'id')+'&limit=1');
+return {label:label,status:'ok',detail:'Reachable and readable'};
+}catch(e){
+var msg=e.message||'';
+var setup=(msg.indexOf('schema cache')!==-1||msg.indexOf('does not exist')!==-1||msg.indexOf('relation')!==-1);
+return {label:label,status:setup?'setup':'warning',detail:systemHealthExplainError(msg)};
+}
+}
+function renderSystemHealth(checks){
+var el=document.getElementById('system-health-body');
+if(!el)return;
+var counts={ok:0,warning:0,setup:0,info:0};
+(checks||[]).forEach(function(c){counts[c.status]=(counts[c.status]||0)+1;});
+var html='<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;margin-bottom:14px">'
++'<div style="padding:12px;border:1px solid var(--border);border-radius:10px;background:#ECFDF5"><div style="font-size:22px;font-weight:900;color:#065F46">'+counts.ok+'</div><div style="font-size:11px;font-weight:800;color:var(--text2);text-transform:uppercase">OK</div></div>'
++'<div style="padding:12px;border:1px solid var(--border);border-radius:10px;background:#FFFBEB"><div style="font-size:22px;font-weight:900;color:#92400E">'+counts.warning+'</div><div style="font-size:11px;font-weight:800;color:var(--text2);text-transform:uppercase">To review</div></div>'
++'<div style="padding:12px;border:1px solid var(--border);border-radius:10px;background:#FEF2F2"><div style="font-size:22px;font-weight:900;color:#991B1B">'+counts.setup+'</div><div style="font-size:11px;font-weight:800;color:var(--text2);text-transform:uppercase">Setup required</div></div>'
++'</div>';
+html+='<div style="border:1px solid var(--border);border-radius:10px;overflow:hidden;background:#fff">';
+checks.forEach(function(c){
+html+='<div style="display:grid;grid-template-columns:minmax(180px,280px) 135px 1fr;gap:12px;align-items:start;padding:11px 12px;border-bottom:1px solid var(--border)">'
++'<div style="font-size:13px;font-weight:850;color:var(--text)">'+escH(c.label)+'</div>'
++'<div>'+systemHealthBadge(c.status)+'</div>'
++'<div style="font-size:12px;color:var(--text2);line-height:1.45">'+escH(c.detail)+'</div>'
++'</div>';
+});
+html+='</div>';
+html+='<div style="margin-top:10px;font-size:11px;color:var(--text2);line-height:1.45">AI is not called by this health check to avoid unnecessary token cost. Test AI from AI Insights when needed.</div>';
+el.innerHTML=html;
+}
+async function loadSystemHealth(){
+var card=document.getElementById('settings-system-health-card');
+if(card)card.style.display=systemHealthCanView()?'block':'none';
+if(!systemHealthCanView())return;
+var el=document.getElementById('system-health-body');
+if(!el)return;
+el.innerHTML='<div class="loading">Checking system health...</div>';
+var checks=[
+{label:'Signed-in session',status:(tok&&prof)?'ok':'warning',detail:(tok&&prof)?'Current user session is active':'No active profile/session detected'},
+{label:'Company context',status:ccid()?'ok':'warning',detail:ccid()?('Company scope: '+(co?.name||prof?.company_name||ccid())):'No company selected or assigned'},
+{label:'AURIS AI',status:'info',detail:'Configured through server environment variables. Not called here to avoid API cost.'}
+];
+var tables=[
+['Companies','companies'],
+['User profiles','profiles'],
+['Incident management','events'],
+['BBS observations','safety_observations'],
+['Master action plan','action_tracker'],
+['Audit trail','audit_events'],
+['Notification queue','notification_queue'],
+['Notification settings','notification_settings'],
+['Chemical control','chemical_register'],
+['Legal compliance','legal_requirements'],
+['Permit to Work','permits'],
+['Risk assessments','risk_assessments'],
+['Approval workflows','approval_workflows']
+];
+var tableChecks=await Promise.all(tables.map(function(t){return systemHealthCheckTable(t[0],t[1]);}));
+checks=checks.concat(tableChecks);
+try{
+var pending=(typeof offlineQueueRead==='function')?offlineQueueRead().length:0;
+checks.push({label:'Offline drafts',status:pending?'warning':'ok',detail:pending?pending+' local draft(s) waiting to sync':'No local drafts waiting to sync'});
+}catch(e){
+checks.push({label:'Offline drafts',status:'warning',detail:e.message||'Unable to read local offline queue'});
+}
+renderSystemHealth(checks);
 }
 
 function securityReadinessItems(){
@@ -42181,6 +42273,17 @@ I can help you:<br>
 </style>
 
 <div class="card"><div class="card-title">My profile</div><div id="my-profile-info"></div></div>
+
+<div class="card" id="settings-system-health-card" style="display:none">
+  <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;margin-bottom:12px">
+    <div>
+      <div class="card-title" style="display:flex;align-items:center;gap:8px;margin-bottom:4px"><i class="ti ti-heartbeat" style="color:#1D9E75"></i>System Health &amp; Setup</div>
+      <div style="font-size:12px;color:var(--text2);line-height:1.5">Internal finalisation check for database tables, permissions, notification queue, offline drafts and core setup readiness.</div>
+    </div>
+    <button class="btn" onclick="loadSystemHealth()"><i class="ti ti-refresh"></i>Refresh checks</button>
+  </div>
+  <div id="system-health-body"><div class="loading">Checking system health...</div></div>
+</div>
 
 <div class="card" id="settings-client-demo-card" style="display:none">
   <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;margin-bottom:12px">
