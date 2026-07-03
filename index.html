@@ -4304,6 +4304,93 @@ function dashCloseMeetingChecklist(){
   if(modal)modal.style.display='none';
 }
 
+function clientDemoItems(){
+  return {
+    ready:[
+      ['Dashboard story','Executive snapshot, live KPIs, days since LTI, open actions and risk indicators.'],
+      ['Incident reporting','Mobile-friendly report flow, evidence photos, classification, investigation trigger and notifications.'],
+      ['BBS observations','Positive/unsafe observations, PPE status, corrective action link and trend view.'],
+      ['Master Action Plan','Single table for actions from incidents, inspections, legal gaps, BBS and manual tasks.'],
+      ['Audit Trail','Chronological trace of key actions, login/logout, AI use, exports and offline sync.'],
+      ['Offline field drafts','Incident/BBS reports can be saved offline with compressed photos and synced later.']
+    ],
+    pilot:[
+      ['Permit to Work','Strong workflow direction with approval routing, gas tests, isolations and precautions. Best shown as controlled pilot.'],
+      ['Legal Compliance','PDF legislation import, section sorting, register, gaps and compliance scoring. Needs client-specific legal validation.'],
+      ['Chemical Control','SDS extraction and exposure/risk fields are valuable. Position as AI-assisted, not a legal SDS replacement.'],
+      ['AI Insights','Good wow factor for summaries, toolbox talks, RAMS and analysis. Explain it is governed by role access and API cost.'],
+      ['No-code fields','Company admins can add Incident/BBS fields without programming. Show only if client asks about customisation.']
+    ],
+    avoid:[
+      ['Do not show every module','Use a complete safety story rather than opening 25 modules one by one.'],
+      ['Do not promise legal compliance automation','Say AURIS360 helps structure and monitor obligations; expert validation remains required.'],
+      ['Do not over-promise offline mode','Offline is currently for Incident/BBS field drafts, not the whole platform.'],
+      ['Do not discuss unreleased integrations as active','ERP/SIRH/LDAP/BI integrations are roadmap unless specifically configured.']
+    ],
+    flow:[
+      ['1','Open Dashboard','Show overall HSE cockpit and explain “one source of truth”.'],
+      ['2','Report an Incident','Create or open an example with photo evidence and classification.'],
+      ['3','Show BBS','Demonstrate observation capture and link to safety behaviour culture.'],
+      ['4','Open Master Action Plan','Show how findings become accountable actions.'],
+      ['5','Open Audit Trail','Close with governance: who did what, when, and what changed.'],
+      ['6','Finish with roadmap','Mention legal, chemicals, PTW, AI and integrations as expansion modules.']
+    ]
+  };
+}
+
+function clientDemoSummaryText(){
+  var items=clientDemoItems();
+  return 'AURIS360 client demo summary\n\n'
+    +'Positioning:\nAURIS360 is a modular HSE management platform designed to centralise incidents, BBS observations, KPIs, actions, audits, permits, legal compliance, chemicals, documents and AI-assisted safety workflows.\n\n'
+    +'Recommended demo flow:\n'+items.flow.map(function(x){return x[0]+'. '+x[1]+' - '+x[2];}).join('\n')+'\n\n'
+    +'Demo-ready strengths:\n'+items.ready.map(function(x){return '- '+x[0]+': '+x[1];}).join('\n')+'\n\n'
+    +'Pilot / explain carefully:\n'+items.pilot.map(function(x){return '- '+x[0]+': '+x[1];}).join('\n')+'\n\n'
+    +'Important boundaries:\n'+items.avoid.map(function(x){return '- '+x[0]+': '+x[1];}).join('\n');
+}
+
+function renderClientDemoCommandCenter(){
+  var el=document.getElementById('client-demo-command-body');if(!el)return;
+  var canSee=isAdm()||activeRole()==='hse_manager'||activeRole()==='hse_officer';
+  var card=document.getElementById('settings-client-demo-card');
+  if(card)card.style.display=canSee?'block':'none';
+  if(!canSee)return;
+  var items=clientDemoItems();
+  function renderList(arr,tone){
+    var color={ready:'#1D9E75',pilot:'#EF9F27',avoid:'#DC2626'}[tone]||'#185FA5';
+    return arr.map(function(x){
+      return '<div style="display:flex;gap:9px;padding:9px 0;border-top:1px solid var(--border)">'
+        +'<i class="ti '+(tone==='ready'?'ti-circle-check':tone==='avoid'?'ti-alert-triangle':'ti-info-circle')+'" style="color:'+color+';font-size:18px;margin-top:1px"></i>'
+        +'<div><div style="font-size:12px;font-weight:900">'+escH(x[0])+'</div><div style="font-size:12px;color:var(--text2);line-height:1.45">'+escH(x[1])+'</div></div>'
+        +'</div>';
+    }).join('');
+  }
+  el.innerHTML='<div style="display:grid;grid-template-columns:1.1fr .9fr;gap:14px;align-items:start">'
+    +'<div>'
+      +'<div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-bottom:14px">'
+        +'<div style="padding:12px;border-radius:10px;background:#ECFDF5;border:1px solid #A7F3D0"><div style="font-size:22px;font-weight:900;color:#065F46">'+items.ready.length+'</div><div style="font-size:11px;color:#065F46;font-weight:800">demo strengths</div></div>'
+        +'<div style="padding:12px;border-radius:10px;background:#FFFBEB;border:1px solid #FCD34D"><div style="font-size:22px;font-weight:900;color:#854F0B">'+items.pilot.length+'</div><div style="font-size:11px;color:#854F0B;font-weight:800">pilot points</div></div>'
+        +'<div style="padding:12px;border-radius:10px;background:#FEF2F2;border:1px solid #FECACA"><div style="font-size:22px;font-weight:900;color:#991B1B">'+items.avoid.length+'</div><div style="font-size:11px;color:#991B1B;font-weight:800">avoid / caution</div></div>'
+      +'</div>'
+      +'<div style="border:1px solid var(--border);border-radius:10px;overflow:hidden;background:#fff">'
+        +'<div style="padding:10px 12px;background:#1a3a5c;color:#fff;font-weight:900;font-size:13px">Recommended meeting flow</div>'
+        +items.flow.map(function(x){return '<div style="display:grid;grid-template-columns:34px 150px 1fr;gap:10px;align-items:start;padding:10px 12px;border-top:1px solid var(--border)"><div style="width:24px;height:24px;border-radius:50%;background:#E0F2FE;color:#075985;font-weight:900;display:flex;align-items:center;justify-content:center">'+escH(x[0])+'</div><div style="font-size:12px;font-weight:900">'+escH(x[1])+'</div><div style="font-size:12px;color:var(--text2);line-height:1.45">'+escH(x[2])+'</div></div>';}).join('')
+      +'</div>'
+    +'</div>'
+    +'<div style="display:grid;gap:12px">'
+      +'<div style="border:1px solid var(--border);border-radius:10px;padding:12px;background:#fff"><div style="font-size:13px;font-weight:900;color:#065F46;margin-bottom:4px">Demo-ready strengths</div>'+renderList(items.ready,'ready')+'</div>'
+      +'<div style="border:1px solid var(--border);border-radius:10px;padding:12px;background:#fff"><div style="font-size:13px;font-weight:900;color:#854F0B;margin-bottom:4px">Explain as pilot / roadmap</div>'+renderList(items.pilot,'pilot')+'</div>'
+      +'<div style="border:1px solid var(--border);border-radius:10px;padding:12px;background:#fff"><div style="font-size:13px;font-weight:900;color:#991B1B;margin-bottom:4px">Do not over-promise</div>'+renderList(items.avoid,'avoid')+'</div>'
+    +'</div>'
+    +'</div>';
+}
+
+function copyClientDemoSummary(){
+  var txt=clientDemoSummaryText();
+  if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(txt).then(function(){toast('Client demo summary copied');});
+  else toast(txt);
+  auditLogEvent('export','demo','Client demo summary copied',{length:txt.length});
+}
+
 async function dashRenderPersonal(events, actions, people, permits, training) {
   if(!isPersonalDashRole()) return;  // safety: don't run if user is admin
 
@@ -8651,6 +8738,7 @@ try{ brandInit(); }catch(e){ console.error('brandInit:',e); }
 try{ loadSecuritySlaSettings(); }catch(e){ console.error('loadSecuritySlaSettings:',e); }
 try{ loadCustomFieldSettings(); }catch(e){ console.error('loadCustomFieldSettings:',e); }
 try{ offlineRenderQueueSettings(); }catch(e){ console.error('offlineRenderQueueSettings:',e); }
+try{ renderClientDemoCommandCenter(); }catch(e){ console.error('renderClientDemoCommandCenter:',e); }
 var notifCard=document.getElementById('settings-notif-card');
 if(notifCard) notifCard.style.display=isAdm()?'block':'none';
 var ptwCard=document.getElementById('settings-ptw-approver-card');
@@ -42093,6 +42181,20 @@ I can help you:<br>
 </style>
 
 <div class="card"><div class="card-title">My profile</div><div id="my-profile-info"></div></div>
+
+<div class="card" id="settings-client-demo-card" style="display:none">
+  <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;margin-bottom:12px">
+    <div>
+      <div class="card-title" style="display:flex;align-items:center;gap:8px;margin-bottom:4px"><i class="ti ti-presentation" style="color:#5B21B6"></i>Client Demo Command Center</div>
+      <div style="font-size:12px;color:var(--text2);line-height:1.5">Internal meeting guide: what to show, what to position as pilot/roadmap, and what not to over-promise.</div>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button class="btn" onclick="dashOpenMeetingChecklist()"><i class="ti ti-list-check"></i>Checklist</button>
+      <button class="btn btn-primary" onclick="copyClientDemoSummary()"><i class="ti ti-copy"></i>Copy summary</button>
+    </div>
+  </div>
+  <div id="client-demo-command-body"><div class="loading">Loading demo command center...</div></div>
+</div>
 
 <div class="card" id="settings-security-readiness-card">
   <div class="card-title" style="display:flex;align-items:center;gap:8px"><i class="ti ti-shield-lock" style="color:#185FA5"></i>Security, Infrastructure &amp; SLA Readiness</div>
