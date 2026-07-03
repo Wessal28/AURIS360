@@ -6060,15 +6060,29 @@ function appConfirm(opts){
     setTimeout(function(){if(cancelBtn)cancelBtn.focus();},0);
   });
 }
-function appConfirmDelete(label, detail){
-  return appConfirm({
+function appDeleteNeedsTypedConfirm(label){
+  return /incident|investigation|risk|permit|legal|document|action|chemical|inspection|audit|training|medical|health|exposure|disease|certificate|meeting minutes|SOP/i.test(String(label||''));
+}
+async function appConfirmDelete(label, detail){
+  var needsTyped=appDeleteNeedsTypedConfirm(label);
+  var ok=await appConfirm({
     title:'Delete '+label,
     message:'Delete this '+label+'?',
-    detail:detail||'This will remove the record from AURIS360.',
-    confirmText:'Delete',
+    detail:detail||(needsTyped?'This is a permanent delete. For real client data, archive, close, cancel or deactivate records whenever possible so the audit history remains complete.':'This will remove the record from AURIS360.'),
+    confirmText:needsTyped?'Continue':'Delete',
     cancelText:'Cancel',
     danger:true
   });
+  if(!ok)return false;
+  if(!needsTyped)return true;
+  var typed=await appPrompt({
+    title:'Confirm permanent delete',
+    message:'Type DELETE to permanently remove this '+label+'. This protects client records from accidental deletion.',
+    placeholder:'DELETE',
+    confirmText:'Delete permanently',
+    cancelText:'Cancel'
+  });
+  return String(typed||'').trim().toUpperCase()==='DELETE';
 }
 function appConfirmAction(opts){
   opts=opts||{};
