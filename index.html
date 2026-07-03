@@ -14797,9 +14797,63 @@ async function libLoadControls(){
   }catch(e){el.innerHTML='<p style="padding:20px;color:red">'+e.message+'</p>';}
 }
 
-// Stub add buttons (can be expanded)
-function libHazardNew(){toast('Add hazard form — coming soon');}
-function libControlNew(){toast('Add control form — coming soon');}
+async function libHazardNew(){
+  if(!isMgr()){toast('Only HSE managers/admins can add library hazards',false);return;}
+  try{
+    var category=await appPrompt({title:'Add hazard',message:'Hazard category',placeholder:'e.g. Working at height, Electrical, Chemical'});
+    if(!category||!category.trim())return;
+    var hazardType=await appPrompt({title:'Add hazard',message:'Hazard type / short name',placeholder:'e.g. Falls from height'});
+    if(!hazardType||!hazardType.trim())return;
+    var description=await appPrompt({title:'Add hazard',message:'Hazard description',placeholder:'Describe the hazard clearly...',multiline:true});
+    if(!description||!description.trim())return;
+    var harm=await appPrompt({title:'Add hazard',message:'Potential harm / consequences',placeholder:'e.g. Serious injury, fatality, burns...',multiline:true});
+    var severity=parseInt(await appPrompt({title:'Add hazard',message:'Default severity score (1-5)',value:'3',placeholder:'1 to 5'}),10);
+    var probability=parseInt(await appPrompt({title:'Add hazard',message:'Default probability score (1-5)',value:'3',placeholder:'1 to 5'}),10);
+    severity=Math.min(5,Math.max(1,isNaN(severity)?3:severity));
+    probability=Math.min(5,Math.max(1,isNaN(probability)?3:probability));
+    await api('/hazard_library',{m:'POST',p:'return=minimal',b:{
+      company_id:prof?.company_id||ccid(),
+      category:category.trim(),
+      hazard_type:hazardType.trim(),
+      hazard_description:description.trim(),
+      potential_harm:(harm||'').trim()||null,
+      default_severity:severity,
+      default_probability:probability,
+      is_global:false,
+      created_by:prof?.id||null
+    }});
+    toast('Hazard added to library');
+    await libLoadHazards();
+  }catch(e){toast('Could not add hazard: '+e.message,false);}
+}
+
+async function libControlNew(){
+  if(!isMgr()){toast('Only HSE managers/admins can add library controls',false);return;}
+  try{
+    var hazardType=await appPrompt({title:'Add control',message:'Related hazard type',placeholder:'e.g. Falls from height, Chemical exposure'});
+    if(!hazardType||!hazardType.trim())return;
+    var level=await appPrompt({title:'Add control',message:'Hierarchy level',value:'engineering',placeholder:'elimination, substitution, engineering, administrative or ppe'});
+    level=String(level||'engineering').toLowerCase().trim();
+    if(!['elimination','substitution','engineering','administrative','ppe'].includes(level))level='engineering';
+    var description=await appPrompt({title:'Add control',message:'Control measure',placeholder:'Describe the practical control measure...',multiline:true});
+    if(!description||!description.trim())return;
+    var effectiveness=parseInt(await appPrompt({title:'Add control',message:'Effectiveness score (1-5)',value:'3',placeholder:'1 to 5'}),10);
+    effectiveness=Math.min(5,Math.max(1,isNaN(effectiveness)?3:effectiveness));
+    var legalRef=await appPrompt({title:'Add control',message:'Legal / standard reference (optional)',placeholder:'e.g. OSH Act 2005, ISO 45001'});
+    await api('/control_library',{m:'POST',p:'return=minimal',b:{
+      company_id:prof?.company_id||ccid(),
+      hazard_type:hazardType.trim(),
+      hierarchy_level:level,
+      control_description:description.trim(),
+      effectiveness:effectiveness,
+      legal_ref:(legalRef||'').trim()||null,
+      is_global:false,
+      created_by:prof?.id||null
+    }});
+    toast('Control measure added to library');
+    await libLoadControls();
+  }catch(e){toast('Could not add control: '+e.message,false);}
+}
 
 // ===== RA_JS_PART4.JS =====
 // ── AI-Assisted RA Generation ─────────────────────────────────────────────────
