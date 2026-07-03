@@ -2752,20 +2752,33 @@ async function obsDelete() {
   if(!workflowCanMutate('observation','BBS observations'))return;
   if(!isMgr()){toast('Only managers/admins can delete BBS observations.',false);return;}
   if (!obsEditId) return;
-  var ok=await appConfirm({
-    title:'Delete BBS observation',
-    message:'Delete this observation?',
-    detail:'This will remove the observation record from the BBS register.',
-    confirmText:'Delete observation',
-    cancelText:'Keep observation',
-    danger:true
-  });
-  if(!ok)return;
   try {
+    var rows=await api('/safety_observations?id=eq.'+obsEditId+'&select=status,feedback_notes');
+    var current=rows?.[0]||{};
+    if(current.status!=='closed'&&!ohIsArchivedText(current.feedback_notes)){
+      var closeOk=await appConfirmAction({
+        title:'Close/archive BBS observation',
+        message:'Close this BBS observation instead of deleting it?',
+        detail:'The observation remains available for audit history and trend analysis.',
+        confirmText:'Close observation',
+        cancelText:'Back',
+        variant:'danger'
+      });
+      if(!closeOk)return;
+      var archived = await api('/safety_observations?id=eq.'+obsEditId, {m:'PATCH',p:'return=representation',b:{status:'closed',feedback_notes:ohArchivedText(current.feedback_notes),updated_at:new Date().toISOString()}});
+      if (Array.isArray(archived) && !archived.length) throw new Error('Record not found or permission denied');
+      var idx=obsAllData.findIndex(x=>x.id===obsEditId);
+      if(idx>=0)Object.assign(obsAllData[idx],archived[0]||{status:'closed'});
+      toast('Observation closed/archived');
+      obsEditId=null;
+      obsShowList();
+      return;
+    }
+    if(!(await appConfirmDelete('closed BBS observation','Permanent deletion should be used only for duplicate/test observations.')))return;
     var deleted = await api('/safety_observations?id=eq.'+obsEditId, {m:'DELETE',p:'return=representation'});
     if (Array.isArray(deleted) && !deleted.length) throw new Error('Record not found or permission denied');
     obsAllData = obsAllData.filter(x=>x.id!==obsEditId);
-    toast('Deleted!'); obsEditId=null; obsShowList();
+    toast('Closed observation permanently deleted'); obsEditId=null; obsShowList();
   } catch(e) { toast(e.message, false); }
 }
 
@@ -6669,12 +6682,23 @@ function invCollectData(){
 
 
 async function invDelete(id){
-  var ok=await appConfirm({title:'Delete investigation',message:'Delete this investigation?',detail:'This cannot be undone and will remove the investigation record.',confirmText:'Delete investigation',cancelText:'Keep investigation',danger:true});
-  if(!ok)return;
   try{
+    var rows=await api('/investigations?id=eq.'+id+'&select=status');
+    var current=rows?.[0]||{};
+    if(current.status!=='closed'){
+      var closeOk=await appConfirmAction({title:'Close/archive investigation',message:'Close this investigation instead of deleting it?',detail:'The investigation stays traceable for legal, insurance and audit evidence.',confirmText:'Close investigation',cancelText:'Back',variant:'danger'});
+      if(!closeOk)return;
+      await api('/investigations?id=eq.'+id,{m:'PATCH',p:'return=minimal',b:{status:'closed',updated_at:new Date().toISOString()}});
+      var rec=invAllData.find(function(x){return x.id===id;});
+      if(rec)rec.status='closed';
+      toast('Investigation closed/archived');
+      loadInvs();
+      return;
+    }
+    if(!(await appConfirmDelete('closed investigation','Permanent deletion should be used only for duplicate/test investigations.')))return;
     await api('/investigations?id=eq.'+id,{m:'DELETE'});
     invAllData=invAllData.filter(function(x){return x.id!==id;});
-    toast('Investigation deleted!');
+    toast('Closed investigation permanently deleted');
     loadInvs();
   }catch(e){toast(e.message,false);console.error(e);}
 }
@@ -6724,8 +6748,9 @@ async function loadNoise(){
 const el=document.getElementById('noise-list');
 if(!el)return;
 try{
-const d=await api('/noise_surveys?select=*'+cf()+'&order=survey_date.desc');
-if(!d||!d.length){el.innerHTML='<div style="text-align:center;padding:36px;color:var(--text2)"><div style="font-weight:700;margin-bottom:6px">No noise surveys yet</div><div style="font-size:12px">Record workplace or environmental noise surveys here.</div></div>';return;}
+const allRows=await api('/noise_surveys?select=*'+cf()+'&order=survey_date.desc');
+const d=(allRows||[]).filter(function(x){return !ohIsArchivedText(x.notes);});
+if(!d.length){el.innerHTML='<div style="text-align:center;padding:36px;color:var(--text2)"><div style="font-weight:700;margin-bottom:6px">No active noise surveys yet</div><div style="font-size:12px">Record workplace or environmental noise surveys here.</div></div>';return;}
 var now=new Date();
 var h='<div style="overflow-x:auto"><table style="width:100%;min-width:900px;border-collapse:collapse;font-size:12px"><thead><tr style="background:#164E63;color:#fff"><th style="padding:9px 12px;text-align:left">Date</th><th style="padding:9px 12px;text-align:left">Type</th><th style="padding:9px 12px;text-align:left">Site / area</th><th style="padding:9px 12px;text-align:left">Conducted by</th><th style="padding:9px 12px;text-align:left">Instrument</th><th style="padding:9px 12px;text-align:left">Calibration</th><th style="padding:9px 12px;text-align:left">Notes</th><th style="padding:9px 12px;width:60px"></th></tr></thead><tbody>';
 for(var i=0;i<d.length;i++){
@@ -6763,10 +6788,22 @@ toggleForm('noise-form');toast('Noise survey saved!'+(calBad?' Calibration actio
 }catch(e){toast(e.message,false);}
 }
 async function deleteNoiseSurvey(id){
-if(!isMgr())return;
-if(!(await appConfirmDelete('noise survey')))return;
-try{await api('/noise_surveys?id=eq.'+id,{m:'DELETE'});toast('Deleted!');loadNoise();}
-catch(e){toast(e.message,false);}
+  if(!isMgr())return;
+  try{
+    var rows=await api('/noise_surveys?id=eq.'+id+'&select=notes');
+    var current=rows?.[0]||{};
+    if(!ohIsArchivedText(current.notes)){
+      if(!(await appConfirmAction({title:'Archive noise survey',message:'Archive this noise survey instead of deleting it?',detail:'Noise surveys are exposure evidence and should remain traceable.',confirmText:'Archive survey',cancelText:'Back',variant:'danger'})))return;
+      await api('/noise_surveys?id=eq.'+id,{m:'PATCH',p:'return=minimal',b:{notes:ohArchivedText(current.notes),updated_at:new Date().toISOString()}});
+      toast('Noise survey archived');
+      loadNoise();
+      return;
+    }
+    if(!(await appConfirmDelete('archived noise survey','Permanent deletion should be used only for duplicate/test surveys.')))return;
+    await api('/noise_surveys?id=eq.'+id,{m:'DELETE'});
+    toast('Archived survey permanently deleted');
+    loadNoise();
+  }catch(e){toast(e.message,false);}
 }
 // ===== HSE MEETINGS MODULE =====
 // DEDUP: mtg variables declared elsewhere
@@ -9393,9 +9430,22 @@ async function customSaveField(){
 }
 async function customDeleteField(id){
   if(!customFieldsCanManage()){toast('Access denied',false);return;}
-  var ok=await appConfirm({title:'Delete custom field',message:'Delete this custom field?',detail:'Existing values for this field will also be removed.',confirmText:'Delete field',cancelText:'Keep field',danger:true});
-  if(!ok)return;
-  try{await api('/custom_fields?id=eq.'+id,{m:'DELETE'});toast('Custom field deleted');loadCustomFieldSettings();}
+  try{
+    var rows=await api('/custom_fields?id=eq.'+id+'&select=active,field_label');
+    var current=rows?.[0]||{};
+    if(current.active!==false){
+      var ok=await appConfirmAction({title:'Deactivate custom field',message:'Deactivate this custom field instead of deleting it?',detail:'Existing values are retained and the field can be reactivated later if needed.',confirmText:'Deactivate field',cancelText:'Back',variant:'danger'});
+      if(!ok)return;
+      await api('/custom_fields?id=eq.'+id,{m:'PATCH',p:'return=minimal',b:{active:false,updated_at:new Date().toISOString()}});
+      toast('Custom field deactivated');
+      loadCustomFieldSettings();
+      return;
+    }
+    if(!(await appConfirmDelete('inactive custom field','Permanent deletion should be used only for duplicate/test fields. Existing values may also be removed by database rules.')))return;
+    await api('/custom_fields?id=eq.'+id,{m:'DELETE'});
+    toast('Inactive custom field permanently deleted');
+    loadCustomFieldSettings();
+  }
   catch(e){toast(e.message,false);}
 }
 async function saveLogo(){
@@ -12955,9 +13005,22 @@ async function invDeleteCurrent(){
   if(!workflowCanMutate('events','investigations'))return;
   if(!isMgr()){toast('Only managers/admins can delete investigations.',false);return;}
   if(!imsInvEditId)return;
-  var ok=await appConfirm({title:'Delete investigation',message:'Delete this investigation?',detail:'This will remove the investigation record linked to the incident.',confirmText:'Delete investigation',cancelText:'Keep investigation',danger:true});
-  if(!ok)return;
-  try{await api('/investigations?id=eq.'+imsInvEditId,{m:'DELETE'});toast('Deleted!');imsInvBack();}
+  try{
+    var rows=await api('/investigations?id=eq.'+imsInvEditId+'&select=status');
+    var current=rows?.[0]||{};
+    if(current.status!=='closed'){
+      var ok=await appConfirmAction({title:'Close/archive investigation',message:'Close this investigation instead of deleting it?',detail:'The investigation stays traceable for legal, insurance and audit evidence.',confirmText:'Close investigation',cancelText:'Back',variant:'danger'});
+      if(!ok)return;
+      await api('/investigations?id=eq.'+imsInvEditId,{m:'PATCH',p:'return=minimal',b:{status:'closed',updated_at:new Date().toISOString()}});
+      toast('Investigation closed/archived');
+      imsInvBack();
+      return;
+    }
+    if(!(await appConfirmDelete('closed investigation','Permanent deletion should be used only for duplicate/test investigations.')))return;
+    await api('/investigations?id=eq.'+imsInvEditId,{m:'DELETE'});
+    toast('Closed investigation permanently deleted');
+    imsInvBack();
+  }
   catch(e){toast(e.message,false);}
 }
 
