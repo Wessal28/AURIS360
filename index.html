@@ -25524,7 +25524,7 @@ function auditFilter() {
     var cfg = AUDIT_TYPE_CFG[type] || AUDIT_TYPE_CFG.workplace;
     var score = (x.score_good!=null&&(x.score_good+x.score_insuf)>0) ? Math.round(x.score_good/(x.score_good+x.score_insuf)*100) : null;
     var scoreColor = score==null?'#6B7280':score>=80?'#1D9E75':score>=60?'#EF9F27':'#DC2626';
-    var stCfg = {open:['#FCEBEB','#A32D2D'],in_progress:['#EFF6FF','#185FA5'],completed:['#EAF3DE','#3B6D11'],closed:['#EAF3DE','#3B6D11']};
+    var stCfg = {open:['#FCEBEB','#A32D2D'],in_progress:['#EFF6FF','#185FA5'],completed:['#EAF3DE','#3B6D11'],closed:['#EAF3DE','#3B6D11'],archived:['#f3f4f6','#6B7280']};
     var sc = stCfg[x.status||'open']||stCfg.open;
     var isOverdue = x.status!=='closed'&&x.status!=='completed'&&x.planned_date&&new Date(x.planned_date)<new Date();
     var ref = x.reference_no||(x.id?x.id.slice(0,8):'-');
@@ -25893,11 +25893,22 @@ function saveInspection(){auditSave();}  // backward compat
 
 async function auditDelete() {
   if(!auditEditId)return;
-  if(!(await appConfirmDelete('inspection')))return;
+  var current=auditAllData.find(function(x){return x.id===auditEditId;})||{};
+  var st=current.status||'open';
+  if(['completed','closed','in_progress'].includes(st)){
+    if(!(await appConfirmAction({title:'Archive inspection',message:'Archive this inspection instead of deleting it?',detail:'The inspection will be removed from active work but retained for audit history and evidence traceability.',confirmText:'Archive inspection',cancelText:'Back'})))return;
+    try{
+      await api('/inspections?id=eq.'+auditEditId,{m:'PATCH',p:'return=minimal',b:{status:'archived',archived_at:new Date().toISOString(),updated_at:new Date().toISOString()}});
+      var rec=auditAllData.find(function(x){return x.id===auditEditId;});if(rec)Object.assign(rec,{status:'archived',archived_at:new Date().toISOString()});
+      toast('Inspection archived and kept for audit history');auditBackToList();
+    }catch(e){toast(e.message,false);}
+    return;
+  }
+  if(!(await appConfirmDelete('inspection','Permanent deletion is intended only for open, draft or test inspection records.')))return;
   try{
     var deleted=await api('/inspections?id=eq.'+auditEditId,{m:'DELETE',p:'return=representation'});
     if(Array.isArray(deleted)&&!deleted.length)throw new Error('Record not found or permission denied');
-    toast('Deleted!');auditBackToList();
+    toast('Inspection permanently deleted');auditBackToList();
   }
   catch(e){toast(e.message,false);}
 }
@@ -26198,17 +26209,32 @@ async function psSave(){
 
 async function psDelete(){
   if(!window.psEditId)return;
-  if(!(await appConfirmDelete('pre-start inspection')))return;
+  var current=auditAllData.find(function(x){return x.id===window.psEditId;})||{};
+  if((current.status||'completed')!=='archived'){
+    if(!(await appConfirmAction({title:'Archive pre-start inspection',message:'Archive this pre-start inspection instead of deleting it?',detail:'The record will remain available for traceability and evidence.',confirmText:'Archive inspection',cancelText:'Back'})))return;
+    try{
+      await api('/inspections?id=eq.'+window.psEditId,{m:'PATCH',p:'return=minimal',b:{status:'archived',archived_at:new Date().toISOString(),updated_at:new Date().toISOString()}});
+      toast('Pre-start inspection archived');psShowList();
+    }catch(e){toast(e.message,false);}
+    return;
+  }
+  if(!(await appConfirmDelete('pre-start inspection','Permanent deletion is intended only for archived duplicate/test records.')))return;
   try{
     var deleted=await api('/inspections?id=eq.'+window.psEditId,{m:'DELETE',p:'return=representation'});
     if(Array.isArray(deleted)&&!deleted.length)throw new Error('Record not found or permission denied');
-    toast('Deleted!');psShowList();
+    toast('Pre-start inspection permanently deleted');psShowList();
   }catch(e){toast(e.message,false);}
 }
 
 async function psDeleteFromList(id){
-  if(!(await appConfirmDelete('pre-start inspection')))return;
-  api('/inspections?id=eq.'+id,{m:'DELETE',p:'return=representation'}).then(function(d){if(Array.isArray(d)&&!d.length)throw new Error('Record not found or permission denied');psLoad();toast('Deleted!');}).catch(function(e){toast(e.message,false);});
+  var current=auditAllData.find(function(x){return x.id===id;})||{};
+  if((current.status||'completed')!=='archived'){
+    if(!(await appConfirmAction({title:'Archive pre-start inspection',message:'Archive this pre-start inspection instead of deleting it?',detail:'The record will remain available for traceability and evidence.',confirmText:'Archive inspection',cancelText:'Back'})))return;
+    api('/inspections?id=eq.'+id,{m:'PATCH',p:'return=minimal',b:{status:'archived',archived_at:new Date().toISOString(),updated_at:new Date().toISOString()}}).then(function(){psLoad();toast('Pre-start inspection archived');}).catch(function(e){toast(e.message,false);});
+    return;
+  }
+  if(!(await appConfirmDelete('pre-start inspection','Permanent deletion is intended only for archived duplicate/test records.')))return;
+  api('/inspections?id=eq.'+id,{m:'DELETE',p:'return=representation'}).then(function(d){if(Array.isArray(d)&&!d.length)throw new Error('Record not found or permission denied');psLoad();toast('Pre-start inspection permanently deleted');}).catch(function(e){toast(e.message,false);});
 }
 
 function psDecisionChange(){}  // handled by radio onchange
@@ -34673,7 +34699,7 @@ function fireEquipStatusBadge(s) {
 <div class="form-group"><label class="form-label">Priority</label>
 <select id="audit-priority"><option value="critical">Critical</option><option value="high">High</option><option value="medium" selected>Medium</option><option value="low">Low</option></select></div>
 <div class="form-group"><label class="form-label">Status</label>
-<select id="audit-status"><option value="open">Open</option><option value="in_progress">In Progress</option><option value="completed">Completed</option><option value="closed">Closed</option></select></div>
+<select id="audit-status"><option value="open">Open</option><option value="in_progress">In Progress</option><option value="completed">Completed</option><option value="closed">Closed</option><option value="archived">Archived</option></select></div>
 </div>
 </div>
 
