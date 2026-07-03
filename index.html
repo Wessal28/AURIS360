@@ -3888,27 +3888,27 @@ var ROLE_ALLOWED = {
   'hse_manager': ['dashboard','executive','ai-insights','kpi','workschedule','events','observation',
                   'inspection','risk','tools','fleet','atex','permit','contractor','emergency',
                   'fire','chemical','ohealth','ppe','esg','noise','meetings','training','actions',
-                  'legal','sop','documents','people','users','settings','integrations','approvals','audit'],
+                  'moc','legal','sop','documents','people','users','settings','integrations','approvals','audit'],
   'hse_officer': ['dashboard','executive','ai-insights','kpi','workschedule','events','observation',
                   'inspection','risk','tools','fleet','atex','permit','contractor','emergency',
                   'fire','chemical','ohealth','ppe','esg','noise','meetings','training','actions',
-                  'legal','sop','documents','people','approvals','audit'],
+                  'moc','legal','sop','documents','people','approvals','audit'],
   'executive':   ['dashboard','executive','kpi','workschedule','events','observation',
                   'inspection','risk','tools','fleet','atex','permit','contractor','emergency',
                   'fire','chemical','ohealth','ppe','esg','noise','meetings','training','actions',
-                  'legal','sop','documents','people'],
+                  'moc','legal','sop','documents','people'],
   'manager':     ['dashboard','executive','kpi','workschedule','events','observation',
                   'inspection','risk','tools','fleet','atex','permit','contractor','emergency',
                   'fire','chemical','ohealth','ppe','esg','noise','meetings','training','actions',
-                  'legal','sop','documents','people'],
+                  'moc','legal','sop','documents','people'],
   'site_manager':['dashboard','kpi','workschedule','events','observation','inspection',
                   'risk','tools','fleet','atex','permit','contractor','emergency','fire','chemical','ppe','esg','noise',
-                  'meetings','training','actions','sop','people'],
+                  'meetings','training','actions','moc','sop','people'],
   'supervisor':  ['dashboard','kpi','workschedule','events','observation','inspection',
                   'risk','tools','fleet','atex','permit','contractor','emergency','fire','chemical','ppe','noise',
                   'meetings','training','actions','sop'],
   'auditor':     ['dashboard','events','observation','inspection','risk','legal',
-                  'fire','documents','meetings','actions'],
+                  'fire','documents','meetings','actions','moc'],
   'hr':          ['dashboard','kpi','training','people','documents','ohealth','meetings'],
   'inspector':   ['dashboard','events','observation','inspection','risk','permit',
                   'tools','fleet','atex','ppe','meetings'],
@@ -3997,7 +3997,7 @@ if(target){
   target.classList.add('active');
 }
 if(el&&el.classList)el.classList.add('active');
-const L={dashboard:loadDash,executive:loadExecutive,kpi:kpiLoadAll,workschedule:loadWorkSchedule,events:loadEvents,observation:loadObservation,inspection:()=>{buildChecklist();loadInsps();},risk:loadRA,investigation:loadInvs,legal:loadLegal,sop:loadSOP,tools:loadTools,fleet:loadFleet,atex:loadATEX,permit:loadPermits,contractor:loadContractors,esg:loadESG,emergency:loadEmergency,fire:loadFire,chemical:loadChemical,ohealth:loadOHealth,ppe:loadPPE,noise:loadNoise,meetings:loadMtgs,training:loadTraining,actions:loadActions,documents:loadDocs,people:loadPeople,users:loadUsers,admin:loadAdmin,'ai-insights':genFullAI,approvals:loadApprovals,audit:loadAudit,settings:loadSettings,integrations:loadIntegrations};
+const L={dashboard:loadDash,executive:loadExecutive,kpi:kpiLoadAll,workschedule:loadWorkSchedule,events:loadEvents,observation:loadObservation,inspection:()=>{buildChecklist();loadInsps();},risk:loadRA,investigation:loadInvs,legal:loadLegal,sop:loadSOP,tools:loadTools,fleet:loadFleet,atex:loadATEX,permit:loadPermits,contractor:loadContractors,esg:loadESG,emergency:loadEmergency,fire:loadFire,chemical:loadChemical,ohealth:loadOHealth,ppe:loadPPE,noise:loadNoise,meetings:loadMtgs,training:loadTraining,actions:loadActions,moc:loadMOC,documents:loadDocs,people:loadPeople,users:loadUsers,admin:loadAdmin,'ai-insights':genFullAI,approvals:loadApprovals,audit:loadAudit,settings:loadSettings,integrations:loadIntegrations};
 if(L[name])L[name]();
 // Mobile: close sidebar and scroll to top
 if(window.innerWidth<=768){
@@ -21243,6 +21243,99 @@ async function atexDelete(){
 function atexOpenRA(){showPage('risk',null);setTimeout(function(){if(typeof raLoadTemplate==='function')raLoadTemplate('tpl-atex');},180);}
 function atexOpenPTW(){showPage('permit',null);}
 
+// ===== MANAGEMENT OF CHANGE (MOC) =====
+let mocData=[], mocEditId=null;
+const MOC_TYPE_LABELS={process:'Process change',equipment:'Equipment / machinery',chemical:'Chemical / substance',layout:'Layout / premises',people:'Organisation / people',supplier:'Supplier / contractor',legal:'Legal / permit condition',temporary:'Temporary change',emergency:'Emergency change',other:'Other change'};
+const MOC_STATUS_LABELS={open:'Request / screening',in_progress:'Approved / implementation',pending_verification:'Post-change review',closed:'Closed',cancelled:'Rejected / cancelled'};
+function mocStatusBadge(status){var st=status||'open';var cfg=MAP_STATUS_CFG[st]||MAP_STATUS_CFG.open;return '<span class="badge" style="background:'+cfg.bg+';color:'+cfg.tc+'">'+(MOC_STATUS_LABELS[st]||cfg.label)+'</span>';}
+function mocPriorityBadge(priority){var p=priority||'medium';var cfg=MAP_PRIORITY_CFG[p]||MAP_PRIORITY_CFG.medium;return '<span class="badge" style="background:'+cfg.bg+';color:'+cfg.tc+'">'+cfg.label+'</span>';}
+function mocRef(x){return x.source_ref||x.action_ref||('MOC-'+String(x.id||'').slice(0,8));}
+function mocMetaFromDescription(desc,key){var m=String(desc||'').match(new RegExp('^'+key+':\\s*(.*)$','mi'));return m?m[1].trim():'';}
+function mocBuildDescription(){
+  var g=function(id){var el=document.getElementById(id);return el?el.value||'':'';};
+  var impacts=[].slice.call(document.querySelectorAll('.moc-impact:checked')).map(function(x){return x.value;});
+  return [
+    'Change type: '+(MOC_TYPE_LABELS[g('moc-type')]||g('moc-type')||'Change'),
+    'Reason: '+g('moc-reason'),
+    'Current situation: '+g('moc-current'),
+    'Proposed change: '+g('moc-proposed'),
+    'Impacted areas: '+(impacts.join(', ')||'None selected'),
+    'Risk review: '+g('moc-risk-review'),
+    'Pre-implementation actions: '+g('moc-pre-actions'),
+    'Post-change verification: '+g('moc-post-review')
+  ].join('\n');
+}
+async function loadMOC(){
+  var list=document.getElementById('moc-list');if(list)list.innerHTML='<div class="loading-msg">Loading MOC register...</div>';
+  try{
+    mocData=await api('/action_tracker?select=*'+cf()+'&source_module=eq.moc&order=created_at.desc')||[];
+    mocRender();
+  }catch(e){
+    if(list)list.innerHTML='<div class="card" style="color:var(--red)">MOC register unavailable: '+escH(e.message)+'</div>';
+  }
+}
+function mocRender(){
+  var total=mocData.length, open=mocData.filter(x=>['open','in_progress'].includes(x.status)).length, review=mocData.filter(x=>x.status==='pending_verification').length, closed=mocData.filter(x=>x.status==='closed').length;
+  [['moc-m-total',total],['moc-m-open',open],['moc-m-review',review],['moc-m-closed',closed]].forEach(function(p){var el=document.getElementById(p[0]);if(el)el.textContent=p[1];});
+  var q=(document.getElementById('moc-search')?.value||'').toLowerCase();
+  var fs=document.getElementById('moc-filter-status')?.value||'';
+  var rows=mocData.filter(function(x){var hay=[mocRef(x),x.title,x.description,x.responsible,x.location,x.priority,x.status].join(' ').toLowerCase();return (!q||hay.includes(q))&&(!fs||x.status===fs);});
+  var el=document.getElementById('moc-list');if(!el)return;
+  if(!rows.length){el.innerHTML='<div class="empty">No management of change records yet.</div>';return;}
+  var h='<div class="card" style="padding:0;overflow:hidden"><table><thead><tr><th>Ref</th><th>Change</th><th>Type</th><th>Owner</th><th>Target</th><th>Risk</th><th>Status</th><th></th></tr></thead><tbody>';
+  rows.forEach(function(x){
+    var type=mocMetaFromDescription(x.description,'Change type')||'Change';
+    h+='<tr><td style="font-family:monospace;font-weight:700;color:var(--green)">'+escH(mocRef(x))+'</td><td><div style="font-weight:700">'+escH(x.title||'Change request')+'</div><div style="font-size:11px;color:var(--text2)">'+escH((x.location||'')+(x.department?' - '+x.department:''))+'</div></td><td>'+escH(type)+'</td><td>'+escH(x.assigned_to_name||x.responsible||'--')+'</td><td>'+(x.target_date?new Date(x.target_date).toLocaleDateString('en-GB'):'--')+'</td><td>'+mocPriorityBadge(x.priority)+'</td><td>'+mocStatusBadge(x.status)+'</td><td><button class="btn btn-sm" data-id="'+x.id+'" onclick="mocEdit(this.dataset.id)"><i class="ti ti-edit"></i></button></td></tr>';
+  });
+  el.innerHTML=h+'</tbody></table></div>';
+}
+function mocShowForm(show){document.getElementById('moc-register-view').style.display=show?'none':'block';document.getElementById('moc-form-view').style.display=show?'block':'none';}
+function mocNew(){
+  mocEditId=null;document.getElementById('moc-form-title').textContent='New Change Request';document.getElementById('moc-form-ref').textContent='MOC-AUTO';
+  ['moc-title','moc-location','moc-owner','moc-reason','moc-current','moc-proposed','moc-risk-review','moc-pre-actions','moc-post-review'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
+  document.getElementById('moc-type').value='process';document.getElementById('moc-priority').value='medium';document.getElementById('moc-status').value='open';document.getElementById('moc-target').value='';
+  document.querySelectorAll('.moc-impact').forEach(function(cb){cb.checked=false;});
+  fillPersonSelect('moc-owner',prof?.full_name||personFullName(prof));
+  mocShowForm(true);
+}
+function mocEdit(id){
+  var x=mocData.find(r=>r.id===id);if(!x)return;mocEditId=id;
+  document.getElementById('moc-form-title').textContent='Edit Change Request';document.getElementById('moc-form-ref').textContent=mocRef(x);
+  document.getElementById('moc-title').value=x.title||'';document.getElementById('moc-location').value=x.location||'';document.getElementById('moc-priority').value=x.priority||'medium';document.getElementById('moc-status').value=x.status||'open';document.getElementById('moc-target').value=x.target_date||'';
+  var typeTxt=mocMetaFromDescription(x.description,'Change type');var typeKey=Object.keys(MOC_TYPE_LABELS).find(k=>MOC_TYPE_LABELS[k]===typeTxt)||'other';document.getElementById('moc-type').value=typeKey;
+  fillPersonSelect('moc-owner',x.assigned_to_id||x.responsible||x.assigned_to_name);
+  document.getElementById('moc-reason').value=mocMetaFromDescription(x.description,'Reason');
+  document.getElementById('moc-current').value=mocMetaFromDescription(x.description,'Current situation');
+  document.getElementById('moc-proposed').value=mocMetaFromDescription(x.description,'Proposed change');
+  document.getElementById('moc-risk-review').value=mocMetaFromDescription(x.description,'Risk review');
+  document.getElementById('moc-pre-actions').value=mocMetaFromDescription(x.description,'Pre-implementation actions');
+  document.getElementById('moc-post-review').value=mocMetaFromDescription(x.description,'Post-change verification');
+  var impacts=(mocMetaFromDescription(x.description,'Impacted areas')||'').split(',').map(s=>s.trim());
+  document.querySelectorAll('.moc-impact').forEach(function(cb){cb.checked=impacts.indexOf(cb.value)!==-1;});
+  mocShowForm(true);
+}
+async function mocSave(){
+  var title=document.getElementById('moc-title')?.value?.trim();if(!title){toast('Please enter the change title',false);return;}
+  var ownerSel=document.getElementById('moc-owner');var ownerId=ownerSel?.value||null;var ownerName='';
+  if(ownerId){var p=(people||[]).find(x=>x.id===ownerId);ownerName=p?(p.last_name+', '+p.first_name):ownerId;}
+  var body={company_id:ccid(),title:title,description:mocBuildDescription(),action_type:'preventive',priority:document.getElementById('moc-priority')?.value||'medium',status:document.getElementById('moc-status')?.value||'open',source_type:'moc',source_module:'moc',location:document.getElementById('moc-location')?.value||null,target_date:document.getElementById('moc-target')?.value||null,assigned_to_id:ownerId||null,assigned_to_name:ownerName||null,responsible:ownerName||null,updated_at:new Date().toISOString()};
+  try{
+    if(mocEditId){await api('/action_tracker?id=eq.'+mocEditId,{m:'PATCH',p:'return=minimal',b:body});toast('MOC updated');}
+    else{body.created_by=prof?.id;var res=await api('/action_tracker',{m:'POST',p:'return=representation',b:body});if(res?.[0]?.id){var ref='MOC-'+new Date().getFullYear()+'-'+String(mocData.length+1).padStart(3,'0');await api('/action_tracker?id=eq.'+res[0].id,{m:'PATCH',p:'return=minimal',b:{source_ref:ref,action_ref:ref}});toast('MOC created: '+ref);}}
+    mocShowForm(false);loadMOC();
+  }catch(e){toast(e.message,false);}
+}
+async function mocDelete(){
+  if(!mocEditId)return;
+  var x=mocData.find(r=>r.id===mocEditId)||{};
+  try{
+    if(x.status!=='cancelled'){if(!(await appConfirmAction({title:'Cancel MOC request',message:'Cancel this change request instead of deleting it?',detail:'Cancelled changes remain traceable for audit and management review.',confirmText:'Cancel request',cancelText:'Back',variant:'danger'})))return;await api('/action_tracker?id=eq.'+mocEditId,{m:'PATCH',p:'return=minimal',b:{status:'cancelled',updated_at:new Date().toISOString()}});toast('MOC cancelled');mocShowForm(false);loadMOC();return;}
+    if(!(await appConfirmDelete('cancelled MOC request','Permanent deletion should be used only for duplicate/test records.')))return;
+    await api('/action_tracker?id=eq.'+mocEditId,{m:'DELETE'});toast('MOC deleted');mocShowForm(false);loadMOC();
+  }catch(e){toast(e.message,false);}
+}
+function mocOpenMap(){showPage('actions',null);setTimeout(function(){var src=document.getElementById('map-filter-source');if(src){src.value='moc';mapRenderList();}},160);}
+
 // ===== MAP_JS.JS =====
 // ===================================================================
 // MASTER ACTION PLAN (MAP) / CAPA MODULE — Full Rebuild
@@ -21270,6 +21363,7 @@ const MAP_PRIORITY_CFG={
 };
 
 const MAP_SOURCE_CFG={
+  moc:             {emoji:'MOC',label:'Management of Change',color:'#0F6E56'},
   incident:        {emoji:'🚨',label:'Incident',          color:'#DC2626'},
   audit:           {emoji:'🔎',label:'Audit',             color:'#185FA5'},
   inspection:      {emoji:'📋',label:'Inspection',        color:'#1D9E75'},
@@ -27103,6 +27197,7 @@ var LAUNCHED_MODULES = [
   'fleet',         // Fleet Management
   'atex',          // ATEX / Hazardous Areas
   'actions',       // Master Action Plan - core workflow follow-up
+  'moc',           // Management of Change
   'sop',           // SOP Generator — internal/admin rollout
   // To activate more: add module key here and redeploy
 ];
@@ -27373,6 +27468,7 @@ var MODULES_DIR = [
   {k:'training',    i:'ti-certificate',        l:'Training',            sec:'HSE Modules'},
   // Management
   {k:'actions',     i:'ti-list-check',         l:'Master Action Plan',  sec:'Management'},
+  {k:'moc',         i:'ti-arrows-exchange',    l:'Management of Change',sec:'Management'},
   {k:'legal',       i:'ti-scale',              l:'Legal Compliance',    sec:'Management'},
   {k:'sop',         i:'ti-file-description',   l:'SOP Generator',       sec:'Management'},
   {k:'documents',   i:'ti-files',              l:'Document Control',    sec:'Management'},
@@ -27444,9 +27540,20 @@ document.addEventListener('click', function(e){
   modulesMenuClose();
 });
 
+function ensureMocSidebarItem(){
+  if(document.getElementById('nav-moc'))return;
+  var actions=document.getElementById('nav-actions')||Array.from(document.querySelectorAll('.nav-item')).find(function(el){return (el.getAttribute('onclick')||'').indexOf("showPage('actions'")!==-1;});
+  if(!actions||!actions.parentNode)return;
+  var item=document.createElement('div');
+  item.className='nav-item';item.id='nav-moc';item.setAttribute('onclick',"showPage('moc',this)");
+  item.innerHTML='<i class="ti ti-arrows-exchange"></i><span>Management of Change</span>';
+  actions.parentNode.insertBefore(item,actions.nextSibling);
+}
+
 function applyRoles() {
   var role = activeRole();
   var level = getRoleLevel(role);
+  ensureMocSidebarItem();
 
   // ── Phase 1: ensure every nav-item has an ID we can target ──
   // Most static <div class="nav-item" onclick="showPage('X',this)"> items have
@@ -28360,7 +28467,8 @@ var MODULE_CATALOGUE = [
   {k:'sop',         l:'SOP Generator'},
   {k:'documents',   l:'Document Control'},
   {k:'people',      l:'People'},
-  {k:'actions',     l:'Master Action Plan'}
+  {k:'actions',     l:'Master Action Plan'},
+  {k:'moc',         l:'Management of Change'}
 ];
 // The default set granted to a new pilot client (matches LAUNCHED_MODULES HSE set).
 var DEFAULT_CLIENT_MODULES = ['dashboard','kpi','events','observation','training','meetings','ppe','emergency','permit'];
@@ -28536,6 +28644,7 @@ var MODULE_CATALOG = [
   { key:'documents',   icon:'ti-file',             name:'Documents' },
   { key:'sop',         icon:'ti-book',             name:'SOPs' },
   { key:'actions',     icon:'ti-checkbox',         name:'Action Tracker' },
+  { key:'moc',         icon:'ti-arrows-exchange',  name:'Management of Change' },
   { key:'esg',         icon:'ti-leaf',             name:'ESG' },
 ];
 
@@ -29586,6 +29695,7 @@ var MOBILE_MODULES = [
   {k:'meetings',     l:'Meetings',     i:'ti-users',              r:['all']},
   {k:'training',     l:'Training',     i:'ti-school',             r:['all']},
   {k:'actions',      l:'Actions',      i:'ti-checklist',          r:['all']},
+  {k:'moc',          l:'MOC',          i:'ti-arrows-exchange',    r:['admin','hse_manager','hse_officer','manager','site_manager','auditor','sephs_admin']},
   {k:'legal',        l:'Legal',        i:'ti-gavel',              r:['admin','hse_manager','auditor','sephs_admin']},
   {k:'sop',          l:'SOPs',         i:'ti-book',               r:['admin','hse_manager','supervisor','sephs_admin']},
   {k:'documents',    l:'Documents',    i:'ti-files',              r:['admin','hse_manager','hr','auditor','sephs_admin']},
@@ -29603,6 +29713,7 @@ var MODULE_COLORS = {
   dashboard:'#185FA5', executive:'#5B21B6', kpi:'#185FA5',
   workschedule:'#065F46', events:'#DC2626', observation:'#9A3412',
   inspection:'#1D9E75', risk:'#C2410C', tools:'#374151', fleet:'#185FA5', atex:'#C2410C',
+  moc:'#0F6E56',
   permit:'#854F0B', contractor:'#0891B2', emergency:'#DC2626', fire:'#B91C1C', chemical:'#7C3AED',
   ohealth:'#065F46', ppe:'#1D9E75', esg:'#065F46',
   noise:'#EF9F27', meetings:'#185FA5', training:'#5B21B6',
@@ -39898,6 +40009,87 @@ function fireEquipStatusBadge(s) {
 
 </div><!-- end page-training -->
 
+<div id="page-moc" class="page">
+<div class="page-header">
+<div>
+<div class="page-title">Management of Change</div>
+<div style="font-size:12px;color:var(--text2)">Control process, equipment, chemical, legal and organisational changes before they create new risks</div>
+</div>
+<div style="display:flex;gap:8px;flex-wrap:wrap">
+<button class="btn" onclick="mocOpenMap()"><i class="ti ti-list-check"></i>Open linked MAP</button>
+<button class="btn btn-primary" onclick="mocNew()"><i class="ti ti-plus"></i>New change request</button>
+</div>
+</div>
+
+<div id="moc-register-view">
+<div class="metrics">
+<div class="metric"><div class="metric-label">Total MOC</div><div class="metric-value" id="moc-m-total">0</div></div>
+<div class="metric"><div class="metric-label">Open / Implementation</div><div class="metric-value" id="moc-m-open">0</div></div>
+<div class="metric"><div class="metric-label">Post-change review</div><div class="metric-value" id="moc-m-review">0</div></div>
+<div class="metric"><div class="metric-label">Closed</div><div class="metric-value" id="moc-m-closed">0</div></div>
+</div>
+<div class="card" style="padding:12px 14px">
+<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+<input id="moc-search" type="text" placeholder="Search change title, reference, owner, location..." oninput="mocRender()" style="flex:1;min-width:220px"/>
+<select id="moc-filter-status" onchange="mocRender()" style="max-width:240px">
+<option value="">All statuses</option>
+<option value="open">Request / screening</option>
+<option value="in_progress">Approved / implementation</option>
+<option value="pending_verification">Post-change review</option>
+<option value="closed">Closed</option>
+<option value="cancelled">Rejected / cancelled</option>
+</select>
+</div>
+</div>
+<div id="moc-list"></div>
+</div>
+
+<div id="moc-form-view" style="display:none">
+<div class="card" style="padding:0;overflow:hidden">
+<div style="padding:16px 22px;background:#0F6E56;color:#fff;display:flex;justify-content:space-between;gap:12px;align-items:flex-start">
+<div><div style="font-size:11px;text-transform:uppercase;opacity:.8;letter-spacing:.08em">Management of Change</div><div style="font-size:20px;font-weight:800" id="moc-form-title">New Change Request</div><div id="moc-form-ref" style="font-family:monospace;font-size:12px;opacity:.85">MOC-AUTO</div></div>
+<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn" style="background:rgba(255,255,255,.18);color:#fff;border-color:rgba(255,255,255,.35)" onclick="mocShowForm(false)"><i class="ti ti-arrow-left"></i>Back</button><button class="btn" style="background:rgba(220,38,38,.25);color:#fff;border-color:rgba(220,38,38,.45)" onclick="mocDelete()"><i class="ti ti-trash"></i></button><button class="btn" style="background:#fff;color:#0F6E56;border-color:#fff" onclick="mocSave()"><i class="ti ti-device-floppy"></i>Save MOC</button></div>
+</div>
+<div style="padding:18px 22px">
+<div class="form-row">
+<div class="form-group"><label class="form-label">Change title *</label><input id="moc-title" placeholder="e.g. Replace solvent, install new machine, change process layout"/></div>
+<div class="form-group"><label class="form-label">Change type</label><select id="moc-type"><option value="process">Process change</option><option value="equipment">Equipment / machinery</option><option value="chemical">Chemical / substance</option><option value="layout">Layout / premises</option><option value="people">Organisation / people</option><option value="supplier">Supplier / contractor</option><option value="legal">Legal / permit condition</option><option value="temporary">Temporary change</option><option value="emergency">Emergency change</option><option value="other">Other change</option></select></div>
+</div>
+<div class="form-row3">
+<div class="form-group"><label class="form-label">Owner / responsible</label><select id="moc-owner"></select></div>
+<div class="form-group"><label class="form-label">Risk priority</label><select id="moc-priority"><option value="low">Low</option><option value="medium">Medium</option><option value="high">High</option><option value="critical">Critical</option></select></div>
+<div class="form-group"><label class="form-label">Status</label><select id="moc-status"><option value="open">Request / screening</option><option value="in_progress">Approved / implementation</option><option value="pending_verification">Post-change review</option><option value="closed">Closed</option><option value="cancelled">Rejected / cancelled</option></select></div>
+</div>
+<div class="form-row">
+<div class="form-group"><label class="form-label">Location / department</label><input id="moc-location" placeholder="Site, department, area"/></div>
+<div class="form-group"><label class="form-label">Target implementation / review date</label><input id="moc-target" type="date"/></div>
+</div>
+<div class="form-group"><label class="form-label">Reason for change</label><textarea id="moc-reason" placeholder="Why is this change required?"></textarea></div>
+<div class="form-row">
+<div class="form-group"><label class="form-label">Current situation</label><textarea id="moc-current" placeholder="Describe the existing condition, process or control."></textarea></div>
+<div class="form-group"><label class="form-label">Proposed change</label><textarea id="moc-proposed" placeholder="Describe what will change."></textarea></div>
+</div>
+<div class="card" style="padding:14px;margin:8px 0 14px"><div class="card-title">Impact screening</div>
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:8px;font-size:12px">
+<label><input class="moc-impact" type="checkbox" value="Risk assessment" style="width:auto;margin-right:6px">Risk assessment</label>
+<label><input class="moc-impact" type="checkbox" value="Legal compliance" style="width:auto;margin-right:6px">Legal compliance</label>
+<label><input class="moc-impact" type="checkbox" value="SOP / documents" style="width:auto;margin-right:6px">SOP / documents</label>
+<label><input class="moc-impact" type="checkbox" value="Training" style="width:auto;margin-right:6px">Training</label>
+<label><input class="moc-impact" type="checkbox" value="Permit to Work" style="width:auto;margin-right:6px">Permit to Work</label>
+<label><input class="moc-impact" type="checkbox" value="Emergency response" style="width:auto;margin-right:6px">Emergency response</label>
+<label><input class="moc-impact" type="checkbox" value="Chemical / SDS" style="width:auto;margin-right:6px">Chemical / SDS</label>
+<label><input class="moc-impact" type="checkbox" value="Fire / ATEX" style="width:auto;margin-right:6px">Fire / ATEX</label>
+</div></div>
+<div class="form-row">
+<div class="form-group"><label class="form-label">Risk review / controls required</label><textarea id="moc-risk-review" placeholder="Summarise RA, controls, PTW, legal, fire, chemical or emergency checks required."></textarea></div>
+<div class="form-group"><label class="form-label">Pre-implementation actions</label><textarea id="moc-pre-actions" placeholder="Actions required before change goes live."></textarea></div>
+</div>
+<div class="form-group"><label class="form-label">Post-change verification</label><textarea id="moc-post-review" placeholder="How will effectiveness be checked after implementation?"></textarea></div>
+</div>
+</div>
+</div>
+</div><!-- end page-moc -->
+
 <div id="page-actions" class="page">
 <div class="page-header">
 <div>
@@ -39942,7 +40134,7 @@ function fireEquipStatusBadge(s) {
 <option value="inspection">Inspection</option><option value="complaint">Complaint</option>
 <option value="risk_assessment">Risk Assessment</option><option value="toolbox_talk">Toolbox Talk</option>
 <option value="permit">Permit</option><option value="ohealth">Occupational Health</option>
-<option value="esg">Environmental / ESG</option><option value="ppe">PPE</option><option value="manual">Manual</option>
+<option value="esg">Environmental / ESG</option><option value="ppe">PPE</option><option value="moc">Management of Change</option><option value="manual">Manual</option>
 </select>
 <select id="filter-priority" onchange="mapRenderList()" style="padding:7px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px">
 <option value="">All priorities</option>
