@@ -7906,8 +7906,17 @@ async function mtgSaveSeries(){
 
 async function mtgDeleteSeries(){
   if(!mtgEditingSeriesId)return;
-  if(!(await appConfirmAction({title:'Delete meeting schedule',message:'Delete this meeting schedule?',detail:'Past minutes will not be deleted.',confirmText:'Delete schedule',cancelText:'Keep schedule'})))return;
   try{
+    var rows=await api('/meeting_series?id=eq.'+mtgEditingSeriesId+'&select=active,notes');
+    var current=rows?.[0]||{};
+    if(current.active!==false&&!ohIsArchivedText(current.notes)){
+      if(!(await appConfirmAction({title:'Deactivate meeting schedule',message:'Deactivate this meeting schedule instead of deleting it?',detail:'Past minutes and schedule history remain traceable.',confirmText:'Deactivate schedule',cancelText:'Back',variant:'danger'})))return;
+      await api('/meeting_series?id=eq.'+mtgEditingSeriesId,{m:'PATCH',p:'return=minimal',b:{active:false,notes:ohArchivedText(current.notes),updated_at:new Date().toISOString()}});
+      toast('Schedule deactivated');
+      mtgSeriesBack();
+      return;
+    }
+    if(!(await appConfirmDelete('inactive meeting schedule','Permanent deletion should be used only for duplicate/test schedules.')))return;
     await api('/meeting_series?id=eq.'+mtgEditingSeriesId,{m:'DELETE'});
     toast('Schedule deleted!');
     mtgSeriesBack();
@@ -8248,8 +8257,17 @@ async function mtgSaveMom(){
 
 async function mtgDeleteMom(){
   if(!mtgEditingMomId)return;
-  if(!(await appConfirmDelete('meeting minutes','This cannot be undone. Linked meeting actions will also be removed.')))return;
   try{
+    var rows=await api('/hse_meetings?id=eq.'+mtgEditingMomId+'&select=status,summary');
+    var current=rows?.[0]||{};
+    if(current.status!=='cancelled'&&!ohIsArchivedText(current.summary)){
+      if(!(await appConfirmAction({title:'Cancel meeting minutes',message:'Cancel/archive these minutes instead of deleting them?',detail:'Meeting minutes and linked actions remain available for audit history.',confirmText:'Cancel minutes',cancelText:'Back',variant:'danger'})))return;
+      await api('/hse_meetings?id=eq.'+mtgEditingMomId,{m:'PATCH',p:'return=minimal',b:{status:'cancelled',summary:ohArchivedText(current.summary),updated_at:new Date().toISOString()}});
+      toast('Minutes cancelled/archived');
+      mtgMomBack();
+      return;
+    }
+    if(!(await appConfirmDelete('cancelled meeting minutes','Permanent deletion should be used only for duplicate/test minutes. Linked meeting actions will also be removed.')))return;
     await api('/action_tracker?source_module=eq.meeting&source_id=eq.'+mtgEditingMomId,{m:'DELETE'});
     await api('/hse_meetings?id=eq.'+mtgEditingMomId,{m:'DELETE'});
     toast('Minutes deleted!');
@@ -8572,8 +8590,17 @@ async function mtgOpenMom(id){
 }
 
 async function mtgDeleteMomFromList(id){
-  if(!(await appConfirmDelete('meeting minutes','This cannot be undone. Linked meeting actions will also be removed.')))return;
   try{
+    var rows=await api('/hse_meetings?id=eq.'+id+'&select=status,summary');
+    var current=rows?.[0]||{};
+    if(current.status!=='cancelled'&&!ohIsArchivedText(current.summary)){
+      if(!(await appConfirmAction({title:'Cancel meeting minutes',message:'Cancel/archive these minutes instead of deleting them?',detail:'Meeting minutes and linked actions remain available for audit history.',confirmText:'Cancel minutes',cancelText:'Back',variant:'danger'})))return;
+      await api('/hse_meetings?id=eq.'+id,{m:'PATCH',p:'return=minimal',b:{status:'cancelled',summary:ohArchivedText(current.summary),updated_at:new Date().toISOString()}});
+      toast('Minutes cancelled/archived');
+      mtgLoadMinutes();
+      return;
+    }
+    if(!(await appConfirmDelete('cancelled meeting minutes','Permanent deletion should be used only for duplicate/test minutes. Linked meeting actions will also be removed.')))return;
     await api('/action_tracker?source_module=eq.meeting&source_id=eq.'+id,{m:'DELETE'});
     await api('/hse_meetings?id=eq.'+id,{m:'DELETE'});
     toast('Minutes deleted!');
@@ -10584,8 +10611,17 @@ async function sopDuplicateSave(){
 
 async function sopDuplicateDelete(){
   if(!sopEditingId)return;
-  if(!(await appConfirmDelete('SOP draft','This will remove the SOP draft from the generator.')))return;
   try{
+    var rows=await api('/sop_documents?id=eq.'+sopEditingId+'&select=status,description');
+    var current=rows?.[0]||{};
+    if(String(current.status||'draft').toLowerCase()!=='archived'&&!ohIsArchivedText(current.description)){
+      if(!(await appConfirmAction({title:'Archive SOP draft',message:'Archive this SOP draft instead of deleting it?',detail:'SOP drafts can be useful evidence of document development and review.',confirmText:'Archive draft',cancelText:'Back',variant:'danger'})))return;
+      await api('/sop_documents?id=eq.'+sopEditingId,{m:'PATCH',p:'return=minimal',b:{status:'archived',description:ohArchivedText(current.description),updated_at:new Date().toISOString()}});
+      toast('SOP archived');
+      sopShowList();
+      return;
+    }
+    if(!(await appConfirmDelete('archived SOP draft','Permanent deletion should be used only for duplicate/test SOPs.')))return;
     await api('/sop_documents?id=eq.'+sopEditingId,{m:'DELETE'});
     toast('Deleted!');
     sopShowList();
@@ -10609,9 +10645,19 @@ function sopDuplicateSaveToDocControl(){
 }
 
 async function sopDelete(id){
+  id=id||sopEditingId;
   if(!id)return;
-  if(!(await appConfirmDelete('SOP','This will permanently delete this SOP draft/document.')))return;
   try{
+    var rows=await api('/sop_documents?id=eq.'+id+'&select=status,description');
+    var current=rows?.[0]||{};
+    if(String(current.status||'draft').toLowerCase()!=='archived'&&!ohIsArchivedText(current.description)){
+      if(!(await appConfirmAction({title:'Archive SOP',message:'Archive this SOP instead of deleting it?',detail:'SOPs are controlled document evidence and should remain traceable.',confirmText:'Archive SOP',cancelText:'Back',variant:'danger'})))return;
+      await api('/sop_documents?id=eq.'+id,{m:'PATCH',p:'return=minimal',b:{status:'archived',description:ohArchivedText(current.description),updated_at:new Date().toISOString()}});
+      toast('SOP archived');
+      sopLoadList();
+      return;
+    }
+    if(!(await appConfirmDelete('archived SOP','Permanent deletion should be used only for duplicate/test SOPs.')))return;
     await api('/sop_documents?id=eq.'+id,{m:'DELETE'});
     toast('SOP deleted!');
     sopLoadList();
@@ -24507,8 +24553,21 @@ async function tbtSave(){
 
 async function tbtDelete(){
   if(!tbtEditId)return;
-  if(!(await appConfirmDelete('toolbox talk record')))return;
-  try{await api('/toolbox_talks?id=eq.'+tbtEditId,{m:'DELETE'});toast('Deleted!');tbtBack();}catch(e){toast(e.message,false);}
+  try{
+    var rows=await api('/toolbox_talks?id=eq.'+tbtEditId+'&select=status,notes');
+    var current=rows?.[0]||{};
+    if(String(current.status||'completed').toLowerCase()!=='archived'&&!ohIsArchivedText(current.notes)){
+      if(!(await appConfirmAction({title:'Archive toolbox talk',message:'Archive this toolbox talk instead of deleting it?',detail:'Toolbox talks are training/communication evidence and should remain traceable.',confirmText:'Archive TBT',cancelText:'Back',variant:'danger'})))return;
+      await api('/toolbox_talks?id=eq.'+tbtEditId,{m:'PATCH',p:'return=minimal',b:{status:'archived',notes:ohArchivedText(current.notes),updated_at:new Date().toISOString()}});
+      toast('TBT archived');
+      tbtBack();
+      return;
+    }
+    if(!(await appConfirmDelete('archived toolbox talk','Permanent deletion should be used only for duplicate/test toolbox talks.')))return;
+    await api('/toolbox_talks?id=eq.'+tbtEditId,{m:'DELETE'});
+    toast('Deleted!');
+    tbtBack();
+  }catch(e){toast(e.message,false);}
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -24631,8 +24690,21 @@ async function alertSave(){
 
 async function alertDelete(){
   if(!alertEditId)return;
-  if(!(await appConfirmDelete('safety alert')))return;
-  try{await api('/safety_alerts?id=eq.'+alertEditId,{m:'DELETE'});toast('Deleted!');alertBack();}catch(e){toast(e.message,false);}
+  try{
+    var rows=await api('/safety_alerts?id=eq.'+alertEditId+'&select=status,summary');
+    var current=rows?.[0]||{};
+    if(String(current.status||'active').toLowerCase()!=='archived'&&!ohIsArchivedText(current.summary)){
+      if(!(await appConfirmAction({title:'Archive safety alert',message:'Archive this safety alert instead of deleting it?',detail:'Safety alerts are communication evidence and should remain traceable.',confirmText:'Archive alert',cancelText:'Back',variant:'danger'})))return;
+      await api('/safety_alerts?id=eq.'+alertEditId,{m:'PATCH',p:'return=minimal',b:{status:'archived',summary:ohArchivedText(current.summary),updated_at:new Date().toISOString()}});
+      toast('Safety alert archived');
+      alertBack();
+      return;
+    }
+    if(!(await appConfirmDelete('archived safety alert','Permanent deletion should be used only for duplicate/test alerts.')))return;
+    await api('/safety_alerts?id=eq.'+alertEditId,{m:'DELETE'});
+    toast('Deleted!');
+    alertBack();
+  }catch(e){toast(e.message,false);}
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -24751,8 +24823,21 @@ async function bulletinSave(){
 
 async function bulletinDelete(){
   if(!bulletinEditId)return;
-  if(!(await appConfirmDelete('bulletin')))return;
-  try{await api('/safety_bulletins?id=eq.'+bulletinEditId,{m:'DELETE'});toast('Deleted!');bulletinBack();}catch(e){toast(e.message,false);}
+  try{
+    var rows=await api('/safety_bulletins?id=eq.'+bulletinEditId+'&select=status,summary');
+    var current=rows?.[0]||{};
+    if(String(current.status||'published').toLowerCase()!=='archived'&&!ohIsArchivedText(current.summary)){
+      if(!(await appConfirmAction({title:'Archive bulletin',message:'Archive this bulletin instead of deleting it?',detail:'Bulletins are communication evidence and should remain available historically.',confirmText:'Archive bulletin',cancelText:'Back',variant:'danger'})))return;
+      await api('/safety_bulletins?id=eq.'+bulletinEditId,{m:'PATCH',p:'return=minimal',b:{status:'archived',summary:ohArchivedText(current.summary),updated_at:new Date().toISOString()}});
+      toast('Bulletin archived');
+      bulletinBack();
+      return;
+    }
+    if(!(await appConfirmDelete('archived bulletin','Permanent deletion should be used only for duplicate/test bulletins.')))return;
+    await api('/safety_bulletins?id=eq.'+bulletinEditId,{m:'DELETE'});
+    toast('Deleted!');
+    bulletinBack();
+  }catch(e){toast(e.message,false);}
 }
 
 // ===== TRAINING_JS.JS =====
