@@ -17623,7 +17623,9 @@ async function esgWasteSave(){
     esgWasteBack();
   }catch(e){toast(e.message,false);}
 }
-async function esgWasteDel(id){if(!(await appConfirmDelete('waste record')))return;try{await api('/waste_records?id=eq.'+id,{m:'DELETE'});esgWasteData=esgWasteData.filter(x=>x.id!==id);toast('Deleted!');esgLoadWaste();}catch(e){toast(e.message,false);}}
+function esgArchivedNotes(notes){return ('[Archived '+new Date().toISOString().slice(0,10)+'] '+(notes||'')).trim();}
+function esgIsArchivedNote(notes){return /\[Archived/i.test(String(notes||''));}
+async function esgWasteDel(id){try{var current=esgWasteData.find(x=>x.id===id)||{};if(!esgIsArchivedNote(current.notes)){if(!(await appConfirmAction({title:'Archive waste record',message:'Archive this waste record instead of deleting it?',detail:'Waste records support environmental traceability. The record will remain available for audit history.',confirmText:'Archive record',cancelText:'Back'})))return;var notes=esgArchivedNotes(current.notes);await api('/waste_records?id=eq.'+id,{m:'PATCH',p:'return=minimal',b:{notes:notes}});toast('Waste record archived');esgLoadWaste();return;}if(!(await appConfirmDelete('waste record','This record is already archived. Permanent deletion should be used only for duplicate/test records.')))return;await api('/waste_records?id=eq.'+id,{m:'DELETE'});esgWasteData=esgWasteData.filter(x=>x.id!==id);toast('Deleted!');esgLoadWaste();}catch(e){toast(e.message,false);}}
 
 // ── HAZARDOUS WASTE ───────────────────────────────────────────────────────────
 async function esgLoadHW(){
@@ -17684,7 +17686,7 @@ async function esgHWSave(){
   var body={company_id:ccid(),waste_name:name,un_number:g('hwf-un'),hazard_class:g('hwf-class'),quantity:parseFloat(g('hwf-qty'))||null,unit:g('hwf-unit')||'kg',container_type:g('hwf-container'),storage_location:g('hwf-location'),generation_date:g('hwf-gen-date'),collection_date:g('hwf-collect-date'),disposal_date:g('hwf-disposal-date'),licensed_contractor:g('hwf-contractor'),contractor_license_number:g('hwf-license'),manifest_number:g('hwf-manifest'),disposal_method:g('hwf-disposal-method'),status:g('hwf-status')||'stored',sds_available:document.getElementById('hwf-sds')?.value==='true',notes:g('hwf-notes'),updated_at:new Date().toISOString()};
   try{if(esgHWEditId){await api('/hazardous_waste?id=eq.'+esgHWEditId,{m:'PATCH',p:'return=minimal',b:body});toast('Updated!');}else{body.created_by=prof?.id;await api('/hazardous_waste',{m:'POST',p:'return=minimal',b:body});toast('Record saved!');}esgHWBack();}catch(e){toast(e.message,false);}
 }
-async function esgHWDel(id){if(!(await appConfirmDelete('hazardous waste record')))return;try{await api('/hazardous_waste?id=eq.'+id,{m:'DELETE'});esgHWData=esgHWData.filter(x=>x.id!==id);toast('Deleted!');esgLoadHW();}catch(e){toast(e.message,false);}}
+async function esgHWDel(id){try{var current=esgHWData.find(x=>x.id===id)||{};if(current.status!=='disposed'&&!esgIsArchivedNote(current.notes)){if(!(await appConfirmAction({title:'Archive hazardous waste record',message:'Mark this hazardous waste record as disposed/archived instead of deleting it?',detail:'Hazardous waste records are regulatory evidence and should remain traceable with manifest and contractor details.',confirmText:'Archive record',cancelText:'Back'})))return;await api('/hazardous_waste?id=eq.'+id,{m:'PATCH',p:'return=minimal',b:{status:'disposed',notes:esgArchivedNotes(current.notes),updated_at:new Date().toISOString()}});toast('Hazardous waste record archived');esgLoadHW();return;}if(!(await appConfirmDelete('hazardous waste record','This record is already disposed/archived. Permanent deletion should be used only for duplicate/test records.')))return;await api('/hazardous_waste?id=eq.'+id,{m:'DELETE'});esgHWData=esgHWData.filter(x=>x.id!==id);toast('Deleted!');esgLoadHW();}catch(e){toast(e.message,false);}}
 
 // ── FUEL ──────────────────────────────────────────────────────────────────────
 function esgCalcCO2(){
@@ -17748,7 +17750,7 @@ async function esgFuelSave(){
   var body={company_id:ccid(),record_date:g('ff-date'),fuel_type:tp,quantity:qty,unit:g('ff-unit')||'litres',vehicle_equipment:g('ff-vehicle'),meter_reading_start:g('ff-odo-start')?parseFloat(g('ff-odo-start')):null,meter_reading_end:g('ff-odo-end')?parseFloat(g('ff-odo-end')):null,purpose:g('ff-purpose'),department:g('ff-dept'),cost:g('ff-cost')?parseFloat(g('ff-cost')):null,currency:'MUR',carbon_kg:Math.round(co2*100)/100,notes:g('ff-notes')};
   try{if(esgFuelEditId){await api('/fuel_consumption?id=eq.'+esgFuelEditId,{m:'PATCH',p:'return=minimal',b:body});toast('Updated!');}else{body.created_by=prof?.id;await api('/fuel_consumption',{m:'POST',p:'return=minimal',b:body});toast('Fuel record saved! CO₂e: '+co2.toFixed(1)+' kg');}esgFuelBack();}catch(e){toast(e.message,false);}
 }
-async function esgFuelDel(id){if(!(await appConfirmDelete('fuel record')))return;try{await api('/fuel_consumption?id=eq.'+id,{m:'DELETE'});esgFuelData=esgFuelData.filter(x=>x.id!==id);toast('Deleted!');esgLoadFuel();}catch(e){toast(e.message,false);}}
+async function esgFuelDel(id){try{var current=esgFuelData.find(x=>x.id===id)||{};if(!esgIsArchivedNote(current.notes)){if(!(await appConfirmAction({title:'Archive fuel record',message:'Archive this fuel / energy record instead of deleting it?',detail:'Fuel records feed ESG and CO2e history. The record will remain available for audit evidence.',confirmText:'Archive record',cancelText:'Back'})))return;await api('/fuel_consumption?id=eq.'+id,{m:'PATCH',p:'return=minimal',b:{notes:esgArchivedNotes(current.notes)}});toast('Fuel record archived');esgLoadFuel();return;}if(!(await appConfirmDelete('fuel record','This record is already archived. Permanent deletion should be used only for duplicate/test records.')))return;await api('/fuel_consumption?id=eq.'+id,{m:'DELETE'});esgFuelData=esgFuelData.filter(x=>x.id!==id);toast('Deleted!');esgLoadFuel();}catch(e){toast(e.message,false);}}
 
 // ── WATER ─────────────────────────────────────────────────────────────────────
 function esgCalcWater(){
@@ -17810,7 +17812,7 @@ async function esgWaterSave(){
   var body={company_id:ccid(),record_date:g('waf-date'),source:g('waf-source')||'mains',meter_id:g('waf-meter-id'),meter_reading_start:g('waf-start')?parseFloat(g('waf-start')):null,meter_reading_end:g('waf-end')?parseFloat(g('waf-end')):null,quantity:qty,unit:g('waf-unit')||'m3',purpose:g('waf-purpose'),location:g('waf-location'),cost:g('waf-cost')?parseFloat(g('waf-cost')):null,notes:g('waf-notes')};
   try{if(esgWaterEditId){await api('/water_usage?id=eq.'+esgWaterEditId,{m:'PATCH',p:'return=minimal',b:body});toast('Updated!');}else{body.created_by=prof?.id;await api('/water_usage',{m:'POST',p:'return=minimal',b:body});toast('Water record saved!');}esgWaterBack();}catch(e){toast(e.message,false);}
 }
-async function esgWaterDel(id){if(!(await appConfirmDelete('water usage record')))return;try{await api('/water_usage?id=eq.'+id,{m:'DELETE'});esgWaterData=esgWaterData.filter(x=>x.id!==id);toast('Deleted!');esgLoadWater();}catch(e){toast(e.message,false);}}
+async function esgWaterDel(id){try{var current=esgWaterData.find(x=>x.id===id)||{};if(!esgIsArchivedNote(current.notes)){if(!(await appConfirmAction({title:'Archive water record',message:'Archive this water usage record instead of deleting it?',detail:'Water readings support environmental trend history. The record will remain available for audit evidence.',confirmText:'Archive record',cancelText:'Back'})))return;await api('/water_usage?id=eq.'+id,{m:'PATCH',p:'return=minimal',b:{notes:esgArchivedNotes(current.notes)}});toast('Water record archived');esgLoadWater();return;}if(!(await appConfirmDelete('water usage record','This record is already archived. Permanent deletion should be used only for duplicate/test records.')))return;await api('/water_usage?id=eq.'+id,{m:'DELETE'});esgWaterData=esgWaterData.filter(x=>x.id!==id);toast('Deleted!');esgLoadWater();}catch(e){toast(e.message,false);}}
 
 // ── SPILLS ────────────────────────────────────────────────────────────────────
 async function esgLoadSpills(){
@@ -17894,7 +17896,7 @@ async function esgSpillSave(){
     esgSpillBack();
   }catch(e){toast(e.message,false);console.error(e);}
 }
-async function esgSpillDel(id){if(!(await appConfirmDelete('spill report')))return;try{await api('/spill_reports?id=eq.'+id,{m:'DELETE'});esgSpillData=esgSpillData.filter(x=>x.id!==id);toast('Deleted!');esgLoadSpills();}catch(e){toast(e.message,false);}}
+async function esgSpillDel(id){try{var current=esgSpillData.find(x=>x.id===id)||{};if(current.status!=='closed'){if(!(await appConfirmAction({title:'Close spill report',message:'Close this spill report instead of deleting it?',detail:'Spill reports are environmental incident evidence. The report will stay in the register for audit history.',confirmText:'Close report',cancelText:'Back'})))return;await api('/spill_reports?id=eq.'+id,{m:'PATCH',p:'return=minimal',b:{status:'closed',updated_at:new Date().toISOString()}});toast('Spill report closed');esgLoadSpills();return;}if(!(await appConfirmDelete('spill report','This spill report is already closed. Permanent deletion should be used only for duplicate/test records.')))return;await api('/spill_reports?id=eq.'+id,{m:'DELETE'});esgSpillData=esgSpillData.filter(x=>x.id!==id);toast('Deleted!');esgLoadSpills();}catch(e){toast(e.message,false);}}
 
 // ── ENVIRONMENTAL INSPECTIONS ─────────────────────────────────────────────────
 function esgBuildInspChecklist(saved){
@@ -17991,7 +17993,7 @@ async function esgInspSave(){
     esgInspBack();
   }catch(e){toast(e.message,false);console.error(e);}
 }
-async function esgInspDel(id){if(!(await appConfirmDelete('environmental inspection')))return;try{await api('/environmental_inspections?id=eq.'+id,{m:'DELETE'});esgInspData=esgInspData.filter(x=>x.id!==id);toast('Deleted!');esgLoadInsp();}catch(e){toast(e.message,false);}}
+async function esgInspDel(id){try{var current=esgInspData.find(x=>x.id===id)||{};if(!esgIsArchivedNote(current.findings)){if(!(await appConfirmAction({title:'Archive environmental inspection',message:'Archive this environmental inspection instead of deleting it?',detail:'Inspection records support compliance evidence and trend review. The record will remain available for audit history.',confirmText:'Archive inspection',cancelText:'Back'})))return;await api('/environmental_inspections?id=eq.'+id,{m:'PATCH',p:'return=minimal',b:{findings:esgArchivedNotes(current.findings)}});toast('Environmental inspection archived');esgLoadInsp();return;}if(!(await appConfirmDelete('environmental inspection','This inspection is already archived. Permanent deletion should be used only for duplicate/test records.')))return;await api('/environmental_inspections?id=eq.'+id,{m:'DELETE'});esgInspData=esgInspData.filter(x=>x.id!==id);toast('Deleted!');esgLoadInsp();}catch(e){toast(e.message,false);}}
 
 // ===== EMERGENCY_JS.JS =====
 // ===== EMERGENCY MANAGEMENT MODULE =====
