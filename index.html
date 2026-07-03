@@ -8622,6 +8622,7 @@ document.getElementById('my-profile-info').innerHTML='<div style="font-size:13px
 try{ brandInit(); }catch(e){ console.error('brandInit:',e); }
 try{ loadSecuritySlaSettings(); }catch(e){ console.error('loadSecuritySlaSettings:',e); }
 try{ loadCustomFieldSettings(); }catch(e){ console.error('loadCustomFieldSettings:',e); }
+try{ offlineRenderQueueSettings(); }catch(e){ console.error('offlineRenderQueueSettings:',e); }
 var notifCard=document.getElementById('settings-notif-card');
 if(notifCard) notifCard.style.display=isAdm()?'block':'none';
 var ptwCard=document.getElementById('settings-ptw-approver-card');
@@ -28909,6 +28910,7 @@ function offlineQueueRead(){
 function offlineQueueWrite(items){
   try{localStorage.setItem(OFFLINE_QUEUE_KEY,JSON.stringify(items||[]));}catch(e){toast('Could not save offline draft: device storage is full',false);}
   offlineRefreshBanner();
+  if(typeof offlineRenderQueueSettings==='function')offlineRenderQueueSettings();
 }
 function offlineIsNetworkError(e){
   var msg=String(e?.message||e||'').toLowerCase();
@@ -28923,21 +28925,117 @@ function offlineQueueAdd(item){
   offlineQueueWrite(q);
   return item.local_id;
 }
+function offlineBlobToDataUrl(blob){
+  return new Promise(function(resolve,reject){
+    var r=new FileReader();
+    r.onload=function(){resolve(r.result);};
+    r.onerror=function(){reject(r.error||new Error('Could not read photo'));};
+    r.readAsDataURL(blob);
+  });
+}
+function offlineImageFromDataUrl(dataUrl){
+  return new Promise(function(resolve,reject){
+    var img=new Image();
+    img.onload=function(){resolve(img);};
+    img.onerror=function(){reject(new Error('Could not process photo'));};
+    img.src=dataUrl;
+  });
+}
+function offlineCanvasToBlob(canvas,type,quality){
+  return new Promise(function(resolve){
+    canvas.toBlob(function(blob){resolve(blob);},type||'image/jpeg',quality||0.75);
+  });
+}
+async function offlineCompressPhoto(file){
+  var original=await offlineBlobToDataUrl(file);
+  var img=await offlineImageFromDataUrl(original);
+  var maxSide=1600;
+  var scale=Math.min(1,maxSide/Math.max(img.width||maxSide,img.height||maxSide));
+  var w=Math.max(1,Math.round((img.width||maxSide)*scale));
+  var h=Math.max(1,Math.round((img.height||maxSide)*scale));
+  var canvas=document.createElement('canvas');
+  canvas.width=w;canvas.height=h;
+  var ctx=canvas.getContext('2d');
+  ctx.drawImage(img,0,0,w,h);
+  var blob=await offlineCanvasToBlob(canvas,'image/jpeg',0.74);
+  return {
+    name:hseCleanFileName((file.name||'photo').replace(/\.[^.]+$/,'')+'.jpg'),
+    type:'image/jpeg',
+    size:blob?blob.size:file.size,
+    data_url:blob?await offlineBlobToDataUrl(blob):original
+  };
+}
+async function offlineCollectPhotos(files){
+  var out=[],total=0;
+  files=files||[];
+  for(var i=0;i<files.length&&out.length<6;i++){
+    try{
+      var p=await offlineCompressPhoto(files[i]);
+      total+=p.size||0;
+      if(total>4.5*1024*1024){toast('Offline photo storage limit reached. Some photos were not kept offline.',false);break;}
+      out.push(p);
+    }catch(e){toast('Could not keep '+(files[i]?.name||'photo')+' offline: '+e.message,false);}
+  }
+  return out;
+}
+function offlinePhotoBlob(photo){
+  var parts=(photo.data_url||'').split(',');
+  var mime=(parts[0].match(/:(.*?);/)||[])[1]||photo.type||'image/jpeg';
+  var bin=atob(parts[1]||'');
+  var len=bin.length;
+  var arr=new Uint8Array(len);
+  for(var i=0;i<len;i++)arr[i]=bin.charCodeAt(i);
+  var blob=new Blob([arr],{type:mime});
+  blob.name=photo.name||'offline-photo.jpg';
+  return blob;
+}
+async function offlineUploadIncidentPhotos(eventId,companyId,incidentRef,photos){
+  photos=photos||[];
+  for(var i=0;i<photos.length;i++){
+    var photo=photos[i],blob=offlinePhotoBlob(photo);
+    var path=await hseUploadEvidencePhoto(blob,companyId,'incidents/'+eventId);
+    await api('/incident_evidence',{m:'POST',p:'return=minimal',b:{
+      company_id:companyId,event_id:eventId,evidence_type:'photo',
+      title:'Incident photo - '+(incidentRef||eventId),
+      file_url:path,file_name:photo.name||'offline-photo.jpg',file_size:String(photo.size||blob.size||''),
+      description:'Synced from offline incident draft',
+      collected_by:prof?.full_name||prof?.email||null,
+      collected_date:new Date().toISOString().slice(0,10),
+      created_by:prof?.id||null
+    }});
+  }
+}
+async function offlineUploadObservationPhotos(obsId,companyId,obsRef,photos,existingNotes){
+  photos=photos||[];
+  if(!photos.length)return;
+  var links=[];
+  for(var i=0;i<photos.length;i++){
+    var photo=photos[i],blob=offlinePhotoBlob(photo);
+    var path=await hseUploadEvidencePhoto(blob,companyId,'observations/'+obsId);
+    links.push((photo.name||'offline-photo.jpg')+': '+path);
+  }
+  var note='\n\nPhoto evidence synced from offline draft:\n'+links.map(function(x){return '- '+x;}).join('\n');
+  await api('/safety_observations?id=eq.'+obsId,{m:'PATCH',p:'return=minimal',b:{feedback_notes:((existingNotes||'')+note).trim(),updated_at:new Date().toISOString()}});
+}
 async function offlineQueueIncident(body, operation, remoteId){
   var customValues=[];
   try{customValues=await customCollectRecordValues('events');}catch(_){}
-  offlineQueueAdd({module:'incident',operation:operation||'insert',remote_id:remoteId||null,company_id:body.company_id,body:body,custom_values:customValues});
+  var photos=[];
   if(typeof imsPendingPhotos!=='undefined'&&imsPendingPhotos&&imsPendingPhotos.length){
-    toast('Offline draft saved without photos. Add photos after it syncs.',false);
+    photos=await offlineCollectPhotos(imsPendingPhotos);
+    imsClearPhotos();
   }
+  offlineQueueAdd({module:'incident',operation:operation||'insert',remote_id:remoteId||null,company_id:body.company_id,body:body,custom_values:customValues,photos:photos});
 }
 async function offlineQueueObservation(body, operation, remoteId){
   var customValues=[];
   try{customValues=await customCollectRecordValues('observation');}catch(_){}
-  offlineQueueAdd({module:'observation',operation:operation||'insert',remote_id:remoteId||null,company_id:body.company_id,body:body,custom_values:customValues});
+  var photos=[];
   if(typeof obsPendingPhotos!=='undefined'&&obsPendingPhotos&&obsPendingPhotos.length){
-    toast('Offline draft saved without photos. Add photos after it syncs.',false);
+    photos=await offlineCollectPhotos(obsPendingPhotos);
+    obsClearPhotos();
   }
+  offlineQueueAdd({module:'observation',operation:operation||'insert',remote_id:remoteId||null,company_id:body.company_id,body:body,custom_values:customValues,photos:photos});
 }
 function offlineEnsureBanner(){
   var el=document.getElementById('offline-sync-banner');
@@ -28963,6 +29061,7 @@ async function offlineSyncIncident(item){
   if(item.operation==='patch'&&item.remote_id){
     await api('/events?id=eq.'+item.remote_id,{m:'PATCH',p:'return=minimal',b:body});
     await customSaveCollectedValues('events',item.remote_id,body.company_id,customValues);
+    await offlineUploadIncidentPhotos(item.remote_id,body.company_id,body.event_ref||body.incident_number||item.remote_id,item.photos||[]);
     return item.remote_id;
   }
   body.created_by=body.created_by||prof?.id||null;
@@ -28977,6 +29076,7 @@ async function offlineSyncIncident(item){
     var ref='INC-'+yr+'-'+String(seq).padStart(4,'0');
     await api('/events?id=eq.'+res[0].id,{m:'PATCH',p:'return=minimal',b:{event_ref:ref,incident_number:ref}});
     await customSaveCollectedValues('events',res[0].id,body.company_id,customValues);
+    await offlineUploadIncidentPhotos(res[0].id,body.company_id,ref,item.photos||[]);
     return res[0].id;
   }
 }
@@ -28986,6 +29086,7 @@ async function offlineSyncObservation(item){
   if(item.operation==='patch'&&item.remote_id){
     await api('/safety_observations?id=eq.'+item.remote_id,{m:'PATCH',p:'return=minimal',b:body});
     await customSaveCollectedValues('safety_observations',item.remote_id,body.company_id,customValues);
+    await offlineUploadObservationPhotos(item.remote_id,body.company_id,body.obs_ref||item.remote_id,item.photos||[],body.feedback_notes);
     return item.remote_id;
   }
   body.created_by=body.created_by||prof?.id||null;
@@ -28996,6 +29097,7 @@ async function offlineSyncObservation(item){
     var ref='OBS-'+typeCode+'-'+yr+'-'+String(Date.now()).slice(-4);
     await api('/safety_observations?id=eq.'+res[0].id,{m:'PATCH',p:'return=minimal',b:{obs_ref:ref}});
     await customSaveCollectedValues('safety_observations',res[0].id,body.company_id,customValues);
+    await offlineUploadObservationPhotos(res[0].id,body.company_id,ref,item.photos||[],body.feedback_notes);
     return res[0].id;
   }
 }
@@ -29021,8 +29123,57 @@ async function offlineSyncNow(){
   offlineQueueWrite(q.filter(function(x){return x.status!=='synced';}));
   if(ok)toast(ok+' offline report'+(ok>1?'s':'')+' synced');
   if(failed)toast(failed+' offline report'+(failed>1?'s':'')+' still pending',false);
+  offlineRenderQueueSettings();
 }
 window.addEventListener('load', offlineRefreshBanner);
+function offlineDraftLabel(item){
+  var b=item.body||{};
+  if(item.module==='incident')return 'Incident - '+(b.description||b.event_type||'Draft incident').toString().slice(0,80);
+  if(item.module==='observation')return 'BBS - '+(b.observation_text||b.unsafe_act_description||b.unsafe_condition_description||'Draft observation').toString().slice(0,80);
+  return 'Offline draft';
+}
+function offlineRenderQueueSettings(){
+  var el=document.getElementById('offline-drafts-body');if(!el)return;
+  var q=offlineQueueRead().filter(function(x){return x.status!=='synced';});
+  if(!q.length){
+    el.innerHTML='<div style="padding:20px;text-align:center;color:var(--text2);border:1px dashed var(--border);border-radius:10px">No offline drafts pending.</div>';
+    return;
+  }
+  el.innerHTML='<div style="overflow:auto"><table style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr style="background:#1a3a5c;color:#fff"><th style="padding:9px;text-align:left">Draft</th><th style="padding:9px;text-align:left">Created</th><th style="padding:9px;text-align:center">Photos</th><th style="padding:9px;text-align:left">Status</th><th style="padding:9px;text-align:right">Actions</th></tr></thead><tbody>'
+    +q.map(function(x){
+      var b=x.body||{};
+      return '<tr style="border-bottom:1px solid var(--border)">'
+        +'<td style="padding:9px"><div style="font-weight:800">'+escH(offlineDraftLabel(x))+'</div><div style="color:var(--text2);font-size:11px">'+escH(b.location||b.department||x.module||'')+'</div></td>'
+        +'<td style="padding:9px;color:var(--text2)">'+(x.created_at?new Date(x.created_at).toLocaleString():'-')+'</td>'
+        +'<td style="padding:9px;text-align:center">'+((x.photos||[]).length||0)+'</td>'
+        +'<td style="padding:9px">'+(x.last_error?'<span style="color:var(--red);font-weight:700">'+escH(x.last_error)+'</span>':'<span style="color:#854F0B;font-weight:700">Pending</span>')+'</td>'
+        +'<td style="padding:9px;text-align:right;white-space:nowrap"><button class="btn btn-sm" onclick="offlineRetryDraft(\''+x.local_id+'\')"><i class="ti ti-refresh"></i>Retry</button> <button class="btn btn-sm" onclick="offlineDeleteDraft(\''+x.local_id+'\')" style="color:var(--red)"><i class="ti ti-trash"></i></button></td>'
+        +'</tr>';
+    }).join('')+'</tbody></table></div>';
+}
+async function offlineRetryDraft(localId){
+  if(!navigator.onLine){toast('Still offline. Retry when internet is back.',false);return;}
+  var q=offlineQueueRead();
+  var item=q.find(function(x){return x.local_id===localId;});
+  if(!item){toast('Offline draft not found',false);offlineRenderQueueSettings();return;}
+  try{
+    if(item.module==='incident')await offlineSyncIncident(item);
+    else if(item.module==='observation')await offlineSyncObservation(item);
+    else throw new Error('Unsupported offline draft type');
+    offlineQueueWrite(q.filter(function(x){return x.local_id!==localId;}));
+    toast('Offline draft synced');
+  }catch(e){
+    item.last_error=e.message||'Sync failed';
+    offlineQueueWrite(q);
+    toast(item.last_error,false);
+  }
+}
+async function offlineDeleteDraft(localId){
+  var ok=await appConfirm({title:'Delete offline draft',message:'Delete this locally saved draft?',detail:'This cannot be recovered if it has not synced yet.',confirmText:'Delete draft',cancelText:'Keep draft',danger:true});
+  if(!ok)return;
+  offlineQueueWrite(offlineQueueRead().filter(function(x){return x.local_id!==localId;}));
+  toast('Offline draft deleted');
+}
 
 // Online/offline status notification
 window.addEventListener('online', function() {
@@ -41914,6 +42065,12 @@ I can help you:<br>
   <div class="card-title" style="display:flex;align-items:center;gap:8px"><i class="ti ti-adjustments" style="color:#1D9E75"></i>No-code Custom Fields</div>
   <div style="font-size:12px;color:var(--text2);margin-bottom:14px">Add company-specific fields without changing the software code. Enabled for Incident Management and BBS Observations.</div>
   <div id="custom-fields-settings-body"><div class="loading">Loading custom fields...</div></div>
+</div>
+
+<div class="card" id="settings-offline-drafts-card">
+  <div class="card-title" style="display:flex;align-items:center;gap:8px"><i class="ti ti-cloud-upload" style="color:#185FA5"></i>Offline Drafts</div>
+  <div style="font-size:12px;color:var(--text2);margin-bottom:14px">Field reports saved while offline are listed here until they sync. Photos are compressed before being stored locally.</div>
+  <div id="offline-drafts-body"><div class="loading">Loading offline drafts...</div></div>
 </div>
 
 <div class="card" id="settings-notif-card" style="display:none">
