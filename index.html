@@ -1568,6 +1568,30 @@ function auditApiMutation(path,method,o,response){
     }).catch(function(){});
   }catch(_){}
 }
+function auditLogEvent(action,moduleName,summary,details,opts){
+  try{
+    if(!tok||!prof)return;
+    opts=opts||{};
+    var entry={
+      company_id:opts.company_id||auditCompanyId(details||{},'')||prof?.company_id||null,
+      actor_user_id:prof?.id||null,
+      actor_name:prof?.full_name||prof?.email||'User',
+      actor_role:activeRole(),
+      action:action,
+      module_name:moduleName||'system',
+      related_table:opts.related_table||moduleName||'system',
+      related_id:opts.related_id||null,
+      summary:summary||auditLabel(action)+' '+auditLabel(moduleName||'system'),
+      details:details||{},
+      user_agent:navigator.userAgent||null
+    };
+    fetch(SB+'/rest/v1/audit_events',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','apikey':KEY,'Authorization':'Bearer '+tok,'Prefer':'return=minimal'},
+      body:JSON.stringify(entry)
+    }).catch(function(){});
+  }catch(_){}
+}
 // ===================================================================
 // MISSING FUNCTION FIXES
 // loadSOP · sopSwitchTab · sopNew · sopLoadList (alias)
@@ -2904,6 +2928,7 @@ async function doLogin() {
   try {
     var d=await authQ('/token?grant_type=password',{email:em,password:pw});
     await authOnSignIn(d);
+    auditLogEvent('login','auth','User signed in',{email:em});
   } catch(e) {
     var msg = e.message||'Sign in failed';
     if(msg.toLowerCase().includes('invalid login')) msg='Invalid email or password. Please try again.';
@@ -3151,6 +3176,7 @@ async function authOnSignIn(authData) {
 
 // ── doLogout ──────────────────────────────────────────────────────────────────
 function doLogout() {
+  auditLogEvent('logout','auth','User signed out',{email:prof?.email||null});
   // Log logout
   if(tok && prof?.id) {
     try {
@@ -5839,10 +5865,12 @@ async function sendAI() {
     aiHist.push({role:'user', content:msg});
     var rep = await callAI(aiHist.slice(-6));   // sliding context window — prevents token bloat
     aiHist.push({role:'assistant', content:rep});
+    auditLogEvent('ai_query','ai','AURIS AI assistant used',{prompt_preview:msg.substring(0,120),prompt_length:msg.length,response_length:(rep||'').length});
     // Replace the thinking bubble with the real response (removing the ⏳ prefix)
     thinking.textContent = rep;
     thinking.style.whiteSpace = 'pre-wrap';
   } catch(e) {
+    auditLogEvent('ai_error','ai','AURIS AI assistant error',{prompt_preview:msg.substring(0,120),error:e.message});
     // Re-render the thinking bubble as an error bubble (red, no emoji prefix)
     thinking.parentElement.innerHTML = '<div style="display:inline-block;background:#FCEBEB;color:#A32D2D;padding:8px 12px;border-radius:2px 12px 12px 12px;font-size:13px;max-width:80%">Error: '+escH(e.message)+'</div>';
   }
@@ -29123,6 +29151,7 @@ async function offlineSyncNow(){
   offlineQueueWrite(q.filter(function(x){return x.status!=='synced';}));
   if(ok)toast(ok+' offline report'+(ok>1?'s':'')+' synced');
   if(failed)toast(failed+' offline report'+(failed>1?'s':'')+' still pending',false);
+  if(ok||failed)auditLogEvent('sync','offline','Offline drafts sync completed',{synced:ok,failed:failed});
   offlineRenderQueueSettings();
 }
 window.addEventListener('load', offlineRefreshBanner);
@@ -29979,7 +30008,9 @@ async function loadAudit(){
     auditPopulateFilters();
     auditRender();
   }catch(e){
-    el.innerHTML='<tr><td colspan="7" style="padding:18px;color:var(--red)">Audit trail unavailable: '+escH(e.message)+'</td></tr>';
+    var msg=e.message||'Unknown error';
+    if(msg.toLowerCase().includes('audit_events')||msg.toLowerCase().includes('schema cache'))msg='Database setup needed: run professional_foundations.sql in Supabase to enable the audit trail.';
+    el.innerHTML='<tr><td colspan="7" style="padding:18px;color:var(--red)">Audit trail unavailable: '+escH(msg)+'</td></tr>';
   }
 }
 
@@ -29993,6 +30024,11 @@ function auditPopulateFilters(){
   }
   var count=document.getElementById('audit-count');
   if(count)count.textContent=String((auditRows||[]).length);
+  var todayEl=document.getElementById('audit-today-count');
+  if(todayEl){
+    var today=new Date().toISOString().slice(0,10);
+    todayEl.textContent=String((auditRows||[]).filter(function(x){return String(x.created_at||'').slice(0,10)===today;}).length);
+  }
 }
 
 function auditLabel(v){
@@ -30001,8 +30037,18 @@ function auditLabel(v){
 
 function auditActionBadge(action){
   var a=String(action||'').toLowerCase();
-  var bg=a==='create'?'#EAF3DE':a==='update'?'#EFF6FF':a==='delete'?'#FCEBEB':'#f3f4f6';
-  var c=a==='create'?'#3B6D11':a==='update'?'#185FA5':a==='delete'?'#A32D2D':'#6B7280';
+  var cfg={
+    create:['#EAF3DE','#3B6D11'],
+    update:['#EFF6FF','#185FA5'],
+    delete:['#FCEBEB','#A32D2D'],
+    login:['#ECFDF5','#065F46'],
+    logout:['#F3F4F6','#374151'],
+    ai_query:['#F5F3FF','#5B21B6'],
+    ai_error:['#FCEBEB','#A32D2D'],
+    export:['#FEF9EC','#854F0B'],
+    sync:['#E0F2FE','#075985']
+  }[a]||['#f3f4f6','#6B7280'];
+  var bg=cfg[0], c=cfg[1];
   return '<span style="display:inline-flex;align-items:center;padding:3px 8px;border-radius:999px;background:'+bg+';color:'+c+';font-size:11px;font-weight:700">'+escH(auditLabel(a||'action'))+'</span>';
 }
 
@@ -30106,6 +30152,7 @@ function auditExportCsv(){
   document.body.appendChild(a);
   a.click();
   setTimeout(function(){URL.revokeObjectURL(url);a.remove();},500);
+  auditLogEvent('export','audit','Audit trail exported',{rows:rows.length,columns:cols});
 }
 
 
@@ -41791,8 +41838,8 @@ I can help you:<br>
     <div style="font-size:14px;font-weight:800;margin-top:8px" id="audit-scope-label">Current company</div>
   </div>
   <div class="card" style="padding:14px;border-left:4px solid #374151">
-    <div style="font-size:11px;text-transform:uppercase;color:var(--text2);font-weight:700">Purpose</div>
-    <div style="font-size:13px;color:var(--text2);margin-top:8px">Accountability, traceability, and client confidence</div>
+    <div style="font-size:11px;text-transform:uppercase;color:var(--text2);font-weight:700">Today</div>
+    <div style="font-size:28px;font-weight:800" id="audit-today-count">0</div>
   </div>
 </div>
 
@@ -41809,6 +41856,12 @@ I can help you:<br>
         <option value="create">Create</option>
         <option value="update">Update</option>
         <option value="delete">Delete</option>
+        <option value="login">Login</option>
+        <option value="logout">Logout</option>
+        <option value="ai_query">AI query</option>
+        <option value="ai_error">AI error</option>
+        <option value="export">Export</option>
+        <option value="sync">Offline sync</option>
       </select>
     </div>
     <div class="form-group" style="margin:0">
