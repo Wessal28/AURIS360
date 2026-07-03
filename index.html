@@ -13185,6 +13185,8 @@ const RL_CFG={
 const RA_STATUS_CFG={
   draft:          ['#f3f4f6','#6B7280','Draft'],
   pending_review: ['#FEF9EC','#854F0B','Pending Review'],
+  submitted:      ['#F5F3FF','#5B21B6','Submitted'],
+  approved:       ['#EAF3DE','#3B6D11','Approved'],
   active:         ['#EAF3DE','#3B6D11','Active'],
   review:         ['#EDE9FE','#7C3AED','Under Review'],
   archived:       ['#f3f4f6','#6B7280','Archived'],
@@ -13920,23 +13922,23 @@ async function raDeleteCurrent(){
   if(!workflowCanMutate('risk','risk assessments'))return;
   if(!raEditingId)return;
   var current=raAllData.find(function(x){return x.id===raEditingId;})||{};
-  if(!isSA()&&!['draft','rejected','archived'].includes(current.status||'draft')){
-    toast('For audit trail, active or submitted RAs should be archived/revised instead of deleted.',false);
+  var st=current.status||'draft';
+  if(!['draft','rejected','archived'].includes(st)){
+    if(!(await appConfirmAction({title:'Archive risk assessment',message:'Archive this risk assessment instead of deleting it?',detail:'The RA will be removed from active use but retained for audit history and future reference. Create a revision if it still needs to be updated.',confirmText:'Archive RA',cancelText:'Back'})))return;
+    try{
+      await api('/risk_assessments?id=eq.'+raEditingId,{m:'PATCH',p:'return=minimal',b:{status:'archived',archived_at:new Date().toISOString(),updated_at:new Date().toISOString()}});
+      Object.assign(current,{status:'archived',archived_at:new Date().toISOString()});
+      var sel=document.getElementById('ra-status-sel');if(sel)sel.value='archived';
+      toast('Risk assessment archived and kept for audit history');
+      controlledApplyFormLock('ra-form-view','ra-controlled-lock-note',current,'Risk assessment');
+    }catch(e){toast(e.message,false);}
     return;
   }
-  var ok=await appConfirm({
-    title:'Delete risk assessment',
-    message:'Delete this risk assessment?',
-    detail:'This cannot be undone and should only be used for draft/test records.',
-    confirmText:'Delete RA',
-    cancelText:'Keep RA',
-    danger:true
-  });
-  if(!ok)return;
+  if(!(await appConfirmDelete('risk assessment','Permanent deletion is intended only for draft, rejected, archived or test risk assessments.')))return;
   api('/risk_assessments?id=eq.'+raEditingId,{m:'DELETE',p:'return=representation'}).then(function(deleted){
     if(!deleted||!deleted.length)throw new Error('Delete failed: record not found or permission denied');
     raAllData=raAllData.filter(x=>x.id!==raEditingId);
-    toast('Deleted!');raEditingId=null;raShowList();
+    toast('Risk assessment permanently deleted');raEditingId=null;raShowList();
   }).catch(function(e){toast(e.message,false);});
 }
 function raDelete(){raDeleteCurrent();}
