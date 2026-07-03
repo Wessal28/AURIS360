@@ -21768,13 +21768,14 @@ async function mapSave(draft){
 async function mapChangeStatus(newStatus){
   if(!workflowCanMutate('actions','actions'))return;
   var old=mapAllData.find(x=>x.id===mapEditingId)||{};
+  var previousStatus=old.status;
   var extraBody={status:newStatus,updated_at:new Date().toISOString()};
   if(newStatus==='in_progress'&&!old.start_date)extraBody.start_date=new Date().toISOString().slice(0,10);
   if(newStatus==='closed')extraBody.completed_date=new Date().toISOString().slice(0,10);
   try{
     await api('/action_tracker?id=eq.'+mapEditingId,{m:'PATCH',p:'return=minimal',b:extraBody});
     Object.assign(old,extraBody);var st=document.getElementById('af-status');if(st)st.value=newStatus;
-    try{await api('/map_activity_log',{m:'POST',p:'return=minimal',b:{company_id:ccid(),action_id:mapEditingId,activity_type:'Status changed to '+newStatus.replace(/_/g,' '),performed_by:prof?.full_name||'User',old_value:old.status,new_value:newStatus}});}catch(ex){}
+    try{await api('/map_activity_log',{m:'POST',p:'return=minimal',b:{company_id:ccid(),action_id:mapEditingId,activity_type:'Status changed to '+newStatus.replace(/_/g,' '),performed_by:prof?.full_name||'User',old_value:previousStatus,new_value:newStatus}});}catch(ex){}
     toast('Status updated to: '+newStatus.replace(/_/g,' '));
     mapRenderWorkflowBar(old);mapRenderActionButtons(old);
     mapLoadLog(mapEditingId);
@@ -21896,10 +21897,22 @@ async function mapLoadLog(id){
 async function mapDelete(){
   if(!workflowCanMutate('actions','actions'))return;
   if(!mapEditingId)return;
-  if(!(await appConfirmDelete('action','This will remove the action from the Master Action Plan.')))return;
+  var current=mapAllData.find(x=>x.id===mapEditingId)||{};
+  if(current.status!=='cancelled'){
+    if(!(await appConfirmAction({title:'Cancel action',message:'Cancel this action instead of deleting it?',detail:'The action remains available for audit history and can be reviewed later. Permanent delete is only available after an action is cancelled.',confirmText:'Cancel action',cancelText:'Back'})))return;
+    try{
+      await api('/action_tracker?id=eq.'+mapEditingId,{m:'PATCH',p:'return=minimal',b:{status:'cancelled',updated_at:new Date().toISOString()}});
+      var previous=current.status;Object.assign(current,{status:'cancelled',updated_at:new Date().toISOString()});
+      try{await api('/map_activity_log',{m:'POST',p:'return=minimal',b:{company_id:ccid(),action_id:mapEditingId,activity_type:'Action cancelled instead of deleted',performed_by:prof?.full_name||'User',old_value:previous,new_value:'cancelled'}});}catch(ex){}
+      toast('Action cancelled and kept for audit history');
+      mapShowList();
+    }catch(e){toast(e.message,false);}
+    return;
+  }
+  if(!(await appConfirmDelete('action','This action is already cancelled. Permanent deletion should be used only for duplicate/test records.')))return;
   api('/action_tracker?id=eq.'+mapEditingId,{m:'DELETE'}).then(function(){
     mapAllData=mapAllData.filter(x=>x.id!==mapEditingId);
-    toast('Action deleted!');mapEditingId=null;mapShowList();
+    toast('Cancelled action permanently deleted');mapEditingId=null;mapShowList();
   }).catch(function(e){toast(e.message,false);});
 }
 
