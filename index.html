@@ -20361,14 +20361,14 @@ async function toolsSaveEquipment(){
 
 async function toolsDelete(){
   if(!toolsEditingId)return;
-  if(!(await appConfirmDelete('equipment')))return;
-  try{await api('/tools_register?id=eq.'+toolsEditingId,{m:'DELETE'});toast('Deleted!');toolsFormBack();}
+  try{var rows=await api('/tools_register?id=eq.'+toolsEditingId+'&select=status,notes');var current=rows?.[0]||{};var status=String(current.status||'active').toLowerCase();if(status!=='out_of_service'&&!ohIsArchivedText(current.notes)){if(!(await appConfirmAction({title:'Take equipment out of service?',message:'Take this equipment out of service instead of deleting it?',detail:'Equipment history should remain available for inspection, assignment and maintenance traceability.',confirmText:'Out of service',cancelText:'Back',variant:'danger'})))return;await api('/tools_register?id=eq.'+toolsEditingId,{m:'PATCH',p:'return=minimal',b:{status:'out_of_service',notes:ohArchivedText(current.notes),updated_at:new Date().toISOString()}});toast('Equipment marked out of service. Use delete again if permanent removal is required.');toolsFormBack();return;}if(!(await appConfirmDelete('equipment','This equipment is already out of service/archived. Permanent deletion should be used only for duplicate/test records.')))return;await api('/tools_register?id=eq.'+toolsEditingId,{m:'DELETE'});toast('Deleted!');toolsFormBack();}
   catch(e){toast(e.message,false);}
 }
 
 async function toolsDeleteFromList(id){
-  if(!(await appConfirmDelete('equipment')))return;
   try{
+    var current=toolsAllData.find(x=>x.id===id)||{};var status=String(current.status||'active').toLowerCase();if(status!=='out_of_service'&&!ohIsArchivedText(current.notes)){if(!(await appConfirmAction({title:'Take equipment out of service?',message:'Take this equipment out of service instead of deleting it?',detail:'Equipment history should remain available for inspection, assignment and maintenance traceability.',confirmText:'Out of service',cancelText:'Back',variant:'danger'})))return;await api('/tools_register?id=eq.'+id,{m:'PATCH',p:'return=minimal',b:{status:'out_of_service',notes:ohArchivedText(current.notes),updated_at:new Date().toISOString()}});toast('Equipment marked out of service. Use delete again if permanent removal is required.');toolsLoadRegister();return;}
+    if(!(await appConfirmDelete('equipment','This equipment is already out of service/archived. Permanent deletion should be used only for duplicate/test records.')))return;
     await api('/tools_register?id=eq.'+id,{m:'DELETE'});
     toolsAllData=toolsAllData.filter(x=>x.id!==id);
     toast('Deleted!');toolsFilterRegister();
@@ -31734,16 +31734,19 @@ async function fireSaveCert() {
 }
 
 async function fireDeleteCert(id) {
-  var ok=await appConfirm({
-    title:'Delete fire certificate',
-    message:'Delete this fire certificate?',
-    detail:'This cannot be undone and will remove the certificate from the fire register.',
-    confirmText:'Delete certificate',
-    cancelText:'Keep certificate',
-    danger:true
-  });
-  if(!ok)return;
   try {
+    var rows=await api('/fire_certificates?id=eq.'+id+'&select=status,notes');
+    var current=rows?.[0]||{};
+    if(String(current.status||'').toLowerCase()!=='archived'||!ohIsArchivedText(current.notes)){
+      var ok=await appConfirm({title:'Archive fire certificate',message:'Archive this fire certificate instead of deleting it?',detail:'Fire certificates are compliance evidence and should remain traceable for renewals, audits and authority checks.',confirmText:'Archive certificate',cancelText:'Keep certificate',danger:true});
+      if(!ok)return;
+      await api('/fire_certificates?id=eq.'+id, {m:'PATCH', p:'return=minimal', b:{status:'archived',notes:ohArchivedText(current.notes),updated_at:new Date().toISOString()}});
+      toast('Certificate archived');
+      await fireLoadAll();
+      fireRenderCerts();
+      return;
+    }
+    if(!(await appConfirmDelete('archived fire certificate','Permanent deletion should be used only for duplicate/test certificates.')))return;
     await api('/fire_certificates?id=eq.'+id, {m:'DELETE', p:'return=minimal'});
     toast('Certificate deleted');
     await fireLoadAll();
@@ -31866,16 +31869,19 @@ async function fireSaveInsp() {
 }
 
 async function fireDeleteInsp(id) {
-  var ok=await appConfirm({
-    title:'Delete fire inspection',
-    message:'Delete this inspection record?',
-    detail:'This will remove the inspection log entry from the fire module.',
-    confirmText:'Delete inspection',
-    cancelText:'Keep inspection',
-    danger:true
-  });
-  if(!ok)return;
   try {
+    var rows=await api('/fire_inspections?id=eq.'+id+'&select=status,findings');
+    var current=rows?.[0]||{};
+    if(String(current.status||'').toLowerCase()!=='closed'||!ohIsArchivedText(current.findings)){
+      var ok=await appConfirm({title:'Close fire inspection',message:'Close/archive this fire inspection instead of deleting it?',detail:'Fire inspection history supports statutory compliance and trend review.',confirmText:'Close inspection',cancelText:'Keep inspection',danger:true});
+      if(!ok)return;
+      await api('/fire_inspections?id=eq.'+id, {m:'PATCH', p:'return=minimal', b:{status:'closed',findings:ohArchivedText(current.findings),updated_at:new Date().toISOString()}});
+      toast('Inspection closed/archived');
+      await fireLoadAll();
+      fireRenderInsp();
+      return;
+    }
+    if(!(await appConfirmDelete('closed fire inspection','Permanent deletion should be used only for duplicate/test inspection records.')))return;
     await api('/fire_inspections?id=eq.'+id, {m:'DELETE', p:'return=minimal'});
     toast('Inspection deleted');
     await fireLoadAll();
@@ -31969,16 +31975,19 @@ async function fireSaveEquip() {
 }
 
 async function fireDeleteEquip(id) {
-  var ok=await appConfirm({
-    title:'Delete fire equipment',
-    message:'Delete this equipment record?',
-    detail:'This will remove the equipment item from the fire equipment register.',
-    confirmText:'Delete equipment',
-    cancelText:'Keep equipment',
-    danger:true
-  });
-  if(!ok)return;
   try {
+    var rows=await api('/fire_equipment?id=eq.'+id+'&select=status,notes');
+    var current=rows?.[0]||{};
+    if(String(current.status||'').toLowerCase()!=='out_of_service'||!ohIsArchivedText(current.notes)){
+      var ok=await appConfirm({title:'Take fire equipment out of service',message:'Take this fire equipment out of service instead of deleting it?',detail:'Equipment servicing and replacement history should remain available for inspection evidence.',confirmText:'Out of service',cancelText:'Keep equipment',danger:true});
+      if(!ok)return;
+      await api('/fire_equipment?id=eq.'+id, {m:'PATCH', p:'return=minimal', b:{status:'out_of_service',notes:ohArchivedText(current.notes),updated_at:new Date().toISOString()}});
+      toast('Equipment marked out of service');
+      await fireLoadAll();
+      fireRenderEquip();
+      return;
+    }
+    if(!(await appConfirmDelete('out-of-service fire equipment','Permanent deletion should be used only for duplicate/test equipment records.')))return;
     await api('/fire_equipment?id=eq.'+id, {m:'DELETE', p:'return=minimal'});
     toast('Equipment deleted');
     await fireLoadAll();
