@@ -2486,7 +2486,7 @@ function obsNew(type) {
   fillPplDrops();
   obsEditId = null;
   obsClearPhotos();
-  document.getElementById('obs-form-title').textContent = 'New Safety Observation';
+  document.getElementById('obs-form-title').textContent = 'Record Safety Observation';
   document.getElementById('obs-form-ref').textContent = 'OBS-AUTO';
   document.getElementById('obs-del-btn').style.display = 'none';
   // Clear fields
@@ -5349,7 +5349,7 @@ async function execAIReport(type) {
     var resp = await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1200,messages:[{role:'user',content:ctx+'\n\n'+prompt}]})});
     var data = await resp.json();
     outEl.textContent = (data.content||[]).map(function(c){return c.text||'';}).join('') || 'No report generated.';
-  } catch(e) { outEl.textContent = 'AI unavailable: '+e.message; }
+  } catch(e) { outEl.textContent = 'AURIS AI unavailable: '+e.message; }
 }
 
 async function execGenerateReport(type) {
@@ -5391,7 +5391,7 @@ async function execGenerateReport(type) {
     var resp = await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1500,messages:[{role:'user',content:prompts[type]||ctx+'\n\nWrite a comprehensive HSE report. ~400 words.'}]})});
     var data = await resp.json();
     textEl.textContent = (data.content||[]).map(function(c){return c.text||'';}).join('') || 'No report generated.';
-  } catch(e) { textEl.textContent = 'AI unavailable: '+e.message; }
+  } catch(e) { textEl.textContent = 'AURIS AI unavailable: '+e.message; }
 }
 
 function execExportReport() {
@@ -5580,7 +5580,7 @@ async function genFullAI() {
     }).join('');
   } catch(e) {
     contentEl.innerHTML = '<div style="padding:20px;background:#FCEBEB;border-radius:10px;border:1px solid #fecaca">'
-      + '<div style="font-weight:700;color:#DC2626;margin-bottom:8px">⚠️ AI analysis unavailable</div>'
+      + '<div style="font-weight:700;color:#DC2626;margin-bottom:8px">AURIS AI analysis unavailable</div>'
       + '<div style="font-size:12px;color:#991B1B">'+escH(e.message)+'</div>'
       + '<div style="margin-top:10px;font-size:12px;color:var(--text2)">Ensure the AI provider environment variables are configured correctly.</div>'
       + '</div>';
@@ -5692,7 +5692,7 @@ async function aiGenerateToolboxTalk() {
     outEl.textContent = result;
     toast('✓ Toolbox talk generated!');
   } catch(e) {
-    outEl.textContent = 'Error: '+e.message;
+    outEl.textContent = 'AURIS AI error: '+e.message;
     toast('Generation failed: '+e.message, false);
   }
 }
@@ -5741,7 +5741,7 @@ async function aiComplianceCheck() {
     }
     toast('✓ Compliance check complete!');
   } catch(e) {
-    outEl.textContent = 'Error: '+e.message;
+    outEl.textContent = 'AURIS AI error: '+e.message;
     toast('Check failed: '+e.message, false);
   }
 }
@@ -5766,7 +5766,7 @@ async function aiLiveCompliance(type) {
     outEl.textContent = result;
     toast('✓ Live compliance scan complete!');
   } catch(e) {
-    outEl.textContent = 'Error: '+e.message;
+    outEl.textContent = 'AURIS AI error: '+e.message;
     toast('Scan failed: '+e.message, false);
   }
 }
@@ -5819,7 +5819,7 @@ async function aiScenarioRisk() {
     outEl.textContent = result;
     toast('✓ Scenario risk assessed!');
   } catch(e) {
-    outEl.textContent = 'Error: '+e.message;
+    outEl.textContent = 'AURIS AI error: '+e.message;
   }
 }
 
@@ -6811,7 +6811,7 @@ async function chemLoad(){
     chemRenderMetrics();
     chemRenderTable();
   }catch(e){
-    el.innerHTML='<div style="padding:22px;color:var(--text2);line-height:1.5"><div style="font-weight:800;color:#A32D2D;margin-bottom:6px">Chemical Control table is not ready yet.</div><div>Run <code>chemical_schema.sql</code> in Supabase SQL Editor, then refresh this page.</div><div style="margin-top:10px;font-size:12px;color:var(--text3)">'+escH(e.message)+'</div></div>';
+    el.innerHTML='<div style="padding:22px;color:var(--text2);line-height:1.5"><div style="font-weight:800;color:#A32D2D;margin-bottom:6px">Chemical Control setup required</div><div>Run <code>chemical_schema.sql</code> in Supabase SQL Editor, then refresh this page.</div><div style="margin-top:10px;font-size:12px;color:var(--text3)">'+escH(e.message)+'</div></div>';
   }
 }
 
@@ -11625,7 +11625,7 @@ function imsNewIncident(){
   imsEditId=null;
   imsClearPhotos();
   imsClearInlineEvidence();
-  document.getElementById('ims-form-title').textContent='New Incident Report';
+  document.getElementById('ims-form-title').textContent='Report Incident';
   document.getElementById('ims-form-ref').textContent='INC-AUTO';
   document.getElementById('ims-del-btn').style.display='none';
   document.getElementById('ims-start-inv-btn').style.display='none';
@@ -12092,7 +12092,7 @@ async function imsSave(){
         // click "Start investigation" immediately instead of re-opening the record.
         if(invReq){
           var refField=document.getElementById('ev-inv-ref'); if(refField)refField.placeholder='Will be assigned when investigation starts';
-          toast('Saved! Click "Start investigation" to begin the investigation.');
+          toast('Incident saved. Start the investigation when the initial report is ready for review.');
           return;
         }
       }
@@ -41562,7 +41562,7 @@ Pick the modules this client can see. Sephs admin (you) always sees everything r
 <div class="card-title" style="color:#185FA5">📋 Risk Assessment &amp; Method Statement (RAMS)</div>
 <div style="font-size:12px;color:var(--text2);margin-bottom:12px">Generate a complete RAMS document for any task or activity. AI populates hazards, risk ratings, controls, PPE and method steps automatically.</div>
 <div class="form-row">
-<div class="form-group"><label class="form-label">Task / activity *</label><input type="text" id="rams-task" placeholder="e.g. Confined space entry, Hot work, Working at height, Electrical isolaton..."/></div>
+<div class="form-group"><label class="form-label">Task / activity *</label><input type="text" id="rams-task" placeholder="e.g. Confined space entry, hot work, working at height, electrical isolation..."/></div>
 <div class="form-group"><label class="form-label">Industry / sector</label><input type="text" id="rams-industry" placeholder="e.g. Manufacturing, Construction..."/></div>
 </div>
 <div class="form-row">
