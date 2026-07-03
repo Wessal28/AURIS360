@@ -22772,10 +22772,27 @@ async function dcDelete(){
   if(!workflowCanMutate('documents','documents'))return;
   if(!isMgr()){toast('Only managers/admins can delete documents.',false);return;}
   if(!dcEditingId)return;
-  if(!(await appConfirmDelete('document','This will permanently delete the document record.')))return;
+  var current=dcAllData.find(function(x){return x.id===dcEditingId;})||{};
+  var st=current.approval_status||current.status||'draft';
+  if(['approved','pending_review','under_review','pending_approval','current'].includes(st)){
+    if(!(await appConfirmAction({title:'Withdraw document',message:'Withdraw this document instead of deleting it?',detail:'The document will no longer be active, but the record and revision history remain available for audit traceability.',confirmText:'Withdraw document',cancelText:'Back'})))return;
+    try{
+      await api('/documents?id=eq.'+dcEditingId,{m:'PATCH',p:'return=minimal',b:{approval_status:'withdrawn',status:'withdrawn',withdrawn_at:new Date().toISOString(),updated_at:new Date().toISOString()}});
+      Object.assign(current,{approval_status:'withdrawn',status:'withdrawn',withdrawn_at:new Date().toISOString()});
+      var stEl=document.getElementById('df-status');if(stEl)stEl.value='withdrawn';
+      toast('Document withdrawn and kept for audit history');
+      dcRenderWorkflowBar(current);dcRenderActionButtons(current);
+    }catch(e){toast(e.message,false);}
+    return;
+  }
+  if(!['draft','rejected','withdrawn','superseded'].includes(st)){
+    toast('This document should be withdrawn or superseded before deletion.',false);
+    return;
+  }
+  if(!(await appConfirmDelete('document','Permanent deletion is intended only for draft, rejected, withdrawn, superseded or test documents.')))return;
   api('/documents?id=eq.'+dcEditingId,{m:'DELETE'}).then(function(){
     dcAllData=dcAllData.filter(x=>x.id!==dcEditingId);
-    toast('Deleted!');dcEditingId=null;dcShowList();
+    toast('Document permanently deleted');dcEditingId=null;dcShowList();
   }).catch(function(e){toast(e.message,false);});
 }
 
