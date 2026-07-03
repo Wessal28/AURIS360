@@ -6178,7 +6178,7 @@ el.innerHTML=ins.map(i=>'<div class="insight-card '+(i.type==='warn'?'warn':i.ty
 // DEDUP: evEditingId and evAllData declared elsewhere
 function evTypeBadge(t){const colors={'Near Miss':{bg:'#FAEEDA',c:'#854F0B'},'Incident':{bg:'#FCEBEB',c:'#A32D2D'},'Hazard Observation':{bg:'#E6F1FB',c:'#185FA5'},'Dangerous Occurrence':{bg:'#F3E8FF',c:'#6B21A8'},'Environmental':{bg:'#EAF3DE',c:'#3B6D11'}};const co=colors[t]||{bg:'#f3f4f6',c:'#374151'};return '<span style="display:inline-flex;align-items:center;padding:3px 9px;border-radius:99px;font-size:11px;font-weight:600;background:'+co.bg+';color:'+co.c+'">'+( t||'—')+'</span>';}
 function evSevBadge(s){const colors={low:{bg:'#E6F1FB',c:'#185FA5'},medium:{bg:'#FAEEDA',c:'#854F0B'},high:{bg:'#FCEBEB',c:'#A32D2D'},critical:{bg:'#4A0000',c:'#fff'}};const co=colors[s]||{bg:'#f3f4f6',c:'#374151'};return '<span style="display:inline-flex;align-items:center;padding:3px 9px;border-radius:99px;font-size:11px;font-weight:700;background:'+co.bg+';color:'+co.c+'">'+(s||'').toUpperCase()+'</span>';}
-function evStatBadge(s){const m={open:{bg:'#FAEEDA',c:'#854F0B',l:'Open'},under_investigation:{bg:'#E6F1FB',c:'#185FA5',l:'Under investigation'},action_required:{bg:'#FCEBEB',c:'#A32D2D',l:'Action required'},closed:{bg:'#EAF3DE',c:'#3B6D11',l:'Closed'}};const co=m[s]||{bg:'#f3f4f6',c:'#374151',l:s||'—'};return '<span style="display:inline-flex;align-items:center;padding:3px 9px;border-radius:99px;font-size:11px;font-weight:600;background:'+co.bg+';color:'+co.c+'">'+co.l+'</span>';}
+function evStatBadge(s){const m={open:{bg:'#FAEEDA',c:'#854F0B',l:'Open'},under_investigation:{bg:'#E6F1FB',c:'#185FA5',l:'Under investigation'},action_required:{bg:'#FCEBEB',c:'#A32D2D',l:'Action required'},closed:{bg:'#EAF3DE',c:'#3B6D11',l:'Closed'},cancelled:{bg:'#f3f4f6',c:'#6B7280',l:'Cancelled'}};const co=m[s]||{bg:'#f3f4f6',c:'#374151',l:s||'—'};return '<span style="display:inline-flex;align-items:center;padding:3px 9px;border-radius:99px;font-size:11px;font-weight:600;background:'+co.bg+';color:'+co.c+'">'+co.l+'</span>';}
 function evFmt(d){return d?new Date(d).toLocaleString('en-GB',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}):'—';}
 function evFmtDate(d){return d?new Date(d).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}):'—';}
 function evUpdateMetrics(data){
@@ -6326,9 +6326,19 @@ async function evDelete(){
 if(!workflowCanMutate('events','events'))return;
 if(!isMgr()){toast('Only managers/admins can delete events.',false);return;}
 if(!evEditingId)return;
-var ok=await appConfirm({title:'Delete event',message:'Delete this event?',detail:'This will remove the event record from the register.',confirmText:'Delete event',cancelText:'Keep event',danger:true});
+var current=evAllData.find(function(x){return x.id===evEditingId;})||{};
+if(current.status!=='cancelled'){
+var ok=await appConfirmAction({title:'Cancel event',message:'Cancel this event instead of deleting it?',detail:'The event remains in the register for audit history. Permanent delete is only available after cancellation.',confirmText:'Cancel event',cancelText:'Back'});
 if(!ok)return;
-try{await api('/events?id=eq.'+evEditingId,{m:'DELETE'});toast('Event deleted!');evCloseModal();await loadEvents();}catch(e){toast(e.message,false);}
+try{
+await api('/events?id=eq.'+evEditingId,{m:'PATCH',p:'return=minimal',b:{status:'cancelled',updated_at:new Date().toISOString()}});
+toast('Event cancelled and kept for audit history');
+evCloseModal();await loadEvents();
+}catch(e){toast(e.message,false);}
+return;
+}
+if(!(await appConfirmDelete('incident','This event is already cancelled. Permanent deletion should be used only for duplicate/test records.')))return;
+try{await api('/events?id=eq.'+evEditingId,{m:'DELETE'});toast('Cancelled event permanently deleted');evCloseModal();await loadEvents();}catch(e){toast(e.message,false);}
 }
 async function evStartInvestigation(eventId){
 const e=evAllData.find(function(x){return x.id===eventId;});
@@ -12221,16 +12231,19 @@ async function imsDelete(){
   if(!workflowCanMutate('events','incidents'))return;
   if(!isMgr()){toast('Only managers/admins can delete incident reports.',false);return;}
   if(!imsEditId)return;
-  var ok=await appConfirm({
-    title:'Delete incident',
-    message:'Delete this incident record?',
-    detail:'This will remove the incident from the register. Use only for test or incorrect entries.',
-    confirmText:'Delete incident',
-    cancelText:'Keep incident',
-    danger:true
-  });
-  if(!ok)return;
-  try{await api('/events?id=eq.'+imsEditId,{m:'DELETE'});toast('Deleted!');imsBackToRegister();}
+  var current=(imsAllData||[]).find(function(x){return x.id===imsEditId;})||{};
+  if(current.status!=='cancelled'){
+    var ok=await appConfirmAction({title:'Cancel incident',message:'Cancel this incident instead of deleting it?',detail:'The incident remains available for audit history. Permanent delete is only available after cancellation and should be used only for duplicate/test records.',confirmText:'Cancel incident',cancelText:'Back'});
+    if(!ok)return;
+    try{
+      await api('/events?id=eq.'+imsEditId,{m:'PATCH',p:'return=minimal',b:{status:'cancelled',updated_at:new Date().toISOString()}});
+      toast('Incident cancelled and kept for audit history');
+      imsBackToRegister();
+    }catch(e){toast(e.message,false);}
+    return;
+  }
+  if(!(await appConfirmDelete('incident','This incident is already cancelled. Permanent deletion should be used only for duplicate/test records.')))return;
+  try{await api('/events?id=eq.'+imsEditId,{m:'DELETE'});toast('Cancelled incident permanently deleted');imsBackToRegister();}
   catch(e){toast(e.message,false);}
 }
 
