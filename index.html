@@ -23699,16 +23699,16 @@ async function legalDeleteReq(){
   if(!workflowCanMutate('legal','legal compliance'))return;
   if(!isMgr()){toast('Only managers/admins can delete legal requirements.',false);return;}
   if(!lrEditId)return;
-  var ok=await appConfirm({title:'Delete legal section',message:'Delete this legal requirement?',detail:'This will remove the section from the legal register.',confirmText:'Delete section',cancelText:'Keep section',danger:true});
+  var ok=await appConfirmAction({title:'Retire legal section',message:'Retire this legal requirement instead of deleting it?',detail:'The section will be marked not applicable and kept in the register for traceability. Use database admin only for permanent cleanup of test imports.',confirmText:'Retire section',cancelText:'Back'});
   if(!ok)return;
-  try{await api('/legal_requirements?id=eq.'+lrEditId,{m:'DELETE'});toast('Deleted!');legalReqBack();}catch(e){toast(e.message,false);}
+  try{await api('/legal_requirements?id=eq.'+lrEditId,{m:'PATCH',p:'return=minimal',b:{status:'not_applicable',applicable:false,compliance_score:0,retired_at:new Date().toISOString(),updated_at:new Date().toISOString()}});toast('Legal section retired');legalReqBack();}catch(e){toast(e.message,false);}
 }
 async function legalDeleteReqFromList(id){
   if(!workflowCanMutate('legal','legal compliance'))return;
   if(!isMgr()){toast('Only managers/admins can delete legal requirements.',false);return;}
-  var ok=await appConfirm({title:'Delete legal section',message:'Delete this legal requirement?',detail:'This will remove the section from the legal register.',confirmText:'Delete section',cancelText:'Keep section',danger:true});
+  var ok=await appConfirmAction({title:'Retire legal section',message:'Retire this legal requirement instead of deleting it?',detail:'The section will be marked not applicable and kept in the register for traceability.',confirmText:'Retire section',cancelText:'Back'});
   if(!ok)return;
-  api('/legal_requirements?id=eq.'+id,{m:'DELETE'}).then(function(){lrAllData=lrAllData.filter(x=>x.id!==id);legalFilterRegister();toast('Deleted!');}).catch(function(e){toast(e.message,false);});
+  api('/legal_requirements?id=eq.'+id,{m:'PATCH',p:'return=minimal',b:{status:'not_applicable',applicable:false,compliance_score:0,retired_at:new Date().toISOString(),updated_at:new Date().toISOString()}}).then(function(){var x=lrAllData.find(r=>r.id===id);if(x)Object.assign(x,{status:'not_applicable',applicable:false,compliance_score:0});legalFilterRegister();toast('Legal section retired');}).catch(function(e){toast(e.message,false);});
 }
 
 function legalToggleVisibleSelection(checked){
@@ -23722,19 +23722,19 @@ async function legalDeleteIds(ids,label){
   if(!ids.length)return;
   for(var i=0;i<ids.length;i+=40){
     var chunk=ids.slice(i,i+40);
-    await api('/legal_requirements?id=in.('+chunk.join(',')+')'+cf(),{m:'DELETE'});
+    await api('/legal_requirements?id=in.('+chunk.join(',')+')'+cf(),{m:'PATCH',p:'return=minimal',b:{status:'not_applicable',applicable:false,compliance_score:0,retired_at:new Date().toISOString(),updated_at:new Date().toISOString()}});
   }
-  lrAllData=lrAllData.filter(function(x){return !ids.includes(x.id);});
+  lrAllData.forEach(function(x){if(ids.includes(x.id))Object.assign(x,{status:'not_applicable',applicable:false,compliance_score:0});});
   legalFilterRegister();
   legalRefreshMetrics();
-  toast('Deleted '+ids.length+' '+(label||'requirement')+(ids.length>1?'s':''));
+  toast('Retired '+ids.length+' '+(label||'requirement')+(ids.length>1?'s':''));
 }
 
 async function legalDeleteSelectedReqs(){
   if(!isMgr()){toast('Only managers/admins can delete legal requirements',false);return;}
   var ids=Array.from(document.querySelectorAll('.lr-row-select:checked')).map(function(cb){return cb.dataset.id;}).filter(Boolean);
   if(!ids.length){toast('Select at least one section to delete',false);return;}
-  var ok=await appConfirm({title:'Delete selected legal sections',message:'Delete '+ids.length+' selected legal section'+(ids.length>1?'s':'')+'?',detail:'This cannot be undone and will remove the selected rows from the legal register.',confirmText:'Delete selected',cancelText:'Keep sections',danger:true});
+  var ok=await appConfirmAction({title:'Retire selected legal sections',message:'Retire '+ids.length+' selected legal section'+(ids.length>1?'s':'')+'?',detail:'Selected sections will be marked not applicable and kept for traceability.',confirmText:'Retire selected',cancelText:'Keep sections'});
   if(!ok)return;
   try{await legalDeleteIds(ids,'section');}
   catch(e){toast('Delete failed: '+e.message,false);}
@@ -23747,10 +23747,10 @@ async function legalDeleteCurrentLegislation(){
   var ids=lrAllData.filter(function(x){return x.legislation===leg;}).map(function(x){return x.id;}).filter(Boolean);
   if(!ids.length){toast('No records found for this legislation',false);return;}
   var ok=await appConfirm({
-    title:'Delete full legislation',
-    message:'Delete all '+ids.length+' sections for "'+leg+'"?',
-    detail:'This will remove the full legislation from the legal register. Use this only when the legislation was imported incorrectly or is no longer needed.',
-    confirmText:'Delete legislation',
+    title:'Retire full legislation',
+    message:'Retire all '+ids.length+' sections for "'+leg+'"?',
+    detail:'This marks the legislation as not applicable while keeping the imported sections for traceability.',
+    confirmText:'Retire legislation',
     cancelText:'Keep legislation',
     danger:true
   });
@@ -23915,7 +23915,20 @@ function gapEdit(id){var x=gapAllData.find(r=>r.id===id);if(!x)return;gapEditId=
 async function gapSave(){var desc=document.getElementById('gapf-description')?.value?.trim();var leg=document.getElementById('gapf-legislation')?.value?.trim();if(!desc||!leg){toast('Please enter legislation and gap description',false);return;}var g=function(id){var el=document.getElementById(id);return el?el.value||null:null;};var body={company_id:ccid(),legislation:leg,section:g('gapf-section'),gap_description:desc,gap_type:g('gapf-type')||'missing_control',risk_level:g('gapf-risk')||'medium',action_required:g('gapf-action'),responsible_person:g('gapf-responsible'),target_date:g('gapf-target-date')||null,completion_date:g('gapf-completion-date')||null,action_ref:g('gapf-action-ref'),status:g('gapf-status')||'open',closure_notes:g('gapf-closure-notes'),updated_at:new Date().toISOString()};
   try{if(gapEditId){await api('/compliance_gaps?id=eq.'+gapEditId,{m:'PATCH',p:'return=minimal',b:body});toast('Gap updated!');}else{body.created_by=prof?.id;var res=await api('/compliance_gaps',{m:'POST',p:'return=representation',b:body});if(res?.[0]?.id){var ref='GAP-'+new Date().getFullYear()+'-'+String(gapAllData.length+1).padStart(3,'0');await api('/compliance_gaps?id=eq.'+res[0].id,{m:'PATCH',p:'return=minimal',b:{gap_ref:ref}});toast('Gap recorded! Ref: '+ref);if(['critical','high'].includes(body.risk_level)){try{await api('/action_tracker',{m:'POST',p:'return=minimal',b:{company_id:ccid(),title:'Close compliance gap: '+desc.substring(0,60),description:desc,source_type:'audit',source_module:'legal',priority:body.risk_level,status:'open',assigned_to_name:body.responsible_person,target_date:body.target_date||null,created_by:prof?.id}});}catch(ex){}}}}gapBack();}catch(e){toast('Error: '+e.message,false);}
 }
-async function gapDelete(){if(!gapEditId)return;if(!(await appConfirmDelete('compliance gap')))return;try{await api('/compliance_gaps?id=eq.'+gapEditId,{m:'DELETE'});toast('Deleted!');gapBack();}catch(e){toast(e.message,false);}}
+async function gapDelete(){
+if(!gapEditId)return;
+var current=(gapAllData||[]).find(function(x){return x.id===gapEditId;})||{};
+if(!['closed','accepted_risk'].includes(current.status||'open')){
+  if(!(await appConfirmAction({title:'Close compliance gap',message:'Close or accept this gap instead of deleting it?',detail:'The gap will remain available for audit history. Use the form status if this is accepted risk rather than closed.',confirmText:'Close gap',cancelText:'Back'})))return;
+  try{
+    await api('/compliance_gaps?id=eq.'+gapEditId,{m:'PATCH',p:'return=minimal',b:{status:'closed',completion_date:new Date().toISOString().slice(0,10),closure_notes:(document.getElementById('gapf-closure-notes')?.value||'Closed instead of deleted'),updated_at:new Date().toISOString()}});
+    toast('Compliance gap closed and kept for history');gapBack();
+  }catch(e){toast(e.message,false);}
+  return;
+}
+if(!(await appConfirmDelete('compliance gap','Permanent deletion is intended only for closed, accepted-risk, duplicate or test gaps.')))return;
+try{await api('/compliance_gaps?id=eq.'+gapEditId,{m:'DELETE'});toast('Compliance gap permanently deleted');gapBack();}catch(e){toast(e.message,false);}
+}
 
 // ── COMPLIANCE CALENDAR ───────────────────────────────────────────────────────
 async function calLoad(filter, btn){
@@ -23984,7 +23997,17 @@ async function calSave(){var title=document.getElementById('calf-title')?.value?
 }
 async function calMarkComplete(id){try{await api('/compliance_calendar?id=eq.'+id,{m:'PATCH',p:'return=minimal',b:{status:'completed',completed_date:new Date().toISOString().slice(0,10),updated_at:new Date().toISOString()}});toast('✓ Marked as completed');calLoad(calCurrentFilter,document.getElementById('cal-btn-'+calCurrentFilter));}catch(e){toast(e.message,false);}
 }
-async function calDelete(){if(!calEditId)return;if(!(await appConfirmDelete('compliance calendar entry')))return;try{await api('/compliance_calendar?id=eq.'+calEditId,{m:'DELETE'});toast('Deleted!');calBack();}catch(e){toast(e.message,false);}}
+async function calDelete(){
+if(!calEditId)return;
+var current=(calAllData||[]).find(function(x){return x.id===calEditId;})||{};
+if(!['completed','cancelled'].includes(current.status||'upcoming')){
+  if(!(await appConfirmAction({title:'Cancel compliance event',message:'Cancel this compliance event instead of deleting it?',detail:'The calendar record will remain available for traceability.',confirmText:'Cancel event',cancelText:'Back'})))return;
+  try{await api('/compliance_calendar?id=eq.'+calEditId,{m:'PATCH',p:'return=minimal',b:{status:'cancelled',updated_at:new Date().toISOString()}});toast('Compliance event cancelled');calBack();}catch(e){toast(e.message,false);}
+  return;
+}
+if(!(await appConfirmDelete('compliance calendar entry','Permanent deletion is intended only for completed, cancelled, duplicate or test calendar entries.')))return;
+try{await api('/compliance_calendar?id=eq.'+calEditId,{m:'DELETE'});toast('Compliance calendar entry permanently deleted');calBack();}catch(e){toast(e.message,false);}
+}
 
 // ── DASHBOARD ─────────────────────────────────────────────────────────────────
 async function legalRenderDashboard(){
@@ -36107,7 +36130,7 @@ function fireEquipStatusBadge(s) {
 <div class="form-group"><label class="form-label">Department</label><input type="text" id="calf-dept"/></div>
 <div class="form-group"><label class="form-label">Reminder (days before)</label><input type="number" id="calf-reminder" value="30" min="1" max="180"/></div>
 <div class="form-group"><label class="form-label">Status</label>
-<select id="calf-status"><option value="upcoming">Upcoming</option><option value="completed">Completed</option><option value="overdue">Overdue</option><option value="waived">Waived</option></select></div>
+<select id="calf-status"><option value="upcoming">Upcoming</option><option value="completed">Completed</option><option value="overdue">Overdue</option><option value="waived">Waived</option><option value="cancelled">Cancelled</option></select></div>
 </div>
 <div class="form-group"><label class="form-label">Description / notes</label><textarea id="calf-description" style="min-height:60px"></textarea></div>
 <div class="form-row">
