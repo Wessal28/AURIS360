@@ -2711,7 +2711,17 @@ async function obsSave() {
       catch(photoErr){toast('Observation saved, but photo upload failed: '+photoErr.message,false);}
     }
     obsShowList();
-  } catch(e) { toast(e.message, false); }
+  } catch(e) {
+    if(offlineIsNetworkError(e)){
+      try{
+        await offlineQueueObservation(body, obsEditId ? 'patch' : 'insert', obsEditId);
+        toast('Offline: BBS observation saved locally. It will sync when internet returns.');
+        obsShowList();
+      }catch(qe){toast(qe.message||'Could not save offline draft',false);}
+      return;
+    }
+    toast(e.message, false);
+  }
 }
 
 async function obsDelete() {
@@ -8945,6 +8955,20 @@ async function customSaveRecordValues(moduleKey,recordTable,recordId,companyId){
     else await api('/custom_field_values',{m:'POST',p:'return=minimal',b:body});
   }
 }
+async function customCollectRecordValues(moduleKey){
+  var defs=customFieldDefsCache[moduleKey]||await customLoadDefinitions(moduleKey,false);
+  return (defs||[]).map(function(f){return {field_id:f.id,field_key:f.field_key,value:customReadRecordFieldValue(f)};});
+}
+async function customSaveCollectedValues(recordTable,recordId,companyId,values){
+  values=values||[];
+  for(var i=0;i<values.length;i++){
+    var v=values[i]; if(!v.field_id)continue;
+    var existing=await api('/custom_field_values?record_table=eq.'+encodeURIComponent(recordTable)+'&record_id=eq.'+recordId+'&field_id=eq.'+v.field_id+'&limit=1');
+    var body={company_id:companyId,record_table:recordTable,record_id:recordId,field_id:v.field_id,field_key:v.field_key,value:v.value,updated_at:new Date().toISOString()};
+    if(existing&&existing[0])await api('/custom_field_values?id=eq.'+existing[0].id,{m:'PATCH',p:'return=minimal',b:body});
+    else await api('/custom_field_values',{m:'POST',p:'return=minimal',b:body});
+  }
+}
 function customFieldSettingsUnavailable(msg){
   return '<div style="padding:12px 14px;border:1px solid #FCD34D;background:#FFFBEB;border-radius:10px;color:#92400E;font-size:12px;line-height:1.45"><strong>Database setup needed:</strong> run <code>custom_fields.sql</code> in Supabase to enable no-code custom fields.<br>'+escH(msg||'')+'</div>';
 }
@@ -11957,7 +11981,17 @@ async function imsSave(){
       }
     }
     imsBackToRegister();
-  }catch(e){toast(e.message,false);}
+  }catch(e){
+    if(offlineIsNetworkError(e)){
+      try{
+        await offlineQueueIncident(body, imsEditId ? 'patch' : 'insert', imsEditId);
+        toast('Offline: incident saved locally. It will sync when internet returns.');
+        imsBackToRegister();
+      }catch(qe){toast(qe.message||'Could not save offline draft',false);}
+      return;
+    }
+    toast(e.message,false);
+  }
 }
 
 async function imsDelete(){
@@ -28867,8 +28901,132 @@ window.addEventListener('load', function() {
   }
 });
 
+// Offline field reporting queue - Phase 1
+const OFFLINE_QUEUE_KEY='auris360_offline_queue_v1';
+function offlineQueueRead(){
+  try{return JSON.parse(localStorage.getItem(OFFLINE_QUEUE_KEY)||'[]')||[];}catch(_){return [];}
+}
+function offlineQueueWrite(items){
+  try{localStorage.setItem(OFFLINE_QUEUE_KEY,JSON.stringify(items||[]));}catch(e){toast('Could not save offline draft: device storage is full',false);}
+  offlineRefreshBanner();
+}
+function offlineIsNetworkError(e){
+  var msg=String(e?.message||e||'').toLowerCase();
+  return !navigator.onLine || msg.includes('failed to fetch') || msg.includes('network') || msg.includes('load failed') || msg.includes('timeout');
+}
+function offlineQueueAdd(item){
+  var q=offlineQueueRead();
+  item.local_id=item.local_id||('offline-'+Date.now()+'-'+Math.random().toString(16).slice(2));
+  item.created_at=item.created_at||new Date().toISOString();
+  item.status='pending';
+  q.push(item);
+  offlineQueueWrite(q);
+  return item.local_id;
+}
+async function offlineQueueIncident(body, operation, remoteId){
+  var customValues=[];
+  try{customValues=await customCollectRecordValues('events');}catch(_){}
+  offlineQueueAdd({module:'incident',operation:operation||'insert',remote_id:remoteId||null,company_id:body.company_id,body:body,custom_values:customValues});
+  if(typeof imsPendingPhotos!=='undefined'&&imsPendingPhotos&&imsPendingPhotos.length){
+    toast('Offline draft saved without photos. Add photos after it syncs.',false);
+  }
+}
+async function offlineQueueObservation(body, operation, remoteId){
+  var customValues=[];
+  try{customValues=await customCollectRecordValues('observation');}catch(_){}
+  offlineQueueAdd({module:'observation',operation:operation||'insert',remote_id:remoteId||null,company_id:body.company_id,body:body,custom_values:customValues});
+  if(typeof obsPendingPhotos!=='undefined'&&obsPendingPhotos&&obsPendingPhotos.length){
+    toast('Offline draft saved without photos. Add photos after it syncs.',false);
+  }
+}
+function offlineEnsureBanner(){
+  var el=document.getElementById('offline-sync-banner');
+  if(el)return el;
+  el=document.createElement('div');
+  el.id='offline-sync-banner';
+  el.style.cssText='display:none;position:fixed;left:50%;bottom:78px;transform:translateX(-50%);z-index:9999;background:#1a3a5c;color:#fff;border-radius:12px;box-shadow:0 10px 35px rgba(0,0,0,.22);padding:10px 12px;gap:10px;align-items:center;max-width:calc(100vw - 24px);font-size:12px';
+  el.innerHTML='<span id="offline-sync-text" style="font-weight:700;white-space:nowrap"></span><button class="btn btn-sm" style="background:#fff;color:#1a3a5c;border-color:#fff" onclick="offlineSyncNow()"><i class="ti ti-refresh"></i>Sync now</button>';
+  document.body.appendChild(el);
+  return el;
+}
+function offlineRefreshBanner(){
+  var q=offlineQueueRead().filter(function(x){return x.status!=='synced';});
+  var el=offlineEnsureBanner();
+  var txt=document.getElementById('offline-sync-text');
+  if(!q.length){el.style.display='none';return;}
+  if(txt)txt.textContent=q.length+' offline report'+(q.length>1?'s':'')+' pending';
+  el.style.display='flex';
+}
+async function offlineSyncIncident(item){
+  var body=Object.assign({},item.body||{});
+  var customValues=item.custom_values||[];
+  if(item.operation==='patch'&&item.remote_id){
+    await api('/events?id=eq.'+item.remote_id,{m:'PATCH',p:'return=minimal',b:body});
+    await customSaveCollectedValues('events',item.remote_id,body.company_id,customValues);
+    return item.remote_id;
+  }
+  body.created_by=body.created_by||prof?.id||null;
+  var res=await api('/events',{m:'POST',p:'return=representation',b:body});
+  if(res?.[0]?.id){
+    var yr=new Date().getFullYear(),seq=1;
+    try{
+      var existing=await api('/events?select=event_ref&company_id=eq.'+body.company_id+'&event_ref=like.INC-'+yr+'-*&order=event_ref.desc&limit=1');
+      var match=existing?.[0]?.event_ref?.match(/INC-\d{4}-(\d+)/);
+      if(match)seq=parseInt(match[1])+1;
+    }catch(_){}
+    var ref='INC-'+yr+'-'+String(seq).padStart(4,'0');
+    await api('/events?id=eq.'+res[0].id,{m:'PATCH',p:'return=minimal',b:{event_ref:ref,incident_number:ref}});
+    await customSaveCollectedValues('events',res[0].id,body.company_id,customValues);
+    return res[0].id;
+  }
+}
+async function offlineSyncObservation(item){
+  var body=Object.assign({},item.body||{});
+  var customValues=item.custom_values||[];
+  if(item.operation==='patch'&&item.remote_id){
+    await api('/safety_observations?id=eq.'+item.remote_id,{m:'PATCH',p:'return=minimal',b:body});
+    await customSaveCollectedValues('safety_observations',item.remote_id,body.company_id,customValues);
+    return item.remote_id;
+  }
+  body.created_by=body.created_by||prof?.id||null;
+  var res=await api('/safety_observations',{m:'POST',p:'return=representation',b:body});
+  if(res?.[0]?.id){
+    var yr=new Date().getFullYear();
+    var typeCode={positive_behaviour:'POS',unsafe_behaviour:'UBA',unsafe_condition:'UCC',near_miss:'NM',good_practice:'GP'}[body.obs_type]||'OBS';
+    var ref='OBS-'+typeCode+'-'+yr+'-'+String(Date.now()).slice(-4);
+    await api('/safety_observations?id=eq.'+res[0].id,{m:'PATCH',p:'return=minimal',b:{obs_ref:ref}});
+    await customSaveCollectedValues('safety_observations',res[0].id,body.company_id,customValues);
+    return res[0].id;
+  }
+}
+async function offlineSyncNow(){
+  if(!navigator.onLine){toast('Still offline. Sync will work when internet returns.',false);return;}
+  var q=offlineQueueRead();
+  var pending=q.filter(function(x){return x.status!=='synced';});
+  if(!pending.length){offlineRefreshBanner();toast('No offline reports pending');return;}
+  toast('Syncing '+pending.length+' offline report'+(pending.length>1?'s':'')+'...');
+  var ok=0,failed=0;
+  for(var i=0;i<q.length;i++){
+    var item=q[i];
+    if(item.status==='synced')continue;
+    try{
+      if(item.module==='incident')await offlineSyncIncident(item);
+      else if(item.module==='observation')await offlineSyncObservation(item);
+      else continue;
+      item.status='synced';item.synced_at=new Date().toISOString();ok++;
+    }catch(e){
+      item.status='pending';item.last_error=e.message||'Sync failed';failed++;
+    }
+  }
+  offlineQueueWrite(q.filter(function(x){return x.status!=='synced';}));
+  if(ok)toast(ok+' offline report'+(ok>1?'s':'')+' synced');
+  if(failed)toast(failed+' offline report'+(failed>1?'s':'')+' still pending',false);
+}
+window.addEventListener('load', offlineRefreshBanner);
+
 // Online/offline status notification
 window.addEventListener('online', function() {
+  offlineSyncNow();
   if(typeof toast === 'function') toast('✓ Back online');
   // Trigger background sync if supported
   if('serviceWorker' in navigator && 'SyncManager' in window) {
