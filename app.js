@@ -816,8 +816,8 @@ async function loadInsps(){
         +'</tr>';
     });
     h+='</tbody></table>';
-    el.innerHTML=h;
-  }catch(e){el.innerHTML='<p style="padding:20px;color:red">'+e.message+'</p>';console.error(e);}
+    if(el)el.innerHTML=h;
+  }catch(e){if(el)el.innerHTML='<p style="padding:20px;color:red">'+e.message+'</p>';console.error(e);}
 }
 
 
@@ -972,8 +972,8 @@ async function loadRA(){
         +'</tr>';
     });
     h+='</tbody></table>';
-    el.innerHTML=h;
-  }catch(e){el.innerHTML='<p style="padding:20px;color:red">'+e.message+'</p>';console.error(e);}
+    if(el)el.innerHTML=h;
+  }catch(e){if(el)el.innerHTML='<p style="padding:20px;color:red">'+e.message+'</p>';console.error(e);}
 }
 
 function raShowList(){
@@ -1535,8 +1535,8 @@ async function loadInvs(){
         +'</tr>';
     }
     h+='</tbody></table>';
-    el.innerHTML=h;
-  }catch(e){el.innerHTML='<p style="padding:20px;color:red">'+e.message+'</p>';console.error(e);}
+    if(el)el.innerHTML=h;
+  }catch(e){if(el)el.innerHTML='<p style="padding:20px;color:red">'+e.message+'</p>';console.error(e);}
 }
 
 
@@ -1942,8 +1942,8 @@ const d=await api('/permits?select=*'+cf()+'&order=created_at.desc');
 if(!d||!d.length){el.innerHTML='<p style="padding:20px;color:#666">No permits yet</p>';return;}
 let h='<table style="width:100%;border-collapse:collapse"><thead><tr style="background:#f9fafb"><th style="padding:10px;text-align:left;border-bottom:1px solid #e5e7eb">Permit No</th><th style="padding:10px;text-align:left;border-bottom:1px solid #e5e7eb">Type</th><th style="padding:10px;text-align:left;border-bottom:1px solid #e5e7eb">Location</th><th style="padding:10px;text-align:left;border-bottom:1px solid #e5e7eb">Status</th></tr></thead><tbody>';
 for(var i=0;i<d.length;i++){var x=d[i];h+='<tr style="border-bottom:1px solid #f3f4f6"><td style="padding:10px"><strong>'+(x.permit_number||'--')+'</strong></td><td style="padding:10px">'+(x.permit_type||'--')+'</td><td style="padding:10px">'+(x.location||'--')+'</td><td style="padding:10px">'+stat(x.status)+'</td></tr>';}
-h+='</tbody></table>';el.innerHTML=h;
-}catch(e){el.innerHTML='<p style="padding:20px;color:red">'+e.message+'</p>';console.error(e);}
+h+='</tbody></table>';if(el)el.innerHTML=h;
+}catch(e){if(el)el.innerHTML='<p style="padding:20px;color:red">'+e.message+'</p>';console.error(e);}
 }
 
 async function savePermit(){
@@ -1962,8 +1962,8 @@ const d=await api('/noise_surveys?select=*'+cf()+'&order=survey_date.desc');
 if(!d||!d.length){el.innerHTML='<p style="padding:20px;color:#666">No noise surveys yet</p>';return;}
 let h='<table style="width:100%;border-collapse:collapse"><thead><tr style="background:#f9fafb"><th style="padding:10px;text-align:left;border-bottom:1px solid #e5e7eb">Date</th><th style="padding:10px;text-align:left;border-bottom:1px solid #e5e7eb">Type</th><th style="padding:10px;text-align:left;border-bottom:1px solid #e5e7eb">Site</th><th style="padding:10px;text-align:left;border-bottom:1px solid #e5e7eb">Conducted by</th></tr></thead><tbody>';
 for(var i=0;i<d.length;i++){var x=d[i];var dt=x.survey_date?new Date(x.survey_date).toLocaleDateString('en-GB'):'--';h+='<tr style="border-bottom:1px solid #f3f4f6"><td style="padding:10px">'+dt+'</td><td style="padding:10px">'+(x.survey_type||'--')+'</td><td style="padding:10px">'+(x.site||'--')+'</td><td style="padding:10px">'+(x.conducted_by||'--')+'</td></tr>';}
-h+='</tbody></table>';el.innerHTML=h;
-}catch(e){el.innerHTML='<p style="padding:20px;color:red">'+e.message+'</p>';console.error(e);}
+h+='</tbody></table>';if(el)el.innerHTML=h;
+}catch(e){if(el)el.innerHTML='<p style="padding:20px;color:red">'+e.message+'</p>';console.error(e);}
 }
 
 async function saveNoise(){
@@ -1980,11 +1980,16 @@ const MTG_TYPES={'management_review':'HSE Management Review','hse_committee':'HS
 const MTG_RECURRENCE={'monthly':'Monthly','bimonthly':'Every 2 months','quarterly':'Quarterly','triannual':'Every 4 months','biannual':'Every 6 months','annual':'Annual'};
 
 function mtgSwitchTab(tab, btn){
-  document.querySelectorAll('.mtg-tab').forEach(t=>{t.classList.remove('active');});
-  btn.classList.add('active');
+  document.querySelectorAll('[id^="mtg-tab-"]').forEach(function(t){t.classList.remove('active');});
+  if(btn)btn.classList.add('active');
   document.getElementById('mtg-view-schedule').style.display=tab==='schedule'?'block':'none';
   document.getElementById('mtg-view-minutes').style.display=tab==='minutes'?'block':'none';
-  if(tab==='schedule'){mtgLoadSeries();}
+  if(tab==='schedule'){
+    var c=document.getElementById('mtg-roadmap-container');
+    if(c)c.innerHTML='<div class="loading-msg">Loading roadmap...</div>';
+    mtgLoadSeries();
+    setTimeout(function(){var c2=document.getElementById('mtg-roadmap-container');if(c2&&/Loading roadmap/i.test(c2.textContent||''))mtgLoadSeries();},300);
+  }
   else mtgLoadMinutes();
 }
 
@@ -2075,8 +2080,8 @@ async function sopLoadList(){
         +'</div></td></tr>';
     });
     h+='</tbody></table>';
-    el.innerHTML=h;
-  }catch(e){el.innerHTML='<p style="padding:20px;color:red">'+e.message+'</p>';console.error(e);}
+    if(el)el.innerHTML=h;
+  }catch(e){if(el)el.innerHTML='<p style="padding:20px;color:red">'+e.message+'</p>';console.error(e);}
 }
 
 function sopNew(){
@@ -2566,7 +2571,7 @@ async function legalLoadRegister(){
       legSel.innerHTML='<option value="">All legislation</option>'+legs.map(function(l){return '<option value="'+escH(l)+'">'+escH(l)+'</option>';}).join('');
     }
     legalFilterRegister();
-  }catch(e){el.innerHTML='<p style="padding:20px;color:red">'+e.message+'</p>';console.error(e);}
+  }catch(e){if(el)el.innerHTML='<p style="padding:20px;color:red">'+e.message+'</p>';console.error(e);}
 }
 
 function legalFilterRegister(){
@@ -2796,8 +2801,8 @@ async function legalLoadChanges(){
       h+='</div></td></tr>';
     });
     h+='</tbody></table>';
-    el.innerHTML=h;
-  }catch(e){el.innerHTML='<p style="padding:20px;color:red">'+e.message+'</p>';console.error(e);}
+    if(el)el.innerHTML=h;
+  }catch(e){if(el)el.innerHTML='<p style="padding:20px;color:red">'+e.message+'</p>';console.error(e);}
 }
 
 function legalShowChgForm(){
@@ -2969,21 +2974,57 @@ async function loadMtgs(){
   mtgRoadmapYear=new Date().getFullYear();
   var yl=document.getElementById('mtg-agenda-year');
   if(yl)yl.textContent=mtgRoadmapYear;
-  mtgLoadSeries();
+  ['schedule','minutes','tbt','alerts','bulletins'].forEach(function(t){
+    var el=document.getElementById('mtg-view-'+t);if(el)el.style.display=t==='schedule'?'block':'none';
+  });
+  document.querySelectorAll('[id^="mtg-tab-"]').forEach(function(t){t.classList.remove('active');});
+  var scheduleTab=document.getElementById('mtg-tab-schedule');if(scheduleTab)scheduleTab.classList.add('active');
+  ['tbt-add-btn','alert-add-btn','bull-add-btn'].forEach(function(id){
+    var el=document.getElementById(id);if(el)el.style.display=isMgr()?'inline-flex':'none';
+  });
+  var container=document.getElementById('mtg-roadmap-container');
+  if(container)container.innerHTML='<div class="loading-msg">Loading roadmap...</div>';
+  mtgKickAgendaRoadmap();
 }
 
+function mtgKickAgendaRoadmap(){
+  var run=async function(){
+    try{
+      // The Minutes tab reliably primes the meeting dataset; do that silently before painting Agenda.
+      if(typeof mtgLoadMinutes==='function')await mtgLoadMinutes();
+    }catch(e){console.warn('Minutes preload for roadmap failed',e);}
+    try{await mtgLoadSeries();}
+    catch(e){
+      console.error(e);
+      var c=document.getElementById('mtg-roadmap-container');
+      if(c)c.innerHTML='<div style="padding:20px;color:#A32D2D;text-align:center">Could not load roadmap: '+((e&&e.message)||e)+'</div>';
+    }
+  };
+  setTimeout(run,50);
+  [500,1500,3000].forEach(function(delay){
+    setTimeout(function(){
+      var c=document.getElementById('mtg-roadmap-container');
+      if(c&&/Loading roadmap/i.test(c.textContent||''))run();
+    },delay);
+  });
+}
 async function mtgLoadSeries(){
   var el=document.getElementById('mtg-series-list');
-  if(!el)return;
   try{
     var d=await api('/meeting_series?select=*'+cf()+'&order=meeting_type,title');
     mtgSeriesData=d||[];
+    try{
+      var mins=await api('/hse_meetings?select=id,series_id,meeting_date,status'+cf());
+      mtgMinutesData=mins||[];
+    }catch(_){}
     if(!d||!d.length){
-      el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)">'
+      if(el)el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)">'
         +'<div style="font-size:40px;margin-bottom:12px">📅</div>'
         +'<div style="font-weight:600;margin-bottom:8px">No meeting schedules yet</div>'
         +(isMgr()?'<button class="btn btn-primary" onclick="mtgNewSeries()"><i class="ti ti-plus"></i>Add first schedule</button>':'<div>Contact your HSE manager to set up meeting schedules</div>')
         +'</div>';
+      mtgRenderRoadmap();
+
       return;
     }
     // Group by type
@@ -3023,10 +3064,17 @@ async function mtgLoadSeries(){
         +'<button class="btn btn-sm" onclick="mtgNewSeries()"><i class="ti ti-plus"></i> Add new meeting schedule</button>'
         +'</div>';
     }
-    el.innerHTML=h;
-  }catch(e){el.innerHTML='<p style="padding:20px;color:red">'+e.message+'</p>';console.error(e);}
+    if(el)el.innerHTML=h;
+  }catch(e){
+    if(el)el.innerHTML='<p style="padding:20px;color:red">'+e.message+'</p>';
+    var rc=document.getElementById('mtg-roadmap-container');
+    if(rc)rc.innerHTML='<div style="padding:20px;color:#A32D2D;text-align:center">Could not load roadmap: '+((e&&e.message)||e)+'</div>';
+    console.error(e);
+  }
   // Render roadmap after series loaded
   mtgRenderRoadmap();
+  setTimeout(function(){var c=document.getElementById('mtg-roadmap-container');if(c&&/Loading roadmap/i.test(c.textContent||''))mtgRenderRoadmap();},150);
+  setTimeout(function(){var c=document.getElementById('mtg-roadmap-container');if(c&&/Loading roadmap/i.test(c.textContent||''))mtgRenderRoadmap();},600);
 }
 
 function mtgNewSeries(){
@@ -3527,7 +3575,11 @@ function mtgRenderRoadmap(){
   var newBtn=document.getElementById('mtg-new-series-btn2');
   if(yearLabel)yearLabel.textContent=mtgRoadmapYear;
   if(newBtn)newBtn.style.display=isMgr()?'inline-flex':'none';
-  if(!container)return;
+  if(!container){
+    setTimeout(function(){try{mtgRenderRoadmap();}catch(e){console.error(e);}},100);
+    return;
+  }
+  try{
 
   if(!mtgSeriesData||!mtgSeriesData.length){
     container.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)">No meeting schedules yet.'+(isMgr()?'<button class="btn btn-primary btn-sm" style="margin-left:8px" onclick="mtgNewSeries()"><i class="ti ti-plus"></i>Add schedule</button>':'')+'</div>';
@@ -3630,6 +3682,10 @@ function mtgRenderRoadmap(){
 
   html+='</tbody></table>';
   container.innerHTML=html;
+  }catch(e){
+    console.error(e);
+    container.innerHTML='<div style="padding:20px;color:#A32D2D;text-align:center">Roadmap error: '+((e&&e.message)||e)+'</div>';
+  }
 }
 
 function mtgClickWeek(seriesId,week){
@@ -3666,7 +3722,7 @@ async function mtgLoadMinutes(){
     var d=await api('/hse_meetings?select=*'+cf()+'&order=meeting_date.desc');
     mtgMinutesData=d||[];
     if(!d||!d.length){
-      el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)">No minutes yet — schedule a meeting from the Schedule tab.</div>';
+      if(el)el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)">No minutes yet — schedule a meeting from the Schedule tab.</div>';
       return;
     }
     var h='<table style="width:100%;border-collapse:collapse"><thead><tr style="background:#f9fafb">'
@@ -3696,8 +3752,8 @@ async function mtgLoadMinutes(){
         +'</tr>';
     });
     h+='</tbody></table>';
-    el.innerHTML=h;
-  }catch(e){el.innerHTML='<p style="padding:20px;color:red">'+e.message+'</p>';console.error(e);}
+    if(el)el.innerHTML=h;
+  }catch(e){if(el)el.innerHTML='<p style="padding:20px;color:red">'+e.message+'</p>';console.error(e);}
 }
 
 async function mtgOpenMom(id){
@@ -3784,8 +3840,8 @@ const d=await api('/training_sessions?select=*'+cf()+'&order=date_conducted.desc
 if(!d||!d.length){el.innerHTML='<p style="padding:20px;color:#666">No training sessions yet</p>';return;}
 let h='<table style="width:100%;border-collapse:collapse"><thead><tr style="background:#f9fafb"><th style="padding:10px;text-align:left;border-bottom:1px solid #e5e7eb">Course</th><th style="padding:10px;text-align:left;border-bottom:1px solid #e5e7eb">Trainer</th><th style="padding:10px;text-align:left;border-bottom:1px solid #e5e7eb">Date</th><th style="padding:10px;text-align:left;border-bottom:1px solid #e5e7eb">Expiry</th></tr></thead><tbody>';
 for(var i=0;i<d.length;i++){var x=d[i];var dt=x.date_conducted?new Date(x.date_conducted).toLocaleDateString('en-GB'):'--';var ex=x.expiry_date?new Date(x.expiry_date).toLocaleDateString('en-GB'):'--';h+='<tr style="border-bottom:1px solid #f3f4f6"><td style="padding:10px">'+(x.course||'--')+'</td><td style="padding:10px">'+(x.trainer||'--')+'</td><td style="padding:10px">'+dt+'</td><td style="padding:10px">'+ex+'</td></tr>';}
-h+='</tbody></table>';el.innerHTML=h;
-}catch(e){el.innerHTML='<p style="padding:20px;color:red">'+e.message+'</p>';console.error(e);}
+h+='</tbody></table>';if(el)el.innerHTML=h;
+}catch(e){if(el)el.innerHTML='<p style="padding:20px;color:red">'+e.message+'</p>';console.error(e);}
 }
 
 async function saveTraining(){
@@ -3822,8 +3878,8 @@ var bg=ov?'background:#fef2f2':'';
 var cb=isMgr()?'<button class="btn btn-sm" data-id="'+x.id+'" data-st="'+x.status+'" onclick="var b=this;cycleAction(b.dataset.id,b.dataset.st)"><i class="ti ti-check"></i></button>':'';
 h+='<tr style="border-bottom:1px solid #f3f4f6;'+bg+'"><td style="padding:10px">'+(x.description||'--')+(ov?' <span style="color:red;font-size:10px;font-weight:700">OVERDUE</span>':'')+'</td><td style="padding:10px">'+(x.source_module||'--')+'</td><td style="padding:10px">'+(x.responsible||'--')+'</td><td style="padding:10px">'+dt+'</td><td style="padding:10px">'+prio(x.priority)+'</td><td style="padding:10px">'+stat(x.status)+'</td><td style="padding:10px">'+cb+'</td></tr>';
 }
-h+='</tbody></table>';el.innerHTML=h;
-}catch(e){el.innerHTML='<p style="padding:20px;color:red">'+e.message+'</p>';console.error(e);}
+h+='</tbody></table>';if(el)el.innerHTML=h;
+}catch(e){if(el)el.innerHTML='<p style="padding:20px;color:red">'+e.message+'</p>';console.error(e);}
 }
 
 async function cycleAction(id,s){
@@ -3851,8 +3907,8 @@ if(!d||!d.length){el.innerHTML='<p style="padding:20px;color:#666">No documents 
 const today=new Date();
 let h='<table style="width:100%;border-collapse:collapse"><thead><tr style="background:#f9fafb"><th style="padding:10px;text-align:left;border-bottom:1px solid #e5e7eb">Title</th><th style="padding:10px;text-align:left;border-bottom:1px solid #e5e7eb">Type</th><th style="padding:10px;text-align:left;border-bottom:1px solid #e5e7eb">Ref</th><th style="padding:10px;text-align:left;border-bottom:1px solid #e5e7eb">Version</th><th style="padding:10px;text-align:left;border-bottom:1px solid #e5e7eb">Review date</th><th style="padding:10px;text-align:left;border-bottom:1px solid #e5e7eb">Status</th></tr></thead><tbody>';
 for(var i=0;i<d.length;i++){var x=d[i];var rev=x.review_date?new Date(x.review_date):null;var ov=rev&&rev<today;var rv=x.review_date?new Date(x.review_date).toLocaleDateString('en-GB'):'--';var title=x.file_url?'<a href="'+x.file_url+'" target="_blank" style="color:var(--green)">'+x.title+'</a>':(x.title||'--');h+='<tr style="border-bottom:1px solid #f3f4f6"><td style="padding:10px">'+title+'</td><td style="padding:10px">'+(x.doc_type||'--')+'</td><td style="padding:10px">'+(x.reference_no||'--')+'</td><td style="padding:10px">'+(x.version||'--')+'</td><td style="padding:10px;'+(ov?'color:red;font-weight:700':'')+'">'+rv+(ov?' ⚠':'')+'</td><td style="padding:10px">'+stat(x.status)+'</td></tr>';}
-h+='</tbody></table>';el.innerHTML=h;
-}catch(e){el.innerHTML='<p style="padding:20px;color:red">'+e.message+'</p>';console.error(e);}
+h+='</tbody></table>';if(el)el.innerHTML=h;
+}catch(e){if(el)el.innerHTML='<p style="padding:20px;color:red">'+e.message+'</p>';console.error(e);}
 }
 
 async function saveDoc(){
@@ -4048,6 +4104,12 @@ return Math.min(100,Math.max(0,(actual/t)*100));
 
 function kpiProgColor(prog){return prog>=100?'#1D9E75':prog>=70?'#EF9F27':'#E24B4A';}
 
+function kpiFmtNumberOnly(v){
+const n=parseFloat(v);
+if(isNaN(n))return v===null||v===undefined?'--':String(v);
+return Number.isInteger(n)?String(n):String(Math.round(n*100)/100);
+}
+
 function kpiCalcYTD(indicatorId,month,actual){
 const ind=kpiIndicators.find(x=>x.id===indicatorId);
 if(!ind)return actual;
@@ -4119,12 +4181,12 @@ if(!objKPIs.length){
 body.innerHTML='<div style="text-align:center;padding:20px;color:var(--text3);font-size:13px">No KPIs yet'+(isMgr()?' — click + Add KPI above':'')+'</div>';
 }else{
 const tbl=document.createElement('table');
-tbl.style.cssText='width:100%;border-collapse:collapse;font-size:13px';
-tbl.innerHTML='<thead><tr>'
-+'<th style="text-align:left;font-weight:600;color:var(--text2);padding:9px 12px;border-bottom:1px solid var(--border);font-size:11px;text-transform:uppercase;background:#fafafa;width:50px">Code</th>'
+tbl.style.cssText='width:100%;min-width:1280px;border-collapse:collapse;font-size:13px;table-layout:fixed';
+tbl.innerHTML='<colgroup><col style="width:58px"><col style="width:24%"><col style="width:34%"><col style="width:220px"><col style="width:160px"><col style="width:130px"></colgroup><thead><tr>'
++'<th style="text-align:left;font-weight:600;color:var(--text2);padding:9px 12px;border-bottom:1px solid var(--border);font-size:11px;text-transform:uppercase;background:#fafafa">Code</th>'
 +'<th style="text-align:left;font-weight:600;color:var(--text2);padding:9px 12px;border-bottom:1px solid var(--border);font-size:11px;text-transform:uppercase;background:#fafafa">KPI name</th>'
 +'<th style="text-align:left;font-weight:600;color:var(--text2);padding:9px 12px;border-bottom:1px solid var(--border);font-size:11px;text-transform:uppercase;background:#fafafa">Measurement indicator</th>'
-+'<th style="text-align:left;font-weight:600;color:var(--text2);padding:9px 12px;border-bottom:1px solid var(--border);font-size:11px;text-transform:uppercase;background:#fafafa;width:90px">Target</th>'
++'<th style="text-align:left;font-weight:600;color:var(--text2);padding:9px 12px;border-bottom:1px solid var(--border);font-size:11px;text-transform:uppercase;background:#fafafa">Target</th>'
 +'<th style="text-align:left;font-weight:600;color:var(--text2);padding:9px 12px;border-bottom:1px solid var(--border);font-size:11px;text-transform:uppercase;background:#fafafa">Responsible</th>'
 +'<th style="text-align:left;font-weight:600;color:var(--text2);padding:9px 12px;border-bottom:1px solid var(--border);font-size:11px;text-transform:uppercase;background:#fafafa">Status</th>'
 +'</tr></thead>';
@@ -4152,15 +4214,19 @@ const bdr=isLast?'border-bottom:2px solid var(--border)':'border-bottom:1px soli
 indRow.innerHTML=
 (indIdx===0?'<td style="padding:10px 12px;'+bdr+';color:var(--text2);font-size:11px;font-weight:700;vertical-align:middle" rowspan="'+inds.length+'">'+(k.code||'')+'</td>'
 +'<td style="padding:10px 12px;'+bdr+';vertical-align:middle" rowspan="'+inds.length+'"><strong>'+k.name+'</strong><br><span style="font-size:11px;color:var(--text3)">'+(k.frequency||'monthly')+'</span></td>':'')
-+'<td style="padding:8px 12px;'+bdr+';font-size:12px;color:var(--text2)">'+ind.name+'</td>'
-+'<td style="padding:8px 12px;'+bdr+';font-size:12px;font-weight:600;color:var(--text)">'+kpiFmtTarget(ind)+'</td>'
-+(indIdx===0?'<td style="padding:10px 12px;'+bdr+';font-size:12px" rowspan="'+inds.length+'">'+(k.responsible||'--')+'</td>'
-+'<td style="padding:10px 12px;'+bdr+'" rowspan="'+inds.length+'">'+kpiStatBadge(k.status)+'</td>':'');
++'<td style="padding:8px 12px;'+bdr+';font-size:12px;color:var(--text2);vertical-align:middle;line-height:1.4;overflow-wrap:anywhere">'+ind.name+'</td>'
++'<td style="padding:8px 12px;'+bdr+';font-size:12px;font-weight:600;color:var(--text);vertical-align:middle;line-height:1.35;word-break:normal;overflow-wrap:break-word">'+kpiFmtTarget(ind)+'</td>'
++(indIdx===0?'<td style="padding:10px 12px;'+bdr+';font-size:12px;vertical-align:middle;line-height:1.35" rowspan="'+inds.length+'">'+(k.responsible||'--')+'</td>'
++'<td style="padding:10px 12px;'+bdr+';vertical-align:middle" rowspan="'+inds.length+'">'+kpiStatBadge(k.status)+'</td>':'');
 tbody.appendChild(indRow);
 });
 }
 });
-tbl.appendChild(tbody);body.appendChild(tbl);
+tbl.appendChild(tbody);
+const tableWrap=document.createElement('div');
+tableWrap.style.cssText='overflow-x:auto;width:100%';
+tableWrap.appendChild(tbl);
+body.appendChild(tableWrap);
 }
 block.appendChild(body);c.appendChild(block);
 });
@@ -4223,7 +4289,7 @@ td.title='Click to '+(entry?'edit':'enter value');
 if(entry&&entry.actual!==null&&entry.actual!==undefined){
 hasData=true;const val=parseFloat(entry.actual);ytdSum+=val;
 const sty=kpiCellStyle(ind,val);if(sty)td.style.cssText+=';'+sty;
-td.textContent=val+(ind.unit||'');
+td.textContent=kpiFmtNumberOnly(val);
 }else{td.style.color='var(--text3)';td.textContent='--';}
 (function(indId,kId,mn){td.onclick=function(){kpiOpenEntry(indId,kId,mn);};})(ind.id,k.id,m);
 tr.appendChild(td);
@@ -4233,7 +4299,7 @@ const ytd=ytdVals.length?parseFloat(ytdVals[ytdVals.length-1].ytd):ytdSum;
 const ytdTd=document.createElement('td');
 const ytdSty=hasData?kpiCellStyle(ind,ytd):'';
 ytdTd.style.cssText='border:1px solid var(--border);padding:6px 8px;text-align:center;font-weight:700'+(ytdSty?';'+ytdSty:'');
-ytdTd.textContent=hasData?ytd+(ind.unit||''):'--';tr.appendChild(ytdTd);
+ytdTd.textContent=hasData?kpiFmtNumberOnly(ytd):'--';tr.appendChild(ytdTd);
 if(indIdx===0){
 const stTd=document.createElement('td');
 stTd.style.cssText='border:1px solid var(--border);padding:6px 8px;text-align:center;vertical-align:middle';
@@ -4635,6 +4701,3 @@ function sopSaveToDocControl(){
   toast('SOP saved to Document Control!');
   sopSave();
 }
-
-
-

@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8"/>
@@ -7245,8 +7245,8 @@ async function sopLoadList(){
         +'</div></td></tr>';
     });
     h+='</tbody></table>';
-    el.innerHTML=h;
-  }catch(e){el.innerHTML='<p style="padding:20px;color:red">'+e.message+'</p>';console.error(e);}
+    if(el)el.innerHTML=h;
+  }catch(e){if(el)el.innerHTML='<p style="padding:20px;color:red">'+e.message+'</p>';console.error(e);}
 }
 
 function sopNew(){
@@ -7770,25 +7770,57 @@ async function loadMtgs(){
   mtgRoadmapYear=new Date().getFullYear();
   var yl=document.getElementById('mtg-agenda-year');
   if(yl)yl.textContent=mtgRoadmapYear;
+  ['schedule','minutes','tbt','alerts','bulletins'].forEach(function(t){
+    var el=document.getElementById('mtg-view-'+t);if(el)el.style.display=t==='schedule'?'block':'none';
+  });
+  document.querySelectorAll('[id^="mtg-tab-"]').forEach(function(t){t.classList.remove('active');});
+  var scheduleTab=document.getElementById('mtg-tab-schedule');if(scheduleTab)scheduleTab.classList.add('active');
   // Role-gate the toolbox-talks / safety-alert / bulletin add buttons (was in a separate override)
   ['tbt-add-btn','alert-add-btn','bull-add-btn'].forEach(function(id){
     var el=document.getElementById(id);if(el)el.style.display=isMgr()?'inline-flex':'none';
   });
-  mtgLoadSeries();
+  var container=document.getElementById('mtg-roadmap-container');
+  if(container)container.innerHTML='<div class="loading-msg">Loading roadmap...</div>';
+  mtgKickAgendaRoadmap();
 }
 
+function mtgKickAgendaRoadmap(){
+  var run=async function(){
+    try{
+      // The Minutes tab reliably primes the meeting dataset; do that silently before painting Agenda.
+      if(typeof mtgLoadMinutes==='function')await mtgLoadMinutes();
+    }catch(e){console.warn('Minutes preload for roadmap failed',e);}
+    try{await mtgLoadSeries();}
+    catch(e){
+      console.error(e);
+      var c=document.getElementById('mtg-roadmap-container');
+      if(c)c.innerHTML='<div style="padding:20px;color:#A32D2D;text-align:center">Could not load roadmap: '+((e&&e.message)||e)+'</div>';
+    }
+  };
+  setTimeout(run,50);
+  [500,1500,3000].forEach(function(delay){
+    setTimeout(function(){
+      var c=document.getElementById('mtg-roadmap-container');
+      if(c&&/Loading roadmap/i.test(c.textContent||''))run();
+    },delay);
+  });
+}
 async function mtgLoadSeries(){
   var el=document.getElementById('mtg-series-list');
-  if(!el)return;
   try{
     var d=await api('/meeting_series?select=*'+cf()+'&order=meeting_type,title');
     mtgSeriesData=d||[];
+    try{
+      var mins=await api('/hse_meetings?select=id,series_id,meeting_date,status'+cf());
+      mtgMinutesData=mins||[];
+    }catch(_){}
     if(!d||!d.length){
-      el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)">'
+      if(el)el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)">'
         +'<div style="font-size:40px;margin-bottom:12px">📅</div>'
         +'<div style="font-weight:600;margin-bottom:8px">No meeting schedules yet</div>'
         +(isMgr()?'<button class="btn btn-primary" onclick="mtgNewSeries()"><i class="ti ti-plus"></i>Add first schedule</button>':'<div>Contact your HSE manager to set up meeting schedules</div>')
         +'</div>';
+      mtgRenderRoadmap();
       return;
     }
     // Group by type
@@ -7828,10 +7860,17 @@ async function mtgLoadSeries(){
         +'<button class="btn btn-sm" onclick="mtgNewSeries()"><i class="ti ti-plus"></i> Add new meeting schedule</button>'
         +'</div>';
     }
-    el.innerHTML=h;
-  }catch(e){el.innerHTML='<p style="padding:20px;color:red">'+e.message+'</p>';console.error(e);}
+    if(el)el.innerHTML=h;
+  }catch(e){
+    if(el)el.innerHTML='<p style="padding:20px;color:red">'+e.message+'</p>';
+    var rc=document.getElementById('mtg-roadmap-container');
+    if(rc)rc.innerHTML='<div style="padding:20px;color:#A32D2D;text-align:center">Could not load roadmap: '+((e&&e.message)||e)+'</div>';
+    console.error(e);
+  }
   // Render roadmap after series loaded
   mtgRenderRoadmap();
+  setTimeout(function(){var c=document.getElementById('mtg-roadmap-container');if(c&&/Loading roadmap/i.test(c.textContent||''))mtgRenderRoadmap();},150);
+  setTimeout(function(){var c=document.getElementById('mtg-roadmap-container');if(c&&/Loading roadmap/i.test(c.textContent||''))mtgRenderRoadmap();},600);
 }
 
 function mtgNewSeries(){
@@ -8353,7 +8392,11 @@ function mtgRenderRoadmap(){
   var newBtn=document.getElementById('mtg-new-series-btn2');
   if(yearLabel)yearLabel.textContent=mtgRoadmapYear;
   if(newBtn)newBtn.style.display=isMgr()?'inline-flex':'none';
-  if(!container)return;
+  if(!container){
+    setTimeout(function(){try{mtgRenderRoadmap();}catch(e){console.error(e);}},100);
+    return;
+  }
+  try{
 
   if(!mtgSeriesData||!mtgSeriesData.length){
     container.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)">No meeting schedules yet.'+(isMgr()?'<button class="btn btn-primary btn-sm" style="margin-left:8px" onclick="mtgNewSeries()"><i class="ti ti-plus"></i>Add schedule</button>':'')+'</div>';
@@ -8456,6 +8499,10 @@ function mtgRenderRoadmap(){
 
   html+='</tbody></table>';
   container.innerHTML=html;
+  }catch(e){
+    console.error(e);
+    container.innerHTML='<div style="padding:20px;color:#A32D2D;text-align:center">Roadmap error: '+((e&&e.message)||e)+'</div>';
+  }
 }
 
 function mtgClickWeek(seriesId,week){
@@ -8492,7 +8539,7 @@ async function mtgLoadMinutes(){
     var d=await api('/hse_meetings?select=*'+cf()+'&order=meeting_date.desc');
     mtgMinutesData=d||[];
     if(!d||!d.length){
-      el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)">No minutes yet — schedule a meeting from the Schedule tab.</div>';
+      if(el)el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)">No minutes yet — schedule a meeting from the Schedule tab.</div>';
       return;
     }
     var h='<table style="width:100%;border-collapse:collapse"><thead><tr style="background:#f9fafb">'
@@ -8522,8 +8569,8 @@ async function mtgLoadMinutes(){
         +'</tr>';
     });
     h+='</tbody></table>';
-    el.innerHTML=h;
-  }catch(e){el.innerHTML='<p style="padding:20px;color:red">'+e.message+'</p>';console.error(e);}
+    if(el)el.innerHTML=h;
+  }catch(e){if(el)el.innerHTML='<p style="padding:20px;color:red">'+e.message+'</p>';console.error(e);}
 }
 
 async function mtgOpenMom(id){
@@ -10744,7 +10791,7 @@ async function wsLoadList(){
     setM('ws-m-overdue',wsAllData.filter(x=>['planned','approved','in_progress'].includes(x.status)&&x.planned_end&&new Date(x.planned_end)<today).length);
     setM('ws-m-hold',wsAllData.filter(x=>x.status==='on_hold').length);
     wsFilter();
-  }catch(e){el.innerHTML='<p style="padding:20px;color:red">'+e.message+'</p>';console.error(e);}
+  }catch(e){if(el)el.innerHTML='<p style="padding:20px;color:red">'+e.message+'</p>';console.error(e);}
 }
 
 function wsFilter(){
@@ -12315,7 +12362,7 @@ async function imsLoadInvestigations(){
     var d=await api('/investigations?select=*'+cf()+'&order=created_at.desc');
     imsInvAllData=d||[];
     if(!d||!d.length){
-      el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)"><div style="font-size:40px;margin-bottom:12px">🔍</div><div style="font-weight:600;margin-bottom:8px">No investigations yet</div>'+(isMgr()?'<button class="btn btn-primary" onclick="imsNewInvestigation()"><i class="ti ti-plus"></i>Start investigation</button>':'')+'</div>';
+      if(el)el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)"><div style="font-size:40px;margin-bottom:12px">🔍</div><div style="font-weight:600;margin-bottom:8px">No investigations yet</div>'+(isMgr()?'<button class="btn btn-primary" onclick="imsNewInvestigation()"><i class="ti ti-plus"></i>Start investigation</button>':'')+'</div>';
       return;
     }
     var stCfg={open:['#FEF9EC','#854F0B'],submitted:['#F5F3FF','#5B21B6'],revision_requested:['#EFF6FF','#185FA5'],in_progress:['#EFF6FF','#185FA5'],completed:['#EAF3DE','#3B6D11'],closed:['#EAF3DE','#3B6D11']};
@@ -12959,7 +13006,7 @@ async function imsLoadCAList(){
     sm('ims-ca-inprog',(d||[]).filter(x=>x.status==='in_progress').length);
     sm('ims-ca-closed',(d||[]).filter(x=>x.status==='closed').length);
     if(!(d||[]).length){
-      el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)"><div style="font-size:40px;margin-bottom:12px">✅</div><div>No corrective actions from incidents yet</div><div style="font-size:12px;color:var(--text2);margin-top:8px">Actions are created automatically when investigations are saved</div></div>';
+      if(el)el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)"><div style="font-size:40px;margin-bottom:12px">✅</div><div>No corrective actions from incidents yet</div><div style="font-size:12px;color:var(--text2);margin-top:8px">Actions are created automatically when investigations are saved</div></div>';
       return;
     }
     var stC={open:['#FCEBEB','#A32D2D'],in_progress:['#EFF6FF','#185FA5'],completed:['#EAF3DE','#3B6D11'],closed:['#EAF3DE','#3B6D11'],at_risk:['#FEF9EC','#854F0B'],overdue:['#FCEBEB','#A32D2D']};
@@ -13011,7 +13058,7 @@ async function imsLoadEvidence(){
     if(filter)q+='&event_id=eq.'+filter;
     var d=await api(q); imsEvidenceData=d||[];
     if(!(d||[]).length){
-      el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)"><div style="font-size:44px;margin-bottom:12px">📸</div><div style="font-weight:600;margin-bottom:8px">No evidence collected yet</div>'+(isMgr()?'<button class="btn btn-primary" onclick="imsNewEvidence()"><i class="ti ti-plus"></i>Add evidence</button>':'')+'</div>';
+      if(el)el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)"><div style="font-size:44px;margin-bottom:12px">📸</div><div style="font-weight:600;margin-bottom:8px">No evidence collected yet</div>'+(isMgr()?'<button class="btn btn-primary" onclick="imsNewEvidence()"><i class="ti ti-plus"></i>Add evidence</button>':'')+'</div>';
       return;
     }
     var tc={photo:{emoji:'📷',label:'Photo'},video:{emoji:'🎬',label:'Video'},document:{emoji:'📄',label:'Document'},witness_statement:{emoji:'🗣️',label:'Witness Statement'},voice_note:{emoji:'🎤',label:'Voice Note'},sketch:{emoji:'✏️',label:'Sketch'},measurement:{emoji:'📏',label:'Measurement'},other:{emoji:'📋',label:'Other'}};
@@ -13316,7 +13363,7 @@ async function raLoadList(){
     setM('ra-m-high',raAllData.filter(x=>['Critical','Very High','High'].includes(x.overall_risk_level||x.risk_level)).length);
     setM('ra-m-review',raAllData.filter(x=>x.review_date&&new Date(x.review_date)<=soon&&x.status==='active').length);
     raFilterList();
-  }catch(e){el.innerHTML='<p style="padding:20px;color:red">'+e.message+'</p>';console.error(e);}
+  }catch(e){if(el)el.innerHTML='<p style="padding:20px;color:red">'+e.message+'</p>';console.error(e);}
 }
 
 async function raLoadJSAList(){
@@ -14545,7 +14592,7 @@ async function raLoadRevisions(){
         +'</div>';
     });
     h+='</div>';
-    el.innerHTML=h;
+    if(el)el.innerHTML=h;
   }catch(e){el.innerHTML='<div style="color:var(--text2);font-size:12px">Could not load revisions</div>';}
 }
 
@@ -14576,7 +14623,7 @@ async function raSearchHazardLib(){
         +'</div>';
     });
     h+='</div>';
-    el.innerHTML=h;
+    if(el)el.innerHTML=h;
   }catch(e){el.innerHTML='<div style="font-size:12px;color:var(--text2);padding:8px">Search error: '+escH(e.message)+'</div>';}
 }
 
@@ -15786,7 +15833,7 @@ async function ptwLoadLog(id){
         +'</div>';
     });
     h+='</div>';
-    el.innerHTML=h;
+    if(el)el.innerHTML=h;
   }catch(e){el.innerHTML='<div class="card"><div style="color:var(--text2);padding:12px">No activity log available</div></div>';}
 }
 
@@ -16519,7 +16566,7 @@ async function conLoadRegister(){
       );
     }).length);
     conFilterRegister();
-  }catch(e){el.innerHTML='<p style="padding:20px;color:red">'+e.message+'</p>';console.error(e);}
+  }catch(e){if(el)el.innerHTML='<p style="padding:20px;color:red">'+e.message+'</p>';console.error(e);}
 }
 
 function conFilterRegisterLegacy(){
@@ -16768,7 +16815,7 @@ function cpaBuildSections(){
         +'</div></div>';
     });
     h+='</div>';
-    el.innerHTML=h;
+    if(el)el.innerHTML=h;
   });
 }
 
@@ -16800,7 +16847,7 @@ async function cpaLoad(){
     var d=await api('/contractor_preassessments?select=*,contractors(contractor_name)'+cf()+'&order=assessment_date.desc');
     conPAData=d||[];
     if(!d||!d.length){
-      el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)">No pre-assessments yet.'+(isMgr()?' <button class="btn btn-primary btn-sm" onclick="cpaNew()"><i class="ti ti-plus"></i>New pre-assessment</button>':'')+'</div>';
+      if(el)el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)">No pre-assessments yet.'+(isMgr()?' <button class="btn btn-primary btn-sm" onclick="cpaNew()"><i class="ti ti-plus"></i>New pre-assessment</button>':'')+'</div>';
       return;
     }
     var h='<div class="card" style="padding:0;overflow:hidden"><table style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr style="background:#1a3a5c;color:#fff">'
@@ -16831,7 +16878,7 @@ async function cpaLoad(){
         +'</tr>';
     });
     h+='</tbody></table></div>';
-    el.innerHTML=h;
+    if(el)el.innerHTML=h;
   }catch(e){el.innerHTML='<p style="padding:20px;color:red">'+e.message+'</p>';}
 }
 
@@ -16998,7 +17045,7 @@ async function cevLoad(){
     var d=await api('/contractor_evaluations?select=*,contractors(contractor_name)'+cf()+'&order=evaluation_date.desc');
     conEvalData=d||[];
     if(!d||!d.length){
-      el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)">No evaluations yet.'+(isMgr()?' <button class="btn btn-primary btn-sm" onclick="cevNew()"><i class="ti ti-plus"></i>New evaluation</button>':'')+'</div>';
+      if(el)el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)">No evaluations yet.'+(isMgr()?' <button class="btn btn-primary btn-sm" onclick="cevNew()"><i class="ti ti-plus"></i>New evaluation</button>':'')+'</div>';
       return;
     }
     var h='<div class="card" style="padding:0;overflow:hidden"><table style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr style="background:#1a3a5c;color:#fff">'
@@ -17028,7 +17075,7 @@ async function cevLoad(){
         +'</div></td></tr>';
     });
     h+='</tbody></table></div>';
-    el.innerHTML=h;
+    if(el)el.innerHTML=h;
   }catch(e){el.innerHTML='<p style="padding:20px;color:red">'+e.message+'</p>';}
 }
 
@@ -17132,7 +17179,7 @@ async function catwLoad(){
     if(alertEl&&expiring.length){alertEl.innerHTML='<div style="background:#FCEBEB;border:1px solid #fca5a5;border-radius:8px;padding:10px 14px;font-size:12px;margin-bottom:8px"><strong style="color:var(--red)">⚠ '+expiring.length+' authorisation'+(expiring.length!==1?'s':'')+' expiring within 7 days:</strong> '+expiring.map(function(x){return escH(x.contractors?.contractor_name||'');}).join(', ')+'</div>';}
     else if(alertEl)alertEl.innerHTML='';
     if(!d||!d.length){
-      el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)">No authorisations issued yet.'+(isMgr()?' <button class="btn btn-primary btn-sm" onclick="catwNew()"><i class="ti ti-plus"></i>New authorisation</button>':'')+'</div>';
+      if(el)el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)">No authorisations issued yet.'+(isMgr()?' <button class="btn btn-primary btn-sm" onclick="catwNew()"><i class="ti ti-plus"></i>New authorisation</button>':'')+'</div>';
       return;
     }
     var h='<table style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr style="background:#1a3a5c;color:#fff">'
@@ -17164,7 +17211,7 @@ async function catwLoad(){
         +'</div></td></tr>';
     });
     h+='</tbody></table>';
-    el.innerHTML=h;
+    if(el)el.innerHTML=h;
   }catch(e){el.innerHTML='<p style="padding:20px;color:red">'+e.message+'</p>';}
 }
 
@@ -17308,7 +17355,7 @@ async function cirLoad(){
     var d=await api('/contractor_incidents?select=*,contractors(contractor_name)'+cf()+'&order=incident_date.desc');
     conIncData=d||[];
     if(!d||!d.length){
-      el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)">No contractor incidents recorded.'+(isMgr()?' <button class="btn btn-primary btn-sm" onclick="cirNew()"><i class="ti ti-plus"></i>Report incident</button>':'')+'</div>';
+      if(el)el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)">No contractor incidents recorded.'+(isMgr()?' <button class="btn btn-primary btn-sm" onclick="cirNew()"><i class="ti ti-plus"></i>Report incident</button>':'')+'</div>';
       return;
     }
     var h='<table style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr style="background:#1a3a5c;color:#fff">'
@@ -17341,7 +17388,7 @@ async function cirLoad(){
         +'</div></td></tr>';
     });
     h+='</tbody></table>';
-    el.innerHTML=h;
+    if(el)el.innerHTML=h;
   }catch(e){el.innerHTML='<p style="padding:20px;color:red">'+e.message+'</p>';}
 }
 
@@ -17621,7 +17668,7 @@ async function esgLoadWaste(){
         +'</div></td></tr>';
     });
     h+='</tbody></table>';
-    el.innerHTML=h;
+    if(el)el.innerHTML=h;
   }catch(e){el.innerHTML='<p style="padding:20px;color:red">'+e.message+'</p>';}
 }
 
@@ -18216,7 +18263,7 @@ async function emPlansLoad(){
     var d=await api('/emergency_plans?select=*'+cf()+'&order=emergency_type,title');
     emPlansData=d||[];
     if(!d||!d.length){
-      el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)">'
+      if(el)el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)">'
         +'<div style="font-size:40px;margin-bottom:12px">📋</div>'
         +'<div style="font-weight:600;margin-bottom:8px">No emergency response plans yet</div>'
         +(isMgr()?'<button class="btn btn-primary" onclick="emPlanNew()"><i class="ti ti-plus"></i>Create first plan</button>':'')
@@ -18249,7 +18296,7 @@ async function emPlansLoad(){
         +'</div></div>';
     });
     h+='</div>';
-    el.innerHTML=h;
+    if(el)el.innerHTML=h;
   }catch(e){el.innerHTML='<p style="padding:20px;color:red">'+e.message+'</p>';}
 }
 
@@ -18389,7 +18436,7 @@ async function ertLoad(){
     if(alertEl&&exp.length)alertEl.innerHTML='<div style="background:#FEF9EC;border:1px solid #fcd34d;border-radius:8px;padding:10px 14px;font-size:12px;margin-bottom:8px"><strong style="color:#854F0B">⚠ '+exp.length+' ERT member'+(exp.length>1?'s':'')+' with certifications expiring within 60 days: </strong>'+exp.map(x=>escH(x.name)).join(', ')+'</div>';
     else if(alertEl)alertEl.innerHTML='';
     if(!d||!d.length){
-      el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)"><div style="font-size:40px;margin-bottom:12px">🦺</div><div style="font-weight:600;margin-bottom:8px">No ERT members registered</div>'+(isMgr()?'<button class="btn btn-primary" onclick="ertNew()"><i class="ti ti-plus"></i>Add first member</button>':'')+'</div>';
+      if(el)el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)"><div style="font-size:40px;margin-bottom:12px">🦺</div><div style="font-weight:600;margin-bottom:8px">No ERT members registered</div>'+(isMgr()?'<button class="btn btn-primary" onclick="ertNew()"><i class="ti ti-plus"></i>Add first member</button>':'')+'</div>';
       return;
     }
     // Group by role
@@ -18421,7 +18468,7 @@ async function ertLoad(){
       h+='</div></div>';
     });
     h+='</div>';
-    el.innerHTML=h;
+    if(el)el.innerHTML=h;
   }catch(e){el.innerHTML='<p style="padding:20px;color:red">'+e.message+'</p>';}
 }
 
@@ -18913,7 +18960,7 @@ async function ohMsLoad(){
       d=(d||[]).filter(function(x){var nd=x.next_exam_date?new Date(x.next_exam_date):null;return nd&&(ft==='overdue'?nd<today:nd<=soon);});
     }
     if(!d||!d.length){
-      el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)"><div style="font-size:40px;margin-bottom:12px">🩺</div><div style="font-weight:600;margin-bottom:8px">No medical examinations recorded</div>'+(isMgr()?'<button class="btn btn-primary" onclick="msNew()"><i class="ti ti-plus"></i>New examination</button>':'')+'</div>';
+      if(el)el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)"><div style="font-size:40px;margin-bottom:12px">🩺</div><div style="font-weight:600;margin-bottom:8px">No medical examinations recorded</div>'+(isMgr()?'<button class="btn btn-primary" onclick="msNew()"><i class="ti ti-plus"></i>New examination</button>':'')+'</div>';
       return;
     }
     var fitCfg={fit:['#EAF3DE','#3B6D11','✓ Fit'],fit_with_restrictions:['#FEF9EC','#854F0B','⚠ Fit w/ restrictions'],temporarily_unfit:['#FEF6E7','#C2410C','⏸ Temp. unfit'],permanently_unfit:['#FCEBEB','#A32D2D','✗ Perm. unfit'],pending:['#f3f4f6','#6B7280','Pending']};
@@ -19058,7 +19105,7 @@ async function ohAudLoad(){
     var alertEl=document.getElementById('oh-aud-alerts');
     if(alertEl)alertEl.innerHTML=sts.length?'<div style="background:#F5F3FF;border:1px solid #c4b5fd;border-radius:8px;padding:10px 14px;font-size:12px;margin-bottom:8px;color:#6D28D9"><strong>⚠ '+sts.length+' employee'+(sts.length>1?'s with':' with')+' Standard Threshold Shift detected:</strong> '+sts.map(x=>escH(x.employee_name)).join(', ')+'</div>':'';
     if(!d||!d.length){
-      el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)"><div style="font-size:40px;margin-bottom:12px">🔊</div><div style="font-weight:600;margin-bottom:8px">No audiometry records</div>'+(isMgr()?'<button class="btn btn-primary" onclick="audNew()"><i class="ti ti-plus"></i>New audiogram</button>':'')+'</div>';
+      if(el)el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)"><div style="font-size:40px;margin-bottom:12px">🔊</div><div style="font-weight:600;margin-bottom:8px">No audiometry records</div>'+(isMgr()?'<button class="btn btn-primary" onclick="audNew()"><i class="ti ti-plus"></i>New audiogram</button>':'')+'</div>';
       return;
     }
     var resCfg={normal:['#EAF3DE','#3B6D11'],mild_loss:['#FEF9EC','#854F0B'],moderate_loss:['#FEF6E7','#C2410C'],severe_loss:['#FCEBEB','#A32D2D'],profound_loss:['#4C0519','#fff']};
@@ -19708,7 +19755,7 @@ async function ppeLoadCatalogue(){
     var q='/ppe_catalogue?select=*'+cf()+'&order=category,name';if(ft)q+='&category=eq.'+ft;
     var d=await api(q);ppeCatData=d||[];
     if(!d||!d.length){
-      el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)"><div style="font-size:40px;margin-bottom:12px">📦</div><div style="font-weight:600;margin-bottom:8px">No PPE in catalogue yet</div>'+(isMgr()?'<button class="btn btn-primary" onclick="ppeCatNew()"><i class="ti ti-plus"></i>Add PPE type</button>':'')+'</div>';
+      if(el)el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)"><div style="font-size:40px;margin-bottom:12px">📦</div><div style="font-weight:600;margin-bottom:8px">No PPE in catalogue yet</div>'+(isMgr()?'<button class="btn btn-primary" onclick="ppeCatNew()"><i class="ti ti-plus"></i>Add PPE type</button>':'')+'</div>';
       return;
     }
     var h='<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px">';
@@ -20211,7 +20258,7 @@ async function toolsLoadRegister(){
     setM('tools-m-stat',toolsAllData.filter(x=>x.requires_statutory&&x.next_statutory_date&&new Date(x.next_statutory_date)<=soon).length);
     setM('tools-m-due',toolsAllData.filter(function(x){return (x.status||'active')==='active'&&toolsInspectionState(x,today).due;}).length);
     toolsFilterRegister();
-  }catch(e){el.innerHTML='<p style="padding:20px;color:red">'+e.message+'</p>';console.error(e);}
+  }catch(e){if(el)el.innerHTML='<p style="padding:20px;color:red">'+e.message+'</p>';console.error(e);}
 }
 
 function toolsFilterRegister(){
@@ -20440,7 +20487,7 @@ async function toolsLoadPersonal(){
     var d=await api(q);
     var assigned=d||[];
     if(!assigned.length){
-      el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)">No personal tool assignments found.<br><br>'+(isMgr()?'<button class="btn btn-primary" onclick="toolsNew()"><i class="ti ti-plus"></i>Add equipment and assign to a person</button>':'')+'</div>';
+      if(el)el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)">No personal tool assignments found.<br><br>'+(isMgr()?'<button class="btn btn-primary" onclick="toolsNew()"><i class="ti ti-plus"></i>Add equipment and assign to a person</button>':'')+'</div>';
       return;
     }
     // Group by person
@@ -20498,7 +20545,7 @@ async function toolsLoadInspections(){
   try{
     var d=await api('/tool_inspections?select=*,tools_register(name,ref_number,category)'+cf()+'&order=inspection_date.desc&limit=100');
     if(!d||!d.length){
-      el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)">No inspections recorded yet.'+(isMgr()?' <button class="btn btn-primary btn-sm" onclick="toolsNewInspection()"><i class="ti ti-plus"></i>New inspection</button>':'')+'</div>';
+      if(el)el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)">No inspections recorded yet.'+(isMgr()?' <button class="btn btn-primary btn-sm" onclick="toolsNewInspection()"><i class="ti ti-plus"></i>New inspection</button>':'')+'</div>';
       return;
     }
     var h='<table style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr style="background:#1a3a5c;color:#fff">'
@@ -20527,7 +20574,7 @@ async function toolsLoadInspections(){
         +'</tr>';
     });
     h+='</tbody></table>';
-    el.innerHTML=h;
+    if(el)el.innerHTML=h;
   }catch(e){el.innerHTML='<p style="padding:20px;color:red">'+e.message+'</p>';}
 }
 
@@ -20824,7 +20871,7 @@ async function toolsLoadStatutory(){
   try{
     var d=await api('/tools_register?requires_statutory=eq.true'+cf()+'&order=next_statutory_date&select=*');
     if(!d||!d.length){
-      el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)">No equipment requiring statutory examination registered.<br><br>'+(isMgr()?'<button class="btn btn-primary btn-sm" onclick="toolsNew()">Add statutory equipment</button>':'')+'</div>';
+      if(el)el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)">No equipment requiring statutory examination registered.<br><br>'+(isMgr()?'<button class="btn btn-primary btn-sm" onclick="toolsNew()">Add statutory equipment</button>':'')+'</div>';
       if(alertEl)alertEl.innerHTML='';
       return;
     }
@@ -20868,7 +20915,7 @@ async function toolsLoadStatutory(){
         +'</tr>';
     });
     h+='</tbody></table>';
-    el.innerHTML=h;
+    if(el)el.innerHTML=h;
   }catch(e){el.innerHTML='<p style="padding:20px;color:red">'+e.message+'</p>';}
 }
 
@@ -20880,7 +20927,7 @@ async function toolsLoadVehicles(){
   try{
     var vehicles=await api('/tools_register?is_vehicle=eq.true'+cf()+'&order=name&select=*');
     if(!vehicles||!vehicles.length){
-      el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)">'
+      if(el)el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)">'
         +'<div style="font-size:48px;margin-bottom:12px">🚗</div>'
         +'<div style="font-weight:600;margin-bottom:8px">No vehicles registered</div>'
         +(isMgr()?'<button class="btn btn-primary" onclick="toolsNewVehicle()"><i class="ti ti-plus"></i>Add vehicle</button>':'')
@@ -22245,7 +22292,7 @@ async function dcLoadList(){
     // Load ack pending count separately
     try{var acks=await api('/doc_acknowledgements?select=id,status'+cf()+'&status=eq.pending');
       setM('dc-m-ack',(acks||[]).length);}catch(ex){}
-  }catch(e){el.innerHTML='<p style="padding:20px;color:red">'+e.message+'</p>';console.error(e);}
+  }catch(e){if(el)el.innerHTML='<p style="padding:20px;color:red">'+e.message+'</p>';console.error(e);}
 }
 
 function dcFilterList(){
@@ -24298,8 +24345,8 @@ const BULL_TYPE_CFG={
 // ── Patch mtgSwitchTab to handle new tabs ─────────────────────────────────────
 // Override the existing function
 function mtgSwitchTab(tab, btn){
-  document.querySelectorAll('.mtg-tab').forEach(t=>{t.classList.remove('active');});
-  btn.classList.add('active');
+  document.querySelectorAll('[id^="mtg-tab-"]').forEach(t=>{t.classList.remove('active');});
+  if(btn)btn.classList.add('active');
   // Hide all views
   ['schedule','minutes','tbt','alerts','bulletins'].forEach(function(t){
     var el=document.getElementById('mtg-view-'+t);if(el)el.style.display='none';
@@ -24312,7 +24359,15 @@ function mtgSwitchTab(tab, btn){
   var viewEl=document.getElementById('mtg-view-'+tab);
   if(viewEl)viewEl.style.display='block';
   // Load data
-  if(tab==='schedule'){mtgLoadSeries();}
+  if(tab==='schedule'){
+    var c=document.getElementById('mtg-roadmap-container');
+    if(c)c.innerHTML='<div class="loading-msg">Loading roadmap...</div>';
+    mtgLoadSeries();
+    setTimeout(function(){
+      var c2=document.getElementById('mtg-roadmap-container');
+      if(c2&&/Loading roadmap/i.test(c2.textContent||''))mtgLoadSeries();
+    },300);
+  }
   else if(tab==='minutes'){mtgLoadMinutes();}
   else if(tab==='tbt'){tbtLoad();}
   else if(tab==='alerts'){alertLoad();}
@@ -24339,7 +24394,7 @@ async function tbtLoad(){
     setM('tbt-m-attendees',(d||[]).reduce((s,x)=>s+(parseInt(x.attendance_count)||0),0));
     setM('tbt-m-actions',(d||[]).reduce((s,x)=>s+((x.actions_raised||[]).length),0));
     if(!d||!d.length){
-      el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)"><div style="font-size:40px;margin-bottom:12px">🗣️</div><div style="font-weight:600;margin-bottom:8px">No toolbox talks recorded yet</div>'+(isMgr()?'<button class="btn btn-primary" onclick="tbtNew()"><i class="ti ti-plus"></i>Record first TBT</button>':'')+'</div>';
+      if(el)el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)"><div style="font-size:40px;margin-bottom:12px">🗣️</div><div style="font-weight:600;margin-bottom:8px">No toolbox talks recorded yet</div>'+(isMgr()?'<button class="btn btn-primary" onclick="tbtNew()"><i class="ti ti-plus"></i>Record first TBT</button>':'')+'</div>';
       return;
     }
     // Cards
@@ -24589,7 +24644,7 @@ async function alertLoad(){
     setM('alert-m-high',(d||[]).filter(x=>x.severity==='high'&&x.status==='active').length);
     setM('alert-m-month',(d||[]).filter(x=>x.issued_date&&new Date(x.issued_date).getMonth()===m&&new Date(x.issued_date).getFullYear()===y).length);
     if(!d||!d.length){
-      el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)"><div style="font-size:40px;margin-bottom:12px">🚨</div><div style="font-weight:600;margin-bottom:8px">No safety alerts issued</div>'+(isMgr()?'<button class="btn btn-primary" onclick="alertNew()"><i class="ti ti-plus"></i>Issue first alert</button>':'')+'</div>';
+      if(el)el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)"><div style="font-size:40px;margin-bottom:12px">🚨</div><div style="font-weight:600;margin-bottom:8px">No safety alerts issued</div>'+(isMgr()?'<button class="btn btn-primary" onclick="alertNew()"><i class="ti ti-plus"></i>Issue first alert</button>':'')+'</div>';
       return;
     }
     var h='<div style="display:flex;flex-direction:column;gap:10px">';
@@ -24720,7 +24775,7 @@ async function bulletinLoad(){
     if(ft)q+='&bulletin_type=eq.'+ft;
     var d=await api(q);bulletinAllData=d||[];
     if(!d||!d.length){
-      el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)"><div style="font-size:40px;margin-bottom:12px">📰</div><div style="font-weight:600;margin-bottom:8px">No bulletins published yet</div>'+(isMgr()?'<button class="btn btn-primary" onclick="bulletinNew()"><i class="ti ti-plus"></i>Publish first bulletin</button>':'')+'</div>';
+      if(el)el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)"><div style="font-size:40px;margin-bottom:12px">📰</div><div style="font-weight:600;margin-bottom:8px">No bulletins published yet</div>'+(isMgr()?'<button class="btn btn-primary" onclick="bulletinNew()"><i class="ti ti-plus"></i>Publish first bulletin</button>':'')+'</div>';
       return;
     }
     var h='<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px">';
@@ -24899,7 +24954,7 @@ async function cmLoad(){
     compAllData=comps||[];
     cmAllData=cm||[];
     if(!compAllData.length){
-      el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)">'
+      if(el)el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)">'
         +'<div style="font-size:40px;margin-bottom:12px">📊</div>'
         +'<div style="font-weight:600;margin-bottom:8px">No competencies defined yet</div>'
         +(isMgr()?'<button class="btn btn-primary" onclick="cmAddCompetency()"><i class="ti ti-plus"></i>Add first competency</button>':'')
@@ -24953,7 +25008,7 @@ async function cmLoad(){
       +LEVEL_COLORS.map(function(c,i){return '<span style="display:flex;align-items:center;gap:4px"><span style="width:14px;height:14px;border-radius:3px;background:'+c+';border:1px solid #e5e7eb;display:inline-block"></span>'+i+' – '+['No knowledge','Theoretical','First experience','Good level','Expert'][i]+'</span>';}).join('')
       +'<span style="display:flex;align-items:center;gap:4px"><span style="width:14px;height:14px;border-radius:3px;background:#fff;border:2px solid var(--red);display:inline-block"></span>Gap identified</span>'
       +'</div>';
-  }catch(e){el.innerHTML='<p style="padding:20px;color:red">'+e.message+'</p>';console.error(e);}
+  }catch(e){if(el)el.innerHTML='<p style="padding:20px;color:red">'+e.message+'</p>';console.error(e);}
 }
 
 async function cmEditCell(personId, compId){
@@ -25013,7 +25068,7 @@ async function tnaLoad(){
     var d=await api('/training_needs?select=*'+cf()+'&order=category,role_name,training_topic');
     tnAllData=d||[];
     if(!tnAllData.length){
-      el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)">'
+      if(el)el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)">'
         +'<div style="font-size:40px;margin-bottom:12px">🎯</div>'
         +'<div style="font-weight:600;margin-bottom:8px">No training needs defined yet</div>'
         +(isMgr()?'<button class="btn btn-primary" onclick="tnaAddRow()"><i class="ti ti-plus"></i>Add requirement</button>':'')
@@ -25049,7 +25104,7 @@ async function tnaLoad(){
     });
     html+='</tbody></table>';
     el.innerHTML=html;
-  }catch(e){el.innerHTML='<p style="padding:20px;color:red">'+e.message+'</p>';console.error(e);}
+  }catch(e){if(el)el.innerHTML='<p style="padding:20px;color:red">'+e.message+'</p>';console.error(e);}
 }
 
 async function tnaAddRow(){
@@ -25092,7 +25147,7 @@ async function tpLoad(){
     setM('tp-m-planned',planned);setM('tp-m-completed',completed);
     setM('tp-m-progress',progress);setM('tp-m-overdue',overdue,'#E24B4A');
     if(!tpAllData.length){
-      el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)">'
+      if(el)el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)">'
         +'<div style="font-size:40px;margin-bottom:12px">📅</div>'
         +'<div style="font-weight:600;margin-bottom:8px">No training planned for '+trainYear+'</div>'
         +(isMgr()?'<button class="btn btn-primary" onclick="tpNew()"><i class="ti ti-plus"></i>Plan first training</button>':'')
@@ -25141,8 +25196,8 @@ async function tpLoad(){
       h+='</tr>';
     });
     h+='</tbody></table>';
-    el.innerHTML=h;
-  }catch(e){el.innerHTML='<p style="padding:20px;color:red">'+e.message+'</p>';console.error(e);}
+    if(el)el.innerHTML=h;
+  }catch(e){if(el)el.innerHTML='<p style="padding:20px;color:red">'+e.message+'</p>';console.error(e);}
 }
 
 function tpShowForm(){
@@ -25247,7 +25302,7 @@ async function tfLoad(){
     (people||[]).forEach(function(p){opts+='<option value="'+p.id+'">'+p.last_name+', '+p.first_name+(p.job_title?' — '+p.job_title:'')+'</option>';});
     ['tfr-person','authr-person'].forEach(function(id){var sel=document.getElementById(id);if(sel)sel.innerHTML=opts;});
     tfRender(tfAllData);
-  }catch(e){el.innerHTML='<p style="padding:20px;color:red">'+e.message+'</p>';console.error(e);}
+  }catch(e){if(el)el.innerHTML='<p style="padding:20px;color:red">'+e.message+'</p>';console.error(e);}
 }
 
 function tfFilter(){
@@ -25452,7 +25507,7 @@ async function authLoad(){
     // Alerts for expiring
     authShowAlerts();
     authRender(authAllData);
-  }catch(e){el.innerHTML='<p style="padding:20px;color:red">'+e.message+'</p>';console.error(e);}
+  }catch(e){if(el)el.innerHTML='<p style="padding:20px;color:red">'+e.message+'</p>';console.error(e);}
 }
 
 function authShowAlerts(){
