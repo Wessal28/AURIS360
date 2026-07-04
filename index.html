@@ -13411,79 +13411,92 @@ function raFilterList(){
       +'</div>';
     return;
   }
-  var h='<div style="overflow:auto"><table style="width:100%;min-width:1120px;border-collapse:collapse;font-size:12px">'
-    +'<thead><tr style="background:#1a3a5c;color:#fff">'
-    +'<th style="padding:10px 12px;color:#fff;text-align:left">Ref</th>'
-    +'<th style="padding:10px;color:#fff;text-align:left">Type</th>'
-    +'<th style="padding:10px;color:#fff;text-align:left">Title / Activity</th>'
-    +'<th style="padding:10px;color:#fff;text-align:left">Location</th>'
-    +'<th style="padding:10px;color:#fff;text-align:left">Assessor</th>'
-    +'<th style="padding:10px;color:#fff;text-align:left">Date</th>'
-    +'<th style="padding:10px;color:#fff;text-align:center">Risk</th>'
-    +'<th style="padding:10px;color:#fff;text-align:center">Status</th>'
-    +'<th style="padding:10px;color:#fff;text-align:left">Review</th>'
-    +'<th style="padding:10px;color:#fff;width:54px"></th>'
-    +'</tr></thead><tbody>';
-  filt.forEach(function(x){
-    var type=x.ra_type_v2||x.ra_type||'baseline';
-    var cfg=RA_TYPE_CFG[type]||RA_TYPE_CFG.baseline;
-    var sc=RA_STATUS_CFG[x.status]||RA_STATUS_CFG.draft;
-    var rl=x.overall_risk_level||x.risk_level||'';
-    var rlcfg=RL_CFG[rl]||['#f3f4f6','#6B7280'];
-    var isReviewDue=x.review_date&&new Date(x.review_date)<=new Date()&&x.status==='active';
-    h+='<tr style="border-bottom:1px solid #eef2f7;cursor:pointer" data-id="'+x.id+'" onclick="raOpen(this.dataset.id)">'
-      +'<td style="padding:9px 12px;font-family:monospace;font-weight:800;color:'+cfg.color+'">'+escH(x.ra_ref||'DRAFT')+'<div style="font-size:10px;color:var(--text2)">Rev '+escH(x.revision||1)+'</div></td>'
-      +'<td style="padding:9px"><span style="background:'+cfg.bg+';color:'+cfg.color+';border:1px solid '+cfg.color+'33;padding:2px 8px;border-radius:99px;font-size:10px;font-weight:800">'+cfg.emoji+' '+escH(cfg.label)+'</span></td>'
-      +'<td style="padding:9px;min-width:260px"><div style="font-weight:800">'+escH(x.title||x.activity||x.workshop||'Untitled RA')+'</div><div style="font-size:11px;color:var(--text2)">'+escH(x.scope||'').substring(0,90)+'</div></td>'
-      +'<td style="padding:9px">'+escH(x.location||x.workshop||'—')+'</td>'
-      +'<td style="padding:9px">'+escH(x.assessed_by||x.ra_assessor||'—')+'</td>'
-      +'<td style="padding:9px;white-space:nowrap">'+(x.ra_date||x.date?new Date(x.ra_date||x.date).toLocaleDateString('en-GB'):'—')+'</td>'
-      +'<td style="padding:9px;text-align:center">'+(rl?'<span style="background:'+rlcfg[0]+';color:'+rlcfg[1]+';padding:2px 8px;border-radius:4px;font-size:11px;font-weight:800">'+escH(rl)+'</span>':'—')+'</td>'
-      +'<td style="padding:9px;text-align:center"><span style="background:'+sc[0]+';color:'+sc[1]+';padding:2px 9px;border-radius:99px;font-size:11px;font-weight:800">'+sc[2]+'</span></td>'
-      +'<td style="padding:9px;white-space:nowrap">'+(x.review_date?new Date(x.review_date).toLocaleDateString('en-GB'):'—')+(isReviewDue?'<div style="font-size:10px;color:#A32D2D;font-weight:800">REVIEW DUE</div>':'')+'</td>'
-      +'<td style="padding:9px"><button class="btn btn-sm" onclick="event.stopPropagation();raOpen(\''+x.id+'\')"><i class="ti ti-edit"></i></button></td>'
-      +'</tr>';
-  });
-  el.innerHTML=h+'</tbody></table></div>';
+  raRenderAssessmentRegister(el,filt);
 }
 
-function raRenderTableRows(el,rows,emptyHtml){
+function raRiskLevelFromScore(score){
+  score=parseInt(score||0);
+  return score>=20?'Critical':score>=12?'Very High':score>=6?'High':score>=3?'Medium':score>0?'Low':'';
+}
+function raRiskBadge(level,score){
+  if(!level&&!score)return '<span style="color:var(--text2)">—</span>';
+  level=level||raRiskLevelFromScore(score);
+  var cfg=RL_CFG[level]||['#f3f4f6','#6B7280'];
+  return '<span style="display:inline-flex;align-items:center;justify-content:center;min-width:72px;background:'+cfg[0]+';color:'+cfg[1]+';padding:3px 8px;border-radius:6px;font-size:11px;font-weight:800">'+escH(level||'—')+(score?' <span style="opacity:.72;margin-left:4px">('+escH(score)+')</span>':'')+'</span>';
+}
+function raSummariseRows(x){
+  var rows=Array.isArray(x.rows)?x.rows:(Array.isArray(x.baseline_rows)?x.baseline_rows:[]);
+  var initScore=parseInt(x.overall_risk_score||x.risk_score||0)||0;
+  var initLevel=x.overall_risk_level||x.risk_level||'';
+  var resScore=0,resLevel='';
+  rows.forEach(function(r){
+    var i=parseInt(r.rr||0)||0;
+    var rs=parseInt(r.res_rr||0)||0;
+    if(i>initScore){initScore=i;initLevel=r.rl||raRiskLevelFromScore(i);}
+    if(rs>resScore){resScore=rs;resLevel=r.res_rl||raRiskLevelFromScore(rs);}
+  });
+  if(!initLevel)initLevel=raRiskLevelFromScore(initScore);
+  if(!resLevel&&resScore)resLevel=raRiskLevelFromScore(resScore);
+  return {rows:rows,initialScore:initScore,initialLevel:initLevel,residualScore:resScore,residualLevel:resLevel};
+}
+function raReviewCell(x){
+  if(!x.review_date)return '<span style="color:var(--text2)">No date</span>';
+  var due=new Date(x.review_date);
+  var now=new Date();
+  var soon=new Date();soon.setDate(soon.getDate()+30);
+  var html='<div style="white-space:nowrap;font-weight:700">'+due.toLocaleDateString('en-GB')+'</div>';
+  if(due<=now&&x.status!=='archived')html+='<div style="font-size:10px;color:#A32D2D;font-weight:800">OVERDUE</div>';
+  else if(due<=soon&&x.status!=='archived')html+='<div style="font-size:10px;color:#854F0B;font-weight:800">DUE SOON</div>';
+  return html;
+}
+function raLinkedCell(x){
+  var links=[];
+  if(x.permit_ref)links.push('PTW '+x.permit_ref);
+  if(x.work_order_id)links.push('Work order');
+  if(x.rams_document_name||x.rams_document_url)links.push('RAMS');
+  if(x.job_segment)links.push(x.job_segment);
+  if(!links.length)return '<span style="color:var(--text2)">—</span>';
+  return links.slice(0,3).map(function(v){return '<span style="display:inline-block;background:#f3f4f6;color:#475569;border:1px solid #e5e7eb;border-radius:999px;padding:2px 7px;margin:1px;font-size:10px;font-weight:700">'+escH(v)+'</span>';}).join('');
+}
+function raRenderAssessmentRegister(el,rows,emptyHtml){
   if(!el)return;
   if(!rows.length){el.innerHTML=emptyHtml;return;}
-  var h='<div style="overflow:auto"><table style="width:100%;min-width:1120px;border-collapse:collapse;font-size:12px">'
+  var h='<div style="overflow:auto;border:1px solid var(--border);border-radius:10px;background:#fff"><table style="width:100%;min-width:1260px;border-collapse:collapse;font-size:12px">'
     +'<thead><tr style="background:#1a3a5c;color:#fff">'
     +'<th style="padding:10px 12px;color:#fff;text-align:left">Ref</th>'
+    +'<th style="padding:10px;color:#fff;text-align:left">Assessment / Scope</th>'
     +'<th style="padding:10px;color:#fff;text-align:left">Type</th>'
-    +'<th style="padding:10px;color:#fff;text-align:left">Title / Activity</th>'
-    +'<th style="padding:10px;color:#fff;text-align:left">Location</th>'
-    +'<th style="padding:10px;color:#fff;text-align:left">Assessor</th>'
-    +'<th style="padding:10px;color:#fff;text-align:left">Date</th>'
-    +'<th style="padding:10px;color:#fff;text-align:center">Risk</th>'
-    +'<th style="padding:10px;color:#fff;text-align:center">Status</th>'
-    +'<th style="padding:10px;color:#fff;text-align:left">Review</th>'
+    +'<th style="padding:10px;color:#fff;text-align:left">Site / Dept.</th>'
+    +'<th style="padding:10px;color:#fff;text-align:left">Owner</th>'
+    +'<th style="padding:10px;color:#fff;text-align:center">Initial Risk</th>'
+    +'<th style="padding:10px;color:#fff;text-align:center">Residual Risk</th>'
+    +'<th style="padding:10px;color:#fff;text-align:left">Linked Records</th>'
+    +'<th style="padding:10px;color:#fff;text-align:center">Status / Review</th>'
     +'<th style="padding:10px;color:#fff;width:54px"></th>'
     +'</tr></thead><tbody>';
   rows.forEach(function(x){
     var type=x.ra_type_v2||x.ra_type||'baseline';
     var cfg=RA_TYPE_CFG[type]||RA_TYPE_CFG.baseline;
     var sc=RA_STATUS_CFG[x.status]||RA_STATUS_CFG.draft;
-    var rl=x.overall_risk_level||x.risk_level||'';
-    var rlcfg=RL_CFG[rl]||['#f3f4f6','#6B7280'];
-    var isReviewDue=x.review_date&&new Date(x.review_date)<=new Date()&&x.status==='active';
-    h+='<tr style="border-bottom:1px solid #eef2f7;cursor:pointer" data-id="'+x.id+'" onclick="raOpen(this.dataset.id)">'
-      +'<td style="padding:9px 12px;font-family:monospace;font-weight:800;color:'+cfg.color+'">'+escH(x.ra_ref||'DRAFT')+'<div style="font-size:10px;color:var(--text2)">Rev '+escH(x.revision||1)+'</div></td>'
-      +'<td style="padding:9px"><span style="background:'+cfg.bg+';color:'+cfg.color+';border:1px solid '+cfg.color+'33;padding:2px 8px;border-radius:99px;font-size:10px;font-weight:800">'+cfg.emoji+' '+escH(cfg.label)+'</span></td>'
-      +'<td style="padding:9px;min-width:260px"><div style="font-weight:800">'+escH(x.title||x.activity||x.workshop||'Untitled RA')+'</div><div style="font-size:11px;color:var(--text2)">'+escH(x.scope||'').substring(0,90)+'</div></td>'
-      +'<td style="padding:9px">'+escH(x.location||x.workshop||'—')+'</td>'
-      +'<td style="padding:9px">'+escH(x.assessed_by||x.ra_assessor||'—')+'</td>'
-      +'<td style="padding:9px;white-space:nowrap">'+(x.ra_date||x.date?new Date(x.ra_date||x.date).toLocaleDateString('en-GB'):'—')+'</td>'
-      +'<td style="padding:9px;text-align:center">'+(rl?'<span style="background:'+rlcfg[0]+';color:'+rlcfg[1]+';padding:2px 8px;border-radius:4px;font-size:11px;font-weight:800">'+escH(rl)+'</span>':'—')+'</td>'
-      +'<td style="padding:9px;text-align:center"><span style="background:'+sc[0]+';color:'+sc[1]+';padding:2px 9px;border-radius:99px;font-size:11px;font-weight:800">'+sc[2]+'</span></td>'
-      +'<td style="padding:9px;white-space:nowrap">'+(x.review_date?new Date(x.review_date).toLocaleDateString('en-GB'):'—')+(isReviewDue?'<div style="font-size:10px;color:#A32D2D;font-weight:800">REVIEW DUE</div>':'')+'</td>'
-      +'<td style="padding:9px"><button class="btn btn-sm" onclick="event.stopPropagation();raOpen(\''+x.id+'\')"><i class="ti ti-edit"></i></button></td>'
+    var sum=raSummariseRows(x);
+    h+='<tr style="border-bottom:1px solid #eef2f7;cursor:pointer;vertical-align:top" data-id="'+x.id+'" onclick="raOpen(this.dataset.id)">'
+      +'<td style="padding:11px 12px;font-family:monospace;font-weight:800;color:'+cfg.color+'">'+escH(x.ra_ref||'DRAFT')+'<div style="font-size:10px;color:var(--text2);font-family:inherit">Rev '+escH(x.revision||1)+' · '+escH(sum.rows.length)+' row'+(sum.rows.length===1?'':'s')+'</div></td>'
+      +'<td style="padding:11px;min-width:300px"><div style="font-weight:800">'+escH(x.title||x.activity||x.workshop||'Untitled RA')+'</div><div style="font-size:11px;color:var(--text2);margin-top:2px">'+escH(x.activity||x.scope||'').substring(0,120)+'</div><div style="font-size:10px;color:var(--text2);margin-top:4px">'+(x.ra_date||x.date?'Assessed '+new Date(x.ra_date||x.date).toLocaleDateString('en-GB'):'Assessment date not set')+'</div></td>'
+      +'<td style="padding:11px"><span style="background:'+cfg.bg+';color:'+cfg.color+';border:1px solid '+cfg.color+'33;padding:3px 8px;border-radius:99px;font-size:10px;font-weight:800;white-space:nowrap">'+cfg.emoji+' '+escH(cfg.label)+'</span></td>'
+      +'<td style="padding:11px"><div style="font-weight:700">'+escH(x.location||x.workshop||'—')+'</div><div style="font-size:11px;color:var(--text2)">'+escH(x.department||x.dept||x.site_name||'')+'</div></td>'
+      +'<td style="padding:11px"><div style="font-weight:700">'+escH(x.assessed_by||x.ra_assessor||'—')+'</div><div style="font-size:11px;color:var(--text2)">Approver: '+escH(x.approved_by||x.ra_approver||'—')+'</div></td>'
+      +'<td style="padding:11px;text-align:center">'+raRiskBadge(sum.initialLevel,sum.initialScore)+'</td>'
+      +'<td style="padding:11px;text-align:center">'+raRiskBadge(sum.residualLevel,sum.residualScore)+'</td>'
+      +'<td style="padding:11px;min-width:150px">'+raLinkedCell(x)+'</td>'
+      +'<td style="padding:11px;text-align:center"><span style="display:inline-block;background:'+sc[0]+';color:'+sc[1]+';padding:3px 9px;border-radius:99px;font-size:11px;font-weight:800;white-space:nowrap">'+sc[2]+'</span><div style="margin-top:5px">'+raReviewCell(x)+'</div></td>'
+      +'<td style="padding:11px"><button class="btn btn-sm" title="Open assessment" onclick="event.stopPropagation();raOpen(\''+x.id+'\')"><i class="ti ti-edit"></i></button></td>'
       +'</tr>';
   });
   el.innerHTML=h+'</tbody></table></div>';
+}
+
+function raRenderTableRows(el,rows,emptyHtml){
+  raRenderAssessmentRegister(el,rows,emptyHtml);
 }
 
 function raRenderJSAList(){
@@ -35300,8 +35313,22 @@ function fireEquipStatusBadge(s) {
 
 <!-- ── LIST VIEW ── -->
 <div id="ra-list-view">
+<div class="card" style="margin-bottom:14px;padding:16px 18px;border-left:4px solid #185FA5;background:#f8fbff">
+<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:14px;flex-wrap:wrap">
+<div>
+<div style="font-size:15px;font-weight:800;color:#1a3a5c;margin-bottom:4px">Professional Risk Assessment Register</div>
+<div style="font-size:12px;color:var(--text2);max-width:860px;line-height:1.45">Manage risk assessments from draft to approval, track initial and residual risk, link RAMS/PTW/work orders, and identify reviews due before work is repeated.</div>
+</div>
+<div style="display:flex;gap:8px;flex-wrap:wrap">
+<span style="background:#fff;border:1px solid #dbeafe;color:#185FA5;border-radius:999px;padding:5px 10px;font-size:11px;font-weight:800">Draft</span>
+<span style="background:#fff;border:1px solid #fed7aa;color:#854F0B;border-radius:999px;padding:5px 10px;font-size:11px;font-weight:800">Review</span>
+<span style="background:#fff;border:1px solid #bbf7d0;color:#166534;border-radius:999px;padding:5px 10px;font-size:11px;font-weight:800">Approved</span>
+<span style="background:#fff;border:1px solid #fecaca;color:#991b1b;border-radius:999px;padding:5px 10px;font-size:11px;font-weight:800">Review due</span>
+</div>
+</div>
+</div>
 <!-- Metrics -->
-<div style="display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin-bottom:14px">
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:14px">
 <div class="card" style="padding:10px 12px;border-left:4px solid #1D9E75"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">Active</div><div style="font-size:22px;font-weight:800;color:#1D9E75" id="ra-m-active">—</div></div>
 <div class="card" style="padding:10px 12px;border-left:4px solid #854F0B"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">Draft</div><div style="font-size:22px;font-weight:800;color:#854F0B" id="ra-m-draft">—</div></div>
 <div class="card" style="padding:10px 12px;border-left:4px solid #185FA5"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">Pending Review</div><div style="font-size:22px;font-weight:800;color:#185FA5" id="ra-m-pending">—</div></div>
@@ -35355,7 +35382,16 @@ function fireEquipStatusBadge(s) {
 <button class="btn" onclick="raShowList()"><i class="ti ti-arrow-left"></i>Back</button>
 <div style="font-size:16px;font-weight:700">Create New Risk Assessment — Choose type</div>
 </div>
-<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:14px;margin-bottom:20px">
+<div class="card" style="margin-bottom:14px;padding:14px 16px;border-left:4px solid #1D9E75;background:#f7fffb">
+<div style="font-weight:800;color:#0f766e;margin-bottom:6px">Recommended approach</div>
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;font-size:12px;color:var(--text2)">
+<div><b style="color:#111827">Task-Based RA</b><br/>Use for most operational jobs because it breaks the work into steps.</div>
+<div><b style="color:#111827">Specific RA</b><br/>Use when the hazard family has special controls, such as fire, chemical, machinery, vehicle or ATEX.</div>
+<div><b style="color:#111827">Dynamic RA</b><br/>Use on site when conditions change and a quick decision is needed.</div>
+<div><b style="color:#111827">JSA / HIRA</b><br/>Use for formal job safety analysis or comprehensive hazard studies.</div>
+</div>
+</div>
+<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:14px;margin-bottom:20px">
 <div class="card" style="cursor:pointer;transition:all .15s;border:2px solid var(--border);text-align:center;padding:20px" onclick="raNew('baseline')" onmouseover="this.style.borderColor='#185FA5';this.style.background='#EFF6FF'" onmouseout="this.style.borderColor='var(--border)';this.style.background='#fff'">
 <div style="font-size:36px;margin-bottom:10px">📋</div>
 <div style="font-weight:700;font-size:14px;color:#185FA5;margin-bottom:6px">Baseline / Generic RA</div>
