@@ -13767,12 +13767,12 @@ function raOpen(id){
 
 // ── Risk Scoring ─────────────────────────────────────────────────────────────
 function raRsSelect(n,prefix){
-  var h='<select class="'+prefix+'rs" style="padding:3px 4px;border:1px solid var(--border);border-radius:4px;font-size:11px;width:40px" onchange="raCalcRL(this)">';
+  var h='<select title="Severity: 1 minor, 5 fatality/catastrophic" class="'+prefix+'rs" style="padding:3px 4px;border:1px solid var(--border);border-radius:4px;font-size:11px;width:48px" onchange="raCalcRL(this)">';
   for(var i=1;i<=5;i++)h+='<option value="'+i+'"'+(i===n?' selected':'')+'> '+i+'</option>';
   return h+'</select>';
 }
 function raRopSelect(n,prefix){
-  var h='<select class="'+prefix+'rop" style="padding:3px 4px;border:1px solid var(--border);border-radius:4px;font-size:11px;width:40px" onchange="raCalcRL(this)">';
+  var h='<select title="Likelihood: 1 rare, 5 frequent/almost certain" class="'+prefix+'rop" style="padding:3px 4px;border:1px solid var(--border);border-radius:4px;font-size:11px;width:48px" onchange="raCalcRL(this)">';
   for(var i=1;i<=5;i++)h+='<option value="'+i+'"'+(i===n?' selected':'')+'> '+i+'</option>';
   return h+'</select>';
 }
@@ -35729,6 +35729,20 @@ function fireEquipStatusBadge(s) {
 
 <!-- Hazards tab -->
 <div id="ra-ftview-hazards" style="display:none">
+<div class="card" style="margin-bottom:14px;padding:14px 16px;border-left:4px solid #1D9E75;background:#f7fffb">
+<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:14px;flex-wrap:wrap">
+<div>
+<div style="font-weight:800;color:#0f766e;margin-bottom:4px">How to complete this section</div>
+<div style="font-size:12px;color:var(--text2);line-height:1.45;max-width:880px">Start with the uncontrolled or existing situation, then add control measures and assess the residual risk after controls. The objective is not only to list hazards, but to show that risk has been reduced to an acceptable level.</div>
+</div>
+<div style="display:grid;grid-template-columns:repeat(2,minmax(130px,1fr));gap:6px;font-size:11px;min-width:280px">
+<div style="background:#fff;border:1px solid #d1fae5;border-radius:8px;padding:7px"><b>Severity</b><br/><span style="color:var(--text2)">1 minor to 5 fatality</span></div>
+<div style="background:#fff;border:1px solid #d1fae5;border-radius:8px;padding:7px"><b>Likelihood</b><br/><span style="color:var(--text2)">1 rare to 5 frequent</span></div>
+<div style="background:#fff;border:1px solid #d1fae5;border-radius:8px;padding:7px"><b>Initial risk</b><br/><span style="color:var(--text2)">Before extra controls</span></div>
+<div style="background:#fff;border:1px solid #d1fae5;border-radius:8px;padding:7px"><b>Residual risk</b><br/><span style="color:var(--text2)">After controls</span></div>
+</div>
+</div>
+</div>
 <!-- Hazard library picker -->
 <div class="card" style="margin-bottom:14px;background:linear-gradient(135deg,#f8fafc,#EFF6FF);border:2px solid #185FA540">
 <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:10px">
@@ -35750,20 +35764,20 @@ function fireEquipStatusBadge(s) {
 <button class="btn btn-sm" style="background:rgba(255,255,255,.2);color:#fff;border-color:rgba(255,255,255,.3)" onclick="raBaselineAddRow()"><i class="ti ti-plus"></i>Add row</button>
 </div>
 <div style="overflow-x:auto">
-<table id="ra-baseline-table" style="width:100%;min-width:1100px;border-collapse:collapse;font-size:12px">
+<table id="ra-baseline-table" style="width:100%;min-width:1180px;border-collapse:collapse;font-size:12px">
 <thead><tr style="background:#f0f4ff">
 <th style="padding:7px 10px;text-align:left;border-bottom:1px solid var(--border);min-width:50px">#</th>
 <th style="padding:7px 10px;text-align:left;border-bottom:1px solid var(--border);min-width:160px">Hazard / Activity</th>
 <th style="padding:7px 10px;text-align:left;border-bottom:1px solid var(--border);min-width:120px">Potential Harm</th>
 <th style="padding:7px 10px;text-align:left;border-bottom:1px solid var(--border);min-width:60px">Who</th>
-<th style="padding:7px 6px;text-align:center;border-bottom:1px solid var(--border);width:45px">S</th>
-<th style="padding:7px 6px;text-align:center;border-bottom:1px solid var(--border);width:45px">P</th>
-<th style="padding:7px 6px;text-align:center;border-bottom:1px solid var(--border);width:50px">RR</th>
+<th title="Severity before additional controls" style="padding:7px 6px;text-align:center;border-bottom:1px solid var(--border);width:62px">Initial<br/>Severity</th>
+<th title="Likelihood before additional controls" style="padding:7px 6px;text-align:center;border-bottom:1px solid var(--border);width:66px">Initial<br/>Likelihood</th>
+<th title="Initial risk rating" style="padding:7px 6px;text-align:center;border-bottom:1px solid var(--border);width:64px">Initial<br/>Risk</th>
 <th style="padding:7px 10px;text-align:left;border-bottom:1px solid var(--border);min-width:200px">Control Measures</th>
 <th style="padding:7px 10px;text-align:left;border-bottom:1px solid var(--border);min-width:80px">Hierarchy</th>
-<th style="padding:7px 6px;text-align:center;border-bottom:1px solid var(--border);width:45px">RS</th>
-<th style="padding:7px 6px;text-align:center;border-bottom:1px solid var(--border);width:45px">RP</th>
-<th style="padding:7px 6px;text-align:center;border-bottom:1px solid var(--border);width:50px">RRR</th>
+<th title="Severity after controls" style="padding:7px 6px;text-align:center;border-bottom:1px solid var(--border);width:64px">Residual<br/>Severity</th>
+<th title="Likelihood after controls" style="padding:7px 6px;text-align:center;border-bottom:1px solid var(--border);width:68px">Residual<br/>Likelihood</th>
+<th title="Residual risk rating after controls" style="padding:7px 6px;text-align:center;border-bottom:1px solid var(--border);width:64px">Residual<br/>Risk</th>
 <th style="padding:7px 10px;text-align:left;border-bottom:1px solid var(--border);min-width:100px">Legal Ref</th>
 <th style="padding:7px 6px;border-bottom:1px solid var(--border);width:40px"></th>
 </tr></thead>
@@ -35779,19 +35793,19 @@ function fireEquipStatusBadge(s) {
 <button class="btn btn-sm" style="background:rgba(255,255,255,.2);color:#fff;border-color:rgba(255,255,255,.3)" onclick="raTaskAddRow()"><i class="ti ti-plus"></i>Add task step</button>
 </div>
 <div style="overflow-x:auto">
-<table id="ra-task-table" style="width:100%;min-width:1000px;border-collapse:collapse;font-size:12px">
+<table id="ra-task-table" style="width:100%;min-width:1120px;border-collapse:collapse;font-size:12px">
 <thead><tr style="background:#f0f4ff">
 <th style="padding:7px 10px;text-align:left;border-bottom:1px solid var(--border);min-width:50px">Step</th>
 <th style="padding:7px 10px;text-align:left;border-bottom:1px solid var(--border);min-width:140px">Task / Activity</th>
 <th style="padding:7px 10px;text-align:left;border-bottom:1px solid var(--border);min-width:140px">Hazard</th>
 <th style="padding:7px 10px;text-align:left;border-bottom:1px solid var(--border);min-width:120px">Potential Harm</th>
-<th style="padding:7px 6px;text-align:center;border-bottom:1px solid var(--border);width:45px">S</th>
-<th style="padding:7px 6px;text-align:center;border-bottom:1px solid var(--border);width:45px">P</th>
-<th style="padding:7px 6px;text-align:center;border-bottom:1px solid var(--border);width:50px">RR</th>
+<th title="Severity before additional controls" style="padding:7px 6px;text-align:center;border-bottom:1px solid var(--border);width:62px">Initial<br/>Severity</th>
+<th title="Likelihood before additional controls" style="padding:7px 6px;text-align:center;border-bottom:1px solid var(--border);width:66px">Initial<br/>Likelihood</th>
+<th title="Initial risk rating" style="padding:7px 6px;text-align:center;border-bottom:1px solid var(--border);width:64px">Initial<br/>Risk</th>
 <th style="padding:7px 10px;text-align:left;border-bottom:1px solid var(--border);min-width:200px">Control Measures</th>
-<th style="padding:7px 6px;text-align:center;border-bottom:1px solid var(--border);width:45px">RS</th>
-<th style="padding:7px 6px;text-align:center;border-bottom:1px solid var(--border);width:45px">RP</th>
-<th style="padding:7px 6px;text-align:center;border-bottom:1px solid var(--border);width:50px">RRR</th>
+<th title="Severity after controls" style="padding:7px 6px;text-align:center;border-bottom:1px solid var(--border);width:64px">Residual<br/>Severity</th>
+<th title="Likelihood after controls" style="padding:7px 6px;text-align:center;border-bottom:1px solid var(--border);width:68px">Residual<br/>Likelihood</th>
+<th title="Residual risk rating after controls" style="padding:7px 6px;text-align:center;border-bottom:1px solid var(--border);width:64px">Residual<br/>Risk</th>
 <th style="padding:7px 6px;border-bottom:1px solid var(--border);width:40px"></th>
 </tr></thead>
 <tbody id="ra-task-body"></tbody>
@@ -35810,13 +35824,13 @@ function fireEquipStatusBadge(s) {
 <button class="btn btn-sm" style="background:rgba(255,255,255,.2);color:#fff;border-color:rgba(255,255,255,.3)" onclick="raDynamicAddRow()"><i class="ti ti-plus"></i>Add observation</button>
 </div>
 <div style="overflow-x:auto">
-<table id="ra-dynamic-table" style="width:100%;min-width:900px;border-collapse:collapse;font-size:12px">
+<table id="ra-dynamic-table" style="width:100%;min-width:980px;border-collapse:collapse;font-size:12px">
 <thead><tr style="background:#f0f4ff">
 <th style="padding:7px 10px;text-align:left;border-bottom:1px solid var(--border);min-width:120px">Condition / Hazard</th>
 <th style="padding:7px 10px;text-align:left;border-bottom:1px solid var(--border);min-width:100px">Observed Risk</th>
-<th style="padding:7px 6px;text-align:center;border-bottom:1px solid var(--border);width:45px">S</th>
-<th style="padding:7px 6px;text-align:center;border-bottom:1px solid var(--border);width:45px">P</th>
-<th style="padding:7px 6px;text-align:center;border-bottom:1px solid var(--border);width:50px">RR</th>
+<th title="Severity of observed risk" style="padding:7px 6px;text-align:center;border-bottom:1px solid var(--border);width:62px">Severity</th>
+<th title="Likelihood of observed risk" style="padding:7px 6px;text-align:center;border-bottom:1px solid var(--border);width:66px">Likelihood</th>
+<th title="Current risk rating" style="padding:7px 6px;text-align:center;border-bottom:1px solid var(--border);width:64px">Current<br/>Risk</th>
 <th style="padding:7px 10px;text-align:left;border-bottom:1px solid var(--border);min-width:180px">Immediate Control</th>
 <th style="padding:7px 10px;text-align:left;border-bottom:1px solid var(--border);min-width:100px">Decision</th>
 <th style="padding:7px 6px;border-bottom:1px solid var(--border);width:40px"></th>
@@ -35837,20 +35851,20 @@ function fireEquipStatusBadge(s) {
 <button class="btn btn-sm" style="background:rgba(255,255,255,.2);color:#fff;border-color:rgba(255,255,255,.3)" onclick="raBaselineAddRow()"><i class="ti ti-plus"></i>Add hazard</button>
 </div>
 <div style="overflow-x:auto">
-<table id="ra-hira-table" style="width:100%;min-width:1200px;border-collapse:collapse;font-size:12px">
+<table id="ra-hira-table" style="width:100%;min-width:1280px;border-collapse:collapse;font-size:12px">
 <thead><tr style="background:#fff1f2">
 <th style="padding:7px 10px;text-align:left;border-bottom:1px solid var(--border);min-width:100px">Category</th>
 <th style="padding:7px 10px;text-align:left;border-bottom:1px solid var(--border);min-width:160px">Hazard Description</th>
 <th style="padding:7px 10px;text-align:left;border-bottom:1px solid var(--border);min-width:120px">Potential Harm</th>
 <th style="padding:7px 10px;text-align:left;border-bottom:1px solid var(--border);min-width:100px">Who at Risk</th>
-<th style="padding:7px 6px;text-align:center;border-bottom:1px solid var(--border);width:45px">S</th>
-<th style="padding:7px 6px;text-align:center;border-bottom:1px solid var(--border);width:45px">P</th>
-<th style="padding:7px 6px;text-align:center;border-bottom:1px solid var(--border);width:50px">RR</th>
+<th title="Severity before additional controls" style="padding:7px 6px;text-align:center;border-bottom:1px solid var(--border);width:62px">Initial<br/>Severity</th>
+<th title="Likelihood before additional controls" style="padding:7px 6px;text-align:center;border-bottom:1px solid var(--border);width:66px">Initial<br/>Likelihood</th>
+<th title="Initial risk rating" style="padding:7px 6px;text-align:center;border-bottom:1px solid var(--border);width:64px">Initial<br/>Risk</th>
 <th style="padding:7px 10px;text-align:left;border-bottom:1px solid var(--border);min-width:200px">Control Measures</th>
 <th style="padding:7px 10px;text-align:left;border-bottom:1px solid var(--border);min-width:80px">HOC Level</th>
-<th style="padding:7px 6px;text-align:center;border-bottom:1px solid var(--border);width:45px">RS</th>
-<th style="padding:7px 6px;text-align:center;border-bottom:1px solid var(--border);width:45px">RP</th>
-<th style="padding:7px 6px;text-align:center;border-bottom:1px solid var(--border);width:50px">RRR</th>
+<th title="Severity after controls" style="padding:7px 6px;text-align:center;border-bottom:1px solid var(--border);width:64px">Residual<br/>Severity</th>
+<th title="Likelihood after controls" style="padding:7px 6px;text-align:center;border-bottom:1px solid var(--border);width:68px">Residual<br/>Likelihood</th>
+<th title="Residual risk rating after controls" style="padding:7px 6px;text-align:center;border-bottom:1px solid var(--border);width:64px">Residual<br/>Risk</th>
 <th style="padding:7px 10px;text-align:left;border-bottom:1px solid var(--border);min-width:100px">Legal Ref</th>
 <th style="padding:7px 6px;border-bottom:1px solid var(--border);width:40px"></th>
 </tr></thead>
