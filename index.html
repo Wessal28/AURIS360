@@ -13615,6 +13615,7 @@ function raNew(type){
   document.getElementById('ra-ai-output').innerHTML='';
   document.getElementById('ra-lib-results').innerHTML='';
   document.getElementById('ra-revisions-list').innerHTML='';
+  raRenderRamsUsed();
   raRenderLegalRefs();
   // Show right form body
   raSwitchFormType(raEditingType);
@@ -13802,6 +13803,7 @@ function raOpen(id){
   fillPersonSelect('ra-sign-approver',x.ra_sign_approver);gf('ra-sign-approver-date',x.ra_sign_approver_date);
   gf('ra-briefed-persons',x.ra_briefed);
   gf('ra-rams-url',x.rams_document_url);gf('ra-rams-name',x.rams_document_name);
+  raRenderRamsUsed(x);
   raLoadPermitOptions(x.permit_ref||x.permit_id);
   gf('ra-job-seg',x.job_segment||x.ra_job_seg);
   gf('ra-rejection-reason',x.rejection_reason);
@@ -13901,8 +13903,9 @@ function raBaselineAddRow(r, bodyOverride, typeOverride){
     +'<td style="padding:4px 5px;text-align:center">'+raRsSelect(s,'')+'</td>'
     +'<td style="padding:4px 5px;text-align:center">'+raRopSelect(p,'')+'</td>'
     +'<td class="rl" style="padding:4px 5px;text-align:center" data-score="'+rr+'" data-level="'+rlLvl+'"><span style="background:'+rlCfg[0]+';color:'+rlCfg[1]+';padding:2px 5px;border-radius:4px;font-size:10px;font-weight:700;display:block;text-align:center">'+rr+'<br><span style="font-size:9px">'+rlLvl+'</span></span></td>'
-    +'<td style="padding:5px 8px"><textarea class="ra-controls" style="width:100%;min-height:50px;padding:4px;border:1px solid var(--border);border-radius:4px;font-size:11px;resize:vertical" placeholder="Control measures...">'+escH(r.controls||r.control_measures||'')+'</textarea>'
+    +'<td style="padding:5px 8px"><textarea class="ra-controls" style="width:100%;min-height:50px;padding:4px;border:1px solid var(--border);border-radius:4px;font-size:11px;resize:vertical" placeholder="Existing controls...">'+escH(r.controls||r.control_measures||'')+'</textarea>'
     +'<button class="btn btn-sm" style="margin-top:3px;font-size:9px;padding:2px 5px;color:#185FA5" onclick="raGetControlSuggestions(this)"><i class="ti ti-sparkles" style="font-size:9px"></i>Suggest</button></td>'
+    +'<td style="padding:5px 8px"><textarea class="ra-further-controls" style="width:100%;min-height:50px;padding:4px;border:1px solid var(--border);border-radius:4px;font-size:11px;resize:vertical" placeholder="Further actions / additional controls...">'+escH(r.further_controls||r.further_actions||r.additional_controls||'')+'</textarea></td>'
     +'<td style="padding:4px 5px">'+raHOCSelect(r.hoc_level||r.hierarchy||'')+'</td>'
     +'<td style="padding:4px 5px;text-align:center">'+raRsSelect(rs,'r-')+'</td>'
     +'<td style="padding:4px 5px;text-align:center">'+raRopSelect(rp,'r-')+'</td>'
@@ -13941,8 +13944,9 @@ function raTaskAddRow(r){
     +'<td style="padding:4px 5px;text-align:center">'+raRsSelect(s,'')+'</td>'
     +'<td style="padding:4px 5px;text-align:center">'+raRopSelect(p,'')+'</td>'
     +'<td class="rl" style="padding:4px;text-align:center" data-score="'+rr+'" data-level="'+rlLvl+'"><span style="background:'+rlCfg[0]+';color:'+rlCfg[1]+';padding:2px 5px;border-radius:4px;font-size:10px;font-weight:700;display:block;text-align:center">'+rr+'<br><span style="font-size:9px">'+rlLvl+'</span></span></td>'
-    +'<td style="padding:5px 8px"><textarea class="ra-controls" style="width:100%;min-height:50px;padding:4px;border:1px solid var(--border);border-radius:4px;font-size:11px;resize:vertical" placeholder="Control measures...">'+escH(r.controls||'')+'</textarea>'
+    +'<td style="padding:5px 8px"><textarea class="ra-controls" style="width:100%;min-height:50px;padding:4px;border:1px solid var(--border);border-radius:4px;font-size:11px;resize:vertical" placeholder="Existing controls...">'+escH(r.controls||'')+'</textarea>'
     +'<button class="btn btn-sm" style="margin-top:3px;font-size:9px;padding:2px 5px;color:#185FA5" onclick="raGetControlSuggestions(this)"><i class="ti ti-sparkles" style="font-size:9px"></i>Suggest</button></td>'
+    +'<td style="padding:5px 8px"><textarea class="ra-further-controls" style="width:100%;min-height:50px;padding:4px;border:1px solid var(--border);border-radius:4px;font-size:11px;resize:vertical" placeholder="Further actions / additional controls...">'+escH(r.further_controls||r.further_actions||r.additional_controls||'')+'</textarea></td>'
     +'<td style="padding:4px 5px;text-align:center">'+raRsSelect(rs,'r-')+'</td>'
     +'<td style="padding:4px 5px;text-align:center">'+raRopSelect(rp,'r-')+'</td>'
     +'<td class="r-rl" style="padding:4px;text-align:center" data-score="'+rrr+'" data-level="'+rrlLvl+'"><span style="background:'+rrlCfg[0]+';color:'+rrlCfg[1]+';padding:2px 5px;border-radius:4px;font-size:10px;font-weight:700;display:block;text-align:center">'+rrr+'<br><span style="font-size:9px">'+rrlLvl+'</span></span></td>'
@@ -14016,6 +14020,7 @@ function raCollectRows(){
         rop:parseInt(tr.querySelector('.rop')?.value)||1,
         rr:rr,rl:rr>=20?'Critical':rr>=12?'Very High':rr>=6?'High':rr>=3?'Medium':'Low',
         controls:tr.querySelector('.ra-controls')?.value||'',
+        further_controls:tr.querySelector('.ra-further-controls')?.value||'',
         res_s:parseInt(tr.querySelector('.r-rs')?.value)||1,
         res_p:parseInt(tr.querySelector('.r-rop')?.value)||1,
         res_rr:rrr,res_rl:rrr>=20?'Critical':rrr>=12?'Very High':rrr>=6?'High':rrr>=3?'Medium':'Low'
@@ -14036,6 +14041,7 @@ function raCollectRows(){
       rop:parseInt(tr.querySelector('.rop')?.value)||1,
       rr:rr,rl:rr>=20?'Critical':rr>=12?'Very High':rr>=6?'High':rr>=3?'Medium':'Low',
       controls:tr.querySelector('.ra-controls')?.value||'',
+      further_controls:tr.querySelector('.ra-further-controls')?.value||'',
       hoc_level:tr.querySelector('.ra-hoc')?.value||'',
       res_s:parseInt(tr.querySelector('.r-rs')?.value)||1,
       res_p:parseInt(tr.querySelector('.r-rop')?.value)||1,
@@ -14046,7 +14052,7 @@ function raCollectRows(){
 }
 
 function raRowHasContent(r){
-  return !!((r.hazard||r.task||r.condition||'').trim()||(r.harm||r.observed_risk||'').trim()||(r.controls||'').trim());
+  return !!((r.hazard||r.task||r.condition||'').trim()||(r.harm||r.observed_risk||'').trim()||(r.controls||'').trim()||(r.further_controls||r.further_actions||'').trim());
 }
 
 // ===== RA_JS_PART3.JS =====
@@ -14390,6 +14396,21 @@ function raRenderLegalRefs(){
 }
 
 // ── RAMS Upload (client-side display only — actual upload to be done by user) ─
+function raRenderRamsUsed(rec){
+  var el=document.getElementById('ra-rams-used-card');if(!el)return;
+  var name=(rec&&rec.rams_document_name)||document.getElementById('ra-rams-name')?.value||'';
+  var url=(rec&&rec.rams_document_url)||document.getElementById('ra-rams-url')?.value||'';
+  if(!name&&!url){
+    el.innerHTML='<div style="padding:12px;border:1px dashed var(--border);border-radius:10px;color:var(--text2);font-size:12px">No RAMS / method statement linked yet.</div>';
+    return;
+  }
+  el.innerHTML='<div style="padding:12px;border:1px solid #BBF7D0;background:#F0FDF4;border-radius:10px;color:#166534">'
+    +'<div style="font-size:12px;font-weight:900;margin-bottom:4px"><i class="ti ti-file-check"></i> RAMS used for this assessment</div>'
+    +'<div style="font-size:13px;font-weight:800">'+escH(name||'Linked RAMS / Method Statement')+'</div>'
+    +(url?'<div style="font-size:11px;margin-top:4px;word-break:break-all"><a href="'+escH(url)+'" target="_blank" style="color:#185FA5">Open linked document</a></div>':'<div style="font-size:11px;margin-top:4px;color:#166534">Document reference saved with this RA.</div>')
+    +'</div>';
+}
+
 function raGuessRiskSeverity(text){
   text=(text||'').toLowerCase();
   if(/fatal|death|amputation|explosion|fire|electric shock|collapse|asphyxiation|confined/.test(text))return 5;
@@ -14445,6 +14466,7 @@ function raExtractRowsFromText(text){
 function raApplyImportedPdf(text,fileName){
   var rows=raExtractRowsFromText(text);
   var ramsName=document.getElementById('ra-rams-name'); if(ramsName)ramsName.value=fileName||'Imported RA PDF';
+  raRenderRamsUsed();
   var titleEl=document.getElementById('ra-title');
   if(titleEl&&!titleEl.value){
     var title=(text.match(/(?:risk assessment|rams|method statement)[^\n]{0,80}/i)||[])[0] || (fileName||'Imported risk assessment').replace(/\.pdf$/i,'').replace(/[_-]+/g,' ');
@@ -14465,6 +14487,7 @@ function raApplyImportedPdf(text,fileName){
 async function raHandleRAMSUpload(input){
   var file=input?.files?.[0];if(!file)return;
   var ramsName=document.getElementById('ra-rams-name'); if(ramsName)ramsName.value=file.name;
+  raRenderRamsUsed();
   var el=document.getElementById('ra-rams-status');
   if(el)el.innerHTML='<div style="padding:8px 12px;background:#EFF6FF;border-radius:8px;font-size:12px;color:#185FA5;margin-bottom:8px">Reading '+escH(file.name)+'...</div>';
   if(!/\.pdf$/i.test(file.name)){
@@ -31492,8 +31515,13 @@ function printRiskAssessment(raId) {
   };
   var legalRefs=Array.isArray(ra.legal_refs)?ra.legal_refs:[];
   var approvalStatus=String(ra.status||'draft').replace(/_/g,' ');
+  var taskSteps=[];
+  rows.forEach(function(r){
+    var t=val(r.task,r.step,r.activity);
+    if(t&&!taskSteps.find(function(x){return x.text===t;}))taskSteps.push({no:taskSteps.length+1,text:t});
+  });
 
-  var html = '<div class="report-page">'
+  var html = '<style>@page{size:A4 landscape;margin:8mm}.report-page{max-width:297mm;padding:8mm}table{font-size:8pt}th,td{padding:4px 5px}.rpt-grid{gap:4px 12px}.rpt-section{break-inside:avoid}</style><div class="report-page">'
     + aurisHeader('Controlled Risk Assessment', val(ra.title,ra.activity,'Risk assessment'), ref)
 
     + '<div class="rpt-section"><div class="rpt-section-title secondary">Document Control</div>'
@@ -31521,20 +31549,32 @@ function printRiskAssessment(raId) {
     + fld('Job Segment', val(ra.job_segment,ra.ra_job_seg))
     + '</div></div>'
 
+    + '<div class="rpt-section"><div class="rpt-section-title secondary">Task / Activity Method Steps</div>'
+    + (taskSteps.length?'<table><thead><tr><th style="width:10%">Step</th><th>Activity / Work Task Step</th></tr></thead><tbody>'
+      + taskSteps.map(function(s){return '<tr><td style="text-align:center;font-weight:700">'+s.no+'</td><td>'+escH(s.text)+'</td></tr>';}).join('')
+      + '</tbody></table>'
+      : '<div class="rpt-grid">'+fld('Activity / Work Task',val(ra.activity,ra.title),true)+'</div>')
+    + '</div>'
+
     + '<div class="rpt-section"><div class="rpt-section-title red">Hazards, Controls & Residual Risk</div>'
-    + (rows.length ? '<table><thead><tr><th style="width:16%">Task / Hazard</th><th style="width:18%">Potential Harm</th><th style="width:8%">Initial</th><th style="width:34%">Existing / Required Controls</th><th style="width:8%">Residual</th><th style="width:16%">Owner / Legal Ref</th></tr></thead><tbody>'
+    + (rows.length ? '<table><thead><tr><th style="width:7%">Step</th><th style="width:14%">Hazard</th><th style="width:15%">Risk Description / Harm</th><th style="width:8%">Initial</th><th style="width:22%">Existing Controls</th><th style="width:18%">Further Actions / Controls</th><th style="width:8%">Residual</th><th style="width:8%">Owner / Ref</th></tr></thead><tbody>'
       + rows.map(function(r){
           var hazard=val(r.task,r.hazard,r.condition,r.observed_risk);
+          var task=val(r.task,r.step,r.activity);
+          if(task&&r.hazard)hazard=r.hazard;
           var harm=val(r.harm,r.risk,r.consequence,r.potential_harm);
           var initialLevel=val(r.rl,r.initial_rl,r.risk_level);
           var initialScore=val(r.rr,r.initial_rr,r.risk_score);
           var residualLevel=val(r.res_rl,r.residual_rl,r.residual_risk_level);
           var residualScore=val(r.res_rr,r.residual_rr,r.residual_risk_score);
+          var stepNo=task?((taskSteps.find(function(s){return s.text===task;})||{}).no||''):'';
           return '<tr>'
+            + '<td style="text-align:center;font-weight:700">' + escH(stepNo||'—') + '</td>'
             + '<td>' + escH(hazard||'—') + '</td>'
             + '<td>' + escH(harm||'—') + '</td>'
             + '<td>' + riskBadge(initialLevel,initialScore) + '<br><span style="font-size:8pt;color:#6b7280">S '+escH(val(r.rs,r.s,r.initial_s,'—'))+' / P '+escH(val(r.rop,r.p,r.initial_p,'—'))+'</span></td>'
             + '<td>' + escH(val(r.controls,r.control_measures,'—')) + (r.hoc_level?'<br><span style="font-size:8pt;color:#185FA5">Hierarchy: '+escH(r.hoc_level)+'</span>':'') + '</td>'
+            + '<td>' + escH(val(r.further_controls,r.further_actions,r.additional_controls,'—')) + '</td>'
             + '<td>' + riskBadge(residualLevel,residualScore) + '<br><span style="font-size:8pt;color:#6b7280">S '+escH(val(r.res_s,r.rs2,'—'))+' / P '+escH(val(r.res_p,r.rp2,'—'))+'</span></td>'
             + '<td>' + escH(val(r.who,r.responsible,r.owner,'—')) + (r.legal_ref?'<br><span style="font-size:8pt;color:#6b7280">'+escH(r.legal_ref)+'</span>':'') + '</td>'
             + '</tr>';
@@ -36116,7 +36156,7 @@ function fireEquipStatusBadge(s) {
 <button class="btn btn-sm" style="background:rgba(255,255,255,.2);color:#fff;border-color:rgba(255,255,255,.3)" onclick="raBaselineAddRow()"><i class="ti ti-plus"></i>Add row</button>
 </div>
 <div style="overflow-x:auto">
-<table id="ra-baseline-table" style="width:100%;min-width:1180px;border-collapse:collapse;font-size:12px">
+<table id="ra-baseline-table" style="width:100%;min-width:1380px;border-collapse:collapse;font-size:12px">
 <thead><tr style="background:#f0f4ff">
 <th style="padding:7px 10px;text-align:left;border-bottom:1px solid var(--border);min-width:50px">#</th>
 <th style="padding:7px 10px;text-align:left;border-bottom:1px solid var(--border);min-width:160px">Hazard / Activity</th>
@@ -36125,7 +36165,8 @@ function fireEquipStatusBadge(s) {
 <th title="Severity before additional controls" style="padding:7px 6px;text-align:center;border-bottom:1px solid var(--border);width:62px">Initial<br/>Severity</th>
 <th title="Likelihood before additional controls" style="padding:7px 6px;text-align:center;border-bottom:1px solid var(--border);width:66px">Initial<br/>Likelihood</th>
 <th title="Initial risk rating" style="padding:7px 6px;text-align:center;border-bottom:1px solid var(--border);width:64px">Initial<br/>Risk</th>
-<th style="padding:7px 10px;text-align:left;border-bottom:1px solid var(--border);min-width:200px">Control Measures</th>
+<th style="padding:7px 10px;text-align:left;border-bottom:1px solid var(--border);min-width:190px">Existing Controls</th>
+<th style="padding:7px 10px;text-align:left;border-bottom:1px solid var(--border);min-width:190px">Further Actions / Controls</th>
 <th style="padding:7px 10px;text-align:left;border-bottom:1px solid var(--border);min-width:80px">Hierarchy</th>
 <th title="Severity after controls" style="padding:7px 6px;text-align:center;border-bottom:1px solid var(--border);width:64px">Residual<br/>Severity</th>
 <th title="Likelihood after controls" style="padding:7px 6px;text-align:center;border-bottom:1px solid var(--border);width:68px">Residual<br/>Likelihood</th>
@@ -36149,7 +36190,7 @@ function fireEquipStatusBadge(s) {
 <button class="btn btn-sm" style="background:rgba(255,255,255,.2);color:#fff;border-color:rgba(255,255,255,.3)" onclick="raTaskAddRow()"><i class="ti ti-plus"></i>Add task step</button>
 </div>
 <div style="overflow-x:auto">
-<table id="ra-task-table" style="width:100%;min-width:1120px;border-collapse:collapse;font-size:12px">
+<table id="ra-task-table" style="width:100%;min-width:1320px;border-collapse:collapse;font-size:12px">
 <thead><tr style="background:#f0f4ff">
 <th style="padding:7px 10px;text-align:left;border-bottom:1px solid var(--border);min-width:50px">Step</th>
 <th style="padding:7px 10px;text-align:left;border-bottom:1px solid var(--border);min-width:140px">Task / Activity</th>
@@ -36158,7 +36199,8 @@ function fireEquipStatusBadge(s) {
 <th title="Severity before additional controls" style="padding:7px 6px;text-align:center;border-bottom:1px solid var(--border);width:62px">Initial<br/>Severity</th>
 <th title="Likelihood before additional controls" style="padding:7px 6px;text-align:center;border-bottom:1px solid var(--border);width:66px">Initial<br/>Likelihood</th>
 <th title="Initial risk rating" style="padding:7px 6px;text-align:center;border-bottom:1px solid var(--border);width:64px">Initial<br/>Risk</th>
-<th style="padding:7px 10px;text-align:left;border-bottom:1px solid var(--border);min-width:200px">Control Measures</th>
+<th style="padding:7px 10px;text-align:left;border-bottom:1px solid var(--border);min-width:190px">Existing Controls</th>
+<th style="padding:7px 10px;text-align:left;border-bottom:1px solid var(--border);min-width:190px">Further Actions / Controls</th>
 <th title="Severity after controls" style="padding:7px 6px;text-align:center;border-bottom:1px solid var(--border);width:64px">Residual<br/>Severity</th>
 <th title="Likelihood after controls" style="padding:7px 6px;text-align:center;border-bottom:1px solid var(--border);width:68px">Residual<br/>Likelihood</th>
 <th title="Residual risk rating after controls" style="padding:7px 6px;text-align:center;border-bottom:1px solid var(--border);width:64px">Residual<br/>Risk</th>
@@ -36207,7 +36249,7 @@ function fireEquipStatusBadge(s) {
 <button class="btn btn-sm" style="background:rgba(255,255,255,.2);color:#fff;border-color:rgba(255,255,255,.3)" onclick="raBaselineAddRow()"><i class="ti ti-plus"></i>Add hazard</button>
 </div>
 <div style="overflow-x:auto">
-<table id="ra-hira-table" style="width:100%;min-width:1280px;border-collapse:collapse;font-size:12px">
+<table id="ra-hira-table" style="width:100%;min-width:1480px;border-collapse:collapse;font-size:12px">
 <thead><tr style="background:#fff1f2">
 <th style="padding:7px 10px;text-align:left;border-bottom:1px solid var(--border);min-width:100px">Category</th>
 <th style="padding:7px 10px;text-align:left;border-bottom:1px solid var(--border);min-width:160px">Hazard Description</th>
@@ -36216,7 +36258,8 @@ function fireEquipStatusBadge(s) {
 <th title="Severity before additional controls" style="padding:7px 6px;text-align:center;border-bottom:1px solid var(--border);width:62px">Initial<br/>Severity</th>
 <th title="Likelihood before additional controls" style="padding:7px 6px;text-align:center;border-bottom:1px solid var(--border);width:66px">Initial<br/>Likelihood</th>
 <th title="Initial risk rating" style="padding:7px 6px;text-align:center;border-bottom:1px solid var(--border);width:64px">Initial<br/>Risk</th>
-<th style="padding:7px 10px;text-align:left;border-bottom:1px solid var(--border);min-width:200px">Control Measures</th>
+<th style="padding:7px 10px;text-align:left;border-bottom:1px solid var(--border);min-width:190px">Existing Controls</th>
+<th style="padding:7px 10px;text-align:left;border-bottom:1px solid var(--border);min-width:190px">Further Actions / Controls</th>
 <th style="padding:7px 10px;text-align:left;border-bottom:1px solid var(--border);min-width:80px">HOC Level</th>
 <th title="Severity after controls" style="padding:7px 6px;text-align:center;border-bottom:1px solid var(--border);width:64px">Residual<br/>Severity</th>
 <th title="Likelihood after controls" style="padding:7px 6px;text-align:center;border-bottom:1px solid var(--border);width:68px">Residual<br/>Likelihood</th>
@@ -36313,8 +36356,9 @@ function fireEquipStatusBadge(s) {
 <button class="btn btn-primary" onclick="document.getElementById('ra-rams-file').click()"><i class="ti ti-upload"></i>Choose file</button>
 </div>
 <div id="ra-rams-status"></div>
-<div class="form-group"><label class="form-label">Document URL (if hosted)</label><input type="text" id="ra-rams-url" placeholder="https://..."/></div>
-<div class="form-group"><label class="form-label">Document reference name</label><input type="text" id="ra-rams-name" placeholder="e.g. RAMS-2026-001-Electrical Works"/></div>
+<div id="ra-rams-used-card" style="margin-bottom:12px"></div>
+<div class="form-group"><label class="form-label">Document URL (if hosted)</label><input type="text" id="ra-rams-url" placeholder="https://..." oninput="raRenderRamsUsed()"/></div>
+<div class="form-group"><label class="form-label">Document reference name</label><input type="text" id="ra-rams-name" placeholder="e.g. RAMS-2026-001-Electrical Works" oninput="raRenderRamsUsed()"/></div>
 </div>
 <div class="card">
 <div class="card-title"><i class="ti ti-book"></i> Legal References</div>
