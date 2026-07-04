@@ -13558,6 +13558,7 @@ function raFormTab(tab, btn){
   ['info','hazards','approval','rams','revisions'].forEach(function(t){
     var el=document.getElementById('ra-ftview-'+t);if(el)el.style.display=t===tab?'block':'none';
   });
+  raUpdateQualityPanel();
   if(tab==='revisions')raLoadRevisions();
 }
 
@@ -13654,6 +13655,54 @@ function raSwitchFormType(type){
   ['ra-baseline-body','ra-task-body','ra-dynamic-body','ra-hira-body'].forEach(function(id){
     var el=document.getElementById(id);if(el)el.innerHTML='';
   });
+  raUpdateQualityPanel();
+}
+
+function raGetFieldValue(id){
+  var el=document.getElementById(id);
+  return el?(el.value||'').trim():'';
+}
+function raUpdateQualityPanel(){
+  var el=document.getElementById('ra-quality-panel');if(!el)return;
+  var rows=[];
+  try{rows=raCollectRows().filter(raRowHasContent);}catch(e){rows=[];}
+  var checks=[
+    {label:'Title / activity',ok:!!(raGetFieldValue('ra-title')||raGetFieldValue('ra-activity'))},
+    {label:'Assessor selected',ok:!!raGetFieldValue('ra-assessed-by')},
+    {label:'Assessment date',ok:!!raGetFieldValue('ra-date')},
+    {label:'Review date',ok:!!raGetFieldValue('ra-review-date')},
+    {label:'Hazard/control rows',ok:rows.length>0,detail:rows.length+' row'+(rows.length===1?'':'s')},
+    {label:'Residual risk assessed',ok:rows.some(function(r){return parseInt(r.res_rr||0)>0;})}
+  ];
+  var complete=checks.filter(function(c){return c.ok;}).length;
+  var pct=Math.round((complete/checks.length)*100);
+  var maxInit=0,maxRes=0,initLevel='',resLevel='';
+  rows.forEach(function(r){
+    var i=parseInt(r.rr||0)||0, rs=parseInt(r.res_rr||0)||0;
+    if(i>maxInit){maxInit=i;initLevel=r.rl||raRiskLevelFromScore(i);}
+    if(rs>maxRes){maxRes=rs;resLevel=r.res_rl||raRiskLevelFromScore(rs);}
+  });
+  var tone=pct===100?'#166534':pct>=70?'#854F0B':'#991B1B';
+  var bg=pct===100?'#F0FDF4':pct>=70?'#FFFBEB':'#FEF2F2';
+  var missing=checks.filter(function(c){return !c.ok;}).map(function(c){return c.label;});
+  el.innerHTML='<div style="display:grid;grid-template-columns:minmax(220px,1fr) minmax(260px,1.4fr) minmax(220px,1fr);gap:12px;align-items:stretch">'
+    +'<div style="padding:12px;border:1px solid var(--border);border-radius:10px;background:'+bg+'">'
+      +'<div style="font-size:11px;text-transform:uppercase;color:var(--text2);font-weight:800;margin-bottom:6px">Assessment readiness</div>'
+      +'<div style="display:flex;align-items:center;gap:10px"><div style="font-size:28px;font-weight:900;color:'+tone+'">'+pct+'%</div><div style="flex:1;height:8px;background:#e5e7eb;border-radius:999px;overflow:hidden"><div style="height:100%;width:'+pct+'%;background:'+tone+'"></div></div></div>'
+      +'<div style="font-size:11px;color:var(--text2);margin-top:6px">'+(missing.length?'Missing: '+escH(missing.join(', ')):'Ready for review / approval')+'</div>'
+    +'</div>'
+    +'<div style="padding:12px;border:1px solid var(--border);border-radius:10px;background:#fff">'
+      +'<div style="font-size:11px;text-transform:uppercase;color:var(--text2);font-weight:800;margin-bottom:8px">Required checks</div>'
+      +'<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:6px">'
+        +checks.map(function(c){return '<div style="display:flex;align-items:center;gap:6px;font-size:11px;color:'+(c.ok?'#166534':'#6b7280')+'"><i class="ti '+(c.ok?'ti-circle-check':'ti-circle')+'" style="font-size:14px"></i><span>'+escH(c.label)+(c.detail?' · '+escH(c.detail):'')+'</span></div>';}).join('')
+      +'</div>'
+    +'</div>'
+    +'<div style="padding:12px;border:1px solid var(--border);border-radius:10px;background:#f8fafc">'
+      +'<div style="font-size:11px;text-transform:uppercase;color:var(--text2);font-weight:800;margin-bottom:8px">Risk summary</div>'
+      +'<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:12px"><span>Initial</span>'+raRiskBadge(initLevel,maxInit)+'</div>'
+      +'<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:12px;margin-top:8px"><span>Residual</span>'+raRiskBadge(resLevel,maxRes)+'</div>'
+    +'</div>'
+  +'</div>';
 }
 
 function raOpen(id){
@@ -13741,6 +13790,7 @@ function raCalcRL(sel){
   var cfg=RL_CFG[lvl]||['#f3f4f6','#6B7280'];
   rlEl.innerHTML='<span style="background:'+cfg[0]+';color:'+cfg[1]+';padding:2px 6px;border-radius:4px;font-size:10px;font-weight:700;display:block;text-align:center">'+rr+'<br><span style="font-size:9px">'+lvl+'</span></span>';
   rlEl.setAttribute('data-score',rr);rlEl.setAttribute('data-level',lvl);
+  raUpdateQualityPanel();
 }
 
 function raRLBadge(rl){
@@ -13789,14 +13839,16 @@ function raBaselineAddRow(r, bodyOverride, typeOverride){
     +'<td style="padding:4px 5px;text-align:center">'+raRopSelect(rp,'r-')+'</td>'
     +'<td class="r-rl" style="padding:4px 5px;text-align:center" data-score="'+rrr+'" data-level="'+rrlLvl+'"><span style="background:'+rrlCfg[0]+';color:'+rrlCfg[1]+';padding:2px 5px;border-radius:4px;font-size:10px;font-weight:700;display:block;text-align:center">'+rrr+'<br><span style="font-size:9px">'+rrlLvl+'</span></span></td>'
     +'<td style="padding:5px 8px"><input class="ra-legal" type="text" style="width:90px;padding:3px 4px;border:1px solid var(--border);border-radius:4px;font-size:10px" value="'+escH(r.legal_ref||r.legal||'')+'" placeholder="OSH Act..."/></td>'
-    +'<td style="padding:4px;text-align:center"><button class="btn btn-sm" style="color:var(--red);padding:2px 6px" onclick="this.closest(\'tr\').remove()"><i class="ti ti-x" style="font-size:10px"></i></button></td>';
+    +'<td style="padding:4px;text-align:center"><button class="btn btn-sm" style="color:var(--red);padding:2px 6px" onclick="this.closest(\'tr\').remove();raUpdateQualityPanel()"><i class="ti ti-x" style="font-size:10px"></i></button></td>';
   body.appendChild(tr);
+  setTimeout(raUpdateQualityPanel,0);
 }
 
 function raBaselineRender(rows){
   var body=document.getElementById('ra-baseline-body');if(!body)return;
   body.innerHTML='';rows.forEach(function(r){raBaselineAddRow(r);});
   if(!rows.length)raBaselineAddRow();
+  setTimeout(raUpdateQualityPanel,0);
 }
 
 // ── Task-Based RA ─────────────────────────────────────────────────────────────
@@ -13825,14 +13877,16 @@ function raTaskAddRow(r){
     +'<td style="padding:4px 5px;text-align:center">'+raRsSelect(rs,'r-')+'</td>'
     +'<td style="padding:4px 5px;text-align:center">'+raRopSelect(rp,'r-')+'</td>'
     +'<td class="r-rl" style="padding:4px;text-align:center" data-score="'+rrr+'" data-level="'+rrlLvl+'"><span style="background:'+rrlCfg[0]+';color:'+rrlCfg[1]+';padding:2px 5px;border-radius:4px;font-size:10px;font-weight:700;display:block;text-align:center">'+rrr+'<br><span style="font-size:9px">'+rrlLvl+'</span></span></td>'
-    +'<td style="padding:4px;text-align:center"><button class="btn btn-sm" style="color:var(--red);padding:2px 6px" onclick="this.closest(\'tr\').remove()"><i class="ti ti-x" style="font-size:10px"></i></button></td>';
+    +'<td style="padding:4px;text-align:center"><button class="btn btn-sm" style="color:var(--red);padding:2px 6px" onclick="this.closest(\'tr\').remove();raUpdateQualityPanel()"><i class="ti ti-x" style="font-size:10px"></i></button></td>';
   body.appendChild(tr);
+  setTimeout(raUpdateQualityPanel,0);
 }
 
 function raTaskRender(rows){
   var body=document.getElementById('ra-task-body');if(!body)return;
   body.innerHTML='';rows.forEach(function(r){raTaskAddRow(r);});
   if(!rows.length)raTaskAddRow();
+  setTimeout(raUpdateQualityPanel,0);
 }
 
 // ── Dynamic RA ────────────────────────────────────────────────────────────────
@@ -13854,14 +13908,16 @@ function raDynamicAddRow(r){
     +'<option value="monitor"'+(r.decision==='monitor'?' selected':'')+'>⚠ Monitor</option>'
     +'<option value="stop_work"'+(r.decision==='stop_work'?' selected':'')+'>✗ Stop Work</option>'
     +'</select></td>'
-    +'<td style="padding:4px;text-align:center"><button class="btn btn-sm" style="color:var(--red);padding:2px 6px" onclick="this.closest(\'tr\').remove()"><i class="ti ti-x" style="font-size:10px"></i></button></td>';
+    +'<td style="padding:4px;text-align:center"><button class="btn btn-sm" style="color:var(--red);padding:2px 6px" onclick="this.closest(\'tr\').remove();raUpdateQualityPanel()"><i class="ti ti-x" style="font-size:10px"></i></button></td>';
   body.appendChild(tr);
+  setTimeout(raUpdateQualityPanel,0);
 }
 
 function raDynamicRender(rows){
   var body=document.getElementById('ra-dynamic-body');if(!body)return;
   body.innerHTML='';rows.forEach(function(r){raDynamicAddRow(r);});
   if(!rows.length)raDynamicAddRow();
+  setTimeout(raUpdateQualityPanel,0);
 }
 
 // ── Collect Rows ──────────────────────────────────────────────────────────────
@@ -35565,7 +35621,7 @@ function fireEquipStatusBadge(s) {
 </div>
 </div>
 
-<div id="ra-form-view" style="display:none">
+<div id="ra-form-view" style="display:none" oninput="raUpdateQualityPanel()" onchange="raUpdateQualityPanel()">
 <!-- Form header -->
 <div class="card" style="margin-bottom:14px;padding:0;overflow:hidden">
 <div style="padding:16px 24px;background:linear-gradient(135deg,#1a3a5c,#185FA5);color:#fff;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
@@ -35596,6 +35652,9 @@ function fireEquipStatusBadge(s) {
 </select>
 <span style="font-size:12px;font-weight:600;color:var(--text2);margin-left:10px">Revision:</span>
 <span style="font-family:monospace;font-size:13px;font-weight:700;color:#185FA5" id="ra-rev-badge">Rev 1</span>
+</div>
+<div style="padding:12px 24px;background:#fff;border-top:1px solid var(--border)">
+<div id="ra-quality-panel"></div>
 </div>
 </div>
 
