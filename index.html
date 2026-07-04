@@ -32019,40 +32019,78 @@ function printAuditReport(auditId) {
   var audit = (auditAllData||[]).find(function(x){ return x.id === auditId; });
   if (!audit) { toast('Audit not found', false); return; }
 
-  var findings = (typeof auditFindings !== 'undefined' ? auditFindings : [])
-    .filter(function(f){ return f.audit_id === auditId; });
-
-  var score = audit.score_good && audit.total_items
-    ? Math.round((audit.score_good / audit.total_items) * 100) + '%'
-    : audit.score || '—';
+  var val=function(){for(var i=0;i<arguments.length;i++){if(arguments[i]!==undefined&&arguments[i]!==null&&String(arguments[i]).trim()!=='')return arguments[i];}return '';};
+  var fmtDate=function(v){return v?new Date(v).toLocaleDateString('en-GB'):'—';};
+  var formOpen = auditEditId === auditId && document.getElementById('audit-form-view')?.style.display !== 'none';
+  var g=function(id){var el=document.getElementById(id);return el?el.value||'':'';};
+  var liveItems = [];
+  if(formOpen){
+    liveItems = (window.chkItems||[]).map(function(c,i){
+      if(!c.item)return null;
+      var result = document.getElementById('cg-'+i)?.checked ? 'good'
+        : (document.getElementById('ci-'+i)?.checked ? 'insufficient'
+        : (document.getElementById('cn-'+i)?.checked ? 'na' : ''));
+      return {category:c.ca||'',item:c.item||'',result:result,observation:document.getElementById('co-'+i)?.value||''};
+    }).filter(Boolean);
+  }
+  var items = liveItems.length ? liveItems : (Array.isArray(audit.items) ? audit.items : (Array.isArray(audit.checklist_results) ? audit.checklist_results : []));
+  var findings = ((typeof auditFindingsData !== 'undefined' ? auditFindingsData : []).concat(typeof auditFindings !== 'undefined' ? auditFindings : []))
+    .filter(function(f){ return f.inspection_id === auditId || f.audit_id === auditId; });
+  var actions = formOpen
+    ? Array.from(document.querySelectorAll('.if-action-row')).map(function(row){
+        return {description:row.querySelector('.ia-desc')?.value||'',responsible:row.querySelector('.ia-who')?.value||'',target_date:row.querySelector('.ia-due')?.value||''};
+      }).filter(function(a){return a.description;})
+    : (Array.isArray(audit.action_items)?audit.action_items:[]);
+  var photos = Array.isArray(audit.photos)?audit.photos:[];
+  var goodCnt = items.filter(function(x){return x.result==='good'||x.result==='ok'||x.result==='pass';}).length;
+  var insufCnt = items.filter(function(x){return x.result==='insufficient'||x.result==='nc'||x.result==='fail';}).length;
+  var scoredTotal = goodCnt + insufCnt;
+  var score = scoredTotal ? Math.round(goodCnt/scoredTotal*100)+'%' : (audit.score||'—');
+  var ref = val(audit.reference_no,audit.audit_ref,'AUD-'+auditId.substring(0,8).toUpperCase());
+  var type = val(formOpen?g('audit-type'):'',audit.inspection_type,audit.audit_type,'workplace');
+  var resultBadge=function(r){
+    r=String(r||'').toLowerCase();
+    var label = r==='good'||r==='ok'||r==='pass'?'Good':(r==='insufficient'||r==='nc'||r==='fail'?'Insufficient':(r==='na'?'N/A':'—'));
+    var cls = label==='Good'?'badge-green':label==='Insufficient'?'badge-red':label==='N/A'?'badge-grey':'badge-grey';
+    return '<span class="badge '+cls+'">'+label+'</span>';
+  };
 
   var html = '<div class="report-page">'
-    + aurisHeader('Inspection / Audit Report', audit.audit_type||'Workplace Inspection', 'AUD-'+auditId.substring(0,8).toUpperCase())
+    + aurisHeader('Inspection / Audit Report', auditLabel(type), ref)
 
     + '<div class="rpt-section"><div class="rpt-section-title">Audit Details</div>'
     + '<div class="rpt-grid">'
-    + fld('Audit Type', audit.audit_type)
-    + fld('Location / Area', audit.location)
-    + fld('Date', audit.audit_date ? new Date(audit.audit_date).toLocaleDateString('en-GB') : '')
-    + fld('Lead Auditor', audit.auditor)
-    + fld('Department', audit.department)
+    + fld('Inspection Type', auditLabel(type))
+    + fld('Location / Area', val(formOpen?g('if-site'):'',audit.site,audit.if_site,audit.location))
+    + fld('Date', fmtDate(val(formOpen?g('if-date'):'',audit.inspection_date,audit.if_date,audit.audit_date)))
+    + fld('Inspector / Auditor', val(formOpen?g('if-by'):'',audit.inspector,audit.if_by,audit.by,audit.auditor))
+    + fld('Department', val(formOpen?g('audit-dept'):'',audit.department))
     + fld('Score', score)
-    + fld('Status', audit.status)
-    + fld('Next Audit', audit.next_audit_date ? new Date(audit.next_audit_date).toLocaleDateString('en-GB') : '')
+    + fld('Status', val(formOpen?g('audit-status'):'',audit.status))
+    + fld('Priority', val(formOpen?g('audit-priority'):'',audit.priority))
+    + fld('Audit Standard', val(formOpen?g('audit-standard'):'',audit.audit_standard))
+    + fld('Scope', val(formOpen?g('audit-scope'):'',audit.audit_scope), true)
+    + fld('GPS / Address', val(formOpen?g('audit-gps-address'):'',audit.gps_address), true)
     + '</div></div>'
 
+    + '<div class="rpt-section"><div class="rpt-section-title blue">Inspection Checklist</div>'
+    + (items.length ? '<table><thead><tr><th style="width:20%">Category</th><th>Item / Requirement</th><th style="width:12%">Result</th><th style="width:30%">Observation / Notes</th></tr></thead><tbody>'
+      + items.map(function(it){
+          return '<tr><td>'+escH(it.category||it.ca||'')+'</td><td>'+escH(it.item||it.item_name||'')+'</td><td>'+resultBadge(it.result)+'</td><td>'+escH(it.observation||it.obs||it.note||'')+'</td></tr>';
+        }).join('') + '</tbody></table>'
+      : '<p style="color:#6b7280;font-size:9pt;padding:8px">No checklist details recorded.</p>')
+    + '</div>'
+
     + '<div class="rpt-section"><div class="rpt-section-title red">Findings & Non-Conformances</div>'
-    + (findings.length ? '<table><thead><tr><th>Category</th><th>Finding</th><th>Severity</th><th>Action Required</th><th>Responsible</th><th>Due</th></tr></thead><tbody>'
+    + (findings.length ? '<table><thead><tr><th>Type</th><th>Clause</th><th>Finding</th><th>Evidence</th><th>Action Required</th><th>Assigned To</th></tr></thead><tbody>'
       + findings.map(function(f){
-          var sev = f.severity;
-          var cls = sev==='critical'?'badge-red':sev==='major'?'badge-amber':sev==='minor'?'badge-blue':'badge-grey';
           return '<tr>'
-            + '<td>' + escH(f.category||'') + '</td>'
-            + '<td>' + escH(f.finding||'') + '</td>'
-            + '<td><span class="badge ' + cls + '">' + escH(sev||'') + '</span></td>'
-            + '<td>' + escH(f.action_required||'') + '</td>'
-            + '<td>' + escH(f.responsible||'') + '</td>'
-            + '<td>' + (f.due_date?new Date(f.due_date).toLocaleDateString('en-GB'):'—') + '</td>'
+            + '<td>' + escH(auditLabel(f.finding_type||f.category||'')) + '</td>'
+            + '<td>' + escH(f.clause||'') + '</td>'
+            + '<td>' + escH(f.description||f.finding||'') + '</td>'
+            + '<td>' + escH(f.evidence||'') + '</td>'
+            + '<td>' + escH(f.corrective_action||f.action_required||'') + '</td>'
+            + '<td>' + escH(f.assigned_to||f.responsible||'') + '</td>'
             + '</tr>';
         }).join('') + '</tbody></table>'
       : '<p style="color:#6b7280;font-size:9pt;padding:8px">No findings recorded.</p>')
@@ -32060,19 +32098,26 @@ function printAuditReport(auditId) {
 
     + '<div class="rpt-section"><div class="rpt-section-title blue">General Observations</div>'
     + '<div class="rpt-grid">'
-    + fld('Positive Observations', audit.positive_observations, true)
-    + fld('Overall Comments', audit.comments, true)
+    + fld('Positive Observations', val(formOpen?g('if-pos'):'',audit.positive_obs,audit.if_pos,audit.positive_observations), true)
+    + fld('Issues / Non-Conformances', val(formOpen?g('if-neg'):'',audit.negative_obs,audit.if_neg,audit.comments), true)
     + '</div></div>'
 
+    + '<div class="rpt-section"><div class="rpt-section-title amber">Corrective Actions & Evidence</div>'
+    + (actions.length ? '<table><thead><tr><th>Action</th><th>Responsible</th><th>Due Date</th></tr></thead><tbody>'
+      + actions.map(function(a){return '<tr><td>'+escH(a.description||'')+'</td><td>'+escH(a.responsible||a.assigned_to||'')+'</td><td>'+fmtDate(a.target_date||a.due_date)+'</td></tr>';}).join('')
+      + '</tbody></table>' : '<p style="color:#6b7280;font-size:9pt;padding:8px">No corrective actions recorded.</p>')
+    + (photos.length ? '<div class="rpt-grid">'+fld('Evidence Links', photos.map(function(p){return p.url||p;}).join('; '), true)+'</div>' : '')
+    + '</div>'
+
     + '<div class="rpt-signatures">'
-    + '<div class="rpt-sig-box"><div class="sig-line"></div><label>Lead Auditor / Date</label></div>'
+    + '<div class="rpt-sig-box"><div class="sig-line">'+escH(val(formOpen?g('if-sign-inspector'):'',audit.sign_inspector,''))+'</div><label>Inspector / '+fmtDate(val(formOpen?g('if-sign-date'):'',audit.sign_date))+'</label></div>'
     + '<div class="rpt-sig-box"><div class="sig-line"></div><label>Area Manager / Date</label></div>'
-    + '<div class="rpt-sig-box"><div class="sig-line"></div><label>HSE Manager / Date</label></div>'
+    + '<div class="rpt-sig-box"><div class="sig-line">'+escH(val(formOpen?g('if-sign-reviewer'):'',audit.sign_reviewer,''))+'</div><label>HSE Manager / '+fmtDate(val(formOpen?g('if-sign-reviewer-date'):'',audit.sign_reviewer_date))+'</label></div>'
     + '</div>'
     + aurisFooter('Audit / Inspection Report')
     + '</div>';
 
-  aurisPrint(html, 'Audit Report — ' + auditId.substring(0,8));
+  aurisPrint(html, 'Audit Report — ' + ref);
 }
 
 // ── 4. PERMIT TO WORK ──────────────────────────────────────────
@@ -36049,13 +36094,13 @@ function fireEquipStatusBadge(s) {
 <div style="overflow:auto">
 <table style="width:100%;border-collapse:collapse;font-size:12px">
 <thead><tr style="background:#185FA5;color:#fff">
-<th style="padding:6px 10px;text-align:left;width:35%">Category</th>
-<th style="padding:6px 10px;text-align:left">Item / requirement</th>
-<th style="padding:6px 8px;text-align:center;width:60px">✓ Good</th>
-<th style="padding:6px 8px;text-align:center;width:70px">✗ Insuf.</th>
-<th style="padding:6px 8px;text-align:center;width:50px">N/A</th>
-<th style="padding:6px 8px;text-align:center;width:50px">📷</th>
-<th style="padding:6px 10px;text-align:left;width:25%">Observation / notes</th>
+<th style="padding:6px 10px;text-align:left;width:35%;color:#fff">Category</th>
+<th style="padding:6px 10px;text-align:left;color:#fff">Item / requirement</th>
+<th style="padding:6px 8px;text-align:center;width:60px;color:#fff">✓ Good</th>
+<th style="padding:6px 8px;text-align:center;width:70px;color:#fff">✗ Insuf.</th>
+<th style="padding:6px 8px;text-align:center;width:50px;color:#fff">N/A</th>
+<th style="padding:6px 8px;text-align:center;width:50px;color:#fff">📷</th>
+<th style="padding:6px 10px;text-align:left;width:25%;color:#fff">Observation / notes</th>
 </tr></thead>
 <tbody id="if-checklist"></tbody>
 </table>
