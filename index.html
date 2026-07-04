@@ -25309,6 +25309,7 @@ function tbtNew(){
   document.getElementById('tbt-actions-list').innerHTML='';
   document.getElementById('tbt-preview-title').textContent='Toolbox Talk';
   document.getElementById('tbt-preview-count').textContent='0';
+  tbtLoadWorkOptions('');
   tbtShowForm();
 }
 
@@ -25322,19 +25323,21 @@ function tbtEdit(id){
   gf('tbtf-title',x.title);gf('tbtf-location',x.location);gf('tbtf-dept',x.department);
   tbtSetPresenterControl(x.presenter||prof?.full_name||prof?.email||'');gf('tbtf-key-points',x.key_points);
   gf('tbtf-hazards',x.hazards_discussed);gf('tbtf-incidents',x.incidents_referenced);
-  gf('tbtf-notes',x.notes);gf('tbtf-date',x.talk_date);
+  var link=tbtParseLinkedWork(x.notes||'');
+  gf('tbtf-notes',tbtStripLinkedWork(x.notes||''));gf('tbtf-date',x.talk_date);
   document.getElementById('tbtf-duration').value=x.duration_mins||15;
   document.getElementById('tbtf-att-count').value=tbtStoredCount(x);
   document.getElementById('tbtf-category').value=x.topic_category||'safety_general';
   document.getElementById('tbtf-status').value=x.status||'completed';
   // Render attendees
   var attEl=document.getElementById('tbt-attendees-list');
-  if(attEl)attEl.innerHTML=(x.attendees||[]).map(function(a,i){return tbtAttendeeRow(a.name||'',a.dept||'',i);}).join('');
+  if(attEl)attEl.innerHTML=(x.attendees||[]).map(function(a,i){return tbtAttendeeRow(a.name||'',a.dept||'',i,a.confirmed_at||'',a.confirmation_method||'');}).join('');
   // Render actions
   var actEl=document.getElementById('tbt-actions-list');
   if(actEl)actEl.innerHTML=(x.actions_raised||[]).map(function(a,i){return tbtActionRow(a.description||'',a.assigned_to||'',a.due_date||'',i);}).join('');
   document.getElementById('tbt-preview-title').textContent=x.title||'Toolbox Talk';
   document.getElementById('tbt-preview-count').textContent=tbtStoredCount(x);
+  tbtLoadWorkOptions(link.id||x.work_order_id||'');
   tbtShowForm();
 }
 
@@ -25369,12 +25372,63 @@ function tbtFillAttendeeDept(sel){
   if(dept&&p)dept.value=p.department||'';
   tbtUpdateCount();
 }
-function tbtAttendeeRow(name,dept,idx){
+function tbtLinkedWorkMarker(work){
+  if(!work||!work.id)return '';
+  return '\n\n[AURIS360_LINKED_WORK:'+JSON.stringify({id:work.id,ref:work.ref||'',title:work.title||''})+']';
+}
+function tbtParseLinkedWork(notes){
+  var m=String(notes||'').match(/\[AURIS360_LINKED_WORK:({[\s\S]*?})\]/);
+  if(!m)return {};
+  try{return JSON.parse(m[1])||{};}catch(_){return {};}
+}
+function tbtStripLinkedWork(notes){
+  return String(notes||'').replace(/\n?\n?\[AURIS360_LINKED_WORK:{[\s\S]*?}\]/,'').trim();
+}
+async function tbtLoadWorkOptions(selected){
+  var sel=document.getElementById('tbtf-work-link');if(!sel)return;
+  sel.innerHTML='<option value="">No linked work / activity</option>';
+  try{
+    if(!wsAllData||!wsAllData.length){
+      try{wsAllData=await api('/work_schedule?select=id,ref_number,title,location,status,planned_start'+cf()+'&order=planned_start.desc&limit=100')||[];}catch(_){}
+    }
+    sel.innerHTML='<option value="">No linked work / activity</option>'+(wsAllData||[]).map(function(w){
+      var label=[w.ref_number,w.title,w.location].filter(Boolean).join(' - ');
+      return '<option value="'+escH(w.id)+'" '+(w.id===selected?'selected':'')+'>'+escH(label||w.id)+'</option>';
+    }).join('');
+  }catch(e){console.warn('Could not load work options for TBT',e);}
+}
+function tbtSelectedWork(){
+  var sel=document.getElementById('tbtf-work-link');
+  if(!sel||!sel.value)return null;
+  var w=(wsAllData||[]).find(function(x){return x.id===sel.value;})||{};
+  return {id:sel.value,ref:w.ref_number||'',title:w.title||sel.options[sel.selectedIndex]?.text||''};
+}
+function tbtConfirmAttendee(btn){
+  var row=btn.closest('.tbt-att-row');
+  var name=row?.querySelector('.tbt-att-name')?.value||'';
+  if(!name){toast('Select attendee first',false);return;}
+  var pin=row.querySelector('.tbt-att-pin')?.value?.trim()||'';
+  var p=personByDisplayName(name);
+  var expected=[p?.employee_number,p?.id_number].filter(Boolean).map(function(x){return String(x).trim();});
+  if(expected.length && expected.indexOf(pin)<0){toast('Employee code / ID does not match this person',false);return;}
+  if(!expected.length && !pin){toast('Enter employee code / PIN to confirm attendance',false);return;}
+  var ts=new Date().toISOString();
+  row.dataset.confirmedAt=ts;
+  row.dataset.confirmationMethod=expected.length?'employee_code':'manual_pin';
+  var status=row.querySelector('.tbt-att-confirm-status');
+  if(status)status.innerHTML='<span style="color:#1D9E75;font-weight:700"><i class="ti ti-circle-check"></i> Confirmed '+new Date(ts).toLocaleString()+'</span>';
+  var pinEl=row.querySelector('.tbt-att-pin');if(pinEl)pinEl.value='';
+}
+function tbtAttendeeRow(name,dept,idx,confirmedAt,method){
+  var confirmedText=confirmedAt?'<span style="color:#1D9E75;font-weight:700"><i class="ti ti-circle-check"></i> Confirmed '+new Date(confirmedAt).toLocaleString()+'</span>':'<span style="color:var(--text2)">Not confirmed</span>';
   return '<div class="tbt-att-row" style="display:flex;gap:6px;align-items:center;margin-bottom:6px">'
     +'<select class="tbt-att-name" onchange="tbtFillAttendeeDept(this)" style="flex:2;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px">'+tbtPersonOptions(name)+'</select>'
     +'<input type="text" placeholder="Dept" value="'+escH(dept)+'" class="tbt-att-dept" style="flex:1;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px"/>'
+    +'<input type="password" placeholder="Employee code / PIN" class="tbt-att-pin" style="flex:1;min-width:120px;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px"/>'
+    +'<button class="btn btn-sm" style="color:#1D9E75;padding:4px 8px" onclick="tbtConfirmAttendee(this)"><i class="ti ti-signature"></i>Confirm</button>'
+    +'<span class="tbt-att-confirm-status" style="font-size:10px;min-width:160px">'+confirmedText+'</span>'
     +'<button class="btn btn-sm" style="color:var(--red);padding:4px 8px" onclick="this.closest(\'.tbt-att-row\').remove();tbtUpdateCount()"><i class="ti ti-x"></i></button>'
-    +'</div>';
+    +'</div>'.replace('class="tbt-att-row"','class="tbt-att-row" data-confirmed-at="'+escH(confirmedAt||'')+'" data-confirmation-method="'+escH(method||'')+'"');
 }
 
 function tbtActionRow(desc,assigned,due,idx){
@@ -25434,7 +25488,7 @@ async function tbtSave(){
     if(row.offsetParent===null)return;
     var name=row.querySelector('.tbt-att-name')?.value?.trim();
     var dept=row.querySelector('.tbt-att-dept')?.value?.trim()||'';
-    if(name)attendees.push({name,dept});
+    if(name)attendees.push({name,dept,confirmed_at:row.dataset.confirmedAt||null,confirmation_method:row.dataset.confirmationMethod||null});
   });
   // Collect actions
   var actions_raised=[];
@@ -25445,7 +25499,9 @@ async function tbtSave(){
     var due=row.querySelector('.tbt-act-due')?.value||'';
     if(desc)actions_raised.push({description:desc,assigned_to:assigned,due_date:due||null});
   });
-  var body={company_id:ccid(),title,topic_category:g('tbtf-category')||'safety_general',talk_date:g('tbtf-date'),location:g('tbtf-location'),department:g('tbtf-dept'),presenter:g('tbtf-presenter'),duration_mins:parseInt(g('tbtf-duration'))||15,key_points:g('tbtf-key-points'),hazards_discussed:g('tbtf-hazards'),incidents_referenced:g('tbtf-incidents'),notes:g('tbtf-notes'),attendees,actions_raised,status:g('tbtf-status')||'completed',updated_at:new Date().toISOString()};
+  var linkedWork=tbtSelectedWork();
+  var cleanNotes=tbtStripLinkedWork(g('tbtf-notes')||'');
+  var body={company_id:ccid(),title,topic_category:g('tbtf-category')||'safety_general',talk_date:g('tbtf-date'),location:g('tbtf-location'),department:g('tbtf-dept'),presenter:g('tbtf-presenter'),duration_mins:parseInt(g('tbtf-duration'))||15,key_points:g('tbtf-key-points'),hazards_discussed:g('tbtf-hazards'),incidents_referenced:g('tbtf-incidents'),notes:cleanNotes+tbtLinkedWorkMarker(linkedWork),attendees,actions_raised,status:g('tbtf-status')||'completed',updated_at:new Date().toISOString()};
   try{
     if(tbtEditId){
       await api('/toolbox_talks?id=eq.'+tbtEditId,{m:'PATCH',p:'return=minimal',b:body});
@@ -25482,7 +25538,7 @@ function tbtCurrentFormData(){
     if(row.offsetParent===null)return;
     var name=row.querySelector('.tbt-att-name')?.value?.trim();
     var dept=row.querySelector('.tbt-att-dept')?.value?.trim()||'';
-    if(name)attendees.push({name:name,dept:dept});
+    if(name)attendees.push({name:name,dept:dept,confirmed_at:row.dataset.confirmedAt||null,confirmation_method:row.dataset.confirmationMethod||null});
   });
   var actions_raised=[];
   document.querySelectorAll('.tbt-act-row').forEach(function(row){
@@ -25490,7 +25546,8 @@ function tbtCurrentFormData(){
     var desc=row.querySelector('.tbt-act-desc')?.value?.trim();
     if(desc)actions_raised.push({description:desc,assigned_to:row.querySelector('.tbt-act-assigned')?.value?.trim()||'',due_date:row.querySelector('.tbt-act-due')?.value||''});
   });
-  return {id:tbtEditId,title:g('tbtf-title'),tbt_ref:document.getElementById('tbt-form-ref')?.textContent||'TBT-AUTO',topic_category:g('tbtf-category'),talk_date:g('tbtf-date'),location:g('tbtf-location'),department:g('tbtf-dept'),presenter:g('tbtf-presenter'),duration_mins:g('tbtf-duration'),key_points:g('tbtf-key-points'),hazards_discussed:g('tbtf-hazards'),incidents_referenced:g('tbtf-incidents'),notes:g('tbtf-notes'),status:g('tbtf-status'),attendees:attendees,actions_raised:actions_raised};
+  var linkedWork=tbtSelectedWork();
+  return {id:tbtEditId,title:g('tbtf-title'),tbt_ref:document.getElementById('tbt-form-ref')?.textContent||'TBT-AUTO',topic_category:g('tbtf-category'),talk_date:g('tbtf-date'),location:g('tbtf-location'),department:g('tbtf-dept'),presenter:g('tbtf-presenter'),duration_mins:g('tbtf-duration'),key_points:g('tbtf-key-points'),hazards_discussed:g('tbtf-hazards'),incidents_referenced:g('tbtf-incidents'),notes:g('tbtf-notes'),status:g('tbtf-status'),attendees:attendees,actions_raised:actions_raised,linked_work:linkedWork};
 }
 
 function printToolboxTalk(id){
@@ -25500,6 +25557,7 @@ function printToolboxTalk(id){
   var ref=t.tbt_ref||'TBT-'+(t.id?String(t.id).substring(0,8).toUpperCase():'AUTO');
   var attendees=Array.isArray(t.attendees)?t.attendees:[];
   var actions=Array.isArray(t.actions_raised)?t.actions_raised:[];
+  var linkedWork=t.linked_work||tbtParseLinkedWork(t.notes||'');
   var fmtDate=function(v){return v?new Date(v).toLocaleDateString('en-GB'):'—';};
   var html='<style>@page{size:A4;margin:10mm}.rpt-section{break-inside:avoid}</style><div class="report-page">'
     +aurisHeader('Toolbox Talk / Safety Briefing',t.title||'Toolbox Talk',ref)
@@ -25512,16 +25570,17 @@ function printToolboxTalk(id){
     +fld('Duration',t.duration_mins?(t.duration_mins+' minutes'):'—')
     +fld('Status',auditLabel(t.status||'completed'))
     +fld('Attendees',String(attendees.length))
+    +fld('Linked Work / Activity',linkedWork.id?[linkedWork.ref,linkedWork.title].filter(Boolean).join(' - '):'—',true)
     +'</div></div>'
     +'<div class="rpt-section"><div class="rpt-section-title blue">Content Covered</div><div class="rpt-grid">'
     +fld('Key Points Covered',t.key_points,true)
     +fld('Hazards Discussed',t.hazards_discussed,true)
     +fld('Incidents / Near Misses Referenced',t.incidents_referenced,true)
-    +fld('Notes',t.notes,true)
+    +fld('Notes',tbtStripLinkedWork(t.notes||''),true)
     +'</div></div>'
     +'<div class="rpt-section"><div class="rpt-section-title secondary">Attendance Register</div>'
     +(attendees.length?'<table><thead><tr><th style="width:8%">No.</th><th>Name</th><th>Department</th><th>Signature</th></tr></thead><tbody>'
-      +attendees.map(function(a,i){return '<tr><td style="text-align:center;font-weight:700">'+(i+1)+'</td><td>'+escH(a.name||'')+'</td><td>'+escH(a.dept||'')+'</td><td style="height:24px"></td></tr>';}).join('')
+      +attendees.map(function(a,i){return '<tr><td style="text-align:center;font-weight:700">'+(i+1)+'</td><td>'+escH(a.name||'')+'</td><td>'+escH(a.dept||'')+'</td><td>'+escH(a.confirmed_at?new Date(a.confirmed_at).toLocaleString():'Not confirmed')+'<br><span style="font-size:8pt;color:#6b7280">'+escH(a.confirmation_method||'')+'</span></td></tr>';}).join('')
       +'</tbody></table>':'<p style="color:#6b7280;font-size:9pt;padding:8px">No attendees recorded.</p>')
     +'</div>'
     +'<div class="rpt-section"><div class="rpt-section-title amber">Actions Raised</div>'
@@ -40541,6 +40600,9 @@ function fireEquipStatusBadge(s) {
 <div class="form-group"><label class="form-label">Location / Area</label><input type="text" id="tbtf-location"/></div>
 <div class="form-group"><label class="form-label">Department</label><input type="text" id="tbtf-dept"/></div>
 <div class="form-group"><label class="form-label">Presenter</label><div id="tbtf-presenter-wrap"><input type="text" id="tbtf-presenter" readonly/></div></div>
+</div>
+<div class="form-row">
+<div class="form-group"><label class="form-label">Linked work / activity</label><select id="tbtf-work-link"><option value="">No linked work / activity</option></select><div style="font-size:10px;color:var(--text2);margin-top:3px">Optional: manually link this toolbox talk to a Work Schedule item.</div></div>
 </div>
 <div class="form-row">
 <div class="form-group"><label class="form-label">Duration (minutes)</label><input type="number" id="tbtf-duration" value="15" min="5" max="120"/></div>
