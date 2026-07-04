@@ -3811,7 +3811,7 @@ async function fillMethodStatementSelect(id,selectedRef){
     el.appendChild(o);
   };
   try{
-    var docs=await api('/documents?select=id,doc_ref,reference_no,title,document_type,doc_type,status,approval_status'+cf()+'&or=(document_type.eq.sop,doc_type.eq.sop,document_type.eq.procedure,doc_type.eq.procedure,document_type.eq.work_instruction,doc_type.eq.work_instruction)&order=created_at.desc&limit=100');
+    var docs=await api('/documents?select=id,doc_ref,reference_no,title,document_type,doc_type,status,approval_status'+cf()+'&or=(document_type.eq.swms,doc_type.eq.swms,document_type.eq.sop,doc_type.eq.sop,document_type.eq.procedure,doc_type.eq.procedure,document_type.eq.work_instruction,doc_type.eq.work_instruction)&order=created_at.desc&limit=100');
     (docs||[]).forEach(function(d){addOpt(d.doc_ref||d.reference_no||d.id,d.title,d.approval_status||d.status,'Document Control');});
   }catch(e){console.warn('Document Control SOP list failed:',e.message);}
   try{
@@ -3900,25 +3900,25 @@ var ROLE_ALLOWED = {
   'hse_manager': ['dashboard','executive','ai-insights','kpi','workschedule','events','observation',
                   'inspection','risk','tools','fleet','atex','permit','contractor','emergency',
                   'fire','chemical','ohealth','ppe','esg','noise','meetings','training','actions',
-                  'moc','legal','sop','documents','people','users','settings','integrations','approvals','audit'],
+                  'moc','legal','sop','swms','documents','people','users','settings','integrations','approvals','audit'],
   'hse_officer': ['dashboard','executive','ai-insights','kpi','workschedule','events','observation',
                   'inspection','risk','tools','fleet','atex','permit','contractor','emergency',
                   'fire','chemical','ohealth','ppe','esg','noise','meetings','training','actions',
-                  'moc','legal','sop','documents','people','approvals','audit'],
+                  'moc','legal','sop','swms','documents','people','approvals','audit'],
   'executive':   ['dashboard','executive','kpi','workschedule','events','observation',
                   'inspection','risk','tools','fleet','atex','permit','contractor','emergency',
                   'fire','chemical','ohealth','ppe','esg','noise','meetings','training','actions',
-                  'moc','legal','sop','documents','people'],
+                  'moc','legal','sop','swms','documents','people'],
   'manager':     ['dashboard','executive','kpi','workschedule','events','observation',
                   'inspection','risk','tools','fleet','atex','permit','contractor','emergency',
                   'fire','chemical','ohealth','ppe','esg','noise','meetings','training','actions',
-                  'moc','legal','sop','documents','people'],
+                  'moc','legal','sop','swms','documents','people'],
   'site_manager':['dashboard','kpi','workschedule','events','observation','inspection',
                   'risk','tools','fleet','atex','permit','contractor','emergency','fire','chemical','ppe','esg','noise',
-                  'meetings','training','actions','moc','sop','people'],
+                  'meetings','training','actions','moc','sop','swms','people'],
   'supervisor':  ['dashboard','kpi','workschedule','events','observation','inspection',
                   'risk','tools','fleet','atex','permit','contractor','emergency','fire','chemical','ppe','noise',
-                  'meetings','training','actions','sop'],
+                  'meetings','training','actions','sop','swms'],
   'auditor':     ['dashboard','events','observation','inspection','risk','legal',
                   'fire','documents','meetings','actions','moc'],
   'hr':          ['dashboard','kpi','training','people','documents','ohealth','meetings'],
@@ -4009,7 +4009,7 @@ if(target){
   target.classList.add('active');
 }
 if(el&&el.classList)el.classList.add('active');
-const L={dashboard:loadDash,executive:loadExecutive,kpi:kpiLoadAll,workschedule:loadWorkSchedule,events:loadEvents,observation:loadObservation,inspection:()=>{buildChecklist();loadInsps();},risk:loadRA,investigation:loadInvs,legal:loadLegal,sop:loadSOP,tools:loadTools,fleet:loadFleet,atex:loadATEX,permit:loadPermits,contractor:loadContractors,esg:loadESG,emergency:loadEmergency,fire:loadFire,chemical:loadChemical,ohealth:loadOHealth,ppe:loadPPE,noise:loadNoise,meetings:loadMtgs,training:loadTraining,actions:loadActions,moc:loadMOC,documents:loadDocs,people:loadPeople,users:loadUsers,admin:loadAdmin,'ai-insights':genFullAI,approvals:loadApprovals,audit:loadAudit,settings:loadSettings,integrations:loadIntegrations};
+const L={dashboard:loadDash,executive:loadExecutive,kpi:kpiLoadAll,workschedule:loadWorkSchedule,events:loadEvents,observation:loadObservation,inspection:()=>{buildChecklist();loadInsps();},risk:loadRA,investigation:loadInvs,legal:loadLegal,sop:loadSOP,swms:loadSWMS,tools:loadTools,fleet:loadFleet,atex:loadATEX,permit:loadPermits,contractor:loadContractors,esg:loadESG,emergency:loadEmergency,fire:loadFire,chemical:loadChemical,ohealth:loadOHealth,ppe:loadPPE,noise:loadNoise,meetings:loadMtgs,training:loadTraining,actions:loadActions,moc:loadMOC,documents:loadDocs,people:loadPeople,users:loadUsers,admin:loadAdmin,'ai-insights':genFullAI,approvals:loadApprovals,audit:loadAudit,settings:loadSettings,integrations:loadIntegrations};
 if(L[name])L[name]();
 // Mobile: close sidebar and scroll to top
 if(window.innerWidth<=768){
@@ -7732,6 +7732,121 @@ async function sopSaveDocument(){
 }
 
 
+
+// ===== SWMS / METHOD STATEMENT MODULE =====
+let swmsAllData=[];
+
+function loadSWMS(){
+  swmsShowList();
+  fillRiskAssessmentSelect('swms-ra-ref');
+  swmsLoadPermitSelect();
+  fillPersonSelect('swms-prepared-by', prof?.full_name||'');
+  fillPersonSelect('swms-reviewed-by');
+  fillPersonSelect('swms-approved-by');
+}
+
+function swmsShowList(){
+  var list=document.getElementById('swms-list-view'), form=document.getElementById('swms-form-view');
+  if(list)list.style.display='block';
+  if(form)form.style.display='none';
+  swmsLoadList();
+}
+
+async function swmsLoadList(){
+  var el=document.getElementById('swms-list');if(!el)return;
+  el.innerHTML='<div class="loading-msg">Loading SWMS...</div>';
+  try{
+    var rows=await api('/documents?select=*'+cf()+'&or=(document_type.eq.swms,doc_type.eq.swms)&order=created_at.desc');
+    swmsAllData=rows||[];
+    var set=function(id,v){var e=document.getElementById(id);if(e)e.textContent=v;};
+    set('swms-m-total',swmsAllData.length);
+    set('swms-m-approved',swmsAllData.filter(x=>(x.approval_status||x.status)==='approved').length);
+    set('swms-m-review',swmsAllData.filter(x=>x.review_date&&new Date(x.review_date)<=new Date(new Date().setDate(new Date().getDate()+30))).length);
+    swmsRenderList();
+  }catch(e){el.innerHTML='<div style="padding:20px;color:#A32D2D">SWMS unavailable: '+escH(e.message)+'</div>';}
+}
+
+function swmsRenderList(){
+  var el=document.getElementById('swms-list');if(!el)return;
+  var q=(document.getElementById('swms-search')?.value||'').toLowerCase();
+  var rows=(swmsAllData||[]).filter(function(x){return !q||(x.title||'').toLowerCase().includes(q)||(x.doc_ref||x.reference_no||'').toLowerCase().includes(q)||(x.department||x.dept||'').toLowerCase().includes(q);});
+  if(!rows.length){
+    el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)"><div style="font-size:40px;margin-bottom:10px">🧾</div><div style="font-weight:800;margin-bottom:8px">No SWMS found</div><button class="btn btn-primary" onclick="swmsNew()"><i class="ti ti-plus"></i>Create first SWMS</button></div>';
+    return;
+  }
+  var h='<div style="overflow:auto;border:1px solid var(--border);border-radius:10px;background:#fff"><table style="width:100%;min-width:980px;border-collapse:collapse;font-size:12px"><thead><tr style="background:#0F766E;color:#fff"><th style="padding:10px;color:#fff;text-align:left">Ref</th><th style="padding:10px;color:#fff;text-align:left">SWMS / Activity</th><th style="padding:10px;color:#fff;text-align:left">Department</th><th style="padding:10px;color:#fff;text-align:left">Owner</th><th style="padding:10px;color:#fff;text-align:center">Status</th><th style="padding:10px;color:#fff;text-align:center">Review</th><th style="padding:10px;color:#fff;width:70px"></th></tr></thead><tbody>';
+  rows.forEach(function(x){
+    var st=x.approval_status||x.status||'draft', sc=DC_STATUS_CFG[st]||DC_STATUS_CFG.draft;
+    h+='<tr style="border-bottom:1px solid #eef2f7;vertical-align:top">'
+      +'<td style="padding:10px 12px;font-family:monospace;font-weight:900;color:#0F766E">'+escH(x.doc_ref||x.reference_no||'DRAFT')+'<div style="font-size:10px;color:var(--text2)">'+escH(x.version||x.doc_version||'Rev 00')+'</div></td>'
+      +'<td style="padding:10px;min-width:280px"><div style="font-weight:900">'+escH(x.title||'Untitled SWMS')+'</div><div style="font-size:11px;color:var(--text2);margin-top:3px">'+escH(x.description||x.scope||'').substring(0,140)+'</div></td>'
+      +'<td style="padding:10px">'+escH(x.department||x.dept||'—')+'</td>'
+      +'<td style="padding:10px">'+escH(x.owner||x.doc_owner||x.author||'—')+'</td>'
+      +'<td style="padding:10px;text-align:center"><span style="background:'+sc.bg+';color:'+sc.tc+';padding:3px 9px;border-radius:99px;font-size:11px;font-weight:800">'+escH(sc.label)+'</span></td>'
+      +'<td style="padding:10px;text-align:center">'+(x.review_date?new Date(x.review_date).toLocaleDateString('en-GB'):'—')+'</td>'
+      +'<td style="padding:10px"><button class="btn btn-sm" title="Open in Document Control" onclick="dcEdit(\''+x.id+'\');showPage(\'documents\',null)"><i class="ti ti-file-search"></i></button></td>'
+      +'</tr>';
+  });
+  el.innerHTML=h+'</tbody></table></div>';
+}
+
+async function swmsLoadPermitSelect(){
+  var el=document.getElementById('swms-ptw-ref');if(!el)return;
+  var cur=el.value||'';el.innerHTML='<option value="">Select permit...</option>';
+  try{
+    var pts=await api('/permits?select=id,permit_number,permit_type,permit_type_v2,status'+cf()+'&order=created_at.desc&limit=100');
+    (pts||[]).forEach(function(p){var ref=p.permit_number||p.id, typ=p.permit_type_v2||p.permit_type||'Permit';var o=document.createElement('option');o.value=ref;o.textContent=ref+' - '+typ.replace(/_/g,' ')+(p.status?' ('+p.status+')':'');el.appendChild(o);});
+  }catch(e){}
+  if(cur)setSelectValueWithFallback('swms-ptw-ref',cur);
+}
+
+function swmsNew(){
+  var list=document.getElementById('swms-list-view'), form=document.getElementById('swms-form-view');
+  if(list)list.style.display='none';if(form)form.style.display='block';
+  ['swms-title','swms-location','swms-dept','swms-contractor','swms-scope','swms-plant','swms-ppe','swms-emergency','swms-ra-ref','swms-ptw-ref','swms-reviewed-by','swms-approved-by'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
+  document.getElementById('swms-ref').textContent='SWMS-AUTO';
+  document.getElementById('swms-version').value='Rev 00';
+  document.getElementById('swms-date').value=new Date().toISOString().slice(0,10);
+  document.getElementById('swms-review-date').value=new Date(new Date().setFullYear(new Date().getFullYear()+1)).toISOString().slice(0,10);
+  fillPersonSelect('swms-prepared-by', prof?.full_name||'');fillPersonSelect('swms-reviewed-by');fillPersonSelect('swms-approved-by');
+  fillRiskAssessmentSelect('swms-ra-ref');swmsLoadPermitSelect();
+  var body=document.getElementById('swms-steps-body');if(body)body.innerHTML='';
+  ['Prepare work area and brief team','Set up access, tools and materials','Carry out work task','Inspect completed work and reinstate area'].forEach(function(t){swmsAddStep({activity:t});});
+  swmsBuildPreview();
+}
+
+function swmsAddStep(r){
+  r=r||{};var body=document.getElementById('swms-steps-body');if(!body)return;
+  var n=body.querySelectorAll('tr').length+1,tr=document.createElement('tr');tr.style.borderBottom='1px solid #eef2f7';
+  tr.innerHTML='<td style="padding:8px;text-align:center;font-weight:900;color:#0F766E">'+n+'</td>'
+    +'<td style="padding:8px"><textarea class="swms-act" style="min-height:50px;width:100%;font-size:12px" placeholder="Activity / work task step">'+escH(r.activity||'')+'</textarea></td>'
+    +'<td style="padding:8px"><textarea class="swms-haz" style="min-height:50px;width:100%;font-size:12px" placeholder="Potential hazards">'+escH(r.hazard||'')+'</textarea></td>'
+    +'<td style="padding:8px"><textarea class="swms-risk" style="min-height:50px;width:100%;font-size:12px" placeholder="Potential injury / damage">'+escH(r.risk||'')+'</textarea></td>'
+    +'<td style="padding:8px"><textarea class="swms-controls" style="min-height:50px;width:100%;font-size:12px" placeholder="Controls required / safe method">'+escH(r.controls||'')+'</textarea></td>'
+    +'<td style="padding:8px"><input class="swms-resp" style="width:100%;font-size:12px" placeholder="Responsible" value="'+escH(r.responsible||'Supervisor / worker')+'"/></td>'
+    +'<td style="padding:8px;text-align:center"><button class="btn btn-sm" style="color:var(--red)" onclick="this.closest(\'tr\').remove();swmsRenumber();swmsBuildPreview()"><i class="ti ti-x"></i></button></td>';
+  body.appendChild(tr);
+}
+function swmsRenumber(){document.querySelectorAll('#swms-steps-body tr').forEach(function(tr,i){tr.children[0].textContent=i+1;});}
+function swmsRows(){return Array.from(document.querySelectorAll('#swms-steps-body tr')).map(function(tr,i){return {no:i+1,activity:tr.querySelector('.swms-act')?.value||'',hazard:tr.querySelector('.swms-haz')?.value||'',risk:tr.querySelector('.swms-risk')?.value||'',controls:tr.querySelector('.swms-controls')?.value||'',responsible:tr.querySelector('.swms-resp')?.value||''};}).filter(function(r){return r.activity||r.hazard||r.controls;});}
+
+function swmsBuildHtml(){
+  var g=function(id){return document.getElementById(id)?.value||'';}, rows=swmsRows(), ref=document.getElementById('swms-ref')?.textContent||'SWMS-AUTO', title=g('swms-title')||'Safe Work Method Statement';
+  var rowHtml=rows.map(function(r){return '<tr><td>'+r.no+'</td><td>'+escH(r.activity||'—')+'</td><td>'+escH(r.hazard||'—')+'</td><td>'+escH(r.risk||'—')+'</td><td>'+escH(r.controls||'—')+'</td><td>'+escH(r.responsible||'—')+'</td></tr>';}).join('');
+  return '<div id="swms-printable" style="font-family:Arial,sans-serif;color:#111827;max-width:1100px;margin:0 auto;background:#fff"><div style="background:#0F766E;color:#fff;padding:18px 22px;display:flex;justify-content:space-between;gap:12px"><div><div style="font-size:11px;text-transform:uppercase;letter-spacing:.08em;opacity:.82">Safe Work Method Statement</div><div style="font-size:24px;font-weight:900">'+escH(title)+'</div></div><div style="text-align:right;font-family:monospace;font-weight:900">'+escH(ref)+'<div style="font-size:12px;font-family:Arial;font-weight:600">'+escH(g('swms-version')||'Rev 00')+'</div></div></div><div style="padding:18px 22px">'
+    +'<table style="width:100%;border-collapse:collapse;font-size:12px;margin-bottom:14px"><tbody><tr><th style="text-align:left;background:#f3f4f6;padding:8px;border:1px solid #e5e7eb;width:18%">Location</th><td style="padding:8px;border:1px solid #e5e7eb">'+escH(g('swms-location')||'—')+'</td><th style="text-align:left;background:#f3f4f6;padding:8px;border:1px solid #e5e7eb;width:18%">Department</th><td style="padding:8px;border:1px solid #e5e7eb">'+escH(g('swms-dept')||'—')+'</td></tr><tr><th style="text-align:left;background:#f3f4f6;padding:8px;border:1px solid #e5e7eb">Contractor / Team</th><td style="padding:8px;border:1px solid #e5e7eb">'+escH(g('swms-contractor')||'—')+'</td><th style="text-align:left;background:#f3f4f6;padding:8px;border:1px solid #e5e7eb">Date</th><td style="padding:8px;border:1px solid #e5e7eb">'+escH(g('swms-date')||'—')+'</td></tr><tr><th style="text-align:left;background:#f3f4f6;padding:8px;border:1px solid #e5e7eb">Linked RA</th><td style="padding:8px;border:1px solid #e5e7eb">'+escH(g('swms-ra-ref')||'—')+'</td><th style="text-align:left;background:#f3f4f6;padding:8px;border:1px solid #e5e7eb">Linked PTW</th><td style="padding:8px;border:1px solid #e5e7eb">'+escH(g('swms-ptw-ref')||'—')+'</td></tr></tbody></table>'
+    +'<h3 style="font-size:14px;text-transform:uppercase;color:#0F766E;border-bottom:2px solid #0F766E;padding-bottom:5px">Scope of Work</h3><p style="font-size:12px;line-height:1.5">'+escH(g('swms-scope')||'—')+'</p><div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:12px 0"><div><h3 style="font-size:14px;text-transform:uppercase;color:#0F766E;border-bottom:2px solid #0F766E;padding-bottom:5px">Plant / Tools / Equipment</h3><p style="font-size:12px;line-height:1.5">'+escH(g('swms-plant')||'—')+'</p></div><div><h3 style="font-size:14px;text-transform:uppercase;color:#0F766E;border-bottom:2px solid #0F766E;padding-bottom:5px">PPE Required</h3><p style="font-size:12px;line-height:1.5">'+escH(g('swms-ppe')||'—')+'</p></div></div>'
+    +'<h3 style="font-size:14px;text-transform:uppercase;color:#0F766E;border-bottom:2px solid #0F766E;padding-bottom:5px">Work Method, Hazards and Controls</h3><table style="width:100%;border-collapse:collapse;font-size:11px"><thead><tr style="background:#0F766E;color:#fff"><th style="padding:7px;border:1px solid #d1d5db;color:#fff;width:5%">No.</th><th style="padding:7px;border:1px solid #d1d5db;color:#fff;width:19%">Activity / Work Task Step</th><th style="padding:7px;border:1px solid #d1d5db;color:#fff;width:18%">Potential Hazards</th><th style="padding:7px;border:1px solid #d1d5db;color:#fff;width:18%">Risk / Consequence</th><th style="padding:7px;border:1px solid #d1d5db;color:#fff;width:28%">Controls Required / Safe Method</th><th style="padding:7px;border:1px solid #d1d5db;color:#fff;width:12%">Responsible</th></tr></thead><tbody>'+rowHtml+'</tbody></table>'
+    +'<h3 style="font-size:14px;text-transform:uppercase;color:#0F766E;border-bottom:2px solid #0F766E;padding-bottom:5px;margin-top:16px">Emergency / Environmental Arrangements</h3><p style="font-size:12px;line-height:1.5">'+escH(g('swms-emergency')||'—')+'</p><div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:18px"><div style="border-top:1px solid #111;padding-top:7px;font-size:11px">Prepared by<br><b>'+escH(g('swms-prepared-by')||'')+'</b></div><div style="border-top:1px solid #111;padding-top:7px;font-size:11px">Reviewed by<br><b>'+escH(g('swms-reviewed-by')||'')+'</b></div><div style="border-top:1px solid #111;padding-top:7px;font-size:11px">Approved by<br><b>'+escH(g('swms-approved-by')||'')+'</b></div></div></div></div>';
+}
+function swmsBuildPreview(){var el=document.getElementById('swms-preview');if(el)el.innerHTML=swmsBuildHtml();}
+function swmsPrint(){aurisPrint(swmsBuildHtml(),'SWMS - '+(document.getElementById('swms-title')?.value||'Method Statement'));}
+async function swmsSaveToDocuments(){
+  var title=document.getElementById('swms-title')?.value.trim();if(!title){toast('Please enter SWMS title',false);return;}
+  var yr=new Date().getFullYear(), ref='SWMS-'+yr+'-'+String((swmsAllData||[]).length+1).padStart(3,'0'), today=new Date().toISOString().slice(0,10);
+  var body={company_id:ccid(),title:title,document_type:'swms',doc_type:'swms',department:document.getElementById('swms-dept')?.value||null,dept:document.getElementById('swms-dept')?.value||null,category:'Safe Work Method Statement',description:document.getElementById('swms-scope')?.value||'Safe Work Method Statement generated in AURIS360.',scope:document.getElementById('swms-scope')?.value||null,tags:['SWMS','Method Statement'],version:document.getElementById('swms-version')?.value||'Rev 00',doc_version:document.getElementById('swms-version')?.value||'Rev 00',doc_ref:ref,reference_no:ref,issue_date:document.getElementById('swms-date')?.value||today,effective_date:document.getElementById('swms-date')?.value||today,review_date:document.getElementById('swms-review-date')?.value||null,review_interval_months:12,controlled_copy:true,is_controlled:true,author:document.getElementById('swms-prepared-by')?.value||null,owner:document.getElementById('swms-prepared-by')?.value||null,doc_owner:document.getElementById('swms-prepared-by')?.value||null,reviewer:document.getElementById('swms-reviewed-by')?.value||null,approver:document.getElementById('swms-approved-by')?.value||null,legal_refs:[],location:document.getElementById('swms-location')?.value||null,approval_status:'draft',status:'draft',created_by:prof?.id,updated_at:new Date().toISOString()};
+  try{await api('/documents',{m:'POST',p:'return=minimal',b:body});document.getElementById('swms-ref').textContent=ref;toast('SWMS saved in Document Control: '+ref);swmsShowList();}catch(e){toast('Save failed: '+e.message,false);}
+}
 
 // ── LEGAL REGISTER ──────────────────────────────────────────────────────────
 
@@ -22716,6 +22831,7 @@ const DC_TYPE_CFG={
   policy:           {emoji:'📜',label:'Policy',           color:'#185FA5'},
   procedure:        {emoji:'📋',label:'Procedure',        color:'#1D9E75'},
   sop:              {emoji:'⚙️', label:'SOP',              color:'#065F46'},
+  swms:             {emoji:'🧾', label:'SWMS',             color:'#0F766E'},
   manual:           {emoji:'📚',label:'Manual',           color:'#5B21B6'},
   form:             {emoji:'📝',label:'Form',             color:'#0891B2'},
   emergency_plan:   {emoji:'🚨',label:'Emergency Plan',   color:'#DC2626'},
@@ -23423,7 +23539,7 @@ async function dcSave(){
       var res=await api('/documents',{m:'POST',p:'return=representation',b:body});
       if(res?.[0]?.id){
         var yr=new Date().getFullYear();
-        var typeCode={policy:'POL',procedure:'PRO',sop:'SOP',manual:'MAN',form:'FRM',emergency_plan:'ERP',risk_assessment:'RA',legal:'LEG',certificate:'CERT',other:'DOC'}[body.document_type]||'DOC';
+        var typeCode={policy:'POL',procedure:'PRO',sop:'SOP',swms:'SWMS',manual:'MAN',form:'FRM',emergency_plan:'ERP',risk_assessment:'RA',legal:'LEG',certificate:'CERT',other:'DOC'}[body.document_type]||'DOC';
         var ref=typeCode+'-'+yr+'-'+String(dcAllData.length+1).padStart(3,'0');
         await api('/documents?id=eq.'+res[0].id,{m:'PATCH',p:'return=minimal',b:{doc_ref:ref,reference_no:ref}});
         res[0].doc_ref=ref;res[0].reference_no=ref;dcAllData.unshift(res[0]);
@@ -27889,6 +28005,7 @@ var LAUNCHED_MODULES = [
   'actions',       // Master Action Plan - core workflow follow-up
   'moc',           // Management of Change
   'sop',           // SOP Generator — internal/admin rollout
+  'swms',          // Safe Work Method Statements
   // To activate more: add module key here and redeploy
 ];
 
@@ -29154,6 +29271,7 @@ var MODULE_CATALOGUE = [
   {k:'atex',        l:'ATEX Areas'},
   {k:'legal',       l:'Legal Compliance'},
   {k:'sop',         l:'SOP Generator'},
+  {k:'swms',        l:'SWMS / Method Statements'},
   {k:'documents',   l:'Document Control'},
   {k:'people',      l:'People'},
   {k:'actions',     l:'Master Action Plan'},
@@ -29332,6 +29450,7 @@ var MODULE_CATALOG = [
   { key:'workschedule',icon:'ti-calendar-week',    name:'Work Schedule' },
   { key:'documents',   icon:'ti-file',             name:'Documents' },
   { key:'sop',         icon:'ti-book',             name:'SOPs' },
+  { key:'swms',        icon:'ti-file-check',       name:'SWMS / Method Statements' },
   { key:'actions',     icon:'ti-checkbox',         name:'Action Tracker' },
   { key:'moc',         icon:'ti-arrows-exchange',  name:'Management of Change' },
   { key:'esg',         icon:'ti-leaf',             name:'ESG' },
@@ -33194,6 +33313,7 @@ function fireEquipStatusBadge(s) {
 <div class="nav-item" onclick="showPage('esg',this)"><i class="ti ti-leaf"></i>Environmental / ESG</div>
 <div class="nav-item" onclick="showPage('noise',this)"><i class="ti ti-volume"></i>Noise Survey</div><div class="nav-item" id="nav-mtg" onclick="showPage('meetings',this)"><i class="ti ti-notes"></i>HSE Meetings</div><div class="nav-item" onclick="showPage('training',this)"><i class="ti ti-certificate"></i>Training</div><span class="nav-section">Management</span><div class="nav-item" onclick="showPage('actions',this)"><i class="ti ti-list-check"></i>Master Action Plan</div><div class="nav-item" onclick="showPage('legal',this)"><i class="ti ti-scale"></i>Legal Compliance</div>
 <div class="nav-item" onclick="showPage('sop',this)"><i class="ti ti-file-description"></i>SOP Generator</div>
+<div class="nav-item" onclick="showPage('swms',this)"><i class="ti ti-file-check"></i>SWMS / Method Statements</div>
 <div class="nav-item" id="nav-docs" onclick="showPage('documents',this)"><i class="ti ti-files"></i>Document Control</div><div class="nav-item" onclick="showPage('people',this)"><i class="ti ti-id-badge"></i>People</div><div class="nav-item" id="nav-users" onclick="showPage('users',this)"><i class="ti ti-users"></i>Users &amp; Roles</div><div class="nav-item" id="nav-admin" style="display:none" onclick="showPage('admin',this)"><i class="ti ti-building"></i>Companies</div><div class="nav-item" id="nav-integrations" onclick="showPage('integrations',this)"><i class="ti ti-plug"></i>Integrations</div>
 <div class="nav-item" id="nav-approvals" onclick="showPage('approvals',this)"><i class="ti ti-circle-check"></i>Approval Center</div><div class="nav-item" id="nav-audit" onclick="showPage('audit',this)"><i class="ti ti-history"></i>Audit Trail</div><div class="nav-item" id="nav-settings" onclick="showPage('settings',this)"><i class="ti ti-settings"></i>Settings</div><div class="sb-footer"><button class="btn btn-sm" style="flex:1;justify-content:center;color:var(--red)" onclick="doLogout()"><i class="ti ti-logout"></i>Sign out</button></div>
 <div id="pwa-install-btn" onclick="pwaInstall()" style="display:none;align-items:center;gap:10px;padding:10px 20px;cursor:pointer;font-size:13px;color:var(--green);font-weight:600;border-top:1px solid var(--border);margin-top:auto"><i class="ti ti-download" style="font-size:16px"></i>Install app</div></div>
@@ -41650,6 +41770,120 @@ function fireEquipStatusBadge(s) {
 </div><!-- end sop-gen-view -->
 <!-- end page-sop -->
 
+<div id="page-swms" class="page">
+<div class="page-header">
+<div>
+<div class="page-title">SWMS / Method Statements</div>
+<div style="font-size:12px;color:var(--text2)">Safe Work Method Statement register · Work steps · Hazards · Controls · Sign-off</div>
+</div>
+<div style="display:flex;gap:8px">
+<button class="btn btn-primary" onclick="swmsNew()"><i class="ti ti-plus"></i>New SWMS</button>
+</div>
+</div>
+
+<div id="swms-list-view">
+<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px">
+<div class="card" style="padding:12px;border-left:4px solid #0F766E"><div style="font-size:10px;color:var(--text2);font-weight:700;text-transform:uppercase">Total SWMS</div><div id="swms-m-total" style="font-size:28px;font-weight:900;color:#0F766E">—</div></div>
+<div class="card" style="padding:12px;border-left:4px solid #1D9E75"><div style="font-size:10px;color:var(--text2);font-weight:700;text-transform:uppercase">Approved</div><div id="swms-m-approved" style="font-size:28px;font-weight:900;color:#1D9E75">—</div></div>
+<div class="card" style="padding:12px;border-left:4px solid #EF9F27"><div style="font-size:10px;color:var(--text2);font-weight:700;text-transform:uppercase">Review due 30d</div><div id="swms-m-review" style="font-size:28px;font-weight:900;color:#EF9F27">—</div></div>
+</div>
+<div class="card" style="margin-bottom:12px;padding:10px 14px;display:flex;gap:10px;align-items:center">
+<input id="swms-search" type="text" placeholder="Search SWMS title, ref, department..." oninput="swmsRenderList()" style="flex:1;padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:12px"/>
+<button class="btn" onclick="swmsLoadList()"><i class="ti ti-refresh"></i>Refresh</button>
+</div>
+<div id="swms-list"><div class="loading-msg">Loading...</div></div>
+</div>
+
+<div id="swms-form-view" style="display:none">
+<div class="card" style="margin-bottom:14px;padding:0;overflow:hidden">
+<div style="padding:16px 22px;background:linear-gradient(135deg,#0F766E,#1D9E75);color:#fff;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">
+<div><div style="font-size:11px;text-transform:uppercase;letter-spacing:.08em;opacity:.82;font-weight:800">Safe Work Method Statement</div><div id="swms-ref" style="font-family:monospace;font-size:18px;font-weight:900">SWMS-AUTO</div></div>
+<div style="display:flex;gap:8px;flex-wrap:wrap">
+<button class="btn" style="background:rgba(255,255,255,.18);color:#fff;border-color:rgba(255,255,255,.3)" onclick="swmsShowList()"><i class="ti ti-arrow-left"></i>Back</button>
+<button class="btn" style="background:#fff;color:#0F766E;border-color:#fff" onclick="swmsBuildPreview()"><i class="ti ti-eye"></i>Preview</button>
+<button class="btn" style="background:#fff;color:#0F766E;border-color:#fff" onclick="swmsPrint()"><i class="ti ti-printer"></i>Print / PDF</button>
+<button class="btn" style="background:#fff;color:#0F766E;border-color:#fff" onclick="swmsSaveToDocuments()"><i class="ti ti-device-floppy"></i>Save to Document Control</button>
+</div>
+</div>
+</div>
+
+<div style="display:grid;grid-template-columns:minmax(0,1.15fr) minmax(360px,.85fr);gap:14px">
+<div>
+<div class="card" style="margin-bottom:14px">
+<div class="card-title"><i class="ti ti-info-circle"></i> Document & Work Details</div>
+<div class="form-row">
+<div class="form-group"><label class="form-label">SWMS title *</label><input id="swms-title" type="text" placeholder="e.g. Painting works on external wall" oninput="swmsBuildPreview()"/></div>
+<div class="form-group"><label class="form-label">Version</label><input id="swms-version" type="text" value="Rev 00" oninput="swmsBuildPreview()"/></div>
+</div>
+<div class="form-row">
+<div class="form-group"><label class="form-label">Location / site</label><input id="swms-location" type="text" oninput="swmsBuildPreview()"/></div>
+<div class="form-group"><label class="form-label">Department / area</label><input id="swms-dept" type="text" oninput="swmsBuildPreview()"/></div>
+<div class="form-group"><label class="form-label">Contractor / team</label><input id="swms-contractor" type="text" oninput="swmsBuildPreview()"/></div>
+</div>
+<div class="form-row">
+<div class="form-group"><label class="form-label">Date</label><input id="swms-date" type="date" onchange="swmsBuildPreview()"/></div>
+<div class="form-group"><label class="form-label">Review date</label><input id="swms-review-date" type="date"/></div>
+</div>
+<div class="form-group"><label class="form-label">Scope of work</label><textarea id="swms-scope" style="min-height:72px" placeholder="Describe the work, limits, interfaces and conditions..." oninput="swmsBuildPreview()"></textarea></div>
+</div>
+
+<div class="card" style="margin-bottom:14px">
+<div class="card-title"><i class="ti ti-link"></i> Linked Records</div>
+<div class="form-row">
+<div class="form-group"><label class="form-label">Linked risk assessment</label><select id="swms-ra-ref" style="font-family:monospace" onchange="swmsBuildPreview()"><option value="">Select risk assessment...</option></select></div>
+<div class="form-group"><label class="form-label">Linked permit to work</label><select id="swms-ptw-ref" style="font-family:monospace" onchange="swmsBuildPreview()"><option value="">Select permit...</option></select></div>
+</div>
+</div>
+
+<div class="card" style="margin-bottom:14px">
+<div class="card-title"><i class="ti ti-tools"></i> Resources & Controls</div>
+<div class="form-row">
+<div class="form-group"><label class="form-label">Plant / tools / equipment</label><textarea id="swms-plant" style="min-height:70px" placeholder="Scaffold, ladders, hand tools, MEWP, fire extinguishers..." oninput="swmsBuildPreview()"></textarea></div>
+<div class="form-group"><label class="form-label">PPE required</label><textarea id="swms-ppe" style="min-height:70px" placeholder="Safety shoes, gloves, eye protection, harness, respirator..." oninput="swmsBuildPreview()"></textarea></div>
+</div>
+<div class="form-group"><label class="form-label">Emergency / environmental arrangements</label><textarea id="swms-emergency" style="min-height:70px" placeholder="First aid, emergency contact, spill kit, waste disposal, rescue arrangements..." oninput="swmsBuildPreview()"></textarea></div>
+</div>
+
+<div class="card" style="padding:0;overflow:hidden">
+<div style="padding:10px 14px;background:#0F766E;color:#fff;display:flex;align-items:center;justify-content:space-between">
+<div style="font-weight:900">Work Method, Hazards and Controls</div>
+<button class="btn btn-sm" style="background:rgba(255,255,255,.18);color:#fff;border-color:rgba(255,255,255,.35)" onclick="swmsAddStep();swmsBuildPreview()"><i class="ti ti-plus"></i>Add step</button>
+</div>
+<div style="overflow:auto">
+<table style="width:100%;min-width:980px;border-collapse:collapse;font-size:12px">
+<thead><tr style="background:#f8fafc">
+<th style="padding:8px;border-bottom:1px solid var(--border);width:44px">No.</th>
+<th style="padding:8px;border-bottom:1px solid var(--border);min-width:170px;text-align:left">Activity / Work Task Step</th>
+<th style="padding:8px;border-bottom:1px solid var(--border);min-width:160px;text-align:left">Potential Hazards</th>
+<th style="padding:8px;border-bottom:1px solid var(--border);min-width:160px;text-align:left">Risk / Consequence</th>
+<th style="padding:8px;border-bottom:1px solid var(--border);min-width:240px;text-align:left">Controls Required / Safe Method</th>
+<th style="padding:8px;border-bottom:1px solid var(--border);min-width:130px;text-align:left">Responsible</th>
+<th style="padding:8px;border-bottom:1px solid var(--border);width:44px"></th>
+</tr></thead>
+<tbody id="swms-steps-body" oninput="swmsBuildPreview()"></tbody>
+</table>
+</div>
+</div>
+
+<div class="card" style="margin-top:14px">
+<div class="card-title"><i class="ti ti-signature"></i> Sign-off</div>
+<div class="form-row">
+<div class="form-group"><label class="form-label">Prepared by</label><select id="swms-prepared-by" onchange="swmsBuildPreview()"><option value="">Select person...</option></select></div>
+<div class="form-group"><label class="form-label">Reviewed by</label><select id="swms-reviewed-by" onchange="swmsBuildPreview()"><option value="">Select person...</option></select></div>
+<div class="form-group"><label class="form-label">Approved by</label><select id="swms-approved-by" onchange="swmsBuildPreview()"><option value="">Select person...</option></select></div>
+</div>
+</div>
+</div>
+<div>
+<div class="card" style="position:sticky;top:90px">
+<div class="card-title"><i class="ti ti-eye"></i> SWMS Preview</div>
+<div id="swms-preview" style="max-height:720px;overflow:auto;border:1px solid var(--border);border-radius:10px;background:#fff"></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+
 <div id="page-documents" class="page">
 <div class="page-header">
 <div>
@@ -41689,7 +41923,7 @@ function fireEquipStatusBadge(s) {
 <select id="dc-filter-type" onchange="dcFilterList()" style="padding:7px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px">
 <option value="">All types</option>
 <option value="policy">📜 Policy</option><option value="procedure">📋 Procedure</option>
-<option value="sop">⚙️ SOP</option><option value="manual">📚 Manual</option>
+<option value="sop">⚙️ SOP</option><option value="swms">🧾 SWMS</option><option value="manual">📚 Manual</option>
 <option value="form">📝 Form</option><option value="emergency_plan">🚨 Emergency Plan</option>
 <option value="risk_assessment">⚠️ Risk Assessment</option><option value="legal">⚖️ Legal</option>
 <option value="certificate">🏅 Certificate</option><option value="other">📄 Other</option>
