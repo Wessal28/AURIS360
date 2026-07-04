@@ -31664,9 +31664,14 @@ function aurisPrintCSS() {
     
     /* Header */
     .rpt-header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 3px solid ${P}; padding-bottom: 10px; margin-bottom: 16px; }
-    .rpt-logo-wrap { display: flex; align-items: center; gap: 10px; }
-    .rpt-logo-img { max-height: 44px; max-width: 180px; object-fit: contain; }
+    .rpt-logo-wrap { display: flex; align-items: center; gap: 12px; min-width: 0; }
+    .rpt-brand-pair { display: flex; align-items: center; gap: 14px; min-width: 0; }
+    .rpt-brand-divider { width: 1px; height: 42px; background: #d1d5db; }
+    .rpt-logo-img { max-height: 44px; max-width: 160px; object-fit: contain; }
+    .rpt-auris-logo { height: 34px; width: auto; object-fit: contain; }
+    .rpt-client-logo { max-height: 42px; max-width: 120px; object-fit: contain; border: 1px solid #e5e7eb; border-radius: 6px; padding: 3px; background: #fff; }
     .rpt-logo { font-size: 22pt; font-weight: 900; color: ${P}; letter-spacing: -1px; }
+    .rpt-client-name { font-size: 13pt; font-weight: 900; color: #111827; line-height: 1.1; }
     .rpt-company { font-size: 9pt; color: #6b7280; margin-top: 2px; }
     .rpt-meta { text-align: right; font-size: 9pt; color: #6b7280; }
     .rpt-meta strong { color: #1a1a1a; }
@@ -31728,19 +31733,23 @@ function aurisPrintCSS() {
 
 function aurisHeader(title, subtitle, refNo) {
   var today = new Date().toLocaleDateString('en-GB', {day:'2-digit', month:'short', year:'numeric'});
-  var B = (window.Brand && window.Brand.get) ? window.Brand.get() : null;
-  var displayName = (B && B.display_name) || (co&&co.name) || 'AURIS360';
-  var tagline     = (B && B.tagline) || 'HSE Management Platform by SEPHS Consulting';
-  // Prefer the light-background logo; fall back to dark variant
-  var logoUrl     = (B && (B.logo_url || B.logo_dark_url)) || (co && co.logo_url) || null;
+  var B = (window.Brand && window.Brand.get) ? window.Brand.get() : {};
+  var companyName = (co && co.name) || (B && B.display_name) || 'Company';
+  var companyLogo = (co && co.logo_url) || (B && B.logo_url) || null;
+  var tagline = (B && B.tagline) || 'HSE Management Platform';
+  var aurisLogo = '/assets/brand/auris360-logo.png';
 
-  var logoBlock = logoUrl
-    ? '<div class="rpt-logo-wrap"><img class="rpt-logo-img" src="' + escH(logoUrl) + '" alt="' + escH(displayName) + '"/><div><div class="rpt-logo" style="font-size:14pt">' + escH(displayName) + '</div><div class="rpt-company">' + escH(tagline) + '</div></div></div>'
-    : '<div><div class="rpt-logo">' + escH(displayName) + '</div><div class="rpt-company">' + escH(tagline) + '</div></div>';
+  var logoBlock = '<div class="rpt-brand-pair">'
+    + '<div class="rpt-logo-wrap"><img class="rpt-auris-logo" src="' + aurisLogo + '" alt="AURIS360"/><div><div class="rpt-logo" style="font-size:13pt">AURIS360</div><div class="rpt-company">HSE Management Platform</div></div></div>'
+    + '<div class="rpt-brand-divider"></div>'
+    + '<div class="rpt-logo-wrap">'
+    + (companyLogo ? '<img class="rpt-client-logo" src="' + escH(companyLogo) + '" alt="' + escH(companyName) + '"/>' : '')
+    + '<div><div class="rpt-client-name">' + escH(companyName) + '</div><div class="rpt-company">' + escH(tagline) + '</div></div>'
+    + '</div></div>';
 
   return '<div class="rpt-header">'
     + logoBlock
-    + '<div class="rpt-meta"><strong>' + escH(refNo||'') + '</strong><br>Generated: ' + today + '<br>' + escH(co&&co.name?co.name:'') + '</div>'
+    + '<div class="rpt-meta"><strong>' + escH(refNo||'') + '</strong><br>Generated: ' + today + '<br>' + escH(companyName) + '</div>'
     + '</div>'
     + '<div class="rpt-title">' + escH(title) + '</div>'
     + (subtitle ? '<div class="rpt-subtitle">' + escH(subtitle) + '</div>' : '');
@@ -43762,12 +43771,12 @@ I can help you:<br>
 <div class="card" id="branding-studio" style="display:none;padding:0;overflow:hidden">
   <div style="padding:18px 22px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap">
     <div>
-      <div style="font-size:16px;font-weight:700;display:flex;align-items:center;gap:8px"><i class="ti ti-palette" style="color:var(--brand-primary,#1D9E75)"></i>Branding Studio</div>
-      <div style="font-size:12px;color:var(--text2);margin-top:2px">Customise how AURIS360 looks for your organisation — colours, logos, identity. Changes apply instantly across the platform.</div>
+      <div style="font-size:16px;font-weight:700;display:flex;align-items:center;gap:8px"><i class="ti ti-palette" style="color:var(--brand-primary,#1D9E75)"></i>Company Branding</div>
+      <div style="font-size:12px;color:var(--text2);margin-top:2px">Add the client company identity used beside the fixed AURIS360 platform mark on reports, emails and the app experience.</div>
     </div>
     <div style="display:flex;gap:8px">
       <button class="btn" onclick="brandResetDefaults()"><i class="ti ti-restore"></i>Reset</button>
-      <button class="btn btn-primary" onclick="brandSave()"><i class="ti ti-device-floppy"></i>Save branding</button>
+      <button class="btn btn-primary" onclick="brandSave()"><i class="ti ti-device-floppy"></i>Save company branding</button>
     </div>
   </div>
 
@@ -43809,29 +43818,29 @@ I can help you:<br>
       </div>
 
       <!-- Logos -->
-      <div style="font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--text3);font-weight:600;margin-bottom:10px">Logos</div>
+      <div style="font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--text3);font-weight:600;margin-bottom:10px">Company logos</div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:22px">
         <div>
-          <label class="form-label" style="font-size:11px">Primary logo (light backgrounds)</label>
+          <label class="form-label" style="font-size:11px">Company logo (light backgrounds)</label>
           <div id="br-logo-drop" class="brand-drop" onclick="document.getElementById('br-logo-file').click()" ondragover="event.preventDefault();this.classList.add('dragover')" ondragleave="this.classList.remove('dragover')" ondrop="brandLogoDrop(event,'light')">
             <img id="br-logo-preview" style="max-height:54px;max-width:100%;display:none"/>
-            <div id="br-logo-placeholder" style="text-align:center;color:var(--text2);font-size:12px"><i class="ti ti-upload" style="font-size:22px;display:block;margin-bottom:4px"></i>Drag or click to upload<div style="font-size:10px;color:var(--text3);margin-top:2px">PNG, JPG or SVG · max 1 MB</div></div>
+            <div id="br-logo-placeholder" style="text-align:center;color:var(--text2);font-size:12px"><i class="ti ti-upload" style="font-size:22px;display:block;margin-bottom:4px"></i>Upload company logo<div style="font-size:10px;color:var(--text3);margin-top:2px">AURIS360 logo remains fixed · PNG, JPG or SVG · max 1 MB</div></div>
           </div>
           <input type="file" id="br-logo-file" accept="image/*" style="display:none" onchange="brandLogoFile(this,'light')"/>
           <div style="display:flex;gap:6px;margin-top:6px">
-            <input type="url" id="br-logo-url" placeholder="…or paste a logo URL" style="flex:1;font-size:12px" oninput="brandLogoUrl('light')"/>
+            <input type="url" id="br-logo-url" placeholder="…or paste company logo URL" style="flex:1;font-size:12px" oninput="brandLogoUrl('light')"/>
             <button class="btn" style="padding:6px 10px;font-size:11px" onclick="brandLogoClear('light')"><i class="ti ti-x"></i></button>
           </div>
         </div>
         <div>
-          <label class="form-label" style="font-size:11px">Dark logo (sidebar, PDFs, dark mode)</label>
+          <label class="form-label" style="font-size:11px">Optional company logo for dark backgrounds</label>
           <div id="br-logo-dark-drop" class="brand-drop brand-drop-dark" onclick="document.getElementById('br-logo-dark-file').click()" ondragover="event.preventDefault();this.classList.add('dragover')" ondragleave="this.classList.remove('dragover')" ondrop="brandLogoDrop(event,'dark')">
             <img id="br-logo-dark-preview" style="max-height:54px;max-width:100%;display:none"/>
-            <div id="br-logo-dark-placeholder" style="text-align:center;color:#9aa4b2;font-size:12px"><i class="ti ti-upload" style="font-size:22px;display:block;margin-bottom:4px"></i>Optional dark variant<div style="font-size:10px;color:#778;margin-top:2px">Falls back to primary if empty</div></div>
+            <div id="br-logo-dark-placeholder" style="text-align:center;color:#9aa4b2;font-size:12px"><i class="ti ti-upload" style="font-size:22px;display:block;margin-bottom:4px"></i>Optional dark variant<div style="font-size:10px;color:#778;margin-top:2px">Falls back to company logo if empty</div></div>
           </div>
           <input type="file" id="br-logo-dark-file" accept="image/*" style="display:none" onchange="brandLogoFile(this,'dark')"/>
           <div style="display:flex;gap:6px;margin-top:6px">
-            <input type="url" id="br-logo-dark-url" placeholder="…or paste a logo URL" style="flex:1;font-size:12px" oninput="brandLogoUrl('dark')"/>
+            <input type="url" id="br-logo-dark-url" placeholder="…or paste company logo URL" style="flex:1;font-size:12px" oninput="brandLogoUrl('dark')"/>
             <button class="btn" style="padding:6px 10px;font-size:11px" onclick="brandLogoClear('dark')"><i class="ti ti-x"></i></button>
           </div>
         </div>
