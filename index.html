@@ -41835,14 +41835,12 @@ function fireEquipStatusBadge(s) {
 <div><div style="font-size:11px;text-transform:uppercase;letter-spacing:.08em;opacity:.82;font-weight:800">Safe Work Method Statement</div><div id="swms-ref" style="font-family:monospace;font-size:18px;font-weight:900">SWMS-AUTO</div></div>
 <div style="display:flex;gap:8px;flex-wrap:wrap">
 <button class="btn" style="background:rgba(255,255,255,.18);color:#fff;border-color:rgba(255,255,255,.3)" onclick="swmsShowList()"><i class="ti ti-arrow-left"></i>Back</button>
-<button class="btn" style="background:#fff;color:#0F766E;border-color:#fff" onclick="swmsBuildPreview()"><i class="ti ti-eye"></i>Preview</button>
 <button class="btn" style="background:#fff;color:#0F766E;border-color:#fff" onclick="swmsPrint()"><i class="ti ti-printer"></i>Print / PDF</button>
 <button class="btn" style="background:#fff;color:#0F766E;border-color:#fff" onclick="swmsSaveToDocuments()"><i class="ti ti-device-floppy"></i>Save to Document Control</button>
 </div>
 </div>
 </div>
 
-<div style="display:grid;grid-template-columns:minmax(0,1.15fr) minmax(360px,.85fr);gap:14px">
 <div>
 <div class="card" style="margin-bottom:14px">
 <div class="card-title"><i class="ti ti-info-circle"></i> Document & Work Details</div>
@@ -41873,10 +41871,10 @@ function fireEquipStatusBadge(s) {
 <div class="card" style="margin-bottom:14px">
 <div class="card-title"><i class="ti ti-tools"></i> Resources & Controls</div>
 <div class="form-row">
-<div class="form-group"><label class="form-label">Plant / tools / equipment</label><textarea id="swms-plant" style="min-height:70px" placeholder="Scaffold, ladders, hand tools, MEWP, fire extinguishers..." oninput="swmsBuildPreview()"></textarea></div>
+<div class="form-group"><label class="form-label">Tools and equipment used</label><textarea id="swms-plant" style="min-height:96px" placeholder="Scaffold, ladders, hand tools, power tools, MEWP, barriers, fire extinguishers, lifting equipment..." oninput="swmsBuildPreview()"></textarea></div>
 <div class="form-group"><label class="form-label">PPE required</label><textarea id="swms-ppe" style="min-height:70px" placeholder="Safety shoes, gloves, eye protection, harness, respirator..." oninput="swmsBuildPreview()"></textarea></div>
 </div>
-<div class="form-group"><label class="form-label">Emergency / environmental arrangements</label><textarea id="swms-emergency" style="min-height:70px" placeholder="First aid, emergency contact, spill kit, waste disposal, rescue arrangements..." oninput="swmsBuildPreview()"></textarea></div>
+<div class="form-group"><label class="form-label">Emergency arrangements</label><textarea id="swms-emergency" style="min-height:96px" placeholder="First aid arrangements, emergency contact, rescue plan, spill kit, waste disposal, fire response, evacuation point, environmental precautions..." oninput="swmsBuildPreview()"></textarea></div>
 </div>
 
 <div class="card" style="padding:0;overflow:hidden">
@@ -41906,13 +41904,6 @@ function fireEquipStatusBadge(s) {
 <div class="form-group"><label class="form-label">Prepared by</label><select id="swms-prepared-by" onchange="swmsBuildPreview()"><option value="">Select person...</option></select></div>
 <div class="form-group"><label class="form-label">Reviewed by</label><select id="swms-reviewed-by" onchange="swmsBuildPreview()"><option value="">Select person...</option></select></div>
 <div class="form-group"><label class="form-label">Approved by</label><select id="swms-approved-by" onchange="swmsBuildPreview()"><option value="">Select person...</option></select></div>
-</div>
-</div>
-</div>
-<div>
-<div class="card" style="position:sticky;top:90px">
-<div class="card-title"><i class="ti ti-eye"></i> SWMS Preview</div>
-<div id="swms-preview" style="max-height:720px;overflow:auto;border:1px solid var(--border);border-radius:10px;background:#fff"></div>
 </div>
 </div>
 </div>
