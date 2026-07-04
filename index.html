@@ -14178,7 +14178,7 @@ function raExtractRowsFromText(text){
     if(hazard.length<6)continue;
     var key=hazard.toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();
     if(rows.some(function(r){return (r._key||'')===key;}))continue;
-    rows.push({_key:key,hazard:hazard,harm:harm,who:'Workers / affected persons',rs:raGuessRiskSeverity(joined),rop:raGuessRiskProbability(joined),controls:controls,hoc_level:/guard|ventilation|isolation|barrier|interlock/i.test(controls)?'engineering':'administrative',res_s:Math.max(1,raGuessRiskSeverity(joined)-1),res_p:1});
+    rows.push({_key:key,task:hazard,hazard:hazard,harm:harm,who:'Workers / affected persons',rs:raGuessRiskSeverity(joined),rop:raGuessRiskProbability(joined),controls:controls,hoc_level:/guard|ventilation|isolation|barrier|interlock/i.test(controls)?'engineering':'administrative',res_s:Math.max(1,raGuessRiskSeverity(joined)-1),res_p:1});
     if(rows.length>=12)break;
   }
   var tableRe=/^(.{6,90}?)\s{2,}(.{6,120}?)\s{2,}(.{10,260})$/i;
@@ -14191,7 +14191,7 @@ function raExtractRowsFromText(text){
     if(!/(injury|harm|burn|fall|exposure|strain|cut|impact|ill|damage|shock|fire|spill|crush|slip|trip|control|ppe|guard|training|supervision|isolation)/i.test(harm2+' '+controls2))continue;
     var key2=hazard2.toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();
     if(rows.some(function(r){return (r._key||'')===key2||(r.hazard||'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim()===key2;}))continue;
-    rows.push({_key:key2,hazard:hazard2,harm:harm2,who:'Workers / affected persons',rs:raGuessRiskSeverity(hazard2+' '+harm2),rop:raGuessRiskProbability(hazard2+' '+harm2),controls:controls2,hoc_level:/guard|ventilation|isolation|barrier|interlock/i.test(controls2)?'engineering':'administrative',res_s:Math.max(1,raGuessRiskSeverity(hazard2+' '+harm2)-1),res_p:1});
+    rows.push({_key:key2,task:hazard2,hazard:hazard2,harm:harm2,who:'Workers / affected persons',rs:raGuessRiskSeverity(hazard2+' '+harm2),rop:raGuessRiskProbability(hazard2+' '+harm2),controls:controls2,hoc_level:/guard|ventilation|isolation|barrier|interlock/i.test(controls2)?'engineering':'administrative',res_s:Math.max(1,raGuessRiskSeverity(hazard2+' '+harm2)-1),res_p:1});
   }
   return rows.map(function(r){delete r._key;return r;});
 }
@@ -14208,12 +14208,12 @@ function raApplyImportedPdf(text,fileName){
   var scope=document.getElementById('ra-scope'); if(scope&&!scope.value)scope.value=text.replace(/\s+/g,' ').substring(0,700);
   if(rows.length){
     if(raEditingType==='dynamic')raSwitchFormType('baseline');
-    if(raEditingType==='task')rows.forEach(function(r){raTaskAddRow({task:r.hazard,hazard:r.hazard,harm:r.harm,rs:r.rs,rop:r.rop,controls:r.controls,res_s:r.res_s,res_p:r.res_p});});
+    if(raEditingType==='task')rows.forEach(function(r){raTaskAddRow({task:r.task||r.hazard,hazard:r.hazard,harm:r.harm,rs:r.rs,rop:r.rop,controls:r.controls,res_s:r.res_s,res_p:r.res_p});});
     else rows.forEach(function(r){raBaselineAddRow(r);});
     raFormTab('hazards', document.getElementById('ra-ftab-hazards'));
   }
   var el=document.getElementById('ra-rams-status');
-  if(el)el.innerHTML='<div style="padding:10px 12px;background:#f0fdf4;border-radius:8px;font-size:12px;color:#166534;margin-bottom:8px"><strong>PDF analysed:</strong> '+escH(fileName||'document')+'<br><span style="font-size:11px;color:#166534">'+rows.length+' hazard row'+(rows.length!==1?'s':'')+' extracted. Please review before saving.</span></div>';
+  if(el)el.innerHTML='<div style="padding:10px 12px;background:#f0fdf4;border-radius:8px;font-size:12px;color:#166534;margin-bottom:8px"><strong>PDF analysed:</strong> '+escH(fileName||'document')+'<br><span style="font-size:11px;color:#166534">'+rows.length+' structured row'+(rows.length!==1?'s':'')+' extracted into the '+(raEditingType==='task'?'task-based':'hazard')+' table. Review wording, ratings and controls before saving.</span></div>';
 }
 async function raHandleRAMSUpload(input){
   var file=input?.files?.[0];if(!file)return;
@@ -35361,7 +35361,7 @@ function fireEquipStatusBadge(s) {
 <div><div class="page-title">Risk Assessment</div><div style="font-size:12px;color:var(--text2)">RAMS · Baseline RA · Task-Based RA · Dynamic RA · HIRA · JSA/JHA</div></div>
 <div style="display:flex;gap:8px" id="risk-add-btn">
 <button class="btn btn-sm" id="ra-lib-btn" onclick="raShowLibrary()"><i class="ti ti-books"></i>Libraries</button>
-<button class="btn btn-sm" id="ra-import-pdf-btn" onclick="raImportExistingPDF('baseline')"><i class="ti ti-file-import"></i>Import RA PDF</button>
+<button class="btn btn-sm" id="ra-import-pdf-btn" onclick="raImportExistingPDF('task')"><i class="ti ti-file-import"></i>Import RA PDF</button>
 <button class="btn btn-primary" onclick="raShowNewPanel()" id="ra-new-main-btn" style="display:none"><i class="ti ti-plus"></i>New RA</button>
 <button class="btn btn-sm" onclick="if(raEditingId)printRiskAssessment(raEditingId);else toast('Open a risk assessment first',false)" title="Print PDF"><i class="ti ti-printer"></i>Print PDF</button>
 </div>
@@ -35957,6 +35957,7 @@ function fireEquipStatusBadge(s) {
 <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
 <div class="card">
 <div class="card-title"><i class="ti ti-file-upload"></i> RAMS Document Upload</div>
+<div style="margin-bottom:12px;padding:10px 12px;background:#F8FBFF;border:1px solid #BFDBFE;border-radius:10px;color:#1E3A8A;font-size:12px;line-height:1.45"><strong>PDF import assistant:</strong> upload an existing risk assessment PDF and AURIS360 will try to convert detected hazards, consequences and controls into editable RA rows. Always review the extracted rows before submitting for approval.</div>
 <div style="background:#f9fafb;border:2px dashed var(--border);border-radius:10px;padding:24px;text-align:center;margin-bottom:14px">
 <div style="font-size:40px;margin-bottom:10px">📎</div>
 <div style="font-size:13px;font-weight:600;margin-bottom:6px">Upload RAMS Document</div>
