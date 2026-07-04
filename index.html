@@ -13690,6 +13690,40 @@ function raRenderWorkflowBar(rec){
   el.innerHTML=h;
   var actions=document.getElementById('ra-approval-actions-card');
   if(actions)actions.style.display=canAdministerControlledRecord()?'block':'none';
+  raRenderApprovalRoute(rec);
+}
+
+async function raRenderApprovalRoute(rec){
+  var el=document.getElementById('ra-approval-route-note');if(!el)return;
+  var st=String(rec?.status||document.getElementById('ra-status-sel')?.value||'draft');
+  if(!rec||!['pending_review','review','pending_approval','active','approved','rejected'].includes(st)){
+    el.innerHTML='';
+    el.style.display='none';
+    return;
+  }
+  el.style.display='block';
+  el.innerHTML='<i class="ti ti-loader-2"></i> Checking approval route...';
+  try{
+    var route=await raGetActiveApprovalWorkflow();
+    if(!route||!route.workflow){
+      el.innerHTML='<i class="ti ti-info-circle"></i> No specific Risk Assessment workflow is configured. Admin/HSE Manager approval applies.';
+      return;
+    }
+    var steps=route.steps||[];
+    var current=steps[0]||null;
+    var chips=steps.length?steps.map(function(s){
+      var isCurrent=current&&s.step_no===current.step_no;
+      return '<span style="display:inline-flex;align-items:center;gap:5px;padding:4px 8px;border-radius:999px;background:'+(isCurrent?'#DBEAFE':'#F3F4F6')+';color:'+(isCurrent?'#1E40AF':'#475569')+';font-size:11px;font-weight:800">L'+escH(s.step_no||'?')+' · '+escH(raApprovalStepLabel(s))+'</span>';
+    }).join(' '):'<span style="color:#64748b">No required approval steps configured</span>';
+    var msg=['active','approved'].includes(st)
+      ? 'Approved through workflow: '+escH(route.workflow.workflow_name||'Risk Assessment Approval')
+      : st==='rejected'
+        ? 'Rejected. Create or release a revision before resubmission.'
+        : 'Waiting for '+escH(raApprovalStepLabel(current))+' according to '+escH(route.workflow.workflow_name||'Risk Assessment Approval')+'.';
+    el.innerHTML='<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap"><div><i class="ti ti-route"></i> '+msg+'</div><div style="display:flex;gap:6px;flex-wrap:wrap">'+chips+'</div></div>';
+  }catch(e){
+    el.innerHTML='<i class="ti ti-info-circle"></i> Approval route could not be loaded; default Admin/HSE Manager approval applies.';
+  }
 }
 
 function raGetFieldValue(id){
@@ -35970,6 +36004,7 @@ function fireEquipStatusBadge(s) {
 <span style="font-family:monospace;font-size:13px;font-weight:700;color:#185FA5" id="ra-rev-badge">Rev 1</span>
 </div>
 <div id="ra-workflow-bar" style="padding:12px 24px;background:#f8fafc;border-top:1px solid var(--border);display:flex;align-items:center;gap:10px;flex-wrap:wrap"></div>
+<div id="ra-approval-route-note" style="display:none;padding:10px 24px;background:#EFF6FF;border-top:1px solid #BFDBFE;color:#1E40AF;font-size:12px;font-weight:700"></div>
 <div style="padding:12px 24px;background:#fff;border-top:1px solid var(--border)">
 <div id="ra-quality-panel"></div>
 </div>
