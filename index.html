@@ -25415,20 +25415,48 @@ function tbtConfirmAttendee(btn){
   var ts=new Date().toISOString();
   row.dataset.confirmedAt=ts;
   row.dataset.confirmationMethod=expected.length?'employee_code':'manual_pin';
+  var dt=row.querySelector('.tbt-att-confirm-dt');if(dt)dt.value=tbtDateTimeLocalValue(ts);
   var status=row.querySelector('.tbt-att-confirm-status');
   if(status)status.innerHTML='<span style="color:#1D9E75;font-weight:700"><i class="ti ti-circle-check"></i> Confirmed '+new Date(ts).toLocaleString()+'</span>';
   var pinEl=row.querySelector('.tbt-att-pin');if(pinEl)pinEl.value='';
 }
+function tbtDateTimeLocalValue(value){
+  if(!value)return '';
+  var d=new Date(value);if(isNaN(d))return '';
+  var pad=function(n){return String(n).padStart(2,'0');};
+  return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())+'T'+pad(d.getHours())+':'+pad(d.getMinutes());
+}
+function tbtSyncConfirmationTime(input){
+  var row=input.closest('.tbt-att-row');if(!row)return;
+  if(input.value){
+    row.dataset.confirmedAt=new Date(input.value).toISOString();
+    if(!row.dataset.confirmationMethod)row.dataset.confirmationMethod='admin_adjusted';
+  }else{
+    row.dataset.confirmedAt='';
+  }
+  var status=row.querySelector('.tbt-att-confirm-status');
+  if(status)status.innerHTML=row.dataset.confirmedAt?'<span style="color:#1D9E75;font-weight:700"><i class="ti ti-circle-check"></i> Confirmed '+new Date(row.dataset.confirmedAt).toLocaleString()+'</span>':'<span style="color:var(--text2)">Not confirmed</span>';
+}
 function tbtAttendeeRow(name,dept,idx,confirmedAt,method){
   var confirmedText=confirmedAt?'<span style="color:#1D9E75;font-weight:700"><i class="ti ti-circle-check"></i> Confirmed '+new Date(confirmedAt).toLocaleString()+'</span>':'<span style="color:var(--text2)">Not confirmed</span>';
-  return '<div class="tbt-att-row" style="display:flex;gap:6px;align-items:center;margin-bottom:6px">'
-    +'<select class="tbt-att-name" onchange="tbtFillAttendeeDept(this)" style="flex:2;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px">'+tbtPersonOptions(name)+'</select>'
-    +'<input type="text" placeholder="Dept" value="'+escH(dept)+'" class="tbt-att-dept" style="flex:1;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px"/>'
-    +'<input type="password" placeholder="Employee code / PIN" class="tbt-att-pin" style="flex:1;min-width:120px;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px"/>'
-    +'<button class="btn btn-sm" style="color:#1D9E75;padding:4px 8px" onclick="tbtConfirmAttendee(this)"><i class="ti ti-signature"></i>Confirm</button>'
-    +'<span class="tbt-att-confirm-status" style="font-size:10px;min-width:160px">'+confirmedText+'</span>'
-    +'<button class="btn btn-sm" style="color:var(--red);padding:4px 8px" onclick="this.closest(\'.tbt-att-row\').remove();tbtUpdateCount()"><i class="ti ti-x"></i></button>'
+  var adminTime=isSA()?'<input type="datetime-local" class="tbt-att-confirm-dt" value="'+escH(tbtDateTimeLocalValue(confirmedAt))+'" onchange="tbtSyncConfirmationTime(this)" title="SEPHS admin may correct confirmation date/time" style="width:175px;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px"/>':'';
+  return '<div class="tbt-att-row" style="display:flex;gap:6px;align-items:center;margin-bottom:8px;flex-wrap:wrap">'
+    +'<select class="tbt-att-name" onchange="tbtFillAttendeeDept(this)" style="flex:1 1 240px;min-width:220px;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px">'+tbtPersonOptions(name)+'</select>'
+    +'<input type="text" placeholder="Dept" value="'+escH(dept)+'" class="tbt-att-dept" style="flex:0 1 150px;min-width:110px;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px"/>'
+    +'<input type="password" placeholder="Employee code / PIN" class="tbt-att-pin" style="flex:0 1 155px;min-width:135px;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px"/>'
+    +'<button class="btn btn-sm" style="color:#1D9E75;padding:4px 8px;white-space:nowrap" onclick="tbtConfirmAttendee(this)"><i class="ti ti-signature"></i>Confirm</button>'
+    +adminTime
+    +'<span class="tbt-att-confirm-status" style="font-size:10px;min-width:160px;flex:1 1 170px">'+confirmedText+'</span>'
+    +'<button class="btn btn-sm" style="color:var(--red);padding:4px 8px;margin-left:auto" onclick="this.closest(\'.tbt-att-row\').remove();tbtUpdateCount()"><i class="ti ti-x"></i></button>'
     +'</div>'.replace('class="tbt-att-row"','class="tbt-att-row" data-confirmed-at="'+escH(confirmedAt||'')+'" data-confirmation-method="'+escH(method||'')+'"');
+}
+function tbtAttendeeConfirmedAt(row){
+  var dt=row.querySelector('.tbt-att-confirm-dt');
+  if(dt&&dt.value){
+    row.dataset.confirmedAt=new Date(dt.value).toISOString();
+    if(!row.dataset.confirmationMethod)row.dataset.confirmationMethod='admin_adjusted';
+  }
+  return row.dataset.confirmedAt||null;
 }
 
 function tbtActionRow(desc,assigned,due,idx){
@@ -25488,7 +25516,7 @@ async function tbtSave(){
     if(row.offsetParent===null)return;
     var name=row.querySelector('.tbt-att-name')?.value?.trim();
     var dept=row.querySelector('.tbt-att-dept')?.value?.trim()||'';
-    if(name)attendees.push({name,dept,confirmed_at:row.dataset.confirmedAt||null,confirmation_method:row.dataset.confirmationMethod||null});
+    if(name)attendees.push({name,dept,confirmed_at:tbtAttendeeConfirmedAt(row),confirmation_method:row.dataset.confirmationMethod||null});
   });
   // Collect actions
   var actions_raised=[];
@@ -25538,7 +25566,7 @@ function tbtCurrentFormData(){
     if(row.offsetParent===null)return;
     var name=row.querySelector('.tbt-att-name')?.value?.trim();
     var dept=row.querySelector('.tbt-att-dept')?.value?.trim()||'';
-    if(name)attendees.push({name:name,dept:dept,confirmed_at:row.dataset.confirmedAt||null,confirmation_method:row.dataset.confirmationMethod||null});
+    if(name)attendees.push({name:name,dept:dept,confirmed_at:tbtAttendeeConfirmedAt(row),confirmation_method:row.dataset.confirmationMethod||null});
   });
   var actions_raised=[];
   document.querySelectorAll('.tbt-act-row').forEach(function(row){
