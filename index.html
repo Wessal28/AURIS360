@@ -13900,11 +13900,11 @@ function raBaselineAddRow(r, bodyOverride, typeOverride){
     +'<td style="padding:5px 8px"><textarea class="ra-hazard" style="width:100%;min-height:50px;padding:4px;border:1px solid var(--border);border-radius:4px;font-size:11px;resize:vertical" placeholder="Hazard...">'+escH(r.hazard||r.activity||'')+'</textarea></td>'
     +'<td style="padding:5px 8px"><textarea class="ra-harm" style="width:100%;min-height:50px;padding:4px;border:1px solid var(--border);border-radius:4px;font-size:11px;resize:vertical" placeholder="Harm...">'+escH(r.harm||r.potential_harm||'')+'</textarea></td>'
     +'<td style="padding:5px 8px"><input class="ra-who" type="text" style="width:70px;padding:3px 4px;border:1px solid var(--border);border-radius:4px;font-size:11px" value="'+escH(r.who||'')+'" placeholder="Who..."/></td>'
+    +'<td style="padding:5px 8px"><textarea class="ra-controls" style="width:100%;min-height:50px;padding:4px;border:1px solid var(--border);border-radius:4px;font-size:11px;resize:vertical" placeholder="Existing controls...">'+escH(r.controls||r.control_measures||'')+'</textarea>'
+    +'<button class="btn btn-sm" style="margin-top:3px;font-size:9px;padding:2px 5px;color:#185FA5" onclick="raGetControlSuggestions(this)"><i class="ti ti-sparkles" style="font-size:9px"></i>Suggest</button></td>'
     +'<td style="padding:4px 5px;text-align:center">'+raRsSelect(s,'')+'</td>'
     +'<td style="padding:4px 5px;text-align:center">'+raRopSelect(p,'')+'</td>'
     +'<td class="rl" style="padding:4px 5px;text-align:center" data-score="'+rr+'" data-level="'+rlLvl+'"><span style="background:'+rlCfg[0]+';color:'+rlCfg[1]+';padding:2px 5px;border-radius:4px;font-size:10px;font-weight:700;display:block;text-align:center">'+rr+'<br><span style="font-size:9px">'+rlLvl+'</span></span></td>'
-    +'<td style="padding:5px 8px"><textarea class="ra-controls" style="width:100%;min-height:50px;padding:4px;border:1px solid var(--border);border-radius:4px;font-size:11px;resize:vertical" placeholder="Existing controls...">'+escH(r.controls||r.control_measures||'')+'</textarea>'
-    +'<button class="btn btn-sm" style="margin-top:3px;font-size:9px;padding:2px 5px;color:#185FA5" onclick="raGetControlSuggestions(this)"><i class="ti ti-sparkles" style="font-size:9px"></i>Suggest</button></td>'
     +'<td style="padding:5px 8px"><textarea class="ra-further-controls" style="width:100%;min-height:50px;padding:4px;border:1px solid var(--border);border-radius:4px;font-size:11px;resize:vertical" placeholder="Further actions / additional controls...">'+escH(r.further_controls||r.further_actions||r.additional_controls||'')+'</textarea></td>'
     +'<td style="padding:4px 5px">'+raHOCSelect(r.hoc_level||r.hierarchy||'')+'</td>'
     +'<td style="padding:4px 5px;text-align:center">'+raRsSelect(rs,'r-')+'</td>'
@@ -13941,11 +13941,11 @@ function raTaskAddRow(r){
     +'<td style="padding:5px 8px"><textarea class="ra-task-step" style="width:100%;min-height:50px;padding:4px;border:1px solid var(--border);border-radius:4px;font-size:11px;resize:vertical" placeholder="Task / step description...">'+escH(r.task||r.step||'')+'</textarea></td>'
     +'<td style="padding:5px 8px"><textarea class="ra-hazard" style="width:100%;min-height:50px;padding:4px;border:1px solid var(--border);border-radius:4px;font-size:11px;resize:vertical" placeholder="Hazard...">'+escH(r.hazard||'')+'</textarea></td>'
     +'<td style="padding:5px 8px"><textarea class="ra-harm" style="width:100%;min-height:50px;padding:4px;border:1px solid var(--border);border-radius:4px;font-size:11px;resize:vertical" placeholder="Harm...">'+escH(r.harm||'')+'</textarea></td>'
+    +'<td style="padding:5px 8px"><textarea class="ra-controls" style="width:100%;min-height:50px;padding:4px;border:1px solid var(--border);border-radius:4px;font-size:11px;resize:vertical" placeholder="Existing controls...">'+escH(r.controls||'')+'</textarea>'
+    +'<button class="btn btn-sm" style="margin-top:3px;font-size:9px;padding:2px 5px;color:#185FA5" onclick="raGetControlSuggestions(this)"><i class="ti ti-sparkles" style="font-size:9px"></i>Suggest</button></td>'
     +'<td style="padding:4px 5px;text-align:center">'+raRsSelect(s,'')+'</td>'
     +'<td style="padding:4px 5px;text-align:center">'+raRopSelect(p,'')+'</td>'
     +'<td class="rl" style="padding:4px;text-align:center" data-score="'+rr+'" data-level="'+rlLvl+'"><span style="background:'+rlCfg[0]+';color:'+rlCfg[1]+';padding:2px 5px;border-radius:4px;font-size:10px;font-weight:700;display:block;text-align:center">'+rr+'<br><span style="font-size:9px">'+rlLvl+'</span></span></td>'
-    +'<td style="padding:5px 8px"><textarea class="ra-controls" style="width:100%;min-height:50px;padding:4px;border:1px solid var(--border);border-radius:4px;font-size:11px;resize:vertical" placeholder="Existing controls...">'+escH(r.controls||'')+'</textarea>'
-    +'<button class="btn btn-sm" style="margin-top:3px;font-size:9px;padding:2px 5px;color:#185FA5" onclick="raGetControlSuggestions(this)"><i class="ti ti-sparkles" style="font-size:9px"></i>Suggest</button></td>'
     +'<td style="padding:5px 8px"><textarea class="ra-further-controls" style="width:100%;min-height:50px;padding:4px;border:1px solid var(--border);border-radius:4px;font-size:11px;resize:vertical" placeholder="Further actions / additional controls...">'+escH(r.further_controls||r.further_actions||r.additional_controls||'')+'</textarea></td>'
     +'<td style="padding:4px 5px;text-align:center">'+raRsSelect(rs,'r-')+'</td>'
     +'<td style="padding:4px 5px;text-align:center">'+raRopSelect(rp,'r-')+'</td>'
@@ -15296,6 +15296,7 @@ function raRenderAISuggestions(rows){
       +'<button class="btn btn-sm" style="background:#8B5CF6;color:#fff;border-color:#8B5CF6;font-size:10px;padding:2px 8px" onclick="raAddSingleAISuggestion('+i+')"><i class="ti ti-plus"></i>Add</button>'
       +'</div></div>'
       +'<div style="font-size:11px;color:#374151;background:#faf5ff;padding:6px 8px;border-radius:6px">'+escH(r.controls||'')+'</div>'
+      +(r.further_controls?'<div style="font-size:11px;color:#374151;background:#fff7ed;padding:6px 8px;border-radius:6px;margin-top:5px"><b>Further controls:</b> '+escH(r.further_controls)+'</div>':'')
       +(r.legal_ref?'<div style="font-size:10px;color:#185FA5;margin-top:4px"><i class="ti ti-book" style="font-size:9px"></i> '+escH(r.legal_ref)+'</div>':'')
       +'</div>';
   });
@@ -15337,7 +15338,7 @@ function raParseAIRows(text){
     try{
       var parsed=JSON.parse(candidates[i]);
       var rows=Array.isArray(parsed)?parsed:(Array.isArray(parsed.rows)?parsed.rows:Array.isArray(parsed.hazards)?parsed.hazards:[]);
-      if(rows.length)return rows.map(raNormalizeAIRow).filter(function(r){return r.hazard||r.harm||r.controls;});
+      if(rows.length)return rows.map(raNormalizeAIRow).filter(function(r){return r.hazard||r.harm||r.controls||r.further_controls;});
     }catch(_){}
   }
   return [];
@@ -15350,17 +15351,28 @@ function raNormalizeAIRow(r){
   var resP=parseInt(r.res_p??r.residual_probability??r.residual_likelihood??r.residual_p??1)||1;
   function clamp(n){return Math.max(1,Math.min(5,parseInt(n)||1));}
   return {
+    task:r.task||r.activity||r.task_step||r.step||'',
     hazard:r.hazard||r.hazard_description||r.task_step||'',
     harm:r.harm||r.consequence||r.potential_harm||'',
     who:r.who||r.persons_at_risk||r.exposed_persons||'',
     rs:clamp(rs),
     rop:clamp(rop),
     controls:Array.isArray(r.controls)?r.controls.join('; '):(r.controls||r.control_measures||r.existing_controls||''),
+    further_controls:Array.isArray(r.further_controls||r.further_actions||r.additional_controls)?(r.further_controls||r.further_actions||r.additional_controls).join('; '):(r.further_controls||r.further_actions||r.additional_controls||r.action_required||''),
     hoc_level:String(r.hoc_level||r.hierarchy||r.control_type||'administrative').toLowerCase().replace(/\s+/g,'_'),
     res_s:clamp(resS),
     res_p:clamp(resP),
     legal_ref:r.legal_ref||r.legal_reference||r.standard||''
   };
+}
+function raFallbackAIRows(prompt){
+  var activity=String(prompt||'the work activity').trim()||'the work activity';
+  return [
+    {task:activity,hazard:'Work area not adequately prepared or controlled',harm:'Slips, trips, struck-by injury or unauthorised access to the work zone',who:'Workers, contractors and nearby persons',rs:3,rop:3,controls:'Define work area, brief the team, install barriers/signage, keep access routes clear and maintain good housekeeping.',further_controls:'Supervisor to verify the work area before starting and record any additional site-specific controls.',hoc_level:'administrative',res_s:3,res_p:1,legal_ref:'OSH Act / safe system of work'},
+    {task:activity,hazard:'Tools, equipment or materials not suitable for the task',harm:'Injury from defective equipment, dropped objects, poor ergonomics or uncontrolled energy',who:'Persons carrying out the task',rs:4,rop:2,controls:'Use inspected equipment only, remove defective items, follow manufacturer instructions and ensure competent users.',further_controls:'Add pre-use checklist and equipment inspection evidence where the task is high risk.',hoc_level:'engineering',res_s:3,res_p:1,legal_ref:'OSH Act / equipment safety'},
+    {task:activity,hazard:'Exposure to hazardous substances, dust, fumes, noise or environmental conditions',harm:'Respiratory irritation, burns, hearing damage, heat stress or occupational illness',who:'Workers and persons nearby',rs:4,rop:2,controls:'Review SDS/task conditions, provide ventilation or isolation, select suitable PPE and limit exposure duration.',further_controls:'Confirm monitoring requirements and emergency arrangements before work starts.',hoc_level:'engineering',res_s:3,res_p:1,legal_ref:'OSH Act / occupational health controls'},
+    {task:activity,hazard:'Emergency response arrangements not confirmed',harm:'Delayed rescue, escalation of injury or uncontrolled incident consequences',who:'All affected persons',rs:5,rop:2,controls:'Communicate emergency contacts, first aid arrangements, evacuation route and stop-work authority during toolbox talk.',further_controls:'Test communication method and assign a standby/responsible person for higher-risk work.',hoc_level:'administrative',res_s:4,res_p:1,legal_ref:'Emergency preparedness requirements'}
+  ];
 }
 async function raAISuggest(){
   var prompt=(document.getElementById('ra-ai-prompt')?.value||'').trim();
@@ -15373,22 +15385,27 @@ async function raAISuggest(){
 Activity: ${prompt}
 
 Return ONLY valid JSON array. Do not use markdown and do not add explanation.
-[{"hazard":"...","harm":"...","who":"...","rs":3,"rop":3,"controls":"...","hoc_level":"engineering","res_s":3,"res_p":1,"legal_ref":"..."}]
+[{"task":"...","hazard":"...","harm":"...","who":"...","controls":"...","rs":3,"rop":3,"further_controls":"...","hoc_level":"engineering","res_s":3,"res_p":1,"legal_ref":"..."}]
 
 Rules:
 - rs and rop are 1-5 integers (severity x probability = risk rating)
 - hoc_level: elimination|substitution|engineering|administrative|ppe
 - legal_ref: relevant OSH legislation or ISO standard
-- controls: specific, actionable, practical control measures
+- controls: existing controls already in place before calculating initial risk
+- further_controls: additional measures/actions needed to reduce the residual risk
 - res_s and res_p are residual severity/probability after controls`}],
       'You are an expert HSE risk assessor. Generate structured, practical risk assessment rows for AURIS360. Return only JSON.');
     var rows=raParseAIRows(txt);
-    if(!Array.isArray(rows)||!rows.length)throw new Error('No rows generated');
+    var usedFallback=false;
+    if(!Array.isArray(rows)||!rows.length){
+      rows=raFallbackAIRows(prompt);
+      usedFallback=true;
+    }
     raRenderAISuggestions(rows);
     if(raEditingId){
       await api('/risk_assessments?id=eq.'+raEditingId,{m:'PATCH',p:'return=minimal',b:{ai_suggestions:rows,ai_generated:true,updated_at:new Date().toISOString()}});
     }
-    toast('AI generated '+rows.length+' hazard rows - review and add to RA');
+    toast((usedFallback?'AURIS generated a standard starter RA because the AI response could not be parsed. ':'AI generated ')+rows.length+' hazard rows - review and add to RA');
   }catch(e){
     var el2=document.getElementById('ra-ai-output');
     if(el2)el2.innerHTML='<div style="padding:12px;background:#FEF2F2;border-radius:8px;font-size:12px;color:#A32D2D">AI error: '+escH(e.message)+'</div>';
@@ -31557,7 +31574,7 @@ function printRiskAssessment(raId) {
     + '</div>'
 
     + '<div class="rpt-section"><div class="rpt-section-title red">Hazards, Controls & Residual Risk</div>'
-    + (rows.length ? '<table><thead><tr><th style="width:7%">Step</th><th style="width:14%">Hazard</th><th style="width:15%">Risk Description / Harm</th><th style="width:8%">Initial</th><th style="width:22%">Existing Controls</th><th style="width:18%">Further Actions / Controls</th><th style="width:8%">Residual</th><th style="width:8%">Owner / Ref</th></tr></thead><tbody>'
+    + (rows.length ? '<table><thead><tr><th style="width:7%">Step</th><th style="width:14%">Hazard</th><th style="width:15%">Risk Description / Harm</th><th style="width:22%">Existing Controls</th><th style="width:8%">Initial</th><th style="width:18%">Further Actions / Controls</th><th style="width:8%">Residual</th><th style="width:8%">Owner / Ref</th></tr></thead><tbody>'
       + rows.map(function(r){
           var hazard=val(r.task,r.hazard,r.condition,r.observed_risk);
           var task=val(r.task,r.step,r.activity);
@@ -31572,8 +31589,8 @@ function printRiskAssessment(raId) {
             + '<td style="text-align:center;font-weight:700">' + escH(stepNo||'—') + '</td>'
             + '<td>' + escH(hazard||'—') + '</td>'
             + '<td>' + escH(harm||'—') + '</td>'
-            + '<td>' + riskBadge(initialLevel,initialScore) + '<br><span style="font-size:8pt;color:#6b7280">S '+escH(val(r.rs,r.s,r.initial_s,'—'))+' / P '+escH(val(r.rop,r.p,r.initial_p,'—'))+'</span></td>'
             + '<td>' + escH(val(r.controls,r.control_measures,'—')) + (r.hoc_level?'<br><span style="font-size:8pt;color:#185FA5">Hierarchy: '+escH(r.hoc_level)+'</span>':'') + '</td>'
+            + '<td>' + riskBadge(initialLevel,initialScore) + '<br><span style="font-size:8pt;color:#6b7280">S '+escH(val(r.rs,r.s,r.initial_s,'—'))+' / P '+escH(val(r.rop,r.p,r.initial_p,'—'))+'</span></td>'
             + '<td>' + escH(val(r.further_controls,r.further_actions,r.additional_controls,'—')) + '</td>'
             + '<td>' + riskBadge(residualLevel,residualScore) + '<br><span style="font-size:8pt;color:#6b7280">S '+escH(val(r.res_s,r.rs2,'—'))+' / P '+escH(val(r.res_p,r.rp2,'—'))+'</span></td>'
             + '<td>' + escH(val(r.who,r.responsible,r.owner,'—')) + (r.legal_ref?'<br><span style="font-size:8pt;color:#6b7280">'+escH(r.legal_ref)+'</span>':'') + '</td>'
@@ -36162,10 +36179,10 @@ function fireEquipStatusBadge(s) {
 <th style="padding:7px 10px;text-align:left;border-bottom:1px solid var(--border);min-width:160px">Hazard / Activity</th>
 <th style="padding:7px 10px;text-align:left;border-bottom:1px solid var(--border);min-width:120px">Potential Harm</th>
 <th style="padding:7px 10px;text-align:left;border-bottom:1px solid var(--border);min-width:60px">Who</th>
+<th style="padding:7px 10px;text-align:left;border-bottom:1px solid var(--border);min-width:190px">Existing Controls</th>
 <th title="Severity before additional controls" style="padding:7px 6px;text-align:center;border-bottom:1px solid var(--border);width:62px">Initial<br/>Severity</th>
 <th title="Likelihood before additional controls" style="padding:7px 6px;text-align:center;border-bottom:1px solid var(--border);width:66px">Initial<br/>Likelihood</th>
 <th title="Initial risk rating" style="padding:7px 6px;text-align:center;border-bottom:1px solid var(--border);width:64px">Initial<br/>Risk</th>
-<th style="padding:7px 10px;text-align:left;border-bottom:1px solid var(--border);min-width:190px">Existing Controls</th>
 <th style="padding:7px 10px;text-align:left;border-bottom:1px solid var(--border);min-width:190px">Further Actions / Controls</th>
 <th style="padding:7px 10px;text-align:left;border-bottom:1px solid var(--border);min-width:80px">Hierarchy</th>
 <th title="Severity after controls" style="padding:7px 6px;text-align:center;border-bottom:1px solid var(--border);width:64px">Residual<br/>Severity</th>
@@ -36196,10 +36213,10 @@ function fireEquipStatusBadge(s) {
 <th style="padding:7px 10px;text-align:left;border-bottom:1px solid var(--border);min-width:140px">Task / Activity</th>
 <th style="padding:7px 10px;text-align:left;border-bottom:1px solid var(--border);min-width:140px">Hazard</th>
 <th style="padding:7px 10px;text-align:left;border-bottom:1px solid var(--border);min-width:120px">Potential Harm</th>
+<th style="padding:7px 10px;text-align:left;border-bottom:1px solid var(--border);min-width:190px">Existing Controls</th>
 <th title="Severity before additional controls" style="padding:7px 6px;text-align:center;border-bottom:1px solid var(--border);width:62px">Initial<br/>Severity</th>
 <th title="Likelihood before additional controls" style="padding:7px 6px;text-align:center;border-bottom:1px solid var(--border);width:66px">Initial<br/>Likelihood</th>
 <th title="Initial risk rating" style="padding:7px 6px;text-align:center;border-bottom:1px solid var(--border);width:64px">Initial<br/>Risk</th>
-<th style="padding:7px 10px;text-align:left;border-bottom:1px solid var(--border);min-width:190px">Existing Controls</th>
 <th style="padding:7px 10px;text-align:left;border-bottom:1px solid var(--border);min-width:190px">Further Actions / Controls</th>
 <th title="Severity after controls" style="padding:7px 6px;text-align:center;border-bottom:1px solid var(--border);width:64px">Residual<br/>Severity</th>
 <th title="Likelihood after controls" style="padding:7px 6px;text-align:center;border-bottom:1px solid var(--border);width:68px">Residual<br/>Likelihood</th>
@@ -36255,10 +36272,10 @@ function fireEquipStatusBadge(s) {
 <th style="padding:7px 10px;text-align:left;border-bottom:1px solid var(--border);min-width:160px">Hazard Description</th>
 <th style="padding:7px 10px;text-align:left;border-bottom:1px solid var(--border);min-width:120px">Potential Harm</th>
 <th style="padding:7px 10px;text-align:left;border-bottom:1px solid var(--border);min-width:100px">Who at Risk</th>
+<th style="padding:7px 10px;text-align:left;border-bottom:1px solid var(--border);min-width:190px">Existing Controls</th>
 <th title="Severity before additional controls" style="padding:7px 6px;text-align:center;border-bottom:1px solid var(--border);width:62px">Initial<br/>Severity</th>
 <th title="Likelihood before additional controls" style="padding:7px 6px;text-align:center;border-bottom:1px solid var(--border);width:66px">Initial<br/>Likelihood</th>
 <th title="Initial risk rating" style="padding:7px 6px;text-align:center;border-bottom:1px solid var(--border);width:64px">Initial<br/>Risk</th>
-<th style="padding:7px 10px;text-align:left;border-bottom:1px solid var(--border);min-width:190px">Existing Controls</th>
 <th style="padding:7px 10px;text-align:left;border-bottom:1px solid var(--border);min-width:190px">Further Actions / Controls</th>
 <th style="padding:7px 10px;text-align:left;border-bottom:1px solid var(--border);min-width:80px">HOC Level</th>
 <th title="Severity after controls" style="padding:7px 6px;text-align:center;border-bottom:1px solid var(--border);width:64px">Residual<br/>Severity</th>
