@@ -7934,11 +7934,41 @@ function swmsBuildHtml(){
   var g=function(id){return document.getElementById(id)?.value||'';}, rows=swmsRows(), ref=document.getElementById('swms-ref')?.textContent||'SWMS-AUTO', title=g('swms-title')||'Safe Work Method Statement';
   var td='padding:7px;border:1px solid #d1d5db;vertical-align:top;line-height:1.35';
   var rowHtml=rows.map(function(r){return '<tr><td style="'+td+';text-align:center;font-weight:700;width:5%">'+r.no+'</td><td style="'+td+'">'+escH(r.activity||'—')+'</td><td style="'+td+'">'+escH(r.hazard||'—')+'</td><td style="'+td+'">'+escH(r.risk||'—')+'</td><td style="'+td+'">'+escH(r.controls||'—')+'</td><td style="'+td+'">'+escH(r.responsible||'—')+'</td></tr>';}).join('');
-  return '<div id="swms-printable" style="font-family:Arial,sans-serif;color:#111827;max-width:1100px;margin:0 auto;background:#fff"><div style="background:#0F766E;color:#fff;padding:18px 22px;display:flex;justify-content:space-between;gap:12px;-webkit-print-color-adjust:exact;print-color-adjust:exact"><div><div style="font-size:11px;text-transform:uppercase;letter-spacing:.08em;opacity:.82">Safe Work Method Statement</div><div style="font-size:24px;font-weight:900;color:#fff">'+escH(title)+'</div></div><div style="text-align:right;font-family:monospace;font-weight:900;color:#fff">'+escH(ref)+'<div style="font-size:12px;font-family:Arial;font-weight:600;color:#fff">'+escH(g('swms-version')||'Rev 00')+'</div></div></div><div style="padding:14px 22px 0;border-left:1px solid #e5e7eb;border-right:1px solid #e5e7eb"><div style="font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:#0F766E;font-weight:900">Safe Work Method Statement</div><h1 style="font-size:22px;line-height:1.2;margin:3px 0 4px;color:#111827">'+escH(title)+'</h1><div style="font-size:12px;color:#374151;font-family:monospace;font-weight:700">'+escH(ref)+' · '+escH(g('swms-version')||'Rev 00')+'</div></div><div style="padding:18px 22px">'
-    +'<table style="width:100%;border-collapse:collapse;font-size:12px;margin-bottom:14px"><tbody><tr><th style="text-align:left;background:#f3f4f6;padding:8px;border:1px solid #e5e7eb;width:18%">Location</th><td style="padding:8px;border:1px solid #e5e7eb">'+escH(g('swms-location')||'—')+'</td><th style="text-align:left;background:#f3f4f6;padding:8px;border:1px solid #e5e7eb;width:18%">Department</th><td style="padding:8px;border:1px solid #e5e7eb">'+escH(g('swms-dept')||'—')+'</td></tr><tr><th style="text-align:left;background:#f3f4f6;padding:8px;border:1px solid #e5e7eb">Contractor / Team</th><td style="padding:8px;border:1px solid #e5e7eb">'+escH(g('swms-contractor')||'—')+'</td><th style="text-align:left;background:#f3f4f6;padding:8px;border:1px solid #e5e7eb">Date</th><td style="padding:8px;border:1px solid #e5e7eb">'+escH(g('swms-date')||'—')+'</td></tr><tr><th style="text-align:left;background:#f3f4f6;padding:8px;border:1px solid #e5e7eb">Linked RA</th><td style="padding:8px;border:1px solid #e5e7eb">'+escH(g('swms-ra-ref')||'—')+'</td><th style="text-align:left;background:#f3f4f6;padding:8px;border:1px solid #e5e7eb">Linked PTW</th><td style="padding:8px;border:1px solid #e5e7eb">'+escH(g('swms-ptw-ref')||'—')+'</td></tr></tbody></table>'
-    +'<h3 style="font-size:14px;text-transform:uppercase;color:#0F766E;border-bottom:2px solid #0F766E;padding-bottom:5px">Scope of Work</h3><p style="font-size:12px;line-height:1.5">'+escH(g('swms-scope')||'—')+'</p><div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:12px 0"><div><h3 style="font-size:14px;text-transform:uppercase;color:#0F766E;border-bottom:2px solid #0F766E;padding-bottom:5px">Plant / Tools / Equipment</h3><p style="font-size:12px;line-height:1.5">'+escH(g('swms-plant')||'—')+'</p></div><div><h3 style="font-size:14px;text-transform:uppercase;color:#0F766E;border-bottom:2px solid #0F766E;padding-bottom:5px">PPE Required</h3><p style="font-size:12px;line-height:1.5">'+escH(g('swms-ppe')||'—')+'</p></div></div>'
-    +'<h3 style="font-size:14px;text-transform:uppercase;color:#0F766E;border-bottom:2px solid #0F766E;padding-bottom:5px">Work Method, Hazards and Controls</h3><table style="width:100%;border-collapse:collapse;font-size:11px"><thead><tr style="background:#0F766E;color:#fff"><th style="padding:7px;border:1px solid #d1d5db;color:#fff;width:5%">No.</th><th style="padding:7px;border:1px solid #d1d5db;color:#fff;width:19%">Activity / Work Task Step</th><th style="padding:7px;border:1px solid #d1d5db;color:#fff;width:18%">Potential Hazards</th><th style="padding:7px;border:1px solid #d1d5db;color:#fff;width:18%">Risk / Consequence</th><th style="padding:7px;border:1px solid #d1d5db;color:#fff;width:28%">Controls Required / Safe Method</th><th style="padding:7px;border:1px solid #d1d5db;color:#fff;width:12%">Responsible</th></tr></thead><tbody>'+rowHtml+'</tbody></table>'
-    +'<h3 style="font-size:14px;text-transform:uppercase;color:#0F766E;border-bottom:2px solid #0F766E;padding-bottom:5px;margin-top:16px">Emergency / Environmental Arrangements</h3><p style="font-size:12px;line-height:1.5">'+escH(g('swms-emergency')||'—')+'</p><div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:18px"><div style="border-top:1px solid #111;padding-top:7px;font-size:11px">Prepared by<br><b>'+escH(g('swms-prepared-by')||'')+'</b></div><div style="border-top:1px solid #111;padding-top:7px;font-size:11px">Reviewed by<br><b>'+escH(g('swms-reviewed-by')||'')+'</b></div><div style="border-top:1px solid #111;padding-top:7px;font-size:11px">Approved by<br><b>'+escH(g('swms-approved-by')||'')+'</b></div></div></div></div>';
+  return '<style>@page{size:A4 landscape;margin:8mm}.report-page{max-width:297mm;padding:8mm}table{font-size:8pt}th,td{padding:4px 5px}.rpt-grid{gap:4px 12px}.rpt-section{break-inside:avoid}</style>'
+    +'<div id="swms-printable" class="report-page">'
+    +aurisHeader('Safe Work Method Statement', title, ref)
+    +'<div class="rpt-section"><div class="rpt-section-title secondary">Document Control</div><div class="rpt-grid-3">'
+    +fld('Reference', ref)+fld('Version', g('swms-version')||'Rev 00')+fld('Date', g('swms-date'))
+    +fld('Review Date', g('swms-review-date'))+fld('Prepared By', g('swms-prepared-by'))+fld('Approved By', g('swms-approved-by'))
+    +'</div></div>'
+    +'<div class="rpt-section"><div class="rpt-section-title">Work Details</div><div class="rpt-grid">'
+    +fld('Activity / SWMS Title', title, true)
+    +fld('Scope of Work', g('swms-scope'), true)
+    +fld('Location / Site', g('swms-location'))+fld('Department / Area', g('swms-dept'))
+    +fld('Contractor / Team', g('swms-contractor'))+fld('Linked Permit to Work', g('swms-ptw-ref'))
+    +fld('Linked Risk Assessment', g('swms-ra-ref'), true)
+    +'</div></div>'
+    +'<div class="rpt-section"><div class="rpt-section-title blue">Resources, PPE & Emergency Arrangements</div>'
+    +'<div class="rpt-grid">'
+    +fld('Tools and Equipment Used', g('swms-plant'), true)
+    +fld('PPE Required', g('swms-ppe'), true)
+    +fld('Emergency / Environmental Arrangements', g('swms-emergency'), true)
+    +'</div></div>'
+    +'<div class="rpt-section"><div class="rpt-section-title red">Work Method, Hazards and Controls</div>'
+    +'<table><thead><tr><th style="width:5%">No.</th><th style="width:19%">Activity / Work Task Step</th><th style="width:18%">Potential Hazards</th><th style="width:18%">Risk / Consequence</th><th style="width:28%">Controls Required / Safe Method</th><th style="width:12%">Responsible</th></tr></thead><tbody>'
+    +(rowHtml||'<tr><td colspan="6" style="color:#6b7280;text-align:center">No work steps recorded.</td></tr>')
+    +'</tbody></table></div>'
+    +'<div class="rpt-section"><div class="rpt-section-title amber">Briefing & Acknowledgement</div>'
+    +'<table><thead><tr><th style="width:25%">Name</th><th style="width:25%">Company / Role</th><th style="width:20%">Date</th><th>Signature</th></tr></thead><tbody>'
+    +[1,2,3,4].map(function(){return '<tr><td>&nbsp;</td><td></td><td></td><td></td></tr>';}).join('')
+    +'</tbody></table></div>'
+    +'<div class="rpt-signatures">'
+    +'<div class="rpt-sig-box"><div class="sig-line">'+escH(g('swms-prepared-by')||'')+'</div><label>Prepared by</label></div>'
+    +'<div class="rpt-sig-box"><div class="sig-line">'+escH(g('swms-reviewed-by')||'')+'</div><label>Reviewed by</label></div>'
+    +'<div class="rpt-sig-box"><div class="sig-line">'+escH(g('swms-approved-by')||'')+'</div><label>Approved by</label></div>'
+    +'</div>'
+    +aurisFooter('Safe Work Method Statement')
+    +'</div>';
 }
 function swmsBuildPreview(){var el=document.getElementById('swms-preview');if(el)el.innerHTML=swmsBuildHtml();}
 function swmsPrint(){aurisPrint(swmsBuildHtml(),'SWMS - '+(document.getElementById('swms-title')?.value||'Method Statement'));}
@@ -31817,6 +31847,43 @@ function printIncidentReport(invId) {
   aurisPrint(html, 'Incident Report — ' + (inv.inv_ref||invId.substring(0,8)));
 }
 
+function raRiskMatrixPrintHtml(){
+  var severity=[
+    ['1','Minor','First aid / negligible damage'],
+    ['2','Low','Medical treatment / minor damage'],
+    ['3','Moderate','Lost time injury / reportable damage'],
+    ['4','Major','Serious injury / major loss'],
+    ['5','Catastrophic','Fatality, permanent disability or catastrophic loss']
+  ];
+  var likelihood=[
+    ['1','Rare','May occur only in exceptional circumstances'],
+    ['2','Unlikely','Could occur, but not expected'],
+    ['3','Possible','Might occur during the activity'],
+    ['4','Likely','Will probably occur in many circumstances'],
+    ['5','Almost certain','Expected to occur frequently']
+  ];
+  var riskCell=function(score){
+    var level=raRiskLevelFromScore(score);
+    var cfg={Low:['#D1FAE5','#065F46'],Medium:['#FEF3C7','#92400E'],High:['#FFEDD5','#C2410C'],'Very High':['#FEE2E2','#B91C1C'],Critical:['#7F1D1D','#fff']}[level]||['#F3F4F6','#374151'];
+    return '<td style="padding:5px;border:1px solid #fff;text-align:center;background:'+cfg[0]+';color:'+cfg[1]+';font-weight:900">'+score+'<div style="font-size:7pt;font-weight:700">'+level+'</div></td>';
+  };
+  return '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">'
+    +'<table><thead><tr><th colspan="3">Severity Criteria</th></tr></thead><tbody>'
+    +severity.map(function(s){return '<tr><td style="width:8%;font-weight:900">'+s[0]+'</td><td style="width:28%;font-weight:700">'+s[1]+'</td><td>'+s[2]+'</td></tr>';}).join('')
+    +'</tbody></table>'
+    +'<table><thead><tr><th colspan="3">Likelihood / Probability Criteria</th></tr></thead><tbody>'
+    +likelihood.map(function(p){return '<tr><td style="width:8%;font-weight:900">'+p[0]+'</td><td style="width:28%;font-weight:700">'+p[1]+'</td><td>'+p[2]+'</td></tr>';}).join('')
+    +'</tbody></table></div>'
+    +'<table><thead><tr><th style="width:20%">Likelihood x Severity</th>'
+    +[1,2,3,4,5].map(function(s){return '<th>S'+s+'</th>';}).join('')
+    +'</tr></thead><tbody>'
+    +[5,4,3,2,1].map(function(p){
+      return '<tr><th>P'+p+' '+likelihood[p-1][1]+'</th>'+[1,2,3,4,5].map(function(s){return riskCell(p*s);}).join('')+'</tr>';
+    }).join('')
+    +'</tbody></table>'
+    +'<div style="font-size:8pt;color:#374151;background:#F8FBFF;border:1px solid #DBEAFE;padding:6px 8px;border-radius:4px"><strong>Rule:</strong> Initial risk is assessed after existing controls. Further controls are then defined to reduce residual risk to an acceptable level before approval.</div>';
+}
+
 // ── 2. RISK ASSESSMENT REPORT ──────────────────────────────────
 function printRiskAssessment(raId) {
   var ra = (raAllData||[]).find(function(x){ return x.id === raId; });
@@ -31906,6 +31973,10 @@ function printRiskAssessment(raId) {
             + '</tr>';
         }).join('') + '</tbody></table>'
       : '<p style="color:#6b7280;font-size:9pt;padding:8px">No hazards or controls recorded.</p>')
+    + '</div>'
+
+    + '<div class="rpt-section"><div class="rpt-section-title grey">Risk Matrix & Assessment Criteria</div>'
+    + raRiskMatrixPrintHtml()
     + '</div>'
 
     + '<div class="rpt-section"><div class="rpt-section-title blue">RAMS Linkage & Legal References</div>'
