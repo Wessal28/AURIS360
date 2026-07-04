@@ -35436,7 +35436,7 @@ function fireEquipStatusBadge(s) {
 <div id="ra-new-panel" style="display:none">
 <div class="card" style="margin-bottom:14px;padding:14px 20px;display:flex;align-items:center;gap:12px">
 <button class="btn" onclick="raShowList()"><i class="ti ti-arrow-left"></i>Back</button>
-<div style="font-size:16px;font-weight:700">Create New Risk Assessment — Choose type</div>
+<div><div style="font-size:16px;font-weight:800">Create New Risk Assessment</div><div style="font-size:12px;color:var(--text2);margin-top:2px">For most work activities, start with Task-Based RA so the assessment follows the real job sequence.</div></div>
 </div>
 <div class="card" style="margin-bottom:14px;padding:14px 16px;border-left:4px solid #1D9E75;background:#f7fffb">
 <div style="font-weight:800;color:#0f766e;margin-bottom:6px">Recommended approach</div>
@@ -35447,16 +35447,36 @@ function fireEquipStatusBadge(s) {
 <div><b style="color:#111827">JSA / HIRA</b><br/>Use for formal job safety analysis or comprehensive hazard studies.</div>
 </div>
 </div>
-<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:14px;margin-bottom:20px">
-<div class="card" style="cursor:pointer;transition:all .15s;border:2px solid var(--border);text-align:center;padding:20px" onclick="raNew('baseline')" onmouseover="this.style.borderColor='#185FA5';this.style.background='#EFF6FF'" onmouseout="this.style.borderColor='var(--border)';this.style.background='#fff'">
-<div style="font-size:36px;margin-bottom:10px">📋</div>
-<div style="font-weight:700;font-size:14px;color:#185FA5;margin-bottom:6px">Baseline / Generic RA</div>
-<div style="font-size:12px;color:var(--text2)">General workplace risk assessment with hazard identification and control measures</div>
+<div style="display:grid;grid-template-columns:minmax(280px,1.35fr) minmax(240px,1fr);gap:14px;margin-bottom:14px">
+<div class="card" style="cursor:pointer;transition:all .15s;border:2px solid #1D9E75;background:linear-gradient(135deg,#F0FDF4,#fff);padding:22px;position:relative;overflow:hidden" onclick="raNew('task')" onmouseover="this.style.boxShadow='0 18px 45px rgba(29,158,117,.18)'" onmouseout="this.style.boxShadow=''">
+<div style="position:absolute;top:14px;right:14px;background:#1D9E75;color:#fff;border-radius:999px;padding:4px 10px;font-size:11px;font-weight:800">Recommended</div>
+<div style="display:flex;gap:14px;align-items:flex-start">
+<div style="width:54px;height:54px;border-radius:14px;background:#1D9E75;color:#fff;display:flex;align-items:center;justify-content:center;font-size:30px;flex-shrink:0">⚙️</div>
+<div>
+<div style="font-weight:900;font-size:18px;color:#0F766E;margin-bottom:6px">Task-Based RA</div>
+<div style="font-size:13px;color:#334155;line-height:1.45;margin-bottom:12px">Best for most operational work. Break the job into steps, identify hazards for each step, define controls, and show residual risk after controls.</div>
+<div style="display:flex;flex-wrap:wrap;gap:6px;font-size:11px">
+<span style="background:#fff;border:1px solid #bbf7d0;color:#166534;border-radius:999px;padding:4px 8px;font-weight:800">Job steps</span>
+<span style="background:#fff;border:1px solid #bbf7d0;color:#166534;border-radius:999px;padding:4px 8px;font-weight:800">Hazards</span>
+<span style="background:#fff;border:1px solid #bbf7d0;color:#166534;border-radius:999px;padding:4px 8px;font-weight:800">Controls</span>
+<span style="background:#fff;border:1px solid #bbf7d0;color:#166534;border-radius:999px;padding:4px 8px;font-weight:800">Residual risk</span>
 </div>
-<div class="card" style="cursor:pointer;transition:all .15s;border:2px solid var(--border);text-align:center;padding:20px" onclick="raNew('task')" onmouseover="this.style.borderColor='#1D9E75';this.style.background='#F0FDF4'" onmouseout="this.style.borderColor='var(--border)';this.style.background='#fff'">
-<div style="font-size:36px;margin-bottom:10px">⚙️</div>
-<div style="font-weight:700;font-size:14px;color:#1D9E75;margin-bottom:6px">Task-Based RA</div>
-<div style="font-size:12px;color:var(--text2)">Step-by-step task analysis with hazards and controls per task step</div>
+</div>
+</div>
+</div>
+<div class="card" style="cursor:pointer;transition:all .15s;border:1px solid var(--border);padding:18px" onclick="raAIGenerate()" onmouseover="this.style.borderColor='#8B5CF6';this.style.background='#F5F3FF'" onmouseout="this.style.borderColor='var(--border)';this.style.background='#fff'">
+<div style="display:flex;align-items:center;gap:12px">
+<div style="font-size:34px">🤖</div>
+<div><div style="font-weight:800;font-size:15px;color:#8B5CF6;margin-bottom:4px">AI-Assisted RA</div>
+<div style="font-size:12px;color:var(--text2);line-height:1.4">Describe the activity and let AI draft hazard/control rows for review.</div></div>
+</div>
+</div>
+</div>
+<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:14px;margin-bottom:20px">
+<div class="card" style="cursor:pointer;transition:all .15s;border:1px solid var(--border);text-align:center;padding:18px" onclick="raNew('baseline')" onmouseover="this.style.borderColor='#185FA5';this.style.background='#EFF6FF'" onmouseout="this.style.borderColor='var(--border)';this.style.background='#fff'">
+<div style="font-size:30px;margin-bottom:8px">📋</div>
+<div style="font-weight:700;font-size:14px;color:#185FA5;margin-bottom:6px">Baseline / Generic RA</div>
+<div style="font-size:12px;color:var(--text2)">Use when the activity is broad and not suitable for step-by-step analysis</div>
 </div>
 <div class="card" style="cursor:pointer;transition:all .15s;border:2px solid var(--border);text-align:center;padding:20px" onclick="raNew('dynamic')" onmouseover="this.style.borderColor='#EF9F27';this.style.background='#FFFBEB'" onmouseout="this.style.borderColor='var(--border)';this.style.background='#fff'">
 <div style="font-size:36px;margin-bottom:10px">⚡</div>
@@ -35502,11 +35522,6 @@ function fireEquipStatusBadge(s) {
 <div style="font-size:36px;margin-bottom:10px"><i class="ti ti-car"></i></div>
 <div style="font-weight:700;font-size:14px;color:#0F766E;margin-bottom:6px">Fleet / Vehicle RA</div>
 <div style="font-size:12px;color:var(--text2)">Driving, site movement, vehicle checks and loading risks</div>
-</div>
-<div class="card" style="cursor:pointer;transition:all .15s;border:2px solid var(--border);text-align:center;padding:20px" onclick="raAIGenerate()" onmouseover="this.style.borderColor='#8B5CF6';this.style.background='#F5F3FF'" onmouseout="this.style.borderColor='var(--border)';this.style.background='#fff'">
-<div style="font-size:36px;margin-bottom:10px">🤖</div>
-<div style="font-weight:700;font-size:14px;color:#8B5CF6;margin-bottom:6px">AI-Assisted RA</div>
-<div style="font-size:12px;color:var(--text2)">Describe the activity and AI generates a complete risk assessment with controls</div>
 </div>
 </div>
 <!-- Load from template -->
@@ -35787,6 +35802,10 @@ function fireEquipStatusBadge(s) {
 </div>
 </div>
 <div id="ra-task-form" style="display:none">
+<div class="card" style="margin-bottom:12px;padding:12px 16px;background:#F0FDF4;border:1px solid #BBF7D0">
+<div style="font-weight:800;color:#0F766E;margin-bottom:4px">Task-based method</div>
+<div style="font-size:12px;color:#334155;line-height:1.45">Enter one row per job step, for example: prepare area, isolate energy, access equipment, perform work, test, reinstate and clean up. This makes the risk assessment easier to brief to workers and easier to audit.</div>
+</div>
 <div class="card" style="padding:0;overflow:hidden">
 <div style="padding:10px 16px;background:#1a3a5c;color:#fff;display:flex;justify-content:space-between;align-items:center">
 <div style="font-weight:700">⚙️ Task-Based RA — Hazards per Task Step</div>
