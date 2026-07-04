@@ -7753,6 +7753,7 @@ async function sopSaveDocument(){
 
 // ===== SWMS / METHOD STATEMENT MODULE =====
 let swmsAllData=[];
+let swmsEditingId=null;
 
 function loadSWMS(){
   swmsShowList();
@@ -7764,6 +7765,7 @@ function loadSWMS(){
 }
 
 function swmsShowList(){
+  swmsEditingId=null;
   var list=document.getElementById('swms-list-view'), form=document.getElementById('swms-form-view');
   if(list)list.style.display='block';
   if(form)form.style.display='none';
@@ -7802,7 +7804,10 @@ function swmsRenderList(){
       +'<td style="padding:10px">'+escH(x.owner||x.doc_owner||x.author||'—')+'</td>'
       +'<td style="padding:10px;text-align:center"><span style="background:'+sc.bg+';color:'+sc.tc+';padding:3px 9px;border-radius:99px;font-size:11px;font-weight:800">'+escH(sc.label)+'</span></td>'
       +'<td style="padding:10px;text-align:center">'+(x.review_date?new Date(x.review_date).toLocaleDateString('en-GB'):'—')+'</td>'
-      +'<td style="padding:10px"><button class="btn btn-sm" title="Open in Document Control" onclick="dcEdit(\''+x.id+'\');showPage(\'documents\',null)"><i class="ti ti-file-search"></i></button></td>'
+      +'<td style="padding:10px"><div style="display:flex;gap:5px;justify-content:center">'
+      +'<button class="btn btn-sm" title="Edit SWMS" onclick="swmsOpen(\''+x.id+'\')"><i class="ti ti-edit"></i></button>'
+      +'<button class="btn btn-sm" title="Open in Document Control" onclick="dcEdit(\''+x.id+'\');showPage(\'documents\',null)"><i class="ti ti-file-search"></i></button>'
+      +'</div></td>'
       +'</tr>';
   });
   el.innerHTML=h+'</tbody></table></div>';
@@ -7819,6 +7824,7 @@ async function swmsLoadPermitSelect(){
 }
 
 function swmsNew(){
+  swmsEditingId=null;
   var list=document.getElementById('swms-list-view'), form=document.getElementById('swms-form-view');
   if(list)list.style.display='none';if(form)form.style.display='block';
   ['swms-title','swms-location','swms-dept','swms-contractor','swms-scope','swms-plant','swms-ppe','swms-emergency','swms-ra-ref','swms-ptw-ref','swms-reviewed-by','swms-approved-by'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
@@ -7831,6 +7837,82 @@ function swmsNew(){
   var body=document.getElementById('swms-steps-body');if(body)body.innerHTML='';
   ['Prepare work area and brief team','Set up access, tools and materials','Carry out work task','Inspect completed work and reinstate area'].forEach(function(t){swmsAddStep({activity:t});});
   swmsBuildPreview();
+}
+
+function swmsPayload(){
+  return {
+    title:document.getElementById('swms-title')?.value||'',
+    version:document.getElementById('swms-version')?.value||'Rev 00',
+    location:document.getElementById('swms-location')?.value||'',
+    department:document.getElementById('swms-dept')?.value||'',
+    contractor:document.getElementById('swms-contractor')?.value||'',
+    date:document.getElementById('swms-date')?.value||'',
+    review_date:document.getElementById('swms-review-date')?.value||'',
+    scope:document.getElementById('swms-scope')?.value||'',
+    risk_assessment_ref:document.getElementById('swms-ra-ref')?.value||'',
+    permit_ref:document.getElementById('swms-ptw-ref')?.value||'',
+    plant:document.getElementById('swms-plant')?.value||'',
+    ppe:document.getElementById('swms-ppe')?.value||'',
+    emergency:document.getElementById('swms-emergency')?.value||'',
+    prepared_by:document.getElementById('swms-prepared-by')?.value||'',
+    reviewed_by:document.getElementById('swms-reviewed-by')?.value||'',
+    approved_by:document.getElementById('swms-approved-by')?.value||'',
+    steps:swmsRows()
+  };
+}
+
+function swmsEncodePayload(payload){
+  try{return 'AURIS360_SWMS_PAYLOAD:'+btoa(unescape(encodeURIComponent(JSON.stringify(payload||{}))));}
+  catch(e){return '';}
+}
+
+function swmsDecodePayload(x){
+  var raw=x?.revision_summary||'';
+  var prefix='AURIS360_SWMS_PAYLOAD:';
+  if(raw.indexOf(prefix)!==0)return null;
+  try{return JSON.parse(decodeURIComponent(escape(atob(raw.substring(prefix.length)))));}
+  catch(e){return null;}
+}
+
+function swmsSetVal(id,val){
+  var el=document.getElementById(id);if(el)el.value=val||'';
+}
+
+function swmsOpen(id){
+  var x=(swmsAllData||[]).find(function(r){return r.id===id;});
+  if(!x){toast('SWMS not found',false);return;}
+  swmsEditingId=id;
+  var list=document.getElementById('swms-list-view'), form=document.getElementById('swms-form-view');
+  if(list)list.style.display='none';if(form)form.style.display='block';
+  var p=swmsDecodePayload(x)||{};
+  document.getElementById('swms-ref').textContent=x.doc_ref||x.reference_no||'SWMS-AUTO';
+  swmsSetVal('swms-title',p.title||x.title||'');
+  swmsSetVal('swms-version',p.version||x.version||x.doc_version||'Rev 00');
+  swmsSetVal('swms-location',p.location||x.location||'');
+  swmsSetVal('swms-dept',p.department||x.department||x.dept||'');
+  swmsSetVal('swms-contractor',p.contractor||'');
+  swmsSetVal('swms-date',p.date||x.issue_date||x.effective_date||'');
+  swmsSetVal('swms-review-date',p.review_date||x.review_date||'');
+  swmsSetVal('swms-scope',p.scope||x.scope||x.description||'');
+  swmsSetVal('swms-plant',p.plant||'');
+  swmsSetVal('swms-ppe',p.ppe||'');
+  swmsSetVal('swms-emergency',p.emergency||'');
+  fillPersonSelect('swms-prepared-by',p.prepared_by||x.author||x.owner||x.doc_owner||prof?.full_name||'');
+  fillPersonSelect('swms-reviewed-by',p.reviewed_by||x.reviewer||'');
+  fillPersonSelect('swms-approved-by',p.approved_by||x.approver||'');
+  fillRiskAssessmentSelect('swms-ra-ref',p.risk_assessment_ref||'');
+  swmsLoadPermitSelect().then(function(){setSelectValueWithFallback('swms-ptw-ref',p.permit_ref||'');});
+  var body=document.getElementById('swms-steps-body');if(body)body.innerHTML='';
+  var rows=Array.isArray(p.steps)?p.steps:[];
+  if(!rows.length)rows=[
+    {activity:'Review scope, linked RA and site conditions',responsible:'Supervisor / worker'},
+    {activity:'Prepare work area and brief team',responsible:'Supervisor / worker'},
+    {activity:'Carry out work task as per controls',responsible:'Supervisor / worker'},
+    {activity:'Inspect completed work and reinstate area',responsible:'Supervisor / worker'}
+  ];
+  rows.forEach(swmsAddStep);
+  swmsBuildPreview();
+  toast('SWMS opened for editing');
 }
 
 function swmsAddStep(r){
@@ -7863,17 +7945,25 @@ function swmsPrint(){aurisPrint(swmsBuildHtml(),'SWMS - '+(document.getElementBy
 async function swmsSaveToDocuments(){
   var title=document.getElementById('swms-title')?.value.trim();if(!title){toast('Please enter SWMS title',false);return;}
   var yr=new Date().getFullYear(), ref='SWMS-'+yr+'-'+String((swmsAllData||[]).length+1).padStart(3,'0'), today=new Date().toISOString().slice(0,10);
-  var body={company_id:ccid(),title:title,document_type:'swms',doc_type:'swms',department:document.getElementById('swms-dept')?.value||null,dept:document.getElementById('swms-dept')?.value||null,category:'Safe Work Method Statement',description:document.getElementById('swms-scope')?.value||'Safe Work Method Statement generated in AURIS360.',scope:document.getElementById('swms-scope')?.value||null,tags:['SWMS','Method Statement'],version:document.getElementById('swms-version')?.value||'Rev 00',doc_version:document.getElementById('swms-version')?.value||'Rev 00',doc_ref:ref,reference_no:ref,issue_date:document.getElementById('swms-date')?.value||today,effective_date:document.getElementById('swms-date')?.value||today,review_date:document.getElementById('swms-review-date')?.value||null,review_interval_months:12,controlled_copy:true,is_controlled:true,author:document.getElementById('swms-prepared-by')?.value||null,owner:document.getElementById('swms-prepared-by')?.value||null,doc_owner:document.getElementById('swms-prepared-by')?.value||null,reviewer:document.getElementById('swms-reviewed-by')?.value||null,approver:document.getElementById('swms-approved-by')?.value||null,legal_refs:[],location:document.getElementById('swms-location')?.value||null,approval_status:'draft',status:'draft',created_by:prof?.id,updated_at:new Date().toISOString()};
+  var payload=swmsPayload();
+  var existing=swmsEditingId?(swmsAllData||[]).find(function(x){return x.id===swmsEditingId;}):null;
+  if(existing&&typeof controlledRecordCanEdit==='function'&&!controlledRecordCanEdit(existing)){
+    toast('This SWMS is controlled. Create a new revision in Document Control before changing approved/submitted content.',false);
+    return;
+  }
+  var saveRef=existing?(existing.doc_ref||existing.reference_no||ref):ref;
+  var body={company_id:ccid(),title:title,document_type:'swms',doc_type:'swms',department:document.getElementById('swms-dept')?.value||null,dept:document.getElementById('swms-dept')?.value||null,category:'Safe Work Method Statement',description:document.getElementById('swms-scope')?.value||'Safe Work Method Statement generated in AURIS360.',scope:document.getElementById('swms-scope')?.value||null,tags:['SWMS','Method Statement'],version:document.getElementById('swms-version')?.value||'Rev 00',doc_version:document.getElementById('swms-version')?.value||'Rev 00',doc_ref:saveRef,reference_no:saveRef,issue_date:document.getElementById('swms-date')?.value||today,effective_date:document.getElementById('swms-date')?.value||today,review_date:document.getElementById('swms-review-date')?.value||null,review_interval_months:12,controlled_copy:true,is_controlled:true,author:document.getElementById('swms-prepared-by')?.value||null,owner:document.getElementById('swms-prepared-by')?.value||null,doc_owner:document.getElementById('swms-prepared-by')?.value||null,reviewer:document.getElementById('swms-reviewed-by')?.value||null,approver:document.getElementById('swms-approved-by')?.value||null,legal_refs:[],location:document.getElementById('swms-location')?.value||null,approval_status:existing?(existing.approval_status||existing.status||'draft'):'draft',status:existing?(existing.status||existing.approval_status||'draft'):'draft',revision_summary:swmsEncodePayload(payload),updated_at:new Date().toISOString()};
   try{
-    await api('/documents',{m:'POST',p:'return=minimal',b:body});
-    document.getElementById('swms-ref').textContent=ref;
+    if(swmsEditingId){await api('/documents?id=eq.'+swmsEditingId,{m:'PATCH',p:'return=minimal',b:body});}
+    else{body.created_by=prof?.id;await api('/documents',{m:'POST',p:'return=minimal',b:body});}
+    document.getElementById('swms-ref').textContent=saveRef;
     var linkedRA=document.getElementById('swms-ra-ref')?.value||'';
     if(linkedRA){
-      var raPatch={rams_document_name:ref,rams_document_url:null,updated_at:new Date().toISOString()};
+      var raPatch={rams_document_name:saveRef,rams_document_url:null,updated_at:new Date().toISOString()};
       try{await api('/risk_assessments?ra_ref=eq.'+encodeURIComponent(linkedRA),{m:'PATCH',p:'return=minimal',b:raPatch});}
       catch(_){try{await api('/risk_assessments?id=eq.'+encodeURIComponent(linkedRA),{m:'PATCH',p:'return=minimal',b:raPatch});}catch(__){}}
     }
-    toast('SWMS saved in Document Control: '+ref+(linkedRA?' and linked to RA':''));
+    toast('SWMS '+(swmsEditingId?'updated':'saved')+' in Document Control: '+saveRef+(linkedRA?' and linked to RA':''));
     swmsShowList();
   }catch(e){toast('Save failed: '+e.message,false);}
 }
@@ -13743,6 +13833,7 @@ function raFormTab(tab, btn){
   ['info','hazards','approval','rams','revisions'].forEach(function(t){
     var el=document.getElementById('ra-ftview-'+t);if(el)el.style.display=t===tab?'block':'none';
   });
+  raRenderFormGuide(tab);
   raUpdateQualityPanel();
   if(tab==='rams'){
     var mx=document.getElementById('ra-risk-matrix-card');
@@ -13752,6 +13843,27 @@ function raFormTab(tab, btn){
     raRenderRamsUsed();
   }
   if(tab==='revisions')raLoadRevisions();
+}
+
+function raRenderFormGuide(tab){
+  var el=document.getElementById('ra-form-guide');if(!el)return;
+  var steps=[
+    {key:'info',num:1,label:'Scope',hint:'Define the activity, site, people involved and assessment dates before assessing hazards.'},
+    {key:'hazards',num:2,label:'Hazards & controls',hint:'List each task or hazard separately. Capture existing controls, score initial risk, then add further controls and residual risk.'},
+    {key:'approval',num:3,label:'Review & approval',hint:'Confirm responsible persons, sign-off, approval route and whether the assessment is ready to submit.'},
+    {key:'rams',num:4,label:'RAMS pack',hint:'Check the risk matrix criteria and link the SWMS / method statement that explains how the task will be carried out.'},
+    {key:'revisions',num:5,label:'Revision history',hint:'Keep previous versions controlled and record why changes were made.'}
+  ];
+  var cur=steps.find(function(s){return s.key===tab;})||steps[0];
+  el.innerHTML='<div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">'
+    +'<div style="display:flex;gap:8px;flex-wrap:wrap">'
+    +steps.map(function(s){
+      var active=s.key===cur.key;
+      return '<button type="button" onclick="raFormTab(\''+s.key+'\',document.getElementById(\'ra-ftab-'+s.key+'\'))" style="border:1px solid '+(active?'#1D9E75':'#dbe3ea')+';background:'+(active?'#E1F5EE':'#fff')+';color:'+(active?'#0F6E56':'#475569')+';border-radius:999px;padding:6px 10px;font-size:12px;font-weight:800;cursor:pointer"><span style="display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:50%;background:'+(active?'#1D9E75':'#eef2f7')+';color:'+(active?'#fff':'#64748b')+';margin-right:5px">'+s.num+'</span>'+escH(s.label)+'</button>';
+    }).join('')
+    +'</div>'
+    +'<div style="font-size:12px;color:#1E3A8A;background:#EFF6FF;border:1px solid #BFDBFE;border-radius:10px;padding:8px 10px;max-width:620px;line-height:1.4"><strong>Step '+cur.num+': '+escH(cur.label)+'.</strong> '+escH(cur.hint)+'</div>'
+    +'</div>';
 }
 
 async function raLoadPermitOptions(selected){
@@ -36268,12 +36380,13 @@ function fireEquipStatusBadge(s) {
 
 <!-- Tabs for RA form -->
 <div style="display:flex;gap:0;margin-bottom:14px;border-bottom:2px solid var(--border)">
-<button class="mtg-tab active" id="ra-ftab-info" onclick="raFormTab('info',this)">📝 Info &amp; Scope</button>
-<button class="mtg-tab" id="ra-ftab-hazards" onclick="raFormTab('hazards',this)">⚠️ Hazards &amp; Controls</button>
-<button class="mtg-tab" id="ra-ftab-approval" onclick="raFormTab('approval',this)">✍️ Approval</button>
-<button class="mtg-tab" id="ra-ftab-rams" onclick="raFormTab('rams',this)">🧮 Risk Matrix &amp; RAMS</button>
-<button class="mtg-tab" id="ra-ftab-revisions" onclick="raFormTab('revisions',this)">🕐 Revisions</button>
+<button class="mtg-tab active" id="ra-ftab-info" onclick="raFormTab('info',this)">1. Scope</button>
+<button class="mtg-tab" id="ra-ftab-hazards" onclick="raFormTab('hazards',this)">2. Hazards &amp; Controls</button>
+<button class="mtg-tab" id="ra-ftab-approval" onclick="raFormTab('approval',this)">3. Review &amp; Approval</button>
+<button class="mtg-tab" id="ra-ftab-rams" onclick="raFormTab('rams',this)">4. RAMS Pack</button>
+<button class="mtg-tab" id="ra-ftab-revisions" onclick="raFormTab('revisions',this)">5. Revisions</button>
 </div>
+<div id="ra-form-guide" class="card" style="padding:10px 12px;margin-bottom:14px;border-left:4px solid #1D9E75;background:#F8FBFF"></div>
 
 <!-- Info tab -->
 <div id="ra-ftview-info">
