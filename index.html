@@ -14080,6 +14080,7 @@ async function raSave(targetStatus){
       var idx=raAllData.findIndex(x=>x.id===raEditingId);
       if(idx>=0)Object.assign(raAllData[idx],body);
       raRenderWorkflowBar(Object.assign({},currentRa||{},body));
+      if(status==='pending_review'||status==='pending_approval'||status==='review')raQueueApprovalRequest(Object.assign({},currentRa||{},body,{id:raEditingId}));
       toast('Risk assessment updated!');
       // Update linked work order if needed
       raSyncToMAP(raEditingId, rows);
@@ -14095,6 +14096,7 @@ async function raSave(targetStatus){
         document.getElementById('ra-form-ref').textContent=ref;
         document.getElementById('ra-form-title').textContent=body.title||'Risk Assessment';
         raRenderWorkflowBar(Object.assign({},body,{id:res[0].id,ra_ref:ref}));
+        if(status==='pending_review'||status==='pending_approval'||status==='review')raQueueApprovalRequest(Object.assign({},body,{id:res[0].id,ra_ref:ref}));
         toast('RA saved! Ref: '+ref);
         raSyncToMAP(res[0].id, rows);
       }
@@ -14102,9 +14104,87 @@ async function raSave(targetStatus){
   }catch(e){toast(e.message,false);console.error(e);}
 }
 
+async function raGetActiveApprovalWorkflow(){
+  var companyId=ccid();
+  if(!companyId)return null;
+  try{
+    var wf=await api('/approval_workflows?company_id=eq.'+companyId+'&module_name=eq.risk&is_active=eq.true&order=created_at.desc&limit=1');
+    if(!wf||!wf[0])return null;
+    var steps=await api('/approval_workflow_steps?workflow_id=eq.'+wf[0].id+'&order=step_no.asc')||[];
+    return {workflow:wf[0],steps:steps.filter(function(s){return s.required!==false;})};
+  }catch(e){
+    console.warn('[RA] Approval workflow unavailable:',e.message);
+    return null;
+  }
+}
+
+function raApprovalStepLabel(step){
+  if(!step)return 'Admin / HSE Manager';
+  return step.approver_name||auditLabel(step.approver_role||'')||'Configured approver';
+}
+
+function raApprovalStepAllows(step){
+  if(!step)return canAdministerControlledRecord();
+  if(isSA())return true;
+  var role=activeRole();
+  if(step.approver_person_id&&prof?.id&&String(step.approver_person_id)===String(prof.id))return true;
+  if(step.approver_email&&prof?.email&&String(step.approver_email).toLowerCase()===String(prof.email).toLowerCase())return true;
+  if(step.approver_role&&String(step.approver_role)===String(role))return true;
+  return false;
+}
+
+async function raCurrentApprovalStep(){
+  var route=await raGetActiveApprovalWorkflow();
+  if(!route||!route.steps||!route.steps.length)return null;
+  return route.steps[0]||null;
+}
+
+async function raQueueApprovalRequest(rec){
+  try{
+    var route=await raGetActiveApprovalWorkflow();
+    if(!route||!route.workflow)return;
+    var first=(route.steps||[])[0]||null;
+    var id=rec?.id||raEditingId;
+    if(!id)return;
+    var existing=await api('/approval_requests?module_name=eq.risk&related_table=eq.risk_assessments&related_id=eq.'+id+'&status=in.(pending,pending_review,pending_approval)&limit=1');
+    var body={
+      company_id:ccid(),
+      module_name:'risk',
+      related_table:'risk_assessments',
+      related_id:id,
+      status:'pending',
+      current_step_no:first?.step_no||1,
+      workflow_id:route.workflow.id,
+      requested_by:prof?.id||null,
+      updated_at:new Date().toISOString()
+    };
+    if(existing&&existing[0])await api('/approval_requests?id=eq.'+existing[0].id,{m:'PATCH',p:'return=minimal',b:body});
+    else await api('/approval_requests',{m:'POST',p:'return=minimal',b:body});
+  }catch(e){
+    console.warn('[RA] Could not queue approval request:',e.message);
+  }
+}
+
+async function raCloseApprovalRequest(status){
+  try{
+    if(!raEditingId)return;
+    var rows=await api('/approval_requests?module_name=eq.risk&related_table=eq.risk_assessments&related_id=eq.'+raEditingId+'&status=in.(pending,pending_review,pending_approval)&limit=5');
+    for(var i=0;i<(rows||[]).length;i++){
+      await api('/approval_requests?id=eq.'+rows[i].id,{m:'PATCH',p:'return=minimal',b:{status:status||'approved',updated_at:new Date().toISOString()}});
+    }
+  }catch(e){
+    console.warn('[RA] Could not close approval request:',e.message);
+  }
+}
+
 async function raApproveCurrent(){
   if(!raEditingId)return;
   if(!canAdministerControlledRecord()){toast('Only Admin or HSE Manager can approve risk assessments',false);return;}
+  var expected=await raCurrentApprovalStep();
+  if(expected&&!raApprovalStepAllows(expected)){
+    toast('This RA is waiting for '+raApprovalStepLabel(expected)+' according to the approval workflow.',false);
+    return;
+  }
   var reviewer=raGetFieldValue('ra-sign-reviewer')||prof?.full_name||prof?.email||'';
   var approver=raGetFieldValue('ra-sign-approver')||prof?.full_name||prof?.email||'';
   var today=new Date().toISOString().slice(0,10);
@@ -14131,6 +14211,7 @@ async function raApproveCurrent(){
     var ad=document.getElementById('ra-sign-approver-date');if(ad)ad.value=body.ra_sign_approver_date;
     controlledApplyFormLock('ra-form-view','ra-controlled-lock-note',rec,'Risk assessment');
     raRenderWorkflowBar(rec);
+    await raCloseApprovalRequest('approved');
     toast('Risk assessment approved and activated');
   }catch(e){toast(e.message,false);}
 }
@@ -14149,6 +14230,7 @@ async function raRejectCurrent(){
     var rr=document.getElementById('ra-rejection-reason');if(rr)rr.value=body.rejection_reason;
     controlledApplyFormLock('ra-form-view','ra-controlled-lock-note',rec,'Risk assessment');
     raRenderWorkflowBar(rec);
+    await raCloseApprovalRequest('rejected');
     toast('Risk assessment rejected for correction');
   }catch(e){toast(e.message,false);}
 }
@@ -14190,6 +14272,7 @@ async function raReleaseForEdit(){
     var ad=document.getElementById('ra-sign-approver-date');if(ad)ad.value='';
     controlledApplyFormLock('ra-form-view','ra-controlled-lock-note',rec,'Risk assessment');
     raRenderWorkflowBar(rec);
+    await raCloseApprovalRequest('released_for_edit');
     raLoadRevisions();
     toast('Risk assessment released as Rev '+newRev);
   }catch(e){toast(e.message,false);}
