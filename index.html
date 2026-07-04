@@ -3841,6 +3841,24 @@ async function fillRiskAssessmentSelect(id,selectedRef){
   }
   if(cur)setSelectValueWithFallback(id,cur);
 }
+async function fillSWMSSelect(id,selectedRef){
+  var el=document.getElementById(id);if(!el)return;
+  var cur=selectedRef||el.value||'';
+  el.innerHTML='<option value="">Select SWMS / method statement...</option>';
+  try{
+    var docs=await api('/documents?select=id,doc_ref,reference_no,title,document_type,doc_type,status,approval_status'+cf()+'&or=(document_type.eq.swms,doc_type.eq.swms)&order=created_at.desc&limit=150');
+    (docs||[]).forEach(function(d){
+      var ref=d.doc_ref||d.reference_no||d.id;
+      var o=document.createElement('option');
+      o.value=ref;
+      o.textContent=ref+' - '+(d.title||'SWMS / Method Statement')+((d.approval_status||d.status)?' ('+(d.approval_status||d.status)+')':'');
+      el.appendChild(o);
+    });
+  }catch(e){
+    var ro=document.createElement('option');ro.value='';ro.textContent='Unable to load SWMS documents';el.appendChild(ro);
+  }
+  if(cur)setSelectValueWithFallback(id,cur);
+}
 function dcPersonSelect(nameId,deptId){
   var name=document.getElementById(nameId)?.value||'';
   var p=trainPersonByName(name);
@@ -7832,8 +7850,9 @@ function swmsRows(){return Array.from(document.querySelectorAll('#swms-steps-bod
 
 function swmsBuildHtml(){
   var g=function(id){return document.getElementById(id)?.value||'';}, rows=swmsRows(), ref=document.getElementById('swms-ref')?.textContent||'SWMS-AUTO', title=g('swms-title')||'Safe Work Method Statement';
-  var rowHtml=rows.map(function(r){return '<tr><td>'+r.no+'</td><td>'+escH(r.activity||'—')+'</td><td>'+escH(r.hazard||'—')+'</td><td>'+escH(r.risk||'—')+'</td><td>'+escH(r.controls||'—')+'</td><td>'+escH(r.responsible||'—')+'</td></tr>';}).join('');
-  return '<div id="swms-printable" style="font-family:Arial,sans-serif;color:#111827;max-width:1100px;margin:0 auto;background:#fff"><div style="background:#0F766E;color:#fff;padding:18px 22px;display:flex;justify-content:space-between;gap:12px"><div><div style="font-size:11px;text-transform:uppercase;letter-spacing:.08em;opacity:.82">Safe Work Method Statement</div><div style="font-size:24px;font-weight:900">'+escH(title)+'</div></div><div style="text-align:right;font-family:monospace;font-weight:900">'+escH(ref)+'<div style="font-size:12px;font-family:Arial;font-weight:600">'+escH(g('swms-version')||'Rev 00')+'</div></div></div><div style="padding:18px 22px">'
+  var td='padding:7px;border:1px solid #d1d5db;vertical-align:top;line-height:1.35';
+  var rowHtml=rows.map(function(r){return '<tr><td style="'+td+';text-align:center;font-weight:700;width:5%">'+r.no+'</td><td style="'+td+'">'+escH(r.activity||'—')+'</td><td style="'+td+'">'+escH(r.hazard||'—')+'</td><td style="'+td+'">'+escH(r.risk||'—')+'</td><td style="'+td+'">'+escH(r.controls||'—')+'</td><td style="'+td+'">'+escH(r.responsible||'—')+'</td></tr>';}).join('');
+  return '<div id="swms-printable" style="font-family:Arial,sans-serif;color:#111827;max-width:1100px;margin:0 auto;background:#fff"><div style="background:#0F766E;color:#fff;padding:18px 22px;display:flex;justify-content:space-between;gap:12px;-webkit-print-color-adjust:exact;print-color-adjust:exact"><div><div style="font-size:11px;text-transform:uppercase;letter-spacing:.08em;opacity:.82">Safe Work Method Statement</div><div style="font-size:24px;font-weight:900;color:#fff">'+escH(title)+'</div></div><div style="text-align:right;font-family:monospace;font-weight:900;color:#fff">'+escH(ref)+'<div style="font-size:12px;font-family:Arial;font-weight:600;color:#fff">'+escH(g('swms-version')||'Rev 00')+'</div></div></div><div style="padding:14px 22px 0;border-left:1px solid #e5e7eb;border-right:1px solid #e5e7eb"><div style="font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:#0F766E;font-weight:900">Safe Work Method Statement</div><h1 style="font-size:22px;line-height:1.2;margin:3px 0 4px;color:#111827">'+escH(title)+'</h1><div style="font-size:12px;color:#374151;font-family:monospace;font-weight:700">'+escH(ref)+' · '+escH(g('swms-version')||'Rev 00')+'</div></div><div style="padding:18px 22px">'
     +'<table style="width:100%;border-collapse:collapse;font-size:12px;margin-bottom:14px"><tbody><tr><th style="text-align:left;background:#f3f4f6;padding:8px;border:1px solid #e5e7eb;width:18%">Location</th><td style="padding:8px;border:1px solid #e5e7eb">'+escH(g('swms-location')||'—')+'</td><th style="text-align:left;background:#f3f4f6;padding:8px;border:1px solid #e5e7eb;width:18%">Department</th><td style="padding:8px;border:1px solid #e5e7eb">'+escH(g('swms-dept')||'—')+'</td></tr><tr><th style="text-align:left;background:#f3f4f6;padding:8px;border:1px solid #e5e7eb">Contractor / Team</th><td style="padding:8px;border:1px solid #e5e7eb">'+escH(g('swms-contractor')||'—')+'</td><th style="text-align:left;background:#f3f4f6;padding:8px;border:1px solid #e5e7eb">Date</th><td style="padding:8px;border:1px solid #e5e7eb">'+escH(g('swms-date')||'—')+'</td></tr><tr><th style="text-align:left;background:#f3f4f6;padding:8px;border:1px solid #e5e7eb">Linked RA</th><td style="padding:8px;border:1px solid #e5e7eb">'+escH(g('swms-ra-ref')||'—')+'</td><th style="text-align:left;background:#f3f4f6;padding:8px;border:1px solid #e5e7eb">Linked PTW</th><td style="padding:8px;border:1px solid #e5e7eb">'+escH(g('swms-ptw-ref')||'—')+'</td></tr></tbody></table>'
     +'<h3 style="font-size:14px;text-transform:uppercase;color:#0F766E;border-bottom:2px solid #0F766E;padding-bottom:5px">Scope of Work</h3><p style="font-size:12px;line-height:1.5">'+escH(g('swms-scope')||'—')+'</p><div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:12px 0"><div><h3 style="font-size:14px;text-transform:uppercase;color:#0F766E;border-bottom:2px solid #0F766E;padding-bottom:5px">Plant / Tools / Equipment</h3><p style="font-size:12px;line-height:1.5">'+escH(g('swms-plant')||'—')+'</p></div><div><h3 style="font-size:14px;text-transform:uppercase;color:#0F766E;border-bottom:2px solid #0F766E;padding-bottom:5px">PPE Required</h3><p style="font-size:12px;line-height:1.5">'+escH(g('swms-ppe')||'—')+'</p></div></div>'
     +'<h3 style="font-size:14px;text-transform:uppercase;color:#0F766E;border-bottom:2px solid #0F766E;padding-bottom:5px">Work Method, Hazards and Controls</h3><table style="width:100%;border-collapse:collapse;font-size:11px"><thead><tr style="background:#0F766E;color:#fff"><th style="padding:7px;border:1px solid #d1d5db;color:#fff;width:5%">No.</th><th style="padding:7px;border:1px solid #d1d5db;color:#fff;width:19%">Activity / Work Task Step</th><th style="padding:7px;border:1px solid #d1d5db;color:#fff;width:18%">Potential Hazards</th><th style="padding:7px;border:1px solid #d1d5db;color:#fff;width:18%">Risk / Consequence</th><th style="padding:7px;border:1px solid #d1d5db;color:#fff;width:28%">Controls Required / Safe Method</th><th style="padding:7px;border:1px solid #d1d5db;color:#fff;width:12%">Responsible</th></tr></thead><tbody>'+rowHtml+'</tbody></table>'
@@ -7845,7 +7864,18 @@ async function swmsSaveToDocuments(){
   var title=document.getElementById('swms-title')?.value.trim();if(!title){toast('Please enter SWMS title',false);return;}
   var yr=new Date().getFullYear(), ref='SWMS-'+yr+'-'+String((swmsAllData||[]).length+1).padStart(3,'0'), today=new Date().toISOString().slice(0,10);
   var body={company_id:ccid(),title:title,document_type:'swms',doc_type:'swms',department:document.getElementById('swms-dept')?.value||null,dept:document.getElementById('swms-dept')?.value||null,category:'Safe Work Method Statement',description:document.getElementById('swms-scope')?.value||'Safe Work Method Statement generated in AURIS360.',scope:document.getElementById('swms-scope')?.value||null,tags:['SWMS','Method Statement'],version:document.getElementById('swms-version')?.value||'Rev 00',doc_version:document.getElementById('swms-version')?.value||'Rev 00',doc_ref:ref,reference_no:ref,issue_date:document.getElementById('swms-date')?.value||today,effective_date:document.getElementById('swms-date')?.value||today,review_date:document.getElementById('swms-review-date')?.value||null,review_interval_months:12,controlled_copy:true,is_controlled:true,author:document.getElementById('swms-prepared-by')?.value||null,owner:document.getElementById('swms-prepared-by')?.value||null,doc_owner:document.getElementById('swms-prepared-by')?.value||null,reviewer:document.getElementById('swms-reviewed-by')?.value||null,approver:document.getElementById('swms-approved-by')?.value||null,legal_refs:[],location:document.getElementById('swms-location')?.value||null,approval_status:'draft',status:'draft',created_by:prof?.id,updated_at:new Date().toISOString()};
-  try{await api('/documents',{m:'POST',p:'return=minimal',b:body});document.getElementById('swms-ref').textContent=ref;toast('SWMS saved in Document Control: '+ref);swmsShowList();}catch(e){toast('Save failed: '+e.message,false);}
+  try{
+    await api('/documents',{m:'POST',p:'return=minimal',b:body});
+    document.getElementById('swms-ref').textContent=ref;
+    var linkedRA=document.getElementById('swms-ra-ref')?.value||'';
+    if(linkedRA){
+      var raPatch={rams_document_name:ref,rams_document_url:null,updated_at:new Date().toISOString()};
+      try{await api('/risk_assessments?ra_ref=eq.'+encodeURIComponent(linkedRA),{m:'PATCH',p:'return=minimal',b:raPatch});}
+      catch(_){try{await api('/risk_assessments?id=eq.'+encodeURIComponent(linkedRA),{m:'PATCH',p:'return=minimal',b:raPatch});}catch(__){}}
+    }
+    toast('SWMS saved in Document Control: '+ref+(linkedRA?' and linked to RA':''));
+    swmsShowList();
+  }catch(e){toast('Save failed: '+e.message,false);}
 }
 
 // ── LEGAL REGISTER ──────────────────────────────────────────────────────────
@@ -13717,6 +13747,8 @@ function raFormTab(tab, btn){
   if(tab==='rams'){
     var mx=document.getElementById('ra-risk-matrix-card');
     if(mx)mx.innerHTML=raRiskMatrixHtml();
+    var sw=document.getElementById('ra-rams-name');
+    if(sw&&sw.options.length<=1)fillSWMSSelect('ra-rams-name',sw.value);
     raRenderRamsUsed();
   }
   if(tab==='revisions')raLoadRevisions();
@@ -13764,6 +13796,7 @@ function raNew(type){
   var st=document.getElementById('ra-status-sel');if(st)st.value='draft';
   ['ra-assessed-by','ra-approved-by','ra-reviewed-by','ra-sign-assessor','ra-sign-reviewer','ra-sign-approver'].forEach(function(id){fillPersonSelect(id);});
   fillPersonSelect('ra-assessed-by',prof?.full_name||'');
+  fillSWMSSelect('ra-rams-name');
   // Update header
   document.getElementById('ra-type-label').textContent=cfg.emoji+' '+cfg.label;
   document.getElementById('ra-form-title').textContent='New '+cfg.label;
@@ -13962,7 +13995,7 @@ function raOpen(id){
   fillPersonSelect('ra-sign-reviewer',x.ra_sign_reviewer);gf('ra-sign-reviewer-date',x.ra_sign_reviewer_date);
   fillPersonSelect('ra-sign-approver',x.ra_sign_approver);gf('ra-sign-approver-date',x.ra_sign_approver_date);
   gf('ra-briefed-persons',x.ra_briefed);
-  gf('ra-rams-url',x.rams_document_url);gf('ra-rams-name',x.rams_document_name);
+  gf('ra-rams-url',x.rams_document_url);fillSWMSSelect('ra-rams-name',x.rams_document_name);
   raRenderRamsUsed(x);
   raLoadPermitOptions(x.permit_ref||x.permit_id);
   gf('ra-job-seg',x.job_segment||x.ra_job_seg);
@@ -14625,7 +14658,7 @@ function raExtractRowsFromText(text){
 }
 function raApplyImportedPdf(text,fileName){
   var rows=raExtractRowsFromText(text);
-  var ramsName=document.getElementById('ra-rams-name'); if(ramsName)ramsName.value=fileName||'Imported RA PDF';
+  var ramsName=document.getElementById('ra-rams-name'); if(ramsName)setSelectValueWithFallback('ra-rams-name',fileName||'Imported RA PDF');
   raRenderRamsUsed();
   var titleEl=document.getElementById('ra-title');
   if(titleEl&&!titleEl.value){
@@ -14646,7 +14679,7 @@ function raApplyImportedPdf(text,fileName){
 }
 async function raHandleRAMSUpload(input){
   var file=input?.files?.[0];if(!file)return;
-  var ramsName=document.getElementById('ra-rams-name'); if(ramsName)ramsName.value=file.name;
+  var ramsName=document.getElementById('ra-rams-name'); if(ramsName)setSelectValueWithFallback('ra-rams-name',file.name);
   raRenderRamsUsed();
   var el=document.getElementById('ra-rams-status');
   if(el)el.innerHTML='<div style="padding:8px 12px;background:#EFF6FF;border-radius:8px;font-size:12px;color:#185FA5;margin-bottom:8px">Reading '+escH(file.name)+'...</div>';
@@ -31763,9 +31796,10 @@ function printRiskAssessment(raId) {
       : '<p style="color:#6b7280;font-size:9pt;padding:8px">No hazards or controls recorded.</p>')
     + '</div>'
 
-    + '<div class="rpt-section"><div class="rpt-section-title blue">Linked Records & Legal References</div>'
+    + '<div class="rpt-section"><div class="rpt-section-title blue">RAMS Linkage & Legal References</div>'
     + '<div class="rpt-grid">'
-    + fld('SWMS / Method Statement', val(ra.rams_document_name,ra.rams_document_url), true)
+    + fld('RAMS Pack', 'This risk assessment forms the RA part of the RAMS pack. The linked SWMS / method statement defines the safe work sequence.', true)
+    + fld('Linked SWMS / Method Statement', val(ra.rams_document_name,ra.rams_document_url), true)
     + fld('Legal References', legalRefs.length?legalRefs.join('; '):'—', true)
     + fld('Revision Notes', ra.revision_notes, true)
     + fld('Rejection / Review Comment', ra.rejection_reason, true)
@@ -36237,7 +36271,7 @@ function fireEquipStatusBadge(s) {
 <button class="mtg-tab active" id="ra-ftab-info" onclick="raFormTab('info',this)">📝 Info &amp; Scope</button>
 <button class="mtg-tab" id="ra-ftab-hazards" onclick="raFormTab('hazards',this)">⚠️ Hazards &amp; Controls</button>
 <button class="mtg-tab" id="ra-ftab-approval" onclick="raFormTab('approval',this)">✍️ Approval</button>
-<button class="mtg-tab" id="ra-ftab-rams" onclick="raFormTab('rams',this)">🧮 Risk Matrix &amp; SWMS</button>
+<button class="mtg-tab" id="ra-ftab-rams" onclick="raFormTab('rams',this)">🧮 Risk Matrix &amp; RAMS</button>
 <button class="mtg-tab" id="ra-ftab-revisions" onclick="raFormTab('revisions',this)">🕐 Revisions</button>
 </div>
 
@@ -36524,7 +36558,7 @@ function fireEquipStatusBadge(s) {
 </div>
 </div>
 
-<!-- Risk matrix / SWMS tab -->
+<!-- Risk matrix / RAMS tab -->
 <div id="ra-ftview-rams" style="display:none">
 <div class="card">
 <div class="card-title"><i class="ti ti-table-options"></i> Risk Matrix &amp; Scoring Criteria</div>
@@ -36533,20 +36567,21 @@ function fireEquipStatusBadge(s) {
 </div>
 <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:14px">
 <div class="card">
-<div class="card-title"><i class="ti ti-file-upload"></i> SWMS / Method Statement</div>
-<div style="margin-bottom:12px;padding:10px 12px;background:#F8FBFF;border:1px solid #BFDBFE;border-radius:10px;color:#1E3A8A;font-size:12px;line-height:1.45"><strong>Separate document:</strong> the SWMS / method statement describes how the work will be carried out step by step. The risk assessment records hazards, controls and risk ratings. You can link or upload the SWMS here as supporting evidence.</div>
+<div class="card-title"><i class="ti ti-file-check"></i> RAMS Pack &amp; Linked SWMS</div>
+<div style="margin-bottom:12px;padding:10px 12px;background:#F8FBFF;border:1px solid #BFDBFE;border-radius:10px;color:#1E3A8A;font-size:12px;line-height:1.45"><strong>RAMS = Risk Assessment + Method Statement.</strong> The RA records hazards, controls and risk ratings. The SWMS / method statement explains how the work will be carried out step by step. Link the SWMS below to form the RAMS pack.</div>
 <div style="margin-bottom:12px;padding:10px 12px;background:#F0FDF4;border:1px solid #BBF7D0;border-radius:10px;color:#166534;font-size:12px;line-height:1.45"><strong>PDF import assistant:</strong> if you upload an existing risk assessment PDF, AURIS360 will try to convert detected hazards, consequences and controls into editable RA rows. Always review extracted rows before submitting for approval.</div>
 <div style="background:#f9fafb;border:2px dashed var(--border);border-radius:10px;padding:24px;text-align:center;margin-bottom:14px">
 <div style="font-size:40px;margin-bottom:10px">📎</div>
-<div style="font-size:13px;font-weight:600;margin-bottom:6px">Upload SWMS / Method Statement</div>
+<div style="font-size:13px;font-weight:600;margin-bottom:6px">Upload existing SWMS / RAMS document</div>
 <div style="font-size:12px;color:var(--text2);margin-bottom:14px">PDF, Word (.docx), or other documents</div>
 <input type="file" id="ra-rams-file" accept=".pdf,.doc,.docx" style="display:none" onchange="raHandleRAMSUpload(this)"/>
 <button class="btn btn-primary" onclick="document.getElementById('ra-rams-file').click()"><i class="ti ti-upload"></i>Choose file</button>
 </div>
 <div id="ra-rams-status"></div>
 <div id="ra-rams-used-card" style="margin-bottom:12px"></div>
-<div class="form-group"><label class="form-label">Document URL (if hosted)</label><input type="text" id="ra-rams-url" placeholder="https://..." oninput="raRenderRamsUsed()"/></div>
-<div class="form-group"><label class="form-label">SWMS / method statement reference</label><input type="text" id="ra-rams-name" placeholder="e.g. SWMS-2026-001-Electrical Works" oninput="raRenderRamsUsed()"/></div>
+<div class="form-group"><label class="form-label">Linked SWMS / method statement</label><select id="ra-rams-name" onchange="raRenderRamsUsed()"><option value="">Select SWMS / method statement...</option></select></div>
+<div class="form-group"><label class="form-label">External document URL (optional)</label><input type="text" id="ra-rams-url" placeholder="https://..." oninput="raRenderRamsUsed()"/></div>
+<div style="padding:10px 12px;background:#FFFBEB;border:1px solid #FDE68A;border-radius:10px;color:#854F0B;font-size:12px;line-height:1.45"><strong>RAMS output:</strong> print the RA to include the risk matrix, linked SWMS reference, legal references, controls and approval signatures in one controlled pack.</div>
 </div>
 <div class="card">
 <div class="card-title"><i class="ti ti-book"></i> Legal References</div>
