@@ -11741,23 +11741,74 @@ function wsBackToTEForm(){
   wsTERenderItems();
 }
 
-// wsRenderLinkedRecords — canonical version with RA + PTW rows
-function wsRenderLinkedRecords(x){
+// wsRenderLinkedRecords — editable links to applicable HSE records/documents
+async function wsRenderLinkedRecords(x){
   var el=document.getElementById('ws-linked-records');if(!el)return;
-  var row=function(icon,label,val,col){
+  var row=function(icon,label,kind,col){
     return '<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid #f5f5f5">'
       +'<i class="ti '+icon+'" style="color:'+col+';font-size:14px;width:18px"></i>'
-      +'<span style="font-size:12px;color:var(--text2);flex:1">'+label+'</span>'
-      +(val?'<span style="font-size:11px;font-weight:700;color:'+col+'">'+escH(val)+'</span>':'<span style="font-size:11px;color:#ccc">None</span>')
+      +'<span style="font-size:12px;color:var(--text2);flex:0 0 105px">'+label+'</span>'
+      +'<select id="ws-link-'+kind+'" onchange="wsLinkedRecordChanged(\''+kind+'\',this.value)" style="flex:1;min-width:0;padding:5px 7px;border:1px solid var(--border);border-radius:7px;font-size:11px;background:#fff">'
+      +'<option value="">Loading...</option></select>'
       +'</div>';
   };
   var h='';
-  h+=row('ti-speakerphone','Toolbox talk',x.toolbox_talk_id?'Linked':'','#8B5CF6');
-  h+=row('ti-shield-check','Pre-start check',x.prestart_id?'Linked':'','#185FA5');
-  h+=row('ti-clipboard-check','Site inspection',x.site_inspection_id?'Linked':'','#1D9E75');
-  h+=row('ti-alert-triangle','Risk assessment',x.ra_ref||'','#E24B4A');
-  h+=row('ti-key','Permit to work',(x.requires_permit&&x.permit_ref)?x.permit_ref:x.requires_permit?'Required — not issued':'N/A','#185FA5');
+  h+=row('ti-speakerphone','Toolbox talk','tbt','#8B5CF6');
+  h+=row('ti-shield-check','Pre-start check','prestart','#185FA5');
+  h+=row('ti-clipboard-check','Site inspection','site','#1D9E75');
+  h+=row('ti-alert-triangle','Risk assessment','ra','#E24B4A');
+  h+=row('ti-key','Permit to work','ptw','#185FA5');
   el.innerHTML=h;
+  await wsLoadLinkedRecordOptions(x);
+}
+
+function wsLinkedOptionHtml(rows,selected,blankLabel,valueFn,labelFn){
+  var html='<option value="">'+escH(blankLabel||'None')+'</option>';
+  (rows||[]).forEach(function(r){
+    var val=valueFn(r)||'';
+    html+='<option value="'+escH(val)+'" '+(String(val)===String(selected||'')?'selected':'')+'>'+escH(labelFn(r)||val)+'</option>';
+  });
+  if(selected&&html.indexOf('value="'+escH(selected)+'"')<0)html+='<option value="'+escH(selected)+'" selected>'+escH(selected)+' (saved)</option>';
+  return html;
+}
+
+async function wsLoadLinkedRecordOptions(x){
+  var set=function(id,html){var el=document.getElementById(id);if(el)el.innerHTML=html;};
+  try{
+    var data=await Promise.all([
+      api('/toolbox_talks?select=id,tbt_ref,title,talk_date'+cf()+'&order=talk_date.desc,created_at.desc&limit=120').catch(function(){return[];}),
+      api('/inspections?select=id,reference_no,activity,site,inspection_date,inspection_type'+cf()+'&inspection_type=eq.prestart&order=inspection_date.desc,created_at.desc&limit=120').catch(function(){return[];}),
+      api('/inspections?select=id,reference_no,activity,site,inspection_date,inspection_type'+cf()+'&inspection_type=neq.prestart&order=inspection_date.desc,created_at.desc&limit=120').catch(function(){return[];}),
+      api('/risk_assessments?select=id,ra_ref,title,activity,status'+cf()+'&order=created_at.desc&limit=150').catch(function(){return[];}),
+      api('/permits?select=id,permit_number,permit_type,permit_type_v2,status'+cf()+'&order=created_at.desc&limit=120').catch(function(){return[];})
+    ]);
+    set('ws-link-tbt',wsLinkedOptionHtml(data[0],x.toolbox_talk_id,'No toolbox talk',function(r){return r.id;},function(r){return [(r.tbt_ref||'TBT'),r.title,r.talk_date].filter(Boolean).join(' - ');}));
+    set('ws-link-prestart',wsLinkedOptionHtml(data[1],x.prestart_id,'No pre-start check',function(r){return r.id;},function(r){return [(r.reference_no||'Pre-start'),r.activity||r.site,r.inspection_date].filter(Boolean).join(' - ');}));
+    set('ws-link-site',wsLinkedOptionHtml(data[2],x.site_inspection_id,'No site inspection',function(r){return r.id;},function(r){return [(r.reference_no||'Inspection'),r.activity||r.site,r.inspection_date].filter(Boolean).join(' - ');}));
+    set('ws-link-ra',wsLinkedOptionHtml(data[3],x.ra_ref,'No risk assessment',function(r){return r.ra_ref||r.id;},function(r){return [(r.ra_ref||'RA'),r.title||r.activity,r.status].filter(Boolean).join(' - ');}));
+    set('ws-link-ptw',wsLinkedOptionHtml(data[4],x.permit_ref,'No permit to work',function(r){return r.permit_number||r.id;},function(r){var type=r.permit_type_v2||r.permit_type;var cfg=(typeof PTW_TYPE_CFG!=='undefined')?PTW_TYPE_CFG[type]:null;return [(r.permit_number||'PTW'),cfg?.label||type,r.status].filter(Boolean).join(' - ');}));
+  }catch(e){
+    ['tbt','prestart','site','ra','ptw'].forEach(function(k){set('ws-link-'+k,'<option value="">Unable to load</option>');});
+  }
+}
+
+async function wsLinkedRecordChanged(kind,value){
+  if(!wsCurrentId)return;
+  var patch={updated_at:new Date().toISOString()};
+  if(kind==='tbt')patch.toolbox_talk_id=value||null;
+  if(kind==='prestart')patch.prestart_id=value||null;
+  if(kind==='site')patch.site_inspection_id=value||null;
+  if(kind==='ra'){patch.ra_ref=value||null;patch.requires_ra=!!value;}
+  if(kind==='ptw'){patch.permit_ref=value||null;patch.requires_permit=!!value;}
+  try{
+    await api('/work_schedule?id=eq.'+wsCurrentId,{m:'PATCH',p:'return=minimal',b:patch});
+    var x=wsAllData.find(function(r){return r.id===wsCurrentId;});
+    if(x)Object.assign(x,patch);
+    if(kind==='ra'){var ra=document.getElementById('ws-detail-ra');if(ra)ra.textContent=value||'—';}
+    if(kind==='ptw'){var ptw=document.getElementById('ws-detail-ptw');if(ptw)ptw.textContent=value||'—';}
+    if(x)wsRenderActionStatuses(x);
+    toast('Linked record updated');
+  }catch(e){toast(e.message,false);}
 }
 
 // ===== IMS_JS.JS =====
