@@ -13418,6 +13418,46 @@ function raRiskLevelFromScore(score){
   score=parseInt(score||0);
   return score>=20?'Critical':score>=12?'Very High':score>=6?'High':score>=3?'Medium':score>0?'Low':'';
 }
+function raRiskMatrixHtml(){
+  var severity=[
+    ['1','Minor','First aid / negligible damage'],
+    ['2','Low','Medical treatment / minor damage'],
+    ['3','Moderate','Lost time injury / reportable damage'],
+    ['4','Major','Serious injury / major loss'],
+    ['5','Catastrophic','Fatality, permanent disability or catastrophic loss']
+  ];
+  var likelihood=[
+    ['1','Rare','May occur only in exceptional circumstances'],
+    ['2','Unlikely','Could occur, but not expected'],
+    ['3','Possible','Might occur during the activity'],
+    ['4','Likely','Will probably occur in many circumstances'],
+    ['5','Almost certain','Expected to occur frequently']
+  ];
+  var h='<div style="display:grid;grid-template-columns:minmax(260px,1fr) minmax(260px,1fr);gap:12px;margin-bottom:12px">'
+    +'<div style="border:1px solid var(--border);border-radius:10px;overflow:hidden"><div style="padding:9px 12px;background:#F8FBFF;font-weight:900;color:#185FA5">Severity criteria</div>'
+    +'<table style="width:100%;border-collapse:collapse;font-size:11px"><tbody>'
+    +severity.map(function(s){return '<tr style="border-top:1px solid #eef2f7"><td style="padding:7px 9px;font-weight:900;width:34px">'+s[0]+'</td><td style="padding:7px 9px;font-weight:800">'+s[1]+'</td><td style="padding:7px 9px;color:var(--text2)">'+s[2]+'</td></tr>';}).join('')
+    +'</tbody></table></div>'
+    +'<div style="border:1px solid var(--border);border-radius:10px;overflow:hidden"><div style="padding:9px 12px;background:#F8FBFF;font-weight:900;color:#185FA5">Likelihood / probability criteria</div>'
+    +'<table style="width:100%;border-collapse:collapse;font-size:11px"><tbody>'
+    +likelihood.map(function(p){return '<tr style="border-top:1px solid #eef2f7"><td style="padding:7px 9px;font-weight:900;width:34px">'+p[0]+'</td><td style="padding:7px 9px;font-weight:800">'+p[1]+'</td><td style="padding:7px 9px;color:var(--text2)">'+p[2]+'</td></tr>';}).join('')
+    +'</tbody></table></div></div>';
+  h+='<div style="overflow:auto;border:1px solid var(--border);border-radius:10px;background:#fff"><table style="width:100%;min-width:620px;border-collapse:collapse;font-size:11px;text-align:center">'
+    +'<thead><tr><th style="padding:8px;background:#1a3a5c;color:#fff">Likelihood x Severity</th>';
+  for(var s=1;s<=5;s++)h+='<th style="padding:8px;background:#1a3a5c;color:#fff">S'+s+'</th>';
+  h+='</tr></thead><tbody>';
+  for(var p=5;p>=1;p--){
+    h+='<tr><th style="padding:8px;background:#f8fafc;text-align:left">P'+p+' '+likelihood[p-1][1]+'</th>';
+    for(var ss=1;ss<=5;ss++){
+      var score=p*ss,lvl=raRiskLevelFromScore(score),cfg=RL_CFG[lvl]||['#f3f4f6','#6B7280'];
+      h+='<td style="padding:8px;background:'+cfg[0]+';color:'+cfg[1]+';font-weight:900;border:1px solid #fff">'+score+'<div style="font-size:9px;font-weight:800">'+lvl+'</div></td>';
+    }
+    h+='</tr>';
+  }
+  h+='</tbody></table></div>'
+    +'<div style="margin-top:10px;padding:10px 12px;background:#F8FBFF;border:1px solid #DBEAFE;border-radius:10px;font-size:12px;color:#1E3A8A;line-height:1.45"><strong>Assessment rule:</strong> Initial risk is scored after considering the existing controls already in place. Further actions are then defined to reduce the residual risk to an acceptable level before approval.</div>';
+  return h;
+}
 function raRiskBadge(level,score){
   if(!level&&!score)return '<span style="color:var(--text2)">—</span>';
   level=level||raRiskLevelFromScore(score);
@@ -13559,6 +13599,11 @@ function raFormTab(tab, btn){
     var el=document.getElementById('ra-ftview-'+t);if(el)el.style.display=t===tab?'block':'none';
   });
   raUpdateQualityPanel();
+  if(tab==='rams'){
+    var mx=document.getElementById('ra-risk-matrix-card');
+    if(mx)mx.innerHTML=raRiskMatrixHtml();
+    raRenderRamsUsed();
+  }
   if(tab==='revisions')raLoadRevisions();
 }
 
@@ -14401,12 +14446,12 @@ function raRenderRamsUsed(rec){
   var name=(rec&&rec.rams_document_name)||document.getElementById('ra-rams-name')?.value||'';
   var url=(rec&&rec.rams_document_url)||document.getElementById('ra-rams-url')?.value||'';
   if(!name&&!url){
-    el.innerHTML='<div style="padding:12px;border:1px dashed var(--border);border-radius:10px;color:var(--text2);font-size:12px">No RAMS / method statement linked yet.</div>';
+    el.innerHTML='<div style="padding:12px;border:1px dashed var(--border);border-radius:10px;color:var(--text2);font-size:12px">No SWMS / method statement linked yet.</div>';
     return;
   }
   el.innerHTML='<div style="padding:12px;border:1px solid #BBF7D0;background:#F0FDF4;border-radius:10px;color:#166534">'
-    +'<div style="font-size:12px;font-weight:900;margin-bottom:4px"><i class="ti ti-file-check"></i> RAMS used for this assessment</div>'
-    +'<div style="font-size:13px;font-weight:800">'+escH(name||'Linked RAMS / Method Statement')+'</div>'
+    +'<div style="font-size:12px;font-weight:900;margin-bottom:4px"><i class="ti ti-file-check"></i> SWMS / method statement linked to this assessment</div>'
+    +'<div style="font-size:13px;font-weight:800">'+escH(name||'Linked SWMS / Method Statement')+'</div>'
     +(url?'<div style="font-size:11px;margin-top:4px;word-break:break-all"><a href="'+escH(url)+'" target="_blank" style="color:#185FA5">Open linked document</a></div>':'<div style="font-size:11px;margin-top:4px;color:#166534">Document reference saved with this RA.</div>')
     +'</div>';
 }
@@ -31566,7 +31611,7 @@ function printRiskAssessment(raId) {
     + fld('Job Segment', val(ra.job_segment,ra.ra_job_seg))
     + '</div></div>'
 
-    + '<div class="rpt-section"><div class="rpt-section-title secondary">Task / Activity Method Steps</div>'
+    + '<div class="rpt-section"><div class="rpt-section-title secondary">Task / Activity Breakdown</div>'
     + (taskSteps.length?'<table><thead><tr><th style="width:10%">Step</th><th>Activity / Work Task Step</th></tr></thead><tbody>'
       + taskSteps.map(function(s){return '<tr><td style="text-align:center;font-weight:700">'+s.no+'</td><td>'+escH(s.text)+'</td></tr>';}).join('')
       + '</tbody></table>'
@@ -31601,7 +31646,7 @@ function printRiskAssessment(raId) {
 
     + '<div class="rpt-section"><div class="rpt-section-title blue">Linked Records & Legal References</div>'
     + '<div class="rpt-grid">'
-    + fld('RAMS / Method Statement', val(ra.rams_document_name,ra.rams_document_url), true)
+    + fld('SWMS / Method Statement', val(ra.rams_document_name,ra.rams_document_url), true)
     + fld('Legal References', legalRefs.length?legalRefs.join('; '):'—', true)
     + fld('Revision Notes', ra.revision_notes, true)
     + fld('Rejection / Review Comment', ra.rejection_reason, true)
@@ -36072,7 +36117,7 @@ function fireEquipStatusBadge(s) {
 <button class="mtg-tab active" id="ra-ftab-info" onclick="raFormTab('info',this)">📝 Info &amp; Scope</button>
 <button class="mtg-tab" id="ra-ftab-hazards" onclick="raFormTab('hazards',this)">⚠️ Hazards &amp; Controls</button>
 <button class="mtg-tab" id="ra-ftab-approval" onclick="raFormTab('approval',this)">✍️ Approval</button>
-<button class="mtg-tab" id="ra-ftab-rams" onclick="raFormTab('rams',this)">📎 RAMS &amp; Docs</button>
+<button class="mtg-tab" id="ra-ftab-rams" onclick="raFormTab('rams',this)">🧮 Risk Matrix &amp; SWMS</button>
 <button class="mtg-tab" id="ra-ftab-revisions" onclick="raFormTab('revisions',this)">🕐 Revisions</button>
 </div>
 
@@ -36359,15 +36404,21 @@ function fireEquipStatusBadge(s) {
 </div>
 </div>
 
-<!-- RAMS tab -->
+<!-- Risk matrix / SWMS tab -->
 <div id="ra-ftview-rams" style="display:none">
-<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
 <div class="card">
-<div class="card-title"><i class="ti ti-file-upload"></i> RAMS Document Upload</div>
-<div style="margin-bottom:12px;padding:10px 12px;background:#F8FBFF;border:1px solid #BFDBFE;border-radius:10px;color:#1E3A8A;font-size:12px;line-height:1.45"><strong>PDF import assistant:</strong> upload an existing risk assessment PDF and AURIS360 will try to convert detected hazards, consequences and controls into editable RA rows. Always review the extracted rows before submitting for approval.</div>
+<div class="card-title"><i class="ti ti-table-options"></i> Risk Matrix &amp; Scoring Criteria</div>
+<div style="font-size:12px;color:var(--text2);line-height:1.45;margin-bottom:12px">This is the matrix used by AURIS360 to calculate initial and residual risk. Scores are calculated as severity x likelihood / probability.</div>
+<div id="ra-risk-matrix-card"></div>
+</div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:14px">
+<div class="card">
+<div class="card-title"><i class="ti ti-file-upload"></i> SWMS / Method Statement</div>
+<div style="margin-bottom:12px;padding:10px 12px;background:#F8FBFF;border:1px solid #BFDBFE;border-radius:10px;color:#1E3A8A;font-size:12px;line-height:1.45"><strong>Separate document:</strong> the SWMS / method statement describes how the work will be carried out step by step. The risk assessment records hazards, controls and risk ratings. You can link or upload the SWMS here as supporting evidence.</div>
+<div style="margin-bottom:12px;padding:10px 12px;background:#F0FDF4;border:1px solid #BBF7D0;border-radius:10px;color:#166534;font-size:12px;line-height:1.45"><strong>PDF import assistant:</strong> if you upload an existing risk assessment PDF, AURIS360 will try to convert detected hazards, consequences and controls into editable RA rows. Always review extracted rows before submitting for approval.</div>
 <div style="background:#f9fafb;border:2px dashed var(--border);border-radius:10px;padding:24px;text-align:center;margin-bottom:14px">
 <div style="font-size:40px;margin-bottom:10px">📎</div>
-<div style="font-size:13px;font-weight:600;margin-bottom:6px">Upload RAMS Document</div>
+<div style="font-size:13px;font-weight:600;margin-bottom:6px">Upload SWMS / Method Statement</div>
 <div style="font-size:12px;color:var(--text2);margin-bottom:14px">PDF, Word (.docx), or other documents</div>
 <input type="file" id="ra-rams-file" accept=".pdf,.doc,.docx" style="display:none" onchange="raHandleRAMSUpload(this)"/>
 <button class="btn btn-primary" onclick="document.getElementById('ra-rams-file').click()"><i class="ti ti-upload"></i>Choose file</button>
@@ -36375,7 +36426,7 @@ function fireEquipStatusBadge(s) {
 <div id="ra-rams-status"></div>
 <div id="ra-rams-used-card" style="margin-bottom:12px"></div>
 <div class="form-group"><label class="form-label">Document URL (if hosted)</label><input type="text" id="ra-rams-url" placeholder="https://..." oninput="raRenderRamsUsed()"/></div>
-<div class="form-group"><label class="form-label">Document reference name</label><input type="text" id="ra-rams-name" placeholder="e.g. RAMS-2026-001-Electrical Works" oninput="raRenderRamsUsed()"/></div>
+<div class="form-group"><label class="form-label">SWMS / method statement reference</label><input type="text" id="ra-rams-name" placeholder="e.g. SWMS-2026-001-Electrical Works" oninput="raRenderRamsUsed()"/></div>
 </div>
 <div class="card">
 <div class="card-title"><i class="ti ti-book"></i> Legal References</div>
