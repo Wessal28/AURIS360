@@ -13611,6 +13611,7 @@ function raNew(type){
   document.getElementById('ra-form-rev-display').textContent='';
   document.getElementById('ra-rev-badge').textContent='Rev 1';
   document.getElementById('ra-delete-btn').style.display='none';
+  raRenderWorkflowBar(null);
   document.getElementById('ra-ai-output').innerHTML='';
   document.getElementById('ra-lib-results').innerHTML='';
   document.getElementById('ra-revisions-list').innerHTML='';
@@ -13656,6 +13657,37 @@ function raSwitchFormType(type){
     var el=document.getElementById(id);if(el)el.innerHTML='';
   });
   raUpdateQualityPanel();
+}
+
+function raRenderWorkflowBar(rec){
+  var el=document.getElementById('ra-workflow-bar');if(!el)return;
+  var st=String(rec?.status||document.getElementById('ra-status-sel')?.value||'draft');
+  var steps=[
+    {key:'draft',label:'Draft'},
+    {key:'pending_review',label:'Submitted'},
+    {key:'active',label:'Approved / Active'},
+    {key:'archived',label:'Archived'}
+  ];
+  var activeIdx=st==='archived'?3:st==='active'||st==='approved'?2:st==='pending_review'||st==='review'||st==='pending_approval'?1:0;
+  var h='<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;width:100%">';
+  steps.forEach(function(s,i){
+    var done=i<activeIdx, active=i===activeIdx;
+    h+='<div style="display:flex;align-items:center;gap:8px">'
+      +'<div style="width:26px;height:26px;border-radius:999px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:900;background:'+(done||active?'#1D9E75':'#e5e7eb')+';color:'+(done||active?'#fff':'#64748b')+'">'+(done?'✓':(i+1))+'</div>'
+      +'<div style="font-size:12px;font-weight:800;color:'+(active?'#0f766e':'#475569')+'">'+s.label+'</div>'
+      +'</div>';
+    if(i<steps.length-1)h+='<div style="height:2px;width:34px;background:'+(i<activeIdx?'#1D9E75':'#e5e7eb')+'"></div>';
+  });
+  h+='<div style="margin-left:auto;display:flex;gap:8px;flex-wrap:wrap">';
+  if(rec&&['pending_review','review','pending_approval'].includes(st)&&canAdministerControlledRecord()){
+    h+='<button class="btn btn-sm" style="background:#1D9E75;color:#fff;border-color:#1D9E75" onclick="raApproveCurrent()"><i class="ti ti-circle-check"></i>Approve</button>';
+    h+='<button class="btn btn-sm" style="background:#E24B4A;color:#fff;border-color:#E24B4A" onclick="raRejectCurrent()"><i class="ti ti-x"></i>Reject</button>';
+  }
+  if(rec&&controlledStatusIsLocked(st)&&canAdministerControlledRecord()){
+    h+='<button class="btn btn-sm" onclick="raReleaseForEdit()"><i class="ti ti-lock-open"></i>Release for edit</button>';
+  }
+  h+='</div></div>';
+  el.innerHTML=h;
 }
 
 function raGetFieldValue(id){
@@ -13718,6 +13750,7 @@ function raOpen(id){
   document.getElementById('ra-form-rev-display').textContent=x.ai_generated?'🤖 AI-generated':'';
   document.getElementById('ra-rev-badge').textContent='Rev '+(x.revision||1);
   document.getElementById('ra-delete-btn').style.display=isMgr()?'inline-flex':'none';
+  raRenderWorkflowBar(x);
   // Fill fields
   var gf=function(id,val){var el=document.getElementById(id);if(el)el.value=val||'';};
   gf('ra-title',x.title||x.activity);gf('ra-activity',x.activity||x.workshop);
@@ -14044,6 +14077,7 @@ async function raSave(targetStatus){
       await api('/risk_assessments?id=eq.'+raEditingId,{m:'PATCH',p:'return=minimal',b:body});
       var idx=raAllData.findIndex(x=>x.id===raEditingId);
       if(idx>=0)Object.assign(raAllData[idx],body);
+      raRenderWorkflowBar(Object.assign({},currentRa||{},body));
       toast('Risk assessment updated!');
       // Update linked work order if needed
       raSyncToMAP(raEditingId, rows);
@@ -14058,11 +14092,81 @@ async function raSave(targetStatus){
         // Update form header
         document.getElementById('ra-form-ref').textContent=ref;
         document.getElementById('ra-form-title').textContent=body.title||'Risk Assessment';
+        raRenderWorkflowBar(Object.assign({},body,{id:res[0].id,ra_ref:ref}));
         toast('RA saved! Ref: '+ref);
         raSyncToMAP(res[0].id, rows);
       }
     }
   }catch(e){toast(e.message,false);console.error(e);}
+}
+
+async function raApproveCurrent(){
+  if(!raEditingId)return;
+  if(!canAdministerControlledRecord()){toast('Only Admin or HSE Manager can approve risk assessments',false);return;}
+  var reviewer=raGetFieldValue('ra-sign-reviewer')||prof?.full_name||prof?.email||'';
+  var approver=raGetFieldValue('ra-sign-approver')||prof?.full_name||prof?.email||'';
+  var today=new Date().toISOString().slice(0,10);
+  var body={
+    status:'active',
+    reviewed_by:reviewer||null,
+    approved_by:approver||null,
+    ra_sign_reviewer:reviewer||null,
+    ra_sign_approver:approver||null,
+    ra_sign_reviewer_date:raGetFieldValue('ra-sign-reviewer-date')||today,
+    ra_sign_approver_date:raGetFieldValue('ra-sign-approver-date')||today,
+    updated_at:new Date().toISOString()
+  };
+  try{
+    await api('/risk_assessments?id=eq.'+raEditingId,{m:'PATCH',p:'return=minimal',b:body});
+    var rec=raAllData.find(function(x){return x.id===raEditingId;})||{};
+    Object.assign(rec,body);
+    var st=document.getElementById('ra-status-sel');if(st)st.value='active';
+    fillPersonSelect('ra-reviewed-by',body.reviewed_by||'');
+    fillPersonSelect('ra-approved-by',body.approved_by||'');
+    fillPersonSelect('ra-sign-reviewer',body.ra_sign_reviewer||'');
+    fillPersonSelect('ra-sign-approver',body.ra_sign_approver||'');
+    var rd=document.getElementById('ra-sign-reviewer-date');if(rd)rd.value=body.ra_sign_reviewer_date;
+    var ad=document.getElementById('ra-sign-approver-date');if(ad)ad.value=body.ra_sign_approver_date;
+    controlledApplyFormLock('ra-form-view','ra-controlled-lock-note',rec,'Risk assessment');
+    raRenderWorkflowBar(rec);
+    toast('Risk assessment approved and activated');
+  }catch(e){toast(e.message,false);}
+}
+
+async function raRejectCurrent(){
+  if(!raEditingId)return;
+  if(!canAdministerControlledRecord()){toast('Only Admin or HSE Manager can reject risk assessments',false);return;}
+  var reason=await appPrompt({title:'Reject risk assessment',message:'Enter the reason for rejection or required correction.',placeholder:'e.g. Controls not specific enough, missing task step...',multiline:true});
+  if(reason===null||reason===undefined)return;
+  var body={status:'rejected',rejection_reason:String(reason||'Revision required'),updated_at:new Date().toISOString()};
+  try{
+    await api('/risk_assessments?id=eq.'+raEditingId,{m:'PATCH',p:'return=minimal',b:body});
+    var rec=raAllData.find(function(x){return x.id===raEditingId;})||{};
+    Object.assign(rec,body);
+    var st=document.getElementById('ra-status-sel');if(st)st.value='rejected';
+    var rr=document.getElementById('ra-rejection-reason');if(rr)rr.value=body.rejection_reason;
+    controlledApplyFormLock('ra-form-view','ra-controlled-lock-note',rec,'Risk assessment');
+    raRenderWorkflowBar(rec);
+    toast('Risk assessment rejected for correction');
+  }catch(e){toast(e.message,false);}
+}
+
+async function raReleaseForEdit(){
+  if(!raEditingId)return;
+  if(!canAdministerControlledRecord()){toast('Only Admin or HSE Manager can release a risk assessment for edit',false);return;}
+  var note=await appPrompt({title:'Release risk assessment',message:'Why is this RA being released for edit?',placeholder:'e.g. Update controls after site change',multiline:true});
+  if(note===null||note===undefined)return;
+  var body={status:'draft',revision_notes:String(note||'Released for edit'),updated_at:new Date().toISOString()};
+  try{
+    await api('/risk_assessments?id=eq.'+raEditingId,{m:'PATCH',p:'return=minimal',b:body});
+    var rec=raAllData.find(function(x){return x.id===raEditingId;})||{};
+    Object.assign(rec,body);
+    var st=document.getElementById('ra-status-sel');if(st)st.value='draft';
+    var rn=document.getElementById('ra-rev-notes');if(rn)rn.value=body.revision_notes;
+    controlledApplyFormLock('ra-form-view','ra-controlled-lock-note',rec,'Risk assessment');
+    raRenderWorkflowBar(rec);
+    toast('Risk assessment released for edit');
+  }catch(e){toast(e.message,false);}
 }
 
 async function raGenRef(type){
@@ -35416,6 +35520,7 @@ function fireEquipStatusBadge(s) {
 <option value="pending_review">Pending Review</option>
 <option value="active">Active</option>
 <option value="review">Under Review</option>
+<option value="rejected">Rejected</option>
 <option value="archived">Archived</option>
 </select>
 <select id="ra-filter-risk" onchange="raFilterList()" style="padding:7px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px">
@@ -35663,11 +35768,13 @@ function fireEquipStatusBadge(s) {
 <option value="pending_review">Pending Review</option>
 <option value="active">Active</option>
 <option value="review">Under Review</option>
+<option value="rejected">Rejected</option>
 <option value="archived">Archived</option>
 </select>
 <span style="font-size:12px;font-weight:600;color:var(--text2);margin-left:10px">Revision:</span>
 <span style="font-family:monospace;font-size:13px;font-weight:700;color:#185FA5" id="ra-rev-badge">Rev 1</span>
 </div>
+<div id="ra-workflow-bar" style="padding:12px 24px;background:#f8fafc;border-top:1px solid var(--border);display:flex;align-items:center;gap:10px;flex-wrap:wrap"></div>
 <div style="padding:12px 24px;background:#fff;border-top:1px solid var(--border)">
 <div id="ra-quality-panel"></div>
 </div>
@@ -35900,6 +36007,7 @@ function fireEquipStatusBadge(s) {
 <div>
 <div class="card" style="margin-bottom:14px;border:2px solid #185FA5">
 <div class="card-title" style="color:#185FA5"><i class="ti ti-certificate"></i> Approval Workflow</div>
+<div style="margin-bottom:12px;padding:10px 12px;background:#F8FBFF;border:1px solid #BFDBFE;border-radius:10px;color:#1E3A8A;font-size:12px;line-height:1.45"><strong>Controlled record rule:</strong> once submitted, the RA is locked for normal editing. Admin/HSE Manager can approve, reject, or release it for correction. Approved RAs become active controlled records.</div>
 <div style="display:flex;flex-direction:column;gap:12px">
 <div style="padding:12px;border:1px solid var(--border);border-radius:8px">
 <div style="font-weight:700;font-size:13px;margin-bottom:8px">Step 1 — Risk Assessor</div>
@@ -35946,6 +36054,15 @@ function fireEquipStatusBadge(s) {
 <div>☐ Residual risk acceptable</div>
 <div>☐ Legal requirements met</div>
 <div>☐ Responsible persons assigned</div>
+</div>
+</div>
+<div class="card" style="margin-top:14px;border:1px solid #dbeafe;background:#f8fbff">
+<div class="card-title" style="color:#185FA5"><i class="ti ti-route"></i> Approval actions</div>
+<div style="font-size:12px;color:var(--text2);line-height:1.45;margin-bottom:10px">Use these actions when reviewing a submitted risk assessment. Rejected assessments return for correction. Releasing an approved or submitted RA makes it editable again and should be justified in revision notes.</div>
+<div style="display:flex;gap:8px;flex-wrap:wrap">
+<button class="btn btn-sm" style="background:#1D9E75;color:#fff;border-color:#1D9E75" onclick="raApproveCurrent()"><i class="ti ti-circle-check"></i>Approve RA</button>
+<button class="btn btn-sm" style="background:#E24B4A;color:#fff;border-color:#E24B4A" onclick="raRejectCurrent()"><i class="ti ti-x"></i>Reject RA</button>
+<button class="btn btn-sm" onclick="raReleaseForEdit()"><i class="ti ti-lock-open"></i>Release for edit</button>
 </div>
 </div>
 </div>
