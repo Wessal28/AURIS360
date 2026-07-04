@@ -13688,6 +13688,8 @@ function raRenderWorkflowBar(rec){
   }
   h+='</div></div>';
   el.innerHTML=h;
+  var actions=document.getElementById('ra-approval-actions-card');
+  if(actions)actions.style.display=canAdministerControlledRecord()?'block':'none';
 }
 
 function raGetFieldValue(id){
@@ -14156,16 +14158,40 @@ async function raReleaseForEdit(){
   if(!canAdministerControlledRecord()){toast('Only Admin or HSE Manager can release a risk assessment for edit',false);return;}
   var note=await appPrompt({title:'Release risk assessment',message:'Why is this RA being released for edit?',placeholder:'e.g. Update controls after site change',multiline:true});
   if(note===null||note===undefined)return;
-  var body={status:'draft',revision_notes:String(note||'Released for edit'),updated_at:new Date().toISOString()};
+  var current=raAllData.find(function(x){return x.id===raEditingId;})||{};
+  var newRev=(parseInt(current.revision||raCurrentRevision||1)||1)+1;
+  var body={
+    status:'draft',
+    revision:newRev,
+    revision_notes:String(note||'Released for edit'),
+    rejection_reason:null,
+    reviewed_by:null,
+    approved_by:null,
+    ra_sign_reviewer:null,
+    ra_sign_reviewer_date:null,
+    ra_sign_approver:null,
+    ra_sign_approver_date:null,
+    updated_at:new Date().toISOString()
+  };
   try{
+    await raArchiveCurrentRevision(current,String(note||'Released for edit'));
     await api('/risk_assessments?id=eq.'+raEditingId,{m:'PATCH',p:'return=minimal',b:body});
     var rec=raAllData.find(function(x){return x.id===raEditingId;})||{};
     Object.assign(rec,body);
+    raCurrentRevision=newRev;
     var st=document.getElementById('ra-status-sel');if(st)st.value='draft';
     var rn=document.getElementById('ra-rev-notes');if(rn)rn.value=body.revision_notes;
+    document.getElementById('ra-rev-badge').textContent='Rev '+newRev;
+    fillPersonSelect('ra-reviewed-by','');
+    fillPersonSelect('ra-approved-by','');
+    fillPersonSelect('ra-sign-reviewer','');
+    fillPersonSelect('ra-sign-approver','');
+    var rd=document.getElementById('ra-sign-reviewer-date');if(rd)rd.value='';
+    var ad=document.getElementById('ra-sign-approver-date');if(ad)ad.value='';
     controlledApplyFormLock('ra-form-view','ra-controlled-lock-note',rec,'Risk assessment');
     raRenderWorkflowBar(rec);
-    toast('Risk assessment released for edit');
+    raLoadRevisions();
+    toast('Risk assessment released as Rev '+newRev);
   }catch(e){toast(e.message,false);}
 }
 
@@ -14738,23 +14764,64 @@ function raLoadTemplate(tplId){
 }
 
 // ── Revision Control ──────────────────────────────────────────────────────────
-async function raCreateRevision(){
+async function raArchiveCurrentRevision(snapshot, notes){
   if(!raEditingId)return;
-  var notes=document.getElementById('ra-rev-notes')?.value?.trim();
-  if(!notes){toast('Please enter revision notes describing what changed',false);return;}
-  raCurrentRevision++;
-  document.getElementById('ra-rev-badge').textContent='Rev '+raCurrentRevision;
-  // Save current as revision
-  var x=raAllData.find(r=>r.id===raEditingId)||{};
+  var snap=snapshot||raAllData.find(function(r){return r.id===raEditingId;})||{};
   try{
     await api('/ra_revisions',{m:'POST',p:'return=minimal',b:{
-      company_id:ccid(),ra_id:raEditingId,
-      revision:raCurrentRevision-1,snapshot:x,
-      changed_by:document.getElementById('ra-assessed-by')?.value||prof?.full_name||'User',
-      change_notes:notes
+      company_id:ccid(),
+      ra_id:raEditingId,
+      revision:parseInt(snap.revision||raCurrentRevision||1)||1,
+      snapshot:snap,
+      changed_by:prof?.full_name||prof?.email||'User',
+      change_notes:notes||'Revision created'
     }});
-    await api('/risk_assessments?id=eq.'+raEditingId,{m:'PATCH',p:'return=minimal',b:{revision:raCurrentRevision,revision_notes:notes,updated_at:new Date().toISOString()}});
-    toast('New revision created — Rev '+raCurrentRevision);
+  }catch(e){
+    console.warn('[RA] Could not archive previous revision:',e.message);
+  }
+}
+
+async function raCreateRevision(){
+  if(!raEditingId)return;
+  if(!workflowCanMutate('risk','risk assessments'))return;
+  var x=raAllData.find(r=>r.id===raEditingId)||{};
+  if(controlledStatusIsLocked(x.status)&&!canAdministerControlledRecord()){
+    toast('This RA is locked. Admin/HSE Manager must release it before creating a revision.',false);
+    return;
+  }
+  var notes=document.getElementById('ra-rev-notes')?.value?.trim();
+  if(!notes){toast('Please enter revision notes describing what changed',false);return;}
+  var oldRev=parseInt(x.revision||raCurrentRevision||1)||1;
+  var newRev=oldRev+1;
+  try{
+    await raArchiveCurrentRevision(x,notes);
+    var body={
+      revision:newRev,
+      status:'draft',
+      revision_notes:notes,
+      rejection_reason:null,
+      reviewed_by:null,
+      approved_by:null,
+      ra_sign_reviewer:null,
+      ra_sign_reviewer_date:null,
+      ra_sign_approver:null,
+      ra_sign_approver_date:null,
+      updated_at:new Date().toISOString()
+    };
+    await api('/risk_assessments?id=eq.'+raEditingId,{m:'PATCH',p:'return=minimal',b:body});
+    Object.assign(x,body);
+    raCurrentRevision=newRev;
+    var st=document.getElementById('ra-status-sel');if(st)st.value='draft';
+    document.getElementById('ra-rev-badge').textContent='Rev '+newRev;
+    fillPersonSelect('ra-reviewed-by','');
+    fillPersonSelect('ra-approved-by','');
+    fillPersonSelect('ra-sign-reviewer','');
+    fillPersonSelect('ra-sign-approver','');
+    var rd=document.getElementById('ra-sign-reviewer-date');if(rd)rd.value='';
+    var ad=document.getElementById('ra-sign-approver-date');if(ad)ad.value='';
+    controlledApplyFormLock('ra-form-view','ra-controlled-lock-note',x,'Risk assessment');
+    raRenderWorkflowBar(x);
+    toast('New editable revision created — Rev '+newRev);
     raLoadRevisions();
   }catch(e){toast(e.message,false);}
 }
@@ -14765,7 +14832,8 @@ async function raLoadRevisions(){
   try{
     var d=await api('/ra_revisions?ra_id=eq.'+raEditingId+'&order=revision.desc'+cf());
     if(!d||!d.length){el.innerHTML='<div style="color:var(--text2);font-size:12px;padding:10px 0">No previous revisions — current is Rev 1 (original)</div>';return;}
-    var h='<div style="display:flex;flex-direction:column;gap:8px;margin-top:12px">';
+    var h='<div style="padding:10px 12px;border:1px solid #BBF7D0;border-radius:8px;background:#F0FDF4;color:#166534;font-size:12px;margin-top:10px;margin-bottom:10px"><strong>Current version:</strong> Rev '+escH(raCurrentRevision||1)+' is the live editable record. Previous versions below are kept for audit traceability.</div>';
+    h+='<div style="display:flex;flex-direction:column;gap:8px;margin-top:12px">';
     d.forEach(function(r){
       h+='<div style="padding:10px 14px;border:1px solid var(--border);border-radius:8px;background:#f9fafb">'
         +'<div style="display:flex;align-items:center;gap:10px;margin-bottom:4px">'
@@ -36116,10 +36184,11 @@ function fireEquipStatusBadge(s) {
 <div class="card">
 <div class="card-title" style="color:#185FA5"><i class="ti ti-history"></i> Revision Control</div>
 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:10px">
-<div style="font-size:13px;color:var(--text2)">All previous versions of this risk assessment</div>
-<button class="btn btn-primary" style="background:#185FA5;border-color:#185FA5" onclick="raCreateRevision()"><i class="ti ti-plus"></i>Create new revision</button>
+<div style="font-size:13px;color:var(--text2)">Create a controlled editable revision while keeping previous approved versions for audit history.</div>
+<button class="btn btn-primary" style="background:#185FA5;border-color:#185FA5" onclick="raCreateRevision()"><i class="ti ti-plus"></i>Create editable revision</button>
 </div>
-<div class="form-group"><label class="form-label">Revision notes</label><textarea id="ra-rev-notes" style="min-height:50px" placeholder="What changed in this revision?"></textarea></div>
+<div style="padding:10px 12px;background:#FFFBEB;border:1px solid #FDE68A;border-radius:10px;color:#854F0B;font-size:12px;line-height:1.45;margin-bottom:12px"><strong>Good practice:</strong> do not overwrite an approved RA directly. Create a new revision, update it, then submit it again for approval.</div>
+<div class="form-group"><label class="form-label">Revision notes</label><textarea id="ra-rev-notes" style="min-height:50px" placeholder="What changed and why? e.g. New task step, new control, site condition changed..."></textarea></div>
 <div id="ra-revisions-list"></div>
 </div>
 </div>
