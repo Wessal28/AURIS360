@@ -29530,6 +29530,62 @@ function pwaRefreshInstallButton(){
   installBtn.style.display = shouldShow ? 'flex' : 'none';
   installBtn.title = pwaIsIOSDevice() ? 'Install on iPad/iPhone using Share > Add to Home Screen' : 'Install AURIS360 as an app';
 }
+function pwaEscapeHtml(value){
+  return String(value || '').replace(/[&<>"']/g, function(ch){
+    return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[ch];
+  });
+}
+function pwaShowInstallInstructions(isIOS){
+  var existing = document.getElementById('pwa-install-help-modal');
+  if(existing) existing.remove();
+
+  var steps = isIOS ? [
+    'Open AURIS360 in Safari on your iPad or iPhone.',
+    'Tap the Share button in the browser toolbar.',
+    'Choose Add to Home Screen from the share menu.',
+    'Tap Add. AURIS360 will appear like an app on the home screen.'
+  ] : [
+    'Open AURIS360 in Chrome or Edge on your device.',
+    'Tap the browser menu button.',
+    'Choose Install app or Add to Home Screen.',
+    'Confirm the installation when prompted.'
+  ];
+
+  var modal = document.createElement('div');
+  modal.id = 'pwa-install-help-modal';
+  modal.setAttribute('role', 'dialog');
+  modal.setAttribute('aria-modal', 'true');
+  modal.style.cssText = 'position:fixed;inset:0;z-index:10000;background:rgba(15,23,42,.48);display:flex;align-items:center;justify-content:center;padding:20px;';
+  modal.innerHTML =
+    '<div style="width:min(520px,100%);background:#fff;border-radius:16px;box-shadow:0 24px 70px rgba(15,23,42,.25);overflow:hidden;">' +
+      '<div style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:18px 20px;background:#109873;color:#fff;">' +
+        '<div>' +
+          '<div style="font-size:18px;font-weight:800;">Install AURIS360</div>' +
+          '<div style="font-size:13px;opacity:.9;">' + (isIOS ? 'iPad / iPhone setup' : 'Mobile app setup') + '</div>' +
+        '</div>' +
+        '<button type="button" data-pwa-close style="border:0;background:rgba(255,255,255,.18);color:#fff;border-radius:10px;width:36px;height:36px;font-size:22px;line-height:1;cursor:pointer;">&times;</button>' +
+      '</div>' +
+      '<div style="padding:20px;">' +
+        '<div style="display:grid;gap:12px;">' +
+          steps.map(function(step, idx){
+            return '<div style="display:grid;grid-template-columns:34px 1fr;gap:12px;align-items:start;">' +
+              '<div style="width:34px;height:34px;border-radius:999px;background:#e7f7f1;color:#08775b;display:flex;align-items:center;justify-content:center;font-weight:800;">' + (idx + 1) + '</div>' +
+              '<div style="font-size:14px;color:#334155;line-height:1.45;padding-top:6px;">' + pwaEscapeHtml(step) + '</div>' +
+            '</div>';
+          }).join('') +
+        '</div>' +
+        '<div style="margin-top:18px;padding:12px 14px;border:1px solid #dbeafe;background:#eff6ff;border-radius:12px;color:#1e3a8a;font-size:13px;line-height:1.45;">Installing AURIS360 gives users a cleaner full-screen experience and quick access from the home screen.</div>' +
+        '<div style="margin-top:18px;display:flex;justify-content:flex-end;gap:10px;">' +
+          '<button type="button" data-pwa-close class="btn" style="min-width:110px;">Close</button>' +
+        '</div>' +
+      '</div>' +
+    '</div>';
+
+  modal.addEventListener('click', function(e){
+    if(e.target === modal || e.target.closest('[data-pwa-close]')) modal.remove();
+  });
+  document.body.appendChild(modal);
+}
 
 // Register service worker
 if('serviceWorker' in navigator) {
@@ -29577,13 +29633,7 @@ window.addEventListener('appinstalled', function() {
 // Show PWA install prompt
 function pwaInstall() {
   if(!_pwaInstallPrompt) {
-    // iOS instructions
-    var isIOS = pwaIsIOSDevice();
-    if(isIOS) {
-      alert('To install AURIS360 on iOS:\n\n1. Tap the Share button (box with arrow) at the bottom of Safari\n2. Scroll down and tap "Add to Home Screen"\n3. Tap "Add" — AURIS360 will appear on your home screen');
-    } else {
-      alert('To install AURIS360:\n\nIn Chrome, tap the menu (⋮) and select "Install app" or "Add to Home Screen"');
-    }
+    pwaShowInstallInstructions(pwaIsIOSDevice());
     return;
   }
   _pwaInstallPrompt.prompt();
