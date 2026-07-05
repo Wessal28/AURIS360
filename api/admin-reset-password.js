@@ -8,6 +8,12 @@ function json(res, status, body) {
   return res.send(JSON.stringify(body));
 }
 
+function allowCors(res) {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+}
+
 async function fetchJson(url, options) {
   const r = await fetch(url, options);
   const data = await r.json().catch(function() { return null; });
@@ -33,6 +39,8 @@ async function getProfile(supabaseUrl, serviceKey, userId) {
 }
 
 module.exports = async function handler(req, res) {
+  allowCors(res);
+  if (req.method === 'OPTIONS') return res.status(204).end();
   if (req.method !== 'POST') return json(res, 405, { error: 'Method not allowed' });
 
   const authHeader = req.headers.authorization || '';
@@ -74,7 +82,7 @@ module.exports = async function handler(req, res) {
     }
 
     await fetchJson(supabaseUrl + '/auth/v1/admin/users/' + encodeURIComponent(targetUserId), {
-      method: 'PATCH',
+      method: 'PUT',
       headers: {
         apikey: serviceKey,
         Authorization: 'Bearer ' + serviceKey,
