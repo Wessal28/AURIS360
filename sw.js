@@ -3,9 +3,9 @@
 // Cache-first for static assets, network-first for API calls
 // ============================================================
 
-const CACHE_NAME = 'auris360-v6';
-const STATIC_CACHE = 'auris360-static-v6';
-const API_CACHE = 'auris360-api-v6';
+const CACHE_NAME = 'auris360-v7';
+const STATIC_CACHE = 'auris360-static-v7';
+const API_CACHE = 'auris360-api-v7';
 
 // Assets to cache on install (app shell)
 const PRECACHE_ASSETS = [
@@ -131,8 +131,8 @@ self.addEventListener('push', function(event) {
   event.waitUntil(
     self.registration.showNotification(data.title || 'AURIS360 Alert', {
       body: data.body || '',
-      icon: '/icon-192.png',
-      badge: '/icon-192.png',
+      icon: '/assets/brand/auris360-icon-192.png',
+      badge: '/assets/brand/auris360-icon-192.png',
       tag: data.tag || 'auris360',
       data: data,
       actions: data.actions || [],

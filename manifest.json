@@ -1,8 +1,8 @@
 {
-  "name": "AURIS360 — HSE Management",
+  "name": "AURIS360 â€” HSE Management",
   "short_name": "AURIS360",
   "description": "HSE Management Platform by SEPHS Consulting",
-  "start_url": "https://auris-360.vercel.app/",
+  "start_url": "/",
   "display": "standalone",
   "orientation": "any",
   "background_color": "#f4f6f8",
@@ -12,7 +12,7 @@
     "productivity"
   ],
   "lang": "en",
-  "scope": "https://auris-360.vercel.app/",
+  "scope": "/",
   "prefer_related_applications": false,
   "icons": [
     {
@@ -33,19 +33,19 @@
       "name": "Report Incident",
       "short_name": "Incident",
       "description": "Report a new incident or near miss",
-      "url": "https://auris-360.vercel.app/?goto=events"
+      "url": "/?goto=events"
     },
     {
       "name": "New Inspection",
       "short_name": "Inspect",
       "description": "Start a workplace inspection",
-      "url": "https://auris-360.vercel.app/?goto=inspection"
+      "url": "/?goto=inspection"
     },
     {
       "name": "Pre-Start Check",
       "short_name": "Pre-Start",
       "description": "Pre-start safety check",
-      "url": "https://auris-360.vercel.app/?goto=prestart"
+      "url": "/?goto=prestart"
     }
   ]
 }
