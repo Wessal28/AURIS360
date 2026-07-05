@@ -20630,35 +20630,44 @@ async function ppeLoadCatalogue(){
       if(el)el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)"><div style="font-size:40px;margin-bottom:12px">📦</div><div style="font-weight:600;margin-bottom:8px">No PPE in catalogue yet</div>'+(isMgr()?'<button class="btn btn-primary" onclick="ppeCatNew()"><i class="ti ti-plus"></i>Add PPE type</button>':'')+'</div>';
       return;
     }
-    var h='<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px">';
+    var h='<div style="overflow:auto;border:1px solid var(--border);border-radius:10px;background:#fff">'
+      +'<table style="width:100%;min-width:1120px;border-collapse:collapse;font-size:12px">'
+      +'<thead><tr style="background:#064E3B;color:#fff">'
+      +'<th style="padding:10px;color:#fff;text-align:left">Code</th>'
+      +'<th style="padding:10px;color:#fff;text-align:left">PPE item</th>'
+      +'<th style="padding:10px;color:#fff;text-align:left">Category</th>'
+      +'<th style="padding:10px;color:#fff;text-align:left">Standard / protection</th>'
+      +'<th style="padding:10px;color:#fff;text-align:center">Total</th>'
+      +'<th style="padding:10px;color:#fff;text-align:center">Available</th>'
+      +'<th style="padding:10px;color:#fff;text-align:center">Issued</th>'
+      +'<th style="padding:10px;color:#fff;text-align:left">Hazards</th>'
+      +'<th style="padding:10px;color:#fff;text-align:center">Status</th>'
+      +'<th style="padding:10px;color:#fff;width:70px"></th>'
+      +'</tr></thead><tbody>';
     d.forEach(function(x){
       var cfg=PPE_CAT_CFG[x.category]||PPE_CAT_CFG.other;
       var isLow=x.quantity_available!=null&&x.reorder_level!=null&&x.quantity_available<=x.reorder_level;
       var isOut=x.quantity_available===0;
-      h+='<div class="card" style="padding:0;overflow:hidden;cursor:pointer;border-left:4px solid '+cfg.color+';transition:box-shadow .15s" data-id="'+x.id+'" onclick="ppeCatEdit(this.dataset.id)" onmouseover="this.style.boxShadow=\'0 4px 16px rgba(0,0,0,.1)\'" onmouseout="this.style.boxShadow=\'\'">'
-        +'<div style="padding:14px 16px">'
-        +'<div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:8px">'
-        +'<div style="display:flex;align-items:center;gap:8px">'
-        +'<span style="font-size:26px">'+cfg.emoji+'</span>'
-        +'<div><div style="font-weight:700;font-size:14px">'+escH(x.name||'—')+'</div>'
-        +'<div style="font-size:11px;color:var(--text2)">'+escH(x.sub_category||x.brand||'')+'</div>'
-        +(x.standard?'<div style="font-size:10px;font-family:monospace;color:'+cfg.color+'">'+escH(x.standard)+'</div>':'')
-        +'</div></div>'
-        +(x.status!=='active'?'<span style="background:#f3f4f6;color:#6B7280;padding:2px 7px;border-radius:99px;font-size:10px;font-weight:700;text-transform:capitalize">'+x.status.replace('_',' ')+'</span>':'')
-        +'</div>'
-        +'<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-top:10px">'
-        +'<div style="background:'+(isOut?'#FCEBEB':isLow?'#FEF9EC':'#f0fdf4')+';border-radius:6px;padding:8px;text-align:center">'
-        +'<div style="font-size:10px;font-weight:600;color:var(--text2);text-transform:uppercase;margin-bottom:2px">Available</div>'
-        +'<div style="font-size:18px;font-weight:800;color:'+(isOut?'#A32D2D':isLow?'#854F0B':'#1D9E75')+'">'+(x.quantity_available??'—')+'</div>'
-        +(isLow&&!isOut?'<div style="font-size:9px;color:#854F0B;font-weight:600">LOW STOCK</div>':(isOut?'<div style="font-size:9px;color:#A32D2D;font-weight:600">OUT OF STOCK</div>':''))
-        +'</div>'
-        +'<div style="background:#f9fafb;border-radius:6px;padding:8px;text-align:center"><div style="font-size:10px;font-weight:600;color:var(--text2);text-transform:uppercase;margin-bottom:2px">Issued</div><div style="font-size:18px;font-weight:800;color:#185FA5">'+(x.quantity_issued??'—')+'</div></div>'
-        +'<div style="background:#f9fafb;border-radius:6px;padding:8px;text-align:center"><div style="font-size:10px;font-weight:600;color:var(--text2);text-transform:uppercase;margin-bottom:2px">Total</div><div style="font-size:18px;font-weight:800">'+(x.quantity_total??'—')+'</div></div>'
-        +'</div>'
-        +(x.hazard_types?.length?'<div style="margin-top:8px;display:flex;gap:4px;flex-wrap:wrap">'+x.hazard_types.map(h=>'<span style="background:'+cfg.color+'20;color:'+cfg.color+';padding:1px 8px;border-radius:99px;font-size:10px;font-weight:600">'+escH(h)+'</span>').join('')+'</div>':'')
-        +'</div></div>';
+      var status=(x.status||'active').replace(/_/g,' ');
+      var statusHtml=x.status&&x.status!=='active'
+        ? '<span style="background:#f3f4f6;color:#6B7280;padding:3px 8px;border-radius:99px;font-size:10px;font-weight:800;text-transform:capitalize">'+escH(status)+'</span>'
+        : '<span style="background:#EAF3DE;color:#3B6D11;padding:3px 8px;border-radius:99px;font-size:10px;font-weight:800">Active</span>';
+      var availColor=isOut?'#A32D2D':isLow?'#854F0B':'#1D9E75';
+      var stockNote=isOut?'<div style="font-size:10px;color:#A32D2D;font-weight:900">OUT OF STOCK</div>':isLow?'<div style="font-size:10px;color:#854F0B;font-weight:900">LOW STOCK</div>':'';
+      h+='<tr style="border-bottom:1px solid var(--border);border-left:5px solid '+cfg.color+';cursor:pointer" data-id="'+x.id+'" onclick="ppeCatEdit(this.dataset.id)">'
+        +'<td style="padding:10px;font-family:monospace;font-weight:800;color:'+cfg.color+'">'+escH(x.ppe_code||'PPE')+'</td>'
+        +'<td style="padding:10px;min-width:230px"><div style="display:flex;align-items:center;gap:8px"><span style="font-size:18px">'+cfg.emoji+'</span><div><div style="font-weight:800">'+escH(x.name||'—')+'</div><div style="font-size:11px;color:var(--text2);margin-top:2px">'+escH([x.sub_category,x.brand,x.model].filter(Boolean).join(' · ')||'—')+'</div></div></div></td>'
+        +'<td style="padding:10px"><span style="background:'+cfg.color+'18;color:'+cfg.color+';padding:3px 8px;border-radius:99px;font-size:10px;font-weight:800">'+escH(cfg.label||x.category||'Other')+'</span></td>'
+        +'<td style="padding:10px;min-width:180px"><div style="font-family:monospace;font-size:11px;color:'+cfg.color+';font-weight:700">'+escH(x.standard||'—')+'</div><div style="font-size:11px;color:var(--text2);margin-top:2px">'+escH(x.protection_level||'—')+'</div></td>'
+        +'<td style="padding:10px;text-align:center;font-weight:900">'+(x.quantity_total??'—')+'</td>'
+        +'<td style="padding:10px;text-align:center;font-weight:900;color:'+availColor+'">'+(x.quantity_available??'—')+stockNote+'</td>'
+        +'<td style="padding:10px;text-align:center;font-weight:900;color:#185FA5">'+(x.quantity_issued??'—')+'</td>'
+        +'<td style="padding:10px;min-width:180px">'+(x.hazard_types?.length?x.hazard_types.map(function(h){return '<span style="display:inline-flex;margin:1px;background:'+cfg.color+'20;color:'+cfg.color+';padding:2px 7px;border-radius:99px;font-size:10px;font-weight:700">'+escH(h)+'</span>';}).join(''):'<span style="color:var(--text3)">—</span>')+'</td>'
+        +'<td style="padding:10px;text-align:center">'+statusHtml+'</td>'
+        +'<td style="padding:10px;text-align:center"><button class="btn btn-sm" onclick="event.stopPropagation();ppeCatEdit(\''+x.id+'\')"><i class="ti ti-eye"></i></button></td>'
+        +'</tr>';
     });
-    h+='</div>';el.innerHTML=h;
+    h+='</tbody></table></div>';el.innerHTML=h;
   }catch(e){el.innerHTML='<p style="padding:20px;color:red">'+e.message+'</p>';}
 }
 
