@@ -28303,6 +28303,64 @@ async function usersResetPw(id) {
   } catch(e) { toast(e.message, false); }
 }
 
+function usersShowTempPasswordResult(u, pw) {
+  var username = u?.email || '';
+  var creds = 'Username: ' + username + '\nTemporary password: ' + pw;
+  var modal = document.getElementById('temp-password-result-modal');
+  if(!modal){
+    modal = document.createElement('div');
+    modal.id = 'temp-password-result-modal';
+    modal.style.cssText = 'display:none;position:fixed;inset:0;background:rgba(15,23,42,.58);z-index:12000;align-items:center;justify-content:center;padding:18px';
+    modal.innerHTML = '<div class="card" role="dialog" aria-modal="true" style="width:100%;max-width:560px;border-radius:12px;box-shadow:0 24px 90px rgba(15,23,42,.30);padding:0;overflow:hidden">'
+      +'<div style="padding:18px 20px;background:#065F46;color:#fff;display:flex;justify-content:space-between;align-items:center;gap:12px">'
+      +'<div><div style="font-size:18px;font-weight:900">Temporary password set</div><div style="font-size:12px;opacity:.9;margin-top:3px">Give this directly to the user before closing this window.</div></div>'
+      +'<button class="btn btn-sm" type="button" id="temp-password-close-x" style="background:rgba(255,255,255,.15);color:#fff;border-color:rgba(255,255,255,.3)"><i class="ti ti-x"></i></button>'
+      +'</div>'
+      +'<div style="padding:18px 20px">'
+      +'<div style="font-size:13px;color:var(--text2);margin-bottom:12px">The user will be asked to change this password after logging in.</div>'
+      +'<div style="border:1px solid #BBF7D0;background:#F0FDF4;border-radius:10px;padding:14px;font-family:monospace;font-size:14px;line-height:1.8">'
+      +'<div><strong>Username:</strong> <span id="temp-password-username"></span></div>'
+      +'<div><strong>Temporary password:</strong> <span id="temp-password-value" style="font-weight:900;color:#065F46"></span></div>'
+      +'</div>'
+      +'<textarea id="temp-password-copy-text" style="position:absolute;left:-9999px;top:-9999px"></textarea>'
+      +'</div>'
+      +'<div style="padding:14px 20px;background:#fff;display:flex;justify-content:flex-end;gap:10px;flex-wrap:wrap;border-top:1px solid var(--border)">'
+      +'<button class="btn" type="button" id="temp-password-copy-btn"><i class="ti ti-copy"></i>Copy credentials</button>'
+      +'<button class="btn btn-primary" type="button" id="temp-password-close-btn">I have saved it</button>'
+      +'</div>'
+      +'</div>';
+    document.body.appendChild(modal);
+  }
+  var userEl = document.getElementById('temp-password-username');
+  var pwEl = document.getElementById('temp-password-value');
+  var copyText = document.getElementById('temp-password-copy-text');
+  var copyBtn = document.getElementById('temp-password-copy-btn');
+  var closeBtn = document.getElementById('temp-password-close-btn');
+  var closeX = document.getElementById('temp-password-close-x');
+  if(userEl) userEl.textContent = username;
+  if(pwEl) pwEl.textContent = pw;
+  if(copyText) copyText.value = creds;
+  function close(){
+    modal.style.display = 'none';
+    usersCloseModal();
+    usersLoad();
+  }
+  function copyCreds(){
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(creds).then(function(){toast('Credentials copied');}).catch(function(){toast('Copy failed', false);});
+    } else if(copyText) {
+      copyText.focus();
+      copyText.select();
+      try { document.execCommand('copy'); toast('Credentials copied'); } catch(e) { toast('Copy failed', false); }
+    }
+  }
+  if(copyBtn) copyBtn.onclick = copyCreds;
+  if(closeBtn) closeBtn.onclick = close;
+  if(closeX) closeX.onclick = close;
+  modal.onclick = function(e){ if(e.target===modal) close(); };
+  modal.style.display = 'flex';
+}
+
 async function usersTempPassword(id) {
   var u = usersAllData.find(function(x){return x.id===id;});
   if(!u) return;
@@ -28339,7 +28397,7 @@ async function usersTempPassword(id) {
       +'<button class="btn btn-sm" style="margin-top:10px" data-creds="'+escH(creds)+'" onclick="navigator.clipboard.writeText(this.dataset.creds).then(function(){toast(\'Copied credentials\');})"><i class="ti ti-copy"></i>Copy credentials</button>'
       +'</div>';
     if(out){out.style.display='block';out.innerHTML=html;} else {toast('Temporary password set: '+pw);}
-    usersLoad();
+    usersShowTempPasswordResult(u, pw);
   } catch(e) {
     toast(e.message,false);
   }
