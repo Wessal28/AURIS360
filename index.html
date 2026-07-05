@@ -11093,7 +11093,19 @@ function wsFilter(){
     return;
   }
   var today=new Date();
-  var html='';
+  var html='<div style="overflow:auto;border:1px solid var(--border);border-radius:10px;background:#fff">'
+    +'<table style="width:100%;min-width:1120px;border-collapse:collapse;font-size:12px">'
+    +'<thead><tr style="background:#0F6E56;color:#fff">'
+    +'<th style="padding:10px;color:#fff;text-align:left">Ref</th>'
+    +'<th style="padding:10px;color:#fff;text-align:left">Work order</th>'
+    +'<th style="padding:10px;color:#fff;text-align:left">Location</th>'
+    +'<th style="padding:10px;color:#fff;text-align:left">Supervisor</th>'
+    +'<th style="padding:10px;color:#fff;text-align:left">Planned dates</th>'
+    +'<th style="padding:10px;color:#fff;text-align:center">Priority</th>'
+    +'<th style="padding:10px;color:#fff;text-align:center">Risk</th>'
+    +'<th style="padding:10px;color:#fff;text-align:center">Status</th>'
+    +'<th style="padding:10px;color:#fff;width:70px"></th>'
+    +'</tr></thead><tbody>';
   filtered.forEach(function(x){
     var sc=WS_STATUS_CFG[x.status]||WS_STATUS_CFG.planned;
     var pc=WS_PRIORITY_CFG[x.priority]||WS_PRIORITY_CFG.medium;
@@ -11102,43 +11114,19 @@ function wsFilter(){
     var typeIcon=WS_TYPE_ICONS[x.work_type]||'ti-package';
     var startStr=x.planned_start?new Date(x.planned_start).toLocaleDateString('en-GB'):'—';
     var endStr=x.planned_end?new Date(x.planned_end).toLocaleDateString('en-GB'):'—';
-    html+='<div class="card" style="margin:0 0 10px 0;padding:0;overflow:hidden;border:1px solid '+(isOverdue?'var(--red)':'var(--border)')+';cursor:pointer;transition:box-shadow .15s" '
-      +'data-id="'+x.id+'" onclick="wsShowDetail(this.dataset.id)" '
-      +'onmouseover="this.style.boxShadow=\'0 4px 16px rgba(0,0,0,.1)\'" onmouseout="this.style.boxShadow=\'\'">'
-      +'<div style="display:flex;align-items:stretch">'
-      // Priority stripe
-      +'<div style="width:5px;background:'+pc[1]+';flex-shrink:0"></div>'
-      // Icon
-      +'<div style="padding:16px 14px;display:flex;align-items:center;border-right:1px solid var(--border)">'
-      +'<div style="width:44px;height:44px;border-radius:12px;background:'+pc[0]+';display:flex;align-items:center;justify-content:center;flex-shrink:0">'
-      +'<i class="ti '+typeIcon+'" style="font-size:20px;color:'+pc[1]+'"></i></div></div>'
-      // Content
-      +'<div style="flex:1;padding:12px 16px;min-width:0">'
-      +'<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:6px">'
-      +'<div>'
-      +'<div style="display:flex;align-items:center;gap:8px;margin-bottom:3px">'
-      +'<span style="font-family:monospace;font-size:11px;font-weight:700;color:var(--green)">'+escH(x.ref_number||'DRAFT')+'</span>'
-      +(isOverdue?'<span style="background:#FCEBEB;color:#A32D2D;padding:1px 7px;border-radius:4px;font-size:10px;font-weight:700">OVERDUE</span>':'')
-      +'</div>'
-      +'<div style="font-weight:700;font-size:14px;color:#1a1a1a">'+escH(x.title||'Untitled')+'</div>'
-      +'</div>'
-      +'<div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">'
-      +wsBadge(x.status,WS_STATUS_CFG)
-      +wsBadge(x.priority,WS_PRIORITY_CFG)
-      +'</div>'
-      +'</div>'
-      +'<div style="display:flex;gap:16px;font-size:12px;color:var(--text2);flex-wrap:wrap">'
-      +(x.location?'<span><i class="ti ti-map-pin" style="font-size:10px"></i> '+escH(x.location)+'</span>':'')
-      +(x.supervisor_name?'<span><i class="ti ti-user" style="font-size:10px"></i> '+escH(x.supervisor_name)+'</span>':'')
-      +'<span><i class="ti ti-calendar" style="font-size:10px"></i> '+startStr+(x.planned_end?' → '+endStr:'')+'</span>'
-      +(x.estimated_duration?'<span><i class="ti ti-clock" style="font-size:10px"></i> '+escH(x.estimated_duration)+'</span>':'')
-      +'</div>'
-      +'</div>'
-      // Arrow
-      +'<div style="padding:16px 14px;display:flex;align-items:center;color:var(--text3)">'
-      +'<i class="ti ti-chevron-right" style="font-size:18px"></i></div>'
-      +'</div></div>';
+    html+='<tr style="border-bottom:1px solid var(--border);border-left:5px solid '+(isOverdue?'var(--red)':pc[1])+';cursor:pointer" data-id="'+x.id+'" onclick="wsShowDetail(this.dataset.id)">'
+      +'<td style="padding:10px;font-family:monospace;font-weight:800;color:var(--green)">'+escH(x.ref_number||'DRAFT')+(isOverdue?'<div style="font-size:10px;color:#A32D2D;font-weight:800">OVERDUE</div>':'')+'</td>'
+      +'<td style="padding:10px;min-width:260px"><div style="display:flex;align-items:center;gap:8px"><i class="ti '+typeIcon+'" style="color:'+pc[1]+'"></i><div><div style="font-weight:800">'+escH(x.title||'Untitled')+'</div><div style="font-size:11px;color:var(--text2);margin-top:2px">'+escH(WS_TYPE_LABELS[x.work_type]||x.work_type||'Work')+(x.estimated_duration?' · '+escH(x.estimated_duration):'')+'</div></div></div></td>'
+      +'<td style="padding:10px">'+escH(x.location||'—')+'</td>'
+      +'<td style="padding:10px">'+escH(x.supervisor_name||'—')+'</td>'
+      +'<td style="padding:10px;white-space:nowrap">'+startStr+(x.planned_end?' → '+endStr:'')+'</td>'
+      +'<td style="padding:10px;text-align:center">'+wsBadge(x.priority,WS_PRIORITY_CFG)+'</td>'
+      +'<td style="padding:10px;text-align:center">'+wsBadge(x.risk_level,WS_RISK_CFG)+'</td>'
+      +'<td style="padding:10px;text-align:center">'+wsBadge(x.status,WS_STATUS_CFG)+'</td>'
+      +'<td style="padding:10px;text-align:center"><button class="btn btn-sm" onclick="event.stopPropagation();wsShowDetail(\''+x.id+'\')"><i class="ti ti-eye"></i></button></td>'
+      +'</tr>';
   });
+  html+='</tbody></table></div>';
   el.innerHTML=html;
 }
 
@@ -11215,8 +11203,10 @@ async function wsShowDetail(id){
   document.getElementById('ws-detail-supervisor').textContent=x.supervisor_name||'—';
   document.getElementById('ws-detail-team').textContent=x.team_members||'—';
   document.getElementById('ws-detail-duration').textContent=x.estimated_duration||'—';
-  document.getElementById('ws-detail-ra').textContent=x.ra_ref||'—';
-  document.getElementById('ws-detail-ptw').textContent=x.permit_ref||'—';
+  var raDetail=document.getElementById('ws-detail-ra');
+  if(raDetail)raDetail.innerHTML=wsLinkedRefButton('ra',x.ra_ref,x.ra_ref||'—');
+  var ptwDetail=document.getElementById('ws-detail-ptw');
+  if(ptwDetail)ptwDetail.innerHTML=wsLinkedRefButton('ptw',x.permit_ref,x.permit_ref||'—');
   document.getElementById('ws-detail-notes').textContent=x.notes||'—';
 
   // Quick status
@@ -11242,8 +11232,8 @@ function wsRenderActionStatuses(x){
   // RA + PTW status (was previously a separate monkey-patch wrapper)
   var ra=document.getElementById('ws-ra-status');
   var ptw=document.getElementById('ws-ptw-status');
-  if(ra)ra.innerHTML=x.ra_ref?'<span style="color:var(--green);font-weight:700">Ref: '+escH(x.ra_ref)+'</span>':'<span style="color:var(--text2)">No RA linked</span>';
-  if(ptw)ptw.innerHTML=(x.permit_ref&&x.requires_permit)?'<span style="color:var(--green);font-weight:700">Ref: '+escH(x.permit_ref)+'</span>':x.requires_permit?'<span style="color:var(--amber);font-weight:600">Required — not issued</span>':'<span style="color:var(--text2)">Not required</span>';
+  if(ra)ra.innerHTML=x.ra_ref?'<span style="color:var(--green);font-weight:700">Ref: '+wsLinkedRefButton('ra',x.ra_ref,x.ra_ref)+'</span>':'<span style="color:var(--text2)">No RA linked</span>';
+  if(ptw)ptw.innerHTML=(x.permit_ref&&x.requires_permit)?'<span style="color:var(--green);font-weight:700">Ref: '+wsLinkedRefButton('ptw',x.permit_ref,x.permit_ref)+'</span>':x.requires_permit?'<span style="color:var(--amber);font-weight:600">Required — not issued</span>':'<span style="color:var(--text2)">Not required</span>';
 }
 
 async function wsUpdateStatus(val){
@@ -11516,17 +11506,13 @@ async function wsDelete(){
 function wsOpenRA(){
   var x=wsGetCurrent();
   showPage('risk',document.querySelector('[onclick*="\'risk\'"]'));
-  if(x.ra_ref)setTimeout(function(){
-    toast('RA reference: '+x.ra_ref+' — search in the register');
-  },400);
+  if(x.ra_ref)setTimeout(function(){wsOpenLinkedRecord('ra',x.ra_ref);},250);
 }
 
 function wsOpenPTW(){
   var x=wsGetCurrent();
   showPage('permit',document.querySelector('[onclick*="\'permit\'"]'));
-  if(x.permit_ref)setTimeout(function(){
-    toast('PTW reference: '+x.permit_ref);
-  },400);
+  if(x.permit_ref)setTimeout(function(){wsOpenLinkedRecord('ptw',x.permit_ref);},250);
 }
 
 // ── TOOLS & EQUIPMENT for WORK ORDER ─────────────────────────────────────────
@@ -11752,6 +11738,67 @@ function wsBackToTEForm(){
   wsTERenderItems();
 }
 
+function wsLinkedRefButton(kind,value,label){
+  if(!value)return escH(label||'—');
+  return '<button type="button" class="link-ref-btn" onclick="event.stopPropagation();wsOpenLinkedRecord(\''+kind+'\',\''+escH(String(value))+'\')" title="Open linked record" style="border:0;background:transparent;color:var(--green);font-family:monospace;font-weight:800;cursor:pointer;padding:0;text-decoration:underline;text-underline-offset:2px">'+escH(label||value)+'</button>';
+}
+
+function wsSelectedLinkedValue(kind){
+  var el=document.getElementById('ws-link-'+kind);
+  return el?el.value:'';
+}
+
+async function wsOpenLinkedRecord(kind,value){
+  value=value||wsSelectedLinkedValue(kind);
+  if(!value){toast('No linked record selected',false);return;}
+  try{
+    if(kind==='ra'){
+      showPage('risk',document.querySelector('[onclick*="\'risk\'"]'));
+      var rec=(raAllData||[]).find(function(r){return r.id===value||r.ra_ref===value;});
+      if(!rec){
+        var rows=await api('/risk_assessments?select=*'+cf()+'&or=(id.eq.'+encodeURIComponent(value)+',ra_ref.eq.'+encodeURIComponent(value)+')&limit=1').catch(function(){return[];});
+        rec=rows&&rows[0];
+        if(rec&&!(raAllData||[]).some(function(r){return r.id===rec.id;}))raAllData.unshift(rec);
+      }
+      if(rec&&typeof raOpen==='function'){setTimeout(function(){raOpen(rec.id);},150);return;}
+    }
+    if(kind==='ptw'){
+      showPage('permit',document.querySelector('[onclick*="\'permit\'"]'));
+      var p=(ptwAllData||[]).find(function(r){return r.id===value||r.permit_number===value;});
+      if(!p){
+        var permits=await api('/permits?select=*'+cf()+'&or=(id.eq.'+encodeURIComponent(value)+',permit_number.eq.'+encodeURIComponent(value)+')&limit=1').catch(function(){return[];});
+        p=permits&&permits[0];
+        if(p&&!(ptwAllData||[]).some(function(r){return r.id===p.id;}))ptwAllData.unshift(p);
+      }
+      if(p&&typeof ptwShowDetail==='function'){setTimeout(function(){ptwShowDetail(p.id);},150);return;}
+    }
+    if(kind==='tbt'){
+      showPage('meetings',document.querySelector('[onclick*="\'meetings\'"]'));
+      var t=(tbtAllData||[]).find(function(r){return r.id===value||r.tbt_ref===value;});
+      if(!t){
+        var tbts=await api('/toolbox_talks?select=*'+cf()+'&id=eq.'+encodeURIComponent(value)+'&limit=1').catch(function(){return[];});
+        t=tbts&&tbts[0];
+        if(t&&!(tbtAllData||[]).some(function(r){return r.id===t.id;}))tbtAllData.unshift(t);
+      }
+      setTimeout(function(){if(typeof mtgSwitchTab==='function')mtgSwitchTab('tbt',document.getElementById('mtg-tab-tbt'));if(t&&typeof tbtEdit==='function')setTimeout(function(){tbtEdit(t.id);},150);},150);
+      return;
+    }
+    if(kind==='prestart'||kind==='site'){
+      showPage('inspection',document.querySelector('[onclick*="\'inspection\'"]'));
+      var a=(auditAllData||[]).find(function(r){return r.id===value||r.reference_no===value;});
+      if(!a){
+        var audits=await api('/inspections?select=*'+cf()+'&id=eq.'+encodeURIComponent(value)+'&limit=1').catch(function(){return[];});
+        a=audits&&audits[0];
+        if(a&&!(auditAllData||[]).some(function(r){return r.id===a.id;}))auditAllData.unshift(a);
+      }
+      if(a&&typeof auditOpen==='function'){setTimeout(function(){auditOpen(a.id);},150);return;}
+    }
+    toast('Linked record not found or not accessible',false);
+  }catch(e){
+    toast(e.message||'Could not open linked record',false);
+  }
+}
+
 // wsRenderLinkedRecords — editable links to applicable HSE records/documents
 async function wsRenderLinkedRecords(x){
   var el=document.getElementById('ws-linked-records');if(!el)return;
@@ -11761,6 +11808,7 @@ async function wsRenderLinkedRecords(x){
       +'<span style="font-size:12px;color:var(--text2);flex:0 0 105px">'+label+'</span>'
       +'<select id="ws-link-'+kind+'" onchange="wsLinkedRecordChanged(\''+kind+'\',this.value)" style="flex:1;min-width:0;padding:5px 7px;border:1px solid var(--border);border-radius:7px;font-size:11px;background:#fff">'
       +'<option value="">Loading...</option></select>'
+      +'<button class="btn btn-sm" type="button" title="Open linked record" onclick="event.stopPropagation();wsOpenLinkedRecord(\''+kind+'\')" style="padding:5px 7px"><i class="ti ti-external-link"></i></button>'
       +'</div>';
   };
   var h='';
@@ -11815,8 +11863,8 @@ async function wsLinkedRecordChanged(kind,value){
     await api('/work_schedule?id=eq.'+wsCurrentId,{m:'PATCH',p:'return=minimal',b:patch});
     var x=wsAllData.find(function(r){return r.id===wsCurrentId;});
     if(x)Object.assign(x,patch);
-    if(kind==='ra'){var ra=document.getElementById('ws-detail-ra');if(ra)ra.textContent=value||'—';}
-    if(kind==='ptw'){var ptw=document.getElementById('ws-detail-ptw');if(ptw)ptw.textContent=value||'—';}
+    if(kind==='ra'){var ra=document.getElementById('ws-detail-ra');if(ra)ra.innerHTML=wsLinkedRefButton('ra',value,value||'—');}
+    if(kind==='ptw'){var ptw=document.getElementById('ws-detail-ptw');if(ptw)ptw.innerHTML=wsLinkedRefButton('ptw',value,value||'—');}
     if(x)wsRenderActionStatuses(x);
     toast('Linked record updated');
   }catch(e){toast(e.message,false);}
@@ -25286,45 +25334,39 @@ async function tbtLoad(){
       if(el)el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)"><div style="font-size:40px;margin-bottom:12px">🗣️</div><div style="font-weight:600;margin-bottom:8px">No toolbox talks recorded yet</div>'+(isMgr()?'<button class="btn btn-primary" onclick="tbtNew()"><i class="ti ti-plus"></i>Record first TBT</button>':'')+'</div>';
       return;
     }
-    // Cards
-    var h='<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:12px">';
+    // Register table
+    var h='<div style="overflow:auto;border:1px solid var(--border);border-radius:10px;background:#fff">'
+      +'<table style="width:100%;min-width:1080px;border-collapse:collapse;font-size:12px">'
+      +'<thead><tr style="background:#185FA5;color:#fff">'
+      +'<th style="padding:10px;color:#fff;text-align:left">Ref</th>'
+      +'<th style="padding:10px;color:#fff;text-align:left">Toolbox talk</th>'
+      +'<th style="padding:10px;color:#fff;text-align:left">Date</th>'
+      +'<th style="padding:10px;color:#fff;text-align:left">Presenter</th>'
+      +'<th style="padding:10px;color:#fff;text-align:left">Location</th>'
+      +'<th style="padding:10px;color:#fff;text-align:center">Attendees</th>'
+      +'<th style="padding:10px;color:#fff;text-align:center">Actions</th>'
+      +'<th style="padding:10px;color:#fff;text-align:center">Status</th>'
+      +'<th style="padding:10px;color:#fff;width:70px"></th>'
+      +'</tr></thead><tbody>';
     d.forEach(function(x){
       var cfg=TBT_TOPIC_CFG[x.topic_category||'other']||TBT_TOPIC_CFG.other;
       var actions=(x.actions_raised||[]).length;
       var attendees=tbtStoredCount(x);
       var dt=x.talk_date?new Date(x.talk_date).toLocaleDateString('en-GB'):'—';
       var stColor=x.status==='completed'?'#1D9E75':x.status==='planned'?'#185FA5':'#6B7280';
-      h+='<div class="card" style="padding:0;overflow:hidden;cursor:pointer;border-left:4px solid '+cfg.color+';transition:box-shadow .15s" data-id="'+x.id+'" onclick="tbtEdit(this.dataset.id)" onmouseover="this.style.boxShadow=\'0 4px 16px rgba(0,0,0,.1)\'" onmouseout="this.style.boxShadow=\'\'">'
-        +'<div style="padding:14px 16px">'
-        +'<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:8px">'
-        +'<div style="display:flex;align-items:center;gap:8px">'
-        +'<span style="font-size:24px">'+cfg.emoji+'</span>'
-        +'<div>'
-        +'<div style="font-weight:700;font-size:14px">'+escH(x.title||'Untitled TBT')+'</div>'
-        +'<div style="font-size:11px;display:flex;gap:6px;margin-top:2px;flex-wrap:wrap">'
-        +(x.tbt_ref?'<span style="font-family:monospace;color:'+cfg.color+'">'+escH(x.tbt_ref)+'</span>':'')
-        +'<span style="background:'+cfg.color+'15;color:'+cfg.color+';padding:1px 6px;border-radius:4px;font-weight:600">'+escH(cfg.label)+'</span>'
-        +'</div></div></div>'
-        +'<span style="font-size:10px;font-weight:700;color:'+stColor+';background:'+stColor+'15;padding:2px 8px;border-radius:99px;text-transform:capitalize">'+escH(x.status||'completed')+'</span>'
-        +'</div>'
-        +'<div style="display:flex;gap:16px;font-size:12px;color:var(--text2);flex-wrap:wrap">'
-        +'<span><i class="ti ti-calendar" style="font-size:10px"></i> '+dt+'</span>'
-        +(x.presenter?'<span><i class="ti ti-user" style="font-size:10px"></i> '+escH(x.presenter)+'</span>':'')
-        +(x.location?'<span><i class="ti ti-map-pin" style="font-size:10px"></i> '+escH(x.location)+'</span>':'')
-        +(x.duration_mins?'<span><i class="ti ti-clock" style="font-size:10px"></i> '+x.duration_mins+'min</span>':'')
-        +'</div>'
-        +'<div style="display:flex;gap:10px;margin-top:10px">'
-        +'<div style="flex:1;text-align:center;background:#f9fafb;border-radius:8px;padding:8px 0">'
-        +'<div style="font-size:18px;font-weight:800;color:#185FA5">'+attendees+'</div>'
-        +'<div style="font-size:10px;color:var(--text2);font-weight:600">Attendees</div></div>'
-        +'<div style="flex:1;text-align:center;background:'+(actions>0?'#FEF9EC':'#f9fafb')+';border-radius:8px;padding:8px 0">'
-        +'<div style="font-size:18px;font-weight:800;color:'+(actions>0?'#854F0B':'#6B7280')+'">'+actions+'</div>'
-        +'<div style="font-size:10px;color:var(--text2);font-weight:600">Actions</div></div>'
-        +(x.duration_mins?'<div style="flex:1;text-align:center;background:#f9fafb;border-radius:8px;padding:8px 0"><div style="font-size:18px;font-weight:800;color:#1D9E75">'+x.duration_mins+'</div><div style="font-size:10px;color:var(--text2);font-weight:600">Mins</div></div>':'')
-        +'</div>'
-        +'</div></div>';
+      h+='<tr style="border-bottom:1px solid var(--border);border-left:5px solid '+cfg.color+';cursor:pointer" data-id="'+x.id+'" onclick="tbtEdit(this.dataset.id)">'
+        +'<td style="padding:10px;font-family:monospace;font-weight:800;color:'+cfg.color+'">'+escH(x.tbt_ref||'TBT')+'</td>'
+        +'<td style="padding:10px;min-width:260px"><div style="font-weight:800">'+escH(x.title||'Untitled TBT')+'</div><div style="font-size:11px;color:'+cfg.color+';font-weight:700;margin-top:2px">'+cfg.emoji+' '+escH(cfg.label)+(x.duration_mins?' · '+escH(x.duration_mins)+' min':'')+'</div></td>'
+        +'<td style="padding:10px;white-space:nowrap">'+dt+'</td>'
+        +'<td style="padding:10px">'+escH(x.presenter||'—')+'</td>'
+        +'<td style="padding:10px">'+escH(x.location||'—')+'</td>'
+        +'<td style="padding:10px;text-align:center;font-weight:800;color:#185FA5">'+attendees+'</td>'
+        +'<td style="padding:10px;text-align:center;font-weight:800;color:'+(actions>0?'#854F0B':'#6B7280')+'">'+actions+'</td>'
+        +'<td style="padding:10px;text-align:center"><span style="font-size:10px;font-weight:800;color:'+stColor+';background:'+stColor+'15;padding:3px 8px;border-radius:99px;text-transform:capitalize">'+escH(x.status||'completed')+'</span></td>'
+        +'<td style="padding:10px;text-align:center"><button class="btn btn-sm" onclick="event.stopPropagation();tbtEdit(\''+x.id+'\')"><i class="ti ti-eye"></i></button></td>'
+        +'</tr>';
     });
-    h+='</div>';el.innerHTML=h;
+    h+='</tbody></table></div>';el.innerHTML=h;
   }catch(e){el.innerHTML='<p style="padding:20px;color:red">'+e.message+'</p>';}
 }
 
