@@ -11787,9 +11787,9 @@ async function wsLoadLinkedRecordOptions(x){
   var set=function(id,html){var el=document.getElementById(id);if(el)el.innerHTML=html;};
   try{
     var data=await Promise.all([
-      api('/toolbox_talks?select=id,tbt_ref,title,talk_date'+cf()+'&order=talk_date.desc,created_at.desc&limit=120').catch(function(){return[];}),
-      api('/inspections?select=id,reference_no,activity,site,inspection_date,inspection_type'+cf()+'&inspection_type=eq.prestart&order=inspection_date.desc,created_at.desc&limit=120').catch(function(){return[];}),
-      api('/inspections?select=id,reference_no,activity,site,inspection_date,inspection_type'+cf()+'&inspection_type=neq.prestart&order=inspection_date.desc,created_at.desc&limit=120').catch(function(){return[];}),
+      api('/toolbox_talks?select=id,title,talk_date'+cf()+'&order=talk_date.desc,created_at.desc&limit=120').catch(function(){return[];}),
+      api('/inspections?select=id,reference_no,site,inspection_date,inspection_type'+cf()+'&inspection_type=eq.prestart&order=inspection_date.desc,created_at.desc&limit=120').catch(function(){return[];}),
+      api('/inspections?select=id,reference_no,site,inspection_date,inspection_type'+cf()+'&inspection_type=neq.prestart&order=inspection_date.desc,created_at.desc&limit=120').catch(function(){return[];}),
       api('/risk_assessments?select=id,ra_ref,title,activity,status'+cf()+'&order=created_at.desc&limit=150').catch(function(){return[];}),
       api('/permits?select=id,permit_number,permit_type,permit_type_v2,status'+cf()+'&order=created_at.desc&limit=120').catch(function(){return[];})
     ]);
