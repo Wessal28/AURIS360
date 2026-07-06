@@ -32255,7 +32255,7 @@ function aurisHeader(title, subtitle, refNo) {
   var today = new Date().toLocaleDateString('en-GB', {day:'2-digit', month:'short', year:'numeric'});
   var B = (window.Brand && window.Brand.get) ? window.Brand.get() : {};
   var companyName = (co && co.name) || (B && B.display_name) || 'Company';
-  var companyLogo = (co && co.logo_url) || (B && B.logo_url) || null;
+  var companyLogo = (co && co.logo_url) || null;
   var tagline = (B && B.tagline) || 'HSE Management Platform';
   var aurisLogo = '/assets/brand/auris360-logo.png';
 
@@ -32840,6 +32840,19 @@ function trainingPrintCurrentView(){
   var key = (active?.id || 'train-tab-matrix').replace('train-tab-','');
   var labels = {matrix:'Training Matrix',competency:'Competency Register',induction:'Induction Register',plan:'Training Plan',followup:'Training Records',elearning:'E-Learning Register',auth:'Certificates Register',tna:'Training Gap Analysis'};
   printRegisterView(labels[key] || 'Training Register', '#train-view-' + key);
+}
+function contractorPrintCurrentView(){
+  var active = document.querySelector('#page-contractor .mtg-tab.active');
+  var key = (active?.id || 'con-tab-register').replace('con-tab-','');
+  var labels = {register:'Contractor Register',preassess:'Contractor Pre-Assessments',eval:'Contractor Evaluations',atw:'Contractor Authorisations to Work',incidents:'Contractor Incidents'};
+  var selectors = {register:'#con-view-register',preassess:'#con-view-preassess',eval:'#con-view-eval',atw:'#con-view-atw',incidents:'#con-view-incidents'};
+  printRegisterView(labels[key] || 'Contractor Register', selectors[key] || '#con-view-register');
+}
+function esgPrintCurrentView(){
+  var active = document.querySelector('#page-esg .mtg-tab.active');
+  var key = (active?.id || 'esg-tab-dash').replace('esg-tab-','');
+  var labels = {dash:'Environmental & ESG Dashboard',waste:'Waste Register',hazwaste:'Hazardous Waste Register',fuel:'Fuel and Energy Register',water:'Water Usage Register',spills:'Spill Reports',inspections:'Environmental Inspections'};
+  printRegisterView(labels[key] || 'Environmental & ESG Register', '#esg-view-' + key);
 }
 function emPrintCurrentView(){
   var active = document.querySelector('#page-emergency .mtg-tab.active');
@@ -38830,7 +38843,7 @@ function fireEquipStatusBadge(s) {
 <div id="page-contractor" class="page">
 <div class="page-header">
 <div><div class="page-title">Contractor Management</div><div style="font-size:12px;color:var(--text2)">Pre-assessment, evaluation, authorisation to work and incident reporting</div></div>
-<div style="display:flex;gap:8px"><button class="btn btn-primary" id="con-add-btn" style="display:none" onclick="conNew()"><i class="ti ti-plus"></i>Register contractor</button></div>
+<div style="display:flex;gap:8px"><button class="btn" id="con-print-btn" onclick="contractorPrintCurrentView()"><i class="ti ti-printer"></i>Print current view</button><button class="btn btn-primary" id="con-add-btn" style="display:none" onclick="conNew()"><i class="ti ti-plus"></i>Register contractor</button></div>
 </div>
 <div style="display:flex;gap:0;margin-bottom:16px;border-bottom:2px solid var(--border)">
 <button class="mtg-tab active" id="con-tab-register" onclick="conSwitchTab('register',this)">🏢 Register</button>
@@ -38985,7 +38998,7 @@ function fireEquipStatusBadge(s) {
 <div id="page-esg" class="page">
 <div class="page-header">
 <div><div class="page-title">Environmental &amp; ESG</div><div style="font-size:12px;color:var(--text2)">Waste, water, energy, spills, carbon footprint and environmental inspections</div></div>
-<div style="display:flex;gap:8px" id="esg-header-btns"></div>
+<div style="display:flex;gap:8px" id="esg-header-btns"><button class="btn" id="esg-print-btn" onclick="esgPrintCurrentView()"><i class="ti ti-printer"></i>Print current view</button></div>
 </div>
 <div style="display:flex;gap:0;margin-bottom:16px;border-bottom:2px solid var(--border);overflow-x:auto">
 <button class="mtg-tab active" id="esg-tab-dash" onclick="esgSwitchTab('dash',this)" style="white-space:nowrap">📊 Dashboard</button>
