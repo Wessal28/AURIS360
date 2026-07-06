@@ -32896,6 +32896,26 @@ function emPrintCurrentView(){
   var labels = {dash:'Emergency Dashboard',plans:'Emergency Response Plans',ert:'Emergency Response Team',muster:'Muster Points',drills:'Emergency Drills',activations:'Emergency Activations',bcp:'Business Continuity Plans',equipment:'Emergency Equipment Register'};
   printRegisterView(labels[key] || 'Emergency Register', '#em-view-' + key);
 }
+function toolsPrintCurrentView(){
+  var active = document.querySelector('#page-tools .mtg-tab.active');
+  var key = (active?.id || 'tools-tab-register').replace('tools-tab-','');
+  var labels = {register:'Equipment Register',personal:'Personal Tool Assignments',inspection:'Tool Inspection Register',statutory:'Statutory Equipment Verification',vehicles:'Vehicle Equipment Checks',rcd:'RCD Monthly Testing Register'};
+  printRegisterView(labels[key] || 'Tools and Equipment Register', '#tools-view-' + key);
+}
+function ohPrintCurrentView(){
+  var active = document.querySelector('#page-ohealth .mtg-tab.active');
+  var key = (active?.id || 'oh-tab-dash').replace('oh-tab-','');
+  var labels = {dash:'Occupational Health Dashboard',surveillance:'Medical Surveillance Register',audiometry:'Audiometry Register',spirometry:'Spirometry Register',vaccination:'Vaccination Register',exposure:'Exposure Monitoring Register',disease:'Occupational Disease Register'};
+  printRegisterView(labels[key] || 'Occupational Health Register', '#oh-view-' + key);
+}
+function mtgPrintCurrentView(){
+  var active = document.querySelector('#page-meetings .mtg-tab.active');
+  var key = (active?.id || 'mtg-tab-schedule').replace('mtg-tab-','');
+  var labels = {schedule:'Meeting Agenda',minutes:'Minutes of Meetings Register',tbt:'Toolbox Talk Register',alerts:'Safety Alerts Register',bulletins:'Safety Bulletins Register'};
+  printRegisterView(labels[key] || 'Meeting and Communication Register', '#mtg-view-' + key);
+}
+function noisePrintRegister(){ printRegisterView('Noise Survey Register', '#noise-list'); }
+function mocPrintRegister(){ printRegisterView('Management of Change Register', '#moc-register-view'); }
 
 
 // ================================================================
@@ -38170,6 +38190,7 @@ function fireEquipStatusBadge(s) {
 <div class="page-header">
 <div><div class="page-title">Tools &amp; Equipment</div><div style="font-size:12px;color:var(--text2)">Register, inspection checklists, statutory verification and vehicle checks</div></div>
 <div style="display:flex;gap:8px" id="tools-header-btns">
+<button class="btn" onclick="toolsPrintCurrentView()"><i class="ti ti-printer"></i>Print current view</button>
 <button class="btn btn-primary" id="tools-add-btn" style="display:none" onclick="toolsNew()"><i class="ti ti-plus"></i>Add equipment</button>
 </div>
 </div>
@@ -39714,7 +39735,7 @@ function fireEquipStatusBadge(s) {
 <div id="page-ohealth" class="page">
 <div class="page-header">
 <div><div class="page-title">Occupational Health</div><div style="font-size:12px;color:var(--text2)">Medical surveillance · Audiometry · Spirometry · Vaccination · Exposure monitoring · Occupational disease</div></div>
-<div style="display:flex;gap:8px" id="oh-header-btns"></div>
+<div style="display:flex;gap:8px" id="oh-header-btns"><button class="btn" onclick="ohPrintCurrentView()"><i class="ti ti-printer"></i>Print current view</button></div>
 </div>
 
 <!-- Tabs -->
@@ -40745,11 +40766,12 @@ function fireEquipStatusBadge(s) {
 </div><!-- end page-ppe -->
 
 <div id="page-noise" class="page">
-<div class="page-header"><div class="page-title">Noise Survey</div><button class="btn btn-primary" onclick="toggleForm('noise-form')"><i class="ti ti-plus"></i>New survey</button></div><div class="card" id="noise-form" style="display:none"><div class="card-title">New noise survey</div><div class="form-row"><div class="form-group"><label class="form-label">Survey type</label><select id="nf-type"><option value="occupational">Occupational</option><option value="environmental">Environmental</option></select></div><div class="form-group"><label class="form-label">Site</label><input type="text" id="nf-site"/></div></div><div class="form-row"><div class="form-group"><label class="form-label">Survey date</label><input type="date" id="nf-date"/></div><div class="form-group"><label class="form-label">Conducted by</label><select id="nf-by"><option value="">Select person...</option></select></div></div><div class="form-row"><div class="form-group"><label class="form-label">Instrument used</label><input type="text" id="nf-instrument"/></div><div class="form-group"><label class="form-label">Calibration date</label><input type="date" id="nf-cal"/></div></div><div class="form-group"><label class="form-label">Weather / conditions</label><input type="text" id="nf-weather"/></div><div class="form-group"><label class="form-label">Notes</label><textarea id="nf-notes"></textarea></div><div style="display:flex;gap:8px"><button class="btn btn-primary" onclick="saveNoise()"><i class="ti ti-device-floppy"></i>Save</button><button class="btn" onclick="toggleForm('noise-form')">Cancel</button></div></div><div class="card"><div class="card-title">Noise surveys</div><div id="noise-list"><div class="loading-msg">Loading...</div></div></div></div>
+<div class="page-header"><div class="page-title">Noise Survey</div><div style="display:flex;gap:8px"><button class="btn" onclick="noisePrintRegister()"><i class="ti ti-printer"></i>Print register</button><button class="btn btn-primary" onclick="toggleForm('noise-form')"><i class="ti ti-plus"></i>New survey</button></div></div><div class="card" id="noise-form" style="display:none"><div class="card-title">New noise survey</div><div class="form-row"><div class="form-group"><label class="form-label">Survey type</label><select id="nf-type"><option value="occupational">Occupational</option><option value="environmental">Environmental</option></select></div><div class="form-group"><label class="form-label">Site</label><input type="text" id="nf-site"/></div></div><div class="form-row"><div class="form-group"><label class="form-label">Survey date</label><input type="date" id="nf-date"/></div><div class="form-group"><label class="form-label">Conducted by</label><select id="nf-by"><option value="">Select person...</option></select></div></div><div class="form-row"><div class="form-group"><label class="form-label">Instrument used</label><input type="text" id="nf-instrument"/></div><div class="form-group"><label class="form-label">Calibration date</label><input type="date" id="nf-cal"/></div></div><div class="form-group"><label class="form-label">Weather / conditions</label><input type="text" id="nf-weather"/></div><div class="form-group"><label class="form-label">Notes</label><textarea id="nf-notes"></textarea></div><div style="display:flex;gap:8px"><button class="btn btn-primary" onclick="saveNoise()"><i class="ti ti-device-floppy"></i>Save</button><button class="btn" onclick="toggleForm('noise-form')">Cancel</button></div></div><div class="card"><div class="card-title">Noise surveys</div><div id="noise-list"><div class="loading-msg">Loading...</div></div></div></div>
 <div id="page-meetings" class="page">
 <div class="page-header">
 <div><div class="page-title">Meeting &amp; Communication Management</div><div style="font-size:12px;color:var(--text2)" id="mtg-subtitle">Safety meetings · Minutes · Toolbox talks · Alerts · Bulletins</div></div>
 <div style="display:flex;gap:8px">
+<button class="btn" onclick="mtgPrintCurrentView()"><i class="ti ti-printer"></i>Print current view</button>
 <button class="btn btn-primary" id="mtg-new-series-btn" onclick="mtgNewSeries()"><i class="ti ti-settings"></i>Manage schedules</button>
 </div>
 </div>
@@ -41763,6 +41785,7 @@ function fireEquipStatusBadge(s) {
 <div style="font-size:12px;color:var(--text2)">Control process, equipment, chemical, legal and organisational changes before they create new risks</div>
 </div>
 <div style="display:flex;gap:8px;flex-wrap:wrap">
+<button class="btn" onclick="mocPrintRegister()"><i class="ti ti-printer"></i>Print register</button>
 <button class="btn" onclick="mocOpenMap()"><i class="ti ti-list-check"></i>Open linked MAP</button>
 <button class="btn btn-primary" onclick="mocNew()"><i class="ti ti-plus"></i>New change request</button>
 </div>
