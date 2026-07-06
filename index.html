@@ -27017,7 +27017,7 @@ async function auditLoadTemplates() {
     // Also check for default templates seeded in DB
     var sel = document.getElementById('audit-template-select');
     if(sel) {
-      sel.innerHTML = '<option value="">Load template...</option>'
+      sel.innerHTML = '<option value="">Load template...</option><option value="__builtin__:workplace">AURIS360 Workplace Inspection</option>'
         + (auditTemplates||[]).map(function(t){return '<option value="'+t.id+'">'+escH(t.template_name)+'</option>';}).join('');
     }
   } catch(e) {
@@ -27029,11 +27029,19 @@ async function auditLoadTemplates() {
 async function auditLoadTemplate() {
   var sel = document.getElementById('audit-template-select');
   if(!sel||!sel.value) return;
+  if(sel.value.indexOf('__builtin__:')===0){
+    var builtinType=sel.value.split(':')[1]||'workplace';
+    var fallback=AUDIT_DEFAULT_CHECKLISTS[builtinType]||AUDIT_DEFAULT_CHECKLISTS.workplace;
+    window.chkItems=fallback;
+    buildChecklist([]);
+    toast('Template loaded: AURIS360 Workplace Inspection');
+    return;
+  }
   var tmpl = auditTemplates.find(function(t){return t.id===sel.value;});
   if(!tmpl) return;
   var items = typeof tmpl.items==='string'?JSON.parse(tmpl.items):(tmpl.items||[]);
   // Convert to chkItems format
-  window.chkItems = items.map(function(item){return{ca:item.category||'',item:item.item||'',guidance:item.guidance||''};});
+  window.chkItems = items.map(function(item){return{ca:item.category||'',item:item.item||item.item_name||'',guidance:item.guidance||''};});
   buildChecklist([]);
   toast('Template loaded: '+tmpl.template_name);
 }
@@ -27041,6 +27049,12 @@ async function auditLoadTemplate() {
 async function auditAutoLoadTemplate(type) {
   // Try to load the default template for this type
   try {
+    if(type==='workplace' && AUDIT_DEFAULT_CHECKLISTS.workplace) {
+      window.chkItems = AUDIT_DEFAULT_CHECKLISTS.workplace;
+      buildChecklist([]);
+      var sel=document.getElementById('audit-template-select'); if(sel)sel.value='__builtin__:workplace';
+      return;
+    }
     var templates = auditTemplates.filter(function(t){return t.inspection_type===type&&t.is_default;});
     if(!templates.length && auditTemplates.length===0) {
       // Load from DB
@@ -27049,7 +27063,7 @@ async function auditAutoLoadTemplate(type) {
     }
     if(templates[0]) {
       var items = typeof templates[0].items==='string'?JSON.parse(templates[0].items):(templates[0].items||[]);
-      window.chkItems = items.map(function(item){return{ca:item.category||'',item:item.item||''};});
+      window.chkItems = items.map(function(item){return{ca:item.category||'',item:item.item||item.item_name||'',guidance:item.guidance||''};});
       buildChecklist([]);
     } else {
       // Use built-in fallback
@@ -27068,11 +27082,42 @@ async function auditAutoLoadTemplate(type) {
 // Built-in fallback checklists (if DB templates not available)
 var AUDIT_DEFAULT_CHECKLISTS = {
   workplace: [
-    {ca:'Housekeeping',item:'Work areas clean and tidy'},{ca:'Housekeeping',item:'Aisles and exits clear'},
-    {ca:'Equipment',item:'Machine guards in place'},{ca:'Equipment',item:'Emergency stops accessible'},
-    {ca:'Electrical',item:'No damaged cables or exposed wires'},{ca:'Fire',item:'Extinguishers accessible and tagged'},
-    {ca:'Fire',item:'Fire exits clear and marked'},{ca:'PPE',item:'Appropriate PPE available'},
-    {ca:'First Aid',item:'First aid kit stocked and accessible'},{ca:'Chemical',item:'Chemicals labelled and SDS available'},
+    {ca:'Planning & Documentation',item:'Task risk assessment reviewed and available at work area',guidance:'Check that the RA is relevant to the activity observed.'},
+    {ca:'Planning & Documentation',item:'Toolbox talk / briefing completed before work starts',guidance:'Confirm key hazards and controls were discussed with the team.'},
+    {ca:'Planning & Documentation',item:'Permit to work issued where required and displayed / understood'},
+    {ca:'Planning & Documentation',item:'Workers competent and authorised for the task observed'},
+    {ca:'Access & Egress',item:'Safe access and egress maintained to the work area'},
+    {ca:'Access & Egress',item:'Walkways, stairs and emergency routes free from obstruction'},
+    {ca:'Access & Egress',item:'Open edges, holes and fragile surfaces protected or barricaded'},
+    {ca:'Housekeeping',item:'Work area clean, tidy and free from trip / slip hazards'},
+    {ca:'Housekeeping',item:'Materials stored safely and not creating falling-object hazards'},
+    {ca:'Housekeeping',item:'Waste removed or segregated in suitable containers'},
+    {ca:'PPE',item:'Required PPE available, suitable and worn correctly'},
+    {ca:'PPE',item:'Task-specific PPE used where required (eye, hand, hearing, respiratory, fall protection)'},
+    {ca:'Tools & Equipment',item:'Tools and equipment inspected before use and in good condition'},
+    {ca:'Tools & Equipment',item:'Machine guards, handles and safety devices fitted and functional'},
+    {ca:'Tools & Equipment',item:'Defective tools/equipment tagged out and removed from service'},
+    {ca:'Electrical Safety',item:'Electrical cables, plugs and sockets undamaged and protected from damage'},
+    {ca:'Electrical Safety',item:'RCD / earth leakage protection used where required'},
+    {ca:'Electrical Safety',item:'Temporary electrical supplies routed safely and not exposed to water or traffic'},
+    {ca:'Work at Height',item:'Working-at-height equipment inspected and suitable for the task'},
+    {ca:'Work at Height',item:'Ladders, scaffolds or platforms stable, secured and used correctly'},
+    {ca:'Work at Height',item:'Fall prevention / fall arrest controls in place where required'},
+    {ca:'Lifting & Manual Handling',item:'Lifting equipment certified, inspected and used within capacity'},
+    {ca:'Lifting & Manual Handling',item:'Lifting area controlled, with exclusion zone where required'},
+    {ca:'Lifting & Manual Handling',item:'Manual handling risks controlled by team lift, mechanical aid or reduced load'},
+    {ca:'Fire & Emergency',item:'Fire extinguishers accessible, suitable and within inspection date'},
+    {ca:'Fire & Emergency',item:'Hot work controls implemented where applicable'},
+    {ca:'Fire & Emergency',item:'Emergency arrangements known by the work team'},
+    {ca:'Chemicals & Environment',item:'Chemicals labelled and SDS available for products in use'},
+    {ca:'Chemicals & Environment',item:'Spill prevention/containment available where oils or chemicals are used'},
+    {ca:'Chemicals & Environment',item:'No uncontrolled discharge, dust, noise or environmental nuisance observed'},
+    {ca:'Traffic & Public Interface',item:'Vehicle/pedestrian segregation or traffic controls in place where required'},
+    {ca:'Traffic & Public Interface',item:'Warning signs, barricades and exclusion zones suitable and visible'},
+    {ca:'Welfare & First Aid',item:'First aid arrangements available and known to workers'},
+    {ca:'Welfare & First Aid',item:'Welfare facilities adequate for the work location'},
+    {ca:'Close-out',item:'Unsafe conditions/actions identified and corrective actions assigned'},
+    {ca:'Close-out',item:'Positive observations / good practices captured for feedback'},
   ],
   fire: [
     {ca:'Fire Extinguishers',item:'Correct type, accessible, within service date'},
@@ -27176,7 +27221,7 @@ async function auditSave() {
   var items = (window.chkItems||[]).map(function(c,i){
     var gEl=document.getElementById('cg-'+i); var iEl=document.getElementById('ci-'+i);
     var nEl=document.getElementById('cn-'+i); var oEl=document.getElementById('co-'+i);
-    return{category:c.ca||'',item:c.item||'',result:gEl?.checked?'good':(iEl?.checked?'insufficient':(nEl?.checked?'na':'')),observation:oEl?.value?.trim()||''};
+    return{category:c.ca||'',item:c.item||'',guidance:c.guidance||'',result:gEl?.checked?'good':(iEl?.checked?'insufficient':(nEl?.checked?'na':'')),observation:oEl?.value?.trim()||''};
   }).filter(function(x){return x.item;});
   if(!items.length){toast('Please add at least one checklist item',false);return;}
   if(items.some(function(x){return !x.result;})){toast('Please mark each checklist item as Good, Insufficient, or N/A',false);return;}
@@ -27365,18 +27410,18 @@ function buildChecklist(preloadedItems) {
     if(showCatRow){
       lastCat=c.ca;
       var catRow=document.createElement('tr');
-      catRow.innerHTML='<td colspan="7" style="padding:6px 10px;font-size:11px;font-weight:800;text-transform:uppercase;color:#fff;background:linear-gradient(90deg,#185FA5,#0891B2);letter-spacing:.05em">'+escH(c.ca)+'</td>';
+      catRow.innerHTML='<td colspan="7" style="padding:8px 12px;font-size:11px;font-weight:900;text-transform:uppercase;color:#fff;background:linear-gradient(90deg,#185FA5,#0891B2);letter-spacing:.05em">'+escH(c.ca)+'</td>';
       tbody.appendChild(catRow);
     }
     var tr=document.createElement('tr');
     tr.style.cssText='border-bottom:1px solid #f3f4f6;';
-    tr.innerHTML='<td style="padding:5px 10px;font-size:11px;color:var(--text2)">'+escH(c.ca||'')+'</td>'
-      +'<td style="padding:5px 10px;font-size:12px;font-weight:500">'+escH(c.item)+(c.guidance?'<br><span style="font-size:10px;color:var(--text2);font-style:italic">'+escH(c.guidance)+'</span>':'')+'</td>'
-      +'<td style="text-align:center;padding:4px"><input type="checkbox" id="cg-'+i+'" '+(isGood?'checked':'')+' onchange="syncChk('+i+',\'g\')" style="accent-color:#1D9E75;width:16px;height:16px;cursor:pointer"/></td>'
-      +'<td style="text-align:center;padding:4px"><input type="checkbox" id="ci-'+i+'" '+(isInsuf?'checked':'')+' onchange="syncChk('+i+',\'i\')" style="accent-color:#DC2626;width:16px;height:16px;cursor:pointer"/></td>'
-      +'<td style="text-align:center;padding:4px"><input type="checkbox" id="cn-'+i+'" '+(isNA?'checked':'')+' onchange="syncChk('+i+',\'n\')" style="accent-color:#9CA3AF;width:16px;height:16px;cursor:pointer"/></td>'
-      +'<td style="text-align:center;padding:4px"><button class="btn btn-sm" style="padding:2px 5px;font-size:10px" onclick="auditAddPhotoRow()"><i class="ti ti-camera"></i></button></td>'
-      +'<td style="padding:4px 6px"><input type="text" id="co-'+i+'" value="'+escH(obs)+'" placeholder="Notes..." style="width:100%;padding:3px 6px;border:1px solid var(--border);border-radius:4px;font-size:11px"/></td>';
+    tr.innerHTML='<td style="padding:8px 10px;font-size:11px;color:var(--text2);vertical-align:top">'+escH(c.ca||'')+'</td>'
+      +'<td style="padding:8px 10px;font-size:12px;font-weight:700;line-height:1.35;vertical-align:top">'+escH(c.item)+(c.guidance?'<br><span style="font-size:10px;color:var(--text2);font-style:italic;font-weight:500">'+escH(c.guidance)+'</span>':'')+'</td>'
+      +'<td style="text-align:center;padding:7px 4px;vertical-align:top"><input type="checkbox" id="cg-'+i+'" '+(isGood?'checked':'')+' onchange="syncChk('+i+',\'g\')" style="accent-color:#1D9E75;width:18px;height:18px;cursor:pointer"/></td>'
+      +'<td style="text-align:center;padding:7px 4px;vertical-align:top"><input type="checkbox" id="ci-'+i+'" '+(isInsuf?'checked':'')+' onchange="syncChk('+i+',\'i\')" style="accent-color:#DC2626;width:18px;height:18px;cursor:pointer"/></td>'
+      +'<td style="text-align:center;padding:7px 4px;vertical-align:top"><input type="checkbox" id="cn-'+i+'" '+(isNA?'checked':'')+' onchange="syncChk('+i+',\'n\')" style="accent-color:#9CA3AF;width:18px;height:18px;cursor:pointer"/></td>'
+      +'<td style="text-align:center;padding:6px 4px;vertical-align:top"><button class="btn btn-sm" style="padding:3px 6px;font-size:10px" onclick="auditAddPhotoRow()" title="Add evidence"><i class="ti ti-camera"></i></button></td>'
+      +'<td style="padding:6px 8px;vertical-align:top"><textarea id="co-'+i+'" placeholder="Observation, evidence, action required..." style="width:100%;min-height:42px;padding:5px 7px;border:1px solid var(--border);border-radius:5px;font-size:11px;resize:vertical">'+escH(obs)+'</textarea></td>';
     tbody.appendChild(tr);
   });
   updateScore();
@@ -32456,7 +32501,7 @@ function printAuditReport(auditId) {
       var result = document.getElementById('cg-'+i)?.checked ? 'good'
         : (document.getElementById('ci-'+i)?.checked ? 'insufficient'
         : (document.getElementById('cn-'+i)?.checked ? 'na' : ''));
-      return {category:c.ca||'',item:c.item||'',result:result,observation:document.getElementById('co-'+i)?.value||''};
+      return {category:c.ca||'',item:c.item||'',guidance:c.guidance||'',result:result,observation:document.getElementById('co-'+i)?.value||''};
     }).filter(Boolean);
   }
   var items = liveItems.length ? liveItems : (Array.isArray(audit.items) ? audit.items : (Array.isArray(audit.checklist_results) ? audit.checklist_results : []));
@@ -36326,7 +36371,7 @@ function fireEquipStatusBadge(s) {
 </div>
 </div>
 
-<div style="display:grid;grid-template-columns:2fr 1fr;gap:14px">
+<div style="display:grid;grid-template-columns:1fr;gap:14px">
 <div>
 <!-- Inspection type selector -->
 <div class="card" style="margin-bottom:14px"><div class="card-title">Inspection / Audit Type</div>
@@ -36378,7 +36423,10 @@ function fireEquipStatusBadge(s) {
 <!-- Checklist with template selector -->
 <div class="card" style="margin-bottom:14px">
 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-<div class="card-title" style="margin:0">Inspection Checklist</div>
+<div>
+<div class="card-title" style="margin:0;font-size:18px">Inspection Checklist</div>
+<div style="font-size:12px;color:var(--text2);margin-top:3px">Record good conditions, deficiencies, non-applicable items and notes/evidence against each requirement.</div>
+</div>
 <div style="display:flex;gap:6px;flex-wrap:wrap">
 <select id="audit-template-select" onchange="auditLoadTemplate()" style="padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:11px;max-width:180px">
 <option value="">Load template...</option>
@@ -36388,15 +36436,15 @@ function fireEquipStatusBadge(s) {
 </div>
 <div style="font-size:12px;color:var(--text2);margin-bottom:8px">Score: <strong id="if-score">0 Good / 0 Insufficient</strong></div>
 <div style="overflow:auto">
-<table style="width:100%;border-collapse:collapse;font-size:12px">
+<table style="width:100%;min-width:1120px;border-collapse:collapse;font-size:12px">
 <thead><tr style="background:#185FA5;color:#fff">
-<th style="padding:6px 10px;text-align:left;width:35%;color:#fff">Category</th>
-<th style="padding:6px 10px;text-align:left;color:#fff">Item / requirement</th>
-<th style="padding:6px 8px;text-align:center;width:60px;color:#fff">✓ Good</th>
-<th style="padding:6px 8px;text-align:center;width:70px;color:#fff">✗ Insuf.</th>
-<th style="padding:6px 8px;text-align:center;width:50px;color:#fff">N/A</th>
-<th style="padding:6px 8px;text-align:center;width:50px;color:#fff">📷</th>
-<th style="padding:6px 10px;text-align:left;width:25%;color:#fff">Observation / notes</th>
+<th style="padding:10px 12px;text-align:left;width:16%;color:#fff;font-size:12px;letter-spacing:.02em">CATEGORY</th>
+<th style="padding:10px 12px;text-align:left;width:35%;color:#fff;font-size:12px;letter-spacing:.02em">ITEM / REQUIREMENT</th>
+<th style="padding:10px 8px;text-align:center;width:72px;color:#fff;font-size:12px">GOOD</th>
+<th style="padding:10px 8px;text-align:center;width:78px;color:#fff;font-size:12px">INSUF.</th>
+<th style="padding:10px 8px;text-align:center;width:64px;color:#fff;font-size:12px">N/A</th>
+<th style="padding:10px 8px;text-align:center;width:58px;color:#fff;font-size:12px">MEDIA</th>
+<th style="padding:10px 12px;text-align:left;width:30%;color:#fff;font-size:12px;letter-spacing:.02em">OBSERVATION / NOTES</th>
 </tr></thead>
 <tbody id="if-checklist"></tbody>
 </table>
