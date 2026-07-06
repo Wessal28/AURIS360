@@ -5537,7 +5537,7 @@ async function aiGenerateRAMS() {
   if(placeholder) placeholder.style.display='none';
   outEl.textContent = '⏳ Generating RAMS for: '+task+'...';
   var g = function(id){var el=document.getElementById(id);return el?el.value||'':'';}; 
-  var prompt = 'Generate a comprehensive RAMS (Risk Assessment & Method Statement) document aligned with SURESERVICES HSSE-MS-PRO-001 RAMS Procedure for the following:\n\n'
+  var prompt = 'Generate a comprehensive RAMS (Risk Assessment & Method Statement) document aligned with a professional HSE RAMS procedure for the following:\n\n'
     + 'Task: '+task+'\n'
     + (g('rams-industry')?'Industry: '+g('rams-industry')+'\n':'')
     + (g('rams-location')?'Location/Environment: '+g('rams-location')+'\n':'')
@@ -5551,7 +5551,7 @@ async function aiGenerateRAMS() {
     + '3. LEGAL / REFERENCE MATERIAL (Mauritius OSH Act, relevant regulations, client requirements, company procedures, manuals and PTW requirements)\n'
     + '4. COMPETENCY AND PRE-COMMENCEMENT REQUIREMENTS (training, authorisations, inductions, permits, isolations, notifications)\n'
     + '5. RISK ASSESSMENT TABLE by task step. Columns: Step | Hazard | Harm/consequence | Who affected | Inherent severity 1-5 | Inherent likelihood 1-5 | Inherent risk level | Existing controls | Further controls following hierarchy of controls | Residual severity 1-5 | Residual likelihood 1-5 | Residual risk level | Responsible person.\n'
-    + 'Use the 5x5 matrix from HSSE-MS-PRO-001: Very Low, Low, Medium, High, Very High. Residual High or Very High must be marked No-Go until reduced or escalated.\n'
+    + 'Use a professional 5x5 HSE matrix: Very Low, Low, Medium, High, Very High. Residual High or Very High must be marked No-Go until reduced or escalated.\n'
     + '6. SAFE WORK METHOD STATEMENT (logical numbered sequence covering planning, competency, equipment, emergency response, isolations, execution, monitoring, completion, removal, sign-off and maintenance)\n'
     + '7. PPE REQUIREMENTS specific to the task\n'
     + '8. EMERGENCY AND ENVIRONMENTAL ARRANGEMENTS, including first aid, rescue, fire/spill response and emergency contacts\n'
@@ -5562,7 +5562,7 @@ async function aiGenerateRAMS() {
     + 'Be thorough and professional. Use actual HSE terminology and practical controls.';
   try {
     var result = await callAI([{role:'user',content:prompt}],
-      'You are a senior HSE professional with 20 years experience writing RAMS documents for Mauritius-based contractors. Follow SURESERVICES HSSE-MS-PRO-001. Always include inherent risk, hierarchy of controls, residual risk, approval level, toolbox/sign-on and review triggers.');
+      'You are a senior HSE professional with 20 years experience writing RAMS documents for Mauritius-based contractors. Follow a professional RAMS procedure. Always include inherent risk, hierarchy of controls, residual risk, approval level, toolbox/sign-on and review triggers.');
     outEl.textContent = result;
     // Add to history
     aiRamsHistory.unshift({task,date:new Date().toLocaleString('en-GB'),content:result});
@@ -7961,7 +7961,7 @@ function swmsBuildHtml(){
     +'<div class="rpt-sig-box"><div class="sig-line">'+escH(g('swms-reviewed-by')||'')+'</div><label>Reviewed by</label></div>'
     +'<div class="rpt-sig-box"><div class="sig-line">'+escH(g('swms-approved-by')||'')+'</div><label>Approved by</label></div>'
     +'</div>'
-    +'<div class="rpt-section"><div class="rpt-section-title secondary">Procedure Alignment</div><div style="font-size:8pt;color:#374151;line-height:1.35">Prepared in line with HSSE-MS-PRO-001 RAMS Procedure: task planning, hazard identification, inherent risk, hierarchy of controls, residual risk acceptance, SWMS, approval, communication/sign-on, implementation monitoring, and review when scope, method, equipment, substances, personnel, legislation or site conditions change.</div></div>'
+    +'<div class="rpt-section"><div class="rpt-section-title secondary">Procedure Alignment</div><div style="font-size:8pt;color:#374151;line-height:1.35">Prepared in line with professional RAMS good practice: task planning, hazard identification, inherent risk, hierarchy of controls, residual risk acceptance, SWMS, approval, communication/sign-on, implementation monitoring, and review when scope, method, equipment, substances, personnel, legislation or site conditions change.</div></div>'
     +aurisFooter('Safe Work Method Statement')
     +'</div>';
 }
@@ -13805,7 +13805,7 @@ function raRiskMatrixHtml(){
     h+='</tr>';
   }
   h+='</tbody></table></div>'
-    +'<div style="margin-top:10px;padding:10px 12px;background:#F8FBFF;border:1px solid #DBEAFE;border-radius:10px;font-size:12px;color:#1E3A8A;line-height:1.45"><strong>SURESERVICES HSSE-MS-PRO-001 rule:</strong> assess inherent risk before controls, apply the hierarchy of controls, then reassess residual risk. Residual High or Very High work must not commence until risk is reduced or escalated for Director / HSSE Consultant review.</div>';
+    +'<div style="margin-top:10px;padding:10px 12px;background:#F8FBFF;border:1px solid #DBEAFE;border-radius:10px;font-size:12px;color:#1E3A8A;line-height:1.45"><strong>RAMS rule:</strong> assess inherent risk before controls, apply the hierarchy of controls, then reassess residual risk. Residual High or Very High work must not commence until risk is reduced or escalated for senior management / HSE review.</div>';
   return h;
 }
 function raRiskBadge(level,score){
@@ -32468,7 +32468,7 @@ function raRiskMatrixPrintHtml(){
       return '<tr><th>P'+p+' '+likelihood[p-1][1]+'</th>'+[1,2,3,4,5].map(function(s){return riskCell(p*s,s,p);}).join('')+'</tr>';
     }).join('')
     +'</tbody></table>'
-    +'<div style="font-size:8pt;color:#374151;background:#F8FBFF;border:1px solid #DBEAFE;padding:6px 8px;border-radius:4px"><strong>HSSE-MS-PRO-001 rule:</strong> inherent risk is assessed before controls, controls follow the hierarchy of controls, and residual High / Very High work must not proceed until reduced or escalated for Director / HSSE Consultant review.</div>';
+    +'<div style="font-size:8pt;color:#374151;background:#F8FBFF;border:1px solid #DBEAFE;padding:6px 8px;border-radius:4px"><strong>RAMS rule:</strong> inherent risk is assessed before controls, controls follow the hierarchy of controls, and residual High / Very High work must not proceed until reduced or escalated for senior management / HSE review.</div>';
 }
 
 // ── 2. RISK ASSESSMENT REPORT ──────────────────────────────────
@@ -37259,7 +37259,7 @@ function fireEquipStatusBadge(s) {
 <div class="card-title"><i class="ti ti-file-check"></i> RAMS Pack &amp; Linked SWMS</div>
 <div style="margin-bottom:12px;padding:10px 12px;background:#F8FBFF;border:1px solid #BFDBFE;border-radius:10px;color:#1E3A8A;font-size:12px;line-height:1.45"><strong>RAMS = Risk Assessment + Method Statement.</strong> The RA records hazards, controls and risk ratings. The SWMS / method statement explains how the work will be carried out step by step. Link the SWMS below to form the RAMS pack.</div>
 <div style="margin-bottom:12px;border:1px solid #D1FAE5;border-radius:10px;overflow:hidden">
-<div style="background:#ECFDF5;color:#065F46;font-weight:900;padding:9px 12px;font-size:12px">HSSE-MS-PRO-001 RAMS readiness checklist</div>
+<div style="background:#ECFDF5;color:#065F46;font-weight:900;padding:9px 12px;font-size:12px">RAMS readiness checklist</div>
 <div style="display:grid;grid-template-columns:1fr 1fr;gap:0;font-size:12px;color:#374151">
 <label style="display:flex;gap:7px;align-items:flex-start;padding:8px 10px;border-top:1px solid #D1FAE5"><input type="checkbox"/> Task, site, personnel and equipment defined</label>
 <label style="display:flex;gap:7px;align-items:flex-start;padding:8px 10px;border-top:1px solid #D1FAE5"><input type="checkbox"/> Hazards identified for each task step</label>
