@@ -9369,7 +9369,7 @@ toast('Security/SLA settings saved');
 loadSecuritySlaSettings();
 }catch(e){
 var msg=e.message||'Save failed';
-if(msg.includes('schema cache')||msg.includes('security_sla_settings'))msg='Database setup needed: run security_sla_settings.sql in Supabase first.';
+if(msg.includes('schema cache')||msg.includes('security_sla_settings'))msg=isSA()?('Security/SLA setup required. Technical detail: '+msg):'Security/SLA settings are not fully enabled yet. Please contact SEPHS admin to complete setup.';
 toast(msg,false);
 }
 }
@@ -9623,7 +9623,7 @@ async function customSaveField(){
     loadCustomFieldSettings();
   }catch(e){
     var msg=e.message||'Save failed';
-    if(msg.includes('schema cache')||msg.includes('custom_fields'))msg='Database setup needed: run custom_fields.sql in Supabase first.';
+    if(msg.includes('schema cache')||msg.includes('custom_fields'))msg=isSA()?('Custom fields setup required. Technical detail: '+msg):'Custom fields are not fully enabled yet. Please contact SEPHS admin to complete setup.';
     toast(msg,false);
   }
 }
@@ -24583,7 +24583,7 @@ async function legalImportPdfRows(){
       try{
         var basicRows=rows.map(function(r){var x=Object.assign({},r);delete x.part;delete x.source_url;delete x.last_verified_at;return x;});
         for(var j=0;j<basicRows.length;j+=50){await api('/legal_requirements',{m:'POST',p:'return=minimal',b:basicRows.slice(j,j+50)});}
-        toast('Imported '+basicRows.length+' sections. Run the latest legal_schema.sql later to enable source tracking.');
+        toast(isSA()?('Imported '+basicRows.length+' sections. Source tracking setup is still pending for this workspace.'):'Imported '+basicRows.length+' sections. Source tracking can be enabled later by SEPHS admin.');
         legalCancelPdfImport();
         legalLoadRegister();
         return;
