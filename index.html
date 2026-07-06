@@ -6714,7 +6714,7 @@ for(var i=0;i<d.length;i++){
     +'</tr>';
 }
 h+='</tbody></table></div>';el.innerHTML=h;
-}catch(e){el.innerHTML='<p style="padding:20px;color:red">'+e.message+'</p>';console.error(e);}
+}catch(e){el.innerHTML=registerErrorHtml('Noise Survey register',e.message);console.error(e);}
 }
 
 async function saveNoise(){
@@ -7226,7 +7226,7 @@ async function sopLoadList(){
     });
     h+='</tbody></table>';
     if(el)el.innerHTML=h;
-  }catch(e){if(el)el.innerHTML='<p style="padding:20px;color:red">'+e.message+'</p>';console.error(e);}
+  }catch(e){if(el)el.innerHTML=registerErrorHtml('SOP register',e.message);console.error(e);}
 }
 
 function sopNew(){
@@ -8833,7 +8833,7 @@ async function mtgLoadMinutes(){
     });
     h+='</tbody></table>';
     if(el)el.innerHTML=h;
-  }catch(e){if(el)el.innerHTML='<p style="padding:20px;color:red">'+e.message+'</p>';console.error(e);}
+  }catch(e){if(el)el.innerHTML=registerErrorHtml('HSE Meetings register',e.message);console.error(e);}
 }
 
 async function mtgOpenMom(id){
@@ -9030,7 +9030,7 @@ document.getElementById('pe-emp').textContent=all.filter(x=>x.person_type==='emp
 document.getElementById('pe-con').textContent=all.filter(x=>x.person_type==='contractor'&&x.status==='active').length;
 document.getElementById('pe-sub').textContent=all.filter(x=>x.person_type==='subcontractor'&&x.status==='active').length;
 peopleRender();
-}catch(e){if(el)el.innerHTML='<div class="empty" style="color:var(--red)">'+escH(e.message)+'</div>';}
+}catch(e){if(el)el.innerHTML=registerErrorHtml('People register',e.message);}
 }
 async function savePerson(){
 if(!peopleCanManage()){toast('Access denied',false);return;}
@@ -9096,6 +9096,14 @@ function setupFriendlyMessage(moduleName,detail){
 var html='<div style="font-weight:800;color:#A32D2D;margin-bottom:6px">'+escH(moduleName)+' setup required</div>'+
 '<div>This feature is not fully enabled for this workspace yet. Please contact SEPHS admin to complete setup.</div>';
 if(typeof isSA==='function'&&isSA()&&detail)html+='<div style="margin-top:10px;font-size:12px;color:var(--text3)">Technical detail: '+escH(detail)+'</div>';
+return '<div class="card" style="padding:22px;color:var(--text2);line-height:1.5">'+html+'</div>';
+}
+function registerErrorHtml(moduleName,detail){
+var msg=String(detail||'');
+if(msg.indexOf('schema cache')!==-1||msg.indexOf('does not exist')!==-1||msg.indexOf('relation')!==-1)return setupFriendlyMessage(moduleName||'Register',msg);
+var html='<div style="font-weight:800;color:#A32D2D;margin-bottom:6px">Unable to load '+escH(moduleName||'this register')+'</div>'+
+'<div>Please refresh the page and try again. If the problem continues, contact SEPHS admin.</div>';
+if(typeof isSA==='function'&&isSA()&&msg)html+='<div style="margin-top:10px;font-size:12px;color:var(--text3)">Technical detail: '+escH(msg)+'</div>';
 return '<div class="card" style="padding:22px;color:var(--text2);line-height:1.5">'+html+'</div>';
 }
 function systemHealthExplainError(msg){
@@ -11033,7 +11041,7 @@ async function wsLoadList(){
     setM('ws-m-overdue',wsAllData.filter(x=>['planned','approved','in_progress'].includes(x.status)&&x.planned_end&&new Date(x.planned_end)<today).length);
     setM('ws-m-hold',wsAllData.filter(x=>x.status==='on_hold').length);
     wsFilter();
-  }catch(e){if(el)el.innerHTML='<p style="padding:20px;color:red">'+e.message+'</p>';console.error(e);}
+  }catch(e){if(el)el.innerHTML=registerErrorHtml('Work Schedule register',e.message);console.error(e);}
 }
 
 function wsFilter(){
@@ -13700,7 +13708,7 @@ async function raLoadList(){
     setM('ra-m-high',raAllData.filter(x=>['Critical','Very High','High'].includes(x.overall_risk_level||x.risk_level)).length);
     setM('ra-m-review',raAllData.filter(x=>x.review_date&&new Date(x.review_date)<=soon&&x.status==='active').length);
     raFilterList();
-  }catch(e){if(el)el.innerHTML='<p style="padding:20px;color:red">'+e.message+'</p>';console.error(e);}
+  }catch(e){if(el)el.innerHTML=registerErrorHtml('Risk Assessment register',e.message);console.error(e);}
 }
 
 async function raLoadJSAList(){
@@ -23162,7 +23170,7 @@ async function dcLoadList(){
     // Load ack pending count separately
     try{var acks=await api('/doc_acknowledgements?select=id,status'+cf()+'&status=eq.pending');
       setM('dc-m-ack',(acks||[]).length);}catch(ex){}
-  }catch(e){if(el)el.innerHTML='<p style="padding:20px;color:red">'+e.message+'</p>';console.error(e);}
+  }catch(e){if(el)el.innerHTML=registerErrorHtml('Document Control register',e.message);console.error(e);}
 }
 
 function dcFilterList(){
