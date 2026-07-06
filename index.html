@@ -2753,7 +2753,7 @@ async function obsAskAI(question) {
     respEl.textContent = text||'No response received.';
     if (inputEl) inputEl.value='';
   } catch(e) {
-    respEl.textContent = 'AURIS AI unavailable: '+e.message;
+    respEl.textContent = aiFriendlyError(e);
   }
 }
 
@@ -5315,7 +5315,7 @@ async function execAIReport(type) {
   var prompt = prompts[type] || 'Generate a comprehensive HSE report (300 words) covering safety performance, compliance, environmental impact, and strategic recommendations.';
   try {
     outEl.textContent = await callAI([{role:'user',content:ctx+'\n\n'+prompt}]) || 'No report generated.';
-  } catch(e) { outEl.textContent = 'AURIS AI unavailable: '+e.message; }
+  } catch(e) { outEl.textContent = aiFriendlyError(e); }
 }
 
 async function execGenerateReport(type) {
@@ -5355,7 +5355,7 @@ async function execGenerateReport(type) {
   };
   try {
     textEl.textContent = await callAI([{role:'user',content:prompts[type]||ctx+'\n\nWrite a comprehensive HSE report. ~400 words.'}]) || 'No report generated.';
-  } catch(e) { textEl.textContent = 'AURIS AI unavailable: '+e.message; }
+  } catch(e) { textEl.textContent = aiFriendlyError(e); }
 }
 
 function execExportReport() {
@@ -5457,6 +5457,20 @@ async function callAI(msgs, systemOverride) {
   }
   var data = await response.json();
   return (data.content||[]).map(function(c){return c.text||'';}).join('');
+}
+function aiFriendlyError(e){
+  var msg=(e&&e.message)?String(e.message):String(e||'');
+  var lower=msg.toLowerCase();
+  var text='AURIS AI is temporarily unavailable. Please try again later or ask SEPHS admin to check the AI setup.';
+  if(lower.includes('restricted'))text='AURIS AI is restricted to authorised HSE and admin roles.';
+  else if(lower.includes('429')||lower.includes('quota'))text='AURIS AI quota has been reached. Please check the OpenAI billing/quota settings or try again later.';
+  else if(lower.includes('api key')||lower.includes('not configured')||lower.includes('ai_provider'))text='AURIS AI setup is incomplete. Please ask SEPHS admin to check the AI environment variables.';
+  else if(lower.includes('401')||lower.includes('403'))text='AURIS AI is not authorised. Please ask SEPHS admin to verify the API key and access settings.';
+  if(typeof isSA==='function'&&isSA()&&msg)text+='\n\nTechnical detail: '+msg;
+  return text;
+}
+function aiFriendlyErrorHtml(e){
+  return '<div style="padding:12px;background:#FEF2F2;border-radius:8px;font-size:12px;color:#A32D2D;line-height:1.45">'+escH(aiFriendlyError(e)).replace(/\n/g,'<br>')+'</div>';
 }
 
 // ── Tab switch ────────────────────────────────────────────────────────────────
@@ -5634,7 +5648,7 @@ async function aiGenerateToolboxTalk() {
     outEl.textContent = result;
     toast('✓ Toolbox talk generated!');
   } catch(e) {
-    outEl.textContent = 'AURIS AI error: '+e.message;
+    outEl.textContent = aiFriendlyError(e);
     toast('Generation failed: '+e.message, false);
   }
 }
@@ -5683,7 +5697,7 @@ async function aiComplianceCheck() {
     }
     toast('✓ Compliance check complete!');
   } catch(e) {
-    outEl.textContent = 'AURIS AI error: '+e.message;
+    outEl.textContent = aiFriendlyError(e);
     toast('Check failed: '+e.message, false);
   }
 }
@@ -5708,7 +5722,7 @@ async function aiLiveCompliance(type) {
     outEl.textContent = result;
     toast('✓ Live compliance scan complete!');
   } catch(e) {
-    outEl.textContent = 'AURIS AI error: '+e.message;
+    outEl.textContent = aiFriendlyError(e);
     toast('Scan failed: '+e.message, false);
   }
 }
@@ -5761,7 +5775,7 @@ async function aiScenarioRisk() {
     outEl.textContent = result;
     toast('✓ Scenario risk assessed!');
   } catch(e) {
-    outEl.textContent = 'AURIS AI error: '+e.message;
+    outEl.textContent = aiFriendlyError(e);
   }
 }
 
@@ -7743,7 +7757,7 @@ async function swmsLoadList(){
     set('swms-m-approved',swmsAllData.filter(x=>(x.approval_status||x.status)==='approved').length);
     set('swms-m-review',swmsAllData.filter(x=>x.review_date&&new Date(x.review_date)<=new Date(new Date().setDate(new Date().getDate()+30))).length);
     swmsRenderList();
-  }catch(e){el.innerHTML='<div style="padding:20px;color:#A32D2D">SWMS unavailable: '+escH(e.message)+'</div>';}
+  }catch(e){el.innerHTML=setupFriendlyMessage('SWMS register',e.message);}
 }
 
 function swmsRenderList(){
@@ -13331,7 +13345,7 @@ async function generateSafetyComm(){
       document.body.appendChild(modal);
       toast('Safety communication ready!');
     }
-  }catch(e){toast('AURIS AI unavailable: '+e.message,false);}
+  }catch(e){toast(aiFriendlyError(e),false);}
 }
 
 async function invGenerateAISummary(){generateSafetyComm();}
@@ -13586,7 +13600,7 @@ async function imsAskAI(question){
   var ctx='Context — Incident data: '+total+' total incidents. By type: '+Object.entries(byType).map(e=>e[0]+':'+e[1]).join(', ')+'. Top locations: '+Object.entries(byLoc).sort((a,b)=>b[1]-a[1]).slice(0,5).map(e=>e[0]+':'+e[1]).join(', ')+'.\n\n';
   try{
     respEl.textContent=await callAI([{role:'user',content:ctx+'You are an expert HSE incident management specialist. Answer concisely and practically:\n\n'+question}])||'No response.';
-  }catch(e){respEl.textContent='AURIS AI unavailable: '+e.message;}
+  }catch(e){respEl.textContent=aiFriendlyError(e);}
 }
 
 // ─── BACKWARD COMPATIBILITY ────────────────────────────────────────────────────
@@ -15697,7 +15711,7 @@ Rules:
     toast('AI generated '+rows.length+' hazard rows — review and add to RA');
   }catch(e){
     var el2=document.getElementById('ra-ai-output');
-    if(el2)el2.innerHTML='<div style="padding:12px;background:#FEF2F2;border-radius:8px;font-size:12px;color:#A32D2D">AI error: '+escH(e.message)+'</div>';
+    if(el2)el2.innerHTML=aiFriendlyErrorHtml(e);
     console.error(e);
   }
 }
@@ -15836,7 +15850,7 @@ Rules:
     toast((usedFallback?'AURIS generated a standard starter RA because the AI response could not be parsed. ':'AI generated ')+rows.length+' hazard rows - review and add to RA');
   }catch(e){
     var el2=document.getElementById('ra-ai-output');
-    if(el2)el2.innerHTML='<div style="padding:12px;background:#FEF2F2;border-radius:8px;font-size:12px;color:#A32D2D">AI error: '+escH(e.message)+'</div>';
+    if(el2)el2.innerHTML=aiFriendlyErrorHtml(e);
     console.error(e);
   }
 }
@@ -16023,7 +16037,7 @@ Generate 4-6 logical sequential steps.`}]);
     document.getElementById('jsa-steps-container').innerHTML='';
     steps.forEach(function(s){jsaAddStep(s);});
     toast('AI generated '+steps.length+' JSA steps — review and customise');
-  }catch(e){toast('AI error: '+e.message,false);console.error(e);}
+  }catch(e){toast(aiFriendlyError(e),false);console.error(e);}
 }
 
 async function jsaSave(){
@@ -25172,7 +25186,7 @@ async function legalAskAI(question){
     var text=await callAI([{role:'user',content:context+'You are an expert HSE compliance advisor specialising in Mauritius legislation (OSH Act 2005, Environment Protection Act, Fire Services Act) and international standards (ISO 45001, ISO 14001). Answer the following compliance question concisely and practically:\n\n'+question}]);
     respEl.textContent=text||'No response received.';
     if(inputEl)inputEl.value='';
-  }catch(e){respEl.textContent='AURIS AI unavailable: '+e.message+'\n\nTry again or check your connection.';}
+  }catch(e){respEl.textContent=aiFriendlyError(e);}
 }
 
 // ===== COMM_JS.JS =====
@@ -29855,7 +29869,7 @@ async function adminGroupAI(type) {
   };
   try{
     outEl.textContent=await callAI([{role:'user',content:prompts[type]||ctx+'Write a group HSE analysis. 250 words.'}])||'No response.';
-  }catch(e){outEl.textContent='AURIS AI unavailable: '+e.message;}
+  }catch(e){outEl.textContent=aiFriendlyError(e);}
 }
 
 // ── Site access ─────────────────────────────────────────────────────────────────
