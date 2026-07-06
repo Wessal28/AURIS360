@@ -23774,7 +23774,7 @@ async function dcSave(){
         toast('Document registered! Ref: '+ref);
       }
     }
-  }catch(e){toast(e.message,false);console.error(e);}
+  }catch(e){toast(actionErrorMessage('Save document','Document Control',e.message),false);console.error(e);}
 }
 
 async function dcSubmitForApproval(){
@@ -23795,7 +23795,7 @@ async function dcSubmitForApproval(){
     var stEl=document.getElementById('df-status');if(stEl)stEl.value=newSt;
     dcRenderWorkflowBar(x);dcRenderActionButtons(x);
     toast('Document submitted for '+(newSt==='pending_review'?'review':'approval')+'!');
-  }catch(e){toast(e.message,false);}
+  }catch(e){toast(actionErrorMessage('Submit document','Document Control',e.message),false);}
 }
 
 async function dcApprove(){
@@ -23815,7 +23815,7 @@ async function dcApprove(){
     toast('✅ Document APPROVED and is now active!');
     dcRenderWorkflowBar(dcAllData.find(r=>r.id===dcEditingId)||{});
     dcRenderActionButtons(dcAllData.find(r=>r.id===dcEditingId)||{});
-  }catch(e){toast(e.message,false);}
+  }catch(e){toast(actionErrorMessage('Approve document','Document Control',e.message),false);}
 }
 
 async function dcReject(){
@@ -23829,7 +23829,7 @@ async function dcReject(){
     toast('Document rejected — returned for revision.');
     dcRenderWorkflowBar(dcAllData.find(r=>r.id===dcEditingId)||{});
     dcRenderActionButtons(dcAllData.find(r=>r.id===dcEditingId)||{});
-  }catch(e){toast(e.message,false);}
+  }catch(e){toast(actionErrorMessage('Reject document','Document Control',e.message),false);}
 }
 
 async function dcWithdraw(){
@@ -23840,7 +23840,7 @@ async function dcWithdraw(){
     var x=dcAllData.find(r=>r.id===dcEditingId);if(x)x.approval_status='withdrawn';
     var stEl=document.getElementById('df-status');if(stEl)stEl.value='withdrawn';
     toast('Document withdrawn.');dcRenderWorkflowBar(x||{});dcRenderActionButtons(x||{});
-  }catch(e){toast(e.message,false);}
+  }catch(e){toast(actionErrorMessage('Withdraw document','Document Control',e.message),false);}
 }
 
 async function dcCreateNewRevision(){
@@ -23862,7 +23862,7 @@ async function dcCreateNewRevision(){
     document.getElementById('df-rev-summary').value=summary;
     toast('New revision '+newVersion+' created — document reset to Draft for updates');
     dcRenderWorkflowBar(x);dcRenderActionButtons(x);
-  }catch(e){toast(e.message,false);}
+  }catch(e){toast(actionErrorMessage('Create document revision','Document Control',e.message),false);}
 }
 
 async function dcDelete(){
@@ -23879,7 +23879,7 @@ async function dcDelete(){
       var stEl=document.getElementById('df-status');if(stEl)stEl.value='withdrawn';
       toast('Document withdrawn and kept for audit history');
       dcRenderWorkflowBar(current);dcRenderActionButtons(current);
-    }catch(e){toast(e.message,false);}
+    }catch(e){toast(actionErrorMessage('Withdraw document','Document Control',e.message),false);}
     return;
   }
   if(!['draft','rejected','withdrawn','superseded'].includes(st)){
@@ -23890,7 +23890,7 @@ async function dcDelete(){
   api('/documents?id=eq.'+dcEditingId,{m:'DELETE'}).then(function(){
     dcAllData=dcAllData.filter(x=>x.id!==dcEditingId);
     toast('Document permanently deleted');dcEditingId=null;dcShowList();
-  }).catch(function(e){toast(e.message,false);});
+  }).catch(function(e){toast(actionErrorMessage('Delete document','Document Control',e.message),false);});
 }
 
 // ── Approval queue view ────────────────────────────────────────────────────────
@@ -23916,7 +23916,7 @@ async function dcLoadApprovalQueue(){
         +'<td style="padding:8px"><button class="btn btn-sm btn-primary" data-id="'+x.id+'" onclick="dcEdit(this.dataset.id)"><i class="ti ti-edit"></i>Review</button></td></tr>';
     });
     h+='</tbody></table></div>';el.innerHTML=h;
-  }catch(e){el.innerHTML='<p style="padding:20px;color:red">'+e.message+'</p>';}
+  }catch(e){el.innerHTML=registerErrorHtml('Document approval queue',e.message);}
 }
 
 // ── Expiry view ────────────────────────────────────────────────────────────────
@@ -24107,7 +24107,7 @@ async function dcCopySave(){
   var docId=document.getElementById('dcf-doc-id')?.value;
   var g=function(id){var el=document.getElementById(id);return el?el.value||null:null;};
   var body={company_id:ccid(),document_id:docId||null,copy_number:g('dcf-copy-no'),copy_holder:holder,department:g('dcf-dept'),location:g('dcf-location'),format:g('dcf-format')||'electronic',issued_date:g('dcf-issued-date')||null,issued_by:g('dcf-issued-by'),is_master:document.getElementById('dcf-is-master')?.checked||false,notes:g('dcf-notes'),status:'active',created_by:prof?.id};
-  try{await api('/doc_controlled_copies',{m:'POST',p:'return=minimal',b:body});toast('Controlled copy issued!');dcCopyBack();}catch(e){toast(e.message,false);}
+  try{await api('/doc_controlled_copies',{m:'POST',p:'return=minimal',b:body});toast('Controlled copy issued!');dcCopyBack();}catch(e){toast(actionErrorMessage('Issue controlled copy','Document Control',e.message),false);}
 }
 
 function dcCopyBack(){
@@ -24175,7 +24175,7 @@ async function dcSaveAck(){
   var doc=dcAllData.find(x=>x.id===dcEditingId);
   var g=function(id){var el=document.getElementById(id);return el?el.value||null:null;};
   var body={company_id:ccid(),document_id:dcEditingId||null,doc_ref:doc?.doc_ref||doc?.reference_no||null,doc_title:doc?.title||null,doc_version:doc?.version||doc?.doc_version||'1.0',employee_name:emp,department:g('daf-dept'),due_date:g('daf-due')||null,status:'pending',created_by:prof?.id};
-  try{await api('/doc_acknowledgements',{m:'POST',p:'return=minimal',b:body});toast('Acknowledgement issued to '+emp+'!');document.getElementById('dc-ack-form').style.display='none';if(dcEditingId)dcLoadDocAck(dcEditingId);}catch(e){toast(e.message,false);}
+  try{await api('/doc_acknowledgements',{m:'POST',p:'return=minimal',b:body});toast('Acknowledgement issued to '+emp+'!');document.getElementById('dc-ack-form').style.display='none';if(dcEditingId)dcLoadDocAck(dcEditingId);}catch(e){toast(actionErrorMessage('Issue acknowledgement','Document Control',e.message),false);}
 }
 
 async function dcMarkAckComplete(ackId){
@@ -24209,7 +24209,7 @@ async function dcAckSave(){
   var doc=dcAllData.find(x=>x.id===docId);
   var g=function(id){var el=document.getElementById(id);return el?el.value||null:null;};
   var body={company_id:ccid(),document_id:docId||null,doc_ref:doc?.doc_ref||doc?.reference_no||null,doc_title:doc?.title||null,doc_version:doc?.version||'1.0',employee_name:emp,department:g('saf-dept'),due_date:g('saf-due')||null,notes:g('saf-notes'),status:'pending',created_by:prof?.id};
-  try{await api('/doc_acknowledgements',{m:'POST',p:'return=minimal',b:body});toast('Acknowledgement issued to '+emp+'!');dcAckBack();}catch(e){toast(e.message,false);}
+  try{await api('/doc_acknowledgements',{m:'POST',p:'return=minimal',b:body});toast('Acknowledgement issued to '+emp+'!');dcAckBack();}catch(e){toast(actionErrorMessage('Issue acknowledgement','Document Control',e.message),false);}
 }
 
 function dcAddDistPerson(){
