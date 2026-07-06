@@ -21143,54 +21143,45 @@ function toolsFilterRegister(){
       +'</div>';
     return;
   }
-  // Group by category
-  var bycat={};
-  filtered.forEach(x=>{if(!bycat[x.category])bycat[x.category]=[];bycat[x.category].push(x);});
   var soon=new Date(); soon.setDate(soon.getDate()+30);
-  var html='';
-  Object.entries(bycat).forEach(function(e){
-    var cat=e[0],items=e[1];
+  var html='<div style="overflow-x:auto"><table style="width:100%;min-width:1180px;border-collapse:collapse;font-size:12px">'
+    +'<thead><tr style="background:#1a3a5c;color:#fff">'
+    +'<th style="padding:9px 12px;text-align:left">Ref</th>'
+    +'<th style="padding:9px 12px;text-align:left">Equipment</th>'
+    +'<th style="padding:9px 12px;text-align:left">Category</th>'
+    +'<th style="padding:9px 12px;text-align:left">Serial / model</th>'
+    +'<th style="padding:9px 12px;text-align:left">Location</th>'
+    +'<th style="padding:9px 12px;text-align:left">Assigned to</th>'
+    +'<th style="padding:9px 12px;text-align:left">Inspection</th>'
+    +'<th style="padding:9px 12px;text-align:left">Statutory</th>'
+    +'<th style="padding:9px 12px;text-align:left">Status</th>'
+    +'<th style="padding:9px 12px;text-align:right">Actions</th>'
+    +'</tr></thead><tbody>';
+  filtered.forEach(function(x,i){
+    var cat=x.category||'other';
     var col=TOOL_CAT_COLORS[cat]||'#6B7280';
-    html+='<div style="padding:8px 16px;background:'+col+'18;border-bottom:2px solid '+col+'44;display:flex;align-items:center;gap:8px">'
-      +'<i class="ti '+( TOOL_CAT_ICONS[cat]||'ti-package')+'" style="color:'+col+';font-size:14px"></i>'
-      +'<span style="font-size:11px;font-weight:700;text-transform:uppercase;color:'+col+';letter-spacing:.05em">'+(TOOL_CAT_LABELS[cat]||cat)+'</span>'
-      +'<span style="font-size:11px;color:'+col+';opacity:.7">— '+items.length+' item'+(items.length!==1?'s':'')+'</span>'
-      +'</div>';
-    items.forEach(function(x,i){
-      var bg=i%2===0?'#fff':'#fafafa';
-      var isStatDue=x.requires_statutory&&x.next_statutory_date&&new Date(x.next_statutory_date)<=soon;
-      var inspState=toolsInspectionState(x,today);
-      var isOos=x.status!=='active';
-      var statusCfg={active:['#EAF3DE','#3B6D11'],out_of_service:['#FCEBEB','#A32D2D'],under_maintenance:['#FEF9EC','#854F0B'],disposed:['#f3f4f6','#6B7280']};
-      var sc=statusCfg[x.status]||statusCfg.active;
-      html+='<div style="padding:12px 16px;border-bottom:1px solid #f3f4f6;background:'+bg+';display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px'+(isOos?';opacity:.7':'')+(isStatDue?';border-left:3px solid #8B5CF6':inspState.due?';border-left:3px solid var(--red)':inspState.soon?';border-left:3px solid #C2410C':'')+'">'
-        +'<div style="display:flex;align-items:center;gap:14px;flex:1">'
-        +'<div style="width:44px;height:44px;border-radius:10px;background:'+col+'20;display:flex;align-items:center;justify-content:center;flex-shrink:0">'
-        +'<i class="ti '+(TOOL_CAT_ICONS[cat]||'ti-package')+'" style="font-size:20px;color:'+col+'"></i></div>'
-        +'<div>'
-        +'<div style="display:flex;align-items:center;gap:8px;margin-bottom:3px">'
-        +'<span style="font-weight:700;font-size:13px">'+escH(x.name||'—')+'</span>'
-        +'<span style="font-family:monospace;font-size:11px;font-weight:700;background:'+col+'20;color:'+col+';padding:2px 7px;border-radius:4px">'+escH(x.ref_number||'—')+'</span>'
-        +'<span style="background:'+sc[0]+';color:'+sc[1]+';padding:2px 8px;border-radius:99px;font-size:10px;font-weight:700">'+(x.status||'active').replace(/_/g,' ')+'</span>'
-        +(inspState.due?'<span style="background:#FCEBEB;color:#A32D2D;padding:2px 8px;border-radius:99px;font-size:10px;font-weight:800">Inspection overdue</span>':inspState.soon?'<span style="background:#FEF6E7;color:#C2410C;padding:2px 8px;border-radius:99px;font-size:10px;font-weight:800">Inspection due soon</span>':'')
-        +(isStatDue?'<span style="background:#F3E8FF;color:#8B5CF6;padding:2px 8px;border-radius:99px;font-size:10px;font-weight:700">Statutory due</span>':'')
-        +'</div>'
-        +'<div style="font-size:11px;color:var(--text2);display:flex;gap:12px;flex-wrap:wrap">'
-        +(x.brand?'<span>'+escH(x.brand+(x.model?' '+x.model:''))+'</span>':'')
-        +(x.serial_number?'<span>S/N: '+escH(x.serial_number)+'</span>':'')
-        +(x.location?'<span><i class="ti ti-map-pin" style="font-size:10px"></i> '+escH(x.location)+'</span>':'')
-        +(x.assigned_to_name?'<span><i class="ti ti-user" style="font-size:10px"></i> '+escH(x.assigned_to_name)+'</span>':'')
-        +'<span><i class="ti ti-clipboard-check" style="font-size:10px"></i> '+escH(inspState.last?('Last check '+inspState.label):inspState.label)+'</span>'
-        +'</div>'
-        +'</div></div>'
-        +'<div style="display:flex;gap:6px;align-items:center">'
-        +'<button class="btn btn-sm" style="background:#1D9E7515;color:#1D9E75;border-color:#1D9E7540" data-id="'+x.id+'" onclick="event.stopPropagation();toolsStartInspection(this.getAttribute(\'data-id\'))"><i class="ti ti-clipboard-check"></i>Inspect</button>'
-        +'<button class="btn btn-sm" data-id="'+x.id+'" onclick="event.stopPropagation();toolsEdit(this.getAttribute(\'data-id\'))"><i class="ti ti-edit"></i></button>'
-        +(isMgr()?'<button class="btn btn-sm" style="color:var(--red)" data-id="'+x.id+'" onclick="event.stopPropagation();toolsDeleteFromList(this.getAttribute(\'data-id\'))"><i class="ti ti-trash"></i></button>':'')
-        +'</div>'
-        +'</div>';
-    });
+    var bg=i%2===0?'#fff':'#fafafa';
+    var isStatDue=x.requires_statutory&&x.next_statutory_date&&new Date(x.next_statutory_date)<=soon;
+    var inspState=toolsInspectionState(x,today);
+    var isOos=x.status!=='active';
+    var statusCfg={active:['#EAF3DE','#3B6D11'],out_of_service:['#FCEBEB','#A32D2D'],under_maintenance:['#FEF9EC','#854F0B'],disposed:['#f3f4f6','#6B7280']};
+    var sc=statusCfg[x.status]||statusCfg.active;
+    var inspBg=inspState.due?'#FCEBEB':inspState.soon?'#FEF6E7':'#EAF3DE';
+    var inspColor=inspState.due?'#A32D2D':inspState.soon?'#C2410C':'#3B6D11';
+    html+='<tr style="border-bottom:1px solid #f0f0f0;background:'+bg+(isOos?';opacity:.72':'')+(isStatDue?';border-left:4px solid #8B5CF6':inspState.due?';border-left:4px solid var(--red)':inspState.soon?';border-left:4px solid #C2410C':'')+'">'
+      +'<td style="padding:10px 12px;font-family:monospace;font-weight:800;color:'+col+'">'+escH(x.ref_number||'--')+'</td>'
+      +'<td style="padding:10px 12px"><div style="display:flex;align-items:center;gap:8px"><i class="ti '+(TOOL_CAT_ICONS[cat]||'ti-package')+'" style="font-size:18px;color:'+col+'"></i><div><div style="font-weight:800">'+escH(x.name||'--')+'</div><div style="font-size:11px;color:var(--text2)">'+escH(x.brand||'')+'</div></div></div></td>'
+      +'<td style="padding:10px 12px"><span style="background:'+col+'18;color:'+col+';padding:3px 8px;border-radius:99px;font-size:10px;font-weight:800">'+escH(TOOL_CAT_LABELS[cat]||cat)+'</span></td>'
+      +'<td style="padding:10px 12px"><div>'+escH(x.serial_number||'--')+'</div><div style="font-size:11px;color:var(--text2)">'+escH(x.model||'')+'</div></td>'
+      +'<td style="padding:10px 12px">'+escH(x.location||'--')+'</td>'
+      +'<td style="padding:10px 12px">'+escH(x.assigned_to_name||'General use')+'</td>'
+      +'<td style="padding:10px 12px"><span style="background:'+inspBg+';color:'+inspColor+';padding:2px 8px;border-radius:99px;font-size:10px;font-weight:800">'+escH(inspState.last?('Last '+inspState.label):inspState.label)+'</span></td>'
+      +'<td style="padding:10px 12px">'+(x.requires_statutory?(x.next_statutory_date?'<span style="color:'+(isStatDue?'#8B5CF6':'inherit')+';font-weight:'+(isStatDue?'800':'500')+'">'+new Date(x.next_statutory_date).toLocaleDateString('en-GB')+(isStatDue?' due':'')+'</span>':'Required'):'--')+'</td>'
+      +'<td style="padding:10px 12px"><span style="background:'+sc[0]+';color:'+sc[1]+';padding:2px 8px;border-radius:99px;font-size:10px;font-weight:800;text-transform:capitalize">'+escH((x.status||'active').replace(/_/g,' '))+'</span></td>'
+      +'<td style="padding:10px 12px;text-align:right;white-space:nowrap"><button class="btn btn-sm" style="background:#1D9E7515;color:#1D9E75;border-color:#1D9E7540" data-id="'+x.id+'" onclick="event.stopPropagation();toolsStartInspection(this.getAttribute(\'data-id\'))"><i class="ti ti-clipboard-check"></i>Inspect</button> <button class="btn btn-sm" data-id="'+x.id+'" onclick="event.stopPropagation();toolsEdit(this.getAttribute(\'data-id\'))"><i class="ti ti-edit"></i></button> '+(isMgr()?'<button class="btn btn-sm" style="color:var(--red)" data-id="'+x.id+'" onclick="event.stopPropagation();toolsDeleteFromList(this.getAttribute(\'data-id\'))"><i class="ti ti-trash"></i></button>':'')+'</td>'
+      +'</tr>';
   });
+  html+='</tbody></table></div>';
   el.innerHTML=html;
 }
 
