@@ -32241,6 +32241,8 @@ function aurisPrintCSS() {
     .rpt-footer { margin-top: 20px; padding-top: 8px; border-top: 1px solid #e5e7eb; display: flex; justify-content: space-between; font-size: 8pt; color: #9ca3af; }
     .rpt-footer-custom { margin-top: 6px; padding-top: 6px; border-top: 1px dashed #e5e7eb; text-align: center; font-size: 8pt; color: #6b7280; font-style: italic; }
     .rpt-powered { margin-top: 4px; text-align: center; font-size: 7pt; color: #b8bcc4; }
+    .rpt-empty { border: 1px dashed #cbd5e1; border-radius: 8px; padding: 18px; text-align: center; color: #64748b; background: #f8fafc; font-size: 10pt; line-height: 1.45; }
+    .rpt-print-note { margin: 0 0 10px; color: #64748b; font-size: 8pt; }
     
     /* Print settings */
     @page { size: A4; margin: 10mm; }
@@ -32803,6 +32805,10 @@ function printRegisterView(title, selector) {
   var node = document.querySelector(selector);
   if (!node) { toast('Nothing to print yet', false); return; }
   var clone = node.cloneNode(true);
+  clone.querySelectorAll('.loading-msg').forEach(function(el) {
+    el.className = 'rpt-empty';
+    el.textContent = 'This view was still loading when the report was generated. Please refresh the module and print again if records are missing.';
+  });
   clone.querySelectorAll('button,.btn,input,select,textarea,[contenteditable="true"]').forEach(function(el) {
     if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') {
       var span = document.createElement('span');
@@ -32816,6 +32822,10 @@ function printRegisterView(title, selector) {
       el.remove();
     }
   });
+  var cleanText = (clone.textContent || '').replace(/\s+/g, ' ').trim();
+  if (!cleanText) {
+    clone.innerHTML = '<div class="rpt-empty">No records are available for this view at the time of printing.</div>';
+  }
   var html = '<div class="report-page">'
     + aurisHeader(title || 'AURIS360 Register', 'Register extract · Generated: ' + new Date().toLocaleString(), '')
     + '<div class="rpt-section">' + clone.innerHTML + '</div>'
