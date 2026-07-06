@@ -2268,68 +2268,12 @@ function obsTableHtml(rows, emptyTitle, emptyButtonLabel, emptyAction) {
   return h+'</tbody></table></div>';
 }
 
-function obsCard(x) {
-  var cfg = OBS_TYPE_CFG[x.obs_type] || OBS_TYPE_CFG.unsafe_condition;
-  var sev = OBS_SEV_CFG[x.severity||'medium'] || OBS_SEV_CFG.medium;
-  var cat = OBS_CAT_CFG[x.category||'general'] || '📌';
-  var desc = x.observation_text || x.positive_points || x.unsafe_act_description || '—';
-  var hasAction = x.action_required && !x.action_completed && x.status !== 'closed';
-  var stCfg = {open:['#FEF9EC','#854F0B'], actioned:['#EFF6FF','#185FA5'], closed:['#EAF3DE','#3B6D11'], acknowledged:['#f3f4f6','#6B7280']};
-  var sc = stCfg[x.status] || stCfg.open;
-  return '<div class="card" style="padding:0;overflow:hidden;cursor:pointer;border-left:5px solid '
-    +cfg.color+';transition:box-shadow .15s" data-id="'+x.id+'" onclick="obsEdit(this.dataset.id)"'
-    +' onmouseover="this.style.boxShadow=\'0 4px 16px rgba(0,0,0,.1)\'" onmouseout="this.style.boxShadow=\'\'">'
-    +'<div style="padding:10px 14px;display:flex;align-items:flex-start;justify-content:space-between;gap:10px;flex-wrap:wrap">'
-    +'<div style="display:flex;gap:10px;flex:1;min-width:0">'
-    +'<div style="font-size:24px;flex-shrink:0">'+cfg.emoji+'</div>'
-    +'<div style="min-width:0">'
-    +'<div style="display:flex;gap:6px;align-items:center;margin-bottom:3px;flex-wrap:wrap">'
-    +(x.obs_ref?'<span style="font-family:monospace;font-size:11px;font-weight:700;color:'+cfg.color+'">'+escH(x.obs_ref)+'</span>':'')
-    +'<span style="background:'+cfg.bg+';color:'+cfg.color+';padding:1px 7px;border-radius:99px;font-size:10px;font-weight:700">'+cfg.label+'</span>'
-    +'<span style="font-size:13px">'+cat+'</span>'
-    +'<span style="font-size:11px;color:var(--text2);text-transform:capitalize">'+escH((x.category||'').replace(/_/g,' '))+'</span>'
-    +(hasAction?'<span style="background:#FEF9EC;color:#854F0B;padding:1px 6px;border-radius:4px;font-size:10px;font-weight:700">ACTION OPEN</span>':'')
-    +'</div>'
-    +'<div style="font-size:13px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:400px">'+escH(desc.substring(0,100))+'</div>'
-    +'<div style="display:flex;gap:12px;font-size:11px;color:var(--text2);margin-top:4px;flex-wrap:wrap">'
-    +(x.observation_date?'<span>📅 '+new Date(x.observation_date).toLocaleDateString('en-GB')+'</span>':'')
-    +(x.observer_name?'<span>👤 '+escH(x.observer_name)+'</span>':'')
-    +(x.location?'<span>📍 '+escH(x.location)+'</span>':'')
-    +(x.department?'<span>🏢 '+escH(x.department)+'</span>':'')
-    +'</div></div></div>'
-    +'<div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0">'
-    +'<span style="background:'+sev.bg+';color:'+sev.color+';padding:2px 8px;border-radius:99px;font-size:10px;font-weight:700;text-transform:capitalize">'+escH(x.severity||'medium')+'</span>'
-    +'<span style="background:'+sc[0]+';color:'+sc[1]+';padding:2px 8px;border-radius:99px;font-size:10px;font-weight:700;text-transform:capitalize">'+escH(x.status||'open')+'</span>'
-    +(x.stopped_work?'<span style="background:#FCEBEB;color:#A32D2D;padding:1px 6px;border-radius:4px;font-size:10px;font-weight:700">⛔ STOPPED</span>':'')
-    +'</div></div></div>';
-}
-
 // ── Positive tab ──────────────────────────────────────────────────────────────
 async function obsLoadPositive() {
   var el = document.getElementById('obs-positive-list'); if (!el) return;
   if (!obsAllData.length) await obsLoadAll();
   var positives = obsAllData.filter(x => ['positive_behaviour','good_practice'].includes(x.obs_type));
   el.innerHTML = obsTableHtml(positives, 'No positive observations yet', 'Add positive observation', "obsNew('positive_behaviour')");
-  return;
-  if (!positives.length) {
-    el.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text2)"><div style="font-size:48px;margin-bottom:12px">✅</div><div style="font-weight:600;margin-bottom:8px">No positive observations yet</div><button class="btn btn-primary" onclick="obsNew(\'positive_behaviour\')"><i class="ti ti-plus"></i>Add positive observation</button></div>';
-    return;
-  }
-  el.innerHTML = '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px">'
-    + positives.map(function(x) {
-      var cfg = OBS_TYPE_CFG[x.obs_type] || OBS_TYPE_CFG.positive_behaviour;
-      var desc = x.observation_text || x.positive_points || '—';
-      return '<div class="card" style="border-top:4px solid '+cfg.color+';cursor:pointer;transition:box-shadow .15s" data-id="'+x.id+'" onclick="obsEdit(this.dataset.id)" onmouseover="this.style.boxShadow=\'0 4px 16px rgba(0,0,0,.1)\'" onmouseout="this.style.boxShadow=\'\'">'
-        +'<div style="font-size:28px;margin-bottom:8px">'+cfg.emoji+'</div>'
-        +'<div style="font-weight:700;margin-bottom:6px">'+escH(desc.substring(0,80))+'</div>'
-        +'<div style="font-size:11px;color:var(--text2);display:flex;gap:10px;flex-wrap:wrap">'
-        +(x.observation_date?'<span>'+new Date(x.observation_date).toLocaleDateString('en-GB')+'</span>':'')
-        +(x.observer_name?'<span>'+escH(x.observer_name)+'</span>':'')
-        +(x.location?'<span>'+escH(x.location)+'</span>':'')
-        +'</div>'
-        +(x.obs_ref?'<div style="font-family:monospace;font-size:10px;color:'+cfg.color+';margin-top:6px;font-weight:700">'+escH(x.obs_ref)+'</div>':'')
-        +'</div>';
-    }).join('') + '</div>';
 }
 
 // ── Unsafe tab ────────────────────────────────────────────────────────────────
@@ -2345,12 +2289,6 @@ async function obsLoadUnsafe() {
       +critical.map(x=>escH(x.obs_ref||x.obs_type.replace(/_/g,' '))).join(', ')+'</div>';
   } else if (alertEl) alertEl.innerHTML = '';
   el.innerHTML = obsTableHtml(unsafes, 'No unsafe acts or conditions reported', '', '');
-  return;
-  if (!unsafes.length) {
-    el.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text2)"><div style="font-size:48px;margin-bottom:12px">🎉</div><div style="font-weight:600">No unsafe acts or conditions reported</div></div>';
-    return;
-  }
-  el.innerHTML = '<div style="display:flex;flex-direction:column;gap:8px">' + unsafes.map(x => obsCard(x)).join('') + '</div>';
 }
 
 // ── Trends ────────────────────────────────────────────────────────────────────
@@ -13428,22 +13366,32 @@ async function imsLoadEvidence(){
       return;
     }
     var tc={photo:{emoji:'📷',label:'Photo'},video:{emoji:'🎬',label:'Video'},document:{emoji:'📄',label:'Document'},witness_statement:{emoji:'🗣️',label:'Witness Statement'},voice_note:{emoji:'🎤',label:'Voice Note'},sketch:{emoji:'✏️',label:'Sketch'},measurement:{emoji:'📏',label:'Measurement'},other:{emoji:'📋',label:'Other'}};
-    var h='<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px">';
-    d.forEach(x=>{
+    var h='<div style="overflow:auto"><table style="width:100%;min-width:980px;border-collapse:collapse;font-size:12px">'
+      +'<thead><tr style="background:#17446B;color:#fff">'
+      +'<th style="padding:10px;color:#fff;text-align:left">Evidence</th>'
+      +'<th style="padding:10px;color:#fff;text-align:left">Type</th>'
+      +'<th style="padding:10px;color:#fff;text-align:left">Collected date</th>'
+      +'<th style="padding:10px;color:#fff;text-align:left">Collected by</th>'
+      +'<th style="padding:10px;color:#fff;text-align:left">Location</th>'
+      +'<th style="padding:10px;color:#fff;text-align:left">Notes</th>'
+      +'<th style="padding:10px;color:#fff;width:92px"></th>'
+      +'</tr></thead><tbody>';
+    d.forEach((x,i)=>{
       var t=tc[x.evidence_type]||tc.other;
-      h+='<div class="card" style="padding:0;overflow:hidden;cursor:pointer;border-top:3px solid #185FA5;transition:box-shadow .15s" data-id="'+x.id+'" onclick="imsEditEvidence(this.dataset.id)" onmouseover="this.style.boxShadow=\'0 4px 12px rgba(0,0,0,.1)\'" onmouseout="this.style.boxShadow=\'\'">'
-        +'<div style="padding:12px 14px">'
-        +'<div style="font-size:26px;margin-bottom:6px">'+t.emoji+'</div>'
-        +'<div style="font-weight:700;font-size:13px;margin-bottom:4px">'+escH(x.title||t.label)+'</div>'
-        +(x.file_url?'<button type="button" class="btn btn-sm" data-path="'+escH(x.file_url)+'" onclick="event.stopPropagation();imsOpenEvidenceFile(this.dataset.path)" style="font-size:11px;color:#185FA5;display:inline-flex;align-items:center;gap:3px"><i class="ti ti-external-link" style="font-size:10px"></i> View file</button>':'')
-        +(x.witness_statement?'<div style="font-size:11px;color:var(--text2);margin-top:6px;font-style:italic">"'+escH(x.witness_statement.substring(0,70))+'…"</div>':'')
-        +'<div style="display:flex;gap:8px;font-size:11px;color:var(--text2);margin-top:8px;flex-wrap:wrap">'
-        +(x.collected_by?'<span>👤 '+escH(x.collected_by)+'</span>':'')
-        +(x.collected_date?'<span>📅 '+new Date(x.collected_date).toLocaleDateString('en-GB')+'</span>':'')
-        +(x.lat&&x.lng?'<span>📍 GPS</span>':'')
-        +'</div></div></div>';
+      var notes=x.description||x.witness_statement||'';
+      h+='<tr style="background:'+(i%2?'#f9fafb':'#fff')+';border-bottom:1px solid #eef2f7;cursor:pointer" data-id="'+x.id+'" onclick="imsEditEvidence(this.dataset.id)">'
+        +'<td style="padding:10px;min-width:220px"><div style="font-weight:800">'+escH(x.title||t.label)+'</div><div style="font-family:monospace;font-size:10px;color:var(--text2);margin-top:2px">'+escH(x.id?x.id.slice(0,8):'')+'</div></td>'
+        +'<td style="padding:10px;white-space:nowrap"><span style="background:#E6F1FB;color:#185FA5;padding:3px 8px;border-radius:99px;font-size:10px;font-weight:800">'+t.emoji+' '+escH(t.label)+'</span></td>'
+        +'<td style="padding:10px;white-space:nowrap">'+(x.collected_date?new Date(x.collected_date).toLocaleDateString('en-GB'):'-')+'</td>'
+        +'<td style="padding:10px">'+escH(x.collected_by||'-')+'</td>'
+        +'<td style="padding:10px">'+escH(x.location_description||((x.lat&&x.lng)?'GPS recorded':'-'))+'</td>'
+        +'<td style="padding:10px;min-width:260px;color:var(--text2)">'+escH(notes.substring(0,130))+(notes.length>130?'...':'')+'</td>'
+        +'<td style="padding:10px;text-align:center;white-space:nowrap">'
+        +(x.file_url?'<button type="button" class="btn btn-sm" data-path="'+escH(x.file_url)+'" onclick="event.stopPropagation();imsOpenEvidenceFile(this.dataset.path)" title="View file"><i class="ti ti-external-link"></i></button> ':'')
+        +'<button type="button" class="btn btn-sm" onclick="event.stopPropagation();imsEditEvidence(\''+x.id+'\')" title="Open evidence"><i class="ti ti-eye"></i></button></td>'
+        +'</tr>';
     });
-    el.innerHTML=h+'</div>';
+    el.innerHTML=h+'</tbody></table></div>';
   }catch(e){el.innerHTML='<div style="padding:20px;color:var(--text2);text-align:center">Evidence table unavailable.<br><small style="color:var(--text2)">Run incident_schema.sql to create the incident_evidence table.</small></div>';}
 }
 
@@ -25897,37 +25845,38 @@ async function bulletinLoad(){
       if(el)el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)"><div style="font-size:40px;margin-bottom:12px">📰</div><div style="font-weight:600;margin-bottom:8px">No bulletins published yet</div>'+(isMgr()?'<button class="btn btn-primary" onclick="bulletinNew()"><i class="ti ti-plus"></i>Publish first bulletin</button>':'')+'</div>';
       return;
     }
-    var h='<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px">';
-    d.forEach(function(x){
+    var h='<div style="overflow:auto"><table style="width:100%;min-width:1060px;border-collapse:collapse;font-size:12px">'
+      +'<thead><tr style="background:#17446B;color:#fff">'
+      +'<th style="padding:10px;color:#fff;text-align:left">Ref</th>'
+      +'<th style="padding:10px;color:#fff;text-align:left">Bulletin</th>'
+      +'<th style="padding:10px;color:#fff;text-align:left">Type</th>'
+      +'<th style="padding:10px;color:#fff;text-align:left">Published</th>'
+      +'<th style="padding:10px;color:#fff;text-align:left">Audience</th>'
+      +'<th style="padding:10px;color:#fff;text-align:left">Author</th>'
+      +'<th style="padding:10px;color:#fff;text-align:center">Status</th>'
+      +'<th style="padding:10px;color:#fff;width:80px"></th>'
+      +'</tr></thead><tbody>';
+    d.forEach(function(x,i){
       var cfg=BULL_TYPE_CFG[x.bulletin_type||'other']||BULL_TYPE_CFG.other;
       var isArch=x.status==='archived';var isDraft=x.status==='draft';
-      h+='<div class="card" style="padding:0;overflow:hidden;cursor:pointer;border-top:4px solid '+cfg.color+';opacity:'+(isArch?'.65':'1')+';transition:box-shadow .15s" data-id="'+x.id+'" onclick="bulletinEdit(this.dataset.id)" onmouseover="this.style.boxShadow=\'0 4px 16px rgba(0,0,0,.1)\'" onmouseout="this.style.boxShadow=\'\'">'
-        +'<div style="padding:14px 16px">'
-        +'<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:8px">'
-        +'<div style="display:flex;align-items:center;gap:8px">'
-        +'<span style="font-size:22px">'+cfg.emoji+'</span>'
-        +'<div>'
-        +'<div style="display:flex;align-items:center;gap:6px;margin-bottom:2px">'
-        +(x.bulletin_ref?'<span style="font-family:monospace;font-size:10px;font-weight:700;color:'+cfg.color+'">'+escH(x.bulletin_ref)+'</span>':'')
-        +(x.issue_number?'<span style="font-size:10px;color:var(--text2)">#'+x.issue_number+'</span>':'')
-        +(isDraft?'<span style="background:#f3f4f6;color:#6B7280;padding:1px 6px;border-radius:99px;font-size:9px;font-weight:700">DRAFT</span>':'')
-        +(isArch?'<span style="background:#f3f4f6;color:#6B7280;padding:1px 6px;border-radius:99px;font-size:9px;font-weight:700">ARCHIVED</span>':'')
-        +'</div>'
-        +'<div style="font-weight:700;font-size:13px">'+escH(x.title||'—')+'</div>'
-        +'</div></div>'
-        +'<span style="background:'+cfg.color+'15;color:'+cfg.color+';padding:2px 8px;border-radius:99px;font-size:10px;font-weight:600;white-space:nowrap">'+escH(cfg.label)+'</span>'
-        +'</div>'
-        +(x.summary?'<div style="font-size:12px;color:var(--text2);margin-bottom:10px;line-height:1.5">'+escH(x.summary.substring(0,120))+(x.summary.length>120?'…':'')+'</div>':'')
-        +'<div style="display:flex;gap:12px;font-size:11px;color:var(--text2);flex-wrap:wrap">'
-        +(x.publication_date?'<span><i class="ti ti-calendar" style="font-size:10px"></i> '+new Date(x.publication_date).toLocaleDateString('en-GB')+'</span>':'')
-        +(x.author?'<span><i class="ti ti-user" style="font-size:10px"></i> '+escH(x.author)+'</span>':'')
-        +(x.target_audience?'<span><i class="ti ti-users" style="font-size:10px"></i> '+escH(x.target_audience)+'</span>':'')
-        +(x.file_url?'<a href="'+escH(x.file_url)+'" target="_blank" onclick="event.stopPropagation()" style="color:var(--green)"><i class="ti ti-external-link" style="font-size:10px"></i> View</a>':'')
-        +'</div>'
-        +((x.topics||[]).length?'<div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:8px">'+x.topics.map(t=>'<span style="background:'+cfg.color+'15;color:'+cfg.color+';padding:1px 8px;border-radius:99px;font-size:10px">'+escH(t)+'</span>').join('')+'</div>':'')
-        +'</div></div>';
+      var stColor=isArch?'#6B7280':isDraft?'#854F0B':'#1D9E75';
+      var summary=x.summary||x.key_messages||'';
+      h+='<tr style="background:'+(i%2?'#f9fafb':'#fff')+';border-bottom:1px solid #eef2f7;border-left:5px solid '+cfg.color+';cursor:pointer;opacity:'+(isArch?'.7':'1')+'" data-id="'+x.id+'" onclick="bulletinEdit(this.dataset.id)">'
+        +'<td style="padding:10px;font-family:monospace;font-weight:800;color:'+cfg.color+';white-space:nowrap">'+escH(x.bulletin_ref||'BULL')+(x.issue_number?'<div style="font-size:10px;color:var(--text2);font-weight:600">Issue '+escH(x.issue_number)+'</div>':'')+'</td>'
+        +'<td style="padding:10px;min-width:320px"><div style="font-weight:800">'+escH(x.title||'-')+'</div>'
+        +(summary?'<div style="font-size:11px;color:var(--text2);margin-top:3px;line-height:1.35">'+escH(summary.substring(0,150))+(summary.length>150?'...':'')+'</div>':'')
+        +((x.topics||[]).length?'<div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:6px">'+x.topics.slice(0,4).map(t=>'<span style="background:'+cfg.color+'15;color:'+cfg.color+';padding:1px 7px;border-radius:99px;font-size:10px">'+escH(t)+'</span>').join('')+'</div>':'')+'</td>'
+        +'<td style="padding:10px"><span style="background:'+cfg.color+'15;color:'+cfg.color+';padding:3px 8px;border-radius:99px;font-size:10px;font-weight:800;white-space:nowrap">'+cfg.emoji+' '+escH(cfg.label)+'</span></td>'
+        +'<td style="padding:10px;white-space:nowrap">'+(x.publication_date?new Date(x.publication_date).toLocaleDateString('en-GB'):'-')+'</td>'
+        +'<td style="padding:10px">'+escH(x.target_audience||'-')+'</td>'
+        +'<td style="padding:10px">'+escH(x.author||'-')+'</td>'
+        +'<td style="padding:10px;text-align:center"><span style="background:'+stColor+'15;color:'+stColor+';padding:3px 8px;border-radius:99px;font-size:10px;font-weight:800;text-transform:capitalize">'+escH(x.status||'published')+'</span></td>'
+        +'<td style="padding:10px;text-align:center;white-space:nowrap">'
+        +(x.file_url?'<a class="btn btn-sm" href="'+escH(x.file_url)+'" target="_blank" onclick="event.stopPropagation()" title="Open bulletin file"><i class="ti ti-external-link"></i></a> ':'')
+        +'<button class="btn btn-sm" onclick="event.stopPropagation();bulletinEdit(\''+x.id+'\')" title="Open bulletin"><i class="ti ti-eye"></i></button></td>'
+        +'</tr>';
     });
-    h+='</div>';el.innerHTML=h;
+    h+='</tbody></table></div>';el.innerHTML=h;
   }catch(e){el.innerHTML='<p style="padding:20px;color:red">'+e.message+'</p>';}
 }
 
