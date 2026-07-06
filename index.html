@@ -19139,32 +19139,25 @@ async function emPlansLoad(){
         +'</div>';
       return;
     }
-    var h='<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px">';
+    var h='<div style="overflow-x:auto"><div class="card" style="padding:0;overflow:hidden"><table style="width:100%;border-collapse:collapse;font-size:12px;min-width:980px"><thead><tr style="background:#1a3a5c;color:#fff"><th style="padding:8px 14px;text-align:left">Plan</th><th style="padding:8px;text-align:left">Emergency type</th><th style="padding:8px;text-align:left">Site / location</th><th style="padding:8px;text-align:center">Version</th><th style="padding:8px;text-align:left">Severity</th><th style="padding:8px;text-align:left">Review date</th><th style="padding:8px;text-align:left">Status</th><th style="padding:8px;width:60px"></th></tr></thead><tbody>';
     d.forEach(function(p){
       var cfg=EM_TYPE_CFG[p.emergency_type]||EM_TYPE_CFG.other;
       var stCfg={draft:['#f3f4f6','#6B7280'],active:['#EAF3DE','#3B6D11'],under_review:['#EDE9FE','#7C3AED'],superseded:['#f3f4f6','#6B7280']};
       var sc=stCfg[p.status]||stCfg.draft;
       var sevCfg={minor:'#1D9E75',moderate:'#EF9F27',major:'#C2410C',critical:'#DC2626'};
-      h+='<div class="card" style="padding:0;overflow:hidden;cursor:pointer;transition:box-shadow .15s;border-left:4px solid '+cfg.color+'" '
-        +'data-id="'+p.id+'" onclick="emPlanEdit(this.dataset.id)" onmouseover="this.style.boxShadow=\'0 4px 16px rgba(0,0,0,.1)\'" onmouseout="this.style.boxShadow=\'\'">'
-        +'<div style="padding:14px 16px">'
-        +'<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:8px">'
-        +'<div style="display:flex;align-items:center;gap:8px">'
-        +'<span style="font-size:28px">'+cfg.emoji+'</span>'
-        +'<div><div style="font-weight:700;font-size:14px">'+escH(p.title||cfg.label)+'</div>'
-        +'<div style="font-family:monospace;font-size:11px;font-weight:600;color:'+cfg.color+'">'+escH(p.plan_ref||'DRAFT')+'</div></div>'
-        +'</div>'
-        +'<span style="background:'+sc[0]+';color:'+sc[1]+';padding:2px 9px;border-radius:99px;font-size:10px;font-weight:700;text-transform:capitalize;flex-shrink:0">'+p.status.replace('_',' ')+'</span>'
-        +'</div>'
-        +'<div style="font-size:12px;color:var(--text2);display:flex;gap:10px;flex-wrap:wrap">'
-        +(p.site_name?'<span><i class="ti ti-building" style="font-size:10px"></i> '+escH(p.site_name)+'</span>':'')
-        +(p.version?'<span>v'+escH(p.version)+'</span>':'')
-        +(p.severity_level?'<span style="color:'+sevCfg[p.severity_level]+'">'+p.severity_level+'</span>':'')
-        +(p.review_date?'<span>Review: '+new Date(p.review_date).toLocaleDateString('en-GB')+'</span>':'')
-        +'</div>'
-        +'</div></div>';
+      var bg=emPlansData.indexOf(p)%2===0?'#fff':'#f9fafb';
+      h+='<tr style="border-bottom:1px solid #f0f0f0;background:'+bg+';border-left:4px solid '+cfg.color+'">'
+        +'<td style="padding:8px 14px"><div style="font-weight:700">'+escH(p.title||cfg.label)+'</div><div style="font-family:monospace;font-size:11px;font-weight:700;color:'+cfg.color+'">'+escH(p.plan_ref||'DRAFT')+'</div></td>'
+        +'<td style="padding:8px;font-weight:600">'+cfg.emoji+' '+escH(cfg.label)+'</td>'
+        +'<td style="padding:8px">'+escH(p.site_name||p.location||'--')+'</td>'
+        +'<td style="padding:8px;text-align:center">'+escH(p.version||'--')+'</td>'
+        +'<td style="padding:8px;color:'+(sevCfg[p.severity_level]||'inherit')+';font-weight:700;text-transform:capitalize">'+escH(p.severity_level||'--')+'</td>'
+        +'<td style="padding:8px">'+(p.review_date?new Date(p.review_date).toLocaleDateString('en-GB'):'--')+'</td>'
+        +'<td style="padding:8px"><span style="background:'+sc[0]+';color:'+sc[1]+';padding:2px 9px;border-radius:99px;font-size:10px;font-weight:700;text-transform:capitalize">'+escH((p.status||'draft').replace('_',' '))+'</span></td>'
+        +'<td style="padding:8px"><button class="btn btn-sm" data-id="'+p.id+'" onclick="emPlanEdit(this.dataset.id)"><i class="ti ti-edit"></i></button></td>'
+        +'</tr>';
     });
-    h+='</div>';
+    h+='</tbody></table></div></div>';
     if(el)el.innerHTML=h;
   }catch(e){el.innerHTML='<p style="padding:20px;color:red">'+e.message+'</p>';}
 }
@@ -19308,35 +19301,24 @@ async function ertLoad(){
       if(el)el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)"><div style="font-size:40px;margin-bottom:12px">🦺</div><div style="font-weight:600;margin-bottom:8px">No ERT members registered</div>'+(isMgr()?'<button class="btn btn-primary" onclick="ertNew()"><i class="ti ti-plus"></i>Add first member</button>':'')+'</div>';
       return;
     }
-    // Group by role
-    var grouped={};
-    d.forEach(function(m){grouped[m.ert_role]=(grouped[m.ert_role]||[]).concat(m);});
-    var h='<div style="display:flex;flex-direction:column;gap:16px">';
-    Object.entries(grouped).forEach(function(entry){
-      var role=entry[0];var members=entry[1];
-      var cfg=ERT_ROLE_CFG[role]||ERT_ROLE_CFG.ert_member;
-      h+='<div><div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:'+cfg.color+';margin-bottom:8px;padding-left:4px">'+cfg.label+' ('+members.length+')</div>'
-        +'<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:10px">';
-      members.forEach(function(m){
-        var faExp=m.first_aid_expiry&&new Date(m.first_aid_expiry)<=soon;
-        var fwExp=m.fire_warden_expiry&&new Date(m.fire_warden_expiry)<=soon;
-        h+='<div class="card" style="padding:12px;border-left:4px solid '+cfg.color+';cursor:pointer" data-id="'+m.id+'" onclick="ertEdit(this.dataset.id)" onmouseover="this.style.boxShadow=\'0 2px 12px rgba(0,0,0,.08)\'" onmouseout="this.style.boxShadow=\'\'">'
-          +'<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">'
-          +'<div style="width:36px;height:36px;border-radius:50%;background:'+cfg.color+';color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;flex-shrink:0">'+escH(m.name.charAt(0).toUpperCase())+'</div>'
-          +'<div><div style="font-weight:700;font-size:13px">'+escH(m.name)+'</div>'
-          +'<div style="font-size:11px;color:var(--text2)">'+escH(m.department||m.job_title||'')+'</div></div>'
-          +'</div>'
-          +(m.coverage_area?'<div style="font-size:11px;color:var(--text2);margin-bottom:6px"><i class="ti ti-map-pin" style="font-size:10px"></i> '+escH(m.coverage_area)+'</div>':'')
-          +'<div style="display:flex;gap:4px;flex-wrap:wrap">'
-          +(m.first_aid_certified?'<span style="background:'+(faExp?'#FCEBEB':'#EAF3DE')+';color:'+(faExp?'#A32D2D':'#3B6D11')+';padding:1px 7px;border-radius:99px;font-size:10px;font-weight:600">FA '+(m.first_aid_expiry?new Date(m.first_aid_expiry).getFullYear():'')+(faExp?' ⚠':'')+'</span>':'')
-          +(m.fire_warden_certified?'<span style="background:'+(fwExp?'#FCEBEB':'#FEF9EC')+';color:'+(fwExp?'#A32D2D':'#854F0B')+';padding:1px 7px;border-radius:99px;font-size:10px;font-weight:600">FW '+(m.fire_warden_expiry?new Date(m.fire_warden_expiry).getFullYear():'')+(fwExp?' ⚠':'')+'</span>':'')
-          +(m.phone_primary?'<a href="tel:'+escH(m.phone_primary)+'" style="background:#E6F1FB;color:#185FA5;padding:1px 8px;border-radius:99px;font-size:10px;font-weight:600;text-decoration:none" onclick="event.stopPropagation()">📞 '+escH(m.phone_primary)+'</a>':'')
-          +'</div>'
-          +'</div>';
-      });
-      h+='</div></div>';
+    var h='<div style="overflow-x:auto"><div class="card" style="padding:0;overflow:hidden"><table style="width:100%;border-collapse:collapse;font-size:12px;min-width:980px"><thead><tr style="background:#1a3a5c;color:#fff"><th style="padding:8px 14px;text-align:left">Member</th><th style="padding:8px;text-align:left">ERT role</th><th style="padding:8px;text-align:left">Department / title</th><th style="padding:8px;text-align:left">Coverage area</th><th style="padding:8px;text-align:left">Contact</th><th style="padding:8px;text-align:left">Certifications</th><th style="padding:8px;text-align:left">Status</th><th style="padding:8px;width:60px"></th></tr></thead><tbody>';
+    d.forEach(function(m,i){
+      var cfg=ERT_ROLE_CFG[m.ert_role]||ERT_ROLE_CFG.ert_member;
+      var faExp=m.first_aid_expiry&&new Date(m.first_aid_expiry)<=soon;
+      var fwExp=m.fire_warden_expiry&&new Date(m.fire_warden_expiry)<=soon;
+      var bg=i%2===0?'#fff':'#f9fafb';
+      h+='<tr style="border-bottom:1px solid #f0f0f0;background:'+bg+';border-left:4px solid '+cfg.color+'">'
+        +'<td style="padding:8px 14px"><div style="display:flex;align-items:center;gap:8px"><div style="width:28px;height:28px;border-radius:50%;background:'+cfg.color+';color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px">'+escH((m.name||'?').charAt(0).toUpperCase())+'</div><strong>'+escH(m.name||'--')+'</strong></div></td>'
+        +'<td style="padding:8px;font-weight:700;color:'+cfg.color+'">'+escH(cfg.label)+'</td>'
+        +'<td style="padding:8px">'+escH(m.department||'--')+'<div style="font-size:11px;color:var(--text2)">'+escH(m.job_title||'')+'</div></td>'
+        +'<td style="padding:8px">'+escH(m.coverage_area||'--')+'</td>'
+        +'<td style="padding:8px">'+(m.phone_primary?'<a href="tel:'+escH(m.phone_primary)+'" onclick="event.stopPropagation()" style="color:#185FA5;font-weight:700;text-decoration:none">'+escH(m.phone_primary)+'</a>':'--')+(m.email?'<div style="font-size:11px;color:var(--text2)">'+escH(m.email)+'</div>':'')+'</td>'
+        +'<td style="padding:8px">'+(m.first_aid_certified?'<span style="background:'+(faExp?'#FCEBEB':'#EAF3DE')+';color:'+(faExp?'#A32D2D':'#3B6D11')+';padding:2px 7px;border-radius:99px;font-size:10px;font-weight:700">First aid '+(m.first_aid_expiry?new Date(m.first_aid_expiry).toLocaleDateString('en-GB'):'')+(faExp?' due':'')+'</span> ':'')+(m.fire_warden_certified?'<span style="background:'+(fwExp?'#FCEBEB':'#FEF9EC')+';color:'+(fwExp?'#A32D2D':'#854F0B')+';padding:2px 7px;border-radius:99px;font-size:10px;font-weight:700">Fire warden '+(m.fire_warden_expiry?new Date(m.fire_warden_expiry).toLocaleDateString('en-GB'):'')+(fwExp?' due':'')+'</span>':'')+'</td>'
+        +'<td style="padding:8px"><span style="background:'+(m.status==='active'?'#EAF3DE':'#f3f4f6')+';color:'+(m.status==='active'?'#3B6D11':'#6B7280')+';padding:2px 8px;border-radius:99px;font-size:10px;font-weight:700;text-transform:capitalize">'+escH(m.status||'active')+'</span></td>'
+        +'<td style="padding:8px"><button class="btn btn-sm" data-id="'+m.id+'" onclick="ertEdit(this.dataset.id)"><i class="ti ti-edit"></i></button></td>'
+        +'</tr>';
     });
-    h+='</div>';
+    h+='</tbody></table></div></div>';
     if(el)el.innerHTML=h;
   }catch(e){el.innerHTML='<p style="padding:20px;color:red">'+e.message+'</p>';}
 }
@@ -19389,22 +19371,21 @@ async function musterLoad(){
   try{
     var d=await api('/muster_points?select=*'+cf()+'&order=name');emMusterData=d||[];
     if(!d||!d.length){el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)"><div style="font-size:40px;margin-bottom:12px">📍</div><div style="font-weight:600;margin-bottom:8px">No muster points defined</div>'+(isMgr()?'<button class="btn btn-primary" onclick="musterNew()"><i class="ti ti-plus"></i>Add muster point</button>':'')+'</div>';return;}
-    var h='<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px">';
-    d.forEach(function(m){
+    var h='<div style="overflow-x:auto"><div class="card" style="padding:0;overflow:hidden"><table style="width:100%;border-collapse:collapse;font-size:12px;min-width:760px"><thead><tr style="background:#1a3a5c;color:#fff"><th style="padding:8px 14px;text-align:left">Muster point</th><th style="padding:8px;text-align:left">Location</th><th style="padding:8px;text-align:center">Capacity</th><th style="padding:8px;text-align:left">Warden</th><th style="padding:8px;text-align:left">Emergency types</th><th style="padding:8px;text-align:left">Status</th><th style="padding:8px;width:60px"></th></tr></thead><tbody>';
+    d.forEach(function(m,i){
       var stCol=m.status==='active'?'#1D9E75':'#6B7280';
-      h+='<div class="card" style="border-left:4px solid '+stCol+';cursor:pointer" data-id="'+m.id+'" onclick="musterEdit(this.dataset.id)" onmouseover="this.style.boxShadow=\'0 2px 12px rgba(0,0,0,.08)\'" onmouseout="this.style.boxShadow=\'\'">'
-        +'<div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:8px">'
-        +'<div><div style="font-weight:700;font-size:14px">📍 '+escH(m.name)+'</div>'
-        +'<div style="font-size:12px;color:var(--text2);margin-top:3px">'+escH(m.location_description||'—')+'</div></div>'
-        +'<span style="background:'+stCol+'20;color:'+stCol+';padding:2px 8px;border-radius:99px;font-size:10px;font-weight:700;text-transform:capitalize">'+m.status+'</span>'
-        +'</div>'
-        +'<div style="display:flex;gap:10px;flex-wrap:wrap;font-size:12px;color:var(--text2)">'
-        +(m.capacity?'<span><i class="ti ti-users" style="font-size:10px"></i> '+m.capacity+' persons</span>':'')
-        +(m.warden_assigned?'<span><i class="ti ti-user" style="font-size:10px"></i> '+escH(m.warden_assigned)+'</span>':'')
-        +'</div>'
-        +'</div>';
+      var bg=i%2===0?'#fff':'#f9fafb';
+      h+='<tr style="border-bottom:1px solid #f0f0f0;background:'+bg+';border-left:4px solid '+stCol+'">'
+        +'<td style="padding:8px 14px;font-weight:700"><i class="ti ti-map-pin" style="color:'+stCol+'"></i> '+escH(m.name||'--')+'</td>'
+        +'<td style="padding:8px">'+escH(m.location_description||'--')+'</td>'
+        +'<td style="padding:8px;text-align:center;font-weight:700">'+(m.capacity?escH(String(m.capacity)):'--')+'</td>'
+        +'<td style="padding:8px">'+escH(m.warden_assigned||'--')+'</td>'
+        +'<td style="padding:8px">'+escH(Array.isArray(m.emergency_types)?m.emergency_types.join(', '):(m.emergency_types||'--'))+'</td>'
+        +'<td style="padding:8px"><span style="background:'+stCol+'20;color:'+stCol+';padding:2px 8px;border-radius:99px;font-size:10px;font-weight:700;text-transform:capitalize">'+escH(m.status||'active')+'</span></td>'
+        +'<td style="padding:8px"><button class="btn btn-sm" data-id="'+m.id+'" onclick="musterEdit(this.dataset.id)"><i class="ti ti-edit"></i></button></td>'
+        +'</tr>';
     });
-    h+='</div>';el.innerHTML=h;
+    h+='</tbody></table></div></div>';el.innerHTML=h;
   }catch(e){el.innerHTML='<p style="padding:20px;color:red">'+e.message+'</p>';}
 }
 
@@ -19500,28 +19481,24 @@ async function activationsLoad(){
     if(!d||!d.length){el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)"><div style="font-size:40px;margin-bottom:12px">✅</div><div style="font-weight:600;margin-bottom:8px">No emergency activations — good news!</div>'+(isMgr()?'<button class="btn btn-sm" onclick="activationNew()">Log an activation</button>':'')+'</div>';return;}
     var sevCfg={minor:['#EAF3DE','#3B6D11'],moderate:['#FEF9EC','#854F0B'],major:['#FEF6E7','#C2410C'],critical:['#FCEBEB','#A32D2D']};
     var stCfg={active:['#FCEBEB','#A32D2D'],contained:['#FEF9EC','#854F0B'],resolved:['#EAF3DE','#3B6D11'],under_review:['#EDE9FE','#7C3AED']};
-    var h='<div style="display:flex;flex-direction:column;gap:10px">';
-    d.forEach(function(x){
+    var h='<div style="overflow-x:auto"><div class="card" style="padding:0;overflow:hidden"><table style="width:100%;border-collapse:collapse;font-size:12px;min-width:980px"><thead><tr style="background:#7F1D1D;color:#fff"><th style="padding:8px 14px;text-align:left">Reference</th><th style="padding:8px;text-align:left">Date</th><th style="padding:8px;text-align:left">Emergency type</th><th style="padding:8px;text-align:left">Location</th><th style="padding:8px;text-align:left">Description</th><th style="padding:8px;text-align:center">People impact</th><th style="padding:8px;text-align:left">Severity</th><th style="padding:8px;text-align:left">Status</th><th style="padding:8px;width:60px"></th></tr></thead><tbody>';
+    d.forEach(function(x,i){
       var cfg=EM_TYPE_CFG[x.emergency_type]||EM_TYPE_CFG.other;
       var sc=sevCfg[x.severity]||sevCfg.moderate;var stc=stCfg[x.status]||stCfg.active;
-      h+='<div class="card" style="padding:0;overflow:hidden;border-left:4px solid '+cfg.color+';cursor:pointer" data-id="'+x.id+'" onclick="activationEdit(this.dataset.id)" onmouseover="this.style.boxShadow=\'0 4px 16px rgba(0,0,0,.1)\'" onmouseout="this.style.boxShadow=\'\'">'
-        +'<div style="padding:14px 18px;display:flex;align-items:center;gap:14px">'
-        +'<div style="font-size:32px;flex-shrink:0">'+cfg.emoji+'</div>'
-        +'<div style="flex:1">'
-        +'<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">'
-        +'<span style="font-family:monospace;font-weight:700;color:'+cfg.color+'">'+escH(x.activation_ref||'—')+'</span>'
-        +'<span style="background:'+sc[0]+';color:'+sc[1]+';padding:2px 8px;border-radius:4px;font-size:11px;font-weight:700;text-transform:capitalize">'+x.severity+'</span>'
-        +'<span style="background:'+stc[0]+';color:'+stc[1]+';padding:2px 8px;border-radius:99px;font-size:11px;font-weight:700;text-transform:capitalize">'+x.status+'</span>'
-        +(x.fatalities>0?'<span style="background:#4C0519;color:#fff;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:700">'+x.fatalities+' fatali'+(x.fatalities>1?'ties':'ty')+'</span>':'')
-        +'</div>'
-        +'<div style="font-weight:700;font-size:14px;margin-bottom:4px">'+cfg.emoji+' '+cfg.label+(x.location?' — '+escH(x.location):'')+'</div>'
-        +'<div style="font-size:12px;color:var(--text2)">'+escH(x.description?x.description.substring(0,100):'')+'</div>'
-        +'</div>'
-        +'<div style="text-align:right;flex-shrink:0"><div style="font-weight:700;font-size:12px">'+(x.activation_date?new Date(x.activation_date).toLocaleDateString('en-GB'):'—')+'</div>'
-        +(x.time_all_clear&&x.activation_time?'<div style="font-size:11px;color:var(--text2)">Duration recorded</div>':'')
-        +'</div></div></div>';
+      var bg=i%2===0?'#fff':'#f9fafb';
+      h+='<tr style="border-bottom:1px solid #f0f0f0;background:'+bg+';border-left:4px solid '+cfg.color+'">'
+        +'<td style="padding:8px 14px;font-family:monospace;font-weight:700;color:'+cfg.color+'">'+escH(x.activation_ref||'--')+'</td>'
+        +'<td style="padding:8px;font-weight:600">'+(x.activation_date?new Date(x.activation_date).toLocaleDateString('en-GB'):'--')+'</td>'
+        +'<td style="padding:8px;font-weight:700">'+cfg.emoji+' '+escH(cfg.label)+'</td>'
+        +'<td style="padding:8px">'+escH(x.location||'--')+'</td>'
+        +'<td style="padding:8px;max-width:360px">'+escH(x.description?x.description.substring(0,140):'--')+'</td>'
+        +'<td style="padding:8px;text-align:center">'+(x.injuries||0)+' injured / '+(x.fatalities||0)+' fatal / '+(x.missing_persons||0)+' missing</td>'
+        +'<td style="padding:8px"><span style="background:'+sc[0]+';color:'+sc[1]+';padding:2px 8px;border-radius:4px;font-size:11px;font-weight:700;text-transform:capitalize">'+escH(x.severity||'moderate')+'</span></td>'
+        +'<td style="padding:8px"><span style="background:'+stc[0]+';color:'+stc[1]+';padding:2px 8px;border-radius:99px;font-size:11px;font-weight:700;text-transform:capitalize">'+escH(x.status||'active')+'</span></td>'
+        +'<td style="padding:8px"><button class="btn btn-sm" data-id="'+x.id+'" onclick="activationEdit(this.dataset.id)"><i class="ti ti-edit"></i></button></td>'
+        +'</tr>';
     });
-    h+='</div>';el.innerHTML=h;
+    h+='</tbody></table></div></div>';el.innerHTML=h;
   }catch(e){el.innerHTML='<p style="padding:20px;color:red">'+e.message+'</p>';}
 }
 
@@ -19544,24 +19521,23 @@ async function bcpLoad(){
     var d=await api('/bcp_records?select=*'+cf()+'&order=priority,title');emBcpData=d||[];
     if(!d||!d.length){el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)"><div style="font-size:40px;margin-bottom:12px">💼</div><div style="font-weight:600;margin-bottom:8px">No BCP records yet</div>'+(isMgr()?'<button class="btn btn-primary" onclick="bcpNew()"><i class="ti ti-plus"></i>Create BCP</button>':'')+'</div>';return;}
     var priCfg={critical:['#FCEBEB','#A32D2D'],high:['#FEF6E7','#C2410C'],medium:['#FEF9EC','#854F0B'],low:['#EAF3DE','#3B6D11']};
-    var h='<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px">';
-    d.forEach(function(x){
+    var h='<div style="overflow-x:auto"><div class="card" style="padding:0;overflow:hidden"><table style="width:100%;border-collapse:collapse;font-size:12px;min-width:980px"><thead><tr style="background:#1a3a5c;color:#fff"><th style="padding:8px 14px;text-align:left">BCP</th><th style="padding:8px;text-align:left">Business process</th><th style="padding:8px;text-align:left">Department</th><th style="padding:8px;text-align:center">RTO</th><th style="padding:8px;text-align:center">RPO</th><th style="padding:8px;text-align:left">Priority</th><th style="padding:8px;text-align:left">Last tested</th><th style="padding:8px;text-align:left">Status</th><th style="padding:8px;width:60px"></th></tr></thead><tbody>';
+    d.forEach(function(x,i){
       var pc=priCfg[x.priority]||priCfg.medium;
-      h+='<div class="card" style="cursor:pointer;border-left:4px solid '+pc[1]+';transition:box-shadow .15s" data-id="'+x.id+'" onclick="bcpEdit(this.dataset.id)" onmouseover="this.style.boxShadow=\'0 4px 16px rgba(0,0,0,.1)\'" onmouseout="this.style.boxShadow=\'\'">'
-        +'<div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:8px">'
-        +'<div><div style="font-family:monospace;font-size:11px;font-weight:700;color:'+pc[1]+'">'+escH(x.bcp_ref||'DRAFT')+'</div>'
-        +'<div style="font-weight:700;font-size:14px;margin-top:3px">'+escH(x.title||'—')+'</div>'
-        +'<div style="font-size:12px;color:var(--text2)">'+escH(x.business_process||x.department||'')+'</div></div>'
-        +'<span style="background:'+pc[0]+';color:'+pc[1]+';padding:2px 8px;border-radius:99px;font-size:10px;font-weight:700;text-transform:capitalize;flex-shrink:0">'+x.priority+'</span>'
-        +'</div>'
-        +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px">'
-        +'<div style="background:#EFF6FF;border-radius:8px;padding:8px;text-align:center"><div style="font-size:11px;color:#185FA5;font-weight:700;margin-bottom:2px">RTO</div><div style="font-size:16px;font-weight:800;color:#185FA5">'+(x.rto_hours?x.rto_hours+'h':'—')+'</div></div>'
-        +'<div style="background:#F5F3FF;border-radius:8px;padding:8px;text-align:center"><div style="font-size:11px;color:#6D28D9;font-weight:700;margin-bottom:2px">RPO</div><div style="font-size:16px;font-weight:800;color:#6D28D9">'+(x.rpo_hours?x.rpo_hours+'h':'—')+'</div></div>'
-        +'</div>'
-        +(x.last_tested?'<div style="font-size:11px;color:var(--text2);margin-top:8px"><i class="ti ti-check" style="color:var(--green)"></i> Last tested: '+new Date(x.last_tested).toLocaleDateString('en-GB')+'</div>':'')
-        +'</div>';
+      var bg=i%2===0?'#fff':'#f9fafb';
+      h+='<tr style="border-bottom:1px solid #f0f0f0;background:'+bg+';border-left:4px solid '+pc[1]+'">'
+        +'<td style="padding:8px 14px"><div style="font-weight:700">'+escH(x.title||'--')+'</div><div style="font-family:monospace;font-size:11px;font-weight:700;color:'+pc[1]+'">'+escH(x.bcp_ref||'DRAFT')+'</div></td>'
+        +'<td style="padding:8px">'+escH(x.business_process||'--')+'</td>'
+        +'<td style="padding:8px">'+escH(x.department||'--')+'</td>'
+        +'<td style="padding:8px;text-align:center;font-weight:800;color:#185FA5">'+(x.rto_hours?escH(String(x.rto_hours))+'h':'--')+'</td>'
+        +'<td style="padding:8px;text-align:center;font-weight:800;color:#6D28D9">'+(x.rpo_hours?escH(String(x.rpo_hours))+'h':'--')+'</td>'
+        +'<td style="padding:8px"><span style="background:'+pc[0]+';color:'+pc[1]+';padding:2px 8px;border-radius:99px;font-size:10px;font-weight:700;text-transform:capitalize">'+escH(x.priority||'medium')+'</span></td>'
+        +'<td style="padding:8px">'+(x.last_tested?new Date(x.last_tested).toLocaleDateString('en-GB'):'--')+'</td>'
+        +'<td style="padding:8px"><span style="background:'+(x.status==='active'?'#EAF3DE':'#f3f4f6')+';color:'+(x.status==='active'?'#3B6D11':'#6B7280')+';padding:2px 8px;border-radius:99px;font-size:10px;font-weight:700;text-transform:capitalize">'+escH(x.status||'active')+'</span></td>'
+        +'<td style="padding:8px"><button class="btn btn-sm" data-id="'+x.id+'" onclick="bcpEdit(this.dataset.id)"><i class="ti ti-edit"></i></button></td>'
+        +'</tr>';
     });
-    h+='</div>';el.innerHTML=h;
+    h+='</tbody></table></div></div>';el.innerHTML=h;
   }catch(e){el.innerHTML='<p style="padding:20px;color:red">'+e.message+'</p>';}
 }
 
@@ -21816,9 +21792,8 @@ async function toolsLoadVehicles(){
         +'</div>';
       return;
     }
-    // Get last inspection for each vehicle
     var today=new Date();
-    var html='<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:16px;padding:16px">';
+    var html='<div class="card" style="padding:0;overflow:hidden"><div style="overflow-x:auto"><table style="width:100%;min-width:980px;border-collapse:collapse;font-size:12px"><thead><tr style="background:#1a3a5c;color:#fff"><th style="padding:9px 12px;text-align:left">Vehicle</th><th style="padding:9px 12px;text-align:left">Reference</th><th style="padding:9px 12px;text-align:left">Location</th><th style="padding:9px 12px;text-align:left">Last inspection</th><th style="padding:9px 12px;text-align:left">Check status</th><th style="padding:9px 12px;text-align:left">Last result</th><th style="padding:9px 12px;text-align:right">Actions</th></tr></thead><tbody>';
     for(var i=0;i<vehicles.length;i++){
       var v=vehicles[i];
       var lastInsp=null;
@@ -21828,31 +21803,17 @@ async function toolsLoadVehicles(){
       var isOverdue=daysSince>35;
       var isDueSoon=daysSince>21&&daysSince<=35;
       var inspStatus=isOverdue?['#FCEBEB','#A32D2D','Monthly check OVERDUE']:isDueSoon?['#FEF9EC','#854F0B','Due for monthly check']:['#EAF3DE','#3B6D11','Monthly check up to date'];
-      html+='<div class="card" style="border:2px solid '+(isOverdue?'var(--red)':isDueSoon?'var(--amber)':'var(--border)')+';padding:0;overflow:hidden">'
-        +'<div style="background:linear-gradient(135deg,#1a3a5c,#185FA5);padding:16px 20px;color:#fff">'
-        +'<div style="display:flex;align-items:center;justify-content:space-between">'
-        +'<div><div style="font-size:18px;font-weight:800;letter-spacing:2px;font-family:monospace">'+escH(v.registration_number||v.name)+'</div>'
-        +'<div style="font-size:12px;opacity:.8;margin-top:2px">'+escH(v.name+(v.brand?' · '+v.brand:'')+(v.model?' '+v.model:''))+'</div>'
-        +'</div>'
-        +'<div style="font-size:36px">🚗</div>'
-        +'</div>'
-        +'<div style="margin-top:8px;font-family:monospace;font-size:11px;opacity:.7">'+escH(v.ref_number||'')+'</div>'
-        +'</div>'
-        +'<div style="padding:14px 16px">'
-        +'<div style="background:'+inspStatus[0]+';color:'+inspStatus[1]+';padding:6px 12px;border-radius:8px;font-size:12px;font-weight:700;margin-bottom:12px;text-align:center">'+inspStatus[2]+'</div>'
-        +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:12px;margin-bottom:14px">'
-        +'<div><span style="color:var(--text2)">Last inspection:</span><br><strong>'+(lastDt?lastDt.toLocaleDateString('en-GB'):'Never')+'</strong></div>'
-        +'<div><span style="color:var(--text2)">Days since check:</span><br><strong style="color:'+(isOverdue?'var(--red)':'inherit')+'">'+( daysSince<999?daysSince+'d':'—')+'</strong></div>'
-        +'<div><span style="color:var(--text2)">Last result:</span><br><strong>'+(lastInsp?.overall_result||'—')+'</strong></div>'
-        +'<div><span style="color:var(--text2)">Location:</span><br><strong>'+escH(v.location||'—')+'</strong></div>'
-        +'</div>'
-        +'<div style="display:flex;gap:8px">'
-        +'<button class="btn btn-primary" style="flex:1;justify-content:center;font-size:12px" data-id="'+v.id+'" onclick="toolsStartInspection(this.getAttribute(\'data-id\'))"><i class="ti ti-clipboard-check"></i>Monthly check</button>'
-        +'<button class="btn btn-sm" data-id="'+v.id+'" onclick="toolsEdit(this.getAttribute(\'data-id\'))"><i class="ti ti-edit"></i></button>'
-        +'</div>'
-        +'</div></div>';
+      html+='<tr style="border-bottom:1px solid #f0f0f0;background:'+(i%2?'#fafafa':'#fff')+(isOverdue?';border-left:4px solid var(--red)':isDueSoon?';border-left:4px solid var(--amber)':'')+'">'
+        +'<td style="padding:10px 12px"><div style="font-family:monospace;font-weight:900;color:#185FA5">'+escH(v.registration_number||v.name||'--')+'</div><div style="font-size:11px;color:var(--text2)">'+escH((v.name||'')+(v.brand?' - '+v.brand:'')+(v.model?' '+v.model:''))+'</div></td>'
+        +'<td style="padding:10px 12px;font-family:monospace;font-weight:700">'+escH(v.ref_number||'--')+'</td>'
+        +'<td style="padding:10px 12px">'+escH(v.location||'--')+'</td>'
+        +'<td style="padding:10px 12px">'+(lastDt?lastDt.toLocaleDateString('en-GB'):'Never')+'<div style="font-size:11px;color:'+(isOverdue?'var(--red)':isDueSoon?'#C2410C':'var(--text2)')+'">'+(daysSince<999?daysSince+' days ago':'Check due')+'</div></td>'
+        +'<td style="padding:10px 12px"><span style="background:'+inspStatus[0]+';color:'+inspStatus[1]+';padding:3px 9px;border-radius:99px;font-size:11px;font-weight:800">'+inspStatus[2]+'</span></td>'
+        +'<td style="padding:10px 12px">'+escH(lastInsp?.overall_result||'--')+'</td>'
+        +'<td style="padding:10px 12px;text-align:right;white-space:nowrap"><button class="btn btn-sm btn-primary" data-id="'+v.id+'" onclick="toolsStartInspection(this.getAttribute(\'data-id\'))"><i class="ti ti-clipboard-check"></i>Check</button> <button class="btn btn-sm" data-id="'+v.id+'" onclick="toolsEdit(this.getAttribute(\'data-id\'))"><i class="ti ti-edit"></i></button></td>'
+        +'</tr>';
     }
-    html+='</div>';
+    html+='</tbody></table></div></div>';
     if(isMgr())html+='<div style="padding:12px 16px;border-top:1px solid var(--border);text-align:center"><button class="btn btn-sm btn-primary" onclick="toolsNewVehicle()"><i class="ti ti-plus"></i>Add vehicle</button></div>';
     el.innerHTML=html;
   }catch(e){el.innerHTML='<p style="padding:20px;color:red">'+e.message+'</p>';}
@@ -24965,33 +24926,23 @@ async function lcaLoad(){
     setM('lr-m-assessments',(d||[]).length);
     if(!d||!d.length){el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)"><div style="font-size:40px;margin-bottom:12px">✅</div><div style="font-weight:600;margin-bottom:8px">No compliance assessments recorded</div>'+(isMgr()?'<button class="btn btn-primary" onclick="lcaNew()"><i class="ti ti-plus"></i>New assessment</button>':'')+'</div>';return;}
     var stCfg={draft:['#f3f4f6','#6B7280'],completed:['#EFF6FF','#185FA5'],reviewed:['#FEF9EC','#854F0B'],approved:['#EAF3DE','#3B6D11']};
-    var h='<div style="display:flex;flex-direction:column;gap:10px">';
-    d.forEach(function(x){
+    var h='<div class="card" style="padding:0;overflow:hidden"><div style="overflow-x:auto"><table style="width:100%;min-width:980px;border-collapse:collapse;font-size:12px"><thead><tr style="background:#1a3a5c;color:#fff"><th style="padding:9px 12px;text-align:left">Assessment</th><th style="padding:9px 12px;text-align:left">Type</th><th style="padding:9px 12px;text-align:left">Date</th><th style="padding:9px 12px;text-align:left">Assessor</th><th style="padding:9px 12px;text-align:center">Requirements</th><th style="padding:9px 12px;text-align:center">Score</th><th style="padding:9px 12px;text-align:left">Status</th><th style="padding:9px 12px;width:60px"></th></tr></thead><tbody>';
+    d.forEach(function(x,i){
       var sc2=stCfg[x.status]||stCfg.draft;
       var score=x.overall_score;
       var scoreColor=score==null?'#6B7280':score>=80?'#1D9E75':score>=60?'#EF9F27':score>=40?'#C2410C':'#A32D2D';
-      h+='<div class="card" style="padding:0;overflow:hidden;cursor:pointer;transition:box-shadow .15s" data-id="'+x.id+'" onclick="lcaEdit(this.dataset.id)" onmouseover="this.style.boxShadow=\'0 4px 16px rgba(0,0,0,.1)\'" onmouseout="this.style.boxShadow=\'\'">'
-        +'<div style="display:flex;align-items:stretch">'
-        +'<div style="width:6px;background:'+scoreColor+';flex-shrink:0"></div>'
-        +'<div style="flex:1;padding:12px 16px">'
-        +'<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:6px">'
-        +'<div><div style="font-weight:700;font-size:14px">'+escH(x.title||'Compliance Assessment')+'</div>'
-        +'<div style="display:flex;gap:8px;margin-top:3px;flex-wrap:wrap">'
-        +(x.assessment_ref?'<span style="font-family:monospace;font-size:11px;color:'+scoreColor+';font-weight:700">'+escH(x.assessment_ref)+'</span>':'')
-        +'<span style="font-size:11px;color:var(--text2);text-transform:capitalize">'+escH((x.assessment_type||'periodic').replace(/_/g,' '))+'</span>'
-        +'<span style="background:'+sc2[0]+';color:'+sc2[1]+';padding:1px 7px;border-radius:99px;font-size:10px;font-weight:700;text-transform:capitalize">'+x.status+'</span>'
-        +'</div></div>'
-        +'<div style="text-align:right">'+(score!=null?'<div style="font-size:28px;font-weight:900;color:'+scoreColor+'">'+score+'%</div><div style="font-size:11px;color:var(--text2)">compliance</div>':'')+'</div>'
-        +'</div>'
-        +'<div style="display:flex;gap:16px;font-size:12px;color:var(--text2);flex-wrap:wrap">'
-        +(x.assessment_date?'<span><i class="ti ti-calendar" style="font-size:10px"></i> '+new Date(x.assessment_date).toLocaleDateString('en-GB')+'</span>':'')
-        +(x.assessor?'<span><i class="ti ti-user" style="font-size:10px"></i> '+escH(x.assessor)+'</span>':'')
-        +(x.total_requirements?'<span>'+x.total_requirements+' requirements assessed</span>':'')
-        +' · <span style="color:#1D9E75">'+escH(x.compliant_count||0)+'✓</span><span style="color:#EF9F27"> '+escH(x.partial_count||0)+'⚠</span><span style="color:#E24B4A"> '+escH(x.non_compliant_count||0)+'✗</span>'
-        +'</div>'
-        +'</div></div></div>';
+      h+='<tr style="border-bottom:1px solid #f0f0f0;background:'+(i%2?'#fafafa':'#fff')+';border-left:4px solid '+scoreColor+'">'
+        +'<td style="padding:10px 12px"><div style="font-weight:800">'+escH(x.title||'Compliance Assessment')+'</div><div style="font-family:monospace;font-size:11px;font-weight:700;color:'+scoreColor+'">'+escH(x.assessment_ref||'--')+'</div></td>'
+        +'<td style="padding:10px 12px;text-transform:capitalize">'+escH((x.assessment_type||'periodic').replace(/_/g,' '))+'</td>'
+        +'<td style="padding:10px 12px">'+(x.assessment_date?new Date(x.assessment_date).toLocaleDateString('en-GB'):'--')+'</td>'
+        +'<td style="padding:10px 12px">'+escH(x.assessor||'--')+'</td>'
+        +'<td style="padding:10px 12px;text-align:center">'+(x.total_requirements||0)+' <span style="color:#1D9E75;font-weight:800">'+(x.compliant_count||0)+'✓</span> <span style="color:#EF9F27;font-weight:800">'+(x.partial_count||0)+'⚠</span> <span style="color:#E24B4A;font-weight:800">'+(x.non_compliant_count||0)+'✗</span></td>'
+        +'<td style="padding:10px 12px;text-align:center;font-size:18px;font-weight:900;color:'+scoreColor+'">'+(score!=null?score+'%':'--')+'</td>'
+        +'<td style="padding:10px 12px"><span style="background:'+sc2[0]+';color:'+sc2[1]+';padding:2px 8px;border-radius:99px;font-size:10px;font-weight:800;text-transform:capitalize">'+escH(x.status||'draft')+'</span></td>'
+        +'<td style="padding:10px 12px"><button class="btn btn-sm" data-id="'+x.id+'" onclick="lcaEdit(this.dataset.id)"><i class="ti ti-edit"></i></button></td>'
+        +'</tr>';
     });
-    h+='</div>';el.innerHTML=h;
+    h+='</tbody></table></div></div>';el.innerHTML=h;
   }catch(e){el.innerHTML='<div style="padding:20px;color:var(--text2);text-align:center">Assessments unavailable. Run the legal schema SQL to create the compliance_assessments table.</div>';}
 }
 
@@ -25035,32 +24986,24 @@ async function gapLoad(){
     setM('gap-m-closed',(d||[]).filter(x=>x.status==='closed').length);
     setM('lr-m-gaps',(d||[]).filter(x=>['open','in_progress'].includes(x.status)).length);
     if(!d||!d.length){el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)"><div style="font-size:40px;margin-bottom:12px">✅</div><div style="font-weight:600;margin-bottom:8px">No compliance gaps identified</div>'+(isMgr()?'<button class="btn btn-primary" onclick="gapNew()"><i class="ti ti-plus"></i>Add gap</button>':'')+'</div>';return;}
-    var h='<div style="display:flex;flex-direction:column;gap:8px">';
-    d.forEach(function(x){
+    var h='<div class="card" style="padding:0;overflow:hidden"><div style="overflow-x:auto"><table style="width:100%;min-width:1120px;border-collapse:collapse;font-size:12px"><thead><tr style="background:#1a3a5c;color:#fff"><th style="padding:9px 12px;text-align:left">Gap</th><th style="padding:9px 12px;text-align:left">Legislation / section</th><th style="padding:9px 12px;text-align:left">Action required</th><th style="padding:9px 12px;text-align:left">Responsible</th><th style="padding:9px 12px;text-align:left">Target date</th><th style="padding:9px 12px;text-align:left">Risk</th><th style="padding:9px 12px;text-align:left">Status</th><th style="padding:9px 12px;width:60px"></th></tr></thead><tbody>';
+    d.forEach(function(x,i){
       var rc=GAP_RISK_CFG[x.risk_level||'medium']||GAP_RISK_CFG.medium;
       var isOverdue=x.target_date&&new Date(x.target_date)<new Date()&&x.status!=='closed';
       var stColors={open:['#FEF9EC','#854F0B'],in_progress:['#EFF6FF','#185FA5'],closed:['#EAF3DE','#3B6D11'],accepted_risk:['#f3f4f6','#6B7280']};
       var sc2=stColors[x.status]||stColors.open;
-      h+='<div class="card" style="padding:0;overflow:hidden;cursor:pointer;border:2px solid '+rc.border+';transition:box-shadow .15s" data-id="'+x.id+'" onclick="gapEdit(this.dataset.id)" onmouseover="this.style.boxShadow=\'0 4px 16px rgba(0,0,0,.1)\'" onmouseout="this.style.boxShadow=\'\'">'
-        +'<div style="background:'+rc.bg+';padding:10px 16px;display:flex;align-items:flex-start;justify-content:space-between;gap:10px;flex-wrap:wrap">'
-        +'<div style="flex:1">'
-        +'<div style="display:flex;gap:8px;align-items:center;margin-bottom:4px;flex-wrap:wrap">'
-        +(x.gap_ref?'<span style="font-family:monospace;font-size:11px;font-weight:700;color:'+rc.tc+'">'+escH(x.gap_ref)+'</span>':'')
-        +'<span style="background:'+rc.border+';color:#fff;padding:1px 8px;border-radius:99px;font-size:10px;font-weight:700;text-transform:capitalize">'+escH(x.risk_level||'medium')+'</span>'
-        +(isOverdue?'<span style="background:#FCEBEB;color:#A32D2D;padding:1px 7px;border-radius:99px;font-size:10px;font-weight:700">OVERDUE</span>':'')
-        +'</div>'
-        +'<div style="font-weight:700;font-size:13px;color:'+rc.tc+'">'+escH(x.gap_description?.substring(0,100)||'—')+(x.gap_description?.length>100?'…':'')+'</div>'
-        +'<div style="font-size:11px;color:var(--text2);margin-top:4px">'+escH(x.legislation||'—')+(x.section?' § '+escH(x.section):'')+'</div>'
-        +'</div>'
-        +'<div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">'
-        +'<span style="background:'+sc2[0]+';color:'+sc2[1]+';padding:2px 8px;border-radius:99px;font-size:10px;font-weight:700;text-transform:capitalize">'+escH((x.status||'open').replace(/_/g,' '))+'</span>'
-        +(x.target_date?'<span style="font-size:11px;color:var(--text2)">Due: '+new Date(x.target_date).toLocaleDateString('en-GB')+'</span>':'')
-        +(x.responsible_person?'<span style="font-size:11px;color:var(--text2)">'+escH(x.responsible_person)+'</span>':'')
-        +'</div></div>'
-        +(x.action_required?'<div style="padding:8px 16px;font-size:12px;border-top:1px solid '+rc.border+'30"><strong style="color:'+rc.tc+'">Action: </strong>'+escH(x.action_required.substring(0,120))+'</div>':'')
-        +'</div>';
+      h+='<tr style="border-bottom:1px solid #f0f0f0;background:'+(i%2?'#fafafa':'#fff')+';border-left:4px solid '+rc.border+'">'
+        +'<td style="padding:10px 12px;max-width:300px"><div style="font-weight:800;color:'+rc.tc+'">'+escH(x.gap_description?.substring(0,120)||'--')+(x.gap_description?.length>120?'...':'')+'</div><div style="font-family:monospace;font-size:11px;font-weight:700;color:'+rc.tc+'">'+escH(x.gap_ref||'--')+'</div></td>'
+        +'<td style="padding:10px 12px">'+escH(x.legislation||'--')+(x.section?'<div style="font-size:11px;color:var(--text2)">Section: '+escH(x.section)+'</div>':'')+'</td>'
+        +'<td style="padding:10px 12px;max-width:320px">'+escH(x.action_required?.substring(0,150)||'--')+(x.action_required?.length>150?'...':'')+'</td>'
+        +'<td style="padding:10px 12px">'+escH(x.responsible_person||'--')+'</td>'
+        +'<td style="padding:10px 12px;'+(isOverdue?'color:var(--red);font-weight:800':'')+'">'+(x.target_date?new Date(x.target_date).toLocaleDateString('en-GB'):'--')+(isOverdue?'<div style="font-size:10px">OVERDUE</div>':'')+'</td>'
+        +'<td style="padding:10px 12px"><span style="background:'+rc.border+';color:#fff;padding:2px 8px;border-radius:99px;font-size:10px;font-weight:800;text-transform:capitalize">'+escH(x.risk_level||'medium')+'</span></td>'
+        +'<td style="padding:10px 12px"><span style="background:'+sc2[0]+';color:'+sc2[1]+';padding:2px 8px;border-radius:99px;font-size:10px;font-weight:800;text-transform:capitalize">'+escH((x.status||'open').replace(/_/g,' '))+'</span></td>'
+        +'<td style="padding:10px 12px"><button class="btn btn-sm" data-id="'+x.id+'" onclick="gapEdit(this.dataset.id)"><i class="ti ti-edit"></i></button></td>'
+        +'</tr>';
     });
-    h+='</div>';el.innerHTML=h;
+    h+='</tbody></table></div></div>';el.innerHTML=h;
   }catch(e){el.innerHTML='<div style="padding:20px;color:var(--text2);text-align:center">Gap records unavailable. Run legal_schema.sql to create the compliance_gaps table.</div>';}
 }
 
@@ -25767,34 +25710,23 @@ async function alertLoad(){
       if(el)el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)"><div style="font-size:40px;margin-bottom:12px">🚨</div><div style="font-weight:600;margin-bottom:8px">No safety alerts issued</div>'+(isMgr()?'<button class="btn btn-primary" onclick="alertNew()"><i class="ti ti-plus"></i>Issue first alert</button>':'')+'</div>';
       return;
     }
-    var h='<div style="display:flex;flex-direction:column;gap:10px">';
-    d.forEach(function(x){
+    var h='<div class="card" style="padding:0;overflow:hidden"><div style="overflow-x:auto"><table style="width:100%;min-width:1060px;border-collapse:collapse;font-size:12px"><thead><tr style="background:#1a3a5c;color:#fff"><th style="padding:9px 12px;text-align:left">Alert</th><th style="padding:9px 12px;text-align:left">Type</th><th style="padding:9px 12px;text-align:left">Issued</th><th style="padding:9px 12px;text-align:left">Summary</th><th style="padding:9px 12px;text-align:left">Action required</th><th style="padding:9px 12px;text-align:left">Severity</th><th style="padding:9px 12px;text-align:left">Status</th><th style="padding:9px 12px;width:60px"></th></tr></thead><tbody>';
+    d.forEach(function(x,i){
       var sc=ALERT_SEV_CFG[x.severity||'medium']||ALERT_SEV_CFG.medium;
       var tc=ALERT_TYPE_CFG[x.alert_type||'other']||ALERT_TYPE_CFG.other;
       var isExpired=x.expiry_date&&new Date(x.expiry_date)<now;
-      h+='<div class="card" style="padding:0;overflow:hidden;cursor:pointer;border:2px solid '+sc.border+';transition:box-shadow .15s" data-id="'+x.id+'" onclick="alertEdit(this.dataset.id)" onmouseover="this.style.boxShadow=\'0 4px 16px rgba(0,0,0,.12)\'" onmouseout="this.style.boxShadow=\'\'">'
-        +'<div style="background:'+sc.bg+';padding:12px 16px;display:flex;align-items:flex-start;justify-content:space-between;gap:10px;flex-wrap:wrap">'
-        +'<div style="display:flex;align-items:center;gap:10px">'
-        +'<span style="font-size:28px">'+tc.emoji+'</span>'
-        +'<div>'
-        +'<div style="display:flex;align-items:center;gap:8px;margin-bottom:2px">'
-        +(x.alert_ref?'<span style="font-family:monospace;font-size:11px;font-weight:700;color:'+sc.tc+'">'+escH(x.alert_ref)+'</span>':'')
-        +'<span style="background:'+sc.border+';color:#fff;padding:1px 8px;border-radius:99px;font-size:10px;font-weight:700">'+sc.label+'</span>'
-        +'<span style="font-size:11px;color:'+sc.tc+'">'+escH(tc.label)+'</span>'
-        +(isExpired?'<span style="background:#f3f4f6;color:#6B7280;padding:1px 7px;border-radius:99px;font-size:10px;font-weight:700">EXPIRED</span>':'')
-        +(x.status==='draft'?'<span style="background:#f3f4f6;color:#6B7280;padding:1px 7px;border-radius:99px;font-size:10px;font-weight:700">DRAFT</span>':'')
-        +'</div>'
-        +'<div style="font-weight:800;font-size:15px;color:'+sc.tc+'">'+escH(x.title||'—')+'</div>'
-        +'</div></div>'
-        +'<div style="font-size:11px;color:'+sc.tc+';text-align:right">'
-        +(x.issued_by?'<div>'+escH(x.issued_by)+'</div>':'')
-        +(x.issued_date?'<div>'+new Date(x.issued_date).toLocaleDateString('en-GB')+'</div>':'')
-        +'</div></div>'
-        +(x.summary?'<div style="padding:10px 16px;font-size:13px;border-top:1px solid '+sc.border+'20">'+escH(x.summary.substring(0,180))+(x.summary.length>180?'…':'')+'</div>':'')
-        +(x.action_required?'<div style="padding:8px 16px;background:#fff;border-top:1px solid '+sc.border+'20;font-size:12px"><strong style="color:'+sc.tc+'">Action required: </strong>'+escH(x.action_required.substring(0,150))+'</div>':'')
-        +'</div>';
+      h+='<tr style="border-bottom:1px solid #f0f0f0;background:'+(i%2?'#fafafa':'#fff')+';border-left:4px solid '+sc.border+'">'
+        +'<td style="padding:10px 12px"><div style="font-weight:900;color:'+sc.tc+'">'+escH(x.title||'--')+'</div><div style="font-family:monospace;font-size:11px;font-weight:700;color:'+sc.tc+'">'+escH(x.alert_ref||'--')+'</div></td>'
+        +'<td style="padding:10px 12px;font-weight:700">'+tc.emoji+' '+escH(tc.label)+'</td>'
+        +'<td style="padding:10px 12px">'+(x.issued_date?new Date(x.issued_date).toLocaleDateString('en-GB'):'--')+'<div style="font-size:11px;color:var(--text2)">'+escH(x.issued_by||'')+'</div></td>'
+        +'<td style="padding:10px 12px;max-width:300px">'+escH(x.summary?x.summary.substring(0,150):'--')+(x.summary&&x.summary.length>150?'...':'')+'</td>'
+        +'<td style="padding:10px 12px;max-width:300px">'+escH(x.action_required?x.action_required.substring(0,150):'--')+(x.action_required&&x.action_required.length>150?'...':'')+'</td>'
+        +'<td style="padding:10px 12px"><span style="background:'+sc.border+';color:#fff;padding:2px 8px;border-radius:99px;font-size:10px;font-weight:800">'+sc.label+'</span></td>'
+        +'<td style="padding:10px 12px"><span style="background:'+(isExpired?'#f3f4f6':x.status==='active'?'#EAF3DE':'#FEF9EC')+';color:'+(isExpired?'#6B7280':x.status==='active'?'#3B6D11':'#854F0B')+';padding:2px 8px;border-radius:99px;font-size:10px;font-weight:800;text-transform:capitalize">'+(isExpired?'Expired':escH(x.status||'active'))+'</span></td>'
+        +'<td style="padding:10px 12px"><button class="btn btn-sm" data-id="'+x.id+'" onclick="alertEdit(this.dataset.id)"><i class="ti ti-edit"></i></button></td>'
+        +'</tr>';
     });
-    h+='</div>';el.innerHTML=h;
+    h+='</tbody></table></div></div>';el.innerHTML=h;
   }catch(e){el.innerHTML='<p style="padding:20px;color:red">'+e.message+'</p>';}
 }
 
