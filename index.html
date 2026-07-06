@@ -33637,7 +33637,7 @@ async function fireSaveCert() {
     document.getElementById('fire-cert-modal').style.display = 'none';
     await fireLoadAll();
     fireRenderCerts();
-  } catch(e) { toast('Error: '+e.message, false); }
+  } catch(e) { toast(actionErrorMessage('Save fire certificate','Fire Certificates',e.message), false); }
 }
 
 async function fireDeleteCert(id) {
@@ -33658,7 +33658,7 @@ async function fireDeleteCert(id) {
     toast('Certificate deleted');
     await fireLoadAll();
     fireRenderCerts();
-  } catch(e) { toast('Error: '+e.message, false); }
+  } catch(e) { toast(actionErrorMessage('Delete fire certificate','Fire Certificates',e.message), false); }
 }
 
 // ── Inspection Form ───────────────────────────────────────────────
@@ -33772,7 +33772,7 @@ async function fireSaveInsp() {
     document.getElementById('fire-insp-modal').style.display = 'none';
     await fireLoadAll();
     fireRenderInsp();
-  } catch(e) { toast('Error: '+e.message, false); }
+  } catch(e) { toast(actionErrorMessage('Save fire inspection','Fire Certificates',e.message), false); }
 }
 
 async function fireDeleteInsp(id) {
@@ -33793,7 +33793,7 @@ async function fireDeleteInsp(id) {
     toast('Inspection deleted');
     await fireLoadAll();
     fireRenderInsp();
-  } catch(e) { toast('Error: '+e.message, false); }
+  } catch(e) { toast(actionErrorMessage('Delete fire inspection','Fire Certificates',e.message), false); }
 }
 
 // ── Equipment Form ────────────────────────────────────────────────
@@ -33878,7 +33878,7 @@ async function fireSaveEquip() {
     document.getElementById('fire-equip-modal').style.display = 'none';
     await fireLoadAll();
     fireRenderEquip();
-  } catch(e) { toast('Error: '+e.message, false); }
+  } catch(e) { toast(actionErrorMessage('Save fire equipment','Fire Certificates',e.message), false); }
 }
 
 async function fireDeleteEquip(id) {
@@ -33899,7 +33899,7 @@ async function fireDeleteEquip(id) {
     toast('Equipment deleted');
     await fireLoadAll();
     fireRenderEquip();
-  } catch(e) { toast('Error: '+e.message, false); }
+  } catch(e) { toast(actionErrorMessage('Delete fire equipment','Fire Certificates',e.message), false); }
 }
 
 // ── PDF Report ────────────────────────────────────────────────────
