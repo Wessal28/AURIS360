@@ -8925,39 +8925,6 @@ async function saveMtg(){mtgSaveMom();}
 
 
 
-async function loadPeople(){
-const btn=document.getElementById('people-add-btn');
-if(isMgr())btn.innerHTML='<button class="btn btn-primary" onclick="toggleForm(\'people-form\')"><i class="ti ti-plus"></i>Add person</button>';
-const el=document.getElementById('people-list');
-try{
-let path='/people?select=*'+cf();
-const tf=document.getElementById('filter-ptype')?.value,sf=document.getElementById('filter-pstatus')?.value;
-if(tf)path+='&person_type=eq.'+tf;
-if(sf)path+='&status=eq.'+sf;
-path+='&order=last_name';
-const d=await api(path);
-const all=await api('/people?select=person_type,status'+cf());
-document.getElementById('pe-total').textContent=(all||[]).filter(x=>x.status==='active').length;
-document.getElementById('pe-emp').textContent=(all||[]).filter(x=>x.person_type==='employee'&&x.status==='active').length;
-document.getElementById('pe-con').textContent=(all||[]).filter(x=>x.person_type==='contractor'&&x.status==='active').length;
-document.getElementById('pe-sub').textContent=(all||[]).filter(x=>x.person_type==='subcontractor'&&x.status==='active').length;
-if(!d?.length){el.innerHTML='<div class="empty">No people registered yet</div>';return;}
-el.innerHTML=d.map(p=>{
-const ac=p.person_type==='employee'?'emp-av':p.person_type==='contractor'?'con-av':'sub-av';
-const ini=(p.first_name?.charAt(0)||'')+(p.last_name?.charAt(0)||'');
-const tb=p.person_type==='employee'?'bg':p.person_type==='contractor'?'bb':'ba';
-return'<div class="person-card"><div class="person-avatar '+ac+'">'+ini+'</div><div style="flex:1"><div style="font-size:13px;font-weight:700">'+p.first_name+' '+p.last_name+'</div><div style="font-size:11px;color:var(--text2)">'+(p.job_title||'--')+(p.department?' &middot; '+p.department:'')+(p.site?' &middot; '+p.site:'')+'</div>'+(p.person_type!=='employee'&&p.company_name?'<div style="font-size:11px;color:var(--blue)">'+p.company_name+'</div>':'')+'<div style="font-size:11px;color:var(--text3)">ID: '+(p.id_number||'--')+' | Phone: '+(p.phone||'--')+'</div></div><div style="text-align:right"><span class="badge '+tb+'" style="margin-bottom:4px;display:block">'+p.person_type+'</span>'+stat(p.status)+(p.induction_completed?'<br><span style="font-size:10px;color:var(--green)">Inducted</span>':'<br><span style="font-size:10px;color:var(--amber)">No induction</span>')+'</div></div>';
-}).join('');
-}catch(e){el.innerHTML='<div class="empty" style="color:var(--red)">'+e.message+'</div>';}
-}
-async function savePerson(){
-if(!isMgr()){toast('Access denied',false);return;}
-try{
-await api('/people',{m:'POST',p:'return=minimal',b:{company_id:ccid(),person_type:document.getElementById('pef-type').value,first_name:document.getElementById('pef-first').value,last_name:document.getElementById('pef-last').value,id_number:document.getElementById('pef-id').value,date_of_birth:document.getElementById('pef-dob').value||null,gender:document.getElementById('pef-gender').value||null,nationality:document.getElementById('pef-nationality').value,job_title:document.getElementById('pef-jobtitle').value,department:document.getElementById('pef-dept').value,site:document.getElementById('pef-site').value,employee_number:document.getElementById('pef-empno').value,contract_type:document.getElementById('pef-contract').value,start_date:document.getElementById('pef-start').value||null,end_date:document.getElementById('pef-end').value||null,company_name:document.getElementById('pef-coname').value,contract_ref:document.getElementById('pef-cref').value,contract_start:document.getElementById('pef-cstart').value||null,contract_end:document.getElementById('pef-cend').value||null,email:document.getElementById('pef-email').value,phone:document.getElementById('pef-phone').value,emergency_name:document.getElementById('pef-emname').value,emergency_relation:document.getElementById('pef-emrel').value,emergency_phone:document.getElementById('pef-emphone').value,induction_date:document.getElementById('pef-induction').value||null,induction_completed:!!document.getElementById('pef-induction').value,medical_fitness_date:document.getElementById('pef-medical').value||null,status:document.getElementById('pef-status').value,created_by:prof?.id}});
-toggleForm('people-form');toast('Person added!');loadPeople();await loadPeopleCache();
-}catch(e){toast(e.message,false);}
-}
-
 let peAllData=[], peEditingId=null;
 
 function peopleCanManage(){
@@ -15679,42 +15646,6 @@ async function libControlNew(){
 
 // ===== RA_JS_PART4.JS =====
 // ── AI-Assisted RA Generation ─────────────────────────────────────────────────
-async function raAISuggest(){
-  var prompt=(document.getElementById('ra-ai-prompt')?.value||'').trim();
-  if(!prompt){toast('Please describe the work activity first',false);return;}
-  var el=document.getElementById('ra-ai-output');
-  if(el)el.innerHTML='<div style="padding:12px;background:#f3e8ff;border-radius:8px;display:flex;align-items:center;gap:10px;font-size:13px"><i class="ti ti-loader-2 ti-spin" style="color:#8B5CF6"></i>AI is generating risk assessment...</div>';
-  try{
-    var txt=await callAI([{role:'user',content:`You are an expert HSE risk assessor. For the following work activity, generate a risk assessment with 4-6 hazard rows.
-
-Activity: ${prompt}
-
-Return ONLY valid JSON array (no markdown, no explanation):
-[{"hazard":"...","harm":"...","who":"...","rs":3,"rop":3,"controls":"...","hoc_level":"engineering","res_s":3,"res_p":1,"legal_ref":"..."}]
-
-Rules:
-- rs and rop are 1-5 integers (severity × probability = risk rating)
-- hoc_level: elimination|substitution|engineering|administrative|ppe
-- legal_ref: relevant OSH legislation or ISO standard
-- controls: specific, actionable, practical control measures
-- res_s and res_p are residual severity/probability after controls`}]);
-    // Clean JSON
-    var clean=txt.replace(/```json\n?|```\n?/g,'').trim();
-    var rows=JSON.parse(clean);
-    if(!Array.isArray(rows)||!rows.length)throw new Error('No rows generated');
-    raRenderAISuggestions(rows);
-    // Store on RA
-    if(raEditingId){
-      await api('/risk_assessments?id=eq.'+raEditingId,{m:'PATCH',p:'return=minimal',b:{ai_suggestions:rows,ai_generated:true,updated_at:new Date().toISOString()}});
-    }
-    toast('AI generated '+rows.length+' hazard rows — review and add to RA');
-  }catch(e){
-    var el2=document.getElementById('ra-ai-output');
-    if(el2)el2.innerHTML=aiFriendlyErrorHtml(e);
-    console.error(e);
-  }
-}
-
 function raRenderAISuggestions(rows){
   var el=document.getElementById('ra-ai-output');if(!el)return;
   var h='<div style="margin-top:10px;border:2px solid #8B5CF6;border-radius:10px;overflow:hidden">'
