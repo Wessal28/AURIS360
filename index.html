@@ -5537,7 +5537,7 @@ async function aiGenerateRAMS() {
   if(placeholder) placeholder.style.display='none';
   outEl.textContent = '⏳ Generating RAMS for: '+task+'...';
   var g = function(id){var el=document.getElementById(id);return el?el.value||'':'';}; 
-  var prompt = 'Generate a comprehensive RAMS (Risk Assessment & Method Statement) document for the following:\n\n'
+  var prompt = 'Generate a comprehensive RAMS (Risk Assessment & Method Statement) document aligned with SURESERVICES HSSE-MS-PRO-001 RAMS Procedure for the following:\n\n'
     + 'Task: '+task+'\n'
     + (g('rams-industry')?'Industry: '+g('rams-industry')+'\n':'')
     + (g('rams-location')?'Location/Environment: '+g('rams-location')+'\n':'')
@@ -5545,20 +5545,24 @@ async function aiGenerateRAMS() {
     + (g('rams-hazards')?'Key hazards identified: '+g('rams-hazards')+'\n':'')
     + (g('rams-conditions')?'Special conditions: '+g('rams-conditions')+'\n':'')
     + 'Regulatory standard: '+g('rams-standard')+'\n\n'
-    + 'Format the RAMS as follows:\n'
-    + '1. DOCUMENT HEADER (Title, Date, Version, Author, Approved by)\n'
-    + '2. SCOPE & DESCRIPTION (What, Where, When, Who)\n'
-    + '3. LEGISLATION & STANDARDS\n'
-    + '4. RISK ASSESSMENT TABLE (Hazard | Who affected | Likelihood | Severity | Initial Risk Rating | Control measures | Residual risk rating) — list at least 8-10 hazards\n'
-    + '5. PPE REQUIREMENTS\n'
-    + '6. METHOD STATEMENT (Step-by-step procedure, numbered)\n'
-    + '7. EMERGENCY PROCEDURES\n'
-    + '8. COMPETENCY REQUIREMENTS\n'
-    + '9. SIGN-OFF SECTION\n\n'
-    + 'Be thorough and professional. Use actual HSE terminology.';
+    + 'Follow this required RAMS structure:\n'
+    + '1. DOCUMENT CONTROL (Title, SWMS/RAMS ref, date, version, prepared by, reviewed by, approved by, review date)\n'
+    + '2. TASK PLANNING (activity, project/site/location, client/contractor, number of workers, tools/equipment/substances, interfaces and site conditions)\n'
+    + '3. LEGAL / REFERENCE MATERIAL (Mauritius OSH Act, relevant regulations, client requirements, company procedures, manuals and PTW requirements)\n'
+    + '4. COMPETENCY AND PRE-COMMENCEMENT REQUIREMENTS (training, authorisations, inductions, permits, isolations, notifications)\n'
+    + '5. RISK ASSESSMENT TABLE by task step. Columns: Step | Hazard | Harm/consequence | Who affected | Inherent severity 1-5 | Inherent likelihood 1-5 | Inherent risk level | Existing controls | Further controls following hierarchy of controls | Residual severity 1-5 | Residual likelihood 1-5 | Residual risk level | Responsible person.\n'
+    + 'Use the 5x5 matrix from HSSE-MS-PRO-001: Very Low, Low, Medium, High, Very High. Residual High or Very High must be marked No-Go until reduced or escalated.\n'
+    + '6. SAFE WORK METHOD STATEMENT (logical numbered sequence covering planning, competency, equipment, emergency response, isolations, execution, monitoring, completion, removal, sign-off and maintenance)\n'
+    + '7. PPE REQUIREMENTS specific to the task\n'
+    + '8. EMERGENCY AND ENVIRONMENTAL ARRANGEMENTS, including first aid, rescue, fire/spill response and emergency contacts\n'
+    + '9. PERMIT TO WORK AND STOP WORK AUTHORITY requirements\n'
+    + '10. TOOLBOX TALK / CONSULTATION SIGN-ON register requirements\n'
+    + '11. REVIEW TRIGGERS (new site/project, change in scope/method/equipment/substances/personnel, incident/near miss/Stop Work, legal/client change, 12-month review)\n'
+    + '12. APPROVAL AUTHORITY based on highest residual risk: Very Low/Low Supervisor, Medium Supervisor with HSSE Consultant review, High Director approval after risk-reduction rework.\n\n'
+    + 'Be thorough and professional. Use actual HSE terminology and practical controls.';
   try {
     var result = await callAI([{role:'user',content:prompt}],
-      'You are a senior HSE professional with 20 years experience writing RAMS documents. Generate comprehensive, technically accurate, regulation-compliant RAMS documents. Always include specific risk ratings and practical controls.');
+      'You are a senior HSE professional with 20 years experience writing RAMS documents for Mauritius-based contractors. Follow SURESERVICES HSSE-MS-PRO-001. Always include inherent risk, hierarchy of controls, residual risk, approval level, toolbox/sign-on and review triggers.');
     outEl.textContent = result;
     // Add to history
     aiRamsHistory.unshift({task,date:new Date().toLocaleString('en-GB'),content:result});
@@ -7783,7 +7787,7 @@ function swmsNew(){
   swmsEditingId=null;
   var list=document.getElementById('swms-list-view'), form=document.getElementById('swms-form-view');
   if(list)list.style.display='none';if(form)form.style.display='block';
-  ['swms-title','swms-location','swms-dept','swms-contractor','swms-scope','swms-plant','swms-ppe','swms-emergency','swms-ra-ref','swms-ptw-ref','swms-reviewed-by','swms-approved-by'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
+  ['swms-title','swms-location','swms-dept','swms-contractor','swms-scope','swms-workers','swms-competency','swms-prestart','swms-references','swms-plant','swms-ppe','swms-emergency','swms-review-triggers','swms-ra-ref','swms-ptw-ref','swms-reviewed-by','swms-approved-by'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
   document.getElementById('swms-ref').textContent='SWMS-AUTO';
   document.getElementById('swms-version').value='Rev 00';
   document.getElementById('swms-date').value=new Date().toISOString().slice(0,10);
@@ -7791,7 +7795,14 @@ function swmsNew(){
   fillPersonSelect('swms-prepared-by', prof?.full_name||'');fillPersonSelect('swms-reviewed-by');fillPersonSelect('swms-approved-by');
   fillRiskAssessmentSelect('swms-ra-ref');swmsLoadPermitSelect();
   var body=document.getElementById('swms-steps-body');if(body)body.innerHTML='';
-  ['Prepare work area and brief team','Set up access, tools and materials','Carry out work task','Inspect completed work and reinstate area'].forEach(function(t){swmsAddStep({activity:t});});
+  [
+    'Confirm scope, site conditions, linked RA and permit requirements',
+    'Verify personnel competency and complete RAMS / toolbox briefing sign-on',
+    'Set up access, isolation, barriers, tools, equipment and emergency arrangements',
+    'Carry out work task using documented controls and safe method',
+    'Monitor changing conditions and apply Stop Work Authority if controls are inadequate',
+    'Inspect completed work, remove equipment, reinstate area and sign off'
+  ].forEach(function(t){swmsAddStep({activity:t,responsible:'Supervisor / worker'});});
   swmsBuildPreview();
 }
 
@@ -7805,11 +7816,16 @@ function swmsPayload(){
     date:document.getElementById('swms-date')?.value||'',
     review_date:document.getElementById('swms-review-date')?.value||'',
     scope:document.getElementById('swms-scope')?.value||'',
+    workers:document.getElementById('swms-workers')?.value||'',
+    competency:document.getElementById('swms-competency')?.value||'',
+    prestart:document.getElementById('swms-prestart')?.value||'',
+    references:document.getElementById('swms-references')?.value||'',
     risk_assessment_ref:document.getElementById('swms-ra-ref')?.value||'',
     permit_ref:document.getElementById('swms-ptw-ref')?.value||'',
     plant:document.getElementById('swms-plant')?.value||'',
     ppe:document.getElementById('swms-ppe')?.value||'',
     emergency:document.getElementById('swms-emergency')?.value||'',
+    review_triggers:document.getElementById('swms-review-triggers')?.value||'',
     prepared_by:document.getElementById('swms-prepared-by')?.value||'',
     reviewed_by:document.getElementById('swms-reviewed-by')?.value||'',
     approved_by:document.getElementById('swms-approved-by')?.value||'',
@@ -7850,9 +7866,14 @@ function swmsOpen(id){
   swmsSetVal('swms-date',p.date||x.issue_date||x.effective_date||'');
   swmsSetVal('swms-review-date',p.review_date||x.review_date||'');
   swmsSetVal('swms-scope',p.scope||x.scope||x.description||'');
+  swmsSetVal('swms-workers',p.workers||'');
+  swmsSetVal('swms-competency',p.competency||'');
+  swmsSetVal('swms-prestart',p.prestart||'');
+  swmsSetVal('swms-references',p.references||'');
   swmsSetVal('swms-plant',p.plant||'');
   swmsSetVal('swms-ppe',p.ppe||'');
   swmsSetVal('swms-emergency',p.emergency||'');
+  swmsSetVal('swms-review-triggers',p.review_triggers||'');
   fillPersonSelect('swms-prepared-by',p.prepared_by||x.author||x.owner||x.doc_owner||prof?.full_name||'');
   fillPersonSelect('swms-reviewed-by',p.reviewed_by||x.reviewer||'');
   fillPersonSelect('swms-approved-by',p.approved_by||x.approver||'');
@@ -7861,9 +7882,11 @@ function swmsOpen(id){
   var body=document.getElementById('swms-steps-body');if(body)body.innerHTML='';
   var rows=Array.isArray(p.steps)?p.steps:[];
   if(!rows.length)rows=[
-    {activity:'Review scope, linked RA and site conditions',responsible:'Supervisor / worker'},
-    {activity:'Prepare work area and brief team',responsible:'Supervisor / worker'},
-    {activity:'Carry out work task as per controls',responsible:'Supervisor / worker'},
+    {activity:'Confirm scope, site conditions, linked RA and permit requirements',responsible:'Supervisor / worker'},
+    {activity:'Verify personnel competency and complete RAMS / toolbox briefing sign-on',responsible:'Supervisor / worker'},
+    {activity:'Set up access, isolation, barriers, tools, equipment and emergency arrangements',responsible:'Supervisor / worker'},
+    {activity:'Carry out work task using documented controls and safe method',responsible:'Supervisor / worker'},
+    {activity:'Monitor changing conditions and apply Stop Work Authority if controls are inadequate',responsible:'Supervisor / worker'},
     {activity:'Inspect completed work and reinstate area',responsible:'Supervisor / worker'}
   ];
   rows.forEach(swmsAddStep);
@@ -7878,18 +7901,28 @@ function swmsAddStep(r){
     +'<td style="padding:8px"><textarea class="swms-act" style="min-height:50px;width:100%;font-size:12px" placeholder="Activity / work task step">'+escH(r.activity||'')+'</textarea></td>'
     +'<td style="padding:8px"><textarea class="swms-haz" style="min-height:50px;width:100%;font-size:12px" placeholder="Potential hazards">'+escH(r.hazard||'')+'</textarea></td>'
     +'<td style="padding:8px"><textarea class="swms-risk" style="min-height:50px;width:100%;font-size:12px" placeholder="Potential injury / damage">'+escH(r.risk||'')+'</textarea></td>'
+    +'<td style="padding:8px">'+swmsRiskSelect('swms-init-risk',r.initial_risk||'Medium')+'</td>'
     +'<td style="padding:8px"><textarea class="swms-controls" style="min-height:50px;width:100%;font-size:12px" placeholder="Controls required / safe method">'+escH(r.controls||'')+'</textarea></td>'
+    +'<td style="padding:8px">'+swmsRiskSelect('swms-res-risk',r.residual_risk||'Low')+'</td>'
     +'<td style="padding:8px"><input class="swms-resp" style="width:100%;font-size:12px" placeholder="Responsible" value="'+escH(r.responsible||'Supervisor / worker')+'"/></td>'
     +'<td style="padding:8px;text-align:center"><button class="btn btn-sm" style="color:var(--red)" onclick="this.closest(\'tr\').remove();swmsRenumber();swmsBuildPreview()"><i class="ti ti-x"></i></button></td>';
   body.appendChild(tr);
 }
 function swmsRenumber(){document.querySelectorAll('#swms-steps-body tr').forEach(function(tr,i){tr.children[0].textContent=i+1;});}
-function swmsRows(){return Array.from(document.querySelectorAll('#swms-steps-body tr')).map(function(tr,i){return {no:i+1,activity:tr.querySelector('.swms-act')?.value||'',hazard:tr.querySelector('.swms-haz')?.value||'',risk:tr.querySelector('.swms-risk')?.value||'',controls:tr.querySelector('.swms-controls')?.value||'',responsible:tr.querySelector('.swms-resp')?.value||''};}).filter(function(r){return r.activity||r.hazard||r.controls;});}
+function swmsRiskSelect(cls,val){
+  var opts=['Very Low','Low','Medium','High','Very High'];
+  return '<select class="'+cls+'" style="width:100%;font-size:11px;padding:5px 6px;border:1px solid var(--border);border-radius:6px" onchange="swmsBuildPreview()">'+opts.map(function(o){return '<option value="'+o+'"'+(o===val?' selected':'')+'>'+o+'</option>';}).join('')+'</select>';
+}
+function swmsRows(){return Array.from(document.querySelectorAll('#swms-steps-body tr')).map(function(tr,i){return {no:i+1,activity:tr.querySelector('.swms-act')?.value||'',hazard:tr.querySelector('.swms-haz')?.value||'',risk:tr.querySelector('.swms-risk')?.value||'',initial_risk:tr.querySelector('.swms-init-risk')?.value||'',controls:tr.querySelector('.swms-controls')?.value||'',residual_risk:tr.querySelector('.swms-res-risk')?.value||'',responsible:tr.querySelector('.swms-resp')?.value||''};}).filter(function(r){return r.activity||r.hazard||r.controls;});}
 
 function swmsBuildHtml(){
   var g=function(id){return document.getElementById(id)?.value||'';}, rows=swmsRows(), ref=document.getElementById('swms-ref')?.textContent||'SWMS-AUTO', title=g('swms-title')||'Safe Work Method Statement';
   var td='padding:7px;border:1px solid #d1d5db;vertical-align:top;line-height:1.35';
-  var rowHtml=rows.map(function(r){return '<tr><td style="'+td+';text-align:center;font-weight:700;width:5%">'+r.no+'</td><td style="'+td+'">'+escH(r.activity||'—')+'</td><td style="'+td+'">'+escH(r.hazard||'—')+'</td><td style="'+td+'">'+escH(r.risk||'—')+'</td><td style="'+td+'">'+escH(r.controls||'—')+'</td><td style="'+td+'">'+escH(r.responsible||'—')+'</td></tr>';}).join('');
+  var riskPill=function(v){
+    var c=RL_CFG[v]||['#f3f4f6','#374151'];
+    return '<span style="display:inline-block;background:'+c[0]+';color:'+c[1]+';padding:2px 6px;border-radius:4px;font-size:7.5pt;font-weight:800">'+escH(v||'—')+'</span>';
+  };
+  var rowHtml=rows.map(function(r){return '<tr><td style="'+td+';text-align:center;font-weight:700;width:4%">'+r.no+'</td><td style="'+td+'">'+escH(r.activity||'—')+'</td><td style="'+td+'">'+escH(r.hazard||'—')+'</td><td style="'+td+'">'+escH(r.risk||'—')+'</td><td style="'+td+';text-align:center">'+riskPill(r.initial_risk||'')+'</td><td style="'+td+'">'+escH(r.controls||'—')+'</td><td style="'+td+';text-align:center">'+riskPill(r.residual_risk||'')+'</td><td style="'+td+'">'+escH(r.responsible||'—')+'</td></tr>';}).join('');
   return '<style>@page{size:A4 landscape;margin:8mm}.report-page{max-width:297mm;padding:8mm}table{font-size:8pt}th,td{padding:4px 5px}.rpt-grid{gap:4px 12px}.rpt-section{break-inside:avoid}</style>'
     +'<div id="swms-printable" class="report-page">'
     +aurisHeader('Safe Work Method Statement', title, ref)
@@ -7903,18 +7936,23 @@ function swmsBuildHtml(){
     +fld('Location / Site', g('swms-location'))+fld('Department / Area', g('swms-dept'))
     +fld('Contractor / Team', g('swms-contractor'))+fld('Linked Permit to Work', g('swms-ptw-ref'))
     +fld('Linked Risk Assessment', g('swms-ra-ref'), true)
+    +fld('Number of workers / team', g('swms-workers'))+fld('Competency requirements', g('swms-competency'), true)
     +'</div></div>'
-    +'<div class="rpt-section"><div class="rpt-section-title blue">Resources, PPE & Emergency Arrangements</div>'
+    +'<div class="rpt-section"><div class="rpt-section-title blue">Pre-commencement, Resources, PPE & Emergency Arrangements</div>'
     +'<div class="rpt-grid">'
+    +fld('Pre-commencement requirements', g('swms-prestart'), true)
+    +fld('Reference material', g('swms-references'), true)
     +fld('Tools and Equipment Used', g('swms-plant'), true)
     +fld('PPE Required', g('swms-ppe'), true)
     +fld('Emergency / Environmental Arrangements', g('swms-emergency'), true)
+    +fld('RAMS review triggers', g('swms-review-triggers'), true)
     +'</div></div>'
     +'<div class="rpt-section"><div class="rpt-section-title red">Work Method, Hazards and Controls</div>'
-    +'<table><thead><tr><th style="width:5%">No.</th><th style="width:19%">Activity / Work Task Step</th><th style="width:18%">Potential Hazards</th><th style="width:18%">Risk / Consequence</th><th style="width:28%">Controls Required / Safe Method</th><th style="width:12%">Responsible</th></tr></thead><tbody>'
-    +(rowHtml||'<tr><td colspan="6" style="color:#6b7280;text-align:center">No work steps recorded.</td></tr>')
+    +'<table><thead><tr><th style="width:4%">No.</th><th style="width:16%">Activity / Work Task Step</th><th style="width:14%">Potential Hazards</th><th style="width:14%">Risk / Consequence</th><th style="width:8%">Inherent Risk</th><th style="width:26%">Controls Required / Safe Method</th><th style="width:8%">Residual Risk</th><th style="width:10%">Responsible</th></tr></thead><tbody>'
+    +(rowHtml||'<tr><td colspan="8" style="color:#6b7280;text-align:center">No work steps recorded.</td></tr>')
     +'</tbody></table></div>'
     +'<div class="rpt-section"><div class="rpt-section-title amber">Briefing & Acknowledgement</div>'
+    +'<div style="font-size:8pt;color:#374151;background:#FFFBEB;border:1px solid #FDE68A;padding:6px 8px;border-radius:4px;margin-bottom:6px">The Supervisor must brief all personnel on task steps, hazards, controls, PPE, permit conditions, emergency arrangements and Stop Work Authority before work starts and daily until completion.</div>'
     +'<table><thead><tr><th style="width:25%">Name</th><th style="width:25%">Company / Role</th><th style="width:20%">Date</th><th>Signature</th></tr></thead><tbody>'
     +[1,2,3,4].map(function(){return '<tr><td>&nbsp;</td><td></td><td></td><td></td></tr>';}).join('')
     +'</tbody></table></div>'
@@ -7923,6 +7961,7 @@ function swmsBuildHtml(){
     +'<div class="rpt-sig-box"><div class="sig-line">'+escH(g('swms-reviewed-by')||'')+'</div><label>Reviewed by</label></div>'
     +'<div class="rpt-sig-box"><div class="sig-line">'+escH(g('swms-approved-by')||'')+'</div><label>Approved by</label></div>'
     +'</div>'
+    +'<div class="rpt-section"><div class="rpt-section-title secondary">Procedure Alignment</div><div style="font-size:8pt;color:#374151;line-height:1.35">Prepared in line with HSSE-MS-PRO-001 RAMS Procedure: task planning, hazard identification, inherent risk, hierarchy of controls, residual risk acceptance, SWMS, approval, communication/sign-on, implementation monitoring, and review when scope, method, equipment, substances, personnel, legislation or site conditions change.</div></div>'
     +aurisFooter('Safe Work Method Statement')
     +'</div>';
 }
@@ -13717,20 +13756,32 @@ function raRiskLevelFromScore(score){
   score=parseInt(score||0);
   return score>=20?'Critical':score>=12?'Very High':score>=6?'High':score>=3?'Medium':score>0?'Low':'';
 }
+function raRiskLevelFromFactors(severity, likelihood){
+  var s=Math.max(1,Math.min(5,parseInt(severity||1)));
+  var p=Math.max(1,Math.min(5,parseInt(likelihood||1)));
+  var matrix=[
+    ['Very Low','Very Low','Low','Low','Medium'],
+    ['Very Low','Low','Low','Medium','High'],
+    ['Low','Low','Medium','High','High'],
+    ['Low','Medium','High','High','Very High'],
+    ['Medium','High','High','Very High','Very High']
+  ];
+  return matrix[p-1][s-1]||raRiskLevelFromScore(s*p);
+}
 function raRiskMatrixHtml(){
   var severity=[
-    ['1','Minor','First aid / negligible damage'],
-    ['2','Low','Medical treatment / minor damage'],
-    ['3','Moderate','Lost time injury / reportable damage'],
-    ['4','Major','Serious injury / major loss'],
-    ['5','Catastrophic','Fatality, permanent disability or catastrophic loss']
+    ['1','Negligible','First aid case, temporary stakeholder impact, minor asset damage or local mention only'],
+    ['2','Minor','Medical treatment injury, local concern under 1 week clean-up, asset loss under 5%'],
+    ['3','Moderate','Major injury or hospitalisation, LTI 1-3 days, external scrutiny or asset loss under 10%'],
+    ['4','Major','Single fatality or multiple major injuries, licence impact, asset loss under 30%'],
+    ['5','Extreme','Multiple fatalities, long-term environmental impact, major asset destruction or government inquiry']
   ];
   var likelihood=[
-    ['1','Rare','May occur only in exceptional circumstances'],
-    ['2','Unlikely','Could occur, but not expected'],
-    ['3','Possible','Might occur during the activity'],
-    ['4','Likely','Will probably occur in many circumstances'],
-    ['5','Almost certain','Expected to occur frequently']
+    ['1','Rare','May occur only in exceptional circumstances (<5%)'],
+    ['2','Unlikely','Could occur at some time (<35%)'],
+    ['3','Possible','Might occur at some time (>35% - <65%)'],
+    ['4','Likely','Will probably occur in most circumstances (>65% - <95%)'],
+    ['5','Almost Certain','Expected to occur in most circumstances (>95%)']
   ];
   var h='<div style="display:grid;grid-template-columns:minmax(260px,1fr) minmax(260px,1fr);gap:12px;margin-bottom:12px">'
     +'<div style="border:1px solid var(--border);border-radius:10px;overflow:hidden"><div style="padding:9px 12px;background:#F8FBFF;font-weight:900;color:#185FA5">Severity criteria</div>'
@@ -13748,13 +13799,13 @@ function raRiskMatrixHtml(){
   for(var p=5;p>=1;p--){
     h+='<tr><th style="padding:8px;background:#f8fafc;text-align:left">P'+p+' '+likelihood[p-1][1]+'</th>';
     for(var ss=1;ss<=5;ss++){
-      var score=p*ss,lvl=raRiskLevelFromScore(score),cfg=RL_CFG[lvl]||['#f3f4f6','#6B7280'];
+      var score=p*ss,lvl=raRiskLevelFromFactors(ss,p),cfg=RL_CFG[lvl]||['#f3f4f6','#6B7280'];
       h+='<td style="padding:8px;background:'+cfg[0]+';color:'+cfg[1]+';font-weight:900;border:1px solid #fff">'+score+'<div style="font-size:9px;font-weight:800">'+lvl+'</div></td>';
     }
     h+='</tr>';
   }
   h+='</tbody></table></div>'
-    +'<div style="margin-top:10px;padding:10px 12px;background:#F8FBFF;border:1px solid #DBEAFE;border-radius:10px;font-size:12px;color:#1E3A8A;line-height:1.45"><strong>Assessment rule:</strong> Initial risk is scored after considering the existing controls already in place. Further actions are then defined to reduce the residual risk to an acceptable level before approval.</div>';
+    +'<div style="margin-top:10px;padding:10px 12px;background:#F8FBFF;border:1px solid #DBEAFE;border-radius:10px;font-size:12px;color:#1E3A8A;line-height:1.45"><strong>SURESERVICES HSSE-MS-PRO-001 rule:</strong> assess inherent risk before controls, apply the hierarchy of controls, then reassess residual risk. Residual High or Very High work must not commence until risk is reduced or escalated for Director / HSSE Consultant review.</div>';
   return h;
 }
 function raRiskBadge(level,score){
@@ -14226,7 +14277,7 @@ function raCalcRL(sel){
   var rr=s*p;
   var rlEl=row.querySelector('.'+prefix+'rl');
   if(!rlEl)return;
-  var lvl=rr>=20?'Critical':rr>=12?'Very High':rr>=6?'High':rr>=3?'Medium':'Low';
+  var lvl=raRiskLevelFromFactors(s,p);
   var cfg=RL_CFG[lvl]||['#f3f4f6','#6B7280'];
   rlEl.innerHTML='<span style="background:'+cfg[0]+';color:'+cfg[1]+';padding:2px 6px;border-radius:4px;font-size:10px;font-weight:700;display:block;text-align:center">'+rr+'<br><span style="font-size:9px">'+lvl+'</span></span>';
   rlEl.setAttribute('data-score',rr);rlEl.setAttribute('data-level',lvl);
@@ -14258,8 +14309,8 @@ function raBaselineAddRow(r, bodyOverride, typeOverride){
   var s=parseInt(r.rs||r.severity||1);var p=parseInt(r.rop||r.probability||1);
   var rs=parseInt(r.res_s||r.res_severity||1);var rp=parseInt(r.res_p||r.res_probability||1);
   var rr=s*p;var rrr=rs*rp;
-  var rlLvl=rr>=20?'Critical':rr>=12?'Very High':rr>=6?'High':rr>=3?'Medium':'Low';
-  var rrlLvl=rrr>=20?'Critical':rrr>=12?'Very High':rrr>=6?'High':rrr>=3?'Medium':'Low';
+  var rlLvl=raRiskLevelFromFactors(s,p);
+  var rrlLvl=raRiskLevelFromFactors(rs,rp);
   var rlCfg=RL_CFG[rlLvl]||['#f3f4f6','#6B7280'];
   var rrlCfg=RL_CFG[rrlLvl]||['#f3f4f6','#6B7280'];
   var isHIRA=bodyId==='ra-hira-body';
@@ -14300,8 +14351,8 @@ function raTaskAddRow(r){
   var s=parseInt(r.rs||1);var p=parseInt(r.rop||1);
   var rs=parseInt(r.res_s||1);var rp=parseInt(r.res_p||1);
   var rr=s*p;var rrr=rs*rp;
-  var rlLvl=rr>=20?'Critical':rr>=12?'Very High':rr>=6?'High':rr>=3?'Medium':'Low';
-  var rrlLvl=rrr>=20?'Critical':rrr>=12?'Very High':rrr>=6?'High':rrr>=3?'Medium':'Low';
+  var rlLvl=raRiskLevelFromFactors(s,p);
+  var rrlLvl=raRiskLevelFromFactors(rs,rp);
   var rlCfg=RL_CFG[rlLvl]||['#f3f4f6','#6B7280'];
   var rrlCfg=RL_CFG[rrlLvl]||['#f3f4f6','#6B7280'];
   var tr=document.createElement('tr');
@@ -14336,7 +14387,7 @@ function raDynamicAddRow(r){
   r=r||{};
   var body=document.getElementById('ra-dynamic-body');if(!body)return;
   var s=parseInt(r.rs||1);var p=parseInt(r.rop||1);var rr=s*p;
-  var rlLvl=rr>=20?'Critical':rr>=12?'Very High':rr>=6?'High':rr>=3?'Medium':'Low';
+  var rlLvl=raRiskLevelFromFactors(s,p);
   var rlCfg=RL_CFG[rlLvl]||['#f3f4f6','#6B7280'];
   var tr=document.createElement('tr');tr.style.borderBottom='1px solid #f0f0f0';
   tr.innerHTML='<td style="padding:5px 8px"><textarea class="ra-condition" style="width:100%;min-height:45px;padding:4px;border:1px solid var(--border);border-radius:4px;font-size:11px;resize:vertical" placeholder="Observed condition / hazard...">'+escH(r.condition||r.hazard||'')+'</textarea></td>'
@@ -14372,6 +14423,8 @@ function raCollectRows(){
         observed_risk:tr.querySelector('.ra-risk-obs')?.value||'',
         rs:parseInt(tr.querySelector('.rs')?.value)||1,
         rop:parseInt(tr.querySelector('.rop')?.value)||1,
+        rr:(parseInt(tr.querySelector('.rs')?.value)||1)*(parseInt(tr.querySelector('.rop')?.value)||1),
+        rl:raRiskLevelFromFactors(parseInt(tr.querySelector('.rs')?.value)||1,parseInt(tr.querySelector('.rop')?.value)||1),
         controls:tr.querySelector('.ra-controls')?.value||'',
         decision:tr.querySelector('.ra-decision')?.value||'proceed'
       };
@@ -14387,12 +14440,12 @@ function raCollectRows(){
         harm:tr.querySelector('.ra-harm')?.value||'',
         rs:parseInt(tr.querySelector('.rs')?.value)||1,
         rop:parseInt(tr.querySelector('.rop')?.value)||1,
-        rr:rr,rl:rr>=20?'Critical':rr>=12?'Very High':rr>=6?'High':rr>=3?'Medium':'Low',
+        rr:rr,rl:raRiskLevelFromFactors(parseInt(tr.querySelector('.rs')?.value)||1,parseInt(tr.querySelector('.rop')?.value)||1),
         controls:tr.querySelector('.ra-controls')?.value||'',
         further_controls:tr.querySelector('.ra-further-controls')?.value||'',
         res_s:parseInt(tr.querySelector('.r-rs')?.value)||1,
         res_p:parseInt(tr.querySelector('.r-rop')?.value)||1,
-        res_rr:rrr,res_rl:rrr>=20?'Critical':rrr>=12?'Very High':rrr>=6?'High':rrr>=3?'Medium':'Low'
+        res_rr:rrr,res_rl:raRiskLevelFromFactors(parseInt(tr.querySelector('.r-rs')?.value)||1,parseInt(tr.querySelector('.r-rop')?.value)||1)
       };
     });
   }
@@ -14408,13 +14461,13 @@ function raCollectRows(){
       who:tr.querySelector('.ra-who')?.value||'',
       rs:parseInt(tr.querySelector('.rs')?.value)||1,
       rop:parseInt(tr.querySelector('.rop')?.value)||1,
-      rr:rr,rl:rr>=20?'Critical':rr>=12?'Very High':rr>=6?'High':rr>=3?'Medium':'Low',
+      rr:rr,rl:raRiskLevelFromFactors(parseInt(tr.querySelector('.rs')?.value)||1,parseInt(tr.querySelector('.rop')?.value)||1),
       controls:tr.querySelector('.ra-controls')?.value||'',
       further_controls:tr.querySelector('.ra-further-controls')?.value||'',
       hoc_level:tr.querySelector('.ra-hoc')?.value||'',
       res_s:parseInt(tr.querySelector('.r-rs')?.value)||1,
       res_p:parseInt(tr.querySelector('.r-rop')?.value)||1,
-      res_rr:rrr,res_rl:rrr>=20?'Critical':rrr>=12?'Very High':rrr>=6?'High':rrr>=3?'Medium':'Low',
+      res_rr:rrr,res_rl:raRiskLevelFromFactors(parseInt(tr.querySelector('.r-rs')?.value)||1,parseInt(tr.querySelector('.r-rop')?.value)||1),
       legal_ref:tr.querySelector('.ra-legal')?.value||''
     };
   });
@@ -15498,7 +15551,7 @@ async function libLoadHazards(){
     d.forEach(function(item,i){
       var bg=i%2===0?'#fff':'#f9fafb';
       var s=item.default_severity||3;var p=item.default_probability||3;var rr=s*p;
-      var rl=rr>=20?'Critical':rr>=12?'Very High':rr>=6?'High':rr>=3?'Medium':'Low';
+      var rl=raRiskLevelFromFactors(s,p);
       var rlcfg=RL_CFG[rl]||['#f3f4f6','#6B7280'];
       h+='<tr style="border-bottom:1px solid #f0f0f0;background:'+bg+'">'
         +'<td style="padding:7px 14px"><span style="background:#e0f2fe;color:#185FA5;padding:2px 7px;border-radius:4px;font-size:11px;font-weight:600">'+escH(item.category||'—')+'</span></td>'
@@ -15652,7 +15705,7 @@ function raRenderAISuggestions(rows){
     +'</div>';
   rows.forEach(function(r,i){
     var rr=(r.rs||1)*(r.rop||1);
-    var rl=rr>=20?'Critical':rr>=12?'Very High':rr>=6?'High':rr>=3?'Medium':'Low';
+    var rl=raRiskLevelFromFactors(r.rs||1,r.rop||1);
     var rlcfg=RL_CFG[rl]||['#f3f4f6','#6B7280'];
     var hocCfg={elimination:'#065F46',substitution:'#1D9E75',engineering:'#185FA5',administrative:'#EF9F27',ppe:'#E24B4A'};
     h+='<div style="padding:10px 14px;border-bottom:1px solid #f3e8ff;background:'+(i%2===0?'#fff':'#fdf4ff')+'">'
@@ -32383,21 +32436,21 @@ function printIncidentReport(invId) {
 
 function raRiskMatrixPrintHtml(){
   var severity=[
-    ['1','Minor','First aid / negligible damage'],
-    ['2','Low','Medical treatment / minor damage'],
-    ['3','Moderate','Lost time injury / reportable damage'],
-    ['4','Major','Serious injury / major loss'],
-    ['5','Catastrophic','Fatality, permanent disability or catastrophic loss']
+    ['1','Negligible','First aid case, temporary stakeholder impact, minor asset damage or local mention'],
+    ['2','Minor','Medical treatment injury, local concern under 1 week clean-up, asset loss under 5%'],
+    ['3','Moderate','Major injury / hospitalisation, LTI 1-3 days, external scrutiny or asset loss under 10%'],
+    ['4','Major','Single fatality or multiple major injuries, licence impact, asset loss under 30%'],
+    ['5','Extreme','Multiple fatalities, long-term environmental impact, major asset destruction or government inquiry']
   ];
   var likelihood=[
-    ['1','Rare','May occur only in exceptional circumstances'],
-    ['2','Unlikely','Could occur, but not expected'],
-    ['3','Possible','Might occur during the activity'],
-    ['4','Likely','Will probably occur in many circumstances'],
-    ['5','Almost certain','Expected to occur frequently']
+    ['1','Rare','Exceptional circumstances (<5%)'],
+    ['2','Unlikely','Could occur at some time (<35%)'],
+    ['3','Possible','Might occur at some time (>35% - <65%)'],
+    ['4','Likely','Will probably occur (>65% - <95%)'],
+    ['5','Almost Certain','Expected in most circumstances (>95%)']
   ];
-  var riskCell=function(score){
-    var level=raRiskLevelFromScore(score);
+  var riskCell=function(score,s,p){
+    var level=raRiskLevelFromFactors(s,p);
     var cfg={Low:['#D1FAE5','#065F46'],Medium:['#FEF3C7','#92400E'],High:['#FFEDD5','#C2410C'],'Very High':['#FEE2E2','#B91C1C'],Critical:['#7F1D1D','#fff']}[level]||['#F3F4F6','#374151'];
     return '<td style="padding:5px;border:1px solid #fff;text-align:center;background:'+cfg[0]+';color:'+cfg[1]+';font-weight:900">'+score+'<div style="font-size:7pt;font-weight:700">'+level+'</div></td>';
   };
@@ -32412,10 +32465,10 @@ function raRiskMatrixPrintHtml(){
     +[1,2,3,4,5].map(function(s){return '<th>S'+s+'</th>';}).join('')
     +'</tr></thead><tbody>'
     +[5,4,3,2,1].map(function(p){
-      return '<tr><th>P'+p+' '+likelihood[p-1][1]+'</th>'+[1,2,3,4,5].map(function(s){return riskCell(p*s);}).join('')+'</tr>';
+      return '<tr><th>P'+p+' '+likelihood[p-1][1]+'</th>'+[1,2,3,4,5].map(function(s){return riskCell(p*s,s,p);}).join('')+'</tr>';
     }).join('')
     +'</tbody></table>'
-    +'<div style="font-size:8pt;color:#374151;background:#F8FBFF;border:1px solid #DBEAFE;padding:6px 8px;border-radius:4px"><strong>Rule:</strong> Initial risk is assessed after existing controls. Further controls are then defined to reduce residual risk to an acceptable level before approval.</div>';
+    +'<div style="font-size:8pt;color:#374151;background:#F8FBFF;border:1px solid #DBEAFE;padding:6px 8px;border-radius:4px"><strong>HSSE-MS-PRO-001 rule:</strong> inherent risk is assessed before controls, controls follow the hierarchy of controls, and residual High / Very High work must not proceed until reduced or escalated for Director / HSSE Consultant review.</div>';
 }
 
 // ── 2. RISK ASSESSMENT REPORT ──────────────────────────────────
@@ -37205,6 +37258,21 @@ function fireEquipStatusBadge(s) {
 <div class="card">
 <div class="card-title"><i class="ti ti-file-check"></i> RAMS Pack &amp; Linked SWMS</div>
 <div style="margin-bottom:12px;padding:10px 12px;background:#F8FBFF;border:1px solid #BFDBFE;border-radius:10px;color:#1E3A8A;font-size:12px;line-height:1.45"><strong>RAMS = Risk Assessment + Method Statement.</strong> The RA records hazards, controls and risk ratings. The SWMS / method statement explains how the work will be carried out step by step. Link the SWMS below to form the RAMS pack.</div>
+<div style="margin-bottom:12px;border:1px solid #D1FAE5;border-radius:10px;overflow:hidden">
+<div style="background:#ECFDF5;color:#065F46;font-weight:900;padding:9px 12px;font-size:12px">HSSE-MS-PRO-001 RAMS readiness checklist</div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:0;font-size:12px;color:#374151">
+<label style="display:flex;gap:7px;align-items:flex-start;padding:8px 10px;border-top:1px solid #D1FAE5"><input type="checkbox"/> Task, site, personnel and equipment defined</label>
+<label style="display:flex;gap:7px;align-items:flex-start;padding:8px 10px;border-top:1px solid #D1FAE5"><input type="checkbox"/> Hazards identified for each task step</label>
+<label style="display:flex;gap:7px;align-items:flex-start;padding:8px 10px;border-top:1px solid #D1FAE5"><input type="checkbox"/> Inherent risk assessed using 5x5 matrix</label>
+<label style="display:flex;gap:7px;align-items:flex-start;padding:8px 10px;border-top:1px solid #D1FAE5"><input type="checkbox"/> Controls follow hierarchy of controls</label>
+<label style="display:flex;gap:7px;align-items:flex-start;padding:8px 10px;border-top:1px solid #D1FAE5"><input type="checkbox"/> Residual risk acceptable before work starts</label>
+<label style="display:flex;gap:7px;align-items:flex-start;padding:8px 10px;border-top:1px solid #D1FAE5"><input type="checkbox"/> Linked SWMS documents logical work method</label>
+<label style="display:flex;gap:7px;align-items:flex-start;padding:8px 10px;border-top:1px solid #D1FAE5"><input type="checkbox"/> PTW need checked for high-risk work</label>
+<label style="display:flex;gap:7px;align-items:flex-start;padding:8px 10px;border-top:1px solid #D1FAE5"><input type="checkbox"/> Approval level matches highest residual risk</label>
+<label style="display:flex;gap:7px;align-items:flex-start;padding:8px 10px;border-top:1px solid #D1FAE5"><input type="checkbox"/> Toolbox / sign-on completed before work</label>
+<label style="display:flex;gap:7px;align-items:flex-start;padding:8px 10px;border-top:1px solid #D1FAE5"><input type="checkbox"/> Review triggers defined and understood</label>
+</div>
+</div>
 <div style="margin-bottom:12px;padding:10px 12px;background:#F0FDF4;border:1px solid #BBF7D0;border-radius:10px;color:#166534;font-size:12px;line-height:1.45"><strong>PDF import assistant:</strong> if you upload an existing risk assessment PDF, AURIS360 will try to convert detected hazards, consequences and controls into editable RA rows. Always review extracted rows before submitting for approval.</div>
 <div style="background:#f9fafb;border:2px dashed var(--border);border-radius:10px;padding:24px;text-align:center;margin-bottom:14px">
 <div style="font-size:40px;margin-bottom:10px">📎</div>
@@ -42329,8 +42397,14 @@ function fireEquipStatusBadge(s) {
 <div class="form-row">
 <div class="form-group"><label class="form-label">Date</label><input id="swms-date" type="date" onchange="swmsBuildPreview()"/></div>
 <div class="form-group"><label class="form-label">Review date</label><input id="swms-review-date" type="date"/></div>
+<div class="form-group"><label class="form-label">Number of workers / team</label><input id="swms-workers" type="text" placeholder="e.g. 4 workers + 1 supervisor" oninput="swmsBuildPreview()"/></div>
 </div>
 <div class="form-group"><label class="form-label">Scope of work</label><textarea id="swms-scope" style="min-height:72px" placeholder="Describe the work, limits, interfaces and conditions..." oninput="swmsBuildPreview()"></textarea></div>
+<div class="form-row">
+<div class="form-group"><label class="form-label">Competency requirements</label><textarea id="swms-competency" style="min-height:66px" placeholder="Training, licence, authorisation, experience, supervision requirements..." oninput="swmsBuildPreview()"></textarea></div>
+<div class="form-group"><label class="form-label">Pre-commencement requirements</label><textarea id="swms-prestart" style="min-height:66px" placeholder="Permits, isolations, inductions, notifications, client approval, access control..." oninput="swmsBuildPreview()"></textarea></div>
+</div>
+<div class="form-group"><label class="form-label">Reference material</label><textarea id="swms-references" style="min-height:56px" placeholder="Legislation, codes of practice, company procedures, client requirements, manuals..." oninput="swmsBuildPreview()"></textarea></div>
 </div>
 
 <div class="card" style="margin-bottom:14px">
@@ -42348,6 +42422,7 @@ function fireEquipStatusBadge(s) {
 <div class="form-group"><label class="form-label">PPE required</label><textarea id="swms-ppe" style="min-height:70px" placeholder="Safety shoes, gloves, eye protection, harness, respirator..." oninput="swmsBuildPreview()"></textarea></div>
 </div>
 <div class="form-group"><label class="form-label">Emergency arrangements</label><textarea id="swms-emergency" style="min-height:96px" placeholder="First aid arrangements, emergency contact, rescue plan, spill kit, waste disposal, fire response, evacuation point, environmental precautions..." oninput="swmsBuildPreview()"></textarea></div>
+<div class="form-group"><label class="form-label">Review triggers</label><textarea id="swms-review-triggers" style="min-height:64px" placeholder="Review before new site/project, if scope/method/equipment/personnel/substances change, after incident/near miss/Stop Work, after legal/client changes, or at least every 12 months..." oninput="swmsBuildPreview()"></textarea></div>
 </div>
 
 <div class="card" style="padding:0;overflow:hidden">
@@ -42356,13 +42431,15 @@ function fireEquipStatusBadge(s) {
 <button class="btn btn-sm" style="background:rgba(255,255,255,.18);color:#fff;border-color:rgba(255,255,255,.35)" onclick="swmsAddStep();swmsBuildPreview()"><i class="ti ti-plus"></i>Add step</button>
 </div>
 <div style="overflow:auto">
-<table style="width:100%;min-width:980px;border-collapse:collapse;font-size:12px">
+<table style="width:100%;min-width:1320px;border-collapse:collapse;font-size:12px">
 <thead><tr style="background:#f8fafc">
 <th style="padding:8px;border-bottom:1px solid var(--border);width:44px">No.</th>
 <th style="padding:8px;border-bottom:1px solid var(--border);min-width:170px;text-align:left">Activity / Work Task Step</th>
 <th style="padding:8px;border-bottom:1px solid var(--border);min-width:160px;text-align:left">Potential Hazards</th>
 <th style="padding:8px;border-bottom:1px solid var(--border);min-width:160px;text-align:left">Risk / Consequence</th>
+<th style="padding:8px;border-bottom:1px solid var(--border);min-width:105px;text-align:left">Inherent Risk</th>
 <th style="padding:8px;border-bottom:1px solid var(--border);min-width:240px;text-align:left">Controls Required / Safe Method</th>
+<th style="padding:8px;border-bottom:1px solid var(--border);min-width:105px;text-align:left">Residual Risk</th>
 <th style="padding:8px;border-bottom:1px solid var(--border);min-width:130px;text-align:left">Responsible</th>
 <th style="padding:8px;border-bottom:1px solid var(--border);width:44px"></th>
 </tr></thead>
