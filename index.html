@@ -27318,7 +27318,7 @@ async function auditSave() {
       try{await api('/action_tracker',{m:'POST',p:'return=minimal',b:{company_id:ccid(),title:a.description.substring(0,80),description:a.description,source_type:'inspection',source_module:'inspection',source_ref:savedRef||body.reference_no||savedId?.slice(0,8)||'',priority:'high',status:'open',assigned_to_name:a.responsible||null,target_date:a.target_date||null,created_by:prof?.id}});}catch(ex){}
     }
     auditBackToList();
-  } catch(e) { toast('Error: '+e.message,false); }
+  } catch(e) { toast(actionErrorMessage('Save inspection','Audits & Inspections',e.message),false); }
 }
 
 function saveInspection(){auditSave();}  // backward compat
@@ -27333,7 +27333,7 @@ async function auditDelete() {
       await api('/inspections?id=eq.'+auditEditId,{m:'PATCH',p:'return=minimal',b:{status:'archived',archived_at:new Date().toISOString(),updated_at:new Date().toISOString()}});
       var rec=auditAllData.find(function(x){return x.id===auditEditId;});if(rec)Object.assign(rec,{status:'archived',archived_at:new Date().toISOString()});
       toast('Inspection archived and kept for audit history');auditBackToList();
-    }catch(e){toast(e.message,false);}
+    }catch(e){toast(actionErrorMessage('Archive inspection','Audits & Inspections',e.message),false);}
     return;
   }
   if(!(await appConfirmDelete('inspection','Permanent deletion is intended only for open, draft or test inspection records.')))return;
@@ -27342,7 +27342,7 @@ async function auditDelete() {
     if(Array.isArray(deleted)&&!deleted.length)throw new Error('Record not found or permission denied');
     toast('Inspection permanently deleted');auditBackToList();
   }
-  catch(e){toast(e.message,false);}
+  catch(e){toast(actionErrorMessage('Delete inspection','Audits & Inspections',e.message),false);}
 }
 
 function auditBackToList() {
@@ -27490,7 +27490,7 @@ async function findingsLoad() {
 
 async function findingClose(id){
   try{await api('/audit_findings?id=eq.'+id,{m:'PATCH',p:'return=minimal',b:{status:'closed',closed_date:new Date().toISOString().slice(0,10),updated_at:new Date().toISOString()}});toast('Finding closed!');findingsLoad();}
-  catch(e){toast(e.message,false);}
+  catch(e){toast(actionErrorMessage('Close audit finding','Audits & Inspections',e.message),false);}
 }
 
 // ── Offline detection ───────────────────────────────────────────────
@@ -27529,7 +27529,7 @@ async function psLoad(){
         +'</tr>';
     });
     el.innerHTML=h+'</tbody></table>';
-  }catch(e){el.innerHTML='<div style="padding:20px;color:var(--text2);text-align:center">'+escH(e.message)+'</div>';}
+  }catch(e){el.innerHTML=registerErrorHtml('Pre-start inspections register',e.message);}
 }
 
 function psShowList(){
@@ -27636,7 +27636,7 @@ async function psSave(){
     else{body.created_by=prof?.id;await api('/inspections',{m:'POST',p:'return=minimal',b:body});toast('Pre-start saved!');}
     if(dec==='stop')toast('⛔ STOP decision — work must not proceed until issues resolved.',false);
     psShowList();
-  }catch(e){toast(e.message,false);}
+  }catch(e){toast(actionErrorMessage('Save pre-start inspection','Audits & Inspections',e.message),false);}
 }
 
 async function psDelete(){
@@ -27647,7 +27647,7 @@ async function psDelete(){
     try{
       await api('/inspections?id=eq.'+window.psEditId,{m:'PATCH',p:'return=minimal',b:{status:'archived',archived_at:new Date().toISOString(),updated_at:new Date().toISOString()}});
       toast('Pre-start inspection archived');psShowList();
-    }catch(e){toast(e.message,false);}
+    }catch(e){toast(actionErrorMessage('Archive pre-start inspection','Audits & Inspections',e.message),false);}
     return;
   }
   if(!(await appConfirmDelete('pre-start inspection','Permanent deletion is intended only for archived duplicate/test records.')))return;
@@ -27655,18 +27655,18 @@ async function psDelete(){
     var deleted=await api('/inspections?id=eq.'+window.psEditId,{m:'DELETE',p:'return=representation'});
     if(Array.isArray(deleted)&&!deleted.length)throw new Error('Record not found or permission denied');
     toast('Pre-start inspection permanently deleted');psShowList();
-  }catch(e){toast(e.message,false);}
+  }catch(e){toast(actionErrorMessage('Delete pre-start inspection','Audits & Inspections',e.message),false);}
 }
 
 async function psDeleteFromList(id){
   var current=auditAllData.find(function(x){return x.id===id;})||{};
   if((current.status||'completed')!=='archived'){
     if(!(await appConfirmAction({title:'Archive pre-start inspection',message:'Archive this pre-start inspection instead of deleting it?',detail:'The record will remain available for traceability and evidence.',confirmText:'Archive inspection',cancelText:'Back'})))return;
-    api('/inspections?id=eq.'+id,{m:'PATCH',p:'return=minimal',b:{status:'archived',archived_at:new Date().toISOString(),updated_at:new Date().toISOString()}}).then(function(){psLoad();toast('Pre-start inspection archived');}).catch(function(e){toast(e.message,false);});
+    api('/inspections?id=eq.'+id,{m:'PATCH',p:'return=minimal',b:{status:'archived',archived_at:new Date().toISOString(),updated_at:new Date().toISOString()}}).then(function(){psLoad();toast('Pre-start inspection archived');}).catch(function(e){toast(actionErrorMessage('Archive pre-start inspection','Audits & Inspections',e.message),false);});
     return;
   }
   if(!(await appConfirmDelete('pre-start inspection','Permanent deletion is intended only for archived duplicate/test records.')))return;
-  api('/inspections?id=eq.'+id,{m:'DELETE',p:'return=representation'}).then(function(d){if(Array.isArray(d)&&!d.length)throw new Error('Record not found or permission denied');psLoad();toast('Pre-start inspection permanently deleted');}).catch(function(e){toast(e.message,false);});
+  api('/inspections?id=eq.'+id,{m:'DELETE',p:'return=representation'}).then(function(d){if(Array.isArray(d)&&!d.length)throw new Error('Record not found or permission denied');psLoad();toast('Pre-start inspection permanently deleted');}).catch(function(e){toast(actionErrorMessage('Delete pre-start inspection','Audits & Inspections',e.message),false);});
 }
 
 function psDecisionChange(){}  // handled by radio onchange
