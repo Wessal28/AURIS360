@@ -7095,7 +7095,7 @@ async function chemSave(){
       var updateBody=Object.assign({},body);
       delete updateBody.company_id;
       var updated=await api('/chemical_register?id=eq.'+chemEditId,{m:'PATCH',p:'return=representation',b:updateBody});
-      if(Array.isArray(updated)&&!updated.length){throw new Error('Supabase policy blocked the update. Run chemical_rls_fix.sql in Supabase SQL Editor.');}
+      if(Array.isArray(updated)&&!updated.length){throw new Error('row-level security policy blocked chemical update');}
       var original=chemData.find(function(x){return x.id===chemEditId;})||{};
       var saved=Object.assign({},original,updateBody,updated?.[0]||{});
       chemData=chemData.map(function(x){return x.id===chemEditId?saved:x;});
@@ -7126,7 +7126,7 @@ async function chemSave(){
       }catch(ex){console.warn('Chemical MAP action failed',ex);}
     }
     chemBack();
-  }catch(e){toast('Save failed: '+e.message,false);}
+  }catch(e){toast(actionErrorMessage('Save chemical','Chemical Control',e.message),false);}
 }
 
 async function chemDelete(){
@@ -7146,16 +7146,16 @@ async function chemDelete(){
   try{
     if(current.status!=='archived'&&!isSA()){
       var archived=await api('/chemical_register?id=eq.'+encodeURIComponent(chemEditId),{m:'PATCH',p:'return=representation',b:{status:'archived',updated_at:new Date().toISOString()}});
-      if(Array.isArray(archived)&&!archived.length){toast('Archive failed: record not found or permission denied',false);return;}
+      if(Array.isArray(archived)&&!archived.length){toast(actionErrorMessage('Archive chemical','Chemical Control','record not found or permission denied'),false);return;}
     }else{
       var deleted=await api('/chemical_register?id=eq.'+encodeURIComponent(chemEditId),{m:'DELETE',p:'return=representation'});
-      if(Array.isArray(deleted)&&!deleted.length){toast('Delete failed: record not found or permission denied',false);return;}
+      if(Array.isArray(deleted)&&!deleted.length){toast(actionErrorMessage('Delete chemical','Chemical Control','record not found or permission denied'),false);return;}
     }
     chemData=chemData.filter(function(x){return x.id!==chemEditId;});
     toast(current.status==='archived'||isSA()?'Deleted':'Archived');
     chemBack();
   }
-  catch(e){toast('Delete failed: '+e.message,false);}
+  catch(e){toast(actionErrorMessage('Delete chemical','Chemical Control',e.message),false);}
 }
 
 
@@ -9105,6 +9105,17 @@ var html='<div style="font-weight:800;color:#A32D2D;margin-bottom:6px">Unable to
 '<div>Please refresh the page and try again. If the problem continues, contact SEPHS admin.</div>';
 if(typeof isSA==='function'&&isSA()&&msg)html+='<div style="margin-top:10px;font-size:12px;color:var(--text3)">Technical detail: '+escH(msg)+'</div>';
 return '<div class="card" style="padding:22px;color:var(--text2);line-height:1.5">'+html+'</div>';
+}
+function actionErrorMessage(action,moduleName,detail){
+var msg=String(detail||'');
+var mod=moduleName||'record';
+if(msg.indexOf('schema cache')!==-1||msg.indexOf('does not exist')!==-1||msg.indexOf('relation')!==-1){
+return (isSA()?mod+' setup required. Technical detail: '+msg:mod+' is not fully enabled yet. Please contact SEPHS admin to complete setup.');
+}
+if(msg.indexOf('permission denied')!==-1||msg.indexOf('row-level security')!==-1||msg.indexOf('policy')!==-1||msg.indexOf('not found or permission denied')!==-1){
+return (isSA()?action+' was blocked by database permissions. Technical detail: '+msg:'You do not currently have permission to '+String(action||'complete this action').toLowerCase()+'. Please contact your company admin or SEPHS admin.');
+}
+return (isSA()?((action||'Action')+' failed. Technical detail: '+msg):((action||'Action')+' failed. Please refresh and try again. If the problem continues, contact SEPHS admin.'));
 }
 function systemHealthExplainError(msg){
 msg=String(msg||'').trim();
@@ -22130,7 +22141,7 @@ async function atexSave(){
   try{
     if(atexEditId){
       var updated=await api('/atex_areas?id=eq.'+atexEditId,{m:'PATCH',p:'return=representation',b:body});
-      if(Array.isArray(updated)&&!updated.length)throw new Error('Update failed: record not found or permission denied');
+      if(Array.isArray(updated)&&!updated.length)throw new Error('record not found or permission denied');
       savedAtexRef=updated?.[0]?.area_ref||savedAtexRef;
     }
     else{
@@ -22159,7 +22170,7 @@ async function atexSave(){
       }catch(ex){console.warn('ATEX MAP action failed',ex);}
     }
     toast('ATEX area saved');atexBack();
-  }catch(e){toast(e.message,false);}
+  }catch(e){toast(actionErrorMessage('Save ATEX area','ATEX areas',e.message),false);}
 }
 
 async function atexDelete(){
@@ -22179,14 +22190,14 @@ async function atexDelete(){
   try{
     if(hard){
       var deleted=await api('/atex_areas?id=eq.'+atexEditId,{m:'DELETE',p:'return=representation'});
-      if(Array.isArray(deleted)&&!deleted.length)throw new Error('Delete failed: record not found or permission denied');
+      if(Array.isArray(deleted)&&!deleted.length)throw new Error('record not found or permission denied');
     }else{
       var archived=await api('/atex_areas?id=eq.'+atexEditId,{m:'PATCH',p:'return=representation',b:{status:'archived',updated_at:new Date().toISOString()}});
-      if(Array.isArray(archived)&&!archived.length)throw new Error('Archive failed: record not found or permission denied');
+      if(Array.isArray(archived)&&!archived.length)throw new Error('record not found or permission denied');
     }
     toast(hard?'Deleted':'Archived');atexBack();
   }
-  catch(e){toast(e.message,false);}
+  catch(e){toast(actionErrorMessage(hard?'Delete ATEX area':'Archive ATEX area','ATEX areas',e.message),false);}
 }
 
 function atexOpenRA(){showPage('risk',null);setTimeout(function(){if(typeof raLoadTemplate==='function')raLoadTemplate('tpl-atex');},180);}
@@ -27474,7 +27485,7 @@ async function findingsLoad() {
         +'</div>';
     });
     el.innerHTML=h+'</div>';
-  }catch(e){el.innerHTML='<div style="padding:20px;color:var(--text2);text-align:center">'+escH(e.message)+'<br><small>Run audit_schema.sql to create the audit_findings table.</small></div>';}
+  }catch(e){el.innerHTML=registerErrorHtml('Audit findings register',e.message);}
 }
 
 async function findingClose(id){
@@ -29654,7 +29665,7 @@ async function adminSaveSite() {
     if(adminEditSiteId){await api('/sites?id=eq.'+adminEditSiteId,{m:'PATCH',p:'return=minimal',b:body});toast('Site updated!');}
     else{body.created_by=prof?.id;var res=await api('/sites',{m:'POST',p:'return=representation',b:body});if(res?.[0]?.id&&!body.site_code){var n=String(adminSitesData.length+1).padStart(3,'0');await api('/sites?id=eq.'+res[0].id,{m:'PATCH',p:'return=minimal',b:{site_code:'SITE-'+n}});}toast('Site added!');}
     adminCloseSiteModal(); await adminLoadAll(); adminLoadSites(); adminRenderHierarchy();
-  }catch(e){toast('Run multisite_schema.sql first. Error: '+e.message,false);}
+  }catch(e){toast(actionErrorMessage('Save site','Multi-site management',e.message),false);}
 }
 
 async function adminDeleteSite(){
@@ -29992,7 +30003,7 @@ async function adminLoadAccessList() {
         +'</tr>';
     });
     el.innerHTML=h+'</tbody></table></div>';
-  }catch(e){el.innerHTML='<div style="padding:20px;color:var(--text2);text-align:center">'+escH(e.message)+'<br><small>Run multisite_schema.sql to create the user_site_access table.</small></div>';}
+  }catch(e){el.innerHTML=registerErrorHtml('Site access register',e.message);}
 }
 
 function adminGrantAccess(){
@@ -30634,7 +30645,7 @@ function integCopyBaseUrl() {
 
 function indBack(){ var el=document.getElementById('ind-form');if(el)el.style.display='none';var v=document.getElementById('train-view-induction');if(v)v.style.display='block';if(typeof indLoad==='function')indLoad(); }
 function indNew(){ window.indEditId=null;var el=document.getElementById('ind-form');if(!el)return;document.getElementById('ind-form-title').textContent='New Induction';if(document.getElementById('ind-del-btn'))document.getElementById('ind-del-btn').style.display='none';['indf-person','indf-emp-id','indf-dept','indf-job-title','indf-inducted-by','indf-extra-topics','indf-notes'].forEach(function(id){var e=document.getElementById(id);if(e)e.value='';});fillPersonSelect('indf-person');fillPersonSelect('indf-inducted-by',prof?.full_name||personFullName(prof));if(document.getElementById('indf-ind-date'))document.getElementById('indf-ind-date').value=new Date().toISOString().slice(0,10);var iv=document.getElementById('train-view-induction');if(iv)iv.style.display='none';el.style.display='block'; }
-async function indSave(){ var person=document.getElementById('indf-person')?.value?.trim();if(!person){toast('Please enter person name',false);return;}var g=function(id){var el=document.getElementById(id);return el?el.value||null:null;};var topics=Array.from(document.querySelectorAll('.ind-topic:checked')).map(function(cb){return cb.value;});var body={company_id:ccid(),person_name:person,employee_id:g('indf-emp-id'),department:g('indf-dept'),job_title:g('indf-job-title'),induction_type:g('indf-type')||'new_employee',induction_date:g('indf-ind-date'),inducted_by:g('indf-inducted-by'),topics_covered:topics,notes:g('indf-notes'),status:g('indf-status')||'completed',completed:g('indf-status')==='completed',updated_at:new Date().toISOString()};try{if(window.indEditId){await api('/induction_records?id=eq.'+window.indEditId,{m:'PATCH',p:'return=minimal',b:body});toast('Updated!');}else{body.created_by=prof?.id;await api('/induction_records',{m:'POST',p:'return=minimal',b:body});toast('Induction saved!');}indBack();}catch(e){toast('Error: '+e.message+'. Run training_schema.sql.',false);} }
+async function indSave(){ var person=document.getElementById('indf-person')?.value?.trim();if(!person){toast('Please enter person name',false);return;}var g=function(id){var el=document.getElementById(id);return el?el.value||null:null;};var topics=Array.from(document.querySelectorAll('.ind-topic:checked')).map(function(cb){return cb.value;});var body={company_id:ccid(),person_name:person,employee_id:g('indf-emp-id'),department:g('indf-dept'),job_title:g('indf-job-title'),induction_type:g('indf-type')||'new_employee',induction_date:g('indf-ind-date'),inducted_by:g('indf-inducted-by'),topics_covered:topics,notes:g('indf-notes'),status:g('indf-status')||'completed',completed:g('indf-status')==='completed',updated_at:new Date().toISOString()};try{if(window.indEditId){await api('/induction_records?id=eq.'+window.indEditId,{m:'PATCH',p:'return=minimal',b:body});toast('Updated!');}else{body.created_by=prof?.id;await api('/induction_records',{m:'POST',p:'return=minimal',b:body});toast('Induction saved!');}indBack();}catch(e){toast(actionErrorMessage('Save induction','Training register',e.message),false);} }
 async function indDelete(){ if(!window.indEditId)return;try{var rows=await api('/induction_records?id=eq.'+window.indEditId+'&select=status');var status=String(rows?.[0]?.status||'').toLowerCase();if(!['cancelled','archived'].includes(status)){if(!(await appConfirmAction({title:'Cancel induction record',message:'Cancel this induction record instead of deleting it?',detail:'Induction records are evidence of training. The record will remain available for audit history. Permanent delete is only available after cancellation.',confirmText:'Cancel record',cancelText:'Back'})))return;await api('/induction_records?id=eq.'+window.indEditId,{m:'PATCH',p:'return=minimal',b:{status:'cancelled',completed:false,updated_at:new Date().toISOString()}});toast('Induction record cancelled');indBack();return;}if(!(await appConfirmDelete('induction record','This record is already cancelled/archived. Permanent deletion should be used only for duplicate/test records.')))return;await api('/induction_records?id=eq.'+window.indEditId,{m:'DELETE'});toast('Deleted!');indBack();}catch(e){toast(e.message,false);} }
 function elcNew(){ window.elcEditId=null;var el=document.getElementById('elc-form');if(!el)return;document.getElementById('elc-form-title').textContent='New Course';if(document.getElementById('elc-del-btn'))document.getElementById('elc-del-btn').style.display='none';['elcf-title','elcf-code','elcf-desc','elcf-url'].forEach(function(id){var e=document.getElementById(id);if(e)e.value='';});var v=document.getElementById('train-view-elearning');if(v)v.style.display='none';el.style.display='block'; }
 function elcBack(){ var el=document.getElementById('elc-form');if(el)el.style.display='none';var v=document.getElementById('train-view-elearning');if(v)v.style.display='block';if(typeof elcLoad==='function')elcLoad(); }
