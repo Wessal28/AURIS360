@@ -26915,7 +26915,7 @@ function auditFilter() {
 function auditNew(preType) {
   auditEditId = null;
   var type = preType || 'workplace';
-  auditSelectType(type);
+  auditSelectType(type,{skipTemplate:true});
   document.getElementById('audit-form-title').textContent = 'New Inspection';
   document.getElementById('audit-form-ref').textContent = 'REF-AUTO';
   document.getElementById('audit-delete-btn').style.display = 'none';
@@ -26946,7 +26946,7 @@ function auditOpen(id) {
   var x = auditAllData.find(function(r){return r.id===id;}); if(!x) return;
   auditEditId = id;
   var type = x.inspection_type || 'workplace';
-  auditSelectType(type);
+  auditSelectType(type,{skipTemplate:true});
   document.getElementById('audit-form-title').textContent = x.site || 'Edit Inspection';
   document.getElementById('audit-form-ref').textContent = x.reference_no || '—';
   document.getElementById('audit-delete-btn').style.display = isMgr()?'inline-flex':'none';
@@ -26989,7 +26989,8 @@ function auditOpen(id) {
 }
 
 // ── Select type and configure form ────────────────────────────────
-function auditSelectType(type) {
+function auditSelectType(type, opts) {
+  opts = opts || {};
   document.getElementById('audit-type').value = type;
   var cfg = AUDIT_TYPE_CFG[type] || AUDIT_TYPE_CFG.workplace;
   var banner = document.getElementById('audit-form-banner');
@@ -27007,9 +27008,27 @@ function auditSelectType(type) {
   var findSec = document.getElementById('audit-findings-section');
   if(stdRow) stdRow.style.display = auditTypes.includes(type)?'block':'none';
   if(findSec) findSec.style.display = auditTypes.includes(type)?'block':'none';
+  if(!opts.skipTemplate && document.getElementById('audit-form-view')?.style.display !== 'none') {
+    auditAutoLoadTemplate(type);
+  }
 }
 
 // ── Templates ──────────────────────────────────────────────────────
+function auditBuiltinTemplateOptions(){
+  return [
+    ['workplace','AURIS360 Workplace Inspection'],
+    ['behavioral','AURIS360 Behavioural Safety Inspection'],
+    ['equipment','AURIS360 Equipment Inspection'],
+    ['ppe','AURIS360 PPE Inspection'],
+    ['fire','AURIS360 Fire Safety Inspection'],
+    ['environmental','AURIS360 Environmental Inspection'],
+    ['iso_audit','AURIS360 ISO 45001 Audit'],
+    ['internal_audit','AURIS360 Internal Audit'],
+    ['supplier_audit','AURIS360 Supplier Audit'],
+    ['contractor_audit','AURIS360 Contractor Audit'],
+    ['regulatory','AURIS360 Regulatory Audit']
+  ].map(function(x){return '<option value="__builtin__:'+x[0]+'">'+x[1]+'</option>';}).join('');
+}
 async function auditLoadTemplates() {
   try {
     var d = await api('/checklist_templates?select=*'+cf()+'&order=template_name');
@@ -27017,12 +27036,14 @@ async function auditLoadTemplates() {
     // Also check for default templates seeded in DB
     var sel = document.getElementById('audit-template-select');
     if(sel) {
-      sel.innerHTML = '<option value="">Load template...</option><option value="__builtin__:workplace">AURIS360 Workplace Inspection</option>'
+      sel.innerHTML = '<option value="">Load template...</option>'+auditBuiltinTemplateOptions()
         + (auditTemplates||[]).map(function(t){return '<option value="'+t.id+'">'+escH(t.template_name)+'</option>';}).join('');
     }
   } catch(e) {
     // Use built-in default templates if DB not available
     auditTemplates = [];
+    var sel = document.getElementById('audit-template-select');
+    if(sel) sel.innerHTML = '<option value="">Load template...</option>'+auditBuiltinTemplateOptions();
   }
 }
 
@@ -27034,7 +27055,7 @@ async function auditLoadTemplate() {
     var fallback=AUDIT_DEFAULT_CHECKLISTS[builtinType]||AUDIT_DEFAULT_CHECKLISTS.workplace;
     window.chkItems=fallback;
     buildChecklist([]);
-    toast('Template loaded: AURIS360 Workplace Inspection');
+    toast('Template loaded');
     return;
   }
   var tmpl = auditTemplates.find(function(t){return t.id===sel.value;});
@@ -27049,10 +27070,10 @@ async function auditLoadTemplate() {
 async function auditAutoLoadTemplate(type) {
   // Try to load the default template for this type
   try {
-    if(type==='workplace' && AUDIT_DEFAULT_CHECKLISTS.workplace) {
-      window.chkItems = AUDIT_DEFAULT_CHECKLISTS.workplace;
+    if(AUDIT_DEFAULT_CHECKLISTS[type]) {
+      window.chkItems = AUDIT_DEFAULT_CHECKLISTS[type];
       buildChecklist([]);
-      var sel=document.getElementById('audit-template-select'); if(sel)sel.value='__builtin__:workplace';
+      var sel=document.getElementById('audit-template-select'); if(sel)sel.value='__builtin__:'+type;
       return;
     }
     var templates = auditTemplates.filter(function(t){return t.inspection_type===type&&t.is_default;});
@@ -27120,6 +27141,15 @@ var AUDIT_DEFAULT_CHECKLISTS = {
     {ca:'Hands',item:'Appropriate gloves available'},{ca:'Feet',item:'Safety boots worn in required areas'},
     {ca:'Fall',item:'Harnesses within inspection date'},
   ],
+  behavioral: [
+    {ca:'Safe Behaviours',item:'Workers follow approved work method / procedure'},
+    {ca:'Safe Behaviours',item:'Workers stop and correct unsafe conditions when observed'},
+    {ca:'PPE Behaviour',item:'PPE worn correctly and consistently'},
+    {ca:'Housekeeping Behaviour',item:'Team keeps work area tidy during the task'},
+    {ca:'Communication',item:'Workers communicate hazards and changes clearly'},
+    {ca:'Supervision',item:'Supervisor reinforces safe behaviour and intervenes when required'},
+    {ca:'Risk Awareness',item:'Workers can explain main hazards and controls for the task'},
+  ],
   equipment: [
     {ca:'Pre-use',item:'Equipment pre-use inspection completed'},{ca:'Guards',item:'All guards and covers in place'},
     {ca:'Operation',item:'E-stop tested and functional'},{ca:'Records',item:'Maintenance record up to date'},
@@ -27134,6 +27164,42 @@ var AUDIT_DEFAULT_CHECKLISTS = {
     {ca:'Leadership (Cl.5)',item:'OH&S policy documented and communicated'},{ca:'Planning (Cl.6)',item:'Risk assessment process implemented'},
     {ca:'Support (Cl.7)',item:'Competency and training records maintained'},{ca:'Operation (Cl.8)',item:'Operational controls in place'},
     {ca:'Performance (Cl.9)',item:'Monitoring and measurement implemented'},{ca:'Improvement (Cl.10)',item:'NCR and incident process in place'},
+  ],
+  internal_audit: [
+    {ca:'Scope & Criteria',item:'Audit scope, criteria and process owner defined'},
+    {ca:'Legal & Other Requirements',item:'Applicable legal and company requirements identified'},
+    {ca:'Risk Controls',item:'Operational controls implemented and effective'},
+    {ca:'Competence',item:'Training, competence and authorisation records available'},
+    {ca:'Documents & Records',item:'Controlled documents and records available and current'},
+    {ca:'Monitoring',item:'KPIs, inspections, incidents and actions reviewed'},
+    {ca:'Improvement',item:'Previous findings and corrective actions closed effectively'},
+  ],
+  supplier_audit: [
+    {ca:'Supplier Approval',item:'Supplier approval / qualification records available'},
+    {ca:'Insurance & Legal',item:'Licences, insurance and legal documents current'},
+    {ca:'HSE Management',item:'Supplier HSE policy, procedures and responsibilities defined'},
+    {ca:'Competence',item:'Personnel competence and training evidence available'},
+    {ca:'Equipment & Materials',item:'Equipment, materials and SDS/certificates controlled'},
+    {ca:'Incident & Emergency',item:'Incident reporting and emergency arrangements established'},
+    {ca:'Performance',item:'Supplier HSE performance and previous issues reviewed'},
+  ],
+  contractor_audit: [
+    {ca:'Prequalification',item:'Contractor approved and scope of work defined'},
+    {ca:'Documents',item:'RAMS, permits, certificates and insurance available'},
+    {ca:'Induction & Training',item:'Contractor personnel inducted and competent'},
+    {ca:'Site Controls',item:'Work area controlled with signage, barriers and supervision'},
+    {ca:'Tools & Equipment',item:'Contractor tools/equipment inspected and fit for use'},
+    {ca:'PPE',item:'Contractor PPE suitable and worn correctly'},
+    {ca:'Emergency & Reporting',item:'Emergency, incident and communication arrangements known'},
+  ],
+  regulatory: [
+    {ca:'Legal Register',item:'Applicable legal requirement identified in legal register'},
+    {ca:'Permit / Licence',item:'Required permit, licence or certificate available and valid'},
+    {ca:'Statutory Inspection',item:'Statutory inspection/test records current'},
+    {ca:'Competent Person',item:'Inspection or activity completed by authorised competent person'},
+    {ca:'Records',item:'Required regulatory records maintained and retrievable'},
+    {ca:'Notification',item:'Regulatory notification/reporting requirements met where applicable'},
+    {ca:'Compliance Status',item:'Non-compliance/gaps recorded with corrective action and due date'},
   ],
 };
 
