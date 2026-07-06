@@ -14568,7 +14568,7 @@ async function raSave(targetStatus){
         raSyncToMAP(res[0].id, rows);
       }
     }
-  }catch(e){toast(e.message,false);console.error(e);}
+  }catch(e){toast(actionErrorMessage('Save risk assessment','Risk Assessment',e.message),false);console.error(e);}
 }
 
 async function raGetActiveApprovalWorkflow(){
@@ -14786,7 +14786,7 @@ async function raDeleteCurrent(){
       var sel=document.getElementById('ra-status-sel');if(sel)sel.value='archived';
       toast('Risk assessment archived and kept for audit history');
       controlledApplyFormLock('ra-form-view','ra-controlled-lock-note',current,'Risk assessment');
-    }catch(e){toast(e.message,false);}
+    }catch(e){toast(actionErrorMessage('Archive risk assessment','Risk Assessment',e.message),false);}
     return;
   }
   if(!(await appConfirmDelete('risk assessment','Permanent deletion is intended only for draft, rejected, archived or test risk assessments.')))return;
@@ -14794,7 +14794,7 @@ async function raDeleteCurrent(){
     if(!deleted||!deleted.length)throw new Error('Delete failed: record not found or permission denied');
     raAllData=raAllData.filter(x=>x.id!==raEditingId);
     toast('Risk assessment permanently deleted');raEditingId=null;raShowList();
-  }).catch(function(e){toast(e.message,false);});
+  }).catch(function(e){toast(actionErrorMessage('Delete risk assessment','Risk Assessment',e.message),false);});
 }
 function raDelete(){raDeleteCurrent();}
 
