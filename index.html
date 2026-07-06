@@ -8087,38 +8087,37 @@ async function mtgLoadSeries(){
       mtgRenderRoadmap();
       return;
     }
-    // Group by type
-    var byType={};
-    d.forEach(function(s){
-      if(!byType[s.meeting_type])byType[s.meeting_type]=[];
-      byType[s.meeting_type].push(s);
+    var h='<div style="overflow:auto"><table style="width:100%;min-width:980px;border-collapse:collapse;font-size:12px">'
+      +'<thead><tr style="background:#1a3a5c;color:#fff">'
+      +'<th style="padding:9px 12px;text-align:left;color:#fff">Type</th>'
+      +'<th style="padding:9px 12px;text-align:left;color:#fff">Meeting</th>'
+      +'<th style="padding:9px 12px;text-align:left;color:#fff">Frequency</th>'
+      +'<th style="padding:9px 12px;text-align:left;color:#fff">Chaired by</th>'
+      +'<th style="padding:9px 12px;text-align:left;color:#fff">Location</th>'
+      +'<th style="padding:9px 12px;text-align:left;color:#fff">Next date</th>'
+      +'<th style="padding:9px 12px;text-align:left;color:#fff">Status</th>'
+      +'<th style="padding:9px 12px;text-align:right;color:#fff">Actions</th>'
+      +'</tr></thead><tbody>';
+    d.forEach(function(s,i){
+      var nextDt=s.next_date?new Date(s.next_date).toLocaleDateString('en-GB'):'Not set';
+      var isOverdue=s.next_date&&new Date(s.next_date)<new Date()&&s.active!==false;
+      var active=s.active!==false;
+      var statusLabel=active?(isOverdue?'Overdue':'Active'):'Inactive';
+      var statusColor=active?(isOverdue?'#DC2626':'#1D9E75'):'#6B7280';
+      var typeLabel=MTG_TYPES[s.meeting_type]||s.meeting_type||'Other';
+      h+='<tr style="background:'+(i%2?'#f9fafb':'#fff')+';border-bottom:1px solid #e5e7eb">'
+        +'<td style="padding:10px 12px;font-weight:700;color:#0F6E56">'+escH(typeLabel)+'</td>'
+        +'<td style="padding:10px 12px"><div style="font-weight:800;color:#111827">'+escH(s.title||'--')+'</div>'+(s.notes?'<div style="font-size:11px;color:var(--text2);margin-top:2px">'+escH(String(s.notes).substring(0,90))+(String(s.notes).length>90?'...':'')+'</div>':'')+'</td>'
+        +'<td style="padding:10px 12px">'+escH(MTG_RECURRENCE[s.recurrence]||s.recurrence||'--')+'</td>'
+        +'<td style="padding:10px 12px">'+escH(s.chaired_by||'--')+'</td>'
+        +'<td style="padding:10px 12px">'+escH(s.location||'--')+'</td>'
+        +'<td style="padding:10px 12px;font-weight:'+(isOverdue?'800':'600')+';color:'+(isOverdue?'#DC2626':'#374151')+'">'+escH(nextDt)+(isOverdue?' <i class="ti ti-alert-triangle"></i>':'')+'</td>'
+        +'<td style="padding:10px 12px"><span style="background:'+statusColor+'15;color:'+statusColor+';padding:3px 8px;border-radius:99px;font-size:10px;font-weight:800">'+statusLabel+'</span></td>'
+        +'<td style="padding:10px 12px;text-align:right;white-space:nowrap"><button class="btn btn-primary btn-sm" data-id="'+s.id+'" onclick="mtgScheduleMeeting(this.getAttribute(\'data-id\'))"><i class="ti ti-file-text"></i>Schedule</button>'
+        +(isMgr()?'<button class="btn btn-sm" data-id="'+s.id+'" onclick="mtgEditSeries(this.getAttribute(\'data-id\'))" title="Edit schedule" style="margin-left:6px"><i class="ti ti-edit"></i></button>':'')
+        +'</td></tr>';
     });
-    var h='';
-    Object.entries(byType).forEach(function(e){
-      var type=e[0], series=e[1];
-      h+='<div style="padding:10px 16px;background:#f9fafb;border-bottom:1px solid var(--border);font-size:11px;font-weight:700;text-transform:uppercase;color:var(--green);letter-spacing:.05em">'+(MTG_TYPES[type]||type)+'</div>';
-      series.forEach(function(s){
-        var nextDt=s.next_date?new Date(s.next_date).toLocaleDateString('en-GB'):'Not set';
-        var isOverdue=s.next_date&&new Date(s.next_date)<new Date();
-        h+='<div style="padding:14px 20px;border-bottom:1px solid #f3f4f6;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">'
-          +'<div style="flex:1">'
-          +'<div style="font-size:14px;font-weight:700;margin-bottom:4px">'+(s.title||'—')
-          +(s.active===false?'<span style="background:#f3f4f6;color:#888;padding:2px 8px;border-radius:99px;font-size:10px;margin-left:8px">Inactive</span>':'')
-          +'</div>'
-          +'<div style="font-size:12px;color:var(--text2);display:flex;gap:16px;flex-wrap:wrap">'
-          +'<span><i class="ti ti-refresh" style="font-size:11px"></i> '+(MTG_RECURRENCE[s.recurrence]||s.recurrence||'—')+'</span>'
-          +'<span><i class="ti ti-map-pin" style="font-size:11px"></i> '+(s.location||'—')+'</span>'
-          +'<span><i class="ti ti-user" style="font-size:11px"></i> '+(s.chaired_by||'—')+'</span>'
-          +'<span style="'+(isOverdue?'color:var(--red);font-weight:600':'')+'"><i class="ti ti-calendar" style="font-size:11px"></i> Next: '+nextDt+(isOverdue?' ⚠':'')+'</span>'
-          +'</div>'
-          +'</div>'
-          +'<div style="display:flex;gap:8px">'
-          +'<button class="btn btn-primary" data-id="'+s.id+'" onclick="mtgScheduleMeeting(this.getAttribute(\'data-id\'))"><i class="ti ti-file-text"></i>Schedule meeting</button>'
-          +(isMgr()?'<button class="btn btn-sm" data-id="'+s.id+'" onclick="mtgEditSeries(this.getAttribute(\'data-id\'))" title="Edit schedule"><i class="ti ti-edit"></i></button>':'')
-          +'</div>'
-          +'</div>';
-      });
-    });
+    h+='</tbody></table></div>';
     if(isMgr()){
       h+='<div style="padding:14px 20px;text-align:center;border-top:1px solid var(--border)">'
         +'<button class="btn btn-sm" onclick="mtgNewSeries()"><i class="ti ti-plus"></i> Add new meeting schedule</button>'
