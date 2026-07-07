@@ -20391,7 +20391,7 @@ async function odDeleteRow(id){try{var current=ohOdData.find(x=>x.id===id)||{};i
 // ===================================================================
 
 let ppeCatData=[], ppeIssData=[], ppeInspData=[], ppeRepData=[];
-let ppeCatEditId=null, ppeIssEditId=null, ppeInspEditId=null, ppeRepEditId=null;
+let ppeCatEditId=null, ppeIssEditId=null, ppeInspEditId=null, ppeRepEditId=null, ppeCatReturnTab='catalogue';
 let ppeExpiryDays=30;
 
 const PPE_CAT_CFG={
@@ -20446,7 +20446,7 @@ async function loadPPE(){
   if(head && !document.getElementById('ppe-print-btn')){
     head.insertAdjacentHTML('afterbegin','<button class="btn" id="ppe-print-btn" onclick="ppePrintCurrentView()"><i class="ti ti-printer"></i>Print current view</button>');
   }
-  ['ppe-cat-add-btn','ppe-iss-add-btn','ppe-insp-add-btn','ppe-rep-add-btn'].forEach(function(id){
+  ['ppe-cat-add-btn','ppe-inventory-add-btn','ppe-iss-add-btn','ppe-insp-add-btn','ppe-rep-add-btn'].forEach(function(id){
     var el=document.getElementById(id);if(el)el.style.display=isMgr()?'inline-flex':'none';
   });
   ppeLoadDash();
@@ -20455,7 +20455,7 @@ async function loadPPE(){
 function ppeSwitchTab(tab,btn){
   document.querySelectorAll('[id^="ppe-tab-"]').forEach(t=>t.classList.remove('active'));
   btn.classList.add('active');
-  ['dash','catalogue','issuance','inspections','replacements','expiry'].forEach(function(t){
+  ['dash','catalogue','inventory','issuance','inspections','replacements','expiry'].forEach(function(t){
     var el=document.getElementById('ppe-view-'+t);if(el)el.style.display=t===tab?'block':'none';
   });
   ['ppe-cat-form','ppe-iss-form','ppe-insp-form','ppe-rep-form'].forEach(function(id){
@@ -20463,6 +20463,7 @@ function ppeSwitchTab(tab,btn){
   });
   if(tab==='dash')ppeLoadDash();
   else if(tab==='catalogue')ppeLoadCatalogue();
+  else if(tab==='inventory')ppeLoadInventory();
   else if(tab==='issuance')ppeLoadIssuance();
   else if(tab==='inspections')ppeLoadInspections();
   else if(tab==='replacements')ppeLoadReplacements();
@@ -20577,37 +20578,27 @@ async function ppeLoadCatalogue(){
       return;
     }
     var h='<div style="overflow:auto;border:1px solid var(--border);border-radius:10px;background:#fff">'
-      +'<table style="width:100%;min-width:1120px;border-collapse:collapse;font-size:12px">'
+      +'<table style="width:100%;min-width:940px;border-collapse:collapse;font-size:12px">'
       +'<thead><tr style="background:#064E3B;color:#fff">'
       +'<th style="padding:10px;color:#fff;text-align:left">Code</th>'
       +'<th style="padding:10px;color:#fff;text-align:left">PPE item</th>'
       +'<th style="padding:10px;color:#fff;text-align:left">Category</th>'
       +'<th style="padding:10px;color:#fff;text-align:left">Standard / protection</th>'
-      +'<th style="padding:10px;color:#fff;text-align:center">Total</th>'
-      +'<th style="padding:10px;color:#fff;text-align:center">Available</th>'
-      +'<th style="padding:10px;color:#fff;text-align:center">Issued</th>'
       +'<th style="padding:10px;color:#fff;text-align:left">Hazards</th>'
       +'<th style="padding:10px;color:#fff;text-align:center">Status</th>'
       +'<th style="padding:10px;color:#fff;width:70px"></th>'
       +'</tr></thead><tbody>';
     d.forEach(function(x){
       var cfg=PPE_CAT_CFG[x.category]||PPE_CAT_CFG.other;
-      var isLow=x.quantity_available!=null&&x.reorder_level!=null&&x.quantity_available<=x.reorder_level;
-      var isOut=x.quantity_available===0;
       var status=(x.status||'active').replace(/_/g,' ');
       var statusHtml=x.status&&x.status!=='active'
         ? '<span style="background:#f3f4f6;color:#6B7280;padding:3px 8px;border-radius:99px;font-size:10px;font-weight:800;text-transform:capitalize">'+escH(status)+'</span>'
         : '<span style="background:#EAF3DE;color:#3B6D11;padding:3px 8px;border-radius:99px;font-size:10px;font-weight:800">Active</span>';
-      var availColor=isOut?'#A32D2D':isLow?'#854F0B':'#1D9E75';
-      var stockNote=isOut?'<div style="font-size:10px;color:#A32D2D;font-weight:900">OUT OF STOCK</div>':isLow?'<div style="font-size:10px;color:#854F0B;font-weight:900">LOW STOCK</div>':'';
       h+='<tr style="border-bottom:1px solid var(--border);border-left:5px solid '+cfg.color+';cursor:pointer" data-id="'+x.id+'" onclick="ppeCatEdit(this.dataset.id)">'
         +'<td style="padding:10px;font-family:monospace;font-weight:800;color:'+cfg.color+'">'+escH(x.ppe_code||'PPE')+'</td>'
         +'<td style="padding:10px;min-width:230px"><div style="display:flex;align-items:center;gap:8px"><span style="font-size:18px">'+cfg.emoji+'</span><div><div style="font-weight:800">'+escH(x.name||'—')+'</div><div style="font-size:11px;color:var(--text2);margin-top:2px">'+escH([x.sub_category,x.brand,x.model].filter(Boolean).join(' · ')||'—')+'</div></div></div></td>'
         +'<td style="padding:10px"><span style="background:'+cfg.color+'18;color:'+cfg.color+';padding:3px 8px;border-radius:99px;font-size:10px;font-weight:800">'+escH(cfg.label||x.category||'Other')+'</span></td>'
         +'<td style="padding:10px;min-width:180px"><div style="font-family:monospace;font-size:11px;color:'+cfg.color+';font-weight:700">'+escH(x.standard||'—')+'</div><div style="font-size:11px;color:var(--text2);margin-top:2px">'+escH(x.protection_level||'—')+'</div></td>'
-        +'<td style="padding:10px;text-align:center;font-weight:900">'+(x.quantity_total??'—')+'</td>'
-        +'<td style="padding:10px;text-align:center;font-weight:900;color:'+availColor+'">'+(x.quantity_available??'—')+stockNote+'</td>'
-        +'<td style="padding:10px;text-align:center;font-weight:900;color:#185FA5">'+(x.quantity_issued??'—')+'</td>'
         +'<td style="padding:10px;min-width:180px">'+(x.hazard_types?.length?x.hazard_types.map(function(h){return '<span style="display:inline-flex;margin:1px;background:'+cfg.color+'20;color:'+cfg.color+';padding:2px 7px;border-radius:99px;font-size:10px;font-weight:700">'+escH(h)+'</span>';}).join(''):'<span style="color:var(--text3)">—</span>')+'</td>'
         +'<td style="padding:10px;text-align:center">'+statusHtml+'</td>'
         +'<td style="padding:10px;text-align:center"><button class="btn btn-sm" onclick="event.stopPropagation();ppeCatEdit(\''+x.id+'\')"><i class="ti ti-eye"></i></button></td>'
@@ -20617,8 +20608,73 @@ async function ppeLoadCatalogue(){
   }catch(e){el.innerHTML='<p style="padding:20px;color:red">'+e.message+'</p>';}
 }
 
-function ppeCatShowForm(){document.getElementById('ppe-view-catalogue').style.display='none';document.getElementById('ppe-cat-form').style.display='block';}
-function ppeCatBack(){document.getElementById('ppe-cat-form').style.display='none';document.getElementById('ppe-view-catalogue').style.display='block';document.querySelectorAll('[id^="ppe-tab-"]').forEach(t=>t.classList.remove('active'));document.getElementById('ppe-tab-catalogue')?.classList.add('active');ppeLoadCatalogue();}
+async function ppeLoadInventory(){
+  var el=document.getElementById('ppe-inventory-list');if(!el)return;
+  el.innerHTML='<div class="loading-msg">Loading...</div>';
+  var ft=document.getElementById('ppe-inventory-filter')?.value||'';
+  var q='/ppe_catalogue?select=*'+cf()+'&order=category,name';if(ft)q+='&category=eq.'+ft;
+  try{
+    var d=await api(q);ppeCatData=d||[];
+    if(!d||!d.length){
+      el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)"><div style="font-size:40px;margin-bottom:12px">📦</div><div style="font-weight:600;margin-bottom:8px">No PPE stock records yet</div>'+(isMgr()?'<button class="btn btn-primary" onclick="ppeCatNew()"><i class="ti ti-plus"></i>Add PPE type</button>':'')+'</div>';
+      return;
+    }
+    var total=d.reduce(function(sum,x){return sum+(Number(x.quantity_total)||0);},0);
+    var available=d.reduce(function(sum,x){return sum+(Number(x.quantity_available)||0);},0);
+    var issued=d.reduce(function(sum,x){return sum+(Number(x.quantity_issued)||0);},0);
+    var low=d.filter(function(x){return Number(x.quantity_available||0)<=Number(x.reorder_level||0);}).length;
+    ['total','available','issued','low'].forEach(function(k){
+      var node=document.getElementById('ppe-inventory-m-'+k);
+      if(node)node.textContent={total:total,available:available,issued:issued,low:low}[k];
+    });
+    var h='<div style="overflow:auto;border:1px solid var(--border);border-radius:10px;background:#fff">'
+      +'<table style="width:100%;min-width:1020px;border-collapse:collapse;font-size:12px">'
+      +'<thead><tr style="background:#185FA5;color:#fff">'
+      +'<th style="padding:10px;color:#fff;text-align:left">Code</th>'
+      +'<th style="padding:10px;color:#fff;text-align:left">PPE item</th>'
+      +'<th style="padding:10px;color:#fff;text-align:center">Total</th>'
+      +'<th style="padding:10px;color:#fff;text-align:center">Available</th>'
+      +'<th style="padding:10px;color:#fff;text-align:center">Issued</th>'
+      +'<th style="padding:10px;color:#fff;text-align:center">Reorder</th>'
+      +'<th style="padding:10px;color:#fff;text-align:left">Storage location</th>'
+      +'<th style="padding:10px;color:#fff;text-align:left">Supplier</th>'
+      +'<th style="padding:10px;color:#fff;text-align:center">Stock status</th>'
+      +'<th style="padding:10px;color:#fff;width:70px"></th>'
+      +'</tr></thead><tbody>';
+    d.forEach(function(x){
+      var cfg=PPE_CAT_CFG[x.category]||PPE_CAT_CFG.other;
+      var qty=Number(x.quantity_available||0), reorder=Number(x.reorder_level||0);
+      var stockLabel=qty<=0?'<span class="badge br">Out of stock</span>':qty<=reorder?'<span class="badge ba">Low stock</span>':'<span class="badge bg">OK</span>';
+      h+='<tr style="border-bottom:1px solid var(--border);border-left:5px solid '+cfg.color+';cursor:pointer" data-id="'+x.id+'" onclick="ppeCatEdit(this.dataset.id)">'
+        +'<td style="padding:10px;font-family:monospace;font-weight:800;color:'+cfg.color+'">'+escH(x.ppe_code||'PPE')+'</td>'
+        +'<td style="padding:10px;min-width:240px"><div style="display:flex;align-items:center;gap:8px"><span style="font-size:18px">'+cfg.emoji+'</span><div><div style="font-weight:800">'+escH(x.name||'—')+'</div><div style="font-size:11px;color:var(--text2);margin-top:2px">'+escH(cfg.label||x.category||'Other')+'</div></div></div></td>'
+        +'<td style="padding:10px;text-align:center;font-weight:900">'+(x.quantity_total??0)+'</td>'
+        +'<td style="padding:10px;text-align:center;font-weight:900;color:'+(qty<=0?'#A32D2D':qty<=reorder?'#854F0B':'#1D9E75')+'">'+(x.quantity_available??0)+'</td>'
+        +'<td style="padding:10px;text-align:center;font-weight:900;color:#185FA5">'+(x.quantity_issued??0)+'</td>'
+        +'<td style="padding:10px;text-align:center">'+(x.reorder_level??0)+'</td>'
+        +'<td style="padding:10px">'+escH(x.location||'—')+'</td>'
+        +'<td style="padding:10px">'+escH(x.supplier||'—')+'</td>'
+        +'<td style="padding:10px;text-align:center">'+stockLabel+'</td>'
+        +'<td style="padding:10px;text-align:center"><button class="btn btn-sm" onclick="event.stopPropagation();ppeCatEdit(\''+x.id+'\')"><i class="ti ti-pencil"></i></button></td>'
+        +'</tr>';
+    });
+    h+='</tbody></table></div>';el.innerHTML=h;
+  }catch(e){el.innerHTML='<p style="padding:20px;color:red">'+e.message+'</p>';}
+}
+
+function ppeCatShowForm(){
+  ppeCatReturnTab=document.getElementById('ppe-tab-inventory')?.classList.contains('active')?'inventory':'catalogue';
+  ['catalogue','inventory'].forEach(function(t){var el=document.getElementById('ppe-view-'+t);if(el)el.style.display='none';});
+  document.getElementById('ppe-cat-form').style.display='block';
+}
+function ppeCatBack(){
+  document.getElementById('ppe-cat-form').style.display='none';
+  document.querySelectorAll('[id^="ppe-tab-"]').forEach(t=>t.classList.remove('active'));
+  var tab=ppeCatReturnTab||'catalogue';
+  document.getElementById('ppe-tab-'+tab)?.classList.add('active');
+  ['catalogue','inventory'].forEach(function(t){var el=document.getElementById('ppe-view-'+t);if(el)el.style.display=t===tab?'block':'none';});
+  if(tab==='inventory')ppeLoadInventory();else ppeLoadCatalogue();
+}
 
 function ppeCatNew(){
   ppeCatEditId=null;document.getElementById('ppe-cat-form-title').textContent='New PPE Type';document.getElementById('ppe-cat-del-btn').style.display='none';
@@ -32808,7 +32864,7 @@ function atexPrintRegister(){ printRegisterView('ATEX Area Register', '#atex-reg
 function ppePrintCurrentView(){
   var active = document.querySelector('#page-ppe .mtg-tab.active');
   var key = (active?.id || 'ppe-tab-dash').replace('ppe-tab-','');
-  var labels = {dash:'PPE Dashboard',catalogue:'PPE Catalogue',issuance:'PPE Issuance Register',inspections:'PPE Inspection Register',replacements:'PPE Replacement Register',expiry:'PPE Expiry Alerts'};
+  var labels = {dash:'PPE Dashboard',catalogue:'PPE Catalogue',inventory:'PPE Stock / Inventory Register',issuance:'PPE Issuance Register',inspections:'PPE Inspection Register',replacements:'PPE Replacement Register',expiry:'PPE Expiry Alerts'};
   printRegisterView(labels[key] || 'PPE Register', '#ppe-view-' + key);
 }
 function obsPrintCurrentView(){
@@ -40358,6 +40414,7 @@ function fireEquipStatusBadge(s) {
 <div style="display:flex;gap:0;margin-bottom:16px;border-bottom:2px solid var(--border);overflow-x:auto">
 <button class="mtg-tab active" id="ppe-tab-dash" onclick="ppeSwitchTab('dash',this)" style="white-space:nowrap">📊 Dashboard</button>
 <button class="mtg-tab" id="ppe-tab-catalogue" onclick="ppeSwitchTab('catalogue',this)" style="white-space:nowrap">📦 Catalogue</button>
+<button class="mtg-tab" id="ppe-tab-inventory" onclick="ppeSwitchTab('inventory',this)" style="white-space:nowrap">🏷️ Stock / Inventory</button>
 <button class="mtg-tab" id="ppe-tab-issuance" onclick="ppeSwitchTab('issuance',this)" style="white-space:nowrap">📋 Issuance</button>
 <button class="mtg-tab" id="ppe-tab-inspections" onclick="ppeSwitchTab('inspections',this)" style="white-space:nowrap">🔍 Inspections</button>
 <button class="mtg-tab" id="ppe-tab-replacements" onclick="ppeSwitchTab('replacements',this)" style="white-space:nowrap">🔄 Replacements</button>
@@ -40387,7 +40444,7 @@ function fireEquipStatusBadge(s) {
 <!-- ── CATALOGUE ── -->
 <div id="ppe-view-catalogue" style="display:none">
 <div class="card" style="margin-bottom:12px;padding:10px 14px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
-<div><div class="card-title" style="margin:0">PPE Catalogue &amp; Inventory</div><div style="font-size:12px;color:var(--text2)">All PPE types with stock levels and specifications</div></div>
+<div><div class="card-title" style="margin:0">PPE Catalogue</div><div style="font-size:12px;color:var(--text2)">Approved PPE types, standards, protection levels and linked hazards</div></div>
 <div style="display:flex;gap:8px">
 <select id="ppe-cat-filter" onchange="ppeLoadCatalogue()" style="padding:6px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px">
 <option value="">All categories</option>
@@ -40401,6 +40458,31 @@ function fireEquipStatusBadge(s) {
 </div>
 </div>
 <div id="ppe-cat-list"></div>
+</div>
+
+<!-- ── STOCK / INVENTORY ── -->
+<div id="ppe-view-inventory" style="display:none">
+<div class="card" style="margin-bottom:12px;padding:10px 14px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+<div><div class="card-title" style="margin:0">PPE Stock / Inventory</div><div style="font-size:12px;color:var(--text2)">Quantities, storage locations, suppliers and reorder alerts</div></div>
+<div style="display:flex;gap:8px">
+<select id="ppe-inventory-filter" onchange="ppeLoadInventory()" style="padding:6px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px">
+<option value="">All categories</option>
+<option value="head">Head</option><option value="eye_face">Eye/Face</option>
+<option value="hearing">Hearing</option><option value="respiratory">Respiratory</option>
+<option value="hands">Hands</option><option value="feet">Feet</option>
+<option value="body">Body</option><option value="fall_protection">Fall protection</option>
+<option value="high_visibility">High visibility</option><option value="other">Other</option>
+</select>
+<button class="btn btn-primary" id="ppe-inventory-add-btn" style="display:none" onclick="ppeCatNew()"><i class="ti ti-plus"></i>Add PPE type</button>
+</div>
+</div>
+<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px">
+<div class="card" style="padding:10px 12px;border-left:4px solid #185FA5"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">Total quantity</div><div style="font-size:22px;font-weight:800;color:#185FA5" id="ppe-inventory-m-total">—</div></div>
+<div class="card" style="padding:10px 12px;border-left:4px solid #1D9E75"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">Available stock</div><div style="font-size:22px;font-weight:800;color:#1D9E75" id="ppe-inventory-m-available">—</div></div>
+<div class="card" style="padding:10px 12px;border-left:4px solid #185FA5"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">Issued</div><div style="font-size:22px;font-weight:800;color:#185FA5" id="ppe-inventory-m-issued">—</div></div>
+<div class="card" style="padding:10px 12px;border-left:4px solid #EF9F27"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">Low stock</div><div style="font-size:22px;font-weight:800;color:#EF9F27" id="ppe-inventory-m-low">—</div></div>
+</div>
+<div id="ppe-inventory-list"></div>
 </div>
 
 <!-- ── ISSUANCE ── -->
@@ -40475,7 +40557,7 @@ function fireEquipStatusBadge(s) {
 </div>
 <div style="display:grid;grid-template-columns:2fr 1fr;gap:14px">
 <div>
-<div class="card" style="margin-bottom:14px"><div class="card-title">PPE Details</div>
+<div class="card" style="margin-bottom:14px"><div class="card-title">Catalogue specification</div>
 <div class="form-row">
 <div class="form-group"><label class="form-label">PPE name</label><input type="text" id="pcf-name" placeholder="e.g. Safety Helmet Type 1"/></div>
 <div class="form-group"><label class="form-label">Category</label>
@@ -40497,8 +40579,8 @@ function fireEquipStatusBadge(s) {
 <div class="form-group"><label class="form-label">Linked hazard types (comma separated)</label><input type="text" id="pcf-hazards" placeholder="e.g. falling objects, noise, chemical splash, height..."/></div>
 <div class="form-group"><label class="form-label">Notes / Description</label><textarea id="pcf-notes" style="min-height:50px"></textarea></div>
 </div>
-<div class="card" style="margin-bottom:14px"><div class="card-title">Lifecycle</div>
-<div style="display:flex;align-items:center;gap:8px;margin-bottom:12px"><input type="checkbox" id="pcf-has-expiry" style="accent-color:var(--green)"/><label for="pcf-has-expiry" style="font-size:13px;font-weight:600;cursor:pointer">This PPE has an expiry date</label></div>
+<div class="card" style="margin-bottom:14px"><div class="card-title">Lifecycle rules</div>
+<div style="display:flex;align-items:center;gap:8px;margin-bottom:12px"><input type="checkbox" id="pcf-has-expiry" style="width:auto;accent-color:var(--green)"/><label for="pcf-has-expiry" style="font-size:13px;font-weight:600;cursor:pointer">This PPE has an expiry date</label></div>
 <div class="form-row">
 <div class="form-group"><label class="form-label">Service life (months)</label><input type="number" id="pcf-service-life" min="1" max="240" placeholder="e.g. 24 for 2 years"/></div>
 <div class="form-group"><label class="form-label">Inspection interval (days)</label><input type="number" id="pcf-insp-interval" min="1" max="365" value="90" placeholder="90"/></div>
@@ -40506,7 +40588,7 @@ function fireEquipStatusBadge(s) {
 </div>
 </div>
 <div>
-<div class="card" style="margin-bottom:14px;border:2px solid #185FA5"><div class="card-title" style="color:#185FA5">Inventory</div>
+<div class="card" style="margin-bottom:14px;border:2px solid #185FA5"><div class="card-title" style="color:#185FA5">Stock / Inventory</div>
 <div class="form-row">
 <div class="form-group"><label class="form-label">Total quantity</label><input type="number" id="pcf-qty-total" min="0" value="0"/></div>
 <div class="form-group"><label class="form-label">Available stock</label><input type="number" id="pcf-qty-avail" min="0" value="0"/></div>
