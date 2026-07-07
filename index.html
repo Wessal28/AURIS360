@@ -2989,7 +2989,56 @@ function authUpdateStrength() {
 document.addEventListener('DOMContentLoaded', function() {
   var regPw=document.getElementById('reg-pw');
   if(regPw) regPw.addEventListener('input', authUpdateStrength);
+  enhanceIconOnlyButtons(document);
+  if(window.MutationObserver) {
+    var iconButtonObserver = new MutationObserver(function(mutations) {
+      if(iconButtonObserver._pending) return;
+      iconButtonObserver._pending = setTimeout(function(){
+        iconButtonObserver._pending = null;
+        mutations.forEach(function(m){
+          if(m.addedNodes) m.addedNodes.forEach(function(n){
+            if(n && n.nodeType === 1) enhanceIconOnlyButtons(n);
+          });
+        });
+      }, 80);
+    });
+    iconButtonObserver.observe(document.body, {childList:true, subtree:true});
+  }
 });
+
+function enhanceIconOnlyButtons(root) {
+  if(!root || !root.querySelectorAll) return;
+  var labels = {
+    'ti-edit':'Edit',
+    'ti-trash':'Delete',
+    'ti-trash-x':'Delete',
+    'ti-eye':'View',
+    'ti-printer':'Print',
+    'ti-file-search':'Open document',
+    'ti-external-link':'Open linked record',
+    'ti-camera':'Add photo',
+    'ti-x':'Remove',
+    'ti-check':'Approve',
+    'ti-circle-check':'Approve',
+    'ti-device-floppy':'Save',
+    'ti-send':'Send',
+    'ti-refresh':'Retry',
+    'ti-clipboard-check':'Inspect',
+    'ti-lock-open':'Release for edit'
+  };
+  root.querySelectorAll('button').forEach(function(btn){
+    if(btn.title || btn.getAttribute('aria-label')) return;
+    var visibleText = Array.from(btn.childNodes || []).filter(function(n){ return n.nodeType === 3; }).map(function(n){ return n.textContent; }).join('').trim();
+    if(visibleText) return;
+    var icon = btn.querySelector('i[class*="ti-"]');
+    if(!icon) return;
+    var cls = Array.from(icon.classList || []);
+    var key = cls.find(function(c){ return labels[c]; });
+    if(!key) return;
+    btn.title = labels[key];
+    btn.setAttribute('aria-label', labels[key]);
+  });
+}
 
 // ── doLogin ────────────────────────────────────────────────────────────────────
 async function doLogin() {
