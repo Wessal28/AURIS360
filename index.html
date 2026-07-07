@@ -104,6 +104,28 @@ thead tr[style*="#7F1D1D"] th:last-child {
 .page table [onclick] {
   cursor: pointer;
 }
+.loading,
+.loading-msg {
+  border-radius: 10px;
+  background: linear-gradient(90deg, #F8FAFC 0%, #EEF2F7 50%, #F8FAFC 100%);
+  background-size: 200% 100%;
+  animation: aurisLoadingShimmer 1.4s ease-in-out infinite;
+}
+.loading {
+  text-align: center;
+  padding: 28px;
+  color: var(--text2);
+  font-size: 13px;
+}
+.empty {
+  border: 1px dashed var(--border);
+  border-radius: 10px;
+  background: #FAFBFC;
+}
+@keyframes aurisLoadingShimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
 
 @keyframes spin{to{transform:rotate(360deg)}}
 
