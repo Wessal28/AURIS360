@@ -16898,7 +16898,7 @@ async function ptwSave(targetStatus){
         await ptwShowDetail(res[0].id);
       }
     }
-  }catch(e){toast(e.message,false);console.error(e);}
+  }catch(e){toast(actionErrorMessage('Save permit','Permit to Work',e.message),false);console.error(e);}
 }
 
 function ptwEditCurrent(){
@@ -16974,7 +16974,7 @@ async function ptwDelete(){
     ptwAllData=ptwAllData.filter(function(x){return x.id!==ptwEditingId;});
     toast('Permit deleted!');ptwEditingId=null;ptwCurrentId=null;
     ptwSetView('list');ptwRenderList();
-  }catch(e){toast(e.message,false);}
+  }catch(e){toast(actionErrorMessage('Delete permit','Permit to Work',e.message),false);}
 }
 
 // ── GAS TEST PANEL ────────────────────────────────────────────────────────────
