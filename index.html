@@ -104,6 +104,47 @@ thead tr[style*="#7F1D1D"] th:last-child {
 .page table [onclick] {
   cursor: pointer;
 }
+.data-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: #fff;
+}
+.data-table thead th {
+  background: #1a3a5c;
+  color: #fff !important;
+  border-bottom: 0;
+  padding: 10px 12px;
+  font-weight: 800;
+  opacity: 1;
+}
+.data-table tbody td {
+  padding: 10px 12px;
+}
+.data-table tbody tr:nth-child(even) td {
+  background: #F9FAFB;
+}
+.icon-btn {
+  width: 34px;
+  height: 32px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: #fff;
+  color: var(--text2);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all .12s;
+}
+.icon-btn:hover {
+  color: var(--green);
+  border-color: rgba(29,158,117,.35);
+  background: #F0FDF4;
+}
 .loading,
 .loading-msg {
   border-radius: 10px;
@@ -30979,7 +31020,7 @@ function compFilter(){
     return (!q||hay.includes(q)) && (!cat||String(x.category||'')===cat);
   });
   host.innerHTML='<table class="data-table"><thead><tr><th>Person</th><th>Department</th><th>Competency</th><th>Level</th><th>Assessor</th><th>Expiry</th><th>Actions</th></tr></thead><tbody>'+
-    (rows.length?rows.map(function(x){return '<tr><td><strong>'+escH(x.person_name||'-')+'</strong><div class="muted">'+escH(x.job_title||'')+'</div></td><td>'+escH(x.department||'-')+'</td><td>'+escH(x.competency_name||'-')+'</td><td>'+escH(x.level||'-')+'</td><td>'+escH(x.assessor||'-')+'</td><td>'+escH(x.expiry_date||'-')+'</td><td><button class="icon-btn" onclick="compEdit(\''+escH(x.id)+'\')"><i class="ti ti-edit"></i></button></td></tr>';}).join(''):'<tr><td colspan="7" class="empty">No competency records yet.</td></tr>')+
+    (rows.length?rows.map(function(x){return '<tr><td><strong>'+escH(x.person_name||'-')+'</strong><div class="muted">'+escH(x.job_title||'')+'</div></td><td>'+escH(x.department||'-')+'</td><td>'+escH(x.competency_name||'-')+'</td><td>'+escH(x.level||'-')+'</td><td>'+escH(x.assessor||'-')+'</td><td>'+escH(x.expiry_date||'-')+'</td><td><button class="icon-btn" title="Edit competency record" aria-label="Edit competency record" onclick="compEdit(\''+escH(x.id)+'\')"><i class="ti ti-edit"></i></button></td></tr>';}).join(''):'<tr><td colspan="7" class="empty">No competency records yet.</td></tr>')+
     '</tbody></table>';
 }
 async function compEdit(id){
@@ -30997,7 +31038,7 @@ async function indLoad(){
     var pending=rows.filter(function(x){return String(x.status||'').toLowerCase()==='pending';}).length;
     var m=function(id,v){var e=document.getElementById(id);if(e)e.textContent=v;};m('ind-m-total',rows.length);m('ind-m-completed',completed);m('ind-m-pending',pending);m('ind-m-refresh',rows.filter(function(x){return String(x.status||'').toLowerCase()==='refresher_due';}).length);
     host.innerHTML='<table class="data-table"><thead><tr><th>Person</th><th>Type</th><th>Date</th><th>Inducted by</th><th>Status</th><th>Actions</th></tr></thead><tbody>'+
-      (rows.length?rows.map(function(x){return '<tr><td><strong>'+escH(x.person_name||'-')+'</strong><div class="muted">'+escH(x.department||x.job_title||'')+'</div></td><td>'+escH((x.induction_type||'-').replaceAll('_',' '))+'</td><td>'+escH(x.induction_date||'-')+'</td><td>'+escH(x.inducted_by||'-')+'</td><td><span class="pill">'+escH(x.status||'-')+'</span></td><td><button class="icon-btn" onclick="indEdit(\''+escH(x.id)+'\')"><i class="ti ti-edit"></i></button></td></tr>';}).join(''):'<tr><td colspan="6" class="empty">No induction records yet.</td></tr>')+
+      (rows.length?rows.map(function(x){return '<tr><td><strong>'+escH(x.person_name||'-')+'</strong><div class="muted">'+escH(x.department||x.job_title||'')+'</div></td><td>'+escH((x.induction_type||'-').replaceAll('_',' '))+'</td><td>'+escH(x.induction_date||'-')+'</td><td>'+escH(x.inducted_by||'-')+'</td><td><span class="pill">'+escH(x.status||'-')+'</span></td><td><button class="icon-btn" title="Edit induction record" aria-label="Edit induction record" onclick="indEdit(\''+escH(x.id)+'\')"><i class="ti ti-edit"></i></button></td></tr>';}).join(''):'<tr><td colspan="6" class="empty">No induction records yet.</td></tr>')+
       '</tbody></table>';
   }catch(e){host.innerHTML=setupFriendlyMessage('Induction register',e.message);}
 }
@@ -31010,9 +31051,9 @@ async function elcLoad(){
   var ch=document.getElementById('elc-list'), eh=document.getElementById('ele-list');if(!ch&&!eh)return;
   try{
     var courses=await api('/elearning_courses?company_id=eq.'+ccid()+'&select=*&order=title.asc');
-    if(ch)ch.innerHTML='<table class="data-table"><thead><tr><th>Course</th><th>Status</th><th>Actions</th></tr></thead><tbody>'+(courses.length?courses.map(function(x){return '<tr><td><strong>'+escH(x.title||'-')+'</strong><div class="muted">'+escH(x.course_code||x.description||'')+'</div></td><td>'+escH(x.status||'active')+'</td><td><button class="icon-btn" onclick="elcEdit(\''+escH(x.id)+'\')"><i class="ti ti-edit"></i></button></td></tr>';}).join(''):'<tr><td colspan="3" class="empty">No e-learning courses yet.</td></tr>')+'</tbody></table>';
+    if(ch)ch.innerHTML='<table class="data-table"><thead><tr><th>Course</th><th>Status</th><th>Actions</th></tr></thead><tbody>'+(courses.length?courses.map(function(x){return '<tr><td><strong>'+escH(x.title||'-')+'</strong><div class="muted">'+escH(x.course_code||x.description||'')+'</div></td><td>'+escH(x.status||'active')+'</td><td><button class="icon-btn" title="Edit e-learning course" aria-label="Edit e-learning course" onclick="elcEdit(\''+escH(x.id)+'\')"><i class="ti ti-edit"></i></button></td></tr>';}).join(''):'<tr><td colspan="3" class="empty">No e-learning courses yet.</td></tr>')+'</tbody></table>';
     var enrol=await api('/elearning_enrolments?company_id=eq.'+ccid()+'&select=*&order=enrolment_date.desc');
-    if(eh)eh.innerHTML='<table class="data-table"><thead><tr><th>Person</th><th>Course</th><th>Status</th><th>Completion</th><th>Actions</th></tr></thead><tbody>'+(enrol.length?enrol.map(function(x){return '<tr><td><strong>'+escH(x.person_name||'-')+'</strong><div class="muted">'+escH(x.department||'')+'</div></td><td>'+escH(x.course_id||'-')+'</td><td>'+escH(x.status||'-')+'</td><td>'+escH(x.completion_date||'-')+'</td><td><button class="icon-btn" onclick="eleEdit(\''+escH(x.id)+'\')"><i class="ti ti-edit"></i></button></td></tr>';}).join(''):'<tr><td colspan="5" class="empty">No e-learning enrolments yet.</td></tr>')+'</tbody></table>';
+    if(eh)eh.innerHTML='<table class="data-table"><thead><tr><th>Person</th><th>Course</th><th>Status</th><th>Completion</th><th>Actions</th></tr></thead><tbody>'+(enrol.length?enrol.map(function(x){return '<tr><td><strong>'+escH(x.person_name||'-')+'</strong><div class="muted">'+escH(x.department||'')+'</div></td><td>'+escH(x.course_id||'-')+'</td><td>'+escH(x.status||'-')+'</td><td>'+escH(x.completion_date||'-')+'</td><td><button class="icon-btn" title="Edit e-learning enrolment" aria-label="Edit e-learning enrolment" onclick="eleEdit(\''+escH(x.id)+'\')"><i class="ti ti-edit"></i></button></td></tr>';}).join(''):'<tr><td colspan="5" class="empty">No e-learning enrolments yet.</td></tr>')+'</tbody></table>';
   }catch(e){if(ch)ch.innerHTML=setupFriendlyMessage('E-learning',e.message);if(eh)eh.innerHTML='';}
 }
 async function elcEdit(id){
