@@ -33018,6 +33018,23 @@ function printCleanRegisterTables(root) {
   });
 }
 
+function printCleanRegisterChrome(root) {
+  if (!root) return;
+  root.querySelectorAll('.mtg-tab,.inv-tab,.kpi-tab,.tab-btn,.topbar,.sidebar,.no-print').forEach(function(el) {
+    el.remove();
+  });
+  root.querySelectorAll('[id*="filter"],[class*="filter"],[id*="search"],[class*="search"]').forEach(function(el) {
+    if (el.closest('table') || el.querySelector('table,tbody')) return;
+    var text = (el.textContent || '').replace(/\s+/g, ' ').trim();
+    if (el.querySelector('input,select,button,.btn') || text.length < 100) el.remove();
+  });
+  root.querySelectorAll('div,section').forEach(function(el) {
+    if (el.querySelector('table,img,canvas,svg')) return;
+    if ((el.textContent || '').replace(/\s+/g, ' ').trim()) return;
+    el.remove();
+  });
+}
+
 function printRegisterView(title, selector) {
   var node = document.querySelector(selector);
   if (!node) { toast('Nothing to print yet', false); return; }
@@ -33026,6 +33043,7 @@ function printRegisterView(title, selector) {
     el.className = 'rpt-empty';
     el.textContent = 'This view was still loading when the report was generated. Please refresh the module and print again if records are missing.';
   });
+  printCleanRegisterChrome(clone);
   clone.querySelectorAll('button,.btn,input,select,textarea,[contenteditable="true"]').forEach(function(el) {
     if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') {
       var span = document.createElement('span');
