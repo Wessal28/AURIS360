@@ -33212,6 +33212,13 @@ function docPrintCurrentView(){
 function peoplePrintRegister(){ printRegisterView('People Register', '#page-people'); }
 function mapPrintRegister(){ printRegisterView('Master Action Plan', '#map-list-view'); }
 function ptwPrintRegister(){ printRegisterView('Permit to Work Register', '#ptw-list-view'); }
+function raPrintCurrentView(){
+  var active = document.querySelector('#page-risk .mtg-tab.active');
+  var key = (active?.id || 'ra-ltab-ra').replace('ra-ltab-','');
+  var labels = {ra:'Risk Assessment Register',jsa:'JSA / JHA Register',hira:'HIRA Register'};
+  var selectors = {ra:'#ra-list',jsa:'#ra-jsa-list',hira:'#ra-hira-list'};
+  printRegisterView(labels[key] || 'Risk Assessment Register', selectors[key] || '#ra-list');
+}
 function trainingPrintCurrentView(){
   var active = document.querySelector('#page-training .mtg-tab.active');
   var key = (active?.id || 'train-tab-matrix').replace('train-tab-','');
@@ -36993,6 +37000,7 @@ function fireEquipStatusBadge(s) {
 <div style="display:flex;gap:8px" id="risk-add-btn">
 <button class="btn btn-sm" id="ra-lib-btn" onclick="raShowLibrary()"><i class="ti ti-books"></i>Libraries</button>
 <button class="btn btn-sm" id="ra-import-pdf-btn" onclick="raImportExistingPDF('task')"><i class="ti ti-file-import"></i>Import RA PDF</button>
+<button class="btn btn-sm" onclick="raPrintCurrentView()" title="Print current register"><i class="ti ti-printer"></i>Print register</button>
 <button class="btn btn-primary" onclick="raShowNewPanel()" id="ra-new-main-btn" style="display:none"><i class="ti ti-plus"></i>New RA</button>
 <button class="btn btn-sm" onclick="if(raEditingId)printRiskAssessment(raEditingId);else toast('Open a risk assessment first',false)" title="Print PDF"><i class="ti ti-printer"></i>Print PDF</button>
 </div>
