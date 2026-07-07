@@ -21129,6 +21129,9 @@ let toolsAllData=[], toolsEditingId=null, toolsInspEditingId=null, toolsInspEqui
 const TOOL_CAT_LABELS={hand_tool:'Hand tool',power_tool:'Power tool',equipment:'Equipment',vehicle:'Vehicle',lifting:'Lifting equipment',electrical:'Electrical',ppe:'PPE',other:'Other'};
 const TOOL_CAT_COLORS={hand_tool:'#185FA5',power_tool:'#854F0B',equipment:'#3B6D11',vehicle:'#185FA5',lifting:'#8B5CF6',electrical:'#EF9F27',ppe:'#1D9E75',other:'#6B7280'};
 const TOOL_CAT_ICONS={hand_tool:'ti-hammer',power_tool:'ti-bolt',equipment:'ti-settings',vehicle:'ti-car',lifting:'ti-crane',electrical:'ti-plug',ppe:'ti-shield',other:'ti-package'};
+const TOOLS_TH_STYLE='padding:9px 12px;text-align:left;color:#fff;font-weight:800;letter-spacing:.04em';
+const TOOLS_TH_STYLE_COMPACT='padding:8px 10px;text-align:left;color:#fff;font-weight:800;letter-spacing:.04em';
+const TOOLS_TH_STYLE_LIGHT='padding:7px 12px;text-align:left;border-bottom:1px solid var(--border);color:var(--text);font-weight:800';
 
 function toolsInspectionIntervalDays(freq){
   return {daily:1,weekly:7,monthly:31,quarterly:92,six_monthly:183,annual:366,yearly:366}[freq||'']||30;
@@ -21221,16 +21224,16 @@ function toolsFilterRegister(){
   var soon=new Date(); soon.setDate(soon.getDate()+30);
   var html='<div style="overflow-x:auto"><table style="width:100%;min-width:1180px;border-collapse:collapse;font-size:12px">'
     +'<thead><tr style="background:#1a3a5c;color:#fff">'
-    +'<th style="padding:9px 12px;text-align:left">Ref</th>'
-    +'<th style="padding:9px 12px;text-align:left">Equipment</th>'
-    +'<th style="padding:9px 12px;text-align:left">Category</th>'
-    +'<th style="padding:9px 12px;text-align:left">Serial / model</th>'
-    +'<th style="padding:9px 12px;text-align:left">Location</th>'
-    +'<th style="padding:9px 12px;text-align:left">Assigned to</th>'
-    +'<th style="padding:9px 12px;text-align:left">Inspection</th>'
-    +'<th style="padding:9px 12px;text-align:left">Statutory</th>'
-    +'<th style="padding:9px 12px;text-align:left">Status</th>'
-    +'<th style="padding:9px 12px;text-align:right">Actions</th>'
+    +'<th style="'+TOOLS_TH_STYLE+'">Ref</th>'
+    +'<th style="'+TOOLS_TH_STYLE+'">Equipment</th>'
+    +'<th style="'+TOOLS_TH_STYLE+'">Category</th>'
+    +'<th style="'+TOOLS_TH_STYLE+'">Serial / model</th>'
+    +'<th style="'+TOOLS_TH_STYLE+'">Location</th>'
+    +'<th style="'+TOOLS_TH_STYLE+'">Assigned to</th>'
+    +'<th style="'+TOOLS_TH_STYLE+'">Inspection</th>'
+    +'<th style="'+TOOLS_TH_STYLE+'">Statutory</th>'
+    +'<th style="'+TOOLS_TH_STYLE+'">Status</th>'
+    +'<th style="'+TOOLS_TH_STYLE+';text-align:right">Actions</th>'
     +'</tr></thead><tbody>';
   filtered.forEach(function(x,i){
     var cat=x.category||'other';
@@ -21430,11 +21433,11 @@ async function toolsLoadPersonal(){
         +'<button class="btn btn-sm btn-primary" style="font-size:11px" onclick="toolsStartPersonalCheck(\''+person+'\')"><i class="ti ti-clipboard-check"></i>Weekly check</button>'
         +'</div>';
       html+='<table style="width:100%;border-collapse:collapse;font-size:12px">'
-        +'<thead><tr style="background:#f9fafb"><th style="padding:7px 12px;text-align:left;border-bottom:1px solid var(--border)">Ref</th>'
-        +'<th style="padding:7px 12px;text-align:left;border-bottom:1px solid var(--border)">Equipment</th>'
-        +'<th style="padding:7px 12px;text-align:left;border-bottom:1px solid var(--border)">Category</th>'
-        +'<th style="padding:7px 12px;text-align:left;border-bottom:1px solid var(--border)">Frequency</th>'
-        +'<th style="padding:7px 12px;text-align:left;border-bottom:1px solid var(--border)">Status</th>'
+        +'<thead><tr style="background:#f9fafb"><th style="'+TOOLS_TH_STYLE_LIGHT+'">Ref</th>'
+        +'<th style="'+TOOLS_TH_STYLE_LIGHT+'">Equipment</th>'
+        +'<th style="'+TOOLS_TH_STYLE_LIGHT+'">Category</th>'
+        +'<th style="'+TOOLS_TH_STYLE_LIGHT+'">Frequency</th>'
+        +'<th style="'+TOOLS_TH_STYLE_LIGHT+'">Status</th>'
         +'</tr></thead><tbody>';
       tools.forEach(function(t,ti){
         var bg=ti%2===0?'#fff':'#fafafa';
@@ -21473,13 +21476,13 @@ async function toolsLoadInspections(){
       return;
     }
     var h='<table style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr style="background:#1a3a5c;color:#fff">'
-      +'<th style="padding:8px 12px;text-align:left">Date</th>'
-      +'<th style="padding:8px 10px;text-align:left">Equipment</th>'
-      +'<th style="padding:8px 10px;text-align:left">Ref</th>'
-      +'<th style="padding:8px 10px;text-align:left">Type</th>'
-      +'<th style="padding:8px 10px;text-align:left">Inspector</th>'
-      +'<th style="padding:8px 10px;text-align:center">Result</th>'
-      +'<th style="padding:8px 10px;width:60px"></th>'
+      +'<th style="padding:8px 12px;text-align:left;color:#fff;font-weight:800;letter-spacing:.04em">Date</th>'
+      +'<th style="'+TOOLS_TH_STYLE_COMPACT+'">Equipment</th>'
+      +'<th style="'+TOOLS_TH_STYLE_COMPACT+'">Ref</th>'
+      +'<th style="'+TOOLS_TH_STYLE_COMPACT+'">Type</th>'
+      +'<th style="'+TOOLS_TH_STYLE_COMPACT+'">Inspector</th>'
+      +'<th style="'+TOOLS_TH_STYLE_COMPACT+';text-align:center">Result</th>'
+      +'<th style="padding:8px 10px;width:60px;color:#fff"></th>'
       +'</tr></thead><tbody>';
     d.forEach(function(x,i){
       var bg=i%2===0?'#fff':'#f9fafb';
@@ -21664,14 +21667,14 @@ async function toolsLoadRCD(){
     var today=new Date();today.setHours(0,0,0,0);
     var h='<div class="card" style="padding:0;overflow:hidden"><table style="width:100%;border-collapse:collapse;font-size:12px;min-width:980px">'
       +'<thead><tr style="background:#1a3a5c;color:#fff">'
-      +'<th style="padding:9px 12px;text-align:left">Ref</th>'
-      +'<th style="padding:9px 12px;text-align:left">RCD / Distribution board</th>'
-      +'<th style="padding:9px 12px;text-align:left">Location</th>'
-      +'<th style="padding:9px 12px;text-align:left">Rating / type</th>'
-      +'<th style="padding:9px 12px;text-align:left">Last test</th>'
-      +'<th style="padding:9px 12px;text-align:left">Next due</th>'
-      +'<th style="padding:9px 12px;text-align:center">Result</th>'
-      +'<th style="padding:9px 12px;text-align:right">Actions</th>'
+      +'<th style="'+TOOLS_TH_STYLE+'">Ref</th>'
+      +'<th style="'+TOOLS_TH_STYLE+'">RCD / Distribution board</th>'
+      +'<th style="'+TOOLS_TH_STYLE+'">Location</th>'
+      +'<th style="'+TOOLS_TH_STYLE+'">Rating / type</th>'
+      +'<th style="'+TOOLS_TH_STYLE+'">Last test</th>'
+      +'<th style="'+TOOLS_TH_STYLE+'">Next due</th>'
+      +'<th style="'+TOOLS_TH_STYLE+';text-align:center">Result</th>'
+      +'<th style="'+TOOLS_TH_STYLE+';text-align:right">Actions</th>'
       +'</tr></thead><tbody>';
     toolsRcdData.forEach(function(x,i){
       var last=lastByTool[x.id];
@@ -21809,14 +21812,14 @@ async function toolsLoadStatutory(){
       alertEl.innerHTML=ah;
     }
     var h='<table style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr style="background:#1a3a5c;color:#fff">'
-      +'<th style="padding:8px 12px;text-align:left">Ref</th>'
-      +'<th style="padding:8px 10px;text-align:left">Equipment</th>'
-      +'<th style="padding:8px 10px;text-align:left">Examination type</th>'
-      +'<th style="padding:8px 10px;text-align:left;width:110px">Last exam</th>'
-      +'<th style="padding:8px 10px;text-align:left;width:110px">Next exam due</th>'
-      +'<th style="padding:8px 10px;text-align:left">Examining body</th>'
-      +'<th style="padding:8px 10px;text-align:center;width:100px">Status</th>'
-      +'<th style="padding:8px 10px;width:60px"></th>'
+      +'<th style="padding:8px 12px;text-align:left;color:#fff;font-weight:800;letter-spacing:.04em">Ref</th>'
+      +'<th style="'+TOOLS_TH_STYLE_COMPACT+'">Equipment</th>'
+      +'<th style="'+TOOLS_TH_STYLE_COMPACT+'">Examination type</th>'
+      +'<th style="'+TOOLS_TH_STYLE_COMPACT+';width:110px">Last exam</th>'
+      +'<th style="'+TOOLS_TH_STYLE_COMPACT+';width:110px">Next exam due</th>'
+      +'<th style="'+TOOLS_TH_STYLE_COMPACT+'">Examining body</th>'
+      +'<th style="'+TOOLS_TH_STYLE_COMPACT+';text-align:center;width:100px">Status</th>'
+      +'<th style="padding:8px 10px;width:60px;color:#fff"></th>'
       +'</tr></thead><tbody>';
     d.forEach(function(x,i){
       var bg=i%2===0?'#fff':'#f9fafb';
@@ -21859,7 +21862,7 @@ async function toolsLoadVehicles(){
       return;
     }
     var today=new Date();
-    var html='<div class="card" style="padding:0;overflow:hidden"><div style="overflow-x:auto"><table style="width:100%;min-width:980px;border-collapse:collapse;font-size:12px"><thead><tr style="background:#1a3a5c;color:#fff"><th style="padding:9px 12px;text-align:left">Vehicle</th><th style="padding:9px 12px;text-align:left">Reference</th><th style="padding:9px 12px;text-align:left">Location</th><th style="padding:9px 12px;text-align:left">Last inspection</th><th style="padding:9px 12px;text-align:left">Check status</th><th style="padding:9px 12px;text-align:left">Last result</th><th style="padding:9px 12px;text-align:right">Actions</th></tr></thead><tbody>';
+    var html='<div class="card" style="padding:0;overflow:hidden"><div style="overflow-x:auto"><table style="width:100%;min-width:980px;border-collapse:collapse;font-size:12px"><thead><tr style="background:#1a3a5c;color:#fff"><th style="'+TOOLS_TH_STYLE+'">Vehicle</th><th style="'+TOOLS_TH_STYLE+'">Reference</th><th style="'+TOOLS_TH_STYLE+'">Location</th><th style="'+TOOLS_TH_STYLE+'">Last inspection</th><th style="'+TOOLS_TH_STYLE+'">Check status</th><th style="'+TOOLS_TH_STYLE+'">Last result</th><th style="'+TOOLS_TH_STYLE+';text-align:right">Actions</th></tr></thead><tbody>';
     for(var i=0;i<vehicles.length;i++){
       var v=vehicles[i];
       var lastInsp=null;
@@ -38517,11 +38520,11 @@ function fireEquipStatusBadge(s) {
 </div>
 <table style="width:100%;border-collapse:collapse" id="insp-checklist-table">
 <thead><tr style="background:#f9fafb">
-<th style="padding:8px 16px;text-align:left;border-bottom:1px solid var(--border);font-size:11px">Check item</th>
-<th style="padding:8px;text-align:center;border-bottom:1px solid var(--border);font-size:11px;width:70px;color:#1D9E75">OK ✓</th>
-<th style="padding:8px;text-align:center;border-bottom:1px solid var(--border);font-size:11px;width:70px;color:#E24B4A">Fail ✗</th>
-<th style="padding:8px;text-align:center;border-bottom:1px solid var(--border);font-size:11px;width:70px;color:#6B7280">N/A</th>
-<th style="padding:8px;text-align:left;border-bottom:1px solid var(--border);font-size:11px">Notes</th>
+<th style="padding:8px 16px;text-align:left;border-bottom:1px solid var(--border);font-size:11px;color:var(--text);font-weight:800">Check item</th>
+<th style="padding:8px;text-align:center;border-bottom:1px solid var(--border);font-size:11px;width:70px;color:#1D9E75;font-weight:800">OK ✓</th>
+<th style="padding:8px;text-align:center;border-bottom:1px solid var(--border);font-size:11px;width:70px;color:#E24B4A;font-weight:800">Fail ✗</th>
+<th style="padding:8px;text-align:center;border-bottom:1px solid var(--border);font-size:11px;width:70px;color:#6B7280;font-weight:800">N/A</th>
+<th style="padding:8px;text-align:left;border-bottom:1px solid var(--border);font-size:11px;color:var(--text);font-weight:800">Notes</th>
 </tr></thead>
 <tbody id="insp-checklist-body"></tbody>
 </table>
