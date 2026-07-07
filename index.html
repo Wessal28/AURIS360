@@ -162,6 +162,64 @@ thead tr[style*="#7F1D1D"] th:last-child {
   border: 1px dashed var(--border);
   border-radius: 10px;
   background: #FAFBFC;
+  color: #64748b;
+  font-weight: 600;
+  line-height: 1.45;
+}
+.empty::before {
+  content: "—";
+  display: block;
+  width: 32px;
+  height: 32px;
+  margin: 0 auto 8px;
+  border-radius: 999px;
+  background: #EEF2F7;
+  color: #94A3B8;
+  line-height: 30px;
+  font-weight: 900;
+}
+.setup-message {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+  padding: 18px;
+  border: 1px solid #BFDBFE;
+  border-radius: 12px;
+  background: #F8FBFF;
+  color: #334155;
+  line-height: 1.5;
+}
+.setup-message.danger {
+  border-color: #FECACA;
+  background: #FEF2F2;
+}
+.setup-message-icon {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  background: #DBEAFE;
+  color: #185FA5;
+  font-size: 20px;
+}
+.setup-message.danger .setup-message-icon {
+  background: #FEE2E2;
+  color: #A32D2D;
+}
+.setup-message-title {
+  font-weight: 900;
+  color: #0F172A;
+  margin-bottom: 4px;
+}
+.setup-message-detail {
+  margin-top: 10px;
+  font-size: 12px;
+  color: #64748B;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  word-break: break-word;
 }
 @keyframes aurisLoadingShimmer {
   0% { background-position: 200% 0; }
@@ -9266,18 +9324,20 @@ var m=map[status]||map.info;
 return '<span style="display:inline-flex;align-items:center;gap:5px;padding:4px 9px;border-radius:999px;font-size:11px;font-weight:800;color:'+m[1]+';background:'+m[2]+'"><i class="ti '+m[3]+'"></i>'+escH(m[0])+'</span>';
 }
 function setupFriendlyMessage(moduleName,detail){
-var html='<div style="font-weight:800;color:#A32D2D;margin-bottom:6px">'+escH(moduleName)+' setup required</div>'+
+var html='<div class="setup-message danger"><div class="setup-message-icon"><i class="ti ti-plug-connected-x"></i></div><div>'+
+'<div class="setup-message-title">'+escH(moduleName)+' setup required</div>'+
 '<div>This feature is not fully enabled for this workspace yet. Please contact SEPHS admin to complete setup.</div>';
-if(typeof isSA==='function'&&isSA()&&detail)html+='<div style="margin-top:10px;font-size:12px;color:var(--text3)">Technical detail: '+escH(detail)+'</div>';
-return '<div class="card" style="padding:22px;color:var(--text2);line-height:1.5">'+html+'</div>';
+if(typeof isSA==='function'&&isSA()&&detail)html+='<div class="setup-message-detail">Technical detail: '+escH(detail)+'</div>';
+return html+'</div></div>';
 }
 function registerErrorHtml(moduleName,detail){
 var msg=String(detail||'');
 if(msg.indexOf('schema cache')!==-1||msg.indexOf('does not exist')!==-1||msg.indexOf('relation')!==-1)return setupFriendlyMessage(moduleName||'Register',msg);
-var html='<div style="font-weight:800;color:#A32D2D;margin-bottom:6px">Unable to load '+escH(moduleName||'this register')+'</div>'+
+var html='<div class="setup-message"><div class="setup-message-icon"><i class="ti ti-alert-circle"></i></div><div>'+
+'<div class="setup-message-title">Unable to load '+escH(moduleName||'this register')+'</div>'+
 '<div>Please refresh the page and try again. If the problem continues, contact SEPHS admin.</div>';
-if(typeof isSA==='function'&&isSA()&&msg)html+='<div style="margin-top:10px;font-size:12px;color:var(--text3)">Technical detail: '+escH(msg)+'</div>';
-return '<div class="card" style="padding:22px;color:var(--text2);line-height:1.5">'+html+'</div>';
+if(typeof isSA==='function'&&isSA()&&msg)html+='<div class="setup-message-detail">Technical detail: '+escH(msg)+'</div>';
+return html+'</div></div>';
 }
 function actionErrorMessage(action,moduleName,detail){
 var msg=String(detail||'');
