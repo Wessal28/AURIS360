@@ -33029,7 +33029,12 @@ function printRegisterView(title, selector) {
   clone.querySelectorAll('button,.btn,input,select,textarea,[contenteditable="true"]').forEach(function(el) {
     if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') {
       var span = document.createElement('span');
-      span.textContent = el.value || el.placeholder || '';
+      var type = (el.getAttribute('type') || '').toLowerCase();
+      if (type === 'checkbox' || type === 'radio') {
+        span.textContent = el.checked ? 'Yes' : 'No';
+      } else {
+        span.textContent = el.value || el.placeholder || '';
+      }
       el.replaceWith(span);
     } else if (el.tagName === 'SELECT') {
       var span = document.createElement('span');
