@@ -79,6 +79,32 @@ thead tr[style*="#7F1D1D"] th:last-child {
   text-align: center;
 }
 
+/* Shared register-table polish: clearer rows without rewriting each module. */
+.page table th {
+  vertical-align: middle;
+  line-height: 1.25;
+}
+.page table td {
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+.page table td:last-child {
+  white-space: nowrap;
+}
+.page table .btn-sm,
+.page table button.btn-sm {
+  min-width: 34px;
+  min-height: 32px;
+  justify-content: center;
+}
+.page table .badge {
+  white-space: nowrap;
+}
+.page table a,
+.page table [onclick] {
+  cursor: pointer;
+}
+
 @keyframes spin{to{transform:rotate(360deg)}}
 
 /* ═══════════════════════════════════════════════════════
