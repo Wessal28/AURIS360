@@ -14581,12 +14581,12 @@ function raBaselineAddRow(r, bodyOverride, typeOverride){
     +'<td class="ra-score-cell">'+raRopSelect(p,'')+'</td>'
     +'<td class="rl ra-risk-badge-cell" data-score="'+rr+'" data-level="'+rlLvl+'"><span style="background:'+rlCfg[0]+';color:'+rlCfg[1]+';padding:2px 5px;border-radius:4px;font-size:10px;font-weight:700;display:block;text-align:center">'+rr+'<br><span style="font-size:9px">'+rlLvl+'</span></span></td>'
     +'<td style="padding:5px 8px"><textarea class="ra-further-controls" style="width:100%;min-height:50px;padding:4px;border:1px solid var(--border);border-radius:4px;font-size:11px;resize:vertical" placeholder="Further actions / additional controls...">'+escH(r.further_controls||r.further_actions||r.additional_controls||'')+'</textarea></td>'
-    +'<td><input class="ra-action-by" type="text" value="'+escH(r.action_by||r.responsible||r.owner||'')+'" placeholder="Name / role"/></td>'
-    +'<td><input class="ra-target-date" type="date" value="'+escH(r.target_date||r.due_date||'')+'"/></td>'
     +'<td style="padding:4px 5px">'+raHOCSelect(r.hoc_level||r.hierarchy||'')+'</td>'
     +'<td class="ra-score-cell">'+raRsSelect(rs,'r-')+'</td>'
     +'<td class="ra-score-cell">'+raRopSelect(rp,'r-')+'</td>'
     +'<td class="r-rl ra-risk-badge-cell" data-score="'+rrr+'" data-level="'+rrlLvl+'"><span style="background:'+rrlCfg[0]+';color:'+rrlCfg[1]+';padding:2px 5px;border-radius:4px;font-size:10px;font-weight:700;display:block;text-align:center">'+rrr+'<br><span style="font-size:9px">'+rrlLvl+'</span></span></td>'
+    +'<td><input class="ra-action-by" type="text" value="'+escH(r.action_by||r.responsible||r.owner||'')+'" placeholder="Name / role"/></td>'
+    +'<td><input class="ra-target-date" type="date" value="'+escH(r.target_date||r.due_date||'')+'"/></td>'
     +'<td style="padding:5px 8px"><input class="ra-legal" type="text" style="width:90px;padding:3px 4px;border:1px solid var(--border);border-radius:4px;font-size:10px" value="'+escH(r.legal_ref||r.legal||'')+'" placeholder="OSH Act..."/></td>'
     +'<td style="padding:4px;text-align:center"><button class="btn btn-sm" style="color:var(--red);padding:2px 6px" onclick="this.closest(\'tr\').remove();raUpdateQualityPanel()"><i class="ti ti-x" style="font-size:10px"></i></button></td>';
   body.appendChild(tr);
@@ -14624,11 +14624,11 @@ function raTaskAddRow(r){
     +'<td class="ra-score-cell">'+raRopSelect(p,'')+'</td>'
     +'<td class="rl ra-risk-badge-cell" data-score="'+rr+'" data-level="'+rlLvl+'"><span style="background:'+rlCfg[0]+';color:'+rlCfg[1]+';padding:2px 5px;border-radius:4px;font-size:10px;font-weight:700;display:block;text-align:center">'+rr+'<br><span style="font-size:9px">'+rlLvl+'</span></span></td>'
     +'<td style="padding:5px 8px"><textarea class="ra-further-controls" style="width:100%;min-height:50px;padding:4px;border:1px solid var(--border);border-radius:4px;font-size:11px;resize:vertical" placeholder="Further actions / additional controls...">'+escH(r.further_controls||r.further_actions||r.additional_controls||'')+'</textarea></td>'
-    +'<td><input class="ra-action-by" type="text" value="'+escH(r.action_by||r.responsible||r.owner||'')+'" placeholder="Name / role"/></td>'
-    +'<td><input class="ra-target-date" type="date" value="'+escH(r.target_date||r.due_date||'')+'"/></td>'
     +'<td class="ra-score-cell">'+raRsSelect(rs,'r-')+'</td>'
     +'<td class="ra-score-cell">'+raRopSelect(rp,'r-')+'</td>'
     +'<td class="r-rl ra-risk-badge-cell" data-score="'+rrr+'" data-level="'+rrlLvl+'"><span style="background:'+rrlCfg[0]+';color:'+rrlCfg[1]+';padding:2px 5px;border-radius:4px;font-size:10px;font-weight:700;display:block;text-align:center">'+rrr+'<br><span style="font-size:9px">'+rrlLvl+'</span></span></td>'
+    +'<td><input class="ra-action-by" type="text" value="'+escH(r.action_by||r.responsible||r.owner||'')+'" placeholder="Name / role"/></td>'
+    +'<td><input class="ra-target-date" type="date" value="'+escH(r.target_date||r.due_date||'')+'"/></td>'
     +'<td style="padding:4px;text-align:center"><button class="btn btn-sm" style="color:var(--red);padding:2px 6px" onclick="this.closest(\'tr\').remove();raUpdateQualityPanel()"><i class="ti ti-x" style="font-size:10px"></i></button></td>';
   body.appendChild(tr);
   setTimeout(raUpdateQualityPanel,0);
@@ -32705,11 +32705,12 @@ function auditExportCsv(){
 
 // ── Core print engine ────────────────────────────────────────────
 function aurisPrint(html, title) {
-  var w = window.open('', '_blank', 'width=900,height=700');
-  if (!w) { toast('Please allow popups for PDF generation', false); return; }
   var printTitle=String(title||'');
-  var reportOverride=printTitle.toLowerCase().includes('risk assessment')
-    ? '@page{size:A4 landscape;margin:8mm}.report-page{max-width:297mm;padding:8mm}table{font-size:7.5pt}th,td{padding:3px 4px}'
+  var isRiskPrint=printTitle.toLowerCase().includes('risk assessment');
+  var w = window.open('', '_blank', isRiskPrint?'width=1280,height=820':'width=900,height=700');
+  if (!w) { toast('Please allow popups for PDF generation', false); return; }
+  var reportOverride=isRiskPrint
+    ? '@page{size:297mm 210mm;margin:8mm}html,body{width:297mm;min-height:210mm}.report-page{width:297mm;max-width:none!important;min-height:210mm;padding:8mm}table{font-size:7.2pt}th,td{padding:3px 4px}.rpt-section{break-inside:avoid}'
     : '';
   w.document.write('<!DOCTYPE html><html><head>'
     + '<meta charset="UTF-8">'
@@ -33031,7 +33032,7 @@ function printRiskAssessment(raId) {
     + '</div>'
 
     + '<div class="rpt-section"><div class="rpt-section-title red">Hazards, Controls & Residual Risk</div>'
-    + (rows.length ? '<table><thead><tr><th style="width:5%">Step</th><th style="width:12%">Hazard</th><th style="width:13%">Risk Description / Harm</th><th style="width:18%">Existing Controls</th><th style="width:7%">Initial</th><th style="width:16%">Further Actions / Controls</th><th style="width:8%">Action by</th><th style="width:8%">Target date</th><th style="width:7%">Residual</th><th style="width:6%">Legal ref</th></tr></thead><tbody>'
+    + (rows.length ? '<table><thead><tr><th style="width:5%">Step</th><th style="width:12%">Hazard</th><th style="width:13%">Risk Description / Harm</th><th style="width:18%">Existing Controls</th><th style="width:7%">Initial</th><th style="width:16%">Further Actions / Controls</th><th style="width:7%">Residual</th><th style="width:8%">Action by</th><th style="width:8%">Target date</th><th style="width:6%">Legal ref</th></tr></thead><tbody>'
       + rows.map(function(r){
           var hazard=val(r.task,r.hazard,r.condition,r.observed_risk);
           var task=val(r.task,r.step,r.activity);
@@ -33049,9 +33050,9 @@ function printRiskAssessment(raId) {
             + '<td>' + escH(val(r.controls,r.control_measures,'—')) + (r.hoc_level?'<br><span style="font-size:8pt;color:#185FA5">Hierarchy: '+escH(r.hoc_level)+'</span>':'') + '</td>'
             + '<td>' + riskBadge(initialLevel,initialScore) + '<br><span style="font-size:8pt;color:#6b7280">S '+escH(val(r.rs,r.s,r.initial_s,'—'))+' / P '+escH(val(r.rop,r.p,r.initial_p,'—'))+'</span></td>'
             + '<td>' + escH(val(r.further_controls,r.further_actions,r.additional_controls,'—')) + '</td>'
+            + '<td>' + riskBadge(residualLevel,residualScore) + '<br><span style="font-size:8pt;color:#6b7280">S '+escH(val(r.res_s,r.rs2,'—'))+' / P '+escH(val(r.res_p,r.rp2,'—'))+'</span></td>'
             + '<td>' + escH(val(r.action_by,r.responsible,r.owner,r.who,'—')) + '</td>'
             + '<td>' + fmtDate(val(r.target_date,r.due_date)) + '</td>'
-            + '<td>' + riskBadge(residualLevel,residualScore) + '<br><span style="font-size:8pt;color:#6b7280">S '+escH(val(r.res_s,r.rs2,'—'))+' / P '+escH(val(r.res_p,r.rp2,'—'))+'</span></td>'
             + '<td>' + escH(val(r.legal_ref,r.legal,'—')) + '</td>'
             + '</tr>';
         }).join('') + '</tbody></table>'
@@ -37711,12 +37712,12 @@ function fireEquipStatusBadge(s) {
 <th title="Likelihood before additional controls" style="padding:7px 6px;text-align:center;border-bottom:1px solid var(--border);width:66px">Initial<br/>Likelihood</th>
 <th title="Initial risk rating" style="padding:7px 6px;text-align:center;border-bottom:1px solid var(--border);width:64px">Initial<br/>Risk</th>
 <th style="padding:7px 10px;text-align:left;border-bottom:1px solid var(--border);min-width:190px">Further Actions / Controls</th>
-<th style="padding:7px 10px;text-align:left;border-bottom:1px solid var(--border);min-width:120px">Action by</th>
-<th style="padding:7px 10px;text-align:left;border-bottom:1px solid var(--border);min-width:120px">Target date</th>
 <th style="padding:7px 10px;text-align:left;border-bottom:1px solid var(--border);min-width:80px">Hierarchy</th>
 <th title="Severity after controls" style="padding:7px 6px;text-align:center;border-bottom:1px solid var(--border);width:64px">Residual<br/>Severity</th>
 <th title="Likelihood after controls" style="padding:7px 6px;text-align:center;border-bottom:1px solid var(--border);width:68px">Residual<br/>Likelihood</th>
 <th title="Residual risk rating after controls" style="padding:7px 6px;text-align:center;border-bottom:1px solid var(--border);width:64px">Residual<br/>Risk</th>
+<th style="padding:7px 10px;text-align:left;border-bottom:1px solid var(--border);min-width:120px">Action by</th>
+<th style="padding:7px 10px;text-align:left;border-bottom:1px solid var(--border);min-width:120px">Target date</th>
 <th style="padding:7px 10px;text-align:left;border-bottom:1px solid var(--border);min-width:100px">Legal Ref</th>
 <th style="padding:7px 6px;border-bottom:1px solid var(--border);width:40px"></th>
 </tr></thead>
@@ -37747,11 +37748,11 @@ function fireEquipStatusBadge(s) {
 <th title="Likelihood before additional controls" style="padding:7px 6px;text-align:center;border-bottom:1px solid var(--border);width:66px">Initial<br/>Likelihood</th>
 <th title="Initial risk rating" style="padding:7px 6px;text-align:center;border-bottom:1px solid var(--border);width:64px">Initial<br/>Risk</th>
 <th style="padding:7px 10px;text-align:left;border-bottom:1px solid var(--border);min-width:190px">Further Actions / Controls</th>
-<th style="padding:7px 10px;text-align:left;border-bottom:1px solid var(--border);min-width:120px">Action by</th>
-<th style="padding:7px 10px;text-align:left;border-bottom:1px solid var(--border);min-width:120px">Target date</th>
 <th title="Severity after controls" style="padding:7px 6px;text-align:center;border-bottom:1px solid var(--border);width:64px">Residual<br/>Severity</th>
 <th title="Likelihood after controls" style="padding:7px 6px;text-align:center;border-bottom:1px solid var(--border);width:68px">Residual<br/>Likelihood</th>
 <th title="Residual risk rating after controls" style="padding:7px 6px;text-align:center;border-bottom:1px solid var(--border);width:64px">Residual<br/>Risk</th>
+<th style="padding:7px 10px;text-align:left;border-bottom:1px solid var(--border);min-width:120px">Action by</th>
+<th style="padding:7px 10px;text-align:left;border-bottom:1px solid var(--border);min-width:120px">Target date</th>
 <th style="padding:7px 6px;border-bottom:1px solid var(--border);width:40px"></th>
 </tr></thead>
 <tbody id="ra-task-body"></tbody>
@@ -37808,12 +37809,12 @@ function fireEquipStatusBadge(s) {
 <th title="Likelihood before additional controls" style="padding:7px 6px;text-align:center;border-bottom:1px solid var(--border);width:66px">Initial<br/>Likelihood</th>
 <th title="Initial risk rating" style="padding:7px 6px;text-align:center;border-bottom:1px solid var(--border);width:64px">Initial<br/>Risk</th>
 <th style="padding:7px 10px;text-align:left;border-bottom:1px solid var(--border);min-width:190px">Further Actions / Controls</th>
-<th style="padding:7px 10px;text-align:left;border-bottom:1px solid var(--border);min-width:120px">Action by</th>
-<th style="padding:7px 10px;text-align:left;border-bottom:1px solid var(--border);min-width:120px">Target date</th>
 <th style="padding:7px 10px;text-align:left;border-bottom:1px solid var(--border);min-width:80px">HOC Level</th>
 <th title="Severity after controls" style="padding:7px 6px;text-align:center;border-bottom:1px solid var(--border);width:64px">Residual<br/>Severity</th>
 <th title="Likelihood after controls" style="padding:7px 6px;text-align:center;border-bottom:1px solid var(--border);width:68px">Residual<br/>Likelihood</th>
 <th title="Residual risk rating after controls" style="padding:7px 6px;text-align:center;border-bottom:1px solid var(--border);width:64px">Residual<br/>Risk</th>
+<th style="padding:7px 10px;text-align:left;border-bottom:1px solid var(--border);min-width:120px">Action by</th>
+<th style="padding:7px 10px;text-align:left;border-bottom:1px solid var(--border);min-width:120px">Target date</th>
 <th style="padding:7px 10px;text-align:left;border-bottom:1px solid var(--border);min-width:100px">Legal Ref</th>
 <th style="padding:7px 6px;border-bottom:1px solid var(--border);width:40px"></th>
 </tr></thead>
