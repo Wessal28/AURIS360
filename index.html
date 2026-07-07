@@ -15659,29 +15659,52 @@ async function raSearchHazardLib(){
     var d=await api('/hazard_library?select=*&or=(is_global.eq.true,company_id.eq.'+prof?.company_id+')&order=hazard_type&limit=30');
     libHazardData=d||[];
     var filt=libHazardData.filter(function(h){
-      return h.hazard_description.toLowerCase().includes(q)||h.hazard_type.toLowerCase().includes(q)||h.category.toLowerCase().includes(q)||(h.potential_harm||'').toLowerCase().includes(q);
+      return (h.hazard_description||'').toLowerCase().includes(q)||(h.hazard_type||'').toLowerCase().includes(q)||(h.category||'').toLowerCase().includes(q)||(h.potential_harm||'').toLowerCase().includes(q);
     }).slice(0,8);
     if(!filt.length){el.innerHTML='<div style="font-size:12px;color:var(--text2);padding:8px">No hazards found for "'+escH(q)+'"</div>';return;}
-    var h='<div style="border:1px solid var(--border);border-radius:8px;overflow:hidden">';
-    filt.forEach(function(item){
-      var rl=item.default_severity&&item.default_probability?item.default_severity*item.default_probability:0;
-      var rlLvl=rl>=20?'Critical':rl>=12?'Very High':rl>=6?'High':rl>=3?'Medium':'Low';
-      var rlcfg=RL_CFG[rlLvl]||['#f3f4f6','#6B7280'];
-      h+='<div style="padding:8px 14px;border-bottom:1px solid #f5f5f5;display:flex;align-items:center;gap:12px;background:#fff">'
-        +'<div style="flex:1">'
-        +'<div style="font-weight:600;font-size:12px">'+escH(item.hazard_description)+'</div>'
-        +'<div style="font-size:11px;color:var(--text2)">'+escH(item.category)+' · '+escH(item.potential_harm||'')+'</div>'
-        +'</div>'
-        +(rl?'<span style="background:'+rlcfg[0]+';color:'+rlcfg[1]+';padding:1px 7px;border-radius:4px;font-size:10px;font-weight:700">'+rl+' '+rlLvl+'</span>':'')
-        +'<button class="btn btn-sm btn-primary" onclick="raAddFromLibrary(\''+item.id+'\')"><i class="ti ti-plus"></i>Add row</button>'
-        +'</div>';
-    });
-    h+='</div>';
-    if(el)el.innerHTML=h;
+    raRenderHazardLibResults(filt);
   }catch(e){el.innerHTML='<div style="font-size:12px;color:var(--text2);padding:8px">Search error: '+escH(e.message)+'</div>';}
 }
 
-function raShowHazardLibPicker(){raSearchHazardLib();}
+function raRenderHazardLibResults(items){
+  var el=document.getElementById('ra-lib-results');if(!el)return;
+  var h='<div style="border:1px solid var(--border);border-radius:8px;overflow:hidden">';
+  (items||[]).forEach(function(item){
+    var rl=item.default_severity&&item.default_probability?item.default_severity*item.default_probability:0;
+    var rlLvl=rl>=20?'Critical':rl>=12?'Very High':rl>=6?'High':rl>=3?'Medium':'Low';
+    var rlcfg=RL_CFG[rlLvl]||['#f3f4f6','#6B7280'];
+    h+='<div style="padding:8px 14px;border-bottom:1px solid #f5f5f5;display:flex;align-items:center;gap:12px;background:#fff">'
+      +'<div style="flex:1">'
+      +'<div style="font-weight:600;font-size:12px">'+escH(item.hazard_description||'Hazard item')+'</div>'
+      +'<div style="font-size:11px;color:var(--text2)">'+escH(item.category||'General')+' · '+escH(item.potential_harm||'')+'</div>'
+      +'</div>'
+      +(rl?'<span style="background:'+rlcfg[0]+';color:'+rlcfg[1]+';padding:1px 7px;border-radius:4px;font-size:10px;font-weight:700">'+rl+' '+rlLvl+'</span>':'')
+      +'<button class="btn btn-sm btn-primary" onclick="raAddFromLibrary(\''+item.id+'\')"><i class="ti ti-plus"></i>Add row</button>'
+      +'</div>';
+  });
+  h+='</div>';
+  el.innerHTML=h;
+}
+
+async function raShowHazardLibPicker(){
+  var input=document.getElementById('ra-lib-search');
+  var el=document.getElementById('ra-lib-results');if(!el)return;
+  if(input)input.focus();
+  var q=(input?.value||'').trim();
+  if(q.length>=2){raSearchHazardLib();return;}
+  el.innerHTML='<div style="font-size:12px;color:var(--text2);padding:8px">Loading hazard library...</div>';
+  try{
+    var d=await api('/hazard_library?select=*&or=(is_global.eq.true,company_id.eq.'+prof?.company_id+')&order=category,hazard_type&limit=12');
+    libHazardData=d||[];
+    if(!libHazardData.length){
+      el.innerHTML='<div style="font-size:12px;color:var(--text2);padding:8px">No hazards are available in the library yet.</div>';
+      return;
+    }
+    raRenderHazardLibResults(libHazardData);
+  }catch(e){
+    el.innerHTML='<div style="font-size:12px;color:var(--text2);padding:8px">Could not open library: '+escH(e.message)+'</div>';
+  }
+}
 
 async function raAddFromLibrary(libId){
   if(!libHazardData.length){
