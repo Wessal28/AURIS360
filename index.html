@@ -21124,7 +21124,7 @@ async function ppeQuickReplace(issId,empName,ppeName){
 // ===== TOOLS_JS.JS =====
 
 // ===== TOOLS & EQUIPMENT MODULE =====
-let toolsAllData=[], toolsEditingId=null, toolsInspEditingId=null, toolsInspEquipId=null, toolsRcdData=[], toolsLastInspectionByTool={};
+let toolsAllData=[], toolsEditingId=null, toolsInspEditingId=null, toolsInspEquipId=null, toolsRcdData=[], toolsLiftingData=[], toolsLastInspectionByTool={}, toolsInspectionReturnTab='inspection';
 
 const TOOL_CAT_LABELS={hand_tool:'Hand tool',power_tool:'Power tool',equipment:'Equipment',vehicle:'Vehicle',lifting:'Lifting equipment',electrical:'Electrical',ppe:'PPE',other:'Other'};
 const TOOL_CAT_COLORS={hand_tool:'#185FA5',power_tool:'#854F0B',equipment:'#3B6D11',vehicle:'#185FA5',lifting:'#8B5CF6',electrical:'#EF9F27',ppe:'#1D9E75',other:'#6B7280'};
@@ -21149,13 +21149,14 @@ function toolsInspectionState(x,today){
 function toolsSwitchTab(tab,btn){
   document.querySelectorAll('[id^="tools-tab-"]').forEach(function(t){t.classList.remove('active');});
   if(btn)btn.classList.add('active');
-  ['register','personal','inspection','statutory','vehicles','rcd'].forEach(function(t){
+  ['register','personal','inspection','lifting','statutory','vehicles','rcd'].forEach(function(t){
     var el=document.getElementById('tools-view-'+t);if(el)el.style.display=t===tab?'block':'none';
   });
   ['tools-form','tools-insp-form','tools-rcd-form'].forEach(function(id){var el=document.getElementById(id);if(el)el.style.display='none';});
   if(tab==='register')toolsLoadRegister();
   else if(tab==='personal')toolsLoadPersonal();
   else if(tab==='inspection')toolsLoadInspections();
+  else if(tab==='lifting')toolsLoadLiftingAccessories();
   else if(tab==='statutory')toolsLoadStatutory();
   else if(tab==='vehicles')toolsLoadVehicles();
   else if(tab==='rcd')toolsLoadRCD();
@@ -21166,6 +21167,8 @@ async function loadTools(){
   if(addBtn)addBtn.style.display=isMgr()?'inline-flex':'none';
   var inspBtn=document.getElementById('tools-insp-new-btn');
   if(inspBtn)inspBtn.style.display=isMgr()?'inline-flex':'none';
+  var liftBtn=document.getElementById('tools-lifting-new-btn');
+  if(liftBtn)liftBtn.style.display=isMgr()?'inline-flex':'none';
   var vehBtn=document.getElementById('veh-insp-btn');
   if(vehBtn)vehBtn.style.display=isMgr()?'inline-flex':'none';
   var rcdBtn=document.getElementById('rcd-add-btn');
@@ -21324,7 +21327,7 @@ function toolsStatutoryChange(){
 }
 
 function toolsShowForm(){
-  ['tools-view-register','tools-view-personal','tools-view-inspection','tools-view-statutory','tools-view-vehicles','tools-view-rcd'].forEach(function(id){var el=document.getElementById(id);if(el)el.style.display='none';});
+  ['tools-view-register','tools-view-personal','tools-view-inspection','tools-view-lifting','tools-view-statutory','tools-view-vehicles','tools-view-rcd'].forEach(function(id){var el=document.getElementById(id);if(el)el.style.display='none';});
   document.getElementById('tools-insp-form').style.display='none';
   var rcdForm=document.getElementById('tools-rcd-form');if(rcdForm)rcdForm.style.display='none';
   document.getElementById('tools-form').style.display='block';
@@ -21459,7 +21462,7 @@ function toolsStartPersonalCheck(personName){
   // Switch to inspection tab and filter by person
   document.querySelectorAll('[id^="tools-tab-"]').forEach(function(t){t.classList.remove('active');});
   var btn=document.getElementById('tools-tab-inspection');if(btn)btn.classList.add('active');
-  ['register','personal','statutory','vehicles','rcd'].forEach(function(t){var el=document.getElementById('tools-view-'+t);if(el)el.style.display='none';});
+  ['register','personal','lifting','statutory','vehicles','rcd'].forEach(function(t){var el=document.getElementById('tools-view-'+t);if(el)el.style.display='none';});
   var insp=document.getElementById('tools-view-inspection');if(insp)insp.style.display='block';
   toolsLoadInspections();
 }
@@ -21505,6 +21508,104 @@ async function toolsLoadInspections(){
   }catch(e){el.innerHTML='<p style="padding:20px;color:red">'+e.message+'</p>';}
 }
 
+async function toolsLoadLiftingAccessories(){
+  var el=document.getElementById('tools-lifting-list');
+  if(!el)return;
+  el.innerHTML='<div class="loading-msg">Loading lifting accessories...</div>';
+  try{
+    var res=await Promise.all([
+      api('/tools_register?category=eq.lifting'+cf()+'&order=name&select=*'),
+      api('/tool_inspections?select=*'+cf()+'&order=inspection_date.desc&limit=500')
+    ]);
+    toolsLiftingData=res[0]||[];
+    var inspections=res[1]||[];
+    var lastByTool={};
+    inspections.forEach(function(x){if(x.tool_id&&!lastByTool[x.tool_id])lastByTool[x.tool_id]=x;});
+    if(!toolsLiftingData.length){
+      el.innerHTML='<div style="text-align:center;padding:42px;color:var(--text2)">'
+        +'<div style="font-size:42px;margin-bottom:10px"><i class="ti ti-crane"></i></div>'
+        +'<div style="font-weight:800;color:var(--text);margin-bottom:6px">No lifting accessories registered</div>'
+        +'<div style="font-size:12px;margin-bottom:14px">Add slings, shackles, chain blocks, lifting beams, hooks or other lifting accessories, then inspect them here.</div>'
+        +(isMgr()?'<button class="btn btn-primary" onclick="toolsNewLiftingAccessory()"><i class="ti ti-plus"></i>Add lifting accessory</button>':'')
+        +'</div>';
+      return;
+    }
+    var today=new Date();today.setHours(0,0,0,0);
+    var soon=new Date(today);soon.setDate(soon.getDate()+14);
+    var total=toolsLiftingData.length, due=0, failed=0, ok=0;
+    toolsLiftingData.forEach(function(x){
+      var last=lastByTool[x.id];
+      var result=last?.overall_result||'not_inspected';
+      if(result==='fail')failed++;
+      else if(result==='pass')ok++;
+      var next=last?.next_inspection_date?new Date(last.next_inspection_date):null;
+      if(!next||next<=soon)due++;
+    });
+    var h='<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:12px">'
+      +toolsMiniMetric('Accessories',total,'#8B5CF6')
+      +toolsMiniMetric('Passed',ok,'#1D9E75')
+      +toolsMiniMetric('Due soon',due,'#EF9F27')
+      +toolsMiniMetric('Failed',failed,'#E24B4A')
+      +'</div>';
+    h+='<div class="card" style="padding:0;overflow:hidden"><div style="overflow-x:auto"><table style="width:100%;min-width:1120px;border-collapse:collapse;font-size:12px">'
+      +'<thead><tr style="background:#1a3a5c;color:#fff">'
+      +'<th style="'+TOOLS_TH_STYLE+'">Ref</th>'
+      +'<th style="'+TOOLS_TH_STYLE+'">Lifting accessory</th>'
+      +'<th style="'+TOOLS_TH_STYLE+'">SWL / model</th>'
+      +'<th style="'+TOOLS_TH_STYLE+'">Serial no.</th>'
+      +'<th style="'+TOOLS_TH_STYLE+'">Location</th>'
+      +'<th style="'+TOOLS_TH_STYLE+'">Last inspection</th>'
+      +'<th style="'+TOOLS_TH_STYLE+'">Next due</th>'
+      +'<th style="'+TOOLS_TH_STYLE+';text-align:center">Result</th>'
+      +'<th style="'+TOOLS_TH_STYLE+';text-align:right">Actions</th>'
+      +'</tr></thead><tbody>';
+    toolsLiftingData.forEach(function(x,i){
+      var last=lastByTool[x.id];
+      var next=last?.next_inspection_date?new Date(last.next_inspection_date):null;
+      var lastDt=last?.inspection_date?new Date(last.inspection_date):null;
+      var overdue=!next||next<today;
+      var dueSoon=next&&next>=today&&next<=soon;
+      var result=last?.overall_result||'not_inspected';
+      var cfg={pass:['#EAF3DE','#3B6D11','Pass'],conditional:['#FEF9EC','#854F0B','Conditional'],fail:['#FCEBEB','#A32D2D','Fail'],not_inspected:['#f3f4f6','#6B7280','No inspection']};
+      var rc=cfg[result]||cfg.not_inspected;
+      h+='<tr style="border-bottom:1px solid #f0f0f0;background:'+(i%2?'#fafafa':'#fff')+(result==='fail'?';border-left:4px solid var(--red)':overdue?';border-left:4px solid #C2410C':dueSoon?';border-left:4px solid #EF9F27':'')+'">'
+        +'<td style="padding:10px 12px;font-family:monospace;font-weight:800;color:#8B5CF6">'+escH(x.ref_number||'--')+'</td>'
+        +'<td style="padding:10px 12px"><div style="font-weight:900">'+escH(x.name||'--')+'</div><div style="font-size:11px;color:var(--text2)">'+escH(x.brand||'')+'</div></td>'
+        +'<td style="padding:10px 12px">'+escH(x.model||x.statutory_type||'--')+'</td>'
+        +'<td style="padding:10px 12px">'+escH(x.serial_number||'--')+'</td>'
+        +'<td style="padding:10px 12px">'+escH(x.location||'--')+'</td>'
+        +'<td style="padding:10px 12px">'+(lastDt?lastDt.toLocaleDateString('en-GB'):'Never')+'</td>'
+        +'<td style="padding:10px 12px;'+(overdue?'color:#C2410C;font-weight:800':dueSoon?'color:#854F0B;font-weight:800':'')+'">'+(next?next.toLocaleDateString('en-GB'):'Due now')+(overdue?' overdue':dueSoon?' due soon':'')+'</td>'
+        +'<td style="padding:10px 12px;text-align:center"><span style="background:'+rc[0]+';color:'+rc[1]+';padding:3px 10px;border-radius:99px;font-size:11px;font-weight:800">'+rc[2]+'</span></td>'
+        +'<td style="padding:10px 12px;text-align:right;white-space:nowrap">'+(isMgr()?'<button class="btn btn-sm btn-primary" data-id="'+x.id+'" onclick="toolsStartLiftingInspection(this.getAttribute(\'data-id\'))"><i class="ti ti-clipboard-check"></i>Inspect</button> ':'')+'<button class="btn btn-sm" data-id="'+x.id+'" onclick="toolsEdit(this.getAttribute(\'data-id\'))"><i class="ti ti-edit"></i></button></td>'
+        +'</tr>';
+    });
+    h+='</tbody></table></div></div>';
+    el.innerHTML=h;
+  }catch(e){
+    el.innerHTML='<p style="padding:20px;color:red">'+e.message+'</p>';
+  }
+}
+
+function toolsMiniMetric(label,value,color){
+  return '<div class="card" style="padding:12px 14px;border-left:4px solid '+color+'"><div style="font-size:10px;color:var(--text2);font-weight:800;text-transform:uppercase;margin-bottom:2px">'+escH(label)+'</div><div style="font-size:24px;font-weight:900;color:'+color+'">'+escH(value)+'</div></div>';
+}
+
+function toolsNewLiftingAccessory(){
+  toolsNew();
+  var cat=document.getElementById('teq-cat');if(cat){cat.value='lifting';toolsCatChange();}
+  var freq=document.getElementById('teq-freq');if(freq)freq.value='monthly';
+  var name=document.getElementById('teq-name');if(name&&!name.value)name.placeholder='e.g. Web sling 2T, shackle, chain block';
+  var model=document.getElementById('teq-model');if(model&&!model.value)model.placeholder='SWL / WLL, size or model';
+  var stat=document.getElementById('teq-statutory');if(stat){stat.checked=true;toolsStatutoryChange();}
+  var statType=document.getElementById('teq-stat-type');if(statType&&!statType.value)statType.value='Lifting accessory thorough examination';
+}
+
+async function toolsStartLiftingInspection(toolId){
+  await toolsStartInspection(toolId,'lifting');
+  var type=document.getElementById('insp-type');if(type)type.value='lifting_accessory';
+}
+
 async function toolsNewInspection(){
   // Show equipment picker first
   var id=await appPrompt({title:'Start inspection',message:'Enter equipment Ref No. or name to inspect.',placeholder:'Ref No. or equipment name'});
@@ -21514,8 +21615,9 @@ async function toolsNewInspection(){
   toolsStartInspection(found.id);
 }
 
-async function toolsStartInspection(toolId){
-  var tool=toolsAllData.find(x=>x.id===toolId);
+async function toolsStartInspection(toolId,returnTab){
+  toolsInspectionReturnTab=returnTab||'inspection';
+  var tool=toolsAllData.find(x=>x.id===toolId)||toolsLiftingData.find(x=>x.id===toolId);
   if(!tool&&toolId){try{var d=await api('/tools_register?id=eq.'+toolId+'&select=*');tool=d?.[0];}catch(e){}}
   if(!tool){toast('Equipment not found',false);return;}
   toolsInspEquipId=toolId;
@@ -21539,7 +21641,7 @@ async function toolsStartInspection(toolId){
   // Load checklist
   await toolsLoadChecklist(tool.category);
   // Show form
-  ['tools-view-register','tools-view-personal','tools-view-inspection','tools-view-statutory','tools-view-vehicles','tools-view-rcd'].forEach(function(id){var el=document.getElementById(id);if(el)el.style.display='none';});
+  ['tools-view-register','tools-view-personal','tools-view-inspection','tools-view-lifting','tools-view-statutory','tools-view-vehicles','tools-view-rcd'].forEach(function(id){var el=document.getElementById(id);if(el)el.style.display='none';});
   document.getElementById('tools-form').style.display='none';
   document.getElementById('tools-insp-form').style.display='block';
 }
@@ -21550,8 +21652,18 @@ async function toolsLoadChecklist(category){
   try{
     var items=await api('/tool_checklist_templates?category=eq.'+category+'&order=sort_order');
     if(!items||!items.length){
-      // Generic items
-      items=[{check_item:'Visual inspection — no damage or defects'},{check_item:'Safe to use'},{check_item:'Stored correctly'}];
+      if(category==='lifting'){
+        items=[
+          {check_item:'Identification tag / marking legible'},
+          {check_item:'SWL / WLL visible and suitable for intended use'},
+          {check_item:'No cuts, wear, deformation, cracks or corrosion'},
+          {check_item:'Hooks, shackles, latches and pins secure'},
+          {check_item:'Certificate / thorough examination in date'},
+          {check_item:'Removed from service if defective'}
+        ];
+      }else{
+        items=[{check_item:'Visual inspection — no damage or defects'},{check_item:'Safe to use'},{check_item:'Stored correctly'}];
+      }
     }
     tbody.innerHTML='';
     items.forEach(function(item,i){
@@ -21589,10 +21701,13 @@ function toolsInspScore(){
 
 function toolsInspFormBack(){
   document.getElementById('tools-insp-form').style.display='none';
-  document.getElementById('tools-view-inspection').style.display='block';
+  var target=toolsInspectionReturnTab||'inspection';
+  var view=document.getElementById('tools-view-'+target)||document.getElementById('tools-view-inspection');
+  if(view)view.style.display='block';
   document.querySelectorAll('[id^="tools-tab-"]').forEach(function(t){t.classList.remove('active');});
-  var tab=document.getElementById('tools-tab-inspection');if(tab)tab.classList.add('active');
-  toolsLoadInspections();
+  var tab=document.getElementById('tools-tab-'+target)||document.getElementById('tools-tab-inspection');if(tab)tab.classList.add('active');
+  if(target==='lifting')toolsLoadLiftingAccessories();
+  else toolsLoadInspections();
 }
 
 async function toolsSaveInspection(){
@@ -21730,7 +21845,7 @@ function toolsStartRCDTest(toolId){
   if(tester&&currentPersonId&&Array.from(tester.options).some(function(o){return o.value===currentPersonId;}))tester.value=currentPersonId;
   [['rcd-visual','ok'],['rcd-button','pass'],['rcd-label','ok']].forEach(function(x){var el=document.getElementById(x[0]);if(el)el.value=x[1];});
   ['rcd-trip-time','rcd-visual-note','rcd-label-note','rcd-defects','rcd-actions'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
-  ['tools-view-register','tools-view-personal','tools-view-inspection','tools-view-statutory','tools-view-vehicles','tools-view-rcd'].forEach(function(id){var el=document.getElementById(id);if(el)el.style.display='none';});
+  ['tools-view-register','tools-view-personal','tools-view-inspection','tools-view-lifting','tools-view-statutory','tools-view-vehicles','tools-view-rcd'].forEach(function(id){var el=document.getElementById(id);if(el)el.style.display='none';});
   document.getElementById('tools-form').style.display='none';
   document.getElementById('tools-insp-form').style.display='none';
   document.getElementById('tools-rcd-form').style.display='block';
@@ -21897,7 +22012,7 @@ function toolsNewVehicle(){
 function toolsNewVehicleInspection(){
   document.querySelectorAll('[id^="tools-tab-"]').forEach(function(t){t.classList.remove('active');});
   var btn=document.getElementById('tools-tab-inspection');if(btn)btn.classList.add('active');
-  ['register','personal','statutory','vehicles'].forEach(function(t){var el=document.getElementById('tools-view-'+t);if(el)el.style.display='none';});
+  ['register','personal','lifting','statutory','vehicles','rcd'].forEach(function(t){var el=document.getElementById('tools-view-'+t);if(el)el.style.display='none';});
   document.getElementById('tools-view-inspection').style.display='block';
   toolsNewInspection();
 }
@@ -32976,7 +33091,7 @@ function emPrintCurrentView(){
 function toolsPrintCurrentView(){
   var active = document.querySelector('#page-tools .mtg-tab.active');
   var key = (active?.id || 'tools-tab-register').replace('tools-tab-','');
-  var labels = {register:'Equipment Register',personal:'Personal Tool Assignments',inspection:'Tool Inspection Register',statutory:'Statutory Equipment Verification',vehicles:'Vehicle Equipment Checks',rcd:'RCD Monthly Testing Register'};
+  var labels = {register:'Equipment Register',personal:'Personal Tool Assignments',inspection:'Tool Inspection Register',lifting:'Lifting Accessories Inspection Register',statutory:'Statutory Equipment Verification',vehicles:'Vehicle Equipment Checks',rcd:'RCD Monthly Testing Register'};
   printRegisterView(labels[key] || 'Tools and Equipment Register', '#tools-view-' + key);
 }
 function ohPrintCurrentView(){
@@ -38277,6 +38392,7 @@ function fireEquipStatusBadge(s) {
 <button class="mtg-tab active" id="tools-tab-register" onclick="toolsSwitchTab('register',this)">🔧 Equipment Register</button>
 <button class="mtg-tab" id="tools-tab-personal" onclick="toolsSwitchTab('personal',this)">👷 Personal Tools</button>
 <button class="mtg-tab" id="tools-tab-inspection" onclick="toolsSwitchTab('inspection',this)">✅ Inspection Checklist</button>
+<button class="mtg-tab" id="tools-tab-lifting" onclick="toolsSwitchTab('lifting',this)">🏗️ Lifting Accessories</button>
 <button class="mtg-tab" id="tools-tab-statutory" onclick="toolsSwitchTab('statutory',this)">⚖️ Statutory Verification</button>
 <button class="mtg-tab" id="tools-tab-vehicles" onclick="toolsSwitchTab('vehicles',this)">🚗 Vehicles</button>
 <button class="mtg-tab" id="tools-tab-rcd" onclick="toolsSwitchTab('rcd',this)"><i class="ti ti-plug-connected"></i> RCD Monthly Testing</button>
@@ -38350,6 +38466,20 @@ function fireEquipStatusBadge(s) {
 </div>
 </div>
 <div id="tools-insp-list"><div class="loading-msg">Loading...</div></div>
+</div>
+
+<!-- ── LIFTING ACCESSORIES ── -->
+<div id="tools-view-lifting" style="display:none">
+<div class="card" style="margin-bottom:12px;padding:10px 14px">
+<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
+<div>
+<div class="card-title" style="margin:0">Lifting Accessories Inspection</div>
+<div style="font-size:12px;color:var(--text2);margin-top:3px">Slings, shackles, hooks, chain blocks and accessories requiring pre-use and periodic inspection</div>
+</div>
+<button class="btn btn-primary" id="tools-lifting-new-btn" style="display:none" onclick="toolsNewLiftingAccessory()"><i class="ti ti-plus"></i>Add lifting accessory</button>
+</div>
+</div>
+<div id="tools-lifting-list"><div class="loading-msg">Loading...</div></div>
 </div>
 
 <!-- ── STATUTORY VERIFICATION ── -->
@@ -38509,7 +38639,7 @@ function fireEquipStatusBadge(s) {
 <div class="form-group" style="margin:0"><label class="form-label">Inspection date</label><input type="date" id="insp-date" style="font-weight:600"/></div>
 <div class="form-group" style="margin:0"><label class="form-label">Inspected by</label><select id="insp-inspector"><option value="">Select...</option></select></div>
 <div class="form-group" style="margin:0"><label class="form-label">Type</label>
-<select id="insp-type"><option value="pre_use">Pre-use check</option><option value="periodic" selected>Periodic inspection</option><option value="statutory">Statutory examination</option><option value="handover">Handover check</option></select></div>
+<select id="insp-type"><option value="pre_use">Pre-use check</option><option value="periodic" selected>Periodic inspection</option><option value="lifting_accessory">Lifting accessory inspection</option><option value="statutory">Statutory examination</option><option value="handover">Handover check</option></select></div>
 </div>
 </div>
 <!-- Checklist items -->
