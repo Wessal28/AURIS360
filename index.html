@@ -2254,6 +2254,7 @@ const OBS_TYPE_CFG = {
   positive_behaviour: { emoji:'✅', label:'Positive Behaviour', color:'#1D9E75',  bg:'#EAF3DE', banner:'linear-gradient(135deg,#064E3B,#1D9E75)' },
   unsafe_behaviour:   { emoji:'⚠️',  label:'Unsafe Behaviour',   color:'#DC2626',  bg:'#FCEBEB', banner:'linear-gradient(135deg,#7F1D1D,#DC2626)' },
   unsafe_condition:   { emoji:'🔴', label:'Unsafe Condition',   color:'#C2410C',  bg:'#FEF6E7', banner:'linear-gradient(135deg,#7C2D12,#C2410C)' },
+  bbs_observation:    { emoji:'👁️', label:'BBS Observation',     color:'#185FA5',  bg:'#EFF6FF', banner:'linear-gradient(135deg,#0F6E56,#185FA5)' },
   near_miss:          { emoji:'⚡', label:'Near Miss',           color:'#7C3AED',  bg:'#EDE9FE', banner:'linear-gradient(135deg,#3B0764,#7C3AED)' },
   good_practice:      { emoji:'⭐', label:'Good Practice',       color:'#185FA5',  bg:'#EFF6FF', banner:'linear-gradient(135deg,#1e3a8a,#185FA5)' }
 };
@@ -2654,7 +2655,7 @@ function obsNew(type) {
   document.getElementById('obs-action-fields').style.display = 'none';
   document.getElementById('obs-ppe-worn').value = 'na';
   document.querySelectorAll('[name="obs-ppe"]').forEach(r=>{r.checked=r.value==='na';});
-  obsSelectType(type || 'unsafe_condition');
+  obsSelectType(type || 'bbs_observation');
   obsSetFormMode(true);
   document.getElementById('obs-form-view').style.display = 'block';
   ['list','positive','unsafe','trends'].forEach(t=>{var el=document.getElementById('obs-view-'+t);if(el)el.style.display='none';});
@@ -2665,9 +2666,9 @@ function obsEdit(id) {
   var x = obsAllData.find(r=>r.id===id); if(!x)return;
   obsEditId = id;
   obsClearPhotos();
-  var cfg = OBS_TYPE_CFG[x.obs_type] || OBS_TYPE_CFG.unsafe_condition;
+  var cfg = OBS_TYPE_CFG[x.obs_type] || OBS_TYPE_CFG.bbs_observation;
   document.getElementById('obs-form-banner').style.background = cfg.banner;
-  document.getElementById('obs-form-title').textContent = cfg.label + ' Observation';
+  document.getElementById('obs-form-title').textContent = 'BBS Observation';
   document.getElementById('obs-form-ref').textContent = x.obs_ref || x.id?.slice(0,8)||'—';
   document.getElementById('obs-del-btn').style.display = isMgr()?'inline-flex':'none';
   var gf = function(fid,val){var el=document.getElementById(fid);if(el)el.value=val||'';};
@@ -2711,33 +2712,23 @@ function obsEdit(id) {
 }
 
 function obsSelectType(type) {
+  type=type||'bbs_observation';
   document.getElementById('obs-type').value = type;
-  var cfg = OBS_TYPE_CFG[type] || OBS_TYPE_CFG.unsafe_condition;
+  var cfg = OBS_TYPE_CFG[type] || OBS_TYPE_CFG.bbs_observation;
   document.getElementById('obs-form-banner').style.background = cfg.banner;
-  document.getElementById('obs-form-type-label').textContent = cfg.label;
+  document.getElementById('obs-form-type-label').textContent = 'Behaviour-Based Safety Observation';
   document.querySelectorAll('.obs-type-btn').forEach(function(btn) {
     var t = btn.dataset.type;
-    var btnCfg = OBS_TYPE_CFG[t]||OBS_TYPE_CFG.unsafe_condition;
-    if (t === type) {
-      btn.style.borderColor = btnCfg.color;
-      btn.style.background = btnCfg.bg;
-      btn.style.transform = 'scale(1.04)';
-      btn.style.boxShadow = '0 2px 12px '+btnCfg.color+'40';
-    } else {
-      btn.style.borderColor = '';
-      btn.style.background = '';
-      btn.style.transform = '';
-      btn.style.boxShadow = '';
-    }
+    var btnCfg = OBS_TYPE_CFG[t]||OBS_TYPE_CFG.bbs_observation;
+    btn.style.borderColor = btnCfg.color;
+    btn.style.background = btnCfg.bg;
+    btn.style.transform = '';
+    btn.style.boxShadow = 'none';
   });
-  var isPositive = ['positive_behaviour','good_practice'].includes(type);
-  document.getElementById('obs-positive-section').style.display = isPositive?'block':'none';
-  document.getElementById('obs-unsafe-section').style.display = isPositive?'none':'block';
-  if (!isPositive) {
-    var titles = {unsafe_behaviour:'⚠️ Unsafe Behaviour',unsafe_condition:'🔴 Unsafe Condition',near_miss:'⚡ Near Miss'};
-    var titleEl=document.getElementById('obs-unsafe-section-title');
-    if(titleEl) titleEl.textContent = titles[type]||'⚠️ Unsafe Observation';
-  }
+  document.getElementById('obs-positive-section').style.display = 'block';
+  document.getElementById('obs-unsafe-section').style.display = 'block';
+  var titleEl=document.getElementById('obs-unsafe-section-title');
+  if(titleEl) titleEl.textContent = '⚠️ Unsafe Behaviour / Unsafe Condition';
 }
 
 function obsToggleAction() {
@@ -2750,17 +2741,18 @@ function obsToggleAction() {
 async function obsSave() {
   if(!workflowCanMutate('observation','BBS observations'))return;
   var g = function(id){var el=document.getElementById(id);return el?el.value||null:null;};
-  var type = g('obs-type')||'unsafe_condition';
-  var isPositive = ['positive_behaviour','good_practice'].includes(type);
-  var desc = isPositive ? (g('obs-positive-text')||g('obs-positive-reinforce')) : g('obs-text');
-  if (!desc) { toast('Please describe what was observed', false); return; }
+  var type = 'bbs_observation';
+  var positiveText = g('obs-positive-text')||g('obs-positive-reinforce')||'';
+  var unsafeText = g('obs-text')||'';
+  var desc = [positiveText,unsafeText].filter(Boolean).join('\n\n');
+  if (!desc) { toast('Please describe at least one positive, unsafe behaviour, or unsafe condition observed', false); return; }
   if (!g('obs-date')) { toast('Please select the observation date', false); return; }
   if (!g('obs-location')) { toast('Please enter the location or area', false); return; }
   if (!g('obs-observer')) { toast('Please select the observer', false); return; }
   try{await customValidateRecordValues('observation');}catch(e){toast(e.message,false);return;}
   var actionRequired = document.getElementById('obs-action-required')?.checked||false;
   var obsSeverity = g('obs-severity')||'medium';
-  if (!isPositive && ['critical','high'].includes(obsSeverity) && !actionRequired) {
+  if (unsafeText && ['critical','high'].includes(obsSeverity) && !actionRequired) {
     var proceedWithoutAction = await appConfirm({
       title:'Save without follow-up action?',
       message:'This is a high-risk observation without an assigned corrective action.',
@@ -2790,10 +2782,10 @@ async function obsSave() {
     observer_dept: g('obs-observer-dept'),
     person_observed: g('obs-person-observed'),
     num_persons_involved: parseInt(g('obs-num-persons'))||1,
-    observation_text: isPositive ? g('obs-positive-text') : g('obs-text'),
-    positive_points: g('obs-positive-reinforce')||( isPositive?g('obs-positive-text'):null ),
-    unsafe_act_description: !isPositive&&type==='unsafe_behaviour'?g('obs-text'):null,
-    unsafe_condition_description: type==='unsafe_condition'?g('obs-text'):null,
+    observation_text: desc,
+    positive_points: positiveText||null,
+    unsafe_act_description: unsafeText||null,
+    unsafe_condition_description: unsafeText||null,
     immediate_cause: g('obs-immediate-cause'),
     potential_consequence: g('obs-consequence'),
     root_cause: g('obs-root-cause'),
@@ -2829,7 +2821,7 @@ async function obsSave() {
       if (res?.[0]?.id) {
         savedObsId = res[0].id;
         var yr = new Date().getFullYear();
-        var typeCode = {positive_behaviour:'POS',unsafe_behaviour:'UBA',unsafe_condition:'UCC',near_miss:'NM',good_practice:'GP'}[type]||'OBS';
+        var typeCode = {bbs_observation:'BBS',positive_behaviour:'POS',unsafe_behaviour:'UBA',unsafe_condition:'UCC',near_miss:'NM',good_practice:'GP'}[type]||'OBS';
         var ref = 'OBS-'+typeCode+'-'+yr+'-'+String(obsAllData.length+1).padStart(3,'0');
         await api('/safety_observations?id=eq.'+res[0].id, {m:'PATCH',p:'return=minimal',b:{obs_ref:ref}});
         await customSaveRecordValues('observation','safety_observations',res[0].id,ccid());
@@ -31660,7 +31652,7 @@ async function offlineSyncObservation(item){
   var res=await api('/safety_observations',{m:'POST',p:'return=representation',b:body});
   if(res?.[0]?.id){
     var yr=new Date().getFullYear();
-    var typeCode={positive_behaviour:'POS',unsafe_behaviour:'UBA',unsafe_condition:'UCC',near_miss:'NM',good_practice:'GP'}[body.obs_type]||'OBS';
+    var typeCode={bbs_observation:'BBS',positive_behaviour:'POS',unsafe_behaviour:'UBA',unsafe_condition:'UCC',near_miss:'NM',good_practice:'GP'}[body.obs_type]||'OBS';
     var ref='OBS-'+typeCode+'-'+yr+'-'+String(Date.now()).slice(-4);
     await api('/safety_observations?id=eq.'+res[0].id,{m:'PATCH',p:'return=minimal',b:{obs_ref:ref}});
     await customSaveCollectedValues('safety_observations',res[0].id,body.company_id,customValues);
@@ -36790,18 +36782,19 @@ function fireEquipStatusBadge(s) {
 </div>
 </div>
 
-<!-- Observation type selector (large visual buttons) -->
+<!-- BBS observation scope -->
 <div class="card" style="margin-bottom:14px">
-<div class="card-title">Observation Type</div>
+<div class="card-title">BBS observation scope</div>
+<div style="font-size:12px;color:var(--text2);line-height:1.45;margin-bottom:10px">Assess the work as one complete observation. Record positive behaviour, unsafe behaviour and unsafe condition together where applicable.</div>
 <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px" id="obs-type-selector">
-<div class="obs-type-btn" data-type="positive_behaviour" onclick="obsSelectType('positive_behaviour')" style="padding:14px 10px;border-radius:10px;text-align:center;cursor:pointer;border:2px solid #bbf7d0;background:#f0fdf4;transition:all .15s">
+<div class="obs-type-btn" data-type="positive_behaviour" style="padding:14px 10px;border-radius:10px;text-align:center;border:2px solid #bbf7d0;background:#f0fdf4;transition:all .15s">
 <div style="font-size:28px;margin-bottom:6px">✅</div><div style="font-weight:700;font-size:12px;color:#166534">Positive Behaviour</div><div style="font-size:10px;color:var(--text2);margin-top:3px">Safe act observed</div></div>
-<div class="obs-type-btn" data-type="unsafe_behaviour" onclick="obsSelectType('unsafe_behaviour')" style="padding:14px 10px;border-radius:10px;text-align:center;cursor:pointer;border:2px solid #fecaca;background:#FEF2F2;transition:all .15s">
+<div class="obs-type-btn" data-type="unsafe_behaviour" style="padding:14px 10px;border-radius:10px;text-align:center;border:2px solid #fecaca;background:#FEF2F2;transition:all .15s">
 <div style="font-size:28px;margin-bottom:6px">⚠️</div><div style="font-weight:700;font-size:12px;color:#991B1B">Unsafe Behaviour</div><div style="font-size:10px;color:var(--text2);margin-top:3px">At-risk act seen</div></div>
-<div class="obs-type-btn" data-type="unsafe_condition" onclick="obsSelectType('unsafe_condition')" style="padding:14px 10px;border-radius:10px;text-align:center;cursor:pointer;border:2px solid #fed7aa;background:#FFF7ED;transition:all .15s">
+<div class="obs-type-btn" data-type="unsafe_condition" style="padding:14px 10px;border-radius:10px;text-align:center;border:2px solid #fed7aa;background:#FFF7ED;transition:all .15s">
 <div style="font-size:28px;margin-bottom:6px">🔴</div><div style="font-weight:700;font-size:12px;color:#9A3412">Unsafe Condition</div><div style="font-size:10px;color:var(--text2);margin-top:3px">Physical hazard</div></div>
 </div>
-<input type="hidden" id="obs-type" value="unsafe_condition"/>
+<input type="hidden" id="obs-type" value="bbs_observation"/>
 </div>
 
 <div style="display:grid;grid-template-columns:2fr 1fr;gap:14px">
