@@ -1510,7 +1510,24 @@ input[type="button"], input[type="submit"] {
 
 .ai-input{box-sizing:border-box;min-height:48px;height:48px;line-height:20px;padding:12px 14px!important;border-radius:10px!important;background:#fff!important;color:var(--text)!important;display:block}
 .ai-input::placeholder{color:var(--text3)!important;opacity:1}
-.ai-input-row{align-items:center}</style>
+.ai-input-row{align-items:center}
+.ra-grid-table{border-collapse:collapse!important;border:1px solid #cbd5e1!important;background:#fff;font-size:12px}
+.ra-grid-table thead th{position:sticky;top:0;z-index:1;background:#eaf2fb!important;color:#1a3a5c!important;border:1px solid #cbd5e1!important;padding:8px 10px!important;vertical-align:middle;text-transform:none!important;letter-spacing:0!important;font-size:11px!important;font-weight:800!important}
+.ra-grid-table tbody td{border:1px solid #dbe3ef!important;padding:0!important;vertical-align:top!important;background:#fff}
+.ra-grid-table tbody tr:hover td{background:#f8fbff!important}
+.ra-grid-table textarea,.ra-grid-table input[type=text],.ra-grid-table select{border:0!important;border-radius:0!important;box-shadow:none!important;background:transparent!important;width:100%!important;font-size:12px!important;line-height:1.35!important}
+.ra-grid-table textarea{min-height:82px!important;resize:vertical!important;padding:8px 9px!important}
+.ra-grid-table input[type=text],.ra-grid-table select{min-height:36px!important;padding:7px 8px!important}
+.ra-grid-table .btn-sm{margin:4px 6px 7px!important;padding:3px 7px!important}
+.ra-row-num{display:flex;align-items:center;justify-content:center;min-height:82px;font-weight:900;color:#185FA5;background:#f8fafc}
+.ra-score-cell{padding:6px!important;text-align:center!important;vertical-align:middle!important;background:#f8fafc!important}
+.ra-score-cell select{min-height:34px!important;text-align:center!important;font-weight:700!important}
+.ra-risk-badge-cell{padding:6px!important;text-align:center!important;vertical-align:middle!important}
+.rams-check-grid{display:grid;grid-template-columns:1fr 1fr;gap:0;font-size:12px;color:#374151}
+.rams-check-grid label{display:grid;grid-template-columns:20px 1fr;gap:8px;align-items:start;padding:10px 12px;border-top:1px solid #D1FAE5;line-height:1.35}
+.rams-check-grid input[type=checkbox]{width:16px!important;height:16px!important;margin:1px 0 0!important;padding:0!important;accent-color:var(--green)}
+@media(max-width:800px){.rams-check-grid{grid-template-columns:1fr}.ra-grid-table{min-width:1180px!important}}
+</style>
 
 <script defer>
 
@@ -14554,20 +14571,20 @@ function raBaselineAddRow(r, bodyOverride, typeOverride){
   var isHIRA=bodyId==='ra-hira-body';
   var tr=document.createElement('tr');
   tr.style.borderBottom='1px solid #f0f0f0';
-  tr.innerHTML=(isHIRA?'<td style="padding:5px 8px"><select class="ra-hcat" style="padding:3px 4px;border:1px solid var(--border);border-radius:4px;font-size:10px;width:90px"><option>Physical</option><option>Mechanical</option><option>Electrical</option><option>Chemical</option><option>Biological</option><option>Ergonomic</option><option>Fire</option><option>Environmental</option><option>Organisational</option></select></td>':'<td style="padding:5px 8px;text-align:center;font-weight:700;color:var(--text2);font-size:11px">'+num+'</td>')
+  tr.innerHTML=(isHIRA?'<td><select class="ra-hcat" style="padding:3px 4px;border:1px solid var(--border);border-radius:4px;font-size:10px;width:90px"><option>Physical</option><option>Mechanical</option><option>Electrical</option><option>Chemical</option><option>Biological</option><option>Ergonomic</option><option>Fire</option><option>Environmental</option><option>Organisational</option></select></td>':'<td><div class="ra-row-num">'+num+'</div></td>')
     +'<td style="padding:5px 8px"><textarea class="ra-hazard" style="width:100%;min-height:50px;padding:4px;border:1px solid var(--border);border-radius:4px;font-size:11px;resize:vertical" placeholder="Hazard...">'+escH(r.hazard||r.activity||'')+'</textarea></td>'
     +'<td style="padding:5px 8px"><textarea class="ra-harm" style="width:100%;min-height:50px;padding:4px;border:1px solid var(--border);border-radius:4px;font-size:11px;resize:vertical" placeholder="Harm...">'+escH(r.harm||r.potential_harm||'')+'</textarea></td>'
     +'<td style="padding:5px 8px"><input class="ra-who" type="text" style="width:70px;padding:3px 4px;border:1px solid var(--border);border-radius:4px;font-size:11px" value="'+escH(r.who||'')+'" placeholder="Who..."/></td>'
     +'<td style="padding:5px 8px"><textarea class="ra-controls" style="width:100%;min-height:50px;padding:4px;border:1px solid var(--border);border-radius:4px;font-size:11px;resize:vertical" placeholder="Existing controls...">'+escH(r.controls||r.control_measures||'')+'</textarea>'
     +'<button class="btn btn-sm" style="margin-top:3px;font-size:9px;padding:2px 5px;color:#185FA5" onclick="raGetControlSuggestions(this)"><i class="ti ti-sparkles" style="font-size:9px"></i>Suggest</button></td>'
-    +'<td style="padding:4px 5px;text-align:center">'+raRsSelect(s,'')+'</td>'
-    +'<td style="padding:4px 5px;text-align:center">'+raRopSelect(p,'')+'</td>'
-    +'<td class="rl" style="padding:4px 5px;text-align:center" data-score="'+rr+'" data-level="'+rlLvl+'"><span style="background:'+rlCfg[0]+';color:'+rlCfg[1]+';padding:2px 5px;border-radius:4px;font-size:10px;font-weight:700;display:block;text-align:center">'+rr+'<br><span style="font-size:9px">'+rlLvl+'</span></span></td>'
+    +'<td class="ra-score-cell">'+raRsSelect(s,'')+'</td>'
+    +'<td class="ra-score-cell">'+raRopSelect(p,'')+'</td>'
+    +'<td class="rl ra-risk-badge-cell" data-score="'+rr+'" data-level="'+rlLvl+'"><span style="background:'+rlCfg[0]+';color:'+rlCfg[1]+';padding:2px 5px;border-radius:4px;font-size:10px;font-weight:700;display:block;text-align:center">'+rr+'<br><span style="font-size:9px">'+rlLvl+'</span></span></td>'
     +'<td style="padding:5px 8px"><textarea class="ra-further-controls" style="width:100%;min-height:50px;padding:4px;border:1px solid var(--border);border-radius:4px;font-size:11px;resize:vertical" placeholder="Further actions / additional controls...">'+escH(r.further_controls||r.further_actions||r.additional_controls||'')+'</textarea></td>'
     +'<td style="padding:4px 5px">'+raHOCSelect(r.hoc_level||r.hierarchy||'')+'</td>'
-    +'<td style="padding:4px 5px;text-align:center">'+raRsSelect(rs,'r-')+'</td>'
-    +'<td style="padding:4px 5px;text-align:center">'+raRopSelect(rp,'r-')+'</td>'
-    +'<td class="r-rl" style="padding:4px 5px;text-align:center" data-score="'+rrr+'" data-level="'+rrlLvl+'"><span style="background:'+rrlCfg[0]+';color:'+rrlCfg[1]+';padding:2px 5px;border-radius:4px;font-size:10px;font-weight:700;display:block;text-align:center">'+rrr+'<br><span style="font-size:9px">'+rrlLvl+'</span></span></td>'
+    +'<td class="ra-score-cell">'+raRsSelect(rs,'r-')+'</td>'
+    +'<td class="ra-score-cell">'+raRopSelect(rp,'r-')+'</td>'
+    +'<td class="r-rl ra-risk-badge-cell" data-score="'+rrr+'" data-level="'+rrlLvl+'"><span style="background:'+rrlCfg[0]+';color:'+rrlCfg[1]+';padding:2px 5px;border-radius:4px;font-size:10px;font-weight:700;display:block;text-align:center">'+rrr+'<br><span style="font-size:9px">'+rrlLvl+'</span></span></td>'
     +'<td style="padding:5px 8px"><input class="ra-legal" type="text" style="width:90px;padding:3px 4px;border:1px solid var(--border);border-radius:4px;font-size:10px" value="'+escH(r.legal_ref||r.legal||'')+'" placeholder="OSH Act..."/></td>'
     +'<td style="padding:4px;text-align:center"><button class="btn btn-sm" style="color:var(--red);padding:2px 6px" onclick="this.closest(\'tr\').remove();raUpdateQualityPanel()"><i class="ti ti-x" style="font-size:10px"></i></button></td>';
   body.appendChild(tr);
@@ -14595,19 +14612,19 @@ function raTaskAddRow(r){
   var rrlCfg=RL_CFG[rrlLvl]||['#f3f4f6','#6B7280'];
   var tr=document.createElement('tr');
   tr.style.borderBottom='1px solid #f0f0f0';
-  tr.innerHTML='<td style="padding:5px 8px;text-align:center;font-weight:700;color:#185FA5;font-size:12px">'+num+'</td>'
+  tr.innerHTML='<td><div class="ra-row-num">'+num+'</div></td>'
     +'<td style="padding:5px 8px"><textarea class="ra-task-step" style="width:100%;min-height:50px;padding:4px;border:1px solid var(--border);border-radius:4px;font-size:11px;resize:vertical" placeholder="Task / step description...">'+escH(r.task||r.step||'')+'</textarea></td>'
     +'<td style="padding:5px 8px"><textarea class="ra-hazard" style="width:100%;min-height:50px;padding:4px;border:1px solid var(--border);border-radius:4px;font-size:11px;resize:vertical" placeholder="Hazard...">'+escH(r.hazard||'')+'</textarea></td>'
     +'<td style="padding:5px 8px"><textarea class="ra-harm" style="width:100%;min-height:50px;padding:4px;border:1px solid var(--border);border-radius:4px;font-size:11px;resize:vertical" placeholder="Harm...">'+escH(r.harm||'')+'</textarea></td>'
     +'<td style="padding:5px 8px"><textarea class="ra-controls" style="width:100%;min-height:50px;padding:4px;border:1px solid var(--border);border-radius:4px;font-size:11px;resize:vertical" placeholder="Existing controls...">'+escH(r.controls||'')+'</textarea>'
     +'<button class="btn btn-sm" style="margin-top:3px;font-size:9px;padding:2px 5px;color:#185FA5" onclick="raGetControlSuggestions(this)"><i class="ti ti-sparkles" style="font-size:9px"></i>Suggest</button></td>'
-    +'<td style="padding:4px 5px;text-align:center">'+raRsSelect(s,'')+'</td>'
-    +'<td style="padding:4px 5px;text-align:center">'+raRopSelect(p,'')+'</td>'
-    +'<td class="rl" style="padding:4px;text-align:center" data-score="'+rr+'" data-level="'+rlLvl+'"><span style="background:'+rlCfg[0]+';color:'+rlCfg[1]+';padding:2px 5px;border-radius:4px;font-size:10px;font-weight:700;display:block;text-align:center">'+rr+'<br><span style="font-size:9px">'+rlLvl+'</span></span></td>'
+    +'<td class="ra-score-cell">'+raRsSelect(s,'')+'</td>'
+    +'<td class="ra-score-cell">'+raRopSelect(p,'')+'</td>'
+    +'<td class="rl ra-risk-badge-cell" data-score="'+rr+'" data-level="'+rlLvl+'"><span style="background:'+rlCfg[0]+';color:'+rlCfg[1]+';padding:2px 5px;border-radius:4px;font-size:10px;font-weight:700;display:block;text-align:center">'+rr+'<br><span style="font-size:9px">'+rlLvl+'</span></span></td>'
     +'<td style="padding:5px 8px"><textarea class="ra-further-controls" style="width:100%;min-height:50px;padding:4px;border:1px solid var(--border);border-radius:4px;font-size:11px;resize:vertical" placeholder="Further actions / additional controls...">'+escH(r.further_controls||r.further_actions||r.additional_controls||'')+'</textarea></td>'
-    +'<td style="padding:4px 5px;text-align:center">'+raRsSelect(rs,'r-')+'</td>'
-    +'<td style="padding:4px 5px;text-align:center">'+raRopSelect(rp,'r-')+'</td>'
-    +'<td class="r-rl" style="padding:4px;text-align:center" data-score="'+rrr+'" data-level="'+rrlLvl+'"><span style="background:'+rrlCfg[0]+';color:'+rrlCfg[1]+';padding:2px 5px;border-radius:4px;font-size:10px;font-weight:700;display:block;text-align:center">'+rrr+'<br><span style="font-size:9px">'+rrlLvl+'</span></span></td>'
+    +'<td class="ra-score-cell">'+raRsSelect(rs,'r-')+'</td>'
+    +'<td class="ra-score-cell">'+raRopSelect(rp,'r-')+'</td>'
+    +'<td class="r-rl ra-risk-badge-cell" data-score="'+rrr+'" data-level="'+rrlLvl+'"><span style="background:'+rrlCfg[0]+';color:'+rrlCfg[1]+';padding:2px 5px;border-radius:4px;font-size:10px;font-weight:700;display:block;text-align:center">'+rrr+'<br><span style="font-size:9px">'+rrlLvl+'</span></span></td>'
     +'<td style="padding:4px;text-align:center"><button class="btn btn-sm" style="color:var(--red);padding:2px 6px" onclick="this.closest(\'tr\').remove();raUpdateQualityPanel()"><i class="ti ti-x" style="font-size:10px"></i></button></td>';
   body.appendChild(tr);
   setTimeout(raUpdateQualityPanel,0);
@@ -37669,7 +37686,7 @@ function fireEquipStatusBadge(s) {
 <button class="btn btn-sm" style="background:rgba(255,255,255,.2);color:#fff;border-color:rgba(255,255,255,.3)" onclick="raBaselineAddRow()"><i class="ti ti-plus"></i>Add row</button>
 </div>
 <div style="overflow-x:auto">
-<table id="ra-baseline-table" style="width:100%;min-width:1380px;border-collapse:collapse;font-size:12px">
+<table id="ra-baseline-table" class="ra-grid-table" style="width:100%;min-width:1500px;border-collapse:collapse;font-size:12px">
 <thead><tr style="background:#f0f4ff">
 <th style="padding:7px 10px;text-align:left;border-bottom:1px solid var(--border);min-width:50px">#</th>
 <th style="padding:7px 10px;text-align:left;border-bottom:1px solid var(--border);min-width:160px">Hazard / Activity</th>
@@ -37703,7 +37720,7 @@ function fireEquipStatusBadge(s) {
 <button class="btn btn-sm" style="background:rgba(255,255,255,.2);color:#fff;border-color:rgba(255,255,255,.3)" onclick="raTaskAddRow()"><i class="ti ti-plus"></i>Add task step</button>
 </div>
 <div style="overflow-x:auto">
-<table id="ra-task-table" style="width:100%;min-width:1320px;border-collapse:collapse;font-size:12px">
+<table id="ra-task-table" class="ra-grid-table" style="width:100%;min-width:1450px;border-collapse:collapse;font-size:12px">
 <thead><tr style="background:#f0f4ff">
 <th style="padding:7px 10px;text-align:left;border-bottom:1px solid var(--border);min-width:50px">Step</th>
 <th style="padding:7px 10px;text-align:left;border-bottom:1px solid var(--border);min-width:140px">Task / Activity</th>
@@ -37762,7 +37779,7 @@ function fireEquipStatusBadge(s) {
 <button class="btn btn-sm" style="background:rgba(255,255,255,.2);color:#fff;border-color:rgba(255,255,255,.3)" onclick="raBaselineAddRow()"><i class="ti ti-plus"></i>Add hazard</button>
 </div>
 <div style="overflow-x:auto">
-<table id="ra-hira-table" style="width:100%;min-width:1480px;border-collapse:collapse;font-size:12px">
+<table id="ra-hira-table" class="ra-grid-table" style="width:100%;min-width:1580px;border-collapse:collapse;font-size:12px">
 <thead><tr style="background:#fff1f2">
 <th style="padding:7px 10px;text-align:left;border-bottom:1px solid var(--border);min-width:100px">Category</th>
 <th style="padding:7px 10px;text-align:left;border-bottom:1px solid var(--border);min-width:160px">Hazard Description</th>
@@ -37868,7 +37885,7 @@ function fireEquipStatusBadge(s) {
 <div style="margin-bottom:12px;padding:10px 12px;background:#F8FBFF;border:1px solid #BFDBFE;border-radius:10px;color:#1E3A8A;font-size:12px;line-height:1.45"><strong>RAMS = Risk Assessment + Method Statement.</strong> The RA records hazards, controls and risk ratings. The SWMS / method statement explains how the work will be carried out step by step. Link the SWMS below to form the RAMS pack.</div>
 <div style="margin-bottom:12px;border:1px solid #D1FAE5;border-radius:10px;overflow:hidden">
 <div style="background:#ECFDF5;color:#065F46;font-weight:900;padding:9px 12px;font-size:12px">RAMS readiness checklist</div>
-<div style="display:grid;grid-template-columns:1fr 1fr;gap:0;font-size:12px;color:#374151">
+<div class="rams-check-grid">
 <label style="display:flex;gap:7px;align-items:flex-start;padding:8px 10px;border-top:1px solid #D1FAE5"><input type="checkbox"/> Task, site, personnel and equipment defined</label>
 <label style="display:flex;gap:7px;align-items:flex-start;padding:8px 10px;border-top:1px solid #D1FAE5"><input type="checkbox"/> Hazards identified for each task step</label>
 <label style="display:flex;gap:7px;align-items:flex-start;padding:8px 10px;border-top:1px solid #D1FAE5"><input type="checkbox"/> Inherent risk assessed using 5x5 matrix</label>
