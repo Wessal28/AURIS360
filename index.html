@@ -33118,6 +33118,21 @@ function printCleanRegisterChrome(root) {
   });
 }
 
+function printReportContextLabel() {
+  try {
+    var visibleLabel = (document.getElementById('sa-company-label')?.textContent || '').replace(/\s+/g, ' ').trim();
+    if (visibleLabel) return visibleLabel;
+    if (typeof isSA === 'function' && isSA() && typeof sephsCompanyContext !== 'undefined' && sephsCompanyContext) {
+      var list = Array.isArray(window.saCompanyList) ? window.saCompanyList : (typeof saCompanyList !== 'undefined' && Array.isArray(saCompanyList) ? saCompanyList : []);
+      var selected = list.find(function(c){ return c.id === sephsCompanyContext; });
+      if (selected && selected.name) return selected.name;
+    }
+    if (typeof co !== 'undefined' && co && co.name) return co.name;
+    if (typeof prof !== 'undefined' && prof && prof.company_name) return prof.company_name;
+  } catch(e) {}
+  return 'Current company';
+}
+
 function printRegisterView(title, selector) {
   var node = document.querySelector(selector);
   if (!node) { toast('Nothing to print yet', false); return; }
@@ -33150,8 +33165,10 @@ function printRegisterView(title, selector) {
   if (!cleanText) {
     clone.innerHTML = '<div class="rpt-empty">No records are available for this view at the time of printing.</div>';
   }
+  var context = printReportContextLabel();
+  var subtitle = 'Register extract · ' + context + ' · Generated: ' + new Date().toLocaleString();
   var html = '<div class="report-page">'
-    + aurisHeader(title || 'AURIS360 Register', 'Register extract · Generated: ' + new Date().toLocaleString(), '')
+    + aurisHeader(title || 'AURIS360 Register', subtitle, '')
     + '<div class="rpt-section">' + clone.innerHTML + '</div>'
     + aurisFooter(title || 'Register')
     + '</div>';
