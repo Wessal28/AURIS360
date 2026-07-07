@@ -22990,7 +22990,7 @@ async function mapLoadList(){
           +escalated.map(function(x){
             var pc=MAP_PRIORITY_CFG[x.priority]||MAP_PRIORITY_CFG.medium;
             return '<span style="background:'+pc.bg+';color:'+pc.tc+';padding:2px 10px;border-radius:99px;font-size:11px;font-weight:600;cursor:pointer" onclick="mapEdit(\''+x.id+'\')">'
-              +escH(x.action_ref||x.id.slice(0,8))+' — '+escH((x.title||x.description||'').substring(0,40))+'</span>';
+              +escH(mapDisplayRef(x))+' — '+escH((x.title||x.description||'').substring(0,40))+'</span>';
           }).join('')+'</div></div>';
       }else escBanner.style.display='none';
     }
@@ -23000,6 +23000,30 @@ async function mapLoadList(){
     if(el2)el2.innerHTML='<p style="padding:20px;color:red">'+e.message+'</p>';
     console.error(e);
   }
+}
+
+function mapActionTypeCode(type){
+  return {corrective:'CA',preventive:'PA',improvement:'IA',observation:'OB'}[type||'']||'MA';
+}
+
+function mapDisplayRef(x){
+  if(!x)return 'MAP-AUTO';
+  var raw=(x.action_ref||'').trim();
+  if(raw&&!/^[0-9a-f]{8}$/i.test(raw))return raw;
+  var dt=x.created_at||x.target_date||x.updated_at||new Date().toISOString();
+  var yr=(new Date(dt).getFullYear()||new Date().getFullYear());
+  var rows=(mapAllData||[]).slice().sort(function(a,b){
+    var ad=new Date(a.created_at||a.target_date||a.updated_at||0).getTime();
+    var bd=new Date(b.created_at||b.target_date||b.updated_at||0).getTime();
+    if(ad!==bd)return ad-bd;
+    return String(a.id||'').localeCompare(String(b.id||''));
+  });
+  var sameYear=rows.filter(function(r){
+    var rd=new Date(r.created_at||r.target_date||r.updated_at||0).getFullYear();
+    return rd===yr;
+  });
+  var idx=sameYear.findIndex(function(r){return r.id===x.id;});
+  return 'MAP-'+mapActionTypeCode(x.action_type)+'-'+yr+'-'+String(idx>=0?idx+1:1).padStart(3,'0');
 }
 
 function mapRenderList(){
@@ -23020,7 +23044,8 @@ function mapRenderList(){
     if(mapCurrentView==='closure')return x.status==='pending_closure';
     return true;
   }).filter(function(x){
-    var mQ=!q||(x.action_ref||'').toLowerCase().includes(q)||(x.title||'').toLowerCase().includes(q)||(x.description||'').toLowerCase().includes(q)||(x.assigned_to_name||x.responsible||'').toLowerCase().includes(q)||(x.source_ref||'').toLowerCase().includes(q);
+    var displayRef=mapDisplayRef(x).toLowerCase();
+    var mQ=!q||displayRef.includes(q)||(x.action_ref||'').toLowerCase().includes(q)||(x.title||'').toLowerCase().includes(q)||(x.description||'').toLowerCase().includes(q)||(x.assigned_to_name||x.responsible||'').toLowerCase().includes(q)||(x.source_ref||'').toLowerCase().includes(q);
     var mSrc=!fsrc||(x.source_type||x.source_module||'')=== fsrc;
     var mPri=!fpri||x.priority===fpri;
     var mSt=!fst||x.status===fst;
@@ -23046,6 +23071,7 @@ function mapRenderList(){
     var typeCfg=MAP_TYPE_CFG[x.action_type||'corrective']||MAP_TYPE_CFG.corrective;
     var daysOverdue=isOverdue?Math.floor((now-new Date(x.target_date))/86400000):0;
     var progress=parseInt(x.progress_pct)||0;
+    var displayRef=mapDisplayRef(x);
 
     h+='<div class="card" style="margin:0 0 10px;padding:0;overflow:hidden;border:1px solid '+(isOverdue?'#fecaca':'var(--border)')+';cursor:pointer;transition:box-shadow .15s" '
       +'data-id="'+x.id+'" onclick="mapEdit(this.dataset.id)" '
@@ -23060,7 +23086,7 @@ function mapRenderList(){
       +'<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-bottom:4px">'
       +'<div>'
       +'<div style="display:flex;align-items:center;gap:8px;margin-bottom:2px">'
-      +(x.action_ref?'<span style="font-family:monospace;font-size:11px;font-weight:700;color:'+pc.color+'">'+escH(x.action_ref)+'</span>':'')
+      +'<span style="font-family:monospace;font-size:11px;font-weight:700;color:'+pc.color+'">'+escH(displayRef)+'</span>'
       +'<span style="background:'+srcCfg.color+'15;color:'+srcCfg.color+';padding:1px 7px;border-radius:4px;font-size:10px;font-weight:600">'+escH(srcCfg.label)+'</span>'
       +'<span style="font-size:11px;color:var(--text2)">'+escH(typeCfg.emoji+' '+typeCfg.label)+'</span>'
       +(x.escalated?'<span style="background:#FCEBEB;color:#A32D2D;padding:1px 7px;border-radius:4px;font-size:10px;font-weight:700">⬆ ESCALATED</span>':'')
@@ -23107,7 +23133,8 @@ function mapRenderTableList(){
     if(mapCurrentView==='closure')return x.status==='pending_closure';
     return true;
   }).filter(function(x){
-    var mQ=!q||(x.action_ref||'').toLowerCase().includes(q)||(x.title||'').toLowerCase().includes(q)||(x.description||'').toLowerCase().includes(q)||(x.assigned_to_name||x.responsible||'').toLowerCase().includes(q)||(x.source_ref||'').toLowerCase().includes(q);
+    var displayRef=mapDisplayRef(x).toLowerCase();
+    var mQ=!q||displayRef.includes(q)||(x.action_ref||'').toLowerCase().includes(q)||(x.title||'').toLowerCase().includes(q)||(x.description||'').toLowerCase().includes(q)||(x.assigned_to_name||x.responsible||'').toLowerCase().includes(q)||(x.source_ref||'').toLowerCase().includes(q);
     var mSrc=!fsrc||(x.source_type||x.source_module||'')=== fsrc;
     var mPri=!fpri||x.priority===fpri;
     var mSt=!fst||x.status===fst;
@@ -23149,7 +23176,7 @@ function mapRenderTableList(){
     var typeCfg=MAP_TYPE_CFG[x.action_type||'corrective']||MAP_TYPE_CFG.corrective;
     var daysOverdue=isOverdue?Math.floor((now-new Date(x.target_date))/86400000):0;
     var progress=parseInt(x.progress_pct)||0;
-    var ref=x.action_ref||x.id.slice(0,8);
+    var ref=mapDisplayRef(x);
     var title=x.title||x.description||'Untitled action';
     var responsible=x.assigned_to_name||x.responsible||'-';
     var due=x.target_date?new Date(x.target_date).toLocaleDateString('en-GB'):'-';
@@ -23248,7 +23275,7 @@ async function mapEdit(id){
   var typeCfg=MAP_TYPE_CFG[x.action_type||'corrective']||MAP_TYPE_CFG.corrective;
   document.getElementById('map-form-banner').style.background='linear-gradient(135deg,'+pc.color+'dd,'+pc.color+')';
   document.getElementById('map-form-title').textContent=x.title||x.description||'Action';
-  document.getElementById('map-form-ref').textContent=x.action_ref||x.id?.slice(0,8)||'—';
+  document.getElementById('map-form-ref').textContent=mapDisplayRef(x);
   document.getElementById('map-form-type-label').textContent=typeCfg.emoji+' '+typeCfg.label+' Action';
   document.getElementById('map-del-btn').style.display=isMgr()?'inline-flex':'none';
   // Fill fields
