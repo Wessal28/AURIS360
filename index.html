@@ -21365,6 +21365,78 @@ const TOOL_CAT_ICONS={hand_tool:'ti-hammer',power_tool:'ti-bolt',equipment:'ti-s
 const TOOLS_TH_STYLE='padding:9px 12px;text-align:left;color:#fff;font-weight:800;letter-spacing:.04em';
 const TOOLS_TH_STYLE_COMPACT='padding:8px 10px;text-align:left;color:#fff;font-weight:800;letter-spacing:.04em';
 const TOOLS_TH_STYLE_LIGHT='padding:7px 12px;text-align:left;border-bottom:1px solid var(--border);color:var(--text);font-weight:800';
+const TOOL_INSPECTION_CHECKLISTS={
+  ladder:[
+    'Identification / asset number visible and inspection tag in date',
+    'Stiles / side rails not bent, split, cracked or damaged',
+    'Rungs / steps complete, clean, secure and free from oil or mud',
+    'Feet / anti-slip shoes present, secure and in good condition',
+    'Hinges, locking bars and spreaders operate correctly',
+    'No unauthorised repairs, paint cover-up or makeshift modifications',
+    'Ladder length and duty rating suitable for the task',
+    'Ladder can be secured, footed or positioned at safe angle before use',
+    'Top and bottom landing / access area clear and stable',
+    'Do not use if damaged, unstable or not suitable for the work'
+  ],
+  lifting:[
+    'Identification tag / marking legible',
+    'SWL / WLL visible and suitable for intended use',
+    'No cuts, wear, deformation, cracks or corrosion',
+    'Hooks, shackles, latches and pins secure',
+    'Certificate / thorough examination in date',
+    'Removed from service if defective'
+  ],
+  electrical:[
+    'Cable, plug and casing free from cuts, cracks or exposed conductors',
+    'Switches, guards and safety devices operate correctly',
+    'RCD / earth leakage protection available where required',
+    'Portable appliance test / electrical inspection in date where applicable',
+    'No overheating, burning smell, loose parts or abnormal noise',
+    'Equipment suitable for the environment and voltage supply'
+  ],
+  power_tool:[
+    'Body, handle and casing free from cracks or defects',
+    'Guard fitted, secure and appropriate for the tool',
+    'Trigger / dead-man switch operates correctly',
+    'Disc, blade, bit or accessory correct and in good condition',
+    'Cable / battery / charger in safe condition',
+    'Noise, vibration and dust controls available where required'
+  ],
+  hand_tool:[
+    'Tool head, handle and grip secure and undamaged',
+    'Cutting edges, striking faces or jaws in safe condition',
+    'No mushroomed heads, cracks, splinters or deformation',
+    'Correct tool selected for the task',
+    'Stored and transported to prevent cuts, drops or damage'
+  ],
+  vehicle:[
+    'Lights, indicators, horn and reversing alarm operational',
+    'Tyres, wheels and visible body condition acceptable',
+    'Brakes, steering and mirrors checked before use',
+    'Seatbelts and safety equipment available',
+    'Fluid leaks, warning lights or abnormal noise checked',
+    'Required documents, inspection and insurance in date'
+  ],
+  default:[
+    'Visual inspection - no damage, deformation or unsafe condition',
+    'All fasteners, guards and protective parts secure',
+    'Moving parts, controls and safety devices functioning',
+    'Labels, reference number and warning signs visible',
+    'Last service / inspection within required schedule',
+    'Equipment safe and suitable for intended use'
+  ]
+};
+
+function toolsChecklistKey(tool,category){
+  var text=[tool?.name,tool?.ref_number,tool?.model,tool?.notes,category].join(' ').toLowerCase();
+  if(/ladder|step\s*ladder|stepladder|extension\s*ladder|platform\s*ladder|portable\s*ladder/.test(text))return 'ladder';
+  if(category==='lifting'||/sling|shackle|chain block|chainblock|lifting|hoist|crane|eyebolt|webbing/.test(text))return 'lifting';
+  if(category==='electrical'||/rcd|extension lead|generator|electrical|cable|plug/.test(text))return 'electrical';
+  if(category==='power_tool'||/grinder|drill|saw|breaker|sander|cutting tool/.test(text))return 'power_tool';
+  if(category==='vehicle'||/vehicle|forklift|truck|van|car/.test(text))return 'vehicle';
+  if(category==='hand_tool')return 'hand_tool';
+  return '';
+}
 
 function toolsInspectionIntervalDays(freq){
   return {daily:1,weekly:7,monthly:31,quarterly:92,six_monthly:183,annual:366,yearly:366}[freq||'']||30;
@@ -21872,37 +21944,38 @@ async function toolsStartInspection(toolId,returnTab){
   nextDate.setDate(nextDate.getDate()+days);
   var nd=document.getElementById('insp-next-date');if(nd)nd.value=nextDate.toISOString().slice(0,10);
   // Load checklist
-  await toolsLoadChecklist(tool.category);
+  await toolsLoadChecklist(tool.category,tool);
   // Show form
   ['tools-view-register','tools-view-personal','tools-view-inspection','tools-view-lifting','tools-view-statutory','tools-view-vehicles','tools-view-rcd'].forEach(function(id){var el=document.getElementById(id);if(el)el.style.display='none';});
   document.getElementById('tools-form').style.display='none';
   document.getElementById('tools-insp-form').style.display='block';
 }
 
-async function toolsLoadChecklist(category){
+async function toolsLoadChecklist(category,tool){
   var tbody=document.getElementById('insp-checklist-body');
   if(!tbody)return;
   try{
-    var items=await api('/tool_checklist_templates?category=eq.'+category+'&order=sort_order');
+    var checklistKey=toolsChecklistKey(tool,category);
+    var items=(checklistKey&&TOOL_INSPECTION_CHECKLISTS[checklistKey])
+      ? TOOL_INSPECTION_CHECKLISTS[checklistKey].map(function(x){return {check_item:x};})
+      : [];
     if(!items||!items.length){
-      if(category==='lifting'){
-        items=[
-          {check_item:'Identification tag / marking legible'},
-          {check_item:'SWL / WLL visible and suitable for intended use'},
-          {check_item:'No cuts, wear, deformation, cracks or corrosion'},
-          {check_item:'Hooks, shackles, latches and pins secure'},
-          {check_item:'Certificate / thorough examination in date'},
-          {check_item:'Removed from service if defective'}
-        ];
-      }else{
-        items=[{check_item:'Visual inspection — no damage or defects'},{check_item:'Safe to use'},{check_item:'Stored correctly'}];
+      try{
+        items=await api('/tool_checklist_templates?category=eq.'+encodeURIComponent(category||'other')+'&order=sort_order');
+      }catch(ex){
+        console.warn('Tool checklist template unavailable:',ex.message);
+        items=[];
       }
+    }
+    if(!items||!items.length){
+      var fallback=TOOL_INSPECTION_CHECKLISTS[category]||TOOL_INSPECTION_CHECKLISTS.default;
+      items=fallback.map(function(x){return {check_item:x};});
     }
     tbody.innerHTML='';
     items.forEach(function(item,i){
       var tr=document.createElement('tr');
       tr.style.cssText='border-bottom:1px solid #f5f5f5';
-      tr.innerHTML='<td style="padding:8px 16px;font-size:12px">'+escH(item.check_item||item.check_item)+'</td>'
+      tr.innerHTML='<td style="padding:8px 16px;font-size:12px">'+escH(item.check_item||item.item||'')+'</td>'
         +'<td style="padding:6px;text-align:center"><input type="radio" name="chk'+i+'" value="ok" id="ci-ok-'+i+'" onchange="toolsInspScore()" style="width:16px;height:16px;accent-color:#1D9E75"></td>'
         +'<td style="padding:6px;text-align:center"><input type="radio" name="chk'+i+'" value="fail" id="ci-fail-'+i+'" onchange="toolsInspScore()" style="width:16px;height:16px;accent-color:#E24B4A"></td>'
         +'<td style="padding:6px;text-align:center"><input type="radio" name="chk'+i+'" value="na" id="ci-na-'+i+'" onchange="toolsInspScore()" style="width:16px;height:16px;accent-color:#6B7280" checked></td>'
