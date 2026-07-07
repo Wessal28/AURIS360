@@ -20420,6 +20420,47 @@ const PPE_INSP_CHECKLISTS={
   other:['Item undamaged and functional','Within service life / not expired','Labels and markings legible','No contamination or damage visible','Correct for intended hazard']
 };
 
+const PPE_CERT_META_RE=/\s*<!--PPE_CERT_META:([\s\S]*?)-->\s*/;
+function ppeStripCertMeta(notes){
+  return String(notes||'').replace(PPE_CERT_META_RE,'').trim();
+}
+function ppeReadCertMeta(row){
+  var direct={
+    type:row?.certificate_type||row?.conformity_certificate_type||'',
+    ref:row?.certificate_ref||row?.conformity_certificate_ref||'',
+    issuer:row?.certificate_issuer||row?.conformity_certificate_issuer||'',
+    issueDate:row?.certificate_issue_date||row?.conformity_issue_date||'',
+    expiryDate:row?.certificate_expiry_date||row?.conformity_expiry_date||'',
+    url:row?.certificate_url||row?.conformity_certificate_url||''
+  };
+  if(Object.values(direct).some(Boolean))return direct;
+  var m=String(row?.notes||'').match(PPE_CERT_META_RE);
+  if(!m)return {};
+  try{return JSON.parse(decodeURIComponent(m[1]))||{};}catch(e){return {};}
+}
+function ppeWriteCertMeta(notes,meta){
+  var clean=ppeStripCertMeta(notes);
+  var payload={type:meta.type||'',ref:meta.ref||'',issuer:meta.issuer||'',issueDate:meta.issueDate||'',expiryDate:meta.expiryDate||'',url:meta.url||''};
+  if(!Object.values(payload).some(Boolean))return clean;
+  return (clean?clean+'\n\n':'')+'<!--PPE_CERT_META:'+encodeURIComponent(JSON.stringify(payload))+'-->';
+}
+function ppeCertBadge(meta){
+  meta=meta||{};
+  if(!Object.values(meta).some(Boolean))return '<span style="color:var(--text3)">—</span>';
+  var exp=meta.expiryDate?new Date(meta.expiryDate+'T00:00:00'):null;
+  var now=new Date();now.setHours(0,0,0,0);
+  var cls='bg',txt='Certificate recorded';
+  if(exp&&!isNaN(exp)){
+    var days=Math.ceil((exp-now)/86400000);
+    if(days<0){cls='br';txt='Expired';}
+    else if(days<=60){cls='ba';txt='Expires in '+days+'d';}
+    else txt='Valid';
+  }
+  var label=escH(meta.ref||meta.type||txt);
+  var link=meta.url?'<a href="'+escH(meta.url)+'" target="_blank" onclick="event.stopPropagation()" style="margin-left:6px;color:var(--green);font-weight:800">Open</a>':'';
+  return '<span class="badge '+cls+'">'+label+'</span>'+link+'<div style="font-size:10px;color:var(--text2);margin-top:3px">'+escH(txt+(meta.issuer?' · '+meta.issuer:''))+'</div>';
+}
+
 async function ppeCreateMapAction(sourceRef, description, responsible, priority, sourceId){
   try{
     await api('/action_tracker',{m:'POST',p:'return=minimal',b:{
@@ -20584,12 +20625,14 @@ async function ppeLoadCatalogue(){
       +'<th style="padding:10px;color:#fff;text-align:left">PPE item</th>'
       +'<th style="padding:10px;color:#fff;text-align:left">Category</th>'
       +'<th style="padding:10px;color:#fff;text-align:left">Standard / protection</th>'
+      +'<th style="padding:10px;color:#fff;text-align:left">MSB / conformity certificate</th>'
       +'<th style="padding:10px;color:#fff;text-align:left">Hazards</th>'
       +'<th style="padding:10px;color:#fff;text-align:center">Status</th>'
       +'<th style="padding:10px;color:#fff;width:70px"></th>'
       +'</tr></thead><tbody>';
     d.forEach(function(x){
       var cfg=PPE_CAT_CFG[x.category]||PPE_CAT_CFG.other;
+      var cert=ppeReadCertMeta(x);
       var status=(x.status||'active').replace(/_/g,' ');
       var statusHtml=x.status&&x.status!=='active'
         ? '<span style="background:#f3f4f6;color:#6B7280;padding:3px 8px;border-radius:99px;font-size:10px;font-weight:800;text-transform:capitalize">'+escH(status)+'</span>'
@@ -20599,6 +20642,7 @@ async function ppeLoadCatalogue(){
         +'<td style="padding:10px;min-width:230px"><div style="display:flex;align-items:center;gap:8px"><span style="font-size:18px">'+cfg.emoji+'</span><div><div style="font-weight:800">'+escH(x.name||'—')+'</div><div style="font-size:11px;color:var(--text2);margin-top:2px">'+escH([x.sub_category,x.brand,x.model].filter(Boolean).join(' · ')||'—')+'</div></div></div></td>'
         +'<td style="padding:10px"><span style="background:'+cfg.color+'18;color:'+cfg.color+';padding:3px 8px;border-radius:99px;font-size:10px;font-weight:800">'+escH(cfg.label||x.category||'Other')+'</span></td>'
         +'<td style="padding:10px;min-width:180px"><div style="font-family:monospace;font-size:11px;color:'+cfg.color+';font-weight:700">'+escH(x.standard||'—')+'</div><div style="font-size:11px;color:var(--text2);margin-top:2px">'+escH(x.protection_level||'—')+'</div></td>'
+        +'<td style="padding:10px;min-width:190px">'+ppeCertBadge(cert)+'</td>'
         +'<td style="padding:10px;min-width:180px">'+(x.hazard_types?.length?x.hazard_types.map(function(h){return '<span style="display:inline-flex;margin:1px;background:'+cfg.color+'20;color:'+cfg.color+';padding:2px 7px;border-radius:99px;font-size:10px;font-weight:700">'+escH(h)+'</span>';}).join(''):'<span style="color:var(--text3)">—</span>')+'</td>'
         +'<td style="padding:10px;text-align:center">'+statusHtml+'</td>'
         +'<td style="padding:10px;text-align:center"><button class="btn btn-sm" onclick="event.stopPropagation();ppeCatEdit(\''+x.id+'\')"><i class="ti ti-eye"></i></button></td>'
@@ -20638,12 +20682,14 @@ async function ppeLoadInventory(){
       +'<th style="padding:10px;color:#fff;text-align:center">Reorder</th>'
       +'<th style="padding:10px;color:#fff;text-align:left">Storage location</th>'
       +'<th style="padding:10px;color:#fff;text-align:left">Supplier</th>'
+      +'<th style="padding:10px;color:#fff;text-align:left">Certificate</th>'
       +'<th style="padding:10px;color:#fff;text-align:center">Stock status</th>'
       +'<th style="padding:10px;color:#fff;width:70px"></th>'
       +'</tr></thead><tbody>';
     d.forEach(function(x){
       var cfg=PPE_CAT_CFG[x.category]||PPE_CAT_CFG.other;
       var qty=Number(x.quantity_available||0), reorder=Number(x.reorder_level||0);
+      var cert=ppeReadCertMeta(x);
       var stockLabel=qty<=0?'<span class="badge br">Out of stock</span>':qty<=reorder?'<span class="badge ba">Low stock</span>':'<span class="badge bg">OK</span>';
       h+='<tr style="border-bottom:1px solid var(--border);border-left:5px solid '+cfg.color+';cursor:pointer" data-id="'+x.id+'" onclick="ppeCatEdit(this.dataset.id)">'
         +'<td style="padding:10px;font-family:monospace;font-weight:800;color:'+cfg.color+'">'+escH(x.ppe_code||'PPE')+'</td>'
@@ -20654,6 +20700,7 @@ async function ppeLoadInventory(){
         +'<td style="padding:10px;text-align:center">'+(x.reorder_level??0)+'</td>'
         +'<td style="padding:10px">'+escH(x.location||'—')+'</td>'
         +'<td style="padding:10px">'+escH(x.supplier||'—')+'</td>'
+        +'<td style="padding:10px;min-width:180px">'+ppeCertBadge(cert)+'</td>'
         +'<td style="padding:10px;text-align:center">'+stockLabel+'</td>'
         +'<td style="padding:10px;text-align:center"><button class="btn btn-sm" onclick="event.stopPropagation();ppeCatEdit(\''+x.id+'\')"><i class="ti ti-pencil"></i></button></td>'
         +'</tr>';
@@ -20678,7 +20725,7 @@ function ppeCatBack(){
 
 function ppeCatNew(){
   ppeCatEditId=null;document.getElementById('ppe-cat-form-title').textContent='New PPE Type';document.getElementById('ppe-cat-del-btn').style.display='none';
-  ['pcf-name','pcf-subcat','pcf-brand','pcf-model','pcf-standard','pcf-protection','pcf-hazards','pcf-notes','pcf-location','pcf-supplier'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
+  ['pcf-name','pcf-subcat','pcf-brand','pcf-model','pcf-standard','pcf-protection','pcf-hazards','pcf-notes','pcf-location','pcf-supplier','pcf-cert-type','pcf-cert-ref','pcf-cert-issuer','pcf-cert-issue','pcf-cert-expiry','pcf-cert-url'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
   ['pcf-qty-total','pcf-qty-avail'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='0';});
   ['pcf-service-life','pcf-cost'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
   document.getElementById('pcf-reorder').value='5';document.getElementById('pcf-category').value='head';document.getElementById('pcf-status').value='active';document.getElementById('pcf-has-expiry').checked=false;document.getElementById('pcf-insp-interval').value='90';
@@ -20688,7 +20735,8 @@ function ppeCatEdit(id){
   var x=ppeCatData.find(r=>r.id===id);if(!x)return;
   ppeCatEditId=id;document.getElementById('ppe-cat-form-title').textContent='Edit PPE Type';document.getElementById('ppe-cat-del-btn').style.display=isMgr()?'inline-flex':'none';
   var gf=function(fid,val){var el=document.getElementById(fid);if(el)el.value=val||'';};
-  gf('pcf-name',x.name);gf('pcf-subcat',x.sub_category);gf('pcf-brand',x.brand);gf('pcf-model',x.model);gf('pcf-standard',x.standard);gf('pcf-protection',x.protection_level);gf('pcf-notes',x.notes);gf('pcf-location',x.location);gf('pcf-supplier',x.supplier);gf('pcf-service-life',x.service_life_months||'');gf('pcf-cost',x.unit_cost||'');
+  gf('pcf-name',x.name);gf('pcf-subcat',x.sub_category);gf('pcf-brand',x.brand);gf('pcf-model',x.model);gf('pcf-standard',x.standard);gf('pcf-protection',x.protection_level);gf('pcf-notes',ppeStripCertMeta(x.notes));gf('pcf-location',x.location);gf('pcf-supplier',x.supplier);gf('pcf-service-life',x.service_life_months||'');gf('pcf-cost',x.unit_cost||'');
+  var cert=ppeReadCertMeta(x);gf('pcf-cert-type',cert.type);gf('pcf-cert-ref',cert.ref);gf('pcf-cert-issuer',cert.issuer);gf('pcf-cert-issue',cert.issueDate);gf('pcf-cert-expiry',cert.expiryDate);gf('pcf-cert-url',cert.url);
   gf('pcf-hazards',(x.hazard_types||[]).join(', '));gf('pcf-qty-total',x.quantity_total??0);gf('pcf-qty-avail',x.quantity_available??0);gf('pcf-reorder',x.reorder_level??5);gf('pcf-insp-interval',x.inspection_interval_days??90);
   document.getElementById('pcf-category').value=x.category||'head';document.getElementById('pcf-status').value=x.status||'active';document.getElementById('pcf-has-expiry').checked=!!x.has_expiry;
   ppeCatShowForm();
@@ -20696,7 +20744,8 @@ function ppeCatEdit(id){
 async function ppeCatSave(){
   var name=document.getElementById('pcf-name')?.value?.trim();if(!name){toast('Please enter PPE name',false);return;}
   var g=function(id){var el=document.getElementById(id);return el?el.value||null:null;};
-  var body={company_id:ccid(),name:name,category:g('pcf-category')||'head',sub_category:g('pcf-subcat'),brand:g('pcf-brand'),model:g('pcf-model'),standard:g('pcf-standard'),protection_level:g('pcf-protection'),hazard_types:g('pcf-hazards')?g('pcf-hazards').split(',').map(x=>x.trim()).filter(Boolean):[],notes:g('pcf-notes'),location:g('pcf-location'),supplier:g('pcf-supplier'),has_expiry:document.getElementById('pcf-has-expiry')?.checked||false,service_life_months:parseInt(g('pcf-service-life'))||null,inspection_interval_days:parseInt(g('pcf-insp-interval'))||90,quantity_total:parseInt(g('pcf-qty-total'))||0,quantity_available:parseInt(g('pcf-qty-avail'))||0,reorder_level:parseInt(g('pcf-reorder'))||5,unit_cost:parseFloat(g('pcf-cost'))||null,status:g('pcf-status')||'active',updated_at:new Date().toISOString()};
+  var certMeta={type:g('pcf-cert-type'),ref:g('pcf-cert-ref'),issuer:g('pcf-cert-issuer'),issueDate:g('pcf-cert-issue'),expiryDate:g('pcf-cert-expiry'),url:g('pcf-cert-url')};
+  var body={company_id:ccid(),name:name,category:g('pcf-category')||'head',sub_category:g('pcf-subcat'),brand:g('pcf-brand'),model:g('pcf-model'),standard:g('pcf-standard'),protection_level:g('pcf-protection'),hazard_types:g('pcf-hazards')?g('pcf-hazards').split(',').map(x=>x.trim()).filter(Boolean):[],notes:ppeWriteCertMeta(g('pcf-notes'),certMeta),location:g('pcf-location'),supplier:g('pcf-supplier'),has_expiry:document.getElementById('pcf-has-expiry')?.checked||false,service_life_months:parseInt(g('pcf-service-life'))||null,inspection_interval_days:parseInt(g('pcf-insp-interval'))||90,quantity_total:parseInt(g('pcf-qty-total'))||0,quantity_available:parseInt(g('pcf-qty-avail'))||0,reorder_level:parseInt(g('pcf-reorder'))||5,unit_cost:parseFloat(g('pcf-cost'))||null,status:g('pcf-status')||'active',updated_at:new Date().toISOString()};
   try{
     if(ppeCatEditId){await api('/ppe_catalogue?id=eq.'+ppeCatEditId,{m:'PATCH',p:'return=minimal',b:body});toast('Updated!');}
     else{
@@ -40573,8 +40622,21 @@ function fireEquipStatusBadge(s) {
 <div class="form-row">
 <div class="form-group"><label class="form-label">Brand</label><input type="text" id="pcf-brand"/></div>
 <div class="form-group"><label class="form-label">Model / Part no.</label><input type="text" id="pcf-model"/></div>
-<div class="form-group"><label class="form-label">Standard / Certification</label><input type="text" id="pcf-standard" placeholder="e.g. EN 397, ISO 20345, ANSI Z89.1"/></div>
+<div class="form-group"><label class="form-label">Standard / Certification</label><input type="text" id="pcf-standard" placeholder="e.g. MSB, EN 397, ISO 20345, ANSI Z89.1"/></div>
 <div class="form-group"><label class="form-label">Protection level</label><input type="text" id="pcf-protection" placeholder="e.g. Class 3, FFP2, S1P"/></div>
+</div>
+<div class="card" style="margin:10px 0 14px;border:1px solid #bfdbfe;background:#eff6ff"><div class="card-title" style="color:#185FA5"><i class="ti ti-certificate"></i> MSB / conformity evidence</div>
+<div style="font-size:12px;color:#1e3a8a;margin-bottom:10px">Attach the MSB certificate or certificate of conformity for this PPE type. Paste a Document Control link, cloud link, or scanned certificate URL.</div>
+<div class="form-row3">
+<div class="form-group"><label class="form-label">Certificate type</label><select id="pcf-cert-type"><option value="">—</option><option value="msb">MSB certificate</option><option value="conformity">Certificate of conformity</option><option value="test_report">Test report</option><option value="manufacturer_declaration">Manufacturer declaration</option><option value="other">Other evidence</option></select></div>
+<div class="form-group"><label class="form-label">Certificate / report ref.</label><input type="text" id="pcf-cert-ref" placeholder="e.g. MSB BASIC 06 SRC"/></div>
+<div class="form-group"><label class="form-label">Issuing body</label><input type="text" id="pcf-cert-issuer" placeholder="e.g. Mauritius Standards Bureau"/></div>
+</div>
+<div class="form-row3">
+<div class="form-group"><label class="form-label">Issue date</label><input type="date" id="pcf-cert-issue"/></div>
+<div class="form-group"><label class="form-label">Expiry / validity date</label><input type="date" id="pcf-cert-expiry"/></div>
+<div class="form-group"><label class="form-label">Certificate URL / attachment</label><input type="url" id="pcf-cert-url" placeholder="https://..."/></div>
+</div>
 </div>
 <div class="form-group"><label class="form-label">Linked hazard types (comma separated)</label><input type="text" id="pcf-hazards" placeholder="e.g. falling objects, noise, chemical splash, height..."/></div>
 <div class="form-group"><label class="form-label">Notes / Description</label><textarea id="pcf-notes" style="min-height:50px"></textarea></div>
