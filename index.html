@@ -34000,6 +34000,7 @@ function fireSwitchTab(tab, el) {
     case 'certs':        fireLoadAll().then(fireRenderCerts); break;
     case 'inspections':  fireLoadAll().then(fireRenderInsp); break;
     case 'equipment':    fireLoadAll().then(fireRenderEquip); break;
+    case 'layout':       fireLoadAll().then(fireRenderLayout); break;
     case 'dashboard':    fireLoadAll().then(fireRenderDashboard); break;
   }
 }
@@ -34215,14 +34216,53 @@ async function fireSaveLayoutState(){
 function fireEquipIcon(type){
   return {fire_extinguisher:'FE',fire_hose_reel:'HR',fire_alarm_panel:'AL',smoke_detector:'SD',heat_detector:'HD',sprinkler_system:'SP',emergency_lighting:'EL',fire_door:'FD',fire_blanket:'FB',evacuation_sign:'EX',fire_pump:'FP',other:'EQ'}[type||'']||'EQ';
 }
+function fireLayoutStandardItems(){
+  return [
+    ['fire_extinguisher','Fire extinguisher'],
+    ['fire_hose_reel','Fire hose reel'],
+    ['fire_alarm_panel','Fire alarm panel'],
+    ['smoke_detector','Smoke detector'],
+    ['heat_detector','Heat detector'],
+    ['sprinkler_system','Sprinkler system'],
+    ['emergency_lighting','Emergency lighting'],
+    ['fire_door','Fire door'],
+    ['fire_blanket','Fire blanket'],
+    ['evacuation_sign','Evacuation sign'],
+    ['fire_pump','Fire pump']
+  ];
+}
+async function fireCreateLayoutEquipment(type,x,y){
+  var cid=fireLayoutCompanyId();
+  var body={
+    company_id:cid,
+    equipment_type:type,
+    description:fireEquipTypeLabel(type),
+    location:'Positioned on site layout',
+    status:'operational',
+    notes:'Created from Site Layout map at '+Number(x).toFixed(1)+'%, '+Number(y).toFixed(1)+'%',
+    created_at:new Date().toISOString(),
+    updated_at:new Date().toISOString()
+  };
+  var res=await api('/fire_equipment',{m:'POST',p:'return=representation',b:body});
+  var row=res&&res[0];
+  if(row){fireAllEquip.push(row);return row;}
+  await fireLoadAll();
+  return fireAllEquip[fireAllEquip.length-1]||null;
+}
 async function fireRenderLayout(){
   await fireLoadLayoutState();
   var sel=document.getElementById('fire-layout-equipment-select');
   if(sel){
-    sel.innerHTML='<option value="">Select equipment to place...</option>'+(fireAllEquip||[]).map(function(e){
+    var existing=(fireAllEquip||[]).map(function(e){
       var label=(e.description||fireEquipTypeLabel(e.equipment_type)||'Fire equipment')+' - '+(e.location||'No location');
       return '<option value="'+escH(e.id)+'">'+escH(label)+'</option>';
     }).join('');
+    var quick='<optgroup label="Create and place a standard item">'+fireLayoutStandardItems().map(function(x){
+      return '<option value="quick:'+escH(x[0])+'">+ '+escH(x[1])+'</option>';
+    }).join('')+'</optgroup>';
+    sel.innerHTML='<option value="">Select equipment to place...</option>'
+      +(existing?'<optgroup label="Registered fire equipment">'+existing+'</optgroup>':'')
+      +quick;
   }
   var img=document.getElementById('fire-layout-img'), empty=document.getElementById('fire-layout-empty');
   if(img){img.src=fireLayoutState.image_url||fireLayoutState.image||'';img.style.display=(fireLayoutState.image_url||fireLayoutState.image)?'block':'none';}
@@ -34266,6 +34306,19 @@ async function fireAddLayoutMarker(ev){
   var rect=ev.currentTarget.getBoundingClientRect();
   var x=Math.max(0,Math.min(100,((ev.clientX-rect.left)/rect.width)*100));
   var y=Math.max(0,Math.min(100,((ev.clientY-rect.top)/rect.height)*100));
+  if(equipId.indexOf('quick:')===0){
+    try{
+      var created=await fireCreateLayoutEquipment(equipId.slice(6),x,y);
+      if(!created||!created.id){toast('Could not create fire equipment record',false);return;}
+      equipId=created.id;
+      var sel=document.getElementById('fire-layout-equipment-select');
+      if(sel)sel.value=equipId;
+      toast('Fire equipment created');
+    }catch(e){
+      toast(actionErrorMessage('Create fire equipment','Fire Certificates',e.message),false);
+      return;
+    }
+  }
   var existing=(fireLayoutState.markers||[]).find(function(m){return m.equipment_id===equipId;});
   if(existing){existing.x=Number(x.toFixed(2));existing.y=Number(y.toFixed(2));}
   else fireLayoutState.markers.push({id:'m'+Date.now(),equipment_id:equipId,x:Number(x.toFixed(2)),y:Number(y.toFixed(2))});
