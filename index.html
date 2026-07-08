@@ -34285,7 +34285,8 @@ async function fireRenderLayout(){
   if(title)title.value=fireLayoutState.title||'Fire equipment layout';
   var sel=document.getElementById('fire-layout-equipment-select');
   if(sel){
-    var existing=(fireAllEquip||[]).map(function(e){
+    var placedIds=(fireLayoutState.markers||[]).map(function(m){return m.equipment_id;});
+    var existing=(fireAllEquip||[]).filter(function(e){return placedIds.indexOf(e.id)===-1;}).map(function(e){
       var label=(e.description||fireEquipTypeLabel(e.equipment_type)||'Fire equipment')+' - '+(e.location||'No location');
       return '<option value="'+escH(e.id)+'">'+escH(label)+'</option>';
     }).join('');
@@ -34293,7 +34294,7 @@ async function fireRenderLayout(){
       return '<option value="quick:'+escH(x[0])+'">+ '+escH(x[1])+'</option>';
     }).join('')+'</optgroup>';
     sel.innerHTML='<option value="">Select equipment to place...</option>'
-      +(existing?'<optgroup label="Registered fire equipment">'+existing+'</optgroup>':'')
+      +(existing?'<optgroup label="Registered equipment not yet on this plan">'+existing+'</optgroup>':'')
       +quick;
   }
   var img=document.getElementById('fire-layout-img'), empty=document.getElementById('fire-layout-empty');
