@@ -34183,17 +34183,32 @@ function fireLayoutLocalFallback(){
   try{return JSON.parse(localStorage.getItem(fireLayoutLocalKey())||'{"image":null,"markers":[]}')||fireLayoutEmptyState();}
   catch(e){return fireLayoutEmptyState();}
 }
+function fireLayoutHasContent(p){
+  return !!(p&&(p.image_url||p.image||p.image_path||(Array.isArray(p.markers)&&p.markers.length)||(p.title&&p.title!=='New fire layout'&&p.title!=='Fire equipment layout')));
+}
+function fireLayoutPlansWithLocal(rows){
+  var plans=(rows||[]).slice();
+  var local=fireLayoutNormalise(fireLayoutLocalFallback());
+  if(fireLayoutHasContent(local)){
+    local.id='local';
+    local.local_only=true;
+    local.updated_at=local.updated_at||new Date().toISOString();
+    plans=plans.filter(function(p){return p.id!=='local';});
+    plans.unshift(local);
+  }
+  return plans;
+}
 async function fireLoadLayoutState(){
   if(fireLayoutCreatingNew){
-    fireLayoutPlans=await api('/fire_layouts?company_id=eq.'+fireLayoutCompanyId()+'&layout_type=eq.fire&select=*&order=title.asc').catch(function(){return fireLayoutPlans||[];})||[];
+    fireLayoutPlans=fireLayoutPlansWithLocal(await api('/fire_layouts?company_id=eq.'+fireLayoutCompanyId()+'&layout_type=eq.fire&select=*&order=title.asc').catch(function(){return fireLayoutPlans||[];})||[]);
     return;
   }
   try{
     var rows=await api('/fire_layouts?company_id=eq.'+fireLayoutCompanyId()+'&layout_type=eq.fire&select=*&order=title.asc');
-    fireLayoutPlans=rows||[];
+    fireLayoutPlans=fireLayoutPlansWithLocal(rows||[]);
     var selectedId=document.getElementById('fire-layout-plan-select')?.value||localStorage.getItem(fireLayoutLocalKey()+'_selected')||'';
     var picked=fireLayoutEditorOpen?(fireLayoutPlans||[]).find(function(x){return x.id===selectedId;}):null;
-    if(picked){fireLayoutState=fireLayoutNormalise(picked);return;}
+    if(picked){fireLayoutState=fireLayoutNormalise(picked);if(picked.local_only)fireLayoutState.id=null;return;}
     if(!fireLayoutEditorOpen){fireLayoutState=fireLayoutEmptyState();return;}
     var local=fireLayoutLocalFallback();
     fireLayoutState=fireLayoutNormalise(local);
@@ -34210,7 +34225,7 @@ async function fireSaveLayoutState(){
   fireLayoutState.title=title;
   var body={company_id:cid,layout_type:'fire',title:title,image_url:fireLayoutState.image_url||fireLayoutState.image||null,image_path:fireLayoutState.image_path||null,markers:fireLayoutState.markers||[],updated_at:new Date().toISOString()};
   try{
-    if(fireLayoutState.id){await api('/fire_layouts?id=eq.'+fireLayoutState.id,{m:'PATCH',p:'return=minimal',b:body});}
+    if(fireLayoutState.id&&fireLayoutState.id!=='local'){await api('/fire_layouts?id=eq.'+fireLayoutState.id,{m:'PATCH',p:'return=minimal',b:body});}
     else{
       body.created_by=prof?.id||null;
       var res=await api('/fire_layouts',{m:'POST',p:'return=representation',b:body});
@@ -34222,7 +34237,7 @@ async function fireSaveLayoutState(){
     if(st)st.innerHTML='<span style="color:var(--green);font-weight:700">Shared layout saved</span>';
     return true;
   }catch(e){
-    try{localStorage.setItem(fireLayoutLocalKey(),JSON.stringify(fireLayoutState));}catch(_){ }
+    try{localStorage.setItem(fireLayoutLocalKey(),JSON.stringify(Object.assign({},fireLayoutState,{id:null,updated_at:new Date().toISOString()})));localStorage.setItem(fireLayoutLocalKey()+'_selected','local');}catch(_){ }
     var st2=document.getElementById('fire-layout-sync-status');
     if(st2)st2.innerHTML='<span style="color:#C2410C;font-weight:700">Not synced:</span> '+escH((e.message||'').substring(0,140));
     toast('Layout saved locally only. Run fire_layouts_schema.sql for shared storage.',false);
@@ -34319,10 +34334,10 @@ function fireRenderLayoutPlanList(){
   if(!fireLayoutPlans.length){el.innerHTML='<div style="padding:28px;color:var(--text2);font-size:13px;text-align:center;border:1px dashed var(--border);border-radius:8px"><i class="ti ti-map-pin" style="font-size:32px;opacity:.35"></i><div style="margin-top:8px;font-weight:800;color:var(--text)">No saved layout plans yet</div><div style="margin-top:4px">Click New plan, upload a floor/site plan, place the equipment and save it here.</div></div>';return;}
   el.innerHTML='<div style="overflow-x:auto"><table style="width:100%;font-size:12px;border-collapse:collapse"><thead><tr style="background:#f8fafc"><th style="text-align:left;padding:10px">Plan title</th><th style="text-align:left;padding:10px">Markers</th><th style="text-align:left;padding:10px">Plan image</th><th style="text-align:left;padding:10px">Updated</th><th style="text-align:right;padding:10px">Action</th></tr></thead><tbody>'
     +fireLayoutPlans.map(function(p){
-      var active=p.id===fireLayoutState.id;
+      var active=(p.id===fireLayoutState.id)||(p.local_only&&fireLayoutEditorOpen&&!fireLayoutState.id);
       var markers=Array.isArray(p.markers)?p.markers.length:0;
       return '<tr style="border-top:1px solid var(--border);background:'+(active?'#ECFDF5':'#fff')+'">'
-        +'<td style="padding:10px;font-weight:800">'+escH(p.title||'Untitled plan')+(active&&fireLayoutEditorOpen?' <span class="badge badge-green">Open</span>':'')+'</td>'
+        +'<td style="padding:10px;font-weight:800">'+escH(p.title||'Untitled plan')+(p.local_only?' <span class="badge badge-amber">Local draft</span>':'')+(active&&fireLayoutEditorOpen?' <span class="badge badge-green">Open</span>':'')+'</td>'
         +'<td style="padding:10px">'+markers+'</td>'
         +'<td style="padding:10px">'+(p.image_url?'<span class="badge badge-green">Uploaded</span>':'<span class="badge badge-grey">No image</span>')+'</td>'
         +'<td style="padding:10px">'+(p.updated_at?new Date(p.updated_at).toLocaleString():'--')+'</td>'
@@ -34353,7 +34368,7 @@ async function fireUploadLayout(input){
     fireLayoutState.image_path=path;
     fireLayoutState.image_url=SB+'/storage/v1/object/public/layouts/'+path.split('/').map(encodeURIComponent).join('/');
     fireLayoutState.image=fireLayoutState.image_url;
-    await fireSaveLayoutState();fireRenderLayout();toast('Shared layout plan uploaded');
+    var saved=await fireSaveLayoutState();fireRenderLayout();toast(saved?'Shared layout plan uploaded':'Layout plan kept as local draft',saved);
   }catch(e){
     toast('Layout upload failed: '+(e.message||'Check layouts bucket / SQL setup'),false);
   }
