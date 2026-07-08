@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8"/>
@@ -33946,6 +33946,8 @@ var fireEditCertId = null;
 var fireEditInspId = null;
 var fireEditEquipId = null;
 var fireCurrentTab = 'certs';
+var fireLayoutState = { image:null, markers:[] };
+var fireLayoutSelectedMarkerId = null;
 
 // ── Load ─────────────────────────────────────────────────────────
 async function loadFire() {
@@ -33986,7 +33988,7 @@ function fireAutoUpdateStatus() {
 // ── Tab switching ─────────────────────────────────────────────────
 function fireSwitchTab(tab, el) {
   fireCurrentTab = tab;
-  ['certs','inspections','equipment','dashboard'].forEach(function(t){
+  ['certs','inspections','equipment','layout','dashboard'].forEach(function(t){
     var pane = document.getElementById('fire-pane-'+t);
     var btn  = document.getElementById('fire-tab-'+t);
     if(pane) pane.style.display = t===tab ? 'block' : 'none';
@@ -34161,6 +34163,95 @@ function fireRenderEquipStats() {
   }).join('');
 }
 
+// ── Site Layout / Fire Map ────────────────────────────────────────
+function fireLayoutStorageKey(){
+  return 'auris360_fire_layout_'+((isSA()&&sephsCompanyContext)?sephsCompanyContext:(prof?.company_id||'default'));
+}
+function fireLoadLayoutState(){
+  try{fireLayoutState=JSON.parse(localStorage.getItem(fireLayoutStorageKey())||'{"image":null,"markers":[]}')||{image:null,markers:[]};}
+  catch(e){fireLayoutState={image:null,markers:[]};}
+  if(!Array.isArray(fireLayoutState.markers))fireLayoutState.markers=[];
+}
+function fireSaveLayoutState(){
+  try{localStorage.setItem(fireLayoutStorageKey(),JSON.stringify(fireLayoutState));}
+  catch(e){toast('Layout image is too large for browser storage. Use a smaller/compressed plan image.',false);}
+}
+function fireEquipIcon(type){
+  return {fire_extinguisher:'FE',fire_hose_reel:'HR',fire_alarm_panel:'AL',smoke_detector:'SD',heat_detector:'HD',sprinkler_system:'SP',emergency_lighting:'EL',fire_door:'FD',fire_blanket:'FB',evacuation_sign:'EX',fire_pump:'FP',other:'EQ'}[type||'']||'EQ';
+}
+function fireRenderLayout(){
+  fireLoadLayoutState();
+  var sel=document.getElementById('fire-layout-equipment-select');
+  if(sel){
+    sel.innerHTML='<option value="">Select equipment to place...</option>'+(fireAllEquip||[]).map(function(e){
+      var label=(e.description||fireEquipTypeLabel(e.equipment_type)||'Fire equipment')+' - '+(e.location||'No location');
+      return '<option value="'+escH(e.id)+'">'+escH(label)+'</option>';
+    }).join('');
+  }
+  var img=document.getElementById('fire-layout-img'), empty=document.getElementById('fire-layout-empty');
+  if(img){img.src=fireLayoutState.image||'';img.style.display=fireLayoutState.image?'block':'none';}
+  if(empty)empty.style.display=fireLayoutState.image?'none':'flex';
+  fireRenderLayoutMarkers();fireRenderLayoutDetails(null);
+}
+function fireRenderLayoutMarkers(){
+  var layer=document.getElementById('fire-layout-marker-layer');if(!layer)return;
+  layer.innerHTML=(fireLayoutState.markers||[]).map(function(m){
+    var e=(fireAllEquip||[]).find(function(x){return x.id===m.equipment_id;})||{};
+    var overdue=e.next_service_date&&new Date(e.next_service_date)<new Date();
+    var due=e.next_service_date&&new Date(e.next_service_date)<=new Date(Date.now()+30*86400000);
+    var color=overdue?'#DC2626':due?'#EF9F27':'#1D9E75';
+    return '<button type="button" data-mid="'+escH(m.id)+'" onclick="event.stopPropagation();fireSelectLayoutMarker(this.dataset.mid)" title="'+escH(e.description||e.location||'Fire equipment')+'" style="position:absolute;left:'+m.x+'%;top:'+m.y+'%;transform:translate(-50%,-50%);min-width:34px;height:34px;border-radius:999px;border:2px solid #fff;background:'+color+';color:#fff;box-shadow:0 3px 12px rgba(0,0,0,.28);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:900;cursor:pointer;z-index:2;padding:0 6px;pointer-events:auto">'+escH(fireEquipIcon(e.equipment_type))+'</button>';
+  }).join('');
+}
+function fireUploadLayout(input){
+  var file=input?.files?.[0];if(!file)return;
+  if(!file.type.startsWith('image/')){toast('Please upload an image layout plan such as PNG or JPG',false);return;}
+  var reader=new FileReader();
+  reader.onload=function(){fireLayoutState.image=reader.result;fireSaveLayoutState();fireRenderLayout();toast('Layout plan loaded');};
+  reader.readAsDataURL(file);
+}
+function fireAddLayoutMarker(ev){
+  if(!fireLayoutState.image){toast('Upload a layout plan first',false);return;}
+  var equipId=document.getElementById('fire-layout-equipment-select')?.value||'';
+  if(!equipId){toast('Select equipment to place on the plan',false);return;}
+  var rect=ev.currentTarget.getBoundingClientRect();
+  var x=Math.max(0,Math.min(100,((ev.clientX-rect.left)/rect.width)*100));
+  var y=Math.max(0,Math.min(100,((ev.clientY-rect.top)/rect.height)*100));
+  var existing=(fireLayoutState.markers||[]).find(function(m){return m.equipment_id===equipId;});
+  if(existing){existing.x=Number(x.toFixed(2));existing.y=Number(y.toFixed(2));}
+  else fireLayoutState.markers.push({id:'m'+Date.now(),equipment_id:equipId,x:Number(x.toFixed(2)),y:Number(y.toFixed(2))});
+  fireSaveLayoutState();fireRenderLayoutMarkers();fireSelectLayoutMarker(existing?existing.id:fireLayoutState.markers[fireLayoutState.markers.length-1].id);
+}
+function fireSelectLayoutMarker(id){
+  fireLayoutSelectedMarkerId=id;
+  var m=(fireLayoutState.markers||[]).find(function(x){return x.id===id;});
+  fireRenderLayoutDetails(m);
+}
+function fireRenderLayoutDetails(marker){
+  var el=document.getElementById('fire-layout-details');if(!el)return;
+  if(!marker){el.innerHTML='<div style="color:var(--text2);font-size:13px">Click an item on the plan to view its service details.</div>';return;}
+  var e=(fireAllEquip||[]).find(function(x){return x.id===marker.equipment_id;})||{};
+  var next=e.next_service_date?new Date(e.next_service_date).toLocaleDateString('en-GB'):'--';
+  var last=e.last_service_date?new Date(e.last_service_date).toLocaleDateString('en-GB'):'--';
+  var overdue=e.next_service_date&&new Date(e.next_service_date)<new Date();
+  el.innerHTML='<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px"><div style="min-width:34px;height:34px;border-radius:999px;background:#1D9E75;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:900">'+escH(fireEquipIcon(e.equipment_type))+'</div><div><div style="font-weight:800">'+escH(e.description||fireEquipTypeLabel(e.equipment_type)||'Fire equipment')+'</div><div style="font-size:12px;color:var(--text2)">'+escH(e.location||'No location recorded')+'</div></div></div>'
+    +'<table style="width:100%;font-size:12px;border-collapse:collapse"><tbody>'
+    +'<tr><td style="padding:6px;color:var(--text2)">Type</td><td style="padding:6px;font-weight:700">'+escH(fireEquipTypeLabel(e.equipment_type))+'</td></tr>'
+    +'<tr><td style="padding:6px;color:var(--text2)">Serial / tag</td><td style="padding:6px;font-family:monospace">'+escH(e.serial_number||'--')+'</td></tr>'
+    +'<tr><td style="padding:6px;color:var(--text2)">Last service</td><td style="padding:6px">'+last+'</td></tr>'
+    +'<tr><td style="padding:6px;color:var(--text2)">Next service</td><td style="padding:6px;font-weight:800;color:'+(overdue?'var(--red)':'var(--green)')+'">'+next+(overdue?' overdue':'')+'</td></tr>'
+    +'<tr><td style="padding:6px;color:var(--text2)">Status</td><td style="padding:6px">'+fireEquipStatusBadge(e.status)+'</td></tr>'
+    +'</tbody></table><div style="display:flex;gap:8px;margin-top:12px"><button class="btn btn-sm" onclick="fireShowEquipForm(\''+escH(e.id||'')+'\')"><i class="ti ti-edit"></i>Edit equipment</button><button class="btn btn-sm" style="color:var(--red)" onclick="fireRemoveLayoutMarker()"><i class="ti ti-trash"></i>Remove marker</button></div>';
+}
+function fireRemoveLayoutMarker(){
+  if(!fireLayoutSelectedMarkerId)return;
+  fireLayoutState.markers=(fireLayoutState.markers||[]).filter(function(m){return m.id!==fireLayoutSelectedMarkerId;});
+  fireLayoutSelectedMarkerId=null;fireSaveLayoutState();fireRenderLayoutMarkers();fireRenderLayoutDetails(null);
+}
+async function fireClearLayout(){
+  if(!(await appConfirmAction({title:'Clear layout plan',message:'Remove the uploaded layout and all positioned fire equipment markers?',confirmText:'Clear layout',cancelText:'Keep layout',variant:'danger'})))return;
+  fireLayoutState={image:null,markers:[]};fireLayoutSelectedMarkerId=null;fireSaveLayoutState();fireRenderLayout();
+}
 // ── Dashboard/Overview ────────────────────────────────────────────
 async function fireRenderDashboard() {
   var el = document.getElementById('fire-overview-content');
@@ -45360,6 +45451,7 @@ I can help you:<br>
   <button class="mtg-tab active" id="fire-tab-certs" onclick="fireSwitchTab('certs',this)" style="white-space:nowrap">🏛️ Certificates</button>
   <button class="mtg-tab" id="fire-tab-inspections" onclick="fireSwitchTab('inspections',this)" style="white-space:nowrap">🔍 Inspections</button>
   <button class="mtg-tab" id="fire-tab-equipment" onclick="fireSwitchTab('equipment',this)" style="white-space:nowrap">🧯 Equipment</button>
+  <button class="mtg-tab" id="fire-tab-layout" onclick="fireSwitchTab('layout',this)" style="white-space:nowrap"><i class="ti ti-map-pin"></i> Site Layout</button>
   <button class="mtg-tab" id="fire-tab-dashboard" onclick="fireSwitchTab('dashboard',this)" style="white-space:nowrap">📊 Overview</button>
 </div>
 
@@ -45438,6 +45530,38 @@ I can help you:<br>
   </div>
 </div>
 
+<!-- ── TAB: Site Layout / Fire Map ─────────────────── -->
+<div id="fire-pane-layout" style="display:none">
+  <div class="card" style="margin-bottom:14px">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap">
+      <div>
+        <div class="card-title" style="margin-bottom:4px">Site Layout / Fire Equipment Map</div>
+        <div style="font-size:12px;color:var(--text2)">Upload a floor or site plan, select equipment, then click on the plan to position it.</div>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <label class="btn" style="cursor:pointer"><i class="ti ti-upload"></i>Upload plan<input type="file" accept="image/*" onchange="fireUploadLayout(this)" style="display:none"/></label>
+        <button class="btn" onclick="fireClearLayout()" style="color:var(--red)"><i class="ti ti-trash"></i>Clear layout</button>
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:minmax(260px,1fr) 300px;gap:14px;margin-top:14px">
+      <div class="form-group" style="margin:0"><label class="form-label">Equipment to position</label><select id="fire-layout-equipment-select"><option value="">Select equipment to place...</option></select></div>
+      <div style="font-size:12px;color:var(--text2);align-self:end">Green = OK, amber = service due soon, red = service overdue.</div>
+    </div>
+  </div>
+  <div style="display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:14px;align-items:start">
+    <div class="card" style="padding:10px;overflow:hidden">
+      <div id="fire-layout-canvas" onclick="fireAddLayoutMarker(event)" style="position:relative;min-height:460px;border:1px dashed var(--border);border-radius:8px;background:#f8fafc;display:flex;align-items:center;justify-content:center;overflow:auto;cursor:crosshair">
+        <div id="fire-layout-empty" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;text-align:center;color:var(--text2);padding:20px;pointer-events:none"><div><i class="ti ti-map" style="font-size:42px;opacity:.35"></i><div style="margin-top:8px;font-weight:700">Upload a site or floor layout plan</div><div style="font-size:12px;margin-top:4px">PNG/JPG plans work best. Then click to place equipment markers.</div></div></div>
+        <img id="fire-layout-img" alt="Site layout plan" style="display:none;max-width:100%;height:auto;user-select:none;pointer-events:none"/>
+        <div id="fire-layout-marker-layer" style="position:absolute;inset:0;pointer-events:none"></div>
+      </div>
+    </div>
+    <div class="card" style="position:sticky;top:86px">
+      <div class="card-title">Selected Equipment</div>
+      <div id="fire-layout-details"></div>
+    </div>
+  </div>
+</div>
 <!-- ── TAB: Overview/Dashboard ───────────────────── -->
 <div id="fire-pane-dashboard" style="display:none">
   <div id="fire-overview-content"></div>
