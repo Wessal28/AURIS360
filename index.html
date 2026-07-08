@@ -34163,24 +34163,60 @@ function fireRenderEquipStats() {
   }).join('');
 }
 
-// ── Site Layout / Fire Map ────────────────────────────────────────
-function fireLayoutStorageKey(){
-  return 'auris360_fire_layout_'+((isSA()&&sephsCompanyContext)?sephsCompanyContext:(prof?.company_id||'default'));
+// Site Layout / Fire Map - Supabase-backed shared layout
+function fireLayoutCompanyId(){
+  return (isSA()&&sephsCompanyContext)?sephsCompanyContext:(prof?.company_id||'default');
 }
-function fireLoadLayoutState(){
-  try{fireLayoutState=JSON.parse(localStorage.getItem(fireLayoutStorageKey())||'{"image":null,"markers":[]}')||{image:null,markers:[]};}
-  catch(e){fireLayoutState={image:null,markers:[]};}
-  if(!Array.isArray(fireLayoutState.markers))fireLayoutState.markers=[];
+function fireLayoutEmptyState(){return {id:null,image:null,image_url:null,image_path:null,markers:[]};}
+function fireLayoutNormalise(row){
+  if(!row)return fireLayoutEmptyState();
+  var markers=Array.isArray(row.markers)?row.markers:[];
+  return {id:row.id||null,image:row.image_url||row.image||null,image_url:row.image_url||row.image||null,image_path:row.image_path||null,markers:markers};
 }
-function fireSaveLayoutState(){
-  try{localStorage.setItem(fireLayoutStorageKey(),JSON.stringify(fireLayoutState));}
-  catch(e){toast('Layout image is too large for browser storage. Use a smaller/compressed plan image.',false);}
+function fireLayoutLocalKey(){return 'auris360_fire_layout_'+fireLayoutCompanyId();}
+function fireLayoutLocalFallback(){
+  try{return JSON.parse(localStorage.getItem(fireLayoutLocalKey())||'{"image":null,"markers":[]}')||fireLayoutEmptyState();}
+  catch(e){return fireLayoutEmptyState();}
+}
+async function fireLoadLayoutState(){
+  try{
+    var rows=await api('/fire_layouts?company_id=eq.'+fireLayoutCompanyId()+'&layout_type=eq.fire&select=*&limit=1');
+    if(rows&&rows[0]){fireLayoutState=fireLayoutNormalise(rows[0]);return;}
+    var local=fireLayoutLocalFallback();
+    fireLayoutState=fireLayoutNormalise(local);
+  }catch(e){
+    fireLayoutState=fireLayoutNormalise(fireLayoutLocalFallback());
+    var st=document.getElementById('fire-layout-sync-status');
+    if(st)st.innerHTML='<span style="color:#C2410C;font-weight:700">Shared layout database not enabled yet.</span> Run <code>fire_layouts_schema.sql</code> in Supabase.';
+  }
+}
+async function fireSaveLayoutState(){
+  var cid=fireLayoutCompanyId();
+  var body={company_id:cid,layout_type:'fire',title:'Fire equipment layout',image_url:fireLayoutState.image_url||fireLayoutState.image||null,image_path:fireLayoutState.image_path||null,markers:fireLayoutState.markers||[],updated_at:new Date().toISOString()};
+  try{
+    if(fireLayoutState.id){await api('/fire_layouts?id=eq.'+fireLayoutState.id,{m:'PATCH',p:'return=minimal',b:body});}
+    else{
+      body.created_by=prof?.id||null;
+      var res=await api('/fire_layouts',{m:'POST',p:'return=representation',b:body});
+      if(res&&res[0])fireLayoutState=fireLayoutNormalise(res[0]);
+    }
+    try{localStorage.removeItem(fireLayoutLocalKey());}catch(_){ }
+    var st=document.getElementById('fire-layout-sync-status');
+    if(st)st.innerHTML='<span style="color:var(--green);font-weight:700">Shared layout saved</span>';
+    return true;
+  }catch(e){
+    try{localStorage.setItem(fireLayoutLocalKey(),JSON.stringify(fireLayoutState));}catch(_){ }
+    var st2=document.getElementById('fire-layout-sync-status');
+    if(st2)st2.innerHTML='<span style="color:#C2410C;font-weight:700">Not synced:</span> '+escH((e.message||'').substring(0,140));
+    toast('Layout saved locally only. Run fire_layouts_schema.sql for shared storage.',false);
+    return false;
+  }
 }
 function fireEquipIcon(type){
   return {fire_extinguisher:'FE',fire_hose_reel:'HR',fire_alarm_panel:'AL',smoke_detector:'SD',heat_detector:'HD',sprinkler_system:'SP',emergency_lighting:'EL',fire_door:'FD',fire_blanket:'FB',evacuation_sign:'EX',fire_pump:'FP',other:'EQ'}[type||'']||'EQ';
 }
-function fireRenderLayout(){
-  fireLoadLayoutState();
+async function fireRenderLayout(){
+  await fireLoadLayoutState();
   var sel=document.getElementById('fire-layout-equipment-select');
   if(sel){
     sel.innerHTML='<option value="">Select equipment to place...</option>'+(fireAllEquip||[]).map(function(e){
@@ -34189,8 +34225,10 @@ function fireRenderLayout(){
     }).join('');
   }
   var img=document.getElementById('fire-layout-img'), empty=document.getElementById('fire-layout-empty');
-  if(img){img.src=fireLayoutState.image||'';img.style.display=fireLayoutState.image?'block':'none';}
-  if(empty)empty.style.display=fireLayoutState.image?'none':'flex';
+  if(img){img.src=fireLayoutState.image_url||fireLayoutState.image||'';img.style.display=(fireLayoutState.image_url||fireLayoutState.image)?'block':'none';}
+  if(empty)empty.style.display=(fireLayoutState.image_url||fireLayoutState.image)?'none':'flex';
+  var st=document.getElementById('fire-layout-sync-status');
+  if(st&&!st.innerHTML)st.innerHTML=fireLayoutState.id?'<span style="color:var(--green);font-weight:700">Shared layout loaded</span>':'<span style="color:var(--text2)">No shared layout saved yet.</span>';
   fireRenderLayoutMarkers();fireRenderLayoutDetails(null);
 }
 function fireRenderLayoutMarkers(){
@@ -34203,15 +34241,26 @@ function fireRenderLayoutMarkers(){
     return '<button type="button" data-mid="'+escH(m.id)+'" onclick="event.stopPropagation();fireSelectLayoutMarker(this.dataset.mid)" title="'+escH(e.description||e.location||'Fire equipment')+'" style="position:absolute;left:'+m.x+'%;top:'+m.y+'%;transform:translate(-50%,-50%);min-width:34px;height:34px;border-radius:999px;border:2px solid #fff;background:'+color+';color:#fff;box-shadow:0 3px 12px rgba(0,0,0,.28);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:900;cursor:pointer;z-index:2;padding:0 6px;pointer-events:auto">'+escH(fireEquipIcon(e.equipment_type))+'</button>';
   }).join('');
 }
-function fireUploadLayout(input){
+async function fireUploadLayout(input){
   var file=input?.files?.[0];if(!file)return;
   if(!file.type.startsWith('image/')){toast('Please upload an image layout plan such as PNG or JPG',false);return;}
-  var reader=new FileReader();
-  reader.onload=function(){fireLayoutState.image=reader.result;fireSaveLayoutState();fireRenderLayout();toast('Layout plan loaded');};
-  reader.readAsDataURL(file);
+  if(file.size>5*1024*1024){toast('Please compress the plan image below 5 MB',false);return;}
+  var cid=fireLayoutCompanyId();
+  var ext=(file.name.split('.').pop()||'png').toLowerCase().replace(/[^a-z0-9]/g,'')||'png';
+  var path=cid+'/fire-layout-'+Date.now()+'.'+ext;
+  try{
+    var r=await fetch(SB+'/storage/v1/object/layouts/'+path.split('/').map(encodeURIComponent).join('/'),{method:'POST',headers:{'Authorization':'Bearer '+tok,'apikey':KEY,'Content-Type':file.type,'x-upsert':'true'},body:file});
+    if(!r.ok){var t='';try{t=await r.text();}catch(_){}throw new Error(t||'Storage upload failed');}
+    fireLayoutState.image_path=path;
+    fireLayoutState.image_url=SB+'/storage/v1/object/public/layouts/'+path.split('/').map(encodeURIComponent).join('/');
+    fireLayoutState.image=fireLayoutState.image_url;
+    await fireSaveLayoutState();fireRenderLayout();toast('Shared layout plan uploaded');
+  }catch(e){
+    toast('Layout upload failed: '+(e.message||'Check layouts bucket / SQL setup'),false);
+  }
 }
-function fireAddLayoutMarker(ev){
-  if(!fireLayoutState.image){toast('Upload a layout plan first',false);return;}
+async function fireAddLayoutMarker(ev){
+  if(!(fireLayoutState.image_url||fireLayoutState.image)){toast('Upload a layout plan first',false);return;}
   var equipId=document.getElementById('fire-layout-equipment-select')?.value||'';
   if(!equipId){toast('Select equipment to place on the plan',false);return;}
   var rect=ev.currentTarget.getBoundingClientRect();
@@ -34220,7 +34269,7 @@ function fireAddLayoutMarker(ev){
   var existing=(fireLayoutState.markers||[]).find(function(m){return m.equipment_id===equipId;});
   if(existing){existing.x=Number(x.toFixed(2));existing.y=Number(y.toFixed(2));}
   else fireLayoutState.markers.push({id:'m'+Date.now(),equipment_id:equipId,x:Number(x.toFixed(2)),y:Number(y.toFixed(2))});
-  fireSaveLayoutState();fireRenderLayoutMarkers();fireSelectLayoutMarker(existing?existing.id:fireLayoutState.markers[fireLayoutState.markers.length-1].id);
+  await fireSaveLayoutState();fireRenderLayoutMarkers();fireSelectLayoutMarker(existing?existing.id:fireLayoutState.markers[fireLayoutState.markers.length-1].id);
 }
 function fireSelectLayoutMarker(id){
   fireLayoutSelectedMarkerId=id;
@@ -34243,16 +34292,15 @@ function fireRenderLayoutDetails(marker){
     +'<tr><td style="padding:6px;color:var(--text2)">Status</td><td style="padding:6px">'+fireEquipStatusBadge(e.status)+'</td></tr>'
     +'</tbody></table><div style="display:flex;gap:8px;margin-top:12px"><button class="btn btn-sm" onclick="fireShowEquipForm(\''+escH(e.id||'')+'\')"><i class="ti ti-edit"></i>Edit equipment</button><button class="btn btn-sm" style="color:var(--red)" onclick="fireRemoveLayoutMarker()"><i class="ti ti-trash"></i>Remove marker</button></div>';
 }
-function fireRemoveLayoutMarker(){
+async function fireRemoveLayoutMarker(){
   if(!fireLayoutSelectedMarkerId)return;
   fireLayoutState.markers=(fireLayoutState.markers||[]).filter(function(m){return m.id!==fireLayoutSelectedMarkerId;});
-  fireLayoutSelectedMarkerId=null;fireSaveLayoutState();fireRenderLayoutMarkers();fireRenderLayoutDetails(null);
+  fireLayoutSelectedMarkerId=null;await fireSaveLayoutState();fireRenderLayoutMarkers();fireRenderLayoutDetails(null);
 }
 async function fireClearLayout(){
   if(!(await appConfirmAction({title:'Clear layout plan',message:'Remove the uploaded layout and all positioned fire equipment markers?',confirmText:'Clear layout',cancelText:'Keep layout',variant:'danger'})))return;
-  fireLayoutState={image:null,markers:[]};fireLayoutSelectedMarkerId=null;fireSaveLayoutState();fireRenderLayout();
+  fireLayoutState=Object.assign(fireLayoutEmptyState(),{id:fireLayoutState.id});await fireSaveLayoutState();fireRenderLayout();
 }
-// ── Dashboard/Overview ────────────────────────────────────────────
 async function fireRenderDashboard() {
   var el = document.getElementById('fire-overview-content');
   if (!el) return;
@@ -45545,7 +45593,7 @@ I can help you:<br>
     </div>
     <div style="display:grid;grid-template-columns:minmax(260px,1fr) 300px;gap:14px;margin-top:14px">
       <div class="form-group" style="margin:0"><label class="form-label">Equipment to position</label><select id="fire-layout-equipment-select"><option value="">Select equipment to place...</option></select></div>
-      <div style="font-size:12px;color:var(--text2);align-self:end">Green = OK, amber = service due soon, red = service overdue.</div>
+      <div style="font-size:12px;color:var(--text2);align-self:end">Green = OK, amber = service due soon, red = service overdue.<div id="fire-layout-sync-status" style="margin-top:5px"></div></div>
     </div>
   </div>
   <div style="display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:14px;align-items:start">
