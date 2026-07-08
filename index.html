@@ -33949,6 +33949,7 @@ var fireCurrentTab = 'certs';
 var fireLayoutState = { image:null, markers:[] };
 var fireLayoutPlans = [];
 var fireLayoutCreatingNew = false;
+var fireLayoutEditorOpen = false;
 var fireLayoutSelectedMarkerId = null;
 var fireLayoutMoveMarkerId = null;
 
@@ -34183,13 +34184,17 @@ function fireLayoutLocalFallback(){
   catch(e){return fireLayoutEmptyState();}
 }
 async function fireLoadLayoutState(){
-  if(fireLayoutCreatingNew)return;
+  if(fireLayoutCreatingNew){
+    fireLayoutPlans=await api('/fire_layouts?company_id=eq.'+fireLayoutCompanyId()+'&layout_type=eq.fire&select=*&order=title.asc').catch(function(){return fireLayoutPlans||[];})||[];
+    return;
+  }
   try{
     var rows=await api('/fire_layouts?company_id=eq.'+fireLayoutCompanyId()+'&layout_type=eq.fire&select=*&order=title.asc');
     fireLayoutPlans=rows||[];
     var selectedId=document.getElementById('fire-layout-plan-select')?.value||localStorage.getItem(fireLayoutLocalKey()+'_selected')||'';
-    var picked=(fireLayoutPlans||[]).find(function(x){return x.id===selectedId;})||fireLayoutPlans[0];
+    var picked=fireLayoutEditorOpen?(fireLayoutPlans||[]).find(function(x){return x.id===selectedId;}):null;
     if(picked){fireLayoutState=fireLayoutNormalise(picked);return;}
+    if(!fireLayoutEditorOpen){fireLayoutState=fireLayoutEmptyState();return;}
     var local=fireLayoutLocalFallback();
     fireLayoutState=fireLayoutNormalise(local);
   }catch(e){
@@ -34276,6 +34281,11 @@ async function fireCreateLayoutEquipment(type,x,y){
 }
 async function fireRenderLayout(){
   await fireLoadLayoutState();
+  var listView=document.getElementById('fire-layout-list-view'), editor=document.getElementById('fire-layout-editor');
+  if(listView)listView.style.display=fireLayoutEditorOpen?'none':'block';
+  if(editor)editor.style.display=fireLayoutEditorOpen?'block':'none';
+  fireRenderLayoutPlanList();
+  if(!fireLayoutEditorOpen)return;
   var planSel=document.getElementById('fire-layout-plan-select');
   if(planSel){
     planSel.innerHTML='<option value="">New unsaved plan</option>'+(fireLayoutPlans||[]).map(function(p){return '<option value="'+escH(p.id)+'">'+escH(p.title||'Untitled plan')+'</option>';}).join('');
@@ -34302,21 +34312,21 @@ async function fireRenderLayout(){
   if(empty)empty.style.display=(fireLayoutState.image_url||fireLayoutState.image)?'none':'flex';
   var st=document.getElementById('fire-layout-sync-status');
   if(st&&!st.innerHTML)st.innerHTML=fireLayoutState.id?'<span style="color:var(--green);font-weight:700">Shared layout loaded</span>':'<span style="color:var(--text2)">No shared layout saved yet.</span>';
-  fireRenderLayoutPlanList();
   fireRenderLayoutMarkers();fireRenderLayoutDetails(null);
 }
 function fireRenderLayoutPlanList(){
   var el=document.getElementById('fire-layout-plan-list');if(!el)return;
-  if(!fireLayoutPlans.length){el.innerHTML='<div style="padding:14px;color:var(--text2);font-size:13px;text-align:center;border:1px dashed var(--border);border-radius:8px">No saved layout plans yet. Add a title and click Save plan.</div>';return;}
-  el.innerHTML='<div style="overflow-x:auto"><table style="width:100%;font-size:12px;border-collapse:collapse"><thead><tr style="background:#f8fafc"><th style="text-align:left;padding:8px">Plan title</th><th style="text-align:left;padding:8px">Markers</th><th style="text-align:left;padding:8px">Plan image</th><th style="text-align:right;padding:8px">Open</th></tr></thead><tbody>'
+  if(!fireLayoutPlans.length){el.innerHTML='<div style="padding:28px;color:var(--text2);font-size:13px;text-align:center;border:1px dashed var(--border);border-radius:8px"><i class="ti ti-map-pin" style="font-size:32px;opacity:.35"></i><div style="margin-top:8px;font-weight:800;color:var(--text)">No saved layout plans yet</div><div style="margin-top:4px">Click New plan, upload a floor/site plan, place the equipment and save it here.</div></div>';return;}
+  el.innerHTML='<div style="overflow-x:auto"><table style="width:100%;font-size:12px;border-collapse:collapse"><thead><tr style="background:#f8fafc"><th style="text-align:left;padding:10px">Plan title</th><th style="text-align:left;padding:10px">Markers</th><th style="text-align:left;padding:10px">Plan image</th><th style="text-align:left;padding:10px">Updated</th><th style="text-align:right;padding:10px">Action</th></tr></thead><tbody>'
     +fireLayoutPlans.map(function(p){
       var active=p.id===fireLayoutState.id;
       var markers=Array.isArray(p.markers)?p.markers.length:0;
       return '<tr style="border-top:1px solid var(--border);background:'+(active?'#ECFDF5':'#fff')+'">'
-        +'<td style="padding:8px;font-weight:800">'+escH(p.title||'Untitled plan')+(active?' <span class="badge badge-green">Open</span>':'')+'</td>'
-        +'<td style="padding:8px">'+markers+'</td>'
-        +'<td style="padding:8px">'+(p.image_url?'<span class="badge badge-green">Uploaded</span>':'<span class="badge badge-grey">No image</span>')+'</td>'
-        +'<td style="padding:8px;text-align:right"><button class="btn btn-sm" data-id="'+escH(p.id)+'" onclick="fireSelectLayoutPlan(this.dataset.id)"><i class="ti ti-folder-open"></i>Open</button></td>'
+        +'<td style="padding:10px;font-weight:800">'+escH(p.title||'Untitled plan')+(active&&fireLayoutEditorOpen?' <span class="badge badge-green">Open</span>':'')+'</td>'
+        +'<td style="padding:10px">'+markers+'</td>'
+        +'<td style="padding:10px">'+(p.image_url?'<span class="badge badge-green">Uploaded</span>':'<span class="badge badge-grey">No image</span>')+'</td>'
+        +'<td style="padding:10px">'+(p.updated_at?new Date(p.updated_at).toLocaleString():'--')+'</td>'
+        +'<td style="padding:10px;text-align:right"><button class="btn btn-sm btn-primary" data-id="'+escH(p.id)+'" onclick="fireSelectLayoutPlan(this.dataset.id)"><i class="ti ti-folder-open"></i>Open plan</button></td>'
         +'</tr>';
     }).join('')+'</tbody></table></div>';
 }
@@ -34350,6 +34360,7 @@ async function fireUploadLayout(input){
 }
 function fireNewLayoutPlan(){
   fireLayoutCreatingNew=true;
+  fireLayoutEditorOpen=true;
   fireLayoutState=fireLayoutEmptyState();
   fireLayoutSelectedMarkerId=null;
   fireLayoutMoveMarkerId=null;
@@ -34357,8 +34368,16 @@ function fireNewLayoutPlan(){
   var st=document.getElementById('fire-layout-sync-status');if(st)st.innerHTML='<span style="color:var(--text2)">New plan not saved yet.</span>';
   fireRenderLayout();
 }
+function fireBackToLayoutList(){
+  fireLayoutEditorOpen=false;
+  fireLayoutCreatingNew=false;
+  fireLayoutSelectedMarkerId=null;
+  fireLayoutMoveMarkerId=null;
+  fireRenderLayout();
+}
 async function fireSelectLayoutPlan(id){
   fireLayoutCreatingNew=!id;
+  fireLayoutEditorOpen=!!id||fireLayoutCreatingNew;
   if(!id){fireLayoutState=fireLayoutEmptyState();fireLayoutSelectedMarkerId=null;}
   var sel=document.getElementById('fire-layout-plan-select');if(sel)sel.value=id||'';
   if(id)localStorage.setItem(fireLayoutLocalKey()+'_selected',id);
@@ -34368,6 +34387,7 @@ async function fireSelectLayoutPlan(id){
 async function fireSaveLayoutPlan(){
   await fireSaveLayoutState();
   fireLayoutCreatingNew=false;
+  fireLayoutEditorOpen=true;
   await fireLoadLayoutState();
   await fireRenderLayout();
   toast('Layout plan saved');
@@ -45733,6 +45753,17 @@ I can help you:<br>
 
 <!-- ── TAB: Site Layout / Fire Map ─────────────────── -->
 <div id="fire-pane-layout" style="display:none">
+  <div id="fire-layout-list-view" class="card" style="margin-bottom:14px">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;margin-bottom:14px">
+      <div>
+        <div class="card-title" style="margin-bottom:4px">Site Layout / Fire Equipment Map</div>
+        <div style="font-size:12px;color:var(--text2)">Saved building plans and positioned fire equipment. Open a plan to view or amend the map.</div>
+      </div>
+      <button class="btn btn-primary" onclick="fireNewLayoutPlan()"><i class="ti ti-plus"></i>New plan</button>
+    </div>
+    <div id="fire-layout-plan-list"></div>
+  </div>
+  <div id="fire-layout-editor" style="display:none">
   <div class="card" style="margin-bottom:14px">
     <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap">
       <div>
@@ -45740,6 +45771,7 @@ I can help you:<br>
         <div style="font-size:12px;color:var(--text2)">Upload a floor or site plan, select equipment, then click on the plan to position it.</div>
       </div>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn" onclick="fireBackToLayoutList()"><i class="ti ti-arrow-left"></i>Back to plans</button>
         <button class="btn" onclick="fireNewLayoutPlan()"><i class="ti ti-plus"></i>New plan</button>
         <button class="btn btn-primary" onclick="fireSaveLayoutPlan()"><i class="ti ti-device-floppy"></i>Save plan</button>
         <label class="btn" style="cursor:pointer"><i class="ti ti-upload"></i>Upload plan<input type="file" accept="image/*" onchange="fireUploadLayout(this)" style="display:none"/></label>
@@ -45769,10 +45801,7 @@ I can help you:<br>
 </select></div>
       <div style="font-size:12px;color:var(--text2);align-self:end">Green = OK, amber = service due soon, red = service overdue.<div id="fire-layout-sync-status" style="margin-top:5px"></div></div>
     </div>
-    <div style="margin-top:14px">
-      <div style="font-weight:800;margin-bottom:8px">Saved layout plans</div>
-      <div id="fire-layout-plan-list"></div>
-    </div>
+
   </div>
   <div style="display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:14px;align-items:start">
     <div class="card" style="padding:10px;overflow:hidden">
@@ -45786,6 +45815,7 @@ I can help you:<br>
       <div class="card-title">Selected Equipment</div>
       <div id="fire-layout-details"></div>
     </div>
+  </div>
   </div>
 </div>
 <!-- ── TAB: Overview/Dashboard ───────────────────── -->
