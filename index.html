@@ -45645,7 +45645,22 @@ I can help you:<br>
       </div>
     </div>
     <div style="display:grid;grid-template-columns:minmax(260px,1fr) 300px;gap:14px;margin-top:14px">
-      <div class="form-group" style="margin:0"><label class="form-label">Equipment to position</label><select id="fire-layout-equipment-select"><option value="">Select equipment to place...</option></select></div>
+      <div class="form-group" style="margin:0"><label class="form-label">Equipment to position</label><select id="fire-layout-equipment-select">
+  <option value="">Select equipment to place...</option>
+  <optgroup label="Create and place a standard item">
+    <option value="quick:fire_extinguisher">+ Fire extinguisher</option>
+    <option value="quick:fire_hose_reel">+ Fire hose reel</option>
+    <option value="quick:fire_alarm_panel">+ Fire alarm panel</option>
+    <option value="quick:smoke_detector">+ Smoke detector</option>
+    <option value="quick:heat_detector">+ Heat detector</option>
+    <option value="quick:sprinkler_system">+ Sprinkler system</option>
+    <option value="quick:emergency_lighting">+ Emergency lighting</option>
+    <option value="quick:fire_door">+ Fire door</option>
+    <option value="quick:fire_blanket">+ Fire blanket</option>
+    <option value="quick:evacuation_sign">+ Evacuation sign</option>
+    <option value="quick:fire_pump">+ Fire pump</option>
+  </optgroup>
+</select></div>
       <div style="font-size:12px;color:var(--text2);align-self:end">Green = OK, amber = service due soon, red = service overdue.<div id="fire-layout-sync-status" style="margin-top:5px"></div></div>
     </div>
   </div>
