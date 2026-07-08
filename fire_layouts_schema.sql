@@ -66,8 +66,9 @@ on conflict (id) do update set
   file_size_limit = excluded.file_size_limit,
   allowed_mime_types = excluded.allowed_mime_types;
 
--- Company folder rule: object path begins with the user's company_id, e.g. <company_id>/fire-layout.png
--- SEPHS admin may manage all layout files.
+-- Storage object permissions.
+-- The fire_layouts table still controls which company layout a user can create/update.
+-- The bucket itself allows authenticated users to upload the image file used by that layout.
 drop policy if exists "layouts_read" on storage.objects;
 create policy "layouts_read"
 on storage.objects for select
@@ -78,14 +79,7 @@ create policy "layouts_company_upload"
 on storage.objects for insert
 with check (
   bucket_id = 'layouts'
-  and exists (
-    select 1 from public.profiles p
-    where p.id = auth.uid()
-      and (
-        p.role = 'sephs_admin'
-        or split_part(storage.objects.name, '/', 1) = p.company_id::text
-      )
-  )
+  and auth.role() = 'authenticated'
 );
 
 drop policy if exists "layouts_company_update" on storage.objects;
@@ -93,25 +87,11 @@ create policy "layouts_company_update"
 on storage.objects for update
 using (
   bucket_id = 'layouts'
-  and exists (
-    select 1 from public.profiles p
-    where p.id = auth.uid()
-      and (
-        p.role = 'sephs_admin'
-        or split_part(storage.objects.name, '/', 1) = p.company_id::text
-      )
-  )
+  and auth.role() = 'authenticated'
 )
 with check (
   bucket_id = 'layouts'
-  and exists (
-    select 1 from public.profiles p
-    where p.id = auth.uid()
-      and (
-        p.role = 'sephs_admin'
-        or split_part(storage.objects.name, '/', 1) = p.company_id::text
-      )
-  )
+  and auth.role() = 'authenticated'
 );
 
 drop policy if exists "layouts_company_delete" on storage.objects;
@@ -119,14 +99,7 @@ create policy "layouts_company_delete"
 on storage.objects for delete
 using (
   bucket_id = 'layouts'
-  and exists (
-    select 1 from public.profiles p
-    where p.id = auth.uid()
-      and (
-        p.role = 'sephs_admin'
-        or split_part(storage.objects.name, '/', 1) = p.company_id::text
-      )
-  )
+  and auth.role() = 'authenticated'
 );
 
 notify pgrst, 'reload schema';
