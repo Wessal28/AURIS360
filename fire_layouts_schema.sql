@@ -21,6 +21,14 @@ create table if not exists public.fire_layouts (
 create index if not exists idx_fire_layouts_company_type
   on public.fire_layouts(company_id, layout_type);
 
+-- Older versions allowed only one fire layout per company.
+-- Multiple buildings/floors need multiple plans, so remove that constraint if present.
+alter table public.fire_layouts
+  drop constraint if exists fire_layouts_company_id_layout_type_key;
+
+create index if not exists idx_fire_layouts_company_type_title
+  on public.fire_layouts(company_id, layout_type, title);
+
 alter table public.fire_layouts enable row level security;
 
 drop policy if exists "fire_layouts_company_read" on public.fire_layouts;

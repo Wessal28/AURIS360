@@ -33947,6 +33947,8 @@ var fireEditInspId = null;
 var fireEditEquipId = null;
 var fireCurrentTab = 'certs';
 var fireLayoutState = { image:null, markers:[] };
+var fireLayoutPlans = [];
+var fireLayoutCreatingNew = false;
 var fireLayoutSelectedMarkerId = null;
 
 // ── Load ─────────────────────────────────────────────────────────
@@ -34168,11 +34170,11 @@ function fireRenderEquipStats() {
 function fireLayoutCompanyId(){
   return (isSA()&&sephsCompanyContext)?sephsCompanyContext:(prof?.company_id||'default');
 }
-function fireLayoutEmptyState(){return {id:null,image:null,image_url:null,image_path:null,markers:[]};}
+function fireLayoutEmptyState(){return {id:null,title:'New fire layout',image:null,image_url:null,image_path:null,markers:[]};}
 function fireLayoutNormalise(row){
   if(!row)return fireLayoutEmptyState();
   var markers=Array.isArray(row.markers)?row.markers:[];
-  return {id:row.id||null,image:row.image_url||row.image||null,image_url:row.image_url||row.image||null,image_path:row.image_path||null,markers:markers};
+  return {id:row.id||null,title:row.title||'Fire equipment layout',image:row.image_url||row.image||null,image_url:row.image_url||row.image||null,image_path:row.image_path||null,markers:markers};
 }
 function fireLayoutLocalKey(){return 'auris360_fire_layout_'+fireLayoutCompanyId();}
 function fireLayoutLocalFallback(){
@@ -34180,9 +34182,13 @@ function fireLayoutLocalFallback(){
   catch(e){return fireLayoutEmptyState();}
 }
 async function fireLoadLayoutState(){
+  if(fireLayoutCreatingNew)return;
   try{
-    var rows=await api('/fire_layouts?company_id=eq.'+fireLayoutCompanyId()+'&layout_type=eq.fire&select=*&limit=1');
-    if(rows&&rows[0]){fireLayoutState=fireLayoutNormalise(rows[0]);return;}
+    var rows=await api('/fire_layouts?company_id=eq.'+fireLayoutCompanyId()+'&layout_type=eq.fire&select=*&order=title.asc');
+    fireLayoutPlans=rows||[];
+    var selectedId=document.getElementById('fire-layout-plan-select')?.value||localStorage.getItem(fireLayoutLocalKey()+'_selected')||'';
+    var picked=(fireLayoutPlans||[]).find(function(x){return x.id===selectedId;})||fireLayoutPlans[0];
+    if(picked){fireLayoutState=fireLayoutNormalise(picked);return;}
     var local=fireLayoutLocalFallback();
     fireLayoutState=fireLayoutNormalise(local);
   }catch(e){
@@ -34192,8 +34198,11 @@ async function fireLoadLayoutState(){
   }
 }
 async function fireSaveLayoutState(){
+  fireLayoutCreatingNew=false;
   var cid=fireLayoutCompanyId();
-  var body={company_id:cid,layout_type:'fire',title:'Fire equipment layout',image_url:fireLayoutState.image_url||fireLayoutState.image||null,image_path:fireLayoutState.image_path||null,markers:fireLayoutState.markers||[],updated_at:new Date().toISOString()};
+  var title=(document.getElementById('fire-layout-title')?.value||fireLayoutState.title||'Fire equipment layout').trim()||'Fire equipment layout';
+  fireLayoutState.title=title;
+  var body={company_id:cid,layout_type:'fire',title:title,image_url:fireLayoutState.image_url||fireLayoutState.image||null,image_path:fireLayoutState.image_path||null,markers:fireLayoutState.markers||[],updated_at:new Date().toISOString()};
   try{
     if(fireLayoutState.id){await api('/fire_layouts?id=eq.'+fireLayoutState.id,{m:'PATCH',p:'return=minimal',b:body});}
     else{
@@ -34202,6 +34211,7 @@ async function fireSaveLayoutState(){
       if(res&&res[0])fireLayoutState=fireLayoutNormalise(res[0]);
     }
     try{localStorage.removeItem(fireLayoutLocalKey());}catch(_){ }
+    if(fireLayoutState.id)localStorage.setItem(fireLayoutLocalKey()+'_selected',fireLayoutState.id);
     var st=document.getElementById('fire-layout-sync-status');
     if(st)st.innerHTML='<span style="color:var(--green);font-weight:700">Shared layout saved</span>';
     return true;
@@ -34215,6 +34225,17 @@ async function fireSaveLayoutState(){
 }
 function fireEquipIcon(type){
   return {fire_extinguisher:'FE',fire_hose_reel:'HR',fire_alarm_panel:'AL',smoke_detector:'SD',heat_detector:'HD',sprinkler_system:'SP',emergency_lighting:'EL',fire_door:'FD',fire_blanket:'FB',evacuation_sign:'EX',fire_pump:'FP',other:'EQ'}[type||'']||'EQ';
+}
+function fireEquipIconHtml(type){
+  var map={fire_extinguisher:'ti-fire-extinguisher',fire_hose_reel:'ti-lifebuoy',fire_alarm_panel:'ti-bell-ringing',smoke_detector:'ti-smoke',heat_detector:'ti-temperature',sprinkler_system:'ti-droplet',emergency_lighting:'ti-bulb',fire_door:'ti-door',fire_blanket:'ti-shield',evacuation_sign:'ti-run',fire_pump:'ti-engine',other:'ti-map-pin'};
+  return '<i class="ti '+(map[type||'']||'ti-map-pin')+'" style="font-size:20px;line-height:1"></i>';
+}
+function fireExtinguisherTypeFromNotes(notes){
+  var m=String(notes||'').match(/Extinguisher type:\s*([^\n]+)/i);
+  return m?m[1].trim():'';
+}
+function fireNotesWithoutExtType(notes){
+  return String(notes||'').replace(/\n?Extinguisher type:\s*[^\n]+/i,'').trim();
 }
 function fireLayoutStandardItems(){
   return [
@@ -34251,6 +34272,13 @@ async function fireCreateLayoutEquipment(type,x,y){
 }
 async function fireRenderLayout(){
   await fireLoadLayoutState();
+  var planSel=document.getElementById('fire-layout-plan-select');
+  if(planSel){
+    planSel.innerHTML='<option value="">New unsaved plan</option>'+(fireLayoutPlans||[]).map(function(p){return '<option value="'+escH(p.id)+'">'+escH(p.title||'Untitled plan')+'</option>';}).join('');
+    planSel.value=fireLayoutState.id||'';
+  }
+  var title=document.getElementById('fire-layout-title');
+  if(title)title.value=fireLayoutState.title||'Fire equipment layout';
   var sel=document.getElementById('fire-layout-equipment-select');
   if(sel){
     var existing=(fireAllEquip||[]).map(function(e){
@@ -34278,7 +34306,7 @@ function fireRenderLayoutMarkers(){
     var overdue=e.next_service_date&&new Date(e.next_service_date)<new Date();
     var due=e.next_service_date&&new Date(e.next_service_date)<=new Date(Date.now()+30*86400000);
     var color=overdue?'#DC2626':due?'#EF9F27':'#1D9E75';
-    return '<button type="button" data-mid="'+escH(m.id)+'" onclick="event.stopPropagation();fireSelectLayoutMarker(this.dataset.mid)" title="'+escH(e.description||e.location||'Fire equipment')+'" style="position:absolute;left:'+m.x+'%;top:'+m.y+'%;transform:translate(-50%,-50%);min-width:34px;height:34px;border-radius:999px;border:2px solid #fff;background:'+color+';color:#fff;box-shadow:0 3px 12px rgba(0,0,0,.28);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:900;cursor:pointer;z-index:2;padding:0 6px;pointer-events:auto">'+escH(fireEquipIcon(e.equipment_type))+'</button>';
+    return '<button type="button" data-mid="'+escH(m.id)+'" onclick="event.stopPropagation();fireSelectLayoutMarker(this.dataset.mid)" title="'+escH(e.description||e.location||'Fire equipment')+'" style="position:absolute;left:'+m.x+'%;top:'+m.y+'%;transform:translate(-50%,-50%);width:38px;height:38px;border-radius:999px;border:2px solid #fff;background:'+color+';color:#fff;box-shadow:0 3px 12px rgba(0,0,0,.28);display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:2;padding:0;pointer-events:auto">'+fireEquipIconHtml(e.equipment_type)+'</button>';
   }).join('');
 }
 async function fireUploadLayout(input){
@@ -34298,6 +34326,28 @@ async function fireUploadLayout(input){
   }catch(e){
     toast('Layout upload failed: '+(e.message||'Check layouts bucket / SQL setup'),false);
   }
+}
+function fireNewLayoutPlan(){
+  fireLayoutCreatingNew=true;
+  fireLayoutState=fireLayoutEmptyState();
+  fireLayoutSelectedMarkerId=null;
+  try{localStorage.removeItem(fireLayoutLocalKey()+'_selected');}catch(_){}
+  var st=document.getElementById('fire-layout-sync-status');if(st)st.innerHTML='<span style="color:var(--text2)">New plan not saved yet.</span>';
+  fireRenderLayout();
+}
+async function fireSelectLayoutPlan(id){
+  fireLayoutCreatingNew=!id;
+  if(!id){fireLayoutState=fireLayoutEmptyState();fireLayoutSelectedMarkerId=null;}
+  if(id)localStorage.setItem(fireLayoutLocalKey()+'_selected',id);
+  else localStorage.removeItem(fireLayoutLocalKey()+'_selected');
+  await fireRenderLayout();
+}
+async function fireSaveLayoutPlan(){
+  await fireSaveLayoutState();
+  fireLayoutCreatingNew=false;
+  await fireLoadLayoutState();
+  await fireRenderLayout();
+  toast('Layout plan saved');
 }
 async function fireAddLayoutMarker(ev){
   if(!(fireLayoutState.image_url||fireLayoutState.image)){toast('Upload a layout plan first',false);return;}
@@ -34336,9 +34386,11 @@ function fireRenderLayoutDetails(marker){
   var next=e.next_service_date?new Date(e.next_service_date).toLocaleDateString('en-GB'):'--';
   var last=e.last_service_date?new Date(e.last_service_date).toLocaleDateString('en-GB'):'--';
   var overdue=e.next_service_date&&new Date(e.next_service_date)<new Date();
-  el.innerHTML='<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px"><div style="min-width:34px;height:34px;border-radius:999px;background:#1D9E75;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:900">'+escH(fireEquipIcon(e.equipment_type))+'</div><div><div style="font-weight:800">'+escH(e.description||fireEquipTypeLabel(e.equipment_type)||'Fire equipment')+'</div><div style="font-size:12px;color:var(--text2)">'+escH(e.location||'No location recorded')+'</div></div></div>'
+  var ext=fireExtinguisherTypeFromNotes(e.notes);
+  el.innerHTML='<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px"><div style="min-width:38px;height:38px;border-radius:999px;background:#1D9E75;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:900">'+fireEquipIconHtml(e.equipment_type)+'</div><div><div style="font-weight:800">'+escH(e.description||fireEquipTypeLabel(e.equipment_type)||'Fire equipment')+'</div><div style="font-size:12px;color:var(--text2)">'+escH(e.location||'No location recorded')+'</div></div></div>'
     +'<table style="width:100%;font-size:12px;border-collapse:collapse"><tbody>'
     +'<tr><td style="padding:6px;color:var(--text2)">Type</td><td style="padding:6px;font-weight:700">'+escH(fireEquipTypeLabel(e.equipment_type))+'</td></tr>'
+    +(e.equipment_type==='fire_extinguisher'?'<tr><td style="padding:6px;color:var(--text2)">Extinguisher agent</td><td style="padding:6px;font-weight:700">'+escH(ext||'--')+'</td></tr>':'')
     +'<tr><td style="padding:6px;color:var(--text2)">Serial / tag</td><td style="padding:6px;font-family:monospace">'+escH(e.serial_number||'--')+'</td></tr>'
     +'<tr><td style="padding:6px;color:var(--text2)">Last service</td><td style="padding:6px">'+last+'</td></tr>'
     +'<tr><td style="padding:6px;color:var(--text2)">Next service</td><td style="padding:6px;font-weight:800;color:'+(overdue?'var(--red)':'var(--green)')+'">'+next+(overdue?' overdue':'')+'</td></tr>'
@@ -34689,6 +34741,7 @@ function fireShowEquipForm(id) {
   document.getElementById('fe-make').value = '';
   document.getElementById('fe-serial').value = '';
   document.getElementById('fe-capacity').value = '';
+  if(document.getElementById('fe-ext-agent')) document.getElementById('fe-ext-agent').value = '';
   document.getElementById('fe-last-service').value = '';
   document.getElementById('fe-next-service').value = '';
   document.getElementById('fe-notes').value = '';
@@ -34704,9 +34757,10 @@ function fireShowEquipForm(id) {
     document.getElementById('fe-make').value         = e.make_model||'';
     document.getElementById('fe-serial').value       = e.serial_number||'';
     document.getElementById('fe-capacity').value     = e.capacity||'';
+    if(document.getElementById('fe-ext-agent')) document.getElementById('fe-ext-agent').value = fireExtinguisherTypeFromNotes(e.notes)||'';
     document.getElementById('fe-last-service').value = e.last_service_date||'';
     document.getElementById('fe-next-service').value = e.next_service_date||'';
-    document.getElementById('fe-notes').value        = e.notes||'';
+    document.getElementById('fe-notes').value        = fireNotesWithoutExtType(e.notes)||'';
     document.getElementById('fe-cert-id').value      = e.certificate_id||'';
   }
   modal.style.display = 'flex';
@@ -34719,6 +34773,11 @@ async function fireSaveEquip() {
   if (!loc)  { toast('Location is required', false); return; }
 
   var cid = (isSA() && sephsCompanyContext) ? sephsCompanyContext : prof.company_id;
+  var rawNotes = document.getElementById('fe-notes').value.trim();
+  var extAgent = document.getElementById('fe-ext-agent')?.value||'';
+  var cleanNotes = fireNotesWithoutExtType(rawNotes);
+  var finalNotes = cleanNotes;
+  if(type==='fire_extinguisher' && extAgent) finalNotes = (cleanNotes?cleanNotes+'\n':'')+'Extinguisher type: '+extAgent;
   var body = {
     company_id:       cid,
     equipment_type:   type,
@@ -34731,7 +34790,7 @@ async function fireSaveEquip() {
     last_service_date: document.getElementById('fe-last-service').value||null,
     next_service_date: document.getElementById('fe-next-service').value||null,
     certificate_id:   document.getElementById('fe-cert-id').value||null,
-    notes:            document.getElementById('fe-notes').value.trim()||null,
+    notes:            finalNotes||null,
     updated_at:       new Date().toISOString()
   };
 
@@ -45640,9 +45699,15 @@ I can help you:<br>
         <div style="font-size:12px;color:var(--text2)">Upload a floor or site plan, select equipment, then click on the plan to position it.</div>
       </div>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn" onclick="fireNewLayoutPlan()"><i class="ti ti-plus"></i>New plan</button>
+        <button class="btn btn-primary" onclick="fireSaveLayoutPlan()"><i class="ti ti-device-floppy"></i>Save plan</button>
         <label class="btn" style="cursor:pointer"><i class="ti ti-upload"></i>Upload plan<input type="file" accept="image/*" onchange="fireUploadLayout(this)" style="display:none"/></label>
         <button class="btn" onclick="fireClearLayout()" style="color:var(--red)"><i class="ti ti-trash"></i>Clear layout</button>
       </div>
+    </div>
+    <div style="display:grid;grid-template-columns:minmax(220px,1fr) minmax(220px,1fr);gap:14px;margin-top:14px">
+      <div class="form-group" style="margin:0"><label class="form-label">Saved plan</label><select id="fire-layout-plan-select" onchange="fireSelectLayoutPlan(this.value)"><option value="">New unsaved plan</option></select></div>
+      <div class="form-group" style="margin:0"><label class="form-label">Plan title</label><input id="fire-layout-title" placeholder="e.g. Main building - Ground floor"/></div>
     </div>
     <div style="display:grid;grid-template-columns:minmax(260px,1fr) 300px;gap:14px;margin-top:14px">
       <div class="form-group" style="margin:0"><label class="form-label">Equipment to position</label><select id="fire-layout-equipment-select">
@@ -45861,6 +45926,20 @@ I can help you:<br>
     </div>
     <div class="form-row">
       <div class="form-group"><label class="form-label">Capacity / Rating</label><input type="text" id="fe-capacity" placeholder="e.g. 5kg, 9L, 6A/34B"/></div>
+      <div class="form-group"><label class="form-label">Extinguisher type / agent</label>
+        <select id="fe-ext-agent">
+          <option value="">Not applicable / select...</option>
+          <option value="CO2">CO2</option>
+          <option value="Dry powder">Dry powder</option>
+          <option value="Foam">Foam</option>
+          <option value="Water">Water</option>
+          <option value="Wet chemical">Wet chemical</option>
+          <option value="Clean agent">Clean agent</option>
+          <option value="Other">Other</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-row">
       <div class="form-group"><label class="form-label">Related Certificate</label>
         <select id="fe-cert-id"><option value="">-- None --</option></select>
       </div>
