@@ -26426,7 +26426,7 @@ async function bulletinLoad(){
         +'<td style="padding:10px">'+escH(x.author||'-')+'</td>'
         +'<td style="padding:10px;text-align:center"><span style="background:'+stColor+'15;color:'+stColor+';padding:3px 8px;border-radius:99px;font-size:10px;font-weight:800;text-transform:capitalize">'+escH(x.status||'published')+'</span></td>'
         +'<td style="padding:10px;text-align:center;white-space:nowrap">'
-        +(x.file_url?'<a class="btn btn-sm" href="'+escH(x.file_url)+'" target="_blank" onclick="event.stopPropagation()" title="Open bulletin file"><i class="ti ti-external-link"></i></a> ':'')
+        +(x.file_url?'<button class="btn btn-sm" onclick="event.stopPropagation();bulletinPreview(\''+x.id+'\')" title="Preview bulletin file and record opening"><i class="ti ti-eye-check"></i></button> ':'')
         +'<button class="btn btn-sm" onclick="event.stopPropagation();bulletinEdit(\''+x.id+'\')" title="Open bulletin"><i class="ti ti-eye"></i></button></td>'
         +'</tr>';
     });
@@ -26460,6 +26460,23 @@ function bulletinNew(){
   document.getElementById('bullf-status').value='published';
   document.getElementById('bullf-issue-no').value='';
   bulletinShowForm();
+}
+
+function bulletinPreview(id){
+  var x=(bulletinAllData||[]).find(function(r){return r.id===id;});
+  if(!x){toast('Bulletin not found',false);return;}
+  if(!x.file_url){toast('No attachment linked to this bulletin',false);return;}
+  auditLogEvent('open','bulletins','Safety bulletin attachment opened',{bulletin_ref:x.bulletin_ref||null,title:x.title||null,file_name:x.file_name||null,file_url:x.file_url||null},{related_table:'safety_bulletins',related_id:x.id,company_id:x.company_id||ccid()});
+  dcOpenViewer({file_url:x.file_url,file_name:x.file_name||x.title||'Safety bulletin',file_mime:dcMimeFromName(x.file_name||x.file_url)});
+}
+function bulletinPreviewCurrent(){
+  var url=document.getElementById('bullf-file-url')?.value||'';
+  var name=document.getElementById('bullf-file-name')?.value||document.getElementById('bullf-title')?.value||'Safety bulletin';
+  if(!url){toast('No attachment URL to preview',false);return;}
+  if(bulletinEditId){
+    auditLogEvent('open','bulletins','Safety bulletin attachment opened',{bulletin_ref:document.getElementById('bull-form-ref')?.textContent||null,title:document.getElementById('bullf-title')?.value||null,file_name:name,file_url:url},{related_table:'safety_bulletins',related_id:bulletinEditId,company_id:ccid()});
+  }
+  dcOpenViewer({file_url:url,file_name:name,file_mime:dcMimeFromName(name||url)});
 }
 
 function bulletinEdit(id){
@@ -42111,6 +42128,7 @@ function fireEquipStatusBadge(s) {
 </select></div>
 <div class="form-group"><label class="form-label">File URL / attachment</label><input type="text" id="bullf-file-url" placeholder="https://..."/></div>
 <div class="form-group"><label class="form-label">File name</label><input type="text" id="bullf-file-name" placeholder="safety-bulletin-may2026.pdf"/></div>
+<button type="button" class="btn" style="width:100%;justify-content:center;margin-bottom:8px" onclick="bulletinPreviewCurrent()"><i class="ti ti-eye"></i>Preview attachment / record opening</button>
 <div class="form-group"><label class="form-label">Status</label><select id="bullf-status"><option value="published">Published</option><option value="draft">Draft</option><option value="archived">Archived</option></select></div>
 </div>
 </div>
