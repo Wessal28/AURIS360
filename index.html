@@ -34505,6 +34505,41 @@ function fireRenderLayoutMarkers(){
     return '<button type="button" data-mid="'+escH(m.id)+'" onclick="event.stopPropagation();fireSelectLayoutMarker(this.dataset.mid)" title="'+escH(e.description||e.location||'Fire equipment')+'" style="position:absolute;left:'+m.x+'%;top:'+m.y+'%;transform:translate(-50%,-50%);width:38px;height:38px;border-radius:999px;border:2px solid #fff;background:'+color+';color:#fff;box-shadow:0 3px 12px rgba(0,0,0,.28);display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:2;padding:0;pointer-events:auto">'+fireEquipIconHtml(e.equipment_type)+'</button>';
   }).join('');
 }
+function fireLayoutMarkerStatus(e){
+  var overdue=e&&e.next_service_date&&new Date(e.next_service_date)<new Date();
+  var due=e&&e.next_service_date&&new Date(e.next_service_date)<=new Date(Date.now()+30*86400000);
+  return overdue?{label:'Service overdue',color:'#DC2626'}:due?{label:'Service due soon',color:'#EF9F27'}:{label:'OK',color:'#1D9E75'};
+}
+function fireLayoutPrintHtml(){
+  var img=fireLayoutState.image_url||fireLayoutState.image||'';
+  var title=(document.getElementById('fire-layout-title')?.value||fireLayoutState.title||'Fire equipment layout').trim();
+  var markers=fireLayoutState.markers||[];
+  var markerHtml=markers.map(function(m,i){
+    var e=(fireAllEquip||[]).find(function(x){return x.id===m.equipment_id;})||{};
+    var st=fireLayoutMarkerStatus(e);
+    return '<div style="position:absolute;left:'+m.x+'%;top:'+m.y+'%;transform:translate(-50%,-50%);width:28px;height:28px;border-radius:999px;border:2px solid #fff;background:'+st.color+';color:#fff;box-shadow:0 2px 8px rgba(0,0,0,.35);display:flex;align-items:center;justify-content:center;font-size:8pt;font-weight:900">'+(i+1)+'</div>';
+  }).join('');
+  var legend=markers.map(function(m,i){
+    var e=(fireAllEquip||[]).find(function(x){return x.id===m.equipment_id;})||{};
+    var st=fireLayoutMarkerStatus(e);
+    var next=e.next_service_date?new Date(e.next_service_date).toLocaleDateString('en-GB'):'—';
+    var ext=fireExtinguisherTypeFromNotes(e.notes);
+    return '<tr><td>'+(i+1)+'</td><td>'+escH(e.description||fireEquipTypeLabel(e.equipment_type)||'Fire equipment')+'</td><td>'+escH(fireEquipTypeLabel(e.equipment_type))+'</td><td>'+escH(ext||'—')+'</td><td>'+escH(e.location||'—')+'</td><td>'+escH(next)+'</td><td><span style="display:inline-block;border-radius:12px;padding:2px 7px;background:'+st.color+';color:#fff;font-weight:700;font-size:7.5pt">'+st.label+'</span></td></tr>';
+  }).join('');
+  return '<style>@page{size:A4 landscape;margin:8mm}.report-page{max-width:297mm;padding:8mm}.fire-print-map{position:relative;border:1px solid #d1d5db;border-radius:6px;padding:4px;background:#fff;margin-bottom:10px}.fire-print-map img{display:block;width:100%;height:auto;max-height:145mm;object-fit:contain}table{width:100%;border-collapse:collapse;font-size:8pt}th,td{border:1px solid #d1d5db;padding:4px 5px;text-align:left;vertical-align:top}th{background:#f3f4f6;font-weight:800}</style>'
+    +'<div class="report-page">'
+    +aurisHeader('Fire Equipment Layout Plan',title,fireLayoutState.id||'DRAFT')
+    +(img?'<div class="fire-print-map"><img src="'+escH(img)+'" alt="Fire equipment layout"/>'+markerHtml+'</div>':'<div style="padding:30px;text-align:center;color:#6b7280;border:1px dashed #d1d5db">No layout image uploaded.</div>')
+    +'<div class="rpt-section"><div class="rpt-section-title">Equipment Legend</div><table><thead><tr><th style="width:32px">No.</th><th>Equipment</th><th>Type</th><th>Extinguisher agent</th><th>Location</th><th>Next service</th><th>Status</th></tr></thead><tbody>'
+    +(legend||'<tr><td colspan="7" style="text-align:center;color:#6b7280">No equipment positioned on this layout.</td></tr>')
+    +'</tbody></table></div>'
+    +aurisFooter('Fire Equipment Layout Plan')
+    +'</div>';
+}
+function firePrintLayoutPlan(){
+  if(!(fireLayoutState.image_url||fireLayoutState.image)){toast('Upload or open a layout plan before printing',false);return;}
+  aurisPrint(fireLayoutPrintHtml(),'Fire Layout - '+((document.getElementById('fire-layout-title')?.value||fireLayoutState.title||'Plan')));
+}
 async function fireUploadLayout(input){
   var file=input?.files?.[0];if(!file)return;
   if(!file.type.startsWith('image/')){toast('Please upload an image layout plan such as PNG or JPG',false);return;}
@@ -46010,6 +46045,7 @@ I can help you:<br>
         <button class="btn" onclick="fireBackToLayoutList()"><i class="ti ti-arrow-left"></i>Back to plans</button>
         <button class="btn" onclick="fireNewLayoutPlan()"><i class="ti ti-plus"></i>New plan</button>
         <button class="btn btn-primary" onclick="fireSaveLayoutPlan()"><i class="ti ti-device-floppy"></i>Save plan</button>
+        <button class="btn" onclick="firePrintLayoutPlan()"><i class="ti ti-printer"></i>Print layout</button>
         <label class="btn" style="cursor:pointer"><i class="ti ti-upload"></i>Upload plan<input type="file" accept="image/*" onchange="fireUploadLayout(this)" style="display:none"/></label>
         <button class="btn" onclick="fireClearLayout()" style="color:var(--red)"><i class="ti ti-trash"></i>Clear layout</button>
       </div>
