@@ -66,6 +66,61 @@ with check (
   )
 );
 
+-- Optional company-specific pictograms used by the fire site layout map.
+-- Standard fire equipment uses built-in AURIS360 symbols; this table is for extra client-specific items.
+create table if not exists public.fire_layout_symbols (
+  id uuid primary key default gen_random_uuid(),
+  company_id uuid not null,
+  item_type text not null,
+  label text not null,
+  symbol text not null default 'EQ',
+  image_data text,
+  created_by uuid null,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  unique(company_id, item_type)
+);
+
+create index if not exists idx_fire_layout_symbols_company_label
+  on public.fire_layout_symbols(company_id, label);
+
+alter table public.fire_layout_symbols enable row level security;
+
+drop policy if exists "fire_layout_symbols_company_read" on public.fire_layout_symbols;
+create policy "fire_layout_symbols_company_read"
+on public.fire_layout_symbols for select
+using (
+  exists (
+    select 1 from public.profiles p
+    where p.id = auth.uid()
+      and (p.role = 'sephs_admin' or p.company_id = fire_layout_symbols.company_id)
+  )
+);
+
+drop policy if exists "fire_layout_symbols_company_manage" on public.fire_layout_symbols;
+create policy "fire_layout_symbols_company_manage"
+on public.fire_layout_symbols for all
+using (
+  exists (
+    select 1 from public.profiles p
+    where p.id = auth.uid()
+      and (
+        p.role = 'sephs_admin'
+        or (p.company_id = fire_layout_symbols.company_id and p.role in ('admin','hse_manager','hse_officer','site_manager'))
+      )
+  )
+)
+with check (
+  exists (
+    select 1 from public.profiles p
+    where p.id = auth.uid()
+      and (
+        p.role = 'sephs_admin'
+        or (p.company_id = fire_layout_symbols.company_id and p.role in ('admin','hse_manager','hse_officer','site_manager'))
+      )
+  )
+);
+
 -- Storage bucket for layout images. Public read keeps plan rendering simple in the app.
 insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
 values ('layouts', 'layouts', true, 5242880, array['image/png','image/jpeg','image/webp','image/svg+xml'])

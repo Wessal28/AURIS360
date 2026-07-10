@@ -34006,6 +34006,8 @@ var fireLayoutCreatingNew = false;
 var fireLayoutEditorOpen = false;
 var fireLayoutSelectedMarkerId = null;
 var fireLayoutMoveMarkerId = null;
+var fireLayoutCustomSymbolsCache = [];
+var fireLayoutSymbolsSharedReady = false;
 
 // ── Load ─────────────────────────────────────────────────────────
 async function loadFire() {
@@ -34316,11 +34318,28 @@ function fireEquipIconHtml(type){
   return icon?'<i class="ti '+icon+'" style="font-size:20px;line-height:1"></i>':'<span style="font-size:11px;font-weight:900;letter-spacing:.2px">'+escH(fireEquipIcon(type))+'</span>';
 }
 function fireLayoutSymbolKey(){return 'auris360_fire_layout_symbols_'+fireLayoutCompanyId();}
-function fireLayoutCustomSymbols(){
+function fireLayoutLocalCustomSymbols(){
   try{return JSON.parse(localStorage.getItem(fireLayoutSymbolKey())||'[]')||[];}catch(e){return [];}
 }
-function fireSaveLayoutCustomSymbols(rows){localStorage.setItem(fireLayoutSymbolKey(),JSON.stringify(rows||[]));}
+function fireLayoutCustomSymbols(){return fireLayoutCustomSymbolsCache.length?fireLayoutCustomSymbolsCache:fireLayoutLocalCustomSymbols();}
+function fireSaveLayoutCustomSymbols(rows){fireLayoutCustomSymbolsCache=rows||[];localStorage.setItem(fireLayoutSymbolKey(),JSON.stringify(rows||[]));}
 function fireLayoutCustomSymbol(type){return (fireLayoutCustomSymbols()||[]).find(function(x){return x.type===type;})||null;}
+async function fireLoadCustomSymbols(){
+  var local=fireLayoutLocalCustomSymbols();
+  try{
+    var rows=await api('/fire_layout_symbols?company_id=eq.'+fireLayoutCompanyId()+'&select=*&order=label.asc');
+    fireLayoutSymbolsSharedReady=true;
+    var shared=(rows||[]).map(function(x){return {id:x.id,type:x.item_type,label:x.label,symbol:x.symbol,image:x.image_data||'',shared:true};});
+    fireLayoutCustomSymbolsCache=shared.concat(local.filter(function(l){return !shared.some(function(s){return s.type===l.type;});}));
+    var st=document.getElementById('fire-symbol-sync-status');
+    if(st)st.innerHTML='<span style="color:var(--green);font-weight:700">Shared company symbols enabled</span>';
+  }catch(e){
+    fireLayoutSymbolsSharedReady=false;
+    fireLayoutCustomSymbolsCache=local;
+    var st2=document.getElementById('fire-symbol-sync-status');
+    if(st2)st2.innerHTML='<span style="color:#C2410C;font-weight:700">Custom symbols are local only.</span> Run <code>fire_layouts_schema.sql</code> for shared symbols.';
+  }
+}
 function fireSymbolFileToDataUrl(file){
   return new Promise(function(resolve,reject){
     var r=new FileReader();
@@ -34337,15 +34356,29 @@ async function fireAddCustomSymbol(){
   if(file&&(!file.type||file.type.indexOf('image/')!==0)){toast('Please upload an image file for the symbol',false);return;}
   if(file&&file.size>250000){toast('Symbol image is too large. Please use a small PNG/JPG under 250 KB.',false);return;}
   var image=file?await fireSymbolFileToDataUrl(file):'';
-  var rows=fireLayoutCustomSymbols();
-  rows.push({type:'custom_'+Date.now(),label:name,symbol:(code||name.replace(/[^A-Za-z0-9]/g,'').slice(0,2)||'EQ').toUpperCase(),image:image});
-  fireSaveLayoutCustomSymbols(rows);
+  var item={type:'custom_'+Date.now(),label:name,symbol:(code||name.replace(/[^A-Za-z0-9]/g,'').slice(0,2)||'EQ').toUpperCase(),image:image};
+  try{
+    var saved=await api('/fire_layout_symbols',{m:'POST',p:'return=representation',b:{company_id:fireLayoutCompanyId(),item_type:item.type,label:item.label,symbol:item.symbol,image_data:item.image,created_by:prof?.id||null,updated_at:new Date().toISOString()}});
+    if(saved&&saved[0])item={id:saved[0].id,type:saved[0].item_type,label:saved[0].label,symbol:saved[0].symbol,image:saved[0].image_data||'',shared:true};
+    fireLayoutSymbolsSharedReady=true;
+  }catch(e){
+    var rows=fireLayoutCustomSymbols();
+    rows.push(item);
+    fireSaveLayoutCustomSymbols(rows);
+    toast('Custom symbol saved locally. Run fire_layouts_schema.sql for shared symbols.',false);
+  }
   ['fire-symbol-name','fire-symbol-code','fire-symbol-file'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
+  await fireLoadCustomSymbols();
   fireRenderCustomSymbols();fireRenderLayout();
-  toast('Custom fire layout symbol added');
+  if(fireLayoutSymbolsSharedReady)toast('Custom fire layout symbol added');
 }
-function fireDeleteCustomSymbol(type){
+async function fireDeleteCustomSymbol(type){
+  var item=fireLayoutCustomSymbol(type);
+  if(item&&item.id){
+    try{await api('/fire_layout_symbols?id=eq.'+item.id,{m:'DELETE',p:'return=minimal'});}catch(e){toast('Could not delete shared symbol: '+e.message,false);return;}
+  }
   fireSaveLayoutCustomSymbols(fireLayoutCustomSymbols().filter(function(x){return x.type!==type;}));
+  await fireLoadCustomSymbols();
   fireRenderCustomSymbols();fireRenderLayout();
 }
 function fireRenderCustomSymbols(){
@@ -34407,7 +34440,7 @@ async function fireRenderLayout(){
   if(editor)editor.style.display=fireLayoutEditorOpen?'block':'none';
   fireRenderLayoutPlanList();
   if(!fireLayoutEditorOpen)return;
-  fireRenderCustomSymbols();
+  await fireLoadCustomSymbols();fireRenderCustomSymbols();
   var planSel=document.getElementById('fire-layout-plan-select');
   if(planSel){
     planSel.innerHTML='<option value="">New unsaved plan</option>'+(fireLayoutPlans||[]).map(function(p){return '<option value="'+escH(p.id)+'">'+escH(p.title||'Untitled plan')+'</option>';}).join('');
@@ -45999,6 +46032,7 @@ I can help you:<br>
         <div>
           <div style="font-weight:900;font-size:13px">Custom layout symbols</div>
           <div style="font-size:12px;color:var(--text2);margin-top:3px">Add a site-specific item and optional pictogram, then place it on the plan.</div>
+          <div id="fire-symbol-sync-status" style="font-size:12px;color:var(--text2);margin-top:5px"></div>
         </div>
       </div>
       <div style="display:grid;grid-template-columns:minmax(180px,1fr) 110px minmax(180px,1fr) auto;gap:8px;margin-top:10px;align-items:end">
