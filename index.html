@@ -2357,13 +2357,29 @@ async function obsLoadAll() {
     // Metrics
     var now = new Date(); var m = now.getMonth(); var y = now.getFullYear();
     var setM = function(id,v){var e=document.getElementById(id);if(e)e.textContent=v;};
-    setM('obs-m-positive',  obsAllData.filter(x=>['positive_behaviour','good_practice'].includes(x.obs_type)).length);
-    setM('obs-m-unsafe-act',obsAllData.filter(x=>x.obs_type==='unsafe_behaviour').length);
-    setM('obs-m-unsafe-cond',obsAllData.filter(x=>x.obs_type==='unsafe_condition').length);
+    setM('obs-m-positive',  obsAllData.filter(obsHasPositive).length);
+    setM('obs-m-unsafe-act',obsAllData.filter(obsHasUnsafeBehaviour).length);
+    setM('obs-m-unsafe-cond',obsAllData.filter(obsHasUnsafeCondition).length);
     setM('obs-m-near-miss', obsAllData.filter(x=>x.obs_type==='near_miss').length);
     setM('obs-m-actions',   obsAllData.filter(x=>x.action_required&&!x.action_completed&&x.status!=='closed').length);
     setM('obs-m-month',     obsAllData.filter(x=>x.observation_date&&new Date(x.observation_date).getMonth()===m&&new Date(x.observation_date).getFullYear()===y).length);
   } catch(e) { console.error('obsLoadAll:', e); }
+}
+
+function obsHasPositive(x){return !!(x&&((x.positive_points||'').trim()||['positive_behaviour','good_practice'].includes(x.obs_type)));}
+function obsHasUnsafeBehaviour(x){return !!(x&&((x.unsafe_act_description||'').trim()||x.obs_type==='unsafe_behaviour'));}
+function obsHasUnsafeCondition(x){return !!(x&&((x.unsafe_condition_description||'').trim()||x.obs_type==='unsafe_condition'));}
+function obsScopeBadges(x){
+  var chips=[];
+  if(obsHasPositive(x))chips.push('<span style="background:#dcfce7;color:#166534;padding:2px 7px;border-radius:99px;font-size:10px;font-weight:800">Positive</span>');
+  if(obsHasUnsafeBehaviour(x))chips.push('<span style="background:#fee2e2;color:#991B1B;padding:2px 7px;border-radius:99px;font-size:10px;font-weight:800">Unsafe behaviour</span>');
+  if(obsHasUnsafeCondition(x))chips.push('<span style="background:#ffedd5;color:#9A3412;padding:2px 7px;border-radius:99px;font-size:10px;font-weight:800">Unsafe condition</span>');
+  return chips.join(' ')||'<span style="background:#eff6ff;color:#185FA5;padding:2px 7px;border-radius:99px;font-size:10px;font-weight:800">BBS</span>';
+}
+function obsSummaryText(x){
+  return [x.positive_points,x.unsafe_act_description,x.unsafe_condition_description,x.observation_text].filter(function(v,i,a){
+    return v&&String(v).trim()&&a.indexOf(v)===i;
+  }).join(' | ')||'—';
 }
 
 async function obsLoadList() {
@@ -2385,7 +2401,10 @@ function obsFilterList() {
              (x.observation_text||x.positive_points||'').toLowerCase().includes(q) ||
              (x.obs_ref||'').toLowerCase().includes(q) ||
              (x.department||'').toLowerCase().includes(q);
-    var mT = !ft || x.obs_type === ft;
+    var mT = !ft || x.obs_type === ft ||
+      (ft==='positive_behaviour'&&obsHasPositive(x)) ||
+      (ft==='unsafe_behaviour'&&obsHasUnsafeBehaviour(x)) ||
+      (ft==='unsafe_condition'&&obsHasUnsafeCondition(x));
     var mC = !fc || x.category === fc;
     var mS = !fs || x.severity === fs;
     return mQ && mT && mC && mS;
@@ -2402,7 +2421,7 @@ function obsFilterList() {
     +'<thead><tr style="background:#17446B;color:#fff">'
     +'<th style="padding:10px;color:#fff;text-align:left">Ref</th>'
     +'<th style="padding:10px;color:#fff;text-align:left">Date</th>'
-    +'<th style="padding:10px;color:#fff;text-align:left">Type</th>'
+    +'<th style="padding:10px;color:#fff;text-align:left">Scope</th>'
     +'<th style="padding:10px;color:#fff;text-align:left">Observation</th>'
     +'<th style="padding:10px;color:#fff;text-align:left">Location</th>'
     +'<th style="padding:10px;color:#fff;text-align:left">Observer</th>'
@@ -2411,12 +2430,12 @@ function obsFilterList() {
     +'<th style="padding:10px;color:#fff;width:54px"></th>'
     +'</tr></thead><tbody>';
   filt.forEach(function(x,i){
-    var cfg=OBS_TYPE_CFG[x.obs_type]||OBS_TYPE_CFG.unsafe_condition;
-    var desc=x.observation_text||x.positive_points||x.unsafe_act_description||x.unsafe_condition_description||'—';
+    var cfg=OBS_TYPE_CFG[x.obs_type]||OBS_TYPE_CFG.bbs_observation;
+    var desc=obsSummaryText(x);
     h+='<tr style="background:'+(i%2?'#f9fafb':'#fff')+';border-bottom:1px solid #eef2f7;cursor:pointer" data-id="'+x.id+'" onclick="obsEdit(this.dataset.id)">'
       +'<td style="padding:9px 10px;font-family:monospace;font-weight:800;color:'+cfg.color+'">'+escH(x.obs_ref||x.id?.slice(0,8)||'—')+'</td>'
       +'<td style="padding:9px 10px;white-space:nowrap">'+(x.observation_date?new Date(x.observation_date).toLocaleDateString('en-GB'):'—')+'</td>'
-      +'<td style="padding:9px 10px"><span style="background:'+cfg.bg+';color:'+cfg.color+';padding:2px 8px;border-radius:99px;font-size:10px;font-weight:800">'+escH(cfg.label)+'</span></td>'
+      +'<td style="padding:9px 10px;min-width:210px"><div style="display:flex;gap:4px;flex-wrap:wrap">'+obsScopeBadges(x)+'</div></td>'
       +'<td style="padding:9px 10px;min-width:260px"><div style="font-weight:700;line-height:1.25">'+escH(desc.substring(0,130))+(desc.length>130?'...':'')+'</div><div style="font-size:11px;color:var(--text2);margin-top:2px">'+escH(x.category||'general')+'</div></td>'
       +'<td style="padding:9px 10px">'+escH(x.location||'—')+'</td>'
       +'<td style="padding:9px 10px">'+escH(x.observer_name||'—')+'</td>'
@@ -2442,7 +2461,7 @@ function obsTableHtml(rows, emptyTitle, emptyButtonLabel, emptyAction) {
     +'<thead><tr style="background:#17446B;color:#fff">'
     +'<th style="padding:10px;color:#fff;text-align:left">Ref</th>'
     +'<th style="padding:10px;color:#fff;text-align:left">Date</th>'
-    +'<th style="padding:10px;color:#fff;text-align:left">Type</th>'
+    +'<th style="padding:10px;color:#fff;text-align:left">Scope</th>'
     +'<th style="padding:10px;color:#fff;text-align:left">Observation</th>'
     +'<th style="padding:10px;color:#fff;text-align:left">Location</th>'
     +'<th style="padding:10px;color:#fff;text-align:left">Observer</th>'
@@ -2451,12 +2470,12 @@ function obsTableHtml(rows, emptyTitle, emptyButtonLabel, emptyAction) {
     +'<th style="padding:10px;color:#fff;width:54px"></th>'
     +'</tr></thead><tbody>';
   rows.forEach(function(x,i){
-    var cfg=OBS_TYPE_CFG[x.obs_type]||OBS_TYPE_CFG.unsafe_condition;
-    var desc=x.observation_text||x.positive_points||x.unsafe_act_description||x.unsafe_condition_description||'-';
+    var cfg=OBS_TYPE_CFG[x.obs_type]||OBS_TYPE_CFG.bbs_observation;
+    var desc=obsSummaryText(x);
     h+='<tr style="background:'+(i%2?'#f9fafb':'#fff')+';border-bottom:1px solid #eef2f7;cursor:pointer" data-id="'+x.id+'" onclick="obsEdit(this.dataset.id)">'
       +'<td style="padding:9px 10px;font-family:monospace;font-weight:800;color:'+cfg.color+'">'+escH(x.obs_ref||x.id?.slice(0,8)||'-')+'</td>'
       +'<td style="padding:9px 10px;white-space:nowrap">'+(x.observation_date?new Date(x.observation_date).toLocaleDateString('en-GB'):'-')+'</td>'
-      +'<td style="padding:9px 10px"><span style="background:'+cfg.bg+';color:'+cfg.color+';padding:2px 8px;border-radius:99px;font-size:10px;font-weight:800">'+escH(cfg.label)+'</span></td>'
+      +'<td style="padding:9px 10px;min-width:210px"><div style="display:flex;gap:4px;flex-wrap:wrap">'+obsScopeBadges(x)+'</div></td>'
       +'<td style="padding:9px 10px;min-width:260px"><div style="font-weight:700;line-height:1.25">'+escH(desc.substring(0,130))+(desc.length>130?'...':'')+'</div><div style="font-size:11px;color:var(--text2);margin-top:2px">'+escH(x.category||'general')+'</div></td>'
       +'<td style="padding:9px 10px">'+escH(x.location||'-')+'</td>'
       +'<td style="padding:9px 10px">'+escH(x.observer_name||'-')+'</td>'
@@ -2633,7 +2652,7 @@ function obsNew(type) {
   document.getElementById('obs-form-ref').textContent = 'OBS-AUTO';
   document.getElementById('obs-del-btn').style.display = 'none';
   // Clear fields
-  ['obs-positive-text','obs-positive-reinforce','obs-text','obs-immediate-cause',
+  ['obs-positive-text','obs-positive-reinforce','obs-text','obs-condition-text','obs-immediate-cause',
    'obs-consequence','obs-location','obs-dept','obs-activity','obs-time',
    'obs-immediate-desc','obs-feedback-notes','obs-action-desc','obs-action-assigned',
    'obs-observer','obs-observer-dept','obs-person-observed','obs-root-cause','obs-ppe-notes'].forEach(function(id){
@@ -2672,9 +2691,10 @@ function obsEdit(id) {
   document.getElementById('obs-form-ref').textContent = x.obs_ref || x.id?.slice(0,8)||'—';
   document.getElementById('obs-del-btn').style.display = isMgr()?'inline-flex':'none';
   var gf = function(fid,val){var el=document.getElementById(fid);if(el)el.value=val||'';};
-  gf('obs-positive-text', x.observation_text||(x.obs_type==='positive_behaviour'?x.positive_points:''));
+  gf('obs-positive-text', x.positive_points||(x.obs_type==='positive_behaviour'?x.observation_text:''));
   gf('obs-positive-reinforce', x.positive_points);
-  gf('obs-text', x.observation_text||x.unsafe_act_description||x.unsafe_condition_description);
+  gf('obs-text', x.unsafe_act_description||(x.obs_type==='unsafe_behaviour'?x.observation_text:''));
+  gf('obs-condition-text', x.unsafe_condition_description||(x.obs_type==='unsafe_condition'?x.observation_text:''));
   gf('obs-immediate-cause', x.immediate_cause);
   gf('obs-consequence', x.potential_consequence);
   gf('obs-location', x.location);
@@ -2704,7 +2724,7 @@ function obsEdit(id) {
   var ppeVal = x.ppe_worn===true?'true':x.ppe_worn===false?'false':x.ppe_worn===null?'na':(x.ppe_worn||'na');
   document.getElementById('obs-ppe-worn').value = ppeVal;
   document.querySelectorAll('[name="obs-ppe"]').forEach(r=>{r.checked=r.value===ppeVal;});
-  obsSelectType(x.obs_type||'unsafe_condition');
+  obsSelectType('bbs_observation');
   obsSetFormMode(true);
   document.getElementById('obs-form-view').style.display = 'block';
   ['list','positive','unsafe','trends'].forEach(t=>{var el=document.getElementById('obs-view-'+t);if(el)el.style.display='none';});
@@ -2744,7 +2764,12 @@ async function obsSave() {
   var type = 'bbs_observation';
   var positiveText = g('obs-positive-text')||g('obs-positive-reinforce')||'';
   var unsafeText = g('obs-text')||'';
-  var desc = [positiveText,unsafeText].filter(Boolean).join('\n\n');
+  var conditionText = g('obs-condition-text')||'';
+  var desc = [
+    positiveText ? 'Positive behaviour: '+positiveText : '',
+    unsafeText ? 'Unsafe behaviour: '+unsafeText : '',
+    conditionText ? 'Unsafe condition: '+conditionText : ''
+  ].filter(Boolean).join('\n\n');
   if (!desc) { toast('Please describe at least one positive, unsafe behaviour, or unsafe condition observed', false); return; }
   if (!g('obs-date')) { toast('Please select the observation date', false); return; }
   if (!g('obs-location')) { toast('Please enter the location or area', false); return; }
@@ -2752,7 +2777,7 @@ async function obsSave() {
   try{await customValidateRecordValues('observation');}catch(e){toast(e.message,false);return;}
   var actionRequired = document.getElementById('obs-action-required')?.checked||false;
   var obsSeverity = g('obs-severity')||'medium';
-  if (unsafeText && ['critical','high'].includes(obsSeverity) && !actionRequired) {
+  if ((unsafeText||conditionText) && ['critical','high'].includes(obsSeverity) && !actionRequired) {
     var proceedWithoutAction = await appConfirm({
       title:'Save without follow-up action?',
       message:'This is a high-risk observation without an assigned corrective action.',
@@ -2785,7 +2810,7 @@ async function obsSave() {
     observation_text: desc,
     positive_points: positiveText||null,
     unsafe_act_description: unsafeText||null,
-    unsafe_condition_description: unsafeText||null,
+    unsafe_condition_description: conditionText||null,
     immediate_cause: g('obs-immediate-cause'),
     potential_consequence: g('obs-consequence'),
     root_cause: g('obs-root-cause'),
@@ -37421,6 +37446,7 @@ function fireEquipStatusBadge(s) {
 <div class="card" style="margin-bottom:14px" id="obs-unsafe-section" style="display:none">
 <div class="card-title" style="color:#DC2626" id="obs-unsafe-section-title">⚠️ Unsafe Observation</div>
 <div class="form-group"><label class="form-label">Observation description</label><textarea id="obs-text" style="min-height:80px" placeholder="Describe clearly what was observed — the unsafe act, condition or near miss..."></textarea></div>
+<div class="form-group"><label class="form-label">Unsafe condition observed</label><textarea id="obs-condition-text" style="min-height:70px" placeholder="Describe the physical condition, workplace hazard or unsafe state observed..."></textarea></div>
 <div class="form-group"><label class="form-label">Immediate / direct cause</label><textarea id="obs-immediate-cause" style="min-height:60px" placeholder="What was the immediate cause of the unsafe situation?"></textarea></div>
 <div class="form-group"><label class="form-label">Potential consequence (if unaddressed)</label><input type="text" id="obs-consequence" placeholder="e.g. Fall from height, Chemical splash, Crush injury..."/></div>
 </div>
