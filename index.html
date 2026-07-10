@@ -34497,12 +34497,13 @@ function fireRenderLayoutPlanList(){
 }
 function fireRenderLayoutMarkers(){
   var layer=document.getElementById('fire-layout-marker-layer');if(!layer)return;
-  layer.innerHTML=(fireLayoutState.markers||[]).map(function(m){
+  layer.innerHTML=(fireLayoutState.markers||[]).map(function(m,i){
     var e=(fireAllEquip||[]).find(function(x){return x.id===m.equipment_id;})||{};
     var overdue=e.next_service_date&&new Date(e.next_service_date)<new Date();
     var due=e.next_service_date&&new Date(e.next_service_date)<=new Date(Date.now()+30*86400000);
     var color=overdue?'#DC2626':due?'#EF9F27':'#1D9E75';
-    return '<button type="button" data-mid="'+escH(m.id)+'" onclick="event.stopPropagation();fireSelectLayoutMarker(this.dataset.mid)" title="'+escH(e.description||e.location||'Fire equipment')+'" style="position:absolute;left:'+m.x+'%;top:'+m.y+'%;transform:translate(-50%,-50%);width:38px;height:38px;border-radius:999px;border:2px solid #fff;background:'+color+';color:#fff;box-shadow:0 3px 12px rgba(0,0,0,.28);display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:2;padding:0;pointer-events:auto">'+fireEquipIconHtml(e.equipment_type)+'</button>';
+    var selected=m.id===fireLayoutSelectedMarkerId;
+    return '<button type="button" data-mid="'+escH(m.id)+'" onclick="event.stopPropagation();fireSelectLayoutMarker(this.dataset.mid)" title="'+escH(e.description||e.location||'Fire equipment')+'" style="position:absolute;left:'+m.x+'%;top:'+m.y+'%;transform:translate(-50%,-50%);width:40px;height:40px;border-radius:999px;border:'+(selected?'3px solid #111827':'2px solid #fff')+';background:'+color+';color:#fff;box-shadow:0 3px 12px rgba(0,0,0,.28);display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:'+(selected?3:2)+';padding:0;pointer-events:auto">'+fireEquipIconHtml(e.equipment_type)+'<span style="position:absolute;right:-6px;top:-7px;min-width:18px;height:18px;border-radius:999px;background:#111827;color:#fff;border:2px solid #fff;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:900;line-height:1">'+(i+1)+'</span></button>';
   }).join('');
 }
 function fireRenderLayoutLegend(){
@@ -34672,7 +34673,7 @@ function fireSelectLayoutMarker(id){
   fireLayoutSelectedMarkerId=id;
   fireLayoutMoveMarkerId=null;
   var m=(fireLayoutState.markers||[]).find(function(x){return x.id===id;});
-  fireRenderLayoutDetails(m);fireRenderLayoutLegend();
+  fireRenderLayoutMarkers();fireRenderLayoutDetails(m);fireRenderLayoutLegend();
 }
 function fireStartMoveLayoutMarker(){
   if(!fireLayoutSelectedMarkerId){toast('Select a marker first',false);return;}
