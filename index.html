@@ -34477,7 +34477,7 @@ async function fireRenderLayout(){
   if(empty)empty.style.display=(fireLayoutState.image_url||fireLayoutState.image)?'none':'flex';
   var st=document.getElementById('fire-layout-sync-status');
   if(st&&!st.innerHTML)st.innerHTML=fireLayoutState.id?'<span style="color:var(--green);font-weight:700">Shared layout loaded</span>':'<span style="color:var(--text2)">No shared layout saved yet.</span>';
-  fireRenderLayoutMarkers();fireRenderLayoutDetails(null);
+  fireRenderLayoutMarkers();fireRenderLayoutDetails(null);fireRenderLayoutLegend();
 }
 function fireRenderLayoutPlanList(){
   var el=document.getElementById('fire-layout-plan-list');if(!el)return;
@@ -34503,6 +34503,20 @@ function fireRenderLayoutMarkers(){
     var due=e.next_service_date&&new Date(e.next_service_date)<=new Date(Date.now()+30*86400000);
     var color=overdue?'#DC2626':due?'#EF9F27':'#1D9E75';
     return '<button type="button" data-mid="'+escH(m.id)+'" onclick="event.stopPropagation();fireSelectLayoutMarker(this.dataset.mid)" title="'+escH(e.description||e.location||'Fire equipment')+'" style="position:absolute;left:'+m.x+'%;top:'+m.y+'%;transform:translate(-50%,-50%);width:38px;height:38px;border-radius:999px;border:2px solid #fff;background:'+color+';color:#fff;box-shadow:0 3px 12px rgba(0,0,0,.28);display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:2;padding:0;pointer-events:auto">'+fireEquipIconHtml(e.equipment_type)+'</button>';
+  }).join('');
+}
+function fireRenderLayoutLegend(){
+  var el=document.getElementById('fire-layout-legend');if(!el)return;
+  var markers=fireLayoutState.markers||[];
+  if(!markers.length){el.innerHTML='<div style="font-size:12px;color:var(--text2);padding:10px 0">No equipment positioned yet.</div>';return;}
+  el.innerHTML=markers.map(function(m,i){
+    var e=(fireAllEquip||[]).find(function(x){return x.id===m.equipment_id;})||{};
+    var st=fireLayoutMarkerStatus(e);
+    var selected=m.id===fireLayoutSelectedMarkerId;
+    return '<button type="button" data-mid="'+escH(m.id)+'" onclick="fireSelectLayoutMarker(this.dataset.mid)" style="width:100%;display:flex;align-items:center;gap:8px;text-align:left;padding:8px;border:1px solid '+(selected?'#1D9E75':'var(--border)')+';border-radius:8px;background:'+(selected?'#ECFDF5':'#fff')+';margin-bottom:6px;cursor:pointer">'
+      +'<span style="width:24px;height:24px;border-radius:999px;background:'+st.color+';color:#fff;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:900;flex:none">'+(i+1)+'</span>'
+      +'<span style="min-width:0;flex:1"><span style="display:block;font-size:12px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+escH(e.description||fireEquipTypeLabel(e.equipment_type)||'Fire equipment')+'</span><span style="display:block;font-size:11px;color:var(--text2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+escH(st.label+' · '+(e.location||'No location'))+'</span></span>'
+      +'</button>';
   }).join('');
 }
 function fireLayoutMarkerStatus(e){
@@ -34629,7 +34643,7 @@ async function fireAddLayoutMarker(ev){
     if(moveMarker){
       moveMarker.x=Number(x.toFixed(2));moveMarker.y=Number(y.toFixed(2));
       fireLayoutMoveMarkerId=null;
-      await fireSaveLayoutState();fireRenderLayoutMarkers();fireSelectLayoutMarker(moveMarker.id);toast('Marker moved');
+      await fireSaveLayoutState();fireRenderLayoutMarkers();fireRenderLayoutLegend();fireSelectLayoutMarker(moveMarker.id);toast('Marker moved');
       return;
     }
     fireLayoutMoveMarkerId=null;
@@ -34652,13 +34666,13 @@ async function fireAddLayoutMarker(ev){
   var existing=(fireLayoutState.markers||[]).find(function(m){return m.equipment_id===equipId;});
   if(existing){existing.x=Number(x.toFixed(2));existing.y=Number(y.toFixed(2));}
   else fireLayoutState.markers.push({id:'m'+Date.now(),equipment_id:equipId,x:Number(x.toFixed(2)),y:Number(y.toFixed(2))});
-  await fireSaveLayoutState();fireRenderLayoutMarkers();fireSelectLayoutMarker(existing?existing.id:fireLayoutState.markers[fireLayoutState.markers.length-1].id);
+  await fireSaveLayoutState();fireRenderLayoutMarkers();fireRenderLayoutLegend();fireSelectLayoutMarker(existing?existing.id:fireLayoutState.markers[fireLayoutState.markers.length-1].id);
 }
 function fireSelectLayoutMarker(id){
   fireLayoutSelectedMarkerId=id;
   fireLayoutMoveMarkerId=null;
   var m=(fireLayoutState.markers||[]).find(function(x){return x.id===id;});
-  fireRenderLayoutDetails(m);
+  fireRenderLayoutDetails(m);fireRenderLayoutLegend();
 }
 function fireStartMoveLayoutMarker(){
   if(!fireLayoutSelectedMarkerId){toast('Select a marker first',false);return;}
@@ -34688,7 +34702,7 @@ function fireRenderLayoutDetails(marker){
 async function fireRemoveLayoutMarker(){
   if(!fireLayoutSelectedMarkerId)return;
   fireLayoutState.markers=(fireLayoutState.markers||[]).filter(function(m){return m.id!==fireLayoutSelectedMarkerId;});
-  fireLayoutSelectedMarkerId=null;fireLayoutMoveMarkerId=null;await fireSaveLayoutState();fireRenderLayoutMarkers();fireRenderLayoutDetails(null);
+  fireLayoutSelectedMarkerId=null;fireLayoutMoveMarkerId=null;await fireSaveLayoutState();fireRenderLayoutMarkers();fireRenderLayoutDetails(null);fireRenderLayoutLegend();
 }
 async function fireClearLayout(){
   if(!(await appConfirmAction({title:'Clear layout plan',message:'Remove the uploaded layout and all positioned fire equipment markers?',confirmText:'Clear layout',cancelText:'Keep layout',variant:'danger'})))return;
@@ -46112,6 +46126,10 @@ I can help you:<br>
     <div class="card" style="position:sticky;top:86px">
       <div class="card-title">Selected Equipment</div>
       <div id="fire-layout-details"></div>
+      <div style="border-top:1px solid var(--border);margin-top:14px;padding-top:12px">
+        <div style="font-size:13px;font-weight:900;margin-bottom:8px">Positioned equipment</div>
+        <div id="fire-layout-legend"></div>
+      </div>
     </div>
   </div>
   </div>
