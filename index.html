@@ -15995,7 +15995,13 @@ function raParseAIRows(text){
   for(var i=0;i<candidates.length;i++){
     try{
       var parsed=JSON.parse(candidates[i]);
-      var rows=Array.isArray(parsed)?parsed:(Array.isArray(parsed.rows)?parsed.rows:Array.isArray(parsed.hazards)?parsed.hazards:[]);
+      var rows=Array.isArray(parsed)?parsed:
+        (Array.isArray(parsed.rows)?parsed.rows:
+        (Array.isArray(parsed.hazards)?parsed.hazards:
+        (Array.isArray(parsed.risk_assessment)?parsed.risk_assessment:
+        (Array.isArray(parsed.riskAssessment)?parsed.riskAssessment:
+        (Array.isArray(parsed.items)?parsed.items:
+        (Array.isArray(parsed.data)?parsed.data:[]))))));
       if(rows.length)return rows.map(raNormalizeAIRow).filter(function(r){return r.hazard||r.harm||r.controls||r.further_controls;});
     }catch(_){}
   }
@@ -16066,7 +16072,14 @@ Rules:
     toast((usedFallback?'AURIS generated a standard starter RA because the AI response could not be parsed. ':'AI generated ')+rows.length+' hazard rows - review and add to RA');
   }catch(e){
     var el2=document.getElementById('ra-ai-output');
-    if(el2)el2.innerHTML=aiFriendlyErrorHtml(e);
+    var rows=raFallbackAIRows(prompt);
+    raRenderAISuggestions(rows);
+    if(el2){
+      el2.insertAdjacentHTML('afterbegin',
+        '<div style="margin-bottom:10px;padding:10px 12px;background:#fff7ed;border:1px solid #fed7aa;border-radius:8px;color:#9a3412;font-size:12px">'
+        +'<b>AI unavailable.</b> AURIS created standard starter rows for review. Details: '+escH(e.message||e)+'</div>');
+    }
+    toast('AI unavailable - AURIS created starter RA rows for review', false);
     console.error(e);
   }
 }
