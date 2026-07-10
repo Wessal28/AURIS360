@@ -8050,6 +8050,7 @@ function swmsNew(){
   fillPersonSelect('swms-prepared-by', prof?.full_name||'');fillPersonSelect('swms-reviewed-by');fillPersonSelect('swms-approved-by');
   fillRiskAssessmentSelect('swms-ra-ref');swmsLoadPermitSelect();
   var body=document.getElementById('swms-steps-body');if(body)body.innerHTML='';
+  var preview=document.getElementById('swms-preview');if(preview)preview.innerHTML='';
   swmsBuildPreview();
 }
 
@@ -34298,14 +34299,65 @@ async function fireSaveLayoutState(){
   }
 }
 function fireEquipIcon(type){
+  var custom=fireLayoutCustomSymbol(type);
+  if(custom)return custom.symbol||'EQ';
   return {fire_extinguisher:'FE',fire_hose_reel:'HR',fire_alarm_panel:'AL',smoke_detector:'SD',heat_detector:'HD',sprinkler_system:'SP',emergency_lighting:'EL',fire_door:'FD',fire_blanket:'FB',evacuation_sign:'EX',fire_pump:'FP',other:'EQ'}[type||'']||'EQ';
 }
 function fireEquipIconHtml(type){
+  var custom=fireLayoutCustomSymbol(type);
+  if(custom){
+    if(custom.image)return '<img src="'+escH(custom.image)+'" alt="" style="width:24px;height:24px;object-fit:contain;display:block"/>';
+    return '<span style="font-size:11px;font-weight:900;letter-spacing:.2px">'+escH(custom.symbol||'EQ')+'</span>';
+  }
   var initials={smoke_detector:'SD',heat_detector:'HD',other:'EQ'};
   if(initials[type||''])return '<span style="font-size:11px;font-weight:900;letter-spacing:.2px">'+initials[type||'']+'</span>';
   var map={fire_extinguisher:'ti-fire-extinguisher',fire_hose_reel:'ti-lifebuoy',fire_alarm_panel:'ti-bell-ringing',sprinkler_system:'ti-droplet',emergency_lighting:'ti-bulb',fire_door:'ti-door',fire_blanket:'ti-shield',evacuation_sign:'ti-run',fire_pump:'ti-engine'};
   var icon=map[type||''];
   return icon?'<i class="ti '+icon+'" style="font-size:20px;line-height:1"></i>':'<span style="font-size:11px;font-weight:900;letter-spacing:.2px">'+escH(fireEquipIcon(type))+'</span>';
+}
+function fireLayoutSymbolKey(){return 'auris360_fire_layout_symbols_'+fireLayoutCompanyId();}
+function fireLayoutCustomSymbols(){
+  try{return JSON.parse(localStorage.getItem(fireLayoutSymbolKey())||'[]')||[];}catch(e){return [];}
+}
+function fireSaveLayoutCustomSymbols(rows){localStorage.setItem(fireLayoutSymbolKey(),JSON.stringify(rows||[]));}
+function fireLayoutCustomSymbol(type){return (fireLayoutCustomSymbols()||[]).find(function(x){return x.type===type;})||null;}
+function fireSymbolFileToDataUrl(file){
+  return new Promise(function(resolve,reject){
+    var r=new FileReader();
+    r.onload=function(){resolve(r.result);};
+    r.onerror=reject;
+    r.readAsDataURL(file);
+  });
+}
+async function fireAddCustomSymbol(){
+  var name=(document.getElementById('fire-symbol-name')?.value||'').trim();
+  var code=(document.getElementById('fire-symbol-code')?.value||'').trim().toUpperCase();
+  var file=document.getElementById('fire-symbol-file')?.files?.[0]||null;
+  if(!name){toast('Enter an item name for the custom symbol',false);return;}
+  if(file&&(!file.type||file.type.indexOf('image/')!==0)){toast('Please upload an image file for the symbol',false);return;}
+  if(file&&file.size>250000){toast('Symbol image is too large. Please use a small PNG/JPG under 250 KB.',false);return;}
+  var image=file?await fireSymbolFileToDataUrl(file):'';
+  var rows=fireLayoutCustomSymbols();
+  rows.push({type:'custom_'+Date.now(),label:name,symbol:(code||name.replace(/[^A-Za-z0-9]/g,'').slice(0,2)||'EQ').toUpperCase(),image:image});
+  fireSaveLayoutCustomSymbols(rows);
+  ['fire-symbol-name','fire-symbol-code','fire-symbol-file'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
+  fireRenderCustomSymbols();fireRenderLayout();
+  toast('Custom fire layout symbol added');
+}
+function fireDeleteCustomSymbol(type){
+  fireSaveLayoutCustomSymbols(fireLayoutCustomSymbols().filter(function(x){return x.type!==type;}));
+  fireRenderCustomSymbols();fireRenderLayout();
+}
+function fireRenderCustomSymbols(){
+  var el=document.getElementById('fire-symbol-list');if(!el)return;
+  var rows=fireLayoutCustomSymbols();
+  if(!rows.length){el.innerHTML='<div style="font-size:12px;color:var(--text2);padding:8px 0">No custom symbols added yet.</div>';return;}
+  el.innerHTML=rows.map(function(x){
+    return '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:6px 0;border-top:1px solid var(--border)">'
+      +'<div style="display:flex;align-items:center;gap:8px"><span style="width:30px;height:30px;border-radius:999px;background:#1D9E75;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:900">'+fireEquipIconHtml(x.type)+'</span><span style="font-size:12px;font-weight:700">'+escH(x.label)+'</span></div>'
+      +'<button class="btn btn-sm" style="color:var(--red)" onclick="fireDeleteCustomSymbol(\''+escH(x.type)+'\')"><i class="ti ti-trash"></i></button>'
+      +'</div>';
+  }).join('');
 }
 function fireExtinguisherTypeFromNotes(notes){
   var m=String(notes||'').match(/Extinguisher type:\s*([^\n]+)/i);
@@ -34315,7 +34367,7 @@ function fireNotesWithoutExtType(notes){
   return String(notes||'').replace(/\n?Extinguisher type:\s*[^\n]+/i,'').trim();
 }
 function fireLayoutStandardItems(){
-  return [
+  var base=[
     ['fire_extinguisher','Fire extinguisher'],
     ['fire_hose_reel','Fire hose reel'],
     ['fire_alarm_panel','Fire alarm panel'],
@@ -34328,6 +34380,7 @@ function fireLayoutStandardItems(){
     ['evacuation_sign','Evacuation sign'],
     ['fire_pump','Fire pump']
   ];
+  return base.concat(fireLayoutCustomSymbols().map(function(x){return [x.type,x.label];}));
 }
 async function fireCreateLayoutEquipment(type,x,y){
   var cid=fireLayoutCompanyId();
@@ -34354,6 +34407,7 @@ async function fireRenderLayout(){
   if(editor)editor.style.display=fireLayoutEditorOpen?'block':'none';
   fireRenderLayoutPlanList();
   if(!fireLayoutEditorOpen)return;
+  fireRenderCustomSymbols();
   var planSel=document.getElementById('fire-layout-plan-select');
   if(planSel){
     planSel.innerHTML='<option value="">New unsaved plan</option>'+(fireLayoutPlans||[]).map(function(p){return '<option value="'+escH(p.id)+'">'+escH(p.title||'Untitled plan')+'</option>';}).join('');
@@ -35037,6 +35091,8 @@ function fireInspTypeLabel(t) {
   return {routine:'Routine',renewal:'Renewal',follow_up:'Follow-up',complaint:'Complaint',internal:'Internal Audit'}[t] || t || '—';
 }
 function fireEquipTypeLabel(t) {
+  var custom=fireLayoutCustomSymbol(t);
+  if(custom)return custom.label||t||'—';
   return {fire_extinguisher:'Fire Extinguisher',fire_hose_reel:'Fire Hose Reel',fire_alarm_panel:'Fire Alarm Panel',
     smoke_detector:'Smoke Detector',heat_detector:'Heat Detector',sprinkler_system:'Sprinkler System',
     emergency_lighting:'Emergency Lighting',fire_door:'Fire Door',fire_blanket:'Fire Blanket',
@@ -43437,7 +43493,8 @@ function fireEquipStatusBadge(s) {
 <div class="form-group"><label class="form-label">Additional PPE / Special equipment</label>
 <input type="text" id="sop-ppe-extra" placeholder="e.g. welding mask, anti-vibration gloves..."/></div>
 </div>
-<div style="display:flex;justify-content:flex-end;margin-top:12px">
+<div style="display:flex;justify-content:space-between;gap:8px;margin-top:12px;flex-wrap:wrap">
+<button class="btn" onclick="sopCancel()"><i class="ti ti-arrow-left"></i>Cancel / Back</button>
 <button class="btn btn-primary" onclick="sopNextStep(1)"><i class="ti ti-arrow-right"></i>Next — Upload Video</button>
 </div>
 </div>
@@ -45936,6 +45993,21 @@ I can help you:<br>
   </optgroup>
 </select></div>
       <div style="font-size:12px;color:var(--text2);align-self:end">Green = OK, amber = service due soon, red = service overdue.<div id="fire-layout-sync-status" style="margin-top:5px"></div></div>
+    </div>
+    <div style="margin-top:14px;border:1px solid var(--border);border-radius:10px;padding:12px;background:#f8fafc">
+      <div style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:flex-start">
+        <div>
+          <div style="font-weight:900;font-size:13px">Custom layout symbols</div>
+          <div style="font-size:12px;color:var(--text2);margin-top:3px">Add a site-specific item and optional pictogram, then place it on the plan.</div>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:minmax(180px,1fr) 110px minmax(180px,1fr) auto;gap:8px;margin-top:10px;align-items:end">
+        <div class="form-group" style="margin:0"><label class="form-label">Item name</label><input id="fire-symbol-name" placeholder="e.g. Gas shut-off valve"/></div>
+        <div class="form-group" style="margin:0"><label class="form-label">Initials</label><input id="fire-symbol-code" maxlength="4" placeholder="GV"/></div>
+        <div class="form-group" style="margin:0"><label class="form-label">Symbol image</label><input id="fire-symbol-file" type="file" accept="image/*"/></div>
+        <button class="btn btn-primary" onclick="fireAddCustomSymbol()"><i class="ti ti-plus"></i>Add symbol</button>
+      </div>
+      <div id="fire-symbol-list" style="margin-top:8px"></div>
     </div>
 
   </div>
