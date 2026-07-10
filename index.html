@@ -27369,6 +27369,18 @@ function inspSwitchTab(tab, btn) {
   else auditSwitchTab(tab, btn);
 }
 
+function auditTypeForTab(tab) {
+  if(tab === 'audit') return 'internal_audit';
+  if(['workplace','behavioral','equipment','ppe','fire','environmental'].includes(tab)) return tab;
+  return 'workplace';
+}
+
+function auditStartFromCurrentTab() {
+  var tab = auditCurrentTab || 'all';
+  if(tab === 'prestart') { psNew(); return; }
+  auditNew(auditTypeForTab(tab));
+}
+
 function auditSwitchTab(tab, btn) {
   auditCurrentTab = tab;
   document.querySelectorAll('[id^="insp-tab-"]').forEach(function(t){t.classList.remove('active');});
@@ -27384,8 +27396,8 @@ function auditSwitchTab(tab, btn) {
   if(labelEl) labelEl.textContent = cfg ? cfg.emoji+' '+cfg.label : '';
   // Update type filter
   var typeFilter = document.getElementById('audit-filter-type');
-  if(typeFilter && tab !== 'all') typeFilter.value = tab;
-  else if(typeFilter && tab === 'all') typeFilter.value = '';
+  if(typeFilter && ['workplace','behavioral','equipment','ppe','fire','environmental'].includes(tab)) typeFilter.value = tab;
+  else if(typeFilter) typeFilter.value = '';
   // Update new button label
   var newBtn = document.getElementById('insp-new-btn');
   if(newBtn) newBtn.innerHTML = '<i class="ti ti-plus"></i>New '+(cfg?cfg.label.toLowerCase():'inspection');
@@ -27439,12 +27451,13 @@ function auditFilter() {
   var filt = (auditAllData||[]).filter(function(x) {
     var mQ = !q || (x.site||'').toLowerCase().includes(q) || (x.inspection_type||'').toLowerCase().includes(q) ||
               (x.reference_no||x.id||'').toLowerCase().includes(q) || (x.inspector||x.by||x.if_by||'').toLowerCase().includes(q);
-    var mT = !ft || (x.inspection_type||'workplace') === ft;
+    var activeTypes = auditCurrentTab==='audit' ? ['iso_audit','internal_audit','supplier_audit','contractor_audit','regulatory'] : null;
+    var mT = (!ft || (x.inspection_type||'workplace') === ft) && (!activeTypes || activeTypes.includes(x.inspection_type||'workplace'));
     var mS = !fs || x.status === fs;
     return mQ && mT && mS;
   });
   if(!filt.length) {
-    el.innerHTML = '<div style="text-align:center;padding:48px;color:var(--text2)"><div style="font-size:44px;margin-bottom:12px">-</div><div style="font-weight:700;font-size:14px;margin-bottom:8px">No inspections found</div><button class="btn btn-primary" onclick="auditNew()"><i class="ti ti-plus"></i>Start inspection</button></div>';
+    el.innerHTML = '<div style="text-align:center;padding:48px;color:var(--text2)"><div style="font-size:44px;margin-bottom:12px">-</div><div style="font-weight:700;font-size:14px;margin-bottom:8px">No inspections found</div><button class="btn btn-primary" onclick="auditStartFromCurrentTab()"><i class="ti ti-plus"></i>Start inspection</button></div>';
     return;
   }
   var h = '<div style="overflow:auto"><table style="width:100%;min-width:1060px;border-collapse:collapse;font-size:12px;background:#fff">'
@@ -37310,7 +37323,7 @@ function fireEquipStatusBadge(s) {
 </div>
 <div style="display:flex;gap:8px" id="insp-header-btns">
 <button class="btn" id="audit-print-current-btn" onclick="auditPrintCurrentView()"><i class="ti ti-printer"></i>Print current view</button>
-<button class="btn btn-primary" id="insp-new-btn" onclick="auditNew()"><i class="ti ti-plus"></i>New inspection</button>
+<button class="btn btn-primary" id="insp-new-btn" onclick="auditStartFromCurrentTab()"><i class="ti ti-plus"></i>New inspection</button>
 <button class="btn btn-sm" onclick="if(typeof auditEditId!=='undefined'&&auditEditId)printAuditReport(auditEditId);else toast('Open an audit first',false)" title="Print PDF"><i class="ti ti-printer"></i>Print PDF</button>
 </div>
 </div>
