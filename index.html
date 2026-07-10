@@ -34651,11 +34651,13 @@ async function fireAddLayoutMarker(ev){
   }
   var equipId=document.getElementById('fire-layout-equipment-select')?.value||'';
   if(!equipId){toast('Select equipment to place on the plan',false);return;}
+  var createdFromMap=false;
   if(equipId.indexOf('quick:')===0){
     try{
       var created=await fireCreateLayoutEquipment(equipId.slice(6),x,y);
       if(!created||!created.id){toast('Could not create fire equipment record',false);return;}
       equipId=created.id;
+      createdFromMap=true;
       var sel=document.getElementById('fire-layout-equipment-select');
       if(sel)sel.value=equipId;
       toast('Fire equipment created');
@@ -34668,6 +34670,10 @@ async function fireAddLayoutMarker(ev){
   if(existing){existing.x=Number(x.toFixed(2));existing.y=Number(y.toFixed(2));}
   else fireLayoutState.markers.push({id:'m'+Date.now(),equipment_id:equipId,x:Number(x.toFixed(2)),y:Number(y.toFixed(2))});
   await fireSaveLayoutState();fireRenderLayoutMarkers();fireRenderLayoutLegend();fireSelectLayoutMarker(existing?existing.id:fireLayoutState.markers[fireLayoutState.markers.length-1].id);
+  if(createdFromMap){
+    toast('Complete the equipment details, service dates and type.');
+    fireShowEquipForm(equipId);
+  }
 }
 function fireSelectLayoutMarker(id){
   fireLayoutSelectedMarkerId=id;
@@ -35021,6 +35027,15 @@ async function fireDeleteInsp(id) {
 }
 
 // ── Equipment Form ────────────────────────────────────────────────
+function fireEnsureEquipTypeOption(type,label){
+  var sel=document.getElementById('fe-type');
+  if(!sel||!type)return;
+  if(!Array.from(sel.options).some(function(o){return o.value===type;})){
+    var o=document.createElement('option');
+    o.value=type;o.textContent=label||fireEquipTypeLabel(type)||type;
+    sel.appendChild(o);
+  }
+}
 function fireShowEquipForm(id) {
   fireEditEquipId = id;
   var modal = document.getElementById('fire-equip-modal');
@@ -35053,6 +35068,7 @@ function fireShowEquipForm(id) {
   if (id) {
     var e = fireAllEquip.find(function(x){ return x.id===id; });
     if (!e) return;
+    fireEnsureEquipTypeOption(e.equipment_type,fireEquipTypeLabel(e.equipment_type));
     document.getElementById('fe-type').value         = e.equipment_type||'';
     document.getElementById('fe-status').value       = e.status||'operational';
     document.getElementById('fe-desc').value         = e.description||'';
@@ -35108,7 +35124,8 @@ async function fireSaveEquip() {
     }
     document.getElementById('fire-equip-modal').style.display = 'none';
     await fireLoadAll();
-    fireRenderEquip();
+    if(fireCurrentTab==='layout')await fireRenderLayout();
+    else fireRenderEquip();
   } catch(e) { toast(actionErrorMessage('Save fire equipment','Fire Certificates',e.message), false); }
 }
 
