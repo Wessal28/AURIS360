@@ -34330,7 +34330,17 @@ async function fireLoadCustomSymbols(){
     var rows=await api('/fire_layout_symbols?company_id=eq.'+fireLayoutCompanyId()+'&select=*&order=label.asc');
     fireLayoutSymbolsSharedReady=true;
     var shared=(rows||[]).map(function(x){return {id:x.id,type:x.item_type,label:x.label,symbol:x.symbol,image:x.image_data||'',shared:true};});
-    fireLayoutCustomSymbolsCache=shared.concat(local.filter(function(l){return !shared.some(function(s){return s.type===l.type;});}));
+    var unsynced=local.filter(function(l){return !l.shared&&!shared.some(function(s){return s.type===l.type;});});
+    if(unsynced.length){
+      for(var i=0;i<unsynced.length;i++){
+        var u=unsynced[i];
+        await api('/fire_layout_symbols',{m:'POST',p:'return=minimal',b:{company_id:fireLayoutCompanyId(),item_type:u.type,label:u.label,symbol:u.symbol||'EQ',image_data:u.image||'',created_by:prof?.id||null,updated_at:new Date().toISOString()}}).catch(function(){});
+      }
+      try{localStorage.removeItem(fireLayoutSymbolKey());}catch(_){ }
+      rows=await api('/fire_layout_symbols?company_id=eq.'+fireLayoutCompanyId()+'&select=*&order=label.asc');
+      shared=(rows||[]).map(function(x){return {id:x.id,type:x.item_type,label:x.label,symbol:x.symbol,image:x.image_data||'',shared:true};});
+    }
+    fireLayoutCustomSymbolsCache=shared;
     var st=document.getElementById('fire-symbol-sync-status');
     if(st)st.innerHTML='<span style="color:var(--green);font-weight:700">Shared company symbols enabled</span>';
   }catch(e){
