@@ -34206,11 +34206,11 @@ function fireRenderEquipStats() {
 function fireLayoutCompanyId(){
   return (isSA()&&sephsCompanyContext)?sephsCompanyContext:(prof?.company_id||'default');
 }
-function fireLayoutEmptyState(){return {id:null,title:'New fire layout',image:null,image_url:null,image_path:null,markers:[]};}
+function fireLayoutEmptyState(){return {id:null,title:'New fire layout',image:null,image_url:null,image_path:null,markers:[],updated_at:null};}
 function fireLayoutNormalise(row){
   if(!row)return fireLayoutEmptyState();
   var markers=Array.isArray(row.markers)?row.markers:[];
-  return {id:row.id||null,title:row.title||'Fire equipment layout',image:row.image_url||row.image||null,image_url:row.image_url||row.image||null,image_path:row.image_path||null,markers:markers};
+  return {id:row.id||null,title:row.title||'Fire equipment layout',image:row.image_url||row.image||null,image_url:row.image_url||row.image||null,image_path:row.image_path||null,markers:markers,updated_at:row.updated_at||null,local_only:!!row.local_only};
 }
 function fireLayoutLocalKey(){return 'auris360_fire_layout_'+fireLayoutCompanyId();}
 function fireLayoutLocalFallback(){
@@ -34345,16 +34345,16 @@ async function fireRenderLayout(){
   var sel=document.getElementById('fire-layout-equipment-select');
   if(sel){
     var placedIds=(fireLayoutState.markers||[]).map(function(m){return m.equipment_id;});
-    var existing=(fireAllEquip||[]).filter(function(e){return placedIds.indexOf(e.id)===-1;}).map(function(e){
-      var label=(e.description||fireEquipTypeLabel(e.equipment_type)||'Fire equipment')+' - '+(e.location||'No location');
+    var available=(fireAllEquip||[]).filter(function(e){return placedIds.indexOf(e.id)===-1;});
+    var existing=available.map(function(e){
+      var label=(e.description||fireEquipTypeLabel(e.equipment_type)||'Fire equipment')+' - '+(e.location||'No location')+(e.serial_number?' - '+e.serial_number:'');
       return '<option value="'+escH(e.id)+'">'+escH(label)+'</option>';
     }).join('');
-    var quick='<optgroup label="Create and place a standard item">'+fireLayoutStandardItems().map(function(x){
+    var existingGroup=existing?'<optgroup label="Registered equipment available for this plan">'+existing+'</optgroup>':'<optgroup label="Registered equipment"><option value="" disabled>All registered fire equipment is already positioned on this plan</option></optgroup>';
+    var quick='<optgroup label="Create new equipment and place it">'+fireLayoutStandardItems().map(function(x){
       return '<option value="quick:'+escH(x[0])+'">+ '+escH(x[1])+'</option>';
     }).join('')+'</optgroup>';
-    sel.innerHTML='<option value="">Select equipment to place...</option>'
-      +(existing?'<optgroup label="Registered equipment not yet on this plan">'+existing+'</optgroup>':'')
-      +quick;
+    sel.innerHTML='<option value="">Select equipment to place...</option>'+existingGroup+quick;
   }
   var img=document.getElementById('fire-layout-img'), empty=document.getElementById('fire-layout-empty');
   if(img){img.src=fireLayoutState.image_url||fireLayoutState.image||'';img.style.display=(fireLayoutState.image_url||fireLayoutState.image)?'block':'none';}
@@ -34375,7 +34375,7 @@ function fireRenderLayoutPlanList(){
         +'<td style="padding:10px">'+markers+'</td>'
         +'<td style="padding:10px">'+(p.image_url?'<span class="badge badge-green">Uploaded</span>':'<span class="badge badge-grey">No image</span>')+'</td>'
         +'<td style="padding:10px">'+(p.updated_at?new Date(p.updated_at).toLocaleString():'--')+'</td>'
-        +'<td style="padding:10px;text-align:right"><button class="btn btn-sm btn-primary" data-id="'+escH(p.id)+'" onclick="fireSelectLayoutPlan(this.dataset.id)"><i class="ti ti-folder-open"></i>Open plan</button></td>'
+        +'<td style="padding:10px;text-align:right;white-space:nowrap"><button class="btn btn-sm btn-primary" data-id="'+escH(p.id)+'" onclick="fireSelectLayoutPlan(this.dataset.id)"><i class="ti ti-folder-open"></i>Open plan</button> <button class="btn btn-sm" data-id="'+escH(p.id)+'" onclick="fireDeleteLayoutPlan(this.dataset.id)" style="color:var(--red)"><i class="ti ti-trash"></i></button></td>'
         +'</tr>';
     }).join('')+'</tbody></table></div>';
 }
@@ -34436,10 +34436,27 @@ async function fireSelectLayoutPlan(id){
 async function fireSaveLayoutPlan(){
   await fireSaveLayoutState();
   fireLayoutCreatingNew=false;
-  fireLayoutEditorOpen=true;
+  fireLayoutEditorOpen=false;
+  fireLayoutSelectedMarkerId=null;
+  fireLayoutMoveMarkerId=null;
   await fireLoadLayoutState();
   await fireRenderLayout();
-  toast('Layout plan saved');
+  toast('Layout plan saved and listed');
+}
+async function fireDeleteLayoutPlan(id){
+  if(!id)return;
+  if(!(await appConfirmAction({title:'Delete layout plan',message:'Delete this saved fire layout plan?',detail:'This removes the plan image reference and positioned markers from the layout register. Fire equipment records remain in the equipment tab.',confirmText:'Delete plan',cancelText:'Cancel',variant:'danger'})))return;
+  try{
+    if(id==='local'){
+      localStorage.removeItem(fireLayoutLocalKey());
+      localStorage.removeItem(fireLayoutLocalKey()+'_selected');
+    }else{
+      await api('/fire_layouts?id=eq.'+id,{m:'DELETE',p:'return=minimal'});
+      if(localStorage.getItem(fireLayoutLocalKey()+'_selected')===id)localStorage.removeItem(fireLayoutLocalKey()+'_selected');
+    }
+    fireLayoutEditorOpen=false;fireLayoutCreatingNew=false;fireLayoutState=fireLayoutEmptyState();
+    await fireLoadLayoutState();await fireRenderLayout();toast('Layout plan deleted');
+  }catch(e){toast(actionErrorMessage('Delete layout plan','Fire Certificates',e.message),false);}
 }
 async function fireAddLayoutMarker(ev){
   if(!(fireLayoutState.image_url||fireLayoutState.image)){toast('Upload a layout plan first',false);return;}
