@@ -34491,7 +34491,7 @@ function fireRenderLayoutPlanList(){
         +'<td style="padding:10px">'+markers+'</td>'
         +'<td style="padding:10px">'+(p.image_url?'<span class="badge badge-green">Uploaded</span>':'<span class="badge badge-grey">No image</span>')+'</td>'
         +'<td style="padding:10px">'+(p.updated_at?new Date(p.updated_at).toLocaleString():'--')+'</td>'
-        +'<td style="padding:10px;text-align:right;white-space:nowrap"><button class="btn btn-sm btn-primary" data-id="'+escH(p.id)+'" onclick="fireSelectLayoutPlan(this.dataset.id)"><i class="ti ti-folder-open"></i>Open plan</button> <button class="btn btn-sm" data-id="'+escH(p.id)+'" onclick="fireDeleteLayoutPlan(this.dataset.id)" style="color:var(--red)"><i class="ti ti-trash"></i></button></td>'
+        +'<td style="padding:10px;text-align:right;white-space:nowrap"><button class="btn btn-sm btn-primary" data-id="'+escH(p.id)+'" onclick="fireSelectLayoutPlan(this.dataset.id)"><i class="ti ti-folder-open"></i>Open plan</button> <button class="btn btn-sm" data-id="'+escH(p.id)+'" onclick="firePrintLayoutPlanById(this.dataset.id)"><i class="ti ti-printer"></i>Print</button> <button class="btn btn-sm" data-id="'+escH(p.id)+'" onclick="fireDeleteLayoutPlan(this.dataset.id)" style="color:var(--red)"><i class="ti ti-trash"></i></button></td>'
         +'</tr>';
     }).join('')+'</tbody></table></div>';
 }
@@ -34539,6 +34539,16 @@ function fireLayoutPrintHtml(){
 function firePrintLayoutPlan(){
   if(!(fireLayoutState.image_url||fireLayoutState.image)){toast('Upload or open a layout plan before printing',false);return;}
   aurisPrint(fireLayoutPrintHtml(),'Fire Layout - '+((document.getElementById('fire-layout-title')?.value||fireLayoutState.title||'Plan')));
+}
+async function firePrintLayoutPlanById(id){
+  var plan=(fireLayoutPlans||[]).find(function(p){return p.id===id;});
+  if(!plan){toast('Layout plan not found',false);return;}
+  var previous=fireLayoutState;
+  fireLayoutState=fireLayoutNormalise(plan);
+  await fireLoadCustomSymbols();
+  if(!(fireLayoutState.image_url||fireLayoutState.image)){toast('This layout has no uploaded plan image to print',false);fireLayoutState=previous;return;}
+  aurisPrint(fireLayoutPrintHtml(),'Fire Layout - '+(fireLayoutState.title||'Plan'));
+  fireLayoutState=previous;
 }
 async function fireUploadLayout(input){
   var file=input?.files?.[0];if(!file)return;
