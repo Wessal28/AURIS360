@@ -15730,12 +15730,12 @@ function raLibCompanyQuery(){
 
 function raStandardHazards(){
   return [
-    {id:'std_work_height',category:'Working at height',hazard_type:'height',hazard_description:'Fall from height while accessing or working at elevated level',potential_harm:'Serious injury or fatality',default_severity:5,default_probability:2},
-    {id:'std_manual_handling',category:'Manual handling',hazard_type:'manual_handling',hazard_description:'Manual lifting, carrying, pushing or pulling of loads',potential_harm:'Back injury, strains, sprains or crush injury',default_severity:3,default_probability:3},
-    {id:'std_electrical',category:'Electrical',hazard_type:'electrical',hazard_description:'Contact with live electrical parts or unexpected energisation',potential_harm:'Electric shock, burns, fire or fatality',default_severity:5,default_probability:2},
-    {id:'std_slips_trips',category:'Housekeeping',hazard_type:'slips_trips',hazard_description:'Slips, trips and falls from poor housekeeping or uneven surfaces',potential_harm:'Fracture, sprain, impact injury or lost time injury',default_severity:3,default_probability:3},
-    {id:'std_chemical',category:'Chemical',hazard_type:'chemical',hazard_description:'Exposure to hazardous substances, fumes, vapours or splashes',potential_harm:'Burns, irritation, poisoning or occupational illness',default_severity:4,default_probability:2},
-    {id:'std_fire',category:'Fire',hazard_type:'fire',hazard_description:'Ignition of combustible materials or uncontrolled hot work',potential_harm:'Fire, explosion, burns, smoke inhalation or property damage',default_severity:5,default_probability:2}
+    {id:'std_work_height',category:'Working at height',hazard_type:'height',hazard_description:'Fall from height while accessing or working at elevated level',potential_harm:'Serious injury or fatality',default_severity:5,default_probability:2,controls:'Use fixed access, inspected scaffold or MEWP where practicable; provide edge protection; maintain exclusion zone below work area; work by competent persons only; stop work in unsafe weather.',further_controls:'Prepare rescue plan; inspect harness and lanyards before use; confirm anchorage points; issue permit to work where required.',hoc_level:'engineering',res_s:5,res_p:1,legal_ref:'Work at Height / OSH safe access requirements'},
+    {id:'std_manual_handling',category:'Manual handling',hazard_type:'manual_handling',hazard_description:'Manual lifting, carrying, pushing or pulling of loads',potential_harm:'Back injury, strains, sprains or crush injury',default_severity:3,default_probability:3,controls:'Assess load before lifting; use team lift or mechanical aid; keep route clear; keep load close to body; avoid twisting; brief workers on safe lifting technique.',further_controls:'Use trolley, hoist or lifting aid; split heavy loads; reduce carrying distance; rotate task where repetitive handling is required.',hoc_level:'engineering',res_s:3,res_p:1,legal_ref:'OSH manual handling principles'},
+    {id:'std_electrical',category:'Electrical',hazard_type:'electrical',hazard_description:'Contact with live electrical parts or unexpected energisation',potential_harm:'Electric shock, burns, fire or fatality',default_severity:5,default_probability:2,controls:'Isolate supply; lock-out/tag-out; test before touch; keep panels closed; use insulated tools; restrict work to competent electrical personnel.',further_controls:'Issue electrical permit where applicable; verify zero energy with approved tester; display warning tags and keep records of isolation.',hoc_level:'engineering',res_s:5,res_p:1,legal_ref:'Electrical safety / isolation requirements'},
+    {id:'std_slips_trips',category:'Housekeeping',hazard_type:'slips_trips',hazard_description:'Slips, trips and falls from poor housekeeping or uneven surfaces',potential_harm:'Fracture, sprain, impact injury or lost time injury',default_severity:3,default_probability:3,controls:'Keep walkways clear; clean spills immediately; manage trailing cables; provide adequate lighting; maintain good housekeeping during the task.',further_controls:'Assign periodic housekeeping checks; repair uneven surfaces; use anti-slip matting or barriers where needed.',hoc_level:'administrative',res_s:3,res_p:1,legal_ref:'OSH workplace housekeeping requirements'},
+    {id:'std_chemical',category:'Chemical',hazard_type:'chemical',hazard_description:'Exposure to hazardous substances, fumes, vapours or splashes',potential_harm:'Burns, irritation, poisoning or occupational illness',default_severity:4,default_probability:2,controls:'Review SDS before use; keep containers labelled and closed; provide ventilation; use correct PPE; keep spill kit available; avoid incompatible storage.',further_controls:'Substitute with less hazardous product where possible; carry out chemical risk assessment; conduct exposure monitoring if required.',hoc_level:'substitution',res_s:4,res_p:1,legal_ref:'Chemical safety / SDS requirements'},
+    {id:'std_fire',category:'Fire',hazard_type:'fire',hazard_description:'Ignition of combustible materials or uncontrolled hot work',potential_harm:'Fire, explosion, burns, smoke inhalation or property damage',default_severity:5,default_probability:2,controls:'Remove or protect combustible materials; keep suitable extinguishers nearby; appoint fire watch; isolate ignition sources; brief emergency arrangements.',further_controls:'Issue hot work permit; complete gas test where applicable; maintain fire watch during and after work; verify area is safe before handover.',hoc_level:'administrative',res_s:5,res_p:1,legal_ref:'Fire safety / hot work controls'}
   ];
 }
 
@@ -15768,7 +15768,12 @@ async function raAddFromLibrary(libId){
   var row={
     hazard:item.hazard_description,harm:item.potential_harm||'',who:'All workers',
     rs:item.default_severity||3,rop:item.default_probability||3,
-    controls:'',hoc_level:'administrative',res_s:item.default_severity||3,res_p:1
+    controls:item.controls||item.control_measures||item.existing_controls||'',
+    further_controls:item.further_controls||item.additional_controls||item.corrective_actions||'',
+    hoc_level:item.hoc_level||item.hierarchy_level||'administrative',
+    res_s:item.res_s||item.residual_severity||item.default_residual_severity||item.default_severity||3,
+    res_p:item.res_p||item.residual_probability||item.default_residual_probability||1,
+    legal_ref:item.legal_ref||item.legal_reference||''
   };
   var type=raEditingType;
   if(type==='task')raTaskAddRow(row);
@@ -15818,7 +15823,7 @@ async function raGetControlSuggestions(btn){
 
 async function raGetControlSuggestionsForHazard(hazardType){
   try{
-    var d=await api('/control_library?hazard_type=eq.'+encodeURIComponent(hazardType)+'&or=(is_global.eq.true,company_id.eq.'+prof?.company_id+')&limit=5');
+    var d=await api('/control_library?hazard_type=eq.'+encodeURIComponent(hazardType)+raLibCompanyQuery()+'&limit=5');
     if(d&&d.length){
       var rows=document.querySelectorAll('#ra-baseline-body tr, #ra-hira-body tr, #ra-task-body tr');
       var lastRow=rows[rows.length-1];
