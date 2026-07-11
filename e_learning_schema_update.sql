@@ -10,6 +10,7 @@ alter table public.elearning_courses
   add column if not exists mandatory boolean default false;
 
 alter table public.elearning_enrolments
+  add column if not exists target_date date,
   add column if not exists score integer,
   add column if not exists expiry_date date,
   add column if not exists attempts integer,
