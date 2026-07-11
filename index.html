@@ -34486,6 +34486,10 @@ function fireLayoutStandardItems(){
   ];
   return base.concat(fireLayoutCustomSymbols().map(function(x){return [x.type,x.label];}));
 }
+function fireLayoutIsMapOnlyEquipment(e){
+  var txt=[e?.location,e?.notes,e?.description].filter(Boolean).join(' ').toLowerCase();
+  return txt.includes('positioned on site layout')||txt.includes('created from site layout map');
+}
 async function fireCreateLayoutEquipment(type,x,y){
   var cid=fireLayoutCompanyId();
   var body={
@@ -34522,12 +34526,14 @@ async function fireRenderLayout(){
   var sel=document.getElementById('fire-layout-equipment-select');
   if(sel){
     var placedIds=(fireLayoutState.markers||[]).map(function(m){return m.equipment_id;});
-    var available=(fireAllEquip||[]).filter(function(e){return placedIds.indexOf(e.id)===-1;});
+    var available=(fireAllEquip||[]).filter(function(e){
+      return placedIds.indexOf(e.id)===-1&&!fireLayoutIsMapOnlyEquipment(e);
+    });
     var existing=available.map(function(e){
       var label=(e.description||fireEquipTypeLabel(e.equipment_type)||'Fire equipment')+' - '+(e.location||'No location')+(e.serial_number?' - '+e.serial_number:'');
       return '<option value="'+escH(e.id)+'">'+escH(label)+'</option>';
     }).join('');
-    var existingGroup=existing?'<optgroup label="Registered equipment available for this plan">'+existing+'</optgroup>':'<optgroup label="Registered equipment"><option value="" disabled>All registered fire equipment is already positioned on this plan</option></optgroup>';
+    var existingGroup=existing?'<optgroup label="Unpositioned registered equipment">'+existing+'</optgroup>':'<optgroup label="Unpositioned registered equipment"><option value="" disabled>No unpositioned registered fire equipment available</option></optgroup>';
     var quick='<optgroup label="Create new equipment and place it">'+fireLayoutStandardItems().map(function(x){
       return '<option value="quick:'+escH(x[0])+'">+ '+escH(x[1])+'</option>';
     }).join('')+'</optgroup>';
