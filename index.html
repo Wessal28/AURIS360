@@ -14634,7 +14634,8 @@ function raTaskAddRow(r){
     +'<td class="ra-score-cell">'+raRsSelect(s,'')+'</td>'
     +'<td class="ra-score-cell">'+raRopSelect(p,'')+'</td>'
     +'<td class="rl ra-risk-badge-cell" data-score="'+rr+'" data-level="'+rlLvl+'"><span style="background:'+rlCfg[0]+';color:'+rlCfg[1]+';padding:2px 5px;border-radius:4px;font-size:10px;font-weight:700;display:block;text-align:center">'+rr+'<br><span style="font-size:9px">'+rlLvl+'</span></span></td>'
-    +'<td style="padding:5px 8px"><textarea class="ra-further-controls" style="width:100%;min-height:50px;padding:4px;border:1px solid var(--border);border-radius:4px;font-size:11px;resize:vertical" placeholder="Further actions / additional controls...">'+escH(r.further_controls||r.further_actions||r.additional_controls||'')+'</textarea></td>'
+    +'<td style="padding:5px 8px"><textarea class="ra-further-controls" style="width:100%;min-height:50px;padding:4px;border:1px solid var(--border);border-radius:4px;font-size:11px;resize:vertical" placeholder="Further actions / additional controls...">'+escH(r.further_controls||r.further_actions||r.additional_controls||'')+'</textarea>'
+    +'<input class="ra-hoc" type="hidden" value="'+escH(r.hoc_level||r.hierarchy||'')+'"/><input class="ra-legal" type="hidden" value="'+escH(r.legal_ref||r.legal||'')+'"/></td>'
     +'<td class="ra-score-cell">'+raRsSelect(rs,'r-')+'</td>'
     +'<td class="ra-score-cell">'+raRopSelect(rp,'r-')+'</td>'
     +'<td class="r-rl ra-risk-badge-cell" data-score="'+rrr+'" data-level="'+rrlLvl+'"><span style="background:'+rrlCfg[0]+';color:'+rrlCfg[1]+';padding:2px 5px;border-radius:4px;font-size:10px;font-weight:700;display:block;text-align:center">'+rrr+'<br><span style="font-size:9px">'+rrlLvl+'</span></span></td>'
@@ -14713,6 +14714,8 @@ function raCollectRows(){
         rr:rr,rl:raRiskLevelFromFactors(parseInt(tr.querySelector('.rs')?.value)||1,parseInt(tr.querySelector('.rop')?.value)||1),
         controls:tr.querySelector('.ra-controls')?.value||'',
         further_controls:tr.querySelector('.ra-further-controls')?.value||'',
+        hoc_level:tr.querySelector('.ra-hoc')?.value||'',
+        legal_ref:tr.querySelector('.ra-legal')?.value||'',
         action_by:tr.querySelector('.ra-action-by')?.value||'',
         target_date:tr.querySelector('.ra-target-date')?.value||'',
         res_s:parseInt(tr.querySelector('.r-rs')?.value)||1,
