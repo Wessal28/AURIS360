@@ -34599,7 +34599,7 @@ function fireLayoutPrintHtml(){
   var markerHtml=markers.map(function(m,i){
     var e=(fireAllEquip||[]).find(function(x){return x.id===m.equipment_id;})||{};
     var st=fireLayoutMarkerStatus(e);
-    return '<div style="position:absolute;left:'+m.x+'%;top:'+m.y+'%;transform:translate(-50%,-50%);width:28px;height:28px;border-radius:999px;border:2px solid #fff;background:'+st.color+';color:#fff;box-shadow:0 2px 8px rgba(0,0,0,.35);display:flex;align-items:center;justify-content:center;font-size:8pt;font-weight:900">'+(i+1)+'</div>';
+    return '<div style="position:absolute;left:'+m.x+'%;top:'+m.y+'%;transform:translate(-50%,-50%);width:32px;height:32px;border-radius:999px;border:2px solid #fff;background:'+st.color+';color:#fff;box-shadow:0 2px 8px rgba(0,0,0,.35);display:flex;align-items:center;justify-content:center;font-size:8pt;font-weight:900">'+fireEquipIconHtml(e.equipment_type)+'<span style="position:absolute;right:-6px;top:-7px;min-width:16px;height:16px;border-radius:999px;background:#111827;color:#fff;border:1px solid #fff;display:flex;align-items:center;justify-content:center;font-size:7pt;font-weight:900;line-height:1">'+(i+1)+'</span></div>';
   }).join('');
   var legend=markers.map(function(m,i){
     var e=(fireAllEquip||[]).find(function(x){return x.id===m.equipment_id;})||{};
