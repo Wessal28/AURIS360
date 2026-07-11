@@ -24500,6 +24500,37 @@ function dcMimeFromName(name){
   return map[ext] || 'application/octet-stream';
 }
 
+function appAttachFileToField(fileInput, urlFieldId, nameFieldId){
+  var file=fileInput&&fileInput.files&&fileInput.files[0];
+  if(!file)return;
+  if(file.size>12*1024*1024){
+    toast('Attachment too large - max 12 MB for inline record attachments. Use Document Control for larger files.',false);
+    fileInput.value='';
+    return;
+  }
+  var rd=new FileReader();
+  rd.onload=function(){
+    var urlEl=document.getElementById(urlFieldId);
+    if(urlEl)urlEl.value=rd.result;
+    if(nameFieldId){
+      var nameEl=document.getElementById(nameFieldId);
+      if(nameEl)nameEl.value=file.name;
+    }
+    toast('Attachment loaded for preview. Save the record to keep it.');
+  };
+  rd.onerror=function(){toast('Could not read attachment',false);};
+  rd.readAsDataURL(file);
+}
+
+function appPreviewFieldDocument(urlFieldId, nameFieldId, fallbackName){
+  var url=(document.getElementById(urlFieldId)?.value||'').trim();
+  var name=nameFieldId?(document.getElementById(nameFieldId)?.value||''):'';
+  name=name||fallbackName||'Attached document';
+  if(!url){toast('No attachment to preview',false);return;}
+  var dataMime=(url.match(/^data:([^;,]+)/)||[])[1];
+  dcOpenViewer({file_url:url,file_name:name,file_mime:dataMime||dcMimeFromName(name||url)});
+}
+
 function dcIconForMime(mime, name){
   var ext = (name||'').toLowerCase().split('.').pop();
   if(mime==='application/pdf') return 'ti-file-type-pdf';
@@ -37880,7 +37911,11 @@ function fireEquipStatusBadge(s) {
 <div class="form-group"><label class="form-label">Collected by</label><input type="text" id="ims-ev-collected-by"/></div>
 <div class="form-group"><label class="form-label">Collected date</label><input type="date" id="ims-ev-date"/></div>
 </div>
-<div class="form-group"><label class="form-label">File URL (photo/video/document link)</label><input type="text" id="ims-ev-url" placeholder="https://... or paste link from cloud storage"/></div>
+<div class="form-group"><label class="form-label">Evidence attachment</label><input type="text" id="ims-ev-url" placeholder="Upload file or paste link"/>
+<div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap">
+<label class="btn btn-sm" style="cursor:pointer"><i class="ti ti-upload"></i>Upload evidence<input type="file" accept=".pdf,.doc,.docx,.png,.jpg,.jpeg,.webp,.mp4,.mov,.m4a,.mp3" onchange="appAttachFileToField(this,'ims-ev-url','ims-ev-filename')" style="display:none"/></label>
+<button type="button" class="btn btn-sm" onclick="appPreviewFieldDocument('ims-ev-url','ims-ev-filename','Incident evidence')"><i class="ti ti-eye"></i>Preview</button>
+</div></div>
 <div class="form-group"><label class="form-label">File name</label><input type="text" id="ims-ev-filename"/></div>
 <!-- Witness statement fields -->
 <div id="ims-ev-witness-fields" style="display:none">
@@ -42519,7 +42554,11 @@ function fireEquipStatusBadge(s) {
 <div class="form-row3">
 <div class="form-group"><label class="form-label">Issue date</label><input type="date" id="pcf-cert-issue"/></div>
 <div class="form-group"><label class="form-label">Expiry / validity date</label><input type="date" id="pcf-cert-expiry"/></div>
-<div class="form-group"><label class="form-label">Certificate URL / attachment</label><input type="url" id="pcf-cert-url" placeholder="https://..."/></div>
+<div class="form-group"><label class="form-label">Certificate attachment</label><input type="text" id="pcf-cert-url" placeholder="Upload certificate or paste link"/></div>
+</div>
+<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:-4px;margin-bottom:8px">
+<label class="btn btn-sm" style="cursor:pointer"><i class="ti ti-upload"></i>Upload certificate<input type="file" accept=".pdf,.doc,.docx,.png,.jpg,.jpeg" onchange="appAttachFileToField(this,'pcf-cert-url')" style="display:none"/></label>
+<button type="button" class="btn btn-sm" onclick="appPreviewFieldDocument('pcf-cert-url',null,document.getElementById('pcf-cert-ref')?.value||'PPE certificate')"><i class="ti ti-eye"></i>Preview</button>
 </div>
 </div>
 <div class="form-group"><label class="form-label">Linked hazard types (comma separated)</label><input type="text" id="pcf-hazards" placeholder="e.g. falling objects, noise, chemical splash, height..."/></div>
@@ -43099,7 +43138,7 @@ function fireEquipStatusBadge(s) {
 <option value="intranet">Intranet / Portal</option><option value="printed">Printed copy</option>
 <option value="meeting">Distributed at meeting</option><option value="all">All channels</option>
 </select></div>
-<div class="form-group"><label class="form-label">File URL / attachment</label><input type="text" id="bullf-file-url" placeholder="https://..."/></div>
+<div class="form-group"><label class="form-label">Attachment</label><input type="text" id="bullf-file-url" placeholder="Upload document or paste link"/></div>
 <div class="form-group"><label class="form-label">File name</label><input type="text" id="bullf-file-name" placeholder="safety-bulletin-may2026.pdf"/></div>
 <label class="btn" style="width:100%;justify-content:center;margin-bottom:8px;cursor:pointer"><i class="ti ti-upload"></i>Upload document for preview<input type="file" accept=".pdf,.doc,.docx,.png,.jpg,.jpeg" onchange="bulletinUploadAttachment(this)" style="display:none"/></label>
 <button type="button" class="btn" style="width:100%;justify-content:center;margin-bottom:8px" onclick="bulletinPreviewCurrent()"><i class="ti ti-eye-check"></i>Preview / mark as checked</button>
@@ -43551,7 +43590,11 @@ function fireEquipStatusBadge(s) {
 </div>
 <div class="form-row">
 <div class="form-group"><label class="form-label">Refresher due</label><input type="date" id="tfr-refresher"/></div>
-<div class="form-group"><label class="form-label">Certificate URL</label><input type="text" id="tfr-cert-url" placeholder="https://..."/></div>
+<div class="form-group"><label class="form-label">Certificate attachment</label><input type="text" id="tfr-cert-url" placeholder="Upload certificate or paste link"/>
+<div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap">
+<label class="btn btn-sm" style="cursor:pointer"><i class="ti ti-upload"></i>Upload<input type="file" accept=".pdf,.doc,.docx,.png,.jpg,.jpeg" onchange="appAttachFileToField(this,'tfr-cert-url')" style="display:none"/></label>
+<button type="button" class="btn btn-sm" onclick="appPreviewFieldDocument('tfr-cert-url',null,document.getElementById('tfr-cert')?.value||'Training certificate')"><i class="ti ti-eye"></i>Preview</button>
+</div></div>
 </div>
 <div class="form-group"><label class="form-label">Notes</label><textarea id="tfr-notes" style="min-height:40px"></textarea></div>
 </div>
@@ -43794,7 +43837,11 @@ function fireEquipStatusBadge(s) {
 <div class="form-row">
 <div class="form-group"><label class="form-label">Status</label>
 <select id="authr-status"><option value="active">Active</option><option value="expired">Expired</option><option value="suspended">Suspended</option><option value="pending">Pending renewal</option></select></div>
-<div class="form-group"><label class="form-label">Certificate URL</label><input type="text" id="authr-cert-url" placeholder="https://..."/></div>
+<div class="form-group"><label class="form-label">Certificate attachment</label><input type="text" id="authr-cert-url" placeholder="Upload certificate or paste link"/>
+<div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap">
+<label class="btn btn-sm" style="cursor:pointer"><i class="ti ti-upload"></i>Upload<input type="file" accept=".pdf,.doc,.docx,.png,.jpg,.jpeg" onchange="appAttachFileToField(this,'authr-cert-url')" style="display:none"/></label>
+<button type="button" class="btn btn-sm" onclick="appPreviewFieldDocument('authr-cert-url',null,document.getElementById('authr-ref')?.value||'Licence certificate')"><i class="ti ti-eye"></i>Preview</button>
+</div></div>
 <div class="form-group"><label class="form-label">Scope / restrictions</label><input type="text" id="authr-scope" placeholder="e.g. 5 tonne max..."/></div>
 </div>
 <div class="form-group"><label class="form-label">Notes</label><textarea id="authr-notes" style="min-height:40px"></textarea></div>
@@ -46988,7 +47035,12 @@ I can help you:<br>
       <div class="form-group"><label class="form-label">Renewal Date</label><input type="date" id="fc-renewal-date"/></div>
     </div>
     <div class="form-group"><label class="form-label">Conditions Attached to Certificate</label><textarea id="fc-conditions" rows="2" placeholder="Any conditions or requirements specified on the certificate..."></textarea></div>
-    <div class="form-group"><label class="form-label">Document URL (link to scanned certificate)</label><input type="text" id="fc-doc-url" placeholder="https://..."/></div>
+    <div class="form-group"><label class="form-label">Scanned certificate attachment</label><input type="text" id="fc-doc-url" placeholder="Upload scanned certificate or paste link"/>
+      <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap">
+        <label class="btn btn-sm" style="cursor:pointer"><i class="ti ti-upload"></i>Upload certificate<input type="file" accept=".pdf,.doc,.docx,.png,.jpg,.jpeg" onchange="appAttachFileToField(this,'fc-doc-url')" style="display:none"/></label>
+        <button type="button" class="btn btn-sm" onclick="appPreviewFieldDocument('fc-doc-url',null,document.getElementById('fc-number')?.value||'Fire certificate')"><i class="ti ti-eye"></i>Preview</button>
+      </div>
+    </div>
     <div class="form-group"><label class="form-label">Notes</label><textarea id="fc-notes" rows="2" placeholder="Additional notes..."></textarea></div>
     <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:20px">
       <button class="btn" onclick="document.getElementById('fire-cert-modal').style.display='none'">Cancel</button>
