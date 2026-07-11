@@ -9314,6 +9314,19 @@ return isSA()||role==='admin'||role==='hse_manager'||role==='hr';
 function peopleName(p){
 return [p?.first_name,p?.last_name].filter(Boolean).join(' ').trim()||p?.email||'Person';
 }
+function peopleDefaultUserRole(p){
+return (p?.person_type==='contractor'||p?.person_type==='subcontractor')?'contractor':'employee';
+}
+function peopleCompanyLoginSlug(){
+var cid=ccid();
+var c=(typeof adminCompaniesData!=='undefined'?adminCompaniesData:[]).find(function(x){return x.id===cid;});
+var nm=c?.name||co?.name||'company';
+return String(nm).toLowerCase().replace(/[^a-z0-9]/g,'').substring(0,20)||'company';
+}
+function peopleSyntheticEmail(p){
+var name=peopleName(p).toLowerCase().replace(/[^a-z0-9 ]/g,'').replace(/\s+/g,'.').replace(/^\.+|\.+$/g,'').substring(0,30)||'user';
+return name+'@'+peopleCompanyLoginSlug()+'.local';
+}
 function peopleSetFormTitle(text){
 const t=document.querySelector('#people-form .card-title');
 if(t)t.textContent=text;
@@ -9380,6 +9393,38 @@ const p=peAllData.find(x=>x.id===id);
 if(!p){toast('Person not found',false);return;}
 peopleFillForm(p);
 }
+async function peopleOnboardUser(id){
+if(!peopleCanManage()){toast('Access denied',false);return;}
+if(typeof adminFnCall!=='function'){toast('User administration service is not available yet',false);return;}
+var p=peAllData.find(function(x){return x.id===id;});
+if(!p){toast('Person not found',false);return;}
+var name=peopleName(p);
+var realEmail=isDeliverableEmail(p.email)?String(p.email).trim():'';
+var loginEmail=realEmail||peopleSyntheticEmail(p);
+var role=peopleDefaultUserRole(p);
+try{
+  var existing=await api('/profiles?select=id,email,full_name,role&email=eq.'+encodeURIComponent(loginEmail)+'&limit=1');
+  if(existing&&existing.length){
+    toast('A user account already exists for '+loginEmail,false);
+    return;
+  }
+}catch(ex){}
+if(realEmail){
+  if(!(await appConfirmAction({title:'Onboard person as user',message:'Send a login invitation to '+name+'?',detail:'The invitation will be sent to '+realEmail+' and the account will start with the '+role.replace('_',' ')+' role.',confirmText:'Send invitation',cancelText:'Cancel'})))return;
+  try{
+    await adminFnCall('invite_user',{email:realEmail,full_name:name,role:role,company_id:ccid()});
+    toast('Invitation sent to '+realEmail);
+  }catch(e){toast(e.message,false);}
+  return;
+}
+var pw=cuGenerateTempPassword();
+if(!(await appConfirmAction({title:'Create login-only account',message:'Create a generated login for '+name+'?',detail:'No real email is recorded for this person. A .local username and temporary password will be created and must be shared directly.',confirmText:'Create account',cancelText:'Cancel'})))return;
+try{
+  await adminFnCall('create_user',{email:loginEmail,password:pw,full_name:name,role:role,company_id:ccid()});
+  usersShowTempPasswordResult({email:loginEmail,full_name:name},pw);
+  toast('Login-only account created');
+}catch(e){toast(e.message,false);}
+}
 function peopleRender(){
 const el=document.getElementById('people-list');if(!el)return;
 const type=document.getElementById('filter-ptype')?.value||'';
@@ -9393,7 +9438,8 @@ const typeBadge=p.person_type==='employee'?'bg':p.person_type==='contractor'?'bb
 const hse=(p.induction_completed?'<span style="color:var(--green);font-weight:700">Inducted</span>':'<span style="color:var(--amber);font-weight:700">Induction pending</span>')+'<br><span style="font-size:11px;color:var(--text2)">Medical: '+dateText(p.medical_fitness_date)+'</span>';
 const employment='<div>'+(p.job_title?escH(p.job_title):'--')+'</div><div style="font-size:11px;color:var(--text2)">Start: '+dateText(p.start_date)+(p.end_date?' | End: '+dateText(p.end_date):'')+'</div>';
 const contractor=p.person_type!=='employee'&&p.company_name?'<div style="font-size:11px;color:var(--blue);font-weight:700">'+escH(p.company_name)+'</div>':'';
-const actions=peopleCanManage()?'<div style="display:flex;gap:6px;flex-wrap:wrap"><button class="btn btn-sm" onclick="peopleEdit(\''+p.id+'\')"><i class="ti ti-edit"></i>Edit</button>'+(p.status==='inactive'?'<button class="btn btn-sm" onclick="peopleReactivate(\''+p.id+'\')">Reactivate</button>':'<button class="btn btn-sm danger" onclick="peopleDeactivate(\''+p.id+'\')">Deactivate</button>')+'</div>':'<span style="font-size:11px;color:var(--text3)">View only</span>';
+const onboardTitle=isDeliverableEmail(p.email)?'Send login invitation':'Create generated login';
+const actions=peopleCanManage()?'<div style="display:flex;gap:6px;flex-wrap:wrap"><button class="btn btn-sm" onclick="peopleEdit(\''+p.id+'\')"><i class="ti ti-edit"></i>Edit</button><button class="btn btn-sm" onclick="peopleOnboardUser(\''+p.id+'\')" title="'+onboardTitle+'"><i class="ti ti-user-plus"></i>Onboard user</button>'+(p.status==='inactive'?'<button class="btn btn-sm" onclick="peopleReactivate(\''+p.id+'\')">Reactivate</button>':'<button class="btn btn-sm danger" onclick="peopleDeactivate(\''+p.id+'\')">Deactivate</button>')+'</div>':'<span style="font-size:11px;color:var(--text3)">View only</span>';
 return '<tr><td><strong>'+escH(peopleName(p))+'</strong>'+contractor+'<div style="font-size:11px;color:var(--text2)">ID: '+escH(p.id_number||'--')+'</div></td><td><span class="badge '+typeBadge+'">'+escH(p.person_type||'person')+'</span></td><td>'+escH(p.department||'--')+'<br><span style="font-size:11px;color:var(--text2)">'+escH(p.site||'--')+'</span></td><td>'+escH(p.email||'--')+'<br><span style="font-size:11px;color:var(--text2)">'+escH(p.phone||'--')+'</span></td><td>'+employment+'</td><td>'+hse+'</td><td>'+stat(p.status||'active')+'</td><td>'+actions+'</td></tr>';
 }).join('')+'</tbody></table></div>';
 }
