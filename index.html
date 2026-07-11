@@ -2675,6 +2675,7 @@ function obsNew(type) {
   document.getElementById('obs-ppe-worn').value = 'na';
   document.querySelectorAll('[name="obs-ppe"]').forEach(r=>{r.checked=r.value==='na';});
   obsSelectType(type || 'bbs_observation');
+  obsUpdateScopeState();
   obsSetFormMode(true);
   document.getElementById('obs-form-view').style.display = 'block';
   ['list','positive','unsafe','trends'].forEach(t=>{var el=document.getElementById('obs-view-'+t);if(el)el.style.display='none';});
@@ -2725,6 +2726,7 @@ function obsEdit(id) {
   document.getElementById('obs-ppe-worn').value = ppeVal;
   document.querySelectorAll('[name="obs-ppe"]').forEach(r=>{r.checked=r.value===ppeVal;});
   obsSelectType('bbs_observation');
+  obsUpdateScopeState();
   obsSetFormMode(true);
   document.getElementById('obs-form-view').style.display = 'block';
   ['list','positive','unsafe','trends'].forEach(t=>{var el=document.getElementById('obs-view-'+t);if(el)el.style.display='none';});
@@ -2749,6 +2751,29 @@ function obsSelectType(type) {
   document.getElementById('obs-unsafe-section').style.display = 'block';
   var titleEl=document.getElementById('obs-unsafe-section-title');
   if(titleEl) titleEl.textContent = '⚠️ Unsafe Behaviour / Unsafe Condition';
+}
+
+function obsUpdateScopeState(){
+  var cfg={
+    positive_behaviour:['obs-positive-text','obs-positive-reinforce'],
+    unsafe_behaviour:['obs-text'],
+    unsafe_condition:['obs-condition-text']
+  };
+  document.querySelectorAll('.obs-type-btn').forEach(function(btn){
+    var fields=cfg[btn.dataset.type]||[];
+    var recorded=fields.some(function(id){
+      var el=document.getElementById(id);
+      return !!(el&&String(el.value||'').trim());
+    });
+    btn.style.boxShadow=recorded?'0 0 0 3px rgba(29,158,117,.16)':'none';
+    btn.style.opacity=recorded?'1':'.86';
+    var badge=btn.querySelector('.obs-scope-status');
+    if(badge){
+      badge.textContent=recorded?'Recorded':'Optional';
+      badge.style.background=recorded?'#DCFCE7':'#f3f4f6';
+      badge.style.color=recorded?'#166534':'var(--text2)';
+    }
+  });
 }
 
 function obsToggleAction() {
@@ -37482,13 +37507,13 @@ function fireEquipStatusBadge(s) {
 <!-- What was observed -->
 <div class="card" style="margin-bottom:14px" id="obs-positive-section">
 <div class="card-title" style="color:#1D9E75">✅ Positive Observation</div>
-<div class="form-group"><label class="form-label">What safe behaviour / good practice was observed?</label><textarea id="obs-positive-text" style="min-height:80px" placeholder="Describe the safe behaviour, what was done correctly, and why it was good practice..."></textarea></div>
-<div class="form-group"><label class="form-label">What positive aspects should be reinforced?</label><textarea id="obs-positive-reinforce" style="min-height:60px" placeholder="What should be recognised and encouraged?"></textarea></div>
+<div class="form-group"><label class="form-label">What safe behaviour / good practice was observed?</label><textarea id="obs-positive-text" style="min-height:80px" placeholder="Describe the safe behaviour, what was done correctly, and why it was good practice..." oninput="obsUpdateScopeState()"></textarea></div>
+<div class="form-group"><label class="form-label">What positive aspects should be reinforced?</label><textarea id="obs-positive-reinforce" style="min-height:60px" placeholder="What should be recognised and encouraged?" oninput="obsUpdateScopeState()"></textarea></div>
 </div>
 <div class="card" style="margin-bottom:14px" id="obs-unsafe-section" style="display:none">
 <div class="card-title" style="color:#DC2626" id="obs-unsafe-section-title">⚠️ Unsafe Observation</div>
-<div class="form-group"><label class="form-label">Unsafe behaviour observed</label><textarea id="obs-text" style="min-height:80px" placeholder="Describe the at-risk action, shortcut or unsafe behaviour observed..."></textarea></div>
-<div class="form-group"><label class="form-label">Unsafe condition observed</label><textarea id="obs-condition-text" style="min-height:70px" placeholder="Describe the physical condition, workplace hazard or unsafe state observed..."></textarea></div>
+<div class="form-group"><label class="form-label">Unsafe behaviour observed</label><textarea id="obs-text" style="min-height:80px" placeholder="Describe the at-risk action, shortcut or unsafe behaviour observed..." oninput="obsUpdateScopeState()"></textarea></div>
+<div class="form-group"><label class="form-label">Unsafe condition observed</label><textarea id="obs-condition-text" style="min-height:70px" placeholder="Describe the physical condition, workplace hazard or unsafe state observed..." oninput="obsUpdateScopeState()"></textarea></div>
 <div class="form-group"><label class="form-label">Immediate / direct cause</label><textarea id="obs-immediate-cause" style="min-height:60px" placeholder="What was the immediate cause of the unsafe situation?"></textarea></div>
 <div class="form-group"><label class="form-label">Potential consequence (if unaddressed)</label><input type="text" id="obs-consequence" placeholder="e.g. Fall from height, Chemical splash, Crush injury..."/></div>
 </div>
