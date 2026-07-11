@@ -43903,7 +43903,7 @@ function fireEquipStatusBadge(s) {
 <!-- Tabs -->
 <div style="display:flex;gap:0;margin-bottom:16px;border-bottom:2px solid var(--border)">
 <button class="mtg-tab active" id="sop-tab-list" onclick="sopSwitchTab('list',this)">📄 All SOPs</button>
-<button class="mtg-tab" id="sop-tab-create" onclick="sopSwitchTab('create',this)">✨ Create New</button>
+<button class="mtg-tab" id="sop-tab-create" onclick="sopNew()">✨ Create New</button>
 </div>
 
 <!-- LIST VIEW -->
@@ -44037,7 +44037,9 @@ function fireEquipStatusBadge(s) {
 <div class="card" style="margin-bottom:12px;padding:14px 20px">
 <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
 <div style="font-size:15px;font-weight:700">Step 5 — Review, edit & save your SOP</div>
-<div style="display:flex;gap:8px">
+<div style="display:flex;gap:8px;flex-wrap:wrap">
+<button class="btn" onclick="sopGoStep(3)"><i class="ti ti-arrow-left"></i>Back to frames</button>
+<button class="btn" onclick="sopCancel()"><i class="ti ti-list"></i>Back to SOP list</button>
 <button class="btn" onclick="sopPrint()"><i class="ti ti-printer"></i>Print / PDF</button>
 <button class="btn btn-primary" onclick="sopSaveDocument()"><i class="ti ti-device-floppy"></i>Save SOP</button>
 </div>
