@@ -34342,6 +34342,7 @@ async function fireLoadLayoutState(){
     fireLayoutState=fireLayoutNormalise(local);
   }catch(e){
     fireLayoutState=fireLayoutNormalise(fireLayoutLocalFallback());
+    fireLayoutPlans=fireLayoutPlansWithLocal([]);
     var st=document.getElementById('fire-layout-sync-status');
     if(st)st.innerHTML='<span style="color:#C2410C;font-weight:700">Shared layout database not enabled yet.</span> Run <code>fire_layouts_schema.sql</code> in Supabase.';
   }
