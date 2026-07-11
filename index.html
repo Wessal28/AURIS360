@@ -2491,7 +2491,7 @@ function obsTableHtml(rows, emptyTitle, emptyButtonLabel, emptyAction) {
 async function obsLoadPositive() {
   var el = document.getElementById('obs-positive-list'); if (!el) return;
   if (!obsAllData.length) await obsLoadAll();
-  var positives = obsAllData.filter(x => ['positive_behaviour','good_practice'].includes(x.obs_type));
+  var positives = obsAllData.filter(obsHasPositive);
   el.innerHTML = obsTableHtml(positives, 'No positive observations yet', 'Add positive observation', "obsNew('positive_behaviour')");
 }
 
@@ -2499,7 +2499,7 @@ async function obsLoadPositive() {
 async function obsLoadUnsafe() {
   var el = document.getElementById('obs-unsafe-list'); if (!el) return;
   if (!obsAllData.length) await obsLoadAll();
-  var unsafes = obsAllData.filter(x => ['unsafe_behaviour','unsafe_condition','near_miss'].includes(x.obs_type));
+  var unsafes = obsAllData.filter(x => obsHasUnsafeBehaviour(x)||obsHasUnsafeCondition(x)||x.obs_type==='near_miss');
   var critical = unsafes.filter(x => (x.severity==='critical'||x.severity==='high') && x.status !== 'closed');
   var alertEl = document.getElementById('obs-unsafe-alerts');
   if (alertEl && critical.length) {
@@ -2517,8 +2517,8 @@ async function obsLoadTrends() {
   // 1. Safe/Unsafe ratio
   var ratioEl = document.getElementById('obs-trend-ratio');
   if (ratioEl) {
-    var safe = d.filter(x=>['positive_behaviour','good_practice'].includes(x.obs_type)).length;
-    var unsafe = d.filter(x=>['unsafe_behaviour','unsafe_condition','near_miss'].includes(x.obs_type)).length;
+    var safe = d.filter(obsHasPositive).length;
+    var unsafe = d.filter(x=>obsHasUnsafeBehaviour(x)||obsHasUnsafeCondition(x)||x.obs_type==='near_miss').length;
     var total = d.length || 1;
     var safePct = Math.round(safe/total*100);
     var unsafePct = Math.round(unsafe/total*100);
@@ -2548,8 +2548,8 @@ async function obsLoadTrends() {
       var m = d2.getMonth(); var y = d2.getFullYear();
       var label = d2.toLocaleString('en-GB',{month:'short'});
       var mData = obsAllData.filter(x=>x.observation_date&&new Date(x.observation_date).getMonth()===m&&new Date(x.observation_date).getFullYear()===y);
-      var safe2 = mData.filter(x=>['positive_behaviour','good_practice'].includes(x.obs_type)).length;
-      var unsafe2 = mData.length - safe2;
+      var safe2 = mData.filter(obsHasPositive).length;
+      var unsafe2 = mData.filter(x=>obsHasUnsafeBehaviour(x)||obsHasUnsafeCondition(x)||x.obs_type==='near_miss').length;
       months.push({label,safe:safe2,unsafe:unsafe2,total:mData.length});
     }
     var maxVal = Math.max(...months.map(m=>m.total),1);
@@ -2577,7 +2577,7 @@ async function obsLoadTrends() {
   // 3. Top unsafe categories
   var catEl = document.getElementById('obs-trend-categories');
   if (catEl) {
-    var unsafeObs = obsAllData.filter(x=>['unsafe_behaviour','unsafe_condition','near_miss'].includes(x.obs_type));
+    var unsafeObs = obsAllData.filter(x=>obsHasUnsafeBehaviour(x)||obsHasUnsafeCondition(x)||x.obs_type==='near_miss');
     var catCount = {};
     unsafeObs.forEach(x=>{var c=x.category||'general';catCount[c]=(catCount[c]||0)+1;});
     var sorted = Object.entries(catCount).sort((a,b)=>b[1]-a[1]).slice(0,6);
@@ -2952,10 +2952,10 @@ async function obsAskAI(question) {
   respEl.textContent='⏳ Analysing observation data...';
   // Build context summary
   var total = obsAllData.length;
-  var pos = obsAllData.filter(x=>['positive_behaviour','good_practice'].includes(x.obs_type)).length;
-  var unsafe = total - pos;
+  var pos = obsAllData.filter(obsHasPositive).length;
+  var unsafe = obsAllData.filter(x=>obsHasUnsafeBehaviour(x)||obsHasUnsafeCondition(x)||x.obs_type==='near_miss').length;
   var catCount = {};
-  obsAllData.filter(x=>!['positive_behaviour','good_practice'].includes(x.obs_type))
+  obsAllData.filter(x=>obsHasUnsafeBehaviour(x)||obsHasUnsafeCondition(x)||x.obs_type==='near_miss')
     .forEach(x=>{var c=x.category||'general'; catCount[c]=(catCount[c]||0)+1;});
   var topCats = Object.entries(catCount).sort((a,b)=>b[1]-a[1]).slice(0,5).map(e=>e[0]+':'+e[1]).join(', ');
   var context = 'BBS Programme Data Summary:\n'
