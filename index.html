@@ -26628,6 +26628,7 @@ async function bulletinLoad(){
       +'<th style="padding:10px;color:#fff;text-align:left">Published</th>'
       +'<th style="padding:10px;color:#fff;text-align:left">Audience</th>'
       +'<th style="padding:10px;color:#fff;text-align:left">Author</th>'
+      +'<th style="padding:10px;color:#fff;text-align:center">Checked</th>'
       +'<th style="padding:10px;color:#fff;text-align:center">Status</th>'
       +'<th style="padding:10px;color:#fff;width:80px"></th>'
       +'</tr></thead><tbody>';
@@ -26636,6 +26637,7 @@ async function bulletinLoad(){
       var isArch=x.status==='archived';var isDraft=x.status==='draft';
       var stColor=isArch?'#6B7280':isDraft?'#854F0B':'#1D9E75';
       var summary=x.summary||x.key_messages||'';
+      var checks=bulletinChecks(x);
       h+='<tr style="background:'+(i%2?'#f9fafb':'#fff')+';border-bottom:1px solid #eef2f7;border-left:5px solid '+cfg.color+';cursor:pointer;opacity:'+(isArch?'.7':'1')+'" data-id="'+x.id+'" onclick="bulletinEdit(this.dataset.id)">'
         +'<td style="padding:10px;font-family:monospace;font-weight:800;color:'+cfg.color+';white-space:nowrap">'+escH(x.bulletin_ref||'BULL')+(x.issue_number?'<div style="font-size:10px;color:var(--text2);font-weight:600">Issue '+escH(x.issue_number)+'</div>':'')+'</td>'
         +'<td style="padding:10px;min-width:320px"><div style="font-weight:800">'+escH(x.title||'-')+'</div>'
@@ -26645,6 +26647,7 @@ async function bulletinLoad(){
         +'<td style="padding:10px;white-space:nowrap">'+(x.publication_date?new Date(x.publication_date).toLocaleDateString('en-GB'):'-')+'</td>'
         +'<td style="padding:10px">'+escH(x.target_audience||'-')+'</td>'
         +'<td style="padding:10px">'+escH(x.author||'-')+'</td>'
+        +'<td style="padding:10px;text-align:center"><span class="badge '+(checks.length?'badge-green':'bg')+'">'+checks.length+'</span></td>'
         +'<td style="padding:10px;text-align:center"><span style="background:'+stColor+'15;color:'+stColor+';padding:3px 8px;border-radius:99px;font-size:10px;font-weight:800;text-transform:capitalize">'+escH(x.status||'published')+'</span></td>'
         +'<td style="padding:10px;text-align:center;white-space:nowrap">'
         +(x.file_url?'<button class="btn btn-sm" onclick="event.stopPropagation();bulletinPreview(\''+x.id+'\')" title="Preview bulletin file and record opening"><i class="ti ti-eye-check"></i></button> ':'')
@@ -26653,6 +26656,46 @@ async function bulletinLoad(){
     });
     h+='</tbody></table></div>';el.innerHTML=h;
   }catch(e){el.innerHTML='<p style="padding:20px;color:red">'+e.message+'</p>';}
+}
+
+function bulletinChecks(x){return noiseSafeJson(x?.checked_by||x?.acknowledged_by||[],[]);}
+function bulletinCurrentCheck(){
+  return {user_id:prof?.id||null,name:prof?.full_name||personFullName(prof)||prof?.email||'User',email:prof?.email||'',checked_at:new Date().toISOString()};
+}
+function bulletinMergeCheck(list, entry){
+  var key=String(entry.user_id||entry.email||entry.name||'').toLowerCase();
+  var rows=(Array.isArray(list)?list:[]).filter(function(r){var rk=String(r.user_id||r.email||r.name||'').toLowerCase();return rk!==key;});
+  rows.unshift(entry);
+  return rows;
+}
+async function bulletinRecordCheck(id){
+  var x=(bulletinAllData||[]).find(function(r){return r.id===id;});
+  if(!x)return false;
+  var checks=bulletinMergeCheck(bulletinChecks(x),bulletinCurrentCheck());
+  x.checked_by=checks;
+  x.acknowledged_by=checks;
+  bulletinRenderChecks(x);
+  try{
+    await api('/safety_bulletins?id=eq.'+id,{m:'PATCH',p:'return=minimal',b:{checked_by:checks,last_checked_at:new Date().toISOString(),updated_at:new Date().toISOString()}});
+    return true;
+  }catch(e){
+    if(!/schema cache|column|Could not find/i.test(e.message||''))throw e;
+    return false;
+  }
+}
+function bulletinRenderChecks(x){
+  var host=document.getElementById('bull-check-list');if(!host)return;
+  var checks=bulletinChecks(x);
+  if(!checks.length){host.innerHTML='<div class="empty" style="padding:18px">No one has checked this bulletin yet.</div>';return;}
+  host.innerHTML='<table class="data-table" style="font-size:12px"><thead><tr><th>Name</th><th>Email</th><th>Checked / opened</th></tr></thead><tbody>'+checks.map(function(c){return '<tr><td><strong>'+escH(c.name||'-')+'</strong></td><td>'+escH(c.email||'-')+'</td><td>'+escH(c.checked_at?new Date(c.checked_at).toLocaleString('en-GB'):'-')+'</td></tr>';}).join('')+'</tbody></table>';
+}
+function bulletinUploadAttachment(input){
+  var file=input.files&&input.files[0];if(!file)return;
+  var max=6*1024*1024;
+  if(file.size>max){toast('Attachment too large for direct preview storage. Use Document Control link for files above 6 MB.',false);return;}
+  var rd=new FileReader();
+  rd.onload=function(){document.getElementById('bullf-file-url').value=rd.result;document.getElementById('bullf-file-name').value=file.name;toast('Attachment loaded for preview. Save the bulletin to keep it.');};
+  rd.readAsDataURL(file);
 }
 
 function bulletinShowForm(){
@@ -26680,22 +26723,25 @@ function bulletinNew(){
   document.getElementById('bullf-dist-method').value='email';
   document.getElementById('bullf-status').value='published';
   document.getElementById('bullf-issue-no').value='';
+  bulletinRenderChecks({});
   bulletinShowForm();
 }
 
-function bulletinPreview(id){
+async function bulletinPreview(id){
   var x=(bulletinAllData||[]).find(function(r){return r.id===id;});
   if(!x){toast('Bulletin not found',false);return;}
   if(!x.file_url){toast('No attachment linked to this bulletin',false);return;}
   auditLogEvent('open','bulletins','Safety bulletin attachment opened',{bulletin_ref:x.bulletin_ref||null,title:x.title||null,file_name:x.file_name||null,file_url:x.file_url||null},{related_table:'safety_bulletins',related_id:x.id,company_id:x.company_id||ccid()});
+  await bulletinRecordCheck(id).catch(function(e){console.warn('Bulletin check record failed',e);});
   dcOpenViewer({file_url:x.file_url,file_name:x.file_name||x.title||'Safety bulletin',file_mime:dcMimeFromName(x.file_name||x.file_url)});
 }
-function bulletinPreviewCurrent(){
+async function bulletinPreviewCurrent(){
   var url=document.getElementById('bullf-file-url')?.value||'';
   var name=document.getElementById('bullf-file-name')?.value||document.getElementById('bullf-title')?.value||'Safety bulletin';
   if(!url){toast('No attachment URL to preview',false);return;}
   if(bulletinEditId){
     auditLogEvent('open','bulletins','Safety bulletin attachment opened',{bulletin_ref:document.getElementById('bull-form-ref')?.textContent||null,title:document.getElementById('bullf-title')?.value||null,file_name:name,file_url:url},{related_table:'safety_bulletins',related_id:bulletinEditId,company_id:ccid()});
+    await bulletinRecordCheck(bulletinEditId).catch(function(e){console.warn('Bulletin check record failed',e);});
   }
   dcOpenViewer({file_url:url,file_name:name,file_mime:dcMimeFromName(name||url)});
 }
@@ -26716,6 +26762,7 @@ function bulletinEdit(id){
   document.getElementById('bullf-dist-method').value=x.distribution_method||'email';
   document.getElementById('bullf-status').value=x.status||'published';
   document.getElementById('bullf-issue-no').value=x.issue_number||'';
+  bulletinRenderChecks(x);
   bulletinShowForm();
 }
 
@@ -42645,9 +42692,11 @@ function fireEquipStatusBadge(s) {
 </select></div>
 <div class="form-group"><label class="form-label">File URL / attachment</label><input type="text" id="bullf-file-url" placeholder="https://..."/></div>
 <div class="form-group"><label class="form-label">File name</label><input type="text" id="bullf-file-name" placeholder="safety-bulletin-may2026.pdf"/></div>
-<button type="button" class="btn" style="width:100%;justify-content:center;margin-bottom:8px" onclick="bulletinPreviewCurrent()"><i class="ti ti-eye"></i>Preview attachment / record opening</button>
+<label class="btn" style="width:100%;justify-content:center;margin-bottom:8px;cursor:pointer"><i class="ti ti-upload"></i>Upload document for preview<input type="file" accept=".pdf,.doc,.docx,.png,.jpg,.jpeg" onchange="bulletinUploadAttachment(this)" style="display:none"/></label>
+<button type="button" class="btn" style="width:100%;justify-content:center;margin-bottom:8px" onclick="bulletinPreviewCurrent()"><i class="ti ti-eye-check"></i>Preview / mark as checked</button>
 <div class="form-group"><label class="form-label">Status</label><select id="bullf-status"><option value="published">Published</option><option value="draft">Draft</option><option value="archived">Archived</option></select></div>
 </div>
+<div class="card" style="margin-bottom:14px"><div class="card-title">Opened / Checked Register</div><div style="font-size:12px;color:var(--text2);margin-bottom:10px">A record is added when a user previews the bulletin attachment.</div><div id="bull-check-list"></div></div>
 </div>
 </div>
 </div>
