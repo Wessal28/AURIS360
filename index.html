@@ -15692,8 +15692,9 @@ async function raSearchHazardLib(){
   var el=document.getElementById('ra-lib-results');if(!el)return;
   if(q.length<2){el.innerHTML='';return;}
   try{
-    var d=await api('/hazard_library?select=*&or=(is_global.eq.true,company_id.eq.'+prof?.company_id+')&order=hazard_type&limit=30');
+    var d=await api('/hazard_library?select=*'+raLibCompanyQuery()+'&order=hazard_type&limit=30');
     libHazardData=d||[];
+    if(!libHazardData.length)libHazardData=raStandardHazards();
     var filt=libHazardData.filter(function(h){
       return (h.hazard_description||'').toLowerCase().includes(q)||(h.hazard_type||'').toLowerCase().includes(q)||(h.category||'').toLowerCase().includes(q)||(h.potential_harm||'').toLowerCase().includes(q);
     }).slice(0,8);
@@ -15722,6 +15723,22 @@ function raRenderHazardLibResults(items){
   el.innerHTML=h;
 }
 
+function raLibCompanyQuery(){
+  var companyId=ccid()||prof?.company_id||'';
+  return companyId?'&or=(is_global.eq.true,company_id.eq.'+companyId+')':'&is_global=eq.true';
+}
+
+function raStandardHazards(){
+  return [
+    {id:'std_work_height',category:'Working at height',hazard_type:'height',hazard_description:'Fall from height while accessing or working at elevated level',potential_harm:'Serious injury or fatality',default_severity:5,default_probability:2},
+    {id:'std_manual_handling',category:'Manual handling',hazard_type:'manual_handling',hazard_description:'Manual lifting, carrying, pushing or pulling of loads',potential_harm:'Back injury, strains, sprains or crush injury',default_severity:3,default_probability:3},
+    {id:'std_electrical',category:'Electrical',hazard_type:'electrical',hazard_description:'Contact with live electrical parts or unexpected energisation',potential_harm:'Electric shock, burns, fire or fatality',default_severity:5,default_probability:2},
+    {id:'std_slips_trips',category:'Housekeeping',hazard_type:'slips_trips',hazard_description:'Slips, trips and falls from poor housekeeping or uneven surfaces',potential_harm:'Fracture, sprain, impact injury or lost time injury',default_severity:3,default_probability:3},
+    {id:'std_chemical',category:'Chemical',hazard_type:'chemical',hazard_description:'Exposure to hazardous substances, fumes, vapours or splashes',potential_harm:'Burns, irritation, poisoning or occupational illness',default_severity:4,default_probability:2},
+    {id:'std_fire',category:'Fire',hazard_type:'fire',hazard_description:'Ignition of combustible materials or uncontrolled hot work',potential_harm:'Fire, explosion, burns, smoke inhalation or property damage',default_severity:5,default_probability:2}
+  ];
+}
+
 async function raShowHazardLibPicker(){
   var input=document.getElementById('ra-lib-search');
   var el=document.getElementById('ra-lib-results');if(!el)return;
@@ -15730,15 +15747,16 @@ async function raShowHazardLibPicker(){
   if(q.length>=2){raSearchHazardLib();return;}
   el.innerHTML='<div style="font-size:12px;color:var(--text2);padding:8px">Loading hazard library...</div>';
   try{
-    var d=await api('/hazard_library?select=*&or=(is_global.eq.true,company_id.eq.'+prof?.company_id+')&order=category,hazard_type&limit=12');
+    var d=await api('/hazard_library?select=*'+raLibCompanyQuery()+'&order=category,hazard_type&limit=12');
     libHazardData=d||[];
     if(!libHazardData.length){
-      el.innerHTML='<div style="font-size:12px;color:var(--text2);padding:8px">No hazards are available in the library yet.</div>';
-      return;
+      libHazardData=raStandardHazards();
     }
     raRenderHazardLibResults(libHazardData);
   }catch(e){
-    el.innerHTML='<div style="font-size:12px;color:var(--text2);padding:8px">Could not open library: '+escH(e.message)+'</div>';
+    libHazardData=raStandardHazards();
+    raRenderHazardLibResults(libHazardData);
+    toast('Using standard hazard library because company library could not be loaded',false);
   }
 }
 
@@ -15773,7 +15791,7 @@ async function raGetControlSuggestions(btn){
   btn.disabled=true;
   try{
     // First try local library
-    var d=await api('/control_library?select=*&or=(is_global.eq.true,company_id.eq.'+prof?.company_id+')&limit=50');
+    var d=await api('/control_library?select=*'+raLibCompanyQuery()+'&limit=50');
     var controls=(d||[]).filter(function(c){
       return hazardText.toLowerCase().includes((c.hazard_type||'').toLowerCase())||
              (c.hazard_type||'').toLowerCase().split(' ').some(w=>hazardText.toLowerCase().includes(w));
@@ -15832,7 +15850,7 @@ async function libLoadHazards(){
   el.innerHTML='<div class="loading-msg">Loading...</div>';
   var addBtn=document.getElementById('lib-add-hazard-btn');if(addBtn)addBtn.style.display=isMgr()?'inline-flex':'none';
   try{
-    var d=await api('/hazard_library?select=*&or=(is_global.eq.true,company_id.eq.'+prof?.company_id+')&order=category,hazard_type');
+    var d=await api('/hazard_library?select=*'+raLibCompanyQuery()+'&order=category,hazard_type');
     libHazardData=d||[];
     if(!d||!d.length){el.innerHTML='<div style="padding:20px;color:var(--text2)">No hazards in library yet</div>';return;}
     var h='<table style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr style="background:#1a3a5c;color:#fff">'
@@ -15870,7 +15888,7 @@ async function libLoadControls(){
   el.innerHTML='<div class="loading-msg">Loading...</div>';
   var addBtn=document.getElementById('lib-add-control-btn');if(addBtn)addBtn.style.display=isMgr()?'inline-flex':'none';
   try{
-    var d=await api('/control_library?select=*&or=(is_global.eq.true,company_id.eq.'+prof?.company_id+')&order=hierarchy_level,hazard_type');
+    var d=await api('/control_library?select=*'+raLibCompanyQuery()+'&order=hierarchy_level,hazard_type');
     libControlData=d||[];
     if(!d||!d.length){el.innerHTML='<div style="padding:20px;color:var(--text2)">No controls in library yet</div>';return;}
     var HOC_COLORS={elimination:'#065F46',substitution:'#1D9E75',engineering:'#185FA5',administrative:'#EF9F27',ppe:'#E24B4A'};
