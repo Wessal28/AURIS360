@@ -15986,6 +15986,7 @@ async function libLoadHazards(){
   var el=document.getElementById('lib-hazard-list');if(!el)return;
   el.innerHTML='<div class="loading-msg">Loading...</div>';
   var addBtn=document.getElementById('lib-add-hazard-btn');if(addBtn)addBtn.style.display=isMgr()?'inline-flex':'none';
+  var importBtn=document.getElementById('lib-import-hazard-btn');if(importBtn)importBtn.style.display=isMgr()?'inline-flex':'none';
   try{
     var d=await api('/hazard_library?select=*'+raLibCompanyQuery()+'&order=category,hazard_type');
     libHazardData=d||[];
@@ -16080,6 +16081,113 @@ async function libHazardNew(){
     toast('Hazard added to library');
     await libLoadHazards();
   }catch(e){toast('Could not add hazard: '+e.message,false);}
+}
+
+function libHazardImportFile(file){
+  if(!file)return;
+  if(!isMgr()){toast('Only HSE managers/admins can import library hazards',false);return;}
+  var reader=new FileReader();
+  reader.onload=function(){
+    libHazardImportText(String(reader.result||''),file.name||'hazard list');
+  };
+  reader.onerror=function(){toast('Could not read hazard file',false);};
+  reader.readAsText(file);
+}
+
+function libSplitDelimitedLine(line,delim){
+  var out=[],cur='',quote=false;
+  for(var i=0;i<String(line||'').length;i++){
+    var ch=line[i],next=line[i+1];
+    if(ch==='"'&&quote&&next==='"'){cur+='"';i++;continue;}
+    if(ch==='"'){quote=!quote;continue;}
+    if(ch===delim&&!quote){out.push(cur.trim());cur='';continue;}
+    cur+=ch;
+  }
+  out.push(cur.trim());
+  return out;
+}
+
+function libDetectDelimiter(text){
+  var sample=String(text||'').split(/\r?\n/).find(function(l){return l.trim();})||'';
+  var choices=[',',';','\t'];
+  return choices.sort(function(a,b){return libSplitDelimitedLine(sample,b).length-libSplitDelimitedLine(sample,a).length;})[0]||',';
+}
+
+function libHazardImportRows(text){
+  var delim=libDetectDelimiter(text);
+  var lines=String(text||'').split(/\r?\n/).map(function(l){return l.trim();}).filter(Boolean);
+  if(!lines.length)return [];
+  var known={category:1,hazard_type:1,hazard:1,hazard_description:1,description:1,potential_harm:1,harm:1,default_severity:1,severity:1,default_probability:1,probability:1,controls:1,further_controls:1,hoc_level:1,hierarchy_level:1,legal_ref:1,legal_reference:1};
+  var first=libSplitDelimitedLine(lines[0],delim).map(function(h){return h.toLowerCase().replace(/[^a-z0-9]+/g,'_').replace(/^_|_$/g,'');});
+  var hasHeader=first.some(function(h){return known[h];});
+  var headers=hasHeader?first:['category','hazard_type','hazard_description','potential_harm','default_severity','default_probability','controls','further_controls','hoc_level','legal_ref'];
+  var dataLines=hasHeader?lines.slice(1):lines;
+  return dataLines.map(function(line){
+    var cells=libSplitDelimitedLine(line,delim), row={};
+    headers.forEach(function(h,i){row[h]=cells[i]||'';});
+    var hazardDesc=row.hazard_description||row.hazard||row.description||row.hazard_type;
+    var hazardType=row.hazard_type||row.hazard||row.category||'general';
+    if(!hazardDesc&&!hazardType)return null;
+    var sev=Math.max(1,Math.min(5,parseInt(row.default_severity||row.severity||3)||3));
+    var prob=Math.max(1,Math.min(5,parseInt(row.default_probability||row.probability||3)||3));
+    return {
+      category:row.category||'General',
+      hazard_type:hazardType,
+      hazard_description:hazardDesc||hazardType,
+      potential_harm:row.potential_harm||row.harm||null,
+      default_severity:sev,
+      default_probability:prob,
+      controls:row.controls||'',
+      further_controls:row.further_controls||'',
+      hoc_level:String(row.hoc_level||row.hierarchy_level||'administrative').toLowerCase(),
+      legal_ref:row.legal_ref||row.legal_reference||null
+    };
+  }).filter(Boolean);
+}
+
+async function libHazardImportText(text,label){
+  if(!isMgr()){toast('Only HSE managers/admins can import library hazards',false);return;}
+  var parsed=libHazardImportRows(text);
+  if(!parsed.length){toast('No valid hazard rows found. Use columns: category, hazard_type, hazard_description, potential_harm, severity, probability, controls, legal_ref.',false);return;}
+  var ok=await appConfirmAction({
+    title:'Import hazard library',
+    message:'Import '+parsed.length+' hazard row'+(parsed.length>1?'s':'')+' from '+(label||'file')+'?',
+    detail:'Accepted formats: CSV, semicolon CSV or tab-separated text. Columns can include category, hazard_type, hazard_description, potential_harm, severity, probability, controls, further_controls, hoc_level and legal_ref.',
+    confirmText:'Import hazards',
+    cancelText:'Cancel'
+  });
+  if(!ok)return;
+  var companyId=prof?.company_id||ccid();
+  var hazards=parsed.map(function(r){
+    return {
+      company_id:companyId,
+      category:r.category,
+      hazard_type:r.hazard_type,
+      hazard_description:r.hazard_description,
+      potential_harm:r.potential_harm,
+      default_severity:r.default_severity,
+      default_probability:r.default_probability,
+      is_global:false,
+      created_by:prof?.id||null
+    };
+  });
+  try{
+    for(var i=0;i<hazards.length;i+=50){
+      await api('/hazard_library',{m:'POST',p:'return=minimal',b:hazards.slice(i,i+50)});
+    }
+    var controls=[];
+    parsed.forEach(function(r){
+      var txt=[r.controls,r.further_controls].filter(Boolean).join('\n');
+      txt.split(/\n|\|/).map(function(s){return s.trim();}).filter(Boolean).forEach(function(c){
+        controls.push({company_id:companyId,hazard_type:r.hazard_type,hierarchy_level:['elimination','substitution','engineering','administrative','ppe'].includes(r.hoc_level)?r.hoc_level:'administrative',control_description:c,effectiveness:3,legal_ref:r.legal_ref,is_global:false,created_by:prof?.id||null});
+      });
+    });
+    for(var j=0;j<controls.length;j+=50){
+      await api('/control_library',{m:'POST',p:'return=minimal',b:controls.slice(j,j+50)});
+    }
+    toast('Imported '+hazards.length+' hazards'+(controls.length?' and '+controls.length+' controls':''));
+    await libLoadHazards();
+  }catch(e){toast('Hazard import failed: '+e.message,false);}
 }
 
 async function libControlNew(){
@@ -38936,7 +39044,11 @@ function fireEquipStatusBadge(s) {
 <div id="lib-view-hazards">
 <div class="card" style="margin-bottom:12px;padding:10px 14px;display:flex;justify-content:space-between;align-items:center">
 <div><div class="card-title" style="margin:0">Hazard Library</div><div style="font-size:12px;color:var(--text2)">Reusable hazard catalogue with default risk scores</div></div>
+<div style="display:flex;gap:8px;flex-wrap:wrap">
+<input type="file" id="lib-hazard-import-file" accept=".csv,.txt,.tsv,text/csv,text/plain" style="display:none" onchange="libHazardImportFile(this.files[0]);this.value=''"/>
+<button class="btn" id="lib-import-hazard-btn" style="display:none" onclick="document.getElementById('lib-hazard-import-file').click()"><i class="ti ti-upload"></i>Import hazards</button>
 <button class="btn btn-primary" id="lib-add-hazard-btn" style="display:none" onclick="libHazardNew()"><i class="ti ti-plus"></i>Add hazard</button>
+</div>
 </div>
 <div class="card" style="padding:0;overflow:hidden"><div id="lib-hazard-list"><div class="loading-msg">Loading...</div></div></div>
 </div>
