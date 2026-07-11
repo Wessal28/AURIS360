@@ -28494,16 +28494,69 @@ function auditAddChecklistRow() {
 }
 
 // ── Photos / voice notes ──────────────────────────────────────────
-function auditAddPhotoRow(url) {
+function auditNormaliseEvidenceUrl(item){
+  if(!item)return '';
+  if(typeof item==='string')return item;
+  return item.url||item.file_url||item.data_url||'';
+}
+
+function auditEvidenceName(item){
+  if(!item)return 'Audit evidence';
+  if(typeof item==='string')return item.split('/').pop()||'Audit evidence';
+  return item.file_name||item.name||item.title||'Audit evidence';
+}
+
+function auditAddPhotoRow(item) {
   var container = document.getElementById('audit-photos-list'); if(!container) return;
+  var url=auditNormaliseEvidenceUrl(item);
+  var type=(item&&typeof item==='object'&&item.type)||'photo';
   var row = document.createElement('div');
-  row.style.cssText = 'display:flex;gap:8px;align-items:center;margin-bottom:4px';
-  row.innerHTML = '<input type="text" class="audit-photo-url" placeholder="Paste photo or voice note URL..." value="'+(url?escH(url):'')+'" style="flex:1;padding:6px 10px;border:1px solid var(--border);border-radius:6px;font-size:12px"/>'
+  row.style.cssText = 'display:flex;gap:8px;align-items:center;margin-bottom:6px;flex-wrap:wrap';
+  row.innerHTML = '<input type="text" class="audit-photo-url" placeholder="Upload evidence or paste link..." value="'+escH(url)+'" data-file-name="'+escH(auditEvidenceName(item))+'" style="flex:1;min-width:220px;padding:6px 10px;border:1px solid var(--border);border-radius:6px;font-size:12px"/>'
     + '<select class="audit-photo-type" style="padding:6px;border:1px solid var(--border);border-radius:6px;font-size:12px">'
     + '<option value="photo">📷 Photo</option><option value="voice">🎤 Voice</option><option value="video">🎬 Video</option><option value="document">📄 Document</option>'
     + '</select>'
+    + '<label class="btn btn-sm" style="cursor:pointer;flex-shrink:0"><i class="ti ti-upload"></i>Upload<input type="file" accept=".pdf,.doc,.docx,.png,.jpg,.jpeg,.webp,.mp4,.mov,.m4a,.mp3" onchange="auditUploadEvidenceFile(this)" style="display:none"/></label>'
+    + '<button type="button" class="btn btn-sm" style="flex-shrink:0" onclick="auditPreviewEvidenceRow(this)"><i class="ti ti-eye"></i></button>'
     + '<button class="btn btn-sm" style="color:var(--red);flex-shrink:0" onclick="this.parentElement.remove()"><i class="ti ti-x"></i></button>';
   container.appendChild(row);
+  row.querySelector('.audit-photo-type').value=type;
+}
+
+function auditUploadEvidenceFile(fileInput){
+  var file=fileInput&&fileInput.files&&fileInput.files[0];
+  if(!file)return;
+  if(file.size>12*1024*1024){
+    toast('Evidence file too large - max 12 MB for inline audit evidence. Use Document Control for larger files.',false);
+    fileInput.value='';
+    return;
+  }
+  var row=fileInput.closest('div');
+  var input=row?.querySelector('.audit-photo-url');
+  var type=row?.querySelector('.audit-photo-type');
+  var rd=new FileReader();
+  rd.onload=function(){
+    if(input){input.value=rd.result;input.dataset.fileName=file.name;}
+    if(type){
+      if(file.type.startsWith('image/'))type.value='photo';
+      else if(file.type.startsWith('video/'))type.value='video';
+      else if(file.type.startsWith('audio/'))type.value='voice';
+      else type.value='document';
+    }
+    toast('Audit evidence loaded for preview. Save the inspection to keep it.');
+  };
+  rd.onerror=function(){toast('Could not read evidence file',false);};
+  rd.readAsDataURL(file);
+}
+
+function auditPreviewEvidenceRow(btn){
+  var row=btn.closest('div');
+  var input=row?.querySelector('.audit-photo-url');
+  var url=(input?.value||'').trim();
+  if(!url){toast('No evidence to preview',false);return;}
+  var name=input?.dataset.fileName||'Audit evidence';
+  var dataMime=(url.match(/^data:([^;,]+)/)||[])[1];
+  dcOpenViewer({file_url:url,file_name:name,file_mime:dataMime||dcMimeFromName(name||url)});
 }
 
 // ── GPS ────────────────────────────────────────────────────────────
@@ -28566,7 +28619,7 @@ async function auditSave() {
   var insufCnt=items.filter(function(x){return x.result==='insufficient';}).length;
   // Collect photos
   var photos = Array.from(document.querySelectorAll('.audit-photo-url'))
-    .map(function(el){return{url:el.value.trim(),type:el.parentElement?.querySelector('.audit-photo-type')?.value||'photo'};})
+    .map(function(el){return{url:el.value.trim(),type:el.parentElement?.querySelector('.audit-photo-type')?.value||'photo',file_name:el.dataset.fileName||''};})
     .filter(function(p){return p.url;});
   // Collect actions
   var actions = [];
@@ -38543,9 +38596,9 @@ function fireEquipStatusBadge(s) {
 <!-- Photos & Voice notes (mobile-friendly) -->
 <div class="card" style="margin-bottom:14px">
 <div class="card-title">📷 Evidence &amp; Media</div>
-<div style="font-size:12px;color:var(--text2);margin-bottom:10px">Attach photo URLs or paste links from cloud storage. Voice note links can also be added here.</div>
+<div style="font-size:12px;color:var(--text2);margin-bottom:10px">Upload photos, documents, videos or voice notes, or paste a link when the file is already stored elsewhere.</div>
 <div id="audit-photos-list" style="display:flex;flex-direction:column;gap:6px"></div>
-<button class="btn btn-sm" onclick="auditAddPhotoRow()"><i class="ti ti-plus"></i>Add photo / voice note URL</button>
+<button class="btn btn-sm" onclick="auditAddPhotoRow()"><i class="ti ti-plus"></i>Add evidence / media</button>
 </div>
 
 <!-- Actions -->
