@@ -8283,14 +8283,6 @@ function swmsOpen(id){
   swmsLoadPermitSelect().then(function(){setSelectValueWithFallback('swms-ptw-ref',p.permit_ref||'');});
   var body=document.getElementById('swms-steps-body');if(body)body.innerHTML='';
   var rows=Array.isArray(p.steps)?p.steps:[];
-  if(!rows.length)rows=[
-    {activity:'Confirm scope, site conditions, linked RA and permit requirements',responsible:'Supervisor / worker'},
-    {activity:'Verify personnel competency and complete RAMS / toolbox briefing sign-on',responsible:'Supervisor / worker'},
-    {activity:'Set up access, isolation, barriers, tools, equipment and emergency arrangements',responsible:'Supervisor / worker'},
-    {activity:'Carry out work task using documented controls and safe method',responsible:'Supervisor / worker'},
-    {activity:'Monitor changing conditions and apply Stop Work Authority if controls are inadequate',responsible:'Supervisor / worker'},
-    {activity:'Inspect completed work and reinstate area',responsible:'Supervisor / worker'}
-  ];
   rows.forEach(swmsAddStep);
   swmsBuildPreview();
   toast('SWMS opened for editing');
@@ -8303,17 +8295,17 @@ function swmsAddStep(r){
     +'<td style="padding:8px"><textarea class="swms-act" style="min-height:50px;width:100%;font-size:12px" placeholder="Activity / work task step">'+escH(r.activity||'')+'</textarea></td>'
     +'<td style="padding:8px"><textarea class="swms-haz" style="min-height:50px;width:100%;font-size:12px" placeholder="Potential hazards">'+escH(r.hazard||'')+'</textarea></td>'
     +'<td style="padding:8px"><textarea class="swms-risk" style="min-height:50px;width:100%;font-size:12px" placeholder="Potential injury / damage">'+escH(r.risk||'')+'</textarea></td>'
-    +'<td style="padding:8px">'+swmsRiskSelect('swms-init-risk',r.initial_risk||'Medium')+'</td>'
+    +'<td style="padding:8px">'+swmsRiskSelect('swms-init-risk',r.initial_risk||'')+'</td>'
     +'<td style="padding:8px"><textarea class="swms-controls" style="min-height:50px;width:100%;font-size:12px" placeholder="Controls required / safe method">'+escH(r.controls||'')+'</textarea></td>'
-    +'<td style="padding:8px">'+swmsRiskSelect('swms-res-risk',r.residual_risk||'Low')+'</td>'
-    +'<td style="padding:8px"><input class="swms-resp" style="width:100%;font-size:12px" placeholder="Responsible" value="'+escH(r.responsible||'Supervisor / worker')+'"/></td>'
+    +'<td style="padding:8px">'+swmsRiskSelect('swms-res-risk',r.residual_risk||'')+'</td>'
+    +'<td style="padding:8px"><input class="swms-resp" style="width:100%;font-size:12px" placeholder="Responsible" value="'+escH(r.responsible||'')+'"/></td>'
     +'<td style="padding:8px;text-align:center"><button class="btn btn-sm" style="color:var(--red)" onclick="this.closest(\'tr\').remove();swmsRenumber();swmsBuildPreview()"><i class="ti ti-x"></i></button></td>';
   body.appendChild(tr);
 }
 function swmsRenumber(){document.querySelectorAll('#swms-steps-body tr').forEach(function(tr,i){tr.children[0].textContent=i+1;});}
 function swmsRiskSelect(cls,val){
-  var opts=['Very Low','Low','Medium','High','Very High'];
-  return '<select class="'+cls+'" style="width:100%;font-size:11px;padding:5px 6px;border:1px solid var(--border);border-radius:6px" onchange="swmsBuildPreview()">'+opts.map(function(o){return '<option value="'+o+'"'+(o===val?' selected':'')+'>'+o+'</option>';}).join('')+'</select>';
+  var opts=['','Very Low','Low','Medium','High','Very High'];
+  return '<select class="'+cls+'" style="width:100%;font-size:11px;padding:5px 6px;border:1px solid var(--border);border-radius:6px" onchange="swmsBuildPreview()">'+opts.map(function(o){return '<option value="'+o+'"'+(o===val?' selected':'')+'>'+(o||'Select risk...')+'</option>';}).join('')+'</select>';
 }
 function swmsRows(){return Array.from(document.querySelectorAll('#swms-steps-body tr')).map(function(tr,i){return {no:i+1,activity:tr.querySelector('.swms-act')?.value||'',hazard:tr.querySelector('.swms-haz')?.value||'',risk:tr.querySelector('.swms-risk')?.value||'',initial_risk:tr.querySelector('.swms-init-risk')?.value||'',controls:tr.querySelector('.swms-controls')?.value||'',residual_risk:tr.querySelector('.swms-res-risk')?.value||'',responsible:tr.querySelector('.swms-resp')?.value||''};}).filter(function(r){return r.activity||r.hazard||r.controls;});}
 
