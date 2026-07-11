@@ -9425,6 +9425,114 @@ try{
   toast('Login-only account created');
 }catch(e){toast(e.message,false);}
 }
+function peopleCloseProfile(){
+var modal=document.getElementById('user-profile-modal');
+if(modal)modal.style.display='none';
+}
+function peopleActivityNameSet(p){
+var full=peopleName(p).toLowerCase();
+var rev=[p?.last_name,p?.first_name].filter(Boolean).join(', ').toLowerCase();
+return [full,rev,String(p?.email||'').toLowerCase(),String(p?.employee_number||'').toLowerCase(),String(p?.id_number||'').toLowerCase()].filter(Boolean);
+}
+function peopleTextMatchesPerson(text,p){
+var hay=String(text||'').toLowerCase();
+return peopleActivityNameSet(p).some(function(n){return n&&hay.indexOf(n)!==-1;});
+}
+function peopleRowMatchesPerson(row,p,fields){
+return (fields||[]).some(function(f){return peopleTextMatchesPerson(row?.[f],p);});
+}
+function peopleMiniTable(title,rows,cols,empty){
+var h='<div style="margin-bottom:16px"><div style="font-size:14px;font-weight:800;margin-bottom:8px">'+escH(title)+' <span class="badge bgr">'+rows.length+'</span></div>';
+if(!rows.length)return h+'<div style="padding:16px;border:1px dashed var(--border);border-radius:10px;color:var(--text2);font-size:12px">'+escH(empty||'No records found')+'</div></div>';
+h+='<div style="overflow:auto;border:1px solid var(--border);border-radius:10px"><table style="min-width:640px;width:100%;border-collapse:collapse;font-size:12px"><thead><tr style="background:#f8fafc">'+cols.map(function(c){return '<th style="padding:8px 10px;text-align:left;color:var(--text2);font-size:10px;text-transform:uppercase">'+escH(c.label)+'</th>';}).join('')+'</tr></thead><tbody>';
+h+=rows.slice(0,8).map(function(r){return '<tr>'+cols.map(function(c){var v=typeof c.value==='function'?c.value(r):r[c.key];return '<td style="padding:8px 10px;border-top:1px solid var(--border)">'+(c.html?String(v||''):escH(v||'-'))+'</td>';}).join('')+'</tr>';}).join('');
+return h+'</tbody></table></div>'+(rows.length>8?'<div style="font-size:11px;color:var(--text2);margin-top:6px">Showing latest 8 of '+rows.length+' records.</div>':'')+'</div>';
+}
+function peopleProfileShell(p){
+var initials=peopleName(p).split(/\s+/).map(function(s){return s[0];}).join('').substring(0,2).toUpperCase()||'P';
+var typeCfg={employee:['#1D9E75','Employee'],contractor:['#185FA5','Contractor'],subcontractor:['#EF9F27','Subcontractor']}[p.person_type]||['#6B7280','Person'];
+return '<div style="background:#f1f5f9;height:54px;margin:-20px -20px 0"></div>'
+  +'<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-top:-28px">'
+  +'<div style="display:flex;gap:14px;align-items:flex-end"><div style="width:64px;height:64px;border-radius:50%;background:'+typeCfg[0]+';color:#fff;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:800;border:4px solid #fff">'+escH(initials)+'</div>'
+  +'<div><div style="font-size:18px;font-weight:800">'+escH(peopleName(p))+'</div><div style="font-size:13px;color:var(--text2)">'+escH(p.email||p.phone||'No contact recorded')+'</div><div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap"><span class="badge bgr"><i class="ti ti-building"></i> '+escH(p.department||'No department')+'</span><span class="badge bgr"><i class="ti ti-map-pin"></i> '+escH(p.site||'No site')+'</span></div></div></div>'
+  +'<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:flex-end"><span class="badge '+(p.status==='inactive'?'bgr':'bg')+'">'+escH(p.status||'active')+'</span><span class="badge bgr">'+escH(typeCfg[1])+'</span></div>'
+  +'</div>';
+}
+function peopleProfileDetails(p){
+return '<div style="display:grid;grid-template-columns:repeat(2,minmax(220px,1fr));gap:12px;margin-top:18px">'
+  +['Job title|'+(p.job_title||'-'),'Staff no.|'+(p.employee_number||'-'),'ID no.|'+(p.id_number||'-'),'Phone|'+(p.phone||'-'),'Start date|'+(p.start_date||'-'),'Medical fitness|'+(p.medical_fitness_date||'-'),'Induction|'+(p.induction_date||'-'),'Emergency contact|'+([p.emergency_name,p.emergency_phone].filter(Boolean).join(' - ')||'-')]
+    .map(function(pair){var a=pair.split('|');return '<div style="padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:#fff"><div style="font-size:10px;color:var(--text2);text-transform:uppercase;font-weight:700">'+escH(a[0])+'</div><div style="font-size:13px;font-weight:600;margin-top:3px">'+escH(a[1])+'</div></div>';}).join('')
+  +'</div>';
+}
+async function peopleOpenProfile(id){
+var p=peAllData.find(function(x){return x.id===id;});
+if(!p){toast('Person not found',false);return;}
+var modal=document.getElementById('user-profile-modal');
+var body=document.getElementById('upm-body');
+if(!modal||!body)return;
+body.innerHTML=peopleProfileShell(p)+'<div style="margin-top:18px">'+peopleProfileDetails(p)+'</div><div style="padding:28px;text-align:center;color:var(--text2)">Loading linked activity...</div>';
+modal.style.display='flex';
+try{
+  var results=await Promise.all([
+    api('/training_followup?select=*'+cf()+'&order=training_date.desc').catch(function(){return[];}),
+    api('/induction_records?select=*'+cf()+'&order=induction_date.desc').catch(function(){return[];}),
+    api('/elearning_enrolments?select=*'+cf()+'&order=enrolment_date.desc').catch(function(){return[];}),
+    api('/doc_acknowledgements?select=*'+cf()+'&order=created_at.desc').catch(function(){return[];}),
+    api('/safety_bulletins?select=*'+cf()+'&order=publication_date.desc').catch(function(){return[];}),
+    api('/audit_events?select=*'+cf()+'&order=created_at.desc&limit=120').catch(function(){return[];})
+  ]);
+  var training=(results[0]||[]).filter(function(x){return peopleRowMatchesPerson(x,p,['person_name','employee_name','name','email']);});
+  var inductions=(results[1]||[]).filter(function(x){return peopleRowMatchesPerson(x,p,['person_name','employee_name','name','email']);});
+  var elearn=(results[2]||[]).filter(function(x){return peopleRowMatchesPerson(x,p,['person_name','employee_name','name','email']);});
+  var docs=(results[3]||[]).filter(function(x){return peopleRowMatchesPerson(x,p,['person_name','employee_name','recipient_name','holder','email','recipient_email']);});
+  var bulletins=(results[4]||[]).filter(function(x){
+    var checks=bulletinChecks(x);
+    return checks.some(function(c){return peopleTextMatchesPerson([c.name,c.email,c.user,c.checked_by].join(' '),p);});
+  });
+  var audit=(results[5]||[]).filter(function(x){return peopleRowMatchesPerson(x,p,['actor_name','actor_email','summary'])||peopleTextMatchesPerson(JSON.stringify(x.details||{}),p);});
+  var content='<div style="border-bottom:1px solid var(--border);margin:22px -20px 18px;padding-left:20px">'
+    +'<span style="display:inline-block;padding:0 0 11px;border-bottom:3px solid #185FA5;color:#185FA5;font-size:14px;font-weight:800">Profile & Activity</span></div>'
+    +peopleProfileDetails(p)
+    +'<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:18px 0">'
+    +'<div class="metric"><div class="metric-label">Training</div><div class="metric-value">'+training.length+'</div></div>'
+    +'<div class="metric"><div class="metric-label">E-learning</div><div class="metric-value">'+elearn.length+'</div></div>'
+    +'<div class="metric"><div class="metric-label">Documents</div><div class="metric-value">'+docs.length+'</div></div>'
+    +'<div class="metric"><div class="metric-label">Bulletins</div><div class="metric-value">'+bulletins.length+'</div></div></div>'
+    +peopleMiniTable('Training records',training.concat(inductions),[
+      {label:'Type',value:function(r){return r.induction_type?'Induction':'Training';}},
+      {label:'Topic',value:function(r){return r.training_topic||r.induction_type||r.course_title||'-';}},
+      {label:'Date',value:function(r){return r.training_date||r.induction_date||r.completion_date||'-';}},
+      {label:'Status',value:function(r){return r.status||r.completed||'-';}}
+    ],'No training or induction records linked to this person yet.')
+    +peopleMiniTable('E-learning records',elearn,[
+      {label:'Course',value:function(r){return r.course_title||r.title||r.course_id||'-';}},
+      {label:'Enrolled',key:'enrolment_date'},
+      {label:'Target',value:function(r){return r.target_date||r.due_date||'-';}},
+      {label:'Status',key:'status'}
+    ],'No e-learning enrolments linked to this person yet.')
+    +peopleMiniTable('Document acknowledgements',docs,[
+      {label:'Document',value:function(r){return r.document_title||r.title||r.document_ref||'-';}},
+      {label:'Issued',value:function(r){return r.created_at?new Date(r.created_at).toLocaleDateString('en-GB'):'-';}},
+      {label:'Due',key:'due_date'},
+      {label:'Status',key:'status'}
+    ],'No document acknowledgements linked to this person yet.')
+    +peopleMiniTable('Safety bulletin checks',bulletins,[
+      {label:'Ref',value:function(r){return r.bulletin_ref||'BULL';}},
+      {label:'Title',key:'title'},
+      {label:'Published',key:'publication_date'},
+      {label:'Status',value:function(){return 'Checked / opened';}}
+    ],'No safety bulletin checks recorded for this person yet.')
+    +peopleMiniTable('Recent software activity',audit,[
+      {label:'Date',value:function(r){return r.created_at?new Date(r.created_at).toLocaleString():'-';}},
+      {label:'Module',value:function(r){return auditLabel(r.module_name||r.related_table||'-');}},
+      {label:'Action',value:function(r){return auditLabel(r.action||'-');}},
+      {label:'Summary',key:'summary'}
+    ],'No recent audit activity linked to this person yet.');
+  body.innerHTML=peopleProfileShell(p)+content;
+}catch(e){
+  body.innerHTML=peopleProfileShell(p)+'<div style="margin-top:18px">'+peopleProfileDetails(p)+'</div><div style="padding:18px;color:var(--red)">Could not load linked activity: '+escH(e.message)+'</div>';
+}
+}
 function peopleRender(){
 const el=document.getElementById('people-list');if(!el)return;
 const type=document.getElementById('filter-ptype')?.value||'';
@@ -9439,7 +9547,8 @@ const hse=(p.induction_completed?'<span style="color:var(--green);font-weight:70
 const employment='<div>'+(p.job_title?escH(p.job_title):'--')+'</div><div style="font-size:11px;color:var(--text2)">Start: '+dateText(p.start_date)+(p.end_date?' | End: '+dateText(p.end_date):'')+'</div>';
 const contractor=p.person_type!=='employee'&&p.company_name?'<div style="font-size:11px;color:var(--blue);font-weight:700">'+escH(p.company_name)+'</div>':'';
 const onboardTitle=isDeliverableEmail(p.email)?'Send login invitation':'Create generated login';
-const actions=peopleCanManage()?'<div style="display:flex;gap:6px;flex-wrap:wrap"><button class="btn btn-sm" onclick="peopleEdit(\''+p.id+'\')"><i class="ti ti-edit"></i>Edit</button><button class="btn btn-sm" onclick="peopleOnboardUser(\''+p.id+'\')" title="'+onboardTitle+'"><i class="ti ti-user-plus"></i>Onboard user</button>'+(p.status==='inactive'?'<button class="btn btn-sm" onclick="peopleReactivate(\''+p.id+'\')">Reactivate</button>':'<button class="btn btn-sm danger" onclick="peopleDeactivate(\''+p.id+'\')">Deactivate</button>')+'</div>':'<span style="font-size:11px;color:var(--text3)">View only</span>';
+const profileBtn='<button class="btn btn-sm" onclick="peopleOpenProfile(\''+p.id+'\')"><i class="ti ti-id"></i>Profile</button>';
+const actions=peopleCanManage()?'<div style="display:flex;gap:6px;flex-wrap:wrap">'+profileBtn+'<button class="btn btn-sm" onclick="peopleEdit(\''+p.id+'\')"><i class="ti ti-edit"></i>Edit</button><button class="btn btn-sm" onclick="peopleOnboardUser(\''+p.id+'\')" title="'+onboardTitle+'"><i class="ti ti-user-plus"></i>Onboard user</button>'+(p.status==='inactive'?'<button class="btn btn-sm" onclick="peopleReactivate(\''+p.id+'\')">Reactivate</button>':'<button class="btn btn-sm danger" onclick="peopleDeactivate(\''+p.id+'\')">Deactivate</button>')+'</div>':profileBtn;
 return '<tr><td><strong>'+escH(peopleName(p))+'</strong>'+contractor+'<div style="font-size:11px;color:var(--text2)">ID: '+escH(p.id_number||'--')+'</div></td><td><span class="badge '+typeBadge+'">'+escH(p.person_type||'person')+'</span></td><td>'+escH(p.department||'--')+'<br><span style="font-size:11px;color:var(--text2)">'+escH(p.site||'--')+'</span></td><td>'+escH(p.email||'--')+'<br><span style="font-size:11px;color:var(--text2)">'+escH(p.phone||'--')+'</span></td><td>'+employment+'</td><td>'+hse+'</td><td>'+stat(p.status||'active')+'</td><td>'+actions+'</td></tr>';
 }).join('')+'</tbody></table></div>';
 }
