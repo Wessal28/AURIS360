@@ -15773,6 +15773,7 @@ async function raAddFromLibrary(libId){
   }
   var item=libHazardData.find(x=>x.id===libId);if(!item)return;
   var row={
+    task:item.task||item.task_step||item.activity||item.category||item.hazard_type||'General activity',
     hazard:item.hazard_description,harm:item.potential_harm||'',who:'All workers',
     rs:item.default_severity||3,rop:item.default_probability||3,
     controls:item.controls||item.control_measures||item.existing_controls||'',
