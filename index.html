@@ -6985,34 +6985,138 @@ const allRows=await api('/noise_surveys?select=*'+cf()+'&order=survey_date.desc'
 const d=(allRows||[]).filter(function(x){return !ohIsArchivedText(x.notes);});
 if(!d.length){el.innerHTML='<div style="text-align:center;padding:36px;color:var(--text2)"><div style="font-weight:700;margin-bottom:6px">No active noise surveys yet</div><div style="font-size:12px">Record workplace or environmental noise surveys here.</div></div>';return;}
 var now=new Date();
-var h='<div style="overflow-x:auto"><table style="width:100%;min-width:900px;border-collapse:collapse;font-size:12px"><thead><tr style="background:#164E63;color:#fff"><th style="padding:9px 12px;text-align:left">Date</th><th style="padding:9px 12px;text-align:left">Type</th><th style="padding:9px 12px;text-align:left">Site / area</th><th style="padding:9px 12px;text-align:left">Conducted by</th><th style="padding:9px 12px;text-align:left">Instrument</th><th style="padding:9px 12px;text-align:left">Calibration</th><th style="padding:9px 12px;text-align:left">Notes</th><th style="padding:9px 12px;width:60px"></th></tr></thead><tbody>';
+var h='<div style="overflow-x:auto"><table class="data-table" style="min-width:1120px"><thead><tr><th>Date</th><th>Type</th><th>Site / area</th><th>Conducted by</th><th>Points</th><th>Max dB(A)</th><th>HPE adequacy</th><th>Calibration</th><th>Actions</th></tr></thead><tbody>';
 for(var i=0;i<d.length;i++){
   var x=d[i];var dt=x.survey_date?new Date(x.survey_date).toLocaleDateString('en-GB'):'--';
   var cal=x.calibration_date?new Date(x.calibration_date):null;
   var calAge=cal?Math.floor((now-cal)/86400000):null;
   var calBad=!cal||calAge>365;
-  var bg=i%2===0?'#fff':'#f9fafb';
-  h+='<tr style="border-bottom:1px solid #f0f0f0;background:'+bg+(calBad?';border-left:4px solid #C2410C':'')+'">'
-    +'<td style="padding:9px 12px;font-weight:700">'+dt+'</td>'
-    +'<td style="padding:9px 12px;text-transform:capitalize">'+escH(x.survey_type||'--')+'</td>'
-    +'<td style="padding:9px 12px;font-weight:600">'+escH(x.site||'--')+'</td>'
-    +'<td style="padding:9px 12px">'+escH(x.conducted_by||'--')+'</td>'
-    +'<td style="padding:9px 12px">'+escH(x.instrument_used||'--')+'</td>'
-    +'<td style="padding:9px 12px;'+(calBad?'color:#C2410C;font-weight:800':'')+'">'+(cal?cal.toLocaleDateString('en-GB'):'Not recorded')+(calBad?' - check':'')+'</td>'
-    +'<td style="padding:9px 12px;max-width:260px;color:var(--text2)">'+escH((x.notes||'').substring(0,120))+'</td>'
-    +'<td style="padding:9px 12px;text-align:right">'+(isMgr()?'<button class="btn btn-sm" style="color:var(--red)" data-id="'+x.id+'" onclick="deleteNoiseSurvey(this.getAttribute(\'data-id\'))"><i class="ti ti-trash"></i></button>':'')+'</td>'
+  var pts=noiseSafeJson(x.measurements,[]);
+  var assessed=noiseSafeJson(x.hpe_assessment,[]);
+  var max=pts.reduce(function(m,p){return Math.max(m,parseFloat(p.leq)||0);},0);
+  var inadequate=assessed.filter(function(a){return a.result==='inadequate';}).length;
+  var warn=assessed.filter(function(a){return a.result==='review';}).length;
+  var hpeLabel=assessed.length?(inadequate?'<span class="badge badge-red">'+inadequate+' inadequate</span>':warn?'<span class="badge badge-amber">'+warn+' review</span>':'<span class="badge badge-green">Adequate</span>'):'<span class="muted">Not assessed</span>';
+  h+='<tr'+(calBad?' style="border-left:4px solid #C2410C"':'')+'>'
+    +'<td><strong>'+dt+'</strong></td>'
+    +'<td style="text-transform:capitalize">'+escH(x.survey_type||'--')+'</td>'
+    +'<td><strong>'+escH(x.site||'--')+'</strong><div class="muted">'+escH((x.notes||'').substring(0,70))+'</div></td>'
+    +'<td>'+escH(x.conducted_by||'--')+'</td>'
+    +'<td>'+pts.length+'</td>'
+    +'<td>'+(max?'<strong style="color:'+(max>=85?'#C2410C':max>=80?'#854F0B':'var(--green)')+'">'+max.toFixed(1)+'</strong>':'-')+'</td>'
+    +'<td>'+hpeLabel+'</td>'
+    +'<td style="'+(calBad?'color:#C2410C;font-weight:800':'')+'">'+(cal?cal.toLocaleDateString('en-GB'):'Not recorded')+(calBad?' - check':'')+'</td>'
+    +'<td style="text-align:right"><button class="icon-btn" title="Open survey" onclick="noiseOpenSurvey(\''+escH(x.id)+'\')"><i class="ti ti-eye"></i></button>'+(isMgr()?'<button class="icon-btn" style="color:var(--red)" data-id="'+x.id+'" onclick="deleteNoiseSurvey(this.getAttribute(\'data-id\'))"><i class="ti ti-trash"></i></button>':'')+'</td>'
     +'</tr>';
 }
 h+='</tbody></table></div>';el.innerHTML=h;
 }catch(e){el.innerHTML=registerErrorHtml('Noise Survey register',e.message);console.error(e);}
 }
 
+function noiseSafeJson(v,fallback){if(Array.isArray(v))return v;try{return JSON.parse(v||'')||fallback;}catch(e){return fallback;}}
+function noiseEmptyForm(){
+  window.noiseEditId=null;
+  ['nf-site','nf-date','nf-instrument','nf-cal','nf-weather','nf-notes','nf-layout-data','nf-layout-name'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
+  fillPersonSelect('nf-by');
+  var by=document.getElementById('nf-by');if(by)by.value='';
+  var type=document.getElementById('nf-type');if(type)type.value='occupational';
+  var title=document.getElementById('noise-form-title');if(title)title.textContent='New noise survey';
+  var del=document.getElementById('noise-del-btn');if(del)del.style.display='none';
+  noiseSetPoints([{loc:'',leq:'',peak:'',duration:'8',persons:'',x:'50',y:'50',hpe:'',snr:''}]);
+  noiseRenderPlanPreview();
+}
+function noiseNewSurvey(){noiseEmptyForm();var f=document.getElementById('noise-form');if(f)f.style.display='block';}
+function noiseSetPoints(rows){
+  var host=document.getElementById('noise-points-body');if(!host)return;
+  host.innerHTML=(rows||[]).map(function(p,i){return noisePointRow(p,i);}).join('');
+  noiseRenderPlanPreview();
+  noiseAssessHpe();
+}
+function noisePointRow(p,i){
+  p=p||{};
+  return '<tr data-idx="'+i+'">'
+    +'<td><input value="'+escH(p.loc||'')+'" placeholder="e.g. Compressor room" oninput="noiseRenderPlanPreview();noiseAssessHpe()"/></td>'
+    +'<td><input type="number" step="0.1" value="'+escH(p.leq||'')+'" oninput="noiseRenderPlanPreview();noiseAssessHpe()"/></td>'
+    +'<td><input type="number" step="0.1" value="'+escH(p.peak||'')+'" oninput="noiseAssessHpe()"/></td>'
+    +'<td><input type="number" step="0.25" value="'+escH(p.duration||'8')+'" oninput="noiseAssessHpe()"/></td>'
+    +'<td><input type="number" min="0" value="'+escH(p.persons||'')+'" oninput="noiseAssessHpe()"/></td>'
+    +'<td><input type="number" min="0" max="100" value="'+escH(p.x||'50')+'" oninput="noiseRenderPlanPreview()"/></td>'
+    +'<td><input type="number" min="0" max="100" value="'+escH(p.y||'50')+'" oninput="noiseRenderPlanPreview()"/></td>'
+    +'<td><input value="'+escH(p.hpe||'')+'" placeholder="e.g. ear muff"/></td>'
+    +'<td><input type="number" step="1" value="'+escH(p.snr||'')+'" oninput="noiseAssessHpe()"/></td>'
+    +'<td><button class="icon-btn" onclick="noiseRemovePoint('+i+')"><i class="ti ti-trash"></i></button></td>'
+    +'</tr>';
+}
+function noisePointsFromForm(){
+  return Array.from(document.querySelectorAll('#noise-points-body tr')).map(function(tr){
+    var v=Array.from(tr.querySelectorAll('input')).map(function(i){return i.value;});
+    return {loc:v[0]||'',leq:v[1]||'',peak:v[2]||'',duration:v[3]||'',persons:v[4]||'',x:v[5]||'50',y:v[6]||'50',hpe:v[7]||'',snr:v[8]||''};
+  }).filter(function(p){return p.loc||p.leq||p.peak||p.hpe;});
+}
+function noiseAddPoint(){var rows=noisePointsFromForm();rows.push({loc:'',leq:'',peak:'',duration:'8',persons:'',x:'50',y:'50',hpe:'',snr:''});noiseSetPoints(rows);}
+function noiseRemovePoint(i){var rows=noisePointsFromForm();rows.splice(i,1);noiseSetPoints(rows.length?rows:[{loc:'',leq:'',peak:'',duration:'8',persons:'',x:'50',y:'50',hpe:'',snr:''}]);}
+function noiseUploadPlan(input){
+  var file=input.files&&input.files[0];if(!file)return;
+  if(!file.type.startsWith('image/')){toast('Please upload a PNG/JPG layout image',false);return;}
+  var rd=new FileReader();
+  rd.onload=function(){document.getElementById('nf-layout-data').value=rd.result;document.getElementById('nf-layout-name').value=file.name;noiseRenderPlanPreview();};
+  rd.readAsDataURL(file);
+}
+function noiseRenderPlanPreview(){
+  var img=document.getElementById('noise-plan-img'), empty=document.getElementById('noise-plan-empty'), layer=document.getElementById('noise-plan-layer');
+  if(!img||!layer)return;
+  var data=document.getElementById('nf-layout-data')?.value||'';
+  img.src=data;img.style.display=data?'block':'none';if(empty)empty.style.display=data?'none':'flex';
+  var rows=noisePointsFromForm();
+  layer.innerHTML=rows.map(function(p,i){var leq=parseFloat(p.leq)||0;var color=leq>=85?'#E24B4A':leq>=80?'#EF9F27':'#1D9E75';return '<button type="button" title="'+escH((p.loc||'Point '+(i+1))+' - '+(p.leq||'-')+' dB(A)')+'" style="position:absolute;left:'+Math.max(0,Math.min(100,parseFloat(p.x)||50))+'%;top:'+Math.max(0,Math.min(100,parseFloat(p.y)||50))+'%;transform:translate(-50%,-50%);width:28px;height:28px;border-radius:999px;border:2px solid #fff;background:'+color+';color:#fff;font-size:11px;font-weight:900;box-shadow:0 2px 8px rgba(0,0,0,.25);pointer-events:auto">'+(i+1)+'</button>';}).join('');
+}
+function noisePlanClick(ev){
+  var rows=noisePointsFromForm();if(!rows.length)return;
+  var rect=ev.currentTarget.getBoundingClientRect();
+  var x=((ev.clientX-rect.left)/rect.width*100).toFixed(1), y=((ev.clientY-rect.top)/rect.height*100).toFixed(1);
+  rows[rows.length-1].x=x;rows[rows.length-1].y=y;noiseSetPoints(rows);
+}
+function noiseAssessHpe(){
+  var rows=noisePointsFromForm();
+  var assessed=rows.map(function(p,i){
+    var leq=parseFloat(p.leq)||0, snr=parseFloat(p.snr)||0;
+    var protectedLevel=snr?Math.max(0,leq-snr):null;
+    var result=!leq?'missing':(!snr?'review':(protectedLevel>85?'inadequate':protectedLevel<70?'review':'adequate'));
+    return Object.assign({},p,{idx:i+1,protected_level:protectedLevel,result:result});
+  });
+  var host=document.getElementById('noise-hpe-results');if(!host)return assessed;
+  host.innerHTML=assessed.length?'<table class="data-table" style="font-size:12px"><thead><tr><th>Point</th><th>Exposure</th><th>HPE</th><th>Protected level</th><th>Status</th></tr></thead><tbody>'+assessed.map(function(a){var badge=a.result==='adequate'?'badge-green':a.result==='inadequate'?'badge-red':'badge-amber';var label={adequate:'Adequate',inadequate:'Not adequate',review:'Review',missing:'Missing data'}[a.result]||a.result;return '<tr><td><strong>'+(a.idx)+'. '+escH(a.loc||'Point')+'</strong></td><td>'+escH(a.leq||'-')+' dB(A)</td><td>'+escH(a.hpe||'-')+(a.snr?' / SNR '+escH(a.snr):'')+'</td><td>'+(a.protected_level!=null?a.protected_level.toFixed(1)+' dB(A)':'-')+'</td><td><span class="badge '+badge+'">'+label+'</span></td></tr>';}).join('')+'</tbody></table>':'<div class="muted">Add measurement points and SNR/NRR values to assess hearing protector adequacy.</div>';
+  return assessed;
+}
+async function noiseOpenSurvey(id){
+  try{
+    var rows=await api('/noise_surveys?id=eq.'+id+'&select=*');var x=rows?.[0];if(!x)return;
+    noiseEmptyForm();window.noiseEditId=id;
+    var set=function(k,v){var el=document.getElementById(k);if(el)el.value=v||'';};
+    set('nf-type',x.survey_type);set('nf-site',x.site);set('nf-date',x.survey_date);set('nf-instrument',x.instrument_used);set('nf-cal',x.calibration_date);set('nf-weather',x.weather_conditions);set('nf-notes',x.notes);set('nf-layout-data',x.layout_image||x.layout_url);set('nf-layout-name',x.layout_title||'Saved layout');
+    fillPersonSelect('nf-by',x.conducted_by);
+    noiseSetPoints(noiseSafeJson(x.measurements,[]));
+    var title=document.getElementById('noise-form-title');if(title)title.textContent='Edit noise survey';
+    var del=document.getElementById('noise-del-btn');if(del)del.style.display=isMgr()?'inline-flex':'none';
+    document.getElementById('noise-form').style.display='block';
+  }catch(e){toast(actionErrorMessage('Open noise survey','Noise Survey',e.message),false);}
+}
 async function saveNoise(){
 try{
 const bid=document.getElementById('nf-by').value;
 var cal=document.getElementById('nf-cal').value||null;
-var body={company_id:ccid(),survey_type:document.getElementById('nf-type').value,site:document.getElementById('nf-site').value,survey_date:document.getElementById('nf-date').value||null,conducted_by:bid?pname(bid):prof?.full_name,instrument_used:document.getElementById('nf-instrument').value,calibration_date:cal,weather_conditions:document.getElementById('nf-weather').value,notes:document.getElementById('nf-notes').value,created_by:prof?.id};
-await api('/noise_surveys',{m:'POST',p:'return=minimal',b:body});
+var points=noisePointsFromForm(), hpe=noiseAssessHpe();
+var base={company_id:ccid(),survey_type:document.getElementById('nf-type').value,site:document.getElementById('nf-site').value,survey_date:document.getElementById('nf-date').value||null,conducted_by:bid?pname(bid):prof?.full_name,instrument_used:document.getElementById('nf-instrument').value,calibration_date:cal,weather_conditions:document.getElementById('nf-weather').value,notes:document.getElementById('nf-notes').value,created_by:prof?.id,updated_at:new Date().toISOString()};
+var body=Object.assign({},base,{layout_title:document.getElementById('nf-layout-name')?.value||null,layout_image:document.getElementById('nf-layout-data')?.value||null,measurements:points,hpe_assessment:hpe});
+try{
+  if(window.noiseEditId)await api('/noise_surveys?id=eq.'+window.noiseEditId,{m:'PATCH',p:'return=minimal',b:body});
+  else await api('/noise_surveys',{m:'POST',p:'return=minimal',b:body});
+}catch(e){
+  if(!/schema cache|column|Could not find/i.test(e.message||''))throw e;
+  if(window.noiseEditId)await api('/noise_surveys?id=eq.'+window.noiseEditId,{m:'PATCH',p:'return=minimal',b:base});
+  else await api('/noise_surveys',{m:'POST',p:'return=minimal',b:base});
+  toast('Noise survey saved. Run noise_survey_schema_update.sql to keep plan, points and HPE assessment.',false);
+}
 var calBad=!cal||((new Date()-new Date(cal))/86400000>365);
 if(calBad){
   try{await api('/action_tracker',{m:'POST',p:'return=minimal',b:{company_id:ccid(),source_module:'noise',source_ref:'Noise survey - '+(body.site||'site'),description:'Noise survey instrument calibration is missing or older than 12 months. Verify calibration before relying on results.',responsible:body.conducted_by||null,priority:'medium',status:'open',created_by:prof?.id}});}catch(ex){console.warn('Noise MAP action failed',ex);}
@@ -42202,7 +42306,28 @@ function fireEquipStatusBadge(s) {
 </div><!-- end page-ppe -->
 
 <div id="page-noise" class="page">
-<div class="page-header"><div class="page-title">Noise Survey</div><div style="display:flex;gap:8px"><button class="btn" onclick="noisePrintRegister()"><i class="ti ti-printer"></i>Print register</button><button class="btn btn-primary" onclick="toggleForm('noise-form')"><i class="ti ti-plus"></i>New survey</button></div></div><div class="card" id="noise-form" style="display:none"><div class="card-title">New noise survey</div><div class="form-row"><div class="form-group"><label class="form-label">Survey type</label><select id="nf-type"><option value="occupational">Occupational</option><option value="environmental">Environmental</option></select></div><div class="form-group"><label class="form-label">Site</label><input type="text" id="nf-site"/></div></div><div class="form-row"><div class="form-group"><label class="form-label">Survey date</label><input type="date" id="nf-date"/></div><div class="form-group"><label class="form-label">Conducted by</label><select id="nf-by"><option value="">Select person...</option></select></div></div><div class="form-row"><div class="form-group"><label class="form-label">Instrument used</label><input type="text" id="nf-instrument"/></div><div class="form-group"><label class="form-label">Calibration date</label><input type="date" id="nf-cal"/></div></div><div class="form-group"><label class="form-label">Weather / conditions</label><input type="text" id="nf-weather"/></div><div class="form-group"><label class="form-label">Notes</label><textarea id="nf-notes"></textarea></div><div style="display:flex;gap:8px"><button class="btn btn-primary" onclick="saveNoise()"><i class="ti ti-device-floppy"></i>Save</button><button class="btn" onclick="toggleForm('noise-form')">Cancel</button></div></div><div class="card"><div class="card-title">Noise surveys</div><div id="noise-list"><div class="loading-msg">Loading...</div></div></div></div>
+<div class="page-header"><div><div class="page-title">Noise Survey</div><div style="font-size:12px;color:var(--text2)">Noise measurements · layout map · hearing protector adequacy</div></div><div style="display:flex;gap:8px"><button class="btn" onclick="noisePrintRegister()"><i class="ti ti-printer"></i>Print register</button><button class="btn btn-primary" onclick="noiseNewSurvey()"><i class="ti ti-plus"></i>New survey</button></div></div>
+<div class="card" id="noise-form" style="display:none">
+<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:12px"><div class="card-title" id="noise-form-title" style="margin:0">New noise survey</div><div style="display:flex;gap:8px"><button id="noise-del-btn" class="btn" style="display:none;color:var(--red)" onclick="deleteNoiseSurvey(window.noiseEditId)"><i class="ti ti-trash"></i></button><button class="btn btn-primary" onclick="saveNoise()"><i class="ti ti-device-floppy"></i>Save survey</button><button class="btn" onclick="toggleForm('noise-form')">Cancel</button></div></div>
+<div class="form-row"><div class="form-group"><label class="form-label">Survey type</label><select id="nf-type"><option value="occupational">Occupational</option><option value="environmental">Environmental</option></select></div><div class="form-group"><label class="form-label">Site / area</label><input type="text" id="nf-site"/></div><div class="form-group"><label class="form-label">Survey date</label><input type="date" id="nf-date"/></div><div class="form-group"><label class="form-label">Conducted by</label><select id="nf-by"><option value="">Select person...</option></select></div></div>
+<div class="form-row"><div class="form-group"><label class="form-label">Instrument used</label><input type="text" id="nf-instrument"/></div><div class="form-group"><label class="form-label">Calibration date</label><input type="date" id="nf-cal"/></div><div class="form-group"><label class="form-label">Weather / conditions</label><input type="text" id="nf-weather"/></div></div>
+<div class="form-group"><label class="form-label">Notes</label><textarea id="nf-notes" style="min-height:54px"></textarea></div>
+<div class="card" style="background:#f8fafc;margin:12px 0">
+<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:10px"><div><div class="card-title" style="margin:0">Site plan and noise map</div><div style="font-size:12px;color:var(--text2)">Upload a layout, enter point coordinates, or click the map to position the latest measurement point.</div></div><label class="btn" style="cursor:pointer"><i class="ti ti-upload"></i>Upload layout<input type="file" accept="image/*" onchange="noiseUploadPlan(this)" style="display:none"/></label></div>
+<input type="hidden" id="nf-layout-data"/><input type="hidden" id="nf-layout-name"/>
+<div id="noise-plan-box" onclick="noisePlanClick(event)" style="position:relative;min-height:320px;border:1px dashed var(--border);border-radius:8px;background:#fff;overflow:auto;display:flex;align-items:center;justify-content:center;cursor:crosshair">
+<div id="noise-plan-empty" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;text-align:center;color:var(--text2);pointer-events:none"><div><i class="ti ti-map" style="font-size:38px;opacity:.35"></i><div style="font-weight:800;margin-top:8px">No layout uploaded</div><div style="font-size:12px;margin-top:4px">Measurement points still work without a plan.</div></div></div>
+<img id="noise-plan-img" alt="Noise survey layout" style="display:none;max-width:100%;height:auto;pointer-events:none;user-select:none"/>
+<div id="noise-plan-layer" style="position:absolute;inset:0;pointer-events:none"></div>
+</div>
+</div>
+<div class="card" style="margin:12px 0;padding:0;overflow:hidden">
+<div style="padding:12px 16px;background:#164E63;color:#fff;display:flex;align-items:center;justify-content:space-between"><strong>Measurement points</strong><button class="btn btn-sm" style="background:#fff;color:#164E63" onclick="noiseAddPoint()"><i class="ti ti-plus"></i>Add point</button></div>
+<div style="overflow-x:auto"><table class="data-table" style="min-width:1200px"><thead><tr><th>Location / activity</th><th>Leq dB(A)</th><th>Peak dB(C)</th><th>Duration h</th><th>Persons</th><th>X %</th><th>Y %</th><th>Hearing protector</th><th>SNR/NRR</th><th></th></tr></thead><tbody id="noise-points-body"></tbody></table></div>
+</div>
+<div class="card" style="margin:12px 0"><div class="card-title">Hearing protector adequacy</div><div style="font-size:12px;color:var(--text2);margin-bottom:10px">Protected level is estimated as exposure minus SNR/NRR. Review if protected level is too high or over-protected.</div><div id="noise-hpe-results"></div></div>
+</div>
+<div class="card"><div class="card-title">Noise surveys</div><div id="noise-list"><div class="loading-msg">Loading...</div></div></div></div>
 <div id="page-meetings" class="page">
 <div class="page-header">
 <div><div class="page-title">Meeting &amp; Communication Management</div><div style="font-size:12px;color:var(--text2)" id="mtg-subtitle">Safety meetings · Minutes · Toolbox talks · Alerts · Bulletins</div></div>
