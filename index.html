@@ -5587,30 +5587,82 @@ function execRenderSustainability(waste, fuel) {
   }).join('');
 }
 
+var execLastAIReportText='';
+function execAIPeriodRange(type){
+  var now=new Date();
+  var start=new Date(now);
+  if(type==='weekly_summary'){start.setDate(now.getDate()-7);}
+  else if(type==='monthly_report'){start=new Date(now.getFullYear(),now.getMonth(),1);}
+  else {start=new Date((execData&&execData.yr)||now.getFullYear(),0,1);}
+  return {start:start,end:now,label:type==='weekly_summary'?'last 7 days':(type==='monthly_report'?'current month':'year to date')};
+}
+function execBuildAIContext(type){
+  var d=execData||{}; var range=execAIPeriodRange(type); var now=new Date();
+  var events=d.events||[], actions=d.actions||[], people=d.people||[], insps=d.insps||[], legal=d.legal||[], spills=d.spills||[], certs=d.certs||[];
+  var inRange=function(x,field){var raw=x[field]||x.event_date||x.inspection_date||x.created_at||''; if(!raw)return false; var dt=new Date(raw); return dt>=range.start&&dt<=range.end;};
+  var periodEvents=events.filter(function(x){return inRange(x,'event_date');});
+  var lti=events.filter(function(x){return x.injury_type==='lti'||x.lost_time_days>0;});
+  var rec=events.filter(function(x){return x.injury_type||['injury','lti','medical_treatment','restricted_work'].includes(x.event_type);});
+  var openActions=actions.filter(function(x){return !['closed','cancelled'].includes(x.status||'');});
+  var overdue=openActions.filter(function(x){return (x.target_date||x.due_date)&&new Date(x.target_date||x.due_date)<now;});
+  var lScores=legal.filter(function(x){return x.compliance_score!=null;}).map(function(x){return parseFloat(x.compliance_score)||0;});
+  var compPct=lScores.length?Math.round(lScores.reduce(function(a,b){return a+b;},0)/lScores.length):0;
+  var avgAudit=insps.length?Math.round(insps.reduce(function(s,x){var t=(x.score_good||0)+(x.score_insuf||0);return s+(t?((x.score_good||0)/t*100):0);},0)/insps.length):0;
+  var manhours=people.length*2000; var ltifr=manhours?(lti.length/manhours*1000000).toFixed(2):'N/A'; var trir=manhours?(rec.length/manhours*200000).toFixed(2):'N/A';
+  var sevCount={critical:0,high:0,medium:0,low:0}; events.forEach(function(x){if(sevCount.hasOwnProperty(x.severity))sevCount[x.severity]++;});
+  var highRecent=periodEvents.filter(function(x){return ['critical','high'].includes(x.severity);}).slice(0,8).map(function(x){return {ref:x.event_ref||x.reference_no||x.id, severity:x.severity, type:x.event_type, location:x.location, date:x.event_date, description:String(x.description||x.event_description||'').slice(0,180)};});
+  var overdueList=overdue.slice(0,10).map(function(x){return {ref:x.action_ref||x.id, title:x.title||x.description, priority:x.priority, responsible:x.assigned_to_name||x.responsible, due:x.target_date||x.due_date, status:x.status};});
+  var badInsps=insps.filter(function(x){return (x.score_insuf||0)>0;}).slice(0,8).map(function(x){return {ref:x.reference_no||x.id, site:x.site||x.if_site, date:x.inspection_date||x.if_date, insufficient:x.score_insuf||0, type:x.inspection_type};});
+  return {company:co?.name||'Current company', period:range.label, generated_at:new Date().toLocaleString('en-GB'), workforce:people.length, ytd:{incidents:events.length, lti:lti.length, recordable:rec.length, ltifr:ltifr, trir:trir, severity:sevCount, legal_compliance_pct:compPct, audit_score_pct:avgAudit, open_actions:openActions.length, overdue_actions:overdue.length, spills:spills.length, certificates_tracked:certs.length}, period_metrics:{incidents:periodEvents.length, high_or_critical:highRecent.length}, recent_high_risk_events:highRecent, overdue_actions:overdueList, inspections_with_findings:badInsps};
+}
+function execAIReportText(data){
+  if(!data)return '';
+  if(typeof data==='string')return data;
+  var parts=[];
+  ['executive_summary','board_summary','management_summary'].forEach(function(k){if(data[k])parts.push(String(data[k]));});
+  ['red_flags','positive_notes','management_decisions','next_week_priorities','recommended_actions'].forEach(function(k){
+    var arr=data[k]; if(Array.isArray(arr)&&arr.length){parts.push(k.replace(/_/g,' ').toUpperCase()+':\n'+arr.map(function(x,i){return (i+1)+'. '+(typeof x==='string'?x:(x.title||x.decision||x.action||x.description||JSON.stringify(x)));}).join('\n'));}
+  });
+  return parts.join('\n\n');
+}
+function execAIRenderList(title,items,color){
+  if(!Array.isArray(items)||!items.length)return '';
+  return '<div style="border:1px solid '+color+'33;background:#fff;border-radius:10px;padding:10px;margin-top:10px"><div style="font-weight:900;color:'+color+';margin-bottom:6px">'+escH(title)+'</div>'
+    +items.map(function(x){var text=typeof x==='string'?x:(x.title||x.decision||x.action||x.description||JSON.stringify(x));return '<div style="padding:7px 0;border-top:1px solid #eef2f7;font-size:12px;line-height:1.45">'+escH(text)+'</div>';}).join('')+'</div>';
+}
+function execAIRenderReport(data,type,ctx){
+  execLastAIReportText=execAIReportText(data);
+  if(!data||typeof data==='string')return '<div style="white-space:pre-wrap">'+escH(execLastAIReportText||String(data||''))+'</div>';
+  var summary=data.executive_summary||data.board_summary||data.management_summary||'';
+  var html='<div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start;flex-wrap:wrap;margin-bottom:10px"><div><div style="font-weight:900;color:#5B21B6;font-size:15px">'+escH(type.replace(/_/g,' ').toUpperCase())+'</div><div style="font-size:11px;color:var(--text2)">'+escH(ctx.company)+' · '+escH(ctx.period)+' · '+escH(ctx.generated_at)+'</div></div><div style="display:flex;gap:6px;flex-wrap:wrap"><button class="btn btn-sm" onclick="execCopyAIReport()"><i class="ti ti-copy"></i>Copy</button><button class="btn btn-sm" onclick="execDownloadAIReport()"><i class="ti ti-download"></i>Download</button><button class="btn btn-sm" onclick="execPrintAIReport()"><i class="ti ti-printer"></i>Print</button></div></div>';
+  html+='<div style="background:#fff;border:1px solid #DDD6FE;border-radius:10px;padding:12px;color:#1f2937;line-height:1.55">'+escH(summary)+'</div>';
+  html+=execAIRenderList('Red flags / board attention',data.red_flags,'#DC2626');
+  html+=execAIRenderList('Positive performance notes',data.positive_notes,'#1D9E75');
+  html+=execAIRenderList('Management decisions required',data.management_decisions,'#5B21B6');
+  html+=execAIRenderList('Next-week priorities',data.next_week_priorities,'#185FA5');
+  html+=execAIRenderList('Recommended actions',data.recommended_actions,'#B45309');
+  return html;
+}
+function execCopyAIReport(){if(!execLastAIReportText){toast('Generate an AI report first',false);return;}navigator.clipboard?.writeText(execLastAIReportText);toast('AI report copied');}
+function execDownloadAIReport(){if(!execLastAIReportText){toast('Generate an AI report first',false);return;}var blob=new Blob([execLastAIReportText],{type:'text/plain'});var url=URL.createObjectURL(blob);var a=document.createElement('a');a.href=url;a.download='AURIS360_Executive_AI_Report_'+new Date().toISOString().slice(0,10)+'.txt';a.click();URL.revokeObjectURL(url);toast('AI report downloaded');}
+function execPrintAIReport(){if(!execLastAIReportText){toast('Generate an AI report first',false);return;}var html='<div class="rpt"><h1>AI Executive HSE Summary</h1><pre style="white-space:pre-wrap;font-family:Arial,sans-serif;font-size:12px;line-height:1.55">'+escH(execLastAIReportText)+'</pre></div>'; if(typeof aurisPrint==='function')aurisPrint(html,'AI Executive HSE Summary');else window.print();}
 async function execAIReport(type) {
   var outEl = document.getElementById('exec-ai-output');
   var phEl  = document.getElementById('exec-ai-placeholder');
   if(!outEl) return;
+  if(typeof canUseAI==='function' && !canUseAI()){outEl.style.display='block'; if(phEl)phEl.style.display='none'; outEl.innerHTML=aiFriendlyErrorHtml(new Error('restricted')); return;}
   outEl.style.display='block'; if(phEl) phEl.style.display='none';
-  outEl.textContent = '⏳ Generating '+type+' report...';
-  var d = execData;
-  var ctx = 'Company HSE data: '+d.events?.length+' incidents YTD, '
-    + d.events?.filter(function(x){return x.injury_type==='lti'||x.lost_time_days>0;}).length+' LTIs, '
-    + d.actions?.filter(function(x){return x.status!=='closed';}).length+' open actions, '
-    + d.people?.length+' workers, '
-    + d.spills?.length+' environmental spills, '
-    + d.certs?.length+' certifications tracked.';
-  var prompts = {
-    executive_summary: 'Write a concise executive summary (200 words) of our HSE performance for board review. Include LTIFR, compliance rate, key risks, and 3 strategic recommendations.',
-    monthly_report: 'Write a monthly HSE management report (300 words) covering: incident summary, compliance status, training, permit-to-work, corrective actions progress, and next month priorities.',
-    annual_stats: 'Generate an annual HSE statistics summary (300 words) with LTIFR/TRIR calculations, year-on-year trends, top incident causes, compliance achievements, and year-ahead targets.',
-  };
-  var prompt = prompts[type] || 'Generate a comprehensive HSE report (300 words) covering safety performance, compliance, environmental impact, and strategic recommendations.';
+  outEl.innerHTML = '<div style="text-align:center;padding:18px;color:#5B21B6;font-weight:800">Generating AI executive report...</div>';
+  var ctx = execBuildAIContext(type);
+  var brief={weekly_summary:'weekly executive HSE summary',executive_summary:'board executive HSE summary',monthly_report:'monthly HSE management report',annual_stats:'annual HSE statistics review'}[type]||'executive HSE report';
+  var prompt='You are AURIS360, a senior HSE executive reporting assistant. Prepare a '+brief+' from the live data below. Return STRICT JSON only with keys: executive_summary string, red_flags array of strings, positive_notes array of strings, management_decisions array of strings, next_week_priorities array of strings, recommended_actions array of strings. Be specific, use the numbers provided, avoid exaggeration, and write in a professional board-ready tone. Data: '+JSON.stringify(ctx);
   try {
-    outEl.textContent = await callAI([{role:'user',content:ctx+'\n\n'+prompt}]) || 'No report generated.';
-  } catch(e) { outEl.textContent = aiFriendlyError(e); }
+    var raw=await callAI([{role:'user',content:prompt}], 'You are a senior HSE director preparing concise board-ready safety performance reports. Output valid JSON only.');
+    var data=aiExtractJson(raw)||raw;
+    outEl.innerHTML=execAIRenderReport(data,type,ctx);
+    toast('AI executive report generated');
+  } catch(e) { outEl.innerHTML = aiFriendlyErrorHtml(e); }
 }
-
 async function execGenerateReport(type) {
   var outEl=document.getElementById('exec-report-output');
   var textEl=document.getElementById('exec-report-text');
@@ -37711,13 +37763,14 @@ function fireEquipStatusBadge(s) {
 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
 <div><div class="card-title" style="margin:0;color:#5B21B6"><i class="ti ti-robot"></i> AI Executive Summary</div><div style="font-size:11px;color:var(--text2)">Board-ready HSE performance summary</div></div>
 <div style="display:flex;gap:6px">
+<button class="btn btn-sm" style="background:#5B21B6;color:#fff;border-color:#5B21B6" onclick="execAIReport('weekly_summary')">🗓️ Weekly board pack</button>
 <button class="btn btn-sm" style="background:#5B21B6;color:#fff;border-color:#5B21B6" onclick="execAIReport('executive_summary')">📊 Board summary</button>
 <button class="btn btn-sm" style="background:#5B21B6;color:#fff;border-color:#5B21B6" onclick="execAIReport('monthly_report')">📋 Monthly report</button>
 <button class="btn btn-sm" style="background:#5B21B6;color:#fff;border-color:#5B21B6" onclick="execAIReport('annual_stats')">📈 Annual stats</button>
 </div>
 </div>
 <div id="exec-ai-output" style="display:none;background:#F5F3FF;border:1px solid #c4b5fd;border-radius:8px;padding:14px;font-size:13px;line-height:1.7;white-space:pre-wrap;max-height:400px;overflow-y:auto"></div>
-<div id="exec-ai-placeholder" style="font-size:12px;color:var(--text2);font-style:italic">Select a report type above to generate an AI-powered executive summary.</div>
+<div id="exec-ai-placeholder" style="font-size:12px;color:var(--text2);font-style:italic">Select a report type above to generate a board-ready AI executive report from live AURIS360 data.</div>
 </div>
 </div>
 
