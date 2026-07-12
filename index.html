@@ -6083,44 +6083,92 @@ async function aiRiskHeatmap() {
 }
 
 // ── Document Analysis ─────────────────────────────────────────────────────────
+var aiDocLastActions=[];
+
+function aiDocRenderStructured(out){
+  aiDocLastActions=Array.isArray(out.actions)?out.actions:[];
+  var html='<div style="display:grid;gap:12px">';
+  if(out.summary)html+='<div><div style="font-weight:800;color:#185FA5;margin-bottom:4px">Executive summary</div><div>'+escH(out.summary)+'</div></div>';
+  var sections=[
+    ['key_requirements','Key requirements'],
+    ['risks','Risks / hazards'],
+    ['legal_compliance_points','Legal / compliance points'],
+    ['missing_information','Missing information'],
+    ['recommended_next_steps','Recommended next steps']
+  ];
+  sections.forEach(function(s){
+    var arr=out[s[0]];
+    if(Array.isArray(arr)&&arr.length){
+      html+='<div><div style="font-weight:800;color:#1a3a5c;margin-bottom:5px">'+s[1]+'</div><ul style="margin:0;padding-left:18px;line-height:1.55">'+arr.map(function(x){return '<li>'+escH(typeof x==='string'?x:JSON.stringify(x))+'</li>';}).join('')+'</ul></div>';
+    }
+  });
+  if(aiDocLastActions.length){
+    html+='<div><div style="font-weight:800;color:#1D9E75;margin-bottom:6px">Action items ready for Master Action Plan</div>'
+      +'<div style="overflow:auto"><table style="width:100%;border-collapse:collapse;font-size:11px;background:#fff;border:1px solid var(--border)">'
+      +'<thead><tr style="background:#1a3a5c;color:#fff"><th style="padding:7px;text-align:left">Action</th><th style="padding:7px;text-align:left">Responsible</th><th style="padding:7px;text-align:left">Due</th><th style="padding:7px;text-align:left">Priority</th></tr></thead><tbody>'
+      +aiDocLastActions.map(function(a){return '<tr style="border-bottom:1px solid #eef2f7"><td style="padding:7px;font-weight:700">'+escH(a.title||a.action||'Action')+'</td><td style="padding:7px">'+escH(a.responsible||'')+'</td><td style="padding:7px">'+escH(a.due_date||'')+'</td><td style="padding:7px">'+escH(a.priority||'medium')+'</td></tr>';}).join('')
+      +'</tbody></table></div></div>';
+  }
+  html+='</div>';
+  return html;
+}
+
+async function aiCreateDocActions(){
+  if(!aiDocLastActions.length){toast('No extracted action items to create',false);return;}
+  if(!isMgr()){toast('Only authorised managers/admins can create action items.',false);return;}
+  var created=0;
+  for(var i=0;i<aiDocLastActions.length;i++){
+    var a=aiDocLastActions[i]||{};
+    var title=String(a.title||a.action||'Document action').trim();
+    if(!title)continue;
+    try{
+      await api('/action_tracker',{m:'POST',p:'return=minimal',b:{company_id:ccid(),title:title,description:a.description||title,source_type:'ai_document_analysis',source_module:'ai',priority:a.priority||'medium',status:'open',assigned_to_name:a.responsible||null,target_date:a.due_date||null,created_by:prof?.id}});
+      created++;
+    }catch(ex){}
+  }
+  toast(created+' action item(s) created in Master Action Plan');
+}
+
 async function aiAnalyseDocument() {
   var text = document.getElementById('doc-analysis-text')?.value?.trim();
   if(!text){toast('Please paste document text to analyse',false);return;}
+  if(typeof canUseAI==='function'&&!canUseAI()){toast('AURIS AI is restricted to authorised HSE/admin roles.',false);return;}
   var outCard = document.getElementById('doc-output-card');
   var outEl = document.getElementById('doc-output');
   if(!outEl) return;
   if(outCard) outCard.style.display='block';
-  outEl.textContent = '⏳ Analysing document...';
-  var g = function(id){var el=document.getElementById(id);return el?el.value||'':('')}; 
+  outEl.textContent = 'Analysing document...';
+  var g = function(id){var el=document.getElementById(id);return el?el.value||'':('')};
   var typePrompts = {
     summarise: 'Summarise the key points of this HSE document. Extract: main purpose, key requirements, important dates/numbers, and critical action items.',
-    extract_actions: 'Extract all action items, tasks and requirements from this document. List each with: action description, responsible party (if mentioned), deadline (if mentioned), priority level.',
-    risk_assess: 'Identify all risks, hazards and safety concerns in this document. For each, provide: risk description, severity, likelihood, affected parties, and recommended controls.',
-    incident_review: 'Review this incident report. Extract: what happened, root causes identified, immediate causes, contributing factors, injuries/damage, corrective actions required, and lessons learned.',
-    sds_review: 'Review this Safety Data Sheet (SDS/MSDS). Extract: product name, hazard classifications, exposure limits, required PPE, first aid measures, storage requirements, and emergency procedures.',
-    contractor_review: 'Review this contractor document. Assess: contractor competency evidence, required licences/certifications, safety management capability, insurance coverage mentions, and any non-conformances or missing requirements.',
-    translate_simplify: 'Rewrite this HSE document in plain, simple language that any worker can understand. Remove jargon, use short sentences, and structure with clear headings. Keep all important safety information.',
+    extract_actions: 'Extract all action items, tasks and requirements from this document. List each with action description, responsible party if mentioned, deadline if mentioned, priority level.',
+    risk_assess: 'Identify all risks, hazards and safety concerns in this document. For each, provide risk description, severity, likelihood, affected parties, and recommended controls.',
+    incident_review: 'Review this incident report. Extract what happened, root causes identified, immediate causes, contributing factors, injuries/damage, corrective actions required, and lessons learned.',
+    sds_review: 'Review this Safety Data Sheet SDS/MSDS. Extract product name, hazard classifications, exposure limits, required PPE, first aid measures, storage requirements, and emergency procedures.',
+    contractor_review: 'Review this contractor document. Assess contractor competency evidence, required licences/certifications, safety management capability, insurance coverage mentions, and any non-conformances or missing requirements.',
+    translate_simplify: 'Rewrite this HSE document in plain, simple language that any worker can understand. Remove jargon, use short sentences, and structure with clear headings. Keep all important safety information.'
   };
-  var formatHints = {
-    structured: 'Format the output as a structured report with clear sections and headings.',
-    bullet_points: 'Format the output using bullet points and sub-bullets.',
-    action_list: 'Format the output as a numbered action list, prioritised by urgency.',
-    table: 'Where possible, present information in table format.',
-  };
-  var prompt = (typePrompts[g('doc-analysis-type')]||'Analyse this HSE document:')
-    + ' ' + (formatHints[g('doc-output-format')]||'')
-    + '\n\n--- DOCUMENT ---\n' + text.substring(0,8000);
+  var formatHints = {structured:'Format the output as a structured report with clear sections and headings.',bullet_points:'Format the output using bullet points.',action_list:'Format the output as a numbered action list, prioritised by urgency.',table:'Where possible, present information in table format.'};
+  var prompt = (typePrompts[g('doc-analysis-type')]||'Analyse this HSE document:')+' '+(formatHints[g('doc-output-format')]||'')
+    + '\nReturn strict JSON only with keys: summary string, key_requirements array, risks array, legal_compliance_points array, missing_information array, recommended_next_steps array, actions array of objects {title, description, responsible, due_date, priority}. If the user selected table format, still return JSON; the app will render the table.'
+    + '\n\n--- DOCUMENT ---\n' + text.substring(0,12000);
   try {
-    var result = await callAI([{role:'user',content:prompt}]);
-    outEl.textContent = result;
-    toast('✓ Document analysis complete!');
+    var result = await callAI([{role:'user',content:prompt}],'You are a senior HSE consultant. Extract only defensible findings from the document. Do not invent dates, names or legal duties not present in the text.');
+    var parsed=aiExtractJson(result);
+    if(parsed){
+      outEl.innerHTML=aiDocRenderStructured(parsed);
+      var createBtn=document.getElementById('doc-create-actions-btn');
+      if(createBtn)createBtn.style.display=aiDocLastActions.length?'inline-flex':'none';
+    }else{
+      aiDocLastActions=[];
+      outEl.textContent = result;
+    }
+    toast('Document analysis complete!');
   } catch(e) {
-    outEl.textContent = 'Error: '+e.message;
-    toast('Analysis failed: '+e.message, false);
+    outEl.textContent = 'Error: '+aiFriendlyError(e);
+    toast('Analysis failed: '+aiFriendlyError(e), false);
   }
 }
-
-// ── AI Chat ───────────────────────────────────────────────────────────────────
 function aiChatPrompt(msg) {
   var inp = document.getElementById('ai-chat-input'); if(inp) inp.value = msg;
   aiChatSend();
@@ -46850,6 +46898,7 @@ Pick the modules this client can see. Sephs admin (you) always sees everything r
 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
 <div class="card-title" style="margin:0">Document Analysis</div>
 <div style="display:flex;gap:6px">
+<button id="doc-create-actions-btn" class="btn btn-sm" style="display:none;background:#1D9E75;color:#fff;border-color:#1D9E75" onclick="aiCreateDocActions()"><i class="ti ti-list-check"></i>Create actions</button>
 <button class="btn btn-sm" onclick="aiCopyOutput('doc-output')"><i class="ti ti-copy"></i>Copy</button>
 <button class="btn btn-sm btn-primary" onclick="aiDownload('doc-output','DocumentAnalysis')"><i class="ti ti-download"></i>Download</button>
 </div>
