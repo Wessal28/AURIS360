@@ -29017,7 +29017,89 @@ function auditAddFinding() {
   container.appendChild(row);
 }
 
-// ── Save inspection ────────────────────────────────────────────────
+// AI inspection assistant
+function auditCollectChecklistDraft(){
+  return (window.chkItems||[]).map(function(c,i){
+    var gEl=document.getElementById('cg-'+i), iEl=document.getElementById('ci-'+i), nEl=document.getElementById('cn-'+i), oEl=document.getElementById('co-'+i);
+    return {category:c.ca||'',item:c.item||'',guidance:c.guidance||'',result:gEl?.checked?'good':(iEl?.checked?'insufficient':(nEl?.checked?'na':'')),observation:oEl?.value?.trim()||''};
+  }).filter(function(x){return x.item;});
+}
+function auditAIDueDate(days){
+  var d=new Date(); d.setDate(d.getDate()+(days||14));
+  return d.toISOString().slice(0,10);
+}
+function auditAIReviewPanel(html){
+  var panel=document.getElementById('audit-ai-output');
+  if(!panel){
+    panel=document.createElement('div');
+    panel.id='audit-ai-output';
+    var host=document.getElementById('audit-form-view');
+    if(host)host.insertBefore(panel, host.children[1]||null);
+  }
+  panel.style.cssText='display:block;margin-bottom:14px;padding:12px 14px;border:1px solid #C7D2FE;background:#EEF2FF;border-radius:10px;color:#1E3A8A;font-size:13px';
+  panel.innerHTML=html;
+}
+function auditAppendAIActions(actions){
+  if(!Array.isArray(actions))actions=[];
+  var body=document.getElementById('if-actions-body'); if(!body)return 0;
+  var empty=document.getElementById('if-actions-empty'); if(empty)empty.style.display='none';
+  var count=0;
+  (actions||[]).forEach(function(a){
+    var desc=(a.description||a.action||'').trim();
+    if(!desc)return;
+    body.insertAdjacentHTML('beforeend', inspActionRowHTML({description:desc,responsible:a.responsible||a.assigned_to||'',target_date:a.target_date||a.due_date||auditAIDueDate(14)}));
+    count++;
+  });
+  return count;
+}
+function auditAppendAIFindings(findings){
+  if(!Array.isArray(findings))findings=[];
+  var section=document.getElementById('audit-findings-section');
+  var container=document.getElementById('audit-findings-list');
+  if(!container || (section && section.style.display==='none'))return 0;
+  var count=0;
+  (findings||[]).forEach(function(f){
+    var desc=(f.description||'').trim(); if(!desc)return;
+    auditAddFinding();
+    var row=container.querySelector('.audit-finding-row:last-child'); if(!row)return;
+    var type=row.querySelector('.af-type'), clause=row.querySelector('.af-clause'), assigned=row.querySelector('.af-assigned'), d=row.querySelector('.af-desc'), ev=row.querySelector('.af-evidence'), act=row.querySelector('.af-action');
+    if(type)type.value=f.finding_type||f.type||'minor_nc';
+    if(clause)clause.value=f.clause||'';
+    if(assigned)assigned.value=f.assigned_to||f.responsible||'';
+    if(d)d.value=desc;
+    if(ev)ev.value=f.evidence||'';
+    if(act)act.value=f.corrective_action||f.action||'';
+    count++;
+  });
+  return count;
+}
+async function auditAIAssistFindings(){
+  try{
+    if(typeof canUseAI==='function' && !canUseAI()){toast('AURIS AI is restricted to authorised HSE/admin roles',false);return;}
+    var items=auditCollectChecklistDraft();
+    var insufficient=items.filter(function(x){return x.result==='insufficient';});
+    if(!items.length){toast('Add or load a checklist first',false);return;}
+    if(!insufficient.length){toast('Mark at least one checklist item as Insufficient first',false);return;}
+    var type=document.getElementById('audit-type')?.value||'workplace';
+    var site=document.getElementById('if-site')?.value?.trim()||'site';
+    var prompt='You are an HSE audit and inspection assistant. Convert insufficient checklist items into practical corrective actions and, where relevant, audit findings. Return strict JSON only with keys: overall_findings_summary, positive_observation, negative_observation, actions array, findings array. Each action needs description, responsible blank if unknown, target_date YYYY-MM-DD, priority. Each finding needs finding_type minor_nc/major_nc/observation, clause, description, evidence, corrective_action, assigned_to blank if unknown. Context: '+JSON.stringify({inspection_type:type,site:site,date:document.getElementById('if-date')?.value||'',inspector:document.getElementById('if-by')?.value||'',positive_obs:document.getElementById('if-pos')?.value||'',negative_obs:document.getElementById('if-neg')?.value||'',insufficient_items:insufficient,all_items:items});
+    auditAIReviewPanel('<b>AI findings assistant</b><br>Analysing insufficient items and preparing proposed actions...');
+    var raw=await callAI(prompt);
+    var data=aiExtractJson(raw)||{};
+    if(!data.actions && !data.findings)throw new Error('No structured findings returned');
+    var pos=document.getElementById('if-pos'), neg=document.getElementById('if-neg');
+    if(pos && !pos.value.trim() && data.positive_observation)pos.value=data.positive_observation;
+    if(neg && !neg.value.trim())neg.value=data.negative_observation||data.overall_findings_summary||'';
+    var actionCount=auditAppendAIActions(data.actions||[]);
+    var findingCount=auditAppendAIFindings(data.findings||[]);
+    auditAIReviewPanel('<b>AI findings assistant</b><br>Prepared <b>'+actionCount+'</b> corrective action(s)'+(findingCount?(' and <b>'+findingCount+'</b> finding(s)'):'')+'. Review, assign responsible persons and due dates before saving.');
+    toast('AI findings prepared for review');
+  }catch(e){
+    auditAIReviewPanel('<b>AI findings assistant</b><br><span style="color:#B91C1C">AI error: '+escH(e.message||String(e))+'</span>');
+    toast('AI findings error: '+(e.message||e),false);
+  }
+}
+// Save inspection
 async function auditSave() {
   var site = document.getElementById('if-site')?.value?.trim();
   var type = document.getElementById('audit-type')?.value||'workplace';
@@ -29102,7 +29184,7 @@ async function auditSave() {
     }
     // Create MAP actions for insufficient items + action rows
     var allActions = actions.slice();
-    if(insufCnt>0){allActions.push({description:'Address '+insufCnt+' insufficient item'+(insufCnt>1?'s':'')+' found during inspection: '+(body.site||''),responsible:'',target_date:null});}
+    if(insufCnt>0&&!actions.length){allActions.push({description:'Address '+insufCnt+' insufficient item'+(insufCnt>1?'s':'')+' found during inspection: '+(body.site||''),responsible:'',target_date:null});}
     for(var a of allActions){
       if(!a.description)continue;
       try{await api('/action_tracker',{m:'POST',p:'return=minimal',b:{company_id:ccid(),title:a.description.substring(0,80),description:a.description,source_type:'inspection',source_module:'inspection',source_ref:savedRef||body.reference_no||savedId?.slice(0,8)||'',priority:'high',status:'open',assigned_to_name:a.responsible||null,target_date:a.target_date||null,created_by:prof?.id}});}catch(ex){}
@@ -39277,7 +39359,7 @@ function fireEquipStatusBadge(s) {
 <div style="display:flex;gap:8px;flex-wrap:wrap">
 <button class="btn" style="background:rgba(255,255,255,.2);color:#fff;border-color:rgba(255,255,255,.3)" onclick="auditBackToList()"><i class="ti ti-arrow-left"></i>Back</button>
 <button id="audit-delete-btn" class="btn" style="display:none;background:rgba(220,38,38,.3);color:#fff;border-color:rgba(220,38,38,.5)" onclick="auditDelete()"><i class="ti ti-trash"></i></button>
-<button class="btn" style="background:#fff;color:#185FA5;font-weight:700" onclick="auditSave()"><i class="ti ti-device-floppy"></i>Save</button>
+<button class="btn" style="background:#fff;color:#5B21B6;font-weight:700" onclick="auditAIAssistFindings()"><i class="ti ti-robot"></i>AI findings</button><button class="btn" style="background:#fff;color:#185FA5;font-weight:700" onclick="auditSave()"><i class="ti ti-device-floppy"></i>Save</button>
 </div>
 </div>
 </div>
