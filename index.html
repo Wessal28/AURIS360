@@ -2782,6 +2782,128 @@ function obsToggleAction() {
   if (af) af.style.display = cb?.checked?'block':'none';
 }
 
+function dcAIVal(id){
+  var el=document.getElementById(id);
+  return el ? String(el.value||'').trim() : '';
+}
+
+function dcAISelectText(id){
+  var el=document.getElementById(id);
+  if(!el || el.selectedIndex<0)return '';
+  return el.options[el.selectedIndex].text||'';
+}
+
+function dcAIContext(){
+  return {
+    ref:document.getElementById('dc-form-ref')?.textContent||'DOC-AUTO',
+    title:dcAIVal('df-title'),
+    document_type:dcAIVal('df-type'),
+    document_type_label:dcAISelectText('df-type'),
+    department:dcAIVal('df-dept'),
+    category:dcAIVal('df-category'),
+    description:dcAIVal('df-description'),
+    scope:dcAIVal('df-scope'),
+    tags:dcAIVal('df-tags'),
+    version:dcAIVal('df-version'),
+    revision_type:dcAIVal('df-rev-type'),
+    revision_summary:dcAIVal('df-rev-summary'),
+    supersedes:dcAIVal('df-supersedes'),
+    legal_refs:dcAIVal('df-legal-refs'),
+    status:dcAIVal('df-status'),
+    issue_date:dcAIVal('df-issue'),
+    effective_date:dcAIVal('df-effective'),
+    expiry_date:dcAIVal('df-expiry'),
+    review_date:dcAIVal('df-review'),
+    review_interval_months:dcAIVal('df-review-interval'),
+    file_name:dcAIVal('df-file-name'),
+    file_mime:dcAIVal('df-file-mime'),
+    file_url:dcAIVal('df-url'),
+    physical_location:dcAIVal('df-location'),
+    controlled:!!document.getElementById('df-controlled')?.checked,
+    review_comments:dcAIVal('df-review-comments'),
+    hse_reviewer:dcAIVal('dc-sign-hse')
+  };
+}
+
+function dcAIList(items){
+  if(!Array.isArray(items)||!items.length)return '<div style="font-size:12px;color:var(--text2)">No item generated.</div>';
+  return '<ul style="margin:6px 0 0 18px;padding:0;line-height:1.5">'+items.map(function(x){return '<li>'+escH(typeof x==='string'?x:(x.description||JSON.stringify(x)))+'</li>';}).join('')+'</ul>';
+}
+
+function dcAIRenderReview(out){
+  window.dcAIReview=out||{};
+  var panel=document.getElementById('dc-ai-review-panel'); if(!panel)return;
+  panel.innerHTML='<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap">'
+    +'<div><div style="font-size:15px;font-weight:900;color:#185FA5"><i class="ti ti-robot"></i> AI document control review</div>'
+    +'<div style="font-size:12px;color:var(--text2);margin-top:3px">Review the suggestions before applying. This supports document governance but does not replace formal approval.</div></div>'
+    +'<button type="button" class="btn btn-sm" onclick="document.getElementById(\'dc-ai-review-panel\').style.display=\'none\'"><i class="ti ti-x"></i>Hide</button></div>'
+    +'<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px;margin-top:14px">'
+    +'<div style="background:#fff;border:1px solid var(--border);border-radius:8px;padding:12px"><div style="font-weight:800;color:#185FA5">Suggested classification</div><div style="font-size:13px;margin-top:6px">'+escH(out.document_type_label||out.document_type||'')+'</div><div style="font-size:12px;color:var(--text2);margin-top:4px">'+escH(out.category||'')+'</div></div>'
+    +'<div style="background:#fff;border:1px solid var(--border);border-radius:8px;padding:12px"><div style="font-weight:800;color:#065F46">Review focus</div>'+dcAIList(out.review_focus)+'</div>'
+    +'<div style="background:#fff;border:1px solid var(--border);border-radius:8px;padding:12px"><div style="font-weight:800;color:#A32D2D">Risks / gaps</div>'+dcAIList(out.gaps_or_risks)+'</div>'
+    +'<div style="background:#fff;border:1px solid var(--border);border-radius:8px;padding:12px"><div style="font-weight:800;color:#854F0B">Distribution / acknowledgement</div>'+dcAIList(out.distribution_recommendations)+'</div>'
+    +'</div>'
+    +'<div style="margin-top:12px;background:#fff;border:1px solid var(--border);border-radius:8px;padding:12px"><div style="font-weight:800;color:#374151">Suggested description</div><div style="font-size:13px;line-height:1.5;margin-top:5px">'+escH(out.description||'')+'</div></div>'
+    +'<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">'
+    +'<button type="button" class="btn btn-sm btn-primary" onclick="dcAIApplyDetails()"><i class="ti ti-check"></i>Apply details</button>'
+    +'<button type="button" class="btn btn-sm" onclick="dcAIApplyReviewDates()"><i class="ti ti-calendar"></i>Apply review timing</button>'
+    +'<button type="button" class="btn btn-sm" onclick="dcAIApplyReviewComments()"><i class="ti ti-notes"></i>Apply review comments</button>'
+    +'</div>';
+  panel.style.display='block';
+  panel.scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+
+function dcAIApplyDetails(){
+  var out=window.dcAIReview||{};
+  if(out.title)document.getElementById('df-title').value=out.title;
+  if(out.document_type&&document.querySelector('#df-type option[value="'+String(out.document_type).replace(/"/g,'')+'"]'))document.getElementById('df-type').value=out.document_type;
+  if(out.category)document.getElementById('df-category').value=out.category;
+  if(out.description)document.getElementById('df-description').value=out.description;
+  if(out.scope)document.getElementById('df-scope').value=out.scope;
+  if(Array.isArray(out.tags))document.getElementById('df-tags').value=out.tags.join(', ');
+  if(Array.isArray(out.legal_refs))document.getElementById('df-legal-refs').value=out.legal_refs.join(', ');
+  toast('AI document details applied. Review before saving.');
+}
+
+function dcAIApplyReviewDates(){
+  var out=window.dcAIReview||{};
+  if(out.review_interval_months){
+    var m=String(out.review_interval_months);
+    if(document.querySelector('#df-review-interval option[value="'+m+'"]'))document.getElementById('df-review-interval').value=m;
+    var d=new Date(); d.setMonth(d.getMonth()+(parseInt(m,10)||12));
+    document.getElementById('df-review').value=d.toISOString().slice(0,10);
+  }
+  if(out.expiry_months){
+    var e=new Date(); e.setMonth(e.getMonth()+(parseInt(out.expiry_months,10)||36));
+    document.getElementById('df-expiry').value=e.toISOString().slice(0,10);
+  }
+  toast('AI review timing applied.');
+}
+
+function dcAIApplyReviewComments(){
+  var out=window.dcAIReview||{};
+  var lines=[];
+  if(Array.isArray(out.review_focus)&&out.review_focus.length)lines.push('Review focus:\n'+out.review_focus.join('\n'));
+  if(Array.isArray(out.gaps_or_risks)&&out.gaps_or_risks.length)lines.push('Gaps/risks:\n'+out.gaps_or_risks.join('\n'));
+  if(Array.isArray(out.approval_checks)&&out.approval_checks.length)lines.push('Approval checks:\n'+out.approval_checks.join('\n'));
+  if(lines.length)document.getElementById('df-review-comments').value=lines.join('\n\n');
+  toast('AI review comments applied.');
+}
+
+async function dcAIReviewDocument(){
+  if(!canUseAI || !canUseAI()){toast('AURIS AI is restricted to authorised HSE/admin roles.',false);return;}
+  var ctx=dcAIContext();
+  if(!ctx.title && !ctx.file_name && !ctx.description){toast('Enter a document title, description or upload a file first.',false);return;}
+  var panel=document.getElementById('dc-ai-review-panel');
+  if(panel){panel.style.display='block';panel.innerHTML='<div style="font-weight:800;color:#185FA5"><i class="ti ti-loader"></i> AURIS is reviewing the document control record...</div><div style="font-size:12px;color:var(--text2);margin-top:5px">Checking classification, review cycle, approval readiness and distribution needs.</div>';}
+  try{
+    var txt=await callAI([{role:'user',content:'Review this HSE document control record and return ONLY valid JSON with this exact shape: {"title":"...","document_type":"policy|procedure|sop|manual|form|emergency_plan|risk_assessment|legal|certificate|work_instruction|technical_spec|other","document_type_label":"...","category":"...","description":"...","scope":"...","tags":["..."],"legal_refs":["..."],"review_interval_months":12,"expiry_months":36,"review_focus":["..."],"gaps_or_risks":["..."],"approval_checks":["..."],"distribution_recommendations":["..."]}.\n\nRules: be practical for an HSE management system, flag missing owner/reviewer/file/review date, do not invent exact legal references unless clearly supported, and make the output suitable for controlled document governance.\n\nDocument record:\n'+JSON.stringify(ctx,null,2)}],
+      'You are a senior HSE document control and ISO 45001 management system auditor. Return only JSON.');
+    var out=aiExtractJson(txt)||{};
+    dcAIRenderReview(out);
+    toast('AI document review ready.');
+  }catch(e){if(panel)panel.innerHTML=aiFriendlyErrorHtml(e);toast(aiFriendlyError(e),false);}
+}
 // ── Save ──────────────────────────────────────────────────────────────────────
 async function obsSave() {
   if(!workflowCanMutate('observation','BBS observations'))return;
@@ -46094,6 +46216,7 @@ function fireEquipStatusBadge(s) {
 <div style="display:flex;gap:8px;flex-wrap:wrap">
 <button class="btn" style="background:rgba(255,255,255,.2);color:#fff;border-color:rgba(255,255,255,.3)" onclick="dcShowList()"><i class="ti ti-arrow-left"></i>Back</button>
 <button id="dc-del-btn" class="btn" style="display:none;background:rgba(220,38,38,.3);color:#fff;border-color:rgba(220,38,38,.5)" onclick="dcDelete()"><i class="ti ti-trash"></i></button>
+<button class="btn" style="background:#fff;color:#185FA5;font-weight:800;border-color:#fff" onclick="dcAIReviewDocument()"><i class="ti ti-robot"></i>AI review</button>
 <button class="btn" style="background:rgba(255,255,255,.2);color:#fff;border-color:rgba(255,255,255,.3)" onclick="dcSave()"><i class="ti ti-device-floppy"></i>Save</button>
 <button class="btn" style="background:#1D9E75;color:#fff;border-color:#1D9E75" onclick="dcSubmitForApproval()"><i class="ti ti-send"></i>Submit for approval</button>
 </div>
@@ -46105,6 +46228,7 @@ function fireEquipStatusBadge(s) {
 <!-- Action buttons -->
 <div id="dc-action-btns" style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap"></div>
 
+<div id="dc-ai-review-panel" class="card" style="display:none;margin-bottom:14px;border:1px solid #bfdbfe;background:#eff6ff"></div>
 <!-- Form tabs -->
 <div style="display:flex;gap:0;margin-bottom:14px;border-bottom:2px solid var(--border)">
 <button class="mtg-tab active" id="dc-ftab-details" onclick="dcFormTab('details',this)">📝 Details</button>
