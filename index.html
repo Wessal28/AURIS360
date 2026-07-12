@@ -27133,7 +27133,19 @@ async function bulletinRecordCheck(id){
     return true;
   }catch(e){
     if(!/schema cache|column|Could not find/i.test(e.message||''))throw e;
-    return false;
+    try{
+      await api('/safety_bulletins?id=eq.'+id,{m:'PATCH',p:'return=minimal',b:{checked_by:checks,updated_at:new Date().toISOString()}});
+      return true;
+    }catch(e2){
+      if(!/schema cache|column|Could not find/i.test(e2.message||''))throw e2;
+      try{
+        await api('/safety_bulletins?id=eq.'+id,{m:'PATCH',p:'return=minimal',b:{acknowledged_by:checks,updated_at:new Date().toISOString()}});
+        return true;
+      }catch(e3){
+        if(!/schema cache|column|Could not find/i.test(e3.message||''))throw e3;
+        return false;
+      }
+    }
   }
 }
 function bulletinRenderChecks(x){
