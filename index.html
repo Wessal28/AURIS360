@@ -28099,7 +28099,23 @@ function auditTypeForTab(tab) {
 function auditStartFromCurrentTab() {
   var tab = auditCurrentTab || 'all';
   if(tab === 'prestart') { psNew(); return; }
+  if(tab === 'findings') { toast('Use an inspection record to add findings', false); return; }
   auditNew(auditTypeForTab(tab));
+}
+
+function auditStartButtonLabel(tab) {
+  var labels = {
+    all: 'New inspection',
+    workplace: 'Start workplace inspection',
+    behavioral: 'Start behavioural inspection',
+    equipment: 'Start equipment inspection',
+    ppe: 'Start PPE inspection',
+    fire: 'Start fire inspection',
+    environmental: 'Start environmental inspection',
+    audit: 'Start audit',
+    prestart: 'New pre-start check'
+  };
+  return labels[tab] || 'New inspection';
 }
 
 function auditSwitchTab(tab, btn) {
@@ -28121,7 +28137,10 @@ function auditSwitchTab(tab, btn) {
   else if(typeFilter) typeFilter.value = '';
   // Update new button label
   var newBtn = document.getElementById('insp-new-btn');
-  if(newBtn) newBtn.innerHTML = '<i class="ti ti-plus"></i>New '+(cfg?cfg.label.toLowerCase():'inspection');
+  if(newBtn) {
+    newBtn.style.display = tab === 'findings' ? 'none' : 'inline-flex';
+    newBtn.innerHTML = '<i class="ti ti-plus"></i>'+auditStartButtonLabel(tab);
+  }
   // Load content
   if(tab === 'prestart') { psLoad(); return; }
   if(tab === 'findings') { findingsLoad(); return; }
@@ -28226,6 +28245,8 @@ function auditNew(preType) {
   document.getElementById('audit-delete-btn').style.display = 'none';
   document.getElementById('audit-form-view').style.display = 'block';
   document.getElementById('audit-view-register').style.display = 'none';
+  document.getElementById('audit-view-prestart').style.display = 'none';
+  document.getElementById('audit-view-findings').style.display = 'none';
   // Clear form
   ['if-site','if-by','if-pos','if-neg','if-sign-inspector','if-sign-reviewer',
    'audit-dept','audit-scope','audit-lead-auditor','audit-team','audit-auditee',
@@ -28742,8 +28763,18 @@ async function auditDelete() {
 function auditBackToList() {
   document.getElementById('audit-form-view').style.display='none';
   document.getElementById('audit-view-prestart').style.display='none';
-  document.getElementById('audit-view-register').style.display='block';
-  auditLoad(null);
+  document.getElementById('audit-view-findings').style.display='none';
+  var tab = auditCurrentTab || 'all';
+  if(tab === 'prestart') {
+    document.getElementById('audit-view-prestart').style.display='block';
+    psLoad();
+  } else if(tab === 'findings') {
+    document.getElementById('audit-view-findings').style.display='block';
+    findingsLoad();
+  } else {
+    document.getElementById('audit-view-register').style.display='block';
+    auditLoad(tab === 'audit' ? ['iso_audit','internal_audit','supplier_audit','contractor_audit','regulatory'] : (tab==='all'?null:[tab]));
+  }
 }
 
 function inspShowList(){auditBackToList();}  // backward compat
