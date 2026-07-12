@@ -32069,8 +32069,133 @@ function integCopyBaseUrl() {
 // ===== TRAINING & WORKSCHEDULE STUBS =====
 
 function indBack(){ var el=document.getElementById('ind-form');if(el)el.style.display='none';var v=document.getElementById('train-view-induction');if(v)v.style.display='block';if(typeof indLoad==='function')indLoad(); }
-function indNew(){ window.indEditId=null;var el=document.getElementById('ind-form');if(!el)return;document.getElementById('ind-form-title').textContent='New Induction';if(document.getElementById('ind-del-btn'))document.getElementById('ind-del-btn').style.display='none';['indf-person','indf-emp-id','indf-dept','indf-job-title','indf-inducted-by','indf-extra-topics','indf-notes'].forEach(function(id){var e=document.getElementById(id);if(e)e.value='';});fillPersonSelect('indf-person');fillPersonSelect('indf-inducted-by',prof?.full_name||personFullName(prof));document.querySelectorAll('.ind-topic').forEach(function(cb){cb.checked=false;});if(document.getElementById('indf-ind-date'))document.getElementById('indf-ind-date').value=new Date().toISOString().slice(0,10);var iv=document.getElementById('train-view-induction');if(iv)iv.style.display='none';el.style.display='block'; }
-async function indSave(){ var person=document.getElementById('indf-person')?.value?.trim();if(!person){toast('Please enter person name',false);return;}var g=function(id){var el=document.getElementById(id);return el?el.value||null:null;};var topics=Array.from(document.querySelectorAll('.ind-topic:checked')).map(function(cb){return cb.value;});var extraTopics=g('indf-extra-topics');if(extraTopics)topics.push('additional:'+extraTopics);var body={company_id:ccid(),person_name:person,employee_id:g('indf-emp-id'),department:g('indf-dept'),job_title:g('indf-job-title'),induction_type:g('indf-type')||'new_employee',induction_date:g('indf-ind-date'),inducted_by:g('indf-inducted-by'),topics_covered:topics,notes:g('indf-notes'),status:g('indf-status')||'completed',completed:g('indf-status')==='completed',updated_at:new Date().toISOString()};try{if(window.indEditId){await api('/induction_records?id=eq.'+window.indEditId,{m:'PATCH',p:'return=minimal',b:body});toast('Updated!');}else{body.created_by=prof?.id;await api('/induction_records',{m:'POST',p:'return=minimal',b:body});toast('Induction saved!');}indBack();}catch(e){toast(actionErrorMessage('Save induction','Training register',e.message),false);} }
+
+const INDUCTION_CHECKLIST_SECTIONS=[
+  {title:'1. Company overview, policies and commitment',items:[
+    ['company_overview','Company activities and organisation overview'],
+    ['hsse_policy','HSSE policy and commitment explained'],
+    ['goal_zero','Goal Zero philosophy and Life Saving Rules explained'],
+    ['stop_work_authority','Stop Work Authority: right and duty to stop unsafe work'],
+    ['alcohol_drug_policy','Alcohol and drug policy, including medication affecting alertness'],
+    ['environmental_social_policy','Environmental protection and social responsibility policies'],
+    ['disciplinary_arrangements','Disciplinary arrangements for HSSE violations explained']
+  ]},
+  {title:'2. Legal duties and responsibilities',items:[
+    ['osh_act_duties','Employee duties under OSH Act 2005: care, cooperation, correct PPE/equipment use'],
+    ['reporting_lines','Organisation structure, reporting lines and HSSE responsibilities'],
+    ['non_compliance_consequences','Consequences of non-compliance with HSSE requirements']
+  ]},
+  {title:'3. Site and workshop rules',items:[
+    ['site_rules','General site rules and prohibited behaviours'],
+    ['housekeeping','Housekeeping: clean work areas, clear routes and immediate spill clean-up'],
+    ['security_arrangements','Security arrangements: visitor control, restricted access and suspicious activity reporting'],
+    ['welfare_facilities','Welfare facilities: toilets, drinking water, rest areas and first aid facilities']
+  ]},
+  {title:'4. Emergency preparedness and response',items:[
+    ['emergency_plan','Emergency response plan and scenarios relevant to the work'],
+    ['alarm_systems','Alarm systems and how to raise the alarm'],
+    ['evacuation_assembly','Evacuation routes, emergency exits and assembly points physically shown'],
+    ['emergency_contacts','Emergency contact numbers and escalation route explained'],
+    ['fire_equipment','Location and basic use of fire extinguishers, fire blankets and firefighting equipment'],
+    ['first_aiders_kits','Identity/location of first aiders and first aid kits'],
+    ['cyclone_warning_classes','Cyclone warning classes and associated work arrangements'],
+    ['spill_response','Spill response arrangements and spill kit locations']
+  ]},
+  {title:'5. Hazard and incident reporting',items:[
+    ['incident_reporting','Immediate reporting of incidents, injuries, near misses, unsafe acts and unsafe conditions'],
+    ['no_blame_reporting','No-blame reporting culture for good-faith reporting'],
+    ['incident_forms','Incident reporting process and forms explained'],
+    ['ra_swms_review','Hazard identification, risk assessment and SWMS review before starting tasks']
+  ]},
+  {title:'6. Job-specific hazards and controls',items:[
+    ['electrical_safety','Electrical safety: isolation, verification, insulated tools and competent persons only'],
+    ['loto_arrangements','Lock Out / Tag Out arrangements explained'],
+    ['permit_to_work','Permit to Work system and permit-controlled activities'],
+    ['work_at_height','Work at height: collective protection, harness use, ladder rules and weather restrictions'],
+    ['hot_work','Hot work: fire watch, combustible removal and extinguishers at hand'],
+    ['manual_handling','Manual handling techniques and mechanical aids'],
+    ['hazardous_substances','Hazardous substances: refrigerants, fuels, solvents, gases and SDS use'],
+    ['pressure_systems','Pressure systems, compressors and stored energy hazards'],
+    ['machinery_tools','Machinery, power tools, guarding, pre-use inspection and out-of-service tagging'],
+    ['noise_dust_vibration','Noise, dust, vibration and fumes: controls and PPE']
+  ]},
+  {title:'7. Vehicle safety and driving',items:[
+    ['driving_rules','Driving rules: valid licence, seat belts, speed limits, no phone, no fatigue/impairment'],
+    ['vehicle_daily_checks','Daily vehicle inspection requirements and defect reporting'],
+    ['load_security','Securing loads, tools and materials during transport']
+  ]},
+  {title:'8. Environment and waste management',items:[
+    ['pollution_prevention','Environment Protection Act responsibilities and pollution prevention'],
+    ['waste_management','Waste segregation and disposal arrangements for oils, metal, refrigerants, batteries and containers'],
+    ['no_discharge_rules','Prohibition of discharge of contaminants into drains, soil or water']
+  ]},
+  {title:'9. PPE issue and training',items:[
+    ['ppe_use_care','PPE requirements for role: correct use, care and storage demonstrated'],
+    ['ppe_issue_acknowledged','PPE issued and acknowledgement of receipt signed'],
+    ['ppe_defect_reporting','Duty to report damaged or defective PPE immediately'],
+    ['tna_mandatory_training','Training Needs Analysis initiated and mandatory training identified'],
+    ['toolbox_communication','Toolbox talk arrangements and HSSE communication channels explained']
+  ]}
+];
+
+function indRenderChecklist(){
+  var host=document.getElementById('ind-checklist-body');if(!host)return;
+  host.innerHTML=INDUCTION_CHECKLIST_SECTIONS.map(function(sec){
+    var rows=sec.items.map(function(it){
+      return '<tr style="border-bottom:1px solid #eef2f7">'
+        +'<td style="padding:7px 8px;font-weight:700;line-height:1.35">'+escH(it[1])+'</td>'
+        +'<td style="padding:7px 4px;text-align:center"><input type="checkbox" class="ind-topic" data-ind-key="'+escH(it[0])+'" value="'+escH(it[0])+'" style="accent-color:var(--green);width:17px;height:17px"/></td>'
+        +'<td style="padding:7px 4px;text-align:center"><input type="checkbox" class="ind-topic-na" data-ind-key="'+escH(it[0])+'" value="na:'+escH(it[0])+'" style="accent-color:#9CA3AF;width:17px;height:17px"/></td>'
+        +'<td style="padding:6px 8px"><input type="text" class="ind-topic-remarks" data-ind-key="'+escH(it[0])+'" placeholder="Remarks..." style="padding:5px 8px;font-size:11px;border:1px solid var(--border);border-radius:6px;width:100%"/></td>'
+        +'</tr>';
+    }).join('');
+    return '<div style="border:1px solid var(--border);border-radius:10px;background:#fff;overflow:hidden;margin-bottom:10px">'
+      +'<div style="padding:9px 12px;background:#185FA5;color:#fff;font-weight:900;font-size:12px;text-transform:uppercase;letter-spacing:.02em">'+escH(sec.title)+'</div>'
+      +'<div style="overflow:auto"><table style="width:100%;min-width:620px;border-collapse:collapse;font-size:12px">'
+      +'<thead><tr style="background:#f8fafc;color:var(--text2);font-size:10px;text-transform:uppercase"><th style="padding:7px 8px;text-align:left">Item covered / explained / demonstrated</th><th style="padding:7px;text-align:center;width:54px">Yes</th><th style="padding:7px;text-align:center;width:54px">N/A</th><th style="padding:7px 8px;text-align:left;width:220px">Remarks</th></tr></thead><tbody>'+rows+'</tbody></table></div></div>';
+  }).join('');
+  indWireChecklistMutualExclusion();
+}
+
+function indWireChecklistMutualExclusion(){
+  document.querySelectorAll('.ind-topic,.ind-topic-na').forEach(function(cb){
+    cb.onchange=function(){
+      if(!this.checked)return;
+      var key=this.getAttribute('data-ind-key');
+      var other=this.classList.contains('ind-topic')?document.querySelector('.ind-topic-na[data-ind-key="'+key+'"]'):document.querySelector('.ind-topic[data-ind-key="'+key+'"]');
+      if(other)other.checked=false;
+    };
+  });
+}
+
+function indCollectChecklistTopics(){
+  var topics=Array.from(document.querySelectorAll('.ind-topic:checked')).map(function(cb){return cb.value;});
+  Array.from(document.querySelectorAll('.ind-topic-na:checked')).forEach(function(cb){topics.push(cb.value);});
+  Array.from(document.querySelectorAll('.ind-topic-remarks')).forEach(function(input){
+    var key=input.getAttribute('data-ind-key'), val=(input.value||'').trim();
+    if(key&&val)topics.push('remark:'+key+':'+val);
+  });
+  return topics;
+}
+
+function indApplyChecklistTopics(topics){
+  indRenderChecklist();
+  document.querySelectorAll('.ind-topic,.ind-topic-na').forEach(function(cb){cb.checked=false;});
+  document.querySelectorAll('.ind-topic-remarks').forEach(function(input){input.value='';});
+  (Array.isArray(topics)?topics:[]).forEach(function(v){
+    v=String(v||'');
+    if(v.indexOf('remark:')===0){
+      var m=v.match(/^remark:([^:]+):(.*)$/);
+      if(m){var input=document.querySelector('.ind-topic-remarks[data-ind-key="'+m[1]+'"]');if(input)input.value=m[2]||'';}
+      return;
+    }
+    if(v.indexOf('na:')===0){var na=document.querySelector('.ind-topic-na[value="'+v.replace(/"/g,'\\"')+'"]');if(na)na.checked=true;return;}
+    var cb=document.querySelector('.ind-topic[value="'+v.replace(/"/g,'\\"')+'"]');if(cb)cb.checked=true;
+  });
+}
+
+function indNew(){ window.indEditId=null;var el=document.getElementById('ind-form');if(!el)return;document.getElementById('ind-form-title').textContent='New Induction';if(document.getElementById('ind-del-btn'))document.getElementById('ind-del-btn').style.display='none';['indf-person','indf-emp-id','indf-dept','indf-job-title','indf-inducted-by','indf-extra-topics','indf-notes'].forEach(function(id){var e=document.getElementById(id);if(e)e.value='';});fillPersonSelect('indf-person');fillPersonSelect('indf-inducted-by',prof?.full_name||personFullName(prof));indApplyChecklistTopics([]);if(document.getElementById('indf-ind-date'))document.getElementById('indf-ind-date').value=new Date().toISOString().slice(0,10);var iv=document.getElementById('train-view-induction');if(iv)iv.style.display='none';el.style.display='block'; }
+async function indSave(){ var person=document.getElementById('indf-person')?.value?.trim();if(!person){toast('Please enter person name',false);return;}var g=function(id){var el=document.getElementById(id);return el?el.value||null:null;};var topics=indCollectChecklistTopics();var extraTopics=g('indf-extra-topics');if(extraTopics)topics.push('additional:'+extraTopics);var body={company_id:ccid(),person_name:person,employee_id:g('indf-emp-id'),department:g('indf-dept'),job_title:g('indf-job-title'),induction_type:g('indf-type')||'new_employee',induction_date:g('indf-ind-date'),inducted_by:g('indf-inducted-by'),topics_covered:topics,notes:g('indf-notes'),status:g('indf-status')||'completed',completed:g('indf-status')==='completed',updated_at:new Date().toISOString()};try{if(window.indEditId){await api('/induction_records?id=eq.'+window.indEditId,{m:'PATCH',p:'return=minimal',b:body});toast('Updated!');}else{body.created_by=prof?.id;await api('/induction_records',{m:'POST',p:'return=minimal',b:body});toast('Induction saved!');}indBack();}catch(e){toast(actionErrorMessage('Save induction','Training register',e.message),false);} }
 async function indDelete(){ if(!window.indEditId)return;try{var rows=await api('/induction_records?id=eq.'+window.indEditId+'&select=status');var status=String(rows?.[0]?.status||'').toLowerCase();if(!['cancelled','archived'].includes(status)){if(!(await appConfirmAction({title:'Cancel induction record',message:'Cancel this induction record instead of deleting it?',detail:'Induction records are evidence of training. The record will remain available for audit history. Permanent delete is only available after cancellation.',confirmText:'Cancel record',cancelText:'Back'})))return;await api('/induction_records?id=eq.'+window.indEditId,{m:'PATCH',p:'return=minimal',b:{status:'cancelled',completed:false,updated_at:new Date().toISOString()}});toast('Induction record cancelled');indBack();return;}if(!(await appConfirmDelete('induction record','This record is already cancelled/archived. Permanent deletion should be used only for duplicate/test records.')))return;await api('/induction_records?id=eq.'+window.indEditId,{m:'DELETE'});toast('Deleted!');indBack();}catch(e){toast(actionErrorMessage('Delete induction','Training register',e.message),false);} }
 function elcFillRequiredPeople(selected){
   var s=document.getElementById('elcf-enrol-people');if(!s)return;
@@ -32256,7 +32381,7 @@ async function indLoad(){
   }catch(e){host.innerHTML=setupFriendlyMessage('Induction register',e.message);}
 }
 async function indEdit(id){
-  try{var rows=await api('/induction_records?id=eq.'+id+'&select=*');var x=rows?.[0];if(!x)return;indNew();window.indEditId=id;var set=function(k,v){var e=document.getElementById(k);if(e)e.value=v||'';};set('indf-person',x.person_name);set('indf-emp-id',x.employee_id);set('indf-dept',x.department);set('indf-job-title',x.job_title);set('indf-type',x.induction_type);set('indf-ind-date',x.induction_date);set('indf-inducted-by',x.inducted_by);set('indf-notes',x.notes);set('indf-status',x.status);document.querySelectorAll('.ind-topic').forEach(function(cb){cb.checked=false;});var extra=[];(Array.isArray(x.topics_covered)?x.topics_covered:[]).forEach(function(v){v=String(v||'');if(v.indexOf('additional:')===0){extra.push(v.slice(11));return;}var cb=document.querySelector('.ind-topic[value="'+v.replace(/"/g,'\\"')+'"]');if(cb)cb.checked=true;});set('indf-extra-topics',extra.join('\n'));var t=document.getElementById('ind-form-title');if(t)t.textContent='Edit Induction';var d=document.getElementById('ind-del-btn');if(d)d.style.display='inline-flex';}catch(e){toast(actionErrorMessage('Open induction','Training register',e.message),false);}
+  try{var rows=await api('/induction_records?id=eq.'+id+'&select=*');var x=rows?.[0];if(!x)return;indNew();window.indEditId=id;var set=function(k,v){var e=document.getElementById(k);if(e)e.value=v||'';};set('indf-person',x.person_name);set('indf-emp-id',x.employee_id);set('indf-dept',x.department);set('indf-job-title',x.job_title);set('indf-type',x.induction_type);set('indf-ind-date',x.induction_date);set('indf-inducted-by',x.inducted_by);set('indf-notes',x.notes);set('indf-status',x.status);var topics=Array.isArray(x.topics_covered)?x.topics_covered:[];var extra=[];topics.forEach(function(v){v=String(v||'');if(v.indexOf('additional:')===0)extra.push(v.slice(11));});indApplyChecklistTopics(topics);set('indf-extra-topics',extra.join('\n'));var t=document.getElementById('ind-form-title');if(t)t.textContent='Edit Induction';var d=document.getElementById('ind-del-btn');if(d)d.style.display='inline-flex';}catch(e){toast(actionErrorMessage('Open induction','Training register',e.message),false);}
 }
 async function elcLoad(){
   var cAdd=document.getElementById('elc-add-btn');if(cAdd)cAdd.style.display=isMgr()?'inline-flex':'none';
@@ -43862,64 +43987,8 @@ function fireEquipStatusBadge(s) {
 </div>
 </div>
 <div class="card" style="margin-bottom:14px"><div class="card-title" style="color:#185FA5">HSE Induction Checklist</div>
-<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:10px;font-size:12px">
-<div style="border:1px solid var(--border);border-radius:8px;padding:10px;background:#fff"><div style="font-weight:800;color:#185FA5;margin-bottom:6px">1. Company overview, policies and commitment</div>
-<label style="display:flex;align-items:center;gap:6px;margin:4px 0;cursor:pointer"><input type="checkbox" class="ind-topic" value="company_overview" style="accent-color:var(--green)"/> Company activities and organisation overview</label>
-<label style="display:flex;align-items:center;gap:6px;margin:4px 0;cursor:pointer"><input type="checkbox" class="ind-topic" value="hsse_policy" style="accent-color:var(--green)"/> HSSE policy and commitment</label>
-<label style="display:flex;align-items:center;gap:6px;margin:4px 0;cursor:pointer"><input type="checkbox" class="ind-topic" value="goal_zero" style="accent-color:var(--green)"/> Goal Zero and Life Saving Rules</label>
-<label style="display:flex;align-items:center;gap:6px;margin:4px 0;cursor:pointer"><input type="checkbox" class="ind-topic" value="stop_work_authority" style="accent-color:var(--green)"/> Stop Work Authority</label>
-<label style="display:flex;align-items:center;gap:6px;margin:4px 0;cursor:pointer"><input type="checkbox" class="ind-topic" value="alcohol_drug_policy" style="accent-color:var(--green)"/> Alcohol, drug and disciplinary rules</label>
-<label style="display:flex;align-items:center;gap:6px;margin:4px 0;cursor:pointer"><input type="checkbox" class="ind-topic" value="environmental_social_policy" style="accent-color:var(--green)"/> Environmental protection and social responsibility policies</label>
-<label style="display:flex;align-items:center;gap:6px;margin:4px 0;cursor:pointer"><input type="checkbox" class="ind-topic" value="disciplinary_arrangements" style="accent-color:var(--green)"/> Disciplinary arrangements for HSSE violations</label>
-</div>
-<div style="border:1px solid var(--border);border-radius:8px;padding:10px;background:#fff"><div style="font-weight:800;color:#185FA5;margin-bottom:6px">2. Legal duties and site rules</div>
-<label style="display:flex;align-items:center;gap:6px;margin:4px 0;cursor:pointer"><input type="checkbox" class="ind-topic" value="osh_act_duties" style="accent-color:var(--green)"/> Employee duties under OSH Act 2005</label>
-<label style="display:flex;align-items:center;gap:6px;margin:4px 0;cursor:pointer"><input type="checkbox" class="ind-topic" value="reporting_lines" style="accent-color:var(--green)"/> Reporting lines, supervisor and escalation</label>
-<label style="display:flex;align-items:center;gap:6px;margin:4px 0;cursor:pointer"><input type="checkbox" class="ind-topic" value="non_compliance_consequences" style="accent-color:var(--green)"/> Consequences of non-compliance with HSSE requirements</label>
-<label style="display:flex;align-items:center;gap:6px;margin:4px 0;cursor:pointer"><input type="checkbox" class="ind-topic" value="site_rules" style="accent-color:var(--green)"/> Site / workshop rules and prohibited behaviours</label>
-<label style="display:flex;align-items:center;gap:6px;margin:4px 0;cursor:pointer"><input type="checkbox" class="ind-topic" value="housekeeping" style="accent-color:var(--green)"/> Housekeeping, welfare and security arrangements</label>
-<label style="display:flex;align-items:center;gap:6px;margin:4px 0;cursor:pointer"><input type="checkbox" class="ind-topic" value="environmental_policy" style="accent-color:var(--green)"/> Environmental and social responsibilities</label>
-</div>
-<div style="border:1px solid var(--border);border-radius:8px;padding:10px;background:#fff"><div style="font-weight:800;color:#185FA5;margin-bottom:6px">3. Emergency preparedness</div>
-<label style="display:flex;align-items:center;gap:6px;margin:4px 0;cursor:pointer"><input type="checkbox" class="ind-topic" value="emergency_plan" style="accent-color:var(--green)"/> Emergency plan, alarms and response scenarios</label>
-<label style="display:flex;align-items:center;gap:6px;margin:4px 0;cursor:pointer"><input type="checkbox" class="ind-topic" value="alarm_systems" style="accent-color:var(--green)"/> Alarm systems and how to raise the alarm</label>
-<label style="display:flex;align-items:center;gap:6px;margin:4px 0;cursor:pointer"><input type="checkbox" class="ind-topic" value="evacuation_assembly" style="accent-color:var(--green)"/> Evacuation routes and assembly points</label>
-<label style="display:flex;align-items:center;gap:6px;margin:4px 0;cursor:pointer"><input type="checkbox" class="ind-topic" value="emergency_contacts" style="accent-color:var(--green)"/> Emergency contacts and first aid arrangements</label>
-<label style="display:flex;align-items:center;gap:6px;margin:4px 0;cursor:pointer"><input type="checkbox" class="ind-topic" value="fire_equipment" style="accent-color:var(--green)"/> Fire equipment and basic fire response</label>
-<label style="display:flex;align-items:center;gap:6px;margin:4px 0;cursor:pointer"><input type="checkbox" class="ind-topic" value="first_aiders_kits" style="accent-color:var(--green)"/> First aiders and first aid kit locations</label>
-<label style="display:flex;align-items:center;gap:6px;margin:4px 0;cursor:pointer"><input type="checkbox" class="ind-topic" value="spill_response" style="accent-color:var(--green)"/> Spill response and cyclone / severe weather rules</label>
-<label style="display:flex;align-items:center;gap:6px;margin:4px 0;cursor:pointer"><input type="checkbox" class="ind-topic" value="cyclone_warning_classes" style="accent-color:var(--green)"/> Cyclone warning classes and work arrangements</label>
-</div>
-<div style="border:1px solid var(--border);border-radius:8px;padding:10px;background:#fff"><div style="font-weight:800;color:#185FA5;margin-bottom:6px">4. Reporting and risk control</div>
-<label style="display:flex;align-items:center;gap:6px;margin:4px 0;cursor:pointer"><input type="checkbox" class="ind-topic" value="incident_reporting" style="accent-color:var(--green)"/> Incident, injury, near miss and hazard reporting</label>
-<label style="display:flex;align-items:center;gap:6px;margin:4px 0;cursor:pointer"><input type="checkbox" class="ind-topic" value="no_blame_reporting" style="accent-color:var(--green)"/> No-blame reporting culture</label>
-<label style="display:flex;align-items:center;gap:6px;margin:4px 0;cursor:pointer"><input type="checkbox" class="ind-topic" value="incident_forms" style="accent-color:var(--green)"/> Reporting process and forms</label>
-<label style="display:flex;align-items:center;gap:6px;margin:4px 0;cursor:pointer"><input type="checkbox" class="ind-topic" value="ra_swms_review" style="accent-color:var(--green)"/> RA / SWMS review before task</label>
-<label style="display:flex;align-items:center;gap:6px;margin:4px 0;cursor:pointer"><input type="checkbox" class="ind-topic" value="toolbox_communication" style="accent-color:var(--green)"/> Toolbox talks and communication channels</label>
-</div>
-<div style="border:1px solid var(--border);border-radius:8px;padding:10px;background:#fff"><div style="font-weight:800;color:#185FA5;margin-bottom:6px">5. Job-specific hazards and controls</div>
-<label style="display:flex;align-items:center;gap:6px;margin:4px 0;cursor:pointer"><input type="checkbox" class="ind-topic" value="electrical_safety" style="accent-color:var(--green)"/> Electrical safety and LOTO</label>
-<label style="display:flex;align-items:center;gap:6px;margin:4px 0;cursor:pointer"><input type="checkbox" class="ind-topic" value="loto_arrangements" style="accent-color:var(--green)"/> Lock Out / Tag Out arrangements</label>
-<label style="display:flex;align-items:center;gap:6px;margin:4px 0;cursor:pointer"><input type="checkbox" class="ind-topic" value="permit_to_work" style="accent-color:var(--green)"/> Permit to Work requirements</label>
-<label style="display:flex;align-items:center;gap:6px;margin:4px 0;cursor:pointer"><input type="checkbox" class="ind-topic" value="work_at_height" style="accent-color:var(--green)"/> Work at height and fall prevention</label>
-<label style="display:flex;align-items:center;gap:6px;margin:4px 0;cursor:pointer"><input type="checkbox" class="ind-topic" value="hot_work" style="accent-color:var(--green)"/> Hot work, fire watch and ignition control</label>
-<label style="display:flex;align-items:center;gap:6px;margin:4px 0;cursor:pointer"><input type="checkbox" class="ind-topic" value="manual_handling" style="accent-color:var(--green)"/> Manual handling and ergonomics</label>
-<label style="display:flex;align-items:center;gap:6px;margin:4px 0;cursor:pointer"><input type="checkbox" class="ind-topic" value="hazardous_substances" style="accent-color:var(--green)"/> Chemicals, SDS and exposure controls</label>
-<label style="display:flex;align-items:center;gap:6px;margin:4px 0;cursor:pointer"><input type="checkbox" class="ind-topic" value="pressure_systems" style="accent-color:var(--green)"/> Pressure systems, compressors and stored energy hazards</label>
-<label style="display:flex;align-items:center;gap:6px;margin:4px 0;cursor:pointer"><input type="checkbox" class="ind-topic" value="machinery_tools" style="accent-color:var(--green)"/> Machinery, tools, guarding and inspections</label>
-<label style="display:flex;align-items:center;gap:6px;margin:4px 0;cursor:pointer"><input type="checkbox" class="ind-topic" value="noise_dust_vibration" style="accent-color:var(--green)"/> Noise, dust, vibration and fumes</label>
-</div>
-<div style="border:1px solid var(--border);border-radius:8px;padding:10px;background:#fff"><div style="font-weight:800;color:#185FA5;margin-bottom:6px">6. Vehicles, environment and PPE</div>
-<label style="display:flex;align-items:center;gap:6px;margin:4px 0;cursor:pointer"><input type="checkbox" class="ind-topic" value="driving_rules" style="accent-color:var(--green)"/> Driving rules, daily checks and load security</label>
-<label style="display:flex;align-items:center;gap:6px;margin:4px 0;cursor:pointer"><input type="checkbox" class="ind-topic" value="vehicle_daily_checks" style="accent-color:var(--green)"/> Daily vehicle inspection and defect reporting</label>
-<label style="display:flex;align-items:center;gap:6px;margin:4px 0;cursor:pointer"><input type="checkbox" class="ind-topic" value="load_security" style="accent-color:var(--green)"/> Securing loads, tools and materials during transport</label>
-<label style="display:flex;align-items:center;gap:6px;margin:4px 0;cursor:pointer"><input type="checkbox" class="ind-topic" value="pollution_prevention" style="accent-color:var(--green)"/> Pollution prevention and no-discharge rules</label>
-<label style="display:flex;align-items:center;gap:6px;margin:4px 0;cursor:pointer"><input type="checkbox" class="ind-topic" value="waste_management" style="accent-color:var(--green)"/> Waste segregation and disposal</label>
-<label style="display:flex;align-items:center;gap:6px;margin:4px 0;cursor:pointer"><input type="checkbox" class="ind-topic" value="ppe_use_care" style="accent-color:var(--green)"/> PPE use, care, storage and defect reporting</label>
-<label style="display:flex;align-items:center;gap:6px;margin:4px 0;cursor:pointer"><input type="checkbox" class="ind-topic" value="ppe_issue_acknowledged" style="accent-color:var(--green)"/> PPE issue record signed / acknowledged</label>
-<label style="display:flex;align-items:center;gap:6px;margin:4px 0;cursor:pointer"><input type="checkbox" class="ind-topic" value="tna_mandatory_training" style="accent-color:var(--green)"/> Training needs and mandatory training explained</label>
-</div>
-</div>
+<div style="font-size:12px;color:var(--text2);margin-bottom:10px">Based on the site induction checklist format: mark each item covered, not applicable, and add remarks where required.</div>
+<div id="ind-checklist-body"></div>
 <div style="margin-top:10px;border:1px solid var(--border);border-radius:8px;padding:10px;background:#f9fafb">
 <div style="font-weight:800;color:#185FA5;margin-bottom:6px">PPE issued / explained</div>
 <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:6px;font-size:12px">
