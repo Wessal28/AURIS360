@@ -8368,6 +8368,48 @@ function swmsRiskSelect(cls,val){
 }
 function swmsRows(){return Array.from(document.querySelectorAll('#swms-steps-body tr')).map(function(tr,i){return {no:i+1,activity:tr.querySelector('.swms-act')?.value||'',hazard:tr.querySelector('.swms-haz')?.value||'',risk:tr.querySelector('.swms-risk')?.value||'',initial_risk:tr.querySelector('.swms-init-risk')?.value||'',controls:tr.querySelector('.swms-controls')?.value||'',residual_risk:tr.querySelector('.swms-res-risk')?.value||'',responsible:tr.querySelector('.swms-resp')?.value||''};}).filter(function(r){return r.activity||r.hazard||r.controls;});}
 
+async function swmsAIDraft(){
+  if(!canUseAI || !canUseAI()){toast('AURIS AI is restricted to authorised HSE/admin roles.',false);return;}
+  var title=(document.getElementById('swms-title')?.value||'').trim();
+  var scope=(document.getElementById('swms-scope')?.value||'').trim();
+  if(!title&&!scope){toast('Enter a SWMS title or scope first',false);return;}
+  toast('AURIS is drafting the SWMS...');
+  var context={
+    title:title,
+    scope:scope,
+    location:document.getElementById('swms-location')?.value||'',
+    department:document.getElementById('swms-dept')?.value||'',
+    contractor:document.getElementById('swms-contractor')?.value||'',
+    workers:document.getElementById('swms-workers')?.value||'',
+    linked_risk_assessment:document.getElementById('swms-ra-ref')?.value||'',
+    linked_permit:document.getElementById('swms-ptw-ref')?.value||'',
+    tools:document.getElementById('swms-plant')?.value||'',
+    ppe:document.getElementById('swms-ppe')?.value||'',
+    emergency:document.getElementById('swms-emergency')?.value||''
+  };
+  try{
+    var txt=await callAI([{role:'user',content:'Generate a practical Safe Work Method Statement draft for this work. Return ONLY valid JSON with this exact shape: {"competency":"...","prestart":"...","references":"...","tools":"...","ppe":"...","emergency":"...","review_triggers":"...","steps":[{"activity":"...","hazard":"...","risk":"...","initial_risk":"Low|Medium|High|Very High","controls":"...","residual_risk":"Very Low|Low|Medium|High","responsible":"Supervisor / worker / competent person"}]}.\n\nRules: create 6-10 sequential work steps; controls must be specific and briefable; include emergency/environmental arrangements; align with RAMS/SWMS good practice; do not invent company-specific document numbers.\n\nSWMS data:\n'+JSON.stringify(context,null,2)}],
+      'You are a senior HSE professional preparing a Safe Work Method Statement. Return only JSON and keep it practical for field briefing.');
+    var out=aiExtractJson(txt)||{};
+    aiSetIfEmpty('swms-competency',out.competency);
+    aiSetIfEmpty('swms-prestart',out.prestart);
+    aiSetIfEmpty('swms-references',out.references);
+    aiSetIfEmpty('swms-plant',out.tools);
+    aiSetIfEmpty('swms-ppe',out.ppe);
+    aiSetIfEmpty('swms-emergency',out.emergency);
+    aiSetIfEmpty('swms-review-triggers',out.review_triggers);
+    if(Array.isArray(out.steps)&&out.steps.length){
+      var existing=swmsRows();
+      if(!existing.length){
+        var body=document.getElementById('swms-steps-body');if(body)body.innerHTML='';
+      }
+      out.steps.slice(0,10).forEach(swmsAddStep);
+    }
+    swmsBuildPreview();
+    toast('AI SWMS draft added. Review and adjust before saving.');
+  }catch(e){toast(aiFriendlyError(e),false);}
+}
+
 function swmsBuildHtml(){
   var g=function(id){return document.getElementById(id)?.value||'';}, rows=swmsRows(), ref=document.getElementById('swms-ref')?.textContent||'SWMS-AUTO', title=g('swms-title')||'Safe Work Method Statement';
   var td='padding:7px;border:1px solid #d1d5db;vertical-align:top;line-height:1.35';
@@ -13558,6 +13600,74 @@ function invAddCA(){
   var caEmpty=document.getElementById('inv-ca-empty'); if(caEmpty)caEmpty.style.display='none';
   var caBody=document.getElementById('inv-ca-body'); if(!caBody)return;
   caBody.insertAdjacentHTML('beforeend', invCaRow('','','','open',caBody.querySelectorAll('.inv-ca-row').length));
+}
+
+function aiExtractJson(raw){
+  var txt=String(raw||'').trim().replace(/```json\s*/gi,'').replace(/```\s*/g,'').trim();
+  var candidates=[txt];
+  var o1=txt.indexOf('{'), o2=txt.lastIndexOf('}');
+  if(o1!==-1&&o2>o1)candidates.push(txt.slice(o1,o2+1));
+  var a1=txt.indexOf('['), a2=txt.lastIndexOf(']');
+  if(a1!==-1&&a2>a1)candidates.push(txt.slice(a1,a2+1));
+  for(var i=0;i<candidates.length;i++){try{return JSON.parse(candidates[i]);}catch(_){}}
+  return null;
+}
+
+function aiSetIfEmpty(id,val){
+  var el=document.getElementById(id); if(!el)return;
+  if(!String(el.value||'').trim() && val)el.value=val;
+}
+
+function aiDueDate(days){
+  var d=new Date();d.setDate(d.getDate()+(parseInt(days,10)||0));
+  return d.toISOString().slice(0,10);
+}
+
+async function invAIAssistInvestigation(){
+  if(!canUseAI || !canUseAI()){toast('AURIS AI is restricted to authorised HSE/admin roles.',false);return;}
+  toast('AURIS is analysing the investigation...');
+  var context={
+    ref:document.getElementById('inv-form-ref')?.textContent||'',
+    type:document.getElementById('inv-type-sel')?.value||'incident',
+    location:document.getElementById('ws1-location')?.value||'',
+    description:document.getElementById('ws1-description')?.value||'',
+    immediate_actions:document.getElementById('ws1-immediate-actions')?.value||'',
+    interview_root_causes:document.getElementById('ws2-root-causes')?.value||'',
+    recurrence:document.getElementById('inv-recurrence')?.value||'',
+    fishbone:{
+      people:document.getElementById('fb-people')?.value||'',
+      equipment:document.getElementById('fb-equipment')?.value||'',
+      methods:document.getElementById('fb-methods')?.value||'',
+      environment:document.getElementById('fb-environment')?.value||'',
+      training:document.getElementById('fb-training')?.value||'',
+      management:document.getElementById('fb-management')?.value||''
+    }
+  };
+  try{
+    var txt=await callAI([{role:'user',content:'Analyse this HSE incident investigation and return ONLY valid JSON with this exact shape: {"root_cause_summary":"...","contributing_factors":"...","five_whys":["why 1","why 2","why 3","why 4","why 5"],"fishbone":{"people":"...","equipment":"...","methods":"...","environment":"...","training":"...","management":"..."},"corrective_actions":[{"description":"...","assigned_to_role":"Supervisor / HSE Officer / Maintenance / Management","due_in_days":7,"priority":"high|medium|low"}],"safety_alert":"max 140 words"}.\n\nRules: be practical, do not blame individuals, focus on system causes, include actions that prevent recurrence, and use HSE investigation language.\n\nInvestigation data:\n'+JSON.stringify(context,null,2)}],
+      'You are a senior HSE incident investigator. Produce concise, practical root cause analysis and corrective actions. Return only JSON.');
+    var out=aiExtractJson(txt)||{};
+    aiSetIfEmpty('ws2-attitude',out.root_cause_summary);
+    aiSetIfEmpty('ws2-personal',out.contributing_factors);
+    var fb=out.fishbone||{};
+    ['people','equipment','methods','environment','training','management'].forEach(function(k){aiSetIfEmpty('fb-'+k,fb[k]);});
+    if(Array.isArray(out.five_whys)&&out.five_whys.length){
+      var whyBody=document.getElementById('ws3-five-why-body');
+      if(whyBody&&!whyBody.querySelector('.ws3-why-row')){
+        whyBody.innerHTML='';
+        out.five_whys.slice(0,5).forEach(function(w,i){imsAddWhyRow(whyBody,i+1,w);});
+      }
+    }
+    if(Array.isArray(out.corrective_actions)&&out.corrective_actions.length){
+      var caBody=document.getElementById('inv-ca-body'), caEmpty=document.getElementById('inv-ca-empty');
+      if(caEmpty)caEmpty.style.display='none';
+      out.corrective_actions.slice(0,6).forEach(function(a){
+        if(caBody)caBody.insertAdjacentHTML('beforeend',invCaRow(a.description||'',a.assigned_to_role||'',aiDueDate(a.due_in_days||14),'open',caBody.querySelectorAll('.inv-ca-row').length));
+      });
+    }
+    invShowTab('rca',document.getElementById('inv-tab-rca'));
+    toast('AI investigation assist completed. Review the root causes and corrective actions.');
+  }catch(e){toast(aiFriendlyError(e),false);}
 }
 
 // ─── INVESTIGATION TEAM MEMBERS (stored as comma-separated text) ─────────────
@@ -38194,7 +38304,7 @@ function fireEquipStatusBadge(s) {
 <button id="inv-delete-btn" class="btn" style="display:none;background:rgba(0,0,0,.3);color:#fff;border-color:rgba(255,255,255,.3)" onclick="invDeleteCurrent()"><i class="ti ti-trash"></i></button>
 <button id="inv-release-btn" class="btn" style="display:none;background:#fff;color:#5B21B6;font-weight:700" onclick="invReleaseForEdit()"><i class="ti ti-lock-open"></i>Release for edit</button>
 <button class="btn" style="background:#1D9E75;color:#fff;border-color:#1D9E75" onclick="invSave()"><i class="ti ti-device-floppy"></i>Save</button>
-<button class="btn" style="display:none;background:#fff;color:#5B21B6;font-weight:700" onclick="invGenerateAISummary()"><i class="ti ti-robot"></i>AI summary</button>
+<button class="btn" style="background:#fff;color:#5B21B6;font-weight:700" onclick="invAIAssistInvestigation()"><i class="ti ti-robot"></i>AI assist</button>
 </div>
 </div>
 </div>
@@ -45149,6 +45259,7 @@ function fireEquipStatusBadge(s) {
 <div style="padding:10px 14px;background:#0F766E;color:#fff;display:flex;align-items:center;justify-content:space-between">
 <div style="font-weight:900">Work Method, Hazards and Controls</div>
 <button class="btn btn-sm" style="background:rgba(255,255,255,.18);color:#fff;border-color:rgba(255,255,255,.35)" onclick="swmsAddStep();swmsBuildPreview()"><i class="ti ti-plus"></i>Add step</button>
+<button class="btn btn-sm" style="background:#fff;color:#5B21B6;border-color:#fff;font-weight:800" onclick="swmsAIDraft()"><i class="ti ti-robot"></i>AI draft SWMS</button>
 </div>
 <div style="overflow:auto">
 <table style="width:100%;min-width:1320px;border-collapse:collapse;font-size:12px">
