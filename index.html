@@ -32393,12 +32393,13 @@ async function dashLoadMyElearning(){
     var done=status==='completed';
     var due=x.target_date||x.due_date||'No target date';
     var overdue=!done&&x.target_date&&x.target_date<today;
+    var cert=done?eleTrainingCertificateRef(x):'';
     var tone=done?'#DCFCE7':overdue?'#FEE2E2':'#EFF6FF';
     var color=done?'#166534':overdue?'#991B1B':'#185FA5';
     return '<div style="border:1px solid var(--border);border-left:4px solid '+color+';border-radius:10px;padding:10px 12px;margin-bottom:8px;background:#fff">'
       +'<div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start;flex-wrap:wrap">'
       +'<div style="min-width:0;flex:1"><div style="font-weight:800;font-size:13px;color:var(--text);white-space:normal">'+escH(elcCourseLabel(x.course_id))+'</div>'
-      +'<div style="font-size:11px;color:var(--text2);margin-top:3px">Target: '+escH(due)+(x.completion_date?' - Completed: '+escH(x.completion_date):'')+'</div></div>'
+      +'<div style="font-size:11px;color:var(--text2);margin-top:3px">Target: '+escH(due)+(x.completion_date?' - Completed: '+escH(x.completion_date):'')+(cert?' - Certificate: '+escH(cert):'')+'</div></div>'
       +'<span class="pill" style="background:'+tone+';color:'+color+'">'+escH(done?'Completed':(overdue?'Overdue':(x.status||'Assigned')))+'</span></div>'
       +'<div style="display:flex;gap:6px;margin-top:9px;flex-wrap:wrap">'
       +(course.course_url?'<button class="btn btn-sm" onclick="elcLaunch(\''+escH(course.id||course.title||x.course_id)+'\')"><i class="ti ti-player-play"></i>Start</button>':'')
