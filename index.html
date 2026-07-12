@@ -6988,7 +6988,7 @@ const allRows=await api('/noise_surveys?select=*'+cf()+'&order=survey_date.desc'
 const d=(allRows||[]).filter(function(x){return !ohIsArchivedText(x.notes);});
 if(!d.length){el.innerHTML='<div style="text-align:center;padding:36px;color:var(--text2)"><div style="font-weight:700;margin-bottom:6px">No active noise surveys yet</div><div style="font-size:12px">Record workplace or environmental noise surveys here.</div></div>';return;}
 var now=new Date();
-var h='<div style="overflow-x:auto"><table class="data-table" style="min-width:1220px"><thead><tr><th>Date</th><th>Type</th><th>Site / area</th><th>Conducted by</th><th>Points</th><th>Max Leq</th><th>Max LEX,8h</th><th>HPE adequacy</th><th>Calibration</th><th>Actions</th></tr></thead><tbody>';
+var h='<div style="overflow-x:auto"><table class="data-table" style="min-width:1320px"><thead><tr><th>Date</th><th>Type</th><th>Site / area</th><th>Layout</th><th>Conducted by</th><th>Points</th><th>Max Leq</th><th>Max LEX,8h</th><th>HPE adequacy</th><th>Calibration</th><th>Actions</th></tr></thead><tbody>';
 for(var i=0;i<d.length;i++){
   var x=d[i];var dt=x.survey_date?new Date(x.survey_date).toLocaleDateString('en-GB'):'--';
   var cal=x.calibration_date?new Date(x.calibration_date):null;
@@ -7005,6 +7005,7 @@ for(var i=0;i<d.length;i++){
     +'<td><strong>'+dt+'</strong></td>'
     +'<td style="text-transform:capitalize">'+escH(x.survey_type||'--')+'</td>'
     +'<td><strong>'+escH(x.site||'--')+'</strong><div class="muted">'+escH((x.notes||'').substring(0,70))+'</div></td>'
+    +'<td>'+(x.layout_image||x.layout_url?'<span class="badge badge-green">Plan saved</span><div class="muted">'+escH(x.layout_title||'Site layout')+'</div>':'<span class="muted">No plan</span>')+'</td>'
     +'<td>'+escH(x.conducted_by||'--')+'</td>'
     +'<td>'+pts.length+'</td>'
     +'<td>'+(max?'<strong style="color:'+(max>=85?'#C2410C':max>=80?'#854F0B':'var(--green)')+'">'+max.toFixed(1)+'</strong>':'-')+'</td>'
@@ -43358,13 +43359,14 @@ function fireEquipStatusBadge(s) {
 </div>
 <div id="noise-section-map" style="display:none">
 <div class="card" style="background:#f8fafc;margin:12px 0">
-<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:10px;flex-wrap:wrap"><div><div class="card-title" style="margin:0">Site plan and noise map</div><div style="font-size:12px;color:var(--text2)">Upload a layout, choose a measurement point, then click the map to position it. Coloured zones are generated from dB(A) values.</div></div><label class="btn" style="cursor:pointer"><i class="ti ti-upload"></i>Upload layout<input type="file" accept="image/*" onchange="noiseUploadPlan(this)" style="display:none"/></label></div>
+<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:10px;flex-wrap:wrap"><div><div class="card-title" style="margin:0">Site plan and noise map</div><div style="font-size:12px;color:var(--text2)">Upload a layout, name it, choose a measurement point, then click the map to position it. Coloured zones are generated from dB(A) values.</div></div><label class="btn" style="cursor:pointer"><i class="ti ti-upload"></i>Upload layout<input type="file" accept="image/*" onchange="noiseUploadPlan(this)" style="display:none"/></label></div>
+<div class="form-group" style="margin-bottom:10px"><label class="form-label">Layout / plan title</label><input type="text" id="nf-layout-name" placeholder="e.g. Workshop ground floor noise map"/></div>
 <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px">
 <div class="form-group" style="margin:0;min-width:280px"><label class="form-label">Point to position / amend</label><select id="noise-active-point" onchange="noiseSetActivePoint(this.value)"></select></div>
 <div id="noise-map-summary" style="font-size:12px"></div>
 <div style="display:flex;gap:8px;font-size:11px;color:var(--text2);flex-wrap:wrap"><span><i style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#16A34A"></i> &lt;80</span><span><i style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#F59E0B"></i> 80-84.9</span><span><i style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#DC2626"></i> >=85 dB(A)</span></div>
 </div>
-<input type="hidden" id="nf-layout-data"/><input type="hidden" id="nf-layout-name"/>
+<input type="hidden" id="nf-layout-data"/>
 <div id="noise-plan-box" onclick="noisePlanClick(event)" style="position:relative;min-height:320px;border:1px dashed var(--border);border-radius:8px;background:#fff;overflow:auto;display:flex;align-items:center;justify-content:center;cursor:crosshair">
 <div id="noise-plan-empty" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;text-align:center;color:var(--text2);pointer-events:none"><div><i class="ti ti-map" style="font-size:38px;opacity:.35"></i><div style="font-weight:800;margin-top:8px">No layout uploaded</div><div style="font-size:12px;margin-top:4px">Measurement points still work without a plan.</div></div></div>
 <img id="noise-plan-img" alt="Noise survey layout" style="display:none;max-width:100%;height:auto;pointer-events:none;user-select:none"/>
