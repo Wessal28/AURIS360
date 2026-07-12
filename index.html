@@ -32521,6 +32521,23 @@ function compFilter(){
 async function compEdit(id){
   try{var rows=await api('/competency_matrix?id=eq.'+id+'&select=*');var x=rows?.[0];if(!x)return;compNew();window.compEditId=id;var set=function(k,v){var e=document.getElementById(k);if(e)e.value=v||'';};set('compf-person',x.person_name);set('compf-dept',x.department);set('compf-job-title',x.job_title);set('compf-competency-name',x.competency_name);set('compf-level',x.level);set('compf-assessed-date',x.assessed_date);set('compf-expiry',x.expiry_date);set('compf-assessor',x.assessor);set('compf-notes',x.notes);var t=document.getElementById('comp-form-title');if(t)t.textContent='Edit Competency Record';var d=document.getElementById('comp-del-btn');if(d)d.style.display='inline-flex';}catch(e){toast(actionErrorMessage('Open competency record','Training register',e.message),false);}
 }
+function indChecklistSummary(x){
+  var topics=Array.isArray(x?.topics_covered)?x.topics_covered:[];
+  var covered=topics.filter(function(v){v=String(v||'');return v&&v.indexOf('na:')!==0&&v.indexOf('remark:')!==0&&v.indexOf('additional:')!==0;}).length;
+  var na=topics.filter(function(v){return String(v||'').indexOf('na:')===0;}).length;
+  return {covered:covered,na:na,total:INDUCTION_CHECKLIST_SECTIONS.reduce(function(n,s){return n+(s.items?s.items.length:0);},0)};
+}
+function indEvidenceSummary(x){
+  var topics=Array.isArray(x?.topics_covered)?x.topics_covered.map(String):[];
+  var sig=topics.some(function(v){return ['entrant_signed','inductor_signed','supervisor_signed'].includes(v);});
+  var understood=topics.includes('entrant_declaration_understood');
+  var ppe=topics.includes('ppe_issue_acknowledged');
+  var parts=[];
+  if(sig)parts.push('Signature');
+  if(understood)parts.push('Declaration');
+  if(ppe)parts.push('PPE issue');
+  return parts.length?parts.join(' ? '):'Pending evidence';
+}
 async function indLoad(){
   var add=document.getElementById('ind-add-btn');if(add)add.style.display=isMgr()?'inline-flex':'none';
   var host=document.getElementById('ind-list');if(!host)return;
@@ -32532,8 +32549,8 @@ async function indLoad(){
     var completed=rows.filter(function(x){return x.completed||x.status==='completed';}).length;
     var pending=rows.filter(function(x){return String(x.status||'').toLowerCase()==='pending';}).length;
     var m=function(id,v){var e=document.getElementById(id);if(e)e.textContent=v;};m('ind-m-total',rows.length);m('ind-m-done',completed);m('ind-m-pending',pending);m('ind-m-refresh',rows.filter(function(x){return String(x.status||'').toLowerCase()==='refresher_due';}).length);
-    host.innerHTML='<table class="data-table"><thead><tr><th>Person</th><th>Type</th><th>Date</th><th>Inducted by</th><th>Status</th><th>Actions</th></tr></thead><tbody>'+
-      (rows.length?rows.map(function(x){return '<tr><td><strong>'+escH(x.person_name||'-')+'</strong><div class="muted">'+escH(x.department||x.job_title||'')+'</div></td><td>'+escH((x.induction_type||'-').replaceAll('_',' '))+'</td><td>'+escH(x.induction_date||'-')+'</td><td>'+escH(x.inducted_by||'-')+'</td><td><span class="pill">'+escH(x.status||'-')+'</span></td><td><button class="icon-btn" title="Edit induction record" aria-label="Edit induction record" onclick="indEdit(\''+escH(x.id)+'\')"><i class="ti ti-edit"></i></button></td></tr>';}).join(''):'<tr><td colspan="6" class="empty">No induction records yet.</td></tr>')+
+    host.innerHTML='<table class="data-table"><thead><tr><th>Person</th><th>Type</th><th>Date</th><th>Inducted by</th><th>Checklist</th><th>Evidence</th><th>Status</th><th>Actions</th></tr></thead><tbody>'+
+      (rows.length?rows.map(function(x){var cs=indChecklistSummary(x);var pct=cs.total?Math.round((cs.covered+cs.na)/cs.total*100):0;var ev=indEvidenceSummary(x);var evOk=ev!=='Pending evidence';return '<tr><td><strong>'+escH(x.person_name||'-')+'</strong><div class="muted">'+escH(x.department||x.job_title||'')+'</div></td><td>'+escH((x.induction_type||'-').replaceAll('_',' '))+'</td><td>'+escH(x.induction_date||'-')+'</td><td>'+escH(x.inducted_by||'-')+'</td><td><strong>'+cs.covered+'/'+cs.total+'</strong><div class="muted">'+pct+'% covered'+(cs.na?' ? '+cs.na+' N/A':'')+'</div></td><td><span class="pill" style="background:'+(evOk?'#ECFDF5':'#FFFBEB')+';color:'+(evOk?'#065F46':'#854F0B')+'">'+escH(ev)+'</span></td><td><span class="pill">'+escH(x.status||'-')+'</span></td><td><button class="icon-btn" title="Edit induction record" aria-label="Edit induction record" onclick="indEdit(\''+escH(x.id)+'\')"><i class="ti ti-edit"></i></button></td></tr>';}).join(''):'<tr><td colspan="8" class="empty">No induction records yet.</td></tr>')+
       '</tbody></table>';
   }catch(e){host.innerHTML=setupFriendlyMessage('Induction register',e.message);}
 }
