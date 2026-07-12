@@ -35550,13 +35550,21 @@ async function fireDeleteCustomSymbol(type){
 function fireRenderCustomSymbols(){
   var el=document.getElementById('fire-symbol-list');if(!el)return;
   var rows=fireLayoutCustomSymbols();
-  if(!rows.length){el.innerHTML='<div style="font-size:12px;color:var(--text2);padding:8px 0">No custom symbols added yet.</div>';return;}
-  el.innerHTML=rows.map(function(x){
-    return '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:6px 0;border-top:1px solid var(--border)">'
-      +'<div style="display:flex;align-items:center;gap:8px"><span style="width:30px;height:30px;border-radius:999px;background:#1D9E75;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:900">'+fireEquipIconHtml(x.type)+'</span><span style="font-size:12px;font-weight:700">'+escH(x.label)+'</span></div>'
-      +'<button class="btn btn-sm" style="color:var(--red)" onclick="fireDeleteCustomSymbol(\''+escH(x.type)+'\')"><i class="ti ti-trash"></i></button>'
-      +'</div>';
-  }).join('');
+  if(!rows.length){
+    el.innerHTML='<div style="font-size:12px;color:var(--text2);padding:10px 0;border-top:1px solid var(--border);margin-top:8px">No custom symbols added yet. Use this when a site has equipment that is not in the standard fire map list.</div>';
+    return;
+  }
+  el.innerHTML='<div style="overflow:auto;margin-top:10px;border:1px solid var(--border);border-radius:8px;background:#fff">'
+    +'<table class="data-table" style="min-width:620px;font-size:12px;margin:0"><thead><tr><th style="width:72px">Symbol</th><th>Item name</th><th>Initials</th><th>Storage</th><th style="text-align:right;width:80px">Action</th></tr></thead><tbody>'
+    +rows.map(function(x){
+      return '<tr>'
+        +'<td><span style="width:36px;height:36px;border-radius:999px;background:#1D9E75;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:900">'+fireEquipIconHtml(x.type)+'</span></td>'
+        +'<td><strong>'+escH(x.label||'-')+'</strong><div class="muted">Available in the equipment-to-position list</div></td>'
+        +'<td><span style="font-family:monospace;font-weight:800">'+escH(x.symbol||'EQ')+'</span></td>'
+        +'<td>'+(x.shared?'<span class="badge badge-green">Shared company symbol</span>':'<span class="badge badge-amber">Local only</span>')+'</td>'
+        +'<td style="text-align:right"><button class="btn btn-sm" style="color:var(--red)" onclick="fireDeleteCustomSymbol(\''+escH(x.type)+'\')"><i class="ti ti-trash"></i></button></td>'
+        +'</tr>';
+    }).join('')+'</tbody></table></div>';
 }
 function fireExtinguisherTypeFromNotes(notes){
   var m=String(notes||'').match(/Extinguisher type:\s*([^\n]+)/i);
