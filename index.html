@@ -6988,7 +6988,7 @@ const allRows=await api('/noise_surveys?select=*'+cf()+'&order=survey_date.desc'
 const d=(allRows||[]).filter(function(x){return !ohIsArchivedText(x.notes);});
 if(!d.length){el.innerHTML='<div style="text-align:center;padding:36px;color:var(--text2)"><div style="font-weight:700;margin-bottom:6px">No active noise surveys yet</div><div style="font-size:12px">Record workplace or environmental noise surveys here.</div></div>';return;}
 var now=new Date();
-var h='<div style="overflow-x:auto"><table class="data-table" style="min-width:1120px"><thead><tr><th>Date</th><th>Type</th><th>Site / area</th><th>Conducted by</th><th>Points</th><th>Max dB(A)</th><th>HPE adequacy</th><th>Calibration</th><th>Actions</th></tr></thead><tbody>';
+var h='<div style="overflow-x:auto"><table class="data-table" style="min-width:1220px"><thead><tr><th>Date</th><th>Type</th><th>Site / area</th><th>Conducted by</th><th>Points</th><th>Max Leq</th><th>Max LEX,8h</th><th>HPE adequacy</th><th>Calibration</th><th>Actions</th></tr></thead><tbody>';
 for(var i=0;i<d.length;i++){
   var x=d[i];var dt=x.survey_date?new Date(x.survey_date).toLocaleDateString('en-GB'):'--';
   var cal=x.calibration_date?new Date(x.calibration_date):null;
@@ -6997,6 +6997,7 @@ for(var i=0;i<d.length;i++){
   var pts=noiseSafeJson(x.measurements,[]);
   var assessed=noiseSafeJson(x.hpe_assessment,[]);
   var max=pts.reduce(function(m,p){return Math.max(m,parseFloat(p.leq)||0);},0);
+  var maxLex=pts.reduce(function(m,p){var v=noiseLex8h(p.leq,p.duration);return Math.max(m,v==null?0:v);},0);
   var inadequate=assessed.filter(function(a){return a.result==='inadequate';}).length;
   var warn=assessed.filter(function(a){return a.result==='review';}).length;
   var hpeLabel=assessed.length?(inadequate?'<span class="badge badge-red">'+inadequate+' inadequate</span>':warn?'<span class="badge badge-amber">'+warn+' review</span>':'<span class="badge badge-green">Adequate</span>'):'<span class="muted">Not assessed</span>';
@@ -7007,6 +7008,7 @@ for(var i=0;i<d.length;i++){
     +'<td>'+escH(x.conducted_by||'--')+'</td>'
     +'<td>'+pts.length+'</td>'
     +'<td>'+(max?'<strong style="color:'+(max>=85?'#C2410C':max>=80?'#854F0B':'var(--green)')+'">'+max.toFixed(1)+'</strong>':'-')+'</td>'
+    +'<td>'+(maxLex?'<strong style="color:'+(maxLex>=85?'#C2410C':maxLex>=80?'#854F0B':'var(--green)')+'">'+maxLex.toFixed(1)+'</strong>':'-')+'</td>'
     +'<td>'+hpeLabel+'</td>'
     +'<td style="'+(calBad?'color:#C2410C;font-weight:800':'')+'">'+(cal?cal.toLocaleDateString('en-GB'):'Not recorded')+(calBad?' - check':'')+'</td>'
     +'<td style="text-align:right"><button class="icon-btn" title="Open survey" onclick="noiseOpenSurvey(\''+escH(x.id)+'\')"><i class="ti ti-eye"></i></button>'+(isMgr()?'<button class="icon-btn" style="color:var(--red)" data-id="'+x.id+'" onclick="deleteNoiseSurvey(this.getAttribute(\'data-id\'))"><i class="ti ti-trash"></i></button>':'')+'</td>'
@@ -7112,20 +7114,34 @@ function noisePlanClick(ev){
   rows[idx].x=x;rows[idx].y=y;noiseSetPoints(rows);
 }
 function noiseLevelMeta(leq){leq=parseFloat(leq)||0;return leq>=85?{color:'#DC2626',label:'Mandatory hearing protection'}:leq>=80?{color:'#F59E0B',label:'Caution / action level'}:{color:'#16A34A',label:'Acceptable / monitor'};}
+function noiseLex8h(leq,duration){
+  leq=parseFloat(leq);duration=parseFloat(duration||8);
+  if(!isFinite(leq)||leq<=0)return null;
+  if(!isFinite(duration)||duration<=0)duration=8;
+  return leq+10*Math.log10(duration/8);
+}
+function noiseExposureBand(lex){
+  if(lex==null)return {label:'Missing data',badge:'badge-amber',action:'Complete exposure level and duration.'};
+  if(lex>=85)return {label:'Above OEL',badge:'badge-red',action:'Mandatory hearing protection, noise reduction plan and audiometry follow-up required.'};
+  if(lex>=80)return {label:'Action level',badge:'badge-amber',action:'Provide suitable HPE, information/training and monitor exposure.'};
+  return {label:'Below action level',badge:'badge-green',action:'Maintain controls and review if work pattern changes.'};
+}
 function noiseAssessHpe(){
   var rows=noisePointsFromForm();
   var assessed=rows.map(function(p,i){
     var leq=parseFloat(p.leq)||0, snr=parseFloat(p.snr)||0;
-    var protectedLevel=snr?Math.max(0,leq-snr):null;
+    var lex=noiseLex8h(p.leq,p.duration);
+    var band=noiseExposureBand(lex);
+    var protectedLevel=snr&&lex!=null?Math.max(0,lex-snr):null;
     var result=!leq?'missing':(!snr?'review':(protectedLevel>85?'inadequate':protectedLevel<70?'review':'adequate'));
-    return Object.assign({},p,{idx:i+1,protected_level:protectedLevel,result:result});
+    return Object.assign({},p,{idx:i+1,lex8h:lex,exposure_band:band.label,exposure_action:band.action,exposure_badge:band.badge,protected_level:protectedLevel,result:result});
   });
   var host=document.getElementById('noise-hpe-results');if(!host)return assessed;
-  host.innerHTML=assessed.length?'<table class="data-table" style="font-size:12px"><thead><tr><th>Point</th><th>Exposure</th><th>HPE</th><th>Protected level</th><th>Status</th><th>Recommendation</th></tr></thead><tbody>'+assessed.map(function(a){
+  host.innerHTML=assessed.length?'<table class="data-table" style="font-size:12px;min-width:980px"><thead><tr><th>Point</th><th>Leq</th><th>LEX,8h</th><th>Exposure band</th><th>HPE</th><th>Protected level</th><th>Status</th><th>Recommendation</th></tr></thead><tbody>'+assessed.map(function(a){
     var badge=a.result==='adequate'?'badge-green':a.result==='inadequate'?'badge-red':'badge-amber';
     var label={adequate:'Adequate',inadequate:'Not adequate',review:'Review',missing:'Missing data'}[a.result]||a.result;
-    var rec=a.result==='adequate'?'Suitable for this measured exposure. Keep training and fit/use checks current.':a.result==='inadequate'?'Select higher attenuation HPE or reduce noise at source before relying on PPE.':a.result==='review'?(a.protected_level!=null&&a.protected_level<70?'Possible over-protection. Confirm speech, alarms and warning signals remain audible.':'Confirm HPE model and enter the SNR/NRR rating.'):'Complete exposure and HPE rating to assess adequacy.';
-    return '<tr><td><strong>'+(a.idx)+'. '+escH(a.loc||'Point')+'</strong></td><td>'+escH(a.leq||'-')+' dB(A)</td><td>'+escH(a.hpe||'-')+(a.snr?' / SNR '+escH(a.snr):'')+'</td><td>'+(a.protected_level!=null?a.protected_level.toFixed(1)+' dB(A)':'-')+'</td><td><span class="badge '+badge+'">'+label+'</span></td><td>'+escH(rec)+'</td></tr>';
+    var rec=a.result==='adequate'?'Suitable for this normalised exposure. Keep training and fit/use checks current.':a.result==='inadequate'?'Select higher attenuation HPE or reduce noise at source before relying on PPE.':a.result==='review'?(a.protected_level!=null&&a.protected_level<70?'Possible over-protection. Confirm speech, alarms and warning signals remain audible.':'Confirm HPE model and enter the SNR/NRR rating.'):'Complete exposure and HPE rating to assess adequacy.';
+    return '<tr><td><strong>'+(a.idx)+'. '+escH(a.loc||'Point')+'</strong></td><td>'+escH(a.leq||'-')+' dB(A)<div class="muted">'+escH(a.duration||'8')+' h</div></td><td><strong>'+(a.lex8h!=null?a.lex8h.toFixed(1)+' dB(A)':'-')+'</strong></td><td><span class="badge '+escH(a.exposure_badge||'badge-amber')+'">'+escH(a.exposure_band||'-')+'</span><div class="muted" style="max-width:220px">'+escH(a.exposure_action||'')+'</div></td><td>'+escH(a.hpe||'-')+(a.snr?' / SNR '+escH(a.snr):'')+'</td><td>'+(a.protected_level!=null?a.protected_level.toFixed(1)+' dB(A)':'-')+'</td><td><span class="badge '+badge+'">'+label+'</span></td><td>'+escH(rec)+'</td></tr>';
   }).join('')+'</tbody></table>':'<div class="muted">Add measurement points and SNR/NRR values to assess hearing protector adequacy.</div>';
   return assessed;
 }
@@ -43283,7 +43299,7 @@ function fireEquipStatusBadge(s) {
 <div style="display:flex;justify-content:space-between;gap:8px"><button class="btn" onclick="noiseSwitchSection('details')"><i class="ti ti-arrow-left"></i>Back to details</button><button class="btn btn-primary" onclick="noiseSwitchSection('hpe')"><i class="ti ti-arrow-right"></i>Assess HPE</button></div>
 </div>
 <div id="noise-section-hpe" style="display:none">
-<div class="card" style="margin:12px 0"><div class="card-title">Hearing protector adequacy</div><div style="font-size:12px;color:var(--text2);margin-bottom:10px">Protected level is estimated as exposure minus SNR/NRR. Aim for adequate protection without over-protection: generally below 85 dB(A), but review values below 70 dB(A) where communication and warning sounds may be affected.</div><div id="noise-hpe-results"></div></div>
+<div class="card" style="margin:12px 0"><div class="card-title">Hearing protector adequacy</div><div style="font-size:12px;color:var(--text2);margin-bottom:10px">AURIS360 calculates LEX,8h from Leq and exposure duration, then estimates protected level as LEX,8h minus SNR/NRR. Aim for adequate protection without over-protection: generally below 85 dB(A), but review values below 70 dB(A) where communication and warning sounds may be affected.</div><div id="noise-hpe-results"></div></div>
 <div style="display:flex;justify-content:space-between;gap:8px"><button class="btn" onclick="noiseSwitchSection('map')"><i class="ti ti-arrow-left"></i>Back to map</button><button class="btn btn-primary" onclick="saveNoise()"><i class="ti ti-device-floppy"></i>Save survey</button></div>
 </div>
 </div>
