@@ -27102,6 +27102,7 @@ async function bulletinLoad(){
       +'<th style="padding:10px;color:#fff;text-align:left">Audience</th>'
       +'<th style="padding:10px;color:#fff;text-align:left">Author</th>'
       +'<th style="padding:10px;color:#fff;text-align:center">Checked</th>'
+      +'<th style="padding:10px;color:#fff;text-align:left">Latest check</th>'
       +'<th style="padding:10px;color:#fff;text-align:center">Status</th>'
       +'<th style="padding:10px;color:#fff;width:80px"></th>'
       +'</tr></thead><tbody>';
@@ -27111,6 +27112,7 @@ async function bulletinLoad(){
       var stColor=isArch?'#6B7280':isDraft?'#854F0B':'#1D9E75';
       var summary=x.summary||x.key_messages||'';
       var checks=bulletinChecks(x);
+      var latest=bulletinLatestCheck(checks);
       h+='<tr style="background:'+(i%2?'#f9fafb':'#fff')+';border-bottom:1px solid #eef2f7;border-left:5px solid '+cfg.color+';cursor:pointer;opacity:'+(isArch?'.7':'1')+'" data-id="'+x.id+'" onclick="bulletinEdit(this.dataset.id)">'
         +'<td style="padding:10px;font-family:monospace;font-weight:800;color:'+cfg.color+';white-space:nowrap">'+escH(x.bulletin_ref||'BULL')+(x.issue_number?'<div style="font-size:10px;color:var(--text2);font-weight:600">Issue '+escH(x.issue_number)+'</div>':'')+'</td>'
         +'<td style="padding:10px;min-width:320px"><div style="font-weight:800">'+escH(x.title||'-')+'</div>'
@@ -27121,6 +27123,7 @@ async function bulletinLoad(){
         +'<td style="padding:10px">'+escH(x.target_audience||'-')+'</td>'
         +'<td style="padding:10px">'+escH(x.author||'-')+'</td>'
         +'<td style="padding:10px;text-align:center"><span class="badge '+(checks.length?'badge-green':'bg')+'">'+checks.length+'</span></td>'
+        +'<td style="padding:10px"><div style="font-weight:700">'+escH(latest?latest.name||latest.email||'-':'-')+'</div><div style="font-size:10px;color:var(--text2)">'+escH(latest&&latest.checked_at?new Date(latest.checked_at).toLocaleString('en-GB'):'')+'</div></td>'
         +'<td style="padding:10px;text-align:center"><span style="background:'+stColor+'15;color:'+stColor+';padding:3px 8px;border-radius:99px;font-size:10px;font-weight:800;text-transform:capitalize">'+escH(x.status||'published')+'</span></td>'
         +'<td style="padding:10px;text-align:center;white-space:nowrap">'
         +(x.file_url?'<button class="btn btn-sm" onclick="event.stopPropagation();bulletinPreview(\''+x.id+'\')" title="Preview bulletin file and record opening"><i class="ti ti-eye-check"></i></button> ':'')
@@ -27131,7 +27134,10 @@ async function bulletinLoad(){
   }catch(e){el.innerHTML='<p style="padding:20px;color:red">'+e.message+'</p>';}
 }
 
-function bulletinChecks(x){return noiseSafeJson(x?.checked_by||x?.acknowledged_by||[],[]);}
+function bulletinChecks(x){
+  return noiseSafeJson(x?.checked_by||x?.acknowledged_by||[],[]).filter(Boolean).sort(function(a,b){return String(b.checked_at||'').localeCompare(String(a.checked_at||''));});
+}
+function bulletinLatestCheck(checks){return (Array.isArray(checks)?checks:[])[0]||null;}
 function bulletinCurrentCheck(){
   return {user_id:prof?.id||null,name:prof?.full_name||personFullName(prof)||prof?.email||'User',email:prof?.email||'',checked_at:new Date().toISOString()};
 }
@@ -27172,7 +27178,23 @@ function bulletinRenderChecks(x){
   var host=document.getElementById('bull-check-list');if(!host)return;
   var checks=bulletinChecks(x);
   if(!checks.length){host.innerHTML='<div class="empty" style="padding:18px">No one has checked this bulletin yet.</div>';return;}
-  host.innerHTML='<table class="data-table" style="font-size:12px"><thead><tr><th>Name</th><th>Email</th><th>Checked / opened</th></tr></thead><tbody>'+checks.map(function(c){return '<tr><td><strong>'+escH(c.name||'-')+'</strong></td><td>'+escH(c.email||'-')+'</td><td>'+escH(c.checked_at?new Date(c.checked_at).toLocaleString('en-GB'):'-')+'</td></tr>';}).join('')+'</tbody></table>';
+  var latest=bulletinLatestCheck(checks);
+  host.innerHTML='<div style="display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:10px">'
+    +'<div style="font-size:12px;color:var(--text2)"><strong style="color:var(--text)">'+checks.length+'</strong> unique check'+(checks.length>1?'s':'')+(latest?' - latest: '+escH(latest.name||latest.email||'-'):'')+'</div>'
+    +'<button type="button" class="btn btn-sm" onclick="bulletinCopyCheckRegister()"><i class="ti ti-copy"></i>Copy register</button></div>'
+    +'<table class="data-table" style="font-size:12px"><thead><tr><th>Name</th><th>Email</th><th>Checked / opened</th></tr></thead><tbody>'+checks.map(function(c){return '<tr><td><strong>'+escH(c.name||'-')+'</strong></td><td>'+escH(c.email||'-')+'</td><td>'+escH(c.checked_at?new Date(c.checked_at).toLocaleString('en-GB'):'-')+'</td></tr>';}).join('')+'</tbody></table>';
+}
+async function bulletinMarkCheckedCurrent(){
+  if(!bulletinEditId){toast('Save the bulletin first, then mark it as checked.',false);return;}
+  var ok=await bulletinRecordCheck(bulletinEditId).catch(function(e){toast(actionErrorMessage('Record bulletin check','Safety bulletins',e.message),false);return false;});
+  if(ok)toast('Marked as checked for current user.');
+}
+function bulletinCopyCheckRegister(){
+  var x=(bulletinAllData||[]).find(function(r){return r.id===bulletinEditId;});
+  var checks=bulletinChecks(x);
+  if(!checks.length){toast('No check register to copy yet.',false);return;}
+  var lines=['Name,Email,Checked at'].concat(checks.map(function(c){return [c.name||'',c.email||'',c.checked_at?new Date(c.checked_at).toLocaleString('en-GB'):''].map(function(v){return '"'+String(v).replace(/"/g,'""')+'"';}).join(',');}));
+  navigator.clipboard?.writeText(lines.join('\n')).then(function(){toast('Check register copied');}).catch(function(){toast('Copy not available in this browser',false);});
 }
 function bulletinUploadAttachment(input){
   var file=input.files&&input.files[0];if(!file)return;
@@ -43577,9 +43599,10 @@ function fireEquipStatusBadge(s) {
 <div class="form-group"><label class="form-label">File name</label><input type="text" id="bullf-file-name" placeholder="safety-bulletin-may2026.pdf"/></div>
 <label class="btn" style="width:100%;justify-content:center;margin-bottom:8px;cursor:pointer"><i class="ti ti-upload"></i>Upload document for preview<input type="file" accept=".pdf,.doc,.docx,.png,.jpg,.jpeg" onchange="bulletinUploadAttachment(this)" style="display:none"/></label>
 <button type="button" class="btn" style="width:100%;justify-content:center;margin-bottom:8px" onclick="bulletinPreviewCurrent()"><i class="ti ti-eye-check"></i>Preview / mark as checked</button>
+<button type="button" class="btn" style="width:100%;justify-content:center;margin-bottom:8px" onclick="bulletinMarkCheckedCurrent()"><i class="ti ti-check"></i>Mark checked without preview</button>
 <div class="form-group"><label class="form-label">Status</label><select id="bullf-status"><option value="published">Published</option><option value="draft">Draft</option><option value="archived">Archived</option></select></div>
 </div>
-<div class="card" style="margin-bottom:14px"><div class="card-title">Opened / Checked Register</div><div style="font-size:12px;color:var(--text2);margin-bottom:10px">A record is added when a user previews the bulletin attachment.</div><div id="bull-check-list"></div></div>
+<div class="card" style="margin-bottom:14px"><div class="card-title">Opened / Checked Register</div><div style="font-size:12px;color:var(--text2);margin-bottom:10px">A record is added when a user previews the attachment or clicks Mark checked.</div><div id="bull-check-list"></div></div>
 </div>
 </div>
 </div>
