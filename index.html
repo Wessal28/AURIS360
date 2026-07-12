@@ -4417,6 +4417,9 @@ async function loadDash() {
       dashRenderPersonal(events, actions, people, permits, training).catch(function(e){
         console.warn('Personal dashboard render error:', e);
       });
+      dashLoadMyElearning().catch(function(e){
+        console.warn('My e-learning render error:', e);
+      });
     }
     dashRenderDeptHeatmap(events, people);
     dashRenderHighRisk(permits, events);
@@ -32327,6 +32330,60 @@ async function eleQuickComplete(id){
   await eleEdit(id);
   eleCompleteAndIssue();
 }
+function dashMyElearningNames(){
+  var names=[prof?.full_name,personFullName(prof),[prof?.first_name,prof?.last_name].filter(Boolean).join(' '),prof?.email,prof?.username].map(function(x){return String(x||'').trim();}).filter(Boolean);
+  return Array.from(new Set(names.map(function(x){return x.toLowerCase();})));
+}
+function dashOpenElearning(){
+  showPage('training',null);
+  setTimeout(function(){var tab=document.getElementById('train-tab-elearning');if(typeof trainSwitchTab==='function')trainSwitchTab('elearning',tab);},100);
+}
+async function dashLoadMyElearning(){
+  var host=document.getElementById('dp-my-elearning');if(!host)return;
+  host.innerHTML='<div class="loading-msg">Loading...</div>';
+  var keys=dashMyElearningNames();
+  if(!keys.length){host.innerHTML='<div class="empty">No user profile matched for e-learning.</div>';return;}
+  var courses=elcAllData&&elcAllData.length?elcAllData:await api('/elearning_courses?company_id=eq.'+ccid()+'&select=*').catch(function(){return [];});
+  elcAllData=courses||[];
+  var rows=await api('/elearning_enrolments?company_id=eq.'+ccid()+'&select=*&order=target_date.asc').catch(function(){return [];});
+  var mine=(rows||[]).filter(function(x){var p=String(x.person_name||'').trim().toLowerCase();return p&&keys.includes(p);}).filter(function(x){return !['cancelled','archived'].includes(String(x.status||'').toLowerCase());});
+  if(!mine.length){host.innerHTML='<div style="padding:18px;text-align:center;color:var(--text2);font-size:12px">No e-learning assigned to you.</div>';return;}
+  var today=new Date().toISOString().slice(0,10);
+  host.innerHTML=mine.slice(0,5).map(function(x){
+    var course=elcCourseById(x.course_id)||{};
+    var status=String(x.status||'enrolled').toLowerCase();
+    var done=status==='completed';
+    var due=x.target_date||x.due_date||'No target date';
+    var overdue=!done&&x.target_date&&x.target_date<today;
+    var tone=done?'#DCFCE7':overdue?'#FEE2E2':'#EFF6FF';
+    var color=done?'#166534':overdue?'#991B1B':'#185FA5';
+    return '<div style="border:1px solid var(--border);border-left:4px solid '+color+';border-radius:10px;padding:10px 12px;margin-bottom:8px;background:#fff">'
+      +'<div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start;flex-wrap:wrap">'
+      +'<div style="min-width:0;flex:1"><div style="font-weight:800;font-size:13px;color:var(--text);white-space:normal">'+escH(elcCourseLabel(x.course_id))+'</div>'
+      +'<div style="font-size:11px;color:var(--text2);margin-top:3px">Target: '+escH(due)+(x.completion_date?' - Completed: '+escH(x.completion_date):'')+'</div></div>'
+      +'<span class="pill" style="background:'+tone+';color:'+color+'">'+escH(done?'Completed':(overdue?'Overdue':(x.status||'Assigned')))+'</span></div>'
+      +'<div style="display:flex;gap:6px;margin-top:9px;flex-wrap:wrap">'
+      +(course.course_url?'<button class="btn btn-sm" onclick="elcLaunch(\''+escH(course.id||course.title||x.course_id)+'\')"><i class="ti ti-player-play"></i>Start</button>':'')
+      +(!done?'<button class="btn btn-sm btn-primary" onclick="dashCompleteElearning(\''+escH(x.id)+'\')"><i class="ti ti-certificate"></i>Complete</button>':'')
+      +'</div></div>';
+  }).join('')+(mine.length>5?'<button class="btn btn-sm" onclick="dashOpenElearning()">View all assigned courses</button>':'');
+}
+async function dashCompleteElearning(id){
+  try{
+    var rows=await api('/elearning_enrolments?id=eq.'+id+'&select=*');var x=rows?.[0];if(!x)return;
+    var today=new Date().toISOString().slice(0,10);var c=elcCourseById(x.course_id)||{};
+    var body={status:'completed',completion_date:today,updated_at:new Date().toISOString()};
+    if(!x.attempts)body.attempts=1;
+    if(!x.expiry_date&&c.validity_months){var d=new Date(today);d.setMonth(d.getMonth()+parseInt(c.validity_months));body.expiry_date=d.toISOString().slice(0,10);}
+    try{await api('/elearning_enrolments?id=eq.'+id,{m:'PATCH',p:'return=minimal',b:body});}
+    catch(e){if(!/schema cache|column|Could not find/i.test(e.message||''))throw e;await api('/elearning_enrolments?id=eq.'+id,{m:'PATCH',p:'return=minimal',b:{status:'completed',completion_date:today,updated_at:body.updated_at}});}
+    await eleSyncCompletedTraining(Object.assign({},x,body)).catch(function(){return false;});
+    auditLogEvent('complete','training','E-learning completed from dashboard',{person_name:x.person_name,course:elcCourseLabel(x.course_id)},{related_table:'elearning_enrolments',related_id:id,company_id:ccid()});
+    toast('E-learning completed. Certificate added to training records.');
+    dashLoadMyElearning();
+    if(typeof loadDash==='function')setTimeout(loadDash,250);
+  }catch(e){toast(actionErrorMessage('Complete e-learning','Training register',e.message),false);}
+}
 function eleBaseBody(g,person){return {company_id:ccid(),person_name:person,department:g('elef-dept'),course_id:g('elef-course-id')||null,enrolment_date:g('elef-enrol-date')||null,completion_date:g('elef-comp-date')||null,status:g('elef-status')||'enrolled',updated_at:new Date().toISOString()};}
 function eleFullBody(g,person){var body=eleBaseBody(g,person);body.target_date=g('elef-target-date')||null;body.score=parseInt(g('elef-score'))||null;body.expiry_date=g('elef-expiry')||null;body.attempts=parseInt(g('elef-attempts'))||null;body.time_spent_minutes=parseInt(g('elef-time'))||null;return body;}
 function eleTrainingCertificateRef(body){
@@ -36695,6 +36752,17 @@ function fireEquipStatusBadge(s) {
       </div>
       <div id="dp-my-training" style="font-size:12px"><div class="loading-msg">Loading...</div></div>
     </div>
+  </div>
+
+  <div class="card" style="padding:18px 20px;margin-bottom:12px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;gap:10px;flex-wrap:wrap">
+      <div>
+        <div style="font-size:13px;font-weight:700;color:var(--text)">My E-learning Assignments</div>
+        <div style="font-size:11px;color:var(--text2);margin-top:2px">Launch assigned courses, complete them, and add the certificate to your training records.</div>
+      </div>
+      <button class="btn btn-sm" onclick="dashOpenElearning()" style="font-size:10px">Open e-learning</button>
+    </div>
+    <div id="dp-my-elearning" style="font-size:12px"><div class="loading-msg">Loading...</div></div>
   </div>
 
   <!-- My Permits section, only visible if the role can see permits -->
