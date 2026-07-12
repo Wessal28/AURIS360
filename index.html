@@ -27583,6 +27583,7 @@ async function tpLoad(){
   el.innerHTML='<div class="loading-msg">Loading...</div>';
   try{
     var d=await api('/training_plan?select=*'+cf()+'&year=eq.'+trainYear+'&order=month,planned_date');
+    var trainingRecords=await api('/training_followup?select=training_topic,training_date,person_name,certificate'+cf()+'&order=training_date.desc').catch(function(){return [];});
     tpAllData=d||[];
     var today=new Date();
     var planned=tpAllData.filter(function(x){return x.status==='planned'||x.status==='confirmed';}).length;
@@ -27613,6 +27614,18 @@ async function tpLoad(){
       var c=cfg[p]||cfg.medium;
       return '<span style="background:'+c[0]+';color:'+c[1]+';padding:2px 6px;border-radius:4px;font-size:11px;font-weight:600">'+p+'</span>';
     };
+    function tpEvidenceBadge(x){
+      var topic=String(x.training_topic||'').trim().toLowerCase();
+      var actual=x.actual_date||'';
+      var matches=(trainingRecords||[]).filter(function(r){
+        var sameTopic=String(r.training_topic||'').trim().toLowerCase()===topic;
+        var sameDate=!actual||String(r.training_date||'')===actual;
+        return topic&&sameTopic&&sameDate;
+      });
+      if(matches.length)return '<span class="badge badge-green">'+matches.length+' record'+(matches.length>1?'s':'')+'</span>'+(matches.some(function(r){return r.certificate;})?'<div class="muted">Certificate evidence</div>':'');
+      if(String(x.status||'').toLowerCase()==='completed')return '<span class="badge badge-amber">Evidence missing</span><div class="muted">Add attendance/training record</div>';
+      return '<span class="muted">Not due yet</span>';
+    }
     var h='<table style="width:100%;border-collapse:collapse;font-size:12px">';
     h+='<thead><tr style="background:#1a3a5c;color:#fff">';
     h+='<th style="padding:8px 10px;text-align:left;width:50px">Month</th>';
@@ -27621,6 +27634,7 @@ async function tpLoad(){
     h+='<th style="padding:8px 10px;text-align:left;width:80px">Type</th>';
     h+='<th style="padding:8px 10px;text-align:left;width:80px">Priority</th>';
     h+='<th style="padding:8px 10px;text-align:left;width:100px">Planned date</th>';
+    h+='<th style="padding:8px 10px;text-align:left;width:130px">Evidence</th>';
     h+='<th style="padding:8px 10px;text-align:left;width:110px">Status</th>';
     h+='<th style="padding:8px 10px;width:70px"></th>';
     h+='</tr></thead><tbody>';
@@ -27636,6 +27650,7 @@ async function tpLoad(){
       h+='<td style="padding:8px 10px;font-size:11px">'+escH(x.training_type||'—')+'</td>';
       h+='<td style="padding:8px 10px">'+priorityBadge(x.priority||'medium')+'</td>';
       h+='<td style="padding:8px 10px;font-size:11px'+(isOverdue?';color:var(--red);font-weight:600':'')+'">'+dt+(isOverdue?' ⚠':'')+'</td>';
+      h+='<td style="padding:8px 10px">'+tpEvidenceBadge(x)+'</td>';
       h+='<td style="padding:8px 10px">'+statusBadge(x.status||'planned')+'</td>';
       h+='<td style="padding:8px 10px"><div style="display:flex;gap:4px">'
         +'<button class="btn btn-sm" data-id="'+x.id+'" onclick="tpOpen(this.getAttribute(\'data-id\'))"><i class="ti ti-edit"></i></button>'
