@@ -1,29 +1,150 @@
 # AURIS360 - Upcoming Proposed Upgrades
 
 Prepared: 12 July 2026  
-Purpose: Prioritise the next professional upgrades for client readiness, scalability, and market differentiation.
+Updated priority order: Premium AI first, then client demo readiness, workflow/governance, enterprise maturity, and advanced modules.
 
-## Executive View
+## Strategic Direction
 
-AURIS360 is already broad and impressive in module coverage. The next step is not to add many more modules randomly, but to make the platform feel more controlled, connected, auditable and enterprise-ready.
+The priority is now to make AURIS360 stand out as an intelligent HSE platform first, then make every module presentation-ready and operationally mature.
 
-The recommended direction is:
+Recommended execution order:
 
-1. Complete cross-module workflow links.
-2. Strengthen evidence, approval and audit trail.
-3. Improve client onboarding and role-based experience.
-4. Add premium intelligence: AI summaries, predictive risks, compliance monitoring.
-5. Prepare for enterprise needs: SLA, offline mode, integrations, backups and security.
+1. Premium AI features.
+2. Client demo readiness for all modules.
+3. Workflow and governance upgrades.
+4. Enterprise / SaaS maturity.
+5. Advanced modules and specialist extensions.
 
-## Phase 1 - Client Demo Readiness
+This makes sense commercially: clients should first feel that AURIS360 is innovative and different, then see that the core workflows are reliable, auditable and professional.
 
-Target: immediate priority before client meetings.
+## Phase 1 - Premium AI Features
 
-### 1. Unified Evidence and Document Preview
+Target: create the strongest "wow" factor and market differentiation.
 
-Objective: every module that asks for evidence should allow upload, preview, and audit tracking.
+### 1. AI HSE Assistant by Module
+
+Objective: AI should support users inside each module, not only through a generic chat box.
+
+Priority module assistants:
+
+- Incident Management: draft immediate actions, likely causes, notification triggers and corrective actions.
+- Investigation: suggest 5 Whys, causal factors, root causes and SMART actions.
+- Risk Assessment: generate detailed task-based hazards, consequences, existing controls, further controls and residual risk.
+- SWMS / Method Statements: generate safe work method steps from activity description, tools, equipment and work environment.
+- PTW: check missing controls based on permit type, high-risk activity, RA and SWMS.
+- Legal Compliance: summarise duties from uploaded legislation and convert them into legal register obligations.
+- Chemical Control: extract SDS hazards, exposure effects, PPE, storage, incompatibilities and emergency measures.
+- Toolbox Talks: generate toolbox talk content from RA, SWMS, incident trends or selected hazard.
+- Audit / Inspection: generate corrective actions from insufficient checklist items.
+- Training: recommend training gaps based on incidents, roles and expired competencies.
+
+Expected value:
+
+- Strong competitive advantage.
+- Makes AURIS360 feel modern and intelligent.
+- Helps non-specialist users produce better HSE documentation.
+
+### 2. AI Risk Assessment Generator Upgrade
+
+Objective: make AI-generated RA outputs more detailed and practical.
+
+Required improvements:
+
+- Generate more than a few generic rows.
+- Use task/activity breakdown.
+- Separate hazards, consequences, existing controls, initial risk, further controls, action by, target date and residual risk.
+- Suggest controls according to the hierarchy of controls.
+- Include legal references where possible.
+- Suggest linked PTW and SWMS requirements.
+- Allow the user to regenerate, amend or accept AI rows.
+
+Expected value:
+
+- Saves significant consultant time.
+- Makes the RA module a premium selling point.
+
+### 3. AI Monthly HSE Report
+
+Objective: one-click monthly HSE report for management.
+
+Report should include:
+
+- Executive summary.
+- Incident and near-miss statistics.
+- BBS trends.
+- Inspection findings.
+- MAP status.
+- Training compliance.
+- Legal compliance status.
+- PTW activity.
+- Fire / equipment / PPE alerts.
+- AI recommendations for next month.
+- Charts and KPI highlights.
+
+Expected value:
+
+- High value for managers.
+- Very useful in client meetings.
+
+### 4. Predictive Risk Dashboard
+
+Objective: use available data to identify emerging risk areas.
+
+Inputs:
+
+- Incidents.
+- Near misses.
+- BBS observations.
+- Inspection findings.
+- Overdue actions.
+- PTW activity.
+- Equipment failures.
+- Training gaps.
+- Legal non-compliances.
+
+Outputs:
+
+- High-risk departments.
+- Repeat hazards.
+- Weak control themes.
+- Overdue critical actions.
+- Suggested campaigns.
+- Predicted areas requiring attention.
+
+Expected value:
+
+- Moves AURIS360 from recordkeeping to decision support.
+
+### 5. AI Document Analysis
+
+Objective: upload documents and have AI extract usable structured data.
+
+Priority documents:
+
+- Legal acts and regulations.
+- SDS / MSDS.
+- Risk assessments.
+- SWMS / method statements.
+- Inspection reports.
+- Training matrices.
+- Certificates.
+- Audit reports.
+
+Expected value:
+
+- Reduces manual data entry.
+- Makes onboarding new clients faster.
+
+## Phase 2 - Client Demo Readiness for All Modules
+
+Target: make every module look polished, consistent and convincing during client demonstrations.
+
+### 6. Unified Evidence and Document Preview
+
+Objective: every module that requests evidence should support upload, preview and traceability.
 
 Includes:
+
 - Incident photos and evidence.
 - Investigation evidence.
 - RA / RAMS / SWMS attachments.
@@ -33,35 +154,37 @@ Includes:
 - Fire certificates and layout plans.
 - Noise survey plans.
 - Safety bulletins.
+- Audit and inspection evidence.
 
-Value:
-- Makes the software feel professional and inspection-ready.
-- Reduces “where is the document?” confusion.
+Expected value:
+
+- Makes the platform feel inspection-ready.
 - Supports legal defensibility.
+- Reduces confusion around document storage.
 
-Priority: Very high.
+### 7. Clickable Cross-References
 
-### 2. Clickable Cross-References
-
-Objective: every reference number should open the related record.
+Objective: every important reference number should open the related record.
 
 Examples:
+
 - Work Schedule -> RA, PTW, TBT, inspection, equipment.
 - MAP -> source incident, audit, inspection, legal gap.
 - PTW -> RA, SWMS, gas test, isolation, approval history.
 - RA -> linked SWMS / RAMS pack.
-- Fire layout -> equipment register item.
+- Fire layout -> fire equipment item.
+- Toolbox Talk -> linked work, RA or SWMS.
 
-Value:
-- Makes AURIS360 feel like one connected system, not separate forms.
+Expected value:
 
-Priority: Very high.
+- Makes AURIS360 feel like one connected system.
 
-### 3. Print and PDF Quality Standardisation
+### 8. Print and PDF Quality Standardisation
 
-Objective: all critical reports should print cleanly with consistent header, company name, AURIS360 logo, company logo, reference, date, approval status and page layout.
+Objective: all critical reports should print cleanly and professionally.
 
-Priority documents:
+Priority reports:
+
 - Incident report.
 - Investigation report.
 - Risk assessment.
@@ -74,61 +197,95 @@ Priority documents:
 - Training records.
 - Legal register.
 
-Value:
-- Clients will judge professionalism heavily from printed outputs.
+Standard header should include:
 
-Priority: Very high.
+- AURIS360 logo.
+- Client company logo.
+- Company name.
+- Report reference.
+- Date generated.
+- Approval status.
+- Page layout appropriate to document type.
 
-### 4. Table-Like Registers Everywhere
+Expected value:
 
-Objective: every module should have a clean register/table first, with forms opening after selection.
+- Printed documents are one of the strongest signals of professionalism.
+
+### 9. Table-Like Registers Everywhere
+
+Objective: every module should open first as a clean register/table, with forms opening after selection.
 
 Modules to keep checking:
-- PPE.
-- Tools and equipment.
-- Fire certificates.
-- Chemical control.
-- Legal compliance.
-- Training.
+
+- Incident Management.
+- BBS Observations.
+- Audits and Inspections.
+- Risk Assessment.
 - SWMS.
+- PTW.
+- Training.
+- PPE.
+- Tools and Equipment.
+- Fire Certificates.
+- Chemical Control.
+- Legal Compliance.
 - Contractors.
-- Occupational health.
+- Occupational Health.
 - Emergency.
 - Environmental / ESG.
 
-Value:
+Expected value:
+
 - Faster review.
 - Better desktop use.
 - More professional SaaS feel.
 
-Priority: High.
+### 10. Mobile Review and Simplification
 
-## Phase 2 - Workflow and Governance
+Objective: make mobile use reliable and simple for employees and supervisors.
 
-Target: make AURIS360 operationally strong.
+Priority mobile workflows:
 
-### 5. Approval Centre Completion
+- Report incident.
+- Record BBS.
+- View assigned training.
+- Confirm toolbox talk attendance.
+- Complete inspection.
+- Upload photos.
+- Open linked documents.
+
+Expected value:
+
+- Critical for field workers and client testing.
+
+## Phase 3 - Workflow and Governance Upgrades
+
+Target: make AURIS360 operationally strong, controlled and auditable.
+
+### 11. Approval Centre Completion
 
 Objective: centralise approvals for PTW, RA, SWMS, investigations, documents, MOC and critical actions.
 
 Includes:
+
 - Level 1 / Level 2 / Level 3 approval rules.
+- Department/site-based approvers.
 - Delegation when approver is absent.
 - Release for amendment.
 - Approval history.
-- Email / WhatsApp / in-app notification.
+- Email, in-app and future WhatsApp notification.
 
-Value:
-- Strong governance.
+Expected value:
+
 - Clear accountability.
+- Strong governance.
 
-Priority: High.
+### 12. Full Audit Trail
 
-### 6. Full Audit Trail
-
-Objective: chronological log of all important actions.
+Objective: chronological log of important actions.
 
 Track:
+
 - Created by.
 - Edited by.
 - Approved by.
@@ -136,137 +293,112 @@ Track:
 - Deleted / archived.
 - Viewed / acknowledged.
 - Printed / exported.
+- AI-generated content accepted or amended.
 
-Value:
+Expected value:
+
 - Essential for professional SaaS and legal defensibility.
 
-Priority: High.
-
-### 7. Notification Centre
+### 13. Notification Centre
 
 Objective: improve notifications beyond email.
 
 Channels:
+
 - Email for real email users.
 - In-app notification for all users.
 - WhatsApp / SMS for users with generated `.local` logins.
 
 Events:
+
 - Incident reported.
 - Action assigned.
 - PTW approval required.
+- RA/SWMS approval required.
 - Training assigned.
 - Legal compliance overdue.
 - Equipment service due.
 - PPE expiry.
 
-Value:
-- Solves the `.local` email limitation.
+Expected value:
+
+- Solves `.local` email limitations.
 - Improves operational response.
 
-Priority: High.
+### 14. Controlled Record Locking
 
-## Phase 3 - Premium AI Features
+Objective: submitted or approved records should not be freely amended.
 
-Target: make AURIS360 innovative and competitive.
+Rules:
 
-### 8. AI HSE Assistant by Module
+- Employees cannot modify submitted incident reports.
+- Managers cannot modify submitted investigations unless released.
+- Approved RA/SWMS/PTW records require revision or release for amendment.
+- Admin can release records for amendment.
 
-Objective: AI should help users inside each module, not only through a chatbot.
+Expected value:
 
-Examples:
-- Incident: draft immediate actions and probable root causes.
-- Investigation: suggest 5 Whys, causal factors and corrective actions.
-- RA: generate detailed task-based hazards and controls.
-- SWMS: generate work method steps from activity description.
-- Legal: summarise obligations from uploaded legislation.
-- Chemical: extract SDS hazards and exposure controls.
-- PTW: check missing controls based on work type.
+- Prevents uncontrolled changes.
+- Improves trust in records.
 
-Value:
-- Strong market differentiator.
+## Phase 4 - Enterprise / SaaS Maturity
 
-Priority: Medium-high.
+Target: prepare AURIS360 for paying clients and larger organisations.
 
-### 9. Predictive Risk Dashboard
-
-Objective: analyse trends and predict weak areas.
-
-Inputs:
-- Incidents.
-- BBS observations.
-- Inspections.
-- MAP overdue actions.
-- PTW types.
-- Equipment failures.
-- Training gaps.
-
-Outputs:
-- High-risk department.
-- Repeat hazard themes.
-- Emerging risks.
-- Recommended preventive campaigns.
-
-Value:
-- Turns the app from recording tool into decision-support platform.
-
-Priority: Medium-high.
-
-### 10. AI Monthly HSE Report
-
-Objective: one-click monthly report with graphs, KPIs, incidents, actions, training, legal compliance and recommendations.
-
-Value:
-- High perceived value for managers and clients.
-
-Priority: Medium-high.
-
-## Phase 4 - Enterprise and SaaS Maturity
-
-Target: prepare for paying clients and larger companies.
-
-### 11. Security, Infrastructure and SLA
+### 15. Security, Infrastructure and SLA
 
 Needed:
+
 - Role-based access verification.
-- Data segregation by company.
+- Company data segregation.
 - Backup policy.
 - Incident response policy.
 - Uptime target.
 - Data retention policy.
 - Admin activity monitoring.
+- Error monitoring.
 
-Value:
+Expected value:
+
 - Required for serious corporate clients.
 
-Priority: Medium.
+### 16. Offline Mode
 
-### 12. Offline Mode
+Objective: mobile users can work without internet, then sync later.
 
-Objective: mobile users can report incidents, BBS, inspections and PTW checks without internet, then sync later.
+Priority offline workflows:
 
-Value:
-- Very useful for construction, factories, remote worksites.
+- Incident reporting.
+- BBS observations.
+- Inspections.
+- PTW checks.
+- Photo capture.
 
-Priority: Medium.
+Expected value:
 
-### 13. Client Portal / Tenant Branding
+- Very useful for construction, factories and remote worksites.
 
-Objective:
+### 17. Client Portal / Tenant Branding
+
+Objective: each client gets a branded experience.
+
+Includes:
+
 - Company logo.
 - Company colour option.
-- Custom modules enabled per client.
+- Company-specific modules.
 - Company-specific templates.
 - Company-specific documents.
+- Company-specific dashboards.
 
-Value:
-- Makes each client feel the platform is theirs.
+Expected value:
 
-Priority: Medium.
+- Makes each client feel AURIS360 is configured for them.
 
-### 14. Integrations
+### 18. Integrations
 
 Possible integrations:
+
 - ERP.
 - HR / employee list.
 - LDAP / Microsoft Entra ID.
@@ -274,14 +406,13 @@ Possible integrations:
 - Google Workspace / Microsoft 365.
 - WhatsApp Business API.
 
-Value:
+Expected value:
+
 - Enterprise readiness.
 
-Priority: Later, unless a client specifically requests it.
+## Phase 5 - Advanced Modules and Specialist Extensions
 
-## Phase 5 - Advanced Modules
-
-Target: deepen AURIS360 as a complete HSE platform.
+Target: deepen AURIS360 as a complete HSE platform after the main system feels premium and stable.
 
 Recommended advanced modules:
 
@@ -298,58 +429,65 @@ Recommended advanced modules:
 - Contractor prequalification.
 - ESG / environmental monitoring.
 - Legal obligation calendar.
+- Confined space management.
+- Lifting operations management.
 
-Value:
+Expected value:
+
 - Broadens market coverage.
+- Supports specialist client requirements.
 
-Priority: Build progressively after core workflows are stable.
+## Revised Immediate Next Upgrades
 
-## Recommended Immediate Next Upgrades
+Based on the new strategy, the next upgrades should be:
 
-For best impact before clients test the software:
-
-1. Finalise print/PDF templates for RA, SWMS, PTW, Incident and Inspection.
-2. Complete clickable references across Work Schedule, MAP, RA, PTW and TBT.
-3. Strengthen audit trail visibility.
-4. Make notification centre clear for email, in-app, WhatsApp/SMS future channel.
-5. Improve dashboard with “client-ready” KPIs and evidence completeness.
-6. Run one full QA test using a sample company from incident -> investigation -> MAP -> closure.
-
-## Recommended Positioning
-
-AURIS360 should be presented as:
-
-> A modular HSE management platform that connects reporting, compliance, risk assessment, permits, training, inspections, legal obligations and AI-assisted safety intelligence into one auditable system.
-
-Main selling points:
-- Built around real HSE workflows.
-- Strong module coverage.
-- AI-assisted, not AI-dependent.
-- Evidence-based and audit-ready.
-- Suitable for SMEs but scalable toward enterprise clients.
-- Adaptable to Mauritius and international HSE requirements.
+1. Upgrade AI Risk Assessment generation.
+2. Add AI module helpers for Incident, Investigation, SWMS and PTW.
+3. Add AI Monthly HSE Report.
+4. Add Predictive Risk Dashboard.
+5. Add AI document analysis improvements for Legal, SDS and RA imports.
+6. Then complete client-demo readiness across all modules.
 
 ## Budget Implications
 
-Professional operation will eventually require:
+The AI-first direction means OpenAI API cost control becomes important.
 
+Recommended controls:
+
+- Restrict AI to SEPHS Admin, Company Admin and HSE roles.
+- Use smaller/cheaper models for simple summaries.
+- Use stronger models only for complex document generation.
+- Add monthly AI usage monitoring per company.
+- Add a setting to enable/disable AI per client.
+- Avoid sending unnecessary data to AI.
+
+Expected paid services:
+
+- OpenAI API for AI features.
 - Supabase paid plan when storage, backups, auth or database usage grows.
 - Vercel paid plan if traffic, functions, cron jobs or team features increase.
-- OpenAI API billing for AI features.
 - Resend or another email provider for notifications.
 - WhatsApp Business API provider if WhatsApp notifications are activated.
 - Domain and optional subdomain setup.
 - Backup / monitoring tools if targeting enterprise clients.
 
+## Positioning
+
+AURIS360 should be positioned as:
+
+> An AI-assisted HSE management platform that connects reporting, compliance, risk assessment, permits, training, inspections, legal obligations and safety intelligence into one auditable system.
+
+Main selling points:
+
+- AI-assisted HSE workflows.
+- Strong module coverage.
+- Built around real safety practice.
+- Evidence-based and audit-ready.
+- Suitable for SMEs but scalable toward enterprise clients.
+- Adaptable to Mauritius and international HSE requirements.
+
 ## Overall Recommendation
 
-Do not keep adding modules endlessly before polishing workflows. The strongest commercial move now is to make the existing platform feel:
+The new order is commercially strong. Build the premium AI layer first to create differentiation, then make the entire platform demo-ready and operationally mature.
 
-- connected,
-- auditable,
-- easy to navigate,
-- reliable on mobile,
-- professional in print,
-- and intelligent through AI support.
-
-Once those foundations are solid, new modules can be added faster and with less rework.
+The key discipline is to make AI useful, controlled and embedded in real HSE workflows, not decorative. AI should help produce better records, better decisions and better prevention.
