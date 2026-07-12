@@ -7025,6 +7025,17 @@ function noiseEmptyForm(){
   var del=document.getElementById('noise-del-btn');if(del)del.style.display='none';
   noiseSetPoints([{loc:'',leq:'',peak:'',duration:'8',persons:'',x:'50',y:'50',hpe:'',snr:''}]);
   noiseRenderPlanPreview();
+  noiseSwitchSection('details');
+}
+function noiseSwitchSection(tab){
+  ['details','map','hpe'].forEach(function(k){
+    var pane=document.getElementById('noise-section-'+k);
+    var btn=document.getElementById('noise-tab-'+k);
+    if(pane)pane.style.display=(k===tab)?'block':'none';
+    if(btn)btn.classList.toggle('active',k===tab);
+  });
+  if(tab==='map')noiseRenderPlanPreview();
+  if(tab==='hpe')noiseAssessHpe();
 }
 function noiseNewSurvey(){noiseEmptyForm();var f=document.getElementById('noise-form');if(f)f.style.display='block';}
 function noiseSetPoints(rows){
@@ -7107,7 +7118,12 @@ function noiseAssessHpe(){
     return Object.assign({},p,{idx:i+1,protected_level:protectedLevel,result:result});
   });
   var host=document.getElementById('noise-hpe-results');if(!host)return assessed;
-  host.innerHTML=assessed.length?'<table class="data-table" style="font-size:12px"><thead><tr><th>Point</th><th>Exposure</th><th>HPE</th><th>Protected level</th><th>Status</th></tr></thead><tbody>'+assessed.map(function(a){var badge=a.result==='adequate'?'badge-green':a.result==='inadequate'?'badge-red':'badge-amber';var label={adequate:'Adequate',inadequate:'Not adequate',review:'Review',missing:'Missing data'}[a.result]||a.result;return '<tr><td><strong>'+(a.idx)+'. '+escH(a.loc||'Point')+'</strong></td><td>'+escH(a.leq||'-')+' dB(A)</td><td>'+escH(a.hpe||'-')+(a.snr?' / SNR '+escH(a.snr):'')+'</td><td>'+(a.protected_level!=null?a.protected_level.toFixed(1)+' dB(A)':'-')+'</td><td><span class="badge '+badge+'">'+label+'</span></td></tr>';}).join('')+'</tbody></table>':'<div class="muted">Add measurement points and SNR/NRR values to assess hearing protector adequacy.</div>';
+  host.innerHTML=assessed.length?'<table class="data-table" style="font-size:12px"><thead><tr><th>Point</th><th>Exposure</th><th>HPE</th><th>Protected level</th><th>Status</th><th>Recommendation</th></tr></thead><tbody>'+assessed.map(function(a){
+    var badge=a.result==='adequate'?'badge-green':a.result==='inadequate'?'badge-red':'badge-amber';
+    var label={adequate:'Adequate',inadequate:'Not adequate',review:'Review',missing:'Missing data'}[a.result]||a.result;
+    var rec=a.result==='adequate'?'Suitable for this measured exposure. Keep training and fit/use checks current.':a.result==='inadequate'?'Select higher attenuation HPE or reduce noise at source before relying on PPE.':a.result==='review'?(a.protected_level!=null&&a.protected_level<70?'Possible over-protection. Confirm speech, alarms and warning signals remain audible.':'Confirm HPE model and enter the SNR/NRR rating.'):'Complete exposure and HPE rating to assess adequacy.';
+    return '<tr><td><strong>'+(a.idx)+'. '+escH(a.loc||'Point')+'</strong></td><td>'+escH(a.leq||'-')+' dB(A)</td><td>'+escH(a.hpe||'-')+(a.snr?' / SNR '+escH(a.snr):'')+'</td><td>'+(a.protected_level!=null?a.protected_level.toFixed(1)+' dB(A)':'-')+'</td><td><span class="badge '+badge+'">'+label+'</span></td><td>'+escH(rec)+'</td></tr>';
+  }).join('')+'</tbody></table>':'<div class="muted">Add measurement points and SNR/NRR values to assess hearing protector adequacy.</div>';
   return assessed;
 }
 async function noiseOpenSurvey(id){
@@ -7121,6 +7137,7 @@ async function noiseOpenSurvey(id){
     var title=document.getElementById('noise-form-title');if(title)title.textContent='Edit noise survey';
     var del=document.getElementById('noise-del-btn');if(del)del.style.display=isMgr()?'inline-flex':'none';
     document.getElementById('noise-form').style.display='block';
+    noiseSwitchSection('details');
   }catch(e){toast(actionErrorMessage('Open noise survey','Noise Survey',e.message),false);}
 }
 async function saveNoise(){
@@ -43124,9 +43141,18 @@ function fireEquipStatusBadge(s) {
 <div class="page-header"><div><div class="page-title">Noise Survey</div><div style="font-size:12px;color:var(--text2)">Noise measurements · layout map · hearing protector adequacy</div></div><div style="display:flex;gap:8px"><button class="btn" onclick="noisePrintRegister()"><i class="ti ti-printer"></i>Print register</button><button class="btn btn-primary" onclick="noiseNewSurvey()"><i class="ti ti-plus"></i>New survey</button></div></div>
 <div class="card" id="noise-form" style="display:none">
 <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:12px"><div class="card-title" id="noise-form-title" style="margin:0">New noise survey</div><div style="display:flex;gap:8px"><button id="noise-del-btn" class="btn" style="display:none;color:var(--red)" onclick="deleteNoiseSurvey(window.noiseEditId)"><i class="ti ti-trash"></i></button><button class="btn btn-primary" onclick="saveNoise()"><i class="ti ti-device-floppy"></i>Save survey</button><button class="btn" onclick="toggleForm('noise-form')">Cancel</button></div></div>
+<div class="mtg-tabs" style="margin-bottom:12px">
+<button class="mtg-tab active" id="noise-tab-details" onclick="noiseSwitchSection('details')"><i class="ti ti-clipboard-text"></i>Survey details</button>
+<button class="mtg-tab" id="noise-tab-map" onclick="noiseSwitchSection('map')"><i class="ti ti-map-2"></i>Noise map</button>
+<button class="mtg-tab" id="noise-tab-hpe" onclick="noiseSwitchSection('hpe')"><i class="ti ti-headphones"></i>HPE adequacy</button>
+</div>
+<div id="noise-section-details">
 <div class="form-row"><div class="form-group"><label class="form-label">Survey type</label><select id="nf-type"><option value="occupational">Occupational</option><option value="environmental">Environmental</option></select></div><div class="form-group"><label class="form-label">Site / area</label><input type="text" id="nf-site"/></div><div class="form-group"><label class="form-label">Survey date</label><input type="date" id="nf-date"/></div><div class="form-group"><label class="form-label">Conducted by</label><select id="nf-by"><option value="">Select person...</option></select></div></div>
 <div class="form-row"><div class="form-group"><label class="form-label">Instrument used</label><input type="text" id="nf-instrument"/></div><div class="form-group"><label class="form-label">Calibration date</label><input type="date" id="nf-cal"/></div><div class="form-group"><label class="form-label">Weather / conditions</label><input type="text" id="nf-weather"/></div></div>
 <div class="form-group"><label class="form-label">Notes</label><textarea id="nf-notes" style="min-height:54px"></textarea></div>
+<div style="display:flex;justify-content:flex-end"><button class="btn btn-primary" onclick="noiseSwitchSection('map')"><i class="ti ti-arrow-right"></i>Continue to noise map</button></div>
+</div>
+<div id="noise-section-map" style="display:none">
 <div class="card" style="background:#f8fafc;margin:12px 0">
 <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:10px;flex-wrap:wrap"><div><div class="card-title" style="margin:0">Site plan and noise map</div><div style="font-size:12px;color:var(--text2)">Upload a layout, choose a measurement point, then click the map to position it. Coloured zones are generated from dB(A) values.</div></div><label class="btn" style="cursor:pointer"><i class="ti ti-upload"></i>Upload layout<input type="file" accept="image/*" onchange="noiseUploadPlan(this)" style="display:none"/></label></div>
 <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px">
@@ -43145,7 +43171,12 @@ function fireEquipStatusBadge(s) {
 <div style="padding:12px 16px;background:#164E63;color:#fff;display:flex;align-items:center;justify-content:space-between"><strong>Measurement points</strong><button class="btn btn-sm" style="background:#fff;color:#164E63" onclick="noiseAddPoint()"><i class="ti ti-plus"></i>Add point</button></div>
 <div style="overflow-x:auto"><table class="data-table" style="min-width:1200px"><thead><tr><th>Location / activity</th><th>Leq dB(A)</th><th>Peak dB(C)</th><th>Duration h</th><th>Persons</th><th>X %</th><th>Y %</th><th>Hearing protector</th><th>SNR/NRR</th><th></th></tr></thead><tbody id="noise-points-body"></tbody></table></div>
 </div>
-<div class="card" style="margin:12px 0"><div class="card-title">Hearing protector adequacy</div><div style="font-size:12px;color:var(--text2);margin-bottom:10px">Protected level is estimated as exposure minus SNR/NRR. Review if protected level is too high or over-protected.</div><div id="noise-hpe-results"></div></div>
+<div style="display:flex;justify-content:space-between;gap:8px"><button class="btn" onclick="noiseSwitchSection('details')"><i class="ti ti-arrow-left"></i>Back to details</button><button class="btn btn-primary" onclick="noiseSwitchSection('hpe')"><i class="ti ti-arrow-right"></i>Assess HPE</button></div>
+</div>
+<div id="noise-section-hpe" style="display:none">
+<div class="card" style="margin:12px 0"><div class="card-title">Hearing protector adequacy</div><div style="font-size:12px;color:var(--text2);margin-bottom:10px">Protected level is estimated as exposure minus SNR/NRR. Aim for adequate protection without over-protection: generally below 85 dB(A), but review values below 70 dB(A) where communication and warning sounds may be affected.</div><div id="noise-hpe-results"></div></div>
+<div style="display:flex;justify-content:space-between;gap:8px"><button class="btn" onclick="noiseSwitchSection('map')"><i class="ti ti-arrow-left"></i>Back to map</button><button class="btn btn-primary" onclick="saveNoise()"><i class="ti ti-device-floppy"></i>Save survey</button></div>
+</div>
 </div>
 <div class="card"><div class="card-title">Noise surveys</div><div id="noise-list"><div class="loading-msg">Loading...</div></div></div></div>
 <div id="page-meetings" class="page">
