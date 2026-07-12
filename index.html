@@ -7016,6 +7016,7 @@ h+='</tbody></table></div>';el.innerHTML=h;
 function noiseSafeJson(v,fallback){if(Array.isArray(v))return v;try{return JSON.parse(v||'')||fallback;}catch(e){return fallback;}}
 function noiseEmptyForm(){
   window.noiseEditId=null;
+  window.noiseActivePoint=0;
   ['nf-site','nf-date','nf-instrument','nf-cal','nf-weather','nf-notes','nf-layout-data','nf-layout-name'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
   fillPersonSelect('nf-by');
   var by=document.getElementById('nf-by');if(by)by.value='';
@@ -7028,13 +7029,23 @@ function noiseEmptyForm(){
 function noiseNewSurvey(){noiseEmptyForm();var f=document.getElementById('noise-form');if(f)f.style.display='block';}
 function noiseSetPoints(rows){
   var host=document.getElementById('noise-points-body');if(!host)return;
+  if(window.noiseActivePoint==null||window.noiseActivePoint>(rows||[]).length-1)window.noiseActivePoint=0;
   host.innerHTML=(rows||[]).map(function(p,i){return noisePointRow(p,i);}).join('');
+  noiseRefreshPointSelector(rows||[]);
   noiseRenderPlanPreview();
   noiseAssessHpe();
 }
+function noiseRefreshPointSelector(rows){
+  var sel=document.getElementById('noise-active-point');if(!sel)return;
+  sel.innerHTML=(rows||[]).map(function(p,i){return '<option value="'+i+'" '+(Number(window.noiseActivePoint||0)===i?'selected':'')+'>'+(i+1)+'. '+escH(p.loc||'Measurement point')+(p.leq?' - '+escH(p.leq)+' dB(A)':'')+'</option>';}).join('');
+}
+function noiseSetActivePoint(v){
+  window.noiseActivePoint=parseInt(v)||0;
+  noiseRenderPlanPreview();
+}
 function noisePointRow(p,i){
   p=p||{};
-  return '<tr data-idx="'+i+'">'
+  return '<tr data-idx="'+i+'" onclick="noiseSetActivePoint('+i+')" style="cursor:pointer">'
     +'<td><input value="'+escH(p.loc||'')+'" placeholder="e.g. Compressor room" oninput="noiseRenderPlanPreview();noiseAssessHpe()"/></td>'
     +'<td><input type="number" step="0.1" value="'+escH(p.leq||'')+'" oninput="noiseRenderPlanPreview();noiseAssessHpe()"/></td>'
     +'<td><input type="number" step="0.1" value="'+escH(p.peak||'')+'" oninput="noiseAssessHpe()"/></td>'
@@ -7068,14 +7079,25 @@ function noiseRenderPlanPreview(){
   var data=document.getElementById('nf-layout-data')?.value||'';
   img.src=data;img.style.display=data?'block':'none';if(empty)empty.style.display=data?'none':'flex';
   var rows=noisePointsFromForm();
-  layer.innerHTML=rows.map(function(p,i){var leq=parseFloat(p.leq)||0;var color=leq>=85?'#E24B4A':leq>=80?'#EF9F27':'#1D9E75';return '<button type="button" title="'+escH((p.loc||'Point '+(i+1))+' - '+(p.leq||'-')+' dB(A)')+'" style="position:absolute;left:'+Math.max(0,Math.min(100,parseFloat(p.x)||50))+'%;top:'+Math.max(0,Math.min(100,parseFloat(p.y)||50))+'%;transform:translate(-50%,-50%);width:28px;height:28px;border-radius:999px;border:2px solid #fff;background:'+color+';color:#fff;font-size:11px;font-weight:900;box-shadow:0 2px 8px rgba(0,0,0,.25);pointer-events:auto">'+(i+1)+'</button>';}).join('');
+  var heat=rows.map(function(p,i){var leq=parseFloat(p.leq)||0;var m=noiseLevelMeta(leq);var x=Math.max(0,Math.min(100,parseFloat(p.x)||50)), y=Math.max(0,Math.min(100,parseFloat(p.y)||50));var active=Number(window.noiseActivePoint||0)===i;var size=leq>=90?170:leq>=85?140:leq>=80?112:84;return '<div style="position:absolute;left:'+x+'%;top:'+y+'%;width:'+size+'px;height:'+size+'px;transform:translate(-50%,-50%);border-radius:999px;background:radial-gradient(circle, '+m.color+'55 0%, '+m.color+'24 48%, transparent 72%);pointer-events:none"></div>'
+    +'<button type="button" onclick="event.stopPropagation();noiseSetActivePoint('+i+')" title="'+escH((p.loc||'Point '+(i+1))+' - '+(p.leq||'-')+' dB(A)')+'" style="position:absolute;left:'+x+'%;top:'+y+'%;transform:translate(-50%,-50%);min-width:36px;height:32px;border-radius:999px;border:'+(active?'3px solid #111827':'2px solid #fff')+';background:'+m.color+';color:#fff;font-size:11px;font-weight:900;box-shadow:0 2px 8px rgba(0,0,0,.25);pointer-events:auto;padding:0 8px">'+(i+1)+(leq?'<span style="font-size:9px;margin-left:3px">'+Math.round(leq)+'</span>':'')+'</button>';}).join('');
+  layer.innerHTML=heat;
+  var summary=document.getElementById('noise-map-summary');
+  if(summary){
+    var max=rows.reduce(function(m,p){return Math.max(m,parseFloat(p.leq)||0);},0);
+    var high=rows.filter(function(p){return (parseFloat(p.leq)||0)>=85;}).length;
+    var caution=rows.filter(function(p){var v=parseFloat(p.leq)||0;return v>=80&&v<85;}).length;
+    summary.innerHTML=rows.length?'<span class="badge '+(max>=85?'badge-red':max>=80?'badge-amber':'badge-green')+'">Max '+max.toFixed(1)+' dB(A)</span> <span class="muted">'+high+' mandatory zone(s), '+caution+' caution zone(s)</span>':'<span class="muted">Add measurement points to generate the noise map.</span>';
+  }
 }
 function noisePlanClick(ev){
   var rows=noisePointsFromForm();if(!rows.length)return;
   var rect=ev.currentTarget.getBoundingClientRect();
   var x=((ev.clientX-rect.left)/rect.width*100).toFixed(1), y=((ev.clientY-rect.top)/rect.height*100).toFixed(1);
-  rows[rows.length-1].x=x;rows[rows.length-1].y=y;noiseSetPoints(rows);
+  var idx=Math.max(0,Math.min(rows.length-1,parseInt(window.noiseActivePoint)||0));
+  rows[idx].x=x;rows[idx].y=y;noiseSetPoints(rows);
 }
+function noiseLevelMeta(leq){leq=parseFloat(leq)||0;return leq>=85?{color:'#DC2626',label:'Mandatory hearing protection'}:leq>=80?{color:'#F59E0B',label:'Caution / action level'}:{color:'#16A34A',label:'Acceptable / monitor'};}
 function noiseAssessHpe(){
   var rows=noisePointsFromForm();
   var assessed=rows.map(function(p,i){
@@ -42936,7 +42958,12 @@ function fireEquipStatusBadge(s) {
 <div class="form-row"><div class="form-group"><label class="form-label">Instrument used</label><input type="text" id="nf-instrument"/></div><div class="form-group"><label class="form-label">Calibration date</label><input type="date" id="nf-cal"/></div><div class="form-group"><label class="form-label">Weather / conditions</label><input type="text" id="nf-weather"/></div></div>
 <div class="form-group"><label class="form-label">Notes</label><textarea id="nf-notes" style="min-height:54px"></textarea></div>
 <div class="card" style="background:#f8fafc;margin:12px 0">
-<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:10px"><div><div class="card-title" style="margin:0">Site plan and noise map</div><div style="font-size:12px;color:var(--text2)">Upload a layout, enter point coordinates, or click the map to position the latest measurement point.</div></div><label class="btn" style="cursor:pointer"><i class="ti ti-upload"></i>Upload layout<input type="file" accept="image/*" onchange="noiseUploadPlan(this)" style="display:none"/></label></div>
+<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:10px;flex-wrap:wrap"><div><div class="card-title" style="margin:0">Site plan and noise map</div><div style="font-size:12px;color:var(--text2)">Upload a layout, choose a measurement point, then click the map to position it. Coloured zones are generated from dB(A) values.</div></div><label class="btn" style="cursor:pointer"><i class="ti ti-upload"></i>Upload layout<input type="file" accept="image/*" onchange="noiseUploadPlan(this)" style="display:none"/></label></div>
+<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px">
+<div class="form-group" style="margin:0;min-width:280px"><label class="form-label">Point to position / amend</label><select id="noise-active-point" onchange="noiseSetActivePoint(this.value)"></select></div>
+<div id="noise-map-summary" style="font-size:12px"></div>
+<div style="display:flex;gap:8px;font-size:11px;color:var(--text2);flex-wrap:wrap"><span><i style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#16A34A"></i> &lt;80</span><span><i style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#F59E0B"></i> 80-84.9</span><span><i style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#DC2626"></i> >=85 dB(A)</span></div>
+</div>
 <input type="hidden" id="nf-layout-data"/><input type="hidden" id="nf-layout-name"/>
 <div id="noise-plan-box" onclick="noisePlanClick(event)" style="position:relative;min-height:320px;border:1px dashed var(--border);border-radius:8px;background:#fff;overflow:auto;display:flex;align-items:center;justify-content:center;cursor:crosshair">
 <div id="noise-plan-empty" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;text-align:center;color:var(--text2);pointer-events:none"><div><i class="ti ti-map" style="font-size:38px;opacity:.35"></i><div style="font-weight:800;margin-top:8px">No layout uploaded</div><div style="font-size:12px;margin-top:4px">Measurement points still work without a plan.</div></div></div>
