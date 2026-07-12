@@ -32019,16 +32019,91 @@ function indBack(){ var el=document.getElementById('ind-form');if(el)el.style.di
 function indNew(){ window.indEditId=null;var el=document.getElementById('ind-form');if(!el)return;document.getElementById('ind-form-title').textContent='New Induction';if(document.getElementById('ind-del-btn'))document.getElementById('ind-del-btn').style.display='none';['indf-person','indf-emp-id','indf-dept','indf-job-title','indf-inducted-by','indf-extra-topics','indf-notes'].forEach(function(id){var e=document.getElementById(id);if(e)e.value='';});fillPersonSelect('indf-person');fillPersonSelect('indf-inducted-by',prof?.full_name||personFullName(prof));document.querySelectorAll('.ind-topic').forEach(function(cb){cb.checked=false;});if(document.getElementById('indf-ind-date'))document.getElementById('indf-ind-date').value=new Date().toISOString().slice(0,10);var iv=document.getElementById('train-view-induction');if(iv)iv.style.display='none';el.style.display='block'; }
 async function indSave(){ var person=document.getElementById('indf-person')?.value?.trim();if(!person){toast('Please enter person name',false);return;}var g=function(id){var el=document.getElementById(id);return el?el.value||null:null;};var topics=Array.from(document.querySelectorAll('.ind-topic:checked')).map(function(cb){return cb.value;});var extraTopics=g('indf-extra-topics');if(extraTopics)topics.push('additional:'+extraTopics);var body={company_id:ccid(),person_name:person,employee_id:g('indf-emp-id'),department:g('indf-dept'),job_title:g('indf-job-title'),induction_type:g('indf-type')||'new_employee',induction_date:g('indf-ind-date'),inducted_by:g('indf-inducted-by'),topics_covered:topics,notes:g('indf-notes'),status:g('indf-status')||'completed',completed:g('indf-status')==='completed',updated_at:new Date().toISOString()};try{if(window.indEditId){await api('/induction_records?id=eq.'+window.indEditId,{m:'PATCH',p:'return=minimal',b:body});toast('Updated!');}else{body.created_by=prof?.id;await api('/induction_records',{m:'POST',p:'return=minimal',b:body});toast('Induction saved!');}indBack();}catch(e){toast(actionErrorMessage('Save induction','Training register',e.message),false);} }
 async function indDelete(){ if(!window.indEditId)return;try{var rows=await api('/induction_records?id=eq.'+window.indEditId+'&select=status');var status=String(rows?.[0]?.status||'').toLowerCase();if(!['cancelled','archived'].includes(status)){if(!(await appConfirmAction({title:'Cancel induction record',message:'Cancel this induction record instead of deleting it?',detail:'Induction records are evidence of training. The record will remain available for audit history. Permanent delete is only available after cancellation.',confirmText:'Cancel record',cancelText:'Back'})))return;await api('/induction_records?id=eq.'+window.indEditId,{m:'PATCH',p:'return=minimal',b:{status:'cancelled',completed:false,updated_at:new Date().toISOString()}});toast('Induction record cancelled');indBack();return;}if(!(await appConfirmDelete('induction record','This record is already cancelled/archived. Permanent deletion should be used only for duplicate/test records.')))return;await api('/induction_records?id=eq.'+window.indEditId,{m:'DELETE'});toast('Deleted!');indBack();}catch(e){toast(actionErrorMessage('Delete induction','Training register',e.message),false);} }
-function elcNew(){ window.elcEditId=null;var el=document.getElementById('elc-form');if(!el)return;document.getElementById('elc-form-title').textContent='New Course';if(document.getElementById('elc-del-btn'))document.getElementById('elc-del-btn').style.display='none';['elcf-title','elcf-code','elcf-cat','elcf-desc','elcf-duration','elcf-pass-score','elcf-validity','elcf-url','elcf-roles'].forEach(function(id){var e=document.getElementById(id);if(e)e.value='';});var m=document.getElementById('elcf-mandatory');if(m)m.checked=false;var st=document.getElementById('elcf-status');if(st)st.value='active';var v=document.getElementById('train-view-elearning');if(v)v.style.display='none';el.style.display='block'; }
+function elcFillRequiredPeople(selected){
+  var s=document.getElementById('elcf-enrol-people');if(!s)return;
+  selected=selected||[];
+  s.innerHTML=(people||[]).map(function(p){
+    var nm=personFullName(p);
+    return '<option value="'+escH(nm)+'" '+(selected.includes(nm)?'selected':'')+'>'+escH([p.last_name,p.first_name].filter(Boolean).join(', ')||nm)+(p.job_title?' -- '+escH(p.job_title):'')+'</option>';
+  }).join('');
+}
+function elcNew(){ window.elcEditId=null;var el=document.getElementById('elc-form');if(!el)return;document.getElementById('elc-form-title').textContent='New Course';if(document.getElementById('elc-del-btn'))document.getElementById('elc-del-btn').style.display='none';['elcf-title','elcf-code','elcf-cat','elcf-desc','elcf-duration','elcf-pass-score','elcf-validity','elcf-url','elcf-roles','elcf-target-date'].forEach(function(id){var e=document.getElementById(id);if(e)e.value='';});var m=document.getElementById('elcf-mandatory');if(m)m.checked=false;var st=document.getElementById('elcf-status');if(st)st.value='active';elcFillRequiredPeople();var v=document.getElementById('train-view-elearning');if(v)v.style.display='none';el.style.display='block'; }
 function elcBack(){ var el=document.getElementById('elc-form');if(el)el.style.display='none';var v=document.getElementById('train-view-elearning');if(v)v.style.display='block';if(typeof elcLoad==='function')elcLoad(); }
 function elcBaseBody(g,title){return {company_id:ccid(),title:title,course_code:g('elcf-code'),description:g('elcf-desc'),course_url:g('elcf-url'),status:g('elcf-status')||'active',updated_at:new Date().toISOString()};}
 function elcFullBody(g,title){var body=elcBaseBody(g,title);body.category=g('elcf-cat');body.duration_minutes=parseInt(g('elcf-duration'))||null;body.passing_score=parseInt(g('elcf-pass-score'))||null;body.validity_months=parseInt(g('elcf-validity'))||null;body.target_roles=g('elcf-roles');body.mandatory=!!document.getElementById('elcf-mandatory')?.checked;return body;}
-async function elcSave(){ var title=document.getElementById('elcf-title')?.value?.trim();if(!title){toast('Please enter course title',false);return;}var g=function(id){var el=document.getElementById(id);return el?el.value||null:null;};var body=elcFullBody(g,title);try{if(window.elcEditId){await api('/elearning_courses?id=eq.'+window.elcEditId,{m:'PATCH',p:'return=minimal',b:body});}else{body.created_by=prof?.id;await api('/elearning_courses',{m:'POST',p:'return=minimal',b:body});}toast(window.elcEditId?'Updated!':'Course added!');elcBack();}catch(e){if(/schema cache|column|Could not find/i.test(e.message||'')){var base=elcBaseBody(g,title);try{if(window.elcEditId){await api('/elearning_courses?id=eq.'+window.elcEditId,{m:'PATCH',p:'return=minimal',b:base});}else{base.created_by=prof?.id;await api('/elearning_courses',{m:'POST',p:'return=minimal',b:base});}toast('Course saved. Some advanced fields need the e-learning schema update.');elcBack();return;}catch(e2){toast(actionErrorMessage('Save e-learning course','Training register',e2.message),false);return;}}toast(actionErrorMessage('Save e-learning course','Training register',e.message),false);} }
+function elcSelectedPeople(){return Array.from(document.getElementById('elcf-enrol-people')?.selectedOptions||[]).map(function(o){return o.value;}).filter(Boolean);}
+async function elcSave(){ var title=document.getElementById('elcf-title')?.value?.trim();if(!title){toast('Please enter course title',false);return;}var g=function(id){var el=document.getElementById(id);return el?el.value||null:null;};var body=elcFullBody(g,title);var courseId=window.elcEditId||null;try{if(window.elcEditId){await api('/elearning_courses?id=eq.'+window.elcEditId,{m:'PATCH',p:'return=minimal',b:body});}else{body.created_by=prof?.id;var created=await api('/elearning_courses',{m:'POST',p:'return=representation',b:body});courseId=created?.[0]?.id||body.title;}if(courseId&&!window.elcEditId){elcAllData=(elcAllData||[]).concat([Object.assign({id:courseId},body)]);}var enrolled=await elcBulkEnrolSelected(courseId,title).catch(function(){return 0;});toast((window.elcEditId?'Updated!':'Course added!')+(enrolled?' '+enrolled+' employee'+(enrolled>1?'s':'')+' enrolled.':''));elcBack();}catch(e){if(/schema cache|column|Could not find/i.test(e.message||'')){var base=elcBaseBody(g,title);try{if(window.elcEditId){await api('/elearning_courses?id=eq.'+window.elcEditId,{m:'PATCH',p:'return=minimal',b:base});courseId=window.elcEditId;}else{base.created_by=prof?.id;var c2=await api('/elearning_courses',{m:'POST',p:'return=representation',b:base});courseId=c2?.[0]?.id||base.title;}var enrolledBase=await elcBulkEnrolSelected(courseId,title).catch(function(){return 0;});toast('Course saved. Some advanced fields need the e-learning schema update.'+(enrolledBase?' '+enrolledBase+' employee'+(enrolledBase>1?'s':'')+' enrolled.':''));elcBack();return;}catch(e2){toast(actionErrorMessage('Save e-learning course','Training register',e2.message),false);return;}}toast(actionErrorMessage('Save e-learning course','Training register',e.message),false);} }
 async function elcDelete(){ if(!window.elcEditId)return;try{var rows=await api('/elearning_courses?id=eq.'+window.elcEditId+'&select=status');var status=String(rows?.[0]?.status||'').toLowerCase();if(status!=='archived'){if(!(await appConfirmAction({title:'Archive e-learning course',message:'Archive this e-learning course instead of deleting it?',detail:'Archived courses stay available for historical enrolments and audit evidence.',confirmText:'Archive course',cancelText:'Back'})))return;await api('/elearning_courses?id=eq.'+window.elcEditId,{m:'PATCH',p:'return=minimal',b:{status:'archived',updated_at:new Date().toISOString()}});toast('Course archived');elcBack();return;}if(!(await appConfirmDelete('e-learning course','This course is already archived. Permanent deletion should be used only for duplicate/test records.')))return;await api('/elearning_courses?id=eq.'+window.elcEditId,{m:'DELETE'});toast('Deleted!');elcBack();}catch(e){toast(actionErrorMessage('Delete e-learning course','Training register',e.message),false);} }
 function elcCourseById(id){return (elcAllData||[]).find(function(c){return String(c.id)===String(id)||String(c.title)===String(id)||String(c.course_code)===String(id);})||null;}
 function elcCourseLabel(id){var c=elcCourseById(id);return c?(c.course_code?c.course_code+' - ':'')+c.title:(id||'-');}
 function elcFillSelect(selected){var s=document.getElementById('elef-course-id');if(!s)return;s.innerHTML='<option value="">Select course...</option>'+(elcAllData||[]).filter(function(c){return String(c.status||'active')!=='archived';}).map(function(c){return '<option value="'+escH(c.id||c.title)+'" '+(String(selected||'')===String(c.id||c.title)?'selected':'')+'>'+escH((c.course_code?c.course_code+' - ':'')+(c.title||'Untitled course'))+'</option>';}).join('');}
 function elcLaunch(id){var c=elcCourseById(id);if(!c||!c.course_url){toast('No course link available',false);return;}auditLogEvent('open','training','E-learning course launched',{course_id:c.id||null,course_title:c.title||null,course_url:c.course_url},{related_table:'elearning_courses',related_id:c.id||null,company_id:c.company_id||ccid()});window.open(c.course_url,'_blank','noopener');}
+function elcPreviewCourseMedia(){
+  var url=document.getElementById('elcf-url')?.value?.trim();
+  if(!url){toast('Upload or enter a course link first',false);return;}
+  if(/\.(mp4|webm|mov|m4v)(\?|#|$)/i.test(url)||url.indexOf('video/')===5){
+    var m=document.getElementById('dc-viewer-modal'), b=document.getElementById('dc-viewer-body'), t=document.getElementById('dc-viewer-title');
+    if(!m||!b){window.open(url,'_blank','noopener');return;}
+    if(t)t.textContent='Course video preview';
+    b.innerHTML='<video controls playsinline style="width:100%;max-height:72vh;background:#000;border-radius:8px"><source src="'+escH(url)+'">Your browser cannot play this video.</video>';
+    m.style.display='flex';
+    return;
+  }
+  appPreviewFieldDocument('elcf-url',null,document.getElementById('elcf-title')?.value||'E-learning course');
+}
+async function elcUploadCourseMedia(input){
+  var file=input?.files?.[0];if(!file)return;
+  var status=document.getElementById('elc-upload-status');
+  if(file.size>250*1024*1024){toast('Video is too large. Please keep it below 250 MB.',false);input.value='';return;}
+  if(status)status.textContent='Uploading...';
+  try{
+    var path=(prof?.company_id||ccid())+'/elearning/'+Date.now()+'_'+dcSanitiseName(file.name);
+    var xhr=new XMLHttpRequest();
+    var uploadUrl=SB+'/storage/v1/object/'+DC_BUCKET+'/'+encodeURIComponent(path);
+    var done=new Promise(function(resolve,reject){
+      xhr.onload=function(){(xhr.status>=200&&xhr.status<300)?resolve():reject(new Error(xhr.responseText||('Upload failed '+xhr.status)));};
+      xhr.onerror=function(){reject(new Error('Upload failed'));};
+    });
+    xhr.open('POST',uploadUrl,true);
+    xhr.setRequestHeader('apikey',KEY);
+    xhr.setRequestHeader('Authorization','Bearer '+tok);
+    xhr.setRequestHeader('x-upsert','true');
+    xhr.setRequestHeader('content-type',file.type||'application/octet-stream');
+    xhr.send(file);
+    await done;
+    var publicUrl=SB+'/storage/v1/object/public/'+DC_BUCKET+'/'+path;
+    var f=document.getElementById('elcf-url');if(f)f.value=publicUrl;
+    if(status)status.textContent='Uploaded: '+file.name;
+    toast('Course video uploaded');
+  }catch(e){
+    if(status)status.textContent='';
+    toast(actionErrorMessage('Upload course video','E-learning',e.message),false);
+  }finally{input.value='';}
+}
+async function elcBulkEnrolSelected(courseId,courseTitle){
+  var selected=elcSelectedPeople();
+  if(!courseId||!selected.length)return 0;
+  var target=document.getElementById('elcf-target-date')?.value||null;
+  var today=new Date().toISOString().slice(0,10);
+  var count=0;
+  for(const name of selected){
+    var p=trainPersonByName(name)||personByDisplayName(name);
+    var body={company_id:ccid(),person_name:name,department:p?.department||'',course_id:courseId,enrolment_date:today,target_date:target,status:'enrolled',created_by:prof?.id,updated_at:new Date().toISOString(),course_title:courseTitle};
+    try{
+      await api('/elearning_enrolments',{m:'POST',p:'return=minimal',b:body});
+      await eleQueueAssignmentNotice(body).catch(function(){});
+      count++;
+    }catch(e){
+      if(/schema cache|column|Could not find/i.test(e.message||'')){
+        var base={company_id:body.company_id,person_name:body.person_name,department:body.department,course_id:body.course_id,enrolment_date:body.enrolment_date,status:body.status,created_by:body.created_by,updated_at:body.updated_at};
+        try{await api('/elearning_enrolments',{m:'POST',p:'return=minimal',b:base});await eleQueueAssignmentNotice(body).catch(function(){});count++;}catch(e2){console.warn('Bulk e-learning enrolment failed for '+name,e2);}
+      }else{
+        console.warn('Bulk e-learning enrolment failed for '+name,e);
+      }
+    }
+  }
+  return count;
+}
 function eleNew(){ window.eleEditId=null;var el=document.getElementById('ele-form');if(!el)return;document.getElementById('ele-form-title').textContent='New Enrolment';if(document.getElementById('ele-del-btn'))document.getElementById('ele-del-btn').style.display='none';fillPersonSelect('elef-person');elcFillSelect();['elef-dept','elef-course-id','elef-target-date','elef-comp-date','elef-score','elef-expiry','elef-time'].forEach(function(id){var e=document.getElementById(id);if(e)e.value='';});var at=document.getElementById('elef-attempts');if(at)at.value='1';var st=document.getElementById('elef-status');if(st)st.value='enrolled';if(document.getElementById('elef-enrol-date'))document.getElementById('elef-enrol-date').value=new Date().toISOString().slice(0,10);var v=document.getElementById('train-view-elearning');if(v)v.style.display='none';el.style.display='block'; }
 function eleBack(){ var el=document.getElementById('ele-form');if(el)el.style.display='none';var v=document.getElementById('train-view-elearning');if(v)v.style.display='block';if(typeof elcLoad==='function')elcLoad(); }
 function eleStatusChange(){var st=document.getElementById('elef-status')?.value||'';if(st==='completed'&&!document.getElementById('elef-comp-date')?.value){document.getElementById('elef-comp-date').value=new Date().toISOString().slice(0,10);}var c=elcCourseById(document.getElementById('elef-course-id')?.value);if(st==='completed'&&c&&c.validity_months&&!document.getElementById('elef-expiry')?.value){var d=new Date(document.getElementById('elef-comp-date')?.value||new Date());d.setMonth(d.getMonth()+parseInt(c.validity_months));document.getElementById('elef-expiry').value=d.toISOString().slice(0,10);}}
@@ -32072,7 +32147,7 @@ async function eleQueueAssignmentNotice(body){
   var p=trainPersonByName(body.person_name)||personByDisplayName(body.person_name);
   var email=usersContactEmail(p);
   if(!email)return false;
-  var course=elcCourseLabel(body.course_id);
+  var course=body.course_title||elcCourseLabel(body.course_id);
   var due=body.target_date||body.completion_date||'to be confirmed';
   await queueNotification({
     company_id:ccid(),
@@ -43927,10 +44002,24 @@ function fireEquipStatusBadge(s) {
 <div class="form-group"><label class="form-label">Status</label><select id="elcf-status"><option value="active">Active</option><option value="draft">Draft</option><option value="archived">Archived</option></select></div>
 </div>
 <div class="form-row">
-<div class="form-group"><label class="form-label">Course video / LMS link</label><input type="text" id="elcf-url" placeholder="https:// video, LMS or document link..."/></div>
+<div class="form-group"><label class="form-label">Course video / LMS link</label><input type="text" id="elcf-url" placeholder="https:// video, LMS or document link..."/>
+<div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;align-items:center">
+<label class="btn btn-sm" style="cursor:pointer"><i class="ti ti-upload"></i>Upload video<input type="file" accept="video/*,.mp4,.webm,.mov,.m4v" onchange="elcUploadCourseMedia(this)" style="display:none"/></label>
+<button type="button" class="btn btn-sm" onclick="elcPreviewCourseMedia()"><i class="ti ti-eye"></i>Preview</button>
+<span id="elc-upload-status" class="muted" style="font-size:12px"></span>
+</div>
+</div>
 <div class="form-group"><label class="form-label">Target roles</label><input type="text" id="elcf-roles" placeholder="e.g. All staff, Supervisors..."/></div>
 </div>
 <div style="display:flex;align-items:center;gap:8px"><input type="checkbox" id="elcf-mandatory" style="accent-color:var(--green)"/><label for="elcf-mandatory" style="font-size:12px;font-weight:600;cursor:pointer">Mandatory course</label></div>
+<div class="card" style="margin-top:12px;background:#eff6ff;border:1px solid #bfdbfe">
+<div class="card-title" style="color:#185FA5">Assign required employees</div>
+<div class="muted" style="margin-bottom:10px">Select employees who must complete this course. When saved, enrolments are created and notifications are queued.</div>
+<div class="form-row">
+<div class="form-group"><label class="form-label">Target completion date</label><input type="date" id="elcf-target-date"/></div>
+<div class="form-group"><label class="form-label">Required employees</label><select id="elcf-enrol-people" multiple size="6" style="min-height:150px"></select><div class="muted" style="font-size:11px;margin-top:4px">Hold Ctrl to select several employees.</div></div>
+</div>
+</div>
 </div>
 </div>
 
