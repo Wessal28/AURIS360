@@ -35369,16 +35369,18 @@ async function fireRenderLayout(){
 function fireRenderLayoutPlanList(){
   var el=document.getElementById('fire-layout-plan-list');if(!el)return;
   if(!fireLayoutPlans.length){el.innerHTML='<div style="padding:28px;color:var(--text2);font-size:13px;text-align:center;border:1px dashed var(--border);border-radius:8px"><i class="ti ti-map-pin" style="font-size:32px;opacity:.35"></i><div style="margin-top:8px;font-weight:800;color:var(--text)">No saved layout plans yet</div><div style="margin-top:4px">Click New plan, upload a floor/site plan, place the equipment and save it here.</div></div>';return;}
-  el.innerHTML='<div style="overflow-x:auto"><table style="width:100%;font-size:12px;border-collapse:collapse"><thead><tr style="background:#f8fafc"><th style="text-align:left;padding:10px">Plan title</th><th style="text-align:left;padding:10px">Markers</th><th style="text-align:left;padding:10px">Plan image</th><th style="text-align:left;padding:10px">Updated</th><th style="text-align:right;padding:10px">Action</th></tr></thead><tbody>'
+  el.innerHTML='<div style="overflow-x:auto"><table class="data-table" style="min-width:920px"><thead><tr><th>Preview</th><th>Plan title</th><th>Markers</th><th>Plan image</th><th>Updated</th><th style="text-align:right">Action</th></tr></thead><tbody>'
     +fireLayoutPlans.map(function(p){
       var active=(p.id===fireLayoutState.id)||(p.local_only&&fireLayoutEditorOpen&&!fireLayoutState.id);
       var markers=Array.isArray(p.markers)?p.markers.length:0;
-      return '<tr style="border-top:1px solid var(--border);background:'+(active?'#ECFDF5':'#fff')+'">'
-        +'<td style="padding:10px;font-weight:800">'+escH(p.title||'Untitled plan')+(p.local_only?' <span class="badge badge-amber">Local draft</span>':'')+(active&&fireLayoutEditorOpen?' <span class="badge badge-green">Open</span>':'')+'</td>'
-        +'<td style="padding:10px">'+markers+'</td>'
-        +'<td style="padding:10px">'+((p.image_url||p.image)?'<span class="badge badge-green">Uploaded</span>':'<span class="badge badge-grey">No image</span>')+'</td>'
-        +'<td style="padding:10px">'+(p.updated_at?new Date(p.updated_at).toLocaleString():'--')+'</td>'
-        +'<td style="padding:10px;text-align:right;white-space:nowrap"><button class="btn btn-sm btn-primary" data-id="'+escH(p.id)+'" onclick="fireSelectLayoutPlan(this.dataset.id)"><i class="ti ti-folder-open"></i>Open plan</button> <button class="btn btn-sm" data-id="'+escH(p.id)+'" onclick="firePrintLayoutPlanById(this.dataset.id)"><i class="ti ti-printer"></i>Print</button> <button class="btn btn-sm" data-id="'+escH(p.id)+'" onclick="fireDeleteLayoutPlan(this.dataset.id)" style="color:var(--red)"><i class="ti ti-trash"></i></button></td>'
+      var img=p.image_url||p.image||'';
+      return '<tr data-id="'+escH(p.id)+'" onclick="fireSelectLayoutPlan(this.dataset.id)" style="cursor:pointer;background:'+(active?'#ECFDF5':'#fff')+'">'
+        +'<td style="width:92px">'+(img?'<img src="'+escH(img)+'" alt="Layout preview" style="width:72px;height:48px;object-fit:cover;border:1px solid var(--border);border-radius:6px;background:#fff"/>':'<div style="width:72px;height:48px;border:1px dashed var(--border);border-radius:6px;display:flex;align-items:center;justify-content:center;color:var(--text2);background:#fff"><i class="ti ti-map"></i></div>')+'</td>'
+        +'<td><strong>'+escH(p.title||'Untitled plan')+'</strong>'+(p.local_only?' <span class="badge badge-amber">Local draft</span>':'')+(active&&fireLayoutEditorOpen?' <span class="badge badge-green">Open</span>':'')+'<div class="muted">Click row to open this layout</div></td>'
+        +'<td>'+markers+'</td>'
+        +'<td>'+((p.image_url||p.image)?'<span class="badge badge-green">Uploaded</span>':'<span class="badge badge-grey">No image</span>')+'</td>'
+        +'<td>'+(p.updated_at?new Date(p.updated_at).toLocaleString():'--')+'</td>'
+        +'<td style="text-align:right;white-space:nowrap"><button class="btn btn-sm btn-primary" data-id="'+escH(p.id)+'" onclick="event.stopPropagation();fireSelectLayoutPlan(this.dataset.id)"><i class="ti ti-folder-open"></i>Open</button> <button class="btn btn-sm" data-id="'+escH(p.id)+'" onclick="event.stopPropagation();firePrintLayoutPlanById(this.dataset.id)"><i class="ti ti-printer"></i>Print</button> <button class="btn btn-sm" data-id="'+escH(p.id)+'" onclick="event.stopPropagation();fireDeleteLayoutPlan(this.dataset.id)" style="color:var(--red)"><i class="ti ti-trash"></i></button></td>'
         +'</tr>';
     }).join('')+'</tbody></table></div>';
 }
