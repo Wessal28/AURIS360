@@ -17310,6 +17310,100 @@ function ptwValidateBeforeSave(targetStatus, body, precautions){
   return null;
 }
 
+function ptwAIValue(id){
+  var el=document.getElementById(id);
+  return el?String(el.value||'').trim():'';
+}
+
+function ptwAISet(id,val){
+  var el=document.getElementById(id);
+  if(el&&val)el.value=val;
+}
+
+function ptwAISelectPPE(items){
+  if(!Array.isArray(items))return;
+  var known=[];
+  document.querySelectorAll('#ptw-ppe-checks input[type="checkbox"]').forEach(function(cb){
+    var wanted=items.some(function(p){return String(p||'').toLowerCase().includes(String(cb.value||'').toLowerCase())||String(cb.value||'').toLowerCase().includes(String(p||'').toLowerCase());});
+    if(wanted){cb.checked=true;known.push(cb.value.toLowerCase());}
+  });
+  var extra=items.filter(function(p){return p&&!known.some(function(k){return String(p).toLowerCase().includes(k)||k.includes(String(p).toLowerCase());});});
+  if(extra.length){
+    var el=document.getElementById('pf-ppe-extra');
+    if(el){
+      var existing=String(el.value||'').trim();
+      el.value=[existing,extra.join(', ')].filter(Boolean).join(existing?', ':'');
+    }
+  }
+}
+
+function ptwAISmartPanel(out){
+  var el=document.getElementById('ptw-smart-check-panel');if(!el)return;
+  var items=[];
+  if(out.approval_level_required)items.push('Recommended approval level: '+out.approval_level_required);
+  if(out.gas_testing_required)items.push('Gas testing required: '+(out.gas_testing_reason||'confirm atmosphere before and during the work.'));
+  if(out.isolation_required)items.push('Isolation required: '+((out.isolation_points||[]).join(', ')||'define isolation points before work starts.'));
+  if(out.simops_concerns&&out.simops_concerns.length)items.push('SIMOPS concerns: '+out.simops_concerns.join('; '));
+  if(out.permit_conditions&&out.permit_conditions.length)items.push('Permit conditions: '+out.permit_conditions.join('; '));
+  if(!items.length)return;
+  el.innerHTML='<div style="padding:12px 14px;background:#F5F3FF;border:1px solid #DDD6FE;border-radius:10px;color:#4C1D95;font-size:12px">'
+    +'<div style="font-weight:800;margin-bottom:8px;display:flex;align-items:center;gap:6px"><i class="ti ti-robot"></i>AURIS AI permit recommendations</div>'
+    +'<ul style="margin:0;padding-left:18px;line-height:1.5">'+items.map(function(x){return '<li>'+escH(x)+'</li>';}).join('')+'</ul>'
+    +'</div>';
+}
+
+async function ptwAIAssist(){
+  if(typeof canUseAI==='function'&&!canUseAI()){toast('AURIS AI is restricted to authorised HSE/admin roles.',false);return;}
+  var type=ptwAIValue('pf-type');
+  if(!type){toast('Select a permit type first, then run AI permit assist.',false);return;}
+  toast('AURIS is reviewing the permit controls...');
+  var cfg=PTW_TYPE_CFG[type]||{};
+  var checkedPrecautions=[];
+  document.querySelectorAll('#ptw-precautions-list input[type="checkbox"]').forEach(function(cb){
+    var txt=cb.closest('label')?.querySelector('span')?.textContent||cb.closest('label')?.textContent||'';
+    checkedPrecautions.push({item:txt.trim(),checked:cb.checked});
+  });
+  var selectedPpe=[];
+  document.querySelectorAll('#ptw-ppe-checks input[type="checkbox"]:checked').forEach(function(cb){selectedPpe.push(cb.value);});
+  var context={
+    permit_type:cfg.label||type,
+    work_description:ptwAIValue('pf-desc'),
+    location:ptwAIValue('pf-loc'),
+    department:ptwAIValue('pf-dept'),
+    priority:ptwAIValue('pf-priority'),
+    risk_level:ptwAIValue('pf-risk'),
+    planned_start:ptwAIValue('pf-start'),
+    planned_end:ptwAIValue('pf-end'),
+    ra_ref:ptwAIValue('pf-ra-ref'),
+    method_statement_ref:ptwAIValue('pf-ms-ref'),
+    work_order_ref:ptwAIValue('pf-wo'),
+    ppe_selected:selectedPpe,
+    extra_ppe:ptwAIValue('pf-ppe-extra'),
+    extra_precautions:ptwAIValue('pf-precautions'),
+    current_precautions:checkedPrecautions
+  };
+  var prompt='Review this permit-to-work draft and improve it for practical HSE control. Return strict JSON only with keys: improved_work_description string, risk_level one of low/medium/high/critical, priority one of low/medium/high/critical, ppe_required array, additional_precautions array, gas_testing_required boolean, gas_testing_reason string, isolation_required boolean, isolation_points array, approval_level_required number 1-3, simops_concerns array, permit_conditions array. Do not include markdown. Context: '+JSON.stringify(context);
+  try{
+    var raw=await callAI([{role:'user',content:prompt}],'You are an experienced Permit to Work controller and HSE manager. Be concise, operational, and conservative. Recommend only controls that are relevant to the described work.');
+    var out=aiExtractJson(raw)||{};
+    aiSetIfEmpty('pf-desc',out.improved_work_description);
+    if(out.risk_level)ptwAISet('pf-risk',out.risk_level);
+    if(out.priority)ptwAISet('pf-priority',out.priority);
+    if(out.approval_level_required)ptwAISet('pf-approval-levels',String(Math.max(1,Math.min(3,parseInt(out.approval_level_required,10)||3))));
+    ptwAISelectPPE(out.ppe_required);
+    if(Array.isArray(out.additional_precautions)&&out.additional_precautions.length){
+      var list=document.getElementById('ptw-precautions-list');
+      if(list)list.insertAdjacentHTML('beforeend',out.additional_precautions.map(function(p){return ptwPrecautionRow(String(p||''),false);}).join(''));
+      var extra=document.getElementById('pf-precautions');
+      if(extra&&!String(extra.value||'').trim())extra.value=out.additional_precautions.join('\n');
+    }
+    ptwAISmartPanel(out);
+    toast('AI permit assist completed. Review the recommendations before submitting.');
+  }catch(e){
+    toast('AI error: '+aiFriendlyError(e),false);
+  }
+}
+
 const PTW_TYPE_CFG={
   hot_work:        {label:'Hot Work',        emoji:'🔥', color:'#DC2626', bg:'#FEF2F2', precautions:['Fire system confirmed functional before work starts','Protect or remove combustible materials within 10m','Fire blanket or welding screen provided where sparks or heat may spread','Suitable extinguisher placed close to the job','Gas bottles and pipework removed or protected from hot work area','Fire alarm call points and emergency routes identified','Area isolated or controlled to prevent unauthorised access','Forced ventilation provided where fumes may be generated','Permanent fire watch appointed during hot work','Continuous fire watch maintained for at least 1 hour after work','Periodic fire watch continued for up to 3 hours based on risk','Adjoining areas, voids and false floors checked for smouldering fire','Final inspection completed before permit closure']},
   confined_space:  {label:'Confined Space',  emoji:'🚪', color:'#7C3AED', bg:'#F5F3FF', precautions:['Space isolated from all energy and material sources','Contents drained, cleaned and residues tested where applicable','Initial atmosphere test completed by authorised gas tester','Atmosphere within safe limits before entry','Forced ventilation established where required','Continuous gas monitoring maintained during entry','Standby person remains at entry point throughout work','Standby person has reliable communication with entrants and rescue support','Rescue plan, tripod and retrieval equipment available and checked','Suitable access and egress provided and kept clear','Additional lighting suitable for the space provided','Harness and lifeline used where retrieval may be required','Maximum number of entrants defined and controlled','Maximum single-entry duration and minimum break period defined','Entry and exit times recorded for every entrant']},
@@ -17908,7 +18002,9 @@ async function ptwSave(targetStatus){
   var precautions=[];
   var cfg=PTW_TYPE_CFG[type]||PTW_TYPE_CFG.hot_work;
   document.querySelectorAll('#ptw-precautions-list input[type="checkbox"]').forEach(function(cb,i){
-    precautions.push({item:cfg.precautions[i]||'Item '+i,checked:cb.checked});
+    var label=cb.closest('label');
+    var txt=(label?.querySelector('span')?.textContent||label?.textContent||cfg.precautions[i]||('Item '+(i+1))).trim();
+    precautions.push({item:txt,checked:cb.checked});
   });
   // Blocked if no RA ref
   var blocks=[];
@@ -41317,6 +41413,7 @@ function fireEquipStatusBadge(s) {
 <div style="display:flex;gap:8px">
 <button class="btn" style="background:rgba(255,255,255,.2);color:#fff;border-color:rgba(255,255,255,.3)" onclick="ptwFormBack()"><i class="ti ti-arrow-left"></i>Back</button>
 <button id="ptw-del-btn" class="btn" style="display:none;background:rgba(220,38,38,.3);color:#fff;border-color:rgba(220,38,38,.5)" onclick="ptwDelete()"><i class="ti ti-trash"></i></button>
+<button class="btn" style="background:#fff;color:#5B21B6;border-color:#fff;font-weight:800" onclick="ptwAIAssist()"><i class="ti ti-robot"></i>AI assist</button>
 <button class="btn" style="background:#1D9E75;color:#fff;border-color:#1D9E75" onclick="ptwSave('draft')"><i class="ti ti-device-floppy"></i>Save Draft</button>
 <button class="btn" style="background:#EF9F27;color:#fff;border-color:#EF9F27" onclick="ptwSave('pending_approval')"><i class="ti ti-send"></i>Submit for Approval</button>
 </div>
