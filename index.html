@@ -13723,53 +13723,157 @@ function aiDueDate(days){
   return d.toISOString().slice(0,10);
 }
 
-async function invAIAssistInvestigation(){
-  if(!canUseAI || !canUseAI()){toast('AURIS AI is restricted to authorised HSE/admin roles.',false);return;}
-  toast('AURIS is analysing the investigation...');
-  var context={
-    ref:document.getElementById('inv-form-ref')?.textContent||'',
-    type:document.getElementById('inv-type-sel')?.value||'incident',
-    location:document.getElementById('ws1-location')?.value||'',
-    description:document.getElementById('ws1-description')?.value||'',
-    immediate_actions:document.getElementById('ws1-immediate-actions')?.value||'',
-    interview_root_causes:document.getElementById('ws2-root-causes')?.value||'',
-    recurrence:document.getElementById('inv-recurrence')?.value||'',
-    fishbone:{
-      people:document.getElementById('fb-people')?.value||'',
-      equipment:document.getElementById('fb-equipment')?.value||'',
-      methods:document.getElementById('fb-methods')?.value||'',
-      environment:document.getElementById('fb-environment')?.value||'',
-      training:document.getElementById('fb-training')?.value||'',
-      management:document.getElementById('fb-management')?.value||''
-    }
-  };
-  try{
-    var txt=await callAI([{role:'user',content:'Analyse this HSE incident investigation and return ONLY valid JSON with this exact shape: {"root_cause_summary":"...","contributing_factors":"...","five_whys":["why 1","why 2","why 3","why 4","why 5"],"fishbone":{"people":"...","equipment":"...","methods":"...","environment":"...","training":"...","management":"..."},"corrective_actions":[{"description":"...","assigned_to_role":"Supervisor / HSE Officer / Maintenance / Management","due_in_days":7,"priority":"high|medium|low"}],"safety_alert":"max 140 words"}.\n\nRules: be practical, do not blame individuals, focus on system causes, include actions that prevent recurrence, and use HSE investigation language.\n\nInvestigation data:\n'+JSON.stringify(context,null,2)}],
-      'You are a senior HSE incident investigator. Produce concise, practical root cause analysis and corrective actions. Return only JSON.');
-    var out=aiExtractJson(txt)||{};
-    aiSetIfEmpty('ws2-attitude',out.root_cause_summary);
-    aiSetIfEmpty('ws2-personal',out.contributing_factors);
-    var fb=out.fishbone||{};
-    ['people','equipment','methods','environment','training','management'].forEach(function(k){aiSetIfEmpty('fb-'+k,fb[k]);});
-    if(Array.isArray(out.five_whys)&&out.five_whys.length){
-      var whyBody=document.getElementById('ws3-five-why-body');
-      if(whyBody&&!whyBody.querySelector('.ws3-why-row')){
-        whyBody.innerHTML='';
-        out.five_whys.slice(0,5).forEach(function(w,i){imsAddWhyRow(whyBody,i+1,w);});
-      }
-    }
-    if(Array.isArray(out.corrective_actions)&&out.corrective_actions.length){
-      var caBody=document.getElementById('inv-ca-body'), caEmpty=document.getElementById('inv-ca-empty');
-      if(caEmpty)caEmpty.style.display='none';
-      out.corrective_actions.slice(0,6).forEach(function(a){
-        if(caBody)caBody.insertAdjacentHTML('beforeend',invCaRow(a.description||'',a.assigned_to_role||'',aiDueDate(a.due_in_days||14),'open',caBody.querySelectorAll('.inv-ca-row').length));
-      });
-    }
-    invShowTab('rca',document.getElementById('inv-tab-rca'));
-    toast('AI investigation assist completed. Review the root causes and corrective actions.');
-  }catch(e){toast(aiFriendlyError(e),false);}
+function invAIGetText(id){
+  var el=document.getElementById(id);
+  return el ? String(el.value||el.textContent||'').trim() : '';
 }
 
+function invAIReviewContext(){
+  var whys=Array.from(document.querySelectorAll('.ws3-why-ans')).map(function(el){return el.value.trim();}).filter(Boolean);
+  var actions=Array.from(document.querySelectorAll('.inv-ca-row')).map(function(row){
+    return {
+      description:row.querySelector('.inv-ca-desc')?.value?.trim()||'',
+      assigned_to:row.querySelector('.inv-ca-assigned')?.value?.trim()||'',
+      due_date:row.querySelector('.inv-ca-due')?.value||'',
+      status:row.querySelector('.inv-ca-status')?.value||''
+    };
+  }).filter(function(a){return a.description;});
+  return {
+    ref:invAIGetText('inv-form-ref'),
+    linked_incident_ref:invAIGetText('ws1-event-link'),
+    type:invAIGetText('inv-type-sel')||'incident',
+    status:invAIGetText('inv-status-sel'),
+    incident_date:invAIGetText('ws1-inc-date'),
+    location:invAIGetText('ws1-location'),
+    description:invAIGetText('ws1-description'),
+    immediate_actions:invAIGetText('ws1-immediate-actions'),
+    person_involved:invAIGetText('ws1-person-name'),
+    witnesses:invAIGetText('ws1-witnesses'),
+    interview: {
+      what_person_was_doing:invAIGetText('ws2-proc'),
+      procedure_followed:invAIGetText('ws2-mgmt'),
+      training_adequacy:invAIGetText('ws2-skills'),
+      workplace_conditions:invAIGetText('ws2-care'),
+      interview_root_causes:invAIGetText('ws2-root-causes')
+    },
+    root_cause_summary:invAIGetText('ws2-attitude'),
+    systemic_factors:invAIGetText('ws2-personal'),
+    recurrence:invAIGetText('inv-recurrence'),
+    fishbone:{
+      people:invAIGetText('fb-people'),
+      equipment:invAIGetText('fb-equipment'),
+      methods:invAIGetText('fb-methods'),
+      environment:invAIGetText('fb-environment'),
+      training:invAIGetText('fb-training'),
+      management:invAIGetText('fb-management')
+    },
+    five_whys:whys,
+    corrective_actions:actions
+  };
+}
+
+function invAIEnsurePanel(){
+  var panel=document.getElementById('inv-ai-review-panel');
+  if(panel)return panel;
+  var form=document.getElementById('ims-inv-form');
+  var firstCard=form ? form.querySelector('.card') : null;
+  panel=document.createElement('div');
+  panel.id='inv-ai-review-panel';
+  panel.className='card';
+  panel.style.cssText='display:none;margin-bottom:14px;border:1px solid #c4b5fd;background:#fbfaff';
+  if(firstCard && firstCard.parentNode) firstCard.parentNode.insertBefore(panel, firstCard.nextSibling);
+  return panel;
+}
+
+function invAIList(items){
+  if(!Array.isArray(items)||!items.length)return '<div style="color:var(--text2);font-size:12px">No suggestion generated.</div>';
+  return '<ul style="margin:6px 0 0 18px;padding:0;line-height:1.5">'+items.map(function(x){return '<li>'+escH(typeof x==='string'?x:(x.description||JSON.stringify(x)))+'</li>';}).join('')+'</ul>';
+}
+
+function invAIActionButtons(){
+  return '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">'
+    +'<button type="button" class="btn btn-sm btn-primary" onclick="invAIApplyField(\'root_cause_summary\')"><i class="ti ti-check"></i>Apply root cause</button>'
+    +'<button type="button" class="btn btn-sm" onclick="invAIApplyField(\'systemic_factors\')"><i class="ti ti-check"></i>Apply systemic factors</button>'
+    +'<button type="button" class="btn btn-sm" onclick="invAIApplyField(\'recurrence\')"><i class="ti ti-check"></i>Apply recurrence</button>'
+    +'<button type="button" class="btn btn-sm" onclick="invAIApplyFiveWhys()"><i class="ti ti-list-check"></i>Add 5-Why</button>'
+    +'<button type="button" class="btn btn-sm" onclick="invAIApplyActions(\'corrective_actions\')"><i class="ti ti-plus"></i>Add corrective actions</button>'
+    +'<button type="button" class="btn btn-sm" onclick="invAIApplyActions(\'preventive_actions\')"><i class="ti ti-plus"></i>Add preventive actions</button>'
+    +'</div>';
+}
+
+function invAIRenderReview(out){
+  window.invAIInvestigationSuggestion=out||{};
+  var panel=invAIEnsurePanel();
+  var actions=(out.corrective_actions||[]).concat(out.preventive_actions||[]);
+  panel.innerHTML='<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap">'
+    +'<div><div style="font-size:15px;font-weight:900;color:#5B21B6"><i class="ti ti-robot"></i> AI investigation review</div>'
+    +'<div style="font-size:12px;color:var(--text2);margin-top:3px">Review the suggestions before applying. Nothing is saved until you click Save.</div></div>'
+    +'<button type="button" class="btn btn-sm" onclick="document.getElementById(\'inv-ai-review-panel\').style.display=\'none\'"><i class="ti ti-x"></i>Hide</button></div>'
+    +'<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px;margin-top:14px">'
+    +'<div style="background:#fff;border:1px solid var(--border);border-radius:8px;padding:12px"><div style="font-weight:800;color:#991B1B">Likely immediate causes</div>'+invAIList(out.immediate_causes)+'</div>'
+    +'<div style="background:#fff;border:1px solid var(--border);border-radius:8px;padding:12px"><div style="font-weight:800;color:#5B21B6">Likely root causes</div>'+invAIList(out.likely_root_causes)+'</div>'
+    +'<div style="background:#fff;border:1px solid var(--border);border-radius:8px;padding:12px"><div style="font-weight:800;color:#185FA5">Missing questions</div>'+invAIList(out.missing_questions)+'</div>'
+    +'<div style="background:#fff;border:1px solid var(--border);border-radius:8px;padding:12px"><div style="font-weight:800;color:#065F46">Recommended actions</div>'+invAIList(actions)+'</div>'
+    +'</div>'
+    +'<div style="margin-top:12px;background:#fff;border:1px solid var(--border);border-radius:8px;padding:12px"><div style="font-weight:800;color:#374151">Management escalation / learning</div><div style="font-size:13px;line-height:1.5;margin-top:5px">'+escH(out.management_escalation||'No escalation note generated.')+'</div></div>'
+    +invAIActionButtons();
+  panel.style.display='block';
+  panel.scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+
+function invAIApplyField(key){
+  var out=window.invAIInvestigationSuggestion||{};
+  var map={root_cause_summary:'ws2-attitude',systemic_factors:'ws2-personal',recurrence:'inv-recurrence'};
+  var id=map[key], el=document.getElementById(id); if(!id||!el)return;
+  var val=out[key]||'';
+  if(key==='recurrence'){
+    val=String(val||'possible').toLowerCase().replace(/\s+/g,'_');
+    if(!['unlikely','possible','likely','almost_certain'].includes(val)) val='possible';
+  }
+  if(val)el.value=val;
+  toast('AI suggestion applied. Review before saving.');
+}
+
+function invAIApplyFiveWhys(){
+  var out=window.invAIInvestigationSuggestion||{};
+  var whys=Array.isArray(out.five_whys)?out.five_whys:[];
+  var body=document.getElementById('ws3-five-why-body'); if(!body||!whys.length)return;
+  body.innerHTML='';
+  whys.slice(0,5).forEach(function(w,i){imsAddWhyRow(body,i+1,w);});
+  invShowTab('rca',document.getElementById('inv-tab-rca'));
+  toast('5-Why suggestions added.');
+}
+
+function invAIApplyActions(key){
+  var out=window.invAIInvestigationSuggestion||{};
+  var list=Array.isArray(out[key])?out[key]:[];
+  var caBody=document.getElementById('inv-ca-body'), caEmpty=document.getElementById('inv-ca-empty');
+  if(!caBody||!list.length)return;
+  if(caEmpty)caEmpty.style.display='none';
+  list.slice(0,8).forEach(function(a){
+    caBody.insertAdjacentHTML('beforeend',invCaRow(a.description||String(a||''),a.assigned_to_role||a.assigned_to||'',aiDueDate(a.due_in_days||14),'open',caBody.querySelectorAll('.inv-ca-row').length));
+  });
+  invShowTab('ca',document.getElementById('inv-tab-ca'));
+  toast('AI actions added. Review ownership and dates before saving.');
+}
+
+async function invAIAssistInvestigation(){
+  if(!canUseAI || !canUseAI()){toast('AURIS AI is restricted to authorised HSE/admin roles.',false);return;}
+  var panel=invAIEnsurePanel();
+  panel.style.display='block';
+  panel.innerHTML='<div style="font-weight:800;color:#5B21B6"><i class="ti ti-loader"></i> AURIS is reviewing the investigation...</div><div style="font-size:12px;color:var(--text2);margin-top:5px">Checking incident facts, interviews, 5-Why, root causes and corrective actions.</div>';
+  toast('AURIS is analysing the investigation...');
+  var context=invAIReviewContext();
+  try{
+    var txt=await callAI([{role:'user',content:'Review this HSE incident investigation and return ONLY valid JSON with this exact shape: {"immediate_causes":["..."],"likely_root_causes":["..."],"root_cause_summary":"...","systemic_factors":"...","missing_questions":["..."],"five_whys":["why 1","why 2","why 3","why 4","why 5"],"fishbone":{"people":"...","equipment":"...","methods":"...","environment":"...","training":"...","management":"..."},"recurrence":"unlikely|possible|likely|almost_certain","corrective_actions":[{"description":"...","assigned_to_role":"Supervisor / HSE Officer / Maintenance / Management","due_in_days":7}],"preventive_actions":[{"description":"...","assigned_to_role":"Supervisor / HSE Officer / Maintenance / Management","due_in_days":14}],"management_escalation":"..."}.\n\nRules: be practical, no blame, separate immediate causes from root/system causes, identify missing evidence/questions, actions must prevent recurrence, and use professional HSE investigation language.\n\nInvestigation data:\n'+JSON.stringify(context,null,2)}],
+      'You are a senior HSE incident investigator and ISO 45001 auditor. Produce concise, practical investigation review outputs. Return only JSON.');
+    var out=aiExtractJson(txt)||{};
+    var fb=out.fishbone||{};
+    ['people','equipment','methods','environment','training','management'].forEach(function(k){aiSetIfEmpty('fb-'+k,fb[k]);});
+    invAIRenderReview(out);
+    toast('AI investigation review ready.');
+  }catch(e){panel.innerHTML=aiFriendlyErrorHtml(e);toast(aiFriendlyError(e),false);}
+}
 // ─── INVESTIGATION TEAM MEMBERS (stored as comma-separated text) ─────────────
 var invTeam=[];
 function invRenderTeam(){
