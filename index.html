@@ -15437,11 +15437,19 @@ function raRenderRamsUsed(rec){
     el.innerHTML='<div style="padding:12px;border:1px dashed var(--border);border-radius:10px;color:var(--text2);font-size:12px">No SWMS / method statement linked yet.</div>';
     return;
   }
+  var hasAttachment=!!url;
   el.innerHTML='<div style="padding:12px;border:1px solid #BBF7D0;background:#F0FDF4;border-radius:10px;color:#166534">'
     +'<div style="font-size:12px;font-weight:900;margin-bottom:4px"><i class="ti ti-file-check"></i> SWMS / method statement linked to this assessment</div>'
     +'<div style="font-size:13px;font-weight:800">'+escH(name||'Linked SWMS / Method Statement')+'</div>'
-    +(url?'<div style="font-size:11px;margin-top:4px;word-break:break-all"><a href="'+escH(url)+'" target="_blank" style="color:#185FA5">Open linked document</a></div>':'<div style="font-size:11px;margin-top:4px;color:#166534">Document reference saved with this RA.</div>')
+    +(hasAttachment?'<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:8px"><span class="pill" style="background:#DCFCE7;color:#065F46">Attachment available</span><button type="button" class="btn btn-sm" onclick="raPreviewRamsDocument()"><i class="ti ti-eye"></i>Preview document</button></div>':'<div style="font-size:11px;margin-top:4px;color:#166534">Document reference saved with this RA.</div>')
     +'</div>';
+}
+function raPreviewRamsDocument(){
+  var url=(document.getElementById('ra-rams-url')?.value||'').trim();
+  var name=document.getElementById('ra-rams-name')?.value||'Linked SWMS / RAMS document';
+  if(!url){toast('No RAMS / SWMS attachment to preview',false);return;}
+  var dataMime=(url.match(/^data:([^;,]+)/)||[])[1];
+  dcOpenViewer({file_url:url,file_name:name,file_mime:dataMime||dcMimeFromName(name||url)});
 }
 
 function raGuessRiskSeverity(text){
@@ -15520,11 +15528,18 @@ function raApplyImportedPdf(text,fileName){
 async function raHandleRAMSUpload(input){
   var file=input?.files?.[0];if(!file)return;
   var ramsName=document.getElementById('ra-rams-name'); if(ramsName)setSelectValueWithFallback('ra-rams-name',file.name);
+  var urlField=document.getElementById('ra-rams-url');
+  await new Promise(function(resolve){
+    var rd=new FileReader();
+    rd.onload=function(){if(urlField)urlField.value=rd.result;resolve();};
+    rd.onerror=function(){resolve();};
+    rd.readAsDataURL(file);
+  });
   raRenderRamsUsed();
   var el=document.getElementById('ra-rams-status');
-  if(el)el.innerHTML='<div style="padding:8px 12px;background:#EFF6FF;border-radius:8px;font-size:12px;color:#185FA5;margin-bottom:8px">Reading '+escH(file.name)+'...</div>';
+  if(el)el.innerHTML='<div style="padding:8px 12px;background:#EFF6FF;border-radius:8px;font-size:12px;color:#185FA5;margin-bottom:8px">Attachment loaded. Reading '+escH(file.name)+'...</div>';
   if(!/\.pdf$/i.test(file.name)){
-    if(el)el.innerHTML='<div style="padding:8px 12px;background:#FEF9EC;border-radius:8px;font-size:12px;color:#854F0B;margin-bottom:8px">'+escH(file.name)+' selected. Automatic reading is available for PDF files; save the RA to record this document reference.</div>';
+    if(el)el.innerHTML='<div style="padding:8px 12px;background:#FEF9EC;border-radius:8px;font-size:12px;color:#854F0B;margin-bottom:8px">'+escH(file.name)+' attached for preview. Automatic reading is available for PDF files; save the RA to keep this attachment.</div>';
     return;
   }
   try{
@@ -32536,7 +32551,7 @@ function indEvidenceSummary(x){
   if(sig)parts.push('Signature');
   if(understood)parts.push('Declaration');
   if(ppe)parts.push('PPE issue');
-  return parts.length?parts.join(' ? '):'Pending evidence';
+  return parts.length?parts.join(' - '):'Pending evidence';
 }
 async function indLoad(){
   var add=document.getElementById('ind-add-btn');if(add)add.style.display=isMgr()?'inline-flex':'none';
@@ -32550,7 +32565,7 @@ async function indLoad(){
     var pending=rows.filter(function(x){return String(x.status||'').toLowerCase()==='pending';}).length;
     var m=function(id,v){var e=document.getElementById(id);if(e)e.textContent=v;};m('ind-m-total',rows.length);m('ind-m-done',completed);m('ind-m-pending',pending);m('ind-m-refresh',rows.filter(function(x){return String(x.status||'').toLowerCase()==='refresher_due';}).length);
     host.innerHTML='<table class="data-table"><thead><tr><th>Person</th><th>Type</th><th>Date</th><th>Inducted by</th><th>Checklist</th><th>Evidence</th><th>Status</th><th>Actions</th></tr></thead><tbody>'+
-      (rows.length?rows.map(function(x){var cs=indChecklistSummary(x);var pct=cs.total?Math.round((cs.covered+cs.na)/cs.total*100):0;var ev=indEvidenceSummary(x);var evOk=ev!=='Pending evidence';return '<tr><td><strong>'+escH(x.person_name||'-')+'</strong><div class="muted">'+escH(x.department||x.job_title||'')+'</div></td><td>'+escH((x.induction_type||'-').replaceAll('_',' '))+'</td><td>'+escH(x.induction_date||'-')+'</td><td>'+escH(x.inducted_by||'-')+'</td><td><strong>'+cs.covered+'/'+cs.total+'</strong><div class="muted">'+pct+'% covered'+(cs.na?' ? '+cs.na+' N/A':'')+'</div></td><td><span class="pill" style="background:'+(evOk?'#ECFDF5':'#FFFBEB')+';color:'+(evOk?'#065F46':'#854F0B')+'">'+escH(ev)+'</span></td><td><span class="pill">'+escH(x.status||'-')+'</span></td><td><button class="icon-btn" title="Edit induction record" aria-label="Edit induction record" onclick="indEdit(\''+escH(x.id)+'\')"><i class="ti ti-edit"></i></button></td></tr>';}).join(''):'<tr><td colspan="8" class="empty">No induction records yet.</td></tr>')+
+      (rows.length?rows.map(function(x){var cs=indChecklistSummary(x);var pct=cs.total?Math.round((cs.covered+cs.na)/cs.total*100):0;var ev=indEvidenceSummary(x);var evOk=ev!=='Pending evidence';return '<tr><td><strong>'+escH(x.person_name||'-')+'</strong><div class="muted">'+escH(x.department||x.job_title||'')+'</div></td><td>'+escH((x.induction_type||'-').replaceAll('_',' '))+'</td><td>'+escH(x.induction_date||'-')+'</td><td>'+escH(x.inducted_by||'-')+'</td><td><strong>'+cs.covered+'/'+cs.total+'</strong><div class="muted">'+pct+'% covered'+(cs.na?' - '+cs.na+' N/A':'')+'</div></td><td><span class="pill" style="background:'+(evOk?'#ECFDF5':'#FFFBEB')+';color:'+(evOk?'#065F46':'#854F0B')+'">'+escH(ev)+'</span></td><td><span class="pill">'+escH(x.status||'-')+'</span></td><td><button class="icon-btn" title="Edit induction record" aria-label="Edit induction record" onclick="indEdit(\''+escH(x.id)+'\')"><i class="ti ti-edit"></i></button></td></tr>';}).join(''):'<tr><td colspan="8" class="empty">No induction records yet.</td></tr>')+
       '</tbody></table>';
   }catch(e){host.innerHTML=setupFriendlyMessage('Induction register',e.message);}
 }
@@ -39795,7 +39810,8 @@ function fireEquipStatusBadge(s) {
 <div id="ra-rams-status"></div>
 <div id="ra-rams-used-card" style="margin-bottom:12px"></div>
 <div class="form-group"><label class="form-label">Linked SWMS / method statement</label><select id="ra-rams-name" onchange="raRenderRamsUsed()"><option value="">Select SWMS / method statement...</option></select></div>
-<div class="form-group"><label class="form-label">External document URL (optional)</label><input type="text" id="ra-rams-url" placeholder="https://..." oninput="raRenderRamsUsed()"/></div>
+<div class="form-group"><label class="form-label">Attachment / external document link</label><input type="text" id="ra-rams-url" placeholder="Upload a document above or paste a secure link" oninput="raRenderRamsUsed()"/></div>
+<button type="button" class="btn btn-sm" onclick="raPreviewRamsDocument()"><i class="ti ti-eye"></i>Preview linked document</button>
 <div style="padding:10px 12px;background:#FFFBEB;border:1px solid #FDE68A;border-radius:10px;color:#854F0B;font-size:12px;line-height:1.45"><strong>RAMS output:</strong> print the RA to include the risk matrix, linked SWMS reference, legal references, controls and approval signatures in one controlled pack.</div>
 </div>
 <div class="card">
