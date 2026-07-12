@@ -28234,6 +28234,8 @@ async function loadTraining(){
   if(cmBtn)cmBtn.style.display=isMgr()?'inline-flex':'none';
   var tnaBtn=document.getElementById('tna-add-btn');
   if(tnaBtn)tnaBtn.style.display=isMgr()?'inline-flex':'none';
+  var trainAiBtn=document.getElementById('train-ai-btn');
+  if(trainAiBtn)trainAiBtn.style.display=(typeof canUseAI==='function'&&canUseAI())?'inline-flex':'none';
   trainYear=new Date().getFullYear();
   var yl=document.getElementById('tp-year-label');if(yl)yl.textContent=trainYear;
   cmLoad();
@@ -28601,6 +28603,70 @@ async function tpDeleteFromList(id){
   if(!(await appConfirmAction({title:'Cancel training plan item',message:'Cancel this planned training?',detail:'The plan item is kept for history and marked as cancelled.',confirmText:'Cancel training',cancelText:'Back'})))return;
   try{await api('/training_plan?id=eq.'+id,{m:'PATCH',p:'return=minimal',b:{status:'cancelled',updated_at:new Date().toISOString()}});toast('Training plan item cancelled');tpLoad();}
   catch(e){toast(e.message,false);}
+}
+async function trainingAIGapReview(){
+  var panel=document.getElementById('train-ai-gap-panel');
+  if(typeof canUseAI==='function'&&!canUseAI()){toast('AURIS AI is restricted to authorised HSE/admin roles.',false);return;}
+  if(panel){panel.style.display='block';panel.innerHTML='<div class="card" style="border-left:4px solid #5B21B6"><div style="font-weight:800;color:#5B21B6"><i class="ti ti-loader"></i> AURIS is reviewing training gaps...</div><div style="font-size:12px;color:var(--text2);margin-top:5px">Checking the training plan, records, competencies, inductions and active staff.</div></div>';}
+  try{
+    var today=new Date().toISOString().slice(0,10);
+    var data=await Promise.all([
+      api('/training_plan?select=*'+cf()+'&year=eq.'+trainYear+'&order=month,planned_date').catch(function(){return [];}),
+      api('/training_followup?select=*'+cf()+'&order=training_date.desc').catch(function(){return [];}),
+      api('/competency_matrix?select=*'+cf()).catch(function(){return [];}),
+      api('/competencies?select=*'+cf()).catch(function(){return [];}),
+      api('/training_needs?select=*'+cf()).catch(function(){return [];}),
+      api('/induction_records?select=*'+cf()+'&order=induction_date.desc').catch(function(){return [];}),
+      api('/people?select=id,first_name,last_name,job_title,department,status'+cf()+'&status=eq.active').catch(function(){return people||[];}),
+      api('/elearning_enrolments?select=*'+cf()).catch(function(){return [];})
+    ]);
+    var ctx={today:today,year:trainYear,training_plan:data[0]||[],training_records:data[1]||[],competency_matrix:data[2]||[],competencies:data[3]||[],training_needs:data[4]||[],inductions:data[5]||[],active_people:data[6]||[],elearning:data[7]||[]};
+    var prompt='Review this AURIS360 Training & Competency dataset as a senior HSE training manager. Return STRICT JSON only with keys: summary string, urgent_gaps array of objects {gap,risk,evidence,recommended_training,target_group,priority,due_date}, recommended_plan_items array of objects {topic,target_group,type,priority,planned_date,objective,notes}, assurance_checks array of strings, management_message string. Prioritise legal/HSE critical gaps, overdue training, missing induction, expiring certificates and competency gaps. Use concise professional wording. Dataset: '+JSON.stringify(ctx).slice(0,18000);
+    var raw=await callAI([{role:'user',content:prompt}], 'You are AURIS, an expert HSE training and competency assurance assistant. Return valid JSON only.');
+    var out=aiExtractJson(raw)||{};
+    trainingAIRenderGapReview(out,ctx);
+    toast('Training AI review ready');
+  }catch(e){if(panel)panel.innerHTML=aiFriendlyErrorHtml(e);toast(aiFriendlyError(e),false);}
+}
+
+function trainingAIRenderGapReview(out,ctx){
+  var panel=document.getElementById('train-ai-gap-panel');if(!panel)return;
+  var gaps=Array.isArray(out.urgent_gaps)?out.urgent_gaps:[];
+  var items=Array.isArray(out.recommended_plan_items)?out.recommended_plan_items:[];
+  window.trainingAiPlanItems=items;
+  var checks=Array.isArray(out.assurance_checks)?out.assurance_checks:[];
+  var h='<div class="card" style="border-left:4px solid #5B21B6;background:#fff">';
+  h+='<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap"><div><div style="font-weight:900;color:#5B21B6;font-size:15px"><i class="ti ti-robot"></i> AI Training & Competency Gap Review</div><div style="font-size:12px;color:var(--text2);margin-top:4px">Review before applying. Based on '+(ctx.active_people||[]).length+' active people, '+(ctx.training_plan||[]).length+' plan items and '+(ctx.training_records||[]).length+' training records.</div></div><button class="btn btn-sm" onclick="document.getElementById(\'train-ai-gap-panel\').style.display=\'none\'"><i class="ti ti-x"></i></button></div>';
+  h+='<div style="margin-top:12px;padding:10px 12px;border-radius:8px;background:#F5F3FF;color:#4C1D95;font-size:13px;line-height:1.45">'+escH(out.summary||'AURIS reviewed the training data and prepared suggested competency actions.')+'</div>';
+  if(gaps.length){
+    h+='<div style="margin-top:14px;font-weight:800">Priority gaps</div><div style="overflow:auto;margin-top:8px"><table style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr style="background:#1a3a5c;color:#fff"><th style="padding:8px;text-align:left">Gap</th><th style="padding:8px;text-align:left">Risk</th><th style="padding:8px;text-align:left">Evidence</th><th style="padding:8px;text-align:left">Recommended training</th><th style="padding:8px;text-align:left;width:90px">Priority</th><th style="padding:8px;text-align:left;width:100px">Due</th></tr></thead><tbody>';
+    gaps.slice(0,8).forEach(function(g,i){h+='<tr style="border-bottom:1px solid var(--border);background:'+(i%2?'#fff':'#f9fafb')+'"><td style="padding:8px;font-weight:700">'+escH(g.gap||'Gap')+'</td><td style="padding:8px">'+escH(g.risk||'')+'</td><td style="padding:8px;color:var(--text2)">'+escH(g.evidence||'')+'</td><td style="padding:8px">'+escH(g.recommended_training||'')+'<div style="font-size:11px;color:var(--text2)">'+escH(g.target_group||'')+'</div></td><td style="padding:8px">'+escH(g.priority||'medium')+'</td><td style="padding:8px">'+escH(g.due_date||'')+'</td></tr>';});
+    h+='</tbody></table></div>';
+  }
+  if(items.length){
+    h+='<div style="margin-top:14px;font-weight:800">Suggested training plan items</div><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:10px;margin-top:8px">';
+    items.slice(0,6).forEach(function(it,i){h+='<div style="border:1px solid var(--border);border-radius:8px;padding:10px;background:#fafafa"><div style="font-weight:800">'+escH(it.topic||'Training')+'</div><div style="font-size:12px;color:var(--text2);margin-top:4px">'+escH(it.target_group||'')+'</div><div style="font-size:12px;margin-top:6px"><b>Priority:</b> '+escH(it.priority||'medium')+' &nbsp; <b>Date:</b> '+escH(it.planned_date||'')+'</div><div style="font-size:12px;color:var(--text2);margin-top:6px;line-height:1.4">'+escH(it.objective||it.notes||'')+'</div><button class="btn btn-sm btn-primary" style="margin-top:8px" data-i="'+i+'" onclick="trainingAIApplyPlanItem(parseInt(this.getAttribute(\'data-i\'),10))"><i class="ti ti-plus"></i>Prefill plan</button></div>';});
+    h+='</div>';
+  }
+  if(checks.length){h+='<div style="margin-top:14px;font-weight:800">Assurance checks</div><ul style="margin:8px 0 0 18px;color:var(--text2);font-size:12px;line-height:1.5">'+checks.slice(0,8).map(function(c){return '<li>'+escH(c)+'</li>';}).join('')+'</ul>';}
+  if(out.management_message)h+='<div style="margin-top:12px;padding:10px 12px;border-radius:8px;background:#EFF6FF;color:#1E3A8A;font-size:12px;line-height:1.45"><b>Management note:</b> '+escH(out.management_message)+'</div>';
+  h+='</div>';
+  panel.innerHTML=h;
+}
+
+function trainingAIApplyPlanItem(i){
+  var it=(window.trainingAiPlanItems||[])[i];if(!it)return;
+  tpNew();
+  var set=function(id,v){var el=document.getElementById(id);if(el&&v!=null)el.value=v;};
+  set('tp-topic',it.topic||it.recommended_training||'');
+  set('tp-group',it.target_group||'');
+  set('tp-type',it.type||'classroom');
+  set('tp-priority',it.priority||'medium');
+  set('tp-planned-date',it.planned_date||'');
+  if(it.planned_date){var m=new Date(it.planned_date).getMonth()+1;if(m>0)set('tp-month',String(m));}
+  set('tp-objective',it.objective||'');
+  set('tp-notes',it.notes||'Suggested by AURIS AI training gap review. Review before saving.');
+  toast('AI suggestion copied into training plan form - review then save');
 }
 
 // ── TRAINING FOLLOW-UP ──────────────────────────────────────────────────────
@@ -44956,8 +45022,9 @@ function fireEquipStatusBadge(s) {
 <div style="font-size:16px;font-weight:800" id="tp-year-label">2026</div>
 <button class="btn btn-sm" onclick="trainPlanNextYear()"><i class="ti ti-chevron-right"></i></button>
 </div>
-<button class="btn btn-primary" id="tp-add-btn" style="display:none" onclick="tpNew()"><i class="ti ti-plus"></i>Add training</button>
+<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn" id="train-ai-btn" style="display:none;color:#5B21B6;border-color:#DDD6FE;background:#F5F3FF" onclick="trainingAIGapReview()"><i class="ti ti-robot"></i>AI training gaps</button><button class="btn btn-primary" id="tp-add-btn" style="display:none" onclick="tpNew()"><i class="ti ti-plus"></i>Add training</button></div>
 </div>
+<div id="train-ai-gap-panel" style="display:none;margin-bottom:12px"></div>
 <div class="card" style="padding:0;overflow:auto"><div id="tp-table"><div class="loading-msg">Loading...</div></div></div>
 </div>
 
