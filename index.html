@@ -32274,12 +32274,33 @@ function elcFillRequiredPeople(selected){
     var nm=personFullName(p);
     return '<option value="'+escH(nm)+'" '+(selected.includes(nm)?'selected':'')+'>'+escH([p.last_name,p.first_name].filter(Boolean).join(', ')||nm)+(p.job_title?' -- '+escH(p.job_title):'')+'</option>';
   }).join('');
+  var host=document.getElementById('elcf-enrol-checklist');
+  if(host){
+    host.innerHTML=(people||[]).map(function(p,i){
+      var nm=personFullName(p);var checked=selected.includes(nm)?' checked':'';
+      return '<label style="display:grid;grid-template-columns:18px 1fr;gap:8px;align-items:start;padding:8px 10px;border:1px solid var(--border);border-radius:8px;background:#fff;cursor:pointer">'
+        +'<input type="checkbox" class="elc-person-check" value="'+escH(nm)+'"'+checked+' onchange="elcSyncPeopleSelectFromChecks()" style="width:16px;height:16px;margin-top:1px;accent-color:var(--green)"/>'
+        +'<span><strong style="font-size:12px">'+escH([p.last_name,p.first_name].filter(Boolean).join(', ')||nm)+'</strong>'+(p.job_title?'<span class="muted" style="display:block;font-size:11px">'+escH(p.job_title)+'</span>':'')+'</span></label>';
+    }).join('')||'<div class="muted" style="padding:10px">No people found in the People register.</div>';
+  }
+  elcSyncPeopleSelectFromChecks();
+}
+function elcSyncPeopleSelectFromChecks(){
+  var checks=Array.from(document.querySelectorAll('.elc-person-check'));
+  var selected=checks.filter(function(c){return c.checked;}).map(function(c){return c.value;});
+  var s=document.getElementById('elcf-enrol-people');
+  if(s)Array.from(s.options||[]).forEach(function(o){o.selected=selected.includes(o.value);});
+  var c=document.getElementById('elc-selected-count');if(c)c.textContent=selected.length+' selected';
+}
+function elcToggleAllPeople(on){
+  document.querySelectorAll('.elc-person-check').forEach(function(c){c.checked=!!on;});
+  elcSyncPeopleSelectFromChecks();
 }
 function elcNew(){ window.elcEditId=null;var el=document.getElementById('elc-form');if(!el)return;document.getElementById('elc-form-title').textContent='New Course';if(document.getElementById('elc-del-btn'))document.getElementById('elc-del-btn').style.display='none';['elcf-title','elcf-code','elcf-cat','elcf-desc','elcf-duration','elcf-pass-score','elcf-validity','elcf-url','elcf-roles','elcf-target-date'].forEach(function(id){var e=document.getElementById(id);if(e)e.value='';});var m=document.getElementById('elcf-mandatory');if(m)m.checked=false;var st=document.getElementById('elcf-status');if(st)st.value='active';elcFillRequiredPeople();var v=document.getElementById('train-view-elearning');if(v)v.style.display='none';el.style.display='block'; }
 function elcBack(){ var el=document.getElementById('elc-form');if(el)el.style.display='none';var v=document.getElementById('train-view-elearning');if(v)v.style.display='block';if(typeof elcLoad==='function')elcLoad(); }
 function elcBaseBody(g,title){return {company_id:ccid(),title:title,course_code:g('elcf-code'),description:g('elcf-desc'),course_url:g('elcf-url'),status:g('elcf-status')||'active',updated_at:new Date().toISOString()};}
 function elcFullBody(g,title){var body=elcBaseBody(g,title);body.category=g('elcf-cat');body.duration_minutes=parseInt(g('elcf-duration'))||null;body.passing_score=parseInt(g('elcf-pass-score'))||null;body.validity_months=parseInt(g('elcf-validity'))||null;body.target_roles=g('elcf-roles');body.mandatory=!!document.getElementById('elcf-mandatory')?.checked;return body;}
-function elcSelectedPeople(){return Array.from(document.getElementById('elcf-enrol-people')?.selectedOptions||[]).map(function(o){return o.value;}).filter(Boolean);}
+function elcSelectedPeople(){var checks=Array.from(document.querySelectorAll('.elc-person-check')).filter(function(c){return c.checked;}).map(function(c){return c.value;});if(checks.length)return checks;return Array.from(document.getElementById('elcf-enrol-people')?.selectedOptions||[]).map(function(o){return o.value;}).filter(Boolean);}
 async function elcSave(){ var title=document.getElementById('elcf-title')?.value?.trim();if(!title){toast('Please enter course title',false);return;}var g=function(id){var el=document.getElementById(id);return el?el.value||null:null;};var body=elcFullBody(g,title);var courseId=window.elcEditId||null;try{if(window.elcEditId){await api('/elearning_courses?id=eq.'+window.elcEditId,{m:'PATCH',p:'return=minimal',b:body});}else{body.created_by=prof?.id;var created=await api('/elearning_courses',{m:'POST',p:'return=representation',b:body});courseId=created?.[0]?.id||body.title;}if(courseId&&!window.elcEditId){elcAllData=(elcAllData||[]).concat([Object.assign({id:courseId},body)]);}var enrolled=await elcBulkEnrolSelected(courseId,title).catch(function(){return 0;});toast((window.elcEditId?'Updated!':'Course added!')+(enrolled?' '+enrolled+' employee'+(enrolled>1?'s':'')+' enrolled.':''));elcBack();}catch(e){if(/schema cache|column|Could not find/i.test(e.message||'')){var base=elcBaseBody(g,title);try{if(window.elcEditId){await api('/elearning_courses?id=eq.'+window.elcEditId,{m:'PATCH',p:'return=minimal',b:base});courseId=window.elcEditId;}else{base.created_by=prof?.id;var c2=await api('/elearning_courses',{m:'POST',p:'return=representation',b:base});courseId=c2?.[0]?.id||base.title;}var enrolledBase=await elcBulkEnrolSelected(courseId,title).catch(function(){return 0;});toast('Course saved. Some advanced fields need the e-learning schema update.'+(enrolledBase?' '+enrolledBase+' employee'+(enrolledBase>1?'s':'')+' enrolled.':''));elcBack();return;}catch(e2){toast(actionErrorMessage('Save e-learning course','Training register',e2.message),false);return;}}toast(actionErrorMessage('Save e-learning course','Training register',e.message),false);} }
 async function elcDelete(){ if(!window.elcEditId)return;try{var rows=await api('/elearning_courses?id=eq.'+window.elcEditId+'&select=status');var status=String(rows?.[0]?.status||'').toLowerCase();if(status!=='archived'){if(!(await appConfirmAction({title:'Archive e-learning course',message:'Archive this e-learning course instead of deleting it?',detail:'Archived courses stay available for historical enrolments and audit evidence.',confirmText:'Archive course',cancelText:'Back'})))return;await api('/elearning_courses?id=eq.'+window.elcEditId,{m:'PATCH',p:'return=minimal',b:{status:'archived',updated_at:new Date().toISOString()}});toast('Course archived');elcBack();return;}if(!(await appConfirmDelete('e-learning course','This course is already archived. Permanent deletion should be used only for duplicate/test records.')))return;await api('/elearning_courses?id=eq.'+window.elcEditId,{m:'DELETE'});toast('Deleted!');elcBack();}catch(e){toast(actionErrorMessage('Delete e-learning course','Training register',e.message),false);} }
 function elcCourseById(id){return (elcAllData||[]).find(function(c){return String(c.id)===String(id)||String(c.title)===String(id)||String(c.course_code)===String(id);})||null;}
@@ -44320,7 +44341,7 @@ function fireEquipStatusBadge(s) {
 <div class="muted" style="margin-bottom:10px">Select employees who must complete this course. When saved, enrolments are created and notifications are queued.</div>
 <div class="form-row">
 <div class="form-group"><label class="form-label">Target completion date</label><input type="date" id="elcf-target-date"/></div>
-<div class="form-group"><label class="form-label">Required employees</label><select id="elcf-enrol-people" multiple size="6" style="min-height:150px"></select><div class="muted" style="font-size:11px;margin-top:4px">Hold Ctrl to select several employees.</div></div>
+<div class="form-group"><label class="form-label">Required employees</label><select id="elcf-enrol-people" multiple size="6" style="display:none"></select><div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:8px"><span id="elc-selected-count" class="muted" style="font-size:11px">0 selected</span><span style="display:flex;gap:6px"><button type="button" class="btn btn-sm" onclick="elcToggleAllPeople(true)">Select all</button><button type="button" class="btn btn-sm" onclick="elcToggleAllPeople(false)">Clear</button></span></div><div id="elcf-enrol-checklist" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:8px;max-height:220px;overflow:auto;padding:2px"></div></div>
 </div>
 </div>
 </div>
