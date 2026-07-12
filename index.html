@@ -24353,6 +24353,79 @@ function mapUpdateEffectivenessStars(val){
 }
 
 // ── Save ──────────────────────────────────────────────────────────────────────
+// AI action intelligence
+var mapAISuggestion=null;
+function mapAIReviewPanel(html){
+  var panel=document.getElementById('map-ai-review-panel');
+  if(!panel){
+    panel=document.createElement('div');
+    panel.id='map-ai-review-panel';
+    var host=document.getElementById('map-form-view');
+    var anchor=document.getElementById('map-action-btns');
+    if(host)host.insertBefore(panel, anchor?anchor.nextSibling:(host.children[1]||null));
+  }
+  panel.style.cssText='display:block;margin-bottom:14px;padding:12px 14px;border:1px solid #C7D2FE;background:#EEF2FF;border-radius:10px;color:#1E3A8A;font-size:13px';
+  panel.innerHTML=html;
+}
+function mapAIActionContext(){
+  var g=function(id){var el=document.getElementById(id);return el?el.value||'':'';};
+  var assigned=document.getElementById('mf-assigned-to');
+  var assignedText=assigned&&assigned.selectedIndex>=0?assigned.options[assigned.selectedIndex].text:'';
+  return {
+    reference:document.getElementById('map-form-ref')?.textContent||'',
+    title:g('mf-title'),description:g('mf-desc'),action_type:g('mf-type'),priority:g('af-priority'),status:g('af-status'),
+    root_cause:g('mf-rootcause'),source_type:g('mf-source-type'),source_ref:g('mf-source-ref'),location:g('mf-location'),department:g('mf-dept'),
+    assigned_to:assignedText,target_date:g('mf-target-date'),progress:g('mf-progress'),progress_notes:g('mf-progress-notes'),
+    escalation_reason:g('mf-esc-reason'),verification_notes:g('mf-verif-notes'),closure_notes:g('mf-closure-notes')
+  };
+}
+function mapApplyAISuggestion(key){
+  if(!mapAISuggestion)return;
+  var v=mapAISuggestion[key];
+  if(v==null||v==='')return;
+  var set=function(id,val){var el=document.getElementById(id);if(el)el.value=val;};
+  if(key==='smart_title')set('mf-title',v);
+  if(key==='smart_description')set('mf-desc',v);
+  if(key==='root_cause')set('mf-rootcause',v);
+  if(key==='priority')set('af-priority',String(v).toLowerCase());
+  if(key==='target_date')set('mf-target-date',v);
+  if(key==='instructions')set('mf-instructions',v);
+  if(key==='escalation_reason')set('mf-esc-reason',v);
+  toast('AI suggestion applied');
+}
+function mapAISuggestionCard(label,key){
+  var v=mapAISuggestion&&mapAISuggestion[key];
+  if(v==null||v==='')return '';
+  return '<div style="border:1px solid #BFDBFE;background:#fff;border-radius:8px;padding:10px;margin-top:8px">'
+    +'<div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start"><div style="font-weight:800;color:#1E3A8A">'+escH(label)+'</div>'
+    +'<button class="btn btn-sm" onclick="mapApplyAISuggestion(\''+key+'\')"><i class="ti ti-wand"></i>Apply</button></div>'
+    +'<div style="white-space:pre-wrap;margin-top:6px;color:#1f2937;line-height:1.45">'+escH(String(v))+'</div></div>';
+}
+async function mapAIReviewAction(){
+  try{
+    if(typeof canUseAI==='function' && !canUseAI()){toast('AURIS AI is restricted to authorised HSE/admin roles',false);return;}
+    var ctx=mapAIActionContext();
+    if(!ctx.title && !ctx.description){toast('Enter an action title or description first',false);return;}
+    mapAIReviewPanel('<b>AI action intelligence</b><br>Reviewing action quality, urgency, responsibility and escalation risk...');
+    var prompt='You are an HSE corrective action and CAPA governance assistant. Review this Master Action Plan item and improve it into a SMART, auditable action. Return strict JSON only with keys: quality_score number 0-100, risk_of_delay low/medium/high/critical, smart_title, smart_description, root_cause, priority low/medium/high/critical, target_date YYYY-MM-DD, instructions, escalation_reason, verification_method, management_summary, warnings array. Use realistic HSE wording and do not invent names. Context: '+JSON.stringify(ctx);
+    var raw=await callAI(prompt);
+    var data=aiExtractJson(raw)||{};
+    mapAISuggestion=data; if(!data.smart_description&&!data.management_summary)throw new Error('No action review returned');
+    var warnings=Array.isArray(data.warnings)?data.warnings:[];
+    var score=data.quality_score!=null?data.quality_score:'-';
+    var risk=data.risk_of_delay||'not assessed';
+    var html='<div style="display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap"><div><b>AI action intelligence</b><br><span>Quality score: <b>'+escH(String(score))+'</b> · Delay risk: <b>'+escH(String(risk))+'</b></span></div><button class="btn btn-sm" onclick="mapAISuggestion=null;document.getElementById(\'map-ai-review-panel\').style.display=\'none\'"><i class="ti ti-x"></i>Close</button></div>';
+    if(data.management_summary)html+='<div style="margin-top:8px;color:#1f2937">'+escH(data.management_summary)+'</div>';
+    if(warnings.length)html+='<div style="margin-top:8px;color:#B45309"><b>Watch points:</b> '+warnings.map(escH).join('; ')+'</div>';
+    html+=mapAISuggestionCard('SMART title','smart_title')+mapAISuggestionCard('SMART description','smart_description')+mapAISuggestionCard('Root cause','root_cause')+mapAISuggestionCard('Priority','priority')+mapAISuggestionCard('Target date','target_date')+mapAISuggestionCard('Instructions to assignee','instructions')+mapAISuggestionCard('Escalation reason','escalation_reason');
+    if(data.verification_method)html+='<div style="border:1px solid #BFDBFE;background:#fff;border-radius:8px;padding:10px;margin-top:8px"><div style="font-weight:800;color:#1E3A8A">Recommended verification</div><div style="white-space:pre-wrap;margin-top:6px;color:#1f2937">'+escH(data.verification_method)+'</div></div>';
+    mapAIReviewPanel(html);
+    toast('AI action review ready');
+  }catch(e){
+    mapAIReviewPanel('<b>AI action intelligence</b><br><span style="color:#B91C1C">AI error: '+escH(e.message||String(e))+'</span>');
+    toast('AI action review error: '+(e.message||e),false);
+  }
+}
 async function mapSave(draft){
   if(!workflowCanMutate('actions','actions'))return;
   var g=function(id){var el=document.getElementById(id);return el?el.value||null:null;};
@@ -44981,6 +45054,7 @@ function fireEquipStatusBadge(s) {
 <div style="display:flex;gap:8px;flex-wrap:wrap">
 <button class="btn" style="background:rgba(255,255,255,.2);color:#fff;border-color:rgba(255,255,255,.3)" onclick="mapShowList()"><i class="ti ti-arrow-left"></i>Back</button>
 <button id="map-del-btn" class="btn" style="display:none;background:rgba(220,38,38,.3);color:#fff;border-color:rgba(220,38,38,.5)" onclick="mapDelete()"><i class="ti ti-trash"></i></button>
+<button class="btn" style="background:#fff;color:#5B21B6;font-weight:800;border-color:#fff" onclick="mapAIReviewAction()"><i class="ti ti-robot"></i>AI review</button>
 <button class="btn" style="background:rgba(255,255,255,.2);color:#fff;border-color:rgba(255,255,255,.3)" onclick="mapSave('draft')"><i class="ti ti-device-floppy"></i>Save</button>
 </div>
 </div>
