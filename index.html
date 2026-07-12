@@ -26539,6 +26539,7 @@ function legalNewRequirement(){
   document.getElementById('lr-gap').checked=false;
   document.getElementById('lr-compliance-score').value=0;
   document.getElementById('lr-score-display').textContent='0%';
+  var aiPanel=document.getElementById('legal-ai-assess-panel');if(aiPanel)aiPanel.style.display='none';
   document.getElementById('legal-view-register').style.display='none';
   document.getElementById('legal-req-form').style.display='block';
 }
@@ -26571,6 +26572,7 @@ function legalOpenReq(id){
   var sc=x.compliance_score!=null?x.compliance_score:(LEG_STATUS_CFG[st]?.score||0);
   document.getElementById('lr-compliance-score').value=sc!=null?sc:0;
   document.getElementById('lr-score-display').textContent=(sc!=null?sc:0)+'%';
+  var aiPanel=document.getElementById('legal-ai-assess-panel');if(aiPanel)aiPanel.style.display='none';
   document.getElementById('legal-view-register').style.display='none';
   document.getElementById('legal-req-form').style.display='block';
 }
@@ -26955,6 +26957,130 @@ async function legalRenderDashboard(){
 // Keep old function for backward compat
 function legalRenderDashboardData(){legalRenderDashboard();}
 
+function legalAIField(id){
+  var el=document.getElementById(id);
+  return el ? String(el.value||'').trim() : '';
+}
+
+function legalAIReqContext(){
+  return {
+    legislation:legalAIField('lr-leg-main'),
+    legislation_type:legalAIField('lr-leg-type'),
+    title:legalAIField('lr-leg-title'),
+    section:legalAIField('lr-section'),
+    subsection:legalAIField('lr-subsection'),
+    category:legalAIField('lr-category'),
+    jurisdiction:legalAIField('lr-jurisdiction')||'Mauritius',
+    authority:legalAIField('lr-authority'),
+    obligation_type:legalAIField('lr-obligation'),
+    frequency:legalAIField('lr-frequency'),
+    requirement:legalAIField('lr-requirement'),
+    controls:legalAIField('lr-controls'),
+    evidence_required:legalAIField('lr-evidence-req'),
+    evidence_location:legalAIField('lr-evidence-loc'),
+    gap_checked:!!document.getElementById('lr-gap')?.checked,
+    gap_description:legalAIField('lr-further-controls'),
+    penalty_risk:legalAIField('lr-penalty'),
+    responsibility:legalAIField('lr-responsibility'),
+    status:legalAIField('lr-status'),
+    score:legalAIField('lr-compliance-score'),
+    target_date:legalAIField('lr-target-date')
+  };
+}
+
+function legalAISetVal(id,val){
+  var el=document.getElementById(id);
+  if(el && val!=null && String(val).trim()) el.value=String(val).trim();
+}
+
+function legalAIList(items){
+  if(!Array.isArray(items)||!items.length)return '<div style="font-size:12px;color:var(--text2)">No item generated.</div>';
+  return '<ul style="margin:6px 0 0 18px;padding:0;line-height:1.5">'+items.map(function(x){return '<li>'+escH(typeof x==='string'?x:(x.description||JSON.stringify(x)))+'</li>';}).join('')+'</ul>';
+}
+
+function legalAIRenderAssessment(out){
+  window.legalAISuggestion=out||{};
+  var panel=document.getElementById('legal-ai-assess-panel'); if(!panel)return;
+  var status=out.recommended_status||'partial';
+  var score=(out.recommended_score!=null?out.recommended_score:'');
+  panel.innerHTML='<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap">'
+    +'<div><div style="font-size:15px;font-weight:900;color:#5B21B6"><i class="ti ti-robot"></i> AI legal requirement assessment</div>'
+    +'<div style="font-size:12px;color:var(--text2);margin-top:3px">Review before applying. AURIS supports compliance management; final legal interpretation remains your responsibility.</div></div>'
+    +'<button type="button" class="btn btn-sm" onclick="document.getElementById(\'legal-ai-assess-panel\').style.display=\'none\'"><i class="ti ti-x"></i>Hide</button></div>'
+    +'<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px;margin-top:14px">'
+    +'<div style="background:#fff;border:1px solid var(--border);border-radius:8px;padding:12px"><div style="font-weight:800;color:#185FA5">Recommended status</div><div style="font-size:24px;font-weight:900;margin-top:4px">'+escH(status)+' '+(score!==''?escH(score)+'%':'')+'</div><div style="font-size:12px;color:var(--text2);margin-top:5px">'+escH(out.status_reason||'')+'</div></div>'
+    +'<div style="background:#fff;border:1px solid var(--border);border-radius:8px;padding:12px"><div style="font-weight:800;color:#065F46">Evidence expected</div>'+legalAIList(out.evidence_expected)+'</div>'
+    +'<div style="background:#fff;border:1px solid var(--border);border-radius:8px;padding:12px"><div style="font-weight:800;color:#A32D2D">Gaps / weaknesses</div>'+legalAIList(out.gaps)+'</div>'
+    +'<div style="background:#fff;border:1px solid var(--border);border-radius:8px;padding:12px"><div style="font-weight:800;color:#854F0B">Actions required</div>'+legalAIList(out.actions)+'</div>'
+    +'</div>'
+    +'<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">'
+    +'<button type="button" class="btn btn-sm btn-primary" onclick="legalAIApplyStatus()"><i class="ti ti-check"></i>Apply status</button>'
+    +'<button type="button" class="btn btn-sm" onclick="legalAIApplyEvidence()"><i class="ti ti-check"></i>Apply evidence</button>'
+    +'<button type="button" class="btn btn-sm" onclick="legalAIApplyGap()"><i class="ti ti-alert-triangle"></i>Apply gap</button>'
+    +'<button type="button" class="btn btn-sm" onclick="legalAIApplyResponsibility()"><i class="ti ti-user-check"></i>Apply responsibility/date</button>'
+    +'</div>';
+  panel.style.display='block';
+  panel.scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+
+function legalAIApplyStatus(){
+  var out=window.legalAISuggestion||{};
+  var st=String(out.recommended_status||'partial').toLowerCase().replace(/\s+/g,'_');
+  if(!['compliant','partial','non_compliant','not_applicable'].includes(st))st='partial';
+  legalSetStatus(st);
+  if(out.recommended_score!=null){
+    var score=Math.max(0,Math.min(100,parseInt(out.recommended_score,10)||0));
+    var s=document.getElementById('lr-compliance-score'), d=document.getElementById('lr-score-display');
+    if(s)s.value=score; if(d)d.textContent=score+'%';
+  }
+  toast('AI status applied. Review before saving.');
+}
+
+function legalAIApplyEvidence(){
+  var out=window.legalAISuggestion||{};
+  if(Array.isArray(out.evidence_expected)&&out.evidence_expected.length)legalAISetVal('lr-evidence-req',out.evidence_expected.join('; '));
+  if(out.controls_summary)legalAISetVal('lr-controls',out.controls_summary);
+  if(out.authority)legalAISetVal('lr-authority',out.authority);
+  toast('AI evidence suggestions applied.');
+}
+
+function legalAIApplyGap(){
+  var out=window.legalAISuggestion||{};
+  var gaps=Array.isArray(out.gaps)?out.gaps:[];
+  var actions=Array.isArray(out.actions)?out.actions:[];
+  if(gaps.length||actions.length){
+    var cb=document.getElementById('lr-gap'); if(cb)cb.checked=true;
+    legalAISetVal('lr-further-controls',gaps.concat(actions).map(function(x){return typeof x==='string'?x:(x.description||'');}).filter(Boolean).join('\n'));
+  }
+  if(out.penalty_or_business_risk)legalAISetVal('lr-penalty',out.penalty_or_business_risk);
+  toast('AI gap wording applied.');
+}
+
+function legalAIApplyResponsibility(){
+  var out=window.legalAISuggestion||{};
+  legalAISetVal('lr-responsibility',out.suggested_responsibility||out.responsible_role);
+  if(out.suggested_target_days){
+    var d=new Date(); d.setDate(d.getDate()+(parseInt(out.suggested_target_days,10)||30));
+    legalAISetVal('lr-target-date',d.toISOString().slice(0,10));
+  }
+  if(out.review_frequency)legalAISetVal('lr-frequency',out.review_frequency);
+  toast('AI responsibility/date applied.');
+}
+
+async function legalAIAssessRequirement(){
+  if(!canUseAI || !canUseAI()){toast('AURIS AI is restricted to authorised HSE/admin roles.',false);return;}
+  var ctx=legalAIReqContext();
+  if(!ctx.requirement && !ctx.title){toast('Enter or open a legal requirement first.',false);return;}
+  var panel=document.getElementById('legal-ai-assess-panel');
+  if(panel){panel.style.display='block';panel.innerHTML='<div style="font-weight:800;color:#5B21B6"><i class="ti ti-loader"></i> AURIS is assessing this legal requirement...</div><div style="font-size:12px;color:var(--text2);margin-top:5px">Checking requirement, controls, evidence and gap risk.</div>';}
+  try{
+    var txt=await callAI([{role:'user',content:'Assess this legal compliance register requirement and return ONLY valid JSON with this exact shape: {"recommended_status":"compliant|partial|non_compliant|not_applicable","recommended_score":0,"status_reason":"...","authority":"...","controls_summary":"...","evidence_expected":["..."],"gaps":["..."],"actions":[{"description":"..."}],"penalty_or_business_risk":"...","suggested_responsibility":"HSE Manager / Site Manager / HR / Maintenance / Company Admin","suggested_target_days":30,"review_frequency":"ongoing|annual|biannual|quarterly|monthly|one_off"}.\n\nRules: be practical for a Mauritius HSE legal register, do not invent exact penalties unless clearly known from the provided text, distinguish missing evidence from actual non-compliance, and keep actions auditable.\n\nRequirement context:\n'+JSON.stringify(ctx,null,2)}],
+      'You are a senior HSE legal compliance auditor. You support compliance assessment but do not provide final legal advice. Return only JSON.');
+    var out=aiExtractJson(txt)||{};
+    legalAIRenderAssessment(out);
+    toast('AI legal assessment ready.');
+  }catch(e){if(panel)panel.innerHTML=aiFriendlyErrorHtml(e);toast(aiFriendlyError(e),false);}
+}
 // ── AI COMPLIANCE ASSISTANT ───────────────────────────────────────────────────
 async function legalAskAI(question){
   if(!question||!question.trim()){toast('Please enter a question',false);return;}
@@ -40879,11 +41005,12 @@ function fireEquipStatusBadge(s) {
 <div style="display:flex;gap:8px">
 <button class="btn" style="background:rgba(255,255,255,.2);color:#fff;border-color:rgba(255,255,255,.3)" onclick="legalReqBack()"><i class="ti ti-arrow-left"></i>Back</button>
 <button id="lr-del-btn" class="btn" style="display:none;background:rgba(220,38,38,.3);color:#fff;border-color:rgba(220,38,38,.5)" onclick="legalDeleteReq()"><i class="ti ti-trash"></i></button>
+<button class="btn" style="background:#fff;color:#5B21B6;font-weight:800;border-color:#fff" onclick="legalAIAssessRequirement()"><i class="ti ti-robot"></i>AI assess</button>
 <button class="btn" style="background:#1D9E75;color:#fff;border-color:#1D9E75" onclick="legalSaveReq()"><i class="ti ti-device-floppy"></i>Save</button>
 </div>
 </div>
 </div>
-<div style="display:grid;grid-template-columns:2fr 1fr;gap:14px">
+<div id="legal-ai-assess-panel" class="card" style="display:none;margin-bottom:14px;border:1px solid #c4b5fd;background:#fbfaff"></div><div style="display:grid;grid-template-columns:2fr 1fr;gap:14px">
 <div>
 <div class="card" style="margin-bottom:14px"><div class="card-title">Legislation Details</div>
 <div class="form-row">
