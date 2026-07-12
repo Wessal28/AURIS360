@@ -27435,6 +27435,106 @@ function tbtActionRow(desc,assigned,due,idx){
     +'</div>';
 }
 
+function tbtAIVal(id){
+  var el=document.getElementById(id);
+  return el ? String(el.value||'').trim() : '';
+}
+
+function tbtAIContext(){
+  var cat=document.getElementById('tbtf-category');
+  var work=tbtSelectedWork();
+  var workFull=work&&work.id?(wsAllData||[]).find(function(w){return w.id===work.id;})||{}:{};
+  return {
+    title:tbtAIVal('tbtf-title'),
+    category:tbtAIVal('tbtf-category'),
+    category_label:cat&&cat.selectedIndex>=0?cat.options[cat.selectedIndex].text:'',
+    date:tbtAIVal('tbtf-date'),
+    location:tbtAIVal('tbtf-location'),
+    department:tbtAIVal('tbtf-dept'),
+    duration_minutes:tbtAIVal('tbtf-duration')||'15',
+    presenter:tbtAIVal('tbtf-presenter'),
+    linked_work:workFull.id?{
+      ref:workFull.ref_number||work.ref||'',
+      title:workFull.title||work.title||'',
+      location:workFull.location||'',
+      description:workFull.description||workFull.notes||'',
+      supervisor:workFull.supervisor_name||'',
+      team:workFull.team_members||'',
+      status:workFull.status||''
+    }:work,
+    existing_key_points:tbtAIVal('tbtf-key-points'),
+    existing_hazards:tbtAIVal('tbtf-hazards'),
+    incidents_referenced:tbtAIVal('tbtf-incidents'),
+    notes:tbtAIVal('tbtf-notes')
+  };
+}
+
+function tbtAIList(items){
+  if(!Array.isArray(items)||!items.length)return '<div style="font-size:12px;color:var(--text2)">No item generated.</div>';
+  return '<ul style="margin:6px 0 0 18px;padding:0;line-height:1.5">'+items.map(function(x){return '<li>'+escH(typeof x==='string'?x:(x.description||JSON.stringify(x)))+'</li>';}).join('')+'</ul>';
+}
+
+function tbtAIRenderDraft(out){
+  window.tbtAIDraft=out||{};
+  var panel=document.getElementById('tbt-ai-draft-panel'); if(!panel)return;
+  panel.innerHTML='<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap">'
+    +'<div><div style="font-size:15px;font-weight:900;color:#185FA5"><i class="ti ti-robot"></i> AI toolbox talk draft</div>'
+    +'<div style="font-size:12px;color:var(--text2);margin-top:3px">Review the draft and apply only what you want. Nothing is saved until you click Save.</div></div>'
+    +'<button type="button" class="btn btn-sm" onclick="document.getElementById(\'tbt-ai-draft-panel\').style.display=\'none\'"><i class="ti ti-x"></i>Hide</button></div>'
+    +'<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px;margin-top:14px">'
+    +'<div style="background:#fff;border:1px solid var(--border);border-radius:8px;padding:12px"><div style="font-weight:800;color:#185FA5">Title</div><div style="font-size:13px;margin-top:6px">'+escH(out.title||'')+'</div></div>'
+    +'<div style="background:#fff;border:1px solid var(--border);border-radius:8px;padding:12px"><div style="font-weight:800;color:#A32D2D">Hazards</div>'+tbtAIList(out.hazards)+'</div>'
+    +'<div style="background:#fff;border:1px solid var(--border);border-radius:8px;padding:12px"><div style="font-weight:800;color:#065F46">Key points</div>'+tbtAIList(out.key_points)+'</div>'
+    +'<div style="background:#fff;border:1px solid var(--border);border-radius:8px;padding:12px"><div style="font-weight:800;color:#854F0B">Questions to ask</div>'+tbtAIList(out.worker_questions)+'</div>'
+    +'</div>'
+    +'<div style="margin-top:12px;background:#fff;border:1px solid var(--border);border-radius:8px;padding:12px"><div style="font-weight:800;color:#374151">Closing message</div><div style="font-size:13px;line-height:1.5;margin-top:5px">'+escH(out.closing_message||'')+'</div></div>'
+    +'<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">'
+    +'<button type="button" class="btn btn-sm btn-primary" onclick="tbtAIApplyContent()"><i class="ti ti-check"></i>Apply content</button>'
+    +'<button type="button" class="btn btn-sm" onclick="tbtAIApplyActions()"><i class="ti ti-plus"></i>Add action items</button>'
+    +'</div>';
+  panel.style.display='block';
+  panel.scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+
+function tbtAIApplyContent(){
+  var out=window.tbtAIDraft||{};
+  if(out.title)document.getElementById('tbtf-title').value=out.title;
+  if(Array.isArray(out.key_points))document.getElementById('tbtf-key-points').value=out.key_points.join('\n');
+  if(Array.isArray(out.hazards))document.getElementById('tbtf-hazards').value=out.hazards.join('\n');
+  var notes=[];
+  if(Array.isArray(out.worker_questions)&&out.worker_questions.length)notes.push('Questions asked:\n'+out.worker_questions.join('\n'));
+  if(out.closing_message)notes.push('Closing message:\n'+out.closing_message);
+  if(notes.length)document.getElementById('tbtf-notes').value=notes.join('\n\n');
+  tbtUpdateCount();
+  toast('AI toolbox talk content applied. Review before saving.');
+}
+
+function tbtAIApplyActions(){
+  var out=window.tbtAIDraft||{};
+  var list=Array.isArray(out.action_items)?out.action_items:[];
+  var el=document.getElementById('tbt-actions-list'); if(!el||!list.length)return;
+  list.slice(0,6).forEach(function(a){
+    var d='';
+    if(a.due_in_days!=null){var dt=new Date();dt.setDate(dt.getDate()+(parseInt(a.due_in_days,10)||7));d=dt.toISOString().slice(0,10);}
+    el.insertAdjacentHTML('beforeend',tbtActionRow(a.description||String(a||''),a.assigned_to_role||a.assigned_to||'',d,el.querySelectorAll('.tbt-act-row').length));
+  });
+  toast('AI action items added. Review ownership and due dates.');
+}
+
+async function tbtAIGenerateDraft(){
+  if(!canUseAI || !canUseAI()){toast('AURIS AI is restricted to authorised HSE/admin roles.',false);return;}
+  var ctx=tbtAIContext();
+  if(!ctx.title && !ctx.category && !(ctx.linked_work&&ctx.linked_work.title)){toast('Enter a topic/title or select linked work first.',false);return;}
+  var panel=document.getElementById('tbt-ai-draft-panel');
+  if(panel){panel.style.display='block';panel.innerHTML='<div style="font-weight:800;color:#185FA5"><i class="ti ti-loader"></i> AURIS is drafting the toolbox talk...</div><div style="font-size:12px;color:var(--text2);margin-top:5px">Using the selected category, location and linked work context.</div>';}
+  try{
+    var txt=await callAI([{role:'user',content:'Create a practical toolbox talk draft and return ONLY valid JSON with this exact shape: {"title":"...","hazards":["..."],"key_points":["..."],"worker_questions":["..."],"closing_message":"...","action_items":[{"description":"...","assigned_to_role":"Supervisor / HSE Officer / Worker / Maintenance","due_in_days":7}]}.\n\nRules: keep it short enough for a 10-15 minute talk, practical for frontline workers, include stop-work authority, PPE/controls where relevant, and make it specific to the linked work/location if provided.\n\nToolbox talk context:\n'+JSON.stringify(ctx,null,2)}],
+      'You are a senior HSE trainer. Write practical, engaging toolbox talk content for workers. Return only JSON.');
+    var out=aiExtractJson(txt)||{};
+    tbtAIRenderDraft(out);
+    toast('AI toolbox talk draft ready.');
+  }catch(e){if(panel)panel.innerHTML=aiFriendlyErrorHtml(e);toast(aiFriendlyError(e),false);}
+}
 function tbtAddAttendee(){
   // Work Schedule has its own embedded #tbt-attendees-list. The standalone TBT
   // page uses #tbtf-attendees-list. Find the visible one so the row appears
@@ -44256,10 +44356,12 @@ function fireEquipStatusBadge(s) {
 <button class="btn" style="background:rgba(255,255,255,.2);color:#fff;border-color:rgba(255,255,255,.3)" onclick="tbtBack()"><i class="ti ti-arrow-left"></i>Back</button>
 <button id="tbt-del-btn" class="btn" style="display:none;background:rgba(220,38,38,.3);color:#fff;border-color:rgba(220,38,38,.5)" onclick="tbtDelete()"><i class="ti ti-trash"></i></button>
 <button class="btn" style="background:rgba(255,255,255,.2);color:#fff;border-color:rgba(255,255,255,.3)" onclick="printToolboxTalk(tbtEditId)"><i class="ti ti-printer"></i>Print</button>
+<button class="btn" style="background:#fff;color:#185FA5;font-weight:800;border-color:#fff" onclick="tbtAIGenerateDraft()"><i class="ti ti-robot"></i>AI draft</button>
 <button class="btn" style="background:#1D9E75;color:#fff;border-color:#1D9E75" onclick="tbtSave()"><i class="ti ti-device-floppy"></i>Save</button>
 </div>
 </div>
 </div>
+<div id="tbt-ai-draft-panel" class="card" style="display:none;margin-bottom:14px;border:1px solid #bae6fd;background:#f0f9ff"></div>
 <div style="display:grid;grid-template-columns:2fr 1fr;gap:14px">
 <div>
 <div class="card" style="margin-bottom:14px"><div class="card-title">Talk Details</div>
