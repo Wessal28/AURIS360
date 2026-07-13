@@ -5126,6 +5126,37 @@ function copyClientDecisionLog(){
   else toast(txt);
   auditLogEvent('export','demo','Client decision log copied',{count:rows.length,length:txt.length});
 }
+function clientValueSnapshotItems(){
+  return [
+    {driver:'Action follow-up discipline',baseline:'Manual spreadsheets, WhatsApp messages and forgotten close-outs',value:'Fewer overdue actions and clearer accountability'},
+    {driver:'Incident/BBS field capture',baseline:'Paper notes, delayed entry and missing evidence',value:'Faster reporting with photo evidence and cleaner investigations'},
+    {driver:'Audit and inspection readiness',baseline:'Scattered checklists and difficult report retrieval',value:'Centralised records, print-ready reports and inspection history'},
+    {driver:'Governance and traceability',baseline:'Hard to prove who changed or approved records',value:'Audit trail, role access and controlled workflows'},
+    {driver:'Management visibility',baseline:'Monthly manual reporting and stale indicators',value:'Live dashboards, KPIs and one source of truth'},
+    {driver:'AI-assisted drafting',baseline:'Time spent drafting toolbox talks, summaries and RAMS text',value:'Faster first drafts with HSE manager validation'}
+  ];
+}
+
+function renderClientValueSnapshot(){
+  var rows=clientValueSnapshotItems();
+  return '<div style="margin-top:14px;border:1px solid var(--border);border-radius:10px;overflow:hidden;background:#fff">'
+    +'<div style="padding:12px;background:#14532D;color:#fff;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><div><div style="font-weight:900">Client value / ROI snapshot</div><div style="font-size:11px;opacity:.85;margin-top:2px">A practical business case for why AURIS360 is worth piloting</div></div><button class="btn btn-sm" style="background:rgba(255,255,255,.14);color:#fff;border-color:rgba(255,255,255,.25)" onclick="copyClientValueSnapshot()"><i class="ti ti-copy"></i>Copy value case</button></div>'
+    +'<div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;padding:12px;background:#F8FAFC">'
+      +'<div style="background:#ECFDF5;border:1px solid #A7F3D0;border-radius:10px;padding:12px"><div style="font-size:22px;font-weight:900;color:#065F46">30-60%</div><div style="font-size:11px;color:#065F46;font-weight:800">less admin chasing</div><div style="font-size:11px;color:var(--text2);margin-top:4px">Typical target once actions, reports and evidence are centralised.</div></div>'
+      +'<div style="background:#EFF6FF;border:1px solid #BFDBFE;border-radius:10px;padding:12px"><div style="font-size:22px;font-weight:900;color:#1D4ED8">1 source</div><div style="font-size:11px;color:#1D4ED8;font-weight:800">of HSE truth</div><div style="font-size:11px;color:var(--text2);margin-top:4px">Incidents, BBS, inspections, actions, RAMS, PTW and contractors linked together.</div></div>'
+      +'<div style="background:#FFFBEB;border:1px solid #FCD34D;border-radius:10px;padding:12px"><div style="font-size:22px;font-weight:900;color:#854F0B">Pilot first</div><div style="font-size:11px;color:#854F0B;font-weight:800">prove value safely</div><div style="font-size:11px;color:var(--text2);margin-top:4px">Start with controlled modules, then expand after acceptance.</div></div>'
+    +'</div>'
+    +'<div style="overflow:auto"><table style="width:100%;min-width:900px;border-collapse:collapse;font-size:12px"><thead><tr style="background:#F8FAFC;color:var(--text2);text-transform:uppercase;font-size:10px"><th style="padding:9px 10px;text-align:left">Value driver</th><th style="padding:9px 10px;text-align:left">Current pain</th><th style="padding:9px 10px;text-align:left">Expected value</th></tr></thead><tbody>'
+    +rows.map(function(x,i){return '<tr style="border-top:1px solid var(--border);background:'+(i%2?'#fafafa':'#fff')+'"><td style="padding:10px;font-weight:900;color:#14532D">'+escH(x.driver)+'</td><td style="padding:10px;color:var(--text2);line-height:1.45">'+escH(x.baseline)+'</td><td style="padding:10px;color:#111827;line-height:1.45">'+escH(x.value)+'</td></tr>';}).join('')
+    +'</tbody></table></div></div>';
+}
+
+function copyClientValueSnapshot(){
+  var txt='AURIS360 client value / ROI snapshot\n\nPositioning: AURIS360 reduces HSE admin leakage, improves evidence capture, strengthens governance and gives management one reliable source of truth. Start with a controlled pilot, prove value, then expand.\n\n'+clientValueSnapshotItems().map(function(x){return '- '+x.driver+'\n  Current pain: '+x.baseline+'\n  Expected value: '+x.value;}).join('\n\n');
+  if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(txt).then(function(){toast('Client value case copied');});
+  else toast(txt);
+  auditLogEvent('export','demo','Client value snapshot copied',{length:txt.length});
+}
 function renderClientDemoCommandCenter(){
   var el=document.getElementById('client-demo-command-body');if(!el)return;
   var canSee=isAdm()||activeRole()==='hse_manager'||activeRole()==='hse_officer';
@@ -5160,7 +5191,7 @@ function renderClientDemoCommandCenter(){
       +'<div style="border:1px solid var(--border);border-radius:10px;padding:12px;background:#fff"><div style="font-size:13px;font-weight:900;color:#991B1B;margin-bottom:4px">Do not over-promise</div>'+renderList(items.avoid,'avoid')+'</div>'
     +'</div>'
     +'</div>'
-    +renderClientDemoModuleMatrix() + '<div id="client-demo-data-checklist"></div>' + renderClientDemoObjections() + renderClientPilotOnboarding() + renderClientPilotSignoff() + renderClientPilotIssues() + renderClientProposalSnapshot() + renderClientEnterpriseReadiness() + renderClientDecisionLog();
+    +renderClientDemoModuleMatrix() + '<div id="client-demo-data-checklist"></div>' + renderClientDemoObjections() + renderClientPilotOnboarding() + renderClientPilotSignoff() + renderClientPilotIssues() + renderClientProposalSnapshot() + renderClientEnterpriseReadiness() + renderClientDecisionLog() + renderClientValueSnapshot();
   setTimeout(clientDemoLoadDataChecklist,80);
 }
 
