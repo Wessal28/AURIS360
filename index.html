@@ -11950,12 +11950,12 @@ kpiRenderOverview();kpiRenderMonthly();kpiUpdateMetrics();
 }
 
 async function kpiLoadObjectives(yr){
-try{const d=await api('/objectives?select=*'+cf()+'&year=eq.'+yr+'&order=sort_order,code');kpiObjectives=d||[];}
+try{const d=await api('/objectives?select=*'+cf()+'&year=eq.'+yr+'&order=sort_order,code');kpiObjectives=(d||[]).filter(function(o){return !/^\[Archived/i.test(String(o.name||''));});}
 catch(e){kpiObjectives=[];}
 }
 
 async function kpiLoadKPIsData(yr){
-try{const d=await api('/kpis_v2?select=*'+cf()+'&year=eq.'+yr+'&order=code');kpiKPIs=d||[];}
+try{const d=await api('/kpis_v2?select=*'+cf()+'&year=eq.'+yr+'&order=code');kpiKPIs=(d||[]).filter(function(k){return String(k.status||'').toLowerCase()!=='archived';});}
 catch(e){kpiKPIs=[];}
 }
 
@@ -11998,8 +11998,8 @@ return op+(ind.target_value!==null&&ind.target_value!==undefined?ind.target_valu
 }
 
 function kpiStatBadge(s){
-const cls={on_track:'bg',at_risk:'ba',off_track:'br',not_started:'bgr'}[s]||'bgr';
-const lbl={on_track:'On Track',at_risk:'At Risk',off_track:'Off Track',not_started:'Not Started'}[s]||s;
+const cls={on_track:'bg',at_risk:'ba',off_track:'br',not_started:'bgr',archived:'bgr'}[s]||'bgr';
+const lbl={on_track:'On Track',at_risk:'At Risk',off_track:'Off Track',not_started:'Not Started',archived:'Archived'}[s]||s;
 return '<span class="badge '+cls+'">'+lbl+'</span>';
 }
 
@@ -12256,15 +12256,15 @@ function openKpiModal(id){const e=document.getElementById(id);if(e)e.style.displ
 
 async function kpiDeleteObjective(){
 if(!kpiEditObjId)return;
-if(!(await appConfirmAction({title:'Delete objective',message:'Delete this objective and all its KPIs?',detail:'This will remove the objective, its KPIs and measurement data.',confirmText:'Delete objective',cancelText:'Keep objective'})))return;
+if(!(await appConfirmAction({title:'Archive objective',message:'Archive this objective and its KPIs instead of deleting them?',detail:'KPI history and monthly values will be kept for management review evidence. The objective will no longer appear in the active scorecard.',confirmText:'Archive objective',cancelText:'Keep objective'})))return;
 try{
 const kpiIds=kpiKPIs.filter(k=>k.objective_id===kpiEditObjId).map(k=>k.id);
 for(const kid of kpiIds){
-await api('/kpi_indicators?kpi_id=eq.'+kid,{m:'DELETE'});
-await api('/kpis_v2?id=eq.'+kid,{m:'DELETE'});
+await api('/kpis_v2?id=eq.'+kid,{m:'PATCH',p:'return=minimal',b:{status:'archived'}});
 }
-await api('/objectives?id=eq.'+kpiEditObjId,{m:'DELETE'});
-toast('Deleted!');closeKpiModal('obj-modal');await kpiLoadAll();
+var obj=kpiObjectives.find(function(o){return o.id===kpiEditObjId;})||{};
+await api('/objectives?id=eq.'+kpiEditObjId,{m:'PATCH',p:'return=minimal',b:{name:ohArchivedText(obj.name||'Objective'),color:'#6B7280'}});
+toast('Objective archived');closeKpiModal('obj-modal');await kpiLoadAll();
 }catch(e){toast(e.message,false);}
 }
 function kpiAddIndicatorRow(name='',target='',operator='gte',unit='',ytdMethod='sum'){
@@ -12419,12 +12419,10 @@ toast(kpiEditKpiId?'KPI updated!':'KPI added!');closeKpiModal('kpi-edit-modal');
 }
 async function kpiDeleteKPI(){
 if(!kpiEditKpiId)return;
-if(!(await appConfirmAction({title:'Delete KPI',message:'Delete this KPI and all its data?',detail:'This will remove the KPI, its indicators and monthly data.',confirmText:'Delete KPI',cancelText:'Keep KPI'})))return;
+if(!(await appConfirmAction({title:'Archive KPI',message:'Archive this KPI instead of deleting it?',detail:'Indicators and monthly KPI history will be kept for management review evidence. The KPI will no longer appear in the active scorecard.',confirmText:'Archive KPI',cancelText:'Keep KPI'})))return;
 try{
-await api('/kpi_indicators?kpi_id=eq.'+kpiEditKpiId,{m:'DELETE'});
-await api('/kpi_monthly_data?kpi_id=eq.'+kpiEditKpiId,{m:'DELETE'});
-await api('/kpis_v2?id=eq.'+kpiEditKpiId,{m:'DELETE'});
-toast('KPI deleted!');closeKpiModal('kpi-edit-modal');await kpiLoadAll();
+await api('/kpis_v2?id=eq.'+kpiEditKpiId,{m:'PATCH',p:'return=minimal',b:{status:'archived'}});
+toast('KPI archived');closeKpiModal('kpi-edit-modal');await kpiLoadAll();
 }catch(e){toast(e.message,false);}
 }
 function kpiCalcYTD(indicatorId,upToMonth,newActual){
