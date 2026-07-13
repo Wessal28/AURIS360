@@ -5945,7 +5945,7 @@ function aiTab(tab, btn) {
   aiCurrentTab = tab;
   document.querySelectorAll('[id^="aitab-"]').forEach(function(t){t.classList.remove('active');});
   if(btn) btn.classList.add('active');
-  ['insights','rams','toolbox','compliance','risk','docs','chat'].forEach(function(t){
+  ['insights','safetyos','rams','toolbox','compliance','risk','docs','chat'].forEach(function(t){
     var el = document.getElementById('aiview-'+t);
     if(el) el.style.display = t===tab ? 'block' : 'none';
   });
@@ -6192,6 +6192,87 @@ async function aiLiveCompliance(type) {
     outEl.textContent = aiFriendlyError(e);
     toast('Scan failed: '+e.message, false);
   }
+}
+
+// ── SafetyOS Go / No-Go decision engine ───────────────────────────────────────
+function safetyOSExample(task,location,worker,type){
+  var set=function(id,v){var el=document.getElementById(id);if(el)el.value=v||'';};
+  set('safetyos-task',task);set('safetyos-location',location);set('safetyos-worker',worker);
+  var wt=document.getElementById('safetyos-worktype');if(wt)wt.value=type||'general';
+  var d=document.getElementById('safetyos-date');if(d&&!d.value)d.value=new Date().toISOString().slice(0,10);
+}
+function safetyOSMatch(row,terms){
+  var t=(terms||[]).filter(Boolean).map(function(x){return String(x).toLowerCase();}).filter(function(x){return x.length>2;});
+  if(!t.length)return true;
+  var hay=Object.keys(row||{}).map(function(k){var v=row[k];return typeof v==='object'?JSON.stringify(v||{}):String(v||'');}).join(' ').toLowerCase();
+  return t.some(function(x){return hay.indexOf(x)!==-1||x.split(/\s+/).some(function(p){return p.length>3&&hay.indexOf(p)!==-1;});});
+}
+async function safetyOSFetch(path){try{return await api(path);}catch(e){console.warn('SafetyOS data:',e.message);return [];} }
+function safetyOSCompact(rows,keys,limit){
+  return (rows||[]).slice(0,limit||8).map(function(r){var o={};keys.forEach(function(k){if(r&&r[k]!==undefined&&r[k]!==null&&r[k]!=='')o[k]=r[k];});return o;});
+}
+async function safetyOSCollectContext(input){
+  var terms=[input.task,input.location,input.worker,input.work_type].filter(Boolean);
+  var results=await Promise.all([
+    safetyOSFetch('/people?select=*'+cf()+'&order=full_name.asc&limit=250'),
+    safetyOSFetch('/people_certifications?select=*'+cf()+'&order=expiry_date.asc&limit=250'),
+    safetyOSFetch('/risk_assessments?select=*'+cf()+'&order=created_at.desc&limit=120'),
+    safetyOSFetch('/permit_to_work?select=*'+cf()+'&order=created_at.desc&limit=120'),
+    safetyOSFetch('/toolbox_talks?select=*'+cf()+'&order=talk_date.desc,created_at.desc&limit=120'),
+    safetyOSFetch('/inspections?select=*'+cf()+'&order=inspection_date.desc,created_at.desc&limit=120'),
+    safetyOSFetch('/events?select=*'+cf()+'&order=event_date.desc,created_at.desc&limit=120'),
+    safetyOSFetch('/action_tracker?select=*'+cf()+'&status=neq.closed&order=target_date.asc,created_at.desc&limit=160'),
+    safetyOSFetch('/chemical_register?select=*'+cf()+'&status=neq.deleted&order=product_name.asc&limit=120'),
+    safetyOSFetch('/tools_register?select=*'+cf()+'&order=created_at.desc&limit=120')
+  ]);
+  var peopleRows=(results[0]||[]).filter(function(r){return safetyOSMatch(r,[input.worker]);});
+  return {
+    request:input,
+    people:safetyOSCompact(peopleRows,['id','full_name','name','email','job_title','department','role','site_location','status'],10),
+    certifications:safetyOSCompact((results[1]||[]).filter(function(r){return safetyOSMatch(r,[input.worker,input.task]);}),['person_id','certificate_name','training_name','status','expiry_date','valid_until'],12),
+    risk_assessments:safetyOSCompact((results[2]||[]).filter(function(r){return safetyOSMatch(r,terms);}),['id','ra_ref','title','activity','status','overall_risk_level','review_date','location','site','department'],10),
+    permits:safetyOSCompact((results[3]||[]).filter(function(r){return safetyOSMatch(r,terms);}),['id','permit_ref','permit_type','status','work_description','location','valid_from','valid_to','created_at'],10),
+    toolbox_talks:safetyOSCompact((results[4]||[]).filter(function(r){return safetyOSMatch(r,terms);}),['id','tbt_ref','title','topic','talk_date','location','presenter','attendance_count','status'],10),
+    inspections:safetyOSCompact((results[5]||[]).filter(function(r){return safetyOSMatch(r,terms);}),['id','reference_no','inspection_type','site','location','inspection_date','status','score_good','score_insuf'],10),
+    recent_incidents:safetyOSCompact((results[6]||[]).filter(function(r){return safetyOSMatch(r,terms);}),['id','event_ref','event_type','event_date','severity','status','location','description'],10),
+    open_actions:safetyOSCompact((results[7]||[]).filter(function(r){return safetyOSMatch(r,terms);}),['id','title','source_ref','priority','status','target_date','due_date','responsible','department'],12),
+    chemicals:safetyOSCompact((results[8]||[]).filter(function(r){return safetyOSMatch(r,terms);}),['id','chemical_ref','product_name','risk_level','location','department','process_use','review_date','sds_revision_date'],10),
+    equipment:safetyOSCompact((results[9]||[]).filter(function(r){return safetyOSMatch(r,terms);}),['id','ref_number','name','category','status','inspection_status','next_inspection_date','location','assigned_to'],10)
+  };
+}
+async function safetyOSRunCheck(){
+  var out=document.getElementById('safetyos-output');if(!out)return;
+  if(typeof canUseAI==='function'&&!canUseAI()){out.innerHTML=aiFriendlyErrorHtml(new Error('restricted'));return;}
+  var g=function(id){var el=document.getElementById(id);return el?String(el.value||'').trim():'';};
+  var input={task:g('safetyos-task'),location:g('safetyos-location'),worker:g('safetyos-worker'),work_type:g('safetyos-worktype')||'general',planned_date:g('safetyos-date')||new Date().toISOString().slice(0,10),context:g('safetyos-context')};
+  if(!input.task){toast('Enter the planned work/task first',false);return;}
+  out.innerHTML='<div style="text-align:center;padding:50px 20px;color:var(--text2)"><div style="font-size:38px;margin-bottom:10px">🧠</div><div style="font-weight:800;color:var(--text)">SafetyOS is checking work readiness...</div><div style="font-size:12px;margin-top:6px">Reviewing live records: RA/RAMS, PTW, TBT, training, inspections, incidents, actions, chemicals and equipment.</div></div>';
+  try{
+    var ctx=await safetyOSCollectContext(input);
+    var prompt='You are SafetyOS, an HSE work readiness decision engine. Review whether this planned work can start today based on live HSE records. Return STRICT JSON only with keys: decision string GO|CONDITIONAL_GO|NO_GO, confidence string high|medium|low, decision_summary string, blocking_items array, conditions_to_start array, missing_records array, verified_controls array, required_documents array, required_notifications array, supervisor_briefing string, evidence array, next_actions array. Be conservative: if critical records are missing for high-risk work, use NO_GO or CONDITIONAL_GO. Check permits, RA/RAMS, SWMS, toolbox talk, training/competency, medical/fitness if relevant, inspections/equipment validity, gas test/rescue/fire watch for hot work/confined space, chemical SDS/controls, open actions and recent incidents. Context: '+JSON.stringify(ctx).slice(0,22000);
+    var raw=await callAI([{role:'user',content:prompt}], 'You are AURIS SafetyOS, a conservative HSE decision engine. Return valid JSON only. Never say work is safe unless evidence supports it.');
+    var data=aiExtractJson(raw)||{};
+    if(!data.decision&&!data.decision_summary)throw new Error('No structured SafetyOS decision returned');
+    safetyOSRenderDecision(data,ctx);
+    toast('SafetyOS decision ready');
+  }catch(e){out.innerHTML=aiFriendlyErrorHtml(e);toast(aiFriendlyError(e),false);}
+}
+function safetyOSRenderDecision(data,ctx){
+  var out=document.getElementById('safetyos-output');if(!out)return;
+  var arr=function(v){return Array.isArray(v)?v:(v?[String(v)]:[]);};
+  var decision=String(data.decision||'CONDITIONAL_GO').toUpperCase();
+  var cfg=decision==='GO'?{label:'GO',color:'#0F6E56',bg:'#ECFDF5'}:decision==='NO_GO'?{label:'NO-GO',color:'#B91C1C',bg:'#FEF2F2'}:{label:'CONDITIONAL GO',color:'#B45309',bg:'#FFFBEB'};
+  var section=function(title,items,icon){items=arr(items);if(!items.length)return '';return '<div style="margin-top:12px"><div style="font-weight:900;font-size:13px;margin-bottom:5px">'+escH(icon||'•')+' '+escH(title)+'</div><ul style="margin:0 0 0 18px;color:#334155;font-size:12px;line-height:1.55">'+items.map(function(x){return '<li>'+escH(x)+'</li>';}).join('')+'</ul></div>';};
+  var h='<div style="border-left:5px solid '+cfg.color+';background:'+cfg.bg+';border-radius:10px;padding:14px;margin-bottom:12px"><div style="font-size:11px;font-weight:900;text-transform:uppercase;color:'+cfg.color+'">SafetyOS decision</div><div style="font-size:30px;font-weight:900;color:'+cfg.color+';margin-top:2px">'+cfg.label+'</div><div style="font-size:13px;color:#111827;margin-top:5px">'+escH(data.decision_summary||'Review required before work starts.')+'</div><div style="font-size:11px;color:#475569;margin-top:6px">Confidence: '+escH(data.confidence||'medium')+'</div></div>';
+  h+='<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;margin-bottom:10px">'
+    +'<div style="background:#fff;border:1px solid var(--border);border-radius:8px;padding:9px"><div style="font-size:10px;color:var(--text2);font-weight:800;text-transform:uppercase">RA/RAMS</div><div style="font-size:20px;font-weight:900">'+(ctx.risk_assessments||[]).length+'</div></div>'
+    +'<div style="background:#fff;border:1px solid var(--border);border-radius:8px;padding:9px"><div style="font-size:10px;color:var(--text2);font-weight:800;text-transform:uppercase">Permits</div><div style="font-size:20px;font-weight:900">'+(ctx.permits||[]).length+'</div></div>'
+    +'<div style="background:#fff;border:1px solid var(--border);border-radius:8px;padding:9px"><div style="font-size:10px;color:var(--text2);font-weight:800;text-transform:uppercase">Open actions</div><div style="font-size:20px;font-weight:900">'+(ctx.open_actions||[]).length+'</div></div>'
+    +'<div style="background:#fff;border:1px solid var(--border);border-radius:8px;padding:9px"><div style="font-size:10px;color:var(--text2);font-weight:800;text-transform:uppercase">Incidents</div><div style="font-size:20px;font-weight:900">'+(ctx.recent_incidents||[]).length+'</div></div>'
+    +'</div>';
+  h+=section('Blocking items',data.blocking_items,'⛔')+section('Conditions before start',data.conditions_to_start,'✅')+section('Missing records',data.missing_records,'📄')+section('Verified controls',data.verified_controls,'🛡️')+section('Required documents',data.required_documents,'📋')+section('Notifications / approvals',data.required_notifications,'📣')+section('Evidence checked',data.evidence,'🔎')+section('Next actions',data.next_actions,'➡️');
+  if(data.supervisor_briefing)h+='<div style="margin-top:12px;padding:10px;border-radius:8px;background:#EFF6FF;color:#1E3A8A;font-size:12px"><b>Supervisor briefing:</b><br>'+escH(data.supervisor_briefing)+'</div>';
+  out.innerHTML=h;
 }
 
 // ── Predictive Risk ───────────────────────────────────────────────────────────
@@ -47571,6 +47652,7 @@ Pick the modules this client can see. Sephs admin (you) always sees everything r
 <!-- Quick action tabs -->
 <div style="display:flex;gap:0;margin-bottom:14px;border-bottom:2px solid var(--border);overflow-x:auto">
 <button class="mtg-tab active" id="aitab-insights"    onclick="aiTab('insights',this)"    style="white-space:nowrap">📊 HSE Insights</button>
+<button class="mtg-tab"        id="aitab-safetyos"    onclick="aiTab('safetyos',this)"    style="white-space:nowrap">🧠 SafetyOS Go/No-Go</button>
 <button class="mtg-tab"        id="aitab-rams"        onclick="aiTab('rams',this)"        style="white-space:nowrap">📋 RAMS Generator</button>
 <button class="mtg-tab"        id="aitab-toolbox"     onclick="aiTab('toolbox',this)"     style="white-space:nowrap">🗣️ Toolbox Talks</button>
 <button class="mtg-tab"        id="aitab-compliance"  onclick="aiTab('compliance',this)"  style="white-space:nowrap">✅ Compliance Check</button>
@@ -47592,6 +47674,50 @@ Pick the modules this client can see. Sephs admin (you) always sees everything r
 <div style="font-weight:700;font-size:15px;margin-bottom:8px">Ready to analyse your HSE data</div>
 <div style="font-size:12px;margin-bottom:16px">AURIS will analyse your incidents, inspections, compliance, training and KPIs to surface actionable insights</div>
 <button class="btn btn-primary" onclick="genFullAI()" style="font-size:14px;padding:10px 24px"><i class="ti ti-robot"></i>Generate AI analysis</button>
+</div>
+</div>
+</div>
+
+<!-- ══ SAFETYOS GO / NO-GO ══ -->
+<div id="aiview-safetyos" style="display:none">
+<div style="display:grid;grid-template-columns:minmax(0,0.95fr) minmax(0,1.05fr);gap:14px" class="mobile-stack">
+<div>
+<div class="card" style="border:2px solid #0F6E56;margin-bottom:14px">
+<div class="card-title" style="color:#0F6E56">🧠 SafetyOS Work Readiness Checker</div>
+<div style="font-size:12px;color:var(--text2);margin-bottom:12px">Ask AURIS whether a task can start today. It checks live records such as RAMS/RA, PTW, toolbox talk, inspections, incidents, actions, chemicals, training and certifications.</div>
+<div class="form-group"><label class="form-label">Work / task to be carried out *</label><input id="safetyos-task" placeholder="e.g. Hot work on tank farm, roof maintenance, chemical transfer..."/></div>
+<div class="form-row">
+<div class="form-group"><label class="form-label">Area / location</label><input id="safetyos-location" placeholder="e.g. Warehouse, Tank 4, workshop, roof..."/></div>
+<div class="form-group"><label class="form-label">Worker / team</label><input id="safetyos-worker" placeholder="Name, team, contractor or job role..."/></div>
+</div>
+<div class="form-row">
+<div class="form-group"><label class="form-label">Work type</label><select id="safetyos-worktype"><option value="general">General work</option><option value="hot_work">Hot work</option><option value="confined_space">Confined space</option><option value="working_at_height">Working at height</option><option value="electrical">Electrical / isolation</option><option value="lifting">Lifting operation</option><option value="chemical">Chemical handling</option><option value="excavation">Excavation</option><option value="vehicle">Vehicle / mobile plant</option></select></div>
+<div class="form-group"><label class="form-label">Planned date</label><input id="safetyos-date" type="date"/></div>
+</div>
+<div class="form-group"><label class="form-label">Additional context</label><textarea id="safetyos-context" style="min-height:80px" placeholder="Mention equipment, contractor, permit ref, weather, shift, special conditions, etc."></textarea></div>
+<button class="btn btn-primary" style="width:100%;background:#0F6E56;border-color:#0F6E56" onclick="safetyOSRunCheck()"><i class="ti ti-shield-check"></i>Run Go/No-Go check</button>
+</div>
+<div class="card">
+<div class="card-title">Quick examples</div>
+<div style="display:flex;flex-wrap:wrap;gap:6px">
+<button class="btn btn-sm" onclick="safetyOSExample('Welding on pipework','Tank farm','Hot work crew','hot_work')">Hot work</button>
+<button class="btn btn-sm" onclick="safetyOSExample('Entry for tank cleaning','Tank 4','Confined space team','confined_space')">Confined space</button>
+<button class="btn btn-sm" onclick="safetyOSExample('Roof maintenance and gutter cleaning','Main building roof','Maintenance team','working_at_height')">Work at height</button>
+<button class="btn btn-sm" onclick="safetyOSExample('Chemical transfer from drum to process tank','Chemical store','Production operator','chemical')">Chemical transfer</button>
+<button class="btn btn-sm" onclick="safetyOSExample('Forklift unloading operation','Warehouse receiving bay','Warehouse team','vehicle')">Forklift work</button>
+</div>
+</div>
+</div>
+<div>
+<div class="card" id="safetyos-output-card">
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;gap:8px;flex-wrap:wrap">
+<div class="card-title" style="margin:0">SafetyOS Decision</div>
+<button class="btn btn-sm" onclick="aiCopyOutput('safetyos-output')"><i class="ti ti-copy"></i>Copy</button>
+</div>
+<div id="safetyos-output" style="min-height:420px;background:#f9fafb;border-radius:10px;padding:16px;font-size:13px;line-height:1.6;color:#1a1a1a">
+<div style="text-align:center;padding:54px 20px;color:var(--text2)"><div style="font-size:44px;margin-bottom:10px">🧠</div><div style="font-weight:800;color:var(--text)">SafetyOS ready</div><div style="font-size:12px;margin-top:6px">Enter a planned task and run the check. AURIS will produce a Go / Conditional Go / No-Go decision with evidence and missing controls.</div></div>
+</div>
+</div>
 </div>
 </div>
 </div>
