@@ -25159,8 +25159,21 @@ function mapDisplayRef(x){
 function mapQueueRefBackfill(){
   var rows=(mapAllData||[]).filter(function(x){return x&&x.id&&!mapHasProfessionalRef(x.action_ref);});
   if(!rows.length)return;
+  var counters={};
+  (mapAllData||[]).forEach(function(x){
+    var ref=String(x.action_ref||'').trim();
+    var match=ref.match(/^MAP-([A-Z]{2})-(\d{4})-(\d{3,})$/i);
+    if(!match)return;
+    var key=match[1].toUpperCase()+'-'+match[2];
+    counters[key]=Math.max(counters[key]||0,parseInt(match[3],10)||0);
+  });
   rows.slice(0,25).forEach(function(x){
-    var ref=mapBuildGeneratedRef(x);
+    var dt=x.created_at||x.target_date||x.updated_at||new Date().toISOString();
+    var yr=(new Date(dt).getFullYear()||new Date().getFullYear());
+    var code=mapActionTypeCode(x.action_type);
+    var key=code+'-'+yr;
+    counters[key]=(counters[key]||0)+1;
+    var ref='MAP-'+code+'-'+yr+'-'+String(counters[key]).padStart(3,'0');
     x.action_ref=ref;
     api('/action_tracker?id=eq.'+x.id,{m:'PATCH',p:'return=minimal',b:{action_ref:ref,updated_at:new Date().toISOString()}}).catch(function(){});
   });
@@ -25665,7 +25678,15 @@ async function mapSave(draft){
       var res=await api('/action_tracker',{m:'POST',p:'return=representation',b:body});
       if(res?.[0]?.id){
         var yr=new Date().getFullYear();var typeCode={corrective:'CA',preventive:'PA',improvement:'IA',observation:'OB'}[body.action_type]||'MA';
-        var ref='MAP-'+typeCode+'-'+yr+'-'+String(mapAllData.length+1).padStart(3,'0');
+        var seq=1;
+        try{
+          var existing=await api('/action_tracker?select=action_ref&company_id=eq.'+ccid()+'&action_ref=like.MAP-'+typeCode+'-'+yr+'-*&order=action_ref.desc&limit=1');
+          if(existing&&existing[0]&&existing[0].action_ref){
+            var match=existing[0].action_ref.match(/MAP-[A-Z]{2}-\d{4}-(\d+)/);
+            if(match)seq=parseInt(match[1],10)+1;
+          }
+        }catch(_){/* fall back to seq=1 */}
+        var ref='MAP-'+typeCode+'-'+yr+'-'+String(seq).padStart(3,'0');
         await api('/action_tracker?id=eq.'+res[0].id,{m:'PATCH',p:'return=minimal',b:{action_ref:ref}});
         res[0].action_ref=ref;mapAllData.unshift(res[0]);mapEditingId=res[0].id;
         document.getElementById('map-form-ref').textContent=ref;refStr=' Ref: '+ref;
