@@ -1760,9 +1760,14 @@ function auditRecordLabel(body){
   }
   return '';
 }
+function auditIsSensitiveField(k){
+  k=String(k||'').toLowerCase();
+  if(!k)return false;
+  if({password:1,temporary_password:1,resend_api_key:1,api_key:1,secret:1,token:1,body_html:1}[k])return true;
+  return /(password|passcode|pin|secret|token|api[_-]?key|service[_-]?key|authorization|access[_-]?token|refresh[_-]?token|smtp|resend|openai|anthropic)/i.test(k);
+}
 function auditChangedFields(body){
-  var hidden={password:1,temporary_password:1,resend_api_key:1,api_key:1,secret:1,token:1,body_html:1};
-  return Object.keys(body||{}).filter(function(k){return !hidden[k];});
+  return Object.keys(body||{}).filter(function(k){return !auditIsSensitiveField(k);});
 }
 function auditApiMutation(path,method,o,response){
   try{
