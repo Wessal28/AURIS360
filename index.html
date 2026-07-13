@@ -29766,27 +29766,46 @@ async function auditAIAssistFindings(){
   try{
     if(typeof canUseAI==='function' && !canUseAI()){toast('AURIS AI is restricted to authorised HSE/admin roles',false);return;}
     var items=auditCollectChecklistDraft();
-    var insufficient=items.filter(function(x){return x.result==='insufficient';});
     if(!items.length){toast('Add or load a checklist first',false);return;}
-    if(!insufficient.length){toast('Mark at least one checklist item as Insufficient first',false);return;}
+    var incomplete=items.filter(function(x){return !x.result;});
+    var insufficient=items.filter(function(x){return x.result==='insufficient';});
     var type=document.getElementById('audit-type')?.value||'workplace';
     var site=document.getElementById('if-site')?.value?.trim()||'site';
-    var prompt='You are an HSE audit and inspection assistant. Convert insufficient checklist items into practical corrective actions and, where relevant, audit findings. Return strict JSON only with keys: overall_findings_summary, positive_observation, negative_observation, actions array, findings array. Each action needs description, responsible blank if unknown, target_date YYYY-MM-DD, priority. Each finding needs finding_type minor_nc/major_nc/observation, clause, description, evidence, corrective_action, assigned_to blank if unknown. Context: '+JSON.stringify({inspection_type:type,site:site,date:document.getElementById('if-date')?.value||'',inspector:document.getElementById('if-by')?.value||'',positive_obs:document.getElementById('if-pos')?.value||'',negative_obs:document.getElementById('if-neg')?.value||'',insufficient_items:insufficient,all_items:items});
-    auditAIReviewPanel('<b>AI findings assistant</b><br>Analysing insufficient items and preparing proposed actions...');
-    var raw=await callAI(prompt);
+    var ctx={inspection_type:type,site:site,date:document.getElementById('if-date')?.value||'',department:document.getElementById('audit-dept')?.value||'',inspector:document.getElementById('if-by')?.value||'',positive_obs:document.getElementById('if-pos')?.value||'',negative_obs:document.getElementById('if-neg')?.value||'',insufficient_items:insufficient,incomplete_items:incomplete,all_items:items,audit_standard:document.getElementById('audit-standard')?.value||'',scope:document.getElementById('audit-scope')?.value||''};
+    auditAIReviewPanel('<b>AI inspection assistant</b><br>Analysing checklist quality, findings and corrective actions...');
+    var prompt='You are an HSE audit and inspection assistant. Review this inspection before it is saved. Return STRICT JSON only with keys: readiness string, score_comment string, positive_observation string, negative_observation string, actions array, findings array, missing_checks array, reviewer_notes array. Each action needs description, responsible blank if unknown, target_date YYYY-MM-DD, priority low/medium/high/critical. Each finding needs finding_type minor_nc/major_nc/observation/opportunity/positive, clause, description, evidence, corrective_action, assigned_to blank if unknown. Do not invent facts; base suggestions on checklist results and observations. Context: '+JSON.stringify(ctx).slice(0,18000);
+    var raw=await callAI([{role:'user',content:prompt}], 'You are AURIS, an expert HSE inspection and audit quality assistant. Return valid JSON only.');
     var data=aiExtractJson(raw)||{};
-    if(!data.actions && !data.findings)throw new Error('No structured findings returned');
-    var pos=document.getElementById('if-pos'), neg=document.getElementById('if-neg');
-    if(pos && !pos.value.trim() && data.positive_observation)pos.value=data.positive_observation;
-    if(neg && !neg.value.trim())neg.value=data.negative_observation||data.overall_findings_summary||'';
-    var actionCount=auditAppendAIActions(data.actions||[]);
-    var findingCount=auditAppendAIFindings(data.findings||[]);
-    auditAIReviewPanel('<b>AI findings assistant</b><br>Prepared <b>'+actionCount+'</b> corrective action(s)'+(findingCount?(' and <b>'+findingCount+'</b> finding(s)'):'')+'. Review, assign responsible persons and due dates before saving.');
-    toast('AI findings prepared for review');
+    if(!data.actions&&!data.findings&&!data.reviewer_notes)throw new Error('No structured inspection review returned');
+    window.auditAIReviewData=data;
+    auditAIRenderReview(data);
+    toast('AI inspection review ready');
   }catch(e){
-    auditAIReviewPanel('<b>AI findings assistant</b><br><span style="color:#B91C1C">AI error: '+escH(e.message||String(e))+'</span>');
-    toast('AI findings error: '+(e.message||e),false);
+    auditAIReviewPanel('<b>AI inspection assistant</b><br><span style="color:#B91C1C">AI error: '+escH(e.message||String(e))+'</span>');
+    toast('AI inspection error: '+(e.message||e),false);
   }
+}
+function auditAIRenderReview(data){
+  data=data||{};
+  var arr=function(v){return Array.isArray(v)?v:(v?[String(v)]:[]);};
+  var actions=arr(data.actions), findings=arr(data.findings), missing=arr(data.missing_checks), notes=arr(data.reviewer_notes);
+  var h='<div style="display:flex;justify-content:space-between;gap:12px;align-items:flex-start;flex-wrap:wrap"><div><b><i class="ti ti-robot"></i> AI inspection quality review</b><div style="font-size:12px;color:#334155;margin-top:4px">Review suggestions before applying. AURIS helps structure findings; the inspector remains accountable for the record.</div></div><button class="btn btn-sm" onclick="document.getElementById(\'audit-ai-output\').style.display=\'none\'"><i class="ti ti-x"></i></button></div>';
+  h+='<div style="margin-top:10px;display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:8px"><div style="background:#fff;border:1px solid #BFDBFE;border-radius:8px;padding:9px"><div style="font-size:11px;font-weight:800;color:#185FA5;text-transform:uppercase">Readiness</div><div style="font-weight:800;color:#111827;margin-top:3px">'+escH(data.readiness||'Review required')+'</div></div><div style="background:#fff;border:1px solid #BFDBFE;border-radius:8px;padding:9px"><div style="font-size:11px;font-weight:800;color:#185FA5;text-transform:uppercase">Score comment</div><div style="font-size:12px;color:#374151;margin-top:3px">'+escH(data.score_comment||'Check all items and action any insufficient points.')+'</div></div></div>';
+  if(missing.length)h+='<div style="margin-top:10px"><b>Missing / incomplete checks</b><ul style="margin:6px 0 0 18px">'+missing.slice(0,8).map(function(x){return '<li>'+escH(x)+'</li>';}).join('')+'</ul></div>';
+  if(notes.length)h+='<div style="margin-top:10px"><b>Reviewer notes</b><ul style="margin:6px 0 0 18px">'+notes.slice(0,8).map(function(x){return '<li>'+escH(x)+'</li>';}).join('')+'</ul></div>';
+  if(actions.length||findings.length)h+='<div style="margin-top:10px;font-size:12px;color:#334155">Prepared <b>'+actions.length+'</b> corrective action(s) and <b>'+findings.length+'</b> audit finding(s).</div>';
+  h+='<div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap"><button class="btn btn-primary" onclick="auditAIApplyReview()"><i class="ti ti-check"></i>Apply suggestions</button></div>';
+  auditAIReviewPanel(h);
+}
+function auditAIApplyReview(){
+  var data=window.auditAIReviewData||{};
+  var pos=document.getElementById('if-pos'), neg=document.getElementById('if-neg');
+  if(pos && !pos.value.trim() && data.positive_observation)pos.value=data.positive_observation;
+  if(neg && !neg.value.trim())neg.value=data.negative_observation||data.overall_findings_summary||'';
+  var actionCount=auditAppendAIActions(data.actions||[]);
+  var findingCount=auditAppendAIFindings(data.findings||[]);
+  auditAIReviewPanel('<b>AI inspection assistant</b><br>Applied <b>'+actionCount+'</b> corrective action(s)'+(findingCount?(' and <b>'+findingCount+'</b> finding(s)'):'')+'. Review responsible persons and due dates before saving.');
+  toast('AI inspection suggestions applied for review');
 }
 // Save inspection
 async function auditSave() {
@@ -40049,7 +40068,7 @@ function fireEquipStatusBadge(s) {
 <div style="display:flex;gap:8px;flex-wrap:wrap">
 <button class="btn" style="background:rgba(255,255,255,.2);color:#fff;border-color:rgba(255,255,255,.3)" onclick="auditBackToList()"><i class="ti ti-arrow-left"></i>Back</button>
 <button id="audit-delete-btn" class="btn" style="display:none;background:rgba(220,38,38,.3);color:#fff;border-color:rgba(220,38,38,.5)" onclick="auditDelete()"><i class="ti ti-trash"></i></button>
-<button class="btn" style="background:#fff;color:#5B21B6;font-weight:700" onclick="auditAIAssistFindings()"><i class="ti ti-robot"></i>AI findings</button><button class="btn" style="background:#fff;color:#185FA5;font-weight:700" onclick="auditSave()"><i class="ti ti-device-floppy"></i>Save</button>
+<button class="btn" id="audit-ai-btn" style="background:#fff;color:#5B21B6;font-weight:700" onclick="auditAIAssistFindings()"><i class="ti ti-robot"></i>AI review</button><button class="btn" style="background:#fff;color:#185FA5;font-weight:700" onclick="auditSave()"><i class="ti ti-device-floppy"></i>Save</button>
 </div>
 </div>
 </div>
