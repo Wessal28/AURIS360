@@ -4607,7 +4607,7 @@ function dashRouteView() {
 function dashRenderDemoReadiness(data){
   var panel=document.getElementById('dash-demo-readiness');
   if(!panel)return;
-  var canSee=isAdm()||activeRole()==='hse_manager'||activeRole()==='hse_officer';
+  var canSee=isSA();
   panel.style.display=canSee&&!isPersonalDashRole()?'block':'none';
   if(panel.style.display==='none')return;
   data=data||{};
@@ -4641,6 +4641,7 @@ function dashRenderDemoReadiness(data){
 }
 
 function dashOpenMeetingChecklist(){
+  if(!isSA()){toast('Internal SEPHS demo tools are not available for this role.',false);return;}
   var modal=document.getElementById('client-meeting-checklist-modal');
   if(!modal){
     modal=document.createElement('div');
@@ -5159,7 +5160,7 @@ function copyClientValueSnapshot(){
 }
 function renderClientDemoCommandCenter(){
   var el=document.getElementById('client-demo-command-body');if(!el)return;
-  var canSee=isAdm()||activeRole()==='hse_manager'||activeRole()==='hse_officer';
+  var canSee=isSA();
   var card=document.getElementById('settings-client-demo-card');
   if(card)card.style.display=canSee?'block':'none';
   if(!canSee)return;
@@ -5252,6 +5253,7 @@ function clientDemoWalkthroughSteps(){
 }
 
 function dashOpenDemoWalkthrough(){
+  if(!isSA()){toast('Internal SEPHS demo tools are not available for this role.',false);return;}
   var modal=document.getElementById('client-demo-walkthrough-modal');
   if(!modal){
     modal=document.createElement('div');
@@ -5284,12 +5286,14 @@ function dashCloseDemoWalkthrough(){
 }
 
 function copyClientDemoWalkthrough(){
+  if(!isSA()){toast('Internal SEPHS demo tools are not available for this role.',false);return;}
   var txt='AURIS360 guided demo walkthrough\n\n'+clientDemoWalkthroughSteps().map(function(x){return x.n+'. '+x.title+'\nSay: '+x.say+'\nShow: '+x.show;}).join('\n\n');
   if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(txt).then(function(){toast('Guided demo script copied');});
   else toast(txt);
   auditLogEvent('export','demo','Guided demo walkthrough copied',{length:txt.length});
 }
 function copyClientDemoSummary(){
+  if(!isSA()){toast('Internal SEPHS demo tools are not available for this role.',false);return;}
   var txt=clientDemoSummaryText();
   if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(txt).then(function(){toast('Client demo summary copied');});
   else toast(txt);
