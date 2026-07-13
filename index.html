@@ -7558,6 +7558,11 @@ function chemRenderTable(){
   h+='</tbody></table>';el.innerHTML=h;
 }
 
+function chemClearAIReview(){
+  window.chemAIReview=null;
+  var panel=document.getElementById('chem-ai-panel');
+  if(panel){panel.style.display='none';panel.innerHTML='';}
+}
 function chemShowForm(){document.getElementById('chem-register-view').style.display='none';document.getElementById('chem-form-view').style.display='block';}
 async function chemBack(){document.getElementById('chem-form-view').style.display='none';document.getElementById('chem-register-view').style.display='block';await chemLoad();}
 
@@ -7574,6 +7579,7 @@ function chemNew(){
   var review=new Date();review.setFullYear(review.getFullYear()+1);
   var rd=document.getElementById('chem-review');if(rd)rd.value=review.toISOString().slice(0,10);
   var msg=document.getElementById('chem-sds-msg');if(msg)msg.textContent='';
+  chemClearAIReview();
   chemUpdateRiskPreview();
   chemShowForm();
 }
@@ -7598,6 +7604,7 @@ function chemEdit(id){
   document.getElementById('chem-duration').value=exp.exposure_duration||'short';
   document.getElementById('chem-task').value=exp.task_type||'closed_handling';
   document.getElementById('chem-status').value=x.status||'active';
+  chemClearAIReview();
   chemUpdateRiskPreview();
   chemShowForm();
 }
@@ -7668,6 +7675,65 @@ function chemRecommend(){
   lines.push('Ensure spill response materials, eyewash/shower and first aid arrangements are available.');
   if(/H3(34|17|50|60|72)|SENSITI|CARCINOGEN|MUTAGEN|REPROTOXIC/i.test([document.getElementById('chem-hcodes')?.value,document.getElementById('chem-hazards')?.value].join(' ')))lines.push('Consider occupational health surveillance due to sensitiser/carcinogen/reprotoxic/long-term health hazard indicators.');
   document.getElementById('chem-recommendations').value=lines.join('\n');
+}
+function chemFormContext(){
+  var g=function(id){var el=document.getElementById(id);return el?String(el.value||'').trim():'';};
+  var risk=chemRiskFromForm();
+  return {
+    product:g('chem-product'),supplier:g('chem-supplier'),manufacturer:g('chem-manufacturer'),sds_revision_date:g('chem-sds-date'),sds_file:g('chem-sds-file'),
+    signal_word:g('chem-signal'),h_codes:g('chem-hcodes'),hazard_identification:g('chem-hazards'),exposure_routes:g('chem-routes'),exposure_consequences:g('chem-consequences'),
+    first_aid:g('chem-firstaid'),handling_storage:g('chem-handling'),ppe_required:g('chem-ppe'),location:g('chem-location'),department:g('chem-dept'),process_use:g('chem-use'),
+    quantity_stored:g('chem-qty'),persons_exposed:g('chem-persons'),frequency:g('chem-frequency'),duration:g('chem-duration'),task_type:g('chem-task'),
+    existing_controls:g('chem-controls'),current_recommendations:g('chem-recommendations'),calculated_risk:r
+  };
+}
+async function chemAIExposureReview(){
+  var panel=document.getElementById('chem-ai-panel');
+  if(typeof canUseAI==='function'&&!canUseAI()){toast('AURIS AI is restricted to authorised HSE/admin roles.',false);return;}
+  var ctx=chemFormContext();
+  if(!ctx.product&&!ctx.hazard_identification&&!ctx.h_codes){toast('Enter product or SDS hazard details first',false);return;}
+  if(panel){panel.style.display='block';panel.innerHTML='<div style="padding:12px;border-radius:10px;background:#F5F3FF;border:1px solid #DDD6FE;color:#5B21B6"><b><i class="ti ti-loader"></i> AURIS is reviewing chemical exposure...</b><div style="font-size:12px;margin-top:4px;color:#6D28D9">Checking SDS hazards, exposure scenario, controls, PPE, storage, emergency arrangements and monitoring needs.</div></div>';}
+  try{
+    var prompt='Review this chemical register entry as an occupational hygiene and HSE chemical risk specialist. Return STRICT JSON only with keys: risk_summary string, risk_level string low|medium|high|critical, exposure_routes array, exposure_consequences array, required_controls array, ppe_rpe array, storage_segregation array, emergency_first_aid array, monitoring_health_surveillance array, missing_information array, immediate_actions array, recommendations_text string, existing_controls_text string, ppe_text string, handling_storage_text string, first_aid_text string. Be practical, conservative and suitable for an HSE chemical register. Do not claim to replace the official SDS. Context: '+JSON.stringify(ctx).slice(0,18000);
+    var raw=await callAI([{role:'user',content:prompt}], 'You are AURIS, an expert chemical safety and occupational hygiene assistant. Return valid JSON only.');
+    var data=aiExtractJson(raw)||{};
+    if(!data.risk_summary&&!data.required_controls&&!data.recommendations_text)throw new Error('No structured chemical exposure review returned');
+    chemAIRenderReview(data);
+    toast('Chemical AI review ready');
+  }catch(e){if(panel)panel.innerHTML=aiFriendlyErrorHtml(e);toast(aiFriendlyError(e),false);}
+}
+function chemAIRenderReview(data){
+  var panel=document.getElementById('chem-ai-panel');if(!panel)return;
+  window.chemAIReview=data||{};
+  var arr=function(v){return Array.isArray(v)?v:(v?[String(v)]:[]);};
+  var risk=String(data.risk_level||chemRiskFromForm().level||'medium').toLowerCase();
+  var cfg=CHEM_RISK_CFG[risk]||CHEM_RISK_CFG.medium;
+  var h='<div style="border:1px solid #DDD6FE;border-left:4px solid #7C3AED;border-radius:10px;background:#fff;padding:12px">';
+  h+='<div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start"><div><div style="font-weight:900;color:#5B21B6"><i class="ti ti-robot"></i> AI chemical exposure review</div><div style="font-size:12px;color:var(--text2);margin-top:3px">Review before applying. AURIS supports chemical risk assessment; the official SDS and competent HSE review remain authoritative.</div></div><button class="btn btn-sm" onclick="chemClearAIReview()"><i class="ti ti-x"></i></button></div>';
+  h+='<div style="margin-top:10px;display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:8px"><div style="padding:10px;border-radius:8px;background:'+cfg.bg+';color:'+cfg.tc+'"><div style="font-size:11px;font-weight:900;text-transform:uppercase">AI risk view</div><div style="font-size:18px;font-weight:900">'+escH(cfg.label)+'</div></div><div style="padding:10px;border-radius:8px;background:#F8FAFC;border:1px solid var(--border)"><div style="font-size:11px;font-weight:900;color:#475569;text-transform:uppercase">Summary</div><div style="font-size:12px;margin-top:3px">'+escH(data.risk_summary||'Chemical exposure review completed.')+'</div></div></div>';
+  var blocks=[['Exposure routes',data.exposure_routes],['Health consequences',data.exposure_consequences],['Required controls',data.required_controls],['PPE / RPE',data.ppe_rpe],['Storage / segregation',data.storage_segregation],['Emergency / first aid',data.emergency_first_aid],['Monitoring / health surveillance',data.monitoring_health_surveillance],['Missing information',data.missing_information],['Immediate actions',data.immediate_actions]];
+  blocks.forEach(function(b){var list=arr(b[1]);if(list.length)h+='<div style="margin-top:10px"><div style="font-weight:800;font-size:12px">'+escH(b[0])+'</div><ul style="margin:5px 0 0 18px;color:var(--text2);font-size:12px;line-height:1.45">'+list.slice(0,8).map(function(x){return '<li>'+escH(x)+'</li>';}).join('')+'</ul></div>';});
+  h+='<div style="margin-top:12px"><button class="btn btn-primary" onclick="chemAIApplyReview()"><i class="ti ti-check"></i>Apply to chemical form</button></div>';
+  h+='</div>';
+  panel.innerHTML=h;
+}
+function chemAIApplyReview(){
+  var data=window.chemAIReview||{};
+  var arr=function(v){return Array.isArray(v)?v:(v?[String(v)]:[]);};
+  var set=function(id,val,append){var el=document.getElementById(id);if(!el||!val)return;var text=Array.isArray(val)?val.join('\n'):String(val);if(!text.trim())return;el.value=append&&el.value.trim()?el.value.trim()+'\n'+text:text;};
+  set('chem-controls',data.existing_controls_text||data.required_controls);
+  set('chem-ppe',data.ppe_text||data.ppe_rpe);
+  set('chem-handling',data.handling_storage_text||data.storage_segregation);
+  set('chem-firstaid',data.first_aid_text||data.emergency_first_aid);
+  var rec=data.recommendations_text||[].concat(arr(data.immediate_actions),arr(data.monitoring_health_surveillance),arr(data.missing_information).map(function(x){return 'Confirm: '+x;})).join('\n');
+  set('chem-recommendations',rec);
+  var risk=String(data.risk_level||'').toLowerCase();
+  if(risk&&CHEM_RISK_CFG[risk]){
+    var current=chemRiskFromForm();
+    if(risk!==current.level)set('chem-recommendations','AI risk view: '+CHEM_RISK_CFG[risk].label+' (current calculated score shows '+CHEM_RISK_CFG[current.level].label+'). Review exposure assumptions before saving.',true);
+  }
+  chemUpdateRiskPreview();
+  toast('AI chemical review copied into editable fields - review then save');
 }
 
 async function chemParseSdsFile(file){
@@ -41143,8 +41209,9 @@ function fireEquipStatusBadge(s) {
 <div style="font-size:15px;font-weight:900;margin-bottom:12px">Risk assessment</div>
 <div><label style="font-size:12px;font-weight:700;color:var(--text2)">Existing controls</label><textarea id="chem-controls" rows="3" oninput="chemUpdateRiskPreview()" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:8px"></textarea></div>
 <div id="chem-risk-preview" style="margin-top:12px"></div>
-<button class="btn" style="margin-top:12px;width:100%;justify-content:center" onclick="chemRecommend()"><i class="ti ti-sparkles"></i>Suggest controls</button>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px" class="mobile-stack"><button class="btn" style="width:100%;justify-content:center" onclick="chemRecommend()"><i class="ti ti-sparkles"></i>Suggest controls</button><button class="btn" style="width:100%;justify-content:center;color:#5B21B6;border-color:#DDD6FE;background:#F5F3FF" onclick="chemAIExposureReview()"><i class="ti ti-robot"></i>AI exposure review</button></div>
 <div style="margin-top:12px"><label style="font-size:12px;font-weight:700;color:var(--text2)">Recommendations</label><textarea id="chem-recommendations" rows="5" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:8px"></textarea></div>
+<div id="chem-ai-panel" style="display:none;margin-top:12px"></div>
 <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px">
 <div><label style="font-size:12px;font-weight:700;color:var(--text2)">Review date</label><input id="chem-review" type="date" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:8px"></div>
 <div><label style="font-size:12px;font-weight:700;color:var(--text2)">Status</label><select id="chem-status" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:8px"><option value="active">Active</option><option value="archived">Archived</option></select></div>
