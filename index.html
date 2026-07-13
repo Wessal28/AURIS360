@@ -4791,6 +4791,36 @@ function copyClientDemoObjections(){
   else toast(txt);
   auditLogEvent('export','demo','Client Q&A copied',{length:txt.length});
 }
+function clientPilotOnboardingItems(){
+  return [
+    {phase:'Company setup',task:'Confirm company profile, logo, report branding and primary contact.',page:'settings',owner:'SEPHS Admin'},
+    {phase:'Access',task:'Create company admin, HSE manager/officer, supervisor and sample employee users with correct roles.',page:'users',owner:'SEPHS Admin'},
+    {phase:'Modules',task:'Enable only the pilot modules agreed with the client, then confirm the sidebar matches the rollout scope.',page:'admin',owner:'SEPHS Admin'},
+    {phase:'People data',task:'Load a clean people register with departments, job titles, phone/real notification emails and status.',page:'people',owner:'Company Admin'},
+    {phase:'Notifications',task:'Configure incident recipients by event type and check that local .local users have a real email/phone alternative.',page:'settings',owner:'Company Admin'},
+    {phase:'Approvals',task:'Define approval workflows for PTW, RA/SWMS, documents and investigations before real use.',page:'settings',owner:'HSE Manager'},
+    {phase:'Demo records',task:'Prepare one clean incident, BBS observation, RA/SWMS, inspection, MAP action, chemical and contractor example.',page:'dashboard',owner:'SEPHS Admin'},
+    {phase:'Training',task:'Run a 30-45 minute user walkthrough: report incident, record BBS, view actions and acknowledge toolbox/induction records.',page:'training',owner:'HSE Manager'},
+    {phase:'Governance',task:'Agree pilot rules: who can edit submitted records, who releases locked records, and how audit trail/export requests are handled.',page:'approvals',owner:'Client Sponsor'},
+    {phase:'Go-live',task:'Complete acceptance check, confirm support contact, backup/export expectations and first review date.',page:'settings',owner:'SEPHS Admin'}
+  ].filter(function(x){return canAccessPage(x.page);});
+}
+
+function renderClientPilotOnboarding(){
+  var items=clientPilotOnboardingItems();
+  return '<div style="margin-top:14px;border:1px solid var(--border);border-radius:10px;overflow:hidden;background:#fff">'
+    +'<div style="padding:11px 12px;background:#0F6E56;color:#fff;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><div><div style="font-weight:900">Pilot onboarding checklist</div><div style="font-size:11px;opacity:.85;margin-top:2px">Use this when moving from demo to a controlled client pilot</div></div><button class="btn btn-sm" style="background:rgba(255,255,255,.14);color:#fff;border-color:rgba(255,255,255,.25)" onclick="copyClientPilotOnboarding()"><i class="ti ti-copy"></i>Copy checklist</button></div>'
+    +'<div style="overflow:auto"><table style="width:100%;min-width:900px;border-collapse:collapse;font-size:12px"><thead><tr style="background:#F8FAFC;color:var(--text2);text-transform:uppercase;font-size:10px"><th style="padding:9px 10px;text-align:left">Phase</th><th style="padding:9px 10px;text-align:left">Required action</th><th style="padding:9px 10px;text-align:left">Owner</th><th style="padding:9px 10px;text-align:right">Open</th></tr></thead><tbody>'
+    +items.map(function(x,i){return '<tr style="border-top:1px solid var(--border);background:'+(i%2?'#fafafa':'#fff')+'"><td style="padding:10px;font-weight:900;color:#0F6E56;white-space:nowrap">'+escH(x.phase)+'</td><td style="padding:10px;line-height:1.45;color:#111827">'+escH(x.task)+'</td><td style="padding:10px;color:var(--text2);font-weight:800;white-space:nowrap">'+escH(x.owner)+'</td><td style="padding:10px;text-align:right"><button class="btn btn-sm" onclick="showPage(\''+x.page+'\',null)"><i class="ti ti-arrow-right"></i></button></td></tr>';}).join('')
+    +'</tbody></table></div></div>';
+}
+
+function copyClientPilotOnboarding(){
+  var txt='AURIS360 pilot onboarding checklist\n\n'+clientPilotOnboardingItems().map(function(x,i){return (i+1)+'. ['+x.phase+'] '+x.task+'\nOwner: '+x.owner;}).join('\n\n');
+  if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(txt).then(function(){toast('Pilot onboarding checklist copied');});
+  else toast(txt);
+  auditLogEvent('export','demo','Pilot onboarding checklist copied',{length:txt.length});
+}
 function renderClientDemoCommandCenter(){
   var el=document.getElementById('client-demo-command-body');if(!el)return;
   var canSee=isAdm()||activeRole()==='hse_manager'||activeRole()==='hse_officer';
@@ -4825,7 +4855,7 @@ function renderClientDemoCommandCenter(){
       +'<div style="border:1px solid var(--border);border-radius:10px;padding:12px;background:#fff"><div style="font-size:13px;font-weight:900;color:#991B1B;margin-bottom:4px">Do not over-promise</div>'+renderList(items.avoid,'avoid')+'</div>'
     +'</div>'
     +'</div>'
-    +renderClientDemoModuleMatrix() + '<div id="client-demo-data-checklist"></div>' + renderClientDemoObjections();
+    +renderClientDemoModuleMatrix() + '<div id="client-demo-data-checklist"></div>' + renderClientDemoObjections() + renderClientPilotOnboarding();
   setTimeout(clientDemoLoadDataChecklist,80);
 }
 
