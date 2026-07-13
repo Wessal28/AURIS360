@@ -5055,6 +5055,77 @@ function copyClientEnterpriseReadiness(){
   else toast(txt);
   auditLogEvent('export','demo','Enterprise readiness checklist copied',{length:txt.length});
 }
+function clientDecisionLogKey(){
+  var companyId=(typeof ccid==='function'&&ccid())||prof?.company_id||'default';
+  return 'auris360_client_decision_log_'+companyId;
+}
+
+function clientDecisionLogRows(){
+  try{var raw=localStorage.getItem(clientDecisionLogKey());return raw?JSON.parse(raw):[];}catch(_){return [];}
+}
+
+function clientDecisionLogSaveRows(rows){
+  try{localStorage.setItem(clientDecisionLogKey(),JSON.stringify(rows||[]));}catch(e){toast('Could not save decision log: '+e.message,false);return false;}
+  return true;
+}
+
+function renderClientDecisionLog(){
+  var rows=clientDecisionLogRows();
+  return '<div style="margin-top:14px;border:1px solid var(--border);border-radius:10px;overflow:hidden;background:#fff">'
+    +'<div style="padding:12px;background:#164E63;color:#fff;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><div><div style="font-weight:900">Client meeting decision log</div><div style="font-size:11px;opacity:.85;margin-top:2px">Record decisions, approvals and commitments made during demo or pilot meetings</div></div><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn btn-sm" style="background:rgba(255,255,255,.14);color:#fff;border-color:rgba(255,255,255,.25)" onclick="copyClientDecisionLog()"><i class="ti ti-copy"></i>Copy log</button><button class="btn btn-sm" style="background:#fff;color:#164E63" onclick="clientDecisionAdd()"><i class="ti ti-plus"></i>Add decision</button></div></div>'
+    +'<div style="overflow:auto"><table style="width:100%;min-width:980px;border-collapse:collapse;font-size:12px"><thead><tr style="background:#F8FAFC;color:var(--text2);text-transform:uppercase;font-size:10px"><th style="padding:9px 10px;text-align:left">Date</th><th style="padding:9px 10px;text-align:left">Decision / commitment</th><th style="padding:9px 10px;text-align:left">Agreed by</th><th style="padding:9px 10px;text-align:left">Follow-up</th><th style="padding:9px 10px;text-align:right">Actions</th></tr></thead><tbody>'
+    +(rows.length?rows.map(function(x,i){return '<tr style="border-top:1px solid var(--border);background:'+(i%2?'#fafafa':'#fff')+'"><td style="padding:10px;white-space:nowrap;font-weight:900;color:#164E63">'+escH(x.date||'-')+'</td><td style="padding:10px;line-height:1.45"><div style="font-weight:800;color:#111827">'+escH(x.decision||'Untitled decision')+'</div>'+(x.context?'<div style="color:var(--text2);font-size:11px;margin-top:3px">'+escH(x.context)+'</div>':'')+'</td><td style="padding:10px;color:var(--text2);font-weight:800;white-space:nowrap">'+escH(x.agreed_by||'-')+'</td><td style="padding:10px;line-height:1.45;color:#111827">'+escH(x.follow_up||'-')+'</td><td style="padding:10px;text-align:right;white-space:nowrap"><button class="btn btn-sm" onclick="clientDecisionEdit('+i+')"><i class="ti ti-edit"></i></button><button class="btn btn-sm" onclick="clientDecisionDelete('+i+')"><i class="ti ti-trash"></i></button></td></tr>';}).join(''):'<tr><td colspan="5" style="padding:18px;text-align:center;color:var(--text2)">No decisions recorded yet. Add the key commercial or pilot decisions agreed with the client.</td></tr>')
+    +'</tbody></table></div></div>';
+}
+
+function clientDecisionPrompt(existing){
+  existing=existing||{};
+  var date=prompt('Decision date (YYYY-MM-DD):',existing.date||new Date().toISOString().slice(0,10));
+  if(date===null)return null;
+  var decision=prompt('Decision / commitment:',existing.decision||'');
+  if(decision===null)return null;
+  decision=String(decision||'').trim();
+  if(!decision){toast('Decision is required',false);return null;}
+  var agreed=prompt('Agreed by:',existing.agreed_by||'');
+  if(agreed===null)return null;
+  var follow=prompt('Follow-up / owner / due date:',existing.follow_up||'');
+  if(follow===null)return null;
+  var context=prompt('Context / notes:',existing.context||'');
+  if(context===null)return null;
+  return {date:String(date||'').trim(),decision:decision,agreed_by:String(agreed||'').trim(),follow_up:String(follow||'').trim(),context:String(context||'').trim(),updated_at:new Date().toISOString()};
+}
+
+function clientDecisionAdd(){
+  var item=clientDecisionPrompt();
+  if(!item)return;
+  var rows=clientDecisionLogRows();rows.unshift(item);
+  if(clientDecisionLogSaveRows(rows)){toast('Client decision added');auditLogEvent('create','demo','Client decision added',{decision:item.decision});renderClientDemoCommandCenter();}
+}
+
+function clientDecisionEdit(i){
+  var rows=clientDecisionLogRows();
+  if(!rows[i])return;
+  var item=clientDecisionPrompt(rows[i]);
+  if(!item)return;
+  rows[i]=Object.assign({},rows[i],item);
+  if(clientDecisionLogSaveRows(rows)){toast('Client decision updated');auditLogEvent('update','demo','Client decision updated',{decision:item.decision});renderClientDemoCommandCenter();}
+}
+
+function clientDecisionDelete(i){
+  var rows=clientDecisionLogRows();
+  if(!rows[i])return;
+  if(!confirm('Delete this client decision?'))return;
+  var removed=rows.splice(i,1)[0];
+  if(clientDecisionLogSaveRows(rows)){toast('Client decision deleted');auditLogEvent('delete','demo','Client decision deleted',{decision:removed.decision});renderClientDemoCommandCenter();}
+}
+
+function copyClientDecisionLog(){
+  var rows=clientDecisionLogRows();
+  var txt='AURIS360 client meeting decision log\n\n'+(rows.length?rows.map(function(x,i){return (i+1)+'. '+(x.date||'-')+' - '+(x.decision||'Untitled')+'\nAgreed by: '+(x.agreed_by||'-')+'\nFollow-up: '+(x.follow_up||'-')+(x.context?'\nNotes: '+x.context:'');}).join('\n\n'):'No decisions recorded.');
+  if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(txt).then(function(){toast('Client decision log copied');});
+  else toast(txt);
+  auditLogEvent('export','demo','Client decision log copied',{count:rows.length,length:txt.length});
+}
 function renderClientDemoCommandCenter(){
   var el=document.getElementById('client-demo-command-body');if(!el)return;
   var canSee=isAdm()||activeRole()==='hse_manager'||activeRole()==='hse_officer';
@@ -5089,7 +5160,7 @@ function renderClientDemoCommandCenter(){
       +'<div style="border:1px solid var(--border);border-radius:10px;padding:12px;background:#fff"><div style="font-size:13px;font-weight:900;color:#991B1B;margin-bottom:4px">Do not over-promise</div>'+renderList(items.avoid,'avoid')+'</div>'
     +'</div>'
     +'</div>'
-    +renderClientDemoModuleMatrix() + '<div id="client-demo-data-checklist"></div>' + renderClientDemoObjections() + renderClientPilotOnboarding() + renderClientPilotSignoff() + renderClientPilotIssues() + renderClientProposalSnapshot() + renderClientEnterpriseReadiness();
+    +renderClientDemoModuleMatrix() + '<div id="client-demo-data-checklist"></div>' + renderClientDemoObjections() + renderClientPilotOnboarding() + renderClientPilotSignoff() + renderClientPilotIssues() + renderClientProposalSnapshot() + renderClientEnterpriseReadiness() + renderClientDecisionLog();
   setTimeout(clientDemoLoadDataChecklist,80);
 }
 
