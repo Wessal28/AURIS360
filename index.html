@@ -4799,6 +4799,58 @@ function renderClientDemoCommandCenter(){
     +renderClientDemoModuleMatrix();
 }
 
+function clientDemoWalkthroughSteps(){
+  return [
+    {n:1,page:'dashboard',title:'Open with the cockpit',say:'AURIS360 gives management one live view of HSE performance: incidents, actions, KPIs, training, permits and operational risk signals.',show:'Dashboard headline metrics, LTI days, open incidents, overdue actions and AI/management signals.'},
+    {n:2,page:'events',title:'Show incident capture',say:'Field teams can report an incident quickly, attach evidence and submit a controlled record for HSE review.',show:'Report incident, photos/evidence, saved report, classification and investigation trigger.'},
+    {n:3,page:'observation',title:'Show behaviour-based safety',say:'AURIS360 supports positive safety culture by recording safe behaviours, unsafe behaviours and unsafe conditions in one observation.',show:'BBS form, PPE status, observations, and how actions are raised.'},
+    {n:4,page:'actions',title:'Close the loop with MAP',say:'Everything important becomes an accountable action with owner, due date, priority, status and evidence of closure.',show:'Master Action Plan table, filters, source reference and progress.'},
+    {n:5,page:'risk',title:'Show RAMS governance',say:'Risk assessments are structured around task steps, hazards, controls, residual risk and method statement linkage.',show:'Hazards & controls table, risk matrix, RAMS readiness and print-ready output.'},
+    {n:6,page:'permit',title:'Show high-risk work control',say:'Permit to Work links the work activity to RA/SWMS, precautions, gas testing, isolation and approval routing.',show:'PTW register, permit form, approval levels and closure process.'},
+    {n:7,page:'contractor',title:'Show contractor control',say:'Contractor safety is managed through onboarding, pre-assessment, evaluation, authorisation to work, incidents and live safety score.',show:'Contractor register and Safety Score tab.'},
+    {n:8,page:'ai-insights',title:'Finish with AURIS AI',say:'AURIS AI helps analyse live HSE data, generate safety content and support decision-making while keeping human HSE approval in control.',show:'AI Insights, predictive risk, document analysis and Ask AURIS.'},
+    {n:9,page:'audit',title:'End with trust and governance',say:'The audit trail proves who did what and when, which is essential for professional HSE governance and client confidence.',show:'Audit Trail and Approval Center if relevant.'}
+  ].filter(function(x){return canAccessPage(x.page);});
+}
+
+function dashOpenDemoWalkthrough(){
+  var modal=document.getElementById('client-demo-walkthrough-modal');
+  if(!modal){
+    modal=document.createElement('div');
+    modal.id='client-demo-walkthrough-modal';
+    modal.style.cssText='display:none;position:fixed;inset:0;background:rgba(15,23,42,.58);z-index:935;align-items:center;justify-content:center;padding:18px';
+    modal.innerHTML='<div class="card" role="dialog" aria-modal="true" aria-labelledby="client-demo-walkthrough-title" style="width:100%;max-width:980px;max-height:88vh;overflow:hidden;border-radius:12px;box-shadow:0 22px 80px rgba(15,23,42,.32);padding:0">'
+      +'<div style="padding:16px 18px;background:linear-gradient(135deg,#0F172A,#1a3a5c);color:#fff;display:flex;justify-content:space-between;align-items:flex-start;gap:12px">'
+      +'<div><div id="client-demo-walkthrough-title" style="font-size:19px;font-weight:900">AURIS360 Guided Demo Walkthrough</div><div style="font-size:12px;opacity:.84;margin-top:3px">Follow this sequence during client meetings to tell a complete operational story.</div></div>'
+      +'<button class="btn btn-sm" style="background:rgba(255,255,255,.14);color:#fff;border-color:rgba(255,255,255,.25)" onclick="dashCloseDemoWalkthrough()"><i class="ti ti-x"></i></button>'
+      +'</div>'
+      +'<div id="client-demo-walkthrough-body" style="padding:16px 18px;overflow:auto;max-height:calc(88vh - 132px)"></div>'
+      +'<div style="padding:12px 18px;border-top:1px solid var(--border);display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap"><button class="btn" onclick="copyClientDemoWalkthrough()"><i class="ti ti-copy"></i>Copy script</button><button class="btn btn-primary" onclick="dashCloseDemoWalkthrough()">Done</button></div>'
+      +'</div>';
+    modal.onclick=function(e){if(e.target===modal)dashCloseDemoWalkthrough();};
+    document.body.appendChild(modal);
+  }
+  var rows=clientDemoWalkthroughSteps();
+  var body=document.getElementById('client-demo-walkthrough-body');
+  if(body)body.innerHTML='<div style="display:grid;gap:10px">'+rows.map(function(x){return '<div style="display:grid;grid-template-columns:44px 1fr auto;gap:12px;align-items:start;border:1px solid var(--border);border-radius:12px;padding:12px;background:#fff">'
+    +'<div style="width:34px;height:34px;border-radius:50%;background:#E0F2FE;color:#075985;font-weight:900;display:flex;align-items:center;justify-content:center">'+x.n+'</div>'
+    +'<div><div style="font-size:14px;font-weight:900;margin-bottom:3px">'+escH(x.title)+'</div><div style="font-size:12px;color:#111827;line-height:1.5"><strong>Say:</strong> '+escH(x.say)+'</div><div style="font-size:12px;color:var(--text2);line-height:1.5;margin-top:4px"><strong>Show:</strong> '+escH(x.show)+'</div></div>'
+    +'<button class="btn btn-sm" onclick="dashCloseDemoWalkthrough();showPage(\''+x.page+'\',null)"><i class="ti ti-arrow-right"></i>Open</button>'
+    +'</div>';}).join('')+'</div><div style="margin-top:12px;padding:12px;border:1px solid #bfdbfe;background:#EFF6FF;border-radius:10px;color:#1e40af;font-size:12px;line-height:1.55"><strong>Presenter note:</strong> keep the meeting to a story: report, investigate, act, verify, govern. Avoid opening every module unless the client asks.</div>';
+  modal.style.display='flex';
+}
+
+function dashCloseDemoWalkthrough(){
+  var modal=document.getElementById('client-demo-walkthrough-modal');
+  if(modal)modal.style.display='none';
+}
+
+function copyClientDemoWalkthrough(){
+  var txt='AURIS360 guided demo walkthrough\n\n'+clientDemoWalkthroughSteps().map(function(x){return x.n+'. '+x.title+'\nSay: '+x.say+'\nShow: '+x.show;}).join('\n\n');
+  if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(txt).then(function(){toast('Guided demo script copied');});
+  else toast(txt);
+  auditLogEvent('export','demo','Guided demo walkthrough copied',{length:txt.length});
+}
 function copyClientDemoSummary(){
   var txt=clientDemoSummaryText();
   if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(txt).then(function(){toast('Client demo summary copied');});
@@ -48616,7 +48668,7 @@ I can help you:<br>
       <div style="font-size:12px;color:var(--text2);line-height:1.5">Internal meeting guide: what to show, what to position as pilot/roadmap, and what not to over-promise.</div>
     </div>
     <div style="display:flex;gap:8px;flex-wrap:wrap">
-      <button class="btn" onclick="dashOpenMeetingChecklist()"><i class="ti ti-list-check"></i>Checklist</button>
+      <button class="btn" onclick="dashOpenMeetingChecklist()"><i class="ti ti-list-check"></i>Checklist</button><button class="btn" onclick="dashOpenDemoWalkthrough()"><i class="ti ti-player-play"></i>Guided walkthrough</button>
       <button class="btn btn-primary" onclick="copyClientDemoSummary()"><i class="ti ti-copy"></i>Copy summary</button>
     </div>
   </div>
