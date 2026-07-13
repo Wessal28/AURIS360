@@ -4721,6 +4721,37 @@ function clientDemoItems(){
   };
 }
 
+function clientDemoModuleMatrix(){
+  return [
+    {page:'dashboard',module:'Dashboard',status:'show',story:'Executive cockpit: LTI days, open incidents, overdue actions, KPIs and operational signals.',caution:'Use this as the opening story, not as a data-entry screen.'},
+    {page:'events',module:'Incident Management',status:'show',story:'Mobile report, evidence photos, manager classification, investigation trigger and linked actions.',caution:'Use prepared demo data so the flow is clean.'},
+    {page:'observation',module:'BBS Observations',status:'show',story:'Behaviour observation across positive behaviour, unsafe behaviour and unsafe condition with action follow-up.',caution:'Explain it supports culture and coaching, not blame.'},
+    {page:'actions',module:'Master Action Plan',status:'show',story:'Single follow-up table fed by incidents, inspections, legal gaps, BBS and manual actions.',caution:'This is the close-the-loop proof; always show it.'},
+    {page:'risk',module:'Risk Assessment / RAMS',status:'show',story:'Task steps, hazards, existing controls, further controls, residual risk, matrix and SWMS/RAMS linkage.',caution:'Position AI import/generation as assistant output requiring HSE review.'},
+    {page:'swms',module:'SWMS / Method Statements',status:'show',story:'Work method, hazards and controls, tools/equipment, emergency arrangements and print-ready method statement.',caution:'Keep SWMS separate from RA but linked as part of RAMS pack.'},
+    {page:'permit',module:'Permit to Work',status:'pilot',story:'Permit type, RA/SWMS references, controls, gas tests, isolation, approval route and closure.',caution:'Show as advanced workflow/pilot unless client already needs PTW.'},
+    {page:'inspection',module:'Audits & Inspections',status:'show',story:'Inspection templates, findings, evidence, AI review, action generation and print report.',caution:'Select the correct inspection template before demo.'},
+    {page:'legal',module:'Legal Compliance',status:'pilot',story:'Import legislation, split into sections, assess status, identify gaps and create actions.',caution:'Do not promise automatic legal compliance; expert validation remains required.'},
+    {page:'chemical',module:'Chemical Control',status:'pilot',story:'Chemical register, SDS upload/extraction, exposure profile, persons exposed and risk rating.',caution:'AI extraction supports review; it does not replace SDS validation.'},
+    {page:'ppe',module:'PPE Management',status:'show',story:'PPE catalogue, stock/inventory, issue register, inspections, replacements and expiry alerts.',caution:'Use stock vs catalogue distinction clearly.'},
+    {page:'tools',module:'Tools & Equipment',status:'show',story:'Equipment register, inspections, lifting accessories, statutory verification, vehicles and RCD testing.',caution:'Use equipment-specific checklists.'},
+    {page:'fire',module:'Fire Certificates / Site Layout',status:'pilot',story:'Fire equipment, certificates, inspections and interactive layout with positioned fire assets.',caution:'Use one prepared plan and a few positioned assets.'},
+    {page:'contractor',module:'Contractor Management',status:'show',story:'Contractor register, pre-assessment, evaluation, authorisation to work, incidents and live safety score.',caution:'Good differentiator for clients using subcontractors.'},
+    {page:'approvals',module:'Approval Center',status:'show',story:'Governance queue for approvals and controlled records.',caution:'Show after a workflow example.'},
+    {page:'audit',module:'Audit Trail',status:'show',story:'Chronological proof of user actions and system events.',caution:'Use as a trust/security closing point.'},
+    {page:'ai-insights',module:'AI Insights',status:'wow',story:'AI assistant, RAMS/toolbox support, predictive risk, document analysis and HSE insights.',caution:'Mention role restriction and API cost control.'}
+  ].filter(function(x){return canAccessPage(x.page);});
+}
+
+function renderClientDemoModuleMatrix(){
+  var rows=clientDemoModuleMatrix();
+  var cfg={show:['#EAF3DE','#3B6D11','Demo ready'],pilot:['#FEF9EC','#854F0B','Pilot / explain'],wow:['#EDE9FE','#5B21B6','Wow factor']};
+  return '<div style="margin-top:14px;border:1px solid var(--border);border-radius:10px;overflow:hidden;background:#fff">'
+    +'<div style="padding:11px 12px;background:#0F172A;color:#fff;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><div style="font-weight:900">Module demo matrix</div><div style="font-size:11px;opacity:.85">What to show, how to position it, and where to be careful</div></div>'
+    +'<div style="overflow:auto"><table style="width:100%;min-width:980px;border-collapse:collapse;font-size:12px"><thead><tr style="background:#f8fafc;color:var(--text2);text-transform:uppercase;font-size:10px"><th style="padding:9px 10px;text-align:left">Module</th><th style="padding:9px 10px;text-align:left">Status</th><th style="padding:9px 10px;text-align:left">Client story</th><th style="padding:9px 10px;text-align:left">Caution / positioning</th><th style="padding:9px 10px;text-align:right">Open</th></tr></thead><tbody>'
+    +rows.map(function(x,i){var s=cfg[x.status]||cfg.show;return '<tr style="border-top:1px solid var(--border);background:'+(i%2?'#fafafa':'#fff')+'"><td style="padding:10px;font-weight:900">'+escH(x.module)+'</td><td style="padding:10px"><span style="background:'+s[0]+';color:'+s[1]+';padding:3px 9px;border-radius:99px;font-size:11px;font-weight:900;white-space:nowrap">'+s[2]+'</span></td><td style="padding:10px;color:#111827;line-height:1.45">'+escH(x.story)+'</td><td style="padding:10px;color:var(--text2);line-height:1.45">'+escH(x.caution)+'</td><td style="padding:10px;text-align:right"><button class="btn btn-sm" onclick="showPage(\''+x.page+'\',null)"><i class="ti ti-arrow-right"></i></button></td></tr>';}).join('')
+    +'</tbody></table></div></div>';
+}
 function clientDemoSummaryText(){
   var items=clientDemoItems();
   return 'AURIS360 client demo summary\n\n'
@@ -4764,7 +4795,8 @@ function renderClientDemoCommandCenter(){
       +'<div style="border:1px solid var(--border);border-radius:10px;padding:12px;background:#fff"><div style="font-size:13px;font-weight:900;color:#854F0B;margin-bottom:4px">Explain as pilot / roadmap</div>'+renderList(items.pilot,'pilot')+'</div>'
       +'<div style="border:1px solid var(--border);border-radius:10px;padding:12px;background:#fff"><div style="font-size:13px;font-weight:900;color:#991B1B;margin-bottom:4px">Do not over-promise</div>'+renderList(items.avoid,'avoid')+'</div>'
     +'</div>'
-    +'</div>';
+    +'</div>'
+    +renderClientDemoModuleMatrix();
 }
 
 function copyClientDemoSummary(){
