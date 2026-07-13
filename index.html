@@ -13165,11 +13165,28 @@ async function wsSave(){
 
 async function wsDelete(){
   if(!wsEditingId)return;
-  if(!(await appConfirmDelete('work order','This will remove the work order from the schedule.')))return;
   try{
-    await api('/work_schedule?id=eq.'+wsEditingId,{m:'DELETE'});
+    var current=wsAllData.find(function(x){return x.id===wsEditingId;})||{};
+    if(String(current.status||'planned')!=='cancelled'){
+      if(!(await appConfirmAction({
+        title:'Cancel work order',
+        message:'Cancel this work order instead of deleting it?',
+        detail:'The work order will stay in the schedule history so linked RA, PTW, toolbox talk, inspections and equipment checks remain traceable.',
+        confirmText:'Cancel work order',
+        cancelText:'Back',
+        variant:'danger'
+      })))return;
+      await api('/work_schedule?id=eq.'+wsEditingId,{m:'PATCH',p:'return=minimal',b:{status:'cancelled',updated_at:new Date().toISOString()}});
+      var idx=wsAllData.findIndex(function(x){return x.id===wsEditingId;});
+      if(idx>=0)wsAllData[idx].status='cancelled';
+      toast('Work order cancelled and kept for audit history');
+      wsCurrentId=null;wsSetView('list');
+      return;
+    }
+    if(!(await appConfirmDelete('cancelled work order','Permanent deletion should be used only for duplicate/test work orders. Linked records may still refer to this work order.')))return;
+    await api('/work_schedule?id=eq.'+wsEditingId,{m:'DELETE',p:'return=representation'});
     wsAllData=wsAllData.filter(function(x){return x.id!==wsEditingId;});
-    toast('Deleted!');wsCurrentId=null;wsSetView('list');
+    toast('Cancelled work order permanently deleted');wsCurrentId=null;wsSetView('list');
   }catch(e){toast(e.message,false);}
 }
 
