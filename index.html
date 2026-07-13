@@ -24059,7 +24059,7 @@ function mocRender(){
   });
   el.innerHTML=h+'</tbody></table></div></div>';
 }
-function mocShowForm(show){document.getElementById('moc-register-view').style.display=show?'none':'block';document.getElementById('moc-form-view').style.display=show?'block':'none';}
+function mocShowForm(show){document.getElementById('moc-register-view').style.display=show?'none':'block';document.getElementById('moc-form-view').style.display=show?'block':'none';var ai=document.getElementById('moc-ai-btn');if(ai)ai.style.display=(show&&typeof canUseAI==='function'&&canUseAI())?'inline-flex':'none';}
 function mocNew(){
   mocEditId=null;document.getElementById('moc-form-title').textContent='New Change Request';document.getElementById('moc-form-ref').textContent='MOC-AUTO';
   ['moc-title','moc-location','moc-owner','moc-reason','moc-current','moc-proposed','moc-risk-review','moc-pre-actions','moc-post-review'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
@@ -24105,6 +24105,52 @@ async function mocDelete(){
   }catch(e){toast(e.message,false);}
 }
 function mocOpenMap(){showPage('actions',null);setTimeout(function(){var src=document.getElementById('map-filter-source');if(src){src.value='moc';mapRenderList();}},160);}
+function mocFormPayload(){
+  var g=function(id){var el=document.getElementById(id);return el?el.value||'':'';};
+  return {title:g('moc-title'),type:MOC_TYPE_LABELS[g('moc-type')]||g('moc-type'),location:g('moc-location'),owner:g('moc-owner'),priority:g('moc-priority'),status:g('moc-status'),target_date:g('moc-target'),reason:g('moc-reason'),current_situation:g('moc-current'),proposed_change:g('moc-proposed'),impacts:[].slice.call(document.querySelectorAll('.moc-impact:checked')).map(function(x){return x.value;}),risk_review:g('moc-risk-review'),pre_actions:g('moc-pre-actions'),post_review:g('moc-post-review')};
+}
+async function mocAIImpactReview(){
+  var panel=document.getElementById('moc-ai-panel');
+  if(typeof canUseAI==='function'&&!canUseAI()){toast('AURIS AI is restricted to authorised HSE/admin roles.',false);return;}
+  var payload=mocFormPayload();
+  if(!payload.title&&!payload.proposed_change){toast('Enter a change title or proposed change first',false);return;}
+  if(panel){panel.style.display='block';panel.innerHTML='<div class="card" style="border-left:4px solid #0F6E56"><div style="font-weight:800;color:#0F6E56"><i class="ti ti-loader"></i> AURIS is screening the change...</div><div style="font-size:12px;color:var(--text2);margin-top:5px">Checking impacts, required controls, approval readiness and post-change verification.</div></div>';}
+  try{
+    var ctx={change:payload,existing_moc:mocData||[],people:(people||[]).map(function(p){return {name:personFullName(p),job_title:p.job_title,department:p.department};})};
+    var prompt='Review this Management of Change request as a senior HSE manager. Return STRICT JSON only with keys: decision string, risk_priority string low|medium|high|critical, impacted_areas array, risk_review string, pre_implementation_actions array of strings, post_change_verification array of strings, approval_conditions array of strings, missing_information array of strings, management_note string. Be practical and specific. MOC data: '+JSON.stringify(ctx).slice(0,16000);
+    var raw=await callAI([{role:'user',content:prompt}], 'You are AURIS, an expert HSE Management of Change screening assistant. Return valid JSON only.');
+    var out=aiExtractJson(raw)||{};
+    mocAIRenderReview(out);
+    toast('MOC AI screening ready');
+  }catch(e){if(panel)panel.innerHTML=aiFriendlyErrorHtml(e);toast(aiFriendlyError(e),false);}
+}
+function mocAIRenderReview(out){
+  var panel=document.getElementById('moc-ai-panel');if(!panel)return;
+  window.mocAIReview=out||{};
+  var arr=function(v){return Array.isArray(v)?v:(v?[String(v)]:[]);};
+  var h='<div class="card" style="border-left:4px solid #0F6E56;background:#fff">';
+  h+='<div style="display:flex;justify-content:space-between;gap:12px;align-items:flex-start;flex-wrap:wrap"><div><div style="font-weight:900;color:#0F6E56;font-size:15px"><i class="ti ti-robot"></i> AI MOC Impact Screening</div><div style="font-size:12px;color:var(--text2);margin-top:4px">Review before applying. AURIS supports screening; management remains responsible for approval.</div></div><button class="btn btn-sm" onclick="document.getElementById(\'moc-ai-panel\').style.display=\'none\'"><i class="ti ti-x"></i></button></div>';
+  h+='<div style="margin-top:12px;display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px"><div style="padding:10px;border-radius:8px;background:#ECFDF5"><div style="font-size:11px;color:#047857;font-weight:800;text-transform:uppercase">Decision</div><div style="font-weight:800;margin-top:4px">'+escH(out.decision||'Review required')+'</div></div><div style="padding:10px;border-radius:8px;background:#FEF9EC"><div style="font-size:11px;color:#854F0B;font-weight:800;text-transform:uppercase">Risk priority</div><div style="font-weight:800;margin-top:4px">'+escH(out.risk_priority||'medium')+'</div></div></div>';
+  if(arr(out.impacted_areas).length)h+='<div style="margin-top:12px"><b>Impacted areas:</b> '+arr(out.impacted_areas).map(function(x){return '<span class="badge badge-blue" style="margin:2px">'+escH(x)+'</span>';}).join('')+'</div>';
+  if(out.risk_review)h+='<div style="margin-top:12px;padding:10px;border:1px solid var(--border);border-radius:8px"><b>Risk review:</b><br>'+escH(out.risk_review)+'</div>';
+  var blocks=[['Pre-implementation actions',out.pre_implementation_actions],['Post-change verification',out.post_change_verification],['Approval conditions',out.approval_conditions],['Missing information',out.missing_information]];
+  blocks.forEach(function(b){var list=arr(b[1]);if(list.length)h+='<div style="margin-top:12px"><div style="font-weight:800">'+escH(b[0])+'</div><ul style="margin:6px 0 0 18px;color:var(--text2);font-size:12px;line-height:1.5">'+list.map(function(x){return '<li>'+escH(x)+'</li>';}).join('')+'</ul></div>';});
+  if(out.management_note)h+='<div style="margin-top:12px;padding:10px 12px;border-radius:8px;background:#EFF6FF;color:#1E3A8A;font-size:12px"><b>Management note:</b> '+escH(out.management_note)+'</div>';
+  h+='<div style="margin-top:12px"><button class="btn btn-primary" onclick="mocAIApplyReview()"><i class="ti ti-check"></i>Apply to MOC fields</button></div>';
+  h+='</div>';
+  panel.innerHTML=h;
+}
+function mocAIApplyReview(){
+  var out=window.mocAIReview||{};
+  if(out.risk_priority&&document.getElementById('moc-priority'))document.getElementById('moc-priority').value=String(out.risk_priority).toLowerCase();
+  var areas=Array.isArray(out.impacted_areas)?out.impacted_areas:[];
+  document.querySelectorAll('.moc-impact').forEach(function(cb){if(areas.some(function(a){return String(a).toLowerCase().includes(String(cb.value).toLowerCase())||String(cb.value).toLowerCase().includes(String(a).toLowerCase());}))cb.checked=true;});
+  var setJoin=function(id,val){var el=document.getElementById(id);if(!el)return;var arr=Array.isArray(val)?val:val?[String(val)]:[];if(arr.length)el.value=arr.join('\n');};
+  if(out.risk_review)document.getElementById('moc-risk-review').value=out.risk_review;
+  setJoin('moc-pre-actions',out.pre_implementation_actions);
+  setJoin('moc-post-review',out.post_change_verification);
+  toast('AI screening copied into MOC fields - review then save');
+}
 
 // ===== MAP_JS.JS =====
 // ===================================================================
@@ -45502,8 +45548,9 @@ function fireEquipStatusBadge(s) {
 <div class="card" style="padding:0;overflow:hidden">
 <div style="padding:16px 22px;background:#0F6E56;color:#fff;display:flex;justify-content:space-between;gap:12px;align-items:flex-start">
 <div><div style="font-size:11px;text-transform:uppercase;opacity:.8;letter-spacing:.08em">Management of Change</div><div style="font-size:20px;font-weight:800" id="moc-form-title">New Change Request</div><div id="moc-form-ref" style="font-family:monospace;font-size:12px;opacity:.85">MOC-AUTO</div></div>
-<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn" style="background:rgba(255,255,255,.18);color:#fff;border-color:rgba(255,255,255,.35)" onclick="mocShowForm(false)"><i class="ti ti-arrow-left"></i>Back</button><button class="btn" style="background:rgba(220,38,38,.25);color:#fff;border-color:rgba(220,38,38,.45)" onclick="mocDelete()"><i class="ti ti-trash"></i></button><button class="btn" style="background:#fff;color:#0F6E56;border-color:#fff" onclick="mocSave()"><i class="ti ti-device-floppy"></i>Save MOC</button></div>
+<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn" style="background:rgba(255,255,255,.18);color:#fff;border-color:rgba(255,255,255,.35)" onclick="mocShowForm(false)"><i class="ti ti-arrow-left"></i>Back</button><button id="moc-ai-btn" class="btn" style="display:none;background:rgba(255,255,255,.2);color:#fff;border-color:rgba(255,255,255,.4)" onclick="mocAIImpactReview()"><i class="ti ti-robot"></i>AI screen</button><button class="btn" style="background:rgba(220,38,38,.25);color:#fff;border-color:rgba(220,38,38,.45)" onclick="mocDelete()"><i class="ti ti-trash"></i></button><button class="btn" style="background:#fff;color:#0F6E56;border-color:#fff" onclick="mocSave()"><i class="ti ti-device-floppy"></i>Save MOC</button></div>
 </div>
+<div id="moc-ai-panel" style="display:none;margin:14px 22px 0"></div>
 <div style="padding:18px 22px">
 <div class="form-row">
 <div class="form-group"><label class="form-label">Change title *</label><input id="moc-title" placeholder="e.g. Replace solvent, install new machine, change process layout"/></div>
