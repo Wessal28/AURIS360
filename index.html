@@ -270,6 +270,7 @@ thead tr[style*="#7F1D1D"] th:last-child {
     justify-content: center;
     gap: 0;
     font-size: 0;
+    color: transparent;
     line-height: 1;
     min-height: 42px;
     width: 56px;
@@ -279,7 +280,9 @@ thead tr[style*="#7F1D1D"] th:last-child {
     flex-shrink: 0;
   }
   .sidebar.collapsed .nav-item.active { border-right-color: var(--green); }
-  .sidebar.collapsed .nav-item i { font-size: 20px; line-height: 1; margin: 0; flex: 0 0 auto; }
+  .sidebar.collapsed .nav-item i { color: var(--text2); font-size: 20px; line-height: 1; margin: 0; flex: 0 0 auto; }
+  .sidebar.collapsed .nav-item:hover i { color: var(--text); }
+  .sidebar.collapsed .nav-item.active i { color: var(--green); }
   .sidebar.collapsed .sb-footer { padding: 8px 4px; flex-direction: column; gap: 4px; }
   .sidebar.collapsed .sb-footer,
   .sidebar.collapsed #pwa-install-btn { margin-top: 0 !important; }
@@ -38751,7 +38754,7 @@ function fireEquipStatusBadge(s) {
 <div class="nav-item" onclick="showPage('events',this)"><i class="ti ti-alert-triangle"></i>Incident Management</div><div class="nav-item" onclick="showPage('observation',this)"><i class="ti ti-eye"></i>BBS Observations</div>
 <div class="nav-item" onclick="showPage('inspection',this)"><i class="ti ti-clipboard-check"></i>Audits &amp; Inspections</div><div class="nav-item" onclick="showPage('risk',this)"><i class="ti ti-shield-check"></i>Risk Assessment</div><div class="nav-item" onclick="showPage('tools',this)"><i class="ti ti-tools"></i>Tools & Equipment</div><div class="nav-item" onclick="showPage('fleet',this)"><i class="ti ti-car"></i>Fleet Management</div><div class="nav-item" onclick="showPage('atex',this)"><i class="ti ti-flame"></i>ATEX Areas</div>
 <div class="nav-item" onclick="showPage('permit',this)"><i class="ti ti-key"></i>Permit to Work</div>
-<div class="nav-item" onclick="showPage('contractor',this)"><i class="ti ti-helmet"></i>Contractors</div><div class="nav-item" onclick="showPage('emergency',this)"><i class="ti ti-alert-square"></i>Emergency</div>
+<div class="nav-item" onclick="showPage('contractor',this)"><i class="ti ti-user-shield"></i>Contractors</div><div class="nav-item" onclick="showPage('emergency',this)"><i class="ti ti-alert-square"></i>Emergency</div>
 <div class="nav-item" onclick="showPage('ohealth',this)"><i class="ti ti-stethoscope"></i>Occupational Health</div>
 <div class="nav-item" onclick="showPage('ppe',this)"><i class="ti ti-shield-check"></i>PPE</div>
 <div class="nav-item" onclick="showPage('fire',this)"><i class="ti ti-flame"></i>Fire Certificates</div>
