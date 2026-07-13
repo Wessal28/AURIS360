@@ -31628,7 +31628,7 @@ function usersRender(data) {
     var isSelf = u.id === prof?.id;
     var canEdit = usersCanEditUser(u);
     var canAdmin = usersCanAdminUser(u);
-    h += '<tr style="border-bottom:1px solid #f0f0f0;background:'+bg+(isSelf?';outline:2px solid #185FA5 inset':'')+';">'
+    h += '<tr data-user-id="'+escH(u.id)+'" style="border-bottom:1px solid #f0f0f0;background:'+bg+(isSelf?';outline:2px solid #185FA5 inset':'')+';cursor:pointer">'
       + '<td style="padding:8px 14px">'
       + '<div style="display:flex;align-items:center;gap:8px">'
       + '<div style="width:32px;height:32px;border-radius:50%;background:'+rc.color+';color:#fff;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;flex-shrink:0">'
@@ -31675,10 +31675,8 @@ function usersCloseProfile(){
 document.addEventListener('click',function(ev){
   var row=ev.target.closest('#users-list tbody tr');
   if(!row||ev.target.closest('button'))return;
-  var cells=row.querySelectorAll('td');
-  var email=(cells[1]?.textContent||'').trim();
-  var u=(usersAllData||[]).find(function(x){return String(x.email||'').trim()===email;});
-  if(u)usersOpenProfile(u.id);
+  var id=row.dataset.userId||'';
+  if(id)usersOpenProfile(id);
 });
 function usersProfileSwitch(tab){
   usersProfileCurrentTab=tab||'profile';
