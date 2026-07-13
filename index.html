@@ -4796,9 +4796,52 @@ function renderClientDemoCommandCenter(){
       +'<div style="border:1px solid var(--border);border-radius:10px;padding:12px;background:#fff"><div style="font-size:13px;font-weight:900;color:#991B1B;margin-bottom:4px">Do not over-promise</div>'+renderList(items.avoid,'avoid')+'</div>'
     +'</div>'
     +'</div>'
-    +renderClientDemoModuleMatrix();
+    +renderClientDemoModuleMatrix() + '<div id="client-demo-data-checklist"></div>';
+  setTimeout(clientDemoLoadDataChecklist,80);
 }
 
+async function clientDemoLoadDataChecklist(){
+  var el=document.getElementById('client-demo-data-checklist');
+  if(!el)return;
+  el.innerHTML='<div style="padding:14px;text-align:center;color:var(--text2)"><i class="ti ti-loader"></i> Checking current company demo data...</div>';
+  var safe=async function(p){try{return await p;}catch(e){console.warn('Demo checklist API:',e.message);return [];}};
+  var results=await Promise.all([
+    safe(api('/people?select=id'+cf()+'&status=eq.active&limit=20')),
+    safe(api('/events?select=id'+cf()+'&limit=20')),
+    safe(api('/safety_observations?select=id'+cf()+'&limit=20')),
+    safe(api('/action_tracker?select=id,status'+cf()+'&limit=50')),
+    safe(api('/risk_assessments?select=id'+cf()+'&limit=20')),
+    safe(api('/legal_requirements?select=id'+cf()+'&limit=20')),
+    safe(api('/chemical_register?select=id,status'+cf()+'&status=neq.deleted&limit=20')),
+    safe(api('/inspections?select=id'+cf()+'&limit=20')),
+    safe(api('/contractors?select=id'+cf()+'&limit=20')),
+    safe(api('/ppe_items?select=id,status'+cf()+'&limit=20')),
+    safe(api('/permits?select=id'+cf()+'&limit=20')),
+    safe(api('/audit_logs?select=id'+cf()+'&limit=20'))
+  ]);
+  var specs=[
+    {page:'people',label:'People',count:(results[0]||[]).length,target:3,why:'minimum workforce context'},
+    {page:'events',label:'Incidents',count:(results[1]||[]).length,target:1,why:'one incident story with evidence'},
+    {page:'observation',label:'BBS',count:(results[2]||[]).length,target:1,why:'one safety culture example'},
+    {page:'actions',label:'Master Action Plan',count:(results[3]||[]).length,target:2,why:'follow-up and accountability'},
+    {page:'risk',label:'Risk Assessments',count:(results[4]||[]).length,target:1,why:'RAMS/RA control story'},
+    {page:'legal',label:'Legal Register',count:(results[5]||[]).length,target:5,why:'credible compliance sample'},
+    {page:'chemical',label:'Chemicals',count:(results[6]||[]).length,target:1,why:'SDS and exposure example'},
+    {page:'inspection',label:'Inspections',count:(results[7]||[]).length,target:1,why:'audit/inspection workflow'},
+    {page:'contractor',label:'Contractors',count:(results[8]||[]).length,target:1,why:'contractor control story'},
+    {page:'ppe',label:'PPE',count:(results[9]||[]).length,target:1,why:'PPE issue/stock story'},
+    {page:'permit',label:'PTW',count:(results[10]||[]).length,target:1,why:'high-risk work example'},
+    {page:'audit',label:'Audit Trail',count:(results[11]||[]).length,target:1,why:'governance proof'}
+  ].filter(function(x){return canAccessPage(x.page);});
+  var ready=specs.filter(function(x){return x.count>=x.target;}).length;
+  var pct=specs.length?Math.round(ready/specs.length*100):0;
+  var color=pct>=80?'#1D9E75':pct>=55?'#EF9F27':'#DC2626';
+  el.innerHTML='<div style="border:1px solid var(--border);border-radius:10px;overflow:hidden;background:#fff;margin-top:14px">'
+    +'<div style="padding:12px;background:#F8FAFC;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><div><div style="font-weight:900">Live demo data checklist</div><div style="font-size:12px;color:var(--text2);margin-top:2px">Current company readiness for a client walkthrough</div></div><div style="min-width:180px"><div style="display:flex;justify-content:space-between;font-size:12px;font-weight:900;margin-bottom:5px"><span>Data readiness</span><span style="color:'+color+'">'+pct+'%</span></div><div style="height:8px;background:#e5e7eb;border-radius:99px;overflow:hidden"><div style="height:100%;width:'+pct+'%;background:'+color+'"></div></div></div><button class="btn btn-sm" onclick="clientDemoLoadDataChecklist()"><i class="ti ti-refresh"></i>Refresh</button></div>'
+    +'<div style="overflow:auto"><table style="width:100%;min-width:820px;border-collapse:collapse;font-size:12px"><thead><tr style="background:#fff;color:var(--text2);text-transform:uppercase;font-size:10px"><th style="padding:8px 10px;text-align:left">Area</th><th style="padding:8px 10px;text-align:center">Records</th><th style="padding:8px 10px;text-align:left">Why it matters</th><th style="padding:8px 10px;text-align:left">Status</th><th style="padding:8px 10px;text-align:right">Open</th></tr></thead><tbody>'
+    +specs.map(function(x,i){var ok=x.count>=x.target;return '<tr style="border-top:1px solid var(--border);background:'+(i%2?'#fafafa':'#fff')+'"><td style="padding:9px 10px;font-weight:900">'+escH(x.label)+'</td><td style="padding:9px 10px;text-align:center;font-weight:900">'+x.count+' / '+x.target+'</td><td style="padding:9px 10px;color:var(--text2)">'+escH(x.why)+'</td><td style="padding:9px 10px"><span style="background:'+(ok?'#EAF3DE':'#FEF9EC')+';color:'+(ok?'#3B6D11':'#854F0B')+';padding:3px 9px;border-radius:99px;font-weight:900;font-size:11px">'+(ok?'Ready':'Add demo data')+'</span></td><td style="padding:9px 10px;text-align:right"><button class="btn btn-sm" onclick="showPage(\''+x.page+'\',null)"><i class="ti ti-arrow-right"></i></button></td></tr>';}).join('')
+    +'</tbody></table></div></div>';
+}
 function clientDemoWalkthroughSteps(){
   return [
     {n:1,page:'dashboard',title:'Open with the cockpit',say:'AURIS360 gives management one live view of HSE performance: incidents, actions, KPIs, training, permits and operational risk signals.',show:'Dashboard headline metrics, LTI days, open incidents, overdue actions and AI/management signals.'},
