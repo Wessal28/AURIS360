@@ -27866,8 +27866,38 @@ function legalOpenChg(id){var x=lcAllData.find(r=>r.id===id);if(!x)return;lcEdit
 async function legalSaveChg(){var g=function(id){var el=document.getElementById(id);return el?el.value||null:null;};var body={company_id:ccid(),date_received:g('lc-date')||null,source:g('lc-source'),jurisdiction:g('lc-jurisdiction')||'Mauritius',legislation:g('lc-legislation'),category:g('lc-category')||'health_safety',changes_identified:g('lc-changes'),changes:g('lc-changes'),action_required:g('lc-action'),action:g('lc-action'),responsible_person:g('lc-responsible'),effective_date:g('lc-effective-date')||null,applicable:g('lc-applicable')!=='false',implemented:g('lc-implemented')==='true',comments:g('lc-comments'),updated_at:new Date().toISOString()};
   try{if(lcEditId){await api('/legal_changes?id=eq.'+lcEditId,{m:'PATCH',p:'return=minimal',b:body});toast('Updated!');}else{body.created_by=prof?.id;await api('/legal_changes',{m:'POST',p:'return=minimal',b:body});toast('Change recorded!');}legalChgBack();}catch(e){toast(actionErrorMessage('Save regulatory change','Legal Compliance',e.message),false);}
 }
-async function legalDeleteChg(){if(!lcEditId)return;if(!(await appConfirmDelete('regulatory change')))return;try{await api('/legal_changes?id=eq.'+lcEditId,{m:'DELETE'});toast('Deleted!');legalChgBack();}catch(e){toast(actionErrorMessage('Delete regulatory change','Legal Compliance',e.message),false);}}
-async function legalDeleteChgFromList(id){if(!(await appConfirmDelete('regulatory change')))return;api('/legal_changes?id=eq.'+id,{m:'DELETE'}).then(function(){lcAllData=lcAllData.filter(x=>x.id!==id);legalLoadChanges();toast('Deleted!');}).catch(function(e){toast(actionErrorMessage('Delete regulatory change','Legal Compliance',e.message),false);});}
+async function legalDeleteChg(){
+  if(!lcEditId)return;
+  try{
+    var rows=await api('/legal_changes?id=eq.'+lcEditId+'&select=comments');
+    var current=rows?.[0]||{};
+    if(!ohIsArchivedText(current.comments)){
+      if(!(await appConfirmAction({title:'Archive regulatory change',message:'Archive this regulatory change instead of deleting it?',detail:'Regulatory change history is legal evidence and should remain traceable for future reviews.',confirmText:'Archive change',cancelText:'Back',variant:'danger'})))return;
+      await api('/legal_changes?id=eq.'+lcEditId,{m:'PATCH',p:'return=minimal',b:{comments:ohArchivedText(current.comments),updated_at:new Date().toISOString()}});
+      toast('Regulatory change archived');
+      legalChgBack();
+      return;
+    }
+    if(!(await appConfirmDelete('archived regulatory change','This change is already archived. Permanent deletion should be used only for duplicate/test records.')))return;
+    await api('/legal_changes?id=eq.'+lcEditId,{m:'DELETE'});toast('Deleted!');legalChgBack();
+  }catch(e){toast(actionErrorMessage('Delete regulatory change','Legal Compliance',e.message),false);}
+}
+async function legalDeleteChgFromList(id){
+  try{
+    var current=(lcAllData||[]).find(function(x){return x.id===id;})||{};
+    if(!ohIsArchivedText(current.comments)){
+      if(!(await appConfirmAction({title:'Archive regulatory change',message:'Archive this regulatory change instead of deleting it?',detail:'Regulatory change history is legal evidence and should remain traceable for future reviews.',confirmText:'Archive change',cancelText:'Back',variant:'danger'})))return;
+      var comments=ohArchivedText(current.comments);
+      await api('/legal_changes?id=eq.'+id,{m:'PATCH',p:'return=minimal',b:{comments:comments,updated_at:new Date().toISOString()}});
+      var idx=lcAllData.findIndex(function(x){return x.id===id;});
+      if(idx>=0)lcAllData[idx]=Object.assign({},lcAllData[idx],{comments:comments});
+      legalLoadChanges();toast('Regulatory change archived');
+      return;
+    }
+    if(!(await appConfirmDelete('archived regulatory change','This change is already archived. Permanent deletion should be used only for duplicate/test records.')))return;
+    await api('/legal_changes?id=eq.'+id,{m:'DELETE'});lcAllData=lcAllData.filter(x=>x.id!==id);legalLoadChanges();toast('Deleted!');
+  }catch(e){toast(actionErrorMessage('Delete regulatory change','Legal Compliance',e.message),false);}
+}
 
 // ── COMPLIANCE ASSESSMENTS ────────────────────────────────────────────────────
 async function lcaLoad(){
@@ -27920,7 +27950,23 @@ function lcaEdit(id){var x=lcaAllData.find(r=>r.id===id);if(!x)return;lcaEditId=
 async function lcaSave(){var title=document.getElementById('lcaf-title')?.value?.trim();if(!title){toast('Please enter assessment title',false);return;}var g=function(id){var el=document.getElementById(id);return el?el.value||null:null;};var c=parseInt(g('lcaf-compliant'))||0;var p=parseInt(g('lcaf-partial'))||0;var n=parseInt(g('lcaf-noncompliant'))||0;var na=parseInt(g('lcaf-na'))||0;var total=c+p+n;var score=total>0?Math.round((c*100+p*50)/total):0;var body={company_id:ccid(),title,assessment_type:g('lcaf-type')||'periodic',assessment_date:g('lcaf-date'),next_assessment_date:g('lcaf-next-date')||null,assessor:g('lcaf-assessor'),total_requirements:total+na,compliant_count:c,partial_count:p,non_compliant_count:n,na_count:na,overall_score:score,scope:g('lcaf-scope'),methodology:g('lcaf-methodology'),findings:g('lcaf-findings'),recommendations:g('lcaf-recommendations'),status:g('lcaf-status')||'draft',approved_by:g('lcaf-approved-by'),approved_date:g('lcaf-approved-date')||null,linked_audit_ref:g('lcaf-audit-ref'),updated_at:new Date().toISOString()};
   try{if(lcaEditId){await api('/compliance_assessments?id=eq.'+lcaEditId,{m:'PATCH',p:'return=minimal',b:body});toast('Assessment updated!');}else{body.created_by=prof?.id;var res=await api('/compliance_assessments',{m:'POST',p:'return=representation',b:body});if(res?.[0]?.id){var ref=await nextCompanyRef('compliance_assessments','assessment_ref','CA-'+new Date().getFullYear()+'-');await api('/compliance_assessments?id=eq.'+res[0].id,{m:'PATCH',p:'return=minimal',b:{assessment_ref:ref}});toast('Assessment saved! Ref: '+ref);}}lcaBack();}catch(e){toast(actionErrorMessage('Save compliance assessment','Legal Compliance',e.message),false);}
 }
-async function lcaDelete(){if(!lcaEditId)return;if(!(await appConfirmDelete('compliance assessment')))return;try{await api('/compliance_assessments?id=eq.'+lcaEditId,{m:'DELETE'});toast('Deleted!');lcaBack();}catch(e){toast(actionErrorMessage('Delete compliance assessment','Legal Compliance',e.message),false);}}
+async function lcaDelete(){
+  if(!lcaEditId)return;
+  try{
+    var rows=await api('/compliance_assessments?id=eq.'+lcaEditId+'&select=status,findings');
+    var current=rows?.[0]||{};
+    var status=String(current.status||'draft').toLowerCase();
+    if(status!=='archived'&&!ohIsArchivedText(current.findings)){
+      if(!(await appConfirmAction({title:'Archive compliance assessment',message:'Archive this compliance assessment instead of deleting it?',detail:'Compliance assessments are audit evidence. The record will remain traceable for legal reviews and client reporting.',confirmText:'Archive assessment',cancelText:'Back',variant:'danger'})))return;
+      await api('/compliance_assessments?id=eq.'+lcaEditId,{m:'PATCH',p:'return=minimal',b:{status:'archived',findings:ohArchivedText(current.findings),updated_at:new Date().toISOString()}});
+      toast('Compliance assessment archived');
+      lcaBack();
+      return;
+    }
+    if(!(await appConfirmDelete('archived compliance assessment','This assessment is already archived. Permanent deletion should be used only for duplicate/test records.')))return;
+    await api('/compliance_assessments?id=eq.'+lcaEditId,{m:'DELETE'});toast('Deleted!');lcaBack();
+  }catch(e){toast(actionErrorMessage('Delete compliance assessment','Legal Compliance',e.message),false);}
+}
 
 // ── GAP ANALYSIS ──────────────────────────────────────────────────────────────
 async function gapLoad(){
