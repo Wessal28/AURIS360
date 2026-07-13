@@ -20751,13 +20751,36 @@ async function cirSave(){
 
 async function cirDelete(){
   if(!cirEditingId)return;
-  if(!(await appConfirmDelete('contractor incident report')))return;
-  try{await api('/contractor_incidents?id=eq.'+cirEditingId,{m:'DELETE'});toast('Deleted!');cirFormBack();}
+  try{
+    var rows=await api('/contractor_incidents?id=eq.'+cirEditingId+'&select=status,notes');
+    var current=rows?.[0]||{};
+    var status=String(current.status||'open').toLowerCase();
+    if(!['closed','cancelled'].includes(status)||!ohIsArchivedText(current.notes)){
+      if(!(await appConfirmAction({title:'Close contractor incident',message:'Close this contractor incident instead of deleting it?',detail:'Contractor incident history should remain traceable for evaluations, authorisations, client reports and the action plan.',confirmText:'Close incident',cancelText:'Back',variant:'danger'})))return;
+      await api('/contractor_incidents?id=eq.'+cirEditingId,{m:'PATCH',p:'return=minimal',b:{status:'closed',notes:ohArchivedText(current.notes),updated_at:new Date().toISOString()}});
+      toast('Contractor incident closed and kept for audit history.');
+      cirFormBack();
+      return;
+    }
+    if(!(await appConfirmDelete('closed contractor incident report','This incident is already closed. Permanent deletion should be used only for duplicate/test records.')))return;
+    await api('/contractor_incidents?id=eq.'+cirEditingId,{m:'DELETE'});toast('Deleted!');cirFormBack();
+  }
   catch(e){toast(e.message,false);}
 }
 async function cirDeleteRow(id){
-  if(!(await appConfirmDelete('contractor incident report')))return;
-  try{await api('/contractor_incidents?id=eq.'+id,{m:'DELETE'});conIncData=conIncData.filter(x=>x.id!==id);toast('Deleted!');cirLoad();}
+  try{
+    var current=conIncData.find(function(x){return x.id===id;})||{};
+    var status=String(current.status||'open').toLowerCase();
+    if(!['closed','cancelled'].includes(status)||!ohIsArchivedText(current.notes)){
+      if(!(await appConfirmAction({title:'Close contractor incident',message:'Close this contractor incident instead of deleting it?',detail:'Contractor incident history should remain traceable for evaluations, authorisations, client reports and the action plan.',confirmText:'Close incident',cancelText:'Back',variant:'danger'})))return;
+      await api('/contractor_incidents?id=eq.'+id,{m:'PATCH',p:'return=minimal',b:{status:'closed',notes:ohArchivedText(current.notes),updated_at:new Date().toISOString()}});
+      toast('Contractor incident closed and kept for audit history.');
+      cirLoad();
+      return;
+    }
+    if(!(await appConfirmDelete('closed contractor incident report','This incident is already closed. Permanent deletion should be used only for duplicate/test records.')))return;
+    await api('/contractor_incidents?id=eq.'+id,{m:'DELETE'});conIncData=conIncData.filter(x=>x.id!==id);toast('Deleted!');cirLoad();
+  }
   catch(e){toast(e.message,false);}
 }
 
