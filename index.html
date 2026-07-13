@@ -35988,7 +35988,7 @@ function aurisPrint(html, title) {
   var w = window.open('', '_blank', isRiskPrint?'width=1280,height=820':'width=900,height=700');
   if (!w) { toast('Please allow popups for PDF generation', false); return; }
   var reportOverride=isRiskPrint
-    ? '@page{size:297mm 210mm;margin:8mm}html,body{width:297mm;min-height:210mm}.report-page{width:297mm;max-width:none!important;min-height:210mm;padding:8mm}table{font-size:7.2pt}th,td{padding:3px 4px}.rpt-section{break-inside:avoid}'
+    ? '@page{size:A4 landscape;margin:8mm}html,body{width:297mm;min-height:210mm}.report-page{width:297mm;max-width:none!important;min-height:210mm;padding:8mm}table{font-size:7.2pt}th,td{padding:3px 4px}.rpt-section{break-inside:avoid}'
     : '';
   w.document.write('<!DOCTYPE html><html><head>'
     + '<meta charset="UTF-8">'
@@ -36274,7 +36274,7 @@ function printRiskAssessment(raId) {
     if(t&&!taskSteps.find(function(x){return x.text===t;}))taskSteps.push({no:taskSteps.length+1,text:t});
   });
 
-  var html = '<style>@page{size:297mm 210mm;margin:8mm}html,body{width:297mm;min-height:210mm}.report-page{width:297mm;max-width:none!important;padding:8mm;box-sizing:border-box}table{font-size:7.6pt;table-layout:fixed;width:100%}th,td{padding:3px 4px;word-break:break-word;vertical-align:top}.rpt-grid{gap:4px 12px}.rpt-section{break-inside:avoid}</style><div class="report-page">'
+  var html = '<style>@page{size:A4 landscape;margin:8mm}html,body{width:297mm;min-height:210mm}.report-page{width:297mm;max-width:none!important;padding:8mm;box-sizing:border-box}table{font-size:7.6pt;table-layout:fixed;width:100%}th,td{padding:3px 4px;word-break:break-word;vertical-align:top}.rpt-grid{gap:4px 12px}.rpt-section{break-inside:avoid}</style><div class="report-page">'
     + aurisHeader('Controlled Risk Assessment', val(ra.title,ra.activity,'Risk assessment'), ref)
 
     + '<div class="rpt-section"><div class="rpt-section-title secondary">Document Control</div>'
