@@ -4981,6 +4981,51 @@ function copyClientPilotIssues(){
   else toast(txt);
   auditLogEvent('export','demo','Pilot issue register copied',{count:rows.length,length:txt.length});
 }
+function clientProposalSnapshotItems(){
+  return {
+    packages:[
+      {name:'Pilot',scope:'3-5 modules, limited users, one company, guided onboarding and review meeting.',best:'First client validation and controlled rollout'},
+      {name:'Professional',scope:'Core HSE suite, approval workflows, branded reports, audit trail, notifications and management dashboards.',best:'SME client that wants a serious HSE operating system'},
+      {name:'Enterprise',scope:'Multi-company setup, SLA/security pack, integrations, advanced AI, offline expansion, BI and tailored governance.',best:'Large clients, groups or regulated operations'}
+    ],
+    phases:[
+      ['Week 1','Setup company, users, roles, branding, pilot modules and demo records.'],
+      ['Week 2','Client training, workflow confirmation, notification testing and first controlled records.'],
+      ['Week 3','Review pilot issues, adjust forms/workflows, lock governance rules and prepare acceptance.'],
+      ['Week 4','Go-live decision, reporting pack, support rhythm and expansion roadmap.']
+    ],
+    proof:[
+      'Single action plan across incidents, inspections, BBS, legal and manual actions',
+      'Role-based access with company scoping and audit trail',
+      'Mobile-first reporting with evidence capture',
+      'AI-assisted HSE drafts and analysis with human approval',
+      'Expandable module catalogue for chemicals, PTW, contractors, PPE, fire layout and RAMS/SWMS'
+    ]
+  };
+}
+
+function renderClientProposalSnapshot(){
+  var x=clientProposalSnapshotItems();
+  return '<div style="margin-top:14px;border:1px solid var(--border);border-radius:10px;overflow:hidden;background:#fff">'
+    +'<div style="padding:12px;background:#0B4F6C;color:#fff;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><div><div style="font-weight:900">Client proposal snapshot</div><div style="font-size:11px;opacity:.85;margin-top:2px">Position AURIS360 clearly after the demo: package, rollout, proof and next step</div></div><button class="btn btn-sm" style="background:rgba(255,255,255,.14);color:#fff;border-color:rgba(255,255,255,.25)" onclick="copyClientProposalSnapshot()"><i class="ti ti-copy"></i>Copy proposal</button></div>'
+    +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:12px;background:#F8FAFC">'
+      +'<div style="background:#fff;border:1px solid var(--border);border-radius:10px;overflow:hidden"><div style="padding:10px 12px;font-weight:900;color:#0B4F6C;border-bottom:1px solid var(--border)">Package positioning</div><div style="overflow:auto"><table style="width:100%;min-width:620px;border-collapse:collapse;font-size:12px"><thead><tr style="background:#F8FAFC;color:var(--text2);text-transform:uppercase;font-size:10px"><th style="padding:8px;text-align:left">Package</th><th style="padding:8px;text-align:left">Scope</th><th style="padding:8px;text-align:left">Best for</th></tr></thead><tbody>'
+        +x.packages.map(function(p,i){return '<tr style="border-top:1px solid var(--border);background:'+(i%2?'#fafafa':'#fff')+'"><td style="padding:9px;font-weight:900;color:#0B4F6C">'+escH(p.name)+'</td><td style="padding:9px;line-height:1.45">'+escH(p.scope)+'</td><td style="padding:9px;color:var(--text2);line-height:1.45">'+escH(p.best)+'</td></tr>';}).join('')
+      +'</tbody></table></div></div>'
+      +'<div style="display:grid;gap:12px">'
+        +'<div style="background:#fff;border:1px solid var(--border);border-radius:10px;padding:12px"><div style="font-weight:900;color:#0B4F6C;margin-bottom:8px">30-day rollout plan</div>'+x.phases.map(function(p){return '<div style="display:grid;grid-template-columns:70px 1fr;gap:8px;padding:8px 0;border-top:1px solid var(--border);font-size:12px"><div style="font-weight:900;color:#111827">'+escH(p[0])+'</div><div style="color:var(--text2);line-height:1.45">'+escH(p[1])+'</div></div>';}).join('')+'</div>'
+        +'<div style="background:#fff;border:1px solid var(--border);border-radius:10px;padding:12px"><div style="font-weight:900;color:#0B4F6C;margin-bottom:8px">Evidence to mention</div>'+x.proof.map(function(p){return '<div style="display:flex;gap:8px;padding:6px 0;border-top:1px solid var(--border);font-size:12px;line-height:1.45"><i class="ti ti-check" style="color:#1D9E75;margin-top:1px"></i><span>'+escH(p)+'</span></div>';}).join('')+'</div>'
+      +'</div>'
+    +'</div></div>';
+}
+
+function copyClientProposalSnapshot(){
+  var x=clientProposalSnapshotItems();
+  var txt='AURIS360 client proposal snapshot\n\nPackage positioning:\n'+x.packages.map(function(p){return '- '+p.name+': '+p.scope+' Best for: '+p.best;}).join('\n')+'\n\n30-day rollout plan:\n'+x.phases.map(function(p){return '- '+p[0]+': '+p[1];}).join('\n')+'\n\nEvidence to mention:\n'+x.proof.map(function(p){return '- '+p;}).join('\n')+'\n\nRecommended next step: agree pilot scope, confirm users/modules, set notification and approval rules, then schedule the first acceptance review.';
+  if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(txt).then(function(){toast('Client proposal snapshot copied');});
+  else toast(txt);
+  auditLogEvent('export','demo','Client proposal snapshot copied',{length:txt.length});
+}
 function renderClientDemoCommandCenter(){
   var el=document.getElementById('client-demo-command-body');if(!el)return;
   var canSee=isAdm()||activeRole()==='hse_manager'||activeRole()==='hse_officer';
@@ -5015,7 +5060,7 @@ function renderClientDemoCommandCenter(){
       +'<div style="border:1px solid var(--border);border-radius:10px;padding:12px;background:#fff"><div style="font-size:13px;font-weight:900;color:#991B1B;margin-bottom:4px">Do not over-promise</div>'+renderList(items.avoid,'avoid')+'</div>'
     +'</div>'
     +'</div>'
-    +renderClientDemoModuleMatrix() + '<div id="client-demo-data-checklist"></div>' + renderClientDemoObjections() + renderClientPilotOnboarding() + renderClientPilotSignoff() + renderClientPilotIssues();
+    +renderClientDemoModuleMatrix() + '<div id="client-demo-data-checklist"></div>' + renderClientDemoObjections() + renderClientPilotOnboarding() + renderClientPilotSignoff() + renderClientPilotIssues() + renderClientProposalSnapshot();
   setTimeout(clientDemoLoadDataChecklist,80);
 }
 
