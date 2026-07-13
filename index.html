@@ -37102,12 +37102,13 @@ function fireStartMoveLayoutMarker(){
 }
 function fireRenderLayoutDetails(marker){
   var el=document.getElementById('fire-layout-details');if(!el)return;
-  if(!marker){el.innerHTML='<div style="color:var(--text2);font-size:13px">Click an item on the plan to view its service details.</div>';return;}
+  if(!marker){el.innerHTML='<div style="color:var(--text2);font-size:13px">Click an item on the plan to view its service details and linked HSE records for that area.</div>';return;}
   var e=(fireAllEquip||[]).find(function(x){return x.id===marker.equipment_id;})||{};
   var next=e.next_service_date?new Date(e.next_service_date).toLocaleDateString('en-GB'):'--';
   var last=e.last_service_date?new Date(e.last_service_date).toLocaleDateString('en-GB'):'--';
   var overdue=e.next_service_date&&new Date(e.next_service_date)<new Date();
   var ext=fireExtinguisherTypeFromNotes(e.notes);
+  var area=fireLayoutAreaName(e,marker);
   el.innerHTML='<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px"><div style="min-width:38px;height:38px;border-radius:999px;background:#1D9E75;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:900">'+fireEquipIconHtml(e.equipment_type)+'</div><div><div style="font-weight:800">'+escH(e.description||fireEquipTypeLabel(e.equipment_type)||'Fire equipment')+'</div><div style="font-size:12px;color:var(--text2)">'+escH(e.location||'No location recorded')+'</div></div></div>'
     +'<table style="width:100%;font-size:12px;border-collapse:collapse"><tbody>'
     +'<tr><td style="padding:6px;color:var(--text2)">Type</td><td style="padding:6px;font-weight:700">'+escH(fireEquipTypeLabel(e.equipment_type))+'</td></tr>'
@@ -37116,7 +37117,56 @@ function fireRenderLayoutDetails(marker){
     +'<tr><td style="padding:6px;color:var(--text2)">Last service</td><td style="padding:6px">'+last+'</td></tr>'
     +'<tr><td style="padding:6px;color:var(--text2)">Next service</td><td style="padding:6px;font-weight:800;color:'+(overdue?'var(--red)':'var(--green)')+'">'+next+(overdue?' overdue':'')+'</td></tr>'
     +'<tr><td style="padding:6px;color:var(--text2)">Status</td><td style="padding:6px">'+fireEquipStatusBadge(e.status)+'</td></tr>'
-    +'</tbody></table><div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap"><button class="btn btn-sm" onclick="fireStartMoveLayoutMarker()"><i class="ti ti-arrows-move"></i>Move marker</button><button class="btn btn-sm" onclick="fireShowEquipForm(\''+escH(e.id||'')+'\')"><i class="ti ti-edit"></i>Edit equipment</button><button class="btn btn-sm" style="color:var(--red)" onclick="fireRemoveLayoutMarker()"><i class="ti ti-trash"></i>Remove marker</button></div>';
+    +'</tbody></table><div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap"><button class="btn btn-sm" onclick="fireStartMoveLayoutMarker()"><i class="ti ti-arrows-move"></i>Move marker</button><button class="btn btn-sm" onclick="fireShowEquipForm(\''+escH(e.id||'')+'\')"><i class="ti ti-edit"></i>Edit equipment</button><button class="btn btn-sm" style="color:var(--red)" onclick="fireRemoveLayoutMarker()"><i class="ti ti-trash"></i>Remove marker</button></div>'
+    +'<div style="border-top:1px solid var(--border);margin-top:14px;padding-top:12px"><div style="font-weight:900;font-size:13px;margin-bottom:6px"><i class="ti ti-map-search"></i> Area HSE records</div><div style="font-size:12px;color:var(--text2);margin-bottom:8px">Matching records for: <b>'+escH(area||'this location')+'</b></div><div id="fire-layout-area-records"><div style="font-size:12px;color:var(--text2)">Loading linked records...</div></div></div>';
+  fireLoadAreaRecords(area);
+}
+function fireLayoutAreaName(e,marker){
+  var vals=[e.location,e.description,e.premises,e.site,e.area,marker&&marker.area,marker&&marker.label].filter(Boolean).map(String);
+  return (vals[0]||'').trim();
+}
+function fireAreaMatch(row,term){
+  if(!term)return false;
+  term=String(term).toLowerCase();
+  var vals=[row.location,row.site,row.area,row.department,row.title,row.description,row.activity,row.site_location,row.work_location,row.premises,row.process_use,row.source_ref,row.event_ref,row.reference_no,row.ra_ref,row.permit_ref,row.chemical_ref].filter(Boolean).join(' ').toLowerCase();
+  return vals.indexOf(term)!==-1||term.split(/\s+/).some(function(t){return t.length>3&&vals.indexOf(t)!==-1;});
+}
+function fireRecordLabel(row,keys){
+  for(var i=0;i<keys.length;i++){if(row&&row[keys[i]])return row[keys[i]];}
+  return row&&row.id?String(row.id).slice(0,8):'Record';
+}
+function fireRecordDate(row){
+  var d=row.event_date||row.inspection_date||row.assessment_date||row.created_at||row.updated_at||row.review_date;
+  if(!d)return '--';
+  try{return new Date(d).toLocaleDateString('en-GB');}catch(_){return String(d).slice(0,10);}
+}
+async function fireAreaApi(path){try{return await api(path);}catch(e){console.warn('Area records:',e.message);return [];}}
+async function fireLoadAreaRecords(area){
+  var el=document.getElementById('fire-layout-area-records');if(!el)return;
+  if(!area){el.innerHTML='<div style="font-size:12px;color:var(--text2)">No location recorded for this marker. Add a location in the equipment record to link site records.</div>';return;}
+  var rows=await Promise.all([
+    fireAreaApi('/events?select=id,event_ref,event_type,event_date,severity,status,location,description'+cf()+'&order=event_date.desc,created_at.desc&limit=80'),
+    fireAreaApi('/inspections?select=id,reference_no,inspection_type,inspection_date,status,site,location,overall_observations,negative_observations'+cf()+'&order=inspection_date.desc,created_at.desc&limit=80'),
+    fireAreaApi('/risk_assessments?select=id,ra_ref,title,activity,status,overall_risk_level,site,location,department,created_at'+cf()+'&order=created_at.desc&limit=80'),
+    fireAreaApi('/permit_to_work?select=id,permit_ref,work_description,location,status,created_at'+cf()+'&order=created_at.desc&limit=80'),
+    fireAreaApi('/chemical_register?select=id,chemical_ref,product_name,risk_level,status,location,department,process_use'+cf()+'&order=product_name.asc&limit=80'),
+    fireAreaApi('/action_tracker?select=id,title,source_ref,status,priority,due_date,target_date,location,department,created_at'+cf()+'&order=created_at.desc&limit=80')
+  ]);
+  var sections=[
+    {name:'Incidents',icon:'ti-alert-triangle',rows:rows[0],keys:['event_ref','event_type','description'],meta:function(r){return [r.severity,r.status,fireRecordDate(r)].filter(Boolean).join(' · ');}},
+    {name:'Inspections',icon:'ti-clipboard-check',rows:rows[1],keys:['reference_no','inspection_type','site'],meta:function(r){return [r.status,fireRecordDate(r)].filter(Boolean).join(' · ');}},
+    {name:'Risk assessments',icon:'ti-shield-check',rows:rows[2],keys:['ra_ref','title','activity'],meta:function(r){return [r.overall_risk_level,r.status].filter(Boolean).join(' · ');}},
+    {name:'Permits',icon:'ti-key',rows:rows[3],keys:['permit_ref','work_description'],meta:function(r){return [r.status,fireRecordDate(r)].filter(Boolean).join(' · ');}},
+    {name:'Chemicals',icon:'ti-flask',rows:rows[4],keys:['chemical_ref','product_name'],meta:function(r){return [r.risk_level,r.status].filter(Boolean).join(' · ');}},
+    {name:'Actions',icon:'ti-list-check',rows:rows[5],keys:['title','source_ref'],meta:function(r){return [r.priority,r.status,r.due_date||r.target_date].filter(Boolean).join(' · ');}}
+  ].map(function(s){s.rows=(s.rows||[]).filter(function(r){return fireAreaMatch(r,area);}).slice(0,6);return s;});
+  var total=sections.reduce(function(n,s){return n+s.rows.length;},0);
+  if(!total){el.innerHTML='<div style="font-size:12px;color:var(--text2);padding:8px;border:1px dashed var(--border);border-radius:8px">No linked HSE records found for this area yet. Records will appear when their site/location text matches this marker location.</div>';return;}
+  el.innerHTML=sections.filter(function(s){return s.rows.length;}).map(function(s){
+    return '<div style="margin-bottom:10px"><div style="font-size:12px;font-weight:900;margin-bottom:5px"><i class="ti '+s.icon+'"></i> '+escH(s.name)+' <span class="badge badge-grey">'+s.rows.length+'</span></div>'
+      +s.rows.map(function(r){return '<div style="padding:7px 8px;border:1px solid var(--border);border-radius:8px;background:#fff;margin-bottom:5px"><div style="font-size:12px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+escH(fireRecordLabel(r,s.keys))+'</div><div style="font-size:11px;color:var(--text2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+escH(s.meta(r)||'--')+'</div></div>';}).join('')
+      +'</div>';
+  }).join('');
 }
 async function fireRemoveLayoutMarker(){
   if(!fireLayoutSelectedMarkerId)return;
@@ -48563,8 +48613,8 @@ I can help you:<br>
   <div id="fire-layout-list-view" class="card" style="margin-bottom:14px">
     <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;margin-bottom:14px">
       <div>
-        <div class="card-title" style="margin-bottom:4px">Site Layout / Fire Equipment Map</div>
-        <div style="font-size:12px;color:var(--text2)">Saved building plans and positioned fire equipment. Open a plan to view or amend the map.</div>
+        <div class="card-title" style="margin-bottom:4px">Safety Twin / Site Map</div>
+        <div style="font-size:12px;color:var(--text2)">Saved building plans, positioned fire equipment and linked HSE records by area.</div>
       </div>
       <button class="btn btn-primary" onclick="fireNewLayoutPlan()"><i class="ti ti-plus"></i>New plan</button>
     </div>
@@ -48574,8 +48624,8 @@ I can help you:<br>
   <div class="card" style="margin-bottom:14px">
     <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap">
       <div>
-        <div class="card-title" style="margin-bottom:4px">Site Layout / Fire Equipment Map</div>
-        <div style="font-size:12px;color:var(--text2)">Upload a floor or site plan, select equipment, then click on the plan to position it.</div>
+        <div class="card-title" style="margin-bottom:4px">Safety Twin / Site Map</div>
+        <div style="font-size:12px;color:var(--text2)">Upload a floor or site plan, position equipment, then click markers to see incidents, risks, inspections, permits, chemicals and actions for the area.</div>
       </div>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
         <button class="btn" onclick="fireBackToLayoutList()"><i class="ti ti-arrow-left"></i>Back to plans</button>
@@ -48636,7 +48686,7 @@ I can help you:<br>
       </div>
     </div>
     <div class="card" style="position:sticky;top:86px">
-      <div class="card-title">Selected Equipment</div>
+      <div class="card-title">Selected Equipment / Area</div>
       <div id="fire-layout-details"></div>
       <div style="border-top:1px solid var(--border);margin-top:14px;padding-top:12px">
         <div style="font-size:13px;font-weight:900;margin-bottom:8px">Positioned equipment</div>
