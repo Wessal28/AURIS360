@@ -19168,7 +19168,17 @@ async function ptwSave(targetStatus){
       if(res?.[0]?.id){
         var yr=new Date().getFullYear();
         var typeCode={hot_work:'HW',confined_space:'CS',excavation:'EX',electrical_isolation:'EI',loto:'LO',work_at_height:'WH',lifting_operation:'LF',line_breaking:'LB',radiation:'RA',chemical_handling:'CH'}[type]||'PTW';
-        var ref='PTW-'+typeCode+'-'+yr+'-'+String(ptwAllData.length+1).padStart(3,'0');
+        var seq=1;
+        try{
+          var prefix='PTW-'+typeCode+'-'+yr+'-';
+          var existing=await api('/permits?select=permit_number&company_id=eq.'+ccid()+'&permit_number=like.'+encodeURIComponent(prefix+'*')+'&order=permit_number.desc&limit=1');
+          var last=(existing&&existing[0]&&existing[0].permit_number)||'';
+          var m=String(last).match(/-(\d+)$/);
+          seq=m?parseInt(m[1],10)+1:1;
+        }catch(refErr){
+          seq=(ptwAllData||[]).filter(function(p){return String(p.permit_number||'').indexOf('PTW-'+typeCode+'-'+yr+'-')===0;}).length+1;
+        }
+        var ref='PTW-'+typeCode+'-'+yr+'-'+String(seq).padStart(3,'0');
         await api('/permits?id=eq.'+res[0].id,{m:'PATCH',p:'return=minimal',b:{permit_number:ref}});
         res[0].permit_number=ref;res[0].permit_type_v2=type;
         ptwAllData.unshift(res[0]);
