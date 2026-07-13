@@ -31787,7 +31787,7 @@ function usersRender(data) {
           + (canAdmin&&!usersIsGeneratedLogin(u)?'<button class="btn btn-sm" title="Send password reset email" data-id="'+u.id+'" onclick="usersResetPw(this.dataset.id)"><i class="ti ti-key"></i></button>':'')
           + (usersCanResetPassword(u)?'<button class="btn btn-sm" title="'+(isSelf?'Change my password':'Set temporary password')+'" data-id="'+u.id+'" onclick="usersTempPassword(this.dataset.id)"><i class="ti ti-lock-cog"></i></button>':'')
           + (canAdmin?'<button class="btn btn-sm" style="color:'+(!isActive?'var(--green)':'var(--red)')+'" title="'+(isActive?'Deactivate (block login)':'Reactivate')+'" data-id="'+u.id+'" data-active="'+(isActive?'1':'0')+'" onclick="usersToggleStatus(this.dataset.id,this.dataset.active)"><i class="ti ti-'+(isActive?'user-off':'user-check')+'"></i></button>':'')
-          + (canAdmin?'<button class="btn btn-sm" style="color:var(--red)" title="Permanently delete user" data-id="'+u.id+'" onclick="usersDelete(this.dataset.id)"><i class="ti ti-trash"></i></button>':'')
+          + (canAdmin?'<button class="btn btn-sm" style="color:var(--red)" title="Deactivate user and preserve history" data-id="'+u.id+'" onclick="usersDelete(this.dataset.id)"><i class="ti ti-user-off"></i></button>':'')
           + '</div></td>'
         : '')
       + '</tr>';
@@ -31976,19 +31976,19 @@ async function usersDelete(id) {
   var u = usersAllData.find(function(x){return x.id===id;});
   if(!u) return;
   if(!usersCanAdminUser(u)){toast('Admin access required or user is protected.',false);return;}
-  var warn = 'PERMANENTLY DELETE '+(u.full_name||u.email)+'?\n\n'
-    + 'Their login account and profile will be removed and CANNOT be recovered.\n'
-    + 'Records they created (incidents, investigations, training) keep their name as text but lose the account link.\n\n'
-    + 'If this person simply left the company, use Deactivate instead.\n\n'
-    + 'To confirm deletion, type their full name exactly:';
-  var typed = await appPrompt({title:'Permanently delete user',message:warn,placeholder:'Type the full name exactly',multiline:false,confirmText:'Delete user'});
+  var warn = 'DEACTIVATE '+(u.full_name||u.email)+'?\n\n'
+    + 'Their login will be blocked, but the profile stays linked to incidents, permits, training and audit history.\n\n'
+    + 'This is the recommended action when a person leaves the company or should no longer access AURIS360.\n\n'
+    + 'To confirm deactivation, type their full name exactly:';
+  var typed = await appPrompt({title:'Deactivate user',message:warn,placeholder:'Type the full name exactly',multiline:false,confirmText:'Deactivate user'});
   if(typed===null) return;
   if((typed||'').trim().toLowerCase() !== (u.full_name||'').trim().toLowerCase()){
     toast('Name did not match — deletion cancelled', false); return;
   }
   try {
-    await adminFnCall('delete_user', {user_id:id});
-    toast('User permanently deleted: '+(u.full_name||u.email));
+    var updated=await api('/profiles?id=eq.'+id,{m:'PATCH',p:'return=representation',b:{status:'inactive',active:false,updated_at:new Date().toISOString()}});
+    if(Array.isArray(updated)&&!updated.length){throw new Error('User not found or permission denied');}
+    toast('User deactivated and history preserved: '+(u.full_name||u.email));
     usersLoad();
   } catch(e) { toast(e.message, false); }
 }
