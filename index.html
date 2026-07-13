@@ -5026,6 +5026,35 @@ function copyClientProposalSnapshot(){
   else toast(txt);
   auditLogEvent('export','demo','Client proposal snapshot copied',{length:txt.length});
 }
+function clientEnterpriseReadinessItems(){
+  return [
+    {area:'Security',status:'In place',detail:'Role-based access, company scoping, protected server secrets and restricted AI access.'},
+    {area:'Audit trail',status:'In place',detail:'Key user actions, exports, approvals and AI use are logged chronologically.'},
+    {area:'Backups',status:'Confirm before enterprise',detail:'Agree Supabase backup frequency, restore testing, retention period and export process.'},
+    {area:'SLA / support',status:'Define commercially',detail:'Set support hours, response times, escalation contacts and planned maintenance notice period.'},
+    {area:'Data retention',status:'Policy required',detail:'Define retention for incidents, medical/occupational health, documents, evidence photos and deleted records.'},
+    {area:'Integrations',status:'Roadmap / project-based',detail:'ERP, HR/SIRH, LDAP/SSO, WhatsApp/SMS and BI need client-specific API access, mapping and testing.'},
+    {area:'Offline mode',status:'Partial',detail:'Field drafts are suitable for incident/BBS use; full offline workflow needs conflict handling and controlled sync.'},
+    {area:'Validation',status:'Pilot gate',detail:'Use the pilot acceptance sign-off before moving to a wider company rollout.'}
+  ];
+}
+
+function renderClientEnterpriseReadiness(){
+  var rows=clientEnterpriseReadinessItems();
+  var cfg={'In place':['#EAF3DE','#3B6D11'],'Confirm before enterprise':['#FEF9EC','#854F0B'],'Define commercially':['#EEF2FF','#3730A3'],'Roadmap / project-based':['#F3E8FF','#6B21A8'],'Partial':['#FFF7ED','#9A3412'],'Policy required':['#FEF2F2','#991B1B'],'Pilot gate':['#ECFEFF','#155E75']};
+  return '<div style="margin-top:14px;border:1px solid var(--border);border-radius:10px;overflow:hidden;background:#fff">'
+    +'<div style="padding:12px;background:#111827;color:#fff;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><div><div style="font-weight:900">Enterprise readiness checklist</div><div style="font-size:11px;opacity:.85;margin-top:2px">Use this to answer security, SLA, backup and integration questions from larger clients</div></div><button class="btn btn-sm" style="background:rgba(255,255,255,.14);color:#fff;border-color:rgba(255,255,255,.25)" onclick="copyClientEnterpriseReadiness()"><i class="ti ti-copy"></i>Copy checklist</button></div>'
+    +'<div style="overflow:auto"><table style="width:100%;min-width:900px;border-collapse:collapse;font-size:12px"><thead><tr style="background:#F8FAFC;color:var(--text2);text-transform:uppercase;font-size:10px"><th style="padding:9px 10px;text-align:left">Area</th><th style="padding:9px 10px;text-align:left">Position</th><th style="padding:9px 10px;text-align:left">What to say / confirm</th></tr></thead><tbody>'
+    +rows.map(function(x,i){var s=cfg[x.status]||['#F8FAFC','#374151'];return '<tr style="border-top:1px solid var(--border);background:'+(i%2?'#fafafa':'#fff')+'"><td style="padding:10px;font-weight:900;color:#111827;white-space:nowrap">'+escH(x.area)+'</td><td style="padding:10px"><span style="background:'+s[0]+';color:'+s[1]+';padding:3px 9px;border-radius:99px;font-size:11px;font-weight:900;white-space:nowrap">'+escH(x.status)+'</span></td><td style="padding:10px;line-height:1.45;color:#111827">'+escH(x.detail)+'</td></tr>';}).join('')
+    +'</tbody></table></div></div>';
+}
+
+function copyClientEnterpriseReadiness(){
+  var txt='AURIS360 enterprise readiness checklist\n\n'+clientEnterpriseReadinessItems().map(function(x){return '- '+x.area+' ['+x.status+']: '+x.detail;}).join('\n');
+  if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(txt).then(function(){toast('Enterprise readiness checklist copied');});
+  else toast(txt);
+  auditLogEvent('export','demo','Enterprise readiness checklist copied',{length:txt.length});
+}
 function renderClientDemoCommandCenter(){
   var el=document.getElementById('client-demo-command-body');if(!el)return;
   var canSee=isAdm()||activeRole()==='hse_manager'||activeRole()==='hse_officer';
@@ -5060,7 +5089,7 @@ function renderClientDemoCommandCenter(){
       +'<div style="border:1px solid var(--border);border-radius:10px;padding:12px;background:#fff"><div style="font-size:13px;font-weight:900;color:#991B1B;margin-bottom:4px">Do not over-promise</div>'+renderList(items.avoid,'avoid')+'</div>'
     +'</div>'
     +'</div>'
-    +renderClientDemoModuleMatrix() + '<div id="client-demo-data-checklist"></div>' + renderClientDemoObjections() + renderClientPilotOnboarding() + renderClientPilotSignoff() + renderClientPilotIssues() + renderClientProposalSnapshot();
+    +renderClientDemoModuleMatrix() + '<div id="client-demo-data-checklist"></div>' + renderClientDemoObjections() + renderClientPilotOnboarding() + renderClientPilotSignoff() + renderClientPilotIssues() + renderClientProposalSnapshot() + renderClientEnterpriseReadiness();
   setTimeout(clientDemoLoadDataChecklist,80);
 }
 
