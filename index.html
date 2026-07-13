@@ -5945,7 +5945,7 @@ function aiTab(tab, btn) {
   aiCurrentTab = tab;
   document.querySelectorAll('[id^="aitab-"]').forEach(function(t){t.classList.remove('active');});
   if(btn) btn.classList.add('active');
-  ['insights','safetyos','rams','toolbox','compliance','risk','docs','chat'].forEach(function(t){
+  ['insights','safetyos','qr','rams','toolbox','compliance','risk','docs','chat'].forEach(function(t){
     var el = document.getElementById('aiview-'+t);
     if(el) el.style.display = t===tab ? 'block' : 'none';
   });
@@ -6193,6 +6193,48 @@ async function aiLiveCompliance(type) {
     toast('Scan failed: '+e.message, false);
   }
 }
+
+// ── QR Everything Label Studio ────────────────────────────────────────────────
+var qrRecords=[];
+function qrTypeConfig(type){
+  var cfg={
+    tools:{module:'tools',path:'/tools_register?select=*'+cf()+'&limit=250',ref:['ref_number','asset_ref','id'],title:['name','description'],sub:['category','location','assigned_to_name']},
+    fire:{module:'fire',path:'/fire_equipment?select=*&company_id=eq.'+ccid()+'&limit=250',ref:['serial_number','id'],title:['description','equipment_type'],sub:['location','status','next_service_date']},
+    ppe:{module:'ppe',path:'/ppe_catalogue?select=*'+cf()+'&limit=250',ref:['ppe_ref','ref_number','id'],title:['name','ppe_name','description'],sub:['category','standard_certification','status']},
+    chemical:{module:'chemical',path:'/chemical_register?select=*'+cf()+'&status=neq.deleted&limit=250',ref:['chemical_ref','id'],title:['product_name'],sub:['supplier','location','risk_level']},
+    documents:{module:'documents',path:'/documents?select=*'+cf()+'&limit=250',ref:['doc_ref','reference_no','id'],title:['title','document_title','file_name'],sub:['document_type','doc_type','status']},
+    risk:{module:'risk',path:'/risk_assessments?select=*'+cf()+'&limit=250',ref:['ra_ref','id'],title:['title','activity'],sub:['overall_risk_level','status','location']},
+    permit:{module:'permit',path:'/permit_to_work?select=*'+cf()+'&limit=250',ref:['permit_ref','id'],title:['work_description','title'],sub:['permit_type','location','status']}
+  };
+  return cfg[type]||cfg.tools;
+}
+function qrPick(row,keys){for(var i=0;i<keys.length;i++){if(row&&row[keys[i]])return row[keys[i]];}return '';}
+function qrBaseUrl(){return window.location.origin+window.location.pathname;}
+function qrRecordUrl(rec){var cfg=qrTypeConfig(document.getElementById('qr-type')?.value||'tools');return qrBaseUrl()+'?goto='+encodeURIComponent(cfg.module)+'&record='+encodeURIComponent(rec.id||'')+'&ref='+encodeURIComponent(qrPick(rec,cfg.ref)||'');}
+function qrImageUrl(url,size){return 'https://api.qrserver.com/v1/create-qr-code/?size='+(size||220)+'x'+(size||220)+'&margin=8&data='+encodeURIComponent(url);}
+function qrLabelData(rec){var cfg=qrTypeConfig(document.getElementById('qr-type')?.value||'tools');var title=document.getElementById('qr-title')?.value.trim()||qrPick(rec,cfg.title)||'AURIS360 record';var ref=qrPick(rec,cfg.ref)||String(rec.id||'').slice(0,8);var sub=cfg.sub.map(function(k){return rec[k];}).filter(Boolean).slice(0,3).join(' · ');return {title:title,ref:ref,sub:sub,url:qrRecordUrl(rec),note:document.getElementById('qr-note')?.value||'Scan to open record in AURIS360'};}
+async function qrLoadRecords(){
+  var sel=document.getElementById('qr-record');if(!sel)return;
+  sel.innerHTML='<option value="">Loading records...</option>';
+  qrRecords=[];
+  try{
+    var type=document.getElementById('qr-type')?.value||'tools';var cfg=qrTypeConfig(type);var rows=await api(cfg.path).catch(function(e){console.warn('QR load',e.message);return [];});
+    qrRecords=rows||[];
+    if(!qrRecords.length){sel.innerHTML='<option value="">No records found</option>';qrRenderPreview();return;}
+    sel.innerHTML='<option value="">Select record...</option>'+qrRecords.map(function(r,i){var title=qrPick(r,cfg.title)||'Record';var ref=qrPick(r,cfg.ref)||String(r.id||'').slice(0,8);return '<option value="'+i+'">'+escH(ref+' - '+title)+'</option>';}).join('');
+  }catch(e){sel.innerHTML='<option value="">Unable to load records</option>';toast('QR records failed: '+e.message,false);}
+  qrRenderPreview();
+}
+function qrPreviewSelected(){var idx=document.getElementById('qr-record')?.value;var rec=qrRecords[parseInt(idx,10)];if(rec){var cfg=qrTypeConfig(document.getElementById('qr-type')?.value||'tools');var title=document.getElementById('qr-title');if(title&&!title.value)title.value=qrPick(rec,cfg.title)||'';}qrRenderPreview();}
+function qrRenderPreview(){
+  var el=document.getElementById('qr-preview');if(!el)return;
+  var idx=document.getElementById('qr-record')?.value;var rec=qrRecords[parseInt(idx,10)];
+  if(!rec){el.innerHTML='<div><i class="ti ti-qrcode" style="font-size:46px;opacity:.35"></i><div style="margin-top:8px">Select a record to generate a QR label.</div></div>';return;}
+  var d=qrLabelData(rec);
+  el.innerHTML='<div id="qr-label-print" style="width:88mm;min-height:58mm;background:#fff;border:1px solid #111827;border-radius:8px;padding:10px;color:#111827;text-align:left;box-shadow:0 6px 24px rgba(0,0,0,.08)"><div style="display:flex;gap:10px;align-items:center"><img src="'+escH(qrImageUrl(d.url,190))+'" alt="QR" style="width:34mm;height:34mm;border:1px solid #e5e7eb;border-radius:4px"><div style="min-width:0;flex:1"><div style="font-size:10px;color:#0F6E56;font-weight:900;letter-spacing:.08em">AURIS360</div><div style="font-size:15px;font-weight:900;line-height:1.2;margin-top:2px">'+escH(d.title)+'</div><div style="font-size:11px;font-family:monospace;color:#185FA5;font-weight:800;margin-top:5px;word-break:break-word">'+escH(d.ref)+'</div><div style="font-size:10px;color:#6b7280;margin-top:5px;line-height:1.3">'+escH(d.sub||d.note)+'</div></div></div><div style="margin-top:7px;border-top:1px solid #e5e7eb;padding-top:6px;font-size:10px;color:#374151;display:flex;justify-content:space-between;gap:8px"><span>'+escH(d.note)+'</span><span style="font-weight:800;color:#0F6E56">HSE traceability</span></div></div>';
+}
+function qrPrintLabel(){var idx=document.getElementById('qr-record')?.value;var rec=qrRecords[parseInt(idx,10)];if(!rec){toast('Select a record first',false);return;}var d=qrLabelData(rec);var html='<style>@page{size:100mm 70mm;margin:5mm}.report-page{width:90mm;padding:0}.qr-label{width:88mm;min-height:58mm;border:1px solid #111827;border-radius:8px;padding:10px;font-family:Arial,sans-serif;color:#111827}</style><div class="report-page"><div class="qr-label"><div style="display:flex;gap:10px;align-items:center"><img src="'+escH(qrImageUrl(d.url,240))+'" style="width:34mm;height:34mm;border:1px solid #e5e7eb"><div><div style="font-size:10px;color:#0F6E56;font-weight:900;letter-spacing:.08em">AURIS360</div><div style="font-size:15px;font-weight:900;line-height:1.2;margin-top:2px">'+escH(d.title)+'</div><div style="font-size:11px;font-family:monospace;color:#185FA5;font-weight:800;margin-top:5px">'+escH(d.ref)+'</div><div style="font-size:10px;color:#6b7280;margin-top:5px;line-height:1.3">'+escH(d.sub||d.note)+'</div></div></div><div style="margin-top:7px;border-top:1px solid #e5e7eb;padding-top:6px;font-size:10px;color:#374151;display:flex;justify-content:space-between"><span>'+escH(d.note)+'</span><span style="font-weight:800;color:#0F6E56">HSE traceability</span></div></div></div>';aurisPrint(html,'AURIS360 QR Label - '+d.ref);}
+function qrCopyLink(){var idx=document.getElementById('qr-record')?.value;var rec=qrRecords[parseInt(idx,10)];if(!rec){toast('Select a record first',false);return;}var url=qrRecordUrl(rec);navigator.clipboard?.writeText(url);toast('QR link copied');}
 
 // ── SafetyOS Go / No-Go decision engine ───────────────────────────────────────
 function safetyOSExample(task,location,worker,type){
@@ -47653,6 +47695,7 @@ Pick the modules this client can see. Sephs admin (you) always sees everything r
 <div style="display:flex;gap:0;margin-bottom:14px;border-bottom:2px solid var(--border);overflow-x:auto">
 <button class="mtg-tab active" id="aitab-insights"    onclick="aiTab('insights',this)"    style="white-space:nowrap">📊 HSE Insights</button>
 <button class="mtg-tab"        id="aitab-safetyos"    onclick="aiTab('safetyos',this)"    style="white-space:nowrap">🧠 SafetyOS Go/No-Go</button>
+<button class="mtg-tab"        id="aitab-qr"          onclick="aiTab('qr',this); qrLoadRecords()" style="white-space:nowrap">🔳 QR Labels</button>
 <button class="mtg-tab"        id="aitab-rams"        onclick="aiTab('rams',this)"        style="white-space:nowrap">📋 RAMS Generator</button>
 <button class="mtg-tab"        id="aitab-toolbox"     onclick="aiTab('toolbox',this)"     style="white-space:nowrap">🗣️ Toolbox Talks</button>
 <button class="mtg-tab"        id="aitab-compliance"  onclick="aiTab('compliance',this)"  style="white-space:nowrap">✅ Compliance Check</button>
@@ -47717,6 +47760,33 @@ Pick the modules this client can see. Sephs admin (you) always sees everything r
 <div id="safetyos-output" style="min-height:420px;background:#f9fafb;border-radius:10px;padding:16px;font-size:13px;line-height:1.6;color:#1a1a1a">
 <div style="text-align:center;padding:54px 20px;color:var(--text2)"><div style="font-size:44px;margin-bottom:10px">🧠</div><div style="font-weight:800;color:var(--text)">SafetyOS ready</div><div style="font-size:12px;margin-top:6px">Enter a planned task and run the check. AURIS will produce a Go / Conditional Go / No-Go decision with evidence and missing controls.</div></div>
 </div>
+</div>
+</div>
+</div>
+</div>
+
+<!-- ══ QR LABEL STUDIO ══ -->
+<div id="aiview-qr" style="display:none">
+<div style="display:grid;grid-template-columns:minmax(0,.9fr) minmax(0,1.1fr);gap:14px" class="mobile-stack">
+<div>
+<div class="card" style="border:2px solid #111827;margin-bottom:14px">
+<div class="card-title" style="color:#111827">🔳 QR Everything Label Studio</div>
+<div style="font-size:12px;color:var(--text2);margin-bottom:12px">Generate QR labels for assets and HSE records. Scan a label to open the relevant AURIS360 module on mobile.</div>
+<div class="form-group"><label class="form-label">Record type</label><select id="qr-type" onchange="qrLoadRecords()"><option value="tools">Tools & equipment</option><option value="fire">Fire equipment</option><option value="ppe">PPE catalogue</option><option value="chemical">Chemical control</option><option value="documents">Documents / SOP / SWMS</option><option value="risk">Risk assessments</option><option value="permit">Permit to work</option></select></div>
+<div class="form-group"><label class="form-label">Record</label><select id="qr-record" onchange="qrPreviewSelected()"><option value="">Load records...</option></select></div>
+<div class="form-group"><label class="form-label">Custom label title</label><input id="qr-title" oninput="qrRenderPreview()" placeholder="Optional label title"/></div>
+<div class="form-group"><label class="form-label">Instructions shown on label</label><input id="qr-note" oninput="qrRenderPreview()" value="Scan to open record in AURIS360"/></div>
+<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn btn-primary" onclick="qrRenderPreview()"><i class="ti ti-qrcode"></i>Generate QR</button><button class="btn" onclick="qrPrintLabel()"><i class="ti ti-printer"></i>Print label</button><button class="btn" onclick="qrCopyLink()"><i class="ti ti-link"></i>Copy link</button></div>
+</div>
+<div class="card">
+<div class="card-title">Professional use</div>
+<div style="font-size:12px;color:var(--text2);line-height:1.6">Use QR labels on ladders, extinguishers, harnesses, electrical panels, chemical stores, PPE shelves and controlled documents. This supports inspections, defect reporting, training verification and mobile access.</div>
+</div>
+</div>
+<div>
+<div class="card" id="qr-preview-card">
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px"><div class="card-title" style="margin:0">QR label preview</div><span class="badge badge-blue">Scan-ready</span></div>
+<div id="qr-preview" style="min-height:420px;display:flex;align-items:center;justify-content:center;background:#f9fafb;border:1px dashed var(--border);border-radius:10px;color:var(--text2);text-align:center;padding:18px">Select a record to generate a QR label.</div>
 </div>
 </div>
 </div>
