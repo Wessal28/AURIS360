@@ -19116,13 +19116,14 @@ function conDateState(dateStr,days){
 function conSwitchTab(tab,btn){
   document.querySelectorAll('[id^="con-tab-"]').forEach(function(t){t.classList.remove('active');});
   if(btn)btn.classList.add('active');
-  ['register','preassess','eval','atw','incidents'].forEach(function(t){
+  ['register','score','preassess','eval','atw','incidents'].forEach(function(t){
     var el=document.getElementById('con-view-'+t);if(el)el.style.display=t===tab?'block':'none';
   });
   ['con-form','cpa-form','cev-form','catw-form','cir-form'].forEach(function(id){
     var el=document.getElementById(id);if(el)el.style.display='none';
   });
   if(tab==='register')conLoadRegister();
+  else if(tab==='score')conLoadSafetyScore();
   else if(tab==='preassess')cpaLoad();
   else if(tab==='eval')cevLoad();
   else if(tab==='atw')catwLoad();
@@ -19131,6 +19132,72 @@ function conSwitchTab(tab,btn){
 
 
 // ── CONTRACTOR REGISTER ──────────────────────────────────────────────────────
+
+function conContractorName(id){var c=(conAllData||[]).find(function(x){return x.id===id;});return c?c.contractor_name:'';}
+function conScoreStatus(score){return score>=85?['#EAF3DE','#3B6D11','Preferred']:score>=70?['#E6F1FB','#185FA5','Approved']:score>=55?['#FEF9EC','#854F0B','Watchlist']:['#FCEBEB','#A32D2D','High risk'];}
+function conScoreDatePenalty(dateStr,soonDays,missingPenalty,expiredPenalty,soonPenalty,reasons,label){
+  var st=conDateState(dateStr,soonDays||60);
+  if(st.missing){if(missingPenalty){reasons.push(label+' missing');return missingPenalty;}return 0;}
+  if(st.expired){reasons.push(label+' expired');return expiredPenalty||0;}
+  if(st.soon){reasons.push(label+' due soon');return soonPenalty||0;}
+  return 0;
+}
+function conBuildScoreRow(c,ctx){
+  var score=100,reasons=[];
+  if(c.status!=='approved'){score-=c.status==='pre_assessed'?12:c.status==='pending'?20:35;reasons.push('Status: '+(CON_STATUS_CFG[c.status]?.[2]||c.status||'unknown'));}
+  score-=conScoreDatePenalty(c.insurance_expiry,60,10,25,10,reasons,'Insurance');
+  score-=conScoreDatePenalty(c.expiry_date,60,12,28,12,reasons,'Approval');
+  score-=conScoreDatePenalty(c.next_review_date,60,0,8,4,reasons,'Review');
+  var id=c.id;
+  var evals=(ctx.evals||[]).filter(function(x){return x.contractor_id===id;});
+  var incs=(ctx.incs||[]).filter(function(x){return x.contractor_id===id;});
+  var atws=(ctx.atw||[]).filter(function(x){return x.contractor_id===id;});
+  var latestEval=evals.slice().sort(function(a,b){return String(b.evaluation_date||b.created_at||'').localeCompare(String(a.evaluation_date||a.created_at||''));})[0];
+  if(latestEval){
+    var total=parseFloat(latestEval.total_score)||0;var max=(typeof CEV_CRITERIA!=='undefined'?CEV_CRITERIA.length:8)*5;var pct=max?total/max:0;
+    if(pct<0.5){score-=18;reasons.push('Low latest evaluation');}
+    else if(pct<0.7){score-=8;reasons.push('Evaluation needs improvement');}
+    if(latestEval.recommend_future_use===false){score-=18;reasons.push('Not recommended for future use');}
+  }else{score-=8;reasons.push('No performance evaluation');}
+  var sevPenalty={fatality:45,lost_time:28,dangerous_occurrence:22,medical_treatment:16,environmental:12,property_damage:10,first_aid:6,near_miss:3};
+  incs.forEach(function(i){score-=sevPenalty[i.incident_type]||({critical:28,high:18,medium:8,low:3}[i.severity]||5);});
+  if(incs.length)reasons.push(incs.length+' incident'+(incs.length>1?'s':'')+' recorded');
+  var activeAtw=atws.filter(function(a){return ['active','draft'].includes(String(a.status||'active'));}).length;
+  var revoked=atws.filter(function(a){return String(a.status||'')==='revoked';}).length;
+  if(revoked){score-=revoked*10;reasons.push(revoked+' authorisation revoked');}
+  if(!activeAtw&&c.status==='approved'){score-=4;reasons.push('No active authorisation to work');}
+  score=Math.max(0,Math.min(100,Math.round(score)));
+  var stat=conScoreStatus(score);
+  return Object.assign({},c,{_score:score,_scoreStatus:stat,_scoreReasons:reasons.slice(0,5),_evals:evals.length,_incs:incs.length,_atw:activeAtw,_latestEval:latestEval});
+}
+async function conLoadSafetyScore(){
+  var el=document.getElementById('con-score-list');if(!el)return;
+  el.innerHTML='<div class="loading-msg">Calculating contractor scores...</div>';
+  try{
+    if(!(conAllData||[]).length){conAllData=await api('/contractors?select=*'+cf()+'&order=contractor_name').catch(function(){return [];});}
+    var results=await Promise.all([
+      api('/contractor_evaluations?select=*'+cf()+'&limit=500').catch(function(){return [];}),
+      api('/contractor_incidents?select=*'+cf()+'&limit=500').catch(function(){return [];}),
+      api('/contractor_authorisations?select=*'+cf()+'&limit=500').catch(function(){return [];})
+    ]);
+    conEvalData=results[0]||conEvalData||[];conIncData=results[1]||conIncData||[];conATWData=results[2]||conATWData||[];
+    var rows=(conAllData||[]).map(function(c){return conBuildScoreRow(c,{evals:conEvalData,incs:conIncData,atw:conATWData});}).sort(function(a,b){return a._score-b._score;});
+    if(!rows.length){el.innerHTML='<div class="card" style="text-align:center;padding:36px;color:var(--text2)">No contractors registered yet.</div>';return;}
+    var avg=Math.round(rows.reduce(function(s,x){return s+x._score;},0)/rows.length);
+    var high=rows.filter(function(x){return x._score<55;}).length;
+    var watch=rows.filter(function(x){return x._score>=55&&x._score<70;}).length;
+    var preferred=rows.filter(function(x){return x._score>=85;}).length;
+    var h='<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px" class="mobile-stack">'
+      +'<div class="card" style="padding:12px 14px;border-left:4px solid #185FA5"><div style="font-size:10px;color:var(--text2);font-weight:800;text-transform:uppercase">Average score</div><div style="font-size:26px;font-weight:900;color:#185FA5">'+avg+'</div></div>'
+      +'<div class="card" style="padding:12px 14px;border-left:4px solid #1D9E75"><div style="font-size:10px;color:var(--text2);font-weight:800;text-transform:uppercase">Preferred</div><div style="font-size:26px;font-weight:900;color:#1D9E75">'+preferred+'</div></div>'
+      +'<div class="card" style="padding:12px 14px;border-left:4px solid #EF9F27"><div style="font-size:10px;color:var(--text2);font-weight:800;text-transform:uppercase">Watchlist</div><div style="font-size:26px;font-weight:900;color:#EF9F27">'+watch+'</div></div>'
+      +'<div class="card" style="padding:12px 14px;border-left:4px solid #E24B4A"><div style="font-size:10px;color:var(--text2);font-weight:800;text-transform:uppercase">High risk</div><div style="font-size:26px;font-weight:900;color:#E24B4A">'+high+'</div></div></div>';
+    h+='<div class="card" style="padding:0;overflow:auto"><table style="width:100%;min-width:1100px;border-collapse:collapse;font-size:12px"><thead><tr style="background:#1a3a5c;color:#fff"><th style="padding:9px 12px;text-align:left">Contractor</th><th style="padding:9px 10px;text-align:center">Score</th><th style="padding:9px 10px;text-align:left">Rating</th><th style="padding:9px 10px;text-align:center">Evaluations</th><th style="padding:9px 10px;text-align:center">Incidents</th><th style="padding:9px 10px;text-align:center">Active ATW</th><th style="padding:9px 10px;text-align:left">Main reasons</th><th style="padding:9px 10px;text-align:right">Open</th></tr></thead><tbody>';
+    rows.forEach(function(x,i){var st=x._scoreStatus;var bar=x._score>=85?'#1D9E75':x._score>=70?'#185FA5':x._score>=55?'#EF9F27':'#E24B4A';h+='<tr style="border-bottom:1px solid #e5e7eb;background:'+(i%2?'#fafafa':'#fff')+'"><td style="padding:10px 12px"><div style="font-weight:900">'+escH(x.contractor_name||'--')+'</div><div style="font-size:11px;color:var(--text2)">'+escH(x.category||'general')+' · '+escH(x.specialisation||x.contact_person||'--')+'</div></td><td style="padding:10px;text-align:center"><div style="font-size:20px;font-weight:900;color:'+bar+'">'+x._score+'</div><div style="height:5px;background:#e5e7eb;border-radius:99px;overflow:hidden"><div style="height:100%;width:'+x._score+'%;background:'+bar+'"></div></div></td><td style="padding:10px"><span style="background:'+st[0]+';color:'+st[1]+';padding:3px 10px;border-radius:99px;font-weight:900;font-size:11px">'+st[2]+'</span></td><td style="padding:10px;text-align:center;font-weight:800">'+x._evals+'</td><td style="padding:10px;text-align:center;font-weight:800;color:'+(x._incs?'#A32D2D':'#3B6D11')+'">'+x._incs+'</td><td style="padding:10px;text-align:center;font-weight:800">'+x._atw+'</td><td style="padding:10px;color:#374151">'+(x._scoreReasons.length?x._scoreReasons.map(escH).join('; '):'No major issues detected')+'</td><td style="padding:10px;text-align:right"><button class="btn btn-sm" data-id="'+x.id+'" onclick="conOpenDetail(this.getAttribute(\'data-id\'))"><i class="ti ti-arrow-right"></i></button></td></tr>';});
+    h+='</tbody></table></div><div class="card" style="margin-top:12px;border-left:4px solid #8B5CF6;background:#f5f3ff"><div style="font-weight:900;color:#5B21B6;margin-bottom:4px">How the score is calculated</div><div style="font-size:12px;color:#374151;line-height:1.5">Starts at 100 and deducts points for non-approved status, expired/missing insurance, expired approvals, overdue reviews, poor evaluations, incidents and revoked authorisations. This is an operational indicator to support contractor review, not an automatic ban decision.</div></div>';
+    el.innerHTML=h;
+  }catch(e){el.innerHTML='<p style="padding:20px;color:red">'+escH(e.message||String(e))+'</p>';}
+}
 async function conLoadRegister(){
   var el=document.getElementById('con-register-list');if(!el)return;
   el.innerHTML='<div class="loading-msg">Loading...</div>';
@@ -19281,7 +19348,7 @@ function conOpenDetail(id){
 
 // ── CONTRACTOR FORM ───────────────────────────────────────────────────────────
 function conShowForm(){
-  ['con-view-register','con-view-preassess','con-view-eval','con-view-atw','con-view-incidents'].forEach(function(id){var el=document.getElementById(id);if(el)el.style.display='none';});
+  ['con-view-register','con-view-score','con-view-preassess','con-view-eval','con-view-atw','con-view-incidents'].forEach(function(id){var el=document.getElementById(id);if(el)el.style.display='none';});
   document.getElementById('con-form').style.display='block';
 }
 function conFormBack(){
@@ -19468,7 +19535,7 @@ async function cpaLoad(){
 }
 
 function cpaShowForm(){
-  ['con-view-register','con-view-preassess','con-view-eval','con-view-atw','con-view-incidents'].forEach(function(id){var el=document.getElementById(id);if(el)el.style.display='none';});
+  ['con-view-register','con-view-score','con-view-preassess','con-view-eval','con-view-atw','con-view-incidents'].forEach(function(id){var el=document.getElementById(id);if(el)el.style.display='none';});
   document.getElementById('cpa-form').style.display='block';
   cpaBuildSections();
 }
@@ -19665,7 +19732,7 @@ async function cevLoad(){
 }
 
 function cevShowForm(){
-  ['con-view-register','con-view-preassess','con-view-eval','con-view-atw','con-view-incidents'].forEach(function(id){var el=document.getElementById(id);if(el)el.style.display='none';});
+  ['con-view-register','con-view-score','con-view-preassess','con-view-eval','con-view-atw','con-view-incidents'].forEach(function(id){var el=document.getElementById(id);if(el)el.style.display='none';});
   document.getElementById('cev-form').style.display='block';
   cevBuildScores();
 }
@@ -19801,7 +19868,7 @@ async function catwLoad(){
 }
 
 function catwShowForm(){
-  ['con-view-register','con-view-preassess','con-view-eval','con-view-atw','con-view-incidents'].forEach(function(id){var el=document.getElementById(id);if(el)el.style.display='none';});
+  ['con-view-register','con-view-score','con-view-preassess','con-view-eval','con-view-atw','con-view-incidents'].forEach(function(id){var el=document.getElementById(id);if(el)el.style.display='none';});
   document.getElementById('catw-form').style.display='block';
 }
 function catwFormBack(){
@@ -19978,7 +20045,7 @@ async function cirLoad(){
 }
 
 function cirShowForm(){
-  ['con-view-register','con-view-preassess','con-view-eval','con-view-atw','con-view-incidents'].forEach(function(id){var el=document.getElementById(id);if(el)el.style.display='none';});
+  ['con-view-register','con-view-score','con-view-preassess','con-view-eval','con-view-atw','con-view-incidents'].forEach(function(id){var el=document.getElementById(id);if(el)el.style.display='none';});
   document.getElementById('cir-form').style.display='block';
 }
 function cirFormBack(){
@@ -36162,8 +36229,8 @@ function trainingPrintCurrentView(){
 function contractorPrintCurrentView(){
   var active = document.querySelector('#page-contractor .mtg-tab.active');
   var key = (active?.id || 'con-tab-register').replace('con-tab-','');
-  var labels = {register:'Contractor Register',preassess:'Contractor Pre-Assessments',eval:'Contractor Evaluations',atw:'Contractor Authorisations to Work',incidents:'Contractor Incidents'};
-  var selectors = {register:'#con-view-register',preassess:'#con-view-preassess',eval:'#con-view-eval',atw:'#con-view-atw',incidents:'#con-view-incidents'};
+  var labels = {register:'Contractor Register',score:'Contractor Safety Score',preassess:'Contractor Pre-Assessments',eval:'Contractor Evaluations',atw:'Contractor Authorisations to Work',incidents:'Contractor Incidents'};
+  var selectors = {register:'#con-view-register',score:'#con-view-score',preassess:'#con-view-preassess',eval:'#con-view-eval',atw:'#con-view-atw',incidents:'#con-view-incidents'};
   printRegisterView(labels[key] || 'Contractor Register', selectors[key] || '#con-view-register');
 }
 function esgPrintCurrentView(){
@@ -42830,6 +42897,7 @@ function fireEquipStatusBadge(s) {
 </div>
 <div style="display:flex;gap:0;margin-bottom:16px;border-bottom:2px solid var(--border)">
 <button class="mtg-tab active" id="con-tab-register" onclick="conSwitchTab('register',this)">🏢 Register</button>
+<button class="mtg-tab" id="con-tab-score" onclick="conSwitchTab('score',this)">📊 Safety Score</button>
 <button class="mtg-tab" id="con-tab-preassess" onclick="conSwitchTab('preassess',this)">📋 Pre-Assessment</button>
 <button class="mtg-tab" id="con-tab-eval" onclick="conSwitchTab('eval',this)">⭐ Evaluation</button>
 <button class="mtg-tab" id="con-tab-atw" onclick="conSwitchTab('atw',this)">🔑 Auth. to Work</button>
@@ -42850,6 +42918,16 @@ function fireEquipStatusBadge(s) {
 <select id="con-filter-cat" onchange="conFilterRegister()" style="padding:7px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px"><option value="">All categories</option><option value="electrical">Electrical</option><option value="mechanical">Mechanical</option><option value="civil">Civil</option><option value="construction">Construction</option></select>
 </div></div>
 <div class="card" style="padding:0;overflow:hidden"><div id="con-register-list"><div class="loading-msg">Loading...</div></div></div>
+</div>
+<div id="con-view-score" style="display:none">
+  <div class="card" style="margin-bottom:12px;padding:12px 16px;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">
+    <div>
+      <div class="card-title" style="margin:0">Live Contractor Safety Score</div>
+      <div style="font-size:12px;color:var(--text2)">Ranks contractors using approvals, insurance, reviews, evaluations, incidents and authorisations to work.</div>
+    </div>
+    <button class="btn" onclick="conLoadSafetyScore()"><i class="ti ti-refresh"></i>Refresh scores</button>
+  </div>
+  <div id="con-score-list"><div class="loading-msg">Loading contractor scores...</div></div>
 </div>
 <div id="con-view-preassess" style="display:none"><div class="card" style="margin-bottom:12px;padding:10px 14px;display:flex;justify-content:space-between;align-items:center"><div class="card-title" style="margin:0">Contractor Pre-Assessments</div><button class="btn btn-primary" id="cpa-add-btn" style="display:none" onclick="cpaNew()"><i class="ti ti-plus"></i>New pre-assessment</button></div><div id="con-pa-list"><div class="loading-msg">Loading...</div></div></div>
 <div id="con-view-eval" style="display:none"><div class="card" style="margin-bottom:12px;padding:10px 14px;display:flex;justify-content:space-between;align-items:center"><div class="card-title" style="margin:0">Performance Evaluations</div><button class="btn btn-primary" id="cev-add-btn" style="display:none" onclick="cevNew()"><i class="ti ti-plus"></i>New evaluation</button></div><div id="con-ev-list"><div class="loading-msg">Loading...</div></div></div>
