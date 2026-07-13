@@ -11327,8 +11327,9 @@ function ptwApproverOptions(selected){
 var opts='<option value="">Select approver...</option>';
 (people||[]).forEach(function(p){
 var name=[p.last_name,p.first_name].filter(Boolean).join(', ');
-var hasEmail=!!p.email;
-var label=name+(p.job_title?' - '+p.job_title:'')+(hasEmail?' ('+p.email+')':' - no email on profile');
+var contact=usersContactEmail(p)||p.email||'';
+var issue=notificationRecipientIssue(contact);
+var label=name+(p.job_title?' - '+p.job_title:'')+(issue?' - notification contact needed':' ('+contact+')');
 opts+='<option value="'+escH(p.id)+'" '+(selected===p.id?'selected':'')+'>'+escH(label)+'</option>';
 });
 return opts;
@@ -11360,10 +11361,11 @@ el.innerHTML='<div style="display:grid;grid-template-columns:repeat(auto-fit,min
 function ptwApproverPayload(level,id){
 var p=(people||[]).find(function(x){return x.id===id;})||{};
 var o={};
+var email=id?(usersContactEmail(p)||''):'';
 o['level'+level+'_id']=id||'';
 o['level'+level+'_name']=id?([p.first_name,p.last_name].filter(Boolean).join(' ')||p.email||''):'';
-o['level'+level+'_email']=id?(p.email||''):'';
-o['level'+level+'_phone']=id?(p.phone||''):'';
+o['level'+level+'_email']=email;
+o['level'+level+'_phone']=id?(p.whatsapp_phone||p.mobile_phone||p.phone||''):'';
 return o;
 }
 
@@ -11373,9 +11375,11 @@ var l1=document.getElementById('ptw-app-l1')?.value||'';
 var l2=document.getElementById('ptw-app-l2')?.value||'';
 var l3=document.getElementById('ptw-app-l3')?.value||'';
 var selected=[l1,l2,l3].filter(Boolean);
+var contactWarnings=[];
 for(var i=0;i<selected.length;i++){
 var p=(people||[]).find(function(x){return x.id===selected[i];});
-if(p&&!p.email){toast('Cannot save PTW approver without email: '+peopleName(p),false);return;}
+var email=usersContactEmail(p);
+if(p&&notificationRecipientIssue(email))contactWarnings.push(peopleName(p));
 }
 var companyId=ccid();
 if(!companyId){toast('No company selected',false);return;}
@@ -11389,7 +11393,7 @@ rules.permit_approvers=approvers;
 var updates={event_recipients:rules,updated_at:new Date().toISOString()};
 if(row)await api('/notification_settings?company_id=eq.'+companyId,{m:'PATCH',p:'return=minimal',b:updates});
 else{updates.company_id=companyId;await api('/notification_settings',{m:'POST',p:'return=minimal',b:updates});}
-toast('PTW approver settings saved');
+toast(contactWarnings.length?'PTW approvers saved. Add real notification contact for: '+contactWarnings.join(', '):'PTW approver settings saved');
 }catch(e){toast('Error saving PTW approvers: '+e.message,false);}
 }
 
@@ -35672,9 +35676,10 @@ async function saveNotifSettings() {
 
 async function sendTestEmail() {
   var companyId=notifCompanyId();
-  if (!prof?.email) { toast('No email on your profile', false); return; }
+  var contactEmail=usersContactEmail(prof);
+  if (!contactEmail && !prof?.email) { toast('No email on your profile', false); return; }
   if (!companyId) { toast('No company selected for test email', false); return; }
-  if (!isDeliverableEmail(prof.email)) {
+  if (!isDeliverableEmail(contactEmail)) {
     toast('This profile uses a login-only email. Add a real notification email before sending a test.', false);
     return;
   }
@@ -35689,10 +35694,10 @@ async function sendTestEmail() {
         + '<p>Your email notifications are working correctly.</p>'
         + '<p style="color:#6b7280;font-size:13px">This test was queued from AURIS360 and will be sent by the server email worker.</p>'
         + '</div></div>',
-      to_email:prof.email,
+      to_email:contactEmail,
       to_name:prof.full_name||''
     });
-    toast('Test email queued for '+prof.email+'. Check Recent Notifications for status.');
+    toast('Test email queued for '+contactEmail+'. Check Recent Notifications for status.');
     loadNotifSettings();
   } catch(e) { toast('Error: ' + e.message, false); }
 }
