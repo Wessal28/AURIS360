@@ -6614,7 +6614,71 @@ function ccid(){
   return (isSA() && sephsCompanyContext) ? sephsCompanyContext : prof?.company_id;
 }
 function toast(m,ok=true){const t=document.getElementById('toast');if(!t){console.log('Toast:',m);return;}t.textContent=m;t.className='toast '+(ok?'toast-ok':'toast-err');t.style.display='block';setTimeout(()=>t.style.display='none',3500);}
-function appConfirm(opts){
+
+// Field voice capture and AI formatting for mobile reporting.
+var aurisVoiceRec=null;
+var aurisVoiceTargetId=null;
+function aurisVoiceStatus(targetId,msg,ok){
+  var el=document.getElementById(targetId+'-voice-status');
+  if(el){el.textContent=msg||'';el.style.color=ok===false?'#DC2626':'var(--text2)';}
+}
+function aurisVoiceSupported(){return !!(window.SpeechRecognition||window.webkitSpeechRecognition);}
+function aurisAppendFieldText(targetId,text){
+  var el=document.getElementById(targetId); if(!el)return;
+  var clean=String(text||'').replace(/\s+/g,' ').trim(); if(!clean)return;
+  clean=clean.charAt(0).toUpperCase()+clean.slice(1);
+  var current=String(el.value||'').trim();
+  el.value=current ? current.replace(/[\s.]*$/,'')+'. '+clean : clean;
+  el.dispatchEvent(new Event('input',{bubbles:true}));
+}
+function aurisStartVoice(targetId,context){
+  var target=document.getElementById(targetId); if(!target){toast('Voice target not found',false);return;}
+  if(!aurisVoiceSupported()){toast('Voice dictation is not supported by this browser. Use Chrome on Android or desktop.',false);aurisVoiceStatus(targetId,'Voice dictation not supported on this browser.',false);return;}
+  if(aurisVoiceRec&&aurisVoiceTargetId===targetId){aurisStopVoice();return;}
+  aurisStopVoice(true);
+  var Speech=window.SpeechRecognition||window.webkitSpeechRecognition;
+  var rec=new Speech();
+  rec.lang=(navigator.language||'en-US'); rec.continuous=true; rec.interimResults=true; rec.maxAlternatives=1;
+  aurisVoiceRec=rec; aurisVoiceTargetId=targetId;
+  var finalText='';
+  rec.onstart=function(){aurisVoiceStatus(targetId,'Listening... speak clearly, then tap Stop voice.',true);toast('Voice capture started');};
+  rec.onerror=function(e){aurisVoiceStatus(targetId,'Voice error: '+(e.error||'unknown'),false);toast('Voice error: '+(e.error||'unknown'),false);};
+  rec.onresult=function(event){
+    var interim='';
+    for(var i=event.resultIndex;i<event.results.length;i++){
+      var transcript=event.results[i][0].transcript;
+      if(event.results[i].isFinal)finalText+=' '+transcript; else interim+=' '+transcript;
+    }
+    aurisVoiceStatus(targetId,interim?('Listening: '+interim.trim()):'Listening...');
+  };
+  rec.onend=function(){
+    if(finalText.trim())aurisAppendFieldText(targetId,finalText);
+    aurisVoiceStatus(targetId,finalText.trim()?'Voice text added. Review before saving.':'Voice capture stopped. No final text received.');
+    aurisVoiceRec=null; aurisVoiceTargetId=null;
+  };
+  try{rec.start();}catch(e){aurisVoiceStatus(targetId,e.message,false);toast(e.message,false);}
+}
+function aurisStopVoice(silent){
+  if(aurisVoiceRec){try{aurisVoiceRec.stop();}catch(e){} if(!silent)toast('Voice capture stopped');}
+}
+async function aurisPolishField(targetId,mode){
+  var el=document.getElementById(targetId); if(!el)return;
+  var raw=String(el.value||'').trim();
+  if(!raw){toast('Add or dictate some text first',false);return;}
+  var prompts={
+    incident:'Rewrite this as a concise factual incident description. Keep only facts, no blame, include what happened, where, who was involved if mentioned, and immediate context. Return only the rewritten text.',
+    immediate:'Rewrite this as immediate actions taken after an incident. Use clear past-tense bullet-style sentences but return plain text only.',
+    bbs_positive:'Rewrite this as a professional positive BBS observation. Keep it practical and specific. Return only the rewritten text.',
+    bbs_unsafe:'Rewrite this as an objective unsafe behaviour or unsafe condition observation. Avoid blame and keep it factual. Return only the rewritten text.',
+    bbs_action:'Rewrite this as a clear corrective/immediate action statement with practical wording. Return only the rewritten text.'
+  };
+  aurisVoiceStatus(targetId,'AI formatting...',true);
+  try{
+    var out=await callAI([{role:'user',content:(prompts[mode]||prompts.incident)+'\n\nText:\n'+raw}], 'You are an HSE reporting assistant. Preserve meaning, do not invent facts, and keep wording professional.');
+    el.value=String(out||'').trim(); el.dispatchEvent(new Event('input',{bubbles:true}));
+    aurisVoiceStatus(targetId,'AI formatted. Review before saving.',true); toast('AI formatted text');
+  }catch(e){aurisVoiceStatus(targetId,'AI format failed: '+e.message,false);toast('AI format failed: '+e.message,false);}
+}function appConfirm(opts){
   opts=opts||{};
   var modal=document.getElementById('app-confirm-modal');
   if(!modal){
@@ -39289,8 +39353,8 @@ function fireEquipStatusBadge(s) {
 <div class="form-group"><label class="form-label">Location</label><input type="text" id="ev-location" placeholder="Specific location..."/></div>
 <div class="form-group"><label class="form-label">Department</label><input type="text" id="ev-department"/></div>
 </div>
-<div class="form-group"><label class="form-label">Description of what happened</label><textarea id="ev-description" style="min-height:90px" placeholder="Describe the incident clearly and factually..."></textarea></div>
-<div class="form-group"><label class="form-label">Immediate actions taken</label><textarea id="ev-immediate" style="min-height:60px" placeholder="What was done immediately after the incident?"></textarea></div>
+<div class="form-group"><div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:4px"><label class="form-label" style="margin:0">Description of what happened</label><div style="display:flex;gap:6px;flex-wrap:wrap"><button type="button" class="btn btn-sm" onclick="aurisStartVoice('ev-description','incident')"><i class="ti ti-microphone"></i> Voice</button><button type="button" class="btn btn-sm" onclick="aurisPolishField('ev-description','incident')"><i class="ti ti-sparkles"></i> AI format</button></div></div><textarea id="ev-description" style="min-height:90px" placeholder="Describe the incident clearly and factually..."></textarea><div id="ev-description-voice-status" style="font-size:11px;color:var(--text2);margin-top:4px"></div></div>
+<div class="form-group"><div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:4px"><label class="form-label" style="margin:0">Immediate actions taken</label><div style="display:flex;gap:6px;flex-wrap:wrap"><button type="button" class="btn btn-sm" onclick="aurisStartVoice('ev-immediate','immediate')"><i class="ti ti-microphone"></i> Voice</button><button type="button" class="btn btn-sm" onclick="aurisPolishField('ev-immediate','immediate')"><i class="ti ti-sparkles"></i> AI format</button></div></div><textarea id="ev-immediate" style="min-height:60px" placeholder="What was done immediately after the incident?"></textarea><div id="ev-immediate-voice-status" style="font-size:11px;color:var(--text2);margin-top:4px"></div></div>
 </div>
 
 <!-- Photos -->
@@ -40003,13 +40067,13 @@ function fireEquipStatusBadge(s) {
 <!-- What was observed -->
 <div class="card" style="margin-bottom:14px" id="obs-positive-section">
 <div class="card-title" style="color:#1D9E75">✅ Positive Observation</div>
-<div class="form-group"><label class="form-label">What safe behaviour / good practice was observed?</label><textarea id="obs-positive-text" style="min-height:80px" placeholder="Describe the safe behaviour, what was done correctly, and why it was good practice..." oninput="obsUpdateScopeState()"></textarea></div>
+<div class="form-group"><div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:4px"><label class="form-label" style="margin:0">What safe behaviour / good practice was observed?</label><div style="display:flex;gap:6px;flex-wrap:wrap"><button type="button" class="btn btn-sm" onclick="aurisStartVoice('obs-positive-text','bbs_positive')"><i class="ti ti-microphone"></i> Voice</button><button type="button" class="btn btn-sm" onclick="aurisPolishField('obs-positive-text','bbs_positive')"><i class="ti ti-sparkles"></i> AI format</button></div></div><textarea id="obs-positive-text" style="min-height:80px" placeholder="Describe the safe behaviour, what was done correctly, and why it was good practice..." oninput="obsUpdateScopeState()"></textarea><div id="obs-positive-text-voice-status" style="font-size:11px;color:var(--text2);margin-top:4px"></div></div>
 <div class="form-group"><label class="form-label">What positive aspects should be reinforced?</label><textarea id="obs-positive-reinforce" style="min-height:60px" placeholder="What should be recognised and encouraged?" oninput="obsUpdateScopeState()"></textarea></div>
 </div>
 <div class="card" style="margin-bottom:14px" id="obs-unsafe-section" style="display:none">
 <div class="card-title" style="color:#DC2626" id="obs-unsafe-section-title">⚠️ Unsafe Observation</div>
-<div class="form-group"><label class="form-label">Unsafe behaviour observed</label><textarea id="obs-text" style="min-height:80px" placeholder="Describe the at-risk action, shortcut or unsafe behaviour observed..." oninput="obsUpdateScopeState()"></textarea></div>
-<div class="form-group"><label class="form-label">Unsafe condition observed</label><textarea id="obs-condition-text" style="min-height:70px" placeholder="Describe the physical condition, workplace hazard or unsafe state observed..." oninput="obsUpdateScopeState()"></textarea></div>
+<div class="form-group"><div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:4px"><label class="form-label" style="margin:0">Unsafe behaviour observed</label><div style="display:flex;gap:6px;flex-wrap:wrap"><button type="button" class="btn btn-sm" onclick="aurisStartVoice('obs-text','bbs_unsafe')"><i class="ti ti-microphone"></i> Voice</button><button type="button" class="btn btn-sm" onclick="aurisPolishField('obs-text','bbs_unsafe')"><i class="ti ti-sparkles"></i> AI format</button></div></div><textarea id="obs-text" style="min-height:80px" placeholder="Describe the at-risk action, shortcut or unsafe behaviour observed..." oninput="obsUpdateScopeState()"></textarea><div id="obs-text-voice-status" style="font-size:11px;color:var(--text2);margin-top:4px"></div></div>
+<div class="form-group"><div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:4px"><label class="form-label" style="margin:0">Unsafe condition observed</label><div style="display:flex;gap:6px;flex-wrap:wrap"><button type="button" class="btn btn-sm" onclick="aurisStartVoice('obs-condition-text','bbs_unsafe')"><i class="ti ti-microphone"></i> Voice</button><button type="button" class="btn btn-sm" onclick="aurisPolishField('obs-condition-text','bbs_unsafe')"><i class="ti ti-sparkles"></i> AI format</button></div></div><textarea id="obs-condition-text" style="min-height:70px" placeholder="Describe the physical condition, workplace hazard or unsafe state observed..." oninput="obsUpdateScopeState()"></textarea><div id="obs-condition-text-voice-status" style="font-size:11px;color:var(--text2);margin-top:4px"></div></div>
 <div class="form-group"><label class="form-label">Immediate / direct cause</label><textarea id="obs-immediate-cause" style="min-height:60px" placeholder="What was the immediate cause of the unsafe situation?"></textarea></div>
 <div class="form-group"><label class="form-label">Potential consequence (if unaddressed)</label><input type="text" id="obs-consequence" placeholder="e.g. Fall from height, Chemical splash, Crush injury..."/></div>
 </div>
@@ -40053,7 +40117,7 @@ function fireEquipStatusBadge(s) {
 <label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer;font-weight:600"><input type="checkbox" id="obs-stopped-work" style="accent-color:var(--red);width:16px;height:16px;padding:0;margin:0;flex-shrink:0"/> Work stopped</label>
 <label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer;font-weight:600"><input type="checkbox" id="obs-feedback-given" style="accent-color:var(--green);width:16px;height:16px;padding:0;margin:0;flex-shrink:0"/> Feedback given to person</label>
 </div>
-<div class="form-group"><label class="form-label">Immediate action description</label><textarea id="obs-immediate-desc" style="min-height:60px" placeholder="Describe what was done immediately to address the observation..."></textarea></div>
+<div class="form-group"><div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:4px"><label class="form-label" style="margin:0">Immediate action description</label><div style="display:flex;gap:6px;flex-wrap:wrap"><button type="button" class="btn btn-sm" onclick="aurisStartVoice('obs-immediate-desc','bbs_action')"><i class="ti ti-microphone"></i> Voice</button><button type="button" class="btn btn-sm" onclick="aurisPolishField('obs-immediate-desc','bbs_action')"><i class="ti ti-sparkles"></i> AI format</button></div></div><textarea id="obs-immediate-desc" style="min-height:60px" placeholder="Describe what was done immediately to address the observation..."></textarea><div id="obs-immediate-desc-voice-status" style="font-size:11px;color:var(--text2);margin-top:4px"></div></div>
 <div class="form-group"><label class="form-label">Feedback notes</label><textarea id="obs-feedback-notes" style="min-height:50px" placeholder="What was communicated to the person observed?"></textarea></div>
 </div>
 
