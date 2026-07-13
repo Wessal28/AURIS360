@@ -1679,6 +1679,26 @@ var AI_ALLOWED_ROLES = ['sephs_admin','admin','hse_manager','hse_officer'];
 function canUseAI(){
   return AI_ALLOWED_ROLES.indexOf(activeRole()) !== -1;
 }
+
+async function ensureContractorNameOptions(){
+  var ids=['swms-contractor','wf-contractor','hwf-contractor','spf-cleanup-con'];
+  ids.forEach(function(id){var el=document.getElementById(id);if(el)el.setAttribute('list','contractor-name-options');});
+  var dl=document.getElementById('contractor-name-options');
+  if(!dl){dl=document.createElement('datalist');dl.id='contractor-name-options';document.body.appendChild(dl);}
+  var key=ccid()||'all';
+  if(dl.getAttribute('data-company')===key)return;
+  try{
+    var rows=await api('/contractors?select=contractor_name,trading_name,status'+cf()+'&order=contractor_name.asc&limit=500');
+    var names=[];
+    (rows||[]).forEach(function(c){
+      [c.contractor_name,c.trading_name].forEach(function(n){n=String(n||'').trim();if(n&&names.indexOf(n)===-1)names.push(n);});
+    });
+    dl.innerHTML=names.map(function(n){return '<option value="'+escH(n)+'"></option>';}).join('');
+    dl.setAttribute('data-company',key);
+  }catch(e){
+    console.warn('Contractor suggestions unavailable',e);
+  }
+}
 function apiCompanyScopeIssue(path,o,method){
   try{
     method=String(method||'GET').toUpperCase();
@@ -9199,6 +9219,7 @@ function loadSWMS(){
   swmsShowList();
   fillRiskAssessmentSelect('swms-ra-ref');
   swmsLoadPermitSelect();
+  ensureContractorNameOptions();
   fillPersonSelect('swms-prepared-by', prof?.full_name||'');
   fillPersonSelect('swms-reviewed-by');
   fillPersonSelect('swms-approved-by');
@@ -20753,6 +20774,7 @@ function esgSwitchTab(tab, btn){
 }
 
 async function loadESG(){
+  ensureContractorNameOptions();
   var btns=['esg-waste-add-btn','esg-hw-add-btn','esg-fuel-add-btn','esg-water-add-btn','esg-spill-add-btn','esg-insp-add-btn'];
   btns.forEach(function(id){var el=document.getElementById(id);if(el)el.style.display=isMgr()?'inline-flex':'none';});
   // Populate month filter
