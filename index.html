@@ -4821,6 +4821,87 @@ function copyClientPilotOnboarding(){
   else toast(txt);
   auditLogEvent('export','demo','Pilot onboarding checklist copied',{length:txt.length});
 }
+function clientPilotSignoffCriteria(){
+  return [
+    'Pilot modules and access rights confirmed with the client sponsor',
+    'Company profile, report branding and users reviewed',
+    'Incident, BBS, inspection, RA/SWMS and action workflows demonstrated',
+    'Notification route confirmed for real email and local app users',
+    'Approval/release rules agreed for submitted controlled records',
+    'Open issues, owner and next review date agreed'
+  ];
+}
+
+function clientPilotSignoffKey(){
+  var companyId=(typeof ccid==='function'&&ccid())||prof?.company_id||'default';
+  return 'auris360_pilot_signoff_'+companyId;
+}
+
+function clientPilotSignoffData(){
+  var base={meeting_date:new Date().toISOString().slice(0,10),client_sponsor:'',pilot_scope:'Incident, BBS, KPIs, dashboard and selected HSE modules',outcome:'pilot_ready_with_actions',blocked_items:'',next_steps:'',next_review_date:'',criteria:{}};
+  try{var raw=localStorage.getItem(clientPilotSignoffKey());if(raw){var saved=JSON.parse(raw);return Object.assign(base,saved,{criteria:Object.assign({},base.criteria,saved.criteria||{})});}}catch(_){}
+  return base;
+}
+
+function renderClientPilotSignoff(){
+  var d=clientPilotSignoffData();
+  var criteria=clientPilotSignoffCriteria();
+  var done=criteria.filter(function(_,i){return !!d.criteria[i];}).length;
+  var pct=criteria.length?Math.round(done/criteria.length*100):0;
+  var color=pct>=85?'#1D9E75':pct>=50?'#EF9F27':'#DC2626';
+  var outcomeOpts=[['pilot_ready','Ready for pilot'],['pilot_ready_with_actions','Ready with actions'],['not_ready','Not ready yet'],['decision_pending','Decision pending']].map(function(x){return '<option value="'+x[0]+'" '+(d.outcome===x[0]?'selected':'')+'>'+x[1]+'</option>';}).join('');
+  return '<div style="margin-top:14px;border:1px solid var(--border);border-radius:10px;overflow:hidden;background:#fff">'
+    +'<div style="padding:12px;background:#123B5D;color:#fff;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap"><div><div style="font-weight:900">Pilot acceptance / go-live sign-off</div><div style="font-size:11px;opacity:.85;margin-top:2px">Capture the decision and next steps after a client demo or pilot readiness meeting</div></div><div style="min-width:190px"><div style="display:flex;justify-content:space-between;font-size:12px;font-weight:900;margin-bottom:5px"><span>Acceptance readiness</span><span>'+pct+'%</span></div><div style="height:8px;background:rgba(255,255,255,.25);border-radius:99px;overflow:hidden"><div style="height:100%;width:'+pct+'%;background:'+color+'"></div></div></div></div>'
+    +'<div style="display:grid;grid-template-columns:minmax(300px,.9fr) minmax(360px,1.1fr);gap:14px;padding:12px;background:#F8FAFC">'
+      +'<div style="background:#fff;border:1px solid var(--border);border-radius:10px;padding:12px"><div style="font-size:13px;font-weight:900;margin-bottom:8px;color:#111827">Acceptance criteria</div>'
+        +criteria.map(function(x,i){return '<label style="display:flex;gap:9px;align-items:flex-start;padding:9px 0;border-top:1px solid var(--border);font-size:12px;line-height:1.4"><input type="checkbox" '+(d.criteria[i]?'checked':'')+' onchange="clientPilotToggleCriterion('+i+')" style="margin-top:2px"><span>'+escH(x)+'</span></label>';}).join('')
+      +'</div>'
+      +'<div style="background:#fff;border:1px solid var(--border);border-radius:10px;padding:12px"><div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">'
+        +'<label style="font-size:12px;font-weight:800;color:var(--text2)">Meeting date<input id="pilot-sign-date" type="date" value="'+escH(d.meeting_date||'')+'" style="width:100%;margin-top:5px"></label>'
+        +'<label style="font-size:12px;font-weight:800;color:var(--text2)">Outcome<select id="pilot-sign-outcome" style="width:100%;margin-top:5px">'+outcomeOpts+'</select></label>'
+        +'<label style="font-size:12px;font-weight:800;color:var(--text2)">Client sponsor<input id="pilot-sign-sponsor" value="'+escH(d.client_sponsor||'')+'" placeholder="Name / role" style="width:100%;margin-top:5px"></label>'
+        +'<label style="font-size:12px;font-weight:800;color:var(--text2)">Next review date<input id="pilot-sign-review" type="date" value="'+escH(d.next_review_date||'')+'" style="width:100%;margin-top:5px"></label>'
+      +'</div>'
+      +'<label style="font-size:12px;font-weight:800;color:var(--text2);display:block;margin-top:10px">Pilot scope<textarea id="pilot-sign-scope" style="width:100%;min-height:56px;margin-top:5px">'+escH(d.pilot_scope||'')+'</textarea></label>'
+      +'<label style="font-size:12px;font-weight:800;color:var(--text2);display:block;margin-top:10px">Blocked items / conditions<textarea id="pilot-sign-blockers" placeholder="Anything that prevents go-live..." style="width:100%;min-height:56px;margin-top:5px">'+escH(d.blocked_items||'')+'</textarea></label>'
+      +'<label style="font-size:12px;font-weight:800;color:var(--text2);display:block;margin-top:10px">Agreed next steps<textarea id="pilot-sign-next" placeholder="Actions, owners, target dates..." style="width:100%;min-height:70px;margin-top:5px">'+escH(d.next_steps||'')+'</textarea></label>'
+      +'<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:10px;flex-wrap:wrap"><button class="btn" onclick="copyClientPilotSignoff()"><i class="ti ti-copy"></i>Copy sign-off</button><button class="btn btn-primary" onclick="saveClientPilotSignoff()"><i class="ti ti-device-floppy"></i>Save sign-off</button></div>'
+      +'</div>'
+    +'</div></div>';
+}
+
+function clientPilotToggleCriterion(i){
+  var d=clientPilotSignoffData();
+  d.criteria=d.criteria||{};
+  d.criteria[i]=!d.criteria[i];
+  d.updated_at=new Date().toISOString();
+  try{localStorage.setItem(clientPilotSignoffKey(),JSON.stringify(d));}catch(_){}
+  renderClientDemoCommandCenter();
+}
+
+function saveClientPilotSignoff(){
+  var d=clientPilotSignoffData();
+  var val=function(id){var el=document.getElementById(id);return el?String(el.value||'').trim():'';};
+  d.meeting_date=val('pilot-sign-date');
+  d.outcome=val('pilot-sign-outcome')||'pilot_ready_with_actions';
+  d.client_sponsor=val('pilot-sign-sponsor');
+  d.next_review_date=val('pilot-sign-review');
+  d.pilot_scope=val('pilot-sign-scope');
+  d.blocked_items=val('pilot-sign-blockers');
+  d.next_steps=val('pilot-sign-next');
+  d.updated_at=new Date().toISOString();
+  try{localStorage.setItem(clientPilotSignoffKey(),JSON.stringify(d));toast('Pilot sign-off saved');}catch(e){toast('Could not save sign-off: '+e.message,false);return;}
+  auditLogEvent('update','demo','Pilot acceptance sign-off saved',{outcome:d.outcome,next_review_date:d.next_review_date});
+}
+
+function copyClientPilotSignoff(){
+  saveClientPilotSignoff();
+  var d=clientPilotSignoffData(), criteria=clientPilotSignoffCriteria();
+  var txt='AURIS360 pilot acceptance / go-live sign-off\n\nMeeting date: '+(d.meeting_date||'-')+'\nClient sponsor: '+(d.client_sponsor||'-')+'\nOutcome: '+(d.outcome||'-').replace(/_/g,' ')+'\nNext review: '+(d.next_review_date||'-')+'\n\nPilot scope:\n'+(d.pilot_scope||'-')+'\n\nAcceptance criteria:\n'+criteria.map(function(x,i){return (d.criteria&&d.criteria[i]?'[x] ':'[ ] ')+x;}).join('\n')+'\n\nBlocked items / conditions:\n'+(d.blocked_items||'-')+'\n\nAgreed next steps:\n'+(d.next_steps||'-');
+  if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(txt).then(function(){toast('Pilot sign-off copied');});
+  else toast(txt);
+  auditLogEvent('export','demo','Pilot sign-off copied',{length:txt.length,outcome:d.outcome});
+}
 function renderClientDemoCommandCenter(){
   var el=document.getElementById('client-demo-command-body');if(!el)return;
   var canSee=isAdm()||activeRole()==='hse_manager'||activeRole()==='hse_officer';
@@ -4855,7 +4936,7 @@ function renderClientDemoCommandCenter(){
       +'<div style="border:1px solid var(--border);border-radius:10px;padding:12px;background:#fff"><div style="font-size:13px;font-weight:900;color:#991B1B;margin-bottom:4px">Do not over-promise</div>'+renderList(items.avoid,'avoid')+'</div>'
     +'</div>'
     +'</div>'
-    +renderClientDemoModuleMatrix() + '<div id="client-demo-data-checklist"></div>' + renderClientDemoObjections() + renderClientPilotOnboarding();
+    +renderClientDemoModuleMatrix() + '<div id="client-demo-data-checklist"></div>' + renderClientDemoObjections() + renderClientPilotOnboarding() + renderClientPilotSignoff();
   setTimeout(clientDemoLoadDataChecklist,80);
 }
 
