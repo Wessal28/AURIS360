@@ -2994,7 +2994,15 @@ async function obsSave() {
         savedObsId = res[0].id;
         var yr = new Date().getFullYear();
         var typeCode = {bbs_observation:'BBS',positive_behaviour:'POS',unsafe_behaviour:'UBA',unsafe_condition:'UCC',near_miss:'NM',good_practice:'GP'}[type]||'OBS';
-        var ref = 'OBS-'+typeCode+'-'+yr+'-'+String(obsAllData.length+1).padStart(3,'0');
+        var seq = 1;
+        try {
+          var existing = await api('/safety_observations?select=obs_ref&company_id=eq.'+ccid()+'&obs_ref=like.OBS-'+typeCode+'-'+yr+'-*&order=obs_ref.desc&limit=1');
+          if(existing && existing[0] && existing[0].obs_ref){
+            var match = existing[0].obs_ref.match(/OBS-[A-Z]+-\d{4}-(\d+)/);
+            if(match) seq = parseInt(match[1],10) + 1;
+          }
+        } catch(_) { /* fall back to seq=1 */ }
+        var ref = 'OBS-'+typeCode+'-'+yr+'-'+String(seq).padStart(3,'0');
         await api('/safety_observations?id=eq.'+res[0].id, {m:'PATCH',p:'return=minimal',b:{obs_ref:ref}});
         await customSaveRecordValues('observation','safety_observations',res[0].id,ccid());
         res[0].obs_ref=ref; obsAllData.unshift(res[0]);
