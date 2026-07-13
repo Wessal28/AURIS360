@@ -28664,7 +28664,18 @@ async function tbtSave(){
       body.created_by=prof?.id;
       var res=await api('/toolbox_talks',{m:'POST',p:'return=representation',b:body});
       if(res?.[0]?.id){
-        var yr=new Date().getFullYear();var ref='TBT-'+yr+'-'+String(tbtAllData.length+1).padStart(3,'0');
+        var yr=new Date().getFullYear();
+        var seq=1;
+        try{
+          var prefix='TBT-'+yr+'-';
+          var existing=await api('/toolbox_talks?select=tbt_ref&company_id=eq.'+ccid()+'&tbt_ref=like.'+encodeURIComponent(prefix+'*')+'&order=tbt_ref.desc&limit=1');
+          var last=(existing&&existing[0]&&existing[0].tbt_ref)||'';
+          var m=String(last).match(/-(\d+)$/);
+          seq=m?parseInt(m[1],10)+1:1;
+        }catch(refErr){
+          seq=(tbtAllData||[]).filter(function(x){return String(x.tbt_ref||'').indexOf('TBT-'+yr+'-')===0;}).length+1;
+        }
+        var ref='TBT-'+yr+'-'+String(seq).padStart(3,'0');
         await api('/toolbox_talks?id=eq.'+res[0].id,{m:'PATCH',p:'return=minimal',b:{tbt_ref:ref}});
         toast('TBT saved! Ref: '+ref);
         // Auto-create MAP actions
@@ -30760,10 +30771,21 @@ async function auditSave() {
       body.created_by=prof?.id;
       var res=await api('/inspections',{m:'POST',p:'return=representation',b:body});
       if(res?.[0]?.id){
-        var yr=new Date().getFullYear(); var n=String(auditAllData.length+1).padStart(3,'0');
+        var yr=new Date().getFullYear();
         var prefix = {workplace:'WI',fire:'FS',ppe:'PPE',equipment:'EQ',environmental:'ENV',
                       iso_audit:'ISO',internal_audit:'AUD',supplier_audit:'SA',
                       contractor_audit:'CA',regulatory:'REG',behavioral:'BBO'}[type]||'INS';
+        var seq=1;
+        try{
+          var refPrefix=prefix+'-'+yr+'-';
+          var existing=await api('/inspections?select=reference_no&company_id=eq.'+ccid()+'&reference_no=like.'+encodeURIComponent(refPrefix+'*')+'&order=reference_no.desc&limit=1');
+          var last=(existing&&existing[0]&&existing[0].reference_no)||'';
+          var m=String(last).match(/-(\d+)$/);
+          seq=m?parseInt(m[1],10)+1:1;
+        }catch(refErr){
+          seq=(auditAllData||[]).filter(function(x){return String(x.reference_no||'').indexOf(prefix+'-'+yr+'-')===0;}).length+1;
+        }
+        var n=String(seq).padStart(3,'0');
         var ref = prefix+'-'+yr+'-'+n;
         await api('/inspections?id=eq.'+res[0].id,{m:'PATCH',p:'return=minimal',b:{reference_no:ref}});
         body.reference_no = ref;
