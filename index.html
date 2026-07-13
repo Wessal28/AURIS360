@@ -4762,6 +4762,35 @@ function clientDemoSummaryText(){
     +'Important boundaries:\n'+items.avoid.map(function(x){return '- '+x[0]+': '+x[1];}).join('\n');
 }
 
+function clientDemoObjectionItems(){
+  return [
+    {q:'Is AURIS360 ready for real clients?',a:'Yes for pilot rollout with controlled modules and prepared onboarding. Core workflows such as incidents, BBS, action tracking, inspections, risk assessment, documents, contractors and dashboards are strong enough to demonstrate and pilot. Some advanced workflows should be positioned as configurable rollout items.'},
+    {q:'Who is responsible for legal compliance?',a:'AURIS360 helps structure the legal register, track obligations, identify gaps and assign actions. Final legal interpretation and validation remains with the competent HSE/legal professional or the client’s appointed advisor.'},
+    {q:'Does AI replace the HSE Manager?',a:'No. AI supports drafting, analysis, summaries and pattern recognition. The HSE Manager remains the approver and decision-maker. This is important for governance, cost control and professional liability.'},
+    {q:'What about data security?',a:'AURIS360 uses role-based access, company scoping, audit trail, controlled modules and server-side environment secrets. For larger clients, the next step is a formal security/SLA document covering hosting, backups, retention, access control and support.'},
+    {q:'Can it work offline?',a:'Offline capability is currently best positioned for field drafts such as incident and BBS reporting with evidence capture. Full offline operation for all modules is a future enterprise feature because sync conflicts and approvals must be carefully controlled.'},
+    {q:'Can it integrate with ERP, HR or BI systems?',a:'The platform is being prepared for integrations such as HR lists, ERP work orders, Power BI and document systems. In practice, each integration requires client-specific API access, credentials, mapping and testing.'},
+    {q:'How long does implementation take?',a:'A small pilot can start quickly once the company, users, roles, module access and demo records are configured. A full professional deployment should include data migration, training, workflow approval setup, notification rules and acceptance testing.'},
+    {q:'How are email and WhatsApp notifications handled?',a:'Email is the default controlled channel for users with real addresses. App-generated local users need either a manager relay, in-app notification, SMS/WhatsApp integration or temporary password workflow. WhatsApp/SMS implies extra provider cost and consent/privacy controls.'},
+    {q:'What makes it different from generic HSE software?',a:'AURIS360 combines HSE modules, action tracking, RAMS/SWMS, field evidence, contractor scoring, fire layout mapping, AI assistance and consultancy-style workflows in one system tailored for practical safety management.'}
+  ];
+}
+
+function renderClientDemoObjections(){
+  var items=clientDemoObjectionItems();
+  return '<div style="margin-top:14px;border:1px solid var(--border);border-radius:10px;overflow:hidden;background:#fff">'
+    +'<div style="padding:11px 12px;background:#1E3A5F;color:#fff;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><div style="font-weight:900">Client Q&amp;A / objection handling</div><button class="btn btn-sm" style="background:rgba(255,255,255,.14);color:#fff;border-color:rgba(255,255,255,.25)" onclick="copyClientDemoObjections()"><i class="ti ti-copy"></i>Copy answers</button></div>'
+    +'<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:10px;padding:12px;background:#f8fafc">'
+    +items.map(function(x){return '<div style="background:#fff;border:1px solid var(--border);border-radius:10px;padding:12px"><div style="font-size:13px;font-weight:900;margin-bottom:6px;color:#111827">'+escH(x.q)+'</div><div style="font-size:12px;color:var(--text2);line-height:1.5">'+escH(x.a)+'</div></div>';}).join('')
+    +'</div></div>';
+}
+
+function copyClientDemoObjections(){
+  var txt='AURIS360 client Q&A / objection handling\n\n'+clientDemoObjectionItems().map(function(x){return 'Q: '+x.q+'\nA: '+x.a;}).join('\n\n');
+  if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(txt).then(function(){toast('Client Q&A copied');});
+  else toast(txt);
+  auditLogEvent('export','demo','Client Q&A copied',{length:txt.length});
+}
 function renderClientDemoCommandCenter(){
   var el=document.getElementById('client-demo-command-body');if(!el)return;
   var canSee=isAdm()||activeRole()==='hse_manager'||activeRole()==='hse_officer';
@@ -4796,7 +4825,7 @@ function renderClientDemoCommandCenter(){
       +'<div style="border:1px solid var(--border);border-radius:10px;padding:12px;background:#fff"><div style="font-size:13px;font-weight:900;color:#991B1B;margin-bottom:4px">Do not over-promise</div>'+renderList(items.avoid,'avoid')+'</div>'
     +'</div>'
     +'</div>'
-    +renderClientDemoModuleMatrix() + '<div id="client-demo-data-checklist"></div>';
+    +renderClientDemoModuleMatrix() + '<div id="client-demo-data-checklist"></div>' + renderClientDemoObjections();
   setTimeout(clientDemoLoadDataChecklist,80);
 }
 
