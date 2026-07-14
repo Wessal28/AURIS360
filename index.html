@@ -8157,7 +8157,7 @@ try{
   if(!/schema cache|column|Could not find/i.test(e.message||''))throw e;
   if(window.noiseEditId)await api('/noise_surveys?id=eq.'+window.noiseEditId,{m:'PATCH',p:'return=minimal',b:base});
   else await api('/noise_surveys',{m:'POST',p:'return=minimal',b:base});
-  toast('Noise survey saved. Run noise_survey_schema_update.sql to keep plan, points and HPE assessment.',false);
+  toast('Noise survey saved. Run auris360_demo_readiness_schema.sql to keep plan, points and HPE assessment.',false);
 }
 var calBad=!cal||((new Date()-new Date(cal))/86400000>365);
 if(calBad){
@@ -10908,7 +10908,7 @@ var grouped={};
 items.forEach(function(it){(grouped[it.area]=grouped[it.area]||[]).push(it);});
 var html='';
 if(tableReady===false){
-html+='<div style="padding:12px 14px;border:1px solid #FCD34D;background:#FFFBEB;border-radius:10px;color:#92400E;font-size:12px;line-height:1.45;margin-bottom:14px"><strong>Database setup needed:</strong> run <code>security_sla_settings.sql</code> in Supabase to save these settings. Until then, this screen shows defaults only.</div>';
+html+='<div style="padding:12px 14px;border:1px solid #FCD34D;background:#FFFBEB;border-radius:10px;color:#92400E;font-size:12px;line-height:1.45;margin-bottom:14px"><strong>Database setup needed:</strong> run <code>auris360_demo_readiness_schema.sql</code> in Supabase to save these settings. Until then, this screen shows defaults only.</div>';
 }
 html+='<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-bottom:16px">'
 +'<div style="padding:14px;border:1px solid var(--border);border-radius:10px;background:#F8FAFC"><div style="font-size:22px;font-weight:900;color:var(--green)">4</div><div style="font-size:12px;color:var(--text2);font-weight:700">foundations already in place</div></div>'
@@ -11220,7 +11220,7 @@ async function customSaveCollectedValues(recordTable,recordId,companyId,values){
   }
 }
 function customFieldSettingsUnavailable(msg){
-  return '<div style="padding:12px 14px;border:1px solid #FCD34D;background:#FFFBEB;border-radius:10px;color:#92400E;font-size:12px;line-height:1.45"><strong>Database setup needed:</strong> run <code>custom_fields.sql</code> in Supabase to enable no-code custom fields.<br>'+escH(msg||'')+'</div>';
+  return '<div style="padding:12px 14px;border:1px solid #FCD34D;background:#FFFBEB;border-radius:10px;color:#92400E;font-size:12px;line-height:1.45"><strong>Database setup needed:</strong> run <code>auris360_demo_readiness_schema.sql</code> in Supabase to enable no-code custom fields.<br>'+escH(msg||'')+'</div>';
 }
 async function loadCustomFieldSettings(){
   var card=document.getElementById('settings-custom-fields-card');
@@ -37652,7 +37652,7 @@ async function fireLoadLayoutState(){
     if(fireLayoutHasContent(fireLayoutState))fireLayoutState.id='local';
     fireLayoutPlans=fireLayoutPlansWithLocal([]);
     var st=document.getElementById('fire-layout-sync-status');
-    if(st)st.innerHTML='<span style="color:#C2410C;font-weight:700">Shared layout database not enabled yet.</span> Run <code>fire_layouts_schema.sql</code> in Supabase.';
+    if(st)st.innerHTML='<span style="color:#C2410C;font-weight:700">Shared layout database not enabled yet.</span> Run <code>auris360_demo_readiness_schema.sql</code> in Supabase.';
   }
 }
 async function fireSaveLayoutState(){
@@ -37677,7 +37677,7 @@ async function fireSaveLayoutState(){
     try{localStorage.setItem(fireLayoutLocalKey(),JSON.stringify(Object.assign({},fireLayoutState,{id:null,updated_at:new Date().toISOString()})));localStorage.setItem(fireLayoutLocalKey()+'_selected','local');}catch(_){ }
     var st2=document.getElementById('fire-layout-sync-status');
     if(st2)st2.innerHTML='<span style="color:#C2410C;font-weight:700">Not synced:</span> '+escH((e.message||'').substring(0,140));
-    toast('Layout saved locally only. Run fire_layouts_schema.sql for shared storage.',false);
+    toast('Layout saved locally only. Run auris360_demo_readiness_schema.sql for shared storage.',false);
     return false;
   }
 }
@@ -37728,7 +37728,7 @@ async function fireLoadCustomSymbols(){
     fireLayoutSymbolsSharedReady=false;
     fireLayoutCustomSymbolsCache=local;
     var st2=document.getElementById('fire-symbol-sync-status');
-    if(st2)st2.innerHTML='<span style="color:#C2410C;font-weight:700">Custom symbols are local only.</span> Run <code>fire_layouts_schema.sql</code> for shared symbols.';
+    if(st2)st2.innerHTML='<span style="color:#C2410C;font-weight:700">Custom symbols are local only.</span> Run <code>auris360_demo_readiness_schema.sql</code> for shared symbols.';
   }
 }
 function fireSymbolFileToDataUrl(file){
@@ -37756,7 +37756,7 @@ async function fireAddCustomSymbol(){
     var rows=fireLayoutCustomSymbols();
     rows.push(item);
     fireSaveLayoutCustomSymbols(rows);
-    toast('Custom symbol saved locally. Run fire_layouts_schema.sql for shared symbols.',false);
+    toast('Custom symbol saved locally. Run auris360_demo_readiness_schema.sql for shared symbols.',false);
   }
   ['fire-symbol-name','fire-symbol-code','fire-symbol-file'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
   await fireLoadCustomSymbols();
