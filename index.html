@@ -4314,26 +4314,26 @@ var ROLE_ALLOWED = {
   'sephs_admin': null,
   'admin':       null,
   'hse_manager': ['dashboard','executive','ai-insights','kpi','workschedule','events','observation',
-                  'inspection','risk','tools','fleet','atex','permit','contractor','emergency',
+                  'inspection','risk','tools','fleet','atex','sitemap','permit','contractor','emergency',
                   'fire','chemical','ohealth','ppe','esg','noise','meetings','training','actions',
                   'moc','legal','sop','swms','documents','people','users','settings','integrations','approvals','audit'],
   'hse_officer': ['dashboard','executive','ai-insights','kpi','workschedule','events','observation',
-                  'inspection','risk','tools','fleet','atex','permit','contractor','emergency',
+                  'inspection','risk','tools','fleet','atex','sitemap','permit','contractor','emergency',
                   'fire','chemical','ohealth','ppe','esg','noise','meetings','training','actions',
                   'moc','legal','sop','swms','documents','people','approvals','audit'],
   'executive':   ['dashboard','executive','kpi','workschedule','events','observation',
-                  'inspection','risk','tools','fleet','atex','permit','contractor','emergency',
+                  'inspection','risk','tools','fleet','atex','sitemap','permit','contractor','emergency',
                   'fire','chemical','ohealth','ppe','esg','noise','meetings','training','actions',
                   'moc','legal','sop','swms','documents','people'],
   'manager':     ['dashboard','executive','kpi','workschedule','events','observation',
-                  'inspection','risk','tools','fleet','atex','permit','contractor','emergency',
+                  'inspection','risk','tools','fleet','atex','sitemap','permit','contractor','emergency',
                   'fire','chemical','ohealth','ppe','esg','noise','meetings','training','actions',
                   'moc','legal','sop','swms','documents','people'],
   'site_manager':['dashboard','kpi','workschedule','events','observation','inspection',
-                  'risk','tools','fleet','atex','permit','contractor','emergency','fire','chemical','ppe','esg','noise',
+                  'risk','tools','fleet','atex','sitemap','permit','contractor','emergency','fire','chemical','ppe','esg','noise',
                   'meetings','training','actions','moc','sop','swms','people'],
   'supervisor':  ['dashboard','kpi','workschedule','events','observation','inspection',
-                  'risk','tools','fleet','atex','permit','contractor','emergency','fire','chemical','ppe','noise',
+                  'risk','tools','fleet','atex','sitemap','permit','contractor','emergency','fire','chemical','ppe','noise',
                   'meetings','training','actions','sop','swms'],
   'auditor':     ['dashboard','events','observation','inspection','risk','legal',
                   'fire','documents','meetings','actions','moc'],
@@ -4425,7 +4425,7 @@ if(target){
   target.classList.add('active');
 }
 if(el&&el.classList)el.classList.add('active');
-const L={dashboard:loadDash,executive:loadExecutive,kpi:kpiLoadAll,workschedule:loadWorkSchedule,events:loadEvents,observation:loadObservation,inspection:()=>{buildChecklist();loadInsps();},risk:loadRA,investigation:loadInvs,legal:loadLegal,sop:loadSOP,swms:loadSWMS,tools:loadTools,fleet:loadFleet,atex:loadATEX,permit:loadPermits,contractor:loadContractors,esg:loadESG,emergency:loadEmergency,fire:loadFire,chemical:loadChemical,ohealth:loadOHealth,ppe:loadPPE,noise:loadNoise,meetings:loadMtgs,training:loadTraining,actions:loadActions,moc:loadMOC,documents:loadDocs,people:loadPeople,users:loadUsers,admin:loadAdmin,'ai-insights':genFullAI,approvals:loadApprovals,audit:loadAudit,settings:loadSettings,integrations:loadIntegrations};
+const L={dashboard:loadDash,executive:loadExecutive,kpi:kpiLoadAll,workschedule:loadWorkSchedule,events:loadEvents,observation:loadObservation,inspection:()=>{buildChecklist();loadInsps();},risk:loadRA,investigation:loadInvs,legal:loadLegal,sop:loadSOP,swms:loadSWMS,tools:loadTools,fleet:loadFleet,atex:loadATEX,sitemap:loadSiteMap,permit:loadPermits,contractor:loadContractors,esg:loadESG,emergency:loadEmergency,fire:loadFire,chemical:loadChemical,ohealth:loadOHealth,ppe:loadPPE,noise:loadNoise,meetings:loadMtgs,training:loadTraining,actions:loadActions,moc:loadMOC,documents:loadDocs,people:loadPeople,users:loadUsers,admin:loadAdmin,'ai-insights':genFullAI,approvals:loadApprovals,audit:loadAudit,settings:loadSettings,integrations:loadIntegrations};
 if(L[name])L[name]();
 // Mobile: close sidebar and scroll to top
 if(window.innerWidth<=768){
@@ -32239,6 +32239,7 @@ var LAUNCHED_MODULES = [
   'chemical',      // Chemical Control / COSHH
   'fleet',         // Fleet Management
   'atex',          // ATEX / Hazardous Areas
+  'sitemap',       // Interactive site map / event location map
   'actions',       // Master Action Plan - core workflow follow-up
   'moc',           // Management of Change
   'sop',           // SOP Generator — internal/admin rollout
@@ -32500,6 +32501,7 @@ var MODULES_DIR = [
   {k:'tools',       i:'ti-tools',              l:'Tools & Equipment',   sec:'HSE Modules'},
   {k:'fleet',       i:'ti-car',                l:'Fleet Management',    sec:'HSE Modules'},
   {k:'atex',        i:'ti-flame',              l:'ATEX Areas',          sec:'HSE Modules'},
+  {k:'sitemap',     i:'ti-map-2',              l:'Site Map',            sec:'HSE Modules'},
   {k:'permit',      i:'ti-key',                l:'Permit to Work',      sec:'HSE Modules'},
   {k:'contractor',  i:'ti-helmet',           l:'Contractors',         sec:'HSE Modules'},
   {k:'emergency',   i:'ti-alert-square',       l:'Emergency',           sec:'HSE Modules'},
@@ -33506,6 +33508,7 @@ var MODULE_CATALOGUE = [
   {k:'tools',       l:'Tools Register'},
   {k:'fleet',       l:'Fleet Management'},
   {k:'atex',        l:'ATEX Areas'},
+  {k:'sitemap',     l:'Site Map'},
   {k:'legal',       l:'Legal Compliance'},
   {k:'sop',         l:'SOP Generator'},
   {k:'swms',        l:'SWMS / Method Statements'},
@@ -33676,6 +33679,7 @@ var MODULE_CATALOG = [
   { key:'chemical',    icon:'ti-flask',            name:'Chemical Control' },
   { key:'fleet',       icon:'ti-car',              name:'Fleet Management' },
   { key:'atex',        icon:'ti-flame',            name:'ATEX Areas' },
+  { key:'sitemap',     icon:'ti-map-2',            name:'Site Map' },
   // Coming-soon modules (not in LAUNCHED_MODULES yet — toggle shows but inactive)
   { key:'risk',        icon:'ti-chart-bar',        name:'Risk Assessment' },
   { key:'inspection',  icon:'ti-clipboard-check',  name:'Audits & Inspections' },
@@ -35234,6 +35238,7 @@ var MOBILE_MODULES = [
   {k:'tools',        l:'Tools',        i:'ti-tool',               r:['all']},
   {k:'fleet',        l:'Fleet',        i:'ti-car',                r:['admin','hse_manager','site_manager','supervisor','contractor','sephs_admin']},
   {k:'atex',         l:'ATEX',         i:'ti-flame',              r:['admin','hse_manager','site_manager','supervisor','contractor','sephs_admin']},
+  {k:'sitemap',      l:'Site Map',     i:'ti-map-2',              r:['admin','hse_manager','hse_officer','site_manager','supervisor','auditor','sephs_admin']},
   {k:'permit',       l:'Permits',      i:'ti-file-certificate',   r:['all']},
   {k:'contractor',   l:'Contractors',  i:'ti-users-group',        r:['admin','hse_manager','site_manager','supervisor','sephs_admin']},
   {k:'emergency',    l:'Emergency',    i:'ti-ambulance',          r:['all']},
@@ -35263,7 +35268,7 @@ var MOBILE_MODULES = [
 var MODULE_COLORS = {
   dashboard:'#185FA5', executive:'#5B21B6', kpi:'#185FA5',
   workschedule:'#065F46', events:'#DC2626', observation:'#9A3412',
-  inspection:'#1D9E75', risk:'#C2410C', tools:'#374151', fleet:'#185FA5', atex:'#C2410C',
+  inspection:'#1D9E75', risk:'#C2410C', tools:'#374151', fleet:'#185FA5', atex:'#C2410C', sitemap:'#0F6E56',
   moc:'#0F6E56',
   permit:'#854F0B', contractor:'#0891B2', emergency:'#DC2626', fire:'#B91C1C', chemical:'#7C3AED',
   ohealth:'#065F46', ppe:'#1D9E75', esg:'#065F46',
@@ -38650,6 +38655,138 @@ function firePrintReport() {
 }
 
 // ── Helpers ───────────────────────────────────────────────────────
+// ============================================================
+// INTERACTIVE SITE MAP / LOCATION RECORDS
+// ============================================================
+var siteMapState={sites:[],events:[],observations:[],inspections:[],risks:[],permits:[],actions:[],selected:null};
+function smText(v){return String(v||'').trim();}
+function smNorm(v){return smText(v).toLowerCase().replace(/\s+/g,' ');}
+function smSiteName(s){return smText(s.name||s.site_name||s.location||s.title||'Unnamed site');}
+function smRowLocation(r){return smText(r.location||r.site||r.area||r.department||r.work_location||r.site_location||r.premises||'');}
+function smMatch(row,site){
+  var siteName=smNorm(smSiteName(site));
+  var code=smNorm(site.site_code||site.code||'');
+  var terms=[siteName,code,smNorm(site.address||''),smNorm(site.city||'')].filter(function(x){return x&&x.length>1;});
+  var hay=smNorm([row.location,row.site,row.area,row.department,row.work_location,row.site_location,row.premises,row.title,row.description,row.activity,row.work_description,row.event_ref,row.reference_no,row.ra_ref,row.permit_ref,row.source_ref].filter(Boolean).join(' '));
+  if(!hay)return false;
+  return terms.some(function(t){return hay.indexOf(t)!==-1||t.split(' ').some(function(p){return p.length>3&&hay.indexOf(p)!==-1;});});
+}
+function smRecordsForSite(site){
+  return {
+    events:(siteMapState.events||[]).filter(function(r){return smMatch(r,site);}),
+    observations:(siteMapState.observations||[]).filter(function(r){return smMatch(r,site);}),
+    inspections:(siteMapState.inspections||[]).filter(function(r){return smMatch(r,site);}),
+    risks:(siteMapState.risks||[]).filter(function(r){return smMatch(r,site);}),
+    permits:(siteMapState.permits||[]).filter(function(r){return smMatch(r,site);}),
+    actions:(siteMapState.actions||[]).filter(function(r){return smMatch(r,site);})
+  };
+}
+function smCount(rec){return Object.keys(rec).reduce(function(n,k){return n+(rec[k]||[]).length;},0);}
+function smSafeDate(v){if(!v)return '--';try{return new Date(v).toLocaleDateString('en-GB');}catch(_){return String(v).slice(0,10);}}
+async function smApi(path){try{return await api(path);}catch(e){console.warn('Site map:',e.message);return [];}}
+async function loadSiteMap(){
+  var list=document.getElementById('sitemap-site-list');
+  var canvas=document.getElementById('sitemap-canvas');
+  if(list)list.innerHTML='<div class="loading-msg">Loading site map...</div>';
+  if(canvas)canvas.innerHTML='<div class="loading-msg">Loading...</div>';
+  var results=await Promise.all([
+    smApi('/sites?select=*'+cf()+'&order=name.asc'),
+    smApi('/events?select=*'+cf()+'&order=event_date.desc,created_at.desc&limit=250'),
+    smApi('/observations?select=*'+cf()+'&order=observation_date.desc,created_at.desc&limit=250'),
+    smApi('/inspections?select=*'+cf()+'&order=inspection_date.desc,created_at.desc&limit=250'),
+    smApi('/risk_assessments?select=*'+cf()+'&order=created_at.desc&limit=250'),
+    smApi('/permit_to_work?select=*'+cf()+'&order=created_at.desc&limit=250'),
+    smApi('/action_tracker?select=*'+cf()+'&order=created_at.desc&limit=250')
+  ]);
+  siteMapState={sites:results[0]||[],events:results[1]||[],observations:results[2]||[],inspections:results[3]||[],risks:results[4]||[],permits:results[5]||[],actions:results[6]||[],selected:null};
+  if(!siteMapState.sites.length)siteMapState.sites=smBuildVirtualSites();
+  smRender();
+}
+function smBuildVirtualSites(){
+  var seen={};
+  [].concat(siteMapState.events,siteMapState.observations,siteMapState.inspections,siteMapState.risks,siteMapState.permits,siteMapState.actions).forEach(function(r){
+    var l=smRowLocation(r);
+    if(l&&!seen[smNorm(l)])seen[smNorm(l)]={id:'loc-'+smNorm(l).replace(/[^a-z0-9]+/g,'-'),name:l,site_type:'area',status:'active'};
+  });
+  return Object.keys(seen).map(function(k){return seen[k];});
+}
+function smRender(){smRenderSummary();smRenderSiteList();smRenderCanvas();smSelectSite(siteMapState.selected||((siteMapState.sites[0]||{}).id),false);}
+function smRenderSummary(){
+  var el=document.getElementById('sitemap-summary');if(!el)return;
+  var openInc=siteMapState.events.filter(function(x){return !['closed','resolved'].includes(String(x.status||'').toLowerCase());}).length;
+  var highRisk=siteMapState.risks.filter(function(x){return /high|critical|very/i.test(String(x.overall_risk_level||''));}).length;
+  var openAct=siteMapState.actions.filter(function(x){return !['closed','completed'].includes(String(x.status||'').toLowerCase());}).length;
+  var total=siteMapState.sites.length;
+  el.innerHTML=[
+    ['Sites / areas',total,'#185FA5','ti-map-pin'],
+    ['Open incidents',openInc,'#DC2626','ti-alert-triangle'],
+    ['High risks',highRisk,'#C2410C','ti-shield-exclamation'],
+    ['Open actions',openAct,'#EF9F27','ti-list-check']
+  ].map(function(x){return '<div class="card" style="padding:12px 14px;border-left:4px solid '+x[2]+'"><div style="display:flex;justify-content:space-between;align-items:center"><div><div style="font-size:10px;color:var(--text2);font-weight:800;text-transform:uppercase">'+x[0]+'</div><div style="font-size:26px;font-weight:900;color:'+x[2]+'">'+x[1]+'</div></div><i class="ti '+x[3]+'" style="font-size:26px;color:'+x[2]+'"></i></div></div>';}).join('');
+}
+function smRiskColor(n){return n>10?'#DC2626':n>4?'#EF9F27':'#1D9E75';}
+function smRenderSiteList(){
+  var el=document.getElementById('sitemap-site-list');if(!el)return;
+  var q=smNorm(document.getElementById('sitemap-search')?.value||'');
+  var sites=(siteMapState.sites||[]).filter(function(s){return !q||smNorm([smSiteName(s),s.site_code,s.address,s.city,s.site_type].filter(Boolean).join(' ')).indexOf(q)!==-1;});
+  if(!sites.length){el.innerHTML='<div class="empty">No matching sites or locations.</div>';return;}
+  el.innerHTML=sites.map(function(s){
+    var rec=smRecordsForSite(s),n=smCount(rec),col=smRiskColor(n);
+    return '<button type="button" onclick="smSelectSite(\''+escH(s.id||smSiteName(s))+'\')" style="width:100%;text-align:left;border:1px solid var(--border);background:#fff;border-radius:8px;padding:10px 12px;margin-bottom:8px;cursor:pointer;display:flex;gap:10px;align-items:flex-start">'
+      +'<div style="width:34px;height:34px;border-radius:999px;background:'+col+';color:#fff;display:flex;align-items:center;justify-content:center;font-weight:900"><i class="ti ti-map-pin"></i></div>'
+      +'<div style="min-width:0;flex:1"><div style="font-weight:900;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+escH(smSiteName(s))+'</div><div style="font-size:11px;color:var(--text2);margin-top:2px">'+escH([s.site_code,s.site_type,s.city].filter(Boolean).join(' - ')||'Site / area')+'</div>'
+      +'<div style="display:flex;gap:5px;flex-wrap:wrap;margin-top:7px"><span class="badge badge-red">'+rec.events.length+' Inc</span><span class="badge badge-amber">'+rec.risks.length+' RA</span><span class="badge badge-blue">'+rec.inspections.length+' Insp</span><span class="badge badge-green">'+rec.actions.length+' Act</span></div></div></button>';
+  }).join('');
+}
+function smRenderCanvas(){
+  var el=document.getElementById('sitemap-canvas');if(!el)return;
+  var sites=siteMapState.sites||[];
+  if(!sites.length){el.innerHTML='<div class="empty">No site data available yet.</div>';return;}
+  el.innerHTML='<div style="position:relative;min-height:360px;border:1px solid var(--border);border-radius:10px;background:linear-gradient(135deg,#EFF6FF,#F8FAFC);overflow:hidden">'
+    +'<div style="position:absolute;inset:18px;border:1px dashed #bfdbfe;border-radius:12px"></div>'
+    +sites.map(function(s,i){
+      var rec=smRecordsForSite(s),n=smCount(rec),col=smRiskColor(n);
+      var lat=parseFloat(s.lat||s.latitude),lng=parseFloat(s.lng||s.longitude);
+      var x=isFinite(lng)?Math.max(8,Math.min(92,((lng+180)/360)*100)):(12+(i*23)%76);
+      var y=isFinite(lat)?Math.max(10,Math.min(90,((90-lat)/180)*100)):(16+(i*31)%68);
+      return '<button type="button" onclick="smSelectSite(\''+escH(s.id||smSiteName(s))+'\')" title="'+escH(smSiteName(s))+'" style="position:absolute;left:'+x+'%;top:'+y+'%;transform:translate(-50%,-50%);border:0;background:transparent;cursor:pointer">'
+        +'<div style="width:46px;height:46px;border-radius:999px;background:'+col+';color:#fff;display:flex;align-items:center;justify-content:center;font-weight:900;box-shadow:0 10px 22px rgba(0,0,0,.18)"><i class="ti ti-map-pin" style="font-size:22px"></i></div>'
+        +'<div style="margin-top:5px;background:#fff;border:1px solid var(--border);border-radius:999px;padding:2px 8px;font-size:10px;font-weight:800;white-space:nowrap;box-shadow:0 4px 12px rgba(0,0,0,.08)">'+escH(smSiteName(s).slice(0,22))+' - '+n+'</div></button>';
+    }).join('')+'</div>';
+}
+function smSelectSite(id,scroll){
+  var sites=siteMapState.sites||[];
+  var site=sites.find(function(s){return String(s.id||smSiteName(s))===String(id);})||sites[0];
+  if(!site)return;
+  siteMapState.selected=site.id||smSiteName(site);
+  var title=document.getElementById('sitemap-selected-title');if(title)title.textContent=smSiteName(site);
+  smRenderDetails(site);
+  if(scroll!==false){var el=document.getElementById('sitemap-details');if(el)el.scrollIntoView({behavior:'smooth',block:'nearest'});}
+}
+function smRecordTitle(r,keys){for(var i=0;i<keys.length;i++){if(r&&r[keys[i]])return r[keys[i]];}return r&&r.id?String(r.id).slice(0,8):'Record';}
+function smModuleButton(page,label){return '<button class="btn btn-sm" onclick="showPage(\''+page+'\',null)" style="font-size:11px"><i class="ti ti-external-link"></i>'+label+'</button>';}
+function smSection(name,icon,page,rows,keys,meta){
+  return '<div style="border:1px solid var(--border);border-radius:8px;overflow:hidden;margin-bottom:10px;background:#fff"><div style="display:flex;justify-content:space-between;align-items:center;background:#f8fafc;padding:9px 11px;border-bottom:1px solid var(--border)"><div style="font-weight:900;font-size:13px"><i class="ti '+icon+'"></i> '+escH(name)+' <span class="badge badge-grey">'+rows.length+'</span></div>'+smModuleButton(page,'Open')+'</div>'
+    +(rows.length?'<div style="overflow:auto"><table class="data-table" style="margin:0"><tbody>'+rows.slice(0,12).map(function(r){return '<tr><td style="padding:8px 10px"><div style="font-weight:800">'+escH(smRecordTitle(r,keys))+'</div><div style="font-size:11px;color:var(--text2)">'+escH(meta(r)||'--')+'</div></td></tr>';}).join('')+'</tbody></table></div>':'<div style="padding:12px;color:var(--text2);font-size:12px">No records linked to this location yet.</div>')+'</div>';
+}
+function smRenderDetails(site){
+  var el=document.getElementById('sitemap-details');if(!el)return;
+  var rec=smRecordsForSite(site);
+  var gps=[site.lat||site.latitude,site.lng||site.longitude].filter(Boolean).join(', ');
+  el.innerHTML='<div class="card" style="margin-bottom:12px"><div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px">'
+    +'<div><div class="form-label">Type</div><div style="font-weight:800">'+escH(site.site_type||'site')+'</div></div>'
+    +'<div><div class="form-label">Code</div><div style="font-weight:800">'+escH(site.site_code||'--')+'</div></div>'
+    +'<div><div class="form-label">GPS</div><div style="font-weight:800">'+escH(gps||'--')+'</div></div>'
+    +'<div><div class="form-label">Records</div><div style="font-weight:900;color:'+smRiskColor(smCount(rec))+'">'+smCount(rec)+'</div></div>'
+    +'</div></div>'
+    +smSection('Incidents','ti-alert-triangle','events',rec.events,['event_ref','event_type','description'],function(r){return [r.severity,r.status,smSafeDate(r.event_date||r.created_at)].filter(Boolean).join(' - ');})
+    +smSection('BBS observations','ti-eye','observation',rec.observations,['observation_ref','observation_type','description'],function(r){return [r.status,r.department,smSafeDate(r.observation_date||r.created_at)].filter(Boolean).join(' - ');})
+    +smSection('Inspections','ti-clipboard-check','inspection',rec.inspections,['reference_no','inspection_type','site'],function(r){return [r.status,smSafeDate(r.inspection_date||r.created_at)].filter(Boolean).join(' - ');})
+    +smSection('Risk assessments','ti-shield-check','risk',rec.risks,['ra_ref','title','activity'],function(r){return [r.overall_risk_level,r.status].filter(Boolean).join(' - ');})
+    +smSection('Permits','ti-key','permit',rec.permits,['permit_ref','permit_type','work_description'],function(r){return [r.status,smSafeDate(r.created_at)].filter(Boolean).join(' - ');})
+    +smSection('Actions','ti-list-check','actions',rec.actions,['title','source_ref'],function(r){return [r.priority,r.status,r.due_date||r.target_date].filter(Boolean).join(' - ');});
+}
+
 function fireCertTypeLabel(t) {
   return {fire_certificate:'Fire Certificate',fire_precaution:'Fire Precaution Certificate',
     occupation_permit:'Occupation Permit (Fire)',temporary:'Temporary Fire Certificate',other:'Other'}[t] || t || '—';
@@ -38875,7 +39012,7 @@ function fireEquipStatusBadge(s) {
 <span class="nav-section">Main</span><div class="nav-item active" id="nav-dashboard" onclick="showPage('dashboard',this)"><i class="ti ti-layout-dashboard"></i>Dashboard</div>
 <div class="nav-item" id="nav-executive" onclick="showPage('executive',this)"><i class="ti ti-chart-bar"></i>Executive Dashboard</div><div class="nav-item" id="nav-ai" onclick="showPage('ai-insights',this)"><i class="ti ti-brain"></i>AI Insights</div><span class="nav-section">HSE Modules</span><div class="nav-item" onclick="showPage('kpi',this)"><i class="ti ti-target"></i>Objectives & KPIs</div><div class="nav-item" onclick="showPage('workschedule',this)"><i class="ti ti-calendar-event"></i>Work Schedule</div>
 <div class="nav-item" onclick="showPage('events',this)"><i class="ti ti-alert-triangle"></i>Incident Management</div><div class="nav-item" onclick="showPage('observation',this)"><i class="ti ti-eye"></i>BBS Observations</div>
-<div class="nav-item" onclick="showPage('inspection',this)"><i class="ti ti-clipboard-check"></i>Audits &amp; Inspections</div><div class="nav-item" onclick="showPage('risk',this)"><i class="ti ti-shield-check"></i>Risk Assessment</div><div class="nav-item" onclick="showPage('tools',this)"><i class="ti ti-tools"></i>Tools & Equipment</div><div class="nav-item" onclick="showPage('fleet',this)"><i class="ti ti-car"></i>Fleet Management</div><div class="nav-item" onclick="showPage('atex',this)"><i class="ti ti-flame"></i>ATEX Areas</div>
+<div class="nav-item" onclick="showPage('inspection',this)"><i class="ti ti-clipboard-check"></i>Audits &amp; Inspections</div><div class="nav-item" onclick="showPage('risk',this)"><i class="ti ti-shield-check"></i>Risk Assessment</div><div class="nav-item" onclick="showPage('tools',this)"><i class="ti ti-tools"></i>Tools & Equipment</div><div class="nav-item" onclick="showPage('fleet',this)"><i class="ti ti-car"></i>Fleet Management</div><div class="nav-item" onclick="showPage('atex',this)"><i class="ti ti-flame"></i>ATEX Areas</div><div class="nav-item" onclick="showPage('sitemap',this)"><i class="ti ti-map-2"></i>Site Map</div>
 <div class="nav-item" onclick="showPage('permit',this)"><i class="ti ti-key"></i>Permit to Work</div>
 <div class="nav-item" onclick="showPage('contractor',this)"><i class="ti ti-user-shield"></i>Contractors</div><div class="nav-item" onclick="showPage('emergency',this)"><i class="ti ti-alert-square"></i>Emergency</div>
 <div class="nav-item" onclick="showPage('ohealth',this)"><i class="ti ti-stethoscope"></i>Occupational Health</div>
@@ -49582,6 +49719,61 @@ I can help you:<br>
      FIRE CERTIFICATE MANAGEMENT MODULE
      Tabs: Register | Inspections | Equipment | Reports
 ═══════════════════════════════════════════════════════════ -->
+<div id="page-sitemap" class="page">
+  <div class="page-header">
+    <div>
+      <div class="page-title"><i class="ti ti-map-2"></i> Site Map</div>
+      <div style="font-size:12px;color:var(--text2)">Interactive site and area view with incidents, BBS, risks, inspections, permits and actions by location</div>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button class="btn" onclick="loadSiteMap()"><i class="ti ti-refresh"></i>Refresh</button>
+      <button class="btn" onclick="showPage('admin',document.getElementById('nav-admin'))"><i class="ti ti-map-pin-plus"></i>Manage sites</button>
+    </div>
+  </div>
+
+  <div id="sitemap-summary" style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:14px"></div>
+
+  <div style="display:grid;grid-template-columns:330px minmax(0,1fr);gap:14px;align-items:start">
+    <div class="card" style="position:sticky;top:86px">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:10px">
+        <div>
+          <div class="card-title" style="margin:0">Sites / Areas</div>
+          <div style="font-size:11px;color:var(--text2)">Click a site to see linked HSE records</div>
+        </div>
+      </div>
+      <input id="sitemap-search" type="text" placeholder="Search site, area, code..." oninput="smRenderSiteList()" style="width:100%;margin-bottom:10px"/>
+      <div id="sitemap-site-list"><div class="loading-msg">Open the module to load sites.</div></div>
+    </div>
+
+    <div>
+      <div class="card" style="margin-bottom:14px">
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:10px">
+          <div>
+            <div class="card-title" style="margin:0">Operational Location Map</div>
+            <div style="font-size:12px;color:var(--text2)">Markers use registered GPS where available; otherwise AURIS360 places them in a readable site overview.</div>
+          </div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;font-size:11px;color:var(--text2)">
+            <span><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#1D9E75"></span> Low activity</span>
+            <span><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#EF9F27"></span> Active</span>
+            <span><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#DC2626"></span> High activity</span>
+          </div>
+        </div>
+        <div id="sitemap-canvas"><div class="loading-msg">Open the module to load map.</div></div>
+      </div>
+
+      <div class="card" id="sitemap-selected-card">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:10px">
+          <div>
+            <div class="card-title" id="sitemap-selected-title" style="margin:0">Selected location</div>
+            <div style="font-size:12px;color:var(--text2)">Linked records are matched from the location/site/area text used in each module.</div>
+          </div>
+        </div>
+        <div id="sitemap-details"><div class="empty">Select a site or area to view records.</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <div id="page-fire" class="page">
 <div class="page-header">
   <div>
