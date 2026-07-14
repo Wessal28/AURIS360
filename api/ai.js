@@ -247,6 +247,11 @@ module.exports = async function handler(req, res) {
 
     const configuredProvider = String(process.env.AI_PROVIDER || '').toLowerCase();
     const provider = configuredProvider || 'openai';
+    if (provider !== 'openai' && provider !== 'anthropic' && provider !== 'claude') {
+      return res.status(500).json({
+        error: 'Invalid AI_PROVIDER. Use openai, anthropic, or claude.'
+      });
+    }
     const result = provider === 'openai'
       ? await callOpenAI(input, messages)
       : await callAnthropic(input, messages);
