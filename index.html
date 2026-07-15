@@ -38883,6 +38883,10 @@ function smPrintMapHtml(){
     var p=smEventPosition(ev,i), sev=String(ev.severity||'').toLowerCase(), col=/critical|high/.test(sev)?'#DC2626':'#F97316';
     return '<div style="position:absolute;left:'+p.x+'%;top:'+p.y+'%;transform:translate(-50%,-50%);width:12px;height:12px;border-radius:999px;background:'+col+';border:1.5px solid #fff;box-shadow:0 1px 5px rgba(0,0,0,.25)"></div>';
   }).join('');
+  var riskDots=(siteMapState.risks||[]).filter(function(r){return /high|critical|very/i.test(String(r.overall_risk_level||r.risk_level||''));}).slice(0,40).map(function(r,i){
+    var p=smRiskPosition(r,i);
+    return '<div style="position:absolute;left:'+p.x+'%;top:'+p.y+'%;transform:translate(-50%,-50%);width:15px;height:15px;border-radius:3px;background:#C2410C;color:#fff;border:1.5px solid #fff;box-shadow:0 1px 5px rgba(0,0,0,.25);font-size:8pt;font-weight:900;line-height:15px;text-align:center">R</div>';
+  }).join('');
   var rows=sites.map(function(s,i){
     var rec=smRecordsForSite(s),n=smCount(rec),col=smRiskColor(n);
     var marker=smMarkerForSite(s), linked=marker&&marker.linked_plan_id;
@@ -38891,7 +38895,8 @@ function smPrintMapHtml(){
   return '<style>@page{size:A4 landscape;margin:8mm}.report-page{max-width:297mm;padding:8mm}.sm-print-map{position:relative;border:1px solid #d1d5db;border-radius:6px;background:#fff;margin-bottom:10px;min-height:130mm;overflow:hidden}.sm-print-map img{display:block;width:100%;height:auto;max-height:150mm;object-fit:contain}.sm-print-empty{height:130mm;background:linear-gradient(135deg,#EFF6FF,#F8FAFC);display:flex;align-items:center;justify-content:center;color:#6b7280}table{width:100%;border-collapse:collapse;font-size:8pt}th,td{border:1px solid #d1d5db;padding:4px 5px;text-align:left;vertical-align:top}th{background:#f3f4f6;font-weight:800}</style>'
     +'<div class="report-page">'
     +aurisHeader('Interactive Site Map',layout.title||'Site / area map',layout.id||'DRAFT')
-    +'<div class="sm-print-map">'+(img?'<img src="'+escH(img)+'" alt="Site map plan"/>':'<div class="sm-print-empty">No uploaded plan image. Auto-positioned location overview.</div>')+markers+eventDots+'</div>'
+    +'<div style="font-size:8pt;color:#374151;margin:0 0 4px 2px"><strong>Map legend:</strong> numbered circles = locations, orange/red circles = open incidents, brown squares = high-risk RA hotspots, blue L = linked child layout.</div>'
+    +'<div class="sm-print-map">'+(img?'<img src="'+escH(img)+'" alt="Site map plan"/>':'<div class="sm-print-empty">No uploaded plan image. Auto-positioned location overview.</div>')+markers+eventDots+riskDots+'</div>'
     +'<div class="rpt-section"><div class="rpt-section-title">Location Records Legend</div><table><thead><tr><th style="width:32px">No.</th><th>Location</th><th>Linked layout</th><th>Total</th><th>Incidents</th><th>BBS</th><th>Inspections</th><th>RA</th><th>PTW</th><th>Actions</th></tr></thead><tbody>'
     +(rows||'<tr><td colspan="10" style="text-align:center;color:#6b7280">No sites or areas available.</td></tr>')
     +'</tbody></table></div>'
