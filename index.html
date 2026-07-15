@@ -38658,11 +38658,78 @@ function firePrintReport() {
 // ============================================================
 // INTERACTIVE SITE MAP / LOCATION RECORDS
 // ============================================================
-var siteMapState={sites:[],events:[],observations:[],inspections:[],risks:[],permits:[],actions:[],selected:null};
+var siteMapState={sites:[],events:[],observations:[],inspections:[],risks:[],permits:[],actions:[],selected:null,plans:[],layout:null};
 function smText(v){return String(v||'').trim();}
 function smNorm(v){return smText(v).toLowerCase().replace(/\s+/g,' ');}
 function smSiteName(s){return smText(s.name||s.site_name||s.location||s.title||'Unnamed site');}
 function smRowLocation(r){return smText(r.location||r.site||r.area||r.department||r.work_location||r.site_location||r.premises||'');}
+function smCompanyId(){return (isSA()&&sephsCompanyContext)?sephsCompanyContext:(prof?.company_id||'default');}
+function smLayoutEmpty(){return {id:null,title:'New site map',image:null,image_url:null,image_path:null,markers:[],local_only:false,updated_at:null};}
+function smLayoutNormalise(row){row=row||{};return {id:row.id||null,title:row.title||'Site map',image:row.image_url||row.image||null,image_url:row.image_url||row.image||null,image_path:row.image_path||null,markers:Array.isArray(row.markers)?row.markers:[],local_only:!!row.local_only,updated_at:row.updated_at||null};}
+function smLayoutKey(){return 'auris360_site_map_layout_'+smCompanyId();}
+function smLocalLayout(){try{return smLayoutNormalise(JSON.parse(localStorage.getItem(smLayoutKey())||'{}'));}catch(_){return smLayoutEmpty();}}
+function smLayoutHasContent(p){return !!(p&&(p.image||p.image_url||p.image_path||(p.title&&p.title!=='Site map'&&p.title!=='New site map')));}
+function smPlansWithLocal(rows){var plans=(rows||[]).map(smLayoutNormalise);var local=smLocalLayout();if(smLayoutHasContent(local)){local.id='local';local.local_only=true;plans=plans.filter(function(p){return p.id!=='local';});plans.unshift(local);}return plans;}
+async function smLoadPlans(){
+  try{
+    var rows=await api('/fire_layouts?company_id=eq.'+smCompanyId()+'&layout_type=eq.site&select=*&order=title.asc');
+    siteMapState.plans=smPlansWithLocal(rows||[]);
+  }catch(e){
+    siteMapState.plans=smPlansWithLocal([]);
+    var st=document.getElementById('sitemap-plan-status');if(st)st.innerHTML='<span style="color:#C2410C;font-weight:800">Shared site map database not enabled.</span> Local draft mode.';
+  }
+  var selected=localStorage.getItem(smLayoutKey()+'_selected')||'';
+  siteMapState.layout=(siteMapState.plans||[]).find(function(p){return p.id===selected;})||siteMapState.plans[0]||smLayoutEmpty();
+  smRenderPlanList();
+}
+async function smSaveLayout(){
+  var layout=siteMapState.layout||smLayoutEmpty();
+  layout.title=(document.getElementById('sitemap-plan-title')?.value||layout.title||'Site map').trim()||'Site map';
+  layout.updated_at=new Date().toISOString();
+  var body={company_id:smCompanyId(),layout_type:'site',title:layout.title,image_url:layout.image_url||layout.image||null,image_path:layout.image_path||null,markers:layout.markers||[],updated_at:layout.updated_at};
+  try{
+    if(layout.id&&layout.id!=='local')await api('/fire_layouts?id=eq.'+layout.id,{m:'PATCH',p:'return=minimal',b:body});
+    else{body.created_by=prof?.id||null;var res=await api('/fire_layouts',{m:'POST',p:'return=representation',b:body});if(res&&res[0])layout=smLayoutNormalise(res[0]);}
+    siteMapState.layout=layout;localStorage.removeItem(smLayoutKey());if(layout.id)localStorage.setItem(smLayoutKey()+'_selected',layout.id);
+    var st=document.getElementById('sitemap-plan-status');if(st)st.innerHTML='<span style="color:var(--green);font-weight:800">Site map plan saved</span>';
+    await smLoadPlans();smRenderCanvas();toast('Site map plan saved');
+  }catch(e){
+    localStorage.setItem(smLayoutKey(),JSON.stringify(Object.assign({},layout,{id:null,local_only:true})));localStorage.setItem(smLayoutKey()+'_selected','local');
+    siteMapState.layout=Object.assign({},layout,{id:'local',local_only:true});
+    var st2=document.getElementById('sitemap-plan-status');if(st2)st2.innerHTML='<span style="color:#C2410C;font-weight:800">Saved locally only:</span> '+escH((e.message||'').slice(0,120));
+    smRenderPlanList();smRenderCanvas();toast('Site map saved locally only',false);
+  }
+}
+function smNewPlan(){siteMapState.layout=smLayoutEmpty();localStorage.removeItem(smLayoutKey()+'_selected');smRenderPlanList();smRenderCanvas();}
+function smOpenPlan(id){siteMapState.layout=(siteMapState.plans||[]).find(function(p){return p.id===id;})||smLayoutEmpty();if(id)localStorage.setItem(smLayoutKey()+'_selected',id);smRenderPlanList();smRenderCanvas();}
+async function smDeletePlan(id){
+  if(!(await appConfirmAction({title:'Delete site map plan',message:'Delete this saved site map plan?',confirmText:'Delete plan',cancelText:'Cancel',variant:'danger'})))return;
+  try{if(id==='local'){localStorage.removeItem(smLayoutKey());localStorage.removeItem(smLayoutKey()+'_selected');}else await api('/fire_layouts?id=eq.'+id,{m:'DELETE',p:'return=minimal'});siteMapState.layout=smLayoutEmpty();await smLoadPlans();smRenderCanvas();toast('Site map plan deleted');}
+  catch(e){toast('Delete failed: '+e.message,false);}
+}
+async function smUploadPlan(input){
+  var file=input?.files?.[0];if(!file)return;
+  if(!file.type.startsWith('image/')){toast('Please upload a PNG or JPG site plan',false);return;}
+  if(file.size>5*1024*1024){toast('Please compress the plan image below 5 MB',false);return;}
+  var layout=siteMapState.layout||smLayoutEmpty();
+  layout.title=(document.getElementById('sitemap-plan-title')?.value||layout.title||file.name.replace(/\.[^.]+$/,'')).trim()||'Site map';
+  var ext=(file.name.split('.').pop()||'png').toLowerCase().replace(/[^a-z0-9]/g,'')||'png';
+  var path=smCompanyId()+'/site-map-'+Date.now()+'.'+ext;
+  try{
+    var r=await fetch(SB+'/storage/v1/object/layouts/'+path.split('/').map(encodeURIComponent).join('/'),{method:'POST',headers:{'Authorization':'Bearer '+tok,'apikey':KEY,'Content-Type':file.type,'x-upsert':'true'},body:file});
+    if(!r.ok){var t='';try{t=await r.text();}catch(_){}throw new Error(t||'Storage upload failed');}
+    layout.image_path=path;layout.image_url=SB+'/storage/v1/object/public/layouts/'+path.split('/').map(encodeURIComponent).join('/');layout.image=layout.image_url;siteMapState.layout=layout;await smSaveLayout();
+  }catch(e){
+    var rd=new FileReader();rd.onload=function(){layout.image=rd.result;layout.image_url=rd.result;siteMapState.layout=layout;smSaveLayout();};rd.readAsDataURL(file);
+  }finally{input.value='';}
+}
+function smRenderPlanList(){
+  var el=document.getElementById('sitemap-plan-list');if(!el)return;
+  var layout=siteMapState.layout||smLayoutEmpty();
+  var title=document.getElementById('sitemap-plan-title');if(title)title.value=layout.title||'Site map';
+  var plans=siteMapState.plans||[];
+  el.innerHTML=plans.length?'<table class="data-table" style="margin:0"><thead><tr><th>Plan</th><th>Updated</th><th></th></tr></thead><tbody>'+plans.map(function(p){return '<tr style="cursor:pointer" onclick="smOpenPlan(\''+escH(p.id)+'\')"><td><strong>'+escH(p.title||'Untitled plan')+'</strong>'+(p.local_only?' <span class="badge badge-amber">Local draft</span>':'')+(layout.id===p.id?' <span class="badge badge-green">Open</span>':'')+'</td><td>'+escH(smSafeDate(p.updated_at))+'</td><td style="text-align:right;white-space:nowrap"><button class="btn btn-sm" onclick="event.stopPropagation();smOpenPlan(\''+escH(p.id)+'\')"><i class="ti ti-folder-open"></i></button><button class="btn btn-sm" onclick="event.stopPropagation();smDeletePlan(\''+escH(p.id)+'\')" style="color:var(--red)"><i class="ti ti-trash"></i></button></td></tr>';}).join('')+'</tbody></table>':'<div class="empty" style="padding:18px">No saved site map plans yet. Add a title, upload a plan, then save.</div>';
+}
 function smMatch(row,site){
   var siteName=smNorm(smSiteName(site));
   var code=smNorm(site.site_code||site.code||'');
@@ -38698,8 +38765,9 @@ async function loadSiteMap(){
     smApi('/permit_to_work?select=*'+cf()+'&order=created_at.desc&limit=250'),
     smApi('/action_tracker?select=*'+cf()+'&order=created_at.desc&limit=250')
   ]);
-  siteMapState={sites:results[0]||[],events:results[1]||[],observations:results[2]||[],inspections:results[3]||[],risks:results[4]||[],permits:results[5]||[],actions:results[6]||[],selected:null};
+  siteMapState=Object.assign(siteMapState,{sites:results[0]||[],events:results[1]||[],observations:results[2]||[],inspections:results[3]||[],risks:results[4]||[],permits:results[5]||[],actions:results[6]||[],selected:null});
   if(!siteMapState.sites.length)siteMapState.sites=smBuildVirtualSites();
+  await smLoadPlans();
   smRender();
 }
 function smBuildVirtualSites(){
@@ -38742,8 +38810,10 @@ function smRenderCanvas(){
   var el=document.getElementById('sitemap-canvas');if(!el)return;
   var sites=siteMapState.sites||[];
   if(!sites.length){el.innerHTML='<div class="empty">No site data available yet.</div>';return;}
-  el.innerHTML='<div style="position:relative;min-height:360px;border:1px solid var(--border);border-radius:10px;background:linear-gradient(135deg,#EFF6FF,#F8FAFC);overflow:hidden">'
-    +'<div style="position:absolute;inset:18px;border:1px dashed #bfdbfe;border-radius:12px"></div>'
+  var layout=siteMapState.layout||smLayoutEmpty();
+  var img=layout.image_url||layout.image||'';
+  el.innerHTML='<div style="position:relative;min-height:420px;border:1px solid var(--border);border-radius:10px;background:'+(img?'#fff':'linear-gradient(135deg,#EFF6FF,#F8FAFC)')+';overflow:hidden">'
+    +(img?'<img src="'+escH(img)+'" alt="'+escH(layout.title||'Site map plan')+'" style="display:block;width:100%;height:auto;max-height:680px;object-fit:contain;user-select:none;pointer-events:none"/>':'<div style="position:absolute;inset:18px;border:1px dashed #bfdbfe;border-radius:12px"></div>')
     +sites.map(function(s,i){
       var rec=smRecordsForSite(s),n=smCount(rec),col=smRiskColor(n);
       var lat=parseFloat(s.lat||s.latitude),lng=parseFloat(s.lng||s.longitude);
@@ -49746,6 +49816,28 @@ I can help you:<br>
     </div>
 
     <div>
+      <div class="card" style="margin-bottom:14px">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;margin-bottom:12px">
+          <div>
+            <div class="card-title" style="margin:0">Site map plans</div>
+            <div style="font-size:12px;color:var(--text2)">Upload and save site or floor plans, then use the map below to view linked HSE records by location.</div>
+          </div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <button class="btn" onclick="smNewPlan()"><i class="ti ti-plus"></i>New plan</button>
+            <label class="btn" style="cursor:pointer"><i class="ti ti-upload"></i>Upload plan<input type="file" accept="image/*" onchange="smUploadPlan(this)" style="display:none"/></label>
+            <button class="btn btn-primary" onclick="smSaveLayout()"><i class="ti ti-device-floppy"></i>Save plan</button>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:minmax(220px,360px) 1fr;gap:12px;align-items:start">
+          <div>
+            <label class="form-label">Plan title</label>
+            <input id="sitemap-plan-title" placeholder="e.g. Main building - ground floor"/>
+            <div id="sitemap-plan-status" style="font-size:12px;color:var(--text2);margin-top:6px">Select or upload a plan.</div>
+          </div>
+          <div id="sitemap-plan-list"><div class="loading-msg">Open the module to load saved plans.</div></div>
+        </div>
+      </div>
+
       <div class="card" style="margin-bottom:14px">
         <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:10px">
           <div>
