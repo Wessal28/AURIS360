@@ -38658,7 +38658,7 @@ function firePrintReport() {
 // ============================================================
 // INTERACTIVE SITE MAP / LOCATION RECORDS
 // ============================================================
-var siteMapState={sites:[],events:[],observations:[],inspections:[],risks:[],permits:[],actions:[],selected:null,plans:[],layout:null,placing:null};
+var siteMapState={sites:[],events:[],observations:[],inspections:[],risks:[],permits:[],actions:[],selected:null,selectedEvent:null,plans:[],layout:null,placing:null};
 function smText(v){return String(v||'').trim();}
 function smNorm(v){return smText(v).toLowerCase().replace(/\s+/g,' ');}
 function smSiteName(s){return smText(s.name||s.site_name||s.location||s.title||'Unnamed site');}
@@ -38798,6 +38798,12 @@ function smOpenLinkedPlan(siteKey){
   if(!marker||!marker.linked_plan_id){smSelectSite(siteKey);return;}
   smOpenPlan(marker.linked_plan_id);
   toast('Opened linked layout: '+(smLinkedPlanTitle(marker.linked_plan_id)||'plan'));
+}
+function smSelectMapEvent(id){siteMapState.selectedEvent=(siteMapState.events||[]).find(function(e){return String(e.id)===String(id);})||null;smRenderCanvas();}
+function smClearMapEvent(){siteMapState.selectedEvent=null;smRenderCanvas();}
+function smMapEventPreview(){
+  var ev=siteMapState.selectedEvent;if(!ev)return '';
+  return '<div style="border:1px solid #fecaca;background:#fff7f7;border-radius:8px;padding:10px 12px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap"><div style="min-width:0;flex:1"><div style="font-size:11px;color:#991b1b;font-weight:900;text-transform:uppercase"><i class="ti ti-alert-triangle"></i> Selected incident</div><div style="font-weight:900">'+escH(ev.event_ref||ev.incident_number||ev.id||'Incident')+'</div><div style="font-size:12px;color:var(--text2);margin-top:3px">'+escH([ev.event_type,ev.severity,ev.status,smSafeDate(ev.event_date||ev.created_at),ev.location].filter(Boolean).join(' - '))+'</div><div style="font-size:12px;margin-top:5px">'+escH(String(ev.description||ev.event_description||'No description').slice(0,180))+'</div></div><div style="display:flex;gap:6px;flex-wrap:wrap"><button class="btn btn-sm" onclick="showPage(\'events\',null)"><i class="ti ti-external-link"></i>Open incidents</button><button class="btn btn-sm" onclick="smClearMapEvent()"><i class="ti ti-x"></i>Close</button></div></div>';
 }
 function smCoord(row,keys){
   for(var i=0;i<keys.length;i++){var n=parseFloat(row&&row[keys[i]]);if(isFinite(n))return n;}
@@ -38966,7 +38972,7 @@ function smRenderCanvas(){
   var layout=siteMapState.layout||smLayoutEmpty();
   var img=layout.image_url||layout.image||'';
   var parents=smPlanParents(layout.id);
-  var context='<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px;padding:8px 10px;border:1px solid var(--border);border-radius:8px;background:#fff"><div style="min-width:0"><div style="font-size:11px;color:var(--text2);font-weight:800;text-transform:uppercase">Current layout</div><div style="font-weight:900;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+escH(layout.title||'Site map')+'</div></div>'+(parents.length?'<div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap"><span style="font-size:11px;color:var(--text2);font-weight:800">Back to</span>'+parents.map(function(p){return '<button class="btn btn-sm" onclick="smOpenPlan(\''+escH(p.id)+'\')"><i class="ti ti-arrow-back-up"></i>'+escH(p.title||'Parent plan')+'</button>';}).join('')+'</div>':'<span class="badge badge-grey">Top-level layout</span>')+'</div>';
+  var context='<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px;padding:8px 10px;border:1px solid var(--border);border-radius:8px;background:#fff"><div style="min-width:0"><div style="font-size:11px;color:var(--text2);font-weight:800;text-transform:uppercase">Current layout</div><div style="font-weight:900;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+escH(layout.title||'Site map')+'</div></div>'+(parents.length?'<div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap"><span style="font-size:11px;color:var(--text2);font-weight:800">Back to</span>'+parents.map(function(p){return '<button class="btn btn-sm" onclick="smOpenPlan(\''+escH(p.id)+'\')"><i class="ti ti-arrow-back-up"></i>'+escH(p.title||'Parent plan')+'</button>';}).join('')+'</div>':'<span class="badge badge-grey">Top-level layout</span>')+'</div>'+smMapEventPreview();
   var openEvents=(siteMapState.events||[]).filter(function(e){return !['closed','resolved'].includes(String(e.status||'').toLowerCase());}).slice(0,40);
   el.innerHTML=context+'<div onclick="smCanvasClick(event)" style="position:relative;min-height:420px;border:1px solid var(--border);border-radius:10px;background:'+(img?'#fff':'linear-gradient(135deg,#EFF6FF,#F8FAFC)')+';overflow:hidden;cursor:'+(siteMapState.placing?'crosshair':'default')+'">'
     +(img?'<img src="'+escH(img)+'" alt="'+escH(layout.title||'Site map plan')+'" style="display:block;width:100%;height:auto;max-height:680px;object-fit:contain;user-select:none;pointer-events:none"/>':'<div style="position:absolute;inset:18px;border:1px dashed #bfdbfe;border-radius:12px"></div>')
@@ -38983,7 +38989,7 @@ function smRenderCanvas(){
       var p=smEventPosition(ev,i), sev=String(ev.severity||'').toLowerCase();
       var col=/critical|high/.test(sev)?'#DC2626':'#F97316';
       var title=smRecordTitle(ev,['event_ref','event_type','description']);
-      return '<button type="button" onclick="event.stopPropagation();showPage(\'events\',null)" title="'+escH(title)+'" style="position:absolute;left:'+p.x+'%;top:'+p.y+'%;transform:translate(-50%,-50%);border:2px solid #fff;background:'+col+';width:18px;height:18px;border-radius:999px;box-shadow:0 3px 10px rgba(220,38,38,.35);cursor:pointer;z-index:4"></button>';
+      return '<button type="button" onclick="event.stopPropagation();smSelectMapEvent(\''+escH(ev.id||'')+'\')" title="'+escH(title)+'" style="position:absolute;left:'+p.x+'%;top:'+p.y+'%;transform:translate(-50%,-50%);border:2px solid #fff;background:'+col+';width:18px;height:18px;border-radius:999px;box-shadow:0 3px 10px rgba(220,38,38,.35);cursor:pointer;z-index:4"></button>';
     }).join('')+'</div>';
 }
 function smSelectSite(id,scroll){
