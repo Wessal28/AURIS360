@@ -38658,7 +38658,7 @@ function firePrintReport() {
 // ============================================================
 // INTERACTIVE SITE MAP / LOCATION RECORDS
 // ============================================================
-var siteMapState={sites:[],events:[],observations:[],inspections:[],risks:[],permits:[],actions:[],selected:null,selectedEvent:null,showEvents:true,plans:[],layout:null,placing:null};
+var siteMapState={sites:[],events:[],observations:[],inspections:[],risks:[],permits:[],actions:[],selected:null,selectedEvent:null,selectedRisk:null,showEvents:true,showRisks:true,plans:[],layout:null,placing:null};
 function smText(v){return String(v||'').trim();}
 function smNorm(v){return smText(v).toLowerCase().replace(/\s+/g,' ');}
 function smSiteName(s){return smText(s.name||s.site_name||s.location||s.title||'Unnamed site');}
@@ -38801,9 +38801,15 @@ function smOpenLinkedPlan(siteKey){
 }
 function smSelectMapEvent(id){siteMapState.selectedEvent=(siteMapState.events||[]).find(function(e){return String(e.id)===String(id);})||null;smRenderCanvas();}
 function smClearMapEvent(){siteMapState.selectedEvent=null;smRenderCanvas();}
+function smSelectMapRisk(id){siteMapState.selectedRisk=(siteMapState.risks||[]).find(function(r){return String(r.id)===String(id);})||null;smRenderCanvas();}
+function smClearMapRisk(){siteMapState.selectedRisk=null;smRenderCanvas();}
 function smMapEventPreview(){
   var ev=siteMapState.selectedEvent;if(!ev)return '';
   return '<div style="border:1px solid #fecaca;background:#fff7f7;border-radius:8px;padding:10px 12px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap"><div style="min-width:0;flex:1"><div style="font-size:11px;color:#991b1b;font-weight:900;text-transform:uppercase"><i class="ti ti-alert-triangle"></i> Selected incident</div><div style="font-weight:900">'+escH(ev.event_ref||ev.incident_number||ev.id||'Incident')+'</div><div style="font-size:12px;color:var(--text2);margin-top:3px">'+escH([ev.event_type,ev.severity,ev.status,smSafeDate(ev.event_date||ev.created_at),ev.location].filter(Boolean).join(' - '))+'</div><div style="font-size:12px;margin-top:5px">'+escH(String(ev.description||ev.event_description||'No description').slice(0,180))+'</div></div><div style="display:flex;gap:6px;flex-wrap:wrap"><button class="btn btn-sm" onclick="showPage(\'events\',null)"><i class="ti ti-external-link"></i>Open incidents</button><button class="btn btn-sm" onclick="smClearMapEvent()"><i class="ti ti-x"></i>Close</button></div></div>';
+}
+function smMapRiskPreview(){
+  var r=siteMapState.selectedRisk;if(!r)return '';
+  return '<div style="border:1px solid #fed7aa;background:#fff7ed;border-radius:8px;padding:10px 12px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap"><div style="min-width:0;flex:1"><div style="font-size:11px;color:#9a3412;font-weight:900;text-transform:uppercase"><i class="ti ti-shield-exclamation"></i> Selected risk hotspot</div><div style="font-weight:900">'+escH(r.ra_ref||r.reference_no||r.title||r.id||'Risk assessment')+'</div><div style="font-size:12px;color:var(--text2);margin-top:3px">'+escH([r.overall_risk_level,r.status,r.location||r.site||r.area].filter(Boolean).join(' - '))+'</div><div style="font-size:12px;margin-top:5px">'+escH(String(r.activity||r.description||r.title||'No activity description').slice(0,180))+'</div></div><div style="display:flex;gap:6px;flex-wrap:wrap"><button class="btn btn-sm" onclick="showPage(\'risk\',null)"><i class="ti ti-external-link"></i>Open RA</button><button class="btn btn-sm" onclick="smClearMapRisk()"><i class="ti ti-x"></i>Close</button></div></div>';
 }
 function smCoord(row,keys){
   for(var i=0;i<keys.length;i++){var n=parseFloat(row&&row[keys[i]]);if(isFinite(n))return n;}
@@ -38830,6 +38836,15 @@ function smEventPosition(ev,i){
     return {x:Math.max(4,Math.min(96,base.x+(((i%5)-2)*2.4))),y:Math.max(4,Math.min(96,base.y+((Math.floor(i/5)%5)-2)*2.4)),gps:false};
   }
   return {x:18+(i*17)%64,y:24+(i*19)%56,gps:false};
+}
+function smRiskPosition(r,i){
+  var sites=siteMapState.sites||[];
+  var site=sites.find(function(s){return smMatch(r,s);});
+  if(site){
+    var base=smSitePosition(site,sites.indexOf(site));
+    return {x:Math.max(4,Math.min(96,base.x+(((i%4)-1.5)*3.2))),y:Math.max(4,Math.min(96,base.y+((Math.floor(i/4)%4)-1.5)*3.2)),site:true};
+  }
+  return {x:22+(i*19)%58,y:28+(i*23)%48,site:false};
 }
 function smPositionSelectedSite(){
   if(!siteMapState.selected){toast('Select a site or area first',false);return;}
@@ -38938,6 +38953,8 @@ function smBuildVirtualSites(){
 function smRender(){smRenderSummary();smRenderSiteList();smRenderCanvas();smSelectSite(siteMapState.selected||((siteMapState.sites[0]||{}).id),false);}
 function smUpdateMapEventToggle(){var b=document.getElementById('sitemap-event-toggle');if(b)b.innerHTML='<i class="ti ti-alert-triangle"></i>'+(siteMapState.showEvents?'Hide incidents':'Show incidents');}
 function smToggleMapEvents(){siteMapState.showEvents=!siteMapState.showEvents;if(!siteMapState.showEvents)siteMapState.selectedEvent=null;smUpdateMapEventToggle();smRenderCanvas();}
+function smUpdateMapRiskToggle(){var b=document.getElementById('sitemap-risk-toggle');if(b)b.innerHTML='<i class="ti ti-shield-exclamation"></i>'+(siteMapState.showRisks?'Hide high risks':'Show high risks');}
+function smToggleMapRisks(){siteMapState.showRisks=!siteMapState.showRisks;if(!siteMapState.showRisks)siteMapState.selectedRisk=null;smUpdateMapRiskToggle();smRenderCanvas();}
 function smRenderSummary(){
   var el=document.getElementById('sitemap-summary');if(!el)return;
   var openInc=siteMapState.events.filter(function(x){return !['closed','resolved'].includes(String(x.status||'').toLowerCase());}).length;
@@ -38970,13 +38987,15 @@ function smRenderSiteList(){
 function smRenderCanvas(){
   var el=document.getElementById('sitemap-canvas');if(!el)return;
   smUpdateMapEventToggle();
+  smUpdateMapRiskToggle();
   var sites=siteMapState.sites||[];
   if(!sites.length){el.innerHTML='<div class="empty">No site data available yet.</div>';return;}
   var layout=siteMapState.layout||smLayoutEmpty();
   var img=layout.image_url||layout.image||'';
   var parents=smPlanParents(layout.id);
-  var context='<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px;padding:8px 10px;border:1px solid var(--border);border-radius:8px;background:#fff"><div style="min-width:0"><div style="font-size:11px;color:var(--text2);font-weight:800;text-transform:uppercase">Current layout</div><div style="font-weight:900;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+escH(layout.title||'Site map')+'</div></div>'+(parents.length?'<div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap"><span style="font-size:11px;color:var(--text2);font-weight:800">Back to</span>'+parents.map(function(p){return '<button class="btn btn-sm" onclick="smOpenPlan(\''+escH(p.id)+'\')"><i class="ti ti-arrow-back-up"></i>'+escH(p.title||'Parent plan')+'</button>';}).join('')+'</div>':'<span class="badge badge-grey">Top-level layout</span>')+'</div>'+smMapEventPreview();
+  var context='<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px;padding:8px 10px;border:1px solid var(--border);border-radius:8px;background:#fff"><div style="min-width:0"><div style="font-size:11px;color:var(--text2);font-weight:800;text-transform:uppercase">Current layout</div><div style="font-weight:900;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+escH(layout.title||'Site map')+'</div></div>'+(parents.length?'<div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap"><span style="font-size:11px;color:var(--text2);font-weight:800">Back to</span>'+parents.map(function(p){return '<button class="btn btn-sm" onclick="smOpenPlan(\''+escH(p.id)+'\')"><i class="ti ti-arrow-back-up"></i>'+escH(p.title||'Parent plan')+'</button>';}).join('')+'</div>':'<span class="badge badge-grey">Top-level layout</span>')+'</div>'+smMapEventPreview()+smMapRiskPreview();
   var openEvents=siteMapState.showEvents?(siteMapState.events||[]).filter(function(e){return !['closed','resolved'].includes(String(e.status||'').toLowerCase());}).slice(0,40):[];
+  var highRisks=siteMapState.showRisks?(siteMapState.risks||[]).filter(function(r){return /high|critical|very/i.test(String(r.overall_risk_level||r.risk_level||''));}).slice(0,40):[];
   el.innerHTML=context+'<div onclick="smCanvasClick(event)" style="position:relative;min-height:420px;border:1px solid var(--border);border-radius:10px;background:'+(img?'#fff':'linear-gradient(135deg,#EFF6FF,#F8FAFC)')+';overflow:hidden;cursor:'+(siteMapState.placing?'crosshair':'default')+'">'
     +(img?'<img src="'+escH(img)+'" alt="'+escH(layout.title||'Site map plan')+'" style="display:block;width:100%;height:auto;max-height:680px;object-fit:contain;user-select:none;pointer-events:none"/>':'<div style="position:absolute;inset:18px;border:1px dashed #bfdbfe;border-radius:12px"></div>')
     +(siteMapState.placing?'<div style="position:absolute;left:50%;top:12px;transform:translateX(-50%);background:#111827;color:#fff;padding:7px 12px;border-radius:999px;font-size:12px;font-weight:800;z-index:5;box-shadow:0 8px 22px rgba(0,0,0,.18)">Click on the plan to place the selected location</div>':'')
@@ -38993,6 +39012,10 @@ function smRenderCanvas(){
       var col=/critical|high/.test(sev)?'#DC2626':'#F97316';
       var title=smRecordTitle(ev,['event_ref','event_type','description']);
       return '<button type="button" onclick="event.stopPropagation();smSelectMapEvent(\''+escH(ev.id||'')+'\')" title="'+escH(title)+'" style="position:absolute;left:'+p.x+'%;top:'+p.y+'%;transform:translate(-50%,-50%);border:2px solid #fff;background:'+col+';width:18px;height:18px;border-radius:999px;box-shadow:0 3px 10px rgba(220,38,38,.35);cursor:pointer;z-index:4"></button>';
+    }).join('')
+    +highRisks.map(function(r,i){
+      var p=smRiskPosition(r,i), title=smRecordTitle(r,['ra_ref','title','activity']);
+      return '<button type="button" onclick="event.stopPropagation();smSelectMapRisk(\''+escH(r.id||'')+'\')" title="'+escH(title)+'" style="position:absolute;left:'+p.x+'%;top:'+p.y+'%;transform:translate(-50%,-50%);border:2px solid #fff;background:#C2410C;color:#fff;width:22px;height:22px;border-radius:6px;box-shadow:0 3px 10px rgba(194,65,12,.35);cursor:pointer;z-index:4;display:flex;align-items:center;justify-content:center"><i class="ti ti-shield-exclamation" style="font-size:14px"></i></button>';
     }).join('')+'</div>';
 }
 function smSelectSite(id,scroll){
@@ -50023,11 +50046,13 @@ I can help you:<br>
           <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;justify-content:flex-end">
             <button class="btn btn-sm" onclick="smPositionSelectedSite()"><i class="ti ti-map-pin-plus"></i>Position selected location</button>
             <button class="btn btn-sm" id="sitemap-event-toggle" onclick="smToggleMapEvents()"><i class="ti ti-alert-triangle"></i>Hide incidents</button>
+            <button class="btn btn-sm" id="sitemap-risk-toggle" onclick="smToggleMapRisks()"><i class="ti ti-shield-exclamation"></i>Hide high risks</button>
             <div style="display:flex;gap:6px;flex-wrap:wrap;font-size:11px;color:var(--text2)">
               <span><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#1D9E75"></span> Low</span>
               <span><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#EF9F27"></span> Active</span>
               <span><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#DC2626"></span> High</span>
               <span><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#F97316;border:1px solid #fff;box-shadow:0 0 0 1px #d1d5db"></span> Incident dot</span>
+              <span><span style="display:inline-block;width:10px;height:10px;border-radius:3px;background:#C2410C;border:1px solid #fff;box-shadow:0 0 0 1px #d1d5db"></span> High risk</span>
             </div>
           </div>
         </div>
