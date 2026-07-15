@@ -38658,10 +38658,11 @@ function firePrintReport() {
 // ============================================================
 // INTERACTIVE SITE MAP / LOCATION RECORDS
 // ============================================================
-var siteMapState={sites:[],events:[],observations:[],inspections:[],risks:[],permits:[],actions:[],selected:null,plans:[],layout:null};
+var siteMapState={sites:[],events:[],observations:[],inspections:[],risks:[],permits:[],actions:[],selected:null,plans:[],layout:null,placing:null};
 function smText(v){return String(v||'').trim();}
 function smNorm(v){return smText(v).toLowerCase().replace(/\s+/g,' ');}
 function smSiteName(s){return smText(s.name||s.site_name||s.location||s.title||'Unnamed site');}
+function smSiteKey(s){return String((s&&s.id)||smSiteName(s));}
 function smRowLocation(r){return smText(r.location||r.site||r.area||r.department||r.work_location||r.site_location||r.premises||'');}
 function smCompanyId(){return (isSA()&&sephsCompanyContext)?sephsCompanyContext:(prof?.company_id||'default');}
 function smLayoutEmpty(){return {id:null,title:'New site map',image:null,image_url:null,image_path:null,markers:[],local_only:false,updated_at:null};}
@@ -38729,6 +38730,32 @@ function smRenderPlanList(){
   var title=document.getElementById('sitemap-plan-title');if(title)title.value=layout.title||'Site map';
   var plans=siteMapState.plans||[];
   el.innerHTML=plans.length?'<table class="data-table" style="margin:0"><thead><tr><th>Plan</th><th>Updated</th><th></th></tr></thead><tbody>'+plans.map(function(p){return '<tr style="cursor:pointer" onclick="smOpenPlan(\''+escH(p.id)+'\')"><td><strong>'+escH(p.title||'Untitled plan')+'</strong>'+(p.local_only?' <span class="badge badge-amber">Local draft</span>':'')+(layout.id===p.id?' <span class="badge badge-green">Open</span>':'')+'</td><td>'+escH(smSafeDate(p.updated_at))+'</td><td style="text-align:right;white-space:nowrap"><button class="btn btn-sm" onclick="event.stopPropagation();smOpenPlan(\''+escH(p.id)+'\')"><i class="ti ti-folder-open"></i></button><button class="btn btn-sm" onclick="event.stopPropagation();smDeletePlan(\''+escH(p.id)+'\')" style="color:var(--red)"><i class="ti ti-trash"></i></button></td></tr>';}).join('')+'</tbody></table>':'<div class="empty" style="padding:18px">No saved site map plans yet. Add a title, upload a plan, then save.</div>';
+}
+function smMarkerForSite(site){
+  var key=smSiteKey(site), layout=siteMapState.layout||smLayoutEmpty();
+  return (layout.markers||[]).find(function(m){return String(m.site_key||m.site_id||m.site_name)===key||String(m.site_name||'')===smSiteName(site);})||null;
+}
+function smPositionSelectedSite(){
+  if(!siteMapState.selected){toast('Select a site or area first',false);return;}
+  siteMapState.placing=siteMapState.selected;
+  var site=(siteMapState.sites||[]).find(function(s){return smSiteKey(s)===String(siteMapState.selected);});
+  toast('Click on the plan/map to position '+(site?smSiteName(site):'the selected location'));
+  smRenderCanvas();
+}
+async function smCanvasClick(ev){
+  if(!siteMapState.placing)return;
+  var box=ev.currentTarget.getBoundingClientRect();
+  var x=Math.max(2,Math.min(98,((ev.clientX-box.left)/box.width)*100));
+  var y=Math.max(2,Math.min(98,((ev.clientY-box.top)/box.height)*100));
+  var site=(siteMapState.sites||[]).find(function(s){return smSiteKey(s)===String(siteMapState.placing);});
+  if(!site)return;
+  var layout=siteMapState.layout||smLayoutEmpty();
+  layout.markers=(layout.markers||[]).filter(function(m){return String(m.site_key||m.site_id||m.site_name)!==smSiteKey(site)&&String(m.site_name||'')!==smSiteName(site);});
+  layout.markers.push({id:'sm-'+Date.now(),site_id:site.id||null,site_key:smSiteKey(site),site_name:smSiteName(site),x:Number(x.toFixed(2)),y:Number(y.toFixed(2))});
+  siteMapState.layout=layout;
+  siteMapState.placing=null;
+  await smSaveLayout();
+  smSelectSite(smSiteKey(site),false);
 }
 function smMatch(row,site){
   var siteName=smNorm(smSiteName(site));
@@ -38800,7 +38827,7 @@ function smRenderSiteList(){
   if(!sites.length){el.innerHTML='<div class="empty">No matching sites or locations.</div>';return;}
   el.innerHTML=sites.map(function(s){
     var rec=smRecordsForSite(s),n=smCount(rec),col=smRiskColor(n);
-    return '<button type="button" onclick="smSelectSite(\''+escH(s.id||smSiteName(s))+'\')" style="width:100%;text-align:left;border:1px solid var(--border);background:#fff;border-radius:8px;padding:10px 12px;margin-bottom:8px;cursor:pointer;display:flex;gap:10px;align-items:flex-start">'
+    return '<button type="button" onclick="smSelectSite(\''+escH(smSiteKey(s))+'\')" style="width:100%;text-align:left;border:1px solid var(--border);background:#fff;border-radius:8px;padding:10px 12px;margin-bottom:8px;cursor:pointer;display:flex;gap:10px;align-items:flex-start">'
       +'<div style="width:34px;height:34px;border-radius:999px;background:'+col+';color:#fff;display:flex;align-items:center;justify-content:center;font-weight:900"><i class="ti ti-map-pin"></i></div>'
       +'<div style="min-width:0;flex:1"><div style="font-weight:900;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+escH(smSiteName(s))+'</div><div style="font-size:11px;color:var(--text2);margin-top:2px">'+escH([s.site_code,s.site_type,s.city].filter(Boolean).join(' - ')||'Site / area')+'</div>'
       +'<div style="display:flex;gap:5px;flex-wrap:wrap;margin-top:7px"><span class="badge badge-red">'+rec.events.length+' Inc</span><span class="badge badge-amber">'+rec.risks.length+' RA</span><span class="badge badge-blue">'+rec.inspections.length+' Insp</span><span class="badge badge-green">'+rec.actions.length+' Act</span></div></div></button>';
@@ -38812,23 +38839,25 @@ function smRenderCanvas(){
   if(!sites.length){el.innerHTML='<div class="empty">No site data available yet.</div>';return;}
   var layout=siteMapState.layout||smLayoutEmpty();
   var img=layout.image_url||layout.image||'';
-  el.innerHTML='<div style="position:relative;min-height:420px;border:1px solid var(--border);border-radius:10px;background:'+(img?'#fff':'linear-gradient(135deg,#EFF6FF,#F8FAFC)')+';overflow:hidden">'
+  el.innerHTML='<div onclick="smCanvasClick(event)" style="position:relative;min-height:420px;border:1px solid var(--border);border-radius:10px;background:'+(img?'#fff':'linear-gradient(135deg,#EFF6FF,#F8FAFC)')+';overflow:hidden;cursor:'+(siteMapState.placing?'crosshair':'default')+'">'
     +(img?'<img src="'+escH(img)+'" alt="'+escH(layout.title||'Site map plan')+'" style="display:block;width:100%;height:auto;max-height:680px;object-fit:contain;user-select:none;pointer-events:none"/>':'<div style="position:absolute;inset:18px;border:1px dashed #bfdbfe;border-radius:12px"></div>')
+    +(siteMapState.placing?'<div style="position:absolute;left:50%;top:12px;transform:translateX(-50%);background:#111827;color:#fff;padding:7px 12px;border-radius:999px;font-size:12px;font-weight:800;z-index:5;box-shadow:0 8px 22px rgba(0,0,0,.18)">Click on the plan to place the selected location</div>':'')
     +sites.map(function(s,i){
       var rec=smRecordsForSite(s),n=smCount(rec),col=smRiskColor(n);
       var lat=parseFloat(s.lat||s.latitude),lng=parseFloat(s.lng||s.longitude);
-      var x=isFinite(lng)?Math.max(8,Math.min(92,((lng+180)/360)*100)):(12+(i*23)%76);
-      var y=isFinite(lat)?Math.max(10,Math.min(90,((90-lat)/180)*100)):(16+(i*31)%68);
-      return '<button type="button" onclick="smSelectSite(\''+escH(s.id||smSiteName(s))+'\')" title="'+escH(smSiteName(s))+'" style="position:absolute;left:'+x+'%;top:'+y+'%;transform:translate(-50%,-50%);border:0;background:transparent;cursor:pointer">'
+      var marker=smMarkerForSite(s);
+      var x=marker?marker.x:(isFinite(lng)?Math.max(8,Math.min(92,((lng+180)/360)*100)):(12+(i*23)%76));
+      var y=marker?marker.y:(isFinite(lat)?Math.max(10,Math.min(90,((90-lat)/180)*100)):(16+(i*31)%68));
+      return '<button type="button" onclick="event.stopPropagation();smSelectSite(\''+escH(smSiteKey(s))+'\')" title="'+escH(smSiteName(s))+'" style="position:absolute;left:'+x+'%;top:'+y+'%;transform:translate(-50%,-50%);border:0;background:transparent;cursor:pointer">'
         +'<div style="width:46px;height:46px;border-radius:999px;background:'+col+';color:#fff;display:flex;align-items:center;justify-content:center;font-weight:900;box-shadow:0 10px 22px rgba(0,0,0,.18)"><i class="ti ti-map-pin" style="font-size:22px"></i></div>'
-        +'<div style="margin-top:5px;background:#fff;border:1px solid var(--border);border-radius:999px;padding:2px 8px;font-size:10px;font-weight:800;white-space:nowrap;box-shadow:0 4px 12px rgba(0,0,0,.08)">'+escH(smSiteName(s).slice(0,22))+' - '+n+'</div></button>';
+        +'<div style="margin-top:5px;background:#fff;border:1px solid var(--border);border-radius:999px;padding:2px 8px;font-size:10px;font-weight:800;white-space:nowrap;box-shadow:0 4px 12px rgba(0,0,0,.08)">'+escH(smSiteName(s).slice(0,22))+' - '+n+(marker?'':' *')+'</div></button>';
     }).join('')+'</div>';
 }
 function smSelectSite(id,scroll){
   var sites=siteMapState.sites||[];
-  var site=sites.find(function(s){return String(s.id||smSiteName(s))===String(id);})||sites[0];
+  var site=sites.find(function(s){return smSiteKey(s)===String(id);})||sites[0];
   if(!site)return;
-  siteMapState.selected=site.id||smSiteName(site);
+  siteMapState.selected=smSiteKey(site);
   var title=document.getElementById('sitemap-selected-title');if(title)title.textContent=smSiteName(site);
   smRenderDetails(site);
   if(scroll!==false){var el=document.getElementById('sitemap-details');if(el)el.scrollIntoView({behavior:'smooth',block:'nearest'});}
@@ -49842,12 +49871,15 @@ I can help you:<br>
         <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:10px">
           <div>
             <div class="card-title" style="margin:0">Operational Location Map</div>
-            <div style="font-size:12px;color:var(--text2)">Markers use registered GPS where available; otherwise AURIS360 places them in a readable site overview.</div>
+            <div style="font-size:12px;color:var(--text2)">Markers use saved positions first. Unpositioned markers are placed automatically until you position them on the plan.</div>
           </div>
-          <div style="display:flex;gap:6px;flex-wrap:wrap;font-size:11px;color:var(--text2)">
-            <span><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#1D9E75"></span> Low activity</span>
-            <span><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#EF9F27"></span> Active</span>
-            <span><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#DC2626"></span> High activity</span>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;justify-content:flex-end">
+            <button class="btn btn-sm" onclick="smPositionSelectedSite()"><i class="ti ti-map-pin-plus"></i>Position selected location</button>
+            <div style="display:flex;gap:6px;flex-wrap:wrap;font-size:11px;color:var(--text2)">
+              <span><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#1D9E75"></span> Low</span>
+              <span><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#EF9F27"></span> Active</span>
+              <span><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#DC2626"></span> High</span>
+            </div>
           </div>
         </div>
         <div id="sitemap-canvas"><div class="loading-msg">Open the module to load map.</div></div>
