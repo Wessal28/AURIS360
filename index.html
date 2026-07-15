@@ -38936,7 +38936,8 @@ function smBuildVirtualSites(){
   return Object.keys(seen).map(function(k){return seen[k];});
 }
 function smRender(){smRenderSummary();smRenderSiteList();smRenderCanvas();smSelectSite(siteMapState.selected||((siteMapState.sites[0]||{}).id),false);}
-function smToggleMapEvents(){siteMapState.showEvents=!siteMapState.showEvents;if(!siteMapState.showEvents)siteMapState.selectedEvent=null;smRenderCanvas();}
+function smUpdateMapEventToggle(){var b=document.getElementById('sitemap-event-toggle');if(b)b.innerHTML='<i class="ti ti-alert-triangle"></i>'+(siteMapState.showEvents?'Hide incidents':'Show incidents');}
+function smToggleMapEvents(){siteMapState.showEvents=!siteMapState.showEvents;if(!siteMapState.showEvents)siteMapState.selectedEvent=null;smUpdateMapEventToggle();smRenderCanvas();}
 function smRenderSummary(){
   var el=document.getElementById('sitemap-summary');if(!el)return;
   var openInc=siteMapState.events.filter(function(x){return !['closed','resolved'].includes(String(x.status||'').toLowerCase());}).length;
@@ -38968,6 +38969,7 @@ function smRenderSiteList(){
 }
 function smRenderCanvas(){
   var el=document.getElementById('sitemap-canvas');if(!el)return;
+  smUpdateMapEventToggle();
   var sites=siteMapState.sites||[];
   if(!sites.length){el.innerHTML='<div class="empty">No site data available yet.</div>';return;}
   var layout=siteMapState.layout||smLayoutEmpty();
@@ -50020,7 +50022,7 @@ I can help you:<br>
           </div>
           <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;justify-content:flex-end">
             <button class="btn btn-sm" onclick="smPositionSelectedSite()"><i class="ti ti-map-pin-plus"></i>Position selected location</button>
-            <button class="btn btn-sm" onclick="smToggleMapEvents()"><i class="ti ti-alert-triangle"></i>Show/hide incidents</button>
+            <button class="btn btn-sm" id="sitemap-event-toggle" onclick="smToggleMapEvents()"><i class="ti ti-alert-triangle"></i>Hide incidents</button>
             <div style="display:flex;gap:6px;flex-wrap:wrap;font-size:11px;color:var(--text2)">
               <span><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#1D9E75"></span> Low</span>
               <span><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#EF9F27"></span> Active</span>
