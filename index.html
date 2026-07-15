@@ -38735,6 +38735,33 @@ function smMarkerForSite(site){
   var key=smSiteKey(site), layout=siteMapState.layout||smLayoutEmpty();
   return (layout.markers||[]).find(function(m){return String(m.site_key||m.site_id||m.site_name)===key||String(m.site_name||'')===smSiteName(site);})||null;
 }
+function smLinkedPlanTitle(id){
+  var p=(siteMapState.plans||[]).find(function(x){return String(x.id)===String(id);});
+  return p?(p.title||'Linked plan'):'';
+}
+async function smSetLinkedPlan(siteKey, planId){
+  var site=(siteMapState.sites||[]).find(function(s){return smSiteKey(s)===String(siteKey);});
+  if(!site){toast('Select a valid site or area first',false);return;}
+  var layout=siteMapState.layout||smLayoutEmpty();
+  var marker=smMarkerForSite(site);
+  if(!marker){
+    var idx=(siteMapState.sites||[]).indexOf(site), pos=smSitePosition(site,idx);
+    marker={id:'sm-'+Date.now(),site_id:site.id||null,site_key:smSiteKey(site),site_name:smSiteName(site),x:Number(pos.x.toFixed(2)),y:Number(pos.y.toFixed(2))};
+    layout.markers=layout.markers||[];
+    layout.markers.push(marker);
+  }
+  marker.linked_plan_id=planId||null;
+  siteMapState.layout=layout;
+  await smSaveLayout();
+  smSelectSite(smSiteKey(site),false);
+}
+function smOpenLinkedPlan(siteKey){
+  var site=(siteMapState.sites||[]).find(function(s){return smSiteKey(s)===String(siteKey);});
+  var marker=site?smMarkerForSite(site):null;
+  if(!marker||!marker.linked_plan_id){smSelectSite(siteKey);return;}
+  smOpenPlan(marker.linked_plan_id);
+  toast('Opened linked layout: '+(smLinkedPlanTitle(marker.linked_plan_id)||'plan'));
+}
 function smCoord(row,keys){
   for(var i=0;i<keys.length;i++){var n=parseFloat(row&&row[keys[i]]);if(isFinite(n))return n;}
   return null;
@@ -38776,8 +38803,9 @@ async function smCanvasClick(ev){
   var site=(siteMapState.sites||[]).find(function(s){return smSiteKey(s)===String(siteMapState.placing);});
   if(!site)return;
   var layout=siteMapState.layout||smLayoutEmpty();
+  var existing=smMarkerForSite(site)||{};
   layout.markers=(layout.markers||[]).filter(function(m){return String(m.site_key||m.site_id||m.site_name)!==smSiteKey(site)&&String(m.site_name||'')!==smSiteName(site);});
-  layout.markers.push({id:'sm-'+Date.now(),site_id:site.id||null,site_key:smSiteKey(site),site_name:smSiteName(site),x:Number(x.toFixed(2)),y:Number(y.toFixed(2))});
+  layout.markers.push(Object.assign({},existing,{id:existing.id||('sm-'+Date.now()),site_id:site.id||null,site_key:smSiteKey(site),site_name:smSiteName(site),x:Number(x.toFixed(2)),y:Number(y.toFixed(2))}));
   siteMapState.layout=layout;
   siteMapState.placing=null;
   await smSaveLayout();
@@ -38903,9 +38931,10 @@ function smRenderCanvas(){
     +sites.map(function(s,i){
       var rec=smRecordsForSite(s),n=smCount(rec),col=smRiskColor(n);
       var pos=smSitePosition(s,i), x=pos.x, y=pos.y;
-      return '<button type="button" onclick="event.stopPropagation();smSelectSite(\''+escH(smSiteKey(s))+'\')" title="'+escH(smSiteName(s))+'" style="position:absolute;left:'+x+'%;top:'+y+'%;transform:translate(-50%,-50%);border:0;background:transparent;cursor:pointer">'
-        +'<div style="width:46px;height:46px;border-radius:999px;background:'+col+';color:#fff;display:flex;align-items:center;justify-content:center;font-weight:900;box-shadow:0 10px 22px rgba(0,0,0,.18)"><i class="ti ti-map-pin" style="font-size:22px"></i></div>'
-        +'<div style="margin-top:5px;background:#fff;border:1px solid var(--border);border-radius:999px;padding:2px 8px;font-size:10px;font-weight:800;white-space:nowrap;box-shadow:0 4px 12px rgba(0,0,0,.08)">'+escH(smSiteName(s).slice(0,22))+' - '+n+(pos.manual?'':' *')+'</div></button>';
+      var marker=smMarkerForSite(s), linked=marker&&marker.linked_plan_id;
+      return '<button type="button" onclick="event.stopPropagation();smOpenLinkedPlan(\''+escH(smSiteKey(s))+'\')" title="'+escH(smSiteName(s))+(linked?' - opens '+smLinkedPlanTitle(linked):'')+'" style="position:absolute;left:'+x+'%;top:'+y+'%;transform:translate(-50%,-50%);border:0;background:transparent;cursor:pointer">'
+        +'<div style="width:46px;height:46px;border-radius:999px;background:'+col+';color:#fff;display:flex;align-items:center;justify-content:center;font-weight:900;box-shadow:0 10px 22px rgba(0,0,0,.18);position:relative"><i class="ti '+(linked?'ti-map-share':'ti-map-pin')+'" style="font-size:22px"></i>'+(linked?'<span style="position:absolute;right:-4px;top:-4px;width:16px;height:16px;border-radius:999px;background:#185FA5;border:2px solid #fff"></span>':'')+'</div>'
+        +'<div style="margin-top:5px;background:#fff;border:1px solid var(--border);border-radius:999px;padding:2px 8px;font-size:10px;font-weight:800;white-space:nowrap;box-shadow:0 4px 12px rgba(0,0,0,.08)">'+escH(smSiteName(s).slice(0,22))+' - '+n+(linked?' link':(pos.manual?'':' *'))+'</div></button>';
     }).join('')
     +openEvents.map(function(ev,i){
       var p=smEventPosition(ev,i), sev=String(ev.severity||'').toLowerCase();
@@ -38933,12 +38962,16 @@ function smRenderDetails(site){
   var el=document.getElementById('sitemap-details');if(!el)return;
   var rec=smRecordsForSite(site);
   var gps=[site.lat||site.latitude,site.lng||site.longitude].filter(Boolean).join(', ');
+  var marker=smMarkerForSite(site);
+  var plans=(siteMapState.plans||[]).filter(function(p){return String(p.id)!==String((siteMapState.layout||{}).id);});
+  var linkOptions='<option value="">No linked layout</option>'+plans.map(function(p){return '<option value="'+escH(p.id)+'" '+(marker&&String(marker.linked_plan_id)===String(p.id)?'selected':'')+'>'+escH(p.title||'Untitled plan')+'</option>';}).join('');
   el.innerHTML='<div class="card" style="margin-bottom:12px"><div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px">'
     +'<div><div class="form-label">Type</div><div style="font-weight:800">'+escH(site.site_type||'site')+'</div></div>'
     +'<div><div class="form-label">Code</div><div style="font-weight:800">'+escH(site.site_code||'--')+'</div></div>'
     +'<div><div class="form-label">GPS</div><div style="font-weight:800">'+escH(gps||'--')+'</div></div>'
     +'<div><div class="form-label">Records</div><div style="font-weight:900;color:'+smRiskColor(smCount(rec))+'">'+smCount(rec)+'</div></div>'
     +'</div></div>'
+    +'<div class="card" style="margin-bottom:12px"><div style="display:flex;align-items:flex-end;gap:10px;flex-wrap:wrap"><div style="flex:1;min-width:240px"><label class="form-label">Linked layout / drill-down map</label><select onchange="smSetLinkedPlan(\''+escH(smSiteKey(site))+'\',this.value)">'+linkOptions+'</select><div style="font-size:11px;color:var(--text2);margin-top:5px">When set, clicking this marker opens the selected building or area layout.</div></div>'+(marker&&marker.linked_plan_id?'<button class="btn btn-sm" onclick="smOpenLinkedPlan(\''+escH(smSiteKey(site))+'\')"><i class="ti ti-map-share"></i>Open linked layout</button>':'')+'</div></div>'
     +smSection('Incidents','ti-alert-triangle','events',rec.events,['event_ref','event_type','description'],function(r){return [r.severity,r.status,smSafeDate(r.event_date||r.created_at)].filter(Boolean).join(' - ');})
     +smSection('BBS observations','ti-eye','observation',rec.observations,['observation_ref','observation_type','description'],function(r){return [r.status,r.department,smSafeDate(r.observation_date||r.created_at)].filter(Boolean).join(' - ');})
     +smSection('Inspections','ti-clipboard-check','inspection',rec.inspections,['reference_no','inspection_type','site'],function(r){return [r.status,smSafeDate(r.inspection_date||r.created_at)].filter(Boolean).join(' - ');})
