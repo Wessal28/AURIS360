@@ -38927,10 +38927,12 @@ function smRenderSiteList(){
   if(!sites.length){el.innerHTML='<div class="empty">No matching sites or locations.</div>';return;}
   el.innerHTML=sites.map(function(s){
     var rec=smRecordsForSite(s),n=smCount(rec),col=smRiskColor(n);
+    var marker=smMarkerForSite(s), linked=marker&&marker.linked_plan_id, linkedTitle=linked?smLinkedPlanTitle(linked):'';
     return '<button type="button" onclick="smSelectSite(\''+escH(smSiteKey(s))+'\')" style="width:100%;text-align:left;border:1px solid var(--border);background:#fff;border-radius:8px;padding:10px 12px;margin-bottom:8px;cursor:pointer;display:flex;gap:10px;align-items:flex-start">'
-      +'<div style="width:34px;height:34px;border-radius:999px;background:'+col+';color:#fff;display:flex;align-items:center;justify-content:center;font-weight:900"><i class="ti ti-map-pin"></i></div>'
-      +'<div style="min-width:0;flex:1"><div style="font-weight:900;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+escH(smSiteName(s))+'</div><div style="font-size:11px;color:var(--text2);margin-top:2px">'+escH([s.site_code,s.site_type,s.city].filter(Boolean).join(' - ')||'Site / area')+'</div>'
-      +'<div style="display:flex;gap:5px;flex-wrap:wrap;margin-top:7px"><span class="badge badge-red">'+rec.events.length+' Inc</span><span class="badge badge-amber">'+rec.risks.length+' RA</span><span class="badge badge-blue">'+rec.inspections.length+' Insp</span><span class="badge badge-green">'+rec.actions.length+' Act</span></div></div></button>';
+      +'<div style="width:34px;height:34px;border-radius:999px;background:'+col+';color:#fff;display:flex;align-items:center;justify-content:center;font-weight:900"><i class="ti '+(linked?'ti-map-share':'ti-map-pin')+'"></i></div>'
+      +'<div style="min-width:0;flex:1"><div style="display:flex;align-items:center;gap:6px;min-width:0"><div style="font-weight:900;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+escH(smSiteName(s))+'</div>'+(linked?'<span class="badge badge-blue">Linked map</span>':'')+'</div><div style="font-size:11px;color:var(--text2);margin-top:2px">'+escH([s.site_code,s.site_type,s.city].filter(Boolean).join(' - ')||'Site / area')+'</div>'
+      +(linked?'<div style="font-size:11px;color:#185FA5;font-weight:800;margin-top:4px"><i class="ti ti-corner-down-right"></i> '+escH(linkedTitle||'Linked layout')+'</div>':'')
+      +'<div style="display:flex;gap:5px;flex-wrap:wrap;margin-top:7px"><span class="badge badge-red">'+rec.events.length+' Inc</span><span class="badge badge-amber">'+rec.risks.length+' RA</span><span class="badge badge-blue">'+rec.inspections.length+' Insp</span><span class="badge badge-green">'+rec.actions.length+' Act</span>'+(linked?'<span class="badge badge-purple" onclick="event.stopPropagation();smOpenLinkedPlan(\''+escH(smSiteKey(s))+'\')">Open map</span>':'')+'</div></div></button>';
   }).join('');
 }
 function smRenderCanvas(){
