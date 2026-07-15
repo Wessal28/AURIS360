@@ -38770,6 +38770,11 @@ async function smSetLinkedPlan(siteKey, planId){
   await smSaveLayout();
   smSelectSite(smSiteKey(site),false);
 }
+async function smUnlinkPlan(siteKey){
+  if(!(await appConfirmAction({title:'Unlink layout',message:'Remove the drill-down map link from this site/area marker?',confirmText:'Unlink',cancelText:'Cancel'})))return;
+  await smSetLinkedPlan(siteKey,'');
+  toast('Linked layout removed');
+}
 async function smCreateLinkedPlan(siteKey){
   var site=(siteMapState.sites||[]).find(function(s){return smSiteKey(s)===String(siteKey);});
   if(!site){toast('Select a valid site or area first',false);return;}
@@ -39009,7 +39014,7 @@ function smRenderDetails(site){
     +'<div><div class="form-label">GPS</div><div style="font-weight:800">'+escH(gps||'--')+'</div></div>'
     +'<div><div class="form-label">Records</div><div style="font-weight:900;color:'+smRiskColor(smCount(rec))+'">'+smCount(rec)+'</div></div>'
     +'</div></div>'
-    +'<div class="card" style="margin-bottom:12px"><div style="display:flex;align-items:flex-end;gap:10px;flex-wrap:wrap"><div style="flex:1;min-width:240px"><label class="form-label">Linked layout / drill-down map</label><select onchange="smSetLinkedPlan(\''+escH(smSiteKey(site))+'\',this.value)">'+linkOptions+'</select><div style="font-size:11px;color:var(--text2);margin-top:5px">When set, clicking this marker opens the selected building or area layout.</div></div>'+(marker&&marker.linked_plan_id?'<button class="btn btn-sm" onclick="smOpenLinkedPlan(\''+escH(smSiteKey(site))+'\')"><i class="ti ti-map-share"></i>Open linked layout</button>':'<button class="btn btn-sm" onclick="smCreateLinkedPlan(\''+escH(smSiteKey(site))+'\')"><i class="ti ti-plus"></i>Create child layout</button>')+'</div></div>'
+    +'<div class="card" style="margin-bottom:12px"><div style="display:flex;align-items:flex-end;gap:10px;flex-wrap:wrap"><div style="flex:1;min-width:240px"><label class="form-label">Linked layout / drill-down map</label><select onchange="smSetLinkedPlan(\''+escH(smSiteKey(site))+'\',this.value)">'+linkOptions+'</select><div style="font-size:11px;color:var(--text2);margin-top:5px">When set, clicking this marker opens the selected building or area layout.</div></div>'+(marker&&marker.linked_plan_id?'<button class="btn btn-sm" onclick="smOpenLinkedPlan(\''+escH(smSiteKey(site))+'\')"><i class="ti ti-map-share"></i>Open linked layout</button><button class="btn btn-sm" onclick="smUnlinkPlan(\''+escH(smSiteKey(site))+'\')" style="color:var(--red)"><i class="ti ti-unlink"></i>Unlink</button>':'<button class="btn btn-sm" onclick="smCreateLinkedPlan(\''+escH(smSiteKey(site))+'\')"><i class="ti ti-plus"></i>Create child layout</button>')+'</div></div>'
     +smSection('Incidents','ti-alert-triangle','events',rec.events,['event_ref','event_type','description'],function(r){return [r.severity,r.status,smSafeDate(r.event_date||r.created_at)].filter(Boolean).join(' - ');})
     +smSection('BBS observations','ti-eye','observation',rec.observations,['observation_ref','observation_type','description'],function(r){return [r.status,r.department,smSafeDate(r.observation_date||r.created_at)].filter(Boolean).join(' - ');})
     +smSection('Inspections','ti-clipboard-check','inspection',rec.inspections,['reference_no','inspection_type','site'],function(r){return [r.status,smSafeDate(r.inspection_date||r.created_at)].filter(Boolean).join(' - ');})
