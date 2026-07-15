@@ -38709,6 +38709,13 @@ function smPlanParents(id){
     return (p.markers||[]).some(function(m){return String(m.linked_plan_id||'')===String(id);});
   });
 }
+function smPlanChildCount(plan){return ((plan&&plan.markers)||[]).filter(function(m){return !!m.linked_plan_id;}).length;}
+function smPlanTypeBadge(plan){
+  var childCount=smPlanChildCount(plan), parentCount=smPlanParents(plan&&plan.id).length;
+  if(parentCount)return '<span class="badge badge-purple">Child / floor</span>';
+  if(childCount)return '<span class="badge badge-blue">Parent / site</span>';
+  return '<span class="badge badge-grey">Standalone</span>';
+}
 async function smDeletePlan(id){
   if(!(await appConfirmAction({title:'Delete site map plan',message:'Delete this saved site map plan?',confirmText:'Delete plan',cancelText:'Cancel',variant:'danger'})))return;
   try{if(id==='local'){localStorage.removeItem(smLayoutKey());localStorage.removeItem(smLayoutKey()+'_selected');}else await api('/fire_layouts?id=eq.'+id,{m:'DELETE',p:'return=minimal'});siteMapState.layout=smLayoutEmpty();await smLoadPlans();smRenderCanvas();toast('Site map plan deleted');}
@@ -38737,7 +38744,7 @@ function smRenderPlanList(){
   var plans=siteMapState.plans||[];
   var parents=smPlanParents(layout.id);
   var parentPanel=parents.length?'<div style="border:1px solid #bfdbfe;background:#eff6ff;border-radius:8px;padding:8px 10px;margin-bottom:8px;display:flex;gap:8px;align-items:center;flex-wrap:wrap"><span style="font-size:12px;color:#1e3a8a;font-weight:900"><i class="ti ti-arrow-back-up"></i> Linked from</span>'+parents.map(function(p){return '<button class="btn btn-sm" onclick="smOpenPlan(\''+escH(p.id)+'\')"><i class="ti ti-map"></i>'+escH(p.title||'Parent plan')+'</button>';}).join('')+'</div>':'';
-  el.innerHTML=plans.length?parentPanel+'<table class="data-table" style="margin:0"><thead><tr><th>Plan</th><th>Linked</th><th>Updated</th><th></th></tr></thead><tbody>'+plans.map(function(p){var childCount=(p.markers||[]).filter(function(m){return !!m.linked_plan_id;}).length;return '<tr style="cursor:pointer" onclick="smOpenPlan(\''+escH(p.id)+'\')"><td><strong>'+escH(p.title||'Untitled plan')+'</strong>'+(p.local_only?' <span class="badge badge-amber">Local draft</span>':'')+(layout.id===p.id?' <span class="badge badge-green">Open</span>':'')+'</td><td>'+(childCount?'<span class="badge badge-blue">'+childCount+' linked map'+(childCount>1?'s':'')+'</span>':'<span style="color:var(--text2)">--</span>')+'</td><td>'+escH(smSafeDate(p.updated_at))+'</td><td style="text-align:right;white-space:nowrap"><button class="btn btn-sm" onclick="event.stopPropagation();smOpenPlan(\''+escH(p.id)+'\')"><i class="ti ti-folder-open"></i></button><button class="btn btn-sm" onclick="event.stopPropagation();smDeletePlan(\''+escH(p.id)+'\')" style="color:var(--red)"><i class="ti ti-trash"></i></button></td></tr>';}).join('')+'</tbody></table>':'<div class="empty" style="padding:18px">No saved site map plans yet. Add a title, upload a plan, then save.</div>';
+  el.innerHTML=plans.length?parentPanel+'<table class="data-table" style="margin:0"><thead><tr><th>Plan</th><th>Type</th><th>Linked</th><th>Updated</th><th></th></tr></thead><tbody>'+plans.map(function(p){var childCount=smPlanChildCount(p);return '<tr style="cursor:pointer" onclick="smOpenPlan(\''+escH(p.id)+'\')"><td><strong>'+escH(p.title||'Untitled plan')+'</strong>'+(p.local_only?' <span class="badge badge-amber">Local draft</span>':'')+(layout.id===p.id?' <span class="badge badge-green">Open</span>':'')+'</td><td>'+smPlanTypeBadge(p)+'</td><td>'+(childCount?'<span class="badge badge-blue">'+childCount+' linked map'+(childCount>1?'s':'')+'</span>':'<span style="color:var(--text2)">--</span>')+'</td><td>'+escH(smSafeDate(p.updated_at))+'</td><td style="text-align:right;white-space:nowrap"><button class="btn btn-sm" onclick="event.stopPropagation();smOpenPlan(\''+escH(p.id)+'\')"><i class="ti ti-folder-open"></i></button><button class="btn btn-sm" onclick="event.stopPropagation();smDeletePlan(\''+escH(p.id)+'\')" style="color:var(--red)"><i class="ti ti-trash"></i></button></td></tr>';}).join('')+'</tbody></table>':'<div class="empty" style="padding:18px">No saved site map plans yet. Add a title, upload a plan, then save.</div>';
 }
 function smMarkerForSite(site){
   var key=smSiteKey(site), layout=siteMapState.layout||smLayoutEmpty();
