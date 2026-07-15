@@ -38832,8 +38832,9 @@ function smPrintMapHtml(){
   var sites=siteMapState.sites||[];
   var markers=sites.map(function(s,i){
     var rec=smRecordsForSite(s),n=smCount(rec),col=smRiskColor(n),p=smSitePosition(s,i);
+    var marker=smMarkerForSite(s), linked=marker&&marker.linked_plan_id;
     var x=p.x, y=p.y;
-    return '<div style="position:absolute;left:'+x+'%;top:'+y+'%;transform:translate(-50%,-50%);width:30px;height:30px;border-radius:999px;background:'+col+';color:#fff;border:2px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,.35);display:flex;align-items:center;justify-content:center;font-size:8pt;font-weight:900">'+(i+1)+'</div>';
+    return '<div style="position:absolute;left:'+x+'%;top:'+y+'%;transform:translate(-50%,-50%);width:30px;height:30px;border-radius:999px;background:'+col+';color:#fff;border:2px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,.35);display:flex;align-items:center;justify-content:center;font-size:8pt;font-weight:900">'+(i+1)+(linked?'<span style="position:absolute;right:-4px;top:-4px;width:12px;height:12px;border-radius:999px;background:#185FA5;border:1px solid #fff;font-size:6pt;line-height:12px;text-align:center">L</span>':'')+'</div>';
   }).join('');
   var eventDots=(siteMapState.events||[]).filter(function(e){return !['closed','resolved'].includes(String(e.status||'').toLowerCase());}).slice(0,40).map(function(ev,i){
     var p=smEventPosition(ev,i), sev=String(ev.severity||'').toLowerCase(), col=/critical|high/.test(sev)?'#DC2626':'#F97316';
@@ -38841,14 +38842,15 @@ function smPrintMapHtml(){
   }).join('');
   var rows=sites.map(function(s,i){
     var rec=smRecordsForSite(s),n=smCount(rec),col=smRiskColor(n);
-    return '<tr><td>'+(i+1)+'</td><td><strong>'+escH(smSiteName(s))+'</strong><div style="font-size:7pt;color:#6b7280">'+escH([s.site_code,s.site_type,s.city].filter(Boolean).join(' - ')||'Site / area')+'</div></td><td style="font-weight:800;color:'+col+'">'+n+'</td><td>'+rec.events.length+'</td><td>'+rec.observations.length+'</td><td>'+rec.inspections.length+'</td><td>'+rec.risks.length+'</td><td>'+rec.permits.length+'</td><td>'+rec.actions.length+'</td></tr>';
+    var marker=smMarkerForSite(s), linked=marker&&marker.linked_plan_id;
+    return '<tr><td>'+(i+1)+'</td><td><strong>'+escH(smSiteName(s))+'</strong><div style="font-size:7pt;color:#6b7280">'+escH([s.site_code,s.site_type,s.city].filter(Boolean).join(' - ')||'Site / area')+'</div></td><td>'+escH(linked?smLinkedPlanTitle(linked):'--')+'</td><td style="font-weight:800;color:'+col+'">'+n+'</td><td>'+rec.events.length+'</td><td>'+rec.observations.length+'</td><td>'+rec.inspections.length+'</td><td>'+rec.risks.length+'</td><td>'+rec.permits.length+'</td><td>'+rec.actions.length+'</td></tr>';
   }).join('');
   return '<style>@page{size:A4 landscape;margin:8mm}.report-page{max-width:297mm;padding:8mm}.sm-print-map{position:relative;border:1px solid #d1d5db;border-radius:6px;background:#fff;margin-bottom:10px;min-height:130mm;overflow:hidden}.sm-print-map img{display:block;width:100%;height:auto;max-height:150mm;object-fit:contain}.sm-print-empty{height:130mm;background:linear-gradient(135deg,#EFF6FF,#F8FAFC);display:flex;align-items:center;justify-content:center;color:#6b7280}table{width:100%;border-collapse:collapse;font-size:8pt}th,td{border:1px solid #d1d5db;padding:4px 5px;text-align:left;vertical-align:top}th{background:#f3f4f6;font-weight:800}</style>'
     +'<div class="report-page">'
     +aurisHeader('Interactive Site Map',layout.title||'Site / area map',layout.id||'DRAFT')
     +'<div class="sm-print-map">'+(img?'<img src="'+escH(img)+'" alt="Site map plan"/>':'<div class="sm-print-empty">No uploaded plan image. Auto-positioned location overview.</div>')+markers+eventDots+'</div>'
-    +'<div class="rpt-section"><div class="rpt-section-title">Location Records Legend</div><table><thead><tr><th style="width:32px">No.</th><th>Location</th><th>Total</th><th>Incidents</th><th>BBS</th><th>Inspections</th><th>RA</th><th>PTW</th><th>Actions</th></tr></thead><tbody>'
-    +(rows||'<tr><td colspan="9" style="text-align:center;color:#6b7280">No sites or areas available.</td></tr>')
+    +'<div class="rpt-section"><div class="rpt-section-title">Location Records Legend</div><table><thead><tr><th style="width:32px">No.</th><th>Location</th><th>Linked layout</th><th>Total</th><th>Incidents</th><th>BBS</th><th>Inspections</th><th>RA</th><th>PTW</th><th>Actions</th></tr></thead><tbody>'
+    +(rows||'<tr><td colspan="10" style="text-align:center;color:#6b7280">No sites or areas available.</td></tr>')
     +'</tbody></table></div>'
     +aurisFooter('Interactive Site Map')
     +'</div>';
