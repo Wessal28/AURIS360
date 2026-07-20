@@ -11538,6 +11538,89 @@ var body='<div style="font-family:Arial,sans-serif;background:#f4f6f8;padding:20
 await queueNotification({company_id:ccid(),type:'permit',subject:subject,body_html:body,to_email:a.email,to_name:a.name||a.email,from_name:'AURIS360 by SEPHS Consulting',related_id:permit.id,related_table:'permits',status:'pending'});
 }catch(e){/* notification must never block permit workflow */}
 }
+
+function ptwPermitRef(permit){
+  return permit?.permit_number||permit?.reference_no||permit?.id?.slice(0,8)||'PTW';
+}
+
+function ptwPermitTypeLabel(permit){
+  var type=permit?.permit_type_v2||permit?.permit_type||'Permit';
+  var cfg=PTW_TYPE_CFG[type]||{};
+  return cfg.label||String(type).replace(/_/g,' ');
+}
+
+function ptwPersonForNotice(idOrName,email){
+  var val=String(idOrName||'').trim();
+  var p=(people||[]).find(function(x){
+    return x.id===val||String(x.email||'').toLowerCase()===val.toLowerCase()||peopleName(x)===val||ptwPersonName(x)===val;
+  });
+  return {
+    name:p?peopleName(p):val,
+    email:email||usersContactEmail(p)||''
+  };
+}
+
+function ptwNoticeRecipients(permit){
+  var out=[], seen={};
+  function add(person){
+    var email=String(person?.email||'').trim();
+    if(!email||seen[email.toLowerCase()])return;
+    seen[email.toLowerCase()]=true;
+    out.push({name:person.name||email,email:email});
+  }
+  add(ptwPersonForNotice(permit?.permit_issuer_id||permit?.permit_issuer_name||permit?.issued_by));
+  add(ptwPersonForNotice(permit?.permit_receiver||permit?.permit_receiver_name));
+  if(prof&&permit?.created_by===prof.id)add({name:prof.full_name||prof.email,email:prof.email});
+  return out;
+}
+
+function ptwAudit(action,summary,permit,details){
+  try{
+    permit=permit||{};
+    auditLogEvent(action,'permit',summary,{
+      permit_ref:ptwPermitRef(permit),
+      permit_type:ptwPermitTypeLabel(permit),
+      status:permit.status||null,
+      location:permit.work_location||permit.location||null,
+      work_description:permit.work_description||null,
+      details:details||{}
+    },{related_table:'permits',related_id:permit.id||ptwCurrentId||null,company_id:permit.company_id||ccid()});
+  }catch(_){}
+}
+
+async function ptwQueueStatusNotice(permit,event,details){
+  try{
+    permit=permit||{};
+    var labels={
+      submitted:'submitted for approval',
+      approved:'approved',
+      active:'activated for work',
+      suspended:'suspended',
+      cancelled:'cancelled',
+      resumed:'resumed',
+      completed:'closed / completed',
+      rejected:'rejected'
+    };
+    var label=labels[event]||String(event||'updated').replace(/_/g,' ');
+    var ref=ptwPermitRef(permit);
+    var type=ptwPermitTypeLabel(permit);
+    var body='<div style="font-family:Arial,sans-serif;background:#f4f6f8;padding:20px"><div style="max-width:620px;margin:0 auto;background:#fff;border-radius:12px;overflow:hidden;border:1px solid #e5e7eb">'
+      +'<div style="background:#1D9E75;color:#fff;padding:18px 22px"><div style="font-size:20px;font-weight:700">AURIS360</div><div style="font-size:13px;opacity:.85">Permit to Work update</div></div>'
+      +'<div style="padding:22px"><h2 style="margin:0 0 14px;font-size:18px">Permit '+escH(label)+'</h2>'
+      +'<table style="width:100%;border-collapse:collapse;font-size:14px">'
+      +'<tr><td style="padding:8px;background:#f9fafb;font-weight:600;width:150px">Permit</td><td style="padding:8px">'+escH(ref)+'</td></tr>'
+      +'<tr><td style="padding:8px;background:#f9fafb;font-weight:600">Type</td><td style="padding:8px">'+escH(type)+'</td></tr>'
+      +'<tr><td style="padding:8px;background:#f9fafb;font-weight:600">Location</td><td style="padding:8px">'+escH(permit.work_location||permit.location||'-')+'</td></tr>'
+      +'<tr><td style="padding:8px;background:#f9fafb;font-weight:600">Status</td><td style="padding:8px">'+escH(permit.status||event||'-')+'</td></tr>'
+      +(details?.reason?'<tr><td style="padding:8px;background:#f9fafb;font-weight:600">Reason</td><td style="padding:8px">'+escH(details.reason)+'</td></tr>':'')
+      +'</table><div style="margin-top:18px;text-align:center"><a href="https://auris-360.vercel.app/?goto=permit" style="display:inline-block;background:#1D9E75;color:#fff;padding:11px 22px;border-radius:8px;text-decoration:none;font-weight:700">Open Permit in AURIS360</a></div></div>'
+      +'<div style="padding:12px 22px;background:#f4f6f8;font-size:11px;color:#6B7280;text-align:center">Automated notification from AURIS360.</div></div></div>';
+    var recipients=ptwNoticeRecipients(permit);
+    for(var i=0;i<recipients.length;i++){
+      await queueNotification({company_id:permit.company_id||ccid(),type:'permit',subject:'[AURIS360] Permit '+label+': '+ref,body_html:body,to_email:recipients[i].email,to_name:recipients[i].name,from_name:'AURIS360 by SEPHS Consulting',related_id:permit.id||ptwCurrentId||null,related_table:'permits',status:'pending'});
+    }
+  }catch(e){/* notification must never block permit workflow */}
+}
 /* -------------------------------------------------------------------
    BRANDING STUDIO CONTROLLER
    - Populates editor with current brand
@@ -19267,7 +19350,12 @@ async function ptwSave(targetStatus){
       await api('/permits?id=eq.'+ptwEditingId,{m:'PATCH',p:'return=minimal',b:body});
       // Log
       try{await api('/permit_activity_log',{m:'POST',p:'return=minimal',b:{company_id:ccid(),permit_id:ptwEditingId,action:'Permit edited',performed_by:prof?.full_name||'User',details:'Status: '+body.status}});}catch(ex){}
-      if(shouldNotifyL1)await ptwQueueApprovalEmail(Object.assign({id:ptwEditingId},body),1);
+      var updatedPermit=Object.assign({},prev,{id:ptwEditingId},body);
+      ptwAudit(shouldNotifyL1?'submit':'update',shouldNotifyL1?'Permit submitted for approval':'Permit updated',updatedPermit,{old_status:prev.status||null,new_status:body.status||null});
+      if(shouldNotifyL1){
+        await ptwQueueApprovalEmail(updatedPermit,1);
+        await ptwQueueStatusNotice(updatedPermit,'submitted',{level:1});
+      }
       toast('Permit updated!');
       var idx=ptwAllData.findIndex(function(x){return x.id===ptwEditingId;});
       if(idx>=0)Object.assign(ptwAllData[idx],body);
@@ -19293,7 +19381,11 @@ async function ptwSave(targetStatus){
         res[0].permit_number=ref;res[0].permit_type_v2=type;
         ptwAllData.unshift(res[0]);
         try{await api('/permit_activity_log',{m:'POST',p:'return=minimal',b:{company_id:ccid(),permit_id:res[0].id,action:'Permit created',performed_by:prof?.full_name||'User',new_status:body.status}});}catch(ex){}
-        if(body.status==='pending_approval')await ptwQueueApprovalEmail(res[0],1);
+        ptwAudit(body.status==='pending_approval'?'submit':'create',body.status==='pending_approval'?'Permit created and submitted for approval':'Permit created',res[0],{new_status:body.status||null});
+        if(body.status==='pending_approval'){
+          await ptwQueueApprovalEmail(res[0],1);
+          await ptwQueueStatusNotice(res[0],'submitted',{level:1});
+        }
         toast('Permit created! Ref: '+ref);
         ptwCurrentId=res[0].id;
         await ptwShowDetail(res[0].id);
@@ -19595,7 +19687,10 @@ async function ptwApprove(level, action){
     await api('/permits?id=eq.'+ptwCurrentId,{m:'PATCH',p:'return=minimal',b:update});
     Object.assign(x,update);
     try{await api('/permit_activity_log',{m:'POST',p:'return=minimal',b:{company_id:ccid(),permit_id:ptwCurrentId,action:'Level '+level+' approval: '+action,performed_by:name,new_status:update.status||x.status}});}catch(ex){}
+    ptwAudit(action==='approved'?'approve':'reject','Permit Level '+level+' '+action,x,{approval_level:level,approver:name,new_status:update.status||x.status});
     if(action==='approved'&&!update.status&&level<levels)await ptwQueueApprovalEmail(x,level+1);
+    if(action==='approved'&&update.status==='approved')await ptwQueueStatusNotice(x,'approved',{approval_level:level,approver:name});
+    if(action==='rejected')await ptwQueueStatusNotice(x,'rejected',{approval_level:level,approver:name});
     toast('Level '+level+' '+action+'!');
     ptwOpenApprovalPanel();
     ptwRenderWorkflowBar(x);
@@ -19626,6 +19721,8 @@ async function ptwActivate(){
     await api('/permits?id=eq.'+ptwCurrentId,{m:'PATCH',p:'return=minimal',b:{status:'active',actual_start:new Date().toISOString(),updated_at:new Date().toISOString()}});
     x.status='active';x.actual_start=new Date().toISOString();
     try{await api('/permit_activity_log',{m:'POST',p:'return=minimal',b:{company_id:ccid(),permit_id:ptwCurrentId,action:'Permit activated - work commenced',performed_by:prof?.full_name||'User',old_status:'approved',new_status:'active'}});}catch(ex){}
+    ptwAudit('activate','Permit activated - work may commence',x,{old_status:'approved',new_status:'active'});
+    await ptwQueueStatusNotice(x,'active');
     toast('Permit is now ACTIVE - work may commence');
     ptwShowDetail(ptwCurrentId);
   }catch(e){toastActionError('Activate permit','Permit to Work',e);}
@@ -19657,6 +19754,8 @@ async function ptwConfirmClose(){
     await api('/permits?id=eq.'+ptwCurrentId,{m:'PATCH',p:'return=minimal',b:{status:'completed',closed_at:new Date().toISOString(),closed_by:closedBy,closure_checklist:checklist,closure_notes:document.getElementById('ptw-closure-notes')?.value||null,actual_end:new Date().toISOString(),updated_at:new Date().toISOString()}});
     var x=ptwAllData.find(function(r){return r.id===ptwCurrentId;});if(x){x.status='completed';x.closed_at=new Date().toISOString();}
     try{await api('/permit_activity_log',{m:'POST',p:'return=minimal',b:{company_id:ccid(),permit_id:ptwCurrentId,action:'Permit closed',performed_by:closedBy,old_status:'active',new_status:'completed'}});}catch(ex){}
+    ptwAudit('close','Permit closed',x||{id:ptwCurrentId,status:'completed'},{closed_by:closedBy,unchecked_items:unchecked,old_status:'active',new_status:'completed'});
+    await ptwQueueStatusNotice(x||{id:ptwCurrentId,status:'completed'},'completed');
     toast('Permit CLOSED - all work complete ?');
     ptwShowDetail(ptwCurrentId);
   }catch(e){toastActionError('Close permit','Permit to Work',e);}
@@ -19684,6 +19783,8 @@ async function ptwConfirmSuspend(){
     await api('/permits?id=eq.'+ptwCurrentId,{m:'PATCH',p:'return=minimal',b:update});
     var x=ptwAllData.find(function(r){return r.id===ptwCurrentId;});if(x)Object.assign(x,update);
     try{await api('/permit_activity_log',{m:'POST',p:'return=minimal',b:{company_id:ccid(),permit_id:ptwCurrentId,action:action==='suspended'?'Permit suspended':'Permit cancelled',performed_by:by,details:reason,new_status:action}});}catch(ex){}
+    ptwAudit(action==='suspended'?'suspend':'cancel',action==='suspended'?'Permit suspended':'Permit cancelled',x||{id:ptwCurrentId,status:action},{reason:reason,performed_by:by,new_status:action});
+    await ptwQueueStatusNotice(x||{id:ptwCurrentId,status:action},action,{reason:reason});
     toast('Permit '+action.toUpperCase()+'! Reason: '+reason);
     ptwShowDetail(ptwCurrentId);
   }catch(e){toastActionError('Suspend permit','Permit to Work',e);}
@@ -19703,6 +19804,8 @@ async function ptwResume(){
     await api('/permits?id=eq.'+ptwCurrentId,{m:'PATCH',p:'return=minimal',b:{status:'active',updated_at:new Date().toISOString()}});
     var x=ptwAllData.find(function(r){return r.id===ptwCurrentId;});if(x)x.status='active';
     try{await api('/permit_activity_log',{m:'POST',p:'return=minimal',b:{company_id:ccid(),permit_id:ptwCurrentId,action:'Permit resumed',performed_by:by,old_status:'suspended',new_status:'active'}});}catch(ex){}
+    ptwAudit('resume','Permit resumed',x||{id:ptwCurrentId,status:'active'},{performed_by:by,old_status:'suspended',new_status:'active'});
+    await ptwQueueStatusNotice(x||{id:ptwCurrentId,status:'active'},'resumed');
     toast('Permit RESUMED - work may continue');
     ptwShowDetail(ptwCurrentId);
   }catch(e){toastActionError('Resume permit','Permit to Work',e);}
