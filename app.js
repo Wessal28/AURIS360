@@ -25,6 +25,11 @@ function isSA(){return prof?.role==='sephs_admin';}
 async function api(path,o={}){
 const headers={'Content-Type':'application/json','apikey':KEY,'Authorization':'Bearer '+(tok||KEY),'Accept':'application/json'};
 if(o.p)headers['Prefer']=o.p;
+const method=o.m||'GET';
+if((method==='POST'||method==='PATCH')&&/^\/documents(?:\?|$)/.test(path)&&o.b&&Object.prototype.hasOwnProperty.call(o.b,'dept')){
+  o=Object.assign({},o,{b:Object.assign({},o.b)});
+  delete o.b.dept;
+}
 const r=await fetch(SB+'/rest/v1'+path,{method:o.m||'GET',headers:headers,body:o.b?JSON.stringify(o.b):undefined});
 if(r.status===204||r.status===205)return null;
 const txt=await r.text();
@@ -2022,8 +2027,6 @@ function legalSwitchTab(tab,btn){
 
 // ===== SOP GENERATOR MODULE =====
 let sopVideo=null, sopFrames=[], sopEditingId=null, sopCurrentStep=1, sopAllData=[];
-const ANTHROPIC_URL='https://api.anthropic.com/v1/messages';
-const CLAUDE_MODEL='claude-sonnet-4-20250514';
 
 function sopSwitchTab(tab,btn){
   document.querySelectorAll('.mtg-tab').forEach(t=>t.classList.remove('active'));
@@ -2332,16 +2335,18 @@ async function sopGenerate(){
   var taskIntro='Generate a complete SOP for the following task:\n\nTitle: '+title+'\nDepartment: '+dept+'\nRisk Level: '+risk+'\nDescription: '+desc+'\nPPE Required: '+allPPE+'\n\nBelow are the video frames with narrations from the person demonstrating the task:';
   var userContent=[{type:'text',text:taskIntro}].concat(stepsContent).concat([{type:'text',text:'Write a professional, detailed SOP. Each step should align with the frame image and narration provided. Include all safety warnings. Be specific and practical.'}]);
 
-  setStatus(30,'Sending to Claude AI...');
+  setStatus(30,'Sending to AURIS AI...');
 
   try{
-    var response=await fetch('https://api.anthropic.com/v1/messages',{
+    var response=await fetch('/api/ai',{
       method:'POST',
-      headers:{'Content-Type':'application/json'},
+      headers:{
+        'Content-Type':'application/json',
+        'Authorization':'Bearer '+tok
+      },
       body:JSON.stringify({
-        model:'claude-sonnet-4-20250514',
-        max_tokens:4000,
         system:systemPrompt,
+        max_tokens:4000,
         messages:[{role:'user',content:userContent}]
       })
     });
@@ -2349,7 +2354,7 @@ async function sopGenerate(){
     setStatus(70,'Processing AI response...');
 
     var data=await response.json();
-    if(data.error){throw new Error(data.error.message||'API error');}
+    if(!response.ok||data.error){throw new Error((data.error&&data.error.message)||data.error||'AI API error');}
 
     var text=data.content&&data.content[0]&&data.content[0].text;
     if(!text)throw new Error('No response from AI');
