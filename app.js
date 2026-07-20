@@ -3919,8 +3919,28 @@ h+='</tbody></table>';if(el)el.innerHTML=h;
 async function saveDoc(){
 if(!isMgr()){toast('Access denied',false);return;}
 try{
-const oid=document.getElementById('df-owner').value;
-await api('/documents',{m:'POST',p:'return=minimal',b:{company_id:prof?.company_id,title:document.getElementById('df-title').value,doc_type:document.getElementById('df-type').value,reference_no:document.getElementById('df-ref').value,version:document.getElementById('df-version').value,issue_date:document.getElementById('df-issue').value||null,review_date:document.getElementById('df-review').value||null,owner:oid?pname(oid):null,file_url:document.getElementById('df-url').value||null,status:document.getElementById('df-status').value,created_by:prof?.id}});
+const val=id=>document.getElementById(id)?.value||null;
+const oid=val('df-owner');
+const docType=val('df-type')||'procedure';
+await api('/documents',{m:'POST',p:'return=minimal',b:{
+  company_id:prof?.company_id,
+  title:val('df-title'),
+  document_type:docType,
+  doc_type:docType,
+  reference_no:val('df-ref'),
+  doc_ref:val('df-ref'),
+  version:val('df-version')||'1.0',
+  doc_version:val('df-version')||'1.0',
+  department:val('df-dept'),
+  issue_date:val('df-issue'),
+  review_date:val('df-review'),
+  owner:oid?pname(oid):null,
+  file_url:val('df-url'),
+  status:val('df-status')||'draft',
+  approval_status:val('df-status')||'draft',
+  created_by:prof?.id,
+  updated_at:new Date().toISOString()
+}});
 toggleForm('doc-form');toast('Document registered!');loadDocs();
 }catch(e){toast(e.message,false);}
 }
