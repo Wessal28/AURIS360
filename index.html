@@ -25401,6 +25401,102 @@ function mapQueueRefBackfill(){
   });
 }
 
+function mapAudit(action,summary,row,details){
+  try{
+    row=row||{};
+    auditLogEvent(action,'actions',summary,details||{},{
+      related_table:'action_tracker',
+      related_id:row.id||mapEditingId||null,
+      company_id:row.company_id||ccid()
+    });
+  }catch(_){}
+}
+
+function mapChangedFields(before,after){
+  before=before||{};after=after||{};
+  return Object.keys(after).filter(function(k){
+    var a=before[k], b=after[k];
+    if(a==null)a=''; if(b==null)b='';
+    return String(a)!==String(b);
+  });
+}
+
+function mapPersonDisplayName(p){
+  if(!p)return '';
+  return [p.last_name,p.first_name].filter(Boolean).join(', ')||[p.first_name,p.last_name].filter(Boolean).join(' ')||p.full_name||p.email||'';
+}
+
+async function mapResolveActionRecipient(personId,fallbackName){
+  var rec={id:personId||null,name:fallbackName||'',email:''};
+  try{
+    var p=null;
+    if(personId){
+      p=(people||[]).find(function(x){return String(x.id)===String(personId);});
+      if(!p || (!p.email && !p.notification_email && !p.real_email)){
+        var rows=await api('/people?select=id,first_name,last_name,full_name,email,notification_email,real_email,phone,whatsapp_phone,mobile_phone&id=eq.'+encodeURIComponent(personId)+cf()+'&limit=1');
+        if(rows&&rows[0])p=rows[0];
+      }
+    }
+    if(p){
+      rec.name=mapPersonDisplayName(p)||rec.name;
+      rec.email=usersContactEmail(p)||p.email||'';
+      rec.phone=p.whatsapp_phone||p.mobile_phone||p.phone||'';
+    }
+  }catch(_){}
+  if(!rec.email && rec.name){
+    rec.email=String(rec.name).toLowerCase().replace(/[^a-z0-9]+/g,'.').replace(/^\.+|\.+$/g,'')+'@auris360.local';
+  }
+  if(!rec.email)rec.email='undeliverable@auris360.local';
+  return rec;
+}
+
+function mapActionEmailBody(x,eventLabel,extraText){
+  var ref=mapDisplayRef(x);
+  var title=x.title||x.description||'Action';
+  return '<!DOCTYPE html><html><body style="font-family:Arial,sans-serif;background:#f4f6f8;padding:20px">'
+    +'<div style="max-width:640px;margin:0 auto;background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.08)">'
+    +'<div style="background:#1D9E75;padding:18px 22px;color:#fff"><div style="font-size:20px;font-weight:700">AURIS360</div><div style="font-size:13px;opacity:.85">Master Action Plan notification</div></div>'
+    +'<div style="padding:22px"><div style="font-size:18px;font-weight:700;margin-bottom:12px">'+escH(eventLabel)+'</div>'
+    +'<table style="width:100%;border-collapse:collapse;font-size:14px"><tr><td style="padding:8px;background:#f9fafb;font-weight:600;width:140px">Reference</td><td style="padding:8px">'+escH(ref)+'</td></tr>'
+    +'<tr><td style="padding:8px;background:#f9fafb;font-weight:600">Action</td><td style="padding:8px">'+escH(title)+'</td></tr>'
+    +'<tr><td style="padding:8px;background:#f9fafb;font-weight:600">Priority</td><td style="padding:8px">'+escH(auditLabel(x.priority||'medium'))+'</td></tr>'
+    +'<tr><td style="padding:8px;background:#f9fafb;font-weight:600">Status</td><td style="padding:8px">'+escH(auditLabel(x.status||'open'))+'</td></tr>'
+    +'<tr><td style="padding:8px;background:#f9fafb;font-weight:600">Due date</td><td style="padding:8px">'+escH(x.target_date||'-')+'</td></tr>'
+    +(extraText?'<tr><td style="padding:8px;background:#f9fafb;font-weight:600">Notes</td><td style="padding:8px">'+escH(extraText)+'</td></tr>':'')
+    +'</table><div style="margin-top:18px;text-align:center"><a href="https://auris-360.vercel.app/?goto=actions" style="background:#1D9E75;color:#fff;padding:11px 24px;border-radius:8px;text-decoration:none;font-weight:600;font-size:14px">Open Master Action Plan</a></div>'
+    +'</div><div style="padding:12px 22px;background:#f4f6f8;font-size:11px;color:#6B7280;text-align:center">This is an automated notification from AURIS360.</div></div></body></html>';
+}
+
+async function mapQueueActionNotice(x,kind,opts){
+  try{
+    if(!x||!x.id||typeof queueNotification!=='function')return;
+    opts=opts||{};
+    var recipient=await mapResolveActionRecipient(opts.personId||x.assigned_to_id,opts.name||x.assigned_to_name||x.responsible);
+    var labels={
+      assigned:'Action assigned',
+      updated:'Action updated',
+      status:'Action status updated',
+      verification:'Action verification update',
+      closure:'Action closure update',
+      escalation:'Action escalated',
+      cancelled:'Action cancelled'
+    };
+    var label=opts.label||labels[kind]||'Action notification';
+    await queueNotification({
+      company_id:x.company_id||ccid(),
+      type:'action',
+      subject:'[AURIS360] '+label+': '+mapDisplayRef(x),
+      body_html:mapActionEmailBody(x,label,opts.note||''),
+      to_email:recipient.email,
+      to_name:recipient.name||recipient.email,
+      from_name:'AURIS360 by SEPHS Consulting',
+      related_id:x.id,
+      related_table:'action_tracker',
+      status:'pending'
+    });
+  }catch(ex){console.warn('Action notification skipped',ex);}
+}
+
 function mapRenderList(){
   if(typeof mapRenderTableList === 'function') return mapRenderTableList();
   var el=document.getElementById('actions-list');if(!el)return;
@@ -25888,11 +25984,18 @@ async function mapSave(draft){
     var refStr='';
     if(mapEditingId){
       var old=mapAllData.find(x=>x.id===mapEditingId)||{};
+      var before=Object.assign({},old);
       await api('/action_tracker?id=eq.'+mapEditingId,{m:'PATCH',p:'return=minimal',b:body});
       var idx=mapAllData.findIndex(x=>x.id===mapEditingId);if(idx>=0)Object.assign(mapAllData[idx],body);
+      var after=Object.assign({},before,body,{id:mapEditingId,company_id:before.company_id||body.company_id});
+      var changed=mapChangedFields(before,body);
+      mapAudit('update','Action updated: '+mapDisplayRef(after),after,{changed_fields:changed,before_status:before.status,after_status:after.status,assigned_to:after.assigned_to_name||after.responsible||null});
       // Log status change
-      if(old.status!==body.status){
-        try{await api('/map_activity_log',{m:'POST',p:'return=minimal',b:{company_id:ccid(),action_id:mapEditingId,activity_type:'Status changed',performed_by:prof?.full_name||'User',old_value:old.status,new_value:body.status}});}catch(ex){}
+      if(before.status!==body.status){
+        try{await api('/map_activity_log',{m:'POST',p:'return=minimal',b:{company_id:ccid(),action_id:mapEditingId,activity_type:'Status changed',performed_by:prof?.full_name||'User',old_value:before.status,new_value:body.status}});}catch(ex){}
+      }
+      if(before.assigned_to_id!==body.assigned_to_id || before.assigned_to_name!==body.assigned_to_name || before.responsible!==body.responsible){
+        await mapQueueActionNotice(after,'assigned',{personId:body.assigned_to_id,name:body.assigned_to_name||body.responsible,note:'The action ownership was updated.'});
       }
       toast('Action updated!');
     }else{
@@ -25913,6 +26016,9 @@ async function mapSave(draft){
         res[0].action_ref=ref;mapAllData.unshift(res[0]);mapEditingId=res[0].id;
         document.getElementById('map-form3ref').textContent=ref;refStr=' Ref: '+ref;
         try{await api('/map_activity_log',{m:'POST',p:'return=minimal',b:{company_id:ccid(),action_id:res[0].id,activity_type:'Action created',performed_by:prof?.full_name||'User',new_value:body.status}});}catch(ex){}
+        var created=Object.assign({},body,res[0],{id:res[0].id,action_ref:ref});
+        mapAudit('create','Action created: '+ref,created,{title:created.title,priority:created.priority,status:created.status,assigned_to:created.assigned_to_name||created.responsible||null,target_date:created.target_date||null});
+        await mapQueueActionNotice(created,'assigned',{personId:created.assigned_to_id,name:created.assigned_to_name||created.responsible,note:'A new Master Action Plan item has been assigned.'});
       }
       toast('Action saved!'+refStr);
       // Update header
@@ -25938,6 +26044,8 @@ async function mapChangeStatus(newStatus){
     await api('/action_tracker?id=eq.'+mapEditingId,{m:'PATCH',p:'return=minimal',b:extraBody});
     Object.assign(old,extraBody);var st=document.getElementById('af-status');if(st)st.value=newStatus;
     try{await api('/map_activity_log',{m:'POST',p:'return=minimal',b:{company_id:ccid(),action_id:mapEditingId,activity_type:'Status changed to '+newStatus.replace(/_/g,' '),performed_by:prof?.full_name||'User',old_value:previousStatus,new_value:newStatus}});}catch(ex){}
+    mapAudit('update','Action status changed: '+mapDisplayRef(old),old,{changed_fields:['status'],old_status:previousStatus,new_status:newStatus});
+    await mapQueueActionNotice(old,'status',{personId:old.assigned_to_id,name:old.assigned_to_name||old.responsible,note:'Status changed from '+auditLabel(previousStatus||'open')+' to '+auditLabel(newStatus)+'.'});
     toast('Status updated to: '+newStatus.replace(/_/g,' '));
     mapRenderWorkflowBar(old);mapRenderActionButtons(old);
     mapLoadLog(mapEditingId);
@@ -25957,6 +26065,8 @@ async function mapApproveVerification(){
     var stEl=document.getElementById('af-status');if(stEl)stEl.value='pending_closure';
     var vsEl=document.getElementById('mf-verif-status');if(vsEl)vsEl.value='passed';
     try{await api('/map_activity_log',{m:'POST',p:'return=minimal',b:{company_id:ccid(),action_id:mapEditingId,activity_type:'Verification approved - ready for closure',performed_by:verifName||prof?.full_name||'User'}});}catch(ex){}
+    mapAudit('update','Action verification approved: '+mapDisplayRef(x||{}),x||{id:mapEditingId,company_id:ccid()},{changed_fields:['verification_status','status'],verification_status:'passed',verification_by:verifName||prof?.full_name||'User'});
+    await mapQueueActionNotice(x||{id:mapEditingId,company_id:ccid()},'verification',{personId:x?.assigned_to_id,name:x?.assigned_to_name||x?.responsible,note:'Verification has been approved and the action is ready for closure.'});
     toast('Verification approved - action moved to Pending Closure');
     var updated=mapAllData.find(r=>r.id===mapEditingId);if(updated){mapRenderWorkflowBar(updated);mapRenderActionButtons(updated);}
     mapFormTab('closure',document.getElementById('map-ftab-closure'));
@@ -25973,6 +26083,8 @@ async function mapFailVerification(){
     var x=mapAllData.find(r=>r.id===mapEditingId);if(x)Object.assign(x,body);
     var stEl=document.getElementById('af-status');if(stEl)stEl.value='in_progress';
     try{await api('/map_activity_log',{m:'POST',p:'return=minimal',b:{company_id:ccid(),action_id:mapEditingId,activity_type:'Verification failed - action reopened',performed_by:prof?.full_name||'User',notes:reason}});}catch(ex){}
+    mapAudit('update','Action verification failed: '+mapDisplayRef(x||{}),x||{id:mapEditingId,company_id:ccid()},{changed_fields:['verification_status','status','verification_notes'],verification_status:'failed',reason:reason});
+    await mapQueueActionNotice(x||{id:mapEditingId,company_id:ccid()},'verification',{personId:x?.assigned_to_id,name:x?.assigned_to_name||x?.responsible,note:'Verification failed: '+reason});
     toast('Verification failed - action reopened for further work');
     var updated=mapAllData.find(r=>r.id===mapEditingId);if(updated){mapRenderWorkflowBar(updated);mapRenderActionButtons(updated);}
     mapLoadLog(mapEditingId);
@@ -25993,6 +26105,8 @@ async function mapApproveClosure(){
     var stEl=document.getElementById('af-status');if(stEl)stEl.value='closed';
     document.getElementById('mf-progress').value=100;mapUpdateProgress(100);
     try{await api('/map_activity_log',{m:'POST',p:'return=minimal',b:{company_id:ccid(),action_id:mapEditingId,activity_type:'Action CLOSED - closure approved by '+(closeName||'User'),performed_by:closeName||prof?.full_name||'User'}});}catch(ex){}
+    mapAudit('complete','Action closed: '+mapDisplayRef(x||{}),x||{id:mapEditingId,company_id:ccid()},{changed_fields:['status','completed_date','closure_approved_by','progress_pct'],closure_approved_by:closeName||prof?.full_name||'User'});
+    await mapQueueActionNotice(x||{id:mapEditingId,company_id:ccid()},'closure',{personId:x?.assigned_to_id,name:x?.assigned_to_name||x?.responsible,note:'Action closure has been approved.'});
     toast('Action closed and approved');
     var updated=mapAllData.find(r=>r.id===mapEditingId);if(updated){mapRenderWorkflowBar(updated);mapRenderActionButtons(updated);}
     mapLoadLog(mapEditingId);
@@ -26009,6 +26123,8 @@ async function mapRejectClosure(){
     var x=mapAllData.find(r=>r.id===mapEditingId);if(x)Object.assign(x,body);
     var stEl=document.getElementById('af-status');if(stEl)stEl.value='in_progress';
     try{await api('/map_activity_log',{m:'POST',p:'return=minimal',b:{company_id:ccid(),action_id:mapEditingId,activity_type:'Closure REJECTED - action reopened',performed_by:prof?.full_name||'User',notes:reason}});}catch(ex){}
+    mapAudit('update','Action closure rejected: '+mapDisplayRef(x||{}),x||{id:mapEditingId,company_id:ccid()},{changed_fields:['status','closure_rejected_reason'],reason:reason});
+    await mapQueueActionNotice(x||{id:mapEditingId,company_id:ccid()},'closure',{personId:x?.assigned_to_id,name:x?.assigned_to_name||x?.responsible,note:'Closure rejected: '+reason});
     toast('Closure rejected - action reopened. Please address the rejection reason.');
     var updated=mapAllData.find(r=>r.id===mapEditingId);if(updated){mapRenderWorkflowBar(updated);mapRenderActionButtons(updated);}
     mapLoadLog(mapEditingId);
@@ -26028,6 +26144,8 @@ async function mapTriggerEscalation(){
     await api('/action_tracker?id=eq.'+mapEditingId,{m:'PATCH',p:'return=minimal',b:body});
     var x=mapAllData.find(r=>r.id===mapEditingId);if(x)Object.assign(x,body);
     try{await api('/map_activity_log',{m:'POST',p:'return=minimal',b:{company_id:ccid(),action_id:mapEditingId,activity_type:'Action ESCALATED to Level '+level+' - '+escName,performed_by:prof?.full_name||'User',notes:reason}});}catch(ex){}
+    mapAudit('update','Action escalated: '+mapDisplayRef(x||{}),x||{id:mapEditingId,company_id:ccid()},{changed_fields:['escalated','escalated_to','escalation_level','escalation_reason'],level:level,escalated_to:escName,reason:reason});
+    await mapQueueActionNotice(x||{id:mapEditingId,company_id:ccid()},'escalation',{personId:escSel?.value||null,name:escName,note:'Escalated to Level '+level+': '+reason});
     toast('Action escalated to: '+escName);
     document.getElementById('mf-escalated').checked=true;
     mapLoadLog(mapEditingId);
@@ -26066,6 +26184,8 @@ async function mapDelete(){
       await api('/action_tracker?id=eq.'+mapEditingId,{m:'PATCH',p:'return=minimal',b:{status:'cancelled',updated_at:new Date().toISOString()}});
       var previous=current.status;Object.assign(current,{status:'cancelled',updated_at:new Date().toISOString()});
       try{await api('/map_activity_log',{m:'POST',p:'return=minimal',b:{company_id:ccid(),action_id:mapEditingId,activity_type:'Action cancelled instead of deleted',performed_by:prof?.full_name||'User',old_value:previous,new_value:'cancelled'}});}catch(ex){}
+      mapAudit('update','Action cancelled: '+mapDisplayRef(current),current,{changed_fields:['status'],old_status:previous,new_status:'cancelled'});
+      await mapQueueActionNotice(current,'cancelled',{personId:current.assigned_to_id,name:current.assigned_to_name||current.responsible,note:'Action was cancelled and retained for audit history.'});
       toast('Action cancelled and kept for audit history');
       mapShowList();
     }catch(e){toastActionError('Delete action','Master Action Plan',e);}
@@ -26073,6 +26193,7 @@ async function mapDelete(){
   }
   if(!(await appConfirmDelete('action','This action is already cancelled. Permanent deletion should be used only for duplicate/test records.')))return;
   api('/action_tracker?id=eq.'+mapEditingId,{m:'DELETE'}).then(function(){
+    mapAudit('delete','Cancelled action permanently deleted: '+mapDisplayRef(current),current,{status:current.status,title:current.title||current.description||null});
     mapAllData=mapAllData.filter(x=>x.id!==mapEditingId);
     toast('Cancelled action permanently deleted');mapEditingId=null;mapShowList();
   }).catch(function(e){toastActionError('Delete action','Master Action Plan',e);});
@@ -26084,7 +26205,7 @@ function cycleAction(id, currentStatus){
   if(!workflowCanMutate('actions','actions'))return;
   var next={open:'in_progress',in_progress:'pending_closure',pending_closure:'closed',closed:'closed'}[currentStatus]||'in_progress';
   api('/action_tracker?id=eq.'+id,{m:'PATCH',p:'return=minimal',b:{status:next,updated_at:new Date().toISOString()}}).then(function(){
-    var x=mapAllData.find(r=>r.id===id);if(x)x.status=next;mapRenderList();mapLoadList();
+    var x=mapAllData.find(r=>r.id===id);if(x){x.status=next;mapAudit('update','Action status changed: '+mapDisplayRef(x),x,{changed_fields:['status'],old_status:currentStatus,new_status:next});mapQueueActionNotice(x,'status',{personId:x.assigned_to_id,name:x.assigned_to_name||x.responsible,note:'Status changed from '+auditLabel(currentStatus||'open')+' to '+auditLabel(next)+'.'}).catch(function(){});}mapRenderList();mapLoadList();
     toast('Status updated!');
   }).catch(function(e){toastActionError('Cycle action status','Master Action Plan',e);});
 }
@@ -50676,4 +50797,3 @@ I can help you:<br>
 
 </body>
 </html>
-
