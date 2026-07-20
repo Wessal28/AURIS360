@@ -4290,7 +4290,7 @@ tbody.appendChild(pr);return;
 }
 inds.forEach(function(ind,indIdx){
 const mdata=kpiMonthlyData[ind.id]||{};
-let ytdSum=0;let hasData=false;
+let hasData=false;
 const tr=document.createElement('tr');
 if(indIdx===0){
 const codeTd=document.createElement('td');
@@ -4312,15 +4312,14 @@ const td=document.createElement('td');
 td.style.cssText='border:1px solid var(--border);padding:6px 8px;text-align:center;cursor:pointer';
 td.title='Click to '+(entry?'edit':'enter value');
 if(entry&&entry.actual!==null&&entry.actual!==undefined){
-hasData=true;const val=parseFloat(entry.actual);ytdSum+=val;
+hasData=true;const val=parseFloat(entry.actual);
 const sty=kpiCellStyle(ind,val);if(sty)td.style.cssText+=';'+sty;
 td.textContent=kpiFmtNumberOnly(val);
 }else{td.style.color='var(--text3)';td.textContent='--';}
 (function(indId,kId,mn){td.onclick=function(){kpiOpenEntry(indId,kId,mn);};})(ind.id,k.id,m);
 tr.appendChild(td);
 });
-const ytdVals=Object.values(mdata).filter(function(v){return v.ytd!==null&&v.ytd!==undefined;});
-const ytd=ytdVals.length?parseFloat(ytdVals[ytdVals.length-1].ytd):ytdSum;
+const ytd=kpiCalcYTDFromRows(ind,Object.values(mdata),12);
 const ytdTd=document.createElement('td');
 const ytdSty=hasData?kpiCellStyle(ind,ytd):'';
 ytdTd.style.cssText='border:1px solid var(--border);padding:6px 8px;text-align:center;font-weight:700'+(ytdSty?';'+ytdSty:'');
@@ -4485,7 +4484,8 @@ ytd_method:ytdEl?ytdEl.value||'sum':'sum'
 };
 }).filter(i=>i&&i.name);
 if(!indicators.length){toast('Please enter at least one indicator name',false);return;}
-const body={company_id:prof?.company_id,objective_id:objId,code:document.getElementById('kpi-code').value.trim(),name,frequency:document.getElementById('kpi-freq').value,responsible:document.getElementById('kpi-resp').value.trim()||null,status:document.getElementById('kpi-status').value,year:parseInt(document.getElementById('year-sel')?.value)||new Date().getFullYear(),created_by:prof?.id};
+const kpiYear=parseInt(document.getElementById('year-sel')?.value)||new Date().getFullYear();
+const body={company_id:prof?.company_id,objective_id:objId,code:document.getElementById('kpi-code').value.trim(),name,frequency:document.getElementById('kpi-freq').value,responsible:document.getElementById('kpi-resp').value.trim()||null,status:document.getElementById('kpi-status').value,year:kpiYear,created_by:prof?.id};
 try{
 let kpiId=kpiEditKpiId;
 if(kpiId){
@@ -4504,6 +4504,7 @@ await api('/kpi_indicators?id=eq.'+existing.id,{m:'PATCH',p:'return=minimal',b:{
 target_value:ind.target_value,target_operator:ind.target_operator,
 unit:ind.unit,ytd_method:ind.ytd_method,sort_order:i
 }});
+Object.assign(existing,ind,{sort_order:i});
 }else{
 await api('/kpi_indicators',{m:'POST',p:'return=minimal',b:{...ind,kpi_id:kpiId,company_id:prof?.company_id,sort_order:i}});
 }
@@ -4516,6 +4517,9 @@ if(!hasData||!hasData.length){
 await api('/kpi_indicators?id=eq.'+ex.id,{m:'DELETE'});
 }
 }
+}
+for(const ex of existingInds){
+await kpiRecalcAllYTD(ex.id,kpiYear);
 }
 }
 toast(kpiEditKpiId?'KPI updated!':'KPI added!');closeKpiModal('kpi-edit-modal');await kpiLoadAll();
@@ -4546,6 +4550,22 @@ if(method==='max')return Math.max(...vals);
 if(method==='min')return Math.min(...vals);
 return Math.round(vals.reduce((a,b)=>a+b,0)*100)/100;
 }
+
+function kpiCalcYTDFromRows(ind,rows,upToMonth){
+const vals=(rows||[])
+.filter(function(x){return x.month<=upToMonth&&x.actual!==null&&x.actual!==undefined;})
+.sort(function(a,b){return a.month-b.month;})
+.map(function(x){return parseFloat(x.actual);})
+.filter(function(v){return !isNaN(v);});
+if(!vals.length)return null;
+const method=ind?.ytd_method||'sum';
+if(method==='last')return vals[vals.length-1];
+if(method==='average')return Math.round((vals.reduce(function(a,b){return a+b;},0)/vals.length)*100)/100;
+if(method==='max')return Math.max.apply(null,vals);
+if(method==='min')return Math.min.apply(null,vals);
+return Math.round(vals.reduce(function(a,b){return a+b;},0)*100)/100;
+}
+
 function kpiOpenEntry(indicatorId,kpiId,month){
 kpiEntryIndicatorId=indicatorId;
 kpiEntryYear=parseInt(document.getElementById('year-sel')?.value)||new Date().getFullYear();

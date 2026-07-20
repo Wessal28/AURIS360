@@ -12219,7 +12219,7 @@ tbody.appendChild(pr);return;
 }
 inds.forEach(function(ind,indIdx){
 const mdata=kpiMonthlyData[ind.id]||{};
-let ytdSum=0;let hasData=false;
+let hasData=false;
 const tr=document.createElement('tr');
 if(indIdx===0){
 const codeTd=document.createElement('td');
@@ -12241,15 +12241,14 @@ const td=document.createElement('td');
 td.style.cssText='border:1px solid var(--border);padding:6px 8px;text-align:center'+(canEdit?';cursor:pointer':'');
 td.title=canEdit?('Click to '+(entry?'edit':'enter value')):'Read-only';
 if(entry&&entry.actual!==null&&entry.actual!==undefined){
-hasData=true;const val=parseFloat(entry.actual);ytdSum+=val;
+hasData=true;const val=parseFloat(entry.actual);
 const sty=kpiCellStyle(ind,val);if(sty)td.style.cssText+=';'+sty;
 td.textContent=kpiFmtNumberOnly(val);
 }else{td.style.color='var(--text3)';td.textContent='--';}
 if(canEdit){(function(indId,kId,mn){td.onclick=function(){kpiOpenEntry(indId,kId,mn);};})(ind.id,k.id,m);}
 tr.appendChild(td);
 });
-const ytdVals=Object.values(mdata).filter(function(v){return v.ytd!==null&&v.ytd!==undefined;});
-const ytd=ytdVals.length?parseFloat(ytdVals[ytdVals.length-1].ytd):ytdSum;
+const ytd=kpiCalcYTDFromRows(ind,Object.values(mdata),12);
 const ytdTd=document.createElement('td');
 const ytdSty=hasData?kpiCellStyle(ind,ytd):'';
 ytdTd.style.cssText='border:1px solid var(--border);padding:6px 8px;text-align:center;font-weight:700'+(ytdSty?';'+ytdSty:'');
@@ -12425,7 +12424,8 @@ if(!indicators.length){toast('Please enter at least one indicator name',false);r
 // This is critical: without it, sephs_admin saves under their own profile company
 // (BuildCo) even when viewing/working on another client's data.
 const effectiveCompanyId = (isSA() && sephsCompanyContext) ? sephsCompanyContext : prof?.company_id;
-const body={company_id:effectiveCompanyId,objective_id:objId,code:document.getElementById('kpi-code').value.trim(),name,frequency:document.getElementById('kpi-freq').value,responsible:document.getElementById('kpi-resp').value.trim()||null,status:document.getElementById('kpi-status').value,year:parseInt(document.getElementById('year-sel')?.value)||new Date().getFullYear(),created_by:prof?.id};
+const kpiYear=parseInt(document.getElementById('year-sel')?.value)||new Date().getFullYear();
+const body={company_id:effectiveCompanyId,objective_id:objId,code:document.getElementById('kpi-code').value.trim(),name,frequency:document.getElementById('kpi-freq').value,responsible:document.getElementById('kpi-resp').value.trim()||null,status:document.getElementById('kpi-status').value,year:kpiYear,created_by:prof?.id};
 try{
 let kpiId=kpiEditKpiId;
 if(kpiId){
@@ -12444,6 +12444,7 @@ await api('/kpi_indicators?id=eq.'+existing.id,{m:'PATCH',p:'return=minimal',b:{
 target_value:ind.target_value,target_operator:ind.target_operator,
 unit:ind.unit,ytd_method:ind.ytd_method,sort_order:i
 }});
+Object.assign(existing,ind,{sort_order:i});
 }else{
 // Same company-context logic for the indicator: must match the parent KPI's company.
 await api('/kpi_indicators',{m:'POST',p:'return=minimal',b:{...ind,kpi_id:kpiId,company_id:effectiveCompanyId,sort_order:i}});
@@ -12457,6 +12458,9 @@ if(!hasData||!hasData.length){
 await api('/kpi_indicators?id=eq.'+ex.id,{m:'DELETE'});
 }
 }
+}
+for(const ex of existingInds){
+await kpiRecalcAllYTD(ex.id,kpiYear);
 }
 }
 toast(kpiEditKpiId?'KPI updated!':'KPI added!');closeKpiModal('kpi-edit-modal');await kpiLoadAll();
@@ -50672,6 +50676,4 @@ I can help you:<br>
 
 </body>
 </html>
-
-
 
