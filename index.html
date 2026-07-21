@@ -28034,17 +28034,25 @@ const LEGAL_LEG_CFG={
   'ISO 14001:2015':                          {color:'#065F46',short:'ISO 14001'},
 };
 const LEGAL_CAT_CFG={
-  health_safety: {emoji:'*',label:'H&S',         color:'#185FA5'},
-  environment:   {emoji:'*',label:'Environment',  color:'#1D9E75'},
-  fire:          {emoji:'*',label:'Fire',         color:'#DC2626'},
-  chemical:      {emoji:'*',label:'Chemical',     color:'#7C3AED'},
-  electrical:    {emoji:'?',label:'Electrical',   color:'#B45309'},
-  construction:  {emoji:'*', label:'Construction', color:'#854F0B'},
-  noise:         {emoji:'*',label:'Noise',        color:'#8B5CF6'},
-  waste:         {emoji:'*', label:'Waste',        color:'#065F46'},
-  iso:           {emoji:'*',label:'ISO',          color:'#5B21B6'},
-  client:        {emoji:'*',label:'Client',       color:'#6B7280'},
-  other:         {emoji:'*',label:'Other',        color:'#6B7280'}
+  health_safety:       {emoji:'*',label:'H&S',                  color:'#185FA5'},
+  workplace_conditions:{emoji:'*',label:'Workplace',            color:'#0F766E'},
+  welfare:             {emoji:'*',label:'Welfare',              color:'#0E7490'},
+  consultation:        {emoji:'*',label:'Consultation',         color:'#2563EB'},
+  training:            {emoji:'*',label:'Training',             color:'#7C3AED'},
+  incident_reporting:  {emoji:'*',label:'Incident reporting',   color:'#C2410C'},
+  occupational_health: {emoji:'*',label:'Occupational health',  color:'#BE185D'},
+  ppe:                 {emoji:'*',label:'PPE',                  color:'#047857'},
+  machinery:           {emoji:'*',label:'Machinery',            color:'#374151'},
+  environment:         {emoji:'*',label:'Environment',          color:'#1D9E75'},
+  fire:                {emoji:'*',label:'Fire',                 color:'#DC2626'},
+  chemical:            {emoji:'*',label:'Chemical',             color:'#7C3AED'},
+  electrical:          {emoji:'*',label:'Electrical',           color:'#B45309'},
+  construction:        {emoji:'*',label:'Construction',         color:'#854F0B'},
+  noise:               {emoji:'*',label:'Noise',                color:'#8B5CF6'},
+  waste:               {emoji:'*',label:'Waste',                color:'#065F46'},
+  iso:                 {emoji:'*',label:'ISO',                  color:'#5B21B6'},
+  client:              {emoji:'*',label:'Client',               color:'#6B7280'},
+  other:               {emoji:'*',label:'Other',                color:'#6B7280'}
 };
 const LEG_STATUS_CFG={
   compliant:      {bg:'#EAF3DE',tc:'#3B6D11', label:'Compliant',     score:100},
@@ -28306,15 +28314,30 @@ function legalParseActSections(text){
 function legalInferRequirementMeta(text){
   var t=(text||'').toLowerCase();
   var category='health_safety';
-  if(/fire|flammable|explosive|explosion|means of escape/.test(t))category='fire';
-  else if(/environment|pollution|waste|effluent|emission|spill/.test(t))category='environment';
-  else if(/chemical|hazardous|corrosive|fume|gas|vapour|substance|asbestos|biological/.test(t))category='chemical';
-  else if(/electric|electrical|voltage|wiring/.test(t))category='electrical';
-  else if(/construction|building|scaffold|ladder|excavation|demolition/.test(t))category='construction';
+  if(/committee|consultation|representative|safety and health committee|employee representative/.test(t))category='consultation';
+  else if(/training|instruction|information|competenc|competent person|supervision|briefing/.test(t))category='training';
+  else if(/accident|incident|dangerous occurrence|notification|notify|reporting|record of accident|investigation/.test(t))category='incident_reporting';
+  else if(/health surveillance|medical examination|occupational illness|occupational disease|exposure monitoring|biological monitoring|audiometry|spirometry/.test(t))category='occupational_health';
+  else if(/first aid|hygiene|sanitary|washing|drinking water|welfare|toilet|rest room|changing room|facilities/.test(t))category='welfare';
+  else if(/ppe|personal protective|protective equipment|respirator|helmet|glove|safety shoes|eye protection|hearing protection/.test(t))category='ppe';
+  else if(/machinery|machine|guard|interlock|moving part|lifting appliance|pressure vessel|hoist|crane|forklift|tool|equipment/.test(t))category='machinery';
+  else if(/fire|flammable|explosive|explosion|means of escape|emergency exit|fire extinguisher|alarm|evacuation/.test(t))category='fire';
+  else if(/environment|pollution|waste|effluent|emission|spill|contamination|discharge/.test(t))category='environment';
+  else if(/chemical|hazardous|corrosive|fume|gas|vapour|substance|asbestos|biological|sds|material safety data/.test(t))category='chemical';
+  else if(/electric|electrical|voltage|wiring|circuit|earthing|energised|energized/.test(t))category='electrical';
+  else if(/construction|scaffold|ladder|excavation|demolition|work at height|roof work|temporary works/.test(t))category='construction';
   else if(/noise|vibration/.test(t))category='noise';
+  else if(/cleanliness|overcrowding|ventilation|temperature|lighting|floor|workplace|premises|passageway|traffic route|housekeeping/.test(t))category='workplace_conditions';
   var obligation=/\bmay\b/.test(t)&&!/\bshall\b|\bmust\b/.test(t)?'conditional':'mandatory';
   var frequency=/notify|notification|report|accident|dangerous occurrence|certificate|registration|permit/.test(t)?'as_required':'ongoing';
   return {category:category,obligation_type:obligation,frequency:frequency};
+}
+
+function legalCategoryOptionsHtml(selected){
+  return Object.keys(LEGAL_CAT_CFG).map(function(k){
+    var c=LEGAL_CAT_CFG[k]||LEGAL_CAT_CFG.other;
+    return '<option value="'+escH(k)+'" '+(k===selected?'selected':'')+'>'+escH(c.label)+'</option>';
+  }).join('');
 }
 
 function legalStatusScore(status){
@@ -28353,7 +28376,7 @@ function legalRenderPdfPreview(rows,fileName){
       +'<td style="padding:8px;text-align:center"><input type="checkbox" class="lr-pdf-row" data-idx="'+i+'" checked style="width:16px!important;height:16px!important;margin:0"/></td>'
       +'<td style="padding:8px;font-family:monospace;font-weight:800;color:#185FA5;white-space:nowrap">'+escH(r.section)+'</td>'
       +'<td style="padding:8px"><div style="font-weight:700">'+escH(r.title)+'</div><div style="font-size:11px;color:var(--text2);line-height:1.35">'+escH(r.requirement.substring(0,220))+(r.requirement.length>220?'...':'')+'</div>'+(r.part?'<div style="font-size:10px;color:#6B7280;margin-top:3px">'+escH(r.part)+'</div>':'')+'</td>'
-      +'<td style="padding:8px"><span style="background:'+cat.color+'15;color:'+cat.color+';padding:2px 7px;border-radius:99px;font-size:10px;font-weight:700">'+cat.label+'</span></td>'
+      +'<td style="padding:8px"><select class="lr-pdf-cat" data-idx="'+i+'" style="width:170px;padding:6px 8px;border:1px solid var(--border);border-radius:8px;font-size:12px">'+legalCategoryOptionsHtml(r.category||'health_safety')+'</select><div style="font-size:10px;color:'+cat.color+';font-weight:700;margin-top:3px">Auto: '+escH(cat.label)+'</div></td>'
       +'</tr>';
   });
   h+='</tbody></table></div>';
@@ -28366,7 +28389,13 @@ function legalTogglePdfRows(checked){
 
 async function legalImportPdfRows(){
   if(!isMgr()){toast('Only managers/admins can import legal requirements',false);return;}
-  var selected=Array.from(document.querySelectorAll('.lr-pdf-row:checked')).map(function(cb){return legalPdfImportRows[parseInt(cb.dataset.idx,10)];}).filter(Boolean);
+  var selected=Array.from(document.querySelectorAll('.lr-pdf-row:checked')).map(function(cb){
+    var idx=parseInt(cb.dataset.idx,10);
+    var row=Object.assign({},legalPdfImportRows[idx]||{});
+    var cat=document.querySelector('.lr-pdf-cat[data-idx="'+idx+'"]');
+    if(cat)row.category=cat.value||row.category;
+    return row;
+  }).filter(function(x){return x&&x.title;});
   if(!selected.length){toast('Select at least one section to import',false);return;}
   var legislation=(document.getElementById('lr-pdf-legislation')?.value||'Imported Legal Act').trim();
   var prefix=(document.getElementById('lr-pdf-prefix')?.value||'LEG').trim().toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,8)||'LEG';
@@ -43711,9 +43740,20 @@ Offline mode - changes will sync when connection is restored
 <select id="lr-filter-cat" onchange="legalFilterRegister()" style="padding:7px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px">
 <option value="">All categories</option>
 <option value="health_safety">Health &amp; Safety</option>
+<option value="workplace_conditions">Workplace conditions</option>
+<option value="welfare">Welfare / facilities</option>
+<option value="consultation">Consultation / committees</option>
+<option value="training">Training / competency</option>
+<option value="incident_reporting">Incident reporting</option>
+<option value="occupational_health">Occupational health</option>
+<option value="ppe">PPE</option>
+<option value="machinery">Machinery / equipment</option>
 <option value="environment">Environment</option>
 <option value="fire">Fire Safety</option>
 <option value="chemical">Chemical / COSHH</option>
+<option value="electrical">Electrical</option>
+<option value="construction">Construction / work at height</option>
+<option value="noise">Noise / vibration</option>
 <option value="iso">ISO Standards</option>
 <option value="client">Client Standards</option>
 <option value="other">Other</option>
@@ -43892,10 +43932,12 @@ Offline mode - changes will sync when connection is restored
 <div class="form3group"><label class="form3label">Sub-section</label><input type="text" id="lr-subsection"/></div>
 <div class="form3group"><label class="form3label">Category</label>
 <select id="lr-category">
-<option value="health_safety">Health &amp; Safety</option><option value="environment">Environment</option>
-<option value="fire">Fire Safety</option><option value="chemical">Chemical</option>
-<option value="electrical">Electrical</option><option value="construction">Construction</option>
-<option value="noise">Noise</option><option value="waste">Waste</option>
+<option value="health_safety">Health &amp; Safety</option><option value="workplace_conditions">Workplace conditions</option><option value="welfare">Welfare / facilities</option>
+<option value="consultation">Consultation / committees</option><option value="training">Training / competency</option><option value="incident_reporting">Incident reporting</option>
+<option value="occupational_health">Occupational health</option><option value="ppe">PPE</option><option value="machinery">Machinery / equipment</option>
+<option value="environment">Environment</option><option value="fire">Fire Safety</option><option value="chemical">Chemical</option>
+<option value="electrical">Electrical</option><option value="construction">Construction / work at height</option>
+<option value="noise">Noise / vibration</option><option value="waste">Waste</option>
 <option value="iso">ISO Standard</option><option value="client">Client Standard</option><option value="other">Other</option>
 </select></div>
 </div>
@@ -43980,8 +44022,11 @@ Offline mode - changes will sync when connection is restored
 <div class="form3row">
 <div class="form3group"><label class="form3label">Category</label>
 <select id="lc-category">
-<option value="health_safety">Health &amp; Safety</option><option value="environment">Environment</option>
-<option value="fire">Fire</option><option value="iso">ISO</option><option value="other">Other</option>
+<option value="health_safety">Health &amp; Safety</option><option value="workplace_conditions">Workplace conditions</option><option value="welfare">Welfare / facilities</option>
+<option value="consultation">Consultation / committees</option><option value="training">Training / competency</option><option value="incident_reporting">Incident reporting</option>
+<option value="occupational_health">Occupational health</option><option value="ppe">PPE</option><option value="machinery">Machinery / equipment</option>
+<option value="environment">Environment</option><option value="fire">Fire</option><option value="chemical">Chemical</option><option value="electrical">Electrical</option>
+<option value="construction">Construction / work at height</option><option value="noise">Noise / vibration</option><option value="iso">ISO</option><option value="other">Other</option>
 </select></div>
 <div class="form3group"><label class="form3label">Effective date</label><input type="date" id="lc-effective-date"/></div>
 <div class="form3group"><label class="form3label">Applicable to company?</label><select id="lc-applicable"><option value="true">Yes</option><option value="false">No</option></select></div>
