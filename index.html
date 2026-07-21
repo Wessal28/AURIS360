@@ -4143,17 +4143,19 @@ try{ Brand.paintFromCache(); }catch(_){}
 
 async function loadPeopleCache(){
 try{
-const d=await api('/people?select=id,first_name,last_name,job_title,department,employee_number,id_number,person_type,email,phone'+cf()+'&status=eq.active&order=last_name');
+const d=await api('/people?select=id,company_id,first_name,last_name,job_title,department,employee_number,id_number,person_type,email,phone'+cf()+'&status=eq.active&order=last_name');
 people=d||[];fillPplDrops();
 }catch(e){people=[];}
 }
 function fillPplDrops(){
-const opts='<option value="">Select person...</option>'+people.map(p=>'<option value="'+p.id+'">'+p.last_name+', '+p.first_name+(p.job_title?' -- '+p.job_title:'')+'</option>').join('');
-const nameOpts='<option value="">Select person...</option>'+people.map(function(p){var nm=[p.first_name,p.last_name].filter(Boolean).join(' ')||p.email||'';return '<option value="'+escH(nm)+'">'+escH([p.last_name,p.first_name].filter(Boolean).join(', ')||nm)+(p.job_title?' -- '+escH(p.job_title):'')+'</option>';}).join('');
+var scopeCompany=(typeof ccid==='function'?ccid():null);
+var dropdownPeople=(people||[]).filter(function(p){return !scopeCompany||!p.company_id||p.company_id===scopeCompany;});
+const opts='<option value="">Select person...</option>'+dropdownPeople.map(p=>'<option value="'+p.id+'">'+p.last_name+', '+p.first_name+(p.job_title?' -- '+p.job_title:'')+'</option>').join('');
+const nameOpts='<option value="">Select person...</option>'+dropdownPeople.map(function(p){var nm=[p.first_name,p.last_name].filter(Boolean).join(' ')||p.email||'';return '<option value="'+escH(nm)+'">'+escH([p.last_name,p.first_name].filter(Boolean).join(', ')||nm)+(p.job_title?' -- '+escH(p.job_title):'')+'</option>';}).join('');
 ['ef-person','ef-by','ef-assigned','rf-by','invf-by','invf-persons','pf-contractor','pf-issued','pf-approved','nf-by','mf-chair','kf-resp','af-resp','df-owner'].forEach(id=>{const el=document.getElementById(id);if(el&&!el.multiple)el.innerHTML=opts;});
 ['if-by','if-sign-inspector','if-sign-reviewer','obs-action-assigned','obs-observer','obs-person-observed','mf-assigned-by','ra-assessed-by','ra-approved-by','ra-reviewed-by','ra-sign-assessor','ra-sign-reviewer','ra-sign-approver','jsa-prepared-by','jsa-reviewed-by','jsa-approved-by','lc-responsible','lcaf-assessor','lcaf-approved-by','gapf-responsible','calf-responsible','ms-chaired-by','ms-responsible','kpi-resp','pif-emp-name','pif-issued-by','piif-emp-name','piif-inspector','prf-emp-name','prf-requested-by','prf-approved-by','epf-approved-by','bullf-author','bullf-approved-by','mom3chaired-by','mom3sign-chair','mom3sign-approver','sop-video-author','sop-author','sop-approver','adm3site-manager','tp-trainer','tfr-trainer','compf-person','compf-assessor','indf-person','indf-inducted-by','elef-person','ertf-name','mpf-warden','drf-conducted-by','drf-reviewed-by','drf-approved-by','bcpf-approved-by','msf-name','audf-name','spif-name','vaxf-name','odf-name','atex-resp','cpaf-assessor','eif-inspector','iso-verified-by'].forEach(id=>{document.querySelectorAll('[id="'+id+'"]').forEach(el=>{if(el&&!el.multiple&&el.tagName==='SELECT'){var cur=el.value;el.innerHTML=nameOpts;if(cur){el.value=cur;if(el.value!==cur){var o=document.createElement('option');o.value=cur;o.textContent=cur+' (saved text)';el.appendChild(o);el.value=cur;}}}});});
 const ms=document.getElementById('tf-attendees');
-if(ms)ms.innerHTML=people.map(p=>'<option value="'+p.id+'">'+p.last_name+', '+p.first_name+'</option>').join('');
+if(ms)ms.innerHTML=dropdownPeople.map(p=>'<option value="'+p.id+'">'+p.last_name+', '+p.first_name+'</option>').join('');
 if(typeof ptwPopulatePeopleFields==='function')ptwPopulatePeopleFields();
 }
 
@@ -28801,31 +28803,44 @@ function legalRenderAssessmentMatrix(){
     +'<div><label class="form3label">Select legislation / standard</label><select id="lca-scope-item" onchange="legalRenderAssessmentMatrix();lcaUpdateLiveScore()">'+legalAssessmentScopeOptionsHtml(currentItem)+'</select></div>'
     +'<button type="button" class="btn btn-sm" onclick="lcaMarkAllNoGap()">Mark all no gap</button>'
     +'</div><div style="font-size:12px;color:var(--text2);margin-top:8px">Saving updates the legal register, sends gaps to Gap Analysis, and creates related actions in the Master Action Plan.</div></div>'
-    +'<div class="table-scroll"><table class="data-table lca-worksheet" style="min-width:1050px"><thead><tr><th style="width:95px">Ref</th><th style="width:230px">Legislation / section</th><th style="width:260px">Requirement</th><th style="width:290px">Assessment result</th><th style="width:310px">Gap action</th></tr></thead><tbody>';
+    +'<div class="table-scroll"><table class="data-table lca-worksheet" style="min-width:1120px"><thead><tr><th style="width:95px">Ref</th><th style="width:230px">Legislation / section</th><th style="width:340px">Requirement</th><th style="width:290px">Assessment result</th><th style="width:310px">Gap action</th></tr></thead><tbody>';
   rows.forEach(function(x){
     var st=x.status||'compliant';
     if(x.applicable===false)st='not_applicable';
     if((x.gap||x.gap_identified)&&st==='compliant')st=(x.controls?'partial':'non_compliant');
     h+='<tr class="lca-row" data-id="'+escH(x.id||'')+'"><td style="font-family:monospace;font-weight:800;color:#185FA5;vertical-align:top">'+escH(displayRecordRef(x,'req_ref','LEG-DRAFT'))+'</td>'
       +'<td style="vertical-align:top"><b>'+escH(x.legislation||'-')+'</b><div style="font-size:11px;color:var(--text2);margin-top:3px">'+escH(x.title||x.section||'')+'</div><div style="font-size:10px;color:var(--text2);margin-top:5px">'+(legalIsStandardRequirement(x)?'Standard':'Legislation / Act')+'</div></td>'
-      +'<td style="font-size:12px;vertical-align:top;line-height:1.35">'+escH((x.requirement||'').substring(0,360))+(String(x.requirement||'').length>360?'...':'')+'</td>'
+      +'<td style="font-size:12px;vertical-align:top;line-height:1.35;white-space:pre-wrap">'+escH(x.requirement||'-')+'</td>'
       +'<td style="vertical-align:top"><label class="form3label">Current controls</label><textarea class="lca-controls" oninput="lcaUpdateLiveScore()" style="min-height:58px;font-size:12px">'+escH(x.controls||'')+'</textarea><div style="display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center;margin-top:8px"><select class="lca-status" onchange="lcaStatusChanged(this)"><option value="compliant" '+(st==='compliant'?'selected':'')+'>Compliant</option><option value="partial" '+(st==='partial'?'selected':'')+'>Partial compliance</option><option value="non_compliant" '+(st==='non_compliant'?'selected':'')+'>Non-compliant</option><option value="not_applicable" '+(st==='not_applicable'?'selected':'')+'>N/A</option></select><label style="display:flex;align-items:center;gap:6px;font-size:12px;font-weight:700;color:#991B1B"><input type="checkbox" class="lca-gap" onchange="lcaGapChanged(this)" '+((x.gap||x.gap_identified)?'checked':'')+' style="width:18px!important;height:18px!important"/> Gap</label></div></td>'
       +'<td style="vertical-align:top"><label class="form3label">Further controls / recommendations</label><textarea class="lca-reco" oninput="lcaUpdateLiveScore()" style="min-height:58px;font-size:12px">'+escH(x.further_controls||x.recommendations||x.gap_description||'')+'</textarea><div style="display:grid;grid-template-columns:1fr 140px;gap:8px;margin-top:8px"><input class="lca-resp" oninput="lcaUpdateLiveScore()" value="'+escH(x.responsibility||x.responsible_person||'')+'" placeholder="Action by"/><input type="date" class="lca-target" onchange="lcaUpdateLiveScore()" value="'+escH(x.target_date||'')+'"/></div></td></tr>';
   });
   box.innerHTML=h+'</tbody></table></div>';
   var modeEl=document.getElementById('lca-scope-mode');if(modeEl)modeEl.value=currentMode;
   var item=document.getElementById('lca-scope-item');if(item){item.value=currentItem;item.disabled=currentMode!=='one';}
+  document.querySelectorAll('#lca-matrix .lca-row').forEach(lcaUpdateGapFields);
   lcaUpdateLiveScore();
+}
+function lcaUpdateGapFields(tr){
+  if(!tr)return;
+  var gap=!!tr.querySelector('.lca-gap')?.checked;
+  ['.lca-reco','.lca-resp','.lca-target'].forEach(function(sel){
+    var el=tr.querySelector(sel);if(!el)return;
+    el.disabled=!gap;
+    el.style.background=gap?'':'#f3f4f6';
+    el.style.opacity=gap?'1':'.65';
+  });
 }
 function lcaGapChanged(cb){
   var tr=cb.closest('.lca-row'),sel=tr?.querySelector('.lca-status');
   if(sel&&cb.checked&&sel.value==='compliant')sel.value='partial';
   if(sel&&!cb.checked&&(sel.value==='partial'||sel.value==='non_compliant'))sel.value='compliant';
+  lcaUpdateGapFields(tr);
   lcaUpdateLiveScore();
 }
 function lcaStatusChanged(sel){
   var tr=sel.closest('.lca-row'),cb=tr?.querySelector('.lca-gap');
   if(cb)cb.checked=sel.value==='partial'||sel.value==='non_compliant';
+  lcaUpdateGapFields(tr);
   lcaUpdateLiveScore();
 }
 function lcaUpdateLiveScore(){
@@ -28841,7 +28856,12 @@ function lcaUpdateLiveScore(){
   set('lcaf-compliant',counts.compliant);set('lcaf-partial',counts.partial);set('lcaf-noncompliant',counts.non);set('lcaf-na',counts.na);
   lcaCalcScore();
 }
-function lcaMarkAllNoGap(){document.querySelectorAll('#lca-matrix .lca-status').forEach(function(sel){sel.value='compliant';});document.querySelectorAll('#lca-matrix .lca-gap').forEach(function(cb){cb.checked=false;});lcaUpdateLiveScore();}
+function lcaMarkAllNoGap(){
+  document.querySelectorAll('#lca-matrix .lca-status').forEach(function(sel){sel.value='compliant';});
+  document.querySelectorAll('#lca-matrix .lca-gap').forEach(function(cb){cb.checked=false;});
+  document.querySelectorAll('#lca-matrix .lca-row').forEach(lcaUpdateGapFields);
+  lcaUpdateLiveScore();
+}
 async function lcaSyncAssessmentRows(assessmentRef){
   var rows=Array.from(document.querySelectorAll('#lca-matrix .lca-row'));
   var date=document.getElementById('lcaf-date')?.value||new Date().toISOString().slice(0,10);
@@ -28857,6 +28877,7 @@ async function lcaSyncAssessmentRows(assessmentRef){
     var resp=tr.querySelector('.lca-resp')?.value||null;
     var target=tr.querySelector('.lca-target')?.value||null;
     var status=rowStatus;
+    if(!gap){reco=null;resp=null;target=null;}
     var score=status==='compliant'?100:(status==='partial'?50:0);
     if(status==='compliant')counts.compliant++;else if(status==='partial')counts.partial++;else if(status==='not_applicable')counts.na++;else counts.non++;
     if(gap)counts.gaps++;
