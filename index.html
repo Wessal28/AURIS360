@@ -28948,7 +28948,7 @@ async function legalLoadChanges(){
     var d=await api('/legal_changes?select=*'+cf()+'&order=date_received.desc');
     lcAllData=d||[];
     if(!d||!d.length){el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)"><div style="font-size:40px;margin-bottom:12px"><i class="ti ti-circle-dot"></i></div><div style="font-weight:600;margin-bottom:8px">No regulatory changes recorded</div>'+(isMgr()?'<button class="btn btn-primary" onclick="legalNewChange()"><i class="ti ti-plus"></i>Add change</button>':'')+'</div>';return;}
-    var h='<div class="table-scroll"><table class="data-table" style="min-width:1100px"><thead><tr><th>Date</th><th>Legislation</th><th>Change</th><th>Category</th><th>Action required</th><th>Applicable?</th><th>Implemented?</th><th style="width:50px"></th></tr></thead><tbody>';
+    var h='<div class="table-scroll"><table class="data-table" style="min-width:1220px"><thead><tr><th>Date</th><th>Legislation</th><th>Section / ref</th><th>Change</th><th>Category</th><th>Action required</th><th>Applicable?</th><th>Implemented?</th><th style="width:50px"></th></tr></thead><tbody>';
     d.forEach(function(x,i){
       var bg=i%2===0?'#fff':'#f9fafb';
       var imp=x.implemented===true||x.implemented==='true';
@@ -28956,6 +28956,7 @@ async function legalLoadChanges(){
       h+='<tr style="border-bottom:1px solid #f0f0f0;background:'+bg+'">'
         +'<td style="padding:8px 14px;font-size:11px;white-space:nowrap">'+(x.date_received?new Date(x.date_received).toLocaleDateString('en-GB'):'-')+'</td>'
         +'<td style="padding:8px;font-weight:600;max-width:180px">'+escH(x.legislation||'-')+'<div style="font-size:10px;color:var(--text2)">'+escH(x.source||'')+'</div></td>'
+        +'<td style="padding:8px;font-size:11px;font-weight:800;color:#185FA5;max-width:150px">'+escH(legalChangeSectionLabel(x)||'-')+'</td>'
         +'<td style="padding:8px;max-width:250px;font-size:11px">'+escH((x.changes_identified||x.changes||'-').substring(0,100))+(((x.changes_identified||x.changes||'').length>100)?'-':'')+'</td>'
         +'<td style="padding:8px">'+(x.category?'<span style="background:'+(LEGAL_CAT_CFG[x.category]?.color||'#6B7280')+'15;color:'+(LEGAL_CAT_CFG[x.category]?.color||'#6B7280')+';padding:1px 7px;border-radius:99px;font-size:10px;font-weight:600">'+(LEGAL_CAT_CFG[x.category]?.emoji||'*')+' '+escH(LEGAL_CAT_CFG[x.category]?.label||x.category)+'</span>':'-')+'</td>'
         +'<td style="padding:8px;font-size:11px">'+escH((x.action_required||x.action||'-').substring(0,60))+'</td>'
@@ -28990,15 +28991,34 @@ function legalChangeTextFromComments(x,label){
   var m=txt.match(re);
   return m&&m[1]?m[1].trim():'';
 }
+function legalChangeMetaFromComments(x){
+  var txt=String(x?.comments||'');
+  var m=txt.match(/AURIS360_CHANGE_META:({[\s\S]*?})\s*(?:\n|$)/);
+  if(!m)return {};
+  try{return JSON.parse(m[1]);}catch(_){return {};}
+}
+function legalChangeSectionLabel(x){
+  var meta=legalChangeMetaFromComments(x);
+  var reqId=x.requirement_id||x.legal_requirement_id||meta.requirement_id||'';
+  var req=(lrAllData||[]).find(function(r){return String(r.id)===String(reqId);})||{};
+  return x.section||x.section_ref||meta.section_ref||req.section||displayRecordRef(req,'req_ref','');
+}
 function legalChangeData(id){
   var x=(lcAllData||[]).find(function(r){return String(r.id)===String(id);})||null;
   if(!x)return null;
+  var meta=legalChangeMetaFromComments(x);
+  if(!x.requirement_id&&meta.requirement_id)x.requirement_id=meta.requirement_id;
+  if(!x.legal_requirement_id&&meta.requirement_id)x.legal_requirement_id=meta.requirement_id;
+  if(!x.section&&meta.section_ref)x.section=meta.section_ref;
+  if(!x.section_ref&&meta.section_ref)x.section_ref=meta.section_ref;
+  if(!x.change_type&&meta.change_type)x.change_type=meta.change_type;
+  if(!x.effective_date&&meta.effective_date)x.effective_date=meta.effective_date;
   if(!x.previous_wording)x.previous_wording=legalChangeTextFromComments(x,'Previous');
   if(!x.new_wording)x.new_wording=legalChangeTextFromComments(x,'New');
   return x;
 }
 function legalChangeUserComments(x){
-  return String(x?.comments||'').replace(/Amendment tracking:[\s\S]*/,'').trim();
+  return String(x?.comments||'').replace(/AURIS360_CHANGE_META:{[\s\S]*?}\s*/,'').replace(/Amendment tracking:[\s\S]*/,'').trim();
 }
 function legalChangeEditMode(edit){
   var review=document.getElementById('lc-review-card'),form=document.getElementById('lc-edit-card'),save=document.getElementById('lc-save-btn'),editBtn=document.getElementById('lc-edit-btn');
@@ -29052,9 +29072,10 @@ async function legalSaveChg(){
   var req=(lrAllData||[]).find(function(x){return x.id===reqId;})||{};
   var previous=g('lc-current-wording')||req.requirement||null;
   var newer=g('lc-new-wording');
+  var meta={requirement_id:reqId||null,section_ref:g('lc-section-ref')||req.section||null,change_type:g('lc-change-type')||'amendment',effective_date:g('lc-effective-date')||null};
   var changeNote='Amendment tracking: '+(reqId?('section '+(req.section||g('lc-section-ref')||displayRecordRef(req,'req_ref','LEG'))+' selected. '):'No linked section selected. ')+(newer?'New wording captured. ':'')
     +(previous?'\nPrevious wording:\n'+previous:'')+(newer?'\nNew wording:\n'+newer:'');
-  var body={company_id:ccid(),date_received:g('lc-date')||null,source:g('lc-source'),jurisdiction:g('lc-jurisdiction')||'Mauritius',legislation:g('lc-legislation')||req.legislation,category:g('lc-category')||req.category||'health_safety',section:g('lc-section-ref')||req.section,requirement_id:reqId||null,legal_requirement_id:reqId||null,change_type:g('lc-change-type')||'amendment',previous_wording:previous,new_wording:newer,changes_identified:g('lc-changes'),changes:g('lc-changes'),action_required:g('lc-action'),action:g('lc-action'),responsible_person:g('lc-responsible'),effective_date:g('lc-effective-date')||null,applicable:g('lc-applicable')!=='false',implemented:g('lc-implemented')==='true',comments:[g('lc-comments'),changeNote].filter(Boolean).join('\n'),updated_at:new Date().toISOString()};
+  var body={company_id:ccid(),date_received:g('lc-date')||null,source:g('lc-source'),jurisdiction:g('lc-jurisdiction')||'Mauritius',legislation:g('lc-legislation')||req.legislation,category:g('lc-category')||req.category||'health_safety',section:g('lc-section-ref')||req.section,requirement_id:reqId||null,legal_requirement_id:reqId||null,change_type:g('lc-change-type')||'amendment',previous_wording:previous,new_wording:newer,changes_identified:g('lc-changes'),changes:g('lc-changes'),action_required:g('lc-action'),action:g('lc-action'),responsible_person:g('lc-responsible'),effective_date:g('lc-effective-date')||null,applicable:g('lc-applicable')!=='false',implemented:g('lc-implemented')==='true',comments:[g('lc-comments'),'AURIS360_CHANGE_META:'+JSON.stringify(meta),changeNote].filter(Boolean).join('\n'),updated_at:new Date().toISOString()};
   try{
     if(reqId&&newer){
       await mtgApiWithSchemaFallback('/legal_requirements?id=eq.'+reqId,{m:'PATCH',p:'return=minimal',b:{requirement:newer,notes:[req.notes,'Amended '+(g('lc-effective-date')||g('lc-date')||new Date().toISOString().slice(0,10))+' via regulatory change '+(g('lc-source')||'')+'. Previous wording retained in Regulatory Changes.'].filter(Boolean).join('\n'),last_verified_at:new Date().toISOString(),updated_at:new Date().toISOString()}},['last_verified_at','updated_at']);
