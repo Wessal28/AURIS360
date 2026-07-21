@@ -9751,6 +9751,57 @@ async function mtgLoadSeries(){
   setTimeout(function(){var c=document.getElementById('mtg-roadmap-container');if(c&&/Loading roadmap/i.test(c.textContent||''))mtgRenderRoadmap();},600);
 }
 
+function mtgMissingColumnName(e){
+  var msg=String((e&&e.message)||e||'');
+  var m=msg.match(/Could not find the '([^']+)' column/i);
+  if(m)return m[1];
+  m=msg.match(/column\s+(?:"?([a-zA-Z0-9_]+)"?\.)?"?([a-zA-Z0-9_]+)"?\s+does not exist/i);
+  if(m)return m[2]||m[1];
+  return '';
+}
+function mtgIsSchemaColumnError(e){
+  return /schema cache|Could not find|column .* does not exist/i.test(String((e&&e.message)||e||''));
+}
+async function mtgApiWithSchemaFallback(path,opts,optionalCols){
+  opts=opts||{};
+  optionalCols=optionalCols||[];
+  var body=Object.assign({},opts.b||{});
+  var removed=[];
+  for(var attempt=0;attempt<=optionalCols.length+2;attempt++){
+    try{
+      return await api(path,Object.assign({},opts,{b:opts.b?body:undefined}));
+    }catch(e){
+      if(!opts.b||!mtgIsSchemaColumnError(e))throw e;
+      var col=mtgMissingColumnName(e);
+      if(col&&Object.prototype.hasOwnProperty.call(body,col)){
+        delete body[col];
+        removed.push(col);
+        continue;
+      }
+      var next=optionalCols.find(function(c){return Object.prototype.hasOwnProperty.call(body,c)&&removed.indexOf(c)===-1;});
+      if(!next)throw e;
+      delete body[next];
+      removed.push(next);
+    }
+  }
+  return await api(path,Object.assign({},opts,{b:body}));
+}
+async function mtgReadMinuteForDelete(id){
+  try{
+    var rows=await api('/hse_meetings?id=eq.'+id+'&select=status,minutes');
+    return rows?.[0]||{};
+  }catch(e){
+    if(!mtgIsSchemaColumnError(e))throw e;
+    try{
+      var rows2=await api('/hse_meetings?id=eq.'+id+'&select=status');
+      return rows2?.[0]||{};
+    }catch(e2){
+      if(!mtgIsSchemaColumnError(e2))throw e2;
+      return {};
+    }
+  }
+}
+
 function mtgNewSeries(){
   fillPplDrops();
   mtgEditingSeriesId=null;
@@ -9810,11 +9861,11 @@ async function mtgSaveSeries(){
   };
   try{
     if(mtgEditingSeriesId){
-      await api('/meeting_series?id=eq.'+mtgEditingSeriesId,{m:'PATCH',p:'return=minimal',b:body});
+      await mtgApiWithSchemaFallback('/meeting_series?id=eq.'+mtgEditingSeriesId,{m:'PATCH',p:'return=minimal',b:body},['responsible','notes','updated_at']);
       toast('Schedule updated!');
     }else{
       body.created_by=prof?.id;
-      await api('/meeting_series',{m:'POST',p:'return=minimal',b:body});
+      await mtgApiWithSchemaFallback('/meeting_series',{m:'POST',p:'return=minimal',b:body},['responsible','notes','updated_at','created_by']);
       toast('Schedule created!');
     }
     mtgSeriesBack();
@@ -9828,7 +9879,7 @@ async function mtgDeleteSeries(){
     var current=rows?.[0]||{};
     if(current.active!==false&&!ohIsArchivedText(current.notes)){
       if(!(await appConfirmAction({title:'Deactivate meeting schedule',message:'Deactivate this meeting schedule instead of deleting it?',detail:'Past minutes and schedule history remain traceable.',confirmText:'Deactivate schedule',cancelText:'Back',variant:'danger'})))return;
-      await api('/meeting_series?id=eq.'+mtgEditingSeriesId,{m:'PATCH',p:'return=minimal',b:{active:false,notes:ohArchivedText(current.notes),updated_at:new Date().toISOString()}});
+      await mtgApiWithSchemaFallback('/meeting_series?id=eq.'+mtgEditingSeriesId,{m:'PATCH',p:'return=minimal',b:{active:false,notes:ohArchivedText(current.notes),updated_at:new Date().toISOString()}},['notes','updated_at']);
       toast('Schedule deactivated');
       mtgSeriesBack();
       return;
@@ -10133,12 +10184,13 @@ async function mtgSaveMom(){
   };
   try{
     var savedId=mtgEditingMomId;
+    var minuteOptionalCols=['series_id','apologies','next_meeting_date','agenda_items','recommendations','status','updated_at','created_by'];
     if(mtgEditingMomId){
-      await api('/hse_meetings?id=eq.'+mtgEditingMomId,{m:'PATCH',p:'return=minimal',b:body});
+      await mtgApiWithSchemaFallback('/hse_meetings?id=eq.'+mtgEditingMomId,{m:'PATCH',p:'return=minimal',b:body},minuteOptionalCols);
       toast('Minutes updated!');
     }else{
       body.created_by=prof?.id;
-      var res=await api('/hse_meetings',{m:'POST',p:'return=representation',b:body});
+      var res=await mtgApiWithSchemaFallback('/hse_meetings',{m:'POST',p:'return=representation',b:body},minuteOptionalCols);
       savedId=res?.[0]?.id;
       toast('Minutes saved!');
     }
@@ -10146,7 +10198,7 @@ async function mtgSaveMom(){
     var seriesId=document.getElementById('mtg-mom3form').dataset.seriesId;
     if(seriesId){
       var nd=document.getElementById('mom3next-date')?.value;
-      if(nd)await api('/meeting_series?id=eq.'+seriesId,{m:'PATCH',p:'return=minimal',b:{next_date:nd,updated_at:new Date().toISOString()}});
+      if(nd)await mtgApiWithSchemaFallback('/meeting_series?id=eq.'+seriesId,{m:'PATCH',p:'return=minimal',b:{next_date:nd,updated_at:new Date().toISOString()}},['updated_at']);
     }
     // Sync recommendations to MAP
     if(savedId&&recs.length){
@@ -10175,11 +10227,10 @@ async function mtgSaveMom(){
 async function mtgDeleteMom(){
   if(!mtgEditingMomId)return;
   try{
-    var rows=await api('/hse_meetings?id=eq.'+mtgEditingMomId+'&select=status,summary');
-    var current=rows?.[0]||{};
-    if(current.status!=='cancelled'&&!ohIsArchivedText(current.summary)){
+    var current=await mtgReadMinuteForDelete(mtgEditingMomId);
+    if(current.status!=='cancelled'&&!ohIsArchivedText(current.minutes)){
       if(!(await appConfirmAction({title:'Cancel meeting minutes',message:'Cancel/archive these minutes instead of deleting them?',detail:'Meeting minutes and linked actions remain available for audit history.',confirmText:'Cancel minutes',cancelText:'Back',variant:'danger'})))return;
-      await api('/hse_meetings?id=eq.'+mtgEditingMomId,{m:'PATCH',p:'return=minimal',b:{status:'cancelled',summary:ohArchivedText(current.summary),updated_at:new Date().toISOString()}});
+      await mtgApiWithSchemaFallback('/hse_meetings?id=eq.'+mtgEditingMomId,{m:'PATCH',p:'return=minimal',b:{status:'cancelled',minutes:ohArchivedText(current.minutes),updated_at:new Date().toISOString()}},['minutes','updated_at','status']);
       toast('Minutes cancelled/archived');
       mtgMomBack();
       return;
@@ -10516,11 +10567,10 @@ async function mtgOpenMom(id){
 
 async function mtgDeleteMomFromList(id){
   try{
-    var rows=await api('/hse_meetings?id=eq.'+id+'&select=status,summary');
-    var current=rows?.[0]||{};
-    if(current.status!=='cancelled'&&!ohIsArchivedText(current.summary)){
+    var current=await mtgReadMinuteForDelete(id);
+    if(current.status!=='cancelled'&&!ohIsArchivedText(current.minutes)){
       if(!(await appConfirmAction({title:'Cancel meeting minutes',message:'Cancel/archive these minutes instead of deleting them?',detail:'Meeting minutes and linked actions remain available for audit history.',confirmText:'Cancel minutes',cancelText:'Back',variant:'danger'})))return;
-      await api('/hse_meetings?id=eq.'+id,{m:'PATCH',p:'return=minimal',b:{status:'cancelled',summary:ohArchivedText(current.summary),updated_at:new Date().toISOString()}});
+      await mtgApiWithSchemaFallback('/hse_meetings?id=eq.'+id,{m:'PATCH',p:'return=minimal',b:{status:'cancelled',minutes:ohArchivedText(current.minutes),updated_at:new Date().toISOString()}},['minutes','updated_at','status']);
       toast('Minutes cancelled/archived');
       mtgLoadMinutes();
       return;
