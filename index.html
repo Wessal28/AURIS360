@@ -28504,7 +28504,7 @@ function legalFilterRegister(){
       +'<td style="padding:8px;font-size:11px">'+escH(x.responsibility||x.responsible_person||'-')+'</td>'
       +'<td style="padding:8px;text-align:center;font-weight:800;color:'+scoreColor+'">'+(score!=null?score+'%':'-')+'</td>'
       +'<td style="padding:8px"><span style="background:'+sc.bg+';color:'+sc.tc+';padding:2px 8px;border-radius:99px;font-size:10px;font-weight:700">'+sc.label+'</span></td>'
-      +'<td style="padding:8px"><button class="btn btn-sm" data-id="'+x.id+'" onclick="event.stopPropagation();legalOpenReq(this.dataset.id)"><i class="ti ti-edit"></i></button></td></tr>';
+      +'<td style="padding:8px"><button class="btn btn-sm" title="View requirement" data-id="'+x.id+'" onclick="event.stopPropagation();legalOpenReq(this.dataset.id)"><i class="ti ti-eye"></i></button></td></tr>';
   });
   h+='</tbody></table></div>';el.innerHTML=h;
 }
@@ -28521,6 +28521,7 @@ function legalReqBack(){
 
 function legalNewRequirement(){
   lrEditId=null;
+  legalReqEditMode(true);
   document.getElementById('lr-form3title').textContent='New Legal Requirement';
   document.getElementById('lr-form3ref-badge').textContent='REQ-AUTO';
   document.getElementById('lr-del-btn').style.display='none';
@@ -28544,9 +28545,31 @@ function legalNewRequirement(){
   document.getElementById('legal-req-form').style.display='block';
 }
 
-function legalOpenReq(id){
-  var x=lrAllData.find(r=>r.id===id);if(!x)return;
-  lrEditId=id;
+function legalReqEditMode(edit){
+  var review=document.getElementById('lr-review-card'),form=document.getElementById('lr-edit-card'),save=document.getElementById('lr-save-btn'),ai=document.getElementById('lr-ai-btn'),editBtn=document.getElementById('lr-edit-btn'),del=document.getElementById('lr-del-btn');
+  if(review)review.style.display=edit?'none':'block';
+  if(form)form.style.display=edit?'block':'none';
+  if(save)save.style.display=edit?'inline-flex':'none';
+  if(ai)ai.style.display=edit?'inline-flex':'none';
+  if(editBtn)editBtn.style.display=(!edit&&isMgr())?'inline-flex':'none';
+  if(del)del.style.display=(edit&&isMgr()&&lrEditId)?'inline-flex':'none';
+}
+function legalReqReviewHtml(x){
+  var st=x.status||'non_compliant';
+  var sc=LEG_STATUS_CFG[st]||LEG_STATUS_CFG.non_compliant;
+  var cat=LEGAL_CAT_CFG[x.category||'other']||LEGAL_CAT_CFG.other;
+  var hasGap=!!(x.gap||x.gap_identified);
+  var row=function(label,value){return '<div><div class="form3label">'+label+'</div><div style="font-weight:700;color:#111827;white-space:pre-wrap">'+escH(value||'-')+'</div></div>';};
+  return '<div style="display:grid;grid-template-columns:1.2fr .8fr .8fr .8fr;gap:10px;margin-bottom:14px">'
+    +row('Legislation',x.legislation)
+    +row('Section / ref',x.section||x.subsection)
+    +'<div><div class="form3label">Category</div><span style="background:'+cat.color+'15;color:'+cat.color+';padding:3px 9px;border-radius:99px;font-size:12px;font-weight:800">'+cat.emoji+' '+escH(cat.label)+'</span></div>'
+    +'<div><div class="form3label">Status</div><span style="background:'+sc.bg+';color:'+sc.tc+';padding:3px 9px;border-radius:99px;font-size:12px;font-weight:800">'+escH(sc.label)+'</span></div>'
+    +'</div><div class="card" style="background:#F8FBFF;border-color:#BFDBFE;margin-bottom:14px"><div class="card-title" style="color:#0F766E">'+escH(x.title||'Legal requirement')+'</div><div style="white-space:pre-wrap;font-size:13px;line-height:1.5;color:#111827">'+escH(x.requirement||'No wording recorded.')+'</div></div>'
+    +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px"><div class="card" style="border-left:4px solid #1D9E75"><div class="card-title" style="color:#1D9E75">Current controls and evidence</div>'+row('Controls in place',x.controls||'No current controls recorded')+'<div style="height:10px"></div>'+row('Evidence required',x.evidence_required)+'<div style="height:10px"></div>'+row('Evidence location / document ref',x.evidence_location)+'</div><div class="card" style="border-left:4px solid '+(hasGap?'#DC2626':'#1D9E75')+'"><div class="card-title" style="color:'+(hasGap?'#DC2626':'#1D9E75')+'">'+(hasGap?'Gap identified':'No gap identified')+'</div>'+row('Further controls / recommendations',x.further_controls||x.gap_description||x.recommendations)+'<div style="height:10px"></div>'+row('Penalty / risk',x.penalty_risk)+'</div></div>'
+    +'<div class="card"><div class="card-title">Responsibility and review</div><div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px">'+row('Responsibility',x.responsibility||x.responsible_person)+row('Target date',x.target_date?new Date(x.target_date).toLocaleDateString('en-GB'):'')+row('Last assessed',x.last_assessed_date?new Date(x.last_assessed_date).toLocaleDateString('en-GB'):'')+row('Assessed by',x.assessed_by)+'</div>'+(x.notes?'<div style="margin-top:12px">'+row('Notes',x.notes)+'</div>':'')+'</div>';
+}
+function legalLoadReqIntoForm(x){
   document.getElementById('lr-form3title').textContent=x.title||x.legislation||'Edit Requirement';
   document.getElementById('lr-form3ref-badge').textContent=displayRecordRef(x,'req_ref','LEG-DRAFT');
   document.getElementById('lr-del-btn').style.display=isMgr()?'inline-flex':'none';
@@ -28573,8 +28596,22 @@ function legalOpenReq(id){
   document.getElementById('lr-compliance-score').value=sc!=null?sc:0;
   document.getElementById('lr-score-display').textContent=(sc!=null?sc:0)+'%';
   var aiPanel=document.getElementById('legal-ai-assess-panel');if(aiPanel)aiPanel.style.display='none';
+}
+function legalOpenReq(id){
+  var x=lrAllData.find(r=>r.id===id);if(!x)return;
+  lrEditId=id;
+  document.getElementById('lr-form3title').textContent=x.title||x.legislation||'Legal Requirement';
+  document.getElementById('lr-form3ref-badge').textContent=displayRecordRef(x,'req_ref','LEG-DRAFT');
+  document.getElementById('lr-del-btn').style.display=isMgr()?'inline-flex':'none';
+  var review=document.getElementById('lr-review-card');if(review)review.innerHTML=legalReqReviewHtml(x);
+  legalReqEditMode(false);
   document.getElementById('legal-view-register').style.display='none';
   document.getElementById('legal-req-form').style.display='block';
+}
+function legalEditReq(){
+  var x=lrAllData.find(r=>r.id===lrEditId);if(!x)return;
+  legalLoadReqIntoForm(x);
+  legalReqEditMode(true);
 }
 
 function legalScoreUpdate(val){
@@ -44260,12 +44297,15 @@ Offline mode - changes will sync when connection is restored
 </div>
 <div style="display:flex;gap:8px">
 <button class="btn" style="background:rgba(255,255,255,.2);color:#fff;border-color:rgba(255,255,255,.3)" onclick="legalReqBack()"><i class="ti ti-arrow-left"></i>Back</button>
+<button id="lr-edit-btn" class="btn" style="display:none;background:#fff;color:#185FA5;font-weight:800;border-color:#fff" onclick="legalEditReq()"><i class="ti ti-edit"></i>Edit</button>
 <button id="lr-del-btn" class="btn" style="display:none;background:rgba(220,38,38,.3);color:#fff;border-color:rgba(220,38,38,.5)" onclick="legalDeleteReq()"><i class="ti ti-trash"></i></button>
-<button class="btn" style="background:#fff;color:#5B21B6;font-weight:800;border-color:#fff" onclick="legalAIAssessRequirement()"><i class="ti ti-robot"></i>AI assess</button>
-<button class="btn" style="background:#1D9E75;color:#fff;border-color:#1D9E75" onclick="legalSaveReq()"><i class="ti ti-device-floppy"></i>Save</button>
+<button id="lr-ai-btn" class="btn" style="background:#fff;color:#5B21B6;font-weight:800;border-color:#fff" onclick="legalAIAssessRequirement()"><i class="ti ti-robot"></i>AI assess</button>
+<button id="lr-save-btn" class="btn" style="background:#1D9E75;color:#fff;border-color:#1D9E75" onclick="legalSaveReq()"><i class="ti ti-device-floppy"></i>Save</button>
 </div>
 </div>
 </div>
+<div id="lr-review-card" class="card" style="display:none"></div>
+<div id="lr-edit-card">
 <div id="legal-ai-assess-panel" class="card" style="display:none;margin-bottom:14px;border:1px solid #c4b5fd;background:#fbfaff"></div><div style="display:grid;grid-template-columns:2fr 1fr;gap:14px">
 <div>
 <div class="card" style="margin-bottom:14px"><div class="card-title">Legislation Details</div>
@@ -44350,6 +44390,7 @@ Offline mode - changes will sync when connection is restored
 <div class="form3row">
 <div class="form3group"><label class="form3label">Last assessed date</label><input type="date" id="lr-last-assessed"/></div>
 <div class="form3group"><label class="form3label">Assessed by</label><input type="text" id="lr-assessed-by"/></div>
+</div>
 </div>
 </div>
 </div>
