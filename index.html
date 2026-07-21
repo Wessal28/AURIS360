@@ -14655,6 +14655,12 @@ async function imsLoadInvestigations(){
         +'</tr>';
     });
     el.innerHTML=h+'</tbody></table></div>';
+    if(window.mapPendingInvestigationSource){
+      setTimeout(function(){
+        var pending=window.mapPendingInvestigationSource||{};
+        mapOpenInvestigationSourceRef(pending.ref,pending.id);
+      },50);
+    }
   }catch(e){el.innerHTML='<div style="padding:20px;color:var(--text2);text-align:center">'+escH(e.message)+'</div>';}
 }
 
@@ -25681,7 +25687,9 @@ function mapDisplayRef(x){
 function mapSourcePageKey(x){
   var s=String((x&&x.source_type)||(x&&x.source_module)||'').toLowerCase();
   var ref=String((x&&x.source_ref)||'').toLowerCase();
+  var moduleName=String((x&&x.source_module)||'').toLowerCase();
   var combined=s+' '+ref;
+  if(moduleName==='investigation'||/^inv[-_]/i.test(ref)||/\binv[-_]/i.test(ref))return 'investigation';
   if(/incident|investigation|event|^inv-|^inc-/.test(combined))return 'events';
   if(/observation|bbs|^obs-/.test(combined))return 'observation';
   if(/inspection|audit|^insp-|^wi-/.test(combined))return 'inspection';
@@ -25700,8 +25708,36 @@ function mapSourcePageKey(x){
   return '';
 }
 
+function mapNormSourceRef(ref){
+  return String(ref||'').toLowerCase().replace(/\([^)]*\)/g,' ').replace(/[^a-z0-9]+/g,' ').trim();
+}
+function mapOpenInvestigationSourceRef(ref,id){
+  if(id&&typeof imsOpenInvestigation==='function'){
+    var byId=(imsInvAllData||[]).find(function(x){return String(x.id)===String(id);});
+    if(byId){imsOpenInvestigation(byId.id);return true;}
+  }
+  var needle=mapNormSourceRef(ref);
+  if(!needle)return false;
+  var match=(imsInvAllData||[]).find(function(x){
+    var hay=mapNormSourceRef([x.investigation_ref,x.reference_no,x.inv_ref,x.title,x.description,x.incident_description].filter(Boolean).join(' '));
+    return !!hay&&(hay===needle||hay.indexOf(needle)!==-1||needle.indexOf(hay)!==-1);
+  });
+  if(match&&typeof imsOpenInvestigation==='function'){
+    window.mapPendingInvestigationSource=null;
+    window.mapPendingInvestigationSourceId='';
+    imsOpenInvestigation(match.id);
+    return true;
+  }
+  window.mapPendingInvestigationSource={ref:ref||'',id:id||''};
+  return false;
+}
+
 function mapApplySourceSearch(pageKey, ref){
   if(!pageKey||!ref)return;
+  if(pageKey==='investigation'){
+    mapOpenInvestigationSourceRef(ref,window.mapPendingInvestigationSourceId||'');
+    return;
+  }
   var ids={
     events:['ev-search'],
     observation:['obs-search'],
@@ -25732,8 +25768,16 @@ function mapOpenSourceRecord(id){
   if(!x||!x.source_ref){if(typeof toast==='function')toast('No linked source record available for this action.',false);return;}
   var pageKey=mapSourcePageKey(x);
   if(!pageKey){if(typeof toast==='function')toast('Source module could not be identified. Use the source reference to search manually.',false);return;}
-  if(typeof showPage==='function')showPage(pageKey);
-  setTimeout(function(){mapApplySourceSearch(pageKey,x.source_ref);},250);
+  if(pageKey==='investigation')window.mapPendingInvestigationSourceId=x.source_id||'';
+  if(typeof showPage==='function')showPage(pageKey==='investigation'?'events':pageKey);
+  if(pageKey==='investigation'){
+    setTimeout(function(){
+      if(typeof imsSwitchTab==='function')imsSwitchTab('investigate',document.getElementById('ims-tab-investigate'));
+      mapApplySourceSearch(pageKey,x.source_ref);
+    },250);
+  }else{
+    setTimeout(function(){mapApplySourceSearch(pageKey,x.source_ref);},250);
+  }
   if(typeof toast==='function')toast('Opened '+x.source_ref+' in the related module.');
 }
 
