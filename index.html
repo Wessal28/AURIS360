@@ -22746,8 +22746,9 @@ function audCalcResult(ear){
   if(overall){
     var icons={'normal':'?','mild':'*','moderate':'*','severe':'*','profound':'*'};
     var msgs={'normal':'Hearing within normal limits','mild':'Mild hearing loss detected - review HPP','moderate':'Moderate hearing loss - audiologist referral recommended','severe':'Severe hearing loss - urgent audiologist referral required','profound':'Profound hearing loss - urgent specialist referral'};
+    var overallColor=color[overallResult+'_loss']||color.normal||'#1D9E75';
     overall.innerHTML='<div style="font-size:32px;margin-bottom:8px">'+icons[overallResult]+'</div>'
-      +'<div style="font-weight:700;font-size:14px;margin-bottom:6px;color:'+color[overallResult+'_loss']||'#1D9E75'+'">'+msgs[overallResult]+'</div>'
+      +'<div style="font-weight:700;font-size:14px;margin-bottom:6px;color:'+overallColor+'">'+msgs[overallResult]+'</div>'
       +'<div style="font-size:12px;color:var(--text2)">Best average: R '+rAvg.toFixed(1)+' dB | L '+lAvg.toFixed(1)+' dB</div>';
   }
 }
