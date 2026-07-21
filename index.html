@@ -30070,6 +30070,16 @@ function trainingAudit(action,summary,table,row,details){
   }catch(_){}
 }
 
+function tpNormalizeType(v){
+  v=String(v||'').trim().toLowerCase().replace(/\s+/g,'_').replace(/-/g,'_');
+  var map={classroom:'internal',on_job:'internal',on_the_job:'internal',in_house:'internal',internal_training:'internal',e_learning:'online',elearning:'online',external_course:'external'};
+  v=map[v]||v||'internal';
+  return ['internal','external','online','toolbox','induction','refresher'].includes(v)?v:'internal';
+}
+function tpTypeLabel(v){
+  return {internal:'Classroom / internal',external:'External course',online:'Online / e-learning',toolbox:'Toolbox talk',induction:'Induction',refresher:'Refresher'}[tpNormalizeType(v)]||'Classroom / internal';
+}
+
 async function trainingQueueNotice(row,event,opts){
   try{
     row=row||{};opts=opts||{};
@@ -30381,7 +30391,7 @@ async function tpLoad(){
       h+='<td style="padding:8px 10px;font-weight:700;color:var(--text2)">'+mo+'</td>';
       h+='<td style="padding:8px 10px"><div style="font-weight:600">'+escH(x.training_topic||'-')+'</div>'+(x.trainer?'<div style="font-size:11px;color:var(--text2)"><i class="ti ti-user"></i> '+escH(x.trainer)+'</div>':'')+'</td>';
       h+='<td style="padding:8px 10px;font-size:11px">'+escH(x.target_group||'-')+'</td>';
-      h+='<td style="padding:8px 10px;font-size:11px">'+escH(x.training_type||'-')+'</td>';
+      h+='<td style="padding:8px 10px;font-size:11px">'+escH(tpTypeLabel(x.training_type))+'</td>';
       h+='<td style="padding:8px 10px">'+priorityBadge(x.priority||'medium')+'</td>';
       h+='<td style="padding:8px 10px;font-size:11px'+(isOverdue?';color:var(--red);font-weight:600':'')+'">'+dt+(isOverdue?' - overdue':'')+'</td>';
       h+='<td style="padding:8px 10px">'+tpEvidenceBadge(x)+'</td>';
@@ -30435,7 +30445,7 @@ function tpOpen(id){
   setSelectValueWithFallback('tp-trainer',x.trainer);
   var pd=document.getElementById('tp-planned-date');if(pd)pd.value=x.planned_date||'';
   var ad=document.getElementById('tp-actual-date');if(ad)ad.value=x.actual_date||'';
-  var tp=document.getElementById('tp-type');if(tp)tp.value=x.training_type||'internal';
+  var tp=document.getElementById('tp-type');if(tp)tp.value=tpNormalizeType(x.training_type);
   var pp=document.getElementById('tp-priority');if(pp)pp.value=x.priority||'medium';
   var sp=document.getElementById('tp-status');if(sp)sp.value=x.status||'planned';
   var dur=document.getElementById('tp-duration');if(dur)dur.value=x.duration_hours||'';
@@ -30459,7 +30469,7 @@ async function tpSave(){
     company_id:ccid(),year:trainYear,
     training_topic:topic,target_group:g('tp-group'),
     month:monthVal?parseInt(monthVal):null,
-    training_type:g('tp-type')||'internal',priority:g('tp-priority')||'medium',
+    training_type:tpNormalizeType(g('tp-type')),priority:g('tp-priority')||'medium',
     status:status,trainer:g('tp-trainer'),location:g('tp-location'),
     planned_date:planned,actual_date:actual,
     duration_hours:duration?parseFloat(duration):null,
@@ -30552,7 +30562,7 @@ function trainingAIApplyPlanItem(i){
   var set=function(id,v){var el=document.getElementById(id);if(el&&v!=null)el.value=v;};
   set('tp-topic',it.topic||it.recommended_training||'');
   set('tp-group',it.target_group||'');
-  set('tp-type',it.type||'classroom');
+  set('tp-type',tpNormalizeType(it.type||'internal'));
   set('tp-priority',it.priority||'medium');
   set('tp-planned-date',it.planned_date||'');
   if(it.planned_date){var m=new Date(it.planned_date).getMonth()+1;if(m>0)set('tp-month',String(m));}
@@ -47599,7 +47609,7 @@ Offline mode - changes will sync when connection is restored
 <div class="form3row">
 <div class="form3group"><label class="form3label">Target group</label><input type="text" id="tp-group" placeholder="e.g. All staff, Production team..."/></div>
 <div class="form3group"><label class="form3label">Type</label>
-<select id="tp-type"><option value="classroom">Classroom</option><option value="on_job">On-the-job</option><option value="online">Online / E-learning</option><option value="external">External course</option><option value="toolbox">Toolbox talk</option><option value="induction">Induction</option><option value="refresher">Refresher</option></select></div>
+<select id="tp-type"><option value="internal">Classroom / internal</option><option value="internal">On-the-job / internal</option><option value="online">Online / E-learning</option><option value="external">External course</option><option value="toolbox">Toolbox talk</option><option value="induction">Induction</option><option value="refresher">Refresher</option></select></div>
 </div>
 <div class="form3row">
 <div class="form3group"><label class="form3label">Month</label>
