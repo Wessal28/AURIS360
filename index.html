@@ -27118,8 +27118,9 @@ function dcFormTab(tab, btn){
 
 function dcRenderWorkflowBar(x){
   var el=document.getElementById('dc-workflow-bar');if(!el)return;
-  var steps=[{key:'draft',label:'Draft'},{key:'under_review',label:'Review'},{key:'pending_approval',label:'Approval'},{key:'approved',label:'Approved / Active'}];
+  var steps=[{key:'draft',label:'Draft'},{key:'pending_review',label:'Review'},{key:'pending_approval',label:'Approval'},{key:'approved',label:'Approved / Active'}];
   var approvalSt=x.approval_status||x.status||'draft';
+  if(approvalSt==='under_review')approvalSt='pending_review';
   if(['withdrawn','superseded'].includes(approvalSt)){el.innerHTML='<span style="font-size:12px;font-weight:700;color:#6B7280">DOCUMENT '+approvalSt.toUpperCase()+'</span>';return;}
   if(approvalSt==='rejected'){el.innerHTML='<span style="font-size:12px;font-weight:700;color:#A32D2D">REJECTED - Requires revision</span>';return;}
   var currentIdx=steps.findIndex(s=>s.key===approvalSt);if(currentIdx<0)currentIdx=0;
@@ -27136,15 +27137,158 @@ function dcRenderWorkflowBar(x){
 function dcRenderActionButtons(x){
   var el=document.getElementById('dc-action-btns');if(!el)return;
   var approvalSt=x.approval_status||x.status||'draft';
+  if(approvalSt==='under_review')approvalSt='pending_review';
   var h='';
   var btn=function(icon,label,onclick,col){return '<button class="btn" style="background:'+col+';color:#fff;border-color:'+col+'" onclick="'+onclick+'"><i class="ti '+icon+'"></i>'+label+'</button>';};
   if(approvalSt==='draft')h+=btn('ti-send','Submit for Review',"dcSubmitForApproval()",'#185FA5');
-  if(approvalSt==='under_review')h+=btn('ti-check','Submit for Approval',"dcSubmitForApproval()",'#8B5CF6');
+  if(approvalSt==='pending_review')h+=btn('ti-check','Submit for Approval',"dcSubmitForApproval()",'#8B5CF6');
   if(approvalSt==='pending_approval'&&isMgr())h+=btn('ti-certificate','Approve Document',"dcApprove()",'#1D9E75');
   if(approvalSt==='pending_approval'&&isMgr())h+=btn('ti-x','Reject',"dcReject()",'#E24B4A');
   if(approvalSt==='approved'&&(isMgr()||canAdministerControlledRecord()))h+=btn('ti-refresh','Create New Revision',"dcCreateNewRevision()",'#185FA5');
   if(approvalSt==='approved'&&(isMgr()||canAdministerControlledRecord()))h+=btn('ti-send','Issue Acknowledgements',"dcFormTab('ack',document.getElementById('dc-ftab-ack'));dcIssueAck()",'#8B5CF6');
   el.innerHTML=h;
+}
+
+function dcDocRef(x){
+  return x?.doc_ref||x?.reference_no||x?.id?.slice(0,8)||'DOC';
+}
+
+function dcDocTitle(x){
+  return x?.title||'Controlled document';
+}
+
+function dcDocTypeLabel(x){
+  var key=x?.document_type||x?.doc_type||'document';
+  return (DC_TYPE_CFG[key]?.label)||String(key||'document').replace(/_/g,' ');
+}
+
+function dcAudit(action,summary,doc,details){
+  try{
+    doc=doc||{};
+    auditLogEvent(action,'documents',summary,{
+      doc_ref:dcDocRef(doc),
+      title:dcDocTitle(doc),
+      document_type:doc.document_type||doc.doc_type||null,
+      version:doc.version||doc.doc_version||null,
+      status:doc.approval_status||doc.status||null,
+      owner:doc.owner||doc.doc_owner||null,
+      details:details||{}
+    },{related_table:'documents',related_id:doc.id||dcEditingId||null,company_id:doc.company_id||ccid()});
+  }catch(_){}
+}
+
+function dcPersonById(id){
+  if(!id)return null;
+  return (people||[]).find(function(p){return String(p.id)===String(id);})||null;
+}
+
+function dcPersonByName(name){
+  name=String(name||'').trim();
+  if(!name)return null;
+  return (people||[]).find(function(p){
+    return peopleName(p)===name||ptwPersonName(p)===name||String(p.email||'').trim().toLowerCase()===name.toLowerCase();
+  })||null;
+}
+
+function dcAddRecipient(list,seen,name,email){
+  email=String(email||'').trim();
+  if(!email||seen[email.toLowerCase()])return;
+  seen[email.toLowerCase()]=true;
+  list.push({name:name||email,email:email});
+}
+
+async function dcActiveApprovalStep(){
+  try{
+    var companyId=ccid();
+    if(!companyId)return null;
+    var wf=await api('/approval_workflows?company_id=eq.'+companyId+'&module_name=eq.documents&is_active=eq.true&order=created_at.desc&limit=1');
+    var route=wf&&wf[0];
+    var steps=route?.steps||route?.approval_steps||route?.route_steps||[];
+    if(typeof steps==='string'){try{steps=JSON.parse(steps);}catch(_){steps=[];}}
+    return Array.isArray(steps)?steps[0]||null:null;
+  }catch(_){return null;}
+}
+
+function dcApprovalStepContact(step,doc){
+  step=step||{};doc=doc||{};
+  var p=dcPersonById(step.approver_person_id||step.person_id||step.approver_id)||dcPersonById(doc.approver_id);
+  return {
+    name:step.approver_name||peopleName(p)||doc.approver||'Document approver',
+    email:step.approver_email||usersContactEmail(p)||''
+  };
+}
+
+async function dcQueueApprovalNotice(doc){
+  try{
+    doc=doc||{};
+    var step=await dcActiveApprovalStep();
+    var contact=dcApprovalStepContact(step,doc);
+    if(!contact.email)return;
+    var ref=dcDocRef(doc), title=dcDocTitle(doc);
+    var body='<div style="font-family:Arial,sans-serif;background:#f4f6f8;padding:20px"><div style="max-width:620px;margin:0 auto;background:#fff;border-radius:12px;overflow:hidden;border:1px solid #e5e7eb">'
+      +'<div style="background:#185FA5;color:#fff;padding:18px 22px"><div style="font-size:20px;font-weight:700">AURIS360</div><div style="font-size:13px;opacity:.85">Document Control approval request</div></div>'
+      +'<div style="padding:22px"><h2 style="margin:0 0 14px;font-size:18px">Document approval required</h2>'
+      +'<table style="width:100%;border-collapse:collapse;font-size:14px">'
+      +'<tr><td style="padding:8px;background:#f9fafb;font-weight:600;width:150px">Reference</td><td style="padding:8px">'+escH(ref)+'</td></tr>'
+      +'<tr><td style="padding:8px;background:#f9fafb;font-weight:600">Title</td><td style="padding:8px">'+escH(title)+'</td></tr>'
+      +'<tr><td style="padding:8px;background:#f9fafb;font-weight:600">Type</td><td style="padding:8px">'+escH(dcDocTypeLabel(doc))+'</td></tr>'
+      +'<tr><td style="padding:8px;background:#f9fafb;font-weight:600">Version</td><td style="padding:8px">'+escH(doc.version||doc.doc_version||'1.0')+'</td></tr>'
+      +'</table><div style="margin-top:18px;text-align:center"><a href="https://auris-360.vercel.app/?goto=documents" style="display:inline-block;background:#1D9E75;color:#fff;padding:11px 22px;border-radius:8px;text-decoration:none;font-weight:700">Open Document Control</a></div></div>'
+      +'<div style="padding:12px 22px;background:#f4f6f8;font-size:11px;color:#6B7280;text-align:center">Automated notification from AURIS360.</div></div></div>';
+    await queueNotification({company_id:doc.company_id||ccid(),type:'document_control',subject:'[AURIS360] Document approval required: '+ref,body_html:body,to_email:contact.email,to_name:contact.name||contact.email,from_name:'AURIS360 by SEPHS Consulting',related_id:doc.id||dcEditingId||null,related_table:'documents',status:'pending'});
+  }catch(_){}
+}
+
+async function dcQueueStatusNotice(doc,event,details){
+  try{
+    doc=doc||{};
+    var labels={created:'created',updated:'updated',submitted:'submitted for approval',approved:'approved and active',rejected:'rejected for correction',withdrawn:'withdrawn',revision:'new revision created',deleted:'deleted'};
+    var label=labels[event]||String(event||'updated').replace(/_/g,' ');
+    var recipients=[], seen={};
+    [doc.owner_id,doc.author_id,doc.reviewer_id,doc.approver_id].forEach(function(id){
+      var p=dcPersonById(id);
+      dcAddRecipient(recipients,seen,peopleName(p),usersContactEmail(p));
+    });
+    [doc.owner,doc.doc_owner,doc.author,doc.reviewer,doc.approver].forEach(function(name){
+      var p=dcPersonByName(name);
+      dcAddRecipient(recipients,seen,name,usersContactEmail(p));
+    });
+    if(prof&&doc.created_by===prof.id)dcAddRecipient(recipients,seen,prof.full_name||prof.email,usersContactEmail(prof)||prof.email);
+    var ref=dcDocRef(doc), title=dcDocTitle(doc);
+    var body='<div style="font-family:Arial,sans-serif;background:#f4f6f8;padding:20px"><div style="max-width:620px;margin:0 auto;background:#fff;border-radius:12px;overflow:hidden;border:1px solid #e5e7eb">'
+      +'<div style="background:#1D9E75;color:#fff;padding:18px 22px"><div style="font-size:20px;font-weight:700">AURIS360</div><div style="font-size:13px;opacity:.85">Document Control update</div></div>'
+      +'<div style="padding:22px"><h2 style="margin:0 0 14px;font-size:18px">Document '+escH(label)+'</h2>'
+      +'<table style="width:100%;border-collapse:collapse;font-size:14px">'
+      +'<tr><td style="padding:8px;background:#f9fafb;font-weight:600;width:150px">Reference</td><td style="padding:8px">'+escH(ref)+'</td></tr>'
+      +'<tr><td style="padding:8px;background:#f9fafb;font-weight:600">Title</td><td style="padding:8px">'+escH(title)+'</td></tr>'
+      +'<tr><td style="padding:8px;background:#f9fafb;font-weight:600">Status</td><td style="padding:8px">'+escH(doc.approval_status||doc.status||event||'-')+'</td></tr>'
+      +(details?.reason?'<tr><td style="padding:8px;background:#f9fafb;font-weight:600">Reason</td><td style="padding:8px">'+escH(details.reason)+'</td></tr>':'')
+      +'</table><div style="margin-top:18px;text-align:center"><a href="https://auris-360.vercel.app/?goto=documents" style="display:inline-block;background:#1D9E75;color:#fff;padding:11px 22px;border-radius:8px;text-decoration:none;font-weight:700">Open Document Control</a></div></div>'
+      +'<div style="padding:12px 22px;background:#f4f6f8;font-size:11px;color:#6B7280;text-align:center">Automated notification from AURIS360.</div></div></div>';
+    for(var i=0;i<recipients.length;i++){
+      await queueNotification({company_id:doc.company_id||ccid(),type:'document_control',subject:'[AURIS360] Document '+label+': '+ref,body_html:body,to_email:recipients[i].email,to_name:recipients[i].name,from_name:'AURIS360 by SEPHS Consulting',related_id:doc.id||dcEditingId||null,related_table:'documents',status:'pending'});
+    }
+  }catch(_){}
+}
+
+async function dcQueueAcknowledgementNotice(doc,ack){
+  try{
+    doc=doc||{};ack=ack||{};
+    var p=dcPersonByName(ack.employee_name);
+    var email=usersContactEmail(p);
+    if(!email)return;
+    var ref=ack.doc_ref||dcDocRef(doc), title=ack.doc_title||dcDocTitle(doc);
+    var body='<div style="font-family:Arial,sans-serif;background:#f4f6f8;padding:20px"><div style="max-width:620px;margin:0 auto;background:#fff;border-radius:12px;overflow:hidden;border:1px solid #e5e7eb">'
+      +'<div style="background:#1D9E75;color:#fff;padding:18px 22px"><div style="font-size:20px;font-weight:700">AURIS360</div><div style="font-size:13px;opacity:.85">Document acknowledgement request</div></div>'
+      +'<div style="padding:22px"><h2 style="margin:0 0 14px;font-size:18px">Please acknowledge this controlled document</h2>'
+      +'<table style="width:100%;border-collapse:collapse;font-size:14px">'
+      +'<tr><td style="padding:8px;background:#f9fafb;font-weight:600;width:150px">Reference</td><td style="padding:8px">'+escH(ref)+'</td></tr>'
+      +'<tr><td style="padding:8px;background:#f9fafb;font-weight:600">Title</td><td style="padding:8px">'+escH(title)+'</td></tr>'
+      +'<tr><td style="padding:8px;background:#f9fafb;font-weight:600">Due date</td><td style="padding:8px">'+escH(ack.due_date||'-')+'</td></tr>'
+      +'</table><div style="margin-top:18px;text-align:center"><a href="https://auris-360.vercel.app/?goto=documents" style="display:inline-block;background:#1D9E75;color:#fff;padding:11px 22px;border-radius:8px;text-decoration:none;font-weight:700">Open Document Control</a></div></div>'
+      +'<div style="padding:12px 22px;background:#f4f6f8;font-size:11px;color:#6B7280;text-align:center">Automated notification from AURIS360.</div></div></div>';
+    await queueNotification({company_id:doc.company_id||ack.company_id||ccid(),type:'document_control',subject:'[AURIS360] Document acknowledgement required: '+ref,body_html:body,to_email:email,to_name:peopleName(p)||ack.employee_name||email,from_name:'AURIS360 by SEPHS Consulting',related_id:doc.id||ack.document_id||dcEditingId||null,related_table:'documents',status:'pending'});
+  }catch(_){}
 }
 
 // -- Save ----------------------------------------------------------------------
@@ -27195,10 +27339,12 @@ async function dcSave(){
   };
   try{
     if(dcEditingId){
+      var oldStatus=currentDoc?.approval_status||currentDoc?.status||null;
       await api('/documents?id=eq.'+dcEditingId,{m:'PATCH',p:'return=minimal',b:body});
       var idx=dcAllData.findIndex(x=>x.id===dcEditingId);if(idx>=0)Object.assign(dcAllData[idx],body);
       toast('Document updated!');
       var updated=dcAllData.find(x=>x.id===dcEditingId);if(updated){dcRenderWorkflowBar(updated);dcRenderActionButtons(updated);}
+      dcAudit('update','Document updated',updated||Object.assign({id:dcEditingId},body),{old_status:oldStatus,new_status:body.approval_status||body.status||null});
     }else{
       body.created_by=prof?.id;
       var res=await api('/documents',{m:'POST',p:'return=representation',b:body});
@@ -27216,6 +27362,7 @@ async function dcSave(){
         document.getElementById('dc-form3type-label').textContent=(DC_TYPE_CFG[body.document_type]?.emoji||'*')+' '+(DC_TYPE_CFG[body.document_type]?.label||'Document');
         dcRenderWorkflowBar(res[0]);dcRenderActionButtons(res[0]);
         toast('Document registered! Ref: '+ref);
+        dcAudit('create','Document registered',res[0],{status:res[0].approval_status||res[0].status||null});
       }
     }
   }catch(e){toast(actionErrorMessage('Save document','Document Control',e.message),false);console.error(e);}
@@ -27232,13 +27379,17 @@ async function dcSubmitForApproval(){
   if(!dcEditingId)return;
   var x=dcAllData.find(r=>r.id===dcEditingId)||{};
   var currSt=x.approval_status||x.status||'draft';
-  var newSt=currSt==='draft'?'pending_review':currSt==='under_review'?'pending_approval':'pending_review';
+  if(currSt==='under_review')currSt='pending_review';
+  var newSt=currSt==='draft'?'pending_review':currSt==='pending_review'?'pending_approval':'pending_review';
   try{
     await api('/documents?id=eq.'+dcEditingId,{m:'PATCH',p:'return=minimal',b:{approval_status:newSt,status:newSt,review_requested_at:new Date().toISOString(),updated_at:new Date().toISOString()}});
     Object.assign(x,{approval_status:newSt,status:newSt});
     var stEl=document.getElementById('df-status');if(stEl)stEl.value=newSt;
     dcRenderWorkflowBar(x);dcRenderActionButtons(x);
     toast('Document submitted for '+(newSt==='pending_review'?'review':'approval')+'!');
+    dcAudit('submit','Document submitted for '+(newSt==='pending_review'?'review':'approval'),x,{old_status:currSt,new_status:newSt});
+    if(newSt==='pending_approval')await dcQueueApprovalNotice(x);
+    await dcQueueStatusNotice(x,'submitted');
   }catch(e){toast(actionErrorMessage('Submit document','Document Control',e.message),false);}
 }
 
@@ -27257,6 +27408,8 @@ async function dcApprove(){
     // Save revision record
     try{await api('/doc_revisions',{m:'POST',p:'return=minimal',b:{company_id:ccid(),document_id:dcEditingId,version:x?.version||'1.0',revision_type:'minor',summary:'Document approved',changed_by:prof?.full_name||'User',approved_by:appName||'Approver',effective_date:new Date().toISOString().slice(0,10),snapshot:x}});}catch(ex){}
     toast('Document approved and is now active');
+    dcAudit('approve','Document approved',x||Object.assign({id:dcEditingId},body),{approved_by:appName||prof?.full_name||null,new_status:'approved'});
+    await dcQueueStatusNotice(x||Object.assign({id:dcEditingId},body),'approved');
     dcRenderWorkflowBar(dcAllData.find(r=>r.id===dcEditingId)||{});
     dcRenderActionButtons(dcAllData.find(r=>r.id===dcEditingId)||{});
   }catch(e){toast(actionErrorMessage('Approve document','Document Control',e.message),false);}
@@ -27271,6 +27424,8 @@ async function dcReject(){
     var x=dcAllData.find(r=>r.id===dcEditingId);if(x){x.approval_status='rejected';x.rejection_reason=reason;}
     var stEl=document.getElementById('df-status');if(stEl)stEl.value='rejected';
     toast('Document rejected - returned for revision.');
+    dcAudit('reject','Document rejected',x||{id:dcEditingId,approval_status:'rejected'}, {reason:reason,new_status:'rejected'});
+    await dcQueueStatusNotice(x||{id:dcEditingId,approval_status:'rejected'},'rejected',{reason:reason});
     dcRenderWorkflowBar(dcAllData.find(r=>r.id===dcEditingId)||{});
     dcRenderActionButtons(dcAllData.find(r=>r.id===dcEditingId)||{});
   }catch(e){toast(actionErrorMessage('Reject document','Document Control',e.message),false);}
@@ -27284,6 +27439,8 @@ async function dcWithdraw(){
     var x=dcAllData.find(r=>r.id===dcEditingId);if(x)x.approval_status='withdrawn';
     var stEl=document.getElementById('df-status');if(stEl)stEl.value='withdrawn';
     toast('Document withdrawn.');dcRenderWorkflowBar(x||{});dcRenderActionButtons(x||{});
+    dcAudit('withdraw','Document withdrawn',x||{id:dcEditingId,approval_status:'withdrawn'},{new_status:'withdrawn'});
+    await dcQueueStatusNotice(x||{id:dcEditingId,approval_status:'withdrawn'},'withdrawn');
   }catch(e){toast(actionErrorMessage('Withdraw document','Document Control',e.message),false);}
 }
 
@@ -27305,6 +27462,8 @@ async function dcCreateNewRevision(){
     var stEl=document.getElementById('df-status');if(stEl)stEl.value='draft';
     document.getElementById('df-rev-summary').value=summary;
     toast('New revision '+newVersion+' created - document reset to Draft for updates');
+    dcAudit('revision','New document revision created',x,{old_version:oldVersion,new_version:newVersion,summary:summary});
+    await dcQueueStatusNotice(x,'revision');
     dcRenderWorkflowBar(x);dcRenderActionButtons(x);
   }catch(e){toast(actionErrorMessage('Create document revision','Document Control',e.message),false);}
 }
@@ -27322,6 +27481,8 @@ async function dcDelete(){
       Object.assign(current,{approval_status:'withdrawn',status:'withdrawn',withdrawn_at:new Date().toISOString()});
       var stEl=document.getElementById('df-status');if(stEl)stEl.value='withdrawn';
       toast('Document withdrawn and kept for audit history');
+      dcAudit('withdraw','Document withdrawn instead of deleted',current,{new_status:'withdrawn'});
+      await dcQueueStatusNotice(current,'withdrawn');
       dcRenderWorkflowBar(current);dcRenderActionButtons(current);
     }catch(e){toast(actionErrorMessage('Withdraw document','Document Control',e.message),false);}
     return;
@@ -27332,6 +27493,7 @@ async function dcDelete(){
   }
   if(!(await appConfirmDelete('document','Permanent deletion is intended only for draft, rejected, withdrawn, superseded or test documents.')))return;
   api('/documents?id=eq.'+dcEditingId,{m:'DELETE'}).then(function(){
+    dcAudit('delete','Document permanently deleted',current,{status_before_delete:st});
     dcAllData=dcAllData.filter(x=>x.id!==dcEditingId);
     toast('Document permanently deleted');dcEditingId=null;dcShowList();
   }).catch(function(e){toast(actionErrorMessage('Delete document','Document Control',e.message),false);});
@@ -27551,7 +27713,12 @@ async function dcCopySave(){
   var docId=document.getElementById('dcf-doc-id')?.value;
   var g=function(id){var el=document.getElementById(id);return el?el.value||null:null;};
   var body={company_id:ccid(),document_id:docId||null,copy_number:g('dcf-copy-no'),copy_holder:holder,department:g('dcf-dept'),location:g('dcf-location'),format:g('dcf-format')||'electronic',issued_date:g('dcf-issued-date')||null,issued_by:g('dcf-issued-by'),is_master:document.getElementById('dcf-is-master')?.checked||false,notes:g('dcf-notes'),status:'active',created_by:prof?.id};
-  try{await api('/doc_controlled_copies',{m:'POST',p:'return=minimal',b:body});toast('Controlled copy issued!');dcCopyBack();}catch(e){toast(actionErrorMessage('Issue controlled copy','Document Control',e.message),false);}
+  try{
+    await api('/doc_controlled_copies',{m:'POST',p:'return=minimal',b:body});
+    var doc=dcAllData.find(function(x){return x.id===docId;})||{};
+    dcAudit('issue_copy','Controlled copy issued',doc,{copy_number:body.copy_number,copy_holder:holder,format:body.format,location:body.location});
+    toast('Controlled copy issued!');dcCopyBack();
+  }catch(e){toast(actionErrorMessage('Issue controlled copy','Document Control',e.message),false);}
 }
 
 function dcCopyBack(){
@@ -27619,12 +27786,20 @@ async function dcSaveAck(){
   var doc=dcAllData.find(x=>x.id===dcEditingId);
   var g=function(id){var el=document.getElementById(id);return el?el.value||null:null;};
   var body={company_id:ccid(),document_id:dcEditingId||null,doc_ref:doc?.doc_ref||doc?.reference_no||null,doc_title:doc?.title||null,doc_version:doc?.version||doc?.doc_version||'1.0',employee_name:emp,department:g('daf-dept'),due_date:g('daf-due')||null,status:'pending',created_by:prof?.id};
-  try{await api('/doc_acknowledgements',{m:'POST',p:'return=minimal',b:body});toast('Acknowledgement issued to '+emp+'!');document.getElementById('dc-ack-form').style.display='none';if(dcEditingId)dcLoadDocAck(dcEditingId);}catch(e){toast(actionErrorMessage('Issue acknowledgement','Document Control',e.message),false);}
+  try{
+    await api('/doc_acknowledgements',{m:'POST',p:'return=minimal',b:body});
+    dcAudit('issue_acknowledgement','Document acknowledgement issued',doc,{employee_name:emp,due_date:body.due_date});
+    await dcQueueAcknowledgementNotice(doc,body);
+    toast('Acknowledgement issued to '+emp+'!');document.getElementById('dc-ack-form').style.display='none';if(dcEditingId)dcLoadDocAck(dcEditingId);
+  }catch(e){toast(actionErrorMessage('Issue acknowledgement','Document Control',e.message),false);}
 }
 
 async function dcMarkAckComplete(ackId){
   try{
+    var before=(dcAckData||[]).find(function(a){return a.id===ackId;})||{};
     await api('/doc_acknowledgements?id=eq.'+ackId,{m:'PATCH',p:'return=minimal',b:{acknowledged:true,acknowledged_at:new Date().toISOString(),status:'acknowledged'}});
+    var doc=dcAllData.find(function(x){return x.id===before.document_id;})||{id:before.document_id,doc_ref:before.doc_ref,title:before.doc_title,version:before.doc_version};
+    dcAudit('acknowledge','Document acknowledgement recorded',doc,{employee_name:before.employee_name||null,acknowledged_at:new Date().toISOString()});
     toast('Acknowledgement recorded!');
     if(dcEditingId)dcLoadDocAck(dcEditingId);else dcLoadAllAck();
   }catch(e){toastActionError('Mark document acknowledgement','Document Control',e);}
@@ -27653,7 +27828,12 @@ async function dcAckSave(){
   var doc=dcAllData.find(x=>x.id===docId);
   var g=function(id){var el=document.getElementById(id);return el?el.value||null:null;};
   var body={company_id:ccid(),document_id:docId||null,doc_ref:doc?.doc_ref||doc?.reference_no||null,doc_title:doc?.title||null,doc_version:doc?.version||'1.0',employee_name:emp,department:g('saf-dept'),due_date:g('saf-due')||null,notes:g('saf-notes'),status:'pending',created_by:prof?.id};
-  try{await api('/doc_acknowledgements',{m:'POST',p:'return=minimal',b:body});toast('Acknowledgement issued to '+emp+'!');dcAckBack();}catch(e){toast(actionErrorMessage('Issue acknowledgement','Document Control',e.message),false);}
+  try{
+    await api('/doc_acknowledgements',{m:'POST',p:'return=minimal',b:body});
+    dcAudit('issue_acknowledgement','Document acknowledgement issued',doc,{employee_name:emp,due_date:body.due_date});
+    await dcQueueAcknowledgementNotice(doc,body);
+    toast('Acknowledgement issued to '+emp+'!');dcAckBack();
+  }catch(e){toast(actionErrorMessage('Issue acknowledgement','Document Control',e.message),false);}
 }
 
 function dcAddDistPerson(){
