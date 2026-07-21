@@ -9384,6 +9384,22 @@ function swmsPayload(){
   };
 }
 
+function swmsAudit(action,summary,doc,details){
+  try{
+    doc=doc||{};
+    auditLogEvent(action,'swms',summary,{
+      swms_ref:doc.doc_ref||doc.reference_no||document.getElementById('swms-ref')?.textContent||'SWMS',
+      title:doc.title||document.getElementById('swms-title')?.value||'SWMS / Method Statement',
+      status:doc.approval_status||doc.status||null,
+      department:doc.department||document.getElementById('swms-dept')?.value||null,
+      location:doc.location||document.getElementById('swms-location')?.value||null,
+      linked_ra:document.getElementById('swms-ra-ref')?.value||null,
+      linked_ptw:document.getElementById('swms-ptw-ref')?.value||null,
+      details:details||{}
+    },{related_table:'documents',related_id:doc.id||swmsEditingId||null,company_id:doc.company_id||ccid()});
+  }catch(_){}
+}
+
 function swmsEncodePayload(payload){
   try{return 'AURIS360_SWMS_PAYLOAD:'+btoa(unescape(encodeURIComponent(JSON.stringify(payload||{}))));}
   catch(e){return '';}
@@ -9557,6 +9573,7 @@ async function swmsSaveToDocuments(){
   var yr=new Date().getFullYear(), ref=await nextCompanyRef('documents','doc_ref','SWMS-'+yr+'-'), today=new Date().toISOString().slice(0,10);
   var payload=swmsPayload();
   var existing=swmsEditingId?(swmsAllData||[]).find(function(x){return x.id===swmsEditingId;}):null;
+  var wasEditing=!!swmsEditingId;
   if(existing&&typeof controlledRecordCanEdit==='function'&&!controlledRecordCanEdit(existing)){
     toast('This SWMS is controlled. Create a new revision in Document Control before changing approved/submitted content.',false);
     return;
@@ -9564,16 +9581,25 @@ async function swmsSaveToDocuments(){
   var saveRef=existing?(existing.doc_ref||existing.reference_no||ref):ref;
   var body={company_id:ccid(),title:title,document_type:'swms',doc_type:'swms',department:document.getElementById('swms-dept')?.value||null,category:'Safe Work Method Statement',description:document.getElementById('swms-scope')?.value||'Safe Work Method Statement generated in AURIS360.',scope:document.getElementById('swms-scope')?.value||null,tags:['SWMS','Method Statement'],version:document.getElementById('swms-version')?.value||'Rev 00',doc_version:document.getElementById('swms-version')?.value||'Rev 00',doc_ref:saveRef,reference_no:saveRef,issue_date:document.getElementById('swms-date')?.value||today,effective_date:document.getElementById('swms-date')?.value||today,review_date:document.getElementById('swms-review-date')?.value||null,review_interval_months:12,controlled_copy:true,is_controlled:true,author:document.getElementById('swms-prepared-by')?.value||null,owner:document.getElementById('swms-prepared-by')?.value||null,doc_owner:document.getElementById('swms-prepared-by')?.value||null,reviewer:document.getElementById('swms-reviewed-by')?.value||null,approver:document.getElementById('swms-approved-by')?.value||null,legal_refs:[],location:document.getElementById('swms-location')?.value||null,approval_status:existing?(existing.approval_status||existing.status||'draft'):'draft',status:existing?(existing.status||existing.approval_status||'draft'):'draft',revision_summary:swmsEncodePayload(payload),updated_at:new Date().toISOString()};
   try{
+    var savedDocId=swmsEditingId||null;
     if(swmsEditingId){await api('/documents?id=eq.'+swmsEditingId,{m:'PATCH',p:'return=minimal',b:body});}
-    else{body.created_by=prof?.id;await api('/documents',{m:'POST',p:'return=minimal',b:body});}
+    else{
+      body.created_by=prof?.id;
+      var created=await api('/documents',{m:'POST',p:'return=representation',b:body});
+      savedDocId=created&&created[0]?created[0].id:null;
+      if(savedDocId)swmsEditingId=savedDocId;
+    }
+    var auditDoc=Object.assign({id:savedDocId},existing||{},body);
+    swmsAudit(wasEditing?'update':'create',wasEditing?'SWMS updated in Document Control':'SWMS saved to Document Control',auditDoc,{step_count:(payload.steps||[]).length});
     document.getElementById('swms-ref').textContent=saveRef;
     var linkedRA=document.getElementById('swms-ra-ref')?.value||'';
     if(linkedRA){
       var raPatch={rams_document_name:saveRef,rams_document_url:null,updated_at:new Date().toISOString()};
       try{await api('/risk_assessments?ra_ref=eq.'+encodeURIComponent(linkedRA),{m:'PATCH',p:'return=minimal',b:raPatch});}
       catch(_){try{await api('/risk_assessments?id=eq.'+encodeURIComponent(linkedRA),{m:'PATCH',p:'return=minimal',b:raPatch});}catch(__){}}
+      swmsAudit('link','SWMS linked to risk assessment',auditDoc,{risk_assessment_ref:linkedRA,swms_ref:saveRef});
     }
-    toast('SWMS '+(swmsEditingId?'updated':'saved')+' in Document Control: '+saveRef+(linkedRA?' and linked to RA':''));
+    toast('SWMS '+(wasEditing?'updated':'saved')+' in Document Control: '+saveRef+(linkedRA?' and linked to RA':''));
     swmsShowList();
   }catch(e){toast(actionErrorMessage('Save SWMS','SWMS / Method Statements',e),false);}
 }
@@ -16571,8 +16597,16 @@ async function raSave(targetStatus){
       await api('/risk_assessments?id=eq.'+raEditingId,{m:'PATCH',p:'return=minimal',b:body});
       var idx=raAllData.findIndex(x=>x.id===raEditingId);
       if(idx>=0)Object.assign(raAllData[idx],body);
-      raRenderWorkflowBar(Object.assign({},currentRa||{},body));
-      if(status==='pending_review'||status==='pending_approval'||status==='review')raQueueApprovalRequest(Object.assign({},currentRa||{},body,{id:raEditingId}));
+      var updatedRa=Object.assign({},currentRa||{},{id:raEditingId},body);
+      raRenderWorkflowBar(updatedRa);
+      var submitted=['pending_review','pending_approval','review'].includes(status);
+      if(submitted){
+        await raQueueApprovalRequest(updatedRa);
+        var route=await raGetActiveApprovalWorkflow();
+        await raQueueApprovalNotice(updatedRa,(route&&route.steps&&route.steps[0])||null);
+      }
+      raAudit(submitted?'submit':'update',submitted?'Risk assessment submitted for approval':'Risk assessment updated',updatedRa,{old_status:currentRa?.status||null,new_status:status,row_count:rows.length});
+      if(submitted&&currentRa?.status!==status)await raQueueStatusNotice(updatedRa,'submitted');
       toast('Risk assessment updated!');
       // Update linked work order if needed
       raSyncToMAP(raEditingId, rows);
@@ -16587,8 +16621,16 @@ async function raSave(targetStatus){
         // Update form header
         document.getElementById('ra-form3ref').textContent=ref;
         document.getElementById('ra-form3title').textContent=body.title||'Risk Assessment';
-        raRenderWorkflowBar(Object.assign({},body,{id:res[0].id,ra_ref:ref}));
-        if(status==='pending_review'||status==='pending_approval'||status==='review')raQueueApprovalRequest(Object.assign({},body,{id:res[0].id,ra_ref:ref}));
+        var createdRa=Object.assign({},body,{id:res[0].id,ra_ref:ref});
+        raRenderWorkflowBar(createdRa);
+        var newSubmitted=['pending_review','pending_approval','review'].includes(status);
+        if(newSubmitted){
+          await raQueueApprovalRequest(createdRa);
+          var newRoute=await raGetActiveApprovalWorkflow();
+          await raQueueApprovalNotice(createdRa,(newRoute&&newRoute.steps&&newRoute.steps[0])||null);
+        }
+        raAudit(newSubmitted?'submit':'create',newSubmitted?'Risk assessment created and submitted for approval':'Risk assessment created',createdRa,{new_status:status,row_count:rows.length});
+        if(newSubmitted)await raQueueStatusNotice(createdRa,'submitted');
         toast('RA saved! Ref: '+ref);
         raSyncToMAP(res[0].id, rows);
       }
@@ -16623,6 +16665,91 @@ function raApprovalStepAllows(step){
   if(step.approver_email&&prof?.email&&String(step.approver_email).toLowerCase()===String(prof.email).toLowerCase())return true;
   if(step.approver_role&&String(step.approver_role)===String(role))return true;
   return false;
+}
+
+function raRecordRef(rec){
+  return rec?.ra_ref||rec?.reference_no||rec?.id?.slice(0,8)||'RA';
+}
+
+function raRecordTitle(rec){
+  return rec?.title||rec?.activity||'Risk assessment';
+}
+
+function raAudit(action,summary,rec,details){
+  try{
+    rec=rec||{};
+    auditLogEvent(action,'risk',summary,{
+      ra_ref:raRecordRef(rec),
+      title:raRecordTitle(rec),
+      ra_type:rec.ra_type_v2||rec.ra_type||raEditingType||null,
+      status:rec.status||null,
+      overall_risk_level:rec.overall_risk_level||null,
+      location:rec.location||rec.workshop||rec.site_name||null,
+      details:details||{}
+    },{related_table:'risk_assessments',related_id:rec.id||raEditingId||null,company_id:rec.company_id||ccid()});
+  }catch(_){}
+}
+
+function raApprovalStepContact(step){
+  step=step||{};
+  var p=(people||[]).find(function(x){
+    return step.approver_person_id&&String(x.id)===String(step.approver_person_id);
+  });
+  return {
+    name:step.approver_name||peopleName(p)||auditLabel(step.approver_role||'Approver'),
+    email:step.approver_email||usersContactEmail(p)||''
+  };
+}
+
+async function raQueueApprovalNotice(rec,step){
+  try{
+    var contact=raApprovalStepContact(step);
+    if(!contact.email)return;
+    var ref=raRecordRef(rec), title=raRecordTitle(rec);
+    var body='<div style="font-family:Arial,sans-serif;background:#f4f6f8;padding:20px"><div style="max-width:620px;margin:0 auto;background:#fff;border-radius:12px;overflow:hidden;border:1px solid #e5e7eb">'
+      +'<div style="background:#185FA5;color:#fff;padding:18px 22px"><div style="font-size:20px;font-weight:700">AURIS360</div><div style="font-size:13px;opacity:.85">Risk assessment approval request</div></div>'
+      +'<div style="padding:22px"><h2 style="margin:0 0 14px;font-size:18px">Risk assessment approval required</h2>'
+      +'<table style="width:100%;border-collapse:collapse;font-size:14px">'
+      +'<tr><td style="padding:8px;background:#f9fafb;font-weight:600;width:150px">Reference</td><td style="padding:8px">'+escH(ref)+'</td></tr>'
+      +'<tr><td style="padding:8px;background:#f9fafb;font-weight:600">Title</td><td style="padding:8px">'+escH(title)+'</td></tr>'
+      +'<tr><td style="padding:8px;background:#f9fafb;font-weight:600">Risk</td><td style="padding:8px">'+escH(rec.overall_risk_level||'-')+'</td></tr>'
+      +'<tr><td style="padding:8px;background:#f9fafb;font-weight:600">Approver</td><td style="padding:8px">'+escH(raApprovalStepLabel(step))+'</td></tr>'
+      +'</table><div style="margin-top:18px;text-align:center"><a href="https://auris-360.vercel.app/?goto=risk" style="display:inline-block;background:#1D9E75;color:#fff;padding:11px 22px;border-radius:8px;text-decoration:none;font-weight:700">Open Risk Assessment</a></div></div>'
+      +'<div style="padding:12px 22px;background:#f4f6f8;font-size:11px;color:#6B7280;text-align:center">Automated notification from AURIS360.</div></div></div>';
+    await queueNotification({company_id:rec.company_id||ccid(),type:'risk_assessment',subject:'[AURIS360] Risk assessment approval required: '+ref,body_html:body,to_email:contact.email,to_name:contact.name||contact.email,from_name:'AURIS360 by SEPHS Consulting',related_id:rec.id||raEditingId||null,related_table:'risk_assessments',status:'pending'});
+  }catch(e){}
+}
+
+async function raQueueStatusNotice(rec,event,details){
+  try{
+    rec=rec||{};
+    var labels={submitted:'submitted for approval',approved:'approved and active',rejected:'rejected for correction',released:'released for edit',archived:'archived',deleted:'deleted'};
+    var label=labels[event]||String(event||'updated').replace(/_/g,' ');
+    var recipients=[], seen={};
+    function addPerson(name,email){
+      email=String(email||'').trim();
+      if(!email||seen[email.toLowerCase()])return;
+      seen[email.toLowerCase()]=true;
+      recipients.push({name:name||email,email:email});
+    }
+    var assessor=(people||[]).find(function(p){return peopleName(p)===rec.assessed_by||ptwPersonName(p)===rec.assessed_by||p.id===rec.assessed_by;});
+    addPerson(rec.assessed_by||peopleName(assessor),usersContactEmail(assessor));
+    if(prof&&rec.created_by===prof.id)addPerson(prof.full_name||prof.email,prof.email);
+    var ref=raRecordRef(rec), title=raRecordTitle(rec);
+    var body='<div style="font-family:Arial,sans-serif;background:#f4f6f8;padding:20px"><div style="max-width:620px;margin:0 auto;background:#fff;border-radius:12px;overflow:hidden;border:1px solid #e5e7eb">'
+      +'<div style="background:#1D9E75;color:#fff;padding:18px 22px"><div style="font-size:20px;font-weight:700">AURIS360</div><div style="font-size:13px;opacity:.85">Risk assessment update</div></div>'
+      +'<div style="padding:22px"><h2 style="margin:0 0 14px;font-size:18px">Risk assessment '+escH(label)+'</h2>'
+      +'<table style="width:100%;border-collapse:collapse;font-size:14px">'
+      +'<tr><td style="padding:8px;background:#f9fafb;font-weight:600;width:150px">Reference</td><td style="padding:8px">'+escH(ref)+'</td></tr>'
+      +'<tr><td style="padding:8px;background:#f9fafb;font-weight:600">Title</td><td style="padding:8px">'+escH(title)+'</td></tr>'
+      +'<tr><td style="padding:8px;background:#f9fafb;font-weight:600">Status</td><td style="padding:8px">'+escH(rec.status||event||'-')+'</td></tr>'
+      +(details?.reason?'<tr><td style="padding:8px;background:#f9fafb;font-weight:600">Reason</td><td style="padding:8px">'+escH(details.reason)+'</td></tr>':'')
+      +'</table><div style="margin-top:18px;text-align:center"><a href="https://auris-360.vercel.app/?goto=risk" style="display:inline-block;background:#1D9E75;color:#fff;padding:11px 22px;border-radius:8px;text-decoration:none;font-weight:700">Open Risk Assessment</a></div></div>'
+      +'<div style="padding:12px 22px;background:#f4f6f8;font-size:11px;color:#6B7280;text-align:center">Automated notification from AURIS360.</div></div></div>';
+    for(var i=0;i<recipients.length;i++){
+      await queueNotification({company_id:rec.company_id||ccid(),type:'risk_assessment',subject:'[AURIS360] Risk assessment '+label+': '+ref,body_html:body,to_email:recipients[i].email,to_name:recipients[i].name,from_name:'AURIS360 by SEPHS Consulting',related_id:rec.id||raEditingId||null,related_table:'risk_assessments',status:'pending'});
+    }
+  }catch(e){}
 }
 
 async function raCurrentApprovalStep(){
@@ -16704,6 +16831,8 @@ async function raApproveCurrent(){
     controlledApplyFormLock('ra-form3view','ra-controlled-lock-note',rec,'Risk assessment');
     raRenderWorkflowBar(rec);
     await raCloseApprovalRequest('approved');
+    raAudit('approve','Risk assessment approved and activated',rec,{reviewer:reviewer,approver:approver,new_status:'active'});
+    await raQueueStatusNotice(rec,'approved');
     toast('Risk assessment approved and activated');
   }catch(e){toastActionError('Approve risk assessment','Risk Assessment',e);}
 }
@@ -16723,6 +16852,8 @@ async function raRejectCurrent(){
     controlledApplyFormLock('ra-form3view','ra-controlled-lock-note',rec,'Risk assessment');
     raRenderWorkflowBar(rec);
     await raCloseApprovalRequest('rejected');
+    raAudit('reject','Risk assessment rejected for correction',rec,{reason:body.rejection_reason,new_status:'rejected'});
+    await raQueueStatusNotice(rec,'rejected',{reason:body.rejection_reason});
     toast('Risk assessment rejected for correction');
   }catch(e){toastActionError('Reject risk assessment','Risk Assessment',e);}
 }
@@ -16765,6 +16896,8 @@ async function raReleaseForEdit(){
     controlledApplyFormLock('ra-form3view','ra-controlled-lock-note',rec,'Risk assessment');
     raRenderWorkflowBar(rec);
     await raCloseApprovalRequest('released_for_edit');
+    raAudit('release','Risk assessment released for edit',rec,{revision:newRev,reason:body.revision_notes,new_status:'draft'});
+    await raQueueStatusNotice(rec,'released',{reason:body.revision_notes});
     raLoadRevisions();
     toast('Risk assessment released as Rev '+newRev);
   }catch(e){toastActionError('Release risk assessment for edit','Risk Assessment',e);}
@@ -16809,6 +16942,8 @@ async function raDeleteCurrent(){
       await api('/risk_assessments?id=eq.'+raEditingId,{m:'PATCH',p:'return=minimal',b:{status:'archived',archived_at:new Date().toISOString(),updated_at:new Date().toISOString()}});
       Object.assign(current,{status:'archived',archived_at:new Date().toISOString()});
       var sel=document.getElementById('ra-status-sel');if(sel)sel.value='archived';
+      raAudit('archive','Risk assessment archived',current,{old_status:st,new_status:'archived'});
+      await raQueueStatusNotice(current,'archived');
       toast('Risk assessment archived and kept for audit history');
       controlledApplyFormLock('ra-form3view','ra-controlled-lock-note',current,'Risk assessment');
     }catch(e){toast(actionErrorMessage('Archive risk assessment','Risk Assessment',e.message),false);}
@@ -16817,6 +16952,7 @@ async function raDeleteCurrent(){
   if(!(await appConfirmDelete('risk assessment','Permanent deletion is intended only for draft, rejected, archived or test risk assessments.')))return;
   api('/risk_assessments?id=eq.'+raEditingId,{m:'DELETE',p:'return=representation'}).then(function(deleted){
     if(!deleted||!deleted.length)throw new Error('Delete failed: record not found or permission denied');
+    raAudit('delete','Risk assessment permanently deleted',current,{old_status:st});
     raAllData=raAllData.filter(x=>x.id!==raEditingId);
     toast('Risk assessment permanently deleted');raEditingId=null;raShowList();
   }).catch(function(e){toast(actionErrorMessage('Delete risk assessment','Risk Assessment',e.message),false);});
