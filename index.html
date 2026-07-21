@@ -8181,6 +8181,20 @@ async function noiseOpenSurvey(id){
     noiseSwitchSection('details');
   }catch(e){toast(actionErrorMessage('Open noise survey','Noise Survey',e.message),false);}
 }
+function noiseAudit(action,summary,row,details){
+  try{
+    row=row||{};
+    auditLogEvent(action,'noise',summary,{
+      reference:row.survey_ref||row.id?.slice(0,8)||'NOISE',
+      site:row.site||null,
+      survey_type:row.survey_type||null,
+      survey_date:row.survey_date||null,
+      conducted_by:row.conducted_by||null,
+      measurement_points:Array.isArray(row.measurements)?row.measurements.length:null,
+      details:details||{}
+    },{related_table:'noise_surveys',related_id:row.id||details?.id||null,company_id:row.company_id||ccid()});
+  }catch(_){}
+}
 async function saveNoise(){
 try{
 const bid=document.getElementById('nf-by').value;
@@ -8188,21 +8202,23 @@ var cal=document.getElementById('nf-cal').value||null;
 var points=noisePointsFromForm(), hpe=noiseAssessHpe();
 var base={company_id:ccid(),survey_type:document.getElementById('nf-type').value,site:document.getElementById('nf-site').value,survey_date:document.getElementById('nf-date').value||null,conducted_by:bid?pname(bid):prof?.full_name,instrument_used:document.getElementById('nf-instrument').value,calibration_date:cal,weather_conditions:document.getElementById('nf-weather').value,notes:document.getElementById('nf-notes').value,created_by:prof?.id,updated_at:new Date().toISOString()};
 var body=Object.assign({},base,{layout_title:document.getElementById('nf-layout-name')?.value||null,layout_image:document.getElementById('nf-layout-data')?.value||null,measurements:points,hpe_assessment:hpe});
+var saved=null;
 try{
-  if(window.noiseEditId)await api('/noise_surveys?id=eq.'+window.noiseEditId,{m:'PATCH',p:'return=minimal',b:body});
-  else await api('/noise_surveys',{m:'POST',p:'return=minimal',b:body});
+  if(window.noiseEditId){await api('/noise_surveys?id=eq.'+window.noiseEditId,{m:'PATCH',p:'return=minimal',b:body});saved=Object.assign({id:window.noiseEditId},body);}
+  else{var created=await api('/noise_surveys',{m:'POST',p:'return=representation',b:body});saved=created?.[0]||body;}
 }catch(e){
   if(!/schema cache|column|Could not find/i.test(e.message||''))throw e;
-  if(window.noiseEditId)await api('/noise_surveys?id=eq.'+window.noiseEditId,{m:'PATCH',p:'return=minimal',b:base});
-  else await api('/noise_surveys',{m:'POST',p:'return=minimal',b:base});
+  if(window.noiseEditId){await api('/noise_surveys?id=eq.'+window.noiseEditId,{m:'PATCH',p:'return=minimal',b:base});saved=Object.assign({id:window.noiseEditId},base);}
+  else{var createdBase=await api('/noise_surveys',{m:'POST',p:'return=representation',b:base});saved=createdBase?.[0]||base;}
   toast(isSA()
     ? 'Noise survey saved. Run auris360_production_schema_bundle_CLEAN.sql to keep plan, points and HPE assessment.'
     : 'Noise survey saved. Advanced plan/point details need admin setup before they are shared.',
     false);
 }
+noiseAudit(window.noiseEditId?'update':'create',window.noiseEditId?'Noise survey updated':'Noise survey created',Object.assign({},body,saved||{}),{points_count:points.length,hpe_count:hpe.length,layout_attached:!!body.layout_image});
 var calBad=!cal||((new Date()-new Date(cal))/86400000>365);
 if(calBad){
-  try{await api('/action_tracker',{m:'POST',p:'return=minimal',b:{company_id:ccid(),source_module:'noise',source_ref:'Noise survey - '+(body.site||'site'),description:'Noise survey instrument calibration is missing or older than 12 months. Verify calibration before relying on results.',responsible:body.conducted_by||null,priority:'medium',status:'open',created_by:prof?.id}});}catch(ex){console.warn('Noise MAP action failed',ex);}
+  try{await api('/action_tracker',{m:'POST',p:'return=minimal',b:{company_id:ccid(),source_module:'noise',source_id:(saved&&saved.id)||window.noiseEditId||null,source_ref:'Noise survey - '+(body.site||'site'),description:'Noise survey instrument calibration is missing or older than 12 months. Verify calibration before relying on results.',responsible:body.conducted_by||null,priority:'medium',status:'open',created_by:prof?.id}});noiseAudit('follow_up','Noise survey calibration action created',Object.assign({},body,saved||{}),{calibration_date:cal});}catch(ex){console.warn('Noise MAP action failed',ex);}
 }
 toggleForm('noise-form');toast('Noise survey saved!'+(calBad?' Calibration action added to MAP.':''));loadNoise();
 }catch(e){toastActionError('Save noise survey','Noise Survey',e);}
@@ -8210,17 +8226,19 @@ toggleForm('noise-form');toast('Noise survey saved!'+(calBad?' Calibration actio
 async function deleteNoiseSurvey(id){
   if(!isMgr())return;
   try{
-    var rows=await api('/noise_surveys?id=eq.'+id+'&select=notes');
+    var rows=await api('/noise_surveys?id=eq.'+id+'&select=*');
     var current=rows?.[0]||{};
     if(!ohIsArchivedText(current.notes)){
       if(!(await appConfirmAction({title:'Archive noise survey',message:'Archive this noise survey instead of deleting it?',detail:'Noise surveys are exposure evidence and should remain traceable.',confirmText:'Archive survey',cancelText:'Back',variant:'danger'})))return;
       await api('/noise_surveys?id=eq.'+id,{m:'PATCH',p:'return=minimal',b:{notes:ohArchivedText(current.notes),updated_at:new Date().toISOString()}});
+      noiseAudit('archive','Noise survey archived',Object.assign({id:id},current),{previous_notes:!!current.notes});
       toast('Noise survey archived');
       loadNoise();
       return;
     }
     if(!(await appConfirmDelete('archived noise survey','Permanent deletion should be used only for duplicate/test surveys.')))return;
     await api('/noise_surveys?id=eq.'+id,{m:'DELETE'});
+    noiseAudit('delete','Noise survey permanently deleted',Object.assign({id:id},current),{reason:'duplicate_or_test_record'});
     toast('Archived survey permanently deleted');
     loadNoise();
   }catch(e){toastActionError('Delete noise survey','Noise Survey',e);}
