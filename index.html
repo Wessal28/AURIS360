@@ -28817,18 +28817,35 @@ function legalPrintRegisterEvidence(){
 function legalRequirementOptionsHtml(selectedId){
   var h='<option value="">Select section to amend...</option>';
   (lrAllData||[]).slice().sort(function(a,b){return (a.legislation||'').localeCompare(b.legislation||'')||legalRefSortValue(a)-legalRefSortValue(b);}).forEach(function(x){
-    var label=displayRecordRef(x,'req_ref','LEG')+' - '+(x.legislation||'')+' - '+(x.title||x.section||'');
+    var section=[x.section,x.subsection].filter(Boolean).join('.');
+    var label=displayRecordRef(x,'req_ref','LEG')+' - '+(section?('s.'+section+' - '):'')+(x.title||x.legislation||'');
     h+='<option value="'+escH(x.id||'')+'" '+(x.id===selectedId?'selected':'')+'>'+escH(label.substring(0,140))+'</option>';
   });
   return h;
 }
+function legalChangeSectionSummaryHtml(x){
+  if(!x)return '<div style="font-size:12px;color:var(--text2)">No legal register section selected yet.</div>';
+  var ref=displayRecordRef(x,'req_ref','LEG');
+  var section=[x.section,x.subsection].filter(Boolean).join('.');
+  var req=String(x.requirement||'').trim();
+  return '<div style="display:grid;grid-template-columns:120px 1fr;gap:10px;align-items:start">'
+    +'<div><div class="form3label">Register ref</div><b style="font-family:monospace;color:#185FA5">'+escH(ref)+'</b></div>'
+    +'<div><div class="form3label">Section concerned</div><b>'+escH((section?('s.'+section+' - '):'')+(x.title||x.legislation||'-'))+'</b>'
+    +(req?'<div style="font-size:12px;color:#374151;line-height:1.45;margin-top:6px;white-space:pre-wrap">'+escH(req.substring(0,420))+(req.length>420?'...':'')+'</div>':'')+'</div></div>';
+}
+function legalChangeSetSectionSummary(x){
+  var box=document.getElementById('lc-section-summary');
+  if(box)box.innerHTML=legalChangeSectionSummaryHtml(x);
+}
 function legalChangeSectionChanged(){
   var id=document.getElementById('lc-section-id')?.value||'';
   var x=(lrAllData||[]).find(function(r){return r.id===id;});
-  if(!x)return;
+  if(!x){legalChangeSetSectionSummary(null);return;}
   var leg=document.getElementById('lc-legislation');if(leg)leg.value=x.legislation||'';
   var cat=document.getElementById('lc-category');if(cat)cat.value=x.category||'health_safety';
+  var ref=document.getElementById('lc-section-ref');if(ref)ref.value=[x.section,x.subsection].filter(Boolean).join('.')||displayRecordRef(x,'req_ref','');
   var prev=document.getElementById('lc-current-wording');if(prev)prev.value=x.requirement||'';
+  legalChangeSetSectionSummary(x);
 }
 function legalRenderAssessmentMatrix(){
   var box=document.getElementById('lca-matrix');if(!box)return;
@@ -28983,6 +29000,7 @@ function legalNewChange(){
   document.getElementById('lc-applicable').value='true';
   document.getElementById('lc-implemented').value='false';
   var ct=document.getElementById('lc-change-type');if(ct)ct.value='amendment';
+  legalChangeSetSectionSummary(null);
   document.getElementById('legal-view-changes').style.display='none';document.getElementById('legal-chg-form').style.display='block';
 }
 function legalChangeTextFromComments(x,label){
@@ -29001,7 +29019,9 @@ function legalChangeSectionLabel(x){
   var meta=legalChangeMetaFromComments(x);
   var reqId=x.requirement_id||x.legal_requirement_id||meta.requirement_id||'';
   var req=(lrAllData||[]).find(function(r){return String(r.id)===String(reqId);})||{};
-  return x.section||x.section_ref||meta.section_ref||req.section||displayRecordRef(req,'req_ref','');
+  var sec=x.section||x.section_ref||meta.section_ref||[req.section,req.subsection].filter(Boolean).join('.');
+  var title=req.title||x.section_title||'';
+  return [sec,title].filter(Boolean).join(' - ')||displayRecordRef(req,'req_ref','');
 }
 function legalChangeData(id){
   var x=(lcAllData||[]).find(function(r){return String(r.id)===String(id);})||null;
@@ -29021,11 +29041,12 @@ function legalChangeUserComments(x){
   return String(x?.comments||'').replace(/AURIS360_CHANGE_META:{[\s\S]*?}\s*/,'').replace(/Amendment tracking:[\s\S]*/,'').trim();
 }
 function legalChangeEditMode(edit){
-  var review=document.getElementById('lc-review-card'),form=document.getElementById('lc-edit-card'),save=document.getElementById('lc-save-btn'),editBtn=document.getElementById('lc-edit-btn');
+  var review=document.getElementById('lc-review-card'),form=document.getElementById('lc-edit-card'),save=document.getElementById('lc-save-btn'),editBtn=document.getElementById('lc-edit-btn'),del=document.getElementById('lc-del-btn');
   if(review)review.style.display=edit?'none':'block';
   if(form)form.style.display=edit?'block':'none';
   if(save)save.style.display=edit?'inline-flex':'none';
   if(editBtn)editBtn.style.display=(!edit&&isMgr())?'inline-flex':'none';
+  if(del)del.style.display=(edit&&isMgr()&&lcEditId)?'inline-flex':'none';
 }
 function legalChangeReviewHtml(x){
   var imp=x.implemented===true||x.implemented==='true';
@@ -29038,7 +29059,7 @@ function legalChangeReviewHtml(x){
     +'<div><div class="form3label">Applicable</div><b style="color:'+(app?'#047857':'#64748b')+'">'+(app?'Yes':'No')+'</b></div>'
     +'<div><div class="form3label">Implemented</div><b style="color:'+(imp?'#047857':'#B45309')+'">'+(imp?'Done':'Pending')+'</b></div>'
     +'</div><div class="card" style="background:#F8FBFF;border-color:#BFDBFE;margin-bottom:14px"><div class="card-title" style="color:#185FA5">Affected section</div>'
-    +'<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px"><div><div class="form3label">Legislation</div><b>'+escH(x.legislation||'-')+'</b></div><div><div class="form3label">Section / ref</div><b>'+escH(x.section||x.section_ref||'-')+'</b></div><div><div class="form3label">Change type</div><b>'+escH(String(x.change_type||'amendment').replace(/_/g,' '))+'</b></div></div></div>'
+    +'<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px"><div><div class="form3label">Legislation</div><b>'+escH(x.legislation||'-')+'</b></div><div><div class="form3label">Section / ref</div><b style="color:#185FA5">'+escH(legalChangeSectionLabel(x)||'-')+'</b></div><div><div class="form3label">Change type</div><b>'+escH(String(x.change_type||'amendment').replace(/_/g,' '))+'</b></div></div></div>'
     +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px"><div class="card" style="background:#FEF2F2;border-color:#FECACA"><div class="card-title" style="color:#991B1B">Previous wording</div><div style="white-space:pre-wrap;font-size:13px;line-height:1.45;color:#7F1D1D">'+escH(oldW)+'</div></div><div class="card" style="background:#ECFDF5;border-color:#A7F3D0"><div class="card-title" style="color:#047857">New wording / replacement</div><div style="white-space:pre-wrap;font-size:13px;line-height:1.45;color:#064E3B;font-weight:600">'+escH(newW)+'</div></div></div>'
     +'<div class="card" style="margin-bottom:14px"><div class="card-title">Change impact and action</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:14px"><div><div class="form3label">Changes identified</div><div style="white-space:pre-wrap">'+escH(x.changes_identified||x.changes||'-')+'</div></div><div><div class="form3label">Action required</div><div style="white-space:pre-wrap">'+escH(x.action_required||x.action||'-')+'</div></div></div></div>'
     +(x.comments?'<div class="card"><div class="card-title">Comments</div><div style="white-space:pre-wrap">'+escH(legalChangeUserComments(x)||'-')+'</div></div>':'');
@@ -29057,8 +29078,10 @@ function legalEditChg(){
   document.getElementById('lc-del-btn').style.display=isMgr()?'inline-flex':'none';
   var gf=function(fid,val){var el=document.getElementById(fid);if(el)el.value=val||'';};
   var section=document.getElementById('lc-section-id');if(section)section.innerHTML=legalRequirementOptionsHtml(x.requirement_id||x.legal_requirement_id||'');
+  var req=(lrAllData||[]).find(function(r){return String(r.id)===String(x.requirement_id||x.legal_requirement_id||'');});
   gf('lc-date',x.date_received);gf('lc-source',x.source);gf('lc-jurisdiction',x.jurisdiction||'Mauritius');gf('lc-legislation',x.legislation);gf('lc-changes',x.changes_identified||x.changes);gf('lc-action',x.action_required||x.action);gf('lc-comments',legalChangeUserComments(x));gf('lc-responsible',x.responsible_person);gf('lc-effective-date',x.effective_date);
   gf('lc-section-ref',x.section||x.section_ref);gf('lc-current-wording',x.previous_wording);gf('lc-new-wording',x.new_wording);
+  legalChangeSetSectionSummary(req||null);
   var ct=document.getElementById('lc-change-type');if(ct)ct.value=x.change_type||'amendment';
   document.getElementById('lc-category').value=x.category||'health_safety';
   document.getElementById('lc-applicable').value=x.applicable!==false&&x.applicable!=='false'?'true':'false';
@@ -44446,6 +44469,7 @@ Offline mode - changes will sync when connection is restored
 <div class="form3group"><label class="form3label">Section / ref</label><input type="text" id="lc-section-ref" placeholder="e.g. s.34, Reg. 12"/></div>
 <div class="form3group"><label class="form3label">Type of change</label><select id="lc-change-type"><option value="amendment">Amendment</option><option value="repeal">Repeal / revoked</option><option value="new_section">New section</option><option value="clarification">Clarification / guidance</option></select></div>
 </div>
+<div id="lc-section-summary" style="padding:10px 12px;margin-bottom:12px;border:1px dashed #BFDBFE;border-radius:8px;background:#fff"></div>
 <div class="form3row">
 <div class="form3group"><label class="form3label">Current wording in register</label><textarea id="lc-current-wording" style="min-height:90px" readonly></textarea></div>
 <div class="form3group"><label class="form3label">New wording / replacement text</label><textarea id="lc-new-wording" style="min-height:90px" placeholder="Paste or summarise the updated legal wording. When saved, this replaces the selected register section."></textarea></div>
