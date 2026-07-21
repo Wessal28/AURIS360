@@ -28586,14 +28586,14 @@ async function legalDeleteReq(){
   if(!lrEditId)return;
   var ok=await appConfirmAction({title:'Retire legal section',message:'Retire this legal requirement instead of deleting it?',detail:'The section will be marked not applicable and kept in the register for traceability. Use database admin only for permanent cleanup of test imports.',confirmText:'Retire section',cancelText:'Back'});
   if(!ok)return;
-  try{await api('/legal_requirements?id=eq.'+lrEditId,{m:'PATCH',p:'return=minimal',b:{status:'not_applicable',applicable:false,compliance_score:0,retired_at:new Date().toISOString(),updated_at:new Date().toISOString()}});toast('Legal section retired');legalReqBack();}catch(e){toast(actionErrorMessage('Retire legal section','Legal Compliance',e.message),false);}
+  try{await legalRetirePath('/legal_requirements?id=eq.'+lrEditId);toast('Legal section retired');legalReqBack();}catch(e){toast(actionErrorMessage('Retire legal section','Legal Compliance',e.message),false);}
 }
 async function legalDeleteReqFromList(id){
   if(!workflowCanMutate('legal','legal compliance'))return;
   if(!isMgr()){toast('Only managers/admins can delete legal requirements.',false);return;}
   var ok=await appConfirmAction({title:'Retire legal section',message:'Retire this legal requirement instead of deleting it?',detail:'The section will be marked not applicable and kept in the register for traceability.',confirmText:'Retire section',cancelText:'Back'});
   if(!ok)return;
-  api('/legal_requirements?id=eq.'+id,{m:'PATCH',p:'return=minimal',b:{status:'not_applicable',applicable:false,compliance_score:0,retired_at:new Date().toISOString(),updated_at:new Date().toISOString()}}).then(function(){var x=lrAllData.find(r=>r.id===id);if(x)Object.assign(x,{status:'not_applicable',applicable:false,compliance_score:0});legalFilterRegister();toast('Legal section retired');}).catch(function(e){toast(actionErrorMessage('Retire legal section','Legal Compliance',e.message),false);});
+  legalRetirePath('/legal_requirements?id=eq.'+id).then(function(){var x=lrAllData.find(r=>r.id===id);if(x)Object.assign(x,{status:'not_applicable',applicable:false,compliance_score:0});legalFilterRegister();toast('Legal section retired');}).catch(function(e){toast(actionErrorMessage('Retire legal section','Legal Compliance',e.message),false);});
 }
 
 function legalToggleVisibleSelection(checked){
@@ -28607,12 +28607,22 @@ async function legalDeleteIds(ids,label){
   if(!ids.length)return;
   for(var i=0;i<ids.length;i+=40){
     var chunk=ids.slice(i,i+40);
-    await api('/legal_requirements?id=in.('+chunk.join(',')+')'+cf(),{m:'PATCH',p:'return=minimal',b:{status:'not_applicable',applicable:false,compliance_score:0,retired_at:new Date().toISOString(),updated_at:new Date().toISOString()}});
+    await legalRetirePath('/legal_requirements?id=in.('+chunk.join(',')+')'+cf());
   }
   lrAllData.forEach(function(x){if(ids.includes(x.id))Object.assign(x,{status:'not_applicable',applicable:false,compliance_score:0});});
   legalFilterRegister();
   legalRefreshMetrics();
   toast('Retired '+ids.length+' '+(label||'requirement')+(ids.length>1?'s':''));
+}
+
+async function legalRetirePath(path){
+  var body={status:'not_applicable',applicable:false,compliance_score:0,retired_at:new Date().toISOString(),updated_at:new Date().toISOString()};
+  try{
+    await mtgApiWithSchemaFallback(path,{m:'PATCH',p:'return=minimal',b:body},['retired_at','updated_at','applicable','compliance_score']);
+  }catch(e){
+    if(!mtgIsSchemaColumnError(e))throw e;
+    await api(path,{m:'DELETE'});
+  }
 }
 
 async function legalDeleteSelectedReqs(){
@@ -28628,7 +28638,12 @@ async function legalDeleteSelectedReqs(){
 async function legalDeleteCurrentLegislation(){
   if(!isMgr()){toast('Only managers/admins can delete legislation',false);return;}
   var leg=document.getElementById('lr-filter-leg')?.value||'';
-  if(!leg){toast('Choose one legislation in the filter first',false);return;}
+  if(!leg){
+    var selectedIds=Array.from(document.querySelectorAll('.lr-row-select:checked')).map(function(cb){return cb.dataset.id;}).filter(Boolean);
+    var selectedLegs=[...new Set(lrAllData.filter(function(x){return selectedIds.includes(x.id);}).map(function(x){return x.legislation;}).filter(Boolean))];
+    if(selectedLegs.length===1)leg=selectedLegs[0];
+  }
+  if(!leg){toast('Choose one legislation in the filter first, or select rows from one legislation only',false);return;}
   var ids=lrAllData.filter(function(x){return x.legislation===leg;}).map(function(x){return x.id;}).filter(Boolean);
   if(!ids.length){toast('No records found for this legislation',false);return;}
   var ok=await appConfirm({
