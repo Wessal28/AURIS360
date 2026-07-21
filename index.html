@@ -28699,6 +28699,47 @@ function legalFilteredRequirements(){
   }).sort(function(a,b){return (a.legislation||'').localeCompare(b.legislation||'')||legalRefSortValue(a)-legalRefSortValue(b);});
 }
 function legalGapLabel(x){return (x&&(x.gap===true||x.gap==='true'||x.gap_identified===true||x.gap_identified==='true'))?'Yes':'No';}
+function legalIsStandardRequirement(x){
+  var t=String(x?.legislation_type||'').toLowerCase();
+  var leg=String(x?.legislation||'').toLowerCase();
+  return ['iso_standard','client_standard','industry_code'].includes(t)||leg.includes('iso ')||leg.includes('standard')||t.includes('standard');
+}
+function legalAssessmentScopeOptionsHtml(selected){
+  var items=[...new Set((lrAllData||[]).map(function(x){return x.legislation;}).filter(Boolean))].sort();
+  return '<option value="">Select legislation / standard...</option>'+items.map(function(name){
+    return '<option value="'+escH(name)+'" '+(name===selected?'selected':'')+'>'+escH(name)+'</option>';
+  }).join('');
+}
+function legalPopulateAssessmentScopeOptions(){
+  var sel=document.getElementById('lca-scope-item');if(!sel)return;
+  var current=sel.value||'';
+  sel.innerHTML=legalAssessmentScopeOptionsHtml(current);
+  if(current&&Array.from(sel.options).some(function(o){return o.value===current;}))sel.value=current;
+  legalAssessmentScopeChanged();
+}
+function legalAssessmentScopeChanged(){
+  var mode=document.getElementById('lca-scope-mode')?.value||'all';
+  var item=document.getElementById('lca-scope-item');
+  if(item)item.disabled=mode!=='one';
+  legalRenderAssessmentMatrix();
+}
+function legalAssessmentRows(){
+  var mode=document.getElementById('lca-scope-mode')?.value||'all';
+  var item=document.getElementById('lca-scope-item')?.value||'';
+  var rows=(lrAllData||[]).slice();
+  if(mode==='legislation')rows=rows.filter(function(x){return !legalIsStandardRequirement(x);});
+  else if(mode==='standards')rows=rows.filter(function(x){return legalIsStandardRequirement(x);});
+  else if(mode==='one'&&item)rows=rows.filter(function(x){return x.legislation===item;});
+  return rows.sort(function(a,b){return (a.legislation||'').localeCompare(b.legislation||'')||legalRefSortValue(a)-legalRefSortValue(b);});
+}
+function legalAssessmentScopeLabel(){
+  var mode=document.getElementById('lca-scope-mode')?.value||'all';
+  var item=document.getElementById('lca-scope-item')?.value||'';
+  if(mode==='legislation')return 'All legislation / acts';
+  if(mode==='standards')return 'All standards';
+  if(mode==='one')return item||'Selected legislation / standard';
+  return 'All legal register';
+}
 function legalPrintRegisterEvidence(){
   var rows=legalFilteredRequirements();
   if(!rows.length){toast('No legal requirements to print',false);return;}
@@ -28728,15 +28769,56 @@ function legalChangeSectionChanged(){
 }
 function legalRenderAssessmentMatrix(){
   var box=document.getElementById('lca-matrix');if(!box)return;
-  var rows=legalFilteredRequirements();if(!rows.length)rows=(lrAllData||[]).slice().sort(function(a,b){return (a.legislation||'').localeCompare(b.legislation||'')||legalRefSortValue(a)-legalRefSortValue(b);});
+  var currentMode=document.getElementById('lca-scope-mode')?.value||'all';
+  var currentItem=document.getElementById('lca-scope-item')?.value||'';
+  var rows=legalAssessmentRows();
   if(!rows.length){box.innerHTML='<div style="padding:18px;color:var(--text2);text-align:center">No legal register sections available. Add or import legislation first.</div>';return;}
-  var h='<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:8px"><div style="font-size:12px;color:var(--text2)">Assess each applicable legal section. Saving updates the register; gaps feed Gap Analysis and Master Action Plan.</div><button type="button" class="btn btn-sm" onclick="lcaMarkAllNoGap()">Mark all no gap</button></div><div class="table-scroll"><table class="data-table" style="min-width:1300px"><thead><tr><th style="width:90px">Ref</th><th style="width:220px">Legislation / section</th><th>Requirement</th><th style="width:230px">Current controls</th><th style="width:70px;text-align:center">Gap?</th><th style="width:250px">Further controls / recommendations</th><th style="width:170px">Action by</th><th style="width:135px">Target date</th></tr></thead><tbody>';
+  var h='<div class="card" style="margin-bottom:10px;background:#F8FBFF;border-color:#BFDBFE"><div style="display:grid;grid-template-columns:220px minmax(260px,1fr) auto;gap:10px;align-items:end">'
+    +'<div><label class="form3label">Assessment scope</label><select id="lca-scope-mode" onchange="legalAssessmentScopeChanged()"><option value="all">All legal register</option><option value="legislation">All legislation / acts</option><option value="standards">All standards</option><option value="one">One legislation or standard</option></select></div>'
+    +'<div><label class="form3label">Select legislation / standard</label><select id="lca-scope-item" onchange="legalRenderAssessmentMatrix();lcaUpdateLiveScore()">'+legalAssessmentScopeOptionsHtml(currentItem)+'</select></div>'
+    +'<button type="button" class="btn btn-sm" onclick="lcaMarkAllNoGap()">Mark all no gap</button>'
+    +'</div><div style="font-size:12px;color:var(--text2);margin-top:8px">Saving updates the legal register, sends gaps to Gap Analysis, and creates related actions in the Master Action Plan.</div></div>'
+    +'<div class="table-scroll"><table class="data-table lca-worksheet" style="min-width:1050px"><thead><tr><th style="width:95px">Ref</th><th style="width:230px">Legislation / section</th><th style="width:260px">Requirement</th><th style="width:290px">Assessment result</th><th style="width:310px">Gap action</th></tr></thead><tbody>';
   rows.forEach(function(x){
-    h+='<tr class="lca-row" data-id="'+escH(x.id||'')+'"><td style="font-family:monospace;font-weight:800;color:#185FA5">'+escH(displayRecordRef(x,'req_ref','LEG-DRAFT'))+'</td><td><b>'+escH(x.legislation||'-')+'</b><div style="font-size:11px;color:var(--text2)">'+escH(x.title||x.section||'')+'</div></td><td style="font-size:12px">'+escH((x.requirement||'').substring(0,260))+(String(x.requirement||'').length>260?'...':'')+'</td><td><textarea class="lca-controls" style="min-height:58px;font-size:12px">'+escH(x.controls||'')+'</textarea></td><td style="text-align:center"><input type="checkbox" class="lca-gap" '+((x.gap||x.gap_identified)?'checked':'')+' style="width:18px!important;height:18px!important"/></td><td><textarea class="lca-reco" style="min-height:58px;font-size:12px">'+escH(x.further_controls||x.recommendations||x.gap_description||'')+'</textarea></td><td><input class="lca-resp" value="'+escH(x.responsibility||x.responsible_person||'')+'" placeholder="Responsible"/></td><td><input type="date" class="lca-target" value="'+escH(x.target_date||'')+'"/></td></tr>';
+    var st=x.status||'compliant';
+    if(x.applicable===false)st='not_applicable';
+    if((x.gap||x.gap_identified)&&st==='compliant')st=(x.controls?'partial':'non_compliant');
+    h+='<tr class="lca-row" data-id="'+escH(x.id||'')+'"><td style="font-family:monospace;font-weight:800;color:#185FA5;vertical-align:top">'+escH(displayRecordRef(x,'req_ref','LEG-DRAFT'))+'</td>'
+      +'<td style="vertical-align:top"><b>'+escH(x.legislation||'-')+'</b><div style="font-size:11px;color:var(--text2);margin-top:3px">'+escH(x.title||x.section||'')+'</div><div style="font-size:10px;color:var(--text2);margin-top:5px">'+(legalIsStandardRequirement(x)?'Standard':'Legislation / Act')+'</div></td>'
+      +'<td style="font-size:12px;vertical-align:top;line-height:1.35">'+escH((x.requirement||'').substring(0,360))+(String(x.requirement||'').length>360?'...':'')+'</td>'
+      +'<td style="vertical-align:top"><label class="form3label">Current controls</label><textarea class="lca-controls" oninput="lcaUpdateLiveScore()" style="min-height:58px;font-size:12px">'+escH(x.controls||'')+'</textarea><div style="display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center;margin-top:8px"><select class="lca-status" onchange="lcaStatusChanged(this)"><option value="compliant" '+(st==='compliant'?'selected':'')+'>Compliant</option><option value="partial" '+(st==='partial'?'selected':'')+'>Partial compliance</option><option value="non_compliant" '+(st==='non_compliant'?'selected':'')+'>Non-compliant</option><option value="not_applicable" '+(st==='not_applicable'?'selected':'')+'>N/A</option></select><label style="display:flex;align-items:center;gap:6px;font-size:12px;font-weight:700;color:#991B1B"><input type="checkbox" class="lca-gap" onchange="lcaGapChanged(this)" '+((x.gap||x.gap_identified)?'checked':'')+' style="width:18px!important;height:18px!important"/> Gap</label></div></td>'
+      +'<td style="vertical-align:top"><label class="form3label">Further controls / recommendations</label><textarea class="lca-reco" oninput="lcaUpdateLiveScore()" style="min-height:58px;font-size:12px">'+escH(x.further_controls||x.recommendations||x.gap_description||'')+'</textarea><div style="display:grid;grid-template-columns:1fr 140px;gap:8px;margin-top:8px"><input class="lca-resp" oninput="lcaUpdateLiveScore()" value="'+escH(x.responsibility||x.responsible_person||'')+'" placeholder="Action by"/><input type="date" class="lca-target" onchange="lcaUpdateLiveScore()" value="'+escH(x.target_date||'')+'"/></div></td></tr>';
   });
   box.innerHTML=h+'</tbody></table></div>';
+  var modeEl=document.getElementById('lca-scope-mode');if(modeEl)modeEl.value=currentMode;
+  var item=document.getElementById('lca-scope-item');if(item){item.value=currentItem;item.disabled=currentMode!=='one';}
+  lcaUpdateLiveScore();
 }
-function lcaMarkAllNoGap(){document.querySelectorAll('#lca-matrix .lca-gap').forEach(function(cb){cb.checked=false;});}
+function lcaGapChanged(cb){
+  var tr=cb.closest('.lca-row'),sel=tr?.querySelector('.lca-status');
+  if(sel&&cb.checked&&sel.value==='compliant')sel.value='partial';
+  if(sel&&!cb.checked&&(sel.value==='partial'||sel.value==='non_compliant'))sel.value='compliant';
+  lcaUpdateLiveScore();
+}
+function lcaStatusChanged(sel){
+  var tr=sel.closest('.lca-row'),cb=tr?.querySelector('.lca-gap');
+  if(cb)cb.checked=sel.value==='partial'||sel.value==='non_compliant';
+  lcaUpdateLiveScore();
+}
+function lcaUpdateLiveScore(){
+  var counts={compliant:0,partial:0,non:0,na:0};
+  document.querySelectorAll('#lca-matrix .lca-row').forEach(function(tr){
+    var st=tr.querySelector('.lca-status')?.value||'compliant';
+    if(st==='compliant')counts.compliant++;
+    else if(st==='partial')counts.partial++;
+    else if(st==='non_compliant')counts.non++;
+    else counts.na++;
+  });
+  var set=function(id,v){var el=document.getElementById(id);if(el)el.value=v;};
+  set('lcaf-compliant',counts.compliant);set('lcaf-partial',counts.partial);set('lcaf-noncompliant',counts.non);set('lcaf-na',counts.na);
+  lcaCalcScore();
+}
+function lcaMarkAllNoGap(){document.querySelectorAll('#lca-matrix .lca-status').forEach(function(sel){sel.value='compliant';});document.querySelectorAll('#lca-matrix .lca-gap').forEach(function(cb){cb.checked=false;});lcaUpdateLiveScore();}
 async function lcaSyncAssessmentRows(assessmentRef){
   var rows=Array.from(document.querySelectorAll('#lca-matrix .lca-row'));
   var date=document.getElementById('lcaf-date')?.value||new Date().toISOString().slice(0,10);
@@ -28746,13 +28828,14 @@ async function lcaSyncAssessmentRows(assessmentRef){
     var tr=rows[i], id=tr.dataset.id;if(!id)continue;
     var req=(lrAllData||[]).find(function(x){return x.id===id;})||{};
     var controls=tr.querySelector('.lca-controls')?.value||null;
-    var gap=!!tr.querySelector('.lca-gap')?.checked;
+    var rowStatus=tr.querySelector('.lca-status')?.value||'compliant';
+    var gap=rowStatus==='partial'||rowStatus==='non_compliant'||!!tr.querySelector('.lca-gap')?.checked;
     var reco=tr.querySelector('.lca-reco')?.value||null;
     var resp=tr.querySelector('.lca-resp')?.value||null;
     var target=tr.querySelector('.lca-target')?.value||null;
-    var status=gap?(controls?'partial':'non_compliant'):'compliant';
+    var status=rowStatus;
     var score=status==='compliant'?100:(status==='partial'?50:0);
-    if(status==='compliant')counts.compliant++;else if(status==='partial')counts.partial++;else counts.non++;
+    if(status==='compliant')counts.compliant++;else if(status==='partial')counts.partial++;else if(status==='not_applicable')counts.na++;else counts.non++;
     if(gap)counts.gaps++;
     await mtgApiWithSchemaFallback('/legal_requirements?id=eq.'+id,{m:'PATCH',p:'return=minimal',b:{controls:controls,gap:gap,gap_identified:gap,further_controls:reco,recommendations:reco,responsibility:resp,responsible_person:resp,target_date:target||null,last_assessed_date:date,assessed_by:assessor,status:status,compliance_score:score,updated_at:new Date().toISOString()}},['recommendations','responsibility','responsible_person','target_date','last_assessed_date','assessed_by','gap_identified','updated_at']);
     if(gap){
@@ -28943,7 +29026,9 @@ function lcaNew(){
   ['lcaf-compliant','lcaf-partial','lcaf-noncompliant','lcaf-na'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='0';});
   document.getElementById('lca-score-number').textContent='-';
   document.getElementById('legal-view-assessments').style.display='none';document.getElementById('lca-form').style.display='block';
+  legalPopulateAssessmentScopeOptions();
   legalRenderAssessmentMatrix();
+  lcaUpdateLiveScore();
 }
 function lcaEdit(id){
   var x=lcaAllData.find(r=>r.id===id);if(!x)return;lcaEditId=id;
@@ -28956,7 +29041,9 @@ function lcaEdit(id){
   document.getElementById('lcaf-status').value=x.status||'draft';
   document.getElementById('lcaf-compliant').value=x.compliant_count||0;document.getElementById('lcaf-partial').value=x.partial_count||0;document.getElementById('lcaf-noncompliant').value=x.non_compliant_count||0;document.getElementById('lcaf-na').value=x.na_count||0;
   lcaCalcScore();document.getElementById('legal-view-assessments').style.display='none';document.getElementById('lca-form').style.display='block';
+  legalPopulateAssessmentScopeOptions();
   legalRenderAssessmentMatrix();
+  lcaUpdateLiveScore();
 }
 async function lcaSave(){
   var title=document.getElementById('lcaf-title')?.value?.trim();if(!title){toast('Please enter assessment title',false);return;}
@@ -28966,7 +29053,7 @@ async function lcaSave(){
     var counts=await lcaSyncAssessmentRows(assessmentRef);
     var c=counts.compliant,p=counts.partial,n=counts.non,na=counts.na,total=c+p+n;
     var score=total>0?Math.round((c*100+p*50)/total):0;
-    var body={company_id:ccid(),title:title,assessment_type:g('lcaf-type')||'periodic',assessment_date:g('lcaf-date'),next_assessment_date:g('lcaf-next-date')||null,assessor:g('lcaf-assessor'),total_requirements:total+na,compliant_count:c,partial_count:p,non_compliant_count:n,na_count:na,overall_score:score,scope:g('lcaf-scope'),methodology:g('lcaf-methodology')||'Line-by-line assessment of the Legal Register, including current controls, gaps, further controls, owner and target date.',findings:g('lcaf-findings')||('Assessment completed. Gaps identified: '+counts.gaps+'.'),recommendations:g('lcaf-recommendations'),status:g('lcaf-status')||'completed',approved_by:g('lcaf-approved-by'),approved_date:g('lcaf-approved-date')||null,linked_audit_ref:g('lcaf-audit-ref'),updated_at:new Date().toISOString()};
+    var body={company_id:ccid(),title:title,assessment_type:g('lcaf-type')||'periodic',assessment_date:g('lcaf-date'),next_assessment_date:g('lcaf-next-date')||null,assessor:g('lcaf-assessor'),total_requirements:total+na,compliant_count:c,partial_count:p,non_compliant_count:n,na_count:na,overall_score:score,scope:g('lcaf-scope')||legalAssessmentScopeLabel(),methodology:g('lcaf-methodology')||'Line-by-line assessment of the Legal Register, including current controls, gaps, further controls, owner and target date.',findings:g('lcaf-findings')||('Assessment completed. Gaps identified: '+counts.gaps+'.'),recommendations:g('lcaf-recommendations'),status:g('lcaf-status')||'completed',approved_by:g('lcaf-approved-by'),approved_date:g('lcaf-approved-date')||null,linked_audit_ref:g('lcaf-audit-ref'),updated_at:new Date().toISOString()};
     if(lcaEditId){await mtgApiWithSchemaFallback('/compliance_assessments?id=eq.'+lcaEditId,{m:'PATCH',p:'return=minimal',b:body},['updated_at']);toast('Assessment updated and register synced!');}
     else{body.created_by=prof?.id;body.assessment_ref=assessmentRef;var res=await mtgApiWithSchemaFallback('/compliance_assessments',{m:'POST',p:'return=representation',b:body},['assessment_ref','updated_at','created_by']);if(res?.[0]?.id){toast('Assessment saved, register synced and gaps/actions created! Ref: '+assessmentRef);}}
     legalLoadRegister();lcaBack();
@@ -29144,17 +29231,24 @@ async function legalRenderDashboard(){
     if(fillEl){fillEl.style.width=score+'%';fillEl.style.background=score>=80?'#1D9E75':score>=60?'#EF9F27':score>=40?'#C2410C':'#A32D2D';}
     var bkEl=document.getElementById('lr-compliance-breakdown');
     if(bkEl)bkEl.innerHTML='<span style="background:#EAF3DE;color:#3B6D11;padding:4px 12px;border-radius:99px;font-size:12px;font-weight:700">'+comp+' Compliant</span><span style="background:#FEF9EC;color:#854F0B;padding:4px 12px;border-radius:99px;font-size:12px;font-weight:700">'+part+' Partial</span><span style="background:#FCEBEB;color:#A32D2D;padding:4px 12px;border-radius:99px;font-size:12px;font-weight:700">'+nonC+' Non-compliant</span>';
-    // By category
+    // Compliance by legislation / standard
     var legEl=document.getElementById('lr-by-legislation');
     if(legEl){
-      var byCat={};d.forEach(function(x){var c=x.category||'other';if(!byCat[c])byCat[c]={comp:0,part:0,nonC:0,total:0};byCat[c].total++;if(x.status==='compliant')byCat[c].comp++;else if(x.status==='partial')byCat[c].part++;else if(x.status==='non_compliant')byCat[c].nonC++;});
-      var legH='<div style="display:flex;flex-direction:column;gap:10px">';
-      Object.entries(byCat).sort((a,b)=>{var sa=Math.round((a[1].comp*100+a[1].part*50)/(a[1].total||1));var sb=Math.round((b[1].comp*100+b[1].part*50)/(b[1].total||1));return sa-sb;}).forEach(function(entry){
-        var cat=entry[0];var c=entry[1];var cfg=LEGAL_CAT_CFG[cat]||LEGAL_CAT_CFG.other;
-        var cs=Math.round((c.comp*100+c.part*50)/(c.total||1));var color=cs>=80?'#1D9E75':cs>=60?'#EF9F27':'#E24B4A';
-        legH+='<div style="display:flex;align-items:center;gap:10px"><span style="font-size:14px">'+cfg.emoji+'</span><div style="flex:1"><div style="font-size:12px;font-weight:600">'+escH(cfg.label)+'</div><div style="width:100%;background:#e5e7eb;border-radius:99px;height:6px;margin-top:3px"><div style="width:'+cs+'%;background:'+color+';height:100%;border-radius:99px"></div></div></div><span style="font-size:12px;font-weight:700;color:'+color+';min-width:40px;text-align:right">'+cs+'%</span><span style="font-size:11px;color:var(--text2)">'+c.total+' req</span></div>';
+      var byLeg={};
+      d.filter(function(x){return x.status!=='not_applicable'&&x.applicable!==false;}).forEach(function(x){
+        var key=x.legislation||'Unspecified';
+        if(!byLeg[key])byLeg[key]={comp:0,part:0,nonC:0,total:0,isStandard:legalIsStandardRequirement(x)};
+        byLeg[key].total++;
+        if(x.status==='compliant')byLeg[key].comp++;
+        else if(x.status==='partial')byLeg[key].part++;
+        else if(x.status==='non_compliant')byLeg[key].nonC++;
       });
-      legEl.innerHTML=legH+'</div>';
+      var legH='<div class="table-scroll"><table class="data-table" style="min-width:720px"><thead><tr><th>Legislation / standard</th><th style="width:95px">Type</th><th style="width:80px">Reqs</th><th style="width:90px">Gaps</th><th style="width:180px">Score</th></tr></thead><tbody>';
+      Object.entries(byLeg).sort((a,b)=>{var sa=Math.round((a[1].comp*100+a[1].part*50)/(a[1].total||1));var sb=Math.round((b[1].comp*100+b[1].part*50)/(b[1].total||1));return sa-sb||a[0].localeCompare(b[0]);}).forEach(function(entry){
+        var name=entry[0];var c=entry[1];var cs=Math.round((c.comp*100+c.part*50)/(c.total||1));var color=cs>=80?'#1D9E75':cs>=60?'#EF9F27':'#E24B4A';
+        legH+='<tr><td><b>'+escH(name)+'</b><div style="font-size:11px;color:var(--text2)">'+c.comp+' compliant - '+c.part+' partial - '+c.nonC+' non-compliant</div></td><td><span class="badge">'+(c.isStandard?'Standard':'Act/Reg')+'</span></td><td>'+c.total+'</td><td style="color:#DC2626;font-weight:800">'+(c.part+c.nonC)+'</td><td><div style="display:flex;align-items:center;gap:8px"><div style="flex:1;background:#e5e7eb;border-radius:99px;height:8px;overflow:hidden"><div style="width:'+cs+'%;background:'+color+';height:100%"></div></div><b style="color:'+color+';min-width:42px;text-align:right">'+cs+'%</b></div></td></tr>';
+      });
+      legEl.innerHTML=legH+'</tbody></table></div>';
     }
     // Gaps
     var gapsEl=document.getElementById('lr-gaps-list');
@@ -44027,7 +44121,7 @@ Offline mode - changes will sync when connection is restored
 </div>
 </div>
 <div class="card">
-<div class="card-title">Compliance by Category</div>
+<div class="card-title">Compliance by Legislation / Standard</div>
 <div id="lr-by-legislation" style="font-size:13px"></div>
 </div>
 </div>
@@ -44256,11 +44350,12 @@ Offline mode - changes will sync when connection is restored
 <div class="form3group"><label class="form3label">Methodology / how was compliance verified?</label><textarea id="lcaf-methodology" style="min-height:60px"></textarea></div>
 </div>
 <div class="card" style="margin-bottom:14px;border-left:4px solid #1D9E75"><div class="card-title" style="color:#1D9E75">Results &amp; Scores</div>
+<div style="font-size:12px;color:var(--text2);margin-bottom:8px">Automatically calculated from the assessment worksheet below.</div>
 <div class="form3row">
-<div class="form3group"><label class="form3label">Compliant</label><input type="number" id="lcaf-compliant" min="0" value="0" oninput="lcaCalcScore()"/></div>
-<div class="form3group"><label class="form3label">Partial</label><input type="number" id="lcaf-partial" min="0" value="0" oninput="lcaCalcScore()"/></div>
-<div class="form3group"><label class="form3label">Non-compliant</label><input type="number" id="lcaf-noncompliant" min="0" value="0" oninput="lcaCalcScore()"/></div>
-<div class="form3group"><label class="form3label">N/A</label><input type="number" id="lcaf-na" min="0" value="0" oninput="lcaCalcScore()"/></div>
+<div class="form3group"><label class="form3label">Compliant</label><input type="number" id="lcaf-compliant" min="0" value="0" readonly/></div>
+<div class="form3group"><label class="form3label">Partial</label><input type="number" id="lcaf-partial" min="0" value="0" readonly/></div>
+<div class="form3group"><label class="form3label">Non-compliant</label><input type="number" id="lcaf-noncompliant" min="0" value="0" readonly/></div>
+<div class="form3group"><label class="form3label">N/A</label><input type="number" id="lcaf-na" min="0" value="0" readonly/></div>
 </div>
 <div id="lca-score-preview" style="padding:14px;background:#f0fdf4;border-radius:8px;text-align:center;margin-top:8px">
 <div style="font-size:32px;font-weight:900;color:#1D9E75" id="lca-score-number">-</div>
