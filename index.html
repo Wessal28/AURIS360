@@ -29081,28 +29081,48 @@ function legalChangeUserComments(x){
   return String(x?.comments||'').replace(/AURIS360_CHANGE_META:{[\s\S]*?}\s*/,'').replace(/Amendment tracking:[\s\S]*/,'').trim();
 }
 function legalChangeEditMode(edit){
-  var review=document.getElementById('lc-review-card'),form=document.getElementById('lc-edit-card'),save=document.getElementById('lc-save-btn'),editBtn=document.getElementById('lc-edit-btn'),del=document.getElementById('lc-del-btn');
+  var review=document.getElementById('lc-review-card'),form=document.getElementById('lc-edit-card'),save=document.getElementById('lc-save-btn'),editBtn=document.getElementById('lc-edit-btn'),del=document.getElementById('lc-del-btn'),print=document.getElementById('lc-print-btn');
   if(review)review.style.display=edit?'none':'block';
   if(form)form.style.display=edit?'block':'none';
   if(save)save.style.display=edit?'inline-flex':'none';
   if(editBtn)editBtn.style.display=(!edit&&isMgr())?'inline-flex':'none';
   if(del)del.style.display=(edit&&isMgr()&&lcEditId)?'inline-flex':'none';
+  if(print)print.style.display=edit?'none':'inline-flex';
+}
+function legalChangeBadge(label,color,bg){
+  return '<span style="display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:99px;font-size:11px;font-weight:900;background:'+bg+';color:'+color+'">'+label+'</span>';
 }
 function legalChangeReviewHtml(x){
   var imp=x.implemented===true||x.implemented==='true';
   var app=x.applicable!==false&&x.applicable!=='false';
+  var archived=ohIsArchivedText(x.comments);
   var oldW=x.previous_wording||'No previous wording captured.';
   var newW=x.new_wording||x.changes_identified||x.changes||'No replacement wording captured.';
-  return '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px">'
-    +'<div><div class="form3label">Date received</div><b>'+escH(x.date_received?new Date(x.date_received).toLocaleDateString('en-GB'):'-')+'</b></div>'
-    +'<div><div class="form3label">Source / publication</div><b>'+escH(x.source||'-')+'</b></div>'
-    +'<div><div class="form3label">Applicable</div><b style="color:'+(app?'#047857':'#64748b')+'">'+(app?'Yes':'No')+'</b></div>'
-    +'<div><div class="form3label">Implemented</div><b style="color:'+(imp?'#047857':'#B45309')+'">'+(imp?'Done':'Pending')+'</b></div>'
-    +'</div><div class="card" style="background:#F8FBFF;border-color:#BFDBFE;margin-bottom:14px"><div class="card-title" style="color:#185FA5">Affected section</div>'
-    +'<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px"><div><div class="form3label">Legislation</div><b>'+escH(x.legislation||'-')+'</b></div><div><div class="form3label">Section / ref</div><b style="color:#185FA5">'+escH(legalChangeSectionLabel(x)||'-')+'</b></div><div><div class="form3label">Change type</div><b>'+escH(String(x.change_type||'amendment').replace(/_/g,' '))+'</b></div></div></div>'
-    +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px"><div class="card" style="background:#FEF2F2;border-color:#FECACA"><div class="card-title" style="color:#991B1B">Previous wording</div><div style="white-space:pre-wrap;font-size:13px;line-height:1.45;color:#7F1D1D">'+escH(oldW)+'</div></div><div class="card" style="background:#ECFDF5;border-color:#A7F3D0"><div class="card-title" style="color:#047857">New wording / replacement</div><div style="white-space:pre-wrap;font-size:13px;line-height:1.45;color:#064E3B;font-weight:600">'+escH(newW)+'</div></div></div>'
-    +'<div class="card" style="margin-bottom:14px"><div class="card-title">Change impact and action</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:14px"><div><div class="form3label">Changes identified</div><div style="white-space:pre-wrap">'+escH(x.changes_identified||x.changes||'-')+'</div></div><div><div class="form3label">Action required</div><div style="white-space:pre-wrap">'+escH(x.action_required||x.action||'-')+'</div></div></div></div>'
-    +(x.comments?'<div class="card"><div class="card-title">Comments</div><div style="white-space:pre-wrap">'+escH(legalChangeUserComments(x)||'-')+'</div></div>':'');
+  var cat=x.category?'<span style="background:'+(LEGAL_CAT_CFG[x.category]?.color||'#6B7280')+'15;color:'+(LEGAL_CAT_CFG[x.category]?.color||'#6B7280')+';padding:4px 10px;border-radius:99px;font-size:11px;font-weight:900">'+(LEGAL_CAT_CFG[x.category]?.emoji||'*')+' '+escH(LEGAL_CAT_CFG[x.category]?.label||x.category)+'</span>':'-';
+  return '<div style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:14px">'
+    +'<div><div style="font-size:12px;color:var(--text2);font-weight:700;text-transform:uppercase">Regulatory change brief</div><div style="font-size:20px;font-weight:900;color:#854F0B">'+escH(x.legislation||'Regulatory change')+'</div><div style="font-size:12px;color:var(--text2)">'+escH(legalChangeSectionLabel(x)||'No linked section')+'</div></div>'
+    +'<div style="display:flex;gap:8px;align-items:flex-start;flex-wrap:wrap">'+(archived?legalChangeBadge('Archived','#6B7280','#F3F4F6'):'')+legalChangeBadge(app?'Applicable':'Not applicable',app?'#047857':'#64748b',app?'#ECFDF5':'#F3F4F6')+legalChangeBadge(imp?'Implemented':'Pending action',imp?'#047857':'#B45309',imp?'#ECFDF5':'#FEF3C7')+'</div>'
+    +'</div>'
+    +'<div style="display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:14px">'
+    +'<div class="card" style="padding:12px"><div class="form3label">Date received</div><b>'+escH(x.date_received?new Date(x.date_received).toLocaleDateString('en-GB'):'-')+'</b></div>'
+    +'<div class="card" style="padding:12px"><div class="form3label">Effective date</div><b>'+escH(x.effective_date?new Date(x.effective_date).toLocaleDateString('en-GB'):'-')+'</b></div>'
+    +'<div class="card" style="padding:12px"><div class="form3label">Source / publication</div><b>'+escH(x.source||'-')+'</b></div>'
+    +'<div class="card" style="padding:12px"><div class="form3label">Change type</div><b>'+escH(String(x.change_type||'amendment').replace(/_/g,' '))+'</b></div>'
+    +'<div class="card" style="padding:12px"><div class="form3label">Category</div>'+cat+'</div>'
+    +'</div>'
+    +'<div class="card" style="background:#F8FBFF;border-color:#BFDBFE;margin-bottom:14px"><div class="card-title" style="color:#185FA5">Affected legal register section</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:14px"><div><div class="form3label">Legislation</div><b>'+escH(x.legislation||'-')+'</b></div><div><div class="form3label">Section / ref</div><b style="color:#185FA5;font-size:16px">'+escH(legalChangeSectionLabel(x)||'-')+'</b></div></div></div>'
+    +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px"><div class="card" style="background:#FEF2F2;border-color:#FECACA"><div class="card-title" style="color:#991B1B">Previous wording</div><div style="white-space:pre-wrap;font-size:13px;line-height:1.5;color:#7F1D1D">'+escH(oldW)+'</div></div><div class="card" style="background:#ECFDF5;border-color:#A7F3D0"><div class="card-title" style="color:#047857">New wording / replacement</div><div style="white-space:pre-wrap;font-size:13px;line-height:1.5;color:#064E3B;font-weight:700">'+escH(newW)+'</div></div></div>'
+    +'<div class="card" style="margin-bottom:14px"><div class="card-title">Implementation follow-up</div><div style="display:grid;grid-template-columns:2fr 2fr 1fr;gap:14px"><div><div class="form3label">Changes identified</div><div style="white-space:pre-wrap">'+escH(x.changes_identified||x.changes||'-')+'</div></div><div><div class="form3label">Action required</div><div style="white-space:pre-wrap">'+escH(x.action_required||x.action||'-')+'</div></div><div><div class="form3label">Responsible person</div><b>'+escH(x.responsible_person||'-')+'</b><div class="form3label" style="margin-top:10px">Status</div>'+(imp?legalChangeBadge('Done','#047857','#ECFDF5'):legalChangeBadge('Pending','#B45309','#FEF3C7'))+'</div></div></div>'
+    +(legalChangeUserComments(x)?'<div class="card"><div class="card-title">Comments</div><div style="white-space:pre-wrap">'+escH(legalChangeUserComments(x))+'</div></div>':'');
+}
+function legalPrintChange(){
+  var x=legalChangeData(lcEditId);if(!x)return;
+  var html='<!doctype html><html><head><title>AURIS360 - Regulatory Change</title><style>@page{size:A4 portrait;margin:12mm}body{font-family:Arial,sans-serif;color:#111827}h1{color:#854F0B;margin:0}.meta{color:#475569;font-size:12px;margin-bottom:12px}.box{border:1px solid #cbd5e1;border-radius:8px;padding:10px;margin:10px 0}.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.label{font-size:11px;color:#64748b;text-transform:uppercase;font-weight:700}.text{white-space:pre-wrap;font-size:12px;line-height:1.45}.old{background:#fff1f2}.new{background:#ecfdf5}.badge{display:inline-block;padding:3px 8px;border-radius:99px;background:#f3f4f6;font-weight:700;font-size:11px}table{width:100%;border-collapse:collapse}td{border:1px solid #cbd5e1;padding:7px;font-size:12px;vertical-align:top}</style></head><body><h1>Regulatory Change Brief</h1><div class="meta">Generated '+new Date().toLocaleDateString('en-GB')+' - '+escH(companyName())+'</div>'
+    +'<table><tr><td><div class="label">Legislation</div><b>'+escH(x.legislation||'-')+'</b></td><td><div class="label">Section / ref</div><b>'+escH(legalChangeSectionLabel(x)||'-')+'</b></td></tr><tr><td><div class="label">Date received</div>'+escH(x.date_received?new Date(x.date_received).toLocaleDateString('en-GB'):'-')+'</td><td><div class="label">Effective date</div>'+escH(x.effective_date?new Date(x.effective_date).toLocaleDateString('en-GB'):'-')+'</td></tr><tr><td><div class="label">Source</div>'+escH(x.source||'-')+'</td><td><div class="label">Status</div><span class="badge">'+(x.implemented===true||x.implemented==='true'?'Implemented':'Pending')+'</span></td></tr></table>'
+    +'<div class="grid"><div class="box old"><div class="label">Previous wording</div><div class="text">'+escH(x.previous_wording||'No previous wording captured.')+'</div></div><div class="box new"><div class="label">New wording / replacement</div><div class="text">'+escH(x.new_wording||x.changes_identified||x.changes||'No replacement wording captured.')+'</div></div></div>'
+    +'<div class="box"><div class="label">Change and action required</div><div class="text">'+escH(x.changes_identified||x.changes||'-')+'</div><hr><div class="text">'+escH(x.action_required||x.action||'-')+'</div></div>'
+    +'<div class="box"><div class="label">Responsible person</div>'+escH(x.responsible_person||'-')+'</div></body></html>';
+  printHtmlDoc(html);
 }
 function legalOpenChg(id){
   var x=legalChangeData(id);if(!x)return;lcEditId=id;
@@ -44505,6 +44525,7 @@ Offline mode - changes will sync when connection is restored
 <div style="font-size:17px;font-weight:800" id="lc-form3title">New Regulatory Change</div>
 <div style="display:flex;gap:8px">
 <button class="btn" style="background:rgba(255,255,255,.2);color:#fff;border-color:rgba(255,255,255,.3)" onclick="legalChgBack()"><i class="ti ti-arrow-left"></i>Back</button>
+<button id="lc-print-btn" class="btn" style="display:none;background:#fff;color:#854F0B;border-color:#fff;font-weight:800" onclick="legalPrintChange()"><i class="ti ti-printer"></i>Print brief</button>
 <button id="lc-edit-btn" class="btn" style="display:none;background:#fff;color:#854F0B;border-color:#fff;font-weight:800" onclick="legalEditChg()"><i class="ti ti-edit"></i>Edit</button>
 <button id="lc-del-btn" class="btn" style="display:none;background:rgba(0,0,0,.3);color:#fff;border-color:rgba(255,255,255,.3)" onclick="legalDeleteChg()"><i class="ti ti-trash"></i></button>
 <button id="lc-save-btn" class="btn" style="background:#1D9E75;color:#fff;border-color:#1D9E75" onclick="legalSaveChg()"><i class="ti ti-device-floppy"></i>Save</button>
