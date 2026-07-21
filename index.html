@@ -28746,6 +28746,7 @@ function legalPrintRegisterEvidence(){
   var rows=legalFilteredRequirements();
   if(!rows.length){toast('No legal requirements to print',false);return;}
   var short=function(v,n){v=String(v||'').replace(/\s+/g,' ').trim();return v.length>n?v.slice(0,n-1)+'...':v;};
+  var full=function(v,fallback){return escH(String(v||fallback||'-').trim());};
   var company=co?.name||prof?.company_name||'Company';
   var comp=rows.filter(function(x){return x.status==='compliant';}).length;
   var part=rows.filter(function(x){return x.status==='partial';}).length;
@@ -28754,7 +28755,7 @@ function legalPrintRegisterEvidence(){
   var totalApplicable=rows.filter(function(x){return x.status!=='not_applicable'&&x.applicable!==false;}).length||1;
   var score=Math.round((comp*100+part*50)/totalApplicable);
   var currentLeg='';
-  var html='<style>@page{size:A4 landscape;margin:8mm}.report-page{width:297mm;max-width:none!important;padding:7mm}.legal-print-title{font-size:16pt;font-weight:900;color:#111827;margin:0}.legal-print-sub{font-size:8.5pt;color:#64748b;margin-top:2px}.legal-print-meta{font-size:8.5pt;color:#475569;text-align:right}.legal-summary{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin:10px 0 10px}.legal-chip{border:1px solid #d7dee8;border-radius:6px;padding:6px 8px;background:#f8fafc}.legal-chip b{display:block;font-size:15pt;line-height:1;color:#173F63}.legal-chip span{font-size:7.5pt;color:#64748b;text-transform:uppercase;font-weight:700}.legal-print-table{width:100%;border-collapse:collapse;table-layout:fixed;font-size:7.4pt;line-height:1.24}.legal-print-table th{background:#173F63;color:#fff;padding:5px 6px;border:1px solid #173F63;text-align:left;text-transform:uppercase;font-size:7pt;letter-spacing:.02em}.legal-print-table td{padding:5px 6px;border:1px solid #d7dee8;vertical-align:top;overflow-wrap:anywhere}.legal-print-table tr:nth-child(even){background:#fbfdff}.leg-group td{background:#eaf3ff!important;color:#173F63;font-weight:900;font-size:8.5pt;padding:5px 7px}.muted{color:#64748b}.small{font-size:7pt}.req-title{font-weight:900;color:#111827}.req-excerpt{color:#334155;margin-top:2px;max-height:30px;overflow:hidden}.badge{display:inline-block;border-radius:999px;padding:2px 7px;font-weight:900;font-size:7pt;white-space:nowrap}.gap-yes{background:#fee2e2;color:#991b1b}.gap-no{background:#dcfce7;color:#166534}.status-compliant{background:#dcfce7;color:#166534}.status-partial{background:#fef3c7;color:#92400e}.status-non_compliant{background:#fee2e2;color:#991b1b}.status-not_applicable{background:#e5e7eb;color:#475569}tr{break-inside:avoid}</style>'
+  var html='<style>@page{size:A4 landscape;margin:8mm}.report-page{width:297mm;max-width:none!important;padding:7mm}.legal-print-title{font-size:16pt;font-weight:900;color:#111827;margin:0}.legal-print-sub{font-size:8.5pt;color:#64748b;margin-top:2px}.legal-print-meta{font-size:8.5pt;color:#475569;text-align:right}.legal-summary{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin:10px 0 10px}.legal-chip{border:1px solid #d7dee8;border-radius:6px;padding:6px 8px;background:#f8fafc}.legal-chip b{display:block;font-size:15pt;line-height:1;color:#173F63}.legal-chip span{font-size:7.5pt;color:#64748b;text-transform:uppercase;font-weight:700}.legal-print-table{width:100%;border-collapse:collapse;table-layout:fixed;font-size:7.2pt;line-height:1.26}.legal-print-table th{background:#173F63;color:#fff;padding:5px 6px;border:1px solid #173F63;text-align:left;text-transform:uppercase;font-size:7pt;letter-spacing:.02em}.legal-print-table td{padding:5px 6px;border:1px solid #d7dee8;vertical-align:top;overflow:visible;overflow-wrap:anywhere;word-break:normal;white-space:normal}.legal-print-table tr{height:auto!important}.legal-print-table tr:nth-child(even){background:#fbfdff}.leg-group td{background:#eaf3ff!important;color:#173F63;font-weight:900;font-size:8.5pt;padding:5px 7px}.muted{color:#64748b}.small{font-size:7pt}.req-title{font-weight:900;color:#111827}.req-excerpt{color:#334155;margin-top:2px;white-space:pre-wrap;overflow:visible}.badge{display:inline-block;border-radius:999px;padding:2px 7px;font-weight:900;font-size:7pt;white-space:nowrap}.gap-yes{background:#fee2e2;color:#991b1b}.gap-no{background:#dcfce7;color:#166534}.status-compliant{background:#dcfce7;color:#166534}.status-partial{background:#fef3c7;color:#92400e}.status-non_compliant{background:#fee2e2;color:#991b1b}.status-not_applicable{background:#e5e7eb;color:#475569}tr{break-inside:auto;page-break-inside:auto}</style>'
     +'<div class="report-page"><div class="rpt-header"><div><div class="legal-print-title">Legal Compliance Register</div><div class="legal-print-sub">'+escH(company)+' - operational evidence view</div></div><div class="legal-print-meta"><b>Generated:</b> '+new Date().toLocaleDateString('en-GB')+'<br><b>Scope:</b> '+rows.length+' visible requirements<br><b>Score:</b> '+score+'%</div></div>'
     +'<div class="legal-summary"><div class="legal-chip"><b>'+rows.length+'</b><span>Requirements</span></div><div class="legal-chip"><b>'+comp+'</b><span>Compliant</span></div><div class="legal-chip"><b>'+part+'</b><span>Partial</span></div><div class="legal-chip"><b>'+nonC+'</b><span>Non-compliant</span></div><div class="legal-chip"><b>'+gaps+'</b><span>Open gaps</span></div></div>'
     +'<table class="legal-print-table"><thead><tr><th style="width:7%">Ref</th><th style="width:23%">Section / requirement</th><th style="width:22%">Current controls</th><th style="width:9%">Status</th><th style="width:7%">Gap</th><th style="width:20%">Recommendations / further controls</th><th style="width:7%">Action by</th><th style="width:5%">Target</th></tr></thead><tbody>';
@@ -28766,11 +28767,11 @@ function legalPrintRegisterEvidence(){
     var st=x.status||'partial';
     var stCfg=LEG_STATUS_CFG[st]||LEG_STATUS_CFG.partial;
     html+='<tr><td><b>'+escH(displayRecordRef(x,'req_ref','LEG-DRAFT'))+'</b></td>'
-      +'<td><div class="req-title">'+escH(x.title||x.section||'-')+'</div><div class="muted small">'+escH(x.section||'')+'</div><div class="req-excerpt">'+escH(short(x.requirement,260))+'</div></td>'
-      +'<td>'+escH(short(x.controls||'No current controls recorded',260))+'</td>'
+      +'<td><div class="req-title">'+escH(x.title||x.section||'-')+'</div><div class="muted small">'+escH(x.section||'')+'</div><div class="req-excerpt">'+full(x.requirement,'-')+'</div></td>'
+      +'<td>'+full(x.controls,'No current controls recorded')+'</td>'
       +'<td><span class="badge status-'+escH(st)+'">'+escH(stCfg.label||st)+'</span><div class="muted small">'+(x.compliance_score!=null?escH(x.compliance_score)+'%':'')+'</div></td>'
       +'<td><span class="badge '+(legalGapLabel(x)==='Yes'?'gap-yes':'gap-no')+'">'+legalGapLabel(x)+'</span></td>'
-      +'<td>'+escH(short(x.further_controls||x.recommendations||x.gap_description||'-',240))+'</td>'
+      +'<td>'+full(x.further_controls||x.recommendations||x.gap_description,'-')+'</td>'
       +'<td>'+escH(x.responsibility||x.responsible_person||'-')+'</td>'
       +'<td>'+escH(x.target_date?new Date(x.target_date).toLocaleDateString('en-GB'):'-')+'</td></tr>';
   });
@@ -28923,7 +28924,7 @@ async function legalLoadChanges(){
         +'<td style="padding:8px;font-size:11px">'+escH((x.action_required||x.action||'-').substring(0,60))+'</td>'
         +'<td style="padding:8px;text-align:center">'+(app?'<span style="color:#1D9E75;font-weight:700">Yes</span>':'<span style="color:#6B7280">No</span>')+'</td>'
         +'<td style="padding:8px;text-align:center">'+(imp?'<span style="background:#EAF3DE;color:#3B6D11;padding:2px 8px;border-radius:99px;font-size:10px;font-weight:700">Done</span>':'<span style="background:#FEF9EC;color:#854F0B;padding:2px 8px;border-radius:99px;font-size:10px;font-weight:700">Pending</span>')+'</td>'
-        +'<td style="padding:8px"><div style="display:flex;gap:4px"><button class="btn btn-sm" data-id="'+x.id+'" onclick="legalOpenChg(this.dataset.id)"><i class="ti ti-edit"></i></button>'+(isMgr()?'<button class="btn btn-sm" style="color:var(--red)" data-id="'+x.id+'" onclick="legalDeleteChgFromList(this.dataset.id)"><i class="ti ti-trash"></i></button>':'')+'</div></td></tr>';
+        +'<td style="padding:8px"><div style="display:flex;gap:4px"><button class="btn btn-sm" data-id="'+x.id+'" onclick="legalOpenChg(this.dataset.id)" title="View change"><i class="ti ti-eye"></i></button>'+(isMgr()?'<button class="btn btn-sm" style="color:var(--red)" data-id="'+x.id+'" onclick="legalDeleteChgFromList(this.dataset.id)"><i class="ti ti-trash"></i></button>':'')+'</div></td></tr>';
     });
     h+='</tbody></table></div>';el.innerHTML=h;
   }catch(e){el.innerHTML=setupFriendlyMessage('Legal changes register',e.message);}
@@ -28932,6 +28933,7 @@ async function legalLoadChanges(){
 function legalChgBack(){document.getElementById('legal-chg-form').style.display='none';document.getElementById('legal-view-changes').style.display='block';document.querySelectorAll('[id^="legal-tab-"]').forEach(t=>t.classList.remove('active'));document.getElementById('legal-tab-changes')?.classList.add('active');legalLoadChanges();}
 function legalNewChange(){
   fillPplDrops();lcEditId=null;
+  legalChangeEditMode(true);
   document.getElementById('lc-form3title').textContent='New Regulatory Change';
   document.getElementById('lc-del-btn').style.display='none';
   var section=document.getElementById('lc-section-id');if(section)section.innerHTML=legalRequirementOptionsHtml('');
@@ -28945,18 +28947,66 @@ function legalNewChange(){
   var ct=document.getElementById('lc-change-type');if(ct)ct.value='amendment';
   document.getElementById('legal-view-changes').style.display='none';document.getElementById('legal-chg-form').style.display='block';
 }
+function legalChangeTextFromComments(x,label){
+  var txt=String(x?.comments||'');
+  var re=new RegExp(label+' wording:\\n([\\s\\S]*?)(?:\\nNew wording:|\\nPrevious wording:|$)','i');
+  var m=txt.match(re);
+  return m&&m[1]?m[1].trim():'';
+}
+function legalChangeData(id){
+  var x=(lcAllData||[]).find(function(r){return String(r.id)===String(id);})||null;
+  if(!x)return null;
+  if(!x.previous_wording)x.previous_wording=legalChangeTextFromComments(x,'Previous');
+  if(!x.new_wording)x.new_wording=legalChangeTextFromComments(x,'New');
+  return x;
+}
+function legalChangeUserComments(x){
+  return String(x?.comments||'').replace(/Amendment tracking:[\s\S]*/,'').trim();
+}
+function legalChangeEditMode(edit){
+  var review=document.getElementById('lc-review-card'),form=document.getElementById('lc-edit-card'),save=document.getElementById('lc-save-btn'),editBtn=document.getElementById('lc-edit-btn');
+  if(review)review.style.display=edit?'none':'block';
+  if(form)form.style.display=edit?'block':'none';
+  if(save)save.style.display=edit?'inline-flex':'none';
+  if(editBtn)editBtn.style.display=(!edit&&isMgr())?'inline-flex':'none';
+}
+function legalChangeReviewHtml(x){
+  var imp=x.implemented===true||x.implemented==='true';
+  var app=x.applicable!==false&&x.applicable!=='false';
+  var oldW=x.previous_wording||'No previous wording captured.';
+  var newW=x.new_wording||x.changes_identified||x.changes||'No replacement wording captured.';
+  return '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px">'
+    +'<div><div class="form3label">Date received</div><b>'+escH(x.date_received?new Date(x.date_received).toLocaleDateString('en-GB'):'-')+'</b></div>'
+    +'<div><div class="form3label">Source / publication</div><b>'+escH(x.source||'-')+'</b></div>'
+    +'<div><div class="form3label">Applicable</div><b style="color:'+(app?'#047857':'#64748b')+'">'+(app?'Yes':'No')+'</b></div>'
+    +'<div><div class="form3label">Implemented</div><b style="color:'+(imp?'#047857':'#B45309')+'">'+(imp?'Done':'Pending')+'</b></div>'
+    +'</div><div class="card" style="background:#F8FBFF;border-color:#BFDBFE;margin-bottom:14px"><div class="card-title" style="color:#185FA5">Affected section</div>'
+    +'<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px"><div><div class="form3label">Legislation</div><b>'+escH(x.legislation||'-')+'</b></div><div><div class="form3label">Section / ref</div><b>'+escH(x.section||x.section_ref||'-')+'</b></div><div><div class="form3label">Change type</div><b>'+escH(String(x.change_type||'amendment').replace(/_/g,' '))+'</b></div></div></div>'
+    +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px"><div class="card" style="background:#FEF2F2;border-color:#FECACA"><div class="card-title" style="color:#991B1B">Previous wording</div><div style="white-space:pre-wrap;font-size:13px;line-height:1.45;color:#7F1D1D">'+escH(oldW)+'</div></div><div class="card" style="background:#ECFDF5;border-color:#A7F3D0"><div class="card-title" style="color:#047857">New wording / replacement</div><div style="white-space:pre-wrap;font-size:13px;line-height:1.45;color:#064E3B;font-weight:600">'+escH(newW)+'</div></div></div>'
+    +'<div class="card" style="margin-bottom:14px"><div class="card-title">Change impact and action</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:14px"><div><div class="form3label">Changes identified</div><div style="white-space:pre-wrap">'+escH(x.changes_identified||x.changes||'-')+'</div></div><div><div class="form3label">Action required</div><div style="white-space:pre-wrap">'+escH(x.action_required||x.action||'-')+'</div></div></div></div>'
+    +(x.comments?'<div class="card"><div class="card-title">Comments</div><div style="white-space:pre-wrap">'+escH(legalChangeUserComments(x)||'-')+'</div></div>':'');
+}
 function legalOpenChg(id){
-  var x=lcAllData.find(r=>r.id===id);if(!x)return;lcEditId=id;
+  var x=legalChangeData(id);if(!x)return;lcEditId=id;
+  document.getElementById('lc-form3title').textContent=x.legislation||'Regulatory Change';
+  document.getElementById('lc-del-btn').style.display=isMgr()?'inline-flex':'none';
+  var review=document.getElementById('lc-review-card');if(review)review.innerHTML=legalChangeReviewHtml(x);
+  legalChangeEditMode(false);
+  document.getElementById('legal-view-changes').style.display='none';document.getElementById('legal-chg-form').style.display='block';
+}
+function legalEditChg(){
+  var x=legalChangeData(lcEditId);if(!x)return;
   document.getElementById('lc-form3title').textContent=x.legislation||'Edit Change';
   document.getElementById('lc-del-btn').style.display=isMgr()?'inline-flex':'none';
   var gf=function(fid,val){var el=document.getElementById(fid);if(el)el.value=val||'';};
   var section=document.getElementById('lc-section-id');if(section)section.innerHTML=legalRequirementOptionsHtml(x.requirement_id||x.legal_requirement_id||'');
-  gf('lc-date',x.date_received);gf('lc-source',x.source);gf('lc-jurisdiction',x.jurisdiction||'Mauritius');gf('lc-legislation',x.legislation);gf('lc-changes',x.changes_identified||x.changes);gf('lc-action',x.action_required||x.action);gf('lc-comments',x.comments);gf('lc-responsible',x.responsible_person);gf('lc-effective-date',x.effective_date);
+  gf('lc-date',x.date_received);gf('lc-source',x.source);gf('lc-jurisdiction',x.jurisdiction||'Mauritius');gf('lc-legislation',x.legislation);gf('lc-changes',x.changes_identified||x.changes);gf('lc-action',x.action_required||x.action);gf('lc-comments',legalChangeUserComments(x));gf('lc-responsible',x.responsible_person);gf('lc-effective-date',x.effective_date);
   gf('lc-section-ref',x.section||x.section_ref);gf('lc-current-wording',x.previous_wording);gf('lc-new-wording',x.new_wording);
   var ct=document.getElementById('lc-change-type');if(ct)ct.value=x.change_type||'amendment';
   document.getElementById('lc-category').value=x.category||'health_safety';
   document.getElementById('lc-applicable').value=x.applicable!==false&&x.applicable!=='false'?'true':'false';
   document.getElementById('lc-implemented').value=x.implemented===true||x.implemented==='true'?'true':'false';
+  legalChangeEditMode(true);
   document.getElementById('legal-view-changes').style.display='none';document.getElementById('legal-chg-form').style.display='block';
 }
 async function legalSaveChg(){
@@ -44313,12 +44363,14 @@ Offline mode - changes will sync when connection is restored
 <div style="font-size:17px;font-weight:800" id="lc-form3title">New Regulatory Change</div>
 <div style="display:flex;gap:8px">
 <button class="btn" style="background:rgba(255,255,255,.2);color:#fff;border-color:rgba(255,255,255,.3)" onclick="legalChgBack()"><i class="ti ti-arrow-left"></i>Back</button>
+<button id="lc-edit-btn" class="btn" style="display:none;background:#fff;color:#854F0B;border-color:#fff;font-weight:800" onclick="legalEditChg()"><i class="ti ti-edit"></i>Edit</button>
 <button id="lc-del-btn" class="btn" style="display:none;background:rgba(0,0,0,.3);color:#fff;border-color:rgba(255,255,255,.3)" onclick="legalDeleteChg()"><i class="ti ti-trash"></i></button>
-<button class="btn" style="background:#1D9E75;color:#fff;border-color:#1D9E75" onclick="legalSaveChg()"><i class="ti ti-device-floppy"></i>Save</button>
+<button id="lc-save-btn" class="btn" style="background:#1D9E75;color:#fff;border-color:#1D9E75" onclick="legalSaveChg()"><i class="ti ti-device-floppy"></i>Save</button>
 </div>
 </div>
 </div>
-<div class="card">
+<div id="lc-review-card" class="card" style="display:none"></div>
+<div id="lc-edit-card" class="card">
 <div class="form3row">
 <div class="form3group"><label class="form3label">Date received</label><input type="date" id="lc-date"/></div>
 <div class="form3group"><label class="form3label">Source / Publication ref</label><input type="text" id="lc-source" placeholder="e.g. Government Gazette No. 22/2026"/></div>
