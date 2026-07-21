@@ -28743,13 +28743,36 @@ function legalAssessmentScopeLabel(){
 function legalPrintRegisterEvidence(){
   var rows=legalFilteredRequirements();
   if(!rows.length){toast('No legal requirements to print',false);return;}
-  var html='<style>@page{size:A4 landscape;margin:10mm}.legal-print-table{width:100%;border-collapse:collapse;font-size:9.5px}.legal-print-table th{background:#173F63;color:#fff;padding:6px;border:1px solid #173F63;text-align:left}.legal-print-table td{padding:6px;border:1px solid #d7dee8;vertical-align:top}.legal-print-table tr:nth-child(even){background:#f8fafc}.muted{color:#64748b}.badge{display:inline-block;border-radius:999px;padding:2px 7px;font-weight:700;font-size:9px}.gap-yes{background:#fee2e2;color:#991b1b}.gap-no{background:#dcfce7;color:#166534}</style>'
-    +'<h1>Legal Compliance Register</h1><p class="muted">Printed view includes operational compliance evidence: current controls, gap status, recommendations, action owner and target date.</p>'
-    +'<table class="legal-print-table"><thead><tr><th style="width:8%">Ref</th><th style="width:14%">Legislation</th><th style="width:18%">Section / Requirement</th><th style="width:17%">Current controls</th><th style="width:7%">Gap</th><th style="width:17%">Recommendations / further controls</th><th style="width:10%">Action by</th><th style="width:9%">Target date</th></tr></thead><tbody>';
+  var short=function(v,n){v=String(v||'').replace(/\s+/g,' ').trim();return v.length>n?v.slice(0,n-1)+'...':v;};
+  var company=co?.name||prof?.company_name||'Company';
+  var comp=rows.filter(function(x){return x.status==='compliant';}).length;
+  var part=rows.filter(function(x){return x.status==='partial';}).length;
+  var nonC=rows.filter(function(x){return x.status==='non_compliant';}).length;
+  var gaps=rows.filter(function(x){return legalGapLabel(x)==='Yes';}).length;
+  var totalApplicable=rows.filter(function(x){return x.status!=='not_applicable'&&x.applicable!==false;}).length||1;
+  var score=Math.round((comp*100+part*50)/totalApplicable);
+  var currentLeg='';
+  var html='<style>@page{size:A4 landscape;margin:8mm}.report-page{width:297mm;max-width:none!important;padding:7mm}.legal-print-title{font-size:16pt;font-weight:900;color:#111827;margin:0}.legal-print-sub{font-size:8.5pt;color:#64748b;margin-top:2px}.legal-print-meta{font-size:8.5pt;color:#475569;text-align:right}.legal-summary{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin:10px 0 10px}.legal-chip{border:1px solid #d7dee8;border-radius:6px;padding:6px 8px;background:#f8fafc}.legal-chip b{display:block;font-size:15pt;line-height:1;color:#173F63}.legal-chip span{font-size:7.5pt;color:#64748b;text-transform:uppercase;font-weight:700}.legal-print-table{width:100%;border-collapse:collapse;table-layout:fixed;font-size:7.4pt;line-height:1.24}.legal-print-table th{background:#173F63;color:#fff;padding:5px 6px;border:1px solid #173F63;text-align:left;text-transform:uppercase;font-size:7pt;letter-spacing:.02em}.legal-print-table td{padding:5px 6px;border:1px solid #d7dee8;vertical-align:top;overflow-wrap:anywhere}.legal-print-table tr:nth-child(even){background:#fbfdff}.leg-group td{background:#eaf3ff!important;color:#173F63;font-weight:900;font-size:8.5pt;padding:5px 7px}.muted{color:#64748b}.small{font-size:7pt}.req-title{font-weight:900;color:#111827}.req-excerpt{color:#334155;margin-top:2px;max-height:30px;overflow:hidden}.badge{display:inline-block;border-radius:999px;padding:2px 7px;font-weight:900;font-size:7pt;white-space:nowrap}.gap-yes{background:#fee2e2;color:#991b1b}.gap-no{background:#dcfce7;color:#166534}.status-compliant{background:#dcfce7;color:#166534}.status-partial{background:#fef3c7;color:#92400e}.status-non_compliant{background:#fee2e2;color:#991b1b}.status-not_applicable{background:#e5e7eb;color:#475569}tr{break-inside:avoid}</style>'
+    +'<div class="report-page"><div class="rpt-header"><div><div class="legal-print-title">Legal Compliance Register</div><div class="legal-print-sub">'+escH(company)+' - operational evidence view</div></div><div class="legal-print-meta"><b>Generated:</b> '+new Date().toLocaleDateString('en-GB')+'<br><b>Scope:</b> '+rows.length+' visible requirements<br><b>Score:</b> '+score+'%</div></div>'
+    +'<div class="legal-summary"><div class="legal-chip"><b>'+rows.length+'</b><span>Requirements</span></div><div class="legal-chip"><b>'+comp+'</b><span>Compliant</span></div><div class="legal-chip"><b>'+part+'</b><span>Partial</span></div><div class="legal-chip"><b>'+nonC+'</b><span>Non-compliant</span></div><div class="legal-chip"><b>'+gaps+'</b><span>Open gaps</span></div></div>'
+    +'<table class="legal-print-table"><thead><tr><th style="width:7%">Ref</th><th style="width:23%">Section / requirement</th><th style="width:22%">Current controls</th><th style="width:9%">Status</th><th style="width:7%">Gap</th><th style="width:20%">Recommendations / further controls</th><th style="width:7%">Action by</th><th style="width:5%">Target</th></tr></thead><tbody>';
   rows.forEach(function(x){
-    html+='<tr><td><b>'+escH(displayRecordRef(x,'req_ref','LEG-DRAFT'))+'</b></td><td><b>'+escH(x.legislation||'-')+'</b><div class="muted">'+escH((x.legislation_type||'').replace(/_/g,' '))+'</div></td><td><b>'+escH(x.title||x.section||'-')+'</b><div class="muted">'+escH(x.section||'')+'</div><div>'+escH(x.requirement||'')+'</div></td><td>'+escH(x.controls||'No current controls recorded')+'</td><td><span class="badge '+(legalGapLabel(x)==='Yes'?'gap-yes':'gap-no')+'">'+legalGapLabel(x)+'</span></td><td>'+escH(x.further_controls||x.recommendations||x.gap_description||'')+'</td><td>'+escH(x.responsibility||x.responsible_person||'')+'</td><td>'+escH(x.target_date?new Date(x.target_date).toLocaleDateString('en-GB'):'')+'</td></tr>';
+    if((x.legislation||'')!==currentLeg){
+      currentLeg=x.legislation||'Unspecified legislation';
+      html+='<tr class="leg-group"><td colspan="8">'+escH(currentLeg)+' <span class="muted small">- '+escH((x.legislation_type||'').replace(/_/g,' ')||'legal requirement')+'</span></td></tr>';
+    }
+    var st=x.status||'partial';
+    var stCfg=LEG_STATUS_CFG[st]||LEG_STATUS_CFG.partial;
+    html+='<tr><td><b>'+escH(displayRecordRef(x,'req_ref','LEG-DRAFT'))+'</b></td>'
+      +'<td><div class="req-title">'+escH(x.title||x.section||'-')+'</div><div class="muted small">'+escH(x.section||'')+'</div><div class="req-excerpt">'+escH(short(x.requirement,260))+'</div></td>'
+      +'<td>'+escH(short(x.controls||'No current controls recorded',260))+'</td>'
+      +'<td><span class="badge status-'+escH(st)+'">'+escH(stCfg.label||st)+'</span><div class="muted small">'+(x.compliance_score!=null?escH(x.compliance_score)+'%':'')+'</div></td>'
+      +'<td><span class="badge '+(legalGapLabel(x)==='Yes'?'gap-yes':'gap-no')+'">'+legalGapLabel(x)+'</span></td>'
+      +'<td>'+escH(short(x.further_controls||x.recommendations||x.gap_description||'-',240))+'</td>'
+      +'<td>'+escH(x.responsibility||x.responsible_person||'-')+'</td>'
+      +'<td>'+escH(x.target_date?new Date(x.target_date).toLocaleDateString('en-GB'):'-')+'</td></tr>';
   });
-  aurisPrint(html+'</tbody></table>','Legal Compliance Register');
+  aurisPrint(html+'</tbody></table></div>','Legal Compliance Register');
 }
 function legalRequirementOptionsHtml(selectedId){
   var h='<option value="">Select section to amend...</option>';
