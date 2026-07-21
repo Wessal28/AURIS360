@@ -28958,30 +28958,70 @@ async function lcaSyncAssessmentRows(assessmentRef){
 }
 
 // -- REGULATORY CHANGES --------------------------------------------------------
+function legalChangeFilterText(x){
+  return [
+    x.date_received,x.source,x.jurisdiction,x.legislation,x.section,x.section_ref,
+    legalChangeSectionLabel(x),x.category,x.changes_identified,x.changes,
+    x.action_required,x.action,x.responsible_person,x.comments
+  ].filter(Boolean).join(' ').toLowerCase();
+}
+function legalClearChangeFilters(){
+  ['lc-chg-search','lc-chg-category','lc-chg-applicable','lc-chg-implemented'].forEach(function(id){
+    var el=document.getElementById(id);if(el)el.value='';
+  });
+  legalRenderChanges();
+}
+function legalRenderChanges(){
+  var el=document.getElementById('lc-table');if(!el)return;
+  var all=lcAllData||[];
+  if(!all.length){
+    el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)"><div style="font-size:40px;margin-bottom:12px"><i class="ti ti-circle-dot"></i></div><div style="font-weight:600;margin-bottom:8px">No regulatory changes recorded</div>'+(isMgr()?'<button class="btn btn-primary" onclick="legalNewChange()"><i class="ti ti-plus"></i>Add change</button>':'')+'</div>';
+    return;
+  }
+  var q=String(document.getElementById('lc-chg-search')?.value||'').trim().toLowerCase();
+  var cat=document.getElementById('lc-chg-category')?.value||'';
+  var app=document.getElementById('lc-chg-applicable')?.value||'';
+  var imp=document.getElementById('lc-chg-implemented')?.value||'';
+  var d=all.filter(function(x){
+    var implemented=x.implemented===true||x.implemented==='true';
+    var applicable=x.applicable!==false&&x.applicable!=='false';
+    if(q&&!legalChangeFilterText(x).includes(q))return false;
+    if(cat&&x.category!==cat)return false;
+    if(app&&String(applicable)!==app)return false;
+    if(imp&&String(implemented)!==imp)return false;
+    return true;
+  });
+  var count=document.getElementById('lc-chg-count');if(count)count.textContent=d.length+' of '+all.length+' changes';
+  if(!d.length){
+    el.innerHTML='<div style="text-align:center;padding:36px;color:var(--text2)"><div style="font-size:34px;margin-bottom:10px"><i class="ti ti-filter-off"></i></div><div style="font-weight:700;margin-bottom:6px">No regulatory changes match the filters</div><button class="btn" onclick="legalClearChangeFilters()"><i class="ti ti-refresh"></i>Clear filters</button></div>';
+    return;
+  }
+  var h='<div class="table-scroll"><table class="data-table" style="min-width:1220px"><thead><tr><th>Date</th><th>Legislation</th><th>Section / ref</th><th>Change</th><th>Category</th><th>Action required</th><th>Applicable?</th><th>Implemented?</th><th style="width:50px"></th></tr></thead><tbody>';
+  d.forEach(function(x,i){
+    var bg=i%2===0?'#fff':'#f9fafb';
+    var archived=ohIsArchivedText(x.comments);
+    var impVal=x.implemented===true||x.implemented==='true';
+    var appVal=x.applicable!==false&&x.applicable!=='false';
+    h+='<tr style="border-bottom:1px solid #f0f0f0;background:'+bg+(archived?';opacity:.6':'')+'">'
+      +'<td style="padding:8px 14px;font-size:11px;white-space:nowrap">'+(x.date_received?new Date(x.date_received).toLocaleDateString('en-GB'):'-')+'</td>'
+      +'<td style="padding:8px;font-weight:600;max-width:180px">'+escH(x.legislation||'-')+'<div style="font-size:10px;color:var(--text2)">'+escH(x.source||'')+'</div>'+(archived?'<div style="font-size:10px;color:#6B7280;font-weight:800">Archived</div>':'')+'</td>'
+      +'<td style="padding:8px;font-size:11px;font-weight:800;color:#185FA5;max-width:150px">'+escH(legalChangeSectionLabel(x)||'-')+'</td>'
+      +'<td style="padding:8px;max-width:250px;font-size:11px">'+escH((x.changes_identified||x.changes||'-').substring(0,100))+(((x.changes_identified||x.changes||'').length>100)?'-':'')+'</td>'
+      +'<td style="padding:8px">'+(x.category?'<span style="background:'+(LEGAL_CAT_CFG[x.category]?.color||'#6B7280')+'15;color:'+(LEGAL_CAT_CFG[x.category]?.color||'#6B7280')+';padding:1px 7px;border-radius:99px;font-size:10px;font-weight:600">'+(LEGAL_CAT_CFG[x.category]?.emoji||'*')+' '+escH(LEGAL_CAT_CFG[x.category]?.label||x.category)+'</span>':'-')+'</td>'
+      +'<td style="padding:8px;font-size:11px">'+escH((x.action_required||x.action||'-').substring(0,60))+'</td>'
+      +'<td style="padding:8px;text-align:center">'+(appVal?'<span style="color:#1D9E75;font-weight:700">Yes</span>':'<span style="color:#6B7280">No</span>')+'</td>'
+      +'<td style="padding:8px;text-align:center">'+(impVal?'<span style="background:#EAF3DE;color:#3B6D11;padding:2px 8px;border-radius:99px;font-size:10px;font-weight:700">Done</span>':'<span style="background:#FEF9EC;color:#854F0B;padding:2px 8px;border-radius:99px;font-size:10px;font-weight:700">Pending</span>')+'</td>'
+      +'<td style="padding:8px"><div style="display:flex;gap:4px"><button class="btn btn-sm" data-id="'+x.id+'" onclick="legalOpenChg(this.dataset.id)" title="View change"><i class="ti ti-eye"></i></button>'+(isMgr()?'<button class="btn btn-sm" style="color:var(--red)" data-id="'+x.id+'" onclick="legalDeleteChgFromList(this.dataset.id)"><i class="ti ti-trash"></i></button>':'')+'</div></td></tr>';
+  });
+  h+='</tbody></table></div>';el.innerHTML=h;
+}
 async function legalLoadChanges(){
   var el=document.getElementById('lc-table');if(!el)return;
   el.innerHTML='<div class="loading-msg">Loading...</div>';
   try{
     var d=await api('/legal_changes?select=*'+cf()+'&order=date_received.desc');
     lcAllData=d||[];
-    if(!d||!d.length){el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)"><div style="font-size:40px;margin-bottom:12px"><i class="ti ti-circle-dot"></i></div><div style="font-weight:600;margin-bottom:8px">No regulatory changes recorded</div>'+(isMgr()?'<button class="btn btn-primary" onclick="legalNewChange()"><i class="ti ti-plus"></i>Add change</button>':'')+'</div>';return;}
-    var h='<div class="table-scroll"><table class="data-table" style="min-width:1220px"><thead><tr><th>Date</th><th>Legislation</th><th>Section / ref</th><th>Change</th><th>Category</th><th>Action required</th><th>Applicable?</th><th>Implemented?</th><th style="width:50px"></th></tr></thead><tbody>';
-    d.forEach(function(x,i){
-      var bg=i%2===0?'#fff':'#f9fafb';
-      var imp=x.implemented===true||x.implemented==='true';
-      var app=x.applicable!==false&&x.applicable!=='false';
-      h+='<tr style="border-bottom:1px solid #f0f0f0;background:'+bg+'">'
-        +'<td style="padding:8px 14px;font-size:11px;white-space:nowrap">'+(x.date_received?new Date(x.date_received).toLocaleDateString('en-GB'):'-')+'</td>'
-        +'<td style="padding:8px;font-weight:600;max-width:180px">'+escH(x.legislation||'-')+'<div style="font-size:10px;color:var(--text2)">'+escH(x.source||'')+'</div></td>'
-        +'<td style="padding:8px;font-size:11px;font-weight:800;color:#185FA5;max-width:150px">'+escH(legalChangeSectionLabel(x)||'-')+'</td>'
-        +'<td style="padding:8px;max-width:250px;font-size:11px">'+escH((x.changes_identified||x.changes||'-').substring(0,100))+(((x.changes_identified||x.changes||'').length>100)?'-':'')+'</td>'
-        +'<td style="padding:8px">'+(x.category?'<span style="background:'+(LEGAL_CAT_CFG[x.category]?.color||'#6B7280')+'15;color:'+(LEGAL_CAT_CFG[x.category]?.color||'#6B7280')+';padding:1px 7px;border-radius:99px;font-size:10px;font-weight:600">'+(LEGAL_CAT_CFG[x.category]?.emoji||'*')+' '+escH(LEGAL_CAT_CFG[x.category]?.label||x.category)+'</span>':'-')+'</td>'
-        +'<td style="padding:8px;font-size:11px">'+escH((x.action_required||x.action||'-').substring(0,60))+'</td>'
-        +'<td style="padding:8px;text-align:center">'+(app?'<span style="color:#1D9E75;font-weight:700">Yes</span>':'<span style="color:#6B7280">No</span>')+'</td>'
-        +'<td style="padding:8px;text-align:center">'+(imp?'<span style="background:#EAF3DE;color:#3B6D11;padding:2px 8px;border-radius:99px;font-size:10px;font-weight:700">Done</span>':'<span style="background:#FEF9EC;color:#854F0B;padding:2px 8px;border-radius:99px;font-size:10px;font-weight:700">Pending</span>')+'</td>'
-        +'<td style="padding:8px"><div style="display:flex;gap:4px"><button class="btn btn-sm" data-id="'+x.id+'" onclick="legalOpenChg(this.dataset.id)" title="View change"><i class="ti ti-eye"></i></button>'+(isMgr()?'<button class="btn btn-sm" style="color:var(--red)" data-id="'+x.id+'" onclick="legalDeleteChgFromList(this.dataset.id)"><i class="ti ti-trash"></i></button>':'')+'</div></td></tr>';
-    });
-    h+='</tbody></table></div>';el.innerHTML=h;
+    legalRenderChanges();
   }catch(e){el.innerHTML=setupFriendlyMessage('Legal changes register',e.message);}
 }
 
@@ -44225,6 +44265,23 @@ Offline mode - changes will sync when connection is restored
 <div class="card" style="margin-bottom:12px;padding:10px 14px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
 <div><div class="card-title" style="margin:0">Regulatory Changes &amp; Updates</div><div style="font-size:12px;color:var(--text2)">Track legislative changes and ensure obligations are updated</div></div>
 <button class="btn btn-primary" id="lc-add-btn" style="display:none" onclick="legalNewChange()"><i class="ti ti-plus"></i>Add change</button>
+</div>
+<div class="card" style="margin-bottom:12px;padding:12px 14px">
+<div style="display:grid;grid-template-columns:minmax(220px,2fr) repeat(3,minmax(150px,1fr)) auto;gap:10px;align-items:center">
+<input id="lc-chg-search" oninput="legalRenderChanges()" placeholder="Search legislation, section, source, action..." style="padding:9px 12px;border:1px solid var(--border);border-radius:8px">
+<select id="lc-chg-category" onchange="legalRenderChanges()" style="padding:9px 12px;border:1px solid var(--border);border-radius:8px">
+<option value="">All categories</option>
+<option value="health_safety">H&amp;S</option><option value="environment">Environment</option><option value="construction">Construction</option><option value="fire">Fire</option><option value="electrical">Electrical</option><option value="chemical">Chemical</option><option value="transport">Transport</option><option value="employment">Employment</option><option value="quality">Quality</option><option value="other">Other</option>
+</select>
+<select id="lc-chg-applicable" onchange="legalRenderChanges()" style="padding:9px 12px;border:1px solid var(--border);border-radius:8px">
+<option value="">All applicability</option><option value="true">Applicable only</option><option value="false">Not applicable</option>
+</select>
+<select id="lc-chg-implemented" onchange="legalRenderChanges()" style="padding:9px 12px;border:1px solid var(--border);border-radius:8px">
+<option value="">All implementation</option><option value="false">Pending</option><option value="true">Implemented</option>
+</select>
+<button class="btn" onclick="legalClearChangeFilters()"><i class="ti ti-filter-off"></i>Clear</button>
+</div>
+<div id="lc-chg-count" style="font-size:11px;color:var(--text2);margin-top:8px">0 changes</div>
 </div>
 <div class="card" style="padding:0;overflow:hidden"><div id="lc-table"><div class="loading-msg">Loading...</div></div></div>
 </div>
