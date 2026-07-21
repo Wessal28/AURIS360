@@ -40493,23 +40493,6 @@ function fireEquipStatusBadge(s) {
      KPI GRID - status-tinted cards with icons and sparklines
      Row 1: 4 primary safety KPIs
      ------------------------------------------------------------------------ -->
-<div id="dash-demo-readiness" class="card" style="display:none;margin-bottom:16px;padding:0;overflow:hidden">
-  <div style="padding:14px 18px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap">
-    <div>
-      <div style="font-size:15px;font-weight:900">Operational go-live readiness</div>
-      <div style="font-size:12px;color:var(--text2);margin-top:2px">Core records and settings required before opening all modules to a client.</div>
-    </div>
-    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
-      <button class="btn btn-sm" onclick="dashOpenMeetingChecklist()"><i class="ti ti-clipboard-check"></i>Go-live checklist</button>
-      <div style="min-width:180px">
-        <div style="display:flex;justify-content:space-between;font-size:12px;font-weight:800;margin-bottom:5px"><span>Readiness</span><span id="dash-demo-readiness-score">0% ready</span></div>
-        <div style="height:8px;background:#f3f4f6;border-radius:99px;overflow:hidden"><div id="dash-demo-readiness-bar" style="height:100%;width:0%;background:#DC2626;border-radius:99px;transition:width .3s"></div></div>
-      </div>
-    </div>
-  </div>
-  <div id="dash-demo-readiness-body" style="padding:4px 18px 10px"></div>
-</div>
-
 <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:12px">
 
   <div class="kpi-card" data-id="d-events" data-tone="red" style="cursor:pointer" onclick="showPage('events',null)">
