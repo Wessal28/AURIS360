@@ -7467,7 +7467,7 @@ function appPrompt(opts){
     modal.style.cssText='display:none;position:fixed;inset:0;background:rgba(15,23,42,.55);z-index:910;align-items:center;justify-content:center;padding:16px';
     modal.innerHTML='<div class="card" role="dialog" aria-modal="true" aria-labelledby="app-prompt-title" style="width:100%;max-width:480px;border-radius:12px;box-shadow:0 20px 70px rgba(15,23,42,.28);padding:0;overflow:hidden">'
       +'<div style="padding:18px 20px;border-bottom:1px solid var(--border);display:flex;gap:12px;align-items:flex-start"><div style="width:36px;height:36px;border-radius:10px;background:#E1F5EE;color:var(--green);display:flex;align-items:center;justify-content:center;flex-shrink:0"><i class="ti ti-pencil"></i></div><div><div id="app-prompt-title" style="font-size:16px;font-weight:900;color:var(--text)">Enter value</div><div id="app-prompt-message" style="font-size:13px;color:var(--text2);margin-top:4px;line-height:1.45"></div></div></div>'
-      +'<div style="padding:16px 20px"><input id="app-prompt-input" style="display:none;width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px"><textarea id="app-prompt-textarea" style="display:none;width:100%;min-height:110px;padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;resize:vertical"></textarea></div>'
+      +'<div style="padding:16px 20px"><input id="app-prompt-input" style="display:none;width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px"><select id="app-prompt-select" style="display:none;width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;background:#fff"></select><textarea id="app-prompt-textarea" style="display:none;width:100%;min-height:110px;padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;resize:vertical"></textarea></div>'
       +'<div style="padding:14px 20px;display:flex;justify-content:flex-end;gap:10px;background:#fff"><button id="app-prompt-cancel" class="btn" type="button">Cancel</button><button id="app-prompt-ok" class="btn btn-primary" type="button">Continue</button></div>'
       +'</div>';
     document.body.appendChild(modal);
@@ -7475,14 +7475,26 @@ function appPrompt(opts){
   var title=document.getElementById('app-prompt-title');
   var message=document.getElementById('app-prompt-message');
   var input=document.getElementById('app-prompt-input');
+  var select=document.getElementById('app-prompt-select');
   var textarea=document.getElementById('app-prompt-textarea');
   var cancelBtn=document.getElementById('app-prompt-cancel');
   var okBtn=document.getElementById('app-prompt-ok');
-  var field=opts.multiline?textarea:input;
+  var field=opts.options?select:(opts.multiline?textarea:input);
   if(title)title.textContent=opts.title||'Enter value';
   if(message)message.textContent=opts.message||'';
-  if(input){input.style.display=opts.multiline?'none':'block';input.value=opts.value||'';input.placeholder=opts.placeholder||'';}
-  if(textarea){textarea.style.display=opts.multiline?'block':'none';textarea.value=opts.value||'';textarea.placeholder=opts.placeholder||'';}
+  if(input){input.style.display=(!opts.multiline&&!opts.options)?'block':'none';input.value=opts.value||'';input.placeholder=opts.placeholder||'';}
+  if(select){
+    select.style.display=opts.options?'block':'none';
+    select.innerHTML='';
+    (opts.options||[]).forEach(function(o){
+      var opt=document.createElement('option');
+      opt.value=String(o.value);
+      opt.textContent=o.label||String(o.value);
+      select.appendChild(opt);
+    });
+    select.value=String(opts.value??'');
+  }
+  if(textarea){textarea.style.display=(opts.multiline&&!opts.options)?'block':'none';textarea.value=opts.value||'';textarea.placeholder=opts.placeholder||'';}
   if(cancelBtn)cancelBtn.textContent=opts.cancelText||'Cancel';
   if(okBtn)okBtn.textContent=opts.confirmText||'Continue';
   modal.style.display='flex';
@@ -30997,9 +31009,16 @@ async function cmEditCell(personId, compId){
   var person=(people||[]).find(function(p){return p.id===personId;});
   var cur=entry?entry.current_level:0;
   var req=entry?entry.required_level:2;
-  var newCur=await appPrompt({title:'Update competency',message:'Competency: '+(comp?.name||'')+'. Enter current level (0-4): 0 No knowledge, 1 Theoretical, 2 First experience, 3 Good level, 4 Expert.',value:String(cur),placeholder:'0-4'});
+  var levelOptions=[
+    {value:0,label:'0 - No knowledge'},
+    {value:1,label:'1 - Theoretical'},
+    {value:2,label:'2 - First experience'},
+    {value:3,label:'3 - Good level'},
+    {value:4,label:'4 - Expert'}
+  ];
+  var newCur=await appPrompt({title:'Update competency',message:'Competency: '+(comp?.name||'')+'. Select the current competency level.',value:String(cur),options:levelOptions});
   if(newCur===null)return;
-  var newReq=await appPrompt({title:'Update competency',message:'Required level for this role',value:String(req),placeholder:'0-4'});
+  var newReq=await appPrompt({title:'Update competency',message:'Required level for this role',value:String(req),options:levelOptions});
   if(newReq===null)return;
   try{
     var body={company_id:ccid(),person_id:personId,competency_id:compId,
