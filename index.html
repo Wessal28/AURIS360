@@ -17375,7 +17375,7 @@ async function raDeleteCompanyTemplate(id){
   if(!t)return;
   if(!(await appConfirmAction({title:'Remove RA template',message:'Remove this company RA template from active use?',detail:'The document record will be withdrawn, not permanently deleted, so audit history is retained.',confirmText:'Withdraw template',cancelText:'Cancel'})))return;
   try{
-    await api('/documents?id=eq.'+id,{m:'PATCH',p:'return=minimal',b:{approval_status:'withdrawn',status:'withdrawn',updated_at:new Date().toISOString()}});
+    await api('/documents?id=eq.'+id,{m:'PATCH',p:'return=minimal',b:{approval_status:'withdrawn',status:'draft',updated_at:new Date().toISOString()}});
     toast('RA template withdrawn');
     await raLoadCompanyTemplates();
     libRenderTemplates();
@@ -26709,6 +26709,13 @@ const DC_STATUS_CFG={
   withdrawn:          {bg:'#f3f4f6', tc:'#6B7280',  label:'Withdrawn'}
 };
 
+function dcDbSafeStatus(st){
+  st=String(st||'draft').toLowerCase();
+  if(st==='current'||st==='active')return 'approved';
+  if(st==='withdrawn'||st==='superseded')return 'draft';
+  return st;
+}
+
 // -- Entry ---------------------------------------------------------------------
 function dcDocumentDueState(x){
   var now=new Date();
@@ -27557,7 +27564,7 @@ async function dcSave(){
     approver:appName||null,approver_id:appId||null,
     hse_reviewer:g('dc-sign-hse'),hse_review_date:g('dc-sign-hse-date')||null,
     review_comments:g('df-review-comments'),
-    approval_status:g('df-status')||'draft',status:g('df-status')||'draft',
+    approval_status:g('df-status')||'draft',status:dcDbSafeStatus(g('df-status')||'draft'),
     updated_at:new Date().toISOString()
   };
   try{
@@ -27658,7 +27665,7 @@ async function dcWithdraw(){
   if(!workflowCanMutate('documents','documents'))return;
   if(!(await appConfirmAction({title:'Withdraw document',message:'Withdraw this document?',detail:'It will no longer be active.',confirmText:'Withdraw',cancelText:'Cancel'})))return;
   try{
-    await api('/documents?id=eq.'+dcEditingId,{m:'PATCH',p:'return=minimal',b:{approval_status:'withdrawn',status:'withdrawn',updated_at:new Date().toISOString()}});
+    await api('/documents?id=eq.'+dcEditingId,{m:'PATCH',p:'return=minimal',b:{approval_status:'withdrawn',status:'draft',updated_at:new Date().toISOString()}});
     var x=dcAllData.find(r=>r.id===dcEditingId);if(x)x.approval_status='withdrawn';
     var stEl=document.getElementById('df-status');if(stEl)stEl.value='withdrawn';
     toast('Document withdrawn.');dcRenderWorkflowBar(x||{});dcRenderActionButtons(x||{});
@@ -27700,8 +27707,8 @@ async function dcDelete(){
   if(['approved','pending_review','under_review','pending_approval','current'].includes(st)){
     if(!(await appConfirmAction({title:'Withdraw document',message:'Withdraw this document instead of deleting it?',detail:'The document will no longer be active, but the record and revision history remain available for audit traceability.',confirmText:'Withdraw document',cancelText:'Back'})))return;
     try{
-      await api('/documents?id=eq.'+dcEditingId,{m:'PATCH',p:'return=minimal',b:{approval_status:'withdrawn',status:'withdrawn',withdrawn_at:new Date().toISOString(),updated_at:new Date().toISOString()}});
-      Object.assign(current,{approval_status:'withdrawn',status:'withdrawn',withdrawn_at:new Date().toISOString()});
+      await api('/documents?id=eq.'+dcEditingId,{m:'PATCH',p:'return=minimal',b:{approval_status:'withdrawn',status:'draft',withdrawn_at:new Date().toISOString(),updated_at:new Date().toISOString()}});
+      Object.assign(current,{approval_status:'withdrawn',status:'draft',withdrawn_at:new Date().toISOString()});
       var stEl=document.getElementById('df-status');if(stEl)stEl.value='withdrawn';
       toast('Document withdrawn and kept for audit history');
       dcAudit('withdraw','Document withdrawn instead of deleted',current,{new_status:'withdrawn'});
