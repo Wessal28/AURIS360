@@ -10302,6 +10302,38 @@ function mtgSplitAgendaPayload(payload){
   };
 }
 
+function mtgCollectMeta(){
+  return {
+    recorder:document.getElementById('mom3recorder')?.value||'',
+    signoff:mtgCollectSignoff()
+  };
+}
+
+function mtgHasMeta(meta){
+  return !!(meta&&(meta.recorder||mtgHasSignoff(meta.signoff)));
+}
+
+function mtgBuildRecommendationPayload(recs, meta){
+  var out=(recs||[]).filter(function(x){return x&&x._kind!=='mom_meta';});
+  if(mtgHasMeta(meta))out.push({_kind:'mom_meta',recorder:meta.recorder||'',signoff:meta.signoff||{}});
+  return out;
+}
+
+function mtgSplitRecommendationPayload(payload){
+  var arr=Array.isArray(payload)?payload:[];
+  return {
+    recs:arr.filter(function(x){return x&&x._kind!=='mom_meta';}),
+    meta:arr.find(function(x){return x&&x._kind==='mom_meta';})||{}
+  };
+}
+
+function mtgApplyMeta(meta, fallbackSignoff){
+  meta=meta||{};
+  var rec=document.getElementById('mom3recorder');
+  if(rec)rec.value=meta.recorder||'';
+  mtgApplySignoff(meta.signoff||fallbackSignoff||{});
+}
+
 function mtgApplySignoff(s){
   s=s||{};
   var chair=s.chair||document.getElementById('mom3chaired-by')?.value||'';
@@ -10390,6 +10422,7 @@ async function mtgSaveMom(){
   var recs=mtgCollectRecs();
   var agenda=mtgCollectAgenda();
   var signoff=mtgCollectSignoff();
+  var meta=mtgCollectMeta();
   var body={
     company_id:ccid(),
     series_id:document.getElementById('mtg-mom3form').dataset.seriesId||null,
@@ -10403,7 +10436,7 @@ async function mtgSaveMom(){
     minutes:document.getElementById('mom3notes')?.value||null,
     next_meeting_date:document.getElementById('mom3next-date')?.value||null,
     agenda_items:mtgBuildAgendaPayload(agenda,signoff),
-    recommendations:recs,
+    recommendations:mtgBuildRecommendationPayload(recs,meta),
     status:document.getElementById('mom3status')?.value||'draft',
     updated_at:new Date().toISOString()
   };
@@ -10751,7 +10784,8 @@ async function mtgOpenMom(id){
   var dt=document.getElementById('mom3date');if(dt)dt.value=m.meeting_date?m.meeting_date.slice(0,16):'';
   var nd=document.getElementById('mom3next-date');if(nd)nd.value=m.next_meeting_date||'';
   var agendaPayload=mtgSplitAgendaPayload(m.agenda_items);
-  mtgApplySignoff(agendaPayload.signoff);
+  var recommendationPayload=mtgSplitRecommendationPayload(m.recommendations);
+  mtgApplyMeta(recommendationPayload.meta,agendaPayload.signoff);
   // Render agenda items
   var ab=document.getElementById('mom3agenda-body');
   if(ab&&agendaPayload.items&&agendaPayload.items.length){
@@ -10768,10 +10802,11 @@ async function mtgOpenMom(id){
   // Render recommendations
   var rb=document.getElementById('mom3rec-body');
   var re=document.getElementById('mom3rec-empty');
-  if(rb&&m.recommendations&&m.recommendations.length){
+  var visibleRecommendations=recommendationPayload.recs||[];
+  if(rb&&visibleRecommendations.length){
     if(re)re.style.display='none';
     rb.innerHTML='';
-    m.recommendations.forEach(function(r){
+    visibleRecommendations.forEach(function(r){
       var tr=document.createElement('tr');
       tr.innerHTML='<td style="padding:6px;text-align:center;border:1px solid var(--border);font-weight:700;font-size:12px;color:var(--text2)">-</td>'
         +'<td style="padding:4px;border:1px solid var(--border)"><input type="text" class="mom3rec-desc" value="'+escH2(r.desc||'')+'" style="width:100%;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px"/></td>'
