@@ -28467,12 +28467,14 @@ function legalFilterRegister(){
   var fs=document.getElementById('lr-filter-status')?.value||'';
   var fl=document.getElementById('lr-filter-leg')?.value||'';
   var fc=document.getElementById('lr-filter-cat')?.value||'';
+  var showArchived=document.getElementById('lr-filter-archived')?.value==='true';
   var filt=lrAllData.filter(function(x){
     var mQ=!q||(x.legislation||'').toLowerCase().includes(q)||(x.title||'').toLowerCase().includes(q)||(x.requirement||'').toLowerCase().includes(q)||(x.req_ref||'').toLowerCase().includes(q)||(x.section||'').toLowerCase().includes(q);
     var mS=!fs||x.status===fs;
     var mL=!fl||x.legislation===fl;
     var mC=!fc||(x.category||'')=== fc;
-    return mQ&&mS&&mL&&mC;
+    var mA=showArchived||!legalReqArchived(x);
+    return mQ&&mS&&mL&&mC&&mA;
   });
   filt.sort(function(a,b){
     var leg=(a.legislation||'').localeCompare(b.legislation||'');
@@ -28485,7 +28487,8 @@ function legalFilterRegister(){
     el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)"><div style="font-size:40px;margin-bottom:12px"><i class="ti ti-circle-dot"></i></div><div style="font-weight:600;margin-bottom:8px">No requirements found</div>'+(isMgr()?'<button class="btn btn-primary" onclick="legalNewRequirement()"><i class="ti ti-plus"></i>Add first requirement</button>':'')+'</div>';
     return;
   }
-  var bulk=isMgr()?'<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px;border-bottom:1px solid var(--border);background:#f9fafb;flex-wrap:wrap"><div style="font-size:12px;color:var(--text2)">'+filt.length+' visible requirement'+(filt.length>1?'s':'')+' sorted by legislation and section number</div><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn btn-sm" onclick="legalToggleVisibleSelection(true)"><i class="ti ti-checks"></i>Select visible</button><button class="btn btn-sm" onclick="legalToggleVisibleSelection(false)"><i class="ti ti-square"></i>Clear</button><button class="btn btn-sm" style="color:var(--red);border-color:#fecaca" onclick="legalDeleteSelectedReqs()"><i class="ti ti-trash"></i>Delete selected</button><button class="btn btn-sm" style="background:#FCEBEB;color:#A32D2D;border-color:#fecaca" onclick="legalDeleteCurrentLegislation()"><i class="ti ti-trash-x"></i>Delete legislation</button></div></div>':'';
+  var archivedCount=(lrAllData||[]).filter(legalReqArchived).length;
+  var bulk=isMgr()?'<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px;border-bottom:1px solid var(--border);background:#f9fafb;flex-wrap:wrap"><div style="font-size:12px;color:var(--text2)">'+filt.length+' visible requirement'+(filt.length>1?'s':'')+' sorted by legislation and section number'+(archivedCount&&!showArchived?' · '+archivedCount+' archived hidden':'')+'</div><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn btn-sm" onclick="legalToggleVisibleSelection(true)"><i class="ti ti-checks"></i>Select visible</button><button class="btn btn-sm" onclick="legalToggleVisibleSelection(false)"><i class="ti ti-square"></i>Clear</button><button class="btn btn-sm" style="color:var(--red);border-color:#fecaca" onclick="legalDeleteSelectedReqs()"><i class="ti ti-archive"></i>Archive selected</button><button class="btn btn-sm" style="background:#FCEBEB;color:#A32D2D;border-color:#fecaca" onclick="legalDeleteCurrentLegislation()"><i class="ti ti-archive"></i>Archive legislation</button></div></div>':'';
   var h=bulk+'<div class="table-scroll"><table class="data-table" style="min-width:1180px"><thead><tr>'+(isMgr()?'<th style="width:38px;text-align:center"><input type="checkbox" id="lr-select-all-visible" onchange="legalToggleVisibleSelection(this.checked)" style="width:16px!important;height:16px!important;margin:0"/></th>':'')+'<th>Ref</th><th>Legislation</th><th style="min-width:300px">Section / Requirement</th><th>Category</th><th>Obligation</th><th>Responsibility</th><th style="text-align:center">Score</th><th>Status</th><th style="width:50px"></th></tr></thead><tbody>';
   filt.forEach(function(x,i){
     var bg=i%2===0?'#fff':'#f9fafb';
@@ -28494,11 +28497,12 @@ function legalFilterRegister(){
     var hasGap=x.gap||x.gap_identified;
     var score=x.compliance_score!=null?x.compliance_score:sc.score;
     var scoreColor=score==null?'#6B7280':score>=80?'#1D9E75':score>=50?'#EF9F27':score>=20?'#C2410C':'#A32D2D';
-    h+='<tr style="border-bottom:1px solid #f0f0f0;background:'+bg+';cursor:pointer" onclick="legalOpenReq(\''+x.id+'\')">'
+    var archived=legalReqArchived(x);
+    h+='<tr style="border-bottom:1px solid #f0f0f0;background:'+bg+';cursor:pointer'+(archived?';opacity:.62':'')+'" onclick="legalOpenReq(\''+x.id+'\')">'
       +(isMgr()?'<td style="padding:8px;text-align:center"><input type="checkbox" class="lr-row-select" data-id="'+x.id+'" onclick="event.stopPropagation()" style="width:16px!important;height:16px!important;margin:0"/></td>':'')
       +'<td style="padding:8px 14px;font-family:monospace;font-size:11px;font-weight:700;color:#185FA5">'+escH(displayRecordRef(x,'req_ref','LEG-DRAFT'))+'</td>'
       +'<td style="padding:8px;max-width:180px"><div style="font-size:11px;font-weight:600;color:#185FA5">'+escH((x.legislation||'-').substring(0,45))+'</div>'+(x.legislation_type?'<div style="font-size:10px;color:var(--text2);text-transform:capitalize">'+escH(x.legislation_type.replace(/_/g,' '))+'</div>':'')+'</td>'
-      +'<td style="padding:8px;max-width:250px"><div style="font-weight:600">'+escH(x.title||('Section '+(x.section||'-')))+'</div><div style="font-size:11px;color:var(--text2)">'+escH((x.requirement||'').substring(0,80))+(x.requirement?.length>80?'-':'')+'</div>'+(hasGap?'<span style="background:#FCEBEB;color:#A32D2D;padding:1px 6px;border-radius:4px;font-size:10px;font-weight:700;margin-top:2px;display:inline-block">GAP</span>':'')+'</td>'
+      +'<td style="padding:8px;max-width:250px"><div style="font-weight:600">'+escH(x.title||('Section '+(x.section||'-')))+'</div><div style="font-size:11px;color:var(--text2)">'+escH((x.requirement||'').substring(0,80))+(x.requirement?.length>80?'-':'')+'</div>'+(hasGap?'<span style="background:#FCEBEB;color:#A32D2D;padding:1px 6px;border-radius:4px;font-size:10px;font-weight:700;margin-top:2px;display:inline-block">GAP</span>':'')+(archived?'<span style="background:#F3F4F6;color:#6B7280;padding:1px 6px;border-radius:4px;font-size:10px;font-weight:800;margin-left:4px;display:inline-block">ARCHIVED</span>':'')+'</td>'
       +'<td style="padding:8px"><span style="background:'+catCfg.color+'15;color:'+catCfg.color+';padding:2px 7px;border-radius:99px;font-size:10px;font-weight:600">'+catCfg.emoji+' '+catCfg.label+'</span></td>'
       +'<td style="padding:8px;font-size:11px;text-transform:capitalize">'+escH((x.obligation_type||'mandatory').replace(/_/g,' '))+'</td>'
       +'<td style="padding:8px;font-size:11px">'+escH(x.responsibility||x.responsible_person||'-')+'</td>'
@@ -28510,6 +28514,12 @@ function legalFilterRegister(){
 }
 
 function legalStatusBadge(s){var c=LEG_STATUS_CFG[s]||LEG_STATUS_CFG.non_compliant;return '<span style="background:'+c.bg+';color:'+c.tc+';padding:2px 8px;border-radius:99px;font-size:10px;font-weight:700">'+c.label+'</span>';}
+function legalReqArchived(x){
+  return ohIsArchivedText(x?.notes)||ohIsArchivedText(x?.comments)||String(x?.status||'').toLowerCase()==='archived'||(String(x?.applicable)==='false'&&/archived|retired|deleted/i.test(String(x?.notes||'')));
+}
+function legalArchiveBody(x){
+  return {applicable:false,status:'not_applicable',compliance_score:0,notes:ohArchivedText(x?.notes||'Archived from legal register'),updated_at:new Date().toISOString()};
+}
 
 function legalReqBack(){
   document.getElementById('legal-req-form').style.display='none';
@@ -28659,9 +28669,10 @@ async function legalDeleteReq(){
 async function legalDeleteReqFromList(id){
   if(!workflowCanMutate('legal','legal compliance'))return;
   if(!isMgr()){toast('Only managers/admins can delete legal requirements.',false);return;}
-  var ok=await appConfirmAction({title:'Delete legal section',message:'Delete this legal requirement from the register?',detail:'This removes the selected section from the current legal register.',confirmText:'Delete section',cancelText:'Back',variant:'danger'});
+  var ok=await appConfirmAction({title:'Archive legal section',message:'Archive this legal requirement from the active register?',detail:'Archived sections are hidden from normal use but retained for traceability.',confirmText:'Archive section',cancelText:'Back',variant:'danger'});
   if(!ok)return;
-  legalDeletePath('/legal_requirements?id=eq.'+id).then(function(){lrAllData=lrAllData.filter(function(r){return r.id!==id;});legalFilterRegister();legalRefreshMetrics();toast('Legal section deleted');}).catch(function(e){toast(actionErrorMessage('Delete legal section','Legal Compliance',e.message),false);});
+  var row=(lrAllData||[]).find(function(r){return r.id===id;})||{};
+  mtgApiWithSchemaFallback('/legal_requirements?id=eq.'+id,{m:'PATCH',p:'return=minimal',b:legalArchiveBody(row)},['updated_at']).then(function(){lrAllData=lrAllData.map(function(r){return r.id===id?Object.assign({},r,legalArchiveBody(r)):r;});legalFilterRegister();legalRefreshMetrics();toast('Legal section archived');}).catch(function(e){toast(actionErrorMessage('Archive legal section','Legal Compliance',e.message),false);});
 }
 
 function legalToggleVisibleSelection(checked){
@@ -28673,14 +28684,14 @@ function legalToggleVisibleSelection(checked){
 async function legalDeleteIds(ids,label){
   if(!workflowCanMutate('legal','legal compliance'))return;
   if(!ids.length)return;
-  for(var i=0;i<ids.length;i+=40){
-    var chunk=ids.slice(i,i+40);
-    await legalDeletePath('/legal_requirements?id=in.('+chunk.join(',')+')'+cf());
+  var rows=(lrAllData||[]).filter(function(x){return ids.includes(x.id);});
+  for(var i=0;i<rows.length;i++){
+    await mtgApiWithSchemaFallback('/legal_requirements?id=eq.'+rows[i].id,{m:'PATCH',p:'return=minimal',b:legalArchiveBody(rows[i])},['updated_at']);
   }
-  lrAllData=lrAllData.filter(function(x){return !ids.includes(x.id);});
+  lrAllData=lrAllData.map(function(x){return ids.includes(x.id)?Object.assign({},x,legalArchiveBody(x)):x;});
   legalFilterRegister();
   legalRefreshMetrics();
-  toast('Deleted '+ids.length+' '+(label||'requirement')+(ids.length>1?'s':''));
+  toast('Archived '+ids.length+' '+(label||'requirement')+(ids.length>1?'s':'')+' from the active register');
 }
 
 async function legalDeletePath(path){
@@ -28690,11 +28701,11 @@ async function legalDeletePath(path){
 async function legalDeleteSelectedReqs(){
   if(!isMgr()){toast('Only managers/admins can delete legal requirements',false);return;}
   var ids=Array.from(document.querySelectorAll('.lr-row-select:checked')).map(function(cb){return cb.dataset.id;}).filter(Boolean);
-  if(!ids.length){toast('Select at least one section to delete',false);return;}
-  var ok=await appConfirmAction({title:'Delete selected legal sections',message:'Delete '+ids.length+' selected legal section'+(ids.length>1?'s':'')+'?',detail:'Selected sections will be removed from the legal register.',confirmText:'Delete selected',cancelText:'Keep sections',variant:'danger'});
+  if(!ids.length){toast('Select at least one section to archive',false);return;}
+  var ok=await appConfirmAction({title:'Archive selected legal sections',message:'Archive '+ids.length+' selected legal section'+(ids.length>1?'s':'')+'?',detail:'Archived sections are hidden from the active legal register but kept for traceability. Use the Include archived filter to view them.',confirmText:'Archive selected',cancelText:'Keep sections',variant:'danger'});
   if(!ok)return;
   try{await legalDeleteIds(ids,'section');}
-  catch(e){toast(actionErrorMessage('Delete selected legal sections','Legal Compliance',e.message),false);}
+  catch(e){toast(actionErrorMessage('Archive selected legal sections','Legal Compliance',e.message),false);}
 }
 
 async function legalDeleteCurrentLegislation(){
@@ -28706,13 +28717,13 @@ async function legalDeleteCurrentLegislation(){
     if(selectedLegs.length===1)leg=selectedLegs[0];
   }
   if(!leg){toast('Choose one legislation in the filter first, or select rows from one legislation only',false);return;}
-  var ids=lrAllData.filter(function(x){return x.legislation===leg;}).map(function(x){return x.id;}).filter(Boolean);
+  var ids=lrAllData.filter(function(x){return x.legislation===leg&&!legalReqArchived(x);}).map(function(x){return x.id;}).filter(Boolean);
   if(!ids.length){toast('No records found for this legislation',false);return;}
   var ok=await appConfirm({
-    title:'Delete full legislation',
-    message:'Delete all '+ids.length+' sections for "'+leg+'"?',
-    detail:'This removes the selected legislation and its sections from the legal register.',
-    confirmText:'Delete legislation',
+    title:'Archive full legislation',
+    message:'Archive all '+ids.length+' active sections for "'+leg+'"?',
+    detail:'Archived sections are hidden from the active register but retained for audit history.',
+    confirmText:'Archive legislation',
     cancelText:'Keep legislation',
     danger:true
   });
@@ -28724,7 +28735,7 @@ async function legalDeleteCurrentLegislation(){
       Array.from(sel.options).forEach(function(o){if(o.value===leg)o.remove();});
       sel.value='';
     }
-  }catch(e){toast(actionErrorMessage('Retire legislation','Legal Compliance',e.message),false);}
+  }catch(e){toast(actionErrorMessage('Archive legislation','Legal Compliance',e.message),false);}
 }
 
 function legalFilteredRequirements(){
@@ -44230,6 +44241,10 @@ Offline mode - changes will sync when connection is restored
 <option value="">All statuses</option>
 <option value="compliant">Compliant</option><option value="partial">Partial</option>
 <option value="non_compliant">Non-Compliant</option><option value="not_applicable">N/A</option>
+</select>
+<select id="lr-filter-archived" onchange="legalFilterRegister()" style="padding:7px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px">
+<option value="">Active register only</option>
+<option value="true">Include archived</option>
 </select>
 <select id="lr-filter-leg" onchange="legalFilterRegister()" style="padding:7px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px;max-width:220px">
 <option value="">All legislation</option>
