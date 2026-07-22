@@ -1754,10 +1754,11 @@ async function api(path,o={}
 const headers={'Content-Type':'application/json','apikey':KEY,'Authorization':'Bearer '+(tok||KEY),'Accept':'application/json'};
 if(o.p)headers['Prefer']=o.p;
 const method=o.m||'GET';
-if((method==='POST'||method==='PATCH')&&/^\/documents(?:\?|$)/.test(path)&&o.b&&(Object.prototype.hasOwnProperty.call(o.b,'dept')||Object.prototype.hasOwnProperty.call(o.b,'doc_owner'))){
+if((method==='POST'||method==='PATCH')&&/^\/documents(?:\?|$)/.test(path)&&o.b&&(Object.prototype.hasOwnProperty.call(o.b,'dept')||Object.prototype.hasOwnProperty.call(o.b,'doc_owner')||Object.prototype.hasOwnProperty.call(o.b,'doc_version'))){
   o=Object.assign({},o,{b:Object.assign({},o.b)});
   delete o.b.dept;
   delete o.b.doc_owner;
+  delete o.b.doc_version;
 }
 const scopeIssue=apiCompanyScopeIssue(path,o,method);
 if(scopeIssue)throw new Error(scopeIssue);
