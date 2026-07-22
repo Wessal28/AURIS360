@@ -27180,6 +27180,29 @@ function appPreviewFieldDocument(urlFieldId, nameFieldId, fallbackName){
   dcOpenViewer({file_url:url,file_name:name,file_mime:dataMime||dcMimeFromName(name||url)});
 }
 
+function dcLooksLikeVideo(url, mime, name){
+  var u=String(url||'').toLowerCase(), m=String(mime||'').toLowerCase(), n=String(name||'').toLowerCase();
+  return m.indexOf('video/')===0 || /^data:video\//i.test(String(url||'')) || /\.(mp4|webm|mov|m4v)(\?|#|$)/i.test(u) || /\.(mp4|webm|mov|m4v)$/i.test(n);
+}
+
+function dcSetViewerActionsForVideo(isVideo, url, name){
+  var open=document.getElementById('dc-viewer-open'), download=document.getElementById('dc-viewer-download');
+  if(open){
+    open.style.display=isVideo?'none':'inline-flex';
+    if(isVideo) open.removeAttribute('href'); else open.href=url||'#';
+  }
+  if(download){
+    download.style.display=isVideo?'none':'inline-flex';
+    if(isVideo){
+      download.removeAttribute('href');
+      download.removeAttribute('download');
+    }else{
+      download.href=url||'#';
+      download.setAttribute('download', name||'download');
+    }
+  }
+}
+
 function dcIconForMime(mime, name){
   var ext = (name||'').toLowerCase().split('.').pop();
   if(mime==='application/pdf') return 'ti-file-type-pdf';
@@ -27346,12 +27369,11 @@ function dcOpenViewer(doc){
   var name = doc.file_name || doc.title || doc.file_url.split('/').pop();
   var mime = (doc.file_mime || dcMimeFromName(name)).toLowerCase();
   var url  = doc.file_url;
+  var isVideo = dcLooksLikeVideo(url, mime, name);
 
   document.getElementById('dc-viewer-title').textContent = name;
   document.getElementById('dc-viewer-meta').textContent  = mime + (doc.file_size?' - '+dcFormatSize(doc.file_size):'');
-  document.getElementById('dc-viewer-download').href     = url;
-  document.getElementById('dc-viewer-download').setAttribute('download', name);
-  document.getElementById('dc-viewer-open').href         = url;
+  dcSetViewerActionsForVideo(isVideo, url, name);
 
   var body = document.getElementById('dc-viewer-body');
   body.innerHTML = '<div style="padding:40px;text-align:center;color:var(--text2)"><i class="ti ti-loader" style="font-size:28px;animation:spin 1s linear infinite"></i><div style="margin-top:10px;font-size:13px">Loading preview-</div></div>';
@@ -27363,6 +27385,12 @@ function dcOpenViewer(doc){
     }
     else if(mime.startsWith('image/')){
       body.innerHTML = '<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:#0f172a;overflow:auto;padding:20px"><img src="'+escH(url)+'" style="max-width:100%;max-height:100%;object-fit:contain;box-shadow:0 4px 24px rgba(0,0,0,.3)"/></div>';
+    }
+    else if(isVideo){
+      body.innerHTML = '<div style="width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#0f172a;padding:20px;gap:10px">'
+        + '<video controls controlsList="nodownload noremoteplayback" disablePictureInPicture playsinline preload="metadata" oncontextmenu="return false" style="width:100%;max-width:980px;max-height:72vh;background:#000;border-radius:8px;box-shadow:0 4px 24px rgba(0,0,0,.35)"><source src="'+escH(url)+'">Your browser cannot play this video. Use MP4/H.264 for best compatibility.</video>'
+        + '<div style="font-size:12px;color:#cbd5e1;text-align:center">Viewing only: direct open and download controls are disabled for course videos.</div>'
+        + '</div>';
     }
     else if(/wordprocessingml|spreadsheetml|presentationml|msword|ms-excel|ms-powerpoint/i.test(mime)
          || /\.(docx?|xlsx?|pptx?)$/i.test(name)){
@@ -36243,16 +36271,13 @@ async function elcDelete(){ if(!window.elcEditId)return;try{var rows=await api('
 function elcCourseById(id){return (elcAllData||[]).find(function(c){return String(c.id)===String(id)||String(c.title)===String(id)||String(c.course_code)===String(id);})||null;}
 function elcCourseLabel(id){var c=elcCourseById(id);return c?(c.course_code?c.course_code+' - ':'')+c.title:(id||'-');}
 function elcFillSelect(selected){var s=document.getElementById('elef-course-id');if(!s)return;s.innerHTML='<option value="">Select course...</option>'+(elcAllData||[]).filter(function(c){return String(c.status||'active')!=='archived';}).map(function(c){return '<option value="'+escH(c.id||c.title)+'" '+(String(selected||'')===String(c.id||c.title)?'selected':'')+'>'+escH((c.course_code?c.course_code+' - ':'')+(c.title||'Untitled course'))+'</option>';}).join('');}
-function elcLaunch(id){var c=elcCourseById(id);if(!c||!c.course_url){toast('No course link available',false);return;}auditLogEvent('open','training','E-learning course launched',{course_id:c.id||null,course_title:c.title||null,course_url:c.course_url},{related_table:'elearning_courses',related_id:c.id||null,company_id:c.company_id||ccid()});window.open(c.course_url,'_blank','noopener');}
+function elcIsVideoUrl(url){return dcLooksLikeVideo(url, dcMimeFromName(String(url||'')), String(url||''));}
+function elcLaunch(id){var c=elcCourseById(id);if(!c||!c.course_url){toast('No course link available',false);return;}auditLogEvent('open','training','E-learning course launched',{course_id:c.id||null,course_title:c.title||null,course_url:c.course_url},{related_table:'elearning_courses',related_id:c.id||null,company_id:c.company_id||ccid()});if(elcIsVideoUrl(c.course_url)){dcOpenViewer({file_url:c.course_url,file_name:c.title||'Course video',file_mime:dcMimeFromName(c.course_url)});return;}window.open(c.course_url,'_blank','noopener');}
 function elcPreviewCourseMedia(){
   var url=document.getElementById('elcf-url')?.value?.trim();
   if(!url){toast('Upload or enter a course link first',false);return;}
-  if(/\.(mp4|webm|mov|m4v)(\?|#|$)/i.test(url)||url.indexOf('video/')===5){
-    var m=document.getElementById('dc-viewer-modal'), b=document.getElementById('dc-viewer-body'), t=document.getElementById('dc-viewer-title');
-    if(!m||!b){window.open(url,'_blank','noopener');return;}
-    if(t)t.textContent='Course video preview';
-    b.innerHTML='<video controls playsinline style="width:100%;max-height:72vh;background:#000;border-radius:8px"><source src="'+escH(url)+'">Your browser cannot play this video.</video>';
-    m.style.display='flex';
+  if(elcIsVideoUrl(url)){
+    dcOpenViewer({file_url:url,file_name:document.getElementById('elcf-title')?.value||'Course video preview',file_mime:dcMimeFromName(url)});
     return;
   }
   appPreviewFieldDocument('elcf-url',null,document.getElementById('elcf-title')?.value||'E-learning course');
@@ -36264,8 +36289,9 @@ async function elcUploadCourseMedia(input){
   if(status)status.textContent='Uploading...';
   try{
     var path=(prof?.company_id||ccid())+'/elearning/'+Date.now()+'_'+dcSanitiseName(file.name);
+    var encodedPath=path.split('/').map(encodeURIComponent).join('/');
     var xhr=new XMLHttpRequest();
-    var uploadUrl=SB+'/storage/v1/object/'+DC_BUCKET+'/'+encodeURIComponent(path);
+    var uploadUrl=SB+'/storage/v1/object/'+DC_BUCKET+'/'+encodedPath;
     var done=new Promise(function(resolve,reject){
       xhr.onload=function(){(xhr.status>=200&&xhr.status<300)?resolve():reject(new Error(xhr.responseText||('Upload failed '+xhr.status)));};
       xhr.onerror=function(){reject(new Error('Upload failed'));};
@@ -36277,7 +36303,7 @@ async function elcUploadCourseMedia(input){
     xhr.setRequestHeader('content-type',file.type||'application/octet-stream');
     xhr.send(file);
     await done;
-    var publicUrl=SB+'/storage/v1/object/public/'+DC_BUCKET+'/'+path;
+    var publicUrl=SB+'/storage/v1/object/public/'+DC_BUCKET+'/'+encodedPath;
     var f=document.getElementById('elcf-url');if(f)f.value=publicUrl;
     if(status)status.textContent='Uploaded: '+file.name;
     toast('Course video uploaded');
