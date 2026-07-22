@@ -1844,6 +1844,21 @@ auditApiMutation(path,method,o,d);
 return d;
 }
 
+async function apiWriteWithMissingColumnFallback(path,o,label){
+  try{
+    return await api(path,o);
+  }catch(e){
+    var msg=String((e&&e.message)||e||'');
+    var m=msg.match(/Could not find the '([^']+)' column/i);
+    var col=m&&m[1]?m[1]:'';
+    if(!col||!o||!o.b||!Object.prototype.hasOwnProperty.call(o.b,col)||!/(POST|PATCH)/i.test(o.m||''))throw e;
+    var retryBody=Object.assign({},o.b);
+    delete retryBody[col];
+    console.warn((label||'Record')+' save skipped unsupported column:',col);
+    return api(path,Object.assign({},o,{b:retryBody}));
+  }
+}
+
 function auditTableFromPath(path){
   var clean=(path||'').split('?')[0].replace(/^\/+/,'');
   return clean.split('/')[0]||'';
@@ -13856,6 +13871,17 @@ function wsLinkedOptionHtml(rows,selected,blankLabel,valueFn,labelFn){
   return html;
 }
 
+async function wsEnsureLinkedRow(rows,selected,path,matchFn){
+  if(!selected)return rows||[];
+  rows=rows||[];
+  if(rows.some(function(r){return matchFn(r,selected);}))return rows;
+  try{
+    var extra=await api(path).catch(function(){return[];});
+    if(extra&&extra[0])rows=[extra[0]].concat(rows);
+  }catch(_){}
+  return rows;
+}
+
 async function wsLoadLinkedRecordOptions(x){
   var set=function(id,html){var el=document.getElementById(id);if(el)el.innerHTML=html;};
   try{
@@ -13866,6 +13892,9 @@ async function wsLoadLinkedRecordOptions(x){
       api('/risk_assessments?select=id,ra_ref,title,activity,status'+cf()+'&order=created_at.desc&limit=150').catch(function(){return[];}),
       api('/permits?select=id,permit_number,permit_type,permit_type_v2,status'+cf()+'&order=created_at.desc&limit=120').catch(function(){return[];})
     ]);
+    data[0]=await wsEnsureLinkedRow(data[0],x.toolbox_talk_id,'/toolbox_talks?select=id,tbt_ref,title,talk_date'+cf()+'&id=eq.'+wsRestEqValue(x.toolbox_talk_id)+'&limit=1',function(r,v){return r.id===v||r.tbt_ref===v;});
+    data[1]=await wsEnsureLinkedRow(data[1],x.prestart_id,'/inspections?select=id,reference_no,site,activity,inspection_date,inspection_type'+cf()+'&id=eq.'+wsRestEqValue(x.prestart_id)+'&limit=1',function(r,v){return r.id===v||r.reference_no===v;});
+    data[2]=await wsEnsureLinkedRow(data[2],x.site_inspection_id,'/inspections?select=id,reference_no,site,activity,inspection_date,inspection_type'+cf()+'&id=eq.'+wsRestEqValue(x.site_inspection_id)+'&limit=1',function(r,v){return r.id===v||r.reference_no===v;});
     set('ws-link-tbt',wsLinkedOptionHtml(data[0],x.toolbox_talk_id,'No toolbox talk',function(r){return r.id;},function(r){return [(r.tbt_ref||'TBT'),r.title,r.talk_date].filter(Boolean).join(' - ');}));
     set('ws-link-prestart',wsLinkedOptionHtml(data[1],x.prestart_id,'No pre-start check',function(r){return r.id;},function(r){return [(r.reference_no||'Pre-start'),r.activity||r.site,r.inspection_date].filter(Boolean).join(' - ');}));
     set('ws-link-site',wsLinkedOptionHtml(data[2],x.site_inspection_id,'No site inspection',function(r){return r.id;},function(r){return [(r.reference_no||'Inspection'),r.activity||r.site,r.inspection_date].filter(Boolean).join(' - ');}));
@@ -30276,7 +30305,7 @@ async function tbtSave(){
   var body={company_id:ccid(),title,topic_category:g('tbtf-category')||'safety_general',talk_date:g('tbtf-date'),location:g('tbtf-location'),department:g('tbtf-dept'),presenter:g('tbtf-presenter'),duration_mins:parseInt(g('tbtf-duration'))||15,key_points:g('tbtf-key-points'),hazards_discussed:g('tbtf-hazards'),incidents_referenced:g('tbtf-incidents'),notes:cleanNotes+tbtLinkedWorkMarker(linkedWork),attendees,actions_raised,status:g('tbtf-status')||'completed',updated_at:new Date().toISOString()};
   try{
     if(tbtEditId){
-      await api('/toolbox_talks?id=eq.'+tbtEditId,{m:'PATCH',p:'return=minimal',b:body});
+      await apiWriteWithMissingColumnFallback('/toolbox_talks?id=eq.'+tbtEditId,{m:'PATCH',p:'return=minimal',b:body},'Toolbox Talk');
       toast('TBT updated!');
       // Auto-create MAP actions for any new action items
       for(var act of actions_raised){
@@ -30286,7 +30315,7 @@ async function tbtSave(){
       }
     }else{
       body.created_by=prof?.id;
-      var res=await api('/toolbox_talks',{m:'POST',p:'return=representation',b:body});
+      var res=await apiWriteWithMissingColumnFallback('/toolbox_talks',{m:'POST',p:'return=representation',b:body},'Toolbox Talk');
       if(res?.[0]?.id){
         var yr=new Date().getFullYear();
         var seq=1;
