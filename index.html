@@ -1771,7 +1771,25 @@ if(!txt||txt.trim()===''){
 }
 let d;
 try{d=JSON.parse(txt);}catch(e){console.error('JSON parse error:',txt.slice(0,200));throw new Error('Invalid server response');}
-if(!r.ok){const msg=(Array.isArray(d)?d[0]?.message:d.message)||d.error_description||d.hint||r.statusText;console.error('API error '+r.status+':',msg,path);throw new Error(msg);}
+if(!r.ok){
+  const msg=(Array.isArray(d)?d[0]?.message:d.message)||d.error_description||d.hint||r.statusText;
+  var missingDocCol='';
+  try{
+    var m=String(msg||'').match(/Could not find the '([^']+)' column of 'documents'/i);
+    missingDocCol=m&&m[1]?m[1]:'';
+  }catch(_){}
+  if(missingDocCol&&(method==='POST'||method==='PATCH')&&/^\/documents(?:\?|$)/.test(path)&&o.b&&Object.prototype.hasOwnProperty.call(o.b,missingDocCol)){
+    var skipped=o._skipMissingDocumentColumns||{};
+    if(!skipped[missingDocCol]&&Object.keys(skipped).length<20){
+      var retryBody=Object.assign({},o.b);
+      delete retryBody[missingDocCol];
+      var retryOpts=Object.assign({},o,{b:retryBody,_skipMissingDocumentColumns:Object.assign({},skipped,{[missingDocCol]:true})});
+      console.warn('Document Control save skipped unsupported documents column:',missingDocCol);
+      return api(path,retryOpts);
+    }
+  }
+  console.error('API error '+r.status+':',msg,path);throw new Error(msg);
+}
 auditApiMutation(path,method,o,d);
 return d;
 }
