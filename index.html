@@ -2977,7 +2977,7 @@ async function dcAIReviewDocument(){
   var panel=document.getElementById('dc-ai-review-panel');
   if(panel){panel.style.display='block';panel.innerHTML='<div style="font-weight:800;color:#185FA5"><i class="ti ti-loader"></i> AURIS is reviewing the document control record...</div><div style="font-size:12px;color:var(--text2);margin-top:5px">Checking classification, review cycle, approval readiness and distribution needs.</div>';}
   try{
-    var txt=await callAI([{role:'user',content:'Review this HSE document control record and return ONLY valid JSON with this exact shape: {"title":"...","document_type":"policy|procedure|sop|manual|form|emergency_plan|risk_assessment|legal|certificate|work_instruction|technical_spec|other","document_type_label":"...","category":"...","description":"...","scope":"...","tags":["..."],"legal_refs":["..."],"review_interval_months":12,"expiry_months":36,"review_focus":["..."],"gaps_or_risks":["..."],"approval_checks":["..."],"distribution_recommendations":["..."]}.\n\nRules: be practical for an HSE management system, flag missing owner/reviewer/file/review date, do not invent exact legal references unless clearly supported, and make the output suitable for controlled document governance.\n\nDocument record:\n'+JSON.stringify(ctx,null,2)}],
+    var txt=await callAI([{role:'user',content:'Review this HSE document control record and return ONLY valid JSON with this exact shape: {"title":"...","document_type":"policy|procedure|sop|swms|manual|form|emergency_plan|risk_assessment|legal|certificate|work_instruction|technical_spec|other","document_type_label":"...","category":"...","description":"...","scope":"...","tags":["..."],"legal_refs":["..."],"review_interval_months":12,"expiry_months":36,"review_focus":["..."],"gaps_or_risks":["..."],"approval_checks":["..."],"distribution_recommendations":["..."]}.\n\nRules: be practical for an HSE management system, flag missing owner/reviewer/file/review date, do not invent exact legal references unless clearly supported, and make the output suitable for controlled document governance.\n\nDocument record:\n'+JSON.stringify(ctx,null,2)}],
       'You are a senior HSE document control and ISO 45001 management system auditor. Return only JSON.');
     var out=aiExtractJson(txt)||{};
     dcAIRenderReview(out);
@@ -4286,12 +4286,13 @@ async function fillSWMSSelect(id,selectedRef){
   var cur=selectedRef||el.value||'';
   el.innerHTML='<option value="">Select SWMS / method statement...</option>';
   try{
-    var docs=await api('/documents?select=id,doc_ref,reference_no,title,document_type,doc_type,status,approval_status'+cf()+'&or=(document_type.eq.swms,doc_type.eq.swms)&order=created_at.desc&limit=150');
+    var docs=await api('/documents?select=id,doc_ref,reference_no,title,document_type,doc_type,status,approval_status,category'+cf()+swmsDocumentQueryFilter()+'&order=created_at.desc&limit=150');
     (docs||[]).forEach(function(d){
       var ref=d.doc_ref||d.reference_no||d.id;
+      var legacy=(d.document_type||d.doc_type)!=='swms';
       var o=document.createElement('option');
       o.value=ref;
-      o.textContent=ref+' - '+(d.title||'SWMS / Method Statement')+((d.approval_status||d.status)?' ('+(d.approval_status||d.status)+')':'');
+      o.textContent=ref+' - '+(d.title||'SWMS / Method Statement')+((d.approval_status||d.status)?' ('+(d.approval_status||d.status)+')':'')+(legacy?' [procedure record]':'');
       el.appendChild(o);
     });
   }catch(e){
@@ -9330,11 +9331,19 @@ function swmsShowList(){
   swmsLoadList();
 }
 
+function swmsDocumentQueryFilter(){
+  return '&or=(document_type.eq.swms,doc_type.eq.swms,doc_ref.ilike.SWMS-*,reference_no.ilike.SWMS-*,title.ilike.*SWMS*,title.ilike.*Safe%20Work%20Method%20Statement*,category.ilike.*Safe%20Work%20Method%20Statement*)';
+}
+
+function swmsIsLegacyProcedureRecord(x){
+  return (x.document_type||x.doc_type)!=='swms';
+}
+
 async function swmsLoadList(){
   var el=document.getElementById('swms-list');if(!el)return;
   el.innerHTML='<div class="loading-msg">Loading SWMS...</div>';
   try{
-    var rows=await api('/documents?select=*'+cf()+'&or=(document_type.eq.swms,doc_type.eq.swms)&order=created_at.desc');
+    var rows=await api('/documents?select=*'+cf()+swmsDocumentQueryFilter()+'&order=created_at.desc');
     swmsAllData=rows||[];
     var set=function(id,v){var e=document.getElementById(id);if(e)e.textContent=v;};
     set('swms-m3total',swmsAllData.length);
@@ -9355,8 +9364,9 @@ function swmsRenderList(){
   var h='<div class="table-scroll"><table class="data-table" style="min-width:980px"><thead><tr><th>Ref</th><th>SWMS / Activity</th><th>Department</th><th>Owner</th><th style="text-align:center">Status</th><th style="text-align:center">Review</th><th style="width:70px"></th></tr></thead><tbody>';
   rows.forEach(function(x){
     var st=x.approval_status||x.status||'draft', sc=DC_STATUS_CFG[st]||DC_STATUS_CFG.draft;
+    var legacy=swmsIsLegacyProcedureRecord(x);
     h+='<tr style="border-bottom:1px solid #eef2f7;vertical-align:top">'
-      +'<td style="padding:10px 12px;font-family:monospace;font-weight:900;color:#0F766E">'+escH(x.doc_ref||x.reference_no||'DRAFT')+'<div style="font-size:10px;color:var(--text2)">'+escH(x.version||x.doc_version||'Rev 00')+'</div></td>'
+      +'<td style="padding:10px 12px;font-family:monospace;font-weight:900;color:#0F766E">'+escH(x.doc_ref||x.reference_no||'DRAFT')+'<div style="font-size:10px;color:var(--text2)">'+escH(x.version||x.doc_version||'Rev 00')+'</div>'+(legacy?'<div style="font-size:10px;color:#C2410C;font-family:var(--font-sans);font-weight:800">procedure record - convert with SQL</div>':'')+'</td>'
       +'<td style="padding:10px;min-width:280px"><div style="font-weight:900">'+escH(x.title||'Untitled SWMS')+'</div><div style="font-size:11px;color:var(--text2);margin-top:3px">'+escH(x.description||x.scope||'').substring(0,140)+'</div></td>'
       +'<td style="padding:10px">'+escH(x.department||x.dept||'-')+'</td>'
       +'<td style="padding:10px">'+escH(x.owner||x.doc_owner||x.author||'-')+'</td>'
@@ -9641,7 +9651,32 @@ async function swmsSaveToDocuments(){
     }
     toast('SWMS '+(wasEditing?'updated':'saved')+' in Document Control: '+saveRef+(linkedRA?' and linked to RA':''));
     swmsShowList();
-  }catch(e){toast(actionErrorMessage('Save SWMS','SWMS / Method Statements',e),false);}
+  }catch(e){
+    var msg=String(e&&e.message?e.message:e||'');
+    var looksLikeSwmsTypeConstraint=/document_type|doc_type|check constraint|violates/i.test(msg);
+    if(looksLikeSwmsTypeConstraint){
+      try{
+        body.document_type='procedure';
+        body.doc_type='procedure';
+        body.category='Safe Work Method Statement';
+        body.tags=['SWMS','Method Statement','Procedure'];
+        var fallbackDocId=swmsEditingId||null;
+        if(swmsEditingId){await api('/documents?id=eq.'+swmsEditingId,{m:'PATCH',p:'return=minimal',b:body});}
+        else{
+          body.created_by=prof?.id;
+          var fallbackCreated=await api('/documents',{m:'POST',p:'return=representation',b:body});
+          fallbackDocId=fallbackCreated&&fallbackCreated[0]?fallbackCreated[0].id:null;
+          if(fallbackDocId)swmsEditingId=fallbackDocId;
+        }
+        swmsAudit(wasEditing?'update':'create','SWMS saved as compatible procedure pending database type upgrade',Object.assign({id:fallbackDocId},existing||{},body),{step_count:(payload.steps||[]).length,swms_type_fallback:true});
+        document.getElementById('swms-ref').textContent=saveRef;
+        toast('SWMS saved as a controlled procedure. Run swms_document_type_fix.sql once to convert it to the SWMS type.');
+        swmsShowList();
+        return;
+      }catch(e2){toast(actionErrorMessage('Save SWMS','SWMS / Method Statements',e2),false);return;}
+    }
+    toast(actionErrorMessage('Save SWMS','SWMS / Method Statements',e),false);
+  }
 }
 
 // -- LEGAL REGISTER ----------------------------------------------------------
@@ -49522,7 +49557,7 @@ Offline mode - changes will sync when connection is restored
 <div class="form3group"><label class="form3label">Document type</label>
 <select id="df-type">
 <option value="policy">Policy</option><option value="procedure">Procedure</option>
-<option value="sop">SOP</option><option value="manual">Manual</option>
+<option value="sop">SOP</option><option value="swms">SWMS / Method Statement</option><option value="manual">Manual</option>
 <option value="form">Form</option><option value="emergency_plan">Emergency Plan</option>
 <option value="risk_assessment">Risk Assessment</option><option value="legal">Legal / Standard</option>
 <option value="certificate">Certificate</option><option value="work_instruction">Work Instruction</option>
