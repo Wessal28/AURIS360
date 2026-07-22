@@ -1754,9 +1754,10 @@ async function api(path,o={}
 const headers={'Content-Type':'application/json','apikey':KEY,'Authorization':'Bearer '+(tok||KEY),'Accept':'application/json'};
 if(o.p)headers['Prefer']=o.p;
 const method=o.m||'GET';
-if((method==='POST'||method==='PATCH')&&/^\/documents(?:\?|$)/.test(path)&&o.b&&Object.prototype.hasOwnProperty.call(o.b,'dept')){
+if((method==='POST'||method==='PATCH')&&/^\/documents(?:\?|$)/.test(path)&&o.b&&(Object.prototype.hasOwnProperty.call(o.b,'dept')||Object.prototype.hasOwnProperty.call(o.b,'doc_owner'))){
   o=Object.assign({},o,{b:Object.assign({},o.b)});
   delete o.b.dept;
+  delete o.b.doc_owner;
 }
 const scopeIssue=apiCompanyScopeIssue(path,o,method);
 if(scopeIssue)throw new Error(scopeIssue);
@@ -27266,8 +27267,10 @@ async function dcEdit(id){
 }
 
 async function dcPopulatePeopleSelects(){
-  if(!people||!people.length){try{var d=await api('/people?select=id,first_name,last_name,job_title'+cf());if(d&&d.length)window.people=d;}catch(ex){}}
-  var opts='<option value="">Select...</option>'+(people||[]).map(function(p){return '<option value="'+p.id+'">'+escH(p.last_name+', '+p.first_name+(p.job_title?' - '+p.job_title:''))+'</option>';}).join('');
+  if(!people||!people.length){try{var d=await api('/people?select=id,first_name,last_name,job_title,company_id'+cf());if(d&&d.length)window.people=d;}catch(ex){}}
+  var scopeCompany=(typeof ccid==='function'?ccid():null);
+  var scopedPeople=(people||[]).filter(function(p){return !scopeCompany||!p.company_id||p.company_id===scopeCompany;});
+  var opts='<option value="">Select...</option>'+scopedPeople.map(function(p){return '<option value="'+p.id+'">'+escH(p.last_name+', '+p.first_name+(p.job_title?' - '+p.job_title:''))+'</option>';}).join('');
   ['df-author','df-owner','dc-sign-author','dc-sign-reviewer','dc-sign-approver'].forEach(function(id){var el=document.getElementById(id);if(el)el.innerHTML=opts;});
 }
 
