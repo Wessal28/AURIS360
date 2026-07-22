@@ -30902,6 +30902,18 @@ async function trainingSaveWithFallback(path,request,body,fallbackKeys){
   }
 }
 
+function tpProviderMarker(v){
+  v=obNormText(v||'');
+  return v?'\n\n[Training institution / provider: '+v.replace(/[\r\n\[\]]/g,' ').trim()+']':'';
+}
+function tpStripProviderNote(v){
+  return String(v||'').replace(/\n*\[Training institution \/ provider:[^\]]*\]\s*$/i,'').trim();
+}
+function tpProviderFromRecord(x){
+  var m=String(x?.notes||'').match(/\[Training institution \/ provider:\s*([^\]]+)\]/i);
+  return x?.training_provider||x?.training_institution||x?.provider_name||(m?m[1].trim():'');
+}
+
 function trainingPreviewAttachment(url,name){
   if(!url){toast('No attachment to preview',false);return;}
   var dataMime=(String(url).match(/^data:([^;,]+)/)||[])[1];
@@ -31206,7 +31218,7 @@ function tpNew(){
   tpEditingId=null;
   document.getElementById('tp-form3title').textContent='New Training';
   document.getElementById('tp-del-btn').style.display='none';
-  ['tp-topic','tp-group','tp-trainer','tp-location','tp-objective','tp-notes'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
+  ['tp-topic','tp-group','tp-trainer','tp-provider','tp-location','tp-objective','tp-notes'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
   fillPersonSelect('tp-trainer');
   ['tp-planned-date','tp-actual-date'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
   var tp=document.getElementById('tp-type');if(tp)tp.value='internal';
@@ -31224,8 +31236,10 @@ function tpOpen(id){
   tpEditingId=id;
   document.getElementById('tp-form3title').textContent='Edit Training';
   document.getElementById('tp-del-btn').style.display=isMgr()?'inline-flex':'none';
-  var flds={'tp-topic':'training_topic','tp-group':'target_group','tp-trainer':'trainer','tp-location':'location','tp-objective':'objective','tp-notes':'notes'};
+  var flds={'tp-topic':'training_topic','tp-group':'target_group','tp-trainer':'trainer','tp-location':'location','tp-objective':'objective'};
   Object.entries(flds).forEach(function(e){var el=document.getElementById(e[0]);if(el)el.value=x[e[1]]||'';});
+  var providerEl=document.getElementById('tp-provider');if(providerEl)providerEl.value=tpProviderFromRecord(x)||'';
+  var notesEl=document.getElementById('tp-notes');if(notesEl)notesEl.value=tpStripProviderNote(x.notes||'');
   fillPersonSelect('tp-trainer',x.trainer);
   setSelectValueWithFallback('tp-trainer',x.trainer);
   var pd=document.getElementById('tp-planned-date');if(pd)pd.value=x.planned_date||'';
@@ -31244,7 +31258,7 @@ async function tpSave(){
   if(!topic){toast('Please enter a training topic',false);return;}
   var g=function(id){var el=document.getElementById(id);return el?obNormText(el.value)||null:null;};
   var planned=g('tp-planned-date'), actual=g('tp-actual-date'), status=g('tp-status')||'planned';
-  var duration=g('tp-duration'), budget=g('tp-budget'), monthVal=document.getElementById('tp-month')?.value;
+  var duration=g('tp-duration'), budget=g('tp-budget'), provider=g('tp-provider'), monthVal=document.getElementById('tp-month')?.value;
   if(planned&&actual&&actual<planned){toast('Actual date cannot be before planned date',false);return;}
   if(status==='completed'&&!actual){toast('Completed training must have an actual date',false);return;}
   if(duration&&Number(duration)<0){toast('Duration cannot be negative',false);return;}
@@ -31259,19 +31273,19 @@ async function tpSave(){
     planned_date:planned,actual_date:actual,
     duration_hours:duration?parseFloat(duration):null,
     budget:budget?parseFloat(budget):null,
-    objective:g('tp-objective'),notes:g('tp-notes'),updated_at:new Date().toISOString()
+    training_provider:provider,objective:g('tp-objective'),notes:tpStripProviderNote(g('tp-notes')||'')+tpProviderMarker(provider),updated_at:new Date().toISOString()
   };
   try{
     if(tpEditingId){
       var current=tpAllData.find(function(x){return x.id===tpEditingId;})||{};
-      await api('/training_plan?id=eq.'+tpEditingId,{m:'PATCH',p:'return=minimal',b:body});
+      await trainingSaveWithFallback('/training_plan?id=eq.'+tpEditingId,{m:'PATCH',p:'return=minimal',b:body},body,['training_provider','training_institution','provider_name']);
       trainingAudit('update','Training plan item updated','training_plan',Object.assign({id:tpEditingId},body),{old_status:current.status||null,new_status:body.status||null});
       if(current.status!=='completed'&&body.status==='completed')trainingAudit('complete','Training plan item completed','training_plan',Object.assign({id:tpEditingId},body),{actual_date:body.actual_date});
       toast('Updated!');
     }
     else{
       body.created_by=prof?.id;
-      var created=await api('/training_plan',{m:'POST',p:'return=representation',b:body});
+      var created=await trainingSaveWithFallback('/training_plan',{m:'POST',p:'return=representation',b:body},body,['training_provider','training_institution','provider_name']);
       trainingAudit('create','Training plan item created','training_plan',created?.[0]||body,{planned_date:body.planned_date});
       toast('Training added to plan!');
     }
@@ -48459,6 +48473,7 @@ Offline mode - changes will sync when connection is restored
 <div>
 <div class="card" style="margin-bottom:14px"><div class="card-title">Delivery</div>
 <div class="form3group"><label class="form3label">Trainer / facilitator</label><select id="tp-trainer"><option value="">Select person...</option></select></div>
+<div class="form3group"><label class="form3label">Training institution / provider</label><input type="text" id="tp-provider" placeholder="e.g. Mauritius Institute of Training, SGS, BSI..."/></div>
 <div class="form3group"><label class="form3label">Location / venue</label><input type="text" id="tp-location"/></div>
 <div class="form3group"><label class="form3label">Budget (Rs)</label><input type="number" id="tp-budget" step="100"/></div>
 </div>
