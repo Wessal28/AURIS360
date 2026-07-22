@@ -10146,13 +10146,38 @@ function mtgCollectAgenda(){
 // -- ATTENDEE DROPDOWN -----------------------------------------------------
 function momPopulateDropdowns(){
   var opts='<option value="">+ Add person...</option>';
-  (people||[]).forEach(function(p){
-    opts+='<option value="'+p.full_name+(p.job_title?' ('+p.job_title+')':'')+'">'+p.full_name+(p.job_title?' - '+p.job_title:'')+'</option>';
+  var scopeCompany=(typeof ccid==='function'?ccid():null);
+  (people||[]).filter(function(p){return !scopeCompany||!p.company_id||p.company_id===scopeCompany;}).forEach(function(p){
+    var name=momPersonName(p);
+    if(!name)return;
+    var label=name+(p.job_title?' - '+p.job_title:(p.department?' - '+p.department:''));
+    opts+='<option value="'+escH(name)+'">'+escH(label)+'</option>';
   });
   var s1=document.getElementById('mom3attendees-sel');
   var s2=document.getElementById('mom3apologies-sel');
   if(s1)s1.innerHTML=opts;
   if(s2)s2.innerHTML=opts;
+}
+
+function momPersonName(p){
+  if(!p)return '';
+  var full=[p.first_name,p.last_name].filter(Boolean).join(' ');
+  var raw=p.full_name||p.person_name||p.name||p.display_name||full||p.email||'';
+  raw=String(raw).replace(/\bundefined\b/gi,'').replace(/\s+/g,' ').trim();
+  return raw;
+}
+
+function momPeopleNames(){
+  var scopeCompany=(typeof ccid==='function'?ccid():null);
+  var names=[];
+  (people||[]).filter(function(p){return !scopeCompany||!p.company_id||p.company_id===scopeCompany;}).forEach(function(p){
+    var name=momPersonName(p);
+    if(!name)return;
+    names.push(name);
+    if(p.job_title)names.push(name+' ('+p.job_title+')');
+    if(p.job_title)names.push(name+' - '+p.job_title);
+  });
+  return names;
 }
 
 function momAddAttendee(){
@@ -10185,12 +10210,12 @@ function momAddTag(containerId, hiddenId, name){
   var span=document.createElement('span');
   span.textContent=name;
   var btn=document.createElement('span');
-  btn.textContent='-'.decode();
+  btn.textContent='x';
   btn.style.cssText='cursor:pointer;margin-left:4px;font-weight:700;opacity:.6;user-select:none';
   btn.onclick=function(){
     var t=this.parentNode;
-    momSyncHidden(t.dataset.cid, t.dataset.hid);
     t.remove();
+    momSyncHidden(t.dataset.cid, t.dataset.hid);
   };
   tag.appendChild(span);
   tag.appendChild(btn);
@@ -10225,8 +10250,7 @@ function momSetAttendees(val){
   container.innerHTML='';
   if(!val)return;
   var names=val.split(/[,\n]/).map(function(s){return s.trim();}).filter(Boolean);
-  // Try to match against people list
-  var peopleNames=(people||[]).map(function(p){return p.full_name+(p.job_title?' ('+p.job_title+')':'');});
+  var peopleNames=momPeopleNames();
   var manuals=[];
   names.forEach(function(n){
     if(peopleNames.indexOf(n)>=0){momAddTag('mom3attendees-tags','mom3attendees',n);}
@@ -10242,13 +10266,79 @@ function momSetApologies(val){
   container.innerHTML='';
   if(!val)return;
   var names=val.split(/[,\n]/).map(function(s){return s.trim();}).filter(Boolean);
-  var peopleNames=(people||[]).map(function(p){return p.full_name+(p.job_title?' ('+p.job_title+')':'');});
+  var peopleNames=momPeopleNames();
   var manuals=[];
   names.forEach(function(n){
     if(peopleNames.indexOf(n)>=0){momAddTag('mom3apologies-tags','mom3apologies',n);}
     else{manuals.push(n);}
   });
   if(extra)extra.value=manuals.join(', ');
+}
+
+function mtgCollectSignoff(){
+  return {
+    chair:document.getElementById('mom3sign-chair')?.value||'',
+    chair_date:document.getElementById('mom3sign-date')?.value||'',
+    approver:document.getElementById('mom3sign-approver')?.value||'',
+    approver_date:document.getElementById('mom3sign-approver-date')?.value||''
+  };
+}
+
+function mtgHasSignoff(s){
+  return !!(s&&(s.chair||s.chair_date||s.approver||s.approver_date));
+}
+
+function mtgBuildAgendaPayload(items, signoff){
+  var out=(items||[]).filter(function(x){return x&&!x._kind;});
+  if(mtgHasSignoff(signoff))out.push(Object.assign({_kind:'signoff'},signoff));
+  return out;
+}
+
+function mtgSplitAgendaPayload(payload){
+  var arr=Array.isArray(payload)?payload:[];
+  return {
+    items:arr.filter(function(x){return x&&x._kind!=='signoff';}),
+    signoff:arr.find(function(x){return x&&x._kind==='signoff';})||{}
+  };
+}
+
+function mtgApplySignoff(s){
+  s=s||{};
+  var chair=s.chair||document.getElementById('mom3chaired-by')?.value||'';
+  fillPersonSelect('mom3sign-chair',chair);
+  fillPersonSelect('mom3sign-approver',s.approver||'');
+  var cd=document.getElementById('mom3sign-date');if(cd)cd.value=s.chair_date||'';
+  var ad=document.getElementById('mom3sign-approver-date');if(ad)ad.value=s.approver_date||'';
+}
+
+function mtgPrintMom(){
+  var title=document.getElementById('mom3title')?.value||'HSE Meeting';
+  var type=document.getElementById('mom3type')?.selectedOptions?.[0]?.textContent||'Meeting';
+  var dt=document.getElementById('mom3date')?.value;
+  var sign=mtgCollectSignoff();
+  var agenda=mtgCollectAgenda();
+  var recs=mtgCollectRecs();
+  var rows=function(list, empty, render){
+    return (list&&list.length?list:[null]).map(function(x,i){return x?render(x,i):'<tr><td colspan="4">'+escH(empty)+'</td></tr>';}).join('');
+  };
+  var html='<div class="report-page">'
+    +'<div class="rpt-header"><div><div class="rpt-brand">AURIS360</div><div>HSE Management Platform</div></div><div><strong>Minutes of Meeting</strong><br>'+escH(new Date().toLocaleDateString('en-GB'))+'</div></div>'
+    +'<h1>Minutes of Meeting</h1><h2>'+escH(title)+'</h2>'
+    +'<div class="rpt-grid rpt-grid-2">'
+    +'<div><label>Meeting type</label><strong>'+escH(type)+'</strong></div><div><label>Date & time</label><strong>'+escH(dt?new Date(dt).toLocaleString('en-GB'):'-')+'</strong></div>'
+    +'<div><label>Location</label><strong>'+escH(document.getElementById('mom3location')?.value||'-')+'</strong></div><div><label>Chaired by</label><strong>'+escH(document.getElementById('mom3chaired-by')?.value||'-')+'</strong></div>'
+    +'</div>'
+    +'<h2>Attendance</h2><div class="rpt-grid rpt-grid-2"><div><label>Present / attendees</label><p>'+escH(momGetAttendees()||'-').replace(/\n/g,'<br>')+'</p></div><div><label>Apologies</label><p>'+escH(momGetApologies()||'-').replace(/\n/g,'<br>')+'</p></div></div>'
+    +'<h2>Agenda & Discussion</h2><table><thead><tr><th>No.</th><th>Agenda item</th><th colspan="2">Discussion notes</th></tr></thead><tbody>'
+    +rows(agenda,'No agenda items recorded.',function(a,i){return '<tr><td>'+(i+1)+'</td><td>'+escH(a.item||'-')+'</td><td colspan="2">'+escH(a.notes||'-')+'</td></tr>';})
+    +'</tbody></table>'
+    +'<h2>Actions & Recommendations</h2><table><thead><tr><th>Action</th><th>Responsible</th><th>Due date</th><th>Status</th></tr></thead><tbody>'
+    +rows(recs,'No actions recorded.',function(r){return '<tr><td>'+escH(r.desc||'-')+'</td><td>'+escH(r.resp||'-')+'</td><td>'+escH(r.date||'-')+'</td><td>'+escH(r.status||'-')+'</td></tr>';})
+    +'</tbody></table>'
+    +'<h2>Other Notes</h2><p>'+escH(document.getElementById('mom3notes')?.value||'-').replace(/\n/g,'<br>')+'</p>'
+    +'<h2>Sign-off</h2><div class="rpt-grid rpt-grid-2"><div><label>Chairperson</label><strong>'+escH(sign.chair||'-')+'</strong><br><label>Date</label><strong>'+escH(sign.chair_date||'-')+'</strong></div><div><label>Minutes approved by</label><strong>'+escH(sign.approver||'-')+'</strong><br><label>Date</label><strong>'+escH(sign.approver_date||'-')+'</strong></div></div>'
+    +'</div>';
+  if(typeof aurisPrint==='function')aurisPrint(html,'Minutes of Meeting - '+title);else window.print();
 }
 
 // -- SEND MINUTES -------------------------------------------------------------
@@ -10299,6 +10389,7 @@ async function mtgSaveMom(){
   if(!title){toast('Please enter a meeting title',false);return;}
   var recs=mtgCollectRecs();
   var agenda=mtgCollectAgenda();
+  var signoff=mtgCollectSignoff();
   var body={
     company_id:ccid(),
     series_id:document.getElementById('mtg-mom3form').dataset.seriesId||null,
@@ -10311,7 +10402,7 @@ async function mtgSaveMom(){
     apologies:momGetApologies()||null,
     minutes:document.getElementById('mom3notes')?.value||null,
     next_meeting_date:document.getElementById('mom3next-date')?.value||null,
-    agenda_items:agenda,
+    agenda_items:mtgBuildAgendaPayload(agenda,signoff),
     recommendations:recs,
     status:document.getElementById('mom3status')?.value||'draft',
     updated_at:new Date().toISOString()
@@ -10659,11 +10750,13 @@ async function mtgOpenMom(id){
   var st=document.getElementById('mom3status');if(st)st.value=m.status||'draft';
   var dt=document.getElementById('mom3date');if(dt)dt.value=m.meeting_date?m.meeting_date.slice(0,16):'';
   var nd=document.getElementById('mom3next-date');if(nd)nd.value=m.next_meeting_date||'';
+  var agendaPayload=mtgSplitAgendaPayload(m.agenda_items);
+  mtgApplySignoff(agendaPayload.signoff);
   // Render agenda items
   var ab=document.getElementById('mom3agenda-body');
-  if(ab&&m.agenda_items&&m.agenda_items.length){
+  if(ab&&agendaPayload.items&&agendaPayload.items.length){
     ab.innerHTML='';
-    m.agenda_items.forEach(function(a,i){
+    agendaPayload.items.forEach(function(a,i){
       var tr=document.createElement('tr');
       tr.innerHTML='<td style="padding:6px;text-align:center;border:1px solid var(--border);font-weight:700;font-size:12px;color:var(--text2)">'+(i+1)+'</td>'
         +'<td style="padding:4px;border:1px solid var(--border)"><input type="text" class="mom3agenda-item" value="'+escH2(a.item||'')+'" style="width:100%;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px"/></td>'
@@ -48154,6 +48247,7 @@ Offline mode - changes will sync when connection is restored
 <button class="btn" onclick="mtgMomBack()"><i class="ti ti-arrow-left"></i>Back</button>
 <button id="mtg-mom3del-btn" class="btn" style="display:none;color:var(--red);border-color:var(--red)" onclick="mtgDeleteMom()"><i class="ti ti-trash"></i>Delete</button>
 <button id="mtg-mom3send-btn" class="btn" style="display:none;background:#185FA5;color:#fff;border-color:#185FA5" onclick="mtgSendMinutes()"><i class="ti ti-send"></i>Send minutes</button>
+<button class="btn" onclick="mtgPrintMom()"><i class="ti ti-printer"></i>Print minutes</button>
 <button class="btn btn-primary" onclick="mtgSaveMom()"><i class="ti ti-device-floppy"></i>Save minutes</button>
 </div>
 </div>
