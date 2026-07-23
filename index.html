@@ -2063,6 +2063,78 @@ input[type="button"], input[type="submit"] {
     justify-content: center !important;
   }
 }
+
+.ele-video-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 760;
+  background: rgba(15,23,42,.88);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+.ele-video-shell {
+  width: min(980px, 96vw);
+  max-height: 94vh;
+  background: #fff;
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: 0 24px 70px rgba(0,0,0,.35);
+  display: flex;
+  flex-direction: column;
+}
+.ele-video-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+  padding: 14px 16px;
+  background: #0f6e56;
+  color: #fff;
+}
+.ele-video-body {
+  padding: 14px;
+  overflow: auto;
+  background: #f8fafc;
+}
+.ele-watch-player {
+  width: 100%;
+  max-height: 68vh;
+  background: #000;
+  border-radius: 10px;
+  display: block;
+}
+.ele-video-progress {
+  height: 10px;
+  background: #e5e7eb;
+  border-radius: 99px;
+  overflow: hidden;
+}
+.ele-video-progress span {
+  display: block;
+  height: 100%;
+  background: #1d9e75;
+  width: 0;
+  transition: width .2s ease;
+}
+.ele-watch-note {
+  margin-top: 10px;
+  padding: 10px 12px;
+  border: 1px solid #bfdbfe;
+  background: #eff6ff;
+  color: #185fa5;
+  border-radius: 10px;
+  font-size: 12px;
+  line-height: 1.45;
+}
+@media (max-width: 640px) {
+  .ele-video-modal { padding: 0; align-items: stretch; }
+  .ele-video-shell { width: 100vw; max-height: 100vh; border-radius: 0; }
+  .ele-video-head { padding: 12px; }
+  .ele-video-body { padding: 10px; }
+  .ele-watch-player { max-height: 56vh; border-radius: 8px; }
+}
 </style>
 
 <script defer>
@@ -36718,12 +36790,122 @@ function elcCourseById(id){return (elcAllData||[]).find(function(c){return Strin
 function elcCourseLabel(id){var c=elcCourseById(id);return c?(c.course_code?c.course_code+' - ':'')+c.title:(id||'-');}
 function elcFillSelect(selected){var s=document.getElementById('elef-course-id');if(!s)return;s.innerHTML='<option value="">Select course...</option>'+(elcAllData||[]).filter(function(c){return String(c.status||'active')!=='archived';}).map(function(c){return '<option value="'+escH(c.id||c.title)+'" '+(String(selected||'')===String(c.id||c.title)?'selected':'')+'>'+escH((c.course_code?c.course_code+' - ':'')+(c.title||'Untitled course'))+'</option>';}).join('');}
 function elcIsVideoUrl(url){return dcLooksLikeVideo(url, dcMimeFromName(String(url||'')), String(url||''));}
-function elcLaunch(id){var c=elcCourseById(id);if(!c||!c.course_url){toast('No course link available',false);return;}auditLogEvent('open','training','E-learning course launched',{course_id:c.id||null,course_title:c.title||null,course_url:c.course_url},{related_table:'elearning_courses',related_id:c.id||null,company_id:c.company_id||ccid()});if(elcIsVideoUrl(c.course_url)){dcOpenViewer({file_url:c.course_url,file_name:c.title||'Course video',file_mime:dcMimeFromName(c.course_url)});return;}window.open(c.course_url,'_blank','noopener');}
+function eleAddMonthsISO(dateValue,months){
+  var d=new Date(dateValue||new Date());if(isNaN(d.getTime()))d=new Date();
+  d.setMonth(d.getMonth()+(parseInt(months,10)||12));
+  return d.toISOString().slice(0,10);
+}
+function eleWatchFinished(x){
+  return !!(x&&(x.watch_completed_at||x.video_completed_at||x.completion_date||Number(x.watch_progress_pct||0)>=95||Number(x.progress_pct||0)>=95));
+}
+function eleWatchPercent(x){
+  var v=Number(x?.watch_progress_pct||x?.progress_pct||0);
+  if(!v&&x?.video_duration_seconds&&x?.watched_seconds)v=Math.round(Number(x.watched_seconds)/Number(x.video_duration_seconds)*100);
+  return Math.max(0,Math.min(100,Math.round(v||0)));
+}
+function eleWatchLabel(x){
+  var status=String(x?.status||'enrolled').toLowerCase();
+  if(status==='completed')return 'Certified';
+  if(eleWatchFinished(x))return 'Watched - certificate pending';
+  if(status==='in_progress'||eleWatchPercent(x)>0)return 'In progress '+eleWatchPercent(x)+'%';
+  return 'Not started';
+}
+async function elePatchWithTrackingFallback(id,body){
+  var fallback=['watch_started_at','watch_completed_at','watched_seconds','video_duration_seconds','watch_progress_pct','certificate_ref','certificate_issued_at','valid_from'];
+  return trainingSaveWithFallback('/elearning_enrolments?id=eq.'+id,{m:'PATCH',p:'return=minimal',b:body},body,fallback);
+}
+function elcLaunch(id){
+  var c=elcCourseById(id);if(!c||!c.course_url){toast('No course link available',false);return;}
+  auditLogEvent('open','training','E-learning course previewed',{course_id:c.id||null,course_title:c.title||null,course_url:c.course_url},{related_table:'elearning_courses',related_id:c.id||null,company_id:c.company_id||ccid()});
+  if(elcIsVideoUrl(c.course_url)){eleOpenVideoPlayer({course:c,preview:true});return;}
+  window.open(c.course_url,'_blank','noopener');
+}
+async function eleLaunchEnrolment(id){
+  try{
+    var rows=await api('/elearning_enrolments?id=eq.'+id+'&select=*');var enrol=rows?.[0];if(!enrol){toast('Enrolment not found',false);return;}
+    var course=elcCourseById(enrol.course_id);
+    if(!course){
+      var cs=await api('/elearning_courses?id=eq.'+encodeURIComponent(enrol.course_id)+'&select=*').catch(function(){return [];});
+      course=cs?.[0]||null;if(course)elcAllData=(elcAllData||[]).concat([course]);
+    }
+    if(!course||!course.course_url){toast('No course video/link available',false);return;}
+    auditLogEvent('open','training','E-learning enrolment launched',{person_name:enrol.person_name,course:elcCourseLabel(enrol.course_id)},{related_table:'elearning_enrolments',related_id:id,company_id:ccid()});
+    if(elcIsVideoUrl(course.course_url)){eleOpenVideoPlayer({course:course,enrolment:enrol,preview:false});return;}
+    window.open(course.course_url,'_blank','noopener');
+  }catch(e){toast(actionErrorMessage('Launch e-learning','Training register',e.message),false);}
+}
+function eleCloseVideoPlayer(){
+  var m=document.getElementById('ele-video-modal');
+  if(m)m.remove();
+  if(window._eleWatchTimer){clearTimeout(window._eleWatchTimer);window._eleWatchTimer=null;}
+}
+function eleOpenVideoPlayer(opts){
+  opts=opts||{};var course=opts.course||{};var enrol=opts.enrolment||null;var preview=!!opts.preview;
+  var old=document.getElementById('ele-video-modal');if(old)old.remove();
+  var watched=eleWatchFinished(enrol);
+  var progress=eleWatchPercent(enrol);
+  var modal=document.createElement('div');
+  modal.id='ele-video-modal';
+  modal.className='ele-video-modal';
+  modal.innerHTML='<div class="ele-video-shell" role="dialog" aria-modal="true">'
+    +'<div class="ele-video-head"><div style="min-width:0"><div style="font-size:13px;font-weight:900;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+escH(course.title||'E-learning video')+'</div><div style="font-size:11px;opacity:.8">'+escH(preview?'Course preview':(enrol?.person_name||'Assigned learner'))+'</div></div><button type="button" class="icon-btn" style="background:rgba(255,255,255,.18);color:#fff;border-color:rgba(255,255,255,.25)" onclick="eleCloseVideoPlayer()" aria-label="Close video"><i class="ti ti-x"></i></button></div>'
+    +'<div class="ele-video-body"><video id="ele-watch-video" class="ele-watch-player" controls controlsList="nodownload noplaybackrate noremoteplayback" disablePictureInPicture playsinline webkit-playsinline preload="metadata" oncontextmenu="return false" src="'+escH(course.course_url||'')+'"></video>'
+    +'<div style="display:flex;justify-content:space-between;gap:10px;align-items:center;margin-top:10px;flex-wrap:wrap"><strong id="ele-watch-status">'+escH(preview?'Preview mode':(watched?'Already watched':'Watch in full to unlock certificate'))+'</strong><span class="muted" id="ele-watch-pct">'+progress+'%</span></div>'
+    +'<div class="ele-video-progress" aria-hidden="true"><span id="ele-watch-bar" style="width:'+progress+'%"></span></div>'
+    +'<div class="ele-watch-note">'+(preview?'Preview only. Learner progress is not recorded from this window.':'First viewing is controlled: forward seeking is blocked until the full video has been watched. Completion creates a one-year validity from the watched date.')+'</div>'
+    +'</div></div>';
+  modal.addEventListener('click',function(e){if(e.target===modal)eleCloseVideoPlayer();});
+  document.body.appendChild(modal);
+  var video=document.getElementById('ele-watch-video'), bar=document.getElementById('ele-watch-bar'), pct=document.getElementById('ele-watch-pct'), label=document.getElementById('ele-watch-status');
+  if(!video||preview)return;
+  var state={max:Number(enrol?.watched_seconds||0),duration:Number(enrol?.video_duration_seconds||0),completed:watched,lastSave:0,started:false,locking:false};
+  var startBody={status:String(enrol.status||'enrolled').toLowerCase()==='completed'?'completed':'in_progress',updated_at:new Date().toISOString()};
+  if(!enrol.watch_started_at)startBody.watch_started_at=new Date().toISOString();
+  if(!enrol.attempts)startBody.attempts=1;
+  elePatchWithTrackingFallback(enrol.id,startBody).catch(function(){});
+  function draw(){
+    var d=state.duration||video.duration||0;var p=d?Math.min(100,Math.round((state.completed?d:state.max)/d*100)):0;
+    if(bar)bar.style.width=p+'%';if(pct)pct.textContent=p+'%';if(label)label.textContent=state.completed?'Watched - certificate pending':'Watching '+p+'%';
+  }
+  function saveProgress(force){
+    var now=Date.now();if(!force&&now-state.lastSave<5000)return;
+    state.lastSave=now;var d=state.duration||video.duration||0;var p=d?Math.min(99,Math.round(state.max/d*100)):0;
+    var body={status:'in_progress',watched_seconds:Math.round(state.max||0),video_duration_seconds:Math.round(d||0),watch_progress_pct:p,time_spent_minutes:Math.ceil((state.max||0)/60)||null,updated_at:new Date().toISOString()};
+    elePatchWithTrackingFallback(enrol.id,body).catch(function(){});
+  }
+  async function markWatched(){
+    if(state.completed)return;
+    state.completed=true;var today=new Date().toISOString().slice(0,10);var months=parseInt(course.validity_months,10)||12;var d=state.duration||video.duration||state.max||0;
+    var body={status:'in_progress',completion_date:today,valid_from:today,expiry_date:eleAddMonthsISO(today,months),watch_completed_at:new Date().toISOString(),watched_seconds:Math.round(d||state.max||0),video_duration_seconds:Math.round(d||0),watch_progress_pct:100,time_spent_minutes:Math.ceil((d||state.max||0)/60)||null,updated_at:new Date().toISOString()};
+    try{await elePatchWithTrackingFallback(enrol.id,body);toast('Video watched in full. Admin can now issue the certificate.');}
+    catch(e){toast(actionErrorMessage('Save e-learning watch record','Training register',e.message),false);}
+    draw();if(typeof elcLoad==='function')setTimeout(elcLoad,300);if(typeof dashLoadMyElearning==='function')setTimeout(dashLoadMyElearning,300);
+  }
+  video.addEventListener('loadedmetadata',function(){state.duration=video.duration||state.duration;draw();});
+  video.addEventListener('play',function(){state.started=true;saveProgress(true);});
+  video.addEventListener('timeupdate',function(){
+    if(state.locking)return;
+    state.duration=video.duration||state.duration;
+    if(video.currentTime>state.max)state.max=video.currentTime;
+    draw();saveProgress(false);
+    if(state.duration&&state.max>=Math.max(1,state.duration-2))markWatched();
+  });
+  video.addEventListener('seeking',function(){
+    if(state.completed)return;
+    if(video.currentTime>state.max+1.5){
+      state.locking=true;video.currentTime=Math.max(0,state.max);setTimeout(function(){state.locking=false;},150);
+      toast('First viewing must be watched in order. You can rewind, but not skip forward yet.',false);
+    }
+  });
+  video.addEventListener('ended',markWatched);
+  video.addEventListener('pause',function(){saveProgress(true);});
+  draw();
+}
 function elcPreviewCourseMedia(){
   var url=document.getElementById('elcf-url')?.value?.trim();
   if(!url){toast('Upload or enter a course link first',false);return;}
   if(elcIsVideoUrl(url)){
-    dcOpenViewer({file_url:url,file_name:document.getElementById('elcf-title')?.value||'Course video preview',file_mime:dcMimeFromName(url)});
+    eleOpenVideoPlayer({course:{title:document.getElementById('elcf-title')?.value||'Course video preview',course_url:url},preview:true});
     return;
   }
   appPreviewFieldDocument('elcf-url',null,document.getElementById('elcf-title')?.value||'E-learning course');
@@ -36782,12 +36964,33 @@ async function elcBulkEnrolSelected(courseId,courseTitle){
   }
   return count;
 }
-function eleNew(){ window.eleEditId=null;var el=document.getElementById('ele-form');if(!el)return;document.getElementById('ele-form3title').textContent='New Enrolment';if(document.getElementById('ele-del-btn'))document.getElementById('ele-del-btn').style.display='none';fillPersonSelect('elef-person');elcFillSelect();['elef-dept','elef-course-id','elef-target-date','elef-comp-date','elef-score','elef-expiry','elef-time'].forEach(function(id){var e=document.getElementById(id);if(e)e.value='';});var at=document.getElementById('elef-attempts');if(at)at.value='1';var st=document.getElementById('elef-status');if(st)st.value='enrolled';if(document.getElementById('elef-enrol-date'))document.getElementById('elef-enrol-date').value=new Date().toISOString().slice(0,10);var v=document.getElementById('train-view-elearning');if(v)v.style.display='none';el.style.display='block'; }
+function eleNew(){ window.eleEditId=null;var el=document.getElementById('ele-form');if(!el)return;document.getElementById('ele-form3title').textContent='New Enrolment';if(document.getElementById('ele-del-btn'))document.getElementById('ele-del-btn').style.display='none';fillPersonSelect('elef-person');elcFillSelect();['elef-dept','elef-course-id','elef-target-date','elef-comp-date','elef-score','elef-expiry','elef-time'].forEach(function(id){var e=document.getElementById(id);if(e)e.value='';});var at=document.getElementById('elef-attempts');if(at)at.value='1';var st=document.getElementById('elef-status');if(st)st.value='enrolled';if(document.getElementById('elef-enrol-date'))document.getElementById('elef-enrol-date').value=new Date().toISOString().slice(0,10);eleRenderWatchSummary(null);var v=document.getElementById('train-view-elearning');if(v)v.style.display='none';el.style.display='block'; }
 function eleBack(){ var el=document.getElementById('ele-form');if(el)el.style.display='none';var v=document.getElementById('train-view-elearning');if(v)v.style.display='block';if(typeof elcLoad==='function')elcLoad(); }
 function eleStatusChange(){var st=document.getElementById('elef-status')?.value||'';if(st==='completed'&&!document.getElementById('elef-comp-date')?.value){document.getElementById('elef-comp-date').value=new Date().toISOString().slice(0,10);}var c=elcCourseById(document.getElementById('elef-course-id')?.value);if(st==='completed'&&c&&c.validity_months&&!document.getElementById('elef-expiry')?.value){var d=new Date(document.getElementById('elef-comp-date')?.value||new Date());d.setMonth(d.getMonth()+parseInt(c.validity_months));document.getElementById('elef-expiry').value=d.toISOString().slice(0,10);}}
 function eleCourseChange(){var c=elcCourseById(document.getElementById('elef-course-id')?.value);var b=document.getElementById('ele-launch-btn');if(b)b.style.display=(c&&c.course_url)?'inline-flex':'none';}
-function eleLaunchCurrent(){elcLaunch(document.getElementById('elef-course-id')?.value);}
-function eleCompleteAndIssue(){
+function eleRenderWatchSummary(x){
+  var box=document.getElementById('ele-watch-summary');if(!box)return;
+  if(!x){box.style.display='none';box.innerHTML='';return;}
+  var watched=eleWatchFinished(x), pct=eleWatchPercent(x);
+  var parts=[eleWatchLabel(x)];
+  if(x.watch_started_at)parts.push('Started: '+new Date(x.watch_started_at).toLocaleString());
+  if(x.watch_completed_at)parts.push('Finished: '+new Date(x.watch_completed_at).toLocaleString());
+  if(x.expiry_date)parts.push('Valid until: '+x.expiry_date);
+  box.style.display='block';
+  box.innerHTML='<strong>Viewing record:</strong> '+escH(parts.join(' | '))+'<div class="ele-video-progress" style="margin-top:8px"><span style="width:'+pct+'%"></span></div>';
+}
+function eleLaunchCurrent(){if(window.eleEditId){eleLaunchEnrolment(window.eleEditId);return;}elcLaunch(document.getElementById('elef-course-id')?.value);}
+async function eleCompleteAndIssue(){
+  if(window.eleEditId){
+    try{
+      var rows=await api('/elearning_enrolments?id=eq.'+window.eleEditId+'&select=*');
+      var existing=rows?.[0];
+      if(existing&&!eleWatchFinished(existing)){
+        toast('The learner must watch the full video before a certificate can be issued.',false);
+        return;
+      }
+    }catch(e){toast(actionErrorMessage('Check e-learning watch record','Training register',e.message),false);return;}
+  }
   var st=document.getElementById('elef-status');if(st)st.value='completed';
   var cd=document.getElementById('elef-comp-date');if(cd&&!cd.value)cd.value=new Date().toISOString().slice(0,10);
   var at=document.getElementById('elef-attempts');if(at&&!at.value)at.value='1';
@@ -36795,6 +36998,11 @@ function eleCompleteAndIssue(){
   eleSave();
 }
 async function eleQuickComplete(id){
+  try{
+    var rows=await api('/elearning_enrolments?id=eq.'+id+'&select=*');
+    var x=rows?.[0];
+    if(x&&!eleWatchFinished(x)){toast('The learner must watch the full video before a certificate can be issued.',false);return;}
+  }catch(e){toast(actionErrorMessage('Check e-learning watch record','Training register',e.message),false);return;}
   await eleEdit(id);
   eleCompleteAndIssue();
 }
@@ -36832,20 +37040,22 @@ async function dashLoadMyElearning(){
       +'<div style="font-size:11px;color:var(--text2);margin-top:3px">Target: '+escH(due)+(x.completion_date?' - Completed: '+escH(x.completion_date):'')+(cert?' - Certificate: '+escH(cert):'')+'</div></div>'
       +'<span class="pill" style="background:'+tone+';color:'+color+'">'+escH(done?'Completed':(overdue?'Overdue':(x.status||'Assigned')))+'</span></div>'
       +'<div style="display:flex;gap:6px;margin-top:9px;flex-wrap:wrap">'
-      +(course.course_url?'<button class="btn btn-sm" onclick="elcLaunch(\''+escH(course.id||course.title||x.course_id)+'\')"><i class="ti ti-player-play"></i>Start</button>':'')
-      +(!done?'<button class="btn btn-sm btn-primary" onclick="dashCompleteElearning(\''+escH(x.id)+'\')"><i class="ti ti-certificate"></i>Complete</button>':'')
+      +(course.course_url?'<button class="btn btn-sm" onclick="eleLaunchEnrolment(\''+escH(x.id)+'\')"><i class="ti ti-player-play"></i>'+escH(done?'Review':'Watch')+'</button>':'')
+      +(!done&&eleWatchFinished(x)&&isMgr()?'<button class="btn btn-sm btn-primary" onclick="dashCompleteElearning(\''+escH(x.id)+'\')"><i class="ti ti-certificate"></i>Issue certificate</button>':'')
       +'</div></div>';
   }).join('')+(mine.length>5?'<button class="btn btn-sm" onclick="dashOpenElearning()">View all assigned courses</button>':'');
 }
 async function dashCompleteElearning(id){
   try{
     var rows=await api('/elearning_enrolments?id=eq.'+id+'&select=*');var x=rows?.[0];if(!x)return;
+    if(!eleWatchFinished(x)){toast('Please watch the full video first. The certificate unlocks after full viewing.',false);return;}
     var today=new Date().toISOString().slice(0,10);var c=elcCourseById(x.course_id)||{};
-    var body={status:'completed',completion_date:today,updated_at:new Date().toISOString()};
+    var completion=x.completion_date||today;
+    var body={status:'completed',completion_date:completion,updated_at:new Date().toISOString(),certificate_ref:eleTrainingCertificateRef(Object.assign({},x,{completion_date:completion})),certificate_issued_at:new Date().toISOString(),valid_from:completion};
     if(!x.attempts)body.attempts=1;
-    if(!x.expiry_date&&c.validity_months){var d=new Date(today);d.setMonth(d.getMonth()+parseInt(c.validity_months));body.expiry_date=d.toISOString().slice(0,10);}
-    try{await api('/elearning_enrolments?id=eq.'+id,{m:'PATCH',p:'return=minimal',b:body});}
-    catch(e){if(!/schema cache|column|Could not find/i.test(e.message||''))throw e;await api('/elearning_enrolments?id=eq.'+id,{m:'PATCH',p:'return=minimal',b:{status:'completed',completion_date:today,updated_at:body.updated_at}});}
+    if(!x.expiry_date)body.expiry_date=eleAddMonthsISO(completion,parseInt(c.validity_months,10)||12);
+    try{await elePatchWithTrackingFallback(id,body);}
+    catch(e){if(!/schema cache|column|Could not find/i.test(e.message||''))throw e;await api('/elearning_enrolments?id=eq.'+id,{m:'PATCH',p:'return=minimal',b:{status:'completed',completion_date:completion,updated_at:body.updated_at}});}
     await eleSyncCompletedTraining(Object.assign({},x,body)).catch(function(){return false;});
     auditLogEvent('complete','training','E-learning completed from dashboard',{person_name:x.person_name,course:elcCourseLabel(x.course_id)},{related_table:'elearning_enrolments',related_id:id,company_id:ccid()});
     toast('E-learning completed. Certificate added to training records.');
@@ -36854,7 +37064,18 @@ async function dashCompleteElearning(id){
   }catch(e){toast(actionErrorMessage('Complete e-learning','Training register',e.message),false);}
 }
 function eleBaseBody(g,person){return {company_id:ccid(),person_name:person,department:g('elef-dept'),course_id:g('elef-course-id')||null,enrolment_date:g('elef-enrol-date')||null,completion_date:g('elef-comp-date')||null,status:g('elef-status')||'enrolled',updated_at:new Date().toISOString()};}
-function eleFullBody(g,person){var body=eleBaseBody(g,person);body.target_date=g('elef-target-date')||null;body.score=parseInt(g('elef-score'))||null;body.expiry_date=g('elef-expiry')||null;body.attempts=parseInt(g('elef-attempts'))||null;body.time_spent_minutes=parseInt(g('elef-time'))||null;return body;}
+function eleFullBody(g,person){
+  var body=eleBaseBody(g,person);
+  body.target_date=g('elef-target-date')||null;body.score=parseInt(g('elef-score'))||null;body.expiry_date=g('elef-expiry')||null;body.attempts=parseInt(g('elef-attempts'))||null;body.time_spent_minutes=parseInt(g('elef-time'))||null;
+  if(String(body.status||'').toLowerCase()==='completed'){
+    if(!body.completion_date)body.completion_date=new Date().toISOString().slice(0,10);
+    if(!body.expiry_date)body.expiry_date=eleAddMonthsISO(body.completion_date,12);
+    body.certificate_ref=eleTrainingCertificateRef(body);
+    body.certificate_issued_at=new Date().toISOString();
+    body.valid_from=body.completion_date;
+  }
+  return body;
+}
 function eleTrainingCertificateRef(body){
   var c=elcCourseById(body.course_id);
   var code=String(c?.course_code||c?.title||'ELC').toUpperCase().replace(/[^A-Z0-9]+/g,'').slice(0,10)||'ELC';
@@ -37028,14 +37249,14 @@ async function elcLoad(){
     var courses=await api('/elearning_courses?company_id=eq.'+ccid()+'&select=*&order=title.asc');elcAllData=courses||[];
     if(ch)ch.innerHTML='<table class="data-table"><thead><tr><th>Course</th><th>Duration</th><th>Status</th><th>Actions</th></tr></thead><tbody>'+(courses.length?courses.map(function(x){var mandatory=x.mandatory?'<span class="pill" style="background:#FEF2F2;color:#991B1B;margin-left:6px">Mandatory</span>':'';return '<tr><td><strong>'+escH(x.title||'-')+'</strong>'+mandatory+'<div class="muted">'+escH(x.course_code||x.description||'')+'</div></td><td>'+escH(x.duration_minutes?x.duration_minutes+' min':'-')+'</td><td>'+escH(x.status||'active')+'</td><td>'+(x.course_url?'<button class="icon-btn" title="Launch course" aria-label="Launch course" onclick="elcLaunch(\''+escH(x.id||x.title)+'\')"><i class="ti ti-player-play"></i></button>':'')+'<button class="icon-btn" title="Edit e-learning course" aria-label="Edit e-learning course" onclick="elcEdit(\''+escH(x.id)+'\')"><i class="ti ti-edit"></i></button></td></tr>';}).join(''):'<tr><td colspan="4" class="empty">No e-learning courses yet.</td></tr>')+'</tbody></table>';
     var enrol=await api('/elearning_enrolments?company_id=eq.'+ccid()+'&select=*&order=enrolment_date.desc');
-    if(eh)eh.innerHTML='<table class="data-table"><thead><tr><th>Person</th><th>Course</th><th>Status</th><th>Timeframe</th><th>Target</th><th>Completion</th><th>Certificate</th><th>Actions</th></tr></thead><tbody>'+(enrol.length?enrol.map(function(x){var c=elcCourseById(x.course_id);var canLaunch=c&&c.course_url;var due=x.target_date||x.due_date||'-';var done=String(x.status||'').toLowerCase()==='completed';var cert=eleCertificateDisplay(x);var tf=eleTimeframeState(x);return '<tr><td><strong>'+escH(x.person_name||'-')+'</strong><div class="muted">'+escH(x.department||'')+'</div></td><td>'+escH(elcCourseLabel(x.course_id))+'</td><td>'+escH((x.status||'-').replaceAll('_',' '))+'</td><td><span class="pill" style="background:'+tf.bg+';color:'+tf.color+'">'+escH(tf.label)+'</span></td><td>'+escH(due)+'</td><td>'+escH(x.completion_date||'-')+'</td><td><span class="pill" style="background:#EFF6FF;color:#185FA5">'+escH(cert)+'</span></td><td>'+(canLaunch?'<button class="icon-btn" title="Launch course" aria-label="Launch course" onclick="elcLaunch(\''+escH(c.id||c.title)+'\')"><i class="ti ti-player-play"></i></button>':'')+(!done?'<button class="icon-btn" title="Complete and issue certificate" aria-label="Complete and issue certificate" onclick="eleQuickComplete(\''+escH(x.id)+'\')"><i class="ti ti-certificate"></i></button>':'')+'<button class="icon-btn" title="Edit e-learning enrolment" aria-label="Edit e-learning enrolment" onclick="eleEdit(\''+escH(x.id)+'\')"><i class="ti ti-edit"></i></button></td></tr>';}).join(''):'<tr><td colspan="8" class="empty">No e-learning enrolments yet.</td></tr>')+'</tbody></table>';
+    if(eh)eh.innerHTML='<table class="data-table"><thead><tr><th>Person</th><th>Course</th><th>Status</th><th>Timeframe</th><th>Target</th><th>Completion</th><th>Certificate</th><th>Actions</th></tr></thead><tbody>'+(enrol.length?enrol.map(function(x){var c=elcCourseById(x.course_id);var canLaunch=c&&c.course_url;var due=x.target_date||x.due_date||'-';var done=String(x.status||'').toLowerCase()==='completed';var watched=eleWatchFinished(x);var cert=eleCertificateDisplay(x);var tf=eleTimeframeState(x);return '<tr><td><strong>'+escH(x.person_name||'-')+'</strong><div class="muted">'+escH(x.department||'')+'</div></td><td>'+escH(elcCourseLabel(x.course_id))+'</td><td>'+escH((x.status||'-').replaceAll('_',' '))+'<div class="muted" style="font-size:11px;margin-top:3px">'+escH(eleWatchLabel(x))+'</div></td><td><span class="pill" style="background:'+tf.bg+';color:'+tf.color+'">'+escH(tf.label)+'</span></td><td>'+escH(due)+'</td><td>'+escH(x.completion_date||'-')+'</td><td><span class="pill" style="background:#EFF6FF;color:#185FA5">'+escH(cert)+'</span></td><td>'+(canLaunch?'<button class="icon-btn" title="Launch course" aria-label="Launch course" onclick="eleLaunchEnrolment(\''+escH(x.id)+'\')"><i class="ti ti-player-play"></i></button>':'')+(!done&&watched&&isMgr()?'<button class="icon-btn" title="Complete and issue certificate" aria-label="Complete and issue certificate" onclick="eleQuickComplete(\''+escH(x.id)+'\')"><i class="ti ti-certificate"></i></button>':'')+'<button class="icon-btn" title="Edit e-learning enrolment" aria-label="Edit e-learning enrolment" onclick="eleEdit(\''+escH(x.id)+'\')"><i class="ti ti-edit"></i></button></td></tr>';}).join(''):'<tr><td colspan="8" class="empty">No e-learning enrolments yet.</td></tr>')+'</tbody></table>';
   }catch(e){if(ch)ch.innerHTML=setupFriendlyMessage('E-learning',e.message);if(eh)eh.innerHTML='';}
 }
 async function elcEdit(id){
   try{var rows=await api('/elearning_courses?id=eq.'+id+'&select=*');var x=rows?.[0];if(!x)return;elcNew();window.elcEditId=id;var set=function(k,v){var e=document.getElementById(k);if(e)e.value=v||'';};set('elcf-title',x.title);set('elcf-code',x.course_code);set('elcf-cat',x.category);set('elcf-desc',x.description);set('elcf-duration',x.duration_minutes);set('elcf-pass-score',x.passing_score);set('elcf-validity',x.validity_months);set('elcf-url',x.course_url);set('elcf-roles',x.target_roles);set('elcf-status',x.status);var m=document.getElementById('elcf-mandatory');if(m)m.checked=!!x.mandatory;var t=document.getElementById('elc-form3title');if(t)t.textContent='Edit Course';var d=document.getElementById('elc-del-btn');if(d)d.style.display='inline-flex';}catch(e){toast(actionErrorMessage('Open e-learning course','Training register',e.message),false);}
 }
 async function eleEdit(id){
-  try{var rows=await api('/elearning_enrolments?id=eq.'+id+'&select=*');var x=rows?.[0];if(!x)return;eleNew();window.eleEditId=id;var set=function(k,v){var e=document.getElementById(k);if(e)e.value=v||'';};set('elef-person',x.person_name);set('elef-dept',x.department);elcFillSelect(x.course_id);set('elef-enrol-date',x.enrolment_date);set('elef-target-date',x.target_date||x.due_date);set('elef-comp-date',x.completion_date);set('elef-score',x.score);set('elef-expiry',x.expiry_date);set('elef-attempts',x.attempts);set('elef-time',x.time_spent_minutes);set('elef-status',x.status);eleCourseChange();var t=document.getElementById('ele-form3title');if(t)t.textContent='Edit Enrolment';var d=document.getElementById('ele-del-btn');if(d)d.style.display='inline-flex';}catch(e){toast(actionErrorMessage('Open e-learning enrolment','Training register',e.message),false);}
+  try{var rows=await api('/elearning_enrolments?id=eq.'+id+'&select=*');var x=rows?.[0];if(!x)return;eleNew();window.eleEditId=id;var set=function(k,v){var e=document.getElementById(k);if(e)e.value=v||'';};set('elef-person',x.person_name);set('elef-dept',x.department);elcFillSelect(x.course_id);set('elef-enrol-date',x.enrolment_date);set('elef-target-date',x.target_date||x.due_date);set('elef-comp-date',x.completion_date);set('elef-score',x.score);set('elef-expiry',x.expiry_date);set('elef-attempts',x.attempts);set('elef-time',x.time_spent_minutes);set('elef-status',x.status);eleCourseChange();eleRenderWatchSummary(x);var t=document.getElementById('ele-form3title');if(t)t.textContent='Edit Enrolment';var d=document.getElementById('ele-del-btn');if(d)d.style.display='inline-flex';}catch(e){toast(actionErrorMessage('Open e-learning enrolment','Training register',e.message),false);}
 }
 function compBack(){ var cf=document.getElementById('comp-form');if(cf)cf.style.display='none';var cv=document.getElementById('train-view-competency');if(cv)cv.style.display='block';if(typeof compFilter==='function')compFilter(); }
 async function compSave(){ var person=document.getElementById('compf-person')?.value?.trim();if(!person){toast('Please enter person name',false);return;}var g=function(id){var el=document.getElementById(id);return el?el.value||null:null;};var assessedDate=g('compf-assessed-date');var cleanNotes=compStripAssessedDateNote(g('compf-notes'));var body={company_id:ccid(),person_name:person,department:g('compf-dept'),job_title:g('compf-job-title'),competency_name:g('compf-competency-name')||'',level:g('compf-level')||'not_assessed',assessed_date:assessedDate||null,expiry_date:g('compf-expiry')||null,assessor:g('compf-assessor'),evidence:g('compf-evidence'),evidence_ref:g('compf-evidence'),notes:(cleanNotes+compAssessedDateNote(assessedDate)).trim()||null,updated_at:new Date().toISOString()};var fallback=['assessed_date','expiry_date','assessor','evidence','evidence_ref'];try{if(window.compEditId){var current=(compAllData||[]).find(function(x){return x.id===window.compEditId;})||{};await trainingSaveWithFallback('/competency_matrix?id=eq.'+window.compEditId,{m:'PATCH',p:'return=minimal',b:body},body,fallback);trainingAudit('update','Competency record updated','competency_matrix',Object.assign({},current,body,{id:window.compEditId}),{old_level:current.level||null,new_level:body.level});toast('Updated!');}else{body.created_by=prof?.id;var created=await trainingSaveWithFallback('/competency_matrix',{m:'POST',p:'return=representation',b:body},body,fallback);trainingAudit('create','Competency record created','competency_matrix',created?.[0]||body,{level:body.level});toast('Saved!');}compBack();}catch(e){toast(actionErrorMessage('Save competency record','Training register',e.message),false);} }
@@ -49393,6 +49614,7 @@ Offline mode - changes will sync when connection is restored
 <button type="button" class="btn btn-sm" onclick="elcPreviewCourseMedia()"><i class="ti ti-eye"></i>Preview</button>
 <span id="elc-upload-status" class="muted" style="font-size:12px"></span>
 </div>
+<div class="muted" style="font-size:11px;margin-top:6px">Recommended mobile format: MP4 with H.264 video and AAC audio. The AURIS player hides download controls; strict copy protection needs private streaming/DRM.</div>
 </div>
 <div class="form3group"><label class="form3label">Target roles</label><input type="text" id="elcf-roles" placeholder="e.g. All staff, Supervisors..."/></div>
 </div>
@@ -49443,6 +49665,7 @@ Offline mode - changes will sync when connection is restored
 <button type="button" class="btn" id="ele-launch-btn" style="display:none;justify-content:center;width:100%" onclick="eleLaunchCurrent()"><i class="ti ti-player-play"></i>Launch selected course</button>
 <button type="button" class="btn btn-primary" style="justify-content:center;width:100%" onclick="eleCompleteAndIssue()"><i class="ti ti-certificate"></i>Complete + issue certificate</button>
 </div>
+<div id="ele-watch-summary" class="ele-watch-note" style="display:none"></div>
 </div>
 </div>
 
