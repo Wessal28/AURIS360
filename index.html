@@ -1617,6 +1617,284 @@ input[type="button"], input[type="submit"] {
 .rams-check-grid label{display:grid;grid-template-columns:20px 1fr;gap:8px;align-items:start;padding:10px 12px;border-top:1px solid #D1FAE5;line-height:1.35}
 .rams-check-grid input[type=checkbox]{width:16px!important;height:16px!important;margin:1px 0 0!important;padding:0!important;accent-color:var(--green)}
 @media(max-width:800px){.rams-check-grid{grid-template-columns:1fr}.ra-grid-table{min-width:1180px!important}}
+
+/* -------------------------------------------------------
+   AURIS360 MOBILE STABILITY PASS
+   Keeps phones on one reliable scroll container and prevents
+   wide module tables/forms from breaking touch navigation.
+   ------------------------------------------------------- */
+@media (max-width: 768px) {
+  html,
+  body {
+    width: 100% !important;
+    height: calc(var(--auris-vh, 1vh) * 100) !important;
+    overflow: hidden !important;
+  }
+
+  #app {
+    position: fixed !important;
+    inset: 0 !important;
+    width: 100% !important;
+    height: calc(var(--auris-vh, 1vh) * 100) !important;
+    min-height: 0 !important;
+    overflow: hidden !important;
+  }
+
+  .layout {
+    display: block !important;
+    width: 100% !important;
+    height: 100% !important;
+    min-height: 0 !important;
+    overflow: hidden !important;
+  }
+
+  #mobile-topbar {
+    height: calc(52px + env(safe-area-inset-top, 0px)) !important;
+    padding-top: env(safe-area-inset-top, 0px) !important;
+  }
+
+  #mobile-bottom3nav {
+    height: calc(58px + env(safe-area-inset-bottom, 0px)) !important;
+    padding-bottom: env(safe-area-inset-bottom, 0px) !important;
+    bottom: 0 !important;
+  }
+
+  .main {
+    position: fixed !important;
+    top: calc(52px + env(safe-area-inset-top, 0px)) !important;
+    right: 0 !important;
+    bottom: calc(58px + env(safe-area-inset-bottom, 0px)) !important;
+    left: 0 !important;
+    width: 100% !important;
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    padding-top: 0 !important;
+    padding-bottom: 16px !important;
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    overscroll-behavior-y: contain !important;
+    touch-action: pan-y !important;
+  }
+
+  .sidebar {
+    top: 0 !important;
+    height: calc(var(--auris-vh, 1vh) * 100) !important;
+    max-height: calc(var(--auris-vh, 1vh) * 100) !important;
+    padding-bottom: calc(88px + env(safe-area-inset-bottom, 0px)) !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+  }
+
+  .page {
+    width: 100% !important;
+    max-width: 100vw !important;
+    padding: 12px 10px 18px !important;
+    overflow-x: hidden !important;
+    overflow-y: visible !important;
+  }
+
+  .page.active {
+    display: block !important;
+  }
+
+  .page-header,
+  .module-header,
+  .report-header {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 10px !important;
+  }
+
+  .page-header > *,
+  .module-header > *,
+  .report-header > * {
+    min-width: 0 !important;
+    max-width: 100% !important;
+  }
+
+  .form3row,
+  .form3row3,
+  .grid2,
+  .grid3,
+  .mobile-stack,
+  .page [style*="grid-template-columns:2fr 1fr"],
+  .page [style*="grid-template-columns:1fr 1fr"],
+  .page [style*="grid-template-columns:repeat(3"],
+  .page [style*="grid-template-columns: repeat(3"],
+  .page [style*="grid-template-columns:repeat(4"],
+  .page [style*="grid-template-columns: repeat(4"] {
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    gap: 10px !important;
+  }
+
+  .metrics,
+  .module-metrics,
+  .kpi-cards,
+  .dashboard-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 10px !important;
+  }
+
+  .card,
+  .panel,
+  .section-card,
+  .metric-card {
+    min-width: 0 !important;
+    max-width: 100% !important;
+    overflow: visible !important;
+  }
+
+  .table-wrap,
+  .table-scroll,
+  .data-table-wrap,
+  .page [style*="overflow-x:auto"],
+  .page [style*="overflow-x: auto"],
+  .page [style*="overflow:auto"],
+  .page [style*="overflow: auto"] {
+    width: 100% !important;
+    max-width: 100% !important;
+    overflow-x: auto !important;
+    overflow-y: visible !important;
+    -webkit-overflow-scrolling: touch !important;
+    touch-action: pan-x pan-y !important;
+    overscroll-behavior-x: contain !important;
+  }
+
+  table,
+  .data-table {
+    min-width: 680px !important;
+    width: max-content !important;
+    max-width: none !important;
+  }
+
+  th,
+  .data-table thead th {
+    white-space: nowrap !important;
+  }
+
+  td,
+  .data-table tbody td {
+    white-space: normal !important;
+    min-width: 72px;
+    vertical-align: top !important;
+  }
+
+  th:last-child,
+  td:last-child,
+  .data-table th:last-child,
+  .data-table td:last-child {
+    white-space: nowrap !important;
+  }
+
+  .module-tabs,
+  .tabs,
+  .tab-row {
+    width: 100% !important;
+    max-width: 100% !important;
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    -webkit-overflow-scrolling: touch !important;
+    touch-action: pan-x !important;
+  }
+
+  .module-tabs button,
+  .tabs button,
+  .tab-row button {
+    flex: 0 0 auto !important;
+    white-space: nowrap !important;
+  }
+
+  input,
+  select,
+  textarea,
+  button,
+  .btn {
+    max-width: 100% !important;
+  }
+
+  textarea {
+    min-height: 86px !important;
+  }
+
+  .ai-window {
+    left: 8px !important;
+    right: 8px !important;
+    bottom: calc(66px + env(safe-area-inset-bottom, 0px)) !important;
+    width: calc(100vw - 16px) !important;
+    max-width: none !important;
+    height: min(72vh, 560px) !important;
+    max-height: calc((var(--auris-vh, 1vh) * 100) - 90px) !important;
+  }
+
+  .ai-input {
+    min-height: 48px !important;
+    height: 48px !important;
+    line-height: 20px !important;
+    padding: 12px 14px !important;
+    color: var(--text) !important;
+    background: #fff !important;
+  }
+
+  #mobile-modules-panel {
+    max-height: min(78vh, calc((var(--auris-vh, 1vh) * 100) - 72px)) !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+  }
+
+  #mobile-modules-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  }
+
+  .modal-content,
+  .dialog-content,
+  [role="dialog"] {
+    max-width: calc(100vw - 16px) !important;
+    max-height: calc((var(--auris-vh, 1vh) * 100) - 24px) !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+  }
+
+  #dc-viewer-modal {
+    padding: 8px !important;
+    z-index: 1300 !important;
+  }
+
+  #dc-viewer-modal > div {
+    width: 100% !important;
+    max-width: 100% !important;
+    height: calc((var(--auris-vh, 1vh) * 100) - 16px) !important;
+    max-height: calc((var(--auris-vh, 1vh) * 100) - 16px) !important;
+    border-radius: 10px !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .metrics,
+  .module-metrics,
+  .kpi-cards,
+  .dashboard-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  #mobile-modules-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  table,
+  .data-table {
+    min-width: 640px !important;
+  }
+
+  .page-header .btn,
+  .module-header .btn,
+  .report-header .btn {
+    width: 100% !important;
+    justify-content: center !important;
+  }
+}
 </style>
 
 <script defer>
@@ -37363,7 +37641,7 @@ function mobileNormalizeButtons() {
 }
 
 function mobileSetViewportHeight() {
-  if (window.innerWidth > 480) return;
+  if (window.innerWidth > 768) return;
   var vh = (window.visualViewport ? window.visualViewport.height : window.innerHeight) * 0.01;
   document.documentElement.style.setProperty('--auris-vh', vh + 'px');
 }
