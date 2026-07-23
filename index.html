@@ -1881,20 +1881,63 @@ input[type="button"], input[type="submit"] {
 
   .module-tabs,
   .tabs,
-  .tab-row {
+  .tab-row,
+  .page > div[style*="border-bottom:2px solid var(--border)"],
+  .page > div[style*="border-bottom: 2px solid var(--border)"] {
     width: 100% !important;
     max-width: 100% !important;
+    display: flex !important;
+    flex-wrap: nowrap !important;
     overflow-x: auto !important;
     overflow-y: hidden !important;
     -webkit-overflow-scrolling: touch !important;
     touch-action: pan-x !important;
+    scroll-snap-type: x proximity !important;
+    padding-bottom: 2px !important;
   }
 
   .module-tabs button,
   .tabs button,
-  .tab-row button {
+  .tab-row button,
+  .module-tabs > *,
+  .tabs > *,
+  .tab-row > *,
+  .page > div[style*="border-bottom:2px solid var(--border)"] > *,
+  .page > div[style*="border-bottom: 2px solid var(--border)"] > * {
     flex: 0 0 auto !important;
     white-space: nowrap !important;
+    scroll-snap-align: start !important;
+  }
+
+  .page-header > div:last-child,
+  .card-title > div,
+  .card-title,
+  .module-header > div,
+  .report-header > div,
+  .page [style*="justify-content:flex-end"],
+  .page [style*="justify-content: flex-end"],
+  .page [style*="justify-content:space-between"],
+  .page [style*="justify-content: space-between"] {
+    min-width: 0 !important;
+    max-width: 100% !important;
+    flex-wrap: wrap !important;
+    gap: 8px !important;
+  }
+
+  .page-header .btn,
+  .module-header .btn,
+  .report-header .btn,
+  .card-title .btn,
+  .page [style*="justify-content:flex-end"] .btn,
+  .page [style*="justify-content: flex-end"] .btn {
+    min-width: 0 !important;
+    white-space: normal !important;
+  }
+
+  .page select,
+  .page input,
+  .page textarea {
+    min-width: 0 !important;
   }
 
   input,
