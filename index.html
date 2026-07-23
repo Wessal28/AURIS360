@@ -988,7 +988,21 @@ input[type="button"], input[type="submit"] {
 .mob-nav-btn.active { color: var(--green); }
 
 /* -- Modules drawer -- */
-#mobile-modules-drawer { display: none; }
+#mobile-modules-drawer {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 390;
+}
+#mobile-modules-drawer.open {
+  display: block;
+}
+#mobile-modules-drawer::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: rgba(15, 23, 42, .42);
+}
 #mobile-modules-panel {
   position: fixed;
   bottom: 0; left: 0; right: 0;
@@ -998,6 +1012,8 @@ input[type="button"], input[type="submit"] {
   max-height: 78vh;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  touch-action: pan-y;
   transform: translateY(100%);
   transition: transform .3s cubic-bezier(.4,0,.2,1);
 }
@@ -1975,10 +1991,29 @@ input[type="button"], input[type="submit"] {
     max-height: min(78vh, calc((var(--auris-vh, 1vh) * 100) - 72px)) !important;
     overflow-y: auto !important;
     -webkit-overflow-scrolling: touch !important;
+    overscroll-behavior: contain !important;
+    touch-action: pan-y !important;
   }
 
   #mobile-modules-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    padding-bottom: calc(18px + env(safe-area-inset-bottom, 0px)) !important;
+  }
+
+  .mob-module-btn,
+  .mob-search-result {
+    min-height: 72px !important;
+    cursor: pointer !important;
+    touch-action: manipulation !important;
+    -webkit-tap-highlight-color: transparent !important;
+  }
+
+  #mobile-search-overlay {
+    z-index: 1300 !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    padding-top: calc(14px + env(safe-area-inset-top, 0px)) !important;
+    padding-bottom: calc(14px + env(safe-area-inset-bottom, 0px)) !important;
   }
 
   .modal-content,
@@ -37593,13 +37628,19 @@ function mobileNavTo(page, title, btnEl) {
     backBtn.style.display = showBack ? 'flex' : 'none';
     menuBtn.style.display = showBack ? 'none' : 'flex';
   }
-  document.querySelectorAll('.mob-nav-btn').forEach(function(b) { b.classList.remove('active'); });
-  var activeBtn = document.getElementById('mob-btn-' + page);
-  if (activeBtn) activeBtn.classList.add('active');
-  else { var mb = document.getElementById('mob-btn-modules'); if(mb) mb.classList.add('active'); }
+  mobileSetBottomNavActive(page, btnEl);
   mobileCloseModules();
   mobileCloseSidebar();
   showPage(page, null);
+}
+
+function mobileSetBottomNavActive(page, btnEl) {
+  document.querySelectorAll('.mob-nav-btn').forEach(function(b) { b.classList.remove('active'); });
+  var activeBtn = null;
+  if (btnEl && btnEl.classList && btnEl.classList.contains('mob-nav-btn')) activeBtn = btnEl;
+  if (!activeBtn) activeBtn = document.getElementById('mob-btn-' + page);
+  if (!activeBtn) activeBtn = document.getElementById('mob-btn-modules');
+  if (activeBtn) activeBtn.classList.add('active');
 }
 
 function mobileGoBack() {
@@ -37661,7 +37702,10 @@ function mobileOpenModules() {
   mobileRenderModulesGrid();
   var drawer = document.getElementById('mobile-modules-drawer');
   var panel  = document.getElementById('mobile-modules-panel');
-  if (drawer) drawer.style.display = 'block';
+  if (drawer) {
+    drawer.style.display = 'block';
+    drawer.classList.add('open');
+  }
   if (panel) {
     panel.style.transition = 'none';
     panel.style.transform = 'translateY(100%)';
@@ -37682,13 +37726,23 @@ function mobileCloseModules() {
   if (panel) {
     panel.style.transform = 'translateY(100%)';
     setTimeout(function() {
-      if (drawer) drawer.style.display = 'none';
+      if (drawer) {
+        drawer.classList.remove('open');
+        drawer.style.display = 'none';
+      }
     }, 300);
   } else {
-    if (drawer) drawer.style.display = 'none';
+    if (drawer) {
+      drawer.classList.remove('open');
+      drawer.style.display = 'none';
+    }
   }
   var mb = document.getElementById('mob-btn-modules');
-  if (mb) mb.classList.remove('active');
+  if (mb && _mobileCurrentPg !== 'dashboard' && _mobileCurrentPg !== 'events' && _mobileCurrentPg !== 'observation' && _mobileCurrentPg !== 'kpi') {
+    mb.classList.add('active');
+  } else if (mb) {
+    mb.classList.remove('active');
+  }
 }
 
 function mobileRenderModulesGrid() {
@@ -41537,8 +41591,8 @@ function fireEquipStatusBadge(s) {
   <button type="button" onclick="mobileToggleSearch()" aria-label="Search modules" style="background:none;border:none;padding:10px;color:var(--text);border-radius:10px;min-width:44px;min-height:44px;display:flex;align-items:center;justify-content:center"><i class="ti ti-search"></i></button>
 </div>
 <div id="sidebar-backdrop" onclick="mobileCloseSidebar()"></div>
-<div id="mobile-modules-drawer">
-  <div id="mobile-modules-panel">
+<div id="mobile-modules-drawer" onclick="mobileCloseModules()">
+  <div id="mobile-modules-panel" onclick="event.stopPropagation()">
     <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 18px;border-bottom:1px solid var(--border)">
       <div style="font-size:14px;font-weight:800;color:var(--text)">Modules</div>
       <button type="button" onclick="mobileCloseModules()" aria-label="Close modules" style="background:none;border:none;min-width:44px;min-height:44px;border-radius:10px;color:var(--text2)"><i class="ti ti-x"></i></button>
