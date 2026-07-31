@@ -572,6 +572,9 @@ thead tr[style*="#7F1D1D"] th:last-child {
     linear-gradient(180deg,#FFFFFF 0%,#F7FAFE 100%);
   box-shadow: 0 18px 42px rgba(15, 23, 42, 0.10);
 }
+.dash-legacy-header {
+  display: none !important;
+}
 .hse-cc-top {
   display: grid;
   grid-template-columns: minmax(260px,1fr) auto;
@@ -592,11 +595,11 @@ thead tr[style*="#7F1D1D"] th:last-child {
   color: #64748B;
 }
 .hse-cc-toolbar {
-  display: flex;
-  gap: 8px;
+  display: grid;
+  grid-template-columns: minmax(160px,1fr) minmax(150px,1fr) auto auto auto auto auto;
+  gap: 9px;
   align-items: center;
-  flex-wrap: wrap;
-  justify-content: flex-end;
+  justify-content: end;
 }
 .hse-cc-filter {
   min-width: 135px;
@@ -604,6 +607,29 @@ thead tr[style*="#7F1D1D"] th:last-child {
   border-radius: 10px;
   background: #fff;
   box-shadow: 0 6px 16px rgba(15,23,42,.08), inset 0 1px 0 rgba(255,255,255,.9);
+}
+.hse-cc-tool-btn {
+  height: 38px;
+  padding: 0 14px;
+  border: 1px solid #E2E8F0;
+  border-radius: 10px;
+  background: linear-gradient(145deg,#FFFFFF,#F6FAFF);
+  color: #0B1736;
+  box-shadow: 0 7px 16px rgba(15,23,42,.08), inset 0 1px 0 rgba(255,255,255,.95);
+  font-size: 12px;
+  font-weight: 850;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.hse-cc-tool-btn.primary {
+  border-color: rgba(29,158,117,.45);
+  color: #fff;
+  background: linear-gradient(145deg,#24C08D,#0F6E56);
+  box-shadow: 0 10px 20px rgba(29,158,117,.22), inset 0 1px 0 rgba(255,255,255,.35);
 }
 .hse-cc-user-chip {
   display: inline-flex;
@@ -638,11 +664,12 @@ thead tr[style*="#7F1D1D"] th:last-child {
 .hse-cc-kpi {
   position: relative;
   min-height: 112px;
-  padding: 15px 14px;
+  padding: 15px 14px 14px 14px;
   border: 1px solid #E2E8F0;
   border-radius: 14px;
-  background: linear-gradient(145deg,#fff 0%,#F8FBFF 100%);
-  box-shadow: 0 12px 22px rgba(15,23,42,.08), inset 0 1px 0 rgba(255,255,255,.95);
+  background:
+    linear-gradient(145deg,rgba(255,255,255,.98) 0%,rgba(248,251,255,.96) 100%);
+  box-shadow: 0 14px 24px rgba(15,23,42,.08), inset 0 1px 0 rgba(255,255,255,.95);
   cursor: pointer;
   transition: transform .16s ease, box-shadow .16s ease;
   overflow: hidden;
@@ -663,16 +690,46 @@ thead tr[style*="#7F1D1D"] th:last-child {
   background: currentColor;
 }
 .hse-cc-kpi-icon {
-  width: 42px;
-  height: 42px;
-  border-radius: 14px;
+  position: relative;
+  width: 48px;
+  height: 48px;
+  border-radius: 16px;
   display: flex;
   align-items: center;
   justify-content: center;
   margin-bottom: 10px;
   color: #fff;
-  font-size: 22px;
-  box-shadow: 0 10px 16px rgba(15,23,42,.18), inset 0 1px 0 rgba(255,255,255,.35);
+  font-size: 24px;
+  transform: perspective(80px) rotateX(4deg) rotateY(-6deg);
+  box-shadow:
+    0 13px 0 rgba(15,23,42,.06),
+    0 16px 22px rgba(15,23,42,.18),
+    inset 0 1px 0 rgba(255,255,255,.48),
+    inset 0 -10px 18px rgba(15,23,42,.18);
+}
+.hse-cc-kpi-icon::before {
+  content: "";
+  position: absolute;
+  inset: 7px 7px auto 7px;
+  height: 13px;
+  border-radius: 999px;
+  background: rgba(255,255,255,.34);
+  filter: blur(.2px);
+}
+.hse-cc-kpi-icon::after {
+  content: "";
+  position: absolute;
+  inset: -7px;
+  border-radius: 20px;
+  background: currentColor;
+  opacity: .10;
+  z-index: -1;
+  filter: blur(8px);
+}
+.hse-cc-kpi-icon i {
+  position: relative;
+  z-index: 1;
+  text-shadow: 0 2px 5px rgba(15,23,42,.25);
 }
 .hse-cc-kpi.blue { color: #185FA5; }
 .hse-cc-kpi.amber { color: #EF9F27; }
@@ -860,13 +917,14 @@ thead tr[style*="#7F1D1D"] th:last-child {
 }
 @media (max-width: 1280px) {
   .hse-cc-kpis { grid-template-columns: repeat(3,minmax(0,1fr)); }
+  .hse-cc-toolbar { grid-template-columns: repeat(2,minmax(0,1fr)); }
   .hse-cc-grid,
   .hse-cc-bottom { grid-template-columns: 1fr; }
 }
 @media (max-width: 760px) {
   .hse-cc { padding: 12px; border-radius: 14px; }
   .hse-cc-top { grid-template-columns: 1fr; }
-  .hse-cc-toolbar { justify-content: flex-start; }
+  .hse-cc-toolbar { grid-template-columns: 1fr; justify-content: stretch; }
   .hse-cc-kpis { grid-template-columns: 1fr 1fr; }
   .hse-cc-kpi { min-height: 104px; }
 }
@@ -5584,9 +5642,9 @@ function dashRouteView() {
     perView.style.display = 'block';
     if(orgControls) orgControls.style.display = 'none';
   } else {
-    orgView.style.display = '';
+    orgView.style.display = 'none';
     perView.style.display = 'none';
-    if(orgControls) orgControls.style.display = 'flex';
+    if(orgControls) orgControls.style.display = 'none';
   }
 }
 
@@ -5786,12 +5844,12 @@ function dashRenderControlCentre(data){
   ];
 
   var metrics=[
-    {label:'Total incidents',value:openIncidents.length+events.length,hint:(thisMonthEvents.length?'+'+thisMonthEvents.length:'0')+' this month',tone:seriousIncidents.length?'red':'blue',icon:'ti-clipboard-alert',page:'events'},
-    {label:'Open actions',value:openActions.length,hint:overdueActions.length+' overdue',tone:overdueActions.length?'amber':'green',icon:'ti-clipboard-list',page:'actions'},
+    {label:'Total incidents',value:openIncidents.length+events.length,hint:(thisMonthEvents.length?'+'+thisMonthEvents.length:'0')+' this month',tone:seriousIncidents.length?'red':'blue',icon:'ti-report-medical',page:'events'},
+    {label:'Open actions',value:openActions.length,hint:overdueActions.length+' overdue',tone:overdueActions.length?'amber':'green',icon:'ti-clipboard-text',page:'actions'},
     {label:'High risks',value:highRisks.length,hint:seriousIncidents.length+' high incidents',tone:highRisks.length?'red':'green',icon:'ti-alert-triangle',page:'risk'},
     {label:'Training compliance',value:(trainingScore||0)+'%',hint:expiringTraining.length+' due soon',tone:trainingScore>=80?'green':'amber',icon:'ti-clipboard-check',page:'training'},
-    {label:'Permit compliance',value:permitScore+'%',hint:activePermits.length+' active permits',tone:permitScore>=80?'green':'amber',icon:'ti-shield-check',page:'permit'},
-    {label:'Inspections due',value:inspectionDue,hint:recentInspections.length+' completed in 30d',tone:inspectionDue?'blue':'green',icon:'ti-calendar-check',page:'inspection'}
+    {label:'Permit compliance',value:permitScore+'%',hint:activePermits.length+' active permits',tone:permitScore>=80?'green':'amber',icon:'ti-shield-lock',page:'permit'},
+    {label:'Inspections due',value:inspectionDue,hint:recentInspections.length+' completed in 30d',tone:inspectionDue?'blue':'green',icon:'ti-calendar-stats',page:'inspection'}
   ];
 
   panel.innerHTML =
@@ -5801,7 +5859,9 @@ function dashRenderControlCentre(data){
         +'<select class="hse-cc-filter" onchange="loadDash()"><option>All Companies</option></select>'
         +'<select class="hse-cc-filter" onchange="loadDash()"><option>All Sites</option></select>'
         +'<div class="hse-cc-filter" style="display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:#334155">'+escH(monthLabel)+'</div>'
-        +'<button class="btn btn-sm" onclick="loadDash()"><i class="ti ti-refresh"></i>Refresh</button>'
+        +'<button class="hse-cc-tool-btn primary" onclick="showPage(\'executive\',document.getElementById(\'nav-executive\'))"><i class="ti ti-chart-bar"></i>Executive View</button>'
+        +'<button class="hse-cc-tool-btn" onclick="printMonthlySummary()" title="Monthly PDF Report"><i class="ti ti-file-analytics"></i>Monthly Report</button>'
+        +'<button class="hse-cc-tool-btn" onclick="loadDash()"><i class="ti ti-refresh"></i>Refresh</button>'
         +'<div class="hse-cc-user-chip"><span class="hse-cc-avatar">'+escH(firstName.charAt(0).toUpperCase())+'</span><span>'+escH(userName)+'<small style="display:block;color:#64748B;font-weight:700">'+escH((prof&&prof.role)||'HSE user')+'</small></span></div>'
       +'</div>'
     +'</div>'
@@ -42475,7 +42535,7 @@ function fireEquipStatusBadge(s) {
 <!-- ------------------------------------------------------------------------
      GREETING BAR - personalised header with name, date, controls
      ------------------------------------------------------------------------ -->
-<div style="display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:18px;flex-wrap:wrap;gap:12px">
+<div class="dash-legacy-header" style="display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:18px;flex-wrap:wrap;gap:12px">
   <div>
     <div style="font-size:11px;color:var(--text2);font-family:monospace;letter-spacing:.1em;text-transform:uppercase;margin-bottom:4px" id="dash-date-line">-</div>
     <div style="font-size:24px;font-weight:800;color:var(--text);letter-spacing:-0.01em" id="dash-greeting">Good day</div>
