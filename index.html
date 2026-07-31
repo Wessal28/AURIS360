@@ -560,6 +560,172 @@ thead tr[style*="#7F1D1D"] th:last-child {
   display: block;
 }
 
+/* -- HSE Control Centre -------------------------------------------------- */
+.hse-cc {
+  margin-bottom: 16px;
+  border-radius: 14px;
+  overflow: hidden;
+  border: 1px solid #CFE6FA;
+  background: #fff;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.06);
+}
+.hse-cc-head {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 18px;
+  align-items: center;
+  padding: 20px 24px;
+  background: linear-gradient(135deg, #123A5A 0%, #0F6E56 100%);
+  color: #fff;
+}
+.hse-cc-eyebrow {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  opacity: .82;
+}
+.hse-cc-title {
+  margin-top: 4px;
+  font-size: 24px;
+  line-height: 1.1;
+  font-weight: 900;
+}
+.hse-cc-sub {
+  margin-top: 7px;
+  font-size: 13px;
+  opacity: .9;
+}
+.hse-cc-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
+}
+.hse-cc-actions .btn {
+  background: rgba(255,255,255,.12);
+  border-color: rgba(255,255,255,.28);
+  color: #fff;
+}
+.hse-cc-actions .btn:hover { background: rgba(255,255,255,.22); }
+.hse-cc-metrics {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(120px, 1fr));
+  gap: 10px;
+  padding: 14px;
+  background: #F8FAFC;
+  border-bottom: 1px solid var(--border);
+}
+.hse-cc-metric {
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: #fff;
+  padding: 12px 14px;
+  min-height: 82px;
+}
+.hse-cc-metric .label {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: .06em;
+  color: var(--text2);
+  text-transform: uppercase;
+}
+.hse-cc-metric .value {
+  margin-top: 6px;
+  font-size: 26px;
+  line-height: 1;
+  font-weight: 900;
+}
+.hse-cc-metric .hint {
+  margin-top: 7px;
+  font-size: 11px;
+  color: var(--text2);
+}
+.hse-cc-metric.red { border-left: 4px solid #DC2626; }
+.hse-cc-metric.amber { border-left: 4px solid #EF9F27; }
+.hse-cc-metric.green { border-left: 4px solid #1D9E75; }
+.hse-cc-metric.blue { border-left: 4px solid #185FA5; }
+.hse-cc-body {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(320px, .9fr);
+  gap: 14px;
+  padding: 14px;
+}
+.hse-cc-panel {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: #fff;
+  overflow: hidden;
+}
+.hse-cc-panel-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  align-items: center;
+  padding: 13px 15px;
+  border-bottom: 1px solid var(--border);
+  background: #F9FAFB;
+}
+.hse-cc-panel-title { font-weight: 900; font-size: 14px; color: var(--text); }
+.hse-cc-panel-sub { font-size: 11px; color: var(--text2); margin-top: 2px; }
+.hse-cc-queue { width: 100%; border-collapse: collapse; font-size: 12px; }
+.hse-cc-queue th {
+  text-align: left;
+  padding: 10px 12px;
+  background: #173F61;
+  color: #fff;
+  font-size: 10px;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}
+.hse-cc-queue td { padding: 11px 12px; border-bottom: 1px solid var(--border); vertical-align: top; }
+.hse-cc-queue tr:last-child td { border-bottom: 0; }
+.hse-cc-flow {
+  display: grid;
+  gap: 9px;
+  padding: 12px;
+}
+.hse-cc-flow-step {
+  display: grid;
+  grid-template-columns: 36px 1fr auto;
+  gap: 10px;
+  align-items: center;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px 12px;
+  background: #fff;
+}
+.hse-cc-flow-step i {
+  width: 36px;
+  height: 36px;
+  border-radius: 9px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #ECFDF5;
+  color: #0F6E56;
+  font-size: 18px;
+}
+.hse-cc-flow-step strong { display: block; font-size: 12px; }
+.hse-cc-flow-step span { display: block; font-size: 11px; color: var(--text2); margin-top: 2px; }
+.hse-cc-empty {
+  padding: 28px 18px;
+  text-align: center;
+  color: var(--text2);
+  font-size: 13px;
+}
+@media (max-width: 1100px) {
+  .hse-cc-metrics { grid-template-columns: repeat(3, minmax(0,1fr)); }
+  .hse-cc-body { grid-template-columns: 1fr; }
+}
+@media (max-width: 760px) {
+  .hse-cc-head { grid-template-columns: 1fr; padding: 18px; }
+  .hse-cc-actions { justify-content: flex-start; }
+  .hse-cc-metrics { grid-template-columns: repeat(2, minmax(0,1fr)); }
+  .hse-cc-queue { min-width: 720px; }
+  .hse-cc-panel { overflow-x: auto; }
+}
+
 /* -- Personal-dashboard action buttons -- */
 .dash-action-btn {
   background: rgba(255,255,255,0.15);
@@ -5103,11 +5269,11 @@ async function loadDash() {
       safe(api('/permits?select=*'+cf()+'&status=eq.active')),
       safe(api('/authorisations?select=*'+cf()+'&status=eq.active&order=expiry_date.asc')),
       safe(api('/inspections?select=*'+cf()+'&order=inspection_date.desc&limit=10')),
-      safe(api('/legal_requirements?select=id,compliance_score,category'+cf())),
+      safe(api('/legal_requirements?select=*'+cf()+'&limit=200')),
       safe(api('/training_followup?select=id,person_name,expiry_date'+cf())),
       safe(api('/kpi_monthly_data?select=*'+cf()+'&order=year.desc,month.desc&limit=50')),
       safe(api('/safety_observations?select=id'+cf()+'&limit=10')),
-      safe(api('/risk_assessments?select=id'+cf()+'&limit=10')),
+      safe(api('/risk_assessments?select=*'+cf()+'&limit=100')),
       safe(api('/chemical_register?select=id,status'+cf()+'&status=neq.deleted&limit=10')),
     ]);
     var [events, actions, people, permits, certs, insps, legal, training, kpiData, observations, riskAssessments, chemicals] = results;
@@ -5188,6 +5354,7 @@ async function loadDash() {
     dashRenderSeverityChart(events);
     dashRenderComplianceRings(compPct, trainPct, permits.length);
     dashRenderDemoReadiness({events:events, actions:actions, people:people, permits:permits, inspections:insps, legal:legal, training:training, kpiData:kpiData, observations:observations, riskAssessments:riskAssessments, chemicals:chemicals});
+    dashRenderControlCentre({events:events, actions:actions, people:people, permits:permits, inspections:insps, legal:legal, training:training, kpiData:kpiData, observations:observations, riskAssessments:riskAssessments, chemicals:chemicals, certs:certs});
     
     // --- Dashboard redesign hooks (Stage 1-5) ---
     dashRouteView();      // toggle org vs personal view based on role
@@ -5276,6 +5443,188 @@ function dashRouteView() {
     perView.style.display = 'none';
     if(orgControls) orgControls.style.display = 'flex';
   }
+}
+
+function dashIsDoneStatus(status){
+  var s=String(status||'').toLowerCase().replace(/[_-]+/g,' ').trim();
+  return ['closed','completed','complete','done','cancelled','canceled','rejected','fulfilled','retired','deleted','approved active'].indexOf(s)!==-1;
+}
+
+function dashIsOverdue(dateValue){
+  if(!dateValue)return false;
+  var d=new Date(dateValue);
+  if(isNaN(d.getTime()))return false;
+  var today=new Date(); today.setHours(0,0,0,0);
+  d.setHours(0,0,0,0);
+  return d<today;
+}
+
+function dashSoon(dateValue,days){
+  if(!dateValue)return false;
+  var d=new Date(dateValue);
+  if(isNaN(d.getTime()))return false;
+  var today=new Date(); today.setHours(0,0,0,0);
+  var lim=new Date(today); lim.setDate(lim.getDate()+(days||30));
+  return d>=today && d<=lim;
+}
+
+function dashFmtDate(dateValue){
+  if(!dateValue)return '-';
+  var d=new Date(dateValue);
+  if(isNaN(d.getTime()))return String(dateValue).slice(0,10)||'-';
+  return d.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'});
+}
+
+function dashRiskWeight(item){
+  var raw=String(item?.residual_risk||item?.overall_risk||item?.risk_rating||item?.risk_level||item?.risk||item?.severity||'').toLowerCase();
+  var score=parseFloat(item?.residual_score||item?.overall_score||item?.risk_score||item?.score||0);
+  if(raw.indexOf('critical')!==-1||raw.indexOf('very high')!==-1||score>=16)return 4;
+  if(raw.indexOf('high')!==-1||score>=10)return 3;
+  if(raw.indexOf('medium')!==-1||score>=5)return 2;
+  if(raw.indexOf('low')!==-1||score>0)return 1;
+  return 0;
+}
+
+function dashEnsureControlCentreMount(){
+  var page=document.getElementById('page-dashboard');
+  if(!page)return null;
+  var panel=document.getElementById('dash-control-centre');
+  if(panel)return panel;
+  panel=document.createElement('div');
+  panel.id='dash-control-centre';
+  panel.className='hse-cc';
+  var orgView=document.getElementById('dash-org-view');
+  if(orgView&&orgView.parentNode)orgView.parentNode.insertBefore(panel,orgView);
+  else page.insertBefore(panel,page.firstChild);
+  return panel;
+}
+
+function dashAttentionRow(item){
+  var tone=item.tone||'amber';
+  var badgeClass=tone==='red'?'br':tone==='green'?'bg':'ba';
+  return '<tr>'
+    +'<td><span class="badge '+badgeClass+'">'+escH(item.priority||'Monitor')+'</span></td>'
+    +'<td><strong>'+escH(item.title||'-')+'</strong><div style="font-size:11px;color:var(--text2);margin-top:2px">'+escH(item.meta||'')+'</div></td>'
+    +'<td>'+escH(item.owner||'-')+'</td>'
+    +'<td>'+escH(item.due||'-')+'</td>'
+    +'<td><button class="btn btn-sm" onclick="showPage(\''+escH(item.page||'actions')+'\',null)">Open</button></td>'
+    +'</tr>';
+}
+
+function dashRenderControlCentre(data){
+  var oldReadiness=document.getElementById('dash-demo-readiness');
+  if(oldReadiness)oldReadiness.style.display='none';
+
+  var panel=dashEnsureControlCentreMount();
+  if(!panel)return;
+  if(isPersonalDashRole()){
+    panel.style.display='none';
+    return;
+  }
+  panel.style.display='block';
+  data=data||{};
+  var now=new Date();
+  var events=data.events||[];
+  var actions=data.actions||[];
+  var permits=data.permits||[];
+  var legal=data.legal||[];
+  var training=data.training||[];
+  var inspections=data.inspections||[];
+  var risks=data.riskAssessments||[];
+  var certs=data.certs||[];
+
+  var openIncidents=events.filter(function(x){return !dashIsDoneStatus(x.status);});
+  var seriousIncidents=openIncidents.filter(function(x){
+    var s=String(x.severity||x.actual_severity||x.potential_severity||'').toLowerCase();
+    return s.indexOf('critical')!==-1||s.indexOf('high')!==-1;
+  });
+  var openActions=actions.filter(function(x){return !dashIsDoneStatus(x.status);});
+  var overdueActions=openActions.filter(function(x){return dashIsOverdue(x.target_date||x.due_date);});
+  var highRisks=risks.filter(function(x){return !dashIsDoneStatus(x.status)&&dashRiskWeight(x)>=3;});
+  var legalGaps=legal.filter(function(x){
+    var score=parseFloat(x.compliance_score);
+    var gap=String(x.gap||x.gap_identified||x.has_gap||'').toLowerCase();
+    var status=String(x.status||x.compliance_status||'').toLowerCase();
+    return gap==='true'||gap==='yes'||status.indexOf('non')!==-1||status.indexOf('partial')!==-1||(!isNaN(score)&&score<80);
+  });
+  var expiringTraining=training.filter(function(x){return x.expiry_date&&(dashIsOverdue(x.expiry_date)||dashSoon(x.expiry_date,30));});
+  var expiringCerts=certs.filter(function(x){return x.expiry_date&&(dashIsOverdue(x.expiry_date)||dashSoon(x.expiry_date,30));});
+  var activePermits=permits.filter(function(x){return !dashIsDoneStatus(x.status);});
+  var recentInspections=inspections.filter(function(x){
+    var d=new Date(x.inspection_date||x.created_at||'');
+    if(isNaN(d.getTime()))return false;
+    var limit=new Date(now); limit.setDate(limit.getDate()-30);
+    return d>=limit;
+  });
+
+  var attention=[];
+  overdueActions.slice(0,6).forEach(function(x){
+    attention.push({priority:'Overdue',tone:'red',title:x.action||x.title||x.description||'Corrective action overdue',meta:x.ref||x.source_ref||x.source||'Master Action Plan',owner:x.responsible||x.assigned_to||x.owner||'-',due:dashFmtDate(x.target_date||x.due_date),page:'actions'});
+  });
+  seriousIncidents.slice(0,4).forEach(function(x){
+    attention.push({priority:'Incident',tone:'red',title:x.description||x.event_type||'High severity incident',meta:x.ref||x.reference||x.event_ref||'Incident Management',owner:x.responsible||x.assigned_to||'-',due:dashFmtDate(x.event_date||x.created_at),page:'events'});
+  });
+  highRisks.slice(0,4).forEach(function(x){
+    attention.push({priority:'High risk',tone:'amber',title:x.title||x.activity||x.task||'High risk assessment',meta:x.ref||x.reference||'Risk Assessment',owner:x.responsible||x.owner||x.assessor||'-',due:dashFmtDate(x.review_date||x.next_review_date||x.target_date),page:'risk'});
+  });
+  legalGaps.slice(0,4).forEach(function(x){
+    attention.push({priority:'Legal gap',tone:'amber',title:x.section_title||x.requirement_title||x.title||x.legislation||'Legal requirement gap',meta:x.ref||x.reference||x.category||'Legal Compliance',owner:x.responsibility||x.responsible||x.action_by||'-',due:dashFmtDate(x.target_date||x.next_assessment_date),page:'legal'});
+  });
+  expiringTraining.slice(0,3).forEach(function(x){
+    attention.push({priority:'Training',tone:'amber',title:x.person_name||x.employee_name||'Training validity due',meta:'Expires '+dashFmtDate(x.expiry_date),owner:x.department||'-',due:dashFmtDate(x.expiry_date),page:'training'});
+  });
+  expiringCerts.slice(0,3).forEach(function(x){
+    attention.push({priority:'Certificate',tone:'amber',title:x.title||x.name||x.cert_name||'Certificate expiring',meta:x.ref||x.reference||'Certificate / authorisation',owner:x.responsible||'-',due:dashFmtDate(x.expiry_date),page:'fire'});
+  });
+  attention=attention.slice(0,10);
+
+  var legalScoreValues=legal.map(function(x){return parseFloat(x.compliance_score);}).filter(function(x){return !isNaN(x);});
+  var legalScore=legalScoreValues.length?Math.round(legalScoreValues.reduce(function(a,b){return a+b;},0)/legalScoreValues.length):0;
+  var openCritical=seriousIncidents.length+highRisks.length;
+
+  var metrics=[
+    {label:'Priority exceptions',value:attention.length,hint:'items requiring attention',tone:attention.length?'red':'green',page:'actions'},
+    {label:'Open incidents',value:openIncidents.length,hint:seriousIncidents.length+' high / critical',tone:seriousIncidents.length?'red':openIncidents.length?'amber':'green',page:'events'},
+    {label:'Overdue actions',value:overdueActions.length,hint:openActions.length+' open actions',tone:overdueActions.length?'red':openActions.length?'amber':'green',page:'actions'},
+    {label:'High risk work',value:highRisks.length,hint:'RA items above threshold',tone:highRisks.length?'amber':'green',page:'risk'},
+    {label:'Legal control',value:legalScore?legalScore+'%':'-',hint:legalGaps.length+' gaps / partial controls',tone:legalScore>=80?'green':legalScore>=60?'amber':'red',page:'legal'},
+    {label:'Active permits',value:activePermits.length,hint:'live permits requiring control',tone:activePermits.length?'blue':'green',page:'permit'}
+  ];
+
+  panel.innerHTML =
+    '<div class="hse-cc-head">'
+      +'<div>'
+        +'<div class="hse-cc-eyebrow">HSE Control Centre</div>'
+        +'<div class="hse-cc-title">What needs attention now</div>'
+        +'<div class="hse-cc-sub">Live command view across incidents, actions, risks, permits, legal compliance, inspections and training.</div>'
+      +'</div>'
+      +'<div class="hse-cc-actions">'
+        +(canAccessPage('events')?'<button class="btn btn-sm" onclick="dashOpenIncidentForm()"><i class="ti ti-alert-triangle"></i>Report incident</button>':'')
+        +(canAccessPage('observation')?'<button class="btn btn-sm" onclick="dashOpenObservationForm()"><i class="ti ti-eye"></i>Record BBS</button>':'')
+        +(canAccessPage('inspection')?'<button class="btn btn-sm" onclick="showPage(\'inspection\',null)"><i class="ti ti-clipboard-check"></i>Inspection</button>':'')
+        +(canAccessPage('risk')?'<button class="btn btn-sm" onclick="showPage(\'risk\',null)"><i class="ti ti-shield-check"></i>Risk assessment</button>':'')
+        +(canAccessPage('permit')?'<button class="btn btn-sm" onclick="showPage(\'permit\',null)"><i class="ti ti-key"></i>Permit</button>':'')
+      +'</div>'
+    +'</div>'
+    +'<div class="hse-cc-metrics">'
+      +metrics.map(function(m){return '<div class="hse-cc-metric '+m.tone+'" onclick="showPage(\''+m.page+'\',null)" style="cursor:pointer"><div class="label">'+escH(m.label)+'</div><div class="value">'+escH(m.value)+'</div><div class="hint">'+escH(m.hint)+'</div></div>';}).join('')
+    +'</div>'
+    +'<div class="hse-cc-body">'
+      +'<div class="hse-cc-panel">'
+        +'<div class="hse-cc-panel-head"><div><div class="hse-cc-panel-title">Priority attention queue</div><div class="hse-cc-panel-sub">Exceptions and records that should be reviewed first.</div></div><span class="badge '+(openCritical?'br':'bg')+'">'+openCritical+' critical/high</span></div>'
+        +(attention.length?'<table class="hse-cc-queue"><thead><tr><th>Type</th><th>Record</th><th>Owner</th><th>Due / date</th><th>Open</th></tr></thead><tbody>'+attention.map(dashAttentionRow).join('')+'</tbody></table>':'<div class="hse-cc-empty"><i class="ti ti-circle-check" style="font-size:24px;color:#1D9E75"></i><div style="font-weight:800;margin-top:6px;color:var(--text)">No urgent exception in the current view</div><div>Continue monitoring actions, permits, inspections and legal gaps.</div></div>')
+      +'</div>'
+      +'<div class="hse-cc-panel">'
+        +'<div class="hse-cc-panel-head"><div><div class="hse-cc-panel-title">Operational control loop</div><div class="hse-cc-panel-sub">How AURIS360 connects daily HSE work into one system.</div></div></div>'
+        +'<div class="hse-cc-flow">'
+          +'<div class="hse-cc-flow-step" onclick="showPage(\'events\',null)" style="cursor:pointer"><i class="ti ti-alert-triangle"></i><div><strong>Capture events and observations</strong><span>'+openIncidents.length+' open incidents, '+(data.observations||[]).length+' BBS records loaded</span></div><span class="badge bg">Field</span></div>'
+          +'<div class="hse-cc-flow-step" onclick="showPage(\'actions\',null)" style="cursor:pointer"><i class="ti ti-list-check"></i><div><strong>Drive corrective actions</strong><span>'+openActions.length+' open, '+overdueActions.length+' overdue</span></div><span class="badge '+(overdueActions.length?'br':'bg')+'">CAPA</span></div>'
+          +'<div class="hse-cc-flow-step" onclick="showPage(\'risk\',null)" style="cursor:pointer"><i class="ti ti-shield-check"></i><div><strong>Control risks and RAMS</strong><span>'+highRisks.length+' high-risk records above threshold</span></div><span class="badge ba">Risk</span></div>'
+          +'<div class="hse-cc-flow-step" onclick="showPage(\'legal\',null)" style="cursor:pointer"><i class="ti ti-scale"></i><div><strong>Maintain legal assurance</strong><span>'+legalGaps.length+' gaps or partial controls, '+legalScore+'% average</span></div><span class="badge '+(legalScore>=80?'bg':'ba')+'">Legal</span></div>'
+          +'<div class="hse-cc-flow-step" onclick="showPage(\'inspection\',null)" style="cursor:pointer"><i class="ti ti-clipboard-check"></i><div><strong>Verify in the field</strong><span>'+recentInspections.length+' inspections recorded in the last 30 days</span></div><span class="badge bg">Assurance</span></div>'
+        +'</div>'
+      +'</div>'
+    +'</div>';
 }
 
 // -- Personal dashboard render -------------------------------------------
@@ -34819,7 +35168,7 @@ document.addEventListener('keydown', function(e){
 // Module metadata: page key, icon, label, section
 var MODULES_DIR = [
   // Main
-  {k:'dashboard',   i:'ti-layout-dashboard',   l:'Dashboard',           sec:'Main'},
+  {k:'dashboard',   i:'ti-layout-dashboard',   l:'HSE Control Centre',  sec:'Main'},
   {k:'executive',   i:'ti-chart-bar',          l:'Executive Dashboard', sec:'Main'},
   {k:'ai-insights', i:'ti-brain',              l:'AI Insights',         sec:'Main'},
   // HSE Modules
@@ -35818,7 +36167,7 @@ async function adminGroupAI(type) {
 // The catalogue of HSE modules a company can be granted. Admin/account pages
 // (users, settings, executive) are NOT here - company admins always get those.
 var MODULE_CATALOGUE = [
-  {k:'dashboard',    l:'Dashboard'},
+  {k:'dashboard',    l:'HSE Control Centre'},
   {k:'events',      l:'Incident Management'},
   {k:'observation', l:'BBS Observations'},
   {k:'kpi',         l:'Objectives & KPIs'},
@@ -36000,7 +36349,7 @@ function adminCloseAccessModal(){document.getElementById('adm3access-modal').sty
 // access controls availability by company; role rules still control who can
 // open sensitive areas.
 var MODULE_CATALOG = [
-  { key:'dashboard',   icon:'ti-layout-dashboard', name:'Dashboard',        note:'Always enabled' },
+  { key:'dashboard',   icon:'ti-layout-dashboard', name:'HSE Control Centre', note:'Always enabled' },
   { key:'kpi',         icon:'ti-target',           name:'Objectives & KPIs' },
   { key:'events',      icon:'ti-alert-triangle',   name:'Incident Management' },
   { key:'observation', icon:'ti-eye',              name:'BBS Observations' },
@@ -37738,7 +38087,7 @@ var _mobileCurrentPg = 'dashboard';
 var _modulesOpen     = false;
 
 var MOBILE_MODULES = [
-  {k:'dashboard',    l:'Dashboard',    i:'ti-layout-dashboard',   r:['all']},
+  {k:'dashboard',    l:'HSE Control Centre', i:'ti-layout-dashboard', r:['all']},
   {k:'executive',    l:'Executive',    i:'ti-chart-bar',          r:['executive','admin','hse_manager','sephs_admin']},
   {k:'kpi',          l:'KPIs',         i:'ti-target',             r:['all']},
   {k:'workschedule', l:'Schedule',     i:'ti-calendar',           r:['all']},
