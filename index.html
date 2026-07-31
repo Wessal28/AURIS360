@@ -5497,7 +5497,14 @@ document.querySelectorAll('.page').forEach(p=>{
   p.classList.remove('active');
 });
 document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
-['obj-modal','kpi-edit-modal','kpi-entry-modal'].forEach(id=>{
+[
+  'obj-modal',
+  'kpi-edit-modal',
+  'kpi-entry-modal',
+  'hse-cc-detail-modal',
+  'client-meeting-checklist-modal',
+  'client-demo-review-modal'
+].forEach(id=>{
   const m=document.getElementById(id);if(m)m.style.display='none';
 });
 // Show target page using inline style  
