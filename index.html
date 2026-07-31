@@ -563,7 +563,7 @@ thead tr[style*="#7F1D1D"] th:last-child {
 /* -- HSE Control Centre: 3D executive cockpit --------------------------- */
 .hse-cc {
   margin-bottom: 18px;
-  padding: 18px;
+  padding: 14px;
   border-radius: 18px;
   border: 1px solid #DCE8F6;
   background:
@@ -571,6 +571,8 @@ thead tr[style*="#7F1D1D"] th:last-child {
     radial-gradient(circle at 92% 12%, rgba(24,95,165,.14), transparent 28%),
     linear-gradient(180deg,#FFFFFF 0%,#F7FAFE 100%);
   box-shadow: 0 18px 42px rgba(15, 23, 42, 0.10);
+  max-height: calc(100vh - 136px);
+  overflow: hidden;
 }
 .dash-legacy-header {
   display: none !important;
@@ -578,12 +580,12 @@ thead tr[style*="#7F1D1D"] th:last-child {
 .hse-cc-top {
   display: grid;
   grid-template-columns: minmax(260px,1fr) auto;
-  gap: 16px;
+  gap: 12px;
   align-items: center;
-  margin-bottom: 14px;
+  margin-bottom: 10px;
 }
 .hse-cc-title {
-  font-size: 24px;
+  font-size: 21px;
   line-height: 1.1;
   font-weight: 900;
   color: #0B1736;
@@ -597,7 +599,7 @@ thead tr[style*="#7F1D1D"] th:last-child {
 .hse-cc-toolbar {
   display: grid;
   grid-template-columns: minmax(160px,1fr) minmax(150px,1fr) auto auto auto auto auto;
-  gap: 9px;
+  gap: 7px;
   align-items: center;
   justify-content: end;
 }
@@ -658,13 +660,13 @@ thead tr[style*="#7F1D1D"] th:last-child {
 .hse-cc-kpis {
   display: grid;
   grid-template-columns: repeat(6,minmax(132px,1fr));
-  gap: 12px;
-  margin-bottom: 14px;
+  gap: 10px;
+  margin-bottom: 10px;
 }
 .hse-cc-kpi {
   position: relative;
-  min-height: 112px;
-  padding: 15px 14px 14px 14px;
+  min-height: 100px;
+  padding: 11px 12px 10px 12px;
   border: 1px solid #E2E8F0;
   border-radius: 14px;
   background:
@@ -691,13 +693,13 @@ thead tr[style*="#7F1D1D"] th:last-child {
 }
 .hse-cc-kpi-icon {
   position: relative;
-  width: 48px;
-  height: 48px;
-  border-radius: 16px;
+  width: 42px;
+  height: 42px;
+  border-radius: 14px;
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-bottom: 10px;
+  margin-bottom: 7px;
   color: #fff;
   font-size: 24px;
   transform: perspective(80px) rotateX(4deg) rotateY(-6deg);
@@ -734,8 +736,8 @@ thead tr[style*="#7F1D1D"] th:last-child {
 .hse-cc-kpi-asset {
   position: relative;
   z-index: 1;
-  width: 35px;
-  height: 35px;
+  width: 31px;
+  height: 31px;
   display: block;
   filter: drop-shadow(0 3px 4px rgba(15,23,42,.24));
 }
@@ -759,13 +761,13 @@ thead tr[style*="#7F1D1D"] th:last-child {
 }
 .hse-cc-kpi-value {
   margin-top: 3px;
-  font-size: 27px;
+  font-size: 24px;
   line-height: 1;
   font-weight: 950;
   color: #0F172A;
 }
 .hse-cc-kpi-hint {
-  margin-top: 8px;
+  margin-top: 5px;
   font-size: 11px;
   color: #64748B;
 }
@@ -774,32 +776,39 @@ thead tr[style*="#7F1D1D"] th:last-child {
 .hse-cc-grid {
   display: grid;
   grid-template-columns: 1.15fr .72fr .72fr;
-  gap: 14px;
-  margin-bottom: 14px;
+  gap: 10px;
+  margin-bottom: 10px;
 }
 .hse-cc-bottom {
   display: grid;
   grid-template-columns: .95fr .82fr .82fr;
-  gap: 14px;
+  gap: 10px;
 }
 .hse-cc-panel {
   border: 1px solid #E2E8F0;
   border-radius: 15px;
   background: rgba(255,255,255,.92);
   box-shadow: 0 12px 26px rgba(15,23,42,.07);
-  padding: 15px;
-  min-height: 260px;
+  padding: 11px;
+  min-height: 0;
   overflow: hidden;
+  cursor: pointer;
+  transition: border-color .16s ease, box-shadow .16s ease, transform .16s ease;
+}
+.hse-cc-panel:hover {
+  transform: translateY(-2px);
+  border-color: #B8C7DF;
+  box-shadow: 0 18px 34px rgba(15,23,42,.10);
 }
 .hse-cc-panel-title {
   font-weight: 900;
   font-size: 14px;
   color: #173F61;
-  margin-bottom: 12px;
+  margin-bottom: 8px;
 }
 .hse-cc-map {
   position: relative;
-  height: 258px;
+  height: 170px;
   border-radius: 13px;
   overflow: hidden;
   background:
@@ -821,8 +830,8 @@ thead tr[style*="#7F1D1D"] th:last-child {
 .hse-cc-marker {
   position: absolute;
   transform: translate(-50%,-50%);
-  width: 44px;
-  height: 44px;
+  width: 38px;
+  height: 38px;
   border-radius: 999px;
   color: #fff;
   display: flex;
@@ -853,19 +862,19 @@ thead tr[style*="#7F1D1D"] th:last-child {
 .hse-cc-donut-wrap {
   display: grid;
   place-items: center;
-  min-height: 216px;
+  min-height: 130px;
 }
 .hse-cc-donut {
-  width: 154px;
-  height: 154px;
+  width: 118px;
+  height: 118px;
   border-radius: 999px;
   display: grid;
   place-items: center;
   box-shadow: inset 0 0 0 1px rgba(15,23,42,.08), 0 14px 22px rgba(15,23,42,.10);
 }
 .hse-cc-donut-core {
-  width: 90px;
-  height: 90px;
+  width: 70px;
+  height: 70px;
   border-radius: 999px;
   background: #fff;
   display: grid;
@@ -873,20 +882,22 @@ thead tr[style*="#7F1D1D"] th:last-child {
   text-align: center;
   box-shadow: 0 8px 16px rgba(15,23,42,.12);
 }
-.hse-cc-donut-core strong { font-size: 28px; line-height: 1; color: #0F172A; }
+.hse-cc-donut-core strong { font-size: 23px; line-height: 1; color: #0F172A; }
 .hse-cc-donut-core span { font-size: 10px; color: #64748B; }
 .hse-cc-status-list,
 .hse-cc-list {
   display: grid;
-  gap: 8px;
+  gap: 4px;
   font-size: 12px;
+  max-height: 134px;
+  overflow: hidden;
 }
 .hse-cc-row {
   display: grid;
   grid-template-columns: 1fr auto;
   gap: 10px;
   align-items: center;
-  padding: 9px 0;
+  padding: 6px 0;
   border-bottom: 1px solid #EEF2F7;
 }
 .hse-cc-row:last-child { border-bottom: 0; }
@@ -894,7 +905,7 @@ thead tr[style*="#7F1D1D"] th:last-child {
 .hse-cc-row small { color: #64748B; display: block; margin-top: 2px; }
 .hse-cc-trend {
   width: 100%;
-  height: 178px;
+  height: 152px;
   display: block;
 }
 .hse-cc-link {
@@ -919,12 +930,61 @@ thead tr[style*="#7F1D1D"] th:last-child {
   background: linear-gradient(90deg,#0F6E56,#22C55E);
 }
 .hse-cc-empty {
-  min-height: 120px;
+  min-height: 80px;
   display: grid;
   place-items: center;
   text-align: center;
   color: #64748B;
   font-size: 13px;
+}
+.hse-cc-modal {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 960;
+  align-items: center;
+  justify-content: center;
+  padding: 18px;
+  background: rgba(15,23,42,.58);
+}
+.hse-cc-modal-card {
+  width: min(1180px,96vw);
+  max-height: 90vh;
+  overflow: auto;
+  border-radius: 18px;
+  background: #F8FAFC;
+  border: 1px solid rgba(226,232,240,.9);
+  box-shadow: 0 30px 90px rgba(15,23,42,.34);
+}
+.hse-cc-modal-head {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  background: linear-gradient(135deg,#0F3A5B,#1D9E75);
+  color: #fff;
+}
+.hse-cc-modal-head h3 {
+  margin: 0;
+  font-size: 18px;
+}
+.hse-cc-modal-body {
+  padding: 16px;
+}
+.hse-cc-modal-body .hse-cc-panel {
+  cursor: default;
+  transform: none;
+}
+.hse-cc-modal-body .hse-cc-map { height: 420px; }
+.hse-cc-modal-body .hse-cc-trend { height: 420px; }
+.hse-cc-modal-body .hse-cc-list,
+.hse-cc-modal-body .hse-cc-status-list {
+  max-height: none;
+  overflow: visible;
 }
 @media (max-width: 1280px) {
   .hse-cc-kpis { grid-template-columns: repeat(3,minmax(0,1fr)); }
@@ -5740,6 +5800,43 @@ function dashKpiAsset(type){
   return svg+defs+(body[type]||body.inspection)+'</svg>';
 }
 
+function dashOpenControlCentreModal(title, bodyHtml){
+  var modal=document.getElementById('hse-cc-detail-modal');
+  if(!modal){
+    modal=document.createElement('div');
+    modal.id='hse-cc-detail-modal';
+    modal.className='hse-cc-modal';
+    modal.innerHTML='<div class="hse-cc-modal-card" role="dialog" aria-modal="true" aria-labelledby="hse-cc-detail-title"><div class="hse-cc-modal-head"><h3 id="hse-cc-detail-title"></h3><button class="btn" onclick="dashCloseControlCentreModal()" style="background:rgba(255,255,255,.16);color:#fff;border-color:rgba(255,255,255,.35)"><i class="ti ti-x"></i> Close</button></div><div id="hse-cc-detail-body" class="hse-cc-modal-body"></div></div>';
+    modal.onclick=function(e){if(e.target===modal)dashCloseControlCentreModal();};
+    document.body.appendChild(modal);
+  }
+  document.getElementById('hse-cc-detail-title').textContent=title||'Dashboard detail';
+  document.getElementById('hse-cc-detail-body').innerHTML=bodyHtml||'';
+  modal.style.display='flex';
+}
+
+function dashCloseControlCentreModal(){
+  var modal=document.getElementById('hse-cc-detail-modal');
+  if(modal)modal.style.display='none';
+}
+
+function dashOpenKpiDetail(index){
+  var item=(window.__hseCcKpis||[])[index];
+  if(!item)return;
+  dashOpenControlCentreModal(item.label,'<div class="hse-cc-panel" style="min-height:260px"><div style="display:flex;align-items:center;gap:18px;margin-bottom:18px"><div class="hse-cc-kpi-icon">'+dashKpiAsset(item.asset)+'</div><div><div class="hse-cc-kpi-label">'+escH(item.label)+'</div><div class="hse-cc-kpi-value" style="font-size:44px">'+escH(item.value)+'</div><div class="hse-cc-kpi-hint '+(item.tone==='red'||item.tone==='amber'?'down':'up')+'">'+escH(item.hint)+'</div></div></div><button class="btn primary" onclick="dashCloseControlCentreModal();showPage(\''+escH(item.page)+'\',null)">Open related module</button></div>');
+}
+
+function dashOpenWidgetDetail(key){
+  var source=document.querySelector('[data-cc-widget="'+key+'"]');
+  if(!source)return;
+  var titleEl=source.querySelector('.hse-cc-panel-title');
+  var clone=source.cloneNode(true);
+  clone.removeAttribute('onclick');
+  clone.removeAttribute('data-cc-widget');
+  Array.prototype.forEach.call(clone.querySelectorAll('[onclick]'),function(el){el.removeAttribute('onclick');});
+  dashOpenControlCentreModal(titleEl?titleEl.textContent:'Dashboard detail',clone.outerHTML);
+}
+
 function dashRenderControlCentre(data){
   var oldReadiness=document.getElementById('dash-demo-readiness');
   if(oldReadiness)oldReadiness.style.display='none';
@@ -5877,6 +5974,7 @@ function dashRenderControlCentre(data){
     {label:'Permit compliance',value:permitScore+'%',hint:activePermits.length+' active permits',tone:permitScore>=80?'green':'amber',asset:'permit',page:'permit'},
     {label:'Inspections due',value:inspectionDue,hint:recentInspections.length+' completed in 30d',tone:inspectionDue?'blue':'green',asset:'inspection',page:'inspection'}
   ];
+  window.__hseCcKpis=metrics;
 
   panel.innerHTML =
     '<div class="hse-cc-top">'
@@ -5892,17 +5990,17 @@ function dashRenderControlCentre(data){
       +'</div>'
     +'</div>'
     +'<div class="hse-cc-kpis">'
-      +metrics.map(function(m){return '<div class="hse-cc-kpi '+m.tone+'" onclick="showPage(\''+m.page+'\',null)"><div class="hse-cc-kpi-icon">'+dashKpiAsset(m.asset)+'</div><div class="hse-cc-kpi-label">'+escH(m.label)+'</div><div class="hse-cc-kpi-value">'+escH(m.value)+'</div><div class="hse-cc-kpi-hint '+(m.tone==='red'||m.tone==='amber'?'down':'up')+'">'+escH(m.hint)+'</div></div>';}).join('')
+      +metrics.map(function(m,i){return '<div class="hse-cc-kpi '+m.tone+'" onclick="dashOpenKpiDetail('+i+')"><div class="hse-cc-kpi-icon">'+dashKpiAsset(m.asset)+'</div><div class="hse-cc-kpi-label">'+escH(m.label)+'</div><div class="hse-cc-kpi-value">'+escH(m.value)+'</div><div class="hse-cc-kpi-hint '+(m.tone==='red'||m.tone==='amber'?'down':'up')+'">'+escH(m.hint)+'</div></div>';}).join('')
     +'</div>'
     +'<div class="hse-cc-grid">'
-      +'<div class="hse-cc-panel"><div class="hse-cc-panel-title">Risk Heat Map (By Site)</div><div style="display:grid;grid-template-columns:1fr 150px;gap:14px;align-items:center"><div class="hse-cc-map"><span class="hse-cc-marker low" style="left:26%;top:28%">'+siteLow+'</span><span class="hse-cc-marker mid" style="left:54%;top:34%">'+siteMid+'</span><span class="hse-cc-marker high" style="left:72%;top:62%">'+siteHigh+'</span><span class="hse-cc-marker low" style="left:38%;top:76%">'+Math.max(1,recentInspections.length)+'</span></div><div class="hse-cc-legend"><div><span class="hse-cc-dot" style="background:#22C55E"></span>Low</div><div><span class="hse-cc-dot" style="background:#F59E0B"></span>Moderate</div><div><span class="hse-cc-dot" style="background:#F97316"></span>High</div><div><span class="hse-cc-dot" style="background:#DC2626"></span>Very high</div></div></div></div>'
-      +'<div class="hse-cc-panel"><div class="hse-cc-panel-title">Action Status</div><div class="hse-cc-donut-wrap"><div class="hse-cc-donut" style="background:'+donutBg+'"><div class="hse-cc-donut-core"><div><strong>'+actionTotal+'</strong><span>Total actions</span></div></div></div></div><div class="hse-cc-status-list"><div class="hse-cc-row"><span><span class="hse-cc-dot" style="background:#EF4444"></span>Overdue</span><strong>'+actionOverdue+'</strong></div><div class="hse-cc-row"><span><span class="hse-cc-dot" style="background:#22C55E"></span>In progress</span><strong>'+actionProgress+'</strong></div><div class="hse-cc-row"><span><span class="hse-cc-dot" style="background:#F59E0B"></span>Due soon</span><strong>'+actionDueSoon+'</strong></div><div class="hse-cc-row"><span><span class="hse-cc-dot" style="background:#CBD5E1"></span>Not started</span><strong>'+actionNotStarted+'</strong></div></div><div class="hse-cc-link" onclick="showPage(\'actions\',null)">View all actions</div></div>'
-      +'<div class="hse-cc-panel"><div class="hse-cc-panel-title">Incident Trend</div><svg class="hse-cc-trend" viewBox="0 0 280 160" preserveAspectRatio="none"><g stroke="#E2E8F0" stroke-width="1"><line x1="12" y1="142" x2="270" y2="142"/><line x1="12" y1="104" x2="270" y2="104"/><line x1="12" y1="66" x2="270" y2="66"/><line x1="12" y1="28" x2="270" y2="28"/></g><polyline points="'+targetPts+'" fill="none" stroke="#6D28D9" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><polyline points="'+trendPts+'" fill="none" stroke="#2563EB" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><g fill="#2563EB">'+ytdMonthly.map(function(v,i){var x=12+(i*(256/11));var y=142-(v/trendMax*112);return '<circle cx="'+x.toFixed(1)+'" cy="'+y.toFixed(1)+'" r="3.5"/>';}).join('')+'</g></svg><div class="hse-cc-link" onclick="showPage(\'events\',null)">View full report</div></div>'
+      +'<div class="hse-cc-panel" data-cc-widget="riskmap" onclick="dashOpenWidgetDetail(\'riskmap\')"><div class="hse-cc-panel-title">Risk Heat Map (By Site)</div><div style="display:grid;grid-template-columns:1fr 150px;gap:14px;align-items:center"><div class="hse-cc-map"><span class="hse-cc-marker low" style="left:26%;top:28%">'+siteLow+'</span><span class="hse-cc-marker mid" style="left:54%;top:34%">'+siteMid+'</span><span class="hse-cc-marker high" style="left:72%;top:62%">'+siteHigh+'</span><span class="hse-cc-marker low" style="left:38%;top:76%">'+Math.max(1,recentInspections.length)+'</span></div><div class="hse-cc-legend"><div><span class="hse-cc-dot" style="background:#22C55E"></span>Low</div><div><span class="hse-cc-dot" style="background:#F59E0B"></span>Moderate</div><div><span class="hse-cc-dot" style="background:#F97316"></span>High</div><div><span class="hse-cc-dot" style="background:#DC2626"></span>Very high</div></div></div></div>'
+      +'<div class="hse-cc-panel" data-cc-widget="actions" onclick="dashOpenWidgetDetail(\'actions\')"><div class="hse-cc-panel-title">Action Status</div><div class="hse-cc-donut-wrap"><div class="hse-cc-donut" style="background:'+donutBg+'"><div class="hse-cc-donut-core"><div><strong>'+actionTotal+'</strong><span>Total actions</span></div></div></div></div><div class="hse-cc-status-list"><div class="hse-cc-row"><span><span class="hse-cc-dot" style="background:#EF4444"></span>Overdue</span><strong>'+actionOverdue+'</strong></div><div class="hse-cc-row"><span><span class="hse-cc-dot" style="background:#22C55E"></span>In progress</span><strong>'+actionProgress+'</strong></div><div class="hse-cc-row"><span><span class="hse-cc-dot" style="background:#F59E0B"></span>Due soon</span><strong>'+actionDueSoon+'</strong></div><div class="hse-cc-row"><span><span class="hse-cc-dot" style="background:#CBD5E1"></span>Not started</span><strong>'+actionNotStarted+'</strong></div></div><div class="hse-cc-link" onclick="event.stopPropagation();showPage(\'actions\',null)">View all actions</div></div>'
+      +'<div class="hse-cc-panel" data-cc-widget="trend" onclick="dashOpenWidgetDetail(\'trend\')"><div class="hse-cc-panel-title">Incident Trend</div><svg class="hse-cc-trend" viewBox="0 0 280 160" preserveAspectRatio="none"><g stroke="#E2E8F0" stroke-width="1"><line x1="12" y1="142" x2="270" y2="142"/><line x1="12" y1="104" x2="270" y2="104"/><line x1="12" y1="66" x2="270" y2="66"/><line x1="12" y1="28" x2="270" y2="28"/></g><polyline points="'+targetPts+'" fill="none" stroke="#6D28D9" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><polyline points="'+trendPts+'" fill="none" stroke="#2563EB" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><g fill="#2563EB">'+ytdMonthly.map(function(v,i){var x=12+(i*(256/11));var y=142-(v/trendMax*112);return '<circle cx="'+x.toFixed(1)+'" cy="'+y.toFixed(1)+'" r="3.5"/>';}).join('')+'</g></svg><div class="hse-cc-link" onclick="event.stopPropagation();showPage(\'events\',null)">View full report</div></div>'
     +'</div>'
     +'<div class="hse-cc-bottom">'
-      +'<div class="hse-cc-panel"><div class="hse-cc-panel-title">My Tasks ('+attention.length+')</div><div class="hse-cc-list">'+(attention.length?attention.slice(0,5).map(function(x){return '<div class="hse-cc-row" onclick="showPage(\''+x.page+'\',null)" style="cursor:pointer"><span><strong>'+escH(x.title)+'</strong><small>'+escH(x.meta||x.priority)+'</small></span><span class="badge '+(x.tone==='red'?'br':x.tone==='green'?'bg':'ba')+'">'+escH(x.priority)+'</span></div>';}).join(''):'<div class="hse-cc-empty">No urgent task in this view</div>')+'</div><div class="hse-cc-link" onclick="showPage(\'actions\',null)">View all tasks</div></div>'
-      +'<div class="hse-cc-panel"><div class="hse-cc-panel-title">Upcoming Activities</div><div class="hse-cc-list">'+(upcoming.length?upcoming.map(function(x){return '<div class="hse-cc-row" onclick="showPage(\''+x.page+'\',null)" style="cursor:pointer"><span><strong>'+escH(x.title)+'</strong><small>'+escH(x.page)+'</small></span><strong>'+escH(dashFmtDate(x.date))+'</strong></div>';}).join(''):'<div class="hse-cc-empty">No upcoming activity date loaded</div>')+'</div><div class="hse-cc-link" onclick="showPage(\'workschedule\',null)">View calendar</div></div>'
-      +'<div class="hse-cc-panel"><div class="hse-cc-panel-title">Compliance Overview</div><div class="hse-cc-list">'+complianceBars.map(function(x){var v=Math.max(0,Math.min(100,x.value||0));return '<div class="hse-cc-row" onclick="showPage(\''+x.page+'\',null)" style="cursor:pointer;grid-template-columns:96px 1fr 42px"><strong>'+escH(x.label)+'</strong><div class="hse-cc-progress"><i style="width:'+v+'%;background:'+x.color+'"></i></div><strong>'+v+'%</strong></div>';}).join('')+'</div><div class="hse-cc-link" onclick="showPage(\'legal\',null)">View compliance report</div></div>'
+      +'<div class="hse-cc-panel" data-cc-widget="tasks" onclick="dashOpenWidgetDetail(\'tasks\')"><div class="hse-cc-panel-title">My Tasks ('+attention.length+')</div><div class="hse-cc-list">'+(attention.length?attention.slice(0,5).map(function(x){return '<div class="hse-cc-row" onclick="event.stopPropagation();showPage(\''+x.page+'\',null)" style="cursor:pointer"><span><strong>'+escH(x.title)+'</strong><small>'+escH(x.meta||x.priority)+'</small></span><span class="badge '+(x.tone==='red'?'br':x.tone==='green'?'bg':'ba')+'">'+escH(x.priority)+'</span></div>';}).join(''):'<div class="hse-cc-empty">No urgent task in this view</div>')+'</div><div class="hse-cc-link" onclick="event.stopPropagation();showPage(\'actions\',null)">View all tasks</div></div>'
+      +'<div class="hse-cc-panel" data-cc-widget="upcoming" onclick="dashOpenWidgetDetail(\'upcoming\')"><div class="hse-cc-panel-title">Upcoming Activities</div><div class="hse-cc-list">'+(upcoming.length?upcoming.map(function(x){return '<div class="hse-cc-row" onclick="event.stopPropagation();showPage(\''+x.page+'\',null)" style="cursor:pointer"><span><strong>'+escH(x.title)+'</strong><small>'+escH(x.page)+'</small></span><strong>'+escH(dashFmtDate(x.date))+'</strong></div>';}).join(''):'<div class="hse-cc-empty">No upcoming activity date loaded</div>')+'</div><div class="hse-cc-link" onclick="event.stopPropagation();showPage(\'workschedule\',null)">View calendar</div></div>'
+      +'<div class="hse-cc-panel" data-cc-widget="compliance" onclick="dashOpenWidgetDetail(\'compliance\')"><div class="hse-cc-panel-title">Compliance Overview</div><div class="hse-cc-list">'+complianceBars.map(function(x){var v=Math.max(0,Math.min(100,x.value||0));return '<div class="hse-cc-row" onclick="event.stopPropagation();showPage(\''+x.page+'\',null)" style="cursor:pointer;grid-template-columns:96px 1fr 42px"><strong>'+escH(x.label)+'</strong><div class="hse-cc-progress"><i style="width:'+v+'%;background:'+x.color+'"></i></div><strong>'+v+'%</strong></div>';}).join('')+'</div><div class="hse-cc-link" onclick="event.stopPropagation();showPage(\'legal\',null)">View compliance report</div></div>'
     +'</div>';
 }
 
