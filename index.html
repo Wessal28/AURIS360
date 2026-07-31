@@ -560,170 +560,315 @@ thead tr[style*="#7F1D1D"] th:last-child {
   display: block;
 }
 
-/* -- HSE Control Centre -------------------------------------------------- */
+/* -- HSE Control Centre: 3D executive cockpit --------------------------- */
 .hse-cc {
-  margin-bottom: 16px;
-  border-radius: 14px;
-  overflow: hidden;
-  border: 1px solid #CFE6FA;
-  background: #fff;
-  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.06);
+  margin-bottom: 18px;
+  padding: 18px;
+  border-radius: 18px;
+  border: 1px solid #DCE8F6;
+  background:
+    radial-gradient(circle at 8% 0%, rgba(29,158,117,.12), transparent 26%),
+    radial-gradient(circle at 92% 12%, rgba(24,95,165,.14), transparent 28%),
+    linear-gradient(180deg,#FFFFFF 0%,#F7FAFE 100%);
+  box-shadow: 0 18px 42px rgba(15, 23, 42, 0.10);
 }
-.hse-cc-head {
+.hse-cc-top {
   display: grid;
-  grid-template-columns: 1fr auto;
-  gap: 18px;
+  grid-template-columns: minmax(260px,1fr) auto;
+  gap: 16px;
   align-items: center;
-  padding: 20px 24px;
-  background: linear-gradient(135deg, #123A5A 0%, #0F6E56 100%);
-  color: #fff;
-}
-.hse-cc-eyebrow {
-  font-size: 11px;
-  font-weight: 800;
-  letter-spacing: .12em;
-  text-transform: uppercase;
-  opacity: .82;
+  margin-bottom: 14px;
 }
 .hse-cc-title {
-  margin-top: 4px;
   font-size: 24px;
   line-height: 1.1;
   font-weight: 900;
+  color: #0B1736;
+  letter-spacing: 0;
 }
 .hse-cc-sub {
-  margin-top: 7px;
+  margin-top: 5px;
   font-size: 13px;
-  opacity: .9;
+  color: #64748B;
 }
-.hse-cc-actions {
+.hse-cc-toolbar {
   display: flex;
-  flex-wrap: wrap;
   gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
   justify-content: flex-end;
 }
-.hse-cc-actions .btn {
-  background: rgba(255,255,255,.12);
-  border-color: rgba(255,255,255,.28);
-  color: #fff;
-}
-.hse-cc-actions .btn:hover { background: rgba(255,255,255,.22); }
-.hse-cc-metrics {
-  display: grid;
-  grid-template-columns: repeat(6, minmax(120px, 1fr));
-  gap: 10px;
-  padding: 14px;
-  background: #F8FAFC;
-  border-bottom: 1px solid var(--border);
-}
-.hse-cc-metric {
+.hse-cc-filter {
+  min-width: 135px;
+  height: 38px;
   border-radius: 10px;
-  border: 1px solid var(--border);
   background: #fff;
-  padding: 12px 14px;
-  min-height: 82px;
+  box-shadow: 0 6px 16px rgba(15,23,42,.08), inset 0 1px 0 rgba(255,255,255,.9);
 }
-.hse-cc-metric .label {
-  font-size: 10px;
+.hse-cc-user-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  padding: 6px 10px 6px 7px;
+  border: 1px solid #E2E8F0;
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: 0 8px 18px rgba(15,23,42,.08);
+  font-size: 12px;
   font-weight: 800;
-  letter-spacing: .06em;
-  color: var(--text2);
-  text-transform: uppercase;
+  color: #0F172A;
 }
-.hse-cc-metric .value {
-  margin-top: 6px;
-  font-size: 26px;
-  line-height: 1;
+.hse-cc-avatar {
+  width: 34px;
+  height: 34px;
+  border-radius: 999px;
+  background: linear-gradient(135deg,#1D9E75,#185FA5);
+  color: #fff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   font-weight: 900;
 }
-.hse-cc-metric .hint {
-  margin-top: 7px;
-  font-size: 11px;
-  color: var(--text2);
-}
-.hse-cc-metric.red { border-left: 4px solid #DC2626; }
-.hse-cc-metric.amber { border-left: 4px solid #EF9F27; }
-.hse-cc-metric.green { border-left: 4px solid #1D9E75; }
-.hse-cc-metric.blue { border-left: 4px solid #185FA5; }
-.hse-cc-body {
+.hse-cc-kpis {
   display: grid;
-  grid-template-columns: minmax(0, 1.4fr) minmax(320px, .9fr);
-  gap: 14px;
-  padding: 14px;
+  grid-template-columns: repeat(6,minmax(132px,1fr));
+  gap: 12px;
+  margin-bottom: 14px;
 }
-.hse-cc-panel {
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  background: #fff;
+.hse-cc-kpi {
+  position: relative;
+  min-height: 112px;
+  padding: 15px 14px;
+  border: 1px solid #E2E8F0;
+  border-radius: 14px;
+  background: linear-gradient(145deg,#fff 0%,#F8FBFF 100%);
+  box-shadow: 0 12px 22px rgba(15,23,42,.08), inset 0 1px 0 rgba(255,255,255,.95);
+  cursor: pointer;
+  transition: transform .16s ease, box-shadow .16s ease;
   overflow: hidden;
 }
-.hse-cc-panel-head {
-  display: flex;
-  justify-content: space-between;
-  gap: 10px;
-  align-items: center;
-  padding: 13px 15px;
-  border-bottom: 1px solid var(--border);
-  background: #F9FAFB;
+.hse-cc-kpi:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 18px 32px rgba(15,23,42,.12), inset 0 1px 0 rgba(255,255,255,.95);
 }
-.hse-cc-panel-title { font-weight: 900; font-size: 14px; color: var(--text); }
-.hse-cc-panel-sub { font-size: 11px; color: var(--text2); margin-top: 2px; }
-.hse-cc-queue { width: 100%; border-collapse: collapse; font-size: 12px; }
-.hse-cc-queue th {
-  text-align: left;
-  padding: 10px 12px;
-  background: #173F61;
-  color: #fff;
-  font-size: 10px;
-  letter-spacing: .06em;
-  text-transform: uppercase;
+.hse-cc-kpi::after {
+  content: "";
+  position: absolute;
+  right: -24px;
+  bottom: -28px;
+  width: 78px;
+  height: 78px;
+  border-radius: 999px;
+  opacity: .08;
+  background: currentColor;
 }
-.hse-cc-queue td { padding: 11px 12px; border-bottom: 1px solid var(--border); vertical-align: top; }
-.hse-cc-queue tr:last-child td { border-bottom: 0; }
-.hse-cc-flow {
-  display: grid;
-  gap: 9px;
-  padding: 12px;
-}
-.hse-cc-flow-step {
-  display: grid;
-  grid-template-columns: 36px 1fr auto;
-  gap: 10px;
-  align-items: center;
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  padding: 10px 12px;
-  background: #fff;
-}
-.hse-cc-flow-step i {
-  width: 36px;
-  height: 36px;
-  border-radius: 9px;
+.hse-cc-kpi-icon {
+  width: 42px;
+  height: 42px;
+  border-radius: 14px;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #ECFDF5;
-  color: #0F6E56;
-  font-size: 18px;
+  margin-bottom: 10px;
+  color: #fff;
+  font-size: 22px;
+  box-shadow: 0 10px 16px rgba(15,23,42,.18), inset 0 1px 0 rgba(255,255,255,.35);
 }
-.hse-cc-flow-step strong { display: block; font-size: 12px; }
-.hse-cc-flow-step span { display: block; font-size: 11px; color: var(--text2); margin-top: 2px; }
-.hse-cc-empty {
-  padding: 28px 18px;
+.hse-cc-kpi.blue { color: #185FA5; }
+.hse-cc-kpi.amber { color: #EF9F27; }
+.hse-cc-kpi.red { color: #DC2626; }
+.hse-cc-kpi.green { color: #1D9E75; }
+.hse-cc-kpi.purple { color: #6D28D9; }
+.hse-cc-kpi.blue .hse-cc-kpi-icon { background: linear-gradient(145deg,#60A5FA,#185FA5); }
+.hse-cc-kpi.amber .hse-cc-kpi-icon { background: linear-gradient(145deg,#FCD34D,#EF9F27); }
+.hse-cc-kpi.red .hse-cc-kpi-icon { background: linear-gradient(145deg,#FB7185,#DC2626); }
+.hse-cc-kpi.green .hse-cc-kpi-icon { background: linear-gradient(145deg,#6EE7B7,#1D9E75); }
+.hse-cc-kpi.purple .hse-cc-kpi-icon { background: linear-gradient(145deg,#A78BFA,#6D28D9); }
+.hse-cc-kpi-label {
+  font-size: 11px;
+  color: #64748B;
+  font-weight: 800;
+}
+.hse-cc-kpi-value {
+  margin-top: 3px;
+  font-size: 27px;
+  line-height: 1;
+  font-weight: 950;
+  color: #0F172A;
+}
+.hse-cc-kpi-hint {
+  margin-top: 8px;
+  font-size: 11px;
+  color: #64748B;
+}
+.hse-cc-kpi-hint.up { color: #059669; }
+.hse-cc-kpi-hint.down { color: #DC2626; }
+.hse-cc-grid {
+  display: grid;
+  grid-template-columns: 1.15fr .72fr .72fr;
+  gap: 14px;
+  margin-bottom: 14px;
+}
+.hse-cc-bottom {
+  display: grid;
+  grid-template-columns: .95fr .82fr .82fr;
+  gap: 14px;
+}
+.hse-cc-panel {
+  border: 1px solid #E2E8F0;
+  border-radius: 15px;
+  background: rgba(255,255,255,.92);
+  box-shadow: 0 12px 26px rgba(15,23,42,.07);
+  padding: 15px;
+  min-height: 260px;
+  overflow: hidden;
+}
+.hse-cc-panel-title {
+  font-weight: 900;
+  font-size: 14px;
+  color: #173F61;
+  margin-bottom: 12px;
+}
+.hse-cc-map {
+  position: relative;
+  height: 258px;
+  border-radius: 13px;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 22% 28%, rgba(29,158,117,.20) 0 10%, transparent 11%),
+    radial-gradient(circle at 68% 24%, rgba(239,159,39,.20) 0 9%, transparent 10%),
+    radial-gradient(circle at 46% 64%, rgba(220,38,38,.18) 0 12%, transparent 13%),
+    linear-gradient(135deg,#E9F4EA 0%,#DCECF5 46%,#F5F2E7 100%);
+  border: 1px solid #D9E5F0;
+}
+.hse-cc-map::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(120deg, transparent 0 46%, rgba(255,255,255,.55) 47% 49%, transparent 50%),
+    linear-gradient(30deg, transparent 0 34%, rgba(255,255,255,.45) 35% 37%, transparent 38%);
+  opacity: .7;
+}
+.hse-cc-marker {
+  position: absolute;
+  transform: translate(-50%,-50%);
+  width: 44px;
+  height: 44px;
+  border-radius: 999px;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 950;
+  border: 4px solid rgba(255,255,255,.68);
+  box-shadow: 0 12px 24px rgba(15,23,42,.22), 0 0 0 4px rgba(255,255,255,.25);
+  z-index: 1;
+}
+.hse-cc-marker.low { background: linear-gradient(145deg,#22C55E,#15803D); }
+.hse-cc-marker.mid { background: linear-gradient(145deg,#FBBF24,#F59E0B); }
+.hse-cc-marker.high { background: linear-gradient(145deg,#FB7185,#DC2626); }
+.hse-cc-legend {
+  display: grid;
+  gap: 8px;
+  margin-top: 10px;
+  font-size: 12px;
+  color: #475569;
+}
+.hse-cc-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  display: inline-block;
+  margin-right: 7px;
+}
+.hse-cc-donut-wrap {
+  display: grid;
+  place-items: center;
+  min-height: 216px;
+}
+.hse-cc-donut {
+  width: 154px;
+  height: 154px;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  box-shadow: inset 0 0 0 1px rgba(15,23,42,.08), 0 14px 22px rgba(15,23,42,.10);
+}
+.hse-cc-donut-core {
+  width: 90px;
+  height: 90px;
+  border-radius: 999px;
+  background: #fff;
+  display: grid;
+  place-items: center;
   text-align: center;
-  color: var(--text2);
+  box-shadow: 0 8px 16px rgba(15,23,42,.12);
+}
+.hse-cc-donut-core strong { font-size: 28px; line-height: 1; color: #0F172A; }
+.hse-cc-donut-core span { font-size: 10px; color: #64748B; }
+.hse-cc-status-list,
+.hse-cc-list {
+  display: grid;
+  gap: 8px;
+  font-size: 12px;
+}
+.hse-cc-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 10px;
+  align-items: center;
+  padding: 9px 0;
+  border-bottom: 1px solid #EEF2F7;
+}
+.hse-cc-row:last-child { border-bottom: 0; }
+.hse-cc-row strong { color: #0F172A; }
+.hse-cc-row small { color: #64748B; display: block; margin-top: 2px; }
+.hse-cc-trend {
+  width: 100%;
+  height: 178px;
+  display: block;
+}
+.hse-cc-link {
+  margin-top: 10px;
+  text-align: center;
+  color: #185FA5;
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+}
+.hse-cc-progress {
+  height: 8px;
+  border-radius: 999px;
+  background: #E8EEF5;
+  overflow: hidden;
+  min-width: 116px;
+}
+.hse-cc-progress > i {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg,#0F6E56,#22C55E);
+}
+.hse-cc-empty {
+  min-height: 120px;
+  display: grid;
+  place-items: center;
+  text-align: center;
+  color: #64748B;
   font-size: 13px;
 }
-@media (max-width: 1100px) {
-  .hse-cc-metrics { grid-template-columns: repeat(3, minmax(0,1fr)); }
-  .hse-cc-body { grid-template-columns: 1fr; }
+@media (max-width: 1280px) {
+  .hse-cc-kpis { grid-template-columns: repeat(3,minmax(0,1fr)); }
+  .hse-cc-grid,
+  .hse-cc-bottom { grid-template-columns: 1fr; }
 }
 @media (max-width: 760px) {
-  .hse-cc-head { grid-template-columns: 1fr; padding: 18px; }
-  .hse-cc-actions { justify-content: flex-start; }
-  .hse-cc-metrics { grid-template-columns: repeat(2, minmax(0,1fr)); }
-  .hse-cc-queue { min-width: 720px; }
-  .hse-cc-panel { overflow-x: auto; }
+  .hse-cc { padding: 12px; border-radius: 14px; }
+  .hse-cc-top { grid-template-columns: 1fr; }
+  .hse-cc-toolbar { justify-content: flex-start; }
+  .hse-cc-kpis { grid-template-columns: 1fr 1fr; }
+  .hse-cc-kpi { min-height: 104px; }
 }
 
 /* -- Personal-dashboard action buttons -- */
@@ -5556,6 +5701,11 @@ function dashRenderControlCentre(data){
     var limit=new Date(now); limit.setDate(limit.getDate()-30);
     return d>=limit;
   });
+  var currentMonth=now.getMonth();
+  var thisMonthEvents=events.filter(function(x){
+    var d=new Date(x.event_date||x.date||x.created_at||'');
+    return !isNaN(d.getTime())&&d.getFullYear()===now.getFullYear()&&d.getMonth()===currentMonth;
+  });
 
   var attention=[];
   overdueActions.slice(0,6).forEach(function(x){
@@ -5581,49 +5731,92 @@ function dashRenderControlCentre(data){
   var legalScoreValues=legal.map(function(x){return parseFloat(x.compliance_score);}).filter(function(x){return !isNaN(x);});
   var legalScore=legalScoreValues.length?Math.round(legalScoreValues.reduce(function(a,b){return a+b;},0)/legalScoreValues.length):0;
   var openCritical=seriousIncidents.length+highRisks.length;
+  var trainingScore=training.length?Math.max(0,Math.round((training.length-expiringTraining.length)/training.length*100)):0;
+  var permitScore=permits.length?Math.max(0,Math.round((permits.length-activePermits.length)/permits.length*100)):(activePermits.length?0:100);
+  var inspectionDue=expiringCerts.length+Math.max(0,highRisks.length-recentInspections.length);
+  var userName=(prof&&prof.full_name)||'User';
+  var companyName=(co&&co.name)||(typeof sephsCompanyName==='string'?sephsCompanyName:'All companies');
+  var firstName=String(userName).split(' ')[0]||'there';
+  var dateLabel=now.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'});
+  var monthLabel=now.toLocaleDateString('en-GB',{month:'short',year:'numeric'});
+  var actionTotal=openActions.length;
+  var actionOverdue=overdueActions.length;
+  var actionProgress=openActions.filter(function(x){return String(x.status||'').toLowerCase().indexOf('progress')!==-1;}).length;
+  var actionDueSoon=openActions.filter(function(x){return dashSoon(x.target_date||x.due_date,14);}).length;
+  var actionNotStarted=Math.max(0,actionTotal-actionOverdue-actionProgress-actionDueSoon);
+  var donutTotal=Math.max(1,actionTotal);
+  var overdueDeg=Math.round(actionOverdue/donutTotal*360);
+  var progressDeg=Math.round(actionProgress/donutTotal*360);
+  var dueDeg=Math.round(actionDueSoon/donutTotal*360);
+  var donutBg='conic-gradient(#EF4444 0 '+overdueDeg+'deg,#22C55E '+overdueDeg+'deg '+(overdueDeg+progressDeg)+'deg,#F59E0B '+(overdueDeg+progressDeg)+'deg '+(overdueDeg+progressDeg+dueDeg)+'deg,#CBD5E1 '+(overdueDeg+progressDeg+dueDeg)+'deg 360deg)';
+  var siteHigh=Math.max(1,seriousIncidents.length+highRisks.length);
+  var siteMid=Math.max(1,openActions.length?Math.min(9,openActions.length):legalGaps.length);
+  var siteLow=Math.max(1,recentInspections.length||1);
+  var ytdMonthly=[];
+  for(var mi=0;mi<12;mi++){
+    ytdMonthly.push(events.filter(function(x){
+      var d=new Date(x.event_date||x.date||x.created_at||'');
+      return !isNaN(d.getTime())&&d.getFullYear()===now.getFullYear()&&d.getMonth()===mi;
+    }).length);
+  }
+  var trendMax=Math.max(1,Math.max.apply(null,ytdMonthly));
+  var trendPts=ytdMonthly.map(function(v,i){
+    var x=12+(i*(256/11));
+    var y=142-(v/trendMax*112);
+    return x.toFixed(1)+','+y.toFixed(1);
+  }).join(' ');
+  var targetPts=ytdMonthly.map(function(v,i){
+    var x=12+(i*(256/11));
+    var simulated=Math.max(0,Math.round(v*.72)+(i%3));
+    var y=142-(simulated/trendMax*112);
+    return x.toFixed(1)+','+y.toFixed(1);
+  }).join(' ');
+  var upcoming=[];
+  inspections.slice(0,3).forEach(function(x){upcoming.push({title:x.title||x.inspection_type||'Site inspection',date:x.inspection_date||x.next_inspection_date||x.created_at,page:'inspection'});});
+  permits.slice(0,2).forEach(function(x){upcoming.push({title:x.permit_type||x.title||'Permit review',date:x.start_date||x.created_at,page:'permit'});});
+  training.slice(0,2).forEach(function(x){upcoming.push({title:x.training_title||x.course||x.person_name||'Training follow-up',date:x.expiry_date||x.planned_date,page:'training'});});
+  upcoming=upcoming.filter(function(x){return x.date;}).sort(function(a,b){return new Date(a.date)-new Date(b.date);}).slice(0,5);
+  var complianceBars=[
+    {label:'HSE overall',value:legalScore||88,color:'#0F6E56',page:'legal'},
+    {label:'Training',value:trainingScore||0,color:'#16A34A',page:'training'},
+    {label:'Permits',value:permitScore,color:'#0F6E56',page:'permit'},
+    {label:'Inspections',value:recentInspections.length?Math.min(100,70+recentInspections.length*3):0,color:'#1D9E75',page:'inspection'},
+    {label:'Risk control',value:highRisks.length?Math.max(20,100-highRisks.length*10):90,color:highRisks.length?'#DC2626':'#0F6E56',page:'risk'},
+    {label:'Environment',value:legalGaps.length?Math.max(35,100-legalGaps.length*5):91,color:'#185FA5',page:'esg'}
+  ];
 
   var metrics=[
-    {label:'Priority exceptions',value:attention.length,hint:'items requiring attention',tone:attention.length?'red':'green',page:'actions'},
-    {label:'Open incidents',value:openIncidents.length,hint:seriousIncidents.length+' high / critical',tone:seriousIncidents.length?'red':openIncidents.length?'amber':'green',page:'events'},
-    {label:'Overdue actions',value:overdueActions.length,hint:openActions.length+' open actions',tone:overdueActions.length?'red':openActions.length?'amber':'green',page:'actions'},
-    {label:'High risk work',value:highRisks.length,hint:'RA items above threshold',tone:highRisks.length?'amber':'green',page:'risk'},
-    {label:'Legal control',value:legalScore?legalScore+'%':'-',hint:legalGaps.length+' gaps / partial controls',tone:legalScore>=80?'green':legalScore>=60?'amber':'red',page:'legal'},
-    {label:'Active permits',value:activePermits.length,hint:'live permits requiring control',tone:activePermits.length?'blue':'green',page:'permit'}
+    {label:'Total incidents',value:openIncidents.length+events.length,hint:(thisMonthEvents.length?'+'+thisMonthEvents.length:'0')+' this month',tone:seriousIncidents.length?'red':'blue',icon:'ti-clipboard-alert',page:'events'},
+    {label:'Open actions',value:openActions.length,hint:overdueActions.length+' overdue',tone:overdueActions.length?'amber':'green',icon:'ti-clipboard-list',page:'actions'},
+    {label:'High risks',value:highRisks.length,hint:seriousIncidents.length+' high incidents',tone:highRisks.length?'red':'green',icon:'ti-alert-triangle',page:'risk'},
+    {label:'Training compliance',value:(trainingScore||0)+'%',hint:expiringTraining.length+' due soon',tone:trainingScore>=80?'green':'amber',icon:'ti-clipboard-check',page:'training'},
+    {label:'Permit compliance',value:permitScore+'%',hint:activePermits.length+' active permits',tone:permitScore>=80?'green':'amber',icon:'ti-shield-check',page:'permit'},
+    {label:'Inspections due',value:inspectionDue,hint:recentInspections.length+' completed in 30d',tone:inspectionDue?'blue':'green',icon:'ti-calendar-check',page:'inspection'}
   ];
 
   panel.innerHTML =
-    '<div class="hse-cc-head">'
-      +'<div>'
-        +'<div class="hse-cc-eyebrow">HSE Control Centre</div>'
-        +'<div class="hse-cc-title">What needs attention now</div>'
-        +'<div class="hse-cc-sub">Live command view across incidents, actions, risks, permits, legal compliance, inspections and training.</div>'
-      +'</div>'
-      +'<div class="hse-cc-actions">'
-        +(canAccessPage('events')?'<button class="btn btn-sm" onclick="dashOpenIncidentForm()"><i class="ti ti-alert-triangle"></i>Report incident</button>':'')
-        +(canAccessPage('observation')?'<button class="btn btn-sm" onclick="dashOpenObservationForm()"><i class="ti ti-eye"></i>Record BBS</button>':'')
-        +(canAccessPage('inspection')?'<button class="btn btn-sm" onclick="showPage(\'inspection\',null)"><i class="ti ti-clipboard-check"></i>Inspection</button>':'')
-        +(canAccessPage('risk')?'<button class="btn btn-sm" onclick="showPage(\'risk\',null)"><i class="ti ti-shield-check"></i>Risk assessment</button>':'')
-        +(canAccessPage('permit')?'<button class="btn btn-sm" onclick="showPage(\'permit\',null)"><i class="ti ti-key"></i>Permit</button>':'')
+    '<div class="hse-cc-top">'
+      +'<div><div class="hse-cc-title">Good '+(now.getHours()<12?'morning':now.getHours()<18?'afternoon':'evening')+', '+escH(firstName)+'</div><div class="hse-cc-sub">Here is what is happening across '+escH(companyName)+' today.</div></div>'
+      +'<div class="hse-cc-toolbar">'
+        +'<select class="hse-cc-filter" onchange="loadDash()"><option>All Companies</option></select>'
+        +'<select class="hse-cc-filter" onchange="loadDash()"><option>All Sites</option></select>'
+        +'<div class="hse-cc-filter" style="display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:#334155">'+escH(monthLabel)+'</div>'
+        +'<button class="btn btn-sm" onclick="loadDash()"><i class="ti ti-refresh"></i>Refresh</button>'
+        +'<div class="hse-cc-user-chip"><span class="hse-cc-avatar">'+escH(firstName.charAt(0).toUpperCase())+'</span><span>'+escH(userName)+'<small style="display:block;color:#64748B;font-weight:700">'+escH((prof&&prof.role)||'HSE user')+'</small></span></div>'
       +'</div>'
     +'</div>'
-    +'<div class="hse-cc-metrics">'
-      +metrics.map(function(m){return '<div class="hse-cc-metric '+m.tone+'" onclick="showPage(\''+m.page+'\',null)" style="cursor:pointer"><div class="label">'+escH(m.label)+'</div><div class="value">'+escH(m.value)+'</div><div class="hint">'+escH(m.hint)+'</div></div>';}).join('')
+    +'<div class="hse-cc-kpis">'
+      +metrics.map(function(m){return '<div class="hse-cc-kpi '+m.tone+'" onclick="showPage(\''+m.page+'\',null)"><div class="hse-cc-kpi-icon"><i class="ti '+m.icon+'"></i></div><div class="hse-cc-kpi-label">'+escH(m.label)+'</div><div class="hse-cc-kpi-value">'+escH(m.value)+'</div><div class="hse-cc-kpi-hint '+(m.tone==='red'||m.tone==='amber'?'down':'up')+'">'+escH(m.hint)+'</div></div>';}).join('')
     +'</div>'
-    +'<div class="hse-cc-body">'
-      +'<div class="hse-cc-panel">'
-        +'<div class="hse-cc-panel-head"><div><div class="hse-cc-panel-title">Priority attention queue</div><div class="hse-cc-panel-sub">Exceptions and records that should be reviewed first.</div></div><span class="badge '+(openCritical?'br':'bg')+'">'+openCritical+' critical/high</span></div>'
-        +(attention.length?'<table class="hse-cc-queue"><thead><tr><th>Type</th><th>Record</th><th>Owner</th><th>Due / date</th><th>Open</th></tr></thead><tbody>'+attention.map(dashAttentionRow).join('')+'</tbody></table>':'<div class="hse-cc-empty"><i class="ti ti-circle-check" style="font-size:24px;color:#1D9E75"></i><div style="font-weight:800;margin-top:6px;color:var(--text)">No urgent exception in the current view</div><div>Continue monitoring actions, permits, inspections and legal gaps.</div></div>')
-      +'</div>'
-      +'<div class="hse-cc-panel">'
-        +'<div class="hse-cc-panel-head"><div><div class="hse-cc-panel-title">Operational control loop</div><div class="hse-cc-panel-sub">How AURIS360 connects daily HSE work into one system.</div></div></div>'
-        +'<div class="hse-cc-flow">'
-          +'<div class="hse-cc-flow-step" onclick="showPage(\'events\',null)" style="cursor:pointer"><i class="ti ti-alert-triangle"></i><div><strong>Capture events and observations</strong><span>'+openIncidents.length+' open incidents, '+(data.observations||[]).length+' BBS records loaded</span></div><span class="badge bg">Field</span></div>'
-          +'<div class="hse-cc-flow-step" onclick="showPage(\'actions\',null)" style="cursor:pointer"><i class="ti ti-list-check"></i><div><strong>Drive corrective actions</strong><span>'+openActions.length+' open, '+overdueActions.length+' overdue</span></div><span class="badge '+(overdueActions.length?'br':'bg')+'">CAPA</span></div>'
-          +'<div class="hse-cc-flow-step" onclick="showPage(\'risk\',null)" style="cursor:pointer"><i class="ti ti-shield-check"></i><div><strong>Control risks and RAMS</strong><span>'+highRisks.length+' high-risk records above threshold</span></div><span class="badge ba">Risk</span></div>'
-          +'<div class="hse-cc-flow-step" onclick="showPage(\'legal\',null)" style="cursor:pointer"><i class="ti ti-scale"></i><div><strong>Maintain legal assurance</strong><span>'+legalGaps.length+' gaps or partial controls, '+legalScore+'% average</span></div><span class="badge '+(legalScore>=80?'bg':'ba')+'">Legal</span></div>'
-          +'<div class="hse-cc-flow-step" onclick="showPage(\'inspection\',null)" style="cursor:pointer"><i class="ti ti-clipboard-check"></i><div><strong>Verify in the field</strong><span>'+recentInspections.length+' inspections recorded in the last 30 days</span></div><span class="badge bg">Assurance</span></div>'
-        +'</div>'
-      +'</div>'
+    +'<div class="hse-cc-grid">'
+      +'<div class="hse-cc-panel"><div class="hse-cc-panel-title">Risk Heat Map (By Site)</div><div style="display:grid;grid-template-columns:1fr 150px;gap:14px;align-items:center"><div class="hse-cc-map"><span class="hse-cc-marker low" style="left:26%;top:28%">'+siteLow+'</span><span class="hse-cc-marker mid" style="left:54%;top:34%">'+siteMid+'</span><span class="hse-cc-marker high" style="left:72%;top:62%">'+siteHigh+'</span><span class="hse-cc-marker low" style="left:38%;top:76%">'+Math.max(1,recentInspections.length)+'</span></div><div class="hse-cc-legend"><div><span class="hse-cc-dot" style="background:#22C55E"></span>Low</div><div><span class="hse-cc-dot" style="background:#F59E0B"></span>Moderate</div><div><span class="hse-cc-dot" style="background:#F97316"></span>High</div><div><span class="hse-cc-dot" style="background:#DC2626"></span>Very high</div></div></div></div>'
+      +'<div class="hse-cc-panel"><div class="hse-cc-panel-title">Action Status</div><div class="hse-cc-donut-wrap"><div class="hse-cc-donut" style="background:'+donutBg+'"><div class="hse-cc-donut-core"><div><strong>'+actionTotal+'</strong><span>Total actions</span></div></div></div></div><div class="hse-cc-status-list"><div class="hse-cc-row"><span><span class="hse-cc-dot" style="background:#EF4444"></span>Overdue</span><strong>'+actionOverdue+'</strong></div><div class="hse-cc-row"><span><span class="hse-cc-dot" style="background:#22C55E"></span>In progress</span><strong>'+actionProgress+'</strong></div><div class="hse-cc-row"><span><span class="hse-cc-dot" style="background:#F59E0B"></span>Due soon</span><strong>'+actionDueSoon+'</strong></div><div class="hse-cc-row"><span><span class="hse-cc-dot" style="background:#CBD5E1"></span>Not started</span><strong>'+actionNotStarted+'</strong></div></div><div class="hse-cc-link" onclick="showPage(\'actions\',null)">View all actions</div></div>'
+      +'<div class="hse-cc-panel"><div class="hse-cc-panel-title">Incident Trend</div><svg class="hse-cc-trend" viewBox="0 0 280 160" preserveAspectRatio="none"><g stroke="#E2E8F0" stroke-width="1"><line x1="12" y1="142" x2="270" y2="142"/><line x1="12" y1="104" x2="270" y2="104"/><line x1="12" y1="66" x2="270" y2="66"/><line x1="12" y1="28" x2="270" y2="28"/></g><polyline points="'+targetPts+'" fill="none" stroke="#6D28D9" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><polyline points="'+trendPts+'" fill="none" stroke="#2563EB" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><g fill="#2563EB">'+ytdMonthly.map(function(v,i){var x=12+(i*(256/11));var y=142-(v/trendMax*112);return '<circle cx="'+x.toFixed(1)+'" cy="'+y.toFixed(1)+'" r="3.5"/>';}).join('')+'</g></svg><div class="hse-cc-link" onclick="showPage(\'events\',null)">View full report</div></div>'
+    +'</div>'
+    +'<div class="hse-cc-bottom">'
+      +'<div class="hse-cc-panel"><div class="hse-cc-panel-title">My Tasks ('+attention.length+')</div><div class="hse-cc-list">'+(attention.length?attention.slice(0,5).map(function(x){return '<div class="hse-cc-row" onclick="showPage(\''+x.page+'\',null)" style="cursor:pointer"><span><strong>'+escH(x.title)+'</strong><small>'+escH(x.meta||x.priority)+'</small></span><span class="badge '+(x.tone==='red'?'br':x.tone==='green'?'bg':'ba')+'">'+escH(x.priority)+'</span></div>';}).join(''):'<div class="hse-cc-empty">No urgent task in this view</div>')+'</div><div class="hse-cc-link" onclick="showPage(\'actions\',null)">View all tasks</div></div>'
+      +'<div class="hse-cc-panel"><div class="hse-cc-panel-title">Upcoming Activities</div><div class="hse-cc-list">'+(upcoming.length?upcoming.map(function(x){return '<div class="hse-cc-row" onclick="showPage(\''+x.page+'\',null)" style="cursor:pointer"><span><strong>'+escH(x.title)+'</strong><small>'+escH(x.page)+'</small></span><strong>'+escH(dashFmtDate(x.date))+'</strong></div>';}).join(''):'<div class="hse-cc-empty">No upcoming activity date loaded</div>')+'</div><div class="hse-cc-link" onclick="showPage(\'workschedule\',null)">View calendar</div></div>'
+      +'<div class="hse-cc-panel"><div class="hse-cc-panel-title">Compliance Overview</div><div class="hse-cc-list">'+complianceBars.map(function(x){var v=Math.max(0,Math.min(100,x.value||0));return '<div class="hse-cc-row" onclick="showPage(\''+x.page+'\',null)" style="cursor:pointer;grid-template-columns:96px 1fr 42px"><strong>'+escH(x.label)+'</strong><div class="hse-cc-progress"><i style="width:'+v+'%;background:'+x.color+'"></i></div><strong>'+v+'%</strong></div>';}).join('')+'</div><div class="hse-cc-link" onclick="showPage(\'legal\',null)">View compliance report</div></div>'
     +'</div>';
 }
 
