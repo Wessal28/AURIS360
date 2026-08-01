@@ -929,6 +929,22 @@ thead tr[style*="#7F1D1D"] th:last-child {
   height: 136px;
   display: block;
 }
+.hse-cc-trend-legend {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  margin-top: 6px;
+  font-size: 11px;
+  color: #475569;
+  font-weight: 700;
+}
+.hse-cc-trend-note {
+  margin-top: 4px;
+  text-align: center;
+  font-size: 10px;
+  color: #64748B;
+}
 .hse-cc-link {
   margin-top: 10px;
   text-align: center;
@@ -5983,25 +5999,43 @@ function dashRenderControlCentre(data){
   var siteHigh=Math.max(1,seriousIncidents.length+highRisks.length);
   var siteMid=Math.max(1,openActions.length?Math.min(9,openActions.length):legalGaps.length);
   var siteLow=Math.max(1,recentInspections.length||1);
-  var ytdMonthly=[];
+  var trendMonths=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  var incidentMonthly=[];
+  var nearMissMonthly=[];
+  function dashIsNearMiss(x){
+    var t=String(x.event_type||x.incident_type||x.type||x.category||'').toLowerCase();
+    return t.indexOf('near')!==-1;
+  }
   for(var mi=0;mi<12;mi++){
-    ytdMonthly.push(events.filter(function(x){
+    incidentMonthly.push(events.filter(function(x){
       var d=new Date(x.event_date||x.date||x.created_at||'');
-      return !isNaN(d.getTime())&&d.getFullYear()===now.getFullYear()&&d.getMonth()===mi;
+      return !isNaN(d.getTime())&&d.getFullYear()===now.getFullYear()&&d.getMonth()===mi&&!dashIsNearMiss(x);
+    }).length);
+    nearMissMonthly.push(events.filter(function(x){
+      var d=new Date(x.event_date||x.date||x.created_at||'');
+      return !isNaN(d.getTime())&&d.getFullYear()===now.getFullYear()&&d.getMonth()===mi&&dashIsNearMiss(x);
     }).length);
   }
-  var trendMax=Math.max(1,Math.max.apply(null,ytdMonthly));
-  var trendPts=ytdMonthly.map(function(v,i){
-    var x=12+(i*(256/11));
-    var y=142-(v/trendMax*112);
-    return x.toFixed(1)+','+y.toFixed(1);
-  }).join(' ');
-  var targetPts=ytdMonthly.map(function(v,i){
-    var x=12+(i*(256/11));
-    var simulated=Math.max(0,Math.round(v*.72)+(i%3));
-    var y=142-(simulated/trendMax*112);
-    return x.toFixed(1)+','+y.toFixed(1);
-  }).join(' ');
+  var trendMax=Math.max(1,Math.max.apply(null,incidentMonthly.concat(nearMissMonthly)));
+  function dashTrendPoints(series){
+    return series.map(function(v,i){
+      var x=18+(i*(244/11));
+      var y=118-(v/trendMax*84);
+      return x.toFixed(1)+','+y.toFixed(1);
+    }).join(' ');
+  }
+  function dashTrendDots(series,color,label){
+    return series.map(function(v,i){
+      var x=18+(i*(244/11));
+      var y=118-(v/trendMax*84);
+      return '<circle cx="'+x.toFixed(1)+'" cy="'+y.toFixed(1)+'" r="3.2" fill="'+color+'"><title>'+label+' - '+trendMonths[i]+': '+v+'</title></circle>';
+    }).join('');
+  }
+  var incidentTrendPts=dashTrendPoints(incidentMonthly);
+  var nearMissTrendPts=dashTrendPoints(nearMissMonthly);
+  var incidentTrendDots=dashTrendDots(incidentMonthly,'#2563EB','Incidents');
+  var nearMissTrendDots=dashTrendDots(nearMissMonthly,'#6D28D9','Near misses');
+  var incidentTrendLabels=trendMonths.map(function(m){return '<span>'+m+'</span>';}).join('');
   var upcoming=[];
   inspections.slice(0,3).forEach(function(x){upcoming.push({title:x.title||x.inspection_type||'Site inspection',date:x.inspection_date||x.next_inspection_date||x.created_at,page:'inspection'});});
   permits.slice(0,2).forEach(function(x){upcoming.push({title:x.permit_type||x.title||'Permit review',date:x.start_date||x.created_at,page:'permit'});});
@@ -6045,7 +6079,7 @@ function dashRenderControlCentre(data){
     +'<div class="hse-cc-grid">'
       +'<div class="hse-cc-panel" data-cc-widget="riskmap" onclick="dashOpenWidgetDetail(\'riskmap\')"><div class="hse-cc-panel-title">Risk Heat Map (By Site)</div><div style="display:grid;grid-template-columns:1fr 150px;gap:14px;align-items:center"><div class="hse-cc-map"><span class="hse-cc-marker low" style="left:26%;top:28%">'+siteLow+'</span><span class="hse-cc-marker mid" style="left:54%;top:34%">'+siteMid+'</span><span class="hse-cc-marker high" style="left:72%;top:62%">'+siteHigh+'</span><span class="hse-cc-marker low" style="left:38%;top:76%">'+Math.max(1,recentInspections.length)+'</span></div><div class="hse-cc-legend"><div><span class="hse-cc-dot" style="background:#22C55E"></span>Low</div><div><span class="hse-cc-dot" style="background:#F59E0B"></span>Moderate</div><div><span class="hse-cc-dot" style="background:#F97316"></span>High</div><div><span class="hse-cc-dot" style="background:#DC2626"></span>Very high</div></div></div></div>'
       +'<div class="hse-cc-panel" data-cc-widget="actions" onclick="dashOpenWidgetDetail(\'actions\')"><div class="hse-cc-panel-title">Action Status</div><div class="hse-cc-donut-wrap"><div class="hse-cc-donut" style="background:'+donutBg+'"><div class="hse-cc-donut-core"><div><strong>'+actionTotal+'</strong><span>Total actions</span></div></div></div></div><div class="hse-cc-status-list"><div class="hse-cc-row"><span><span class="hse-cc-dot" style="background:#EF4444"></span>Overdue</span><strong>'+actionOverdue+'</strong></div><div class="hse-cc-row"><span><span class="hse-cc-dot" style="background:#22C55E"></span>In progress</span><strong>'+actionProgress+'</strong></div><div class="hse-cc-row"><span><span class="hse-cc-dot" style="background:#F59E0B"></span>Due soon</span><strong>'+actionDueSoon+'</strong></div><div class="hse-cc-row"><span><span class="hse-cc-dot" style="background:#CBD5E1"></span>Not started</span><strong>'+actionNotStarted+'</strong></div></div><div class="hse-cc-link">View all actions</div></div>'
-      +'<div class="hse-cc-panel" data-cc-widget="trend" onclick="dashOpenWidgetDetail(\'trend\')"><div class="hse-cc-panel-title">Incident Trend</div><svg class="hse-cc-trend" viewBox="0 0 280 160" preserveAspectRatio="none"><g stroke="#E2E8F0" stroke-width="1"><line x1="12" y1="142" x2="270" y2="142"/><line x1="12" y1="104" x2="270" y2="104"/><line x1="12" y1="66" x2="270" y2="66"/><line x1="12" y1="28" x2="270" y2="28"/></g><polyline points="'+targetPts+'" fill="none" stroke="#6D28D9" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><polyline points="'+trendPts+'" fill="none" stroke="#2563EB" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><g fill="#2563EB">'+ytdMonthly.map(function(v,i){var x=12+(i*(256/11));var y=142-(v/trendMax*112);return '<circle cx="'+x.toFixed(1)+'" cy="'+y.toFixed(1)+'" r="3.5"/>';}).join('')+'</g></svg><div class="hse-cc-link">View full report</div></div>'
+      +'<div class="hse-cc-panel" data-cc-widget="trend" onclick="dashOpenWidgetDetail(\'trend\')"><div class="hse-cc-panel-title">Incident Trend</div><svg class="hse-cc-trend" viewBox="0 0 280 132" role="img" aria-label="Monthly incident and near miss trend"><g stroke="#E2E8F0" stroke-width="1"><line x1="18" y1="118" x2="262" y2="118"/><line x1="18" y1="90" x2="262" y2="90"/><line x1="18" y1="62" x2="262" y2="62"/><line x1="18" y1="34" x2="262" y2="34"/></g><polyline points="'+nearMissTrendPts+'" fill="none" stroke="#6D28D9" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/><polyline points="'+incidentTrendPts+'" fill="none" stroke="#2563EB" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/><g>'+nearMissTrendDots+incidentTrendDots+'</g></svg><div style="display:grid;grid-template-columns:repeat(12,1fr);gap:2px;margin:0 8px;color:#64748B;font-size:9px;font-weight:800;text-align:center">'+incidentTrendLabels+'</div><div class="hse-cc-trend-legend"><span><span class="hse-cc-dot" style="background:#2563EB"></span>Incidents</span><span><span class="hse-cc-dot" style="background:#6D28D9"></span>Near misses</span></div><div class="hse-cc-trend-note">Current year monthly counts</div><div class="hse-cc-link">View full report</div></div>'
     +'</div>'
     +'<div class="hse-cc-bottom">'
       +'<div class="hse-cc-panel" data-cc-widget="tasks" onclick="dashOpenWidgetDetail(\'tasks\')"><div class="hse-cc-panel-title">My Tasks ('+attention.length+')</div><div class="hse-cc-list">'+(attention.length?attention.slice(0,8).map(function(x){return '<div class="hse-cc-row"><span><strong>'+escH(x.title)+'</strong><small>'+escH(x.meta||x.priority)+'</small></span><span class="badge '+(x.tone==='red'?'br':x.tone==='green'?'bg':'ba')+'">'+escH(x.priority)+'</span></div>';}).join(''):'<div class="hse-cc-empty">No urgent task in this view</div>')+'</div><div class="hse-cc-link">View all tasks</div></div>'
