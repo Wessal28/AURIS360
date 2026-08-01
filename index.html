@@ -922,6 +922,15 @@ thead tr[style*="#7F1D1D"] th:last-child {
   border-bottom: 1px solid #EEF2F7;
 }
 .hse-cc-row:last-child { border-bottom: 0; }
+.hse-cc-row[onclick] {
+  cursor: pointer;
+  border-radius: 10px;
+  padding-left: 6px;
+  padding-right: 6px;
+}
+.hse-cc-row[onclick]:hover {
+  background: #F8FAFC;
+}
 .hse-cc-row strong { color: #0F172A; }
 .hse-cc-row small { color: #64748B; display: block; margin-top: 2px; }
 .hse-cc-trend {
@@ -951,8 +960,9 @@ thead tr[style*="#7F1D1D"] th:last-child {
   color: #185FA5;
   font-size: 12px;
   font-weight: 800;
-  cursor: inherit;
+  cursor: pointer;
 }
+.hse-cc-link:hover { text-decoration: underline; }
 .hse-cc-progress {
   height: 8px;
   border-radius: 999px;
@@ -5892,10 +5902,43 @@ function dashCloseControlCentreModal(){
   if(modal)modal.style.display='none';
 }
 
+function dashJs(value){
+  return String(value==null?'':value).replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/\r?\n/g,' ');
+}
+
+function dashNavigateTo(page,id){
+  dashCloseControlCentreModal();
+  if(!page)return;
+  showPage(page,null);
+  if(!id)return;
+  setTimeout(function(){
+    try{
+      if(page==='events'&&typeof evOpenDetail==='function')evOpenDetail(id);
+      else if(page==='inspection'&&typeof auditOpen==='function')auditOpen(id);
+      else if(page==='risk'&&typeof raOpen==='function')raOpen(id);
+      else if(page==='permit'&&typeof ptwShowDetail==='function')ptwShowDetail(id);
+      else if(page==='workschedule'&&typeof wsShowDetail==='function')wsShowDetail(id);
+      else if(page==='swms'&&typeof swmsOpen==='function')swmsOpen(id);
+      else if(page==='training'&&typeof tpOpen==='function')tpOpen(id);
+      else if(page==='actions'&&typeof mapOpenSourceRecord==='function')mapOpenSourceRecord(id);
+    }catch(e){
+      console.warn('Dashboard record navigation failed',e);
+    }
+  },180);
+}
+
+function dashNavClick(event,page,id){
+  if(event){
+    event.preventDefault();
+    event.stopPropagation();
+  }
+  dashNavigateTo(page,id);
+}
+
 function dashOpenKpiDetail(index){
   var item=(window.__hseCcKpis||[])[index];
   if(!item)return;
-  dashOpenControlCentreModal(item.label,'<div class="hse-cc-panel" style="min-height:260px"><div style="display:flex;align-items:center;gap:18px;margin-bottom:18px"><div class="hse-cc-kpi-icon">'+dashKpiAsset(item.asset)+'</div><div><div class="hse-cc-kpi-label">'+escH(item.label)+'</div><div class="hse-cc-kpi-value" style="font-size:44px">'+escH(item.value)+'</div><div class="hse-cc-kpi-hint '+(item.tone==='red'||item.tone==='amber'?'down':'up')+'">'+escH(item.hint)+'</div></div></div><button class="btn primary" onclick="dashCloseControlCentreModal();showPage(\''+escH(item.page)+'\',null)">Open related module</button></div>');
+  dashOpenControlCentreModal(item.label,'<div class="hse-cc-panel" style="min-height:260px"><div style="display:flex;align-items:center;gap:18px;margin-bottom:18px"><div class="hse-cc-kpi-icon">'+dashKpiAsset(item.asset)+'</div><div><div class="hse-cc-kpi-label">'+escH(item.label)+'</div><div class="hse-cc-kpi-value" style="font-size:44px">'+escH(item.value)+'</div><div class="hse-cc-kpi-hint '+(item.tone==='red'||item.tone==='amber'?'down':'up')+'">'+escH(item.hint)+'</div></div></div><button class="btn primary" onclick="dashNavigateTo(\''+dashJs(item.page)+'\')">Open related module</button></div>');
 }
 
 function dashOpenWidgetDetail(key){
@@ -5905,7 +5948,6 @@ function dashOpenWidgetDetail(key){
   var clone=source.cloneNode(true);
   clone.removeAttribute('onclick');
   clone.removeAttribute('data-cc-widget');
-  Array.prototype.forEach.call(clone.querySelectorAll('[onclick]'),function(el){el.removeAttribute('onclick');});
   dashOpenControlCentreModal(titleEl?titleEl.textContent:'Dashboard detail',clone.outerHTML);
 }
 
@@ -5962,22 +6004,22 @@ function dashRenderControlCentre(data){
 
   var attention=[];
   overdueActions.slice(0,6).forEach(function(x){
-    attention.push({priority:'Overdue',tone:'red',title:x.action||x.title||x.description||'Corrective action overdue',meta:x.ref||x.source_ref||x.source||'Master Action Plan',owner:x.responsible||x.assigned_to||x.owner||'-',due:dashFmtDate(x.target_date||x.due_date),page:'actions'});
+    attention.push({id:x.id||'',priority:'Overdue',tone:'red',title:x.action||x.title||x.description||'Corrective action overdue',meta:x.ref||x.source_ref||x.source||'Master Action Plan',owner:x.responsible||x.assigned_to||x.owner||'-',due:dashFmtDate(x.target_date||x.due_date),page:'actions'});
   });
   seriousIncidents.slice(0,4).forEach(function(x){
-    attention.push({priority:'Incident',tone:'red',title:x.description||x.event_type||'High severity incident',meta:x.ref||x.reference||x.event_ref||'Incident Management',owner:x.responsible||x.assigned_to||'-',due:dashFmtDate(x.event_date||x.created_at),page:'events'});
+    attention.push({id:x.id||'',priority:'Incident',tone:'red',title:x.description||x.event_type||'High severity incident',meta:x.ref||x.reference||x.event_ref||'Incident Management',owner:x.responsible||x.assigned_to||'-',due:dashFmtDate(x.event_date||x.created_at),page:'events'});
   });
   highRisks.slice(0,4).forEach(function(x){
-    attention.push({priority:'High risk',tone:'amber',title:x.title||x.activity||x.task||'High risk assessment',meta:x.ref||x.reference||'Risk Assessment',owner:x.responsible||x.owner||x.assessor||'-',due:dashFmtDate(x.review_date||x.next_review_date||x.target_date),page:'risk'});
+    attention.push({id:x.id||'',priority:'High risk',tone:'amber',title:x.title||x.activity||x.task||'High risk assessment',meta:x.ref||x.reference||'Risk Assessment',owner:x.responsible||x.owner||x.assessor||'-',due:dashFmtDate(x.review_date||x.next_review_date||x.target_date),page:'risk'});
   });
   legalGaps.slice(0,4).forEach(function(x){
-    attention.push({priority:'Legal gap',tone:'amber',title:x.section_title||x.requirement_title||x.title||x.legislation||'Legal requirement gap',meta:x.ref||x.reference||x.category||'Legal Compliance',owner:x.responsibility||x.responsible||x.action_by||'-',due:dashFmtDate(x.target_date||x.next_assessment_date),page:'legal'});
+    attention.push({id:x.id||'',priority:'Legal gap',tone:'amber',title:x.section_title||x.requirement_title||x.title||x.legislation||'Legal requirement gap',meta:x.ref||x.reference||x.category||'Legal Compliance',owner:x.responsibility||x.responsible||x.action_by||'-',due:dashFmtDate(x.target_date||x.next_assessment_date),page:'legal'});
   });
   expiringTraining.slice(0,3).forEach(function(x){
-    attention.push({priority:'Training',tone:'amber',title:x.person_name||x.employee_name||'Training validity due',meta:'Expires '+dashFmtDate(x.expiry_date),owner:x.department||'-',due:dashFmtDate(x.expiry_date),page:'training'});
+    attention.push({id:x.id||'',priority:'Training',tone:'amber',title:x.person_name||x.employee_name||'Training validity due',meta:'Expires '+dashFmtDate(x.expiry_date),owner:x.department||'-',due:dashFmtDate(x.expiry_date),page:'training'});
   });
   expiringCerts.slice(0,3).forEach(function(x){
-    attention.push({priority:'Certificate',tone:'amber',title:x.title||x.name||x.cert_name||'Certificate expiring',meta:x.ref||x.reference||'Certificate / authorisation',owner:x.responsible||'-',due:dashFmtDate(x.expiry_date),page:'fire'});
+    attention.push({id:x.id||'',priority:'Certificate',tone:'amber',title:x.title||x.name||x.cert_name||'Certificate expiring',meta:x.ref||x.reference||'Certificate / authorisation',owner:x.responsible||'-',due:dashFmtDate(x.expiry_date),page:'fire'});
   });
   attention=attention.slice(0,10);
 
@@ -6043,9 +6085,9 @@ function dashRenderControlCentre(data){
   var nearMissTrendDots=dashTrendDots(nearMissMonthly,'#6D28D9','Near misses');
   var incidentTrendLabels=trendMonths.map(function(m){return '<span>'+m+'</span>';}).join('');
   var upcoming=[];
-  inspections.slice(0,3).forEach(function(x){upcoming.push({title:x.title||x.inspection_type||'Site inspection',date:x.inspection_date||x.next_inspection_date||x.created_at,page:'inspection'});});
-  permits.slice(0,2).forEach(function(x){upcoming.push({title:x.permit_type||x.title||'Permit review',date:x.start_date||x.created_at,page:'permit'});});
-  training.slice(0,2).forEach(function(x){upcoming.push({title:x.training_title||x.course||x.person_name||'Training follow-up',date:x.expiry_date||x.planned_date,page:'training'});});
+  inspections.slice(0,3).forEach(function(x){upcoming.push({id:x.id||'',title:x.title||x.inspection_type||'Site inspection',date:x.inspection_date||x.next_inspection_date||x.created_at,page:'inspection'});});
+  permits.slice(0,2).forEach(function(x){upcoming.push({id:x.id||'',title:x.permit_type||x.title||'Permit review',date:x.start_date||x.created_at,page:'permit'});});
+  training.slice(0,2).forEach(function(x){upcoming.push({id:x.id||'',title:x.training_title||x.course||x.person_name||'Training follow-up',date:x.expiry_date||x.planned_date,page:'training'});});
   upcoming=upcoming.filter(function(x){return x.date;}).sort(function(a,b){return new Date(a.date)-new Date(b.date);}).slice(0,8);
   var complianceBars=[
     {label:'HSE overall',value:legalScore||88,color:'#0F6E56',page:'legal'},
@@ -6084,13 +6126,13 @@ function dashRenderControlCentre(data){
     +'</div>'
     +'<div class="hse-cc-grid">'
       +'<div class="hse-cc-panel" data-cc-widget="riskmap" onclick="dashOpenWidgetDetail(\'riskmap\')"><div class="hse-cc-panel-title">Risk Heat Map (By Site)</div><div style="display:grid;grid-template-columns:1fr 150px;gap:14px;align-items:center"><div class="hse-cc-map"><span class="hse-cc-marker low" style="left:26%;top:28%">'+siteLow+'</span><span class="hse-cc-marker mid" style="left:54%;top:34%">'+siteMid+'</span><span class="hse-cc-marker high" style="left:72%;top:62%">'+siteHigh+'</span><span class="hse-cc-marker low" style="left:38%;top:76%">'+Math.max(1,recentInspections.length)+'</span></div><div class="hse-cc-legend"><div><span class="hse-cc-dot" style="background:#22C55E"></span>Low</div><div><span class="hse-cc-dot" style="background:#F59E0B"></span>Moderate</div><div><span class="hse-cc-dot" style="background:#F97316"></span>High</div><div><span class="hse-cc-dot" style="background:#DC2626"></span>Very high</div></div></div></div>'
-      +'<div class="hse-cc-panel" data-cc-widget="actions" onclick="dashOpenWidgetDetail(\'actions\')"><div class="hse-cc-panel-title">Action Status</div><div class="hse-cc-donut-wrap"><div class="hse-cc-donut" style="background:'+donutBg+'"><div class="hse-cc-donut-core"><div><strong>'+actionTotal+'</strong><span>Total actions</span></div></div></div></div><div class="hse-cc-status-list"><div class="hse-cc-row"><span><span class="hse-cc-dot" style="background:#EF4444"></span>Overdue</span><strong>'+actionOverdue+'</strong></div><div class="hse-cc-row"><span><span class="hse-cc-dot" style="background:#22C55E"></span>In progress</span><strong>'+actionProgress+'</strong></div><div class="hse-cc-row"><span><span class="hse-cc-dot" style="background:#F59E0B"></span>Due soon</span><strong>'+actionDueSoon+'</strong></div><div class="hse-cc-row"><span><span class="hse-cc-dot" style="background:#CBD5E1"></span>Not started</span><strong>'+actionNotStarted+'</strong></div></div><div class="hse-cc-link">View all actions</div></div>'
-      +'<div class="hse-cc-panel" data-cc-widget="trend" onclick="dashOpenWidgetDetail(\'trend\')"><div class="hse-cc-panel-title">Incident Trend</div><svg class="hse-cc-trend" viewBox="0 0 280 132" role="img" aria-label="Monthly incident and near miss trend"><g stroke="#E2E8F0" stroke-width="1"><line x1="18" y1="118" x2="262" y2="118"/><line x1="18" y1="90" x2="262" y2="90"/><line x1="18" y1="62" x2="262" y2="62"/><line x1="18" y1="34" x2="262" y2="34"/></g><polyline points="'+nearMissTrendPts+'" fill="none" stroke="#6D28D9" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/><polyline points="'+incidentTrendPts+'" fill="none" stroke="#2563EB" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/><g>'+nearMissTrendDots+incidentTrendDots+'</g></svg><div style="display:grid;grid-template-columns:repeat(12,1fr);gap:2px;margin:0 8px;color:#64748B;font-size:9px;font-weight:800;text-align:center">'+incidentTrendLabels+'</div><div class="hse-cc-trend-legend"><span><span class="hse-cc-dot" style="background:#2563EB"></span>Incidents</span><span><span class="hse-cc-dot" style="background:#6D28D9"></span>Near misses</span></div><div class="hse-cc-trend-note">Current year monthly counts</div><div class="hse-cc-link">View full report</div></div>'
+      +'<div class="hse-cc-panel" data-cc-widget="actions" onclick="dashOpenWidgetDetail(\'actions\')"><div class="hse-cc-panel-title">Action Status</div><div class="hse-cc-donut-wrap"><div class="hse-cc-donut" style="background:'+donutBg+'"><div class="hse-cc-donut-core"><div><strong>'+actionTotal+'</strong><span>Total actions</span></div></div></div></div><div class="hse-cc-status-list"><div class="hse-cc-row" onclick="dashNavClick(event,\'actions\')"><span><span class="hse-cc-dot" style="background:#EF4444"></span>Overdue</span><strong>'+actionOverdue+'</strong></div><div class="hse-cc-row" onclick="dashNavClick(event,\'actions\')"><span><span class="hse-cc-dot" style="background:#22C55E"></span>In progress</span><strong>'+actionProgress+'</strong></div><div class="hse-cc-row" onclick="dashNavClick(event,\'actions\')"><span><span class="hse-cc-dot" style="background:#F59E0B"></span>Due soon</span><strong>'+actionDueSoon+'</strong></div><div class="hse-cc-row" onclick="dashNavClick(event,\'actions\')"><span><span class="hse-cc-dot" style="background:#CBD5E1"></span>Not started</span><strong>'+actionNotStarted+'</strong></div></div><div class="hse-cc-link" onclick="dashNavClick(event,\'actions\')">View all actions</div></div>'
+      +'<div class="hse-cc-panel" data-cc-widget="trend" onclick="dashOpenWidgetDetail(\'trend\')"><div class="hse-cc-panel-title">Incident Trend</div><svg class="hse-cc-trend" viewBox="0 0 280 132" role="img" aria-label="Monthly incident and near miss trend"><g stroke="#E2E8F0" stroke-width="1"><line x1="18" y1="118" x2="262" y2="118"/><line x1="18" y1="90" x2="262" y2="90"/><line x1="18" y1="62" x2="262" y2="62"/><line x1="18" y1="34" x2="262" y2="34"/></g><polyline points="'+nearMissTrendPts+'" fill="none" stroke="#6D28D9" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/><polyline points="'+incidentTrendPts+'" fill="none" stroke="#2563EB" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/><g>'+nearMissTrendDots+incidentTrendDots+'</g></svg><div style="display:grid;grid-template-columns:repeat(12,1fr);gap:2px;margin:0 8px;color:#64748B;font-size:9px;font-weight:800;text-align:center">'+incidentTrendLabels+'</div><div class="hse-cc-trend-legend"><span><span class="hse-cc-dot" style="background:#2563EB"></span>Incidents</span><span><span class="hse-cc-dot" style="background:#6D28D9"></span>Near misses</span></div><div class="hse-cc-trend-note">Current year monthly counts</div><div class="hse-cc-link" onclick="dashNavClick(event,\'events\')">View full report</div></div>'
     +'</div>'
     +'<div class="hse-cc-bottom">'
-      +'<div class="hse-cc-panel" data-cc-widget="tasks" onclick="dashOpenWidgetDetail(\'tasks\')"><div class="hse-cc-panel-title">My Tasks ('+attention.length+')</div><div class="hse-cc-list">'+(attention.length?attention.slice(0,8).map(function(x){return '<div class="hse-cc-row"><span><strong>'+escH(x.title)+'</strong><small>'+escH(x.meta||x.priority)+'</small></span><span class="badge '+(x.tone==='red'?'br':x.tone==='green'?'bg':'ba')+'">'+escH(x.priority)+'</span></div>';}).join(''):'<div class="hse-cc-empty">No urgent task in this view</div>')+'</div><div class="hse-cc-link">View all tasks</div></div>'
-      +'<div class="hse-cc-panel" data-cc-widget="upcoming" onclick="dashOpenWidgetDetail(\'upcoming\')"><div class="hse-cc-panel-title">Upcoming Activities</div><div class="hse-cc-list">'+(upcoming.length?upcoming.map(function(x){return '<div class="hse-cc-row"><span><strong>'+escH(x.title)+'</strong><small>'+escH(x.page)+'</small></span><strong>'+escH(dashFmtDate(x.date))+'</strong></div>';}).join(''):'<div class="hse-cc-empty">No upcoming activity date loaded</div>')+'</div><div class="hse-cc-link">View calendar</div></div>'
-      +'<div class="hse-cc-panel" data-cc-widget="compliance" onclick="dashOpenWidgetDetail(\'compliance\')"><div class="hse-cc-panel-title">Compliance Overview</div><div class="hse-cc-list">'+complianceBars.map(function(x){var v=Math.max(0,Math.min(100,x.value||0));return '<div class="hse-cc-row" style="grid-template-columns:96px 1fr 42px"><strong>'+escH(x.label)+'</strong><div class="hse-cc-progress"><i style="width:'+v+'%;background:'+x.color+'"></i></div><strong>'+v+'%</strong></div>';}).join('')+'</div><div class="hse-cc-link">View compliance report</div></div>'
+      +'<div class="hse-cc-panel" data-cc-widget="tasks" onclick="dashOpenWidgetDetail(\'tasks\')"><div class="hse-cc-panel-title">My Tasks ('+attention.length+')</div><div class="hse-cc-list">'+(attention.length?attention.slice(0,8).map(function(x){return '<div class="hse-cc-row" onclick="dashNavClick(event,\''+dashJs(x.page)+'\',\''+dashJs(x.id)+'\')"><span><strong>'+escH(x.title)+'</strong><small>'+escH(x.meta||x.priority)+'</small></span><span class="badge '+(x.tone==='red'?'br':x.tone==='green'?'bg':'ba')+'">'+escH(x.priority)+'</span></div>';}).join(''):'<div class="hse-cc-empty">No urgent task in this view</div>')+'</div><div class="hse-cc-link" onclick="dashNavClick(event,\'actions\')">View all tasks</div></div>'
+      +'<div class="hse-cc-panel" data-cc-widget="upcoming" onclick="dashOpenWidgetDetail(\'upcoming\')"><div class="hse-cc-panel-title">Upcoming Activities</div><div class="hse-cc-list">'+(upcoming.length?upcoming.map(function(x){return '<div class="hse-cc-row" onclick="dashNavClick(event,\''+dashJs(x.page)+'\',\''+dashJs(x.id)+'\')"><span><strong>'+escH(x.title)+'</strong><small>'+escH(x.page)+'</small></span><strong>'+escH(dashFmtDate(x.date))+'</strong></div>';}).join(''):'<div class="hse-cc-empty">No upcoming activity date loaded</div>')+'</div><div class="hse-cc-link" onclick="dashNavClick(event,\'workschedule\')">View calendar</div></div>'
+      +'<div class="hse-cc-panel" data-cc-widget="compliance" onclick="dashOpenWidgetDetail(\'compliance\')"><div class="hse-cc-panel-title">Compliance Overview</div><div class="hse-cc-list">'+complianceBars.map(function(x){var v=Math.max(0,Math.min(100,x.value||0));return '<div class="hse-cc-row" onclick="dashNavClick(event,\''+dashJs(x.page)+'\')" style="grid-template-columns:96px 1fr 42px"><strong>'+escH(x.label)+'</strong><div class="hse-cc-progress"><i style="width:'+v+'%;background:'+x.color+'"></i></div><strong>'+v+'%</strong></div>';}).join('')+'</div><div class="hse-cc-link" onclick="dashNavClick(event,\'legal\')">View compliance report</div></div>'
     +'</div>';
 }
 
