@@ -3,9 +3,9 @@
 // Cache-first for static assets, network-first for API calls
 // ============================================================
 
-const CACHE_NAME = 'auris360-v7';
-const STATIC_CACHE = 'auris360-static-v7';
-const API_CACHE = 'auris360-api-v7';
+const CACHE_NAME = 'auris360-v8';
+const STATIC_CACHE = 'auris360-static-v8';
+const API_CACHE = 'auris360-api-v8';
 
 // Assets to cache on install (app shell)
 const PRECACHE_ASSETS = [

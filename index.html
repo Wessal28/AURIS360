@@ -38228,10 +38228,17 @@ function pwaShowInstallInstructions(isIOS){
 
 // Register service worker
 if('serviceWorker' in navigator) {
+  var aurisRefreshingForUpdate = false;
+  navigator.serviceWorker.addEventListener('controllerchange', function() {
+    if(aurisRefreshingForUpdate) return;
+    aurisRefreshingForUpdate = true;
+    window.location.reload();
+  });
   window.addEventListener('load', function() {
     navigator.serviceWorker.register('/sw.js')
       .then(function(reg) {
         console.log('AURIS360 SW registered:', reg.scope);
+        reg.update();
         // Check for updates every 10 minutes
         setInterval(function() { reg.update(); }, 10 * 60 * 1000);
         // When a new SW is waiting, prompt user to update
@@ -38242,8 +38249,9 @@ if('serviceWorker' in navigator) {
             if(newWorker.state === 'installed' && navigator.serviceWorker.controller) {
               // New version available
               if(typeof toast === 'function') {
-                toast('Update available - refresh to get the latest AURIS360');
+                toast('AURIS360 updated - refreshing to the latest version');
               }
+              window.location.reload();
             }
           });
         });
