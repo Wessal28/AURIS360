@@ -35667,7 +35667,11 @@ function sidebarEnhanceNavItems(){
     }
   });
 }
+var sidebarCycleLocked = false;
 function sidebarCycle() {
+  if(sidebarCycleLocked) return;
+  sidebarCycleLocked = true;
+  setTimeout(function(){ sidebarCycleLocked = false; }, 240);
   var cur = sidebarGetState();
   var i = SIDEBAR_STATES.indexOf(cur);
   var next = SIDEBAR_STATES[(i + 1) % SIDEBAR_STATES.length];
@@ -54166,6 +54170,7 @@ I can help you:<br>
   background:linear-gradient(180deg,#fff 0%,#f8fbff 100%)!important;
   border-right:1px solid #dbe7f3!important;
   box-shadow:10px 0 28px rgba(15,23,42,.06)!important;
+  transition:width .18s ease,min-width .18s ease,max-width .18s ease!important;
 }
 .sidebar-top{background:linear-gradient(180deg,#fff 0%,#f8fbff 100%)!important}
 .sidebar-brand-row{
@@ -54175,9 +54180,9 @@ I can help you:<br>
   margin-bottom:8px!important;
 }
 .auris-sidebar-logo{
-  width:40px!important;
-  height:40px!important;
-  min-width:40px!important;
+  width:46px!important;
+  height:46px!important;
+  min-width:46px!important;
   object-fit:contain!important;
   padding:3px!important;
   border:1px solid #dbe7f3!important;
@@ -54186,9 +54191,9 @@ I can help you:<br>
   box-shadow:0 10px 22px rgba(15,23,42,.08),inset 0 1px 0 rgba(255,255,255,.9)!important;
 }
 .sidebar-top .co-logo,.sidebar-top .co-initials{
-  width:32px!important;
-  height:32px!important;
-  min-width:32px!important;
+  width:38px!important;
+  height:38px!important;
+  min-width:38px!important;
   margin:0!important;
   border-radius:10px!important;
   font-size:13px!important;
@@ -54206,20 +54211,19 @@ I can help you:<br>
 }
 .nav-item{
   position:relative!important;
-  min-height:42px!important;
-  margin:4px 10px!important;
-  padding:5px 10px!important;
-  gap:10px!important;
+  min-height:38px!important;
+  margin:3px 10px!important;
+  padding:4px 10px!important;
+  gap:9px!important;
   border-left:0!important;
   border-radius:14px!important;
   color:#0f172a!important;
   font-weight:700!important;
   background:transparent!important;
   overflow:visible!important;
-  transition:transform .16s ease,box-shadow .16s ease,background .16s ease,color .16s ease!important;
+  transition:background .12s ease,color .12s ease,box-shadow .12s ease!important;
 }
 .nav-item:hover{
-  transform:translateY(-1px);
   background:linear-gradient(135deg,#f8fbff,#eef6ff)!important;
   box-shadow:0 10px 22px rgba(15,23,42,.08),inset 0 1px 0 rgba(255,255,255,.95)!important;
 }
@@ -54232,15 +54236,15 @@ I can help you:<br>
 .nav-item i{
   position:relative!important;
   overflow:hidden!important;
-  width:30px!important;
-  height:30px!important;
-  min-width:30px!important;
-  border-radius:10px!important;
+  width:26px!important;
+  height:26px!important;
+  min-width:26px!important;
+  border-radius:9px!important;
   display:flex!important;
   align-items:center!important;
   justify-content:center!important;
   color:#fff!important;
-  font-size:17px!important;
+  font-size:15px!important;
   line-height:1!important;
   background:linear-gradient(145deg,#60a5fa 0%,#2563eb 62%,#1e40af 100%)!important;
   box-shadow:inset 0 1px 0 rgba(255,255,255,.68),inset 0 -4px 8px rgba(15,23,42,.18),0 7px 12px rgba(37,99,235,.24)!important;
@@ -54271,9 +54275,9 @@ I can help you:<br>
 @media (min-width:769px){
   .sidebar.collapsed{
     display:block!important;
-    width:64px!important;
-    min-width:64px!important;
-    max-width:64px!important;
+    width:58px!important;
+    min-width:58px!important;
+    max-width:58px!important;
     height:100vh!important;
     overflow-y:auto!important;
     overflow-x:hidden!important;
@@ -54284,26 +54288,43 @@ I can help you:<br>
   .sidebar.collapsed .nav-section,.sidebar.collapsed .profile-info,.sidebar.collapsed .role-switcher,.sidebar.collapsed .btn-danger{display:none!important}
   .sidebar.collapsed .sidebar-top{padding:10px 6px!important}
   .sidebar.collapsed .sidebar-brand-row{justify-content:center!important;margin-bottom:0!important}
-  .sidebar.collapsed .auris-sidebar-logo{width:36px!important;height:36px!important;min-width:36px!important}
+  .sidebar.collapsed .auris-sidebar-logo{width:40px!important;height:40px!important;min-width:40px!important}
   .sidebar.collapsed .co-logo,.sidebar.collapsed .co-initials{display:none!important}
   .sidebar.collapsed .nav-item{
-    width:44px!important;
-    min-width:44px!important;
-    max-width:44px!important;
-    min-height:44px!important;
-    padding:6px!important;
-    margin:5px auto!important;
-    border-radius:15px!important;
+    width:38px!important;
+    min-width:38px!important;
+    max-width:38px!important;
+    min-height:38px!important;
+    padding:5px!important;
+    margin:4px auto!important;
+    border-radius:13px!important;
     justify-content:center!important;
+    overflow:visible!important;
   }
   .sidebar.collapsed .nav-label{display:none!important}
-  .sidebar.collapsed .nav-item i{width:32px!important;height:32px!important;min-width:32px!important;flex:0 0 32px!important;font-size:18px!important}
+  .sidebar.collapsed .nav-item i{width:28px!important;height:28px!important;min-width:28px!important;flex:0 0 28px!important;font-size:16px!important}
   .sidebar.collapsed .nav-item.active{background:rgba(37,99,235,.08)!important}
 }
 @media (max-width:768px){
   .nav-item{min-height:48px!important}
-  .nav-item i{width:30px!important;height:30px!important;min-width:30px!important}
+  .nav-item i{width:28px!important;height:28px!important;min-width:28px!important}
 }
+.modules-menu-item{
+  gap:10px!important;
+  min-height:38px!important;
+  padding:8px 16px!important;
+}
+.modules-menu-item i{
+  width:20px!important;
+  min-width:20px!important;
+  height:20px!important;
+  display:inline-flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  color:#64748b!important;
+  font-size:17px!important;
+}
+.modules-menu-item.active i{color:var(--green)!important}
 </style>
 </body>
 </html>
