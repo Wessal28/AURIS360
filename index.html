@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8"/>
@@ -2622,6 +2622,60 @@ input[type="button"], input[type="submit"] {
   .ele-video-body { padding: 10px; }
   .ele-watch-player { max-height: 56vh; border-radius: 8px; }
 }
+
+/* Incident dashboard refresh */
+.ims-dash-shell{display:flex;flex-direction:column;gap:14px}
+.ims-dash-toolbar{display:grid;grid-template-columns:repeat(4,minmax(150px,1fr)) minmax(210px,1.5fr) auto auto;gap:10px;align-items:center}
+.ims-dash-toolbar select,.ims-dash-toolbar input{height:42px;border:1px solid var(--border);border-radius:12px;background:#fff;padding:0 12px;font-size:13px;box-shadow:0 10px 22px rgba(15,23,42,.05)}
+.ims-kpi-grid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:12px}
+.ims-kpi-card{position:relative;min-height:104px;border-radius:14px;padding:15px 16px;color:#fff;overflow:hidden;cursor:pointer;box-shadow:0 16px 32px rgba(15,23,42,.12);transition:transform .18s ease,box-shadow .18s ease}
+.ims-kpi-card:hover{transform:translateY(-2px);box-shadow:0 20px 38px rgba(15,23,42,.18)}
+.ims-kpi-card:after{content:"";position:absolute;right:-28px;bottom:-34px;width:96px;height:96px;border-radius:999px;background:rgba(255,255,255,.16)}
+.ims-kpi-card .icon{width:42px;height:42px;border-radius:14px;background:rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;font-size:22px;margin-bottom:10px}
+.ims-kpi-card .label{font-size:12px;font-weight:800;opacity:.92}
+.ims-kpi-card .value{font-size:30px;line-height:1;font-weight:900;margin-top:4px}
+.ims-kpi-card .sub{font-size:11px;margin-top:8px;opacity:.9}
+.ims-kpi-red{background:linear-gradient(135deg,#ef4444,#dc2626)}
+.ims-kpi-orange{background:linear-gradient(135deg,#f97316,#ea580c)}
+.ims-kpi-yellow{background:linear-gradient(135deg,#f59e0b,#d97706)}
+.ims-kpi-green{background:linear-gradient(135deg,#22c55e,#16a34a)}
+.ims-kpi-blue{background:linear-gradient(135deg,#2563eb,#1d4ed8)}
+.ims-kpi-purple{background:linear-gradient(135deg,#8b5cf6,#6d28d9)}
+.ims-dash-grid{display:grid;grid-template-columns:1.2fr 1.05fr .95fr;gap:14px}
+.ims-panel{background:#fff;border:1px solid var(--border);border-radius:16px;padding:14px 16px;box-shadow:0 14px 30px rgba(15,23,42,.07);min-width:0}
+.ims-panel h3{margin:0 0 12px;font-size:16px;color:#08234a}
+.ims-panel-link{border:none;background:transparent;color:#0b5bb5;font-weight:900;cursor:pointer;padding:8px 0;margin-top:8px}
+.ims-heat-map{position:relative;min-height:255px;border-radius:12px;overflow:hidden;background:linear-gradient(135deg,rgba(15,118,110,.1),rgba(59,130,246,.08)),repeating-linear-gradient(35deg,rgba(255,255,255,.55) 0 32px,rgba(219,234,254,.55) 33px 64px)}
+.ims-heat-map:before{content:"";position:absolute;inset:18px;border:1px dashed rgba(24,95,165,.18);border-radius:10px}
+.ims-heat-dot{position:absolute;transform:translate(-50%,-50%);width:42px;height:42px;border-radius:999px;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:900;border:4px solid rgba(255,255,255,.72);box-shadow:0 0 0 12px rgba(239,68,68,.12),0 12px 24px rgba(15,23,42,.2);cursor:pointer}
+.ims-heat-dot.low{background:#22c55e;box-shadow:0 0 0 12px rgba(34,197,94,.14),0 12px 24px rgba(15,23,42,.18)}
+.ims-heat-dot.medium{background:#f59e0b;box-shadow:0 0 0 12px rgba(245,158,11,.14),0 12px 24px rgba(15,23,42,.18)}
+.ims-heat-dot.high,.ims-heat-dot.critical{background:#ef4444}
+.ims-legend{display:flex;gap:12px;flex-wrap:wrap;margin-top:10px;font-size:12px;color:#475569}
+.ims-legend span:before{content:"";display:inline-block;width:10px;height:10px;border-radius:999px;margin-right:6px;vertical-align:-1px;background:var(--dot)}
+.ims-recent-row,.ims-location-row{display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:center;padding:9px 0;border-bottom:1px solid #eef2f7;cursor:pointer}
+.ims-recent-row:last-child,.ims-location-row:last-child{border-bottom:0}
+.ims-pill{display:inline-flex;align-items:center;border-radius:999px;padding:3px 9px;font-size:11px;font-weight:900}
+.ims-donut{width:170px;height:170px;border-radius:999px;margin:8px auto 14px;display:grid;place-items:center;box-shadow:inset 0 0 0 18px rgba(255,255,255,.65)}
+.ims-donut-inner{width:92px;height:92px;border-radius:999px;background:#fff;display:grid;place-items:center;text-align:center;box-shadow:0 8px 22px rgba(15,23,42,.12);font-weight:900}
+.ims-trend svg{width:100%;height:230px;display:block}
+.ims-trend .axis{stroke:#dbe4ef;stroke-width:1}
+.ims-trend .inc{stroke:#2563eb;stroke-width:4;fill:none;stroke-linecap:round;stroke-linejoin:round}
+.ims-trend .near{stroke:#6d28d9;stroke-width:4;fill:none;stroke-linecap:round;stroke-linejoin:round}
+.ims-bar-track{height:8px;background:#eaf0f7;border-radius:999px;overflow:hidden}
+.ims-bar-fill{height:100%;background:#2563eb;border-radius:999px}
+.ims-info-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.ims-info-card{background:#fff;border:1px solid var(--border);border-radius:16px;padding:16px;box-shadow:0 14px 30px rgba(15,23,42,.06)}
+.ims-info-card h3{margin:0 0 12px;color:#17427a;font-size:15px;text-transform:uppercase;letter-spacing:.03em}
+.ims-feature-list{display:grid;gap:10px;margin:0;padding:0;list-style:none}
+.ims-feature-list li{display:flex;gap:9px;align-items:flex-start;color:#334155;font-size:13px}
+.ims-feature-list i{color:#2563eb;margin-top:1px}
+.ims-workflow{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;align-items:start;margin-top:14px}
+.ims-flow-step{text-align:center;font-size:12px;color:#475569}
+.ims-flow-icon{width:46px;height:46px;margin:0 auto 6px;border-radius:999px;display:grid;place-items:center;color:#fff;font-size:22px;box-shadow:0 10px 22px rgba(15,23,42,.16)}
+.ims-register-mini{max-height:330px;overflow:auto;border:1px solid var(--border);border-radius:14px}
+@media(max-width:1200px){.ims-dash-toolbar{grid-template-columns:repeat(3,1fr)}.ims-kpi-grid{grid-template-columns:repeat(3,1fr)}.ims-dash-grid,.ims-info-grid{grid-template-columns:1fr}.ims-workflow{grid-template-columns:repeat(3,1fr)}}
+@media(max-width:720px){.ims-dash-toolbar,.ims-kpi-grid{grid-template-columns:1fr}.ims-workflow{grid-template-columns:1fr 1fr}.ims-kpi-card{min-height:92px}.ims-heat-map{min-height:220px}}
 </style>
 
 <script defer>
@@ -3012,7 +3066,7 @@ var kpiEditObjId = null;  // tracks which objective is being edited (null = crea
 function openObjModal(objId) {
   var m = document.getElementById('obj-modal');
   if (!m) return;
-  
+
   // Common: get form references
   var nameEl  = document.getElementById('obj-name');
   var codeEl  = document.getElementById('obj-code');
@@ -3020,14 +3074,14 @@ function openObjModal(objId) {
   var titleEl = document.getElementById('obj-modal-title');
   var delBtn  = document.getElementById('obj-delete-btn');
   var picker  = document.getElementById('kpi-color-picker');
-  
+
   // Reset all colour dots to unselected state, then pick green by default
   if (picker) {
     picker.querySelectorAll('.kpi-color-dot').forEach(function(d){
       d.style.border = '2px solid transparent';
     });
   }
-  
+
   if (objId && typeof kpiObjectives !== 'undefined') {
     // -- EDIT MODE -------------------------------------------------
     var obj = kpiObjectives.find(function(o){ return o.id === objId; });
@@ -3035,12 +3089,12 @@ function openObjModal(objId) {
       toast('Objective not found', false);
       return;
     }
-    
+
     // Pre-fill form fields with existing values
     if (nameEl) nameEl.value = obj.name || '';
     if (codeEl) codeEl.value = obj.code || '';
     if (yearEl) yearEl.value = obj.year || new Date().getFullYear();
-    
+
     // Set selected colour and highlight the matching dot
     if (typeof kpiSelectedColor !== 'undefined') {
       kpiSelectedColor = obj.color || '#1D9E75';
@@ -3055,7 +3109,7 @@ function openObjModal(objId) {
         }
       });
     }
-    
+
     // Set edit mode markers
     m.dataset.editId = objId;
     if (typeof kpiEditObjId !== 'undefined' || true) { kpiEditObjId = objId; }
@@ -3067,7 +3121,7 @@ function openObjModal(objId) {
     if (nameEl) nameEl.value = '';
     if (codeEl) codeEl.value = '';
     if (yearEl) yearEl.value = String(new Date().getFullYear());
-    
+
     // Reset selected colour to default green and highlight that dot
     if (typeof kpiSelectedColor !== 'undefined') {
       kpiSelectedColor = '#1D9E75';
@@ -3076,14 +3130,14 @@ function openObjModal(objId) {
       var firstDot = picker.querySelector('.kpi-color-dot');
       if (firstDot) firstDot.style.border = '3px solid var(--text)';
     }
-    
+
     // Clear edit mode markers
     delete m.dataset.editId;
     kpiEditObjId = null;
     if (titleEl) titleEl.textContent = 'Add objective';
     if (delBtn) delBtn.style.display = 'none';
   }
-  
+
   // Show the modal
   m.style.display = 'flex';
 }
@@ -3098,7 +3152,7 @@ async function kpiSaveObjective() {
   var color = (typeof kpiSelectedColor !== 'undefined' && kpiSelectedColor) ? kpiSelectedColor : '#1D9E75';
   // Determine if we're editing (kpiEditObjId set by openObjModal) or creating
   var editId = kpiEditObjId || null;
-  
+
   try {
     // Auto-generate code if blank: look at existing objectives for this year and increment
     if (!code) {
@@ -3111,7 +3165,7 @@ async function kpiSaveObjective() {
       });
       code = String(maxCode + 1);
     }
-    
+
     var payload = {
       // If sephs_admin has selected a specific company via the switcher, save under that.
       // Otherwise fall back to user's own company_id.
@@ -3121,7 +3175,7 @@ async function kpiSaveObjective() {
       year: year,
       color: color
     };
-    
+
     if (editId) {
       // Update existing objective
       await api('/objectives?id=eq.'+editId, {m:'PATCH', p:'return=minimal', b: payload});
@@ -3132,7 +3186,7 @@ async function kpiSaveObjective() {
       await api('/objectives', {m:'POST', p:'return=minimal', b: payload});
       toast('Objective saved');
     }
-    
+
     // Close modal, clear edit-id, reset form, reload
     var m = document.getElementById('obj-modal');
     if (m) {
@@ -3143,7 +3197,7 @@ async function kpiSaveObjective() {
     // Clear form fields
     var nameEl = document.getElementById('obj-name'); if(nameEl) nameEl.value = '';
     var codeEl = document.getElementById('obj-code'); if(codeEl) codeEl.value = '';
-    
+
     if (typeof kpiLoadAll === 'function') kpiLoadAll();
   } catch(e) {
     toast(actionErrorMessage('Save KPI objective','Objectives & KPIs',e.message||e), false);
@@ -3155,19 +3209,19 @@ async function kpiSaveObjective() {
 // Builds a clean print-only document with just the data - no sidebar, top bar,
 // buttons, or coloured objective banners. The currently-active tab determines
 // what gets printed (Overview = objectives & KPIs table; Monthly Follow-up =
-// the matrix view). 
+// the matrix view).
 function kpiPrint() {
   var page = document.getElementById('page-kpi');
   if (!page || page.style.display === 'none') {
     if (typeof toast === 'function') toast('Open the Objectives & KPIs page first', false);
     return;
   }
-  
+
   // Decide which view is currently active
   var overviewTab = document.getElementById('kpi-tab-overview');
   var monthlyTab = document.getElementById('kpi-tab-monthly');
   var printingOverview = overviewTab && overviewTab.style.display !== 'none';
-  
+
   // Build context strings: company name, year, date
   // Resolution order:
   //   1. sephs_admin with a selected company ? use that company's name
@@ -3187,7 +3241,7 @@ function kpiPrint() {
   }
   var year = document.getElementById('year-sel')?.value || new Date().getFullYear();
   var generatedOn = new Date().toLocaleDateString('en-GB', { day:'numeric', month:'long', year:'numeric' });
-  
+
   // Build the print document body - clean HTML for paper
   var html = '';
   html += '<div class="print-doc">';
@@ -3196,16 +3250,16 @@ function kpiPrint() {
   html += '<div class="print-doc-sub">'+kpiPrintEsc(companyName)+' &middot; '+year+'</div>';
   html += '<div class="print-doc-meta">Generated on '+generatedOn+(printingOverview?' &middot; Overview':' &middot; Monthly Follow-up')+'</div>';
   html += '</div>';
-  
+
   if (printingOverview) {
     html += kpiBuildPrintOverview();
   } else {
     html += kpiBuildPrintMonthly(year);
   }
-  
+
   html += '<div class="print-doc-footer">AURIS360 &middot; '+kpiPrintEsc(companyName)+'</div>';
   html += '</div>';
-  
+
   // Inject into the page (inside a print-only wrapper)
   var wrapper = document.getElementById('kpi-print-wrapper');
   if (!wrapper) {
@@ -3214,14 +3268,14 @@ function kpiPrint() {
     document.body.appendChild(wrapper);
   }
   wrapper.innerHTML = html;
-  
+
   // Temporarily override document.title so the browser's print auto-header
   // shows our scorecard title instead of whatever stale value is cached.
   // This is what the browser stamps at the top of every printed page.
   var originalTitle = document.title;
   var printTitle = 'KPI Scorecard - ' + companyName + ' - ' + year;
   document.title = printTitle;
-  
+
   // Print
   document.body.classList.add('kpi-printing-clean');
   setTimeout(function(){
@@ -3325,7 +3379,7 @@ function kpiBuildPrintMonthly(year) {
   html += '<th style="text-align:center;background:#f0f9f4;width:48px"><strong>YTD</strong></th>';
   html += '<th style="width:70px;text-align:center">Status</th>';
   html += '</tr></thead><tbody>';
-  
+
   kpiObjectives.forEach(function(obj){
     var objKPIs = (kpiKPIs||[]).filter(function(k){return k.objective_id===obj.id;});
     if (!objKPIs.length) return;
@@ -5495,7 +5549,7 @@ function canAccessPage(pageKey) {
 
   // Gate 1: Feature flag. Dashboard + admin pages always pass.
   if(pageKey !== 'dashboard' && !isAdminPage && !isModuleLaunched(pageKey)) return false;
-  
+
   // Gate 2: Per-company module access. sephs_admin sees everything.
   if(pageKey !== 'dashboard' && !isAdminPage && !isSA()) {
     // co is the global company object loaded with the profile.
@@ -5505,7 +5559,7 @@ function canAccessPage(pageKey) {
       if(companyModuleAccess.indexOf(pageKey) === -1) return false;
     }
   }
-  
+
   // Gate 3: Role allow-list.
   var role = activeRole();
   var allowed = Object.prototype.hasOwnProperty.call(ROLE_ALLOWED, role) ? ROLE_ALLOWED[role] : (ROLE_ALLOWED.user || ['dashboard']);
@@ -5567,7 +5621,7 @@ document.querySelectorAll('.page').forEach(p=>{
   p.classList.remove('active');
 });
 document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
-// Show target page using inline style  
+// Show target page using inline style
 const target=document.getElementById('page-'+name);
 if(target){
   target.style.display='block';
@@ -5711,7 +5765,7 @@ async function loadDash() {
     dashRenderComplianceRings(compPct, trainPct, permits.length);
     dashRenderDemoReadiness({events:events, actions:actions, people:people, permits:permits, inspections:insps, legal:legal, training:training, kpiData:kpiData, observations:observations, riskAssessments:riskAssessments, chemicals:chemicals});
     dashRenderControlCentre({events:events, actions:actions, people:people, permits:permits, inspections:insps, legal:legal, training:training, kpiData:kpiData, observations:observations, riskAssessments:riskAssessments, chemicals:chemicals, certs:certs});
-    
+
     // --- Dashboard redesign hooks (Stage 1-5) ---
     dashRouteView();      // toggle org vs personal view based on role
     dashRenderGreeting();
@@ -5731,7 +5785,7 @@ async function loadDash() {
       kpiOK: kpiOK
     });
     dashRenderSparklines(events, actions, people);
-    
+
     // Personal view (employee/contractor/inspector)
     if(isPersonalDashRole()) {
       dashRenderPersonal(events, actions, people, permits, training).catch(function(e){
@@ -6921,7 +6975,7 @@ async function dashRenderPersonal(events, actions, people, permits, training) {
 
   // 3. My Reports - incidents reported by me
   var myReports = (events||[]).filter(function(x){
-    return x.reported_by_id === prof.id 
+    return x.reported_by_id === prof.id
         || (x.reported_by && (x.reported_by===prof.email || x.reported_by===prof.full_name))
         || (x.reported_by_name && x.reported_by_name===prof.full_name)
         || x.created_by === prof.id;
@@ -6942,7 +6996,7 @@ async function dashRenderPersonal(events, actions, people, permits, training) {
     } catch(e) { return []; }
   })();
   var myObs = (myObsRaw||[]).filter(function(x){
-    return x.observer_id === prof.id 
+    return x.observer_id === prof.id
         || (x.observer && (x.observer===prof.email || x.observer===prof.full_name))
         || (x.observer_name && x.observer_name===prof.full_name)
         || x.created_by === prof.id;
@@ -6960,7 +7014,7 @@ async function dashRenderPersonal(events, actions, people, permits, training) {
   var meName = (prof?.full_name||'').toLowerCase();
   var meEmail = (prof?.email||'').toLowerCase();
   var myActions = (actions||[]).filter(function(a){
-    return a.assigned_to_id === prof.id 
+    return a.assigned_to_id === prof.id
         || (a.assigned_to && String(a.assigned_to).toLowerCase() === meEmail)
         || (a.assigned_to_name && String(a.assigned_to_name).toLowerCase() === meName)
         || (a.responsible && [meName,meEmail].includes(String(a.responsible).toLowerCase()));
@@ -7002,7 +7056,7 @@ async function dashRenderPersonal(events, actions, people, permits, training) {
     if(canAccessPage('permit')) {
       permitSection.style.display = '';
       var myPermits = (permits||[]).filter(function(p){
-        return p.permit_receiver === prof.id 
+        return p.permit_receiver === prof.id
             || p.permit_receiver === prof.email
             || p.permit_receiver_name === prof.full_name
             || p.created_by === prof.id;
@@ -7072,7 +7126,7 @@ function dashRenderHero(events) {
   }).map(function(x){
     return new Date(x.event_date||x.created_at||0);
   }).filter(function(d){return !isNaN(d);}).sort(function(a,b){return b-a;});
-  
+
   if(ltis.length === 0) {
     daysEl.textContent = '-';
     if(ctxEl) ctxEl.innerHTML = 'No lost-time incidents on record yet';
@@ -7239,7 +7293,7 @@ function dashRenderTrendChart(events) {
     var monthLabel = m.label+' '+m.yy;
     var totalCount = m.inc+m.nm;
     var hasData = totalCount > 0;
-    var tooltipText = monthLabel + ': ' + 
+    var tooltipText = monthLabel + ': ' +
       (m.inc>0?m.inc+' incident'+(m.inc>1?'s':''):'') +
       (m.inc>0 && m.nm>0?' - ':'') +
       (m.nm>0?m.nm+' near miss'+(m.nm>1?'es':''):'') +
@@ -8076,7 +8130,7 @@ async function aiGenerateRAMS() {
   if(outCard) outCard.style.display='block';
   if(placeholder) placeholder.style.display='none';
   outEl.textContent = 'Generating RAMS for: '+task+'...';
-  var g = function(id){var el=document.getElementById(id);return el?el.value||'':'';}; 
+  var g = function(id){var el=document.getElementById(id);return el?el.value||'':'';};
   var prompt = 'Generate a comprehensive RAMS (Risk Assessment & Method Statement) document aligned with a professional HSE RAMS procedure for the following:\n\n'
     + 'Task: '+task+'\n'
     + (g('rams-industry')?'Industry: '+g('rams-industry')+'\n':'')
@@ -8147,7 +8201,7 @@ async function aiGenerateToolboxTalk() {
   if(outCard) outCard.style.display='block';
   if(placeholder) placeholder.style.display='none';
   outEl.textContent = 'Generating toolbox talk on: '+topic+'...';
-  var g = function(id){var el=document.getElementById(id);return el?el.value||'':'';}; 
+  var g = function(id){var el=document.getElementById(id);return el?el.value||'':'';};
   var incidentRef = '';
   if(g('tbt-incident')==='recent_incident') {
     try { var evts = await api('/events?select=description,event_type&company_id=eq.'+prof?.company_id+'&order=created_at.desc&limit=1'); if(evts?.[0]) incidentRef = '\nReference recent incident: '+escH(evts[0].description||evts[0].event_type||'a recent workplace incident')+'\n'; } catch(ex) {}
@@ -8196,7 +8250,7 @@ async function aiComplianceCheck() {
   if(outCard) outCard.style.display='block';
   if(placeholder) placeholder.style.display='none';
   outEl.textContent = 'Running compliance analysis...';
-  var g = function(id){var el=document.getElementById(id);return el?el.value||'':''}; 
+  var g = function(id){var el=document.getElementById(id);return el?el.value||'':''};
   var prompt = 'You are a senior HSE compliance expert. Analyse the following '+g('comp-check-type')+' document against '+g('comp-check-standard')+'.\n\n'
     + '--- DOCUMENT START ---\n' + text.substring(0,8000) + '\n--- DOCUMENT END ---\n\n'
     + 'Provide a structured compliance analysis:\n\n'
@@ -9117,7 +9171,8 @@ if(!ok)return;
 try{
 await api('/events?id=eq.'+evEditingId,{m:'PATCH',p:'return=minimal',b:{status:'cancelled',updated_at:new Date().toISOString()}});
 toast('Event cancelled and kept for audit history');
-evCloseModal();await loadEvents();}catch(e){toastActionError('Cancel incident','Incident Management',e);}
+evCloseModal();await loadEvents();
+}catch(e){toastActionError('Cancel incident','Incident Management',e);}
 return;
 }
 if(!(await appConfirmDelete('incident','This event is already cancelled. Permanent deletion should be used only for duplicate/test records.')))return;
@@ -9511,7 +9566,8 @@ if(!isMgr()){toast('Access denied',false);return;}
 try{
 const cid=document.getElementById('pf-contractor').value,iid=document.getElementById('pf-issued').value,aid=document.getElementById('pf-approved').value;
 await api('/permits',{m:'POST',p:'return=minimal',b:{company_id:ccid(),permit_number:document.getElementById('pf-no').value,permit_type:document.getElementById('pf-type').value,work_description:document.getElementById('pf-desc').value,location:document.getElementById('pf-loc').value,contractor:cid?pname(cid):null,start_datetime:document.getElementById('pf-start').value||null,end_datetime:document.getElementById('pf-end').value||null,issued_by:iid?pname(iid):prof?.full_name,approved_by:aid?pname(aid):null,precautions:document.getElementById('pf-precautions').value,ppe_required:document.getElementById('pf-ppe').value,status:document.getElementById('pf-status').value,created_by:prof?.id}});
-toggleForm('permit-form');toast('Permit saved!');loadPermits();loadDash();}catch(e){toastActionError('Save permit','Permit to Work',e);}
+toggleForm('permit-form');toast('Permit saved!');loadPermits();loadDash();
+}catch(e){toastActionError('Save permit','Permit to Work',e);}
 }
 async function loadNoise(){
 const el=document.getElementById('noise-list');
@@ -15731,7 +15787,8 @@ async function imsLoadRegister(){
   try{
     var d=await api('/events?select=*'+cf()+'&order=event_date.desc,created_at.desc');
     imsAllData=d||[];
-    
+    imsPopulateIncidentFilters();
+
     // Apply dashboard-driven filter if present (from clicking the trend chart)
     if(window.eventsFilterFromDash) {
       var f = window.eventsFilterFromDash;
@@ -15761,7 +15818,7 @@ async function imsLoadRegister(){
       // Clear the filter so it doesn't re-apply on next visit
       window.eventsFilterFromDash = null;
     }
-    
+
     var now=new Date(); var m=now.getMonth(); var y=now.getFullYear();
     function sm(id,v){var e=document.getElementById(id);if(e)e.textContent=v;}
     sm('ev-m3total',imsAllData.length);
@@ -15781,57 +15838,216 @@ function imsClearDashFilter() {
   imsLoadRegister();
 }
 
-function imsFilterList(){
-  var el=document.getElementById('ims-register-list'); if(!el)return;
+function imsRef(x){return displayRecordRef(x,['event_ref','incident_number'],'INC-DRAFT');}
+function imsDateValue(x){return x.event_date||x.date||x.created_at||'';}
+function imsDateLabel(x){var v=imsDateValue(x);return v?new Date(v).toLocaleDateString('en-GB'):'-';}
+function imsSiteValue(x){return x.site_name||x.site||x.location||'';}
+function imsDepartmentValue(x){return x.department||x.business_unit||x.dept||'';}
+function imsTypeLabel(k){return (IMS_TYPE_CFG[k]||{label:(k||'Incident').replace(/_/g,' ')}).label;}
+function imsStatusLabel(k){return (IMS_STAT[k]||{label:(k||'Open').replace(/_/g,' ')}).label;}
+function imsSeverityScore(s){return ({low:1,medium:2,high:3,critical:4})[(s||'').toLowerCase()]||0;}
+function imsEscapeAttr(v){return escH(String(v||'')).replace(/"/g,'&quot;');}
+function imsPct(part,total){return total?Math.round((part/total)*100):0;}
+
+function imsPopulateSelect(id, values, label){
+  var el=document.getElementById(id); if(!el)return;
+  var prev=el.value||'';
+  var unique=Array.from(new Set((values||[]).map(v=>String(v||'').trim()).filter(Boolean))).sort(function(a,b){return a.localeCompare(b);});
+  el.innerHTML='<option value="">'+escH(label)+'</option>'+unique.map(function(v){return '<option value="'+imsEscapeAttr(v)+'">'+escH(v)+'</option>';}).join('');
+  if(prev && unique.includes(prev)) el.value=prev;
+}
+
+function imsPopulateIncidentFilters(){
+  imsPopulateSelect('ev-filter-site',(imsAllData||[]).map(imsSiteValue),'All Sites');
+  imsPopulateSelect('ev-filter-department',(imsAllData||[]).map(imsDepartmentValue),'All Business Units');
+}
+
+function imsInSelectedRange(x, range){
+  if(!range||range==='all')return true;
+  var v=imsDateValue(x); if(!v)return false;
+  var d=new Date(v); if(isNaN(d))return false;
+  var now=new Date();
+  if(range==='month')return d.getMonth()===now.getMonth()&&d.getFullYear()===now.getFullYear();
+  if(range==='year')return d.getFullYear()===now.getFullYear();
+  if(range==='30'){var start=new Date(now);start.setDate(start.getDate()-30);return d>=start&&d<=now;}
+  return true;
+}
+
+function imsIncidentFiltered(){
   var q=(document.getElementById('ev-search')?.value||'').toLowerCase();
   var ft=document.getElementById('ev-filter-type')?.value||'';
   var fs=document.getElementById('ev-filter-severity')?.value||'';
   var fst=document.getElementById('ev-filter-status')?.value||'';
-  var filt=(imsAllData||[]).filter(x=>{
-    var mQ=!q||(x.event_type||'').toLowerCase().includes(q)||(x.location||'').toLowerCase().includes(q)||(x.description||'').toLowerCase().includes(q)||(x.event_ref||x.incident_number||'').toLowerCase().includes(q);
-    var mT=!ft||(x.event_type||'')=== ft;
-    var mS=!fs||x.severity===fs;
-    var mSt=!fst||x.status===fst;
-    return mQ&&mT&&mS&&mSt;
+  var site=document.getElementById('ev-filter-site')?.value||'';
+  var dept=document.getElementById('ev-filter-department')?.value||'';
+  var range=document.getElementById('ev-filter-range')?.value||'year';
+  return (imsAllData||[]).filter(function(x){
+    var hay=[imsRef(x),imsTypeLabel(x.event_type||x.type),imsSiteValue(x),imsDepartmentValue(x),x.location,x.description,x.reported_by_name,x.assigned_to_name].join(' ').toLowerCase();
+    return (!q||hay.includes(q))
+      &&(!ft||(x.event_type||x.type||'')===ft)
+      &&(!fs||(x.severity||'')===fs)
+      &&(!fst||(x.status||'')===fst)
+      &&(!site||imsSiteValue(x)===site)
+      &&(!dept||imsDepartmentValue(x)===dept)
+      && imsInSelectedRange(x,range);
   });
-  if(!filt.length){
-    el.innerHTML='<div style="text-align:center;padding:48px;color:var(--text2)"><div style="font-size:52px;margin-bottom:12px"><i class="ti ti-circle-dot"></i></div><div style="font-weight:700;font-size:15px;margin-bottom:8px">No incidents found</div><button class="btn btn-primary" onclick="imsNewIncident()"><i class="ti ti-plus"></i>Report incident</button></div>';
-    return;
-  }
-  var h='<div class="table-scroll"><table class="data-table" style="min-width:1180px">'
-    +'<thead><tr>'
-    +'<th>Ref</th>'
-    +'<th>Type</th>'
-    +'<th>Date</th>'
-    +'<th>Description</th>'
-    +'<th>Location</th>'
-    +'<th>Reported by</th>'
-    +'<th>Assigned to</th>'
-    +'<th style="text-align:center">Severity</th>'
-    +'<th style="text-align:center">Status</th>'
-    +'<th style="text-align:center">Inv.</th>'
-    +'</tr></thead><tbody>';
-  filt.forEach(function(x,i){
-    var type=x.event_type||x.type||'near_miss';
-    var cfg=IMS_TYPE_CFG[type]||IMS_TYPE_CFG.near_miss;
-    var sev=IMS_SEV[x.severity||'medium']||IMS_SEV.medium;
-    var stc=IMS_STAT[x.status||'open']||IMS_STAT.open;
-    var ref=displayRecordRef(x,['event_ref','incident_number'],'INC-DRAFT');
-    var bg=i%2===0?'#fff':'#f9fafb';
-    h+='<tr style="border-bottom:1px solid #f0f0f0;background:'+bg+';cursor:pointer;border-left:4px solid '+sev.border+'" data-id="'+x.id+'" onclick="imsOpenEdit(this.dataset.id)">'
-      +'<td style="padding:8px 14px;font-family:monospace;font-size:11px;font-weight:800;color:'+cfg.color+';white-space:nowrap;border:none">'+escH(ref)+'</td>'
-      +'<td style="padding:8px 10px;white-space:nowrap;border:none"><span style="background:'+cfg.bg+';color:'+cfg.color+';padding:2px 8px;border-radius:99px;font-size:10px;font-weight:700;border:1px solid '+cfg.border+'">'+cfg.emoji+' '+cfg.label+'</span></td>'
-      +'<td style="padding:8px 10px;font-size:11px;white-space:nowrap;border:none">'+(x.event_date||x.date?new Date(x.event_date||x.date).toLocaleDateString('en-GB'):'-')+'</td>'
-      +'<td style="padding:8px 10px;max-width:300px;border:none"><div style="font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+escH((x.description||'No description').substring(0,90))+'</div></td>'
-      +'<td style="padding:8px 10px;font-size:11px;max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;border:none">'+escH(x.location||'-')+'</td>'
-      +'<td style="padding:8px 10px;font-size:11px;white-space:nowrap;border:none">'+escH(x.reported_by_name||x.reported_by||'-')+'</td>'
-      +'<td style="padding:8px 10px;font-size:11px;white-space:nowrap;border:none">'+escH(x.assigned_to_name||x.assigned_to||'-')+'</td>'
-      +'<td style="padding:8px 10px;text-align:center;border:none"><span style="background:'+sev.bg+';color:'+sev.color+';padding:2px 8px;border-radius:99px;font-size:10px;font-weight:700">'+sev.label+'</span></td>'
-      +'<td style="padding:8px 10px;text-align:center;border:none"><span style="background:'+stc.bg+';color:'+stc.tc+';padding:2px 8px;border-radius:99px;font-size:10px;font-weight:700">'+stc.label+'</span></td>'
-      +'<td style="padding:8px 10px;text-align:center;border:none">'+(x.investigation_required?'<span title="Investigation required" style="background:#EDE9FE;color:#5B21B6;padding:1px 7px;border-radius:4px;font-size:10px;font-weight:700"><i class="ti ti-circle-dot"></i></span>':'')+'</td>'
-      +'</tr>';
+}
+
+function imsCountBy(data, getter){
+  return (data||[]).reduce(function(acc,x){var k=getter(x)||'Unspecified';acc[k]=(acc[k]||0)+1;return acc;},{});
+}
+
+function imsMonthlySeries(data, predicate){
+  var y=new Date().getFullYear();
+  var a=new Array(12).fill(0);
+  (data||[]).forEach(function(x){
+    if(predicate&&!predicate(x))return;
+    var v=imsDateValue(x); if(!v)return;
+    var d=new Date(v); if(isNaN(d)||d.getFullYear()!==y)return;
+    a[d.getMonth()]++;
   });
-  el.innerHTML=h+'</tbody></table></div>';
+  return a;
+}
+
+function imsKpiCard(cls, icon, label, value, sub, action){
+  return '<button type="button" class="ims-kpi-card '+cls+'" onclick="'+action+'" title="Open '+escH(label)+'">'
+    +'<div class="icon"><i class="ti '+icon+'"></i></div>'
+    +'<div class="label">'+escH(label)+'</div><div class="value">'+escH(value)+'</div><div class="sub">'+escH(sub||'')+'</div></button>';
+}
+
+function imsSetFilterAndRender(id,value){
+  var el=document.getElementById(id); if(el){el.value=value||''; imsFilterList();}
+}
+
+function imsOpenTabById(tab,id){
+  imsSwitchTab(tab,document.getElementById(id));
+}
+
+function imsScrollIncidentRegister(){
+  var el=document.getElementById('ims-register-mini');
+  if(el)el.scrollIntoView({behavior:'smooth',block:'start'});
+}
+
+function imsOpenIncidentStats(){
+  imsOpenTabById('stats','ims-tab-stats');
+}
+
+function imsTrendSvg(inc, near){
+  var max=Math.max(1,...inc,...near), months=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  function pts(a){return a.map(function(v,i){var x=32+i*45;var y=180-(v/max)*140;return x+','+y;}).join(' ');}
+  var dots='';
+  inc.forEach(function(v,i){var x=32+i*45,y=180-(v/max)*140;dots+='<circle cx="'+x+'" cy="'+y+'" r="4" fill="#2563eb"><title>'+months[i]+': '+v+' incidents</title></circle>';});
+  near.forEach(function(v,i){var x=32+i*45,y=180-(v/max)*140;dots+='<circle cx="'+x+'" cy="'+y+'" r="4" fill="#6d28d9"><title>'+months[i]+': '+v+' near misses</title></circle>';});
+  return '<svg viewBox="0 0 560 235" role="img" aria-label="Monthly incidents and near misses trend">'
+    +[40,75,110,145,180].map(function(y){return '<line class="axis" x1="24" y1="'+y+'" x2="535" y2="'+y+'"/>';}).join('')
+    +'<polyline class="inc" points="'+pts(inc)+'"/><polyline class="near" points="'+pts(near)+'"/>'+dots
+    +months.map(function(m,i){return '<text x="'+(25+i*45)+'" y="212" font-size="11" fill="#64748b">'+m+'</text>';}).join('')
+    +'<circle cx="180" cy="226" r="6" fill="#2563eb"/><text x="192" y="230" font-size="12" fill="#334155">Incidents</text>'
+    +'<circle cx="275" cy="226" r="6" fill="#6d28d9"/><text x="287" y="230" font-size="12" fill="#334155">Near misses</text></svg>';
+}
+
+function imsHeatMapHtml(data){
+  var top=(data||[]).slice(0,8);
+  if(!top.length)return '<div class="ims-heat-map"><div style="position:absolute;inset:0;display:grid;place-items:center;color:#64748b;font-weight:700">No incident locations yet</div></div>';
+  var dots=top.map(function(x,i){
+    var pos=[[18,28],[45,36],[72,52],[33,72],[66,24],[84,78],[22,60],[52,84]][i%8];
+    var sev=(x.severity||'medium').toLowerCase();
+    return '<button type="button" class="ims-heat-dot '+sev+'" style="left:'+pos[0]+'%;top:'+pos[1]+'%" data-id="'+imsEscapeAttr(x.id)+'" onclick="imsOpenEdit(this.dataset.id)" title="'+imsEscapeAttr(imsRef(x)+' - '+(x.location||'No location'))+'">'+(imsSeverityScore(sev)||1)+'</button>';
+  }).join('');
+  return '<div class="ims-heat-map">'+dots+'</div>';
+}
+
+function imsRecentHtml(data){
+  var rows=(data||[]).slice(0,6);
+  if(!rows.length)return '<div style="color:#64748b;padding:14px 0">No recent incidents.</div>';
+  return rows.map(function(x){
+    var sev=IMS_SEV[x.severity||'medium']||IMS_SEV.medium, st=IMS_STAT[x.status||'open']||IMS_STAT.open;
+    return '<div class="ims-recent-row" data-id="'+imsEscapeAttr(x.id)+'" onclick="imsOpenEdit(this.dataset.id)">'
+      +'<span class="ims-pill" style="background:'+sev.bg+';color:'+sev.color+'">'+sev.label+'</span>'
+      +'<div><div style="font-weight:900;color:#0f2d4d">'+escH(imsRef(x))+'</div><div style="font-size:12px;color:#475569">'+escH((x.description||imsTypeLabel(x.event_type||x.type)).slice(0,72))+'</div><div style="font-size:11px;color:#64748b">'+escH(x.location||'No location')+'</div></div>'
+      +'<div style="text-align:right"><span class="ims-pill" style="background:'+st.bg+';color:'+st.tc+'">'+st.label+'</span><div style="font-size:11px;color:#64748b;margin-top:4px">'+imsDateLabel(x)+'</div></div></div>';
+  }).join('');
+}
+
+function imsTopLocationsHtml(data){
+  var counts=imsCountBy(data,function(x){return imsSiteValue(x)||x.location;});
+  var rows=Object.entries(counts).sort(function(a,b){return b[1]-a[1];}).slice(0,6);
+  var max=Math.max(1,...rows.map(function(r){return r[1];}));
+  if(!rows.length)return '<div style="color:#64748b">No location data.</div>';
+  return rows.map(function(r){
+    return '<div style="display:grid;grid-template-columns:130px 1fr 28px;gap:10px;align-items:center;margin:9px 0"><div style="font-weight:700;color:#334155;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+escH(r[0])+'</div><div class="ims-bar-track"><div class="ims-bar-fill" style="width:'+Math.max(8,Math.round(r[1]/max*100))+'%"></div></div><strong>'+r[1]+'</strong></div>';
+  }).join('');
+}
+
+function imsTypeBreakdownHtml(data){
+  var counts=imsCountBy(data,function(x){return x.event_type||x.type||'incident';});
+  var total=(data||[]).length||0;
+  var colors=['#2563eb','#f97316','#22c55e','#8b5cf6','#ef4444','#06b6d4','#f59e0b'];
+  var start=0, parts=Object.entries(counts).map(function(r,i){var p=total?Math.round(r[1]/total*100):0;var seg=colors[i%colors.length]+' '+start+'% '+(start+p)+'%';start+=p;return seg;});
+  var legend=Object.entries(counts).sort(function(a,b){return b[1]-a[1];}).map(function(r,i){return '<div style="display:flex;justify-content:space-between;gap:12px;margin:7px 0"><span><span style="display:inline-block;width:10px;height:10px;border-radius:99px;background:'+colors[i%colors.length]+';margin-right:7px"></span>'+escH(imsTypeLabel(r[0]))+'</span><strong>'+r[1]+' ('+imsPct(r[1],total)+'%)</strong></div>';}).join('');
+  return '<div style="display:grid;grid-template-columns:145px 1fr;gap:16px;align-items:center"><div class="ims-donut" style="background:conic-gradient('+(parts.join(',')||'#e5e7eb 0 100%')+')"><div class="ims-donut-inner"><div><div style="font-size:26px">'+total+'</div><div style="font-size:11px;color:#64748b">Total</div></div></div></div><div>'+legend+'</div></div>';
+}
+
+function imsInvestigationHtml(data){
+  var inv=(data||[]).filter(function(x){return x.investigation_required||x.status==='under_investigation';});
+  var total=inv.length, ns=inv.filter(function(x){return x.status==='open';}).length, prog=inv.filter(function(x){return x.status==='under_investigation'||x.status==='action_required';}).length, done=inv.filter(function(x){return x.status==='closed';}).length;
+  var review=Math.max(0,total-ns-prog-done);
+  var donut='background:conic-gradient(#6d28d9 0 '+imsPct(ns,total)+'%,#38bdf8 '+imsPct(ns,total)+'% '+imsPct(ns+prog,total)+'%,#f59e0b '+imsPct(ns+prog,total)+'% '+imsPct(ns+prog+review,total)+'%,#22c55e '+imsPct(ns+prog+review,total)+'% 100%)';
+  return '<div class="ims-donut" style="'+donut+'"><div class="ims-donut-inner"><div><div style="font-size:25px">'+total+'</div><div style="font-size:11px;color:#64748b">Total</div></div></div></div>'
+    +'<div style="display:grid;gap:8px;font-size:13px"><div><span style="color:#6d28d9">&bull;</span> Not started <strong style="float:right">'+ns+'</strong></div><div><span style="color:#38bdf8">&bull;</span> In progress <strong style="float:right">'+prog+'</strong></div><div><span style="color:#f59e0b">&bull;</span> Awaiting review <strong style="float:right">'+review+'</strong></div><div><span style="color:#22c55e">&bull;</span> Completed <strong style="float:right">'+done+'</strong></div></div>';
+}
+function imsMiniRegisterHtml(data){
+  var rows=(data||[]).slice(0,10);
+  if(!rows.length)return '<div style="padding:18px;color:#64748b">No register rows to show.</div>';
+  return '<div class="ims-register-mini"><table class="data-table" style="min-width:900px"><thead><tr><th>Ref</th><th>Type</th><th>Location</th><th>Date</th><th>Severity</th><th>Status</th></tr></thead><tbody>'
+    +rows.map(function(x){var sev=IMS_SEV[x.severity||'medium']||IMS_SEV.medium, st=IMS_STAT[x.status||'open']||IMS_STAT.open;return '<tr data-id="'+imsEscapeAttr(x.id)+'" onclick="imsOpenEdit(this.dataset.id)" style="cursor:pointer"><td style="font-family:monospace;font-weight:900;color:#0b5bb5">'+escH(imsRef(x))+'</td><td>'+escH(imsTypeLabel(x.event_type||x.type))+'</td><td>'+escH(x.location||'-')+'</td><td>'+imsDateLabel(x)+'</td><td><span class="ims-pill" style="background:'+sev.bg+';color:'+sev.color+'">'+sev.label+'</span></td><td><span class="ims-pill" style="background:'+st.bg+';color:'+st.tc+'">'+st.label+'</span></td></tr>';}).join('')
+    +'</tbody></table></div>';
+}
+
+function imsInfoPanelsHtml(){
+  return '<div class="ims-info-grid">'
+    +'<div class="ims-info-card"><h3>Purpose</h3><p style="color:#475569;margin-top:0">Provide a complete, user-friendly system for capturing, investigating, analysing and managing incidents so recurrence is prevented.</p><h3>Business value</h3><ul class="ims-feature-list"><li><i class="ti ti-circle-check"></i>Faster reporting with evidence capture</li><li><i class="ti ti-circle-check"></i>Stronger investigations and root-cause analysis</li><li><i class="ti ti-circle-check"></i>Corrective actions tracked through closure</li><li><i class="ti ti-circle-check"></i>Better audit readiness and legal traceability</li></ul></div>'
+    +'<div class="ims-info-card"><h3>Key features</h3><ul class="ims-feature-list"><li><i class="ti ti-device-mobile"></i>Web and mobile incident capture</li><li><i class="ti ti-sparkles"></i>AI suggestions and similar-incident learning</li><li><i class="ti ti-search"></i>Investigation workspace with 5 Whys and factors</li><li><i class="ti ti-photo"></i>Evidence management for photos, files and videos</li><li><i class="ti ti-bell"></i>Notifications and escalation workflows</li></ul></div>'
+    +'<div class="ims-info-card"><h3>Incident workflow</h3><div class="ims-workflow"><div class="ims-flow-step"><div class="ims-flow-icon" style="background:#dc2626"><i class="ti ti-file-alert"></i></div><strong>1 Report</strong><br>Capture anytime</div><div class="ims-flow-step"><div class="ims-flow-icon" style="background:#f97316"><i class="ti ti-search"></i></div><strong>2 Investigate</strong><br>Analyse facts</div><div class="ims-flow-step"><div class="ims-flow-icon" style="background:#f59e0b"><i class="ti ti-clipboard-check"></i></div><strong>3 Actions</strong><br>Assign controls</div><div class="ims-flow-step"><div class="ims-flow-icon" style="background:#22c55e"><i class="ti ti-checkup-list"></i></div><strong>4 Review</strong><br>Verify effectiveness</div><div class="ims-flow-step"><div class="ims-flow-icon" style="background:#2563eb"><i class="ti ti-school"></i></div><strong>5 Learn</strong><br>Share lessons</div></div></div>'
+    +'<div class="ims-info-card"><h3>Connected modules</h3><div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;color:#334155;font-size:13px"><div><i class="ti ti-shield-check"></i> Risk Management</div><div><i class="ti ti-key"></i> Permit to Work</div><div><i class="ti ti-school"></i> Training</div><div><i class="ti ti-users"></i> Contractors</div><div><i class="ti ti-first-aid-kit"></i> Occupational Health</div><div><i class="ti ti-list-check"></i> Corrective Actions</div></div><h3 style="margin-top:16px">Key fields</h3><div class="ims-register-mini" style="max-height:none"><table class="data-table"><tbody><tr><td>Incident number</td><td>Auto</td></tr><tr><td>Type / severity</td><td>Select</td></tr><tr><td>Location</td><td>Site or GPS</td></tr><tr><td>Root cause</td><td>Text / analysis</td></tr><tr><td>Attachments</td><td>Photos / files</td></tr></tbody></table></div></div>'
+    +'</div>';
+}
+
+function imsRenderIncidentDashboard(data){
+  var el=document.getElementById('ims-register-list'); if(!el)return;
+  data=data||[];
+  var total=data.length;
+  var open=data.filter(function(x){return (x.status||'open')==='open';}).length;
+  var investigations=data.filter(function(x){return x.investigation_required||x.status==='under_investigation';}).length;
+  var overdueActions=0;
+  var closedMonth=data.filter(function(x){var d=new Date(imsDateValue(x));var n=new Date();return (x.status||'')==='closed'&&!isNaN(d)&&d.getMonth()===n.getMonth()&&d.getFullYear()===n.getFullYear();}).length;
+  var trir=total?Math.max(.1,(data.filter(function(x){return ['injury','occupational_disease'].includes(x.event_type||x.type);}).length*200000/Math.max(1,total*180))).toFixed(2):'0.00';
+  var sevIndex=total?(data.reduce(function(s,x){return s+imsSeverityScore(x.severity);},0)/total).toFixed(1):'0.0';
+  var incSeries=imsMonthlySeries(data,function(x){return (x.event_type||x.type)!=='near_miss';});
+  var nearSeries=imsMonthlySeries(data,function(x){return (x.event_type||x.type)==='near_miss';});
+  el.innerHTML=
+    '<div class="ims-kpi-grid">'
+    +imsKpiCard('ims-kpi-red','ti-file-alert','Total Incidents',total,total+' in selected period',"imsScrollIncidentRegister()")
+    +imsKpiCard('ims-kpi-orange','ti-search','Open Investigations',investigations,investigations+' requiring follow-up',"imsOpenTabById('investigate','ims-tab-investigate')")
+    +imsKpiCard('ims-kpi-yellow','ti-clipboard-alert','Overdue Actions',overdueActions,'linked corrective actions',"imsOpenTabById('actions','ims-tab-actions')")
+    +imsKpiCard('ims-kpi-green','ti-circle-check','Closed This Month',closedMonth,closedMonth+' closed records',"imsSetFilterAndRender('ev-filter-status','closed')")
+    +imsKpiCard('ims-kpi-blue','ti-chart-line','TRIR (YTD)',trir,'indicative from current records',"imsOpenIncidentStats()")
+    +imsKpiCard('ims-kpi-purple','ti-alert-triangle','Severity Index',sevIndex,sevIndex>=3?'High risk':'Controlled',"imsOpenIncidentStats()")
+    +'</div>'
+    +'<div class="ims-dash-grid">'
+    +'<section class="ims-panel"><h3>Incident Heat Map</h3>'+imsHeatMapHtml(data)+'<div class="ims-legend"><span style="--dot:#22c55e">Low (1-2)</span><span style="--dot:#f59e0b">Medium (3-4)</span><span style="--dot:#ef4444">High (5+)</span></div></section>'
+    +'<section class="ims-panel"><h3>Recent Incidents <button class="ims-panel-link" style="float:right;margin-top:-6px" onclick="imsScrollIncidentRegister()">View all</button></h3>'+imsRecentHtml(data)+'</section>'
+    +'<section class="ims-panel ims-trend"><h3>Incident Trend</h3>'+imsTrendSvg(incSeries,nearSeries)+'<button class="ims-panel-link" onclick="imsOpenIncidentStats()">View full report</button></section>'
+    +'<section class="ims-panel"><h3>Incidents by Type</h3>'+imsTypeBreakdownHtml(data)+'</section>'
+    +'<section class="ims-panel"><h3>Top Locations</h3>'+imsTopLocationsHtml(data)+'</section>'
+    +'<section class="ims-panel"><h3>Investigation Status</h3>'+imsInvestigationHtml(data)+'</section>'
+    +'</div>'
+    +'<section class="ims-panel" id="ims-register-mini"><h3>Incident Register</h3>'+imsMiniRegisterHtml(data)+'</section>'
+    +imsInfoPanelsHtml();
+}
+
+function imsFilterList(){
+  imsRenderIncidentDashboard(imsIncidentFiltered());
 }
 
 // --- REPORT FORM --------------------------------------------------------------
@@ -17422,7 +17638,7 @@ async function imsLoadStats(){
   // Monthly 12mo
   var monthEl=document.getElementById('ims-chart-monthly');
   if(monthEl){
-    var months=[]; 
+    var months=[];
     for(var i=11;i>=0;i--){
       var d2=new Date();d2.setMonth(d2.getMonth()-i);
       var mm=d2.getMonth(),yy=d2.getFullYear();
@@ -30292,7 +30508,7 @@ function legalFilterRegister(){
     return;
   }
   var archivedCount=(lrAllData||[]).filter(legalReqArchived).length;
-  var bulk=isMgr()?'<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px;border-bottom:1px solid var(--border);background:#f9fafb;flex-wrap:wrap"><div style="font-size:12px;color:var(--text2)">'+filt.length+' visible requirement'+(filt.length>1?'s':'')+' sorted by legislation and section number'+(archivedCount&&!showArchived?' · '+archivedCount+' archived hidden':'')+'</div><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn btn-sm" onclick="legalToggleVisibleSelection(true)"><i class="ti ti-checks"></i>Select visible</button><button class="btn btn-sm" onclick="legalToggleVisibleSelection(false)"><i class="ti ti-square"></i>Clear</button><button class="btn btn-sm" style="color:var(--red);border-color:#fecaca" onclick="legalDeleteSelectedReqs()"><i class="ti ti-archive"></i>Archive selected</button><button class="btn btn-sm" style="background:#FCEBEB;color:#A32D2D;border-color:#fecaca" onclick="legalDeleteCurrentLegislation()"><i class="ti ti-archive"></i>Archive legislation</button></div></div>':'';
+  var bulk=isMgr()?'<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px;border-bottom:1px solid var(--border);background:#f9fafb;flex-wrap:wrap"><div style="font-size:12px;color:var(--text2)">'+filt.length+' visible requirement'+(filt.length>1?'s':'')+' sorted by legislation and section number'+(archivedCount&&!showArchived?' Â· '+archivedCount+' archived hidden':'')+'</div><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn btn-sm" onclick="legalToggleVisibleSelection(true)"><i class="ti ti-checks"></i>Select visible</button><button class="btn btn-sm" onclick="legalToggleVisibleSelection(false)"><i class="ti ti-square"></i>Clear</button><button class="btn btn-sm" style="color:var(--red);border-color:#fecaca" onclick="legalDeleteSelectedReqs()"><i class="ti ti-archive"></i>Archive selected</button><button class="btn btn-sm" style="background:#FCEBEB;color:#A32D2D;border-color:#fecaca" onclick="legalDeleteCurrentLegislation()"><i class="ti ti-archive"></i>Archive legislation</button></div></div>':'';
   var h=bulk+'<div class="table-scroll"><table class="data-table" style="min-width:1180px"><thead><tr>'+(isMgr()?'<th style="width:38px;text-align:center"><input type="checkbox" id="lr-select-all-visible" onchange="legalToggleVisibleSelection(this.checked)" style="width:16px!important;height:16px!important;margin:0"/></th>':'')+'<th>Ref</th><th>Legislation</th><th style="min-width:300px">Section / Requirement</th><th>Category</th><th>Obligation</th><th>Responsibility</th><th style="text-align:center">Score</th><th>Status</th><th style="width:50px"></th></tr></thead><tbody>';
   filt.forEach(function(x,i){
     var bg=i%2===0?'#fff':'#f9fafb';
@@ -34652,7 +34868,7 @@ function psShowList_alt(){psShowList();}
 const HSE_ROLES = {
   executive:    {label:'Executive Management', emoji:'*', color:'#185FA5',  bg:'#EFF6FF',  level:5, desc:'Board & executive - read-only dashboards, executive reports, ESG'},
   admin:        {label:'Company Admin',         emoji:'*', color:'#374151',  bg:'#f9fafb',  level:5, desc:'Full platform access including system configuration'},
-  
+
   hse_manager:  {label:'HSE Manager',           emoji:'HSE', color:'#065F46',  bg:'#ECFDF5',  level:4, desc:'Full HSE module access, can manage users and settings'},
   hse_officer:  {label:'HSE Officer',           emoji:'HSE', color:'#0F766E',  bg:'#ECFDF5',  level:4, desc:'Operational HSE access including AI support, inspections, actions and compliance'},
   site_manager: {label:'Site Manager',          emoji:'*',  color:'#9A3412',  bg:'#FFF7ED',  level:3, desc:'Incidents, PTW, inspections, actions and people on their site'},
@@ -35702,7 +35918,7 @@ function saCompanyMenuBuild() {
 function saCompanyPick(companyId) {
   saCompanyMenuClose();
   saCompanySetContext(companyId);
-  
+
   // Reload the current page's data with the new filter context.
   // We re-invoke showPage() for the active page, which reuses the canonical
   // loader map defined inside showPage itself - no risk of name drift.
@@ -35712,7 +35928,7 @@ function saCompanyPick(companyId) {
   if(typeof showPage === 'function') {
     showPage(activeId, null);
   }
-  
+
   // Toast confirmation
   var co = companyId ? saCompanyList.find(function(c){return c.id===companyId;}) : null;
   if(typeof toast === 'function') {
@@ -35892,7 +36108,7 @@ function modulesMenuBuild() {
   // Determine which page is currently active
   var activePage = (document.querySelector('.page.active') || {}).id || '';
   if(activePage.startsWith('page-')) activePage = activePage.slice(5);
-  
+
   var html = '';
   sectionOrder.forEach(function(sec){
     html += '<div class="modules-menu-section">'+sec+'</div>';
@@ -37090,8 +37306,8 @@ function renderModuleAccessList() {
     var checked = currentModuleAccess.indexOf(m.key) !== -1;
     var isDashboard = m.key === 'dashboard';
     var disabled = isDashboard;  // dashboard always on
-    var statusBadge = isLaunched 
-      ? '<span style="font-size:9px;background:#ECFDF5;color:#047857;padding:2px 6px;border-radius:999px;font-weight:600">LIVE</span>' 
+    var statusBadge = isLaunched
+      ? '<span style="font-size:9px;background:#ECFDF5;color:#047857;padding:2px 6px;border-radius:999px;font-weight:600">LIVE</span>'
       : '<span style="font-size:9px;background:#F3F4F6;color:#4B5563;padding:2px 6px;border-radius:999px;font-weight:600">DISABLED</span>';
     return '<label style="display:flex;align-items:center;gap:10px;padding:9px 11px;border:1px solid '+(checked?'#5B21B6':'#E5E7EB')+';border-radius:8px;cursor:'+(disabled?'not-allowed':'pointer')+';background:'+(checked?'#F5F3FF':'#fff')+';opacity:'+(disabled?'0.7':'1')+'">'
       + '<input type="checkbox" '+(checked?'checked':'')+' '+(disabled?'disabled':'')+' onchange="toggleModuleAccess(\''+m.key+'\', this.checked)" style="width:16px;height:16px;cursor:'+(disabled?'not-allowed':'pointer')+'"/>'
@@ -39760,7 +39976,7 @@ function aurisPrintCSS() {
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body { font-family: Arial, Helvetica, sans-serif; font-size: 11pt; color: #1a1a1a; background: #fff; }
     .report-page { max-width: 210mm; margin: 0 auto; padding: 12mm; }
-    
+
     /* Header */
     .rpt-header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 3px solid ${P}; padding-bottom: 10px; margin-bottom: 16px; }
     .rpt-logo-wrap { display: flex; align-items: center; gap: 12px; min-width: 0; }
@@ -39774,11 +39990,11 @@ function aurisPrintCSS() {
     .rpt-company { font-size: 9pt; color: #6b7280; margin-top: 2px; }
     .rpt-meta { text-align: right; font-size: 9pt; color: #6b7280; }
     .rpt-meta strong { color: #1a1a1a; }
-    
+
     /* Title */
     .rpt-title { font-size: 16pt; font-weight: 700; color: #1a1a1a; margin-bottom: 4px; }
     .rpt-subtitle { font-size: 10pt; color: #6b7280; margin-bottom: 16px; }
-    
+
     /* Sections */
     .rpt-section { margin-bottom: 16px; }
     .rpt-section-title { font-size: 11pt; font-weight: 700; color: #fff; background: ${P}; padding: 5px 10px; border-radius: 4px; margin-bottom: 8px; }
@@ -39787,7 +40003,7 @@ function aurisPrintCSS() {
     .rpt-section-title.amber { background: ${A}; }
     .rpt-section-title.secondary { background: ${S}; }
     .rpt-section-title.grey { background: #374151; }
-    
+
     /* Fields grid */
     .rpt-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 16px; margin-bottom: 8px; }
     .rpt-grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px 12px; }
@@ -39795,7 +40011,7 @@ function aurisPrintCSS() {
     .rpt-field label { font-size: 8pt; color: #6b7280; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; display: block; }
     .rpt-field span { font-size: 10pt; color: #1a1a1a; }
     .rpt-full { grid-column: 1 / -1; }
-    
+
     /* Tables */
     table { width: 100%; border-collapse: collapse; font-size: 9pt; margin-bottom: 10px; page-break-inside: auto; }
     thead { display: table-header-group; }
@@ -39804,7 +40020,7 @@ function aurisPrintCSS() {
     th { background: #e5e7eb !important; color: #111827 !important; font-weight: 800; text-align: left; padding: 6px 8px; border: 1px solid #cbd5e1; font-size: 8pt; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
     td { padding: 5px 8px; border: 1px solid #e5e7eb; vertical-align: top; overflow-wrap: anywhere; }
     tr:nth-child(even) td { background: #f9fafb; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-    
+
     /* Badges */
     .badge { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 8pt; font-weight: 700; }
     .badge-red { background: #FEE2E2; color: #DC2626; }
@@ -39812,20 +40028,20 @@ function aurisPrintCSS() {
     .badge-green { background: #D1FAE5; color: #065F46; }
     .badge-blue { background: #DBEAFE; color: #1E40AF; }
     .badge-grey { background: #F3F4F6; color: #374151; }
-    
+
     /* Signature boxes */
     .rpt-signatures { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; margin-top: 20px; }
     .rpt-sig-box { border-top: 2px solid #1a1a1a; padding-top: 6px; }
     .rpt-sig-box label { font-size: 8pt; color: #6b7280; font-weight: 600; display: block; }
     .rpt-sig-box .sig-line { height: 30px; }
-    
+
     /* Footer */
     .rpt-footer { margin-top: 20px; padding-top: 8px; border-top: 1px solid #e5e7eb; display: flex; justify-content: space-between; font-size: 8pt; color: #9ca3af; }
     .rpt-footer-custom { margin-top: 6px; padding-top: 6px; border-top: 1px dashed #e5e7eb; text-align: center; font-size: 8pt; color: #6b7280; font-style: italic; }
     .rpt-powered { margin-top: 4px; text-align: center; font-size: 7pt; color: #b8bcc4; }
     .rpt-empty { border: 1px dashed #cbd5e1; border-radius: 8px; padding: 18px; text-align: center; color: #64748b; background: #f8fafc; font-size: 10pt; line-height: 1.45; }
     .rpt-print-note { margin: 0 0 10px; color: #64748b; font-size: 8pt; }
-    
+
     /* Print settings */
     @page { size: A4; margin: 10mm; }
     @media print {
@@ -44146,8 +44362,8 @@ function fireEquipStatusBadge(s) {
 <div id="page-events" class="page">
 <div class="page-header">
 <div>
-<div class="page-title">Incident Management System</div>
-<div style="font-size:12px;color:var(--text2)" id="ev-subtitle">Report - Investigate - Correct - Review</div>
+<div class="page-title">Incident Dashboard</div>
+<div style="font-size:12px;color:var(--text2)" id="ev-subtitle">Capture - Investigate - Correct - Learn</div>
 </div>
 <div style="display:flex;gap:8px">
 <button class="btn btn-primary" onclick="imsNewIncident()" id="ims-report-btn"><i class="ti ti-plus"></i>Report incident</button>
@@ -44156,7 +44372,7 @@ function fireEquipStatusBadge(s) {
 </div>
 
 <!-- Metrics -->
-<div class="module-metrics" style="display:grid;grid-template-columns:repeat(7,1fr);gap:10px;margin-bottom:14px">
+<div class="module-metrics" style="display:none;grid-template-columns:repeat(7,1fr);gap:10px;margin-bottom:14px">
 <div class="card" style="padding:10px 12px;border-left:4px solid #E24B4A"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">Total</div><div style="font-size:22px;font-weight:800;color:#E24B4A" id="ev-m3total">-</div></div>
 <div class="card" style="padding:10px 12px;border-left:4px solid #DC2626"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">Open</div><div style="font-size:22px;font-weight:800;color:#DC2626" id="ev-m3open">-</div></div>
 <div class="card" style="padding:10px 12px;border-left:4px solid #8B5CF6"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">Under Inv.</div><div style="font-size:22px;font-weight:800;color:#8B5CF6" id="ev-m3investigating">-</div></div>
@@ -44178,10 +44394,15 @@ function fireEquipStatusBadge(s) {
 
 <!-- -- INCIDENT REGISTER -- -->
 <div id="ims-view-register">
-<div class="card" style="margin-bottom:12px;padding:10px 14px">
-<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
-<input type="text" id="ev-search" placeholder="Search incidents, ref, location..." oninput="imsFilterList()" style="flex:1;min-width:180px;padding:7px 12px;border:1px solid var(--border);border-radius:8px;font-size:12px"/>
-<select id="ev-filter-type" onchange="imsFilterList()" style="padding:7px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px">
+<div class="ims-dash-shell">
+<div class="ims-dash-toolbar">
+<select id="ev-filter-site" onchange="imsFilterList()">
+<option value="">All Sites</option>
+</select>
+<select id="ev-filter-department" onchange="imsFilterList()">
+<option value="">All Business Units</option>
+</select>
+<select id="ev-filter-type" onchange="imsFilterList()">
 <option value="">All types</option>
 <option value="injury">Injury</option>
 <option value="near_miss">Near Miss</option>
@@ -44195,21 +44416,29 @@ function fireEquipStatusBadge(s) {
 <option value="security">Security</option>
 <option value="fire">Fire/Explosion</option>
 </select>
-<select id="ev-filter-severity" onchange="imsFilterList()" style="padding:7px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px">
+<select id="ev-filter-range" onchange="imsFilterList()">
+<option value="year">This year</option>
+<option value="month">This month</option>
+<option value="30">Last 30 days</option>
+<option value="all">All dates</option>
+</select>
+<input type="text" id="ev-search" placeholder="Search incidents..." oninput="imsFilterList()"/>
+<select id="ev-filter-severity" onchange="imsFilterList()">
 <option value="">All severities</option>
 <option value="critical">Critical</option><option value="high">High</option>
 <option value="medium">Medium</option><option value="low">Low</option>
 </select>
-<select id="ev-filter-status" onchange="imsFilterList()" style="padding:7px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px">
+<select id="ev-filter-status" onchange="imsFilterList()">
 <option value="">All statuses</option>
 <option value="open">Open</option>
 <option value="under_investigation">Under investigation</option>
 <option value="action_required">Action required</option>
 <option value="closed">Closed</option>
 </select>
-</div>
+<button type="button" class="btn btn-primary" onclick="imsNewIncident()"><i class="ti ti-plus"></i>New Incident</button>
 </div>
 <div id="ims-register-list"><div class="loading-msg">Loading incidents...</div></div>
+</div>
 </div>
 
 <!-- -- REPORT FORM -- -->
