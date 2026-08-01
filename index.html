@@ -4987,13 +4987,10 @@ document.getElementById('dash-label').textContent= isSephsAdmin ? 'Platform admi
 // White-label: only apply client branding for non-sephs-admin users
 if (isSephsAdmin) {
   // Neutral AURIS360 platform mark
-  var logoEl = document.getElementById('co-logo-img');
-  var initEl = document.getElementById('co-initials-div');
   // Reset any cached brand from previous sessions (otherwise BuildCo-themed
   // titles/icons/colors carry over into the sephs_admin experience).
   try{ Brand.reset(); }catch(_){}
-  if (logoEl) { logoEl.src = '/assets/brand/auris360-icon-192.png'; logoEl.style.display = 'block'; }
-  if (initEl) { initEl.style.display = 'none'; }
+  sidebarApplyCompanyLogo();
   // Restore the platform title - paintFromCache might have set a stale value
   try{ document.title = 'AURIS360 - HSE Management Platform'; }catch(_){}
 } else {
@@ -5001,6 +4998,7 @@ if (isSephsAdmin) {
     if(co?.logo_url){document.getElementById('co-logo-img').src=co.logo_url;document.getElementById('co-logo-img').style.display='block';document.getElementById('co-initials-div').style.display='none';}
     else{document.getElementById('co-initials-div').textContent=(co?.name||'A').charAt(0).toUpperCase();}
   }
+  sidebarApplyCompanyLogo(co);
 }
 // First-login password change prompt - if admin provisioned this user with a temp password.
 if(prof.must_change_password) {
@@ -8625,6 +8623,42 @@ function cf(){
 // not under the admin's own profile company. All save payloads use this.
 function ccid(){
   return (isSA() && sephsCompanyContext) ? sephsCompanyContext : prof?.company_id;
+}
+function sidebarViewedCompany(){
+  try{
+    var id = (typeof ccid === 'function' ? ccid() : null) || prof?.company_id || null;
+    if(id && Array.isArray(saCompanyList) && saCompanyList.length){
+      var match = saCompanyList.find(function(c){ return String(c.id) === String(id); });
+      if(match) return match;
+    }
+    if(co && (!id || String(co.id) === String(id))) return co;
+  }catch(_){}
+  return co || null;
+}
+function sidebarApplyCompanyLogo(company){
+  var img = document.getElementById('co-logo-img');
+  var init = document.getElementById('co-initials-div');
+  if(!img || !init) return;
+  var c = company || sidebarViewedCompany();
+  var name = (c && (c.display_name || c.brand_display_name || c.name)) || '';
+  var logo = c && (c.logo_url || c.logo_dark_url || c.brand_logo_url || c.company_logo_url || c.logo);
+  if(logo){
+    img.src = logo;
+    img.title = name ? name + ' logo' : 'Company logo';
+    img.alt = name ? name + ' logo' : 'Company logo';
+    img.style.display = 'block';
+    init.style.display = 'none';
+  } else if(name){
+    img.removeAttribute('src');
+    img.style.display = 'none';
+    init.textContent = name.charAt(0).toUpperCase();
+    init.title = name;
+    init.style.display = 'flex';
+  } else {
+    img.removeAttribute('src');
+    img.style.display = 'none';
+    init.style.display = 'none';
+  }
 }
 function toastMessageForUser(m,ok){
   var msg=String(m||'');
@@ -35453,6 +35487,7 @@ function saCompanySetContext(companyId) {
   } catch(e){}
   sephsCompanyContext = companyId;
   saCompanyUpdateLabel();
+  sidebarApplyCompanyLogo();
 }
 
 function saCompanyUpdateLabel() {
@@ -35479,7 +35514,7 @@ async function saCompanyInit() {
   if(saCompanyList.length === 0) {
     try {
       // Direct query bypassing cf() since we want ALL companies
-      var data = await api('/companies?select=id,name&order=name.asc');
+      var data = await api('/companies?select=id,name,logo_url&order=name.asc');
       saCompanyList = data || [];
     } catch(e) {
       console.warn('Could not load companies:', e);
@@ -35491,6 +35526,7 @@ async function saCompanyInit() {
     sephsCompanyContext = saved;
   }
   saCompanyUpdateLabel();
+  sidebarApplyCompanyLogo();
 }
 
 function saCompanyMenuToggle(evt) {
@@ -42683,7 +42719,7 @@ function fireEquipStatusBadge(s) {
   <button id="mob-btn-modules" class="mob-nav-btn" type="button" onclick="mobileToggleModules()"><i class="ti ti-apps"></i><span>More</span></button>
 </div>
 <div class="layout">
-<div class="sidebar"><div class="sidebar-top"><img id="co-logo-img" class="co-logo" src="" alt="logo"/><div id="co-initials-div" class="co-initials">A</div><div class="sb-company" id="sb-company">AURIS360</div><div class="sb-user" id="sb-user">-</div><span class="sb-role" id="sb-role">-</span></div><div id="sb-role-changer" style="padding:8px 20px;border-bottom:1px solid var(--border);display:none;gap:6px;align-items:center">
+<div class="sidebar"><div class="sidebar-top"><div class="sidebar-brand-row"><img id="auris-sidebar-logo" class="auris-sidebar-logo" src="/assets/brand/auris360-icon-192.png" alt="AURIS360 logo"/><img id="co-logo-img" class="co-logo" src="" alt="Company logo"/><div id="co-initials-div" class="co-initials">A</div></div><div class="sb-company" id="sb-company">AURIS360</div><div class="sb-user" id="sb-user">-</div><span class="sb-role" id="sb-role">-</span></div><div id="sb-role-changer" style="padding:8px 20px;border-bottom:1px solid var(--border);display:none;gap:6px;align-items:center">
 <select id="sb-role-select" style="flex:1;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:11px" onchange="">
 <option value="employee">Employee</option>
 <option value="contractor">Contractor</option>
@@ -54132,6 +54168,37 @@ I can help you:<br>
   box-shadow:10px 0 28px rgba(15,23,42,.06)!important;
 }
 .sidebar-top{background:linear-gradient(180deg,#fff 0%,#f8fbff 100%)!important}
+.sidebar-brand-row{
+  display:flex!important;
+  align-items:center!important;
+  gap:8px!important;
+  margin-bottom:8px!important;
+}
+.auris-sidebar-logo{
+  width:40px!important;
+  height:40px!important;
+  min-width:40px!important;
+  object-fit:contain!important;
+  padding:3px!important;
+  border:1px solid #dbe7f3!important;
+  border-radius:12px!important;
+  background:#fff!important;
+  box-shadow:0 10px 22px rgba(15,23,42,.08),inset 0 1px 0 rgba(255,255,255,.9)!important;
+}
+.sidebar-top .co-logo,.sidebar-top .co-initials{
+  width:32px!important;
+  height:32px!important;
+  min-width:32px!important;
+  margin:0!important;
+  border-radius:10px!important;
+  font-size:13px!important;
+  box-shadow:0 8px 18px rgba(15,23,42,.08)!important;
+}
+.sidebar-top .co-initials{
+  background:linear-gradient(145deg,#34d399,#059669 62%,#047857)!important;
+  color:#fff!important;
+  font-weight:800!important;
+}
 .nav-section{
   padding:16px 18px 7px!important;
   color:#94a3b8!important;
@@ -54205,6 +54272,9 @@ I can help you:<br>
   .sidebar.collapsed{width:64px!important;min-width:64px!important;max-width:64px!important}
   .sidebar.collapsed .nav-section,.sidebar.collapsed .profile-info,.sidebar.collapsed .role-switcher,.sidebar.collapsed .btn-danger{display:none!important}
   .sidebar.collapsed .sidebar-top{padding:10px 6px!important}
+  .sidebar.collapsed .sidebar-brand-row{justify-content:center!important;margin-bottom:0!important}
+  .sidebar.collapsed .auris-sidebar-logo{width:36px!important;height:36px!important;min-width:36px!important}
+  .sidebar.collapsed .co-logo,.sidebar.collapsed .co-initials{display:none!important}
   .sidebar.collapsed .nav-item{
     width:48px!important;
     min-width:48px!important;
