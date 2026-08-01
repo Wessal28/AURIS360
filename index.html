@@ -457,6 +457,12 @@ thead tr[style*="#7F1D1D"] th:last-child {
   padding: 6px 0;
 }
 .modules-menu.open { display: block; animation: fadeIn 0.15s ease both; }
+#sidebar-backdrop:not(.active),
+#mobile-modules-drawer:not(.open),
+#mobile-search-overlay[style*="display:none"],
+.modules-menu:not(.open) {
+  pointer-events: none !important;
+}
 .modules-menu-section {
   font-size: 9px;
   text-transform: uppercase;
@@ -5483,6 +5489,37 @@ function canAccessPage(pageKey) {
   return allowed.indexOf(pageKey) !== -1;
 }
 
+function closeTransientOverlays(){
+  [
+    'obj-modal',
+    'kpi-edit-modal',
+    'kpi-entry-modal',
+    'hse-cc-detail-modal',
+    'client-meeting-checklist-modal',
+    'client-demo-review-modal',
+    'mobile-search-overlay',
+    'mobile-modules-drawer',
+    'sidebar-backdrop',
+    'modules-menu',
+    'sa-company-menu'
+  ].forEach(function(id){
+    var el=document.getElementById(id);
+    if(!el)return;
+    el.classList.remove('open','active');
+    el.style.display='none';
+  });
+  document.querySelectorAll('.modules-menu.open,.hse-cc-modal').forEach(function(el){
+    el.classList.remove('open','active');
+    el.style.display='none';
+  });
+  var mobilePanel=document.getElementById('mobile-modules-panel');
+  if(mobilePanel){
+    mobilePanel.classList.remove('open','active');
+    mobilePanel.style.transform='translateY(100%)';
+  }
+  if(typeof _modulesOpen!=='undefined')_modulesOpen=false;
+}
+
 function showPage(name,el){
   // Block access to restricted pages regardless of how this was called
   // (sidebar click, dashboard card, programmatic call, deep link).
@@ -5491,22 +5528,13 @@ function showPage(name,el){
     return;
   }
 
+closeTransientOverlays();
 // Hide all pages using inline style
 document.querySelectorAll('.page').forEach(p=>{
   p.style.display='none';
   p.classList.remove('active');
 });
 document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
-[
-  'obj-modal',
-  'kpi-edit-modal',
-  'kpi-entry-modal',
-  'hse-cc-detail-modal',
-  'client-meeting-checklist-modal',
-  'client-demo-review-modal'
-].forEach(id=>{
-  const m=document.getElementById(id);if(m)m.style.display='none';
-});
 // Show target page using inline style  
 const target=document.getElementById('page-'+name);
 if(target){
@@ -38688,10 +38716,20 @@ function mobileOpenModules() {
   history.pushState(null, '', window.location.href);
 }
 
-function mobileCloseModules() {
+function mobileCloseModules(immediate) {
   _modulesOpen = false;
   var panel  = document.getElementById('mobile-modules-panel');
   var drawer = document.getElementById('mobile-modules-drawer');
+  if (immediate) {
+    if (panel) panel.style.transform = 'translateY(100%)';
+    if (drawer) {
+      drawer.classList.remove('open');
+      drawer.style.display = 'none';
+    }
+    var mbNow = document.getElementById('mob-btn-modules');
+    if (mbNow) mbNow.classList.remove('active');
+    return;
+  }
   if (panel) {
     panel.style.transform = 'translateY(100%)';
     setTimeout(function() {
