@@ -85,6 +85,57 @@ create table if not exists public.noise_mgmt_maps (
  operating_condition text, limitations text, status text not null default 'draft', version_no int not null default 1, supersedes_id text,
  published_by uuid, published_at timestamptz, created_by uuid, created_at timestamptz not null default now(), updated_at timestamptz not null default now(), unique(company_id,code,version_no)
 );
+alter table public.noise_mgmt_maps
+ add column if not exists map_type text default 'point_only',
+ add column if not exists owner_name text,
+ add column if not exists reviewer_name text,
+ add column if not exists data_period text,
+ add column if not exists profile_name text,
+ add column if not exists confidentiality text default 'internal',
+ add column if not exists plan_filename text,
+ add column if not exists plan_checksum text,
+ add column if not exists scale_distance numeric,
+ add column if not exists scale_unit text default 'm',
+ add column if not exists orientation_degrees numeric default 0,
+ add column if not exists coordinate_mode text default 'plan_xy',
+ add column if not exists quality_status text default 'not_validated',
+ add column if not exists review_due_date date,
+ add column if not exists current_version_id text;
+create table if not exists public.noise_mgmt_map_versions (
+ id text primary key default gen_random_uuid()::text, company_id uuid not null references public.companies(id) on delete cascade,
+ map_id text not null, version_no int not null, plan_snapshot jsonb not null default '{}', profile_snapshot jsonb not null default '{}',
+ source_snapshot jsonb not null default '[]', settings_snapshot jsonb not null default '{}', limitation_statement text,
+ quality_result jsonb not null default '{}', change_reason text, checksum text, status text not null default 'draft',
+ reviewer_id uuid, reviewer_name text, reviewed_at timestamptz, published_by uuid, published_at timestamptz,
+ created_by uuid, created_at timestamptz not null default now(), unique(company_id,map_id,version_no)
+);
+create table if not exists public.noise_mgmt_map_points (
+ id text primary key default gen_random_uuid()::text, company_id uuid not null references public.companies(id) on delete cascade,
+ map_id text not null, map_version_id text, measurement_id text not null, measurement_version int, plan_x numeric, plan_y numeric,
+ coordinate_x numeric, coordinate_y numeric, coordinate_mode text default 'plan_xy', placement_status text default 'unplaced',
+ label text, symbol text, display_note text, exclusion_reason text, status text not null default 'included',
+ created_by uuid, created_at timestamptz not null default now(), updated_at timestamptz not null default now(),
+ unique(company_id,map_version_id,measurement_id)
+);
+create table if not exists public.noise_mgmt_map_layers (
+ id text primary key default gen_random_uuid()::text, company_id uuid not null references public.companies(id) on delete cascade,
+ map_id text not null, map_version_id text, layer_type text not null, name text not null, geometry_json jsonb not null default '{}',
+ style_json jsonb not null default '{}', source_entity_type text, source_entity_id text, source_version text, effective_from date,
+ effective_to date, display_order int default 0, visible boolean not null default true, status text not null default 'draft',
+ created_by uuid, created_at timestamptz not null default now(), updated_at timestamptz not null default now()
+);
+create table if not exists public.noise_mgmt_map_surfaces (
+ id text primary key default gen_random_uuid()::text, company_id uuid not null references public.companies(id) on delete cascade,
+ map_id text not null, map_version_id text, method_code text not null, method_version text not null, parameters_json jsonb not null default '{}',
+ boundary_json jsonb not null default '{}', grid_resolution numeric, eligible_measurements jsonb not null default '[]',
+ quality_result jsonb not null default '{}', surface_ref text, checksum text, status text not null default 'draft',
+ generated_by uuid, generated_at timestamptz not null default now()
+);
+create table if not exists public.noise_mgmt_map_reviews (
+ id text primary key default gen_random_uuid()::text, company_id uuid not null references public.companies(id) on delete cascade,
+ map_id text not null, map_version_id text, reviewer_id uuid, reviewer_name text, checklist_json jsonb not null default '{}',
+ comments text, decision text not null, returned_cycle int not null default 0, created_at timestamptz not null default now()
+);
 create table if not exists public.noise_mgmt_control_plans (
  id text primary key default gen_random_uuid()::text, company_id uuid not null references public.companies(id) on delete cascade,
  code text not null, source_ref text not null, baseline_result text not null, hierarchy text not null, options_json jsonb not null default '[]', selected_control text not null,
@@ -117,17 +168,29 @@ create table if not exists public.noise_mgmt_audit_events (
  entity_type text not null, entity_id text not null, action text not null, before_json jsonb, after_json jsonb, reason text,
  performed_by uuid, performed_by_name text, created_at timestamptz not null default now()
 );
+create table if not exists public.noise_mgmt_config_records (
+ id text primary key default gen_random_uuid()::text, company_id uuid not null references public.companies(id) on delete cascade,
+ workspace text not null, code text not null, name text not null, description text, scope_type text not null default 'company', scope_id text,
+ inherited_from_id text, override_fields jsonb not null default '[]', payload jsonb not null default '{}', test_cases jsonb not null default '[]',
+ dependency_snapshot jsonb not null default '{}', owner_id uuid, owner_name text, effective_from date, effective_to date,
+ status text not null default 'draft', version_no int not null default 1, copied_from_id text, change_reason text,
+ tested_by uuid, tested_at timestamptz, published_by uuid, published_at timestamptz, archived_at timestamptz,
+ created_by uuid, created_at timestamptz not null default now(), updated_at timestamptz not null default now(), unique(company_id,workspace,code,version_no)
+);
 
 create index if not exists noise_mgmt_measurements_company_status on public.noise_mgmt_measurements(company_id,status,measurement_date desc);
 create index if not exists noise_mgmt_assessments_company_status on public.noise_mgmt_exposure_assessments(company_id,status,assessment_date desc);
 create index if not exists noise_mgmt_controls_company_due on public.noise_mgmt_control_plans(company_id,status,due_date);
 create index if not exists noise_mgmt_instruments_company_due on public.noise_mgmt_instruments(company_id,status,calibration_due_date);
 create index if not exists noise_mgmt_audit_entity on public.noise_mgmt_audit_events(company_id,entity_type,entity_id,created_at desc);
+create index if not exists noise_mgmt_map_points_source on public.noise_mgmt_map_points(company_id,map_id,measurement_id);
+create index if not exists noise_mgmt_map_versions_status on public.noise_mgmt_map_versions(company_id,map_id,status,version_no desc);
+create index if not exists noise_mgmt_config_workspace on public.noise_mgmt_config_records(company_id,workspace,status,effective_from);
 
 do $$
 declare t text;
 begin
- foreach t in array array['noise_mgmt_sources','noise_mgmt_tasks','noise_mgmt_segs','noise_mgmt_programmes','noise_mgmt_measurement_plans','noise_mgmt_instruments','noise_mgmt_field_surveys','noise_mgmt_measurements','noise_mgmt_assessment_profiles','noise_mgmt_exposure_assessments','noise_mgmt_maps','noise_mgmt_control_plans','noise_mgmt_hearing_protectors','noise_mgmt_reports'] loop
+ foreach t in array array['noise_mgmt_sources','noise_mgmt_tasks','noise_mgmt_segs','noise_mgmt_programmes','noise_mgmt_measurement_plans','noise_mgmt_instruments','noise_mgmt_field_surveys','noise_mgmt_measurements','noise_mgmt_assessment_profiles','noise_mgmt_exposure_assessments','noise_mgmt_maps','noise_mgmt_map_versions','noise_mgmt_map_points','noise_mgmt_map_layers','noise_mgmt_map_surfaces','noise_mgmt_map_reviews','noise_mgmt_control_plans','noise_mgmt_hearing_protectors','noise_mgmt_reports','noise_mgmt_config_records'] loop
   execute format('alter table public.%I enable row level security',t);
   execute format('drop policy if exists %I on public.%I',t||'_tenant_read',t);
   execute format('create policy %I on public.%I for select using (exists(select 1 from public.profiles p where p.id=auth.uid() and (p.role=''sephs_admin'' or p.company_id=%I.company_id)))',t||'_tenant_read',t,t);

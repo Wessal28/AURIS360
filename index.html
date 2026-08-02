@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8"/>
@@ -34917,7 +34917,7 @@ const ROLE_PERMISSIONS = {
   'Occupational Health':     [false,true,true,false,false,true,false,false,false],
   'PPE':                     [false,true,true,true,false,false,true,false,false],
   'ESG / Environmental':     [true,true,true,true,true,false,false,false,false],
-  'Noise Surveys':           [false,true,true,true,false,false,true,false,false],
+  'Occupational Noise Management': [false,true,true,true,false,false,true,false,false],
   'Training & Competency':   [false,true,true,false,false,true,false,false,false],
   'View own training':     [false,true,true,true,false,true,true,true,true],
   'Meetings & Comms':        [false,true,true,true,false,false,true,false,false],
@@ -36086,7 +36086,7 @@ var MODULES_DIR = [
   {k:'ohealth',     i:'ti-stethoscope',        l:'Occupational Health', sec:'HSE Modules'},
   {k:'ppe',         i:'ti-shield-check',       l:'PPE',                 sec:'HSE Modules'},
   {k:'esg',         i:'ti-leaf',               l:'Environmental / ESG', sec:'HSE Modules'},
-  {k:'noise',       i:'ti-volume',             l:'Noise Survey',        sec:'HSE Modules'},
+  {k:'noise',       i:'ti-volume',             l:'Occupational Noise Management', sec:'HSE Modules'},
   {k:'meetings',    i:'ti-notes',              l:'HSE Meetings',        sec:'HSE Modules'},
   {k:'training',    i:'ti-certificate',        l:'Training',            sec:'HSE Modules'},
   // Management
@@ -37086,7 +37086,7 @@ var MODULE_CATALOGUE = [
   {k:'fire',        l:'Fire Certificates'},
   {k:'chemical',    l:'Chemical Control'},
   {k:'ohealth',     l:'Occupational Health'},
-  {k:'noise',       l:'Noise Survey'},
+  {k:'noise',       l:'Occupational Noise Management'},
   {k:'esg',         l:'Environmental / ESG'},
   {k:'contractor',  l:'Contractors'},
   {k:'tools',       l:'Tools Register'},
@@ -37272,7 +37272,7 @@ var MODULE_CATALOG = [
   { key:'tools',       icon:'ti-tool',             name:'Tools & Equipment' },
   { key:'contractor',  icon:'ti-users',            name:'Contractors' },
   { key:'ohealth',     icon:'ti-stethoscope',      name:'Occupational Health' },
-  { key:'noise',       icon:'ti-volume',           name:'Noise Survey' },
+  { key:'noise',       icon:'ti-volume',           name:'Occupational Noise Management' },
   { key:'legal',       icon:'ti-scale',            name:'Legal Register' },
   { key:'workschedule',icon:'ti-calendar-week',    name:'Work Schedule' },
   { key:'documents',   icon:'ti-file',             name:'Documents' },
@@ -43037,6 +43037,7 @@ function fireEquipStatusBadge(s) {
 <link rel="stylesheet" href="safety-engagement.css">
 <link rel="stylesheet" href="bbs-observations.css?v=20260802-2">
 <link rel="stylesheet" href="noise-management.css?v=20260802-1">
+<link rel="stylesheet" href="noise-management-map-config.css?v=20260803-1">
 </head>
 <body>
 <div id="login-screen">
@@ -43242,7 +43243,7 @@ function fireEquipStatusBadge(s) {
 <div class="nav-item" onclick="showPage('fire',this)"><i class="ti ti-flame"></i>Fire Certificates</div>
 <div class="nav-item" onclick="showPage('chemical',this)"><i class="ti ti-flask"></i>Chemical Control</div>
 <div class="nav-item" onclick="showPage('esg',this)"><i class="ti ti-leaf"></i>Environmental / ESG</div>
-<div class="nav-item" onclick="showPage('noise',this)"><i class="ti ti-volume"></i>Noise Survey</div><div class="nav-item" id="nav-mtg" onclick="showPage('meetings',this)"><i class="ti ti-notes"></i>HSE Meetings</div><div class="nav-item" onclick="showPage('training',this)"><i class="ti ti-certificate"></i>Training</div><span class="nav-section">Management</span><div class="nav-item" onclick="showPage('actions',this)"><i class="ti ti-list-check"></i>Master Action Plan</div><div class="nav-item" onclick="showPage('legal',this)"><i class="ti ti-scale"></i>Legal Compliance</div>
+<div class="nav-item" onclick="showPage('noise',this)"><i class="ti ti-volume"></i>Occupational Noise Management</div><div class="nav-item" id="nav-mtg" onclick="showPage('meetings',this)"><i class="ti ti-notes"></i>HSE Meetings</div><div class="nav-item" onclick="showPage('training',this)"><i class="ti ti-certificate"></i>Training</div><span class="nav-section">Management</span><div class="nav-item" onclick="showPage('actions',this)"><i class="ti ti-list-check"></i>Master Action Plan</div><div class="nav-item" onclick="showPage('legal',this)"><i class="ti ti-scale"></i>Legal Compliance</div>
 <div class="nav-item" onclick="showPage('sop',this)"><i class="ti ti-file-description"></i>SOP Generator</div>
 <div class="nav-item" onclick="showPage('swms',this)"><i class="ti ti-file-check"></i>SWMS / Method Statements</div>
 <div class="nav-item" id="nav-docs" onclick="showPage('documents',this)"><i class="ti ti-files"></i>Document Control</div><div class="nav-item" onclick="showPage('people',this)"><i class="ti ti-id-badge"></i>People</div><div class="nav-item" id="nav-users" onclick="showPage('users',this)"><i class="ti ti-users"></i>Users &amp; Roles</div><div class="nav-item" id="nav-admin" style="display:none" onclick="showPage('admin',this)"><i class="ti ti-building"></i>Companies</div><div class="nav-item" id="nav-integrations" onclick="showPage('integrations',this)"><i class="ti ti-plug"></i>Integrations</div>
@@ -54860,6 +54861,6 @@ I can help you:<br>
 <script src="kpi-module-upgrade.js"></script>
 <script src="safety-engagement.js"></script>
 <script src="bbs-observations.js?v=20260802-2"></script>
-<script src="noise-management.js?v=20260803-2"></script>
+<script src="noise-management.js?v=20260803-3"></script>
 </body>
 </html>
