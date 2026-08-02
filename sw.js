@@ -3,14 +3,16 @@
 // Cache-first for static assets, network-first for API calls
 // ============================================================
 
-const CACHE_NAME = 'auris360-v8';
-const STATIC_CACHE = 'auris360-static-v8';
-const API_CACHE = 'auris360-api-v8';
+const CACHE_NAME = 'auris360-v9';
+const STATIC_CACHE = 'auris360-static-v9';
+const API_CACHE = 'auris360-api-v9';
 
 // Assets to cache on install (app shell)
 const PRECACHE_ASSETS = [
   '/',
   '/index.html',
+  '/safety-engagement.css',
+  '/safety-engagement.js',
   'https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css',
 ];
 
@@ -21,6 +23,8 @@ self.addEventListener('install', function(event) {
       return cache.addAll([
         '/',
         '/index.html',
+        '/safety-engagement.css',
+        '/safety-engagement.js',
       ]).catch(function(err) {
         console.warn('AURIS360 SW: Pre-cache partial failure', err);
       });
@@ -81,6 +85,19 @@ self.addEventListener('fetch', function(event) {
   }
 
   // index.html — network first, fall back to cache
+  if (url.origin === self.location.origin &&
+      (url.pathname === '/safety-engagement.css' || url.pathname === '/safety-engagement.js')) {
+    event.respondWith(
+      fetch(event.request).then(function(response) {
+        if (response.ok) {
+          caches.open(STATIC_CACHE).then(function(cache) { cache.put(event.request, response.clone()); });
+        }
+        return response;
+      }).catch(function() { return caches.match(event.request); })
+    );
+    return;
+  }
+
   if (url.pathname === '/' || url.pathname === '/index.html') {
     event.respondWith(
       fetch(event.request).then(function(response) {
