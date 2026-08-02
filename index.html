@@ -4738,9 +4738,9 @@ async function authOnSignIn(authData) {
   var aiPanel=document.getElementById('ai-panel');
   if(aiPanel) aiPanel.style.display='block';
   document.getElementById('page-dashboard').style.display='block';
-  applyRoles();
   dashRouteView();
   if(!isPersonalDashRole()) dashRenderControlCentre({});
+  applyRoles();
   sidebarApplyState(sidebarGetState());
   devModeUpdateUI();
   saCompanyInit();
@@ -4999,9 +4999,9 @@ async function authInitSession() {
     var aiPanel = document.getElementById('ai-panel');
     if(aiPanel) aiPanel.style.display='block';
     document.getElementById('page-dashboard').style.display='block';
-    applyRoles();
     dashRouteView();
     if(!isPersonalDashRole()) dashRenderControlCentre({});
+    applyRoles();
     sidebarApplyState(sidebarGetState());
     devModeUpdateUI();
     saCompanyInit();
@@ -5672,9 +5672,8 @@ function dashOpenMyActions(){
 async function loadDash() {
   var refreshIcon = document.getElementById('dash-refresh-icon');
   if (refreshIcon) refreshIcon.style.animation = 'spin .8s linear infinite';
-  // Management dashboards use the Operations Centre instead of the legacy
-  // organisation view. Mount it immediately so a fresh login never shows a
-  // blank page while the live API requests are still loading.
+  // Mount the organisation dashboard immediately so a fresh login never
+  // appears blank while the live API requests are still loading.
   if(!isPersonalDashRole()) {
     dashRouteView();
     dashRenderControlCentre({});
@@ -5947,252 +5946,258 @@ function dashKpiAsset(type){
   return svg+defs+(body[type]||body.inspection)+'</svg>';
 }
 
+function dashOpenControlCentreModal(title, bodyHtml){
+  var modal=document.getElementById('hse-cc-detail-modal');
+  if(!modal){
+    modal=document.createElement('div');
+    modal.id='hse-cc-detail-modal';
+    modal.className='hse-cc-modal';
+    modal.innerHTML='<div class="hse-cc-modal-card" role="dialog" aria-modal="true" aria-labelledby="hse-cc-detail-title"><div class="hse-cc-modal-head"><h3 id="hse-cc-detail-title"></h3><button class="btn" onclick="dashCloseControlCentreModal()" style="background:rgba(255,255,255,.16);color:#fff;border-color:rgba(255,255,255,.35)"><i class="ti ti-x"></i> Close</button></div><div id="hse-cc-detail-body" class="hse-cc-modal-body"></div></div>';
+    modal.onclick=function(e){if(e.target===modal)dashCloseControlCentreModal();};
+    document.body.appendChild(modal);
+  }
+  document.getElementById('hse-cc-detail-title').textContent=title||'Dashboard detail';
+  document.getElementById('hse-cc-detail-body').innerHTML=bodyHtml||'';
+  modal.style.display='flex';
+}
+
+function dashCloseControlCentreModal(){
+  var modal=document.getElementById('hse-cc-detail-modal');
+  if(modal)modal.style.display='none';
+}
+
 function dashJs(value){
   return String(value==null?'':value).replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/\r?\n/g,' ');
 }
-function dashOpsPage(key){
-  var pages={
-    dashboard:'dashboard',safety:'events',events:'events',incident:'events',
-    observation:'observation',risk:'risk',fire:'fire',health:'ohealth',
-    ohealth:'ohealth',chemical:'esg',environment:'esg',equipment:'tools',
-    assets:'tools',training:'training',people:'people',legal:'legal',
-    administration:'legal',ai:'ai-insights',actions:'actions',permit:'permit',
-    inspection:'inspection',audit:'inspection',documents:'documents',
-    schedule:'workschedule',workschedule:'workschedule','site-map':'sitemap',
-    sitemap:'sitemap',contractors:'contractor',contractor:'contractor'
-  };
-  return pages[String(key||'dashboard').toLowerCase()]||String(key||'dashboard');
-}
-function dashOpsSearch(value){
-  var q=String(value||'').trim().toLowerCase();
-  if(!q)return false;
-  var store=window.__hseOpsDetailRows||{};
-  var rows=[];
-  Object.keys(store).forEach(function(key){
-    (store[key].rows||[]).forEach(function(row){
-      var hay=[row.title,row.meta,row.side,row.ref].filter(Boolean).join(' ').toLowerCase();
-      if(hay.indexOf(q)!==-1)rows.push(row);
-    });
-  });
-  window.__hseOpsDetailRows.search={title:'Search results for “'+value+'”',page:'dashboard',rows:rows.slice(0,30)};
-  dashOpenWidgetDetail('search');
-  return false;
-}
-function dashOpsQuick(type){
-  if(type==='incident'){dashOpenIncidentForm();return false;}
-  if(type==='permit'){
-    showPage('permit',null);
-    setTimeout(function(){if(typeof ptwNew==='function')ptwNew();},120);
-    return false;
-  }
-  if(type==='inspection'){
-    showPage('inspection',null);
-    setTimeout(function(){if(typeof auditNew==='function')auditNew('workplace');},120);
-    return false;
-  }
-  if(type==='document'){
-    showPage('documents',null);
-    setTimeout(function(){if(typeof dcNew==='function')dcNew();},120);
-    return false;
-  }
-  return dashOpsGo(type);
-}
-function dashOpsApplySearch(id){
-  if(!id) return false;
-  var search = document.querySelector('input[placeholder*="Search"], input[placeholder*="search"], input[type="search"]');
-  if(!search) return false;
-  search.value = id;
-  search.dispatchEvent(new Event('input',{bubbles:true}));
-  search.dispatchEvent(new Event('change',{bubbles:true}));
-  return true;
-}
-function dashOpsOpenRecord(page,id){
-  if(!id) return false;
-  var routeFns = {
-    events:['imsOpenEdit','invOpen','eventEdit','incidentEdit'],
-    observation:['obsEdit','observationEdit'],
-    risk:['raOpen','raEdit','riskEdit'],
-    inspection:['auditOpen','audEdit','auditEdit','inspectionEdit'],
-    permit:['ptwEdit','ptwOpen','permitEdit'],
-    training:['tbtEdit','trainingEdit','tpOpen'],
-    documents:['dcEdit','docEdit','sopView','swmsOpen','documentEdit'],
-    workschedule:['wsEdit','workEdit'],
-    esg:['esgInspEdit'],
-    fire:['emEqEdit','fireEdit','fcEdit'],
-    tools:['emEqEdit','eqEdit','equipmentEdit'],
-    actions:['mapEdit','mapOpenSourceRecord','cpaEdit','actionEdit','gapEdit'],
-    legal:['lcaEdit','gapEdit','calEdit'],
-    contractor:['conEdit']
-  };
-  var names = routeFns[page] || [];
-  for(var i=0;i<names.length;i++){
-    var fn = window[names[i]];
-    if(typeof fn === 'function'){
-      try { fn(id); return true; }
-      catch(err){ console.warn('Record open failed via '+names[i], err); }
+
+function dashNavigateTo(page,id){
+  dashCloseControlCentreModal();
+  if(!page)return;
+  showPage(page,null);
+  if(!id)return;
+  setTimeout(function(){
+    try{
+      if(page==='events'&&typeof evOpenDetail==='function')evOpenDetail(id);
+      else if(page==='inspection'&&typeof auditOpen==='function')auditOpen(id);
+      else if(page==='risk'&&typeof raOpen==='function')raOpen(id);
+      else if(page==='permit'&&typeof ptwShowDetail==='function')ptwShowDetail(id);
+      else if(page==='workschedule'&&typeof wsShowDetail==='function')wsShowDetail(id);
+      else if(page==='swms'&&typeof swmsOpen==='function')swmsOpen(id);
+      else if(page==='training'&&typeof tpOpen==='function')tpOpen(id);
+      else if(page==='actions'&&typeof mapOpenSourceRecord==='function')mapOpenSourceRecord(id);
+    }catch(e){
+      console.warn('Dashboard record navigation failed',e);
     }
-  }
-  return false;
+  },180);
 }
-function dashOpsGo(key,id){
-  var page = dashOpsPage(key);
-  var modal = document.getElementById('hse-cc-modal');
-  if(modal) modal.remove();
-  try{
-    if(typeof showPage === 'function'){
-      showPage(page,null);
-      setTimeout(function(){
-        if(!id) return;
-        if(dashOpsOpenRecord(page,id)) return;
-        dashOpsApplySearch(id);
-      },180);
-      return false;
-    }
-  }catch(err){ console.warn('Navigation failed', err); }
-  return false;
-}
-function dashNavClick(event,key,id){
+
+function dashNavClick(event,page,id){
   if(event){
     event.preventDefault();
     event.stopPropagation();
   }
-  return dashOpsGo(key,id);
+  dashNavigateTo(page,id);
 }
-function dashKpiAsset(type){
-  var icons = {
-    incident:'ti-alert-triangle', action:'ti-list-check', risk:'ti-shield-exclamation',
-    training:'ti-certificate', permit:'ti-key', inspection:'ti-clipboard-check',
-    compliance:'ti-scale', map:'ti-map-2', alert:'ti-bell-ringing', task:'ti-checkbox',
-    quick:'ti-bolt', ai:'ti-sparkles'
-  };
-  return '<span class="hse-cc-kpi-cube '+escH(type||'incident')+'"><i class="ti '+(icons[type]||'ti-chart-bar')+'"></i></span>';
+
+function dashOpenKpiDetail(index){
+  var item=(window.__hseCcKpis||[])[index];
+  if(!item)return;
+  dashOpenControlCentreModal(item.label,'<div class="hse-cc-panel" style="min-height:260px"><div style="display:flex;align-items:center;gap:18px;margin-bottom:18px"><div class="hse-cc-kpi-icon">'+dashKpiAsset(item.asset)+'</div><div><div class="hse-cc-kpi-label">'+escH(item.label)+'</div><div class="hse-cc-kpi-value" style="font-size:44px">'+escH(item.value)+'</div><div class="hse-cc-kpi-hint '+(item.tone==='red'||item.tone==='amber'?'down':'up')+'">'+escH(item.hint)+'</div></div></div><button class="btn primary" onclick="dashNavigateTo(\''+dashJs(item.page)+'\')">Open related module</button></div>');
 }
-function dashOpsDoneStatus(status){
-  return ['closed','complete','completed','done','approved','fulfilled','verified'].includes(String(status||'').toLowerCase());
-}
-function dashOpsRowListHtml(rows,emptyText){
-  if(!rows || !rows.length) return '<div class="hse-cc-empty">'+escH(emptyText||'No records available')+'</div>';
-  return rows.slice(0,6).map(function(row){
-    return '<button type="button" class="hse-cc-list-row" onclick="return dashNavClick(event,\''+dashJs(row.page||row.module||'dashboard')+'\',\''+dashJs(row.id||row.ref||'')+'\')">'+
-      '<span><strong>'+escH(row.title||row.ref||'Record')+'</strong><em>'+escH(row.meta||row.subtitle||'')+'</em></span>'+
-      '<b class="'+escH(row.tone||'')+'">'+escH(row.side||row.badge||'Open')+'</b>'+
-    '</button>';
-  }).join('');
-}
+
 function dashOpenWidgetDetail(key){
-  var store = window.__hseOpsDetailRows || {};
-  var pack = store[key] || { title:'Operations Centre', rows:[], page:'dashboard' };
-  var modal = document.getElementById('hse-cc-modal');
-  if(modal) modal.remove();
-  modal = document.createElement('div');
-  modal.id = 'hse-cc-modal';
-  modal.className = 'hse-cc-modal';
-  modal.innerHTML = '<div class="hse-cc-backdrop" onclick="this.parentElement.remove()"></div>'+
-    '<section class="hse-cc-dialog" role="dialog" aria-modal="true">'+
-      '<header><h3>'+escH(pack.title||'Operations Centre')+'</h3><button type="button" onclick="document.getElementById(\'hse-cc-modal\').remove()"><i class="ti ti-x"></i> Close</button></header>'+
-      '<div class="hse-cc-dialog-body">'+dashOpsRowListHtml(pack.rows,'No linked records available')+'</div>'+
-      '<footer><button type="button" class="hse-cc-primary" onclick="return dashNavClick(event,\''+dashJs(pack.page||key)+'\')">View all</button></footer>'+
-    '</section>';
-  document.body.appendChild(modal);
+  var source=document.querySelector('[data-cc-widget="'+key+'"]');
+  if(!source)return;
+  var titleEl=source.querySelector('.hse-cc-panel-title');
+  var clone=source.cloneNode(true);
+  clone.removeAttribute('onclick');
+  clone.removeAttribute('data-cc-widget');
+  dashOpenControlCentreModal(titleEl?titleEl.textContent:'Dashboard detail',clone.outerHTML);
 }
-function dashOpsRequirementsHtml(){
-  var reqs = [
-    ['Navigation map',['Operations Centre','Safety','Fire and Emergency','Occupational Health','Environment','Operational Excellence','Assets and Operations','People and Competence','Intelligence and Analytics','Administration']],
-    ['User journey',['Overview: land on the Operations Centre','Monitor: review KPIs, alerts and live data','Investigate: drill into incidents, risks or alerts','Act: create actions, assign tasks or initiate workflows','Follow up: track progress and outcomes in real time']],
-    ['Functional requirements',['Real-time display of operational KPIs','Customisable command dashboard layout','Role-based widget visibility','Drill-down from summary to detail','Map integration with GIS or uploaded layouts','AI-driven insights and alerts','Quick actions for common tasks','Mobile and tablet responsive']],
-    ['Key features',['Real-time monitoring','AI insights and recommendations','Interactive dashboards','Geospatial incident visualisation','Workflow task management','Alerts and notifications','Quick actions','Personalised workspaces']],
-    ['User interactions',['Click KPI cards to open modules','Click map markers for site details','Open any list item to its source record','Use quick actions to create records','Interact with charts for analysis','Receive and act on alerts']],
-    ['Integrations',['AD / SSO','Microsoft 365','ERP / HR systems','GIS systems','IoT sensors','Email, SMS, WhatsApp and Teams']],
-    ['Permissions',['SEPHS Admin: all companies and configuration','Company Admin: company configuration and users','HSE Manager: departmental control and approvals','Supervisor: operational records and actions','Employee: own tasks and reporting']],
-    ['AI capabilities',['Anomaly detection','Trend prediction','Risk scoring','Smart recommendations','Natural language queries','Auto-summary of incidents and actions']],
-    ['Technical specifications',['Responsive HTML, CSS and JavaScript','Supabase backend and storage','OpenAI API for AI services','Real-time data where required','Role-based access control','Audit trail and secure configuration']],
-    ['Widget specification',['KPI cards show real-time database indicators','Live incident map uses GIS data or uploaded layouts','AI insights use OpenAI recommendations','Permit to Work widget uses PTW module summaries','Incident trend refreshes from safety events','Actions overview uses Master Action Plan data','My tasks use workflow records','Quick actions create common records']]
-  ];
-  return '<div class="hse-cc-requirements">'+reqs.map(function(section){
-    return '<article><h4>'+escH(section[0])+'</h4><ul>'+section[1].map(function(item){ return '<li>'+escH(item)+'</li>'; }).join('')+'</ul></article>';
-  }).join('')+'</div>';
-}
+
 function dashRenderControlCentre(data){
-  var panel = dashEnsureControlCentreMount();
-  if(!panel) return;
-  var role = (prof && prof.currentRole) || '';
-  if(isPersonalDashRole(role)){ panel.style.display='none'; return; }
-  panel.style.display = '';
-  var events = data.events || [];
-  var actions = data.actions || [];
-  var permits = data.permits || [];
-  var legal = data.legal || [];
-  var training = data.training || [];
-  var inspections = data.inspections || [];
-  var risks = data.risks || data.riskAssessments || [];
-  var companyName = (co && co.name) || (prof && prof.company_name) || 'your organisation';
-  var openActions = actions.filter(function(a){ return !dashOpsDoneStatus(a.status); });
-  var overdueActions = openActions.filter(function(a){ return dashIsOverdue(a.due_date || a.target_date); });
-  var highRisks = risks.filter(function(r){ return dashRiskWeight(r) >= 3 || /high|very high|critical/i.test(String(r.level||r.risk_level||r.overall_risk||'')); });
-  var activePermits = permits.filter(function(p){ return !dashOpsDoneStatus(p.status); });
-  var dueInspections = inspections.filter(function(i){ return dashSoon(i.next_due || i.next_inspection_due || i.due_date, 30); });
-  var completeTraining = training.length ? Math.round(100 * training.filter(function(t){ return dashOpsDoneStatus(t.status) || /competent|valid/i.test(String(t.competency_level||t.result||'')); }).length / training.length) : 0;
-  var complianceScore = legal.length ? Math.round(100 * legal.filter(function(l){ return /compliant/i.test(String(l.status||'')); }).length / legal.length) : 0;
-  var incidentRows = events.slice(0,6).map(function(e){ return { title:e.ref || e.reference || e.incident_number || 'Incident', meta:e.description || e.location || e.incident_type || '', side:e.status || e.severity || 'Open', tone:/high|overdue|open/i.test(String(e.severity||e.status||''))?'danger':'', page:'events', id:e.id || e.ref || e.reference }; });
-  var taskRows = overdueActions.concat(openActions).slice(0,8).map(function(a){ return { title:a.title || a.action || a.description || 'Action', meta:(a.source || a.related_ref || 'Action')+' '+(a.due_date ? '('+dashFmtDate(a.due_date)+')' : ''), side:dashIsOverdue(a.due_date||a.target_date)?'Overdue':(a.status||'Open'), tone:dashIsOverdue(a.due_date||a.target_date)?'danger':'', page:'actions', id:a.id || a.ref }; });
-  var upcomingRows = inspections.concat(training).slice(0,8).map(function(x){ return { title:x.title || x.name || x.inspection_type || x.training_title || 'Upcoming item', meta:x.type || x.category || x.module || 'Activity', side:dashFmtDate(x.next_due || x.next_inspection_due || x.planned_date || x.date), page:/train/i.test(String(x.type||x.module||''))?'training':'audit', id:x.id || x.ref }; });
-  window.__hseOpsDetailRows = {
-    alerts:{ title:'My Alerts', page:'actions', rows:incidentRows.concat(taskRows).slice(0,8) },
-    tasks:{ title:'My Tasks', page:'actions', rows:taskRows },
-    upcoming:{ title:'Upcoming Activities', page:'schedule', rows:upcomingRows },
-    actions:{ title:'Action Status', page:'actions', rows:taskRows },
-    incidents:{ title:'Incident Trend', page:'events', rows:incidentRows },
-    riskmap:{ title:'Live Incident Map', page:'site-map', rows:incidentRows.concat(highRisks.slice(0,4).map(function(r){ return { title:r.title||r.ref||'High risk', meta:r.location||r.activity||'', side:r.level||r.risk_level||'High', tone:'danger', page:'risk', id:r.id||r.ref }; })) },
-    compliance:{ title:'Compliance by Category', page:'legal', rows:[
-      {title:'HSE overall', meta:'Legal register and audit evidence', side:complianceScore+'%', page:'legal'},
-      {title:'Training completion', meta:'Competency and training plan', side:completeTraining+'%', page:'training'},
-      {title:'Permit compliance', meta:'Active permits and approvals', side:(permits.length?Math.round(100*(permits.length-activePermits.length)/permits.length):100)+'%', page:'permit'},
-      {title:'Inspection readiness', meta:'Due and completed inspections', side:(dueInspections.length?'Due':'On track'), page:'audit'}
-    ] }
-  };
-  function kpi(title,value,sub,type,page){
-    return '<button type="button" class="hse-cc-kpi" onclick="return dashNavClick(event,\''+page+'\')">'+dashKpiAsset(type)+'<span>'+escH(title)+'</span><strong>'+escH(value)+'</strong><em>'+escH(sub)+'</em></button>';
+  var oldReadiness=document.getElementById('dash-demo-readiness');
+  if(oldReadiness)oldReadiness.style.display='none';
+
+  var panel=dashEnsureControlCentreMount();
+  if(!panel)return;
+  if(isPersonalDashRole()){
+    panel.style.display='none';
+    return;
   }
-  function quickAction(title,sub,type,action){
-    return '<button type="button" class="hse-cc-kpi" onclick="return dashOpsQuick(\''+action+'\')">'+dashKpiAsset(type)+'<span>'+escH(title)+'</span><strong>+</strong><em>'+escH(sub)+'</em></button>';
-  }
-  var maxMonth = Math.max(1, events.length, 6);
-  var trendPoints = [0,1,2,3,4,5,6,7,8,9,10,11].map(function(m){
-    var count = events.filter(function(e){ var d = new Date(e.date || e.event_date || e.created_at || ''); return !isNaN(d) && d.getMonth() === m; }).length;
-    return 220 - Math.round((count / maxMonth) * 150);
+  panel.style.display='block';
+  data=data||{};
+  var now=new Date();
+  var events=data.events||[];
+  var actions=data.actions||[];
+  var permits=data.permits||[];
+  var legal=data.legal||[];
+  var training=data.training||[];
+  var inspections=data.inspections||[];
+  var risks=data.riskAssessments||[];
+  var certs=data.certs||[];
+
+  var openIncidents=events.filter(function(x){return !dashIsDoneStatus(x.status);});
+  var seriousIncidents=openIncidents.filter(function(x){
+    var s=String(x.severity||x.actual_severity||x.potential_severity||'').toLowerCase();
+    return s.indexOf('critical')!==-1||s.indexOf('high')!==-1;
   });
-  var trendSvg = '<svg class="hse-cc-trend" viewBox="0 0 360 230" preserveAspectRatio="none">'+
-    '<g class="grid"><line x1="0" y1="50" x2="360" y2="50"/><line x1="0" y1="105" x2="360" y2="105"/><line x1="0" y1="160" x2="360" y2="160"/></g>'+
-    '<polyline points="'+trendPoints.map(function(y,i){return (18+i*30)+','+y;}).join(' ')+'" class="inc"/>'+
-    '<polyline points="'+trendPoints.map(function(y,i){return (18+i*30)+','+(i<6?210-y:y);}).join(' ')+'" class="near"/>'+
-    '</svg>';
+  var openActions=actions.filter(function(x){return !dashIsDoneStatus(x.status);});
+  var overdueActions=openActions.filter(function(x){return dashIsOverdue(x.target_date||x.due_date);});
+  var highRisks=risks.filter(function(x){return !dashIsDoneStatus(x.status)&&dashRiskWeight(x)>=3;});
+  var legalGaps=legal.filter(function(x){
+    var score=parseFloat(x.compliance_score);
+    var gap=String(x.gap||x.gap_identified||x.has_gap||'').toLowerCase();
+    var status=String(x.status||x.compliance_status||'').toLowerCase();
+    return gap==='true'||gap==='yes'||status.indexOf('non')!==-1||status.indexOf('partial')!==-1||(!isNaN(score)&&score<80);
+  });
+  var expiringTraining=training.filter(function(x){return x.expiry_date&&(dashIsOverdue(x.expiry_date)||dashSoon(x.expiry_date,30));});
+  var expiringCerts=certs.filter(function(x){return x.expiry_date&&(dashIsOverdue(x.expiry_date)||dashSoon(x.expiry_date,30));});
+  var activePermits=permits.filter(function(x){return !dashIsDoneStatus(x.status);});
+  var recentInspections=inspections.filter(function(x){
+    var d=new Date(x.inspection_date||x.created_at||'');
+    if(isNaN(d.getTime()))return false;
+    var limit=new Date(now); limit.setDate(limit.getDate()-30);
+    return d>=limit;
+  });
+  var currentMonth=now.getMonth();
+  var thisMonthEvents=events.filter(function(x){
+    var d=new Date(x.event_date||x.date||x.created_at||'');
+    return !isNaN(d.getTime())&&d.getFullYear()===now.getFullYear()&&d.getMonth()===currentMonth;
+  });
+
+  var attention=[];
+  overdueActions.slice(0,6).forEach(function(x){
+    attention.push({id:x.id||'',priority:'Overdue',tone:'red',title:x.action||x.title||x.description||'Corrective action overdue',meta:x.ref||x.source_ref||x.source||'Master Action Plan',owner:x.responsible||x.assigned_to||x.owner||'-',due:dashFmtDate(x.target_date||x.due_date),page:'actions'});
+  });
+  seriousIncidents.slice(0,4).forEach(function(x){
+    attention.push({id:x.id||'',priority:'Incident',tone:'red',title:x.description||x.event_type||'High severity incident',meta:x.ref||x.reference||x.event_ref||'Incident Management',owner:x.responsible||x.assigned_to||'-',due:dashFmtDate(x.event_date||x.created_at),page:'events'});
+  });
+  highRisks.slice(0,4).forEach(function(x){
+    attention.push({id:x.id||'',priority:'High risk',tone:'amber',title:x.title||x.activity||x.task||'High risk assessment',meta:x.ref||x.reference||'Risk Assessment',owner:x.responsible||x.owner||x.assessor||'-',due:dashFmtDate(x.review_date||x.next_review_date||x.target_date),page:'risk'});
+  });
+  legalGaps.slice(0,4).forEach(function(x){
+    attention.push({id:x.id||'',priority:'Legal gap',tone:'amber',title:x.section_title||x.requirement_title||x.title||x.legislation||'Legal requirement gap',meta:x.ref||x.reference||x.category||'Legal Compliance',owner:x.responsibility||x.responsible||x.action_by||'-',due:dashFmtDate(x.target_date||x.next_assessment_date),page:'legal'});
+  });
+  expiringTraining.slice(0,3).forEach(function(x){
+    attention.push({id:x.id||'',priority:'Training',tone:'amber',title:x.person_name||x.employee_name||'Training validity due',meta:'Expires '+dashFmtDate(x.expiry_date),owner:x.department||'-',due:dashFmtDate(x.expiry_date),page:'training'});
+  });
+  expiringCerts.slice(0,3).forEach(function(x){
+    attention.push({id:x.id||'',priority:'Certificate',tone:'amber',title:x.title||x.name||x.cert_name||'Certificate expiring',meta:x.ref||x.reference||'Certificate / authorisation',owner:x.responsible||'-',due:dashFmtDate(x.expiry_date),page:'fire'});
+  });
+  attention=attention.slice(0,10);
+
+  var legalScoreValues=legal.map(function(x){return parseFloat(x.compliance_score);}).filter(function(x){return !isNaN(x);});
+  var legalScore=legalScoreValues.length?Math.round(legalScoreValues.reduce(function(a,b){return a+b;},0)/legalScoreValues.length):0;
+  var openCritical=seriousIncidents.length+highRisks.length;
+  var trainingScore=training.length?Math.max(0,Math.round((training.length-expiringTraining.length)/training.length*100)):0;
+  var permitScore=permits.length?Math.max(0,Math.round((permits.length-activePermits.length)/permits.length*100)):(activePermits.length?0:100);
+  var inspectionDue=expiringCerts.length+Math.max(0,highRisks.length-recentInspections.length);
+  var userName=(prof&&prof.full_name)||'User';
+  var companyName=(co&&co.name)||(typeof sephsCompanyName==='string'?sephsCompanyName:'All companies');
+  var firstName=String(userName).split(' ')[0]||'there';
+  var dateLabel=now.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'});
+  var monthLabel=now.toLocaleDateString('en-GB',{month:'short',year:'numeric'});
+  var actionTotal=openActions.length;
+  var actionOverdue=overdueActions.length;
+  var actionProgress=openActions.filter(function(x){return String(x.status||'').toLowerCase().indexOf('progress')!==-1;}).length;
+  var actionDueSoon=openActions.filter(function(x){return dashSoon(x.target_date||x.due_date,14);}).length;
+  var actionNotStarted=Math.max(0,actionTotal-actionOverdue-actionProgress-actionDueSoon);
+  var donutTotal=Math.max(1,actionTotal);
+  var overdueDeg=Math.round(actionOverdue/donutTotal*360);
+  var progressDeg=Math.round(actionProgress/donutTotal*360);
+  var dueDeg=Math.round(actionDueSoon/donutTotal*360);
+  var donutBg='conic-gradient(#EF4444 0 '+overdueDeg+'deg,#22C55E '+overdueDeg+'deg '+(overdueDeg+progressDeg)+'deg,#F59E0B '+(overdueDeg+progressDeg)+'deg '+(overdueDeg+progressDeg+dueDeg)+'deg,#CBD5E1 '+(overdueDeg+progressDeg+dueDeg)+'deg 360deg)';
+  var siteHigh=Math.max(1,seriousIncidents.length+highRisks.length);
+  var siteMid=Math.max(1,openActions.length?Math.min(9,openActions.length):legalGaps.length);
+  var siteLow=Math.max(1,recentInspections.length||1);
+  var trendMonths=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  var incidentMonthly=[];
+  var nearMissMonthly=[];
+  function dashIsNearMiss(x){
+    var t=String(x.event_type||x.incident_type||x.type||x.category||'').toLowerCase();
+    return t.indexOf('near')!==-1;
+  }
+  for(var mi=0;mi<12;mi++){
+    incidentMonthly.push(events.filter(function(x){
+      var d=new Date(x.event_date||x.date||x.created_at||'');
+      return !isNaN(d.getTime())&&d.getFullYear()===now.getFullYear()&&d.getMonth()===mi&&!dashIsNearMiss(x);
+    }).length);
+    nearMissMonthly.push(events.filter(function(x){
+      var d=new Date(x.event_date||x.date||x.created_at||'');
+      return !isNaN(d.getTime())&&d.getFullYear()===now.getFullYear()&&d.getMonth()===mi&&dashIsNearMiss(x);
+    }).length);
+  }
+  var trendMax=Math.max(1,Math.max.apply(null,incidentMonthly.concat(nearMissMonthly)));
+  function dashTrendPoints(series){
+    return series.map(function(v,i){
+      var x=18+(i*(244/11));
+      var y=118-(v/trendMax*84);
+      return x.toFixed(1)+','+y.toFixed(1);
+    }).join(' ');
+  }
+  function dashTrendDots(series,color,label){
+    return series.map(function(v,i){
+      var x=18+(i*(244/11));
+      var y=118-(v/trendMax*84);
+      return '<circle cx="'+x.toFixed(1)+'" cy="'+y.toFixed(1)+'" r="3.2" fill="'+color+'"><title>'+label+' - '+trendMonths[i]+': '+v+'</title></circle>';
+    }).join('');
+  }
+  var incidentTrendPts=dashTrendPoints(incidentMonthly);
+  var nearMissTrendPts=dashTrendPoints(nearMissMonthly);
+  var incidentTrendDots=dashTrendDots(incidentMonthly,'#2563EB','Incidents');
+  var nearMissTrendDots=dashTrendDots(nearMissMonthly,'#6D28D9','Near misses');
+  var incidentTrendLabels=trendMonths.map(function(m){return '<span>'+m+'</span>';}).join('');
+  var upcoming=[];
+  inspections.slice(0,3).forEach(function(x){upcoming.push({id:x.id||'',title:x.title||x.inspection_type||'Site inspection',date:x.inspection_date||x.next_inspection_date||x.created_at,page:'inspection'});});
+  permits.slice(0,2).forEach(function(x){upcoming.push({id:x.id||'',title:x.permit_type||x.title||'Permit review',date:x.start_date||x.created_at,page:'permit'});});
+  training.slice(0,2).forEach(function(x){upcoming.push({id:x.id||'',title:x.training_title||x.course||x.person_name||'Training follow-up',date:x.expiry_date||x.planned_date,page:'training'});});
+  upcoming=upcoming.filter(function(x){return x.date;}).sort(function(a,b){return new Date(a.date)-new Date(b.date);}).slice(0,8);
+  var complianceBars=[
+    {label:'HSE overall',value:legalScore||88,color:'#0F6E56',page:'legal'},
+    {label:'Training',value:trainingScore||0,color:'#16A34A',page:'training'},
+    {label:'Permits',value:permitScore,color:'#0F6E56',page:'permit'},
+    {label:'Inspections',value:recentInspections.length?Math.min(100,70+recentInspections.length*3):0,color:'#1D9E75',page:'inspection'},
+    {label:'Risk control',value:highRisks.length?Math.max(20,100-highRisks.length*10):90,color:highRisks.length?'#DC2626':'#0F6E56',page:'risk'},
+    {label:'Environment',value:legalGaps.length?Math.max(35,100-legalGaps.length*5):91,color:'#185FA5',page:'esg'}
+  ];
+
+  var metrics=[
+    {label:'Total incidents',value:openIncidents.length+events.length,hint:(thisMonthEvents.length?'+'+thisMonthEvents.length:'0')+' this month',tone:seriousIncidents.length?'red':'blue',asset:'incident',page:'events'},
+    {label:'Open actions',value:openActions.length,hint:overdueActions.length+' overdue',tone:overdueActions.length?'amber':'green',asset:'action',page:'actions'},
+    {label:'High risks',value:highRisks.length,hint:seriousIncidents.length+' high incidents',tone:highRisks.length?'red':'green',asset:'risk',page:'risk'},
+    {label:'Training compliance',value:(trainingScore||0)+'%',hint:expiringTraining.length+' due soon',tone:trainingScore>=80?'green':'amber',asset:'training',page:'training'},
+    {label:'Permit compliance',value:permitScore+'%',hint:activePermits.length+' active permits',tone:permitScore>=80?'green':'amber',asset:'permit',page:'permit'},
+    {label:'Inspections due',value:inspectionDue,hint:recentInspections.length+' completed in 30d',tone:inspectionDue?'blue':'green',asset:'inspection',page:'inspection'}
+  ];
+  window.__hseCcKpis=metrics;
+
   panel.innerHTML =
-    '<style>'+
-    '.hse-cc-page{padding:20px 28px 28px;background:#f5f9ff;color:#0b1f3a;font-family:Inter,system-ui,sans-serif}.hse-cc-brief{display:grid;grid-template-columns:220px 1fr 128px;gap:18px;align-items:center;margin-bottom:14px}.hse-cc-brand{display:flex;gap:12px;align-items:center}.hse-cc-brand .mark{width:54px;height:54px;border-radius:16px;background:linear-gradient(145deg,#062647,#0a65d8);display:grid;place-items:center;color:#fff;font-weight:900;box-shadow:0 14px 28px rgba(4,50,110,.22)}.hse-cc-brief h2{margin:0;font-size:34px;letter-spacing:.04em}.hse-cc-brief p{margin:4px 0 0;color:#49617f}.hse-cc-badge{background:#0857c9;color:white;border-radius:0 0 0 22px;padding:18px;text-align:center;font-weight:800}.hse-cc-grid{display:grid;grid-template-columns:190px 1fr 360px;gap:16px}.hse-cc-side,.hse-cc-device,.hse-cc-card,.hse-cc-dark{border:1px solid #d8e3f1;border-radius:14px;background:white;box-shadow:0 18px 35px rgba(15,45,80,.08)}.hse-cc-side{padding:12px}.hse-cc-side h4,.hse-cc-device h4{margin:0 0 10px;color:#07529c;text-transform:uppercase;font-size:13px}.hse-cc-nav button{width:100%;border:0;background:#f6fbff;border-radius:8px;padding:10px;margin:4px 0;text-align:left;color:#102b4a}.hse-cc-nav button:first-child{background:#0b62c8;color:white}.hse-cc-journey{margin-top:14px;border-top:1px solid #e6edf6;padding-top:12px}.hse-cc-step{display:grid;grid-template-columns:30px 1fr;gap:8px;margin-bottom:8px}.hse-cc-step b{background:#0b62c8;color:white;border-radius:9px;display:grid;place-items:center;height:30px}.hse-cc-step span{font-size:12px}.hse-cc-dark{background:#0b1726;color:#eaf4ff;padding:14px}.hse-cc-dark-head{display:flex;gap:14px;align-items:center;margin-bottom:12px}.hse-cc-dark-head strong{font-size:20px}.hse-cc-search{flex:1;border:1px solid #1e3a55;background:#102235;border-radius:24px;color:#8fa8c4;padding:10px 16px}.hse-cc-kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:10px}.hse-cc-kpi{border:1px solid rgba(255,255,255,.08);background:#13243a;color:#fff;border-radius:10px;padding:12px;text-align:left;min-height:94px;cursor:pointer}.hse-cc-kpi span{display:block;color:#b8c8da;font-size:12px;margin-top:6px}.hse-cc-kpi strong{display:block;font-size:28px;margin-top:4px}.hse-cc-kpi em{font-style:normal;color:#74e08d;font-size:11px}.hse-cc-kpi-cube{width:42px;height:42px;border-radius:14px;display:grid;place-items:center;color:white;background:linear-gradient(145deg,#38d7a7,#0d8a62);box-shadow:inset -8px -8px 16px rgba(0,0,0,.18),0 10px 18px rgba(0,0,0,.16)}.hse-cc-kpi-cube.incident{background:linear-gradient(145deg,#ff6565,#d71f2d)}.hse-cc-kpi-cube.action{background:linear-gradient(145deg,#ffc34c,#ed9300)}.hse-cc-kpi-cube.risk{background:linear-gradient(145deg,#ff8c4b,#c54900)}.hse-cc-kpi-cube.training{background:linear-gradient(145deg,#26c6da,#1676dd)}.hse-cc-kpi-cube.inspection{background:linear-gradient(145deg,#6bd8ff,#1b70df)}.hse-cc-main-grid{display:grid;grid-template-columns:1.5fr .9fr .9fr;gap:10px;margin-top:10px}.hse-cc-card{background:#102235;border-color:#1e3a55;color:#eaf4ff;padding:12px;min-height:170px}.hse-cc-card h3{margin:0 0 10px;font-size:15px}.hse-cc-map{height:210px;border-radius:10px;background:linear-gradient(135deg,#334d5f,#152638);position:relative;overflow:hidden}.hse-cc-map:before{content:"";position:absolute;inset:0;background:radial-gradient(circle at 20% 35%,rgba(77,189,122,.25),transparent 22%),radial-gradient(circle at 60% 55%,rgba(250,178,40,.22),transparent 18%),linear-gradient(28deg,transparent 45%,rgba(255,255,255,.08) 46%,transparent 48%)}.hse-cc-pin{position:absolute;width:34px;height:34px;border-radius:50%;display:grid;place-items:center;color:#fff;font-weight:800;box-shadow:0 0 0 7px rgba(255,255,255,.13)}.hse-cc-pin.low{background:#20bf66}.hse-cc-pin.med{background:#f5a400}.hse-cc-pin.high{background:#ef3d4d}.hse-cc-list-row{width:100%;display:flex;justify-content:space-between;gap:10px;align-items:center;border:0;border-bottom:1px solid rgba(255,255,255,.08);background:transparent;color:inherit;text-align:left;padding:9px 0;cursor:pointer}.hse-cc-list-row strong{display:block}.hse-cc-list-row em{display:block;color:#8fa8c4;font-style:normal;font-size:12px}.hse-cc-list-row b{font-size:12px;border-radius:999px;padding:4px 8px;background:#19324b}.hse-cc-list-row b.danger{background:#7c1d26;color:#ffd7d7}.hse-cc-donut{width:150px;height:150px;border-radius:50%;margin:10px auto;background:conic-gradient(#f03a4b 0 70%,#25c274 70% 85%,#f6a21a 85% 100%);display:grid;place-items:center}.hse-cc-donut span{width:76px;height:76px;background:#102235;border-radius:50%;display:grid;place-items:center;text-align:center}.hse-cc-trend{width:100%;height:190px}.hse-cc-trend line{stroke:#29445f}.hse-cc-trend polyline{fill:none;stroke-width:5}.hse-cc-trend .inc{stroke:#2d7df0}.hse-cc-trend .near{stroke:#7b2ee6}.hse-cc-bottom{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-top:10px}.hse-cc-bottom .hse-cc-card{min-height:150px}.hse-cc-link{background:none;border:0;color:#55b7ff;font-weight:800;cursor:pointer}.hse-cc-device{padding:12px;margin-bottom:14px}.hse-cc-table{width:100%;border-collapse:collapse;font-size:12px}.hse-cc-table th,.hse-cc-table td{border:1px solid #d7e3f1;padding:7px;text-align:left}.hse-cc-phone{width:150px;background:#102235;color:white;border:8px solid #061421;border-radius:24px;padding:12px;margin:auto}.hse-cc-phone .mini{background:#172c45;border-radius:9px;padding:8px;margin:6px 0}.hse-cc-requirements{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:0;margin-top:16px;border:1px solid #d8e3f1;border-radius:12px;background:white;overflow:hidden}.hse-cc-requirements article{padding:14px;border-right:1px solid #d8e3f1;border-bottom:1px solid #d8e3f1}.hse-cc-requirements h4{margin:0 0 8px;color:#07529c;text-transform:uppercase;font-size:13px}.hse-cc-requirements ul{margin:0;padding-left:16px;font-size:12px;color:#183a5a}.hse-cc-modal{position:fixed;inset:0;z-index:99999}.hse-cc-backdrop{position:absolute;inset:0;background:rgba(5,18,34,.62)}.hse-cc-dialog{position:relative;margin:9vh auto 0;width:min(1060px,88vw);background:white;border-radius:18px;box-shadow:0 30px 70px rgba(0,0,0,.35);overflow:hidden}.hse-cc-dialog header{display:flex;justify-content:space-between;align-items:center;padding:20px 24px;background:linear-gradient(135deg,#0d4c68,#1ca071);color:white}.hse-cc-dialog header h3{margin:0}.hse-cc-dialog header button,.hse-cc-primary{border:1px solid rgba(255,255,255,.35);border-radius:9px;padding:10px 16px;background:#1ca071;color:white;font-weight:800}.hse-cc-dialog-body{padding:18px 24px;color:#102b4a}.hse-cc-dialog-body .hse-cc-list-row{color:#102b4a;border-color:#e4edf6}.hse-cc-dialog-body .hse-cc-list-row b{background:#eaf3ff;color:#07529c}.hse-cc-dialog footer{text-align:center;padding:0 24px 20px}.hse-cc-empty{padding:28px;text-align:center;color:#64748b}.hse-cc-widget-spec{max-height:280px;overflow:auto}@media(max-width:1200px){.hse-cc-grid{grid-template-columns:1fr}.hse-cc-requirements{grid-template-columns:repeat(2,1fr)}.hse-cc-main-grid,.hse-cc-bottom,.hse-cc-kpis{grid-template-columns:1fr 1fr}.hse-cc-brief{grid-template-columns:1fr}}@media(max-width:720px){.hse-cc-page{padding:12px}.hse-cc-kpis,.hse-cc-main-grid,.hse-cc-bottom,.hse-cc-requirements{grid-template-columns:1fr}.hse-cc-dialog{width:94vw}}'+
-    '</style>'+
-    '<div class="hse-cc-page">'+
-      '<div class="hse-cc-brief"><div class="hse-cc-brand"><span class="mark">A</span><div><strong>AURIS 360</strong><br><small>Enterprise HSEQ Platform</small></div></div><div><h2>Operations Centre</h2><p>Command. Monitor. Act. A real-time command hub for performance, risks, compliance and actions across '+escH(companyName)+'.</p></div><div class="hse-cc-badge">01<br><small>MODULE OVERVIEW</small></div></div>'+
-      '<div class="hse-cc-grid">'+
-        '<aside class="hse-cc-side"><h4>Navigation map</h4><div class="hse-cc-nav">'+
-          '<button onclick="dashOpsGo(\'dashboard\')">Operations Centre</button><button onclick="dashOpsGo(\'risk\')">Safety</button><button onclick="dashOpsGo(\'fire\')">Fire and Emergency</button><button onclick="dashOpsGo(\'health\')">Occupational Health</button><button onclick="dashOpsGo(\'chemical\')">Environment</button><button onclick="dashOpsGo(\'equipment\')">Assets and Operations</button><button onclick="dashOpsGo(\'training\')">People and Competence</button><button onclick="dashOpsGo(\'legal\')">Administration</button>'+
-        '</div><div class="hse-cc-journey"><h4>User journey</h4>'+['Overview|User lands on Operations Centre','Monitor|Review KPIs, alerts and live data','Investigate|Drill into incidents, risks or alerts','Act|Create actions and launch workflows','Follow up|Track progress in real time'].map(function(x,i){ var p=x.split('|'); return '<div class="hse-cc-step"><b>'+(i+1)+'</b><span><strong>'+p[0]+'</strong><br>'+p[1]+'</span></div>'; }).join('')+'</div></aside>'+
-        '<main class="hse-cc-dark"><div class="hse-cc-dark-head"><strong>AURIS 360</strong><input class="hse-cc-search" placeholder="Search alerts, tasks and records..." onkeydown="if(event.key===\'Enter\')dashOpsSearch(this.value)"><button class="hse-cc-link" onclick="dashOpsGo(\'ai\')">AI</button><button class="hse-cc-link" onclick="dashOpsGo(\'actions\')">Alerts</button></div>'+
-          '<div class="hse-cc-kpis">'+
-            kpi('Total recordable incidents',events.length,'live incident data','incident','events')+
-            kpi('Open actions',openActions.length,overdueActions.length+' overdue','action','actions')+
-            kpi('Compliance score',complianceScore+'%','legal register evidence','compliance','legal')+
-            kpi('High risks',highRisks.length,'risk controls required','risk','risk')+
-            kpi('Training completion',completeTraining+'%','competency records','training','training')+
-          '</div>'+
-          '<div class="hse-cc-main-grid"><section class="hse-cc-card" onclick="dashOpenWidgetDetail(\'riskmap\')"><h3>Live Incident Map</h3><div class="hse-cc-map"><span class="hse-cc-pin high" style="left:22%;top:50%">'+Math.max(0,incidentRows.filter(function(x){return x.tone==='danger';}).length)+'</span><span class="hse-cc-pin med" style="left:45%;top:28%">'+Math.max(0,highRisks.length)+'</span><span class="hse-cc-pin low" style="left:68%;top:38%">'+Math.max(0,inspections.length-dueInspections.length)+'</span><span class="hse-cc-pin med" style="left:58%;top:70%">'+Math.max(0,dueInspections.length)+'</span></div></section>'+
-          '<section class="hse-cc-card"><h3>AI Insights <button class="hse-cc-link" onclick="dashOpsGo(\'ai\')">View all</button></h3>'+dashOpsRowListHtml(incidentRows.concat(taskRows).slice(0,4),'No insights yet')+'</section>'+
-          '<section class="hse-cc-card"><h3>Permit to Work</h3><div class="hse-cc-donut"><span><strong>'+permits.length+'</strong><br>permits</span></div><button class="hse-cc-link" onclick="dashOpsGo(\'permit\')">View all permits</button></section></div>'+
-          '<div class="hse-cc-bottom"><section class="hse-cc-card" onclick="dashOpenWidgetDetail(\'incidents\')"><h3>Incidents Trend (30 days)</h3>'+trendSvg+'<button class="hse-cc-link" onclick="dashNavClick(event,\'events\')">View full report</button></section><section class="hse-cc-card" onclick="dashOpenWidgetDetail(\'actions\')"><h3>Actions Overview</h3><div class="hse-cc-donut"><span><strong>'+openActions.length+'</strong><br>open actions</span></div></section><section class="hse-cc-card" onclick="dashOpenWidgetDetail(\'compliance\')"><h3>Compliance by Category</h3>'+window.__hseOpsDetailRows.compliance.rows.map(function(r){ return '<div class="hse-cc-list-row"><span><strong>'+escH(r.title)+'</strong></span><b>'+escH(r.side)+'</b></div>'; }).join('')+'</section></div>'+
-          '<div class="hse-cc-bottom"><section class="hse-cc-card" onclick="dashOpenWidgetDetail(\'alerts\')"><h3>My Alerts</h3>'+dashOpsRowListHtml(window.__hseOpsDetailRows.alerts.rows,'No alerts')+'</section><section class="hse-cc-card" onclick="dashOpenWidgetDetail(\'tasks\')"><h3>My Tasks</h3>'+dashOpsRowListHtml(taskRows,'No tasks')+'</section><section class="hse-cc-card"><h3>Quick Actions</h3><div class="hse-cc-kpis" style="grid-template-columns:repeat(2,1fr)">'+quickAction('Report incident','Create record','incident','incident')+quickAction('Create PTW','Permit workflow','permit','permit')+quickAction('Add inspection','Start checklist','inspection','inspection')+quickAction('New document','Controlled document','quick','document')+'</div></section></div>'+
-        '</main>'+
-        '<aside><section class="hse-cc-device"><h4>Tablet view</h4><div class="hse-cc-card" style="background:#102235;color:white"><strong>AURIS 360</strong><br><br>'+kpi('TRI',events.length,'tablet responsive','incident','events')+kpi('Actions',openActions.length,'real time','action','actions')+'</div></section><section class="hse-cc-device"><h4>Mobile view</h4><div class="hse-cc-phone"><strong>AURIS 360</strong><div class="mini">TRI '+events.length+'</div><div class="mini">Actions '+openActions.length+'</div><div class="mini">Compliance '+complianceScore+'%</div></div></section><section class="hse-cc-device hse-cc-widget-spec"><h4>Widget specifications</h4><table class="hse-cc-table"><tr><th>Widget</th><th>Purpose</th><th>Refresh</th></tr><tr><td>KPI cards</td><td>Key performance indicators</td><td>Real time</td></tr><tr><td>Live map</td><td>Geospatial incidents</td><td>1 min</td></tr><tr><td>AI insights</td><td>Recommendations</td><td>Real time</td></tr><tr><td>PTW</td><td>Permit status</td><td>1 min</td></tr><tr><td>Trend</td><td>Incident analysis</td><td>5 min</td></tr><tr><td>Tasks</td><td>User workflow</td><td>Real time</td></tr></table></section></aside>'+
-      '</div>'+dashOpsRequirementsHtml()+'<div style="text-align:center;margin-top:16px;color:#07529c;font-weight:800">One Platform. Total Visibility. Intelligent Action.</div>'+
-    '</div>';
+    '<div class="hse-cc-top">'
+      +'<div><div class="hse-cc-title">Good '+(now.getHours()<12?'morning':now.getHours()<18?'afternoon':'evening')+', '+escH(firstName)+'</div><div class="hse-cc-sub">Here is what is happening across '+escH(companyName)+' today.</div></div>'
+      +'<div class="hse-cc-toolbar">'
+        +'<select class="hse-cc-filter" onchange="loadDash()"><option>All Companies</option></select>'
+        +'<select class="hse-cc-filter" onchange="loadDash()"><option>All Sites</option></select>'
+        +'<div class="hse-cc-filter" style="display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:#334155">'+escH(monthLabel)+'</div>'
+        +'<button class="hse-cc-tool-btn primary" onclick="showPage(\'executive\',document.getElementById(\'nav-executive\'))"><i class="ti ti-chart-bar"></i>Executive View</button>'
+        +'<button class="hse-cc-tool-btn" onclick="printMonthlySummary()" title="Monthly PDF Report"><i class="ti ti-file-analytics"></i>Monthly Report</button>'
+        +'<button class="hse-cc-tool-btn" onclick="loadDash()"><i class="ti ti-refresh"></i>Refresh</button>'
+        +'<div class="hse-cc-user-chip"><span class="hse-cc-avatar">'+escH(firstName.charAt(0).toUpperCase())+'</span><span>'+escH(userName)+'<small style="display:block;color:#64748B;font-weight:700">'+escH((prof&&prof.role)||'HSE user')+'</small></span></div>'
+      +'</div>'
+    +'</div>'
+    +'<div class="hse-cc-kpis">'
+      +metrics.map(function(m){return '<div class="hse-cc-kpi '+m.tone+'" onclick="showPage(\''+m.page+'\',null)"><div class="hse-cc-kpi-icon">'+dashKpiAsset(m.asset)+'</div><div class="hse-cc-kpi-label">'+escH(m.label)+'</div><div class="hse-cc-kpi-value">'+escH(m.value)+'</div><div class="hse-cc-kpi-hint '+(m.tone==='red'||m.tone==='amber'?'down':'up')+'">'+escH(m.hint)+'</div></div>';}).join('')
+    +'</div>'
+    +'<div class="hse-cc-grid">'
+      +'<div class="hse-cc-panel" data-cc-widget="riskmap" onclick="dashOpenWidgetDetail(\'riskmap\')"><div class="hse-cc-panel-title">Risk Heat Map (By Site)</div><div style="display:grid;grid-template-columns:1fr 150px;gap:14px;align-items:center"><div class="hse-cc-map"><span class="hse-cc-marker low" style="left:26%;top:28%">'+siteLow+'</span><span class="hse-cc-marker mid" style="left:54%;top:34%">'+siteMid+'</span><span class="hse-cc-marker high" style="left:72%;top:62%">'+siteHigh+'</span><span class="hse-cc-marker low" style="left:38%;top:76%">'+Math.max(1,recentInspections.length)+'</span></div><div class="hse-cc-legend"><div><span class="hse-cc-dot" style="background:#22C55E"></span>Low</div><div><span class="hse-cc-dot" style="background:#F59E0B"></span>Moderate</div><div><span class="hse-cc-dot" style="background:#F97316"></span>High</div><div><span class="hse-cc-dot" style="background:#DC2626"></span>Very high</div></div></div></div>'
+      +'<div class="hse-cc-panel" data-cc-widget="actions" onclick="dashOpenWidgetDetail(\'actions\')"><div class="hse-cc-panel-title">Action Status</div><div class="hse-cc-donut-wrap"><div class="hse-cc-donut" style="background:'+donutBg+'"><div class="hse-cc-donut-core"><div><strong>'+actionTotal+'</strong><span>Total actions</span></div></div></div></div><div class="hse-cc-status-list"><div class="hse-cc-row" onclick="dashNavClick(event,\'actions\')"><span><span class="hse-cc-dot" style="background:#EF4444"></span>Overdue</span><strong>'+actionOverdue+'</strong></div><div class="hse-cc-row" onclick="dashNavClick(event,\'actions\')"><span><span class="hse-cc-dot" style="background:#22C55E"></span>In progress</span><strong>'+actionProgress+'</strong></div><div class="hse-cc-row" onclick="dashNavClick(event,\'actions\')"><span><span class="hse-cc-dot" style="background:#F59E0B"></span>Due soon</span><strong>'+actionDueSoon+'</strong></div><div class="hse-cc-row" onclick="dashNavClick(event,\'actions\')"><span><span class="hse-cc-dot" style="background:#CBD5E1"></span>Not started</span><strong>'+actionNotStarted+'</strong></div></div><div class="hse-cc-link" onclick="dashNavClick(event,\'actions\')">View all actions</div></div>'
+      +'<div class="hse-cc-panel" data-cc-widget="trend" onclick="dashOpenWidgetDetail(\'trend\')"><div class="hse-cc-panel-title">Incident Trend</div><svg class="hse-cc-trend" viewBox="0 0 280 132" role="img" aria-label="Monthly incident and near miss trend"><g stroke="#E2E8F0" stroke-width="1"><line x1="18" y1="118" x2="262" y2="118"/><line x1="18" y1="90" x2="262" y2="90"/><line x1="18" y1="62" x2="262" y2="62"/><line x1="18" y1="34" x2="262" y2="34"/></g><polyline points="'+nearMissTrendPts+'" fill="none" stroke="#6D28D9" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/><polyline points="'+incidentTrendPts+'" fill="none" stroke="#2563EB" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/><g>'+nearMissTrendDots+incidentTrendDots+'</g></svg><div style="display:grid;grid-template-columns:repeat(12,1fr);gap:2px;margin:0 8px;color:#64748B;font-size:9px;font-weight:800;text-align:center">'+incidentTrendLabels+'</div><div class="hse-cc-trend-legend"><span><span class="hse-cc-dot" style="background:#2563EB"></span>Incidents</span><span><span class="hse-cc-dot" style="background:#6D28D9"></span>Near misses</span></div><div class="hse-cc-trend-note">Current year monthly counts</div><div class="hse-cc-link" onclick="dashNavClick(event,\'events\')">View full report</div></div>'
+    +'</div>'
+    +'<div class="hse-cc-bottom">'
+      +'<div class="hse-cc-panel" data-cc-widget="tasks" onclick="dashOpenWidgetDetail(\'tasks\')"><div class="hse-cc-panel-title">My Tasks ('+attention.length+')</div><div class="hse-cc-list">'+(attention.length?attention.slice(0,8).map(function(x){return '<div class="hse-cc-row" onclick="dashNavClick(event,\''+dashJs(x.page)+'\',\''+dashJs(x.id)+'\')"><span><strong>'+escH(x.title)+'</strong><small>'+escH(x.meta||x.priority)+'</small></span><span class="badge '+(x.tone==='red'?'br':x.tone==='green'?'bg':'ba')+'">'+escH(x.priority)+'</span></div>';}).join(''):'<div class="hse-cc-empty">No urgent task in this view</div>')+'</div><div class="hse-cc-link" onclick="dashNavClick(event,\'actions\')">View all tasks</div></div>'
+      +'<div class="hse-cc-panel" data-cc-widget="upcoming" onclick="dashOpenWidgetDetail(\'upcoming\')"><div class="hse-cc-panel-title">Upcoming Activities</div><div class="hse-cc-list">'+(upcoming.length?upcoming.map(function(x){return '<div class="hse-cc-row" onclick="dashNavClick(event,\''+dashJs(x.page)+'\',\''+dashJs(x.id)+'\')"><span><strong>'+escH(x.title)+'</strong><small>'+escH(x.page)+'</small></span><strong>'+escH(dashFmtDate(x.date))+'</strong></div>';}).join(''):'<div class="hse-cc-empty">No upcoming activity date loaded</div>')+'</div><div class="hse-cc-link" onclick="dashNavClick(event,\'workschedule\')">View calendar</div></div>'
+      +'<div class="hse-cc-panel" data-cc-widget="compliance" onclick="dashOpenWidgetDetail(\'compliance\')"><div class="hse-cc-panel-title">Compliance Overview</div><div class="hse-cc-list">'+complianceBars.map(function(x){var v=Math.max(0,Math.min(100,x.value||0));return '<div class="hse-cc-row" onclick="dashNavClick(event,\''+dashJs(x.page)+'\')" style="grid-template-columns:96px 1fr 42px"><strong>'+escH(x.label)+'</strong><div class="hse-cc-progress"><i style="width:'+v+'%;background:'+x.color+'"></i></div><strong>'+v+'%</strong></div>';}).join('')+'</div><div class="hse-cc-link" onclick="dashNavClick(event,\'legal\')">View compliance report</div></div>'
+    +'</div>';
 }
 
 // -- Personal dashboard render -------------------------------------------
