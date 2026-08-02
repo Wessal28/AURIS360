@@ -13981,7 +13981,8 @@ loadCoDrop();
 document.getElementById('if-date')&&(document.getElementById('if-date').value=new Date().toISOString().slice(0,10));
 async function kpiLoadAll(){
 var yr=parseInt(document.getElementById('year-sel')?.value)||new Date().getFullYear();
-document.getElementById('kpi-monthly-year').textContent=yr;
+var monthlyYearEl=document.getElementById('kpi-monthly-year');
+if(monthlyYearEl)monthlyYearEl.textContent=yr;
 try{
 kpiObjectives=[];kpiKPIs=[];kpiIndicators=[];kpiMonthlyData={};
 await kpiLoadObjectives(yr);
