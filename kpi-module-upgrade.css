@@ -88,6 +88,7 @@
 #page-kpi .kpi-x-status.at_risk {background:#fff2cf;color:#a15800}
 #page-kpi .kpi-x-status.off_track {background:#fee2e2;color:#b91c1c}
 #page-kpi .kpi-x-status.data_missing {background:#eef2f6;color:#64748b}
+#page-kpi .kpi-x-status.in_progress {background:#e8f2ff;color:#2563eb}
 #page-kpi .kpi-x-status.not_started,#page-kpi .kpi-x-status.not_due {background:#e8edf3;color:#526274}
 #page-kpi .kpi-x-row-actions {display:flex;gap:5px;justify-content:flex-end}
 #page-kpi .kpi-x-icon-btn {width:29px;height:29px;border:1px solid #d9e1ea;border-radius:7px;background:#fff;color:#475569;display:grid;place-items:center;cursor:pointer}
@@ -112,6 +113,7 @@
 #page-kpi .kpi-x-cell.at_risk {background:#fff8e7!important;color:#a15800!important;font-weight:700}
 #page-kpi .kpi-x-cell.off_track {background:#fff0f0!important;color:#b91c1c!important;font-weight:700}
 #page-kpi .kpi-x-cell.data_missing {background:#fffaf0!important;color:#b45309!important}
+#page-kpi .kpi-x-cell.in_progress {background:#eef6ff!important;color:#2563eb!important;font-weight:700}
 #page-kpi .kpi-x-cell.not_due {background:#f5f7fa!important;color:#94a3b8!important;cursor:default}
 #page-kpi .kpi-x-workflow {display:flex;align-items:center;justify-content:center;gap:9px;padding:12px;background:#fff;border-top:1px solid #dce4ed;font-size:10px;color:#64748b}
 #page-kpi .kpi-x-workflow span {display:inline-flex;align-items:center;gap:5px}
