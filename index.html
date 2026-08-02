@@ -28532,6 +28532,10 @@ async function mapRejectClosure(){
 
 async function mapTriggerEscalation(){
   if(!workflowCanMutate('actions','actions'))return;
+  if(!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(String(mapEditingId||''))){
+    toast('Save the action before triggering escalation.',false);
+    return;
+  }
   var escSel=document.getElementById('mf-escalated-to');var escName='';
   if(escSel?.value){var ep=(people||[]).find(x=>x.id===escSel.value);escName=ep?(ep.last_name+', '+ep.first_name):'';}
   var reason=document.getElementById('mf-esc-reason')?.value?.trim();
