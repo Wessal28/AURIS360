@@ -5632,7 +5632,7 @@ if(target){
   target.classList.add('active');
 }
 if(el&&el.classList)el.classList.add('active');
-const L={dashboard:loadDash,executive:loadExecutive,kpi:kpiLoadAll,engagement:loadSafetyEngagement,workschedule:loadWorkSchedule,events:loadEvents,observation:()=>{if(typeof window.loadBbsObservations==='function')window.loadBbsObservations();else loadObservation();},inspection:()=>{buildChecklist();loadInsps();},risk:loadRA,investigation:loadInvs,legal:loadLegal,sop:loadSOP,swms:loadSWMS,tools:loadTools,fleet:loadFleet,atex:loadATEX,sitemap:loadSiteMap,permit:loadPermits,contractor:loadContractors,esg:loadESG,emergency:loadEmergency,fire:loadFire,chemical:loadChemical,ohealth:loadOHealth,ppe:loadPPE,noise:loadNoise,meetings:loadMtgs,training:loadTraining,actions:loadActions,moc:loadMOC,documents:loadDocs,people:loadPeople,users:loadUsers,admin:loadAdmin,'ai-insights':genFullAI,approvals:loadApprovals,audit:loadAudit,settings:loadSettings,integrations:loadIntegrations};
+const L={dashboard:loadDash,executive:loadExecutive,kpi:kpiLoadAll,engagement:loadSafetyEngagement,workschedule:loadWorkSchedule,events:loadEvents,observation:()=>{if(typeof window.loadBbsObservations==='function')window.loadBbsObservations();else loadObservation();},inspection:()=>{buildChecklist();loadInsps();},risk:loadRA,investigation:loadInvs,legal:loadLegal,sop:loadSOP,swms:loadSWMS,tools:loadTools,fleet:loadFleet,atex:loadATEX,sitemap:loadSiteMap,permit:loadPermits,contractor:loadContractors,esg:loadESG,emergency:loadEmergency,fire:loadFire,chemical:loadChemical,ohealth:loadOHealth,ppe:loadPPE,noise:()=>{if(typeof window.loadNoiseManagement==='function')window.loadNoiseManagement();else loadNoise();},meetings:loadMtgs,training:loadTraining,actions:loadActions,moc:loadMOC,documents:loadDocs,people:loadPeople,users:loadUsers,admin:loadAdmin,'ai-insights':genFullAI,approvals:loadApprovals,audit:loadAudit,settings:loadSettings,integrations:loadIntegrations};
 if(L[name])L[name]();
 // Mobile: close sidebar and scroll to top
 if(window.innerWidth<=768){
@@ -43036,6 +43036,7 @@ function fireEquipStatusBadge(s) {
 <link rel="stylesheet" href="kpi-module-upgrade.css">
 <link rel="stylesheet" href="safety-engagement.css">
 <link rel="stylesheet" href="bbs-observations.css?v=20260802-2">
+<link rel="stylesheet" href="noise-management.css?v=20260802-1">
 </head>
 <body>
 <div id="login-screen">
@@ -54859,5 +54860,6 @@ I can help you:<br>
 <script src="kpi-module-upgrade.js"></script>
 <script src="safety-engagement.js"></script>
 <script src="bbs-observations.js?v=20260802-2"></script>
+<script src="noise-management.js?v=20260802-1"></script>
 </body>
 </html>

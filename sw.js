@@ -3,9 +3,9 @@
 // Cache-first for static assets, network-first for API calls
 // ============================================================
 
-const CACHE_NAME = 'auris360-v11';
-const STATIC_CACHE = 'auris360-static-v11';
-const API_CACHE = 'auris360-api-v11';
+const CACHE_NAME = 'auris360-v12';
+const STATIC_CACHE = 'auris360-static-v12';
+const API_CACHE = 'auris360-api-v12';
 
 // Assets to cache on install (app shell)
 const PRECACHE_ASSETS = [
@@ -15,6 +15,8 @@ const PRECACHE_ASSETS = [
   '/safety-engagement.js',
   '/bbs-observations.css',
   '/bbs-observations.js',
+  '/noise-management.css',
+  '/noise-management.js',
   'https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css',
 ];
 
@@ -29,6 +31,8 @@ self.addEventListener('install', function(event) {
         '/safety-engagement.js',
         '/bbs-observations.css',
         '/bbs-observations.js',
+        '/noise-management.css',
+        '/noise-management.js',
       ]).catch(function(err) {
         console.warn('AURIS360 SW: Pre-cache partial failure', err);
       });
@@ -91,7 +95,8 @@ self.addEventListener('fetch', function(event) {
   // index.html — network first, fall back to cache
   if (url.origin === self.location.origin &&
       (url.pathname === '/safety-engagement.css' || url.pathname === '/safety-engagement.js' ||
-       url.pathname === '/bbs-observations.css' || url.pathname === '/bbs-observations.js')) {
+       url.pathname === '/bbs-observations.css' || url.pathname === '/bbs-observations.js' ||
+       url.pathname === '/noise-management.css' || url.pathname === '/noise-management.js')) {
     event.respondWith(
       fetch(event.request).then(function(response) {
         if (response.ok) {
