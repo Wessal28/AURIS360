@@ -461,21 +461,21 @@ cross join (values
 on conflict(company_id,code,version_no) do nothing;
 
 insert into public.bbs_behaviour_items(company_id,category_id,category_code,category_name,code,name,safe_statement,at_risk_examples,critical,potential_consequence,feedback_prompt,version_no,status,effective_from,owner_name,change_reason)
-select c.id,cat.id,v.category_code,cat.name,v.code,v.name,v.safe_statement,to_jsonb(string_to_array(v.risk_examples,';')),v.critical,v.consequence,'What made this the easiest safe way to perform the task?',1,'published',current_date,'AURIS 360 baseline','Initial BBS catalogue'
+select c.id,cat.id,v.category_code,cat.name,v.code,v.name,v.safe_statement,to_jsonb(string_to_array(v.risk_examples,'|')),v.critical,v.consequence,'What made this the easiest safe way to perform the task?',1,'published',current_date,'AURIS 360 baseline','Initial BBS catalogue'
 from public.companies c
 join (values
-  ('BBS-CAT-PPE','BBS-PPE-001','Correct PPE use','Correct PPE is selected, fitted and maintained.','Missing or unsuitable PPE;Damaged or incorrectly worn PPE',false,'Exposure to task hazard'),
-  ('BBS-CAT-LOF','BBS-LOF-001','Line of fire controlled','Body and hands remain outside the energy path and exclusion zones.','Standing in a crush, drop or swing zone;Reaching into moving equipment',true,'Crush, strike or fatal injury'),
-  ('BBS-CAT-TOOL','BBS-TOOL-001','Correct tools and equipment','The correct inspected tool is used with guards and a stable setup.','Improvised or wrong tool;Guard bypassed or defect ignored',false,'Cut, impact or equipment failure'),
-  ('BBS-CAT-MH','BBS-MH-001','Safe manual handling','The load is assessed and an aid or team lift is used when required.','Excessive load, poor grip or twisting;Available aid not used',false,'Musculoskeletal injury'),
-  ('BBS-CAT-WAH','BBS-WAH-001','Work at height controls','Access, edge protection, tie-off and dropped-object controls are effective.','Unprotected edge or unsuitable ladder;Dropped-object exposure',true,'Fall from height or struck-by injury'),
-  ('BBS-CAT-MP','BBS-MP-001','Mobile plant interface','Segregation, visibility, speed and seatbelt controls are followed.','Pedestrian interface or blind reversing;Distraction or exclusion-zone breach',true,'Vehicle collision or crush injury'),
-  ('BBS-CAT-HK','BBS-HK-001','Workplace housekeeping','Routes are clear and materials, waste and spills are controlled.','Trip or obstruction;Unstable storage or unmanaged spill',false,'Slip, trip or falling material'),
-  ('BBS-CAT-ISO','BBS-ISO-001','Energy isolation','Energy sources are identified, locked, verified and controlled.','Incomplete isolation;Missing verification or unauthorised removal',true,'Release of hazardous energy'),
-  ('BBS-CAT-PTW','BBS-PTW-001','Permit compliance','The permit is valid, understood and matches current work conditions.','Work outside scope;Expired permit or missing control',true,'Uncontrolled high-risk work'),
-  ('BBS-CAT-COM','BBS-COM-001','Communication and teamwork','Roles, signals and changes are clearly confirmed by the team.','Unclear signal or conflicting instruction;Language barrier not addressed',false,'Coordination failure'),
+  ('BBS-CAT-PPE','BBS-PPE-001','Correct PPE use','Correct PPE is selected, fitted and maintained.','Missing or unsuitable PPE|Damaged or incorrectly worn PPE',false,'Exposure to task hazard'),
+  ('BBS-CAT-LOF','BBS-LOF-001','Line of fire controlled','Body and hands remain outside the energy path and exclusion zones.','Standing in a crush, drop or swing zone|Reaching into moving equipment',true,'Crush, strike or fatal injury'),
+  ('BBS-CAT-TOOL','BBS-TOOL-001','Correct tools and equipment','The correct inspected tool is used with guards and a stable setup.','Improvised or wrong tool|Guard bypassed or defect ignored',false,'Cut, impact or equipment failure'),
+  ('BBS-CAT-MH','BBS-MH-001','Safe manual handling','The load is assessed and an aid or team lift is used when required.','Excessive load, poor grip or twisting|Available aid not used',false,'Musculoskeletal injury'),
+  ('BBS-CAT-WAH','BBS-WAH-001','Work at height controls','Access, edge protection, tie-off and dropped-object controls are effective.','Unprotected edge or unsuitable ladder|Dropped-object exposure',true,'Fall from height or struck-by injury'),
+  ('BBS-CAT-MP','BBS-MP-001','Mobile plant interface','Segregation, visibility, speed and seatbelt controls are followed.','Pedestrian interface or blind reversing|Distraction or exclusion-zone breach',true,'Vehicle collision or crush injury'),
+  ('BBS-CAT-HK','BBS-HK-001','Workplace housekeeping','Routes are clear and materials, waste and spills are controlled.','Trip or obstruction|Unstable storage or unmanaged spill',false,'Slip, trip or falling material'),
+  ('BBS-CAT-ISO','BBS-ISO-001','Energy isolation','Energy sources are identified, locked, verified and controlled.','Incomplete isolation|Missing verification or unauthorised removal',true,'Release of hazardous energy'),
+  ('BBS-CAT-PTW','BBS-PTW-001','Permit compliance','The permit is valid, understood and matches current work conditions.','Work outside scope|Expired permit or missing control',true,'Uncontrolled high-risk work'),
+  ('BBS-CAT-COM','BBS-COM-001','Communication and teamwork','Roles, signals and changes are clearly confirmed by the team.','Unclear signal or conflicting instruction|Language barrier not addressed',false,'Coordination failure'),
   ('BBS-CAT-SW','BBS-SW-001','Stop-work intervention','Work is paused respectfully whenever a control is uncertain.','Known unsafe condition allowed to continue',true,'Escalating uncontrolled risk'),
-  ('BBS-CAT-ENV','BBS-ENV-001','Environmental controls','Waste, spill controls and resource rules are followed.','Incorrect disposal or uncontrolled discharge;Avoidable resource waste',false,'Pollution or environmental harm')
+  ('BBS-CAT-ENV','BBS-ENV-001','Environmental controls','Waste, spill controls and resource rules are followed.','Incorrect disposal or uncontrolled discharge|Avoidable resource waste',false,'Pollution or environmental harm')
 ) as v(category_code,code,name,safe_statement,risk_examples,critical,consequence) on true
 join public.bbs_behaviour_categories cat on cat.company_id=c.id and cat.code=v.category_code and cat.version_no=1
 on conflict(company_id,code,version_no) do nothing;
