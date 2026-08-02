@@ -344,36 +344,9 @@ update public.companies
 set module_access = array_append(coalesce(module_access,array[]::text[]),'engagement')
 where not ('engagement'=any(coalesce(module_access,array[]::text[])));
 
--- Seed the governed programme library and visible starter data for each company.
-insert into public.engagement_programmes(company_id,code,name,purpose,population,period,version_no,kpi_count,weight_total,owner,status,effective_from)
-select c.id,v.code,v.name,v.purpose,v.population,v.period,v.version_no,v.kpi_count,100,v.owner,v.status,date '2026-01-01'
-from public.companies c cross join (values
- ('SEP-OPS','Operational Employee Safety','Positive participation for operational employees','Operational employees','2026',2,6,'HSE Manager','published'),
- ('SEP-SUP','Supervisor Safety Leadership','Visible safety leadership and timely validation','Supervisors','2026',2,7,'HSE Manager','published'),
- ('SEP-OFF','Office Safety Participation','Role-appropriate office participation','Office employees','2026',1,4,'People Manager','published'),
- ('SEP-CON','Contractor Engagement','Project-based contractor participation','Contract workers','Project',1,5,'Contractor Manager','review'),
- ('SEP-NEW','New Starter - 90 Days','Supported first 90 days','New employees','90 days',1,5,'People Manager','draft')
-) as v(code,name,purpose,population,period,version_no,kpi_count,owner,status)
-where not exists(select 1 from public.engagement_programmes p where p.company_id=c.id and p.code=v.code and p.version_no=v.version_no);
-
-insert into public.engagement_kpi_definitions(company_id,programme_id,code,name,measure,target,unit,frequency,weight,direction,source,status)
-select p.company_id,p.id,v.code,v.name,v.measure,v.target,v.unit,v.frequency,v.weight,'higher',v.source,'published'
-from public.engagement_programmes p cross join (values
- ('IKPI-001','Validated hazard reports','Accepted genuine reports',2::numeric,'count/month','monthly',25::numeric,'Hazard Reporting'),
- ('IKPI-002','Toolbox participation','Attended / scheduled while eligible',90::numeric,'%','monthly',20::numeric,'Toolbox Talks'),
- ('IKPI-003','Required training','Valid completed / required due',100::numeric,'%','monthly',20::numeric,'Training'),
- ('IKPI-004','Assigned actions on time','Closed by due / due',95::numeric,'%','monthly',15::numeric,'Master Action Plan'),
- ('IKPI-005','Inspection participation','Verified team membership',1::numeric,'count/quarter','quarterly',10::numeric,'Inspections'),
- ('IKPI-006','Safety suggestions','Accepted improvement suggestions',1::numeric,'count/quarter','quarterly',10::numeric,'BBS Observations')
-) as v(code,name,measure,target,unit,frequency,weight,source)
-where p.code='SEP-OPS' and p.status='published'
-  and not exists(select 1 from public.engagement_kpi_definitions k where k.company_id=p.company_id and k.programme_id=p.id and k.code=v.code);
-
-insert into public.engagement_configuration_versions(company_id,version_no,status,effective_from,configuration,published_at)
-select c.id,1,'published',date '2026-08-01',
- '{"on_track":90,"at_risk":70,"min_group_size":5,"qr_expiry_minutes":5,"offline_retention_days":7,"upload_limit_mb":10,"quiet_hours":"20:00-06:00","pending_rule":"exclude_from_failure","na_rule":"redistribute","no_incident_targets":true,"public_negative_ranking":false,"automatic_discipline":false}'::jsonb,now()
-from public.companies c
-where not exists(select 1 from public.engagement_configuration_versions x where x.company_id=c.id);
+-- Production receives no fictional programmes, KPIs, people, results or workflow
+-- records. Optional demonstration content belongs in a tenant-isolated Demo Data
+-- Pack and must never be installed automatically by this production schema.
 
 -- Default-deny company isolation. Personal tables further restrict employees to
 -- their own records while supervisors/governance roles retain authorised scope.
