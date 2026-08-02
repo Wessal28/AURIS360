@@ -577,46 +577,26 @@ thead tr[style*="#7F1D1D"] th:last-child {
     radial-gradient(circle at 92% 12%, rgba(24,95,165,.14), transparent 28%),
     linear-gradient(180deg,#FFFFFF 0%,#F7FAFE 100%);
   box-shadow: 0 18px 42px rgba(15, 23, 42, 0.10);
-  max-height: none;
-  overflow: visible;
+  max-height: calc(100vh - 136px);
+  overflow: hidden;
 }
 @media (min-width: 761px) {
   #page-dashboard.active {
-    padding: 28px 32px;
-    min-height: 100%;
-    background: #fff;
+    padding: 0;
+    min-height: calc(100vh - 49px);
+    background: #F3F6FA;
   }
   #page-dashboard.active .hse-cc {
-    margin: 0 0 18px;
-    min-height: 0;
-    max-height: none;
+    margin: 0;
+    min-height: calc(100vh - 49px);
+    max-height: calc(100vh - 49px);
     border: 0;
     border-radius: 0;
     box-shadow: none;
   }
 }
-.dash-legacy-header { display: flex !important; }
-
-/* The reference board guides behaviour; only its central dashboard is UI. */
-.hse-cc-reference-shell .hse-cc-brief,
-.hse-cc-reference-shell .hse-cc-side,
-.hse-cc-reference-shell .hse-cc-grid > aside,
-.hse-cc-reference-shell .hse-cc-requirements,
-.hse-cc-reference-shell .hse-cc-page > div:last-child { display: none !important; }
-.hse-cc-reference-shell .hse-cc-page { padding: 0 !important; background: #fff !important; }
-.hse-cc-reference-shell .hse-cc-grid { display: block !important; }
-.hse-cc-reference-shell .hse-cc-dark { width: 100%; }
-@media (max-width: 1100px) {
-  .hse-cc-reference-shell .hse-cc-main-grid > .hse-cc-card:first-child { grid-column: 1 / -1; }
-  .hse-cc-reference-shell .hse-cc-dark-head { flex-wrap: wrap; }
-}
-@media (max-width: 720px) {
-  .hse-cc-reference-shell .hse-cc-dark { padding: 10px; border-radius: 12px; }
-  .hse-cc-reference-shell .hse-cc-dark-head strong { width: 100%; }
-  .hse-cc-reference-shell .hse-cc-search { order: 3; flex: 1 0 100%; min-width: 0; }
-  .hse-cc-reference-shell .hse-cc-card { min-height: 0; }
-  .hse-cc-reference-shell .hse-cc-map { height: 180px; }
-  .hse-cc-reference-shell .hse-cc-trend { height: 150px; }
+.dash-legacy-header {
+  display: none !important;
 }
 .hse-cc-top {
   display: grid;
@@ -5882,7 +5862,7 @@ function dashRouteView() {
   } else {
     orgView.style.display = 'none';
     perView.style.display = 'none';
-    if(orgControls) orgControls.style.display = 'flex';
+    if(orgControls) orgControls.style.display = 'none';
   }
 }
 
@@ -5930,14 +5910,13 @@ function dashEnsureControlCentreMount(){
   var page=document.getElementById('page-dashboard');
   if(!page)return null;
   var panel=document.getElementById('dash-control-centre');
-  if(!panel){
-    panel=document.createElement('div');
-    panel.id='dash-control-centre';
-  }
-  panel.className='hse-cc hse-cc-reference-shell';
-  var alertBar=document.getElementById('dash-alert-bar');
-  if(alertBar&&alertBar.parentNode)alertBar.parentNode.insertBefore(panel,alertBar.nextSibling);
-  else if(!panel.parentNode)page.appendChild(panel);
+  if(panel)return panel;
+  panel=document.createElement('div');
+  panel.id='dash-control-centre';
+  panel.className='hse-cc';
+  var orgView=document.getElementById('dash-org-view');
+  if(orgView&&orgView.parentNode)orgView.parentNode.insertBefore(panel,orgView);
+  else page.insertBefore(panel,page.firstChild);
   return panel;
 }
 
