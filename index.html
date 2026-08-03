@@ -16224,6 +16224,8 @@ function imsOpenEdit(id){
   gf('ev-quantity',x.quantity_released);gf('ev-gps-address',x.gps_address);
   gf('ev-lat',x.lat);gf('ev-lng',x.lng);
   document.getElementById('ev-severity').value=x.severity||'medium';
+  document.getElementById('ev-potential-severity').value=x.potential_severity||x.severity||'high';
+  gf('ev-reg-required',x.regulatory_required||'no');
   document.getElementById('ev-status').value=x.status||'open';
   document.getElementById('ev-inv-required').checked=!!x.investigation_required;
   document.getElementById('ev-inv-ref-section').style.display=x.investigation_required?'block':'none';
@@ -16503,7 +16505,13 @@ async function imsSave(){
   var assignedPerson = personByDisplayName(g('ev-assigned-name'));
   var reporterPerson = personByDisplayName(g('ev-reported-by-name'));
   var body={company_id:effectiveCompanyId,event_type:type,event_date:date.includes('T')?date.split('T')[0]:date,
-    event_time:date.includes('T')?date.split('T')[1]:null,severity:severity,
+    event_time:date.includes('T')?date.split('T')[1]:null,title:desc.substring(0,120),severity:severity,
+    potential_severity:g('ev-potential-severity')||null,likelihood:g('imx-likelihood')||null,
+    estimated_time:g('imx-estimated-time')==='true',confidentiality:g('imx-confidentiality')||'internal',
+    emergency_gate:g('imx-emergency-gate')||'none',immediate_danger:g('imx-immediate-danger')==='true',
+    reporter_mode:g('imx-reporter-mode')||'named',work_activity:g('imx-work-activity')||null,
+    regulatory_required:g('ev-reg-required')||null,idempotency_key:(typeof imv2IncidentKey==='function'?imv2IncidentKey():'incident-'+effectiveCompanyId+'-'+Date.now()),
+    submitted_at:(g('ev-status')==='submitted'?new Date().toISOString():null),
     status:g('ev-status')||'open',location:g('ev-location'),department:g('ev-department'),
     description:desc,immediate_action:g('ev-immediate'),root_cause:g('ev-root-cause'),
     witnesses:g('ev-witnesses'),reported_by_name:g('ev-reported-by-name'),
@@ -43038,6 +43046,7 @@ function fireEquipStatusBadge(s) {
 <link rel="stylesheet" href="bbs-observations.css?v=20260802-2">
 <link rel="stylesheet" href="noise-management.css?v=20260802-1">
 <link rel="stylesheet" href="noise-management-map-config.css?v=20260803-1">
+<link rel="stylesheet" href="incident-management-upgrade.css?v=20260803-1">
 </head>
 <body>
 <div id="login-screen">
@@ -54862,5 +54871,6 @@ I can help you:<br>
 <script src="safety-engagement.js"></script>
 <script src="bbs-observations.js?v=20260802-2"></script>
 <script src="noise-management.js?v=20260803-3"></script>
+<script src="incident-management-upgrade.js?v=20260803-1"></script>
 </body>
 </html>
