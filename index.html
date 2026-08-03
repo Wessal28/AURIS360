@@ -17622,7 +17622,7 @@ async function imsEvidenceSave(){
   var title=document.getElementById('ims-ev-title')?.value?.trim();
   if(!title){toast('Please enter evidence title/description',false);return;}
   var g=function(id){var el=document.getElementById(id);return el?el.value||null:null;};
-  var body={company_id:ccid(),event_id:g('ims-ev-incident-link')||null,evidence_type:g('ims-ev-type')||'photo',title,file_url:g('ims-ev-url'),file_name:g('ims-ev-filename'),description:g('ims-ev-desc'),collected_by:g('ims-ev-collected-by'),collected_date:g('ims-ev-date')||null,location_description:g('ims-ev-location-desc'),lat:g('ims-ev-lat')?parseFloat(g('ims-ev-lat')):null,lng:g('ims-ev-lng')?parseFloat(g('ims-ev-lng')):null,witness_name:g('ims-ev-witness-name'),witness_contact:g('ims-ev-witness-contact'),witness_statement:g('ims-ev-statement')};
+  var body={company_id:ccid(),event_id:g('ims-ev-incident-link')||null,investigation_id:window.imv2CaseInvestigationId||null,evidence_type:g('ims-ev-type')||'photo',title,file_url:g('ims-ev-url'),file_name:g('ims-ev-filename'),description:g('ims-ev-desc'),collected_by:g('ims-ev-collected-by'),collected_date:g('ims-ev-date')||null,location_description:g('ims-ev-location-desc'),lat:g('ims-ev-lat')?parseFloat(g('ims-ev-lat')):null,lng:g('ims-ev-lng')?parseFloat(g('ims-ev-lng')):null,witness_name:g('ims-ev-witness-name'),witness_contact:g('ims-ev-witness-contact'),witness_statement:g('ims-ev-statement')};
   try{
     if(imsEvidenceEditId){await api('/incident_evidence?id=eq.'+imsEvidenceEditId,{m:'PATCH',p:'return=minimal',b:body});toast('Updated!');}
     else{body.created_by=prof?.id;await api('/incident_evidence',{m:'POST',p:'return=minimal',b:body});toast('Evidence saved!');}
@@ -43046,7 +43046,7 @@ function fireEquipStatusBadge(s) {
 <link rel="stylesheet" href="bbs-observations.css?v=20260802-2">
 <link rel="stylesheet" href="noise-management.css?v=20260802-1">
 <link rel="stylesheet" href="noise-management-map-config.css?v=20260803-1">
-<link rel="stylesheet" href="incident-management-upgrade.css?v=20260803-1">
+<link rel="stylesheet" href="incident-management-upgrade.css?v=20260803-2">
 </head>
 <body>
 <div id="login-screen">
@@ -54871,6 +54871,6 @@ I can help you:<br>
 <script src="safety-engagement.js"></script>
 <script src="bbs-observations.js?v=20260802-2"></script>
 <script src="noise-management.js?v=20260803-3"></script>
-<script src="incident-management-upgrade.js?v=20260803-1"></script>
+<script src="incident-management-upgrade.js?v=20260803-2"></script>
 </body>
 </html>
