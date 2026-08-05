@@ -26701,7 +26701,8 @@ async function toolsSaveInspection(){
       toast('Inspection saved!');
     }
     toolsInspFormBack();
-  }catch(e){toastActionError('Save equipment inspection','Tools & Equipment',e);console.error(e);}
+    return true;
+  }catch(e){toastActionError('Save equipment inspection','Tools & Equipment',e);console.error(e);return false;}
 }
 
 // -- STATUTORY VERIFICATION ---------------------------------------------------
@@ -43055,6 +43056,7 @@ function fireEquipStatusBadge(s) {
 <link rel="stylesheet" href="learning-competency-upgrade.css?v=20260805-1">
 <link rel="stylesheet" href="chemical-control-upgrade.css?v=20260805-1">
 <link rel="stylesheet" href="contractor-management-upgrade.css?v=20260805-1">
+<link rel="stylesheet" href="tools-equipment-upgrade.css?v=20260805-1">
 </head>
 <body>
 <div id="login-screen">
@@ -54888,5 +54890,6 @@ I can help you:<br>
 <script src="learning-competency-upgrade.js?v=20260805-1"></script>
 <script src="chemical-control-upgrade.js?v=20260805-1"></script>
 <script src="contractor-management-upgrade.js?v=20260805-1"></script>
+<script src="tools-equipment-upgrade.js?v=20260805-1"></script>
 </body>
 </html>
