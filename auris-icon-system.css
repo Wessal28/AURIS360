@@ -1,0 +1,120 @@
+/* Final AURIS 360 icon system supplied 2026-08-05. */
+:root{--auris-icon-atlas:url("assets/auris-icon-system-final.png")}
+
+/* Platform logo crops. Client white-label logos remain unaffected. */
+#auris-sidebar-logo{
+  object-fit:none!important;object-position:9999px 9999px!important;
+  background-image:var(--auris-icon-atlas)!important;background-repeat:no-repeat!important;
+  background-size:538px 358px!important;background-position:-8px -4px!important;
+  background-color:#06192e!important;border-color:#173b5b!important;
+}
+img.login-logo[src*="auris360-logo"],img.login-logo[src*="auris-icon-system-final"]{
+  width:225px!important;height:50px!important;max-width:92%!important;
+  object-fit:none!important;object-position:9999px 9999px!important;
+  background-image:var(--auris-icon-atlas)!important;background-repeat:no-repeat!important;
+  background-size:768px 512px!important;background-position:-15px -9px!important;
+  background-color:#06192e!important;border-radius:9px!important;
+}
+
+/* Module artwork shared by sidebar, dropdown and mobile navigation. */
+.auris-module-icon{
+  width:34px!important;height:34px!important;min-width:34px!important;flex:0 0 34px!important;
+  border-radius:0!important;background-color:transparent!important;
+  background-image:var(--auris-icon-atlas)!important;background-repeat:no-repeat!important;
+  background-size:614px 410px!important;box-shadow:none!important;text-shadow:none!important;
+  color:transparent!important;font-size:0!important;overflow:hidden!important;mix-blend-mode:multiply;
+}
+.auris-module-icon:before,.auris-module-icon:after{content:none!important;display:none!important}
+
+/* Core row 1 */
+[data-nav-key="dashboard"] .auris-module-icon{background-position:-19px -92px!important}
+[data-nav-key="executive"] .auris-module-icon{background-position:-77px -92px!important}
+[data-nav-key="ai-insights"] .auris-module-icon{background-position:-135px -92px!important}
+[data-nav-key="kpi"] .auris-module-icon{background-position:-251px -92px!important}
+[data-nav-key="risk"] .auris-module-icon{background-position:-367px -92px!important}
+[data-nav-key="events"] .auris-module-icon{background-position:-425px -92px!important}
+[data-nav-key="observation"] .auris-module-icon{background-position:-483px -92px!important}
+/* Core row 2 */
+[data-nav-key="inspection"] .auris-module-icon{background-position:-19px -149px!important}
+[data-nav-key="actions"] .auris-module-icon{background-position:-77px -149px!important}
+[data-nav-key="permit"] .auris-module-icon{background-position:-135px -149px!important}
+[data-nav-key="moc"] .auris-module-icon{background-position:-193px -149px!important}
+[data-nav-key="contractor"] .auris-module-icon{background-position:-251px -149px!important}
+[data-nav-key="training"] .auris-module-icon{background-position:-309px -149px!important}
+[data-nav-key="engagement"] .auris-module-icon{background-position:-367px -149px!important}
+[data-nav-key="tools"] .auris-module-icon{background-position:-425px -149px!important}
+[data-nav-key="fleet"] .auris-module-icon{background-position:-483px -149px!important}
+/* Core row 3 */
+[data-nav-key="atex"] .auris-module-icon{background-position:-19px -207px!important}
+[data-nav-key="sitemap"] .auris-module-icon{background-position:-77px -207px!important}
+[data-nav-key="emergency"] .auris-module-icon{background-position:-135px -207px!important}
+[data-nav-key="fire"] .auris-module-icon{background-position:-193px -207px!important}
+[data-nav-key="ohealth"] .auris-module-icon{background-position:-251px -207px!important}
+[data-nav-key="ppe"] .auris-module-icon{background-position:-309px -207px!important}
+[data-nav-key="chemical"] .auris-module-icon{background-position:-367px -207px!important}
+[data-nav-key="esg"] .auris-module-icon{background-position:-425px -207px!important}
+[data-nav-key="noise"] .auris-module-icon{background-position:-483px -207px!important}
+/* Management */
+[data-nav-key="meetings"] .auris-module-icon{background-position:-19px -274px!important}
+[data-nav-key="sop"] .auris-module-icon{background-position:-77px -274px!important}
+[data-nav-key="swms"] .auris-module-icon{background-position:-135px -274px!important}
+[data-nav-key="documents"] .auris-module-icon{background-position:-193px -274px!important}
+[data-nav-key="people"] .auris-module-icon{background-position:-251px -274px!important}
+[data-nav-key="users"] .auris-module-icon{background-position:-309px -274px!important}
+[data-nav-key="admin"] .auris-module-icon,[data-nav-key="companies"] .auris-module-icon{background-position:-367px -274px!important}
+[data-nav-key="integrations"] .auris-module-icon{background-position:-425px -274px!important}
+[data-nav-key="approvals"] .auris-module-icon{background-position:-483px -274px!important}
+/* Governance & support */
+[data-nav-key="legal"] .auris-module-icon{background-position:-19px -333px!important}
+[data-nav-key="workschedule"] .auris-module-icon{background-position:-135px -333px!important}
+[data-nav-key="audit"] .auris-module-icon{background-position:-309px -333px!important}
+[data-nav-key="settings"] .auris-module-icon{background-position:-367px -333px!important}
+
+.sidebar .nav-item:has(.auris-module-icon){min-height:43px!important;padding-top:5px!important;padding-bottom:5px!important}
+.sidebar .nav-item.active .auris-module-icon{filter:saturate(1.08) contrast(1.03)}
+.modules-menu-item .auris-module-icon{margin-left:-5px;margin-right:1px}
+.mob-nav-btn .auris-module-icon{width:32px!important;height:32px!important;min-width:32px!important;flex-basis:32px!important}
+@media(min-width:769px){.sidebar.collapsed .nav-item .auris-module-icon{width:34px!important;height:34px!important;min-width:34px!important;flex-basis:34px!important}}
+@media(max-width:768px){.sidebar .nav-item .auris-module-icon{width:36px!important;height:36px!important;min-width:36px!important;flex-basis:36px!important}}
+
+/* Common action artwork. Applied only to interactive controls. */
+.auris-action-icon{
+  width:18px!important;height:18px!important;min-width:18px!important;flex:0 0 18px!important;
+  display:inline-block!important;border-radius:0!important;background-color:transparent!important;
+  background-image:var(--auris-icon-atlas)!important;background-repeat:no-repeat!important;
+  background-size:1229px 819px!important;box-shadow:none!important;text-shadow:none!important;
+  color:transparent!important;font-size:0!important;overflow:hidden!important;mix-blend-mode:multiply;
+}
+.auris-action-icon:before,.auris-action-icon:after{content:none!important;display:none!important}
+[data-action-icon="add"]{background-position:-44px -787px!important}
+[data-action-icon="edit"]{background-position:-105px -787px!important}
+[data-action-icon="delete"]{background-position:-161px -787px!important}
+[data-action-icon="view"]{background-position:-223px -787px!important}
+[data-action-icon="download"]{background-position:-279px -787px!important}
+[data-action-icon="upload"]{background-position:-345px -787px!important}
+[data-action-icon="share"]{background-position:-402px -787px!important}
+[data-action-icon="filter"]{background-position:-459px -787px!important}
+[data-action-icon="search"]{background-position:-515px -787px!important}
+[data-action-icon="refresh"]{background-position:-571px -787px!important}
+[data-action-icon="print"]{background-position:-631px -787px!important}
+[data-action-icon="export"]{background-position:-685px -787px!important}
+[data-action-icon="save"]{background-position:-743px -787px!important}
+[data-action-icon="cancel"]{background-position:-797px -787px!important}
+[data-action-icon="info"]{background-position:-850px -787px!important}
+[data-action-icon="warning"]{background-position:-893px -787px!important}
+[data-action-icon="success"]{background-position:-947px -787px!important}
+[data-action-icon="error"]{background-position:-995px -787px!important}
+.btn-primary .auris-action-icon,.btn-danger .auris-action-icon{mix-blend-mode:normal;background-color:#fff!important;border-radius:4px!important}
+
+/* Specialised actions not pictured in the catalogue retain their meaningful
+   glyph inside the same rounded, metallic 3D visual language. */
+button i.ti:not(.auris-action-icon):not(.auris-module-icon),
+a.btn i.ti:not(.auris-action-icon):not(.auris-module-icon){
+  width:19px!important;height:19px!important;min-width:19px!important;flex:0 0 19px!important;
+  display:inline-flex!important;align-items:center!important;justify-content:center!important;
+  border:1px solid #9aa9b8!important;border-radius:6px!important;
+  color:#17324d!important;font-size:12px!important;
+  background:linear-gradient(145deg,#fff 0%,#e2e8f0 50%,#aebbc8 100%)!important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.95),inset 0 -2px 4px rgba(13,27,42,.16),0 2px 4px rgba(13,27,42,.15)!important;
+  text-shadow:0 1px 0 #fff!important;
+}
