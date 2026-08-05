@@ -85,10 +85,30 @@ create table if not exists public.learning_source_relationships (
 );
 create index if not exists learning_source_reverse on public.learning_source_relationships(company_id,related_module,related_record_id,impact_status);
 
+create table if not exists public.learning_external_providers (
+  id text primary key default gen_random_uuid()::text,
+  company_id uuid not null references public.companies(id) on delete cascade,
+  provider_name text not null,
+  contact_name text,
+  contact_email text,
+  contact_phone text,
+  accreditation_scope text,
+  accreditation_reference text,
+  accreditation_expiry date,
+  approved_status text not null default 'pending' check (approved_status in ('pending','approved','conditional','suspended','expired','archived')),
+  evaluation_notes text,
+  evidence_reference text,
+  created_by uuid,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  unique(company_id,provider_name)
+);
+create index if not exists learning_external_provider_status on public.learning_external_providers(company_id,approved_status,accreditation_expiry);
+
 do $$
 declare t text;
 begin
-  foreach t in array array['learning_course_governance','learning_practical_assessments','learning_source_relationships'] loop
+  foreach t in array array['learning_course_governance','learning_practical_assessments','learning_source_relationships','learning_external_providers'] loop
     execute format('alter table public.%I enable row level security',t);
     execute format('drop policy if exists %I on public.%I',t||'_tenant_read',t);
     execute format('create policy %I on public.%I for select using (exists (select 1 from public.profiles p where p.id=auth.uid() and (p.role=''sephs_admin'' or p.company_id=%I.company_id)))',t||'_tenant_read',t,t);
