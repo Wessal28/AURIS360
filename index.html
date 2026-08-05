@@ -10389,7 +10389,7 @@ const COMPLIANCE_STATUS={
 
 
 // ===== SOP GENERATOR MODULE =====
-let sopVideo=null, sopFrames=[], sopEditingId=null, sopCurrentStep=1, sopAllData=[];
+var sopVideo=null, sopFrames=[], sopEditingId=null, sopCurrentStep=1, sopAllData=[];
 
 function sopSwitchTab(tab,btn){
   document.querySelectorAll('[id^="sop-tab-"]').forEach(function(t){t.classList.remove('active');});
@@ -43051,6 +43051,7 @@ function fireEquipStatusBadge(s) {
 <link rel="stylesheet" href="swms-upgrade.css?v=20260803-1">
 <link rel="stylesheet" href="legal-compliance-upgrade.css?v=20260804-1">
 <link rel="stylesheet" href="risk-assessment-upgrade.css?v=20260804-1">
+<link rel="stylesheet" href="sop-video-upgrade.css?v=20260805-1">
 </head>
 <body>
 <div id="login-screen">
@@ -54880,5 +54881,6 @@ I can help you:<br>
 <script src="swms-upgrade.js?v=20260803-1"></script>
 <script src="legal-compliance-upgrade.js?v=20260804-1"></script>
 <script src="risk-assessment-upgrade.js?v=20260804-1"></script>
+<script src="sop-video-upgrade.js?v=20260805-1"></script>
 </body>
 </html>
