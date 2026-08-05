@@ -20,58 +20,59 @@ img.login-logo[src*="auris360-logo"],img.login-logo[src*="auris-icon-system-fina
 }
 
 /* Module artwork shared by sidebar, dropdown and mobile navigation. */
-.auris-module-icon{
+i.auris-module-icon,
+[data-nav-key] i.auris-module-icon{
   width:34px!important;height:34px!important;min-width:34px!important;flex:0 0 34px!important;
   border-radius:0!important;background-color:transparent!important;
   background-image:var(--auris-icon-atlas)!important;background-repeat:no-repeat!important;
   background-size:614px 410px!important;box-shadow:none!important;text-shadow:none!important;
   color:transparent!important;font-size:0!important;overflow:hidden!important;mix-blend-mode:multiply;
 }
-.auris-module-icon:before,.auris-module-icon:after{content:none!important;display:none!important}
+i.auris-module-icon:before,i.auris-module-icon:after{content:none!important;display:none!important}
 
 /* Core row 1 */
-[data-nav-key="dashboard"] .auris-module-icon{background-position:-19px -92px!important}
-[data-nav-key="executive"] .auris-module-icon{background-position:-77px -92px!important}
-[data-nav-key="ai-insights"] .auris-module-icon{background-position:-135px -92px!important}
-[data-nav-key="kpi"] .auris-module-icon{background-position:-251px -92px!important}
-[data-nav-key="risk"] .auris-module-icon{background-position:-367px -92px!important}
-[data-nav-key="events"] .auris-module-icon{background-position:-425px -92px!important}
-[data-nav-key="observation"] .auris-module-icon{background-position:-483px -92px!important}
+[data-nav-key="dashboard"] i.auris-module-icon{background-position:-19px -92px!important}
+[data-nav-key="executive"] i.auris-module-icon{background-position:-77px -92px!important}
+[data-nav-key="ai-insights"] i.auris-module-icon{background-position:-135px -92px!important}
+[data-nav-key="kpi"] i.auris-module-icon{background-position:-251px -92px!important}
+[data-nav-key="risk"] i.auris-module-icon{background-position:-367px -92px!important}
+[data-nav-key="events"] i.auris-module-icon{background-position:-425px -92px!important}
+[data-nav-key="observation"] i.auris-module-icon{background-position:-483px -92px!important}
 /* Core row 2 */
-[data-nav-key="inspection"] .auris-module-icon{background-position:-19px -149px!important}
-[data-nav-key="actions"] .auris-module-icon{background-position:-77px -149px!important}
-[data-nav-key="permit"] .auris-module-icon{background-position:-135px -149px!important}
-[data-nav-key="moc"] .auris-module-icon{background-position:-193px -149px!important}
-[data-nav-key="contractor"] .auris-module-icon{background-position:-251px -149px!important}
-[data-nav-key="training"] .auris-module-icon{background-position:-309px -149px!important}
-[data-nav-key="engagement"] .auris-module-icon{background-position:-367px -149px!important}
-[data-nav-key="tools"] .auris-module-icon{background-position:-425px -149px!important}
-[data-nav-key="fleet"] .auris-module-icon{background-position:-483px -149px!important}
+[data-nav-key="inspection"] i.auris-module-icon{background-position:-19px -149px!important}
+[data-nav-key="actions"] i.auris-module-icon{background-position:-77px -149px!important}
+[data-nav-key="permit"] i.auris-module-icon{background-position:-135px -149px!important}
+[data-nav-key="moc"] i.auris-module-icon{background-position:-193px -149px!important}
+[data-nav-key="contractor"] i.auris-module-icon{background-position:-251px -149px!important}
+[data-nav-key="training"] i.auris-module-icon{background-position:-309px -149px!important}
+[data-nav-key="engagement"] i.auris-module-icon{background-position:-367px -149px!important}
+[data-nav-key="tools"] i.auris-module-icon{background-position:-425px -149px!important}
+[data-nav-key="fleet"] i.auris-module-icon{background-position:-483px -149px!important}
 /* Core row 3 */
-[data-nav-key="atex"] .auris-module-icon{background-position:-19px -207px!important}
-[data-nav-key="sitemap"] .auris-module-icon{background-position:-77px -207px!important}
-[data-nav-key="emergency"] .auris-module-icon{background-position:-135px -207px!important}
-[data-nav-key="fire"] .auris-module-icon{background-position:-193px -207px!important}
-[data-nav-key="ohealth"] .auris-module-icon{background-position:-251px -207px!important}
-[data-nav-key="ppe"] .auris-module-icon{background-position:-309px -207px!important}
-[data-nav-key="chemical"] .auris-module-icon{background-position:-367px -207px!important}
-[data-nav-key="esg"] .auris-module-icon{background-position:-425px -207px!important}
-[data-nav-key="noise"] .auris-module-icon{background-position:-483px -207px!important}
+[data-nav-key="atex"] i.auris-module-icon{background-position:-19px -207px!important}
+[data-nav-key="sitemap"] i.auris-module-icon{background-position:-77px -207px!important}
+[data-nav-key="emergency"] i.auris-module-icon{background-position:-135px -207px!important}
+[data-nav-key="fire"] i.auris-module-icon{background-position:-193px -207px!important}
+[data-nav-key="ohealth"] i.auris-module-icon{background-position:-251px -207px!important}
+[data-nav-key="ppe"] i.auris-module-icon{background-position:-309px -207px!important}
+[data-nav-key="chemical"] i.auris-module-icon{background-position:-367px -207px!important}
+[data-nav-key="esg"] i.auris-module-icon{background-position:-425px -207px!important}
+[data-nav-key="noise"] i.auris-module-icon{background-position:-483px -207px!important}
 /* Management */
-[data-nav-key="meetings"] .auris-module-icon{background-position:-19px -274px!important}
-[data-nav-key="sop"] .auris-module-icon{background-position:-77px -274px!important}
-[data-nav-key="swms"] .auris-module-icon{background-position:-135px -274px!important}
-[data-nav-key="documents"] .auris-module-icon{background-position:-193px -274px!important}
-[data-nav-key="people"] .auris-module-icon{background-position:-251px -274px!important}
-[data-nav-key="users"] .auris-module-icon{background-position:-309px -274px!important}
-[data-nav-key="admin"] .auris-module-icon,[data-nav-key="companies"] .auris-module-icon{background-position:-367px -274px!important}
-[data-nav-key="integrations"] .auris-module-icon{background-position:-425px -274px!important}
-[data-nav-key="approvals"] .auris-module-icon{background-position:-483px -274px!important}
+[data-nav-key="meetings"] i.auris-module-icon{background-position:-19px -274px!important}
+[data-nav-key="sop"] i.auris-module-icon{background-position:-77px -274px!important}
+[data-nav-key="swms"] i.auris-module-icon{background-position:-135px -274px!important}
+[data-nav-key="documents"] i.auris-module-icon{background-position:-193px -274px!important}
+[data-nav-key="people"] i.auris-module-icon{background-position:-251px -274px!important}
+[data-nav-key="users"] i.auris-module-icon{background-position:-309px -274px!important}
+[data-nav-key="admin"] i.auris-module-icon,[data-nav-key="companies"] i.auris-module-icon{background-position:-367px -274px!important}
+[data-nav-key="integrations"] i.auris-module-icon{background-position:-425px -274px!important}
+[data-nav-key="approvals"] i.auris-module-icon{background-position:-483px -274px!important}
 /* Governance & support */
-[data-nav-key="legal"] .auris-module-icon{background-position:-19px -333px!important}
-[data-nav-key="workschedule"] .auris-module-icon{background-position:-135px -333px!important}
-[data-nav-key="audit"] .auris-module-icon{background-position:-309px -333px!important}
-[data-nav-key="settings"] .auris-module-icon{background-position:-367px -333px!important}
+[data-nav-key="legal"] i.auris-module-icon{background-position:-19px -333px!important}
+[data-nav-key="workschedule"] i.auris-module-icon{background-position:-135px -333px!important}
+[data-nav-key="audit"] i.auris-module-icon{background-position:-309px -333px!important}
+[data-nav-key="settings"] i.auris-module-icon{background-position:-367px -333px!important}
 
 .sidebar .nav-item:has(.auris-module-icon){min-height:43px!important;padding-top:5px!important;padding-bottom:5px!important}
 .sidebar .nav-item.active .auris-module-icon{filter:saturate(1.08) contrast(1.03)}
@@ -81,14 +82,14 @@ img.login-logo[src*="auris360-logo"],img.login-logo[src*="auris-icon-system-fina
 @media(max-width:768px){.sidebar .nav-item .auris-module-icon{width:36px!important;height:36px!important;min-width:36px!important;flex-basis:36px!important}}
 
 /* Common action artwork. Applied only to interactive controls. */
-.auris-action-icon{
+i.auris-action-icon{
   width:18px!important;height:18px!important;min-width:18px!important;flex:0 0 18px!important;
   display:inline-block!important;border-radius:0!important;background-color:transparent!important;
   background-image:var(--auris-icon-atlas)!important;background-repeat:no-repeat!important;
   background-size:1229px 819px!important;box-shadow:none!important;text-shadow:none!important;
   color:transparent!important;font-size:0!important;overflow:hidden!important;mix-blend-mode:multiply;
 }
-.auris-action-icon:before,.auris-action-icon:after{content:none!important;display:none!important}
+i.auris-action-icon:before,i.auris-action-icon:after{content:none!important;display:none!important}
 [data-action-icon="add"]{background-position:-44px -787px!important}
 [data-action-icon="edit"]{background-position:-105px -787px!important}
 [data-action-icon="delete"]{background-position:-161px -787px!important}
