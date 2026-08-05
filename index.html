@@ -5932,18 +5932,9 @@ function dashAttentionRow(item){
 }
 
 function dashKpiAsset(type){
-  var svg='<svg class="hse-cc-kpi-asset" viewBox="0 0 64 64" aria-hidden="true">';
-  var defs='<defs><filter id="ccIconShadow" x="-30%" y="-30%" width="160%" height="160%"><feDropShadow dx="0" dy="3" stdDeviation="2.4" flood-color="#0F172A" flood-opacity=".25"/></filter><linearGradient id="ccWhite" x1="10" y1="4" x2="54" y2="58"><stop stop-color="#fff"/><stop offset="1" stop-color="#EAF2FF"/></linearGradient><linearGradient id="ccGold" x1="12" y1="4" x2="52" y2="60"><stop stop-color="#FFE45C"/><stop offset="1" stop-color="#F59E0B"/></linearGradient><linearGradient id="ccRed" x1="12" y1="4" x2="52" y2="60"><stop stop-color="#FF8A8A"/><stop offset="1" stop-color="#DC2626"/></linearGradient><linearGradient id="ccGreen" x1="12" y1="4" x2="52" y2="60"><stop stop-color="#7CF0C4"/><stop offset="1" stop-color="#10B981"/></linearGradient><linearGradient id="ccBlue" x1="12" y1="4" x2="52" y2="60"><stop stop-color="#93C5FD"/><stop offset="1" stop-color="#2563EB"/></linearGradient></defs>';
-  var common='filter="url(#ccIconShadow)" stroke-linecap="round" stroke-linejoin="round"';
-  var body={
-    incident:'<g '+common+'><rect x="12" y="12" width="34" height="42" rx="7" fill="url(#ccWhite)" stroke="#BFDBFE" stroke-width="2"/><rect x="19" y="8" width="34" height="42" rx="7" fill="url(#ccBlue)" stroke="#DBEAFE" stroke-width="2"/><path d="M36 20v15M28.5 27.5h15" stroke="#fff" stroke-width="5"/><circle cx="46" cy="44" r="9" fill="url(#ccRed)" stroke="#fff" stroke-width="2"/><path d="M46 39v6M46 49h.1" stroke="#fff" stroke-width="3"/></g>',
-    action:'<g '+common+'><rect x="16" y="9" width="34" height="46" rx="8" fill="url(#ccGold)" stroke="#FEF3C7" stroke-width="2"/><rect x="24" y="6" width="18" height="8" rx="3" fill="#fff" opacity=".9"/><path d="M25 27l4 4 9-10M25 41l4 4 9-10" stroke="#fff" stroke-width="4"/><path d="M42 28h4M42 42h4" stroke="#7C2D12" stroke-width="3" opacity=".35"/></g>',
-    risk:'<g '+common+'><path d="M32 7l27 48H5L32 7z" fill="url(#ccRed)" stroke="#FEE2E2" stroke-width="2"/><path d="M32 24v14M32 46h.1" stroke="#fff" stroke-width="6"/><path d="M18 52h28" stroke="#7F1D1D" stroke-width="3" opacity=".2"/></g>',
-    training:'<g '+common+'><rect x="14" y="10" width="36" height="44" rx="8" fill="url(#ccGreen)" stroke="#D1FAE5" stroke-width="2"/><rect x="22" y="7" width="20" height="8" rx="3" fill="#fff" opacity=".9"/><path d="M23 29l7 7 13-15" stroke="#fff" stroke-width="5"/><path d="M23 43h19" stroke="#065F46" stroke-width="3" opacity=".3"/></g>',
-    permit:'<g '+common+'><path d="M32 7l21 8v14c0 13-8 22-21 27C19 51 11 42 11 29V15l21-8z" fill="url(#ccGreen)" stroke="#D1FAE5" stroke-width="2"/><rect x="22" y="29" width="20" height="15" rx="4" fill="#fff"/><path d="M26 29v-5a6 6 0 0112 0v5" fill="none" stroke="#fff" stroke-width="5"/><path d="M32 35v4" stroke="#0F766E" stroke-width="3"/></g>',
-    inspection:'<g '+common+'><rect x="13" y="12" width="38" height="40" rx="8" fill="url(#ccBlue)" stroke="#DBEAFE" stroke-width="2"/><path d="M22 8v9M42 8v9M14 23h36" stroke="#fff" stroke-width="4"/><path d="M23 35l5 5 12-13" stroke="#fff" stroke-width="5"/><circle cx="47" cy="47" r="9" fill="url(#ccWhite)" stroke="#60A5FA" stroke-width="2"/><path d="M53 53l5 5" stroke="#2563EB" stroke-width="4"/></g>'
-  };
-  return svg+defs+(body[type]||body.inspection)+'</svg>';
+  var allowed={incident:1,action:1,risk:1,training:1,permit:1,inspection:1};
+  var icon=allowed[type]?type:'inspection';
+  return '<i class="auris-dashboard-asset" data-dashboard-icon="'+icon+'" aria-hidden="true"></i>';
 }
 
 function dashOpenControlCentreModal(title, bodyHtml){
@@ -54876,7 +54867,7 @@ I can help you:<br>
 }
 .modules-menu-item.active i{color:var(--green)!important}
 </style>
-<link rel="stylesheet" href="auris-icon-system.css?v=20260806-1">
+<link rel="stylesheet" href="auris-icon-system.css?v=20260806-2">
 <script src="kpi-configuration.js"></script>
 <script src="kpi-module-upgrade.js"></script>
 <script src="safety-engagement.js"></script>

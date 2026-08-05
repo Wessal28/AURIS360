@@ -32,54 +32,115 @@ i.auris-module-icon:before,i.auris-module-icon:after{content:none!important;disp
 
 /* Core row 1 */
 [data-nav-key="dashboard"] i.auris-module-icon{background-position:-19px -92px!important}
-[data-nav-key="executive"] i.auris-module-icon{background-position:-77px -92px!important}
-[data-nav-key="ai-insights"] i.auris-module-icon{background-position:-135px -92px!important}
+[data-nav-key="executive"] i.auris-module-icon{background-position:-80px -92px!important}
+[data-nav-key="ai-insights"] i.auris-module-icon{background-position:-137px -92px!important}
 [data-nav-key="kpi"] i.auris-module-icon{background-position:-251px -92px!important}
-[data-nav-key="risk"] i.auris-module-icon{background-position:-367px -92px!important}
-[data-nav-key="events"] i.auris-module-icon{background-position:-425px -92px!important}
-[data-nav-key="observation"] i.auris-module-icon{background-position:-483px -92px!important}
+[data-nav-key="risk"] i.auris-module-icon{background-position:-360px -92px!important}
+[data-nav-key="events"] i.auris-module-icon{background-position:-418px -92px!important}
+[data-nav-key="observation"] i.auris-module-icon{background-position:-472px -92px!important}
 /* Core row 2 */
 [data-nav-key="inspection"] i.auris-module-icon{background-position:-19px -149px!important}
-[data-nav-key="actions"] i.auris-module-icon{background-position:-77px -149px!important}
-[data-nav-key="permit"] i.auris-module-icon{background-position:-135px -149px!important}
-[data-nav-key="moc"] i.auris-module-icon{background-position:-193px -149px!important}
-[data-nav-key="contractor"] i.auris-module-icon{background-position:-251px -149px!important}
-[data-nav-key="training"] i.auris-module-icon{background-position:-309px -149px!important}
-[data-nav-key="engagement"] i.auris-module-icon{background-position:-367px -149px!important}
-[data-nav-key="tools"] i.auris-module-icon{background-position:-425px -149px!important}
-[data-nav-key="fleet"] i.auris-module-icon{background-position:-483px -149px!important}
+[data-nav-key="actions"] i.auris-module-icon{background-position:-80px -149px!important}
+[data-nav-key="permit"] i.auris-module-icon{background-position:-137px -149px!important}
+[data-nav-key="moc"] i.auris-module-icon{background-position:-195px -149px!important}
+[data-nav-key="contractor"] i.auris-module-icon{background-position:-250px -149px!important}
+[data-nav-key="training"] i.auris-module-icon{background-position:-303px -149px!important}
+[data-nav-key="engagement"] i.auris-module-icon{background-position:-360px -149px!important}
+[data-nav-key="tools"] i.auris-module-icon{background-position:-418px -149px!important}
+[data-nav-key="fleet"] i.auris-module-icon{background-position:-472px -149px!important}
 /* Core row 3 */
 [data-nav-key="atex"] i.auris-module-icon{background-position:-19px -207px!important}
-[data-nav-key="sitemap"] i.auris-module-icon{background-position:-77px -207px!important}
-[data-nav-key="emergency"] i.auris-module-icon{background-position:-135px -207px!important}
-[data-nav-key="fire"] i.auris-module-icon{background-position:-193px -207px!important}
-[data-nav-key="ohealth"] i.auris-module-icon{background-position:-251px -207px!important}
-[data-nav-key="ppe"] i.auris-module-icon{background-position:-309px -207px!important}
-[data-nav-key="chemical"] i.auris-module-icon{background-position:-367px -207px!important}
-[data-nav-key="esg"] i.auris-module-icon{background-position:-425px -207px!important}
-[data-nav-key="noise"] i.auris-module-icon{background-position:-483px -207px!important}
+[data-nav-key="sitemap"] i.auris-module-icon{background-position:-80px -207px!important}
+[data-nav-key="emergency"] i.auris-module-icon{background-position:-137px -207px!important}
+[data-nav-key="fire"] i.auris-module-icon{background-position:-195px -207px!important}
+[data-nav-key="ohealth"] i.auris-module-icon{background-position:-250px -207px!important}
+[data-nav-key="ppe"] i.auris-module-icon{background-position:-303px -207px!important}
+[data-nav-key="chemical"] i.auris-module-icon{background-position:-360px -207px!important}
+[data-nav-key="esg"] i.auris-module-icon{background-position:-418px -207px!important}
+[data-nav-key="noise"] i.auris-module-icon{background-position:-472px -207px!important}
 /* Management */
 [data-nav-key="meetings"] i.auris-module-icon{background-position:-19px -274px!important}
-[data-nav-key="sop"] i.auris-module-icon{background-position:-77px -274px!important}
-[data-nav-key="swms"] i.auris-module-icon{background-position:-135px -274px!important}
-[data-nav-key="documents"] i.auris-module-icon{background-position:-193px -274px!important}
-[data-nav-key="people"] i.auris-module-icon{background-position:-251px -274px!important}
-[data-nav-key="users"] i.auris-module-icon{background-position:-309px -274px!important}
-[data-nav-key="admin"] i.auris-module-icon,[data-nav-key="companies"] i.auris-module-icon{background-position:-367px -274px!important}
-[data-nav-key="integrations"] i.auris-module-icon{background-position:-425px -274px!important}
-[data-nav-key="approvals"] i.auris-module-icon{background-position:-483px -274px!important}
+[data-nav-key="sop"] i.auris-module-icon{background-position:-74px -274px!important}
+[data-nav-key="swms"] i.auris-module-icon{background-position:-130px -274px!important}
+[data-nav-key="documents"] i.auris-module-icon{background-position:-187px -274px!important}
+[data-nav-key="people"] i.auris-module-icon{background-position:-244px -274px!important}
+[data-nav-key="users"] i.auris-module-icon{background-position:-298px -274px!important}
+[data-nav-key="admin"] i.auris-module-icon,[data-nav-key="companies"] i.auris-module-icon{background-position:-352px -274px!important}
+[data-nav-key="integrations"] i.auris-module-icon{background-position:-409px -274px!important}
+[data-nav-key="approvals"] i.auris-module-icon{background-position:-466px -274px!important}
 /* Governance & support */
-[data-nav-key="legal"] i.auris-module-icon{background-position:-19px -333px!important}
-[data-nav-key="workschedule"] i.auris-module-icon{background-position:-135px -333px!important}
-[data-nav-key="audit"] i.auris-module-icon{background-position:-309px -333px!important}
-[data-nav-key="settings"] i.auris-module-icon{background-position:-367px -333px!important}
+[data-nav-key="legal"] i.auris-module-icon{background-position:-18px -337px!important}
+[data-nav-key="workschedule"] i.auris-module-icon{background-position:-130px -337px!important}
+[data-nav-key="audit"] i.auris-module-icon{background-position:-298px -337px!important}
+[data-nav-key="settings"] i.auris-module-icon{background-position:-356px -337px!important}
 
-.sidebar .nav-item:has(.auris-module-icon){min-height:43px!important;padding-top:5px!important;padding-bottom:5px!important}
+.sidebar .nav-item:has(.auris-module-icon){min-height:43px!important;padding-top:5px!important;padding-bottom:5px!important;align-items:center!important}
+.sidebar .nav-item i.auris-module-icon{margin:0!important;align-self:center!important}
 .sidebar .nav-item.active .auris-module-icon{filter:saturate(1.08) contrast(1.03)}
 .modules-menu-item .auris-module-icon{margin-left:-5px;margin-right:1px}
 .mob-nav-btn .auris-module-icon{width:32px!important;height:32px!important;min-width:32px!important;flex-basis:32px!important}
 @media(min-width:769px){.sidebar.collapsed .nav-item .auris-module-icon{width:34px!important;height:34px!important;min-width:34px!important;flex-basis:34px!important}}
 @media(max-width:768px){.sidebar .nav-item .auris-module-icon{width:36px!important;height:36px!important;min-width:36px!important;flex-basis:36px!important}}
+
+/* Consistent module heading typography, based on the Risk Assessment module. */
+.page-header .page-title,
+.kpi-x-title,
+:is(.rax-hero,.legx-hero,.swx-hero,.ccu-hero,.cmu-hero,.teu-hero,.lcu-hero,.sov-hero,.dcx-module-head) h1{
+  font-size:27px!important;line-height:1.12!important;font-weight:800!important;
+  letter-spacing:0!important;color:#082f3a!important;
+}
+.page-header>div:first-child>div:not(.page-title),
+:is(.rax-hero,.legx-hero,.swx-hero,.ccu-hero,.cmu-hero,.teu-hero,.lcu-hero,.sov-hero,.dcx-module-head) p,
+.hse-cc-sub{
+  font-size:12px!important;line-height:1.45!important;color:#667c84!important;
+}
+:is(.rax-kicker,.legx-kicker,.swx-kicker,.ccu-kicker,.cmu-kicker,.teu-kicker,.lcu-kicker,.sov-kicker,.dcx-kicker){
+  font-size:10px!important;font-weight:900!important;letter-spacing:.13em!important;
+  line-height:1.25!important;text-transform:uppercase!important;color:#087d68!important;
+}
+.hse-cc-title{
+  font-size:27px!important;line-height:1.12!important;font-weight:800!important;
+  letter-spacing:0!important;color:#082f3a!important;
+}
+
+/* Dashboard cards now reuse the same final 3D artwork as the modules. */
+#page-dashboard .hse-cc-kpi .hse-cc-kpi-icon{
+  width:42px!important;height:42px!important;border-radius:0!important;
+  background:transparent!important;box-shadow:none!important;transform:none!important;
+}
+#page-dashboard .hse-cc-kpi .hse-cc-kpi-icon:before,
+#page-dashboard .hse-cc-kpi .hse-cc-kpi-icon:after{content:none!important;display:none!important}
+.auris-dashboard-asset,
+#page-dashboard .kpi-card .kpi-icon{
+  width:34px!important;height:34px!important;min-width:34px!important;
+  display:block!important;border-radius:0!important;color:transparent!important;font-size:0!important;
+  background-color:transparent!important;background-image:var(--auris-icon-atlas)!important;
+  background-repeat:no-repeat!important;background-size:614px 410px!important;
+  box-shadow:none!important;text-shadow:none!important;overflow:hidden!important;mix-blend-mode:multiply;
+}
+#page-dashboard .kpi-card .kpi-icon>*{display:none!important}
+.auris-dashboard-asset[data-dashboard-icon="incident"],
+#page-dashboard :is([data-id="dp-days"],[data-id="d-events"],[data-id="d-ltifr"],[data-id="d-trir"]) .kpi-icon{background-position:-418px -92px!important}
+.auris-dashboard-asset[data-dashboard-icon="action"],
+#page-dashboard :is([data-id="dp-site-incidents"],[data-id="d-actions"]) .kpi-icon{background-position:-80px -149px!important}
+.auris-dashboard-asset[data-dashboard-icon="risk"]{background-position:-360px -92px!important}
+.auris-dashboard-asset[data-dashboard-icon="training"],
+#page-dashboard :is([data-id="dp-training"],[data-id="d-training-pct"]) .kpi-icon{background-position:-303px -149px!important}
+.auris-dashboard-asset[data-dashboard-icon="permit"],
+#page-dashboard [data-id="d-permits"] .kpi-icon{background-position:-137px -149px!important}
+.auris-dashboard-asset[data-dashboard-icon="inspection"],
+#page-dashboard [data-id="d-audit-score"] .kpi-icon{background-position:-19px -149px!important}
+#page-dashboard [data-id="d-people"] .kpi-icon{background-position:-244px -274px!important}
+#page-dashboard [data-id="d-certs"] .kpi-icon{background-position:-360px -149px!important}
+#page-dashboard [data-id="d-compliance"] .kpi-icon{background-position:-18px -337px!important}
+#page-dashboard [data-id="d-env"] .kpi-icon{background-position:-418px -207px!important}
+#page-dashboard [data-id="d-kpis"] .kpi-icon{background-position:-250px -92px!important}
+
+@media(max-width:720px){
+  .page-header .page-title,.kpi-x-title,
+  :is(.rax-hero,.legx-hero,.swx-hero,.ccu-hero,.cmu-hero,.teu-hero,.lcu-hero,.sov-hero,.dcx-module-head) h1,
+  .hse-cc-title{font-size:23px!important}
+}
 
 /* Common action artwork. Applied only to interactive controls. */
 i.auris-action-icon{
