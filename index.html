@@ -5172,7 +5172,7 @@ window.Brand = (function(){
     primary:    '#1D9E75',
     secondary:  '#0F6E56',
     accent:     '#EF9F27',
-    logo_url:   '/assets/brand/auris360-logo.png',
+    logo_url:   '/assets/auris360-logo-final.png',
     logo_dark_url: '/assets/brand/auris360-icon-192.png',
     favicon_url:'/assets/brand/auris360-icon-32.png',
     display_name: 'AURIS360',
@@ -5231,7 +5231,7 @@ window.Brand = (function(){
 
     var loginLogo = document.querySelector('.login-logo');
     if(loginLogo){
-      if(loginLogo.tagName==='IMG') loginLogo.src = b.logo_url || b.logo_dark_url || '/assets/brand/auris360-logo.png';
+      if(loginLogo.tagName==='IMG') loginLogo.src = b.logo_url || b.logo_dark_url || '/assets/auris360-logo-final.png';
       else loginLogo.textContent = b.display_name || 'AURIS360';
     }
     var loginSub = document.querySelector('.login-sub');
@@ -40083,7 +40083,7 @@ function aurisHeader(title, subtitle, refNo) {
   var companyName = (co && co.name) || (B && B.display_name) || 'Company';
   var companyLogo = (co && co.logo_url) || null;
   var tagline = (B && B.tagline) || 'HSE Management Platform';
-  var aurisLogo = '/assets/brand/auris360-logo.png';
+  var aurisLogo = '/assets/auris360-logo-final.png';
 
   var logoBlock = '<div class="rpt-brand-pair">'
     + '<div class="rpt-logo-wrap"><img class="rpt-auris-logo" src="' + aurisLogo + '" alt="AURIS360"/><div><div class="rpt-logo" style="font-size:13pt">AURIS360</div><div class="rpt-company">HSE Management Platform</div></div></div>'
@@ -43068,7 +43068,7 @@ function fireEquipStatusBadge(s) {
 <div class="login-box" style="position:relative;z-index:1;max-width:400px;width:100%">
 <!-- Logo -->
 <div style="text-align:center;margin-bottom:24px">
-<img class="login-logo" src="/assets/brand/auris360-logo.png" alt="AURIS360" style="width:220px;max-width:86%;height:auto;object-fit:contain;display:block;margin:0 auto"/>
+<img class="login-logo" src="/assets/auris360-logo-final.png" alt="AURIS 360 — Safety. Compliance. Excellence." style="width:220px;max-width:86%;height:auto;object-fit:contain;display:block;margin:0 auto"/>
 <div style="font-size:11px;color:var(--text2);margin-top:4px;letter-spacing:.05em;text-transform:uppercase">Powered by SEPHS Consulting</div>
 </div>
 
@@ -43235,7 +43235,7 @@ function fireEquipStatusBadge(s) {
   <button id="mob-btn-modules" class="mob-nav-btn" type="button" onclick="mobileToggleModules()"><i class="ti ti-apps"></i><span>More</span></button>
 </div>
 <div class="layout">
-<div class="sidebar"><div class="sidebar-top"><div class="sidebar-brand-row"><img id="auris-sidebar-logo" class="auris-sidebar-logo" src="/assets/brand/auris360-icon-192.png" alt="AURIS360 logo"/><img id="co-logo-img" class="co-logo" src="" alt="Company logo"/><div id="co-initials-div" class="co-initials">A</div></div><div class="sb-company" id="sb-company">AURIS360</div><div class="sb-user" id="sb-user">-</div><span class="sb-role" id="sb-role">-</span></div><div id="sb-role-changer" style="padding:8px 20px;border-bottom:1px solid var(--border);display:none;gap:6px;align-items:center">
+<div class="sidebar"><div class="sidebar-top"><div class="sidebar-brand-row"><img id="auris-sidebar-logo" class="auris-sidebar-logo" src="/assets/auris360-logo-final.png" alt="AURIS 360 logo"/><img id="co-logo-img" class="co-logo" src="" alt="Company logo"/><div id="co-initials-div" class="co-initials">A</div></div><div class="sb-company" id="sb-company">AURIS360</div><div class="sb-user" id="sb-user">-</div><span class="sb-role" id="sb-role">-</span></div><div id="sb-role-changer" style="padding:8px 20px;border-bottom:1px solid var(--border);display:none;gap:6px;align-items:center">
 <select id="sb-role-select" style="flex:1;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:11px" onchange="">
 <option value="employee">Employee</option>
 <option value="contractor">Contractor</option>

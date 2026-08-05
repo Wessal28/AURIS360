@@ -1,19 +1,22 @@
 /* Final AURIS 360 icon system supplied 2026-08-05. */
-:root{--auris-icon-atlas:url("assets/auris-icon-system-final.png")}
+:root{
+  --auris-icon-atlas:url("assets/auris-icon-system-final.png");
+  --auris-brand-logo:url("assets/auris360-logo-final.png");
+}
 
-/* Platform logo crops. Client white-label logos remain unaffected. */
+/* New platform brand supplied 2026-08-05. Client white-label logos remain unaffected. */
 #auris-sidebar-logo{
   object-fit:none!important;object-position:9999px 9999px!important;
-  background-image:var(--auris-icon-atlas)!important;background-repeat:no-repeat!important;
-  background-size:538px 358px!important;background-position:-8px -4px!important;
-  background-color:#06192e!important;border-color:#173b5b!important;
+  background-image:var(--auris-brand-logo)!important;background-repeat:no-repeat!important;
+  background-size:108px 86px!important;background-position:-27px -1px!important;
+  background-color:#fff!important;border-color:#dbe7f3!important;
 }
 img.login-logo[src*="auris360-logo"],img.login-logo[src*="auris-icon-system-final"]{
-  width:225px!important;height:50px!important;max-width:92%!important;
+  width:244px!important;height:195px!important;max-width:92%!important;
   object-fit:none!important;object-position:9999px 9999px!important;
-  background-image:var(--auris-icon-atlas)!important;background-repeat:no-repeat!important;
-  background-size:768px 512px!important;background-position:-15px -9px!important;
-  background-color:#06192e!important;border-radius:9px!important;
+  background-image:var(--auris-brand-logo)!important;background-repeat:no-repeat!important;
+  background-size:contain!important;background-position:center!important;
+  background-color:#fff!important;border-radius:9px!important;
 }
 
 /* Module artwork shared by sidebar, dropdown and mobile navigation. */
