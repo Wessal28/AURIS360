@@ -1,0 +1,54 @@
+/* Illustrated module icons derived from the approved 5 x 4 reference atlas. */
+.sidebar .nav-item i.module-art-icon,
+.modules-menu-item i.module-art-icon{
+  width:34px!important;
+  height:34px!important;
+  min-width:34px!important;
+  flex:0 0 34px!important;
+  border-radius:0!important;
+  background-color:transparent!important;
+  background-image:url("assets/module-icons-3d.png")!important;
+  background-repeat:no-repeat!important;
+  background-size:340px 193px!important;
+  box-shadow:none!important;
+  text-shadow:none!important;
+  color:transparent!important;
+  font-size:0!important;
+  overflow:hidden!important;
+  mix-blend-mode:multiply;
+}
+.sidebar .nav-item i.module-art-icon:before,
+.sidebar .nav-item i.module-art-icon:after,
+.modules-menu-item i.module-art-icon:before,
+.modules-menu-item i.module-art-icon:after{content:none!important;display:none!important}
+
+/* Row 1 */
+[data-nav-key="kpi"] i.module-art-icon{background-position:-27px -12px!important}
+[data-nav-key="engagement"] i.module-art-icon{background-position:-83px -12px!important}
+[data-nav-key="workschedule"] i.module-art-icon{background-position:-141px -12px!important}
+[data-nav-key="events"] i.module-art-icon{background-position:-201px -12px!important}
+[data-nav-key="observation"] i.module-art-icon{background-position:-266px -12px!important}
+/* Row 2 */
+[data-nav-key="inspection"] i.module-art-icon{background-position:-27px -55px!important}
+[data-nav-key="risk"] i.module-art-icon{background-position:-83px -55px!important}
+[data-nav-key="tools"] i.module-art-icon{background-position:-141px -55px!important}
+[data-nav-key="fleet"] i.module-art-icon{background-position:-201px -55px!important}
+[data-nav-key="atex"] i.module-art-icon{background-position:-266px -55px!important}
+/* Row 3 */
+[data-nav-key="sitemap"] i.module-art-icon{background-position:-27px -99px!important}
+[data-nav-key="permit"] i.module-art-icon{background-position:-83px -99px!important}
+[data-nav-key="contractor"] i.module-art-icon{background-position:-141px -99px!important}
+[data-nav-key="emergency"] i.module-art-icon{background-position:-201px -99px!important}
+[data-nav-key="ohealth"] i.module-art-icon{background-position:-266px -99px!important}
+/* Row 4 */
+[data-nav-key="ppe"] i.module-art-icon{background-position:-27px -143px!important}
+[data-nav-key="fire"] i.module-art-icon{background-position:-83px -143px!important}
+[data-nav-key="chemical"] i.module-art-icon{background-position:-141px -143px!important}
+[data-nav-key="esg"] i.module-art-icon{background-position:-201px -143px!important}
+[data-nav-key="noise"] i.module-art-icon{background-position:-266px -143px!important}
+
+.sidebar .nav-item:has(i.module-art-icon){min-height:43px!important;padding-top:5px!important;padding-bottom:5px!important}
+.sidebar .nav-item.active i.module-art-icon{filter:saturate(1.08) contrast(1.03)}
+.modules-menu-item i.module-art-icon{margin-left:-5px;margin-right:1px}
+@media(min-width:769px){.sidebar.collapsed .nav-item i.module-art-icon{width:34px!important;height:34px!important;min-width:34px!important;flex-basis:34px!important}}
+@media(max-width:768px){.sidebar .nav-item i.module-art-icon{width:36px!important;height:36px!important;min-width:36px!important;flex-basis:36px!important}}
