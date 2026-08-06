@@ -2,9 +2,9 @@
 -- Safe to rerun. Existing source_id values are never overwritten.
 -- Exact, company-scoped, single-candidate matches are linked automatically.
 -- Ambiguous and unresolved records are retained in map_source_backfill_review.
--- MIGRATION VERSION: V2-UNLOGGED-WORK-TABLES
+-- MIGRATION VERSION: V3-STAGING-FREE
 
-select 'AURIS360_ACTION_SOURCE_BACKFILL_V2_UNLOGGED_WORK_TABLES' as migration_version;
+select 'AURIS360_ACTION_SOURCE_BACKFILL_V3_STAGING_FREE' as migration_version;
 
 begin;
 
@@ -63,30 +63,9 @@ where source_id is null
   and lower(coalesce(source_module, 'manual')) = 'manual'
   and source_ref ilike 'ATEX - %';
 
--- Supabase SQL runners may execute statements across transaction boundaries,
--- which makes temporary tables disappear before the DO block can use them.
--- Explicitly scoped unlogged work tables survive those boundaries and are
--- removed at the end of the migration.
-drop table if exists public.map_source_backfill_candidates_work;
-drop table if exists public.map_source_backfill_targets_work;
-
-create unlogged table public.map_source_backfill_targets_work as
-select id as action_id, company_id, lower(coalesce(source_module, '')) as source_module, source_ref
-from public.action_tracker
-where source_id is null
-  and nullif(btrim(source_ref), '') is not null
-  and lower(coalesce(source_module, '')) not in ('', 'manual', 'ai');
-
-create unlogged table public.map_source_backfill_candidates_work (
-  action_id uuid not null,
-  source_table text not null,
-  source_id uuid not null,
-  matched_reference text,
-  primary key(action_id, source_table, source_id)
-);
-
 -- Each mapping is activated only when both the table and reference column exist.
--- Matching is case-insensitive, company-scoped and reference-token based.
+-- Every mapping is processed in one self-contained CTE statement: no temporary,
+-- unlogged or cross-statement work relation is required by the SQL runner.
 do $backfill$
 declare
   mapping record;
@@ -129,20 +108,74 @@ begin
            and column_name = 'company_id'
        ) then
       execute format(
-        'insert into public.map_source_backfill_candidates_work(action_id, source_table, source_id, matched_reference)
-         select t.action_id, %L, s.id, s.%I::text
-         from public.map_source_backfill_targets_work t
-         join public.%I s on s.company_id = t.company_id
-         where t.source_module = %L
-           and nullif(btrim(s.%I::text), '''') is not null
-           and position(lower(s.%I::text) in lower(t.source_ref)) > 0
-         on conflict do nothing',
+        'with matches as (
+           select
+             a.id as action_id,
+             a.company_id,
+             lower(coalesce(a.source_module, '''')) as source_module,
+             a.source_ref,
+             count(s.id)::integer as candidate_count,
+             min(s.id::text)::uuid as resolved_id,
+             jsonb_agg(
+               jsonb_build_object(
+                 ''source_table'', %L,
+                 ''source_id'', s.id,
+                 ''matched_reference'', s.%I::text
+               ) order by s.id
+             ) as candidate_records
+           from public.action_tracker a
+           join public.%I s on s.company_id = a.company_id
+           where a.source_id is null
+             and lower(coalesce(a.source_module, '''')) = %L
+             and nullif(btrim(a.source_ref), '''') is not null
+            and nullif(btrim(s.%I::text), '''') is not null
+             and position(lower(s.%I::text) in lower(a.source_ref)) > 0
+           group by a.id, a.company_id, a.source_module, a.source_ref
+         ), logged as (
+           insert into public.map_source_backfill_review (
+             company_id, action_id, source_module, source_ref, candidate_count,
+             candidate_records, resolution_status, resolved_source_table,
+             resolved_source_id, last_scanned_at
+           )
+           select
+             company_id,
+             action_id,
+             source_module,
+             source_ref,
+             candidate_count,
+             candidate_records,
+             case when candidate_count = 1 then ''auto_linked'' else ''needs_review'' end,
+             case when candidate_count = 1 then %L else null end,
+             case when candidate_count = 1 then resolved_id else null end,
+             now()
+           from matches
+           on conflict (action_id) do update
+           set source_module = excluded.source_module,
+               source_ref = excluded.source_ref,
+               candidate_count = excluded.candidate_count,
+               candidate_records = excluded.candidate_records,
+               resolution_status = excluded.resolution_status,
+               resolved_source_table = excluded.resolved_source_table,
+               resolved_source_id = excluded.resolved_source_id,
+               last_scanned_at = now()
+           where map_source_backfill_review.resolution_status not in (''manually_linked'', ''dismissed'')
+           returning action_id
+         )
+         update public.action_tracker a
+         set source_id = m.resolved_id,
+             updated_at = now()
+         from matches m
+         join logged l on l.action_id = m.action_id
+         where a.id = m.action_id
+           and a.source_id is null
+           and m.candidate_count = 1',
         mapping.table_name,
         mapping.ref_column,
         mapping.table_name,
         mapping.module_key,
         mapping.ref_column,
-        mapping.ref_column
+        mapping.ref_column,
+        mapping.table_name
       );
     end if;
   end loop;
@@ -150,81 +183,68 @@ end
 $backfill$;
 
 -- A Management of Change item is itself the governed action_tracker row.
-insert into public.map_source_backfill_candidates_work(action_id, source_table, source_id, matched_reference)
-select t.action_id, 'action_tracker', t.action_id, t.source_ref
-from public.map_source_backfill_targets_work t
-where t.source_module = 'moc'
-  and t.source_ref ~* '^MOC-[0-9]{4}-[0-9]+'
-on conflict do nothing;
-
--- Only exactly one candidate may be auto-linked.
-with unique_candidates as (
-  select action_id, max(source_id::text)::uuid as source_id
-  from public.map_source_backfill_candidates_work
-  group by action_id
-  having count(*) = 1
+with moc_matches as (
+  select id as action_id, company_id, lower(source_module) as source_module, source_ref
+  from public.action_tracker
+  where source_id is null
+    and lower(coalesce(source_module, '')) = 'moc'
+    and source_ref ~* '^MOC-[0-9]{4}-[0-9]+'
+), logged as (
+  insert into public.map_source_backfill_review (
+    company_id, action_id, source_module, source_ref, candidate_count,
+    candidate_records, resolution_status, resolved_source_table,
+    resolved_source_id, last_scanned_at
+  )
+  select
+    company_id,
+    action_id,
+    source_module,
+    source_ref,
+    1,
+    jsonb_build_array(jsonb_build_object('source_table', 'action_tracker', 'source_id', action_id, 'matched_reference', source_ref)),
+    'auto_linked',
+    'action_tracker',
+    action_id,
+    now()
+  from moc_matches
+  on conflict (action_id) do update
+  set candidate_count = 1,
+      candidate_records = excluded.candidate_records,
+      resolution_status = 'auto_linked',
+      resolved_source_table = 'action_tracker',
+      resolved_source_id = excluded.resolved_source_id,
+      last_scanned_at = now()
+  where map_source_backfill_review.resolution_status not in ('manually_linked', 'dismissed')
+  returning action_id
 )
 update public.action_tracker a
-set source_id = u.source_id,
+set source_id = a.id,
     updated_at = now()
-from unique_candidates u
-where a.id = u.action_id
+from logged l
+where a.id = l.action_id
   and a.source_id is null;
 
--- Preserve a complete reconciliation result for every scanned action.
-with candidate_summary as (
-  select
-    t.action_id,
-    t.company_id,
-    t.source_module,
-    t.source_ref,
-    count(c.source_id)::integer as candidate_count,
-    coalesce(
-      jsonb_agg(
-        jsonb_build_object(
-          'source_table', c.source_table,
-          'source_id', c.source_id,
-          'matched_reference', c.matched_reference
-        ) order by c.source_table, c.source_id
-      ) filter (where c.source_id is not null),
-      '[]'::jsonb
-    ) as candidates,
-    max(c.source_table) filter (where c.source_id is not null) as resolved_table,
-    (max(c.source_id::text) filter (where c.source_id is not null))::uuid as resolved_id
-  from public.map_source_backfill_targets_work t
-  left join public.map_source_backfill_candidates_work c on c.action_id = t.action_id
-  group by t.action_id, t.company_id, t.source_module, t.source_ref
-)
+-- Anything still unlinked is explicitly queued without guessing.
 insert into public.map_source_backfill_review (
   company_id, action_id, source_module, source_ref, candidate_count,
-  candidate_records, resolution_status, resolved_source_table,
-  resolved_source_id, last_scanned_at
+  candidate_records, resolution_status, last_scanned_at
 )
 select
   company_id,
-  action_id,
-  source_module,
+  id,
+  lower(source_module),
   source_ref,
-  candidate_count,
-  candidates,
-  case
-    when candidate_count = 1 then 'auto_linked'
-    when candidate_count > 1 then 'needs_review'
-    else 'unresolved'
-  end,
-  case when candidate_count = 1 then resolved_table else null end,
-  case when candidate_count = 1 then resolved_id else null end,
+  0,
+  '[]'::jsonb,
+  'unresolved',
   now()
-from candidate_summary
+from public.action_tracker
+where source_id is null
+  and nullif(btrim(source_ref), '') is not null
+  and lower(coalesce(source_module, '')) not in ('', 'manual', 'ai')
 on conflict (action_id) do update
-set source_module = excluded.source_module,
-    source_ref = excluded.source_ref,
-    candidate_count = excluded.candidate_count,
-    candidate_records = excluded.candidate_records,
-    resolution_status = excluded.resolution_status,
-    resolved_source_table = excluded.resolved_source_table,
-    resolved_source_id = excluded.resolved_source_id,
-    last_scanned_at = now();
+set last_scanned_at = now()
+where map_source_backfill_review.resolution_status = 'unresolved';
 
 alter table public.map_source_backfill_review enable row level security;
 
@@ -248,9 +268,6 @@ create policy "map_source_backfill_review_company_access"
   );
 
 grant select, insert, update, delete on public.map_source_backfill_review to authenticated;
-
-drop table if exists public.map_source_backfill_candidates_work;
-drop table if exists public.map_source_backfill_targets_work;
 
 commit;
 
