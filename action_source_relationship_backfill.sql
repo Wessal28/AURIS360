@@ -60,20 +60,27 @@ where source_id is null
   and lower(coalesce(source_module, 'manual')) = 'manual'
   and source_ref ilike 'ATEX - %';
 
-create temporary table map_source_backfill_targets on commit drop as
+-- Supabase SQL runners may execute statements across transaction boundaries,
+-- which makes temporary tables disappear before the DO block can use them.
+-- Explicitly scoped unlogged work tables survive those boundaries and are
+-- removed at the end of the migration.
+drop table if exists public.map_source_backfill_candidates_work;
+drop table if exists public.map_source_backfill_targets_work;
+
+create unlogged table public.map_source_backfill_targets_work as
 select id as action_id, company_id, lower(coalesce(source_module, '')) as source_module, source_ref
 from public.action_tracker
 where source_id is null
   and nullif(btrim(source_ref), '') is not null
   and lower(coalesce(source_module, '')) not in ('', 'manual', 'ai');
 
-create temporary table map_source_backfill_candidates (
+create unlogged table public.map_source_backfill_candidates_work (
   action_id uuid not null,
   source_table text not null,
   source_id uuid not null,
   matched_reference text,
   primary key(action_id, source_table, source_id)
-) on commit drop;
+);
 
 -- Each mapping is activated only when both the table and reference column exist.
 -- Matching is case-insensitive, company-scoped and reference-token based.
@@ -119,9 +126,9 @@ begin
            and column_name = 'company_id'
        ) then
       execute format(
-        'insert into map_source_backfill_candidates(action_id, source_table, source_id, matched_reference)
+        'insert into public.map_source_backfill_candidates_work(action_id, source_table, source_id, matched_reference)
          select t.action_id, %L, s.id, s.%I::text
-         from map_source_backfill_targets t
+         from public.map_source_backfill_targets_work t
          join public.%I s on s.company_id = t.company_id
          where t.source_module = %L
            and nullif(btrim(s.%I::text), '''') is not null
@@ -140,9 +147,9 @@ end
 $backfill$;
 
 -- A Management of Change item is itself the governed action_tracker row.
-insert into map_source_backfill_candidates(action_id, source_table, source_id, matched_reference)
+insert into public.map_source_backfill_candidates_work(action_id, source_table, source_id, matched_reference)
 select t.action_id, 'action_tracker', t.action_id, t.source_ref
-from map_source_backfill_targets t
+from public.map_source_backfill_targets_work t
 where t.source_module = 'moc'
   and t.source_ref ~* '^MOC-[0-9]{4}-[0-9]+'
 on conflict do nothing;
@@ -150,7 +157,7 @@ on conflict do nothing;
 -- Only exactly one candidate may be auto-linked.
 with unique_candidates as (
   select action_id, max(source_id::text)::uuid as source_id
-  from map_source_backfill_candidates
+  from public.map_source_backfill_candidates_work
   group by action_id
   having count(*) = 1
 )
@@ -181,8 +188,8 @@ with candidate_summary as (
     ) as candidates,
     max(c.source_table) filter (where c.source_id is not null) as resolved_table,
     (max(c.source_id::text) filter (where c.source_id is not null))::uuid as resolved_id
-  from map_source_backfill_targets t
-  left join map_source_backfill_candidates c on c.action_id = t.action_id
+  from public.map_source_backfill_targets_work t
+  left join public.map_source_backfill_candidates_work c on c.action_id = t.action_id
   group by t.action_id, t.company_id, t.source_module, t.source_ref
 )
 insert into public.map_source_backfill_review (
@@ -238,6 +245,9 @@ create policy "map_source_backfill_review_company_access"
   );
 
 grant select, insert, update, delete on public.map_source_backfill_review to authenticated;
+
+drop table if exists public.map_source_backfill_candidates_work;
+drop table if exists public.map_source_backfill_targets_work;
 
 commit;
 

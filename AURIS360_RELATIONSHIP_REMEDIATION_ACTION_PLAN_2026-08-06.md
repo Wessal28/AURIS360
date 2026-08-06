@@ -16,6 +16,7 @@
 | 6 Aug 2026 | AP-022 generated-action metadata correction | In progress | New ESG spill actions now retain the spill record ID; full metadata normalisation and legacy backfill remain pending |
 | 6 Aug 2026 | AP-022 generated-action metadata correction | Forward-write repair complete | BBS, Chemical and ATEX now write canonical source modules; Investigation, Legal gap, Toolbox Talk and Inspection actions retain source IDs; Risk actions retain their RA reference; MOC actions link to their own governed record. AI document-analysis actions remain reference-only until analysis artefacts receive durable storage IDs; legacy data backfill remains pending |
 | 6 Aug 2026 | AP-023 legacy action-source backfill | Migration ready; execution pending | `action_source_relationship_backfill.sql` normalises known legacy aliases, auto-links only unique company-scoped reference matches, preserves existing links, and creates an RLS-protected review queue for ambiguous or unresolved records |
+| 6 Aug 2026 | AP-023 SQL runner compatibility | Corrected after deployment test | Replaced transaction-scoped temporary staging tables with explicitly named unlogged work tables because the hosted SQL runner did not preserve the temporary relation between statements; work tables are dropped after reconciliation |
 
 ## 1. Delivery principles
 
