@@ -12,6 +12,8 @@
 |---|---|---|---|
 | 6 Aug 2026 | AP-013 resilient enhanced-module loaders | First implementation complete | Chemical, Contractor, Training, Legal, Risk, SOP, SWMS and Tools now retain successful datasets when another optional table fails |
 | 6 Aug 2026 | AP-020 immediate registry drift corrections | Interim corrections complete | Chemical and SWMS added to desktop Modules, SWMS added to mobile, and People added to the administrative catalogue; canonical registry consolidation remains pending |
+| 6 Aug 2026 | AP-021 Master Action Plan source adapter registry | First implementation complete | All source-module values currently written by the application now route through a table-driven registry; Contractor, ESG, Emergency, Occupational Health, Noise, Training and Document Control support exact-ID opening where their source record is available, with reference-search fallback for legacy actions |
+| 6 Aug 2026 | AP-022 generated-action metadata correction | In progress | New ESG spill actions now retain the spill record ID; full metadata normalisation and legacy backfill remain pending |
 
 ## 1. Delivery principles
 

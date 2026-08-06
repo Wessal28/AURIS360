@@ -23619,7 +23619,7 @@ async function esgSpillSave(){
         var yr=new Date().getFullYear();var ref=await nextCompanyRef('spill_reports','ref_number','SPL-'+yr+'-');
         await api('/spill_reports?id=eq.'+res[0].id,{m:'PATCH',p:'return=minimal',b:{ref_number:ref}});
         if(['major','critical'].includes(body.severity)){
-          await api('/action_tracker',{m:'POST',p:'return=minimal',b:{company_id:ccid(),source_module:'esg',source_ref:ref,description:'Spill remediation: '+substance+' at '+location+(body.corrective_actions?'\n'+body.corrective_actions:''),priority:body.severity==='critical'?'critical':'high',status:'open',created_by:prof?.id}});
+          await api('/action_tracker',{m:'POST',p:'return=minimal',b:{company_id:ccid(),source_module:'esg',source_id:res[0].id,source_ref:ref,description:'Spill remediation: '+substance+' at '+location+(body.corrective_actions?'\n'+body.corrective_actions:''),priority:body.severity==='critical'?'critical':'high',status:'open',created_by:prof?.id}});
           toast('Spill report saved! Ref: '+ref+' - Action added to MAP.');
         }else{toast('Spill report saved! Ref: '+ref);}
       }
@@ -27680,28 +27680,44 @@ function mapDisplayRef(x){
   return mapHasProfessionalRef(raw) ? raw : mapBuildGeneratedRef(x);
 }
 
+// Master Action Plan source routing is intentionally table-driven. New source
+// modules can be added here without growing another fragile chain of conditions.
+var MAP_SOURCE_ADAPTERS=[
+  {key:'investigation',page:'events',aliases:['investigation'],match:/\binvestigation\b|\binv[-_]/},
+  {key:'events',page:'events',aliases:['event','events','incident','incidents'],match:/\bincident\b|\bevent\b|\binc[-_]/},
+  {key:'observation',page:'observation',aliases:['observation','observations','bbs'],match:/\bobservation\b|\bbbs\b|\bobs[-_]/},
+  {key:'inspection',page:'inspection',aliases:['inspection','inspections','audit','audits'],match:/\binspection\b|\baudit\b|\binsp[-_]|\bwi[-_]/},
+  {key:'risk',page:'risk',aliases:['risk','risk_assessment','risk assessment'],match:/\brisk\b|\bassessment\b|\bra[-_]|\btra[-_]/},
+  {key:'permit',page:'permit',aliases:['permit','permits','ptw'],match:/\bpermit\b|\bptw\b/},
+  {key:'meetings',page:'meetings',aliases:['meeting','meetings','toolbox'],match:/\btoolbox\b|\bmeeting\b|\btbt[-_]/},
+  {key:'legal',page:'legal',aliases:['legal','compliance','legal_compliance'],match:/\blegal\b|\bcompliance\b|\bleg[-_]/},
+  {key:'chemical',page:'chemical',aliases:['chemical','chemicals','sds'],match:/\bchemical\b|\bsds\b|\bmsds\b|\bchem3/},
+  {key:'ppe',page:'ppe',aliases:['ppe','ppe_issuance'],match:/\bppe\b|\bissuance\b|\biss[-_]/},
+  {key:'tools',page:'tools',aliases:['tools','equipment','tools_equipment'],match:/\btool\b|\bequipment\b|\brcd\b|\blifting\b|\btool[-_]/},
+  {key:'fleet',page:'fleet',aliases:['fleet','vehicle'],match:/\bfleet\b|\bvehicle\b/},
+  {key:'atex',page:'atex',aliases:['atex'],match:/\batex\b/},
+  {key:'moc',page:'moc',aliases:['moc','change','management_of_change'],match:/\bchange\b|\bmoc\b/},
+  {key:'contractor',page:'contractor',aliases:['contractor','contractors'],match:/\bcontractor\b|\bcir[-_]/},
+  {key:'esg',page:'esg',aliases:['esg','environment','environmental'],match:/\benvironment\b|\benvironmental\b|\besg\b|\bspl[-_]/},
+  {key:'emergency',page:'emergency',aliases:['emergency'],match:/\bemergency\b|\bdrill[-_]|\bact[-_]/},
+  {key:'ohealth',page:'ohealth',aliases:['ohealth','occupational_health','occupational health'],match:/\boccupational\b|\bohealth\b|\baudiometry\b|\bspirometry\b|\bmedical surveillance\b|\bexposure monitoring\b/},
+  {key:'noise',page:'noise',aliases:['noise','occupational_noise'],match:/\bnoise\b/},
+  {key:'training',page:'training',aliases:['training','competency'],match:/\btraining\b|\bcompetency\b/},
+  {key:'documents',page:'documents',aliases:['document','documents','document_control'],match:/\bdocument\b/},
+  {key:'ai',page:'ai-insights',aliases:['ai','ai_insights'],match:/\bai document analysis\b/}
+];
+
+function mapSourceAdapter(x){
+  var moduleName=String((x&&x.source_module)||(x&&x.source_type)||'').toLowerCase().trim();
+  var exact=MAP_SOURCE_ADAPTERS.find(function(a){return a.aliases.indexOf(moduleName)!==-1;});
+  if(exact)return exact;
+  var combined=(moduleName+' '+String((x&&x.source_ref)||'')).toLowerCase();
+  return MAP_SOURCE_ADAPTERS.find(function(a){return a.match.test(combined);})||null;
+}
+
 function mapSourcePageKey(x){
-  var s=String((x&&x.source_type)||(x&&x.source_module)||'').toLowerCase();
-  var ref=String((x&&x.source_ref)||'').toLowerCase();
-  var moduleName=String((x&&x.source_module)||'').toLowerCase();
-  var combined=s+' '+ref;
-  if(moduleName==='investigation'||/^inv[-_]/i.test(ref)||/\binv[-_]/i.test(ref))return 'investigation';
-  if(/incident|investigation|event|^inv-|^inc-/.test(combined))return 'events';
-  if(/observation|bbs|^obs-/.test(combined))return 'observation';
-  if(/inspection|audit|^insp-|^wi-/.test(combined))return 'inspection';
-  if(/risk|assessment|^ra-|^tra-/.test(combined))return 'risk';
-  if(/permit|ptw|^ptw-/.test(combined))return 'permit';
-  if(/toolbox|meeting|tbt|^tbt-/.test(combined))return 'meetings';
-  if(/legal|compliance|^leg-/.test(combined))return 'legal';
-  if(/chemical|sds|msds|^chem3/.test(combined))return 'chemical';
-  if(/\bppe\b|issuance|^iss-/.test(combined))return 'ppe';
-  if(/tool|equipment|rcd|lifting|^tool-/.test(combined))return 'tools';
-  if(/fleet|vehicle/.test(combined))return 'fleet';
-  if(/atex/.test(combined))return 'atex';
-  if(/change|moc/.test(combined))return 'moc';
-  if(/environment|esg/.test(combined))return 'esg';
-  if(/occupational|health|ohealth/.test(combined))return 'ohealth';
-  return '';
+  var adapter=mapSourceAdapter(x);
+  return adapter ? adapter.page : '';
 }
 
 function mapNormSourceRef(ref){
@@ -27747,7 +27763,11 @@ function mapApplySourceSearch(pageKey, ref){
     tools:['tools-search'],
     fleet:['fleet-search'],
     atex:['atex-search'],
-    moc:['moc-search']
+    moc:['moc-search'],
+    contractor:['con-search'],
+    training:['tf-search'],
+    documents:['dc-search'],
+    noise:['noise-search']
   }[pageKey]||[];
   ids.some(function(id){
     var el=document.getElementById(id);
@@ -27759,22 +27779,89 @@ function mapApplySourceSearch(pageKey, ref){
   });
 }
 
-function mapOpenSourceRecord(id){
+function mapHasSourceRow(rows,id){
+  return Array.isArray(rows)&&rows.some(function(r){return String(r.id)===String(id);});
+}
+
+async function mapOpenExactSource(adapter,x){
+  var id=x&&x.source_id;
+  if(!adapter||!id)return false;
+  var ref=String(x.source_ref||'').toLowerCase();
+  try{
+    if(adapter.key==='documents'&&typeof dcEdit==='function'){
+      await dcEdit(id);return true;
+    }
+    if(adapter.key==='noise'&&typeof noiseOpenSurvey==='function'){
+      await noiseOpenSurvey(id);return true;
+    }
+    if(adapter.key==='contractor'&&typeof conSwitchTab==='function'&&typeof cirLoad==='function'){
+      conSwitchTab('incidents',document.getElementById('con-tab-incidents'));
+      await cirLoad();
+      if(mapHasSourceRow(conIncData,id)&&typeof cirEdit==='function'){await cirEdit(id);return true;}
+    }
+    if(adapter.key==='esg'&&typeof esgSwitchTab==='function'){
+      if(/^spl[-_]|\bspill\b/.test(ref)){
+        esgSwitchTab('spills',document.getElementById('esg-tab-spills'));
+        if(typeof esgLoadSpills==='function')await esgLoadSpills();
+        if(mapHasSourceRow(esgSpillData,id)&&typeof esgSpillEdit==='function'){esgSpillEdit(id);return true;}
+      }else{
+        esgSwitchTab('inspections',document.getElementById('esg-tab-inspections'));
+        if(typeof esgLoadInsp==='function')await esgLoadInsp();
+        if(mapHasSourceRow(esgInspData,id)&&typeof esgInspEdit==='function'){esgInspEdit(id);return true;}
+      }
+    }
+    if(adapter.key==='emergency'&&typeof emSwitchTab==='function'){
+      if(/^drill[-_]|\bemergency drill\b/.test(ref)){
+        emSwitchTab('drills',document.getElementById('em3tab-drills'));await drillsLoad();
+        if(mapHasSourceRow(emDrillsData,id)){await drillEdit(id);return true;}
+      }else if(/^act[-_]|\bactivation\b/.test(ref)){
+        emSwitchTab('activations',document.getElementById('em3tab-activations'));await activationsLoad();
+        if(mapHasSourceRow(emActivationsData,id)){await activationEdit(id);return true;}
+      }else{
+        emSwitchTab('equipment',document.getElementById('em3tab-equipment'));await emEqLoad();
+        if(mapHasSourceRow(emEqData,id)){await emEqEdit(id);return true;}
+      }
+    }
+    if(adapter.key==='ohealth'&&typeof ohSwitchTab==='function'){
+      var tab='',loader=null,rows=null,opener=null;
+      if(/medical surveillance/.test(ref)){tab='surveillance';loader=ohMsLoad;rows=ohMsData;opener=msEdit;}
+      else if(/audiometry/.test(ref)){tab='audiometry';loader=ohAudLoad;rows=ohAudData;opener=audEdit;}
+      else if(/spirometry/.test(ref)){tab='spirometry';loader=ohSpiLoad;rows=ohSpiData;opener=spiEdit;}
+      else if(/exposure monitoring/.test(ref)){tab='exposure';loader=expLoad;rows=ohExpData;opener=expEdit;}
+      else if(/occupational disease|\bod[-_]/.test(ref)){tab='disease';loader=ohOdLoad;rows=ohOdData;opener=odEdit;}
+      if(tab){ohSwitchTab(tab,document.getElementById('oh-tab-'+tab));await loader();if(mapHasSourceRow(rows,id)){await opener(id);return true;}}
+    }
+    if(adapter.key==='training'&&typeof trainSwitchTab==='function'){
+      if(/competency gap/.test(ref)&&typeof compEdit==='function'){
+        trainSwitchTab('competency',document.getElementById('train-tab-competency'));await compEdit(id);return true;
+      }
+      trainSwitchTab('followup',document.getElementById('train-tab-followup'));
+      if(typeof tfLoad==='function')await tfLoad();
+      if(mapHasSourceRow(tfAllData,id)&&typeof tfOpen==='function'){tfOpen(id);return true;}
+    }
+  }catch(e){console.warn('MAP exact source navigation failed',adapter.key,e);}
+  return false;
+}
+
+async function mapOpenSourceRecord(id){
   var x=(mapAllData||[]).find(function(r){return r.id===id;});
   if(!x||!x.source_ref){if(typeof toast==='function')toast('No linked source record available for this action.',false);return;}
-  var pageKey=mapSourcePageKey(x);
+  var adapter=mapSourceAdapter(x);
+  var pageKey=adapter&&adapter.page;
   if(!pageKey){if(typeof toast==='function')toast('Source module could not be identified. Use the source reference to search manually.',false);return;}
-  if(pageKey==='investigation')window.mapPendingInvestigationSourceId=x.source_id||'';
-  if(typeof showPage==='function')showPage(pageKey==='investigation'?'events':pageKey);
-  if(pageKey==='investigation'){
-    setTimeout(function(){
-      if(typeof imsSwitchTab==='function')imsSwitchTab('investigate',document.getElementById('ims-tab-investigate'));
-      mapApplySourceSearch(pageKey,x.source_ref);
-    },250);
-  }else{
-    setTimeout(function(){mapApplySourceSearch(pageKey,x.source_ref);},250);
+  if(adapter.key==='investigation')window.mapPendingInvestigationSourceId=x.source_id||'';
+  if(typeof showPage==='function')showPage(pageKey);
+  if(adapter.key==='investigation'){
+    await new Promise(function(resolve){setTimeout(resolve,250);});
+    if(typeof imsSwitchTab==='function')imsSwitchTab('investigate',document.getElementById('ims-tab-investigate'));
+    mapApplySourceSearch('investigation',x.source_ref);
+    if(typeof toast==='function')toast('Opened '+x.source_ref+' in Investigations.');
+    return;
   }
-  if(typeof toast==='function')toast('Opened '+x.source_ref+' in the related module.');
+  await new Promise(function(resolve){setTimeout(resolve,120);});
+  var opened=await mapOpenExactSource(adapter,x);
+  if(!opened)mapApplySourceSearch(pageKey,x.source_ref);
+  if(typeof toast==='function')toast(opened?'Opened the linked source record.':'Opened '+x.source_ref+' in the related module.');
 }
 
 function mapQueueRefBackfill(){
