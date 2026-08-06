@@ -2,6 +2,9 @@
 -- Safe to rerun. Existing source_id values are never overwritten.
 -- Exact, company-scoped, single-candidate matches are linked automatically.
 -- Ambiguous and unresolved records are retained in map_source_backfill_review.
+-- MIGRATION VERSION: V2-UNLOGGED-WORK-TABLES
+
+select 'AURIS360_ACTION_SOURCE_BACKFILL_V2_UNLOGGED_WORK_TABLES' as migration_version;
 
 begin;
 
