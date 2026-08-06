@@ -84,8 +84,8 @@ i.auris-module-icon:before,i.auris-module-icon:after{content:none!important;disp
 
 /* Consistent module heading typography, based on the Risk Assessment module. */
 .page-header .page-title,
-.kpi-x-title,
-:is(.rax-hero,.legx-hero,.swx-hero,.ccu-hero,.cmu-hero,.teu-hero,.lcu-hero,.sov-hero,.dcx-module-head) h1{
+.page .kpi-x-title,
+.page :is(.rax-hero,.legx-hero,.swx-hero,.ccu-hero,.cmu-hero,.teu-hero,.lcu-hero,.sov-hero,.dcx-module-head) h1{
   font-size:27px!important;line-height:1.12!important;font-weight:800!important;
   letter-spacing:0!important;color:#082f3a!important;
 }
@@ -102,6 +102,51 @@ i.auris-module-icon:before,i.auris-module-icon:after{content:none!important;disp
   font-size:27px!important;line-height:1.12!important;font-weight:800!important;
   letter-spacing:0!important;color:#082f3a!important;
 }
+
+/* Every module uses the compact Risk Assessment tab hierarchy. */
+.page :is(.mtg-tab,[class*="-tabs"]>button,.rax-nav>button){
+  font-size:11px!important;line-height:1.2!important;font-weight:800!important;
+}
+.page :is(.mtg-tab.active,[class*="-tabs"]>button.active,.rax-nav>button.active){
+  font-size:13px!important;font-weight:950!important;
+}
+
+/* Search and filter controls stay on one efficient row on desktop. */
+.page div:has(>input[id*="search"]):has(>select){
+  display:flex!important;align-items:end!important;gap:10px!important;flex-wrap:nowrap!important;width:100%!important;
+}
+.page div:has(>input[id*="search"]):has(>select)>input[id*="search"]{
+  flex:2 1 260px!important;width:auto!important;min-width:220px!important;
+}
+.page div:has(>input[id*="search"]):has(>select)>select{
+  flex:1 1 170px!important;width:auto!important;min-width:150px!important;
+}
+
+/* Colourful, icon-led dashboard indicators across every HSE module. */
+.auris-indicator-card{
+  --indicator:#2563eb;--indicator-soft:#eff6ff;
+  position:relative!important;overflow:hidden!important;border:1px solid color-mix(in srgb,var(--indicator) 24%,#dce7e4)!important;
+  border-left:4px solid var(--indicator)!important;background:linear-gradient(145deg,#fff 0%,var(--indicator-soft) 145%)!important;
+  box-shadow:0 8px 18px color-mix(in srgb,var(--indicator) 10%,transparent)!important;
+}
+.auris-indicator-card[data-indicator-tone="green"]{--indicator:#059669;--indicator-soft:#ecfdf5}
+.auris-indicator-card[data-indicator-tone="amber"]{--indicator:#d97706;--indicator-soft:#fffbeb}
+.auris-indicator-card[data-indicator-tone="red"]{--indicator:#dc2626;--indicator-soft:#fef2f2}
+.auris-indicator-card[data-indicator-tone="purple"]{--indicator:#7c3aed;--indicator-soft:#f5f3ff}
+.auris-indicator-card[data-indicator-tone="cyan"]{--indicator:#0891b2;--indicator-soft:#ecfeff}
+.auris-indicator-card:after{
+  content:""!important;display:block!important;position:absolute!important;right:-25px!important;bottom:-30px!important;
+  width:82px!important;height:82px!important;border-radius:50%!important;background:var(--indicator)!important;opacity:.07!important;pointer-events:none!important;
+}
+i.auris-indicator-icon{
+  width:36px!important;height:36px!important;min-width:36px!important;border-radius:11px!important;margin:0 0 9px!important;
+  display:flex!important;align-items:center!important;justify-content:center!important;color:#fff!important;font-size:19px!important;
+  background:linear-gradient(145deg,color-mix(in srgb,var(--indicator) 58%,#fff),var(--indicator) 62%,color-mix(in srgb,var(--indicator) 76%,#06192e))!important;
+  border:1px solid color-mix(in srgb,var(--indicator) 72%,#fff)!important;
+  box-shadow:inset 0 1px rgba(255,255,255,.72),inset 0 -5px 9px rgba(6,25,46,.16),0 7px 12px color-mix(in srgb,var(--indicator) 24%,transparent)!important;
+  text-shadow:0 2px 3px rgba(6,25,46,.25)!important;
+}
+.auris-indicator-value{color:var(--indicator)!important}
 
 /* Dashboard cards now reuse the same final 3D artwork as the modules. */
 #page-dashboard .hse-cc-kpi .hse-cc-kpi-icon{
@@ -137,9 +182,12 @@ i.auris-module-icon:before,i.auris-module-icon:after{content:none!important;disp
 #page-dashboard [data-id="d-kpis"] .kpi-icon{background-position:-250px -92px!important}
 
 @media(max-width:720px){
-  .page-header .page-title,.kpi-x-title,
-  :is(.rax-hero,.legx-hero,.swx-hero,.ccu-hero,.cmu-hero,.teu-hero,.lcu-hero,.sov-hero,.dcx-module-head) h1,
+  .page-header .page-title,.page .kpi-x-title,
+  .page :is(.rax-hero,.legx-hero,.swx-hero,.ccu-hero,.cmu-hero,.teu-hero,.lcu-hero,.sov-hero,.dcx-module-head) h1,
   .hse-cc-title{font-size:23px!important}
+  .page div:has(>input[id*="search"]):has(>select){flex-wrap:wrap!important}
+  .page div:has(>input[id*="search"]):has(>select)>input[id*="search"],
+  .page div:has(>input[id*="search"]):has(>select)>select{flex:1 1 100%!important;width:100%!important;min-width:0!important}
 }
 
 /* Common action artwork. Applied only to interactive controls. */
