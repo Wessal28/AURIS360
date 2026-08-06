@@ -2903,6 +2903,55 @@ auditApiMutation(path,method,o,d);
 return d;
 }
 
+// Shared reciprocal relationship service (AP-030). Module-specific relationship
+// tables remain supported while modules migrate to this canonical interface.
+function relationshipEndpoint(moduleKey,tableName,recordId,recordRef,revision){
+  return {
+    module:String(moduleKey||'').toLowerCase().trim(),
+    table:String(tableName||'').toLowerCase().trim(),
+    id:String(recordId||'').trim(),
+    ref:recordRef==null?null:String(recordRef),
+    revision:revision==null?null:String(revision)
+  };
+}
+async function relationshipList(endpoint,options){
+  endpoint=endpoint||{};options=options||{};
+  if(!endpoint.module||!endpoint.table||!endpoint.id)return [];
+  var path='/record_relationships_bidirectional?select=*'
+    +'&record_module=eq.'+encodeURIComponent(endpoint.module)
+    +'&record_table=eq.'+encodeURIComponent(endpoint.table)
+    +'&record_id=eq.'+encodeURIComponent(endpoint.id)
+    +cf();
+  if(options.includeArchived!==true)path+='&status=neq.archived';
+  try{return await api(path+'&order=created_at.desc');}
+  catch(e){
+    if(/record_relationships|schema cache|does not exist|not found/i.test(String(e?.message||e))){console.warn('Shared relationships are not installed yet');return [];}
+    throw e;
+  }
+}
+async function relationshipCreate(source,target,relationshipType,options){
+  source=source||{};target=target||{};options=options||{};
+  if(!source.module||!source.table||!source.id||!target.module||!target.table||!target.id)throw new Error('Both relationship endpoints require module, table and record ID.');
+  var rows=await api('/rpc/create_record_relationship',{m:'POST',p:'return=representation',b:{
+    p_company_id:options.company_id||ccid(),
+    p_source_module:source.module,p_source_table:source.table,p_source_id:String(source.id),p_source_ref:source.ref||null,
+    p_target_module:target.module,p_target_table:target.table,p_target_id:String(target.id),p_target_ref:target.ref||null,
+    p_relationship_type:relationshipType||'related_to',
+    p_source_revision:source.revision||null,p_target_revision:target.revision||null,
+    p_applicability:options.applicability||{},p_allow_unresolved:options.allowUnresolved===true
+  }});
+  var row=Array.isArray(rows)?rows[0]:rows;
+  try{auditLogEvent('link','relationships','Connected records linked',{relationship_type:relationshipType||'related_to',source:source,target:target},{related_table:'record_relationships',related_id:row?.id||null,company_id:options.company_id||ccid()});}catch(_){}
+  return row||null;
+}
+async function relationshipArchive(relationshipId,reason){
+  if(!relationshipId)return;
+  var current=await api('/record_relationships?select=applicability&id=eq.'+encodeURIComponent(relationshipId)+'&limit=1');
+  var applicability=Object.assign({},current?.[0]?.applicability||{},{archive_reason:reason||'Relationship removed by user',archived_at:new Date().toISOString()});
+  await api('/record_relationships?id=eq.'+encodeURIComponent(relationshipId),{m:'PATCH',p:'return=minimal',b:{status:'archived',applicability:applicability,updated_at:new Date().toISOString()}});
+  try{auditLogEvent('unlink','relationships','Connected-record relationship archived',{reason:reason||null},{related_table:'record_relationships',related_id:relationshipId,company_id:ccid()});}catch(_){}
+}
+
 async function apiWriteWithMissingColumnFallback(path,o,label){
   try{
     return await api(path,o);

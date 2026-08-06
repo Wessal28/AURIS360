@@ -18,6 +18,7 @@
 | 6 Aug 2026 | AP-023 legacy action-source backfill | Migration ready; execution pending | `action_source_relationship_backfill_v3.sql` normalises known legacy aliases, auto-links only unique company-scoped reference matches, preserves existing links, and creates an RLS-protected review queue for ambiguous or unresolved records |
 | 6 Aug 2026 | AP-023 SQL runner compatibility | Corrected after deployment test | Replaced transaction-scoped temporary staging tables with explicitly named unlogged work tables because the hosted SQL runner did not preserve the temporary relation between statements; work tables are dropped after reconciliation |
 | 6 Aug 2026 | AP-023 staging-free compatibility | Corrected after second deployment test | Removed all staging relations. Each table mapping now logs candidates and performs its unique-match update inside one self-contained CTE statement, so segmented SQL execution cannot lose intermediate relations |
+| 6 Aug 2026 | AP-030 shared reciprocal relationship model | Schema ready; execution pending | Added `shared_record_relationships_schema.sql` with a canonical symmetric relationship table, allowlisted module/table registry, endpoint validation, governed creation RPC, tenant RLS and bidirectional lookup view; existing module-specific relationship tables remain available for compatibility |
 
 ## 1. Delivery principles
 
