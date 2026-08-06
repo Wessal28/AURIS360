@@ -53,8 +53,7 @@ function ensureFormEnhancements(){
 function updateReadiness(){var set=function(id,v){var x=document.getElementById(id);if(x)x.textContent=v;};set('swx-ready-revision',document.getElementById('swms-version')?.value||'Rev 00');set('swx-ready-steps',document.querySelectorAll('#swms-steps-body tr').length);set('swx-ready-risk',document.getElementById('swms-ra-ref')?.value?'Linked':'Not linked');set('swx-ready-permit',document.getElementById('swms-ptw-ref')?.value?'Linked':'Not required/linked');}
 
 async function loadAux(){
-  try{var a=await Promise.all([api('/swms_operational_records?select=*'+cf()+'&order=created_at.desc'),api('/swms_relationships?select=*'+cf()+'&order=created_at.desc')]);S.records=a[0]||[];S.relationships=a[1]||[];S.schemaReady=true;}
-  catch(_){S.records=[];S.relationships=[];S.schemaReady=false;}
+  var a=await Promise.allSettled([api('/swms_operational_records?select=*'+cf()+'&order=created_at.desc'),api('/swms_relationships?select=*'+cf()+'&order=created_at.desc')]);S.records=a[0].status==='fulfilled'?(a[0].value||[]):[];S.relationships=a[1].status==='fulfilled'?(a[1].value||[]):[];S.schemaReady=a.every(function(x){return x.status==='fulfilled';});
   renderActive();refreshRelated();
 }
 function metric(icon,label,value){return '<article class="swx-metric"><i class="ti '+icon+'"></i><b>'+e(value)+'</b><span>'+e(label)+'</span></article>';}

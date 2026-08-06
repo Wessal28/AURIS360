@@ -33,8 +33,7 @@ function enhanceWizard(){
   var step3=document.querySelector('#sop-step-3 .card');if(step3&&!document.getElementById('sov-review-rule')){step3.insertAdjacentHTML('afterend','<div class="sov-note" id="sov-review-rule"><strong>Review rule:</strong> AI-inferred and safety-critical steps must be explicitly accepted or amended before generation. The AI cannot declare a task safe, compliant or approved.</div>');var tools=step3.querySelector('div > div:last-child');if(tools)tools.insertAdjacentHTML('afterbegin','<button class="sov-btn compact" type="button" onclick="sovSaveEvidence()"><i class="ti ti-device-floppy"></i>Save evidence draft</button>');}
 }
 async function loadAux(){
-  try{var r=await Promise.all([api('/sop_video_projects?select=*'+cf()+'&order=created_at.desc'),api('/sop_video_evidence?select=*'+cf()+'&order=created_at.asc')]);X.projects=r[0]||[];X.evidence=r[1]||[];X.schemaReady=true;}
-  catch(_){X.projects=[];X.evidence=[];X.schemaReady=false;}
+  var r=await Promise.allSettled([api('/sop_video_projects?select=*'+cf()+'&order=created_at.desc'),api('/sop_video_evidence?select=*'+cf()+'&order=created_at.asc')]);X.projects=r[0].status==='fulfilled'?(r[0].value||[]):[];X.evidence=r[1].status==='fulfilled'?(r[1].value||[]):[];X.schemaReady=r.every(function(x){return x.status==='fulfilled';});
   renderAll();
 }
 function metric(icon,label,value){return '<article class="sov-metric"><i class="ti '+icon+'"></i><b>'+e(value)+'</b><span>'+e(label)+'</span></article>';}

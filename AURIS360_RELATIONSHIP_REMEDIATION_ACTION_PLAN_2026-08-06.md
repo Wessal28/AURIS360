@@ -6,6 +6,13 @@
 
 **Objective:** Make every module deployable, traceable and interoperable so users can move from a dashboard, action, approval, notification or connected record to the exact authoritative source without blank modules, broken links or manual searching.
 
+## Implementation progress
+
+| Date | Action | Status | Result |
+|---|---|---|---|
+| 6 Aug 2026 | AP-013 resilient enhanced-module loaders | First implementation complete | Chemical, Contractor, Training, Legal, Risk, SOP, SWMS and Tools now retain successful datasets when another optional table fails |
+| 6 Aug 2026 | AP-020 immediate registry drift corrections | Interim corrections complete | Chemical and SWMS added to desktop Modules, SWMS added to mobile, and People added to the administrative catalogue; canonical registry consolidation remains pending |
+
 ## 1. Delivery principles
 
 1. Protect existing customer data and preserve backward compatibility.
