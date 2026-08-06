@@ -188,6 +188,7 @@
 ### AP-031 — Build the shared Connected Records component
 
 - **Owner:** Frontend engineer
+- **Status (2026-08-06):** Shared component complete and first integrated into the Master Action Plan record view. It provides reciprocal display, status and broken-link warnings, exact-record navigation adapters, a registry-backed record picker, governed relationship types and non-destructive unlinking. The remaining listed modules will adopt this same component under AP-032.
 - **Capabilities:**
   - Add from a validated record picker.
   - Display both sides of the relationship.

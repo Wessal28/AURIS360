@@ -2952,6 +2952,134 @@ async function relationshipArchive(relationshipId,reason){
   try{auditLogEvent('unlink','relationships','Connected-record relationship archived',{reason:reason||null},{related_table:'record_relationships',related_id:relationshipId,company_id:ccid()});}catch(_){}
 }
 
+// Reusable Connected Records panel (AP-031). It intentionally discovers linkable
+// records through the server-side registry so users never type raw record IDs.
+var connectedRecordsState={};
+var relationshipRegistryCache=null;
+var relationshipSchemaReady=null;
+async function relationshipRegistry(){
+  if(relationshipRegistryCache)return relationshipRegistryCache;
+  try{
+    relationshipRegistryCache=await api('/relationship_module_registry?select=module_key,table_name,id_column,ref_column,display_label&enabled=eq.true&order=display_label.asc');
+    relationshipSchemaReady=true;
+    return relationshipRegistryCache||[];
+  }catch(e){
+    if(/relationship_module_registry|schema cache|does not exist|not found/i.test(String(e?.message||e))){relationshipSchemaReady=false;return [];}
+    throw e;
+  }
+}
+function connectedRecordsCanManage(options){
+  if(options&&options.allowCreate===false)return false;
+  return typeof isMgr==='function' ? isMgr() : false;
+}
+function connectedRecordsLabel(row,cfg){
+  var ref=cfg&&cfg.ref_column&&row[cfg.ref_column];
+  var title=['title','name','description','subject','activity','chemical_name','document_title','event_type','assessment_title','contractor_name','identifier']
+    .map(function(k){return row&&row[k];}).find(Boolean);
+  return [ref,title].filter(Boolean).join(' - ')||String(row?.[cfg?.id_column||'id']||'Record');
+}
+function connectedRecordsStatusStyle(status){
+  if(status==='active')return {bg:'#E8F7F0',fg:'#087A55',label:'Connected'};
+  if(status==='pending_verification')return {bg:'#FFF4D6',fg:'#9A5B00',label:'Verify'};
+  return {bg:'#FDE8E8',fg:'#B42318',label:status==='broken'?'Broken link':'Unresolved'};
+}
+async function connectedRecordsMount(mountId,endpoint,options){
+  var host=document.getElementById(mountId);if(!host)return;
+  connectedRecordsState[mountId]={endpoint:endpoint,options:options||{},rows:[],registry:[],pickerRows:[]};
+  if(!endpoint||!endpoint.id){
+    host.innerHTML='<div class="card" style="border-left:4px solid #94A3B8"><div class="card-title"><i class="ti ti-link"></i> Connected Records</div><div style="font-size:12px;color:var(--text2)">Save this record before adding relationships.</div></div>';
+    return;
+  }
+  host.innerHTML='<div class="card"><div class="loading-msg">Loading connected records...</div></div>';
+  try{
+    var result=await Promise.all([relationshipList(endpoint),relationshipRegistry()]);
+    var state=connectedRecordsState[mountId];if(!state)return;
+    state.rows=result[0]||[];state.registry=result[1]||[];
+    connectedRecordsRender(mountId);
+  }catch(e){host.innerHTML='<div class="card"><div style="color:var(--red);font-size:12px">Connected records could not be loaded: '+escH(e.message||e)+'</div></div>';}
+}
+function connectedRecordsRender(mountId){
+  var state=connectedRecordsState[mountId],host=document.getElementById(mountId);if(!state||!host)return;
+  var canManage=connectedRecordsCanManage(state.options);
+  var h='<div class="card" style="border-left:4px solid #2563EB">'
+    +'<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap"><div><div class="card-title" style="margin-bottom:2px"><i class="ti ti-link"></i> Connected Records <span style="background:#E8F0FE;color:#185FA5;border-radius:99px;padding:2px 7px;font-size:10px">'+state.rows.length+'</span></div><div style="font-size:11px;color:var(--text2)">Open related evidence, controls and actions without searching another module.</div></div>'
+    +(canManage&&relationshipSchemaReady!==false?'<button type="button" class="btn btn-sm" onclick="connectedRecordsTogglePicker(\''+mountId+'\')"><i class="ti ti-plus"></i>Add relationship</button>':'')+'</div>';
+  if(relationshipSchemaReady===false){
+    h+='<div style="margin-top:12px;padding:10px;border-radius:8px;background:#FFF8E6;color:#854F0B;font-size:12px"><i class="ti ti-alert-triangle"></i> Run <b>shared_record_relationships_schema.sql</b> to enable Connected Records.</div>';
+  }else if(!state.rows.length){
+    h+='<div style="margin-top:12px;padding:14px;border:1px dashed var(--border);border-radius:8px;text-align:center;color:var(--text2);font-size:12px">No connected records yet.</div>';
+  }else{
+    h+='<div style="display:grid;gap:8px;margin-top:12px">';
+    state.rows.forEach(function(row){
+      var st=connectedRecordsStatusStyle(row.status),warning=row.status!=='active'||row.related_valid===false;
+      h+='<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px;border:1px solid '+(warning?'#F5B7B1':'var(--border)')+';border-radius:9px;background:'+(warning?'#FFF8F7':'#fff')+'">'
+        +'<div style="min-width:0"><div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap"><span style="font-size:12px;font-weight:800;color:var(--text)">'+escH(row.related_ref||row.related_id)+'</span><span style="font-size:10px;font-weight:700;background:#EEF2F6;color:#475569;padding:2px 7px;border-radius:99px">'+escH(String(row.related_module||'').replace(/_/g,' '))+'</span><span style="font-size:10px;font-weight:700;background:'+st.bg+';color:'+st.fg+';padding:2px 7px;border-radius:99px">'+st.label+'</span></div>'
+        +'<div style="font-size:11px;color:var(--text2);margin-top:3px">'+escH(String(row.relationship_type||'related_to').replace(/_/g,' '))+(row.related_revision?' · Revision '+escH(row.related_revision):'')+(warning&&row.validation_error?' · '+escH(row.validation_error):'')+'</div></div>'
+        +'<div style="display:flex;gap:5px;flex-shrink:0"><button type="button" class="btn btn-sm" '+(warning?'disabled title="Resolve this relationship before opening"':'onclick="connectedRecordsOpen(\''+mountId+'\',\''+row.id+'\')"')+'><i class="ti ti-external-link"></i>Open</button>'
+        +(canManage?'<button type="button" class="btn btn-sm" title="Remove relationship" onclick="connectedRecordsRemove(\''+mountId+'\',\''+row.id+'\')"><i class="ti ti-unlink"></i></button>':'')+'</div></div>';
+    });
+    h+='</div>';
+  }
+  if(canManage&&relationshipSchemaReady!==false){
+    h+='<div id="'+mountId+'-picker" style="display:none;margin-top:12px;padding:12px;background:#F8FAFC;border:1px solid var(--border);border-radius:9px">'
+      +'<div class="form3row"><div class="form3group"><label class="form3label">Record type</label><select id="'+mountId+'-module" onchange="connectedRecordsSearch(\''+mountId+'\')"><option value="">Select module...</option>'
+      +state.registry.filter(function(c){return !(c.module_key===state.endpoint.module&&c.table_name===state.endpoint.table);}).map(function(c){return '<option value="'+escH(c.module_key+'|'+c.table_name)+'">'+escH(c.display_label)+'</option>';}).join('')+'</select></div>'
+      +'<div class="form3group"><label class="form3label">Relationship</label><select id="'+mountId+'-type"><option value="related_to">Related to</option><option value="evidence_for">Evidence for</option><option value="action_for">Action for</option><option value="control_for">Control for</option><option value="supersedes">Supersedes</option><option value="derived_from">Derived from</option></select></div></div>'
+      +'<div class="form3group"><label class="form3label">Find a record</label><input id="'+mountId+'-search" placeholder="Search reference, title or description..." oninput="connectedRecordsFilterPicker(\''+mountId+'\')"/></div>'
+      +'<div class="form3group"><label class="form3label">Select verified record</label><select id="'+mountId+'-result"><option value="">Choose a record type first...</option></select></div>'
+      +'<div style="display:flex;justify-content:flex-end;gap:7px"><button class="btn btn-sm" type="button" onclick="connectedRecordsTogglePicker(\''+mountId+'\',false)">Cancel</button><button class="btn btn-primary btn-sm" type="button" onclick="connectedRecordsAdd(\''+mountId+'\')"><i class="ti ti-link-plus"></i>Connect selected record</button></div></div>';
+  }
+  h+='</div>';host.innerHTML=h;
+}
+function connectedRecordsTogglePicker(mountId,force){
+  var el=document.getElementById(mountId+'-picker');if(!el)return;
+  el.style.display=force===false?'none':(el.style.display==='none'?'block':'none');
+}
+async function connectedRecordsSearch(mountId){
+  var state=connectedRecordsState[mountId],choice=document.getElementById(mountId+'-module')?.value||'',result=document.getElementById(mountId+'-result');if(!state||!result)return;
+  var parts=choice.split('|'),cfg=state.registry.find(function(c){return c.module_key===parts[0]&&c.table_name===parts[1];});
+  if(!cfg||!/^[a-z0-9_]+$/.test(cfg.table_name)){result.innerHTML='<option value="">Select a valid module...</option>';return;}
+  result.innerHTML='<option value="">Loading records...</option>';
+  try{
+    var rows=await api('/'+cfg.table_name+'?select=*&limit=100'+cf());
+    state.pickerCfg=cfg;state.pickerRows=(rows||[]).map(function(row){return {row:row,id:String(row[cfg.id_column]||''),ref:cfg.ref_column?row[cfg.ref_column]:null,label:connectedRecordsLabel(row,cfg)};}).filter(function(x){return x.id;});
+    connectedRecordsFilterPicker(mountId);
+  }catch(e){state.pickerRows=[];result.innerHTML='<option value="">Records unavailable for this module</option>';toast('This record type cannot be linked yet: '+(e.message||e),false);}
+}
+function connectedRecordsFilterPicker(mountId){
+  var state=connectedRecordsState[mountId],result=document.getElementById(mountId+'-result');if(!state||!result)return;
+  var q=String(document.getElementById(mountId+'-search')?.value||'').toLowerCase().trim();
+  var rows=(state.pickerRows||[]).filter(function(x){return !q||x.label.toLowerCase().includes(q);}).slice(0,40);
+  result.innerHTML='<option value="">Select a verified record...</option>'+rows.map(function(x){return '<option value="'+escH(x.id)+'">'+escH(x.label)+'</option>';}).join('');
+}
+async function connectedRecordsAdd(mountId){
+  var state=connectedRecordsState[mountId],selected=document.getElementById(mountId+'-result')?.value||'',type=document.getElementById(mountId+'-type')?.value||'related_to';
+  var pick=state&&(state.pickerRows||[]).find(function(x){return x.id===selected;});
+  if(!state||!state.pickerCfg||!pick){toast('Select a record from the verified results.',false);return;}
+  if(state.pickerCfg.table_name===state.endpoint.table&&pick.id===String(state.endpoint.id)){toast('A record cannot be connected to itself.',false);return;}
+  try{
+    var target=relationshipEndpoint(state.pickerCfg.module_key,state.pickerCfg.table_name,pick.id,pick.ref);
+    await relationshipCreate(state.endpoint,target,type,{});toast('Record connected successfully.');
+    await connectedRecordsMount(mountId,state.endpoint,state.options);
+  }catch(e){toast('Relationship could not be created: '+(e.message||e),false);}
+}
+async function connectedRecordsRemove(mountId,relationshipId){
+  if(!confirm('Remove this relationship? The records themselves will not be deleted.'))return;
+  var state=connectedRecordsState[mountId];
+  try{await relationshipArchive(relationshipId,'Removed from Connected Records panel');toast('Relationship removed.');await connectedRecordsMount(mountId,state.endpoint,state.options);}catch(e){toast('Relationship could not be removed: '+(e.message||e),false);}
+}
+async function connectedRecordsOpen(mountId,relationshipId){
+  var state=connectedRecordsState[mountId],row=state&&(state.rows||[]).find(function(x){return x.id===relationshipId;});if(!row)return;
+  if(row.related_module==='action'&&row.related_table==='action_tracker'){
+    showPage('actions');await new Promise(function(resolve){setTimeout(resolve,140);});await mapEdit(row.related_id);return;
+  }
+  var synthetic={source_module:row.related_module,source_type:row.related_module,source_id:row.related_id,source_ref:row.related_ref||row.related_id};
+  var adapter=mapSourceAdapter(synthetic);if(!adapter){toast('This module does not yet have a navigation adapter.',false);return;}
+  showPage(adapter.page);await new Promise(function(resolve){setTimeout(resolve,140);});
+  var opened=await mapOpenExactSource(adapter,synthetic);if(!opened)mapApplySourceSearch(adapter.page,synthetic.source_ref);
+  toast(opened?'Opened connected record.':'Opened the related module and applied the record reference.');
+}
+
 async function apiWriteWithMissingColumnFallback(path,o,label){
   try{
     return await api(path,o);
@@ -28271,6 +28399,7 @@ function mapNew(){
   document.getElementById('map-log-content').innerHTML='';
   document.getElementById('map-list-view').style.display='none';
   document.getElementById('map-form3view').style.display='block';
+  connectedRecordsMount('map-connected-records',null,{allowCreate:false});
   mapFormTab('details', document.getElementById('map-ftab-details'));
 }
 
@@ -28327,6 +28456,7 @@ async function mapEdit(id){
   mapRenderActionButtons(x);
   document.getElementById('map-list-view').style.display='none';
   document.getElementById('map-form3view').style.display='block';
+  connectedRecordsMount('map-connected-records',relationshipEndpoint('action','action_tracker',x.id,mapDisplayRef(x)),{allowCreate:true});
   mapFormTab('details', document.getElementById('map-ftab-details'));
   mapLoadLog(id);
 }
@@ -51457,6 +51587,7 @@ Offline mode - changes will sync when connection is restored
 </div>
 <div class="form3group"><label class="form3label">Location / area</label><input type="text" id="mf-location" placeholder="Where does this action apply?"/></div>
 </div>
+<div id="map-connected-records" style="margin-bottom:14px"></div>
 </div>
 <div>
 <div class="card" style="margin-bottom:14px;border:2px solid #185FA5"><div class="card-title" style="color:#185FA5">Status &amp; Dates</div>
