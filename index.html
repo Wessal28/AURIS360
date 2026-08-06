@@ -18345,6 +18345,7 @@ function raNew(type){
   var mf=document.getElementById('ra-manual-form');if(mf)mf.style.display='none';
   var sf=document.getElementById('ra-specific-form');if(sf)sf.style.display='none';
   document.getElementById('ra-form3view').style.display='block';
+  connectedRecordsMount('ra-connected-records',null,{allowCreate:false});
   // Switch to info tab
   raFormTab('info', document.getElementById('ra-ftab-info'));
   controlledApplyFormLock('ra-form3view','ra-controlled-lock-note',null,'Risk assessment');
@@ -18540,6 +18541,7 @@ function raOpen(id){
   var mf=document.getElementById('ra-manual-form');if(mf)mf.style.display='none';
   var sf=document.getElementById('ra-specific-form');if(sf)sf.style.display='none';
   document.getElementById('ra-form3view').style.display='block';
+  connectedRecordsMount('ra-connected-records',relationshipEndpoint('risk','risk_assessments',x.id,x.ra_ref,x.revision),{allowCreate:controlledRecordCanEdit(x)});
   raFormTab('info', document.getElementById('ra-ftab-info'));
   // AI output
   document.getElementById('ra-ai-output').innerHTML='';
@@ -27969,6 +27971,15 @@ async function mapOpenExactSource(adapter,x){
   try{
     if(adapter.key==='documents'&&typeof dcEdit==='function'){
       await dcEdit(id);return true;
+    }
+    if(adapter.key==='risk'&&typeof raOpen==='function'){
+      var riskRow=(raAllData||[]).find(function(row){return String(row.id)===String(id);});
+      if(!riskRow){
+        var riskRows=await api('/risk_assessments?select=*&id=eq.'+encodeURIComponent(id)+cf()+'&limit=1');
+        riskRow=riskRows&&riskRows[0];
+        if(riskRow&&!mapHasSourceRow(raAllData,id))raAllData.push(riskRow);
+      }
+      if(riskRow){raOpen(riskRow.id);return true;}
     }
     if(adapter.key==='noise'&&typeof noiseOpenSurvey==='function'){
       await noiseOpenSurvey(id);return true;
@@ -46349,6 +46360,7 @@ Offline mode - changes will sync when connection is restored
 <div class="form3group"><label class="form3label">Linked permit ref</label><select id="ra-linked-permit" style="font-family:monospace"><option value="">None</option></select></div>
 <div class="form3group"><label class="form3label">Related job segment</label><input type="text" id="ra-job-seg" placeholder="e.g. Phase 2, Zone B..."/></div>
 </div>
+<div id="ra-connected-records" style="margin-bottom:14px"></div>
 <!-- AI Assist -->
 <div class="card" style="margin-bottom:14px;border:2px solid #8B5CF6;background:linear-gradient(135deg,#f8fafc,#f3e8ff)">
 <div class="card-title" style="color:#8B5CF6"><i class="ti ti-wand"></i> AI Assistant</div>
