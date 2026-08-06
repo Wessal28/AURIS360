@@ -14,6 +14,7 @@
 | 6 Aug 2026 | AP-020 immediate registry drift corrections | Interim corrections complete | Chemical and SWMS added to desktop Modules, SWMS added to mobile, and People added to the administrative catalogue; canonical registry consolidation remains pending |
 | 6 Aug 2026 | AP-021 Master Action Plan source adapter registry | First implementation complete | All source-module values currently written by the application now route through a table-driven registry; Contractor, ESG, Emergency, Occupational Health, Noise, Training and Document Control support exact-ID opening where their source record is available, with reference-search fallback for legacy actions |
 | 6 Aug 2026 | AP-022 generated-action metadata correction | In progress | New ESG spill actions now retain the spill record ID; full metadata normalisation and legacy backfill remain pending |
+| 6 Aug 2026 | AP-022 generated-action metadata correction | Forward-write repair complete | BBS, Chemical and ATEX now write canonical source modules; Investigation, Legal gap, Toolbox Talk and Inspection actions retain source IDs; Risk actions retain their RA reference; MOC actions link to their own governed record. AI document-analysis actions remain reference-only until analysis artefacts receive durable storage IDs; legacy data backfill remains pending |
 
 ## 1. Delivery principles
 

@@ -4220,7 +4220,7 @@ async function obsSave() {
               company_id: ccid(),
               title: 'Observation action: '+body.action_description.substring(0,60),
               description: body.action_description,
-              source_type: 'manual', source_module: 'manual', source_id: savedObsId, source_ref: 'BBS observation - '+ref,
+              source_type: 'observation', source_module: 'observation', source_id: savedObsId, source_ref: 'BBS observation - '+ref,
               action_type: 'corrective',
               priority: body.severity, status: 'open',
               location: body.location||null,
@@ -10329,7 +10329,7 @@ async function chemSave(){
       try{
         await api('/action_tracker',{m:'POST',p:'return=minimal',b:{
           company_id:ccid(),title:'Review chemical exposure controls: '+product.substring(0,60),
-          source_type:'manual',source_module:'manual',source_id:savedChemId,source_ref:'Chemical - '+(savedChemRef||product),
+          source_type:'chemical',source_module:'chemical',source_id:savedChemId,source_ref:'Chemical - '+(savedChemRef||product),
           action_type:'corrective',
           description:'Review chemical exposure controls for '+product+' ('+r.level+' risk). '+(g('chem3recommendations')||g('chem3controls')||'Confirm controls, PPE, storage, training and exposure monitoring.'),
           priority:r.level==='critical'?'critical':'high',status:'open',created_by:prof?.id
@@ -17373,7 +17373,7 @@ async function invSave(){
         // Auto-create action_tracker rows for each corrective action - also fix company_id
         for(var ca of cas){
           if(ca.description){
-            try{await api('/action_tracker',{m:'POST',p:'return=minimal',b:{company_id:effectiveCompanyId,title:ca.description.substring(0,80),description:ca.description,source_type:'incident',source_module:'investigation',source_ref:ref,priority:'high',status:ca.status||'open',assigned_to_name:ca.assigned_to||null,target_date:ca.due_date||null,created_by:prof?.id}});}
+            try{await api('/action_tracker',{m:'POST',p:'return=minimal',b:{company_id:effectiveCompanyId,title:ca.description.substring(0,80),description:ca.description,source_type:'investigation',source_module:'investigation',source_id:res[0].id,source_ref:ref,priority:'high',status:ca.status||'open',assigned_to_name:ca.assigned_to||null,target_date:ca.due_date||null,created_by:prof?.id}});}
             catch(ex){}
           }
         }
@@ -18981,11 +18981,13 @@ async function raGenRef(type){
 
 function raSyncToMAP(raId, rows){
   // Auto-create MAP actions for critical/high residual risks
+  var ra=(raAllData||[]).find(function(x){return String(x.id)===String(raId);})||{};
+  var sourceRef=raRecordRef(ra);
   rows.forEach(function(r){
     var rl=r.res_rl||r.rl||'';
     if(['Critical','Very High'].includes(rl)){
       api('/action_tracker',{m:'POST',p:'return=minimal',b:{
-        company_id:ccid(),source_module:'risk',source_id:raId,
+        company_id:ccid(),source_module:'risk',source_id:raId,source_ref:sourceRef,
         description:'High residual risk: '+( r.hazard||'').substring(0,100),
         priority:rl==='Critical'?'critical':'high',status:'open',created_by:prof?.id
       }}).catch(function(){});
@@ -27325,7 +27327,7 @@ async function atexSave(){
       try{
         await api('/action_tracker',{m:'POST',p:'return=minimal',b:{
           company_id:ccid(),title:'ATEX action required: '+name.substring(0,60),
-          source_type:'manual',source_module:'manual',source_id:savedAtexId,source_ref:'ATEX - '+savedAtexRef,
+          source_type:'atex',source_module:'atex',source_id:savedAtexId,source_ref:'ATEX - '+savedAtexRef,
           action_type:'corrective',
           description:'ATEX area requires action: '+name+' at '+(body.location||'location')+'. '+(body.notes||body.ignition_controls||'Review controls and inspection status.'),
           responsible:body.responsible_person||null,assigned_to_name:body.responsible_person||null,
@@ -27464,7 +27466,7 @@ async function mocSave(){
   var body={company_id:ccid(),title:title,description:mocBuildDescription(),action_type:'preventive',priority:document.getElementById('moc-priority')?.value||'medium',status:document.getElementById('moc-status')?.value||'open',source_type:'moc',source_module:'moc',location:document.getElementById('moc-location')?.value||null,target_date:document.getElementById('moc-target')?.value||null,assigned_to_id:ownerId||null,assigned_to_name:ownerName||null,responsible:ownerName||null,updated_at:new Date().toISOString()};
   try{
     if(mocEditId){await api('/action_tracker?id=eq.'+mocEditId,{m:'PATCH',p:'return=minimal',b:body});toast('MOC updated');}
-    else{body.created_by=prof?.id;var res=await api('/action_tracker',{m:'POST',p:'return=representation',b:body});if(res?.[0]?.id){var ref=await nextCompanyRef('action_tracker','source_ref','MOC-'+new Date().getFullYear()+'-');await api('/action_tracker?id=eq.'+res[0].id,{m:'PATCH',p:'return=minimal',b:{source_ref:ref,action_ref:ref}});toast('MOC created: '+ref);}}
+    else{body.created_by=prof?.id;var res=await api('/action_tracker',{m:'POST',p:'return=representation',b:body});if(res?.[0]?.id){var ref=await nextCompanyRef('action_tracker','source_ref','MOC-'+new Date().getFullYear()+'-');await api('/action_tracker?id=eq.'+res[0].id,{m:'PATCH',p:'return=minimal',b:{source_id:res[0].id,source_ref:ref,action_ref:ref}});toast('MOC created: '+ref);}}
     mocShowForm(false);loadMOC();
   }catch(e){toastActionError('Save change request','Management of Change',e);}
 }
@@ -31489,7 +31491,7 @@ function gapBack(){document.getElementById('gap-form').style.display='none';docu
 function gapNew(){fillPplDrops();gapEditId=null;document.getElementById('gap-form3title').textContent='New Compliance Gap';document.getElementById('gap-form3ref').textContent='GAP-AUTO';document.getElementById('gap-del-btn').style.display='none';['gapf-legislation','gapf-section','gapf-description','gapf-action','gapf-responsible','gapf-action-ref','gapf-closure-notes'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});['gapf-target-date','gapf-completion-date'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});document.getElementById('gapf-type').value='missing_control';document.getElementById('gapf-risk').value='medium';document.getElementById('gapf-status').value='open';document.querySelectorAll('[name="gap-st-r"]').forEach(r=>{r.checked=r.value==='open';});document.getElementById('legal-view-gaps').style.display='none';document.getElementById('gap-form').style.display='block';}
 function gapEdit(id){var x=gapAllData.find(r=>r.id===id);if(!x)return;gapEditId=id;document.getElementById('gap-form3title').textContent=x.legislation||'Edit Gap';document.getElementById('gap-form3ref').textContent=x.gap_ref||'-';document.getElementById('gap-del-btn').style.display=isMgr()?'inline-flex':'none';var gf=function(fid,val){var el=document.getElementById(fid);if(el)el.value=val||'';};gf('gapf-legislation',x.legislation);gf('gapf-section',x.section);gf('gapf-description',x.gap_description);gf('gapf-action',x.action_required);gf('gapf-responsible',x.responsible_person);gf('gapf-action-ref',x.action_ref);gf('gapf-closure-notes',x.closure_notes);gf('gapf-target-date',x.target_date);gf('gapf-completion-date',x.completion_date);document.getElementById('gapf-type').value=x.gap_type||'missing_control';document.getElementById('gapf-risk').value=x.risk_level||'medium';document.getElementById('gapf-status').value=x.status||'open';document.querySelectorAll('[name="gap-st-r"]').forEach(r=>{r.checked=r.value===(x.status||'open');});document.getElementById('legal-view-gaps').style.display='none';document.getElementById('gap-form').style.display='block';}
 async function gapSave(){var desc=document.getElementById('gapf-description')?.value?.trim();var leg=document.getElementById('gapf-legislation')?.value?.trim();if(!desc||!leg){toast('Please enter legislation and gap description',false);return;}var g=function(id){var el=document.getElementById(id);return el?el.value||null:null;};var body={company_id:ccid(),legislation:leg,section:g('gapf-section'),gap_description:desc,gap_type:g('gapf-type')||'missing_control',risk_level:g('gapf-risk')||'medium',action_required:g('gapf-action'),responsible_person:g('gapf-responsible'),target_date:g('gapf-target-date')||null,completion_date:g('gapf-completion-date')||null,action_ref:g('gapf-action-ref'),status:g('gapf-status')||'open',closure_notes:g('gapf-closure-notes'),updated_at:new Date().toISOString()};
-  try{if(gapEditId){await api('/compliance_gaps?id=eq.'+gapEditId,{m:'PATCH',p:'return=minimal',b:body});toast('Gap updated!');}else{body.created_by=prof?.id;var res=await api('/compliance_gaps',{m:'POST',p:'return=representation',b:body});if(res?.[0]?.id){var ref=await nextCompanyRef('compliance_gaps','gap_ref','GAP-'+new Date().getFullYear()+'-');await api('/compliance_gaps?id=eq.'+res[0].id,{m:'PATCH',p:'return=minimal',b:{gap_ref:ref}});toast('Gap recorded! Ref: '+ref);if(['critical','high'].includes(body.risk_level)){try{await api('/action_tracker',{m:'POST',p:'return=minimal',b:{company_id:ccid(),title:'Close compliance gap: '+desc.substring(0,60),description:desc,source_type:'audit',source_module:'legal',source_ref:ref+' - Compliance gap',priority:body.risk_level,status:'open',assigned_to_name:body.responsible_person,target_date:body.target_date||null,created_by:prof?.id}});}catch(ex){}}}}gapBack();}catch(e){toast(actionErrorMessage('Save compliance gap','Legal Compliance',e.message),false);}
+  try{if(gapEditId){await api('/compliance_gaps?id=eq.'+gapEditId,{m:'PATCH',p:'return=minimal',b:body});toast('Gap updated!');}else{body.created_by=prof?.id;var res=await api('/compliance_gaps',{m:'POST',p:'return=representation',b:body});if(res?.[0]?.id){var ref=await nextCompanyRef('compliance_gaps','gap_ref','GAP-'+new Date().getFullYear()+'-');await api('/compliance_gaps?id=eq.'+res[0].id,{m:'PATCH',p:'return=minimal',b:{gap_ref:ref}});toast('Gap recorded! Ref: '+ref);if(['critical','high'].includes(body.risk_level)){try{await api('/action_tracker',{m:'POST',p:'return=minimal',b:{company_id:ccid(),title:'Close compliance gap: '+desc.substring(0,60),description:desc,source_type:'legal',source_module:'legal',source_id:res[0].id,source_ref:ref+' - Compliance gap',priority:body.risk_level,status:'open',assigned_to_name:body.responsible_person,target_date:body.target_date||null,created_by:prof?.id}});}catch(ex){}}}}gapBack();}catch(e){toast(actionErrorMessage('Save compliance gap','Legal Compliance',e.message),false);}
 }
 async function gapDelete(){
 if(!gapEditId)return;
@@ -32313,7 +32315,7 @@ async function tbtSave(){
         // Auto-create MAP actions
         for(var act2 of actions_raised){
           if(act2.description){
-            try{await api('/action_tracker',{m:'POST',p:'return=minimal',b:{company_id:ccid(),title:act2.description,description:act2.description,source_type:'toolbox_talk',source_module:'meeting',source_ref:ref,priority:'medium',status:'open',assigned_to_name:act2.assigned_to||null,target_date:act2.due_date||null,created_by:prof?.id}});}catch(ex){}
+            try{await api('/action_tracker',{m:'POST',p:'return=minimal',b:{company_id:ccid(),title:act2.description,description:act2.description,source_type:'toolbox_talk',source_module:'meeting',source_id:res[0].id,source_ref:ref,priority:'medium',status:'open',assigned_to_name:act2.assigned_to||null,target_date:act2.due_date||null,created_by:prof?.id}});}catch(ex){}
           }
         }
       }
@@ -34587,7 +34589,7 @@ async function auditSave() {
     if(insufCnt>0&&!actions.length){allActions.push({description:'Address '+insufCnt+' insufficient item'+(insufCnt>1?'s':'')+' found during inspection: '+(body.site||''),responsible:'',target_date:null});}
     for(var a of allActions){
       if(!a.description)continue;
-      try{await api('/action_tracker',{m:'POST',p:'return=minimal',b:{company_id:ccid(),title:a.description.substring(0,80),description:a.description,source_type:'inspection',source_module:'inspection',source_ref:savedRef||body.reference_no||savedId?.slice(0,8)||'',priority:'high',status:'open',assigned_to_name:a.responsible||null,target_date:a.target_date||null,created_by:prof?.id}});}catch(ex){}
+      try{await api('/action_tracker',{m:'POST',p:'return=minimal',b:{company_id:ccid(),title:a.description.substring(0,80),description:a.description,source_type:'inspection',source_module:'inspection',source_id:savedId||null,source_ref:savedRef||body.reference_no||savedId?.slice(0,8)||'',priority:'high',status:'open',assigned_to_name:a.responsible||null,target_date:a.target_date||null,created_by:prof?.id}});}catch(ex){}
     }
     auditBackToList();
   } catch(e) { toast(actionErrorMessage('Save inspection','Audits & Inspections',e.message),false); }
