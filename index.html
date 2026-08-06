@@ -2970,7 +2970,8 @@ async function relationshipRegistry(){
 }
 function connectedRecordsCanManage(options){
   if(options&&options.allowCreate===false)return false;
-  return typeof isMgr==='function' ? isMgr() : false;
+  var role=typeof activeRole==='function'?activeRole():'';
+  return ['sephs_admin','admin','hse_manager','hse_officer','manager','site_manager','supervisor','document_controller','compliance_manager','risk_assessor'].includes(role);
 }
 function connectedRecordsLabel(row,cfg){
   var ref=cfg&&cfg.ref_column&&row[cfg.ref_column];
@@ -27884,6 +27885,7 @@ var MAP_SOURCE_ADAPTERS=[
   {key:'ohealth',page:'ohealth',aliases:['ohealth','occupational_health','occupational health'],match:/\boccupational\b|\bohealth\b|\baudiometry\b|\bspirometry\b|\bmedical surveillance\b|\bexposure monitoring\b/},
   {key:'noise',page:'noise',aliases:['noise','occupational_noise'],match:/\bnoise\b/},
   {key:'training',page:'training',aliases:['training','competency'],match:/\btraining\b|\bcompetency\b/},
+  {key:'swms',page:'swms',aliases:['swms','method_statement','method statement'],match:/\bswms\b|\bmethod statement\b/},
   {key:'documents',page:'documents',aliases:['document','documents','document_control'],match:/\bdocument\b/},
   {key:'ai',page:'ai-insights',aliases:['ai','ai_insights'],match:/\bai document analysis\b/}
 ];
@@ -27980,6 +27982,24 @@ async function mapOpenExactSource(adapter,x){
         if(riskRow&&!mapHasSourceRow(raAllData,id))raAllData.push(riskRow);
       }
       if(riskRow){raOpen(riskRow.id);return true;}
+    }
+    if(adapter.key==='swms'&&typeof swmsOpen==='function'){
+      var swmsRow=(swmsAllData||[]).find(function(row){return String(row.id)===String(id);});
+      if(!swmsRow){
+        var swmsRows=await api('/documents?select=*&id=eq.'+encodeURIComponent(id)+cf()+'&limit=1');
+        swmsRow=swmsRows&&swmsRows[0];
+        if(swmsRow&&!mapHasSourceRow(swmsAllData,id))swmsAllData.push(swmsRow);
+      }
+      if(swmsRow){swmsOpen(swmsRow.id);return true;}
+    }
+    if(adapter.key==='permit'&&typeof ptwShowDetail==='function'){
+      var permitRow=(ptwAllData||[]).find(function(row){return String(row.id)===String(id);});
+      if(!permitRow){
+        var permitRows=await api('/permits?select=*&id=eq.'+encodeURIComponent(id)+cf()+'&limit=1');
+        permitRow=permitRows&&permitRows[0];
+        if(permitRow&&!mapHasSourceRow(ptwAllData,id))ptwAllData.push(permitRow);
+      }
+      if(permitRow){ptwShowDetail(permitRow.id);return true;}
     }
     if(adapter.key==='noise'&&typeof noiseOpenSurvey==='function'){
       await noiseOpenSurvey(id);return true;

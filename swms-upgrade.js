@@ -48,6 +48,8 @@ function ensureFormEnhancements(){
   if(resources)resources.insertAdjacentHTML('beforebegin','<div class="card swx-enhance" id="swx-context-card"><div class="card-title"><i class="ti ti-route"></i> Applicability, Responsibilities & Interfaces</div><div class="swx-enhance-grid"><div class="swx-field"><label>Applicability</label><select id="swx-app"><option value="generic">Generic activity</option><option value="project">Project specific</option><option value="site">Site specific</option><option value="task">Task / work-pack specific</option></select></div><div class="swx-field"><label>Person in charge</label><input id="swx-pic" placeholder="Responsible supervisor / PIC"></div><div class="swx-field"><label>Working conditions / shift</label><input id="swx-conditions" placeholder="Hours, weather or operating limits"></div><div class="swx-field two"><label>Boundaries and prohibited practices</label><textarea id="swx-boundaries" placeholder="What is included, excluded or must never be done?"></textarea></div><div class="swx-field"><label>SIMOPS / adjacent-work interfaces</label><textarea id="swx-simops" placeholder="Concurrent work, coordination and segregation"></textarea></div><div class="swx-field"><label>Isolation / design interface</label><textarea id="swx-isolation" placeholder="LOTO, drawing, calculation or hold-point references"></textarea></div><div class="swx-field"><label>Environmental controls</label><textarea id="swx-environment" placeholder="Noise, waste, spill, dust, emissions and community controls"></textarea></div><div class="swx-field"><label>Rescue limitations and capability</label><textarea id="swx-rescue" placeholder="Authorised rescue team, equipment, access and limitations"></textarea></div></div></div>');
   var sign=Array.from(form.querySelectorAll('.card')).find(function(c){return /^\s*Sign-off/i.test(c.textContent);});
   if(sign)sign.insertAdjacentHTML('afterend','<div class="card swx-related" id="swx-related-card"><div class="swx-panel-head"><div><h3>Execution records</h3><p>The same record IDs appear here and in the module-wide queues.</p></div></div><div class="swx-related-grid" id="swx-related-grid"></div></div>');
+  var execution=document.getElementById('swx-related-card');
+  if(execution)execution.insertAdjacentHTML('afterend','<div id="swms-connected-records" style="margin-top:14px"></div>');
   form.addEventListener('input',updateReadiness);form.addEventListener('change',updateReadiness);
 }
 function updateReadiness(){var set=function(id,v){var x=document.getElementById(id);if(x)x.textContent=v;};set('swx-ready-revision',document.getElementById('swms-version')?.value||'Rev 00');set('swx-ready-steps',document.querySelectorAll('#swms-steps-body tr').length);set('swx-ready-risk',document.getElementById('swms-ra-ref')?.value?'Linked':'Not linked');set('swx-ready-permit',document.getElementById('swms-ptw-ref')?.value?'Linked':'Not required/linked');}
@@ -97,9 +99,60 @@ window.swmsNew=function(){ensureShell();baseNew();hideModuleViews();document.get
 window.swmsOpen=function(docId){ensureShell();baseOpen(docId);hideModuleViews();document.getElementById('swx-tabs').style.display='none';var d=docById(docId),p=window.swmsDecodePayload?swmsDecodePayload(d)||{}:{};setExtra(p);};
 window.swmsShowList=(function(base){return function(){base();var tabs=document.getElementById('swx-tabs');if(tabs)tabs.style.display='flex';swxSwitch('register');};})(window.swmsShowList);
 window.swmsBuildHtml=function(){var html=baseBuildHtml(),p=window.swmsPayload(),extra='<div class="rpt-section"><div class="rpt-section-title">Applicability & Interfaces</div><div class="rpt-grid">'+fld('Applicability',String(p.applicability||'generic').replace(/_/g,' '))+fld('Person in charge',p.person_in_charge)+fld('Conditions / shift',p.working_conditions,true)+fld('Boundaries / prohibited work',p.boundaries,true)+fld('SIMOPS / adjacent work',p.simops,true)+fld('Isolation / design interface',p.isolation_interface,true)+fld('Environmental controls',p.environmental_controls,true)+fld('Rescue capability and limitations',p.rescue_capability,true)+'</div></div>';return html.replace('<div class="rpt-section"><div class="rpt-section-title secondary">Procedure Alignment',extra+'<div class="rpt-section"><div class="rpt-section-title secondary">Procedure Alignment');};
-window.swmsSaveToDocuments=async function(){await baseSave();if(window.swmsEditingId||swmsEditingId){await syncRelationships(window.swmsEditingId||swmsEditingId);await loadAux();}};
-async function syncRelationships(docId){if(!S.schemaReady)return;var me=profile(),p=window.swmsPayload(),revision=p.version||'Rev 00',links=[['risk_assessment',p.risk_assessment_ref],['permit',p.permit_ref]];for(var i=0;i<links.length;i++){var x=links[i];try{await api('/swms_relationships?company_id=eq.'+encodeURIComponent(ccid())+'&swms_document_id=eq.'+encodeURIComponent(docId)+'&revision_code=eq.'+encodeURIComponent(revision)+'&related_module=eq.'+x[0],{m:'DELETE',p:'return=minimal'});if(x[1])await api('/swms_relationships',{m:'POST',p:'return=minimal',b:{company_id:ccid(),swms_document_id:String(docId),revision_code:revision,related_module:x[0],related_record_id:String(x[1]),relationship_type:x[0]==='permit'?'interfaces_with':'derived_from',status:'active',applicability:{scope:p.applicability||'generic'},created_by:me.id||null}});}catch(_){}}}
-function refreshRelated(){var el=document.getElementById('swx-related-grid');if(!el)return;var did=window.swmsEditingId||swmsEditingId;if(!did){el.innerHTML=empty('Save the SWMS first','Execution records can be linked after the SWMS has a stable identity.');return;}el.innerHTML=[['briefing','Briefings'],['verification','Verifications'],['change_request','Changes'],['work_pack','Work packs']].map(function(x){var n=S.records.filter(function(r){return r.record_type===x[0]&&String(r.swms_document_id)===String(did);}).length;return '<button class="swx-related-card" onclick="swxOpenRecordForm(\''+x[0]+'\',\''+e(did)+'\')"><i class="ti '+TYPES[x[0]].icon+'"></i><b>'+n+'</b><span>'+x[1]+' · add/open</span></button>';}).join('');}
+window.swmsSaveToDocuments=async function(){
+  var existingId=window.swmsEditingId||swmsEditingId||null;
+  await baseSave();
+  var docId=existingId,saveRef=document.getElementById('swms-ref')?.textContent||'';
+  if(!docId&&saveRef&&saveRef!=='SWMS-AUTO'){
+    try{var found=await api('/documents?select=id,doc_ref,reference_no&doc_ref=eq.'+encodeURIComponent(saveRef)+cf()+'&limit=1');docId=found?.[0]?.id||null;}catch(_){ }
+  }
+  if(docId){
+    await syncRelationships(docId);
+    try{await syncCanonicalRelationships(docId,saveRef);}catch(err){console.warn('SWMS canonical relationship sync failed',err);toast('SWMS saved, but Connected Records could not sync. Run the updated shared relationship schema and retry.',false);}
+    await loadAux();
+  }
+};
+async function syncRelationships(docId){
+  if(!S.schemaReady)return;
+  var me=profile(),p=window.swmsPayload(),revision=p.version||'Rev 00',links=[['risk_assessment',p.risk_assessment_ref],['permit',p.permit_ref]];
+  for(var i=0;i<links.length;i++){
+    var x=links[i];
+    try{
+      await api('/swms_relationships?company_id=eq.'+encodeURIComponent(ccid())+'&swms_document_id=eq.'+encodeURIComponent(docId)+'&revision_code=eq.'+encodeURIComponent(revision)+'&related_module=eq.'+x[0],{m:'DELETE',p:'return=minimal'});
+      if(x[1])await api('/swms_relationships',{m:'POST',p:'return=minimal',b:{company_id:ccid(),swms_document_id:String(docId),revision_code:revision,related_module:x[0],related_record_id:String(x[1]),relationship_type:x[0]==='permit'?'interfaces_with':'derived_from',status:'active',applicability:{scope:p.applicability||'generic'},created_by:me.id||null}});
+    }catch(_){ }
+  }
+}
+async function swxResolveEndpoint(moduleKey,value){
+  value=String(value||'').trim();if(!value)return null;
+  var rows=[];
+  if(moduleKey==='risk')rows=await api('/risk_assessments?select=id,ra_ref,revision&ra_ref=eq.'+encodeURIComponent(value)+cf()+'&limit=1').catch(function(){return[];});
+  if(moduleKey==='permit')rows=await api('/permits?select=id,permit_number&permit_number=eq.'+encodeURIComponent(value)+cf()+'&limit=1').catch(function(){return[];});
+  if(!rows.length&&/^[0-9a-f]{8}-[0-9a-f-]{27}$/i.test(value)){
+    var table=moduleKey==='risk'?'risk_assessments':'permits',fields=moduleKey==='risk'?'id,ra_ref,revision':'id,permit_number';
+    rows=await api('/'+table+'?select='+fields+'&id=eq.'+encodeURIComponent(value)+cf()+'&limit=1').catch(function(){return[];});
+  }
+  var row=rows[0];if(!row)return null;
+  return moduleKey==='risk'?relationshipEndpoint('risk','risk_assessments',row.id,row.ra_ref,row.revision):relationshipEndpoint('permit','permits',row.id,row.permit_number);
+}
+async function syncCanonicalRelationships(docId,saveRef){
+  if(typeof relationshipCreate!=='function')return;
+  var p=window.swmsPayload(),source=relationshipEndpoint('swms','documents',docId,saveRef,p.version||'Rev 00'),current=await relationshipList(source).catch(function(){return[];});
+  var specs=[{module:'risk',value:p.risk_assessment_ref,type:'derived_from'},{module:'permit',value:p.permit_ref,type:'interfaces_with'}];
+  for(var i=0;i<specs.length;i++){
+    var spec=specs[i],target=await swxResolveEndpoint(spec.module,spec.value),managed=current.filter(function(r){return r.related_module===spec.module&&r.applicability?.origin==='swms_selector';});
+    if(spec.value&&!target)throw new Error('Selected '+spec.module+' record could not be resolved');
+    for(var j=0;j<managed.length;j++)if(!target||String(managed[j].related_id)!==String(target.id))await relationshipArchive(managed[j].id,'SWMS selector changed');
+    if(target)await relationshipCreate(source,target,spec.type,{applicability:{origin:'swms_selector',scope:p.applicability||'generic'}});
+  }
+}
+function refreshRelated(){
+  var el=document.getElementById('swx-related-grid');if(!el)return;
+  var did=window.swmsEditingId||swmsEditingId,doc=did?docById(did):null;
+  if(typeof connectedRecordsMount==='function')connectedRecordsMount('swms-connected-records',did?relationshipEndpoint('swms','documents',did,docRef(doc),doc?.version||doc?.doc_version||document.getElementById('swms-version')?.value):null,{allowCreate:!!doc&&controlledRecordCanEdit(doc)});
+  if(!did){el.innerHTML=empty('Save the SWMS first','Execution records can be linked after the SWMS has a stable identity.');return;}
+  el.innerHTML=[['briefing','Briefings'],['verification','Verifications'],['change_request','Changes'],['work_pack','Work packs']].map(function(x){var n=S.records.filter(function(r){return r.record_type===x[0]&&String(r.swms_document_id)===String(did);}).length;return '<button class="swx-related-card" onclick="swxOpenRecordForm(\''+x[0]+'\',\''+e(did)+'\')"><i class="ti '+TYPES[x[0]].icon+'"></i><b>'+n+'</b><span>'+x[1]+' · add/open</span></button>';}).join('');
+}
 
 window.swmsLoadList=async function(){var r=await baseLoadList();if(S.ready){window.swmsRenderList();renderActive();}return r;};
 window.loadSWMS=async function(){ensureShell();var desired=S.tab;baseLoad();await loadAux();S.tab=desired;setTimeout(function(){if(!document.getElementById('swms-form3view')||document.getElementById('swms-form3view').style.display==='none')swxSwitch(desired||'dashboard');},80);};

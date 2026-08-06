@@ -202,7 +202,7 @@
 - **Owner:** Module owners
 - **Actions:**
   - Risk: **Completed 2026-08-06** — shared reciprocal display, registry-validated picker, governed relationship types, broken-link warnings, exact RA navigation and safe unlinking are integrated into the RA record view.
-  - SWMS: render saved RA/Permit relationships and expose them reciprocally.
+  - SWMS: **Completed 2026-08-06** — corrected the canonical table mapping, preserved the existing RA/Permit selectors, synchronized their saved choices into reciprocal relationships, added the shared panel and enabled exact SWMS/RA/Permit navigation.
   - Legal: implement create, display and open flows for loaded relationships.
   - SOP: write project relationships and create the controlled Document link at publication.
   - Training: activate `learning_source_relationships` and source-change impact handling.

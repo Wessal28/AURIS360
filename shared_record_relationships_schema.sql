@@ -47,13 +47,17 @@ values
   ('training','competency_matrix','id',null,'Competency Record',to_regclass('public.competency_matrix') is not null),
   ('documents','documents','id','doc_ref','Controlled Document',to_regclass('public.documents') is not null),
   ('sop','sop_video_projects','id',null,'SOP Project',to_regclass('public.sop_video_projects') is not null),
-  ('swms','swms_documents','id',null,'SWMS / Method Statement',to_regclass('public.swms_documents') is not null)
+  ('swms','documents','id','doc_ref','SWMS / Method Statement',to_regclass('public.documents') is not null)
 on conflict(module_key, table_name) do update
 set id_column = excluded.id_column,
     ref_column = excluded.ref_column,
     display_label = excluded.display_label,
     enabled = excluded.enabled,
     updated_at = now();
+
+-- Early builds registered a table name that is not used by the application.
+delete from public.relationship_module_registry
+where module_key='swms' and table_name='swms_documents';
 
 create table if not exists public.record_relationships (
   id uuid primary key default gen_random_uuid(),
@@ -181,6 +185,38 @@ create trigger record_relationships_validate
 before insert or update of company_id,source_module,source_table,source_id,target_module,target_table,target_id,status
 on public.record_relationships
 for each row execute function public.validate_record_relationship();
+
+-- Promote existing SWMS selector links into the reciprocal service. Both IDs
+-- and professional references are supported because early SWMS builds stored
+-- the selected reference in related_record_id.
+do $$
+begin
+  if to_regclass('public.swms_relationships') is not null then
+    insert into public.record_relationships(
+      company_id,source_module,source_table,source_id,source_ref,
+      target_module,target_table,target_id,target_ref,relationship_type,
+      source_revision,target_revision,applicability,status,created_by,created_at,updated_at
+    )
+    select s.company_id,'swms','documents',d.id::text,d.doc_ref,
+           'risk','risk_assessments',r.id::text,r.ra_ref,coalesce(nullif(s.relationship_type,''),'derived_from'),
+           s.revision_code,null,coalesce(s.applicability,'{}'::jsonb)||'{"origin":"swms_relationships_backfill"}'::jsonb,
+           'active',s.created_by,s.created_at,s.updated_at
+    from public.swms_relationships s
+    join public.documents d on d.id::text=s.swms_document_id and d.company_id=s.company_id
+    join public.risk_assessments r on r.company_id=s.company_id and (r.id::text=s.related_record_id or r.ra_ref=s.related_record_id)
+    where s.related_module in ('risk','risk_assessment') and s.status<>'archived'
+    union all
+    select s.company_id,'swms','documents',d.id::text,d.doc_ref,
+           'permit','permits',p.id::text,p.permit_number,coalesce(nullif(s.relationship_type,''),'interfaces_with'),
+           s.revision_code,null,coalesce(s.applicability,'{}'::jsonb)||'{"origin":"swms_relationships_backfill"}'::jsonb,
+           'active',s.created_by,s.created_at,s.updated_at
+    from public.swms_relationships s
+    join public.documents d on d.id::text=s.swms_document_id and d.company_id=s.company_id
+    join public.permits p on p.company_id=s.company_id and (p.id::text=s.related_record_id or p.permit_number=s.related_record_id)
+    where s.related_module='permit' and s.status<>'archived'
+    on conflict (company_id,relationship_type,endpoint_a,endpoint_b) where status<>'archived' do nothing;
+  end if;
+end $$;
 
 create or replace function public.create_record_relationship(
   p_company_id uuid,
