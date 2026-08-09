@@ -278,6 +278,7 @@
 ### AP-050 — Make People the canonical person identity
 
 - **Owner:** Data architect
+- **Status (2026-08-09):** Completed — priority modules now persist stable `people.id` relationships while retaining name, organisation and role snapshots for historical reporting. The rerunnable `canonical_person_identity_upgrade.sql` adds canonical links across Training, PPE, Occupational Health, document acknowledgements, meetings and Master Action Plan assignments; it automatically links only unique matches and sends ambiguous/unmatched legacy rows to `person_identity_backfill_review`. Frontend writes resolve People selections centrally and gracefully omit new columns until the migration is installed. `tests/person_identity_contract.test.cjs` protects the ID-plus-snapshot contract.
 - **First modules:** Training, PPE, Occupational Health, Document acknowledgements, Meetings and Action assignments.
 - **Actions:**
   - Store `person_id` on every person-linked record.
