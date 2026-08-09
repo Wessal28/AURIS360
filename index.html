@@ -4421,7 +4421,7 @@ async function obsSave() {
                   body_html:'<div style="font-family:Arial,sans-serif;padding:20px"><h2 style="color:#1D9E75;margin:0 0 12px">AURIS360 BBS Action</h2><p>A follow-up action has been assigned to you from a safety observation.</p><p><strong>Reference:</strong> '+escH(ref)+'</p><p><strong>Location:</strong> '+escH(body.location||'')+'</p><p><strong>Action:</strong> '+escH(body.action_description)+'</p><p><strong>Due date:</strong> '+escH(body.action_due_date||'Not set')+'</p></div>',
                   to_email:assignedPerson.email,to_name:personFullName(assignedPerson),
                   from_name:'AURIS360 by SEPHS Consulting',
-                  related_table:'safety_observations',related_id:savedObsId,status:'pending'
+                  related_module:'observation',related_table:'safety_observations',related_id:savedObsId,related_ref:ref,status:'pending'
                 });
               }catch(mailEx){}
             }
@@ -13640,7 +13640,7 @@ var body='<div style="font-family:Arial,sans-serif;background:#f4f6f8;padding:20
   +'<tr><td style="padding:8px;background:#f9fafb;font-weight:600">Work</td><td style="padding:8px">'+escH(permit.work_description||'-')+'</td></tr>'
   +'</table><div style="margin-top:18px;text-align:center"><a href="https://auris-360.vercel.app/?goto=permit" style="display:inline-block;background:#1D9E75;color:#fff;padding:11px 22px;border-radius:8px;text-decoration:none;font-weight:700">Open Permit in AURIS360</a></div></div>'
   +'<div style="padding:12px 22px;background:#f4f6f8;font-size:11px;color:#6B7280;text-align:center">Automated notification from AURIS360.</div></div></div>';
-await queueNotification({company_id:ccid(),type:'permit',subject:subject,body_html:body,to_email:a.email,to_name:a.name||a.email,from_name:'AURIS360 by SEPHS Consulting',related_id:permit.id,related_table:'permits',status:'pending'});
+await queueNotification({company_id:ccid(),type:'permit',subject:subject,body_html:body,to_email:a.email,to_name:a.name||a.email,from_name:'AURIS360 by SEPHS Consulting',related_module:'permit',related_id:permit.id,related_table:'permits',related_ref:ref,status:'pending'});
 }catch(e){/* notification must never block permit workflow */}
 }
 
@@ -13722,7 +13722,7 @@ async function ptwQueueStatusNotice(permit,event,details){
       +'<div style="padding:12px 22px;background:#f4f6f8;font-size:11px;color:#6B7280;text-align:center">Automated notification from AURIS360.</div></div></div>';
     var recipients=ptwNoticeRecipients(permit);
     for(var i=0;i<recipients.length;i++){
-      await queueNotification({company_id:permit.company_id||ccid(),type:'permit',subject:'[AURIS360] Permit '+label+': '+ref,body_html:body,to_email:recipients[i].email,to_name:recipients[i].name,from_name:'AURIS360 by SEPHS Consulting',related_id:permit.id||ptwCurrentId||null,related_table:'permits',status:'pending'});
+      await queueNotification({company_id:permit.company_id||ccid(),type:'permit',subject:'[AURIS360] Permit '+label+': '+ref,body_html:body,to_email:recipients[i].email,to_name:recipients[i].name,from_name:'AURIS360 by SEPHS Consulting',related_module:'permit',related_id:permit.id||ptwCurrentId||null,related_table:'permits',related_ref:ref,status:'pending'});
     }
   }catch(e){/* notification must never block permit workflow */}
 }
@@ -16530,7 +16530,7 @@ async function imsNotifyAssignee(assignedName, companyId, ref, desc, location){
       company_id:companyId,type:'incident_assigned',
       subject:'Incident assigned to you - '+(ref||'New incident'),
       body_html:html,to_email:p.email,to_name:p.full_name||assignedName||'',
-      related_table:'events',related_id:imsEditId||null
+      related_module:'events',related_table:'events',related_id:imsEditId||null,related_ref:ref||'Incident'
     });
     toast('Notification queued for '+(p.full_name||p.email));
   }catch(e){/* non-critical */}
@@ -16574,7 +16574,7 @@ async function imsNotifyIncidentTypeRecipients(companyId, type, ref, desc, locat
         company_id:companyId,type:'incident_'+type,
         subject:'New '+cfg.label+' incident - '+(ref||'AURIS360'),
         body_html:html,to_email:email,to_name:name,
-        related_table:'events',related_id:imsEditId||null
+        related_module:'events',related_table:'events',related_id:imsEditId||null,related_ref:ref||'Incident'
       });
     }
   }catch(e){/* non-critical: notification rules must never block incident reporting */}
@@ -17444,7 +17444,7 @@ async function invNotifySign(toName, companyId, invRef, stageLabel){
       company_id:companyId,type:'investigation_signoff',
       subject:'Investigation '+(invRef||'')+' - awaiting your '+stageLabel,
       body_html:html,to_email:p.email,to_name:p.full_name||'',
-      related_table:'investigations',related_id:imsInvEditId||null});
+      related_module:'events',related_table:'investigations',related_id:imsInvEditId||null,related_ref:invRef||'Investigation'});
     return true;
   }catch(e){return false;}
 }
@@ -18986,7 +18986,7 @@ async function raQueueApprovalNotice(rec,step){
       +'<tr><td style="padding:8px;background:#f9fafb;font-weight:600">Approver</td><td style="padding:8px">'+escH(raApprovalStepLabel(step))+'</td></tr>'
       +'</table><div style="margin-top:18px;text-align:center"><a href="https://auris-360.vercel.app/?goto=risk" style="display:inline-block;background:#1D9E75;color:#fff;padding:11px 22px;border-radius:8px;text-decoration:none;font-weight:700">Open Risk Assessment</a></div></div>'
       +'<div style="padding:12px 22px;background:#f4f6f8;font-size:11px;color:#6B7280;text-align:center">Automated notification from AURIS360.</div></div></div>';
-    await queueNotification({company_id:rec.company_id||ccid(),type:'risk_assessment',subject:'[AURIS360] Risk assessment approval required: '+ref,body_html:body,to_email:contact.email,to_name:contact.name||contact.email,from_name:'AURIS360 by SEPHS Consulting',related_id:rec.id||raEditingId||null,related_table:'risk_assessments',status:'pending'});
+    await queueNotification({company_id:rec.company_id||ccid(),type:'risk_assessment',subject:'[AURIS360] Risk assessment approval required: '+ref,body_html:body,to_email:contact.email,to_name:contact.name||contact.email,from_name:'AURIS360 by SEPHS Consulting',related_module:'risk',related_id:rec.id||raEditingId||null,related_table:'risk_assessments',related_ref:ref,status:'pending'});
   }catch(e){}
 }
 
@@ -19017,7 +19017,7 @@ async function raQueueStatusNotice(rec,event,details){
       +'</table><div style="margin-top:18px;text-align:center"><a href="https://auris-360.vercel.app/?goto=risk" style="display:inline-block;background:#1D9E75;color:#fff;padding:11px 22px;border-radius:8px;text-decoration:none;font-weight:700">Open Risk Assessment</a></div></div>'
       +'<div style="padding:12px 22px;background:#f4f6f8;font-size:11px;color:#6B7280;text-align:center">Automated notification from AURIS360.</div></div></div>';
     for(var i=0;i<recipients.length;i++){
-      await queueNotification({company_id:rec.company_id||ccid(),type:'risk_assessment',subject:'[AURIS360] Risk assessment '+label+': '+ref,body_html:body,to_email:recipients[i].email,to_name:recipients[i].name,from_name:'AURIS360 by SEPHS Consulting',related_id:rec.id||raEditingId||null,related_table:'risk_assessments',status:'pending'});
+      await queueNotification({company_id:rec.company_id||ccid(),type:'risk_assessment',subject:'[AURIS360] Risk assessment '+label+': '+ref,body_html:body,to_email:recipients[i].email,to_name:recipients[i].name,from_name:'AURIS360 by SEPHS Consulting',related_module:'risk',related_id:rec.id||raEditingId||null,related_table:'risk_assessments',related_ref:ref,status:'pending'});
     }
   }catch(e){}
 }
@@ -28287,6 +28287,8 @@ async function mapQueueActionNotice(x,kind,opts){
       from_name:'AURIS360 by SEPHS Consulting',
       related_id:x.id,
       related_table:'action_tracker',
+      related_module:'actions',
+      related_ref:mapDisplayRef(x),
       status:'pending'
     });
   }catch(ex){console.warn('Action notification skipped',ex);}
@@ -29834,7 +29836,7 @@ async function dcQueueApprovalNotice(doc){
       +'<tr><td style="padding:8px;background:#f9fafb;font-weight:600">Version</td><td style="padding:8px">'+escH(doc.version||doc.doc_version||'1.0')+'</td></tr>'
       +'</table><div style="margin-top:18px;text-align:center"><a href="https://auris-360.vercel.app/?goto=documents" style="display:inline-block;background:#1D9E75;color:#fff;padding:11px 22px;border-radius:8px;text-decoration:none;font-weight:700">Open Document Control</a></div></div>'
       +'<div style="padding:12px 22px;background:#f4f6f8;font-size:11px;color:#6B7280;text-align:center">Automated notification from AURIS360.</div></div></div>';
-    await queueNotification({company_id:doc.company_id||ccid(),type:'document_control',subject:'[AURIS360] Document approval required: '+ref,body_html:body,to_email:contact.email,to_name:contact.name||contact.email,from_name:'AURIS360 by SEPHS Consulting',related_id:doc.id||dcEditingId||null,related_table:'documents',status:'pending'});
+    await queueNotification({company_id:doc.company_id||ccid(),type:'document_control',subject:'[AURIS360] Document approval required: '+ref,body_html:body,to_email:contact.email,to_name:contact.name||contact.email,from_name:'AURIS360 by SEPHS Consulting',related_module:'documents',related_id:doc.id||dcEditingId||null,related_table:'documents',related_ref:ref,status:'pending'});
   }catch(_){}
 }
 
@@ -29865,7 +29867,7 @@ async function dcQueueStatusNotice(doc,event,details){
       +'</table><div style="margin-top:18px;text-align:center"><a href="https://auris-360.vercel.app/?goto=documents" style="display:inline-block;background:#1D9E75;color:#fff;padding:11px 22px;border-radius:8px;text-decoration:none;font-weight:700">Open Document Control</a></div></div>'
       +'<div style="padding:12px 22px;background:#f4f6f8;font-size:11px;color:#6B7280;text-align:center">Automated notification from AURIS360.</div></div></div>';
     for(var i=0;i<recipients.length;i++){
-      await queueNotification({company_id:doc.company_id||ccid(),type:'document_control',subject:'[AURIS360] Document '+label+': '+ref,body_html:body,to_email:recipients[i].email,to_name:recipients[i].name,from_name:'AURIS360 by SEPHS Consulting',related_id:doc.id||dcEditingId||null,related_table:'documents',status:'pending'});
+      await queueNotification({company_id:doc.company_id||ccid(),type:'document_control',subject:'[AURIS360] Document '+label+': '+ref,body_html:body,to_email:recipients[i].email,to_name:recipients[i].name,from_name:'AURIS360 by SEPHS Consulting',related_module:'documents',related_id:doc.id||dcEditingId||null,related_table:'documents',related_ref:ref,status:'pending'});
     }
   }catch(_){}
 }
@@ -29886,7 +29888,7 @@ async function dcQueueAcknowledgementNotice(doc,ack){
       +'<tr><td style="padding:8px;background:#f9fafb;font-weight:600">Due date</td><td style="padding:8px">'+escH(ack.due_date||'-')+'</td></tr>'
       +'</table><div style="margin-top:18px;text-align:center"><a href="https://auris-360.vercel.app/?goto=documents" style="display:inline-block;background:#1D9E75;color:#fff;padding:11px 22px;border-radius:8px;text-decoration:none;font-weight:700">Open Document Control</a></div></div>'
       +'<div style="padding:12px 22px;background:#f4f6f8;font-size:11px;color:#6B7280;text-align:center">Automated notification from AURIS360.</div></div></div>';
-    await queueNotification({company_id:doc.company_id||ack.company_id||ccid(),type:'document_control',subject:'[AURIS360] Document acknowledgement required: '+ref,body_html:body,to_email:email,to_name:peopleName(p)||ack.employee_name||email,from_name:'AURIS360 by SEPHS Consulting',related_id:doc.id||ack.document_id||dcEditingId||null,related_table:'documents',status:'pending'});
+    await queueNotification({company_id:doc.company_id||ack.company_id||ccid(),type:'document_control',subject:'[AURIS360] Document acknowledgement required: '+ref,body_html:body,to_email:email,to_name:peopleName(p)||ack.employee_name||email,from_name:'AURIS360 by SEPHS Consulting',related_module:'documents',related_id:doc.id||ack.document_id||dcEditingId||null,related_table:'documents',related_ref:ref,status:'pending'});
   }catch(_){}
 }
 
@@ -33175,7 +33177,7 @@ async function trainingQueueNotice(row,event,opts){
       +(opts.message?'<tr><td style="padding:8px;background:#f9fafb;font-weight:600">Message</td><td style="padding:8px">'+escH(opts.message)+'</td></tr>':'')
       +'</table><div style="margin-top:18px;text-align:center"><a href="https://auris-360.vercel.app/?goto=training" style="display:inline-block;background:#1D9E75;color:#fff;padding:11px 22px;border-radius:8px;text-decoration:none;font-weight:700">Open Training</a></div></div>'
       +'<div style="padding:12px 22px;background:#f4f6f8;font-size:11px;color:#6B7280;text-align:center">Automated notification from AURIS360.</div></div></div>';
-    await queueNotification({company_id:row.company_id||ccid(),type:'training',subject:'[AURIS360] '+label+': '+topic,body_html:body,to_email:email,to_name:row.person_name||peopleName(p)||email,from_name:'AURIS360 Training',related_table:opts.related_table||'training_followup',related_id:row.id||opts.related_id||null,status:'pending'});
+    await queueNotification({company_id:row.company_id||ccid(),type:'training',subject:'[AURIS360] '+label+': '+topic,body_html:body,to_email:email,to_name:row.person_name||peopleName(p)||email,from_name:'AURIS360 Training',related_module:'training',related_table:opts.related_table||'training_followup',related_id:row.id||opts.related_id||null,related_ref:opts.related_ref||row.training_ref||row.reference||topic,status:'pending'});
     return true;
   }catch(_){return false;}
 }
@@ -35665,8 +35667,47 @@ function notificationRecipientIssue(email){
   if(v.toLowerCase().endsWith('.local'))return 'Login-only address. This user needs a real notification email, or a future WhatsApp/SMS contact.';
   return '';
 }
+var notificationQueueRows=[];
+var NOTIFICATION_RELATION_MODULES={
+  safety_observations:'observation',events:'events',investigations:'events',risk_assessments:'risk',permits:'permit',documents:'documents',
+  action_tracker:'actions',training_followup:'training',training_sessions:'training',training_records:'training',elearning_enrolments:'training',
+  elearning_courses:'training',companies:'admin'
+};
+function notificationRelationship(payload){
+  payload=payload||{};var table=String(payload.related_table||'').trim();
+  var metadata=payload.metadata&&typeof payload.metadata==='object'?payload.metadata:{};
+  var saved=metadata.relationship&&typeof metadata.relationship==='object'?metadata.relationship:{};
+  return {module:String(payload.related_module||saved.module||NOTIFICATION_RELATION_MODULES[table]||'').trim(),table:table||String(saved.table||'').trim(),
+    id:String(payload.related_id||saved.id||'').trim(),ref:String(payload.related_ref||saved.ref||'').trim(),company_id:String(payload.company_id||saved.company_id||'').trim(),url:String(payload.record_url||saved.url||'').trim()};
+}
+function notificationRecordUrl(rel){
+  if(!rel||!rel.module)return '';
+  try{
+    var origin=window.location&&/^https?:/.test(window.location.origin||'')&&!/localhost|127\.0\.0\.1/.test(window.location.hostname||'')?window.location.origin:'https://app.auris360.com';
+    var url=new URL(origin+(window.location&&window.location.pathname&&window.location.pathname!=='/'?window.location.pathname:'/'));
+    url.searchParams.set('goto',rel.module);if(rel.id)url.searchParams.set('record',rel.id);if(rel.ref)url.searchParams.set('ref',rel.ref);
+    if(rel.table)url.searchParams.set('table',rel.table);if(rel.company_id)url.searchParams.set('company',rel.company_id);return url.toString();
+  }catch(_){return '';}
+}
+function notificationLinkBody(html,url){
+  if(!url)return String(html||'');var safe=String(url).replace(/&/g,'&amp;').replace(/"/g,'&quot;');var content=String(html||'');
+  var replaced=false;content=content.replace(/href="https:\/\/(?:app\.auris360\.com|auris-360\.vercel\.app)[^"]*"/g,function(){replaced=true;return 'href="'+safe+'"';});
+  if(replaced)return content;
+  var link='<div style="margin:18px 0;text-align:center"><a href="'+safe+'" style="display:inline-block;background:#1D9E75;color:#fff;padding:11px 22px;border-radius:8px;text-decoration:none;font-weight:700">Open exact record in AURIS360</a></div>';
+  return content.indexOf('</body>')>=0?content.replace('</body>',link+'</body>'):content+link;
+}
+async function notificationLogEvent(row,eventType,detail){
+  var rel=notificationRelationship(row);if(!row?.id||!row?.company_id)return false;
+  try{await api('/notification_events',{m:'POST',p:'return=minimal',b:{company_id:row.company_id,notification_id:row.id,event_type:eventType,related_module:rel.module||null,related_table:rel.table||null,related_id:rel.id||null,related_ref:rel.ref||null,actor_id:prof?.id||null,detail:detail||{}}});return true;}catch(_){return false;}
+}
 async function queueNotification(payload){
   var body=Object.assign({status:'pending'}, payload||{});
+  var rel=notificationRelationship(body),exempt=['test_email','system'].includes(String(body.type||''));
+  if(!exempt&&(!rel.module||!rel.table||!rel.id||!rel.ref))throw new Error('Workflow notification requires related module, table, record ID and reference.');
+  rel.url=rel.url||notificationRecordUrl(rel);
+  body.related_module=rel.module||null;body.related_table=rel.table||null;body.related_id=rel.id||null;body.related_ref=rel.ref||null;body.record_url=rel.url||null;
+  body.metadata=Object.assign({},body.metadata||{},{relationship:rel});
+  body.body_html=notificationLinkBody(body.body_html,rel.url);
   var issue=notificationRecipientIssue(body.to_email);
   if(issue){
     body.status='failed';
@@ -35674,7 +35715,24 @@ async function queueNotification(payload){
     body.retry_count=body.retry_count||1;
     body.to_email=String(body.to_email||'undeliverable@auris360.local').trim();
   }
-  return api('/notification_queue',{m:'POST',p:'return=minimal',b:body});
+  try{return await api('/notification_queue',{m:'POST',p:'return=representation',b:body});}
+  catch(e){
+    if(/metadata/i.test(e.message||'')){var withoutMetadata=Object.assign({},body);delete withoutMetadata.metadata;return api('/notification_queue',{m:'POST',p:'return=representation',b:withoutMetadata});}
+    if(!/related_module|related_ref|record_url|schema cache|could not find/i.test(e.message||''))throw e;
+    var legacy=Object.assign({},body);delete legacy.related_module;delete legacy.related_ref;delete legacy.record_url;
+    try{return await api('/notification_queue',{m:'POST',p:'return=representation',b:legacy});}
+    catch(e2){delete legacy.metadata;return api('/notification_queue',{m:'POST',p:'return=representation',b:legacy});}
+  }
+}
+async function notificationOpen(id){
+  var row=(notificationQueueRows||[]).find(function(x){return String(x.id)===String(id);});if(!row)return toast('Notification is no longer in the recent list. Refresh and try again.',false);
+  var rel=notificationRelationship(row);
+  if(!rel.module||!rel.table||!rel.id){await notificationLogEvent(row,'failed_target',{reason:'relationship_missing'});return toast('This legacy notification has no exact source record. Open the relevant module from the sidebar.',false);}
+  var request=deepLinkNormalise({goto:rel.module,record:rel.id,ref:rel.ref,table:rel.table,company:rel.company_id});
+  if(!request||!canAccessPage(deepLinkPage(request))){await notificationLogEvent(row,'failed_target',{reason:'access_denied'});return toast('Your current role cannot open this notification source.',false);}
+  await notificationLogEvent(row,'opened',{surface:'notification_settings'});
+  deepLinkStore(request);
+  var opened=await deepLinkResume('notification-open');if(!opened)await notificationLogEvent(row,'failed_target',{reason:'record_unavailable'});
 }
 function usersContactEmail(u){
   return u?.real_email||u?.notification_email||(isDeliverableEmail(u?.email)?u.email:'');
@@ -38778,7 +38836,10 @@ async function eleQueueAssignmentNotice(body){
     to_email:email,
     to_name:body.person_name,
     from_name:'AURIS360 Training',
-    related_table:'elearning_enrolments'
+    related_module:'training',
+    related_table:'elearning_enrolments',
+    related_id:body.id||null,
+    related_ref:body.enrolment_ref||body.reference||course
   });
   return true;
 }
@@ -39896,8 +39957,9 @@ async function loadNotifSettings() {
     if(!companyId){el.innerHTML='<div style="color:var(--red);padding:12px">No company selected for notification settings.</div>';return;}
     var rows = await api('/notification_settings?company_id=eq.' + companyId + '&limit=1');
     var s = rows && rows[0] ? rows[0] : {};
-    var queue = await api('/notification_queue?company_id=eq.' + companyId + '&order=created_at.desc&limit=25');
-    el.innerHTML = renderNotifSettings(s, queue || []);
+    var queue = await api('/notification_queue?company_id=eq.' + encodeURIComponent(companyId) + '&order=created_at.desc&limit=25');
+    notificationQueueRows=queue||[];
+    el.innerHTML = renderNotifSettings(s, notificationQueueRows);
   } catch(e) {
     el.innerHTML = '<div style="color:var(--red);padding:12px">Error loading settings: ' + escH(e.message) + '</div>';
   }
@@ -39943,14 +40005,17 @@ function renderNotifSettings(s, queue) {
   var recentRows = queue.length ? queue.map(function(n) {
     var color = (n.status==='sent'||n.status==='delivered') ? 'var(--green)' : (n.status==='failed'||n.status==='bounced') ? 'var(--red)' : 'var(--text2)';
     var err = n.error_msg ? '<div style="font-size:10px;color:var(--red);margin-top:3px;max-width:360px;white-space:normal">'+escH(n.error_msg)+'</div>' : '';
+    var rel=notificationRelationship(n),canOpen=!!(rel.module&&rel.table&&rel.id);
     return '<tr>'
       + '<td style="padding:8px 10px">' + escH((n.subject||'').substring(0,50)) + err + '</td>'
       + '<td style="padding:8px 10px">' + notifToCell(n) + '</td>'
+      + '<td style="padding:8px 10px"><strong>'+escH(rel.ref||'System notification')+'</strong><div style="font-size:10px;color:var(--text2)">'+escH(rel.module?auditLabel(rel.module):'No source record')+'</div></td>'
       + '<td style="padding:8px 10px">' + notifStatusBadge(n) + '</td>'
       + '<td style="padding:8px 10px;color:var(--text2);font-size:11px">'
       + (n.created_at ? new Date(n.created_at).toLocaleString() : '') + '</td>'
+      + '<td style="padding:8px 10px;text-align:right">'+(canOpen?'<button class="btn btn-sm" onclick="notificationOpen(\''+escH(n.id)+'\')"><i class="ti ti-external-link"></i>Open record</button>':'<span style="font-size:10px;color:var(--text3)">Not applicable</span>')+'</td>'
       + '</tr>';
-  }).join('') : '<tr><td colspan="4" style="padding:16px;text-align:center;color:var(--text2)">No notifications yet</td></tr>';
+  }).join('') : '<tr><td colspan="6" style="padding:16px;text-align:center;color:var(--text2)">No notifications yet</td></tr>';
   var recipientRows = incidentTypeKeys.map(function(k) {
     var cfg = (typeof IMS_TYPE_CFG !== 'undefined' && IMS_TYPE_CFG[k]) ? IMS_TYPE_CFG[k] : {label:k.replace(/_/g,' '), emoji:''};
     var recipients = Array.isArray(incidentRules[k]) ? incidentRules[k] : [];
@@ -39984,10 +40049,10 @@ function renderNotifSettings(s, queue) {
     + '<div style="font-size:13px;font-weight:600">Recent Notifications</div>'
     + '<div style="display:flex;gap:6px;flex-wrap:wrap;font-size:11px"><span class="badge bgr">Pending '+qPending+'</span><span class="badge bg">Sent '+qSent+'</span><span class="badge br">Failed '+qFailed+'</span></div>'
     + '</div>'
-    + '<div style="overflow-x:auto"><table style="width:100%;font-size:12px;min-width:500px">'
+    + '<div style="overflow-x:auto"><table style="width:100%;font-size:12px;min-width:900px">'
     + '<thead><tr style="border-bottom:2px solid var(--border)">'
     + '<th style="padding:8px 10px;text-align:left">Subject</th><th style="padding:8px 10px;text-align:left">To</th>'
-    + '<th style="padding:8px 10px;text-align:left">Status</th><th style="padding:8px 10px;text-align:left">Time</th>'
+    + '<th style="padding:8px 10px;text-align:left">Source record</th><th style="padding:8px 10px;text-align:left">Status</th><th style="padding:8px 10px;text-align:left">Time</th><th style="padding:8px 10px;text-align:right">Action</th>'
     + '</tr></thead><tbody>' + recentRows + '</tbody></table></div>';
 }
 
@@ -41720,7 +41785,9 @@ async function obCreate() {
         to_email:      adminEmail,
         to_name:       adminName,
         related_table: 'companies',
-        related_id:    _obCompanyId
+        related_module:'admin',
+        related_id:    _obCompanyId,
+        related_ref:   coName
       });
     } catch (e) {} // Welcome email is non-critical
 

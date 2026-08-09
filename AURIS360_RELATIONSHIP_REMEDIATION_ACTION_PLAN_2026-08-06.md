@@ -246,6 +246,7 @@
 ### AP-042 — Standardise notification relationships
 
 - **Owner:** Backend/Frontend
+- **Status (2026-08-09):** Completed — workflow notification producers now supply canonical module, table, record ID and reference metadata through one queue contract. The helper generates an exact-record URL, replaces generic email links, preserves relationship metadata during pre-migration fallback and rejects incomplete workflow notifications. Recent Notifications displays and opens the source record, while the rerunnable `notification_relationships_upgrade.sql` adds relationship fields, enforces the forward-write contract and records queued, sent, delivered, failed, bounced, skipped, opened and failed-target lifecycle events.
 - **Actions:**
   - Require related module/table/ID/reference on workflow notifications.
   - Generate record-aware URLs through one helper.
