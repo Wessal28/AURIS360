@@ -332,6 +332,7 @@
 ### AP-061 — Build the cross-module integration test suite
 
 - **Owner:** QA automation
+- **Status (2026-08-09):** Automated contract implemented — `tests/cross_module_integration_contract.test.cjs` covers the eight P0/P1 release scenarios: canonical action sources and exact reopening, bidirectional links, archived/broken endpoint handling, governed Approval Center reopening, authentication-persistent QR/email links, tenant/role isolation, optional-table degradation and responsive layout contracts. Approval decisions remain in each authoritative source workspace so module-specific gates and audit rules cannot be bypassed by a generic update. The repository contract passes; an environment-backed desktop/tablet/mobile run against the release-candidate Supabase tenant remains mandatory at the release gate.
 - **Required scenarios:**
   - Create source record → create action → reopen exact source.
   - Create reciprocal relationship → open from both modules.
