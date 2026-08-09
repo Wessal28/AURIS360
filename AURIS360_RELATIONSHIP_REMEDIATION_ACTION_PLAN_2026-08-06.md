@@ -289,6 +289,7 @@
 ### AP-051 — Reconcile legacy people data
 
 - **Owner:** Data steward
+- **Status (2026-08-09):** Completed — Settings now includes a controlled People Identity Reconciliation workspace with unresolved/resolved/ignored accounting, verified-person selection, evidence notes and advisory duplicate-profile clusters. `person_identity_reconciliation_upgrade.sql` rescans legacy records, applies only company-scoped allowlisted links, records every manual or newly unique decision in an append-only decision ledger and the Audit Trail, and never automatically merges or deletes People. `tests/person_identity_reconciliation_contract.test.cjs` enforces these safety boundaries.
 - **Actions:**
   - Match by existing ID, email, employee number, company and normalised name.
   - Flag duplicates and uncertain matches for controlled review.
