@@ -40124,6 +40124,35 @@ async function sendTestEmail() {
 // ================================================================
 var approvalCenterRows = [];
 
+var APPROVAL_SOURCE_ADAPTERS = [
+  {key:'permit',module:'Permit to Work',table:'permits',page:'permit',statuses:['pending_approval'],status:['status'],ref:['permit_number'],title:['work_description','work_location'],approver:['current_approver_name','approver_name'],due:['approval_due_date','valid_from'],confidentiality:['confidentiality'],stage:'Permit approval'},
+  {key:'swms',module:'SWMS / Method Statements',table:'documents',page:'swms',statuses:['pending_review','under_review','pending_approval','review'],status:['approval_status','status'],ref:['doc_ref','reference_no'],title:['title'],approver:['reviewer_name','approver_name','owner'],due:['review_due_date','next_review_date'],confidentiality:['confidentiality','classification'],stage:'Method statement review',opener:'swms',filter:function(x){var t=String(x.doc_type||x.document_type||x.title||'').toLowerCase();return t.indexOf('swms')!==-1||t.indexOf('safe work method')!==-1||t.indexOf('method statement')!==-1;}},
+  {key:'documents',module:'Document Control',table:'documents',page:'documents',statuses:['pending_review','under_review','pending_approval','review'],status:['approval_status','status'],ref:['doc_ref','reference_no'],title:['title'],approver:['reviewer_name','approver_name','owner'],due:['review_due_date','next_review_date'],confidentiality:['confidentiality','classification'],stage:'Document review',filter:function(x){var t=String(x.doc_type||x.document_type||x.title||'').toLowerCase();return t.indexOf('swms')===-1&&t.indexOf('safe work method')===-1&&t.indexOf('method statement')===-1;}},
+  {key:'risk',module:'Risk Assessment',table:'risk_assessments',page:'risk',statuses:['pending_review','under_review','pending_approval','review','submitted'],status:['status'],ref:['ra_ref','reference_no'],title:['title','activity'],approver:['reviewer_name','approver_name'],due:['review_date','next_review_date'],confidentiality:['confidentiality'],stage:'Risk review'},
+  {key:'incident',module:'Incident Management',table:'investigations',page:'events',statuses:['submitted','pending_review','under_review','pending_approval','review'],status:['approval_status','status','workflow_status'],ref:['investigation_ref','reference_no','incident_ref'],title:['title','investigation_title','summary'],approver:['reviewer_name','approver_name','lead_investigator_name'],due:['review_due_date','target_date','due_date'],confidentiality:['confidentiality','privacy_level'],stage:'Investigation review'},
+  {key:'legal',module:'Legal Compliance',table:'legal_requirements',page:'legal',statuses:['submitted','pending_review','under_review','pending_approval','review'],status:['approval_status','status','workflow_status'],ref:['requirement_ref','reference_no','code'],title:['title','requirement','summary'],approver:['reviewer_name','approver_name','owner_name'],due:['review_due_date','next_review_date','due_date'],confidentiality:['confidentiality','classification'],stage:'Compliance review'},
+  {key:'sop',module:'SOP Generator',table:'sop_video_projects',page:'sop',statuses:['ready_for_review','in_review','awaiting_approval','pending_approval'],status:['processing_status','approval_status','status'],ref:['reference','project_ref','code'],title:['title','name'],approver:['reviewer_name','approver_name','owner_name'],due:['due_at','review_due_date'],confidentiality:['privacy_level','confidentiality'],stage:'SOP review'},
+  {key:'training',module:'Training & Competency',table:'elearning_courses',page:'training',statuses:['submitted','review','pending_review','under_review','pending_approval'],status:['approval_status','status'],ref:['course_ref','code'],title:['title','course_name','name'],approver:['reviewer_name','approver_name','owner_name'],due:['review_due_date','due_date'],confidentiality:['confidentiality','visibility'],stage:'Learning governance review'},
+  {key:'moc',module:'Management of Change',table:'action_tracker',page:'moc',statuses:['submitted','pending_review','pending_approval','pending_verification','awaiting_verification'],status:['approval_status','status'],ref:['action_ref','reference_no'],title:['title','action_title','description'],approver:['reviewer_name','approver_name','assigned_to_name'],due:['review_due_date','target_date','due_date'],confidentiality:['confidentiality'],stage:'Change control review',filter:function(x){return ['moc','management_of_change'].indexOf(String(x.source_module||x.source_type||'').toLowerCase())!==-1;}},
+  {key:'chemical_sds',module:'Chemical Control',table:'chemical_sds_versions',page:'chemical',statuses:['pending','submitted','review','pending_review','under_review','pending_approval'],status:['validation_status','approval_status','status'],ref:['source_reference','file_reference','version_ref'],title:['file_name','title'],approver:['reviewer_name','approver_name'],due:['review_due_date','revision_date'],confidentiality:['confidentiality'],stage:'SDS validation',openTable:'chemical_sds_versions'},
+  {key:'chemical_use',module:'Chemical Control',table:'chemical_use_approvals',page:'chemical',statuses:['proposed','submitted','assessed','review','pending_approval'],status:['approval_status','status'],ref:['reference','approval_ref'],title:['task_name','title','description'],approver:['reviewer_name','approver_name','owner_name'],due:['review_date','due_date'],confidentiality:['confidentiality'],stage:'Chemical-use approval'},
+  {key:'contractor_profile',module:'Contractor Management',table:'contractor_assurance_profiles',page:'contractor',statuses:['pending','submitted','review','pending_review','pending_approval'],status:['decision_status','approval_status','status'],ref:['profile_ref','reference'],title:['title','scope','contractor_name'],approver:['decision_authority','reviewer_name'],due:['next_review_date','review_due_date'],confidentiality:['confidentiality'],stage:'Contractor assurance decision',opener:'contractor_profile',openId:['contractor_id']},
+  {key:'contractor_document',module:'Contractor Management',table:'contractor_documents',page:'contractor',statuses:['submitted','review','pending_review','under_review','pending_approval'],status:['review_status','approval_status','status'],ref:['file_reference','document_ref','reference'],title:['title','document_name','file_name'],approver:['reviewer_name','approver_name'],due:['review_due_date','expiry_date'],confidentiality:['confidentiality','classification'],stage:'Contractor document review',opener:'contractor_document'},
+  {key:'tools_profile',module:'Tools & Equipment',table:'equipment_assurance_profiles',page:'tools',statuses:['pending','submitted','review','pending_review','pending_approval'],status:['acceptance_status','approval_status','status'],ref:['profile_ref','reference'],title:['title','profile_name','equipment_name'],approver:['acceptance_authority','reviewer_name'],due:['review_due','review_due_date'],confidentiality:['confidentiality'],stage:'Equipment assurance acceptance',opener:'tools_profile',openId:['equipment_id']},
+  {key:'tools_assurance',module:'Tools & Equipment',table:'equipment_assurance_records',page:'tools',statuses:['submitted','review','pending_review','pending_approval','awaiting_release'],status:['validation_status','release_status','approval_status','status'],ref:['reference','assurance_ref'],title:['title','assurance_type','equipment_name'],approver:['validation_authority','release_authority','reviewer_name'],due:['next_due_date','review_due_date'],confidentiality:['confidentiality'],stage:'Equipment assurance review',opener:'tools_assurance'},
+  {key:'tools_maintenance',module:'Tools & Equipment',table:'equipment_maintenance_events',page:'tools',statuses:['awaiting_release','pending_release','pending_approval'],status:['release_status','approval_status','status'],ref:['reference','maintenance_ref'],title:['title','work_description','equipment_name'],approver:['release_authority','approver_name'],due:['release_due_date','planned_date'],confidentiality:['confidentiality'],stage:'Return-to-service release',opener:'tools_maintenance'},
+  {key:'bbs_programme',module:'BBS Observations',table:'bbs_programmes',page:'observation',statuses:['review','submitted','pending_review','pending_approval'],status:['approval_status','status'],ref:['code','programme_ref'],title:['name','title'],approver:['reviewer_name','owner'],due:['review_due_date','end_date'],confidentiality:['confidentiality'],stage:'BBS programme review',opener:'bbs_entity',entity:'programmes'},
+  {key:'bbs_observation',module:'BBS Observations',table:'bbs_observation_details',page:'observation',statuses:['submitted','in_review','pending_review','pending_approval'],status:['workflow_status','approval_status','status'],ref:['observation_ref','reference'],title:['title','activity','task_observed'],approver:['reviewer_name','assigned_reviewer_name'],due:['review_due_date','due_date'],confidentiality:['privacy_level','confidentiality'],stage:'Observation quality review',opener:'bbs_entity',entity:'details'},
+  {key:'bbs_recognition',module:'BBS Observations',table:'bbs_recognitions',page:'observation',statuses:['submitted','review','pending_review','pending_approval'],status:['approval_status','status'],ref:['source_ref','reference'],title:['reason','title','nominee_name'],approver:['reviewer_name','reviewed_by'],due:['review_due_date'],confidentiality:['visibility','confidentiality'],stage:'Recognition review',opener:'bbs_entity',entity:'recognitions'},
+  {key:'engagement_programme',module:'Safety Engagement',table:'engagement_programmes',page:'engagement',statuses:['review','submitted','pending_review','pending_approval'],status:['approval_status','status'],ref:['code','programme_ref'],title:['name','title'],approver:['reviewer_name','owner'],due:['review_due_date','effective_from'],confidentiality:['confidentiality'],stage:'Engagement programme review',opener:'engagement_entity',entity:'programmes'},
+  {key:'engagement_review',module:'Safety Engagement',table:'engagement_team_reviews',page:'engagement',statuses:['submitted','review','pending_review','pending_approval'],status:['approval_status','status'],ref:['review_code','reference'],title:['team_name','title'],approver:['reviewer_name','owner_name'],due:['review_date','meeting_date'],confidentiality:['confidentiality','privacy_level'],stage:'Team performance review',opener:'engagement_review'},
+  {key:'engagement_recognition',module:'Safety Engagement',table:'engagement_recognitions',page:'engagement',statuses:['submitted','review','pending_review','pending_approval'],status:['approval_status','status'],ref:['source_ref','reference'],title:['reason','basis','recipient_name'],approver:['reviewer_name','reviewed_by'],due:['review_due_date'],confidentiality:['visibility','confidentiality'],stage:'Recognition decision',opener:'engagement_entity',entity:'recognitions'},
+  {key:'engagement_dispute',module:'Safety Engagement',table:'engagement_disputes',page:'engagement',statuses:['submitted','acknowledged','evidence','review','more_information','decision','appeal'],status:['workflow_status','status'],ref:['dispute_ref','reference'],title:['issue','explanation','title'],approver:['reviewer_name','assigned_to_name'],due:['decision_due_date','review_due_date'],confidentiality:['confidentiality','privacy_level'],stage:'Independent correction review',opener:'engagement_entity',entity:'disputes',defaultConfidentiality:'Restricted'},
+  {key:'noise_assessment',module:'Occupational Noise Management',table:'noise_mgmt_exposure_assessments',page:'noise',statuses:['submitted','review','pending_review','pending_approval'],status:['approval_status','status'],ref:['code','assessment_ref','reference'],title:['title','assessment_name','seg_name'],approver:['reviewer_name','approver_name'],due:['review_due_date','assessment_date'],confidentiality:['confidentiality','privacy_level'],stage:'Exposure assessment review',opener:'noise_record',entity:'assessments'},
+  {key:'noise_map',module:'Occupational Noise Management',table:'noise_mgmt_maps',page:'noise',statuses:['submitted','review','pending_review','pending_approval'],status:['approval_status','status'],ref:['code','map_ref','reference'],title:['name','title'],approver:['reviewer_name','approver_name'],due:['review_due_date'],confidentiality:['confidentiality','privacy_level'],stage:'Noise-map review',opener:'noise_map',entity:'maps'},
+  {key:'noise_report',module:'Occupational Noise Management',table:'noise_mgmt_reports',page:'noise',statuses:['submitted','review','pending_review','pending_approval'],status:['approval_status','status'],ref:['code','report_ref','reference'],title:['name','title'],approver:['approver_name','reviewer_name'],due:['review_due_date','issued_at'],confidentiality:['confidentiality','privacy_level'],stage:'Noise report approval',opener:'noise_record',entity:'reports'}
+];
+
 function approvalsCanView(){
   return ['sephs_admin','admin','hse_manager','hse_officer'].indexOf(activeRole()) !== -1;
 }
@@ -40144,57 +40173,80 @@ function approvalsStatusBadge(s){
   var c=raw.indexOf('approved')>=0?'#3B6D11':raw.indexOf('reject')>=0?'#A32D2D':raw.indexOf('review')>=0?'#185FA5':'#854F0B';
   return '<span style="display:inline-flex;align-items:center;padding:3px 8px;border-radius:999px;background:'+bg+';color:'+c+';font-size:11px;font-weight:700">'+escH(approvalsStatusLabel(raw))+'</span>';
 }
+function approvalsDate(value){
+  if(!value)return null;var d=new Date(value);return isNaN(d.getTime())?null:d;
+}
+function approvalsDateLabel(value,emptyLabel){
+  var d=approvalsDate(value);return d?d.toLocaleDateString():(value?String(value):(emptyLabel||'-'));
+}
 function approvalsCompanyPath(base){
   var cid=approvalsCompanyFilter();
-  return base + (cid ? '&company_id=eq.'+cid : '');
+  return base + (cid ? '&company_id=eq.'+encodeURIComponent(cid) : '');
+}
+
+function approvalsPick(row,fields){
+  for(var i=0;i<(fields||[]).length;i++){var v=row?.[fields[i]];if(v!==null&&v!==undefined&&String(v).trim()!=='')return v;}
+  return '';
+}
+function approvalsAdapterStatus(row,adapter){
+  var allowed=adapter.statuses||[];
+  for(var i=0;i<(adapter.status||['status']).length;i++){
+    var value=String(row?.[adapter.status[i]]||'').toLowerCase();
+    if(allowed.indexOf(value)!==-1)return value;
+  }
+  return '';
+}
+function approvalsAdapterRow(adapter,row){
+  var status=approvalsAdapterStatus(row,adapter);if(!status||adapter.filter&&!adapter.filter(row))return null;
+  var id=row.id||row.record_id||row.related_id;if(!id)return null;
+  var openId=approvalsPick(row,adapter.openId)||id;
+  return {row_key:adapter.table+':'+id,adapter_key:adapter.key,source:adapter.key,module:adapter.module,table:adapter.table,record_id:id,id:id,
+    ref:String(approvalsPick(row,adapter.ref)||displayRecordRef(row,['reference_no','reference','code'],'REVIEW-DRAFT')),
+    title:String(approvalsPick(row,adapter.title)||adapter.module+' record awaiting review'),status:status,stage:adapter.stage||approvalsStatusLabel(status),step:adapter.stage||approvalsStatusLabel(status),
+    approver:String(approvalsPick(row,adapter.approver)||'Role-based queue'),due_date:approvalsPick(row,adapter.due)||'',
+    confidentiality:String(approvalsPick(row,adapter.confidentiality)||adapter.defaultConfidentiality||'Standard'),updated_at:row.updated_at||row.created_at||approvalsPick(row,adapter.due)||'',
+    page:adapter.page,opener:adapter.opener||'',entity:adapter.entity||'',open_id:openId,open_table:adapter.openTable||adapter.table,company_id:row.company_id||approvalsCompanyFilter()};
 }
 
 async function loadApprovals(){
   var el=document.getElementById('approvals-table-body');if(!el)return;
   if(!approvalsCanView()){
-    el.innerHTML='<tr><td colspan="7" style="padding:18px;color:var(--red);text-align:center">Access denied</td></tr>';
+    el.innerHTML='<tr><td colspan="8" style="padding:18px;color:var(--red);text-align:center">Access denied</td></tr>';
     return;
   }
-  el.innerHTML='<tr><td colspan="7" style="padding:22px;text-align:center;color:var(--text2)">Loading approvals...</td></tr>';
+  el.innerHTML='<tr><td colspan="8" style="padding:22px;text-align:center;color:var(--text2)">Loading governed review queues...</td></tr>';
   try{
     var cid=approvalsCompanyFilter();
     var scope=document.getElementById('approvals-scope-label');
     if(scope)scope.textContent=isSA()?(cid?'Selected company':'All companies'):(co?.name||'Current company');
 
-    var generic = await approvalsSafe(api(approvalsCompanyPath('/approval_requests?select=*&order=created_at.desc&limit=200')));
-    var permits = await approvalsSafe(api(approvalsCompanyPath('/permits?select=id,permit_number,permit_type,permit_type_v2,status,work_location,work_description,approval_level_required,approval_l1_status,approval_l2_status,approval_l3_status,created_at,updated_at&order=updated_at.desc&limit=200')));
-    var docs = await approvalsSafe(api(approvalsCompanyPath('/documents?select=id,doc_ref,reference_no,title,document_type,doc_type,status,approval_status,owner,created_at,updated_at&order=updated_at.desc&limit=200')));
-    var ras = await approvalsSafe(api(approvalsCompanyPath('/risk_assessments?select=id,ra_ref,title,ra_type,ra_type_v2,status,overall_risk_level,created_at,updated_at&order=updated_at.desc&limit=200')));
-
+    var tables=Array.from(new Set(APPROVAL_SOURCE_ADAPTERS.map(function(a){return a.table;})));
+    var loads=[approvalsSafe(api(approvalsCompanyPath('/approval_requests?select=*&limit=300')))];
+    tables.forEach(function(table){loads.push(approvalsSafe(api(approvalsCompanyPath('/'+table+'?select=*&limit=300'))));});
+    var loaded=await Promise.all(loads),generic=loaded[0]||[],seen={},loadedByTable={};
+    tables.forEach(function(table,index){loadedByTable[table]=loaded[index+1]||[];});
     approvalCenterRows=[];
+    APPROVAL_SOURCE_ADAPTERS.forEach(function(adapter){
+      (loadedByTable[adapter.table]||[]).forEach(function(sourceRow){var row=approvalsAdapterRow(adapter,sourceRow);if(row&&!seen[row.row_key]){seen[row.row_key]=true;approvalCenterRows.push(row);}});
+    });
     (generic||[]).forEach(function(x){
-      approvalCenterRows.push({
-        source:'workflow',
-        module:x.module_name||x.related_table||'workflow',
+      var id=x.related_id||x.id,table=x.related_table||'approval_requests',key=table+':'+id;
+      if(!id||seen[key]||!['pending','submitted','pending_review','under_review','pending_approval','review'].includes(String(x.status||'pending').toLowerCase()))return;
+      seen[key]=true;approvalCenterRows.push({
+        row_key:'workflow:'+x.id,adapter_key:'workflow',source:'workflow',module:x.module_name||x.related_table||'Workflow',table:table,record_id:id,
         ref:displayRecordRef(x,['request_ref','approval_ref','related_ref'],'WF-DRAFT'),
         title:x.related_table||'Approval request',
         status:x.status||'pending',
-        step:x.current_step_no?('Level '+x.current_step_no):'',
+        stage:x.current_step_no?('Approval level '+x.current_step_no):'Workflow review',step:x.current_step_no?('Approval level '+x.current_step_no):'Workflow review',
+        approver:x.approver_name||x.assigned_to_name||'Role-based queue',due_date:x.due_date||x.review_due_date||'',confidentiality:x.confidentiality||'Standard',
         updated_at:x.updated_at||x.created_at,
-        id:x.related_id||x.id,
-        page:x.module_name||''
+        id:id,page:x.module_name||'',open_id:id,open_table:table,company_id:x.company_id||cid
       });
     });
-    (permits||[]).filter(function(x){return x.status==='pending_approval';}).forEach(function(x){
-      var first=1;
-      for(var i=1;i<=3;i++){if((x['approval_l'+i+'_status']||'pending')!=='approved'){first=i;break;}}
-      approvalCenterRows.push({source:'permit',module:'Permit to Work',ref:displayRecordRef(x,'permit_number','PTW-DRAFT'),title:x.work_description||x.work_location||'Permit awaiting approval',status:x.status,step:'Level '+first,updated_at:x.updated_at||x.created_at,id:x.id,page:'permit'});
-    });
-    (docs||[]).filter(function(x){return ['pending_review','under_review','pending_approval'].indexOf(x.approval_status||x.status||'')!==-1;}).forEach(function(x){
-      approvalCenterRows.push({source:'documents',module:'Document Control',ref:displayRecordRef(x,['doc_ref','reference_no'],'DOC-DRAFT'),title:x.title||'Document awaiting approval',status:x.approval_status||x.status,step:(x.approval_status||x.status)==='pending_approval'?'Approval':'Review',updated_at:x.updated_at||x.created_at,id:x.id,page:'documents'});
-    });
-    (ras||[]).filter(function(x){return ['pending_review','pending_approval','review'].indexOf(x.status||'')!==-1;}).forEach(function(x){
-      approvalCenterRows.push({source:'risk',module:'Risk Assessment',ref:displayRecordRef(x,'ra_ref','RA-DRAFT'),title:x.title||'Risk assessment awaiting approval',status:x.status,step:x.status==='pending_approval'?'Approval':'Review',updated_at:x.updated_at||x.created_at,id:x.id,page:'risk'});
-    });
-    approvalCenterRows.sort(function(a,b){return new Date(b.updated_at||0)-new Date(a.updated_at||0);});
+    approvalCenterRows.sort(function(a,b){var ad=approvalsDate(a.due_date)||new Date('2999-12-31'),bd=approvalsDate(b.due_date)||new Date('2999-12-31');return ad-bd||(approvalsDate(b.updated_at)||0)-(approvalsDate(a.updated_at)||0);});
     approvalsRender();
   }catch(e){
-    el.innerHTML='<tr><td colspan="7" style="padding:18px">'+setupFriendlyMessage('Approval Center',e.message)+'</td></tr>';
+    el.innerHTML='<tr><td colspan="8" style="padding:18px">'+setupFriendlyMessage('Approval Center',e.message)+'</td></tr>';
   }
 }
 
@@ -40206,7 +40258,7 @@ function approvalsFilteredRows(){
     if(status && String(x.status||'')!==status)return false;
     if(module && String(x.source||x.module||'')!==module)return false;
     if(q){
-      var hay=[x.module,x.ref,x.title,x.status,x.step].join(' ').toLowerCase();
+      var hay=[x.module,x.ref,x.title,x.status,x.stage,x.approver,x.confidentiality].join(' ').toLowerCase();
       if(hay.indexOf(q)===-1)return false;
     }
     return true;
@@ -40218,32 +40270,55 @@ function approvalsRender(){
   var tbody=document.getElementById('approvals-table-body');if(!tbody)return;
   var total=document.getElementById('approvals-count');if(total)total.textContent=String((approvalCenterRows||[]).length);
   var shown=document.getElementById('approvals-shown-count');if(shown)shown.textContent=String(rows.length);
-  var pending=document.getElementById('approvals-pending-count');if(pending)pending.textContent=String((approvalCenterRows||[]).filter(function(x){return ['pending','pending_review','under_review','pending_approval'].indexOf(x.status||'')!==-1;}).length);
+  var pending=document.getElementById('approvals-pending-count');if(pending)pending.textContent=String((approvalCenterRows||[]).filter(function(x){return !['approved','rejected','closed','published','issued'].includes(String(x.status||'').toLowerCase());}).length);
+  var statusSel=document.getElementById('approvals-filter-status');
+  if(statusSel){
+    var selectedStatus=statusSel.value,statuses=Array.from(new Set((approvalCenterRows||[]).map(function(x){return String(x.status||'');}).filter(Boolean))).sort();
+    statusSel.innerHTML='<option value="">All statuses</option>'+statuses.map(function(s){return '<option value="'+escH(s)+'">'+escH(approvalsStatusLabel(s))+'</option>';}).join('');
+    if(statuses.indexOf(selectedStatus)!==-1)statusSel.value=selectedStatus;
+  }
   var modSel=document.getElementById('approvals-filter-module');
-  if(modSel && !modSel.dataset.ready){
-    modSel.innerHTML='<option value="">All modules</option><option value="workflow">Workflow requests</option><option value="permit">Permit to Work</option><option value="documents">Document Control</option><option value="risk">Risk Assessment</option>';
-    modSel.dataset.ready='1';
+  if(modSel){
+    var selected=modSel.value,modules=Array.from(new Set((approvalCenterRows||[]).map(function(x){return x.source||x.module||'';}))).sort();
+    modSel.innerHTML='<option value="">All modules</option>'+modules.map(function(k){var row=approvalCenterRows.find(function(x){return (x.source||x.module)===k;});return '<option value="'+escH(k)+'">'+escH(row?.module||auditLabel(k))+'</option>';}).join('');
+    if(modules.indexOf(selected)!==-1)modSel.value=selected;
   }
   if(!rows.length){
-    tbody.innerHTML='<tr><td colspan="7" style="padding:26px;text-align:center;color:var(--text2)">No approvals waiting for action</td></tr>';
+    tbody.innerHTML='<tr><td colspan="8" style="padding:26px;text-align:center;color:var(--text2)">No governed reviews match this view</td></tr>';
     return;
   }
   tbody.innerHTML=rows.map(function(x){
     return '<tr style="border-bottom:1px solid var(--border)">'
       +'<td style="padding:10px 12px;font-weight:800">'+escH(x.ref||'-')+'<div style="font-size:11px;color:var(--text2);font-weight:400">'+escH(x.module||'-')+'</div></td>'
       +'<td style="padding:10px 12px;max-width:420px">'+escH(x.title||'-')+'</td>'
-      +'<td style="padding:10px 12px">'+approvalsStatusBadge(x.status)+'</td>'
-      +'<td style="padding:10px 12px">'+escH(x.step||'-')+'</td>'
-      +'<td style="padding:10px 12px;color:var(--text2);white-space:nowrap">'+(x.updated_at?new Date(x.updated_at).toLocaleString():'-')+'</td>'
-      +'<td style="padding:10px 12px;color:var(--text2);font-size:11px">'+escH(auditLabel(x.source||''))+'</td>'
-      +'<td style="padding:10px 12px;text-align:right"><button class="btn btn-sm" onclick="approvalsOpen(\''+escH(x.page||'')+'\')"><i class="ti ti-arrow-right"></i>Open</button></td>'
+      +'<td style="padding:10px 12px">'+approvalsStatusBadge(x.status)+'<div style="font-size:11px;color:var(--text2);margin-top:4px">'+escH(x.stage||'-')+'</div></td>'
+      +'<td style="padding:10px 12px">'+escH(x.approver||'Role-based queue')+'</td>'
+      +'<td style="padding:10px 12px;white-space:nowrap;'+(approvalsDate(x.due_date)&&approvalsDate(x.due_date)<new Date()?'color:var(--red);font-weight:800':'color:var(--text2)')+'">'+escH(approvalsDateLabel(x.due_date,'Not set'))+'</td>'
+      +'<td style="padding:10px 12px;color:var(--text2);font-size:11px">'+escH(x.confidentiality||'Standard')+'</td>'
+      +'<td style="padding:10px 12px;color:var(--text2);white-space:nowrap">'+escH(approvalsDateLabel(x.updated_at,'-'))+'</td>'
+      +'<td style="padding:10px 12px;text-align:right"><button class="btn btn-sm" onclick="approvalsOpen(\''+escH(x.row_key)+'\')"><i class="ti ti-arrow-right"></i>Open record</button></td>'
       +'</tr>';
   }).join('');
 }
 
-function approvalsOpen(page){
-  if(page&&canAccessPage(page))showPage(page,null);
-  else toast('Open the related module to review this approval.',false);
+async function approvalsOpen(rowKey){
+  var x=(approvalCenterRows||[]).find(function(r){return r.row_key===rowKey;});if(!x)return toast('This approval is no longer in the current queue. Refresh and try again.',false);
+  if(x.page&&!canAccessPage(x.page))return toast('Your current role cannot open '+x.module+'.',false);
+  try{
+    if(x.opener==='contractor_document'&&typeof cmuOpenDocument==='function'){showPage('contractor',null);return setTimeout(function(){cmuOpenDocument(x.open_id);},350);}
+    if(x.opener==='swms'&&typeof swmsOpen==='function'){showPage('swms',null);return setTimeout(function(){swmsOpen(x.open_id);},350);}
+    if(x.opener==='contractor_profile'&&typeof conOpenDetail==='function'){showPage('contractor',null);return setTimeout(function(){conOpenDetail(x.open_id);},350);}
+    if(x.opener==='tools_profile'&&typeof teuOpenProfile==='function'){showPage('tools',null);return setTimeout(function(){teuOpenProfile(x.open_id);},350);}
+    if(x.opener==='tools_assurance'&&typeof teuOpenAssurance==='function'){showPage('tools',null);return setTimeout(function(){teuOpenAssurance(x.open_id);},350);}
+    if(x.opener==='tools_maintenance'&&typeof teuOpenMaintenance==='function'){showPage('tools',null);return setTimeout(function(){teuOpenMaintenance(x.open_id);},350);}
+    if(x.opener==='bbs_entity'&&typeof bbsOpenEntity==='function'){showPage('observation',null);return setTimeout(function(){bbsOpenEntity(x.entity,x.open_id);},350);}
+    if(x.opener==='engagement_review'&&typeof seOpenTeamReview==='function'){showPage('engagement',null);return setTimeout(function(){seOpenTeamReview(x.open_id);},350);}
+    if(x.opener==='engagement_entity'&&typeof seOpenDrawer==='function'){showPage('engagement',null);return setTimeout(function(){seOpenDrawer('record-view',x.open_id,x.entity);},350);}
+    if(x.opener==='noise_map'&&typeof noiseOpenMapWorkspace==='function'){showPage('noise',null);return setTimeout(function(){noiseOpenMapWorkspace(x.open_id);},350);}
+    if(x.opener==='noise_record'&&typeof noiseOpenRecord==='function'){showPage('noise',null);return setTimeout(function(){noiseOpenRecord(x.entity,x.open_id);},350);}
+    deepLinkStore(deepLinkNormalise({goto:x.page||x.adapter_key,record:x.open_id||x.record_id,ref:x.ref,table:x.open_table||x.table,company:x.company_id||''}));
+    return deepLinkResume('approval-center');
+  }catch(e){toast('Unable to open '+x.ref+': '+e.message,false);}
 }
 
 // ================================================================
@@ -53854,7 +53929,7 @@ I can help you:<br>
 <div class="page-header">
   <div>
     <div class="page-title">Approval Center</div>
-    <div style="font-size:12px;color:var(--text2);margin-top:3px">Central queue for submitted permits, documents, risk assessments and workflow approvals</div>
+    <div style="font-size:12px;color:var(--text2);margin-top:3px">One governed inbox for reviews, approvals, validation decisions and authorised releases across AURIS360</div>
   </div>
   <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
     <button class="btn" onclick="loadApprovals()"><i class="ti ti-refresh"></i>Refresh</button>
@@ -53882,7 +53957,11 @@ I can help you:<br>
 </div>
 
 <div style="background:#EFF6FF;border:1px solid #bfdbfe;border-radius:10px;padding:11px 14px;margin-bottom:16px;color:#1e40af;font-size:12px">
-  <strong>Audit coverage:</strong> successful create, update and delete actions are logged with user, role, module, record reference and changed fields. Passwords, API keys and email HTML are excluded from the visible field list.
+  <strong>Approval coverage:</strong> adapters include Permit to Work, Document Control, Risk, Incident, Legal, SWMS documents, SOP, Training, MOC, Chemical, Contractor, Tools, BBS, Safety Engagement and Occupational Noise. Missing optional module tables are skipped without hiding records from available sources.
+</div>
+
+<div style="background:#F8FAFC;border:1px solid var(--border);border-radius:10px;padding:11px 14px;margin-bottom:16px;color:var(--text2);font-size:12px">
+  <strong style="color:var(--text)">Operational-only exclusions:</strong> draft observations, ordinary training attendance, active equipment custody, open corrective actions and draft noise measurements stay in their module work queues because they do not require a controlled approval decision. Submitted reviews, validations, releases and disputes remain included here.
 </div>
 
 <div class="card" style="padding:14px;margin-bottom:16px">
@@ -53916,15 +53995,16 @@ I can help you:<br>
         <tr>
           <th style="padding:10px 12px;text-align:left">Reference</th>
           <th style="padding:10px 12px;text-align:left">Record</th>
-          <th style="padding:10px 12px;text-align:left">Status</th>
-          <th style="padding:10px 12px;text-align:left">Step</th>
+          <th style="padding:10px 12px;text-align:left">Status / Stage</th>
+          <th style="padding:10px 12px;text-align:left">Approver</th>
+          <th style="padding:10px 12px;text-align:left">Due</th>
+          <th style="padding:10px 12px;text-align:left">Confidentiality</th>
           <th style="padding:10px 12px;text-align:left">Updated</th>
-          <th style="padding:10px 12px;text-align:left">Source</th>
           <th style="padding:10px 12px;text-align:right">Action</th>
         </tr>
       </thead>
       <tbody id="approvals-table-body">
-        <tr><td colspan="7" style="padding:24px;text-align:center;color:var(--text2)">Open Approval Center to load approvals</td></tr>
+        <tr><td colspan="8" style="padding:24px;text-align:center;color:var(--text2)">Open Approval Center to load governed reviews</td></tr>
       </tbody>
     </table>
   </div>

@@ -237,6 +237,7 @@
 ### AP-041 — Expand Approval Center with adapters
 
 - **Owner:** Workflow architect
+- **Status (2026-08-09):** Completed — the Approval Center now loads a shared adapter contract in parallel across Permit, Document Control/SWMS, Risk, Incident, Legal, SOP, Training, MOC, Chemical, Contractor, Tools, BBS, Safety Engagement and Occupational Noise. Each queue row carries its authoritative table/record ID, reference, stage, approver, due date and confidentiality, deduplicates generic workflow requests, and opens the exact source record where authorised. Operational states that do not require a controlled decision are documented in the interface rather than misrepresented as approvals.
 - **First wave:** Incident, Legal, SWMS, SOP, Training and MOC.
 - **Second wave:** Chemical, Contractor, Tools, BBS, Safety Engagement and Noise.
 - **Adapter contract:** module, table, record ID, reference, title, stage, approver, due date, confidentiality and record opener.
