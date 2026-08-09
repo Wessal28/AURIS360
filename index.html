@@ -11091,9 +11091,11 @@ async function sopSaveDocument(){
       docBody.doc_ref=ref;
       docBody.reference_no=ref;
     }catch(_){}
-    await api('/documents',{m:'POST',p:'return=minimal',b:docBody});
+    var documentRows=await api('/documents',{m:'POST',p:'return=representation',b:docBody});
+    var documentRow=documentRows?.[0]||null;
     toast('SOP saved and registered in Document Control!');
     sopSwitchTab('list',document.getElementById('sop-tab-list'));
+    return {sop:sopRows?.[0]||null,document:documentRow};
   }catch(e){toastActionError('Save SOP','SOP Generator',e);console.error(e);}
 }
 
@@ -27886,6 +27888,7 @@ var MAP_SOURCE_ADAPTERS=[
   {key:'ohealth',page:'ohealth',aliases:['ohealth','occupational_health','occupational health'],match:/\boccupational\b|\bohealth\b|\baudiometry\b|\bspirometry\b|\bmedical surveillance\b|\bexposure monitoring\b/},
   {key:'noise',page:'noise',aliases:['noise','occupational_noise'],match:/\bnoise\b/},
   {key:'training',page:'training',aliases:['training','competency'],match:/\btraining\b|\bcompetency\b/},
+  {key:'sop',page:'sop',aliases:['sop','sop_generator','sop project'],match:/\bsopv[-_]|\bsop project\b|\bsop generator\b/},
   {key:'swms',page:'swms',aliases:['swms','method_statement','method statement'],match:/\bswms\b|\bmethod statement\b/},
   {key:'documents',page:'documents',aliases:['document','documents','document_control'],match:/\bdocument\b/},
   {key:'ai',page:'ai-insights',aliases:['ai','ai_insights'],match:/\bai document analysis\b/}
@@ -28062,6 +28065,9 @@ async function mapOpenExactSource(adapter,x){
       trainSwitchTab('followup',document.getElementById('train-tab-followup'));
       if(typeof tfLoad==='function')await tfLoad();
       if(mapHasSourceRow(tfAllData,id)&&typeof tfOpen==='function'){tfOpen(id);return true;}
+    }
+    if(adapter.key==='sop'&&typeof sovFocusProject==='function'){
+      await sovFocusProject(id);return true;
     }
   }catch(e){console.warn('MAP exact source navigation failed',adapter.key,e);}
   return false;

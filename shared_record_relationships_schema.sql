@@ -47,7 +47,7 @@ values
   ('training','training_followup','id',null,'Training Record',to_regclass('public.training_followup') is not null),
   ('training','competency_matrix','id',null,'Competency Record',to_regclass('public.competency_matrix') is not null),
   ('documents','documents','id','doc_ref','Controlled Document',to_regclass('public.documents') is not null),
-  ('sop','sop_video_projects','id',null,'SOP Project',to_regclass('public.sop_video_projects') is not null),
+  ('sop','sop_video_projects','id','reference','SOP Project',to_regclass('public.sop_video_projects') is not null),
   ('swms','documents','id','doc_ref','SWMS / Method Statement',to_regclass('public.documents') is not null)
 on conflict(module_key, table_name) do update
 set id_column = excluded.id_column,
@@ -237,6 +237,65 @@ begin
     from public.legal_compliance_records r
     join public.legal_requirements q on q.id::text=r.requirement_id and q.company_id=r.company_id
     where r.record_type in ('evidence','permit_licence')
+    on conflict (company_id,relationship_type,endpoint_a,endpoint_b) where status<>'archived' do nothing;
+  end if;
+end $$;
+
+-- Promote exact SOP project links. The publication link is authoritative only
+-- when sop_document_id resolves to a controlled Document in the same tenant.
+-- Legacy project relationships are migrated by explicit record ID only; no
+-- title or free-text inference is performed.
+do $$
+begin
+  if to_regclass('public.sop_video_projects') is not null then
+    insert into public.record_relationships(
+      company_id,source_module,source_table,source_id,source_ref,
+      target_module,target_table,target_id,target_ref,relationship_type,
+      target_revision,applicability,status,created_by,created_at,updated_at
+    )
+    select p.company_id,'sop','sop_video_projects',p.id::text,p.reference,
+           'documents','documents',d.id::text,d.doc_ref,'published_as',
+           coalesce(nullif(to_jsonb(d)->>'version',''),nullif(to_jsonb(d)->>'doc_version','')),jsonb_build_object('origin','sop_document_id_backfill'),
+           'active',p.created_by,p.created_at,p.updated_at
+    from public.sop_video_projects p
+    join public.documents d on d.id::text=p.sop_document_id and d.company_id=p.company_id
+    where nullif(btrim(p.sop_document_id),'') is not null
+      and p.processing_status='published'
+    on conflict (company_id,relationship_type,endpoint_a,endpoint_b) where status<>'archived' do nothing;
+  end if;
+
+  if to_regclass('public.sop_video_relationships') is not null then
+    insert into public.record_relationships(
+      company_id,source_module,source_table,source_id,source_ref,
+      target_module,target_table,target_id,target_ref,relationship_type,
+      source_revision,applicability,status,created_by,created_at,updated_at
+    )
+    select r.company_id,'sop','sop_video_projects',p.id::text,p.reference,
+           'risk','risk_assessments',ra.id::text,ra.ra_ref,coalesce(nullif(r.relationship_type,''),'derived_from'),
+           r.revision_code,jsonb_build_object('origin','sop_video_relationships_backfill'),
+           'active',r.created_by,r.created_at,r.created_at
+    from public.sop_video_relationships r
+    join public.sop_video_projects p on p.id::text=r.project_id and p.company_id=r.company_id
+    join public.risk_assessments ra on ra.id::text=r.related_record_id and ra.company_id=r.company_id
+    where r.related_module in ('risk','risk_assessment')
+    union all
+    select r.company_id,'sop','sop_video_projects',p.id::text,p.reference,
+           'permit','permits',pt.id::text,pt.permit_number,coalesce(nullif(r.relationship_type,''),'interfaces_with'),
+           r.revision_code,jsonb_build_object('origin','sop_video_relationships_backfill'),
+           'active',r.created_by,r.created_at,r.created_at
+    from public.sop_video_relationships r
+    join public.sop_video_projects p on p.id::text=r.project_id and p.company_id=r.company_id
+    join public.permits pt on pt.id::text=r.related_record_id and pt.company_id=r.company_id
+    where r.related_module in ('permit','ptw')
+    union all
+    select r.company_id,'sop','sop_video_projects',p.id::text,p.reference,
+           'documents','documents',d.id::text,d.doc_ref,coalesce(nullif(r.relationship_type,''),'published_as'),
+           r.revision_code,jsonb_build_object('origin','sop_video_relationships_backfill'),
+           'active',r.created_by,r.created_at,r.created_at
+    from public.sop_video_relationships r
+    join public.sop_video_projects p on p.id::text=r.project_id and p.company_id=r.company_id
+    join public.documents d on d.id::text=r.related_record_id and d.company_id=r.company_id
+    where r.related_module in ('document','documents','document_control')
     on conflict (company_id,relationship_type,endpoint_a,endpoint_b) where status<>'archived' do nothing;
   end if;
 end $$;
