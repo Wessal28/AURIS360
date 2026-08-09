@@ -256,6 +256,7 @@
 ### AP-043 — Standardise audit coverage
 
 - **Owner:** QA/Backend
+- **Status (2026-08-09):** Completed — the shared audit layer now applies stable module/action event codes and semantically classifies create, update, submit, approve, reject, archive, link, unlink, sensitive-record open and export events. It records authoritative references, correlation/outcome/sensitivity metadata and canonical relationship IDs; the Audit Trail exposes these fields and dynamically filters every event type. The rerunnable `audit_coverage_upgrade.sql` extends existing audit data without destructive rewriting, while `tests/audit_contract.test.cjs` verifies the mandatory event contract, controlled-module table coverage and workflow classification rules.
 - **Actions:**
   - Define mandatory events: create, update, submit, approve, reject, archive, link, unlink, open sensitive record and export.
   - Add contract tests per module.

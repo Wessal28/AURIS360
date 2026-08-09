@@ -2941,15 +2941,16 @@ async function relationshipCreate(source,target,relationshipType,options){
     p_applicability:options.applicability||{},p_allow_unresolved:options.allowUnresolved===true
   }});
   var row=Array.isArray(rows)?rows[0]:rows;
-  try{auditLogEvent('link','relationships','Connected records linked',{relationship_type:relationshipType||'related_to',source:source,target:target},{related_table:'record_relationships',related_id:row?.id||null,company_id:options.company_id||ccid()});}catch(_){}
+  try{auditLogEvent('link','relationships','Connected records linked',{relationship_type:relationshipType||'related_to',source:source,target:target},{related_table:'record_relationships',related_id:row?.id||null,related_ref:(source.ref||source.id)+' ↔ '+(target.ref||target.id),relationship_id:row?.id||null,company_id:options.company_id||ccid()});}catch(_){}
   return row||null;
 }
 async function relationshipArchive(relationshipId,reason){
   if(!relationshipId)return;
-  var current=await api('/record_relationships?select=applicability&id=eq.'+encodeURIComponent(relationshipId)+'&limit=1');
+  var current=await api('/record_relationships?select=*&id=eq.'+encodeURIComponent(relationshipId)+'&limit=1');
   var applicability=Object.assign({},current?.[0]?.applicability||{},{archive_reason:reason||'Relationship removed by user',archived_at:new Date().toISOString()});
   await api('/record_relationships?id=eq.'+encodeURIComponent(relationshipId),{m:'PATCH',p:'return=minimal',b:{status:'archived',applicability:applicability,updated_at:new Date().toISOString()}});
-  try{auditLogEvent('unlink','relationships','Connected-record relationship archived',{reason:reason||null},{related_table:'record_relationships',related_id:relationshipId,company_id:ccid()});}catch(_){}
+  var relationship=current?.[0]||{};
+  try{auditLogEvent('unlink','relationships','Connected-record relationship archived',{reason:reason||null,source:{module:relationship.source_module,table:relationship.source_table,id:relationship.source_id,ref:relationship.source_ref},target:{module:relationship.target_module,table:relationship.target_table,id:relationship.target_id,ref:relationship.target_ref}},{related_table:'record_relationships',related_id:relationshipId,related_ref:(relationship.source_ref||relationship.source_id||'Source')+' ↔ '+(relationship.target_ref||relationship.target_id||'Target'),relationship_id:relationshipId,company_id:relationship.company_id||ccid()});}catch(_){}
 }
 
 // Reusable Connected Records panel (AP-031). It intentionally discovers linkable
@@ -3120,7 +3121,7 @@ function auditCompanyId(body,path){
 }
 function auditRecordLabel(body){
   body=body||{};
-  var keys=['reference_no','permit_number','event_ref','incident_number','ra_ref','chemical_name','product_name','title','name','full_name','subject','description'];
+  var keys=['reference_no','reference','action_ref','permit_number','event_ref','incident_number','investigation_ref','ra_ref','doc_ref','course_ref','training_ref','code','chemical_name','product_name','title','name','full_name','subject','description'];
   for(var i=0;i<keys.length;i++){
     var v=body[keys[i]];
     if(v)return String(v).substring(0,90);
@@ -3145,15 +3146,73 @@ function auditIsSensitiveField(k){
 function auditChangedFields(body){
   return Object.keys(body||{}).filter(function(k){return !auditIsSensitiveField(k);});
 }
+var AUDIT_EVENT_CONTRACT={
+  mandatory:['create','update','submit','approve','reject','archive','link','unlink','open_sensitive','export'],
+  modules:{
+    incident:{tables:['events','investigations','incident_mgmt_records']},risk:{tables:['risk_assessments']},permit:{tables:['permits']},
+    documents:{tables:['documents','document_control_records']},swms:{tables:['documents']},legal:{tables:['legal_requirements','legal_assessments']},
+    sop:{tables:['sop_video_projects']},training:{tables:['training_sessions','training_records','training_followup','elearning_courses','elearning_enrolments']},
+    moc:{tables:['moc_change_requests']},chemical:{tables:['chemicals','chemical_sds_versions','chemical_use_approvals']},
+    contractor:{tables:['contractors','contractor_documents','contractor_assurance_profiles']},tools:{tables:['tools_equipment','equipment_assurance_profiles','equipment_assurance_records','equipment_maintenance_events']},
+    bbs:{tables:['safety_observations','bbs_observation_details','bbs_programmes','bbs_recognitions']},
+    engagement:{tables:['engagement_programmes','engagement_team_reviews','engagement_recognitions','engagement_disputes']},
+    noise:{tables:['noise_surveys','noise_mgmt_measurements','noise_mgmt_exposure_assessments','noise_mgmt_maps','noise_mgmt_reports']},
+    actions:{tables:['action_tracker']}
+  },
+  sensitiveTables:['investigations','incident_mgmt_records','occupational_disease_records','health_surveillance','noise_mgmt_health_statuses','engagement_disputes','engagement_coaching_plans','engagement_person_results']
+};
+function auditModuleForRecord(table,body){
+  table=String(table||'');body=body||{};
+  if(table==='documents'){
+    var type=String(body.doc_type||body.document_type||body.title||'').toLowerCase();
+    if(/swms|safe work method|method statement/.test(type))return 'swms';
+  }
+  var names=Object.keys(AUDIT_EVENT_CONTRACT.modules);
+  for(var i=0;i<names.length;i++)if(AUDIT_EVENT_CONTRACT.modules[names[i]].tables.indexOf(table)!==-1)return names[i];
+  return table||'system';
+}
+function auditSemanticAction(table,method,body){
+  method=String(method||'GET').toUpperCase();body=body||{};
+  if(table==='record_relationships'){
+    if(method==='POST')return 'link';
+    if(method==='DELETE'||String(body.status||'').toLowerCase()==='archived')return 'unlink';
+  }
+  if(method==='DELETE')return 'delete';
+  var values=Object.keys(body).filter(function(k){return /status|decision|outcome/i.test(k);}).map(function(k){return String(body[k]||'').toLowerCase();});
+  if(values.some(function(v){return ['submitted','pending_review','pending_approval','in_review','under_review'].includes(v);}))return 'submit';
+  if(values.some(function(v){return ['approved','accepted','validated','published','released','verified'].includes(v);}))return 'approve';
+  if(values.some(function(v){return ['rejected','declined','returned','not_approved'].includes(v);}))return 'reject';
+  if(values.some(function(v){return ['archived','retired','superseded'].includes(v);}))return 'archive';
+  return {POST:'create',PATCH:'update',PUT:'update'}[method]||method.toLowerCase();
+}
+function auditSensitivity(table,body){
+  if(AUDIT_EVENT_CONTRACT.sensitiveTables.indexOf(String(table||''))!==-1){
+    return /health|disease|clinical/.test(String(table||''))?'clinical':'restricted';
+  }
+  var level=String(body?.confidentiality||body?.privacy_level||body?.classification||'').toLowerCase();
+  return ['restricted','clinical','confidential'].includes(level)?level:'standard';
+}
+function auditUuid(){try{return crypto.randomUUID();}catch(_){return null;}}
+function auditPostEntry(entry){
+  var headers={'Content-Type':'application/json','apikey':KEY,'Authorization':'Bearer '+tok,'Prefer':'return=minimal'};
+  fetch(SB+'/rest/v1/audit_events',{method:'POST',headers:headers,body:JSON.stringify(entry)}).then(function(r){
+    if(r.ok)return;var legacy=Object.assign({},entry);['event_code','related_ref','relationship_id','correlation_id','outcome','sensitivity'].forEach(function(k){delete legacy[k];});
+    return fetch(SB+'/rest/v1/audit_events',{method:'POST',headers:headers,body:JSON.stringify(legacy)});
+  }).catch(function(){});
+}
 function auditApiMutation(path,method,o,response){
   try{
     method=(method||'GET').toUpperCase();
-    if(method==='GET')return;
     var table=auditTableFromPath(path);
-    if(!table||table==='audit_events')return;
     if(!tok||!prof)return;
+    if(method==='GET'){
+      var readId=auditRelatedIdFromPath(path),readRow=Array.isArray(response)?response[0]:response,readSensitivity=auditSensitivity(table,readRow||{});
+      if(readId&&readSensitivity!=='standard'&&table!=='audit_events')auditPostEntry({company_id:auditCompanyId(readRow||{},path),actor_user_id:prof?.id||null,actor_name:prof?.full_name||prof?.email||'User',actor_role:activeRole(),action:'open_sensitive',module_name:auditModuleForRecord(table,readRow||{}),related_table:table,related_id:readId,related_ref:auditRecordLabel(readRow||{})||null,event_code:auditModuleForRecord(table,readRow||{})+'.open_sensitive',correlation_id:auditUuid(),outcome:'success',sensitivity:readSensitivity,summary:'Sensitive '+auditLabel(table)+' record opened',details:{method:'GET',path:path,access_surface:'record_query'}});
+      return;
+    }
+    if(!table||table==='audit_events'||table==='notification_events'||table==='record_relationships'||table==='rpc'||/_audit_events$/.test(table))return;
     var body=o?.b||{};
-    var action={POST:'create',PATCH:'update',PUT:'update',DELETE:'delete'}[method]||method.toLowerCase();
+    var action=auditSemanticAction(table,method,body);
     var first=Array.isArray(response)?response[0]:response;
     var relatedId=first?.id||body?.id||auditRelatedIdFromPath(path);
     var label=auditRecordLabel(first||body);
@@ -3163,23 +3222,27 @@ function auditApiMutation(path,method,o,response){
       actor_name:prof?.full_name||prof?.email||'User',
       actor_role:activeRole(),
       action:action,
-      module_name:table,
+      module_name:auditModuleForRecord(table,first||body),
       related_table:table,
       related_id:relatedId,
+      related_ref:label||null,
+      relationship_id:table==='record_relationships'?relatedId:null,
+      correlation_id:auditUuid(),
+      event_code:auditModuleForRecord(table,first||body)+'.'+action,
+      outcome:'success',
+      sensitivity:auditSensitivity(table,first||body),
       summary:auditLabel(action)+' '+auditLabel(table)+(label?' - '+label:''),
       details:{method:method,path:path,changed_fields:auditChangedFields(body),record_label:label}
     };
-    fetch(SB+'/rest/v1/audit_events',{
-      method:'POST',
-      headers:{'Content-Type':'application/json','apikey':KEY,'Authorization':'Bearer '+tok,'Prefer':'return=minimal'},
-      body:JSON.stringify(entry)
-    }).catch(function(){});
+    auditPostEntry(entry);
   }catch(_){}
 }
 function auditLogEvent(action,moduleName,summary,details,opts){
   try{
     if(!tok||!prof)return;
     opts=opts||{};
+    var table=opts.related_table||moduleName||'system';
+    if(action==='open'&&auditSensitivity(table,details)!=='standard')action='open_sensitive';
     var entry={
       company_id:opts.company_id||auditCompanyId(details||{},'')||prof?.company_id||null,
       actor_user_id:prof?.id||null,
@@ -3187,17 +3250,19 @@ function auditLogEvent(action,moduleName,summary,details,opts){
       actor_role:activeRole(),
       action:action,
       module_name:moduleName||'system',
-      related_table:opts.related_table||moduleName||'system',
+      related_table:table,
       related_id:opts.related_id||null,
+      related_ref:opts.related_ref||auditRecordLabel(details||{})||null,
+      relationship_id:opts.relationship_id||null,
+      correlation_id:opts.correlation_id||auditUuid(),
+      event_code:(moduleName||auditModuleForRecord(table,details))+'.'+action,
+      outcome:opts.outcome||'success',
+      sensitivity:opts.sensitivity||auditSensitivity(table,details),
       summary:summary||auditLabel(action)+' '+auditLabel(moduleName||'system'),
       details:details||{},
       user_agent:navigator.userAgent||null
     };
-    fetch(SB+'/rest/v1/audit_events',{
-      method:'POST',
-      headers:{'Content-Type':'application/json','apikey':KEY,'Authorization':'Bearer '+tok,'Prefer':'return=minimal'},
-      body:JSON.stringify(entry)
-    }).catch(function(){});
+    auditPostEntry(entry);
   }catch(_){}
 }
 // ===================================================================
@@ -40426,6 +40491,12 @@ async function loadAudit(){
 }
 
 function auditPopulateFilters(){
+  var actionSel=document.getElementById('audit-filter-action');
+  if(actionSel){
+    var selectedAction=actionSel.value||'',actions=Array.from(new Set(AUDIT_EVENT_CONTRACT.mandatory.concat((auditRows||[]).map(function(x){return x.action||'';})).filter(Boolean))).sort();
+    actionSel.innerHTML='<option value="">All actions</option>'+actions.map(function(a){return '<option value="'+escH(a)+'">'+escH(auditLabel(a))+'</option>';}).join('');
+    if(actions.indexOf(selectedAction)!==-1)actionSel.value=selectedAction;
+  }
   var moduleSel=document.getElementById('audit-filter-module');
   if(moduleSel){
     var current=moduleSel.value||'';
@@ -40457,7 +40528,14 @@ function auditActionBadge(action){
     ai_query:['#F5F3FF','#5B21B6'],
     ai_error:['#FCEBEB','#A32D2D'],
     export:['#FEF9EC','#854F0B'],
-    sync:['#E0F2FE','#075985']
+    sync:['#E0F2FE','#075985'],
+    submit:['#FFF7ED','#9A3412'],
+    approve:['#EAF3DE','#3B6D11'],
+    reject:['#FCEBEB','#A32D2D'],
+    archive:['#F3F4F6','#374151'],
+    link:['#ECFDF5','#047857'],
+    unlink:['#FFF1F2','#BE123C'],
+    open_sensitive:['#F5F3FF','#6D28D9']
   }[a]||['#f3f4f6','#6B7280'];
   var bg=cfg[0], c=cfg[1];
   return '<span style="display:inline-flex;align-items:center;padding:3px 8px;border-radius:999px;background:'+bg+';color:'+c+';font-size:11px;font-weight:700">'+escH(auditLabel(a||'action'))+'</span>';
@@ -40496,7 +40574,7 @@ function auditRender(){
       +'<td style="padding:10px 12px;font-weight:700">'+escH(auditLabel(x.module_name||x.related_table||'-'))+'</td>'
       +'<td style="padding:10px 12px">'+escH(x.actor_name||'-')+'<div style="font-size:11px;color:var(--text2)">'+escH(auditLabel(x.actor_role||''))+'</div></td>'
       +'<td style="padding:10px 12px;max-width:360px">'+escH(x.summary||'')+'<div style="font-size:11px;color:var(--text2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+escH(fields||details.path||'')+'</div></td>'
-      +'<td style="padding:10px 12px;font-family:monospace;font-size:11px;color:var(--text2)">'+escH(x.related_id||'-')+'</td>'
+      +'<td style="padding:10px 12px;font-family:monospace;font-size:11px;color:var(--text2)">'+escH(x.related_ref||x.related_id||'-')+(x.relationship_id?'<div style="margin-top:3px;color:#047857">Relationship '+escH(String(x.relationship_id).slice(0,8))+'</div>':'')+'</td>'
       +'<td style="padding:10px 12px;text-align:right"><button class="btn btn-sm" onclick="auditCopyDetails(\''+escH(x.id)+'\')"><i class="ti ti-copy"></i>Details</button></td>'
       +'</tr>';
   }).join('');
@@ -40528,6 +40606,9 @@ function auditCopyDetails(id){
     +'<div style="color:var(--text2);font-weight:700">Module</div><div style="font-weight:800">'+escH(auditLabel(x.module_name||x.related_table||'-'))+'</div>'
     +'<div style="color:var(--text2);font-weight:700">User</div><div>'+escH(x.actor_name||'-')+' <span style="color:var(--text2)">('+escH(auditLabel(x.actor_role||''))+')</span></div>'
     +'<div style="color:var(--text2);font-weight:700">Record</div><div style="font-family:monospace;font-size:12px">'+escH(x.related_id||'-')+'</div>'
+    +'<div style="color:var(--text2);font-weight:700">Reference</div><div>'+escH(x.related_ref||'-')+'</div>'
+    +'<div style="color:var(--text2);font-weight:700">Relationship</div><div style="font-family:monospace;font-size:12px">'+escH(x.relationship_id||'Not applicable')+'</div>'
+    +'<div style="color:var(--text2);font-weight:700">Event code</div><div>'+escH(x.event_code||((x.module_name||'system')+'.'+(x.action||'event')))+'</div>'
     +'<div style="color:var(--text2);font-weight:700">Summary</div><div>'+escH(x.summary||'-')+'</div>'
     +'<div style="color:var(--text2);font-weight:700">Changed fields</div><div>'+escH(fields.length?fields.join(', '):'No field list recorded')+'</div>'
     +'</div><details style="margin-top:16px"><summary style="cursor:pointer;font-weight:800;color:var(--text2)">Raw event JSON</summary><pre style="margin-top:10px;white-space:pre-wrap;background:#0f172a;color:#e5e7eb;border-radius:8px;padding:12px;font-size:11px;max-height:260px;overflow:auto">'+escH(txt)+'</pre></details>';
@@ -40548,7 +40629,7 @@ function auditCopyDetails(id){
 function auditExportCsv(){
   var rows=auditFilteredRows();
   if(!rows.length){toast('No audit rows to export',false);return;}
-  var cols=['created_at','action','module_name','actor_name','actor_role','summary','related_table','related_id'];
+  var cols=['created_at','event_code','action','module_name','actor_name','actor_role','summary','related_table','related_id','related_ref','relationship_id','outcome','sensitivity','correlation_id'];
   var csv=[cols.join(',')].concat(rows.map(function(r){
     return cols.map(function(c){
       var v=r[c]||'';
