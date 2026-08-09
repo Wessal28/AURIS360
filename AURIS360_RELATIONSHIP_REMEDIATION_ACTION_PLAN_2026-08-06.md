@@ -347,6 +347,7 @@
 ### AP-062 — Roll out by module cohort
 
 - **Owner:** Product/Release manager
+- **Status (2026-08-09):** Controlled rollout infrastructure implemented — `controlled_rollout_upgrade.sql` adds tenant-scoped Disabled/Pilot/Enabled/Paused cohort policies, eight release-gate evidence fields, RLS-protected monitoring events and a cohort health summary. Settings now provides a SEPHS-admin rollout control surface, blocks Pilot/Enabled transitions until their required gates pass, records failed deep links and applies the cohort gate above the existing `companies.module_access` and role rules. Unsaved tenants remain in compatibility mode, so the upgrade does not unexpectedly hide existing modules. `tests/controlled_rollout_contract.test.cjs` protects the four cohorts, gate rules, health taxonomy, tenant isolation and compatibility behavior. Executing each client rollout remains an explicit Product/Release decision after environment-backed acceptance testing.
 - **Suggested cohorts:**
   1. Master Action Plan, Incidents, Inspections and Risk.
   2. Permit, SWMS, Documents, Legal and SOP.

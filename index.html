@@ -4964,6 +4964,7 @@ async function authOnSignIn(authData) {
   authSaveSession(authData);
   authScheduleRefresh(authData);
   await loadProf(authData.user.id);
+  await loadRolloutRuntimeConfig();
   // Stamp last_login on the profile (fresh sign-in only, not page refresh)
   try {
     await api('/profiles?id=eq.'+authData.user.id, {
@@ -5239,6 +5240,7 @@ async function authInitSession() {
   try {
     authScheduleRefresh(stored);
     await loadProf(stored.user_id);
+    await loadRolloutRuntimeConfig();
     if(timedOut) return;
     clearTimeout(timeout);
     // Hide login, show app
@@ -5833,6 +5835,31 @@ var ROLE_ALLOWED = {
   'user':        ['dashboard','kpi','events','observation'],
 };
 
+// Controlled rollout cohorts (AP-062). No saved rows means compatibility mode:
+// existing companies.module_access and role rules continue to apply unchanged.
+var ROLLOUT_COHORTS=[
+  {key:'core_control',label:'Core Control',modules:['actions','events','inspection','risk']},
+  {key:'controlled_content',label:'Controlled Content',modules:['permit','swms','documents','legal','sop']},
+  {key:'people_health',label:'People & Health',modules:['training','people','ppe','ohealth']},
+  {key:'specialist_operations',label:'Specialist Operations',modules:['observation','engagement','contractor','tools','emergency','esg','noise']}
+];
+var rolloutRuntimeRows=[];
+function rolloutCompanyId(){return (isSA()&&sephsCompanyContext)?sephsCompanyContext:prof?.company_id||null;}
+function rolloutCohortForModule(pageKey){return ROLLOUT_COHORTS.find(function(c){return c.modules.indexOf(pageKey)!==-1;})||null;}
+function rolloutModuleAllowed(pageKey){
+  if(isSA())return true;
+  var cohort=rolloutCohortForModule(pageKey);if(!cohort)return true;
+  var row=(rolloutRuntimeRows||[]).find(function(r){return r.cohort_key===cohort.key;});
+  if(!row)return true; // Compatibility read: no explicit rollout policy yet.
+  return row.status==='pilot'||row.status==='enabled';
+}
+async function loadRolloutRuntimeConfig(){
+  var companyId=rolloutCompanyId();rolloutRuntimeRows=[];if(!companyId)return [];
+  try{rolloutRuntimeRows=await api('/company_rollout_cohorts?select=*&company_id=eq.'+encodeURIComponent(companyId))||[];}
+  catch(e){if(!/company_rollout_cohorts|schema cache|does not exist|not found/i.test(String(e.message||e)))console.warn('Rollout configuration unavailable',e);rolloutRuntimeRows=[];}
+  return rolloutRuntimeRows;
+}
+
 // Returns true if the current user's role is allowed to access `pageKey`.
 // THREE gates, all must pass:
 //   1. Feature flag (LAUNCHED_MODULES) - is the module globally enabled?
@@ -5861,6 +5888,7 @@ function canAccessPage(pageKey) {
   if(pageKey === 'approvals') {
     if(['sephs_admin','admin','hse_manager','hse_officer'].indexOf(activeRole()) === -1) return false;
   }
+  if(!rolloutModuleAllowed(pageKey)) return false;
 
   // Legacy rollout guard: old client records may still have a short module list
   // from the early rollout. Treat those as "full production access by role" so
@@ -13018,6 +13046,52 @@ if(!peopleCanManage()){toast('Access denied',false);return;}
 try{await api('/people?id=eq.'+id,{m:'PATCH',p:'return=minimal',b:{status:'active'}});toast('Person reactivated');await loadPeople();await loadPeopleCache();}catch(e){toastActionError('Reactivate person','People',e);}
 }
 
+var ROLLOUT_RELEASE_GATES=['database','data_safety','security','navigation','resilience','workflow','mobile_offline','rollback'];
+function rolloutGateLabel(key){return String(key||'').replace(/_/g,' ').replace(/\b\w/g,function(c){return c.toUpperCase();});}
+function rolloutStatusBadge(status){var c={disabled:['#64748B','#F1F5F9'],pilot:['#B45309','#FFFBEB'],enabled:['#047857','#ECFDF5'],paused:['#B91C1C','#FEF2F2']}[status]||['#64748B','#F1F5F9'];return '<span style="padding:4px 8px;border-radius:99px;font-size:10px;font-weight:850;color:'+c[0]+';background:'+c[1]+'">'+escH(String(status||'compatibility').replace(/_/g,' '))+'</span>';}
+function rolloutCanManage(){return isSA();}
+function rolloutDefaultRow(cohort){return {company_id:rolloutCompanyId(),cohort_key:cohort.key,status:'disabled',module_keys:cohort.modules.slice(),compatibility_reads:true,gate_results:{}};}
+function rolloutRender(rows,health){
+  var card=document.getElementById('settings-rollout-control-card'),el=document.getElementById('rollout-control-body');if(!card||!el)return;
+  card.style.display=rolloutCanManage()?'block':'none';if(!rolloutCanManage())return;
+  var companyId=rolloutCompanyId();if(!companyId){el.innerHTML='<div class="setup-message"><div class="setup-message-icon"><i class="ti ti-building"></i></div><div><div class="setup-message-title">Select a company</div><div>Choose one company from the top bar before configuring its rollout cohorts.</div></div></div>';return;}
+  rows=rows||[];health=health||[];
+  var h='<div style="padding:10px 12px;border:1px solid #BFDBFE;background:#EFF6FF;border-radius:9px;color:#1E40AF;font-size:11px;margin-bottom:12px"><b>Compatibility safety:</b> tenants without saved cohort rows continue using their existing module access. Saving a cohort makes its Disabled/Paused/Pilot/Enabled status authoritative.</div>';
+  h+='<div style="display:flex;flex-direction:column;gap:10px">';
+  ROLLOUT_COHORTS.forEach(function(cohort){
+    var row=rows.find(function(r){return r.cohort_key===cohort.key;})||rolloutDefaultRow(cohort),summary=health.find(function(x){return x.cohort_key===cohort.key;})||{},gates=row.gate_results||{};
+    h+='<div style="border:1px solid var(--border);border-radius:11px;padding:13px;background:#fff">'
+      +'<div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start;flex-wrap:wrap"><div><div style="font-size:14px;font-weight:900">'+escH(cohort.label)+' '+rolloutStatusBadge(row.status)+'</div><div style="font-size:11px;color:var(--text2);margin-top:3px">'+escH(cohort.modules.join(' · '))+'</div></div>'
+      +'<div style="display:flex;gap:8px;align-items:end"><label style="font-size:10px;font-weight:800;color:var(--text2)">STATUS<select id="rollout-status-'+cohort.key+'" style="min-width:125px;margin-top:3px"><option value="disabled">Disabled</option><option value="pilot">Pilot</option><option value="enabled">Enabled</option><option value="paused">Paused</option></select></label><button class="btn btn-primary btn-sm" onclick="rolloutSaveCohort(\''+cohort.key+'\')"><i class="ti ti-device-floppy"></i>Save</button></div></div>'
+      +'<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(125px,1fr));gap:6px;margin-top:11px">'+ROLLOUT_RELEASE_GATES.map(function(g){return '<label style="display:flex;gap:6px;align-items:center;font-size:10px;padding:6px 7px;border:1px solid var(--border);border-radius:7px"><input id="rollout-gate-'+cohort.key+'-'+g+'" type="checkbox" '+(gates[g]?'checked':'')+'/> '+escH(rolloutGateLabel(g))+'</label>';}).join('')+'</div>'
+      +'<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(105px,1fr));gap:6px;margin-top:10px;font-size:10px;color:var(--text2)"><span><b>'+Number(summary.open_findings||0)+'</b> open</span><span><b>'+Number(summary.module_errors||0)+'</b> errors</span><span><b>'+Number(summary.orphan_relationships||0)+'</b> orphans</span><span><b>'+Number(summary.failed_deep_links||0)+'</b> failed links</span><span><b>'+Number(summary.approval_discrepancies||0)+'</b> approval gaps</span></div>'
+      +'</div>';
+  });
+  el.innerHTML=h+'</div>';
+  ROLLOUT_COHORTS.forEach(function(c){var row=rows.find(function(r){return r.cohort_key===c.key;});var sel=document.getElementById('rollout-status-'+c.key);if(sel)sel.value=row?.status||'disabled';});
+}
+async function loadRolloutControl(){
+  var card=document.getElementById('settings-rollout-control-card');if(card)card.style.display=rolloutCanManage()?'block':'none';if(!rolloutCanManage())return;
+  var companyId=rolloutCompanyId();if(!companyId)return rolloutRender([],[]);
+  var el=document.getElementById('rollout-control-body');if(el)el.innerHTML='<div class="loading">Loading controlled rollout...</div>';
+  try{var result=await Promise.all([api('/company_rollout_cohorts?select=*&company_id=eq.'+encodeURIComponent(companyId)),api('/rollout_cohort_health_summary?select=*&company_id=eq.'+encodeURIComponent(companyId))]);rolloutRuntimeRows=result[0]||[];rolloutRender(result[0]||[],result[1]||[]);}
+  catch(e){rolloutRuntimeRows=[];if(el)el.innerHTML='<div class="setup-message danger"><div class="setup-message-icon"><i class="ti ti-flag"></i></div><div><div class="setup-message-title">Controlled rollout setup required</div><div>Run <code>controlled_rollout_upgrade.sql</code> in Supabase.</div><div class="setup-message-detail">'+escH(e.message||e)+'</div></div></div>';}
+}
+async function rolloutSaveCohort(cohortKey){
+  var cohort=ROLLOUT_COHORTS.find(function(c){return c.key===cohortKey;});if(!cohort||!rolloutCanManage())return;
+  var status=document.getElementById('rollout-status-'+cohortKey)?.value||'disabled',gates={};ROLLOUT_RELEASE_GATES.forEach(function(g){gates[g]=!!document.getElementById('rollout-gate-'+cohortKey+'-'+g)?.checked;});
+  if(status==='enabled'&&!ROLLOUT_RELEASE_GATES.every(function(g){return gates[g];})){toast('Complete every release gate before enabling this cohort.',false);return;}
+  if(status==='pilot'&&!['database','security','navigation'].every(function(g){return gates[g];})){toast('Pilot requires Database, Security and Navigation gates.',false);return;}
+  var body={company_id:rolloutCompanyId(),cohort_key:cohort.key,status:status,module_keys:cohort.modules,compatibility_reads:true,gate_results:gates,enabled_at:status==='enabled'?new Date().toISOString():null,enabled_by:prof?.id||null,updated_at:new Date().toISOString()};
+  try{await api('/company_rollout_cohorts?on_conflict=company_id,cohort_key',{m:'POST',p:'resolution=merge-duplicates,return=minimal',b:body});auditLogEvent('update','rollout','Rollout cohort updated',body,{related_table:'company_rollout_cohorts',related_id:cohort.key,company_id:body.company_id});toast(cohort.label+' rollout saved');await loadRolloutRuntimeConfig();applyRoles();modulesMenuBuild();await loadRolloutControl();}catch(e){toast('Rollout setting failed: '+(e.message||e),false);}
+}
+async function rolloutRecordHealthEvent(eventType,payload){
+  payload=payload||{};var companyId=rolloutCompanyId();if(!companyId)return;
+  var moduleKey=payload.module_key||payload.module||'',cohort=rolloutCohortForModule(moduleKey),fingerprint=payload.fingerprint||[eventType,moduleKey,payload.record_id||''].join(':');
+  try{await api('/rollout_health_events',{m:'POST',p:'return=minimal',b:{company_id:companyId,cohort_key:cohort?.key||null,module_key:moduleKey||null,event_type:eventType,severity:payload.severity||'warning',record_table:payload.record_table||null,record_id:payload.record_id||null,record_ref:payload.record_ref||null,fingerprint:fingerprint,detail:payload.detail||{}}});}catch(_){}
+}
+window.addEventListener('error',function(event){try{var active=document.querySelector('.page.active'),moduleKey=active?active.id.replace('page-',''):'app',message=String(event.message||'Unexpected module error').slice(0,300);rolloutRecordHealthEvent('module_error',{module_key:moduleKey,severity:'error',fingerprint:['module-error',moduleKey,message].join(':'),detail:{message:message}});}catch(_){}});
+
 function loadSettings(){
 if(isAdm())document.getElementById('logo-settings').style.display='block';
 document.getElementById('my-profile-info').innerHTML='<div style="font-size:13px"><strong>'+(prof?.full_name||'--')+'</strong><br><span style="color:var(--text2)">'+(prof?.email||'--')+'</span><br>'+stat(prof?.role)+'</div>';
@@ -13026,6 +13100,7 @@ try{ loadSecuritySlaSettings(); }catch(e){ console.error('loadSecuritySlaSetting
 try{ loadSystemHealth(); }catch(e){ console.error('loadSystemHealth:',e); }
 try{ loadRelationshipRepairQueue(false); }catch(e){ console.error('loadRelationshipRepairQueue:',e); }
 try{ loadPersonIdentityReconciliation(false); }catch(e){ console.error('loadPersonIdentityReconciliation:',e); }
+try{ loadRolloutControl(); }catch(e){ console.error('loadRolloutControl:',e); }
 try{ loadCustomFieldSettings(); }catch(e){ console.error('loadCustomFieldSettings:',e); }
 try{ offlineRenderQueueSettings(); }catch(e){ console.error('offlineRenderQueueSettings:',e); }
 try{ renderClientDemoCommandCenter(); }catch(e){ console.error('renderClientDemoCommandCenter:',e); }
@@ -36622,9 +36697,11 @@ function saCompanyMenuBuild() {
   menu.innerHTML = html;
 }
 
-function saCompanyPick(companyId) {
+async function saCompanyPick(companyId) {
   saCompanyMenuClose();
   saCompanySetContext(companyId);
+  await loadRolloutRuntimeConfig();
+  applyRoles();
 
   // Reload the current page's data with the new filter context.
   // We re-invoke showPage() for the active page, which reuses the canonical
@@ -39403,6 +39480,7 @@ function deepLinkClear(removeQuery){
   if(removeQuery!==false)try{var url=new URL(window.location.href);['goto','record','ref','table','company'].forEach(function(k){url.searchParams.delete(k);});history.replaceState(null,'',url.pathname+(url.search||'')+(url.hash||''));}catch(_){}
 }
 function deepLinkShowNotice(message,retry){
+  try{var failed=pendingDeepLinkRequest||deepLinkReadStored();rolloutRecordHealthEvent('failed_deep_link',{module_key:failed?.goto||'',record_table:failed?.table||null,record_id:failed?.record||null,record_ref:failed?.ref||null,fingerprint:['deep-link',failed?.goto||'',failed?.record||'',String(message||'').slice(0,80)].join(':'),detail:{reason:String(message||'').slice(0,500),retryable:!!retry}});}catch(_){}
   var el=document.getElementById('deep-link-notice');
   if(!el){el=document.createElement('div');el.id='deep-link-notice';el.style.cssText='position:fixed;right:18px;top:84px;z-index:940;max-width:470px;background:#fff;border:1px solid #F5B7B1;border-left:5px solid #DC2626;border-radius:10px;padding:12px 14px;box-shadow:0 12px 34px rgba(15,23,42,.22);font-size:12px;color:#334155';document.body.appendChild(el);}
   el.innerHTML='<div style="font-weight:900;color:#991B1B;margin-bottom:4px"><i class="ti ti-link-off"></i> Linked record could not be opened</div><div>'+escH(message)+'</div><div style="display:flex;gap:7px;justify-content:flex-end;margin-top:9px">'+(retry?'<button class="btn btn-sm" onclick="deepLinkResume(\'retry\')"><i class="ti ti-refresh"></i>Retry</button>':'')+'<button class="btn btn-sm" onclick="deepLinkClear(true)">Dismiss</button></div>';
@@ -54780,6 +54858,17 @@ I can help you:<br>
 </style>
 
 <div class="card"><div class="card-title">My profile</div><div id="my-profile-info"></div></div>
+
+<div class="card" id="settings-rollout-control-card" style="display:none">
+  <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;margin-bottom:12px">
+    <div>
+      <div class="card-title" style="display:flex;align-items:center;gap:8px;margin-bottom:4px"><i class="ti ti-flag-3" style="color:#7C3AED"></i>Controlled Rollout</div>
+      <div style="font-size:12px;color:var(--text2);line-height:1.5">Enable module cohorts per tenant only after their release gates pass; pause a cohort without deleting its configuration or data.</div>
+    </div>
+    <button class="btn" onclick="loadRolloutControl()"><i class="ti ti-refresh"></i>Refresh rollout</button>
+  </div>
+  <div id="rollout-control-body"><div class="loading">Loading controlled rollout...</div></div>
+</div>
 
 <div class="card" id="settings-system3health-card" style="display:none">
   <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;margin-bottom:12px">
