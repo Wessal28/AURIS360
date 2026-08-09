@@ -266,6 +266,7 @@
 ### AP-044 — Separate MOC from corrective actions
 
 - **Owner:** Product/Backend
+- **Status (2026-08-09):** Completed — Management of Change now uses a dedicated `moc_change_requests` header with a controlled Draft-to-Closed lifecycle. The interface reads and writes that register, participates in Approval Center and exact-record routing, exposes reciprocal Connected Records and creates corrective actions as independent Master Action Plan records. `moc_change_requests_upgrade.sql` migrates legacy MOC-shaped action rows without deleting them, preserves each original action as a linked implementation action and updates the relationship registry. A safe frontend fallback keeps legacy records visible until the migration is applied, and `tests/moc_separation_contract.test.cjs` guards the separation contract.
 - **Actions:**
   - Introduce a dedicated change-request header and lifecycle.
   - Link resulting risk assessments, documents, training, permits and corrective actions.

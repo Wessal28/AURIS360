@@ -30,7 +30,7 @@ values
   ('legal','legal_compliance_records','id','reference','Legal Evidence / Permit',to_regclass('public.legal_compliance_records') is not null),
   ('chemical','chemical_register','id','chemical_ref','Chemical',to_regclass('public.chemical_register') is not null),
   ('atex','atex_areas','id','area_ref','ATEX Area',to_regclass('public.atex_areas') is not null),
-  ('moc','action_tracker','id','source_ref','Management of Change',to_regclass('public.action_tracker') is not null),
+  ('moc','moc_change_requests','id','moc_ref','Management of Change',to_regclass('public.moc_change_requests') is not null),
   ('action','action_tracker','id','action_ref','Master Action',to_regclass('public.action_tracker') is not null),
   ('contractor','contractors','id','contractor_ref','Contractor',to_regclass('public.contractors') is not null),
   ('contractor','contractor_incidents','id','ref_number','Contractor Incident',to_regclass('public.contractor_incidents') is not null),

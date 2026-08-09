@@ -27636,12 +27636,14 @@ function atexOpenRA(){showPage('risk',null);setTimeout(function(){if(typeof raLo
 function atexOpenPTW(){showPage('permit',null);}
 
 // ===== MANAGEMENT OF CHANGE (MOC) =====
-let mocData=[], mocEditId=null;
+let mocData=[], mocEditId=null, mocLegacyMode=false;
 const MOC_TYPE_LABELS={process:'Process change',equipment:'Equipment / machinery',chemical:'Chemical / substance',layout:'Layout / premises',people:'Organisation / people',supplier:'Supplier / contractor',legal:'Legal / permit condition',temporary:'Temporary change',emergency:'Emergency change',other:'Other change'};
-const MOC_STATUS_LABELS={open:'Request / screening',in_progress:'Approved / implementation',pending_verification:'Post-change review',closed:'Closed',cancelled:'Rejected / cancelled'};
-function mocStatusBadge(status){var st=status||'open';var cfg=MAP_STATUS_CFG[st]||MAP_STATUS_CFG.open;return '<span class="badge" style="background:'+cfg.bg+';color:'+cfg.tc+'">'+(MOC_STATUS_LABELS[st]||cfg.label)+'</span>';}
+const MOC_STATUS_LABELS={draft:'Draft',screening:'Screening',impact_assessment:'Impact assessment',pending_approval:'Pending approval',approved:'Approved',implementation:'Implementation',verification:'Post-change verification',closed:'Closed',rejected:'Rejected',cancelled:'Cancelled',open:'Screening',in_progress:'Implementation',pending_verification:'Post-change verification'};
+const MOC_STATUS_COLORS={draft:['#F1F5F9','#475569'],screening:['#E6F1FB','#185FA5'],impact_assessment:['#FEF9EC','#854F0B'],pending_approval:['#F3E8FF','#7E22CE'],approved:['#ECFDF5','#047857'],implementation:['#DBEAFE','#1D4ED8'],verification:['#EDE9FE','#6D28D9'],closed:['#EAF3DE','#3B6D11'],rejected:['#FCEBEB','#A32D2D'],cancelled:['#F3F4F6','#6B7280']};
+function mocCanonicalStatus(status){return ({open:'screening',in_progress:'implementation',pending_verification:'verification'}[status]||status||'draft');}
+function mocStatusBadge(status){var st=mocCanonicalStatus(status),cfg=MOC_STATUS_COLORS[st]||MOC_STATUS_COLORS.draft;return '<span class="badge" style="background:'+cfg[0]+';color:'+cfg[1]+'">'+(MOC_STATUS_LABELS[st]||st)+'</span>';}
 function mocPriorityBadge(priority){var p=priority||'medium';var cfg=MAP_PRIORITY_CFG[p]||MAP_PRIORITY_CFG.medium;return '<span class="badge" style="background:'+cfg.bg+';color:'+cfg.tc+'">'+cfg.label+'</span>';}
-function mocRef(x){return displayRecordRef(x,['source_ref','action_ref'],'MOC-DRAFT');}
+function mocRef(x){return displayRecordRef(x,['moc_ref','source_ref','action_ref'],'MOC-DRAFT');}
 function mocMetaFromDescription(desc,key){var m=String(desc||'').match(new RegExp('^'+key+':\\s*(.*)$','mi'));return m?m[1].trim():'';}
 function mocBuildDescription(){
   var g=function(id){var el=document.getElementById(id);return el?el.value||'':'';};
@@ -27660,18 +27662,24 @@ function mocBuildDescription(){
 async function loadMOC(){
   var list=document.getElementById('moc-list');if(list)list.innerHTML='<div class="loading-msg">Loading MOC register...</div>';
   try{
-    mocData=await api('/action_tracker?select=*'+cf()+'&source_module=eq.moc&order=created_at.desc')||[];
+    mocData=await api('/moc_change_requests?select=*'+cf()+'&order=created_at.desc')||[];
+    mocLegacyMode=false;
     mocRender();
   }catch(e){
-    if(list)list.innerHTML=setupFriendlyMessage('Management of Change register',e.message);
+    try{
+      mocData=await api('/action_tracker?select=*'+cf()+'&source_module=eq.moc&order=created_at.desc')||[];
+      mocLegacyMode=true;mocRender();
+      if(list)list.insertAdjacentHTML('afterbegin','<div class="card" style="border-left:4px solid #EF9F27;background:#FFFBEB;font-size:12px;color:#854F0B"><b>Database upgrade pending.</b> Existing MOC records are shown safely. Run <b>moc_change_requests_upgrade.sql</b> to enable the dedicated lifecycle, approvals and linked actions.</div>');
+    }catch(legacyError){if(list)list.innerHTML=setupFriendlyMessage('Management of Change register',legacyError.message);}
   }
 }
 function mocRender(){
-  var total=mocData.length, open=mocData.filter(x=>['open','in_progress'].includes(x.status)).length, review=mocData.filter(x=>x.status==='pending_verification').length, closed=mocData.filter(x=>x.status==='closed').length;
+  var statusOf=function(x){return mocCanonicalStatus(x.lifecycle_status||x.status);};
+  var total=mocData.length, open=mocData.filter(x=>['draft','screening','impact_assessment','pending_approval','approved','implementation'].includes(statusOf(x))).length, review=mocData.filter(x=>statusOf(x)==='verification').length, closed=mocData.filter(x=>statusOf(x)==='closed').length;
   [['moc-m3total',total],['moc-m3open',open],['moc-m3review',review],['moc-m3closed',closed]].forEach(function(p){var el=document.getElementById(p[0]);if(el)el.textContent=p[1];});
   var q=(document.getElementById('moc-search')?.value||'').toLowerCase();
   var fs=document.getElementById('moc-filter-status')?.value||'';
-  var rows=mocData.filter(function(x){var hay=[mocRef(x),x.title,x.description,x.responsible,x.location,x.priority,x.status].join(' ').toLowerCase();return (!q||hay.includes(q))&&(!fs||x.status===fs);});
+  var rows=mocData.filter(function(x){var status=statusOf(x),hay=[mocRef(x),x.title,x.description,x.owner_name,x.responsible,x.location,x.priority,status].join(' ').toLowerCase();return (!q||hay.includes(q))&&(!fs||status===fs);});
   var el=document.getElementById('moc-list');if(!el)return;
   if(!rows.length){
     el.innerHTML='<div class="card" style="text-align:center;padding:40px;color:var(--text2)">'
@@ -27684,17 +27692,17 @@ function mocRender(){
   }
   var h='<div class="table-scroll"><table class="data-table" style="min-width:1040px"><thead><tr><th>Ref</th><th>Change</th><th>Type</th><th>Owner</th><th>Target</th><th>Risk</th><th>Status</th><th style="text-align:right">Actions</th></tr></thead><tbody>';
   rows.forEach(function(x,i){
-    var type=mocMetaFromDescription(x.description,'Change type')||'Change';
+    var type=MOC_TYPE_LABELS[x.change_type]||mocMetaFromDescription(x.description,'Change type')||'Change';
     var target=x.target_date?new Date(x.target_date):null;
-    var overdue=target&&target<new Date()&&!['closed','cancelled'].includes(x.status);
+    var status=statusOf(x),overdue=target&&target<new Date()&&!['closed','cancelled','rejected'].includes(status);
     h+='<tr style="background:'+(i%2?'#f9fafb':'#fff')+';border-bottom:1px solid #e5e7eb">'
       +'<td style="padding:10px 12px;font-family:monospace;font-weight:800;color:#0F6E56;white-space:nowrap">'+escH(mocRef(x))+'</td>'
       +'<td style="padding:10px 12px;min-width:280px"><div style="font-weight:800;color:#111827">'+escH(x.title||'Change request')+'</div><div style="font-size:11px;color:var(--text2);margin-top:2px">'+escH((x.location||'')+(x.department?' - '+x.department:''))+'</div></td>'
       +'<td style="padding:10px 12px">'+escH(type)+'</td>'
-      +'<td style="padding:10px 12px">'+escH(x.assigned_to_name||x.responsible||'--')+'</td>'
+      +'<td style="padding:10px 12px">'+escH(x.owner_name||x.assigned_to_name||x.responsible||'--')+'</td>'
       +'<td style="padding:10px 12px;font-weight:'+(overdue?'800':'600')+';color:'+(overdue?'#DC2626':'#374151')+'">'+(target?target.toLocaleDateString('en-GB'):'--')+(overdue?' <i class="ti ti-alert-triangle"></i>':'')+'</td>'
       +'<td style="padding:10px 12px">'+mocPriorityBadge(x.priority)+'</td>'
-      +'<td style="padding:10px 12px">'+mocStatusBadge(x.status)+'</td>'
+      +'<td style="padding:10px 12px">'+mocStatusBadge(status)+'</td>'
       +'<td style="padding:10px 12px;text-align:right"><button class="btn btn-sm" data-id="'+x.id+'" onclick="mocEdit(this.dataset.id)" title="Open change request"><i class="ti ti-edit"></i></button></td>'
       +'</tr>';
   });
@@ -27704,35 +27712,47 @@ function mocShowForm(show){document.getElementById('moc-register-view').style.di
 function mocNew(){
   mocEditId=null;document.getElementById('moc-form3title').textContent='New Change Request';document.getElementById('moc-form3ref').textContent='MOC-AUTO';
   ['moc-title','moc-location','moc-owner','moc-reason','moc-current','moc-proposed','moc-risk-review','moc-pre-actions','moc-post-review'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
-  document.getElementById('moc-type').value='process';document.getElementById('moc-priority').value='medium';document.getElementById('moc-status').value='open';document.getElementById('moc-target').value='';
+  document.getElementById('moc-type').value='process';document.getElementById('moc-priority').value='medium';document.getElementById('moc-status').value='draft';document.getElementById('moc-target').value='';
   document.querySelectorAll('.moc-impact').forEach(function(cb){cb.checked=false;});
   fillPersonSelect('moc-owner',prof?.full_name||personFullName(prof));
+  var actionBtn=document.getElementById('moc-create-action-btn');if(actionBtn)actionBtn.style.display='none';
+  connectedRecordsMount('moc-connected-records',null,{allowCreate:false});
   mocShowForm(true);
 }
 function mocEdit(id){
   var x=mocData.find(r=>r.id===id);if(!x)return;mocEditId=id;
   document.getElementById('moc-form3title').textContent='Edit Change Request';document.getElementById('moc-form3ref').textContent=mocRef(x);
-  document.getElementById('moc-title').value=x.title||'';document.getElementById('moc-location').value=x.location||'';document.getElementById('moc-priority').value=x.priority||'medium';document.getElementById('moc-status').value=x.status||'open';document.getElementById('moc-target').value=x.target_date||'';
-  var typeTxt=mocMetaFromDescription(x.description,'Change type');var typeKey=Object.keys(MOC_TYPE_LABELS).find(k=>MOC_TYPE_LABELS[k]===typeTxt)||'other';document.getElementById('moc-type').value=typeKey;
-  fillPersonSelect('moc-owner',x.assigned_to_id||x.responsible||x.assigned_to_name);
-  document.getElementById('moc-reason').value=mocMetaFromDescription(x.description,'Reason');
-  document.getElementById('moc-current').value=mocMetaFromDescription(x.description,'Current situation');
-  document.getElementById('moc-proposed').value=mocMetaFromDescription(x.description,'Proposed change');
-  document.getElementById('moc-risk-review').value=mocMetaFromDescription(x.description,'Risk review');
-  document.getElementById('moc-pre-actions').value=mocMetaFromDescription(x.description,'Pre-implementation actions');
-  document.getElementById('moc-post-review').value=mocMetaFromDescription(x.description,'Post-change verification');
-  var impacts=(mocMetaFromDescription(x.description,'Impacted areas')||'').split(',').map(s=>s.trim());
+  document.getElementById('moc-title').value=x.title||'';document.getElementById('moc-location').value=x.location||'';document.getElementById('moc-priority').value=x.priority||'medium';document.getElementById('moc-status').value=mocCanonicalStatus(x.lifecycle_status||x.status);document.getElementById('moc-target').value=x.target_date||'';
+  var typeTxt=mocMetaFromDescription(x.description,'Change type');var typeKey=x.change_type||Object.keys(MOC_TYPE_LABELS).find(k=>MOC_TYPE_LABELS[k]===typeTxt)||'other';document.getElementById('moc-type').value=typeKey;
+  fillPersonSelect('moc-owner',x.owner_id||x.assigned_to_id||x.responsible||x.owner_name||x.assigned_to_name);
+  document.getElementById('moc-reason').value=x.reason||mocMetaFromDescription(x.description,'Reason');
+  document.getElementById('moc-current').value=x.current_situation||mocMetaFromDescription(x.description,'Current situation');
+  document.getElementById('moc-proposed').value=x.proposed_change||mocMetaFromDescription(x.description,'Proposed change');
+  document.getElementById('moc-risk-review').value=x.risk_review||mocMetaFromDescription(x.description,'Risk review');
+  document.getElementById('moc-pre-actions').value=x.pre_implementation_actions||mocMetaFromDescription(x.description,'Pre-implementation actions');
+  document.getElementById('moc-post-review').value=x.post_change_verification||mocMetaFromDescription(x.description,'Post-change verification');
+  var impacts=Array.isArray(x.impacted_areas)?x.impacted_areas:(mocMetaFromDescription(x.description,'Impacted areas')||'').split(',').map(s=>s.trim());
   document.querySelectorAll('.moc-impact').forEach(function(cb){cb.checked=impacts.indexOf(cb.value)!==-1;});
+  var actionBtn=document.getElementById('moc-create-action-btn');if(actionBtn)actionBtn.style.display=mocLegacyMode?'none':'inline-flex';
+  connectedRecordsMount('moc-connected-records',mocLegacyMode?null:relationshipEndpoint('moc','moc_change_requests',x.id,mocRef(x)),{allowCreate:isMgr(),defaultRelationshipType:'related_to'});
   mocShowForm(true);
 }
 async function mocSave(){
   var title=document.getElementById('moc-title')?.value?.trim();if(!title){toast('Please enter the change title',false);return;}
   var ownerSel=document.getElementById('moc-owner');var ownerId=ownerSel?.value||null;var ownerName='';
   if(ownerId){var p=(people||[]).find(x=>x.id===ownerId);ownerName=p?(p.last_name+', '+p.first_name):ownerId;}
-  var body={company_id:ccid(),title:title,description:mocBuildDescription(),action_type:'preventive',priority:document.getElementById('moc-priority')?.value||'medium',status:document.getElementById('moc-status')?.value||'open',source_type:'moc',source_module:'moc',location:document.getElementById('moc-location')?.value||null,target_date:document.getElementById('moc-target')?.value||null,assigned_to_id:ownerId||null,assigned_to_name:ownerName||null,responsible:ownerName||null,updated_at:new Date().toISOString()};
+  var impacts=[].slice.call(document.querySelectorAll('.moc-impact:checked')).map(function(x){return x.value;});
   try{
-    if(mocEditId){await api('/action_tracker?id=eq.'+mocEditId,{m:'PATCH',p:'return=minimal',b:body});toast('MOC updated');}
-    else{body.created_by=prof?.id;var res=await api('/action_tracker',{m:'POST',p:'return=representation',b:body});if(res?.[0]?.id){var ref=await nextCompanyRef('action_tracker','source_ref','MOC-'+new Date().getFullYear()+'-');await api('/action_tracker?id=eq.'+res[0].id,{m:'PATCH',p:'return=minimal',b:{source_id:res[0].id,source_ref:ref,action_ref:ref}});toast('MOC created: '+ref);}}
+    if(mocLegacyMode){
+      var legacyLifecycle=document.getElementById('moc-status')?.value||'draft';var legacyStatus=({draft:'open',screening:'open',impact_assessment:'open',pending_approval:'open',approved:'in_progress',implementation:'in_progress',verification:'pending_verification',rejected:'cancelled'}[legacyLifecycle]||legacyLifecycle);
+      var legacyBody={company_id:ccid(),title:title,description:mocBuildDescription(),action_type:'preventive',priority:document.getElementById('moc-priority')?.value||'medium',status:legacyStatus,source_type:'moc',source_module:'moc',location:document.getElementById('moc-location')?.value||null,target_date:document.getElementById('moc-target')?.value||null,assigned_to_id:ownerId||null,assigned_to_name:ownerName||null,responsible:ownerName||null,updated_at:new Date().toISOString()};
+      if(mocEditId){await api('/action_tracker?id=eq.'+mocEditId,{m:'PATCH',p:'return=minimal',b:legacyBody});toast('Legacy MOC updated');}
+      else{legacyBody.created_by=prof?.id;var oldRes=await api('/action_tracker',{m:'POST',p:'return=representation',b:legacyBody});if(oldRes?.[0]?.id){var oldRef=await nextCompanyRef('action_tracker','source_ref','MOC-'+new Date().getFullYear()+'-');await api('/action_tracker?id=eq.'+oldRes[0].id,{m:'PATCH',p:'return=minimal',b:{source_id:oldRes[0].id,source_ref:oldRef,action_ref:oldRef}});toast('Legacy MOC created: '+oldRef);}}
+    }else{
+      var body={company_id:ccid(),title:title,change_type:document.getElementById('moc-type')?.value||'process',reason:document.getElementById('moc-reason')?.value||null,current_situation:document.getElementById('moc-current')?.value||null,proposed_change:document.getElementById('moc-proposed')?.value||null,impacted_areas:impacts,risk_review:document.getElementById('moc-risk-review')?.value||null,pre_implementation_actions:document.getElementById('moc-pre-actions')?.value||null,post_change_verification:document.getElementById('moc-post-review')?.value||null,priority:document.getElementById('moc-priority')?.value||'medium',lifecycle_status:document.getElementById('moc-status')?.value||'draft',location:document.getElementById('moc-location')?.value||null,target_date:document.getElementById('moc-target')?.value||null,owner_id:ownerId||null,owner_name:ownerName||null,updated_by:prof?.id||null};
+      if(mocEditId){await api('/moc_change_requests?id=eq.'+mocEditId,{m:'PATCH',p:'return=minimal',b:body});toast('MOC updated');}
+      else{body.created_by=prof?.id||null;body.moc_ref=await nextCompanyRef('moc_change_requests','moc_ref','MOC-'+new Date().getFullYear()+'-');var res=await api('/moc_change_requests',{m:'POST',p:'return=representation',b:body});if(res?.[0]?.id)toast('MOC created: '+body.moc_ref);}
+    }
     mocShowForm(false);loadMOC();
   }catch(e){toastActionError('Save change request','Management of Change',e);}
 }
@@ -27740,12 +27760,23 @@ async function mocDelete(){
   if(!mocEditId)return;
   var x=mocData.find(r=>r.id===mocEditId)||{};
   try{
-    if(x.status!=='cancelled'){if(!(await appConfirmAction({title:'Cancel MOC request',message:'Cancel this change request instead of deleting it?',detail:'Cancelled changes remain traceable for audit and management review.',confirmText:'Cancel request',cancelText:'Back',variant:'danger'})))return;await api('/action_tracker?id=eq.'+mocEditId,{m:'PATCH',p:'return=minimal',b:{status:'cancelled',updated_at:new Date().toISOString()}});toast('MOC cancelled');mocShowForm(false);loadMOC();return;}
+    var status=mocCanonicalStatus(x.lifecycle_status||x.status),table=mocLegacyMode?'action_tracker':'moc_change_requests',statusField=mocLegacyMode?'status':'lifecycle_status';
+    if(status!=='cancelled'){if(!(await appConfirmAction({title:'Cancel MOC request',message:'Cancel this change request instead of deleting it?',detail:'Cancelled changes remain traceable for audit and management review.',confirmText:'Cancel request',cancelText:'Back',variant:'danger'})))return;var cancelBody={};cancelBody[statusField]='cancelled';await api('/'+table+'?id=eq.'+mocEditId,{m:'PATCH',p:'return=minimal',b:cancelBody});toast('MOC cancelled');mocShowForm(false);loadMOC();return;}
     if(!(await appConfirmDelete('cancelled MOC request','Permanent deletion should be used only for duplicate/test records.')))return;
-    await api('/action_tracker?id=eq.'+mocEditId,{m:'DELETE'});toast('MOC deleted');mocShowForm(false);loadMOC();
+    await api('/'+table+'?id=eq.'+mocEditId,{m:'DELETE'});toast('MOC deleted');mocShowForm(false);loadMOC();
   }catch(e){toastActionError('Delete change request','Management of Change',e);}
 }
 function mocOpenMap(){showPage('actions',null);setTimeout(function(){var src=document.getElementById('map-filter-source');if(src){src.value='moc';mapRenderList();}},160);}
+async function mocCreateCorrectiveAction(){
+  var x=mocData.find(function(r){return r.id===mocEditId;});if(!x||mocLegacyMode){toast('Save this MOC in the dedicated register first.',false);return;}
+  if(!(await appConfirmAction({title:'Create linked corrective action',message:'Create a separate Master Action Plan item for '+mocRef(x)+'?',detail:'The action will have its own owner, due date and closure status. The MOC lifecycle remains independent.',confirmText:'Create action',cancelText:'Back'})))return;
+  try{
+    var actionRef=await nextCompanyRef('action_tracker','action_ref','MAP-COR-'+new Date().getFullYear()+'-');
+    var body={company_id:ccid(),action_ref:actionRef,title:'MOC action: '+(x.title||mocRef(x)),description:x.pre_implementation_actions||x.risk_review||'Complete the controls required by '+mocRef(x),action_type:'corrective',priority:x.priority||'medium',status:'open',source_type:'moc',source_module:'moc',source_table:'moc_change_requests',source_id:x.id,source_ref:mocRef(x),location:x.location||null,target_date:x.target_date||null,assigned_to_id:x.owner_id||null,assigned_to_name:x.owner_name||null,responsible:x.owner_name||null,created_by:prof?.id||null};
+    var result=await api('/action_tracker',{m:'POST',p:'return=representation',b:body});var action=result&&result[0];
+    if(action){try{await relationshipCreate(relationshipEndpoint('moc','moc_change_requests',x.id,mocRef(x)),relationshipEndpoint('action','action_tracker',action.id,actionRef),'generated_action',{});}catch(linkError){console.warn('MOC action created; relationship link pending',linkError);}toast('Linked corrective action created: '+actionRef);mocEdit(x.id);}
+  }catch(e){toastActionError('Create corrective action','Management of Change',e);}
+}
 function mocFormPayload(){
   var g=function(id){var el=document.getElementById(id);return el?el.value||'':'';};
   return {title:g('moc-title'),type:MOC_TYPE_LABELS[g('moc-type')]||g('moc-type'),location:g('moc-location'),owner:g('moc-owner'),priority:g('moc-priority'),status:g('moc-status'),target_date:g('moc-target'),reason:g('moc-reason'),current_situation:g('moc-current'),proposed_change:g('moc-proposed'),impacts:[].slice.call(document.querySelectorAll('.moc-impact:checked')).map(function(x){return x.value;}),risk_review:g('moc-risk-review'),pre_actions:g('moc-pre-actions'),post_review:g('moc-post-review')};
@@ -28059,6 +28090,11 @@ async function mapOpenExactSource(adapter,x){
   if(!adapter||!id)return false;
   var ref=String(x.source_ref||'').toLowerCase();
   try{
+    if(adapter.key==='moc'){
+      var mocRow=(mocData||[]).find(function(row){return String(row.id)===String(id);});
+      if(!mocRow){var mocRows=await api('/moc_change_requests?select=*&id=eq.'+encodeURIComponent(id)+cf()+'&limit=1');mocRow=mocRows&&mocRows[0];if(mocRow&&!mapHasSourceRow(mocData,id))mocData.push(mocRow);}
+      if(mocRow){mocLegacyMode=false;mocEdit(mocRow.id);return true;}
+    }
     if(adapter.key==='investigation'){
       if(mapOpenInvestigationSourceRef(x.source_ref,id))return true;
       var invRows=await api('/investigations?select=*&id=eq.'+encodeURIComponent(id)+cf()+'&limit=1');
@@ -39211,7 +39247,7 @@ var DEEP_LINK_DEFAULT_TABLES={
   events:'events',event:'events',investigation:'investigations',observation:'safety_observations',inspection:'inspections',
   risk:'risk_assessments',permit:'permits',meetings:'toolbox_talks',legal:'legal_requirements',chemical:'chemical_register',fire:'fire_equipment',ppe:'ppe_catalogue',
   tools:'tools_register',atex:'atex_areas',contractor:'contractors',noise:'noise_surveys',training:'training_followup',
-  actions:'action_tracker',action:'action_tracker',moc:'action_tracker',documents:'documents',sop:'sop_video_projects',swms:'documents'
+  actions:'action_tracker',action:'action_tracker',moc:'moc_change_requests',documents:'documents',sop:'sop_video_projects',swms:'documents'
 };
 function deepLinkNormalise(raw){
   raw=raw||{};
@@ -40263,7 +40299,7 @@ var APPROVAL_SOURCE_ADAPTERS = [
   {key:'legal',module:'Legal Compliance',table:'legal_requirements',page:'legal',statuses:['submitted','pending_review','under_review','pending_approval','review'],status:['approval_status','status','workflow_status'],ref:['requirement_ref','reference_no','code'],title:['title','requirement','summary'],approver:['reviewer_name','approver_name','owner_name'],due:['review_due_date','next_review_date','due_date'],confidentiality:['confidentiality','classification'],stage:'Compliance review'},
   {key:'sop',module:'SOP Generator',table:'sop_video_projects',page:'sop',statuses:['ready_for_review','in_review','awaiting_approval','pending_approval'],status:['processing_status','approval_status','status'],ref:['reference','project_ref','code'],title:['title','name'],approver:['reviewer_name','approver_name','owner_name'],due:['due_at','review_due_date'],confidentiality:['privacy_level','confidentiality'],stage:'SOP review'},
   {key:'training',module:'Training & Competency',table:'elearning_courses',page:'training',statuses:['submitted','review','pending_review','under_review','pending_approval'],status:['approval_status','status'],ref:['course_ref','code'],title:['title','course_name','name'],approver:['reviewer_name','approver_name','owner_name'],due:['review_due_date','due_date'],confidentiality:['confidentiality','visibility'],stage:'Learning governance review'},
-  {key:'moc',module:'Management of Change',table:'action_tracker',page:'moc',statuses:['submitted','pending_review','pending_approval','pending_verification','awaiting_verification'],status:['approval_status','status'],ref:['action_ref','reference_no'],title:['title','action_title','description'],approver:['reviewer_name','approver_name','assigned_to_name'],due:['review_due_date','target_date','due_date'],confidentiality:['confidentiality'],stage:'Change control review',filter:function(x){return ['moc','management_of_change'].indexOf(String(x.source_module||x.source_type||'').toLowerCase())!==-1;}},
+  {key:'moc',module:'Management of Change',table:'moc_change_requests',page:'moc',statuses:['screening','impact_assessment','pending_approval','verification'],status:['lifecycle_status'],ref:['moc_ref'],title:['title','proposed_change'],approver:['approver_name','owner_name'],due:['target_date'],confidentiality:['confidentiality'],stage:'Change control review'},
   {key:'chemical_sds',module:'Chemical Control',table:'chemical_sds_versions',page:'chemical',statuses:['pending','submitted','review','pending_review','under_review','pending_approval'],status:['validation_status','approval_status','status'],ref:['source_reference','file_reference','version_ref'],title:['file_name','title'],approver:['reviewer_name','approver_name'],due:['review_due_date','revision_date'],confidentiality:['confidentiality'],stage:'SDS validation',openTable:'chemical_sds_versions'},
   {key:'chemical_use',module:'Chemical Control',table:'chemical_use_approvals',page:'chemical',statuses:['proposed','submitted','assessed','review','pending_approval'],status:['approval_status','status'],ref:['reference','approval_ref'],title:['task_name','title','description'],approver:['reviewer_name','approver_name','owner_name'],due:['review_date','due_date'],confidentiality:['confidentiality'],stage:'Chemical-use approval'},
   {key:'contractor_profile',module:'Contractor Management',table:'contractor_assurance_profiles',page:'contractor',statuses:['pending','submitted','review','pending_review','pending_approval'],status:['decision_status','approval_status','status'],ref:['profile_ref','reference'],title:['title','scope','contractor_name'],approver:['decision_authority','reviewer_name'],due:['next_review_date','review_due_date'],confidentiality:['confidentiality'],stage:'Contractor assurance decision',opener:'contractor_profile',openId:['contractor_id']},
@@ -51799,11 +51835,16 @@ Offline mode - changes will sync when connection is restored
 <input id="moc-search" type="text" placeholder="Search change title, reference, owner, location..." oninput="mocRender()" style="flex:1;min-width:220px"/>
 <select id="moc-filter-status" onchange="mocRender()" style="max-width:240px">
 <option value="">All statuses</option>
-<option value="open">Request / screening</option>
-<option value="in_progress">Approved / implementation</option>
-<option value="pending_verification">Post-change review</option>
+<option value="draft">Draft</option>
+<option value="screening">Screening</option>
+<option value="impact_assessment">Impact assessment</option>
+<option value="pending_approval">Pending approval</option>
+<option value="approved">Approved</option>
+<option value="implementation">Implementation</option>
+<option value="verification">Post-change verification</option>
 <option value="closed">Closed</option>
-<option value="cancelled">Rejected / cancelled</option>
+<option value="rejected">Rejected</option>
+<option value="cancelled">Cancelled</option>
 </select>
 </div>
 </div>
@@ -51814,7 +51855,7 @@ Offline mode - changes will sync when connection is restored
 <div class="card" style="padding:0;overflow:hidden">
 <div style="padding:16px 22px;background:#0F6E56;color:#fff;display:flex;justify-content:space-between;gap:12px;align-items:flex-start">
 <div><div style="font-size:11px;text-transform:uppercase;opacity:.8;letter-spacing:.08em">Management of Change</div><div style="font-size:20px;font-weight:800" id="moc-form3title">New Change Request</div><div id="moc-form3ref" style="font-family:monospace;font-size:12px;opacity:.85">MOC-AUTO</div></div>
-<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn" style="background:rgba(255,255,255,.18);color:#fff;border-color:rgba(255,255,255,.35)" onclick="mocShowForm(false)"><i class="ti ti-arrow-left"></i>Back</button><button id="moc-ai-btn" class="btn" style="display:none;background:rgba(255,255,255,.2);color:#fff;border-color:rgba(255,255,255,.4)" onclick="mocAIImpactReview()"><i class="ti ti-robot"></i>AI screen</button><button class="btn" style="background:rgba(220,38,38,.25);color:#fff;border-color:rgba(220,38,38,.45)" onclick="mocDelete()"><i class="ti ti-trash"></i></button><button class="btn" style="background:#fff;color:#0F6E56;border-color:#fff" onclick="mocSave()"><i class="ti ti-device-floppy"></i>Save MOC</button></div>
+<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn" style="background:rgba(255,255,255,.18);color:#fff;border-color:rgba(255,255,255,.35)" onclick="mocShowForm(false)"><i class="ti ti-arrow-left"></i>Back</button><button id="moc-create-action-btn" class="btn" style="display:none;background:rgba(255,255,255,.18);color:#fff;border-color:rgba(255,255,255,.35)" onclick="mocCreateCorrectiveAction()"><i class="ti ti-list-check"></i>Create corrective action</button><button id="moc-ai-btn" class="btn" style="display:none;background:rgba(255,255,255,.2);color:#fff;border-color:rgba(255,255,255,.4)" onclick="mocAIImpactReview()"><i class="ti ti-robot"></i>AI screen</button><button class="btn" style="background:rgba(220,38,38,.25);color:#fff;border-color:rgba(220,38,38,.45)" onclick="mocDelete()"><i class="ti ti-trash"></i></button><button class="btn" style="background:#fff;color:#0F6E56;border-color:#fff" onclick="mocSave()"><i class="ti ti-device-floppy"></i>Save MOC</button></div>
 </div>
 <div id="moc-ai-panel" style="display:none;margin:14px 22px 0"></div>
 <div style="padding:18px 22px">
@@ -51825,7 +51866,7 @@ Offline mode - changes will sync when connection is restored
 <div class="form3row3">
 <div class="form3group"><label class="form3label">Owner / responsible</label><select id="moc-owner"></select></div>
 <div class="form3group"><label class="form3label">Risk priority</label><select id="moc-priority"><option value="low">Low</option><option value="medium">Medium</option><option value="high">High</option><option value="critical">Critical</option></select></div>
-<div class="form3group"><label class="form3label">Status</label><select id="moc-status"><option value="open">Request / screening</option><option value="in_progress">Approved / implementation</option><option value="pending_verification">Post-change review</option><option value="closed">Closed</option><option value="cancelled">Rejected / cancelled</option></select></div>
+<div class="form3group"><label class="form3label">Lifecycle stage</label><select id="moc-status"><option value="draft">Draft</option><option value="screening">Screening</option><option value="impact_assessment">Impact assessment</option><option value="pending_approval">Pending approval</option><option value="approved">Approved</option><option value="implementation">Implementation</option><option value="verification">Post-change verification</option><option value="closed">Closed</option><option value="rejected">Rejected</option><option value="cancelled">Cancelled</option></select></div>
 </div>
 <div class="form3row">
 <div class="form3group"><label class="form3label">Location / department</label><input id="moc-location" placeholder="Site, department, area"/></div>
@@ -51852,6 +51893,7 @@ Offline mode - changes will sync when connection is restored
 <div class="form3group"><label class="form3label">Pre-implementation actions</label><textarea id="moc-pre-actions" placeholder="Actions required before change goes live."></textarea></div>
 </div>
 <div class="form3group"><label class="form3label">Post-change verification</label><textarea id="moc-post-review" placeholder="How will effectiveness be checked after implementation?"></textarea></div>
+<div id="moc-connected-records" style="margin-top:14px"></div>
 </div>
 </div>
 </div>

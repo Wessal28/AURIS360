@@ -3,7 +3,8 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "test:audit-contract": "node tests/audit_contract.test.cjs"
+    "test:audit-contract": "node tests/audit_contract.test.cjs",
+    "test:moc-contract": "node tests/moc_separation_contract.test.cjs"
   },
   "dependencies": {
     "nodemailer": "^6.9.16"
