@@ -309,6 +309,7 @@
 ### AP-053 — Replace remaining reference-only operational links
 
 - **Owner:** Module owners
+- **Status (2026-08-09):** Completed — ATEX, PPE Issuance, Compliance Calendar, Work Schedule, Permit to Work and SWMS now save verified target IDs alongside readable reference snapshots. ATEX selects an actual permit instead of only a permit type; Permit submission validates verified current/approved RA and method-statement records; linked records can be opened directly from source forms. The rerunnable `verified_operational_references_upgrade.sql` backfills only unique company-scoped matches (including legacy values that stored an ID in a reference field) and queues ambiguous/unmatched references in `reference_identity_backfill_review`. Schema-fallback writes keep the application usable before the migration is installed, and `tests/verified_operational_references_contract.test.cjs` protects the contract.
 - **Priority:** ATEX, PPE, Legal Calendar, legacy Work Schedule, Permit and SWMS fields.
 - **Actions:**
   - Save the target ID plus reference snapshot.

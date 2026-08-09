@@ -5647,6 +5647,25 @@ function setSelectValueWithFallback(id,val){
   el.value=val||'';
   if(val&&el.tagName==='SELECT'&&el.value!==val){var o=document.createElement('option');o.value=val;o.textContent=val+' (saved text)';el.appendChild(o);el.value=val;}
 }
+function verifiedReferenceSelection(id){
+  var el=document.getElementById(id),opt=el?.selectedOptions?.[0];
+  if(!el||!el.value)return {id:null,ref:null,status:null,target:null,verified:false};
+  return {id:opt?.dataset?.recordId||null,ref:opt?.dataset?.recordRef||el.value,status:opt?.dataset?.recordStatus||null,target:opt?.dataset?.targetTable||null,verified:!!opt?.dataset?.recordId};
+}
+function verifiedReferenceOption(option,row,ref,target){
+  option.dataset.recordId=row.id||'';option.dataset.recordRef=ref||'';option.dataset.recordStatus=row.approval_status||row.status||'';option.dataset.targetTable=target||'';return option;
+}
+function verifiedReferenceStatusOk(selection,allowed){
+  if(!selection?.id)return false;
+  if(!selection.status||!allowed?.length)return true;
+  return allowed.includes(String(selection.status).toLowerCase());
+}
+async function openVerifiedReferenceSelect(selectId,kind){
+  var s=verifiedReferenceSelection(selectId);if(!s.id){toast('Select a verified record first.',false);return;}
+  if(kind==='ra'||kind==='ptw'){await wsOpenLinkedRecord(kind,s.id);return;}
+  if(kind==='work'){showPage('workschedule',null);setTimeout(function(){wsShowDetail(s.id);},150);return;}
+  if(kind==='document'){showPage('documents',null);setTimeout(function(){dcEdit(s.id);},150);return;}
+}
 function fillPersonSelect(id,selectedName){
   var el=document.getElementById(id);if(!el)return;
   var cur=selectedName||el.value||'';
@@ -5666,21 +5685,21 @@ async function fillMethodStatementSelect(id,selectedRef){
   var cur=selectedRef||el.value||'';
   el.innerHTML='<option value="">Select method statement / SOP...</option>';
   var seen={};
-  var addOpt=function(ref,title,status,source){
+  var addOpt=function(ref,title,status,source,row,target){
     if(!ref||seen[ref])return;
     seen[ref]=true;
     var o=document.createElement('option');
-    o.value=ref;
+    o.value=ref;if(row&&target)verifiedReferenceOption(o,row,ref,target);
     o.textContent=ref+' - '+(title||'Method statement / SOP')+(status?' ('+status+')':'')+(source?' - '+source:'');
     el.appendChild(o);
   };
   try{
     var docs=await api('/documents?select=id,doc_ref,reference_no,title,document_type,doc_type,status,approval_status'+cf()+'&or=(document_type.eq.swms,doc_type.eq.swms,document_type.eq.sop,doc_type.eq.sop,document_type.eq.procedure,doc_type.eq.procedure,document_type.eq.work_instruction,doc_type.eq.work_instruction)&order=created_at.desc&limit=100');
-    (docs||[]).forEach(function(d){addOpt(d.doc_ref||d.reference_no||d.id,d.title,d.approval_status||d.status,'Document Control');});
+    (docs||[]).forEach(function(d){addOpt(d.doc_ref||d.reference_no||d.id,d.title,d.approval_status||d.status,'Document Control',d,'documents');});
   }catch(e){console.warn('Document Control SOP list failed:',e.message);}
   try{
     var sops=await api('/sop_documents?select=*'+cf()+'&order=created_at.desc&limit=100');
-    (sops||[]).forEach(function(d){addOpt(d.sop_number||d.reference_no||d.doc_ref||d.id,d.title||d.sop_title||d.name,d.status,'SOP Generator');});
+    (sops||[]).forEach(function(d){addOpt(d.sop_number||d.reference_no||d.doc_ref||d.id,d.title||d.sop_title||d.name,d.status,'SOP Generator',null,null);});
   }catch(e){console.warn('SOP document list failed:',e.message);}
   if(cur)setSelectValueWithFallback(id,cur);
 }
@@ -5697,6 +5716,7 @@ async function fillRiskAssessmentSelect(id,selectedRef){
       var rev=r.revision?(' rev '+r.revision):'';
       var o=document.createElement('option');
       o.value=ref;
+      verifiedReferenceOption(o,r,ref,'risk_assessments');
       o.textContent=ref+' - '+title+(status?' ('+status+')':'')+rev;
       el.appendChild(o);
     });
@@ -5716,6 +5736,7 @@ async function fillSWMSSelect(id,selectedRef){
       var legacy=(d.document_type||d.doc_type)!=='swms';
       var o=document.createElement('option');
       o.value=ref;
+      verifiedReferenceOption(o,d,ref,'documents');
       o.textContent=ref+' - '+(d.title||'SWMS / Method Statement')+((d.approval_status||d.status)?' ('+(d.approval_status||d.status)+')':'')+(legacy?' [procedure record]':'');
       el.appendChild(o);
     });
@@ -11316,7 +11337,7 @@ async function swmsLoadPermitSelect(){
   var cur=el.value||'';el.innerHTML='<option value="">Select permit...</option>';
   try{
     var pts=await api('/permits?select=id,permit_number,permit_type,permit_type_v2,status'+cf()+'&order=created_at.desc&limit=100');
-    (pts||[]).forEach(function(p){var ref=p.permit_number||p.id, typ=p.permit_type_v2||p.permit_type||'Permit';var o=document.createElement('option');o.value=ref;o.textContent=ref+' - '+typ.replace(/_/g,' ')+(p.status?' ('+p.status+')':'');el.appendChild(o);});
+    (pts||[]).forEach(function(p){var ref=p.permit_number||p.id, typ=p.permit_type_v2||p.permit_type||'Permit';var o=document.createElement('option');o.value=ref;verifiedReferenceOption(o,p,ref,'permits');o.textContent=ref+' - '+typ.replace(/_/g,' ')+(p.status?' ('+p.status+')':'');el.appendChild(o);});
   }catch(e){}
   if(cur)setSelectValueWithFallback('swms-ptw-ref',cur);
 }
@@ -11424,8 +11445,8 @@ function swmsOpen(id){
   fillPersonSelect('swms-prepared-by',p.prepared_by||x.author||x.owner||x.doc_owner||prof?.full_name||'');
   fillPersonSelect('swms-reviewed-by',p.reviewed_by||x.reviewer||'');
   fillPersonSelect('swms-approved-by',p.approved_by||x.approver||'');
-  fillRiskAssessmentSelect('swms-ra-ref',p.risk_assessment_ref||'');
-  swmsLoadPermitSelect().then(function(){setSelectValueWithFallback('swms-ptw-ref',p.permit_ref||'');});
+  fillRiskAssessmentSelect('swms-ra-ref',x.linked_ra_ref||p.risk_assessment_ref||x.linked_risk_assessment_id||'');
+  swmsLoadPermitSelect().then(function(){setSelectValueWithFallback('swms-ptw-ref',x.linked_permit_ref||p.permit_ref||x.linked_permit_id||'');});
   var body=document.getElementById('swms-steps-body');if(body)body.innerHTML='';
   var rows=Array.isArray(p.steps)?p.steps:[];
   rows.forEach(swmsAddStep);
@@ -11559,13 +11580,14 @@ async function swmsSaveToDocuments(){
     return;
   }
   var saveRef=existing?(existing.doc_ref||existing.reference_no||ref):ref;
-  var body={company_id:ccid(),title:title,document_type:'swms',doc_type:'swms',department:document.getElementById('swms-dept')?.value||null,category:'Safe Work Method Statement',description:document.getElementById('swms-scope')?.value||'Safe Work Method Statement generated in AURIS360.',scope:document.getElementById('swms-scope')?.value||null,tags:['SWMS','Method Statement'],version:document.getElementById('swms-version')?.value||'Rev 00',doc_version:document.getElementById('swms-version')?.value||'Rev 00',doc_ref:saveRef,reference_no:saveRef,issue_date:document.getElementById('swms-date')?.value||today,effective_date:document.getElementById('swms-date')?.value||today,review_date:document.getElementById('swms-review-date')?.value||null,review_interval_months:12,controlled_copy:true,is_controlled:true,author:document.getElementById('swms-prepared-by')?.value||null,owner:document.getElementById('swms-prepared-by')?.value||null,doc_owner:document.getElementById('swms-prepared-by')?.value||null,reviewer:document.getElementById('swms-reviewed-by')?.value||null,approver:document.getElementById('swms-approved-by')?.value||null,legal_refs:[],location:document.getElementById('swms-location')?.value||null,approval_status:existing?(existing.approval_status||existing.status||'draft'):'draft',status:existing?(existing.status||existing.approval_status||'draft'):'draft',revision_summary:swmsEncodePayload(payload),updated_at:new Date().toISOString()};
+  var swmsRa=verifiedReferenceSelection('swms-ra-ref'),swmsPermit=verifiedReferenceSelection('swms-ptw-ref');
+  var body={company_id:ccid(),title:title,document_type:'swms',doc_type:'swms',department:document.getElementById('swms-dept')?.value||null,category:'Safe Work Method Statement',description:document.getElementById('swms-scope')?.value||'Safe Work Method Statement generated in AURIS360.',scope:document.getElementById('swms-scope')?.value||null,tags:['SWMS','Method Statement'],version:document.getElementById('swms-version')?.value||'Rev 00',doc_version:document.getElementById('swms-version')?.value||'Rev 00',doc_ref:saveRef,reference_no:saveRef,issue_date:document.getElementById('swms-date')?.value||today,effective_date:document.getElementById('swms-date')?.value||today,review_date:document.getElementById('swms-review-date')?.value||null,review_interval_months:12,controlled_copy:true,is_controlled:true,author:document.getElementById('swms-prepared-by')?.value||null,owner:document.getElementById('swms-prepared-by')?.value||null,doc_owner:document.getElementById('swms-prepared-by')?.value||null,reviewer:document.getElementById('swms-reviewed-by')?.value||null,approver:document.getElementById('swms-approved-by')?.value||null,legal_refs:[],location:document.getElementById('swms-location')?.value||null,linked_risk_assessment_id:swmsRa.id,linked_ra_ref:swmsRa.ref,linked_permit_id:swmsPermit.id,linked_permit_ref:swmsPermit.ref,approval_status:existing?(existing.approval_status||existing.status||'draft'):'draft',status:existing?(existing.status||existing.approval_status||'draft'):'draft',revision_summary:swmsEncodePayload(payload),updated_at:new Date().toISOString()};
   try{
     var savedDocId=swmsEditingId||null;
-    if(swmsEditingId){await api('/documents?id=eq.'+swmsEditingId,{m:'PATCH',p:'return=minimal',b:body});}
+    if(swmsEditingId){await apiWriteWithMissingColumnFallback('/documents?id=eq.'+swmsEditingId,{m:'PATCH',p:'return=minimal',b:body},'SWMS');}
     else{
       body.created_by=prof?.id;
-      var created=await api('/documents',{m:'POST',p:'return=representation',b:body});
+      var created=await apiWriteWithMissingColumnFallback('/documents',{m:'POST',p:'return=representation',b:body},'SWMS');
       savedDocId=created&&created[0]?created[0].id:null;
       if(savedDocId)swmsEditingId=savedDocId;
     }
@@ -11575,7 +11597,7 @@ async function swmsSaveToDocuments(){
     var linkedRA=document.getElementById('swms-ra-ref')?.value||'';
     if(linkedRA){
       var raPatch={rams_document_name:saveRef,rams_document_url:null,updated_at:new Date().toISOString()};
-      try{await api('/risk_assessments?ra_ref=eq.'+encodeURIComponent(linkedRA),{m:'PATCH',p:'return=minimal',b:raPatch});}
+      try{await api('/risk_assessments?'+(swmsRa.id?'id=eq.'+encodeURIComponent(swmsRa.id):'ra_ref=eq.'+encodeURIComponent(linkedRA)),{m:'PATCH',p:'return=minimal',b:raPatch});}
       catch(_){try{await api('/risk_assessments?id=eq.'+encodeURIComponent(linkedRA),{m:'PATCH',p:'return=minimal',b:raPatch});}catch(__){}}
       swmsAudit('link','SWMS linked to risk assessment',auditDoc,{risk_assessment_ref:linkedRA,swms_ref:saveRef});
     }
@@ -11591,10 +11613,10 @@ async function swmsSaveToDocuments(){
         body.category='Safe Work Method Statement';
         body.tags=['SWMS','Method Statement','Procedure'];
         var fallbackDocId=swmsEditingId||null;
-        if(swmsEditingId){await api('/documents?id=eq.'+swmsEditingId,{m:'PATCH',p:'return=minimal',b:body});}
+        if(swmsEditingId){await apiWriteWithMissingColumnFallback('/documents?id=eq.'+swmsEditingId,{m:'PATCH',p:'return=minimal',b:body},'SWMS');}
         else{
           body.created_by=prof?.id;
-          var fallbackCreated=await api('/documents',{m:'POST',p:'return=representation',b:body});
+          var fallbackCreated=await apiWriteWithMissingColumnFallback('/documents',{m:'POST',p:'return=representation',b:body},'SWMS');
           fallbackDocId=fallbackCreated&&fallbackCreated[0]?fallbackCreated[0].id:null;
           if(fallbackDocId)swmsEditingId=fallbackDocId;
         }
@@ -15439,7 +15461,7 @@ async function wsLoadReferenceOptions(selectedRA,selectedPTW){
         var pType=p.permit_type_v2||p.permit_type;
         var label=(PTW_TYPE_CFG[pType]?.label||pType||'Permit');
         var o=document.createElement('option');
-        o.value=ref;o.textContent=ref+' - '+label+(p.status?' ['+p.status+']':'');
+        o.value=ref;verifiedReferenceOption(o,p,ref,'permits');o.textContent=ref+' - '+label+(p.status?' ['+p.status+']':'');
         ptwSel.appendChild(o);
       });
     }catch(e){
@@ -15525,9 +15547,11 @@ async function wsSave(){
     ra_ref:g('wsf-ra-ref'),permit_ref:g('wsf-ptw-ref'),
     notes:g('wsf-notes'),updated_at:new Date().toISOString()
   };
+  var wsRa=verifiedReferenceSelection('wsf-ra-ref'),wsPermit=verifiedReferenceSelection('wsf-ptw-ref');
+  body.risk_assessment_id=wsRa.id;body.permit_id=wsPermit.id;
   try{
     if(wsEditingId){
-      await api('/work_schedule?id=eq.'+wsEditingId,{m:'PATCH',p:'return=minimal',b:body});
+      await apiWriteWithMissingColumnFallback('/work_schedule?id=eq.'+wsEditingId,{m:'PATCH',p:'return=minimal',b:body},'Work order');
       var idx=wsAllData.findIndex(function(x){return x.id===wsEditingId;});
       if(idx>=0)Object.assign(wsAllData[idx],body);
       toast('Work order updated!');
@@ -15535,7 +15559,7 @@ async function wsSave(){
       wsShowDetail(wsEditingId);
     }else{
       body.created_by=prof?.id;
-      var res=await api('/work_schedule',{m:'POST',p:'return=representation',b:body});
+      var res=await apiWriteWithMissingColumnFallback('/work_schedule',{m:'POST',p:'return=representation',b:body},'Work order');
       if(res?.[0]){
         // Generate ref number
         var yr=new Date().getFullYear();
@@ -15907,7 +15931,7 @@ function wsLinkedOptionHtml(rows,selected,blankLabel,valueFn,labelFn){
   var html='<option value="">'+escH(blankLabel||'None')+'</option>';
   (rows||[]).forEach(function(r){
     var val=valueFn(r)||'';
-    html+='<option value="'+escH(val)+'" '+(String(val)===String(selected||'')?'selected':'')+'>'+escH(labelFn(r)||val)+'</option>';
+    html+='<option value="'+escH(val)+'" data-record-id="'+escH(r.id||'')+'" data-record-ref="'+escH(val)+'" data-record-status="'+escH(r.status||'')+'" '+(String(val)===String(selected||'')?'selected':'')+'>'+escH(labelFn(r)||val)+'</option>';
   });
   if(selected&&html.indexOf('value="'+escH(selected)+'"')<0)html+='<option value="'+escH(selected)+'" selected>'+escH(selected)+' (saved)</option>';
   return html;
@@ -15953,10 +15977,11 @@ async function wsLinkedRecordChanged(kind,value){
   if(kind==='tbt')patch.toolbox_talk_id=value||null;
   if(kind==='prestart')patch.prestart_id=value||null;
   if(kind==='site')patch.site_inspection_id=value||null;
-  if(kind==='ra'){patch.ra_ref=value||null;patch.requires_ra=!!value;}
-  if(kind==='ptw'){patch.permit_ref=value||null;patch.requires_permit=!!value;}
+  var selected=document.getElementById('ws-link-'+kind)?.selectedOptions?.[0],selectedId=selected?.dataset?.recordId||null;
+  if(kind==='ra'){patch.ra_ref=value||null;patch.risk_assessment_id=selectedId;patch.requires_ra=!!value;}
+  if(kind==='ptw'){patch.permit_ref=value||null;patch.permit_id=selectedId;patch.requires_permit=!!value;}
   try{
-    await api('/work_schedule?id=eq.'+wsCurrentId,{m:'PATCH',p:'return=minimal',b:patch});
+    await apiWriteWithMissingColumnFallback('/work_schedule?id=eq.'+wsCurrentId,{m:'PATCH',p:'return=minimal',b:patch},'Work order relationship');
     var x=wsAllData.find(function(r){return r.id===wsCurrentId;});
     if(x)Object.assign(x,patch);
     if(kind==='ra'){var ra=document.getElementById('ws-detail-ra');if(ra)ra.innerHTML=wsLinkedRefButton('ra',value,value||'-');}
@@ -21151,7 +21176,7 @@ async function ptwLoadWorkOrderOptions(selectedId){
   try{
     var d=await api('/work_schedule?select=id,title,ref_number'+cf()+'&order=planned_start.desc&limit=50');
     (d||[]).forEach(function(w){
-      var o=document.createElement('option');o.value=w.id;o.textContent=(w.ref_number||'WO')+' - '+(w.title||'Work order');woSel.appendChild(o);
+      var ref=w.ref_number||w.id;var o=document.createElement('option');o.value=w.id;verifiedReferenceOption(o,w,ref,'work_schedule');o.textContent=ref+' - '+(w.title||'Work order');woSel.appendChild(o);
     });
   }catch(ex){}
   ptwSelectWithFallback('pf-wo',selectedId);
@@ -21172,6 +21197,11 @@ function ptwValidateBeforeSave(targetStatus, body, precautions){
   if(!body.planned_start||!body.planned_end)return 'Please enter planned start and planned end dates.';
   if(new Date(body.planned_end)<=new Date(body.planned_start))return 'Planned end must be after planned start.';
   if(!body.ra_ref)return 'Please select the Risk Assessment reference before submitting.';
+  var raLink=verifiedReferenceSelection('pf-ra-ref');
+  if(!raLink.verified)return 'Please select a verified Risk Assessment record before submitting.';
+  if(!verifiedReferenceStatusOk(raLink,['approved','active','current','completed']))return 'The selected Risk Assessment must be approved/current before permit submission.';
+  var msLink=verifiedReferenceSelection('pf-ms-ref');
+  if(body.method_statement_ref&&(!msLink.verified||!verifiedReferenceStatusOk(msLink,['approved','active','current','effective','published'])))return 'The selected method statement must be a verified approved/current Document Control record.';
   var unchecked=(precautions||[]).filter(function(p){return !p.checked;});
   if(unchecked.length)return 'Please confirm all required precautions before submitting for approval.';
   return null;
@@ -21891,7 +21921,7 @@ async function ptwSave(targetStatus){
     issued_by:issuerName||null,
     permit_receiver_name:receiver.name,permit_receiver:receiver.id||receiver.name,
     contractor_id:g('pf-contractor')||null,
-    work_order_ref:g('pf-wo')||null,
+    work_order_ref:null,
     team_members:ptwTeamValue(),
     ra_ref:g('pf-ra-ref'),method_statement_ref:g('pf-ms-ref'),
     ppe_required:ppe,precautions_checklist:precautions,
@@ -21901,6 +21931,8 @@ async function ptwSave(targetStatus){
     status:blocks.length&&targetStatus!=='draft'?'draft':targetStatus,
     updated_at:new Date().toISOString()
   };
+  var permitRa=verifiedReferenceSelection('pf-ra-ref'),permitMs=verifiedReferenceSelection('pf-ms-ref'),permitWo=verifiedReferenceSelection('pf-wo');
+  body.risk_assessment_id=permitRa.id;body.method_statement_id=permitMs.id;body.work_order_id=permitWo.id;body.work_order_ref=permitWo.ref;
   Object.assign(body,locationIdentityPayload(body.location,null));
   var validation=ptwValidateBeforeSave(targetStatus,body,precautions);
   if(validation){toast(validation,false);return;}
@@ -21977,7 +22009,7 @@ function ptwEditCurrent(){
   g('pf-team3extra',x.team_members);
   ptwLoadReferenceOptions(x.ra_ref,x.method_statement_ref);
   ptwLoadContractorOptions(x.contractor_id);
-  ptwLoadWorkOrderOptions(x.work_order_ref);
+  ptwLoadWorkOrderOptions(x.work_order_id||x.work_order_ref);
   g('pf-priority',x.priority||'medium');
   g('pf-risk',x.risk_level||'medium');
   g('pf-approval-levels',String(x.approval_level_required||3));
@@ -26057,7 +26089,7 @@ async function ppeIssLoadReferenceOptions(selectedWO,selectedRA){
       (work||[]).forEach(function(w){
         var ref=w.ref_number||w.id;
         var o=document.createElement('option');
-        o.value=ref;o.textContent=ref+' - '+(w.title||'Work order')+(w.status?' ['+w.status+']':'');
+        o.value=ref;verifiedReferenceOption(o,w,ref,'work_schedule');o.textContent=ref+' - '+(w.title||'Work order')+(w.status?' ['+w.status+']':'');
         woSel.appendChild(o);
       });
     }catch(e){
@@ -26104,7 +26136,7 @@ async function ppeIssSave(){
   if(ppeId&&ppeSel?.selectedOptions[0]?.text?.includes('Select'))ppeName='PPE';
   var g=function(id){var el=document.getElementById(id);return el?el.value||null:null;};
   var ppe=ppeCatData.find(x=>x.id===ppeId);
-  var body={company_id:ccid(),ppe_id:ppeId||null,ppe_name:ppe?.name||ppeName,ppe_category:ppe?.category||null,employee_name:emp,employee_id:g('pif-emp-id'),department:g('pif-dept'),job_title:g('pif-title'),issued_date:g('pif-issued-date'),issued_by:g('pif-issued-by'),quantity:parseInt(g('pif-qty'))||1,size:g('pif-size'),serial_number:g('pif-serial'),batch_number:g('pif-batch'),condition_on_issue:g('pif-condition')||'new',manufacture_date:g('pif-mfg-date')||null,expiry_date:g('pif-expiry-date')||null,expected_replacement_date:g('pif-replace-date')||null,work_order_ref:g('pif-wo-ref'),ra_ref:g('pif-ra-ref'),hazard_ref:g('pif-hazard'),employee_signature:document.getElementById('pif-ack')?.checked||false,acknowledgement_date:g('pif-ack-date')||null,returned:document.getElementById('pif-returned')?.checked||false,return_date:g('pif-return-date')||null,return_condition:g('pif-return-condition')||null,return_reason:g('pif-return-reason'),notes:g('pif-notes'),status:g('pif-status')||'active',updated_at:new Date().toISOString()};Object.assign(body,personIdentityPayload(emp));body.issued_by_person_id=personFromValue(body.issued_by)?.id||null;
+  var body={company_id:ccid(),ppe_id:ppeId||null,ppe_name:ppe?.name||ppeName,ppe_category:ppe?.category||null,employee_name:emp,employee_id:g('pif-emp-id'),department:g('pif-dept'),job_title:g('pif-title'),issued_date:g('pif-issued-date'),issued_by:g('pif-issued-by'),quantity:parseInt(g('pif-qty'))||1,size:g('pif-size'),serial_number:g('pif-serial'),batch_number:g('pif-batch'),condition_on_issue:g('pif-condition')||'new',manufacture_date:g('pif-mfg-date')||null,expiry_date:g('pif-expiry-date')||null,expected_replacement_date:g('pif-replace-date')||null,work_order_ref:g('pif-wo-ref'),ra_ref:g('pif-ra-ref'),hazard_ref:g('pif-hazard'),employee_signature:document.getElementById('pif-ack')?.checked||false,acknowledgement_date:g('pif-ack-date')||null,returned:document.getElementById('pif-returned')?.checked||false,return_date:g('pif-return-date')||null,return_condition:g('pif-return-condition')||null,return_reason:g('pif-return-reason'),notes:g('pif-notes'),status:g('pif-status')||'active',updated_at:new Date().toISOString()};Object.assign(body,personIdentityPayload(emp));body.issued_by_person_id=personFromValue(body.issued_by)?.id||null;body.work_order_id=verifiedReferenceSelection('pif-wo-ref').id;body.risk_assessment_id=verifiedReferenceSelection('pif-ra-ref').id;
   try{
     if(ppeIssEditId){await apiWriteWithMissingColumnFallback('/ppe_issuance?id=eq.'+ppeIssEditId,{m:'PATCH',p:'return=minimal',b:body},'PPE issuance');toast('Updated!');}
     else{
@@ -27585,7 +27617,7 @@ function atexRender(){
       +'<td style="padding:10px 12px;font-size:11px;line-height:1.35">'+escH([x.ventilation_controls,x.ignition_controls,x.detection_controls].filter(Boolean).join(' | ')||'--')+'</td>'
       +'<td style="padding:10px 12px;'+(due?'color:var(--red);font-weight:800':'')+'">'+(x.next_inspection_date?new Date(x.next_inspection_date).toLocaleDateString('en-GB'):'--')+(due?'<div style="font-size:10px;color:#A32D2D;font-weight:900">OVERDUE</div>':soon?'<div style="font-size:10px;color:#C2410C;font-weight:900">DUE SOON</div>':'')+'</td>'
       +'<td style="padding:10px 12px;text-align:center"><span style="background:'+cfg[0]+';color:'+cfg[1]+';padding:3px 9px;border-radius:99px;font-weight:800;font-size:11px">'+cfg[2]+'</span></td>'
-      +'<td style="padding:10px 12px;text-align:right;white-space:nowrap"><button class="btn btn-sm" data-id="'+x.id+'" onclick="event.stopPropagation();atexEdit(this.getAttribute(\'data-id\'))"><i class="ti ti-edit"></i></button> <button class="btn btn-sm" onclick="event.stopPropagation();atexOpenRA()"><i class="ti ti-shield-check"></i>RA</button> <button class="btn btn-sm" onclick="event.stopPropagation();atexOpenPTW()"><i class="ti ti-key"></i>PTW</button></td>'
+      +'<td style="padding:10px 12px;text-align:right;white-space:nowrap"><button class="btn btn-sm" data-id="'+x.id+'" onclick="event.stopPropagation();atexEdit(this.getAttribute(\'data-id\'))"><i class="ti ti-edit"></i></button> <button class="btn btn-sm" data-id="'+x.id+'" onclick="event.stopPropagation();atexOpenLinkedRecord(\'ra\',this.dataset.id)"><i class="ti ti-shield-check"></i>RA</button> <button class="btn btn-sm" data-id="'+x.id+'" onclick="event.stopPropagation();atexOpenLinkedRecord(\'ptw\',this.dataset.id)"><i class="ti ti-key"></i>PTW</button></td>'
       +'</tr>';
   });
   h+='</tbody></table></div>';
@@ -27597,20 +27629,16 @@ function atexShowForm(show){
   document.getElementById('atex-form').style.display=show?'block':'none';
 }
 
-async function atexLoadReferenceOptions(selectedRA,selectedPermitType){
+async function atexLoadReferenceOptions(selectedRA,selectedPermit){
   var raSel=document.getElementById('atex-ra');
   var permitSel=document.getElementById('atex-permit');
   if(raSel){
     await fillRiskAssessmentSelect('atex-ra',selectedRA);
   }
   if(permitSel){
-    permitSel.innerHTML='<option value="">Select permit type...</option>';
-    Object.entries(PTW_TYPE_CFG||{}).forEach(function(entry){
-      var o=document.createElement('option');
-      o.value=entry[0];o.textContent=entry[1].label||entry[0].replace(/_/g,' ');
-      permitSel.appendChild(o);
-    });
-    if(selectedPermitType){permitSel.value=selectedPermitType;if(permitSel.value!==selectedPermitType){var savedPT=document.createElement('option');savedPT.value=selectedPermitType;savedPT.textContent=selectedPermitType+' (saved text)';permitSel.appendChild(savedPT);permitSel.value=selectedPermitType;}}
+    permitSel.innerHTML='<option value="">Select an actual permit...</option>';
+    try{var permits=await api('/permits?select=id,permit_number,permit_type,permit_type_v2,status'+cf()+'&order=created_at.desc&limit=150');(permits||[]).forEach(function(p){var ref=p.permit_number||p.id,type=p.permit_type_v2||p.permit_type||'permit',o=document.createElement('option');o.value=ref;verifiedReferenceOption(o,p,ref,'permits');o.dataset.permitType=type;o.textContent=ref+' - '+type.replace(/_/g,' ')+(p.status?' ['+p.status+']':'');permitSel.appendChild(o);});}catch(_){ }
+    if(selectedPermit)setSelectValueWithFallback('atex-permit',selectedPermit);
   }
 }
 
@@ -27634,7 +27662,7 @@ async function atexEdit(id){
   atexEditId=id;
   document.getElementById('atex-form3title').textContent='Edit ATEX Area';
   document.getElementById('atex-del-btn').style.display=isMgr()?'inline-flex':'none';
-  await atexLoadReferenceOptions(x.linked_ra_ref,x.linked_permit_type);
+  await atexLoadReferenceOptions(x.linked_ra_ref,x.linked_permit_ref||x.linked_permit_type);
   var f={'atex-ref':'area_ref','atex-name':'area_name','atex-location':'location','atex-plant':'plant_area','atex-substance':'substance','atex-release':'source_of_release','atex-ventilation':'ventilation_controls','atex-ignition':'ignition_controls','atex-detection':'detection_controls','atex-equipment':'linked_equipment','atex-ra':'linked_ra_ref','atex-permit':'linked_permit_type','atex-last':'last_inspection_date','atex-next':'next_inspection_date','atex-resp':'responsible_person','atex-notes':'notes'};
   Object.entries(f).forEach(function(e){var el=document.getElementById(e[0]);if(el)el.value=x[e[1]]||'';});
   fillPersonSelect('atex-resp',x.responsible_person||'');
@@ -27656,19 +27684,20 @@ async function atexSave(){
   if(!g('atex-ventilation')||!g('atex-ignition')){toast('Please describe ventilation and ignition source controls',false);return;}
   var nextDate=g('atex-next');
   if(!nextDate){var d=new Date();d.setFullYear(d.getFullYear()+1);nextDate=d.toISOString().slice(0,10);}
-  var body={company_id:ccid(),area_ref:g('atex-ref'),area_name:name,location:g('atex-location'),plant_area:g('atex-plant'),zone_type:g('atex-zone')||'zone_2',material_type:g('atex-material')||'gas_vapour',substance:g('atex-substance'),source_of_release:g('atex-release'),ventilation_controls:g('atex-ventilation'),ignition_controls:g('atex-ignition'),detection_controls:g('atex-detection'),linked_equipment:g('atex-equipment'),linked_ra_ref:g('atex-ra'),linked_permit_type:g('atex-permit'),last_inspection_date:g('atex-last'),next_inspection_date:nextDate,status:g('atex-status')||'controlled',responsible_person:g('atex-resp'),notes:g('atex-notes'),updated_at:new Date().toISOString()};
+  var raLink=verifiedReferenceSelection('atex-ra'),permitLink=verifiedReferenceSelection('atex-permit'),permitOpt=document.getElementById('atex-permit')?.selectedOptions?.[0];
+  var body={company_id:ccid(),area_ref:g('atex-ref'),area_name:name,location:g('atex-location'),plant_area:g('atex-plant'),zone_type:g('atex-zone')||'zone_2',material_type:g('atex-material')||'gas_vapour',substance:g('atex-substance'),source_of_release:g('atex-release'),ventilation_controls:g('atex-ventilation'),ignition_controls:g('atex-ignition'),detection_controls:g('atex-detection'),linked_equipment:g('atex-equipment'),linked_ra_ref:raLink.ref,linked_ra_id:raLink.id,linked_permit_ref:permitLink.ref,linked_permit_id:permitLink.id,linked_permit_type:permitOpt?.dataset?.permitType||null,last_inspection_date:g('atex-last'),next_inspection_date:nextDate,status:g('atex-status')||'controlled',responsible_person:g('atex-resp'),notes:g('atex-notes'),updated_at:new Date().toISOString()};
   var previous=atexEditId?(atexAreas.find(function(x){return x.id===atexEditId;})||{}):{};
   var shouldCreateAction=['action_required','out_of_service'].includes(body.status)&&previous.status!==body.status;
   var savedAtexId=atexEditId||null, savedAtexRef=body.area_ref||name;
   try{
     if(atexEditId){
-      var updated=await api('/atex_areas?id=eq.'+atexEditId,{m:'PATCH',p:'return=representation',b:body});
+      var updated=await apiWriteWithMissingColumnFallback('/atex_areas?id=eq.'+atexEditId,{m:'PATCH',p:'return=representation',b:body},'ATEX area');
       if(Array.isArray(updated)&&!updated.length)throw new Error('record not found or permission denied');
       savedAtexRef=updated?.[0]?.area_ref||savedAtexRef;
     }
     else{
       body.created_by=prof?.id;
-      var res=await api('/atex_areas',{m:'POST',p:'return=representation',b:body});
+      var res=await apiWriteWithMissingColumnFallback('/atex_areas',{m:'POST',p:'return=representation',b:body},'ATEX area');
       if(res?.[0]?.id){
         savedAtexId=res[0].id;
         if(!body.area_ref){
@@ -27724,6 +27753,12 @@ async function atexDelete(){
 
 function atexOpenRA(){showPage('risk',null);setTimeout(function(){if(typeof raLoadTemplate==='function')raLoadTemplate('tpl-atex');},180);}
 function atexOpenPTW(){showPage('permit',null);}
+async function atexOpenLinkedRecord(kind,sourceId){
+  var row=(atexAreas||[]).find(function(x){return String(x.id)===String(sourceId);});if(!row)return;
+  var value=kind==='ra'?(row.linked_ra_id||row.linked_ra_ref):(row.linked_permit_id||row.linked_permit_ref);
+  if(!value){toast('No verified '+(kind==='ra'?'Risk Assessment':'Permit')+' is linked to this ATEX area.',false);return;}
+  await wsOpenLinkedRecord(kind,value);
+}
 
 // ===== MANAGEMENT OF CHANGE (MOC) =====
 let mocData=[], mocEditId=null, mocLegacyMode=false;
@@ -32072,11 +32107,17 @@ async function calLoad(filter, btn){
 
 function calFilter(f,btn){calLoad(f,btn);}
 function calBack(){document.getElementById('cal-form').style.display='none';document.getElementById('legal-view-calendar').style.display='block';document.querySelectorAll('[id^="legal-tab-"]').forEach(t=>t.classList.remove('active'));document.getElementById('legal-tab-calendar')?.classList.add('active');calLoad(calCurrentFilter,document.getElementById('cal-btn-'+calCurrentFilter));}
-function calNew(){fillPplDrops();calEditId=null;document.getElementById('cal-form3title').textContent='New Compliance Event';document.getElementById('cal-del-btn').style.display='none';['calf-title','calf-legislation','calf-ob-ref','calf-responsible','calf-dept','calf-description','calf-action-ref'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});['calf-due-date','calf-completed-date'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});document.getElementById('calf-type').value='submission';document.getElementById('calf-recurrence').value='annual';document.getElementById('calf-status').value='upcoming';document.getElementById('calf-reminder').value='30';document.getElementById('legal-view-calendar').style.display='none';document.getElementById('cal-form').style.display='block';}
-function calEdit(id){var x=calAllData.find(r=>r.id===id);if(!x)return;calEditId=id;document.getElementById('cal-form3title').textContent=x.title||'Edit Event';document.getElementById('cal-del-btn').style.display=isMgr()?'inline-flex':'none';var gf=function(fid,val){var el=document.getElementById(fid);if(el)el.value=val||'';};gf('calf-title',x.title);gf('calf-legislation',x.legislation);gf('calf-ob-ref',x.obligation_ref);gf('calf-responsible',x.responsible_person);gf('calf-dept',x.department);gf('calf-description',x.description);gf('calf-action-ref',x.linked_action_ref);gf('calf-due-date',x.due_date);gf('calf-completed-date',x.completed_date);document.getElementById('calf-type').value=x.event_type||'submission';document.getElementById('calf-recurrence').value=x.recurrence||'none';document.getElementById('calf-status').value=x.status||'upcoming';document.getElementById('calf-reminder').value=x.reminder_days||30;document.getElementById('legal-view-calendar').style.display='none';document.getElementById('cal-form').style.display='block';}
-async function calSave(){var title=document.getElementById('calf-title')?.value?.trim();if(!title){toast('Please enter event title',false);return;}var g=function(id){var el=document.getElementById(id);return el?el.value||null:null;};var body={company_id:ccid(),title,event_type:g('calf-type')||'submission',legislation:g('calf-legislation'),obligation_ref:g('calf-ob-ref'),due_date:g('calf-due-date'),recurrence:g('calf-recurrence')||'none',responsible_person:g('calf-responsible'),department:g('calf-dept'),description:g('calf-description'),reminder_days:parseInt(g('calf-reminder'))||30,status:g('calf-status')||'upcoming',completed_date:g('calf-completed-date')||null,linked_action_ref:g('calf-action-ref'),updated_at:new Date().toISOString()};
-  try{if(calEditId){await api('/compliance_calendar?id=eq.'+calEditId,{m:'PATCH',p:'return=minimal',b:body});toast('Event updated!');}else{body.created_by=prof?.id;await api('/compliance_calendar',{m:'POST',p:'return=minimal',b:body});toast('Calendar event added!');}calBack();}catch(e){toast(actionErrorMessage('Save compliance calendar event','Legal Compliance',e.message),false);}
+async function calLoadReferenceOptions(selectedRequirement,selectedAction){
+  var req=document.getElementById('calf-ob-ref'),act=document.getElementById('calf-action-ref');
+  if(req){req.innerHTML='<option value="">Select a Legal Register requirement...</option>';try{var requirements=await api('/legal_requirements?select=id,req_ref,legislation,section,status'+cf()+'&order=legislation,section&limit=250');(requirements||[]).forEach(function(r){var ref=r.req_ref||r.id,o=document.createElement('option');o.value=ref;verifiedReferenceOption(o,r,ref,'legal_requirements');o.textContent=ref+' - '+[r.legislation,r.section].filter(Boolean).join(' / ')+(r.status?' ['+r.status+']':'');req.appendChild(o);});}catch(_){}if(selectedRequirement)setSelectValueWithFallback('calf-ob-ref',selectedRequirement);}
+  if(act){act.innerHTML='<option value="">No linked Master Action</option>';try{var actions=await api('/action_tracker?select=id,action_ref,title,description,status'+cf()+'&order=created_at.desc&limit=200');(actions||[]).forEach(function(a){var ref=a.action_ref||a.id,o=document.createElement('option');o.value=ref;verifiedReferenceOption(o,a,ref,'action_tracker');o.textContent=ref+' - '+String(a.title||a.description||'Action').slice(0,75)+(a.status?' ['+a.status+']':'');act.appendChild(o);});}catch(_){}if(selectedAction)setSelectValueWithFallback('calf-action-ref',selectedAction);}
 }
+async function calNew(){fillPplDrops();calEditId=null;document.getElementById('cal-form3title').textContent='New Compliance Event';document.getElementById('cal-del-btn').style.display='none';['calf-title','calf-legislation','calf-ob-ref','calf-responsible','calf-dept','calf-description','calf-action-ref'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});await calLoadReferenceOptions();['calf-due-date','calf-completed-date'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});document.getElementById('calf-type').value='submission';document.getElementById('calf-recurrence').value='annual';document.getElementById('calf-status').value='upcoming';document.getElementById('calf-reminder').value='30';document.getElementById('legal-view-calendar').style.display='none';document.getElementById('cal-form').style.display='block';}
+async function calEdit(id){var x=calAllData.find(r=>r.id===id);if(!x)return;calEditId=id;document.getElementById('cal-form3title').textContent=x.title||'Edit Event';document.getElementById('cal-del-btn').style.display=isMgr()?'inline-flex':'none';var gf=function(fid,val){var el=document.getElementById(fid);if(el)el.value=val||'';};gf('calf-title',x.title);gf('calf-legislation',x.legislation);await calLoadReferenceOptions(x.obligation_ref,x.linked_action_ref);gf('calf-responsible',x.responsible_person);gf('calf-dept',x.department);gf('calf-description',x.description);gf('calf-due-date',x.due_date);gf('calf-completed-date',x.completed_date);document.getElementById('calf-type').value=x.event_type||'submission';document.getElementById('calf-recurrence').value=x.recurrence||'none';document.getElementById('calf-status').value=x.status||'upcoming';document.getElementById('calf-reminder').value=x.reminder_days||30;document.getElementById('legal-view-calendar').style.display='none';document.getElementById('cal-form').style.display='block';}
+async function calSave(){var title=document.getElementById('calf-title')?.value?.trim();if(!title){toast('Please enter event title',false);return;}var g=function(id){var el=document.getElementById(id);return el?el.value||null:null;},req=verifiedReferenceSelection('calf-ob-ref'),act=verifiedReferenceSelection('calf-action-ref');var body={company_id:ccid(),title,event_type:g('calf-type')||'submission',legislation:g('calf-legislation'),obligation_ref:req.ref,due_date:g('calf-due-date'),recurrence:g('calf-recurrence')||'none',responsible_person:g('calf-responsible'),department:g('calf-dept'),description:g('calf-description'),reminder_days:parseInt(g('calf-reminder'))||30,status:g('calf-status')||'upcoming',completed_date:g('calf-completed-date')||null,linked_action_ref:act.ref,legal_requirement_id:req.id,linked_action_id:act.id,updated_at:new Date().toISOString()};
+  try{if(calEditId){await apiWriteWithMissingColumnFallback('/compliance_calendar?id=eq.'+calEditId,{m:'PATCH',p:'return=minimal',b:body},'Compliance calendar event');toast('Event updated!');}else{body.created_by=prof?.id;await apiWriteWithMissingColumnFallback('/compliance_calendar',{m:'POST',p:'return=minimal',b:body},'Compliance calendar event');toast('Calendar event added!');}calBack();}catch(e){toast(actionErrorMessage('Save compliance calendar event','Legal Compliance',e.message),false);}
+}
+async function calOpenLinked(kind){var s=verifiedReferenceSelection(kind==='legal'?'calf-ob-ref':'calf-action-ref');if(!s.id){toast('Select a verified record first.',false);return;}if(kind==='legal'){showPage('legal',null);if(!lrAllData.length)await legalLoadRegister();setTimeout(function(){legalOpenReq(s.id);},150);}else{showPage('actions',null);setTimeout(function(){mapEdit(s.id);},150);}}
 async function calMarkComplete(id){try{await api('/compliance_calendar?id=eq.'+id,{m:'PATCH',p:'return=minimal',b:{status:'completed',completed_date:new Date().toISOString().slice(0,10),updated_at:new Date().toISOString()}});toast('Marked as completed');calLoad(calCurrentFilter,document.getElementById('cal-btn-'+calCurrentFilter));}catch(e){toast(actionErrorMessage('Complete compliance calendar event','Legal Compliance',e.message),false);}
 }
 async function calDelete(){
@@ -45050,8 +45091,8 @@ function fireEquipStatusBadge(s) {
 <label style="display:flex;align-items:center;gap:6px;font-size:12px;font-weight:600;cursor:pointer">
 <input type="checkbox" id="wsf-requires-permit" style="accent-color:var(--green);width:15px;height:15px">Permit to work required</label>
 </div>
-<div class="form3group"><label class="form3label">RA reference</label><select id="wsf-ra-ref" style="font-family:monospace"><option value="">Select risk assessment...</option></select></div>
-<div class="form3group"><label class="form3label">Permit reference</label><select id="wsf-ptw-ref" style="font-family:monospace"><option value="">Select permit...</option></select></div>
+<div class="form3group"><label class="form3label">RA reference</label><div style="display:flex;gap:6px"><select id="wsf-ra-ref" style="font-family:monospace;min-width:0"><option value="">Select risk assessment...</option></select><button type="button" class="btn btn-sm" onclick="openVerifiedReferenceSelect('wsf-ra-ref','ra')"><i class="ti ti-external-link"></i></button></div></div>
+<div class="form3group"><label class="form3label">Permit reference</label><div style="display:flex;gap:6px"><select id="wsf-ptw-ref" style="font-family:monospace;min-width:0"><option value="">Select permit...</option></select><button type="button" class="btn btn-sm" onclick="openVerifiedReferenceSelect('wsf-ptw-ref','ptw')"><i class="ti ti-external-link"></i></button></div></div>
 </div>
 <!-- Ref number display -->
 <div class="card" style="background:linear-gradient(135deg,#1a3a5c,#185FA5);color:#fff;border:none;text-align:center;padding:20px">
@@ -48016,7 +48057,7 @@ Offline mode - changes will sync when connection is restored
 </div>
 <div class="form3row">
 <div class="form3group"><label class="form3label">Legislation / obligation</label><input type="text" id="calf-legislation" placeholder="e.g. OSH Act 2005 s.50"/></div>
-<div class="form3group"><label class="form3label">Obligation reference</label><input type="text" id="calf-ob-ref" style="font-family:monospace"/></div>
+<div class="form3group"><label class="form3label">Legal Register requirement</label><div style="display:flex;gap:6px"><select id="calf-ob-ref" style="font-family:monospace;min-width:0;flex:1"><option value="">Select requirement...</option></select><button type="button" class="btn btn-sm" onclick="calOpenLinked('legal')" title="Open linked requirement"><i class="ti ti-external-link"></i></button></div></div>
 <div class="form3group"><label class="form3label">Due date</label><input type="date" id="calf-due-date"/></div>
 <div class="form3group"><label class="form3label">Recurrence</label>
 <select id="calf-recurrence"><option value="none">No recurrence</option><option value="monthly">Monthly</option>
@@ -48032,7 +48073,7 @@ Offline mode - changes will sync when connection is restored
 <div class="form3group"><label class="form3label">Description / notes</label><textarea id="calf-description" style="min-height:60px"></textarea></div>
 <div class="form3row">
 <div class="form3group"><label class="form3label">Completion date</label><input type="date" id="calf-completed-date"/></div>
-<div class="form3group"><label class="form3label">Linked MAP action ref</label><input type="text" id="calf-action-ref" style="font-family:monospace"/></div>
+<div class="form3group"><label class="form3label">Linked Master Action</label><div style="display:flex;gap:6px"><select id="calf-action-ref" style="font-family:monospace;min-width:0;flex:1"><option value="">No linked action</option></select><button type="button" class="btn btn-sm" onclick="calOpenLinked('action')" title="Open linked action"><i class="ti ti-external-link"></i></button></div></div>
 </div>
 </div>
 </div>
@@ -48139,7 +48180,7 @@ Offline mode - changes will sync when connection is restored
 <div class="form3row">
 <div class="form3group"><label class="form3label">Linked equipment</label><input type="text" id="atex-equipment" placeholder="Ex motors, gas detector, ventilation fan..."/></div>
 <div class="form3group"><label class="form3label">Linked RA reference</label><select id="atex-ra"><option value="">Select risk assessment...</option></select></div>
-<div class="form3group"><label class="form3label">Linked permit type</label><select id="atex-permit"><option value="">Select permit type...</option></select></div>
+<div class="form3group"><label class="form3label">Linked permit record</label><select id="atex-permit"><option value="">Select an actual permit...</option></select></div>
 </div>
 </div>
 </div>
@@ -48722,9 +48763,9 @@ Offline mode - changes will sync when connection is restored
 <div class="card" style="margin-bottom:14px;border-left:4px solid #1D9E75">
 <div class="card-title" style="color:#1D9E75"><i class="ti ti-link"></i> Linked Documents &amp; Smart Checks</div>
 <div class="form3row">
-<div class="form3group"><label class="form3label">Risk Assessment ref.</label><select id="pf-ra-ref" style="font-family:monospace"><option value="">Select risk assessment...</option></select></div>
-<div class="form3group"><label class="form3label">Method Statement ref.</label><select id="pf-ms-ref" style="font-family:monospace"><option value="">Select method statement / SOP...</option></select></div>
-<div class="form3group"><label class="form3label">Work Order ref.</label><select id="pf-wo"><option value="">None</option></select></div>
+<div class="form3group"><label class="form3label">Risk Assessment ref.</label><div style="display:flex;gap:6px"><select id="pf-ra-ref" style="font-family:monospace;min-width:0"><option value="">Select risk assessment...</option></select><button type="button" class="btn btn-sm" onclick="openVerifiedReferenceSelect('pf-ra-ref','ra')"><i class="ti ti-external-link"></i></button></div></div>
+<div class="form3group"><label class="form3label">Method Statement ref.</label><div style="display:flex;gap:6px"><select id="pf-ms-ref" style="font-family:monospace;min-width:0"><option value="">Select method statement / SOP...</option></select><button type="button" class="btn btn-sm" onclick="openVerifiedReferenceSelect('pf-ms-ref','document')"><i class="ti ti-external-link"></i></button></div></div>
+<div class="form3group"><label class="form3label">Work Order ref.</label><div style="display:flex;gap:6px"><select id="pf-wo" style="min-width:0"><option value="">None</option></select><button type="button" class="btn btn-sm" onclick="openVerifiedReferenceSelect('pf-wo','work')"><i class="ti ti-external-link"></i></button></div></div>
 </div>
 <div id="ptw-smart-check-panel" style="margin-top:10px"></div>
 <div style="display:flex;align-items:center;gap:10px;margin-top:12px">
@@ -50649,8 +50690,8 @@ Offline mode - changes will sync when connection is restored
 </div>
 <div class="card" style="margin-bottom:14px"><div class="card-title">Linked References</div>
 <div class="form3row">
-<div class="form3group"><label class="form3label">Work order ref</label><select id="pif-wo-ref" style="font-family:monospace"><option value="">Select work order...</option></select></div>
-<div class="form3group"><label class="form3label">Risk Assessment ref</label><select id="pif-ra-ref" style="font-family:monospace"><option value="">Select risk assessment...</option></select></div>
+<div class="form3group"><label class="form3label">Work order ref</label><div style="display:flex;gap:6px"><select id="pif-wo-ref" style="font-family:monospace;min-width:0"><option value="">Select work order...</option></select><button type="button" class="btn btn-sm" onclick="openVerifiedReferenceSelect('pif-wo-ref','work')"><i class="ti ti-external-link"></i></button></div></div>
+<div class="form3group"><label class="form3label">Risk Assessment ref</label><div style="display:flex;gap:6px"><select id="pif-ra-ref" style="font-family:monospace;min-width:0"><option value="">Select risk assessment...</option></select><button type="button" class="btn btn-sm" onclick="openVerifiedReferenceSelect('pif-ra-ref','ra')"><i class="ti ti-external-link"></i></button></div></div>
 <div class="form3group"><label class="form3label">Hazard type</label><input type="text" id="pif-hazard" placeholder="e.g. noise, height, chemical..."/></div>
 </div></div>
 <div class="card"><div class="card-title">Return Details (fill on return)</div>
@@ -52582,8 +52623,8 @@ Offline mode - changes will sync when connection is restored
 <div class="card" style="margin-bottom:14px">
 <div class="card-title"><i class="ti ti-link"></i> Linked Records</div>
 <div class="form3row">
-<div class="form3group"><label class="form3label">Linked risk assessment</label><select id="swms-ra-ref" style="font-family:monospace" onchange="swmsBuildPreview()"><option value="">Select risk assessment...</option></select></div>
-<div class="form3group"><label class="form3label">Linked permit to work</label><select id="swms-ptw-ref" style="font-family:monospace" onchange="swmsBuildPreview()"><option value="">Select permit...</option></select></div>
+<div class="form3group"><label class="form3label">Linked risk assessment</label><div style="display:flex;gap:6px"><select id="swms-ra-ref" style="font-family:monospace;min-width:0" onchange="swmsBuildPreview()"><option value="">Select risk assessment...</option></select><button type="button" class="btn btn-sm" onclick="openVerifiedReferenceSelect('swms-ra-ref','ra')"><i class="ti ti-external-link"></i></button></div></div>
+<div class="form3group"><label class="form3label">Linked permit to work</label><div style="display:flex;gap:6px"><select id="swms-ptw-ref" style="font-family:monospace;min-width:0" onchange="swmsBuildPreview()"><option value="">Select permit...</option></select><button type="button" class="btn btn-sm" onclick="openVerifiedReferenceSelect('swms-ptw-ref','ptw')"><i class="ti ti-external-link"></i></button></div></div>
 </div>
 </div>
 

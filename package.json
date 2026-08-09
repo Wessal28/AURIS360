@@ -7,7 +7,8 @@
     "test:moc-contract": "node tests/moc_separation_contract.test.cjs",
     "test:person-identity": "node tests/person_identity_contract.test.cjs",
     "test:person-reconciliation": "node tests/person_identity_reconciliation_contract.test.cjs",
-    "test:location-identity": "node tests/location_identity_contract.test.cjs"
+    "test:location-identity": "node tests/location_identity_contract.test.cjs",
+    "test:verified-references": "node tests/verified_operational_references_contract.test.cjs"
   },
   "dependencies": {
     "nodemailer": "^6.9.16"
