@@ -85,6 +85,134 @@ create table if not exists public.learning_source_relationships (
 );
 create index if not exists learning_source_reverse on public.learning_source_relationships(company_id,related_module,related_record_id,impact_status);
 
+alter table public.learning_source_relationships add column if not exists related_table text;
+alter table public.learning_source_relationships add column if not exists source_current_revision text;
+alter table public.learning_source_relationships add column if not exists impact_note text;
+alter table public.learning_source_relationships add column if not exists impact_detected_at timestamptz;
+alter table public.learning_source_relationships add column if not exists reviewed_at timestamptz;
+alter table public.learning_source_relationships add column if not exists reviewed_by uuid;
+
+-- Preserve exact legacy course-governance sources in the relationship register.
+-- Only IDs that resolve inside the same company are migrated; no title matching
+-- or inferred relationship is used.
+do $$
+begin
+if to_regclass('public.documents') is not null
+   and to_regclass('public.risk_assessments') is not null
+   and to_regclass('public.legal_requirements') is not null
+   and to_regclass('public.events') is not null
+   and to_regclass('public.action_tracker') is not null then
+insert into public.learning_source_relationships(
+  company_id,course_id,course_version,related_module,related_table,related_record_id,
+  related_revision,relationship_type,impact_status,created_by,created_at,updated_at
+)
+select g.company_id,g.course_id,g.version_no,'documents','documents',d.id::text,
+       coalesce(g.source_revision,nullif(to_jsonb(d)->>'version',''),nullif(to_jsonb(d)->>'doc_version','')),
+       'learning_source','current',g.created_by,g.created_at,g.updated_at
+from public.learning_course_governance g
+join public.documents d on d.id::text=g.source_record_id and d.company_id=g.company_id
+where g.source_module='documents' and nullif(g.source_record_id,'') is not null
+union all
+select g.company_id,g.course_id,g.version_no,'risk','risk_assessments',r.id::text,
+       coalesce(g.source_revision,nullif(to_jsonb(r)->>'revision',''),nullif(to_jsonb(r)->>'updated_at','')),
+       'learning_source','current',g.created_by,g.created_at,g.updated_at
+from public.learning_course_governance g
+join public.risk_assessments r on r.id::text=g.source_record_id and r.company_id=g.company_id
+where g.source_module='risk' and nullif(g.source_record_id,'') is not null
+union all
+select g.company_id,g.course_id,g.version_no,'legal','legal_requirements',l.id::text,
+       coalesce(g.source_revision,nullif(to_jsonb(l)->>'revision',''),nullif(to_jsonb(l)->>'updated_at','')),
+       'learning_source','current',g.created_by,g.created_at,g.updated_at
+from public.learning_course_governance g
+join public.legal_requirements l on l.id::text=g.source_record_id and l.company_id=g.company_id
+where g.source_module='legal' and nullif(g.source_record_id,'') is not null
+union all
+select g.company_id,g.course_id,g.version_no,'event','events',e.id::text,
+       coalesce(g.source_revision,nullif(to_jsonb(e)->>'revision',''),nullif(to_jsonb(e)->>'updated_at','')),
+       'learning_source','current',g.created_by,g.created_at,g.updated_at
+from public.learning_course_governance g
+join public.events e on e.id::text=g.source_record_id and e.company_id=g.company_id
+where g.source_module='incident' and nullif(g.source_record_id,'') is not null
+union all
+select g.company_id,g.course_id,g.version_no,'moc','action_tracker',m.id::text,
+       coalesce(g.source_revision,nullif(to_jsonb(m)->>'revision',''),nullif(to_jsonb(m)->>'updated_at','')),
+       'learning_source','current',g.created_by,g.created_at,g.updated_at
+from public.learning_course_governance g
+join public.action_tracker m on m.id::text=g.source_record_id and m.company_id=g.company_id
+where g.source_module='moc' and nullif(g.source_record_id,'') is not null
+on conflict(company_id,course_id,course_version,related_module,related_record_id,relationship_type)
+do update set related_table=excluded.related_table,
+              related_revision=coalesce(public.learning_source_relationships.related_revision,excluded.related_revision),
+              updated_at=now();
+end if;
+end $$;
+
+create or replace function public.refresh_learning_source_impacts(p_company_id uuid)
+returns table(current_count bigint, review_required_count bigint, affected_count bigint)
+language plpgsql
+security invoker
+set search_path=public
+as $$
+declare
+  rel record;
+  source_row jsonb;
+  current_revision text;
+begin
+  for rel in
+    select * from public.learning_source_relationships
+    where company_id=p_company_id and impact_status<>'superseded'
+  loop
+    source_row:=null;
+    current_revision:=null;
+    if rel.related_table is null or rel.related_table!~'^[a-z0-9_]+$'
+       or to_regclass('public.'||rel.related_table) is null
+       or not exists(select 1 from information_schema.columns where table_schema='public' and table_name=rel.related_table and column_name='id')
+       or not exists(select 1 from information_schema.columns where table_schema='public' and table_name=rel.related_table and column_name='company_id') then
+      update public.learning_source_relationships
+      set impact_status='affected',impact_note='The linked source type is unavailable.',
+          impact_detected_at=coalesce(impact_detected_at,now()),updated_at=now()
+      where id=rel.id;
+      continue;
+    end if;
+    execute format('select to_jsonb(t) from public.%I t where t.id::text=$1 and t.company_id=$2 limit 1',rel.related_table)
+      into source_row using rel.related_record_id,p_company_id;
+    if source_row is null then
+      update public.learning_source_relationships
+      set impact_status='affected',impact_note='The linked source record no longer resolves in this company.',
+          impact_detected_at=coalesce(impact_detected_at,now()),updated_at=now()
+      where id=rel.id;
+      continue;
+    end if;
+    current_revision:=coalesce(
+      nullif(source_row->>'revision',''),nullif(source_row->>'revision_code',''),
+      nullif(source_row->>'doc_version',''),nullif(source_row->>'version',''),
+      nullif(source_row->>'current_revision_id',''),nullif(source_row->>'updated_at','')
+    );
+    if rel.related_revision is null then
+      update public.learning_source_relationships
+      set related_revision=current_revision,source_current_revision=current_revision,
+          impact_note=null,updated_at=now()
+      where id=rel.id;
+    elsif current_revision is distinct from rel.related_revision then
+      update public.learning_source_relationships
+      set source_current_revision=current_revision,impact_status='review_required',
+          impact_note='The controlled source changed after this learning version was linked.',
+          impact_detected_at=coalesce(impact_detected_at,now()),updated_at=now()
+      where id=rel.id;
+    else
+      update public.learning_source_relationships
+      set source_current_revision=current_revision,updated_at=now()
+      where id=rel.id;
+    end if;
+  end loop;
+  return query
+  select count(*) filter(where l.impact_status='current'),
+         count(*) filter(where l.impact_status='review_required'),
+         count(*) filter(where l.impact_status='affected')
+  from public.learning_source_relationships l where l.company_id=p_company_id;
+end;
+$$;
+
 create table if not exists public.learning_external_providers (
   id text primary key default gen_random_uuid()::text,
   company_id uuid not null references public.companies(id) on delete cascade,
@@ -116,6 +244,8 @@ begin
     execute format('create policy %I on public.%I for all using (exists (select 1 from public.profiles p where p.id=auth.uid() and (p.role=''sephs_admin'' or (p.company_id=%I.company_id and p.role in (''admin'',''hse_manager'',''hse_officer'',''manager'',''site_manager'',''supervisor'',''training_admin'',''hr_manager''))))) with check (exists (select 1 from public.profiles p where p.id=auth.uid() and (p.role=''sephs_admin'' or (p.company_id=%I.company_id and p.role in (''admin'',''hse_manager'',''hse_officer'',''manager'',''site_manager'',''supervisor'',''training_admin'',''hr_manager'')))))',t||'_tenant_write',t,t,t);
   end loop;
 end $$;
+
+grant execute on function public.refresh_learning_source_impacts(uuid) to authenticated;
 
 notify pgrst, 'reload schema';
 commit;

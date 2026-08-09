@@ -46,6 +46,7 @@ values
   ('noise','noise_surveys','id',null,'Noise Survey',to_regclass('public.noise_surveys') is not null),
   ('training','training_followup','id',null,'Training Record',to_regclass('public.training_followup') is not null),
   ('training','competency_matrix','id',null,'Competency Record',to_regclass('public.competency_matrix') is not null),
+  ('training','elearning_courses','id','course_code','Learning Course',to_regclass('public.elearning_courses') is not null),
   ('documents','documents','id','doc_ref','Controlled Document',to_regclass('public.documents') is not null),
   ('sop','sop_video_projects','id','reference','SOP Project',to_regclass('public.sop_video_projects') is not null),
   ('swms','documents','id','doc_ref','SWMS / Method Statement',to_regclass('public.documents') is not null)
@@ -300,6 +301,72 @@ begin
   end if;
 end $$;
 
+-- Promote exact controlled sources already registered against learning course
+-- versions. The active UI writes both this canonical service and the
+-- learning-specific impact register; this block preserves earlier valid links.
+do $$
+begin
+  if to_regclass('public.learning_source_relationships') is not null
+     and to_regclass('public.elearning_courses') is not null
+     and to_regclass('public.documents') is not null
+     and to_regclass('public.risk_assessments') is not null
+     and to_regclass('public.legal_requirements') is not null
+     and to_regclass('public.events') is not null
+     and to_regclass('public.action_tracker') is not null
+     and exists(select 1 from information_schema.columns where table_schema='public' and table_name='learning_source_relationships' and column_name='related_table') then
+    insert into public.record_relationships(
+      company_id,source_module,source_table,source_id,source_ref,
+      target_module,target_table,target_id,target_ref,relationship_type,
+      source_revision,target_revision,applicability,status,created_by,created_at,updated_at
+    )
+    select r.company_id,'training','elearning_courses',c.id::text,c.course_code,
+           'documents','documents',d.id::text,d.doc_ref,coalesce(nullif(r.relationship_type,''),'learning_source'),
+           r.course_version::text,r.related_revision,jsonb_build_object('origin','learning_source_relationships_backfill'),
+           'active',r.created_by,r.created_at,r.updated_at
+    from public.learning_source_relationships r
+    join public.elearning_courses c on c.id::text=r.course_id and c.company_id=r.company_id
+    join public.documents d on d.id::text=r.related_record_id and d.company_id=r.company_id
+    where r.related_module='documents' and r.related_table='documents' and r.impact_status<>'superseded'
+    union all
+    select r.company_id,'training','elearning_courses',c.id::text,c.course_code,
+           'risk','risk_assessments',ra.id::text,ra.ra_ref,coalesce(nullif(r.relationship_type,''),'learning_source'),
+           r.course_version::text,r.related_revision,jsonb_build_object('origin','learning_source_relationships_backfill'),
+           'active',r.created_by,r.created_at,r.updated_at
+    from public.learning_source_relationships r
+    join public.elearning_courses c on c.id::text=r.course_id and c.company_id=r.company_id
+    join public.risk_assessments ra on ra.id::text=r.related_record_id and ra.company_id=r.company_id
+    where r.related_module='risk' and r.related_table='risk_assessments' and r.impact_status<>'superseded'
+    union all
+    select r.company_id,'training','elearning_courses',c.id::text,c.course_code,
+           'legal','legal_requirements',l.id::text,l.req_ref,coalesce(nullif(r.relationship_type,''),'learning_source'),
+           r.course_version::text,r.related_revision,jsonb_build_object('origin','learning_source_relationships_backfill'),
+           'active',r.created_by,r.created_at,r.updated_at
+    from public.learning_source_relationships r
+    join public.elearning_courses c on c.id::text=r.course_id and c.company_id=r.company_id
+    join public.legal_requirements l on l.id::text=r.related_record_id and l.company_id=r.company_id
+    where r.related_module='legal' and r.related_table='legal_requirements' and r.impact_status<>'superseded'
+    union all
+    select r.company_id,'training','elearning_courses',c.id::text,c.course_code,
+           'event','events',ev.id::text,ev.event_ref,coalesce(nullif(r.relationship_type,''),'learning_source'),
+           r.course_version::text,r.related_revision,jsonb_build_object('origin','learning_source_relationships_backfill'),
+           'active',r.created_by,r.created_at,r.updated_at
+    from public.learning_source_relationships r
+    join public.elearning_courses c on c.id::text=r.course_id and c.company_id=r.company_id
+    join public.events ev on ev.id::text=r.related_record_id and ev.company_id=r.company_id
+    where r.related_module='event' and r.related_table='events' and r.impact_status<>'superseded'
+    union all
+    select r.company_id,'training','elearning_courses',c.id::text,c.course_code,
+           'moc','action_tracker',m.id::text,coalesce(to_jsonb(m)->>'source_ref',to_jsonb(m)->>'action_ref'),coalesce(nullif(r.relationship_type,''),'learning_source'),
+           r.course_version::text,r.related_revision,jsonb_build_object('origin','learning_source_relationships_backfill'),
+           'active',r.created_by,r.created_at,r.updated_at
+    from public.learning_source_relationships r
+    join public.elearning_courses c on c.id::text=r.course_id and c.company_id=r.company_id
+    join public.action_tracker m on m.id::text=r.related_record_id and m.company_id=r.company_id
+    where r.related_module='moc' and r.related_table='action_tracker' and r.impact_status<>'superseded'
+    on conflict (company_id,relationship_type,endpoint_a,endpoint_b) where status<>'archived' do nothing;
+  end if;
+end $$;
+
 create or replace function public.create_record_relationship(
   p_company_id uuid,
   p_source_module text,
@@ -389,8 +456,8 @@ for select using (exists(select 1 from public.profiles p where p.id=auth.uid()
        or p.role in ('sephs_admin','admin','hse_manager','compliance_manager'))));
 drop policy if exists "record_relationships_tenant_write" on public.record_relationships;
 create policy "record_relationships_tenant_write" on public.record_relationships
-for all using (exists(select 1 from public.profiles p where p.id=auth.uid() and (p.role='sephs_admin' or (p.company_id=record_relationships.company_id and p.role in ('admin','hse_manager','hse_officer','manager','site_manager','supervisor','document_controller','compliance_manager','risk_assessor')))))
-with check (exists(select 1 from public.profiles p where p.id=auth.uid() and (p.role='sephs_admin' or (p.company_id=record_relationships.company_id and p.role in ('admin','hse_manager','hse_officer','manager','site_manager','supervisor','document_controller','compliance_manager','risk_assessor')))));
+for all using (exists(select 1 from public.profiles p where p.id=auth.uid() and (p.role='sephs_admin' or (p.company_id=record_relationships.company_id and p.role in ('admin','hse_manager','hse_officer','manager','site_manager','supervisor','document_controller','compliance_manager','risk_assessor','training_admin','hr_manager')))))
+with check (exists(select 1 from public.profiles p where p.id=auth.uid() and (p.role='sephs_admin' or (p.company_id=record_relationships.company_id and p.role in ('admin','hse_manager','hse_officer','manager','site_manager','supervisor','document_controller','compliance_manager','risk_assessor','training_admin','hr_manager')))));
 
 grant select on public.relationship_module_registry to authenticated;
 grant select,insert,update,delete on public.record_relationships to authenticated;

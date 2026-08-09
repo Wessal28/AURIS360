@@ -2971,7 +2971,7 @@ async function relationshipRegistry(){
 function connectedRecordsCanManage(options){
   if(options&&options.allowCreate===false)return false;
   var role=typeof activeRole==='function'?activeRole():'';
-  return ['sephs_admin','admin','hse_manager','hse_officer','manager','site_manager','supervisor','document_controller','compliance_manager','risk_assessor'].includes(role);
+  return ['sephs_admin','admin','hse_manager','hse_officer','manager','site_manager','supervisor','document_controller','compliance_manager','risk_assessor','training_admin','hr_manager'].includes(role);
 }
 function connectedRecordsLabel(row,cfg){
   var ref=cfg&&cfg.ref_column&&row[cfg.ref_column];
@@ -3026,12 +3026,12 @@ function connectedRecordsRender(mountId){
     h+='<div id="'+mountId+'-picker" style="display:none;margin-top:12px;padding:12px;background:#F8FAFC;border:1px solid var(--border);border-radius:9px">'
       +'<div class="form3row"><div class="form3group"><label class="form3label">Record type</label><select id="'+mountId+'-module" onchange="connectedRecordsSearch(\''+mountId+'\')"><option value="">Select module...</option>'
       +state.registry.filter(function(c){return !(c.module_key===state.endpoint.module&&c.table_name===state.endpoint.table);}).map(function(c){return '<option value="'+escH(c.module_key+'|'+c.table_name)+'">'+escH(c.display_label)+'</option>';}).join('')+'</select></div>'
-      +'<div class="form3group"><label class="form3label">Relationship</label><select id="'+mountId+'-type"><option value="related_to">Related to</option><option value="evidence_for">Evidence for</option><option value="action_for">Action for</option><option value="control_for">Control for</option><option value="supersedes">Supersedes</option><option value="derived_from">Derived from</option></select></div></div>'
+      +'<div class="form3group"><label class="form3label">Relationship</label><select id="'+mountId+'-type"><option value="related_to">Related to</option><option value="learning_source">Learning source</option><option value="evidence_for">Evidence for</option><option value="action_for">Action for</option><option value="control_for">Control for</option><option value="supersedes">Supersedes</option><option value="derived_from">Derived from</option></select></div></div>'
       +'<div class="form3group"><label class="form3label">Find a record</label><input id="'+mountId+'-search" placeholder="Search reference, title or description..." oninput="connectedRecordsFilterPicker(\''+mountId+'\')"/></div>'
       +'<div class="form3group"><label class="form3label">Select verified record</label><select id="'+mountId+'-result"><option value="">Choose a record type first...</option></select></div>'
       +'<div style="display:flex;justify-content:flex-end;gap:7px"><button class="btn btn-sm" type="button" onclick="connectedRecordsTogglePicker(\''+mountId+'\',false)">Cancel</button><button class="btn btn-primary btn-sm" type="button" onclick="connectedRecordsAdd(\''+mountId+'\')"><i class="ti ti-link-plus"></i>Connect selected record</button></div></div>';
   }
-  h+='</div>';host.innerHTML=h;
+  h+='</div>';host.innerHTML=h;var defaultType=document.getElementById(mountId+'-type');if(defaultType&&state.options.defaultRelationshipType)defaultType.value=state.options.defaultRelationshipType;
 }
 function connectedRecordsTogglePicker(mountId,force){
   var el=document.getElementById(mountId+'-picker');if(!el)return;
@@ -3063,12 +3063,13 @@ async function connectedRecordsAdd(mountId){
     var target=relationshipEndpoint(state.pickerCfg.module_key,state.pickerCfg.table_name,pick.id,pick.ref);
     await relationshipCreate(state.endpoint,target,type,{});toast('Record connected successfully.');
     await connectedRecordsMount(mountId,state.endpoint,state.options);
+    if(typeof state.options.onChanged==='function')await state.options.onChanged();
   }catch(e){toast('Relationship could not be created: '+(e.message||e),false);}
 }
 async function connectedRecordsRemove(mountId,relationshipId){
   if(!confirm('Remove this relationship? The records themselves will not be deleted.'))return;
   var state=connectedRecordsState[mountId];
-  try{await relationshipArchive(relationshipId,'Removed from Connected Records panel');toast('Relationship removed.');await connectedRecordsMount(mountId,state.endpoint,state.options);}catch(e){toast('Relationship could not be removed: '+(e.message||e),false);}
+  try{await relationshipArchive(relationshipId,'Removed from Connected Records panel');toast('Relationship removed.');await connectedRecordsMount(mountId,state.endpoint,state.options);if(typeof state.options.onChanged==='function')await state.options.onChanged();}catch(e){toast('Relationship could not be removed: '+(e.message||e),false);}
 }
 async function connectedRecordsOpen(mountId,relationshipId){
   var state=connectedRecordsState[mountId],row=state&&(state.rows||[]).find(function(x){return x.id===relationshipId;});if(!row)return;
@@ -28059,6 +28060,10 @@ async function mapOpenExactSource(adapter,x){
       if(tab){ohSwitchTab(tab,document.getElementById('oh-tab-'+tab));await loader();if(mapHasSourceRow(rows,id)){await opener(id);return true;}}
     }
     if(adapter.key==='training'&&typeof trainSwitchTab==='function'){
+      if(x.source_table==='elearning_courses'&&typeof lcuOpenGovernance==='function'){
+        if(typeof lcuSwitch==='function')lcuSwitch('studio');
+        await lcuOpenGovernance(id);return true;
+      }
       if(/competency gap/.test(ref)&&typeof compEdit==='function'){
         trainSwitchTab('competency',document.getElementById('train-tab-competency'));await compEdit(id);return true;
       }
@@ -55205,7 +55210,7 @@ I can help you:<br>
 <script src="legal-compliance-upgrade.js?v=20260806-1"></script>
 <script src="risk-assessment-upgrade.js?v=20260806-1"></script>
 <script src="sop-video-upgrade.js?v=20260806-1"></script>
-<script src="learning-competency-upgrade.js?v=20260806-1"></script>
+<script src="learning-competency-upgrade.js?v=20260809-2"></script>
 <script src="chemical-control-upgrade.js?v=20260806-1"></script>
 <script src="contractor-management-upgrade.js?v=20260806-1"></script>
 <script src="tools-equipment-upgrade.js?v=20260806-1"></script>
