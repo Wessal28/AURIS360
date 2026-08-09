@@ -322,6 +322,7 @@
 ### AP-060 — Generate the service-worker asset manifest
 
 - **Owner:** Build/Frontend
+- **Status (2026-08-09):** Completed — the service-worker app shell is generated from current `index.html`, manifest and CSS dependencies; all launched module upgrades, the shared icon system and brand assets are included. Its cache version is a deterministic content hash, required shell failures remain visible, optional asset failures cannot abort installation, private API/auth traffic bypasses caches and offline navigation falls back to the current application shell. `tests/offline_asset_manifest_contract.test.cjs` protects manifest freshness, asset existence, module coverage, privacy exclusions and the existing queued-workflow sync hooks.
 - **Actions:**
   - Derive cached assets from `index.html` or the deployment build.
   - Include the shared icon system and every current module upgrade asset.

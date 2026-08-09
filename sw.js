@@ -1,189 +1,113 @@
-// ============================================================
-// AURIS360 Service Worker — PWA offline support
-// Cache-first for static assets, network-first for API calls
-// ============================================================
+// AURIS360 service worker — generated app-shell caching and partial offline support.
+importScripts('/sw-assets.js');
 
-const CACHE_NAME = 'auris360-v16';
-const STATIC_CACHE = 'auris360-static-v16';
-const API_CACHE = 'auris360-api-v16';
+const ASSET_MANIFEST = self.AURIS_SW_ASSET_MANIFEST || { version: 'development', assets: ['/', '/index.html'] };
+const CACHE_PREFIX = 'auris360-';
+const STATIC_CACHE = `${CACHE_PREFIX}static-${ASSET_MANIFEST.version}`;
+const REQUIRED_SHELL = ['/', '/index.html', '/manifest.json'];
+const OPTIONAL_ASSETS = ASSET_MANIFEST.assets.filter((asset) => !REQUIRED_SHELL.includes(asset));
 
-// Assets to cache on install (app shell)
-const PRECACHE_ASSETS = [
-  '/',
-  '/index.html',
-  '/safety-engagement.css',
-  '/safety-engagement.js',
-  '/bbs-observations.css',
-  '/bbs-observations.js',
-  '/noise-management.css',
-  '/noise-management-map-config.css',
-  '/noise-management.js',
-  '/incident-management-upgrade.css',
-  '/incident-management-upgrade.js',
-  'https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css',
-];
+async function cacheRequiredShell(cache) { await cache.addAll(REQUIRED_SHELL); }
 
-// ── Install: pre-cache the app shell ────────────────────────────────────────
-self.addEventListener('install', function(event) {
-  event.waitUntil(
-    caches.open(STATIC_CACHE).then(function(cache) {
-      return cache.addAll([
-        '/',
-        '/index.html',
-        '/safety-engagement.css',
-        '/safety-engagement.js',
-        '/bbs-observations.css',
-        '/bbs-observations.js',
-        '/noise-management.css',
-        '/noise-management-map-config.css',
-        '/noise-management.js',
-        '/incident-management-upgrade.css',
-        '/incident-management-upgrade.js',
-      ]).catch(function(err) {
-        console.warn('AURIS360 SW: Pre-cache partial failure', err);
-      });
-    }).then(function() {
-      return self.skipWaiting();
-    })
-  );
+async function cacheOptionalAssets(cache) {
+  // A missing optional asset must not prevent installation of the current shell.
+  await Promise.allSettled(OPTIONAL_ASSETS.map(async (asset) => {
+    const response = await fetch(asset, { cache: 'reload' });
+    if (!response.ok) throw new Error(`${asset}: ${response.status}`);
+    await cache.put(asset, response);
+  }));
+}
+
+self.addEventListener('install', (event) => {
+  event.waitUntil((async () => {
+    const cache = await caches.open(STATIC_CACHE);
+    await cacheRequiredShell(cache);
+    await cacheOptionalAssets(cache);
+    await self.skipWaiting();
+  })());
 });
 
-// ── Activate: clean up old caches ────────────────────────────────────────────
-self.addEventListener('activate', function(event) {
-  event.waitUntil(
-    caches.keys().then(function(keys) {
-      return Promise.all(
-        keys.filter(function(key) {
-          return key !== STATIC_CACHE && key !== API_CACHE;
-        }).map(function(key) {
-          console.log('AURIS360 SW: Deleting old cache', key);
-          return caches.delete(key);
-        })
-      );
-    }).then(function() {
-      return self.clients.claim();
-    })
-  );
+self.addEventListener('activate', (event) => {
+  event.waitUntil((async () => {
+    const cacheKeys = await caches.keys();
+    await Promise.all(cacheKeys
+      .filter((key) => key.startsWith(CACHE_PREFIX) && key !== STATIC_CACHE)
+      .map((key) => caches.delete(key)));
+    await self.clients.claim();
+  })());
 });
 
-// ── Fetch: smart caching strategy ───────────────────────────────────────────
-self.addEventListener('fetch', function(event) {
-  var url = new URL(event.request.url);
+function isPrivateOrApiRequest(url, request) {
+  return request.method !== 'GET' ||
+    url.hostname.includes('supabase.co') ||
+    url.hostname.includes('anthropic.com') ||
+    url.pathname.includes('/auth/') ||
+    url.pathname.startsWith('/api/');
+}
 
-  // Never cache: Supabase API calls, Anthropic API calls, auth requests
-  if (url.hostname.includes('supabase.co') ||
-      url.hostname.includes('anthropic.com') ||
-      url.pathname.includes('/auth/') ||
-      event.request.method !== 'GET') {
-    return; // Let it go to network normally
-  }
-
-  // CDN assets (Tabler icons, Chart.js etc.) — cache first, long TTL
-  if (url.hostname.includes('cdn.jsdelivr.net') ||
-      url.hostname.includes('cdnjs.cloudflare.com') ||
-      url.hostname.includes('unpkg.com')) {
-    event.respondWith(
-      caches.open(STATIC_CACHE).then(function(cache) {
-        return cache.match(event.request).then(function(cached) {
-          if (cached) return cached;
-          return fetch(event.request).then(function(response) {
-            if (response.ok) cache.put(event.request, response.clone());
-            return response;
-          }).catch(function() {
-            return new Response('Offline', { status: 503 });
-          });
-        });
-      })
+async function networkFirstNavigation(request) {
+  const cache = await caches.open(STATIC_CACHE);
+  try {
+    const response = await fetch(request);
+    if (response.ok) await cache.put('/index.html', response.clone());
+    return response;
+  } catch (error) {
+    return (await cache.match('/index.html')) || new Response(
+      '<!doctype html><html><body><h1>AURIS360</h1><p>You are offline. Reconnect to continue.</p></body></html>',
+      { status: 503, headers: { 'Content-Type': 'text/html; charset=utf-8' } }
     );
+  }
+}
+
+async function cacheFirstAsset(request) {
+  const cache = await caches.open(STATIC_CACHE);
+  const cached = await cache.match(request, { ignoreSearch: true });
+  if (cached) return cached;
+  const response = await fetch(request);
+  if (response.ok) await cache.put(request, response.clone());
+  return response;
+}
+
+self.addEventListener('fetch', (event) => {
+  const url = new URL(event.request.url);
+  if (isPrivateOrApiRequest(url, event.request)) return;
+  if (event.request.mode === 'navigate' && url.origin === self.location.origin) {
+    event.respondWith(networkFirstNavigation(event.request));
     return;
   }
-
-  // index.html — network first, fall back to cache
-  if (url.origin === self.location.origin &&
-      (url.pathname === '/safety-engagement.css' || url.pathname === '/safety-engagement.js' ||
-       url.pathname === '/bbs-observations.css' || url.pathname === '/bbs-observations.js' ||
-       url.pathname === '/noise-management.css' || url.pathname === '/noise-management-map-config.css' || url.pathname === '/noise-management.js' ||
-       url.pathname === '/incident-management-upgrade.css' || url.pathname === '/incident-management-upgrade.js')) {
-    event.respondWith(
-      fetch(event.request).then(function(response) {
-        if (response.ok) {
-          caches.open(STATIC_CACHE).then(function(cache) { cache.put(event.request, response.clone()); });
-        }
-        return response;
-      }).catch(function() { return caches.match(event.request); })
-    );
-    return;
-  }
-
-  if (url.pathname === '/' || url.pathname === '/index.html') {
-    event.respondWith(
-      fetch(event.request).then(function(response) {
-        if (response.ok) {
-          caches.open(STATIC_CACHE).then(function(cache) {
-            cache.put(event.request, response.clone());
-          });
-        }
-        return response;
-      }).catch(function() {
-        return caches.match('/index.html').then(function(cached) {
-          return cached || new Response(
-            '<html><body style="font-family:sans-serif;text-align:center;padding:40px">' +
-            '<h2 style="color:#1D9E75">AURIS360</h2>' +
-            '<p>You are offline. Please reconnect to continue.</p>' +
-            '</body></html>',
-            { headers: { 'Content-Type': 'text/html' } }
-          );
-        });
-      })
-    );
-    return;
+  if (url.origin === self.location.origin && ASSET_MANIFEST.assets.includes(url.pathname)) {
+    event.respondWith(cacheFirstAsset(event.request));
   }
 });
 
-// ── Background sync for offline incident reports ─────────────────────────────
-self.addEventListener('sync', function(event) {
-  if (event.tag === 'sync-incidents') {
-    event.waitUntil(syncPendingData('auris360-pending-incidents'));
-  }
-  if (event.tag === 'sync-inspections') {
-    event.waitUntil(syncPendingData('auris360-pending-inspections'));
-  }
+// Background sync remains intentionally limited to workflows with an IndexedDB queue.
+self.addEventListener('sync', (event) => {
+  if (event.tag === 'sync-incidents') event.waitUntil(syncPendingData('auris360-pending-incidents'));
+  if (event.tag === 'sync-inspections') event.waitUntil(syncPendingData('auris360-pending-inspections'));
 });
 
 async function syncPendingData(storeName) {
-  // Notify the app that sync is running
   const clients = await self.clients.matchAll();
-  clients.forEach(function(client) {
-    client.postMessage({ type: 'SYNC_STATUS', store: storeName, status: 'syncing' });
-  });
+  clients.forEach((client) => client.postMessage({ type: 'SYNC_STATUS', store: storeName, status: 'syncing' }));
 }
 
-// ── Push notifications (future) ──────────────────────────────────────────────
-self.addEventListener('push', function(event) {
+self.addEventListener('push', (event) => {
   if (!event.data) return;
-  var data = event.data.json();
-  event.waitUntil(
-    self.registration.showNotification(data.title || 'AURIS360 Alert', {
-      body: data.body || '',
-      icon: '/assets/brand/auris360-icon-192.png',
-      badge: '/assets/brand/auris360-icon-192.png',
-      tag: data.tag || 'auris360',
-      data: data,
-      actions: data.actions || [],
-      requireInteraction: data.urgent || false
-    })
-  );
+  const data = event.data.json();
+  event.waitUntil(self.registration.showNotification(data.title || 'AURIS360 Alert', {
+    body: data.body || '', icon: '/assets/brand/auris360-icon-192.png',
+    badge: '/assets/brand/auris360-icon-192.png', tag: data.tag || 'auris360',
+    data, actions: data.actions || [], requireInteraction: data.urgent || false
+  }));
 });
 
-self.addEventListener('notificationclick', function(event) {
+self.addEventListener('notificationclick', (event) => {
   event.notification.close();
-  var url = event.notification.data?.url || '/';
-  event.waitUntil(
-    self.clients.matchAll({ type: 'window' }).then(function(clients) {
-      for (var c of clients) {
-        if (c.url === url && 'focus' in c) return c.focus();
-      }
-      if (self.clients.openWindow) return self.clients.openWindow(url);
-    })
-  );
+  const targetUrl = event.notification.data?.url || '/';
+  event.waitUntil(self.clients.matchAll({ type: 'window' }).then((clients) => {
+    for (const client of clients) {
+      if (client.url === targetUrl && 'focus' in client) return client.focus();
+    }
+    if (self.clients.openWindow) return self.clients.openWindow(targetUrl);
+  }));
 });
