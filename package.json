@@ -3,6 +3,8 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
+    "test": "node --test",
+    "release:readiness": "node scripts/release-readiness.cjs",
     "generate:sw-manifest": "node scripts/generate-sw-manifest.cjs",
     "check:sw-manifest": "node scripts/generate-sw-manifest.cjs --check",
     "test:offline-assets": "node tests/offline_asset_manifest_contract.test.cjs",

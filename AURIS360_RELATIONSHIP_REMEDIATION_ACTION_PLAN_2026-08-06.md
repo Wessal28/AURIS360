@@ -359,6 +359,12 @@
   - Keep compatibility reads during the transition.
 - **Acceptance:** Each cohort meets the release gates before the next cohort begins.
 
+### AP-063 — Capture release acceptance evidence
+
+- **Owner:** Product/Release manager and environment tester
+- **Status (2026-08-09):** Implemented — `npm run release:readiness` executes the complete repository contract suite plus the deterministic offline-manifest freshness check. It can write timestamped machine-readable evidence while deliberately leaving all eight environment gates pending. `RELEASE_ACCEPTANCE_CHECKLIST.md` defines the tenant/cohort test evidence, pilot observation, pause criteria and release-owner sign-off required before activation. The runner does not mutate a tenant or mark an environment gate as passed.
+- **Acceptance:** Automated evidence passes and all eight environment gates are signed off for the exact tenant, cohort and release candidate before Pilot or Enabled is selected.
+
 ## 10. Release gates
 
 | Gate | Required evidence |
