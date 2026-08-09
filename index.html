@@ -4929,6 +4929,7 @@ async function authOnSignIn(authData) {
   sbInitRoleSelect();
   await loadPeopleCache();
   loadDash();
+  setTimeout(function(){if(typeof deepLinkResume==='function')deepLinkResume('sign-in');},180);
   setTimeout(function(){genDashAI();}, 3000);
 }
 
@@ -5189,6 +5190,7 @@ async function authInitSession() {
     saCompanyInit();
     await loadPeopleCache();
     loadDash();
+    setTimeout(function(){if(typeof deepLinkResume==='function')deepLinkResume('session-restore');},180);
     setTimeout(function(){genDashAI();}, 3000);
   } catch(e) {
     clearTimeout(timeout);
@@ -8494,19 +8496,19 @@ async function aiLiveCompliance(type) {
 var qrRecords=[];
 function qrTypeConfig(type){
   var cfg={
-    tools:{module:'tools',path:'/tools_register?select=*'+cf()+'&limit=250',ref:['ref_number','asset_ref'],fallback:'TOOL-DRAFT',title:['name','description'],sub:['category','location','assigned_to_name']},
-    fire:{module:'fire',path:'/fire_equipment?select=*&company_id=eq.'+ccid()+'&limit=250',ref:['equipment_ref','serial_number'],fallback:'FIRE-DRAFT',title:['description','equipment_type'],sub:['location','status','next_service_date']},
-    ppe:{module:'ppe',path:'/ppe_catalogue?select=*'+cf()+'&limit=250',ref:['ppe_ref','ref_number'],fallback:'PPE-DRAFT',title:['name','ppe_name','description'],sub:['category','standard_certification','status']},
-    chemical:{module:'chemical',path:'/chemical_register?select=*'+cf()+'&status=neq.deleted&limit=250',ref:['chemical_ref'],fallback:'CHEM-DRAFT',title:['product_name'],sub:['supplier','location','risk_level']},
-    documents:{module:'documents',path:'/documents?select=*'+cf()+'&limit=250',ref:['doc_ref','reference_no'],fallback:'DOC-DRAFT',title:['title','document_title','file_name'],sub:['document_type','doc_type','status']},
-    risk:{module:'risk',path:'/risk_assessments?select=*'+cf()+'&limit=250',ref:['ra_ref','reference_no'],fallback:'RA-DRAFT',title:['title','activity'],sub:['overall_risk_level','status','location']},
-    permit:{module:'permit',path:'/permit_to_work?select=*'+cf()+'&limit=250',ref:['permit_number','permit_ref'],fallback:'PTW-DRAFT',title:['work_description','title'],sub:['permit_type','location','status']}
+    tools:{module:'tools',table:'tools_register',path:'/tools_register?select=*'+cf()+'&limit=250',ref:['ref_number','asset_ref'],fallback:'TOOL-DRAFT',title:['name','description'],sub:['category','location','assigned_to_name']},
+    fire:{module:'fire',table:'fire_equipment',path:'/fire_equipment?select=*&company_id=eq.'+ccid()+'&limit=250',ref:['equipment_ref','serial_number'],fallback:'FIRE-DRAFT',title:['description','equipment_type'],sub:['location','status','next_service_date']},
+    ppe:{module:'ppe',table:'ppe_catalogue',path:'/ppe_catalogue?select=*'+cf()+'&limit=250',ref:['ppe_ref','ref_number'],fallback:'PPE-DRAFT',title:['name','ppe_name','description'],sub:['category','standard_certification','status']},
+    chemical:{module:'chemical',table:'chemical_register',path:'/chemical_register?select=*'+cf()+'&status=neq.deleted&limit=250',ref:['chemical_ref'],fallback:'CHEM-DRAFT',title:['product_name'],sub:['supplier','location','risk_level']},
+    documents:{module:'documents',table:'documents',path:'/documents?select=*'+cf()+'&limit=250',ref:['doc_ref','reference_no'],fallback:'DOC-DRAFT',title:['title','document_title','file_name'],sub:['document_type','doc_type','status']},
+    risk:{module:'risk',table:'risk_assessments',path:'/risk_assessments?select=*'+cf()+'&limit=250',ref:['ra_ref','reference_no'],fallback:'RA-DRAFT',title:['title','activity'],sub:['overall_risk_level','status','location']},
+    permit:{module:'permit',table:'permits',path:'/permits?select=*'+cf()+'&limit=250',ref:['permit_number','permit_ref'],fallback:'PTW-DRAFT',title:['work_description','title'],sub:['permit_type','location','status']}
   };
   return cfg[type]||cfg.tools;
 }
 function qrPick(row,keys){for(var i=0;i<keys.length;i++){if(row&&row[keys[i]])return row[keys[i]];}return '';}
 function qrBaseUrl(){return window.location.origin+window.location.pathname;}
-function qrRecordUrl(rec){var cfg=qrTypeConfig(document.getElementById('qr-type')?.value||'tools');return qrBaseUrl()+'?goto='+encodeURIComponent(cfg.module)+'&record='+encodeURIComponent(rec.id||'')+'&ref='+encodeURIComponent(qrPick(rec,cfg.ref)||'');}
+function qrRecordUrl(rec){var cfg=qrTypeConfig(document.getElementById('qr-type')?.value||'tools');return typeof deepLinkRecordUrl==='function'?deepLinkRecordUrl({module:cfg.module,table:cfg.table,id:rec.id||'',ref:qrPick(rec,cfg.ref)||''}):qrBaseUrl()+'?goto='+encodeURIComponent(cfg.module)+'&record='+encodeURIComponent(rec.id||'')+'&ref='+encodeURIComponent(qrPick(rec,cfg.ref)||'');}
 function qrImageUrl(url,size){return 'https://api.qrserver.com/v1/create-qr-code/?size='+(size||220)+'x'+(size||220)+'&margin=8&data='+encodeURIComponent(url);}
 function qrLabelData(rec){var cfg=qrTypeConfig(document.getElementById('qr-type')?.value||'tools');var title=document.getElementById('qr-title')?.value.trim()||qrPick(rec,cfg.title)||'AURIS360 record';var ref=qrPick(rec,cfg.ref)||String(rec.id||'').slice(0,8);var sub=cfg.sub.map(function(k){return rec[k];}).filter(Boolean).slice(0,3).join(' - ');return {title:title,ref:ref,sub:sub,url:qrRecordUrl(rec),note:document.getElementById('qr-note')?.value||'Scan to open record in AURIS360'};}
 function qrDisplayRef(rec,cfg){return displayRecordRef(rec,cfg.ref,cfg.fallback||'AURIS-DRAFT');}
@@ -27901,6 +27903,7 @@ var MAP_SOURCE_ADAPTERS=[
   {key:'contractor',page:'contractor',aliases:['contractor','contractors'],match:/\bcontractor\b|\bcir[-_]/},
   {key:'esg',page:'esg',aliases:['esg','environment','environmental'],match:/\benvironment\b|\benvironmental\b|\besg\b|\bspl[-_]/},
   {key:'emergency',page:'emergency',aliases:['emergency'],match:/\bemergency\b|\bdrill[-_]|\bact[-_]/},
+  {key:'fire',page:'fire',aliases:['fire','fire_certificate','fire_equipment'],match:/\bfire\b|\bextinguisher\b/},
   {key:'ohealth',page:'ohealth',aliases:['ohealth','occupational_health','occupational health'],match:/\boccupational\b|\bohealth\b|\baudiometry\b|\bspirometry\b|\bmedical surveillance\b|\bexposure monitoring\b/},
   {key:'noise',page:'noise',aliases:['noise','occupational_noise'],match:/\bnoise\b/},
   {key:'training',page:'training',aliases:['training','competency'],match:/\btraining\b|\bcompetency\b/},
@@ -27991,12 +27994,33 @@ async function mapOpenExactSource(adapter,x){
   if(!adapter||!id)return false;
   var ref=String(x.source_ref||'').toLowerCase();
   try{
+    if(adapter.key==='investigation'){
+      if(mapOpenInvestigationSourceRef(x.source_ref,id))return true;
+      var invRows=await api('/investigations?select=*&id=eq.'+encodeURIComponent(id)+cf()+'&limit=1');
+      var invRow=invRows&&invRows[0];
+      if(invRow){if(!mapHasSourceRow(imsInvAllData,id))imsInvAllData.push(invRow);return mapOpenInvestigationSourceRef(x.source_ref||invRow.investigation_ref,id);}
+    }
+    if(adapter.key==='events'&&typeof imsOpenEdit==='function'){
+      var eventRow=(imsAllData||[]).find(function(row){return String(row.id)===String(id);});
+      if(!eventRow){var eventRows=await api('/events?select=*&id=eq.'+encodeURIComponent(id)+cf()+'&limit=1');eventRow=eventRows&&eventRows[0];if(eventRow&&!mapHasSourceRow(imsAllData,id))imsAllData.push(eventRow);}
+      if(eventRow){imsOpenEdit(eventRow.id);return true;}
+    }
+    if(adapter.key==='observation'&&x.source_table!=='bbs_themes'&&typeof obsEdit==='function'){
+      var obsRow=(obsAllData||[]).find(function(row){return String(row.id)===String(id);});
+      if(!obsRow){var obsRows=await api('/safety_observations?select=*&id=eq.'+encodeURIComponent(id)+cf()+'&limit=1');obsRow=obsRows&&obsRows[0];if(obsRow&&!mapHasSourceRow(obsAllData,id))obsAllData.push(obsRow);}
+      if(obsRow){obsEdit(obsRow.id);return true;}
+    }
     if(adapter.key==='observation'&&x.source_table==='bbs_themes'&&typeof bbsSwitchTab==='function'){
       if(typeof loadBbsObservations==='function')loadBbsObservations();
       bbsSwitchTab('barriers');
       await new Promise(function(resolve){setTimeout(resolve,220);});
       if(typeof bbsOpenEntity==='function')bbsOpenEntity('themes',id);
       return true;
+    }
+    if(adapter.key==='inspection'&&typeof auditOpen==='function'){
+      var inspectionRow=(auditAllData||[]).find(function(row){return String(row.id)===String(id);});
+      if(!inspectionRow){var inspectionRows=await api('/inspections?select=*&id=eq.'+encodeURIComponent(id)+cf()+'&limit=1');inspectionRow=inspectionRows&&inspectionRows[0];if(inspectionRow&&!mapHasSourceRow(auditAllData,id))auditAllData.push(inspectionRow);}
+      if(inspectionRow){auditOpen(inspectionRow.id);return true;}
     }
     if(adapter.key==='documents'&&typeof dcxOpenDocument==='function'){
       return await dcxOpenDocument(id);
@@ -28046,6 +28070,31 @@ async function mapOpenExactSource(adapter,x){
     }
     if(adapter.key==='noise'&&typeof noiseOpenSurvey==='function'){
       await noiseOpenSurvey(id);return true;
+    }
+    if(adapter.key==='fire'&&x.source_table==='fire_equipment'&&typeof fireShowEquipForm==='function'){
+      var fireRow=(fireAllEquip||[]).find(function(row){return String(row.id)===String(id);});
+      if(!fireRow){var fireRows=await api('/fire_equipment?select=*&id=eq.'+encodeURIComponent(id)+cf()+'&limit=1');fireRow=fireRows&&fireRows[0];if(fireRow&&!mapHasSourceRow(fireAllEquip,id))fireAllEquip.push(fireRow);}
+      if(fireRow){fireShowEquipForm(id);return true;}
+    }
+    if(adapter.key==='ppe'&&x.source_table==='ppe_catalogue'&&typeof ppeCatEdit==='function'){
+      var ppeRow=(ppeCatData||[]).find(function(row){return String(row.id)===String(id);});
+      if(!ppeRow){var ppeRows=await api('/ppe_catalogue?select=*&id=eq.'+encodeURIComponent(id)+cf()+'&limit=1');ppeRow=ppeRows&&ppeRows[0];if(ppeRow&&!mapHasSourceRow(ppeCatData,id))ppeCatData.push(ppeRow);}
+      if(ppeRow){ppeCatEdit(id);return true;}
+    }
+    if(adapter.key==='chemical'&&typeof chemEdit==='function'){
+      var chemicalRow=(chemData||[]).find(function(row){return String(row.id)===String(id);});
+      if(!chemicalRow){var chemicalRows=await api('/chemical_register?select=*&id=eq.'+encodeURIComponent(id)+cf()+'&limit=1');chemicalRow=chemicalRows&&chemicalRows[0];if(chemicalRow&&!mapHasSourceRow(chemData,id))chemData.push(chemicalRow);}
+      if(chemicalRow){chemEdit(id);return true;}
+    }
+    if(adapter.key==='tools'&&typeof toolsEdit==='function'){
+      var toolRow=(toolsAllData||[]).find(function(row){return String(row.id)===String(id);});
+      if(!toolRow){var toolRows=await api('/tools_register?select=*&id=eq.'+encodeURIComponent(id)+cf()+'&limit=1');toolRow=toolRows&&toolRows[0];if(toolRow&&!mapHasSourceRow(toolsAllData,id))toolsAllData.push(toolRow);}
+      if(toolRow){toolsEdit(toolRow.id);return true;}
+    }
+    if(adapter.key==='atex'&&typeof atexEdit==='function'){
+      var atexRow=(atexAreas||[]).find(function(row){return String(row.id)===String(id);});
+      if(!atexRow){var atexRows=await api('/atex_areas?select=*&id=eq.'+encodeURIComponent(id)+cf()+'&limit=1');atexRow=atexRows&&atexRows[0];if(atexRow&&!mapHasSourceRow(atexAreas,id))atexAreas.push(atexRow);}
+      if(atexRow){await atexEdit(id);return true;}
     }
     if(adapter.key==='contractor'&&typeof conSwitchTab==='function'&&typeof cirLoad==='function'){
       conSwitchTab('incidents',document.getElementById('con-tab-incidents'));
@@ -36298,6 +36347,7 @@ function saCompanyPick(companyId) {
   if(typeof toast === 'function') {
     toast(co ? 'Viewing data for: '+co.name : 'Viewing data for: All companies (portfolio view)', true);
   }
+  setTimeout(function(){if(typeof deepLinkResume==='function')deepLinkResume('company-switch');},220);
 }
 
 // Close company switcher on outside click
@@ -36658,6 +36708,7 @@ function sbChangeRole() {
   if(!canAccessPage(activeId)) showPage('dashboard', null);
   else if(activeId && typeof showPage === 'function') showPage(activeId, null);
   toast('Previewing role: ' + (rc ? rc.label : role.replace(/_/g,' ')), true);
+  setTimeout(function(){if(typeof deepLinkResume==='function')deepLinkResume('role-selection');},180);
 }
 
 function getRoleAccessNote(role) {
@@ -39023,30 +39074,99 @@ function pwaInstall() {
 
 window.addEventListener('load', pwaRefreshInstallButton);
 
-// Handle deep links from PWA shortcuts (?goto=xxx)
-window.addEventListener('load', function() {
-  var params = new URLSearchParams(window.location.search);
-  var goto = params.get('goto');
-  if(goto) {
-    // Wait for auth then navigate
-    var checkAuth = setInterval(function() {
-      if(typeof prof !== 'undefined' && prof && typeof showPage === 'function') {
-        clearInterval(checkAuth);
-        if(goto === 'prestart') {
-          showPage('inspection', null);
-          setTimeout(function(){
-            var btn=document.getElementById('insp-tab-prestart');
-            if(btn && typeof auditSwitchTab === 'function') auditSwitchTab('prestart', btn);
-          }, 150);
-        } else {
-          showPage(goto, null);
-        }
-      }
-    }, 500);
-    // Give up after 10 seconds
-    setTimeout(function() { clearInterval(checkAuth); }, 10000);
-  }
-});
+// Record-aware deep-link router (AP-040). The request is captured before
+// authentication and retained through login, role preview and company context
+// changes until the exact record opens or the user dismisses the request.
+var DEEP_LINK_STORAGE_KEY='auris360_pending_deep_link_v1';
+var pendingDeepLinkRequest=null;
+var deepLinkOpening=false;
+var deepLinkLastAttempt=0;
+var DEEP_LINK_DEFAULT_TABLES={
+  events:'events',event:'events',investigation:'investigations',observation:'safety_observations',inspection:'inspections',
+  risk:'risk_assessments',permit:'permits',meetings:'toolbox_talks',legal:'legal_requirements',chemical:'chemical_register',fire:'fire_equipment',ppe:'ppe_catalogue',
+  tools:'tools_register',atex:'atex_areas',contractor:'contractors',noise:'noise_surveys',training:'training_followup',
+  actions:'action_tracker',action:'action_tracker',moc:'action_tracker',documents:'documents',sop:'sop_video_projects',swms:'documents'
+};
+function deepLinkNormalise(raw){
+  raw=raw||{};
+  var moduleName=String(raw.goto||raw.module||'').toLowerCase().trim();
+  if(!/^[a-z0-9_-]{1,64}$/.test(moduleName))return null;
+  var clean=function(v,max){v=String(v||'').trim();return v&&v.length<=(max||180)?v:'';};
+  return {goto:moduleName,record:clean(raw.record||raw.id,180),ref:clean(raw.ref,240),table:clean(raw.table,80).toLowerCase(),company:clean(raw.company,80),captured_at:raw.captured_at||new Date().toISOString()};
+}
+function deepLinkReadUrl(){
+  try{var q=new URLSearchParams(window.location.search);if(!q.get('goto'))return null;return deepLinkNormalise({goto:q.get('goto'),record:q.get('record'),ref:q.get('ref'),table:q.get('table'),company:q.get('company')});}catch(_){return null;}
+}
+function deepLinkReadStored(){try{return deepLinkNormalise(JSON.parse(sessionStorage.getItem(DEEP_LINK_STORAGE_KEY)||'null'));}catch(_){return null;}}
+function deepLinkStore(req){pendingDeepLinkRequest=req||null;try{if(req)sessionStorage.setItem(DEEP_LINK_STORAGE_KEY,JSON.stringify(req));else sessionStorage.removeItem(DEEP_LINK_STORAGE_KEY);}catch(_){}}
+function deepLinkCaptureRequest(){var req=deepLinkReadUrl()||pendingDeepLinkRequest||deepLinkReadStored();if(req)deepLinkStore(req);return req;}
+function deepLinkClear(removeQuery){
+  deepLinkStore(null);
+  var notice=document.getElementById('deep-link-notice');if(notice)notice.remove();
+  if(removeQuery!==false)try{var url=new URL(window.location.href);['goto','record','ref','table','company'].forEach(function(k){url.searchParams.delete(k);});history.replaceState(null,'',url.pathname+(url.search||'')+(url.hash||''));}catch(_){}
+}
+function deepLinkShowNotice(message,retry){
+  var el=document.getElementById('deep-link-notice');
+  if(!el){el=document.createElement('div');el.id='deep-link-notice';el.style.cssText='position:fixed;right:18px;top:84px;z-index:940;max-width:470px;background:#fff;border:1px solid #F5B7B1;border-left:5px solid #DC2626;border-radius:10px;padding:12px 14px;box-shadow:0 12px 34px rgba(15,23,42,.22);font-size:12px;color:#334155';document.body.appendChild(el);}
+  el.innerHTML='<div style="font-weight:900;color:#991B1B;margin-bottom:4px"><i class="ti ti-link-off"></i> Linked record could not be opened</div><div>'+escH(message)+'</div><div style="display:flex;gap:7px;justify-content:flex-end;margin-top:9px">'+(retry?'<button class="btn btn-sm" onclick="deepLinkResume(\'retry\')"><i class="ti ti-refresh"></i>Retry</button>':'')+'<button class="btn btn-sm" onclick="deepLinkClear(true)">Dismiss</button></div>';
+}
+function deepLinkPage(req){
+  if(req.goto==='prestart')return 'inspection';
+  if(req.goto==='action'||req.goto==='actions')return 'actions';
+  var adapter=typeof mapSourceAdapter==='function'?mapSourceAdapter({source_module:req.goto,source_ref:req.ref||'',source_table:req.table||''}):null;
+  return adapter&&adapter.page?adapter.page:req.goto;
+}
+function deepLinkRecordUrl(endpoint){
+  endpoint=endpoint||{};var url=new URL(window.location.origin+window.location.pathname);
+  url.searchParams.set('goto',endpoint.module||endpoint.goto||'dashboard');
+  if(endpoint.id||endpoint.record)url.searchParams.set('record',endpoint.id||endpoint.record);
+  if(endpoint.ref)url.searchParams.set('ref',endpoint.ref);
+  if(endpoint.table)url.searchParams.set('table',endpoint.table);
+  if(endpoint.company_id||endpoint.company)url.searchParams.set('company',endpoint.company_id||endpoint.company);
+  return url.toString();
+}
+async function deepLinkResume(reason){
+  var req=deepLinkCaptureRequest();
+  if(!req||!prof||typeof showPage!=='function'||deepLinkOpening)return false;
+  if(Date.now()-deepLinkLastAttempt<350)return false;
+  deepLinkLastAttempt=Date.now();deepLinkOpening=true;
+  try{
+    var page=deepLinkPage(req);
+    if(!document.getElementById('page-'+page)){
+      deepLinkShowNotice('The link targets an unknown AURIS360 module ('+req.goto+').',false);return false;
+    }
+    if(!canAccessPage(page)){
+      deepLinkShowNotice('Your current role does not have access to '+page.replace(/-/g,' ')+'. Ask an administrator for access or select an authorised role.',true);return false;
+    }
+    if(req.company&&isSA()&&saCompanyGetContext()!==req.company){saCompanySetContext(req.company);await new Promise(function(resolve){setTimeout(resolve,180);});}
+    showPage(page,null);
+    if(req.goto==='prestart'){
+      await new Promise(function(resolve){setTimeout(resolve,180);});
+      var prestart=document.getElementById('insp-tab-prestart');if(prestart&&typeof auditSwitchTab==='function')auditSwitchTab('prestart',prestart);
+      deepLinkClear(true);return true;
+    }
+    if(!req.record){deepLinkClear(true);return true;}
+    await new Promise(function(resolve){setTimeout(resolve,360);});
+    var opened=false;
+    if(page==='actions'&&typeof mapEdit==='function'){await mapEdit(req.record);opened=String(typeof mapEditingId!=='undefined'?mapEditingId:'')===String(req.record);}
+    else{
+      var source={source_module:req.goto,source_type:req.goto,source_table:req.table||DEEP_LINK_DEFAULT_TABLES[req.goto]||'',source_id:req.record,source_ref:req.ref||req.record};
+      var adapter=mapSourceAdapter(source);
+      if(adapter)opened=await mapOpenExactSource(adapter,source);
+      if(!opened&&req.ref)mapApplySourceSearch(page,req.ref);
+    }
+    if(opened){
+      try{auditLogEvent('open','deep_link','Record-aware link opened',{goto:req.goto,record:req.record,ref:req.ref,table:req.table,reason:reason||'navigation'},{related_table:req.table||null,related_id:req.record,company_id:ccid()});}catch(_){}
+      toast('Opened '+(req.ref||'the linked record')+'.');deepLinkClear(true);return true;
+    }
+    var context=isSA()?' Confirm the correct company is selected, then retry.':' The record may be unavailable, archived, or outside your company access.';
+    deepLinkShowNotice('AURIS360 opened the '+page.replace(/-/g,' ')+' module but could not open '+(req.ref||req.record)+'.'+context,true);
+    return false;
+  }catch(e){deepLinkShowNotice('The linked record could not be opened: '+(e.message||e),true);return false;}
+  finally{deepLinkOpening=false;}
+}
+deepLinkCaptureRequest();
+window.addEventListener('load',function(){setTimeout(function(){deepLinkResume('page-load');},220);});
 
 // Offline field reporting queue - Phase 1
 const OFFLINE_QUEUE_KEY='auris360_offline_queue_v1';

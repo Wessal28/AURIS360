@@ -226,6 +226,7 @@
 ### AP-040 — Make deep links record-aware
 
 - **Owner:** Frontend engineer
+- **Status (2026-08-09):** Completed — `goto`, `record`, `ref`, `table` and optional company context are captured before authentication, retained in session through login/role/company changes, resolved through the shared source-adapter registry and opened at exact-record level where authorised. QR labels now include authoritative table context; denied and unavailable targets display a persistent explanation with retry/dismiss controls.
 - **Actions:**
   - Read `goto`, `record` and `ref` after authentication.
   - Use the source adapter registry to open the target record.
