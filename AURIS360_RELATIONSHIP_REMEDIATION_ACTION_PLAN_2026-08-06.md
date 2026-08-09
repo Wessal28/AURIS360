@@ -299,6 +299,7 @@
 ### AP-052 — Add stable site and area relationships
 
 - **Owner:** Data/Module owners
+- **Status (2026-08-09):** Completed — operational Incident, BBS Observation, Inspection, Risk Assessment, Permit and Master Action Plan records now persist canonical `site_id` and optional `area_id` links while retaining readable historical snapshots. Areas continue to use the existing child-Site hierarchy rather than a duplicate location master. The rerunnable `canonical_location_relationships_upgrade.sql` backfills only unique company-scoped exact matches and queues ambiguous/unmatched values in `location_identity_backfill_review`. Site Map now prefers stable IDs, refuses contradictory text fallback, labels remaining legacy text matches and reads from the live BBS/Permit tables with compatibility fallbacks. Searchable location suggestions and `tests/location_identity_contract.test.cjs` protect the frontend contract.
 - **Actions:**
   - Add `site_id` and optional `area_id` to operational records.
   - Replace text-only site fields with searchable selectors while keeping snapshots.

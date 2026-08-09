@@ -4426,11 +4426,12 @@ async function obsSave() {
     status: g('obs-status')||'open',
     updated_at: new Date().toISOString()
   };
+  Object.assign(body,locationIdentityPayload(body.location,null));
   try {
     var savedObsId = obsEditId;
     var savedObsRef = '';
     if (obsEditId) {
-      await api('/safety_observations?id=eq.'+obsEditId, {m:'PATCH',p:'return=minimal',b:body});
+      await apiWriteWithMissingColumnFallback('/safety_observations?id=eq.'+obsEditId, {m:'PATCH',p:'return=minimal',b:body},'Safety observation');
       await customSaveRecordValues('observation','safety_observations',obsEditId,ccid());
       var idx = obsAllData.findIndex(x=>x.id===obsEditId);
       if (idx>=0) Object.assign(obsAllData[idx],body);
@@ -4438,7 +4439,7 @@ async function obsSave() {
       toast('Observation updated!');
     } else {
       body.created_by = prof?.id;
-      var res = await api('/safety_observations', {m:'POST',p:'return=representation',b:body});
+      var res = await apiWriteWithMissingColumnFallback('/safety_observations', {m:'POST',p:'return=representation',b:body},'Safety observation');
       if (res?.[0]?.id) {
         savedObsId = res[0].id;
         var yr = new Date().getFullYear();
@@ -4991,6 +4992,7 @@ async function authOnSignIn(authData) {
   saCompanyInit();
   sbInitRoleSelect();
   await loadPeopleCache();
+  await loadLocationSitesCache();
   loadDash();
   setTimeout(function(){if(typeof deepLinkResume==='function')deepLinkResume('sign-in');},180);
   setTimeout(function(){genDashAI();}, 3000);
@@ -5252,6 +5254,7 @@ async function authInitSession() {
     devModeUpdateUI();
     saCompanyInit();
     await loadPeopleCache();
+    await loadLocationSitesCache();
     loadDash();
     setTimeout(function(){if(typeof deepLinkResume==='function')deepLinkResume('session-restore');},180);
     setTimeout(function(){genDashAI();}, 3000);
@@ -5539,6 +5542,41 @@ try{
 const d=await api('/people?select=id,company_id,first_name,last_name,job_title,department,employee_number,id_number,person_type,email,phone'+cf()+'&status=eq.active&order=last_name');
 people=d||[];fillPplDrops();
 }catch(e){people=[];}
+}
+var locationSites=[];
+async function loadLocationSitesCache(){
+  try{
+    var rows=await api('/sites?select=id,company_id,name,site_code,parent_site_id,site_type,status'+cf()+'&order=name.asc');
+    locationSites=(rows||[]).filter(function(s){return String(s.status||'active').toLowerCase()!=='inactive';});
+  }catch(_){locationSites=[];}
+  locationAttachSearchableSelectors();
+  return locationSites;
+}
+function locationIdentityText(value){return String(value||'').trim().toLowerCase().replace(/[^a-z0-9]+/g,'');}
+function locationFromValue(value,areaOnly){
+  var raw=String(value||'').trim(),needle=locationIdentityText(raw),scope=(typeof ccid==='function'?ccid():null);if(!needle)return null;
+  var matches=(locationSites||[]).filter(function(s){
+    return (!scope||!s.company_id||s.company_id===scope)&&(!areaOnly||!!s.parent_site_id)&&
+      (String(s.id)===raw||locationIdentityText(s.name)===needle||locationIdentityText(s.site_code)===needle);
+  });
+  return matches.length===1?matches[0]:null;
+}
+function locationIdentityPayload(siteValue,areaValue){
+  var area=locationFromValue(areaValue,true),selected=area||locationFromValue(siteValue,false),site=selected&&selected.parent_site_id?(locationSites||[]).find(function(s){return String(s.id)===String(selected.parent_site_id);}):selected;
+  return {
+    site_id:site?.id||null,area_id:selected?.parent_site_id?selected.id:null,
+    site_name_snapshot:site?.name||String(siteValue||'').trim()||null,
+    area_name_snapshot:selected?.parent_site_id?selected.name:(String(areaValue||'').trim()||null)
+  };
+}
+function locationAttachSearchableSelectors(){
+  var list=document.getElementById('canonical-location-options');
+  if(!list){list=document.createElement('datalist');list.id='canonical-location-options';document.body.appendChild(list);}
+  list.innerHTML=(locationSites||[]).map(function(s){
+    var parent=s.parent_site_id?(locationSites||[]).find(function(p){return String(p.id)===String(s.parent_site_id);}):null;
+    return '<option value="'+escH(s.name||s.site_code||'')+'">'+escH([parent?.name,s.site_code,s.parent_site_id?'Area':'Site'].filter(Boolean).join(' - '))+'</option>';
+  }).join('');
+  ['ev-location','obs-location','if-site','ra-site-name','ra-workshop','pf-loc','mf-location'].forEach(function(id){var el=document.getElementById(id);if(el&&el.tagName==='INPUT'){el.setAttribute('list','canonical-location-options');el.setAttribute('autocomplete','off');}});
 }
 function fillPplDrops(){
 var scopeCompany=(typeof ccid==='function'?ccid():null);
@@ -9389,15 +9427,16 @@ const personName=personId?pname(personId):null;
 const repName=repId?pname(repId):prof?.full_name||null;
 const assName=assId?pname(assId):null;
 const body={company_id:ccid(),event_type:evType,severity:sev,event_date:date||null,location:loc,description:desc,immediate_action:document.getElementById('ev-immediate').value||null,person_involved:personName,person_id:personId,department:document.getElementById('ev-department').value||null,reported_by:repName,reported_by_id:repId,assigned_to:assName,assigned_to_id:assId,action_due_date:document.getElementById('ev-due-date').value||null,status:document.getElementById('ev-status').value,created_by:prof?.id,updated_at:new Date().toISOString()};
+Object.assign(body,locationIdentityPayload(loc,null));
 try{
 let savedId=evEditingId;
 if(evEditingId){
-await api('/events?id=eq.'+evEditingId,{m:'PATCH',p:'return=representation',b:body});
+await apiWriteWithMissingColumnFallback('/events?id=eq.'+evEditingId,{m:'PATCH',p:'return=representation',b:body},'Incident');
 toast('Event updated!');
 }else{
 const yr=new Date().getFullYear();
 body.event_ref=await evGenRef(yr);
-const res=await api('/events',{m:'POST',p:'return=representation',b:body});
+const res=await apiWriteWithMissingColumnFallback('/events',{m:'POST',p:'return=representation',b:body},'Incident');
 savedId=res?.[0]?.id;
 toast('Event reported!');
 if(savedId&&assName){
@@ -9826,7 +9865,9 @@ if(!workflowCanMutate('permit','permits'))return;
 if(!isMgr()){toast('Access denied',false);return;}
 try{
 const cid=document.getElementById('pf-contractor').value,iid=document.getElementById('pf-issued').value,aid=document.getElementById('pf-approved').value;
-await api('/permits',{m:'POST',p:'return=minimal',b:{company_id:ccid(),permit_number:document.getElementById('pf-no').value,permit_type:document.getElementById('pf-type').value,work_description:document.getElementById('pf-desc').value,location:document.getElementById('pf-loc').value,contractor:cid?pname(cid):null,start_datetime:document.getElementById('pf-start').value||null,end_datetime:document.getElementById('pf-end').value||null,issued_by:iid?pname(iid):prof?.full_name,approved_by:aid?pname(aid):null,precautions:document.getElementById('pf-precautions').value,ppe_required:document.getElementById('pf-ppe').value,status:document.getElementById('pf-status').value,created_by:prof?.id}});
+var permitBody={company_id:ccid(),permit_number:document.getElementById('pf-no').value,permit_type:document.getElementById('pf-type').value,work_description:document.getElementById('pf-desc').value,location:document.getElementById('pf-loc').value,contractor:cid?pname(cid):null,start_datetime:document.getElementById('pf-start').value||null,end_datetime:document.getElementById('pf-end').value||null,issued_by:iid?pname(iid):prof?.full_name,approved_by:aid?pname(aid):null,precautions:document.getElementById('pf-precautions').value,ppe_required:document.getElementById('pf-ppe').value,status:document.getElementById('pf-status').value,created_by:prof?.id};
+Object.assign(permitBody,locationIdentityPayload(permitBody.location,null));
+await apiWriteWithMissingColumnFallback('/permits',{m:'POST',p:'return=minimal',b:permitBody},'Permit');
 toggleForm('permit-form');toast('Permit saved!');loadPermits();loadDash();
 }catch(e){toastActionError('Save permit','Permit to Work',e);}
 }
@@ -18969,13 +19010,14 @@ async function raSave(targetStatus){
     revision:raCurrentRevision,
     updated_at:new Date().toISOString()
   };
+  Object.assign(body,locationIdentityPayload(body.site_name,body.location));
   // Handle linked WO
   var woSel=document.getElementById('ra-linked-wo');
   if(woSel&&woSel.value)body.work_order_id=woSel.value;
   try{
     var saved;
     if(raEditingId){
-      await api('/risk_assessments?id=eq.'+raEditingId,{m:'PATCH',p:'return=minimal',b:body});
+      await apiWriteWithMissingColumnFallback('/risk_assessments?id=eq.'+raEditingId,{m:'PATCH',p:'return=minimal',b:body},'Risk assessment');
       var idx=raAllData.findIndex(x=>x.id===raEditingId);
       if(idx>=0)Object.assign(raAllData[idx],body);
       var updatedRa=Object.assign({},currentRa||{},{id:raEditingId},body);
@@ -18993,7 +19035,7 @@ async function raSave(targetStatus){
       raSyncToMAP(raEditingId, rows);
     }else{
       body.created_by=prof?.id;
-      var res=await api('/risk_assessments',{m:'POST',p:'return=representation',b:body});
+      var res=await apiWriteWithMissingColumnFallback('/risk_assessments',{m:'POST',p:'return=representation',b:body},'Risk assessment');
       if(res?.[0]?.id){
         var ref=await raGenRef(raEditingType);
         await api('/risk_assessments?id=eq.'+res[0].id,{m:'PATCH',p:'return=minimal',b:{ra_ref:ref}});
@@ -21859,6 +21901,7 @@ async function ptwSave(targetStatus){
     status:blocks.length&&targetStatus!=='draft'?'draft':targetStatus,
     updated_at:new Date().toISOString()
   };
+  Object.assign(body,locationIdentityPayload(body.location,null));
   var validation=ptwValidateBeforeSave(targetStatus,body,precautions);
   if(validation){toast(validation,false);return;}
   if(blocks.length&&targetStatus!=='draft')toast('Saved as draft - RA reference is missing',false);
@@ -21866,7 +21909,7 @@ async function ptwSave(targetStatus){
     if(ptwEditingId){
       var prev=ptwAllData.find(function(x){return x.id===ptwEditingId;})||{};
       var shouldNotifyL1=body.status==='pending_approval'&&prev.status!=='pending_approval';
-      await api('/permits?id=eq.'+ptwEditingId,{m:'PATCH',p:'return=minimal',b:body});
+      await apiWriteWithMissingColumnFallback('/permits?id=eq.'+ptwEditingId,{m:'PATCH',p:'return=minimal',b:body},'Permit');
       // Log
       try{await api('/permit_activity_log',{m:'POST',p:'return=minimal',b:{company_id:ccid(),permit_id:ptwEditingId,action:'Permit edited',performed_by:prof?.full_name||'User',details:'Status: '+body.status}});}catch(ex){}
       var updatedPermit=Object.assign({},prev,{id:ptwEditingId},body);
@@ -21881,7 +21924,7 @@ async function ptwSave(targetStatus){
       ptwShowDetail(ptwEditingId);
     }else{
       body.created_by=prof?.id;
-      var res=await api('/permits',{m:'POST',p:'return=representation',b:body});
+      var res=await apiWriteWithMissingColumnFallback('/permits',{m:'POST',p:'return=representation',b:body},'Permit');
       if(res?.[0]?.id){
         var yr=new Date().getFullYear();
         var typeCode={hot_work:'HW',confined_space:'CS',excavation:'EX',electrical_isolation:'EI',loto:'LO',work_at_height:'WH',lifting_operation:'LF',line_breaking:'LB',radiation:'RA',chemical_handling:'CH'}[type]||'PTW';
@@ -28928,6 +28971,7 @@ async function mapSave(draft){
     recurrence_prevented:g('mf-recurrence')===''?null:g('mf-recurrence')==='true',
     updated_at:new Date().toISOString()
   };
+  Object.assign(body,locationIdentityPayload(body.location,null));
   try{
     var refStr='';
     if(mapEditingId){
@@ -35005,17 +35049,18 @@ async function auditSave() {
     lng:g('audit-lng')?parseFloat(g('audit-lng')):null,
     updated_at:new Date().toISOString()
   };
+  Object.assign(body,locationIdentityPayload(body.site,null));
   try {
     var savedId = auditEditId;
     var savedRef = '';
     if(auditEditId){
-      await api('/inspections?id=eq.'+auditEditId,{m:'PATCH',p:'return=minimal',b:body});
+      await apiWriteWithMissingColumnFallback('/inspections?id=eq.'+auditEditId,{m:'PATCH',p:'return=minimal',b:body},'Inspection');
       var existing = auditAllData.find(function(x){return x.id===auditEditId;});
       savedRef = existing?.reference_no || auditEditId;
       toast('Inspection updated!');
     } else {
       body.created_by=prof?.id;
-      var res=await api('/inspections',{m:'POST',p:'return=representation',b:body});
+      var res=await apiWriteWithMissingColumnFallback('/inspections',{m:'POST',p:'return=representation',b:body},'Inspection');
       if(res?.[0]?.id){
         var yr=new Date().getFullYear();
         var prefix = {workplace:'WI',fire:'FS',ppe:'PPE',equipment:'EQ',environmental:'ENV',
@@ -43634,26 +43679,37 @@ function smPrintMap(){
   aurisPrint(smPrintMapHtml(),'Site Map - '+((siteMapState.layout||{}).title||'Location map'));
 }
 function smMatch(row,site){
+  return !!smMatchMode(row,site);
+}
+function smMatchMode(row,site){
+  var siteId=String(site?.id||'');
+  if(row.area_id&&String(row.area_id)===siteId)return 'area_id';
+  if(row.site_id&&String(row.site_id)===siteId)return 'site_id';
+  if(row.area_id||row.site_id)return '';
   var siteName=smNorm(smSiteName(site));
   var code=smNorm(site.site_code||site.code||'');
   var terms=[siteName,code,smNorm(site.address||''),smNorm(site.city||'')].filter(function(x){return x&&x.length>1;});
   var hay=smNorm([row.location,row.site,row.area,row.department,row.work_location,row.site_location,row.premises,row.title,row.description,row.activity,row.work_description,row.event_ref,row.reference_no,row.ra_ref,row.permit_ref,row.source_ref].filter(Boolean).join(' '));
-  if(!hay)return false;
-  return terms.some(function(t){return hay.indexOf(t)!==-1||t.split(' ').some(function(p){return p.length>3&&hay.indexOf(p)!==-1;});});
+  if(!hay)return '';
+  return terms.some(function(t){return hay.indexOf(t)!==-1||t.split(' ').some(function(p){return p.length>3&&hay.indexOf(p)!==-1;});})?'legacy':'';
+}
+function smMatchedRows(rows,site){
+  return (rows||[]).map(function(r){var mode=smMatchMode(r,site);return mode?Object.assign({},r,{__sm_match_mode:mode}):null;}).filter(Boolean);
 }
 function smRecordsForSite(site){
   return {
-    events:(siteMapState.events||[]).filter(function(r){return smMatch(r,site);}),
-    observations:(siteMapState.observations||[]).filter(function(r){return smMatch(r,site);}),
-    inspections:(siteMapState.inspections||[]).filter(function(r){return smMatch(r,site);}),
-    risks:(siteMapState.risks||[]).filter(function(r){return smMatch(r,site);}),
-    permits:(siteMapState.permits||[]).filter(function(r){return smMatch(r,site);}),
-    actions:(siteMapState.actions||[]).filter(function(r){return smMatch(r,site);})
+    events:smMatchedRows(siteMapState.events,site),
+    observations:smMatchedRows(siteMapState.observations,site),
+    inspections:smMatchedRows(siteMapState.inspections,site),
+    risks:smMatchedRows(siteMapState.risks,site),
+    permits:smMatchedRows(siteMapState.permits,site),
+    actions:smMatchedRows(siteMapState.actions,site)
   };
 }
 function smCount(rec){return Object.keys(rec).reduce(function(n,k){return n+(rec[k]||[]).length;},0);}
 function smSafeDate(v){if(!v)return '--';try{return new Date(v).toLocaleDateString('en-GB');}catch(_){return String(v).slice(0,10);}}
 async function smApi(path){try{return await api(path);}catch(e){console.warn('Site map:',e.message);return [];}}
+async function smApiCompat(primary,legacy){try{return await api(primary);}catch(e){console.warn('Site map primary endpoint:',e.message);return legacy?smApi(legacy):[];}}
 async function loadSiteMap(){
   var list=document.getElementById('sitemap-site-list');
   var canvas=document.getElementById('sitemap-canvas');
@@ -43662,13 +43718,14 @@ async function loadSiteMap(){
   var results=await Promise.all([
     smApi('/sites?select=*'+cf()+'&order=name.asc'),
     smApi('/events?select=*'+cf()+'&order=event_date.desc,created_at.desc&limit=250'),
-    smApi('/observations?select=*'+cf()+'&order=observation_date.desc,created_at.desc&limit=250'),
+    smApiCompat('/safety_observations?select=*'+cf()+'&order=observation_date.desc,created_at.desc&limit=250','/observations?select=*'+cf()+'&order=observation_date.desc,created_at.desc&limit=250'),
     smApi('/inspections?select=*'+cf()+'&order=inspection_date.desc,created_at.desc&limit=250'),
     smApi('/risk_assessments?select=*'+cf()+'&order=created_at.desc&limit=250'),
-    smApi('/permit_to_work?select=*'+cf()+'&order=created_at.desc&limit=250'),
+    smApiCompat('/permits?select=*'+cf()+'&order=created_at.desc&limit=250','/permit_to_work?select=*'+cf()+'&order=created_at.desc&limit=250'),
     smApi('/action_tracker?select=*'+cf()+'&order=created_at.desc&limit=250')
   ]);
   siteMapState=Object.assign(siteMapState,{sites:results[0]||[],events:results[1]||[],observations:results[2]||[],inspections:results[3]||[],risks:results[4]||[],permits:results[5]||[],actions:results[6]||[],selected:null});
+  locationSites=(results[0]||[]).slice();
   if(!siteMapState.sites.length)siteMapState.sites=smBuildVirtualSites();
   await smLoadPlans();
   smRender();
@@ -43762,11 +43819,12 @@ function smRecordTitle(r,keys){return displayRecordRef(r,keys,'Record');}
 function smModuleButton(page,label){return '<button class="btn btn-sm" onclick="showPage(\''+page+'\',null)" style="font-size:11px"><i class="ti ti-external-link"></i>'+label+'</button>';}
 function smSection(name,icon,page,rows,keys,meta){
   return '<div style="border:1px solid var(--border);border-radius:8px;overflow:hidden;margin-bottom:10px;background:#fff"><div style="display:flex;justify-content:space-between;align-items:center;background:#f8fafc;padding:9px 11px;border-bottom:1px solid var(--border)"><div style="font-weight:900;font-size:13px"><i class="ti '+icon+'"></i> '+escH(name)+' <span class="badge badge-grey">'+rows.length+'</span></div>'+smModuleButton(page,'Open')+'</div>'
-    +(rows.length?'<div style="overflow:auto"><table class="data-table" style="margin:0"><tbody>'+rows.slice(0,12).map(function(r){return '<tr onclick="showPage(\''+page+'\',null)" title="Open '+escH(name)+' module" style="cursor:pointer"><td style="padding:8px 10px"><div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start"><div style="min-width:0"><div style="font-weight:800">'+escH(smRecordTitle(r,keys))+'</div><div style="font-size:11px;color:var(--text2)">'+escH(meta(r)||'--')+'</div></div><i class="ti ti-chevron-right" style="color:var(--text3);margin-top:2px"></i></div></td></tr>';}).join('')+'</tbody></table></div>':'<div style="padding:12px;color:var(--text2);font-size:12px">No records linked to this location yet.</div>')+'</div>';
+    +(rows.length?'<div style="overflow:auto"><table class="data-table" style="margin:0"><tbody>'+rows.slice(0,12).map(function(r){return '<tr onclick="showPage(\''+page+'\',null)" title="Open '+escH(name)+' module" style="cursor:pointer"><td style="padding:8px 10px"><div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start"><div style="min-width:0"><div style="font-weight:800">'+escH(smRecordTitle(r,keys))+(r.__sm_match_mode==='legacy'?' <span class="badge badge-amber" title="Matched using historical location text; reconcile this record to a canonical Site or Area">Legacy text match</span>':'')+'</div><div style="font-size:11px;color:var(--text2)">'+escH(meta(r)||'--')+'</div></div><i class="ti ti-chevron-right" style="color:var(--text3);margin-top:2px"></i></div></td></tr>';}).join('')+'</tbody></table></div>':'<div style="padding:12px;color:var(--text2);font-size:12px">No records linked to this location yet.</div>')+'</div>';
 }
 function smRenderDetails(site){
   var el=document.getElementById('sitemap-details');if(!el)return;
   var rec=smRecordsForSite(site);
+  var legacyCount=Object.keys(rec).reduce(function(n,k){return n+(rec[k]||[]).filter(function(r){return r.__sm_match_mode==='legacy';}).length;},0);
   var gps=[site.lat||site.latitude,site.lng||site.longitude].filter(Boolean).join(', ');
   var marker=smMarkerForSite(site);
   var plans=(siteMapState.plans||[]).filter(function(p){return String(p.id)!==String((siteMapState.layout||{}).id);});
@@ -43777,6 +43835,7 @@ function smRenderDetails(site){
     +'<div><div class="form3label">GPS</div><div style="font-weight:800">'+escH(gps||'--')+'</div></div>'
     +'<div><div class="form3label">Records</div><div style="font-weight:900;color:'+smRiskColor(smCount(rec))+'">'+smCount(rec)+'</div></div>'
     +'</div></div>'
+    +(legacyCount?'<div style="margin:-2px 0 12px;padding:9px 11px;border:1px solid #FCD34D;background:#FFFBEB;border-radius:8px;color:#92400E;font-size:11px;font-weight:700"><i class="ti ti-alert-triangle"></i> '+legacyCount+' record'+(legacyCount===1?'':'s')+' linked by historical text only. Confirm the canonical Site / Area before relying on location totals.</div>':'')
     +'<div class="card" style="margin-bottom:12px"><div style="display:flex;align-items:flex-end;gap:10px;flex-wrap:wrap"><div style="flex:1;min-width:240px"><label class="form3label">Linked layout / drill-down map</label><select onchange="smSetLinkedPlan(\''+escH(smSiteKey(site))+'\',this.value)">'+linkOptions+'</select><div style="font-size:11px;color:var(--text2);margin-top:5px">When set, clicking this marker opens the selected building or area layout.</div></div>'+(marker&&marker.linked_plan_id?'<button class="btn btn-sm" onclick="smOpenLinkedPlan(\''+escH(smSiteKey(site))+'\')"><i class="ti ti-map-share"></i>Open linked layout</button><button class="btn btn-sm" onclick="smUnlinkPlan(\''+escH(smSiteKey(site))+'\')" style="color:var(--red)"><i class="ti ti-unlink"></i>Unlink</button>':'<button class="btn btn-sm" onclick="smCreateLinkedPlan(\''+escH(smSiteKey(site))+'\')"><i class="ti ti-plus"></i>Create child layout</button>')+'</div></div>'
     +smSection('Incidents','ti-alert-triangle','events',rec.events,['event_ref','event_type','description'],function(r){return [r.severity,r.status,smSafeDate(r.event_date||r.created_at)].filter(Boolean).join(' - ');})
     +smSection('BBS observations','ti-eye','observation',rec.observations,['observation_ref','observation_type','description'],function(r){return [r.status,r.department,smSafeDate(r.observation_date||r.created_at)].filter(Boolean).join(' - ');})
