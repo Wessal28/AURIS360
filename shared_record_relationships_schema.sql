@@ -20,6 +20,7 @@ values
   ('event','events','id','event_ref','Incident / Event',to_regclass('public.events') is not null),
   ('investigation','investigations','id','investigation_ref','Investigation',to_regclass('public.investigations') is not null),
   ('observation','safety_observations','id','obs_ref','BBS Observation',to_regclass('public.safety_observations') is not null),
+  ('observation','bbs_themes','id',null,'BBS Barrier Theme',to_regclass('public.bbs_themes') is not null),
   ('inspection','inspections','id','reference_no','Audit / Inspection',to_regclass('public.inspections') is not null),
   ('risk','risk_assessments','id','ra_ref','Risk Assessment',to_regclass('public.risk_assessments') is not null),
   ('permit','permits','id','permit_number','Permit to Work',to_regclass('public.permits') is not null),
@@ -417,6 +418,32 @@ begin
     case when source_ok and target_ok then 'active' else 'unresolved' end,auth.uid()
   ) returning * into result;
   return result;
+end;
+$$;
+
+-- Promote governed BBS barrier responses into the reciprocal relationship
+-- service. bbs_action_links remains the compatibility/operational cache while
+-- action_tracker remains authoritative for owner, due date and closure state.
+do $$
+begin
+  if to_regclass('public.bbs_action_links') is not null
+     and to_regclass('public.bbs_themes') is not null
+     and to_regclass('public.action_tracker') is not null then
+    insert into public.record_relationships(
+      company_id,source_module,source_table,source_id,source_ref,
+      target_module,target_table,target_id,target_ref,relationship_type,
+      applicability,status,created_by,created_at,updated_at
+    )
+    select l.company_id,'observation','bbs_themes',t.id::text,t.title,
+           'action','action_tracker',a.id::text,coalesce(a.action_ref,l.action_ref),'action_for',
+           jsonb_build_object('origin','bbs_action_links','bbs_action_link_id',l.id::text),
+           'active',l.created_by,l.created_at,coalesce(l.status_checked_at,l.created_at)
+    from public.bbs_action_links l
+    join public.bbs_themes t on t.id::text=l.theme_id and t.company_id=l.company_id
+    join public.action_tracker a on a.id::text=l.action_id and a.company_id=l.company_id
+    where l.theme_id is not null
+    on conflict (company_id,relationship_type,endpoint_a,endpoint_b) where status<>'archived' do nothing;
+  end if;
 end;
 $$;
 

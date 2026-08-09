@@ -27976,6 +27976,13 @@ async function mapOpenExactSource(adapter,x){
   if(!adapter||!id)return false;
   var ref=String(x.source_ref||'').toLowerCase();
   try{
+    if(adapter.key==='observation'&&x.source_table==='bbs_themes'&&typeof bbsSwitchTab==='function'){
+      if(typeof loadBbsObservations==='function')loadBbsObservations();
+      bbsSwitchTab('barriers');
+      await new Promise(function(resolve){setTimeout(resolve,220);});
+      if(typeof bbsOpenEntity==='function')bbsOpenEntity('themes',id);
+      return true;
+    }
     if(adapter.key==='documents'&&typeof dcEdit==='function'){
       await dcEdit(id);return true;
     }
