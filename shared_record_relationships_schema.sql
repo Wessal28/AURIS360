@@ -26,6 +26,7 @@ values
   ('meeting','toolbox_talks','id','tbt_ref','Toolbox Talk',to_regclass('public.toolbox_talks') is not null),
   ('legal','legal_requirements','id','req_ref','Legal Requirement',to_regclass('public.legal_requirements') is not null),
   ('legal','compliance_gaps','id','gap_ref','Compliance Gap',to_regclass('public.compliance_gaps') is not null),
+  ('legal','legal_compliance_records','id','reference','Legal Evidence / Permit',to_regclass('public.legal_compliance_records') is not null),
   ('chemical','chemical_register','id','chemical_ref','Chemical',to_regclass('public.chemical_register') is not null),
   ('atex','atex_areas','id','area_ref','ATEX Area',to_regclass('public.atex_areas') is not null),
   ('moc','action_tracker','id','source_ref','Management of Change',to_regclass('public.action_tracker') is not null),
@@ -218,6 +219,28 @@ begin
   end if;
 end $$;
 
+-- Promote governed legal evidence and permit/licence records that already have
+-- an exact parent requirement. No inference or free-text matching is used.
+do $$
+begin
+  if to_regclass('public.legal_compliance_records') is not null then
+    insert into public.record_relationships(
+      company_id,source_module,source_table,source_id,source_ref,
+      target_module,target_table,target_id,target_ref,relationship_type,
+      applicability,status,created_by,created_at,updated_at
+    )
+    select r.company_id,'legal','legal_requirements',q.id::text,q.req_ref,
+           'legal','legal_compliance_records',r.id::text,r.reference,
+           case when r.record_type='evidence' then 'evidence_for' else 'licence_for' end,
+           jsonb_build_object('origin','legal_compliance_records_backfill','record_type',r.record_type),
+           'active',r.created_by,r.created_at,r.updated_at
+    from public.legal_compliance_records r
+    join public.legal_requirements q on q.id::text=r.requirement_id and q.company_id=r.company_id
+    where r.record_type in ('evidence','permit_licence')
+    on conflict (company_id,relationship_type,endpoint_a,endpoint_b) where status<>'archived' do nothing;
+  end if;
+end $$;
+
 create or replace function public.create_record_relationship(
   p_company_id uuid,
   p_source_module text,
@@ -301,7 +324,10 @@ with check (exists(select 1 from public.profiles p where p.id=auth.uid() and p.r
 
 drop policy if exists "record_relationships_tenant_read" on public.record_relationships;
 create policy "record_relationships_tenant_read" on public.record_relationships
-for select using (exists(select 1 from public.profiles p where p.id=auth.uid() and (p.role='sephs_admin' or p.company_id=record_relationships.company_id)));
+for select using (exists(select 1 from public.profiles p where p.id=auth.uid()
+  and (p.role='sephs_admin' or p.company_id=record_relationships.company_id)
+  and (coalesce(record_relationships.applicability->>'confidentiality','general')<>'privileged'
+       or p.role in ('sephs_admin','admin','hse_manager','compliance_manager'))));
 drop policy if exists "record_relationships_tenant_write" on public.record_relationships;
 create policy "record_relationships_tenant_write" on public.record_relationships
 for all using (exists(select 1 from public.profiles p where p.id=auth.uid() and (p.role='sephs_admin' or (p.company_id=record_relationships.company_id and p.role in ('admin','hse_manager','hse_officer','manager','site_manager','supervisor','document_controller','compliance_manager','risk_assessor')))))

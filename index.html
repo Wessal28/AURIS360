@@ -2995,7 +2995,8 @@ async function connectedRecordsMount(mountId,endpoint,options){
   try{
     var result=await Promise.all([relationshipList(endpoint),relationshipRegistry()]);
     var state=connectedRecordsState[mountId];if(!state)return;
-    state.rows=result[0]||[];state.registry=result[1]||[];
+    var role=typeof activeRole==='function'?activeRole():'';
+    state.rows=(result[0]||[]).filter(function(row){return row.applicability?.confidentiality!=='privileged'||['sephs_admin','admin','hse_manager','compliance_manager'].includes(role);});state.registry=result[1]||[];
     connectedRecordsRender(mountId);
   }catch(e){host.innerHTML='<div class="card"><div style="color:var(--red);font-size:12px">Connected records could not be loaded: '+escH(e.message||e)+'</div></div>';}
 }
@@ -3074,7 +3075,7 @@ async function connectedRecordsOpen(mountId,relationshipId){
   if(row.related_module==='action'&&row.related_table==='action_tracker'){
     showPage('actions');await new Promise(function(resolve){setTimeout(resolve,140);});await mapEdit(row.related_id);return;
   }
-  var synthetic={source_module:row.related_module,source_type:row.related_module,source_id:row.related_id,source_ref:row.related_ref||row.related_id};
+  var synthetic={source_module:row.related_module,source_type:row.related_module,source_table:row.related_table,source_id:row.related_id,source_ref:row.related_ref||row.related_id};
   var adapter=mapSourceAdapter(synthetic);if(!adapter){toast('This module does not yet have a navigation adapter.',false);return;}
   showPage(adapter.page);await new Promise(function(resolve){setTimeout(resolve,140);});
   var opened=await mapOpenExactSource(adapter,synthetic);if(!opened)mapApplySourceSearch(adapter.page,synthetic.source_ref);
@@ -27983,6 +27984,19 @@ async function mapOpenExactSource(adapter,x){
       }
       if(riskRow){raOpen(riskRow.id);return true;}
     }
+    if(adapter.key==='legal'){
+      if(x.source_table==='legal_compliance_records'&&typeof legxOpenConnectedRecord==='function'){await legxOpenConnectedRecord(id);return true;}
+      if(x.source_table==='compliance_gaps'&&typeof gapEdit==='function'){
+        var gapRow=(gapAllData||[]).find(function(row){return String(row.id)===String(id);});
+        if(!gapRow){var gapRows=await api('/compliance_gaps?select=*&id=eq.'+encodeURIComponent(id)+cf()+'&limit=1');gapRow=gapRows&&gapRows[0];if(gapRow&&!mapHasSourceRow(gapAllData,id))gapAllData.push(gapRow);}
+        if(gapRow){legalSwitchTab('gaps',document.getElementById('legal-tab-gaps'));gapEdit(gapRow.id);return true;}
+      }
+      if(typeof legalOpenReq==='function'){
+        var legalRow=(lrAllData||[]).find(function(row){return String(row.id)===String(id);});
+        if(!legalRow){var legalRows=await api('/legal_requirements?select=*&id=eq.'+encodeURIComponent(id)+cf()+'&limit=1');legalRow=legalRows&&legalRows[0];if(legalRow&&!mapHasSourceRow(lrAllData,id))lrAllData.push(legalRow);}
+        if(legalRow){legalOpenReq(legalRow.id);return true;}
+      }
+    }
     if(adapter.key==='swms'&&typeof swmsOpen==='function'){
       var swmsRow=(swmsAllData||[]).find(function(row){return String(row.id)===String(id);});
       if(!swmsRow){
@@ -47176,6 +47190,7 @@ Offline mode - changes will sync when connection is restored
 </div>
 </div>
 <div id="lr-review-card" class="card" style="display:none"></div>
+<div id="legal-connected-records" style="margin-bottom:14px"></div>
 <div id="lr-edit-card">
 <div id="legal-ai-assess-panel" class="card" style="display:none;margin-bottom:14px;border:1px solid #c4b5fd;background:#fbfaff"></div><div style="display:grid;grid-template-columns:2fr 1fr;gap:14px">
 <div>

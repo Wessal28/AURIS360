@@ -203,7 +203,7 @@
 - **Actions:**
   - Risk: **Completed 2026-08-06** — shared reciprocal display, registry-validated picker, governed relationship types, broken-link warnings, exact RA navigation and safe unlinking are integrated into the RA record view.
   - SWMS: **Completed 2026-08-06** — corrected the canonical table mapping, preserved the existing RA/Permit selectors, synchronized their saved choices into reciprocal relationships, added the shared panel and enabled exact SWMS/RA/Permit navigation.
-  - Legal: implement create, display and open flows for loaded relationships.
+  - Legal: **Completed 2026-08-09** — shared create/display/open flows are integrated into legal requirements; governed evidence and permit/licence records are linked canonically, existing valid records are backfilled, privileged-link management is restricted and exact requirement/gap/evidence navigation is supported.
   - SOP: write project relationships and create the controlled Document link at publication.
   - Training: activate `learning_source_relationships` and source-change impact handling.
   - BBS: create the MAP action and `bbs_action_links` row in one governed workflow.
