@@ -214,6 +214,7 @@
 ### AP-033 — Add reciprocal and orphan checks
 
 - **Owner:** Backend/QA
+- **Status (2026-08-09):** Completed — batch and optional hourly validation now recheck both endpoints, classify active/archived/broken/unresolved states, retain validation-run metrics and expose an administrator repair queue with exact-record opening and non-destructive archival.
 - **Actions:**
   - Scheduled validation of both endpoints.
   - Mark archived, deleted, inaccessible and unresolved targets distinctly.

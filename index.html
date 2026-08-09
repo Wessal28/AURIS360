@@ -2982,7 +2982,9 @@ function connectedRecordsLabel(row,cfg){
 function connectedRecordsStatusStyle(status){
   if(status==='active')return {bg:'#E8F7F0',fg:'#087A55',label:'Connected'};
   if(status==='pending_verification')return {bg:'#FFF4D6',fg:'#9A5B00',label:'Verify'};
-  return {bg:'#FDE8E8',fg:'#B42318',label:status==='broken'?'Broken link':'Unresolved'};
+  if(status==='endpoint_archived')return {bg:'#FFFBEB',fg:'#92400E',label:'Endpoint archived'};
+  if(status==='broken')return {bg:'#FDE8E8',fg:'#B42318',label:'Broken link'};
+  return {bg:'#F5F3FF',fg:'#6D28D9',label:'Unresolved'};
 }
 async function connectedRecordsMount(mountId,endpoint,options){
   var host=document.getElementById(mountId);if(!host)return;
@@ -12879,6 +12881,7 @@ document.getElementById('my-profile-info').innerHTML='<div style="font-size:13px
 try{ brandInit(); }catch(e){ console.error('brandInit:',e); }
 try{ loadSecuritySlaSettings(); }catch(e){ console.error('loadSecuritySlaSettings:',e); }
 try{ loadSystemHealth(); }catch(e){ console.error('loadSystemHealth:',e); }
+try{ loadRelationshipRepairQueue(false); }catch(e){ console.error('loadRelationshipRepairQueue:',e); }
 try{ loadCustomFieldSettings(); }catch(e){ console.error('loadCustomFieldSettings:',e); }
 try{ offlineRenderQueueSettings(); }catch(e){ console.error('offlineRenderQueueSettings:',e); }
 try{ renderClientDemoCommandCenter(); }catch(e){ console.error('renderClientDemoCommandCenter:',e); }
@@ -13014,6 +13017,18 @@ checks.push({label:'Offline drafts',status:'warning',detail:e.message||'Unable t
 }
 renderSystemHealth(checks);
 }
+
+var relationshipRepairRows=[];
+function relationshipHealthMetric(label,value,color,note){return '<div style="padding:12px;border:1px solid var(--border);border-radius:10px;background:#fff;border-left:4px solid '+color+'"><div style="font-size:23px;font-weight:950;color:'+color+'">'+Number(value||0)+'</div><div style="font-size:11px;font-weight:850;text-transform:uppercase;color:var(--text2)">'+escH(label)+'</div><div style="font-size:10px;color:var(--text3);margin-top:3px">'+escH(note||'')+'</div></div>';}
+function relationshipRepairStatus(status){var cfg={endpoint_archived:['Archived endpoint','#92400E','#FFFBEB'],broken:['Broken','#B91C1C','#FEF2F2'],unresolved:['Unresolved','#6D28D9','#F5F3FF'],pending_verification:['Verify','#1D4ED8','#EFF6FF']}[status]||['Review','#475569','#F1F5F9'];return '<span style="display:inline-flex;padding:4px 8px;border-radius:99px;font-size:10px;font-weight:850;color:'+cfg[1]+';background:'+cfg[2]+'">'+cfg[0]+'</span>';}
+function renderRelationshipRepairQueue(summary,rows,lastRun){var el=document.getElementById('relationship-repair-body');if(!el)return;summary=summary||{};relationshipRepairRows=rows||[];var html='<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:9px;margin-bottom:13px">'+relationshipHealthMetric('Active',summary.active_count,'#07835B','Healthy reciprocal links')+relationshipHealthMetric('Archived endpoint',summary.archived_endpoint_count,'#B45309','Source or target retired')+relationshipHealthMetric('Broken',summary.broken_count,'#DC2626','Exact record no longer exists')+relationshipHealthMetric('Unresolved',summary.unresolved_count,'#7C3AED','Registry or table needs setup')+'</div>';
+html+='<div style="display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:10px"><div style="font-size:11px;color:var(--text2)">'+(lastRun?'Last validation '+escH(new Date(lastRun).toLocaleString()):'No validation run recorded yet')+' · Links are never deleted by validation.</div><button class="btn btn-primary btn-sm" onclick="loadRelationshipRepairQueue(true)"><i class="ti ti-refresh"></i>Validate now</button></div>';
+if(!relationshipRepairRows.length)html+='<div style="padding:18px;border:1px dashed var(--border);border-radius:10px;text-align:center;color:var(--text2)"><i class="ti ti-circle-check" style="color:#07835B;font-size:22px"></i><div style="font-weight:850;margin-top:5px">No relationships require repair</div></div>';
+else{html+='<div style="overflow-x:auto;border:1px solid var(--border);border-radius:10px"><table style="width:100%;border-collapse:collapse;min-width:880px"><thead><tr style="background:#F8FAFC"><th style="padding:9px;text-align:left">Status</th><th style="padding:9px;text-align:left">Source</th><th style="padding:9px;text-align:left">Relationship</th><th style="padding:9px;text-align:left">Target</th><th style="padding:9px;text-align:left">Finding</th><th style="padding:9px;text-align:right">Actions</th></tr></thead><tbody>'+relationshipRepairRows.map(function(r){return '<tr style="border-top:1px solid var(--border)"><td style="padding:9px">'+relationshipRepairStatus(r.status)+'</td><td style="padding:9px"><b>'+escH(r.source_ref||r.source_id)+'</b><div style="font-size:10px;color:var(--text2)">'+escH(r.source_module+' · '+r.source_state)+'</div></td><td style="padding:9px;font-size:11px">'+escH(String(r.relationship_type||'related_to').replace(/_/g,' '))+'</td><td style="padding:9px"><b>'+escH(r.target_ref||r.target_id)+'</b><div style="font-size:10px;color:var(--text2)">'+escH(r.target_module+' · '+r.target_state)+'</div></td><td style="padding:9px;font-size:11px;color:var(--text2);max-width:260px">'+escH(r.validation_error||'Verification required')+'</td><td style="padding:9px;text-align:right;white-space:nowrap"><button class="btn btn-sm" onclick="relationshipRepairOpen(\''+r.id+'\',\'source\')" title="Open source"><i class="ti ti-arrow-up-right"></i>Source</button> <button class="btn btn-sm" onclick="relationshipRepairOpen(\''+r.id+'\',\'target\')" title="Open target"><i class="ti ti-arrow-up-right"></i>Target</button> <button class="btn btn-sm" onclick="relationshipRepairArchive(\''+r.id+'\')" title="Archive invalid relationship"><i class="ti ti-archive"></i></button></td></tr>';}).join('')+'</tbody></table></div>';}
+el.innerHTML=html;}
+async function loadRelationshipRepairQueue(runValidation){var card=document.getElementById('settings-relationship-repair-card');if(card)card.style.display=systemHealthCanView()?'block':'none';if(!systemHealthCanView())return;var el=document.getElementById('relationship-repair-body');if(!el)return;el.innerHTML='<div class="loading">'+(runValidation?'Validating both endpoints...':'Loading relationship health...')+'</div>';try{if(runValidation)await api('/rpc/validate_record_relationships',{m:'POST',p:'return=representation',b:{p_company_id:ccid(),p_limit:5000,p_trigger_source:'administrator'}});var result=await Promise.all([api('/relationship_health_summary?select=*&company_id=eq.'+encodeURIComponent(ccid())+'&limit=1'),api('/relationship_repair_queue?select=*&company_id=eq.'+encodeURIComponent(ccid())+'&order=last_validated_at.desc&limit=200'),api('/relationship_validation_runs?select=completed_at&company_id=eq.'+encodeURIComponent(ccid())+'&order=completed_at.desc&limit=1')]);renderRelationshipRepairQueue(result[0]?.[0]||{},result[1]||[],result[2]?.[0]?.completed_at||result[0]?.[0]?.last_validated_at||null);if(runValidation)toast('Relationship validation completed');}catch(e){el.innerHTML='<div class="setup-message danger"><div class="setup-message-icon"><i class="ti ti-plug-connected-x"></i></div><div><div class="setup-message-title">Relationship validation setup required</div><div>Run the updated <code>shared_record_relationships_schema.sql</code> in Supabase.</div>'+(isSA()?'<div class="setup-message-detail">'+escH(e.message||e)+'</div>':'')+'</div></div>';}}
+async function relationshipRepairOpen(id,side){var r=relationshipRepairRows.find(function(x){return String(x.id)===String(id);});if(!r)return;var moduleName=side==='target'?r.target_module:r.source_module,tableName=side==='target'?r.target_table:r.source_table,recordId=side==='target'?r.target_id:r.source_id,recordRef=side==='target'?r.target_ref:r.source_ref,state=side==='target'?r.target_state:r.source_state;if(state!=='active'&&state!=='archived')return toast('This endpoint cannot be opened because it is '+state+'.',false);if(moduleName==='action'&&tableName==='action_tracker'){showPage('actions');await new Promise(function(resolve){setTimeout(resolve,150);});return mapEdit(recordId);}var synthetic={source_module:moduleName,source_type:moduleName,source_table:tableName,source_id:recordId,source_ref:recordRef||recordId},adapter=mapSourceAdapter(synthetic);if(!adapter)return toast('No exact-record navigation adapter exists for this endpoint.',false);showPage(adapter.page);await new Promise(function(resolve){setTimeout(resolve,150);});var opened=await mapOpenExactSource(adapter,synthetic);if(!opened)mapApplySourceSearch(adapter.page,synthetic.source_ref);}
+async function relationshipRepairArchive(id){var ok=await appConfirmAction({title:'Archive invalid relationship',message:'Archive this relationship without deleting either record?',detail:'The relationship remains in audit history and can be replaced with a verified link from Connected Records.',confirmText:'Archive relationship',cancelText:'Keep link',variant:'danger'});if(!ok)return;try{await relationshipArchive(id,'Archived from administrator relationship repair queue');toast('Relationship archived');await loadRelationshipRepairQueue(false);}catch(e){toast('Relationship could not be archived: '+(e.message||e),false);}}
 
 function securityReadinessItems(){
 return [
@@ -54236,6 +54251,17 @@ I can help you:<br>
     <button class="btn" onclick="loadSystemHealth()"><i class="ti ti-refresh"></i>Refresh checks</button>
   </div>
   <div id="system3health-body"><div class="loading">Checking system health...</div></div>
+</div>
+
+<div class="card" id="settings-relationship-repair-card" style="display:none">
+  <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;margin-bottom:12px">
+    <div>
+      <div class="card-title" style="display:flex;align-items:center;gap:8px;margin-bottom:4px"><i class="ti ti-link" style="color:#2563EB"></i>Relationship Health &amp; Repair</div>
+      <div style="font-size:12px;color:var(--text2);line-height:1.5">Validate both endpoints, distinguish retired records from broken or unresolved links, and repair relationships without silently deleting history.</div>
+    </div>
+    <button class="btn" onclick="loadRelationshipRepairQueue(true)"><i class="ti ti-refresh"></i>Validate now</button>
+  </div>
+  <div id="relationship-repair-body"><div class="loading">Loading relationship health...</div></div>
 </div>
 
 <div class="card" id="settings-client-demo-card" style="display:none">

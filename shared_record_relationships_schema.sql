@@ -99,6 +99,18 @@ create table if not exists public.record_relationships (
         lower(target_module)||':'||lower(target_table)||':'||target_id)
 );
 
+alter table public.record_relationships add column if not exists source_state text not null default 'unresolved';
+alter table public.record_relationships add column if not exists target_state text not null default 'unresolved';
+alter table public.record_relationships drop constraint if exists record_relationships_status_check;
+alter table public.record_relationships add constraint record_relationships_status_check
+  check(status in ('active','pending_verification','unresolved','broken','endpoint_archived','superseded','archived'));
+alter table public.record_relationships drop constraint if exists record_relationships_source_state_check;
+alter table public.record_relationships add constraint record_relationships_source_state_check
+  check(source_state in ('active','archived','broken','unresolved'));
+alter table public.record_relationships drop constraint if exists record_relationships_target_state_check;
+alter table public.record_relationships add constraint record_relationships_target_state_check
+  check(target_state in ('active','archived','broken','unresolved'));
+
 create unique index if not exists record_relationships_canonical_unique
   on public.record_relationships(company_id, relationship_type, endpoint_a, endpoint_b)
   where status <> 'archived';
@@ -146,6 +158,41 @@ begin
 end;
 $$;
 
+create or replace function public.relationship_endpoint_state(
+  p_company_id uuid,
+  p_module text,
+  p_table text,
+  p_record_id text
+) returns text
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  cfg record;
+  endpoint_row jsonb;
+  lifecycle text;
+begin
+  if p_company_id is null or nullif(btrim(p_record_id),'') is null then return 'unresolved'; end if;
+  select * into cfg
+  from public.relationship_module_registry
+  where module_key=lower(btrim(p_module)) and table_name=lower(btrim(p_table)) and enabled=true;
+  if not found or to_regclass('public.'||cfg.table_name) is null then return 'unresolved'; end if;
+  if not exists(select 1 from information_schema.columns where table_schema='public' and table_name=cfg.table_name and column_name=cfg.id_column)
+     or not exists(select 1 from information_schema.columns where table_schema='public' and table_name=cfg.table_name and column_name='company_id') then
+    return 'unresolved';
+  end if;
+  execute format('select to_jsonb(t) from public.%I t where %I::text=$1 and company_id=$2 limit 1',cfg.table_name,cfg.id_column)
+    into endpoint_row using p_record_id,p_company_id;
+  if endpoint_row is null then return 'broken'; end if;
+  lifecycle:=lower(coalesce(nullif(endpoint_row->>'lifecycle_state',''),nullif(endpoint_row->>'approval_status',''),nullif(endpoint_row->>'status',''),''));
+  if lifecycle in ('archived','deleted','obsolete','withdrawn','superseded','retired','inactive','cancelled','out_of_service') then return 'archived'; end if;
+  return 'active';
+exception when others then
+  return 'unresolved';
+end;
+$$;
+
 create or replace function public.validate_record_relationship()
 returns trigger
 language plpgsql
@@ -160,8 +207,10 @@ begin
   new.target_table := lower(btrim(new.target_table));
   new.target_id := btrim(new.target_id);
   new.relationship_type := lower(btrim(new.relationship_type));
-  new.source_valid := public.relationship_endpoint_exists(new.company_id,new.source_module,new.source_table,new.source_id);
-  new.target_valid := public.relationship_endpoint_exists(new.company_id,new.target_module,new.target_table,new.target_id);
+  new.source_state := public.relationship_endpoint_state(new.company_id,new.source_module,new.source_table,new.source_id);
+  new.target_state := public.relationship_endpoint_state(new.company_id,new.target_module,new.target_table,new.target_id);
+  new.source_valid := new.source_state='active';
+  new.target_valid := new.target_state='active';
   new.last_validated_at := now();
   new.updated_at := now();
   if new.status = 'archived' then
@@ -169,9 +218,27 @@ begin
       case when not new.source_valid then 'Archived source record is unavailable or outside the company' end,
       case when not new.target_valid then 'Archived target record is unavailable or outside the company' end
     ) end;
+  elsif new.source_state='unresolved' or new.target_state='unresolved' then
+    new.status := 'unresolved';
+    new.validation_error := concat_ws('; ',
+      case when new.source_state='unresolved' then 'Source registry, table or permission state cannot be validated' end,
+      case when new.target_state='unresolved' then 'Target registry, table or permission state cannot be validated' end
+    );
+  elsif new.source_state='archived' or new.target_state='archived' then
+    new.status := 'endpoint_archived';
+    new.validation_error := concat_ws('; ',
+      case when new.source_state='archived' then 'Source record is archived, retired or inactive' end,
+      case when new.target_state='archived' then 'Target record is archived, retired or inactive' end
+    );
+  elsif new.source_state='broken' or new.target_state='broken' then
+    new.status := 'broken';
+    new.validation_error := concat_ws('; ',
+      case when new.source_state='broken' then 'Source record no longer exists in this company' end,
+      case when new.target_state='broken' then 'Target record no longer exists in this company' end
+    );
   elsif new.source_valid and new.target_valid then
     new.validation_error := null;
-    if new.status in ('unresolved','broken') then new.status := 'active'; end if;
+    if new.status in ('unresolved','broken','endpoint_archived','pending_verification') then new.status := 'active'; end if;
   else
     new.status := 'unresolved';
     new.validation_error := concat_ws('; ',
@@ -188,6 +255,120 @@ create trigger record_relationships_validate
 before insert or update of company_id,source_module,source_table,source_id,target_module,target_table,target_id,status
 on public.record_relationships
 for each row execute function public.validate_record_relationship();
+
+create table if not exists public.relationship_validation_runs (
+  id uuid primary key default gen_random_uuid(),
+  company_id uuid references public.companies(id) on delete cascade,
+  requested_by uuid,
+  trigger_source text not null default 'manual',
+  scanned_count integer not null default 0,
+  active_count integer not null default 0,
+  archived_endpoint_count integer not null default 0,
+  broken_count integer not null default 0,
+  unresolved_count integer not null default 0,
+  started_at timestamptz not null default now(),
+  completed_at timestamptz not null default now()
+);
+
+create index if not exists relationship_validation_runs_company
+  on public.relationship_validation_runs(company_id,completed_at desc);
+
+create or replace function public.validate_record_relationships(
+  p_company_id uuid default null,
+  p_limit integer default 1000,
+  p_trigger_source text default 'manual'
+) returns table(scanned_count integer,active_count integer,archived_endpoint_count integer,broken_count integer,unresolved_count integer,completed_at timestamptz)
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  caller record;
+  effective_company uuid:=p_company_id;
+  scanned integer:=0;
+  active_n integer:=0;
+  archived_n integer:=0;
+  broken_n integer:=0;
+  unresolved_n integer:=0;
+  finished timestamptz:=now();
+begin
+  if auth.uid() is not null then
+    select id,company_id,role into caller from public.profiles where id=auth.uid();
+    if not found or caller.role not in ('sephs_admin','admin','hse_manager','hse_officer') then
+      raise exception 'Relationship validation requires administrator or HSE governance access' using errcode='42501';
+    end if;
+    if caller.role<>'sephs_admin' then
+      effective_company:=caller.company_id;
+      if p_company_id is not null and p_company_id<>caller.company_id then
+        raise exception 'Relationship validation is limited to the active company' using errcode='42501';
+      end if;
+    end if;
+  elsif current_user not in ('postgres','supabase_admin','service_role') then
+    raise exception 'Relationship validation requires an authenticated administrator' using errcode='42501';
+  end if;
+
+  with candidates as (
+    select id from public.record_relationships
+    where status<>'archived' and (effective_company is null or company_id=effective_company)
+    order by coalesce(last_validated_at,'epoch'::timestamptz),created_at
+    limit greatest(1,least(coalesce(p_limit,1000),5000))
+  ), refreshed as (
+    update public.record_relationships r set status=r.status
+    from candidates c where r.id=c.id
+    returning r.status
+  )
+  select count(*)::integer,
+         count(*) filter(where status='active')::integer,
+         count(*) filter(where status='endpoint_archived')::integer,
+         count(*) filter(where status='broken')::integer,
+         count(*) filter(where status='unresolved')::integer
+    into scanned,active_n,archived_n,broken_n,unresolved_n
+  from refreshed;
+
+  finished:=now();
+  insert into public.relationship_validation_runs(company_id,requested_by,trigger_source,scanned_count,active_count,archived_endpoint_count,broken_count,unresolved_count,completed_at)
+  values(effective_company,auth.uid(),coalesce(nullif(p_trigger_source,''),'manual'),scanned,active_n,archived_n,broken_n,unresolved_n,finished);
+  return query select scanned,active_n,archived_n,broken_n,unresolved_n,finished;
+end;
+$$;
+
+create or replace view public.relationship_health_summary
+with (security_invoker=true)
+as
+select company_id,
+       count(*) filter(where status='active')::integer as active_count,
+       count(*) filter(where status='endpoint_archived')::integer as archived_endpoint_count,
+       count(*) filter(where status='broken')::integer as broken_count,
+       count(*) filter(where status='unresolved')::integer as unresolved_count,
+       count(*) filter(where status='pending_verification')::integer as pending_verification_count,
+       count(*) filter(where status='archived')::integer as archived_relationship_count,
+       count(*)::integer as total_count,
+       max(last_validated_at) as last_validated_at
+from public.record_relationships
+group by company_id;
+
+create or replace view public.relationship_repair_queue
+with (security_invoker=true)
+as
+select id,company_id,source_module,source_table,source_id,source_ref,source_revision,source_state,
+       target_module,target_table,target_id,target_ref,target_revision,target_state,
+       relationship_type,status,validation_error,last_validated_at,created_at,updated_at,
+       applicability
+from public.record_relationships
+where status in ('endpoint_archived','broken','unresolved','pending_verification');
+
+-- If pg_cron is already enabled, install one idempotent hourly validation job.
+-- Environments without pg_cron use the same RPC from their Supabase scheduler.
+do $$
+begin
+  if to_regclass('cron.job') is not null
+     and not exists(select 1 from cron.job where jobname='auris360-relationship-validation') then
+    perform cron.schedule('auris360-relationship-validation','17 * * * *',
+      $job$select * from public.validate_record_relationships(null,5000,'scheduled');$job$);
+  end if;
+exception when others then
+  raise notice 'Relationship validation schedule was not installed: %',sqlerrm;
+end $$;
 
 -- Promote existing SWMS selector links into the reciprocal service. Both IDs
 -- and professional references are supported because early SWMS builds stored
@@ -523,18 +704,21 @@ select
   id,company_id,
   source_module as record_module,source_table as record_table,source_id as record_id,source_ref as record_ref,source_revision as record_revision,
   target_module as related_module,target_table as related_table,target_id as related_id,target_ref as related_ref,target_revision as related_revision,
-  relationship_type,status,applicability,source_valid as record_valid,target_valid as related_valid,validation_error,last_validated_at,verified_at,created_by,created_at,updated_at
+  relationship_type,status,applicability,source_valid as record_valid,target_valid as related_valid,validation_error,last_validated_at,verified_at,created_by,created_at,updated_at,
+  source_state as record_state,target_state as related_state
 from public.record_relationships
 union all
 select
   id,company_id,
   target_module,target_table,target_id,target_ref,target_revision,
   source_module,source_table,source_id,source_ref,source_revision,
-  relationship_type,status,applicability,target_valid,source_valid,validation_error,last_validated_at,verified_at,created_by,created_at,updated_at
+  relationship_type,status,applicability,target_valid,source_valid,validation_error,last_validated_at,verified_at,created_by,created_at,updated_at,
+  target_state,source_state
 from public.record_relationships;
 
 alter table public.relationship_module_registry enable row level security;
 alter table public.record_relationships enable row level security;
+alter table public.relationship_validation_runs enable row level security;
 
 drop policy if exists "relationship_registry_read" on public.relationship_module_registry;
 create policy "relationship_registry_read" on public.relationship_module_registry
@@ -555,11 +739,28 @@ create policy "record_relationships_tenant_write" on public.record_relationships
 for all using (exists(select 1 from public.profiles p where p.id=auth.uid() and (p.role='sephs_admin' or (p.company_id=record_relationships.company_id and p.role in ('admin','hse_manager','hse_officer','manager','site_manager','supervisor','document_controller','compliance_manager','risk_assessor','training_admin','hr_manager')))))
 with check (exists(select 1 from public.profiles p where p.id=auth.uid() and (p.role='sephs_admin' or (p.company_id=record_relationships.company_id and p.role in ('admin','hse_manager','hse_officer','manager','site_manager','supervisor','document_controller','compliance_manager','risk_assessor','training_admin','hr_manager')))));
 
+drop policy if exists "relationship_validation_runs_tenant_read" on public.relationship_validation_runs;
+create policy "relationship_validation_runs_tenant_read" on public.relationship_validation_runs
+for select using (exists(select 1 from public.profiles p where p.id=auth.uid()
+  and p.role in ('sephs_admin','admin','hse_manager','hse_officer')
+  and (p.role='sephs_admin' or p.company_id=relationship_validation_runs.company_id)));
+
 grant select on public.relationship_module_registry to authenticated;
 grant select,insert,update,delete on public.record_relationships to authenticated;
+grant select on public.relationship_validation_runs to authenticated;
 grant select on public.record_relationships_bidirectional to authenticated;
+grant select on public.relationship_health_summary to authenticated;
+grant select on public.relationship_repair_queue to authenticated;
 grant execute on function public.relationship_endpoint_exists(uuid,text,text,text) to authenticated;
+grant execute on function public.relationship_endpoint_state(uuid,text,text,text) to authenticated;
 grant execute on function public.create_record_relationship(uuid,text,text,text,text,text,text,text,text,text,text,text,jsonb,boolean) to authenticated;
+grant execute on function public.validate_record_relationships(uuid,integer,text) to authenticated;
+
+revoke all on public.relationship_validation_runs from anon;
+revoke all on function public.relationship_endpoint_exists(uuid,text,text,text) from public,anon;
+revoke all on function public.relationship_endpoint_state(uuid,text,text,text) from public,anon;
+revoke all on function public.create_record_relationship(uuid,text,text,text,text,text,text,text,text,text,text,text,jsonb,boolean) from public,anon;
+revoke all on function public.validate_record_relationships(uuid,integer,text) from public,anon;
 
 commit;
 notify pgrst, 'reload schema';
