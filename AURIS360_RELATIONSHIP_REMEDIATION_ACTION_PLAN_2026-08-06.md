@@ -200,6 +200,7 @@
 ### AP-032 — Complete the current partial relationship implementations
 
 - **Owner:** Module owners
+- **Status (2026-08-09):** Completed across Risk, SWMS, Legal, SOP, Training, BBS and Document Control. All listed partial relationship workflows now use or synchronize with the shared reciprocal service without requiring manual record-ID re-entry.
 - **Actions:**
   - Risk: **Completed 2026-08-06** — shared reciprocal display, registry-validated picker, governed relationship types, broken-link warnings, exact RA navigation and safe unlinking are integrated into the RA record view.
   - SWMS: **Completed 2026-08-06** — corrected the canonical table mapping, preserved the existing RA/Permit selectors, synchronized their saved choices into reciprocal relationships, added the shared panel and enabled exact SWMS/RA/Permit navigation.
@@ -207,7 +208,7 @@
   - SOP: **Completed 2026-08-09** — SOP workspaces now expose the shared Connected Records panel, reopen exact projects from reciprocal links, preserve explicit legacy Risk/Permit/Document links, and require an exact controlled Document link before publication.
   - Training: **Completed 2026-08-09** — learning courses now use verified reciprocal sources, synchronize the learning-specific dependency register, detect changed or missing source revisions, expose an impact-review queue and block publication until source impacts are resolved.
   - BBS: **Completed 2026-08-09** — confirmed barrier themes now create the authoritative Master Action and `bbs_action_links` record in one guided workflow, automatically cancel an action if native linking fails, synchronize reciprocal relationships and reopen the exact action or source theme.
-  - Documents: migrate generic related-record rows into the shared relationship service.
+  - Documents: **Completed 2026-08-09** — Document Control now uses the shared verified Connected Records picker and reciprocal display; exact active legacy targets are backfilled from generic payloads, invalid targets remain visibly unresolved, free-text-only history is preserved for manual resolution and linked documents reopen in the governed document workspace.
 - **Acceptance:** No module advertises a connected-record capability that requires manual re-entry to complete the link.
 
 ### AP-033 — Add reciprocal and orphan checks

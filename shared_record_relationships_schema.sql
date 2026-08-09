@@ -368,6 +368,75 @@ begin
   end if;
 end $$;
 
+-- Migrate exact legacy Document Control links that were previously stored as
+-- free-form payloads. Records without a stable target ID remain untouched for
+-- manual resolution; invalid or unavailable exact targets become visibly
+-- unresolved through the standard validation trigger.
+do $$
+begin
+  if to_regclass('public.document_control_records') is not null
+     and to_regclass('public.documents') is not null then
+    with legacy as (
+      select r.*,d.doc_ref,
+             coalesce(nullif(lower(r.payload->>'target_module'),''),
+                      nullif(lower(r.payload->>'related_module'),''),
+                      nullif(lower(r.payload->>'module'),'')) as raw_module,
+             coalesce(nullif(r.payload->>'target_table',''),
+                      nullif(r.payload->>'related_table','')) as raw_table,
+             coalesce(nullif(r.payload->>'target_id',''),
+                      nullif(r.payload->>'target_record_id',''),
+                      nullif(r.payload->>'related_record_id',''),
+                      nullif(r.payload->>'record_id','')) as target_id
+      from public.document_control_records r
+      join public.documents d on d.id::text=r.document_id and d.company_id=r.company_id
+      where r.record_type='related_record' and r.document_id is not null
+    ), normalized as (
+      select l.*,
+             case l.raw_module
+               when 'document' then 'documents' when 'document_control' then 'documents'
+               when 'risk_assessment' then 'risk' when 'ptw' then 'permit'
+               when 'incident' then 'event' when 'events' then 'event'
+               when 'actions' then 'action' when 'master_action_plan' then 'action'
+               when 'legal_compliance' then 'legal' when 'inspection' then 'inspection'
+               when 'bbs' then 'observation' else l.raw_module end as target_module,
+             coalesce(l.raw_table,case l.raw_module
+               when 'document' then 'documents' when 'documents' then 'documents' when 'document_control' then 'documents'
+               when 'risk' then 'risk_assessments' when 'risk_assessment' then 'risk_assessments'
+               when 'permit' then 'permits' when 'ptw' then 'permits'
+               when 'incident' then 'events' when 'event' then 'events' when 'events' then 'events'
+               when 'action' then 'action_tracker' when 'actions' then 'action_tracker' when 'master_action_plan' then 'action_tracker'
+               when 'legal' then 'legal_requirements' when 'legal_compliance' then 'legal_requirements'
+               when 'inspection' then 'inspections' when 'bbs' then 'safety_observations' when 'observation' then 'safety_observations'
+               when 'training' then 'training_followup' when 'chemical' then 'chemical_register'
+               when 'contractor' then 'contractors' when 'noise' then 'noise_surveys'
+               when 'sop' then 'sop_video_projects' when 'swms' then 'documents'
+             end) as target_table
+      from legacy l
+    )
+    insert into public.record_relationships(
+      company_id,source_module,source_table,source_id,source_ref,
+      target_module,target_table,target_id,target_ref,relationship_type,
+      source_revision,target_revision,applicability,status,created_by,created_at,updated_at
+    )
+    select n.company_id,'documents','documents',n.document_id,n.doc_ref,
+           n.target_module,n.target_table,n.target_id,
+           coalesce(nullif(n.payload->>'target_ref',''),nullif(n.payload->>'related_ref',''),nullif(n.code,''),nullif(n.title,'')),
+           coalesce(nullif(lower(n.payload->>'relationship_type'),''),'related_to'),
+           coalesce(nullif(n.payload->>'source_revision',''),nullif(n.revision_id,'')),
+           coalesce(nullif(n.payload->>'target_revision',''),nullif(n.payload->>'related_revision','')),
+           jsonb_build_object('origin','document_control_records_backfill','legacy_record_id',n.id::text,'legacy_status',n.status),
+           'active',
+           n.created_by,n.created_at,n.updated_at
+    from normalized n
+    where nullif(btrim(n.target_module),'') is not null
+      and nullif(btrim(n.target_table),'') is not null
+      and nullif(btrim(n.target_id),'') is not null
+      and n.status<>'archived'
+      and not (n.target_module='documents' and n.target_table='documents' and n.target_id=n.document_id)
+    on conflict (company_id,relationship_type,endpoint_a,endpoint_b) where status<>'archived' do nothing;
+  end if;
+end $$;
+
 create or replace function public.create_record_relationship(
   p_company_id uuid,
   p_source_module text,

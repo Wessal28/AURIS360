@@ -27983,6 +27983,9 @@ async function mapOpenExactSource(adapter,x){
       if(typeof bbsOpenEntity==='function')bbsOpenEntity('themes',id);
       return true;
     }
+    if(adapter.key==='documents'&&typeof dcxOpenDocument==='function'){
+      return await dcxOpenDocument(id);
+    }
     if(adapter.key==='documents'&&typeof dcEdit==='function'){
       await dcEdit(id);return true;
     }
