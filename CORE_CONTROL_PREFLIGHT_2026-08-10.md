@@ -92,11 +92,25 @@ The preview selector exposes every tested role, `applyRoles()` hides unauthorise
 
 Result: **role-matrix contract passed**.
 
+### Workflow-transition gate
+
+A shared Core Control transition contract now protects status changes made through buttons, dropdowns and programmatic calls. The contract permits the intended forward and correction paths while blocking stage-skipping and reopening of terminal records. Verification, closure, approval, rejection and controlled release transitions cannot be completed through a status dropdown; their dedicated actions remain mandatory.
+
+| Module | Controlled path | Correction/terminal controls |
+|---|---|---|
+| Master Action Plan | Open → In Progress → Verification → Pending Closure → Closed | Failed verification or rejected closure returns to In Progress; Closed and Cancelled are terminal |
+| Incident Management | Open → Under Investigation / Action Required → Closed | Managers close incidents; Cancelled and Closed cannot be reopened through a status edit |
+| Audits & Inspections | Open → In Progress → Completed → Closed → Archived | Required checklist results and assigned corrective actions remain enforced; Archived is terminal |
+| Risk Assessment | Draft → Pending Review → Active | Approval/rejection remains role-controlled; rejected records can be corrected and resubmitted; active records require controlled release/revision before editing |
+
+The regression contract checks 14 allowed and 8 blocked transitions. It also confirms that action transitions write activity/audit evidence and notifications, Incident and Inspection follow-ups retain their exact Master Action source IDs, and Risk approval/rejection closes its approval request while recording audit and notification evidence.
+
+Result: **workflow-transition contract passed without modifying production records**.
+
 ## Release decision
 
 Do not save or enable the Core Control cohort yet. Complete these items first:
 
-1. Complete workflow-transition evidence without altering production records.
-2. Complete resilience and mobile/offline evidence.
-3. Record the rollback drill and acceptance owner.
-4. Start with Pilot only after all eight gates are recorded as passed.
+1. Complete resilience and mobile/offline evidence.
+2. Record the rollback drill and acceptance owner.
+3. Start with Pilot only after all eight gates are recorded as passed.

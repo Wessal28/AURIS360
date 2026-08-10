@@ -9348,6 +9348,75 @@ function workflowCanMutate(pageKey, label){
   return true;
 }
 
+// Core Control workflow contract. UI buttons guide the normal path, while this
+// guard also protects status dropdowns and programmatic calls from skipping a
+// required review/verification stage.
+var CORE_WORKFLOW_TRANSITIONS={
+  actions:{
+    open:['in_progress','cancelled'],
+    in_progress:['pending_verification','pending_closure','cancelled'],
+    pending_verification:['pending_closure','in_progress','cancelled'],
+    pending_closure:['closed','in_progress','cancelled'],
+    closed:[],cancelled:[]
+  },
+  events:{
+    open:['under_investigation','action_required','closed','cancelled'],
+    submitted:['under_investigation','action_required','closed','cancelled'],
+    under_investigation:['action_required','closed','cancelled'],
+    action_required:['under_investigation','closed','cancelled'],
+    closed:[],cancelled:[]
+  },
+  inspection:{
+    draft:['open'],
+    open:['in_progress','completed','closed','archived'],
+    in_progress:['completed','closed','archived'],
+    completed:['closed','archived'],
+    closed:['archived'],
+    archived:[]
+  },
+  risk:{
+    draft:['pending_review','review','archived'],
+    pending_review:['active','rejected','archived'],
+    pending_approval:['active','rejected','archived'],
+    review:['active','rejected','draft','archived'],
+    rejected:['draft','pending_review','review','archived'],
+    active:['review','draft','archived'],
+    archived:[]
+  }
+};
+var CORE_WORKFLOW_DEDICATED_TRANSITIONS={
+  actions:['pending_verification>pending_closure','pending_closure>closed'],
+  risk:['pending_review>active','pending_review>rejected','pending_approval>active','pending_approval>rejected','review>active','review>rejected','active>draft']
+};
+function coreWorkflowTransitionAllowed(moduleName,fromStatus,toStatus){
+  var from=String(fromStatus||'').toLowerCase();
+  var to=String(toStatus||'').toLowerCase();
+  if(!from||from===to)return true;
+  var moduleRules=CORE_WORKFLOW_TRANSITIONS[moduleName];
+  if(!moduleRules)return true;
+  return Array.isArray(moduleRules[from])&&moduleRules[from].includes(to);
+}
+function coreWorkflowDirectEditAllowed(moduleName,fromStatus,toStatus){
+  if(!coreWorkflowTransitionAllowed(moduleName,fromStatus,toStatus))return false;
+  var from=String(fromStatus||'').toLowerCase();
+  var to=String(toStatus||'').toLowerCase();
+  var dedicated=CORE_WORKFLOW_DEDICATED_TRANSITIONS[moduleName]||[];
+  return !dedicated.includes(from+'>'+to);
+}
+function coreWorkflowRequireTransition(moduleName,fromStatus,toStatus,label){
+  if(coreWorkflowTransitionAllowed(moduleName,fromStatus,toStatus))return true;
+  toast((label||'Record')+' cannot move directly from '+auditLabel(fromStatus||'unknown')+' to '+auditLabel(toStatus||'unknown')+'. Follow the workflow steps shown on the record.',false);
+  return false;
+}
+function coreWorkflowRequireDirectEdit(moduleName,fromStatus,toStatus,label){
+  if(coreWorkflowDirectEditAllowed(moduleName,fromStatus,toStatus))return true;
+  if(coreWorkflowTransitionAllowed(moduleName,fromStatus,toStatus)){
+    toast((label||'Record')+' requires its dedicated approve, reject, verify or release action for this status change.',false);
+    return false;
+  }
+  return coreWorkflowRequireTransition(moduleName,fromStatus,toStatus,label);
+}
+
 // DEDUP: aiOpen and aiHist already declared at L2471
 
 async function askAI(q){if(!aiOpen)toggleAI();document.getElementById('ai-input').value=q;sendAI();}
@@ -9509,6 +9578,10 @@ return 'EVT-'+yr+'-'+String(next).padStart(3,'0');
 }catch(e){return 'EVT-'+yr+'-'+Date.now().toString().slice(-3);}
 }
 async function evQuickClose(id){
+if(!workflowCanMutate('events','events'))return;
+if(!isMgr()){toast('Only managers/admins can close events.',false);return;}
+var currentEvent=(evAllData||[]).find(function(x){return x.id===id;})||{};
+if(!coreWorkflowRequireTransition('events',currentEvent.status||'open','closed','Incident'))return;
 try{await api('/events?id=eq.'+id,{m:'PATCH',p:'return=minimal',b:{status:'closed',closed_date:new Date().toISOString().slice(0,10),updated_at:new Date().toISOString()}});toast('Event closed!');evCloseModal();await loadEvents();}catch(e){toastActionError('Close incident','Incident Management',e);}
 }
 async function evDelete(){
@@ -16969,6 +17042,8 @@ async function imsSave(){
     quantity_released:g('ev-quantity'),regulator_notified:document.getElementById('ev-regulator-notified')?.checked||false,
     gps_address:g('ev-gps-address'),lat:g('ev-lat')?parseFloat(g('ev-lat')):null,lng:g('ev-lng')?parseFloat(g('ev-lng')):null,
     investigation_required:invReq,updated_at:new Date().toISOString()};
+  var currentIncident=imsEditId?(imsAllData||[]).find(function(x){return x.id===imsEditId;}):null;
+  if(currentIncident&&!coreWorkflowRequireTransition('events',currentIncident.status||'open',body.status,'Incident'))return;
   try{
     // Detect whether the assignment changed - only notify on new/changed assignment
     var prevAssigned='';
@@ -17046,6 +17121,7 @@ async function imsDelete(){
   if(!imsEditId)return;
   var current=(imsAllData||[]).find(function(x){return x.id===imsEditId;})||{};
   if(current.status!=='cancelled'){
+    if(!coreWorkflowRequireTransition('events',current.status||'open','cancelled','Incident'))return;
     var ok=await appConfirmAction({title:'Cancel incident',message:'Cancel this incident instead of deleting it?',detail:'The incident remains available for audit history. Permanent delete is only available after cancellation and should be used only for duplicate/test records.',confirmText:'Cancel incident',cancelText:'Back'});
     if(!ok)return;
     try{
@@ -19069,6 +19145,7 @@ async function raSave(targetStatus){
   var g=function(id){var el=document.getElementById(id);return el?el.value||null:null;};
   var rows=raCollectRows().filter(raRowHasContent);
   var status=targetStatus||g('ra-status-sel')||'draft';
+  if(currentRa&&!coreWorkflowRequireDirectEdit('risk',currentRa.status||'draft',status,'Risk assessment'))return;
   if(status!=='draft'){
     if(!(g('ra-title')||g('ra-activity')))return toast('Please enter an RA title or activity before submitting',false);
     if(!g('ra-assessed-by'))return toast('Please select the assessor before submitting',false);
@@ -19324,6 +19401,8 @@ async function raCloseApprovalRequest(status){
 async function raApproveCurrent(){
   if(!raEditingId)return;
   if(!canAdministerControlledRecord()){toast('Only Admin or HSE Manager can approve risk assessments',false);return;}
+  var currentApprovalRa=raAllData.find(function(x){return x.id===raEditingId;})||{};
+  if(!coreWorkflowRequireTransition('risk',currentApprovalRa.status||'draft','active','Risk assessment'))return;
   var expected=await raCurrentApprovalStep();
   if(expected&&!raApprovalStepAllows(expected)){
     toast('This RA is waiting for '+raApprovalStepLabel(expected)+' according to the approval workflow.',false);
@@ -19365,6 +19444,8 @@ async function raApproveCurrent(){
 async function raRejectCurrent(){
   if(!raEditingId)return;
   if(!canAdministerControlledRecord()){toast('Only Admin or HSE Manager can reject risk assessments',false);return;}
+  var currentRejectedRa=raAllData.find(function(x){return x.id===raEditingId;})||{};
+  if(!coreWorkflowRequireTransition('risk',currentRejectedRa.status||'draft','rejected','Risk assessment'))return;
   var reason=await appPrompt({title:'Reject risk assessment',message:'Enter the reason for rejection or required correction.',placeholder:'e.g. Controls not specific enough, missing task step...',multiline:true});
   if(reason===null||reason===undefined)return;
   var body={status:'rejected',rejection_reason:String(reason||'Revision required'),updated_at:new Date().toISOString()};
@@ -19386,6 +19467,8 @@ async function raRejectCurrent(){
 async function raReleaseForEdit(){
   if(!raEditingId)return;
   if(!canAdministerControlledRecord()){toast('Only Admin or HSE Manager can release a risk assessment for edit',false);return;}
+  var currentReleaseRa=raAllData.find(function(x){return x.id===raEditingId;})||{};
+  if(!coreWorkflowRequireTransition('risk',currentReleaseRa.status||'draft','draft','Risk assessment'))return;
   var note=await appPrompt({title:'Release risk assessment',message:'Why is this RA being released for edit?',placeholder:'e.g. Update controls after site change',multiline:true});
   if(note===null||note===undefined)return;
   var current=raAllData.find(function(x){return x.id===raEditingId;})||{};
@@ -29089,6 +29172,7 @@ async function mapSave(draft){
     if(mapEditingId){
       var old=mapAllData.find(x=>x.id===mapEditingId)||{};
       var before=Object.assign({},old);
+      if(!coreWorkflowRequireDirectEdit('actions',before.status||'open',body.status,'Action'))return;
       await apiWriteWithMissingColumnFallback('/action_tracker?id=eq.'+mapEditingId,{m:'PATCH',p:'return=minimal',b:body},'Master action');
       var idx=mapAllData.findIndex(x=>x.id===mapEditingId);if(idx>=0)Object.assign(mapAllData[idx],body);
       var after=Object.assign({},before,body,{id:mapEditingId,company_id:before.company_id||body.company_id});
@@ -29140,6 +29224,7 @@ async function mapSave(draft){
 async function mapChangeStatus(newStatus){
   if(!workflowCanMutate('actions','actions'))return;
   var old=mapAllData.find(x=>x.id===mapEditingId)||{};
+  if(!coreWorkflowRequireTransition('actions',old.status||'open',newStatus,'Action'))return;
   var previousStatus=old.status;
   var extraBody={status:newStatus,updated_at:new Date().toISOString()};
   if(newStatus==='in_progress'&&!old.start_date)extraBody.start_date=new Date().toISOString().slice(0,10);
@@ -29159,6 +29244,8 @@ async function mapChangeStatus(newStatus){
 async function mapApproveVerification(){
   if(!workflowCanMutate('actions','actions'))return;
   var notesEl=document.getElementById('mf-verif-notes');var verifEl=document.getElementById('mf-verified-by');
+  var currentVerification=mapAllData.find(function(x){return x.id===mapEditingId;})||{};
+  if(!coreWorkflowRequireTransition('actions',currentVerification.status||'open','pending_closure','Action'))return;
   var notes=notesEl?.value?.trim();if(!notes){toast('Please add verification notes before approving',false);return;}
   var verifSel=document.getElementById('mf-verified-by');var verifName='';
   if(verifSel?.value){var p=(people||[]).find(x=>x.id===verifSel.value);verifName=p?(p.last_name+', '+p.first_name):'';}
@@ -29180,6 +29267,8 @@ async function mapApproveVerification(){
 
 async function mapFailVerification(){
   if(!workflowCanMutate('actions','actions'))return;
+  var currentFailedVerification=mapAllData.find(function(x){return x.id===mapEditingId;})||{};
+  if(!coreWorkflowRequireTransition('actions',currentFailedVerification.status||'open','in_progress','Action'))return;
   var reason=await appPrompt({title:'Verification failed',message:'Reason for verification failure. What needs to be done again?',placeholder:'Reason',multiline:true});if(!reason)return;
   var body={status:'in_progress',verification_status:'failed',verification_notes:(document.getElementById('mf-verif-notes')?.value||'')+'\nFAILED: '+reason,updated_at:new Date().toISOString()};
   try{
@@ -29197,6 +29286,8 @@ async function mapFailVerification(){
 
 async function mapApproveClosure(){
   if(!workflowCanMutate('actions','actions'))return;
+  var currentClosure=mapAllData.find(function(x){return x.id===mapEditingId;})||{};
+  if(!coreWorkflowRequireTransition('actions',currentClosure.status||'open','closed','Action'))return;
   var closeName='';var closeSel=document.getElementById('mf-closure-by');
   if(closeSel?.value){var cp=(people||[]).find(x=>x.id===closeSel.value);closeName=cp?(cp.last_name+', '+cp.first_name):'';}
   var notes=document.getElementById('mf-closure-notes')?.value?.trim();
@@ -29219,6 +29310,8 @@ async function mapApproveClosure(){
 
 async function mapRejectClosure(){
   if(!workflowCanMutate('actions','actions'))return;
+  var currentRejectedClosure=mapAllData.find(function(x){return x.id===mapEditingId;})||{};
+  if(!coreWorkflowRequireTransition('actions',currentRejectedClosure.status||'open','in_progress','Action'))return;
   var reason=document.getElementById('mf-closure-rejected')?.value?.trim();
   if(!reason)reason=await appPrompt({title:'Reject closure',message:'Reason for rejecting closure',placeholder:'Reason',multiline:true});if(!reason)return;
   var body={status:'in_progress',closure_rejected_reason:reason,updated_at:new Date().toISOString()};
@@ -35115,6 +35208,7 @@ function auditAIApplyReview(){
 }
 // Save inspection
 async function auditSave() {
+  if(!workflowCanMutate('inspection','inspections'))return;
   var site = document.getElementById('if-site')?.value?.trim();
   var type = document.getElementById('audit-type')?.value||'workplace';
   if(!site){toast('Please enter location / site',false);return;}
@@ -35167,6 +35261,8 @@ async function auditSave() {
     lng:g('audit-lng')?parseFloat(g('audit-lng')):null,
     updated_at:new Date().toISOString()
   };
+  var currentInspection=auditEditId?(auditAllData||[]).find(function(x){return x.id===auditEditId;}):null;
+  if(currentInspection&&!coreWorkflowRequireTransition('inspection',currentInspection.status||'open',body.status,'Inspection'))return;
   Object.assign(body,locationIdentityPayload(body.site,null));
   try {
     var savedId = auditEditId;
