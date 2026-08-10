@@ -365,6 +365,12 @@
 - **Status (2026-08-09):** Implemented — `npm run release:readiness` executes the complete repository contract suite plus the deterministic offline-manifest freshness check. It can write timestamped machine-readable evidence while deliberately leaving all eight environment gates pending. `RELEASE_ACCEPTANCE_CHECKLIST.md` defines the tenant/cohort test evidence, pilot observation, pause criteria and release-owner sign-off required before activation. The runner does not mutate a tenant or mark an environment gate as passed.
 - **Acceptance:** Automated evidence passes and all eight environment gates are signed off for the exact tenant, cohort and release candidate before Pilot or Enabled is selected.
 
+### AP-064 — Run the Core Control environment preflight
+
+- **Owner:** Product/Release manager and environment tester
+- **Status (2026-08-10):** In progress — the live AURIS360 Supabase project passed nine rollout schema/RLS checks and the Core Control data baseline found 118 records with no missing company relationship. All ten companies remain in compatibility mode with no saved cohort or health-event rows. Supabase Advisor identified `public.pending_notifications` as a Security Definer view; `pending_notifications_security_upgrade.sql` provides a rerunnable caller-permission correction protected by a repository contract. Authenticated application, mobile/offline and rollback evidence remain pending, so no cohort was enabled.
+- **Acceptance:** The Advisor finding is cleared, all eight live gates pass for the selected pilot tenant and the Core Control cohort starts in Pilot rather than Enabled.
+
 ## 10. Release gates
 
 | Gate | Required evidence |
