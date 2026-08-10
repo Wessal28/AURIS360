@@ -79,6 +79,19 @@ scenario('INT-005', 'P0', 'QR and email deep links survive authentication and re
   assert.match(html, /deepLinkScheduleResume\('sign-in'\)/);
   assert.match(html, /deepLinkScheduleResume\('session-restore'\)/);
   assert.match(html, /deepLinkCaptureRequest\(\);[\s\S]*deepLinkScheduleResume\('page-load'\)/);
+  const retryTimers = [];
+  const retryState = { pending: { goto: 'events' }, calls: 0 };
+  const retrySandbox = {
+    prof: { id: 'user-1' }, pendingDeepLinkRequest: null, Promise,
+    setTimeout: (fn, delay) => retryTimers.push({ fn, delay }),
+    deepLinkReadUrl: () => retryState.pending,
+    deepLinkReadStored: () => null,
+    deepLinkResume: () => { retryState.calls += 1; retryState.pending = null; return true; }
+  };
+  vm.runInNewContext(`${functionSource('deepLinkScheduleResume')}; deepLinkScheduleResume('sign-in');`, retrySandbox);
+  assert.deepStrictEqual(retryTimers.map((timer) => timer.delay), [120, 500, 1200, 2400]);
+  retryTimers.forEach((timer) => timer.fn());
+  assert.strictEqual(retryState.calls, 1, 'successful deep-link navigation must stop later retries');
 });
 
 scenario('INT-006', 'P0', 'Company and role switching cannot cross tenant boundaries', () => {
