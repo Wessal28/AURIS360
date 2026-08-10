@@ -8,6 +8,7 @@ const testFiles = [
   'tests/offline_asset_manifest_contract.test.cjs',
   'tests/cross_module_integration_contract.test.cjs',
   'tests/controlled_rollout_contract.test.cjs',
+  'tests/core_control_role_matrix_contract.test.cjs',
   'tests/audit_contract.test.cjs',
   'tests/moc_separation_contract.test.cjs',
   'tests/person_identity_contract.test.cjs',

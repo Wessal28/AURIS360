@@ -5,7 +5,7 @@
 - Supabase project: AURIS360 / SEPHS Consulting Ltd
 - Cohort: Core Control
 - Modules: Master Action Plan, Incident Management, Audits & Inspections, Risk Assessment
-- Validation mode: read-only database and unauthenticated application inspection
+- Validation mode: read-only database and authenticated application inspection
 - Cohort activation: not performed
 
 ## Evidence captured
@@ -70,14 +70,33 @@ Result: **security correction passed**.
 - Incident Management, Master Action Plan, Audits & Inspections and Risk Assessment all loaded authorised records without a setup/schema error.
 - Desktop (1440 px), tablet (1024 px) and mobile (390 px) checks showed no page-level horizontal overflow; mobile navigation remained available.
 
-Result: **module and responsive smoke checks passed; corrected deep-link retry requires deployment verification**.
+The corrected bounded deep-link retry is present in the deployed application and protected by the automated cross-module contract.
+
+Result: **module, responsive and deployed deep-link smoke checks passed**.
+
+### Role-matrix gate
+
+The Core Control access contract now checks seven roles against all four cohort modules and verifies that both sidebar visibility and direct route navigation use the same access gate.
+
+| Role | Actions | Incidents | Inspections | Risk |
+|---|---|---|---|---|
+| HSE Manager | Allowed | Allowed | Allowed | Allowed |
+| HSE Officer | Allowed | Allowed | Allowed | Allowed |
+| Supervisor | Allowed | Allowed | Allowed | Allowed |
+| Auditor | Allowed | Allowed | Allowed | Allowed |
+| Employee | Hidden/blocked | Allowed | Hidden/blocked | Hidden/blocked |
+| Contractor | Hidden/blocked | Allowed | Hidden/blocked | Hidden/blocked |
+| SEPHS Admin | Allowed | Allowed | Allowed | Allowed |
+
+The preview selector exposes every tested role, `applyRoles()` hides unauthorised navigation, `showPage()` blocks direct unauthorised routes, and a role change returns the user to Dashboard when the current page is no longer allowed. The automated release-readiness suite now prevents this matrix from drifting.
+
+Result: **role-matrix contract passed**.
 
 ## Release decision
 
 Do not save or enable the Core Control cohort yet. Complete these items first:
 
-1. Sign into the deployed AURIS360 application in the acceptance browser.
-2. Validate Dashboard, Master Action Plan, Incidents, Inspections and Risk across the required roles.
-3. Test exact-record deep links before and after authentication.
-4. Complete resilience, workflow, mobile/offline and rollback evidence.
-5. Start with Pilot only after all eight gates are recorded as passed.
+1. Complete workflow-transition evidence without altering production records.
+2. Complete resilience and mobile/offline evidence.
+3. Record the rollback drill and acceptance owner.
+4. Start with Pilot only after all eight gates are recorded as passed.
