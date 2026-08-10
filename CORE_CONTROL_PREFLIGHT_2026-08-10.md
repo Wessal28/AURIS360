@@ -47,13 +47,20 @@ Core Control source records:
 
 Result: **baseline counts and company ownership passed**.
 
-### Security gate finding
+### Security gate
 
-Supabase Advisor reports `public.pending_notifications` as a Security Definer view. The underlying `notification_queue` table has RLS enabled and one authenticated, company-scoped policy, but the view currently has no `security_invoker` option and is owned by `postgres`.
+Supabase Advisor initially reported `public.pending_notifications` as a Security Definer view. The underlying `notification_queue` table had RLS enabled and one authenticated, company-scoped policy, but the view had no `security_invoker` option and was owned by `postgres`.
 
-The rerunnable `pending_notifications_security_upgrade.sql` corrects the view to use caller permissions, removes anonymous access to the view and retains authenticated read access. This migration must be applied and Advisor rechecked before the security gate can pass.
+The rerunnable `pending_notifications_security_upgrade.sql` was applied successfully. Post-migration verification confirmed:
 
-Result: **blocked pending corrective migration and verification**.
+- `security_invoker=true`;
+- authenticated users retain `SELECT` on the view;
+- anonymous users do not have `SELECT` on the view;
+- `notification_queue` RLS remains enabled;
+- its authenticated company-scoped policy remains present;
+- Supabase Advisor reports no security or performance issues.
+
+Result: **security correction passed**.
 
 ### Application/navigation gate
 
@@ -67,9 +74,8 @@ Result: **pending authenticated acceptance session**.
 
 Do not save or enable the Core Control cohort yet. Complete these items first:
 
-1. Apply `pending_notifications_security_upgrade.sql` and confirm the Advisor finding clears.
-2. Sign into the deployed AURIS360 application in the acceptance browser.
-3. Validate Dashboard, Master Action Plan, Incidents, Inspections and Risk across the required roles.
-4. Test exact-record deep links before and after authentication.
-5. Complete resilience, workflow, mobile/offline and rollback evidence.
-6. Start with Pilot only after all eight gates are recorded as passed.
+1. Sign into the deployed AURIS360 application in the acceptance browser.
+2. Validate Dashboard, Master Action Plan, Incidents, Inspections and Risk across the required roles.
+3. Test exact-record deep links before and after authentication.
+4. Complete resilience, workflow, mobile/offline and rollback evidence.
+5. Start with Pilot only after all eight gates are recorded as passed.

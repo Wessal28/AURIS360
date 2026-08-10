@@ -368,7 +368,7 @@
 ### AP-064 — Run the Core Control environment preflight
 
 - **Owner:** Product/Release manager and environment tester
-- **Status (2026-08-10):** In progress — the live AURIS360 Supabase project passed nine rollout schema/RLS checks and the Core Control data baseline found 118 records with no missing company relationship. All ten companies remain in compatibility mode with no saved cohort or health-event rows. Supabase Advisor identified `public.pending_notifications` as a Security Definer view; `pending_notifications_security_upgrade.sql` provides a rerunnable caller-permission correction protected by a repository contract. Authenticated application, mobile/offline and rollback evidence remain pending, so no cohort was enabled.
+- **Status (2026-08-10):** In progress — the live AURIS360 Supabase project passed nine rollout schema/RLS checks and the Core Control data baseline found 118 records with no missing company relationship. All ten companies remain in compatibility mode with no saved cohort or health-event rows. The `pending_notifications_security_upgrade.sql` correction was applied and verified: the view now uses caller permissions, anonymous view access is removed, authenticated access remains RLS-governed and Supabase Advisor reports no issues. Authenticated application, mobile/offline and rollback evidence remain pending, so no cohort was enabled.
 - **Acceptance:** The Advisor finding is cleared, all eight live gates pass for the selected pilot tenant and the Core Control cohort starts in Pilot rather than Enabled.
 
 ## 10. Release gates
