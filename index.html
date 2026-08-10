@@ -4995,7 +4995,8 @@ async function authOnSignIn(authData) {
   await loadPeopleCache();
   await loadLocationSitesCache();
   loadDash();
-  setTimeout(function(){if(typeof deepLinkResume==='function')deepLinkResume('sign-in');},180);
+  if(typeof deepLinkScheduleResume==='function') deepLinkScheduleResume('sign-in');
+  else setTimeout(function(){if(typeof deepLinkResume==='function')deepLinkResume('sign-in');},180);
   setTimeout(function(){genDashAI();}, 3000);
 }
 
@@ -5258,7 +5259,8 @@ async function authInitSession() {
     await loadPeopleCache();
     await loadLocationSitesCache();
     loadDash();
-    setTimeout(function(){if(typeof deepLinkResume==='function')deepLinkResume('session-restore');},180);
+    if(typeof deepLinkScheduleResume==='function') deepLinkScheduleResume('session-restore');
+    else setTimeout(function(){if(typeof deepLinkResume==='function')deepLinkResume('session-restore');},180);
     setTimeout(function(){genDashAI();}, 3000);
   } catch(e) {
     clearTimeout(timeout);
@@ -39500,6 +39502,18 @@ function deepLinkRecordUrl(endpoint){
   if(endpoint.company_id||endpoint.company)url.searchParams.set('company',endpoint.company_id||endpoint.company);
   return url.toString();
 }
+function deepLinkScheduleResume(reason){
+  // Authentication, company context and responsive navigation initialise in
+  // parallel. Retry at bounded intervals so a valid link cannot be lost to a
+  // one-shot timing race; successful navigation clears the stored request.
+  [120,500,1200,2400].forEach(function(delay){
+    setTimeout(function(){
+      var pending=deepLinkReadUrl()||pendingDeepLinkRequest||deepLinkReadStored();
+      if(!pending||!prof||typeof deepLinkResume!=='function')return;
+      Promise.resolve(deepLinkResume((reason||'navigation')+'-'+delay)).catch(function(){});
+    },delay);
+  });
+}
 async function deepLinkResume(reason){
   var req=deepLinkCaptureRequest();
   if(!req||!prof||typeof showPage!=='function'||deepLinkOpening)return false;
@@ -39541,7 +39555,7 @@ async function deepLinkResume(reason){
   finally{deepLinkOpening=false;}
 }
 deepLinkCaptureRequest();
-window.addEventListener('load',function(){setTimeout(function(){deepLinkResume('page-load');},220);});
+window.addEventListener('load',function(){deepLinkScheduleResume('page-load');});
 
 // Offline field reporting queue - Phase 1
 const OFFLINE_QUEUE_KEY='auris360_offline_queue_v1';

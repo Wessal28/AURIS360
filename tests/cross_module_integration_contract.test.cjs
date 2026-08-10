@@ -75,7 +75,10 @@ scenario('INT-005', 'P0', 'QR and email deep links survive authentication and re
   assert.match(functionSource('deepLinkCaptureRequest'), /deepLinkReadUrl\(\)\|\|pendingDeepLinkRequest\|\|deepLinkReadStored\(\)/);
   assert.match(functionSource('deepLinkRecordUrl'), /record[\s\S]*ref[\s\S]*table[\s\S]*company/);
   assert.match(functionSource('qrRecordUrl'), /deepLinkRecordUrl/);
-  assert.match(html, /deepLinkCaptureRequest\(\);[\s\S]*page-load/);
+  assert.match(functionSource('deepLinkScheduleResume'), /120[\s\S]*500[\s\S]*1200[\s\S]*2400[\s\S]*deepLinkResume/);
+  assert.match(html, /deepLinkScheduleResume\('sign-in'\)/);
+  assert.match(html, /deepLinkScheduleResume\('session-restore'\)/);
+  assert.match(html, /deepLinkCaptureRequest\(\);[\s\S]*deepLinkScheduleResume\('page-load'\)/);
 });
 
 scenario('INT-006', 'P0', 'Company and role switching cannot cross tenant boundaries', () => {

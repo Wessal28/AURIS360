@@ -65,10 +65,12 @@ Result: **security correction passed**.
 ### Application/navigation gate
 
 - The deployed login page loads without browser console errors.
-- The direct module URL `?goto=events` remains present at the login boundary.
-- Authenticated module navigation, exact-record opening and role/company switching could not be completed because the application browser session is not signed in.
+- The direct module URL `?goto=events` remained present at the login boundary, but the initial login landed on Dashboard instead of Incident Management. This exposed a one-shot initialisation race; bounded post-authentication retries were added and protected by the cross-module contract.
+- Dashboard rendered immediately with 21 indicator cards and live totals.
+- Incident Management, Master Action Plan, Audits & Inspections and Risk Assessment all loaded authorised records without a setup/schema error.
+- Desktop (1440 px), tablet (1024 px) and mobile (390 px) checks showed no page-level horizontal overflow; mobile navigation remained available.
 
-Result: **pending authenticated acceptance session**.
+Result: **module and responsive smoke checks passed; corrected deep-link retry requires deployment verification**.
 
 ## Release decision
 
