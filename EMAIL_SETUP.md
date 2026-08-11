@@ -40,23 +40,56 @@ rejected with HTTP 401.
 
 ## Processing frequency
 
-The repository currently schedules `/api/send-emails` once daily because that
-frequency is compatible with a Vercel Hobby deployment. This is not suitable
-for urgent HSE alerts. For production, use one of the following:
+The repository schedules `/api/send-emails` and `/api/process-escalations`
+every five minutes. This cadence requires a Vercel plan that supports frequent
+cron execution. For production, use one of the following:
 
 - Vercel Pro cron every five minutes: `*/5 * * * *`; or
-- an external trusted scheduler calling `/api/send-emails` with
+- an external trusted scheduler calling both endpoints with
   `Authorization: Bearer <CRON_SECRET>` every five minutes.
 
 Keep the daily job only for low-priority digests. Immediate and escalation
 messages must use the five-minute worker schedule.
+
+## Automatic action escalation
+
+Run `action_notification_escalation_upgrade.sql` after the Master Action Plan,
+notification relationship and delivery reliability migrations. It provides:
+
+- one due-soon notification within the configured reminder window;
+- Level 1 escalation at 7 overdue days;
+- Level 2 escalation at 21 overdue days;
+- Level 3 escalation at 45 overdue days;
+- idempotency per action, target date, event and recipient;
+- automatic stop when an action is closed, completed, cancelled or voided.
+
+Thresholds can be changed per company in `notification_escalation_settings`.
+Configure the actual hierarchy in `notification_escalation_recipients`; when a
+level has no deliverable explicit recipient, the engine selects one controlled
+company-role fallback for that level.
+
+Example recipient configuration:
+
+```sql
+insert into notification_escalation_recipients(
+  company_id, escalation_level, profile_id
+)
+values
+  ('<company-uuid>', 1, '<supervisor-profile-uuid>'),
+  ('<company-uuid>', 2, '<manager-profile-uuid>'),
+  ('<company-uuid>', 3, '<director-profile-uuid>');
+```
+
+Do not leave the fallback roles as the permanent reporting hierarchy when the
+company has multiple supervisors or managers. Explicit recipients prevent
+unnecessary disclosure and ensure the correct accountability chain.
 
 ## Controlled verification
 
 After deploying the worker and applying the migration:
 
 1. Queue one `test_email` to a controlled real mailbox.
-2. Invoke the worker with the cron secret instead of waiting for the daily job.
+2. Invoke the worker with the cron secret instead of waiting for the cron job.
 3. Confirm the row advances `pending -> sent -> delivered`.
 4. Confirm `provider_message_id`, `sent_at` and `delivered_at` are populated.
 5. Test one temporary provider failure and confirm `next_attempt_at` is set.

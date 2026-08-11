@@ -18,7 +18,8 @@
     "test:location-identity": "node tests/location_identity_contract.test.cjs",
     "test:verified-references": "node tests/verified_operational_references_contract.test.cjs",
     "test:notification-security": "node tests/pending_notifications_security_contract.test.cjs",
-    "test:notification-delivery": "node tests/notification_delivery_reliability_contract.test.cjs"
+    "test:notification-delivery": "node tests/notification_delivery_reliability_contract.test.cjs",
+    "test:notification-escalation": "node tests/action_notification_escalation_contract.test.cjs"
   },
   "dependencies": {
     "nodemailer": "^6.9.16"

@@ -31,12 +31,19 @@
   "functions": {
     "api/send-emails.js": {
       "maxDuration": 30
+    },
+    "api/process-escalations.js": {
+      "maxDuration": 30
     }
   },
   "crons": [
     {
       "path": "/api/send-emails",
-      "schedule": "0 9 * * *"
+      "schedule": "*/5 * * * *"
+    },
+    {
+      "path": "/api/process-escalations",
+      "schedule": "*/5 * * * *"
     }
   ]
 }

@@ -177,7 +177,7 @@ function preferenceForType(type) {
   if (value.startsWith('incident')) return 'notify_on_incident';
   if (value.startsWith('investigation')) return 'notify_on_investigation';
   if (value.startsWith('audit') || value.startsWith('inspection')) return 'notify_on_audit';
-  if (value === 'action_overdue' || value === 'overdue_digest') return 'notify_on_overdue';
+  if (value === 'action_due_soon' || value === 'action_overdue' || value === 'overdue_digest') return 'notify_on_overdue';
   return null;
 }
 
