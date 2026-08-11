@@ -4,6 +4,16 @@
 
 begin;
 
+-- Keep the migration self-contained for installations that used the older
+-- notification queue bundle but have not yet applied professional_foundations.
+alter table public.notification_queue
+  add column if not exists channel text not null default 'email',
+  add column if not exists priority text not null default 'normal',
+  add column if not exists metadata jsonb not null default '{}'::jsonb;
+
+alter table public.profiles
+  add column if not exists real_email text;
+
 create table if not exists public.notification_escalation_settings (
   company_id uuid primary key references public.companies(id) on delete cascade,
   enabled boolean not null default true,
@@ -214,10 +224,13 @@ begin
             and case level_value
               when 1 then p.role in ('supervisor','site_manager')
               when 2 then p.role in ('manager','hse_manager')
-              when 3 then p.role in ('admin','hse_manager')
+              when 3 then p.role in ('executive','director','company_admin','admin','hse_manager')
               else false end
             and public.notification_best_email(array[p.real_email,p.email]) is not null
-          order by case p.role when 'supervisor' then 1 when 'manager' then 1 when 'admin' then 1 else 2 end,p.full_name,p.id
+          order by case p.role
+            when 'supervisor' then 1 when 'manager' then 1
+            when 'executive' then 1 when 'director' then 1 when 'company_admin' then 1 when 'admin' then 1
+            else 2 end,p.full_name,p.id
           limit 1
         ) pr on true
         where not exists(

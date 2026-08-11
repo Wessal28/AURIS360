@@ -40,16 +40,20 @@ rejected with HTTP 401.
 
 ## Processing frequency
 
-The repository schedules `/api/send-emails` and `/api/process-escalations`
-every five minutes. This cadence requires a Vercel plan that supports frequent
-cron execution. For production, use one of the following:
+The repository includes Hobby-compatible daily safety schedules for
+`/api/send-emails` and `/api/process-escalations`. The escalation thresholds
+are day-based, so daily escalation evaluation is safe. Daily email delivery is
+not suitable for urgent HSE alerts. For production, use one of the following:
 
 - Vercel Pro cron every five minutes: `*/5 * * * *`; or
 - an external trusted scheduler calling both endpoints with
   `Authorization: Bearer <CRON_SECRET>` every five minutes.
 
-Keep the daily job only for low-priority digests. Immediate and escalation
-messages must use the five-minute worker schedule.
+On a Vercel Pro deployment, replace the daily email cron with `*/5 * * * *`.
+Alternatively, keep the deployable daily safety jobs and let the external
+scheduler invoke both endpoints every five minutes. Do not commit a frequent
+Vercel cron until the project plan supports it because Vercel rejects the whole
+deployment when an unsupported cron cadence is present.
 
 ## Automatic action escalation
 

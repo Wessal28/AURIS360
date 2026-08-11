@@ -37,10 +37,13 @@ test('email preferences cover due-soon and overdue action events', () => {
   assert.equal(worker.preferenceForType('action_overdue'), 'notify_on_overdue');
 });
 
-test('email and escalation processors run at operational cadence', () => {
+test('email and escalation processors retain deployable daily safety schedules', () => {
   const schedules = Object.fromEntries(vercel.crons.map(item => [item.path, item.schedule]));
-  assert.equal(schedules['/api/send-emails'], '*/5 * * * *');
-  assert.equal(schedules['/api/process-escalations'], '*/5 * * * *');
+  assert.equal(schedules['/api/send-emails'], '0 9 * * *');
+  assert.equal(schedules['/api/process-escalations'], '5 9 * * *');
+  const setup = fs.readFileSync(path.join(root, 'EMAIL_SETUP.md'), 'utf8');
+  assert.match(setup, /external trusted scheduler[\s\S]*every five minutes/i);
+  assert.match(setup, /Vercel rejects the whole\s+deployment/i);
 });
 
 test('escalation endpoint is deployable and authenticated', () => {
