@@ -51,4 +51,3 @@ test('desktop and mobile application chrome mount the personal inbox', () => {
   assert.match(app, /id='nc-desktop-trigger'/);
   assert.match(css, /@media\(max-width:768px\)/);
 });
-
