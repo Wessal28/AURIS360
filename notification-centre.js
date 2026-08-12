@@ -1,7 +1,7 @@
 (function(){
 'use strict';
 
-var NC={rows:[],ready:null,open:false,filter:'all',loading:false,timer:null,lastLoaded:null};
+var NC={rows:[],ready:null,open:false,filter:'all',loading:false,timer:null,lastLoaded:null,push:{supported:false,configured:false,permission:'default',subscribed:false,loading:false}};
 
 function esc(value){return typeof window.escH==='function'?window.escH(String(value==null?'':value)):String(value==null?'':value).replace(/[&<>"']/g,function(c){return({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c];});}
 function profile(){return typeof prof!=='undefined'?prof:null;}
@@ -15,6 +15,13 @@ function activeRows(){
 }
 function unreadCount(){return NC.rows.filter(function(x){return !x.read_at;}).length;}
 function acknowledgementCount(){return NC.rows.filter(function(x){return x.acknowledgement_required&&!x.acknowledged_at;}).length;}
+function pushStatus(){
+  if(!NC.push.supported)return {label:'Push unavailable',detail:'Use the in-app inbox and email on this device.',action:''};
+  if(!NC.push.configured)return {label:'Push not configured',detail:'Your administrator must add the VAPID server configuration.',action:''};
+  if(NC.push.permission==='denied')return {label:'Push blocked',detail:'Allow notifications for AURIS360 in this browser or device settings.',action:''};
+  if(NC.push.subscribed)return {label:'Push enabled',detail:'High-priority alerts can appear on this device.',action:'disable'};
+  return {label:'Enable push alerts',detail:isIos()&&!isStandalone()?'On iPhone/iPad, first install AURIS360 using Share > Add to Home Screen.':'The browser will ask for permission only after you continue.',action:'enable'};
+}
 function updateBadges(){
   var count=unreadCount(),label=count>99?'99+':String(count);
   ['nc-desktop-badge','nc-mobile-badge'].forEach(function(id){var el=document.getElementById(id);if(!el)return;el.textContent=label;el.classList.toggle('show',count>0);});
@@ -70,10 +77,13 @@ function render(){
   else if(NC.ready===false)body='<div class="nc-empty"><i class="ti ti-bell-off"></i><strong>Notification centre is being activated</strong><span>Email alerts remain available while the personal inbox database upgrade is completed.</span></div>';
   else if(!rows.length)body='<div class="nc-empty"><i class="ti ti-bell-check"></i><strong>'+({unread:'You are all caught up',ack:'No acknowledgements pending',all:'No notifications yet'}[NC.filter])+'</strong><span>New alerts assigned to you will appear here.</span></div>';
   else body=rows.map(renderItem).join('');
+  var ps=pushStatus();
   el.innerHTML='<div class="nc-head"><div><div class="nc-title">Notifications</div><div class="nc-subtitle">Your assignments, reminders and escalations</div></div><div class="nc-head-actions">'
     +'<button type="button" class="nc-icon-btn" title="Mark all as read" aria-label="Mark all as read" onclick="notificationCentreMarkAllRead()"><i class="ti ti-checks"></i></button>'
     +'<button type="button" class="nc-icon-btn" title="Refresh" aria-label="Refresh notifications" onclick="notificationCentreRefresh(true)"><i class="ti ti-refresh"></i></button>'
     +'<button type="button" class="nc-icon-btn" title="Close" aria-label="Close notifications" onclick="notificationCentreClose()"><i class="ti ti-x"></i></button></div></div>'
+    +'<div class="nc-push"><div class="nc-push-copy"><strong><i class="ti '+(NC.push.subscribed?'ti-bell-ringing':'ti-device-mobile')+'"></i>'+esc(ps.label)+'</strong><span>'+esc(ps.detail)+'</span></div>'
+    +(ps.action?'<button type="button" class="nc-action '+(ps.action==='enable'?'primary':'')+'" '+(NC.push.loading?'disabled':'')+' onclick="notificationCentrePushToggle()">'+(NC.push.loading?'Working...':(ps.action==='enable'?'Enable':'Disable'))+'</button>':'')+'</div>'
     +'<div class="nc-filters">'+filterButton('all','All',NC.rows.length)+filterButton('unread','Unread',unreadCount())+filterButton('ack','Needs acknowledgement',ackCount)+'</div>'
     +'<div class="nc-list">'+body+'</div><div class="nc-footer"><span>Private to your account</span><span>'+(NC.lastLoaded?('Updated '+timeLabel(NC.lastLoaded)):'')+'</span></div>';
   updateBadges();
@@ -99,6 +109,36 @@ async function refresh(force){
     if(isMissingSchema(error)){NC.ready=false;NC.rows=[];}else{console.warn('Notification centre refresh failed',error);}
   }finally{NC.loading=false;render();}
 }
+function isIos(){return /iphone|ipad|ipod/i.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);}
+function isStandalone(){return window.matchMedia&&window.matchMedia('(display-mode: standalone)').matches||window.navigator.standalone===true;}
+function urlBase64ToUint8Array(value){
+  var padding='='.repeat((4-value.length%4)%4),base64=(value+padding).replace(/-/g,'+').replace(/_/g,'/'),raw=atob(base64),out=new Uint8Array(raw.length);
+  for(var i=0;i<raw.length;i++)out[i]=raw.charCodeAt(i);return out;
+}
+async function loadPushState(){
+  NC.push.supported=!!(window.isSecureContext&&'serviceWorker' in navigator&&'PushManager' in window&&'Notification' in window);
+  NC.push.permission=window.Notification?Notification.permission:'default';
+  if(!NC.push.supported){render();return;}
+  try{
+    var configResponse=await fetch('/api/push-config',{cache:'no-store'}),config=await configResponse.json();
+    NC.push.configured=!!(configResponse.ok&&config.enabled&&config.publicKey);NC.push.publicKey=config.publicKey||null;
+    var registration=await navigator.serviceWorker.ready,subscription=await registration.pushManager.getSubscription();
+    NC.push.subscription=subscription||null;NC.push.subscribed=!!subscription;
+    if(subscription&&NC.push.configured&&profile())saveSubscription(subscription).catch(function(error){console.warn('Push subscription sync failed',error);});
+  }catch(error){NC.push.configured=false;}
+  render();
+}
+async function saveSubscription(subscription){
+  var json=subscription.toJSON(),keys=json.keys||{},body={company_id:profile().company_id,recipient_profile_id:profile().id,endpoint:json.endpoint,p256dh:keys.p256dh,auth_secret:keys.auth,user_agent:navigator.userAgent,device_label:[navigator.platform||'Browser',isStandalone()?'installed app':'web'].join(' - '),enabled:true,last_seen_at:new Date().toISOString(),disabled_at:null,disabled_reason:null,updated_at:new Date().toISOString()};
+  try{
+    var existing=await apiCall('/push_subscriptions?recipient_profile_id=eq.'+encodeURIComponent(profile().id)+'&endpoint=eq.'+encodeURIComponent(json.endpoint)+'&limit=1');
+    if(existing&&existing[0])await apiCall('/push_subscriptions?id=eq.'+encodeURIComponent(existing[0].id),{m:'PATCH',p:'return=minimal',b:body});
+    else await apiCall('/push_subscriptions',{m:'POST',p:'return=minimal',b:Object.assign({created_at:new Date().toISOString()},body)});
+  }catch(error){
+    if(isMissingSchema(error))throw new Error('Run the browser push database upgrade before enabling alerts.');
+    throw error;
+  }
+}
 async function patch(id,body){
   if(!profile()||NC.ready===false)return false;
   try{
@@ -111,7 +151,7 @@ window.notificationCentreInit=function(){
   if(NC.timer)clearInterval(NC.timer);
   NC.rows=[];NC.ready=null;NC.open=false;NC.filter='all';
   NC.timer=setInterval(function(){refresh(false);},60000);
-  refresh(true);
+  refresh(true);loadPushState();
 };
 window.notificationCentreReset=function(){if(NC.timer)clearInterval(NC.timer);NC.timer=null;NC.rows=[];NC.open=false;var el=panel();if(el)el.classList.remove('open');updateBadges();};
 window.notificationCentreRefresh=function(force){return refresh(force!==false);};
@@ -128,6 +168,33 @@ window.notificationCentreMarkAllRead=async function(){
     NC.rows.forEach(function(row){if(!row.read_at)row.read_at=now;});render();
   }catch(error){if(typeof window.toast==='function')toast('Notifications could not be marked as read',false);}
 };
+window.notificationCentrePushToggle=async function(){
+  if(NC.push.loading||!profile())return;
+  NC.push.loading=true;render();
+  try{
+    var registration=await navigator.serviceWorker.ready,subscription=await registration.pushManager.getSubscription();
+    if(subscription){
+      var endpoint=subscription.endpoint;
+      await subscription.unsubscribe();
+      await apiCall('/push_subscriptions?recipient_profile_id=eq.'+encodeURIComponent(profile().id)+'&endpoint=eq.'+encodeURIComponent(endpoint),{m:'PATCH',p:'return=minimal',b:{enabled:false,disabled_at:new Date().toISOString(),disabled_reason:'User disabled push on this device',updated_at:new Date().toISOString()}});
+      NC.push.subscribed=false;NC.push.subscription=null;
+      if(typeof window.toast==='function')toast('Push alerts disabled on this device');
+    }else{
+      if(isIos()&&!isStandalone())throw new Error('Install AURIS360 from Share > Add to Home Screen before enabling iPhone or iPad push alerts.');
+      if(Notification.permission==='denied')throw new Error('Notifications are blocked. Allow AURIS360 in your browser or device settings.');
+      if(Notification.permission==='default'){
+        var permission=await Notification.requestPermission();NC.push.permission=permission;
+        if(permission!=='granted')throw new Error('Notification permission was not granted.');
+      }
+      if(!NC.push.publicKey)throw new Error('Push alerts are not configured by the administrator.');
+      subscription=await registration.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:urlBase64ToUint8Array(NC.push.publicKey)});
+      try{await saveSubscription(subscription);}catch(error){await subscription.unsubscribe().catch(function(){});throw error;}
+      NC.push.subscribed=true;NC.push.subscription=subscription;
+      if(typeof window.toast==='function')toast('Push alerts enabled on this device');
+    }
+  }catch(error){if(typeof window.toast==='function')toast(error.message||'Push setting could not be changed',false);}
+  finally{NC.push.loading=false;NC.push.permission=window.Notification?Notification.permission:'default';render();}
+};
 window.notificationCentreOpen=async function(id){
   var row=NC.rows.find(function(x){return String(x.id)===String(id);});if(!row)return;
   if(!row.read_at)await patch(id,{read_at:new Date().toISOString()});
@@ -143,4 +210,5 @@ window.notificationCentreOpen=async function(id){
 document.addEventListener('click',function(event){if(NC.open&&!event.target.closest('#nc-panel')&&!event.target.closest('#nc-desktop-trigger')&&!event.target.closest('#nc-mobile-trigger'))notificationCentreClose();});
 document.addEventListener('keydown',function(event){if(event.key==='Escape'&&NC.open)notificationCentreClose();});
 document.addEventListener('visibilitychange',function(){if(!document.hidden&&profile())refresh(true);});
+if('serviceWorker' in navigator)navigator.serviceWorker.addEventListener('message',function(event){if(event.data&&event.data.type==='PUSH_SUBSCRIPTION_CHANGED'&&profile())loadPushState();});
 })();

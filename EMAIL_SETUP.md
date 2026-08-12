@@ -102,6 +102,34 @@ is skipped. Users can only select and update their own notifications. They canno
 create inbox rows, change another recipient's inbox, undo read state or rewrite
 an acknowledgement.
 
+## Browser and mobile PWA push
+
+Run `browser_push_notifications_upgrade.sql` after the personal inbox migration.
+Generate one VAPID key pair and add these server environment variables:
+
+- `VAPID_PUBLIC_KEY`
+- `VAPID_PRIVATE_KEY`
+- `VAPID_SUBJECT`, for example `mailto:support@yourdomain.com`
+
+The public key is intentionally returned by `/api/push-config`; the private key
+must remain only in Vercel. Do not put either the private key or Supabase service
+key in browser code.
+
+The user enables push from the personal notification centre. The application
+never requests browser permission automatically. One person may register several
+devices, and disabling one device does not disable the others. Only high/urgent
+or acknowledgement-required inbox alerts are queued for push.
+
+Desktop Chrome/Edge and Android require notification permission. On iPhone/iPad,
+the user must first install AURIS360 with **Share > Add to Home Screen**, open the
+installed PWA and then enable push. An ordinary Safari tab is not an installed
+iOS notification app.
+
+The repository retains a Hobby-compatible daily `/api/send-push` safety cron.
+Urgent production push requires Vercel Pro or an external scheduler calling the
+protected endpoint every five minutes with `Authorization: Bearer <CRON_SECRET>`.
+Expired browser subscriptions are disabled automatically after HTTP 404/410.
+
 ## Controlled verification
 
 After deploying the worker and applying the migration:

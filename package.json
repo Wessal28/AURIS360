@@ -20,10 +20,12 @@
     "test:notification-security": "node tests/pending_notifications_security_contract.test.cjs",
     "test:notification-delivery": "node tests/notification_delivery_reliability_contract.test.cjs",
     "test:notification-escalation": "node tests/action_notification_escalation_contract.test.cjs",
-    "test:notification-inbox": "node tests/in_app_notification_centre_contract.test.cjs"
+    "test:notification-inbox": "node tests/in_app_notification_centre_contract.test.cjs",
+    "test:notification-push": "node tests/browser_push_notification_contract.test.cjs"
   },
   "dependencies": {
-    "nodemailer": "^6.9.16"
+    "nodemailer": "^6.9.16",
+    "web-push": "^3.6.7"
   },
   "engines": {
     "node": ">=18.x"

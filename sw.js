@@ -93,7 +93,9 @@ async function syncPendingData(storeName) {
 
 self.addEventListener('push', (event) => {
   if (!event.data) return;
-  const data = event.data.json();
+  let data = {};
+  try { data = event.data.json(); }
+  catch (_) { data = { body: event.data.text() }; }
   event.waitUntil(self.registration.showNotification(data.title || 'AURIS360 Alert', {
     body: data.body || '', icon: '/assets/brand/auris360-icon-192.png',
     badge: '/assets/brand/auris360-icon-192.png', tag: data.tag || 'auris360',
@@ -103,11 +105,23 @@ self.addEventListener('push', (event) => {
 
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
-  const targetUrl = event.notification.data?.url || '/';
-  event.waitUntil(self.clients.matchAll({ type: 'window' }).then((clients) => {
+  const requestedUrl = new URL(event.notification.data?.url || '/', self.location.origin);
+  const targetUrl = requestedUrl.origin === self.location.origin ? requestedUrl.href : self.location.origin + '/';
+  event.waitUntil(self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clients) => {
     for (const client of clients) {
-      if (client.url === targetUrl && 'focus' in client) return client.focus();
+      if (new URL(client.url).origin === self.location.origin && 'focus' in client) {
+        if ('navigate' in client && client.url !== targetUrl) return client.navigate(targetUrl).then(() => client.focus());
+        return client.focus();
+      }
     }
     if (self.clients.openWindow) return self.clients.openWindow(targetUrl);
+  }));
+});
+
+self.addEventListener('pushsubscriptionchange', (event) => {
+  // The authenticated application resynchronises the renewed subscription on
+  // next open. Do not silently create an unauthenticated server record here.
+  event.waitUntil(self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clients) => {
+    clients.forEach((client) => client.postMessage({ type: 'PUSH_SUBSCRIPTION_CHANGED' }));
   }));
 });

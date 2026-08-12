@@ -34,6 +34,9 @@
     },
     "api/process-escalations.js": {
       "maxDuration": 30
+    },
+    "api/send-push.js": {
+      "maxDuration": 30
     }
   },
   "crons": [
@@ -44,6 +47,10 @@
     {
       "path": "/api/process-escalations",
       "schedule": "5 9 * * *"
+    },
+    {
+      "path": "/api/send-push",
+      "schedule": "10 9 * * *"
     }
   ]
 }
