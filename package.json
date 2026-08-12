@@ -23,7 +23,8 @@
     "test:notification-inbox": "node tests/in_app_notification_centre_contract.test.cjs",
     "test:notification-push": "node tests/browser_push_notification_contract.test.cjs",
     "test:notification-whatsapp": "node tests/whatsapp_notification_contract.test.cjs",
-    "test:notification-health": "node tests/notification_health_contract.test.cjs"
+    "test:notification-health": "node tests/notification_health_contract.test.cjs",
+    "test:notification-preferences": "node tests/notification_user_preferences_contract.test.cjs"
   },
   "dependencies": {
     "nodemailer": "^6.9.16",

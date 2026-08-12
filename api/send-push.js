@@ -39,6 +39,14 @@ async function processPushQueue() {
 
       const notification = detail.notification;
       const subscription = detail.subscription;
+      const policy = await evaluateDeliveryPolicy(context, notification, 'push');
+      if (policy && policy.allowed === false) {
+        await patchJob(context, job.id, finalPatch('skipped', { error_msg: 'Recipient preference: ' + policy.reason })); failed++; continue;
+      }
+      if (policy && policy.deliver_after && new Date(policy.deliver_after).getTime() > Date.now() + 15000) {
+        await patchJob(context, job.id, {status:'pending',next_attempt_at:policy.deliver_after,locked_at:null,locked_by:null,error_msg:'Delivery deferred by recipient policy: '+policy.reason,updated_at:new Date().toISOString()}); retried++; continue;
+      }
+      if (policy && policy.override) await logPolicyOverride(context, notification, 'push', policy.reason);
       const payload = JSON.stringify({
         notificationId: notification.id,
         title: notification.title || 'AURIS360 Alert',
@@ -86,6 +94,12 @@ async function processPushQueue() {
   }
   return { sent, retried, expired, failed, total: jobs.length };
 }
+
+async function evaluateDeliveryPolicy(context, notification, channel) {
+  const response=await fetch(context.baseUrl+'/rest/v1/rpc/evaluate_notification_delivery_policy',{method:'POST',headers:{...context.headers,'Content-Type':'application/json'},body:JSON.stringify({p_company_id:notification.company_id,p_profile_id:notification.recipient_profile_id,p_channel:channel,p_severity:notification.severity||'normal',p_ack_required:!!notification.acknowledgement_required})});
+  if(response.ok)return response.json();const detail=await response.text();if(response.status===404||/PGRST202|schema cache|evaluate_notification_delivery_policy/i.test(detail))return null;throw transientError('Unable to evaluate recipient delivery policy');
+}
+async function logPolicyOverride(context,n,channel,reason){await fetch(context.baseUrl+'/rest/v1/notification_events',{method:'POST',headers:{...context.headers,'Content-Type':'application/json',Prefer:'return=minimal'},body:JSON.stringify({company_id:n.company_id,notification_id:n.source_notification_id,event_type:'mandatory_alert_override',related_module:n.related_module||null,related_table:n.related_table||null,related_id:n.related_id||null,related_ref:n.related_ref||null,detail:{channel,reason,recipient_profile_id:n.recipient_profile_id}})});}
 
 function validateEnvironment() {
   const required = ['SUPABASE_URL','SUPABASE_SERVICE_KEY','VAPID_PUBLIC_KEY','VAPID_PRIVATE_KEY','VAPID_SUBJECT'];
@@ -156,4 +170,4 @@ function isTransient(error) {
 }
 function safeError(error) { return String(error && error.message ? error.message : error || 'Unknown error').slice(0, 500); }
 
-module.exports._test = { isTransient, plainText, retryDelayMs, topicFor };
+module.exports._test = { evaluateDeliveryPolicy, isTransient, plainText, retryDelayMs, topicFor };

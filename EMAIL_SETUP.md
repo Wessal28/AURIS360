@@ -165,6 +165,21 @@ it never returns SMTP passwords, VAPID private keys, Meta tokens or app secrets.
 Treat the committed daily Vercel schedules as safety runs, not proof of
 near-real-time urgent delivery.
 
+## Recipient preferences and quiet hours
+
+Run `notification_user_preferences_upgrade.sql` after the in-app, push and
+WhatsApp migrations. Users manage their own external channel preferences,
+timezone, quiet hours and hourly burst limit under **Users & Roles → Profile →
+Notifications**. In-app notifications remain available even when an external
+channel is disabled.
+
+Non-urgent external alerts received during quiet hours are deferred to the end
+of the quiet period. Only an urgent, acknowledgement-required alert may override
+quiet hours when the user permits it; the override is recorded as
+`mandatory_alert_override` in `notification_events`. Non-urgent bursts exceeding
+the user's hourly ceiling are delayed rather than deleted. The workers remain
+backward-compatible while the migration is being rolled out.
+
 After deploying the worker and applying the migration:
 
 1. Queue one `test_email` to a controlled real mailbox.

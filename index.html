@@ -36250,6 +36250,31 @@ function usersProfileField(icon,label,value){
     +'</div>';
 }
 function usersWhatsappConsentActive(u){return !!(u&&u.whatsapp_opted_in_at&&!u.whatsapp_opted_out_at&&u.whatsapp_phone);}
+var usersNotificationPreferences=null;
+async function usersLoadNotificationPreferences(){
+  if(usersProfileCurrentId!==prof?.id)return;
+  try{var rows=await api('/notification_user_preferences?profile_id=eq.'+encodeURIComponent(prof.id)+'&limit=1');usersNotificationPreferences=rows&&rows[0]?rows[0]:{};usersRenderNotificationPreferenceControls();}
+  catch(e){usersNotificationPreferences={schema_missing:true,error:e.message};usersRenderNotificationPreferenceControls();}
+}
+function usersRenderNotificationPreferenceControls(){
+  var el=document.getElementById('upm3-notification-preferences');if(!el)return;var p=usersNotificationPreferences||{};
+  if(p.schema_missing){el.innerHTML='<div style="padding:12px;background:#FFFBEB;border:1px solid #FDE68A;border-radius:9px;color:#92400E;font-size:12px"><strong>Preference controls require setup.</strong> Run <code>notification_user_preferences_upgrade.sql</code>.</div>';return;}
+  var checked=function(v,defaultValue){return (v==null?defaultValue:v)?'checked':'';};
+  el.innerHTML='<div style="font-weight:800;color:var(--text);margin-bottom:9px">Delivery preferences & quiet hours</div>'
+    +'<div style="font-size:11px;color:var(--text2);line-height:1.5;margin-bottom:12px">In-app notifications always remain available. These controls apply to external email, push and consented WhatsApp delivery.</div>'
+    +'<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px"><label><input type="checkbox" id="upm3-pref-email" '+checked(p.email_enabled,true)+'> Email</label><label><input type="checkbox" id="upm3-pref-push" '+checked(p.push_enabled,true)+'> Push</label><label><input type="checkbox" id="upm3-pref-wa" '+checked(p.whatsapp_enabled,true)+'> WhatsApp</label></div>'
+    +'<label style="display:flex;align-items:center;gap:7px;font-weight:700"><input type="checkbox" id="upm3-pref-quiet" '+checked(p.quiet_hours_enabled,false)+'> Enable quiet hours</label>'
+    +'<div style="display:grid;grid-template-columns:1fr 1fr 1.5fr;gap:8px;margin-top:9px"><div><label style="font-size:10px">From</label><input type="time" id="upm3-pref-start" value="'+escH(String(p.quiet_start||'20:00').slice(0,5))+'"></div><div><label style="font-size:10px">Until</label><input type="time" id="upm3-pref-end" value="'+escH(String(p.quiet_end||'06:00').slice(0,5))+'"></div><div><label style="font-size:10px">Timezone</label><select id="upm3-pref-timezone"><option>Asia/Dubai</option><option>Indian/Mauritius</option><option>UTC</option><option>Europe/London</option></select></div></div>'
+    +'<label style="display:flex;align-items:flex-start;gap:7px;margin-top:10px;font-size:11px"><input type="checkbox" id="upm3-pref-override" '+checked(p.allow_urgent_override,true)+'> Allow urgent acknowledgement-required safety alerts to override quiet hours. Every override is audited.</label>'
+    +'<div style="margin-top:10px"><label style="font-size:10px">External alert burst limit per hour</label><input type="number" min="1" max="60" id="upm3-pref-limit" value="'+Number(p.max_external_alerts_per_hour||10)+'"></div>'
+    +'<button class="btn" style="margin-top:12px" onclick="usersSaveNotificationPreferences()"><i class="ti ti-device-floppy"></i>Save delivery preferences</button>';
+  var tz=document.getElementById('upm3-pref-timezone');if(tz)tz.value=p.timezone||Intl.DateTimeFormat().resolvedOptions().timeZone||'Asia/Dubai';
+}
+async function usersSaveNotificationPreferences(){
+  if(usersProfileCurrentId!==prof?.id)return toast('Only the account owner can change delivery preferences.',false);
+  var val=function(id){return document.getElementById(id)?.value;},on=function(id){return !!document.getElementById(id)?.checked;};
+  try{var result=await api('/rpc/set_my_notification_preferences',{m:'POST',b:{p_timezone:val('upm3-pref-timezone')||'Asia/Dubai',p_quiet_enabled:on('upm3-pref-quiet'),p_quiet_start:val('upm3-pref-start')||'20:00',p_quiet_end:val('upm3-pref-end')||'06:00',p_allow_urgent_override:on('upm3-pref-override'),p_email_enabled:on('upm3-pref-email'),p_push_enabled:on('upm3-pref-push'),p_whatsapp_enabled:on('upm3-pref-wa'),p_max_external_alerts:Number(val('upm3-pref-limit')||10)}});usersNotificationPreferences=Array.isArray(result)?result[0]:result;toast('Delivery preferences saved.');usersRenderNotificationPreferenceControls();}catch(e){toastActionError('Save notification preferences','Users & Roles',e);}
+}
 async function usersSetWhatsappConsent(optedIn){
   var u=(usersAllData||[]).find(function(x){return x.id===usersProfileCurrentId;});
   if(!u||u.id!==prof?.id)return toast('Only the account owner can change WhatsApp consent.',false);
@@ -36308,6 +36333,7 @@ function usersRenderProfileModal(){
           :'<div style="font-size:11px;color:var(--text2);margin-top:8px">By enabling, I confirm that this number belongs to me and I agree to receive AURIS360 operational and safety notifications. I can withdraw consent here at any time.</div><button class="btn btn-primary" style="margin-top:12px;background:#0B7F61" onclick="usersSetWhatsappConsent(true)"><i class="ti ti-brand-whatsapp"></i>I agree — enable WhatsApp</button>')
         :'<div style="font-size:12px;margin-top:12px;color:'+(whatsappActive?'#047857':'#B45309')+'">'+(whatsappActive?'The user has recorded active consent.':'The user has not recorded active WhatsApp consent. Administrators cannot opt in for them.')+'</div>')
       +'</div>'
+      +(isOwn?'<div id="upm3-notification-preferences" style="max-width:540px;margin:14px auto 0;text-align:left;border:1px solid var(--border);background:#fff;border-radius:12px;padding:16px"><div class="loading">Loading delivery preferences...</div></div>':'')
       +'</div>';
   }
   body.innerHTML='<div style="background:#f1f5f9;height:54px;margin:-20px -20px 0"></div>'
@@ -36316,6 +36342,7 @@ function usersRenderProfileModal(){
     +'<div><div style="font-size:18px;font-weight:800">'+escH(u.full_name||'User')+'</div><div style="font-size:13px;color:var(--text2);font-family:monospace">'+escH(u.email||'')+'</div><div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap"><span class="badge bgr"><i class="ti ti-map-pin"></i> '+escH(u.site||'No site')+'</span><span class="badge bgr"><i class="ti ti-clock"></i> '+escH(usersFmtLastLogin(u.last_login))+'</span></div></div></div>'
     +'<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end"><span class="badge bg"><i class="ti ti-circle-check"></i> '+escH(u.status==='inactive'?'Inactive':'Active')+'</span><button class="btn btn-sm" onclick="usersCloseProfile();usersEdit(\''+u.id+'\')"><i class="ti ti-edit"></i>Edit</button></div>'
     +'</div><div style="border-bottom:1px solid var(--border);margin:22px -20px 18px;padding-left:20px">'+tabsHtml+'</div><div>'+content+'</div>';
+  if(usersProfileCurrentTab==='notifications'&&u.id===prof?.id)setTimeout(usersLoadNotificationPreferences,0);
 }
 
 function usersEdit(id) {

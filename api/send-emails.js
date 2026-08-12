@@ -40,6 +40,16 @@ async function processEmailQueue() {
 
   for (const notification of notifications) {
     try {
+      const policy = await evaluateDeliveryPolicy(context, notification, 'email');
+      if (policy && policy.allowed === false) {
+        await patchNotification(context, notification.id, finalPatch(claim.mode, { status: 'skipped', error_msg: 'Recipient preference: ' + policy.reason }));
+        skipped++; continue;
+      }
+      if (policy && policy.deliver_after && new Date(policy.deliver_after).getTime() > Date.now() + 15000) {
+        await patchNotification(context, notification.id, { status:'pending', next_attempt_at:policy.deliver_after, locked_at:null, locked_by:null, error_msg:'Delivery deferred by recipient policy: '+policy.reason });
+        retried++; continue;
+      }
+      if (policy && policy.override) await logPolicyOverride(context, notification, 'email', policy.reason);
       if (!isDeliverableEmail(notification.to_email)) {
         await patchNotification(context, notification.id, finalPatch(claim.mode, {
           status: 'skipped',
@@ -106,6 +116,23 @@ async function processEmailQueue() {
   }
 
   return { sent, retried, failed, skipped, total: notifications.length, mode: claim.mode };
+}
+
+async function evaluateDeliveryPolicy(context, notification, channel) {
+  if (!notification.recipient_profile_id) return null;
+  const response = await fetch(context.baseUrl + '/rest/v1/rpc/evaluate_notification_delivery_policy', {
+    method:'POST', headers:{...context.headers,'Content-Type':'application/json'}, body:JSON.stringify({
+      p_company_id:notification.company_id,p_profile_id:notification.recipient_profile_id,p_channel:channel,
+      p_severity:notification.priority||'normal',p_ack_required:!!(notification.metadata&&notification.metadata.acknowledgement_required)
+    })
+  });
+  if (response.ok) return response.json();
+  const detail=await response.text();
+  if (response.status===404||/PGRST202|schema cache|evaluate_notification_delivery_policy/i.test(detail)) return null;
+  throw transientError('Unable to evaluate recipient delivery policy');
+}
+async function logPolicyOverride(context, notification, channel, reason) {
+  await fetch(context.baseUrl+'/rest/v1/notification_events',{method:'POST',headers:{...context.headers,'Content-Type':'application/json',Prefer:'return=minimal'},body:JSON.stringify({company_id:notification.company_id,notification_id:notification.id,event_type:'mandatory_alert_override',related_module:notification.related_module||null,related_table:notification.related_table||null,related_id:notification.related_id||null,related_ref:notification.related_ref||null,detail:{channel,reason,recipient_profile_id:notification.recipient_profile_id}})});
 }
 
 function validateEnvironment() {
@@ -319,4 +346,5 @@ module.exports._test = {
   isTransientError,
   preferenceForType,
   retryDelayMs
+  ,evaluateDeliveryPolicy
 };
