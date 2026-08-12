@@ -185,7 +185,7 @@ begin
     end if;
 
     event_key_value:=event_name||':'||action_row.target_date::text;
-    record_url_value:='https://auris-360.vercel.app/?goto=actions&record='||action_row.id::text||'&table=action_tracker&company='||action_row.company_id::text;
+    record_url_value:='https://auris360.app/?goto=actions&record='||action_row.id::text||'&table=action_tracker&company='||action_row.company_id::text;
     recipient_names:=array[]::text[];
     action_count:=action_count+1;
 

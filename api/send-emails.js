@@ -250,7 +250,7 @@ async function sendNotificationEmail(notification) {
 function trackedEmailHtml(notification) {
   const html=String(notification.body_html||''),secret=process.env.NOTIFICATION_LINK_SECRET;
   if(!secret||!notification.id)return html;
-  const base=String(process.env.APP_BASE_URL||'https://auris-360.vercel.app').replace(/\/$/,''),expires=Date.now()+30*86400000;
+  const base=String(process.env.APP_BASE_URL||'https://auris360.app').replace(/\/$/,''),expires=Date.now()+30*86400000;
   return html.replace(/href=(['"])(https:\/\/[^'"\s>]+)\1/gi,function(match,quote,encoded){
     const destination=encoded.replace(/&amp;/g,'&');
     try{const url=new URL(destination);if(url.origin!==new URL(base).origin)return match;}catch(_){return match;}

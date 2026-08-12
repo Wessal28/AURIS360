@@ -130,7 +130,7 @@ begin
       select public.notification_best_email(array[p.real_email,p.email]) into email_value from public.profiles p where p.id=original.recipient_profile_id and p.company_id=original.company_id;
       insert into public.notification_queue(company_id,recipient_profile_id,type,subject,body_html,to_email,to_name,status,channel,priority,related_id,related_table,related_module,related_ref,record_url,metadata,idempotency_key,next_attempt_at)
       select original.company_id,original.recipient_profile_id,'acknowledgement_reminder','[AURIS360] Response overdue: '||original.title,
-        '<p>Your acknowledgement is overdue.</p><p><a href="'||coalesce(original.record_url,'https://auris-360.vercel.app/')||'">Open the exact record and acknowledge</a></p>',email_value,p.full_name,'pending','email',original.severity,
+        '<p>Your acknowledgement is overdue.</p><p><a href="'||coalesce(original.record_url,'https://auris360.app/')||'">Open the exact record and acknowledge</a></p>',email_value,p.full_name,'pending','email',original.severity,
         original.related_id,original.related_table,original.related_module,original.related_ref,original.record_url,
         jsonb_build_object('parent_user_notification_id',original.id,'reminder_number',next_count,'acknowledgement_required',false,'relationship',jsonb_build_object('module',original.related_module,'table',original.related_table,'id',original.related_id,'ref',original.related_ref,'company_id',original.company_id,'url',original.record_url)),
         'ack-reminder/'||original.id::text||'/'||next_count::text,now() from public.profiles p where p.id=original.recipient_profile_id
@@ -154,7 +154,7 @@ begin
       loop
         insert into public.notification_queue(company_id,recipient_profile_id,type,subject,body_html,to_email,to_name,status,channel,priority,related_id,related_table,related_module,related_ref,record_url,metadata,idempotency_key,next_attempt_at)
         values(original.company_id,recipient.profile_id,'acknowledgement_escalation','[AURIS360] Unacknowledged alert requires attention: '||original.title,
-          '<p>A required acknowledgement remains overdue after '||next_count||' reminder(s).</p><p><a href="'||coalesce(original.record_url,'https://auris-360.vercel.app/')||'">Open exact source record</a></p>',recipient.email,recipient.name,'pending','email',original.severity,
+          '<p>A required acknowledgement remains overdue after '||next_count||' reminder(s).</p><p><a href="'||coalesce(original.record_url,'https://auris360.app/')||'">Open exact source record</a></p>',recipient.email,recipient.name,'pending','email',original.severity,
           original.related_id,original.related_table,original.related_module,original.related_ref,original.record_url,
           jsonb_build_object('parent_user_notification_id',original.id,'escalation_level',event_level,'reminder_number',next_count,'acknowledgement_required',false,'relationship',jsonb_build_object('module',original.related_module,'table',original.related_table,'id',original.related_id,'ref',original.related_ref,'company_id',original.company_id,'url',original.record_url)),
           'ack-escalation/'||original.id::text||'/'||next_count::text||'/'||coalesce(recipient.profile_id::text,lower(recipient.email)),now())

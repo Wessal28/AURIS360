@@ -9,7 +9,7 @@ module.exports=async function handler(req,res){
     return res.redirect(302,destination);
   }catch(error){return res.redirect(302,fallback+'?goto=dashboard&notice=notification-link-invalid');}
 };
-function applicationBase(){return String(process.env.APP_BASE_URL||'https://auris-360.vercel.app').replace(/\/$/,'');}
+function applicationBase(){return String(process.env.APP_BASE_URL||'https://auris360.app').replace(/\/$/,'');}
 function decodeDestination(value){return Buffer.from(String(value||''),'base64url').toString('utf8');}
 function isAllowedDestination(value){try{const url=new URL(value),base=new URL(applicationBase());return url.origin===base.origin&&url.protocol==='https:';}catch(_){return false;}}
 function signature(id,expires,destination){return crypto.createHmac('sha256',process.env.NOTIFICATION_LINK_SECRET||'').update(id+'|'+expires+'|'+destination).digest('base64url');}

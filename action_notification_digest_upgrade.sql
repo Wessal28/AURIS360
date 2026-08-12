@@ -50,7 +50,7 @@ begin
       min(a.id::text)::uuid as first_id,
       min(coalesce(a.action_ref,a.source_ref,a.id::text)) as first_ref,
       string_agg(
-        '<tr><td style="padding:9px;border-bottom:1px solid #e5e7eb"><a href="https://auris-360.vercel.app/?goto=actions&amp;record='||a.id::text||'&amp;table=action_tracker&amp;company='||a.company_id::text||'">'||
+        '<tr><td style="padding:9px;border-bottom:1px solid #e5e7eb"><a href="https://auris360.app/?goto=actions&amp;record='||a.id::text||'&amp;table=action_tracker&amp;company='||a.company_id::text||'">'||
         public.notification_html_escape(coalesce(a.action_ref,a.source_ref,a.id::text))||'</a></td><td style="padding:9px;border-bottom:1px solid #e5e7eb">'||
         public.notification_html_escape(coalesce(a.title,a.description,'Action'))||'</td><td style="padding:9px;border-bottom:1px solid #e5e7eb">'||
         a.target_date::text||'</td><td style="padding:9px;border-bottom:1px solid #e5e7eb;color:#b91c1c;font-weight:700">'||
@@ -78,16 +78,16 @@ begin
       ||'<div style="background:#0b7f61;color:#fff;padding:18px 22px"><strong>AURIS360</strong><br>Daily overdue action digest</div><div style="padding:22px">'
       ||'<h2 style="margin-top:0">'||recipient_row.action_count||' overdue action(s)</h2><p>This summary is recalculated from currently open actions. Closed or cancelled actions are excluded.</p>'
       ||'<table style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr style="background:#f8fafc"><th style="padding:9px;text-align:left">Reference</th><th style="padding:9px;text-align:left">Action</th><th style="padding:9px;text-align:left">Due</th><th style="padding:9px;text-align:left">Overdue</th></tr></thead><tbody>'
-      ||recipient_row.action_rows||'</tbody></table><p style="text-align:center;margin-top:22px"><a href="https://auris-360.vercel.app/?goto=actions" style="background:#0b7f61;color:#fff;padding:11px 22px;border-radius:8px;text-decoration:none">Open Master Action Plan</a></p>'
+      ||recipient_row.action_rows||'</tbody></table><p style="text-align:center;margin-top:22px"><a href="https://auris360.app/?goto=actions" style="background:#0b7f61;color:#fff;padding:11px 22px;border-radius:8px;text-decoration:none">Open Master Action Plan</a></p>'
       ||'</div></div></body></html>';
 
     insert into public.notification_queue(company_id,recipient_profile_id,type,subject,body_html,to_email,to_name,status,
       channel,priority,related_id,related_table,related_module,related_ref,record_url,metadata,idempotency_key,next_attempt_at)
     values(recipient_row.company_id,recipient_row.profile_id,'overdue_digest','[AURIS360] Daily overdue action digest - '||recipient_row.action_count||' item(s)',
       body_value,recipient_row.recipient_email,recipient_row.full_name,'pending','email','normal',first_action_id,'action_tracker','actions',
-      'DIGEST-'||p_run_date::text,'https://auris-360.vercel.app/?goto=actions',
+      'DIGEST-'||p_run_date::text,'https://auris360.app/?goto=actions',
       jsonb_build_object('digest_date',p_run_date,'action_count',recipient_row.action_count,'recipient_profile_id',recipient_row.profile_id,
-        'relationship',jsonb_build_object('module','actions','table','action_tracker','id',first_action_id,'ref',first_action_ref,'company_id',recipient_row.company_id,'url','https://auris-360.vercel.app/?goto=actions')),
+        'relationship',jsonb_build_object('module','actions','table','action_tracker','id',first_action_id,'ref',first_action_ref,'company_id',recipient_row.company_id,'url','https://auris360.app/?goto=actions')),
       'overdue-digest/'||recipient_row.company_id::text||'/'||p_run_date::text||'/'||recipient_row.profile_id::text,now())
     on conflict(company_id,idempotency_key) where idempotency_key is not null do update set idempotency_key=excluded.idempotency_key
     returning id into notification_uuid;

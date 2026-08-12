@@ -55,7 +55,8 @@ async function sendTemplate(job,n,s){
   return fetch('https://graph.facebook.com/'+encodeURIComponent(version)+'/'+encodeURIComponent(s.phone_number_id)+'/messages',{method:'POST',headers:{Authorization:'Bearer '+process.env.WHATSAPP_ACCESS_TOKEN,'Content-Type':'application/json'},body:JSON.stringify({messaging_product:'whatsapp',recipient_type:'individual',to:normalisePhone(job.phone_snapshot),type:'template',template:{name:job.template_name,language:{code:job.template_language},components:[{type:'body',parameters:[{type:'text',text:severityLabel(n.severity)},{type:'text',text:String(n.title||'AURIS360 alert').slice(0,200)},{type:'text',text:reference},{type:'text',text:url}]}]}})});
 }
 async function patchJob(c,id,body){const r=await fetch(c.baseUrl+'/rest/v1/whatsapp_delivery_jobs?id=eq.'+encodeURIComponent(id),{method:'PATCH',headers:{...c.headers,'Content-Type':'application/json',Prefer:'return=minimal'},body:JSON.stringify(body)});if(!r.ok)throw new Error('Unable to update WhatsApp job: '+r.status);}
-function safeRecordUrl(value){try{const u=new URL(String(value||'/'),'https://auris-360.vercel.app');return u.origin==='https://auris-360.vercel.app'?u.href:'https://auris-360.vercel.app/';}catch(_){return 'https://auris-360.vercel.app/';}}
+function applicationBase(){return String(process.env.APP_BASE_URL||'https://auris360.app').replace(/\/$/,'');}
+function safeRecordUrl(value){const base=applicationBase();try{const u=new URL(String(value||'/'),base);return u.origin===new URL(base).origin&&u.protocol==='https:'?u.href:base+'/';}catch(_){return base+'/';}}
 function normalisePhone(v){return String(v||'').replace(/\D/g,'');}
 function severityLabel(v){return ({urgent:'URGENT',high:'HIGH',normal:'NOTICE',low:'NOTICE'})[String(v||'').toLowerCase()]||'NOTICE';}
 function finalPatch(status,extra){return {...extra,status,locked_at:null,locked_by:null,updated_at:new Date().toISOString()};}
@@ -63,4 +64,4 @@ function retryDelayMs(attempt){return Math.min(60,Math.pow(2,Math.max(0,Number(a
 function transientError(message){const e=new Error(message);e.transient=true;return e;}
 function isTransient(e){const s=Number(e&&e.statusCode||0);return e&&e.transient===true||s===408||s===429||s>=500||/timeout|network|temporar|connection/i.test(safeError(e));}
 function safeError(e){return String(e&&e.message?e.message:e||'Unknown error').slice(0,500);}
-module.exports._test={evaluateDeliveryPolicy,isTransient,normalisePhone,retryDelayMs,safeRecordUrl,severityLabel};
+module.exports._test={applicationBase,evaluateDeliveryPolicy,isTransient,normalisePhone,retryDelayMs,safeRecordUrl,severityLabel};

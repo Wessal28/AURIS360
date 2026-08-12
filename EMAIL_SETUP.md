@@ -32,7 +32,7 @@ For Resend delivery evidence, also add:
 
 Then register this endpoint in the Resend dashboard:
 
-`https://auris-360.vercel.app/api/resend-webhook`
+`https://auris360.app/api/resend-webhook`
 
 Subscribe it to `email.delivered`, `email.delivery_delayed`, `email.bounced`
 and `email.complained`. A request without valid Svix signature headers must be
@@ -190,7 +190,7 @@ WHATSAPP_GRAPH_VERSION=v23.0
 In Meta WhatsApp Manager, create and approve a utility template named
 `auris360_alert` with four body variables in this exact order: severity, title,
 record reference and exact AURIS360 URL. Register
-`https://auris-360.vercel.app/api/whatsapp-webhook` as the webhook and subscribe
+`https://auris360.app/api/whatsapp-webhook` as the webhook and subscribe
 to message-status events. Never commit or expose the access token or app secret.
 
 Finally insert or update the tenant's `whatsapp_channel_settings` row with
@@ -229,8 +229,8 @@ After deploying the worker and applying the migration:
 ### Signed record-link evidence
 
 Run `notification_link_evidence_upgrade.sql` and add a randomly generated
-`NOTIFICATION_LINK_SECRET` in Vercel. Optionally set `APP_BASE_URL`; production
-defaults to `https://auris-360.vercel.app`. The email worker then signs only
+`NOTIFICATION_LINK_SECRET` in Vercel. Set `APP_BASE_URL` to
+`https://auris360.app` for Production and Preview. The email worker then signs only
 same-origin AURIS360 links for 30 days. Opening the link records the first use
 and an aggregate repeat-use count before redirecting to the exact record.
 

@@ -37,7 +37,7 @@ where nullif(trim(related_ref), '') is null
   and related_id is not null;
 
 update public.notification_queue
-set record_url = 'https://auris-360.vercel.app/?goto=' ||
+set record_url = 'https://auris360.app/?goto=' ||
     replace(related_module, ' ', '%20') || '&record=' || related_id::text ||
     '&table=' || replace(related_table, ' ', '%20') ||
     '&company=' || company_id::text

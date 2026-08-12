@@ -13964,7 +13964,7 @@ var body='<div style="font-family:Arial,sans-serif;background:#f4f6f8;padding:20
   +'<tr><td style="padding:8px;background:#f9fafb;font-weight:600">Type</td><td style="padding:8px">'+escH(cfg.label||type)+'</td></tr>'
   +'<tr><td style="padding:8px;background:#f9fafb;font-weight:600">Location</td><td style="padding:8px">'+escH(permit.work_location||permit.location||'-')+'</td></tr>'
   +'<tr><td style="padding:8px;background:#f9fafb;font-weight:600">Work</td><td style="padding:8px">'+escH(permit.work_description||'-')+'</td></tr>'
-  +'</table><div style="margin-top:18px;text-align:center"><a href="https://auris-360.vercel.app/?goto=permit" style="display:inline-block;background:#1D9E75;color:#fff;padding:11px 22px;border-radius:8px;text-decoration:none;font-weight:700">Open Permit in AURIS360</a></div></div>'
+  +'</table><div style="margin-top:18px;text-align:center"><a href="https://auris360.app/?goto=permit" style="display:inline-block;background:#1D9E75;color:#fff;padding:11px 22px;border-radius:8px;text-decoration:none;font-weight:700">Open Permit in AURIS360</a></div></div>'
   +'<div style="padding:12px 22px;background:#f4f6f8;font-size:11px;color:#6B7280;text-align:center">Automated notification from AURIS360.</div></div></div>';
 await queueNotification({company_id:ccid(),type:'permit',subject:subject,body_html:body,to_email:a.email,to_name:a.name||a.email,from_name:'AURIS360 by SEPHS Consulting',related_module:'permit',related_id:permit.id,related_table:'permits',related_ref:ref,status:'pending'});
 }catch(e){/* notification must never block permit workflow */}
@@ -14044,7 +14044,7 @@ async function ptwQueueStatusNotice(permit,event,details){
       +'<tr><td style="padding:8px;background:#f9fafb;font-weight:600">Location</td><td style="padding:8px">'+escH(permit.work_location||permit.location||'-')+'</td></tr>'
       +'<tr><td style="padding:8px;background:#f9fafb;font-weight:600">Status</td><td style="padding:8px">'+escH(permit.status||event||'-')+'</td></tr>'
       +(details?.reason?'<tr><td style="padding:8px;background:#f9fafb;font-weight:600">Reason</td><td style="padding:8px">'+escH(details.reason)+'</td></tr>':'')
-      +'</table><div style="margin-top:18px;text-align:center"><a href="https://auris-360.vercel.app/?goto=permit" style="display:inline-block;background:#1D9E75;color:#fff;padding:11px 22px;border-radius:8px;text-decoration:none;font-weight:700">Open Permit in AURIS360</a></div></div>'
+      +'</table><div style="margin-top:18px;text-align:center"><a href="https://auris360.app/?goto=permit" style="display:inline-block;background:#1D9E75;color:#fff;padding:11px 22px;border-radius:8px;text-decoration:none;font-weight:700">Open Permit in AURIS360</a></div></div>'
       +'<div style="padding:12px 22px;background:#f4f6f8;font-size:11px;color:#6B7280;text-align:center">Automated notification from AURIS360.</div></div></div>';
     var recipients=ptwNoticeRecipients(permit);
     for(var i=0;i<recipients.length;i++){
@@ -16850,7 +16850,7 @@ async function imsNotifyAssignee(assignedName, companyId, ref, desc, location){
     +(location?'<div style="margin-top:5px"><strong>Location:</strong> '+escH(location)+'</div>':'')
     +'<div style="margin-top:5px"><strong>Description:</strong> '+escH((desc||'').substring(0,200))+'</div>'
     +'</div>'
-    +'<div style="margin-top:18px;text-align:center"><a href="https://app.auris360.com" style="background:#1D9E75;color:#fff;padding:10px 24px;border-radius:8px;text-decoration:none;font-weight:600;font-size:13px">Open AURIS360</a></div>'
+    +'<div style="margin-top:18px;text-align:center"><a href="https://auris360.app" style="background:#1D9E75;color:#fff;padding:10px 24px;border-radius:8px;text-decoration:none;font-weight:600;font-size:13px">Open AURIS360</a></div>'
     +'</div>'
     +'<div style="padding:10px 24px;background:#f4f6f8;font-size:11px;color:#6B7280;text-align:center">AURIS360 - Incident Management</div>'
     +'</div></body></html>';
@@ -16895,7 +16895,7 @@ async function imsNotifyIncidentTypeRecipients(companyId, type, ref, desc, locat
         +(location?'<div style="margin-top:5px"><strong>Location:</strong> '+escH(location)+'</div>':'')
         +'<div style="margin-top:5px"><strong>Description:</strong> '+escH((desc||'').substring(0,260))+'</div>'
         +'</div>'
-        +'<div style="margin-top:18px;text-align:center"><a href="https://app.auris360.com" style="background:#1D9E75;color:#fff;padding:10px 24px;border-radius:8px;text-decoration:none;font-weight:600;font-size:13px">Open AURIS360</a></div>'
+        +'<div style="margin-top:18px;text-align:center"><a href="https://auris360.app" style="background:#1D9E75;color:#fff;padding:10px 24px;border-radius:8px;text-decoration:none;font-weight:600;font-size:13px">Open AURIS360</a></div>'
         +'</div>'
         +'<div style="padding:10px 24px;background:#f4f6f8;font-size:11px;color:#6B7280;text-align:center">AURIS360 - Incident Management</div>'
         +'</div></body></html>';
@@ -17768,7 +17768,7 @@ async function invNotifySign(toName, companyId, invRef, stageLabel){
     +'<div style="background:#5B21B6;padding:18px 24px;color:#fff;font-size:16px;font-weight:700">&#128269; Investigation ready for your '+escH(stageLabel)+'</div>'
     +'<div style="padding:24px"><p style="font-size:14px;color:#1a1a1a">Hi <strong>'+escH(p.full_name||'')+'</strong>,</p>'
     +'<p style="color:#374151;font-size:13px">Investigation <strong>'+escH(invRef||'')+'</strong> has been signed at the previous stage and is now waiting for your '+escH(stageLabel)+' in AURIS360.</p>'
-    +'<div style="margin-top:18px;text-align:center"><a href="https://app.auris360.com" style="background:#1D9E75;color:#fff;padding:10px 24px;border-radius:8px;text-decoration:none;font-weight:600;font-size:13px">Open AURIS360</a></div>'
+    +'<div style="margin-top:18px;text-align:center"><a href="https://auris360.app" style="background:#1D9E75;color:#fff;padding:10px 24px;border-radius:8px;text-decoration:none;font-weight:600;font-size:13px">Open AURIS360</a></div>'
     +'</div><div style="padding:10px 24px;background:#f4f6f8;font-size:11px;color:#6B7280;text-align:center">AURIS360 - Investigation Sign-off</div>'
     +'</div></body></html>';
   try{
@@ -19318,7 +19318,7 @@ async function raQueueApprovalNotice(rec,step){
       +'<tr><td style="padding:8px;background:#f9fafb;font-weight:600">Title</td><td style="padding:8px">'+escH(title)+'</td></tr>'
       +'<tr><td style="padding:8px;background:#f9fafb;font-weight:600">Risk</td><td style="padding:8px">'+escH(rec.overall_risk_level||'-')+'</td></tr>'
       +'<tr><td style="padding:8px;background:#f9fafb;font-weight:600">Approver</td><td style="padding:8px">'+escH(raApprovalStepLabel(step))+'</td></tr>'
-      +'</table><div style="margin-top:18px;text-align:center"><a href="https://auris-360.vercel.app/?goto=risk" style="display:inline-block;background:#1D9E75;color:#fff;padding:11px 22px;border-radius:8px;text-decoration:none;font-weight:700">Open Risk Assessment</a></div></div>'
+      +'</table><div style="margin-top:18px;text-align:center"><a href="https://auris360.app/?goto=risk" style="display:inline-block;background:#1D9E75;color:#fff;padding:11px 22px;border-radius:8px;text-decoration:none;font-weight:700">Open Risk Assessment</a></div></div>'
       +'<div style="padding:12px 22px;background:#f4f6f8;font-size:11px;color:#6B7280;text-align:center">Automated notification from AURIS360.</div></div></div>';
     await queueNotification({company_id:rec.company_id||ccid(),type:'risk_assessment',subject:'[AURIS360] Risk assessment approval required: '+ref,body_html:body,to_email:contact.email,to_name:contact.name||contact.email,from_name:'AURIS360 by SEPHS Consulting',related_module:'risk',related_id:rec.id||raEditingId||null,related_table:'risk_assessments',related_ref:ref,status:'pending'});
   }catch(e){}
@@ -19348,7 +19348,7 @@ async function raQueueStatusNotice(rec,event,details){
       +'<tr><td style="padding:8px;background:#f9fafb;font-weight:600">Title</td><td style="padding:8px">'+escH(title)+'</td></tr>'
       +'<tr><td style="padding:8px;background:#f9fafb;font-weight:600">Status</td><td style="padding:8px">'+escH(rec.status||event||'-')+'</td></tr>'
       +(details?.reason?'<tr><td style="padding:8px;background:#f9fafb;font-weight:600">Reason</td><td style="padding:8px">'+escH(details.reason)+'</td></tr>':'')
-      +'</table><div style="margin-top:18px;text-align:center"><a href="https://auris-360.vercel.app/?goto=risk" style="display:inline-block;background:#1D9E75;color:#fff;padding:11px 22px;border-radius:8px;text-decoration:none;font-weight:700">Open Risk Assessment</a></div></div>'
+      +'</table><div style="margin-top:18px;text-align:center"><a href="https://auris360.app/?goto=risk" style="display:inline-block;background:#1D9E75;color:#fff;padding:11px 22px;border-radius:8px;text-decoration:none;font-weight:700">Open Risk Assessment</a></div></div>'
       +'<div style="padding:12px 22px;background:#f4f6f8;font-size:11px;color:#6B7280;text-align:center">Automated notification from AURIS360.</div></div></div>';
     for(var i=0;i<recipients.length;i++){
       await queueNotification({company_id:rec.company_id||ccid(),type:'risk_assessment',subject:'[AURIS360] Risk assessment '+label+': '+ref,body_html:body,to_email:recipients[i].email,to_name:recipients[i].name,from_name:'AURIS360 by SEPHS Consulting',related_module:'risk',related_id:rec.id||raEditingId||null,related_table:'risk_assessments',related_ref:ref,status:'pending'});
@@ -28645,7 +28645,7 @@ function mapActionEmailBody(x,eventLabel,extraText){
     +'<tr><td style="padding:8px;background:#f9fafb;font-weight:600">Status</td><td style="padding:8px">'+escH(auditLabel(x.status||'open'))+'</td></tr>'
     +'<tr><td style="padding:8px;background:#f9fafb;font-weight:600">Due date</td><td style="padding:8px">'+escH(x.target_date||'-')+'</td></tr>'
     +(extraText?'<tr><td style="padding:8px;background:#f9fafb;font-weight:600">Notes</td><td style="padding:8px">'+escH(extraText)+'</td></tr>':'')
-    +'</table><div style="margin-top:18px;text-align:center"><a href="https://auris-360.vercel.app/?goto=actions" style="background:#1D9E75;color:#fff;padding:11px 24px;border-radius:8px;text-decoration:none;font-weight:600;font-size:14px">Open Master Action Plan</a></div>'
+    +'</table><div style="margin-top:18px;text-align:center"><a href="https://auris360.app/?goto=actions" style="background:#1D9E75;color:#fff;padding:11px 24px;border-radius:8px;text-decoration:none;font-weight:600;font-size:14px">Open Master Action Plan</a></div>'
     +'</div><div style="padding:12px 22px;background:#f4f6f8;font-size:11px;color:#6B7280;text-align:center">This is an automated notification from AURIS360.</div></div></body></html>';
 }
 
@@ -30234,7 +30234,7 @@ async function dcQueueApprovalNotice(doc){
       +'<tr><td style="padding:8px;background:#f9fafb;font-weight:600">Title</td><td style="padding:8px">'+escH(title)+'</td></tr>'
       +'<tr><td style="padding:8px;background:#f9fafb;font-weight:600">Type</td><td style="padding:8px">'+escH(dcDocTypeLabel(doc))+'</td></tr>'
       +'<tr><td style="padding:8px;background:#f9fafb;font-weight:600">Version</td><td style="padding:8px">'+escH(doc.version||doc.doc_version||'1.0')+'</td></tr>'
-      +'</table><div style="margin-top:18px;text-align:center"><a href="https://auris-360.vercel.app/?goto=documents" style="display:inline-block;background:#1D9E75;color:#fff;padding:11px 22px;border-radius:8px;text-decoration:none;font-weight:700">Open Document Control</a></div></div>'
+      +'</table><div style="margin-top:18px;text-align:center"><a href="https://auris360.app/?goto=documents" style="display:inline-block;background:#1D9E75;color:#fff;padding:11px 22px;border-radius:8px;text-decoration:none;font-weight:700">Open Document Control</a></div></div>'
       +'<div style="padding:12px 22px;background:#f4f6f8;font-size:11px;color:#6B7280;text-align:center">Automated notification from AURIS360.</div></div></div>';
     await queueNotification({company_id:doc.company_id||ccid(),type:'document_control',subject:'[AURIS360] Document approval required: '+ref,body_html:body,to_email:contact.email,to_name:contact.name||contact.email,from_name:'AURIS360 by SEPHS Consulting',related_module:'documents',related_id:doc.id||dcEditingId||null,related_table:'documents',related_ref:ref,status:'pending'});
   }catch(_){}
@@ -30264,7 +30264,7 @@ async function dcQueueStatusNotice(doc,event,details){
       +'<tr><td style="padding:8px;background:#f9fafb;font-weight:600">Title</td><td style="padding:8px">'+escH(title)+'</td></tr>'
       +'<tr><td style="padding:8px;background:#f9fafb;font-weight:600">Status</td><td style="padding:8px">'+escH(doc.approval_status||doc.status||event||'-')+'</td></tr>'
       +(details?.reason?'<tr><td style="padding:8px;background:#f9fafb;font-weight:600">Reason</td><td style="padding:8px">'+escH(details.reason)+'</td></tr>':'')
-      +'</table><div style="margin-top:18px;text-align:center"><a href="https://auris-360.vercel.app/?goto=documents" style="display:inline-block;background:#1D9E75;color:#fff;padding:11px 22px;border-radius:8px;text-decoration:none;font-weight:700">Open Document Control</a></div></div>'
+      +'</table><div style="margin-top:18px;text-align:center"><a href="https://auris360.app/?goto=documents" style="display:inline-block;background:#1D9E75;color:#fff;padding:11px 22px;border-radius:8px;text-decoration:none;font-weight:700">Open Document Control</a></div></div>'
       +'<div style="padding:12px 22px;background:#f4f6f8;font-size:11px;color:#6B7280;text-align:center">Automated notification from AURIS360.</div></div></div>';
     for(var i=0;i<recipients.length;i++){
       await queueNotification({company_id:doc.company_id||ccid(),type:'document_control',subject:'[AURIS360] Document '+label+': '+ref,body_html:body,to_email:recipients[i].email,to_name:recipients[i].name,from_name:'AURIS360 by SEPHS Consulting',related_module:'documents',related_id:doc.id||dcEditingId||null,related_table:'documents',related_ref:ref,status:'pending'});
@@ -30286,7 +30286,7 @@ async function dcQueueAcknowledgementNotice(doc,ack){
       +'<tr><td style="padding:8px;background:#f9fafb;font-weight:600;width:150px">Reference</td><td style="padding:8px">'+escH(ref)+'</td></tr>'
       +'<tr><td style="padding:8px;background:#f9fafb;font-weight:600">Title</td><td style="padding:8px">'+escH(title)+'</td></tr>'
       +'<tr><td style="padding:8px;background:#f9fafb;font-weight:600">Due date</td><td style="padding:8px">'+escH(ack.due_date||'-')+'</td></tr>'
-      +'</table><div style="margin-top:18px;text-align:center"><a href="https://auris-360.vercel.app/?goto=documents" style="display:inline-block;background:#1D9E75;color:#fff;padding:11px 22px;border-radius:8px;text-decoration:none;font-weight:700">Open Document Control</a></div></div>'
+      +'</table><div style="margin-top:18px;text-align:center"><a href="https://auris360.app/?goto=documents" style="display:inline-block;background:#1D9E75;color:#fff;padding:11px 22px;border-radius:8px;text-decoration:none;font-weight:700">Open Document Control</a></div></div>'
       +'<div style="padding:12px 22px;background:#f4f6f8;font-size:11px;color:#6B7280;text-align:center">Automated notification from AURIS360.</div></div></div>';
     await queueNotification({company_id:doc.company_id||ack.company_id||ccid(),type:'document_control',subject:'[AURIS360] Document acknowledgement required: '+ref,body_html:body,to_email:email,to_name:peopleName(p)||ack.employee_name||email,from_name:'AURIS360 by SEPHS Consulting',related_module:'documents',related_id:doc.id||ack.document_id||dcEditingId||null,related_table:'documents',related_ref:ref,status:'pending'});
   }catch(_){}
@@ -33581,7 +33581,7 @@ async function trainingQueueNotice(row,event,opts){
       +'<tr><td style="padding:8px;background:#f9fafb;font-weight:600">Training</td><td style="padding:8px">'+escH(topic)+'</td></tr>'
       +(due?'<tr><td style="padding:8px;background:#f9fafb;font-weight:600">Due / expiry</td><td style="padding:8px">'+escH(due)+'</td></tr>':'')
       +(opts.message?'<tr><td style="padding:8px;background:#f9fafb;font-weight:600">Message</td><td style="padding:8px">'+escH(opts.message)+'</td></tr>':'')
-      +'</table><div style="margin-top:18px;text-align:center"><a href="https://auris-360.vercel.app/?goto=training" style="display:inline-block;background:#1D9E75;color:#fff;padding:11px 22px;border-radius:8px;text-decoration:none;font-weight:700">Open Training</a></div></div>'
+      +'</table><div style="margin-top:18px;text-align:center"><a href="https://auris360.app/?goto=training" style="display:inline-block;background:#1D9E75;color:#fff;padding:11px 22px;border-radius:8px;text-decoration:none;font-weight:700">Open Training</a></div></div>'
       +'<div style="padding:12px 22px;background:#f4f6f8;font-size:11px;color:#6B7280;text-align:center">Automated notification from AURIS360.</div></div></div>';
     await queueNotification({company_id:row.company_id||ccid(),type:'training',subject:'[AURIS360] '+label+': '+topic,body_html:body,to_email:email,to_name:row.person_name||peopleName(p)||email,from_name:'AURIS360 Training',related_module:'training',related_table:opts.related_table||'training_followup',related_id:row.id||opts.related_id||null,related_ref:opts.related_ref||row.training_ref||row.reference||topic,status:'pending'});
     return true;
@@ -36094,7 +36094,7 @@ function notificationRelationship(payload){
 function notificationRecordUrl(rel){
   if(!rel||!rel.module)return '';
   try{
-    var origin=window.location&&/^https?:/.test(window.location.origin||'')&&!/localhost|127\.0\.0\.1/.test(window.location.hostname||'')?window.location.origin:'https://app.auris360.com';
+    var origin=window.location&&/^https?:/.test(window.location.origin||'')&&!/localhost|127\.0\.0\.1/.test(window.location.hostname||'')?window.location.origin:'https://auris360.app';
     var url=new URL(origin+(window.location&&window.location.pathname&&window.location.pathname!=='/'?window.location.pathname:'/'));
     url.searchParams.set('goto',rel.module);if(rel.id)url.searchParams.set('record',rel.id);if(rel.ref)url.searchParams.set('ref',rel.ref);
     if(rel.table)url.searchParams.set('table',rel.table);if(rel.company_id)url.searchParams.set('company',rel.company_id);return url.toString();
@@ -36102,7 +36102,7 @@ function notificationRecordUrl(rel){
 }
 function notificationLinkBody(html,url){
   if(!url)return String(html||'');var safe=String(url).replace(/&/g,'&amp;').replace(/"/g,'&quot;');var content=String(html||'');
-  var replaced=false;content=content.replace(/href="https:\/\/(?:app\.auris360\.com|auris-360\.vercel\.app)[^"]*"/g,function(){replaced=true;return 'href="'+safe+'"';});
+  var replaced=false;content=content.replace(/href="https:\/\/(?:auris360\.app|app\.auris360\.com|auris-360\.vercel\.app)[^"]*"/g,function(){replaced=true;return 'href="'+safe+'"';});
   if(replaced)return content;
   var link='<div style="margin:18px 0;text-align:center"><a href="'+safe+'" style="display:inline-block;background:#1D9E75;color:#fff;padding:11px 22px;border-radius:8px;text-decoration:none;font-weight:700">Open exact record in AURIS360</a></div>';
   return content.indexOf('</body>')>=0?content.replace('</body>',link+'</body>'):content+link;
@@ -42316,7 +42316,7 @@ async function obCreate() {
     // -- Step 5: Queue welcome email ------------------------------
     try {
       var coName = companyName;
-      var appUrl = location.origin || 'https://auris-360.vercel.app';
+      var appUrl = location.origin || 'https://auris360.app';
       var welcomeHtml = '<!DOCTYPE html><html><body style="font-family:Arial,sans-serif;background:#f4f6f8;padding:20px">'
         + '<div style="max-width:600px;margin:0 auto;background:#fff;border-radius:12px;overflow:hidden">'
         + '<div style="background:#1D9E75;padding:20px 24px;color:#fff">'
@@ -54155,7 +54155,7 @@ Pick the modules this client can see. Sephs admin (you) always sees everything r
 <div class="card-title">Webhook Receiver</div>
 <div style="font-size:12px;color:var(--text2);margin-bottom:12px">Receive events from external systems into AURIS360</div>
 <div class="form3group"><label class="form3label">Inbound webhook URL</label>
-<div style="background:#f9fafb;border:1px solid var(--border);border-radius:6px;padding:8px 12px;font-family:monospace;font-size:11px;color:#185FA5;word-break:break-all">https://app.auris360.com/api/webhook</div></div>
+<div style="background:#f9fafb;border:1px solid var(--border);border-radius:6px;padding:8px 12px;font-family:monospace;font-size:11px;color:#185FA5;word-break:break-all">https://auris360.app/api/webhook</div></div>
 <div class="form3group"><label class="form3label">Supported events</label>
 <div style="font-size:11px;color:var(--text2);line-height:1.8">incident.created - inspection.completed - action.overdue - permit.expired - sensor.alert - access.denied</div></div>
 </div>

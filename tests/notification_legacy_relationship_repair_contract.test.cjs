@@ -14,7 +14,7 @@ test('legacy repair drops the guard before repairing constrained rows',()=>{
 
 test('legacy records retain metadata reference or stable record id',()=>{
   assert.match(repair,/metadata#>>'\{relationship,ref\}'[\s\S]*related_id::text/i);
-  assert.match(repair,/https:\/\/auris-360\.vercel\.app\/\?goto=/i);
+  assert.match(repair,/https:\/\/auris360\.app\/\?goto=/i);
   assert.doesNotMatch(repair,/delete from public\.notification_queue/i);
 });
 
