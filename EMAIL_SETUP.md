@@ -130,6 +130,32 @@ Urgent production push requires Vercel Pro or an external scheduler calling the
 protected endpoint every five minutes with `Authorization: Bearer <CRON_SECRET>`.
 Expired browser subscriptions are disabled automatically after HTTP 404/410.
 
+## WhatsApp Cloud API activation
+
+WhatsApp remains disabled until the company approves the channel and each
+recipient personally opts in from **Users & Roles → Profile → Notifications**.
+Run `whatsapp_notifications_upgrade.sql`, then add these Vercel variables:
+
+```text
+WHATSAPP_ACCESS_TOKEN=<permanent Meta system-user token>
+WHATSAPP_APP_SECRET=<Meta app secret used to verify webhook signatures>
+WHATSAPP_VERIFY_TOKEN=<a private value you choose for webhook verification>
+WHATSAPP_GRAPH_VERSION=v23.0
+```
+
+In Meta WhatsApp Manager, create and approve a utility template named
+`auris360_alert` with four body variables in this exact order: severity, title,
+record reference and exact AURIS360 URL. Register
+`https://auris-360.vercel.app/api/whatsapp-webhook` as the webhook and subscribe
+to message-status events. Never commit or expose the access token or app secret.
+
+Finally insert or update the tenant's `whatsapp_channel_settings` row with
+`enabled=true`, the Meta `phone_number_id`, approved template name and language.
+The default rule sends WhatsApp only at escalation Level 2 or 3, or for a
+high/urgent notification when the opted-in user selected WhatsApp as preferred.
+Email and in-app remain governed fallbacks. The included daily cron is a safety
+run; use a five-minute external or Vercel Pro schedule for urgent use.
+
 ## Controlled verification
 
 After deploying the worker and applying the migration:

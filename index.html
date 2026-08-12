@@ -36157,7 +36157,8 @@ function usersChannelLabel(ch){
 function usersNotifyStatus(u){
   var email=usersContactEmail(u), channel=usersPreferredChannel(u);
   if(email&&channel==='email')return '<span class="badge bg">Email ready</span>';
-  if(channel==='whatsapp'&&(u.whatsapp_phone||u.phone))return '<span class="badge bb">WhatsApp ready</span>';
+  if(channel==='whatsapp'&&(u.whatsapp_phone||u.phone)&&u.whatsapp_opted_in_at&&!u.whatsapp_opted_out_at)return '<span class="badge bb">WhatsApp opted in</span>';
+  if(channel==='whatsapp')return '<span class="badge ba">WhatsApp consent required</span>';
   if(channel==='sms'&&(u.mobile_phone||u.phone))return '<span class="badge bb">SMS ready</span>';
   if(!isDeliverableEmail(u?.email))return '<span class="badge ba">Login only</span>';
   return '<span class="badge bgr">In-app only</span>';
@@ -36248,6 +36249,19 @@ function usersProfileField(icon,label,value){
     +'<div style="color:#374151;font-size:13px;font-weight:500">'+escH(value||'-')+'</div>'
     +'</div>';
 }
+function usersWhatsappConsentActive(u){return !!(u&&u.whatsapp_opted_in_at&&!u.whatsapp_opted_out_at&&u.whatsapp_phone);}
+async function usersSetWhatsappConsent(optedIn){
+  var u=(usersAllData||[]).find(function(x){return x.id===usersProfileCurrentId;});
+  if(!u||u.id!==prof?.id)return toast('Only the account owner can change WhatsApp consent.',false);
+  var phone=document.getElementById('upm3-whatsapp-phone')?.value||u.whatsapp_phone||u.phone||'';
+  if(optedIn&&!/^\+[1-9][0-9]{7,14}$/.test(phone.replace(/[\s()-]/g,'')))return toast('Enter the WhatsApp number in international format, for example +2305xxxxxxx.',false);
+  if(!optedIn&&!(await appConfirmAction({title:'Disable WhatsApp alerts?',message:'AURIS360 will stop queueing new WhatsApp alerts for this account.',detail:'In-app and email notification evidence remains available.',confirmText:'Disable WhatsApp',cancelText:'Keep enabled'})))return;
+  try{
+    await api('/rpc/set_my_whatsapp_consent',{m:'POST',b:{p_opted_in:!!optedIn,p_phone:phone,p_consent_version:'2026-08'}});
+    await usersLoad();usersProfileCurrentId=prof.id;usersProfileCurrentTab='notifications';usersRenderProfileModal();
+    toast(optedIn?'WhatsApp alerts enabled. Delivery also requires your company WhatsApp channel to be active.':'WhatsApp alerts disabled.');
+  }catch(e){toastActionError('Update WhatsApp consent','Users & Roles',e);}
+}
 function usersRenderProfileModal(){
   var u=(usersAllData||[]).find(function(x){return x.id===usersProfileCurrentId;});
   var body=document.getElementById('upm3body');
@@ -36281,10 +36295,19 @@ function usersRenderProfileModal(){
       +'<div style="text-align:right;color:var(--text2);font-size:12px">Now</div><div style="width:10px;height:10px;border-radius:50%;background:#185FA5;margin-top:4px"></div><div><strong>User profile viewed</strong><div style="color:var(--text2);font-size:12px;margin-top:4px">'+escH(prof?.full_name||'AURIS360 admin')+' opened this user profile.</div></div>'
       +'</div>';
   }else{
-    content='<div style="text-align:center;padding:42px 20px;color:var(--text2)">'
+    var whatsappActive=usersWhatsappConsentActive(u),isOwn=u.id===prof?.id;
+    content='<div style="text-align:center;padding:24px 20px;color:var(--text2)">'
       +'<div style="font-weight:800;color:var(--text);margin-bottom:10px">'+usersNotifyStatus(u)+'</div>'
       +'<div>Preferred channel: <strong>'+escH(usersChannelLabel(channel))+'</strong></div>'
       +'<div style="margin-top:8px">Email notifications '+(realEmail?'can be sent to '+escH(realEmail):'will be skipped until a real email is added')+'.</div>'
+      +'<div style="max-width:540px;margin:22px auto 0;text-align:left;border:1px solid #D1FAE5;background:#F0FDF4;border-radius:12px;padding:16px">'
+      +'<div style="display:flex;align-items:center;gap:8px;font-weight:800;color:#065F46"><i class="ti ti-brand-whatsapp"></i> WhatsApp safety alerts</div>'
+      +'<div style="font-size:12px;line-height:1.5;margin-top:7px">WhatsApp is supplementary for important safety alerts. In-app and configured email notifications remain the controlled fallback. Standard carrier or data charges may apply.</div>'
+      +(isOwn?'<label style="display:block;font-size:12px;font-weight:700;margin-top:14px;color:var(--text)">My WhatsApp number</label><input id="upm3-whatsapp-phone" value="'+escH(u.whatsapp_phone||u.phone||'')+'" placeholder="+2305xxxxxxx" style="width:100%;margin-top:5px" '+(whatsappActive?'disabled':'')+'>'
+        +(whatsappActive?'<div style="font-size:11px;color:#047857;margin-top:8px">Consent recorded '+escH(new Date(u.whatsapp_opted_in_at).toLocaleString())+'.</div><button class="btn" style="margin-top:12px;color:var(--red);border-color:#FCA5A5" onclick="usersSetWhatsappConsent(false)"><i class="ti ti-bell-off"></i>Disable WhatsApp alerts</button>'
+          :'<div style="font-size:11px;color:var(--text2);margin-top:8px">By enabling, I confirm that this number belongs to me and I agree to receive AURIS360 operational and safety notifications. I can withdraw consent here at any time.</div><button class="btn btn-primary" style="margin-top:12px;background:#0B7F61" onclick="usersSetWhatsappConsent(true)"><i class="ti ti-brand-whatsapp"></i>I agree — enable WhatsApp</button>')
+        :'<div style="font-size:12px;margin-top:12px;color:'+(whatsappActive?'#047857':'#B45309')+'">'+(whatsappActive?'The user has recorded active consent.':'The user has not recorded active WhatsApp consent. Administrators cannot opt in for them.')+'</div>')
+      +'</div>'
       +'</div>';
   }
   body.innerHTML='<div style="background:#f1f5f9;height:54px;margin:-20px -20px 0"></div>'
@@ -40383,15 +40406,17 @@ async function loadNotifSettings() {
     if(!companyId){el.innerHTML='<div style="color:var(--red);padding:12px">No company selected for notification settings.</div>';return;}
     var rows = await api('/notification_settings?company_id=eq.' + companyId + '&limit=1');
     var s = rows && rows[0] ? rows[0] : {};
+    var whatsappSettings={};
+    try{var waRows=await api('/whatsapp_channel_settings?company_id=eq.'+encodeURIComponent(companyId)+'&limit=1');whatsappSettings=waRows&&waRows[0]?waRows[0]:{};}catch(waError){whatsappSettings={schema_missing:true};}
     var queue = await api('/notification_queue?company_id=eq.' + encodeURIComponent(companyId) + '&order=created_at.desc&limit=25');
     notificationQueueRows=queue||[];
-    el.innerHTML = renderNotifSettings(s, notificationQueueRows);
+    el.innerHTML = renderNotifSettings(s, notificationQueueRows, whatsappSettings);
   } catch(e) {
     el.innerHTML = '<div style="color:var(--red);padding:12px">Error loading settings: ' + escH(e.message) + '</div>';
   }
 }
 
-function renderNotifSettings(s, queue) {
+function renderNotifSettings(s, queue, whatsappSettings) {
   var fields = [
     {id:'email_enabled',           val: s.email_enabled !== false,           label:'Email notifications enabled'},
     {id:'notify_on_incident',      val: s.notify_on_incident !== false,      label:'Notify on new incident (HSE managers + admins)'},
@@ -40461,6 +40486,7 @@ function renderNotifSettings(s, queue) {
     + '<input type="hidden" id="notif-resend-key" value="' + escH(s.resend_api_key||'') + '"/>'
     + '</div>'
     + '<div id="notif-toggles" style="margin-bottom:16px">' + togglesHtml + '</div>'
+    + renderWhatsappChannelSettings(whatsappSettings||{})
     + '<div style="border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:16px;background:#fff">'
     + '<div style="font-size:13px;font-weight:800;margin-bottom:4px">Incident recipients by event type</div>'
     + '<div style="font-size:12px;color:var(--text2);margin-bottom:10px">Company Admin can add the people to notify for each incident type. Use real email addresses, separated by commas.</div>'
@@ -40480,6 +40506,27 @@ function renderNotifSettings(s, queue) {
     + '<th style="padding:8px 10px;text-align:left">Subject</th><th style="padding:8px 10px;text-align:left">To</th>'
     + '<th style="padding:8px 10px;text-align:left">Source record</th><th style="padding:8px 10px;text-align:left">Status</th><th style="padding:8px 10px;text-align:left">Time</th><th style="padding:8px 10px;text-align:right">Action</th>'
     + '</tr></thead><tbody>' + recentRows + '</tbody></table></div>';
+}
+
+function renderWhatsappChannelSettings(s){
+  if(s.schema_missing)return '<div style="border:1px solid #FDE68A;background:#FFFBEB;border-radius:10px;padding:14px;margin-bottom:16px;font-size:12px;color:#92400E"><strong>WhatsApp not installed.</strong> Run <code>whatsapp_notifications_upgrade.sql</code> before configuring this channel.</div>';
+  var level=Number(s.minimum_escalation_level==null?2:s.minimum_escalation_level);
+  var levelOption=function(value,label){return '<option value="'+value+'" '+(level===value?'selected':'')+'>'+label+'</option>';};
+  return '<div style="border:1px solid #BBF7D0;background:#F0FDF4;border-radius:10px;padding:14px;margin-bottom:16px">'
+    +'<div style="display:flex;justify-content:space-between;gap:12px;align-items:flex-start;flex-wrap:wrap"><div><div style="font-size:13px;font-weight:800;color:#065F46"><i class="ti ti-brand-whatsapp"></i> WhatsApp Cloud API</div><div style="font-size:12px;color:#047857;margin-top:4px">Approved templates only. Access token and app secret stay in Vercel and are never shown here.</div></div>'
+    +'<label style="display:flex;align-items:center;gap:7px;font-size:12px;font-weight:700"><input type="checkbox" id="notif-wa-enabled" '+(s.enabled?'checked':'')+'> Channel enabled</label></div>'
+    +'<div class="form3row" style="margin-top:12px"><div class="form3group"><label class="form3label">Meta phone number ID</label><input id="notif-wa-phone-id" value="'+escH(s.phone_number_id||'')+'" placeholder="Meta phone_number_id"></div><div class="form3group"><label class="form3label">Approved template</label><input id="notif-wa-template" value="'+escH(s.alert_template_name||'auris360_alert')+'"></div></div>'
+    +'<div class="form3row"><div class="form3group"><label class="form3label">Template language</label><input id="notif-wa-language" value="'+escH(s.template_language||'en')+'" placeholder="en"></div><div class="form3group"><label class="form3label">Minimum escalation level</label><select id="notif-wa-level">'+levelOption(0,'All governed alerts')+levelOption(1,'Level 1+')+levelOption(2,'Level 2+ (recommended)')+levelOption(3,'Level 3 only')+'</select></div></div>'
+    +'<label style="display:flex;align-items:center;gap:7px;font-size:12px"><input type="checkbox" id="notif-wa-preferred" '+(s.allow_preferred_high_priority!==false?'checked':'')+'> Also send high/urgent alerts when an opted-in user selected WhatsApp as preferred</label>'
+    +'<button class="btn" style="margin-top:12px;border-color:#10B981;color:#047857" onclick="saveWhatsappChannelSettings()"><i class="ti ti-device-floppy"></i>Save WhatsApp channel</button></div>';
+}
+
+async function saveWhatsappChannelSettings(){
+  var companyId=notifCompanyId();if(!companyId)return toast('No company selected.',false);
+  var body={company_id:companyId,enabled:!!document.getElementById('notif-wa-enabled')?.checked,provider:'meta_cloud',phone_number_id:(document.getElementById('notif-wa-phone-id')?.value||'').trim()||null,alert_template_name:(document.getElementById('notif-wa-template')?.value||'auris360_alert').trim(),template_language:(document.getElementById('notif-wa-language')?.value||'en').trim(),minimum_escalation_level:Number(document.getElementById('notif-wa-level')?.value||2),allow_preferred_high_priority:!!document.getElementById('notif-wa-preferred')?.checked,updated_by:prof?.id||null,updated_at:new Date().toISOString()};
+  if(body.enabled&&!body.phone_number_id)return toast('Enter the Meta phone number ID before enabling WhatsApp.',false);
+  if(!/^[a-z0-9_]+$/i.test(body.alert_template_name))return toast('Template name may contain only letters, numbers and underscores.',false);
+  try{var existing=await api('/whatsapp_channel_settings?company_id=eq.'+encodeURIComponent(companyId)+'&limit=1');if(existing&&existing[0])await api('/whatsapp_channel_settings?company_id=eq.'+encodeURIComponent(companyId),{m:'PATCH',p:'return=minimal',b:body});else await api('/whatsapp_channel_settings',{m:'POST',p:'return=minimal',b:body});toast('WhatsApp channel settings saved.');loadNotifSettings();}catch(e){toastActionError('Save WhatsApp channel','Notification Settings',e);}
 }
 
 
