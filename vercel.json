@@ -49,6 +49,9 @@
     },
     "api/process-acknowledgements.js": {
       "maxDuration": 30
+    },
+    "api/notification-open.js": {
+      "maxDuration": 10
     }
   },
   "crons": [

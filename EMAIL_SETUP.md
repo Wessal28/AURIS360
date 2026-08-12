@@ -227,6 +227,21 @@ backward-compatible while the migration is being rolled out.
 
 After deploying the worker and applying the migration:
 
+### Signed record-link evidence
+
+Run `notification_link_evidence_upgrade.sql` and add a randomly generated
+`NOTIFICATION_LINK_SECRET` in Vercel. Optionally set `APP_BASE_URL`; production
+defaults to `https://auris-360.vercel.app`. The email worker then signs only
+same-origin AURIS360 links for 30 days. Opening the link records the first use
+and an aggregate repeat-use count before redirecting to the exact record.
+
+This is explicit link evidence, not invisible open-pixel tracking. It stores no
+recipient address, IP address, user agent or raw destination URL. If the secret
+is absent, messages retain their direct links and no click evidence is claimed.
+If evidence storage is temporarily unavailable, a valid signed link still opens
+the requested AURIS360 record. Notification delivery health shows unique record
+opens and a bounded delivered-to-opened conversion indicator.
+
 1. Queue one `test_email` to a controlled real mailbox.
 2. Invoke the worker with the cron secret instead of waiting for the cron job.
 3. Confirm the row advances `pending -> sent -> delivered`.

@@ -22,13 +22,14 @@ module.exports = async function handler(req, res) {
 
 async function buildHealth(context, companyId) {
   const since = new Date(Date.now() - 7 * 86400000).toISOString();
-  const [queue, pushJobs, whatsappJobs, pushSubscriptions, optedProfiles, whatsappSettings] = await Promise.all([
+  const [queue, pushJobs, whatsappJobs, pushSubscriptions, optedProfiles, whatsappSettings, linkOpens] = await Promise.all([
     readRows(context, '/notification_queue?select=status,channel,created_at,error_msg&company_id=eq.' + enc(companyId) + '&created_at=gte.' + enc(since) + '&limit=5000'),
     readRows(context, '/push_delivery_jobs?select=status,created_at,error_msg&company_id=eq.' + enc(companyId) + '&created_at=gte.' + enc(since) + '&limit=5000', true),
     readRows(context, '/whatsapp_delivery_jobs?select=status,created_at,error_msg&company_id=eq.' + enc(companyId) + '&created_at=gte.' + enc(since) + '&limit=5000', true),
     readRows(context, '/push_subscriptions?select=id&company_id=eq.' + enc(companyId) + '&enabled=eq.true&limit=5000', true),
     readRows(context, '/profiles?select=id&company_id=eq.' + enc(companyId) + '&whatsapp_opted_in_at=not.is.null&whatsapp_opted_out_at=is.null&limit=5000', true),
-    readRows(context, '/whatsapp_channel_settings?select=enabled,phone_number_id,alert_template_name,template_language,minimum_escalation_level&company_id=eq.' + enc(companyId) + '&limit=1', true)
+    readRows(context, '/whatsapp_channel_settings?select=enabled,phone_number_id,alert_template_name,template_language,minimum_escalation_level&company_id=eq.' + enc(companyId) + '&limit=1', true),
+    readRows(context, '/notification_link_opens?select=notification_id,first_opened_at,open_count&company_id=eq.' + enc(companyId) + '&first_opened_at=gte.' + enc(since) + '&limit=5000', true)
   ]);
 
   const emailRows = queue.rows.filter(row => !row.channel || row.channel === 'email');
@@ -46,7 +47,10 @@ async function buildHealth(context, companyId) {
     channels: {
       email: channelHealth(emailConfigured, emailRows, ['failed','bounced'], {
         provider: process.env.SMTP_HOST ? 'smtp' : process.env.RESEND_API_KEY ? 'resend' : null,
-        deliveryWebhookConfigured: emailWebhook
+        deliveryWebhookConfigured: emailWebhook,
+        signedRecordLinksConfigured: !!process.env.NOTIFICATION_LINK_SECRET,
+        uniqueRecordOpens: linkOpens.rows.length,
+        deliveredToOpenPercent: conversionPercent(emailRows.filter(row=>row.status==='delivered').length,linkOpens.rows.length)
       }),
       inApp: {
         status: queue.missing ? 'setup' : 'operational', configured: !queue.missing,
@@ -65,10 +69,12 @@ async function buildHealth(context, companyId) {
       mode: 'daily_safety',
       warning: 'Daily Hobby-plan schedules are safety fallbacks. Urgent production delivery requires five-minute external or Vercel Pro schedules.'
     },
-    schemaWarnings: [queue,pushJobs,whatsappJobs,pushSubscriptions,optedProfiles,whatsappSettings]
+    schemaWarnings: [queue,pushJobs,whatsappJobs,pushSubscriptions,optedProfiles,whatsappSettings,linkOpens]
       .filter(item => item.missing).map(item => item.label)
   };
 }
+
+function conversionPercent(delivered,opened){return delivered>0?Math.round(Math.min(opened,delivered)/delivered*100):null;}
 
 function channelHealth(configured, rows, failureStates, extra) {
   const counts = {};
@@ -103,4 +109,4 @@ function enc(value){return encodeURIComponent(String(value));}
 function httpError(statusCode,message){const error=new Error(message);error.statusCode=statusCode;return error;}
 function safeError(error){return String(error&&error.message?error.message:error||'Unknown error').slice(0,500);}
 
-module.exports._test={channelHealth};
+module.exports._test={channelHealth,conversionPercent};

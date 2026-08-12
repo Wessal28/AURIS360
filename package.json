@@ -27,7 +27,8 @@
     "test:notification-preferences": "node tests/notification_user_preferences_contract.test.cjs",
     "test:notification-digest": "node tests/action_notification_digest_contract.test.cjs",
     "test:notification-escalation-admin": "node tests/notification_escalation_admin_contract.test.cjs",
-    "test:notification-acknowledgement": "node tests/notification_acknowledgement_control_contract.test.cjs"
+    "test:notification-acknowledgement": "node tests/notification_acknowledgement_control_contract.test.cjs",
+    "test:notification-link-evidence": "node tests/notification_link_evidence_contract.test.cjs"
   },
   "dependencies": {
     "nodemailer": "^6.9.16",

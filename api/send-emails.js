@@ -238,13 +238,27 @@ function smtpConfigured() {
 }
 
 async function sendNotificationEmail(notification) {
-  if (smtpConfigured()) return sendWithSmtp(notification);
-  if (process.env.RESEND_API_KEY) return sendWithResend(notification);
+  const prepared = { ...notification, body_html: trackedEmailHtml(notification) };
+  if (smtpConfigured()) return sendWithSmtp(prepared);
+  if (process.env.RESEND_API_KEY) return sendWithResend(prepared);
   return {
     ok: false,
     transient: false,
     error: 'Email sender is not configured. Add SMTP_HOST, SMTP_USER and SMTP_PASS, or RESEND_API_KEY.'
   };
+}
+
+function trackedEmailHtml(notification) {
+  const html=String(notification.body_html||''),secret=process.env.NOTIFICATION_LINK_SECRET;
+  if(!secret||!notification.id)return html;
+  const base=String(process.env.APP_BASE_URL||'https://auris-360.vercel.app').replace(/\/$/,''),expires=Date.now()+30*86400000;
+  return html.replace(/href=(['"])(https:\/\/[^'"\s>]+)\1/gi,function(match,quote,encoded){
+    const destination=encoded.replace(/&amp;/g,'&');
+    try{const url=new URL(destination);if(url.origin!==new URL(base).origin)return match;}catch(_){return match;}
+    const token=require('crypto').createHmac('sha256',secret).update(notification.id+'|'+expires+'|'+destination).digest('base64url');
+    const tracked=base+'/api/notification-open?n='+encodeURIComponent(notification.id)+'&e='+expires+'&d='+Buffer.from(destination).toString('base64url')+'&t='+encodeURIComponent(token);
+    return 'href='+quote+tracked+quote;
+  });
 }
 
 async function sendWithSmtp(notification) {
@@ -347,4 +361,5 @@ module.exports._test = {
   preferenceForType,
   retryDelayMs
   ,evaluateDeliveryPolicy
+  ,trackedEmailHtml
 };
