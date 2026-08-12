@@ -88,6 +88,20 @@ Do not leave the fallback roles as the permanent reporting hierarchy when the
 company has multiple supervisors or managers. Explicit recipients prevent
 unnecessary disclosure and ensure the correct accountability chain.
 
+## Personal in-app notification centre
+
+Run `in_app_notification_centre_upgrade.sql` after the notification relationship
+and reliability migrations. It adds the private desktop/mobile inbox, unread
+state, exact-record links and audited acknowledgements. Recent queue records are
+backfilled for the last 90 days when their recipient can be resolved to a
+company profile.
+
+The inbox is useful even when a user has a login-only `.local` address: queue
+records can resolve that login profile and appear in-app although email delivery
+is skipped. Users can only select and update their own notifications. They cannot
+create inbox rows, change another recipient's inbox, undo read state or rewrite
+an acknowledgement.
+
 ## Controlled verification
 
 After deploying the worker and applying the migration:

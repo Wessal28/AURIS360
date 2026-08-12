@@ -5003,6 +5003,7 @@ async function authOnSignIn(authData) {
 // -- doLogout ------------------------------------------------------------------
 function doLogout() {
   auditLogEvent('logout','auth','User signed out',{email:prof?.email||null});
+  if(typeof notificationCentreReset==='function')notificationCentreReset();
   // Log logout
   if(tok && prof?.id) {
     try {
@@ -5326,6 +5327,7 @@ if (isSephsAdmin) {
 if(prof.must_change_password) {
   setTimeout(function(){ pwChangeShow(true); }, 300);  // small delay so dashboard paints first
 }
+if(typeof notificationCentreInit==='function')setTimeout(notificationCentreInit,0);
 }
 }catch(e){console.error(e);}
 }
@@ -44268,6 +44270,7 @@ function fireEquipStatusBadge(s) {
   <button id="mobile-menu-btn" type="button" onclick="mobileToggleSidebar()" aria-label="Open menu"><i class="ti ti-menu-2"></i></button>
   <button id="mobile-back-btn" type="button" onclick="mobileGoBack()" aria-label="Go back" style="display:none"><i class="ti ti-arrow-left"></i></button>
   <div class="mobile-logo" id="mobile-page-title">Dashboard</div>
+  <button id="nc-mobile-trigger" class="nc-mobile-trigger" type="button" onclick="notificationCentreToggle(event)" aria-label="Notifications"><i class="ti ti-bell"></i><span class="nc-badge" id="nc-mobile-badge">0</span></button>
   <button type="button" onclick="mobileToggleSearch()" aria-label="Search modules" style="background:none;border:none;padding:10px;color:var(--text);border-radius:10px;min-width:44px;min-height:44px;display:flex;align-items:center;justify-content:center"><i class="ti ti-search"></i></button>
 </div>
 <div id="sidebar-backdrop" onclick="mobileCloseSidebar()"></div>
@@ -55984,6 +55987,7 @@ I can help you:<br>
 .modules-menu-item.active i{color:var(--green)!important}
 </style>
 <link rel="stylesheet" href="auris-icon-system.css?v=20260806-3">
+<link rel="stylesheet" href="notification-centre.css?v=20260812-1">
 <script src="kpi-configuration.js"></script>
 <script src="kpi-module-upgrade.js"></script>
 <script src="safety-engagement.js"></script>
@@ -56000,5 +56004,6 @@ I can help you:<br>
 <script src="contractor-management-upgrade.js?v=20260806-1"></script>
 <script src="tools-equipment-upgrade.js?v=20260806-1"></script>
 <script src="auris-icon-system.js?v=20260806-3"></script>
+<script src="notification-centre.js?v=20260812-1"></script>
 </body>
 </html>
