@@ -4595,6 +4595,9 @@ async function obsAskAI(question) {
 
 // -- Auth state ----------------------------------------------------------------
 var _authSession = null;  // { access_token, refresh_token, expires_at, user }
+var _authRefreshTimer = null;
+var _authRefreshPromise = null;
+var _authSessionGeneration = 0;
 
 // -- Panel switching ------------------------------------------------------------
 function authShowPanel(name) {
@@ -4917,6 +4920,9 @@ function authSaveSession(session) {
 }
 
 function authClearSession() {
+  _authSessionGeneration++;
+  if(_authRefreshTimer){clearTimeout(_authRefreshTimer);_authRefreshTimer=null;}
+  _authRefreshPromise=null;
   try { localStorage.removeItem('auris360_session'); } catch(e) {}
 }
 
@@ -4934,31 +4940,77 @@ async function authRefreshToken(refreshToken) {
     headers:{'Content-Type':'application/json','apikey':KEY},
     body:JSON.stringify({refresh_token:refreshToken})
   });
-  if(!r.ok) throw new Error('Token refresh failed');
+  if(!r.ok) {
+    var detail=await r.json().catch(function(){return{};});
+    var error=new Error(detail.error_description||detail.msg||'Token refresh failed');
+    error.status=r.status;
+    throw error;
+  }
   return await r.json();
+}
+
+async function authRefreshSession(session) {
+  async function refreshLatest() {
+    var latest=authGetStoredSession();
+    // Another same-origin tab may already have rotated the refresh token.
+    if(latest?.access_token&&latest?.refresh_token&&latest.refresh_token!==session.refresh_token&&latest.expires_at>Date.now()/1000+60){
+      return latest;
+    }
+    return authRefreshToken(latest?.refresh_token||session.refresh_token);
+  }
+  if(navigator.locks?.request){
+    return navigator.locks.request('auris360-auth-refresh',{mode:'exclusive'},refreshLatest);
+  }
+  return refreshLatest();
 }
 
 // Auto-refresh 5 minutes before expiry
 function authScheduleRefresh(session) {
+  if(_authRefreshTimer){clearTimeout(_authRefreshTimer);_authRefreshTimer=null;}
   if(!session?.refresh_token||!session?.expires_at) return;
   var expiresAt = session.expires_at * 1000;  // convert to ms
   var refreshAt = expiresAt - (5 * 60 * 1000);  // 5 min before
-  var delay = Math.max(0, refreshAt - Date.now());
-  setTimeout(async function() {
+  var delay = Math.max(1000, Math.min(2147483000, refreshAt - Date.now()));
+  _authRefreshTimer=setTimeout(async function() {
+    _authRefreshTimer=null;
+    var generation=_authSessionGeneration;
     try {
-      var newSession=await authRefreshToken(session.refresh_token);
+      if(_authRefreshPromise)return;
+      _authRefreshPromise=authRefreshSession(session);
+      var newSession=await _authRefreshPromise;
+      if(generation!==_authSessionGeneration||!authGetStoredSession())return;
       tok=newSession.access_token;
+      _authSession=newSession;
       authSaveSession(newSession);
       authScheduleRefresh(newSession);
     } catch(e) {
-      // Refresh failed - session expired, go to login
-      doLogout();
+      if(generation!==_authSessionGeneration)return;
+      var latest=authGetStoredSession();
+      if(latest?.refresh_token&&latest.refresh_token!==session.refresh_token){
+        tok=latest.access_token;_authSession=latest;authScheduleRefresh(latest);return;
+      }
+      // Network and temporary provider failures must not destroy a valid local
+      // session. Retry shortly; an explicit sign-out remains user-controlled.
+      if((e.status===400||e.status===401)&&latest){
+        authClearSession();tok=null;prof=null;co=null;_authSession=null;
+        authShowPanel('signin');
+        document.getElementById('login-screen').style.display='flex';
+        document.getElementById('app').style.display='none';
+        authShowErr('Your session has expired. Please sign in again.');
+      } else if(tok&&latest){
+        _authRefreshTimer=setTimeout(function(){authScheduleRefresh(authGetStoredSession());},60000);
+      }
+    } finally {
+      _authRefreshPromise=null;
     }
   }, delay);
 }
 
 // -- On successful sign in -----------------------------------------------------
 async function authOnSignIn(authData) {
+  _authSessionGeneration++;
+  if(_authRefreshTimer){clearTimeout(_authRefreshTimer);_authRefreshTimer=null;}
+  _authRefreshPromise=null;
   tok = authData.access_token;
   _authSession = authData;
   authSaveSession(authData);
@@ -5204,15 +5256,12 @@ async function authInitSession() {
   var loginScreen = document.getElementById('login-screen');
   if(loginScreen) loginScreen.style.display='flex';
 
-  // Set a hard timeout - if restore takes more than 8 seconds, give up and show login
-  var timedOut = false;
+  // A slow profile/network response must not erase a valid session. Keep the
+  // restoration state visible and let the request complete.
+  authShowLoading('Restoring your secure session...');
   var timeout = setTimeout(function() {
-    timedOut = true;
-    authClearSession();
-    tok = null; prof = null;
-    document.getElementById('login-screen').style.display='flex';
-    authHideLoading();
-  }, 8000);
+    authShowLoading('Still restoring your session. Please check your connection...');
+  }, 12000);
 
   var now = Date.now()/1000;
 
@@ -5224,15 +5273,17 @@ async function authInitSession() {
       return;
     }
     try {
-      var newSession = await authRefreshToken(stored.refresh_token);
-      if(timedOut) return;
+      var newSession = await authRefreshSession(stored);
       clearTimeout(timeout);
       await authOnSignIn(newSession);
       return;
     } catch(e) {
       clearTimeout(timeout);
-      authClearSession();
+      if(e.status===400||e.status===401)authClearSession();
       authHideLoading();
+      authShowErr(e.status===400||e.status===401
+        ? 'Your session has expired. Please sign in again.'
+        : 'We could not refresh your session. Please check your connection and try again.');
       return;
     }
   }
@@ -5243,7 +5294,6 @@ async function authInitSession() {
     authScheduleRefresh(stored);
     await loadProf(stored.user_id);
     await loadRolloutRuntimeConfig();
-    if(timedOut) return;
     clearTimeout(timeout);
     // Hide login, show app
     document.getElementById('login-screen').style.display='none';
@@ -5265,10 +5315,9 @@ async function authInitSession() {
     setTimeout(function(){genDashAI();}, 3000);
   } catch(e) {
     clearTimeout(timeout);
-    authClearSession();
-    tok = null; prof = null;
     authHideLoading();
     document.getElementById('login-screen').style.display='flex';
+    authShowErr('We could not restore your session. Please check your connection or sign in again.');
   }
 }
 
@@ -39552,9 +39601,10 @@ if('serviceWorker' in navigator) {
             if(newWorker.state === 'installed' && navigator.serviceWorker.controller) {
               // New version available
               if(typeof toast === 'function') {
-                toast('AURIS360 updated - refreshing to the latest version');
+                toast('AURIS360 update installed - refreshing once');
               }
-              window.location.reload();
+              // skipWaiting() causes controllerchange; that single handler is
+              // the authoritative reload path and prevents a double refresh.
             }
           });
         });
