@@ -37,11 +37,11 @@ test('terminal action state stops only pending individual alerts on every channe
 });
 
 test('protected daily builder runs before the email worker and respects delivery policy',()=>{
-  assert.match(worker,/x-vercel-cron/);
+  assert.match(worker,/CRON_SECRET/);
   assert.match(worker,/process_action_overdue_digests/);
   const digestCron=vercel.crons.find(x=>x.path==='/api/process-digests');
   const emailCron=vercel.crons.find(x=>x.path==='/api/send-emails');
   assert.equal(digestCron.schedule,'55 8 * * *');
-  assert.equal(emailCron.schedule,'0 9 * * *');
+  assert.equal(emailCron.schedule,'*/5 * * * *');
   assert.equal(emailWorker._test.preferenceForType('overdue_digest'),'notify_on_overdue');
 });

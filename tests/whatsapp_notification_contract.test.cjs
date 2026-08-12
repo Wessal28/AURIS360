@@ -38,7 +38,7 @@ test('webhook verifies Meta signature and records lifecycle statuses',()=>{
   assert.match(webhook,/bodyParser:false/);assert.match(webhook,/hub\.verify_token/);
   assert.match(webhook,/eligiblePriorStatuses/);assert.match(webhook,/status=in\./);
 });
-test('deployment uses Hobby-compatible safety schedule',()=>{
-  const schedules=Object.fromEntries(vercel.crons.map(x=>[x.path,x.schedule]));assert.equal(schedules['/api/send-whatsapp'],'15 9 * * *');
+test('deployment uses Vercel Pro five-minute schedule',()=>{
+  const schedules=Object.fromEntries(vercel.crons.map(x=>[x.path,x.schedule]));assert.equal(schedules['/api/send-whatsapp'],'*/5 * * * *');
   assert.equal(vercel.functions['api/send-whatsapp.js'].maxDuration,30);
 });

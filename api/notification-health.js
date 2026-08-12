@@ -91,7 +91,7 @@ async function buildHealth(context, companyId, simulate) {
     schedules: {
       mode: scheduleMode,
       productionReady: scheduleReady,
-      warning: 'Daily Hobby-plan schedules are safety fallbacks. Urgent production delivery requires five-minute external or Vercel Pro schedules.'
+      warning: scheduleReady ? 'Urgent notification workers are configured on a five-minute Vercel Pro cycle.' : 'Urgent production delivery requires five-minute external or Vercel Pro schedules.'
     },
     readiness,
     simulation: simulate ? buildSimulation(readiness, routing, {

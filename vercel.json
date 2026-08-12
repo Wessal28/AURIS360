@@ -61,23 +61,23 @@
     },
     {
       "path": "/api/send-emails",
-      "schedule": "0 9 * * *"
+      "schedule": "*/5 * * * *"
     },
     {
       "path": "/api/process-escalations",
-      "schedule": "5 9 * * *"
+      "schedule": "*/5 * * * *"
     },
     {
       "path": "/api/send-push",
-      "schedule": "10 9 * * *"
+      "schedule": "*/5 * * * *"
     },
     {
       "path": "/api/send-whatsapp",
-      "schedule": "15 9 * * *"
+      "schedule": "*/5 * * * *"
     },
     {
       "path": "/api/process-acknowledgements",
-      "schedule": "20 9 * * *"
+      "schedule": "*/5 * * * *"
     }
   ]
 }

@@ -7,9 +7,8 @@ const BATCH_SIZE = 50;
 const MAX_ATTEMPTS = 5;
 
 module.exports = async function handler(req, res) {
-  const cronHeader = req.headers['x-vercel-cron'];
   const authHeader = req.headers['authorization'];
-  if (!cronHeader && authHeader !== 'Bearer ' + process.env.CRON_SECRET) {
+  if (!process.env.CRON_SECRET || authHeader !== 'Bearer ' + process.env.CRON_SECRET) {
     return res.status(401).json({ error: 'Unauthorized' });
   }
 

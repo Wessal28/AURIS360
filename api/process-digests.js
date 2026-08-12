@@ -1,6 +1,6 @@
 // Scheduled daily overdue-action digest builder. It queues email; send-emails delivers it.
 module.exports=async function handler(req,res){
-  if(!req.headers['x-vercel-cron']&&req.headers.authorization!=='Bearer '+process.env.CRON_SECRET)return res.status(401).json({error:'Unauthorized'});
+  if(!process.env.CRON_SECRET||req.headers.authorization!=='Bearer '+process.env.CRON_SECRET)return res.status(401).json({error:'Unauthorized'});
   if(!['GET','POST'].includes(String(req.method||'GET').toUpperCase()))return res.status(405).json({error:'GET or POST only'});
   try{validateEnvironment();const base=String(process.env.SUPABASE_URL).replace(/\/$/,'');const key=process.env.SUPABASE_SERVICE_KEY;
     const response=await fetch(base+'/rest/v1/rpc/process_action_overdue_digests',{method:'POST',headers:{apikey:key,Authorization:'Bearer '+key,'Content-Type':'application/json'},body:JSON.stringify({p_limit:1000})});

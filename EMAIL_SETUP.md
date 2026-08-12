@@ -38,22 +38,23 @@ Subscribe it to `email.delivered`, `email.delivery_delayed`, `email.bounced`
 and `email.complained`. A request without valid Svix signature headers must be
 rejected with HTTP 401.
 
-## Processing frequency
+## Processing frequency — Vercel Pro
 
-The repository includes Hobby-compatible daily safety schedules for
-`/api/send-emails` and `/api/process-escalations`. The escalation thresholds
-are day-based, so daily escalation evaluation is safe. Daily email delivery is
-not suitable for urgent HSE alerts. For production, use one of the following:
+The production deployment uses Vercel Pro cron every five minutes
+(`*/5 * * * *`) for email, escalation evaluation, browser push, WhatsApp and
+acknowledgement SLA processing. The overdue digest remains once daily at 08:55
+UTC; the next email worker cycle sends the queued digest within five minutes.
 
-- Vercel Pro cron every five minutes: `*/5 * * * *`; or
-- an external trusted scheduler calling both endpoints with
-  `Authorization: Bearer <CRON_SECRET>` every five minutes.
+Add a strong `CRON_SECRET` in **Vercel → Project → Settings → Environment
+Variables** for Production, Preview and Development. Vercel automatically sends
+it as `Authorization: Bearer <CRON_SECRET>` to cron invocations. Every worker
+rejects calls without that exact secret. Also set
+`NOTIFICATION_SCHEDULE_MODE=vercel_pro` so Notification Settings reports the
+deployed cadence correctly. Redeploy after adding or changing variables.
 
-On a Vercel Pro deployment, replace the daily email cron with `*/5 * * * *`.
-Alternatively, keep the deployable daily safety jobs and let the external
-scheduler invoke both endpoints every five minutes. Do not commit a frequent
-Vercel cron until the project plan supports it because Vercel rejects the whole
-deployment when an unsupported cron cadence is present.
+Cron expressions use UTC. After deployment, open **Vercel → Project → Settings
+→ Cron Jobs** and confirm all six jobs are enabled. Use each job's **View Logs**
+link to verify HTTP 200 responses; do not expose the secret in logs or URLs.
 
 ## Automatic action escalation
 
@@ -111,8 +112,8 @@ transition also skips still-pending individual email, browser-push and WhatsApp
 jobs for that action and dismisses its unresolved personal-inbox alert. Sent
 messages remain immutable delivery history.
 
-The Hobby-compatible cron builds the digest at 08:55 UTC and the email worker
-runs at 09:00 UTC. Recipient email enablement, overdue-event preference, quiet
+The daily cron builds the digest at 08:55 UTC and the next five-minute email
+worker cycle delivers it. Recipient email enablement, overdue-event preference, quiet
 hours and rate limits still apply. For a controlled manual run, call
 `/api/process-digests` with `Authorization: Bearer <CRON_SECRET>`; the daily
 run ledger prevents a duplicate digest for the same recipient and date.
@@ -141,9 +142,8 @@ count and the point at which a missed response enters the action hierarchy.
 High alerts route to Level 2 and urgent alerts to Level 3. Each reminder and
 hierarchy notice is idempotent and preserves the exact source-record link.
 
-The committed `/api/process-acknowledgements` cron is a once-daily deployment
-safety run. Production response SLAs require Vercel Pro or a trusted external
-scheduler to call the protected endpoint every five minutes. Acknowledging the
+The committed `/api/process-acknowledgements` cron runs every five minutes on
+Vercel Pro. Acknowledging the
 original alert, or closing/cancelling its action source, stops still-pending
 follow-ups without altering sent delivery history.
 
@@ -170,9 +170,8 @@ the user must first install AURIS360 with **Share > Add to Home Screen**, open t
 installed PWA and then enable push. An ordinary Safari tab is not an installed
 iOS notification app.
 
-The repository retains a Hobby-compatible daily `/api/send-push` safety cron.
-Urgent production push requires Vercel Pro or an external scheduler calling the
-protected endpoint every five minutes with `Authorization: Bearer <CRON_SECRET>`.
+The repository runs `/api/send-push` every five minutes on Vercel Pro using the
+protected `Authorization: Bearer <CRON_SECRET>` invocation.
 Expired browser subscriptions are disabled automatically after HTTP 404/410.
 
 ## WhatsApp Cloud API activation
@@ -198,8 +197,8 @@ Finally insert or update the tenant's `whatsapp_channel_settings` row with
 `enabled=true`, the Meta `phone_number_id`, approved template name and language.
 The default rule sends WhatsApp only at escalation Level 2 or 3, or for a
 high/urgent notification when the opted-in user selected WhatsApp as preferred.
-Email and in-app remain governed fallbacks. The included daily cron is a safety
-run; use a five-minute external or Vercel Pro schedule for urgent use.
+Email and in-app remain governed fallbacks. The WhatsApp worker runs every five
+minutes on Vercel Pro for urgent use.
 
 ## Controlled verification
 
@@ -207,8 +206,8 @@ Administrators and HSE notification owners can review **Settings → Notificatio
 Settings → Notification delivery health**. The server endpoint reports only
 configured/not-configured states plus tenant-scoped seven-day delivery counts;
 it never returns SMTP passwords, VAPID private keys, Meta tokens or app secrets.
-Treat the committed daily Vercel schedules as safety runs, not proof of
-near-real-time urgent delivery.
+Use the readiness matrix and Vercel runtime logs to confirm that the committed
+five-minute schedules are running successfully.
 
 ## Recipient preferences and quiet hours
 

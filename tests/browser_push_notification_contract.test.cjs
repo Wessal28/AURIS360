@@ -68,11 +68,11 @@ test('service worker safely opens exact same-origin notification target', () => 
   assert.match(serviceWorker, /pushsubscriptionchange/);
 });
 
-test('deployment declares web-push and a Hobby-compatible safety schedule', () => {
+test('deployment declares web-push and a Vercel Pro delivery schedule', () => {
   assert.equal(packageJson.dependencies['web-push'], '^3.6.7');
   assert.equal(fs.existsSync(path.join(root, 'pnpm-lock.yaml')), true);
   const schedules = Object.fromEntries(vercel.crons.map(item => [item.path, item.schedule]));
-  assert.equal(schedules['/api/send-push'], '10 9 * * *');
+  assert.equal(schedules['/api/send-push'], '*/5 * * * *');
 });
 
 test('push topic is stable, bounded and URL-safe', () => {
