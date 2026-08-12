@@ -43,9 +43,16 @@
     },
     "api/notification-health.js": {
       "maxDuration": 30
+    },
+    "api/process-digests.js": {
+      "maxDuration": 30
     }
   },
   "crons": [
+    {
+      "path": "/api/process-digests",
+      "schedule": "55 8 * * *"
+    },
     {
       "path": "/api/send-emails",
       "schedule": "0 9 * * *"

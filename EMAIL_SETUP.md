@@ -88,6 +88,26 @@ Do not leave the fallback roles as the permanent reporting hierarchy when the
 company has multiple supervisors or managers. Explicit recipients prevent
 unnecessary disclosure and ensure the correct accountability chain.
 
+## Daily overdue digest and terminal-state suppression
+
+Run `action_notification_digest_upgrade.sql` after the escalation, personal
+inbox, browser push, WhatsApp and recipient-preference migrations. The daily
+builder queues at most one consolidated overdue-action email per recipient and
+company. Every row in the summary links to the exact Master Action record. It
+does not replace immediate due-soon or Level 1-3 escalation notifications.
+
+The digest is built from live open actions only. A closed, completed, cancelled
+or voided action is excluded from future summaries. The same terminal-state
+transition also skips still-pending individual email, browser-push and WhatsApp
+jobs for that action and dismisses its unresolved personal-inbox alert. Sent
+messages remain immutable delivery history.
+
+The Hobby-compatible cron builds the digest at 08:55 UTC and the email worker
+runs at 09:00 UTC. Recipient email enablement, overdue-event preference, quiet
+hours and rate limits still apply. For a controlled manual run, call
+`/api/process-digests` with `Authorization: Bearer <CRON_SECRET>`; the daily
+run ledger prevents a duplicate digest for the same recipient and date.
+
 ## Personal in-app notification centre
 
 Run `in_app_notification_centre_upgrade.sql` after the notification relationship
