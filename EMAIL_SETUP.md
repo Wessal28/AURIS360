@@ -88,6 +88,15 @@ Do not leave the fallback roles as the permanent reporting hierarchy when the
 company has multiple supervisors or managers. Explicit recipients prevent
 unnecessary disclosure and ensure the correct accountability chain.
 
+Apply `notification_escalation_admin_upgrade.sql` to maintain this hierarchy
+without routine SQL edits. Company Admins and HSE Managers can then use
+**Settings → Notification Settings → Action escalation hierarchy** to enable or
+disable automatic escalation, validate the ordered reminder thresholds and
+assign one or more explicit AURIS360 users or controlled external recipients to
+each level. Saving is atomic: invalid or cross-company recipients leave the
+previous hierarchy unchanged. When no explicit recipient exists, the screen
+shows the role fallback used by the escalation engine.
+
 ## Daily overdue digest and terminal-state suppression
 
 Run `action_notification_digest_upgrade.sql` after the escalation, personal
