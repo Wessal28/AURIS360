@@ -14,22 +14,31 @@ module.exports = async function handler(req, res) {
     const requested = String(req.query && req.query.company_id || '').trim();
     const companyId = profile.role === 'sephs_admin' && requested ? requested : profile.company_id;
     if (!companyId) return res.status(400).json({ error: 'Company context is required' });
-    return res.status(200).json(await buildHealth(context, companyId));
+    const simulate = String(req.query && req.query.simulate || '').toLowerCase() === 'true';
+    return res.status(200).json(await buildHealth(context, companyId, simulate));
   } catch (error) {
     return res.status(error.statusCode || 500).json({ error: safeError(error) });
   }
 };
 
-async function buildHealth(context, companyId) {
+async function buildHealth(context, companyId, simulate) {
   const since = new Date(Date.now() - 7 * 86400000).toISOString();
-  const [queue, pushJobs, whatsappJobs, pushSubscriptions, optedProfiles, whatsappSettings, linkOpens] = await Promise.all([
+  const [queue, pushJobs, whatsappJobs, pushSubscriptions, optedProfiles, whatsappSettings, linkOpens,
+    inbox, events, escalationSettings, escalationRecipients, profiles, preferences, acknowledgementSettings] = await Promise.all([
     readRows(context, '/notification_queue?select=status,channel,created_at,error_msg&company_id=eq.' + enc(companyId) + '&created_at=gte.' + enc(since) + '&limit=5000'),
     readRows(context, '/push_delivery_jobs?select=status,created_at,error_msg&company_id=eq.' + enc(companyId) + '&created_at=gte.' + enc(since) + '&limit=5000', true),
     readRows(context, '/whatsapp_delivery_jobs?select=status,created_at,error_msg&company_id=eq.' + enc(companyId) + '&created_at=gte.' + enc(since) + '&limit=5000', true),
     readRows(context, '/push_subscriptions?select=id&company_id=eq.' + enc(companyId) + '&enabled=eq.true&limit=5000', true),
     readRows(context, '/profiles?select=id&company_id=eq.' + enc(companyId) + '&whatsapp_opted_in_at=not.is.null&whatsapp_opted_out_at=is.null&limit=5000', true),
     readRows(context, '/whatsapp_channel_settings?select=enabled,phone_number_id,alert_template_name,template_language,minimum_escalation_level&company_id=eq.' + enc(companyId) + '&limit=1', true),
-    readRows(context, '/notification_link_opens?select=notification_id,first_opened_at,open_count&company_id=eq.' + enc(companyId) + '&first_opened_at=gte.' + enc(since) + '&limit=5000', true)
+    readRows(context, '/notification_link_opens?select=notification_id,first_opened_at,open_count&company_id=eq.' + enc(companyId) + '&first_opened_at=gte.' + enc(since) + '&limit=5000', true),
+    readRows(context, '/user_notifications?select=id&company_id=eq.' + enc(companyId) + '&limit=1', true),
+    readRows(context, '/notification_events?select=id&company_id=eq.' + enc(companyId) + '&limit=1', true),
+    readRows(context, '/notification_escalation_settings?select=enabled,due_soon_days,level_1_overdue_days,level_2_overdue_days,level_3_overdue_days&company_id=eq.' + enc(companyId) + '&limit=1', true),
+    readRows(context, '/notification_escalation_recipients?select=escalation_level,profile_id,email_override,active&company_id=eq.' + enc(companyId) + '&active=eq.true&limit=500', true),
+    readRows(context, '/profiles?select=id,role,email,real_email&company_id=eq.' + enc(companyId) + '&limit=5000'),
+    readRows(context, '/notification_user_preferences?select=id&company_id=eq.' + enc(companyId) + '&limit=1', true),
+    readRows(context, '/notification_acknowledgement_settings?select=enabled&company_id=eq.' + enc(companyId) + '&limit=1', true)
   ]);
 
   const emailRows = queue.rows.filter(row => !row.channel || row.channel === 'email');
@@ -39,6 +48,20 @@ async function buildHealth(context, companyId) {
   const whatsappSecrets = !!(process.env.WHATSAPP_ACCESS_TOKEN && process.env.WHATSAPP_APP_SECRET && process.env.WHATSAPP_VERIFY_TOKEN);
   const waSetting = whatsappSettings.rows[0] || {};
   const whatsappConfigured = whatsappSecrets && waSetting.enabled === true && !!waSetting.phone_number_id;
+  const routing = routingReadiness(escalationSettings, escalationRecipients, profiles);
+  const scheduleMode = String(process.env.NOTIFICATION_SCHEDULE_MODE || 'daily_safety').toLowerCase();
+  const scheduleReady = ['five_minute','external','vercel_pro'].includes(scheduleMode);
+  const foundationMissing = [queue,inbox,events,escalationSettings,escalationRecipients,preferences,acknowledgementSettings]
+    .filter(item => item.missing).map(item => item.label);
+  const readiness = buildReadiness({
+    foundationMissing, routing, emailConfigured, emailWebhook,
+    pushConfigured: pushConfigured && !pushJobs.missing,
+    whatsappConfigured, scheduleReady, scheduleMode,
+    appBaseUrl: !!process.env.APP_BASE_URL,
+    signedLinks: !!process.env.NOTIFICATION_LINK_SECRET,
+    inboxInstalled: !inbox.missing,
+    acknowledgementInstalled: !acknowledgementSettings.missing
+  });
 
   return {
     companyId,
@@ -66,11 +89,78 @@ async function buildHealth(context, companyId) {
       })
     },
     schedules: {
-      mode: 'daily_safety',
+      mode: scheduleMode,
+      productionReady: scheduleReady,
       warning: 'Daily Hobby-plan schedules are safety fallbacks. Urgent production delivery requires five-minute external or Vercel Pro schedules.'
     },
-    schemaWarnings: [queue,pushJobs,whatsappJobs,pushSubscriptions,optedProfiles,whatsappSettings,linkOpens]
-      .filter(item => item.missing).map(item => item.label)
+    readiness,
+    simulation: simulate ? buildSimulation(readiness, routing, {
+      email: emailConfigured,
+      inApp: !inbox.missing,
+      push: pushConfigured && !pushJobs.missing && pushSubscriptions.rows.length > 0,
+      whatsapp: whatsappConfigured && optedProfiles.rows.length > 0
+    }) : null,
+    schemaWarnings: [queue,pushJobs,whatsappJobs,pushSubscriptions,optedProfiles,whatsappSettings,linkOpens,inbox,events,
+      escalationSettings,escalationRecipients,preferences,acknowledgementSettings].filter(item => item.missing).map(item => item.label)
+  };
+}
+
+function deliverableEmail(value) {
+  const email=String(value||'').trim().toLowerCase();
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) && !email.endsWith('.local');
+}
+
+function routingReadiness(settingsResult, recipientsResult, profilesResult) {
+  const settings=settingsResult.rows[0] || {};
+  const profiles=profilesResult.rows || [];
+  const byId=new Map(profiles.map(row=>[String(row.id),row]));
+  const fallbackRoles={1:['supervisor','site_manager'],2:['manager','hse_manager'],3:['executive','director','company_admin','admin','hse_manager']};
+  const levels=[1,2,3].map(level=>{
+    const explicit=recipientsResult.rows.filter(row=>Number(row.escalation_level)===level && row.active!==false);
+    const explicitDeliverable=explicit.filter(row=>deliverableEmail(row.email_override) || deliverableEmail((byId.get(String(row.profile_id))||{}).real_email) || deliverableEmail((byId.get(String(row.profile_id))||{}).email)).length;
+    const fallbackDeliverable=profiles.filter(row=>fallbackRoles[level].includes(String(row.role||'').toLowerCase()) && (deliverableEmail(row.real_email)||deliverableEmail(row.email))).length;
+    return {level,ready:explicitDeliverable>0||fallbackDeliverable>0,explicitRecipients:explicit.length,explicitDeliverable,fallbackDeliverable};
+  });
+  return {
+    installed: !settingsResult.missing && !recipientsResult.missing,
+    enabled: settings.enabled !== false,
+    dueSoonDays: Number(settings.due_soon_days==null?7:settings.due_soon_days),
+    thresholds: [Number(settings.level_1_overdue_days||7),Number(settings.level_2_overdue_days||21),Number(settings.level_3_overdue_days||45)],
+    levels,
+    allLevelsReady: levels.every(level=>level.ready)
+  };
+}
+
+function buildReadiness(input) {
+  const item=(key,label,ready,detail,remediation,blocking)=>({key,label,status:ready?'ready':blocking?'blocked':'review',detail,remediation:ready?null:remediation});
+  const items=[
+    item('foundation','Database foundation',input.foundationMissing.length===0,input.foundationMissing.length?'Missing: '+input.foundationMissing.join(', '):'Required notification components are installed.','Run the missing notification upgrade scripts before production use.',true),
+    item('routing','Escalation recipients',input.routing.installed&&input.routing.enabled&&input.routing.allLevelsReady,input.routing.allLevelsReady?'Levels 1, 2 and 3 each resolve to a deliverable recipient.':'One or more escalation levels have no deliverable explicit or role-fallback recipient.','Assign a real notification email to the required hierarchy roles or configure explicit recipients.',true),
+    item('email','Email delivery',input.emailConfigured,input.emailConfigured?'SMTP or Resend provider is configured.':'No SMTP or Resend provider configured.','Configure a server-side SMTP or Resend provider.',true),
+    item('email_evidence','Email lifecycle evidence',input.emailWebhook,input.emailWebhook?'Resend delivery, bounce and complaint webhook is configured.':'Provider lifecycle webhook is not confirmed.','For Resend, configure RESEND_WEBHOOK_SECRET and the signed webhook endpoint; SMTP delivery can operate without this optional evidence.',false),
+    item('in_app','In-app inbox',input.inboxInstalled,input.inboxInstalled?'Company-scoped personal inbox is installed.':'Personal inbox schema is missing.','Run the in-app notification centre upgrade.',true),
+    item('push','Browser / mobile push',input.pushConfigured,input.pushConfigured?'VAPID configuration and push schema are present.':'VAPID configuration or push schema is incomplete.','Add all VAPID variables and install the push notification schema.',false),
+    item('whatsapp','WhatsApp',input.whatsappConfigured,input.whatsappConfigured?'Provider secrets and tenant channel are enabled.':'Provider secrets, tenant phone ID or channel enablement is incomplete.','Complete Meta Cloud API configuration and retain explicit user consent.',false),
+    item('links','Exact record links',input.appBaseUrl&&input.signedLinks,input.appBaseUrl&&input.signedLinks?'Application base URL and signed link evidence are configured.':'Base URL or signed link secret is missing.','Set APP_BASE_URL and NOTIFICATION_LINK_SECRET in every production environment.',true),
+    item('acknowledgement','Acknowledgement controls',input.acknowledgementInstalled,input.acknowledgementInstalled?'Acknowledgement settings are installed.':'Acknowledgement settings are missing.','Run the notification acknowledgement control upgrade.',false),
+    item('automation','Urgent processing cadence',input.scheduleReady,input.scheduleReady?'Production scheduling mode: '+input.scheduleMode+'.':'Current mode is '+input.scheduleMode+'; daily execution is fallback only.','Configure five-minute external or Vercel Pro schedules, then set NOTIFICATION_SCHEDULE_MODE=five_minute.',true)
+  ];
+  return {status:items.some(x=>x.status==='blocked')?'blocked':items.some(x=>x.status==='review')?'review':'ready',ready:items.filter(x=>x.status==='ready').length,total:items.length,items};
+}
+
+function buildSimulation(readiness, routing, channels) {
+  const routeFor=level=>routing.levels.find(item=>item.level===level);
+  const scenario=(key,label,level)=>{
+    const route=level?routeFor(level):null;
+    const selected=Object.keys(channels).filter(channel=>channels[channel]);
+    return {key,label,level,routeReady:level?!!(route&&route.ready):true,channels:selected,deliverable:selected.length>0 && (!level || !!(route&&route.ready))};
+  };
+  return {
+    readOnly:true,
+    generatedAt:new Date().toISOString(),
+    message:'Simulation only. No notification, delivery job or audit row was created.',
+    scenarios:[scenario('assignment','New action assignment',0),scenario('level_1','Level 1 supervisor escalation',1),scenario('level_2','Level 2 manager escalation',2),scenario('level_3','Level 3 executive escalation',3)],
+    productionReady:readiness.status==='ready'
   };
 }
 
@@ -109,4 +199,4 @@ function enc(value){return encodeURIComponent(String(value));}
 function httpError(statusCode,message){const error=new Error(message);error.statusCode=statusCode;return error;}
 function safeError(error){return String(error&&error.message?error.message:error||'Unknown error').slice(0,500);}
 
-module.exports._test={channelHealth,conversionPercent};
+module.exports._test={channelHealth,conversionPercent,deliverableEmail,routingReadiness,buildReadiness,buildSimulation};
