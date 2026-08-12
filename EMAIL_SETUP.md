@@ -131,6 +131,22 @@ is skipped. Users can only select and update their own notifications. They canno
 create inbox rows, change another recipient's inbox, undo read state or rewrite
 an acknowledgement.
 
+## Acknowledgement SLA and missed-response escalation
+
+Run `notification_acknowledgement_control_upgrade.sql` after the personal inbox
+and escalation administration migrations. Under **Settings → Notification
+Settings → Acknowledgement control**, Company Admins and HSE Managers configure
+separate high/urgent response deadlines, reminder frequency, a bounded reminder
+count and the point at which a missed response enters the action hierarchy.
+High alerts route to Level 2 and urgent alerts to Level 3. Each reminder and
+hierarchy notice is idempotent and preserves the exact source-record link.
+
+The committed `/api/process-acknowledgements` cron is a once-daily deployment
+safety run. Production response SLAs require Vercel Pro or a trusted external
+scheduler to call the protected endpoint every five minutes. Acknowledging the
+original alert, or closing/cancelling its action source, stops still-pending
+follow-ups without altering sent delivery history.
+
 ## Browser and mobile PWA push
 
 Run `browser_push_notifications_upgrade.sql` after the personal inbox migration.

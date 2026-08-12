@@ -37,6 +37,12 @@ function timeLabel(value){
   if(diff<604800000)return Math.floor(diff/86400000)+'d ago';
   return date.toLocaleDateString(undefined,{day:'numeric',month:'short'});
 }
+function acknowledgementDeadline(row){
+  if(!row.acknowledgement_required||row.acknowledged_at||!row.acknowledgement_due_at)return '';
+  var due=new Date(row.acknowledgement_due_at),overdue=Date.now()>due.getTime();
+  if(!Number.isFinite(due.getTime()))return '';
+  return '<span class="nc-pill ack"><i class="ti ti-clock-exclamation"></i>'+(overdue?'Response overdue':'Respond by '+esc(due.toLocaleString()))+'</span>';
+}
 function iconFor(row){
   var type=String(row.event_type||'').toLowerCase();
   if(type.indexOf('incident')===0)return 'ti-alert-triangle';
@@ -62,6 +68,7 @@ function renderItem(row){
     +'<div class="nc-item-meta"><span>'+esc(timeLabel(row.created_at))+'</span>'
     +(rel.ref?'<span class="nc-pill"><i class="ti ti-link"></i>'+esc(rel.ref)+'</span>':'')
     +(ack?'<span class="nc-pill ack"><i class="ti ti-hand-click"></i>Acknowledgement required</span>':'')
+    +acknowledgementDeadline(row)
     +(row.acknowledged_at?'<span class="nc-pill"><i class="ti ti-check"></i>Acknowledged</span>':'')+'</div>'
     +'<div class="nc-actions">'
     +(canOpen?'<button type="button" class="nc-action primary" onclick="event.stopPropagation();notificationCentreOpen(\''+esc(row.id)+'\')"><i class="ti ti-external-link"></i> Open record</button>':'')

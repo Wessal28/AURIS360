@@ -40441,6 +40441,7 @@ async function loadNotifSettings() {
     var health=await healthPromise;
     el.innerHTML = renderNotificationDeliveryHealth(health)+renderNotifSettings(s, notificationQueueRows, whatsappSettings);
     if(typeof loadNotificationEscalationSettings==='function')loadNotificationEscalationSettings(companyId);
+    if(typeof loadNotificationAcknowledgementSettings==='function')loadNotificationAcknowledgementSettings(companyId);
   } catch(e) {
     el.innerHTML = '<div style="color:var(--red);padding:12px">Error loading settings: ' + escH(e.message) + '</div>';
   }
@@ -40535,6 +40536,7 @@ function renderNotifSettings(s, queue, whatsappSettings) {
     + '</div>'
     + '<div id="notif-toggles" style="margin-bottom:16px">' + togglesHtml + '</div>'
     + '<div id="notification-escalation-settings"></div>'
+    + '<div id="notification-acknowledgement-settings"></div>'
     + renderWhatsappChannelSettings(whatsappSettings||{})
     + '<div style="border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:16px;background:#fff">'
     + '<div style="font-size:13px;font-weight:800;margin-bottom:4px">Incident recipients by event type</div>'
@@ -56102,5 +56104,6 @@ I can help you:<br>
 <script src="auris-icon-system.js?v=20260806-3"></script>
 <script src="notification-centre.js?v=20260812-2"></script>
 <script src="notification-escalation-settings.js?v=20260812-1"></script>
+<script src="notification-acknowledgement-settings.js?v=20260812-1"></script>
 </body>
 </html>
