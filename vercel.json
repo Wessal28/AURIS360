@@ -40,6 +40,9 @@
     },
     "api/send-whatsapp.js": {
       "maxDuration": 30
+    },
+    "api/notification-health.js": {
+      "maxDuration": 30
     }
   },
   "crons": [

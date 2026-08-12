@@ -158,6 +158,13 @@ run; use a five-minute external or Vercel Pro schedule for urgent use.
 
 ## Controlled verification
 
+Administrators and HSE notification owners can review **Settings → Notification
+Settings → Notification delivery health**. The server endpoint reports only
+configured/not-configured states plus tenant-scoped seven-day delivery counts;
+it never returns SMTP passwords, VAPID private keys, Meta tokens or app secrets.
+Treat the committed daily Vercel schedules as safety runs, not proof of
+near-real-time urgent delivery.
+
 After deploying the worker and applying the migration:
 
 1. Queue one `test_email` to a controlled real mailbox.
