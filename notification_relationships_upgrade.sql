@@ -1,13 +1,24 @@
 -- AURIS360 AP-042: canonical notification relationships and lifecycle events.
 -- Rerunnable. Apply after the base notification_queue table exists.
 
+begin;
+
 alter table public.notification_queue
   add column if not exists related_module text,
   add column if not exists related_ref text,
-  add column if not exists record_url text;
+  add column if not exists record_url text,
+  add column if not exists metadata jsonb not null default '{}'::jsonb;
+
+-- Remove the NOT VALID relationship guard while legacy rows are repaired.
+-- PostgreSQL still enforces NOT VALID constraints on every updated row, which
+-- otherwise prevents later migrations from adding recipient_profile_id.
+alter table public.notification_queue
+  drop constraint if exists notification_queue_workflow_relationship_check;
 
 update public.notification_queue
-set related_module = case
+set related_module = coalesce(
+  nullif(trim(metadata#>>'{relationship,module}'), ''),
+  case
   when related_table in ('events','investigations') then 'events'
   when related_table = 'safety_observations' then 'observation'
   when related_table = 'risk_assessments' then 'risk'
@@ -17,11 +28,28 @@ set related_module = case
   when related_table like 'training_%' or related_table like 'elearning_%' then 'training'
   when related_table = 'companies' then 'admin'
   else related_module
-end
+  end)
 where related_module is null and related_table is not null;
 
-alter table public.notification_queue
-  drop constraint if exists notification_queue_workflow_relationship_check;
+-- Keep the original reference when present. Older queue rows commonly stored
+-- only related_id; its UUID is a stable, honest fallback reference.
+update public.notification_queue
+set related_ref = coalesce(
+  nullif(trim(metadata#>>'{relationship,ref}'), ''),
+  related_id::text
+)
+where nullif(trim(related_ref), '') is null
+  and related_id is not null;
+
+update public.notification_queue
+set record_url = 'https://auris-360.vercel.app/?goto=' ||
+    replace(related_module, ' ', '%20') || '&record=' || related_id::text ||
+    '&table=' || replace(related_table, ' ', '%20') ||
+    '&company=' || company_id::text
+where nullif(trim(record_url), '') is null
+  and nullif(trim(related_module), '') is not null
+  and nullif(trim(related_table), '') is not null
+  and related_id is not null;
 
 alter table public.notification_queue
   add constraint notification_queue_workflow_relationship_check
@@ -119,3 +147,7 @@ grant select, insert on public.notification_events to authenticated;
 
 comment on table public.notification_events is
   'Append-only notification lifecycle events, including delivery, open and failed-target outcomes.';
+
+commit;
+
+notify pgrst, 'reload schema';

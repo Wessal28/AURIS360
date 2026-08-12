@@ -267,7 +267,16 @@ on conflict(source_notification_id, recipient_profile_id) do nothing;
 update public.notification_queue q
 set recipient_profile_id = u.recipient_profile_id
 from public.user_notifications u
-where u.source_notification_id = q.id and q.recipient_profile_id is null;
+where u.source_notification_id = q.id and q.recipient_profile_id is null
+  and (
+    q.type in ('test_email','system')
+    or (
+      nullif(trim(q.related_module),'') is not null
+      and nullif(trim(q.related_table),'') is not null
+      and q.related_id is not null
+      and nullif(trim(q.related_ref),'') is not null
+    )
+  );
 
 comment on table public.user_notifications is
   'Recipient-private in-app inbox derived from governed notification queue records.';
