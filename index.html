@@ -13254,6 +13254,7 @@ try{ loadCustomFieldSettings(); }catch(e){ console.error('loadCustomFieldSetting
 try{ offlineRenderQueueSettings(); }catch(e){ console.error('offlineRenderQueueSettings:',e); }
 try{ renderClientDemoCommandCenter(); }catch(e){ console.error('renderClientDemoCommandCenter:',e); }
 try{ if(typeof renderResilienceSimulation==='function')renderResilienceSimulation(); }catch(e){ console.error('renderResilienceSimulation:',e); }
+try{ if(typeof renderOfflineSyncDiagnostic==='function')renderOfflineSyncDiagnostic(); }catch(e){ console.error('renderOfflineSyncDiagnostic:',e); }
 var notifCard=document.getElementById('settings-notif-card');
 if(notifCard) notifCard.style.display=isAdm()?'block':'none';
 var ptwCard=document.getElementById('settings-ptw-approver-card');
@@ -39781,11 +39782,19 @@ window.addEventListener('load',function(){deepLinkScheduleResume('page-load');})
 
 // Offline field reporting queue - Phase 1
 const OFFLINE_QUEUE_KEY='auris360_offline_queue_v1';
+var offlineSyncInFlight=false;
 function offlineQueueRead(){
   try{return JSON.parse(localStorage.getItem(OFFLINE_QUEUE_KEY)||'[]')||[];}catch(_){return [];}
 }
+function offlineDraftCompanyId(item){return String(item?.company_id||item?.body?.company_id||'');}
+function offlineDraftCanSync(item,companyId){return !!companyId&&offlineDraftCompanyId(item)===String(companyId);}
+function offlineDraftDeduplicate(items){
+  var seen={};return (items||[]).filter(function(item){
+    var id=String(item?.local_id||'');if(!id)return true;if(seen[id])return false;seen[id]=true;return true;
+  });
+}
 function offlineQueueWrite(items){
-  try{localStorage.setItem(OFFLINE_QUEUE_KEY,JSON.stringify(items||[]));}catch(e){toast('Could not save offline draft: device storage is full',false);}
+  try{localStorage.setItem(OFFLINE_QUEUE_KEY,JSON.stringify(offlineDraftDeduplicate(items||[])));}catch(e){toast('Could not save offline draft: device storage is full',false);}
   offlineRefreshBanner();
   if(typeof offlineRenderQueueSettings==='function')offlineRenderQueueSettings();
 }
@@ -39979,17 +39988,20 @@ async function offlineSyncObservation(item){
   }
 }
 async function offlineSyncNow(){
+  if(offlineSyncInFlight){toast('Offline synchronization is already running.');return;}
   if(!navigator.onLine){toast('Still offline. Sync will work when internet returns.',false);return;}
+  offlineSyncInFlight=true;
+  try{
   var q=offlineQueueRead();
   var activeCompany=ccid();
-  var pending=q.filter(function(x){return x.status!=='synced'&&String(x.company_id||x.body?.company_id||'')===String(activeCompany||'');});
+  var pending=q.filter(function(x){return x.status!=='synced'&&offlineDraftCanSync(x,activeCompany);});
   if(!pending.length){offlineRefreshBanner();toast('No offline reports pending');return;}
   toast('Syncing '+pending.length+' offline report'+(pending.length>1?'s':'')+'...');
   var ok=0,failed=0;
   for(var i=0;i<q.length;i++){
     var item=q[i];
     if(item.status==='synced')continue;
-    if(String(item.company_id||item.body?.company_id||'')!==String(activeCompany||''))continue;
+    if(!offlineDraftCanSync(item,activeCompany))continue;
     try{
       if(item.module==='incident')await offlineSyncIncident(item);
       else if(item.module==='observation')await offlineSyncObservation(item);
@@ -40004,6 +40016,7 @@ async function offlineSyncNow(){
   if(failed)toast(failed+' offline report'+(failed>1?'s':'')+' still pending',false);
   if(ok||failed)auditLogEvent('sync','offline','Offline drafts sync completed',{synced:ok,failed:failed});
   offlineRenderQueueSettings();
+  }finally{offlineSyncInFlight=false;}
 }
 window.addEventListener('load', offlineRefreshBanner);
 function offlineDraftLabel(item){
@@ -40036,7 +40049,7 @@ async function offlineRetryDraft(localId){
   var q=offlineQueueRead();
   var item=q.find(function(x){return x.local_id===localId;});
   if(!item){toast('Offline draft not found',false);offlineRenderQueueSettings();return;}
-  if(String(item.company_id||item.body?.company_id||'')!==String(ccid()||'')){
+  if(!offlineDraftCanSync(item,ccid())){
     toast('Switch to the company where this draft was created before syncing it.',false);return;
   }
   try{
@@ -55267,6 +55280,8 @@ I can help you:<br>
   <div id="offline-drafts-body"><div class="loading">Loading offline drafts...</div></div>
 </div>
 
+<div class="card" id="settings-offline-sync-diagnostic-card" style="display:none"></div>
+
 <div class="card" id="settings-notif-card" style="display:none">
   <div class="card-title" style="display:flex;align-items:center;gap:8px"><i class="ti ti-bell" style="color:var(--green)"></i>Email Notifications</div>
   <div style="font-size:12px;color:var(--text2);margin-bottom:14px">Company Admin can configure who receives incident emails by incident type. Go to the section below called "Incident recipients by event type".</div>
@@ -56212,6 +56227,7 @@ I can help you:<br>
 <script src="tools-equipment-upgrade.js?v=20260806-1"></script>
 <script src="auris-icon-system.js?v=20260814-1"></script>
 <script src="resilience-fault-simulation.js?v=20260814-1"></script>
+<script src="offline-sync-diagnostic.js?v=20260814-1"></script>
 <script src="notification-centre.js?v=20260814-1"></script>
 <script src="notification-escalation-settings.js?v=20260812-1"></script>
 <script src="notification-acknowledgement-settings.js?v=20260812-1"></script>

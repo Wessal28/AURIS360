@@ -43,7 +43,10 @@ assert.match(html, /data\.type===['"]SYNC_REQUEST['"][\s\S]*offlineSyncNow\(\)/)
 // record exists and never cross the active tenant boundary.
 assert.match(functionSource('offlineQueueAdd'), /status=['"]pending['"][\s\S]*offlineQueueWrite/);
 assert.match(functionSource('offlineSyncNow'), /activeCompany=ccid\(\)/);
-assert.match(functionSource('offlineSyncNow'), /company_id[\s\S]*activeCompany[\s\S]*continue/);
+assert.match(functionSource('offlineDraftCanSync'), /offlineDraftCompanyId\(item\)[\s\S]*companyId/);
+assert.match(functionSource('offlineSyncNow'), /offlineDraftCanSync\(item,activeCompany\)[\s\S]*continue/);
+assert.match(functionSource('offlineSyncNow'), /offlineSyncInFlight[\s\S]*finally\{offlineSyncInFlight=false;/);
+assert.match(functionSource('offlineQueueWrite'), /offlineDraftDeduplicate/);
 assert.match(functionSource('offlineSyncNow'), /catch\(e\)[\s\S]*status=['"]pending['"][\s\S]*last_error/);
 assert.match(functionSource('offlineSyncNow'), /filter\(function\(x\)\{return x\.status!==['"]synced['"];/);
 assert.match(functionSource('offlineRetryDraft'), /Switch to the company where this draft was created/);
