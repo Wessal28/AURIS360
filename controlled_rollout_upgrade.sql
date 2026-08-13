@@ -35,6 +35,49 @@ create table if not exists public.rollout_health_events (
   created_at timestamptz not null default now()
 );
 
+-- Rollback is a controlled status transition, never deletion. This ledger
+-- preserves who changed a cohort and the gate evidence at that moment.
+create table if not exists public.rollout_cohort_transitions (
+  id uuid primary key default gen_random_uuid(),
+  company_id uuid not null references public.companies(id) on delete cascade,
+  cohort_key text not null check (cohort_key in ('core_control','controlled_content','people_health','specialist_operations')),
+  previous_status text check (previous_status is null or previous_status in ('disabled','pilot','enabled','paused')),
+  new_status text not null check (new_status in ('disabled','pilot','enabled','paused')),
+  gate_results jsonb not null default '{}'::jsonb,
+  compatibility_reads boolean not null default true,
+  changed_by uuid,
+  changed_at timestamptz not null default now()
+);
+
+create index if not exists rollout_cohort_transitions_company_time
+  on public.rollout_cohort_transitions(company_id, cohort_key, changed_at desc);
+
+create or replace function public.audit_rollout_cohort_transition()
+returns trigger
+language plpgsql
+security definer
+set search_path=public
+as $$
+begin
+  if tg_op='INSERT' or old.status is distinct from new.status then
+    insert into public.rollout_cohort_transitions(
+      company_id,cohort_key,previous_status,new_status,gate_results,
+      compatibility_reads,changed_by
+    ) values (
+      new.company_id,new.cohort_key,
+      case when tg_op='INSERT' then null else old.status end,
+      new.status,new.gate_results,new.compatibility_reads,auth.uid()
+    );
+  end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists company_rollout_cohort_transition_audit on public.company_rollout_cohorts;
+create trigger company_rollout_cohort_transition_audit
+after insert or update of status on public.company_rollout_cohorts
+for each row execute function public.audit_rollout_cohort_transition();
+
 create index if not exists rollout_health_events_company_time
   on public.rollout_health_events(company_id, created_at desc);
 create index if not exists rollout_health_events_open
@@ -61,6 +104,7 @@ group by c.company_id,c.cohort_key,c.status,c.module_keys,c.compatibility_reads,
 
 alter table public.company_rollout_cohorts enable row level security;
 alter table public.rollout_health_events enable row level security;
+alter table public.rollout_cohort_transitions enable row level security;
 
 drop policy if exists "rollout_cohorts_tenant_read" on public.company_rollout_cohorts;
 create policy "rollout_cohorts_tenant_read" on public.company_rollout_cohorts
@@ -90,9 +134,19 @@ create policy "rollout_health_platform_update" on public.rollout_health_events
 for update using (exists (select 1 from public.profiles p where p.id=auth.uid() and p.role='sephs_admin'))
 with check (exists (select 1 from public.profiles p where p.id=auth.uid() and p.role='sephs_admin'));
 
+drop policy if exists "rollout_transitions_tenant_read" on public.rollout_cohort_transitions;
+create policy "rollout_transitions_tenant_read" on public.rollout_cohort_transitions
+for select using (exists (
+  select 1 from public.profiles p where p.id=auth.uid()
+    and (p.role='sephs_admin' or (p.company_id=rollout_cohort_transitions.company_id and p.role in ('admin','hse_manager','hse_officer')))
+));
+
 grant select on public.company_rollout_cohorts,public.rollout_cohort_health_summary to authenticated;
-grant insert,update,delete on public.company_rollout_cohorts to authenticated;
+grant insert,update on public.company_rollout_cohorts to authenticated;
 grant select,insert,update on public.rollout_health_events to authenticated;
-revoke all on public.company_rollout_cohorts,public.rollout_health_events from anon;
+grant select on public.rollout_cohort_transitions to authenticated;
+revoke delete on public.company_rollout_cohorts from authenticated;
+revoke insert,update,delete on public.rollout_cohort_transitions from authenticated;
+revoke all on public.company_rollout_cohorts,public.rollout_health_events,public.rollout_cohort_transitions from anon;
 
 commit;

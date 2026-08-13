@@ -13,6 +13,12 @@ assert.match(sql, /status in \('disabled','pilot','enabled','paused'\)/i);
 assert.match(sql, /compatibility_reads boolean not null default true/i);
 assert.match(sql, /gate_results jsonb not null default '\{\}'::jsonb/i);
 assert.match(sql, /create table if not exists public\.rollout_health_events/i);
+assert.match(sql, /create table if not exists public\.rollout_cohort_transitions/i);
+assert.match(sql, /create trigger company_rollout_cohort_transition_audit/i);
+assert.match(sql, /old\.status is distinct from new\.status/i);
+assert.match(sql, /previous_status,new_status,gate_results/i);
+assert.match(sql, /revoke delete on public\.company_rollout_cohorts from authenticated/i);
+assert.match(sql, /revoke insert,update,delete on public\.rollout_cohort_transitions from authenticated/i);
 for (const event of ['module_error', 'orphan_relationship', 'failed_deep_link', 'approval_discrepancy']) {
   assert(sql.includes(`'${event}'`), `health taxonomy missing ${event}`);
 }
@@ -48,5 +54,7 @@ assert.match(html, /rollout_cohort_health_summary\?select=\*/);
 assert.match(html, /rolloutRecordHealthEvent\('failed_deep_link'/);
 assert.match(html, /window\.addEventListener\('error'[\s\S]*rolloutRecordHealthEvent\('module_error'/);
 assert.match(html, /companies\.module_access/);
+assert.match(html, /rolloutEnsureSafeLanding\(\)/);
+assert.match(html, /previous\.enabled_at\|\|new Date\(\)\.toISOString\(\)/);
 
 console.log('Controlled rollout contract passed (4 cohorts, 8 gates, 4 monitored event types).');

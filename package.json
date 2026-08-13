@@ -12,6 +12,7 @@
     "test:core-resilience": "node tests/core_control_resilience_contract.test.cjs",
     "test:mobile-offline": "node tests/mobile_offline_acceptance_contract.test.cjs",
     "test:controlled-rollout": "node tests/controlled_rollout_contract.test.cjs",
+    "test:controlled-rollback": "node tests/controlled_rollback_contract.test.cjs",
     "test:index-syntax": "node tests/index_inline_syntax.test.cjs",
     "test:audit-contract": "node tests/audit_contract.test.cjs",
     "test:moc-contract": "node tests/moc_separation_contract.test.cjs",

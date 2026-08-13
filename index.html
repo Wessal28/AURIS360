@@ -13223,8 +13223,14 @@ async function rolloutSaveCohort(cohortKey){
   var status=document.getElementById('rollout-status-'+cohortKey)?.value||'disabled',gates={};ROLLOUT_RELEASE_GATES.forEach(function(g){gates[g]=!!document.getElementById('rollout-gate-'+cohortKey+'-'+g)?.checked;});
   if(status==='enabled'&&!ROLLOUT_RELEASE_GATES.every(function(g){return gates[g];})){toast('Complete every release gate before enabling this cohort.',false);return;}
   if(status==='pilot'&&!['database','security','navigation'].every(function(g){return gates[g];})){toast('Pilot requires Database, Security and Navigation gates.',false);return;}
-  var body={company_id:rolloutCompanyId(),cohort_key:cohort.key,status:status,module_keys:cohort.modules,compatibility_reads:true,gate_results:gates,enabled_at:status==='enabled'?new Date().toISOString():null,enabled_by:prof?.id||null,updated_at:new Date().toISOString()};
-  try{await api('/company_rollout_cohorts?on_conflict=company_id,cohort_key',{m:'POST',p:'resolution=merge-duplicates,return=minimal',b:body});auditLogEvent('update','rollout','Rollout cohort updated',body,{related_table:'company_rollout_cohorts',related_id:cohort.key,company_id:body.company_id});toast(cohort.label+' rollout saved');await loadRolloutRuntimeConfig();applyRoles();modulesMenuBuild();await loadRolloutControl();}catch(e){toast('Rollout setting failed: '+(e.message||e),false);}
+  var previous=(rolloutRuntimeRows||[]).find(function(r){return r.cohort_key===cohortKey;})||{};
+  var body={company_id:rolloutCompanyId(),cohort_key:cohort.key,status:status,module_keys:cohort.modules,compatibility_reads:true,gate_results:gates,enabled_at:status==='enabled'?(previous.enabled_at||new Date().toISOString()):(previous.enabled_at||null),enabled_by:status==='enabled'?(previous.enabled_by||prof?.id||null):(previous.enabled_by||null),updated_at:new Date().toISOString()};
+  try{await api('/company_rollout_cohorts?on_conflict=company_id,cohort_key',{m:'POST',p:'resolution=merge-duplicates,return=minimal',b:body});auditLogEvent('update','rollout','Rollout cohort updated',Object.assign({previous_status:previous.status||'compatibility'},body),{related_table:'company_rollout_cohorts',related_id:cohort.key,company_id:body.company_id});toast(cohort.label+' rollout saved');await loadRolloutRuntimeConfig();applyRoles();modulesMenuBuild();rolloutEnsureSafeLanding();await loadRolloutControl();}catch(e){toast('Rollout setting failed: '+(e.message||e),false);}
+}
+function rolloutEnsureSafeLanding(){
+  var active=document.querySelector('.page.active');if(!active)return;
+  var pageKey=active.id.replace('page-','');
+  if(!canAccessPage(pageKey))showPage('dashboard',null);
 }
 async function rolloutRecordHealthEvent(eventType,payload){
   payload=payload||{};var companyId=rolloutCompanyId();if(!companyId)return;
