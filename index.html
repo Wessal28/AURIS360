@@ -5042,11 +5042,10 @@ async function authOnSignIn(authData) {
   applyRoles();
   sidebarApplyState(sidebarGetState());
   devModeUpdateUI();
-  saCompanyInit();
+  await saCompanyInit();
   sbInitRoleSelect();
-  await loadPeopleCache();
-  await loadLocationSitesCache();
-  loadDash();
+  await Promise.all([loadPeopleCache(),loadLocationSitesCache()]);
+  await loadDash({initial:true,attempt:0});
   if(typeof deepLinkScheduleResume==='function') deepLinkScheduleResume('sign-in');
   else setTimeout(function(){if(typeof deepLinkResume==='function')deepLinkResume('sign-in');},180);
   setTimeout(function(){genDashAI();}, 3000);
@@ -5306,10 +5305,9 @@ async function authInitSession() {
     applyRoles();
     sidebarApplyState(sidebarGetState());
     devModeUpdateUI();
-    saCompanyInit();
-    await loadPeopleCache();
-    await loadLocationSitesCache();
-    loadDash();
+    await saCompanyInit();
+    await Promise.all([loadPeopleCache(),loadLocationSitesCache()]);
+    await loadDash({initial:true,attempt:0});
     if(typeof deepLinkScheduleResume==='function') deepLinkScheduleResume('session-restore');
     else setTimeout(function(){if(typeof deepLinkResume==='function')deepLinkResume('session-restore');},180);
     setTimeout(function(){genDashAI();}, 3000);
@@ -6069,7 +6067,12 @@ function dashOpenMyActions(){
 // ===================================================================
 
 // --- REAL-TIME DASHBOARD ------------------------------------------
-async function loadDash() {
+var _dashLoadGeneration=0;
+var _dashInitialRetryTimer=null;
+async function loadDash(options) {
+  options=options||{};
+  var loadGeneration=++_dashLoadGeneration;
+  var hadApiFailure=false;
   var refreshIcon = document.getElementById('dash-refresh-icon');
   if (refreshIcon) refreshIcon.style.animation = 'spin .8s linear infinite';
   // Mount the organisation dashboard immediately so a fresh login never
@@ -6079,7 +6082,7 @@ async function loadDash() {
     dashRenderControlCentre({});
   }
   try {
-    var safe = async function(p) { try { return await p; } catch(e) { console.warn('Dash API:', e.message); return []; } };
+    var safe = async function(p) { try { return await p; } catch(e) { hadApiFailure=true;console.warn('Dash API:', e.message); return []; } };
     var now = new Date(); var yr = now.getFullYear();
     var yrStart = yr + '-01-01';
     var results = await Promise.all([
@@ -6097,6 +6100,9 @@ async function loadDash() {
       safe(api('/chemical_register?select=id,status'+cf()+'&status=neq.deleted&limit=10')),
     ]);
     var [events, actions, people, permits, certs, insps, legal, training, kpiData, observations, riskAssessments, chemicals] = results;
+    // A newer dashboard request owns the screen. Never let a slower, older
+    // response overwrite data loaded for a changed company or manual refresh.
+    if(loadGeneration!==_dashLoadGeneration)return;
     events = events||[]; actions = actions||[]; people = people||[];
     permits = permits||[]; certs = certs||[]; insps = insps||[];
     legal = legal||[]; training = training||[]; kpiData = kpiData||[];
@@ -6198,12 +6204,10 @@ async function loadDash() {
 
     // Personal view (employee/contractor/inspector)
     if(isPersonalDashRole()) {
-      dashRenderPersonal(events, actions, people, permits, training).catch(function(e){
-        console.warn('Personal dashboard render error:', e);
-      });
-      dashLoadMyElearning().catch(function(e){
-        console.warn('My e-learning render error:', e);
-      });
+      await Promise.all([
+        dashRenderPersonal(events, actions, people, permits, training).catch(function(e){console.warn('Personal dashboard render error:',e);}),
+        dashLoadMyElearning().catch(function(e){console.warn('My e-learning render error:',e);})
+      ]);
     }
     dashRenderDeptHeatmap(events, people);
     dashRenderHighRisk(permits, events);
@@ -6228,9 +6232,20 @@ async function loadDash() {
     }
 
     sm('dash-label', 'Updated '+now.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}));
+    var dashboardPage=document.getElementById('page-dashboard');
+    if(dashboardPage)dashboardPage.dataset.dashboardReady='true';
   } catch(e) { console.error('Dashboard error:', e); }
   finally {
-    if(refreshIcon) refreshIcon.style.animation = '';
+    if(loadGeneration===_dashLoadGeneration&&refreshIcon)refreshIcon.style.animation='';
+    // A short-lived network/schema-cache failure during login should repair
+    // itself. Retry at most twice and never compete with a newer dashboard load.
+    if(loadGeneration===_dashLoadGeneration&&options.initial&&hadApiFailure&&(options.attempt||0)<2){
+      if(_dashInitialRetryTimer)clearTimeout(_dashInitialRetryTimer);
+      _dashInitialRetryTimer=setTimeout(function(){
+        _dashInitialRetryTimer=null;
+        if(loadGeneration===_dashLoadGeneration)loadDash({initial:true,attempt:(options.attempt||0)+1});
+      },1500);
+    }
   }
 }
 
