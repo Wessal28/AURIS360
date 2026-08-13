@@ -18,6 +18,8 @@ npm run release:readiness -- --report release-evidence/<tenant>-<cohort>.json
 
 All checks must pass. The generated JSON intentionally leaves the eight environment gates pending.
 
+After applying the current migrations, run `core_control_live_gate_verification.sql` in Supabase. Its final `OVERALL` row must be `PASS`; retain the result as live environment evidence. A `REVIEW` result is a stop signal, not permission to enable a cohort.
+
 ## 2. Environment evidence
 
 Record the tenant, cohort, tester, release candidate and date. Attach evidence for every gate:

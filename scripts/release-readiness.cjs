@@ -9,6 +9,7 @@ const testFiles = [
   'tests/cross_module_integration_contract.test.cjs',
   'tests/controlled_rollout_contract.test.cjs',
   'tests/controlled_rollback_contract.test.cjs',
+  'tests/live_gate_verification_contract.test.cjs',
   'tests/core_control_role_matrix_contract.test.cjs',
   'tests/core_control_workflow_contract.test.cjs',
   'tests/core_control_resilience_contract.test.cjs',
