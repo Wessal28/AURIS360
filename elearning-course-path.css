@@ -1,0 +1,24 @@
+.elc-path-card{margin-top:14px;border:1px solid #cbd5e1;background:#f8fafc;border-radius:14px;padding:14px}
+.elc-path-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:12px}
+.elc-path-title{font-size:15px;font-weight:900;color:#0b3342}
+.elc-path-sub{font-size:12px;color:#64748b;margin-top:3px}
+.elc-lesson-row,.elc-question-row{display:grid;grid-template-columns:42px minmax(150px,.7fr) minmax(260px,1.5fr) auto;gap:8px;align-items:center;padding:9px;background:#fff;border:1px solid #e2e8f0;border-radius:11px;margin-top:8px}
+.elc-question-row{grid-template-columns:42px minmax(190px,1.2fr) repeat(3,minmax(120px,1fr)) 120px auto;align-items:end}
+.elc-seq{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;background:#e0f2fe;color:#075985;font-weight:900}
+.elc-lesson-row input,.elc-question-row input,.elc-question-row select{width:100%;min-width:0}
+.ele-course-shell{width:min(1180px,97vw)}
+.ele-course-layout{display:grid;grid-template-columns:minmax(0,1fr) 280px;gap:14px}
+.ele-course-stage{min-width:0}
+.ele-course-outline{background:#fff;border:1px solid #e2e8f0;border-radius:11px;padding:10px;max-height:72vh;overflow:auto}
+.ele-outline-item{width:100%;display:flex;gap:9px;align-items:center;text-align:left;border:0;background:transparent;padding:10px;border-radius:9px;color:#334155;cursor:pointer}
+.ele-outline-item.active{background:#e8f7f2;color:#075e49;font-weight:800}
+.ele-outline-item.locked{opacity:.52;cursor:not-allowed}
+.ele-outline-dot{width:24px;height:24px;flex:0 0 24px;border-radius:50%;display:grid;place-items:center;background:#e2e8f0;font-size:11px;font-weight:900}
+.ele-outline-item.done .ele-outline-dot{background:#16a34a;color:#fff}
+.ele-course-nav{display:flex;justify-content:space-between;gap:10px;margin-top:12px}
+.ele-quiz-panel{background:#fff;border:1px solid #dbeafe;border-radius:12px;padding:18px}
+.ele-quiz-question{padding:13px 0;border-bottom:1px solid #e2e8f0}
+.ele-quiz-question:last-child{border-bottom:0}
+.ele-quiz-option{display:flex;gap:8px;align-items:flex-start;margin-top:8px;padding:8px;border:1px solid #e2e8f0;border-radius:9px;cursor:pointer}
+@media(max-width:820px){.ele-course-layout{grid-template-columns:1fr}.ele-course-outline{max-height:210px}.elc-lesson-row,.elc-question-row{grid-template-columns:34px 1fr}.elc-lesson-row>*:nth-child(n+2),.elc-question-row>*:nth-child(n+2){grid-column:2}}
+

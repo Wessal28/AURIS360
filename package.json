@@ -33,6 +33,7 @@
     "test:notification-escalation-admin": "node tests/notification_escalation_admin_contract.test.cjs",
     "test:notification-acknowledgement": "node tests/notification_acknowledgement_control_contract.test.cjs",
     "test:notification-link-evidence": "node tests/notification_link_evidence_contract.test.cjs"
+    ,"test:elearning-path": "node tests/elearning_course_path_contract.test.cjs"
   },
   "dependencies": {
     "nodemailer": "^6.9.16",
