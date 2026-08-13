@@ -35,6 +35,7 @@
     "test:notification-link-evidence": "node tests/notification_link_evidence_contract.test.cjs"
     ,"test:elearning-path": "node tests/elearning_course_path_contract.test.cjs"
     ,"test:tab-icons": "node tests/module_tab_icon_contract.test.cjs"
+    ,"test:module-typography": "node tests/module_typography_contract.test.cjs"
   },
   "dependencies": {
     "nodemailer": "^6.9.16",

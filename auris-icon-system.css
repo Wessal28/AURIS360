@@ -2,6 +2,99 @@
 :root{
   --auris-icon-atlas:url("assets/auris-icon-system-final.png");
   --auris-brand-logo:url("assets/auris360-logo-final.png");
+  --auris-module-font:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;
+  --auris-type-title:25px;
+  --auris-type-description:12px;
+  --auris-type-kicker:10px;
+  --auris-type-tab:11px;
+  --auris-type-tab-active:13px;
+  --auris-type-control:12px;
+  --auris-type-panel:14px;
+  --auris-type-table:11px;
+}
+
+/* Platform typography contract — Objectives & KPIs is the reference module.
+   Technical references and record IDs may retain their explicit monospace font. */
+.page,.page button,.page input,.page select,.page textarea,.page table{
+  font-family:var(--auris-module-font)!important;
+}
+.page :is(.page-title,.kpi-x-title,.se-title,.noise-title,.bbs-title,.hse-cc-title),
+.page [class*="-hero"] h1,
+.page [class*="-module-head"] h1{
+  font-family:var(--auris-module-font)!important;
+  font-size:var(--auris-type-title)!important;
+  line-height:1.12!important;
+  font-weight:850!important;
+  letter-spacing:-.025em!important;
+}
+.page :is(.se-subtitle,.noise-subtitle,.bbs-subtitle),
+.page [class*="-hero"] p,
+.page [class*="-module-head"] p,
+.page .page-header>div:first-child>div:not(.page-title){
+  font-size:var(--auris-type-description)!important;
+  line-height:1.45!important;
+  font-weight:400!important;
+  letter-spacing:0!important;
+}
+.page :is(.se-eyebrow,.noise-eyebrow,.bbs-eyebrow),
+.page [class*="-kicker"]{
+  font-size:var(--auris-type-kicker)!important;
+  line-height:1.25!important;
+  font-weight:850!important;
+  letter-spacing:.1em!important;
+  text-transform:uppercase!important;
+}
+.page :is(.mtg-tab,[class*="-tabs"]>button,.rax-nav>button,.kpi-tab,.se-tab,.noise-tab){
+  font-family:var(--auris-module-font)!important;
+  font-size:var(--auris-type-tab)!important;
+  line-height:1.2!important;
+  font-weight:650!important;
+  letter-spacing:0!important;
+}
+.page :is(.mtg-tab.active,[class*="-tabs"]>button.active,.rax-nav>button.active,.kpi-tab.active,.se-tab.active,.noise-tab.active){
+  font-size:var(--auris-type-tab-active)!important;
+  font-weight:750!important;
+}
+.page :is(button,.btn,input,select,textarea){
+  font-size:var(--auris-type-control)!important;
+  letter-spacing:0!important;
+}
+.page :is(.form3label,[class*="-field"]>label,[class*="-field"] label,.kpi-x-field label){
+  font-size:10px!important;
+  line-height:1.25!important;
+  font-weight:750!important;
+  letter-spacing:.05em!important;
+}
+.page :is(.card-title,[class*="-panel-title"],[class*="-card-title"],[class*="-section-title"],.kpi-x-panel-title),
+.page [class*="-panel"] h3{
+  font-size:var(--auris-type-panel)!important;
+  line-height:1.3!important;
+  font-weight:800!important;
+  letter-spacing:0!important;
+}
+.page :is([class*="-panel-sub"],[class*="-card-sub"],[class*="-section-sub"],.kpi-x-panel-sub),
+.page [class*="-panel"] p{
+  font-size:11px!important;
+  line-height:1.45!important;
+  font-weight:400!important;
+}
+.page table,.page :is(.data-table,.kpi-x-table,.se-table,.noise-table,.bbs-table){
+  font-size:var(--auris-type-table)!important;
+}
+.page table th{
+  font-size:11px!important;
+  line-height:1.3!important;
+  font-weight:750!important;
+  letter-spacing:0!important;
+}
+.page table td{font-size:11px!important;line-height:1.4!important}
+.page :is(.badge,[class*="-badge"],[class*="-pill"],[class*="-status"]){
+  font-size:10px!important;
+  line-height:1.2!important;
+}
+@media(max-width:720px){
+  .page :is(.page-title,.kpi-x-title,.se-title,.noise-title,.bbs-title,.hse-cc-title),
+  .page [class*="-hero"] h1,.page [class*="-module-head"] h1{font-size:22px!important}
 }
 
 /* New platform brand supplied 2026-08-05. Client white-label logos remain unaffected. */
@@ -86,7 +179,7 @@ i.auris-module-icon:before,i.auris-module-icon:after{content:none!important;disp
 .page-header .page-title,
 .page .kpi-x-title,
 .page :is(.rax-hero,.legx-hero,.swx-hero,.ccu-hero,.cmu-hero,.teu-hero,.lcu-hero,.sov-hero,.dcx-module-head) h1{
-  font-size:27px!important;line-height:1.12!important;font-weight:800!important;
+  font-size:var(--auris-type-title)!important;line-height:1.12!important;font-weight:850!important;
   letter-spacing:0!important;color:#082f3a!important;
 }
 .page-header>div:first-child>div:not(.page-title),
@@ -99,7 +192,7 @@ i.auris-module-icon:before,i.auris-module-icon:after{content:none!important;disp
   line-height:1.25!important;text-transform:uppercase!important;color:#087d68!important;
 }
 .hse-cc-title{
-  font-size:27px!important;line-height:1.12!important;font-weight:800!important;
+  font-size:var(--auris-type-title)!important;line-height:1.12!important;font-weight:850!important;
   letter-spacing:0!important;color:#082f3a!important;
 }
 
