@@ -111,6 +111,32 @@ i.auris-module-icon:before,i.auris-module-icon:after{content:none!important;disp
   font-size:13px!important;font-weight:950!important;
 }
 
+/* Every module tab has a colourful, meaning-based icon. The decorator also
+   covers tabs rebuilt dynamically after navigation or data refresh. */
+.page button.auris-icon-tab{
+  display:inline-flex!important;align-items:center!important;gap:7px!important;
+}
+.page button.auris-icon-tab>i.auris-tab-icon{
+  --tab-icon:#2563eb;--tab-icon-light:#dbeafe;
+  width:24px!important;height:24px!important;min-width:24px!important;flex:0 0 24px!important;
+  display:inline-flex!important;align-items:center!important;justify-content:center!important;
+  margin:0!important;border:1px solid color-mix(in srgb,var(--tab-icon) 42%,#fff)!important;
+  border-radius:8px!important;color:#fff!important;font-size:14px!important;
+  background:linear-gradient(145deg,color-mix(in srgb,var(--tab-icon) 45%,#fff) 0%,var(--tab-icon) 58%,color-mix(in srgb,var(--tab-icon) 78%,#071a2c) 100%)!important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.85),inset 0 -3px 5px rgba(5,23,42,.2),0 3px 7px color-mix(in srgb,var(--tab-icon) 22%,transparent)!important;
+  text-shadow:0 1px 2px rgba(5,23,42,.32)!important;overflow:hidden!important;
+}
+.page button.auris-icon-tab[data-tab-tone="green"]>i{--tab-icon:#059669;--tab-icon-light:#d1fae5}
+.page button.auris-icon-tab[data-tab-tone="amber"]>i{--tab-icon:#d97706;--tab-icon-light:#fef3c7}
+.page button.auris-icon-tab[data-tab-tone="red"]>i{--tab-icon:#dc2626;--tab-icon-light:#fee2e2}
+.page button.auris-icon-tab[data-tab-tone="purple"]>i{--tab-icon:#7c3aed;--tab-icon-light:#ede9fe}
+.page button.auris-icon-tab[data-tab-tone="cyan"]>i{--tab-icon:#0891b2;--tab-icon-light:#cffafe}
+.page button.auris-icon-tab.active>i.auris-tab-icon,
+.page button.auris-icon-tab[aria-current="page"]>i.auris-tab-icon{
+  transform:translateY(-1px) scale(1.06)!important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.9),inset 0 -3px 5px rgba(5,23,42,.2),0 5px 10px color-mix(in srgb,var(--tab-icon) 32%,transparent)!important;
+}
+
 /* Search and filter controls stay on one efficient row on desktop. */
 .page div:has(>input[id*="search"]):has(>select){
   display:flex!important;align-items:end!important;gap:10px!important;flex-wrap:nowrap!important;width:100%!important;
@@ -221,8 +247,8 @@ i.auris-action-icon:before,i.auris-action-icon:after{content:none!important;disp
 
 /* Specialised actions not pictured in the catalogue retain their meaningful
    glyph inside the same rounded, metallic 3D visual language. */
-button i.ti:not(.auris-action-icon):not(.auris-module-icon),
-a.btn i.ti:not(.auris-action-icon):not(.auris-module-icon){
+button i.ti:not(.auris-action-icon):not(.auris-module-icon):not(.auris-tab-icon),
+a.btn i.ti:not(.auris-action-icon):not(.auris-module-icon):not(.auris-tab-icon){
   width:19px!important;height:19px!important;min-width:19px!important;flex:0 0 19px!important;
   display:inline-flex!important;align-items:center!important;justify-content:center!important;
   border:1px solid #9aa9b8!important;border-radius:6px!important;
