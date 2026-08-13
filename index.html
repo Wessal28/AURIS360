@@ -2860,6 +2860,8 @@ function apiCompanyScopeIssue(path,o,method){
 }
 async function api(path,o={}
 ){
+const resilienceFault=typeof window.aurisResilienceFaultForPath==='function'?window.aurisResilienceFaultForPath(path):'';
+if(resilienceFault)throw new Error(resilienceFault);
 const headers={'Content-Type':'application/json','apikey':KEY,'Authorization':'Bearer '+(tok||KEY),'Accept':'application/json'};
 if(o.p)headers['Prefer']=o.p;
 const method=o.m||'GET';
@@ -13251,6 +13253,7 @@ try{ loadRolloutControl(); }catch(e){ console.error('loadRolloutControl:',e); }
 try{ loadCustomFieldSettings(); }catch(e){ console.error('loadCustomFieldSettings:',e); }
 try{ offlineRenderQueueSettings(); }catch(e){ console.error('offlineRenderQueueSettings:',e); }
 try{ renderClientDemoCommandCenter(); }catch(e){ console.error('renderClientDemoCommandCenter:',e); }
+try{ if(typeof renderResilienceSimulation==='function')renderResilienceSimulation(); }catch(e){ console.error('renderResilienceSimulation:',e); }
 var notifCard=document.getElementById('settings-notif-card');
 if(notifCard) notifCard.style.display=isAdm()?'block':'none';
 var ptwCard=document.getElementById('settings-ptw-approver-card');
@@ -54826,6 +54829,8 @@ I can help you:<br>
 <div id="page-settings" class="page">
 <div class="page-header"><div class="page-title">Settings</div></div>
 
+<div class="card" id="settings-resilience-simulation-card" style="display:none"></div>
+
 <!-- ------- BRANDING STUDIO (white-label) ------- -->
 <div class="card" id="branding-studio" style="display:none;padding:0;overflow:hidden">
   <div style="padding:18px 22px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap">
@@ -56186,7 +56191,7 @@ I can help you:<br>
 }
 .modules-menu-item.active i{color:var(--green)!important}
 </style>
-<link rel="stylesheet" href="auris-icon-system.css?v=20260814-1">
+<link rel="stylesheet" href="auris-icon-system.css?v=20260814-2">
 <link rel="stylesheet" href="notification-centre.css?v=20260812-2">
 <link rel="stylesheet" href="elearning-course-path.css?v=20260813-1">
 <script src="kpi-configuration.js"></script>
@@ -56206,6 +56211,7 @@ I can help you:<br>
 <script src="contractor-management-upgrade.js?v=20260806-1"></script>
 <script src="tools-equipment-upgrade.js?v=20260806-1"></script>
 <script src="auris-icon-system.js?v=20260814-1"></script>
+<script src="resilience-fault-simulation.js?v=20260814-1"></script>
 <script src="notification-centre.js?v=20260814-1"></script>
 <script src="notification-escalation-settings.js?v=20260812-1"></script>
 <script src="notification-acknowledgement-settings.js?v=20260812-1"></script>

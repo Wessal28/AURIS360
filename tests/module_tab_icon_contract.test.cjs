@@ -29,7 +29,7 @@ test('tab icons use the colourful AURIS visual language and active emphasis', ()
 });
 
 test('new icon assets are cache-busted in the application shell', () => {
-  assert.match(html, /auris-icon-system\.css\?v=20260814-1/);
+  assert.match(html, /auris-icon-system\.css\?v=20260814-2/);
   assert.match(html, /auris-icon-system\.js\?v=20260814-1/);
 });
 

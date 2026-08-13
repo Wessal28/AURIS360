@@ -10,6 +10,7 @@
     "test:offline-assets": "node tests/offline_asset_manifest_contract.test.cjs",
     "test:cross-module": "node tests/cross_module_integration_contract.test.cjs",
     "test:core-resilience": "node tests/core_control_resilience_contract.test.cjs",
+    "test:resilience-simulation": "node tests/resilience_fault_simulation_contract.test.cjs",
     "test:mobile-offline": "node tests/mobile_offline_acceptance_contract.test.cjs",
     "test:controlled-rollout": "node tests/controlled_rollout_contract.test.cjs",
     "test:controlled-rollback": "node tests/controlled_rollback_contract.test.cjs",

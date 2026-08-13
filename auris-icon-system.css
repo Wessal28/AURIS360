@@ -265,6 +265,9 @@ i.auris-indicator-icon{
   text-shadow:0 2px 3px rgba(6,25,46,.25)!important;
 }
 .auris-indicator-value{color:var(--indicator)!important}
+.resilience-simulation-banner{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:0 0 14px;padding:11px 14px;border:1px solid #f59e0b;border-left:4px solid #d97706;border-radius:10px;background:#fffbeb;color:#92400e;font-size:11px;line-height:1.45}
+.resilience-simulation-banner>span{display:flex;align-items:center;gap:7px}.resilience-simulation-banner>span>i{font-size:18px;color:#d97706}.resilience-simulation-banner .btn{flex:0 0 auto;background:#fff}
+@media(max-width:720px){.resilience-simulation-banner{align-items:flex-start;flex-direction:column}}
 
 /* Dashboard cards now reuse the same final 3D artwork as the modules. */
 #page-dashboard .hse-cc-kpi .hse-cc-kpi-icon{
