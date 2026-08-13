@@ -43,6 +43,14 @@ test('notification centre supplies inbox, filters, badge and exact-record naviga
   assert.match(app, /Notification centre is being activated/);
 });
 
+test('read notifications leave the active inbox and persistence is verified', () => {
+  assert.match(app, /!x\.read_at\|\|\(x\.acknowledgement_required&&!x\.acknowledged_at\)/);
+  assert.match(app, /filterButton\('all','Active',activeCount\(\)\)/);
+  assert.match(app, /p:'return=representation'/);
+  assert.match(app, /if\(!Array\.isArray\(updated\)\|\|!updated\.length\)throw new Error/);
+  assert.match(app, /dismissed_at:now/);
+});
+
 test('desktop and mobile application chrome mount the personal inbox', () => {
   assert.match(index, /id="nc-mobile-trigger"/);
   assert.match(index, /notificationCentreInit/);

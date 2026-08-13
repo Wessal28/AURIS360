@@ -11,8 +11,9 @@ function isMissingSchema(error){return /user_notifications|schema cache|does not
 function activeRows(){
   if(NC.filter==='unread')return NC.rows.filter(function(x){return !x.read_at;});
   if(NC.filter==='ack')return NC.rows.filter(function(x){return x.acknowledgement_required&&!x.acknowledged_at;});
-  return NC.rows;
+  return NC.rows.filter(function(x){return !x.read_at||(x.acknowledgement_required&&!x.acknowledged_at);});
 }
+function activeCount(){return NC.rows.filter(function(x){return !x.read_at||(x.acknowledgement_required&&!x.acknowledged_at);}).length;}
 function unreadCount(){return NC.rows.filter(function(x){return !x.read_at;}).length;}
 function acknowledgementCount(){return NC.rows.filter(function(x){return x.acknowledgement_required&&!x.acknowledged_at;}).length;}
 function pushStatus(){
@@ -91,7 +92,7 @@ function render(){
     +'<button type="button" class="nc-icon-btn" title="Close" aria-label="Close notifications" onclick="notificationCentreClose()"><i class="ti ti-x"></i></button></div></div>'
     +'<div class="nc-push"><div class="nc-push-copy"><strong><i class="ti '+(NC.push.subscribed?'ti-bell-ringing':'ti-device-mobile')+'"></i>'+esc(ps.label)+'</strong><span>'+esc(ps.detail)+'</span></div>'
     +(ps.action?'<button type="button" class="nc-action '+(ps.action==='enable'?'primary':'')+'" '+(NC.push.loading?'disabled':'')+' onclick="notificationCentrePushToggle()">'+(NC.push.loading?'Working...':(ps.action==='enable'?'Enable':'Disable'))+'</button>':'')+'</div>'
-    +'<div class="nc-filters">'+filterButton('all','All',NC.rows.length)+filterButton('unread','Unread',unreadCount())+filterButton('ack','Needs acknowledgement',ackCount)+'</div>'
+    +'<div class="nc-filters">'+filterButton('all','Active',activeCount())+filterButton('unread','Unread',unreadCount())+filterButton('ack','Needs acknowledgement',ackCount)+'</div>'
     +'<div class="nc-list">'+body+'</div><div class="nc-footer"><span>Private to your account</span><span>'+(NC.lastLoaded?('Updated '+timeLabel(NC.lastLoaded)):'')+'</span></div>';
   updateBadges();
 }
@@ -149,7 +150,8 @@ async function saveSubscription(subscription){
 async function patch(id,body){
   if(!profile()||NC.ready===false)return false;
   try{
-    await apiCall('/user_notifications?id=eq.'+encodeURIComponent(id)+'&recipient_profile_id=eq.'+encodeURIComponent(profile().id),{m:'PATCH',p:'return=minimal',b:Object.assign({updated_at:new Date().toISOString()},body)});
+    var updated=await apiCall('/user_notifications?id=eq.'+encodeURIComponent(id)+'&recipient_profile_id=eq.'+encodeURIComponent(profile().id)+'&select=id,read_at,acknowledged_at,dismissed_at',{m:'PATCH',p:'return=representation',b:Object.assign({updated_at:new Date().toISOString()},body)});
+    if(!Array.isArray(updated)||!updated.length)throw new Error('The notification update was not saved. Please sign in again.');
     var row=NC.rows.find(function(x){return String(x.id)===String(id);});if(row)Object.assign(row,body);render();return true;
   }catch(error){if(typeof window.toast==='function')toast('Notification could not be updated: '+(error.message||'Try again'),false);return false;}
 }
@@ -165,14 +167,15 @@ window.notificationCentreRefresh=function(force){return refresh(force!==false);}
 window.notificationCentreToggle=function(event){if(event)event.stopPropagation();ensureUi();NC.open=!NC.open;panel().classList.toggle('open',NC.open);if(NC.open){render();refresh(true);}};
 window.notificationCentreClose=function(){NC.open=false;var el=panel();if(el)el.classList.remove('open');};
 window.notificationCentreFilter=function(filter){NC.filter=['all','unread','ack'].includes(filter)?filter:'all';render();};
-window.notificationCentreMarkRead=function(id){return patch(id,{read_at:new Date().toISOString()});};
-window.notificationCentreAcknowledge=function(id){var now=new Date().toISOString();return patch(id,{read_at:now,acknowledged_at:now,acknowledged_by:profile().id});};
+window.notificationCentreMarkRead=function(id){var now=new Date().toISOString(),row=NC.rows.find(function(x){return String(x.id)===String(id);});return patch(id,Object.assign({read_at:now},row&&row.acknowledgement_required&&!row.acknowledged_at?{}:{dismissed_at:now}));};
+window.notificationCentreAcknowledge=function(id){var now=new Date().toISOString();return patch(id,{read_at:now,acknowledged_at:now,acknowledged_by:profile().id,dismissed_at:now});};
 window.notificationCentreMarkAllRead=async function(){
   if(!profile()||NC.ready===false||!unreadCount())return;
   var now=new Date().toISOString();
   try{
-    await apiCall('/user_notifications?recipient_profile_id=eq.'+encodeURIComponent(profile().id)+'&read_at=is.null',{m:'PATCH',p:'return=minimal',b:{read_at:now,updated_at:now}});
-    NC.rows.forEach(function(row){if(!row.read_at)row.read_at=now;});render();
+    var unread=NC.rows.filter(function(row){return !row.read_at;});
+    await Promise.all(unread.map(function(row){return patch(row.id,Object.assign({read_at:now},row.acknowledgement_required&&!row.acknowledged_at?{}:{dismissed_at:now}));}));
+    render();
   }catch(error){if(typeof window.toast==='function')toast('Notifications could not be marked as read',false);}
 };
 window.notificationCentrePushToggle=async function(){
@@ -204,7 +207,7 @@ window.notificationCentrePushToggle=async function(){
 };
 window.notificationCentreOpen=async function(id){
   var row=NC.rows.find(function(x){return String(x.id)===String(id);});if(!row)return;
-  if(!row.read_at)await patch(id,{read_at:new Date().toISOString()});
+  if(!row.read_at)await window.notificationCentreMarkRead(id);
   var rel=relationship(row);
   if(!rel.module||!rel.table||!rel.id){if(typeof window.toast==='function')toast('This notification has no linked source record.',false);return;}
   var request=typeof window.deepLinkNormalise==='function'?deepLinkNormalise({goto:rel.module,record:rel.id,ref:rel.ref,table:rel.table,company:rel.company_id}):null;
