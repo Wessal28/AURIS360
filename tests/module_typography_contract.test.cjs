@@ -8,9 +8,10 @@ const css = fs.readFileSync(path.join(root, 'auris-icon-system.css'), 'utf8');
 const kpiCss = fs.readFileSync(path.join(root, 'kpi-module-upgrade.css'), 'utf8');
 const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
 
-test('all module pages inherit the Objectives and KPIs system font', () => {
+test('other module pages inherit the Objectives and KPIs system font without restyling the reference module', () => {
   assert.match(css, /--auris-module-font:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif/);
-  assert.match(css, /\.page,\.page button,\.page input,\.page select,\.page textarea,\.page table/);
+  assert.match(css, /\.page:not\(#page-kpi\),\.page:not\(#page-kpi\) button/);
+  assert.doesNotMatch(css, /^\.page,\.page button/m);
   assert.match(css, /font-family:var\(--auris-module-font\)!important/);
 });
 
@@ -24,12 +25,17 @@ test('the shared hierarchy matches the KPI reference dimensions', () => {
 });
 
 test('headings tabs controls panels tables and labels use the shared hierarchy', () => {
-  for (const selector of ['-hero"] h1', '-kicker"]', '-tabs"]>button', '.form3label', '-panel-title', '.page table th']) {
+  for (const selector of ['-hero"] h1', '-kicker"]', '-tabs"]>button', '.form3label', '-panel-title', '.page:not(#page-kpi) table th']) {
     assert.ok(css.includes(selector), `missing typography coverage ${selector}`);
   }
 });
 
 test('typography stylesheet is cache-busted for deployment and offline refresh', () => {
-  assert.match(html, /auris-icon-system\.css\?v=20260813-5/);
+  assert.match(html, /auris-icon-system\.css\?v=20260813-6/);
 });
 
+test('KPI header retains its functional subtitle rather than showing a company name', () => {
+  const js = fs.readFileSync(path.join(root, 'kpi-module-upgrade.js'), 'utf8');
+  assert.match(js, /label\.textContent='Company performance'/);
+  assert.doesNotMatch(js, /label\.textContent=\(typeof co/);
+});

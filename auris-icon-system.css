@@ -15,86 +15,86 @@
 
 /* Platform typography contract — Objectives & KPIs is the reference module.
    Technical references and record IDs may retain their explicit monospace font. */
-.page,.page button,.page input,.page select,.page textarea,.page table{
+.page:not(#page-kpi),.page:not(#page-kpi) button,.page:not(#page-kpi) input,.page:not(#page-kpi) select,.page:not(#page-kpi) textarea,.page:not(#page-kpi) table{
   font-family:var(--auris-module-font)!important;
 }
-.page :is(.page-title,.kpi-x-title,.se-title,.noise-title,.bbs-title,.hse-cc-title),
-.page [class*="-hero"] h1,
-.page [class*="-module-head"] h1{
+.page:not(#page-kpi) :is(.page-title,.se-title,.noise-title,.bbs-title,.hse-cc-title),
+.page:not(#page-kpi) [class*="-hero"] h1,
+.page:not(#page-kpi) [class*="-module-head"] h1{
   font-family:var(--auris-module-font)!important;
   font-size:var(--auris-type-title)!important;
   line-height:1.12!important;
   font-weight:850!important;
   letter-spacing:-.025em!important;
 }
-.page :is(.se-subtitle,.noise-subtitle,.bbs-subtitle),
-.page [class*="-hero"] p,
-.page [class*="-module-head"] p,
-.page .page-header>div:first-child>div:not(.page-title){
+.page:not(#page-kpi) :is(.se-subtitle,.noise-subtitle,.bbs-subtitle),
+.page:not(#page-kpi) [class*="-hero"] p,
+.page:not(#page-kpi) [class*="-module-head"] p,
+.page:not(#page-kpi) .page-header>div:first-child>div:not(.page-title){
   font-size:var(--auris-type-description)!important;
   line-height:1.45!important;
   font-weight:400!important;
   letter-spacing:0!important;
 }
-.page :is(.se-eyebrow,.noise-eyebrow,.bbs-eyebrow),
-.page [class*="-kicker"]{
+.page:not(#page-kpi) :is(.se-eyebrow,.noise-eyebrow,.bbs-eyebrow),
+.page:not(#page-kpi) [class*="-kicker"]{
   font-size:var(--auris-type-kicker)!important;
   line-height:1.25!important;
   font-weight:850!important;
   letter-spacing:.1em!important;
   text-transform:uppercase!important;
 }
-.page :is(.mtg-tab,[class*="-tabs"]>button,.rax-nav>button,.kpi-tab,.se-tab,.noise-tab){
+.page:not(#page-kpi) :is(.mtg-tab,[class*="-tabs"]>button,.rax-nav>button,.se-tab,.noise-tab){
   font-family:var(--auris-module-font)!important;
   font-size:var(--auris-type-tab)!important;
   line-height:1.2!important;
   font-weight:650!important;
   letter-spacing:0!important;
 }
-.page :is(.mtg-tab.active,[class*="-tabs"]>button.active,.rax-nav>button.active,.kpi-tab.active,.se-tab.active,.noise-tab.active){
+.page:not(#page-kpi) :is(.mtg-tab.active,[class*="-tabs"]>button.active,.rax-nav>button.active,.se-tab.active,.noise-tab.active){
   font-size:var(--auris-type-tab-active)!important;
   font-weight:750!important;
 }
-.page :is(button,.btn,input,select,textarea){
+.page:not(#page-kpi) :is(button,.btn,input,select,textarea){
   font-size:var(--auris-type-control)!important;
   letter-spacing:0!important;
 }
-.page :is(.form3label,[class*="-field"]>label,[class*="-field"] label,.kpi-x-field label){
+.page:not(#page-kpi) :is(.form3label,[class*="-field"]>label,[class*="-field"] label){
   font-size:10px!important;
   line-height:1.25!important;
   font-weight:750!important;
   letter-spacing:.05em!important;
 }
-.page :is(.card-title,[class*="-panel-title"],[class*="-card-title"],[class*="-section-title"],.kpi-x-panel-title),
-.page [class*="-panel"] h3{
+.page:not(#page-kpi) :is(.card-title,[class*="-panel-title"],[class*="-card-title"],[class*="-section-title"]),
+.page:not(#page-kpi) [class*="-panel"] h3{
   font-size:var(--auris-type-panel)!important;
   line-height:1.3!important;
   font-weight:800!important;
   letter-spacing:0!important;
 }
-.page :is([class*="-panel-sub"],[class*="-card-sub"],[class*="-section-sub"],.kpi-x-panel-sub),
-.page [class*="-panel"] p{
+.page:not(#page-kpi) :is([class*="-panel-sub"],[class*="-card-sub"],[class*="-section-sub"]),
+.page:not(#page-kpi) [class*="-panel"] p{
   font-size:11px!important;
   line-height:1.45!important;
   font-weight:400!important;
 }
-.page table,.page :is(.data-table,.kpi-x-table,.se-table,.noise-table,.bbs-table){
+.page:not(#page-kpi) table,.page:not(#page-kpi) :is(.data-table,.se-table,.noise-table,.bbs-table){
   font-size:var(--auris-type-table)!important;
 }
-.page table th{
+.page:not(#page-kpi) table th{
   font-size:11px!important;
   line-height:1.3!important;
   font-weight:750!important;
   letter-spacing:0!important;
 }
-.page table td{font-size:11px!important;line-height:1.4!important}
-.page :is(.badge,[class*="-badge"],[class*="-pill"],[class*="-status"]){
+.page:not(#page-kpi) table td{font-size:11px!important;line-height:1.4!important}
+.page:not(#page-kpi) :is(.badge,[class*="-badge"],[class*="-pill"],[class*="-status"]){
   font-size:10px!important;
   line-height:1.2!important;
 }
 @media(max-width:720px){
-  .page :is(.page-title,.kpi-x-title,.se-title,.noise-title,.bbs-title,.hse-cc-title),
-  .page [class*="-hero"] h1,.page [class*="-module-head"] h1{font-size:22px!important}
+  .page:not(#page-kpi) :is(.page-title,.se-title,.noise-title,.bbs-title,.hse-cc-title),
+  .page:not(#page-kpi) [class*="-hero"] h1,.page:not(#page-kpi) [class*="-module-head"] h1{font-size:22px!important}
 }
 
 /* New platform brand supplied 2026-08-05. Client white-label logos remain unaffected. */
@@ -177,7 +177,6 @@ i.auris-module-icon:before,i.auris-module-icon:after{content:none!important;disp
 
 /* Consistent module heading typography, based on the Risk Assessment module. */
 .page-header .page-title,
-.page .kpi-x-title,
 .page :is(.rax-hero,.legx-hero,.swx-hero,.ccu-hero,.cmu-hero,.teu-hero,.lcu-hero,.sov-hero,.dcx-module-head) h1{
   font-size:var(--auris-type-title)!important;line-height:1.12!important;font-weight:850!important;
   letter-spacing:0!important;color:#082f3a!important;
@@ -197,10 +196,10 @@ i.auris-module-icon:before,i.auris-module-icon:after{content:none!important;disp
 }
 
 /* Every module uses the compact Risk Assessment tab hierarchy. */
-.page :is(.mtg-tab,[class*="-tabs"]>button,.rax-nav>button){
+.page:not(#page-kpi) :is(.mtg-tab,[class*="-tabs"]>button,.rax-nav>button){
   font-size:11px!important;line-height:1.2!important;font-weight:800!important;
 }
-.page :is(.mtg-tab.active,[class*="-tabs"]>button.active,.rax-nav>button.active){
+.page:not(#page-kpi) :is(.mtg-tab.active,[class*="-tabs"]>button.active,.rax-nav>button.active){
   font-size:13px!important;font-weight:950!important;
 }
 
@@ -301,7 +300,7 @@ i.auris-indicator-icon{
 #page-dashboard [data-id="d-kpis"] .kpi-icon{background-position:-250px -92px!important}
 
 @media(max-width:720px){
-  .page-header .page-title,.page .kpi-x-title,
+  .page-header .page-title,
   .page :is(.rax-hero,.legx-hero,.swx-hero,.ccu-hero,.cmu-hero,.teu-hero,.lcu-hero,.sov-hero,.dcx-module-head) h1,
   .hse-cc-title{font-size:23px!important}
   .page div:has(>input[id*="search"]):has(>select){flex-wrap:wrap!important}
