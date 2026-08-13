@@ -28,7 +28,7 @@ Record the tenant, cohort, tester, release candidate and date. Attach evidence f
 | Data safety | Compare before/after record counts and relationship health; resolve or explicitly accept every discrepancy. |
 | Security | Test tenant isolation, roles and confidential records at both relationship endpoints. |
 | Navigation | Open every supported source from lists, Connected Records, notifications, QR links and Approval Center. |
-| Resilience | Confirm a missing optional dependency produces a controlled setup/empty state instead of a blank module. |
+| Resilience | Run `npm run test:core-resilience`, then temporarily deny or rename one **optional** dependency in a protected test tenant (never production): Incident Evidence, Inspection Templates/Findings, or Risk JSA. Confirm the primary Incidents, Inspections or Risk register remains visible, the unavailable feature shows a controlled message/empty state, and restoring the dependency recovers without data repair. Capture before/after screenshots and the browser/API error. |
 | Workflow | Exercise create, submit, approve/reject, notify, audit and linked-action paths in their authoritative modules. |
 | Mobile/offline | Test desktop, tablet and mobile layouts; verify login-retained deep links and the supported offline queue. |
 | Rollback | Test Paused/Disabled cohort status and the forward corrective migration procedure without deleting tenant data. |
