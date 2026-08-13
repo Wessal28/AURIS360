@@ -39972,13 +39972,15 @@ async function offlineSyncObservation(item){
 async function offlineSyncNow(){
   if(!navigator.onLine){toast('Still offline. Sync will work when internet returns.',false);return;}
   var q=offlineQueueRead();
-  var pending=q.filter(function(x){return x.status!=='synced';});
+  var activeCompany=ccid();
+  var pending=q.filter(function(x){return x.status!=='synced'&&String(x.company_id||x.body?.company_id||'')===String(activeCompany||'');});
   if(!pending.length){offlineRefreshBanner();toast('No offline reports pending');return;}
   toast('Syncing '+pending.length+' offline report'+(pending.length>1?'s':'')+'...');
   var ok=0,failed=0;
   for(var i=0;i<q.length;i++){
     var item=q[i];
     if(item.status==='synced')continue;
+    if(String(item.company_id||item.body?.company_id||'')!==String(activeCompany||''))continue;
     try{
       if(item.module==='incident')await offlineSyncIncident(item);
       else if(item.module==='observation')await offlineSyncObservation(item);
@@ -40025,6 +40027,9 @@ async function offlineRetryDraft(localId){
   var q=offlineQueueRead();
   var item=q.find(function(x){return x.local_id===localId;});
   if(!item){toast('Offline draft not found',false);offlineRenderQueueSettings();return;}
+  if(String(item.company_id||item.body?.company_id||'')!==String(ccid()||'')){
+    toast('Switch to the company where this draft was created before syncing it.',false);return;
+  }
   try{
     if(item.module==='incident')await offlineSyncIncident(item);
     else if(item.module==='observation')await offlineSyncObservation(item);
@@ -40052,10 +40057,15 @@ window.addEventListener('online', function() {
   if('serviceWorker' in navigator && 'SyncManager' in window) {
     navigator.serviceWorker.ready.then(function(reg) {
       reg.sync.register('sync-incidents').catch(function(){});
-      reg.sync.register('sync-inspections').catch(function(){});
+      reg.sync.register('sync-observations').catch(function(){});
     });
   }
 });
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.addEventListener('message',function(event){
+    if(event.data&&event.data.type==='SYNC_REQUEST')offlineSyncNow();
+  });
+}
 window.addEventListener('offline', function() {
   if(typeof toast === 'function') toast('You are offline - data will sync when reconnected', false);
 });

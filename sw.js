@@ -83,12 +83,12 @@ self.addEventListener('fetch', (event) => {
 // Background sync remains intentionally limited to workflows with an IndexedDB queue.
 self.addEventListener('sync', (event) => {
   if (event.tag === 'sync-incidents') event.waitUntil(syncPendingData('auris360-pending-incidents'));
-  if (event.tag === 'sync-inspections') event.waitUntil(syncPendingData('auris360-pending-inspections'));
+  if (event.tag === 'sync-observations') event.waitUntil(syncPendingData('auris360-pending-observations'));
 });
 
 async function syncPendingData(storeName) {
   const clients = await self.clients.matchAll();
-  clients.forEach((client) => client.postMessage({ type: 'SYNC_STATUS', store: storeName, status: 'syncing' }));
+  clients.forEach((client) => client.postMessage({ type: 'SYNC_REQUEST', store: storeName }));
 }
 
 self.addEventListener('push', (event) => {

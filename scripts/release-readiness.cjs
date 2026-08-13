@@ -11,6 +11,7 @@ const testFiles = [
   'tests/core_control_role_matrix_contract.test.cjs',
   'tests/core_control_workflow_contract.test.cjs',
   'tests/core_control_resilience_contract.test.cjs',
+  'tests/mobile_offline_acceptance_contract.test.cjs',
   'tests/audit_contract.test.cjs',
   'tests/moc_separation_contract.test.cjs',
   'tests/person_identity_contract.test.cjs',

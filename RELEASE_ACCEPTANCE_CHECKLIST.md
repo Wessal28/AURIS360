@@ -30,7 +30,7 @@ Record the tenant, cohort, tester, release candidate and date. Attach evidence f
 | Navigation | Open every supported source from lists, Connected Records, notifications, QR links and Approval Center. |
 | Resilience | Run `npm run test:core-resilience`, then temporarily deny or rename one **optional** dependency in a protected test tenant (never production): Incident Evidence, Inspection Templates/Findings, or Risk JSA. Confirm the primary Incidents, Inspections or Risk register remains visible, the unavailable feature shows a controlled message/empty state, and restoring the dependency recovers without data repair. Capture before/after screenshots and the browser/API error. |
 | Workflow | Exercise create, submit, approve/reject, notify, audit and linked-action paths in their authoritative modules. |
-| Mobile/offline | Test desktop, tablet and mobile layouts; verify login-retained deep links and the supported offline queue. |
+| Mobile/offline | Run `npm run test:mobile-offline`. On protected desktop, tablet and installed mobile-PWA sessions: open an authenticated record link; create one Incident and one BBS draft while offline; reconnect under the same company and verify each syncs once with its photos; confirm a draft created under another company is retained but cannot sync until that company is selected. Verify unsupported modules clearly require connectivity. Capture screenshots and resulting record IDs. |
 | Rollback | Test Paused/Disabled cohort status and the forward corrective migration procedure without deleting tenant data. |
 
 ## 3. Cohort order

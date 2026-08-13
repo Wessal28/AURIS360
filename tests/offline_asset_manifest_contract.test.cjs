@@ -42,6 +42,7 @@ assert(sw.includes("cache.match('/index.html')"), 'offline navigation must fall 
 assert(sw.includes("url.pathname.startsWith('/api/')"), 'application APIs must bypass caches');
 assert(sw.includes("url.hostname.includes('supabase.co')"), 'Supabase requests must bypass caches');
 assert(sw.includes("event.tag === 'sync-incidents'"), 'incident background sync must remain registered');
-assert(sw.includes("event.tag === 'sync-inspections'"), 'inspection background sync must remain registered');
+assert(sw.includes("event.tag === 'sync-observations'"), 'BBS observation background sync must remain registered');
+assert(sw.includes("type: 'SYNC_REQUEST'"), 'background sync must request authenticated queue processing from the app');
 
 console.log(`Offline asset contract passed (${manifest.assets.length} routes, version ${manifest.version}).`);
