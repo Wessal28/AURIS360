@@ -158,7 +158,7 @@ function kpiXRefreshFilters(){
   if(objective){objective.innerHTML='<option value="all">All Objectives</option>'+kpiObjectives.map(function(o){return '<option value="'+kpiXEsc(o.id)+'">'+kpiXEsc((o.code||'')+' '+o.name)+'</option>';}).join('');objective.value=kpiXState.objective;}
   if(owner){var owners=[];kpiKPIs.forEach(function(k){var value=kpiXOwner(k);if(owners.indexOf(value)<0)owners.push(value);});owner.innerHTML='<option value="all">All KPI Owners</option>'+owners.sort().map(function(x){return '<option>'+kpiXEsc(x)+'</option>';}).join('');owner.value=kpiXState.owner;}
 }
-function kpiXMetricCard(label,value,sub,status,icon){return '<button type="button" class="kpi-x-metric" data-status="'+status+'" onclick="kpiXFilterStatus(\''+status+'\')"><div class="kpi-x-metric-head"><span class="kpi-x-metric-icon"><i class="ti '+icon+'"></i></span><span class="kpi-x-metric-label">'+kpiXEsc(label)+'</span></div><div class="kpi-x-metric-value">'+kpiXEsc(value)+'</div><div class="kpi-x-metric-sub">'+kpiXEsc(sub)+'</div></button>';}
+function kpiXMetricCard(label,value,sub,status,icon){return '<button type="button" class="kpi-x-metric" data-status="'+status+'" onclick="kpiXFilterStatus(\''+status+'\')"><span class="kpi-x-metric-icon"><i class="ti '+icon+'"></i></span><span class="kpi-x-metric-label">'+kpiXEsc(label)+'</span><strong class="kpi-x-metric-value">'+kpiXEsc(value)+'</strong><span class="kpi-x-metric-sub">'+kpiXEsc(sub)+'</span></button>';}
 function kpiXTrendSvg(){
   var monthScores=[],compilationMonth=kpiXCompilationMonth();
   for(var month=1;month<=12;month++){

@@ -15,7 +15,7 @@ var actionByClass={};Object.keys(actionMap).forEach(function(k){actionMap[k].for
 var queued=false;
 function navKey(el){if(el.dataset.navKey)return el.dataset.navKey;var click=el.getAttribute('onclick')||'';var m=click.match(/(?:showPage|modulesMenuNavigate|mobileNavTo)\('([^']+)'/);if(m)return m[1];var id=el.id||'';if(id.indexOf('mob-btn-')===0)return id.slice(8);return '';}
 function applyModules(){document.querySelectorAll('.sidebar .nav-item,.modules-menu-item,.mob-nav-btn,#mobile-modules-grid [onclick]').forEach(function(el){var key=navKey(el);if(!key)return;el.dataset.navKey=key;var icon=el.querySelector('i');if(icon)icon.classList.toggle('auris-module-icon',moduleKeys.has(key));});}
-function applyActions(){document.querySelectorAll('button i.ti,.btn i.ti,a.btn i.ti').forEach(function(icon){if(icon.classList.contains('auris-module-icon')||icon.classList.contains('auris-tab-icon'))return;var kind='';Array.prototype.some.call(icon.classList,function(c){if(actionByClass[c]){kind=actionByClass[c];return true;}return false;});icon.classList.toggle('auris-action-icon',!!kind);if(kind)icon.dataset.actionIcon=kind;else delete icon.dataset.actionIcon;});}
+function applyActions(){document.querySelectorAll('button i.ti,.btn i.ti,a.btn i.ti').forEach(function(icon){if(icon.classList.contains('auris-module-icon')||icon.classList.contains('auris-tab-icon')||icon.classList.contains('auris-indicator-icon')||icon.closest('.kpi-x-metric'))return;var kind='';Array.prototype.some.call(icon.classList,function(c){if(actionByClass[c]){kind=actionByClass[c];return true;}return false;});icon.classList.toggle('auris-action-icon',!!kind);if(kind)icon.dataset.actionIcon=kind;else delete icon.dataset.actionIcon;});}
 var indicatorTones=['blue','green','amber','red','purple','cyan'];
 var tabSelector='.page .module-tabs>button,.page [class$="-tabs"]>button,.page [class*="-tabs "]>button,.page [role="tab"],.page .rax-nav>button,.page .kpi-tab,.page .mtg-tab';
 function tabGlyph(text){
@@ -73,7 +73,7 @@ function applyIndicators(){
   document.querySelectorAll('.page [class~="metrics"]>.card,.page [class~="metrics"]>.metric,.page [class~="metrics"]>[class*="-metric"],.page [class*="-metrics"]>[class*="-metric"]').forEach(function(el){cards.add(el);});
   document.querySelectorAll('.page [id*="-m3"]').forEach(function(el){var card=el.closest('.card');if(card)cards.add(card);});
   cards.forEach(function(card){
-    if(card.closest('#page-dashboard')||card.classList.contains('auris-indicator-card'))return;
+    if(card.closest('#page-dashboard,#page-kpi')||card.classList.contains('auris-indicator-card'))return;
     var siblings=Array.prototype.filter.call(card.parentElement?card.parentElement.children:[],function(el){return el.matches('.card,.metric,[class*="-metric"]');});
     var idx=Math.max(0,siblings.indexOf(card));card.classList.add('auris-indicator-card');card.dataset.indicatorTone=indicatorTones[idx%indicatorTones.length];
     var icon=card.querySelector(':scope>i');
@@ -82,7 +82,7 @@ function applyIndicators(){
     var value=card.querySelector('[id*="-m3"],.metric-value,[class*="metric-value"],.value,b,strong');if(value)value.classList.add('auris-indicator-value');
   });
 }
-function apply(){queued=false;applyModules();applyTabs();applyActions();applyIndicators();}
+function apply(){queued=false;applyModules();applyTabs();applyIndicators();applyActions();}
 function queue(){if(queued)return;queued=true;requestAnimationFrame(apply);}
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',apply);else apply();
 new MutationObserver(queue).observe(document.documentElement,{childList:true,subtree:true});
