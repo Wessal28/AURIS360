@@ -24,8 +24,10 @@ Phase 2F migrated all 99 attributes from Objectives & KPIs, SWMS, Contractor Man
 
 Phase 2G migrated all 75 attributes from Training & Competency and BBS Observations into 53 precompiled handlers plus the strict namespace dispatcher for two reusable BBS render helpers. Only the 91 Safety Engagement handlers remain before `script-src-attr 'unsafe-inline'` can be removed.
 
+Phase 2H migrated all 91 Safety Engagement attributes into 61 precompiled handlers plus a strictly namespaced dispatcher for its reusable button and metric renderers. A scan of every active local application script now reports zero executable inline event attributes. The enforced policy is therefore set to `script-src-attr 'none'`; inline script attributes are no longer permitted in production.
+
 The interface also contains inline style attributes. Style CSP remains report-only with `'unsafe-inline'` until these declarations are moved into reusable classes or a nonce/hash strategy is adopted.
 
 ## Security effect
 
-Injected inline `<script>` elements can no longer execute under the enforced policy. Existing action buttons continue to work while event-handler migration proceeds in controlled batches.
+Injected inline `<script>` elements and inline script event attributes can no longer execute under the enforced policy. Existing action buttons use delegated, precompiled handlers.

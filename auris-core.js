@@ -34543,7 +34543,7 @@ function ensureMocSidebarItem(){
   var actions=document.getElementById('nav-actions')||Array.from(document.querySelectorAll('.nav-item')).find(function(el){return (el.getAttribute('onclick')||'').indexOf("showPage('actions'")!==-1;});
   if(!actions||!actions.parentNode)return;
   var item=document.createElement('div');
-  item.className='nav-item';item.id='nav-moc';item.setAttribute('onclick',"showPage('moc',this)");
+  item.className='nav-item';item.id='nav-moc';item.setAttribute('data-auris-runtime-onclick','r0152');
   item.innerHTML='<i class="ti ti-arrows-exchange"></i><span>Management of Change</span>';
   actions.parentNode.insertBefore(item,actions.nextSibling);
 }
@@ -34553,15 +34553,21 @@ function applyRoles() {
   var level = getRoleLevel(role);
   ensureMocSidebarItem();
 
+  var navHandlerPages={h0027:'dashboard',h0028:'executive',h0029:'ai-insights',h0030:'kpi',h0031:'workschedule',h0032:'events',h0033:'observation',h0034:'inspection',h0035:'risk',h0036:'tools',h0037:'fleet',h0038:'atex',h0039:'sitemap',h0040:'permit',h0041:'contractor',h0042:'emergency',h0043:'ohealth',h0044:'ppe',h0045:'fire',h0046:'chemical',h0047:'esg',h0048:'noise',h0049:'meetings',h0050:'training',h0051:'actions',h0052:'legal',h0053:'sop',h0054:'swms',h0055:'documents',h0056:'people',h0057:'users',h0058:'admin',h0059:'integrations',h0060:'approvals',h0061:'audit',h0062:'settings'};
+  function navPageKey(el) {
+    if(el.id==='nav-moc')return 'moc';
+    if(el.id==='nav-engagement')return 'engagement';
+    return navHandlerPages[el.getAttribute('data-auris-onclick')]||null;
+  }
+
   // -- Phase 1: ensure every nav-item has an ID we can target --
   // Most static <div class="nav-item" data-auris-generated-onclick="g0346"> items have
   // no ID, which means we can't role-gate them. Walk them once and assign
   // id="nav-{page}" based on the showPage(...) target in their onclick.
   document.querySelectorAll('.nav-item').forEach(function(el){
     if(el.id) return;  // already has an ID, leave it alone
-    var oc = el.getAttribute('onclick') || '';
-    var m = oc.match(/showPage\(['"]([^'"]+)['"]/);
-    if(m) el.id = 'nav-' + m[1];
+    var pageKey=navPageKey(el);
+    if(pageKey) el.id = 'nav-' + pageKey;
   });
 
   // -- Phase 2: read allowed pages from shared ROLE_ALLOWED map --
@@ -34574,11 +34580,6 @@ function applyRoles() {
   // every role (except sephs_admin in dev mode).
   // We read the page key from the onclick (not the id), because some items
   // have legacy IDs like "nav-mtg" that don't match the page key "meetings".
-  function navPageKey(el) {
-    var oc = el.getAttribute('onclick') || '';
-    var m = oc.match(/showPage\(['"]([^'"]+)['"]/);
-    return m ? m[1] : null;
-  }
   document.querySelectorAll('.nav-item').forEach(function(el){
     var pageKey = navPageKey(el);
     if(!pageKey) return;
@@ -39262,7 +39263,7 @@ function addPrintBtn(container, onclick, label) {
   btn.className = 'btn btn-sm';
   btn.style.cssText = 'gap:6px;';
   btn.innerHTML = '<i class="ti ti-printer"></i>' + (label||'Print PDF');
-  btn.setAttribute('onclick', onclick);
+  if (typeof onclick === 'function') btn.addEventListener('click', onclick);
   if (container) container.appendChild(btn);
   return btn;
 }

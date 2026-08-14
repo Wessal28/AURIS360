@@ -10,6 +10,7 @@ module.exports=function applicationSource(root=path.resolve(__dirname,'..')){
     fs.readFileSync(path.join(root,'auris-module-event-handlers-batch-2.js'),'utf8')+'\n'+
     fs.readFileSync(path.join(root,'auris-module-event-handlers-batch-3.js'),'utf8')+'\n'+
     fs.readFileSync(path.join(root,'auris-module-event-handlers-batch-4.js'),'utf8')+'\n'+
+    fs.readFileSync(path.join(root,'auris-module-event-handlers-batch-5.js'),'utf8')+'\n'+
     fs.readFileSync(path.join(root,'auris-core.js'),'utf8')+'\n'+
     fs.readFileSync(path.join(root,'auris-detached-modules.js'),'utf8');
 };

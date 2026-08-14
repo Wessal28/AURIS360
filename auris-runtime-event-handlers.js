@@ -453,6 +453,9 @@ smCreateLinkedPlan(args[0])
     },
     "r0151": function (event, args) {
 this.parentNode.parentNode.remove()
+    },
+    "r0152": function (event, args) {
+showPage('moc',this)
     }
   };
   var namedActions = {

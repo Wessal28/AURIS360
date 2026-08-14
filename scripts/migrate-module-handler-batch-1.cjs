@@ -19,6 +19,10 @@ const batches = {
   4: {
     prefix: 'e',
     files: ['learning-competency-upgrade.js','bbs-observations.js']
+  },
+  5: {
+    prefix: 'f',
+    files: ['safety-engagement.js']
   }
 };
 const batch = batches[batchNumber];
