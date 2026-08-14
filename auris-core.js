@@ -38618,17 +38618,21 @@ function aurisPrint(html, title) {
   var isLandscapePrint=isRiskPrint||printTitle.toLowerCase().includes('fire certificate compliance report');
   var w = window.open('', '_blank', isLandscapePrint?'width=1280,height=820':'width=900,height=700');
   if (!w) { toast('Please allow popups for PDF generation', false); return; }
-  var reportOverride=isLandscapePrint
-    ? '@page{size:A4 landscape;margin:8mm}html,body{width:297mm;min-height:210mm}.report-page{width:297mm;max-width:none!important;min-height:210mm;padding:8mm}table{font-size:7.2pt}th,td{padding:3px 4px}.rpt-section{break-inside:avoid}.fire-print-table th,.fire-print-table td{vertical-align:top}.fire-print-table td{white-space:normal;overflow:visible;height:auto}'
-    : '';
+  var brand=(window.Brand&&window.Brand.get)?window.Brand.get():{};
+  function safePrintColor(value,fallback){return /^#[0-9a-f]{3,8}$/i.test(String(value||''))?String(value):fallback;}
+  var printVariables='--auris-print-primary:'+safePrintColor(brand.primary,'#1D9E75')+';--auris-print-secondary:'+safePrintColor(brand.secondary,'#0F6E56')+';--auris-print-accent:'+safePrintColor(brand.accent,'#EF9F27');
   w.document.write('<!DOCTYPE html><html><head>'
     + '<meta charset="UTF-8">'
     + '<title>' + escH(title) + '</title>'
-    + '<style>' + aurisPrintCSS() + reportOverride + '</style>'
-    + '</head><body>' + html + '</body></html>');
+    + '<link id="auris-print-styles" rel="stylesheet" href="/auris-print.css">'
+    + '</head><body class="'+(isLandscapePrint?'auris-print-landscape':'auris-print-portrait')+'" style="'+printVariables+'">' + html + '</body></html>');
   w.document.close();
   w.focus();
-  setTimeout(function() { w.print(); }, 600);
+  var printed=false;
+  function printWhenReady(){if(printed)return;printed=true;w.focus();w.print();}
+  var stylesheet=w.document.getElementById('auris-print-styles');
+  if(stylesheet){stylesheet.addEventListener('load',printWhenReady,{once:true});stylesheet.addEventListener('error',printWhenReady,{once:true});}
+  setTimeout(printWhenReady,1200);
 }
 
 function aurisPrintCSS() {

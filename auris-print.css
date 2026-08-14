@@ -1,0 +1,90 @@
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: Arial, Helvetica, sans-serif; font-size: 11pt; color: #1a1a1a; background: #fff; }
+    .report-page { max-width: 210mm; margin: 0 auto; padding: 12mm; }
+
+    /* Header */
+    .rpt-header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 3px solid var(--auris-print-primary); padding-bottom: 10px; margin-bottom: 16px; }
+    .rpt-logo-wrap { display: flex; align-items: center; gap: 12px; min-width: 0; }
+    .rpt-brand-pair { display: flex; align-items: center; gap: 14px; min-width: 0; }
+    .rpt-brand-divider { width: 1px; height: 42px; background: #d1d5db; }
+    .rpt-logo-img { max-height: 44px; max-width: 160px; object-fit: contain; }
+    .rpt-auris-logo { height: 34px; width: auto; object-fit: contain; }
+    .rpt-client-logo { max-height: 42px; max-width: 120px; object-fit: contain; border: 1px solid #e5e7eb; border-radius: 6px; padding: 3px; background: #fff; }
+    .rpt-logo { font-size: 22pt; font-weight: 900; color: var(--auris-print-primary); letter-spacing: -1px; }
+    .rpt-client-name { font-size: 13pt; font-weight: 900; color: #111827; line-height: 1.1; }
+    .rpt-company { font-size: 9pt; color: #6b7280; margin-top: 2px; }
+    .rpt-meta { text-align: right; font-size: 9pt; color: #6b7280; }
+    .rpt-meta strong { color: #1a1a1a; }
+
+    /* Title */
+    .rpt-title { font-size: 16pt; font-weight: 700; color: #1a1a1a; margin-bottom: 4px; }
+    .rpt-subtitle { font-size: 10pt; color: #6b7280; margin-bottom: 16px; }
+
+    /* Sections */
+    .rpt-section { margin-bottom: 16px; }
+    .rpt-section-title { font-size: 11pt; font-weight: 700; color: #fff; background: var(--auris-print-primary); padding: 5px 10px; border-radius: 4px; margin-bottom: 8px; }
+    .rpt-section-title.red { background: #DC2626; }
+    .rpt-section-title.blue { background: #185FA5; }
+    .rpt-section-title.amber { background: var(--auris-print-accent); }
+    .rpt-section-title.secondary { background: var(--auris-print-secondary); }
+    .rpt-section-title.grey { background: #374151; }
+
+    /* Fields grid */
+    .rpt-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 16px; margin-bottom: 8px; }
+    .rpt-grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px 12px; }
+    .rpt-field { border-bottom: 1px solid #e5e7eb; padding-bottom: 4px; }
+    .rpt-field label { font-size: 8pt; color: #6b7280; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; display: block; }
+    .rpt-field span { font-size: 10pt; color: #1a1a1a; }
+    .rpt-full { grid-column: 1 / -1; }
+
+    /* Tables */
+    table { width: 100%; border-collapse: collapse; font-size: 9pt; margin-bottom: 10px; page-break-inside: auto; }
+    thead { display: table-header-group; }
+    tfoot { display: table-footer-group; }
+    tr { page-break-inside: avoid; page-break-after: auto; }
+    th { background: #e5e7eb !important; color: #111827 !important; font-weight: 800; text-align: left; padding: 6px 8px; border: 1px solid #cbd5e1; font-size: 8pt; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    td { padding: 5px 8px; border: 1px solid #e5e7eb; vertical-align: top; overflow-wrap: anywhere; }
+    tr:nth-child(even) td { background: #f9fafb; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+
+    /* Badges */
+    .badge { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 8pt; font-weight: 700; }
+    .badge-red { background: #FEE2E2; color: #DC2626; }
+    .badge-amber { background: #FEF3C7; color: #92400E; }
+    .badge-green { background: #D1FAE5; color: #065F46; }
+    .badge-blue { background: #DBEAFE; color: #1E40AF; }
+    .badge-grey { background: #F3F4F6; color: #374151; }
+
+    /* Signature boxes */
+    .rpt-signatures { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; margin-top: 20px; }
+    .rpt-sig-box { border-top: 2px solid #1a1a1a; padding-top: 6px; }
+    .rpt-sig-box label { font-size: 8pt; color: #6b7280; font-weight: 600; display: block; }
+    .rpt-sig-box .sig-line { height: 30px; }
+
+    /* Footer */
+    .rpt-footer { margin-top: 20px; padding-top: 8px; border-top: 1px solid #e5e7eb; display: flex; justify-content: space-between; font-size: 8pt; color: #9ca3af; }
+    .rpt-footer-custom { margin-top: 6px; padding-top: 6px; border-top: 1px dashed #e5e7eb; text-align: center; font-size: 8pt; color: #6b7280; font-style: italic; }
+    .rpt-powered { margin-top: 4px; text-align: center; font-size: 7pt; color: #b8bcc4; }
+    .rpt-empty { border: 1px dashed #cbd5e1; border-radius: 8px; padding: 18px; text-align: center; color: #64748b; background: #f8fafc; font-size: 10pt; line-height: 1.45; }
+    .rpt-print-note { margin: 0 0 10px; color: #64748b; font-size: 8pt; }
+
+    /* Print settings */
+    @page { size: A4; margin: 10mm; }
+    @media print {
+      html, body { background: #fff !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      .no-print, .sidebar, .topbar, .mobile-topbar, .mobile-bottom3nav, .fab, .ai-fab, .dev-badge, button { display: none !important; }
+      .report-page { box-shadow: none !important; margin: 0 auto !important; }
+      a { color: #111827 !important; text-decoration: none !important; }
+    }
+
+body.auris-print-landscape { width: 297mm; min-height: 210mm; }
+body.auris-print-landscape .report-page { width: 297mm; max-width: none !important; min-height: 210mm; padding: 8mm; }
+body.auris-print-landscape table { font-size: 7.2pt; }
+body.auris-print-landscape th,
+body.auris-print-landscape td { padding: 3px 4px; }
+body.auris-print-landscape .rpt-section { break-inside: avoid; }
+body.auris-print-landscape .fire-print-table th,
+body.auris-print-landscape .fire-print-table td { vertical-align: top; }
+body.auris-print-landscape .fire-print-table td { white-space: normal; overflow: visible; height: auto; }
+@page { size: A4; margin: 10mm; }
+body.auris-print-landscape { page: auris-landscape; }
+@page auris-landscape { size: A4 landscape; margin: 8mm; }

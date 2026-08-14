@@ -30,6 +30,8 @@ The interface also contains inline style attributes. Style CSP remains report-on
 
 Phase 3A began the style migration by extracting all six page-level `<style>` blocks (101,694 characters) into ordered, same-origin stylesheets. Their original cascade positions are preserved, the offline application shell now includes each stylesheet, and a regression contract prevents page-level inline style blocks from returning. Runtime style attributes and print-window templates remain staged under the report-only style policy for subsequent controlled batches.
 
+Phase 3B externalized the shared print engine stylesheet into `auris-print.css`. The engine now validates tenant brand colours before exposing them as CSS variables, applies portrait or landscape rules through classes, and waits for the external stylesheet to load before opening the print dialog. The stylesheet is included in the offline application shell. Twelve specialised report templates still contain scoped inline style blocks and remain the next print migration batch.
+
 ## Security effect
 
 Injected inline `<script>` elements and inline script event attributes can no longer execute under the enforced policy. Existing action buttons use delegated, precompiled handlers.
