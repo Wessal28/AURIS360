@@ -4,7 +4,7 @@ const path = require('path');
 const vm = require('vm');
 
 const root = path.resolve(__dirname, '..');
-const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
+const html = require('./application_source.cjs')(root);
 
 function functionSource(name) {
   const start = html.indexOf(`function ${name}(`);

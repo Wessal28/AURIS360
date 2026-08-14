@@ -6,7 +6,7 @@ const path = require('node:path');
 const root = path.join(__dirname, '..');
 const css = fs.readFileSync(path.join(root, 'auris-icon-system.css'), 'utf8');
 const kpiCss = fs.readFileSync(path.join(root, 'kpi-module-upgrade.css'), 'utf8');
-const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
+const html = require('./application_source.cjs')(root);
 
 test('other module pages inherit the Objectives and KPIs system font without restyling the reference module', () => {
   assert.match(css, /--auris-module-font:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif/);

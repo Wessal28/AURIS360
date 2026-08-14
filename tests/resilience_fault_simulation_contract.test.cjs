@@ -1,5 +1,5 @@
 const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path');
-const root=path.resolve(__dirname,'..'),app=fs.readFileSync(path.join(root,'resilience-fault-simulation.js'),'utf8'),html=fs.readFileSync(path.join(root,'index.html'),'utf8');
+const root=path.resolve(__dirname,'..'),app=fs.readFileSync(path.join(root,'resilience-fault-simulation.js'),'utf8'),html=require('./application_source.cjs')(root);
 
 test('fault simulation is administrator-only and session-scoped',()=>{
   assert.match(app,/isSA[\s\S]*isAdm/);

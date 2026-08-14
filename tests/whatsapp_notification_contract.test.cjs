@@ -6,7 +6,7 @@ const root=path.resolve(__dirname,'..');
 const sql=fs.readFileSync(path.join(root,'whatsapp_notifications_upgrade.sql'),'utf8');
 const sender=fs.readFileSync(path.join(root,'api','send-whatsapp.js'),'utf8');
 const webhook=fs.readFileSync(path.join(root,'api','whatsapp-webhook.js'),'utf8');
-const app=fs.readFileSync(path.join(root,'index.html'),'utf8');
+const app=require('./application_source.cjs')(root);
 const vercel=require(path.join(root,'vercel.json'));
 
 test('consent is self-service, withdrawable and append-only audited',()=>{

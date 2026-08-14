@@ -1,7 +1,7 @@
 const fs = require('fs');
 const vm = require('vm');
 
-const html = fs.readFileSync('index.html', 'utf8');
+const html = require('./application_source.cjs')();
 const start = html.indexOf('var AUDIT_EVENT_CONTRACT');
 const end = html.indexOf('function auditApiMutation', start);
 if (start < 0 || end < 0) throw new Error('Shared audit contract was not found');

@@ -2,7 +2,7 @@ const test=require('node:test');
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
 
-const html=fs.readFileSync('index.html','utf8');
+const html=require('./application_source.cjs')();
 
 test('fresh sign-in waits for company context and dashboard data',()=>{
   const signIn=html.match(/async function authOnSignIn\(authData\) \{[\s\S]*?\n\}/)?.[0]||'';

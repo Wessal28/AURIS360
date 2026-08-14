@@ -3,7 +3,7 @@ const path = require('path');
 const assert = require('assert');
 
 const root = path.resolve(__dirname, '..');
-const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
+const html = require('./application_source.cjs')(root);
 const sql = fs.readFileSync(path.join(root, 'canonical_person_identity_upgrade.sql'), 'utf8');
 
 const directTables = [

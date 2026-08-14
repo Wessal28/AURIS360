@@ -1,5 +1,5 @@
 const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path'),vm=require('node:vm');
-const html=fs.readFileSync(path.resolve(__dirname,'..','index.html'),'utf8');
+const html=require('./application_source.cjs')();
 
 function extract(name,next){
   const start=html.indexOf(`function ${name}`),end=html.indexOf(`function ${next}`,start);

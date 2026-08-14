@@ -1,5 +1,5 @@
 const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path');
-const root=path.resolve(__dirname,'..'),app=fs.readFileSync(path.join(root,'offline-sync-diagnostic.js'),'utf8'),html=fs.readFileSync(path.join(root,'index.html'),'utf8');
+const root=path.resolve(__dirname,'..'),app=fs.readFileSync(path.join(root,'offline-sync-diagnostic.js'),'utf8'),html=require('./application_source.cjs')(root);
 test('offline preflight is synthetic, session-only and has no remote writes',()=>{assert.match(app,/sessionStorage\.setItem\(KEY/);assert.match(app,/Synthetic offline incident/);assert.match(app,/Synthetic cross-company observation/);assert.doesNotMatch(app,/\bapi\s*\(|\bfetch\s*\(|localStorage/);assert.match(app,/never calls an API/);});
 test('preflight covers tenant safety, evidence and duplicate handling',()=>{assert.match(app,/offlineDraftDeduplicate/);assert.match(app,/offlineDraftCanSync/);assert.match(app,/Company isolation/);assert.match(app,/Attachment retention/);assert.match(app,/Duplicate protection/);assert.match(app,/Live evidence still required/);});
 test('settings surface loads the diagnostic',()=>{assert.match(html,/id="settings-offline-sync-diagnostic-card"/);assert.match(html,/renderOfflineSyncDiagnostic/);assert.match(html,/offline-sync-diagnostic\.js\?v=20260814-1/);});

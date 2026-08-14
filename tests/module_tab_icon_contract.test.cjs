@@ -6,7 +6,7 @@ const path = require('node:path');
 const root = path.join(__dirname, '..');
 const js = fs.readFileSync(path.join(root, 'auris-icon-system.js'), 'utf8');
 const css = fs.readFileSync(path.join(root, 'auris-icon-system.css'), 'utf8');
-const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
+const html = require('./application_source.cjs')(root);
 
 test('shared decorator covers static and dynamically generated module tabs', () => {
   for (const selector of ['.module-tabs>button', '[class$="-tabs"]>button', '[role="tab"]', '.kpi-tab', '.mtg-tab']) {

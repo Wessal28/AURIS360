@@ -3,7 +3,7 @@ const path = require('path');
 const assert = require('assert');
 
 const root = path.resolve(__dirname, '..');
-const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
+const html = require('./application_source.cjs')(root);
 const sql = fs.readFileSync(path.join(root, 'moc_change_requests_upgrade.sql'), 'utf8');
 
 assert.match(sql, /create table if not exists public\.moc_change_requests/i);

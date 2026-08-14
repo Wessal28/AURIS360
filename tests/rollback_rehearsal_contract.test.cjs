@@ -1,5 +1,5 @@
 const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path');
-const root=path.resolve(__dirname,'..'),app=fs.readFileSync(path.join(root,'rollback-rehearsal.js'),'utf8'),html=fs.readFileSync(path.join(root,'index.html'),'utf8');
+const root=path.resolve(__dirname,'..'),app=fs.readFileSync(path.join(root,'rollback-rehearsal.js'),'utf8'),html=require('./application_source.cjs')(root);
 test('rehearsal is administrator-only, synthetic and session-scoped',()=>{assert.match(app,/isSA/);assert.match(app,/sessionStorage\.setItem\(KEY/);assert.match(app,/local synthetic state only/);assert.doesNotMatch(app,/\bapi\s*\(|\bfetch\s*\(|localStorage/);});
 test('rehearsal exercises the application rollout policy and safe transition order',()=>{assert.match(app,/rolloutStatusAllowsModules/);assert.match(app,/\['pilot','paused','disabled'\]/);assert.match(app,/Paused hides the cohort/);assert.match(app,/Evidence retention/);assert.match(app,/Protected-tenant evidence still required/);});
 test('settings surface loads the rollback rehearsal',()=>{assert.match(html,/id="settings-rollback-rehearsal-card"/);assert.match(html,/renderRollbackRehearsal/);assert.match(html,/rollback-rehearsal\.js\?v=20260814-1/);});

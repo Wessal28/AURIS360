@@ -5,7 +5,7 @@ const vm = require('vm');
 
 const root = path.resolve(__dirname, '..');
 const read = (file) => fs.readFileSync(path.join(root, file), 'utf8');
-const html = read('index.html');
+const html = require('./application_source.cjs')(root);
 const relationshipsSql = read('shared_record_relationships_schema.sql');
 const results = [];
 

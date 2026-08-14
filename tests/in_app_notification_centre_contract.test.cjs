@@ -7,7 +7,7 @@ const root = path.resolve(__dirname, '..');
 const sql = fs.readFileSync(path.join(root, 'in_app_notification_centre_upgrade.sql'), 'utf8');
 const app = fs.readFileSync(path.join(root, 'notification-centre.js'), 'utf8');
 const css = fs.readFileSync(path.join(root, 'notification-centre.css'), 'utf8');
-const index = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
+const index = require('./application_source.cjs')(root);
 
 test('personal inbox is recipient-private under RLS', () => {
   assert.match(sql, /alter table public\.user_notifications enable row level security/i);

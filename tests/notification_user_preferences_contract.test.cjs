@@ -7,7 +7,7 @@ const sql=fs.readFileSync(path.join(root,'notification_user_preferences_upgrade.
 const email=fs.readFileSync(path.join(root,'api','send-emails.js'),'utf8');
 const push=fs.readFileSync(path.join(root,'api','send-push.js'),'utf8');
 const whatsapp=fs.readFileSync(path.join(root,'api','send-whatsapp.js'),'utf8');
-const app=fs.readFileSync(path.join(root,'index.html'),'utf8');
+const app=require('./application_source.cjs')(root);
 
 test('preferences are recipient-owned and tenant-bound',()=>{
   assert.match(sql,/profile_id=auth\.uid\(\)/i);assert.match(sql,/p\.company_id=notification_user_preferences\.company_id/i);

@@ -5,7 +5,7 @@ const path=require('node:path');
 const root=path.resolve(__dirname,'..');
 const endpointText=fs.readFileSync(path.join(root,'api','notification-health.js'),'utf8');
 const endpoint=require(path.join(root,'api','notification-health.js'))._test;
-const app=fs.readFileSync(path.join(root,'index.html'),'utf8');
+const app=require('./application_source.cjs')(root);
 const vercel=require(path.join(root,'vercel.json'));
 
 test('health endpoint requires a real user and authorised role',()=>{

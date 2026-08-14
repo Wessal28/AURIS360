@@ -6,7 +6,7 @@ const path = require('node:path');
 const root = path.join(__dirname, '..');
 const js = fs.readFileSync(path.join(root, 'elearning-course-path.js'), 'utf8');
 const sql = fs.readFileSync(path.join(root, 'elearning_course_path_upgrade.sql'), 'utf8');
-const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
+const html = require('./application_source.cjs')(root);
 
 test('course paths support ordered videos with a legacy single-video fallback', () => {
   assert.match(js, /learning_path/);

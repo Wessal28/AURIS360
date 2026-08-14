@@ -4,7 +4,7 @@
 
 - `auris360.app` serves HTTPS with Vercel HSTS.
 - Baseline CSP, clickjacking, MIME-sniffing, referrer and browser-permission protections are deployed.
-- The complete CSP remains report-only until inline scripts and observed dependency violations are removed.
+- Script elements are now governed by an enforced CSP allowlist; the complete policy remains report-only while legacy event-handler and style attributes are migrated.
 - The browser uses the Supabase anonymous/publishable client role; elevated service credentials remain server-side.
 - Database-provided links and media now pass through a shared protocol allowlist before entering `href` or `src` attributes.
 - Stored SOP HTML is sanitized before print rendering; active elements, event handlers and unsafe URLs are removed.
@@ -37,12 +37,12 @@ Completed safeguards:
 - isolate database-driven new-window links with `noopener noreferrer`;
 - sanitize stored SOP print HTML before it is written into a new window.
 
-This is a targeted high-risk sink remediation. The remaining inline-script migration is tracked separately because it is required before the full CSP can be enforced.
+This is a targeted high-risk sink remediation. CSP phase 1 is recorded in `CSP_HARDENING_PHASE_1_2026-08-14.md`: both inline script blocks are external assets, generated SOP print scripts are removed and `script-src-elem` is enforced. The remaining work is the staged migration of legacy inline event handlers and styles.
 
 ## Remaining gates
 
-1. Remove inline application scripts progressively and continue reviewing module-specific rich-content renderers.
-2. Move the complete CSP from report-only to enforced after inline migration.
+1. Replace inline event-handler attributes module by module and continue reviewing module-specific rich-content renderers.
+2. Migrate inline styles or adopt a controlled nonce/hash strategy, then move the complete CSP from report-only to enforced.
 3. Require MFA for privileged AURIS360, Supabase, Vercel and source-control accounts.
 4. Migrate legacy Supabase `anon`/`service_role` keys to publishable/secret keys and rotate elevated credentials safely.
 5. Protect preview deployments and verify production/preview environment-variable separation.

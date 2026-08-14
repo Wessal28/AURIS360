@@ -4,7 +4,7 @@ const path = require('path');
 const vm = require('vm');
 
 const root = path.resolve(__dirname, '..');
-const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
+const html = require('./application_source.cjs')(root);
 const sql = fs.readFileSync(path.join(root, 'controlled_rollout_upgrade.sql'), 'utf8');
 
 assert.match(sql, /create table if not exists public\.company_rollout_cohorts/i);
