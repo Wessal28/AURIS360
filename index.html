@@ -58,6 +58,7 @@
 <link rel="stylesheet" href="auris-application-shell.css?v=20260814-2">
 <link rel="stylesheet" href="auris-dashboard-personal.css?v=20260814-1">
 <link rel="stylesheet" href="auris-dashboard-org.css?v=20260814-1">
+<link rel="stylesheet" href="auris-dashboard-executive.css?v=20260814-1">
 </head>
 <body>
 <div id="login-screen">
@@ -722,14 +723,14 @@
 <!-- ------------------------------------------------------ -->
 <!-- EXECUTIVE MANAGEMENT DASHBOARD                        -->
 <!-- ------------------------------------------------------ -->
-<div id="page-executive" class="page" style="display:none">
-<div class="page-header" style="margin-bottom:10px">
+<div id="page-executive" class="page auris-exec-s-6aa34d7432">
+<div class="page-header auris-exec-s-b922c89f16">
 <div>
 <div class="page-title">Executive Management Dashboard</div>
-<div style="font-size:12px;color:var(--text2)">Board-level HSE performance - Monthly reports - ESG - Sustainability</div>
+<div class="auris-exec-s-7299078644">Board-level HSE performance - Monthly reports - ESG - Sustainability</div>
 </div>
-<div style="display:flex;gap:8px;align-items:center">
-<select id="exec-year-filter" data-auris-onchange="h0091" style="padding:6px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px">
+<div class="auris-exec-s-39c68df36f">
+<select id="exec-year-filter" class="auris-exec-s-bd0e58d190" data-auris-onchange="h0091">
 <option value="">Current year</option>
 </select>
 <button class="btn btn-sm btn-primary" data-auris-onclick="h0092"><i class="ti ti-file-export"></i>Export report</button>
@@ -738,211 +739,211 @@
 </div>
 
 <!-- Executive tab bar -->
-<div style="display:flex;gap:0;margin-bottom:14px;border-bottom:2px solid var(--border);overflow-x:auto">
-<button class="mtg-tab active" id="exec-tab-overview" data-auris-onclick="h0094" style="white-space:nowrap">Executive Overview</button>
-<button class="mtg-tab" id="exec-tab-safety" data-auris-onclick="h0095" style="white-space:nowrap">Safety Performance</button>
-<button class="mtg-tab" id="exec-tab-compliance" data-auris-onclick="h0096" style="white-space:nowrap">Compliance</button>
-<button class="mtg-tab" id="exec-tab-esg" data-auris-onclick="h0097" style="white-space:nowrap">ESG &amp; Environment</button>
-<button class="mtg-tab" id="exec-tab-reports" data-auris-onclick="h0098" style="white-space:nowrap">Reports</button>
+<div class="auris-exec-s-0904085f3d">
+<button class="mtg-tab active auris-exec-s-eb99a4c193" id="exec-tab-overview" data-auris-onclick="h0094">Executive Overview</button>
+<button class="mtg-tab auris-exec-s-eb99a4c193" id="exec-tab-safety" data-auris-onclick="h0095">Safety Performance</button>
+<button class="mtg-tab auris-exec-s-eb99a4c193" id="exec-tab-compliance" data-auris-onclick="h0096">Compliance</button>
+<button class="mtg-tab auris-exec-s-eb99a4c193" id="exec-tab-esg" data-auris-onclick="h0097">ESG &amp; Environment</button>
+<button class="mtg-tab auris-exec-s-eb99a4c193" id="exec-tab-reports" data-auris-onclick="h0098">Reports</button>
 </div>
 
 <!-- -- OVERVIEW -- -->
 <div id="exec-view-overview">
 <!-- Headline KPIs -->
-<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px">
-<div class="card" style="padding:14px 16px;background:linear-gradient(135deg,#7F1D1D,#DC2626);color:#fff">
-<div style="font-size:11px;font-weight:700;text-transform:uppercase;opacity:.8;margin-bottom:6px">LTIFR YTD</div>
-<div style="font-size:32px;font-weight:900" id="exec-ltifr">-</div>
-<div style="font-size:11px;opacity:.75;margin-top:3px">per million man-hours</div>
-<div style="font-size:11px;margin-top:8px" id="exec-ltifr-trend"></div>
+<div class="auris-exec-s-14dfb7ae67">
+<div class="card auris-exec-s-eb391b5195">
+<div class="auris-exec-s-525e47b940">LTIFR YTD</div>
+<div id="exec-ltifr" class="auris-exec-s-32fa062d0e">-</div>
+<div class="auris-exec-s-b6cb22c5b1">per million man-hours</div>
+<div id="exec-ltifr-trend" class="auris-exec-s-3393371eab"></div>
 </div>
-<div class="card" style="padding:14px 16px;background:linear-gradient(135deg,#312e81,#5B21B6);color:#fff">
-<div style="font-size:11px;font-weight:700;text-transform:uppercase;opacity:.8;margin-bottom:6px">TRIR YTD</div>
-<div style="font-size:32px;font-weight:900" id="exec-trir">-</div>
-<div style="font-size:11px;opacity:.75;margin-top:3px">total recordable rate</div>
-<div style="font-size:11px;margin-top:8px" id="exec-trir-trend"></div>
+<div class="card auris-exec-s-bf8f7f0abd">
+<div class="auris-exec-s-525e47b940">TRIR YTD</div>
+<div id="exec-trir" class="auris-exec-s-32fa062d0e">-</div>
+<div class="auris-exec-s-b6cb22c5b1">total recordable rate</div>
+<div id="exec-trir-trend" class="auris-exec-s-3393371eab"></div>
 </div>
-<div class="card" style="padding:14px 16px;background:linear-gradient(135deg,#064E3B,#1D9E75);color:#fff">
-<div style="font-size:11px;font-weight:700;text-transform:uppercase;opacity:.8;margin-bottom:6px">Compliance</div>
-<div style="font-size:32px;font-weight:900" id="exec-compliance">-</div>
-<div style="font-size:11px;opacity:.75;margin-top:3px">overall HSE compliance</div>
-<div id="exec-compliance-prog" style="height:4px;background:rgba(255,255,255,.2);border-radius:99px;margin-top:8px;overflow:hidden"><div id="exec-compliance-prog-inner" style="height:100%;background:#fff;width:0%;transition:width 1s;border-radius:99px"></div></div>
+<div class="card auris-exec-s-0df5893da0">
+<div class="auris-exec-s-525e47b940">Compliance</div>
+<div id="exec-compliance" class="auris-exec-s-32fa062d0e">-</div>
+<div class="auris-exec-s-b6cb22c5b1">overall HSE compliance</div>
+<div id="exec-compliance-prog" class="auris-exec-s-659931a888"><div id="exec-compliance-prog-inner" class="auris-exec-s-be75a9b8db"></div></div>
 </div>
-<div class="card" style="padding:14px 16px;background:linear-gradient(135deg,#1e3a5f,#185FA5);color:#fff">
-<div style="font-size:11px;font-weight:700;text-transform:uppercase;opacity:.8;margin-bottom:6px">Days Since LTI</div>
-<div style="font-size:32px;font-weight:900" id="exec-days-lti">-</div>
-<div style="font-size:11px;opacity:.75;margin-top:3px">lost time injury free</div>
+<div class="card auris-exec-s-7c31f3e506">
+<div class="auris-exec-s-525e47b940">Days Since LTI</div>
+<div id="exec-days-lti" class="auris-exec-s-32fa062d0e">-</div>
+<div class="auris-exec-s-b6cb22c5b1">lost time injury free</div>
 </div>
 </div>
 
 <!-- Performance trend + Site comparison -->
-<div style="display:grid;grid-template-columns:2fr 1fr;gap:12px;margin-bottom:12px">
+<div class="auris-exec-s-95cc0e2392">
 <div class="card">
 <div class="card-title">Annual Safety Performance Trend</div>
-<div id="exec-annual-trend" style="height:140px;display:flex;align-items:flex-end;gap:4px;padding:4px">
-<div class="loading-msg" style="font-size:11px;width:100%;text-align:center">Loading...</div>
+<div id="exec-annual-trend" class="auris-exec-s-24afcea83f">
+<div class="loading-msg auris-exec-s-d57cdb0b2f">Loading...</div>
 </div>
-<div id="exec-trend-labels" style="display:flex;gap:4px;margin-top:4px"></div>
+<div id="exec-trend-labels" class="auris-exec-s-97346626ba"></div>
 </div>
 <div class="card">
 <div class="card-title">Risk Distribution</div>
-<div id="exec-risk-dist" style="display:flex;flex-direction:column;gap:8px">
-<div class="loading-msg" style="font-size:11px">Loading...</div>
+<div id="exec-risk-dist" class="auris-exec-s-0fbf9e859f">
+<div class="loading-msg auris-exec-s-33ee298127">Loading...</div>
 </div>
 </div>
 </div>
 
 <!-- Department + Contractor comparison -->
-<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+<div class="auris-exec-s-0994386629">
 <div class="card">
 <div class="card-title">Department Comparison</div>
-<div id="exec-dept-comparison" style="display:flex;flex-direction:column;gap:6px">
-<div class="loading-msg" style="font-size:11px">Loading...</div>
+<div id="exec-dept-comparison" class="auris-exec-s-67c6459975">
+<div class="loading-msg auris-exec-s-33ee298127">Loading...</div>
 </div>
 </div>
 <div class="card">
 <div class="card-title">Contractor vs Employee Incidents</div>
-<div id="exec-contractor-comparison" style="display:flex;flex-direction:column;gap:8px">
-<div class="loading-msg" style="font-size:11px">Loading...</div>
+<div id="exec-contractor-comparison" class="auris-exec-s-0fbf9e859f">
+<div class="loading-msg auris-exec-s-33ee298127">Loading...</div>
 </div>
 </div>
 </div>
 
 <!-- AI Executive Summary -->
-<div class="card" style="border:2px solid #5B21B6">
-<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-<div><div class="card-title" style="margin:0;color:#5B21B6"><i class="ti ti-robot"></i> AI Executive Summary</div><div style="font-size:11px;color:var(--text2)">Board-ready HSE performance summary</div></div>
-<div style="display:flex;gap:6px">
-<button class="btn btn-sm" style="background:#5B21B6;color:#fff;border-color:#5B21B6" data-auris-onclick="h0099">Weekly board pack</button>
-<button class="btn btn-sm" style="background:#5B21B6;color:#fff;border-color:#5B21B6" data-auris-onclick="h0100">Board summary</button>
-<button class="btn btn-sm" style="background:#5B21B6;color:#fff;border-color:#5B21B6" data-auris-onclick="h0101">Monthly report</button>
-<button class="btn btn-sm" style="background:#5B21B6;color:#fff;border-color:#5B21B6" data-auris-onclick="h0102">Annual stats</button>
+<div class="card auris-exec-s-ee71c71db7">
+<div class="auris-exec-s-a219ea00cb">
+<div><div class="card-title auris-exec-s-102a816f53"><i class="ti ti-robot"></i> AI Executive Summary</div><div class="auris-exec-s-d37c8e8fe6">Board-ready HSE performance summary</div></div>
+<div class="auris-exec-s-69374f356a">
+<button class="btn btn-sm auris-exec-s-a7dfccfa36" data-auris-onclick="h0099">Weekly board pack</button>
+<button class="btn btn-sm auris-exec-s-a7dfccfa36" data-auris-onclick="h0100">Board summary</button>
+<button class="btn btn-sm auris-exec-s-a7dfccfa36" data-auris-onclick="h0101">Monthly report</button>
+<button class="btn btn-sm auris-exec-s-a7dfccfa36" data-auris-onclick="h0102">Annual stats</button>
 </div>
 </div>
-<div id="exec-ai-output" style="display:none;background:#F5F3FF;border:1px solid #c4b5fd;border-radius:8px;padding:14px;font-size:13px;line-height:1.7;white-space:pre-wrap;max-height:400px;overflow-y:auto"></div>
-<div id="exec-ai-placeholder" style="font-size:12px;color:var(--text2);font-style:italic">Select a report type above to generate a board-ready AI executive report from live AURIS360 data.</div>
+<div id="exec-ai-output" class="auris-exec-s-f137364cfd"></div>
+<div id="exec-ai-placeholder" class="auris-exec-s-5d7636ec51">Select a report type above to generate a board-ready AI executive report from live AURIS360 data.</div>
 </div>
 </div>
 
 <!-- -- SAFETY PERFORMANCE -- -->
-<div id="exec-view-safety" style="display:none">
-<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px">
-<div class="card" style="padding:10px 12px;border-left:4px solid #DC2626"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase">Fatalities</div><div style="font-size:28px;font-weight:800;color:#DC2626" id="exec-fatalities">0</div></div>
-<div class="card" style="padding:10px 12px;border-left:4px solid #C2410C"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase">LTIs</div><div style="font-size:28px;font-weight:800;color:#C2410C" id="exec-ltis">-</div></div>
-<div class="card" style="padding:10px 12px;border-left:4px solid #EF9F27"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase">Medical Treatment</div><div style="font-size:28px;font-weight:800;color:#EF9F27" id="exec-mti">-</div></div>
-<div class="card" style="padding:10px 12px;border-left:4px solid #185FA5"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase">Near Misses</div><div style="font-size:28px;font-weight:800;color:#185FA5" id="exec-nm">-</div></div>
+<div id="exec-view-safety" class="auris-exec-s-6aa34d7432">
+<div class="auris-exec-s-14dfb7ae67">
+<div class="card auris-exec-s-03bd966c28"><div class="auris-exec-s-d68348462c">Fatalities</div><div id="exec-fatalities" class="auris-exec-s-39e15ae240">0</div></div>
+<div class="card auris-exec-s-9d8960c695"><div class="auris-exec-s-d68348462c">LTIs</div><div id="exec-ltis" class="auris-exec-s-ca558a1914">-</div></div>
+<div class="card auris-exec-s-c70473e794"><div class="auris-exec-s-d68348462c">Medical Treatment</div><div id="exec-mti" class="auris-exec-s-89936f8745">-</div></div>
+<div class="card auris-exec-s-b6d403ee7e"><div class="auris-exec-s-d68348462c">Near Misses</div><div id="exec-nm" class="auris-exec-s-c85dfe6fed">-</div></div>
 </div>
-<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+<div class="auris-exec-s-0994386629">
 <div class="card">
 <div class="card-title">Incident Types - YTD</div>
-<div id="exec-incident-types" style="display:flex;flex-direction:column;gap:6px"><div class="loading-msg" style="font-size:11px">Loading...</div></div>
+<div id="exec-incident-types" class="auris-exec-s-67c6459975"><div class="loading-msg auris-exec-s-33ee298127">Loading...</div></div>
 </div>
 <div class="card">
 <div class="card-title">Monthly Lost Time Days</div>
-<div id="exec-lost-time" style="height:120px;display:flex;align-items:flex-end;gap:4px;padding:4px"><div class="loading-msg" style="font-size:11px;width:100%;text-align:center">Loading...</div></div>
-<div id="exec-lt-labels" style="display:flex;gap:4px;margin-top:4px"></div>
+<div id="exec-lost-time" class="auris-exec-s-73814da5b1"><div class="loading-msg auris-exec-s-d57cdb0b2f">Loading...</div></div>
+<div id="exec-lt-labels" class="auris-exec-s-97346626ba"></div>
 </div>
 </div>
 <div class="card">
 <div class="card-title">Top Incident Locations - Risk Ranking</div>
-<div id="exec-location-rank" style="display:flex;flex-direction:column;gap:6px"><div class="loading-msg" style="font-size:11px">Loading...</div></div>
+<div id="exec-location-rank" class="auris-exec-s-67c6459975"><div class="loading-msg auris-exec-s-33ee298127">Loading...</div></div>
 </div>
 </div>
 
 <!-- -- COMPLIANCE -- -->
-<div id="exec-view-compliance" style="display:none">
-<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px">
-<div class="card" style="padding:10px 12px;border-left:4px solid #3B6D11"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase">Legal Compliance</div><div style="font-size:28px;font-weight:800;color:#3B6D11" id="exec-legal-pct">-</div><div style="font-size:10px;color:var(--text2)">requirements met</div></div>
-<div class="card" style="padding:10px 12px;border-left:4px solid #185FA5"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase">Audit Compliance</div><div style="font-size:28px;font-weight:800;color:#185FA5" id="exec-audit-pct">-</div><div style="font-size:10px;color:var(--text2)">inspection score avg</div></div>
-<div class="card" style="padding:10px 12px;border-left:4px solid #0891B2"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase">Training Compliance</div><div style="font-size:28px;font-weight:800;color:#0891B2" id="exec-training-pct">-</div><div style="font-size:10px;color:var(--text2)">of workforce trained</div></div>
+<div id="exec-view-compliance" class="auris-exec-s-6aa34d7432">
+<div class="auris-exec-s-88a8942883">
+<div class="card auris-exec-s-ee54d13274"><div class="auris-exec-s-d68348462c">Legal Compliance</div><div id="exec-legal-pct" class="auris-exec-s-f068913452">-</div><div class="auris-exec-s-49acb3c3b7">requirements met</div></div>
+<div class="card auris-exec-s-b6d403ee7e"><div class="auris-exec-s-d68348462c">Audit Compliance</div><div id="exec-audit-pct" class="auris-exec-s-c85dfe6fed">-</div><div class="auris-exec-s-49acb3c3b7">inspection score avg</div></div>
+<div class="card auris-exec-s-a5cd1e43c2"><div class="auris-exec-s-d68348462c">Training Compliance</div><div id="exec-training-pct" class="auris-exec-s-2fe91b0e78">-</div><div class="auris-exec-s-49acb3c3b7">of workforce trained</div></div>
 </div>
-<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+<div class="auris-exec-s-28fe69c991">
 <div class="card">
 <div class="card-title">Compliance by Category</div>
-<div id="exec-compliance-cat" style="display:flex;flex-direction:column;gap:8px"><div class="loading-msg" style="font-size:11px">Loading...</div></div>
+<div id="exec-compliance-cat" class="auris-exec-s-0fbf9e859f"><div class="loading-msg auris-exec-s-33ee298127">Loading...</div></div>
 </div>
 <div class="card">
 <div class="card-title">Open Corrective Actions - Age Profile</div>
-<div id="exec-ca-age" style="display:flex;flex-direction:column;gap:8px"><div class="loading-msg" style="font-size:11px">Loading...</div></div>
+<div id="exec-ca-age" class="auris-exec-s-0fbf9e859f"><div class="loading-msg auris-exec-s-33ee298127">Loading...</div></div>
 </div>
 </div>
 </div>
 
 <!-- -- ESG & ENVIRONMENT -- -->
-<div id="exec-view-esg" style="display:none">
-<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px">
-<div class="card" style="padding:10px 12px;border-left:4px solid #065F46"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase">Environmental Incidents</div><div style="font-size:28px;font-weight:800;color:#065F46" id="exec-env-inc">-</div></div>
-<div class="card" style="padding:10px 12px;border-left:4px solid #1D9E75"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase">Spills</div><div style="font-size:28px;font-weight:800;color:#1D9E75" id="exec-spills">-</div></div>
-<div class="card" style="padding:10px 12px;border-left:4px solid #0891B2"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase">Waste (tonnes)</div><div style="font-size:28px;font-weight:800;color:#0891B2" id="exec-waste">-</div></div>
-<div class="card" style="padding:10px 12px;border-left:4px solid #854F0B"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase">CO2 (tCO2e)</div><div style="font-size:28px;font-weight:800;color:#854F0B" id="exec-co2">-</div></div>
+<div id="exec-view-esg" class="auris-exec-s-6aa34d7432">
+<div class="auris-exec-s-14dfb7ae67">
+<div class="card auris-exec-s-2a2d77404c"><div class="auris-exec-s-d68348462c">Environmental Incidents</div><div id="exec-env-inc" class="auris-exec-s-30dd38374f">-</div></div>
+<div class="card auris-exec-s-7a5e61eb83"><div class="auris-exec-s-d68348462c">Spills</div><div id="exec-spills" class="auris-exec-s-9500d42bf8">-</div></div>
+<div class="card auris-exec-s-a5cd1e43c2"><div class="auris-exec-s-d68348462c">Waste (tonnes)</div><div id="exec-waste" class="auris-exec-s-2fe91b0e78">-</div></div>
+<div class="card auris-exec-s-eccffcaf4c"><div class="auris-exec-s-d68348462c">CO2 (tCO2e)</div><div id="exec-co2" class="auris-exec-s-b1c126973c">-</div></div>
 </div>
-<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+<div class="auris-exec-s-0994386629">
 <div class="card">
 <div class="card-title">ESG Score Card</div>
-<div id="exec-esg-scorecard" style="display:flex;flex-direction:column;gap:8px"><div class="loading-msg" style="font-size:11px">Loading...</div></div>
+<div id="exec-esg-scorecard" class="auris-exec-s-0fbf9e859f"><div class="loading-msg auris-exec-s-33ee298127">Loading...</div></div>
 </div>
 <div class="card">
 <div class="card-title">Sustainability KPIs</div>
-<div id="exec-sustainability" style="display:flex;flex-direction:column;gap:8px"><div class="loading-msg" style="font-size:11px">Loading...</div></div>
+<div id="exec-sustainability" class="auris-exec-s-0fbf9e859f"><div class="loading-msg auris-exec-s-33ee298127">Loading...</div></div>
 </div>
 </div>
 </div>
 
 <!-- -- REPORTS -- -->
-<div id="exec-view-reports" style="display:none">
-<div class="card" style="margin-bottom:14px;padding:14px 20px;background:linear-gradient(135deg,#1a3a5c,#185FA5);color:#fff">
-<div style="font-size:15px;font-weight:800;margin-bottom:4px">AI-Powered HSE Reports</div>
-<div style="font-size:12px;opacity:.85">Generate board-ready reports, monthly summaries and annual statistics using AI</div>
+<div id="exec-view-reports" class="auris-exec-s-6aa34d7432">
+<div class="card auris-exec-s-5d5e403437">
+<div class="auris-exec-s-287292c0e6">AI-Powered HSE Reports</div>
+<div class="auris-exec-s-dc4ac84a01">Generate board-ready reports, monthly summaries and annual statistics using AI</div>
 </div>
-<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:14px">
-<div class="card" style="cursor:pointer;transition:box-shadow .15s;border:2px solid transparent" data-auris-onmouseover="h0103" data-auris-onmouseout="h0104" data-auris-onclick="h0105">
-<div style="font-size:28px;margin-bottom:8px"><i class="ti ti-circle-dot"></i></div>
-<div style="font-weight:700;font-size:14px;margin-bottom:4px">Monthly HSE Report</div>
-<div style="font-size:12px;color:var(--text2)">Comprehensive monthly summary with incident analysis, compliance status, and action items</div>
-<button class="btn btn-primary" style="width:100%;margin-top:12px" data-auris-onclick="h0106"><i class="ti ti-robot"></i>Generate</button>
+<div class="auris-exec-s-8ad94bd7b6">
+<div class="card auris-exec-s-04fabd42f7" data-auris-onmouseover="h0103" data-auris-onmouseout="h0104" data-auris-onclick="h0105">
+<div class="auris-exec-s-6fa3c1bc44"><i class="ti ti-circle-dot"></i></div>
+<div class="auris-exec-s-a70f62612a">Monthly HSE Report</div>
+<div class="auris-exec-s-7299078644">Comprehensive monthly summary with incident analysis, compliance status, and action items</div>
+<button class="btn btn-primary auris-exec-s-bfcf90404e" data-auris-onclick="h0106"><i class="ti ti-robot"></i>Generate</button>
 </div>
-<div class="card" style="cursor:pointer;transition:box-shadow .15s;border:2px solid transparent" data-auris-onmouseover="h0107" data-auris-onmouseout="h0104" data-auris-onclick="h0108">
-<div style="font-size:28px;margin-bottom:8px"><i class="ti ti-circle-dot"></i></div>
-<div style="font-weight:700;font-size:14px;margin-bottom:4px">Board Dashboard Report</div>
-<div style="font-size:12px;color:var(--text2)">Executive-level HSE performance overview for board presentations and governance reporting</div>
-<button class="btn" style="width:100%;margin-top:12px;background:#5B21B6;color:#fff;border-color:#5B21B6" data-auris-onclick="h0109"><i class="ti ti-robot"></i>Generate</button>
+<div class="card auris-exec-s-04fabd42f7" data-auris-onmouseover="h0107" data-auris-onmouseout="h0104" data-auris-onclick="h0108">
+<div class="auris-exec-s-6fa3c1bc44"><i class="ti ti-circle-dot"></i></div>
+<div class="auris-exec-s-a70f62612a">Board Dashboard Report</div>
+<div class="auris-exec-s-7299078644">Executive-level HSE performance overview for board presentations and governance reporting</div>
+<button class="btn auris-exec-s-c95ddc81f7" data-auris-onclick="h0109"><i class="ti ti-robot"></i>Generate</button>
 </div>
-<div class="card" style="cursor:pointer;transition:box-shadow .15s;border:2px solid transparent" data-auris-onmouseover="h0110" data-auris-onmouseout="h0104" data-auris-onclick="h0111">
-<div style="font-size:28px;margin-bottom:8px"><i class="ti ti-circle-dot"></i></div>
-<div style="font-weight:700;font-size:14px;margin-bottom:4px">Annual HSE Statistics</div>
-<div style="font-size:12px;color:var(--text2)">Full-year performance statistics including LTIFR, TRIR, trends and year-on-year comparison</div>
-<button class="btn" style="width:100%;margin-top:12px;background:#065F46;color:#fff;border-color:#065F46" data-auris-onclick="h0112"><i class="ti ti-robot"></i>Generate</button>
+<div class="card auris-exec-s-04fabd42f7" data-auris-onmouseover="h0110" data-auris-onmouseout="h0104" data-auris-onclick="h0111">
+<div class="auris-exec-s-6fa3c1bc44"><i class="ti ti-circle-dot"></i></div>
+<div class="auris-exec-s-a70f62612a">Annual HSE Statistics</div>
+<div class="auris-exec-s-7299078644">Full-year performance statistics including LTIFR, TRIR, trends and year-on-year comparison</div>
+<button class="btn auris-exec-s-1a09a5d04a" data-auris-onclick="h0112"><i class="ti ti-robot"></i>Generate</button>
 </div>
-<div class="card" style="cursor:pointer;transition:box-shadow .15s;border:2px solid transparent" data-auris-onmouseover="h0113" data-auris-onmouseout="h0104" data-auris-onclick="h0114">
-<div style="font-size:28px;margin-bottom:8px"><i class="ti ti-circle-dot"></i></div>
-<div style="font-weight:700;font-size:14px;margin-bottom:4px">ESG Report</div>
-<div style="font-size:12px;color:var(--text2)">Environmental, Social and Governance performance report aligned with international ESG frameworks</div>
-<button class="btn" style="width:100%;margin-top:12px;background:#1D9E75;color:#fff;border-color:#1D9E75" data-auris-onclick="h0115"><i class="ti ti-robot"></i>Generate</button>
+<div class="card auris-exec-s-04fabd42f7" data-auris-onmouseover="h0113" data-auris-onmouseout="h0104" data-auris-onclick="h0114">
+<div class="auris-exec-s-6fa3c1bc44"><i class="ti ti-circle-dot"></i></div>
+<div class="auris-exec-s-a70f62612a">ESG Report</div>
+<div class="auris-exec-s-7299078644">Environmental, Social and Governance performance report aligned with international ESG frameworks</div>
+<button class="btn auris-exec-s-ce06b7485c" data-auris-onclick="h0115"><i class="ti ti-robot"></i>Generate</button>
 </div>
-<div class="card" style="cursor:pointer;transition:box-shadow .15s;border:2px solid transparent" data-auris-onmouseover="h0116" data-auris-onmouseout="h0104" data-auris-onclick="h0117">
-<div style="font-size:28px;margin-bottom:8px"><i class="ti ti-circle-dot"></i></div>
-<div style="font-weight:700;font-size:14px;margin-bottom:4px">Sustainability Report</div>
-<div style="font-size:12px;color:var(--text2)">GRI-aligned sustainability performance including waste, water, energy and carbon footprint</div>
-<button class="btn" style="width:100%;margin-top:12px;background:#0891B2;color:#fff;border-color:#0891B2" data-auris-onclick="h0118"><i class="ti ti-robot"></i>Generate</button>
+<div class="card auris-exec-s-04fabd42f7" data-auris-onmouseover="h0116" data-auris-onmouseout="h0104" data-auris-onclick="h0117">
+<div class="auris-exec-s-6fa3c1bc44"><i class="ti ti-circle-dot"></i></div>
+<div class="auris-exec-s-a70f62612a">Sustainability Report</div>
+<div class="auris-exec-s-7299078644">GRI-aligned sustainability performance including waste, water, energy and carbon footprint</div>
+<button class="btn auris-exec-s-c7300727fa" data-auris-onclick="h0118"><i class="ti ti-robot"></i>Generate</button>
 </div>
-<div class="card" style="cursor:pointer;transition:box-shadow .15s;border:2px solid transparent" data-auris-onmouseover="h0119" data-auris-onmouseout="h0104" data-auris-onclick="h0120">
-<div style="font-size:28px;margin-bottom:8px"><i class="ti ti-circle-dot"></i></div>
-<div style="font-weight:700;font-size:14px;margin-bottom:4px">Compliance Report</div>
-<div style="font-size:12px;color:var(--text2)">Legal compliance status, regulatory notifications, gap analysis and corrective action summary</div>
-<button class="btn" style="width:100%;margin-top:12px;background:#EF9F27;color:#fff;border-color:#EF9F27" data-auris-onclick="h0121"><i class="ti ti-robot"></i>Generate</button>
+<div class="card auris-exec-s-04fabd42f7" data-auris-onmouseover="h0119" data-auris-onmouseout="h0104" data-auris-onclick="h0120">
+<div class="auris-exec-s-6fa3c1bc44"><i class="ti ti-circle-dot"></i></div>
+<div class="auris-exec-s-a70f62612a">Compliance Report</div>
+<div class="auris-exec-s-7299078644">Legal compliance status, regulatory notifications, gap analysis and corrective action summary</div>
+<button class="btn auris-exec-s-9848fb2000" data-auris-onclick="h0121"><i class="ti ti-robot"></i>Generate</button>
 </div>
 </div>
 
 <!-- Report output -->
-<div id="exec-report-output" style="display:none" class="card">
-<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-<div style="font-weight:700;font-size:14px" id="exec-report-title">Report</div>
-<div style="display:flex;gap:6px">
+<div id="exec-report-output" class="card auris-exec-s-6aa34d7432">
+<div class="auris-exec-s-ad8736dd0f">
+<div id="exec-report-title" class="auris-exec-s-e746326d06">Report</div>
+<div class="auris-exec-s-69374f356a">
 <button class="btn btn-sm" data-auris-onclick="h0122"><i class="ti ti-copy"></i>Copy</button>
 <button class="btn btn-sm" data-auris-onclick="h0123"><i class="ti ti-x"></i></button>
 </div>
 </div>
-<div id="exec-report-text" style="white-space:pre-wrap;font-size:13px;line-height:1.8;color:#1a1a1a;background:#f9fafb;padding:16px;border-radius:8px;max-height:500px;overflow-y:auto"></div>
+<div id="exec-report-text" class="auris-exec-s-42b2d1ee35"></div>
 </div>
 </div>
 

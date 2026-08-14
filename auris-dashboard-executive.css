@@ -1,0 +1,124 @@
+/* Generated from the Executive Management Dashboard by scripts/extract-executive-dashboard-styles.cjs. */
+/* Non-important declarations preserve tab, progress and hover updates. */
+.auris-exec-s-03bd966c28{padding:10px 12px;border-left:4px solid #DC2626}
+.auris-exec-s-04fabd42f7{cursor:pointer;transition:box-shadow .15s;border:2px solid transparent}
+.auris-exec-s-0904085f3d{display:flex;gap:0;margin-bottom:14px;border-bottom:2px solid var(--border);overflow-x:auto}
+.auris-exec-s-0994386629{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}
+.auris-exec-s-0df5893da0{padding:14px 16px;background:linear-gradient(135deg,#064E3B,#1D9E75);color:#fff}
+.auris-exec-s-0fbf9e859f{display:flex;flex-direction:column;gap:8px}
+.auris-exec-s-102a816f53{margin:0;color:#5B21B6}
+.auris-exec-s-14dfb7ae67{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px}
+.auris-exec-s-1a09a5d04a{width:100%;margin-top:12px;background:#065F46;color:#fff;border-color:#065F46}
+.auris-exec-s-24afcea83f{height:140px;display:flex;align-items:flex-end;gap:4px;padding:4px}
+.auris-exec-s-287292c0e6{font-size:15px;font-weight:800;margin-bottom:4px}
+.auris-exec-s-28fe69c991{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.auris-exec-s-2a2d77404c{padding:10px 12px;border-left:4px solid #065F46}
+.auris-exec-s-2fe91b0e78{font-size:28px;font-weight:800;color:#0891B2}
+.auris-exec-s-30dd38374f{font-size:28px;font-weight:800;color:#065F46}
+.auris-exec-s-32fa062d0e{font-size:32px;font-weight:900}
+.auris-exec-s-3393371eab{font-size:11px;margin-top:8px}
+.auris-exec-s-33ee298127{font-size:11px}
+.auris-exec-s-39c68df36f{display:flex;gap:8px;align-items:center}
+.auris-exec-s-39e15ae240{font-size:28px;font-weight:800;color:#DC2626}
+.auris-exec-s-42b2d1ee35{white-space:pre-wrap;font-size:13px;line-height:1.8;color:#1a1a1a;background:#f9fafb;padding:16px;border-radius:8px;max-height:500px;overflow-y:auto}
+.auris-exec-s-49acb3c3b7{font-size:10px;color:var(--text2)}
+.auris-exec-s-525e47b940{font-size:11px;font-weight:700;text-transform:uppercase;opacity:.8;margin-bottom:6px}
+.auris-exec-s-5d5e403437{margin-bottom:14px;padding:14px 20px;background:linear-gradient(135deg,#1a3a5c,#185FA5);color:#fff}
+.auris-exec-s-5d7636ec51{font-size:12px;color:var(--text2);font-style:italic}
+.auris-exec-s-659931a888{height:4px;background:rgba(255,255,255,.2);border-radius:99px;margin-top:8px;overflow:hidden}
+.auris-exec-s-67c6459975{display:flex;flex-direction:column;gap:6px}
+.auris-exec-s-69374f356a{display:flex;gap:6px}
+.auris-exec-s-6aa34d7432{display:none}
+.auris-exec-s-6fa3c1bc44{font-size:28px;margin-bottom:8px}
+.auris-exec-s-7299078644{font-size:12px;color:var(--text2)}
+.auris-exec-s-73814da5b1{height:120px;display:flex;align-items:flex-end;gap:4px;padding:4px}
+.auris-exec-s-7a5e61eb83{padding:10px 12px;border-left:4px solid #1D9E75}
+.auris-exec-s-7c31f3e506{padding:14px 16px;background:linear-gradient(135deg,#1e3a5f,#185FA5);color:#fff}
+.auris-exec-s-88a8942883{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px}
+.auris-exec-s-89936f8745{font-size:28px;font-weight:800;color:#EF9F27}
+.auris-exec-s-8ad94bd7b6{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:14px}
+.auris-exec-s-9500d42bf8{font-size:28px;font-weight:800;color:#1D9E75}
+.auris-exec-s-95cc0e2392{display:grid;grid-template-columns:2fr 1fr;gap:12px;margin-bottom:12px}
+.auris-exec-s-97346626ba{display:flex;gap:4px;margin-top:4px}
+.auris-exec-s-9848fb2000{width:100%;margin-top:12px;background:#EF9F27;color:#fff;border-color:#EF9F27}
+.auris-exec-s-9d8960c695{padding:10px 12px;border-left:4px solid #C2410C}
+.auris-exec-s-a219ea00cb{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.auris-exec-s-a5cd1e43c2{padding:10px 12px;border-left:4px solid #0891B2}
+.auris-exec-s-a70f62612a{font-weight:700;font-size:14px;margin-bottom:4px}
+.auris-exec-s-a7dfccfa36{background:#5B21B6;color:#fff;border-color:#5B21B6}
+.auris-exec-s-ad8736dd0f{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+.auris-exec-s-b1c126973c{font-size:28px;font-weight:800;color:#854F0B}
+.auris-exec-s-b6cb22c5b1{font-size:11px;opacity:.75;margin-top:3px}
+.auris-exec-s-b6d403ee7e{padding:10px 12px;border-left:4px solid #185FA5}
+.auris-exec-s-b922c89f16{margin-bottom:10px}
+.auris-exec-s-bd0e58d190{padding:6px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px}
+.auris-exec-s-be75a9b8db{height:100%;background:#fff;width:0%;transition:width 1s;border-radius:99px}
+.auris-exec-s-bf8f7f0abd{padding:14px 16px;background:linear-gradient(135deg,#312e81,#5B21B6);color:#fff}
+.auris-exec-s-bfcf90404e{width:100%;margin-top:12px}
+.auris-exec-s-c70473e794{padding:10px 12px;border-left:4px solid #EF9F27}
+.auris-exec-s-c7300727fa{width:100%;margin-top:12px;background:#0891B2;color:#fff;border-color:#0891B2}
+.auris-exec-s-c85dfe6fed{font-size:28px;font-weight:800;color:#185FA5}
+.auris-exec-s-c95ddc81f7{width:100%;margin-top:12px;background:#5B21B6;color:#fff;border-color:#5B21B6}
+.auris-exec-s-ca558a1914{font-size:28px;font-weight:800;color:#C2410C}
+.auris-exec-s-ce06b7485c{width:100%;margin-top:12px;background:#1D9E75;color:#fff;border-color:#1D9E75}
+.auris-exec-s-d37c8e8fe6{font-size:11px;color:var(--text2)}
+.auris-exec-s-d57cdb0b2f{font-size:11px;width:100%;text-align:center}
+.auris-exec-s-d68348462c{font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase}
+.auris-exec-s-dc4ac84a01{font-size:12px;opacity:.85}
+.auris-exec-s-e746326d06{font-weight:700;font-size:14px}
+.auris-exec-s-eb391b5195{padding:14px 16px;background:linear-gradient(135deg,#7F1D1D,#DC2626);color:#fff}
+.auris-exec-s-eb99a4c193{white-space:nowrap}
+.auris-exec-s-eccffcaf4c{padding:10px 12px;border-left:4px solid #854F0B}
+.auris-exec-s-ee54d13274{padding:10px 12px;border-left:4px solid #3B6D11}
+.auris-exec-s-ee71c71db7{border:2px solid #5B21B6}
+.auris-exec-s-f068913452{font-size:28px;font-weight:800;color:#3B6D11}
+.auris-exec-s-f137364cfd{display:none;background:#F5F3FF;border:1px solid #c4b5fd;border-radius:8px;padding:14px;font-size:13px;line-height:1.7;white-space:pre-wrap;max-height:400px;overflow-y:auto}
+/* Preserve former inline precedence over existing ID selectors. */
+#exec-ai-output.auris-exec-s-f137364cfd{display:none;background:#F5F3FF;border:1px solid #c4b5fd;border-radius:8px;padding:14px;font-size:13px;line-height:1.7;white-space:pre-wrap;max-height:400px;overflow-y:auto}
+#exec-ai-placeholder.auris-exec-s-5d7636ec51{font-size:12px;color:var(--text2);font-style:italic}
+#exec-annual-trend.auris-exec-s-24afcea83f{height:140px;display:flex;align-items:flex-end;gap:4px;padding:4px}
+#exec-audit-pct.auris-exec-s-c85dfe6fed{font-size:28px;font-weight:800;color:#185FA5}
+#exec-ca-age.auris-exec-s-0fbf9e859f{display:flex;flex-direction:column;gap:8px}
+#exec-co2.auris-exec-s-b1c126973c{font-size:28px;font-weight:800;color:#854F0B}
+#exec-compliance-cat.auris-exec-s-0fbf9e859f{display:flex;flex-direction:column;gap:8px}
+#exec-compliance-prog-inner.auris-exec-s-be75a9b8db{height:100%;background:#fff;width:0%;transition:width 1s;border-radius:99px}
+#exec-compliance-prog.auris-exec-s-659931a888{height:4px;background:rgba(255,255,255,.2);border-radius:99px;margin-top:8px;overflow:hidden}
+#exec-compliance.auris-exec-s-32fa062d0e{font-size:32px;font-weight:900}
+#exec-contractor-comparison.auris-exec-s-0fbf9e859f{display:flex;flex-direction:column;gap:8px}
+#exec-days-lti.auris-exec-s-32fa062d0e{font-size:32px;font-weight:900}
+#exec-dept-comparison.auris-exec-s-67c6459975{display:flex;flex-direction:column;gap:6px}
+#exec-env-inc.auris-exec-s-30dd38374f{font-size:28px;font-weight:800;color:#065F46}
+#exec-esg-scorecard.auris-exec-s-0fbf9e859f{display:flex;flex-direction:column;gap:8px}
+#exec-fatalities.auris-exec-s-39e15ae240{font-size:28px;font-weight:800;color:#DC2626}
+#exec-incident-types.auris-exec-s-67c6459975{display:flex;flex-direction:column;gap:6px}
+#exec-legal-pct.auris-exec-s-f068913452{font-size:28px;font-weight:800;color:#3B6D11}
+#exec-location-rank.auris-exec-s-67c6459975{display:flex;flex-direction:column;gap:6px}
+#exec-lost-time.auris-exec-s-73814da5b1{height:120px;display:flex;align-items:flex-end;gap:4px;padding:4px}
+#exec-lt-labels.auris-exec-s-97346626ba{display:flex;gap:4px;margin-top:4px}
+#exec-ltifr-trend.auris-exec-s-3393371eab{font-size:11px;margin-top:8px}
+#exec-ltifr.auris-exec-s-32fa062d0e{font-size:32px;font-weight:900}
+#exec-ltis.auris-exec-s-ca558a1914{font-size:28px;font-weight:800;color:#C2410C}
+#exec-mti.auris-exec-s-89936f8745{font-size:28px;font-weight:800;color:#EF9F27}
+#exec-nm.auris-exec-s-c85dfe6fed{font-size:28px;font-weight:800;color:#185FA5}
+#exec-report-output.auris-exec-s-6aa34d7432{display:none}
+#exec-report-text.auris-exec-s-42b2d1ee35{white-space:pre-wrap;font-size:13px;line-height:1.8;color:#1a1a1a;background:#f9fafb;padding:16px;border-radius:8px;max-height:500px;overflow-y:auto}
+#exec-report-title.auris-exec-s-e746326d06{font-weight:700;font-size:14px}
+#exec-risk-dist.auris-exec-s-0fbf9e859f{display:flex;flex-direction:column;gap:8px}
+#exec-spills.auris-exec-s-9500d42bf8{font-size:28px;font-weight:800;color:#1D9E75}
+#exec-sustainability.auris-exec-s-0fbf9e859f{display:flex;flex-direction:column;gap:8px}
+#exec-tab-compliance.auris-exec-s-eb99a4c193{white-space:nowrap}
+#exec-tab-esg.auris-exec-s-eb99a4c193{white-space:nowrap}
+#exec-tab-overview.auris-exec-s-eb99a4c193{white-space:nowrap}
+#exec-tab-reports.auris-exec-s-eb99a4c193{white-space:nowrap}
+#exec-tab-safety.auris-exec-s-eb99a4c193{white-space:nowrap}
+#exec-training-pct.auris-exec-s-2fe91b0e78{font-size:28px;font-weight:800;color:#0891B2}
+#exec-trend-labels.auris-exec-s-97346626ba{display:flex;gap:4px;margin-top:4px}
+#exec-trir-trend.auris-exec-s-3393371eab{font-size:11px;margin-top:8px}
+#exec-trir.auris-exec-s-32fa062d0e{font-size:32px;font-weight:900}
+#exec-view-compliance.auris-exec-s-6aa34d7432{display:none}
+#exec-view-esg.auris-exec-s-6aa34d7432{display:none}
+#exec-view-reports.auris-exec-s-6aa34d7432{display:none}
+#exec-view-safety.auris-exec-s-6aa34d7432{display:none}
+#exec-waste.auris-exec-s-2fe91b0e78{font-size:28px;font-weight:800;color:#0891B2}
+#exec-year-filter.auris-exec-s-bd0e58d190{padding:6px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px}
+#page-executive.auris-exec-s-6aa34d7432{display:none}
