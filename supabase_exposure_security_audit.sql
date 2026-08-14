@@ -21,6 +21,7 @@ with public_schema_access as (
          has_table_privilege('anon',c.oid,'INSERT') as anon_insert,
          has_table_privilege('anon',c.oid,'UPDATE') as anon_update,
          has_table_privilege('anon',c.oid,'DELETE') as anon_delete,
+         has_table_privilege('anon',c.oid,'MAINTAIN') as anon_maintain,
          has_table_privilege('authenticated',c.oid,'SELECT') as auth_select,
          has_table_privilege('authenticated',c.oid,'INSERT') as auth_insert,
          has_table_privilege('authenticated',c.oid,'UPDATE') as auth_update,
@@ -90,6 +91,12 @@ with public_schema_access as (
          'The anon role has INSERT, UPDATE or DELETE table privilege.',
          'Revoke anonymous mutation grants unless a documented public workflow and restrictive RLS policy require them.'
   from public_relations where relkind in ('r','p') and (anon_insert or anon_update or anon_delete)
+
+  union all
+  select 45,'CRITICAL','Anonymous maintenance',schema_name||'.'||relname,
+         'The anon role has MAINTAIN table privilege.',
+         'Revoke MAINTAIN from anonymous API roles; database maintenance belongs to controlled operator roles.'
+  from public_relations where relkind in ('r','p') and anon_maintain
 
   union all
   select 50,'CRITICAL','View exposure',schema_name||'.'||relname,

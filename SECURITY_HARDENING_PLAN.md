@@ -25,6 +25,8 @@ Do not apply blanket revokes. Export the result, classify intended public workfl
 
 Live audit and targeted production remediation completed on 14 August 2026. The classified evidence and post-change results are recorded in `SUPABASE_EXPOSURE_AUDIT_REPORT_2026-08-14.md`; the rerunnable migration is `supabase_exposure_security_remediation.sql`. Live verification confirmed zero anonymous mutation tables, zero anonymous sequence grants and zero anonymously/PUBLIC-callable privileged functions while retaining required authenticated and service-role workflows.
 
+The remaining-exposure review is recorded in `SUPABASE_REMAINING_EXPOSURE_REVIEW_2026-08-14.md`. Its targeted production migration removed all 15 inherited anonymous/PUBLIC non-privileged RPC grants, 117 redundant anonymous read grants and anonymous public-table maintenance grants. Live verification returned zero for every targeted exposure while authenticated KPI and learning workflows remained available. Supabase-managed role/schema defaults are retained as a monitored platform control because the project SQL role cannot alter them.
+
 ## Gate 3 - client content and URL hardening
 
 Completed safeguards:
@@ -39,9 +41,8 @@ This is a targeted high-risk sink remediation. The remaining inline-script migra
 
 ## Remaining gates
 
-1. Review the remaining non-privileged RPC and intentional public/RLS-controlled SELECT grants during each database release.
-2. Remove inline application scripts progressively and continue reviewing module-specific rich-content renderers.
-3. Move the complete CSP from report-only to enforced after inline migration.
-4. Require MFA for privileged AURIS360, Supabase, Vercel and source-control accounts.
-5. Migrate legacy Supabase `anon`/`service_role` keys to publishable/secret keys and rotate elevated credentials safely.
-6. Protect preview deployments and verify production/preview environment-variable separation.
+1. Remove inline application scripts progressively and continue reviewing module-specific rich-content renderers.
+2. Move the complete CSP from report-only to enforced after inline migration.
+3. Require MFA for privileged AURIS360, Supabase, Vercel and source-control accounts.
+4. Migrate legacy Supabase `anon`/`service_role` keys to publishable/secret keys and rotate elevated credentials safely.
+5. Protect preview deployments and verify production/preview environment-variable separation.
