@@ -57,6 +57,7 @@
 <link rel="stylesheet" href="auris-login-shell.css?v=20260814-1">
 <link rel="stylesheet" href="auris-application-shell.css?v=20260814-2">
 <link rel="stylesheet" href="auris-dashboard-personal.css?v=20260814-1">
+<link rel="stylesheet" href="auris-dashboard-org.css?v=20260814-1">
 </head>
 <body>
 <div id="login-screen">
@@ -482,19 +483,19 @@
      ORG VIEW - for managers, admins, hse_manager, sephs_admin, etc.
      The status-tinted KPI grid we built earlier. Default visible.
      ------------------------------------------------------------------------ -->
-<div id="dash-org-view" style="display:none">
+<div id="dash-org-view" class="auris-orgdash-s-6aa34d7432">
 
 
 <!-- ------------------------------------------------------------------------
      HERO CARD - Days Since Last LTI (visual anchor of the page)
      ------------------------------------------------------------------------ -->
-<div id="dash-hero" style="background:linear-gradient(135deg,#1D9E75 0%,#0d8060 100%);color:#fff;border-radius:14px;padding:22px 26px;margin-bottom:16px;display:grid;grid-template-columns:2fr 1fr;gap:24px;align-items:center;box-shadow:0 8px 22px rgba(29,158,117,0.22);cursor:pointer" data-auris-onclick="h0079">
+<div id="dash-hero" class="auris-orgdash-s-5ce7e1a78e" data-auris-onclick="h0079">
   <div>
-    <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.12em;opacity:0.9;margin-bottom:6px">Days Since Last Lost-Time Incident</div>
-    <div style="font-size:54px;font-weight:800;line-height:1;letter-spacing:-0.03em" id="dash-hero-days">-</div>
-    <div style="font-size:13px;opacity:0.95;margin-top:10px;display:flex;align-items:center;gap:6px" id="dash-hero-context">Calculating safety streak-</div>
+    <div class="auris-orgdash-s-520ed9e5cc">Days Since Last Lost-Time Incident</div>
+    <div id="dash-hero-days" class="auris-orgdash-s-d9213d642a">-</div>
+    <div id="dash-hero-context" class="auris-orgdash-s-2dd4a1e656">Calculating safety streak-</div>
   </div>
-  <div style="background:rgba(255,255,255,0.15);border-radius:10px;padding:12px;min-height:80px">
+  <div class="auris-orgdash-s-7a0bfc212d">
     <svg width="100%" height="80" viewBox="0 0 200 80" preserveAspectRatio="none" id="dash-hero-spark">
       <polyline points="0,60 20,55 40,58 60,50 80,52 100,40 120,42 140,30 160,32 180,20 200,15" stroke="#fff" stroke-width="2" fill="none" opacity="0.9"/>
       <polyline points="0,60 20,55 40,58 60,50 80,52 100,40 120,42 140,30 160,32 180,20 200,15 200,80 0,80" fill="#fff" opacity="0.15"/>
@@ -507,9 +508,9 @@
      KPI GRID - status-tinted cards with icons and sparklines
      Row 1: 4 primary safety KPIs
      ------------------------------------------------------------------------ -->
-<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:12px">
+<div class="auris-orgdash-s-8c18c12e18">
 
-  <div class="kpi-card" data-id="d-events" data-tone="red" style="cursor:pointer" data-auris-onclick="h0079">
+  <div class="kpi-card auris-orgdash-s-9463ff4798" data-id="d-events" data-tone="red" data-auris-onclick="h0079">
     <div class="kpi-icon"><i class="ti ti-alert-triangle"></i></div>
     <div class="kpi-label">Open Incidents</div>
     <div class="kpi-value" id="d-events">-</div>
@@ -517,7 +518,7 @@
     <svg class="kpi-spark" viewBox="0 0 100 24" preserveAspectRatio="none" id="d-events-spark"></svg>
   </div>
 
-  <div class="kpi-card" data-id="d-actions" data-tone="amber" style="cursor:pointer" data-auris-onclick="h0084">
+  <div class="kpi-card auris-orgdash-s-9463ff4798" data-id="d-actions" data-tone="amber" data-auris-onclick="h0084">
     <div class="kpi-icon"><i class="ti ti-circle-dot"></i></div>
     <div class="kpi-label">Actions Due</div>
     <div class="kpi-value" id="d-actions">-</div>
@@ -525,7 +526,7 @@
     <svg class="kpi-spark" viewBox="0 0 100 24" preserveAspectRatio="none" id="d-actions-spark"></svg>
   </div>
 
-  <div class="kpi-card" data-id="d-training-pct" data-tone="green" style="cursor:pointer" data-auris-onclick="h0077">
+  <div class="kpi-card auris-orgdash-s-9463ff4798" data-id="d-training-pct" data-tone="green" data-auris-onclick="h0077">
     <div class="kpi-icon"><i class="ti ti-circle-dot"></i></div>
     <div class="kpi-label">Training Compliance</div>
     <div class="kpi-value" id="d-training-pct">-</div>
@@ -533,7 +534,7 @@
     <svg class="kpi-spark" viewBox="0 0 100 24" preserveAspectRatio="none" id="d-training-pct-spark"></svg>
   </div>
 
-  <div class="kpi-card" data-id="d-people" data-tone="blue" style="cursor:pointer" data-auris-onclick="h0085">
+  <div class="kpi-card auris-orgdash-s-9463ff4798" data-id="d-people" data-tone="blue" data-auris-onclick="h0085">
     <div class="kpi-icon"><i class="ti ti-circle-dot"></i></div>
     <div class="kpi-label">Active Workforce</div>
     <div class="kpi-value" id="d-people">-</div>
@@ -544,9 +545,9 @@
 </div>
 
 <!-- Row 2: 4 secondary KPIs -->
-<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px">
+<div class="auris-orgdash-s-311c2a86b4">
 
-  <div class="kpi-card" data-id="d-permits" data-tone="grey" style="cursor:pointer" data-auris-onclick="h0078">
+  <div class="kpi-card auris-orgdash-s-9463ff4798" data-id="d-permits" data-tone="grey" data-auris-onclick="h0078">
     <div class="kpi-icon"><i class="ti ti-circle-dot"></i></div>
     <div class="kpi-label">Active PTW</div>
     <div class="kpi-value" id="d-permits">-</div>
@@ -554,7 +555,7 @@
     <svg class="kpi-spark" viewBox="0 0 100 24" preserveAspectRatio="none" id="d-permits-spark"></svg>
   </div>
 
-  <div class="kpi-card" data-id="d-certs" data-tone="amber" style="cursor:pointer" data-auris-onclick="h0077">
+  <div class="kpi-card auris-orgdash-s-9463ff4798" data-id="d-certs" data-tone="amber" data-auris-onclick="h0077">
     <div class="kpi-icon"><i class="ti ti-circle-dot"></i></div>
     <div class="kpi-label">Certs Expiring</div>
     <div class="kpi-value" id="d-certs">-</div>
@@ -562,7 +563,7 @@
     <svg class="kpi-spark" viewBox="0 0 100 24" preserveAspectRatio="none" id="d-certs-spark"></svg>
   </div>
 
-  <div class="kpi-card" data-id="d-ltifr" data-tone="green" style="cursor:pointer" data-auris-onclick="h0079">
+  <div class="kpi-card auris-orgdash-s-9463ff4798" data-id="d-ltifr" data-tone="green" data-auris-onclick="h0079">
     <div class="kpi-icon"><i class="ti ti-circle-dot"></i></div>
     <div class="kpi-label">LTIFR</div>
     <div class="kpi-value" id="d-ltifr">-</div>
@@ -570,7 +571,7 @@
     <svg class="kpi-spark" viewBox="0 0 100 24" preserveAspectRatio="none" id="d-ltifr-spark"></svg>
   </div>
 
-  <div class="kpi-card" data-id="d-trir" data-tone="green" style="cursor:pointer" data-auris-onclick="h0079">
+  <div class="kpi-card auris-orgdash-s-9463ff4798" data-id="d-trir" data-tone="green" data-auris-onclick="h0079">
     <div class="kpi-icon"><i class="ti ti-circle-dot"></i></div>
     <div class="kpi-label">TRIR</div>
     <div class="kpi-value" id="d-trir">-</div>
@@ -581,17 +582,17 @@
 </div>
 
 <!-- Row 3: 4 compliance/environment KPIs -->
-<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:18px">
+<div class="auris-orgdash-s-2a8102fc7b">
 
-  <div class="kpi-card" data-id="d-compliance" data-tone="green" style="cursor:pointer" data-auris-onclick="h0086">
+  <div class="kpi-card auris-orgdash-s-9463ff4798" data-id="d-compliance" data-tone="green" data-auris-onclick="h0086">
     <div class="kpi-icon">?</div>
     <div class="kpi-label">Legal Compliance</div>
     <div class="kpi-value" id="d-compliance">-</div>
     <div class="kpi-trend">average score</div>
-    <div id="d-compliance-bar" style="height:4px;background:rgba(0,0,0,0.06);border-radius:99px;margin-top:8px;overflow:hidden"><div id="d-compliance-bar-inner" style="height:100%;background:#1D9E75;width:0%;transition:width .8s;border-radius:99px"></div></div>
+    <div id="d-compliance-bar" class="auris-orgdash-s-87da444c80"><div id="d-compliance-bar-inner" class="auris-orgdash-s-6274cfaf5b"></div></div>
   </div>
 
-  <div class="kpi-card" data-id="d-env" data-tone="green" style="cursor:pointer" data-auris-onclick="h0087">
+  <div class="kpi-card auris-orgdash-s-9463ff4798" data-id="d-env" data-tone="green" data-auris-onclick="h0087">
     <div class="kpi-icon"><i class="ti ti-circle-dot"></i></div>
     <div class="kpi-label">Env Incidents</div>
     <div class="kpi-value" id="d-env">-</div>
@@ -599,7 +600,7 @@
     <svg class="kpi-spark" viewBox="0 0 100 24" preserveAspectRatio="none" id="d-env-spark"></svg>
   </div>
 
-  <div class="kpi-card" data-id="d-audit-score" data-tone="blue" style="cursor:pointer" data-auris-onclick="h0088">
+  <div class="kpi-card auris-orgdash-s-9463ff4798" data-id="d-audit-score" data-tone="blue" data-auris-onclick="h0088">
     <div class="kpi-icon">?</div>
     <div class="kpi-label">Audit Score</div>
     <div class="kpi-value" id="d-audit-score">-</div>
@@ -607,7 +608,7 @@
     <svg class="kpi-spark" viewBox="0 0 100 24" preserveAspectRatio="none" id="d-audit-score-spark"></svg>
   </div>
 
-  <div class="kpi-card" data-id="d-kpis" data-tone="blue" style="cursor:pointer" data-auris-onclick="h0089">
+  <div class="kpi-card auris-orgdash-s-9463ff4798" data-id="d-kpis" data-tone="blue" data-auris-onclick="h0089">
     <div class="kpi-icon"><i class="ti ti-circle-dot"></i></div>
     <div class="kpi-label">KPIs On Track</div>
     <div class="kpi-value" id="d-kpis">-</div>
@@ -621,33 +622,33 @@
 <!-- ------------------------------------------------------------------------
      MAIN CHARTS ROW - 12-month trend + donut charts
      ------------------------------------------------------------------------ -->
-<div style="display:grid;grid-template-columns:2fr 1fr 1fr;gap:12px;margin-bottom:12px">
+<div class="auris-orgdash-s-e0e5b5e344">
 
-  <div class="card" style="padding:18px 20px">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
-      <div style="font-size:13px;font-weight:600;color:var(--text)">Incident Trend - 12 Months</div>
-      <div style="display:flex;gap:10px;font-size:10px;color:var(--text2)">
-        <span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:10px;background:#DC2626;border-radius:2px;display:inline-block"></span>Incidents</span>
-        <span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:10px;background:#EF9F27;border-radius:2px;display:inline-block"></span>Near miss</span>
+  <div class="card auris-orgdash-s-0230ce59c8">
+    <div class="auris-orgdash-s-601e592789">
+      <div class="auris-orgdash-s-b45a17b9a4">Incident Trend - 12 Months</div>
+      <div class="auris-orgdash-s-d7bf8f0539">
+        <span class="auris-orgdash-s-0a2ace13a1"><span class="auris-orgdash-s-e980faff66"></span>Incidents</span>
+        <span class="auris-orgdash-s-0a2ace13a1"><span class="auris-orgdash-s-e491ffabe6"></span>Near miss</span>
       </div>
     </div>
-    <div id="dash-trend-chart" style="height:120px;display:flex;align-items:flex-end;gap:3px;padding:0 4px">
-      <div class="skeleton" style="width:100%;height:80%;border-radius:4px;background:linear-gradient(90deg,#f3f4f6 0%,#e5e7eb 50%,#f3f4f6 100%);background-size:200% 100%;animation:skel 1.5s infinite"></div>
+    <div id="dash-trend-chart" class="auris-orgdash-s-88c035eada">
+      <div class="skeleton auris-orgdash-s-faecc99976"></div>
     </div>
-    <div id="dash-trend-labels" style="display:flex;gap:3px;margin-top:4px;padding:0 4px"></div>
+    <div id="dash-trend-labels" class="auris-orgdash-s-d44c5fcdc1"></div>
   </div>
 
-  <div class="card" style="padding:18px 20px;text-align:center">
-    <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:12px;text-align:left">Severity</div>
+  <div class="card auris-orgdash-s-d3b799ea68">
+    <div class="auris-orgdash-s-d5cbc4cacb">Severity</div>
     <div id="dash-severity-chart">
-      <div class="skeleton" style="width:120px;height:120px;border-radius:50%;margin:0 auto;background:linear-gradient(90deg,#f3f4f6 0%,#e5e7eb 50%,#f3f4f6 100%);background-size:200% 100%;animation:skel 1.5s infinite"></div>
+      <div class="skeleton auris-orgdash-s-47a51a8d0f"></div>
     </div>
   </div>
 
-  <div class="card" style="padding:18px 20px;text-align:center">
-    <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:12px;text-align:left">Compliance</div>
+  <div class="card auris-orgdash-s-d3b799ea68">
+    <div class="auris-orgdash-s-d5cbc4cacb">Compliance</div>
     <div id="dash-compliance-ring">
-      <div class="skeleton" style="width:120px;height:120px;border-radius:50%;margin:0 auto;background:linear-gradient(90deg,#f3f4f6 0%,#e5e7eb 50%,#f3f4f6 100%);background-size:200% 100%;animation:skel 1.5s infinite"></div>
+      <div class="skeleton auris-orgdash-s-47a51a8d0f"></div>
     </div>
   </div>
 
@@ -657,20 +658,20 @@
 <!-- ------------------------------------------------------------------------
      DEPT HEATMAP + HIGH-RISK
      ------------------------------------------------------------------------ -->
-<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
-  <div class="card" style="padding:18px 20px">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-      <div style="font-size:13px;font-weight:600;color:var(--text)">Department Incident Heatmap</div>
-      <div style="font-size:10px;color:var(--text2)">incidents this year</div>
+<div class="auris-orgdash-s-0994386629">
+  <div class="card auris-orgdash-s-0230ce59c8">
+    <div class="auris-orgdash-s-ad8736dd0f">
+      <div class="auris-orgdash-s-b45a17b9a4">Department Incident Heatmap</div>
+      <div class="auris-orgdash-s-49acb3c3b7">incidents this year</div>
     </div>
-    <div id="dash-dept-heatmap" style="display:flex;flex-direction:column;gap:5px">
-      <div class="loading-msg" style="font-size:11px">Loading...</div>
+    <div id="dash-dept-heatmap" class="auris-orgdash-s-af1212ed37">
+      <div class="loading-msg auris-orgdash-s-33ee298127">Loading...</div>
     </div>
   </div>
-  <div class="card" style="padding:18px 20px">
-    <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:12px">High-Risk Activities</div>
-    <div id="dash-highrisk" style="display:flex;flex-direction:column;gap:6px">
-      <div class="loading-msg" style="font-size:11px">Loading...</div>
+  <div class="card auris-orgdash-s-0230ce59c8">
+    <div class="auris-orgdash-s-9f46ee0682">High-Risk Activities</div>
+    <div id="dash-highrisk" class="auris-orgdash-s-67c6459975">
+      <div class="loading-msg auris-orgdash-s-33ee298127">Loading...</div>
     </div>
   </div>
 </div>
@@ -679,38 +680,38 @@
 <!-- ------------------------------------------------------------------------
      BOTTOM ROW - Recent incidents / Priority actions / Training
      ------------------------------------------------------------------------ -->
-<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px">
-  <div class="card" style="padding:18px 20px">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-      <div style="font-size:13px;font-weight:600;color:var(--text)">Recent Incidents</div>
-      <button class="btn btn-sm" data-auris-onclick="h0079" style="font-size:10px">View all</button>
+<div class="auris-orgdash-s-f10b017e13">
+  <div class="card auris-orgdash-s-0230ce59c8">
+    <div class="auris-orgdash-s-a219ea00cb">
+      <div class="auris-orgdash-s-b45a17b9a4">Recent Incidents</div>
+      <button class="btn btn-sm auris-orgdash-s-c28fa1ae60" data-auris-onclick="h0079">View all</button>
     </div>
-    <div id="dash-events" style="font-size:12px"><div class="loading-msg">Loading...</div></div>
+    <div id="dash-events" class="auris-orgdash-s-a49cca52be"><div class="loading-msg">Loading...</div></div>
   </div>
-  <div class="card" style="padding:18px 20px">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-      <div style="font-size:13px;font-weight:600;color:var(--text)">Priority Actions</div>
-      <button class="btn btn-sm" data-auris-onclick="h0084" style="font-size:10px">View all</button>
+  <div class="card auris-orgdash-s-0230ce59c8">
+    <div class="auris-orgdash-s-a219ea00cb">
+      <div class="auris-orgdash-s-b45a17b9a4">Priority Actions</div>
+      <button class="btn btn-sm auris-orgdash-s-c28fa1ae60" data-auris-onclick="h0084">View all</button>
     </div>
-    <div id="dash-actions" style="font-size:12px"><div class="loading-msg">Loading...</div></div>
+    <div id="dash-actions" class="auris-orgdash-s-a49cca52be"><div class="loading-msg">Loading...</div></div>
   </div>
-  <div class="card" style="padding:18px 20px">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-      <div style="font-size:13px;font-weight:600;color:var(--text)">Training Compliance</div>
-      <button class="btn btn-sm" data-auris-onclick="h0077" style="font-size:10px">View all</button>
+  <div class="card auris-orgdash-s-0230ce59c8">
+    <div class="auris-orgdash-s-a219ea00cb">
+      <div class="auris-orgdash-s-b45a17b9a4">Training Compliance</div>
+      <button class="btn btn-sm auris-orgdash-s-c28fa1ae60" data-auris-onclick="h0077">View all</button>
     </div>
-    <div id="dash-training-compliance" style="font-size:12px"><div class="loading-msg">Loading...</div></div>
+    <div id="dash-training-compliance" class="auris-orgdash-s-a49cca52be"><div class="loading-msg">Loading...</div></div>
   </div>
 </div>
 
 <!-- AI Insights panel -->
-<div id="ai-dash-insights" style="margin-top:14px">
-  <div class="card" style="border:2px solid #185FA5;padding:18px 20px">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-      <div style="font-size:13px;font-weight:600;color:#185FA5"><i class="ti ti-robot"></i> AI Dashboard Insights</div>
+<div id="ai-dash-insights" class="auris-orgdash-s-c53ea1da23">
+  <div class="card auris-orgdash-s-75d784a672">
+    <div class="auris-orgdash-s-a219ea00cb">
+      <div class="auris-orgdash-s-e2b6cb40b5"><i class="ti ti-robot"></i> AI Dashboard Insights</div>
       <button class="btn btn-sm btn-primary" data-auris-onclick="h0090"><i class="ti ti-robot"></i>Generate insights</button>
     </div>
-    <div id="dash-ai-content" style="font-size:12px;color:var(--text2);font-style:italic">Click "Generate insights" for AI-powered analysis of your HSE data.</div>
+    <div id="dash-ai-content" class="auris-orgdash-s-5d7636ec51">Click "Generate insights" for AI-powered analysis of your HSE data.</div>
   </div>
 </div>
 
