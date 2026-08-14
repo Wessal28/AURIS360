@@ -1,0 +1,43 @@
+/* Generated from ATEX Areas by scripts/extract-atex-areas-styles.cjs. */
+/* Non-important declarations preserve zone, control, inspection and status runtime state. */
+.auris-atex-s-01137f2f4c{font-size:24px;font-weight:800;color:#E24B4A}
+.auris-atex-s-0e8d4526b6{margin-bottom:14px;padding:14px 20px}
+.auris-atex-s-30e294142f{font-size:16px;font-weight:700}
+.auris-atex-s-3b299d6ce4{padding:12px 14px;border-left:4px solid #E24B4A}
+.auris-atex-s-42a6ced8b6{margin-bottom:14px}
+.auris-atex-s-42afc95e9e{flex:1;min-width:220px;padding:7px 12px;border:1px solid var(--border);border-radius:8px;font-size:12px}
+.auris-atex-s-4422804ebb{font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px}
+.auris-atex-s-4d5979ac8f{min-height:70px}
+.auris-atex-s-54bb9f1d16{margin-bottom:12px;padding:10px 14px}
+.auris-atex-s-5d553a9b75{font-size:24px;font-weight:800;color:#8B5CF6}
+.auris-atex-s-5e92a26fd0{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px}
+.auris-atex-s-6aa34d7432{display:none}
+.auris-atex-s-7299078644{font-size:12px;color:var(--text2)}
+.auris-atex-s-8470422add{font-size:24px;font-weight:800;color:#C2410C}
+.auris-atex-s-86cbb6feb0{padding:12px 14px;border-left:4px solid #C2410C}
+.auris-atex-s-8dea1152ee{display:none;color:var(--red);border-color:var(--red)}
+.auris-atex-s-97309bb0fa{font-size:24px;font-weight:800;color:#EF9F27}
+.auris-atex-s-9c40389b4a{display:flex;gap:8px}
+.auris-atex-s-bf5033d99d{padding:12px 14px;border-left:4px solid #EF9F27}
+.auris-atex-s-c260bac5c9{padding:12px 14px;border-left:4px solid #8B5CF6}
+.auris-atex-s-c5e695a888{min-height:170px}
+.auris-atex-s-d35063206b{padding:7px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px}
+.auris-atex-s-d5129e1520{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.auris-atex-s-eff0aa5b40{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:14px}
+.auris-atex-s-f1bc427372{display:grid;grid-template-columns:2fr 1fr;gap:16px}
+/* Preserve former inline precedence over existing ID selectors. */
+#atex-add-btn.auris-atex-s-6aa34d7432{display:none}
+#atex-del-btn.auris-atex-s-8dea1152ee{display:none;color:var(--red);border-color:var(--red)}
+#atex-detection.auris-atex-s-4d5979ac8f{min-height:70px}
+#atex-filter-status.auris-atex-s-d35063206b{padding:7px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px}
+#atex-filter-zone.auris-atex-s-d35063206b{padding:7px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px}
+#atex-form.auris-atex-s-6aa34d7432{display:none}
+#atex-form3title.auris-atex-s-30e294142f{font-size:16px;font-weight:700}
+#atex-ignition.auris-atex-s-4d5979ac8f{min-height:70px}
+#atex-m3action.auris-atex-s-97309bb0fa{font-size:24px;font-weight:800;color:#EF9F27}
+#atex-m3due.auris-atex-s-5d553a9b75{font-size:24px;font-weight:800;color:#8B5CF6}
+#atex-m3oos.auris-atex-s-01137f2f4c{font-size:24px;font-weight:800;color:#E24B4A}
+#atex-m3total.auris-atex-s-8470422add{font-size:24px;font-weight:800;color:#C2410C}
+#atex-notes.auris-atex-s-c5e695a888{min-height:170px}
+#atex-search.auris-atex-s-42afc95e9e{flex:1;min-width:220px;padding:7px 12px;border:1px solid var(--border);border-radius:8px;font-size:12px}
+#atex-ventilation.auris-atex-s-4d5979ac8f{min-height:70px}

@@ -68,6 +68,7 @@
 <link rel="stylesheet" href="auris-chemical-control-static.css?v=20260814-1">
 <link rel="stylesheet" href="auris-legal-compliance-static.css?v=20260814-1">
 <link rel="stylesheet" href="auris-fleet-management-static.css?v=20260814-1">
+<link rel="stylesheet" href="auris-atex-areas-static.css?v=20260814-1">
 </head>
 <body>
 <div id="login-screen">
@@ -4252,26 +4253,26 @@ Offline mode - changes will sync when connection is restored
 
 <div id="page-atex" class="page">
 <div class="page-header">
-<div><div class="page-title">ATEX Areas</div><div style="font-size:12px;color:var(--text2)">Hazardous area zones, explosive atmospheres, controls and inspection tracking</div></div>
-<div style="display:flex;gap:8px">
+<div><div class="page-title">ATEX Areas</div><div class="auris-atex-s-7299078644">Hazardous area zones, explosive atmospheres, controls and inspection tracking</div></div>
+<div class="auris-atex-s-9c40389b4a">
 <button class="btn" id="atex-print-btn" data-auris-onclick="h0495"><i class="ti ti-printer"></i>Print register</button>
-<button class="btn btn-primary" id="atex-add-btn" style="display:none" data-auris-onclick="h0496"><i class="ti ti-plus"></i>Add ATEX area</button>
+<button class="btn btn-primary auris-atex-s-6aa34d7432" id="atex-add-btn" data-auris-onclick="h0496"><i class="ti ti-plus"></i>Add ATEX area</button>
 </div>
 </div>
 <div id="atex-register-view">
-<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:14px">
-<div class="card" style="padding:12px 14px;border-left:4px solid #C2410C"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">ATEX areas</div><div style="font-size:24px;font-weight:800;color:#C2410C" id="atex-m3total">--</div></div>
-<div class="card" style="padding:12px 14px;border-left:4px solid #EF9F27"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">Action required</div><div style="font-size:24px;font-weight:800;color:#EF9F27" id="atex-m3action">--</div></div>
-<div class="card" style="padding:12px 14px;border-left:4px solid #E24B4A"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">Out of service</div><div style="font-size:24px;font-weight:800;color:#E24B4A" id="atex-m3oos">--</div></div>
-<div class="card" style="padding:12px 14px;border-left:4px solid #8B5CF6"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">Inspections due</div><div style="font-size:24px;font-weight:800;color:#8B5CF6" id="atex-m3due">--</div></div>
+<div class="auris-atex-s-eff0aa5b40">
+<div class="card auris-atex-s-86cbb6feb0"><div class="auris-atex-s-4422804ebb">ATEX areas</div><div id="atex-m3total" class="auris-atex-s-8470422add">--</div></div>
+<div class="card auris-atex-s-bf5033d99d"><div class="auris-atex-s-4422804ebb">Action required</div><div id="atex-m3action" class="auris-atex-s-97309bb0fa">--</div></div>
+<div class="card auris-atex-s-3b299d6ce4"><div class="auris-atex-s-4422804ebb">Out of service</div><div id="atex-m3oos" class="auris-atex-s-01137f2f4c">--</div></div>
+<div class="card auris-atex-s-c260bac5c9"><div class="auris-atex-s-4422804ebb">Inspections due</div><div id="atex-m3due" class="auris-atex-s-5d553a9b75">--</div></div>
 </div>
-<div class="card" style="margin-bottom:12px;padding:10px 14px">
-<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
-<input type="text" id="atex-search" placeholder="Search ref, area, location, substance..." data-auris-oninput="h0497" style="flex:1;min-width:220px;padding:7px 12px;border:1px solid var(--border);border-radius:8px;font-size:12px"/>
-<select id="atex-filter-zone" data-auris-onchange="h0498" style="padding:7px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px">
+<div class="card auris-atex-s-54bb9f1d16">
+<div class="auris-atex-s-d5129e1520">
+<input type="text" id="atex-search" class="auris-atex-s-42afc95e9e" placeholder="Search ref, area, location, substance..." data-auris-oninput="h0497"/>
+<select id="atex-filter-zone" class="auris-atex-s-d35063206b" data-auris-onchange="h0498">
 <option value="">All zones</option><option value="zone_0">Zone 0</option><option value="zone_1">Zone 1</option><option value="zone_2">Zone 2</option><option value="zone_20">Zone 20</option><option value="zone_21">Zone 21</option><option value="zone_22">Zone 22</option>
 </select>
-<select id="atex-filter-status" data-auris-onchange="h0498" style="padding:7px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px">
+<select id="atex-filter-status" class="auris-atex-s-d35063206b" data-auris-onchange="h0498">
 <option value="active" selected>Active areas</option><option value="">All statuses</option><option value="controlled">Controlled</option><option value="action_required">Action required</option><option value="out_of_service">Out of service</option><option value="archived">Archived</option>
 </select>
 </div>
@@ -4279,20 +4280,20 @@ Offline mode - changes will sync when connection is restored
 <div id="atex-list"><div class="loading-msg">Loading ATEX areas...</div></div>
 </div>
 
-<div id="atex-form" style="display:none">
-<div class="card" style="margin-bottom:14px;padding:14px 20px">
-<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
-<div><div style="font-size:16px;font-weight:700" id="atex-form3title">New ATEX Area</div><div style="font-size:12px;color:var(--text2)">Zone classification and control register</div></div>
-<div style="display:flex;gap:8px">
+<div id="atex-form" class="auris-atex-s-6aa34d7432">
+<div class="card auris-atex-s-0e8d4526b6">
+<div class="auris-atex-s-5e92a26fd0">
+<div><div id="atex-form3title" class="auris-atex-s-30e294142f">New ATEX Area</div><div class="auris-atex-s-7299078644">Zone classification and control register</div></div>
+<div class="auris-atex-s-9c40389b4a">
 <button class="btn" data-auris-onclick="h0499"><i class="ti ti-arrow-left"></i>Back</button>
-<button class="btn" id="atex-del-btn" style="display:none;color:var(--red);border-color:var(--red)" data-auris-onclick="h0500"><i class="ti ti-trash"></i>Delete</button>
+<button class="btn auris-atex-s-8dea1152ee" id="atex-del-btn" data-auris-onclick="h0500"><i class="ti ti-trash"></i>Delete</button>
 <button class="btn btn-primary" data-auris-onclick="h0501"><i class="ti ti-device-floppy"></i>Save</button>
 </div>
 </div>
 </div>
-<div style="display:grid;grid-template-columns:2fr 1fr;gap:16px">
+<div class="auris-atex-s-f1bc427372">
 <div>
-<div class="card" style="margin-bottom:14px">
+<div class="card auris-atex-s-42a6ced8b6">
 <div class="card-title">Area Details</div>
 <div class="form3row">
 <div class="form3group"><label class="form3label">Reference</label><input type="text" id="atex-ref" placeholder="ATEX-001"/></div>
@@ -4307,12 +4308,12 @@ Offline mode - changes will sync when connection is restored
 <div class="form3group"><label class="form3label">Source of release</label><input type="text" id="atex-release" placeholder="Valve, filling point, open container..."/></div>
 </div>
 </div>
-<div class="card" style="margin-bottom:14px">
+<div class="card auris-atex-s-42a6ced8b6">
 <div class="card-title">Controls</div>
 <div class="form3row">
-<div class="form3group"><label class="form3label">Ventilation controls</label><textarea id="atex-ventilation" style="min-height:70px"></textarea></div>
-<div class="form3group"><label class="form3label">Ignition source controls</label><textarea id="atex-ignition" style="min-height:70px"></textarea></div>
-<div class="form3group"><label class="form3label">Detection / monitoring controls</label><textarea id="atex-detection" style="min-height:70px"></textarea></div>
+<div class="form3group"><label class="form3label">Ventilation controls</label><textarea id="atex-ventilation" class="auris-atex-s-4d5979ac8f"></textarea></div>
+<div class="form3group"><label class="form3label">Ignition source controls</label><textarea id="atex-ignition" class="auris-atex-s-4d5979ac8f"></textarea></div>
+<div class="form3group"><label class="form3label">Detection / monitoring controls</label><textarea id="atex-detection" class="auris-atex-s-4d5979ac8f"></textarea></div>
 </div>
 </div>
 <div class="card">
@@ -4325,7 +4326,7 @@ Offline mode - changes will sync when connection is restored
 </div>
 </div>
 <div>
-<div class="card" style="margin-bottom:14px">
+<div class="card auris-atex-s-42a6ced8b6">
 <div class="card-title">Inspection & Status</div>
 <div class="form3group"><label class="form3label">Status</label><select id="atex-status"><option value="controlled">Controlled</option><option value="action_required">Action required</option><option value="out_of_service">Out of service</option><option value="archived">Archived</option></select></div>
 <div class="form3group"><label class="form3label">Responsible person</label><select id="atex-resp"><option value="">Select person...</option></select></div>
@@ -4336,7 +4337,7 @@ Offline mode - changes will sync when connection is restored
 </div>
 <div class="card">
 <div class="card-title">Notes</div>
-<textarea id="atex-notes" style="min-height:170px" placeholder="Zone assumptions, restrictions, drawing reference, access limits..."></textarea>
+<textarea id="atex-notes" class="auris-atex-s-c5e695a888" placeholder="Zone assumptions, restrictions, drawing reference, access limits..."></textarea>
 </div>
 </div>
 </div>
