@@ -75,6 +75,7 @@
 <link rel="stylesheet" href="auris-environmental-esg-static.css?v=20260815-1">
 <link rel="stylesheet" href="auris-emergency-management-static.css?v=20260815-1">
 <link rel="stylesheet" href="auris-occupational-health-static.css?v=20260815-1">
+<link rel="stylesheet" href="auris-ppe-static.css?v=20260815-1">
 </head>
 <body>
 <div id="login-screen">
@@ -6573,47 +6574,47 @@ Offline mode - changes will sync when connection is restored
 
 <div id="page-ppe" class="page">
 <div class="page-header">
-<div><div class="page-title">PPE Management</div><div style="font-size:12px;color:var(--text2)">Catalogue - Issuance - Inspections - Replacements - Expiry tracking</div></div>
-<div style="display:flex;gap:8px" id="ppe-header-btns"></div>
+<div><div class="page-title">PPE Management</div><div class="auris-ppe-s-7299078644">Catalogue - Issuance - Inspections - Replacements - Expiry tracking</div></div>
+<div id="ppe-header-btns" class="auris-ppe-s-9c40389b4a"></div>
 </div>
 
 <!-- Tabs -->
-<div style="display:flex;gap:0;margin-bottom:16px;border-bottom:2px solid var(--border);overflow-x:auto">
-<button class="mtg-tab active" id="ppe-tab-dash" data-auris-onclick="h0735" style="white-space:nowrap">Dashboard</button>
-<button class="mtg-tab" id="ppe-tab-catalogue" data-auris-onclick="h0736" style="white-space:nowrap">Catalogue</button>
-<button class="mtg-tab" id="ppe-tab-inventory" data-auris-onclick="h0737" style="white-space:nowrap">Stock / Inventory</button>
-<button class="mtg-tab" id="ppe-tab-issuance" data-auris-onclick="h0738" style="white-space:nowrap">Issuance</button>
-<button class="mtg-tab" id="ppe-tab-inspections" data-auris-onclick="h0739" style="white-space:nowrap">Inspections</button>
-<button class="mtg-tab" id="ppe-tab-replacements" data-auris-onclick="h0740" style="white-space:nowrap">Replacements</button>
-<button class="mtg-tab" id="ppe-tab-expiry" data-auris-onclick="h0741" style="white-space:nowrap">Expiry Alerts</button>
+<div class="auris-ppe-s-0cf9615f1f">
+<button class="mtg-tab active auris-ppe-s-eb99a4c193" id="ppe-tab-dash" data-auris-onclick="h0735">Dashboard</button>
+<button class="mtg-tab auris-ppe-s-eb99a4c193" id="ppe-tab-catalogue" data-auris-onclick="h0736">Catalogue</button>
+<button class="mtg-tab auris-ppe-s-eb99a4c193" id="ppe-tab-inventory" data-auris-onclick="h0737">Stock / Inventory</button>
+<button class="mtg-tab auris-ppe-s-eb99a4c193" id="ppe-tab-issuance" data-auris-onclick="h0738">Issuance</button>
+<button class="mtg-tab auris-ppe-s-eb99a4c193" id="ppe-tab-inspections" data-auris-onclick="h0739">Inspections</button>
+<button class="mtg-tab auris-ppe-s-eb99a4c193" id="ppe-tab-replacements" data-auris-onclick="h0740">Replacements</button>
+<button class="mtg-tab auris-ppe-s-eb99a4c193" id="ppe-tab-expiry" data-auris-onclick="h0741">Expiry Alerts</button>
 </div>
 
 <!-- -- DASHBOARD -- -->
 <div id="ppe-view-dash">
-<div style="display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin-bottom:14px">
-<div class="card" style="padding:10px 12px;border-left:4px solid #185FA5"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">PPE Types</div><div style="font-size:22px;font-weight:800;color:#185FA5" id="ppe-m3types">-</div></div>
-<div class="card" style="padding:10px 12px;border-left:4px solid #1D9E75"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">Currently Issued</div><div style="font-size:22px;font-weight:800;color:#1D9E75" id="ppe-m3issued">-</div></div>
-<div class="card" style="padding:10px 12px;border-left:4px solid #E24B4A"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">Expired / Due</div><div style="font-size:22px;font-weight:800;color:#E24B4A" id="ppe-m3expired">-</div></div>
-<div class="card" style="padding:10px 12px;border-left:4px solid #EF9F27"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">Low Stock</div><div style="font-size:22px;font-weight:800;color:#EF9F27" id="ppe-m3lowstock">-</div></div>
-<div class="card" style="padding:10px 12px;border-left:4px solid #8B5CF6"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">Pending Replacement</div><div style="font-size:22px;font-weight:800;color:#8B5CF6" id="ppe-m3replace">-</div></div>
-<div class="card" style="padding:10px 12px;border-left:4px solid #6B7280"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">Inspections Due</div><div style="font-size:22px;font-weight:800;color:#6B7280" id="ppe-m3insp-due">-</div></div>
+<div class="auris-ppe-s-0b8cad26ad">
+<div class="card auris-ppe-s-b6d403ee7e"><div class="auris-ppe-s-4422804ebb">PPE Types</div><div id="ppe-m3types" class="auris-ppe-s-6f56b8363e">-</div></div>
+<div class="card auris-ppe-s-7a5e61eb83"><div class="auris-ppe-s-4422804ebb">Currently Issued</div><div id="ppe-m3issued" class="auris-ppe-s-1e4fd5f9ed">-</div></div>
+<div class="card auris-ppe-s-530946d91c"><div class="auris-ppe-s-4422804ebb">Expired / Due</div><div id="ppe-m3expired" class="auris-ppe-s-e7ad3ebe2e">-</div></div>
+<div class="card auris-ppe-s-c70473e794"><div class="auris-ppe-s-4422804ebb">Low Stock</div><div id="ppe-m3lowstock" class="auris-ppe-s-2062f090bc">-</div></div>
+<div class="card auris-ppe-s-24ac637923"><div class="auris-ppe-s-4422804ebb">Pending Replacement</div><div id="ppe-m3replace" class="auris-ppe-s-bc6456303a">-</div></div>
+<div class="card auris-ppe-s-21ac3ff165"><div class="auris-ppe-s-4422804ebb">Inspections Due</div><div id="ppe-m3insp-due" class="auris-ppe-s-34362c1a82">-</div></div>
 </div>
 <!-- Alerts banner -->
-<div id="ppe-dash-alerts" style="margin-bottom:14px"></div>
+<div id="ppe-dash-alerts" class="auris-ppe-s-42a6ced8b6"></div>
 <!-- Category breakdown + Recent issuances -->
-<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px">
-<div class="card"><div class="card-title"><i class="ti ti-chart-bar"></i> Inventory by Category</div><div id="ppe-dash-inventory" style="font-size:13px"></div></div>
-<div class="card"><div class="card-title"><i class="ti ti-clock"></i> Expiring in 30 Days</div><div id="ppe-dash-expiry" style="font-size:13px"></div></div>
+<div class="auris-ppe-s-03826b79d9">
+<div class="card"><div class="card-title"><i class="ti ti-chart-bar"></i> Inventory by Category</div><div id="ppe-dash-inventory" class="auris-ppe-s-5e461f0709"></div></div>
+<div class="card"><div class="card-title"><i class="ti ti-clock"></i> Expiring in 30 Days</div><div id="ppe-dash-expiry" class="auris-ppe-s-5e461f0709"></div></div>
 </div>
-<div class="card"><div class="card-title"><i class="ti ti-activity"></i> Recent Issuances</div><div id="ppe-dash-recent" style="font-size:13px"></div></div>
+<div class="card"><div class="card-title"><i class="ti ti-activity"></i> Recent Issuances</div><div id="ppe-dash-recent" class="auris-ppe-s-5e461f0709"></div></div>
 </div>
 
 <!-- -- CATALOGUE -- -->
-<div id="ppe-view-catalogue" style="display:none">
-<div class="card" style="margin-bottom:12px;padding:10px 14px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
-<div><div class="card-title" style="margin:0">PPE Catalogue</div><div style="font-size:12px;color:var(--text2)">Approved PPE types, standards, protection levels and linked hazards</div></div>
-<div style="display:flex;gap:8px">
-<select id="ppe-cat-filter" data-auris-onchange="h0742" style="padding:6px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px">
+<div id="ppe-view-catalogue" class="auris-ppe-s-6aa34d7432">
+<div class="card auris-ppe-s-e2e1112055">
+<div><div class="card-title auris-ppe-s-ab79ea2b85">PPE Catalogue</div><div class="auris-ppe-s-7299078644">Approved PPE types, standards, protection levels and linked hazards</div></div>
+<div class="auris-ppe-s-9c40389b4a">
+<select id="ppe-cat-filter" class="auris-ppe-s-bd0e58d190" data-auris-onchange="h0742">
 <option value="">All categories</option>
 <option value="head">Head</option><option value="eye_face">Eye/Face</option>
 <option value="hearing">Hearing</option><option value="respiratory">Respiratory</option>
@@ -6621,18 +6622,18 @@ Offline mode - changes will sync when connection is restored
 <option value="body">Body</option><option value="fall_protection">Fall protection</option>
 <option value="high_visibility">High visibility</option><option value="other">Other</option>
 </select>
-<button class="btn btn-primary" id="ppe-cat-add-btn" style="display:none" data-auris-onclick="h0743"><i class="ti ti-plus"></i>Add PPE type</button>
+<button class="btn btn-primary auris-ppe-s-6aa34d7432" id="ppe-cat-add-btn" data-auris-onclick="h0743"><i class="ti ti-plus"></i>Add PPE type</button>
 </div>
 </div>
 <div id="ppe-cat-list"></div>
 </div>
 
 <!-- -- STOCK / INVENTORY -- -->
-<div id="ppe-view-inventory" style="display:none">
-<div class="card" style="margin-bottom:12px;padding:10px 14px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
-<div><div class="card-title" style="margin:0">PPE Stock / Inventory</div><div style="font-size:12px;color:var(--text2)">Quantities, storage locations, suppliers and reorder alerts</div></div>
-<div style="display:flex;gap:8px">
-<select id="ppe-inventory-filter" data-auris-onchange="h0744" style="padding:6px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px">
+<div id="ppe-view-inventory" class="auris-ppe-s-6aa34d7432">
+<div class="card auris-ppe-s-e2e1112055">
+<div><div class="card-title auris-ppe-s-ab79ea2b85">PPE Stock / Inventory</div><div class="auris-ppe-s-7299078644">Quantities, storage locations, suppliers and reorder alerts</div></div>
+<div class="auris-ppe-s-9c40389b4a">
+<select id="ppe-inventory-filter" class="auris-ppe-s-bd0e58d190" data-auris-onchange="h0744">
 <option value="">All categories</option>
 <option value="head">Head</option><option value="eye_face">Eye/Face</option>
 <option value="hearing">Hearing</option><option value="respiratory">Respiratory</option>
@@ -6640,66 +6641,66 @@ Offline mode - changes will sync when connection is restored
 <option value="body">Body</option><option value="fall_protection">Fall protection</option>
 <option value="high_visibility">High visibility</option><option value="other">Other</option>
 </select>
-<button class="btn btn-primary" id="ppe-inventory-add-btn" style="display:none" data-auris-onclick="h0743"><i class="ti ti-plus"></i>Add PPE type</button>
+<button class="btn btn-primary auris-ppe-s-6aa34d7432" id="ppe-inventory-add-btn" data-auris-onclick="h0743"><i class="ti ti-plus"></i>Add PPE type</button>
 </div>
 </div>
-<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px">
-<div class="card" style="padding:10px 12px;border-left:4px solid #185FA5"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">Total quantity</div><div style="font-size:22px;font-weight:800;color:#185FA5" id="ppe-inventory-m3total">-</div></div>
-<div class="card" style="padding:10px 12px;border-left:4px solid #1D9E75"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">Available stock</div><div style="font-size:22px;font-weight:800;color:#1D9E75" id="ppe-inventory-m3available">-</div></div>
-<div class="card" style="padding:10px 12px;border-left:4px solid #185FA5"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">Issued</div><div style="font-size:22px;font-weight:800;color:#185FA5" id="ppe-inventory-m3issued">-</div></div>
-<div class="card" style="padding:10px 12px;border-left:4px solid #EF9F27"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">Low stock</div><div style="font-size:22px;font-weight:800;color:#EF9F27" id="ppe-inventory-m3low">-</div></div>
+<div class="auris-ppe-s-14dfb7ae67">
+<div class="card auris-ppe-s-b6d403ee7e"><div class="auris-ppe-s-4422804ebb">Total quantity</div><div id="ppe-inventory-m3total" class="auris-ppe-s-6f56b8363e">-</div></div>
+<div class="card auris-ppe-s-7a5e61eb83"><div class="auris-ppe-s-4422804ebb">Available stock</div><div id="ppe-inventory-m3available" class="auris-ppe-s-1e4fd5f9ed">-</div></div>
+<div class="card auris-ppe-s-b6d403ee7e"><div class="auris-ppe-s-4422804ebb">Issued</div><div id="ppe-inventory-m3issued" class="auris-ppe-s-6f56b8363e">-</div></div>
+<div class="card auris-ppe-s-c70473e794"><div class="auris-ppe-s-4422804ebb">Low stock</div><div id="ppe-inventory-m3low" class="auris-ppe-s-2062f090bc">-</div></div>
 </div>
 <div id="ppe-inventory-list"></div>
 </div>
 
 <!-- -- ISSUANCE -- -->
-<div id="ppe-view-issuance" style="display:none">
-<div class="card" style="margin-bottom:12px;padding:10px 14px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
-<div><div class="card-title" style="margin:0">PPE Issuance Register</div><div style="font-size:12px;color:var(--text2)">Track who has what PPE issued - with expiry and replacement dates</div></div>
-<div style="display:flex;gap:8px">
-<input type="text" id="ppe-iss-search" placeholder="Search employee, PPE..." data-auris-oninput="h0745" style="padding:6px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px;width:180px"/>
-<select id="ppe-iss-filter-status" data-auris-onchange="h0746" style="padding:6px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px">
+<div id="ppe-view-issuance" class="auris-ppe-s-6aa34d7432">
+<div class="card auris-ppe-s-e2e1112055">
+<div><div class="card-title auris-ppe-s-ab79ea2b85">PPE Issuance Register</div><div class="auris-ppe-s-7299078644">Track who has what PPE issued - with expiry and replacement dates</div></div>
+<div class="auris-ppe-s-9c40389b4a">
+<input type="text" id="ppe-iss-search" class="auris-ppe-s-e205b0937c" placeholder="Search employee, PPE..." data-auris-oninput="h0745"/>
+<select id="ppe-iss-filter-status" class="auris-ppe-s-bd0e58d190" data-auris-onchange="h0746">
 <option value="active">Active only</option><option value="">All</option>
 <option value="expired">Expired</option><option value="returned">Returned</option>
 </select>
-<button class="btn btn-primary" id="ppe-iss-add-btn" style="display:none" data-auris-onclick="h0747"><i class="ti ti-plus"></i>Issue PPE</button>
+<button class="btn btn-primary auris-ppe-s-6aa34d7432" id="ppe-iss-add-btn" data-auris-onclick="h0747"><i class="ti ti-plus"></i>Issue PPE</button>
 </div>
 </div>
 <div id="ppe-iss-list"></div>
 </div>
 
 <!-- -- INSPECTIONS -- -->
-<div id="ppe-view-inspections" style="display:none">
-<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px">
-<div class="card" style="padding:10px 12px;border-left:4px solid #1D9E75"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">Pass</div><div style="font-size:22px;font-weight:800;color:#1D9E75" id="ppe-insp-pass">-</div></div>
-<div class="card" style="padding:10px 12px;border-left:4px solid #E24B4A"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">Fail</div><div style="font-size:22px;font-weight:800;color:#E24B4A" id="ppe-insp-fail">-</div></div>
-<div class="card" style="padding:10px 12px;border-left:4px solid #DC2626"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">Condemned</div><div style="font-size:22px;font-weight:800;color:#DC2626" id="ppe-insp-cond">-</div></div>
-<div class="card" style="padding:10px 12px;border-left:4px solid #EF9F27"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">Due Soon</div><div style="font-size:22px;font-weight:800;color:#EF9F27" id="ppe-insp-due">-</div></div>
+<div id="ppe-view-inspections" class="auris-ppe-s-6aa34d7432">
+<div class="auris-ppe-s-14dfb7ae67">
+<div class="card auris-ppe-s-7a5e61eb83"><div class="auris-ppe-s-4422804ebb">Pass</div><div id="ppe-insp-pass" class="auris-ppe-s-1e4fd5f9ed">-</div></div>
+<div class="card auris-ppe-s-530946d91c"><div class="auris-ppe-s-4422804ebb">Fail</div><div id="ppe-insp-fail" class="auris-ppe-s-e7ad3ebe2e">-</div></div>
+<div class="card auris-ppe-s-03bd966c28"><div class="auris-ppe-s-4422804ebb">Condemned</div><div id="ppe-insp-cond" class="auris-ppe-s-ffe267bce1">-</div></div>
+<div class="card auris-ppe-s-c70473e794"><div class="auris-ppe-s-4422804ebb">Due Soon</div><div id="ppe-insp-due" class="auris-ppe-s-2062f090bc">-</div></div>
 </div>
-<div class="card" style="margin-bottom:12px;padding:10px 14px;display:flex;justify-content:space-between;align-items:center">
-<div class="card-title" style="margin:0">PPE Inspection Records</div>
-<button class="btn btn-primary" id="ppe-insp-add-btn" style="display:none" data-auris-onclick="h0748"><i class="ti ti-plus"></i>New inspection</button>
+<div class="card auris-ppe-s-ae71a9e48f">
+<div class="card-title auris-ppe-s-ab79ea2b85">PPE Inspection Records</div>
+<button class="btn btn-primary auris-ppe-s-6aa34d7432" id="ppe-insp-add-btn" data-auris-onclick="h0748"><i class="ti ti-plus"></i>New inspection</button>
 </div>
 <div id="ppe-insp-list"></div>
 </div>
 
 <!-- -- REPLACEMENTS -- -->
-<div id="ppe-view-replacements" style="display:none">
-<div class="card" style="margin-bottom:12px;padding:10px 14px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
-<div><div class="card-title" style="margin:0">Replacement Requests</div><div style="font-size:12px;color:var(--text2)">Track PPE replacement requests from damage, expiry or inspection failures</div></div>
-<button class="btn btn-primary" id="ppe-rep-add-btn" style="display:none" data-auris-onclick="h0749"><i class="ti ti-plus"></i>New request</button>
+<div id="ppe-view-replacements" class="auris-ppe-s-6aa34d7432">
+<div class="card auris-ppe-s-e2e1112055">
+<div><div class="card-title auris-ppe-s-ab79ea2b85">Replacement Requests</div><div class="auris-ppe-s-7299078644">Track PPE replacement requests from damage, expiry or inspection failures</div></div>
+<button class="btn btn-primary auris-ppe-s-6aa34d7432" id="ppe-rep-add-btn" data-auris-onclick="h0749"><i class="ti ti-plus"></i>New request</button>
 </div>
 <div id="ppe-rep-list"></div>
 </div>
 
 <!-- -- EXPIRY ALERTS -- -->
-<div id="ppe-view-expiry" style="display:none">
-<div class="card" style="margin-bottom:12px;padding:12px 16px;background:linear-gradient(135deg,#7F1D1D,#DC2626);color:#fff">
-<div style="font-size:14px;font-weight:700;margin-bottom:4px"><i class="ti ti-alert-triangle"></i> Expiry &amp; Replacement Reminders</div>
-<div style="font-size:12px;opacity:.85">PPE items that have expired or are due for replacement within 90 days. Act before workers use expired PPE.</div>
+<div id="ppe-view-expiry" class="auris-ppe-s-6aa34d7432">
+<div class="card auris-ppe-s-1d7c02f7a9">
+<div class="auris-ppe-s-f26cfe9154"><i class="ti ti-alert-triangle"></i> Expiry &amp; Replacement Reminders</div>
+<div class="auris-ppe-s-dc4ac84a01">PPE items that have expired or are due for replacement within 90 days. Act before workers use expired PPE.</div>
 </div>
-<div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap">
-<button class="btn active" id="ppe-exp-btn-30" data-auris-onclick="h0750" style="background:#DC2626;color:#fff;border-color:#DC2626">Expired / Due &lt;30d</button>
+<div class="auris-ppe-s-7c3219e933">
+<button class="btn active auris-ppe-s-ce950f1509" id="ppe-exp-btn-30" data-auris-onclick="h0750">Expired / Due &lt;30d</button>
 <button class="btn" id="ppe-exp-btn-60" data-auris-onclick="h0751">Due &lt;60d</button>
 <button class="btn" id="ppe-exp-btn-90" data-auris-onclick="h0752">Due &lt;90d</button>
 <button class="btn" id="ppe-exp-btn-all" data-auris-onclick="h0753">All active</button>
@@ -6710,21 +6711,21 @@ Offline mode - changes will sync when connection is restored
 <!-- ------- FORMS ------- -->
 
 <!-- Catalogue form -->
-<div id="ppe-cat-form" style="display:none">
-<div class="card" style="margin-bottom:14px;padding:0;overflow:hidden">
-<div style="padding:14px 20px;background:linear-gradient(135deg,#1a3a5c,#185FA5);color:#fff;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
-<div><div style="font-size:11px;font-weight:600;text-transform:uppercase;opacity:.8;margin-bottom:4px">PPE Catalogue</div>
-<div style="font-size:17px;font-weight:800" id="ppe-cat-form3title">New PPE Type</div></div>
-<div style="display:flex;gap:8px">
-<button class="btn" style="background:rgba(255,255,255,.2);color:#fff;border-color:rgba(255,255,255,.3)" data-auris-onclick="h0754"><i class="ti ti-arrow-left"></i>Back</button>
-<button id="ppe-cat-del-btn" class="btn" style="display:none;background:rgba(220,38,38,.3);color:#fff;border-color:rgba(220,38,38,.5)" data-auris-onclick="h0755"><i class="ti ti-trash"></i></button>
-<button class="btn" style="background:#1D9E75;color:#fff;border-color:#1D9E75" data-auris-onclick="h0756"><i class="ti ti-device-floppy"></i>Save</button>
+<div id="ppe-cat-form" class="auris-ppe-s-6aa34d7432">
+<div class="card auris-ppe-s-54ec8874e7">
+<div class="auris-ppe-s-6e86c59eb5">
+<div><div class="auris-ppe-s-adf04cf81f">PPE Catalogue</div>
+<div id="ppe-cat-form3title" class="auris-ppe-s-75021e57ca">New PPE Type</div></div>
+<div class="auris-ppe-s-9c40389b4a">
+<button class="btn auris-ppe-s-5c09edd131" data-auris-onclick="h0754"><i class="ti ti-arrow-left"></i>Back</button>
+<button id="ppe-cat-del-btn" class="btn auris-ppe-s-0e610f7b67" data-auris-onclick="h0755"><i class="ti ti-trash"></i></button>
+<button class="btn auris-ppe-s-c7b9e5b2c7" data-auris-onclick="h0756"><i class="ti ti-device-floppy"></i>Save</button>
 </div>
 </div>
 </div>
-<div style="display:grid;grid-template-columns:2fr 1fr;gap:14px">
+<div class="auris-ppe-s-5571af1e74">
 <div>
-<div class="card" style="margin-bottom:14px"><div class="card-title">Catalogue specification</div>
+<div class="card auris-ppe-s-42a6ced8b6"><div class="card-title">Catalogue specification</div>
 <div class="form3row">
 <div class="form3group"><label class="form3label">PPE name</label><input type="text" id="pcf-name" placeholder="e.g. Safety Helmet Type 1"/></div>
 <div class="form3group"><label class="form3label">Category</label>
@@ -6743,8 +6744,8 @@ Offline mode - changes will sync when connection is restored
 <div class="form3group"><label class="form3label">Standard / Certification</label><input type="text" id="pcf-standard" placeholder="e.g. MSB, EN 397, ISO 20345, ANSI Z89.1"/></div>
 <div class="form3group"><label class="form3label">Protection level</label><input type="text" id="pcf-protection" placeholder="e.g. Class 3, FFP2, S1P"/></div>
 </div>
-<div class="card" style="margin:10px 0 14px;border:1px solid #bfdbfe;background:#eff6ff"><div class="card-title" style="color:#185FA5"><i class="ti ti-certificate"></i> MSB / conformity evidence</div>
-<div style="font-size:12px;color:#1e3a8a;margin-bottom:10px">Attach the MSB certificate or certificate of conformity for this PPE type. Paste a Document Control link, cloud link, or scanned certificate URL.</div>
+<div class="card auris-ppe-s-47b612029d"><div class="card-title auris-ppe-s-ca32b871b2"><i class="ti ti-certificate"></i> MSB / conformity evidence</div>
+<div class="auris-ppe-s-29eddeb97f">Attach the MSB certificate or certificate of conformity for this PPE type. Paste a Document Control link, cloud link, or scanned certificate URL.</div>
 <div class="form3row3">
 <div class="form3group"><label class="form3label">Certificate type</label><select id="pcf-cert-type"><option value="">-</option><option value="msb">MSB certificate</option><option value="conformity">Certificate of conformity</option><option value="test_report">Test report</option><option value="manufacturer_declaration">Manufacturer declaration</option><option value="other">Other evidence</option></select></div>
 <div class="form3group"><label class="form3label">Certificate / report ref.</label><input type="text" id="pcf-cert-ref" placeholder="e.g. MSB BASIC 06 SRC"/></div>
@@ -6755,16 +6756,16 @@ Offline mode - changes will sync when connection is restored
 <div class="form3group"><label class="form3label">Expiry / validity date</label><input type="date" id="pcf-cert-expiry"/></div>
 <div class="form3group"><label class="form3label">Certificate attachment</label><input type="text" id="pcf-cert-url" placeholder="Upload certificate or paste link"/></div>
 </div>
-<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:-4px;margin-bottom:8px">
-<label class="btn btn-sm" style="cursor:pointer"><i class="ti ti-upload"></i>Upload certificate<input type="file" accept=".pdf,.doc,.docx,.png,.jpg,.jpeg" data-auris-onchange="h0757" style="display:none"/></label>
+<div class="auris-ppe-s-f8516803fa">
+<label class="btn btn-sm auris-ppe-s-9463ff4798"><i class="ti ti-upload"></i>Upload certificate<input class="auris-ppe-s-6aa34d7432" type="file" accept=".pdf,.doc,.docx,.png,.jpg,.jpeg" data-auris-onchange="h0757"/></label>
 <button type="button" class="btn btn-sm" data-auris-onclick="h0758"><i class="ti ti-eye"></i>Preview</button>
 </div>
 </div>
 <div class="form3group"><label class="form3label">Linked hazard types (comma separated)</label><input type="text" id="pcf-hazards" placeholder="e.g. falling objects, noise, chemical splash, height..."/></div>
-<div class="form3group"><label class="form3label">Notes / Description</label><textarea id="pcf-notes" style="min-height:50px"></textarea></div>
+<div class="form3group"><label class="form3label">Notes / Description</label><textarea id="pcf-notes" class="auris-ppe-s-2b013fa0d9"></textarea></div>
 </div>
-<div class="card" style="margin-bottom:14px"><div class="card-title">Lifecycle rules</div>
-<div style="display:flex;align-items:center;gap:8px;margin-bottom:12px"><input type="checkbox" id="pcf-has-expiry" style="width:auto;accent-color:var(--green)"/><label for="pcf-has-expiry" style="font-size:13px;font-weight:600;cursor:pointer">This PPE has an expiry date</label></div>
+<div class="card auris-ppe-s-42a6ced8b6"><div class="card-title">Lifecycle rules</div>
+<div class="auris-ppe-s-aa7c01383d"><input type="checkbox" id="pcf-has-expiry" class="auris-ppe-s-9c103f75d4"/><label class="auris-ppe-s-22514dbec4" for="pcf-has-expiry">This PPE has an expiry date</label></div>
 <div class="form3row">
 <div class="form3group"><label class="form3label">Service life (months)</label><input type="number" id="pcf-service-life" min="1" max="240" placeholder="e.g. 24 for 2 years"/></div>
 <div class="form3group"><label class="form3label">Inspection interval (days)</label><input type="number" id="pcf-insp-interval" min="1" max="365" value="90" placeholder="90"/></div>
@@ -6772,7 +6773,7 @@ Offline mode - changes will sync when connection is restored
 </div>
 </div>
 <div>
-<div class="card" style="margin-bottom:14px;border:2px solid #185FA5"><div class="card-title" style="color:#185FA5">Stock / Inventory</div>
+<div class="card auris-ppe-s-9bcefa3fff"><div class="card-title auris-ppe-s-ca32b871b2">Stock / Inventory</div>
 <div class="form3row">
 <div class="form3group"><label class="form3label">Total quantity</label><input type="number" id="pcf-qty-total" min="0" value="0"/></div>
 <div class="form3group"><label class="form3label">Available stock</label><input type="number" id="pcf-qty-avail" min="0" value="0"/></div>
@@ -6792,29 +6793,29 @@ Offline mode - changes will sync when connection is restored
 </div>
 
 <!-- Issuance form -->
-<div id="ppe-iss-form" style="display:none">
-<div class="card" style="margin-bottom:14px;padding:0;overflow:hidden">
-<div style="padding:14px 20px;background:linear-gradient(135deg,#064E3B,#1D9E75);color:#fff;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+<div id="ppe-iss-form" class="auris-ppe-s-6aa34d7432">
+<div class="card auris-ppe-s-54ec8874e7">
+<div class="auris-ppe-s-d5e9713ce7">
 <div>
-<div style="font-size:11px;font-weight:600;text-transform:uppercase;opacity:.8;margin-bottom:4px">PPE Issuance</div>
-<div style="font-size:17px;font-weight:800" id="ppe-iss-form3title">Issue PPE</div>
-<div style="font-family:monospace;font-size:12px;color:#a7f3d0;margin-top:3px" id="ppe-iss-form3ref">ISS-AUTO</div>
+<div class="auris-ppe-s-adf04cf81f">PPE Issuance</div>
+<div id="ppe-iss-form3title" class="auris-ppe-s-75021e57ca">Issue PPE</div>
+<div id="ppe-iss-form3ref" class="auris-ppe-s-8703b10672">ISS-AUTO</div>
 </div>
-<div style="display:flex;gap:8px">
-<button class="btn" style="background:rgba(255,255,255,.2);color:#fff;border-color:rgba(255,255,255,.3)" data-auris-onclick="h0759"><i class="ti ti-arrow-left"></i>Back</button>
-<button id="ppe-iss-del-btn" class="btn" style="display:none;background:rgba(0,0,0,.3);color:#fff;border-color:rgba(255,255,255,.3)" data-auris-onclick="h0760"><i class="ti ti-trash"></i></button>
-<button class="btn" style="background:#fff;color:#1D9E75;font-weight:700" data-auris-onclick="h0761"><i class="ti ti-device-floppy"></i>Save issuance</button>
+<div class="auris-ppe-s-9c40389b4a">
+<button class="btn auris-ppe-s-5c09edd131" data-auris-onclick="h0759"><i class="ti ti-arrow-left"></i>Back</button>
+<button id="ppe-iss-del-btn" class="btn auris-ppe-s-96f7839a1b" data-auris-onclick="h0760"><i class="ti ti-trash"></i></button>
+<button class="btn auris-ppe-s-56ac49ff17" data-auris-onclick="h0761"><i class="ti ti-device-floppy"></i>Save issuance</button>
 </div>
 </div>
 </div>
-<div style="display:grid;grid-template-columns:2fr 1fr;gap:14px">
+<div class="auris-ppe-s-5571af1e74">
 <div>
-<div class="card" style="margin-bottom:14px"><div class="card-title">PPE &amp; Recipient</div>
+<div class="card auris-ppe-s-42a6ced8b6"><div class="card-title">PPE &amp; Recipient</div>
 <div class="form3row">
 <div class="form3group"><label class="form3label">PPE item</label><select id="pif-ppe-id" data-auris-onchange="h0762"><option value="">Select PPE from catalogue...</option></select></div>
-<div class="form3group" id="pif-ppe-name-group" style="display:none"><label class="form3label">PPE name (manual)</label><input type="text" id="pif-ppe-name"/></div>
+<div class="form3group auris-ppe-s-6aa34d7432" id="pif-ppe-name-group"><label class="form3label">PPE name (manual)</label><input type="text" id="pif-ppe-name"/></div>
 </div>
-<div id="pif-ppe-info" style="margin-bottom:12px"></div>
+<div id="pif-ppe-info" class="auris-ppe-s-b56987dbcb"></div>
 <div class="form3row">
 <div class="form3group"><label class="form3label">Employee name</label><select id="pif-emp-name" data-auris-onchange="h0763"><option value="">Select person...</option></select></div>
 <div class="form3group"><label class="form3label">Employee ID</label><input type="text" id="pif-emp-id"/></div>
@@ -6822,7 +6823,7 @@ Offline mode - changes will sync when connection is restored
 <div class="form3group"><label class="form3label">Job title</label><input type="text" id="pif-title"/></div>
 </div>
 </div>
-<div class="card" style="margin-bottom:14px"><div class="card-title">Issuance Details</div>
+<div class="card auris-ppe-s-42a6ced8b6"><div class="card-title">Issuance Details</div>
 <div class="form3row">
 <div class="form3group"><label class="form3label">Issued date</label><input type="date" id="pif-issued-date"/></div>
 <div class="form3group"><label class="form3label">Issued by</label><select id="pif-issued-by"><option value="">Select person...</option></select></div>
@@ -6830,20 +6831,20 @@ Offline mode - changes will sync when connection is restored
 <div class="form3group"><label class="form3label">Size</label><input type="text" id="pif-size" placeholder="S / M / L / XL / 42 etc."/></div>
 </div>
 <div class="form3row">
-<div class="form3group"><label class="form3label">Serial / Tag number</label><input type="text" id="pif-serial" style="font-family:monospace"/></div>
-<div class="form3group"><label class="form3label">Batch number</label><input type="text" id="pif-batch" style="font-family:monospace"/></div>
+<div class="form3group"><label class="form3label">Serial / Tag number</label><input type="text" id="pif-serial" class="auris-ppe-s-7b8c3df564"/></div>
+<div class="form3group"><label class="form3label">Batch number</label><input type="text" id="pif-batch" class="auris-ppe-s-7b8c3df564"/></div>
 <div class="form3group"><label class="form3label">Condition on issue</label><select id="pif-condition"><option value="new">New</option><option value="good">Good</option><option value="fair">Fair</option></select></div>
 </div>
 </div>
-<div class="card" style="margin-bottom:14px"><div class="card-title">Linked References</div>
+<div class="card auris-ppe-s-42a6ced8b6"><div class="card-title">Linked References</div>
 <div class="form3row">
-<div class="form3group"><label class="form3label">Work order ref</label><div style="display:flex;gap:6px"><select id="pif-wo-ref" style="font-family:monospace;min-width:0"><option value="">Select work order...</option></select><button type="button" class="btn btn-sm" data-auris-onclick="h0764"><i class="ti ti-external-link"></i></button></div></div>
-<div class="form3group"><label class="form3label">Risk Assessment ref</label><div style="display:flex;gap:6px"><select id="pif-ra-ref" style="font-family:monospace;min-width:0"><option value="">Select risk assessment...</option></select><button type="button" class="btn btn-sm" data-auris-onclick="h0765"><i class="ti ti-external-link"></i></button></div></div>
+<div class="form3group"><label class="form3label">Work order ref</label><div class="auris-ppe-s-69374f356a"><select id="pif-wo-ref" class="auris-ppe-s-c1a6ae2812"><option value="">Select work order...</option></select><button type="button" class="btn btn-sm" data-auris-onclick="h0764"><i class="ti ti-external-link"></i></button></div></div>
+<div class="form3group"><label class="form3label">Risk Assessment ref</label><div class="auris-ppe-s-69374f356a"><select id="pif-ra-ref" class="auris-ppe-s-c1a6ae2812"><option value="">Select risk assessment...</option></select><button type="button" class="btn btn-sm" data-auris-onclick="h0765"><i class="ti ti-external-link"></i></button></div></div>
 <div class="form3group"><label class="form3label">Hazard type</label><input type="text" id="pif-hazard" placeholder="e.g. noise, height, chemical..."/></div>
 </div></div>
 <div class="card"><div class="card-title">Return Details (fill on return)</div>
-<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px"><input type="checkbox" id="pif-returned" style="accent-color:var(--green)" data-auris-onchange="h0766"/><label for="pif-returned" style="font-size:13px;font-weight:600;cursor:pointer">PPE returned</label></div>
-<div id="pif-return-fields" style="display:none">
+<div class="auris-ppe-s-ba28bccee4"><input type="checkbox" id="pif-returned" class="auris-ppe-s-283f12d7fe" data-auris-onchange="h0766"/><label class="auris-ppe-s-22514dbec4" for="pif-returned">PPE returned</label></div>
+<div id="pif-return-fields" class="auris-ppe-s-6aa34d7432">
 <div class="form3row">
 <div class="form3group"><label class="form3label">Return date</label><input type="date" id="pif-return-date"/></div>
 <div class="form3group"><label class="form3label">Return condition</label><select id="pif-return-condition"><option value="good">Good</option><option value="damaged">Damaged</option><option value="condemned">Condemned</option><option value="lost">Lost</option></select></div>
@@ -6852,36 +6853,36 @@ Offline mode - changes will sync when connection is restored
 </div></div>
 </div>
 <div>
-<div class="card" style="margin-bottom:14px;border:2px solid #1D9E75"><div class="card-title" style="color:#1D9E75">Dates &amp; Lifecycle</div>
+<div class="card auris-ppe-s-f8805c5d89"><div class="card-title auris-ppe-s-f9faa54401">Dates &amp; Lifecycle</div>
 <div class="form3group"><label class="form3label">Manufacture date</label><input type="date" id="pif-mfg-date"/></div>
 <div class="form3group"><label class="form3label">Expiry date</label><input type="date" id="pif-expiry-date"/></div>
-<div class="form3group" style="background:#EFF6FF;border-radius:8px;padding:10px"><label class="form3label" style="color:#185FA5">Expected replacement date</label><input type="date" id="pif-replace-date" style="font-weight:700"/><div style="font-size:11px;color:#185FA5;margin-top:4px" id="pif-replace-hint">Based on service life</div></div>
-<div class="form3group" style="margin-top:10px"><label class="form3label">Status</label><select id="pif-status"><option value="active">Active - in use</option><option value="returned">Returned</option><option value="expired">Expired</option><option value="lost">Lost</option><option value="condemned">Condemned</option></select></div></div>
+<div class="form3group auris-ppe-s-32216f38c7"><label class="form3label auris-ppe-s-ca32b871b2">Expected replacement date</label><input type="date" id="pif-replace-date" class="auris-ppe-s-c6fa01b3f1"/><div id="pif-replace-hint" class="auris-ppe-s-750ba98b34">Based on service life</div></div>
+<div class="form3group auris-ppe-s-df928149c5"><label class="form3label">Status</label><select id="pif-status"><option value="active">Active - in use</option><option value="returned">Returned</option><option value="expired">Expired</option><option value="lost">Lost</option><option value="condemned">Condemned</option></select></div></div>
 <div class="card"><div class="card-title">Acknowledgement</div>
-<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px"><input type="checkbox" id="pif-ack" style="accent-color:var(--green)"/><label for="pif-ack" style="font-size:13px;font-weight:600;cursor:pointer">Employee acknowledged receipt</label></div>
+<div class="auris-ppe-s-ba28bccee4"><input type="checkbox" id="pif-ack" class="auris-ppe-s-283f12d7fe"/><label class="auris-ppe-s-22514dbec4" for="pif-ack">Employee acknowledged receipt</label></div>
 <div class="form3group"><label class="form3label">Acknowledgement date</label><input type="date" id="pif-ack-date"/></div>
-<div class="form3group"><label class="form3label">Notes</label><textarea id="pif-notes" style="min-height:50px"></textarea></div></div>
+<div class="form3group"><label class="form3label">Notes</label><textarea id="pif-notes" class="auris-ppe-s-2b013fa0d9"></textarea></div></div>
 </div>
 </div>
 </div>
 
 <!-- Inspection form -->
-<div id="ppe-insp-form" style="display:none">
-<div class="card" style="margin-bottom:14px;padding:0;overflow:hidden">
-<div style="padding:14px 20px;background:linear-gradient(135deg,#1E3A5F,#8B5CF6);color:#fff;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+<div id="ppe-insp-form" class="auris-ppe-s-6aa34d7432">
+<div class="card auris-ppe-s-54ec8874e7">
+<div class="auris-ppe-s-601d435a3f">
 <div>
-<div style="font-size:11px;font-weight:600;text-transform:uppercase;opacity:.8;margin-bottom:4px">PPE Inspection</div>
-<div style="font-size:17px;font-weight:800" id="ppe-insp-form3title">New Inspection</div>
-<div style="font-family:monospace;font-size:12px;color:#ddd6fe;margin-top:3px" id="ppe-insp-form3ref">PPEINSP-AUTO</div>
+<div class="auris-ppe-s-adf04cf81f">PPE Inspection</div>
+<div id="ppe-insp-form3title" class="auris-ppe-s-75021e57ca">New Inspection</div>
+<div id="ppe-insp-form3ref" class="auris-ppe-s-be29fbce10">PPEINSP-AUTO</div>
 </div>
-<div style="display:flex;gap:8px">
-<button class="btn" style="background:rgba(255,255,255,.2);color:#fff;border-color:rgba(255,255,255,.3)" data-auris-onclick="h0767"><i class="ti ti-arrow-left"></i>Back</button>
-<button id="ppe-insp-del-btn" class="btn" style="display:none;background:rgba(0,0,0,.3);color:#fff;border-color:rgba(255,255,255,.3)" data-auris-onclick="h0768"><i class="ti ti-trash"></i></button>
-<button class="btn" style="background:#1D9E75;color:#fff;border-color:#1D9E75" data-auris-onclick="h0769"><i class="ti ti-device-floppy"></i>Save</button>
+<div class="auris-ppe-s-9c40389b4a">
+<button class="btn auris-ppe-s-5c09edd131" data-auris-onclick="h0767"><i class="ti ti-arrow-left"></i>Back</button>
+<button id="ppe-insp-del-btn" class="btn auris-ppe-s-96f7839a1b" data-auris-onclick="h0768"><i class="ti ti-trash"></i></button>
+<button class="btn auris-ppe-s-c7b9e5b2c7" data-auris-onclick="h0769"><i class="ti ti-device-floppy"></i>Save</button>
 </div>
 </div>
 </div>
-<div class="card" style="margin-bottom:14px">
+<div class="card auris-ppe-s-42a6ced8b6">
 <div class="form3row">
 <div class="form3group"><label class="form3label">PPE item</label><select id="piif-ppe-id" data-auris-onchange="h0770"><option value="">Select PPE...</option></select></div>
 <div class="form3group"><label class="form3label">Employee name</label><select id="piif-emp-name" data-auris-onchange="h0771"><option value="">Select person...</option></select></div>
@@ -6892,14 +6893,14 @@ Offline mode - changes will sync when connection is restored
 </div>
 </div>
 <!-- Dynamic checklist -->
-<div class="card" style="margin-bottom:14px;padding:0;overflow:hidden">
-<div style="padding:10px 16px;background:linear-gradient(135deg,#1E3A5F,#8B5CF6);color:#fff;font-weight:700">Inspection Checklist</div>
-<div id="piif-checklist" style="padding:10px"></div>
+<div class="card auris-ppe-s-54ec8874e7">
+<div class="auris-ppe-s-65224788c7">Inspection Checklist</div>
+<div id="piif-checklist" class="auris-ppe-s-7e9e1b04a9"></div>
 </div>
-<div style="display:grid;grid-template-columns:2fr 1fr;gap:14px">
+<div class="auris-ppe-s-5571af1e74">
 <div>
-<div class="card" style="margin-bottom:14px"><div class="card-title">Findings</div>
-<div class="form3group"><label class="form3label">Defects / issues found</label><textarea id="piif-defects" style="min-height:70px" placeholder="Describe any defects, damage or issues found..."></textarea></div>
+<div class="card auris-ppe-s-42a6ced8b6"><div class="card-title">Findings</div>
+<div class="form3group"><label class="form3label">Defects / issues found</label><textarea id="piif-defects" class="auris-ppe-s-4d5979ac8f" placeholder="Describe any defects, damage or issues found..."></textarea></div>
 <div class="form3group"><label class="form3label">Action taken</label>
 <select id="piif-action">
 <option value="cleared_for_use">Cleared for use</option>
@@ -6908,18 +6909,18 @@ Offline mode - changes will sync when connection is restored
 <option value="returned_for_maintenance">Returned for maintenance</option>
 <option value="none">- No action required</option>
 </select></div>
-<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px"><input type="checkbox" id="piif-repl-issued" style="accent-color:var(--green)"/><label for="piif-repl-issued" style="font-size:13px;font-weight:600;cursor:pointer">Replacement issued</label></div>
-<div class="form3group"><label class="form3label">Replacement issuance ref</label><input type="text" id="piif-repl-ref" style="font-family:monospace"/></div>
-<div class="form3group"><label class="form3label">Notes</label><textarea id="piif-notes" style="min-height:50px"></textarea></div>
+<div class="auris-ppe-s-e8beef2369"><input type="checkbox" id="piif-repl-issued" class="auris-ppe-s-283f12d7fe"/><label class="auris-ppe-s-22514dbec4" for="piif-repl-issued">Replacement issued</label></div>
+<div class="form3group"><label class="form3label">Replacement issuance ref</label><input type="text" id="piif-repl-ref" class="auris-ppe-s-7b8c3df564"/></div>
+<div class="form3group"><label class="form3label">Notes</label><textarea id="piif-notes" class="auris-ppe-s-2b013fa0d9"></textarea></div>
 </div>
 </div>
 <div>
-<div class="card" style="border:2px solid #8B5CF6"><div class="card-title" style="color:#8B5CF6">Overall Result</div>
-<div style="display:flex;flex-direction:column;gap:8px">
-<label style="display:flex;align-items:center;gap:8px;padding:10px;border-radius:8px;cursor:pointer;background:#f0fdf4;border:1px solid #bbf7d0" data-auris-onclick="h0772"><input type="radio" name="piif-result-radio" value="pass" style="accent-color:var(--green)" checked><span style="font-weight:700;color:#166534">Pass - cleared for use</span></label>
-<label style="display:flex;align-items:center;gap:8px;padding:10px;border-radius:8px;cursor:pointer;background:#FFF7ED;border:1px solid #fed7aa" data-auris-onclick="h0773"><input type="radio" name="piif-result-radio" value="monitor" style="accent-color:#C2410C"><span style="font-weight:700;color:#C2410C">Monitor - recheck needed</span></label>
-<label style="display:flex;align-items:center;gap:8px;padding:10px;border-radius:8px;cursor:pointer;background:#FEF2F2;border:1px solid #fecaca" data-auris-onclick="h0774"><input type="radio" name="piif-result-radio" value="fail" style="accent-color:var(--red)"><span style="font-weight:700;color:var(--red)">Fail - remove from service</span></label>
-<label style="display:flex;align-items:center;gap:8px;padding:10px;border-radius:8px;cursor:pointer;background:#FCEBEB;border:1px solid #fca5a5" data-auris-onclick="h0775"><input type="radio" name="piif-result-radio" value="condemn" style="accent-color:#7F1D1D"><span style="font-weight:700;color:#7F1D1D">Condemn - destroy &amp; replace</span></label>
+<div class="card auris-ppe-s-82d616954c"><div class="card-title auris-ppe-s-48a87f51bd">Overall Result</div>
+<div class="auris-ppe-s-0fbf9e859f">
+<label class="auris-ppe-s-e6499d5863" data-auris-onclick="h0772"><input class="auris-ppe-s-283f12d7fe" type="radio" name="piif-result-radio" value="pass" checked><span class="auris-ppe-s-485acb7ee6">Pass - cleared for use</span></label>
+<label class="auris-ppe-s-3536b249e1" data-auris-onclick="h0773"><input class="auris-ppe-s-d27852021c" type="radio" name="piif-result-radio" value="monitor"><span class="auris-ppe-s-e6aeeaf7e8">Monitor - recheck needed</span></label>
+<label class="auris-ppe-s-8c5a7fbdc5" data-auris-onclick="h0774"><input class="auris-ppe-s-af62d68b87" type="radio" name="piif-result-radio" value="fail"><span class="auris-ppe-s-f59a8847ec">Fail - remove from service</span></label>
+<label class="auris-ppe-s-0dc4a97c22" data-auris-onclick="h0775"><input class="auris-ppe-s-bfff90bfdd" type="radio" name="piif-result-radio" value="condemn"><span class="auris-ppe-s-3ed2ae7f16">Condemn - destroy &amp; replace</span></label>
 </div>
 <input type="hidden" id="piif-result" value="pass"/>
 </div>
@@ -6928,24 +6929,24 @@ Offline mode - changes will sync when connection is restored
 </div>
 
 <!-- Replacement form -->
-<div id="ppe-rep-form" style="display:none">
-<div class="card" style="margin-bottom:14px;padding:0;overflow:hidden">
-<div style="padding:14px 20px;background:linear-gradient(135deg,#1a3a5c,#B45309);color:#fff;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+<div id="ppe-rep-form" class="auris-ppe-s-6aa34d7432">
+<div class="card auris-ppe-s-54ec8874e7">
+<div class="auris-ppe-s-21cd6a56d0">
 <div>
-<div style="font-size:11px;font-weight:600;text-transform:uppercase;opacity:.8;margin-bottom:4px">Replacement Request</div>
-<div style="font-size:17px;font-weight:800" id="ppe-rep-form3title">New Request</div>
-<div style="font-family:monospace;font-size:12px;color:#fef3c7;margin-top:3px" id="ppe-rep-form3ref">REP-AUTO</div>
+<div class="auris-ppe-s-adf04cf81f">Replacement Request</div>
+<div id="ppe-rep-form3title" class="auris-ppe-s-75021e57ca">New Request</div>
+<div id="ppe-rep-form3ref" class="auris-ppe-s-4bff8bc1bc">REP-AUTO</div>
 </div>
-<div style="display:flex;gap:8px">
-<button class="btn" style="background:rgba(255,255,255,.2);color:#fff;border-color:rgba(255,255,255,.3)" data-auris-onclick="h0776"><i class="ti ti-arrow-left"></i>Back</button>
-<button id="ppe-rep-del-btn" class="btn" style="display:none;background:rgba(0,0,0,.3);color:#fff;border-color:rgba(255,255,255,.3)" data-auris-onclick="h0777"><i class="ti ti-trash"></i></button>
-<button class="btn" style="background:#1D9E75;color:#fff;border-color:#1D9E75" data-auris-onclick="h0778"><i class="ti ti-device-floppy"></i>Save request</button>
+<div class="auris-ppe-s-9c40389b4a">
+<button class="btn auris-ppe-s-5c09edd131" data-auris-onclick="h0776"><i class="ti ti-arrow-left"></i>Back</button>
+<button id="ppe-rep-del-btn" class="btn auris-ppe-s-96f7839a1b" data-auris-onclick="h0777"><i class="ti ti-trash"></i></button>
+<button class="btn auris-ppe-s-c7b9e5b2c7" data-auris-onclick="h0778"><i class="ti ti-device-floppy"></i>Save request</button>
 </div>
 </div>
 </div>
-<div style="display:grid;grid-template-columns:2fr 1fr;gap:14px">
+<div class="auris-ppe-s-5571af1e74">
 <div>
-<div class="card" style="margin-bottom:14px"><div class="card-title">Request Details</div>
+<div class="card auris-ppe-s-42a6ced8b6"><div class="card-title">Request Details</div>
 <div class="form3row">
 <div class="form3group"><label class="form3label">PPE item</label><select id="prf-ppe-id"><option value="">Select PPE...</option></select></div>
 <div class="form3group"><label class="form3label">Employee name</label><select id="prf-emp-name" data-auris-onchange="h0779"><option value="">Select person...</option></select></div>
@@ -6970,7 +6971,7 @@ Offline mode - changes will sync when connection is restored
 <div class="form3row">
 <div class="form3group"><label class="form3label">Old item condition</label><input type="text" id="prf-old-condition" placeholder="Describe current state of the PPE..."/></div>
 </div>
-<div class="form3group"><label class="form3label">Reason notes</label><textarea id="prf-notes" style="min-height:60px" placeholder="Additional details about why replacement is needed..."></textarea></div>
+<div class="form3group"><label class="form3label">Reason notes</label><textarea id="prf-notes" class="auris-ppe-s-07bdff4587" placeholder="Additional details about why replacement is needed..."></textarea></div>
 </div>
 <div class="card"><div class="card-title">Approval &amp; Fulfilment</div>
 <div class="form3row">
@@ -6979,17 +6980,17 @@ Offline mode - changes will sync when connection is restored
 </div>
 <div class="form3row">
 <div class="form3group"><label class="form3label">Fulfilled date</label><input type="date" id="prf-fulfilled-date"/></div>
-<div class="form3group"><label class="form3label">New issuance ref</label><input type="text" id="prf-new-iss-ref" style="font-family:monospace"/></div>
+<div class="form3group"><label class="form3label">New issuance ref</label><input type="text" id="prf-new-iss-ref" class="auris-ppe-s-7b8c3df564"/></div>
 </div>
 </div>
 </div>
 <div>
-<div class="card" style="border:2px solid #B45309"><div class="card-title" style="color:#B45309">Status</div>
-<div style="display:flex;flex-direction:column;gap:8px">
-<label style="display:grid;grid-template-columns:18px 1fr;align-items:center;gap:10px;padding:10px;border-radius:8px;cursor:pointer;background:#FFFBEB;border:1px solid #fcd34d" data-auris-onclick="h0780"><input type="radio" name="prf-status-radio" value="pending" style="width:auto;accent-color:#EF9F27" checked><span style="font-weight:700;color:#854F0B">Pending approval</span></label>
-<label style="display:grid;grid-template-columns:18px 1fr;align-items:center;gap:10px;padding:10px;border-radius:8px;cursor:pointer;background:#EFF6FF;border:1px solid #bfdbfe" data-auris-onclick="h0781"><input type="radio" name="prf-status-radio" value="approved" style="width:auto;accent-color:#185FA5"><span style="font-weight:700;color:#185FA5">Approved</span></label>
-<label style="display:grid;grid-template-columns:18px 1fr;align-items:center;gap:10px;padding:10px;border-radius:8px;cursor:pointer;background:#f0fdf4;border:1px solid #bbf7d0" data-auris-onclick="h0782"><input type="radio" name="prf-status-radio" value="fulfilled" style="width:auto;accent-color:var(--green)"><span style="font-weight:700;color:#166534">Fulfilled</span></label>
-<label style="display:grid;grid-template-columns:18px 1fr;align-items:center;gap:10px;padding:10px;border-radius:8px;cursor:pointer;background:#FEF2F2;border:1px solid #fecaca" data-auris-onclick="h0783"><input type="radio" name="prf-status-radio" value="rejected" style="width:auto;accent-color:var(--red)"><span style="font-weight:700;color:var(--red)">Rejected</span></label>
+<div class="card auris-ppe-s-a5894783e5"><div class="card-title auris-ppe-s-e04fac5754">Status</div>
+<div class="auris-ppe-s-0fbf9e859f">
+<label class="auris-ppe-s-aa387de207" data-auris-onclick="h0780"><input class="auris-ppe-s-442d1cb3bc" type="radio" name="prf-status-radio" value="pending" checked><span class="auris-ppe-s-fe395009b0">Pending approval</span></label>
+<label class="auris-ppe-s-2eb6e9229b" data-auris-onclick="h0781"><input class="auris-ppe-s-43732a4f0c" type="radio" name="prf-status-radio" value="approved"><span class="auris-ppe-s-639a8ffb61">Approved</span></label>
+<label class="auris-ppe-s-68a4cad15c" data-auris-onclick="h0782"><input class="auris-ppe-s-9c103f75d4" type="radio" name="prf-status-radio" value="fulfilled"><span class="auris-ppe-s-485acb7ee6">Fulfilled</span></label>
+<label class="auris-ppe-s-8d366d10f3" data-auris-onclick="h0783"><input class="auris-ppe-s-f1d8e01041" type="radio" name="prf-status-radio" value="rejected"><span class="auris-ppe-s-f59a8847ec">Rejected</span></label>
 </div>
 <input type="hidden" id="prf-status" value="pending"/>
 </div>

@@ -1,0 +1,184 @@
+/* Generated from PPE by scripts/extract-ppe-styles.cjs. */
+/* Non-important declarations preserve catalogue, inventory, issue, inspection and replacement runtime state. */
+.auris-ppe-s-03826b79d9{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px}
+.auris-ppe-s-03bd966c28{padding:10px 12px;border-left:4px solid #DC2626}
+.auris-ppe-s-07bdff4587{min-height:60px}
+.auris-ppe-s-0b8cad26ad{display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin-bottom:14px}
+.auris-ppe-s-0cf9615f1f{display:flex;gap:0;margin-bottom:16px;border-bottom:2px solid var(--border);overflow-x:auto}
+.auris-ppe-s-0dc4a97c22{display:flex;align-items:center;gap:8px;padding:10px;border-radius:8px;cursor:pointer;background:#FCEBEB;border:1px solid #fca5a5}
+.auris-ppe-s-0e610f7b67{display:none;background:rgba(220,38,38,.3);color:#fff;border-color:rgba(220,38,38,.5)}
+.auris-ppe-s-0fbf9e859f{display:flex;flex-direction:column;gap:8px}
+.auris-ppe-s-14dfb7ae67{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px}
+.auris-ppe-s-1d7c02f7a9{margin-bottom:12px;padding:12px 16px;background:linear-gradient(135deg,#7F1D1D,#DC2626);color:#fff}
+.auris-ppe-s-1e4fd5f9ed{font-size:22px;font-weight:800;color:#1D9E75}
+.auris-ppe-s-2062f090bc{font-size:22px;font-weight:800;color:#EF9F27}
+.auris-ppe-s-21ac3ff165{padding:10px 12px;border-left:4px solid #6B7280}
+.auris-ppe-s-21cd6a56d0{padding:14px 20px;background:linear-gradient(135deg,#1a3a5c,#B45309);color:#fff;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px}
+.auris-ppe-s-22514dbec4{font-size:13px;font-weight:600;cursor:pointer}
+.auris-ppe-s-24ac637923{padding:10px 12px;border-left:4px solid #8B5CF6}
+.auris-ppe-s-283f12d7fe{accent-color:var(--green)}
+.auris-ppe-s-29eddeb97f{font-size:12px;color:#1e3a8a;margin-bottom:10px}
+.auris-ppe-s-2b013fa0d9{min-height:50px}
+.auris-ppe-s-2eb6e9229b{display:grid;grid-template-columns:18px 1fr;align-items:center;gap:10px;padding:10px;border-radius:8px;cursor:pointer;background:#EFF6FF;border:1px solid #bfdbfe}
+.auris-ppe-s-32216f38c7{background:#EFF6FF;border-radius:8px;padding:10px}
+.auris-ppe-s-34362c1a82{font-size:22px;font-weight:800;color:#6B7280}
+.auris-ppe-s-3536b249e1{display:flex;align-items:center;gap:8px;padding:10px;border-radius:8px;cursor:pointer;background:#FFF7ED;border:1px solid #fed7aa}
+.auris-ppe-s-3ed2ae7f16{font-weight:700;color:#7F1D1D}
+.auris-ppe-s-42a6ced8b6{margin-bottom:14px}
+.auris-ppe-s-43732a4f0c{width:auto;accent-color:#185FA5}
+.auris-ppe-s-4422804ebb{font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px}
+.auris-ppe-s-442d1cb3bc{width:auto;accent-color:#EF9F27}
+.auris-ppe-s-47b612029d{margin:10px 0 14px;border:1px solid #bfdbfe;background:#eff6ff}
+.auris-ppe-s-485acb7ee6{font-weight:700;color:#166534}
+.auris-ppe-s-48a87f51bd{color:#8B5CF6}
+.auris-ppe-s-4bff8bc1bc{font-family:monospace;font-size:12px;color:#fef3c7;margin-top:3px}
+.auris-ppe-s-4d5979ac8f{min-height:70px}
+.auris-ppe-s-530946d91c{padding:10px 12px;border-left:4px solid #E24B4A}
+.auris-ppe-s-54ec8874e7{margin-bottom:14px;padding:0;overflow:hidden}
+.auris-ppe-s-5571af1e74{display:grid;grid-template-columns:2fr 1fr;gap:14px}
+.auris-ppe-s-56ac49ff17{background:#fff;color:#1D9E75;font-weight:700}
+.auris-ppe-s-5c09edd131{background:rgba(255,255,255,.2);color:#fff;border-color:rgba(255,255,255,.3)}
+.auris-ppe-s-5e461f0709{font-size:13px}
+.auris-ppe-s-601d435a3f{padding:14px 20px;background:linear-gradient(135deg,#1E3A5F,#8B5CF6);color:#fff;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px}
+.auris-ppe-s-639a8ffb61{font-weight:700;color:#185FA5}
+.auris-ppe-s-65224788c7{padding:10px 16px;background:linear-gradient(135deg,#1E3A5F,#8B5CF6);color:#fff;font-weight:700}
+.auris-ppe-s-68a4cad15c{display:grid;grid-template-columns:18px 1fr;align-items:center;gap:10px;padding:10px;border-radius:8px;cursor:pointer;background:#f0fdf4;border:1px solid #bbf7d0}
+.auris-ppe-s-69374f356a{display:flex;gap:6px}
+.auris-ppe-s-6aa34d7432{display:none}
+.auris-ppe-s-6e86c59eb5{padding:14px 20px;background:linear-gradient(135deg,#1a3a5c,#185FA5);color:#fff;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px}
+.auris-ppe-s-6f56b8363e{font-size:22px;font-weight:800;color:#185FA5}
+.auris-ppe-s-7299078644{font-size:12px;color:var(--text2)}
+.auris-ppe-s-75021e57ca{font-size:17px;font-weight:800}
+.auris-ppe-s-750ba98b34{font-size:11px;color:#185FA5;margin-top:4px}
+.auris-ppe-s-7a5e61eb83{padding:10px 12px;border-left:4px solid #1D9E75}
+.auris-ppe-s-7b8c3df564{font-family:monospace}
+.auris-ppe-s-7c3219e933{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap}
+.auris-ppe-s-7e9e1b04a9{padding:10px}
+.auris-ppe-s-82d616954c{border:2px solid #8B5CF6}
+.auris-ppe-s-8703b10672{font-family:monospace;font-size:12px;color:#a7f3d0;margin-top:3px}
+.auris-ppe-s-8c5a7fbdc5{display:flex;align-items:center;gap:8px;padding:10px;border-radius:8px;cursor:pointer;background:#FEF2F2;border:1px solid #fecaca}
+.auris-ppe-s-8d366d10f3{display:grid;grid-template-columns:18px 1fr;align-items:center;gap:10px;padding:10px;border-radius:8px;cursor:pointer;background:#FEF2F2;border:1px solid #fecaca}
+.auris-ppe-s-9463ff4798{cursor:pointer}
+.auris-ppe-s-96f7839a1b{display:none;background:rgba(0,0,0,.3);color:#fff;border-color:rgba(255,255,255,.3)}
+.auris-ppe-s-9bcefa3fff{margin-bottom:14px;border:2px solid #185FA5}
+.auris-ppe-s-9c103f75d4{width:auto;accent-color:var(--green)}
+.auris-ppe-s-9c40389b4a{display:flex;gap:8px}
+.auris-ppe-s-a5894783e5{border:2px solid #B45309}
+.auris-ppe-s-aa387de207{display:grid;grid-template-columns:18px 1fr;align-items:center;gap:10px;padding:10px;border-radius:8px;cursor:pointer;background:#FFFBEB;border:1px solid #fcd34d}
+.auris-ppe-s-aa7c01383d{display:flex;align-items:center;gap:8px;margin-bottom:12px}
+.auris-ppe-s-ab79ea2b85{margin:0}
+.auris-ppe-s-adf04cf81f{font-size:11px;font-weight:600;text-transform:uppercase;opacity:.8;margin-bottom:4px}
+.auris-ppe-s-ae71a9e48f{margin-bottom:12px;padding:10px 14px;display:flex;justify-content:space-between;align-items:center}
+.auris-ppe-s-af62d68b87{accent-color:var(--red)}
+.auris-ppe-s-b56987dbcb{margin-bottom:12px}
+.auris-ppe-s-b6d403ee7e{padding:10px 12px;border-left:4px solid #185FA5}
+.auris-ppe-s-ba28bccee4{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+.auris-ppe-s-bc6456303a{font-size:22px;font-weight:800;color:#8B5CF6}
+.auris-ppe-s-bd0e58d190{padding:6px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px}
+.auris-ppe-s-be29fbce10{font-family:monospace;font-size:12px;color:#ddd6fe;margin-top:3px}
+.auris-ppe-s-bfff90bfdd{accent-color:#7F1D1D}
+.auris-ppe-s-c1a6ae2812{font-family:monospace;min-width:0}
+.auris-ppe-s-c6fa01b3f1{font-weight:700}
+.auris-ppe-s-c70473e794{padding:10px 12px;border-left:4px solid #EF9F27}
+.auris-ppe-s-c7b9e5b2c7{background:#1D9E75;color:#fff;border-color:#1D9E75}
+.auris-ppe-s-ca32b871b2{color:#185FA5}
+.auris-ppe-s-ce950f1509{background:#DC2626;color:#fff;border-color:#DC2626}
+.auris-ppe-s-d27852021c{accent-color:#C2410C}
+.auris-ppe-s-d5e9713ce7{padding:14px 20px;background:linear-gradient(135deg,#064E3B,#1D9E75);color:#fff;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px}
+.auris-ppe-s-dc4ac84a01{font-size:12px;opacity:.85}
+.auris-ppe-s-df928149c5{margin-top:10px}
+.auris-ppe-s-e04fac5754{color:#B45309}
+.auris-ppe-s-e205b0937c{padding:6px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px;width:180px}
+.auris-ppe-s-e2e1112055{margin-bottom:12px;padding:10px 14px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px}
+.auris-ppe-s-e6499d5863{display:flex;align-items:center;gap:8px;padding:10px;border-radius:8px;cursor:pointer;background:#f0fdf4;border:1px solid #bbf7d0}
+.auris-ppe-s-e6aeeaf7e8{font-weight:700;color:#C2410C}
+.auris-ppe-s-e7ad3ebe2e{font-size:22px;font-weight:800;color:#E24B4A}
+.auris-ppe-s-e8beef2369{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.auris-ppe-s-eb99a4c193{white-space:nowrap}
+.auris-ppe-s-f1d8e01041{width:auto;accent-color:var(--red)}
+.auris-ppe-s-f26cfe9154{font-size:14px;font-weight:700;margin-bottom:4px}
+.auris-ppe-s-f59a8847ec{font-weight:700;color:var(--red)}
+.auris-ppe-s-f8516803fa{display:flex;gap:8px;flex-wrap:wrap;margin-top:-4px;margin-bottom:8px}
+.auris-ppe-s-f8805c5d89{margin-bottom:14px;border:2px solid #1D9E75}
+.auris-ppe-s-f9faa54401{color:#1D9E75}
+.auris-ppe-s-fe395009b0{font-weight:700;color:#854F0B}
+.auris-ppe-s-ffe267bce1{font-size:22px;font-weight:800;color:#DC2626}
+/* Preserve former inline precedence over existing ID selectors. */
+#pcf-has-expiry.auris-ppe-s-9c103f75d4{width:auto;accent-color:var(--green)}
+#pcf-notes.auris-ppe-s-2b013fa0d9{min-height:50px}
+#pif-ack.auris-ppe-s-283f12d7fe{accent-color:var(--green)}
+#pif-batch.auris-ppe-s-7b8c3df564{font-family:monospace}
+#pif-notes.auris-ppe-s-2b013fa0d9{min-height:50px}
+#pif-ppe-info.auris-ppe-s-b56987dbcb{margin-bottom:12px}
+#pif-ppe-name-group.auris-ppe-s-6aa34d7432{display:none}
+#pif-ra-ref.auris-ppe-s-c1a6ae2812{font-family:monospace;min-width:0}
+#pif-replace-date.auris-ppe-s-c6fa01b3f1{font-weight:700}
+#pif-replace-hint.auris-ppe-s-750ba98b34{font-size:11px;color:#185FA5;margin-top:4px}
+#pif-return-fields.auris-ppe-s-6aa34d7432{display:none}
+#pif-returned.auris-ppe-s-283f12d7fe{accent-color:var(--green)}
+#pif-serial.auris-ppe-s-7b8c3df564{font-family:monospace}
+#pif-wo-ref.auris-ppe-s-c1a6ae2812{font-family:monospace;min-width:0}
+#piif-checklist.auris-ppe-s-7e9e1b04a9{padding:10px}
+#piif-defects.auris-ppe-s-4d5979ac8f{min-height:70px}
+#piif-notes.auris-ppe-s-2b013fa0d9{min-height:50px}
+#piif-repl-issued.auris-ppe-s-283f12d7fe{accent-color:var(--green)}
+#piif-repl-ref.auris-ppe-s-7b8c3df564{font-family:monospace}
+#ppe-cat-add-btn.auris-ppe-s-6aa34d7432{display:none}
+#ppe-cat-del-btn.auris-ppe-s-0e610f7b67{display:none;background:rgba(220,38,38,.3);color:#fff;border-color:rgba(220,38,38,.5)}
+#ppe-cat-filter.auris-ppe-s-bd0e58d190{padding:6px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px}
+#ppe-cat-form.auris-ppe-s-6aa34d7432{display:none}
+#ppe-cat-form3title.auris-ppe-s-75021e57ca{font-size:17px;font-weight:800}
+#ppe-dash-alerts.auris-ppe-s-42a6ced8b6{margin-bottom:14px}
+#ppe-dash-expiry.auris-ppe-s-5e461f0709{font-size:13px}
+#ppe-dash-inventory.auris-ppe-s-5e461f0709{font-size:13px}
+#ppe-dash-recent.auris-ppe-s-5e461f0709{font-size:13px}
+#ppe-exp-btn-30.auris-ppe-s-ce950f1509{background:#DC2626;color:#fff;border-color:#DC2626}
+#ppe-header-btns.auris-ppe-s-9c40389b4a{display:flex;gap:8px}
+#ppe-insp-add-btn.auris-ppe-s-6aa34d7432{display:none}
+#ppe-insp-cond.auris-ppe-s-ffe267bce1{font-size:22px;font-weight:800;color:#DC2626}
+#ppe-insp-del-btn.auris-ppe-s-96f7839a1b{display:none;background:rgba(0,0,0,.3);color:#fff;border-color:rgba(255,255,255,.3)}
+#ppe-insp-due.auris-ppe-s-2062f090bc{font-size:22px;font-weight:800;color:#EF9F27}
+#ppe-insp-fail.auris-ppe-s-e7ad3ebe2e{font-size:22px;font-weight:800;color:#E24B4A}
+#ppe-insp-form.auris-ppe-s-6aa34d7432{display:none}
+#ppe-insp-form3ref.auris-ppe-s-be29fbce10{font-family:monospace;font-size:12px;color:#ddd6fe;margin-top:3px}
+#ppe-insp-form3title.auris-ppe-s-75021e57ca{font-size:17px;font-weight:800}
+#ppe-insp-pass.auris-ppe-s-1e4fd5f9ed{font-size:22px;font-weight:800;color:#1D9E75}
+#ppe-inventory-add-btn.auris-ppe-s-6aa34d7432{display:none}
+#ppe-inventory-filter.auris-ppe-s-bd0e58d190{padding:6px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px}
+#ppe-inventory-m3available.auris-ppe-s-1e4fd5f9ed{font-size:22px;font-weight:800;color:#1D9E75}
+#ppe-inventory-m3issued.auris-ppe-s-6f56b8363e{font-size:22px;font-weight:800;color:#185FA5}
+#ppe-inventory-m3low.auris-ppe-s-2062f090bc{font-size:22px;font-weight:800;color:#EF9F27}
+#ppe-inventory-m3total.auris-ppe-s-6f56b8363e{font-size:22px;font-weight:800;color:#185FA5}
+#ppe-iss-add-btn.auris-ppe-s-6aa34d7432{display:none}
+#ppe-iss-del-btn.auris-ppe-s-96f7839a1b{display:none;background:rgba(0,0,0,.3);color:#fff;border-color:rgba(255,255,255,.3)}
+#ppe-iss-filter-status.auris-ppe-s-bd0e58d190{padding:6px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px}
+#ppe-iss-form.auris-ppe-s-6aa34d7432{display:none}
+#ppe-iss-form3ref.auris-ppe-s-8703b10672{font-family:monospace;font-size:12px;color:#a7f3d0;margin-top:3px}
+#ppe-iss-form3title.auris-ppe-s-75021e57ca{font-size:17px;font-weight:800}
+#ppe-iss-search.auris-ppe-s-e205b0937c{padding:6px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px;width:180px}
+#ppe-m3expired.auris-ppe-s-e7ad3ebe2e{font-size:22px;font-weight:800;color:#E24B4A}
+#ppe-m3insp-due.auris-ppe-s-34362c1a82{font-size:22px;font-weight:800;color:#6B7280}
+#ppe-m3issued.auris-ppe-s-1e4fd5f9ed{font-size:22px;font-weight:800;color:#1D9E75}
+#ppe-m3lowstock.auris-ppe-s-2062f090bc{font-size:22px;font-weight:800;color:#EF9F27}
+#ppe-m3replace.auris-ppe-s-bc6456303a{font-size:22px;font-weight:800;color:#8B5CF6}
+#ppe-m3types.auris-ppe-s-6f56b8363e{font-size:22px;font-weight:800;color:#185FA5}
+#ppe-rep-add-btn.auris-ppe-s-6aa34d7432{display:none}
+#ppe-rep-del-btn.auris-ppe-s-96f7839a1b{display:none;background:rgba(0,0,0,.3);color:#fff;border-color:rgba(255,255,255,.3)}
+#ppe-rep-form.auris-ppe-s-6aa34d7432{display:none}
+#ppe-rep-form3ref.auris-ppe-s-4bff8bc1bc{font-family:monospace;font-size:12px;color:#fef3c7;margin-top:3px}
+#ppe-rep-form3title.auris-ppe-s-75021e57ca{font-size:17px;font-weight:800}
+#ppe-tab-catalogue.auris-ppe-s-eb99a4c193{white-space:nowrap}
+#ppe-tab-dash.auris-ppe-s-eb99a4c193{white-space:nowrap}
+#ppe-tab-expiry.auris-ppe-s-eb99a4c193{white-space:nowrap}
+#ppe-tab-inspections.auris-ppe-s-eb99a4c193{white-space:nowrap}
+#ppe-tab-inventory.auris-ppe-s-eb99a4c193{white-space:nowrap}
+#ppe-tab-issuance.auris-ppe-s-eb99a4c193{white-space:nowrap}
+#ppe-tab-replacements.auris-ppe-s-eb99a4c193{white-space:nowrap}
+#ppe-view-catalogue.auris-ppe-s-6aa34d7432{display:none}
+#ppe-view-expiry.auris-ppe-s-6aa34d7432{display:none}
+#ppe-view-inspections.auris-ppe-s-6aa34d7432{display:none}
+#ppe-view-inventory.auris-ppe-s-6aa34d7432{display:none}
+#ppe-view-issuance.auris-ppe-s-6aa34d7432{display:none}
+#ppe-view-replacements.auris-ppe-s-6aa34d7432{display:none}
+#prf-new-iss-ref.auris-ppe-s-7b8c3df564{font-family:monospace}
+#prf-notes.auris-ppe-s-07bdff4587{min-height:60px}
