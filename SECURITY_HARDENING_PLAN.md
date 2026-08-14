@@ -37,11 +37,11 @@ Completed safeguards:
 - isolate database-driven new-window links with `noopener noreferrer`;
 - sanitize stored SOP print HTML before it is written into a new window.
 
-This is a targeted high-risk sink remediation. CSP phase 1 is recorded in `CSP_HARDENING_PHASE_1_2026-08-14.md`: both inline script blocks are external assets, generated SOP print scripts are removed and `script-src-elem` is enforced. CSP phase 2A migrated all 1,458 static event attributes; 648 dynamic-markup handlers and the inline styles remain.
+This is a targeted high-risk sink remediation. CSP phase 1 is recorded in `CSP_HARDENING_PHASE_1_2026-08-14.md`: both inline script blocks are external assets, generated SOP print scripts are removed and `script-src-elem` is enforced. CSP phases 2A and 2B migrated 1,928 event attributes; 178 runtime-argument handlers and the inline styles remain.
 
 ## Remaining gates
 
-1. Replace the remaining 648 dynamic-markup event-handler attributes and continue reviewing module-specific rich-content renderers.
+1. Replace the remaining 178 runtime-argument event-handler attributes and continue reviewing module-specific rich-content renderers.
 2. Migrate inline styles or adopt a controlled nonce/hash strategy, then move the complete CSP from report-only to enforced.
 3. Require MFA for privileged AURIS360, Supabase, Vercel and source-control accounts.
 4. Migrate legacy Supabase `anon`/`service_role` keys to publishable/secret keys and rotate elevated credentials safely.

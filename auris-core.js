@@ -1183,7 +1183,7 @@ function obsFilterList() {
     el.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text2)">'
       +'<div style="font-size:48px;margin-bottom:12px"><i class="ti ti-eye-check"></i></div>'
       +'<div style="font-weight:600;margin-bottom:8px">No observations found</div>'
-      +'<button class="btn btn-primary" onclick="obsNew()"><i class="ti ti-plus"></i>Record first observation</button>'
+      +'<button class="btn btn-primary" data-auris-generated-onclick="g0001"><i class="ti ti-plus"></i>Record first observation</button>'
       +'</div>';
     return;
   }
@@ -1202,7 +1202,7 @@ function obsFilterList() {
   filt.forEach(function(x,i){
     var cfg=OBS_TYPE_CFG[x.obs_type]||OBS_TYPE_CFG.bbs_observation;
     var desc=obsSummaryText(x);
-    h+='<tr style="background:'+(i%2?'#f9fafb':'#fff')+';border-bottom:1px solid #eef2f7;cursor:pointer" data-id="'+x.id+'" onclick="obsEdit(this.dataset.id)">'
+    h+='<tr style="background:'+(i%2?'#f9fafb':'#fff')+';border-bottom:1px solid #eef2f7;cursor:pointer" data-id="'+x.id+'" data-auris-generated-onclick="g0002">'
       +'<td style="padding:9px 10px;font-family:monospace;font-weight:800;color:'+cfg.color+'">'+escH(displayRecordRef(x,'obs_ref','OBS-DRAFT'))+'</td>'
       +'<td style="padding:9px 10px;white-space:nowrap">'+(x.observation_date?new Date(x.observation_date).toLocaleDateString('en-GB'):'-')+'</td>'
       +'<td style="padding:9px 10px;min-width:210px"><div style="display:flex;gap:4px;flex-wrap:wrap">'+obsScopeBadges(x)+'</div></td>'
@@ -1242,7 +1242,7 @@ function obsTableHtml(rows, emptyTitle, emptyButtonLabel, emptyAction) {
   rows.forEach(function(x,i){
     var cfg=OBS_TYPE_CFG[x.obs_type]||OBS_TYPE_CFG.bbs_observation;
     var desc=obsSummaryText(x);
-    h+='<tr style="background:'+(i%2?'#f9fafb':'#fff')+';border-bottom:1px solid #eef2f7;cursor:pointer" data-id="'+x.id+'" onclick="obsEdit(this.dataset.id)">'
+    h+='<tr style="background:'+(i%2?'#f9fafb':'#fff')+';border-bottom:1px solid #eef2f7;cursor:pointer" data-id="'+x.id+'" data-auris-generated-onclick="g0002">'
       +'<td style="padding:9px 10px;font-family:monospace;font-weight:800;color:'+cfg.color+'">'+escH(displayRecordRef(x,'obs_ref','OBS-DRAFT'))+'</td>'
       +'<td style="padding:9px 10px;white-space:nowrap">'+(x.observation_date?new Date(x.observation_date).toLocaleDateString('en-GB'):'-')+'</td>'
       +'<td style="padding:9px 10px;min-width:210px"><div style="display:flex;gap:4px;flex-wrap:wrap">'+obsScopeBadges(x)+'</div></td>'
@@ -1402,7 +1402,7 @@ async function obsLoadTrends() {
           var cfg=OBS_TYPE_CFG[x.obs_type]||OBS_TYPE_CFG.unsafe_condition;
           var sev=OBS_SEV_CFG[x.severity||'high']||OBS_SEV_CFG.high;
           var desc=x.observation_text||x.positive_points||'-';
-          return '<div style="display:flex;gap:10px;align-items:flex-start;padding:8px 12px;border:1px solid '+sev.border+'40;border-radius:8px;background:'+sev.bg+';cursor:pointer" data-id="'+x.id+'" onclick="obsEdit(this.dataset.id)">'
+          return '<div style="display:flex;gap:10px;align-items:flex-start;padding:8px 12px;border:1px solid '+sev.border+'40;border-radius:8px;background:'+sev.bg+';cursor:pointer" data-id="'+x.id+'" data-auris-generated-onclick="g0002">'
             +'<span style="font-size:18px">'+cfg.emoji+'</span>'
             +'<div style="flex:1;min-width:0"><div style="font-weight:600;font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+escH(desc.substring(0,70))+'</div>'
             +'<div style="font-size:11px;color:var(--text2)">'+escH(x.location||'-')+(x.observation_date?' - '+new Date(x.observation_date).toLocaleDateString('en-GB'):'')+'</div></div>'
@@ -1606,7 +1606,7 @@ function dcAIRenderReview(out){
   panel.innerHTML='<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap">'
     +'<div><div style="font-size:15px;font-weight:900;color:#185FA5"><i class="ti ti-robot"></i> AI document control review</div>'
     +'<div style="font-size:12px;color:var(--text2);margin-top:3px">Review the suggestions before applying. This supports document governance but does not replace formal approval.</div></div>'
-    +'<button type="button" class="btn btn-sm" onclick="document.getElementById(\'dc-ai-review-panel\').style.display=\'none\'"><i class="ti ti-x"></i>Hide</button></div>'
+    +'<button type="button" class="btn btn-sm" data-auris-generated-onclick="g0003"><i class="ti ti-x"></i>Hide</button></div>'
     +'<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px;margin-top:14px">'
     +'<div style="background:#fff;border:1px solid var(--border);border-radius:8px;padding:12px"><div style="font-weight:800;color:#185FA5">Suggested classification</div><div style="font-size:13px;margin-top:6px">'+escH(out.document_type_label||out.document_type||'')+'</div><div style="font-size:12px;color:var(--text2);margin-top:4px">'+escH(out.category||'')+'</div></div>'
     +'<div style="background:#fff;border:1px solid var(--border);border-radius:8px;padding:12px"><div style="font-weight:800;color:#065F46">Review focus</div>'+dcAIList(out.review_focus)+'</div>'
@@ -1615,9 +1615,9 @@ function dcAIRenderReview(out){
     +'</div>'
     +'<div style="margin-top:12px;background:#fff;border:1px solid var(--border);border-radius:8px;padding:12px"><div style="font-weight:800;color:#374151">Suggested description</div><div style="font-size:13px;line-height:1.5;margin-top:5px">'+escH(out.description||'')+'</div></div>'
     +'<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">'
-    +'<button type="button" class="btn btn-sm btn-primary" onclick="dcAIApplyDetails()"><i class="ti ti-check"></i>Apply details</button>'
-    +'<button type="button" class="btn btn-sm" onclick="dcAIApplyReviewDates()"><i class="ti ti-calendar"></i>Apply review timing</button>'
-    +'<button type="button" class="btn btn-sm" onclick="dcAIApplyReviewComments()"><i class="ti ti-notes"></i>Apply review comments</button>'
+    +'<button type="button" class="btn btn-sm btn-primary" data-auris-generated-onclick="g0004"><i class="ti ti-check"></i>Apply details</button>'
+    +'<button type="button" class="btn btn-sm" data-auris-generated-onclick="g0005"><i class="ti ti-calendar"></i>Apply review timing</button>'
+    +'<button type="button" class="btn btn-sm" data-auris-generated-onclick="g0006"><i class="ti ti-notes"></i>Apply review comments</button>'
     +'</div>';
   panel.style.display='block';
   panel.scrollIntoView({behavior:'smooth',block:'nearest'});
@@ -3680,7 +3680,7 @@ function dashOpenControlCentreModal(title, bodyHtml){
     modal=document.createElement('div');
     modal.id='hse-cc-detail-modal';
     modal.className='hse-cc-modal';
-    modal.innerHTML='<div class="hse-cc-modal-card" role="dialog" aria-modal="true" aria-labelledby="hse-cc-detail-title"><div class="hse-cc-modal-head"><h3 id="hse-cc-detail-title"></h3><button class="btn" onclick="dashCloseControlCentreModal()" style="background:rgba(255,255,255,.16);color:#fff;border-color:rgba(255,255,255,.35)"><i class="ti ti-x"></i> Close</button></div><div id="hse-cc-detail-body" class="hse-cc-modal-body"></div></div>';
+    modal.innerHTML='<div class="hse-cc-modal-card" role="dialog" aria-modal="true" aria-labelledby="hse-cc-detail-title"><div class="hse-cc-modal-head"><h3 id="hse-cc-detail-title"></h3><button class="btn" data-auris-generated-onclick="g0007" style="background:rgba(255,255,255,.16);color:#fff;border-color:rgba(255,255,255,.35)"><i class="ti ti-x"></i> Close</button></div><div id="hse-cc-detail-body" class="hse-cc-modal-body"></div></div>';
     modal.onclick=function(e){if(e.target===modal)dashCloseControlCentreModal();};
     document.body.appendChild(modal);
   }
@@ -3904,12 +3904,12 @@ function dashRenderControlCentre(data){
     '<div class="hse-cc-top">'
       +'<div><div class="hse-cc-title">Good '+(now.getHours()<12?'morning':now.getHours()<18?'afternoon':'evening')+', '+escH(firstName)+'</div><div class="hse-cc-sub">Here is what is happening across '+escH(companyName)+' today.</div></div>'
       +'<div class="hse-cc-toolbar">'
-        +'<select class="hse-cc-filter" onchange="loadDash()"><option>All Companies</option></select>'
-        +'<select class="hse-cc-filter" onchange="loadDash()"><option>All Sites</option></select>'
+        +'<select class="hse-cc-filter" data-auris-generated-onchange="g0008"><option>All Companies</option></select>'
+        +'<select class="hse-cc-filter" data-auris-generated-onchange="g0008"><option>All Sites</option></select>'
         +'<div class="hse-cc-filter" style="display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:#334155">'+escH(monthLabel)+'</div>'
-        +'<button class="hse-cc-tool-btn primary" onclick="showPage(\'executive\',document.getElementById(\'nav-executive\'))"><i class="ti ti-chart-bar"></i>Executive View</button>'
-        +'<button class="hse-cc-tool-btn" onclick="printMonthlySummary()" title="Monthly PDF Report"><i class="ti ti-file-analytics"></i>Monthly Report</button>'
-        +'<button class="hse-cc-tool-btn" onclick="loadDash()"><i class="ti ti-refresh"></i>Refresh</button>'
+        +'<button class="hse-cc-tool-btn primary" data-auris-generated-onclick="g0009"><i class="ti ti-chart-bar"></i>Executive View</button>'
+        +'<button class="hse-cc-tool-btn" data-auris-generated-onclick="g0010" title="Monthly PDF Report"><i class="ti ti-file-analytics"></i>Monthly Report</button>'
+        +'<button class="hse-cc-tool-btn" data-auris-generated-onclick="g0011"><i class="ti ti-refresh"></i>Refresh</button>'
         +'<div class="hse-cc-user-chip"><span class="hse-cc-avatar">'+escH(firstName.charAt(0).toUpperCase())+'</span><span>'+escH(userName)+'<small style="display:block;color:#64748B;font-weight:700">'+escH((prof&&prof.role)||'HSE user')+'</small></span></div>'
       +'</div>'
     +'</div>'
@@ -3917,14 +3917,14 @@ function dashRenderControlCentre(data){
       +metrics.map(function(m){return '<div class="hse-cc-kpi '+m.tone+'" onclick="showPage(\''+m.page+'\',null)"><div class="hse-cc-kpi-icon">'+dashKpiAsset(m.asset)+'</div><div class="hse-cc-kpi-label">'+escH(m.label)+'</div><div class="hse-cc-kpi-value">'+escH(m.value)+'</div><div class="hse-cc-kpi-hint '+(m.tone==='red'||m.tone==='amber'?'down':'up')+'">'+escH(m.hint)+'</div></div>';}).join('')
     +'</div>'
     +'<div class="hse-cc-grid">'
-      +'<div class="hse-cc-panel" data-cc-widget="riskmap" onclick="dashOpenWidgetDetail(\'riskmap\')"><div class="hse-cc-panel-title">Risk Heat Map (By Site)</div><div style="display:grid;grid-template-columns:1fr 150px;gap:14px;align-items:center"><div class="hse-cc-map"><span class="hse-cc-marker low" style="left:26%;top:28%">'+siteLow+'</span><span class="hse-cc-marker mid" style="left:54%;top:34%">'+siteMid+'</span><span class="hse-cc-marker high" style="left:72%;top:62%">'+siteHigh+'</span><span class="hse-cc-marker low" style="left:38%;top:76%">'+Math.max(1,recentInspections.length)+'</span></div><div class="hse-cc-legend"><div><span class="hse-cc-dot" style="background:#22C55E"></span>Low</div><div><span class="hse-cc-dot" style="background:#F59E0B"></span>Moderate</div><div><span class="hse-cc-dot" style="background:#F97316"></span>High</div><div><span class="hse-cc-dot" style="background:#DC2626"></span>Very high</div></div></div></div>'
-      +'<div class="hse-cc-panel" data-cc-widget="actions" onclick="dashOpenWidgetDetail(\'actions\')"><div class="hse-cc-panel-title">Action Status</div><div class="hse-cc-donut-wrap"><div class="hse-cc-donut" style="background:'+donutBg+'"><div class="hse-cc-donut-core"><div><strong>'+actionTotal+'</strong><span>Total actions</span></div></div></div></div><div class="hse-cc-status-list"><div class="hse-cc-row" onclick="dashNavClick(event,\'actions\')"><span><span class="hse-cc-dot" style="background:#EF4444"></span>Overdue</span><strong>'+actionOverdue+'</strong></div><div class="hse-cc-row" onclick="dashNavClick(event,\'actions\')"><span><span class="hse-cc-dot" style="background:#22C55E"></span>In progress</span><strong>'+actionProgress+'</strong></div><div class="hse-cc-row" onclick="dashNavClick(event,\'actions\')"><span><span class="hse-cc-dot" style="background:#F59E0B"></span>Due soon</span><strong>'+actionDueSoon+'</strong></div><div class="hse-cc-row" onclick="dashNavClick(event,\'actions\')"><span><span class="hse-cc-dot" style="background:#CBD5E1"></span>Not started</span><strong>'+actionNotStarted+'</strong></div></div><div class="hse-cc-link" onclick="dashNavClick(event,\'actions\')">View all actions</div></div>'
-      +'<div class="hse-cc-panel" data-cc-widget="trend" onclick="dashOpenWidgetDetail(\'trend\')"><div class="hse-cc-panel-title">Incident Trend</div><svg class="hse-cc-trend" viewBox="0 0 280 132" role="img" aria-label="Monthly incident and near miss trend"><g stroke="#E2E8F0" stroke-width="1"><line x1="18" y1="118" x2="262" y2="118"/><line x1="18" y1="90" x2="262" y2="90"/><line x1="18" y1="62" x2="262" y2="62"/><line x1="18" y1="34" x2="262" y2="34"/></g><polyline points="'+nearMissTrendPts+'" fill="none" stroke="#6D28D9" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/><polyline points="'+incidentTrendPts+'" fill="none" stroke="#2563EB" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/><g>'+nearMissTrendDots+incidentTrendDots+'</g></svg><div style="display:grid;grid-template-columns:repeat(12,1fr);gap:2px;margin:0 8px;color:#64748B;font-size:9px;font-weight:800;text-align:center">'+incidentTrendLabels+'</div><div class="hse-cc-trend-legend"><span><span class="hse-cc-dot" style="background:#2563EB"></span>Incidents</span><span><span class="hse-cc-dot" style="background:#6D28D9"></span>Near misses</span></div><div class="hse-cc-trend-note">Current year monthly counts</div><div class="hse-cc-link" onclick="dashNavClick(event,\'events\')">View full report</div></div>'
+      +'<div class="hse-cc-panel" data-cc-widget="riskmap" data-auris-generated-onclick="g0012"><div class="hse-cc-panel-title">Risk Heat Map (By Site)</div><div style="display:grid;grid-template-columns:1fr 150px;gap:14px;align-items:center"><div class="hse-cc-map"><span class="hse-cc-marker low" style="left:26%;top:28%">'+siteLow+'</span><span class="hse-cc-marker mid" style="left:54%;top:34%">'+siteMid+'</span><span class="hse-cc-marker high" style="left:72%;top:62%">'+siteHigh+'</span><span class="hse-cc-marker low" style="left:38%;top:76%">'+Math.max(1,recentInspections.length)+'</span></div><div class="hse-cc-legend"><div><span class="hse-cc-dot" style="background:#22C55E"></span>Low</div><div><span class="hse-cc-dot" style="background:#F59E0B"></span>Moderate</div><div><span class="hse-cc-dot" style="background:#F97316"></span>High</div><div><span class="hse-cc-dot" style="background:#DC2626"></span>Very high</div></div></div></div>'
+      +'<div class="hse-cc-panel" data-cc-widget="actions" data-auris-generated-onclick="g0013"><div class="hse-cc-panel-title">Action Status</div><div class="hse-cc-donut-wrap"><div class="hse-cc-donut" style="background:'+donutBg+'"><div class="hse-cc-donut-core"><div><strong>'+actionTotal+'</strong><span>Total actions</span></div></div></div></div><div class="hse-cc-status-list"><div class="hse-cc-row" data-auris-generated-onclick="g0014"><span><span class="hse-cc-dot" style="background:#EF4444"></span>Overdue</span><strong>'+actionOverdue+'</strong></div><div class="hse-cc-row" data-auris-generated-onclick="g0014"><span><span class="hse-cc-dot" style="background:#22C55E"></span>In progress</span><strong>'+actionProgress+'</strong></div><div class="hse-cc-row" data-auris-generated-onclick="g0014"><span><span class="hse-cc-dot" style="background:#F59E0B"></span>Due soon</span><strong>'+actionDueSoon+'</strong></div><div class="hse-cc-row" data-auris-generated-onclick="g0014"><span><span class="hse-cc-dot" style="background:#CBD5E1"></span>Not started</span><strong>'+actionNotStarted+'</strong></div></div><div class="hse-cc-link" data-auris-generated-onclick="g0014">View all actions</div></div>'
+      +'<div class="hse-cc-panel" data-cc-widget="trend" data-auris-generated-onclick="g0015"><div class="hse-cc-panel-title">Incident Trend</div><svg class="hse-cc-trend" viewBox="0 0 280 132" role="img" aria-label="Monthly incident and near miss trend"><g stroke="#E2E8F0" stroke-width="1"><line x1="18" y1="118" x2="262" y2="118"/><line x1="18" y1="90" x2="262" y2="90"/><line x1="18" y1="62" x2="262" y2="62"/><line x1="18" y1="34" x2="262" y2="34"/></g><polyline points="'+nearMissTrendPts+'" fill="none" stroke="#6D28D9" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/><polyline points="'+incidentTrendPts+'" fill="none" stroke="#2563EB" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/><g>'+nearMissTrendDots+incidentTrendDots+'</g></svg><div style="display:grid;grid-template-columns:repeat(12,1fr);gap:2px;margin:0 8px;color:#64748B;font-size:9px;font-weight:800;text-align:center">'+incidentTrendLabels+'</div><div class="hse-cc-trend-legend"><span><span class="hse-cc-dot" style="background:#2563EB"></span>Incidents</span><span><span class="hse-cc-dot" style="background:#6D28D9"></span>Near misses</span></div><div class="hse-cc-trend-note">Current year monthly counts</div><div class="hse-cc-link" data-auris-generated-onclick="g0016">View full report</div></div>'
     +'</div>'
     +'<div class="hse-cc-bottom">'
-      +'<div class="hse-cc-panel" data-cc-widget="tasks" onclick="dashOpenWidgetDetail(\'tasks\')"><div class="hse-cc-panel-title">My Tasks ('+attention.length+')</div><div class="hse-cc-list">'+(attention.length?attention.slice(0,8).map(function(x){return '<div class="hse-cc-row" onclick="dashNavClick(event,\''+dashJs(x.page)+'\',\''+dashJs(x.id)+'\')"><span><strong>'+escH(x.title)+'</strong><small>'+escH(x.meta||x.priority)+'</small></span><span class="badge '+(x.tone==='red'?'br':x.tone==='green'?'bg':'ba')+'">'+escH(x.priority)+'</span></div>';}).join(''):'<div class="hse-cc-empty">No urgent task in this view</div>')+'</div><div class="hse-cc-link" onclick="dashNavClick(event,\'actions\')">View all tasks</div></div>'
-      +'<div class="hse-cc-panel" data-cc-widget="upcoming" onclick="dashOpenWidgetDetail(\'upcoming\')"><div class="hse-cc-panel-title">Upcoming Activities</div><div class="hse-cc-list">'+(upcoming.length?upcoming.map(function(x){return '<div class="hse-cc-row" onclick="dashNavClick(event,\''+dashJs(x.page)+'\',\''+dashJs(x.id)+'\')"><span><strong>'+escH(x.title)+'</strong><small>'+escH(x.page)+'</small></span><strong>'+escH(dashFmtDate(x.date))+'</strong></div>';}).join(''):'<div class="hse-cc-empty">No upcoming activity date loaded</div>')+'</div><div class="hse-cc-link" onclick="dashNavClick(event,\'workschedule\')">View calendar</div></div>'
-      +'<div class="hse-cc-panel" data-cc-widget="compliance" onclick="dashOpenWidgetDetail(\'compliance\')"><div class="hse-cc-panel-title">Compliance Overview</div><div class="hse-cc-list">'+complianceBars.map(function(x){var v=Math.max(0,Math.min(100,x.value||0));return '<div class="hse-cc-row" onclick="dashNavClick(event,\''+dashJs(x.page)+'\')" style="grid-template-columns:96px 1fr 42px"><strong>'+escH(x.label)+'</strong><div class="hse-cc-progress"><i style="width:'+v+'%;background:'+x.color+'"></i></div><strong>'+v+'%</strong></div>';}).join('')+'</div><div class="hse-cc-link" onclick="dashNavClick(event,\'legal\')">View compliance report</div></div>'
+      +'<div class="hse-cc-panel" data-cc-widget="tasks" data-auris-generated-onclick="g0017"><div class="hse-cc-panel-title">My Tasks ('+attention.length+')</div><div class="hse-cc-list">'+(attention.length?attention.slice(0,8).map(function(x){return '<div class="hse-cc-row" onclick="dashNavClick(event,\''+dashJs(x.page)+'\',\''+dashJs(x.id)+'\')"><span><strong>'+escH(x.title)+'</strong><small>'+escH(x.meta||x.priority)+'</small></span><span class="badge '+(x.tone==='red'?'br':x.tone==='green'?'bg':'ba')+'">'+escH(x.priority)+'</span></div>';}).join(''):'<div class="hse-cc-empty">No urgent task in this view</div>')+'</div><div class="hse-cc-link" data-auris-generated-onclick="g0014">View all tasks</div></div>'
+      +'<div class="hse-cc-panel" data-cc-widget="upcoming" data-auris-generated-onclick="g0018"><div class="hse-cc-panel-title">Upcoming Activities</div><div class="hse-cc-list">'+(upcoming.length?upcoming.map(function(x){return '<div class="hse-cc-row" onclick="dashNavClick(event,\''+dashJs(x.page)+'\',\''+dashJs(x.id)+'\')"><span><strong>'+escH(x.title)+'</strong><small>'+escH(x.page)+'</small></span><strong>'+escH(dashFmtDate(x.date))+'</strong></div>';}).join(''):'<div class="hse-cc-empty">No upcoming activity date loaded</div>')+'</div><div class="hse-cc-link" data-auris-generated-onclick="g0019">View calendar</div></div>'
+      +'<div class="hse-cc-panel" data-cc-widget="compliance" data-auris-generated-onclick="g0020"><div class="hse-cc-panel-title">Compliance Overview</div><div class="hse-cc-list">'+complianceBars.map(function(x){var v=Math.max(0,Math.min(100,x.value||0));return '<div class="hse-cc-row" onclick="dashNavClick(event,\''+dashJs(x.page)+'\')" style="grid-template-columns:96px 1fr 42px"><strong>'+escH(x.label)+'</strong><div class="hse-cc-progress"><i style="width:'+v+'%;background:'+x.color+'"></i></div><strong>'+v+'%</strong></div>';}).join('')+'</div><div class="hse-cc-link" data-auris-generated-onclick="g0021">View compliance report</div></div>'
     +'</div>';
 }
 
@@ -3975,13 +3975,13 @@ function dashOpenMeetingChecklist(){
     modal.innerHTML='<div class="card" role="dialog" aria-modal="true" aria-labelledby="client-meeting-checklist-title" style="width:100%;max-width:760px;max-height:86vh;overflow:hidden;border-radius:12px;box-shadow:0 20px 70px rgba(15,23,42,.28);padding:0">'
       +'<div style="padding:16px 18px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:flex-start;gap:12px">'
       +'<div><div id="client-meeting-checklist-title" style="font-size:18px;font-weight:900">Go-live readiness checklist</div><div style="font-size:12px;color:var(--text2);margin-top:3px">Use this before client launch to confirm records, workflows, governance and support are ready.</div></div>'
-      +'<button class="btn btn-sm" onclick="dashCloseMeetingChecklist()"><i class="ti ti-x"></i></button>'
+      +'<button class="btn btn-sm" data-auris-generated-onclick="g0022"><i class="ti ti-x"></i></button>'
       +'</div>'
       +'<div style="padding:16px 18px;overflow:auto;max-height:calc(86vh - 120px)">'
       +'<div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px" id="client-meeting-checklist-body"></div>'
       +'<div style="margin-top:14px;padding:12px;border:1px solid #bfdbfe;background:#EFF6FF;border-radius:10px;color:#1e40af;font-size:12px;line-height:1.55"><strong>Go-live review rule:</strong> confirm the complete operating flow, not every screen. Start with Dashboard, then Incident/BBS, then Action Plan, then Audit Trail. Open advanced modules only when they match the client need.</div>'
       +'</div>'
-      +'<div style="padding:12px 18px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:8px"><button class="btn" onclick="window.print()"><i class="ti ti-printer"></i>Print</button><button class="btn btn-primary" onclick="dashCloseMeetingChecklist()">Done</button></div>'
+      +'<div style="padding:12px 18px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:8px"><button class="btn" data-auris-generated-onclick="g0023"><i class="ti ti-printer"></i>Print</button><button class="btn btn-primary" data-auris-generated-onclick="g0022">Done</button></div>'
       +'</div>';
     modal.onclick=function(e){if(e.target===modal)dashCloseMeetingChecklist();};
     document.body.appendChild(modal);
@@ -4105,7 +4105,7 @@ function clientDemoObjectionItems(){
 function renderClientDemoObjections(){
   var items=clientDemoObjectionItems();
   return '<div style="margin-top:14px;border:1px solid var(--border);border-radius:10px;overflow:hidden;background:#fff">'
-    +'<div style="padding:11px 12px;background:#1E3A5F;color:#fff;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><div style="font-weight:900">Commercial Q&amp;A / objection handling</div><button class="btn btn-sm" style="background:rgba(255,255,255,.14);color:#fff;border-color:rgba(255,255,255,.25)" onclick="copyClientDemoObjections()"><i class="ti ti-copy"></i>Copy answers</button></div>'
+    +'<div style="padding:11px 12px;background:#1E3A5F;color:#fff;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><div style="font-weight:900">Commercial Q&amp;A / objection handling</div><button class="btn btn-sm" style="background:rgba(255,255,255,.14);color:#fff;border-color:rgba(255,255,255,.25)" data-auris-generated-onclick="g0024"><i class="ti ti-copy"></i>Copy answers</button></div>'
     +'<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:10px;padding:12px;background:#f8fafc">'
     +items.map(function(x){return '<div style="background:#fff;border:1px solid var(--border);border-radius:10px;padding:12px"><div style="font-size:13px;font-weight:900;margin-bottom:6px;color:#111827">'+escH(x.q)+'</div><div style="font-size:12px;color:var(--text2);line-height:1.5">'+escH(x.a)+'</div></div>';}).join('')
     +'</div></div>';
@@ -4135,7 +4135,7 @@ function clientRolloutOnboardingItems(){
 function renderClientRolloutOnboarding(){
   var items=clientRolloutOnboardingItems();
   return '<div style="margin-top:14px;border:1px solid var(--border);border-radius:10px;overflow:hidden;background:#fff">'
-    +'<div style="padding:11px 12px;background:#0F6E56;color:#fff;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><div><div style="font-weight:900">Client rollout checklist</div><div style="font-size:11px;opacity:.85;margin-top:2px">Use this when moving from configuration to controlled client go-live</div></div><button class="btn btn-sm" style="background:rgba(255,255,255,.14);color:#fff;border-color:rgba(255,255,255,.25)" onclick="copyClientRolloutOnboarding()"><i class="ti ti-copy"></i>Copy checklist</button></div>'
+    +'<div style="padding:11px 12px;background:#0F6E56;color:#fff;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><div><div style="font-weight:900">Client rollout checklist</div><div style="font-size:11px;opacity:.85;margin-top:2px">Use this when moving from configuration to controlled client go-live</div></div><button class="btn btn-sm" style="background:rgba(255,255,255,.14);color:#fff;border-color:rgba(255,255,255,.25)" data-auris-generated-onclick="g0025"><i class="ti ti-copy"></i>Copy checklist</button></div>'
     +'<div style="overflow:auto"><table style="width:100%;min-width:900px;border-collapse:collapse;font-size:12px"><thead><tr style="background:#F8FAFC;color:var(--text2);text-transform:uppercase;font-size:10px"><th style="padding:9px 10px;text-align:left">Phase</th><th style="padding:9px 10px;text-align:left">Required action</th><th style="padding:9px 10px;text-align:left">Owner</th><th style="padding:9px 10px;text-align:right">Open</th></tr></thead><tbody>'
     +items.map(function(x,i){return '<tr style="border-top:1px solid var(--border);background:'+(i%2?'#fafafa':'#fff')+'"><td style="padding:10px;font-weight:900;color:#0F6E56;white-space:nowrap">'+escH(x.phase)+'</td><td style="padding:10px;line-height:1.45;color:#111827">'+escH(x.task)+'</td><td style="padding:10px;color:var(--text2);font-weight:800;white-space:nowrap">'+escH(x.owner)+'</td><td style="padding:10px;text-align:right"><button class="btn btn-sm" onclick="showPage(\''+x.page+'\',null)"><i class="ti ti-arrow-right"></i></button></td></tr>';}).join('')
     +'</tbody></table></div></div>';
@@ -4191,7 +4191,7 @@ function renderClientAcceptanceSignoff(){
       +'<label style="font-size:12px;font-weight:800;color:var(--text2);display:block;margin-top:10px">Rollout scope<textarea id="rollout-sign-scope" style="width:100%;min-height:56px;margin-top:5px">'+escH(d.rollout_scope||'')+'</textarea></label>'
       +'<label style="font-size:12px;font-weight:800;color:var(--text2);display:block;margin-top:10px">Blocked items / conditions<textarea id="rollout-sign-blockers" placeholder="Anything that prevents go-live..." style="width:100%;min-height:56px;margin-top:5px">'+escH(d.blocked_items||'')+'</textarea></label>'
       +'<label style="font-size:12px;font-weight:800;color:var(--text2);display:block;margin-top:10px">Agreed next steps<textarea id="rollout-sign-next" placeholder="Actions, owners, target dates..." style="width:100%;min-height:70px;margin-top:5px">'+escH(d.next_steps||'')+'</textarea></label>'
-      +'<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:10px;flex-wrap:wrap"><button class="btn" onclick="copyClientAcceptanceSignoff()"><i class="ti ti-copy"></i>Copy sign-off</button><button class="btn btn-primary" onclick="saveClientAcceptanceSignoff()"><i class="ti ti-device-floppy"></i>Save sign-off</button></div>'
+      +'<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:10px;flex-wrap:wrap"><button class="btn" data-auris-generated-onclick="g0026"><i class="ti ti-copy"></i>Copy sign-off</button><button class="btn btn-primary" data-auris-generated-onclick="g0027"><i class="ti ti-device-floppy"></i>Save sign-off</button></div>'
       +'</div>'
     +'</div></div>';
 }
@@ -4246,7 +4246,7 @@ function clientReadinessIssueStatusBadge(status){
 function renderClientReadinessIssues(){
   var rows=clientReadinessIssues();
   return '<div style="margin-top:14px;border:1px solid var(--border);border-radius:10px;overflow:hidden;background:#fff">'
-    +'<div style="padding:12px;background:#3A2F5F;color:#fff;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><div><div style="font-weight:900">Go-live issue / feedback register</div><div style="font-size:11px;opacity:.85;margin-top:2px">Track blockers, agreed improvements and follow-up actions before go-live</div></div><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn btn-sm" style="background:rgba(255,255,255,.14);color:#fff;border-color:rgba(255,255,255,.25)" onclick="copyClientReadinessIssues()"><i class="ti ti-copy"></i>Copy register</button><button class="btn btn-sm" style="background:#fff;color:#3A2F5F" onclick="clientRolloutAddIssue()"><i class="ti ti-plus"></i>Add issue</button></div></div>'
+    +'<div style="padding:12px;background:#3A2F5F;color:#fff;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><div><div style="font-weight:900">Go-live issue / feedback register</div><div style="font-size:11px;opacity:.85;margin-top:2px">Track blockers, agreed improvements and follow-up actions before go-live</div></div><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn btn-sm" style="background:rgba(255,255,255,.14);color:#fff;border-color:rgba(255,255,255,.25)" data-auris-generated-onclick="g0028"><i class="ti ti-copy"></i>Copy register</button><button class="btn btn-sm" style="background:#fff;color:#3A2F5F" data-auris-generated-onclick="g0029"><i class="ti ti-plus"></i>Add issue</button></div></div>'
     +'<div style="overflow:auto"><table style="width:100%;min-width:980px;border-collapse:collapse;font-size:12px"><thead><tr style="background:#F8FAFC;color:var(--text2);text-transform:uppercase;font-size:10px"><th style="padding:9px 10px;text-align:left">Type</th><th style="padding:9px 10px;text-align:left">Issue / feedback</th><th style="padding:9px 10px;text-align:left">Owner</th><th style="padding:9px 10px;text-align:left">Due</th><th style="padding:9px 10px;text-align:left">Status</th><th style="padding:9px 10px;text-align:right">Actions</th></tr></thead><tbody>'
     +(rows.length?rows.map(function(x,i){return '<tr style="border-top:1px solid var(--border);background:'+(i%2?'#fafafa':'#fff')+'"><td style="padding:10px;font-weight:900;color:#3A2F5F;white-space:nowrap">'+escH(x.type||'Feedback')+'</td><td style="padding:10px;line-height:1.45"><div style="font-weight:800;color:#111827">'+escH(x.title||'Untitled')+'</div>'+(x.note?'<div style="color:var(--text2);font-size:11px;margin-top:3px">'+escH(x.note)+'</div>':'')+'</td><td style="padding:10px;color:var(--text2);font-weight:800;white-space:nowrap">'+escH(x.owner||'-')+'</td><td style="padding:10px;white-space:nowrap">'+escH(x.due_date||'-')+'</td><td style="padding:10px">'+clientReadinessIssueStatusBadge(x.status)+'</td><td style="padding:10px;text-align:right;white-space:nowrap"><button class="btn btn-sm" onclick="clientRolloutEditIssue('+i+')"><i class="ti ti-edit"></i></button><button class="btn btn-sm" onclick="clientRolloutDeleteIssue('+i+')"><i class="ti ti-trash"></i></button></td></tr>';}).join(''):'<tr><td colspan="6" style="padding:18px;text-align:center;color:var(--text2)">No client issues recorded yet. Add client feedback during the meeting.</td></tr>')
     +'</tbody></table></div></div>';
@@ -4333,7 +4333,7 @@ function clientProposalSnapshotItems(){
 function renderClientProposalSnapshot(){
   var x=clientProposalSnapshotItems();
   return '<div style="margin-top:14px;border:1px solid var(--border);border-radius:10px;overflow:hidden;background:#fff">'
-    +'<div style="padding:12px;background:#0B4F6C;color:#fff;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><div><div style="font-weight:900">Commercial proposal snapshot</div><div style="font-size:11px;opacity:.85;margin-top:2px">Position AURIS360 clearly after readiness review: package, rollout, proof and next step</div></div><button class="btn btn-sm" style="background:rgba(255,255,255,.14);color:#fff;border-color:rgba(255,255,255,.25)" onclick="copyClientProposalSnapshot()"><i class="ti ti-copy"></i>Copy proposal</button></div>'
+    +'<div style="padding:12px;background:#0B4F6C;color:#fff;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><div><div style="font-weight:900">Commercial proposal snapshot</div><div style="font-size:11px;opacity:.85;margin-top:2px">Position AURIS360 clearly after readiness review: package, rollout, proof and next step</div></div><button class="btn btn-sm" style="background:rgba(255,255,255,.14);color:#fff;border-color:rgba(255,255,255,.25)" data-auris-generated-onclick="g0030"><i class="ti ti-copy"></i>Copy proposal</button></div>'
     +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:12px;background:#F8FAFC">'
       +'<div style="background:#fff;border:1px solid var(--border);border-radius:10px;overflow:hidden"><div style="padding:10px 12px;font-weight:900;color:#0B4F6C;border-bottom:1px solid var(--border)">Package positioning</div><div style="overflow:auto"><table style="width:100%;min-width:620px;border-collapse:collapse;font-size:12px"><thead><tr style="background:#F8FAFC;color:var(--text2);text-transform:uppercase;font-size:10px"><th style="padding:8px;text-align:left">Package</th><th style="padding:8px;text-align:left">Scope</th><th style="padding:8px;text-align:left">Best for</th></tr></thead><tbody>'
         +x.packages.map(function(p,i){return '<tr style="border-top:1px solid var(--border);background:'+(i%2?'#fafafa':'#fff')+'"><td style="padding:9px;font-weight:900;color:#0B4F6C">'+escH(p.name)+'</td><td style="padding:9px;line-height:1.45">'+escH(p.scope)+'</td><td style="padding:9px;color:var(--text2);line-height:1.45">'+escH(p.best)+'</td></tr>';}).join('')
@@ -4369,7 +4369,7 @@ function renderClientEnterpriseReadiness(){
   var rows=clientEnterpriseReadinessItems();
   var cfg={'In place':['#EAF3DE','#3B6D11'],'Confirm before enterprise':['#FEF9EC','#854F0B'],'Define commercially':['#EEF2FF','#3730A3'],'Project-based':['#F3E8FF','#6B21A8'],'Partial':['#FFF7ED','#9A3412'],'Policy required':['#FEF2F2','#991B1B'],'Rollout gate':['#ECFEFF','#155E75']};
   return '<div style="margin-top:14px;border:1px solid var(--border);border-radius:10px;overflow:hidden;background:#fff">'
-    +'<div style="padding:12px;background:#111827;color:#fff;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><div><div style="font-weight:900">Enterprise readiness checklist</div><div style="font-size:11px;opacity:.85;margin-top:2px">Use this to answer security, SLA, backup and integration questions from larger clients</div></div><button class="btn btn-sm" style="background:rgba(255,255,255,.14);color:#fff;border-color:rgba(255,255,255,.25)" onclick="copyClientEnterpriseReadiness()"><i class="ti ti-copy"></i>Copy checklist</button></div>'
+    +'<div style="padding:12px;background:#111827;color:#fff;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><div><div style="font-weight:900">Enterprise readiness checklist</div><div style="font-size:11px;opacity:.85;margin-top:2px">Use this to answer security, SLA, backup and integration questions from larger clients</div></div><button class="btn btn-sm" style="background:rgba(255,255,255,.14);color:#fff;border-color:rgba(255,255,255,.25)" data-auris-generated-onclick="g0031"><i class="ti ti-copy"></i>Copy checklist</button></div>'
     +'<div style="overflow:auto"><table style="width:100%;min-width:900px;border-collapse:collapse;font-size:12px"><thead><tr style="background:#F8FAFC;color:var(--text2);text-transform:uppercase;font-size:10px"><th style="padding:9px 10px;text-align:left">Area</th><th style="padding:9px 10px;text-align:left">Position</th><th style="padding:9px 10px;text-align:left">What to say / confirm</th></tr></thead><tbody>'
     +rows.map(function(x,i){var s=cfg[x.status]||['#F8FAFC','#374151'];return '<tr style="border-top:1px solid var(--border);background:'+(i%2?'#fafafa':'#fff')+'"><td style="padding:10px;font-weight:900;color:#111827;white-space:nowrap">'+escH(x.area)+'</td><td style="padding:10px"><span style="background:'+s[0]+';color:'+s[1]+';padding:3px 9px;border-radius:99px;font-size:11px;font-weight:900;white-space:nowrap">'+escH(x.status)+'</span></td><td style="padding:10px;line-height:1.45;color:#111827">'+escH(x.detail)+'</td></tr>';}).join('')
     +'</tbody></table></div></div>';
@@ -4398,7 +4398,7 @@ function clientDecisionLogSaveRows(rows){
 function renderClientDecisionLog(){
   var rows=clientDecisionLogRows();
   return '<div style="margin-top:14px;border:1px solid var(--border);border-radius:10px;overflow:hidden;background:#fff">'
-    +'<div style="padding:12px;background:#164E63;color:#fff;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><div><div style="font-weight:900">Go-live decision log</div><div style="font-size:11px;opacity:.85;margin-top:2px">Record decisions, approvals and commitments made during rollout readiness reviews</div></div><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn btn-sm" style="background:rgba(255,255,255,.14);color:#fff;border-color:rgba(255,255,255,.25)" onclick="copyClientDecisionLog()"><i class="ti ti-copy"></i>Copy log</button><button class="btn btn-sm" style="background:#fff;color:#164E63" onclick="clientDecisionAdd()"><i class="ti ti-plus"></i>Add decision</button></div></div>'
+    +'<div style="padding:12px;background:#164E63;color:#fff;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><div><div style="font-weight:900">Go-live decision log</div><div style="font-size:11px;opacity:.85;margin-top:2px">Record decisions, approvals and commitments made during rollout readiness reviews</div></div><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn btn-sm" style="background:rgba(255,255,255,.14);color:#fff;border-color:rgba(255,255,255,.25)" data-auris-generated-onclick="g0032"><i class="ti ti-copy"></i>Copy log</button><button class="btn btn-sm" style="background:#fff;color:#164E63" data-auris-generated-onclick="g0033"><i class="ti ti-plus"></i>Add decision</button></div></div>'
     +'<div style="overflow:auto"><table style="width:100%;min-width:980px;border-collapse:collapse;font-size:12px"><thead><tr style="background:#F8FAFC;color:var(--text2);text-transform:uppercase;font-size:10px"><th style="padding:9px 10px;text-align:left">Date</th><th style="padding:9px 10px;text-align:left">Decision / commitment</th><th style="padding:9px 10px;text-align:left">Agreed by</th><th style="padding:9px 10px;text-align:left">Follow-up</th><th style="padding:9px 10px;text-align:right">Actions</th></tr></thead><tbody>'
     +(rows.length?rows.map(function(x,i){return '<tr style="border-top:1px solid var(--border);background:'+(i%2?'#fafafa':'#fff')+'"><td style="padding:10px;white-space:nowrap;font-weight:900;color:#164E63">'+escH(x.date||'-')+'</td><td style="padding:10px;line-height:1.45"><div style="font-weight:800;color:#111827">'+escH(x.decision||'Untitled decision')+'</div>'+(x.context?'<div style="color:var(--text2);font-size:11px;margin-top:3px">'+escH(x.context)+'</div>':'')+'</td><td style="padding:10px;color:var(--text2);font-weight:800;white-space:nowrap">'+escH(x.agreed_by||'-')+'</td><td style="padding:10px;line-height:1.45;color:#111827">'+escH(x.follow_up||'-')+'</td><td style="padding:10px;text-align:right;white-space:nowrap"><button class="btn btn-sm" onclick="clientDecisionEdit('+i+')"><i class="ti ti-edit"></i></button><button class="btn btn-sm" onclick="clientDecisionDelete('+i+')"><i class="ti ti-trash"></i></button></td></tr>';}).join(''):'<tr><td colspan="5" style="padding:18px;text-align:center;color:var(--text2)">No decisions recorded yet. Add the key commercial or rollout decisions agreed with the client.</td></tr>')
     +'</tbody></table></div></div>';
@@ -4466,7 +4466,7 @@ function clientValueSnapshotItems(){
 function renderClientValueSnapshot(){
   var rows=clientValueSnapshotItems();
   return '<div style="margin-top:14px;border:1px solid var(--border);border-radius:10px;overflow:hidden;background:#fff">'
-    +'<div style="padding:12px;background:#14532D;color:#fff;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><div><div style="font-weight:900">Client value / ROI snapshot</div><div style="font-size:11px;opacity:.85;margin-top:2px">A practical business case for why AURIS360 is worth rolling out</div></div><button class="btn btn-sm" style="background:rgba(255,255,255,.14);color:#fff;border-color:rgba(255,255,255,.25)" onclick="copyClientValueSnapshot()"><i class="ti ti-copy"></i>Copy value case</button></div>'
+    +'<div style="padding:12px;background:#14532D;color:#fff;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><div><div style="font-weight:900">Client value / ROI snapshot</div><div style="font-size:11px;opacity:.85;margin-top:2px">A practical business case for why AURIS360 is worth rolling out</div></div><button class="btn btn-sm" style="background:rgba(255,255,255,.14);color:#fff;border-color:rgba(255,255,255,.25)" data-auris-generated-onclick="g0034"><i class="ti ti-copy"></i>Copy value case</button></div>'
     +'<div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;padding:12px;background:#F8FAFC">'
       +'<div style="background:#ECFDF5;border:1px solid #A7F3D0;border-radius:10px;padding:12px"><div style="font-size:22px;font-weight:900;color:#065F46">30-60%</div><div style="font-size:11px;color:#065F46;font-weight:800">less admin chasing</div><div style="font-size:11px;color:var(--text2);margin-top:4px">Typical target once actions, reports and evidence are centralised.</div></div>'
       +'<div style="background:#EFF6FF;border:1px solid #BFDBFE;border-radius:10px;padding:12px"><div style="font-size:22px;font-weight:900;color:#1D4ED8">1 source</div><div style="font-size:11px;color:#1D4ED8;font-weight:800">of HSE truth</div><div style="font-size:11px;color:var(--text2);margin-top:4px">Incidents, BBS, inspections, actions, RAMS, PTW and contractors linked together.</div></div>'
@@ -4558,7 +4558,7 @@ async function clientDemoLoadDataChecklist(){
   var pct=specs.length?Math.round(ready/specs.length*100):0;
   var color=pct>=80?'#1D9E75':pct>=55?'#EF9F27':'#DC2626';
   el.innerHTML='<div style="border:1px solid var(--border);border-radius:10px;overflow:hidden;background:#fff;margin-top:14px">'
-    +'<div style="padding:12px;background:#F8FAFC;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><div><div style="font-weight:900">Live go-live readiness checklist</div><div style="font-size:12px;color:var(--text2);margin-top:2px">Current company readiness for professional go-live</div></div><div style="min-width:180px"><div style="display:flex;justify-content:space-between;font-size:12px;font-weight:900;margin-bottom:5px"><span>Data readiness</span><span style="color:'+color+'">'+pct+'%</span></div><div style="height:8px;background:#e5e7eb;border-radius:99px;overflow:hidden"><div style="height:100%;width:'+pct+'%;background:'+color+'"></div></div></div><button class="btn btn-sm" onclick="clientDemoLoadDataChecklist()"><i class="ti ti-refresh"></i>Refresh</button></div>'
+    +'<div style="padding:12px;background:#F8FAFC;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><div><div style="font-weight:900">Live go-live readiness checklist</div><div style="font-size:12px;color:var(--text2);margin-top:2px">Current company readiness for professional go-live</div></div><div style="min-width:180px"><div style="display:flex;justify-content:space-between;font-size:12px;font-weight:900;margin-bottom:5px"><span>Data readiness</span><span style="color:'+color+'">'+pct+'%</span></div><div style="height:8px;background:#e5e7eb;border-radius:99px;overflow:hidden"><div style="height:100%;width:'+pct+'%;background:'+color+'"></div></div></div><button class="btn btn-sm" data-auris-generated-onclick="g0035"><i class="ti ti-refresh"></i>Refresh</button></div>'
     +'<div style="overflow:auto"><table style="width:100%;min-width:820px;border-collapse:collapse;font-size:12px"><thead><tr style="background:#fff;color:var(--text2);text-transform:uppercase;font-size:10px"><th style="padding:8px 10px;text-align:left">Area</th><th style="padding:8px 10px;text-align:center">Records</th><th style="padding:8px 10px;text-align:left">Why it matters</th><th style="padding:8px 10px;text-align:left">Status</th><th style="padding:8px 10px;text-align:right">Open</th></tr></thead><tbody>'
     +specs.map(function(x,i){var ok=x.count>=x.target;return '<tr style="border-top:1px solid var(--border);background:'+(i%2?'#fafafa':'#fff')+'"><td style="padding:9px 10px;font-weight:900">'+escH(x.label)+'</td><td style="padding:9px 10px;text-align:center;font-weight:900">'+x.count+' / '+x.target+'</td><td style="padding:9px 10px;color:var(--text2)">'+escH(x.why)+'</td><td style="padding:9px 10px"><span style="background:'+(ok?'#EAF3DE':'#FEF9EC')+';color:'+(ok?'#3B6D11':'#854F0B')+';padding:3px 9px;border-radius:99px;font-weight:900;font-size:11px">'+(ok?'Ready':'Add readiness data')+'</span></td><td style="padding:9px 10px;text-align:right"><button class="btn btn-sm" onclick="showPage(\''+x.page+'\',null)"><i class="ti ti-arrow-right"></i></button></td></tr>';}).join('')
     +'</tbody></table></div></div>';
@@ -4587,10 +4587,10 @@ function dashOpenDemoReview(){
     modal.innerHTML='<div class="card" role="dialog" aria-modal="true" aria-labelledby="client-demo-review-title" style="width:100%;max-width:980px;max-height:88vh;overflow:hidden;border-radius:12px;box-shadow:0 22px 80px rgba(15,23,42,.32);padding:0">'
       +'<div style="padding:16px 18px;background:linear-gradient(135deg,#0F172A,#1a3a5c);color:#fff;display:flex;justify-content:space-between;align-items:flex-start;gap:12px">'
       +'<div><div id="client-demo-review-title" style="font-size:19px;font-weight:900">AURIS360 Guided Rollout Review</div><div style="font-size:12px;opacity:.84;margin-top:3px">Follow this sequence during rollout reviews to validate the full operational workflow.</div></div>'
-      +'<button class="btn btn-sm" style="background:rgba(255,255,255,.14);color:#fff;border-color:rgba(255,255,255,.25)" onclick="dashCloseDemoReview()"><i class="ti ti-x"></i></button>'
+      +'<button class="btn btn-sm" style="background:rgba(255,255,255,.14);color:#fff;border-color:rgba(255,255,255,.25)" data-auris-generated-onclick="g0036"><i class="ti ti-x"></i></button>'
       +'</div>'
       +'<div id="client-demo-review-body" style="padding:16px 18px;overflow:auto;max-height:calc(88vh - 132px)"></div>'
-      +'<div style="padding:12px 18px;border-top:1px solid var(--border);display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap"><button class="btn" onclick="copyClientDemoReview()"><i class="ti ti-copy"></i>Copy script</button><button class="btn btn-primary" onclick="dashCloseDemoReview()">Done</button></div>'
+      +'<div style="padding:12px 18px;border-top:1px solid var(--border);display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap"><button class="btn" data-auris-generated-onclick="g0037"><i class="ti ti-copy"></i>Copy script</button><button class="btn btn-primary" data-auris-generated-onclick="g0036">Done</button></div>'
       +'</div>';
     modal.onclick=function(e){if(e.target===modal)dashCloseDemoReview();};
     document.body.appendChild(modal);
@@ -5040,10 +5040,10 @@ function dashRenderTrendChart(events) {
     // Build clickable segments. Incidents bar = navigate filtered to incidents only.
     // Near miss bar = navigate filtered to near miss only.
     var incBar = m.inc>0
-      ? '<div onclick="event.stopPropagation();dashNavigateToMonth('+m.yy+','+m.mm+',\'incident\')" style="width:80%;height:'+hInc+'px;background:#DC2626;border-radius:'+(m.nm?'0':'3px 3px')+' 0 0;cursor:pointer;transition:height .5s,opacity .15s" onmouseover="this.style.opacity=0.8" onmouseout="this.style.opacity=1" title="'+m.inc+' incident'+(m.inc>1?'s':'')+' in '+monthLabel+' - click to view"></div>'
+      ? '<div onclick="event.stopPropagation();dashNavigateToMonth('+m.yy+','+m.mm+',\'incident\')" style="width:80%;height:'+hInc+'px;background:#DC2626;border-radius:'+(m.nm?'0':'3px 3px')+' 0 0;cursor:pointer;transition:height .5s,opacity .15s" data-auris-generated-onmouseover="g0038" data-auris-generated-onmouseout="g0039" title="'+m.inc+' incident'+(m.inc>1?'s':'')+' in '+monthLabel+' - click to view"></div>'
       : '';
     var nmBar = m.nm>0
-      ? '<div onclick="event.stopPropagation();dashNavigateToMonth('+m.yy+','+m.mm+',\'near_miss\')" style="width:80%;height:'+hNm+'px;background:#EF9F27;border-radius:3px 3px 0 0;cursor:pointer;transition:height .5s,opacity .15s" onmouseover="this.style.opacity=0.8" onmouseout="this.style.opacity=1" title="'+m.nm+' near miss'+(m.nm>1?'es':'')+' in '+monthLabel+' - click to view"></div>'
+      ? '<div onclick="event.stopPropagation();dashNavigateToMonth('+m.yy+','+m.mm+',\'near_miss\')" style="width:80%;height:'+hNm+'px;background:#EF9F27;border-radius:3px 3px 0 0;cursor:pointer;transition:height .5s,opacity .15s" data-auris-generated-onmouseover="g0038" data-auris-generated-onmouseout="g0039" title="'+m.nm+' near miss'+(m.nm>1?'es':'')+' in '+monthLabel+' - click to view"></div>'
       : '';
     var empty = (m.inc===0 && m.nm===0)
       ? '<div onclick="dashNavigateToMonth('+m.yy+','+m.mm+',\'all\')" style="width:80%;height:2px;background:#E5E7EB;border-radius:2px;cursor:pointer" title="'+monthLabel+': No incidents - click to view month"></div>'
@@ -5607,7 +5607,7 @@ function execAIRenderReport(data,type,ctx){
   execLastAIReportText=execAIReportText(data);
   if(!data||typeof data==='string')return '<div style="white-space:pre-wrap">'+escH(execLastAIReportText||String(data||''))+'</div>';
   var summary=data.executive_summary||data.board_summary||data.management_summary||'';
-  var html='<div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start;flex-wrap:wrap;margin-bottom:10px"><div><div style="font-weight:900;color:#5B21B6;font-size:15px">'+escH(type.replace(/_/g,' ').toUpperCase())+'</div><div style="font-size:11px;color:var(--text2)">'+escH(ctx.company)+' - '+escH(ctx.period)+' - '+escH(ctx.generated_at)+'</div></div><div style="display:flex;gap:6px;flex-wrap:wrap"><button class="btn btn-sm" onclick="execCopyAIReport()"><i class="ti ti-copy"></i>Copy</button><button class="btn btn-sm" onclick="execDownloadAIReport()"><i class="ti ti-download"></i>Download</button><button class="btn btn-sm" onclick="execPrintAIReport()"><i class="ti ti-printer"></i>Print</button></div></div>';
+  var html='<div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start;flex-wrap:wrap;margin-bottom:10px"><div><div style="font-weight:900;color:#5B21B6;font-size:15px">'+escH(type.replace(/_/g,' ').toUpperCase())+'</div><div style="font-size:11px;color:var(--text2)">'+escH(ctx.company)+' - '+escH(ctx.period)+' - '+escH(ctx.generated_at)+'</div></div><div style="display:flex;gap:6px;flex-wrap:wrap"><button class="btn btn-sm" data-auris-generated-onclick="g0040"><i class="ti ti-copy"></i>Copy</button><button class="btn btn-sm" data-auris-generated-onclick="g0041"><i class="ti ti-download"></i>Download</button><button class="btn btn-sm" data-auris-generated-onclick="g0042"><i class="ti ti-printer"></i>Print</button></div></div>';
   html+='<div style="background:#fff;border:1px solid #DDD6FE;border-radius:10px;padding:12px;color:#1f2937;line-height:1.55">'+escH(summary)+'</div>';
   html+=execAIRenderList('Red flags / board attention',data.red_flags,'#DC2626');
   html+=execAIRenderList('Positive performance notes',data.positive_notes,'#1D9E75');
@@ -5843,7 +5843,7 @@ async function genFullAI() {
       return '<div class="card" style="border-left:4px solid '+section.color+';margin-bottom:10px">'
         + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">'
         + '<div class="card-title" style="margin:0;color:'+section.color+'">'+section.title+'</div>'
-        + '<button class="btn btn-sm" onclick="aiCopyOutput(this)" data-content="'+escH(section.content)+'"><i class="ti ti-copy"></i></button>'
+        + '<button class="btn btn-sm" data-auris-generated-onclick="g0043" data-content="'+escH(section.content)+'"><i class="ti ti-copy"></i></button>'
         + '</div>'
         + '<div style="white-space:pre-wrap;font-size:13px;line-height:1.7;color:#1a1a1a">'+escH(section.content)+'</div>'
         + '</div>';
@@ -6889,7 +6889,7 @@ document.getElementById('ev-view-content').innerHTML=''
 +(isSerious&&!e.investigation_id?'<div style="background:#FEF2F2;border:1px solid #FCA5A5;border-radius:8px;padding:12px 14px;margin-top:12px"><div style="font-size:12px;font-weight:600;color:var(--red)">High/critical event - investigation recommended</div></div>':'');
 const actEl=document.getElementById('ev-view-actions');
 let btns='';
-if(isMgr())btns+='<button class="btn btn-primary" onclick="evSwitchToEdit()"><i class="ti ti-edit"></i>Edit</button>';
+if(isMgr())btns+='<button class="btn btn-primary" data-auris-generated-onclick="g0044"><i class="ti ti-edit"></i>Edit</button>';
 if(isMgr()&&e.status!=='closed')btns+='<button class="btn" onclick="evQuickClose(\''+e.id+'\')"><i class="ti ti-check"></i>Mark closed</button>';
 if(isMgr()&&!e.investigation_id)btns+='<button class="btn" style="background:#E6F1FB;color:#185FA5;border-color:#93C5FD;font-weight:600" onclick="evStartInvestigation(\''+e.id+'\')"><i class="ti ti-search"></i>Investigate</button>';
 if(e.investigation_id)btns+='<span style="font-size:12px;color:var(--green);display:flex;align-items:center;gap:6px"><i class="ti ti-check-circle"></i>Investigation linked</span>';
@@ -7463,7 +7463,7 @@ for(var i=0;i<d.length;i++){
     +'<td>'+(maxLex?'<strong style="color:'+(maxLex>=85?'#C2410C':maxLex>=80?'#854F0B':'var(--green)')+'">'+maxLex.toFixed(1)+'</strong>':'-')+'</td>'
     +'<td>'+hpeLabel+'</td>'
     +'<td style="'+(calBad?'color:#C2410C;font-weight:800':'')+'">'+(cal?cal.toLocaleDateString('en-GB'):'Not recorded')+(calBad?' - check':'')+'</td>'
-    +'<td style="text-align:right"><button class="icon-btn" title="Open survey" onclick="noiseOpenSurvey(\''+escH(x.id)+'\')"><i class="ti ti-eye"></i></button><button class="icon-btn" title="Print survey" onclick="noisePrintSurvey(\''+escH(x.id)+'\')"><i class="ti ti-printer"></i></button>'+(isMgr()?'<button class="icon-btn" style="color:var(--red)" data-id="'+x.id+'" onclick="deleteNoiseSurvey(this.getAttribute(\'data-id\'))"><i class="ti ti-trash"></i></button>':'')+'</td>'
+    +'<td style="text-align:right"><button class="icon-btn" title="Open survey" onclick="noiseOpenSurvey(\''+escH(x.id)+'\')"><i class="ti ti-eye"></i></button><button class="icon-btn" title="Print survey" onclick="noisePrintSurvey(\''+escH(x.id)+'\')"><i class="ti ti-printer"></i></button>'+(isMgr()?'<button class="icon-btn" style="color:var(--red)" data-id="'+x.id+'" data-auris-generated-onclick="g0045"><i class="ti ti-trash"></i></button>':'')+'</td>'
     +'</tr>';
 }
 h+='</tbody></table></div>';el.innerHTML=h;
@@ -7521,18 +7521,18 @@ function noiseSetActivePoint(v){
 function noisePointRow(p,i){
   p=p||{};
   return '<tr data-idx="'+i+'" onclick="noiseSetActivePoint('+i+')" style="cursor:pointer">'
-    +'<td><input class="np-loc" value="'+escH(p.loc||'')+'" placeholder="e.g. Compressor room" oninput="noiseRenderPlanPreview();noiseAssessHpe()"/></td>'
+    +'<td><input class="np-loc" value="'+escH(p.loc||'')+'" placeholder="e.g. Compressor room" data-auris-generated-oninput="g0046"/></td>'
     +'<td><input class="np-source" value="'+escH(p.source||'')+'" placeholder="e.g. Compressor, grinder, generator"/></td>'
-    +'<td><input class="np-leq" type="number" step="0.1" value="'+escH(p.leq||'')+'" oninput="noiseRenderPlanPreview();noiseAssessHpe()"/></td>'
-    +'<td><input class="np-peak" type="number" step="0.1" value="'+escH(p.peak||'')+'" oninput="noiseAssessHpe()"/></td>'
-    +'<td><input class="np-duration" type="number" step="0.25" value="'+escH(p.duration||'8')+'" oninput="noiseAssessHpe()"/></td>'
-    +'<td><input class="np-persons" type="number" min="0" value="'+escH(p.persons||'')+'" oninput="noiseAssessHpe()"/></td>'
-    +'<td><textarea class="np-existing" style="min-height:42px" placeholder="Existing controls: enclosure, distance, rotation..." oninput="noiseAssessHpe()">'+escH(p.existing_controls||'')+'</textarea></td>'
-    +'<td><input class="np-x" type="number" min="0" max="100" value="'+escH(p.x||'50')+'" oninput="noiseRenderPlanPreview()"/></td>'
-    +'<td><input class="np-y" type="number" min="0" max="100" value="'+escH(p.y||'50')+'" oninput="noiseRenderPlanPreview()"/></td>'
+    +'<td><input class="np-leq" type="number" step="0.1" value="'+escH(p.leq||'')+'" data-auris-generated-oninput="g0046"/></td>'
+    +'<td><input class="np-peak" type="number" step="0.1" value="'+escH(p.peak||'')+'" data-auris-generated-oninput="g0047"/></td>'
+    +'<td><input class="np-duration" type="number" step="0.25" value="'+escH(p.duration||'8')+'" data-auris-generated-oninput="g0047"/></td>'
+    +'<td><input class="np-persons" type="number" min="0" value="'+escH(p.persons||'')+'" data-auris-generated-oninput="g0047"/></td>'
+    +'<td><textarea class="np-existing" style="min-height:42px" placeholder="Existing controls: enclosure, distance, rotation..." data-auris-generated-oninput="g0047">'+escH(p.existing_controls||'')+'</textarea></td>'
+    +'<td><input class="np-x" type="number" min="0" max="100" value="'+escH(p.x||'50')+'" data-auris-generated-oninput="g0048"/></td>'
+    +'<td><input class="np-y" type="number" min="0" max="100" value="'+escH(p.y||'50')+'" data-auris-generated-oninput="g0048"/></td>'
     +'<td><input class="np-hpe" value="'+escH(p.hpe||'')+'" placeholder="e.g. ear muff"/></td>'
-    +'<td><input class="np-snr" type="number" step="1" value="'+escH(p.snr||'')+'" oninput="noiseAssessHpe()"/></td>'
-    +'<td><textarea class="np-further" style="min-height:42px" placeholder="Further controls / recommendations" oninput="noiseAssessHpe()">'+escH(p.further_controls||'')+'</textarea></td>'
+    +'<td><input class="np-snr" type="number" step="1" value="'+escH(p.snr||'')+'" data-auris-generated-oninput="g0047"/></td>'
+    +'<td><textarea class="np-further" style="min-height:42px" placeholder="Further controls / recommendations" data-auris-generated-oninput="g0047">'+escH(p.further_controls||'')+'</textarea></td>'
     +'<td><input class="np-action-by" value="'+escH(p.action_by||'')+'" placeholder="Owner"/></td>'
     +'<td><input class="np-target" type="date" value="'+escH(p.target_date||'')+'"/></td>'
     +'<td><button class="icon-btn" onclick="event.stopPropagation();noiseRemovePoint('+i+')"><i class="ti ti-trash"></i></button></td>'
@@ -7867,7 +7867,7 @@ function chemRenderTable(){
     return mq&&mr&&ms;
   }).sort(function(a,b){return (a.product_name||'').localeCompare(b.product_name||'');});
   if(!rows.length){
-    el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)"><div style="font-size:36px;margin-bottom:8px"><i class="ti ti-flask"></i></div><div style="font-weight:700;margin-bottom:8px">No chemicals found</div>'+(isMgr()?'<button class="btn btn-primary" onclick="chemNew()"><i class="ti ti-plus"></i>Add chemical</button>':'')+'</div>';
+    el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)"><div style="font-size:36px;margin-bottom:8px"><i class="ti ti-flask"></i></div><div style="font-weight:700;margin-bottom:8px">No chemicals found</div>'+(isMgr()?'<button class="btn btn-primary" data-auris-generated-onclick="g0049"><i class="ti ti-plus"></i>Add chemical</button>':'')+'</div>';
     return;
   }
   var h='<div class="table-scroll"><table class="data-table" style="min-width:1120px"><thead><tr><th>Ref</th><th>Product</th><th>Hazards</th><th>Exposure</th><th style="text-align:center">Persons</th><th>Risk</th><th>Review / SDS</th><th style="width:70px"></th></tr></thead><tbody>';
@@ -8040,11 +8040,11 @@ function chemAIRenderReview(data){
   var risk=String(data.risk_level||chemRiskFromForm().level||'medium').toLowerCase();
   var cfg=CHEM_RISK_CFG[risk]||CHEM_RISK_CFG.medium;
   var h='<div style="border:1px solid #DDD6FE;border-left:4px solid #7C3AED;border-radius:10px;background:#fff;padding:12px">';
-  h+='<div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start"><div><div style="font-weight:900;color:#5B21B6"><i class="ti ti-robot"></i> AI chemical exposure review</div><div style="font-size:12px;color:var(--text2);margin-top:3px">Review before applying. AURIS supports chemical risk assessment; the official SDS and competent HSE review remain authoritative.</div></div><button class="btn btn-sm" onclick="chemClearAIReview()"><i class="ti ti-x"></i></button></div>';
+  h+='<div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start"><div><div style="font-weight:900;color:#5B21B6"><i class="ti ti-robot"></i> AI chemical exposure review</div><div style="font-size:12px;color:var(--text2);margin-top:3px">Review before applying. AURIS supports chemical risk assessment; the official SDS and competent HSE review remain authoritative.</div></div><button class="btn btn-sm" data-auris-generated-onclick="g0050"><i class="ti ti-x"></i></button></div>';
   h+='<div style="margin-top:10px;display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:8px"><div style="padding:10px;border-radius:8px;background:'+cfg.bg+';color:'+cfg.tc+'"><div style="font-size:11px;font-weight:900;text-transform:uppercase">AI risk view</div><div style="font-size:18px;font-weight:900">'+escH(cfg.label)+'</div></div><div style="padding:10px;border-radius:8px;background:#F8FAFC;border:1px solid var(--border)"><div style="font-size:11px;font-weight:900;color:#475569;text-transform:uppercase">Summary</div><div style="font-size:12px;margin-top:3px">'+escH(data.risk_summary||'Chemical exposure review completed.')+'</div></div></div>';
   var blocks=[['Exposure routes',data.exposure_routes],['Health consequences',data.exposure_consequences],['Required controls',data.required_controls],['PPE / RPE',data.ppe_rpe],['Storage / segregation',data.storage_segregation],['Emergency / first aid',data.emergency_first_aid],['Monitoring / health surveillance',data.monitoring_health_surveillance],['Missing information',data.missing_information],['Immediate actions',data.immediate_actions]];
   blocks.forEach(function(b){var list=arr(b[1]);if(list.length)h+='<div style="margin-top:10px"><div style="font-weight:800;font-size:12px">'+escH(b[0])+'</div><ul style="margin:5px 0 0 18px;color:var(--text2);font-size:12px;line-height:1.45">'+list.slice(0,8).map(function(x){return '<li>'+escH(x)+'</li>';}).join('')+'</ul></div>';});
-  h+='<div style="margin-top:12px"><button class="btn btn-primary" onclick="chemAIApplyReview()"><i class="ti ti-check"></i>Apply to chemical form</button></div>';
+  h+='<div style="margin-top:12px"><button class="btn btn-primary" data-auris-generated-onclick="g0051"><i class="ti ti-check"></i>Apply to chemical form</button></div>';
   h+='</div>';
   panel.innerHTML=h;
 }
@@ -8263,7 +8263,7 @@ async function sopLoadList(){
         +'<div style="font-size:48px;margin-bottom:16px"><i class="ti ti-circle-dot"></i></div>'
         +'<div style="font-size:16px;font-weight:700;margin-bottom:8px">No SOPs yet</div>'
         +'<div style="font-size:13px;margin-bottom:20px">Create your first SOP by uploading a task demonstration video</div>'
-        +'<button class="btn btn-primary" onclick="sopNew()"><i class="ti ti-plus"></i>Create first SOP</button>'
+        +'<button class="btn btn-primary" data-auris-generated-onclick="g0052"><i class="ti ti-plus"></i>Create first SOP</button>'
         +'</div>';
       return;
     }
@@ -8291,9 +8291,9 @@ async function sopLoadList(){
         +'<td style="padding:10px">'+stBadge+'</td>'
         +'<td style="padding:10px;font-size:12px">'+dt+'</td>'
         +'<td style="padding:10px"><div style="display:flex;gap:4px">'
-        +'<button class="btn btn-sm" title="View" data-id="'+x.id+'" onclick="sopView(this.getAttribute(\'data-id\'))"><i class="ti ti-eye"></i></button>'
-        +'<button class="btn btn-sm" title="Print" data-id="'+x.id+'" onclick="sopPrintById(this.getAttribute(\'data-id\'))"><i class="ti ti-printer"></i></button>'
-        +(isMgr()?'<button class="btn btn-sm" style="color:var(--red)" title="Delete" data-id="'+x.id+'" onclick="sopDelete(this.getAttribute(\'data-id\'))"><i class="ti ti-trash"></i></button>':'')
+        +'<button class="btn btn-sm" title="View" data-id="'+x.id+'" data-auris-generated-onclick="g0053"><i class="ti ti-eye"></i></button>'
+        +'<button class="btn btn-sm" title="Print" data-id="'+x.id+'" data-auris-generated-onclick="g0054"><i class="ti ti-printer"></i></button>'
+        +(isMgr()?'<button class="btn btn-sm" style="color:var(--red)" title="Delete" data-id="'+x.id+'" data-auris-generated-onclick="g0055"><i class="ti ti-trash"></i></button>':'')
         +'</div></td></tr>';
     });
     h+='</tbody></table></div>';
@@ -8849,7 +8849,7 @@ function swmsRenderList(){
   var q=(document.getElementById('swms-search')?.value||'').toLowerCase();
   var rows=(swmsAllData||[]).filter(function(x){return !q||(x.title||'').toLowerCase().includes(q)||(x.doc_ref||x.reference_no||'').toLowerCase().includes(q)||(x.department||x.dept||'').toLowerCase().includes(q);});
   if(!rows.length){
-    el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)"><div style="font-size:40px;margin-bottom:10px"><i class="ti ti-circle-dot"></i></div><div style="font-weight:800;margin-bottom:8px">No SWMS found</div><button class="btn btn-primary" onclick="swmsNew()"><i class="ti ti-plus"></i>Create first SWMS</button></div>';
+    el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)"><div style="font-size:40px;margin-bottom:10px"><i class="ti ti-circle-dot"></i></div><div style="font-weight:800;margin-bottom:8px">No SWMS found</div><button class="btn btn-primary" data-auris-generated-onclick="g0056"><i class="ti ti-plus"></i>Create first SWMS</button></div>';
     return;
   }
   var h='<div class="table-scroll"><table class="data-table" style="min-width:980px"><thead><tr><th>Ref</th><th>SWMS / Activity</th><th>Department</th><th>Owner</th><th style="text-align:center">Status</th><th style="text-align:center">Review</th><th style="width:70px"></th></tr></thead><tbody>';
@@ -9005,13 +9005,13 @@ function swmsAddStep(r){
     +'<td style="padding:8px"><textarea class="swms-controls" style="min-height:50px;width:100%;font-size:12px" placeholder="Controls required / safe method">'+escH(r.controls||'')+'</textarea></td>'
     +'<td style="padding:8px">'+swmsRiskSelect('swms-res-risk',r.residual_risk||'')+'</td>'
     +'<td style="padding:8px"><input class="swms-resp" style="width:100%;font-size:12px" placeholder="Responsible" value="'+escH(r.responsible||'')+'"/></td>'
-    +'<td style="padding:8px;text-align:center"><button class="btn btn-sm" style="color:var(--red)" onclick="this.closest(\'tr\').remove();swmsRenumber();swmsBuildPreview()"><i class="ti ti-x"></i></button></td>';
+    +'<td style="padding:8px;text-align:center"><button class="btn btn-sm" style="color:var(--red)" data-auris-generated-onclick="g0057"><i class="ti ti-x"></i></button></td>';
   body.appendChild(tr);
 }
 function swmsRenumber(){document.querySelectorAll('#swms-steps-body tr').forEach(function(tr,i){tr.children[0].textContent=i+1;});}
 function swmsRiskSelect(cls,val){
   var opts=['','Very Low','Low','Medium','High','Very High'];
-  return '<select class="'+cls+'" style="width:100%;font-size:11px;padding:5px 6px;border:1px solid var(--border);border-radius:6px" onchange="swmsBuildPreview()">'+opts.map(function(o){return '<option value="'+o+'"'+(o===val?' selected':'')+'>'+(o||'Select risk...')+'</option>';}).join('')+'</select>';
+  return '<select class="'+cls+'" style="width:100%;font-size:11px;padding:5px 6px;border:1px solid var(--border);border-radius:6px" data-auris-generated-onchange="g0058">'+opts.map(function(o){return '<option value="'+o+'"'+(o===val?' selected':'')+'>'+(o||'Select risk...')+'</option>';}).join('')+'</select>';
 }
 function swmsRows(){return Array.from(document.querySelectorAll('#swms-steps-body tr')).map(function(tr,i){return {no:i+1,activity:tr.querySelector('.swms-act')?.value||'',hazard:tr.querySelector('.swms-haz')?.value||'',risk:tr.querySelector('.swms-risk')?.value||'',initial_risk:tr.querySelector('.swms-init-risk')?.value||'',controls:tr.querySelector('.swms-controls')?.value||'',residual_risk:tr.querySelector('.swms-res-risk')?.value||'',responsible:tr.querySelector('.swms-resp')?.value||''};}).filter(function(r){return r.activity||r.hazard||r.controls;});}
 
@@ -9246,7 +9246,7 @@ async function mtgLoadSeries(){
       if(el)el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)">'
         +'<div style="font-size:40px;margin-bottom:12px"><i class="ti ti-circle-dot"></i></div>'
         +'<div style="font-weight:600;margin-bottom:8px">No meeting schedules yet</div>'
-        +(isMgr()?'<button class="btn btn-primary" onclick="mtgNewSeries()"><i class="ti ti-plus"></i>Add first schedule</button>':'<div>Contact your HSE manager to set up meeting schedules</div>')
+        +(isMgr()?'<button class="btn btn-primary" data-auris-generated-onclick="g0059"><i class="ti ti-plus"></i>Add first schedule</button>':'<div>Contact your HSE manager to set up meeting schedules</div>')
         +'</div>';
       mtgRenderRoadmap();
       return;
@@ -9277,14 +9277,14 @@ async function mtgLoadSeries(){
         +'<td style="padding:10px 12px">'+escH(s.location||'--')+'</td>'
         +'<td style="padding:10px 12px;font-weight:'+(isOverdue?'800':'600')+';color:'+(isOverdue?'#DC2626':'#374151')+'">'+escH(nextDt)+(isOverdue?' <i class="ti ti-alert-triangle"></i>':'')+'</td>'
         +'<td style="padding:10px 12px"><span style="background:'+statusColor+'15;color:'+statusColor+';padding:3px 8px;border-radius:99px;font-size:10px;font-weight:800">'+statusLabel+'</span></td>'
-        +'<td style="padding:10px 12px;text-align:right;white-space:nowrap"><button class="btn btn-primary btn-sm" data-id="'+s.id+'" onclick="mtgScheduleMeeting(this.getAttribute(\'data-id\'))"><i class="ti ti-file-text"></i>Schedule</button>'
-        +(isMgr()?'<button class="btn btn-sm" data-id="'+s.id+'" onclick="mtgEditSeries(this.getAttribute(\'data-id\'))" title="Edit schedule" style="margin-left:6px"><i class="ti ti-edit"></i></button>':'')
+        +'<td style="padding:10px 12px;text-align:right;white-space:nowrap"><button class="btn btn-primary btn-sm" data-id="'+s.id+'" data-auris-generated-onclick="g0060"><i class="ti ti-file-text"></i>Schedule</button>'
+        +(isMgr()?'<button class="btn btn-sm" data-id="'+s.id+'" data-auris-generated-onclick="g0061" title="Edit schedule" style="margin-left:6px"><i class="ti ti-edit"></i></button>':'')
         +'</td></tr>';
     });
     h+='</tbody></table></div>';
     if(isMgr()){
       h+='<div style="padding:14px 20px;text-align:center;border-top:1px solid var(--border)">'
-        +'<button class="btn btn-sm" onclick="mtgNewSeries()"><i class="ti ti-plus"></i> Add new meeting schedule</button>'
+        +'<button class="btn btn-sm" data-auris-generated-onclick="g0059"><i class="ti ti-plus"></i> Add new meeting schedule</button>'
         +'</div>';
     }
     if(el)el.innerHTML=h;
@@ -9494,9 +9494,9 @@ function mtgClearMom(){
   // Clear agenda
   var ab=document.getElementById('mom3agenda-body');
   if(ab)ab.innerHTML=`
-    <tr><td style="padding:6px;text-align:center;border:1px solid var(--border);font-weight:700;font-size:12px;color:var(--text2)">1</td><td style="padding:4px;border:1px solid var(--border)"><input type="text" class="mom3agenda-item" style="width:100%;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px" placeholder="e.g. Approval of previous minutes"/></td><td style="padding:4px;border:1px solid var(--border)"><textarea class="mom3agenda-notes" style="width:100%;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;min-height:50px;resize:vertical" placeholder="Discussion notes..."></textarea></td><td style="padding:4px;text-align:center;border:1px solid var(--border)"><button onclick="this.parentNode.parentNode.remove()" style="background:none;border:none;cursor:pointer;color:var(--red)"><i class="ti ti-x"></i></button></td></tr>
-    <tr><td style="padding:6px;text-align:center;border:1px solid var(--border);font-weight:700;font-size:12px;color:var(--text2)">2</td><td style="padding:4px;border:1px solid var(--border)"><input type="text" class="mom3agenda-item" style="width:100%;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px" placeholder="e.g. Review of incidents"/></td><td style="padding:4px;border:1px solid var(--border)"><textarea class="mom3agenda-notes" style="width:100%;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;min-height:50px;resize:vertical" placeholder="Discussion notes..."></textarea></td><td style="padding:4px;text-align:center;border:1px solid var(--border)"><button onclick="this.parentNode.parentNode.remove()" style="background:none;border:none;cursor:pointer;color:var(--red)"><i class="ti ti-x"></i></button></td></tr>
-    <tr><td style="padding:6px;text-align:center;border:1px solid var(--border);font-weight:700;font-size:12px;color:var(--text2)">3</td><td style="padding:4px;border:1px solid var(--border)"><input type="text" class="mom3agenda-item" style="width:100%;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px" placeholder="e.g. KPI performance review"/></td><td style="padding:4px;border:1px solid var(--border)"><textarea class="mom3agenda-notes" style="width:100%;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;min-height:50px;resize:vertical" placeholder="Discussion notes..."></textarea></td><td style="padding:4px;text-align:center;border:1px solid var(--border)"><button onclick="this.parentNode.parentNode.remove()" style="background:none;border:none;cursor:pointer;color:var(--red)"><i class="ti ti-x"></i></button></td></tr>
+    <tr><td style="padding:6px;text-align:center;border:1px solid var(--border);font-weight:700;font-size:12px;color:var(--text2)">1</td><td style="padding:4px;border:1px solid var(--border)"><input type="text" class="mom3agenda-item" style="width:100%;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px" placeholder="e.g. Approval of previous minutes"/></td><td style="padding:4px;border:1px solid var(--border)"><textarea class="mom3agenda-notes" style="width:100%;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;min-height:50px;resize:vertical" placeholder="Discussion notes..."></textarea></td><td style="padding:4px;text-align:center;border:1px solid var(--border)"><button data-auris-generated-onclick="g0062" style="background:none;border:none;cursor:pointer;color:var(--red)"><i class="ti ti-x"></i></button></td></tr>
+    <tr><td style="padding:6px;text-align:center;border:1px solid var(--border);font-weight:700;font-size:12px;color:var(--text2)">2</td><td style="padding:4px;border:1px solid var(--border)"><input type="text" class="mom3agenda-item" style="width:100%;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px" placeholder="e.g. Review of incidents"/></td><td style="padding:4px;border:1px solid var(--border)"><textarea class="mom3agenda-notes" style="width:100%;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;min-height:50px;resize:vertical" placeholder="Discussion notes..."></textarea></td><td style="padding:4px;text-align:center;border:1px solid var(--border)"><button data-auris-generated-onclick="g0062" style="background:none;border:none;cursor:pointer;color:var(--red)"><i class="ti ti-x"></i></button></td></tr>
+    <tr><td style="padding:6px;text-align:center;border:1px solid var(--border);font-weight:700;font-size:12px;color:var(--text2)">3</td><td style="padding:4px;border:1px solid var(--border)"><input type="text" class="mom3agenda-item" style="width:100%;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px" placeholder="e.g. KPI performance review"/></td><td style="padding:4px;border:1px solid var(--border)"><textarea class="mom3agenda-notes" style="width:100%;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;min-height:50px;resize:vertical" placeholder="Discussion notes..."></textarea></td><td style="padding:4px;text-align:center;border:1px solid var(--border)"><button data-auris-generated-onclick="g0062" style="background:none;border:none;cursor:pointer;color:var(--red)"><i class="ti ti-x"></i></button></td></tr>
   `;
   // Clear recommendations
   var rb=document.getElementById('mom3rec-body');if(rb)rb.innerHTML='';
@@ -9511,7 +9511,7 @@ function mtgAddAgendaItem(){
   tr.innerHTML='<td style="padding:6px;text-align:center;border:1px solid var(--border);font-weight:700;font-size:12px;color:var(--text2)">'+num+'</td>'
     +'<td style="padding:4px;border:1px solid var(--border)"><input type="text" class="mom3agenda-item" style="width:100%;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px" placeholder="Agenda item..."/></td>'
     +'<td style="padding:4px;border:1px solid var(--border)"><textarea class="mom3agenda-notes" style="width:100%;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;min-height:50px;resize:vertical" placeholder="Discussion notes..."></textarea></td>'
-    +'<td style="padding:4px;text-align:center;border:1px solid var(--border)"><button onclick="this.parentNode.parentNode.remove()" style="background:none;border:none;cursor:pointer;color:var(--red)"><i class="ti ti-x"></i></button></td>';
+    +'<td style="padding:4px;text-align:center;border:1px solid var(--border)"><button data-auris-generated-onclick="g0062" style="background:none;border:none;cursor:pointer;color:var(--red)"><i class="ti ti-x"></i></button></td>';
   body.appendChild(tr);
 }
 
@@ -9528,7 +9528,7 @@ function mtgAddRec(){
     +'<td style="padding:4px;border:1px solid var(--border)"><input type="date" class="mom3rec-date" style="width:100%;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px"/></td>'
     +'<td style="padding:4px;border:1px solid var(--border)"><select class="mom3rec-prio" style="width:100%;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px"><option value="low">Low</option><option value="medium" selected>Medium</option><option value="high">High</option><option value="critical">Critical</option></select></td>'
     +'<td style="padding:4px;border:1px solid var(--border)"><select class="mom3rec-status" style="width:100%;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px"><option value="open">Open</option><option value="in_progress">In progress</option><option value="closed">Closed</option></select></td>'
-    +'<td style="padding:4px;text-align:center;border:1px solid var(--border)"><button onclick="this.parentNode.parentNode.remove()" style="background:none;border:none;cursor:pointer;color:var(--red)"><i class="ti ti-x"></i></button></td>';
+    +'<td style="padding:4px;text-align:center;border:1px solid var(--border)"><button data-auris-generated-onclick="g0062" style="background:none;border:none;cursor:pointer;color:var(--red)"><i class="ti ti-x"></i></button></td>';
   body.appendChild(tr);
 }
 
@@ -10003,7 +10003,7 @@ function mtgRenderRoadmap(){
   try{
 
   if(!mtgSeriesData||!mtgSeriesData.length){
-    container.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)">No meeting schedules yet.'+(isMgr()?'<button class="btn btn-primary btn-sm" style="margin-left:8px" onclick="mtgNewSeries()"><i class="ti ti-plus"></i>Add schedule</button>':'')+'</div>';
+    container.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)">No meeting schedules yet.'+(isMgr()?'<button class="btn btn-primary btn-sm" style="margin-left:8px" data-auris-generated-onclick="g0059"><i class="ti ti-plus"></i>Add schedule</button>':'')+'</div>';
     return;
   }
 
@@ -10161,14 +10161,14 @@ async function mtgLoadMinutes(){
       var statusBadge=x.status==='completed'?'<span class="badge bg">Completed</span>':x.status==='cancelled'?'<span class="badge br">Cancelled</span>':'<span class="badge ba">Draft</span>';
       h+='<tr style="border-bottom:1px solid #f3f4f6">'
         +'<td style="padding:10px 16px;font-weight:600">'+dt+'</td>'
-        +'<td style="padding:10px;cursor:pointer;color:var(--green);font-weight:600" data-id="'+x.id+'" onclick="mtgOpenMom(this.getAttribute(\'data-id\'))">'+(x.title||'-')+'</td>'
+        +'<td style="padding:10px;cursor:pointer;color:var(--green);font-weight:600" data-id="'+x.id+'" data-auris-generated-onclick="g0063">'+(x.title||'-')+'</td>'
         +'<td style="padding:10px;font-size:12px;color:var(--text2)">'+(MTG_TYPES[x.meeting_type]||x.meeting_type||'-')+'</td>'
         +'<td style="padding:10px">'+(x.chaired_by||'-')+'</td>'
         +'<td style="padding:10px;text-align:center"><span style="background:#EAF3DE;color:#3B6D11;padding:2px 8px;border-radius:99px;font-size:11px;font-weight:600">'+recs+' action'+(recs!==1?'s':'')+'</span></td>'
         +'<td style="padding:10px">'+statusBadge+'</td>'
         +'<td style="padding:10px"><div style="display:flex;gap:4px">'
-        +'<button class="btn btn-sm" data-id="'+x.id+'" onclick="mtgOpenMom(this.getAttribute(\'data-id\'))"><i class="ti ti-edit"></i></button>'
-        +(isMgr()?'<button class="btn btn-sm" style="color:var(--red)" data-id="'+x.id+'" onclick="mtgDeleteMomFromList(this.getAttribute(\'data-id\'))"><i class="ti ti-trash"></i></button>':'')
+        +'<button class="btn btn-sm" data-id="'+x.id+'" data-auris-generated-onclick="g0063"><i class="ti ti-edit"></i></button>'
+        +(isMgr()?'<button class="btn btn-sm" style="color:var(--red)" data-id="'+x.id+'" data-auris-generated-onclick="g0064"><i class="ti ti-trash"></i></button>':'')
         +'</div></td>'
         +'</tr>';
     });
@@ -10212,7 +10212,7 @@ async function mtgOpenMom(id){
       tr.innerHTML='<td style="padding:6px;text-align:center;border:1px solid var(--border);font-weight:700;font-size:12px;color:var(--text2)">'+(i+1)+'</td>'
         +'<td style="padding:4px;border:1px solid var(--border)"><input type="text" class="mom3agenda-item" value="'+escH2(a.item||'')+'" style="width:100%;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px"/></td>'
         +'<td style="padding:4px;border:1px solid var(--border)"><textarea class="mom3agenda-notes" style="width:100%;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;min-height:50px;resize:vertical">'+escH2(a.notes||'')+'</textarea></td>'
-        +'<td style="padding:4px;text-align:center;border:1px solid var(--border)"><button onclick="this.parentNode.parentNode.remove()" style="background:none;border:none;cursor:pointer;color:var(--red)"><i class="ti ti-x"></i></button></td>';
+        +'<td style="padding:4px;text-align:center;border:1px solid var(--border)"><button data-auris-generated-onclick="g0062" style="background:none;border:none;cursor:pointer;color:var(--red)"><i class="ti ti-x"></i></button></td>';
       ab.appendChild(tr);
     });
   }
@@ -10231,7 +10231,7 @@ async function mtgOpenMom(id){
         +'<td style="padding:4px;border:1px solid var(--border)"><input type="date" class="mom3rec-date" value="'+(r.date||'')+'" style="width:100%;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px"/></td>'
         +'<td style="padding:4px;border:1px solid var(--border)"><select class="mom3rec-prio" style="width:100%;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px"><option value="low"'+(r.prio==='low'?' selected':'')+'>Low</option><option value="medium"'+((!r.prio||r.prio==='medium')?' selected':'')+'>Medium</option><option value="high"'+(r.prio==='high'?' selected':'')+'>High</option><option value="critical"'+(r.prio==='critical'?' selected':'')+'>Critical</option></select></td>'
         +'<td style="padding:4px;border:1px solid var(--border)"><select class="mom3rec-status" style="width:100%;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px"><option value="open"'+(r.status==='open'?' selected':'')+'>Open</option><option value="in_progress"'+(r.status==='in_progress'?' selected':'')+'>In progress</option><option value="closed"'+(r.status==='closed'?' selected':'')+'>Closed</option></select></td>'
-        +'<td style="padding:4px;text-align:center;border:1px solid var(--border)"><button onclick="this.parentNode.parentNode.remove()" style="background:none;border:none;cursor:pointer;color:var(--red)"><i class="ti ti-x"></i></button></td>';
+        +'<td style="padding:4px;text-align:center;border:1px solid var(--border)"><button data-auris-generated-onclick="g0062" style="background:none;border:none;cursor:pointer;color:var(--red)"><i class="ti ti-x"></i></button></td>';
       rb.appendChild(tr);
     });
   }else if(re){re.style.display='block';}
@@ -10518,7 +10518,7 @@ return '<tr><td><strong>'+escH(peopleName(p))+'</strong>'+contractor+'<div style
 }
 async function loadPeople(){
 const btn=document.getElementById('people-add-btn');
-if(btn)btn.innerHTML=peopleCanManage()?'<button class="btn btn-primary" onclick="peopleNew()"><i class="ti ti-plus"></i>Add person</button>':'';
+if(btn)btn.innerHTML=peopleCanManage()?'<button class="btn btn-primary" data-auris-generated-onclick="g0065"><i class="ti ti-plus"></i>Add person</button>':'';
 const el=document.getElementById('people-list');if(el)el.innerHTML='<div class="loading-msg">Loading...</div>';
 try{
 let path='/people?select=*'+cf()+'&order=last_name';
@@ -10762,7 +10762,7 @@ var relationshipRepairRows=[];
 function relationshipHealthMetric(label,value,color,note){return '<div style="padding:12px;border:1px solid var(--border);border-radius:10px;background:#fff;border-left:4px solid '+color+'"><div style="font-size:23px;font-weight:950;color:'+color+'">'+Number(value||0)+'</div><div style="font-size:11px;font-weight:850;text-transform:uppercase;color:var(--text2)">'+escH(label)+'</div><div style="font-size:10px;color:var(--text3);margin-top:3px">'+escH(note||'')+'</div></div>';}
 function relationshipRepairStatus(status){var cfg={endpoint_archived:['Archived endpoint','#92400E','#FFFBEB'],broken:['Broken','#B91C1C','#FEF2F2'],unresolved:['Unresolved','#6D28D9','#F5F3FF'],pending_verification:['Verify','#1D4ED8','#EFF6FF']}[status]||['Review','#475569','#F1F5F9'];return '<span style="display:inline-flex;padding:4px 8px;border-radius:99px;font-size:10px;font-weight:850;color:'+cfg[1]+';background:'+cfg[2]+'">'+cfg[0]+'</span>';}
 function renderRelationshipRepairQueue(summary,rows,lastRun){var el=document.getElementById('relationship-repair-body');if(!el)return;summary=summary||{};relationshipRepairRows=rows||[];var html='<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:9px;margin-bottom:13px">'+relationshipHealthMetric('Active',summary.active_count,'#07835B','Healthy reciprocal links')+relationshipHealthMetric('Archived endpoint',summary.archived_endpoint_count,'#B45309','Source or target retired')+relationshipHealthMetric('Broken',summary.broken_count,'#DC2626','Exact record no longer exists')+relationshipHealthMetric('Unresolved',summary.unresolved_count,'#7C3AED','Registry or table needs setup')+'</div>';
-html+='<div style="display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:10px"><div style="font-size:11px;color:var(--text2)">'+(lastRun?'Last validation '+escH(new Date(lastRun).toLocaleString()):'No validation run recorded yet')+' · Links are never deleted by validation.</div><button class="btn btn-primary btn-sm" onclick="loadRelationshipRepairQueue(true)"><i class="ti ti-refresh"></i>Validate now</button></div>';
+html+='<div style="display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:10px"><div style="font-size:11px;color:var(--text2)">'+(lastRun?'Last validation '+escH(new Date(lastRun).toLocaleString()):'No validation run recorded yet')+' · Links are never deleted by validation.</div><button class="btn btn-primary btn-sm" data-auris-generated-onclick="g0066"><i class="ti ti-refresh"></i>Validate now</button></div>';
 if(!relationshipRepairRows.length)html+='<div style="padding:18px;border:1px dashed var(--border);border-radius:10px;text-align:center;color:var(--text2)"><i class="ti ti-circle-check" style="color:#07835B;font-size:22px"></i><div style="font-weight:850;margin-top:5px">No relationships require repair</div></div>';
 else{html+='<div style="overflow-x:auto;border:1px solid var(--border);border-radius:10px"><table style="width:100%;border-collapse:collapse;min-width:880px"><thead><tr style="background:#F8FAFC"><th style="padding:9px;text-align:left">Status</th><th style="padding:9px;text-align:left">Source</th><th style="padding:9px;text-align:left">Relationship</th><th style="padding:9px;text-align:left">Target</th><th style="padding:9px;text-align:left">Finding</th><th style="padding:9px;text-align:right">Actions</th></tr></thead><tbody>'+relationshipRepairRows.map(function(r){return '<tr style="border-top:1px solid var(--border)"><td style="padding:9px">'+relationshipRepairStatus(r.status)+'</td><td style="padding:9px"><b>'+escH(r.source_ref||r.source_id)+'</b><div style="font-size:10px;color:var(--text2)">'+escH(r.source_module+' · '+r.source_state)+'</div></td><td style="padding:9px;font-size:11px">'+escH(String(r.relationship_type||'related_to').replace(/_/g,' '))+'</td><td style="padding:9px"><b>'+escH(r.target_ref||r.target_id)+'</b><div style="font-size:10px;color:var(--text2)">'+escH(r.target_module+' · '+r.target_state)+'</div></td><td style="padding:9px;font-size:11px;color:var(--text2);max-width:260px">'+escH(r.validation_error||'Verification required')+'</td><td style="padding:9px;text-align:right;white-space:nowrap"><button class="btn btn-sm" onclick="relationshipRepairOpen(\''+r.id+'\',\'source\')" title="Open source"><i class="ti ti-arrow-up-right"></i>Source</button> <button class="btn btn-sm" onclick="relationshipRepairOpen(\''+r.id+'\',\'target\')" title="Open target"><i class="ti ti-arrow-up-right"></i>Target</button> <button class="btn btn-sm" onclick="relationshipRepairArchive(\''+r.id+'\')" title="Archive invalid relationship"><i class="ti ti-archive"></i></button></td></tr>';}).join('')+'</tbody></table></div>';}
 el.innerHTML=html;}
@@ -10780,14 +10780,14 @@ function renderPersonIdentityReconciliation(summary,rows,duplicates){
     +relationshipHealthMetric('Resolved',summary.resolved_count,'#07835B','Linked to verified People')
     +relationshipHealthMetric('Intentionally ignored',summary.ignored_count,'#64748B','Reviewed without reassignment')
     +relationshipHealthMetric('Possible duplicates',summary.duplicate_cluster_count,'#B45309','Advisory People profile signals')+'</div>';
-  var h=metrics+'<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px"><div style="font-size:11px;color:var(--text2)">Only verified selections are linked. Names and roles remain as historical snapshots.</div><button class="btn btn-primary btn-sm" onclick="loadPersonIdentityReconciliation(true)"><i class="ti ti-refresh"></i>Rescan legacy records</button></div>';
+  var h=metrics+'<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px"><div style="font-size:11px;color:var(--text2)">Only verified selections are linked. Names and roles remain as historical snapshots.</div><button class="btn btn-primary btn-sm" data-auris-generated-onclick="g0067"><i class="ti ti-refresh"></i>Rescan legacy records</button></div>';
   if(!personIdentityReviewRows.length)h+='<div style="padding:18px;border:1px dashed var(--border);border-radius:10px;text-align:center;color:var(--text2)"><i class="ti ti-user-check" style="color:#07835B;font-size:22px"></i><div style="font-weight:850;margin-top:5px">No legacy identities require review</div></div>';
   else{
     var options=(people||[]).filter(function(p){return !p.company_id||p.company_id===ccid();}).map(identityPersonOption).join('');
     h+='<div style="overflow-x:auto;border:1px solid var(--border);border-radius:10px"><table style="width:100%;border-collapse:collapse;min-width:980px"><thead><tr style="background:#F8FAFC"><th style="padding:9px;text-align:left">Legacy record</th><th style="padding:9px;text-align:left">Source</th><th style="padding:9px;text-align:left">Verified person</th><th style="padding:9px;text-align:left">Review note</th><th style="padding:9px;text-align:right">Decision</th></tr></thead><tbody>';
     h+=personIdentityReviewRows.map(function(r){return '<tr style="border-top:1px solid var(--border)"><td style="padding:9px"><b>'+escH(r.legacy_name||'Unnamed legacy record')+'</b><div style="font-size:10px;color:var(--text2)">'+escH(r.legacy_employee_number||'No employee number')+' · '+Number((r.candidate_person_ids||[]).length)+' candidate(s)</div></td><td style="padding:9px"><span class="badge badge-blue">'+escH(String(r.source_table||'').replace(/_/g,' '))+'</span><div style="font-family:monospace;font-size:9px;color:var(--text3);margin-top:4px">'+escH(r.source_id)+'</div></td><td style="padding:9px"><select id="identity-person-'+r.id+'" style="min-width:260px"><option value="">Select verified person...</option>'+options+'</select></td><td style="padding:9px"><input id="identity-note-'+r.id+'" placeholder="Reason / evidence reviewed" style="min-width:210px"></td><td style="padding:9px;text-align:right;white-space:nowrap"><button class="btn btn-primary btn-sm" onclick="personIdentityResolve(\''+r.id+'\',\'linked\')"><i class="ti ti-link"></i>Link</button> <button class="btn btn-sm" onclick="personIdentityResolve(\''+r.id+'\',\'ignored\')"><i class="ti ti-eye-off"></i>Ignore</button></td></tr>';}).join('')+'</tbody></table></div>';
   }
-  if(personDuplicateRows.length){h+='<details style="margin-top:13px;border:1px solid #F5D08A;border-radius:10px;background:#FFFBEB"><summary style="padding:11px 13px;cursor:pointer;font-weight:850;color:#92400E">'+personDuplicateRows.length+' possible duplicate People cluster(s) — review only</summary><div style="padding:0 13px 13px"><div style="font-size:11px;color:#854F0B;margin-bottom:8px">AURIS never merges these automatically. Open People and verify employment, contact and linked history before any manual decision.</div>'+personDuplicateRows.map(function(d){return '<div style="padding:8px 0;border-top:1px solid #FDE7B0;display:flex;justify-content:space-between;gap:10px"><div><b>'+escH(d.match_type.replace(/_/g,' '))+': '+escH(d.match_key)+'</b><div style="font-size:11px;color:var(--text2)">'+escH((d.person_names||[]).join(' · '))+'</div></div><button class="btn btn-sm" onclick="showPage(\'people\')"><i class="ti ti-users"></i>Open People</button></div>';}).join('')+'</div></details>';}
+  if(personDuplicateRows.length){h+='<details style="margin-top:13px;border:1px solid #F5D08A;border-radius:10px;background:#FFFBEB"><summary style="padding:11px 13px;cursor:pointer;font-weight:850;color:#92400E">'+personDuplicateRows.length+' possible duplicate People cluster(s) — review only</summary><div style="padding:0 13px 13px"><div style="font-size:11px;color:#854F0B;margin-bottom:8px">AURIS never merges these automatically. Open People and verify employment, contact and linked history before any manual decision.</div>'+personDuplicateRows.map(function(d){return '<div style="padding:8px 0;border-top:1px solid #FDE7B0;display:flex;justify-content:space-between;gap:10px"><div><b>'+escH(d.match_type.replace(/_/g,' '))+': '+escH(d.match_key)+'</b><div style="font-size:11px;color:var(--text2)">'+escH((d.person_names||[]).join(' · '))+'</div></div><button class="btn btn-sm" data-auris-generated-onclick="g0068"><i class="ti ti-users"></i>Open People</button></div>';}).join('')+'</div></details>';}
   el.innerHTML=h;personIdentityReviewRows.forEach(function(r){var candidate=(r.candidate_person_ids||[])[0],select=document.getElementById('identity-person-'+r.id);if(select&&candidate)select.value=candidate;});
 }
 async function loadPersonIdentityReconciliation(runScan){
@@ -10850,7 +10850,7 @@ html+='</div>';
 html+='<div style="margin-top:16px;border:1px solid var(--border);border-radius:12px;background:#fff;overflow:hidden">'
 +'<div style="padding:14px 16px;border-bottom:1px solid var(--border);background:#F8FAFC;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">'
 +'<div><div style="font-weight:900;color:var(--text)">Client security and SLA statement</div><div style="font-size:12px;color:var(--text2);margin-top:2px">Configure the wording you can share with clients once validated contractually.</div></div>'
-+'<button class="btn btn-primary" onclick="saveSecuritySlaSettings()"><i class="ti ti-device-floppy"></i>Save security/SLA settings</button>'
++'<button class="btn btn-primary" data-auris-generated-onclick="g0069"><i class="ti ti-device-floppy"></i>Save security/SLA settings</button>'
 +'</div>'
 +'<div style="padding:16px;display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px">'
 +securitySlaInput('sec-target-uptime','Target availability',settings.target_uptime,'text','Use a realistic target until paid plans/SLA are confirmed.')
@@ -10873,10 +10873,10 @@ html+='<div style="margin-top:16px;border:1px solid var(--border);border-radius:
 +securitySlaInput('sec-sla-notes','SLA notes / disclaimer',settings.sla_notes,'textarea')
 +'</div></div>';
 html+='<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:16px">'
-+'<button class="btn btn-primary" onclick="copySecurityClientSummary()"><i class="ti ti-copy"></i>Copy client summary</button>'
-+'<button class="btn" onclick="previewSecurityClientSummary()"><i class="ti ti-file-description"></i>Preview summary</button>'
-+'<button class="btn" onclick="showPage(&quot;audit&quot;,document.getElementById(&quot;nav-audit&quot;))"><i class="ti ti-history"></i>Open Audit Trail</button>'
-+'<button class="btn" onclick="showPage(&quot;approvals&quot;,document.getElementById(&quot;nav-approvals&quot;))"><i class="ti ti-circle-check"></i>Open Approval Center</button>'
++'<button class="btn btn-primary" data-auris-generated-onclick="g0070"><i class="ti ti-copy"></i>Copy client summary</button>'
++'<button class="btn" data-auris-generated-onclick="g0071"><i class="ti ti-file-description"></i>Preview summary</button>'
++'<button class="btn" data-auris-generated-onclick="g0072"><i class="ti ti-history"></i>Open Audit Trail</button>'
++'<button class="btn" data-auris-generated-onclick="g0073"><i class="ti ti-circle-check"></i>Open Approval Center</button>'
 +'</div>';
 el.innerHTML=html;
 }
@@ -11169,15 +11169,15 @@ function customRenderFieldSettings(moduleKey,rows){
   });
   table+='</tbody></table></div>';
   el.innerHTML='<div style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:flex-end">'
-    +'<div class="form3group" style="min-width:260px;margin:0"><label class="form3label">Module</label><select id="cf-module-select" onchange="loadCustomFieldSettings()">'+moduleOptions+'</select></div>'
-    +'<button class="btn btn-primary" onclick="customNewField()"><i class="ti ti-plus"></i>New field</button></div>'
+    +'<div class="form3group" style="min-width:260px;margin:0"><label class="form3label">Module</label><select id="cf-module-select" data-auris-generated-onchange="g0074">'+moduleOptions+'</select></div>'
+    +'<button class="btn btn-primary" data-auris-generated-onclick="g0075"><i class="ti ti-plus"></i>New field</button></div>'
     +table
     +'<div id="cf-form3panel" style="display:none;margin-top:14px;padding:14px;border:1px solid var(--border);border-radius:10px;background:#fff">'
-    +'<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:12px"><div style="font-weight:900;color:var(--text)" id="cf-form3heading">New custom field</div><button class="btn btn-sm" onclick="customHideFieldForm()"><i class="ti ti-x"></i>Close</button></div>'
+    +'<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:12px"><div style="font-weight:900;color:var(--text)" id="cf-form3heading">New custom field</div><button class="btn btn-sm" data-auris-generated-onclick="g0076"><i class="ti ti-x"></i>Close</button></div>'
     +'<input type="hidden" id="cf-edit-id"/>'
     +'<div class="form3row">'
     +'<div class="form3group"><label class="form3label">Field label</label><input id="cf-label" placeholder="e.g. Contractor company, Shift, Machine number"/></div>'
-    +'<div class="form3group"><label class="form3label">Field type</label><select id="cf-type" onchange="customToggleOptionsHelp()"><option value="text">Text</option><option value="textarea">Long text</option><option value="number">Number</option><option value="date">Date</option><option value="select">Dropdown</option><option value="checkbox">Checkbox</option></select></div>'
+    +'<div class="form3group"><label class="form3label">Field type</label><select id="cf-type" data-auris-generated-onchange="g0077"><option value="text">Text</option><option value="textarea">Long text</option><option value="number">Number</option><option value="date">Date</option><option value="select">Dropdown</option><option value="checkbox">Checkbox</option></select></div>'
     +'<div class="form3group"><label class="form3label">Order</label><input id="cf-order" type="number" value="0"/></div>'
     +'</div>'
     +'<div class="form3group"><label class="form3label">Dropdown options</label><input id="cf-options" placeholder="One option per line or separated by commas"/><div id="cf-options-help" style="font-size:10px;color:var(--text3);margin-top:3px">Used only when type is Dropdown.</div></div>'
@@ -11185,7 +11185,7 @@ function customRenderFieldSettings(moduleKey,rows){
     +'<label style="display:flex;gap:7px;align-items:center;font-size:12px;font-weight:700"><input type="checkbox" id="cf-required" style="width:16px;height:16px;margin:0;padding:0;accent-color:var(--green)"/> Required</label>'
     +'<label style="display:flex;gap:7px;align-items:center;font-size:12px;font-weight:700"><input type="checkbox" id="cf-active" checked style="width:16px;height:16px;margin:0;padding:0;accent-color:var(--green)"/> Active</label>'
     +'</div>'
-    +'<button class="btn btn-primary" onclick="customSaveField()"><i class="ti ti-device-floppy"></i>Save custom field</button>'
+    +'<button class="btn btn-primary" data-auris-generated-onclick="g0078"><i class="ti ti-device-floppy"></i>Save custom field</button>'
     +'</div>';
   customToggleOptionsHelp();
 }
@@ -11313,7 +11313,7 @@ el.innerHTML='<div style="display:grid;grid-template-columns:repeat(auto-fit,min
 +'<div class="form3group"><label class="form3label">Level 3 approver</label><select id="ptw-app-l3">'+ptwApproverOptions(a.level3_id||'')+'</select><div style="font-size:11px;color:var(--text2);margin-top:4px">Usually HSE Manager</div></div>'
 +'</div>'
 +'<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:12px">'
-+'<button class="btn btn-primary" onclick="savePTWApprovalSettings()"><i class="ti ti-device-floppy"></i>Save PTW approvers</button>'
++'<button class="btn btn-primary" data-auris-generated-onclick="g0079"><i class="ti ti-device-floppy"></i>Save PTW approvers</button>'
 +'<div style="font-size:12px;color:var(--text2)">These names will be used for permit approval routing and later email / WhatsApp notifications.</div>'
 +'</div>';
 }catch(e){el.innerHTML=registerErrorHtml('PTW approver settings',e.message);}
@@ -11568,7 +11568,7 @@ function approvalRenderWorkflows(){
   }).join(''):'<div style="padding:18px;text-align:center;color:var(--text2);border:1px dashed var(--border);border-radius:10px">No approval workflows yet. Add one for PTW, documents, risk assessments, or incidents.</div>';
   el.innerHTML='<div style="display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:12px">'
     +'<div style="font-size:12px;color:var(--text2)">Define who approves controlled records before they become final. These rules are reusable across modules.</div>'
-    +'<button class="btn btn-primary" onclick="approvalNewWorkflow()"><i class="ti ti-plus"></i>Add workflow</button>'
+    +'<button class="btn btn-primary" data-auris-generated-onclick="g0080"><i class="ti ti-plus"></i>Add workflow</button>'
     +'</div><div style="display:flex;flex-direction:column;gap:8px">'+cards+'</div><div id="workflow-form3host" style="margin-top:14px"></div>';
 }
 
@@ -11594,13 +11594,13 @@ function approvalRenderWorkflowForm(w,steps){
       +'</div><label style="display:flex;align-items:center;gap:8px;margin-top:10px;font-size:12px"><input type="checkbox" id="aw-step-required-'+n+'" '+(s.required!==false?'checked':'')+'/> Required step</label></div>';
   }
   host.innerHTML='<div style="border:2px solid #bfdbfe;border-radius:12px;padding:14px;background:#fff">'
-    +'<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:12px"><div style="font-size:14px;font-weight:800">'+(approvalEditingId?'Edit workflow':'New workflow')+'</div><button class="btn btn-sm" onclick="approvalRenderWorkflows()"><i class="ti ti-x"></i>Close</button></div>'
+    +'<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:12px"><div style="font-size:14px;font-weight:800">'+(approvalEditingId?'Edit workflow':'New workflow')+'</div><button class="btn btn-sm" data-auris-generated-onclick="g0081"><i class="ti ti-x"></i>Close</button></div>'
     +'<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:12px">'
     +'<div class="form3group" style="margin:0"><label class="form3label">Module</label><select id="aw-module">'+approvalModuleOptions(w.module_name||'permit')+'</select></div>'
     +'<div class="form3group" style="margin:0"><label class="form3label">Workflow name</label><input id="aw-name" value="'+escH(w.workflow_name||'')+'" placeholder="e.g. Hot Work Permit Approval"/></div>'
     +'<div class="form3group" style="margin:0"><label class="form3label">Applies to</label><input id="aw-applies" value="'+escH(w.applies_to||'')+'" placeholder="e.g. hot work, all permits"/></div></div>'
     +'<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:12px">'+step(1)+step(2)+step(3)+'</div>'
-    +'<div style="display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap"><label style="display:flex;align-items:center;gap:8px;font-size:12px"><input type="checkbox" id="aw-active" '+(w.is_active!==false?'checked':'')+'/> Active workflow</label><button class="btn btn-primary" onclick="approvalSaveWorkflow()"><i class="ti ti-device-floppy"></i>Save workflow</button></div></div>';
+    +'<div style="display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap"><label style="display:flex;align-items:center;gap:8px;font-size:12px"><input type="checkbox" id="aw-active" '+(w.is_active!==false?'checked':'')+'/> Active workflow</label><button class="btn btn-primary" data-auris-generated-onclick="g0082"><i class="ti ti-device-floppy"></i>Save workflow</button></div></div>';
 }
 
 async function approvalSaveWorkflow(){
@@ -12042,7 +12042,7 @@ function kpiRenderOverview(){
 const c=document.getElementById('kpi-objectives-container');
 if(!c)return;
 if(!kpiObjectives.length){
-var addBtn = isMgr() ? '<button class="btn btn-primary" onclick="openObjModal()"><i class="ti ti-plus"></i>Add your first objective</button>' : '<div style="font-size:11px;color:var(--text3);font-style:italic">Ask your HSE manager to set up objectives.</div>';
+var addBtn = isMgr() ? '<button class="btn btn-primary" data-auris-generated-onclick="g0083"><i class="ti ti-plus"></i>Add your first objective</button>' : '<div style="font-size:11px;color:var(--text3);font-style:italic">Ask your HSE manager to set up objectives.</div>';
 c.innerHTML='<div class="kpi-empty"><i class="ti ti-target kpi-empty-icon"></i><div class="kpi-empty-title">No objectives set up yet</div><div class="kpi-empty-body">Objectives are the high-level safety, health and environment goals you want to track this year. Each objective contains one or more KPIs with measurable indicators.</div>'+addBtn+'</div>';
 return;
 }
@@ -12312,7 +12312,7 @@ row.innerHTML=
 +'<option value="max" '+(ytdMethod==="max"?"selected":"")+'>Max</option>'
 +'<option value="min" '+(ytdMethod==="min"?"selected":"")+'>Min</option>'
 +'</select>'
-+'<button type="button" onclick="this.parentNode.parentNode.remove()" style="background:none;border:none;cursor:pointer;color:var(--red);font-size:20px;margin-left:auto;padding:2px 6px"><i class="ti ti-trash"></i></button>'
++'<button type="button" data-auris-generated-onclick="g0062" style="background:none;border:none;cursor:pointer;color:var(--red);font-size:20px;margin-left:auto;padding:2px 6px"><i class="ti ti-trash"></i></button>'
 +'</div>';
 row.setAttribute('data-ind-row','1');
 list.appendChild(row);
@@ -12768,7 +12768,7 @@ function wsFilter(){
     el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)">'
       +'<div style="font-size:40px;margin-bottom:12px"><i class="ti ti-circle-dot"></i></div>'
       +'<div style="font-weight:600;margin-bottom:8px">No work orders found</div>'
-      +(isMgr()&&!search&&!status&&!priority?'<button class="btn btn-primary" onclick="wsNew()"><i class="ti ti-plus"></i>Create first work order</button>':'')
+      +(isMgr()&&!search&&!status&&!priority?'<button class="btn btn-primary" data-auris-generated-onclick="g0084"><i class="ti ti-plus"></i>Create first work order</button>':'')
       +'</div>';
     return;
   }
@@ -12794,7 +12794,7 @@ function wsFilter(){
     var typeIcon=WS_TYPE_ICONS[x.work_type]||'ti-package';
     var startStr=x.planned_start?new Date(x.planned_start).toLocaleDateString('en-GB'):'-';
     var endStr=x.planned_end?new Date(x.planned_end).toLocaleDateString('en-GB'):'-';
-    html+='<tr style="border-bottom:1px solid var(--border);border-left:5px solid '+(isOverdue?'var(--red)':pc[1])+';cursor:pointer" data-id="'+x.id+'" onclick="wsShowDetail(this.dataset.id)">'
+    html+='<tr style="border-bottom:1px solid var(--border);border-left:5px solid '+(isOverdue?'var(--red)':pc[1])+';cursor:pointer" data-id="'+x.id+'" data-auris-generated-onclick="g0085">'
       +'<td style="padding:10px;font-family:monospace;font-weight:800;color:var(--green)">'+escH(x.ref_number||'DRAFT')+(isOverdue?'<div style="font-size:10px;color:#A32D2D;font-weight:800">OVERDUE</div>':'')+'</td>'
       +'<td style="padding:10px;min-width:260px"><div style="display:flex;align-items:center;gap:8px"><i class="ti '+typeIcon+'" style="color:'+pc[1]+'"></i><div><div style="font-weight:800">'+escH(x.title||'Untitled')+'</div><div style="font-size:11px;color:var(--text2);margin-top:2px">'+escH(WS_TYPE_LABELS[x.work_type]||x.work_type||'Work')+(x.estimated_duration?' - '+escH(x.estimated_duration):'')+'</div></div></div></td>'
       +'<td style="padding:10px">'+escH(x.location||'-')+'</td>'
@@ -12843,7 +12843,7 @@ function wsRenderWeek(){
     dayOrders.forEach(function(x){
       var pc=WS_PRIORITY_CFG[x.priority]||WS_PRIORITY_CFG.medium;
       html+='<div style="background:'+pc[0]+';color:'+pc[1]+';border-radius:6px;padding:4px 8px;font-size:11px;font-weight:600;margin-bottom:4px;cursor:pointer;overflow:hidden;white-space:nowrap;text-overflow:ellipsis" '
-        +'data-id="'+x.id+'" onclick="wsShowDetail(this.dataset.id)" title="'+escH(x.title)+'">'
+        +'data-id="'+x.id+'" data-auris-generated-onclick="g0085" title="'+escH(x.title)+'">'
         +escH(x.title)+'</div>';
     });
     html+='</div></div>';
@@ -13245,7 +13245,7 @@ function wsTESearchEquipment(){
     return (t.name||'').toLowerCase().includes(q)||(t.ref_number||'').toLowerCase().includes(q)||(t.serial_number||'').toLowerCase().includes(q);
   }).slice(0,8);
   if(!results.length){
-    el.innerHTML='<div style="padding:8px 12px;font-size:12px;color:var(--text2)">No equipment found in register. <button class="btn btn-sm btn-primary" onclick="wsTEAddManual()"><i class="ti ti-plus"></i>Add manually</button></div>';
+    el.innerHTML='<div style="padding:8px 12px;font-size:12px;color:var(--text2)">No equipment found in register. <button class="btn btn-sm btn-primary" data-auris-generated-onclick="g0086"><i class="ti ti-plus"></i>Add manually</button></div>';
     return;
   }
   var h='<div style="border:1px solid var(--border);border-radius:8px;overflow:hidden;margin-bottom:8px">';
@@ -13262,7 +13262,7 @@ function wsTESearchEquipment(){
       +'</div>'
       +(alreadyAdded
         ?'<span style="color:var(--green);font-size:11px;font-weight:700">Added</span>'
-        :'<button class="btn btn-sm btn-primary" data-id="'+t.id+'" onclick="wsTEAddFromRegister(this.dataset.id)"><i class="ti ti-plus"></i>Add</button>')
+        :'<button class="btn btn-sm btn-primary" data-id="'+t.id+'" data-auris-generated-onclick="g0087"><i class="ti ti-plus"></i>Add</button>')
       +'</div>';
   });
   h+='</div>';
@@ -13307,7 +13307,7 @@ function wsTERenderItems(){
     var label=TOOL_CAT_LABELS?.[item.category]||item.category;
     h+='<div style="border:1px solid var(--border);border-radius:10px;padding:12px 16px;background:#fff;display:flex;align-items:center;gap:12px;cursor:pointer;transition:box-shadow .15s" '
       +'data-idx="'+i+'" onclick="wsTEOpenChecklist('+i+')" '
-      +'onmouseover="this.style.boxShadow=\'0 2px 12px rgba(0,0,0,.08)\'" onmouseout="this.style.boxShadow=\'\'">'
+      +'onmouseover="this.style.boxShadow=\'0 2px 12px rgba(0,0,0,.08)\'" data-auris-generated-onmouseout="g0088">'
       +'<div style="width:42px;height:42px;border-radius:10px;background:'+col+'20;display:flex;align-items:center;justify-content:center;flex-shrink:0">'
       +'<i class="ti '+icon+'" style="font-size:20px;color:'+col+'"></i></div>'
       +'<div style="flex:1">'
@@ -13366,9 +13366,9 @@ async function wsTEOpenChecklist(idx){
         var tr=document.createElement('tr');
         tr.style.borderBottom='1px solid #f5f5f5';
         tr.innerHTML='<td style="padding:8px 16px;font-size:12px">'+escH(ci.check_item)+'</td>'
-          +'<td style="padding:6px;text-align:center"><input type="radio" name="wsc'+i+'" value="ok" id="wsc-ok-'+i+'" onchange="wsChkScore()" style="width:16px;height:16px;accent-color:#1D9E75"></td>'
-          +'<td style="padding:6px;text-align:center"><input type="radio" name="wsc'+i+'" value="fail" id="wsc-fail-'+i+'" onchange="wsChkScore()" style="width:16px;height:16px;accent-color:#E24B4A"></td>'
-          +'<td style="padding:6px;text-align:center"><input type="radio" name="wsc'+i+'" value="na" id="wsc-na-'+i+'" onchange="wsChkScore()" checked style="width:16px;height:16px;accent-color:#6B7280"></td>'
+          +'<td style="padding:6px;text-align:center"><input type="radio" name="wsc'+i+'" value="ok" id="wsc-ok-'+i+'" data-auris-generated-onchange="g0089" style="width:16px;height:16px;accent-color:#1D9E75"></td>'
+          +'<td style="padding:6px;text-align:center"><input type="radio" name="wsc'+i+'" value="fail" id="wsc-fail-'+i+'" data-auris-generated-onchange="g0089" style="width:16px;height:16px;accent-color:#E24B4A"></td>'
+          +'<td style="padding:6px;text-align:center"><input type="radio" name="wsc'+i+'" value="na" id="wsc-na-'+i+'" data-auris-generated-onchange="g0089" checked style="width:16px;height:16px;accent-color:#6B7280"></td>'
           +'<td style="padding:5px 12px"><input type="text" id="wsc-note-'+i+'" placeholder="Note..." style="width:100%;padding:4px 8px;border:1px solid var(--border);border-radius:6px;font-size:11px"/></td>';
         tbody.appendChild(tr);
       });
@@ -13694,7 +13694,7 @@ async function imsLoadInlineEvidence(eventId){
         +'<i class="ti '+(isPhoto?'ti-photo':'ti-paperclip')+'" style="font-size:18px;color:#185FA5"></i>'
         +'<div style="flex:1;min-width:0"><div style="font-size:12px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+escH(x.file_name||x.title||'Evidence')+'</div>'
         +'<div style="font-size:11px;color:var(--text2)">'+escH((x.evidence_type||'evidence').replace(/_/g,' '))+(x.collected_date?' - '+new Date(x.collected_date).toLocaleDateString('en-GB'):'')+'</div></div>'
-        +(x.file_url?'<button type="button" class="btn btn-sm" data-path="'+escH(x.file_url)+'" onclick="imsOpenEvidenceFile(this.dataset.path)"><i class="ti ti-eye"></i>View</button>':'')
+        +(x.file_url?'<button type="button" class="btn btn-sm" data-path="'+escH(x.file_url)+'" data-auris-generated-onclick="g0090"><i class="ti ti-eye"></i>View</button>':'')
         +'</div>';
     }).join('');
   }catch(e){
@@ -13788,7 +13788,7 @@ async function imsLoadRegister(){
         monthLabel = new Date(parseInt(dParts[0]), parseInt(dParts[1])-1, 1).toLocaleString('en-GB',{month:'long',year:'numeric'});
       }
       var typeLabel = f.type==='incident'?'incidents':f.type==='near_miss'?'near misses':'all events';
-      el.innerHTML = '<div style="background:#EFF6FF;border:1px solid #bfdbfe;border-radius:8px;padding:10px 14px;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><div style="font-size:12px;color:#185FA5;font-weight:600">Filtered to '+typeLabel+(monthLabel?' in '+monthLabel:'')+' (from dashboard)</div><button class="btn btn-sm" onclick="imsClearDashFilter()" style="font-size:11px">Clear filter</button></div><div id="ims-register-inner"></div>';
+      el.innerHTML = '<div style="background:#EFF6FF;border:1px solid #bfdbfe;border-radius:8px;padding:10px 14px;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><div style="font-size:12px;color:#185FA5;font-weight:600">Filtered to '+typeLabel+(monthLabel?' in '+monthLabel:'')+' (from dashboard)</div><button class="btn btn-sm" data-auris-generated-onclick="g0091" style="font-size:11px">Clear filter</button></div><div id="ims-register-inner"></div>';
       // Clear the filter so it doesn't re-apply on next visit
       window.eventsFilterFromDash = null;
     }
@@ -13926,7 +13926,7 @@ function imsHeatMapHtml(data){
   var dots=top.map(function(x,i){
     var pos=[[18,28],[45,36],[72,52],[33,72],[66,24],[84,78],[22,60],[52,84]][i%8];
     var sev=(x.severity||'medium').toLowerCase();
-    return '<button type="button" class="ims-heat-dot '+sev+'" style="left:'+pos[0]+'%;top:'+pos[1]+'%" data-id="'+imsEscapeAttr(x.id)+'" onclick="imsOpenEdit(this.dataset.id)" title="'+imsEscapeAttr(imsRef(x)+' - '+(x.location||'No location'))+'">'+(imsSeverityScore(sev)||1)+'</button>';
+    return '<button type="button" class="ims-heat-dot '+sev+'" style="left:'+pos[0]+'%;top:'+pos[1]+'%" data-id="'+imsEscapeAttr(x.id)+'" data-auris-generated-onclick="g0092" title="'+imsEscapeAttr(imsRef(x)+' - '+(x.location||'No location'))+'">'+(imsSeverityScore(sev)||1)+'</button>';
   }).join('');
   return '<div class="ims-heat-map">'+dots+'</div>';
 }
@@ -13936,7 +13936,7 @@ function imsRecentHtml(data){
   if(!rows.length)return '<div style="color:#64748b;padding:14px 0">No recent incidents.</div>';
   return rows.map(function(x){
     var sev=IMS_SEV[x.severity||'medium']||IMS_SEV.medium, st=IMS_STAT[x.status||'open']||IMS_STAT.open;
-    return '<div class="ims-recent-row" data-id="'+imsEscapeAttr(x.id)+'" onclick="imsOpenEdit(this.dataset.id)">'
+    return '<div class="ims-recent-row" data-id="'+imsEscapeAttr(x.id)+'" data-auris-generated-onclick="g0092">'
       +'<span class="ims-pill" style="background:'+sev.bg+';color:'+sev.color+'">'+sev.label+'</span>'
       +'<div><div style="font-weight:900;color:#0f2d4d">'+escH(imsRef(x))+'</div><div style="font-size:12px;color:#475569">'+escH((x.description||imsTypeLabel(x.event_type||x.type)).slice(0,72))+'</div><div style="font-size:11px;color:#64748b">'+escH(x.location||'No location')+'</div></div>'
       +'<div style="text-align:right"><span class="ims-pill" style="background:'+st.bg+';color:'+st.tc+'">'+st.label+'</span><div style="font-size:11px;color:#64748b;margin-top:4px">'+imsDateLabel(x)+'</div></div></div>';
@@ -13974,7 +13974,7 @@ function imsMiniRegisterHtml(data){
   var rows=(data||[]).slice(0,10);
   if(!rows.length)return '<div style="padding:18px;color:#64748b">No register rows to show.</div>';
   return '<div class="ims-register-mini"><table class="data-table" style="min-width:900px"><thead><tr><th>Ref</th><th>Type</th><th>Location</th><th>Date</th><th>Severity</th><th>Status</th></tr></thead><tbody>'
-    +rows.map(function(x){var sev=IMS_SEV[x.severity||'medium']||IMS_SEV.medium, st=IMS_STAT[x.status||'open']||IMS_STAT.open;return '<tr data-id="'+imsEscapeAttr(x.id)+'" onclick="imsOpenEdit(this.dataset.id)" style="cursor:pointer"><td style="font-family:monospace;font-weight:900;color:#0b5bb5">'+escH(imsRef(x))+'</td><td>'+escH(imsTypeLabel(x.event_type||x.type))+'</td><td>'+escH(x.location||'-')+'</td><td>'+imsDateLabel(x)+'</td><td><span class="ims-pill" style="background:'+sev.bg+';color:'+sev.color+'">'+sev.label+'</span></td><td><span class="ims-pill" style="background:'+st.bg+';color:'+st.tc+'">'+st.label+'</span></td></tr>';}).join('')
+    +rows.map(function(x){var sev=IMS_SEV[x.severity||'medium']||IMS_SEV.medium, st=IMS_STAT[x.status||'open']||IMS_STAT.open;return '<tr data-id="'+imsEscapeAttr(x.id)+'" data-auris-generated-onclick="g0092" style="cursor:pointer"><td style="font-family:monospace;font-weight:900;color:#0b5bb5">'+escH(imsRef(x))+'</td><td>'+escH(imsTypeLabel(x.event_type||x.type))+'</td><td>'+escH(x.location||'-')+'</td><td>'+imsDateLabel(x)+'</td><td><span class="ims-pill" style="background:'+sev.bg+';color:'+sev.color+'">'+sev.label+'</span></td><td><span class="ims-pill" style="background:'+st.bg+';color:'+st.tc+'">'+st.label+'</span></td></tr>';}).join('')
     +'</tbody></table></div>';
 }
 
@@ -14010,8 +14010,8 @@ function imsRenderIncidentDashboard(data){
     +'</div>'
     +'<div class="ims-dash-grid">'
     +'<section class="ims-panel"><h3>Incident Heat Map</h3>'+imsHeatMapHtml(data)+'<div class="ims-legend"><span style="--dot:#22c55e">Low (1-2)</span><span style="--dot:#f59e0b">Medium (3-4)</span><span style="--dot:#ef4444">High (5+)</span></div></section>'
-    +'<section class="ims-panel"><h3>Recent Incidents <button class="ims-panel-link" style="float:right;margin-top:-6px" onclick="imsScrollIncidentRegister()">View all</button></h3>'+imsRecentHtml(data)+'</section>'
-    +'<section class="ims-panel ims-trend"><h3>Incident Trend</h3>'+imsTrendSvg(incSeries,nearSeries)+'<button class="ims-panel-link" onclick="imsOpenIncidentStats()">View full report</button></section>'
+    +'<section class="ims-panel"><h3>Recent Incidents <button class="ims-panel-link" style="float:right;margin-top:-6px" data-auris-generated-onclick="g0093">View all</button></h3>'+imsRecentHtml(data)+'</section>'
+    +'<section class="ims-panel ims-trend"><h3>Incident Trend</h3>'+imsTrendSvg(incSeries,nearSeries)+'<button class="ims-panel-link" data-auris-generated-onclick="g0094">View full report</button></section>'
     +'<section class="ims-panel"><h3>Incidents by Type</h3>'+imsTypeBreakdownHtml(data)+'</section>'
     +'<section class="ims-panel"><h3>Top Locations</h3>'+imsTopLocationsHtml(data)+'</section>'
     +'<section class="ims-panel"><h3>Investigation Status</h3>'+imsInvestigationHtml(data)+'</section>'
@@ -14604,7 +14604,7 @@ async function imsLoadInvestigations(){
     var d=await api('/investigations?select=*'+cf()+'&order=created_at.desc');
     imsInvAllData=d||[];
     if(!d||!d.length){
-      if(el)el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)"><div style="font-size:40px;margin-bottom:12px"><i class="ti ti-circle-dot"></i></div><div style="font-weight:600;margin-bottom:8px">No investigations yet</div>'+(isMgr()?'<button class="btn btn-primary" onclick="imsNewInvestigation()"><i class="ti ti-plus"></i>Start investigation</button>':'')+'</div>';
+      if(el)el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)"><div style="font-size:40px;margin-bottom:12px"><i class="ti ti-circle-dot"></i></div><div style="font-weight:600;margin-bottom:8px">No investigations yet</div>'+(isMgr()?'<button class="btn btn-primary" data-auris-generated-onclick="g0095"><i class="ti ti-plus"></i>Start investigation</button>':'')+'</div>';
       return;
     }
     var stCfg={open:['#FEF9EC','#854F0B'],submitted:['#F5F3FF','#5B21B6'],revision_requested:['#EFF6FF','#185FA5'],in_progress:['#EFF6FF','#185FA5'],completed:['#EAF3DE','#3B6D11'],closed:['#EAF3DE','#3B6D11']};
@@ -14621,7 +14621,7 @@ async function imsLoadInvestigations(){
         +'<td style="padding:8px;font-size:11px">'+escH(x.reported_by||x.investigator||'-')+'</td>'
         +'<td style="padding:8px;font-size:11px">'+(x.incident_date||x.date?new Date(x.incident_date||x.date).toLocaleDateString('en-GB'):'-')+'</td>'
         +'<td style="padding:8px"><span style="background:'+sc2[0]+';color:'+sc2[1]+';padding:2px 8px;border-radius:99px;font-size:10px;font-weight:700;text-transform:capitalize">'+escH((x.status||'open').replace(/_/g,' '))+'</span></td>'
-        +'<td style="padding:8px"><button class="btn btn-sm" data-id="'+x.id+'" onclick="event.stopPropagation();imsOpenInvestigation(this.dataset.id)"><i class="ti ti-edit"></i></button></td>'
+        +'<td style="padding:8px"><button class="btn btn-sm" data-id="'+x.id+'" data-auris-generated-onclick="g0096"><i class="ti ti-edit"></i></button></td>'
         +'</tr>';
     });
     el.innerHTML=h+'</tbody></table></div>';
@@ -14803,7 +14803,7 @@ function imsAddWhyRow(container, num, answer){
   row.style.cssText='display:grid;grid-template-columns:auto 1fr auto;gap:8px;align-items:start;margin-bottom:8px;padding:8px;border:1px solid var(--border);border-radius:8px;background:#f9fafb';
   row.innerHTML='<div style="font-weight:800;color:#185FA5;min-width:55px;padding-top:6px;font-size:12px">Why '+num+'?</div>'
     +'<textarea class="ws3-why-ans" style="min-height:50px;padding:6px;border:1px solid var(--border);border-radius:6px;font-size:12px;resize:vertical" placeholder="Why did this happen?">'+escH(answer)+'</textarea>'
-    +'<button class="btn btn-sm" style="color:var(--red);margin-top:2px" onclick="this.closest(\'.ws3-why-row\').remove()"><i class="ti ti-x"></i></button>';
+    +'<button class="btn btn-sm" style="color:var(--red);margin-top:2px" data-auris-generated-onclick="g0097"><i class="ti ti-x"></i></button>';
   container.appendChild(row);
 }
 
@@ -14813,7 +14813,7 @@ function imsAddTimelineRow(container, time, desc){
   row.style.cssText='display:grid;grid-template-columns:auto 1fr auto;gap:8px;align-items:start;margin-bottom:8px;padding:8px;border-left:3px solid #EF9F27;background:#FFFBEB;border-radius:0 8px 8px 0';
   row.innerHTML='<input type="datetime-local" class="tl-time" value="'+escH(time)+'" style="padding:5px;border:1px solid var(--border);border-radius:6px;font-size:11px;width:165px"/>'
     +'<textarea class="tl-event" style="min-height:45px;padding:6px;border:1px solid var(--border);border-radius:6px;font-size:12px" placeholder="What happened at this time...">'+escH(desc)+'</textarea>'
-    +'<button class="btn btn-sm" style="color:var(--red)" onclick="this.closest(\'.inv-timeline-row\').remove()"><i class="ti ti-x"></i></button>';
+    +'<button class="btn btn-sm" style="color:var(--red)" data-auris-generated-onclick="g0098"><i class="ti ti-x"></i></button>';
   container.appendChild(row);
 }
 
@@ -14866,7 +14866,7 @@ function invCaRow(desc, assigned, due, status, idx){
     +'<option value="in_progress"'+(status==='in_progress'?' selected':'')+'>In progress</option>'
     +'<option value="completed"'+(status==='completed'?' selected':'')+'>Completed</option>'
     +'</select>'
-    +'<button class="btn btn-sm" style="color:var(--red);flex-shrink:0" onclick="this.closest(\'.inv-ca-row\').remove()"><i class="ti ti-x"></i></button>'
+    +'<button class="btn btn-sm" style="color:var(--red);flex-shrink:0" data-auris-generated-onclick="g0099"><i class="ti ti-x"></i></button>'
     +'</div>';
 }
 
@@ -14966,12 +14966,12 @@ function invAIList(items){
 
 function invAIActionButtons(){
   return '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">'
-    +'<button type="button" class="btn btn-sm btn-primary" onclick="invAIApplyField(\'root_cause_summary\')"><i class="ti ti-check"></i>Apply root cause</button>'
-    +'<button type="button" class="btn btn-sm" onclick="invAIApplyField(\'systemic_factors\')"><i class="ti ti-check"></i>Apply systemic factors</button>'
-    +'<button type="button" class="btn btn-sm" onclick="invAIApplyField(\'recurrence\')"><i class="ti ti-check"></i>Apply recurrence</button>'
-    +'<button type="button" class="btn btn-sm" onclick="invAIApplyFiveWhys()"><i class="ti ti-list-check"></i>Add 5-Why</button>'
-    +'<button type="button" class="btn btn-sm" onclick="invAIApplyActions(\'corrective_actions\')"><i class="ti ti-plus"></i>Add corrective actions</button>'
-    +'<button type="button" class="btn btn-sm" onclick="invAIApplyActions(\'preventive_actions\')"><i class="ti ti-plus"></i>Add preventive actions</button>'
+    +'<button type="button" class="btn btn-sm btn-primary" data-auris-generated-onclick="g0100"><i class="ti ti-check"></i>Apply root cause</button>'
+    +'<button type="button" class="btn btn-sm" data-auris-generated-onclick="g0101"><i class="ti ti-check"></i>Apply systemic factors</button>'
+    +'<button type="button" class="btn btn-sm" data-auris-generated-onclick="g0102"><i class="ti ti-check"></i>Apply recurrence</button>'
+    +'<button type="button" class="btn btn-sm" data-auris-generated-onclick="g0103"><i class="ti ti-list-check"></i>Add 5-Why</button>'
+    +'<button type="button" class="btn btn-sm" data-auris-generated-onclick="g0104"><i class="ti ti-plus"></i>Add corrective actions</button>'
+    +'<button type="button" class="btn btn-sm" data-auris-generated-onclick="g0105"><i class="ti ti-plus"></i>Add preventive actions</button>'
     +'</div>';
 }
 
@@ -14982,7 +14982,7 @@ function invAIRenderReview(out){
   panel.innerHTML='<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap">'
     +'<div><div style="font-size:15px;font-weight:900;color:#5B21B6"><i class="ti ti-robot"></i> AI investigation review</div>'
     +'<div style="font-size:12px;color:var(--text2);margin-top:3px">Review the suggestions before applying. Nothing is saved until you click Save.</div></div>'
-    +'<button type="button" class="btn btn-sm" onclick="document.getElementById(\'inv-ai-review-panel\').style.display=\'none\'"><i class="ti ti-x"></i>Hide</button></div>'
+    +'<button type="button" class="btn btn-sm" data-auris-generated-onclick="g0106"><i class="ti ti-x"></i>Hide</button></div>'
     +'<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px;margin-top:14px">'
     +'<div style="background:#fff;border:1px solid var(--border);border-radius:8px;padding:12px"><div style="font-weight:800;color:#991B1B">Likely immediate causes</div>'+invAIList(out.immediate_causes)+'</div>'
     +'<div style="background:#fff;border:1px solid var(--border);border-radius:8px;padding:12px"><div style="font-weight:800;color:#5B21B6">Likely root causes</div>'+invAIList(out.likely_root_causes)+'</div>'
@@ -15054,7 +15054,7 @@ function invRenderTeam(){
   var el=document.getElementById('inv-team3chips'); if(!el)return;
   el.innerHTML=invTeam.map(function(n,i){
     return '<span style="background:#EDE9FE;color:#5B21B6;padding:3px 10px;border-radius:99px;font-size:12px;font-weight:600;display:inline-flex;align-items:center;gap:6px">'
-      +escH(n)+'<span style="cursor:pointer;font-weight:800" data-i="'+i+'" onclick="invRemoveTeamMember(parseInt(this.dataset.i))" title="Remove">&times;</span></span>';
+      +escH(n)+'<span style="cursor:pointer;font-weight:800" data-i="'+i+'" data-auris-generated-onclick="g0107" title="Remove">&times;</span></span>';
   }).join('');
 }
 function invAddTeamMember(){
@@ -15081,10 +15081,10 @@ function invWitnessRowHtml(key, ev){
     +'<div class="form3group"><label class="form3label">Statement / interview summary</label><textarea class="wt-statement" style="min-height:60px" placeholder="What the witness saw or stated...">'+escH(ev.witness_statement||'')+'</textarea></div>'
     +'<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">'
     +'<label class="btn btn-sm" style="cursor:pointer;margin:0">&#128206; '+(hasFile?'Replace statement file':'Attach signed statement')
-    +'<input type="file" class="wt-file" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.heic" style="display:none" onchange="invWitnessFileSel(this)"/></label>'
+    +'<input type="file" class="wt-file" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.heic" style="display:none" data-auris-generated-onchange="g0108"/></label>'
     +'<span class="wt-file-label" style="font-size:11px;color:var(--text2)">'+(hasFile?'&#128196; '+escH(ev.file_name||'attached file'):'No file attached')+'</span>'
-    +(hasFile?'<button type="button" class="btn btn-sm" onclick="invViewStatement(this)">&#128065; View</button>':'')
-    +'<button type="button" class="btn btn-sm" style="margin-left:auto;color:var(--red)" onclick="invDeleteWitnessRow(this)"><i class="ti ti-trash"></i>Remove</button>'
+    +(hasFile?'<button type="button" class="btn btn-sm" data-auris-generated-onclick="g0109">&#128065; View</button>':'')
+    +'<button type="button" class="btn btn-sm" style="margin-left:auto;color:var(--red)" data-auris-generated-onclick="g0110"><i class="ti ti-trash"></i>Remove</button>'
     +'</div></div>';
 }
 function invAddWitnessRow(ev){
@@ -15409,7 +15409,7 @@ async function generateSafetyComm(){
         +'<div style="white-space:pre-wrap;font-size:13px;line-height:1.7;color:#1a1a1a">'+escH(text)+'</div>'
         +'<div style="display:flex;gap:8px;margin-top:16px">'
         +'<button class="btn btn-primary" onclick="navigator.clipboard.writeText('+JSON.stringify(text)+').then(()=>toast(\'Copied!\'))"><i class="ti ti-copy"></i>Copy</button>'
-        +'<button class="btn" onclick="this.closest(\'div[style*=inset]\').remove()">Close</button>'
+        +'<button class="btn" data-auris-generated-onclick="g0111">Close</button>'
         +'</div></div>';
       document.body.appendChild(modal);
       toast('Safety communication ready!');
@@ -15490,7 +15490,7 @@ async function imsLoadEvidence(){
     if(filter)q+='&event_id=eq.'+filter;
     var d=await api(q); imsEvidenceData=d||[];
     if(!(d||[]).length){
-      if(el)el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)"><div style="font-size:44px;margin-bottom:12px"><i class="ti ti-circle-dot"></i></div><div style="font-weight:600;margin-bottom:8px">No evidence collected yet</div>'+(isMgr()?'<button class="btn btn-primary" onclick="imsNewEvidence()"><i class="ti ti-plus"></i>Add evidence</button>':'')+'</div>';
+      if(el)el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)"><div style="font-size:44px;margin-bottom:12px"><i class="ti ti-circle-dot"></i></div><div style="font-weight:600;margin-bottom:8px">No evidence collected yet</div>'+(isMgr()?'<button class="btn btn-primary" data-auris-generated-onclick="g0112"><i class="ti ti-plus"></i>Add evidence</button>':'')+'</div>';
       return;
     }
     var tc={photo:{emoji:'*',label:'Photo'},video:{emoji:'*',label:'Video'},document:{emoji:'*',label:'Document'},witness_statement:{emoji:'*',label:'Witness Statement'},voice_note:{emoji:'*',label:'Voice Note'},sketch:{emoji:'*',label:'Sketch'},measurement:{emoji:'*',label:'Measurement'},other:{emoji:'*',label:'Other'}};
@@ -15507,7 +15507,7 @@ async function imsLoadEvidence(){
     d.forEach((x,i)=>{
       var t=tc[x.evidence_type]||tc.other;
       var notes=x.description||x.witness_statement||'';
-      h+='<tr style="background:'+(i%2?'#f9fafb':'#fff')+';border-bottom:1px solid #eef2f7;cursor:pointer" data-id="'+x.id+'" onclick="imsEditEvidence(this.dataset.id)">'
+      h+='<tr style="background:'+(i%2?'#f9fafb':'#fff')+';border-bottom:1px solid #eef2f7;cursor:pointer" data-id="'+x.id+'" data-auris-generated-onclick="g0113">'
         +'<td style="padding:10px;min-width:220px"><div style="font-weight:800">'+escH(x.title||t.label)+'</div><div style="font-family:monospace;font-size:10px;color:var(--text2);margin-top:2px">'+escH(x.id?x.id.slice(0,8):'')+'</div></td>'
         +'<td style="padding:10px;white-space:nowrap"><span style="background:#E6F1FB;color:#185FA5;padding:3px 8px;border-radius:99px;font-size:10px;font-weight:800">'+t.emoji+' '+escH(t.label)+'</span></td>'
         +'<td style="padding:10px;white-space:nowrap">'+(x.collected_date?new Date(x.collected_date).toLocaleDateString('en-GB'):'-')+'</td>'
@@ -15515,7 +15515,7 @@ async function imsLoadEvidence(){
         +'<td style="padding:10px">'+escH(x.location_description||((x.lat&&x.lng)?'GPS recorded':'-'))+'</td>'
         +'<td style="padding:10px;min-width:260px;color:var(--text2)">'+escH(notes.substring(0,130))+(notes.length>130?'...':'')+'</td>'
         +'<td style="padding:10px;text-align:center;white-space:nowrap">'
-        +(x.file_url?'<button type="button" class="btn btn-sm" data-path="'+escH(x.file_url)+'" onclick="event.stopPropagation();imsOpenEvidenceFile(this.dataset.path)" title="View file"><i class="ti ti-external-link"></i></button> ':'')
+        +(x.file_url?'<button type="button" class="btn btn-sm" data-path="'+escH(x.file_url)+'" data-auris-generated-onclick="g0114" title="View file"><i class="ti ti-external-link"></i></button> ':'')
         +'<button type="button" class="btn btn-sm" onclick="event.stopPropagation();imsEditEvidence(\''+x.id+'\')" title="Open evidence"><i class="ti ti-eye"></i></button></td>'
         +'</tr>';
     });
@@ -15834,7 +15834,7 @@ function raFilterList(){
     el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)">'
       +'<div style="font-size:40px;margin-bottom:12px"><i class="ti ti-circle-dot"></i></div>'
       +'<div style="font-weight:600;margin-bottom:8px">No risk assessments found</div>'
-      +(isMgr()&&!q&&!ft&&!fs?'<button class="btn btn-primary" onclick="raShowNewPanel()"><i class="ti ti-plus"></i>Create first RA</button>':'')
+      +(isMgr()&&!q&&!ft&&!fs?'<button class="btn btn-primary" data-auris-generated-onclick="g0115"><i class="ti ti-plus"></i>Create first RA</button>':'')
       +'</div>';
     return;
   }
@@ -15958,7 +15958,7 @@ function raRenderAssessmentRegister(el,rows,emptyHtml){
     var cfg=RA_TYPE_CFG[type]||RA_TYPE_CFG.baseline;
     var sc=RA_STATUS_CFG[x.status]||RA_STATUS_CFG.draft;
     var sum=raSummariseRows(x);
-    h+='<tr style="border-bottom:1px solid #eef2f7;cursor:pointer;vertical-align:top" data-id="'+x.id+'" onclick="raOpen(this.dataset.id)">'
+    h+='<tr style="border-bottom:1px solid #eef2f7;cursor:pointer;vertical-align:top" data-id="'+x.id+'" data-auris-generated-onclick="g0116">'
       +'<td style="padding:11px 12px;font-family:monospace;font-weight:800;color:'+cfg.color+'">'+escH(x.ra_ref||'DRAFT')+'<div style="font-size:10px;color:var(--text2);font-family:inherit">Rev '+escH(x.revision||1)+' - '+escH(sum.rows.length)+' row'+(sum.rows.length===1?'':'s')+'</div></td>'
       +'<td style="padding:11px;min-width:300px"><div style="font-weight:800">'+escH(x.title||x.activity||x.workshop||'Untitled RA')+'</div><div style="font-size:11px;color:var(--text2);margin-top:2px">'+escH(x.activity||x.scope||'').substring(0,120)+'</div><div style="font-size:10px;color:var(--text2);margin-top:4px">'+(x.ra_date||x.date?'Assessed '+new Date(x.ra_date||x.date).toLocaleDateString('en-GB'):'Assessment date not set')+'</div></td>'
       +'<td style="padding:11px"><span style="background:'+cfg.bg+';color:'+cfg.color+';border:1px solid '+cfg.color+'33;padding:3px 8px;border-radius:99px;font-size:10px;font-weight:800;white-space:nowrap">'+cfg.emoji+' '+escH(cfg.label)+'</span></td>'
@@ -15984,7 +15984,7 @@ function raRenderJSAList(){
     el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)">'
       +'<div style="font-size:40px;margin-bottom:12px"><i class="ti ti-circle-dot"></i></div>'
       +'<div style="font-weight:600;margin-bottom:8px">No JSA/JHA records yet</div>'
-      +(isMgr()?'<button class="btn btn-primary" onclick="jsaNew()"><i class="ti ti-plus"></i>Create first JSA</button>':'')
+      +(isMgr()?'<button class="btn btn-primary" data-auris-generated-onclick="g0117"><i class="ti ti-plus"></i>Create first JSA</button>':'')
       +'</div>';
     return;
   }
@@ -16001,7 +16001,7 @@ function raRenderJSAList(){
   raAllJSA.forEach(function(x){
     var sc=x.status==='active'?['#EAF3DE','#3B6D11','Active']:x.status==='superseded'?['#f3f4f6','#6B7280','Superseded']:['#FEF9EC','#854F0B','Draft'];
     var steps=x.steps||[];
-    h+='<tr style="border-bottom:1px solid #eef2f7;cursor:pointer" data-id="'+x.id+'" onclick="jsaEdit(this.dataset.id)">'
+    h+='<tr style="border-bottom:1px solid #eef2f7;cursor:pointer" data-id="'+x.id+'" data-auris-generated-onclick="g0118">'
       +'<td style="padding:9px 12px;font-family:monospace;font-weight:800;color:#6D28D9">'+escH(x.jsa_ref||'DRAFT')+(x.revision&&x.revision>1?'<div style="font-size:10px;color:var(--text2)">Rev '+escH(x.revision)+'</div>':'')+'</td>'
       +'<td style="padding:9px;min-width:260px"><div style="font-weight:800">'+escH(x.title||'Untitled JSA')+'</div><div style="font-size:11px;color:var(--text2)">'+escH(x.scope||x.description||'').substring(0,90)+'</div></td>'
       +'<td style="padding:9px">'+escH(x.location||'-')+'</td>'
@@ -16022,7 +16022,7 @@ function raRenderHIRAList(){
     el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)">'
       +'<div style="font-size:40px;margin-bottom:12px"><i class="ti ti-circle-dot"></i></div>'
       +'<div style="font-weight:600;margin-bottom:8px">No HIRA records yet</div>'
-      +(isMgr()?'<button class="btn btn-primary" onclick="raNew(\'hira\')"><i class="ti ti-plus"></i>Create first HIRA</button>':'')
+      +(isMgr()?'<button class="btn btn-primary" data-auris-generated-onclick="g0119"><i class="ti ti-plus"></i>Create first HIRA</button>':'')
       +'</div>';
     return;
   }
@@ -16191,11 +16191,11 @@ function raRenderWorkflowBar(rec){
   });
   h+='<div style="margin-left:auto;display:flex;gap:8px;flex-wrap:wrap">';
   if(rec&&['pending_review','review','pending_approval'].includes(st)&&canAdministerControlledRecord()){
-    h+='<button class="btn btn-sm" style="background:#1D9E75;color:#fff;border-color:#1D9E75" onclick="raApproveCurrent()"><i class="ti ti-circle-check"></i>Approve</button>';
-    h+='<button class="btn btn-sm" style="background:#E24B4A;color:#fff;border-color:#E24B4A" onclick="raRejectCurrent()"><i class="ti ti-x"></i>Reject</button>';
+    h+='<button class="btn btn-sm" style="background:#1D9E75;color:#fff;border-color:#1D9E75" data-auris-generated-onclick="g0120"><i class="ti ti-circle-check"></i>Approve</button>';
+    h+='<button class="btn btn-sm" style="background:#E24B4A;color:#fff;border-color:#E24B4A" data-auris-generated-onclick="g0121"><i class="ti ti-x"></i>Reject</button>';
   }
   if(rec&&controlledStatusIsLocked(st)&&canAdministerControlledRecord()){
-    h+='<button class="btn btn-sm" onclick="raReleaseForEdit()"><i class="ti ti-lock-open"></i>Release for edit</button>';
+    h+='<button class="btn btn-sm" data-auris-generated-onclick="g0122"><i class="ti ti-lock-open"></i>Release for edit</button>';
   }
   h+='</div></div>';
   el.innerHTML=h;
@@ -16349,12 +16349,12 @@ function raOpen(id){
 
 // -- Risk Scoring -------------------------------------------------------------
 function raRsSelect(n,prefix){
-  var h='<select title="Severity: 1 minor, 5 fatality/catastrophic" class="'+prefix+'rs" style="padding:3px 4px;border:1px solid var(--border);border-radius:4px;font-size:11px;width:48px" onchange="raCalcRL(this)">';
+  var h='<select title="Severity: 1 minor, 5 fatality/catastrophic" class="'+prefix+'rs" style="padding:3px 4px;border:1px solid var(--border);border-radius:4px;font-size:11px;width:48px" data-auris-generated-onchange="g0123">';
   for(var i=1;i<=5;i++)h+='<option value="'+i+'"'+(i===n?' selected':'')+'> '+i+'</option>';
   return h+'</select>';
 }
 function raRopSelect(n,prefix){
-  var h='<select title="Likelihood: 1 rare, 5 frequent/almost certain" class="'+prefix+'rop" style="padding:3px 4px;border:1px solid var(--border);border-radius:4px;font-size:11px;width:48px" onchange="raCalcRL(this)">';
+  var h='<select title="Likelihood: 1 rare, 5 frequent/almost certain" class="'+prefix+'rop" style="padding:3px 4px;border:1px solid var(--border);border-radius:4px;font-size:11px;width:48px" data-auris-generated-onchange="g0123">';
   for(var i=1;i<=5;i++)h+='<option value="'+i+'"'+(i===n?' selected':'')+'> '+i+'</option>';
   return h+'</select>';
 }
@@ -16412,7 +16412,7 @@ function raBaselineAddRow(r, bodyOverride, typeOverride){
     +'<td style="padding:5px 8px"><textarea class="ra-harm" style="width:100%;min-height:50px;padding:4px;border:1px solid var(--border);border-radius:4px;font-size:11px;resize:vertical" placeholder="Harm...">'+escH(r.harm||r.potential_harm||'')+'</textarea></td>'
     +'<td style="padding:5px 8px"><input class="ra-who" type="text" style="width:70px;padding:3px 4px;border:1px solid var(--border);border-radius:4px;font-size:11px" value="'+escH(r.who||'')+'" placeholder="Who..."/></td>'
     +'<td style="padding:5px 8px"><textarea class="ra-controls" style="width:100%;min-height:50px;padding:4px;border:1px solid var(--border);border-radius:4px;font-size:11px;resize:vertical" placeholder="Existing controls...">'+escH(r.controls||r.control_measures||'')+'</textarea>'
-    +'<button class="btn btn-sm" style="margin-top:3px;font-size:9px;padding:2px 5px;color:#185FA5" onclick="raGetControlSuggestions(this)"><i class="ti ti-sparkles" style="font-size:9px"></i>Suggest</button></td>'
+    +'<button class="btn btn-sm" style="margin-top:3px;font-size:9px;padding:2px 5px;color:#185FA5" data-auris-generated-onclick="g0124"><i class="ti ti-sparkles" style="font-size:9px"></i>Suggest</button></td>'
     +'<td class="ra-score-cell">'+raRsSelect(s,'')+'</td>'
     +'<td class="ra-score-cell">'+raRopSelect(p,'')+'</td>'
     +'<td class="rl ra-risk-badge-cell" data-score="'+rr+'" data-level="'+rlLvl+'"><span style="background:'+rlCfg[0]+';color:'+rlCfg[1]+';padding:2px 5px;border-radius:4px;font-size:10px;font-weight:700;display:block;text-align:center">'+rr+'<br><span style="font-size:9px">'+rlLvl+'</span></span></td>'
@@ -16424,7 +16424,7 @@ function raBaselineAddRow(r, bodyOverride, typeOverride){
     +'<td><input class="ra-action-by" type="text" value="'+escH(r.action_by||r.responsible||r.owner||'')+'" placeholder="Name / role"/></td>'
     +'<td><input class="ra-target-date" type="date" value="'+escH(r.target_date||r.due_date||'')+'"/></td>'
     +'<td style="padding:5px 8px"><input class="ra-legal" type="text" style="width:90px;padding:3px 4px;border:1px solid var(--border);border-radius:4px;font-size:10px" value="'+escH(r.legal_ref||r.legal||'')+'" placeholder="OSH Act..."/></td>'
-    +'<td style="padding:4px;text-align:center"><button class="btn btn-sm" style="color:var(--red);padding:2px 6px" onclick="this.closest(\'tr\').remove();raUpdateQualityPanel()"><i class="ti ti-x" style="font-size:10px"></i></button></td>';
+    +'<td style="padding:4px;text-align:center"><button class="btn btn-sm" style="color:var(--red);padding:2px 6px" data-auris-generated-onclick="g0125"><i class="ti ti-x" style="font-size:10px"></i></button></td>';
   body.appendChild(tr);
   setTimeout(raUpdateQualityPanel,0);
 }
@@ -16455,7 +16455,7 @@ function raTaskAddRow(r){
     +'<td style="padding:5px 8px"><textarea class="ra-hazard" style="width:100%;min-height:50px;padding:4px;border:1px solid var(--border);border-radius:4px;font-size:11px;resize:vertical" placeholder="Hazard...">'+escH(r.hazard||'')+'</textarea></td>'
     +'<td style="padding:5px 8px"><textarea class="ra-harm" style="width:100%;min-height:50px;padding:4px;border:1px solid var(--border);border-radius:4px;font-size:11px;resize:vertical" placeholder="Harm...">'+escH(r.harm||'')+'</textarea></td>'
     +'<td style="padding:5px 8px"><textarea class="ra-controls" style="width:100%;min-height:50px;padding:4px;border:1px solid var(--border);border-radius:4px;font-size:11px;resize:vertical" placeholder="Existing controls...">'+escH(r.controls||'')+'</textarea>'
-    +'<button class="btn btn-sm" style="margin-top:3px;font-size:9px;padding:2px 5px;color:#185FA5" onclick="raGetControlSuggestions(this)"><i class="ti ti-sparkles" style="font-size:9px"></i>Suggest</button></td>'
+    +'<button class="btn btn-sm" style="margin-top:3px;font-size:9px;padding:2px 5px;color:#185FA5" data-auris-generated-onclick="g0124"><i class="ti ti-sparkles" style="font-size:9px"></i>Suggest</button></td>'
     +'<td class="ra-score-cell">'+raRsSelect(s,'')+'</td>'
     +'<td class="ra-score-cell">'+raRopSelect(p,'')+'</td>'
     +'<td class="rl ra-risk-badge-cell" data-score="'+rr+'" data-level="'+rlLvl+'"><span style="background:'+rlCfg[0]+';color:'+rlCfg[1]+';padding:2px 5px;border-radius:4px;font-size:10px;font-weight:700;display:block;text-align:center">'+rr+'<br><span style="font-size:9px">'+rlLvl+'</span></span></td>'
@@ -16466,7 +16466,7 @@ function raTaskAddRow(r){
     +'<td class="r-rl ra-risk-badge-cell" data-score="'+rrr+'" data-level="'+rrlLvl+'"><span style="background:'+rrlCfg[0]+';color:'+rrlCfg[1]+';padding:2px 5px;border-radius:4px;font-size:10px;font-weight:700;display:block;text-align:center">'+rrr+'<br><span style="font-size:9px">'+rrlLvl+'</span></span></td>'
     +'<td><input class="ra-action-by" type="text" value="'+escH(r.action_by||r.responsible||r.owner||'')+'" placeholder="Name / role"/></td>'
     +'<td><input class="ra-target-date" type="date" value="'+escH(r.target_date||r.due_date||'')+'"/></td>'
-    +'<td style="padding:4px;text-align:center"><button class="btn btn-sm" style="color:var(--red);padding:2px 6px" onclick="this.closest(\'tr\').remove();raUpdateQualityPanel()"><i class="ti ti-x" style="font-size:10px"></i></button></td>';
+    +'<td style="padding:4px;text-align:center"><button class="btn btn-sm" style="color:var(--red);padding:2px 6px" data-auris-generated-onclick="g0125"><i class="ti ti-x" style="font-size:10px"></i></button></td>';
   body.appendChild(tr);
   setTimeout(raUpdateQualityPanel,0);
 }
@@ -16497,7 +16497,7 @@ function raDynamicAddRow(r){
     +'<option value="monitor"'+(r.decision==='monitor'?' selected':'')+'>Monitor</option>'
     +'<option value="stop_work"'+(r.decision==='stop_work'?' selected':'')+'>Stop Work</option>'
     +'</select></td>'
-    +'<td style="padding:4px;text-align:center"><button class="btn btn-sm" style="color:var(--red);padding:2px 6px" onclick="this.closest(\'tr\').remove();raUpdateQualityPanel()"><i class="ti ti-x" style="font-size:10px"></i></button></td>';
+    +'<td style="padding:4px;text-align:center"><button class="btn btn-sm" style="color:var(--red);padding:2px 6px" data-auris-generated-onclick="g0125"><i class="ti ti-x" style="font-size:10px"></i></button></td>';
   body.appendChild(tr);
   setTimeout(raUpdateQualityPanel,0);
 }
@@ -17052,7 +17052,7 @@ function raRenderRamsUsed(rec){
   el.innerHTML='<div style="padding:12px;border:1px solid #BBF7D0;background:#F0FDF4;border-radius:10px;color:#166534">'
     +'<div style="font-size:12px;font-weight:900;margin-bottom:4px"><i class="ti ti-file-check"></i> SWMS / method statement linked to this assessment</div>'
     +'<div style="font-size:13px;font-weight:800">'+escH(name||'Linked SWMS / Method Statement')+'</div>'
-    +(hasAttachment?'<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:8px"><span class="pill" style="background:#DCFCE7;color:#065F46">Attachment available</span><button type="button" class="btn btn-sm" onclick="raPreviewRamsDocument()"><i class="ti ti-eye"></i>Preview document</button></div>':'<div style="font-size:11px;margin-top:4px;color:#166534">Document reference saved with this RA.</div>')
+    +(hasAttachment?'<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:8px"><span class="pill" style="background:#DCFCE7;color:#065F46">Attachment available</span><button type="button" class="btn btn-sm" data-auris-generated-onclick="g0126"><i class="ti ti-eye"></i>Preview document</button></div>':'<div style="font-size:11px;margin-top:4px;color:#166534">Document reference saved with this RA.</div>')
     +'</div>';
 }
 function raPreviewRamsDocument(){
@@ -17234,13 +17234,13 @@ function libRenderTemplates(){
   var h='<div class="card" style="margin-bottom:12px;padding:12px 14px;background:#F8FBFF;border-left:4px solid #185FA5">'
     +'<div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap">'
     +'<div><div class="card-title" style="margin:0">Company RA Templates</div><div style="font-size:12px;color:var(--text2)">Upload the client/company RA format and keep it available beside the AURIS360 templates.</div></div>'
-    +(isMgr()?'<input type="file" id="ra-company-template-file" accept=".pdf,.doc,.docx,.xls,.xlsx,image/*" style="display:none" onchange="raUploadCompanyTemplate(this.files[0]);this.value=\'\'"/><button class="btn btn-primary" onclick="document.getElementById(\'ra-company-template-file\').click()"><i class="ti ti-upload"></i>Upload company RA template</button>':'')
+    +(isMgr()?'<input type="file" id="ra-company-template-file" accept=".pdf,.doc,.docx,.xls,.xlsx,image/*" style="display:none" data-auris-generated-onchange="g0127"/><button class="btn btn-primary" data-auris-generated-onclick="g0128"><i class="ti ti-upload"></i>Upload company RA template</button>':'')
     +'</div></div>';
   h+='<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px;margin-bottom:16px">';
   h+=(raCompanyTemplates.length?raCompanyTemplates.map(function(t){return raCompanyTemplateCard(t,false);}).join(''):'<div class="card" style="padding:18px;text-align:center;color:var(--text2);grid-column:1/-1"><i class="ti ti-file-upload" style="font-size:28px;color:#94a3b8"></i><div style="font-weight:700;margin-top:6px">No company RA template uploaded</div><div style="font-size:12px;margin-top:4px">Upload a PDF, Word, Excel or image template from the client/company.</div></div>');
   h+='</div><div class="card" style="padding:12px 14px"><div class="card-title" style="margin-top:0">Built-in AURIS360 RA Templates</div><div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px">';
   h+=raBuiltInTemplates().map(function(t){
-    return '<div class="card" style="cursor:pointer;transition:all .15s;border:1px solid var(--border);padding:12px;text-align:center" onclick="raLoadTemplate(\''+t.id+'\')" onmouseover="this.style.borderColor=\'#185FA5\';this.style.background=\'#EFF6FF\'" onmouseout="this.style.borderColor=\'var(--border)\';this.style.background=\'#fff\'">'
+    return '<div class="card" style="cursor:pointer;transition:all .15s;border:1px solid var(--border);padding:12px;text-align:center" onclick="raLoadTemplate(\''+t.id+'\')" data-auris-generated-onmouseover="g0129" data-auris-generated-onmouseout="g0130">'
       +'<div style="font-size:20px;font-weight:900;color:#185FA5;margin-bottom:8px">'+escH(t.emoji)+'</div><div style="font-weight:700;font-size:12px;color:#185FA5;margin-bottom:4px">'+escH(t.name)+'</div><div style="font-size:11px;color:var(--text2)">'+escH(t.desc)+'</div></div>';
   }).join('');
   h+='</div></div>';
@@ -17554,7 +17554,7 @@ function raSpecificNew(kind){
   document.getElementById('sp-accent-title').style.color=cfg.accent;
   var fields=document.getElementById('sp-factor-fields');
   fields.innerHTML=cfg.factors.map(function(f){
-    return '<div class="form3group"><label class="form3label">'+escH(f[0])+'</label><select id="'+f[1]+'" onchange="raSpecificUpdatePreview()">'+f[2].map(function(o){return '<option value="'+o[0]+'">'+escH(o[1])+'</option>';}).join('')+'</select></div>';
+    return '<div class="form3group"><label class="form3label">'+escH(f[0])+'</label><select id="'+f[1]+'" data-auris-generated-onchange="g0131">'+f[2].map(function(o){return '<option value="'+o[0]+'">'+escH(o[1])+'</option>';}).join('')+'</select></div>';
   }).join('');
   raSpecificUpdatePreview();
 }
@@ -18453,7 +18453,7 @@ function raShowBowtie(){
   modal.onclick=function(e){if(e.target===modal)document.body.removeChild(modal);};
   var inner=document.createElement('div');
   inner.style.cssText='background:#fff;border-radius:12px;padding:20px;max-width:960px;width:100%;max-height:90vh;overflow:auto';
-  inner.innerHTML='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px"><div style="font-size:16px;font-weight:700">Bowtie Visualisation</div><button class="btn" onclick="this.closest(\'[style*=fixed]\').remove()"><i class="ti ti-x"></i>Close</button></div>'+svg;
+  inner.innerHTML='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px"><div style="font-size:16px;font-weight:700">Bowtie Visualisation</div><button class="btn" data-auris-generated-onclick="g0132"><i class="ti ti-x"></i>Close</button></div>'+svg;
   modal.appendChild(inner);document.body.appendChild(modal);
 }
 
@@ -18528,7 +18528,7 @@ function jsaAddStep(s){
     +'<div style="width:28px;height:28px;border-radius:50%;background:#6D28D9;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;flex-shrink:0">'+stepNum+'</div>'
     +'<div style="flex:1"><label style="font-size:11px;font-weight:700;color:var(--text2);text-transform:uppercase;display:block;margin-bottom:4px">Task / Step '+stepNum+'</label>'
     +'<input type="text" class="jsa-task" value="'+escH2(s.task||'')+'" placeholder="Describe this task step..." style="width:100%;padding:7px 10px;border:1px solid var(--border);border-radius:8px;font-size:13px"/></div>'
-    +'<button class="btn btn-sm" style="color:var(--red);flex-shrink:0" onclick="this.closest(\'.jsa-step-card\').remove()"><i class="ti ti-trash"></i></button>'
+    +'<button class="btn btn-sm" style="color:var(--red);flex-shrink:0" data-auris-generated-onclick="g0133"><i class="ti ti-trash"></i></button>'
     +'</div>'
     +'<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-left:40px">'
     +'<div><label style="font-size:11px;font-weight:700;color:#E24B4A;display:block;margin-bottom:4px"><i class="ti ti-alert-triangle" style="font-size:10px"></i> Hazards</label>'
@@ -19004,7 +19004,7 @@ function ptwRenderList(){
     el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)">'
       +'<div style="font-size:40px;margin-bottom:12px">-</div>'
       +'<div style="font-weight:600;margin-bottom:8px">No permits found</div>'
-      +(isMgr()?'<button class="btn btn-primary" onclick="ptwNew()"><i class="ti ti-plus"></i>Issue first permit</button>':'')
+      +(isMgr()?'<button class="btn btn-primary" data-auris-generated-onclick="g0134"><i class="ti ti-plus"></i>Issue first permit</button>':'')
       +'</div>';
     return;
   }
@@ -19031,7 +19031,7 @@ function ptwRenderList(){
     var endStr=x.planned_end?new Date(x.planned_end).toLocaleString('en-GB'):'-';
     var risk=x.risk_level||x.priority||'medium';
     var riskCfg={low:['#EAF3DE','#3B6D11'],medium:['#FEF9EC','#854F0B'],high:['#FEF6E7','#C2410C'],critical:['#FCEBEB','#A32D2D']}[risk]||['#f3f4f6','#6B7280'];
-    h+='<tr style="background:'+(i%2?'#f9fafb':'#fff')+';border-bottom:1px solid #eef2f7;border-left:5px solid '+(isOverdue?'#A32D2D':cfg.color)+';cursor:pointer" data-id="'+x.id+'" onclick="ptwShowDetail(this.dataset.id)">'
+    h+='<tr style="background:'+(i%2?'#f9fafb':'#fff')+';border-bottom:1px solid #eef2f7;border-left:5px solid '+(isOverdue?'#A32D2D':cfg.color)+';cursor:pointer" data-id="'+x.id+'" data-auris-generated-onclick="g0135">'
       +'<td style="padding:9px 10px;font-family:monospace;font-weight:800;color:'+cfg.color+'">'+escH(x.permit_number||'DRAFT')+(isOverdue?'<div style="font-size:10px;color:#A32D2D;font-weight:800">OVERDUE</div>':'')+'</td>'
       +'<td style="padding:9px 10px"><span style="background:'+cfg.bg+';color:'+cfg.color+';padding:3px 8px;border-radius:99px;font-size:10px;font-weight:800">'+escH(cfg.label)+'</span></td>'
       +'<td style="padding:9px 10px;min-width:280px"><div style="font-weight:700;line-height:1.25">'+escH((x.work_description||'Permit work').substring(0,110))+(x.work_description&&x.work_description.length>110?'...':'')+'</div><div style="font-size:11px;color:var(--text2);margin-top:2px">'+escH(x.work_location||x.location||'-')+'</div></td>'
@@ -19238,12 +19238,12 @@ function ptwRenderGasHistory(x){
   var el=document.getElementById('ptw-gas-content');if(!el)return;
   var tests=x.gas_tests||[];
   if(!tests.length){
-    el.innerHTML='<div class="card"><div style="text-align:center;padding:24px;color:var(--text2)">No gas tests recorded yet.<br><button class="btn btn-primary btn-sm" style="margin-top:12px" onclick="ptwOpenGasPanel()"><i class="ti ti-plus"></i>Add gas test</button></div></div>';
+    el.innerHTML='<div class="card"><div style="text-align:center;padding:24px;color:var(--text2)">No gas tests recorded yet.<br><button class="btn btn-primary btn-sm" style="margin-top:12px" data-auris-generated-onclick="g0136"><i class="ti ti-plus"></i>Add gas test</button></div></div>';
     return;
   }
   var h='<div class="card" style="padding:0;overflow:hidden">'
     +'<div style="padding:10px 16px;background:#065F46;color:#fff;font-weight:700;display:flex;justify-content:space-between;align-items:center">'
-    +'<span>Gas Test Records</span><button class="btn btn-sm" style="background:rgba(255,255,255,.2);color:#fff;border-color:rgba(255,255,255,.3)" onclick="ptwOpenGasPanel()"><i class="ti ti-plus"></i>Add test</button></div>'
+    +'<span>Gas Test Records</span><button class="btn btn-sm" style="background:rgba(255,255,255,.2);color:#fff;border-color:rgba(255,255,255,.3)" data-auris-generated-onclick="g0136"><i class="ti ti-plus"></i>Add test</button></div>'
     +'<table style="width:100%;border-collapse:collapse;font-size:12px">'
     +'<thead><tr style="background:#f0fdf4"><th style="padding:8px 14px;text-align:left">Date/Time</th><th style="padding:8px;text-align:center">O2%</th><th style="padding:8px;text-align:center">LEL%</th><th style="padding:8px;text-align:center">H2S ppm</th><th style="padding:8px;text-align:center">CO ppm</th><th style="padding:8px;text-align:left">Tester</th><th style="padding:8px;text-align:center">Result</th></tr></thead><tbody>';
   tests.forEach(function(t,i){
@@ -19272,13 +19272,13 @@ function ptwRenderIsolationList(x){
   var el=document.getElementById('ptw-isolation-content');if(!el)return;
   var isos=x.isolations||[];
   if(!isos.length){
-    el.innerHTML='<div class="card"><div style="text-align:center;padding:24px;color:var(--text2)">No isolation points recorded.<br><button class="btn btn-primary btn-sm" style="margin-top:12px" onclick="ptwOpenIsolationPanel()"><i class="ti ti-lock"></i>Add isolation</button></div></div>';
+    el.innerHTML='<div class="card"><div style="text-align:center;padding:24px;color:var(--text2)">No isolation points recorded.<br><button class="btn btn-primary btn-sm" style="margin-top:12px" data-auris-generated-onclick="g0137"><i class="ti ti-lock"></i>Add isolation</button></div></div>';
     return;
   }
   var stCfg={isolated:['#EAF3DE','#3B6D11','Isolated'],'pending':['#FEF9EC','#854F0B','Pending'],'de-isolated':['#FCEBEB','#A32D2D','De-isolated']};
   var h='<div class="card" style="padding:0;overflow:hidden">'
     +'<div style="padding:10px 16px;background:#1E3A5F;color:#fff;font-weight:700;display:flex;justify-content:space-between;align-items:center">'
-    +'<span>Isolation Points</span><button class="btn btn-sm" style="background:rgba(255,255,255,.2);color:#fff;border-color:rgba(255,255,255,.3)" onclick="ptwOpenIsolationPanel()"><i class="ti ti-plus"></i>Add isolation</button></div>'
+    +'<span>Isolation Points</span><button class="btn btn-sm" style="background:rgba(255,255,255,.2);color:#fff;border-color:rgba(255,255,255,.3)" data-auris-generated-onclick="g0137"><i class="ti ti-plus"></i>Add isolation</button></div>'
     +'<table style="width:100%;border-collapse:collapse;font-size:12px">'
     +'<thead><tr style="background:#f0f4ff"><th style="padding:8px 14px;text-align:left">Tag/ID</th><th style="padding:8px 10px;text-align:left">Description</th><th style="padding:8px 10px;text-align:left">Type</th><th style="padding:8px 10px;text-align:left">Isolated by</th><th style="padding:8px 10px;text-align:left">Verified by</th><th style="padding:8px 10px;text-align:left">Status</th></tr></thead><tbody>';
   isos.forEach(function(iso,i){
@@ -20150,7 +20150,7 @@ async function conLoadSafetyScore(){
       +'<div class="card" style="padding:12px 14px;border-left:4px solid #EF9F27"><div style="font-size:10px;color:var(--text2);font-weight:800;text-transform:uppercase">Watchlist</div><div style="font-size:26px;font-weight:900;color:#EF9F27">'+watch+'</div></div>'
       +'<div class="card" style="padding:12px 14px;border-left:4px solid #E24B4A"><div style="font-size:10px;color:var(--text2);font-weight:800;text-transform:uppercase">High risk</div><div style="font-size:26px;font-weight:900;color:#E24B4A">'+high+'</div></div></div>';
     h+='<div class="table-scroll"><table class="data-table" style="min-width:1100px"><thead><tr><th>Contractor</th><th style="text-align:center">Score</th><th>Rating</th><th style="text-align:center">Evaluations</th><th style="text-align:center">Incidents</th><th style="text-align:center">Active ATW</th><th>Main reasons</th><th style="text-align:right">Open</th></tr></thead><tbody>';
-    rows.forEach(function(x,i){var st=x._scoreStatus;var bar=x._score>=85?'#1D9E75':x._score>=70?'#185FA5':x._score>=55?'#EF9F27':'#E24B4A';h+='<tr style="border-bottom:1px solid #e5e7eb;background:'+(i%2?'#fafafa':'#fff')+'"><td style="padding:10px 12px"><div style="font-weight:900">'+escH(x.contractor_name||'--')+'</div><div style="font-size:11px;color:var(--text2)">'+escH(x.category||'general')+' - '+escH(x.specialisation||x.contact_person||'--')+'</div></td><td style="padding:10px;text-align:center"><div style="font-size:20px;font-weight:900;color:'+bar+'">'+x._score+'</div><div style="height:5px;background:#e5e7eb;border-radius:99px;overflow:hidden"><div style="height:100%;width:'+x._score+'%;background:'+bar+'"></div></div></td><td style="padding:10px"><span style="background:'+st[0]+';color:'+st[1]+';padding:3px 10px;border-radius:99px;font-weight:900;font-size:11px">'+st[2]+'</span></td><td style="padding:10px;text-align:center;font-weight:800">'+x._evals+'</td><td style="padding:10px;text-align:center;font-weight:800;color:'+(x._incs?'#A32D2D':'#3B6D11')+'">'+x._incs+'</td><td style="padding:10px;text-align:center;font-weight:800">'+x._atw+'</td><td style="padding:10px;color:#374151">'+(x._scoreReasons.length?x._scoreReasons.map(escH).join('; '):'No major issues detected')+'</td><td style="padding:10px;text-align:right"><button class="btn btn-sm" data-id="'+x.id+'" onclick="conOpenDetail(this.getAttribute(\'data-id\'))"><i class="ti ti-arrow-right"></i></button></td></tr>';});
+    rows.forEach(function(x,i){var st=x._scoreStatus;var bar=x._score>=85?'#1D9E75':x._score>=70?'#185FA5':x._score>=55?'#EF9F27':'#E24B4A';h+='<tr style="border-bottom:1px solid #e5e7eb;background:'+(i%2?'#fafafa':'#fff')+'"><td style="padding:10px 12px"><div style="font-weight:900">'+escH(x.contractor_name||'--')+'</div><div style="font-size:11px;color:var(--text2)">'+escH(x.category||'general')+' - '+escH(x.specialisation||x.contact_person||'--')+'</div></td><td style="padding:10px;text-align:center"><div style="font-size:20px;font-weight:900;color:'+bar+'">'+x._score+'</div><div style="height:5px;background:#e5e7eb;border-radius:99px;overflow:hidden"><div style="height:100%;width:'+x._score+'%;background:'+bar+'"></div></div></td><td style="padding:10px"><span style="background:'+st[0]+';color:'+st[1]+';padding:3px 10px;border-radius:99px;font-weight:900;font-size:11px">'+st[2]+'</span></td><td style="padding:10px;text-align:center;font-weight:800">'+x._evals+'</td><td style="padding:10px;text-align:center;font-weight:800;color:'+(x._incs?'#A32D2D':'#3B6D11')+'">'+x._incs+'</td><td style="padding:10px;text-align:center;font-weight:800">'+x._atw+'</td><td style="padding:10px;color:#374151">'+(x._scoreReasons.length?x._scoreReasons.map(escH).join('; '):'No major issues detected')+'</td><td style="padding:10px;text-align:right"><button class="btn btn-sm" data-id="'+x.id+'" data-auris-generated-onclick="g0138"><i class="ti ti-arrow-right"></i></button></td></tr>';});
     h+='</tbody></table></div><div class="card" style="margin-top:12px;border-left:4px solid #8B5CF6;background:#f5f3ff"><div style="font-weight:900;color:#5B21B6;margin-bottom:4px">How the score is calculated</div><div style="font-size:12px;color:#374151;line-height:1.5">Starts at 100 and deducts points for non-approved status, expired/missing insurance, expired approvals, overdue reviews, poor evaluations, incidents and revoked authorisations. This is an operational indicator to support contractor review, not an automatic ban decision.</div></div>';
     el.innerHTML=h;
   }catch(e){el.innerHTML=registerErrorHtml('Contractor safety score',e.message||String(e));}
@@ -20193,7 +20193,7 @@ function conFilterRegisterLegacy(){
     el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)">'
       +'<div style="font-size:40px;margin-bottom:12px"><i class="ti ti-circle-dot"></i></div>'
       +'<div style="font-weight:600;margin-bottom:8px">No contractors registered yet</div>'
-      +(isMgr()?'<button class="btn btn-primary" onclick="conNew()"><i class="ti ti-plus"></i>Register first contractor</button>':'')
+      +(isMgr()?'<button class="btn btn-primary" data-auris-generated-onclick="g0139"><i class="ti ti-plus"></i>Register first contractor</button>':'')
       +'</div>';
     return;
   }
@@ -20205,7 +20205,7 @@ function conFilterRegisterLegacy(){
     var isExpiring=x.expiry_date&&new Date(x.expiry_date)<=soon&&x.status==='approved';
     var isExpired=x.expiry_date&&new Date(x.expiry_date)<today&&x.status==='approved';
     h+='<div style="padding:14px 18px;border-bottom:1px solid #f0f0f0;display:flex;align-items:center;gap:14px;cursor:pointer;transition:background .1s" '
-      +'onclick="conOpenDetail(\''+x.id+'\')" onmouseover="this.style.background=\'#fafafa\'" onmouseout="this.style.background=\'\'">'
+      +'onclick="conOpenDetail(\''+x.id+'\')" data-auris-generated-onmouseover="g0140" data-auris-generated-onmouseout="g0141">'
       +'<div style="width:44px;height:44px;border-radius:12px;background:#185FA520;display:flex;align-items:center;justify-content:center;flex-shrink:0">'
       +'<i class="ti '+icon+'" style="font-size:20px;color:#185FA5"></i></div>'
       +'<div style="flex:1">'
@@ -20223,8 +20223,8 @@ function conFilterRegisterLegacy(){
       +(x.expiry_date?'<span><i class="ti ti-calendar" style="font-size:10px"></i> Expires: '+new Date(x.expiry_date).toLocaleDateString('en-GB')+'</span>':'')
       +'</div></div>'
       +'<div style="display:flex;gap:6px">'
-      +'<button class="btn btn-sm" data-id="'+x.id+'" onclick="event.stopPropagation();conEdit(this.getAttribute(\'data-id\'))"><i class="ti ti-edit"></i></button>'
-      +(isMgr()?'<button class="btn btn-sm" style="color:var(--red)" data-id="'+x.id+'" onclick="event.stopPropagation();conDeleteFromList(this.getAttribute(\'data-id\'))"><i class="ti ti-trash"></i></button>':'')
+      +'<button class="btn btn-sm" data-id="'+x.id+'" data-auris-generated-onclick="g0142"><i class="ti ti-edit"></i></button>'
+      +(isMgr()?'<button class="btn btn-sm" style="color:var(--red)" data-id="'+x.id+'" data-auris-generated-onclick="g0143"><i class="ti ti-trash"></i></button>':'')
       +'</div>'
       +'</div>';
   });
@@ -20251,7 +20251,7 @@ function conFilterRegister(){
     el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)">'
       +'<div style="font-size:40px;margin-bottom:12px"><i class="ti ti-building"></i></div>'
       +'<div style="font-weight:600;margin-bottom:8px">No contractors match the selected filters</div>'
-      +(isMgr()?'<button class="btn btn-primary" onclick="conNew()"><i class="ti ti-plus"></i>Register contractor</button>':'')
+      +(isMgr()?'<button class="btn btn-primary" data-auris-generated-onclick="g0139"><i class="ti ti-plus"></i>Register contractor</button>':'')
       +'</div>';
     return;
   }
@@ -20287,8 +20287,8 @@ function conFilterRegister(){
       +'<td style="padding:10px">'+dateBadge(review,'No review date')+'</td>'
       +'<td style="padding:10px;text-align:center"><span style="background:'+sc[0]+';color:'+sc[1]+';padding:3px 9px;border-radius:99px;font-size:11px;font-weight:800">'+sc[2]+'</span></td>'
       +'<td style="padding:10px;text-align:right;white-space:nowrap">'
-      +'<button class="btn btn-sm" data-id="'+x.id+'" onclick="event.stopPropagation();conEdit(this.getAttribute(\'data-id\'))"><i class="ti ti-edit"></i></button> '
-      +(isMgr()?'<button class="btn btn-sm" style="color:var(--red)" data-id="'+x.id+'" onclick="event.stopPropagation();conDeleteFromList(this.getAttribute(\'data-id\'))"><i class="ti ti-trash"></i></button>':'')
+      +'<button class="btn btn-sm" data-id="'+x.id+'" data-auris-generated-onclick="g0142"><i class="ti ti-edit"></i></button> '
+      +(isMgr()?'<button class="btn btn-sm" style="color:var(--red)" data-id="'+x.id+'" data-auris-generated-onclick="g0143"><i class="ti ti-trash"></i></button>':'')
       +'</td></tr>';
   });
   h+='</tbody></table></div>';
@@ -20416,11 +20416,11 @@ function cpaBuildSections(){
         +'<div style="font-size:11px;color:var(--text2);margin-top:3px">Weight: '+q.weight+' points</div></div>'
         +'<div style="display:flex;gap:12px;align-items:center">'
         +'<label style="display:flex;align-items:center;gap:5px;font-size:12px;font-weight:600;cursor:pointer;color:var(--green)">'
-        +'<input type="radio" name="cpa-'+q.field+'" value="yes" id="cpa-'+q.field+'-y" onchange="cpaCalcScore()" style="accent-color:var(--green);width:15px;height:15px"> Yes</label>'
+        +'<input type="radio" name="cpa-'+q.field+'" value="yes" id="cpa-'+q.field+'-y" data-auris-generated-onchange="g0144" style="accent-color:var(--green);width:15px;height:15px"> Yes</label>'
         +'<label style="display:flex;align-items:center;gap:5px;font-size:12px;font-weight:600;cursor:pointer;color:var(--red)">'
-        +'<input type="radio" name="cpa-'+q.field+'" value="no" id="cpa-'+q.field+'-n" onchange="cpaCalcScore()" style="accent-color:var(--red);width:15px;height:15px"> No</label>'
+        +'<input type="radio" name="cpa-'+q.field+'" value="no" id="cpa-'+q.field+'-n" data-auris-generated-onchange="g0144" style="accent-color:var(--red);width:15px;height:15px"> No</label>'
         +'<label style="display:flex;align-items:center;gap:5px;font-size:12px;cursor:pointer;color:var(--text2)">'
-        +'<input type="radio" name="cpa-'+q.field+'" value="na" id="cpa-'+q.field+'-na" onchange="cpaCalcScore()" style="width:15px;height:15px" checked> N/A</label>'
+        +'<input type="radio" name="cpa-'+q.field+'" value="na" id="cpa-'+q.field+'-na" data-auris-generated-onchange="g0144" style="width:15px;height:15px" checked> N/A</label>'
         +'</div></div>';
     });
     h+='</div>';
@@ -20456,7 +20456,7 @@ async function cpaLoad(){
     var d=await api('/contractor_preassessments?select=*,contractors(contractor_name)'+cf()+'&order=assessment_date.desc');
     conPAData=d||[];
     if(!d||!d.length){
-      if(el)el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)">No pre-assessments yet.'+(isMgr()?' <button class="btn btn-primary btn-sm" onclick="cpaNew()"><i class="ti ti-plus"></i>New pre-assessment</button>':'')+'</div>';
+      if(el)el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)">No pre-assessments yet.'+(isMgr()?' <button class="btn btn-primary btn-sm" data-auris-generated-onclick="g0145"><i class="ti ti-plus"></i>New pre-assessment</button>':'')+'</div>';
       return;
     }
     var h='<div class="table-scroll"><table class="data-table" style="min-width:820px"><thead><tr>'
@@ -20481,8 +20481,8 @@ async function cpaLoad(){
         +'<td style="padding:9px 10px;text-align:center"><span style="font-weight:800;font-size:14px;color:'+(sc2>=75?'#1D9E75':sc2>=50?'#854F0B':'#E24B4A')+'">'+sc2+'%</span></td>'
         +'<td style="padding:9px 10px"><span style="background:'+rc[0]+';color:'+rc[1]+';padding:2px 9px;border-radius:99px;font-size:11px;font-weight:700">'+rc[2]+'</span></td>'
         +'<td style="padding:9px 10px"><div style="display:flex;gap:4px">'
-        +'<button class="btn btn-sm" data-id="'+x.id+'" onclick="cpaEdit(this.getAttribute(\'data-id\'))"><i class="ti ti-edit"></i></button>'
-        +(isMgr()?'<button class="btn btn-sm" style="color:var(--red)" data-id="'+x.id+'" onclick="cpaDeleteRow(this.getAttribute(\'data-id\'))"><i class="ti ti-trash"></i></button>':'')
+        +'<button class="btn btn-sm" data-id="'+x.id+'" data-auris-generated-onclick="g0146"><i class="ti ti-edit"></i></button>'
+        +(isMgr()?'<button class="btn btn-sm" style="color:var(--red)" data-id="'+x.id+'" data-auris-generated-onclick="g0147"><i class="ti ti-trash"></i></button>':'')
         +'</div></td>'
         +'</tr>';
     });
@@ -20654,7 +20654,7 @@ async function cevLoad(){
     var d=await api('/contractor_evaluations?select=*,contractors(contractor_name)'+cf()+'&order=evaluation_date.desc');
     conEvalData=d||[];
     if(!d||!d.length){
-      if(el)el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)">No evaluations yet.'+(isMgr()?' <button class="btn btn-primary btn-sm" onclick="cevNew()"><i class="ti ti-plus"></i>New evaluation</button>':'')+'</div>';
+      if(el)el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)">No evaluations yet.'+(isMgr()?' <button class="btn btn-primary btn-sm" data-auris-generated-onclick="g0148"><i class="ti ti-plus"></i>New evaluation</button>':'')+'</div>';
       return;
     }
     var h='<div class="table-scroll"><table class="data-table" style="min-width:900px"><thead><tr>'
@@ -20679,8 +20679,8 @@ async function cevLoad(){
         +'<td style="padding:9px 10px"><span style="background:'+rc[0]+';color:'+rc[1]+';padding:2px 9px;border-radius:99px;font-size:11px;font-weight:700;text-transform:capitalize">'+( x.overall_rating||'-')+'</span></td>'
         +'<td style="padding:9px 10px;text-align:center">'+(x.recommend_future_use?'<span style="color:var(--green);font-weight:700">Yes</span>':'<span style="color:var(--red)">No</span>')+'</td>'
         +'<td style="padding:9px 10px"><div style="display:flex;gap:4px">'
-        +'<button class="btn btn-sm" data-id="'+x.id+'" onclick="cevEdit(this.getAttribute(\'data-id\'))"><i class="ti ti-edit"></i></button>'
-        +(isMgr()?'<button class="btn btn-sm" style="color:var(--red)" data-id="'+x.id+'" onclick="cevDeleteRow(this.getAttribute(\'data-id\'))"><i class="ti ti-trash"></i></button>':'')
+        +'<button class="btn btn-sm" data-id="'+x.id+'" data-auris-generated-onclick="g0149"><i class="ti ti-edit"></i></button>'
+        +(isMgr()?'<button class="btn btn-sm" style="color:var(--red)" data-id="'+x.id+'" data-auris-generated-onclick="g0150"><i class="ti ti-trash"></i></button>':'')
         +'</div></td></tr>';
     });
     h+='</tbody></table></div>';
@@ -20788,7 +20788,7 @@ async function catwLoad(){
     if(alertEl&&expiring.length){alertEl.innerHTML='<div style="background:#FCEBEB;border:1px solid #fca5a5;border-radius:8px;padding:10px 14px;font-size:12px;margin-bottom:8px"><strong style="color:var(--red)">Due: '+expiring.length+' authorisation'+(expiring.length!==1?'s':'')+' expiring within 7 days:</strong> '+expiring.map(function(x){return escH(x.contractors?.contractor_name||'');}).join(', ')+'</div>';}
     else if(alertEl)alertEl.innerHTML='';
     if(!d||!d.length){
-      if(el)el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)">No authorisations issued yet.'+(isMgr()?' <button class="btn btn-primary btn-sm" onclick="catwNew()"><i class="ti ti-plus"></i>New authorisation</button>':'')+'</div>';
+      if(el)el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)">No authorisations issued yet.'+(isMgr()?' <button class="btn btn-primary btn-sm" data-auris-generated-onclick="g0151"><i class="ti ti-plus"></i>New authorisation</button>':'')+'</div>';
       return;
     }
     var h='<div class="table-scroll"><table class="data-table" style="min-width:980px"><thead><tr>'
@@ -20815,8 +20815,8 @@ async function catwLoad(){
         +'<td style="padding:9px 10px;text-align:center">'+persons.length+'</td>'
         +'<td style="padding:9px 10px"><span style="background:'+sc2[0]+';color:'+sc2[1]+';padding:2px 9px;border-radius:99px;font-size:11px;font-weight:700;text-transform:capitalize">'+x.status+'</span></td>'
         +'<td style="padding:9px 10px"><div style="display:flex;gap:4px">'
-        +'<button class="btn btn-sm" data-id="'+x.id+'" onclick="catwEdit(this.getAttribute(\'data-id\'))"><i class="ti ti-edit"></i></button>'
-        +(isMgr()?'<button class="btn btn-sm" style="color:var(--red)" data-id="'+x.id+'" onclick="catwDeleteRow(this.getAttribute(\'data-id\'))"><i class="ti ti-trash"></i></button>':'')
+        +'<button class="btn btn-sm" data-id="'+x.id+'" data-auris-generated-onclick="g0152"><i class="ti ti-edit"></i></button>'
+        +(isMgr()?'<button class="btn btn-sm" style="color:var(--red)" data-id="'+x.id+'" data-auris-generated-onclick="g0153"><i class="ti ti-trash"></i></button>':'')
         +'</div></td></tr>';
     });
     h+='</tbody></table></div>';
@@ -20964,7 +20964,7 @@ async function cirLoad(){
     var d=await api('/contractor_incidents?select=*,contractors(contractor_name)'+cf()+'&order=incident_date.desc');
     conIncData=d||[];
     if(!d||!d.length){
-      if(el)el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)">No contractor incidents recorded.'+(isMgr()?' <button class="btn btn-primary btn-sm" onclick="cirNew()"><i class="ti ti-plus"></i>Report incident</button>':'')+'</div>';
+      if(el)el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)">No contractor incidents recorded.'+(isMgr()?' <button class="btn btn-primary btn-sm" data-auris-generated-onclick="g0154"><i class="ti ti-plus"></i>Report incident</button>':'')+'</div>';
       return;
     }
     var h='<div class="table-scroll"><table class="data-table" style="min-width:980px"><thead><tr>'
@@ -20992,8 +20992,8 @@ async function cirLoad(){
         +'<td style="padding:9px 10px"><span style="background:'+sc2[0]+';color:'+sc2[1]+';padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600;text-transform:capitalize">'+x.severity+'</span></td>'
         +'<td style="padding:9px 10px"><span style="background:'+stc[0]+';color:'+stc[1]+';padding:2px 8px;border-radius:99px;font-size:11px;font-weight:600;text-transform:capitalize">'+x.status+'</span></td>'
         +'<td style="padding:9px 10px"><div style="display:flex;gap:4px">'
-        +'<button class="btn btn-sm" data-id="'+x.id+'" onclick="cirEdit(this.getAttribute(\'data-id\'))"><i class="ti ti-edit"></i></button>'
-        +(isMgr()?'<button class="btn btn-sm" style="color:var(--red)" data-id="'+x.id+'" onclick="cirDeleteRow(this.getAttribute(\'data-id\'))"><i class="ti ti-trash"></i></button>':'')
+        +'<button class="btn btn-sm" data-id="'+x.id+'" data-auris-generated-onclick="g0155"><i class="ti ti-edit"></i></button>'
+        +(isMgr()?'<button class="btn btn-sm" style="color:var(--red)" data-id="'+x.id+'" data-auris-generated-onclick="g0156"><i class="ti ti-trash"></i></button>':'')
         +'</div></td></tr>';
     });
     h+='</tbody></table></div>';
@@ -21279,7 +21279,7 @@ async function esgLoadWaste(){
     var q='/waste_records?select=*'+cf()+'&order=record_date.desc';
     if(month)q+='&record_date=gte.'+month+'-01&record_date=lt.'+month+'-32';
     var d=await api(q);esgWasteData=d||[];
-    if(!d||!d.length){el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)">No waste records found.'+(isMgr()?' <button class="btn btn-primary btn-sm" onclick="esgWasteNew()"><i class="ti ti-plus"></i>Add</button>':'')+'</div>';return;}
+    if(!d||!d.length){el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)">No waste records found.'+(isMgr()?' <button class="btn btn-primary btn-sm" data-auris-generated-onclick="g0157"><i class="ti ti-plus"></i>Add</button>':'')+'</div>';return;}
     var catColors={general:'#6B7280',recyclable:'#1D9E75',hazardous:'#E24B4A',organic:'#854F0B',electronic:'#185FA5',construction:'#EF9F27',medical:'#8B5CF6',other:'#9CA3AF'};
     var h='<div class="table-scroll"><table class="data-table" style="min-width:860px"><thead><tr>'
       +'<th>Date</th><th>Waste type</th>'
@@ -21296,8 +21296,8 @@ async function esgLoadWaste(){
         +'<td style="padding:8px 10px;text-align:right;font-weight:700">'+parseFloat(x.quantity||0).toFixed(1)+' '+escH(x.unit||'kg')+'</td>'
         +'<td style="padding:8px 10px;font-size:11px;color:var(--text2)">'+escH(x.disposal_method||'-')+'</td>'
         +'<td style="padding:8px 10px"><div style="display:flex;gap:4px">'
-        +'<button class="btn btn-sm" data-id="'+x.id+'" onclick="esgWasteEdit(this.getAttribute(\'data-id\'))"><i class="ti ti-edit"></i></button>'
-        +(isMgr()?'<button class="btn btn-sm" style="color:var(--red)" data-id="'+x.id+'" onclick="esgWasteDel(this.getAttribute(\'data-id\'))"><i class="ti ti-trash"></i></button>':'')
+        +'<button class="btn btn-sm" data-id="'+x.id+'" data-auris-generated-onclick="g0158"><i class="ti ti-edit"></i></button>'
+        +(isMgr()?'<button class="btn btn-sm" style="color:var(--red)" data-id="'+x.id+'" data-auris-generated-onclick="g0159"><i class="ti ti-trash"></i></button>':'')
         +'</div></td></tr>';
     });
     h+='</tbody></table></div>';
@@ -21364,7 +21364,7 @@ async function esgLoadHW(){
     var alertEl=document.getElementById('esg-hw-alerts');
     if(alertEl&&stored>0)alertEl.innerHTML='<div style="background:#FEF9EC;border:1px solid #fcd34d;border-radius:8px;padding:10px 14px;font-size:12px;margin-bottom:8px"><strong style="color:#854F0B">Alert: '+stored+' hazardous waste item'+(stored!==1?'s':'')+' currently stored on site - ensure licensed contractor collection is scheduled</strong></div>';
     else if(alertEl)alertEl.innerHTML='';
-    if(!d||!d.length){el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)">No hazardous waste records.'+(isMgr()?' <button class="btn btn-primary btn-sm" onclick="esgHWNew()"><i class="ti ti-plus"></i>Add</button>':'')+'</div>';return;}
+    if(!d||!d.length){el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)">No hazardous waste records.'+(isMgr()?' <button class="btn btn-primary btn-sm" data-auris-generated-onclick="g0160"><i class="ti ti-plus"></i>Add</button>':'')+'</div>';return;}
     var stCfg={stored:['#FEF9EC','#854F0B'],awaiting_collection:['#FEF6E7','#C2410C'],in_transit:['#EDE9FE','#7C3AED'],disposed:['#EAF3DE','#3B6D11'],spilled:['#FCEBEB','#A32D2D']};
     var h='<div class="table-scroll"><table class="data-table" style="min-width:980px"><thead><tr>'
       +'<th>Waste</th><th>UN No.</th>'
@@ -21384,8 +21384,8 @@ async function esgLoadHW(){
         +'<td style="padding:8px 10px;font-size:11px">'+escH(x.licensed_contractor||'-')+'</td>'
         +'<td style="padding:8px 10px"><span style="background:'+sc2[0]+';color:'+sc2[1]+';padding:2px 8px;border-radius:99px;font-size:11px;font-weight:600;text-transform:capitalize">'+(x.status||'stored').replace(/_/g,' ')+'</span></td>'
         +'<td style="padding:8px 10px"><div style="display:flex;gap:4px">'
-        +'<button class="btn btn-sm" data-id="'+x.id+'" onclick="esgHWEdit(this.getAttribute(\'data-id\'))"><i class="ti ti-edit"></i></button>'
-        +(isMgr()?'<button class="btn btn-sm" style="color:var(--red)" data-id="'+x.id+'" onclick="esgHWDel(this.getAttribute(\'data-id\'))"><i class="ti ti-trash"></i></button>':'')
+        +'<button class="btn btn-sm" data-id="'+x.id+'" data-auris-generated-onclick="g0161"><i class="ti ti-edit"></i></button>'
+        +(isMgr()?'<button class="btn btn-sm" style="color:var(--red)" data-id="'+x.id+'" data-auris-generated-onclick="g0162"><i class="ti ti-trash"></i></button>':'')
         +'</div></td></tr>';
     });
     h+='</tbody></table></div>';el.innerHTML=h;
@@ -21429,7 +21429,7 @@ async function esgLoadFuel(){
   try{
     var q='/fuel_consumption?select=*'+cf()+'&order=record_date.desc';if(ft)q+='&fuel_type=eq.'+ft;
     var d=await api(q);esgFuelData=d||[];
-    if(!d||!d.length){el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)">No fuel records.'+(isMgr()?' <button class="btn btn-primary btn-sm" onclick="esgFuelNew()"><i class="ti ti-plus"></i>Add</button>':'')+'</div>';return;}
+    if(!d||!d.length){el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)">No fuel records.'+(isMgr()?' <button class="btn btn-primary btn-sm" data-auris-generated-onclick="g0163"><i class="ti ti-plus"></i>Add</button>':'')+'</div>';return;}
     var fuelLabels={diesel:'Diesel',petrol:'Petrol',lpg:'LPG',natural_gas:'Natural Gas',electricity:'Electricity',heavy_fuel_oil:'HFO',other:'Other'};
     var fuelColors={diesel:'#374151',petrol:'#EF9F27',lpg:'#185FA5',natural_gas:'#6B7280',electricity:'#1D9E75',heavy_fuel_oil:'#7F1D1D',other:'#9CA3AF'};
     var h='<div class="table-scroll"><table class="data-table" style="min-width:900px"><thead><tr>'
@@ -21447,8 +21447,8 @@ async function esgLoadFuel(){
         +'<td style="padding:8px 10px;text-align:right;color:#6D28D9;font-weight:600">'+(x.carbon_kg?parseFloat(x.carbon_kg).toFixed(1):'-')+'</td>'
         +'<td style="padding:8px 10px;font-size:11px">'+escH(x.purpose||'-')+'</td>'
         +'<td style="padding:8px 10px"><div style="display:flex;gap:4px">'
-        +'<button class="btn btn-sm" data-id="'+x.id+'" onclick="esgFuelEdit(this.getAttribute(\'data-id\'))"><i class="ti ti-edit"></i></button>'
-        +(isMgr()?'<button class="btn btn-sm" style="color:var(--red)" data-id="'+x.id+'" onclick="esgFuelDel(this.getAttribute(\'data-id\'))"><i class="ti ti-trash"></i></button>':'')
+        +'<button class="btn btn-sm" data-id="'+x.id+'" data-auris-generated-onclick="g0164"><i class="ti ti-edit"></i></button>'
+        +(isMgr()?'<button class="btn btn-sm" style="color:var(--red)" data-id="'+x.id+'" data-auris-generated-onclick="g0165"><i class="ti ti-trash"></i></button>':'')
         +'</div></td></tr>';
     });
     h+='</tbody></table>';el.innerHTML=h;
@@ -21491,7 +21491,7 @@ async function esgLoadWater(){
   var el=document.getElementById('esg-water-list');if(!el)return;el.innerHTML='<div class="loading-msg">Loading...</div>';
   try{
     var d=await api('/water_usage?select=*'+cf()+'&order=record_date.desc');esgWaterData=d||[];
-    if(!d||!d.length){el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)">No water records.'+(isMgr()?' <button class="btn btn-primary btn-sm" onclick="esgWaterNew()"><i class="ti ti-plus"></i>Add</button>':'')+'</div>';return;}
+    if(!d||!d.length){el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)">No water records.'+(isMgr()?' <button class="btn btn-primary btn-sm" data-auris-generated-onclick="g0166"><i class="ti ti-plus"></i>Add</button>':'')+'</div>';return;}
     var srcLabels={mains:'Mains',borehole:'Borehole',rainwater:'Rainwater',river:'River',recycled:'Recycled',other:'Other'};
     var h='<div class="table-scroll"><table class="data-table" style="min-width:900px"><thead><tr>'
       +'<th>Date</th><th>Source</th>'
@@ -21508,8 +21508,8 @@ async function esgLoadWater(){
         +'<td style="padding:8px 10px;font-size:11px">'+escH(x.purpose||'-')+'</td>'
         +'<td style="padding:8px 10px;font-size:11px">'+escH(x.location||'-')+'</td>'
         +'<td style="padding:8px 10px"><div style="display:flex;gap:4px">'
-        +'<button class="btn btn-sm" data-id="'+x.id+'" onclick="esgWaterEdit(this.getAttribute(\'data-id\'))"><i class="ti ti-edit"></i></button>'
-        +(isMgr()?'<button class="btn btn-sm" style="color:var(--red)" data-id="'+x.id+'" onclick="esgWaterDel(this.getAttribute(\'data-id\'))"><i class="ti ti-trash"></i></button>':'')
+        +'<button class="btn btn-sm" data-id="'+x.id+'" data-auris-generated-onclick="g0167"><i class="ti ti-edit"></i></button>'
+        +(isMgr()?'<button class="btn btn-sm" style="color:var(--red)" data-id="'+x.id+'" data-auris-generated-onclick="g0168"><i class="ti ti-trash"></i></button>':'')
         +'</div></td></tr>';
     });
     h+='</tbody></table></div>';el.innerHTML=h;
@@ -21545,7 +21545,7 @@ async function esgLoadSpills(){
   var el=document.getElementById('esg-spill-list');if(!el)return;el.innerHTML='<div class="loading-msg">Loading...</div>';
   try{
     var d=await api('/spill_reports?select=*'+cf()+'&order=spill_date.desc');esgSpillData=d||[];
-    if(!d||!d.length){el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)">No spills recorded.'+(isMgr()?' <button class="btn btn-primary btn-sm" onclick="esgSpillNew()"><i class="ti ti-plus"></i>Report spill</button>':'')+'</div>';return;}
+    if(!d||!d.length){el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)">No spills recorded.'+(isMgr()?' <button class="btn btn-primary btn-sm" data-auris-generated-onclick="g0169"><i class="ti ti-plus"></i>Report spill</button>':'')+'</div>';return;}
     var sevCfg={minor:['#EAF3DE','#3B6D11'],moderate:['#FEF9EC','#854F0B'],major:['#FEF6E7','#C2410C'],critical:['#FCEBEB','#A32D2D']};
     var stCfg={open:['#FCEBEB','#A32D2D'],contained:['#FEF9EC','#854F0B'],remediated:['#E6F1FB','#185FA5'],closed:['#EAF3DE','#3B6D11']};
     var h='<div class="table-scroll"><table class="data-table" style="min-width:980px"><thead><tr>'
@@ -21567,8 +21567,8 @@ async function esgLoadSpills(){
         +'<td style="padding:8px 10px"><span style="background:'+sc2[0]+';color:'+sc2[1]+';padding:2px 8px;border-radius:4px;font-size:11px;font-weight:700;text-transform:capitalize">'+x.severity+'</span></td>'
         +'<td style="padding:8px 10px"><span style="background:'+stc[0]+';color:'+stc[1]+';padding:2px 8px;border-radius:99px;font-size:11px;font-weight:600;text-transform:capitalize">'+x.status+'</span></td>'
         +'<td style="padding:8px 10px"><div style="display:flex;gap:4px">'
-        +'<button class="btn btn-sm" data-id="'+x.id+'" onclick="esgSpillEdit(this.getAttribute(\'data-id\'))"><i class="ti ti-edit"></i></button>'
-        +(isMgr()?'<button class="btn btn-sm" style="color:var(--red)" data-id="'+x.id+'" onclick="esgSpillDel(this.getAttribute(\'data-id\'))"><i class="ti ti-trash"></i></button>':'')
+        +'<button class="btn btn-sm" data-id="'+x.id+'" data-auris-generated-onclick="g0170"><i class="ti ti-edit"></i></button>'
+        +(isMgr()?'<button class="btn btn-sm" style="color:var(--red)" data-id="'+x.id+'" data-auris-generated-onclick="g0171"><i class="ti ti-trash"></i></button>':'')
         +'</div></td></tr>';
     });
     h+='</tbody></table></div>';el.innerHTML=h;
@@ -21644,7 +21644,7 @@ async function esgLoadInsp(){
   var el=document.getElementById('esg-insp-list');if(!el)return;el.innerHTML='<div class="loading-msg">Loading...</div>';
   try{
     var d=await api('/environmental_inspections?select=*'+cf()+'&order=inspection_date.desc');esgInspData=d||[];
-    if(!d||!d.length){el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)">No environmental inspections.'+(isMgr()?' <button class="btn btn-primary btn-sm" onclick="esgInspNew()"><i class="ti ti-plus"></i>New</button>':'')+'</div>';return;}
+    if(!d||!d.length){el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)">No environmental inspections.'+(isMgr()?' <button class="btn btn-primary btn-sm" data-auris-generated-onclick="g0172"><i class="ti ti-plus"></i>New</button>':'')+'</div>';return;}
     var ratCfg={excellent:['#EAF3DE','#3B6D11'],good:['#E6F1FB','#185FA5'],satisfactory:['#FEF9EC','#854F0B'],poor:['#FEF6E7','#C2410C'],unacceptable:['#FCEBEB','#A32D2D']};
     var h='<div class="table-scroll"><table class="data-table" style="min-width:900px"><thead><tr>'
       +'<th>Date</th><th>Inspector</th>'
@@ -21661,8 +21661,8 @@ async function esgLoadInsp(){
         +'<td style="padding:8px 10px;text-align:center;font-weight:700;color:'+(x.non_conformances>0?'var(--red)':'var(--green)')+'">'+( x.non_conformances||0)+'</td>'
         +'<td style="padding:8px 10px"><span style="background:'+rc[0]+';color:'+rc[1]+';padding:2px 8px;border-radius:99px;font-size:11px;font-weight:700;text-transform:capitalize">'+escH(x.overall_rating||'satisfactory')+'</span></td>'
         +'<td style="padding:8px 10px"><div style="display:flex;gap:4px">'
-        +'<button class="btn btn-sm" data-id="'+x.id+'" onclick="esgInspEdit(this.getAttribute(\'data-id\'))"><i class="ti ti-edit"></i></button>'
-        +(isMgr()?'<button class="btn btn-sm" style="color:var(--red)" data-id="'+x.id+'" onclick="esgInspDel(this.getAttribute(\'data-id\'))"><i class="ti ti-trash"></i></button>':'')
+        +'<button class="btn btn-sm" data-id="'+x.id+'" data-auris-generated-onclick="g0173"><i class="ti ti-edit"></i></button>'
+        +(isMgr()?'<button class="btn btn-sm" style="color:var(--red)" data-id="'+x.id+'" data-auris-generated-onclick="g0174"><i class="ti ti-trash"></i></button>':'')
         +'</div></td></tr>';
     });
     h+='</tbody></table></div>';el.innerHTML=h;
@@ -21851,7 +21851,7 @@ async function emLoadDash(){
       (plans||[]).slice(0,6).forEach(function(p){
         var cfg=EM_TYPE_CFG[p.emergency_type]||EM_TYPE_CFG.other;
         var stCol=p.status==='active'?'#1D9E75':'#6B7280';
-        h+='<div style="display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:8px;border:1px solid var(--border);cursor:pointer" onclick="emSwitchTab(\'plans\',document.getElementById(\'em3tab-plans\'))">'
+        h+='<div style="display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:8px;border:1px solid var(--border);cursor:pointer" data-auris-generated-onclick="g0175">'
           +'<span style="font-size:20px">'+cfg.emoji+'</span>'
           +'<div style="flex:1"><div style="font-weight:600;font-size:13px">'+escH(p.title||cfg.label)+'</div>'
           +'<div style="font-size:11px;font-family:monospace;color:'+stCol+'">'+escH(p.plan_ref||'-')+'</div></div>'
@@ -21922,7 +21922,7 @@ async function emPlansLoad(){
       if(el)el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)">'
         +'<div style="font-size:40px;margin-bottom:12px"><i class="ti ti-circle-dot"></i></div>'
         +'<div style="font-weight:600;margin-bottom:8px">No emergency response plans yet</div>'
-        +(isMgr()?'<button class="btn btn-primary" onclick="emPlanNew()"><i class="ti ti-plus"></i>Create first plan</button>':'')
+        +(isMgr()?'<button class="btn btn-primary" data-auris-generated-onclick="g0176"><i class="ti ti-plus"></i>Create first plan</button>':'')
         +'</div>';
       return;
     }
@@ -21941,7 +21941,7 @@ async function emPlansLoad(){
         +'<td style="padding:8px;color:'+(sevCfg[p.severity_level]||'inherit')+';font-weight:700;text-transform:capitalize">'+escH(p.severity_level||'--')+'</td>'
         +'<td style="padding:8px">'+(p.review_date?new Date(p.review_date).toLocaleDateString('en-GB'):'--')+'</td>'
         +'<td style="padding:8px"><span style="background:'+sc[0]+';color:'+sc[1]+';padding:2px 9px;border-radius:99px;font-size:10px;font-weight:700;text-transform:capitalize">'+escH((p.status||'draft').replace('_',' '))+'</span></td>'
-        +'<td style="padding:8px"><button class="btn btn-sm" data-id="'+p.id+'" onclick="emPlanEdit(this.dataset.id)"><i class="ti ti-edit"></i></button></td>'
+        +'<td style="padding:8px"><button class="btn btn-sm" data-id="'+p.id+'" data-auris-generated-onclick="g0177"><i class="ti ti-edit"></i></button></td>'
         +'</tr>';
     });
     h+='</tbody></table></div>';
@@ -22089,7 +22089,7 @@ async function ertLoad(){
     if(alertEl&&exp.length)alertEl.innerHTML='<div style="background:#FEF9EC;border:1px solid #fcd34d;border-radius:8px;padding:10px 14px;font-size:12px;margin-bottom:8px"><strong style="color:#854F0B">Due: '+exp.length+' ERT member'+(exp.length>1?'s':'')+' with certifications expiring within 60 days: </strong>'+exp.map(x=>escH(x.name)).join(', ')+'</div>';
     else if(alertEl)alertEl.innerHTML='';
     if(!d||!d.length){
-      if(el)el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)"><div style="font-size:40px;margin-bottom:12px"><i class="ti ti-circle-dot"></i></div><div style="font-weight:600;margin-bottom:8px">No ERT members registered</div>'+(isMgr()?'<button class="btn btn-primary" onclick="ertNew()"><i class="ti ti-plus"></i>Add first member</button>':'')+'</div>';
+      if(el)el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)"><div style="font-size:40px;margin-bottom:12px"><i class="ti ti-circle-dot"></i></div><div style="font-weight:600;margin-bottom:8px">No ERT members registered</div>'+(isMgr()?'<button class="btn btn-primary" data-auris-generated-onclick="g0178"><i class="ti ti-plus"></i>Add first member</button>':'')+'</div>';
       return;
     }
     var h='<div class="table-scroll"><table class="data-table" style="min-width:980px"><thead><tr><th>Member</th><th>ERT role</th><th>Department / title</th><th>Coverage area</th><th>Contact</th><th>Certifications</th><th>Status</th><th style="width:60px"></th></tr></thead><tbody>';
@@ -22103,10 +22103,10 @@ async function ertLoad(){
         +'<td style="padding:8px;font-weight:700;color:'+cfg.color+'">'+escH(cfg.label)+'</td>'
         +'<td style="padding:8px">'+escH(m.department||'--')+'<div style="font-size:11px;color:var(--text2)">'+escH(m.job_title||'')+'</div></td>'
         +'<td style="padding:8px">'+escH(m.coverage_area||'--')+'</td>'
-        +'<td style="padding:8px">'+(m.phone_primary?'<a href="tel:'+escH(m.phone_primary)+'" onclick="event.stopPropagation()" style="color:#185FA5;font-weight:700;text-decoration:none">'+escH(m.phone_primary)+'</a>':'--')+(m.email?'<div style="font-size:11px;color:var(--text2)">'+escH(m.email)+'</div>':'')+'</td>'
+        +'<td style="padding:8px">'+(m.phone_primary?'<a href="tel:'+escH(m.phone_primary)+'" data-auris-generated-onclick="g0179" style="color:#185FA5;font-weight:700;text-decoration:none">'+escH(m.phone_primary)+'</a>':'--')+(m.email?'<div style="font-size:11px;color:var(--text2)">'+escH(m.email)+'</div>':'')+'</td>'
         +'<td style="padding:8px">'+(m.first_aid_certified?'<span style="background:'+(faExp?'#FCEBEB':'#EAF3DE')+';color:'+(faExp?'#A32D2D':'#3B6D11')+';padding:2px 7px;border-radius:99px;font-size:10px;font-weight:700">First aid '+(m.first_aid_expiry?new Date(m.first_aid_expiry).toLocaleDateString('en-GB'):'')+(faExp?' due':'')+'</span> ':'')+(m.fire_warden_certified?'<span style="background:'+(fwExp?'#FCEBEB':'#FEF9EC')+';color:'+(fwExp?'#A32D2D':'#854F0B')+';padding:2px 7px;border-radius:99px;font-size:10px;font-weight:700">Fire warden '+(m.fire_warden_expiry?new Date(m.fire_warden_expiry).toLocaleDateString('en-GB'):'')+(fwExp?' due':'')+'</span>':'')+'</td>'
         +'<td style="padding:8px"><span style="background:'+(m.status==='active'?'#EAF3DE':'#f3f4f6')+';color:'+(m.status==='active'?'#3B6D11':'#6B7280')+';padding:2px 8px;border-radius:99px;font-size:10px;font-weight:700;text-transform:capitalize">'+escH(m.status||'active')+'</span></td>'
-        +'<td style="padding:8px"><button class="btn btn-sm" data-id="'+m.id+'" onclick="ertEdit(this.dataset.id)"><i class="ti ti-edit"></i></button></td>'
+        +'<td style="padding:8px"><button class="btn btn-sm" data-id="'+m.id+'" data-auris-generated-onclick="g0180"><i class="ti ti-edit"></i></button></td>'
         +'</tr>';
     });
     h+='</tbody></table></div>';
@@ -22161,7 +22161,7 @@ async function musterLoad(){
   var el=document.getElementById('em3muster-list');if(!el)return;el.innerHTML='<div class="loading-msg">Loading...</div>';
   try{
     var d=await api('/muster_points?select=*'+cf()+'&order=name');emMusterData=d||[];
-    if(!d||!d.length){el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)"><div style="font-size:40px;margin-bottom:12px"><i class="ti ti-circle-dot"></i></div><div style="font-weight:600;margin-bottom:8px">No muster points defined</div>'+(isMgr()?'<button class="btn btn-primary" onclick="musterNew()"><i class="ti ti-plus"></i>Add muster point</button>':'')+'</div>';return;}
+    if(!d||!d.length){el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)"><div style="font-size:40px;margin-bottom:12px"><i class="ti ti-circle-dot"></i></div><div style="font-weight:600;margin-bottom:8px">No muster points defined</div>'+(isMgr()?'<button class="btn btn-primary" data-auris-generated-onclick="g0181"><i class="ti ti-plus"></i>Add muster point</button>':'')+'</div>';return;}
     var h='<div class="table-scroll"><table class="data-table" style="min-width:760px"><thead><tr><th>Muster point</th><th>Location</th><th>Capacity</th><th>Warden</th><th>Emergency types</th><th>Status</th><th style="width:60px"></th></tr></thead><tbody>';
     d.forEach(function(m,i){
       var stCol=m.status==='active'?'#1D9E75':'#6B7280';
@@ -22173,7 +22173,7 @@ async function musterLoad(){
         +'<td style="padding:8px">'+escH(m.warden_assigned||'--')+'</td>'
         +'<td style="padding:8px">'+escH(Array.isArray(m.emergency_types)?m.emergency_types.join(', '):(m.emergency_types||'--'))+'</td>'
         +'<td style="padding:8px"><span style="background:'+stCol+'20;color:'+stCol+';padding:2px 8px;border-radius:99px;font-size:10px;font-weight:700;text-transform:capitalize">'+escH(m.status||'active')+'</span></td>'
-        +'<td style="padding:8px"><button class="btn btn-sm" data-id="'+m.id+'" onclick="musterEdit(this.dataset.id)"><i class="ti ti-edit"></i></button></td>'
+        +'<td style="padding:8px"><button class="btn btn-sm" data-id="'+m.id+'" data-auris-generated-onclick="g0182"><i class="ti ti-edit"></i></button></td>'
         +'</tr>';
     });
     h+='</tbody></table></div>';el.innerHTML=h;
@@ -22197,7 +22197,7 @@ async function drillsLoadLegacy(){
     setM('em3drill-total',d?d.length:0);setM('em3drill-done',d?d.filter(x=>x.status==='completed').length:0);setM('em3drill-planned',d?d.filter(x=>x.status==='planned').length:0);
     var completed=d?d.filter(x=>x.status==='completed'&&x.evacuation_time_mins):[];
     if(completed.length){var avg=completed.reduce((s,x)=>s+(parseFloat(x.evacuation_time_mins)||0),0)/completed.length;setM('em3drill-avg-evac',avg.toFixed(1)+' min');}
-    if(!d||!d.length){el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)"><div style="font-size:40px;margin-bottom:12px"><i class="ti ti-circle-dot"></i></div><div style="font-weight:600;margin-bottom:8px">No drills recorded</div>'+(isMgr()?'<button class="btn btn-primary" onclick="drillNew()"><i class="ti ti-plus"></i>Schedule first drill</button>':'')+'</div>';return;}
+    if(!d||!d.length){el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)"><div style="font-size:40px;margin-bottom:12px"><i class="ti ti-circle-dot"></i></div><div style="font-weight:600;margin-bottom:8px">No drills recorded</div>'+(isMgr()?'<button class="btn btn-primary" data-auris-generated-onclick="g0183"><i class="ti ti-plus"></i>Schedule first drill</button>':'')+'</div>';return;}
     var stCfg={planned:['#FEF9EC','#854F0B'],completed:['#EAF3DE','#3B6D11'],cancelled:['#f3f4f6','#6B7280'],postponed:['#EDE9FE','#7C3AED']};
     var ratCfg={excellent:['#EAF3DE','#3B6D11'],good:['#E6F1FB','#185FA5'],satisfactory:['#FEF9EC','#854F0B'],needs_improvement:['#FEF6E7','#C2410C'],failed:['#FCEBEB','#A32D2D']};
     var h='<div class="table-scroll"><table class="data-table" style="min-width:980px"><thead><tr><th>Ref</th><th>Date</th><th>Type</th><th>Location</th><th>Evac time</th><th>Participants</th><th>Rating</th><th>Status</th><th style="width:70px"></th></tr></thead><tbody>';
@@ -22212,7 +22212,7 @@ async function drillsLoadLegacy(){
         +'<td style="padding:8px;text-align:center">'+(x.total_participated||'-')+(x.total_expected?'/'+x.total_expected:'')+'</td>'
         +'<td style="padding:8px">'+(x.overall_rating?'<span style="background:'+rc[0]+';color:'+rc[1]+';padding:2px 8px;border-radius:99px;font-size:10px;font-weight:700;text-transform:capitalize">'+x.overall_rating.replace('_',' ')+'</span>':'-')+'</td>'
         +'<td style="padding:8px"><span style="background:'+sc[0]+';color:'+sc[1]+';padding:2px 8px;border-radius:99px;font-size:10px;font-weight:700;text-transform:capitalize">'+x.status+'</span></td>'
-        +'<td style="padding:8px"><div style="display:flex;gap:4px"><button class="btn btn-sm" data-id="'+x.id+'" onclick="drillEdit(this.getAttribute(\'data-id\'))"><i class="ti ti-edit"></i></button>'+(isMgr()?'<button class="btn btn-sm" style="color:var(--red)" data-id="'+x.id+'" onclick="drillDelete(this.getAttribute(\'data-id\'))"><i class="ti ti-trash"></i></button>':'')+'</div></td></tr>';
+        +'<td style="padding:8px"><div style="display:flex;gap:4px"><button class="btn btn-sm" data-id="'+x.id+'" data-auris-generated-onclick="g0184"><i class="ti ti-edit"></i></button>'+(isMgr()?'<button class="btn btn-sm" style="color:var(--red)" data-id="'+x.id+'" data-auris-generated-onclick="g0185"><i class="ti ti-trash"></i></button>':'')+'</div></td></tr>';
     });
     h+='</tbody></table></div>';el.innerHTML=h;
   }catch(e){el.innerHTML=registerErrorHtml('register',e.message);}
@@ -22228,7 +22228,7 @@ async function drillsLoad(){
     setM('em3drill-planned',d?d.filter(function(x){return x.status==='planned';}).length:0);
     var completed=d?d.filter(function(x){return x.status==='completed'&&x.evacuation_time_mins;}):[];
     if(completed.length){var avg=completed.reduce(function(s,x){return s+(parseFloat(x.evacuation_time_mins)||0);},0)/completed.length;setM('em3drill-avg-evac',avg.toFixed(1)+' min');}
-    if(!d||!d.length){el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)"><div style="font-size:40px;margin-bottom:12px"><i class="ti ti-bell-ringing"></i></div><div style="font-weight:600;margin-bottom:8px">No drills recorded</div>'+(isMgr()?'<button class="btn btn-primary" onclick="drillNew()"><i class="ti ti-plus"></i>Schedule first drill</button>':'')+'</div>';return;}
+    if(!d||!d.length){el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)"><div style="font-size:40px;margin-bottom:12px"><i class="ti ti-bell-ringing"></i></div><div style="font-weight:600;margin-bottom:8px">No drills recorded</div>'+(isMgr()?'<button class="btn btn-primary" data-auris-generated-onclick="g0183"><i class="ti ti-plus"></i>Schedule first drill</button>':'')+'</div>';return;}
     var stCfg={planned:['#FEF9EC','#854F0B'],completed:['#EAF3DE','#3B6D11'],cancelled:['#f3f4f6','#6B7280'],postponed:['#EDE9FE','#7C3AED']};
     var ratCfg={excellent:['#EAF3DE','#3B6D11'],good:['#E6F1FB','#185FA5'],satisfactory:['#FEF9EC','#854F0B'],needs_improvement:['#FEF6E7','#C2410C'],failed:['#FCEBEB','#A32D2D']};
     var h='<div class="table-scroll"><table class="data-table" style="min-width:980px"><thead><tr><th>Ref</th><th>Date</th><th>Type</th><th>Location</th><th>Evac time</th><th>Participants</th><th>Rating</th><th>Status</th><th style="width:70px"></th></tr></thead><tbody>';
@@ -22246,7 +22246,7 @@ async function drillsLoad(){
         +'<td style="padding:8px;text-align:center">'+(x.total_participated||'--')+(x.total_expected?'/'+x.total_expected:'')+(x.unaccounted_persons>0?'<div style="color:var(--red);font-weight:800">'+x.unaccounted_persons+' unaccounted</div>':'')+'</td>'
         +'<td style="padding:8px">'+(x.overall_rating?'<span style="background:'+rc[0]+';color:'+rc[1]+';padding:2px 8px;border-radius:99px;font-size:10px;font-weight:700;text-transform:capitalize">'+x.overall_rating.replace('_',' ')+'</span>':'--')+'</td>'
         +'<td style="padding:8px"><span style="background:'+(overdue?'#FCEBEB':sc[0])+';color:'+(overdue?'#A32D2D':sc[1])+';padding:2px 8px;border-radius:99px;font-size:10px;font-weight:700;text-transform:capitalize">'+(overdue?'overdue':x.status)+'</span></td>'
-        +'<td style="padding:8px"><div style="display:flex;gap:4px"><button class="btn btn-sm" data-id="'+x.id+'" onclick="drillEdit(this.getAttribute(\'data-id\'))"><i class="ti ti-edit"></i></button>'+(isMgr()?'<button class="btn btn-sm" style="color:var(--red)" data-id="'+x.id+'" onclick="drillDelete(this.getAttribute(\'data-id\'))"><i class="ti ti-trash"></i></button>':'')+'</div></td></tr>';
+        +'<td style="padding:8px"><div style="display:flex;gap:4px"><button class="btn btn-sm" data-id="'+x.id+'" data-auris-generated-onclick="g0184"><i class="ti ti-edit"></i></button>'+(isMgr()?'<button class="btn btn-sm" style="color:var(--red)" data-id="'+x.id+'" data-auris-generated-onclick="g0185"><i class="ti ti-trash"></i></button>':'')+'</div></td></tr>';
     });
     h+='</tbody></table></div>';el.innerHTML=h;
   }catch(e){el.innerHTML=registerErrorHtml('register',e.message);}
@@ -22269,7 +22269,7 @@ async function activationsLoad(){
   var el=document.getElementById('em3activations-list');if(!el)return;el.innerHTML='<div class="loading-msg">Loading...</div>';
   try{
     var d=await api('/emergency_activations?select=*'+cf()+'&order=activation_date.desc');emActivationsData=d||[];
-    if(!d||!d.length){el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)"><div style="font-size:40px;margin-bottom:12px"><i class="ti ti-shield-check"></i></div><div style="font-weight:600;margin-bottom:8px">No emergency activations - good news!</div>'+(isMgr()?'<button class="btn btn-sm" onclick="activationNew()">Log an activation</button>':'')+'</div>';return;}
+    if(!d||!d.length){el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)"><div style="font-size:40px;margin-bottom:12px"><i class="ti ti-shield-check"></i></div><div style="font-weight:600;margin-bottom:8px">No emergency activations - good news!</div>'+(isMgr()?'<button class="btn btn-sm" data-auris-generated-onclick="g0186">Log an activation</button>':'')+'</div>';return;}
     var sevCfg={minor:['#EAF3DE','#3B6D11'],moderate:['#FEF9EC','#854F0B'],major:['#FEF6E7','#C2410C'],critical:['#FCEBEB','#A32D2D']};
     var stCfg={active:['#FCEBEB','#A32D2D'],contained:['#FEF9EC','#854F0B'],resolved:['#EAF3DE','#3B6D11'],under_review:['#EDE9FE','#7C3AED']};
     var h='<div class="table-scroll"><table class="data-table" style="min-width:980px"><thead><tr><th>Reference</th><th>Date</th><th>Emergency type</th><th>Location</th><th>Description</th><th>People impact</th><th>Severity</th><th>Status</th><th style="width:60px"></th></tr></thead><tbody>';
@@ -22286,7 +22286,7 @@ async function activationsLoad(){
         +'<td style="padding:8px;text-align:center">'+(x.injuries||0)+' injured / '+(x.fatalities||0)+' fatal / '+(x.missing_persons||0)+' missing</td>'
         +'<td style="padding:8px"><span style="background:'+sc[0]+';color:'+sc[1]+';padding:2px 8px;border-radius:4px;font-size:11px;font-weight:700;text-transform:capitalize">'+escH(x.severity||'moderate')+'</span></td>'
         +'<td style="padding:8px"><span style="background:'+stc[0]+';color:'+stc[1]+';padding:2px 8px;border-radius:99px;font-size:11px;font-weight:700;text-transform:capitalize">'+escH(x.status||'active')+'</span></td>'
-        +'<td style="padding:8px"><button class="btn btn-sm" data-id="'+x.id+'" onclick="activationEdit(this.dataset.id)"><i class="ti ti-edit"></i></button></td>'
+        +'<td style="padding:8px"><button class="btn btn-sm" data-id="'+x.id+'" data-auris-generated-onclick="g0187"><i class="ti ti-edit"></i></button></td>'
         +'</tr>';
     });
     h+='</tbody></table></div>';el.innerHTML=h;
@@ -22310,7 +22310,7 @@ async function bcpLoad(){
   var el=document.getElementById('em3bcp-list');if(!el)return;el.innerHTML='<div class="loading-msg">Loading...</div>';
   try{
     var d=await api('/bcp_records?select=*'+cf()+'&order=priority,title');emBcpData=d||[];
-    if(!d||!d.length){el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)"><div style="font-size:40px;margin-bottom:12px"><i class="ti ti-circle-dot"></i></div><div style="font-weight:600;margin-bottom:8px">No BCP records yet</div>'+(isMgr()?'<button class="btn btn-primary" onclick="bcpNew()"><i class="ti ti-plus"></i>Create BCP</button>':'')+'</div>';return;}
+    if(!d||!d.length){el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)"><div style="font-size:40px;margin-bottom:12px"><i class="ti ti-circle-dot"></i></div><div style="font-weight:600;margin-bottom:8px">No BCP records yet</div>'+(isMgr()?'<button class="btn btn-primary" data-auris-generated-onclick="g0188"><i class="ti ti-plus"></i>Create BCP</button>':'')+'</div>';return;}
     var priCfg={critical:['#FCEBEB','#A32D2D'],high:['#FEF6E7','#C2410C'],medium:['#FEF9EC','#854F0B'],low:['#EAF3DE','#3B6D11']};
     var h='<div class="table-scroll"><table class="data-table" style="min-width:980px"><thead><tr><th>BCP</th><th>Business process</th><th>Department</th><th>RTO</th><th>RPO</th><th>Priority</th><th>Last tested</th><th>Status</th><th style="width:60px"></th></tr></thead><tbody>';
     d.forEach(function(x,i){
@@ -22325,7 +22325,7 @@ async function bcpLoad(){
         +'<td style="padding:8px"><span style="background:'+pc[0]+';color:'+pc[1]+';padding:2px 8px;border-radius:99px;font-size:10px;font-weight:700;text-transform:capitalize">'+escH(x.priority||'medium')+'</span></td>'
         +'<td style="padding:8px">'+(x.last_tested?new Date(x.last_tested).toLocaleDateString('en-GB'):'--')+'</td>'
         +'<td style="padding:8px"><span style="background:'+(x.status==='active'?'#EAF3DE':'#f3f4f6')+';color:'+(x.status==='active'?'#3B6D11':'#6B7280')+';padding:2px 8px;border-radius:99px;font-size:10px;font-weight:700;text-transform:capitalize">'+escH(x.status||'active')+'</span></td>'
-        +'<td style="padding:8px"><button class="btn btn-sm" data-id="'+x.id+'" onclick="bcpEdit(this.dataset.id)"><i class="ti ti-edit"></i></button></td>'
+        +'<td style="padding:8px"><button class="btn btn-sm" data-id="'+x.id+'" data-auris-generated-onclick="g0189"><i class="ti ti-edit"></i></button></td>'
         +'</tr>';
     });
     h+='</tbody></table></div>';el.innerHTML=h;
@@ -22353,7 +22353,7 @@ async function emEqLoadLegacy(){
     var now=new Date();var soon=new Date();soon.setDate(soon.getDate()+30);
     var setM=function(id,v){var e=document.getElementById(id);if(e)e.textContent=v;};
     setM('em3eq-total',d?d.length:0);setM('em3eq-ok',d?d.filter(x=>x.status==='operational').length:0);setM('em3eq-bad',d?d.filter(x=>x.status!=='operational').length:0);setM('em3eq-due',d?d.filter(x=>(x.next_inspection&&new Date(x.next_inspection)<=soon)||(x.next_service&&new Date(x.next_service)<=soon)).length:0);setM('em3eq-fe',d?d.filter(x=>x.equipment_type==='fire_extinguisher').length:0);
-    if(!d||!d.length){el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)"><div style="font-size:40px;margin-bottom:12px"><i class="ti ti-circle-dot"></i></div><div style="font-weight:600;margin-bottom:8px">No emergency equipment registered</div>'+(isMgr()?'<button class="btn btn-primary" onclick="emEqNew()"><i class="ti ti-plus"></i>Add equipment</button>':'')+'</div>';return;}
+    if(!d||!d.length){el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)"><div style="font-size:40px;margin-bottom:12px"><i class="ti ti-circle-dot"></i></div><div style="font-weight:600;margin-bottom:8px">No emergency equipment registered</div>'+(isMgr()?'<button class="btn btn-primary" data-auris-generated-onclick="g0190"><i class="ti ti-plus"></i>Add equipment</button>':'')+'</div>';return;}
     var eqEmoji={fire_extinguisher:'*',fire_hose:'*',first_aid_kit:'*',aed:'*',eyewash:'*',spill_kit:'*',ppe_kit:'*',alarm_panel:'*',emergency_light:'*',pa_system:'*',stretcher:'*',oxygen_kit:'*',other:'*'};
     var condCfg={excellent:['#EAF3DE','#3B6D11'],good:['#EAF3DE','#3B6D11'],fair:['#FEF9EC','#854F0B'],poor:['#FEF6E7','#C2410C'],condemned:['#FCEBEB','#A32D2D']};
     var h='<div class="table-scroll"><table class="data-table" style="min-width:980px"><thead><tr><th>Equipment</th><th>ID/Tag</th><th>Building/Floor</th><th>Location</th><th>Condition</th><th>Next Inspection</th><th>Status</th><th style="width:70px"></th></tr></thead><tbody>';
@@ -22370,7 +22370,7 @@ async function emEqLoadLegacy(){
         +'<td style="padding:8px"><span style="background:'+cc[0]+';color:'+cc[1]+';padding:2px 7px;border-radius:4px;font-size:10px;font-weight:700;text-transform:capitalize">'+x.condition+'</span></td>'
         +'<td style="padding:8px;font-weight:'+(isDue?'700':'400')+';color:'+(isDue?'var(--red)':'inherit')+'">'+(x.next_inspection?new Date(x.next_inspection).toLocaleDateString('en-GB')+(isDue?' ?':''):'-')+'</td>'
         +'<td style="padding:8px"><span style="font-weight:700;font-size:11px;color:'+stcol+'">'+escH(x.status||'-')+'</span></td>'
-        +'<td style="padding:8px"><div style="display:flex;gap:4px"><button class="btn btn-sm" data-id="'+x.id+'" onclick="emEqEdit(this.getAttribute(\'data-id\'))"><i class="ti ti-edit"></i></button>'+(isMgr()?'<button class="btn btn-sm" style="color:var(--red)" data-id="'+x.id+'" onclick="emEqDeleteRow(this.getAttribute(\'data-id\'))"><i class="ti ti-trash"></i></button>':'')+'</div></td></tr>';
+        +'<td style="padding:8px"><div style="display:flex;gap:4px"><button class="btn btn-sm" data-id="'+x.id+'" data-auris-generated-onclick="g0191"><i class="ti ti-edit"></i></button>'+(isMgr()?'<button class="btn btn-sm" style="color:var(--red)" data-id="'+x.id+'" data-auris-generated-onclick="g0192"><i class="ti ti-trash"></i></button>':'')+'</div></td></tr>';
     });
     h+='</tbody></table></div>';el.innerHTML=h;
   }catch(e){el.innerHTML=registerErrorHtml('register',e.message);}
@@ -22391,7 +22391,7 @@ async function emEqLoad(){
     setM('em3eq-bad',d?d.filter(function(x){return x.status!=='operational';}).length:0);
     setM('em3eq-due',d?d.filter(function(x){return (x.next_inspection&&new Date(x.next_inspection)<=soon)||(x.next_service&&new Date(x.next_service)<=soon);}).length:0);
     setM('em3eq-fe',d?d.filter(function(x){return x.equipment_type==='fire_extinguisher';}).length:0);
-    if(!d||!d.length){el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)"><div style="font-size:40px;margin-bottom:12px"><i class="ti ti-fire-extinguisher"></i></div><div style="font-weight:600;margin-bottom:8px">No emergency equipment registered</div>'+(isMgr()?'<button class="btn btn-primary" onclick="emEqNew()"><i class="ti ti-plus"></i>Add equipment</button>':'')+'</div>';return;}
+    if(!d||!d.length){el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)"><div style="font-size:40px;margin-bottom:12px"><i class="ti ti-fire-extinguisher"></i></div><div style="font-weight:600;margin-bottom:8px">No emergency equipment registered</div>'+(isMgr()?'<button class="btn btn-primary" data-auris-generated-onclick="g0190"><i class="ti ti-plus"></i>Add equipment</button>':'')+'</div>';return;}
     var eqIcon={fire_extinguisher:'ti-fire-extinguisher',fire_hose:'ti-flame',first_aid_kit:'ti-first-aid-kit',aed:'ti-heartbeat',eyewash:'ti-eye',spill_kit:'ti-droplet',ppe_kit:'ti-shield',alarm_panel:'ti-bell-ringing',emergency_light:'ti-bulb',pa_system:'ti-speakerphone',stretcher:'ti-bed',oxygen_kit:'ti-wind',other:'ti-package'};
     var condCfg={excellent:['#EAF3DE','#3B6D11'],good:['#EAF3DE','#3B6D11'],fair:['#FEF9EC','#854F0B'],poor:['#FEF6E7','#C2410C'],condemned:['#FCEBEB','#A32D2D']};
     var h='<div class="table-scroll"><table class="data-table" style="min-width:980px"><thead><tr><th>Equipment</th><th>ID/Tag</th><th>Building/Floor</th><th>Location</th><th>Condition</th><th>Inspection / Service</th><th>Status</th><th style="width:70px"></th></tr></thead><tbody>';
@@ -22409,7 +22409,7 @@ async function emEqLoad(){
         +'<td style="padding:8px"><span style="background:'+cc[0]+';color:'+cc[1]+';padding:2px 7px;border-radius:4px;font-size:10px;font-weight:700;text-transform:capitalize">'+escH(x.condition||'good')+'</span></td>'
         +'<td style="padding:8px;font-weight:'+(due||overdue?'700':'400')+';color:'+(overdue?'var(--red)':due?'#C2410C':'inherit')+'">Insp: '+(insp.missing?'--':insp.label)+(insp.overdue?' overdue':insp.soon?' due':'')+'<br>Svc: '+(svc.missing?'--':svc.label)+(svc.overdue?' overdue':svc.soon?' due':'')+'</td>'
         +'<td style="padding:8px"><span style="font-weight:700;font-size:11px;color:'+stcol+'">'+escH(x.status||'--')+'</span></td>'
-        +'<td style="padding:8px"><div style="display:flex;gap:4px"><button class="btn btn-sm" data-id="'+x.id+'" onclick="emEqEdit(this.getAttribute(\'data-id\'))"><i class="ti ti-edit"></i></button>'+(isMgr()?'<button class="btn btn-sm" style="color:var(--red)" data-id="'+x.id+'" onclick="emEqDeleteRow(this.getAttribute(\'data-id\'))"><i class="ti ti-trash"></i></button>':'')+'</div></td></tr>';
+        +'<td style="padding:8px"><div style="display:flex;gap:4px"><button class="btn btn-sm" data-id="'+x.id+'" data-auris-generated-onclick="g0191"><i class="ti ti-edit"></i></button>'+(isMgr()?'<button class="btn btn-sm" style="color:var(--red)" data-id="'+x.id+'" data-auris-generated-onclick="g0192"><i class="ti ti-trash"></i></button>':'')+'</div></td></tr>';
     });
     h+='</tbody></table></div>';el.innerHTML=h;
   }catch(e){el.innerHTML=registerErrorHtml('register',e.message);}
@@ -22600,7 +22600,7 @@ async function ohMsLoad(){
       d=(d||[]).filter(function(x){var nd=x.next_exam_date?new Date(x.next_exam_date):null;return nd&&(ft==='overdue'?nd<today:nd<=soon);});
     }
     if(!d||!d.length){
-      if(el)el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)"><div style="font-size:40px;margin-bottom:12px"><i class="ti ti-circle-dot"></i></div><div style="font-weight:600;margin-bottom:8px">No medical examinations recorded</div>'+(isMgr()?'<button class="btn btn-primary" onclick="msNew()"><i class="ti ti-plus"></i>New examination</button>':'')+'</div>';
+      if(el)el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)"><div style="font-size:40px;margin-bottom:12px"><i class="ti ti-circle-dot"></i></div><div style="font-weight:600;margin-bottom:8px">No medical examinations recorded</div>'+(isMgr()?'<button class="btn btn-primary" data-auris-generated-onclick="g0193"><i class="ti ti-plus"></i>New examination</button>':'')+'</div>';
       return;
     }
     var fitCfg={fit:['#EAF3DE','#3B6D11','Fit'],fit_with_restrictions:['#FEF9EC','#854F0B','Fit w/ restrictions'],temporarily_unfit:['#FEF6E7','#C2410C','Temp. unfit'],permanently_unfit:['#FCEBEB','#A32D2D','Perm. unfit'],pending:['#f3f4f6','#6B7280','Pending']};
@@ -22621,7 +22621,7 @@ async function ohMsLoad(){
         +'<td style="padding:8px;font-weight:'+(isOverdue?'700':'400')+';color:'+(isOverdue?'var(--red)':'inherit')+'">'+(x.next_exam_date?new Date(x.next_exam_date).toLocaleDateString('en-GB')+(isOverdue?' - overdue':''):'-')+'</td>'
         +'<td style="padding:8px;text-align:center;font-weight:700;color:'+(x.bmi?x.bmi<18.5?'#0891B2':x.bmi<25?'#1D9E75':x.bmi<30?'#EF9F27':'#E24B4A':'#6B7280')+'">'+(x.bmi?parseFloat(x.bmi).toFixed(1):'-')+'</td>'
         +'<td style="padding:8px"><span style="background:'+fc[0]+';color:'+fc[1]+';padding:2px 8px;border-radius:99px;font-size:10px;font-weight:700">'+fc[2]+'</span></td>'
-        +'<td style="padding:8px"><div style="display:flex;gap:4px"><button class="btn btn-sm" data-id="'+x.id+'" onclick="msEdit(this.dataset.id)"><i class="ti ti-edit"></i></button>'+(isMgr()?'<button class="btn btn-sm" style="color:var(--red)" data-id="'+x.id+'" onclick="msDeleteRow(this.dataset.id)"><i class="ti ti-trash"></i></button>':'')+'</div></td></tr>';
+        +'<td style="padding:8px"><div style="display:flex;gap:4px"><button class="btn btn-sm" data-id="'+x.id+'" data-auris-generated-onclick="g0194"><i class="ti ti-edit"></i></button>'+(isMgr()?'<button class="btn btn-sm" style="color:var(--red)" data-id="'+x.id+'" data-auris-generated-onclick="g0195"><i class="ti ti-trash"></i></button>':'')+'</div></td></tr>';
     });
     h+='</tbody></table></div>';el.innerHTML=h;
   }catch(e){el.innerHTML=registerErrorHtml('register',e.message);}
@@ -22765,7 +22765,7 @@ async function ohAudLoad(){
     var alertEl=document.getElementById('oh-aud-alerts');
     if(alertEl)alertEl.innerHTML=sts.length?'<div style="background:#F5F3FF;border:1px solid #c4b5fd;border-radius:8px;padding:10px 14px;font-size:12px;margin-bottom:8px;color:#6D28D9"><strong>STS: '+sts.length+' employee'+(sts.length>1?'s with':' with')+' Standard Threshold Shift detected:</strong> '+sts.map(x=>escH(x.employee_name)).join(', ')+'</div>':'';
     if(!d||!d.length){
-      if(el)el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)"><div style="font-size:40px;margin-bottom:12px"><i class="ti ti-circle-dot"></i></div><div style="font-weight:600;margin-bottom:8px">No audiometry records</div>'+(isMgr()?'<button class="btn btn-primary" onclick="audNew()"><i class="ti ti-plus"></i>New audiogram</button>':'')+'</div>';
+      if(el)el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)"><div style="font-size:40px;margin-bottom:12px"><i class="ti ti-circle-dot"></i></div><div style="font-weight:600;margin-bottom:8px">No audiometry records</div>'+(isMgr()?'<button class="btn btn-primary" data-auris-generated-onclick="g0196"><i class="ti ti-plus"></i>New audiogram</button>':'')+'</div>';
       return;
     }
     var resCfg={normal:['#EAF3DE','#3B6D11'],mild_loss:['#FEF9EC','#854F0B'],moderate_loss:['#FEF6E7','#C2410C'],severe_loss:['#FCEBEB','#A32D2D'],profound_loss:['#4C0519','#fff']};
@@ -22784,7 +22784,7 @@ async function ohAudLoad(){
         +'<td style="padding:8px;text-align:center">'+stsBadge+'</td>'
         +'<td style="padding:8px;text-align:center">'+(x.is_baseline?'<span style="background:#E6F1FB;color:#185FA5;padding:2px 8px;border-radius:99px;font-size:10px;font-weight:700">Baseline</span>':'-')+'</td>'
         +'<td style="padding:8px;font-size:11px">'+(x.next_test_date?new Date(x.next_test_date).toLocaleDateString('en-GB'):'-')+'</td>'
-        +'<td style="padding:8px"><div style="display:flex;gap:4px"><button class="btn btn-sm" data-id="'+x.id+'" onclick="audEdit(this.dataset.id)"><i class="ti ti-edit"></i></button>'+(isMgr()?'<button class="btn btn-sm" style="color:var(--red)" data-id="'+x.id+'" onclick="audDeleteRow(this.dataset.id)"><i class="ti ti-trash"></i></button>':'')+'</div></td></tr>';
+        +'<td style="padding:8px"><div style="display:flex;gap:4px"><button class="btn btn-sm" data-id="'+x.id+'" data-auris-generated-onclick="g0197"><i class="ti ti-edit"></i></button>'+(isMgr()?'<button class="btn btn-sm" style="color:var(--red)" data-id="'+x.id+'" data-auris-generated-onclick="g0198"><i class="ti ti-trash"></i></button>':'')+'</div></td></tr>';
     });
     h+='</tbody></table></div>';el.innerHTML=h;
   }catch(e){el.innerHTML=registerErrorHtml('register',e.message);}
@@ -22883,7 +22883,7 @@ async function ohSpiLoad(){
   var el=document.getElementById('oh-spi-list');if(!el)return;el.innerHTML='<div class="loading-msg">Loading...</div>';
   try{
     var d=await api('/spirometry_records?select=*'+cf()+'&order=test_date.desc');ohSpiData=d||[];
-    if(!d||!d.length){el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)"><div style="font-size:40px;margin-bottom:12px"><i class="ti ti-circle-dot"></i></div><div style="font-weight:600;margin-bottom:8px">No spirometry records</div>'+(isMgr()?'<button class="btn btn-primary" onclick="spiNew()"><i class="ti ti-plus"></i>New test</button>':'')+'</div>';return;}
+    if(!d||!d.length){el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)"><div style="font-size:40px;margin-bottom:12px"><i class="ti ti-circle-dot"></i></div><div style="font-weight:600;margin-bottom:8px">No spirometry records</div>'+(isMgr()?'<button class="btn btn-primary" data-auris-generated-onclick="g0199"><i class="ti ti-plus"></i>New test</button>':'')+'</div>';return;}
     var patCfg={normal:['#EAF3DE','#3B6D11'],obstructive:['#FEF9EC','#854F0B'],restrictive:['#FEF6E7','#C2410C'],mixed:['#FCEBEB','#A32D2D'],borderline:['#EDE9FE','#7C3AED']};
     var sevCfg={none:'',mild:' (Mild)',moderate:' (Moderate)',severe:' (Severe)',very_severe:' (Very severe)'};
     var h='<div class="table-scroll"><table class="data-table" style="min-width:920px"><thead><tr><th>Employee</th><th>Date</th><th>FVC %pred</th><th>FEV1 %pred</th><th>FEV1/FVC</th><th>Pattern</th><th>Next test</th><th style="width:50px"></th></tr></thead><tbody>';
@@ -22901,7 +22901,7 @@ async function ohSpiLoad(){
         +'<td style="padding:8px;text-align:center;font-weight:700;color:'+(ratioPct&&ratioPct<70?'var(--red)':'inherit')+'">'+(ratioPct?ratioPct+'%':'-')+'</td>'
         +'<td style="padding:8px"><span style="background:'+pc[0]+';color:'+pc[1]+';padding:2px 8px;border-radius:99px;font-size:10px;font-weight:700;text-transform:capitalize">'+escH(x.pattern||'normal')+(sevCfg[x.severity]||'')+'</span></td>'
         +'<td style="padding:8px;font-size:11px">'+(x.next_test_date?new Date(x.next_test_date).toLocaleDateString('en-GB'):'-')+'</td>'
-        +'<td style="padding:8px"><div style="display:flex;gap:4px"><button class="btn btn-sm" data-id="'+x.id+'" onclick="spiEdit(this.dataset.id)"><i class="ti ti-edit"></i></button>'+(isMgr()?'<button class="btn btn-sm" style="color:var(--red)" data-id="'+x.id+'" onclick="spiDeleteRow(this.dataset.id)"><i class="ti ti-trash"></i></button>':'')+'</div></td></tr>';
+        +'<td style="padding:8px"><div style="display:flex;gap:4px"><button class="btn btn-sm" data-id="'+x.id+'" data-auris-generated-onclick="g0200"><i class="ti ti-edit"></i></button>'+(isMgr()?'<button class="btn btn-sm" style="color:var(--red)" data-id="'+x.id+'" data-auris-generated-onclick="g0201"><i class="ti ti-trash"></i></button>':'')+'</div></td></tr>';
     });
     h+='</tbody></table></div>';el.innerHTML=h;
   }catch(e){el.innerHTML=registerErrorHtml('register',e.message);}
@@ -23014,7 +23014,7 @@ async function vaxLoad(){
     setM('oh-vax-sched',(d||[]).filter(x=>x.status==='scheduled').length);
     setM('oh-vax-overdue',(d||[]).filter(x=>x.status==='overdue'||(x.status==='scheduled'&&x.next_dose_date&&new Date(x.next_dose_date)<now)).length);
     setM('oh-vax-declined',(d||[]).filter(x=>x.status==='declined').length);
-    if(!d||!d.length){el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)"><div style="font-size:40px;margin-bottom:12px"><i class="ti ti-circle-dot"></i></div><div style="font-weight:600;margin-bottom:8px">No vaccination records</div>'+(isMgr()?'<button class="btn btn-primary" onclick="vaxNew()"><i class="ti ti-plus"></i>Add vaccination</button>':'')+'</div>';return;}
+    if(!d||!d.length){el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)"><div style="font-size:40px;margin-bottom:12px"><i class="ti ti-circle-dot"></i></div><div style="font-weight:600;margin-bottom:8px">No vaccination records</div>'+(isMgr()?'<button class="btn btn-primary" data-auris-generated-onclick="g0202"><i class="ti ti-plus"></i>Add vaccination</button>':'')+'</div>';return;}
     var stCfg={completed:['#EAF3DE','#3B6D11'],scheduled:['#FEF9EC','#854F0B'],declined:['#f3f4f6','#6B7280'],overdue:['#FCEBEB','#A32D2D'],not_applicable:['#f3f4f6','#6B7280']};
     var typeCfg={occupational:'#185FA5',travel:'#1D9E75',routine:'#EF9F27',pandemic:'#E24B4A',other:'#6B7280'};
     var h='<div class="table-scroll"><table class="data-table" style="min-width:980px"><thead><tr><th>Employee</th><th>Vaccine</th><th>Type</th><th>Dose</th><th>Date</th><th>Next dose</th><th>Expiry</th><th>Status</th><th style="width:50px"></th></tr></thead><tbody>';
@@ -23030,7 +23030,7 @@ async function vaxLoad(){
         +'<td style="padding:8px;font-size:11px">'+(x.next_dose_date?new Date(x.next_dose_date).toLocaleDateString('en-GB'):'-')+'</td>'
         +'<td style="padding:8px;font-size:11px;color:'+(isExpired?'var(--red)':'inherit')+'">'+(x.expiry_date?new Date(x.expiry_date).toLocaleDateString('en-GB')+(isExpired?' ?':''):'-')+'</td>'
         +'<td style="padding:8px"><span style="background:'+sc[0]+';color:'+sc[1]+';padding:2px 8px;border-radius:99px;font-size:10px;font-weight:700;text-transform:capitalize">'+x.status.replace('_',' ')+'</span></td>'
-        +'<td style="padding:8px"><div style="display:flex;gap:4px"><button class="btn btn-sm" data-id="'+x.id+'" onclick="vaxEdit(this.dataset.id)"><i class="ti ti-edit"></i></button>'+(isMgr()?'<button class="btn btn-sm" style="color:var(--red)" data-id="'+x.id+'" onclick="vaxDeleteRow(this.dataset.id)"><i class="ti ti-trash"></i></button>':'')+'</div></td></tr>';
+        +'<td style="padding:8px"><div style="display:flex;gap:4px"><button class="btn btn-sm" data-id="'+x.id+'" data-auris-generated-onclick="g0203"><i class="ti ti-edit"></i></button>'+(isMgr()?'<button class="btn btn-sm" style="color:var(--red)" data-id="'+x.id+'" data-auris-generated-onclick="g0204"><i class="ti ti-trash"></i></button>':'')+'</div></td></tr>';
     });
     h+='</tbody></table></div>';el.innerHTML=h;
   }catch(e){el.innerHTML=registerErrorHtml('register',e.message);}
@@ -23057,7 +23057,7 @@ async function expLoad(){
     setM('oh-exp-exceeded',(d||[]).filter(x=>x.exceeded_oel).length);
     setM('oh-exp-high',(d||[]).filter(x=>['high','critical'].includes(x.risk_level)).length);
     setM('oh-exp-total',(d||[]).length);
-    if(!d||!d.length){el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)"><div style="font-size:40px;margin-bottom:12px"><i class="ti ti-circle-dot"></i></div><div style="font-weight:600;margin-bottom:8px">No exposure monitoring records</div>'+(isMgr()?'<button class="btn btn-primary" onclick="expNew()"><i class="ti ti-plus"></i>New measurement</button>':'')+'</div>';return;}
+    if(!d||!d.length){el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)"><div style="font-size:40px;margin-bottom:12px"><i class="ti ti-circle-dot"></i></div><div style="font-weight:600;margin-bottom:8px">No exposure monitoring records</div>'+(isMgr()?'<button class="btn btn-primary" data-auris-generated-onclick="g0205"><i class="ti ti-plus"></i>New measurement</button>':'')+'</div>';return;}
     var rlCfg={negligible:['#EAF3DE','#3B6D11'],low:['#EAF3DE','#3B6D11'],medium:['#FEF9EC','#854F0B'],high:['#FEF6E7','#C2410C'],critical:['#FCEBEB','#A32D2D']};
     var typeEmoji={noise:'*',dust:'*',silica:'*',chemical:'*',heat_stress:'*',vibration:'*',biological:'*',radiation:'*',other:'*'};
     var h='<div class="table-scroll"><table class="data-table" style="min-width:1120px"><thead><tr><th>Ref / Date</th><th>Type</th><th>Location / Dept</th><th>Agent</th><th>TWA</th><th>OEL</th><th>% OEL</th><th>Risk</th><th>Status</th><th style="width:50px"></th></tr></thead><tbody>';
@@ -23078,7 +23078,7 @@ async function expLoad(){
         +'<td style="padding:8px;text-align:center;font-weight:800;color:'+pctColor+'">'+(pctOel?pctOel+'%':'-')+(x.exceeded_oel?'<div style="font-size:9px;color:#A32D2D">EXCEEDED</div>':'')+'</td>'
         +'<td style="padding:8px"><span style="background:'+rl[0]+';color:'+rl[1]+';padding:2px 8px;border-radius:99px;font-size:10px;font-weight:700;text-transform:capitalize">'+escH(x.risk_level||'low')+'</span></td>'
         +'<td style="padding:8px"><span style="background:'+sc[0]+';color:'+sc[1]+';padding:2px 8px;border-radius:99px;font-size:10px;font-weight:700">'+escH(x.status?.replace(/_/g,' ')||'open')+'</span></td>'
-        +'<td style="padding:8px"><div style="display:flex;gap:4px"><button class="btn btn-sm" data-id="'+x.id+'" onclick="expEdit(this.dataset.id)"><i class="ti ti-edit"></i></button>'+(isMgr()?'<button class="btn btn-sm" style="color:var(--red)" data-id="'+x.id+'" onclick="expDeleteRow(this.dataset.id)"><i class="ti ti-trash"></i></button>':'')+'</div></td></tr>';
+        +'<td style="padding:8px"><div style="display:flex;gap:4px"><button class="btn btn-sm" data-id="'+x.id+'" data-auris-generated-onclick="g0206"><i class="ti ti-edit"></i></button>'+(isMgr()?'<button class="btn btn-sm" style="color:var(--red)" data-id="'+x.id+'" data-auris-generated-onclick="g0207"><i class="ti ti-trash"></i></button>':'')+'</div></td></tr>';
     });
     h+='</tbody></table></div>';el.innerHTML=h;
   }catch(e){el.innerHTML=registerErrorHtml('register',e.message);}
@@ -23095,8 +23095,8 @@ function expUpdateTypeForm(){
   var typeHtml={
     noise:'<div class="card" style="margin-bottom:14px;border-left:4px solid #185FA5"><div class="card-title" style="color:#185FA5">Noise-Specific Fields</div><div class="form3row"><div class="form3group"><label class="form3label">LEX,8h (daily noise exposure, dB(A))</label><input type="number" id="expf-lex8h" step="0.1" min="50" max="140"/></div><div class="form3group"><label class="form3label">Peak noise level (dB(C))</label><input type="number" id="expf-peak-dbc" step="0.1" min="50" max="200"/></div></div><div style="font-size:11px;background:#EFF6FF;padding:8px 12px;border-radius:8px;color:#185FA5"><strong>Action level:</strong> 80 dB(A) - provide HPE, training, audiometry | <strong>OEL:</strong> 85 dB(A) - mandatory hearing protection</div></div>',
     silica:'<div class="card" style="margin-bottom:14px;border-left:4px solid #854F0B"><div class="card-title" style="color:#854F0B">Silica-Specific Fields</div><div class="form3row"><div class="form3group"><label class="form3label">Sample type</label><select id="expf-silica-type"><option value="respirable">Respirable fraction</option><option value="inhalable">Inhalable fraction</option></select></div><div class="form3group"><label class="form3label">% SiO2 in bulk sample</label><input type="number" id="expf-silica-pct" step="0.1" min="0" max="100"/></div></div><div style="font-size:11px;background:#FEF9EC;padding:8px 12px;border-radius:8px;color:#854F0B"><strong>ACGIH TLV:</strong> 0.025 mg/m3 (respirable) | <strong>NIOSH REL:</strong> 0.05 mg/m3 | Silicosis risk even at lower levels</div></div>',
-    heat_stress:'<div class="card" style="margin-bottom:14px;border-left:4px solid #DC2626"><div class="card-title" style="color:#DC2626">Heat Stress-Specific Fields</div><div class="form3row"><div class="form3group"><label class="form3label">WBGT value (-C)</label><input type="number" id="expf-wbgt" step="0.1" min="10" max="50" oninput="expCalcRisk()"/></div><div class="form3group"><label class="form3label">Work intensity</label><select id="expf-heat-intensity"><option value="light">Light (&lt;200W) - WBGT limit 28-C</option><option value="moderate">Moderate (200-350W) - limit 25-C</option><option value="heavy">Heavy (350-500W) - limit 22-C</option><option value="very_heavy">Very heavy (&gt;500W) - limit 18-C</option></select></div></div><div style="font-size:11px;background:#FEF2F2;padding:8px 12px;border-radius:8px;color:#A32D2D"><strong>Heat stroke risk factors:</strong> high humidity, direct sunlight, dehydration, physical exertion, no acclimatisation</div></div>',
-    vibration:'<div class="card" style="margin-bottom:14px;border-left:4px solid #8B5CF6"><div class="card-title" style="color:#8B5CF6">Vibration-Specific Fields</div><div class="form3row"><div class="form3group"><label class="form3label">Vibration type</label><select id="expf-vib-type"><option value="hav">Hand-arm (HAV) - ISO 5349</option><option value="wbv">Whole-body (WBV) - ISO 2631</option></select></div><div class="form3group"><label class="form3label">A(8) value (m/s-)</label><input type="number" id="expf-ahv" step="0.01" min="0" oninput="expCalcRisk()"/></div><div class="form3group"><label class="form3label">Exposure points</label><input type="number" id="expf-vib-points" step="1" min="0"/></div></div><div style="font-size:11px;background:#F5F3FF;padding:8px 12px;border-radius:8px;color:#7C3AED"><strong>HAV action value:</strong> 2.5 m/s- A(8) | <strong>Limit value:</strong> 5 m/s- A(8)<br><strong>WBV action value:</strong> 0.5 m/s- A(8) | <strong>Limit value:</strong> 1.15 m/s- A(8)</div></div>'
+    heat_stress:'<div class="card" style="margin-bottom:14px;border-left:4px solid #DC2626"><div class="card-title" style="color:#DC2626">Heat Stress-Specific Fields</div><div class="form3row"><div class="form3group"><label class="form3label">WBGT value (-C)</label><input type="number" id="expf-wbgt" step="0.1" min="10" max="50" data-auris-generated-oninput="g0208"/></div><div class="form3group"><label class="form3label">Work intensity</label><select id="expf-heat-intensity"><option value="light">Light (&lt;200W) - WBGT limit 28-C</option><option value="moderate">Moderate (200-350W) - limit 25-C</option><option value="heavy">Heavy (350-500W) - limit 22-C</option><option value="very_heavy">Very heavy (&gt;500W) - limit 18-C</option></select></div></div><div style="font-size:11px;background:#FEF2F2;padding:8px 12px;border-radius:8px;color:#A32D2D"><strong>Heat stroke risk factors:</strong> high humidity, direct sunlight, dehydration, physical exertion, no acclimatisation</div></div>',
+    vibration:'<div class="card" style="margin-bottom:14px;border-left:4px solid #8B5CF6"><div class="card-title" style="color:#8B5CF6">Vibration-Specific Fields</div><div class="form3row"><div class="form3group"><label class="form3label">Vibration type</label><select id="expf-vib-type"><option value="hav">Hand-arm (HAV) - ISO 5349</option><option value="wbv">Whole-body (WBV) - ISO 2631</option></select></div><div class="form3group"><label class="form3label">A(8) value (m/s-)</label><input type="number" id="expf-ahv" step="0.01" min="0" data-auris-generated-oninput="g0208"/></div><div class="form3group"><label class="form3label">Exposure points</label><input type="number" id="expf-vib-points" step="1" min="0"/></div></div><div style="font-size:11px;background:#F5F3FF;padding:8px 12px;border-radius:8px;color:#7C3AED"><strong>HAV action value:</strong> 2.5 m/s- A(8) | <strong>Limit value:</strong> 5 m/s- A(8)<br><strong>WBV action value:</strong> 0.5 m/s- A(8) | <strong>Limit value:</strong> 1.15 m/s- A(8)</div></div>'
   };
   el.innerHTML=typeHtml[type]||'';
   expCalcRisk();
@@ -23195,7 +23195,7 @@ async function ohOdLoad(){
   var el=document.getElementById('oh-od-list');if(!el)return;el.innerHTML='<div class="loading-msg">Loading...</div>';
   try{
     var d=await api('/occupational_diseases?select=*'+cf()+'&order=created_at.desc');ohOdData=d||[];
-    if(!d||!d.length){el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)"><div style="font-size:40px;margin-bottom:12px"><i class="ti ti-circle-dot"></i></div><div style="font-weight:600;margin-bottom:8px">No occupational disease records</div>'+(isMgr()?'<button class="btn btn-primary" onclick="odNew()"><i class="ti ti-plus"></i>Record disease</button>':'')+'</div>';return;}
+    if(!d||!d.length){el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)"><div style="font-size:40px;margin-bottom:12px"><i class="ti ti-circle-dot"></i></div><div style="font-weight:600;margin-bottom:8px">No occupational disease records</div>'+(isMgr()?'<button class="btn btn-primary" data-auris-generated-onclick="g0209"><i class="ti ti-plus"></i>Record disease</button>':'')+'</div>';return;}
     var outCfg={ongoing:['#FEF9EC','#854F0B'],recovered:['#EAF3DE','#3B6D11'],permanent_disability:['#FEF6E7','#C2410C'],under_treatment:['#EDE9FE','#7C3AED'],fatal:['#4C0519','#fff']};
     var expEmoji={noise:'*',dust:'*',silica:'*',chemical:'*',vibration:'*',heat:'*',biological:'*',ergonomic:'*',psychological:'*',radiation:'*',other:'*'};
     var h='<div class="table-scroll"><table class="data-table" style="min-width:1080px"><thead><tr><th>Employee</th><th>Ref</th><th>Disease / Condition</th><th>ICD-10</th><th>Exposure</th><th>Diagnosed</th><th>Days lost</th><th>Outcome</th><th style="width:50px"></th></tr></thead><tbody>';
@@ -23210,7 +23210,7 @@ async function ohOdLoad(){
         +'<td style="padding:8px;font-size:11px">'+(x.diagnosis_date?new Date(x.diagnosis_date).toLocaleDateString('en-GB'):'-')+'</td>'
         +'<td style="padding:8px;text-align:center;font-weight:700;color:'+(x.days_lost>30?'var(--red)':'inherit')+'">'+( x.days_lost||0)+'</td>'
         +'<td style="padding:8px"><span style="background:'+oc[0]+';color:'+oc[1]+';padding:2px 8px;border-radius:99px;font-size:10px;font-weight:700;text-transform:capitalize">'+escH((x.outcome||'ongoing').replace(/_/g,' '))+'</span></td>'
-        +'<td style="padding:8px"><div style="display:flex;gap:4px"><button class="btn btn-sm" data-id="'+x.id+'" onclick="odEdit(this.dataset.id)"><i class="ti ti-edit"></i></button>'+(isMgr()?'<button class="btn btn-sm" style="color:var(--red)" data-id="'+x.id+'" onclick="odDeleteRow(this.dataset.id)"><i class="ti ti-trash"></i></button>':'')+'</div></td></tr>';
+        +'<td style="padding:8px"><div style="display:flex;gap:4px"><button class="btn btn-sm" data-id="'+x.id+'" data-auris-generated-onclick="g0210"><i class="ti ti-edit"></i></button>'+(isMgr()?'<button class="btn btn-sm" style="color:var(--red)" data-id="'+x.id+'" data-auris-generated-onclick="g0211"><i class="ti ti-trash"></i></button>':'')+'</div></td></tr>';
     });
     h+='</tbody></table></div>';el.innerHTML=h;
   }catch(e){el.innerHTML=registerErrorHtml('register',e.message);}
@@ -23307,7 +23307,7 @@ function ppeCertBadge(meta){
   }
   var label=escH(meta.ref||meta.type||txt);
   var certUrl=aurisSafeUrl(meta.url);
-  var link=certUrl?'<a href="'+escH(certUrl)+'" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation()" style="margin-left:6px;color:var(--green);font-weight:800">Open</a>':'';
+  var link=certUrl?'<a href="'+escH(certUrl)+'" target="_blank" rel="noopener noreferrer" data-auris-generated-onclick="g0179" style="margin-left:6px;color:var(--green);font-weight:800">Open</a>':'';
   return '<span class="badge '+cls+'">'+label+'</span>'+link+'<div style="font-size:10px;color:var(--text2);margin-top:3px">'+escH(txt+(meta.issuer?' - '+meta.issuer:''))+'</div>';
 }
 
@@ -23335,7 +23335,7 @@ async function ppeCreateMapAction(sourceRef, description, responsible, priority,
 async function loadPPE(){
   var head=document.getElementById('ppe-header-btns');
   if(head && !document.getElementById('ppe-print-btn')){
-    head.insertAdjacentHTML('afterbegin','<button class="btn" id="ppe-print-btn" onclick="ppePrintCurrentView()"><i class="ti ti-printer"></i>Print current view</button>');
+    head.insertAdjacentHTML('afterbegin','<button class="btn" id="ppe-print-btn" data-auris-generated-onclick="g0212"><i class="ti ti-printer"></i>Print current view</button>');
   }
   ['ppe-cat-add-btn','ppe-inventory-add-btn','ppe-iss-add-btn','ppe-insp-add-btn','ppe-rep-add-btn'].forEach(function(id){
     var el=document.getElementById(id);if(el)el.style.display=isMgr()?'inline-flex':'none';
@@ -23465,7 +23465,7 @@ async function ppeLoadCatalogue(){
     var q='/ppe_catalogue?select=*'+cf()+'&order=category,name';if(ft)q+='&category=eq.'+ft;
     var d=await api(q);ppeCatData=d||[];
     if(!d||!d.length){
-      if(el)el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)"><div style="font-size:40px;margin-bottom:12px"><i class="ti ti-circle-dot"></i></div><div style="font-weight:600;margin-bottom:8px">No PPE in catalogue yet</div>'+(isMgr()?'<button class="btn btn-primary" onclick="ppeCatNew()"><i class="ti ti-plus"></i>Add PPE type</button>':'')+'</div>';
+      if(el)el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)"><div style="font-size:40px;margin-bottom:12px"><i class="ti ti-circle-dot"></i></div><div style="font-weight:600;margin-bottom:8px">No PPE in catalogue yet</div>'+(isMgr()?'<button class="btn btn-primary" data-auris-generated-onclick="g0213"><i class="ti ti-plus"></i>Add PPE type</button>':'')+'</div>';
       return;
     }
     var h='<div class="table-scroll">'
@@ -23487,7 +23487,7 @@ async function ppeLoadCatalogue(){
       var statusHtml=x.status&&x.status!=='active'
         ? '<span style="background:#f3f4f6;color:#6B7280;padding:3px 8px;border-radius:99px;font-size:10px;font-weight:800;text-transform:capitalize">'+escH(status)+'</span>'
         : '<span style="background:#EAF3DE;color:#3B6D11;padding:3px 8px;border-radius:99px;font-size:10px;font-weight:800">Active</span>';
-      h+='<tr style="border-bottom:1px solid var(--border);border-left:5px solid '+cfg.color+';cursor:pointer" data-id="'+x.id+'" onclick="ppeCatEdit(this.dataset.id)">'
+      h+='<tr style="border-bottom:1px solid var(--border);border-left:5px solid '+cfg.color+';cursor:pointer" data-id="'+x.id+'" data-auris-generated-onclick="g0214">'
         +'<td style="padding:10px;font-family:monospace;font-weight:800;color:'+cfg.color+'">'+escH(x.ppe_code||'PPE')+'</td>'
         +'<td style="padding:10px;min-width:230px"><div style="display:flex;align-items:center;gap:8px"><span style="font-size:18px">'+cfg.emoji+'</span><div><div style="font-weight:800">'+escH(x.name||'-')+'</div><div style="font-size:11px;color:var(--text2);margin-top:2px">'+escH([x.sub_category,x.brand,x.model].filter(Boolean).join(' - ')||'-')+'</div></div></div></td>'
         +'<td style="padding:10px"><span style="background:'+cfg.color+'18;color:'+cfg.color+';padding:3px 8px;border-radius:99px;font-size:10px;font-weight:800">'+escH(cfg.label||x.category||'Other')+'</span></td>'
@@ -23524,7 +23524,7 @@ async function ppeLoadInventory(){
   try{
     var d=await api(q);ppeCatData=d||[];
     if(!d||!d.length){
-      el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)"><div style="font-size:40px;margin-bottom:12px"><i class="ti ti-circle-dot"></i></div><div style="font-weight:600;margin-bottom:8px">No PPE stock records yet</div>'+(isMgr()?'<button class="btn btn-primary" onclick="ppeCatNew()"><i class="ti ti-plus"></i>Add PPE type</button>':'')+'</div>';
+      el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)"><div style="font-size:40px;margin-bottom:12px"><i class="ti ti-circle-dot"></i></div><div style="font-weight:600;margin-bottom:8px">No PPE stock records yet</div>'+(isMgr()?'<button class="btn btn-primary" data-auris-generated-onclick="g0213"><i class="ti ti-plus"></i>Add PPE type</button>':'')+'</div>';
       return;
     }
     var total=d.reduce(function(sum,x){return sum+(Number(x.quantity_total)||0);},0);
@@ -23555,7 +23555,7 @@ async function ppeLoadInventory(){
       var qty=Number(x.quantity_available||0), reorder=Number(x.reorder_level||0);
       var cert=ppeReadCertMeta(x);
       var stockLabel=qty<=0?'<span class="badge br">Out of stock</span>':qty<=reorder?'<span class="badge ba">Low stock</span>':'<span class="badge bg">OK</span>';
-      h+='<tr style="border-bottom:1px solid var(--border);border-left:5px solid '+cfg.color+';cursor:pointer" data-id="'+x.id+'" onclick="ppeCatEdit(this.dataset.id)">'
+      h+='<tr style="border-bottom:1px solid var(--border);border-left:5px solid '+cfg.color+';cursor:pointer" data-id="'+x.id+'" data-auris-generated-onclick="g0214">'
         +'<td style="padding:10px;font-family:monospace;font-weight:800;color:'+cfg.color+'">'+escH(x.ppe_code||'PPE')+'</td>'
         +'<td style="padding:10px;min-width:240px"><div style="display:flex;align-items:center;gap:8px"><span style="font-size:18px">'+cfg.emoji+'</span><div><div style="font-weight:800">'+escH(x.name||'-')+'</div><div style="font-size:11px;color:var(--text2);margin-top:2px">'+escH(cfg.label||x.category||'Other')+'</div></div></div></td>'
         +'<td style="padding:10px;text-align:center;font-weight:900">'+(x.quantity_total??0)+'</td>'
@@ -23631,7 +23631,7 @@ async function ppeLoadIssuance(){
     var q='/ppe_issuance?select=*'+cf()+'&order=issued_date.desc';if(fs)q+='&status=eq.'+fs;
     var d=await api(q);ppeIssData=d||[];
     if(q_param){var ql=q_param.toLowerCase();ppeIssData=ppeIssData.filter(x=>(x.employee_name||'').toLowerCase().includes(ql)||(x.ppe_name||'').toLowerCase().includes(ql)||(x.issuance_ref||'').toLowerCase().includes(ql)||(x.department||'').toLowerCase().includes(ql));}
-    if(!ppeIssData.length){el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)"><div style="font-size:40px;margin-bottom:12px"><i class="ti ti-circle-dot"></i></div><div style="font-weight:600;margin-bottom:8px">No issuance records</div>'+(isMgr()?'<button class="btn btn-primary" onclick="ppeIssNew()"><i class="ti ti-plus"></i>Issue PPE</button>':'')+'</div>';return;}
+    if(!ppeIssData.length){el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)"><div style="font-size:40px;margin-bottom:12px"><i class="ti ti-circle-dot"></i></div><div style="font-weight:600;margin-bottom:8px">No issuance records</div>'+(isMgr()?'<button class="btn btn-primary" data-auris-generated-onclick="g0215"><i class="ti ti-plus"></i>Issue PPE</button>':'')+'</div>';return;}
     var stCfg={active:['#EAF3DE','#3B6D11'],returned:['#f3f4f6','#6B7280'],expired:['#FCEBEB','#A32D2D'],lost:['#FCEBEB','#A32D2D'],condemned:['#f3f4f6','#6B7280']};
     var h='<div class="table-scroll"><table class="data-table" style="min-width:1080px"><thead><tr><th>Ref</th><th>PPE Item</th><th>Employee</th><th>Dept</th><th>Issued</th><th>Expiry</th><th>Replace by</th><th>Status</th><th style="width:60px"></th></tr></thead><tbody>';
     ppeIssData.forEach(function(x,i){
@@ -23647,7 +23647,7 @@ async function ppeLoadIssuance(){
         +'<td style="padding:8px;font-size:11px;font-weight:'+(expiring?'700':'400')+';color:'+(expiring?'var(--red)':'inherit')+'">'+(x.expiry_date?new Date(x.expiry_date).toLocaleDateString('en-GB')+(expiring?' Due':''):'-')+'</td>'
         +'<td style="padding:8px;font-size:11px;font-weight:'+(replaceDue?'700':'400')+';color:'+(replaceDue?'#C2410C':'inherit')+'">'+(x.expected_replacement_date?new Date(x.expected_replacement_date).toLocaleDateString('en-GB')+(replaceDue?' Due':''):'-')+'</td>'
         +'<td style="padding:8px"><span style="background:'+sc[0]+';color:'+sc[1]+';padding:2px 8px;border-radius:99px;font-size:10px;font-weight:700;text-transform:capitalize">'+x.status+'</span></td>'
-        +'<td style="padding:8px"><div style="display:flex;gap:4px"><button class="btn btn-sm" data-id="'+x.id+'" onclick="ppeIssEdit(this.dataset.id)"><i class="ti ti-edit"></i></button>'+(isMgr()?'<button class="btn btn-sm" style="color:var(--red)" data-id="'+x.id+'" onclick="ppeIssDeleteRow(this.dataset.id)"><i class="ti ti-trash"></i></button>':'')+'</div></td></tr>';
+        +'<td style="padding:8px"><div style="display:flex;gap:4px"><button class="btn btn-sm" data-id="'+x.id+'" data-auris-generated-onclick="g0216"><i class="ti ti-edit"></i></button>'+(isMgr()?'<button class="btn btn-sm" style="color:var(--red)" data-id="'+x.id+'" data-auris-generated-onclick="g0217"><i class="ti ti-trash"></i></button>':'')+'</div></td></tr>';
     });
     h+='</tbody></table></div>';el.innerHTML=h;
   }catch(e){el.innerHTML=registerErrorHtml('register',e.message);}
@@ -23772,7 +23772,7 @@ async function ppeLoadInspections(){
     setM('ppe-insp-fail',(d||[]).filter(x=>x.overall_result==='fail').length);
     setM('ppe-insp-cond',(d||[]).filter(x=>x.overall_result==='condemn').length);
     setM('ppe-insp-due',(d||[]).filter(x=>x.next_inspection_date&&new Date(x.next_inspection_date)<=d30).length);
-    if(!d||!d.length){el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)"><div style="font-size:40px;margin-bottom:12px"><i class="ti ti-circle-dot"></i></div><div style="font-weight:600;margin-bottom:8px">No PPE inspections recorded</div>'+(isMgr()?'<button class="btn btn-primary" onclick="ppeInspNew()"><i class="ti ti-plus"></i>New inspection</button>':'')+'</div>';return;}
+    if(!d||!d.length){el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)"><div style="font-size:40px;margin-bottom:12px"><i class="ti ti-circle-dot"></i></div><div style="font-weight:600;margin-bottom:8px">No PPE inspections recorded</div>'+(isMgr()?'<button class="btn btn-primary" data-auris-generated-onclick="g0218"><i class="ti ti-plus"></i>New inspection</button>':'')+'</div>';return;}
     var resCfg={pass:['#EAF3DE','#3B6D11','Pass'],fail:['#FCEBEB','#A32D2D','Fail'],condemn:['#4C0519','#fff','Condemn'],monitor:['#FEF9EC','#854F0B','Monitor']};
     var h='<div class="table-scroll"><table class="data-table" style="min-width:1080px"><thead><tr><th>Ref</th><th>PPE Item</th><th>Employee</th><th>Inspector</th><th>Date</th><th>Result</th><th>Action taken</th><th>Next insp.</th><th style="width:60px"></th></tr></thead><tbody>';
     d.forEach(function(x,i){
@@ -23787,7 +23787,7 @@ async function ppeLoadInspections(){
         +'<td style="padding:8px"><span style="background:'+rc[0]+';color:'+rc[1]+';padding:2px 8px;border-radius:99px;font-size:10px;font-weight:700">'+rc[2]+'</span></td>'
         +'<td style="padding:8px;font-size:11px;text-transform:capitalize">'+escH((x.action_taken||'-').replace(/_/g,' '))+'</td>'
         +'<td style="padding:8px;font-size:11px;font-weight:'+(isDue?'700':'400')+';color:'+(isDue?'var(--red)':'inherit')+'">'+(x.next_inspection_date?new Date(x.next_inspection_date).toLocaleDateString('en-GB')+(isDue?' ?':''):'-')+'</td>'
-        +'<td style="padding:8px"><div style="display:flex;gap:4px"><button class="btn btn-sm" data-id="'+x.id+'" onclick="ppeInspEdit(this.dataset.id)"><i class="ti ti-edit"></i></button>'+(isMgr()?'<button class="btn btn-sm" style="color:var(--red)" data-id="'+x.id+'" onclick="ppeInspDeleteRow(this.dataset.id)"><i class="ti ti-trash"></i></button>':'')+'</div></td></tr>';
+        +'<td style="padding:8px"><div style="display:flex;gap:4px"><button class="btn btn-sm" data-id="'+x.id+'" data-auris-generated-onclick="g0219"><i class="ti ti-edit"></i></button>'+(isMgr()?'<button class="btn btn-sm" style="color:var(--red)" data-id="'+x.id+'" data-auris-generated-onclick="g0220"><i class="ti ti-trash"></i></button>':'')+'</div></td></tr>';
     });
     h+='</tbody></table></div>';el.innerHTML=h;
   }catch(e){el.innerHTML=registerErrorHtml('register',e.message);}
@@ -23886,7 +23886,7 @@ async function ppeLoadReplacements(){
   var el=document.getElementById('ppe-rep-list');if(!el)return;el.innerHTML='<div class="loading-msg">Loading...</div>';
   try{
     var d=await api('/ppe_replacements?select=*'+cf()+'&order=created_at.desc');ppeRepData=d||[];
-    if(!d||!d.length){el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)"><div style="font-size:40px;margin-bottom:12px"><i class="ti ti-circle-dot"></i></div><div style="font-weight:600;margin-bottom:8px">No replacement requests</div>'+(isMgr()?'<button class="btn btn-primary" onclick="ppeRepNew()"><i class="ti ti-plus"></i>New request</button>':'')+'</div>';return;}
+    if(!d||!d.length){el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)"><div style="font-size:40px;margin-bottom:12px"><i class="ti ti-circle-dot"></i></div><div style="font-weight:600;margin-bottom:8px">No replacement requests</div>'+(isMgr()?'<button class="btn btn-primary" data-auris-generated-onclick="g0221"><i class="ti ti-plus"></i>New request</button>':'')+'</div>';return;}
     var urgCfg={immediate:['#FCEBEB','#A32D2D','Immediate'],urgent:['#FEF6E7','#C2410C','Urgent'],normal:['#FEF9EC','#854F0B','Normal'],planned:['#EAF3DE','#3B6D11','Planned']};
     var stCfg={pending:['#FEF9EC','#854F0B'],approved:['#EFF6FF','#185FA5'],fulfilled:['#EAF3DE','#3B6D11'],rejected:['#f3f4f6','#6B7280'],cancelled:['#f3f4f6','#6B7280']};
     var h='<div class="table-scroll"><table class="data-table" style="min-width:980px"><thead><tr><th>Ref</th><th>PPE Item</th><th>Employee</th><th>Reason</th><th>Urgency</th><th>Date</th><th>Status</th><th style="width:60px"></th></tr></thead><tbody>';
@@ -23900,7 +23900,7 @@ async function ppeLoadReplacements(){
         +'<td style="padding:8px"><span style="background:'+uc[0]+';color:'+uc[1]+';padding:2px 8px;border-radius:99px;font-size:10px;font-weight:700">'+uc[2]+'</span></td>'
         +'<td style="padding:8px;font-size:11px">'+(x.requested_date?new Date(x.requested_date).toLocaleDateString('en-GB'):'-')+'</td>'
         +'<td style="padding:8px"><span style="background:'+sc[0]+';color:'+sc[1]+';padding:2px 8px;border-radius:99px;font-size:10px;font-weight:700;text-transform:capitalize">'+x.status+'</span></td>'
-        +'<td style="padding:8px"><div style="display:flex;gap:4px"><button class="btn btn-sm" data-id="'+x.id+'" onclick="ppeRepEdit(this.dataset.id)"><i class="ti ti-edit"></i></button>'+(isMgr()?'<button class="btn btn-sm" style="color:var(--red)" data-id="'+x.id+'" onclick="ppeRepDeleteRow(this.dataset.id)"><i class="ti ti-trash"></i></button>':'')+'</div></td></tr>';
+        +'<td style="padding:8px"><div style="display:flex;gap:4px"><button class="btn btn-sm" data-id="'+x.id+'" data-auris-generated-onclick="g0222"><i class="ti ti-edit"></i></button>'+(isMgr()?'<button class="btn btn-sm" style="color:var(--red)" data-id="'+x.id+'" data-auris-generated-onclick="g0223"><i class="ti ti-trash"></i></button>':'')+'</div></td></tr>';
     });
     h+='</tbody></table></div>';el.innerHTML=h;
   }catch(e){el.innerHTML=registerErrorHtml('register',e.message);}
@@ -24155,7 +24155,7 @@ function toolsFilterRegister(){
     el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)">'
       +'<div style="font-size:40px;margin-bottom:12px"><i class="ti ti-circle-dot"></i></div>'
       +'<div style="font-weight:600;margin-bottom:8px">No equipment found</div>'
-      +(isMgr()&&!search&&!cat&&!status?'<button class="btn btn-primary" onclick="toolsNew()"><i class="ti ti-plus"></i>Add first equipment</button>':'')
+      +(isMgr()&&!search&&!cat&&!status?'<button class="btn btn-primary" data-auris-generated-onclick="g0224"><i class="ti ti-plus"></i>Add first equipment</button>':'')
       +'</div>';
     return;
   }
@@ -24194,7 +24194,7 @@ function toolsFilterRegister(){
       +'<td style="padding:10px 12px"><span style="background:'+inspBg+';color:'+inspColor+';padding:2px 8px;border-radius:99px;font-size:10px;font-weight:800">'+escH(inspState.last?('Last '+inspState.label):inspState.label)+'</span></td>'
       +'<td style="padding:10px 12px">'+(x.requires_statutory?(x.next_statutory_date?'<span style="color:'+(isStatDue?'#8B5CF6':'inherit')+';font-weight:'+(isStatDue?'800':'500')+'">'+new Date(x.next_statutory_date).toLocaleDateString('en-GB')+(isStatDue?' due':'')+'</span>':'Required'):'--')+'</td>'
       +'<td style="padding:10px 12px"><span style="background:'+sc[0]+';color:'+sc[1]+';padding:2px 8px;border-radius:99px;font-size:10px;font-weight:800;text-transform:capitalize">'+escH((x.status||'active').replace(/_/g,' '))+'</span></td>'
-      +'<td style="padding:10px 12px;text-align:right;white-space:nowrap"><button class="btn btn-sm" style="background:#1D9E7515;color:#1D9E75;border-color:#1D9E7540" data-id="'+x.id+'" onclick="event.stopPropagation();toolsStartInspection(this.getAttribute(\'data-id\'))"><i class="ti ti-clipboard-check"></i>Inspect</button> <button class="btn btn-sm" data-id="'+x.id+'" onclick="event.stopPropagation();toolsEdit(this.getAttribute(\'data-id\'))"><i class="ti ti-edit"></i></button> '+(isMgr()?'<button class="btn btn-sm" style="color:var(--red)" data-id="'+x.id+'" onclick="event.stopPropagation();toolsDeleteFromList(this.getAttribute(\'data-id\'))"><i class="ti ti-trash"></i></button>':'')+'</td>'
+      +'<td style="padding:10px 12px;text-align:right;white-space:nowrap"><button class="btn btn-sm" style="background:#1D9E7515;color:#1D9E75;border-color:#1D9E7540" data-id="'+x.id+'" data-auris-generated-onclick="g0225"><i class="ti ti-clipboard-check"></i>Inspect</button> <button class="btn btn-sm" data-id="'+x.id+'" data-auris-generated-onclick="g0226"><i class="ti ti-edit"></i></button> '+(isMgr()?'<button class="btn btn-sm" style="color:var(--red)" data-id="'+x.id+'" data-auris-generated-onclick="g0227"><i class="ti ti-trash"></i></button>':'')+'</td>'
       +'</tr>';
   });
   html+='</tbody></table></div>';
@@ -24352,7 +24352,7 @@ async function toolsLoadPersonal(){
     var d=await api(q);
     var assigned=d||[];
     if(!assigned.length){
-      if(el)el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)">No personal tool assignments found.<br><br>'+(isMgr()?'<button class="btn btn-primary" onclick="toolsNew()"><i class="ti ti-plus"></i>Add equipment and assign to a person</button>':'')+'</div>';
+      if(el)el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)">No personal tool assignments found.<br><br>'+(isMgr()?'<button class="btn btn-primary" data-auris-generated-onclick="g0224"><i class="ti ti-plus"></i>Add equipment and assign to a person</button>':'')+'</div>';
       return;
     }
     // Group by person
@@ -24410,7 +24410,7 @@ async function toolsLoadInspections(){
   try{
     var d=await api('/tool_inspections?select=*,tools_register(name,ref_number,category)'+cf()+'&order=inspection_date.desc&limit=100');
     if(!d||!d.length){
-      if(el)el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)">No inspections recorded yet.'+(isMgr()?' <button class="btn btn-primary btn-sm" onclick="toolsNewInspection()"><i class="ti ti-plus"></i>New inspection</button>':'')+'</div>';
+      if(el)el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)">No inspections recorded yet.'+(isMgr()?' <button class="btn btn-primary btn-sm" data-auris-generated-onclick="g0228"><i class="ti ti-plus"></i>New inspection</button>':'')+'</div>';
       return;
     }
     var h='<div class="table-scroll"><table class="data-table" style="min-width:860px"><thead><tr>'
@@ -24435,7 +24435,7 @@ async function toolsLoadInspections(){
         +'<td style="padding:8px 10px;text-transform:capitalize;font-size:11px">'+escH((x.inspection_type||'').replace(/_/g,' '))+'</td>'
         +'<td style="padding:8px 10px">'+escH(x.inspected_by_name||'-')+'</td>'
         +'<td style="padding:8px 10px;text-align:center"><span style="background:'+rc[0]+';color:'+rc[1]+';padding:3px 10px;border-radius:99px;font-size:11px;font-weight:700">'+rc[2]+'</span></td>'
-        +'<td style="padding:8px 10px"><button class="btn btn-sm" data-id="'+x.id+'" onclick="toolsViewInspection(this.getAttribute(\'data-id\'))"><i class="ti ti-eye"></i></button></td>'
+        +'<td style="padding:8px 10px"><button class="btn btn-sm" data-id="'+x.id+'" data-auris-generated-onclick="g0229"><i class="ti ti-eye"></i></button></td>'
         +'</tr>';
     });
     h+='</tbody></table></div>';
@@ -24461,7 +24461,7 @@ async function toolsLoadLiftingAccessories(){
         +'<div style="font-size:42px;margin-bottom:10px"><i class="ti ti-crane"></i></div>'
         +'<div style="font-weight:800;color:var(--text);margin-bottom:6px">No lifting accessories registered</div>'
         +'<div style="font-size:12px;margin-bottom:14px">Add slings, shackles, chain blocks, lifting beams, hooks or other lifting accessories, then inspect them here.</div>'
-        +(isMgr()?'<button class="btn btn-primary" onclick="toolsNewLiftingAccessory()"><i class="ti ti-plus"></i>Add lifting accessory</button>':'')
+        +(isMgr()?'<button class="btn btn-primary" data-auris-generated-onclick="g0230"><i class="ti ti-plus"></i>Add lifting accessory</button>':'')
         +'</div>';
       return;
     }
@@ -24512,7 +24512,7 @@ async function toolsLoadLiftingAccessories(){
         +'<td style="padding:10px 12px">'+(lastDt?lastDt.toLocaleDateString('en-GB'):'Never')+'</td>'
         +'<td style="padding:10px 12px;'+(overdue?'color:#C2410C;font-weight:800':dueSoon?'color:#854F0B;font-weight:800':'')+'">'+(next?next.toLocaleDateString('en-GB'):'Due now')+(overdue?' overdue':dueSoon?' due soon':'')+'</td>'
         +'<td style="padding:10px 12px;text-align:center"><span style="background:'+rc[0]+';color:'+rc[1]+';padding:3px 10px;border-radius:99px;font-size:11px;font-weight:800">'+rc[2]+'</span></td>'
-        +'<td style="padding:10px 12px;text-align:right;white-space:nowrap">'+(isMgr()?'<button class="btn btn-sm btn-primary" data-id="'+x.id+'" onclick="toolsStartLiftingInspection(this.getAttribute(\'data-id\'))"><i class="ti ti-clipboard-check"></i>Inspect</button> ':'')+'<button class="btn btn-sm" data-id="'+x.id+'" onclick="toolsEdit(this.getAttribute(\'data-id\'))"><i class="ti ti-edit"></i></button></td>'
+        +'<td style="padding:10px 12px;text-align:right;white-space:nowrap">'+(isMgr()?'<button class="btn btn-sm btn-primary" data-id="'+x.id+'" data-auris-generated-onclick="g0231"><i class="ti ti-clipboard-check"></i>Inspect</button> ':'')+'<button class="btn btn-sm" data-id="'+x.id+'" data-auris-generated-onclick="g0232"><i class="ti ti-edit"></i></button></td>'
         +'</tr>';
     });
     h+='</tbody></table></div>';
@@ -24606,9 +24606,9 @@ async function toolsLoadChecklist(category,tool){
       var tr=document.createElement('tr');
       tr.style.cssText='border-bottom:1px solid #f5f5f5';
       tr.innerHTML='<td style="padding:8px 16px;font-size:12px">'+escH(item.check_item||item.item||'')+'</td>'
-        +'<td style="padding:6px;text-align:center"><input type="radio" name="chk'+i+'" value="ok" id="ci-ok-'+i+'" onchange="toolsInspScore()" style="width:16px;height:16px;accent-color:#1D9E75"></td>'
-        +'<td style="padding:6px;text-align:center"><input type="radio" name="chk'+i+'" value="fail" id="ci-fail-'+i+'" onchange="toolsInspScore()" style="width:16px;height:16px;accent-color:#E24B4A"></td>'
-        +'<td style="padding:6px;text-align:center"><input type="radio" name="chk'+i+'" value="na" id="ci-na-'+i+'" onchange="toolsInspScore()" style="width:16px;height:16px;accent-color:#6B7280" checked></td>'
+        +'<td style="padding:6px;text-align:center"><input type="radio" name="chk'+i+'" value="ok" id="ci-ok-'+i+'" data-auris-generated-onchange="g0233" style="width:16px;height:16px;accent-color:#1D9E75"></td>'
+        +'<td style="padding:6px;text-align:center"><input type="radio" name="chk'+i+'" value="fail" id="ci-fail-'+i+'" data-auris-generated-onchange="g0233" style="width:16px;height:16px;accent-color:#E24B4A"></td>'
+        +'<td style="padding:6px;text-align:center"><input type="radio" name="chk'+i+'" value="na" id="ci-na-'+i+'" data-auris-generated-onchange="g0233" style="width:16px;height:16px;accent-color:#6B7280" checked></td>'
         +'<td style="padding:4px 12px"><input type="text" class="insp-note-'+i+'" placeholder="Notes..." style="width:100%;padding:4px 8px;border:1px solid var(--border);border-radius:6px;font-size:11px"/></td>';
       tbody.appendChild(tr);
     });
@@ -24712,7 +24712,7 @@ async function toolsLoadRCD(){
         +'<div style="font-size:38px;margin-bottom:10px"><i class="ti ti-plug-connected"></i></div>'
         +'<div style="font-weight:700;margin-bottom:8px;color:var(--text)">No RCDs registered yet</div>'
         +'<div style="font-size:12px;margin-bottom:14px">Add distribution boards or RCD devices, then record monthly push-button tests.</div>'
-        +(isMgr()?'<button class="btn btn-primary" onclick="toolsNewRCD()"><i class="ti ti-plus"></i>Add RCD / DB</button>':'')
+        +(isMgr()?'<button class="btn btn-primary" data-auris-generated-onclick="g0234"><i class="ti ti-plus"></i>Add RCD / DB</button>':'')
         +'</div>';
       return;
     }
@@ -24746,8 +24746,8 @@ async function toolsLoadRCD(){
         +'<td style="padding:9px 12px;'+(overdue?'color:var(--red);font-weight:700':dueSoon?'color:#C2410C;font-weight:700':'')+'">'+(next?next.toLocaleDateString('en-GB'):'No test recorded')+(next&&overdue?' overdue':dueSoon?' due soon':'')+'</td>'
         +'<td style="padding:9px 12px;text-align:center"><span style="background:'+rc[0]+';color:'+rc[1]+';padding:3px 10px;border-radius:99px;font-size:11px;font-weight:700">'+rc[2]+'</span></td>'
         +'<td style="padding:9px 12px;text-align:right;white-space:nowrap">'
-        +(isMgr()?'<button class="btn btn-sm btn-primary" data-id="'+x.id+'" onclick="event.stopPropagation();toolsStartRCDTest(this.getAttribute(\'data-id\'))"><i class="ti ti-clipboard-check"></i>Test</button> ':'')
-        +(isMgr()?'<button class="btn btn-sm" data-id="'+x.id+'" onclick="event.stopPropagation();toolsEdit(this.getAttribute(\'data-id\'))"><i class="ti ti-edit"></i></button>':'')
+        +(isMgr()?'<button class="btn btn-sm btn-primary" data-id="'+x.id+'" data-auris-generated-onclick="g0235"><i class="ti ti-clipboard-check"></i>Test</button> ':'')
+        +(isMgr()?'<button class="btn btn-sm" data-id="'+x.id+'" data-auris-generated-onclick="g0226"><i class="ti ti-edit"></i></button>':'')
         +'</td></tr>';
     });
     h+='</tbody></table></div>';
@@ -24850,7 +24850,7 @@ async function toolsLoadStatutory(){
   try{
     var d=await api('/tools_register?requires_statutory=eq.true'+cf()+'&order=next_statutory_date&select=*');
     if(!d||!d.length){
-      if(el)el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)">No equipment requiring statutory examination registered.<br><br>'+(isMgr()?'<button class="btn btn-primary btn-sm" onclick="toolsNew()">Add statutory equipment</button>':'')+'</div>';
+      if(el)el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)">No equipment requiring statutory examination registered.<br><br>'+(isMgr()?'<button class="btn btn-primary btn-sm" data-auris-generated-onclick="g0224">Add statutory equipment</button>':'')+'</div>';
       if(alertEl)alertEl.innerHTML='';
       return;
     }
@@ -24890,7 +24890,7 @@ async function toolsLoadStatutory(){
         +'<td style="padding:8px 10px;color:'+statColor+';font-weight:600">'+( nextDate?nextDate.toLocaleDateString('en-GB'):'-')+'</td>'
         +'<td style="padding:8px 10px">'+escH(x.statutory_body||'-')+'</td>'
         +'<td style="padding:8px 10px;text-align:center"><span style="background:'+statBg+';color:'+statTxt+';padding:2px 8px;border-radius:99px;font-size:10px;font-weight:700">'+statLabel+'</span></td>'
-        +'<td style="padding:8px 10px"><button class="btn btn-sm" data-id="'+x.id+'" onclick="toolsEdit(this.getAttribute(\'data-id\'))"><i class="ti ti-edit"></i></button></td>'
+        +'<td style="padding:8px 10px"><button class="btn btn-sm" data-id="'+x.id+'" data-auris-generated-onclick="g0232"><i class="ti ti-edit"></i></button></td>'
         +'</tr>';
     });
     h+='</tbody></table></div>';
@@ -24909,7 +24909,7 @@ async function toolsLoadVehicles(){
       if(el)el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)">'
         +'<div style="font-size:48px;margin-bottom:12px"><i class="ti ti-circle-dot"></i></div>'
         +'<div style="font-weight:600;margin-bottom:8px">No vehicles registered</div>'
-        +(isMgr()?'<button class="btn btn-primary" onclick="toolsNewVehicle()"><i class="ti ti-plus"></i>Add vehicle</button>':'')
+        +(isMgr()?'<button class="btn btn-primary" data-auris-generated-onclick="g0236"><i class="ti ti-plus"></i>Add vehicle</button>':'')
         +'</div>';
       return;
     }
@@ -24931,11 +24931,11 @@ async function toolsLoadVehicles(){
         +'<td style="padding:10px 12px">'+(lastDt?lastDt.toLocaleDateString('en-GB'):'Never')+'<div style="font-size:11px;color:'+(isOverdue?'var(--red)':isDueSoon?'#C2410C':'var(--text2)')+'">'+(daysSince<999?daysSince+' days ago':'Check due')+'</div></td>'
         +'<td style="padding:10px 12px"><span style="background:'+inspStatus[0]+';color:'+inspStatus[1]+';padding:3px 9px;border-radius:99px;font-size:11px;font-weight:800">'+inspStatus[2]+'</span></td>'
         +'<td style="padding:10px 12px">'+escH(lastInsp?.overall_result||'--')+'</td>'
-        +'<td style="padding:10px 12px;text-align:right;white-space:nowrap"><button class="btn btn-sm btn-primary" data-id="'+v.id+'" onclick="toolsStartInspection(this.getAttribute(\'data-id\'))"><i class="ti ti-clipboard-check"></i>Check</button> <button class="btn btn-sm" data-id="'+v.id+'" onclick="toolsEdit(this.getAttribute(\'data-id\'))"><i class="ti ti-edit"></i></button></td>'
+        +'<td style="padding:10px 12px;text-align:right;white-space:nowrap"><button class="btn btn-sm btn-primary" data-id="'+v.id+'" data-auris-generated-onclick="g0237"><i class="ti ti-clipboard-check"></i>Check</button> <button class="btn btn-sm" data-id="'+v.id+'" data-auris-generated-onclick="g0232"><i class="ti ti-edit"></i></button></td>'
         +'</tr>';
     }
     html+='</tbody></table></div>';
-    if(isMgr())html+='<div style="padding:12px 16px;border-top:1px solid var(--border);text-align:center"><button class="btn btn-sm btn-primary" onclick="toolsNewVehicle()"><i class="ti ti-plus"></i>Add vehicle</button></div>';
+    if(isMgr())html+='<div style="padding:12px 16px;border-top:1px solid var(--border);text-align:center"><button class="btn btn-sm btn-primary" data-auris-generated-onclick="g0236"><i class="ti ti-plus"></i>Add vehicle</button></div>';
     el.innerHTML=html;
   }catch(e){el.innerHTML=registerErrorHtml('register',e.message);}
 }
@@ -24980,7 +24980,7 @@ async function toolsViewInspection(id){
     modal.innerHTML='<div class="card" role="dialog" aria-modal="true" style="width:100%;max-width:820px;max-height:88vh;overflow:auto;border-radius:12px;padding:0;box-shadow:0 24px 80px rgba(0,0,0,.35)">'
       +'<div style="padding:16px 20px;background:linear-gradient(135deg,#1a3a5c,#185FA5);color:#fff;display:flex;justify-content:space-between;align-items:center;gap:12px">'
       +'<div><div style="font-size:11px;text-transform:uppercase;letter-spacing:.08em;opacity:.8">Equipment inspection report</div><div style="font-size:18px;font-weight:900;margin-top:3px">'+escH(tool.name||'Equipment')+'</div><div style="font-family:monospace;font-size:12px;opacity:.8">'+escH(tool.ref_number||'')+'</div></div>'
-      +'<button class="btn btn-sm" style="background:rgba(255,255,255,.16);color:#fff;border-color:rgba(255,255,255,.25)" onclick="document.getElementById(\'tools-inspection-detail-modal\')?.remove()"><i class="ti ti-x"></i></button>'
+      +'<button class="btn btn-sm" style="background:rgba(255,255,255,.16);color:#fff;border-color:rgba(255,255,255,.25)" data-auris-generated-onclick="g0238"><i class="ti ti-x"></i></button>'
       +'</div>'
       +'<div style="padding:18px 20px">'
       +'<div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-bottom:16px">'
@@ -25003,7 +25003,7 @@ async function toolsViewInspection(id){
       +'</div>'
       +'<div style="border:1px solid var(--border);border-radius:10px;overflow:hidden;background:#fff"><div style="padding:10px 12px;font-size:12px;font-weight:900;background:#f9fafb;border-bottom:1px solid var(--border)">Checklist results</div>'
       +'<table style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr><th style="padding:8px 10px;text-align:left">Check item</th><th style="padding:8px 10px;text-align:center;width:90px">Result</th><th style="padding:8px 10px;text-align:left">Notes</th></tr></thead><tbody>'+rowsHtml+'</tbody></table></div>'
-      +'<div style="display:flex;justify-content:flex-end;gap:8px;margin-top:16px"><button class="btn" onclick="window.print()"><i class="ti ti-printer"></i>Print</button><button class="btn btn-primary" onclick="document.getElementById(\'tools-inspection-detail-modal\')?.remove()">Close</button></div>'
+      +'<div style="display:flex;justify-content:flex-end;gap:8px;margin-top:16px"><button class="btn" data-auris-generated-onclick="g0023"><i class="ti ti-printer"></i>Print</button><button class="btn btn-primary" data-auris-generated-onclick="g0238">Close</button></div>'
       +'</div></div>';
     document.body.appendChild(modal);
     modal.addEventListener('click',function(e){if(e.target===modal)modal.remove();});
@@ -25109,11 +25109,11 @@ function fleetRender(){
     return true;
   });
   if(!fleetVehicles.length){
-    el.innerHTML='<div class="card" style="text-align:center;padding:42px;color:var(--text2)"><div style="font-size:40px;margin-bottom:10px"><i class="ti ti-car"></i></div><div style="font-weight:700;color:var(--text);margin-bottom:8px">No vehicles registered yet</div><div style="font-size:12px;margin-bottom:14px">Add company vehicles from here, then track inspections, fuel and incidents.</div>'+(isMgr()?'<button class="btn btn-primary" onclick="fleetNewVehicle()"><i class="ti ti-plus"></i>Add vehicle</button>':'')+'</div>';
+    el.innerHTML='<div class="card" style="text-align:center;padding:42px;color:var(--text2)"><div style="font-size:40px;margin-bottom:10px"><i class="ti ti-car"></i></div><div style="font-weight:700;color:var(--text);margin-bottom:8px">No vehicles registered yet</div><div style="font-size:12px;margin-bottom:14px">Add company vehicles from here, then track inspections, fuel and incidents.</div>'+(isMgr()?'<button class="btn btn-primary" data-auris-generated-onclick="g0239"><i class="ti ti-plus"></i>Add vehicle</button>':'')+'</div>';
     return;
   }
   if(!rows.length){
-    el.innerHTML='<div class="card" style="text-align:center;padding:34px;color:var(--text2)"><div style="font-weight:800;color:var(--text);margin-bottom:6px">No vehicles match the current filters</div><button class="btn btn-sm" onclick="document.getElementById(\'fleet-search\').value=\'\';document.getElementById(\'fleet-filter-status\').value=\'\';document.getElementById(\'fleet-filter-check\').value=\'\';fleetRender()">Clear filters</button></div>';
+    el.innerHTML='<div class="card" style="text-align:center;padding:34px;color:var(--text2)"><div style="font-weight:800;color:var(--text);margin-bottom:6px">No vehicles match the current filters</div><button class="btn btn-sm" data-auris-generated-onclick="g0240">Clear filters</button></div>';
     return;
   }
   var h='<div class="table-scroll"><table class="data-table" style="min-width:1180px">'
@@ -25143,9 +25143,9 @@ function fleetRender(){
       +'<td style="padding:10px 12px;font-weight:700">'+(fuelSum?fuelSum.toFixed(1):'0')+' L<div style="font-size:11px;color:var(--text2);font-weight:400">'+fList.length+' entries</div></td>'
       +'<td style="padding:10px 12px;text-align:center;font-weight:800;color:'+(incCount?'var(--red)':'var(--text2)')+'">'+incCount+'</td>'
       +'<td style="padding:10px 12px;text-align:right;white-space:nowrap">'
-      +(isMgr()?'<button class="btn btn-sm" data-id="'+v.id+'" onclick="event.stopPropagation();fleetMonthlyCheck(this.getAttribute(\'data-id\'))"><i class="ti ti-clipboard-check"></i>Check</button> ':'')
-      +(isMgr()?'<button class="btn btn-sm" data-label="'+escH(fleetLabel(v))+'" onclick="event.stopPropagation();fleetFuelNew(this.getAttribute(\'data-label\'))"><i class="ti ti-gas-station"></i>Fuel</button> ':'')
-      +(isMgr()?'<button class="btn btn-sm" data-id="'+v.id+'" onclick="event.stopPropagation();fleetEditVehicle(this.getAttribute(\'data-id\'))"><i class="ti ti-edit"></i></button>':'')
+      +(isMgr()?'<button class="btn btn-sm" data-id="'+v.id+'" data-auris-generated-onclick="g0241"><i class="ti ti-clipboard-check"></i>Check</button> ':'')
+      +(isMgr()?'<button class="btn btn-sm" data-label="'+escH(fleetLabel(v))+'" data-auris-generated-onclick="g0242"><i class="ti ti-gas-station"></i>Fuel</button> ':'')
+      +(isMgr()?'<button class="btn btn-sm" data-id="'+v.id+'" data-auris-generated-onclick="g0243"><i class="ti ti-edit"></i></button>':'')
       +'</td></tr>';
   });
   h+='</tbody></table></div>';
@@ -25202,7 +25202,7 @@ function atexRender(){
   setM('atex-m3oos',atexAreas.filter(x=>x.status==='out_of_service').length);
   setM('atex-m3due',atexAreas.filter(x=>x.status!=='archived'&&x.next_inspection_date&&new Date(x.next_inspection_date)<=today).length);
   if(!filtered.length){
-    el.innerHTML='<div class="card" style="text-align:center;padding:42px;color:var(--text2)"><div style="font-size:38px;margin-bottom:10px"><i class="ti ti-flame"></i></div><div style="font-weight:700;color:var(--text);margin-bottom:8px">No ATEX areas found</div>'+(isMgr()?'<button class="btn btn-primary" onclick="atexNew()"><i class="ti ti-plus"></i>Add ATEX area</button>':'')+'</div>';
+    el.innerHTML='<div class="card" style="text-align:center;padding:42px;color:var(--text2)"><div style="font-size:38px;margin-bottom:10px"><i class="ti ti-flame"></i></div><div style="font-weight:700;color:var(--text);margin-bottom:8px">No ATEX areas found</div>'+(isMgr()?'<button class="btn btn-primary" data-auris-generated-onclick="g0244"><i class="ti ti-plus"></i>Add ATEX area</button>':'')+'</div>';
     return;
   }
   var h='<div class="table-scroll"><table class="data-table" style="min-width:1180px">'
@@ -25224,7 +25224,7 @@ function atexRender(){
       +'<td style="padding:10px 12px;font-size:11px;line-height:1.35">'+escH([x.ventilation_controls,x.ignition_controls,x.detection_controls].filter(Boolean).join(' | ')||'--')+'</td>'
       +'<td style="padding:10px 12px;'+(due?'color:var(--red);font-weight:800':'')+'">'+(x.next_inspection_date?new Date(x.next_inspection_date).toLocaleDateString('en-GB'):'--')+(due?'<div style="font-size:10px;color:#A32D2D;font-weight:900">OVERDUE</div>':soon?'<div style="font-size:10px;color:#C2410C;font-weight:900">DUE SOON</div>':'')+'</td>'
       +'<td style="padding:10px 12px;text-align:center"><span style="background:'+cfg[0]+';color:'+cfg[1]+';padding:3px 9px;border-radius:99px;font-weight:800;font-size:11px">'+cfg[2]+'</span></td>'
-      +'<td style="padding:10px 12px;text-align:right;white-space:nowrap"><button class="btn btn-sm" data-id="'+x.id+'" onclick="event.stopPropagation();atexEdit(this.getAttribute(\'data-id\'))"><i class="ti ti-edit"></i></button> <button class="btn btn-sm" data-id="'+x.id+'" onclick="event.stopPropagation();atexOpenLinkedRecord(\'ra\',this.dataset.id)"><i class="ti ti-shield-check"></i>RA</button> <button class="btn btn-sm" data-id="'+x.id+'" onclick="event.stopPropagation();atexOpenLinkedRecord(\'ptw\',this.dataset.id)"><i class="ti ti-key"></i>PTW</button></td>'
+      +'<td style="padding:10px 12px;text-align:right;white-space:nowrap"><button class="btn btn-sm" data-id="'+x.id+'" data-auris-generated-onclick="g0245"><i class="ti ti-edit"></i></button> <button class="btn btn-sm" data-id="'+x.id+'" data-auris-generated-onclick="g0246"><i class="ti ti-shield-check"></i>RA</button> <button class="btn btn-sm" data-id="'+x.id+'" data-auris-generated-onclick="g0247"><i class="ti ti-key"></i>PTW</button></td>'
       +'</tr>';
   });
   h+='</tbody></table></div>';
@@ -25418,7 +25418,7 @@ function mocRender(){
       +'<div style="font-size:36px;margin-bottom:10px"><i class="ti ti-switch-3"></i></div>'
       +'<div style="font-weight:800;color:var(--text);margin-bottom:6px">No management of change records found</div>'
       +'<div style="font-size:12px;margin-bottom:14px">Use MOC to review process, equipment, chemical, legal and organisational changes before implementation.</div>'
-      +(isMgr()?'<button class="btn btn-primary" onclick="mocNew()"><i class="ti ti-plus"></i>New change request</button>':'')
+      +(isMgr()?'<button class="btn btn-primary" data-auris-generated-onclick="g0248"><i class="ti ti-plus"></i>New change request</button>':'')
       +'</div>';
     return;
   }
@@ -25435,7 +25435,7 @@ function mocRender(){
       +'<td style="padding:10px 12px;font-weight:'+(overdue?'800':'600')+';color:'+(overdue?'#DC2626':'#374151')+'">'+(target?target.toLocaleDateString('en-GB'):'--')+(overdue?' <i class="ti ti-alert-triangle"></i>':'')+'</td>'
       +'<td style="padding:10px 12px">'+mocPriorityBadge(x.priority)+'</td>'
       +'<td style="padding:10px 12px">'+mocStatusBadge(status)+'</td>'
-      +'<td style="padding:10px 12px;text-align:right"><button class="btn btn-sm" data-id="'+x.id+'" onclick="mocEdit(this.dataset.id)" title="Open change request"><i class="ti ti-edit"></i></button></td>'
+      +'<td style="padding:10px 12px;text-align:right"><button class="btn btn-sm" data-id="'+x.id+'" data-auris-generated-onclick="g0249" title="Open change request"><i class="ti ti-edit"></i></button></td>'
       +'</tr>';
   });
   el.innerHTML=h+'</tbody></table></div>';
@@ -25532,14 +25532,14 @@ function mocAIRenderReview(out){
   window.mocAIReview=out||{};
   var arr=function(v){return Array.isArray(v)?v:(v?[String(v)]:[]);};
   var h='<div class="card" style="border-left:4px solid #0F6E56;background:#fff">';
-  h+='<div style="display:flex;justify-content:space-between;gap:12px;align-items:flex-start;flex-wrap:wrap"><div><div style="font-weight:900;color:#0F6E56;font-size:15px"><i class="ti ti-robot"></i> AI MOC Impact Screening</div><div style="font-size:12px;color:var(--text2);margin-top:4px">Review before applying. AURIS supports screening; management remains responsible for approval.</div></div><button class="btn btn-sm" onclick="document.getElementById(\'moc-ai-panel\').style.display=\'none\'"><i class="ti ti-x"></i></button></div>';
+  h+='<div style="display:flex;justify-content:space-between;gap:12px;align-items:flex-start;flex-wrap:wrap"><div><div style="font-weight:900;color:#0F6E56;font-size:15px"><i class="ti ti-robot"></i> AI MOC Impact Screening</div><div style="font-size:12px;color:var(--text2);margin-top:4px">Review before applying. AURIS supports screening; management remains responsible for approval.</div></div><button class="btn btn-sm" data-auris-generated-onclick="g0250"><i class="ti ti-x"></i></button></div>';
   h+='<div style="margin-top:12px;display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px"><div style="padding:10px;border-radius:8px;background:#ECFDF5"><div style="font-size:11px;color:#047857;font-weight:800;text-transform:uppercase">Decision</div><div style="font-weight:800;margin-top:4px">'+escH(out.decision||'Review required')+'</div></div><div style="padding:10px;border-radius:8px;background:#FEF9EC"><div style="font-size:11px;color:#854F0B;font-weight:800;text-transform:uppercase">Risk priority</div><div style="font-weight:800;margin-top:4px">'+escH(out.risk_priority||'medium')+'</div></div></div>';
   if(arr(out.impacted_areas).length)h+='<div style="margin-top:12px"><b>Impacted areas:</b> '+arr(out.impacted_areas).map(function(x){return '<span class="badge badge-blue" style="margin:2px">'+escH(x)+'</span>';}).join('')+'</div>';
   if(out.risk_review)h+='<div style="margin-top:12px;padding:10px;border:1px solid var(--border);border-radius:8px"><b>Risk review:</b><br>'+escH(out.risk_review)+'</div>';
   var blocks=[['Pre-implementation actions',out.pre_implementation_actions],['Post-change verification',out.post_change_verification],['Approval conditions',out.approval_conditions],['Missing information',out.missing_information]];
   blocks.forEach(function(b){var list=arr(b[1]);if(list.length)h+='<div style="margin-top:12px"><div style="font-weight:800">'+escH(b[0])+'</div><ul style="margin:6px 0 0 18px;color:var(--text2);font-size:12px;line-height:1.5">'+list.map(function(x){return '<li>'+escH(x)+'</li>';}).join('')+'</ul></div>';});
   if(out.management_note)h+='<div style="margin-top:12px;padding:10px 12px;border-radius:8px;background:#EFF6FF;color:#1E3A8A;font-size:12px"><b>Management note:</b> '+escH(out.management_note)+'</div>';
-  h+='<div style="margin-top:12px"><button class="btn btn-primary" onclick="mocAIApplyReview()"><i class="ti ti-check"></i>Apply to MOC fields</button></div>';
+  h+='<div style="margin-top:12px"><button class="btn btn-primary" data-auris-generated-onclick="g0251"><i class="ti ti-check"></i>Apply to MOC fields</button></div>';
   h+='</div>';
   panel.innerHTML=h;
 }
@@ -26157,7 +26157,7 @@ function mapRenderList(){
     el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)">'
       +'<div style="font-size:40px;margin-bottom:12px"><i class="ti ti-circle-check"></i></div>'
       +'<div style="font-weight:600;margin-bottom:8px">No actions found</div>'
-      +(isMgr()&&mapCurrentView==='all'&&!q&&!fsrc&&!fpri&&!fst?'<button class="btn btn-primary" onclick="mapNew()"><i class="ti ti-plus"></i>Create first action</button>':'')
+      +(isMgr()&&mapCurrentView==='all'&&!q&&!fsrc&&!fpri&&!fst?'<button class="btn btn-primary" data-auris-generated-onclick="g0252"><i class="ti ti-plus"></i>Create first action</button>':'')
       +'</div>';
     return;
   }
@@ -26174,8 +26174,8 @@ function mapRenderList(){
     var displayRef=mapDisplayRef(x);
 
     h+='<div class="card" style="margin:0 0 10px;padding:0;overflow:hidden;border:1px solid '+(isOverdue?'#fecaca':'var(--border)')+';cursor:pointer;transition:box-shadow .15s" '
-      +'data-id="'+x.id+'" onclick="mapEdit(this.dataset.id)" '
-      +'onmouseover="this.style.boxShadow=\'0 4px 16px rgba(0,0,0,.1)\'" onmouseout="this.style.boxShadow=\'\'">'
+      +'data-id="'+x.id+'" data-auris-generated-onclick="g0253" '
+      +'onmouseover="this.style.boxShadow=\'0 4px 16px rgba(0,0,0,.1)\'" data-auris-generated-onmouseout="g0088">'
       +'<div style="display:flex;align-items:stretch">'
       +'<div style="width:5px;background:'+pc.color+';flex-shrink:0"></div>'
       // Source emoji column
@@ -26246,7 +26246,7 @@ function mapRenderTableList(){
     el.innerHTML='<div class="card" style="text-align:center;padding:40px;color:var(--text2)">'
       +'<div style="font-size:36px;margin-bottom:12px"><i class="ti ti-circle-check"></i></div>'
       +'<div style="font-weight:700;margin-bottom:8px">No actions found</div>'
-      +(isMgr()&&mapCurrentView==='all'&&!q&&!fsrc&&!fpri&&!fst?'<button class="btn btn-primary" onclick="mapNew()"><i class="ti ti-plus"></i>Create first action</button>':'')
+      +(isMgr()&&mapCurrentView==='all'&&!q&&!fsrc&&!fpri&&!fst?'<button class="btn btn-primary" data-auris-generated-onclick="g0252"><i class="ti ti-plus"></i>Create first action</button>':'')
       +'</div>';
     return;
   }
@@ -26282,7 +26282,7 @@ function mapRenderTableList(){
     var due=x.target_date?new Date(x.target_date).toLocaleDateString('en-GB'):'-';
     var dueExtra=isOverdue?' <span style="color:var(--red);font-weight:700">('+daysOverdue+'d overdue)</span>':'';
 
-    h+='<tr data-id="'+x.id+'" onclick="mapEdit(this.dataset.id)" style="cursor:pointer;border-left:4px solid '+pc.color+';background:'+(isOverdue?'#fff7f7':'#fff')+'" onmouseover="this.style.background=\''+(isOverdue?'#fff1f1':'#f9fafb')+'\'" onmouseout="this.style.background=\''+(isOverdue?'#fff7f7':'#fff')+'\'">'
+    h+='<tr data-id="'+x.id+'" data-auris-generated-onclick="g0253" style="cursor:pointer;border-left:4px solid '+pc.color+';background:'+(isOverdue?'#fff7f7':'#fff')+'" onmouseover="this.style.background=\''+(isOverdue?'#fff1f1':'#f9fafb')+'\'" onmouseout="this.style.background=\''+(isOverdue?'#fff7f7':'#fff')+'\'">'
       +'<td style="'+cell+';font-family:monospace;font-size:11px;font-weight:700;color:'+pc.color+';white-space:nowrap">'+escH(ref)+'</td>'
       +'<td style="'+cell+'"><span style="display:inline-flex;align-items:center;gap:6px;background:'+srcCfg.color+'15;color:'+srcCfg.color+';padding:3px 8px;border-radius:99px;font-size:11px;font-weight:700;white-space:nowrap">'+srcCfg.emoji+' '+escH(srcCfg.label)+'</span>'
       +(x.source_ref?'<button type="button" onclick="event.stopPropagation();mapOpenSourceRecord(\''+x.id+'\')" style="border:0;background:transparent;padding:0;margin-top:4px;font-family:monospace;font-size:10px;color:var(--green);font-weight:700;text-decoration:underline;cursor:pointer">'+escH(x.source_ref)+'</button>':'')+'</td>'
@@ -26554,7 +26554,7 @@ async function mapAIReviewAction(){
     var warnings=Array.isArray(data.warnings)?data.warnings:[];
     var score=data.quality_score!=null?data.quality_score:'-';
     var risk=data.risk_of_delay||'not assessed';
-    var html='<div style="display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap"><div><b>AI action intelligence</b><br><span>Quality score: <b>'+escH(String(score))+'</b> - Delay risk: <b>'+escH(String(risk))+'</b></span></div><button class="btn btn-sm" onclick="mapAISuggestion=null;document.getElementById(\'map-ai-review-panel\').style.display=\'none\'"><i class="ti ti-x"></i>Close</button></div>';
+    var html='<div style="display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap"><div><b>AI action intelligence</b><br><span>Quality score: <b>'+escH(String(score))+'</b> - Delay risk: <b>'+escH(String(risk))+'</b></span></div><button class="btn btn-sm" data-auris-generated-onclick="g0254"><i class="ti ti-x"></i>Close</button></div>';
     if(data.management_summary)html+='<div style="margin-top:8px;color:#1f2937">'+escH(data.management_summary)+'</div>';
     if(warnings.length)html+='<div style="margin-top:8px;color:#B45309"><b>Watch points:</b> '+warnings.map(escH).join('; ')+'</div>';
     html+=mapAISuggestionCard('SMART title','smart_title')+mapAISuggestionCard('SMART description','smart_description')+mapAISuggestionCard('Root cause','root_cause')+mapAISuggestionCard('Priority','priority')+mapAISuggestionCard('Target date','target_date')+mapAISuggestionCard('Instructions to assignee','instructions')+mapAISuggestionCard('Escalation reason','escalation_reason');
@@ -27031,7 +27031,7 @@ function dcFilterList(){
     el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)">'
       +'<div style="font-size:40px;margin-bottom:12px"><i class="ti ti-circle-dot"></i></div>'
       +'<div style="font-weight:600;margin-bottom:8px">No documents found</div>'
-      +(isMgr()&&!q&&!ft&&!fs?'<button class="btn btn-primary" onclick="dcNew()"><i class="ti ti-plus"></i>Register first document</button>':'')
+      +(isMgr()&&!q&&!ft&&!fs?'<button class="btn btn-primary" data-auris-generated-onclick="g0255"><i class="ti ti-plus"></i>Register first document</button>':'')
       +'</div>';
     return;
   }
@@ -27044,8 +27044,8 @@ function dcFilterList(){
     var isExpired=x.expiry_date&&new Date(x.expiry_date)<now;
     var isReviewDue=x.review_date&&new Date(x.review_date)<=soon&&approvalSt==='approved';
     h+='<div class="card" style="margin:0 0 10px;padding:0;overflow:hidden;border:1px solid '+(isExpired?'#fecaca':'var(--border)')+';cursor:pointer;transition:box-shadow .15s" '
-      +'data-id="'+x.id+'" onclick="dcEdit(this.dataset.id)" '
-      +'onmouseover="this.style.boxShadow=\'0 4px 16px rgba(0,0,0,.1)\'" onmouseout="this.style.boxShadow=\'\'">'
+      +'data-id="'+x.id+'" data-auris-generated-onclick="g0256" '
+      +'onmouseover="this.style.boxShadow=\'0 4px 16px rgba(0,0,0,.1)\'" data-auris-generated-onmouseout="g0088">'
       +'<div style="display:flex;align-items:stretch">'
       +'<div style="width:5px;background:'+cfg.color+';flex-shrink:0"></div>'
       +'<div style="padding:12px 10px;display:flex;align-items:center;border-right:1px solid var(--border)">'
@@ -27358,7 +27358,7 @@ function dcOpenViewer(doc){
     }
     else if(isVideo){
       body.innerHTML = '<div style="width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#0f172a;padding:20px;gap:10px">'
-        + '<video controls controlsList="nodownload noremoteplayback" disablePictureInPicture playsinline preload="metadata" oncontextmenu="return false" style="width:100%;max-width:980px;max-height:72vh;background:#000;border-radius:8px;box-shadow:0 4px 24px rgba(0,0,0,.35)"><source src="'+escH(url)+'">Your browser cannot play this video. Use MP4/H.264 for best compatibility.</video>'
+        + '<video controls controlsList="nodownload noremoteplayback" disablePictureInPicture playsinline preload="metadata" data-auris-generated-oncontextmenu="g0257" style="width:100%;max-width:980px;max-height:72vh;background:#000;border-radius:8px;box-shadow:0 4px 24px rgba(0,0,0,.35)"><source src="'+escH(url)+'">Your browser cannot play this video. Use MP4/H.264 for best compatibility.</video>'
         + '<div style="font-size:12px;color:#cbd5e1;text-align:center">Viewing only: direct open and download controls are disabled for course videos.</div>'
         + '</div>';
     }
@@ -27966,7 +27966,7 @@ async function dcLoadApprovalQueue(){
         +'<td style="padding:8px;font-size:11px">'+(x.review_requested_at?new Date(x.review_requested_at).toLocaleDateString('en-GB'):'-')+'</td>'
         +'<td style="padding:8px;font-size:11px">'+escH(x.owner||x.doc_owner||'-')+'</td>'
         +'<td style="padding:8px"><span style="background:'+sc.bg+';color:'+sc.tc+';padding:2px 8px;border-radius:99px;font-size:10px;font-weight:700">'+sc.label+'</span></td>'
-        +'<td style="padding:8px"><button class="btn btn-sm btn-primary" data-id="'+x.id+'" onclick="dcEdit(this.dataset.id)"><i class="ti ti-edit"></i>Review</button></td></tr>';
+        +'<td style="padding:8px"><button class="btn btn-sm btn-primary" data-id="'+x.id+'" data-auris-generated-onclick="g0256"><i class="ti ti-edit"></i>Review</button></td></tr>';
     });
     h+='</tbody></table></div>';el.innerHTML=h;
   }catch(e){el.innerHTML=registerErrorHtml('Document approval queue',e.message);}
@@ -28011,7 +28011,7 @@ async function dcLoadExpiry(filter){
       +'<td style="padding:8px;font-size:11px;color:'+(expiryDate&&expiryDate<now?'var(--red)':'inherit')+'">'+(expiryDate?expiryDate.toLocaleDateString('en-GB')+(expiryDate<now?' ?':''):'-')+'</td>'
       +'<td style="padding:8px"><span style="background:'+urgBg[urgency]+';color:'+urgTc[urgency]+';padding:3px 8px;border-radius:99px;font-size:10px;font-weight:700">'+urgency+(daysLeft>=0&&urgency!=='OK'?' ('+daysLeft+'d)':'')+'</span></td>'
       +'<td style="padding:8px;font-size:11px">'+escH(x.owner||x.doc_owner||'-')+'</td>'
-      +'<td style="padding:8px"><button class="btn btn-sm" style="font-size:10px" data-id="'+x.id+'" onclick="dcEdit(this.dataset.id)"><i class="ti ti-edit"></i>Review</button></td></tr>';
+      +'<td style="padding:8px"><button class="btn btn-sm" style="font-size:10px" data-id="'+x.id+'" data-auris-generated-onclick="g0256"><i class="ti ti-edit"></i>Review</button></td></tr>';
   });
   h+='</tbody></table></div>';el.innerHTML=h;
 }
@@ -28195,7 +28195,7 @@ async function dcLoadDocAck(docId){
   var el=document.getElementById('dc-doc-ack-list');if(!el)return;
   try{
     var d=await api('/doc_acknowledgements?document_id=eq.'+docId+'&order=created_at.desc'+cf());
-    if(!d||!d.length){el.innerHTML='<div style="text-align:center;padding:20px;color:var(--text2);font-size:13px">No acknowledgements issued for this document yet<br><button class="btn btn-sm btn-primary" style="margin-top:10px" onclick="dcIssueAck()"><i class="ti ti-send"></i>Issue to persons</button></div>';return;}
+    if(!d||!d.length){el.innerHTML='<div style="text-align:center;padding:20px;color:var(--text2);font-size:13px">No acknowledgements issued for this document yet<br><button class="btn btn-sm btn-primary" style="margin-top:10px" data-auris-generated-onclick="g0258"><i class="ti ti-send"></i>Issue to persons</button></div>';return;}
     el.innerHTML=dcRenderAckTable(d);
   }catch(e){el.innerHTML='<div style="color:var(--text2);font-size:12px">Error loading acknowledgements</div>';}
 }
@@ -28216,7 +28216,7 @@ function dcRenderAckTable(d){
     h+='">'+(a.due_date?new Date(a.due_date).toLocaleDateString('en-GB')+(isOverdue?' - overdue':''):'-')+'</td>'
       +'<td style="padding:8px;font-size:11px">'+(a.acknowledged_at?new Date(a.acknowledged_at).toLocaleDateString('en-GB'):'-')+'</td>'
       +'<td style="padding:8px"><span style="background:'+sc[0]+';color:'+sc[1]+';padding:2px 8px;border-radius:99px;font-size:10px;font-weight:700;text-transform:capitalize">'+escH(isOverdue?'Overdue':a.status)+'</span></td>'
-      +'<td style="padding:8px"><div style="display:flex;gap:4px">'+(a.status==='pending'&&isMgr()?'<button class="btn btn-sm" style="background:var(--green);color:#fff;border-color:var(--green);font-size:10px" data-id="'+a.id+'" onclick="dcMarkAckComplete(this.dataset.id)"><i class="ti ti-check"></i></button>':'')+'</div></td></tr>';
+      +'<td style="padding:8px"><div style="display:flex;gap:4px">'+(a.status==='pending'&&isMgr()?'<button class="btn btn-sm" style="background:var(--green);color:#fff;border-color:var(--green);font-size:10px" data-id="'+a.id+'" data-auris-generated-onclick="g0259"><i class="ti ti-check"></i></button>':'')+'</div></td></tr>';
   });
   return h+'</tbody></table></div>';
 }
@@ -28289,7 +28289,7 @@ function dcAddDistPerson(){
   var item=document.createElement('div');item.className='dc-dist-item';
   item.style.cssText='display:flex;gap:6px;align-items:center;margin-bottom:6px';
   item.innerHTML='<input type="text" placeholder="Name or department..." style="flex:1;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px"/>'
-    +'<button class="btn btn-sm" style="color:var(--red)" onclick="this.parentElement.remove()"><i class="ti ti-x"></i></button>';
+    +'<button class="btn btn-sm" style="color:var(--red)" data-auris-generated-onclick="g0260"><i class="ti ti-x"></i></button>';
   el.appendChild(item);
 }
 
@@ -28648,9 +28648,9 @@ function legalRenderPdfPreview(rows,fileName){
   var h='<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px;flex-wrap:wrap">'
     +'<div style="font-size:12px;color:var(--text2)">Selected rows will be imported as Legal Register requirements.</div>'
     +'<div style="display:flex;gap:8px;flex-wrap:wrap">'
-    +'<button class="btn btn-sm" onclick="legalTogglePdfRows(true)">Select all</button>'
-    +'<button class="btn btn-sm" onclick="legalTogglePdfRows(false)">Select none</button>'
-    +'<button class="btn btn-primary btn-sm" onclick="legalImportPdfRows()"><i class="ti ti-database-import"></i>Import selected</button>'
+    +'<button class="btn btn-sm" data-auris-generated-onclick="g0261">Select all</button>'
+    +'<button class="btn btn-sm" data-auris-generated-onclick="g0262">Select none</button>'
+    +'<button class="btn btn-primary btn-sm" data-auris-generated-onclick="g0263"><i class="ti ti-database-import"></i>Import selected</button>'
     +'</div></div>';
   h+='<div style="max-height:420px;overflow:auto;border:1px solid var(--border);border-radius:10px;background:#fff"><table style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr style="background:#1a3a5c;color:#fff"><th style="width:38px;padding:8px;color:#fff"></th><th style="padding:8px;color:#fff;text-align:left">Section</th><th style="padding:8px;color:#fff;text-align:left">Title / requirement preview</th><th style="padding:8px;color:#fff;text-align:left">Category</th></tr></thead><tbody>';
   rows.forEach(function(r,i){
@@ -28765,12 +28765,12 @@ function legalFilterRegister(){
     return String(a.req_ref||'').localeCompare(String(b.req_ref||''),undefined,{numeric:true,sensitivity:'base'});
   });
   if(!filt.length){
-    el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)"><div style="font-size:40px;margin-bottom:12px"><i class="ti ti-circle-dot"></i></div><div style="font-weight:600;margin-bottom:8px">No requirements found</div>'+(isMgr()?'<button class="btn btn-primary" onclick="legalNewRequirement()"><i class="ti ti-plus"></i>Add first requirement</button>':'')+'</div>';
+    el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)"><div style="font-size:40px;margin-bottom:12px"><i class="ti ti-circle-dot"></i></div><div style="font-weight:600;margin-bottom:8px">No requirements found</div>'+(isMgr()?'<button class="btn btn-primary" data-auris-generated-onclick="g0264"><i class="ti ti-plus"></i>Add first requirement</button>':'')+'</div>';
     return;
   }
   var archivedCount=(lrAllData||[]).filter(legalReqArchived).length;
-  var bulk=isMgr()?'<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px;border-bottom:1px solid var(--border);background:#f9fafb;flex-wrap:wrap"><div style="font-size:12px;color:var(--text2)">'+filt.length+' visible requirement'+(filt.length>1?'s':'')+' sorted by legislation and section number'+(archivedCount&&!showArchived?' Â· '+archivedCount+' archived hidden':'')+'</div><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn btn-sm" onclick="legalToggleVisibleSelection(true)"><i class="ti ti-checks"></i>Select visible</button><button class="btn btn-sm" onclick="legalToggleVisibleSelection(false)"><i class="ti ti-square"></i>Clear</button><button class="btn btn-sm" style="color:var(--red);border-color:#fecaca" onclick="legalDeleteSelectedReqs()"><i class="ti ti-archive"></i>Archive selected</button><button class="btn btn-sm" style="background:#FCEBEB;color:#A32D2D;border-color:#fecaca" onclick="legalDeleteCurrentLegislation()"><i class="ti ti-archive"></i>Archive legislation</button></div></div>':'';
-  var h=bulk+'<div class="table-scroll"><table class="data-table" style="min-width:1180px"><thead><tr>'+(isMgr()?'<th style="width:38px;text-align:center"><input type="checkbox" id="lr-select-all-visible" onchange="legalToggleVisibleSelection(this.checked)" style="width:16px!important;height:16px!important;margin:0"/></th>':'')+'<th>Ref</th><th>Legislation</th><th style="min-width:300px">Section / Requirement</th><th>Category</th><th>Obligation</th><th>Responsibility</th><th style="text-align:center">Score</th><th>Status</th><th style="width:50px"></th></tr></thead><tbody>';
+  var bulk=isMgr()?'<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px;border-bottom:1px solid var(--border);background:#f9fafb;flex-wrap:wrap"><div style="font-size:12px;color:var(--text2)">'+filt.length+' visible requirement'+(filt.length>1?'s':'')+' sorted by legislation and section number'+(archivedCount&&!showArchived?' Â· '+archivedCount+' archived hidden':'')+'</div><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn btn-sm" data-auris-generated-onclick="g0265"><i class="ti ti-checks"></i>Select visible</button><button class="btn btn-sm" data-auris-generated-onclick="g0266"><i class="ti ti-square"></i>Clear</button><button class="btn btn-sm" style="color:var(--red);border-color:#fecaca" data-auris-generated-onclick="g0267"><i class="ti ti-archive"></i>Archive selected</button><button class="btn btn-sm" style="background:#FCEBEB;color:#A32D2D;border-color:#fecaca" data-auris-generated-onclick="g0268"><i class="ti ti-archive"></i>Archive legislation</button></div></div>':'';
+  var h=bulk+'<div class="table-scroll"><table class="data-table" style="min-width:1180px"><thead><tr>'+(isMgr()?'<th style="width:38px;text-align:center"><input type="checkbox" id="lr-select-all-visible" data-auris-generated-onchange="g0269" style="width:16px!important;height:16px!important;margin:0"/></th>':'')+'<th>Ref</th><th>Legislation</th><th style="min-width:300px">Section / Requirement</th><th>Category</th><th>Obligation</th><th>Responsibility</th><th style="text-align:center">Score</th><th>Status</th><th style="width:50px"></th></tr></thead><tbody>';
   filt.forEach(function(x,i){
     var bg=i%2===0?'#fff':'#f9fafb';
     var sc=LEG_STATUS_CFG[x.status]||LEG_STATUS_CFG.non_compliant;
@@ -28780,7 +28780,7 @@ function legalFilterRegister(){
     var scoreColor=score==null?'#6B7280':score>=80?'#1D9E75':score>=50?'#EF9F27':score>=20?'#C2410C':'#A32D2D';
     var archived=legalReqArchived(x);
     h+='<tr style="border-bottom:1px solid #f0f0f0;background:'+bg+';cursor:pointer'+(archived?';opacity:.62':'')+'" onclick="legalOpenReq(\''+x.id+'\')">'
-      +(isMgr()?'<td style="padding:8px;text-align:center"><input type="checkbox" class="lr-row-select" data-id="'+x.id+'" onclick="event.stopPropagation()" style="width:16px!important;height:16px!important;margin:0"/></td>':'')
+      +(isMgr()?'<td style="padding:8px;text-align:center"><input type="checkbox" class="lr-row-select" data-id="'+x.id+'" data-auris-generated-onclick="g0179" style="width:16px!important;height:16px!important;margin:0"/></td>':'')
       +'<td style="padding:8px 14px;font-family:monospace;font-size:11px;font-weight:700;color:#185FA5">'+escH(displayRecordRef(x,'req_ref','LEG-DRAFT'))+'</td>'
       +'<td style="padding:8px;max-width:180px"><div style="font-size:11px;font-weight:600;color:#185FA5">'+escH((x.legislation||'-').substring(0,45))+'</div>'+(x.legislation_type?'<div style="font-size:10px;color:var(--text2);text-transform:capitalize">'+escH(x.legislation_type.replace(/_/g,' '))+'</div>':'')+'</td>'
       +'<td style="padding:8px;max-width:250px"><div style="font-weight:600">'+escH(x.title||('Section '+(x.section||'-')))+'</div><div style="font-size:11px;color:var(--text2)">'+escH((x.requirement||'').substring(0,80))+(x.requirement?.length>80?'-':'')+'</div>'+(hasGap?'<span style="background:#FCEBEB;color:#A32D2D;padding:1px 6px;border-radius:4px;font-size:10px;font-weight:700;margin-top:2px;display:inline-block">GAP</span>':'')+(archived?'<span style="background:#F3F4F6;color:#6B7280;padding:1px 6px;border-radius:4px;font-size:10px;font-weight:800;margin-left:4px;display:inline-block">ARCHIVED</span>':'')+'</td>'
@@ -28789,7 +28789,7 @@ function legalFilterRegister(){
       +'<td style="padding:8px;font-size:11px">'+escH(x.responsibility||x.responsible_person||'-')+'</td>'
       +'<td style="padding:8px;text-align:center;font-weight:800;color:'+scoreColor+'">'+(score!=null?score+'%':'-')+'</td>'
       +'<td style="padding:8px"><span style="background:'+sc.bg+';color:'+sc.tc+';padding:2px 8px;border-radius:99px;font-size:10px;font-weight:700">'+sc.label+'</span></td>'
-      +'<td style="padding:8px"><button class="btn btn-sm" title="View requirement" data-id="'+x.id+'" onclick="event.stopPropagation();legalOpenReq(this.dataset.id)"><i class="ti ti-eye"></i></button></td></tr>';
+      +'<td style="padding:8px"><button class="btn btn-sm" title="View requirement" data-id="'+x.id+'" data-auris-generated-onclick="g0270"><i class="ti ti-eye"></i></button></td></tr>';
   });
   h+='</tbody></table></div>';el.innerHTML=h;
 }
@@ -29146,9 +29146,9 @@ function legalRenderAssessmentMatrix(){
   var rows=legalAssessmentRows();
   if(!rows.length){box.innerHTML='<div style="padding:18px;color:var(--text2);text-align:center">No legal register sections available. Add or import legislation first.</div>';return;}
   var h='<div class="card" style="margin-bottom:10px;background:#F8FBFF;border-color:#BFDBFE"><div style="display:grid;grid-template-columns:220px minmax(260px,1fr) auto;gap:10px;align-items:end">'
-    +'<div><label class="form3label">Assessment scope</label><select id="lca-scope-mode" onchange="legalAssessmentScopeChanged()"><option value="all">All legal register</option><option value="legislation">All legislation / acts</option><option value="standards">All standards</option><option value="one">One legislation or standard</option></select></div>'
-    +'<div><label class="form3label">Select legislation / standard</label><select id="lca-scope-item" onchange="legalRenderAssessmentMatrix();lcaUpdateLiveScore()">'+legalAssessmentScopeOptionsHtml(currentItem)+'</select></div>'
-    +'<button type="button" class="btn btn-sm" onclick="lcaMarkAllNoGap()">Mark all no gap</button>'
+    +'<div><label class="form3label">Assessment scope</label><select id="lca-scope-mode" data-auris-generated-onchange="g0271"><option value="all">All legal register</option><option value="legislation">All legislation / acts</option><option value="standards">All standards</option><option value="one">One legislation or standard</option></select></div>'
+    +'<div><label class="form3label">Select legislation / standard</label><select id="lca-scope-item" data-auris-generated-onchange="g0272">'+legalAssessmentScopeOptionsHtml(currentItem)+'</select></div>'
+    +'<button type="button" class="btn btn-sm" data-auris-generated-onclick="g0273">Mark all no gap</button>'
     +'</div><div style="font-size:12px;color:var(--text2);margin-top:8px">Saving updates the legal register, sends gaps to Gap Analysis, and creates related actions in the Master Action Plan.</div></div>'
     +'<div class="table-scroll"><table class="data-table lca-worksheet" style="min-width:1120px"><thead><tr><th style="width:95px">Ref</th><th style="width:230px">Legislation / section</th><th style="width:340px">Requirement</th><th style="width:290px">Assessment result</th><th style="width:310px">Gap action</th></tr></thead><tbody>';
   rows.forEach(function(x){
@@ -29159,8 +29159,8 @@ function legalRenderAssessmentMatrix(){
     h+='<tr class="lca-row" data-id="'+escH(x.id||'')+'"><td style="font-family:monospace;font-weight:800;color:#185FA5;vertical-align:top">'+escH(displayRecordRef(x,'req_ref','LEG-DRAFT'))+'</td>'
       +'<td style="vertical-align:top"><div style="font-size:13px;font-weight:900;color:#0F766E;line-height:1.25">'+escH(x.title||x.section||'Untitled section')+'</div><div style="font-size:11px;color:#475569;margin-top:5px;font-weight:700">'+escH(x.legislation||'-')+'</div><div style="font-size:10px;color:var(--text2);margin-top:5px">'+(legalIsStandardRequirement(x)?'Standard':'Legislation / Act')+(x.section?' - '+escH(x.section):'')+'</div></td>'
       +'<td style="font-size:12px;vertical-align:top;line-height:1.35;white-space:pre-wrap">'+escH(x.requirement||'-')+'</td>'
-      +'<td style="vertical-align:top"><label class="form3label">Current controls</label><textarea class="lca-controls" oninput="lcaUpdateLiveScore()" style="min-height:58px;font-size:12px">'+escH(x.controls||'')+'</textarea><div style="display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center;margin-top:8px"><select class="lca-status" onchange="lcaStatusChanged(this)"><option value="compliant" '+(st==='compliant'?'selected':'')+'>Compliant</option><option value="partial" '+(st==='partial'?'selected':'')+'>Partial compliance</option><option value="non_compliant" '+(st==='non_compliant'?'selected':'')+'>Non-compliant</option><option value="not_applicable" '+(st==='not_applicable'?'selected':'')+'>N/A</option></select><label style="display:flex;align-items:center;gap:6px;font-size:12px;font-weight:700;color:#991B1B"><input type="checkbox" class="lca-gap" onchange="lcaGapChanged(this)" '+(hasGap?'checked':'')+' style="width:18px!important;height:18px!important"/> Gap</label></div></td>'
-      +'<td style="vertical-align:top"><label class="form3label">Further controls / recommendations</label><textarea class="lca-reco" oninput="lcaUpdateLiveScore()" style="min-height:58px;font-size:12px">'+escH(x.further_controls||x.recommendations||x.gap_description||'')+'</textarea><div style="display:grid;grid-template-columns:1fr 140px;gap:8px;margin-top:8px"><input class="lca-resp" oninput="lcaUpdateLiveScore()" value="'+escH(x.responsibility||x.responsible_person||'')+'" placeholder="Action by"/><input type="date" class="lca-target" onchange="lcaUpdateLiveScore()" value="'+escH(x.target_date||'')+'"/></div></td></tr>';
+      +'<td style="vertical-align:top"><label class="form3label">Current controls</label><textarea class="lca-controls" data-auris-generated-oninput="g0274" style="min-height:58px;font-size:12px">'+escH(x.controls||'')+'</textarea><div style="display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center;margin-top:8px"><select class="lca-status" data-auris-generated-onchange="g0275"><option value="compliant" '+(st==='compliant'?'selected':'')+'>Compliant</option><option value="partial" '+(st==='partial'?'selected':'')+'>Partial compliance</option><option value="non_compliant" '+(st==='non_compliant'?'selected':'')+'>Non-compliant</option><option value="not_applicable" '+(st==='not_applicable'?'selected':'')+'>N/A</option></select><label style="display:flex;align-items:center;gap:6px;font-size:12px;font-weight:700;color:#991B1B"><input type="checkbox" class="lca-gap" data-auris-generated-onchange="g0276" '+(hasGap?'checked':'')+' style="width:18px!important;height:18px!important"/> Gap</label></div></td>'
+      +'<td style="vertical-align:top"><label class="form3label">Further controls / recommendations</label><textarea class="lca-reco" data-auris-generated-oninput="g0274" style="min-height:58px;font-size:12px">'+escH(x.further_controls||x.recommendations||x.gap_description||'')+'</textarea><div style="display:grid;grid-template-columns:1fr 140px;gap:8px;margin-top:8px"><input class="lca-resp" data-auris-generated-oninput="g0274" value="'+escH(x.responsibility||x.responsible_person||'')+'" placeholder="Action by"/><input type="date" class="lca-target" data-auris-generated-onchange="g0277" value="'+escH(x.target_date||'')+'"/></div></td></tr>';
   });
   box.innerHTML=h+'</tbody></table></div>';
   var modeEl=document.getElementById('lca-scope-mode');if(modeEl)modeEl.value=currentMode;
@@ -29270,7 +29270,7 @@ function legalRenderChanges(){
   var el=document.getElementById('lc-table');if(!el)return;
   var all=lcAllData||[];
   if(!all.length){
-    el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)"><div style="font-size:40px;margin-bottom:12px"><i class="ti ti-circle-dot"></i></div><div style="font-weight:600;margin-bottom:8px">No regulatory changes recorded</div>'+(isMgr()?'<button class="btn btn-primary" onclick="legalNewChange()"><i class="ti ti-plus"></i>Add change</button>':'')+'</div>';
+    el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)"><div style="font-size:40px;margin-bottom:12px"><i class="ti ti-circle-dot"></i></div><div style="font-weight:600;margin-bottom:8px">No regulatory changes recorded</div>'+(isMgr()?'<button class="btn btn-primary" data-auris-generated-onclick="g0278"><i class="ti ti-plus"></i>Add change</button>':'')+'</div>';
     return;
   }
   var q=String(document.getElementById('lc-chg-search')?.value||'').trim().toLowerCase();
@@ -29288,7 +29288,7 @@ function legalRenderChanges(){
   });
   var count=document.getElementById('lc-chg-count');if(count)count.textContent=d.length+' of '+all.length+' changes';
   if(!d.length){
-    el.innerHTML='<div style="text-align:center;padding:36px;color:var(--text2)"><div style="font-size:34px;margin-bottom:10px"><i class="ti ti-filter-off"></i></div><div style="font-weight:700;margin-bottom:6px">No regulatory changes match the filters</div><button class="btn" onclick="legalClearChangeFilters()"><i class="ti ti-refresh"></i>Clear filters</button></div>';
+    el.innerHTML='<div style="text-align:center;padding:36px;color:var(--text2)"><div style="font-size:34px;margin-bottom:10px"><i class="ti ti-filter-off"></i></div><div style="font-weight:700;margin-bottom:6px">No regulatory changes match the filters</div><button class="btn" data-auris-generated-onclick="g0279"><i class="ti ti-refresh"></i>Clear filters</button></div>';
     return;
   }
   var h='<div class="table-scroll"><table class="data-table" style="min-width:1220px"><thead><tr><th>Date</th><th>Legislation</th><th>Section / ref</th><th>Change</th><th>Category</th><th>Action required</th><th>Applicable?</th><th>Implemented?</th><th style="width:50px"></th></tr></thead><tbody>';
@@ -29306,7 +29306,7 @@ function legalRenderChanges(){
       +'<td style="padding:8px;font-size:11px">'+escH((x.action_required||x.action||'-').substring(0,60))+'</td>'
       +'<td style="padding:8px;text-align:center">'+(appVal?'<span style="color:#1D9E75;font-weight:700">Yes</span>':'<span style="color:#6B7280">No</span>')+'</td>'
       +'<td style="padding:8px;text-align:center">'+(impVal?'<span style="background:#EAF3DE;color:#3B6D11;padding:2px 8px;border-radius:99px;font-size:10px;font-weight:700">Done</span>':'<span style="background:#FEF9EC;color:#854F0B;padding:2px 8px;border-radius:99px;font-size:10px;font-weight:700">Pending</span>')+'</td>'
-      +'<td style="padding:8px"><div style="display:flex;gap:4px"><button class="btn btn-sm" data-id="'+x.id+'" onclick="legalOpenChg(this.dataset.id)" title="View change"><i class="ti ti-eye"></i></button>'+(isMgr()?'<button class="btn btn-sm" style="color:var(--red)" data-id="'+x.id+'" onclick="legalDeleteChgFromList(this.dataset.id)"><i class="ti ti-trash"></i></button>':'')+'</div></td></tr>';
+      +'<td style="padding:8px"><div style="display:flex;gap:4px"><button class="btn btn-sm" data-id="'+x.id+'" data-auris-generated-onclick="g0280" title="View change"><i class="ti ti-eye"></i></button>'+(isMgr()?'<button class="btn btn-sm" style="color:var(--red)" data-id="'+x.id+'" data-auris-generated-onclick="g0281"><i class="ti ti-trash"></i></button>':'')+'</div></td></tr>';
   });
   h+='</tbody></table></div>';el.innerHTML=h;
 }
@@ -29503,7 +29503,7 @@ async function lcaLoad(){
     var d=await api('/compliance_assessments?select=*'+cf()+'&order=assessment_date.desc');lcaAllData=d||[];
     var setM=function(id,v){var e=document.getElementById(id);if(e)e.textContent=v;};
     setM('lr-m3assessments',(d||[]).length);
-    if(!d||!d.length){el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)"><div style="font-size:40px;margin-bottom:12px"><i class="ti ti-circle-check"></i></div><div style="font-weight:600;margin-bottom:8px">No compliance assessments recorded</div>'+(isMgr()?'<button class="btn btn-primary" onclick="lcaNew()"><i class="ti ti-plus"></i>New assessment</button>':'')+'</div>';return;}
+    if(!d||!d.length){el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)"><div style="font-size:40px;margin-bottom:12px"><i class="ti ti-circle-check"></i></div><div style="font-weight:600;margin-bottom:8px">No compliance assessments recorded</div>'+(isMgr()?'<button class="btn btn-primary" data-auris-generated-onclick="g0282"><i class="ti ti-plus"></i>New assessment</button>':'')+'</div>';return;}
     var stCfg={draft:['#f3f4f6','#6B7280'],completed:['#EFF6FF','#185FA5'],reviewed:['#FEF9EC','#854F0B'],approved:['#EAF3DE','#3B6D11']};
     var h='<div class="table-scroll"><table class="data-table" style="min-width:980px"><thead><tr><th>Assessment</th><th>Type</th><th>Date</th><th>Assessor</th><th style="text-align:center">Requirements</th><th style="text-align:center">Score</th><th>Status</th><th style="width:60px"></th></tr></thead><tbody>';
     d.forEach(function(x,i){
@@ -29518,7 +29518,7 @@ async function lcaLoad(){
         +'<td style="padding:10px 12px;text-align:center">'+(x.total_requirements||0)+' <span style="color:#1D9E75;font-weight:800">'+(x.compliant_count||0)+'?</span> <span style="color:#EF9F27;font-weight:800">'+(x.partial_count||0)+'?</span> <span style="color:#E24B4A;font-weight:800">'+(x.non_compliant_count||0)+'?</span></td>'
         +'<td style="padding:10px 12px;text-align:center;font-size:18px;font-weight:900;color:'+scoreColor+'">'+(score!=null?score+'%':'--')+'</td>'
         +'<td style="padding:10px 12px"><span style="background:'+sc2[0]+';color:'+sc2[1]+';padding:2px 8px;border-radius:99px;font-size:10px;font-weight:800;text-transform:capitalize">'+escH(x.status||'draft')+'</span></td>'
-        +'<td style="padding:10px 12px"><button class="btn btn-sm" data-id="'+x.id+'" onclick="lcaEdit(this.dataset.id)"><i class="ti ti-edit"></i></button></td>'
+        +'<td style="padding:10px 12px"><button class="btn btn-sm" data-id="'+x.id+'" data-auris-generated-onclick="g0283"><i class="ti ti-edit"></i></button></td>'
         +'</tr>';
     });
     h+='</tbody></table></div>';el.innerHTML=h;
@@ -29622,7 +29622,7 @@ async function gapLoad(){
     setM('gap-m3medium',(d||[]).filter(x=>x.risk_level==='medium'&&x.status!=='closed').length);
     setM('gap-m3closed',(d||[]).filter(x=>x.status==='closed').length);
     setM('lr-m3gaps',(d||[]).filter(x=>['open','in_progress'].includes(x.status)).length);
-    if(!d||!d.length){el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)"><div style="font-size:40px;margin-bottom:12px"><i class="ti ti-circle-check"></i></div><div style="font-weight:600;margin-bottom:8px">No compliance gaps identified</div>'+(isMgr()?'<button class="btn btn-primary" onclick="gapNew()"><i class="ti ti-plus"></i>Add gap</button>':'')+'</div>';return;}
+    if(!d||!d.length){el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)"><div style="font-size:40px;margin-bottom:12px"><i class="ti ti-circle-check"></i></div><div style="font-weight:600;margin-bottom:8px">No compliance gaps identified</div>'+(isMgr()?'<button class="btn btn-primary" data-auris-generated-onclick="g0284"><i class="ti ti-plus"></i>Add gap</button>':'')+'</div>';return;}
     var h='<div class="table-scroll"><table class="data-table" style="min-width:1120px"><thead><tr><th>Gap</th><th>Legislation / section</th><th>Action required</th><th>Responsible</th><th>Target date</th><th>Risk</th><th>Status</th><th style="width:60px"></th></tr></thead><tbody>';
     d.forEach(function(x,i){
       var rc=GAP_RISK_CFG[x.risk_level||'medium']||GAP_RISK_CFG.medium;
@@ -29637,7 +29637,7 @@ async function gapLoad(){
         +'<td style="padding:10px 12px;'+(isOverdue?'color:var(--red);font-weight:800':'')+'">'+(x.target_date?new Date(x.target_date).toLocaleDateString('en-GB'):'--')+(isOverdue?'<div style="font-size:10px">OVERDUE</div>':'')+'</td>'
         +'<td style="padding:10px 12px"><span style="background:'+rc.border+';color:#fff;padding:2px 8px;border-radius:99px;font-size:10px;font-weight:800;text-transform:capitalize">'+escH(x.risk_level||'medium')+'</span></td>'
         +'<td style="padding:10px 12px"><span style="background:'+sc2[0]+';color:'+sc2[1]+';padding:2px 8px;border-radius:99px;font-size:10px;font-weight:800;text-transform:capitalize">'+escH((x.status||'open').replace(/_/g,' '))+'</span></td>'
-        +'<td style="padding:10px 12px"><button class="btn btn-sm" data-id="'+x.id+'" onclick="gapEdit(this.dataset.id)"><i class="ti ti-edit"></i></button></td>'
+        +'<td style="padding:10px 12px"><button class="btn btn-sm" data-id="'+x.id+'" data-auris-generated-onclick="g0285"><i class="ti ti-edit"></i></button></td>'
         +'</tr>';
     });
     h+='</tbody></table></div>';el.innerHTML=h;
@@ -29685,7 +29685,7 @@ async function calLoad(filter, btn){
     var due30=(d||[]).filter(x=>x.status!=='completed'&&x.due_date&&new Date(x.due_date)>=now&&new Date(x.due_date)<=new Date(now.getTime()+30*86400000));
     var setM=function(id,v){var e=document.getElementById(id);if(e)e.textContent=v;};
     setM('lr-m3cal-due',due30.length);
-    if(!filtered.length){el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)"><div style="font-size:40px;margin-bottom:12px"><i class="ti ti-circle-dot"></i></div><div style="font-weight:600;margin-bottom:8px">No compliance events in this period</div>'+(isMgr()?'<button class="btn btn-primary" onclick="calNew()"><i class="ti ti-plus"></i>Add event</button>':'')+'</div>';return;}
+    if(!filtered.length){el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)"><div style="font-size:40px;margin-bottom:12px"><i class="ti ti-circle-dot"></i></div><div style="font-weight:600;margin-bottom:8px">No compliance events in this period</div>'+(isMgr()?'<button class="btn btn-primary" data-auris-generated-onclick="g0286"><i class="ti ti-plus"></i>Add event</button>':'')+'</div>';return;}
     var typeEmoji={assessment:'?',submission:'*',renewal:'*',audit:'*',review:'*',training:'*',inspection:'*',reporting:'*',other:'*'};
     var h='<div style="display:flex;flex-direction:column;gap:8px">';
     filtered.forEach(function(x){
@@ -29694,7 +29694,7 @@ async function calLoad(filter, btn){
       var urgency=isOverdue?'OVERDUE':daysLeft<=7?'CRITICAL':daysLeft<=30?'URGENT':daysLeft<=90?'UPCOMING':'PLANNED';
       var urgBg={OVERDUE:'#FCEBEB',CRITICAL:'#FEF6E7',URGENT:'#FEF9EC',UPCOMING:'#EFF6FF',PLANNED:'#f3f4f6'};
       var urgTc={OVERDUE:'#A32D2D',CRITICAL:'#C2410C',URGENT:'#854F0B',UPCOMING:'#185FA5',PLANNED:'#6B7280'};
-      h+='<div class="card" style="padding:0;overflow:hidden;cursor:pointer;border-left:4px solid '+(urgTc[urgency])+';transition:box-shadow .15s" data-id="'+x.id+'" onclick="calEdit(this.dataset.id)" onmouseover="this.style.boxShadow=\'0 4px 16px rgba(0,0,0,.1)\'" onmouseout="this.style.boxShadow=\'\'">'
+      h+='<div class="card" style="padding:0;overflow:hidden;cursor:pointer;border-left:4px solid '+(urgTc[urgency])+';transition:box-shadow .15s" data-id="'+x.id+'" data-auris-generated-onclick="g0287" data-auris-generated-onmouseover="g0288" data-auris-generated-onmouseout="g0088">'
         +'<div style="padding:12px 16px;display:flex;align-items:flex-start;justify-content:space-between;gap:10px;flex-wrap:wrap">'
         +'<div style="display:flex;align-items:center;gap:12px">'
         +'<div style="min-width:50px;text-align:center;background:#f0f4ff;border-radius:8px;padding:6px 4px">'
@@ -29856,7 +29856,7 @@ function legalAIRenderAssessment(out){
   panel.innerHTML='<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap">'
     +'<div><div style="font-size:15px;font-weight:900;color:#5B21B6"><i class="ti ti-robot"></i> AI legal requirement assessment</div>'
     +'<div style="font-size:12px;color:var(--text2);margin-top:3px">Review before applying. AURIS supports compliance management; final legal interpretation remains your responsibility.</div></div>'
-    +'<button type="button" class="btn btn-sm" onclick="document.getElementById(\'legal-ai-assess-panel\').style.display=\'none\'"><i class="ti ti-x"></i>Hide</button></div>'
+    +'<button type="button" class="btn btn-sm" data-auris-generated-onclick="g0289"><i class="ti ti-x"></i>Hide</button></div>'
     +'<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px;margin-top:14px">'
     +'<div style="background:#fff;border:1px solid var(--border);border-radius:8px;padding:12px"><div style="font-weight:800;color:#185FA5">Recommended status</div><div style="font-size:24px;font-weight:900;margin-top:4px">'+escH(status)+' '+(score!==''?escH(score)+'%':'')+'</div><div style="font-size:12px;color:var(--text2);margin-top:5px">'+escH(out.status_reason||'')+'</div></div>'
     +'<div style="background:#fff;border:1px solid var(--border);border-radius:8px;padding:12px"><div style="font-weight:800;color:#065F46">Evidence expected</div>'+legalAIList(out.evidence_expected)+'</div>'
@@ -29864,10 +29864,10 @@ function legalAIRenderAssessment(out){
     +'<div style="background:#fff;border:1px solid var(--border);border-radius:8px;padding:12px"><div style="font-weight:800;color:#854F0B">Actions required</div>'+legalAIList(out.actions)+'</div>'
     +'</div>'
     +'<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">'
-    +'<button type="button" class="btn btn-sm btn-primary" onclick="legalAIApplyStatus()"><i class="ti ti-check"></i>Apply status</button>'
-    +'<button type="button" class="btn btn-sm" onclick="legalAIApplyEvidence()"><i class="ti ti-check"></i>Apply evidence</button>'
-    +'<button type="button" class="btn btn-sm" onclick="legalAIApplyGap()"><i class="ti ti-alert-triangle"></i>Apply gap</button>'
-    +'<button type="button" class="btn btn-sm" onclick="legalAIApplyResponsibility()"><i class="ti ti-user-check"></i>Apply responsibility/date</button>'
+    +'<button type="button" class="btn btn-sm btn-primary" data-auris-generated-onclick="g0290"><i class="ti ti-check"></i>Apply status</button>'
+    +'<button type="button" class="btn btn-sm" data-auris-generated-onclick="g0291"><i class="ti ti-check"></i>Apply evidence</button>'
+    +'<button type="button" class="btn btn-sm" data-auris-generated-onclick="g0292"><i class="ti ti-alert-triangle"></i>Apply gap</button>'
+    +'<button type="button" class="btn btn-sm" data-auris-generated-onclick="g0293"><i class="ti ti-user-check"></i>Apply responsibility/date</button>'
     +'</div>';
   panel.style.display='block';
   panel.scrollIntoView({behavior:'smooth',block:'nearest'});
@@ -30058,7 +30058,7 @@ async function tbtLoad(){
     setM('tbt-m3attendees',(d||[]).reduce((s,x)=>s+tbtStoredCount(x),0));
     setM('tbt-m3actions',(d||[]).reduce((s,x)=>s+((x.actions_raised||[]).length),0));
     if(!d||!d.length){
-      if(el)el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)"><div style="font-size:40px;margin-bottom:12px"><i class="ti ti-circle-dot"></i></div><div style="font-weight:600;margin-bottom:8px">No toolbox talks recorded yet</div>'+(isMgr()?'<button class="btn btn-primary" onclick="tbtNew()"><i class="ti ti-plus"></i>Record first TBT</button>':'')+'</div>';
+      if(el)el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)"><div style="font-size:40px;margin-bottom:12px"><i class="ti ti-circle-dot"></i></div><div style="font-weight:600;margin-bottom:8px">No toolbox talks recorded yet</div>'+(isMgr()?'<button class="btn btn-primary" data-auris-generated-onclick="g0294"><i class="ti ti-plus"></i>Record first TBT</button>':'')+'</div>';
       return;
     }
     // Register table
@@ -30081,7 +30081,7 @@ async function tbtLoad(){
       var attendees=tbtStoredCount(x);
       var dt=x.talk_date?new Date(x.talk_date).toLocaleDateString('en-GB'):'-';
       var stColor=x.status==='completed'?'#1D9E75':x.status==='planned'?'#185FA5':'#6B7280';
-      h+='<tr style="border-bottom:1px solid var(--border);border-left:5px solid '+cfg.color+';cursor:pointer" data-id="'+x.id+'" onclick="tbtEdit(this.dataset.id)">'
+      h+='<tr style="border-bottom:1px solid var(--border);border-left:5px solid '+cfg.color+';cursor:pointer" data-id="'+x.id+'" data-auris-generated-onclick="g0295">'
         +'<td style="padding:10px;font-family:monospace;font-weight:800;color:'+cfg.color+'">'+escH(x.tbt_ref||'TBT')+'</td>'
         +'<td style="padding:10px;min-width:260px"><div style="font-weight:800">'+escH(x.title||'Untitled TBT')+'</div><div style="font-size:11px;color:'+cfg.color+';font-weight:700;margin-top:2px">'+cfg.emoji+' '+escH(cfg.label)+(x.duration_mins?' - '+escH(x.duration_mins)+' min':'')+'</div></td>'
         +'<td style="padding:10px;white-space:nowrap">'+dt+'</td>'
@@ -30256,15 +30256,15 @@ function tbtSyncConfirmationTime(input){
 }
 function tbtAttendeeRow(name,dept,idx,confirmedAt,method){
   var confirmedText=confirmedAt?'<span style="color:#1D9E75;font-weight:700"><i class="ti ti-circle-check"></i> Confirmed '+new Date(confirmedAt).toLocaleString()+'</span>':'<span style="color:var(--text2)">Not confirmed</span>';
-  var adminTime=isSA()?'<input type="datetime-local" class="tbt-att-confirm3dt" value="'+escH(tbtDateTimeLocalValue(confirmedAt))+'" onchange="tbtSyncConfirmationTime(this)" title="SEPHS admin may correct confirmation date/time" style="width:175px;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px"/>':'';
+  var adminTime=isSA()?'<input type="datetime-local" class="tbt-att-confirm3dt" value="'+escH(tbtDateTimeLocalValue(confirmedAt))+'" data-auris-generated-onchange="g0296" title="SEPHS admin may correct confirmation date/time" style="width:175px;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px"/>':'';
   return '<div class="tbt-att-row" style="display:flex;gap:6px;align-items:center;margin-bottom:8px;flex-wrap:wrap">'
-    +'<select class="tbt-att-name" onchange="tbtFillAttendeeDept(this)" style="flex:1 1 240px;min-width:220px;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px">'+tbtPersonOptions(name)+'</select>'
+    +'<select class="tbt-att-name" data-auris-generated-onchange="g0297" style="flex:1 1 240px;min-width:220px;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px">'+tbtPersonOptions(name)+'</select>'
     +'<input type="text" placeholder="Dept" value="'+escH(dept)+'" class="tbt-att-dept" style="flex:0 1 150px;min-width:110px;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px"/>'
     +'<input type="password" placeholder="Employee code / PIN" class="tbt-att-pin" style="flex:0 1 155px;min-width:135px;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px"/>'
-    +'<button class="btn btn-sm" style="color:#1D9E75;padding:4px 8px;white-space:nowrap" onclick="tbtConfirmAttendee(this)"><i class="ti ti-signature"></i>Confirm</button>'
+    +'<button class="btn btn-sm" style="color:#1D9E75;padding:4px 8px;white-space:nowrap" data-auris-generated-onclick="g0298"><i class="ti ti-signature"></i>Confirm</button>'
     +adminTime
     +'<span class="tbt-att-confirm3status" style="font-size:10px;min-width:160px;flex:1 1 170px">'+confirmedText+'</span>'
-    +'<button class="btn btn-sm" style="color:var(--red);padding:4px 8px;margin-left:auto" onclick="this.closest(\'.tbt-att-row\').remove();tbtUpdateCount()"><i class="ti ti-x"></i></button>'
+    +'<button class="btn btn-sm" style="color:var(--red);padding:4px 8px;margin-left:auto" data-auris-generated-onclick="g0299"><i class="ti ti-x"></i></button>'
     +'</div>'.replace('class="tbt-att-row"','class="tbt-att-row" data-confirmed-at="'+escH(confirmedAt||'')+'" data-confirmation-method="'+escH(method||'')+'"');
 }
 function tbtAttendeeConfirmedAt(row){
@@ -30281,7 +30281,7 @@ function tbtActionRow(desc,assigned,due,idx){
     +'<input type="text" placeholder="Action description..." value="'+escH(desc)+'" class="tbt-act-desc" style="flex:3;min-width:150px;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px"/>'
     +'<input type="text" placeholder="Assigned to" value="'+escH(assigned)+'" class="tbt-act-assigned" style="flex:2;min-width:100px;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px"/>'
     +'<input type="date" value="'+escH(due)+'" class="tbt-act-due" style="flex:1;min-width:120px;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px"/>'
-    +'<button class="btn btn-sm" style="color:var(--red);padding:4px 8px" onclick="this.closest(\'.tbt-act-row\').remove()"><i class="ti ti-x"></i></button>'
+    +'<button class="btn btn-sm" style="color:var(--red);padding:4px 8px" data-auris-generated-onclick="g0300"><i class="ti ti-x"></i></button>'
     +'</div>';
 }
 
@@ -30330,7 +30330,7 @@ function tbtAIRenderDraft(out){
   panel.innerHTML='<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap">'
     +'<div><div style="font-size:15px;font-weight:900;color:#185FA5"><i class="ti ti-robot"></i> AI toolbox talk draft</div>'
     +'<div style="font-size:12px;color:var(--text2);margin-top:3px">Review the draft and apply only what you want. Nothing is saved until you click Save.</div></div>'
-    +'<button type="button" class="btn btn-sm" onclick="document.getElementById(\'tbt-ai-draft-panel\').style.display=\'none\'"><i class="ti ti-x"></i>Hide</button></div>'
+    +'<button type="button" class="btn btn-sm" data-auris-generated-onclick="g0301"><i class="ti ti-x"></i>Hide</button></div>'
     +'<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px;margin-top:14px">'
     +'<div style="background:#fff;border:1px solid var(--border);border-radius:8px;padding:12px"><div style="font-weight:800;color:#185FA5">Title</div><div style="font-size:13px;margin-top:6px">'+escH(out.title||'')+'</div></div>'
     +'<div style="background:#fff;border:1px solid var(--border);border-radius:8px;padding:12px"><div style="font-weight:800;color:#A32D2D">Hazards</div>'+tbtAIList(out.hazards)+'</div>'
@@ -30339,8 +30339,8 @@ function tbtAIRenderDraft(out){
     +'</div>'
     +'<div style="margin-top:12px;background:#fff;border:1px solid var(--border);border-radius:8px;padding:12px"><div style="font-weight:800;color:#374151">Closing message</div><div style="font-size:13px;line-height:1.5;margin-top:5px">'+escH(out.closing_message||'')+'</div></div>'
     +'<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">'
-    +'<button type="button" class="btn btn-sm btn-primary" onclick="tbtAIApplyContent()"><i class="ti ti-check"></i>Apply content</button>'
-    +'<button type="button" class="btn btn-sm" onclick="tbtAIApplyActions()"><i class="ti ti-plus"></i>Add action items</button>'
+    +'<button type="button" class="btn btn-sm btn-primary" data-auris-generated-onclick="g0302"><i class="ti ti-check"></i>Apply content</button>'
+    +'<button type="button" class="btn btn-sm" data-auris-generated-onclick="g0303"><i class="ti ti-plus"></i>Add action items</button>'
     +'</div>';
   panel.style.display='block';
   panel.scrollIntoView({behavior:'smooth',block:'nearest'});
@@ -30592,7 +30592,7 @@ async function alertLoad(){
     setM('alert-m3high',(d||[]).filter(x=>x.severity==='high'&&x.status==='active').length);
     setM('alert-m3month',(d||[]).filter(x=>x.issued_date&&new Date(x.issued_date).getMonth()===m&&new Date(x.issued_date).getFullYear()===y).length);
     if(!d||!d.length){
-      if(el)el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)"><div style="font-size:40px;margin-bottom:12px"><i class="ti ti-circle-dot"></i></div><div style="font-weight:600;margin-bottom:8px">No safety alerts issued</div>'+(isMgr()?'<button class="btn btn-primary" onclick="alertNew()"><i class="ti ti-plus"></i>Issue first alert</button>':'')+'</div>';
+      if(el)el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)"><div style="font-size:40px;margin-bottom:12px"><i class="ti ti-circle-dot"></i></div><div style="font-weight:600;margin-bottom:8px">No safety alerts issued</div>'+(isMgr()?'<button class="btn btn-primary" data-auris-generated-onclick="g0304"><i class="ti ti-plus"></i>Issue first alert</button>':'')+'</div>';
       return;
     }
     var h='<div class="table-scroll"><table class="data-table" style="min-width:1060px"><thead><tr><th>Alert</th><th>Type</th><th>Issued</th><th>Summary</th><th>Action required</th><th>Severity</th><th>Status</th><th style="width:60px"></th></tr></thead><tbody>';
@@ -30608,7 +30608,7 @@ async function alertLoad(){
         +'<td style="padding:10px 12px;max-width:300px">'+escH(x.action_required?x.action_required.substring(0,150):'--')+(x.action_required&&x.action_required.length>150?'...':'')+'</td>'
         +'<td style="padding:10px 12px"><span style="background:'+sc.border+';color:#fff;padding:2px 8px;border-radius:99px;font-size:10px;font-weight:800">'+sc.label+'</span></td>'
         +'<td style="padding:10px 12px"><span style="background:'+(isExpired?'#f3f4f6':x.status==='active'?'#EAF3DE':'#FEF9EC')+';color:'+(isExpired?'#6B7280':x.status==='active'?'#3B6D11':'#854F0B')+';padding:2px 8px;border-radius:99px;font-size:10px;font-weight:800;text-transform:capitalize">'+(isExpired?'Expired':escH(x.status||'active'))+'</span></td>'
-        +'<td style="padding:10px 12px"><button class="btn btn-sm" data-id="'+x.id+'" onclick="alertEdit(this.dataset.id)"><i class="ti ti-edit"></i></button></td>'
+        +'<td style="padding:10px 12px"><button class="btn btn-sm" data-id="'+x.id+'" data-auris-generated-onclick="g0305"><i class="ti ti-edit"></i></button></td>'
         +'</tr>';
     });
     h+='</tbody></table></div>';el.innerHTML=h;
@@ -30712,7 +30712,7 @@ async function bulletinLoad(){
     if(ft)q+='&bulletin_type=eq.'+ft;
     var d=await api(q);bulletinAllData=d||[];
     if(!d||!d.length){
-      if(el)el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)"><div style="font-size:40px;margin-bottom:12px"><i class="ti ti-circle-dot"></i></div><div style="font-weight:600;margin-bottom:8px">No bulletins published yet</div>'+(isMgr()?'<button class="btn btn-primary" onclick="bulletinNew()"><i class="ti ti-plus"></i>Publish first bulletin</button>':'')+'</div>';
+      if(el)el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)"><div style="font-size:40px;margin-bottom:12px"><i class="ti ti-circle-dot"></i></div><div style="font-weight:600;margin-bottom:8px">No bulletins published yet</div>'+(isMgr()?'<button class="btn btn-primary" data-auris-generated-onclick="g0306"><i class="ti ti-plus"></i>Publish first bulletin</button>':'')+'</div>';
       return;
     }
     var h='<div class="table-scroll"><table class="data-table" style="min-width:1060px">'
@@ -30735,7 +30735,7 @@ async function bulletinLoad(){
       var summary=x.summary||x.key_messages||'';
       var checks=bulletinChecks(x);
       var latest=bulletinLatestCheck(checks);
-      h+='<tr style="background:'+(i%2?'#f9fafb':'#fff')+';border-bottom:1px solid #eef2f7;border-left:5px solid '+cfg.color+';cursor:pointer;opacity:'+(isArch?'.7':'1')+'" data-id="'+x.id+'" onclick="bulletinEdit(this.dataset.id)">'
+      h+='<tr style="background:'+(i%2?'#f9fafb':'#fff')+';border-bottom:1px solid #eef2f7;border-left:5px solid '+cfg.color+';cursor:pointer;opacity:'+(isArch?'.7':'1')+'" data-id="'+x.id+'" data-auris-generated-onclick="g0307">'
         +'<td style="padding:10px;font-family:monospace;font-weight:800;color:'+cfg.color+';white-space:nowrap">'+escH(x.bulletin_ref||'BULL')+(x.issue_number?'<div style="font-size:10px;color:var(--text2);font-weight:600">Issue '+escH(x.issue_number)+'</div>':'')+'</td>'
         +'<td style="padding:10px;min-width:320px"><div style="font-weight:800">'+escH(x.title||'-')+'</div>'
         +(summary?'<div style="font-size:11px;color:var(--text2);margin-top:3px;line-height:1.35">'+escH(summary.substring(0,150))+(summary.length>150?'...':'')+'</div>':'')
@@ -30803,7 +30803,7 @@ function bulletinRenderChecks(x){
   var latest=bulletinLatestCheck(checks);
   host.innerHTML='<div style="display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:10px">'
     +'<div style="font-size:12px;color:var(--text2)"><strong style="color:var(--text)">'+checks.length+'</strong> unique check'+(checks.length>1?'s':'')+(latest?' - latest: '+escH(latest.name||latest.email||'-'):'')+'</div>'
-    +'<button type="button" class="btn btn-sm" onclick="bulletinCopyCheckRegister()"><i class="ti ti-copy"></i>Copy register</button></div>'
+    +'<button type="button" class="btn btn-sm" data-auris-generated-onclick="g0308"><i class="ti ti-copy"></i>Copy register</button></div>'
     +'<table class="data-table" style="font-size:12px"><thead><tr><th>Name</th><th>Email</th><th>Checked / opened</th></tr></thead><tbody>'+checks.map(function(c){return '<tr><td><strong>'+escH(c.name||'-')+'</strong></td><td>'+escH(c.email||'-')+'</td><td>'+escH(c.checked_at?new Date(c.checked_at).toLocaleString('en-GB'):'-')+'</td></tr>';}).join('')+'</tbody></table>';
 }
 async function bulletinMarkCheckedCurrent(){
@@ -31081,7 +31081,7 @@ async function cmLoad(){
       if(el)el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)">'
         +'<div style="font-size:40px;margin-bottom:12px"><i class="ti ti-circle-dot"></i></div>'
         +'<div style="font-weight:600;margin-bottom:8px">No competencies defined yet</div>'
-        +(isMgr()?'<button class="btn btn-primary" onclick="cmAddCompetency()"><i class="ti ti-plus"></i>Add first competency</button>':'')
+        +(isMgr()?'<button class="btn btn-primary" data-auris-generated-onclick="g0309"><i class="ti ti-plus"></i>Add first competency</button>':'')
         +'</div>';
       return;
     }
@@ -31116,7 +31116,7 @@ async function cmLoad(){
         html+='<td style="padding:4px;text-align:center;background:'+bg+'">'
           +'<div style="width:52px;height:28px;border-radius:6px;background:'+bg2+';color:'+col2+';font-weight:700;font-size:12px;display:flex;align-items:center;justify-content:center;margin:0 auto;cursor:pointer;border:1px solid '+(isGap?'var(--red)':'transparent')+';position:relative" '
           +'title="'+escH(comp.name)+': Level '+(cur!==null?cur:'-')+' (required: '+req+')" '
-          +'data-pid="'+p.id+'" data-cid="'+comp.id+'" onclick="cmEditCell(this.dataset.pid,this.dataset.cid)">'
+          +'data-pid="'+p.id+'" data-cid="'+comp.id+'" data-auris-generated-onclick="g0310">'
           +(cur!==null?cur:'-')
           +(isGap?'<span style="position:absolute;top:-4px;right:-4px;width:8px;height:8px;border-radius:50%;background:var(--red)"></span>':'')
           +'</div></td>';
@@ -31211,7 +31211,7 @@ async function tnaLoad(){
       if(el)el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)">'
         +'<div style="font-size:40px;margin-bottom:12px"><i class="ti ti-circle-dot"></i></div>'
         +'<div style="font-weight:600;margin-bottom:8px">No training needs defined yet</div>'
-        +(isMgr()?'<button class="btn btn-primary" onclick="tnaAddRow()"><i class="ti ti-plus"></i>Add requirement</button>':'')
+        +(isMgr()?'<button class="btn btn-primary" data-auris-generated-onclick="g0311"><i class="ti ti-plus"></i>Add requirement</button>':'')
         +'</div>';
       return;
     }
@@ -31291,7 +31291,7 @@ async function tpLoad(){
       if(el)el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)">'
         +'<div style="font-size:40px;margin-bottom:12px"><i class="ti ti-circle-dot"></i></div>'
         +'<div style="font-weight:600;margin-bottom:8px">No training planned for '+trainYear+'</div>'
-        +(isMgr()?'<button class="btn btn-primary" onclick="tpNew()"><i class="ti ti-plus"></i>Plan first training</button>':'')
+        +(isMgr()?'<button class="btn btn-primary" data-auris-generated-onclick="g0312"><i class="ti ti-plus"></i>Plan first training</button>':'')
         +'</div>';
       return;
     }
@@ -31345,8 +31345,8 @@ async function tpLoad(){
       h+='<td style="padding:8px 10px">'+tpEvidenceBadge(x)+'</td>';
       h+='<td style="padding:8px 10px">'+statusBadge(x.status||'planned')+'</td>';
       h+='<td style="padding:8px 10px"><div style="display:flex;gap:4px">'
-        +'<button class="btn btn-sm" data-id="'+x.id+'" onclick="tpOpen(this.getAttribute(\'data-id\'))"><i class="ti ti-edit"></i></button>'
-        +(isMgr()?'<button class="btn btn-sm" style="color:var(--red)" data-id="'+x.id+'" onclick="tpDeleteFromList(this.getAttribute(\'data-id\'))"><i class="ti ti-trash"></i></button>':'')
+        +'<button class="btn btn-sm" data-id="'+x.id+'" data-auris-generated-onclick="g0313"><i class="ti ti-edit"></i></button>'
+        +(isMgr()?'<button class="btn btn-sm" style="color:var(--red)" data-id="'+x.id+'" data-auris-generated-onclick="g0314"><i class="ti ti-trash"></i></button>':'')
         +'</div></td>';
       h+='</tr>';
     });
@@ -31488,7 +31488,7 @@ function trainingAIRenderGapReview(out,ctx){
   window.trainingAiPlanItems=items;
   var checks=Array.isArray(out.assurance_checks)?out.assurance_checks:[];
   var h='<div class="card" style="border-left:4px solid #5B21B6;background:#fff">';
-  h+='<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap"><div><div style="font-weight:900;color:#5B21B6;font-size:15px"><i class="ti ti-robot"></i> AI Training & Competency Gap Review</div><div style="font-size:12px;color:var(--text2);margin-top:4px">Review before applying. Based on '+(ctx.active_people||[]).length+' active people, '+(ctx.training_plan||[]).length+' plan items and '+(ctx.training_records||[]).length+' training records.</div></div><button class="btn btn-sm" onclick="document.getElementById(\'train-ai-gap-panel\').style.display=\'none\'"><i class="ti ti-x"></i></button></div>';
+  h+='<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap"><div><div style="font-weight:900;color:#5B21B6;font-size:15px"><i class="ti ti-robot"></i> AI Training & Competency Gap Review</div><div style="font-size:12px;color:var(--text2);margin-top:4px">Review before applying. Based on '+(ctx.active_people||[]).length+' active people, '+(ctx.training_plan||[]).length+' plan items and '+(ctx.training_records||[]).length+' training records.</div></div><button class="btn btn-sm" data-auris-generated-onclick="g0315"><i class="ti ti-x"></i></button></div>';
   h+='<div style="margin-top:12px;padding:10px 12px;border-radius:8px;background:#F5F3FF;color:#4C1D95;font-size:13px;line-height:1.45">'+escH(out.summary||'AURIS reviewed the training data and prepared suggested competency actions.')+'</div>';
   if(gaps.length){
     h+='<div style="margin-top:14px;font-weight:800">Priority gaps</div><div class="table-scroll" style="margin-top:8px"><table class="data-table" style="min-width:980px"><thead><tr><th>Gap</th><th>Risk</th><th>Evidence</th><th>Recommended training</th><th style="width:90px">Priority</th><th style="width:100px">Due</th></tr></thead><tbody>';
@@ -31497,7 +31497,7 @@ function trainingAIRenderGapReview(out,ctx){
   }
   if(items.length){
     h+='<div style="margin-top:14px;font-weight:800">Suggested training plan items</div><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:10px;margin-top:8px">';
-    items.slice(0,6).forEach(function(it,i){h+='<div style="border:1px solid var(--border);border-radius:8px;padding:10px;background:#fafafa"><div style="font-weight:800">'+escH(it.topic||'Training')+'</div><div style="font-size:12px;color:var(--text2);margin-top:4px">'+escH(it.target_group||'')+'</div><div style="font-size:12px;margin-top:6px"><b>Priority:</b> '+escH(it.priority||'medium')+' &nbsp; <b>Date:</b> '+escH(it.planned_date||'')+'</div><div style="font-size:12px;color:var(--text2);margin-top:6px;line-height:1.4">'+escH(it.objective||it.notes||'')+'</div><button class="btn btn-sm btn-primary" style="margin-top:8px" data-i="'+i+'" onclick="trainingAIApplyPlanItem(parseInt(this.getAttribute(\'data-i\'),10))"><i class="ti ti-plus"></i>Prefill plan</button></div>';});
+    items.slice(0,6).forEach(function(it,i){h+='<div style="border:1px solid var(--border);border-radius:8px;padding:10px;background:#fafafa"><div style="font-weight:800">'+escH(it.topic||'Training')+'</div><div style="font-size:12px;color:var(--text2);margin-top:4px">'+escH(it.target_group||'')+'</div><div style="font-size:12px;margin-top:6px"><b>Priority:</b> '+escH(it.priority||'medium')+' &nbsp; <b>Date:</b> '+escH(it.planned_date||'')+'</div><div style="font-size:12px;color:var(--text2);margin-top:6px;line-height:1.4">'+escH(it.objective||it.notes||'')+'</div><button class="btn btn-sm btn-primary" style="margin-top:8px" data-i="'+i+'" data-auris-generated-onclick="g0316"><i class="ti ti-plus"></i>Prefill plan</button></div>';});
     h+='</div>';
   }
   if(checks.length){h+='<div style="margin-top:14px;font-weight:800">Assurance checks</div><ul style="margin:8px 0 0 18px;color:var(--text2);font-size:12px;line-height:1.5">'+checks.slice(0,8).map(function(c){return '<li>'+escH(c)+'</li>';}).join('')+'</ul>';}
@@ -31548,7 +31548,7 @@ function tfFilter(){
 function tfRender(data){
   var el=document.getElementById('tf-table');if(!el)return;
   if(!data.length){
-    el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)">No training records found.'+(isMgr()?' <button class="btn btn-primary btn-sm" onclick="tfNew()"><i class="ti ti-plus"></i>Add record</button>':'')+'</div>';
+    el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)">No training records found.'+(isMgr()?' <button class="btn btn-primary btn-sm" data-auris-generated-onclick="g0317"><i class="ti ti-plus"></i>Add record</button>':'')+'</div>';
     return;
   }
   var today=new Date();
@@ -31574,7 +31574,7 @@ function tfRender(data){
     var refAlert=ref&&ref<today?'color:var(--red);font-weight:700':ref&&ref<soon?'color:var(--amber);font-weight:600':'';
     var certUrl=x.certificate_url||x.evidence_url||'';
     var certCell=certUrl
-      ? '<button class="btn btn-sm" title="Preview certificate" data-url="'+escH(certUrl)+'" data-name="'+escH(x.certificate||x.training_topic||'Training certificate')+'" onclick="trainingPreviewAttachment(this.getAttribute(\'data-url\'),this.getAttribute(\'data-name\'))"><i class="ti ti-eye"></i> '+escH(x.certificate||'Certificate')+'</button>'
+      ? '<button class="btn btn-sm" title="Preview certificate" data-url="'+escH(certUrl)+'" data-name="'+escH(x.certificate||x.training_topic||'Training certificate')+'" data-auris-generated-onclick="g0318"><i class="ti ti-eye"></i> '+escH(x.certificate||'Certificate')+'</button>'
       : escH(x.certificate||'-');
     var archived=/\[Archived/i.test(String(x.notes||''));
     var result=archived?'<span class="badge gray">Archived</span>':x.passed===true?'<span style="color:var(--green);font-weight:700">Pass</span>':x.passed===false?'<span style="color:var(--red)">Fail</span>':'-';
@@ -31587,8 +31587,8 @@ function tfRender(data){
       +'<td style="padding:8px 10px;'+refAlert+'">'+refStr+(refAlert.includes('red')?' ?':'')+'</td>'
       +'<td style="padding:8px 10px;text-align:center">'+result+'</td>'
       +'<td style="padding:8px 10px"><div style="display:flex;gap:4px">'
-      +'<button class="btn btn-sm" data-id="'+x.id+'" onclick="tfOpen(this.getAttribute(\'data-id\'))"><i class="ti ti-edit"></i></button>'
-      +(isMgr()?'<button class="btn btn-sm" style="color:var(--red)" data-id="'+x.id+'" onclick="tfDeleteFromList(this.getAttribute(\'data-id\'))"><i class="ti ti-trash"></i></button>':'')
+      +'<button class="btn btn-sm" data-id="'+x.id+'" data-auris-generated-onclick="g0319"><i class="ti ti-edit"></i></button>'
+      +(isMgr()?'<button class="btn btn-sm" style="color:var(--red)" data-id="'+x.id+'" data-auris-generated-onclick="g0320"><i class="ti ti-trash"></i></button>':'')
       +'</div></td>'
       +'</tr>';
   });
@@ -31802,7 +31802,7 @@ function authFilter(){
 function authRender(data){
   var el=document.getElementById('auth-table');if(!el)return;
   if(!data.length){
-    el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)">No authorisations found.'+(isMgr()?' <button class="btn btn-primary btn-sm" onclick="authNew()"><i class="ti ti-plus"></i>Add</button>':'')+'</div>';
+    el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)">No authorisations found.'+(isMgr()?' <button class="btn btn-primary btn-sm" data-auris-generated-onclick="g0321"><i class="ti ti-plus"></i>Add</button>':'')+'</div>';
     return;
   }
   var today=new Date();var soon=new Date();soon.setDate(soon.getDate()+60);
@@ -31835,7 +31835,7 @@ function authRender(data){
       var exp=x.expiry_date?new Date(x.expiry_date).toLocaleDateString('en-GB'):'-';
       var certUrl=x.certificate_url||x.evidence_url||'';
       var refCell=certUrl
-        ? '<button class="btn btn-sm" title="Preview certificate" data-url="'+escH(certUrl)+'" data-name="'+escH(x.reference||x.authorisation_type||'Authorisation certificate')+'" onclick="trainingPreviewAttachment(this.getAttribute(\'data-url\'),this.getAttribute(\'data-name\'))"><i class="ti ti-eye"></i> '+escH(x.reference||'Evidence')+'</button>'
+        ? '<button class="btn btn-sm" title="Preview certificate" data-url="'+escH(certUrl)+'" data-name="'+escH(x.reference||x.authorisation_type||'Authorisation certificate')+'" data-auris-generated-onclick="g0318"><i class="ti ti-eye"></i> '+escH(x.reference||'Evidence')+'</button>'
         : escH(x.reference||'-');
       var isExpiredOrWarn=x.expiry_date&&(new Date(x.expiry_date)<today||new Date(x.expiry_date)<=soon);
       h+='<tr style="border-bottom:1px solid #f0f0f0;background:'+bg+'">'
@@ -31846,8 +31846,8 @@ function authRender(data){
         +'<td style="padding:8px 10px;font-size:11px">'+refCell+(x.scope||x.restrictions?'<div class="muted">'+escH(x.scope||x.restrictions)+'</div>':'')+'</td>'
         +'<td style="padding:8px 10px">'+statusBadge(x.status,x.expiry_date)+'</td>'
         +'<td style="padding:8px 10px"><div style="display:flex;gap:4px">'
-        +'<button class="btn btn-sm" data-id="'+x.id+'" onclick="authOpen(this.getAttribute(\'data-id\'))"><i class="ti ti-edit"></i></button>'
-        +(isMgr()?'<button class="btn btn-sm" style="color:var(--red)" data-id="'+x.id+'" onclick="authDeleteFromList(this.getAttribute(\'data-id\'))"><i class="ti ti-trash"></i></button>':'')
+        +'<button class="btn btn-sm" data-id="'+x.id+'" data-auris-generated-onclick="g0322"><i class="ti ti-edit"></i></button>'
+        +(isMgr()?'<button class="btn btn-sm" style="color:var(--red)" data-id="'+x.id+'" data-auris-generated-onclick="g0323"><i class="ti ti-trash"></i></button>':'')
         +'</div></td>'
         +'</tr>';
     });
@@ -32106,7 +32106,7 @@ function auditFilter() {
     return mQ && mT && mS;
   });
   if(!filt.length) {
-    el.innerHTML = '<div style="text-align:center;padding:48px;color:var(--text2)"><div style="font-size:44px;margin-bottom:12px">-</div><div style="font-weight:700;font-size:14px;margin-bottom:8px">No inspections found</div><button class="btn btn-primary" onclick="auditStartFromCurrentTab()"><i class="ti ti-plus"></i>Start inspection</button></div>';
+    el.innerHTML = '<div style="text-align:center;padding:48px;color:var(--text2)"><div style="font-size:44px;margin-bottom:12px">-</div><div style="font-weight:700;font-size:14px;margin-bottom:8px">No inspections found</div><button class="btn btn-primary" data-auris-generated-onclick="g0324"><i class="ti ti-plus"></i>Start inspection</button></div>';
     return;
   }
   var h = '<div class="table-scroll"><table class="data-table" style="min-width:1060px">'
@@ -32130,7 +32130,7 @@ function auditFilter() {
     var sc = stCfg[x.status||'open']||stCfg.open;
     var isOverdue = x.status!=='closed'&&x.status!=='completed'&&x.planned_date&&new Date(x.planned_date)<new Date();
     var ref = displayRecordRef(x,'reference_no','INSP-DRAFT');
-    h += '<tr style="border-bottom:1px solid var(--border);border-left:5px solid '+cfg.border+';cursor:pointer" data-id="'+x.id+'" onclick="auditOpen(this.dataset.id)">'
+    h += '<tr style="border-bottom:1px solid var(--border);border-left:5px solid '+cfg.border+';cursor:pointer" data-id="'+x.id+'" data-auris-generated-onclick="g0325">'
       + '<td style="padding:10px;font-family:monospace;font-weight:800;color:'+cfg.color+'">'+escH(ref)+'</td>'
       + '<td style="padding:10px"><span style="background:'+cfg.bg+';color:'+cfg.color+';padding:3px 8px;border-radius:99px;font-size:10px;font-weight:700;border:1px solid '+cfg.border+'">'+escH(cfg.label)+'</span></td>'
       + '<td style="padding:10px;font-weight:600">'+escH(x.site||x.if_site||'-')+(x.department?' <span style="color:var(--text2);font-weight:500">/ '+escH(x.department)+'</span>':'')+(isOverdue?' <span style="background:#FCEBEB;color:#DC2626;padding:1px 6px;border-radius:4px;font-size:9px;font-weight:700">OVERDUE</span>':'')+'</td>'
@@ -32468,9 +32468,9 @@ function auditAddPhotoRow(item) {
     + '<select class="audit-photo-type" style="padding:6px;border:1px solid var(--border);border-radius:6px;font-size:12px">'
     + '<option value="photo">Photo</option><option value="voice">Voice</option><option value="video">Video</option><option value="document">Document</option>'
     + '</select>'
-    + '<label class="btn btn-sm" style="cursor:pointer;flex-shrink:0"><i class="ti ti-upload"></i>Upload<input type="file" accept=".pdf,.doc,.docx,.png,.jpg,.jpeg,.webp,.mp4,.mov,.m4a,.mp3" onchange="auditUploadEvidenceFile(this)" style="display:none"/></label>'
-    + '<button type="button" class="btn btn-sm" style="flex-shrink:0" onclick="auditPreviewEvidenceRow(this)"><i class="ti ti-eye"></i></button>'
-    + '<button class="btn btn-sm" style="color:var(--red);flex-shrink:0" onclick="this.parentElement.remove()"><i class="ti ti-x"></i></button>';
+    + '<label class="btn btn-sm" style="cursor:pointer;flex-shrink:0"><i class="ti ti-upload"></i>Upload<input type="file" accept=".pdf,.doc,.docx,.png,.jpg,.jpeg,.webp,.mp4,.mov,.m4a,.mp3" data-auris-generated-onchange="g0326" style="display:none"/></label>'
+    + '<button type="button" class="btn btn-sm" style="flex-shrink:0" data-auris-generated-onclick="g0327"><i class="ti ti-eye"></i></button>'
+    + '<button class="btn btn-sm" style="color:var(--red);flex-shrink:0" data-auris-generated-onclick="g0260"><i class="ti ti-x"></i></button>';
   container.appendChild(row);
   row.querySelector('.audit-photo-type').value=type;
 }
@@ -32547,7 +32547,7 @@ function auditAddFinding() {
     + '<div><label style="font-size:10px;font-weight:600;text-transform:uppercase;color:var(--text2)">Required corrective action</label>'
     + '<textarea class="af-action" style="width:100%;min-height:40px;padding:6px;border:1px solid var(--border);border-radius:6px;font-size:12px;resize:vertical;margin-top:2px" placeholder="What needs to be done?"></textarea></div>'
     + '</div>'
-    + '<div style="display:flex;justify-content:flex-end;margin-top:6px"><button class="btn btn-sm" style="color:var(--red)" onclick="this.closest(\'.audit-finding-row\').remove()"><i class="ti ti-x"></i>Remove</button></div>';
+    + '<div style="display:flex;justify-content:flex-end;margin-top:6px"><button class="btn btn-sm" style="color:var(--red)" data-auris-generated-onclick="g0328"><i class="ti ti-x"></i>Remove</button></div>';
   container.appendChild(row);
 }
 
@@ -32634,14 +32634,14 @@ function auditAIRenderReview(data){
   data=data||{};
   var arr=function(v){return Array.isArray(v)?v:(v?[String(v)]:[]);};
   var actions=arr(data.actions), findings=arr(data.findings), missing=arr(data.missing_checks), notes=arr(data.reviewer_notes);
-  var h='<div style="display:flex;justify-content:space-between;gap:12px;align-items:flex-start;flex-wrap:wrap"><div><b><i class="ti ti-robot"></i> AI inspection quality review</b><div style="font-size:12px;color:#334155;margin-top:4px">Review suggestions before applying. AURIS helps structure findings; the inspector remains accountable for the record.</div></div><button class="btn btn-sm" onclick="document.getElementById(\'audit-ai-output\').style.display=\'none\'"><i class="ti ti-x"></i></button></div>';
+  var h='<div style="display:flex;justify-content:space-between;gap:12px;align-items:flex-start;flex-wrap:wrap"><div><b><i class="ti ti-robot"></i> AI inspection quality review</b><div style="font-size:12px;color:#334155;margin-top:4px">Review suggestions before applying. AURIS helps structure findings; the inspector remains accountable for the record.</div></div><button class="btn btn-sm" data-auris-generated-onclick="g0329"><i class="ti ti-x"></i></button></div>';
   h+='<div style="margin-top:10px;display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:8px"><div style="background:#fff;border:1px solid #BFDBFE;border-radius:8px;padding:9px"><div style="font-size:11px;font-weight:800;color:#185FA5;text-transform:uppercase">Readiness</div><div style="font-weight:800;color:#111827;margin-top:3px">'+escH(data.readiness||'Review required')+'</div></div><div style="background:#fff;border:1px solid #FED7AA;border-radius:8px;padding:9px"><div style="font-size:11px;font-weight:800;color:#9A3412;text-transform:uppercase">Site risk</div><div style="font-weight:900;color:#111827;margin-top:3px">'+escH((data.site_risk_level||data.priority||'medium')).toUpperCase()+(data.immediate_stop_work?' - STOP WORK':'')+'</div></div><div style="background:#fff;border:1px solid #BFDBFE;border-radius:8px;padding:9px"><div style="font-size:11px;font-weight:800;color:#185FA5;text-transform:uppercase">Score comment</div><div style="font-size:12px;color:#374151;margin-top:3px">'+escH(data.score_comment||'Check all items and action any insufficient points.')+'</div></div></div>';
   if(missing.length)h+='<div style="margin-top:10px"><b>Missing / incomplete checks</b><ul style="margin:6px 0 0 18px">'+missing.slice(0,8).map(function(x){return '<li>'+escH(x)+'</li>';}).join('')+'</ul></div>';
   if(notes.length)h+='<div style="margin-top:10px"><b>Reviewer notes</b><ul style="margin:6px 0 0 18px">'+notes.slice(0,8).map(function(x){return '<li>'+escH(x)+'</li>';}).join('')+'</ul></div>';
   if(actions.length||findings.length)h+='<div style="margin-top:10px;font-size:12px;color:#334155">Prepared <b>'+actions.length+'</b> corrective action(s) and <b>'+findings.length+'</b> audit finding(s).</div>';
   if(actions.length)h+='<div style="margin-top:10px"><b>Suggested corrective actions</b><ul style="margin:6px 0 0 18px">'+actions.slice(0,6).map(function(a){return '<li>'+escH(a.description||a.action||String(a))+(a.priority?' <b>['+escH(a.priority)+']</b>':'')+'</li>';}).join('')+'</ul></div>';
   if(findings.length)h+='<div style="margin-top:10px"><b>Suggested findings</b><ul style="margin:6px 0 0 18px">'+findings.slice(0,6).map(function(f){return '<li>'+escH(f.description||String(f))+'</li>';}).join('')+'</ul></div>';
-  h+='<div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap"><button class="btn btn-primary" onclick="auditAIApplyReview()"><i class="ti ti-check"></i>Apply suggestions</button></div>';
+  h+='<div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap"><button class="btn btn-primary" data-auris-generated-onclick="g0330"><i class="ti ti-check"></i>Apply suggestions</button></div>';
   auditAIReviewPanel(h);
 }
 function auditAIApplyReview(){
@@ -32856,7 +32856,7 @@ function inspActionRowHTML(a){
     +'<input type="text" class="ia-desc" value="'+escH((a.description||''))+'" placeholder="Action description..." style="padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px"/>'
     +'<select class="ia-who" style="padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px">'+auditPersonOptions(a.responsible||a.assigned_to||'')+'</select>'
     +'<input type="date" class="ia-due" value="'+escH((a.target_date||a.due_date||''))+'" style="padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px"/>'
-    +'<button class="btn btn-sm" style="color:var(--red)" onclick="this.closest(\'.if-action-row\').remove()"><i class="ti ti-x"></i></button>'
+    +'<button class="btn btn-sm" style="color:var(--red)" data-auris-generated-onclick="g0331"><i class="ti ti-x"></i></button>'
     +'</div>';
 }
 function inspSyncActions(a){return inspActionRowHTML(a);}
@@ -32890,7 +32890,7 @@ function buildChecklist(preloadedItems) {
       +'<td style="text-align:center;padding:7px 4px;vertical-align:top"><input type="checkbox" id="cg-'+i+'" '+(isGood?'checked':'')+' onchange="syncChk('+i+',\'g\')" style="accent-color:#1D9E75;width:18px;height:18px;cursor:pointer"/></td>'
       +'<td style="text-align:center;padding:7px 4px;vertical-align:top"><input type="checkbox" id="ci-'+i+'" '+(isInsuf?'checked':'')+' onchange="syncChk('+i+',\'i\')" style="accent-color:#DC2626;width:18px;height:18px;cursor:pointer"/></td>'
       +'<td style="text-align:center;padding:7px 4px;vertical-align:top"><input type="checkbox" id="cn-'+i+'" '+(isNA?'checked':'')+' onchange="syncChk('+i+',\'n\')" style="accent-color:#9CA3AF;width:18px;height:18px;cursor:pointer"/></td>'
-      +'<td style="text-align:center;padding:6px 4px;vertical-align:top"><button class="btn btn-sm" style="padding:3px 6px;font-size:10px" onclick="auditAddPhotoRow()" title="Add evidence"><i class="ti ti-camera"></i></button></td>'
+      +'<td style="text-align:center;padding:6px 4px;vertical-align:top"><button class="btn btn-sm" style="padding:3px 6px;font-size:10px" data-auris-generated-onclick="g0332" title="Add evidence"><i class="ti ti-camera"></i></button></td>'
       +'<td style="padding:6px 8px;vertical-align:top"><textarea id="co-'+i+'" placeholder="Observation, evidence, action required..." style="width:100%;min-height:42px;padding:5px 7px;border:1px solid var(--border);border-radius:5px;font-size:11px;resize:vertical">'+escH(obs)+'</textarea></td>';
     tbody.appendChild(tr);
   });
@@ -32932,7 +32932,7 @@ async function findingsLoad() {
         +(x.finding_ref?'<span style="font-family:monospace">'+escH(x.finding_ref)+'</span>':'')
         +'</div>'
         +(isMgr()?'<div style="margin-top:8px;display:flex;gap:6px">'
-          +'<button class="btn btn-sm" data-id="'+x.id+'" onclick="findingClose(this.dataset.id)">Mark closed</button>'
+          +'<button class="btn btn-sm" data-id="'+x.id+'" data-auris-generated-onclick="g0333">Mark closed</button>'
           +'</div>':'')
         +'</div>';
     });
@@ -32962,7 +32962,7 @@ async function psLoad(){
   el.innerHTML='<div class="loading-msg">Loading...</div>';
   try{
     var d=await api('/inspections?select=*'+cf()+'&inspection_type=eq.prestart&order=created_at.desc');
-    if(!d||!d.length){el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)"><div style="font-size:40px;margin-bottom:12px"><i class="ti ti-circle-dot"></i></div><div style="font-weight:600;margin-bottom:8px">No pre-start inspections yet</div>'+(isMgr()?'<button class="btn btn-primary" onclick="psNew()"><i class="ti ti-plus"></i>New pre-start</button>':'')+'</div>';return;}
+    if(!d||!d.length){el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)"><div style="font-size:40px;margin-bottom:12px"><i class="ti ti-circle-dot"></i></div><div style="font-weight:600;margin-bottom:8px">No pre-start inspections yet</div>'+(isMgr()?'<button class="btn btn-primary" data-auris-generated-onclick="g0334"><i class="ti ti-plus"></i>New pre-start</button>':'')+'</div>';return;}
     var decColors={go:'#1D9E75',hold:'#EF9F27',stop:'#DC2626'};
     var h='<div class="table-scroll"><table class="data-table" style="min-width:900px"><thead><tr><th>Date</th><th>Activity</th><th>Location</th><th>Decision</th><th>Score</th><th>Supervisor</th><th style="width:50px"></th></tr></thead><tbody>';
     d.forEach(function(x,i){
@@ -32977,7 +32977,7 @@ async function psLoad(){
         +'<td style="padding:8px;text-align:center"><span style="background:'+dc+';color:#fff;padding:2px 10px;border-radius:99px;font-size:10px;font-weight:800;text-transform:uppercase">'+dec.toUpperCase()+'</span></td>'
         +'<td style="padding:8px;text-align:center;font-weight:700;color:'+(score!=null?(score>=80?'#1D9E75':score>=60?'#EF9F27':'#DC2626'):'#9CA3AF')+'">'+(score!=null?score+'%':'-')+'</td>'
         +'<td style="padding:8px;font-size:11px">'+escH(x.inspector||x.supervisor||'-')+'</td>'
-        +'<td style="padding:8px"><button class="btn btn-sm" data-id="'+x.id+'" onclick="event.stopPropagation();psOpen(this.dataset.id)"><i class="ti ti-edit"></i></button></td>'
+        +'<td style="padding:8px"><button class="btn btn-sm" data-id="'+x.id+'" data-auris-generated-onclick="g0335"><i class="ti ti-edit"></i></button></td>'
         +'</tr>';
     });
     el.innerHTML=h+'</tbody></table></div>';
@@ -33650,11 +33650,11 @@ function usersRender(data) {
       + '<td style="padding:8px;font-size:11px;color:var(--text2)">'+usersFmtLastLogin(u.last_login)+'</td>'
       + (isMgr()
         ? '<td style="padding:8px"><div style="display:flex;gap:4px;flex-wrap:wrap;justify-content:center">'
-          + (canEdit?'<button class="btn btn-sm" title="Edit user" data-id="'+u.id+'" onclick="usersEdit(this.dataset.id)"><i class="ti ti-edit"></i></button>':'<span style="font-size:11px;color:var(--text3)">Protected</span>')
-          + (canAdmin&&!usersIsGeneratedLogin(u)?'<button class="btn btn-sm" title="Send password reset email" data-id="'+u.id+'" onclick="usersResetPw(this.dataset.id)"><i class="ti ti-key"></i></button>':'')
-          + (usersCanResetPassword(u)?'<button class="btn btn-sm" title="'+(isSelf?'Change my password':'Set temporary password')+'" data-id="'+u.id+'" onclick="usersTempPassword(this.dataset.id)"><i class="ti ti-lock-cog"></i></button>':'')
-          + (canAdmin?'<button class="btn btn-sm" style="color:'+(!isActive?'var(--green)':'var(--red)')+'" title="'+(isActive?'Deactivate (block login)':'Reactivate')+'" data-id="'+u.id+'" data-active="'+(isActive?'1':'0')+'" onclick="usersToggleStatus(this.dataset.id,this.dataset.active)"><i class="ti ti-'+(isActive?'user-off':'user-check')+'"></i></button>':'')
-          + (canAdmin?'<button class="btn btn-sm" style="color:var(--red)" title="Deactivate user and preserve history" data-id="'+u.id+'" onclick="usersDelete(this.dataset.id)"><i class="ti ti-user-off"></i></button>':'')
+          + (canEdit?'<button class="btn btn-sm" title="Edit user" data-id="'+u.id+'" data-auris-generated-onclick="g0336"><i class="ti ti-edit"></i></button>':'<span style="font-size:11px;color:var(--text3)">Protected</span>')
+          + (canAdmin&&!usersIsGeneratedLogin(u)?'<button class="btn btn-sm" title="Send password reset email" data-id="'+u.id+'" data-auris-generated-onclick="g0337"><i class="ti ti-key"></i></button>':'')
+          + (usersCanResetPassword(u)?'<button class="btn btn-sm" title="'+(isSelf?'Change my password':'Set temporary password')+'" data-id="'+u.id+'" data-auris-generated-onclick="g0338"><i class="ti ti-lock-cog"></i></button>':'')
+          + (canAdmin?'<button class="btn btn-sm" style="color:'+(!isActive?'var(--green)':'var(--red)')+'" title="'+(isActive?'Deactivate (block login)':'Reactivate')+'" data-id="'+u.id+'" data-active="'+(isActive?'1':'0')+'" data-auris-generated-onclick="g0339"><i class="ti ti-'+(isActive?'user-off':'user-check')+'"></i></button>':'')
+          + (canAdmin?'<button class="btn btn-sm" style="color:var(--red)" title="Deactivate user and preserve history" data-id="'+u.id+'" data-auris-generated-onclick="g0340"><i class="ti ti-user-off"></i></button>':'')
           + '</div></td>'
         : '')
       + '</tr>';
@@ -33713,7 +33713,7 @@ function usersRenderNotificationPreferenceControls(){
     +'<div style="display:grid;grid-template-columns:1fr 1fr 1.5fr;gap:8px;margin-top:9px"><div><label style="font-size:10px">From</label><input type="time" id="upm3-pref-start" value="'+escH(String(p.quiet_start||'20:00').slice(0,5))+'"></div><div><label style="font-size:10px">Until</label><input type="time" id="upm3-pref-end" value="'+escH(String(p.quiet_end||'06:00').slice(0,5))+'"></div><div><label style="font-size:10px">Timezone</label><select id="upm3-pref-timezone"><option>Asia/Dubai</option><option>Indian/Mauritius</option><option>UTC</option><option>Europe/London</option></select></div></div>'
     +'<label style="display:flex;align-items:flex-start;gap:7px;margin-top:10px;font-size:11px"><input type="checkbox" id="upm3-pref-override" '+checked(p.allow_urgent_override,true)+'> Allow urgent acknowledgement-required safety alerts to override quiet hours. Every override is audited.</label>'
     +'<div style="margin-top:10px"><label style="font-size:10px">External alert burst limit per hour</label><input type="number" min="1" max="60" id="upm3-pref-limit" value="'+Number(p.max_external_alerts_per_hour||10)+'"></div>'
-    +'<button class="btn" style="margin-top:12px" onclick="usersSaveNotificationPreferences()"><i class="ti ti-device-floppy"></i>Save delivery preferences</button>';
+    +'<button class="btn" style="margin-top:12px" data-auris-generated-onclick="g0341"><i class="ti ti-device-floppy"></i>Save delivery preferences</button>';
   var tz=document.getElementById('upm3-pref-timezone');if(tz)tz.value=p.timezone||Intl.DateTimeFormat().resolvedOptions().timeZone||'Asia/Dubai';
 }
 async function usersSaveNotificationPreferences(){
@@ -33775,8 +33775,8 @@ function usersRenderProfileModal(){
       +'<div style="display:flex;align-items:center;gap:8px;font-weight:800;color:#065F46"><i class="ti ti-brand-whatsapp"></i> WhatsApp safety alerts</div>'
       +'<div style="font-size:12px;line-height:1.5;margin-top:7px">WhatsApp is supplementary for important safety alerts. In-app and configured email notifications remain the controlled fallback. Standard carrier or data charges may apply.</div>'
       +(isOwn?'<label style="display:block;font-size:12px;font-weight:700;margin-top:14px;color:var(--text)">My WhatsApp number</label><input id="upm3-whatsapp-phone" value="'+escH(u.whatsapp_phone||u.phone||'')+'" placeholder="+2305xxxxxxx" style="width:100%;margin-top:5px" '+(whatsappActive?'disabled':'')+'>'
-        +(whatsappActive?'<div style="font-size:11px;color:#047857;margin-top:8px">Consent recorded '+escH(new Date(u.whatsapp_opted_in_at).toLocaleString())+'.</div><button class="btn" style="margin-top:12px;color:var(--red);border-color:#FCA5A5" onclick="usersSetWhatsappConsent(false)"><i class="ti ti-bell-off"></i>Disable WhatsApp alerts</button>'
-          :'<div style="font-size:11px;color:var(--text2);margin-top:8px">By enabling, I confirm that this number belongs to me and I agree to receive AURIS360 operational and safety notifications. I can withdraw consent here at any time.</div><button class="btn btn-primary" style="margin-top:12px;background:#0B7F61" onclick="usersSetWhatsappConsent(true)"><i class="ti ti-brand-whatsapp"></i>I agree — enable WhatsApp</button>')
+        +(whatsappActive?'<div style="font-size:11px;color:#047857;margin-top:8px">Consent recorded '+escH(new Date(u.whatsapp_opted_in_at).toLocaleString())+'.</div><button class="btn" style="margin-top:12px;color:var(--red);border-color:#FCA5A5" data-auris-generated-onclick="g0342"><i class="ti ti-bell-off"></i>Disable WhatsApp alerts</button>'
+          :'<div style="font-size:11px;color:var(--text2);margin-top:8px">By enabling, I confirm that this number belongs to me and I agree to receive AURIS360 operational and safety notifications. I can withdraw consent here at any time.</div><button class="btn btn-primary" style="margin-top:12px;background:#0B7F61" data-auris-generated-onclick="g0343"><i class="ti ti-brand-whatsapp"></i>I agree — enable WhatsApp</button>')
         :'<div style="font-size:12px;margin-top:12px;color:'+(whatsappActive?'#047857':'#B45309')+'">'+(whatsappActive?'The user has recorded active consent.':'The user has not recorded active WhatsApp consent. Administrators cannot opt in for them.')+'</div>')
       +'</div>'
       +(isOwn?'<div id="upm3-notification-preferences" style="max-width:540px;margin:14px auto 0;text-align:left;border:1px solid var(--border);background:#fff;border-radius:12px;padding:16px"><div class="loading">Loading delivery preferences...</div></div>':'')
@@ -34013,7 +34013,7 @@ async function usersTempPassword(id) {
       +'<div style="margin-top:10px;padding:10px;background:#fff;border:1px solid #d1fae5;border-radius:6px;font-family:monospace">'
       +'<div><strong>Username:</strong> '+escH(u.email||'')+'</div>'
       +'<div><strong>Temporary password:</strong> '+escH(pw)+'</div></div>'
-      +'<button class="btn btn-sm" style="margin-top:10px" data-creds="'+escH(creds)+'" onclick="navigator.clipboard.writeText(this.dataset.creds).then(function(){toast(\'Copied credentials\');})"><i class="ti ti-copy"></i>Copy credentials</button>'
+      +'<button class="btn btn-sm" style="margin-top:10px" data-creds="'+escH(creds)+'" data-auris-generated-onclick="g0344"><i class="ti ti-copy"></i>Copy credentials</button>'
       +'</div>';
     if(out){out.style.display='block';out.innerHTML=html;} else {toast('Temporary password set: '+pw);}
     usersShowTempPasswordResult(u, pw);
@@ -34280,7 +34280,7 @@ function saCompanyMenuBuild() {
   var html = '<div class="modules-menu-section">View context</div>';
   // "All companies" option at top
   var isAllActive = !sephsCompanyContext;
-  html += '<div class="modules-menu-item'+(isAllActive?' active':'')+'" onclick="saCompanyPick(null)"><i class="ti ti-globe"></i>All companies (portfolio view)</div>';
+  html += '<div class="modules-menu-item'+(isAllActive?' active':'')+'" data-auris-generated-onclick="g0345"><i class="ti ti-globe"></i>All companies (portfolio view)</div>';
   if(saCompanyList.length === 0) {
     html += '<div style="padding:10px 14px;font-size:11px;color:var(--text3)">No companies loaded yet.</div>';
   } else {
@@ -34554,7 +34554,7 @@ function applyRoles() {
   ensureMocSidebarItem();
 
   // -- Phase 1: ensure every nav-item has an ID we can target --
-  // Most static <div class="nav-item" onclick="showPage('X',this)"> items have
+  // Most static <div class="nav-item" data-auris-generated-onclick="g0346"> items have
   // no ID, which means we can't role-gate them. Walk them once and assign
   // id="nav-{page}" based on the showPage(...) target in their onclick.
   document.querySelectorAll('.nav-item').forEach(function(el){
@@ -34894,12 +34894,12 @@ function adminRenderOverviewCards(data) {
     var tierColors = {starter:['#6B7280','#f3f4f6'],professional:['#185FA5','#EFF6FF'],enterprise:['#5B21B6','#F5F3FF']};
     var tc = tierColors[co.subscription_tier||'professional']||tierColors.professional;
     var typeCfg = {group:'Group',subsidiary:'Subsidiary',client:'Client',standalone:'Standalone'};
-    return '<div class="card" style="padding:0;overflow:hidden;cursor:pointer;border:2px solid '+(co.active!==false?'#185FA5':'#e5e7eb')+';transition:all .15s" onclick="adminEditCompany(\''+co.id+'\')" onmouseover="this.style.boxShadow=\'0 4px 16px rgba(0,0,0,.1)\'" onmouseout="this.style.boxShadow=\'\'">'
+    return '<div class="card" style="padding:0;overflow:hidden;cursor:pointer;border:2px solid '+(co.active!==false?'#185FA5':'#e5e7eb')+';transition:all .15s" onclick="adminEditCompany(\''+co.id+'\')" data-auris-generated-onmouseover="g0288" data-auris-generated-onmouseout="g0088">'
       + '<div style="height:4px;background:'+(co.active!==false?'linear-gradient(90deg,#185FA5,#1D9E75)':'#e5e7eb')+'"></div>'
       + '<div style="padding:12px 14px">'
       + '<div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:8px">'
       + '<div style="display:flex;align-items:center;gap:8px">'
-      + (aurisSafeMediaUrl(co.logo_url,'image')?'<img src="'+escH(aurisSafeMediaUrl(co.logo_url,'image'))+'" style="width:36px;height:36px;border-radius:8px;object-fit:contain;border:1px solid #f3f4f6" onerror="this.style.display=\'none\'"/>':
+      + (aurisSafeMediaUrl(co.logo_url,'image')?'<img src="'+escH(aurisSafeMediaUrl(co.logo_url,'image'))+'" style="width:36px;height:36px;border-radius:8px;object-fit:contain;border:1px solid #f3f4f6" data-auris-generated-onerror="g0347"/>':
         '<div style="width:36px;height:36px;border-radius:8px;background:#185FA5;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:14px;flex-shrink:0">'+(co.name?co.name[0].toUpperCase():'?')+'</div>')
       + '<div><div style="font-weight:700;font-size:13px">'+escH(co.name)+'</div>'
       + '<div style="font-size:10px;color:var(--text2)">'+escH(co.industry||'-')+'</div>'
@@ -34987,7 +34987,7 @@ async function adminLoadCompanies() {
     var tierColors={starter:'#6B7280',professional:'#185FA5',enterprise:'#5B21B6'};
     h+='<tr style="border-bottom:1px solid #f0f0f0;background:'+bg+'">'
       +'<td style="padding:8px 14px"><div style="display:flex;align-items:center;gap:8px">'
-      +(aurisSafeMediaUrl(co.logo_url,'image')?'<img src="'+escH(aurisSafeMediaUrl(co.logo_url,'image'))+'" style="width:24px;height:24px;border-radius:4px;object-fit:contain" onerror="this.style.display=\'none\'"/>':
+      +(aurisSafeMediaUrl(co.logo_url,'image')?'<img src="'+escH(aurisSafeMediaUrl(co.logo_url,'image'))+'" style="width:24px;height:24px;border-radius:4px;object-fit:contain" data-auris-generated-onerror="g0347"/>':
         '<div style="width:24px;height:24px;border-radius:4px;background:#185FA5;color:#fff;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700">'+co.name[0].toUpperCase()+'</div>')
       +'<span style="font-weight:700">'+escH(co.name)+'</span>'
       +(co.parent_company_id?'<span style="font-size:9px;background:#EDE9FE;color:#5B21B6;padding:1px 5px;border-radius:3px">subsidiary</span>':'')
@@ -35000,7 +35000,7 @@ async function adminLoadCompanies() {
       +'<td style="padding:8px;text-align:center;font-weight:700">'+escH(String(co.headcount||0))+'</td>'
       +'<td style="padding:8px"><span style="color:'+(tierColors[co.subscription_tier||'professional'])+';font-size:10px;font-weight:700;text-transform:capitalize">'+escH(co.subscription_tier||'pro')+'</span></td>'
       +'<td style="padding:8px"><span style="background:'+(co.active!==false?'#EAF3DE':'#f3f4f6')+';color:'+(co.active!==false?'#3B6D11':'#6B7280')+';padding:2px 8px;border-radius:99px;font-size:10px;font-weight:700">'+(co.active!==false?'Active':'Inactive')+'</span></td>'
-      +'<td style="padding:8px"><button class="btn btn-sm" data-id="'+co.id+'" onclick="adminEditCompany(this.dataset.id)"><i class="ti ti-edit"></i></button></td>'
+      +'<td style="padding:8px"><button class="btn btn-sm" data-id="'+co.id+'" data-auris-generated-onclick="g0348"><i class="ti ti-edit"></i></button></td>'
       +'</tr>';
   });
   el.innerHTML = h + '</tbody></table></div>';
@@ -35149,7 +35149,7 @@ async function adminLoadSites() {
     var mT  = !fType || s.site_type===fType;
     return mCo && mT;
   });
-  if(!sites.length){el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)"><div style="font-size:40px;margin-bottom:10px"><i class="ti ti-circle-dot"></i></div><div style="font-weight:600;margin-bottom:8px">No sites found</div><button class="btn btn-primary" onclick="adminNewSite(null)"><i class="ti ti-plus"></i>Add site</button></div>'; return;}
+  if(!sites.length){el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)"><div style="font-size:40px;margin-bottom:10px"><i class="ti ti-circle-dot"></i></div><div style="font-weight:600;margin-bottom:8px">No sites found</div><button class="btn btn-primary" data-auris-generated-onclick="g0349"><i class="ti ti-plus"></i>Add site</button></div>'; return;}
   var h='<div class="table-scroll"><table class="data-table" style="min-width:1080px">'
     +'<thead><tr>'
     +'<th>Site</th><th>Company</th>'
@@ -35176,7 +35176,7 @@ async function adminLoadSites() {
       +'<td style="padding:8px"><span style="background:'+rc.bg+';color:'+rc.color+';padding:1px 7px;border-radius:99px;font-size:10px;font-weight:700;text-transform:capitalize">'+escH(s.risk_level||'medium')+'</span></td>'
       +'<td style="padding:8px"><span style="background:'+sc[0]+';color:'+sc[1]+';padding:2px 8px;border-radius:99px;font-size:10px;font-weight:700;text-transform:capitalize">'+escH(s.status||'active')+'</span></td>'
       +'<td style="padding:8px"><div style="display:flex;gap:4px">'
-      +'<button class="btn btn-sm" title="Edit site" data-id="'+s.id+'" onclick="adminEditSite(this.dataset.id)"><i class="ti ti-edit"></i></button>'
+      +'<button class="btn btn-sm" title="Edit site" data-id="'+s.id+'" data-auris-generated-onclick="g0350"><i class="ti ti-edit"></i></button>'
       +'<button class="btn btn-sm" title="Set as active site" data-id="'+s.id+'" onclick="adminSwitchSite(this.dataset.id);document.getElementById(\'adm3site-switcher\').value=this.dataset.id;toast(\'Viewing: \'+(adminSitesData.find(function(x){return x.id===this.dataset.id;})?.name||\'Site\'))"><i class="ti ti-eye"></i></button>'
       +'</div></td></tr>';
   });
@@ -35289,7 +35289,7 @@ function adminRenderHierarchy() {
     html += '<div class="card" style="margin-bottom:12px;padding:0;overflow:hidden">'
       + '<div style="padding:12px 16px;background:linear-gradient(135deg,#1a3a5c,#185FA5);color:#fff;display:flex;align-items:center;justify-content:space-between">'
       + '<div style="display:flex;align-items:center;gap:10px">'
-      + (aurisSafeMediaUrl(co.logo_url,'image')?'<img src="'+escH(aurisSafeMediaUrl(co.logo_url,'image'))+'" style="width:28px;height:28px;border-radius:6px;object-fit:contain;background:#fff;padding:2px" onerror="this.style.display=\'none\'"/>':
+      + (aurisSafeMediaUrl(co.logo_url,'image')?'<img src="'+escH(aurisSafeMediaUrl(co.logo_url,'image'))+'" style="width:28px;height:28px;border-radius:6px;object-fit:contain;background:#fff;padding:2px" data-auris-generated-onerror="g0347"/>':
         '<div style="width:28px;height:28px;border-radius:6px;background:rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;font-weight:800;color:#fff">'+co.name[0]+'</div>')
       + '<div><div style="font-weight:800;font-size:14px">'+escH(co.name)+'</div>'
       + '<div style="font-size:10px;opacity:.8">'+escH(co.industry||'')+(co.country?' - '+escH(co.country):'')+(co.company_type?' - '+escH(co.company_type):'')+'</div></div></div>'
@@ -35325,8 +35325,8 @@ function renderSiteTree(sites, parentId, depth) {
       + '<span style="background:'+rc.bg+';color:'+rc.color+';padding:1px 6px;border-radius:99px;font-size:9px;font-weight:700;text-transform:capitalize">'+escH(s.risk_level||'medium')+'</span>'
       + (subCount>0?'<span style="font-size:10px;color:var(--text2)">+'+subCount+' sub</span>':'')
       + '<div style="display:flex;gap:4px">'
-      + '<button class="btn btn-sm" style="padding:2px 5px" data-id="'+s.id+'" onclick="adminEditSite(this.dataset.id)"><i class="ti ti-edit"></i></button>'
-      + '<button class="btn btn-sm" style="padding:2px 5px" title="Add child site" data-co="'+s.company_id+'" data-parent="'+s.id+'" onclick="adminNewChildSite(this.dataset.co,this.dataset.parent)"><i class="ti ti-plus"></i></button>'
+      + '<button class="btn btn-sm" style="padding:2px 5px" data-id="'+s.id+'" data-auris-generated-onclick="g0350"><i class="ti ti-edit"></i></button>'
+      + '<button class="btn btn-sm" style="padding:2px 5px" title="Add child site" data-co="'+s.company_id+'" data-parent="'+s.id+'" data-auris-generated-onclick="g0351"><i class="ti ti-plus"></i></button>'
       + '</div></div>';
     html += renderSiteTree(sites, s.id, depth+1);
   });
@@ -35520,16 +35520,16 @@ async function adminLoadModuleAccess() {
       + '<div style="font-weight:700;font-size:13px">'+escH(c.name||'(unnamed)')+'</div>'
       + '<div style="display:flex;gap:6px;align-items:center">'
       + '<span style="font-size:11px;opacity:.9">'+liveGranted+' / '+totalLive+' live - '+granted+' selected</span>'
-      + '<button class="btn btn-sm" data-id="'+c.id+'" onclick="adminModSetDefault(this.dataset.id)" style="background:#fff;color:#185FA5">Production default</button>'
-      + '<button class="btn btn-sm" data-id="'+c.id+'" onclick="adminModSetAll(this.dataset.id,true)" style="background:rgba(255,255,255,.15);color:#fff;border-color:rgba(255,255,255,.4)">All live</button>'
-      + '<button class="btn btn-sm" data-id="'+c.id+'" onclick="adminModSetAll(this.dataset.id,false)" style="background:rgba(255,255,255,.15);color:#fff;border-color:rgba(255,255,255,.4)">None</button>'
+      + '<button class="btn btn-sm" data-id="'+c.id+'" data-auris-generated-onclick="g0352" style="background:#fff;color:#185FA5">Production default</button>'
+      + '<button class="btn btn-sm" data-id="'+c.id+'" data-auris-generated-onclick="g0353" style="background:rgba(255,255,255,.15);color:#fff;border-color:rgba(255,255,255,.4)">All live</button>'
+      + '<button class="btn btn-sm" data-id="'+c.id+'" data-auris-generated-onclick="g0354" style="background:rgba(255,255,255,.15);color:#fff;border-color:rgba(255,255,255,.4)">None</button>'
       + '</div></div>'
       + '<div style="padding:12px 14px;display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:6px">';
     MODULE_CATALOGUE.forEach(function(m){
       var on = acc.indexOf(m.k)!==-1;
       h += '<label style="display:flex;align-items:center;gap:8px;font-size:12px;cursor:pointer;padding:4px 6px;border-radius:6px">'
         + '<input type="checkbox" '+(on?'checked':'')+' data-co="'+c.id+'" data-mod="'+m.k+'" '
-        + 'style="width:15px;height:15px;flex-shrink:0;cursor:pointer;accent-color:#185FA5" onchange="adminModToggle(this)"/>'
+        + 'style="width:15px;height:15px;flex-shrink:0;cursor:pointer;accent-color:#185FA5" data-auris-generated-onchange="g0355"/>'
         + '<span>'+escH(m.l)+'</span></label>';
     });
     h += '</div></div>';
@@ -35577,7 +35577,7 @@ async function adminLoadAccessList() {
   try{
     var d=await api('/user_site_access?select=*'+cf()+'&order=granted_at.desc');
     adminAccessData=d||[];
-    if(!d||!d.length){el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)"><div style="font-size:40px;margin-bottom:10px"><i class="ti ti-circle-dot"></i></div><div style="font-weight:600;margin-bottom:8px">No site access assignments yet</div><button class="btn btn-primary" onclick="adminGrantAccess()"><i class="ti ti-plus"></i>Grant first access</button></div>';return;}
+    if(!d||!d.length){el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)"><div style="font-size:40px;margin-bottom:10px"><i class="ti ti-circle-dot"></i></div><div style="font-weight:600;margin-bottom:8px">No site access assignments yet</div><button class="btn btn-primary" data-auris-generated-onclick="g0356"><i class="ti ti-plus"></i>Grant first access</button></div>';return;}
     var h='<div class="table-scroll"><table class="data-table" style="min-width:900px">'
       +'<thead><tr>'
       +'<th>User ID</th>'
@@ -35598,7 +35598,7 @@ async function adminLoadAccessList() {
         +'<td style="padding:8px">'+(rc?'<span style="background:'+rc.bg+';color:'+rc.color+';padding:1px 7px;border-radius:99px;font-size:10px;font-weight:700">'+rc.emoji+' '+rc.label+'</span>':'<span style="color:var(--text2);font-size:11px">Default</span>')+'</td>'
         +'<td style="padding:8px"><span style="font-size:11px;font-weight:600;color:'+(a.access_level==='read_only'?'#6B7280':'#185FA5')+'">'+escH(a.access_level||'read_write').replace('_',' ')+'</span></td>'
         +'<td style="padding:8px;font-size:11px;color:var(--text2)">'+(a.granted_at?new Date(a.granted_at).toLocaleDateString('en-GB'):'-')+'</td>'
-        +'<td style="padding:8px"><button class="btn btn-sm" style="color:#DC2626" data-id="'+a.id+'" onclick="adminRevokeAccess(this.dataset.id)"><i class="ti ti-x"></i></button></td>'
+        +'<td style="padding:8px"><button class="btn btn-sm" style="color:#DC2626" data-id="'+a.id+'" data-auris-generated-onclick="g0357"><i class="ti ti-x"></i></button></td>'
         +'</tr>';
     });
     el.innerHTML=h+'</tbody></table></div>';
@@ -36007,7 +36007,7 @@ function integRenderGrid(typeFilter) {
       var status = saved ? (saved.status||'disconnected') : 'disconnected';
       var sc = STATUS_CFG[status] || STATUS_CFG.disconnected;
       var isConnected = status==='connected';
-      html += '<div class="card" style="padding:0;overflow:hidden;cursor:pointer;border:2px solid '+(isConnected?integ.color||'#185FA5':'var(--border)')+';transition:all .15s" data-key="'+integ.key+'" onclick="integOpenConfig(\''+integ.key+'\')" onmouseover="this.style.boxShadow=\'0 4px 20px rgba(0,0,0,.12)\'" onmouseout="this.style.boxShadow=\'\'">'
+      html += '<div class="card" style="padding:0;overflow:hidden;cursor:pointer;border:2px solid '+(isConnected?integ.color||'#185FA5':'var(--border)')+';transition:all .15s" data-key="'+integ.key+'" onclick="integOpenConfig(\''+integ.key+'\')" data-auris-generated-onmouseover="g0358" data-auris-generated-onmouseout="g0088">'
         // Top colour bar
         + '<div style="height:4px;background:'+(isConnected?integ.color||'#185FA5':'#e5e7eb')+'"></div>'
         + '<div style="padding:14px 16px">'
@@ -36385,7 +36385,7 @@ function elcFillRequiredPeople(selected){
     host.innerHTML=(people||[]).map(function(p,i){
       var nm=personFullName(p);var checked=selected.includes(nm)?' checked':'';
       return '<label style="display:grid;grid-template-columns:18px 1fr;gap:8px;align-items:start;padding:8px 10px;border:1px solid var(--border);border-radius:8px;background:#fff;cursor:pointer">'
-        +'<input type="checkbox" class="elc-person-check" value="'+escH(nm)+'"'+checked+' onchange="elcSyncPeopleSelectFromChecks()" style="width:16px;height:16px;margin-top:1px;accent-color:var(--green)"/>'
+        +'<input type="checkbox" class="elc-person-check" value="'+escH(nm)+'"'+checked+' data-auris-generated-onchange="g0359" style="width:16px;height:16px;margin-top:1px;accent-color:var(--green)"/>'
         +'<span><strong style="font-size:12px">'+escH([p.last_name,p.first_name].filter(Boolean).join(', ')||nm)+'</strong>'+(p.job_title?'<span class="muted" style="display:block;font-size:11px">'+escH(p.job_title)+'</span>':'')+'</span></label>';
     }).join('')||'<div class="muted" style="padding:10px">No people found in the People register.</div>';
   }
@@ -36477,8 +36477,8 @@ function eleOpenVideoPlayer(opts){
   modal.id='ele-video-modal';
   modal.className='ele-video-modal';
   modal.innerHTML='<div class="ele-video-shell" role="dialog" aria-modal="true">'
-    +'<div class="ele-video-head"><div style="min-width:0"><div style="font-size:13px;font-weight:900;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+escH(course.title||'E-learning video')+'</div><div style="font-size:11px;opacity:.8">'+escH(preview?'Course preview':(enrol?.person_name||'Assigned learner'))+'</div></div><button type="button" class="icon-btn" style="background:rgba(255,255,255,.18);color:#fff;border-color:rgba(255,255,255,.25)" onclick="eleCloseVideoPlayer()" aria-label="Close video"><i class="ti ti-x"></i></button></div>'
-    +'<div class="ele-video-body"><video id="ele-watch-video" class="ele-watch-player" controls controlsList="nodownload noplaybackrate noremoteplayback" disablePictureInPicture playsinline webkit-playsinline preload="metadata" oncontextmenu="return false" src="'+escH(videoUrl)+'"></video>'
+    +'<div class="ele-video-head"><div style="min-width:0"><div style="font-size:13px;font-weight:900;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+escH(course.title||'E-learning video')+'</div><div style="font-size:11px;opacity:.8">'+escH(preview?'Course preview':(enrol?.person_name||'Assigned learner'))+'</div></div><button type="button" class="icon-btn" style="background:rgba(255,255,255,.18);color:#fff;border-color:rgba(255,255,255,.25)" data-auris-generated-onclick="g0360" aria-label="Close video"><i class="ti ti-x"></i></button></div>'
+    +'<div class="ele-video-body"><video id="ele-watch-video" class="ele-watch-player" controls controlsList="nodownload noplaybackrate noremoteplayback" disablePictureInPicture playsinline webkit-playsinline preload="metadata" data-auris-generated-oncontextmenu="g0257" src="'+escH(videoUrl)+'"></video>'
     +'<div style="display:flex;justify-content:space-between;gap:10px;align-items:center;margin-top:10px;flex-wrap:wrap"><strong id="ele-watch-status">'+escH(preview?'Preview mode':(watched?'Already watched':'Watch in full to unlock certificate'))+'</strong><span class="muted" id="ele-watch-pct">'+progress+'%</span></div>'
     +'<div class="ele-video-progress" aria-hidden="true"><span id="ele-watch-bar" style="width:'+progress+'%"></span></div>'
     +'<div class="ele-watch-note">'+(preview?'Preview only. Learner progress is not recorded from this window.':'First viewing is controlled: forward seeking is blocked until the full video has been watched. Completion creates a one-year validity from the watched date.')+'</div>'
@@ -36672,7 +36672,7 @@ async function dashLoadMyElearning(){
       +(course.course_url?'<button class="btn btn-sm" onclick="eleLaunchEnrolment(\''+escH(x.id)+'\')"><i class="ti ti-player-play"></i>'+escH(done?'Review':'Watch')+'</button>':'')
       +(!done&&eleWatchFinished(x)&&isMgr()?'<button class="btn btn-sm btn-primary" onclick="dashCompleteElearning(\''+escH(x.id)+'\')"><i class="ti ti-certificate"></i>Issue certificate</button>':'')
       +'</div></div>';
-  }).join('')+(mine.length>5?'<button class="btn btn-sm" onclick="dashOpenElearning()">View all assigned courses</button>':'');
+  }).join('')+(mine.length>5?'<button class="btn btn-sm" data-auris-generated-onclick="g0361">View all assigned courses</button>':'');
 }
 async function dashCompleteElearning(id){
   try{
@@ -37086,7 +37086,7 @@ function deepLinkShowNotice(message,retry){
   try{var failed=pendingDeepLinkRequest||deepLinkReadStored();rolloutRecordHealthEvent('failed_deep_link',{module_key:failed?.goto||'',record_table:failed?.table||null,record_id:failed?.record||null,record_ref:failed?.ref||null,fingerprint:['deep-link',failed?.goto||'',failed?.record||'',String(message||'').slice(0,80)].join(':'),detail:{reason:String(message||'').slice(0,500),retryable:!!retry}});}catch(_){}
   var el=document.getElementById('deep-link-notice');
   if(!el){el=document.createElement('div');el.id='deep-link-notice';el.style.cssText='position:fixed;right:18px;top:84px;z-index:940;max-width:470px;background:#fff;border:1px solid #F5B7B1;border-left:5px solid #DC2626;border-radius:10px;padding:12px 14px;box-shadow:0 12px 34px rgba(15,23,42,.22);font-size:12px;color:#334155';document.body.appendChild(el);}
-  el.innerHTML='<div style="font-weight:900;color:#991B1B;margin-bottom:4px"><i class="ti ti-link-off"></i> Linked record could not be opened</div><div>'+escH(message)+'</div><div style="display:flex;gap:7px;justify-content:flex-end;margin-top:9px">'+(retry?'<button class="btn btn-sm" onclick="deepLinkResume(\'retry\')"><i class="ti ti-refresh"></i>Retry</button>':'')+'<button class="btn btn-sm" onclick="deepLinkClear(true)">Dismiss</button></div>';
+  el.innerHTML='<div style="font-weight:900;color:#991B1B;margin-bottom:4px"><i class="ti ti-link-off"></i> Linked record could not be opened</div><div>'+escH(message)+'</div><div style="display:flex;gap:7px;justify-content:flex-end;margin-top:9px">'+(retry?'<button class="btn btn-sm" data-auris-generated-onclick="g0362"><i class="ti ti-refresh"></i>Retry</button>':'')+'<button class="btn btn-sm" data-auris-generated-onclick="g0363">Dismiss</button></div>';
 }
 function deepLinkPage(req){
   if(req.goto==='prestart')return 'inspection';
@@ -37307,7 +37307,7 @@ function offlineEnsureBanner(){
   el=document.createElement('div');
   el.id='offline-sync-banner';
   el.style.cssText='display:none;position:fixed;left:50%;bottom:78px;transform:translateX(-50%);z-index:9999;background:#1a3a5c;color:#fff;border-radius:12px;box-shadow:0 10px 35px rgba(0,0,0,.22);padding:10px 12px;gap:10px;align-items:center;max-width:calc(100vw - 24px);font-size:12px';
-  el.innerHTML='<span id="offline-sync-text" style="font-weight:700;white-space:nowrap"></span><button class="btn btn-sm" style="background:#fff;color:#1a3a5c;border-color:#fff" onclick="offlineSyncNow()"><i class="ti ti-refresh"></i>Sync now</button>';
+  el.innerHTML='<span id="offline-sync-text" style="font-weight:700;white-space:nowrap"></span><button class="btn btn-sm" style="background:#fff;color:#1a3a5c;border-color:#fff" data-auris-generated-onclick="g0364"><i class="ti ti-refresh"></i>Sync now</button>';
   document.body.appendChild(el);
   return el;
 }
@@ -37948,7 +37948,7 @@ function renderNotificationReadiness(health){
   var items=(readiness.items||[]).map(function(item){return '<div style="border:1px solid var(--border);border-radius:9px;background:#fff;padding:11px"><div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start"><strong style="font-size:11px">'+escH(item.label)+'</strong>'+notificationReadinessBadge(item.status)+'</div><div style="font-size:10px;color:var(--text2);line-height:1.45;margin-top:6px">'+escH(item.detail||'')+'</div>'+(item.remediation?'<div style="font-size:10px;color:#92400E;line-height:1.45;margin-top:5px"><strong>Required:</strong> '+escH(item.remediation)+'</div>':'')+'</div>';}).join('');
   var simulation=health.simulation,scenarioHtml='';
   if(simulation){scenarioHtml='<div style="border-top:1px solid #BFDBFE;margin-top:12px;padding-top:12px"><div style="font-size:11px;font-weight:850;color:#1E3A8A">Routing simulation</div><div style="font-size:10px;color:#475569;margin:4px 0 8px">'+escH(simulation.message)+'</div><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(205px,1fr));gap:7px">'+(simulation.scenarios||[]).map(function(x){return '<div style="background:#fff;border:1px solid var(--border);border-radius:8px;padding:9px"><div style="display:flex;justify-content:space-between;gap:6px"><strong style="font-size:10px">'+escH(x.label)+'</strong>'+notificationReadinessBadge(x.deliverable?'ready':'blocked')+'</div><div style="font-size:9px;color:var(--text2);margin-top:5px">Channels: '+escH((x.channels||[]).join(', ')||'none configured')+(x.level?' Â· Level '+Number(x.level):'')+'</div></div>';}).join('')+'</div></div>';}
-  return '<div id="notification-readiness-matrix" style="border:1px solid #BFDBFE;background:#EFF6FF;border-radius:12px;padding:14px;margin:0 0 16px"><div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start;flex-wrap:wrap;margin-bottom:11px"><div><div style="font-size:14px;font-weight:900;color:#1E3A8A">Operational readiness matrix</div><div style="font-size:11px;color:#475569;margin-top:3px">'+Number(readiness.ready||0)+' of '+Number(readiness.total||0)+' controls ready. Checks are company-scoped and do not expose secrets or personal recipient details.</div></div><div style="display:flex;gap:8px;align-items:center">'+notificationReadinessBadge(readiness.status)+'<button type="button" class="btn btn-sm" onclick="runNotificationRoutingSimulation()"><i class="ti ti-route"></i>Run read-only simulation</button></div></div><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:8px">'+items+'</div>'+scenarioHtml+'</div>';
+  return '<div id="notification-readiness-matrix" style="border:1px solid #BFDBFE;background:#EFF6FF;border-radius:12px;padding:14px;margin:0 0 16px"><div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start;flex-wrap:wrap;margin-bottom:11px"><div><div style="font-size:14px;font-weight:900;color:#1E3A8A">Operational readiness matrix</div><div style="font-size:11px;color:#475569;margin-top:3px">'+Number(readiness.ready||0)+' of '+Number(readiness.total||0)+' controls ready. Checks are company-scoped and do not expose secrets or personal recipient details.</div></div><div style="display:flex;gap:8px;align-items:center">'+notificationReadinessBadge(readiness.status)+'<button type="button" class="btn btn-sm" data-auris-generated-onclick="g0365"><i class="ti ti-route"></i>Run read-only simulation</button></div></div><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:8px">'+items+'</div>'+scenarioHtml+'</div>';
 }
 function notificationHealthBadge(status){var map={operational:['Operational','#065F46','#DCFCE7','ti-circle-check'],review:['Review','#92400E','#FEF3C7','ti-alert-triangle'],setup:['Setup required','#991B1B','#FEE2E2','ti-plug-connected-x']};var m=map[status]||map.setup;return '<span style="display:inline-flex;align-items:center;gap:5px;padding:4px 9px;border-radius:99px;background:'+m[2]+';color:'+m[1]+';font-size:11px;font-weight:800"><i class="ti '+m[3]+'"></i>'+m[0]+'</span>';}
 function notificationHealthCount(c){c=c||{};var parts=Object.keys(c).filter(function(k){return Number(c[k])>0;}).map(function(k){return escH(k.replace(/_/g,' '))+': <strong>'+Number(c[k])+'</strong>';});return parts.length?parts.join(' · '):'No delivery activity in the last 7 days';}
@@ -38040,9 +38040,9 @@ function renderNotifSettings(s, queue, whatsappSettings) {
     + recipientRows
     + '</div>'
     + '<div style="display:flex;gap:10px;margin-bottom:20px">'
-    + '<button class="btn btn-primary" onclick="saveNotifSettings()"><i class="ti ti-device-floppy"></i>Save Settings</button>'
-    + '<button class="btn" onclick="sendTestEmail()"><i class="ti ti-mail"></i>Send Test Email</button>'
-    + '<button class="btn" onclick="loadNotifSettings()"><i class="ti ti-refresh"></i>Refresh Status</button>'
+    + '<button class="btn btn-primary" data-auris-generated-onclick="g0366"><i class="ti ti-device-floppy"></i>Save Settings</button>'
+    + '<button class="btn" data-auris-generated-onclick="g0367"><i class="ti ti-mail"></i>Send Test Email</button>'
+    + '<button class="btn" data-auris-generated-onclick="g0368"><i class="ti ti-refresh"></i>Refresh Status</button>'
     + '</div>'
     + '<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:10px">'
     + '<div style="font-size:13px;font-weight:600">Recent Notifications</div>'
@@ -38065,7 +38065,7 @@ function renderWhatsappChannelSettings(s){
     +'<div class="form3row" style="margin-top:12px"><div class="form3group"><label class="form3label">Meta phone number ID</label><input id="notif-wa-phone-id" value="'+escH(s.phone_number_id||'')+'" placeholder="Meta phone_number_id"></div><div class="form3group"><label class="form3label">Approved template</label><input id="notif-wa-template" value="'+escH(s.alert_template_name||'auris360_alert')+'"></div></div>'
     +'<div class="form3row"><div class="form3group"><label class="form3label">Template language</label><input id="notif-wa-language" value="'+escH(s.template_language||'en')+'" placeholder="en"></div><div class="form3group"><label class="form3label">Minimum escalation level</label><select id="notif-wa-level">'+levelOption(0,'All governed alerts')+levelOption(1,'Level 1+')+levelOption(2,'Level 2+ (recommended)')+levelOption(3,'Level 3 only')+'</select></div></div>'
     +'<label style="display:flex;align-items:center;gap:7px;font-size:12px"><input type="checkbox" id="notif-wa-preferred" '+(s.allow_preferred_high_priority!==false?'checked':'')+'> Also send high/urgent alerts when an opted-in user selected WhatsApp as preferred</label>'
-    +'<button class="btn" style="margin-top:12px;border-color:#10B981;color:#047857" onclick="saveWhatsappChannelSettings()"><i class="ti ti-device-floppy"></i>Save WhatsApp channel</button></div>';
+    +'<button class="btn" style="margin-top:12px;border-color:#10B981;color:#047857" data-auris-generated-onclick="g0369"><i class="ti ti-device-floppy"></i>Save WhatsApp channel</button></div>';
 }
 
 async function saveWhatsappChannelSettings(){
@@ -40407,13 +40407,13 @@ function fireRenderLayoutPlanList(){
       var active=(p.id===fireLayoutState.id)||(p.local_only&&fireLayoutEditorOpen&&!fireLayoutState.id);
       var markers=Array.isArray(p.markers)?p.markers.length:0;
       var img=p.image_url||p.image||'';
-      return '<tr data-id="'+escH(p.id)+'" onclick="fireSelectLayoutPlan(this.dataset.id)" style="cursor:pointer;background:'+(active?'#ECFDF5':'#fff')+'">'
+      return '<tr data-id="'+escH(p.id)+'" data-auris-generated-onclick="g0370" style="cursor:pointer;background:'+(active?'#ECFDF5':'#fff')+'">'
         +'<td style="width:92px">'+(img?'<img src="'+escH(img)+'" alt="Layout preview" style="width:72px;height:48px;object-fit:cover;border:1px solid var(--border);border-radius:6px;background:#fff"/>':'<div style="width:72px;height:48px;border:1px dashed var(--border);border-radius:6px;display:flex;align-items:center;justify-content:center;color:var(--text2);background:#fff"><i class="ti ti-map"></i></div>')+'</td>'
         +'<td><strong>'+escH(p.title||'Untitled plan')+'</strong>'+(p.local_only?' <span class="badge badge-amber">Local draft</span>':'')+(active&&fireLayoutEditorOpen?' <span class="badge badge-green">Open</span>':'')+'<div class="muted">Click row to open this layout</div></td>'
         +'<td>'+markers+'</td>'
         +'<td>'+((p.image_url||p.image)?'<span class="badge badge-green">Uploaded</span>':'<span class="badge badge-grey">No image</span>')+'</td>'
         +'<td>'+(p.updated_at?new Date(p.updated_at).toLocaleString():'--')+'</td>'
-        +'<td style="text-align:right;white-space:nowrap"><button class="btn btn-sm btn-primary" data-id="'+escH(p.id)+'" onclick="event.stopPropagation();fireSelectLayoutPlan(this.dataset.id)"><i class="ti ti-folder-open"></i>Open</button> <button class="btn btn-sm" data-id="'+escH(p.id)+'" onclick="event.stopPropagation();firePrintLayoutPlanById(this.dataset.id)"><i class="ti ti-printer"></i>Print</button> <button class="btn btn-sm" data-id="'+escH(p.id)+'" onclick="event.stopPropagation();fireDeleteLayoutPlan(this.dataset.id)" style="color:var(--red)"><i class="ti ti-trash"></i></button></td>'
+        +'<td style="text-align:right;white-space:nowrap"><button class="btn btn-sm btn-primary" data-id="'+escH(p.id)+'" data-auris-generated-onclick="g0371"><i class="ti ti-folder-open"></i>Open</button> <button class="btn btn-sm" data-id="'+escH(p.id)+'" data-auris-generated-onclick="g0372"><i class="ti ti-printer"></i>Print</button> <button class="btn btn-sm" data-id="'+escH(p.id)+'" data-auris-generated-onclick="g0373" style="color:var(--red)"><i class="ti ti-trash"></i></button></td>'
         +'</tr>';
     }).join('')+'</tbody></table></div>';
 }
@@ -40425,7 +40425,7 @@ function fireRenderLayoutMarkers(){
     var due=e.next_service_date&&new Date(e.next_service_date)<=new Date(Date.now()+30*86400000);
     var color=overdue?'#DC2626':due?'#EF9F27':'#1D9E75';
     var selected=m.id===fireLayoutSelectedMarkerId;
-    return '<button type="button" data-mid="'+escH(m.id)+'" onclick="event.stopPropagation();fireSelectLayoutMarker(this.dataset.mid)" title="'+escH(e.description||e.location||'Fire equipment')+'" style="position:absolute;left:'+m.x+'%;top:'+m.y+'%;transform:translate(-50%,-50%);width:40px;height:40px;border-radius:999px;border:'+(selected?'3px solid #111827':'2px solid #fff')+';background:'+color+';color:#fff;box-shadow:0 3px 12px rgba(0,0,0,.28);display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:'+(selected?3:2)+';padding:0;pointer-events:auto">'+fireEquipIconHtml(e.equipment_type)+'<span style="position:absolute;right:-6px;top:-7px;min-width:18px;height:18px;border-radius:999px;background:#111827;color:#fff;border:2px solid #fff;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:900;line-height:1">'+(i+1)+'</span></button>';
+    return '<button type="button" data-mid="'+escH(m.id)+'" data-auris-generated-onclick="g0374" title="'+escH(e.description||e.location||'Fire equipment')+'" style="position:absolute;left:'+m.x+'%;top:'+m.y+'%;transform:translate(-50%,-50%);width:40px;height:40px;border-radius:999px;border:'+(selected?'3px solid #111827':'2px solid #fff')+';background:'+color+';color:#fff;box-shadow:0 3px 12px rgba(0,0,0,.28);display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:'+(selected?3:2)+';padding:0;pointer-events:auto">'+fireEquipIconHtml(e.equipment_type)+'<span style="position:absolute;right:-6px;top:-7px;min-width:18px;height:18px;border-radius:999px;background:#111827;color:#fff;border:2px solid #fff;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:900;line-height:1">'+(i+1)+'</span></button>';
   }).join('');
 }
 function fireRenderLayoutLegend(){
@@ -40436,7 +40436,7 @@ function fireRenderLayoutLegend(){
     var e=(fireAllEquip||[]).find(function(x){return x.id===m.equipment_id;})||{};
     var st=fireLayoutMarkerStatus(e);
     var selected=m.id===fireLayoutSelectedMarkerId;
-    return '<button type="button" data-mid="'+escH(m.id)+'" onclick="fireSelectLayoutMarker(this.dataset.mid)" style="width:100%;display:flex;align-items:center;gap:8px;text-align:left;padding:8px;border:1px solid '+(selected?'#1D9E75':'var(--border)')+';border-radius:8px;background:'+(selected?'#ECFDF5':'#fff')+';margin-bottom:6px;cursor:pointer">'
+    return '<button type="button" data-mid="'+escH(m.id)+'" data-auris-generated-onclick="g0375" style="width:100%;display:flex;align-items:center;gap:8px;text-align:left;padding:8px;border:1px solid '+(selected?'#1D9E75':'var(--border)')+';border-radius:8px;background:'+(selected?'#ECFDF5':'#fff')+';margin-bottom:6px;cursor:pointer">'
       +'<span style="width:24px;height:24px;border-radius:999px;background:'+st.color+';color:#fff;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:900;flex:none">'+(i+1)+'</span>'
       +'<span style="min-width:0;flex:1"><span style="display:block;font-size:12px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+escH(e.description||fireEquipTypeLabel(e.equipment_type)||'Fire equipment')+'</span><span style="display:block;font-size:11px;color:var(--text2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+escH(st.label+' - '+(e.location||'No location'))+'</span></span>'
       +'</button>';
@@ -40642,7 +40642,7 @@ function fireRenderLayoutDetails(marker){
     +'<tr><td style="padding:6px;color:var(--text2)">Last service</td><td style="padding:6px">'+last+'</td></tr>'
     +'<tr><td style="padding:6px;color:var(--text2)">Next service</td><td style="padding:6px;font-weight:800;color:'+(overdue?'var(--red)':'var(--green)')+'">'+next+(overdue?' overdue':'')+'</td></tr>'
     +'<tr><td style="padding:6px;color:var(--text2)">Status</td><td style="padding:6px">'+fireEquipStatusBadge(e.status)+'</td></tr>'
-    +'</tbody></table><div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap"><button class="btn btn-sm" onclick="fireStartMoveLayoutMarker()"><i class="ti ti-arrows-move"></i>Move marker</button><button class="btn btn-sm" onclick="fireShowEquipForm(\''+escH(e.id||'')+'\')"><i class="ti ti-edit"></i>Edit equipment</button><button class="btn btn-sm" style="color:var(--red)" onclick="fireRemoveLayoutMarker()"><i class="ti ti-trash"></i>Remove marker</button></div>'
+    +'</tbody></table><div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap"><button class="btn btn-sm" data-auris-generated-onclick="g0376"><i class="ti ti-arrows-move"></i>Move marker</button><button class="btn btn-sm" onclick="fireShowEquipForm(\''+escH(e.id||'')+'\')"><i class="ti ti-edit"></i>Edit equipment</button><button class="btn btn-sm" style="color:var(--red)" data-auris-generated-onclick="g0377"><i class="ti ti-trash"></i>Remove marker</button></div>'
     +'<div style="border-top:1px solid var(--border);margin-top:14px;padding-top:12px"><div style="font-weight:900;font-size:13px;margin-bottom:6px"><i class="ti ti-map-search"></i> Area HSE records</div><div style="font-size:12px;color:var(--text2);margin-bottom:8px">Matching records for: <b>'+escH(area||'this location')+'</b></div><div id="fire-layout-area-records"><div style="font-size:12px;color:var(--text2)">Loading linked records...</div></div></div>';
   fireLoadAreaRecords(area);
 }
@@ -40772,7 +40772,7 @@ async function fireRenderDashboard() {
     return String(a.next_service_date||'9999-12-31').localeCompare(String(b.next_service_date||'9999-12-31'));
   }).slice(0,12);
   html += '<div class="card" style="padding:0;overflow:hidden;margin-top:16px">'
-    + '<div style="display:flex;justify-content:space-between;align-items:center;padding:14px 16px;border-bottom:1px solid var(--border)"><div><div style="font-weight:800">Fire Equipment Service Schedule</div><div class="muted">Service status by equipment, location and extinguisher agent</div></div><button class="btn btn-sm" onclick="fireSwitchTab(\'equipment\')"><i class="ti ti-flame"></i>Open equipment</button></div>'
+    + '<div style="display:flex;justify-content:space-between;align-items:center;padding:14px 16px;border-bottom:1px solid var(--border)"><div><div style="font-weight:800">Fire Equipment Service Schedule</div><div class="muted">Service status by equipment, location and extinguisher agent</div></div><button class="btn btn-sm" data-auris-generated-onclick="g0378"><i class="ti ti-flame"></i>Open equipment</button></div>'
     + '<div style="overflow-x:auto"><table class="data-table" style="min-width:980px;margin:0"><thead><tr><th>Equipment</th><th>Location</th><th>Serial</th><th>Last service</th><th>Next service</th><th>Service</th><th>Status</th></tr></thead><tbody>'
     + (serviceRows.length ? serviceRows.map(function(e){
         return '<tr><td><strong>'+escH(fireEquipDisplayName(e))+'</strong><div class="muted">'+escH(fireEquipTypeLabel(e.equipment_type))+(fireEquipAgentLabel(e)?' - '+escH(fireEquipAgentLabel(e)):'')+'</div></td><td>'+escH(e.location||'-')+'</td><td>'+escH(e.serial_number||'-')+'</td><td>'+fireSafeDate(e.last_service_date)+'</td><td>'+fireSafeDate(e.next_service_date)+'</td><td>'+fireServiceStatusBadge(e)+'</td><td>'+fireEquipStatusBadge(e.status)+'</td></tr>';
@@ -40783,7 +40783,7 @@ async function fireRenderDashboard() {
     return String(b.inspection_date||'').localeCompare(String(a.inspection_date||''));
   }).slice(0,10);
   html += '<div class="card" style="padding:0;overflow:hidden;margin-top:16px">'
-    + '<div style="display:flex;justify-content:space-between;align-items:center;padding:14px 16px;border-bottom:1px solid var(--border)"><div><div style="font-weight:800">Inspection Follow-up</div><div class="muted">Latest fire inspections and actions required</div></div><button class="btn btn-sm" onclick="fireSwitchTab(\'inspections\')"><i class="ti ti-search"></i>Open inspections</button></div>'
+    + '<div style="display:flex;justify-content:space-between;align-items:center;padding:14px 16px;border-bottom:1px solid var(--border)"><div><div style="font-weight:800">Inspection Follow-up</div><div class="muted">Latest fire inspections and actions required</div></div><button class="btn btn-sm" data-auris-generated-onclick="g0379"><i class="ti ti-search"></i>Open inspections</button></div>'
     + '<div style="overflow-x:auto"><table class="data-table" style="min-width:900px;margin:0"><thead><tr><th>Date</th><th>Certificate / premise</th><th>Type</th><th>Inspector</th><th>Result</th><th>Status</th></tr></thead><tbody>'
     + (recentInsp.length ? recentInsp.map(function(i){
         var cert=(fireAllCerts||[]).find(function(c){return c.id===i.certificate_id;})||{};
@@ -40792,7 +40792,7 @@ async function fireRenderDashboard() {
     + '</tbody></table></div></div>';
 
   html += '<div class="card" style="padding:0;overflow:hidden;margin-top:16px">'
-    + '<div style="display:flex;justify-content:space-between;align-items:center;padding:14px 16px;border-bottom:1px solid var(--border)"><div><div style="font-weight:800">Saved Fire Layout Plans</div><div class="muted">Building plans and positioned fire equipment maps</div></div><button class="btn btn-sm" onclick="fireSwitchTab(\'layout\')"><i class="ti ti-map"></i>Open layouts</button></div>'
+    + '<div style="display:flex;justify-content:space-between;align-items:center;padding:14px 16px;border-bottom:1px solid var(--border)"><div><div style="font-weight:800">Saved Fire Layout Plans</div><div class="muted">Building plans and positioned fire equipment maps</div></div><button class="btn btn-sm" data-auris-generated-onclick="g0380"><i class="ti ti-map"></i>Open layouts</button></div>'
     + '<div style="overflow-x:auto"><table class="data-table" style="min-width:760px;margin:0"><thead><tr><th>Plan title</th><th>Markers</th><th>Image</th><th>Updated</th><th></th></tr></thead><tbody>'
     + ((fireLayoutPlans||[]).length ? (fireLayoutPlans||[]).slice(0,8).map(function(p){
         var markers=Array.isArray(p.markers)?p.markers.length:0;
@@ -40964,7 +40964,7 @@ function fireAddFindingRow() {
   div.innerHTML = '<input type="text" class="fi-finding-text" placeholder="Finding description"/>'
     + '<select class="fi-finding-sev"><option value="minor">Minor</option><option value="major">Major</option><option value="critical">Critical</option></select>'
     + '<input type="text" class="fi-finding-action" placeholder="Action required"/>'
-    + '<button onclick="this.parentNode.remove()" style="background:none;border:none;color:var(--red);cursor:pointer;padding:4px"><i class="ti ti-x"></i></button>';
+    + '<button data-auris-generated-onclick="g0381" style="background:none;border:none;color:var(--red);cursor:pointer;padding:4px"><i class="ti ti-x"></i></button>';
   container.appendChild(div);
 }
 
@@ -41403,11 +41403,11 @@ function smSelectMapRisk(id){siteMapState.selectedRisk=(siteMapState.risks||[]).
 function smClearMapRisk(){siteMapState.selectedRisk=null;smRenderCanvas();}
 function smMapEventPreview(){
   var ev=siteMapState.selectedEvent;if(!ev)return '';
-  return '<div style="border:1px solid #fecaca;background:#fff7f7;border-radius:8px;padding:10px 12px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap"><div style="min-width:0;flex:1"><div style="font-size:11px;color:#991b1b;font-weight:900;text-transform:uppercase"><i class="ti ti-alert-triangle"></i> Selected incident</div><div style="font-weight:900">'+escH(displayRecordRef(ev,['event_ref','incident_number'],'INC-DRAFT'))+'</div><div style="font-size:12px;color:var(--text2);margin-top:3px">'+escH([ev.event_type,ev.severity,ev.status,smSafeDate(ev.event_date||ev.created_at),ev.location].filter(Boolean).join(' - '))+'</div><div style="font-size:12px;margin-top:5px">'+escH(String(ev.description||ev.event_description||'No description').slice(0,180))+'</div></div><div style="display:flex;gap:6px;flex-wrap:wrap"><button class="btn btn-sm" onclick="showPage(\'events\',null)"><i class="ti ti-external-link"></i>Open incidents</button><button class="btn btn-sm" onclick="smClearMapEvent()"><i class="ti ti-x"></i>Close</button></div></div>';
+  return '<div style="border:1px solid #fecaca;background:#fff7f7;border-radius:8px;padding:10px 12px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap"><div style="min-width:0;flex:1"><div style="font-size:11px;color:#991b1b;font-weight:900;text-transform:uppercase"><i class="ti ti-alert-triangle"></i> Selected incident</div><div style="font-weight:900">'+escH(displayRecordRef(ev,['event_ref','incident_number'],'INC-DRAFT'))+'</div><div style="font-size:12px;color:var(--text2);margin-top:3px">'+escH([ev.event_type,ev.severity,ev.status,smSafeDate(ev.event_date||ev.created_at),ev.location].filter(Boolean).join(' - '))+'</div><div style="font-size:12px;margin-top:5px">'+escH(String(ev.description||ev.event_description||'No description').slice(0,180))+'</div></div><div style="display:flex;gap:6px;flex-wrap:wrap"><button class="btn btn-sm" data-auris-generated-onclick="g0382"><i class="ti ti-external-link"></i>Open incidents</button><button class="btn btn-sm" data-auris-generated-onclick="g0383"><i class="ti ti-x"></i>Close</button></div></div>';
 }
 function smMapRiskPreview(){
   var r=siteMapState.selectedRisk;if(!r)return '';
-  return '<div style="border:1px solid #fed7aa;background:#fff7ed;border-radius:8px;padding:10px 12px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap"><div style="min-width:0;flex:1"><div style="font-size:11px;color:#9a3412;font-weight:900;text-transform:uppercase"><i class="ti ti-shield-exclamation"></i> Selected risk hotspot</div><div style="font-weight:900">'+escH(displayRecordRef(r,['ra_ref','reference_no'],'RA-DRAFT'))+'</div><div style="font-size:12px;color:var(--text2);margin-top:3px">'+escH([r.overall_risk_level,r.status,r.location||r.site||r.area].filter(Boolean).join(' - '))+'</div><div style="font-size:12px;margin-top:5px">'+escH(String(r.activity||r.description||r.title||'No activity description').slice(0,180))+'</div></div><div style="display:flex;gap:6px;flex-wrap:wrap"><button class="btn btn-sm" onclick="showPage(\'risk\',null)"><i class="ti ti-external-link"></i>Open RA</button><button class="btn btn-sm" onclick="smClearMapRisk()"><i class="ti ti-x"></i>Close</button></div></div>';
+  return '<div style="border:1px solid #fed7aa;background:#fff7ed;border-radius:8px;padding:10px 12px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap"><div style="min-width:0;flex:1"><div style="font-size:11px;color:#9a3412;font-weight:900;text-transform:uppercase"><i class="ti ti-shield-exclamation"></i> Selected risk hotspot</div><div style="font-weight:900">'+escH(displayRecordRef(r,['ra_ref','reference_no'],'RA-DRAFT'))+'</div><div style="font-size:12px;color:var(--text2);margin-top:3px">'+escH([r.overall_risk_level,r.status,r.location||r.site||r.area].filter(Boolean).join(' - '))+'</div><div style="font-size:12px;margin-top:5px">'+escH(String(r.activity||r.description||r.title||'No activity description').slice(0,180))+'</div></div><div style="display:flex;gap:6px;flex-wrap:wrap"><button class="btn btn-sm" data-auris-generated-onclick="g0384"><i class="ti ti-external-link"></i>Open RA</button><button class="btn btn-sm" data-auris-generated-onclick="g0385"><i class="ti ti-x"></i>Close</button></div></div>';
 }
 function smCoord(row,keys){
   for(var i=0;i<keys.length;i++){var n=parseFloat(row&&row[keys[i]]);if(isFinite(n))return n;}
@@ -41611,7 +41611,7 @@ function smRenderCanvas(){
   var context='<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px;padding:8px 10px;border:1px solid var(--border);border-radius:8px;background:#fff"><div style="min-width:0"><div style="font-size:11px;color:var(--text2);font-weight:800;text-transform:uppercase">Current layout</div><div style="font-weight:900;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+escH(layout.title||'Site map')+'</div></div>'+(parents.length?'<div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap"><span style="font-size:11px;color:var(--text2);font-weight:800">Back to</span>'+parents.map(function(p){return '<button class="btn btn-sm" onclick="smOpenPlan(\''+escH(p.id)+'\')"><i class="ti ti-arrow-back-up"></i>'+escH(p.title||'Parent plan')+'</button>';}).join('')+'</div>':'<span class="badge badge-grey">Top-level layout</span>')+'</div>'+smMapEventPreview()+smMapRiskPreview();
   var openEvents=siteMapState.showEvents?(siteMapState.events||[]).filter(function(e){return !['closed','resolved'].includes(String(e.status||'').toLowerCase());}).slice(0,40):[];
   var highRisks=siteMapState.showRisks?(siteMapState.risks||[]).filter(function(r){return /high|critical|very/i.test(String(r.overall_risk_level||r.risk_level||''));}).slice(0,40):[];
-  el.innerHTML=context+'<div onclick="smCanvasClick(event)" style="position:relative;min-height:420px;border:1px solid var(--border);border-radius:10px;background:'+(img?'#fff':'linear-gradient(135deg,#EFF6FF,#F8FAFC)')+';overflow:hidden;cursor:'+(siteMapState.placing?'crosshair':'default')+'">'
+  el.innerHTML=context+'<div data-auris-generated-onclick="g0386" style="position:relative;min-height:420px;border:1px solid var(--border);border-radius:10px;background:'+(img?'#fff':'linear-gradient(135deg,#EFF6FF,#F8FAFC)')+';overflow:hidden;cursor:'+(siteMapState.placing?'crosshair':'default')+'">'
     +(img?'<img src="'+escH(img)+'" alt="'+escH(layout.title||'Site map plan')+'" style="display:block;width:100%;height:auto;max-height:680px;object-fit:contain;user-select:none;pointer-events:none"/>':'<div style="position:absolute;inset:18px;border:1px dashed #bfdbfe;border-radius:12px"></div>')
     +(siteMapState.placing?'<div style="position:absolute;left:50%;top:12px;transform:translateX(-50%);background:#111827;color:#fff;padding:7px 12px;border-radius:999px;font-size:12px;font-weight:800;z-index:5;box-shadow:0 8px 22px rgba(0,0,0,.18)">Click on the plan to place the selected location</div>':'')
     +sites.map(function(s,i){
