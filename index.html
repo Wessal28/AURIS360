@@ -64,6 +64,7 @@
 <link rel="stylesheet" href="auris-incident-management-static.css?v=20260814-1">
 <link rel="stylesheet" href="auris-bbs-observation-static.css?v=20260814-1">
 <link rel="stylesheet" href="auris-audits-inspections-static.css?v=20260814-1">
+<link rel="stylesheet" href="auris-risk-assessment-static.css?v=20260814-1">
 </head>
 <body>
 <div id="login-screen">
@@ -2721,52 +2722,52 @@ Offline mode - changes will sync when connection is restored
 
 <div id="page-risk" class="page">
 <div class="page-header">
-<div><div class="page-title">Risk Assessment</div><div style="font-size:12px;color:var(--text2)">RAMS - Baseline RA - Task-Based RA - Dynamic RA - HIRA - JSA/JHA</div></div>
-<div style="display:flex;gap:8px" id="risk-add-btn">
+<div><div class="page-title">Risk Assessment</div><div class="auris-risk-s-7299078644">RAMS - Baseline RA - Task-Based RA - Dynamic RA - HIRA - JSA/JHA</div></div>
+<div id="risk-add-btn" class="auris-risk-s-9c40389b4a">
 <button class="btn btn-sm" id="ra-lib-btn" data-auris-onclick="h0329"><i class="ti ti-books"></i>Libraries</button>
 <button class="btn btn-sm" id="ra-import-pdf-btn" data-auris-onclick="h0330"><i class="ti ti-file-import"></i>Import RA PDF</button>
 <button class="btn btn-sm" data-auris-onclick="h0331" title="Print current register"><i class="ti ti-printer"></i>Print register</button>
-<button class="btn btn-primary" data-auris-onclick="h0332" id="ra-new-main-btn" style="display:none"><i class="ti ti-plus"></i>New RA</button>
+<button class="btn btn-primary auris-risk-s-6aa34d7432" data-auris-onclick="h0332" id="ra-new-main-btn"><i class="ti ti-plus"></i>New RA</button>
 <button class="btn btn-sm" data-auris-onclick="h0333" title="Print PDF"><i class="ti ti-printer"></i>Print PDF</button>
 </div>
 </div>
 
 <!-- -- LIST VIEW -- -->
 <div id="ra-list-view">
-<div class="card" style="margin-bottom:14px;padding:16px 18px;border-left:4px solid #185FA5;background:#f8fbff">
-<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:14px;flex-wrap:wrap">
+<div class="card auris-risk-s-983f37eea6">
+<div class="auris-risk-s-90b16d923c">
 <div>
-<div style="font-size:15px;font-weight:800;color:#1a3a5c;margin-bottom:4px">Professional Risk Assessment Register</div>
-<div style="font-size:12px;color:var(--text2);max-width:860px;line-height:1.45">Manage risk assessments from draft to approval, track initial and residual risk, link RAMS/PTW/work orders, and identify reviews due before work is repeated.</div>
+<div class="auris-risk-s-79930530d0">Professional Risk Assessment Register</div>
+<div class="auris-risk-s-f6ee2bf393">Manage risk assessments from draft to approval, track initial and residual risk, link RAMS/PTW/work orders, and identify reviews due before work is repeated.</div>
 </div>
-<div style="display:flex;gap:8px;flex-wrap:wrap">
-<span style="background:#fff;border:1px solid #dbeafe;color:#185FA5;border-radius:999px;padding:5px 10px;font-size:11px;font-weight:800">Draft</span>
-<span style="background:#fff;border:1px solid #fed7aa;color:#854F0B;border-radius:999px;padding:5px 10px;font-size:11px;font-weight:800">Review</span>
-<span style="background:#fff;border:1px solid #bbf7d0;color:#166534;border-radius:999px;padding:5px 10px;font-size:11px;font-weight:800">Approved</span>
-<span style="background:#fff;border:1px solid #fecaca;color:#991b1b;border-radius:999px;padding:5px 10px;font-size:11px;font-weight:800">Review due</span>
+<div class="auris-risk-s-c9dc9b5648">
+<span class="auris-risk-s-fe28ddb926">Draft</span>
+<span class="auris-risk-s-8c51c8d2b1">Review</span>
+<span class="auris-risk-s-e6b28fa163">Approved</span>
+<span class="auris-risk-s-65b88fe0b0">Review due</span>
 </div>
 </div>
 </div>
 <!-- Metrics -->
-<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:14px">
-<div class="card" style="padding:10px 12px;border-left:4px solid #1D9E75"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">Active</div><div style="font-size:22px;font-weight:800;color:#1D9E75" id="ra-m3active">-</div></div>
-<div class="card" style="padding:10px 12px;border-left:4px solid #854F0B"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">Draft</div><div style="font-size:22px;font-weight:800;color:#854F0B" id="ra-m3draft">-</div></div>
-<div class="card" style="padding:10px 12px;border-left:4px solid #185FA5"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">Pending Review</div><div style="font-size:22px;font-weight:800;color:#185FA5" id="ra-m3pending">-</div></div>
-<div class="card" style="padding:10px 12px;border-left:4px solid #E24B4A"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">High/Critical</div><div style="font-size:22px;font-weight:800;color:#E24B4A" id="ra-m3high">-</div></div>
-<div class="card" style="padding:10px 12px;border-left:4px solid #6B7280"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">Review Due</div><div style="font-size:22px;font-weight:800;color:#6B7280" id="ra-m3review">-</div></div>
-<div class="card" style="padding:10px 12px;border-left:4px solid #6D28D9"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">JSA Records</div><div style="font-size:22px;font-weight:800;color:#6D28D9" id="ra-m3jsa">-</div></div>
+<div class="auris-risk-s-eff0aa5b40">
+<div class="card auris-risk-s-7a5e61eb83"><div class="auris-risk-s-4422804ebb">Active</div><div id="ra-m3active" class="auris-risk-s-1e4fd5f9ed">-</div></div>
+<div class="card auris-risk-s-eccffcaf4c"><div class="auris-risk-s-4422804ebb">Draft</div><div id="ra-m3draft" class="auris-risk-s-58368c28c6">-</div></div>
+<div class="card auris-risk-s-b6d403ee7e"><div class="auris-risk-s-4422804ebb">Pending Review</div><div id="ra-m3pending" class="auris-risk-s-6f56b8363e">-</div></div>
+<div class="card auris-risk-s-530946d91c"><div class="auris-risk-s-4422804ebb">High/Critical</div><div id="ra-m3high" class="auris-risk-s-e7ad3ebe2e">-</div></div>
+<div class="card auris-risk-s-21ac3ff165"><div class="auris-risk-s-4422804ebb">Review Due</div><div id="ra-m3review" class="auris-risk-s-34362c1a82">-</div></div>
+<div class="card auris-risk-s-a0785733e0"><div class="auris-risk-s-4422804ebb">JSA Records</div><div id="ra-m3jsa" class="auris-risk-s-f87716cfb5">-</div></div>
 </div>
 <!-- Tab bar -->
-<div style="display:flex;gap:0;margin-bottom:14px;border-bottom:2px solid var(--border)">
+<div class="auris-risk-s-6bf792afaa">
 <button class="mtg-tab active" id="ra-ltab-ra" data-auris-onclick="h0334">Risk Assessments</button>
 <button class="mtg-tab" id="ra-ltab-jsa" data-auris-onclick="h0335">JSA / JHA</button>
 <button class="mtg-tab" id="ra-ltab-hira" data-auris-onclick="h0336">HIRA</button>
 </div>
 <!-- Filter bar -->
-<div class="card" style="margin-bottom:12px;padding:10px 14px">
-<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
-<input type="text" id="ra-search" placeholder="Search ref, title, location, activity..." data-auris-oninput="h0337" style="flex:1;min-width:180px;padding:7px 12px;border:1px solid var(--border);border-radius:8px;font-size:12px"/>
-<select id="ra-filter-type" data-auris-onchange="h0338" style="padding:7px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px">
+<div class="card auris-risk-s-54bb9f1d16">
+<div class="auris-risk-s-d5129e1520">
+<input type="text" id="ra-search" class="auris-risk-s-11856befbc" placeholder="Search ref, title, location, activity..." data-auris-oninput="h0337"/>
+<select id="ra-filter-type" class="auris-risk-s-d35063206b" data-auris-onchange="h0338">
 <option value="">All types</option>
 <option value="baseline">Baseline / Generic</option>
 <option value="task">Task-Based</option>
@@ -2774,7 +2775,7 @@ Offline mode - changes will sync when connection is restored
 <option value="hira">HIRA</option>
 <option value="jsa">JSA / JHA</option>
 </select>
-<select id="ra-filter-status" data-auris-onchange="h0338" style="padding:7px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px">
+<select id="ra-filter-status" class="auris-risk-s-d35063206b" data-auris-onchange="h0338">
 <option value="">All statuses</option>
 <option value="draft">Draft</option>
 <option value="pending_review">Pending Review</option>
@@ -2783,7 +2784,7 @@ Offline mode - changes will sync when connection is restored
 <option value="rejected">Rejected</option>
 <option value="archived">Archived</option>
 </select>
-<select id="ra-filter-risk" data-auris-onchange="h0338" style="padding:7px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px">
+<select id="ra-filter-risk" class="auris-risk-s-d35063206b" data-auris-onchange="h0338">
 <option value="">All risk levels</option>
 <option value="critical">Critical</option>
 <option value="high">High</option>
@@ -2793,130 +2794,130 @@ Offline mode - changes will sync when connection is restored
 </div>
 </div>
 <div id="ra-list"></div>
-<div id="ra-jsa-list" style="display:none"></div>
-<div id="ra-hira-list" style="display:none"></div>
+<div id="ra-jsa-list" class="auris-risk-s-6aa34d7432"></div>
+<div id="ra-hira-list" class="auris-risk-s-6aa34d7432"></div>
 </div>
 
 <!-- -- NEW RA PANEL -- -->
-<div id="ra-new-panel" style="display:none">
-<div class="card" style="margin-bottom:14px;padding:14px 20px;display:flex;align-items:center;gap:12px">
+<div id="ra-new-panel" class="auris-risk-s-6aa34d7432">
+<div class="card auris-risk-s-f28abc0df9">
 <button class="btn" data-auris-onclick="h0339"><i class="ti ti-arrow-left"></i>Back</button>
-<div><div style="font-size:16px;font-weight:800">Create New Risk Assessment</div><div style="font-size:12px;color:var(--text2);margin-top:2px">For most work activities, start with Task-Based RA so the assessment follows the real job sequence.</div></div>
+<div><div class="auris-risk-s-34451d06e2">Create New Risk Assessment</div><div class="auris-risk-s-a2fa84dea0">For most work activities, start with Task-Based RA so the assessment follows the real job sequence.</div></div>
 </div>
-<div class="card" style="margin-bottom:14px;padding:14px 16px;border-left:4px solid #1D9E75;background:#f7fffb">
-<div style="font-weight:800;color:#0f766e;margin-bottom:6px">Recommended approach</div>
-<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;font-size:12px;color:var(--text2)">
-<div><b style="color:#111827">Task-Based RA</b><br/>Use for most operational jobs because it breaks the work into steps.</div>
-<div><b style="color:#111827">Specific RA</b><br/>Use when the hazard family has special controls, such as fire, chemical, machinery, vehicle or ATEX.</div>
-<div><b style="color:#111827">Dynamic RA</b><br/>Use on site when conditions change and a quick decision is needed.</div>
-<div><b style="color:#111827">JSA / HIRA</b><br/>Use for formal job safety analysis or comprehensive hazard studies.</div>
+<div class="card auris-risk-s-5019965c36">
+<div class="auris-risk-s-1e7d536875">Recommended approach</div>
+<div class="auris-risk-s-a9f006e5d0">
+<div><b class="auris-risk-s-f677e21492">Task-Based RA</b><br/>Use for most operational jobs because it breaks the work into steps.</div>
+<div><b class="auris-risk-s-f677e21492">Specific RA</b><br/>Use when the hazard family has special controls, such as fire, chemical, machinery, vehicle or ATEX.</div>
+<div><b class="auris-risk-s-f677e21492">Dynamic RA</b><br/>Use on site when conditions change and a quick decision is needed.</div>
+<div><b class="auris-risk-s-f677e21492">JSA / HIRA</b><br/>Use for formal job safety analysis or comprehensive hazard studies.</div>
 </div>
 </div>
-<div style="display:grid;grid-template-columns:minmax(280px,1.35fr) minmax(240px,1fr);gap:14px;margin-bottom:14px">
-<div class="card" style="cursor:pointer;transition:all .15s;border:2px solid #1D9E75;background:linear-gradient(135deg,#F0FDF4,#fff);padding:22px;position:relative;overflow:hidden" data-auris-onclick="h0340" data-auris-onmouseover="h0341" data-auris-onmouseout="h0342">
-<div style="position:absolute;top:14px;right:14px;background:#1D9E75;color:#fff;border-radius:999px;padding:4px 10px;font-size:11px;font-weight:800">Recommended</div>
-<div style="display:flex;gap:14px;align-items:flex-start">
-<div style="width:54px;height:54px;border-radius:14px;background:#1D9E75;color:#fff;display:flex;align-items:center;justify-content:center;font-size:30px;flex-shrink:0"><i class="ti ti-circle-dot"></i></div>
+<div class="auris-risk-s-cd39740603">
+<div class="card auris-risk-s-01d415c1fd" data-auris-onclick="h0340" data-auris-onmouseover="h0341" data-auris-onmouseout="h0342">
+<div class="auris-risk-s-893963fe7f">Recommended</div>
+<div class="auris-risk-s-865fdbecd3">
+<div class="auris-risk-s-4ff7e40425"><i class="ti ti-circle-dot"></i></div>
 <div>
-<div style="font-weight:900;font-size:18px;color:#0F766E;margin-bottom:6px">Task-Based RA</div>
-<div style="font-size:13px;color:#334155;line-height:1.45;margin-bottom:12px">Best for most operational work. Break the job into steps, identify hazards for each step, define controls, and show residual risk after controls.</div>
-<div style="display:flex;flex-wrap:wrap;gap:6px;font-size:11px">
-<span style="background:#fff;border:1px solid #bbf7d0;color:#166534;border-radius:999px;padding:4px 8px;font-weight:800">Job steps</span>
-<span style="background:#fff;border:1px solid #bbf7d0;color:#166534;border-radius:999px;padding:4px 8px;font-weight:800">Hazards</span>
-<span style="background:#fff;border:1px solid #bbf7d0;color:#166534;border-radius:999px;padding:4px 8px;font-weight:800">Controls</span>
-<span style="background:#fff;border:1px solid #bbf7d0;color:#166534;border-radius:999px;padding:4px 8px;font-weight:800">Residual risk</span>
+<div class="auris-risk-s-a9c7aeb139">Task-Based RA</div>
+<div class="auris-risk-s-afdea31c9c">Best for most operational work. Break the job into steps, identify hazards for each step, define controls, and show residual risk after controls.</div>
+<div class="auris-risk-s-95980317de">
+<span class="auris-risk-s-669f0edd6d">Job steps</span>
+<span class="auris-risk-s-669f0edd6d">Hazards</span>
+<span class="auris-risk-s-669f0edd6d">Controls</span>
+<span class="auris-risk-s-669f0edd6d">Residual risk</span>
 </div>
 </div>
 </div>
 </div>
-<div class="card" style="cursor:pointer;transition:all .15s;border:1px solid var(--border);padding:18px" data-auris-onclick="h0343" data-auris-onmouseover="h0344" data-auris-onmouseout="h0345">
-<div style="display:flex;align-items:center;gap:12px">
-<div style="font-size:34px"><i class="ti ti-circle-dot"></i></div>
-<div><div style="font-weight:800;font-size:15px;color:#8B5CF6;margin-bottom:4px">AI-Assisted RA</div>
-<div style="font-size:12px;color:var(--text2);line-height:1.4">Describe the activity and let AI draft hazard/control rows for review.</div></div>
+<div class="card auris-risk-s-2f4021d327" data-auris-onclick="h0343" data-auris-onmouseover="h0344" data-auris-onmouseout="h0345">
+<div class="auris-risk-s-03b0f4e055">
+<div class="auris-risk-s-49d89bbf02"><i class="ti ti-circle-dot"></i></div>
+<div><div class="auris-risk-s-96cea40763">AI-Assisted RA</div>
+<div class="auris-risk-s-8731020755">Describe the activity and let AI draft hazard/control rows for review.</div></div>
 </div>
 </div>
 </div>
-<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:14px;margin-bottom:20px">
-<div class="card" style="cursor:pointer;transition:all .15s;border:1px solid var(--border);text-align:center;padding:18px" data-auris-onclick="h0346" data-auris-onmouseover="h0347" data-auris-onmouseout="h0345">
-<div style="font-size:30px;margin-bottom:8px"><i class="ti ti-circle-dot"></i></div>
-<div style="font-weight:700;font-size:14px;color:#185FA5;margin-bottom:6px">Baseline / Generic RA</div>
-<div style="font-size:12px;color:var(--text2)">Use when the activity is broad and not suitable for step-by-step analysis</div>
+<div class="auris-risk-s-0175e8f6a8">
+<div class="card auris-risk-s-c27e10b2b0" data-auris-onclick="h0346" data-auris-onmouseover="h0347" data-auris-onmouseout="h0345">
+<div class="auris-risk-s-ec7c40881c"><i class="ti ti-circle-dot"></i></div>
+<div class="auris-risk-s-542fb69d7a">Baseline / Generic RA</div>
+<div class="auris-risk-s-7299078644">Use when the activity is broad and not suitable for step-by-step analysis</div>
 </div>
-<div class="card" style="cursor:pointer;transition:all .15s;border:2px solid var(--border);text-align:center;padding:20px" data-auris-onclick="h0348" data-auris-onmouseover="h0349" data-auris-onmouseout="h0345">
-<div style="font-size:36px;margin-bottom:10px">?</div>
-<div style="font-weight:700;font-size:14px;color:#EF9F27;margin-bottom:6px">Dynamic RA</div>
-<div style="font-size:12px;color:var(--text2)">Real-time point-in-time risk assessment for changing site conditions</div>
+<div class="card auris-risk-s-7b424cc16c" data-auris-onclick="h0348" data-auris-onmouseover="h0349" data-auris-onmouseout="h0345">
+<div class="auris-risk-s-7743f33f11">?</div>
+<div class="auris-risk-s-0bb8877ac8">Dynamic RA</div>
+<div class="auris-risk-s-7299078644">Real-time point-in-time risk assessment for changing site conditions</div>
 </div>
-<div class="card" style="cursor:pointer;transition:all .15s;border:2px solid var(--border);text-align:center;padding:20px" data-auris-onclick="h0350" data-auris-onmouseover="h0351" data-auris-onmouseout="h0345">
-<div style="font-size:36px;margin-bottom:10px"><i class="ti ti-circle-dot"></i></div>
-<div style="font-weight:700;font-size:14px;color:#E24B4A;margin-bottom:6px">HIRA</div>
-<div style="font-size:12px;color:var(--text2)">Hazard Identification and Risk Assessment - systematic comprehensive hazard study</div>
+<div class="card auris-risk-s-7b424cc16c" data-auris-onclick="h0350" data-auris-onmouseover="h0351" data-auris-onmouseout="h0345">
+<div class="auris-risk-s-7743f33f11"><i class="ti ti-circle-dot"></i></div>
+<div class="auris-risk-s-6ff8f754ce">HIRA</div>
+<div class="auris-risk-s-7299078644">Hazard Identification and Risk Assessment - systematic comprehensive hazard study</div>
 </div>
-<div class="card" style="cursor:pointer;transition:all .15s;border:2px solid var(--border);text-align:center;padding:20px" data-auris-onclick="h0352" data-auris-onmouseover="h0353" data-auris-onmouseout="h0345">
-<div style="font-size:36px;margin-bottom:10px"><i class="ti ti-circle-dot"></i></div>
-<div style="font-weight:700;font-size:14px;color:#6D28D9;margin-bottom:6px">JSA / JHA</div>
-<div style="font-size:12px;color:var(--text2)">Job Safety Analysis / Job Hazard Analysis - task-by-task safety breakdown</div>
+<div class="card auris-risk-s-7b424cc16c" data-auris-onclick="h0352" data-auris-onmouseover="h0353" data-auris-onmouseout="h0345">
+<div class="auris-risk-s-7743f33f11"><i class="ti ti-circle-dot"></i></div>
+<div class="auris-risk-s-20dba08f47">JSA / JHA</div>
+<div class="auris-risk-s-7299078644">Job Safety Analysis / Job Hazard Analysis - task-by-task safety breakdown</div>
 </div>
-<div class="card" style="cursor:pointer;transition:all .15s;border:2px solid var(--border);text-align:center;padding:20px" data-auris-onclick="h0354" data-auris-onmouseover="h0355" data-auris-onmouseout="h0345">
-<div style="font-size:36px;margin-bottom:10px"><i class="ti ti-weight"></i></div>
-<div style="font-weight:700;font-size:14px;color:#0F766E;margin-bottom:6px">Manual Handling RA</div>
-<div style="font-size:12px;color:var(--text2)">Guided lifting and carrying assessment with automatic risk rows</div>
+<div class="card auris-risk-s-7b424cc16c" data-auris-onclick="h0354" data-auris-onmouseover="h0355" data-auris-onmouseout="h0345">
+<div class="auris-risk-s-7743f33f11"><i class="ti ti-weight"></i></div>
+<div class="auris-risk-s-7542802c43">Manual Handling RA</div>
+<div class="auris-risk-s-7299078644">Guided lifting and carrying assessment with automatic risk rows</div>
 </div>
-<div class="card" style="cursor:pointer;transition:all .15s;border:2px solid var(--border);text-align:center;padding:20px" data-auris-onclick="h0356" data-auris-onmouseover="h0357" data-auris-onmouseout="h0345">
-<div style="font-size:36px;margin-bottom:10px"><i class="ti ti-flame"></i></div>
-<div style="font-weight:700;font-size:14px;color:#DC2626;margin-bottom:6px">Fire RA</div>
-<div style="font-size:12px;color:var(--text2)">Fire load, ignition sources, escape and emergency controls</div>
+<div class="card auris-risk-s-7b424cc16c" data-auris-onclick="h0356" data-auris-onmouseover="h0357" data-auris-onmouseout="h0345">
+<div class="auris-risk-s-7743f33f11"><i class="ti ti-flame"></i></div>
+<div class="auris-risk-s-23d4490cfa">Fire RA</div>
+<div class="auris-risk-s-7299078644">Fire load, ignition sources, escape and emergency controls</div>
 </div>
-<div class="card" style="cursor:pointer;transition:all .15s;border:2px solid var(--border);text-align:center;padding:20px" data-auris-onclick="h0358" data-auris-onmouseover="h0347" data-auris-onmouseout="h0345">
-<div style="font-size:36px;margin-bottom:10px"><i class="ti ti-settings"></i></div>
-<div style="font-weight:700;font-size:14px;color:#185FA5;margin-bottom:6px">Machinery RA</div>
-<div style="font-size:12px;color:var(--text2)">Guarding, isolation, jam clearing and emergency stop risks</div>
+<div class="card auris-risk-s-7b424cc16c" data-auris-onclick="h0358" data-auris-onmouseover="h0347" data-auris-onmouseout="h0345">
+<div class="auris-risk-s-7743f33f11"><i class="ti ti-settings"></i></div>
+<div class="auris-risk-s-542fb69d7a">Machinery RA</div>
+<div class="auris-risk-s-7299078644">Guarding, isolation, jam clearing and emergency stop risks</div>
 </div>
-<div class="card" style="cursor:pointer;transition:all .15s;border:2px solid var(--border);text-align:center;padding:20px" data-auris-onclick="h0359" data-auris-onmouseover="h0360" data-auris-onmouseout="h0345">
-<div style="font-size:36px;margin-bottom:10px"><i class="ti ti-flask"></i></div>
-<div style="font-weight:700;font-size:14px;color:#7C3AED;margin-bottom:6px">Chemical / COSHH RA</div>
-<div style="font-size:12px;color:var(--text2)">Exposure routes, SDS controls, storage and spill risks</div>
+<div class="card auris-risk-s-7b424cc16c" data-auris-onclick="h0359" data-auris-onmouseover="h0360" data-auris-onmouseout="h0345">
+<div class="auris-risk-s-7743f33f11"><i class="ti ti-flask"></i></div>
+<div class="auris-risk-s-b4e3618725">Chemical / COSHH RA</div>
+<div class="auris-risk-s-7299078644">Exposure routes, SDS controls, storage and spill risks</div>
 </div>
-<div class="card" style="cursor:pointer;transition:all .15s;border:2px solid var(--border);text-align:center;padding:20px" data-auris-onclick="h0361" data-auris-onmouseover="h0362" data-auris-onmouseout="h0345">
-<div style="font-size:36px;margin-bottom:10px"><i class="ti ti-explosion"></i></div>
-<div style="font-weight:700;font-size:14px;color:#B45309;margin-bottom:6px">ATEX RA</div>
-<div style="font-size:12px;color:var(--text2)">Zoned area, ignition source and equipment suitability controls</div>
+<div class="card auris-risk-s-7b424cc16c" data-auris-onclick="h0361" data-auris-onmouseover="h0362" data-auris-onmouseout="h0345">
+<div class="auris-risk-s-7743f33f11"><i class="ti ti-explosion"></i></div>
+<div class="auris-risk-s-6b99af9e1d">ATEX RA</div>
+<div class="auris-risk-s-7299078644">Zoned area, ignition source and equipment suitability controls</div>
 </div>
-<div class="card" style="cursor:pointer;transition:all .15s;border:2px solid var(--border);text-align:center;padding:20px" data-auris-onclick="h0363" data-auris-onmouseover="h0355" data-auris-onmouseout="h0345">
-<div style="font-size:36px;margin-bottom:10px"><i class="ti ti-car"></i></div>
-<div style="font-weight:700;font-size:14px;color:#0F766E;margin-bottom:6px">Fleet / Vehicle RA</div>
-<div style="font-size:12px;color:var(--text2)">Driving, site movement, vehicle checks and loading risks</div>
+<div class="card auris-risk-s-7b424cc16c" data-auris-onclick="h0363" data-auris-onmouseover="h0355" data-auris-onmouseout="h0345">
+<div class="auris-risk-s-7743f33f11"><i class="ti ti-car"></i></div>
+<div class="auris-risk-s-7542802c43">Fleet / Vehicle RA</div>
+<div class="auris-risk-s-7299078644">Driving, site movement, vehicle checks and loading risks</div>
 </div>
 </div>
 <!-- Load from template -->
-<div class="card" style="margin-bottom:14px">
+<div class="card auris-risk-s-42a6ced8b6">
 <div class="card-title"><i class="ti ti-file-star"></i> Company RA Templates</div>
-<div style="font-size:12px;color:var(--text2);margin-bottom:10px">Client/company formats uploaded by HSE/Admin. Use these as the required layout reference when preparing the AURIS360 RA.</div>
-<div id="ra-company-templates-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px"></div>
+<div class="auris-risk-s-fa530ed1c3">Client/company formats uploaded by HSE/Admin. Use these as the required layout reference when preparing the AURIS360 RA.</div>
+<div id="ra-company-templates-grid" class="auris-risk-s-81c452c03d"></div>
 </div>
 <div class="card">
 <div class="card-title"><i class="ti ti-template"></i> Load from Standard Template</div>
-<div id="ra-templates-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px"></div>
+<div id="ra-templates-grid" class="auris-risk-s-67cce973ed"></div>
 </div>
 </div>
 
 <!-- -- RA FORM VIEW -- -->
-<div id="ra-manual-form" style="display:none">
-<div class="card" style="margin-bottom:14px;padding:0;overflow:hidden">
-<div style="padding:16px 22px;background:linear-gradient(135deg,#0F766E,#1D9E75);color:#fff;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">
+<div id="ra-manual-form" class="auris-risk-s-6aa34d7432">
+<div class="card auris-risk-s-54ec8874e7">
+<div class="auris-risk-s-a8e092d4e4">
 <div>
-<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;opacity:.82;margin-bottom:4px">Specific Risk Assessment</div>
-<div style="font-size:18px;font-weight:800">Manual Handling RA Builder</div>
-<div style="font-size:12px;opacity:.86;margin-top:4px">Complete the key handling factors, then generate a table-style RA for review.</div>
+<div class="auris-risk-s-b6cba6b124">Specific Risk Assessment</div>
+<div class="auris-risk-s-e56ce903a9">Manual Handling RA Builder</div>
+<div class="auris-risk-s-a91eb4a69e">Complete the key handling factors, then generate a table-style RA for review.</div>
 </div>
-<div style="display:flex;gap:8px;flex-wrap:wrap">
-<button class="btn" style="background:rgba(255,255,255,.18);color:#fff;border-color:rgba(255,255,255,.3)" data-auris-onclick="h0332"><i class="ti ti-arrow-left"></i>Back</button>
-<button class="btn" style="background:#fff;color:#0F766E;border-color:#fff" data-auris-onclick="h0364"><i class="ti ti-table-plus"></i>Generate RA</button>
+<div class="auris-risk-s-c9dc9b5648">
+<button class="btn auris-risk-s-7ab2dd0041" data-auris-onclick="h0332"><i class="ti ti-arrow-left"></i>Back</button>
+<button class="btn auris-risk-s-0b2b1bb5c1" data-auris-onclick="h0364"><i class="ti ti-table-plus"></i>Generate RA</button>
 </div>
 </div>
 </div>
-<div style="display:grid;grid-template-columns:minmax(0,2fr) minmax(260px,1fr);gap:14px">
+<div class="auris-risk-s-fbd4a4c6d2">
 <div class="card">
 <div class="card-title"><i class="ti ti-clipboard-list"></i> Task Details</div>
 <div class="form3row">
@@ -2929,14 +2930,14 @@ Offline mode - changes will sync when connection is restored
 <div class="form3group"><label class="form3label">Assessed by</label><input type="text" id="mh-assessed-by"/></div>
 </div>
 </div>
-<div class="card" style="border:2px solid #0F766E33;background:#F0FDF4">
-<div class="card-title" style="color:#0F766E"><i class="ti ti-chart-bar"></i> Risk Preview</div>
+<div class="card auris-risk-s-4a71f5abd8">
+<div class="card-title auris-risk-s-34487dc42a"><i class="ti ti-chart-bar"></i> Risk Preview</div>
 <div id="mh-risk-preview"></div>
 </div>
 </div>
-<div class="card" style="margin-top:14px">
+<div class="card auris-risk-s-c53ea1da23">
 <div class="card-title"><i class="ti ti-adjustments-horizontal"></i> Handling Factors</div>
-<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px">
+<div class="auris-risk-s-2767ca80bb">
 <div class="form3group"><label class="form3label">Approximate load weight</label><select id="mh-weight" data-auris-onchange="h0366"><option value="under5">&lt; 5 kg</option><option value="5to10">5 - 10 kg</option><option value="10to20">10 - 20 kg</option><option value="20to25">20 - 25 kg</option><option value="over25">&gt; 25 kg</option></select></div>
 <div class="form3group"><label class="form3label">Frequency</label><select id="mh-frequency" data-auris-onchange="h0366"><option value="occasional">Occasional</option><option value="repeated">Repeated during shift</option><option value="frequent">Frequent</option><option value="continuous">Continuous / very frequent</option></select></div>
 <div class="form3group"><label class="form3label">Carry distance</label><select id="mh-distance" data-auris-onchange="h0366"><option value="short">Short, under 5 m</option><option value="moderate">Moderate, 5 - 20 m</option><option value="long">Long, over 20 m</option></select></div>
@@ -2948,37 +2949,37 @@ Offline mode - changes will sync when connection is restored
 <div class="form3group"><label class="form3label">Team lift required?</label><select id="mh-team" data-auris-onchange="h0366"><option value="no">No</option><option value="yes">Yes</option></select></div>
 </div>
 </div>
-<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:14px">
+<div class="auris-risk-s-c156e2c950">
 <div class="card">
 <div class="card-title"><i class="ti ti-shield-check"></i> Existing Controls</div>
-<textarea id="mh-existing-controls" style="min-height:120px" placeholder="Training, trolley, team lifting, clear route, supervision..."></textarea>
+<textarea id="mh-existing-controls" class="auris-risk-s-d02d845f31" placeholder="Training, trolley, team lifting, clear route, supervision..."></textarea>
 </div>
 <div class="card">
 <div class="card-title"><i class="ti ti-plus"></i> Additional Controls Needed</div>
-<textarea id="mh-extra-controls" style="min-height:120px" placeholder="Extra measures to reduce the residual risk..."></textarea>
+<textarea id="mh-extra-controls" class="auris-risk-s-d02d845f31" placeholder="Extra measures to reduce the residual risk..."></textarea>
 </div>
 </div>
 </div>
 
-<div id="ra-specific-form" style="display:none">
+<div id="ra-specific-form" class="auris-risk-s-6aa34d7432">
 <input type="hidden" id="sp-kind"/>
-<div class="card" style="margin-bottom:14px;padding:0;overflow:hidden">
-<div id="sp-hero" style="padding:16px 22px;background:linear-gradient(135deg,#185FA5,#1D9E75);color:#fff;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">
-<div style="display:flex;align-items:center;gap:12px">
-<div style="width:42px;height:42px;border-radius:12px;background:rgba(255,255,255,.18);display:flex;align-items:center;justify-content:center;font-size:24px"><i id="sp-icon" class="ti ti-shield-check"></i></div>
+<div class="card auris-risk-s-54ec8874e7">
+<div id="sp-hero" class="auris-risk-s-cdc79a8084">
+<div class="auris-risk-s-03b0f4e055">
+<div class="auris-risk-s-2fdbaf0d30"><i id="sp-icon" class="ti ti-shield-check"></i></div>
 <div>
-<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;opacity:.82;margin-bottom:4px">Specific Risk Assessment</div>
-<div style="font-size:18px;font-weight:800" id="sp-heading">Specific RA Builder</div>
-<div style="font-size:12px;opacity:.86;margin-top:4px">Answer the key prompts, then generate a table-style RA for review.</div>
+<div class="auris-risk-s-b6cba6b124">Specific Risk Assessment</div>
+<div id="sp-heading" class="auris-risk-s-e56ce903a9">Specific RA Builder</div>
+<div class="auris-risk-s-a91eb4a69e">Answer the key prompts, then generate a table-style RA for review.</div>
 </div>
 </div>
-<div style="display:flex;gap:8px;flex-wrap:wrap">
-<button class="btn" style="background:rgba(255,255,255,.18);color:#fff;border-color:rgba(255,255,255,.3)" data-auris-onclick="h0332"><i class="ti ti-arrow-left"></i>Back</button>
-<button class="btn" style="background:#fff;color:#0F766E;border-color:#fff" data-auris-onclick="h0367"><i class="ti ti-table-plus"></i>Generate RA</button>
+<div class="auris-risk-s-c9dc9b5648">
+<button class="btn auris-risk-s-7ab2dd0041" data-auris-onclick="h0332"><i class="ti ti-arrow-left"></i>Back</button>
+<button class="btn auris-risk-s-0b2b1bb5c1" data-auris-onclick="h0367"><i class="ti ti-table-plus"></i>Generate RA</button>
 </div>
 </div>
 </div>
-<div style="display:grid;grid-template-columns:minmax(0,2fr) minmax(260px,1fr);gap:14px">
+<div class="auris-risk-s-fbd4a4c6d2">
 <div class="card">
 <div class="card-title" id="sp-accent-title"><i class="ti ti-clipboard-list"></i> Assessment Details</div>
 <div class="form3row">
@@ -2989,46 +2990,46 @@ Offline mode - changes will sync when connection is restored
 <div class="form3group"><label class="form3label">Department</label><input type="text" id="sp-dept"/></div>
 <div class="form3group"><label class="form3label">Assessed by</label><input type="text" id="sp-assessed-by"/></div>
 </div>
-<div class="form3group"><label class="form3label">Context / scope</label><textarea id="sp-context" style="min-height:72px" placeholder="Describe the process, area, equipment, material or vehicle activity..."></textarea></div>
+<div class="form3group"><label class="form3label">Context / scope</label><textarea id="sp-context" class="auris-risk-s-25583169ff" placeholder="Describe the process, area, equipment, material or vehicle activity..."></textarea></div>
 </div>
-<div class="card" style="border:2px solid #0F766E33;background:#F0FDF4">
-<div class="card-title" style="color:#0F766E"><i class="ti ti-chart-bar"></i> Risk Preview</div>
+<div class="card auris-risk-s-4a71f5abd8">
+<div class="card-title auris-risk-s-34487dc42a"><i class="ti ti-chart-bar"></i> Risk Preview</div>
 <div id="sp-risk-preview"></div>
 </div>
 </div>
-<div class="card" style="margin-top:14px">
+<div class="card auris-risk-s-c53ea1da23">
 <div class="card-title"><i class="ti ti-adjustments-horizontal"></i> Specific Risk Factors</div>
-<div id="sp-factor-fields" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px"></div>
+<div id="sp-factor-fields" class="auris-risk-s-2767ca80bb"></div>
 </div>
-<div class="card" style="margin-top:14px">
+<div class="card auris-risk-s-c53ea1da23">
 <div class="card-title"><i class="ti ti-shield-check"></i> Existing or Additional Controls</div>
-<textarea id="sp-controls" style="min-height:110px" placeholder="Add any controls already in place or required at this site..."></textarea>
+<textarea id="sp-controls" class="auris-risk-s-7ff2c4f87b" placeholder="Add any controls already in place or required at this site..."></textarea>
 </div>
 </div>
 
-<div id="ra-form3view" style="display:none" data-auris-oninput="h0368" data-auris-onchange="h0369">
+<div id="ra-form3view" class="auris-risk-s-6aa34d7432" data-auris-oninput="h0368" data-auris-onchange="h0369">
 <!-- Form header -->
-<div class="card" style="margin-bottom:14px;padding:0;overflow:hidden">
-<div style="padding:16px 24px;background:linear-gradient(135deg,#1a3a5c,#185FA5);color:#fff;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
+<div class="card auris-risk-s-54ec8874e7">
+<div class="auris-risk-s-cfe6631fc0">
 <div>
-<div style="font-size:11px;font-weight:600;text-transform:uppercase;opacity:.8;letter-spacing:.08em;margin-bottom:4px" id="ra-type-label">Risk Assessment</div>
-<div style="font-size:18px;font-weight:800" id="ra-form3title">New Risk Assessment</div>
-<div style="display:flex;gap:14px;margin-top:6px;flex-wrap:wrap">
-<span style="font-family:monospace;font-size:12px;color:#a8d8f0" id="ra-form3ref"></span>
-<span style="font-size:12px;opacity:.8" id="ra-form3rev-display"></span>
+<div id="ra-type-label" class="auris-risk-s-c542f2bc2e">Risk Assessment</div>
+<div id="ra-form3title" class="auris-risk-s-e56ce903a9">New Risk Assessment</div>
+<div class="auris-risk-s-bbe427626f">
+<span id="ra-form3ref" class="auris-risk-s-bd8c8ed086"></span>
+<span id="ra-form3rev-display" class="auris-risk-s-8e25059921"></span>
 </div>
 </div>
-<div style="display:flex;gap:8px;flex-wrap:wrap">
-<button class="btn" style="background:rgba(255,255,255,.2);color:#fff;border-color:rgba(255,255,255,.3)" data-auris-onclick="h0339"><i class="ti ti-arrow-left"></i>Back</button>
-<button id="ra-delete-btn" class="btn" style="display:none;background:rgba(220,38,38,.3);color:#fff;border-color:rgba(220,38,38,.5)" data-auris-onclick="h0370"><i class="ti ti-trash"></i></button>
-<button class="btn" style="background:rgba(255,255,255,.2);color:#fff;border-color:rgba(255,255,255,.3)" data-auris-onclick="h0371"><i class="ti ti-device-floppy"></i>Save Draft</button>
-<button class="btn" style="background:#1D9E75;color:#fff;border-color:#1D9E75" data-auris-onclick="h0372"><i class="ti ti-send"></i>Submit for Approval</button>
+<div class="auris-risk-s-c9dc9b5648">
+<button class="btn auris-risk-s-5c09edd131" data-auris-onclick="h0339"><i class="ti ti-arrow-left"></i>Back</button>
+<button id="ra-delete-btn" class="btn auris-risk-s-0e610f7b67" data-auris-onclick="h0370"><i class="ti ti-trash"></i></button>
+<button class="btn auris-risk-s-5c09edd131" data-auris-onclick="h0371"><i class="ti ti-device-floppy"></i>Save Draft</button>
+<button class="btn auris-risk-s-c7b9e5b2c7" data-auris-onclick="h0372"><i class="ti ti-send"></i>Submit for Approval</button>
 </div>
 </div>
 <!-- Status workflow bar -->
-<div style="padding:10px 24px;background:#f9fafb;border-top:1px solid var(--border);display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-<span style="font-size:12px;font-weight:600;color:var(--text2)">Status:</span>
-<select id="ra-status-sel" style="padding:5px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px">
+<div class="auris-risk-s-05d8290e32">
+<span class="auris-risk-s-2e4b22ec3a">Status:</span>
+<select id="ra-status-sel" class="auris-risk-s-6c50f67d2e">
 <option value="draft">Draft</option>
 <option value="pending_review">Pending Review</option>
 <option value="active">Active</option>
@@ -3036,31 +3037,31 @@ Offline mode - changes will sync when connection is restored
 <option value="rejected">Rejected</option>
 <option value="archived">Archived</option>
 </select>
-<span style="font-size:12px;font-weight:600;color:var(--text2);margin-left:10px">Revision:</span>
-<span style="font-family:monospace;font-size:13px;font-weight:700;color:#185FA5" id="ra-rev-badge">Rev 1</span>
+<span class="auris-risk-s-3fdf2a3b16">Revision:</span>
+<span id="ra-rev-badge" class="auris-risk-s-395b1661c9">Rev 1</span>
 </div>
-<div id="ra-workflow-bar" style="padding:12px 24px;background:#f8fafc;border-top:1px solid var(--border);display:flex;align-items:center;gap:10px;flex-wrap:wrap"></div>
-<div id="ra-approval-route-note" style="display:none;padding:10px 24px;background:#EFF6FF;border-top:1px solid #BFDBFE;color:#1E40AF;font-size:12px;font-weight:700"></div>
-<div style="padding:12px 24px;background:#fff;border-top:1px solid var(--border)">
+<div id="ra-workflow-bar" class="auris-risk-s-f253cf4eeb"></div>
+<div id="ra-approval-route-note" class="auris-risk-s-fdbed5905e"></div>
+<div class="auris-risk-s-58c4d98451">
 <div id="ra-quality-panel"></div>
 </div>
 </div>
 
 <!-- Tabs for RA form -->
-<div style="display:flex;gap:0;margin-bottom:14px;border-bottom:2px solid var(--border)">
+<div class="auris-risk-s-6bf792afaa">
 <button class="mtg-tab active" id="ra-ftab-info" data-auris-onclick="h0373">1. Scope</button>
 <button class="mtg-tab" id="ra-ftab-hazards" data-auris-onclick="h0374">2. Hazards &amp; Controls</button>
 <button class="mtg-tab" id="ra-ftab-approval" data-auris-onclick="h0375">3. Review &amp; Approval</button>
 <button class="mtg-tab" id="ra-ftab-rams" data-auris-onclick="h0376">4. RAMS Pack</button>
 <button class="mtg-tab" id="ra-ftab-revisions" data-auris-onclick="h0377">5. Revisions</button>
 </div>
-<div id="ra-form3guide" class="card" style="padding:10px 12px;margin-bottom:14px;border-left:4px solid #1D9E75;background:#F8FBFF"></div>
+<div id="ra-form3guide" class="card auris-risk-s-4299064cfb"></div>
 
 <!-- Info tab -->
 <div id="ra-ftview-info">
-<div style="display:grid;grid-template-columns:2fr 1fr;gap:14px">
+<div class="auris-risk-s-5571af1e74">
 <div>
-<div class="card" style="margin-bottom:14px">
+<div class="card auris-risk-s-42a6ced8b6">
 <div class="card-title">General Information</div>
 <div class="form3row">
 <div class="form3group"><label class="form3label">RA Title</label><input type="text" id="ra-title" placeholder="e.g. Electrical panel maintenance - Site A"/></div>
@@ -3071,9 +3072,9 @@ Offline mode - changes will sync when connection is restored
 <div class="form3group"><label class="form3label">Location / Area</label><input type="text" id="ra-workshop"/></div>
 <div class="form3group"><label class="form3label">Site name</label><input type="text" id="ra-site-name" placeholder="Site or client name..."/></div>
 </div>
-<div class="form3group"><label class="form3label">Scope / Background</label><textarea id="ra-scope" style="min-height:60px" placeholder="Describe the scope and context of this risk assessment..."></textarea></div>
+<div class="form3group"><label class="form3label">Scope / Background</label><textarea id="ra-scope" class="auris-risk-s-07bdff4587" placeholder="Describe the scope and context of this risk assessment..."></textarea></div>
 </div>
-<div class="card" style="margin-bottom:14px">
+<div class="card auris-risk-s-42a6ced8b6">
 <div class="card-title">Personnel &amp; Dates</div>
 <div class="form3row">
 <div class="form3group"><label class="form3label">Assessed by</label><select id="ra-assessed-by"><option value="">Select person...</option></select></div>
@@ -3088,29 +3089,29 @@ Offline mode - changes will sync when connection is restored
 </div>
 <div>
 <!-- Links -->
-<div class="card" style="margin-bottom:14px;border:2px solid #185FA5">
-<div class="card-title" style="color:#185FA5"><i class="ti ti-link"></i> Site &amp; Document Links</div>
+<div class="card auris-risk-s-9bcefa3fff">
+<div class="card-title auris-risk-s-ca32b871b2"><i class="ti ti-link"></i> Site &amp; Document Links</div>
 <div class="form3group"><label class="form3label">Linked work order</label><select id="ra-linked-wo"><option value="">None</option></select></div>
-<div class="form3group"><label class="form3label">Linked permit ref</label><select id="ra-linked-permit" style="font-family:monospace"><option value="">None</option></select></div>
+<div class="form3group"><label class="form3label">Linked permit ref</label><select id="ra-linked-permit" class="auris-risk-s-7b8c3df564"><option value="">None</option></select></div>
 <div class="form3group"><label class="form3label">Related job segment</label><input type="text" id="ra-job-seg" placeholder="e.g. Phase 2, Zone B..."/></div>
 </div>
-<div id="ra-connected-records" style="margin-bottom:14px"></div>
+<div id="ra-connected-records" class="auris-risk-s-42a6ced8b6"></div>
 <!-- AI Assist -->
-<div class="card" style="margin-bottom:14px;border:2px solid #8B5CF6;background:linear-gradient(135deg,#f8fafc,#f3e8ff)">
-<div class="card-title" style="color:#8B5CF6"><i class="ti ti-wand"></i> AI Assistant</div>
-<div style="font-size:12px;color:var(--text2);margin-bottom:10px">Describe the work activity and AI will suggest hazards, controls and hierarchy of controls</div>
-<div class="form3group"><label class="form3label">Activity description</label><textarea id="ra-ai-prompt" style="min-height:60px" placeholder="e.g. Installing new electrical panels in an industrial building, working at 3m height, with live circuits nearby..."></textarea></div>
-<button class="btn btn-sm" style="background:#8B5CF6;color:#fff;border-color:#8B5CF6;width:100%;justify-content:center" data-auris-onclick="h0378"><i class="ti ti-sparkles"></i>Generate AI suggestions</button>
-<div id="ra-ai-output" style="margin-top:10px"></div>
+<div class="card auris-risk-s-4474e5af7b">
+<div class="card-title auris-risk-s-48a87f51bd"><i class="ti ti-wand"></i> AI Assistant</div>
+<div class="auris-risk-s-fa530ed1c3">Describe the work activity and AI will suggest hazards, controls and hierarchy of controls</div>
+<div class="form3group"><label class="form3label">Activity description</label><textarea id="ra-ai-prompt" class="auris-risk-s-07bdff4587" placeholder="e.g. Installing new electrical panels in an industrial building, working at 3m height, with live circuits nearby..."></textarea></div>
+<button class="btn btn-sm auris-risk-s-0ad6137f96" data-auris-onclick="h0378"><i class="ti ti-sparkles"></i>Generate AI suggestions</button>
+<div id="ra-ai-output" class="auris-risk-s-df928149c5"></div>
 </div>
 <!-- Risk matrix key -->
-<div class="card" style="padding:10px">
-<div style="font-size:11px;font-weight:700;color:var(--text2);text-transform:uppercase;margin-bottom:8px">Risk Level Key</div>
-<div style="display:flex;flex-direction:column;gap:3px;font-size:11px">
-<div style="display:flex;align-items:center;gap:6px"><div style="width:14px;height:14px;background:#DC2626;border-radius:3px"></div><strong>Critical (20-25)</strong> - Immediate stop work</div>
-<div style="display:flex;align-items:center;gap:6px"><div style="width:14px;height:14px;background:#EA580C;border-radius:3px"></div><strong>High (12-19)</strong> - Senior management action</div>
-<div style="display:flex;align-items:center;gap:6px"><div style="width:14px;height:14px;background:#EF9F27;border-radius:3px"></div><strong>Medium (6-11)</strong> - Management attention</div>
-<div style="display:flex;align-items:center;gap:6px"><div style="width:14px;height:14px;background:#1D9E75;border-radius:3px"></div><strong>Low (1-5)</strong> - Accept / monitor</div>
+<div class="card auris-risk-s-7e9e1b04a9">
+<div class="auris-risk-s-a6c326aa46">Risk Level Key</div>
+<div class="auris-risk-s-f7c3133dd1">
+<div class="auris-risk-s-311c619ca0"><div class="auris-risk-s-924e6875ad"></div><strong>Critical (20-25)</strong> - Immediate stop work</div>
+<div class="auris-risk-s-311c619ca0"><div class="auris-risk-s-23b3771d8d"></div><strong>High (12-19)</strong> - Senior management action</div>
+<div class="auris-risk-s-311c619ca0"><div class="auris-risk-s-4e015fc717"></div><strong>Medium (6-11)</strong> - Management attention</div>
+<div class="auris-risk-s-311c619ca0"><div class="auris-risk-s-8e6e1d3059"></div><strong>Low (1-5)</strong> - Accept / monitor</div>
 </div>
 </div>
 </div>
@@ -3118,158 +3119,158 @@ Offline mode - changes will sync when connection is restored
 </div>
 
 <!-- Hazards tab -->
-<div id="ra-ftview-hazards" style="display:none">
-<div class="card" style="margin-bottom:14px;padding:14px 16px;border-left:4px solid #1D9E75;background:#f7fffb">
-<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:14px;flex-wrap:wrap">
+<div id="ra-ftview-hazards" class="auris-risk-s-6aa34d7432">
+<div class="card auris-risk-s-5019965c36">
+<div class="auris-risk-s-90b16d923c">
 <div>
-<div style="font-weight:800;color:#0f766e;margin-bottom:4px">How to complete this section</div>
-<div style="font-size:12px;color:var(--text2);line-height:1.45;max-width:880px">Start with the uncontrolled or existing situation, then add control measures and assess the residual risk after controls. The objective is not only to list hazards, but to show that risk has been reduced to an acceptable level.</div>
+<div class="auris-risk-s-e42cec4615">How to complete this section</div>
+<div class="auris-risk-s-8d2ad86707">Start with the uncontrolled or existing situation, then add control measures and assess the residual risk after controls. The objective is not only to list hazards, but to show that risk has been reduced to an acceptable level.</div>
 </div>
-<div style="display:grid;grid-template-columns:repeat(2,minmax(130px,1fr));gap:6px;font-size:11px;min-width:280px">
-<div style="background:#fff;border:1px solid #d1fae5;border-radius:8px;padding:7px"><b>Severity</b><br/><span style="color:var(--text2)">1 minor to 5 fatality</span></div>
-<div style="background:#fff;border:1px solid #d1fae5;border-radius:8px;padding:7px"><b>Likelihood</b><br/><span style="color:var(--text2)">1 rare to 5 frequent</span></div>
-<div style="background:#fff;border:1px solid #d1fae5;border-radius:8px;padding:7px"><b>Initial risk</b><br/><span style="color:var(--text2)">Before extra controls</span></div>
-<div style="background:#fff;border:1px solid #d1fae5;border-radius:8px;padding:7px"><b>Residual risk</b><br/><span style="color:var(--text2)">After controls</span></div>
+<div class="auris-risk-s-926769a831">
+<div class="auris-risk-s-b2c7ee2619"><b>Severity</b><br/><span class="auris-risk-s-f308dcba31">1 minor to 5 fatality</span></div>
+<div class="auris-risk-s-b2c7ee2619"><b>Likelihood</b><br/><span class="auris-risk-s-f308dcba31">1 rare to 5 frequent</span></div>
+<div class="auris-risk-s-b2c7ee2619"><b>Initial risk</b><br/><span class="auris-risk-s-f308dcba31">Before extra controls</span></div>
+<div class="auris-risk-s-b2c7ee2619"><b>Residual risk</b><br/><span class="auris-risk-s-f308dcba31">After controls</span></div>
 </div>
 </div>
 </div>
 <!-- Hazard library picker -->
-<div class="card" style="margin-bottom:14px;background:linear-gradient(135deg,#f8fafc,#EFF6FF);border:2px solid #185FA540">
-<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:10px">
-<div><div class="card-title" style="margin:0;color:#185FA5"><i class="ti ti-books"></i> Add from Hazard Library</div>
-<div style="font-size:12px;color:var(--text2)">Search the hazard library to quickly add pre-defined hazard rows</div></div>
-<button class="btn btn-sm" style="background:#185FA5;color:#fff;border-color:#185FA5" data-auris-onclick="h0379"><i class="ti ti-search"></i>Browse library</button>
+<div class="card auris-risk-s-820d11fc5f">
+<div class="auris-risk-s-aa12d99c0b">
+<div><div class="card-title auris-risk-s-1e3b39fbbe"><i class="ti ti-books"></i> Add from Hazard Library</div>
+<div class="auris-risk-s-7299078644">Search the hazard library to quickly add pre-defined hazard rows</div></div>
+<button class="btn btn-sm auris-risk-s-30621493b3" data-auris-onclick="h0379"><i class="ti ti-search"></i>Browse library</button>
 </div>
-<div style="display:flex;gap:8px">
-<input type="text" id="ra-lib-search" placeholder="Search hazard library (e.g. height, electrical, manual handling)..." style="flex:1;padding:7px 12px;border:1px solid var(--border);border-radius:8px;font-size:12px" data-auris-oninput="h0380"/>
+<div class="auris-risk-s-9c40389b4a">
+<input type="text" id="ra-lib-search" class="auris-risk-s-87a8db50fd" placeholder="Search hazard library (e.g. height, electrical, manual handling)..." data-auris-oninput="h0380"/>
 </div>
-<div id="ra-lib-results" style="margin-top:8px"></div>
+<div id="ra-lib-results" class="auris-risk-s-43a97fe494"></div>
 </div>
 
 <!-- RA type-specific form areas -->
 <div id="ra-baseline-form">
-<div class="card" style="padding:0;overflow:hidden">
-<div style="padding:10px 16px;background:#1a3a5c;color:#fff;display:flex;justify-content:space-between;align-items:center">
-<div style="font-weight:700;font-size:14px">Risk Assessment - Hazards &amp; Controls</div>
-<button class="btn btn-sm" style="background:rgba(255,255,255,.2);color:#fff;border-color:rgba(255,255,255,.3)" data-auris-onclick="h0381"><i class="ti ti-plus"></i>Add row</button>
+<div class="card auris-risk-s-d9c39add3c">
+<div class="auris-risk-s-2fa4643a56">
+<div class="auris-risk-s-e746326d06">Risk Assessment - Hazards &amp; Controls</div>
+<button class="btn btn-sm auris-risk-s-5c09edd131" data-auris-onclick="h0381"><i class="ti ti-plus"></i>Add row</button>
 </div>
-<div style="overflow-x:auto">
-<table id="ra-baseline-table" class="ra-grid-table" style="width:100%;min-width:1720px;border-collapse:collapse;font-size:12px">
-<thead><tr style="background:#f0f4ff">
-<th style="padding:7px 10px;text-align:left;border-bottom:1px solid var(--border);min-width:50px">#</th>
-<th style="padding:7px 10px;text-align:left;border-bottom:1px solid var(--border);min-width:160px">Hazard / Activity</th>
-<th style="padding:7px 10px;text-align:left;border-bottom:1px solid var(--border);min-width:120px">Potential Harm</th>
-<th style="padding:7px 10px;text-align:left;border-bottom:1px solid var(--border);min-width:60px">Who</th>
-<th style="padding:7px 10px;text-align:left;border-bottom:1px solid var(--border);min-width:190px">Existing Controls</th>
-<th title="Severity before additional controls" style="padding:7px 6px;text-align:center;border-bottom:1px solid var(--border);width:62px">Initial<br/>Severity</th>
-<th title="Likelihood before additional controls" style="padding:7px 6px;text-align:center;border-bottom:1px solid var(--border);width:66px">Initial<br/>Likelihood</th>
-<th title="Initial risk rating" style="padding:7px 6px;text-align:center;border-bottom:1px solid var(--border);width:64px">Initial<br/>Risk</th>
-<th style="padding:7px 10px;text-align:left;border-bottom:1px solid var(--border);min-width:190px">Further Actions / Controls</th>
-<th style="padding:7px 10px;text-align:left;border-bottom:1px solid var(--border);min-width:80px">Hierarchy</th>
-<th title="Severity after controls" style="padding:7px 6px;text-align:center;border-bottom:1px solid var(--border);width:64px">Residual<br/>Severity</th>
-<th title="Likelihood after controls" style="padding:7px 6px;text-align:center;border-bottom:1px solid var(--border);width:68px">Residual<br/>Likelihood</th>
-<th title="Residual risk rating after controls" style="padding:7px 6px;text-align:center;border-bottom:1px solid var(--border);width:64px">Residual<br/>Risk</th>
-<th style="padding:7px 10px;text-align:left;border-bottom:1px solid var(--border);min-width:120px">Action by</th>
-<th style="padding:7px 10px;text-align:left;border-bottom:1px solid var(--border);min-width:120px">Target date</th>
-<th style="padding:7px 10px;text-align:left;border-bottom:1px solid var(--border);min-width:100px">Legal Ref</th>
-<th style="padding:7px 6px;border-bottom:1px solid var(--border);width:40px"></th>
+<div class="auris-risk-s-1b1d75452f">
+<table id="ra-baseline-table" class="ra-grid-table auris-risk-s-fc8c7658af">
+<thead><tr class="auris-risk-s-aeaa48161b">
+<th class="auris-risk-s-f55c734899">#</th>
+<th class="auris-risk-s-6ac6c4ef72">Hazard / Activity</th>
+<th class="auris-risk-s-e35a6494d1">Potential Harm</th>
+<th class="auris-risk-s-5f33ea8d71">Who</th>
+<th class="auris-risk-s-5d66cf08b5">Existing Controls</th>
+<th class="auris-risk-s-dc2a101f62" title="Severity before additional controls">Initial<br/>Severity</th>
+<th class="auris-risk-s-be0e10aa1b" title="Likelihood before additional controls">Initial<br/>Likelihood</th>
+<th class="auris-risk-s-72f1312d0c" title="Initial risk rating">Initial<br/>Risk</th>
+<th class="auris-risk-s-5d66cf08b5">Further Actions / Controls</th>
+<th class="auris-risk-s-ca2207fe8b">Hierarchy</th>
+<th class="auris-risk-s-72f1312d0c" title="Severity after controls">Residual<br/>Severity</th>
+<th class="auris-risk-s-e6dd142df8" title="Likelihood after controls">Residual<br/>Likelihood</th>
+<th class="auris-risk-s-72f1312d0c" title="Residual risk rating after controls">Residual<br/>Risk</th>
+<th class="auris-risk-s-e35a6494d1">Action by</th>
+<th class="auris-risk-s-e35a6494d1">Target date</th>
+<th class="auris-risk-s-ec13b38dab">Legal Ref</th>
+<th class="auris-risk-s-0e52eeb6fd"></th>
 </tr></thead>
 <tbody id="ra-baseline-body"></tbody>
 </table>
 </div>
 </div>
 </div>
-<div id="ra-task-form" style="display:none">
-<div class="card" style="margin-bottom:12px;padding:12px 16px;background:#F0FDF4;border:1px solid #BBF7D0">
-<div style="font-weight:800;color:#0F766E;margin-bottom:4px">Task-based method</div>
-<div style="font-size:12px;color:#334155;line-height:1.45">Enter one row per job step, for example: prepare area, isolate energy, access equipment, perform work, test, reinstate and clean up. This makes the risk assessment easier to brief to workers and easier to audit.</div>
+<div id="ra-task-form" class="auris-risk-s-6aa34d7432">
+<div class="card auris-risk-s-9e0e354d10">
+<div class="auris-risk-s-762b9b7f92">Task-based method</div>
+<div class="auris-risk-s-3a42e3f250">Enter one row per job step, for example: prepare area, isolate energy, access equipment, perform work, test, reinstate and clean up. This makes the risk assessment easier to brief to workers and easier to audit.</div>
 </div>
-<div class="card" style="padding:0;overflow:hidden">
-<div style="padding:10px 16px;background:#1a3a5c;color:#fff;display:flex;justify-content:space-between;align-items:center">
-<div style="font-weight:700">Task-Based RA - Hazards per Task Step</div>
-<button class="btn btn-sm" style="background:rgba(255,255,255,.2);color:#fff;border-color:rgba(255,255,255,.3)" data-auris-onclick="h0382"><i class="ti ti-plus"></i>Add task step</button>
+<div class="card auris-risk-s-d9c39add3c">
+<div class="auris-risk-s-2fa4643a56">
+<div class="auris-risk-s-c6fa01b3f1">Task-Based RA - Hazards per Task Step</div>
+<button class="btn btn-sm auris-risk-s-5c09edd131" data-auris-onclick="h0382"><i class="ti ti-plus"></i>Add task step</button>
 </div>
-<div style="overflow-x:auto">
-<table id="ra-task-table" class="ra-grid-table" style="width:100%;min-width:1660px;border-collapse:collapse;font-size:12px">
-<thead><tr style="background:#f0f4ff">
-<th style="padding:7px 10px;text-align:left;border-bottom:1px solid var(--border);min-width:50px">Step</th>
-<th style="padding:7px 10px;text-align:left;border-bottom:1px solid var(--border);min-width:140px">Task / Activity</th>
-<th style="padding:7px 10px;text-align:left;border-bottom:1px solid var(--border);min-width:140px">Hazard</th>
-<th style="padding:7px 10px;text-align:left;border-bottom:1px solid var(--border);min-width:120px">Potential Harm</th>
-<th style="padding:7px 10px;text-align:left;border-bottom:1px solid var(--border);min-width:190px">Existing Controls</th>
-<th title="Severity before additional controls" style="padding:7px 6px;text-align:center;border-bottom:1px solid var(--border);width:62px">Initial<br/>Severity</th>
-<th title="Likelihood before additional controls" style="padding:7px 6px;text-align:center;border-bottom:1px solid var(--border);width:66px">Initial<br/>Likelihood</th>
-<th title="Initial risk rating" style="padding:7px 6px;text-align:center;border-bottom:1px solid var(--border);width:64px">Initial<br/>Risk</th>
-<th style="padding:7px 10px;text-align:left;border-bottom:1px solid var(--border);min-width:190px">Further Actions / Controls</th>
-<th title="Severity after controls" style="padding:7px 6px;text-align:center;border-bottom:1px solid var(--border);width:64px">Residual<br/>Severity</th>
-<th title="Likelihood after controls" style="padding:7px 6px;text-align:center;border-bottom:1px solid var(--border);width:68px">Residual<br/>Likelihood</th>
-<th title="Residual risk rating after controls" style="padding:7px 6px;text-align:center;border-bottom:1px solid var(--border);width:64px">Residual<br/>Risk</th>
-<th style="padding:7px 10px;text-align:left;border-bottom:1px solid var(--border);min-width:120px">Action by</th>
-<th style="padding:7px 10px;text-align:left;border-bottom:1px solid var(--border);min-width:120px">Target date</th>
-<th style="padding:7px 6px;border-bottom:1px solid var(--border);width:40px"></th>
+<div class="auris-risk-s-1b1d75452f">
+<table id="ra-task-table" class="ra-grid-table auris-risk-s-9e4bd020ca">
+<thead><tr class="auris-risk-s-aeaa48161b">
+<th class="auris-risk-s-f55c734899">Step</th>
+<th class="auris-risk-s-fd03f7c4cd">Task / Activity</th>
+<th class="auris-risk-s-fd03f7c4cd">Hazard</th>
+<th class="auris-risk-s-e35a6494d1">Potential Harm</th>
+<th class="auris-risk-s-5d66cf08b5">Existing Controls</th>
+<th class="auris-risk-s-dc2a101f62" title="Severity before additional controls">Initial<br/>Severity</th>
+<th class="auris-risk-s-be0e10aa1b" title="Likelihood before additional controls">Initial<br/>Likelihood</th>
+<th class="auris-risk-s-72f1312d0c" title="Initial risk rating">Initial<br/>Risk</th>
+<th class="auris-risk-s-5d66cf08b5">Further Actions / Controls</th>
+<th class="auris-risk-s-72f1312d0c" title="Severity after controls">Residual<br/>Severity</th>
+<th class="auris-risk-s-e6dd142df8" title="Likelihood after controls">Residual<br/>Likelihood</th>
+<th class="auris-risk-s-72f1312d0c" title="Residual risk rating after controls">Residual<br/>Risk</th>
+<th class="auris-risk-s-e35a6494d1">Action by</th>
+<th class="auris-risk-s-e35a6494d1">Target date</th>
+<th class="auris-risk-s-0e52eeb6fd"></th>
 </tr></thead>
 <tbody id="ra-task-body"></tbody>
 </table>
 </div>
 </div>
 </div>
-<div id="ra-dynamic-form" style="display:none">
-<div class="card" style="margin-bottom:12px;padding:12px 16px;background:#FEF9EC;border:2px solid #EF9F27">
-<div style="font-weight:700;color:#854F0B;margin-bottom:4px"><i class="ti ti-alert-triangle"></i> Dynamic Risk Assessment</div>
-<div style="font-size:12px;color:#92400E">Point-in-time assessment for changing conditions. Record date/time, current conditions and real-time risk decisions.</div>
+<div id="ra-dynamic-form" class="auris-risk-s-6aa34d7432">
+<div class="card auris-risk-s-396ef7b043">
+<div class="auris-risk-s-53cf5f59db"><i class="ti ti-alert-triangle"></i> Dynamic Risk Assessment</div>
+<div class="auris-risk-s-fa589f4295">Point-in-time assessment for changing conditions. Record date/time, current conditions and real-time risk decisions.</div>
 </div>
-<div class="card" style="padding:0;overflow:hidden">
-<div style="padding:10px 16px;background:#1a3a5c;color:#fff;display:flex;justify-content:space-between;align-items:center">
-<div style="font-weight:700">Dynamic RA - Real-time Observations</div>
-<button class="btn btn-sm" style="background:rgba(255,255,255,.2);color:#fff;border-color:rgba(255,255,255,.3)" data-auris-onclick="h0383"><i class="ti ti-plus"></i>Add observation</button>
+<div class="card auris-risk-s-d9c39add3c">
+<div class="auris-risk-s-2fa4643a56">
+<div class="auris-risk-s-c6fa01b3f1">Dynamic RA - Real-time Observations</div>
+<button class="btn btn-sm auris-risk-s-5c09edd131" data-auris-onclick="h0383"><i class="ti ti-plus"></i>Add observation</button>
 </div>
-<div style="overflow-x:auto">
-<table id="ra-dynamic-table" style="width:100%;min-width:980px;border-collapse:collapse;font-size:12px">
-<thead><tr style="background:#f0f4ff">
-<th style="padding:7px 10px;text-align:left;border-bottom:1px solid var(--border);min-width:120px">Condition / Hazard</th>
-<th style="padding:7px 10px;text-align:left;border-bottom:1px solid var(--border);min-width:100px">Observed Risk</th>
-<th title="Severity of observed risk" style="padding:7px 6px;text-align:center;border-bottom:1px solid var(--border);width:62px">Severity</th>
-<th title="Likelihood of observed risk" style="padding:7px 6px;text-align:center;border-bottom:1px solid var(--border);width:66px">Likelihood</th>
-<th title="Current risk rating" style="padding:7px 6px;text-align:center;border-bottom:1px solid var(--border);width:64px">Current<br/>Risk</th>
-<th style="padding:7px 10px;text-align:left;border-bottom:1px solid var(--border);min-width:180px">Immediate Control</th>
-<th style="padding:7px 10px;text-align:left;border-bottom:1px solid var(--border);min-width:100px">Decision</th>
-<th style="padding:7px 6px;border-bottom:1px solid var(--border);width:40px"></th>
+<div class="auris-risk-s-1b1d75452f">
+<table id="ra-dynamic-table" class="auris-risk-s-be1ea6595a">
+<thead><tr class="auris-risk-s-aeaa48161b">
+<th class="auris-risk-s-e35a6494d1">Condition / Hazard</th>
+<th class="auris-risk-s-ec13b38dab">Observed Risk</th>
+<th class="auris-risk-s-dc2a101f62" title="Severity of observed risk">Severity</th>
+<th class="auris-risk-s-be0e10aa1b" title="Likelihood of observed risk">Likelihood</th>
+<th class="auris-risk-s-72f1312d0c" title="Current risk rating">Current<br/>Risk</th>
+<th class="auris-risk-s-b54baed91b">Immediate Control</th>
+<th class="auris-risk-s-ec13b38dab">Decision</th>
+<th class="auris-risk-s-0e52eeb6fd"></th>
 </tr></thead>
 <tbody id="ra-dynamic-body"></tbody>
 </table>
 </div>
 </div>
 </div>
-<div id="ra-hira-form" style="display:none">
-<div class="card" style="margin-bottom:12px;padding:12px 16px;background:#FEF2F2;border:2px solid #E24B4A">
-<div style="font-weight:700;color:#A32D2D;margin-bottom:4px"><i class="ti ti-microscope"></i> HIRA - Hazard Identification and Risk Assessment</div>
-<div style="font-size:12px;color:#7F1D1D">Systematic multi-category hazard study. Categorise hazards by discipline and assess risk across activities and worker groups.</div>
+<div id="ra-hira-form" class="auris-risk-s-6aa34d7432">
+<div class="card auris-risk-s-63f552cbae">
+<div class="auris-risk-s-749f2c20b9"><i class="ti ti-microscope"></i> HIRA - Hazard Identification and Risk Assessment</div>
+<div class="auris-risk-s-424902e468">Systematic multi-category hazard study. Categorise hazards by discipline and assess risk across activities and worker groups.</div>
 </div>
-<div class="card" style="padding:0;overflow:hidden">
-<div style="padding:10px 16px;background:#7F1D1D;color:#fff;display:flex;justify-content:space-between;align-items:center">
-<div style="font-weight:700">HIRA - Hazard Identification Table</div>
-<button class="btn btn-sm" style="background:rgba(255,255,255,.2);color:#fff;border-color:rgba(255,255,255,.3)" data-auris-onclick="h0381"><i class="ti ti-plus"></i>Add hazard</button>
+<div class="card auris-risk-s-d9c39add3c">
+<div class="auris-risk-s-0be1e1011f">
+<div class="auris-risk-s-c6fa01b3f1">HIRA - Hazard Identification Table</div>
+<button class="btn btn-sm auris-risk-s-5c09edd131" data-auris-onclick="h0381"><i class="ti ti-plus"></i>Add hazard</button>
 </div>
-<div style="overflow-x:auto">
-<table id="ra-hira-table" class="ra-grid-table" style="width:100%;min-width:1800px;border-collapse:collapse;font-size:12px">
-<thead><tr style="background:#fff1f2">
-<th style="padding:7px 10px;text-align:left;border-bottom:1px solid var(--border);min-width:100px">Category</th>
-<th style="padding:7px 10px;text-align:left;border-bottom:1px solid var(--border);min-width:160px">Hazard Description</th>
-<th style="padding:7px 10px;text-align:left;border-bottom:1px solid var(--border);min-width:120px">Potential Harm</th>
-<th style="padding:7px 10px;text-align:left;border-bottom:1px solid var(--border);min-width:100px">Who at Risk</th>
-<th style="padding:7px 10px;text-align:left;border-bottom:1px solid var(--border);min-width:190px">Existing Controls</th>
-<th title="Severity before additional controls" style="padding:7px 6px;text-align:center;border-bottom:1px solid var(--border);width:62px">Initial<br/>Severity</th>
-<th title="Likelihood before additional controls" style="padding:7px 6px;text-align:center;border-bottom:1px solid var(--border);width:66px">Initial<br/>Likelihood</th>
-<th title="Initial risk rating" style="padding:7px 6px;text-align:center;border-bottom:1px solid var(--border);width:64px">Initial<br/>Risk</th>
-<th style="padding:7px 10px;text-align:left;border-bottom:1px solid var(--border);min-width:190px">Further Actions / Controls</th>
-<th style="padding:7px 10px;text-align:left;border-bottom:1px solid var(--border);min-width:80px">HOC Level</th>
-<th title="Severity after controls" style="padding:7px 6px;text-align:center;border-bottom:1px solid var(--border);width:64px">Residual<br/>Severity</th>
-<th title="Likelihood after controls" style="padding:7px 6px;text-align:center;border-bottom:1px solid var(--border);width:68px">Residual<br/>Likelihood</th>
-<th title="Residual risk rating after controls" style="padding:7px 6px;text-align:center;border-bottom:1px solid var(--border);width:64px">Residual<br/>Risk</th>
-<th style="padding:7px 10px;text-align:left;border-bottom:1px solid var(--border);min-width:120px">Action by</th>
-<th style="padding:7px 10px;text-align:left;border-bottom:1px solid var(--border);min-width:120px">Target date</th>
-<th style="padding:7px 10px;text-align:left;border-bottom:1px solid var(--border);min-width:100px">Legal Ref</th>
-<th style="padding:7px 6px;border-bottom:1px solid var(--border);width:40px"></th>
+<div class="auris-risk-s-1b1d75452f">
+<table id="ra-hira-table" class="ra-grid-table auris-risk-s-c6fdba95e4">
+<thead><tr class="auris-risk-s-5a1407a722">
+<th class="auris-risk-s-ec13b38dab">Category</th>
+<th class="auris-risk-s-6ac6c4ef72">Hazard Description</th>
+<th class="auris-risk-s-e35a6494d1">Potential Harm</th>
+<th class="auris-risk-s-ec13b38dab">Who at Risk</th>
+<th class="auris-risk-s-5d66cf08b5">Existing Controls</th>
+<th class="auris-risk-s-dc2a101f62" title="Severity before additional controls">Initial<br/>Severity</th>
+<th class="auris-risk-s-be0e10aa1b" title="Likelihood before additional controls">Initial<br/>Likelihood</th>
+<th class="auris-risk-s-72f1312d0c" title="Initial risk rating">Initial<br/>Risk</th>
+<th class="auris-risk-s-5d66cf08b5">Further Actions / Controls</th>
+<th class="auris-risk-s-ca2207fe8b">HOC Level</th>
+<th class="auris-risk-s-72f1312d0c" title="Severity after controls">Residual<br/>Severity</th>
+<th class="auris-risk-s-e6dd142df8" title="Likelihood after controls">Residual<br/>Likelihood</th>
+<th class="auris-risk-s-72f1312d0c" title="Residual risk rating after controls">Residual<br/>Risk</th>
+<th class="auris-risk-s-e35a6494d1">Action by</th>
+<th class="auris-risk-s-e35a6494d1">Target date</th>
+<th class="auris-risk-s-ec13b38dab">Legal Ref</th>
+<th class="auris-risk-s-0e52eeb6fd"></th>
 </tr></thead>
 <tbody id="ra-hira-body"></tbody>
 </table>
@@ -3279,29 +3280,29 @@ Offline mode - changes will sync when connection is restored
 </div>
 
 <!-- Approval tab -->
-<div id="ra-ftview-approval" style="display:none">
-<div style="display:grid;grid-template-columns:2fr 1fr;gap:14px">
+<div id="ra-ftview-approval" class="auris-risk-s-6aa34d7432">
+<div class="auris-risk-s-5571af1e74">
 <div>
-<div class="card" style="margin-bottom:14px;border:2px solid #185FA5">
-<div class="card-title" style="color:#185FA5"><i class="ti ti-certificate"></i> Approval Workflow</div>
-<div style="margin-bottom:12px;padding:10px 12px;background:#F8FBFF;border:1px solid #BFDBFE;border-radius:10px;color:#1E3A8A;font-size:12px;line-height:1.45"><strong>Controlled record rule:</strong> once submitted, the RA is locked for normal editing. Admin/HSE Manager can approve, reject, or release it for correction. Approved RAs become active controlled records.</div>
-<div style="display:flex;flex-direction:column;gap:12px">
-<div style="padding:12px;border:1px solid var(--border);border-radius:8px">
-<div style="font-weight:700;font-size:13px;margin-bottom:8px">Step 1 - Risk Assessor</div>
+<div class="card auris-risk-s-9bcefa3fff">
+<div class="card-title auris-risk-s-ca32b871b2"><i class="ti ti-certificate"></i> Approval Workflow</div>
+<div class="auris-risk-s-12aa71d5e8"><strong>Controlled record rule:</strong> once submitted, the RA is locked for normal editing. Admin/HSE Manager can approve, reject, or release it for correction. Approved RAs become active controlled records.</div>
+<div class="auris-risk-s-f0de252a84">
+<div class="auris-risk-s-8fe2234028">
+<div class="auris-risk-s-00bf13061f">Step 1 - Risk Assessor</div>
 <div class="form3row">
 <div class="form3group"><label class="form3label">Assessor name</label><select id="ra-sign-assessor"><option value="">Select person...</option></select></div>
 <div class="form3group"><label class="form3label">Date</label><input type="date" id="ra-sign-assessor-date"/></div>
 </div>
 </div>
-<div style="padding:12px;border:1px solid var(--border);border-radius:8px">
-<div style="font-weight:700;font-size:13px;margin-bottom:8px">Step 2 - Reviewer</div>
+<div class="auris-risk-s-8fe2234028">
+<div class="auris-risk-s-00bf13061f">Step 2 - Reviewer</div>
 <div class="form3row">
 <div class="form3group"><label class="form3label">Reviewer name</label><select id="ra-sign-reviewer"><option value="">Select person...</option></select></div>
 <div class="form3group"><label class="form3label">Date</label><input type="date" id="ra-sign-reviewer-date"/></div>
 </div>
 </div>
-<div style="padding:12px;border:1px solid var(--border);border-radius:8px">
-<div style="font-weight:700;font-size:13px;margin-bottom:8px">Step 3 - Approver</div>
+<div class="auris-risk-s-8fe2234028">
+<div class="auris-risk-s-00bf13061f">Step 3 - Approver</div>
 <div class="form3row">
 <div class="form3group"><label class="form3label">Approver name</label><select id="ra-sign-approver"><option value="">Select person...</option></select></div>
 <div class="form3group"><label class="form3label">Date</label><input type="date" id="ra-sign-approver-date"/></div>
@@ -3312,19 +3313,19 @@ Offline mode - changes will sync when connection is restored
 <div class="card">
 <div class="card-title">Briefing Record</div>
 <div class="form3group"><label class="form3label">Persons briefed on this RA</label>
-<textarea id="ra-briefed-persons" style="min-height:80px" placeholder="Names of workers/team members who have been briefed on this RA..."></textarea></div>
+<textarea id="ra-briefed-persons" class="auris-risk-s-770a4152c1" placeholder="Names of workers/team members who have been briefed on this RA..."></textarea></div>
 </div>
 </div>
 <div>
-<div class="card" style="margin-bottom:14px">
+<div class="card auris-risk-s-42a6ced8b6">
 <div class="card-title">Rejection / Comments</div>
-<div class="form3group"><label class="form3label">Rejection reason (if rejected)</label><textarea id="ra-rejection-reason" style="min-height:70px"></textarea></div>
-<div class="form3group"><label class="form3label">Review comments</label><textarea id="ra-review-comments" style="min-height:70px"></textarea></div>
+<div class="form3group"><label class="form3label">Rejection reason (if rejected)</label><textarea id="ra-rejection-reason" class="auris-risk-s-4d5979ac8f"></textarea></div>
+<div class="form3group"><label class="form3label">Review comments</label><textarea id="ra-review-comments" class="auris-risk-s-4d5979ac8f"></textarea></div>
 </div>
-<div class="card" style="background:linear-gradient(135deg,#1a3a5c,#185FA5);color:#fff;border:none;padding:20px;text-align:center">
-<div style="font-size:32px;margin-bottom:8px">?</div>
-<div style="font-weight:700;font-size:14px;margin-bottom:6px">Approval Checklist</div>
-<div style="font-size:12px;opacity:.8;text-align:left">
+<div class="card auris-risk-s-2c1a160bf9">
+<div class="auris-risk-s-d0e4588d0b">?</div>
+<div class="auris-risk-s-58dfd90f8f">Approval Checklist</div>
+<div class="auris-risk-s-eeb782f395">
 <div>All significant hazards identified</div>
 <div>Controls are SMART and achievable</div>
 <div>Hierarchy of controls applied</div>
@@ -3333,12 +3334,12 @@ Offline mode - changes will sync when connection is restored
 <div>Responsible persons assigned</div>
 </div>
 </div>
-<div class="card" style="margin-top:14px;border:1px solid #dbeafe;background:#f8fbff">
-<div class="card-title" style="color:#185FA5"><i class="ti ti-route"></i> Approval actions</div>
-<div style="font-size:12px;color:var(--text2);line-height:1.45;margin-bottom:10px">Use these actions when reviewing a submitted risk assessment. Rejected assessments return for correction. Releasing an approved or submitted RA makes it editable again and should be justified in revision notes.</div>
-<div style="display:flex;gap:8px;flex-wrap:wrap">
-<button class="btn btn-sm" style="background:#1D9E75;color:#fff;border-color:#1D9E75" data-auris-onclick="h0384"><i class="ti ti-circle-check"></i>Approve RA</button>
-<button class="btn btn-sm" style="background:#E24B4A;color:#fff;border-color:#E24B4A" data-auris-onclick="h0385"><i class="ti ti-x"></i>Reject RA</button>
+<div class="card auris-risk-s-bf1b875f01">
+<div class="card-title auris-risk-s-ca32b871b2"><i class="ti ti-route"></i> Approval actions</div>
+<div class="auris-risk-s-1a5ccd228d">Use these actions when reviewing a submitted risk assessment. Rejected assessments return for correction. Releasing an approved or submitted RA makes it editable again and should be justified in revision notes.</div>
+<div class="auris-risk-s-c9dc9b5648">
+<button class="btn btn-sm auris-risk-s-c7b9e5b2c7" data-auris-onclick="h0384"><i class="ti ti-circle-check"></i>Approve RA</button>
+<button class="btn btn-sm auris-risk-s-293fd43d26" data-auris-onclick="h0385"><i class="ti ti-x"></i>Reject RA</button>
 <button class="btn btn-sm" data-auris-onclick="h0386"><i class="ti ti-lock-open"></i>Release for edit</button>
 </div>
 </div>
@@ -3347,65 +3348,65 @@ Offline mode - changes will sync when connection is restored
 </div>
 
 <!-- Risk matrix / RAMS tab -->
-<div id="ra-ftview-rams" style="display:none">
+<div id="ra-ftview-rams" class="auris-risk-s-6aa34d7432">
 <div class="card">
 <div class="card-title"><i class="ti ti-table-options"></i> Risk Matrix &amp; Scoring Criteria</div>
-<div style="font-size:12px;color:var(--text2);line-height:1.45;margin-bottom:12px">This is the matrix used by AURIS360 to calculate initial and residual risk. Scores are calculated as severity x likelihood / probability.</div>
+<div class="auris-risk-s-f1f178d8b2">This is the matrix used by AURIS360 to calculate initial and residual risk. Scores are calculated as severity x likelihood / probability.</div>
 <div id="ra-risk-matrix-card"></div>
 </div>
-<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:14px">
+<div class="auris-risk-s-c156e2c950">
 <div class="card">
 <div class="card-title"><i class="ti ti-file-check"></i> RAMS Pack &amp; Linked SWMS</div>
-<div style="margin-bottom:12px;padding:10px 12px;background:#F8FBFF;border:1px solid #BFDBFE;border-radius:10px;color:#1E3A8A;font-size:12px;line-height:1.45"><strong>RAMS = Risk Assessment + Method Statement.</strong> The RA records hazards, controls and risk ratings. The SWMS / method statement explains how the work will be carried out step by step. Link the SWMS below to form the RAMS pack.</div>
-<div style="margin-bottom:12px;border:1px solid #D1FAE5;border-radius:10px;overflow:hidden">
-<div style="background:#ECFDF5;color:#065F46;font-weight:900;padding:9px 12px;font-size:12px">RAMS readiness checklist</div>
+<div class="auris-risk-s-12aa71d5e8"><strong>RAMS = Risk Assessment + Method Statement.</strong> The RA records hazards, controls and risk ratings. The SWMS / method statement explains how the work will be carried out step by step. Link the SWMS below to form the RAMS pack.</div>
+<div class="auris-risk-s-4cf4cdd039">
+<div class="auris-risk-s-d52d18db9c">RAMS readiness checklist</div>
 <div class="rams-check-grid">
-<label style="display:flex;gap:7px;align-items:flex-start;padding:8px 10px;border-top:1px solid #D1FAE5"><input type="checkbox"/> Task, site, personnel and equipment defined</label>
-<label style="display:flex;gap:7px;align-items:flex-start;padding:8px 10px;border-top:1px solid #D1FAE5"><input type="checkbox"/> Hazards identified for each task step</label>
-<label style="display:flex;gap:7px;align-items:flex-start;padding:8px 10px;border-top:1px solid #D1FAE5"><input type="checkbox"/> Inherent risk assessed using 5x5 matrix</label>
-<label style="display:flex;gap:7px;align-items:flex-start;padding:8px 10px;border-top:1px solid #D1FAE5"><input type="checkbox"/> Controls follow hierarchy of controls</label>
-<label style="display:flex;gap:7px;align-items:flex-start;padding:8px 10px;border-top:1px solid #D1FAE5"><input type="checkbox"/> Residual risk acceptable before work starts</label>
-<label style="display:flex;gap:7px;align-items:flex-start;padding:8px 10px;border-top:1px solid #D1FAE5"><input type="checkbox"/> Linked SWMS documents logical work method</label>
-<label style="display:flex;gap:7px;align-items:flex-start;padding:8px 10px;border-top:1px solid #D1FAE5"><input type="checkbox"/> PTW need checked for high-risk work</label>
-<label style="display:flex;gap:7px;align-items:flex-start;padding:8px 10px;border-top:1px solid #D1FAE5"><input type="checkbox"/> Approval level matches highest residual risk</label>
-<label style="display:flex;gap:7px;align-items:flex-start;padding:8px 10px;border-top:1px solid #D1FAE5"><input type="checkbox"/> Toolbox / sign-on completed before work</label>
-<label style="display:flex;gap:7px;align-items:flex-start;padding:8px 10px;border-top:1px solid #D1FAE5"><input type="checkbox"/> Review triggers defined and understood</label>
+<label class="auris-risk-s-6600519f34"><input type="checkbox"/> Task, site, personnel and equipment defined</label>
+<label class="auris-risk-s-6600519f34"><input type="checkbox"/> Hazards identified for each task step</label>
+<label class="auris-risk-s-6600519f34"><input type="checkbox"/> Inherent risk assessed using 5x5 matrix</label>
+<label class="auris-risk-s-6600519f34"><input type="checkbox"/> Controls follow hierarchy of controls</label>
+<label class="auris-risk-s-6600519f34"><input type="checkbox"/> Residual risk acceptable before work starts</label>
+<label class="auris-risk-s-6600519f34"><input type="checkbox"/> Linked SWMS documents logical work method</label>
+<label class="auris-risk-s-6600519f34"><input type="checkbox"/> PTW need checked for high-risk work</label>
+<label class="auris-risk-s-6600519f34"><input type="checkbox"/> Approval level matches highest residual risk</label>
+<label class="auris-risk-s-6600519f34"><input type="checkbox"/> Toolbox / sign-on completed before work</label>
+<label class="auris-risk-s-6600519f34"><input type="checkbox"/> Review triggers defined and understood</label>
 </div>
 </div>
-<div style="margin-bottom:12px;padding:10px 12px;background:#F0FDF4;border:1px solid #BBF7D0;border-radius:10px;color:#166534;font-size:12px;line-height:1.45"><strong>PDF import assistant:</strong> if you upload an existing risk assessment PDF, AURIS360 will try to convert detected hazards, consequences and controls into editable RA rows. Always review extracted rows before submitting for approval.</div>
-<div style="background:#f9fafb;border:2px dashed var(--border);border-radius:10px;padding:24px;text-align:center;margin-bottom:14px">
-<div style="font-size:40px;margin-bottom:10px"><i class="ti ti-circle-dot"></i></div>
-<div style="font-size:13px;font-weight:600;margin-bottom:6px">Upload existing SWMS / RAMS document</div>
-<div style="font-size:12px;color:var(--text2);margin-bottom:14px">PDF, Word (.docx), or other documents</div>
-<input type="file" id="ra-rams-file" accept=".pdf,.doc,.docx" style="display:none" data-auris-onchange="h0387"/>
+<div class="auris-risk-s-2604e9f26e"><strong>PDF import assistant:</strong> if you upload an existing risk assessment PDF, AURIS360 will try to convert detected hazards, consequences and controls into editable RA rows. Always review extracted rows before submitting for approval.</div>
+<div class="auris-risk-s-e022ff2248">
+<div class="auris-risk-s-d0f83c42bc"><i class="ti ti-circle-dot"></i></div>
+<div class="auris-risk-s-0c49cc536f">Upload existing SWMS / RAMS document</div>
+<div class="auris-risk-s-934634063f">PDF, Word (.docx), or other documents</div>
+<input type="file" id="ra-rams-file" class="auris-risk-s-6aa34d7432" accept=".pdf,.doc,.docx" data-auris-onchange="h0387"/>
 <button class="btn btn-primary" data-auris-onclick="h0388"><i class="ti ti-upload"></i>Choose file</button>
 </div>
 <div id="ra-rams-status"></div>
-<div id="ra-rams-used-card" style="margin-bottom:12px"></div>
+<div id="ra-rams-used-card" class="auris-risk-s-b56987dbcb"></div>
 <div class="form3group"><label class="form3label">Linked SWMS / method statement</label><select id="ra-rams-name" data-auris-onchange="h0389"><option value="">Select SWMS / method statement...</option></select></div>
 <div class="form3group"><label class="form3label">Attachment / external document link</label><input type="text" id="ra-rams-url" placeholder="Upload a document above or paste a secure link" data-auris-oninput="h0390"/></div>
 <button type="button" class="btn btn-sm" data-auris-onclick="h0391"><i class="ti ti-eye"></i>Preview linked document</button>
-<div style="padding:10px 12px;background:#FFFBEB;border:1px solid #FDE68A;border-radius:10px;color:#854F0B;font-size:12px;line-height:1.45"><strong>RAMS output:</strong> print the RA to include the risk matrix, linked SWMS reference, legal references, controls and approval signatures in one controlled pack.</div>
+<div class="auris-risk-s-3193ae21f4"><strong>RAMS output:</strong> print the RA to include the risk matrix, linked SWMS reference, legal references, controls and approval signatures in one controlled pack.</div>
 </div>
 <div class="card">
 <div class="card-title"><i class="ti ti-book"></i> Legal References</div>
-<div style="font-size:12px;color:var(--text2);margin-bottom:12px">Link specific legislation and standards to this RA</div>
-<div id="ra-legal-refs-list" style="margin-bottom:10px"></div>
-<div style="display:flex;gap:8px">
-<input type="text" id="ra-legal-ref-input" placeholder="e.g. OSH Act 2005 s.14, ISO 45001 cl.6.1..." style="flex:1;padding:7px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px" data-auris-onkeydown="h0392"/>
+<div class="auris-risk-s-5faab67eef">Link specific legislation and standards to this RA</div>
+<div id="ra-legal-refs-list" class="auris-risk-s-b922c89f16"></div>
+<div class="auris-risk-s-9c40389b4a">
+<input type="text" id="ra-legal-ref-input" class="auris-risk-s-0d03572ab0" placeholder="e.g. OSH Act 2005 s.14, ISO 45001 cl.6.1..." data-auris-onkeydown="h0392"/>
 <button class="btn btn-sm btn-primary" data-auris-onclick="h0393"><i class="ti ti-plus"></i></button>
 </div>
-<div style="margin-top:14px;padding:10px;background:#EFF6FF;border-radius:8px">
-<div style="font-size:11px;font-weight:700;color:#185FA5;margin-bottom:6px">Common legal references (click to add):</div>
-<div style="display:flex;flex-wrap:wrap;gap:6px">
-<button class="btn btn-sm" style="font-size:10px" data-auris-onclick="h0394">OSH Act s.14</button>
-<button class="btn btn-sm" style="font-size:10px" data-auris-onclick="h0395">WAH Regs</button>
-<button class="btn btn-sm" style="font-size:10px" data-auris-onclick="h0396">Scaffolds Regs</button>
-<button class="btn btn-sm" style="font-size:10px" data-auris-onclick="h0397">Noise Regs</button>
-<button class="btn btn-sm" style="font-size:10px" data-auris-onclick="h0398">Electrical Regs</button>
-<button class="btn btn-sm" style="font-size:10px" data-auris-onclick="h0399">PPE Regs</button>
-<button class="btn btn-sm" style="font-size:10px" data-auris-onclick="h0400">First Aid Regs</button>
-<button class="btn btn-sm" style="font-size:10px" data-auris-onclick="h0401">ISO 45001</button>
+<div class="auris-risk-s-6e38cb577b">
+<div class="auris-risk-s-3db796986a">Common legal references (click to add):</div>
+<div class="auris-risk-s-f26d0e34f5">
+<button class="btn btn-sm auris-risk-s-c28fa1ae60" data-auris-onclick="h0394">OSH Act s.14</button>
+<button class="btn btn-sm auris-risk-s-c28fa1ae60" data-auris-onclick="h0395">WAH Regs</button>
+<button class="btn btn-sm auris-risk-s-c28fa1ae60" data-auris-onclick="h0396">Scaffolds Regs</button>
+<button class="btn btn-sm auris-risk-s-c28fa1ae60" data-auris-onclick="h0397">Noise Regs</button>
+<button class="btn btn-sm auris-risk-s-c28fa1ae60" data-auris-onclick="h0398">Electrical Regs</button>
+<button class="btn btn-sm auris-risk-s-c28fa1ae60" data-auris-onclick="h0399">PPE Regs</button>
+<button class="btn btn-sm auris-risk-s-c28fa1ae60" data-auris-onclick="h0400">First Aid Regs</button>
+<button class="btn btn-sm auris-risk-s-c28fa1ae60" data-auris-onclick="h0401">ISO 45001</button>
 </div>
 </div>
 </div>
@@ -3413,15 +3414,15 @@ Offline mode - changes will sync when connection is restored
 </div>
 
 <!-- Revisions tab -->
-<div id="ra-ftview-revisions" style="display:none">
+<div id="ra-ftview-revisions" class="auris-risk-s-6aa34d7432">
 <div class="card">
-<div class="card-title" style="color:#185FA5"><i class="ti ti-history"></i> Revision Control</div>
-<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:10px">
-<div style="font-size:13px;color:var(--text2)">Create a controlled editable revision while keeping previous approved versions for audit history.</div>
-<button class="btn btn-primary" style="background:#185FA5;border-color:#185FA5" data-auris-onclick="h0402"><i class="ti ti-plus"></i>Create editable revision</button>
+<div class="card-title auris-risk-s-ca32b871b2"><i class="ti ti-history"></i> Revision Control</div>
+<div class="auris-risk-s-39ad88fd0b">
+<div class="auris-risk-s-a41bff61e4">Create a controlled editable revision while keeping previous approved versions for audit history.</div>
+<button class="btn btn-primary auris-risk-s-3a191dbbb7" data-auris-onclick="h0402"><i class="ti ti-plus"></i>Create editable revision</button>
 </div>
-<div style="padding:10px 12px;background:#FFFBEB;border:1px solid #FDE68A;border-radius:10px;color:#854F0B;font-size:12px;line-height:1.45;margin-bottom:12px"><strong>Good practice:</strong> do not overwrite an approved RA directly. Create a new revision, update it, then submit it again for approval.</div>
-<div class="form3group"><label class="form3label">Revision notes</label><textarea id="ra-rev-notes" style="min-height:50px" placeholder="What changed and why? e.g. New task step, new control, site condition changed..."></textarea></div>
+<div class="auris-risk-s-a844fc0ad2"><strong>Good practice:</strong> do not overwrite an approved RA directly. Create a new revision, update it, then submit it again for approval.</div>
+<div class="form3group"><label class="form3label">Revision notes</label><textarea id="ra-rev-notes" class="auris-risk-s-2b013fa0d9" placeholder="What changed and why? e.g. New task step, new control, site condition changed..."></textarea></div>
 <div id="ra-revisions-list"></div>
 </div>
 </div>
@@ -3429,29 +3430,29 @@ Offline mode - changes will sync when connection is restored
 </div><!-- end ra-form3view -->
 
 <!-- -- JSA FORM -- -->
-<div id="ra-jsa-form" style="display:none">
-<div class="card" style="margin-bottom:14px;padding:0;overflow:hidden">
-<div style="padding:14px 20px;background:linear-gradient(135deg,#3B0764,#6D28D9);color:#fff;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
+<div id="ra-jsa-form" class="auris-risk-s-6aa34d7432">
+<div class="card auris-risk-s-54ec8874e7">
+<div class="auris-risk-s-95ce4320af">
 <div>
-<div style="font-size:11px;font-weight:600;text-transform:uppercase;opacity:.8;letter-spacing:.08em;margin-bottom:4px">JSA / JHA Builder</div>
-<div style="font-size:18px;font-weight:800" id="jsa-form3title">New JSA</div>
-<div style="font-family:monospace;font-size:12px;color:#ddd6fe;margin-top:3px" id="jsa-form3ref">JSA-AUTO</div>
+<div class="auris-risk-s-c542f2bc2e">JSA / JHA Builder</div>
+<div id="jsa-form3title" class="auris-risk-s-e56ce903a9">New JSA</div>
+<div id="jsa-form3ref" class="auris-risk-s-be29fbce10">JSA-AUTO</div>
 </div>
-<div style="display:flex;gap:8px">
-<button class="btn" style="background:rgba(255,255,255,.2);color:#fff;border-color:rgba(255,255,255,.3)" data-auris-onclick="h0403"><i class="ti ti-arrow-left"></i>Back</button>
-<button class="btn" style="background:#1D9E75;color:#fff;border-color:#1D9E75" data-auris-onclick="h0404"><i class="ti ti-device-floppy"></i>Save JSA</button>
+<div class="auris-risk-s-9c40389b4a">
+<button class="btn auris-risk-s-5c09edd131" data-auris-onclick="h0403"><i class="ti ti-arrow-left"></i>Back</button>
+<button class="btn auris-risk-s-c7b9e5b2c7" data-auris-onclick="h0404"><i class="ti ti-device-floppy"></i>Save JSA</button>
 </div>
 </div>
 </div>
-<div class="card" style="margin-bottom:14px">
+<div class="card auris-risk-s-42a6ced8b6">
 <div class="form3row">
 <div class="form3group"><label class="form3label">JSA Title</label><input type="text" id="jsa-title" placeholder="e.g. Installation of new electrical panel"/></div>
 <div class="form3group"><label class="form3label">Date</label><input type="date" id="jsa-date"/></div>
 <div class="form3group"><label class="form3label">Location</label><input type="text" id="jsa-location"/></div>
-<div class="form3group"><label class="form3label">Work order ref</label><select id="jsa-wo-ref" style="font-family:monospace"><option value="">Select work order...</option></select></div>
+<div class="form3group"><label class="form3label">Work order ref</label><select id="jsa-wo-ref" class="auris-risk-s-7b8c3df564"><option value="">Select work order...</option></select></div>
 </div>
 <div class="form3row">
-<div class="form3group"><label class="form3label">Job description</label><textarea id="jsa-job-desc" style="min-height:60px"></textarea></div>
+<div class="form3group"><label class="form3label">Job description</label><textarea id="jsa-job-desc" class="auris-risk-s-07bdff4587"></textarea></div>
 </div>
 <div class="form3row">
 <div class="form3group"><label class="form3label">Prepared by</label><select id="jsa-prepared-by"><option value="">Select person...</option></select></div>
@@ -3461,48 +3462,48 @@ Offline mode - changes will sync when connection is restored
 </div>
 </div>
 <!-- JSA Steps -->
-<div class="card" style="padding:0;overflow:hidden">
-<div style="padding:10px 16px;background:linear-gradient(135deg,#3B0764,#6D28D9);color:#fff;display:flex;justify-content:space-between;align-items:center">
-<div style="font-weight:700">Job Steps - Hazards &amp; Controls</div>
-<div style="display:flex;gap:8px">
-<button class="btn btn-sm" style="background:rgba(255,255,255,.15);color:#fff;border-color:rgba(255,255,255,.3)" data-auris-onclick="h0405"><i class="ti ti-sparkles"></i>AI Generate Steps</button>
-<button class="btn btn-sm" style="background:rgba(255,255,255,.15);color:#fff;border-color:rgba(255,255,255,.3)" data-auris-onclick="h0406"><i class="ti ti-plus"></i>Add step</button>
+<div class="card auris-risk-s-d9c39add3c">
+<div class="auris-risk-s-8c11686837">
+<div class="auris-risk-s-c6fa01b3f1">Job Steps - Hazards &amp; Controls</div>
+<div class="auris-risk-s-9c40389b4a">
+<button class="btn btn-sm auris-risk-s-4068d4ef8d" data-auris-onclick="h0405"><i class="ti ti-sparkles"></i>AI Generate Steps</button>
+<button class="btn btn-sm auris-risk-s-4068d4ef8d" data-auris-onclick="h0406"><i class="ti ti-plus"></i>Add step</button>
 </div>
 </div>
-<div id="jsa-steps-container" style="padding:0"></div>
+<div id="jsa-steps-container" class="auris-risk-s-35eecf3e83"></div>
 </div>
 </div>
 
 <!-- -- HAZARD LIBRARY VIEW -- -->
-<div id="ra-library-view" style="display:none">
-<div class="card" style="margin-bottom:14px;padding:14px 20px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
-<div><div style="font-size:16px;font-weight:700">Libraries</div><div style="font-size:12px;color:var(--text2)">Hazard library - Control measures - Standard templates</div></div>
+<div id="ra-library-view" class="auris-risk-s-6aa34d7432">
+<div class="card auris-risk-s-86d0672cfd">
+<div><div class="auris-risk-s-30e294142f">Libraries</div><div class="auris-risk-s-7299078644">Hazard library - Control measures - Standard templates</div></div>
 <button class="btn" data-auris-onclick="h0339"><i class="ti ti-arrow-left"></i>Back</button>
 </div>
-<div style="display:flex;gap:0;margin-bottom:14px;border-bottom:2px solid var(--border)">
+<div class="auris-risk-s-6bf792afaa">
 <button class="mtg-tab active" id="lib-tab-hazards" data-auris-onclick="h0407">Hazard Library</button>
 <button class="mtg-tab" id="lib-tab-controls" data-auris-onclick="h0408">Control Library</button>
 <button class="mtg-tab" id="lib-tab-templates" data-auris-onclick="h0409">Templates</button>
 </div>
 <div id="lib-view-hazards">
-<div class="card" style="margin-bottom:12px;padding:10px 14px;display:flex;justify-content:space-between;align-items:center">
-<div><div class="card-title" style="margin:0">Hazard Library</div><div style="font-size:12px;color:var(--text2)">Reusable hazard catalogue with default risk scores</div></div>
-<div style="display:flex;gap:8px;flex-wrap:wrap">
-<input type="file" id="lib-hazard-import-file" accept=".csv,.txt,.tsv,text/csv,text/plain" style="display:none" data-auris-onchange="h0410"/>
-<button class="btn" id="lib-import-hazard-btn" style="display:none" data-auris-onclick="h0411"><i class="ti ti-upload"></i>Import hazards</button>
-<button class="btn btn-primary" id="lib-add-hazard-btn" style="display:none" data-auris-onclick="h0412"><i class="ti ti-plus"></i>Add hazard</button>
+<div class="card auris-risk-s-ae71a9e48f">
+<div><div class="card-title auris-risk-s-ab79ea2b85">Hazard Library</div><div class="auris-risk-s-7299078644">Reusable hazard catalogue with default risk scores</div></div>
+<div class="auris-risk-s-c9dc9b5648">
+<input type="file" id="lib-hazard-import-file" class="auris-risk-s-6aa34d7432" accept=".csv,.txt,.tsv,text/csv,text/plain" data-auris-onchange="h0410"/>
+<button class="btn auris-risk-s-6aa34d7432" id="lib-import-hazard-btn" data-auris-onclick="h0411"><i class="ti ti-upload"></i>Import hazards</button>
+<button class="btn btn-primary auris-risk-s-6aa34d7432" id="lib-add-hazard-btn" data-auris-onclick="h0412"><i class="ti ti-plus"></i>Add hazard</button>
 </div>
 </div>
-<div class="card" style="padding:0;overflow:hidden"><div id="lib-hazard-list"><div class="loading-msg">Loading...</div></div></div>
+<div class="card auris-risk-s-d9c39add3c"><div id="lib-hazard-list"><div class="loading-msg">Loading...</div></div></div>
 </div>
-<div id="lib-view-controls" style="display:none">
-<div class="card" style="margin-bottom:12px;padding:10px 14px;display:flex;justify-content:space-between;align-items:center">
-<div><div class="card-title" style="margin:0">Control Measure Library</div><div style="font-size:12px;color:var(--text2)">Pre-defined controls by hazard type and hierarchy level</div></div>
-<button class="btn btn-primary" id="lib-add-control-btn" style="display:none" data-auris-onclick="h0413"><i class="ti ti-plus"></i>Add control</button>
+<div id="lib-view-controls" class="auris-risk-s-6aa34d7432">
+<div class="card auris-risk-s-ae71a9e48f">
+<div><div class="card-title auris-risk-s-ab79ea2b85">Control Measure Library</div><div class="auris-risk-s-7299078644">Pre-defined controls by hazard type and hierarchy level</div></div>
+<button class="btn btn-primary auris-risk-s-6aa34d7432" id="lib-add-control-btn" data-auris-onclick="h0413"><i class="ti ti-plus"></i>Add control</button>
 </div>
-<div class="card" style="padding:0;overflow:hidden"><div id="lib-control-list"><div class="loading-msg">Loading...</div></div></div>
+<div class="card auris-risk-s-d9c39add3c"><div id="lib-control-list"><div class="loading-msg">Loading...</div></div></div>
 </div>
-<div id="lib-view-templates" style="display:none">
+<div id="lib-view-templates" class="auris-risk-s-6aa34d7432">
 <div id="lib-template-list"><div class="loading-msg">Loading...</div></div>
 </div>
 </div>
