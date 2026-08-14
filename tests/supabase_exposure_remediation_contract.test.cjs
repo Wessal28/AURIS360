@@ -11,5 +11,7 @@ assert.match(sql,/p\.prorettype='trigger'::regtype/i);
 assert.match(sql,/set search_path = pg_catalog, public, extensions/i);
 assert.match(sql,/alter default privileges for role postgres in schema public/i);
 assert.match(sql,/exposed_security_definer_functions/i);
+assert.match(sql,/aclexplode\(coalesce\(c\.relacl,acldefault\('S',c\.relowner\)\)\)/i);
+assert.doesNotMatch(sql,/has_sequence_privilege\('anon',c\.oid/i);
 assert.doesNotMatch(sql,/revoke all privileges on table %s from authenticated/i);
 console.log('Supabase exposure remediation contract passed (targeted anon/RPC hardening with authenticated workflows preserved).');

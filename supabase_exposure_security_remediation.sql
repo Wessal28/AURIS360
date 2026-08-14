@@ -131,7 +131,13 @@ select
     )
   ) as anon_mutation_tables,
   count(*) filter (
-    where c.relkind='S' and has_sequence_privilege('anon',c.oid,'USAGE')
+    where c.relkind='S' and exists (
+      select 1
+      from aclexplode(coalesce(c.relacl,acldefault('S',c.relowner))) x
+      join pg_roles r on r.oid=x.grantee
+      where r.rolname='anon'
+        and x.privilege_type in ('USAGE','UPDATE')
+    )
   ) as anon_sequences
 from pg_class c join pg_namespace n on n.oid=c.relnamespace
 where n.nspname='public';

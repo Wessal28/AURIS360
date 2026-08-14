@@ -40,3 +40,26 @@ Confirmed controls:
 - preserves authenticated application access and intentional public storage reads.
 
 Broad authenticated revokes were deliberately not applied. AURIS360 is a browser application whose signed-in requests use the `authenticated` Postgres role, with RLS providing the tenant and user boundary.
+
+## Production application and verification
+
+The targeted migration was applied to production on 14 August 2026 and committed successfully. A direct catalog verification returned:
+
+- anonymous mutation tables: `0`;
+- anonymous sequence grants: `0`;
+- anonymously/PUBLIC-callable `SECURITY DEFINER` functions: `0`;
+- authenticated workflow helper access retained: `true`;
+- service-role internal helper access retained: `true`;
+- browser execution on internal trigger helpers: `false`.
+
+The full audit was then rerun. The former anonymous-mutation, privileged-RPC and unsafe-search-path categories no longer appeared. Remaining rows are the expected RLS-protected SELECT/column grants, authenticated defaults and non-privileged RPC review items:
+
+| Severity | Category | Count |
+| --- | --- | ---: |
+| Critical | Column privileges | 231 |
+| Critical | Default privileges | 12 |
+| Review | Column privileges | 246 |
+| Review | Default privileges | 12 |
+| Review | RPC exposure | 15 |
+
+The two remaining `Critical` labels are conservative audit classifications for anonymous SELECT/default grants. No public table with API grants lacks RLS, so these are retained for the intended public/RLS-controlled read paths and remain subject to periodic review.
