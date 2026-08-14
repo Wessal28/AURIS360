@@ -22,6 +22,8 @@ Phase 2E migrated another 71 attributes from Document Control, Risk Assessment a
 
 Phase 2F migrated all 99 attributes from Objectives & KPIs, SWMS, Contractor Management and Tools & Equipment into 76 precompiled handlers. No dynamic-command fallback was required. The loaded-module backlog is now 166 across Training & Competency, BBS Observations and Safety Engagement.
 
+Phase 2G migrated all 75 attributes from Training & Competency and BBS Observations into 53 precompiled handlers plus the strict namespace dispatcher for two reusable BBS render helpers. Only the 91 Safety Engagement handlers remain before `script-src-attr 'unsafe-inline'` can be removed.
+
 The interface also contains inline style attributes. Style CSP remains report-only with `'unsafe-inline'` until these declarations are moved into reusable classes or a nonce/hash strategy is adopted.
 
 ## Security effect

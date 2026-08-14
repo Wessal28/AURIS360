@@ -262,7 +262,7 @@ imv2ConfigGroup(args[0])
     var command = decodeURIComponent(encodedCommand);
     splitTopLevel(command, ';').forEach(function (statement) {
       var match = /^([A-Za-z_$][\w$]*)\((.*)\)$/.exec(statement);
-      var allowed = namespace === 'dcx' ? /^dcx[A-Z]\w*$/ : /^(?:noise|imv2)[A-Z]\w*$/;
+      var allowed = namespace === 'dcx' ? /^dcx[A-Z]\w*$/ : namespace === 'bbs' ? /^bbs[A-Z]\w*$/ : /^(?:noise|imv2)[A-Z]\w*$/;
       if (!match || !allowed.test(match[1])) throw new Error('Rejected module command');
       var target = window[match[1]];
       if (typeof target !== 'function') throw new Error('Unknown module command');
