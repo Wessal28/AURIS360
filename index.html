@@ -63,6 +63,7 @@
 <link rel="stylesheet" href="auris-work-schedule.css?v=20260814-1">
 <link rel="stylesheet" href="auris-incident-management-static.css?v=20260814-1">
 <link rel="stylesheet" href="auris-bbs-observation-static.css?v=20260814-1">
+<link rel="stylesheet" href="auris-audits-inspections-static.css?v=20260814-1">
 </head>
 <body>
 <div id="login-screen">
@@ -2383,9 +2384,9 @@
 <div class="page-header">
 <div>
 <div class="page-title">Audits &amp; Inspections</div>
-<div style="font-size:12px;color:var(--text2)" id="insp-subtitle">Workplace - Equipment - PPE - Fire - Environmental - ISO Audits - Regulatory</div>
+<div id="insp-subtitle" class="auris-audit-s-7299078644">Workplace - Equipment - PPE - Fire - Environmental - ISO Audits - Regulatory</div>
 </div>
-<div style="display:flex;gap:8px" id="insp-header-btns">
+<div id="insp-header-btns" class="auris-audit-s-9c40389b4a">
 <button class="btn" id="audit-print-current-btn" data-auris-onclick="h0288"><i class="ti ti-printer"></i>Print current view</button>
 <button class="btn btn-primary" id="insp-new-btn" data-auris-onclick="h0289"><i class="ti ti-plus"></i>New inspection</button>
 <button class="btn btn-sm" data-auris-onclick="h0290" title="Print PDF"><i class="ti ti-printer"></i>Print PDF</button>
@@ -2393,35 +2394,35 @@
 </div>
 
 <!-- Metrics -->
-<div style="display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin-bottom:14px">
-<div class="card" style="padding:10px 12px;border-left:4px solid #185FA5"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase">Total</div><div style="font-size:22px;font-weight:800;color:#185FA5" id="audit-m3total">-</div></div>
-<div class="card" style="padding:10px 12px;border-left:4px solid #1D9E75"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase">Completed</div><div style="font-size:22px;font-weight:800;color:#1D9E75" id="audit-m3done">-</div></div>
-<div class="card" style="padding:10px 12px;border-left:4px solid #DC2626"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase">Open Findings</div><div style="font-size:22px;font-weight:800;color:#DC2626" id="audit-m3findings">-</div></div>
-<div class="card" style="padding:10px 12px;border-left:4px solid #EF9F27"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase">Overdue</div><div style="font-size:22px;font-weight:800;color:#EF9F27" id="audit-m3overdue">-</div></div>
-<div class="card" style="padding:10px 12px;border-left:4px solid #8B5CF6"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase">Major NCs</div><div style="font-size:22px;font-weight:800;color:#8B5CF6" id="audit-m3major">-</div></div>
-<div class="card" style="padding:10px 12px;border-left:4px solid #0891B2"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase">Avg Score</div><div style="font-size:22px;font-weight:800;color:#0891B2" id="audit-m3score">-</div></div>
+<div class="auris-audit-s-0b8cad26ad">
+<div class="card auris-audit-s-b6d403ee7e"><div class="auris-audit-s-d68348462c">Total</div><div id="audit-m3total" class="auris-audit-s-6f56b8363e">-</div></div>
+<div class="card auris-audit-s-7a5e61eb83"><div class="auris-audit-s-d68348462c">Completed</div><div id="audit-m3done" class="auris-audit-s-1e4fd5f9ed">-</div></div>
+<div class="card auris-audit-s-03bd966c28"><div class="auris-audit-s-d68348462c">Open Findings</div><div id="audit-m3findings" class="auris-audit-s-ffe267bce1">-</div></div>
+<div class="card auris-audit-s-c70473e794"><div class="auris-audit-s-d68348462c">Overdue</div><div id="audit-m3overdue" class="auris-audit-s-2062f090bc">-</div></div>
+<div class="card auris-audit-s-24ac637923"><div class="auris-audit-s-d68348462c">Major NCs</div><div id="audit-m3major" class="auris-audit-s-bc6456303a">-</div></div>
+<div class="card auris-audit-s-a5cd1e43c2"><div class="auris-audit-s-d68348462c">Avg Score</div><div id="audit-m3score" class="auris-audit-s-48aeeeda5f">-</div></div>
 </div>
 
 <!-- Tab bar -->
-<div style="display:flex;gap:0;margin-bottom:14px;border-bottom:2px solid var(--border);overflow-x:auto">
-<button class="mtg-tab active" id="insp-tab-all"          data-auris-onclick="h0291"          style="white-space:nowrap">All</button>
-<button class="mtg-tab"        id="insp-tab-workplace"    data-auris-onclick="h0292"    style="white-space:nowrap">Workplace</button>
-<button class="mtg-tab"        id="insp-tab-behavioral"   data-auris-onclick="h0293"   style="white-space:nowrap">Behavioral</button>
-<button class="mtg-tab"        id="insp-tab-equipment"    data-auris-onclick="h0294"    style="white-space:nowrap">Equipment</button>
-<button class="mtg-tab"        id="insp-tab-ppe"          data-auris-onclick="h0295"          style="white-space:nowrap">PPE</button>
-<button class="mtg-tab"        id="insp-tab-fire"         data-auris-onclick="h0296"         style="white-space:nowrap">Fire</button>
-<button class="mtg-tab"        id="insp-tab-environmental" data-auris-onclick="h0297" style="white-space:nowrap">Environmental</button>
-<button class="mtg-tab"        id="insp-tab-audit"        data-auris-onclick="h0298"        style="white-space:nowrap">Audits</button>
-<button class="mtg-tab"        id="insp-tab-prestart"     data-auris-onclick="h0299"     style="white-space:nowrap">Pre-Start</button>
-<button class="mtg-tab"        id="insp-tab-findings"     data-auris-onclick="h0300"     style="white-space:nowrap">Findings</button>
+<div class="auris-audit-s-0904085f3d">
+<button class="mtg-tab active auris-audit-s-eb99a4c193" id="insp-tab-all"          data-auris-onclick="h0291"         >All</button>
+<button class="mtg-tab auris-audit-s-eb99a4c193"        id="insp-tab-workplace"    data-auris-onclick="h0292"   >Workplace</button>
+<button class="mtg-tab auris-audit-s-eb99a4c193"        id="insp-tab-behavioral"   data-auris-onclick="h0293"  >Behavioral</button>
+<button class="mtg-tab auris-audit-s-eb99a4c193"        id="insp-tab-equipment"    data-auris-onclick="h0294"   >Equipment</button>
+<button class="mtg-tab auris-audit-s-eb99a4c193"        id="insp-tab-ppe"          data-auris-onclick="h0295"         >PPE</button>
+<button class="mtg-tab auris-audit-s-eb99a4c193"        id="insp-tab-fire"         data-auris-onclick="h0296"        >Fire</button>
+<button class="mtg-tab auris-audit-s-eb99a4c193"        id="insp-tab-environmental" data-auris-onclick="h0297">Environmental</button>
+<button class="mtg-tab auris-audit-s-eb99a4c193"        id="insp-tab-audit"        data-auris-onclick="h0298"       >Audits</button>
+<button class="mtg-tab auris-audit-s-eb99a4c193"        id="insp-tab-prestart"     data-auris-onclick="h0299"    >Pre-Start</button>
+<button class="mtg-tab auris-audit-s-eb99a4c193"        id="insp-tab-findings"     data-auris-onclick="h0300"    >Findings</button>
 </div>
 
 <!-- -- REGISTER (list view used by all/workplace/equipment etc tabs) -- -->
 <div id="audit-view-register">
-<div class="card" style="margin-bottom:12px;padding:10px 14px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
-<div style="display:flex;gap:8px;flex-wrap:wrap">
-<input type="text" id="audit-search" placeholder="Search ref, site, type..." data-auris-oninput="h0301" style="padding:7px 12px;border:1px solid var(--border);border-radius:8px;font-size:12px;width:200px"/>
-<select id="audit-filter-type" data-auris-onchange="h0302" style="padding:7px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px">
+<div class="card auris-audit-s-e2e1112055">
+<div class="auris-audit-s-c9dc9b5648">
+<input type="text" id="audit-search" class="auris-audit-s-05bdd3e62a" placeholder="Search ref, site, type..." data-auris-oninput="h0301"/>
+<select id="audit-filter-type" class="auris-audit-s-d35063206b" data-auris-onchange="h0302">
 <option value="">All types</option>
 <option value="workplace">Workplace</option><option value="behavioral">Behavioral</option>
 <option value="equipment">Equipment</option><option value="ppe">PPE</option>
@@ -2430,40 +2431,40 @@
 <option value="supplier_audit">Supplier Audit</option><option value="contractor_audit">Contractor Audit</option>
 <option value="regulatory">Regulatory</option>
 </select>
-<select id="audit-filter-status" data-auris-onchange="h0302" style="padding:7px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px">
+<select id="audit-filter-status" class="auris-audit-s-d35063206b" data-auris-onchange="h0302">
 <option value="">All statuses</option>
 <option value="open">Open</option><option value="in_progress">In Progress</option>
 <option value="completed">Completed</option><option value="closed">Closed</option>
 </select>
 </div>
-<div style="font-size:12px;color:var(--text2)" id="audit-filter-label"></div>
+<div id="audit-filter-label" class="auris-audit-s-7299078644"></div>
 </div>
 <div id="audit-register-list"><div class="loading-msg">Loading...</div></div>
 </div>
 
 <!-- -- PRE-START TAB -- -->
-<div id="audit-view-prestart" style="display:none">
-<div class="card" style="margin-bottom:12px;padding:10px 14px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
-<div class="card-title" style="margin:0">Pre-Start Inspections</div>
-<button class="btn btn-primary" id="ps-add-btn" data-auris-onclick="h0303" style="display:none"><i class="ti ti-plus"></i>New pre-start</button>
+<div id="audit-view-prestart" class="auris-audit-s-6aa34d7432">
+<div class="card auris-audit-s-e2e1112055">
+<div class="card-title auris-audit-s-ab79ea2b85">Pre-Start Inspections</div>
+<button class="btn btn-primary auris-audit-s-6aa34d7432" id="ps-add-btn" data-auris-onclick="h0303"><i class="ti ti-plus"></i>New pre-start</button>
 </div>
 <div id="ps-list-view">
 <div id="ps-list"><div class="loading-msg">Loading...</div></div>
 </div>
-<div id="ps-form3view" style="display:none">
-<div class="card" style="margin-bottom:14px;padding:0;overflow:hidden">
-<div style="padding:14px 20px;background:linear-gradient(135deg,#1a3a5c,#185FA5);color:#fff;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
-<div style="font-size:17px;font-weight:800" id="ps-form3title">Pre-Start Inspection</div>
-<div style="display:flex;gap:8px">
-<button class="btn" style="background:rgba(255,255,255,.2);color:#fff;border-color:rgba(255,255,255,.3)" data-auris-onclick="h0304"><i class="ti ti-arrow-left"></i>Back</button>
-<button id="ps-delete-btn" class="btn" style="display:none;background:rgba(220,38,38,.3);color:#fff;border-color:rgba(220,38,38,.5)" data-auris-onclick="h0305"><i class="ti ti-trash"></i></button>
-<button class="btn" style="background:#1D9E75;color:#fff;border-color:#1D9E75" data-auris-onclick="h0306"><i class="ti ti-device-floppy"></i>Save</button>
+<div id="ps-form3view" class="auris-audit-s-6aa34d7432">
+<div class="card auris-audit-s-54ec8874e7">
+<div class="auris-audit-s-6e86c59eb5">
+<div id="ps-form3title" class="auris-audit-s-75021e57ca">Pre-Start Inspection</div>
+<div class="auris-audit-s-9c40389b4a">
+<button class="btn auris-audit-s-5c09edd131" data-auris-onclick="h0304"><i class="ti ti-arrow-left"></i>Back</button>
+<button id="ps-delete-btn" class="btn auris-audit-s-0e610f7b67" data-auris-onclick="h0305"><i class="ti ti-trash"></i></button>
+<button class="btn auris-audit-s-c7b9e5b2c7" data-auris-onclick="h0306"><i class="ti ti-device-floppy"></i>Save</button>
 </div>
 </div>
 </div>
-<div style="display:grid;grid-template-columns:2fr 1fr;gap:14px">
+<div class="auris-audit-s-5571af1e74">
 <div>
-<div class="card" style="margin-bottom:14px"><div class="card-title">Task Details</div>
+<div class="card auris-audit-s-42a6ced8b6"><div class="card-title">Task Details</div>
 <div class="form3row">
 <div class="form3group"><label class="form3label">Activity / task</label><input type="text" id="ps-activity" placeholder="e.g. Excavation, Crane lift..."/></div>
 <div class="form3group"><label class="form3label">Location</label><input type="text" id="ps-location"/></div>
@@ -2475,47 +2476,47 @@
 <div class="form3group"><label class="form3label">Team members</label><input type="text" id="ps-team" placeholder="Names of team..."/></div>
 </div>
 <div class="form3row">
-<div class="form3group"><label class="form3label">Risk assessment ref</label><select id="ps-ra-ref" style="font-family:monospace"><option value="">Select risk assessment...</option></select></div>
-<div class="form3group"><label class="form3label">Permit to Work ref</label><input type="text" id="ps-ptw-ref" style="font-family:monospace"/></div>
+<div class="form3group"><label class="form3label">Risk assessment ref</label><select id="ps-ra-ref" class="auris-audit-s-7b8c3df564"><option value="">Select risk assessment...</option></select></div>
+<div class="form3group"><label class="form3label">Permit to Work ref</label><input type="text" id="ps-ptw-ref" class="auris-audit-s-7b8c3df564"/></div>
 </div>
 </div>
-<div class="card" style="margin-bottom:14px"><div class="card-title">Checklist</div>
-<div style="font-size:12px;color:var(--text2);margin-bottom:8px">Score: <strong id="ps-score">-</strong></div>
+<div class="card auris-audit-s-42a6ced8b6"><div class="card-title">Checklist</div>
+<div class="auris-audit-s-46744debb8">Score: <strong id="ps-score">-</strong></div>
 <div id="ps-checklist-body"></div>
 </div>
-<div class="card" style="margin-bottom:14px"><div class="card-title">Hazards &amp; Controls</div>
-<div class="form3group"><label class="form3label">Identified hazards</label><textarea id="ps-hazards" style="min-height:60px"></textarea></div>
-<div class="form3group"><label class="form3label">Controls in place</label><textarea id="ps-controls" style="min-height:60px"></textarea></div>
+<div class="card auris-audit-s-42a6ced8b6"><div class="card-title">Hazards &amp; Controls</div>
+<div class="form3group"><label class="form3label">Identified hazards</label><textarea id="ps-hazards" class="auris-audit-s-07bdff4587"></textarea></div>
+<div class="form3group"><label class="form3label">Controls in place</label><textarea id="ps-controls" class="auris-audit-s-07bdff4587"></textarea></div>
 </div>
-<div class="card" style="margin-bottom:14px"><div class="card-title">PPE Checks</div>
+<div class="card auris-audit-s-42a6ced8b6"><div class="card-title">PPE Checks</div>
 <div id="ps-ppe-checks" class="prestart-check-grid">
-<label class="prestart-check-item"><input type="checkbox" style="accent-color:var(--green)"/><span>Hard hat</span></label>
-<label class="prestart-check-item"><input type="checkbox" style="accent-color:var(--green)"/><span>Safety glasses</span></label>
-<label class="prestart-check-item"><input type="checkbox" style="accent-color:var(--green)"/><span>Safety boots</span></label>
-<label class="prestart-check-item"><input type="checkbox" style="accent-color:var(--green)"/><span>Hi-vis vest</span></label>
-<label class="prestart-check-item"><input type="checkbox" style="accent-color:var(--green)"/><span>Gloves</span></label>
-<label class="prestart-check-item"><input type="checkbox" style="accent-color:var(--green)"/><span>Harness (WAH)</span></label>
-<label class="prestart-check-item"><input type="checkbox" style="accent-color:var(--green)"/><span>Respirator</span></label>
-<label class="prestart-check-item"><input type="checkbox" style="accent-color:var(--green)"/><span>Hearing protection</span></label>
+<label class="prestart-check-item"><input class="auris-audit-s-283f12d7fe" type="checkbox"/><span>Hard hat</span></label>
+<label class="prestart-check-item"><input class="auris-audit-s-283f12d7fe" type="checkbox"/><span>Safety glasses</span></label>
+<label class="prestart-check-item"><input class="auris-audit-s-283f12d7fe" type="checkbox"/><span>Safety boots</span></label>
+<label class="prestart-check-item"><input class="auris-audit-s-283f12d7fe" type="checkbox"/><span>Hi-vis vest</span></label>
+<label class="prestart-check-item"><input class="auris-audit-s-283f12d7fe" type="checkbox"/><span>Gloves</span></label>
+<label class="prestart-check-item"><input class="auris-audit-s-283f12d7fe" type="checkbox"/><span>Harness (WAH)</span></label>
+<label class="prestart-check-item"><input class="auris-audit-s-283f12d7fe" type="checkbox"/><span>Respirator</span></label>
+<label class="prestart-check-item"><input class="auris-audit-s-283f12d7fe" type="checkbox"/><span>Hearing protection</span></label>
 </div>
-<div class="form3group" style="margin-top:8px"><label class="form3label">Additional PPE required</label><input type="text" id="ps-ppe-extra"/></div>
+<div class="form3group auris-audit-s-43a97fe494"><label class="form3label">Additional PPE required</label><input type="text" id="ps-ppe-extra"/></div>
 </div>
 </div>
 <div>
-<div class="card" style="margin-bottom:14px"><div class="card-title">Toolbox Talk</div>
-<label class="prestart-check-single" for="ps-tbt-done" style="margin-bottom:8px"><input type="checkbox" id="ps-tbt-done" style="accent-color:var(--green)"/><span>Toolbox talk completed</span></label>
+<div class="card auris-audit-s-42a6ced8b6"><div class="card-title">Toolbox Talk</div>
+<label class="prestart-check-single auris-audit-s-8e26c5f7a1" for="ps-tbt-done"><input type="checkbox" id="ps-tbt-done" class="auris-audit-s-283f12d7fe"/><span>Toolbox talk completed</span></label>
 <div class="form3group"><label class="form3label">Topics covered</label><input type="text" id="ps-tbt-topics" placeholder="Key topics discussed..."/></div>
 </div>
-<div class="card" style="margin-bottom:14px"><div class="card-title">Stop Work Authority</div>
-<label class="prestart-check-single" for="ps-stop-work" style="margin-bottom:8px"><input type="checkbox" id="ps-stop-work" style="accent-color:var(--green)"/><span>Team briefed on Stop Work Authority</span></label>
+<div class="card auris-audit-s-42a6ced8b6"><div class="card-title">Stop Work Authority</div>
+<label class="prestart-check-single auris-audit-s-8e26c5f7a1" for="ps-stop-work"><input type="checkbox" id="ps-stop-work" class="auris-audit-s-283f12d7fe"/><span>Team briefed on Stop Work Authority</span></label>
 </div>
-<div class="card" style="margin-bottom:14px;border:2px solid var(--green)"><div class="card-title" style="color:#065F46">Go / Hold / Stop</div>
-<div style="display:flex;flex-direction:column;gap:8px">
-<label style="display:flex;align-items:center;gap:8px;padding:8px;border-radius:8px;cursor:pointer;background:#f0fdf4;border:1px solid #bbf7d0"><input type="radio" name="ps-dec" value="go" style="accent-color:var(--green)" checked/><span style="font-weight:700;color:#166534;font-size:13px" id="ps-decision-go-lbl">GO - Safe to proceed</span></label>
-<label style="display:flex;align-items:center;gap:8px;padding:8px;border-radius:8px;cursor:pointer;background:#FEF9EC;border:1px solid #fcd34d"><input type="radio" name="ps-dec" value="hold" style="accent-color:#EF9F27"/><span style="font-weight:700;color:#854F0B;font-size:13px" id="ps-decision-hold-lbl">HOLD - Issues to resolve</span></label>
-<label style="display:flex;align-items:center;gap:8px;padding:8px;border-radius:8px;cursor:pointer;background:#FEF2F2;border:1px solid #fecaca"><input type="radio" name="ps-dec" value="stop" style="accent-color:var(--red)"/><span style="font-weight:700;color:#991B1B;font-size:13px" id="ps-decision-stop-lbl">STOP - Do NOT proceed</span></label>
+<div class="card auris-audit-s-d6a6bf375f"><div class="card-title auris-audit-s-ea719d3b52">Go / Hold / Stop</div>
+<div class="auris-audit-s-0fbf9e859f">
+<label class="auris-audit-s-c5a78eb56a"><input class="auris-audit-s-283f12d7fe" type="radio" name="ps-dec" value="go" checked/><span id="ps-decision-go-lbl" class="auris-audit-s-396e3458a1">GO - Safe to proceed</span></label>
+<label class="auris-audit-s-00ff6b8c67"><input class="auris-audit-s-90cf399257" type="radio" name="ps-dec" value="hold"/><span id="ps-decision-hold-lbl" class="auris-audit-s-2357285a1c">HOLD - Issues to resolve</span></label>
+<label class="auris-audit-s-9a709e2a2d"><input class="auris-audit-s-af62d68b87" type="radio" name="ps-dec" value="stop"/><span id="ps-decision-stop-lbl" class="auris-audit-s-2d66399f0c">STOP - Do NOT proceed</span></label>
 </div>
-<div class="form3group" style="margin-top:8px"><label class="form3label">Decision notes</label><textarea id="ps-decision-notes" style="min-height:50px"></textarea></div>
+<div class="form3group auris-audit-s-43a97fe494"><label class="form3label">Decision notes</label><textarea id="ps-decision-notes" class="auris-audit-s-2b013fa0d9"></textarea></div>
 </div>
 <div class="card"><div class="card-title">Sign-off</div>
 <div class="form3group"><label class="form3label">Supervisor / Inspector name</label><input type="text" id="ps-sign-name"/></div>
@@ -2527,16 +2528,16 @@
 </div>
 
 <!-- -- FINDINGS TAB -- -->
-<div id="audit-view-findings" style="display:none">
-<div class="card" style="margin-bottom:12px;padding:10px 14px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
-<div class="card-title" style="margin:0">Audit Findings &amp; Non-Conformances</div>
-<div style="display:flex;gap:8px">
-<select id="findings-filter-type" data-auris-onchange="h0307" style="padding:7px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px">
+<div id="audit-view-findings" class="auris-audit-s-6aa34d7432">
+<div class="card auris-audit-s-e2e1112055">
+<div class="card-title auris-audit-s-ab79ea2b85">Audit Findings &amp; Non-Conformances</div>
+<div class="auris-audit-s-9c40389b4a">
+<select id="findings-filter-type" class="auris-audit-s-d35063206b" data-auris-onchange="h0307">
 <option value="">All types</option>
 <option value="major_nc">Major NC</option><option value="minor_nc">Minor NC</option>
 <option value="observation">Observation</option><option value="opportunity">Opportunity</option>
 </select>
-<select id="findings-filter-status" data-auris-onchange="h0307" style="padding:7px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px">
+<select id="findings-filter-status" class="auris-audit-s-d35063206b" data-auris-onchange="h0307">
 <option value="">All statuses</option>
 <option value="open">Open</option><option value="in_progress">In progress</option><option value="closed">Closed</option>
 </select>
@@ -2546,42 +2547,42 @@
 </div>
 
 <!-- ---------- MAIN INSPECTION / AUDIT FORM ---------- -->
-<div id="audit-form3view" style="display:none">
-<div class="card" style="margin-bottom:14px;padding:0;overflow:hidden">
-<div id="audit-form3banner" style="padding:16px 24px;background:linear-gradient(135deg,#1a3a5c,#185FA5);color:#fff;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px">
+<div id="audit-form3view" class="auris-audit-s-6aa34d7432">
+<div class="card auris-audit-s-54ec8874e7">
+<div id="audit-form3banner" class="auris-audit-s-69e187f31c">
 <div>
-<div style="font-size:11px;font-weight:600;text-transform:uppercase;opacity:.8;letter-spacing:.08em;margin-bottom:4px" id="audit-form3type-label">Inspection</div>
-<div style="font-size:18px;font-weight:800" id="audit-form3title">New Inspection</div>
-<div style="font-family:monospace;font-size:12px;color:#a8d8f0;margin-top:3px" id="audit-form3ref">REF-AUTO</div>
+<div id="audit-form3type-label" class="auris-audit-s-c542f2bc2e">Inspection</div>
+<div id="audit-form3title" class="auris-audit-s-e56ce903a9">New Inspection</div>
+<div id="audit-form3ref" class="auris-audit-s-9abe12cdf2">REF-AUTO</div>
 </div>
-<div style="display:flex;gap:8px;flex-wrap:wrap">
-<button class="btn" style="background:rgba(255,255,255,.2);color:#fff;border-color:rgba(255,255,255,.3)" data-auris-onclick="h0308"><i class="ti ti-arrow-left"></i>Back</button>
-<button id="audit-delete-btn" class="btn" style="display:none;background:rgba(220,38,38,.3);color:#fff;border-color:rgba(220,38,38,.5)" data-auris-onclick="h0309"><i class="ti ti-trash"></i></button>
-<button class="btn" id="audit-ai-btn" style="background:#fff;color:#5B21B6;font-weight:700" data-auris-onclick="h0310"><i class="ti ti-robot"></i>AI Site Inspector</button><button class="btn" style="background:#fff;color:#185FA5;font-weight:700" data-auris-onclick="h0311"><i class="ti ti-device-floppy"></i>Save</button>
+<div class="auris-audit-s-c9dc9b5648">
+<button class="btn auris-audit-s-5c09edd131" data-auris-onclick="h0308"><i class="ti ti-arrow-left"></i>Back</button>
+<button id="audit-delete-btn" class="btn auris-audit-s-0e610f7b67" data-auris-onclick="h0309"><i class="ti ti-trash"></i></button>
+<button class="btn auris-audit-s-c35b8f39aa" id="audit-ai-btn" data-auris-onclick="h0310"><i class="ti ti-robot"></i>AI Site Inspector</button><button class="btn auris-audit-s-7e63926b0f" data-auris-onclick="h0311"><i class="ti ti-device-floppy"></i>Save</button>
 </div>
 </div>
 </div>
 
-<div style="display:grid;grid-template-columns:1fr;gap:14px">
+<div class="auris-audit-s-fb0b03cf30">
 <div>
 <!-- Inspection type selector -->
-<div class="card" style="margin-bottom:14px"><div class="card-title">Inspection / Audit Type</div>
-<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px;margin-bottom:12px" id="audit-type-grid">
-<div class="audit-type-btn" data-type="workplace"       data-auris-onclick="h0312"       style="padding:8px;border-radius:8px;text-align:center;cursor:pointer;border:2px solid #bfdbfe;background:#EFF6FF;transition:all .15s"><div style="font-size:18px;margin-bottom:3px"><i class="ti ti-circle-dot"></i></div><div style="font-weight:700;font-size:10px;color:#1e40af">Workplace</div></div>
-<div class="audit-type-btn" data-type="behavioral"      data-auris-onclick="h0313"      style="padding:8px;border-radius:8px;text-align:center;cursor:pointer;border:2px solid #ddd6fe;background:#F5F3FF;transition:all .15s"><div style="font-size:18px;margin-bottom:3px"><i class="ti ti-circle-dot"></i></div><div style="font-weight:700;font-size:10px;color:#5B21B6">Behavioral</div></div>
-<div class="audit-type-btn" data-type="equipment"       data-auris-onclick="h0314"       style="padding:8px;border-radius:8px;text-align:center;cursor:pointer;border:2px solid #fed7aa;background:#FFF7ED;transition:all .15s"><div style="font-size:18px;margin-bottom:3px"><i class="ti ti-circle-dot"></i></div><div style="font-weight:700;font-size:10px;color:#9A3412">Equipment</div></div>
-<div class="audit-type-btn" data-type="ppe"             data-auris-onclick="h0315"             style="padding:8px;border-radius:8px;text-align:center;cursor:pointer;border:2px solid #a7f3d0;background:#ECFDF5;transition:all .15s"><div style="font-size:18px;margin-bottom:3px"><i class="ti ti-circle-dot"></i></div><div style="font-weight:700;font-size:10px;color:#065F46">PPE</div></div>
-<div class="audit-type-btn" data-type="fire"            data-auris-onclick="h0316"            style="padding:8px;border-radius:8px;text-align:center;cursor:pointer;border:2px solid #fecaca;background:#FEF2F2;transition:all .15s"><div style="font-size:18px;margin-bottom:3px"><i class="ti ti-circle-dot"></i></div><div style="font-weight:700;font-size:10px;color:#991B1B">Fire</div></div>
-<div class="audit-type-btn" data-type="environmental"   data-auris-onclick="h0317"   style="padding:8px;border-radius:8px;text-align:center;cursor:pointer;border:2px solid #a7f3d0;background:#ECFDF5;transition:all .15s"><div style="font-size:18px;margin-bottom:3px"><i class="ti ti-circle-dot"></i></div><div style="font-weight:700;font-size:10px;color:#065F46">Environmental</div></div>
-<div class="audit-type-btn" data-type="iso_audit"       data-auris-onclick="h0318"       style="padding:8px;border-radius:8px;text-align:center;cursor:pointer;border:2px solid #e5e7eb;background:#f9fafb;transition:all .15s"><div style="font-size:18px;margin-bottom:3px"><i class="ti ti-circle-dot"></i></div><div style="font-weight:700;font-size:10px;color:#374151">ISO Audit</div></div>
-<div class="audit-type-btn" data-type="internal_audit"  data-auris-onclick="h0319"  style="padding:8px;border-radius:8px;text-align:center;cursor:pointer;border:2px solid #bfdbfe;background:#EFF6FF;transition:all .15s"><div style="font-size:18px;margin-bottom:3px"><i class="ti ti-circle-dot"></i></div><div style="font-weight:700;font-size:10px;color:#1e40af">Internal</div></div>
-<div class="audit-type-btn" data-type="supplier_audit"  data-auris-onclick="h0320"  style="padding:8px;border-radius:8px;text-align:center;cursor:pointer;border:2px solid #fcd34d;background:#FFFBEB;transition:all .15s"><div style="font-size:18px;margin-bottom:3px"><i class="ti ti-circle-dot"></i></div><div style="font-weight:700;font-size:10px;color:#854F0B">Supplier</div></div>
-<div class="audit-type-btn" data-type="contractor_audit" data-auris-onclick="h0321" style="padding:8px;border-radius:8px;text-align:center;cursor:pointer;border:2px solid #fed7aa;background:#FFF7ED;transition:all .15s"><div style="font-size:18px;margin-bottom:3px"><i class="ti ti-circle-dot"></i></div><div style="font-weight:700;font-size:10px;color:#9A3412">Contractor</div></div>
-<div class="audit-type-btn" data-type="regulatory"      data-auris-onclick="h0322"      style="padding:8px;border-radius:8px;text-align:center;cursor:pointer;border:2px solid #fecaca;background:#FEF2F2;transition:all .15s"><div style="font-size:18px;margin-bottom:3px"><i class="ti ti-circle-dot"></i></div><div style="font-weight:700;font-size:10px;color:#991B1B">Regulatory</div></div>
+<div class="card auris-audit-s-42a6ced8b6"><div class="card-title">Inspection / Audit Type</div>
+<div id="audit-type-grid" class="auris-audit-s-aa38d5c883">
+<div class="audit-type-btn auris-audit-s-dcb3822756" data-type="workplace"       data-auris-onclick="h0312"      ><div class="auris-audit-s-3065389727"><i class="ti ti-circle-dot"></i></div><div class="auris-audit-s-0cddb99246">Workplace</div></div>
+<div class="audit-type-btn auris-audit-s-3b6e6bea9a" data-type="behavioral"      data-auris-onclick="h0313"     ><div class="auris-audit-s-3065389727"><i class="ti ti-circle-dot"></i></div><div class="auris-audit-s-b62d91472a">Behavioral</div></div>
+<div class="audit-type-btn auris-audit-s-5e0beb166e" data-type="equipment"       data-auris-onclick="h0314"      ><div class="auris-audit-s-3065389727"><i class="ti ti-circle-dot"></i></div><div class="auris-audit-s-e30a855fa5">Equipment</div></div>
+<div class="audit-type-btn auris-audit-s-a04e4109e3" data-type="ppe"             data-auris-onclick="h0315"            ><div class="auris-audit-s-3065389727"><i class="ti ti-circle-dot"></i></div><div class="auris-audit-s-1b883c2068">PPE</div></div>
+<div class="audit-type-btn auris-audit-s-22dbfce4ab" data-type="fire"            data-auris-onclick="h0316"           ><div class="auris-audit-s-3065389727"><i class="ti ti-circle-dot"></i></div><div class="auris-audit-s-629b69c674">Fire</div></div>
+<div class="audit-type-btn auris-audit-s-a04e4109e3" data-type="environmental"   data-auris-onclick="h0317"  ><div class="auris-audit-s-3065389727"><i class="ti ti-circle-dot"></i></div><div class="auris-audit-s-1b883c2068">Environmental</div></div>
+<div class="audit-type-btn auris-audit-s-586b65af55" data-type="iso_audit"       data-auris-onclick="h0318"      ><div class="auris-audit-s-3065389727"><i class="ti ti-circle-dot"></i></div><div class="auris-audit-s-40fa4ebb41">ISO Audit</div></div>
+<div class="audit-type-btn auris-audit-s-dcb3822756" data-type="internal_audit"  data-auris-onclick="h0319" ><div class="auris-audit-s-3065389727"><i class="ti ti-circle-dot"></i></div><div class="auris-audit-s-0cddb99246">Internal</div></div>
+<div class="audit-type-btn auris-audit-s-b6bc008f19" data-type="supplier_audit"  data-auris-onclick="h0320" ><div class="auris-audit-s-3065389727"><i class="ti ti-circle-dot"></i></div><div class="auris-audit-s-d03950a2d8">Supplier</div></div>
+<div class="audit-type-btn auris-audit-s-5e0beb166e" data-type="contractor_audit" data-auris-onclick="h0321"><div class="auris-audit-s-3065389727"><i class="ti ti-circle-dot"></i></div><div class="auris-audit-s-e30a855fa5">Contractor</div></div>
+<div class="audit-type-btn auris-audit-s-22dbfce4ab" data-type="regulatory"      data-auris-onclick="h0322"     ><div class="auris-audit-s-3065389727"><i class="ti ti-circle-dot"></i></div><div class="auris-audit-s-629b69c674">Regulatory</div></div>
 </div>
 <input type="hidden" id="audit-type" value="workplace"/>
 <!-- ISO/Audit standard selector (shown for audit types) -->
-<div id="audit-standard-row" style="display:none">
+<div id="audit-standard-row" class="auris-audit-s-6aa34d7432">
 <div class="form3row">
 <div class="form3group"><label class="form3label">Audit standard</label>
 <select id="audit-standard"><option value="">Select...</option><option value="ISO 45001">ISO 45001:2018 - OH&S</option><option value="ISO 14001">ISO 14001:2015 - Environmental</option><option value="ISO 9001">ISO 9001:2015 - Quality</option><option value="ISO 50001">ISO 50001 - Energy</option><option value="OHSAS 18001">OHSAS 18001</option><option value="Internal">Internal standard</option><option value="Regulatory">Regulatory requirement</option><option value="Custom">Custom / other</option></select></div>
@@ -2596,7 +2597,7 @@
 </div>
 
 <!-- Core details -->
-<div class="card" style="margin-bottom:14px"><div class="card-title">Details</div>
+<div class="card auris-audit-s-42a6ced8b6"><div class="card-title">Details</div>
 <div class="form3row">
 <div class="form3group"><label class="form3label">Location / site</label><input type="text" id="if-site" placeholder="Site, area, building..."/></div>
 <div class="form3group"><label class="form3label">Department</label><input type="text" id="audit-dept"/></div>
@@ -2612,66 +2613,66 @@
 </div>
 
 <!-- Checklist with template selector -->
-<div class="card" style="margin-bottom:14px">
-<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+<div class="card auris-audit-s-42a6ced8b6">
+<div class="auris-audit-s-a219ea00cb">
 <div>
-<div class="card-title" style="margin:0;font-size:18px">Inspection Checklist</div>
-<div style="font-size:12px;color:var(--text2);margin-top:3px">Record good conditions, deficiencies, non-applicable items and notes/evidence against each requirement.</div>
+<div class="card-title auris-audit-s-e4432c4660">Inspection Checklist</div>
+<div class="auris-audit-s-9c4ae63835">Record good conditions, deficiencies, non-applicable items and notes/evidence against each requirement.</div>
 </div>
-<div style="display:flex;gap:6px;flex-wrap:wrap">
-<select id="audit-template-select" data-auris-onchange="h0323" style="padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:11px;max-width:180px">
+<div class="auris-audit-s-ed524873cf">
+<select id="audit-template-select" class="auris-audit-s-e185123999" data-auris-onchange="h0323">
 <option value="">Load template...</option>
 </select>
 <button class="btn btn-sm" data-auris-onclick="h0324"><i class="ti ti-plus"></i>Add item</button>
 </div>
 </div>
-<div style="font-size:12px;color:var(--text2);margin-bottom:8px">Score: <strong id="if-score">0 Good / 0 Insufficient</strong></div>
-<div style="overflow:auto">
-<table style="width:100%;min-width:1120px;border-collapse:collapse;font-size:12px">
-<thead><tr style="background:#185FA5;color:#fff">
-<th style="padding:10px 12px;text-align:left;width:16%;color:#fff;font-size:12px;letter-spacing:.02em">CATEGORY</th>
-<th style="padding:10px 12px;text-align:left;width:35%;color:#fff;font-size:12px;letter-spacing:.02em">ITEM / REQUIREMENT</th>
-<th style="padding:10px 8px;text-align:center;width:72px;color:#fff;font-size:12px">GOOD</th>
-<th style="padding:10px 8px;text-align:center;width:78px;color:#fff;font-size:12px">INSUF.</th>
-<th style="padding:10px 8px;text-align:center;width:64px;color:#fff;font-size:12px">N/A</th>
-<th style="padding:10px 8px;text-align:center;width:58px;color:#fff;font-size:12px">MEDIA</th>
-<th style="padding:10px 12px;text-align:left;width:30%;color:#fff;font-size:12px;letter-spacing:.02em">OBSERVATION / NOTES</th>
+<div class="auris-audit-s-46744debb8">Score: <strong id="if-score">0 Good / 0 Insufficient</strong></div>
+<div class="auris-audit-s-e2c857d54b">
+<table class="auris-audit-s-46e9bf472c">
+<thead><tr class="auris-audit-s-933cd425ec">
+<th class="auris-audit-s-bf409c23f5">CATEGORY</th>
+<th class="auris-audit-s-82700e96ad">ITEM / REQUIREMENT</th>
+<th class="auris-audit-s-a4e119245f">GOOD</th>
+<th class="auris-audit-s-a3db12fbbf">INSUF.</th>
+<th class="auris-audit-s-8dd98dcb3c">N/A</th>
+<th class="auris-audit-s-da9ee35ee8">MEDIA</th>
+<th class="auris-audit-s-dc34c936f3">OBSERVATION / NOTES</th>
 </tr></thead>
 <tbody id="if-checklist"></tbody>
 </table>
 </div>
-<div id="audit-ai-output" class="card" style="display:none;margin:12px 0 0;border:1px solid #c4b5fd;background:#f5f3ff;padding:12px 14px"></div>
+<div id="audit-ai-output" class="card auris-audit-s-0d7cedfd2a"></div>
 </div>
 
 <!-- Observations -->
-<div class="card" style="margin-bottom:14px"><div class="card-title">Overall Observations</div>
+<div class="card auris-audit-s-42a6ced8b6"><div class="card-title">Overall Observations</div>
 <div class="form3row">
-<div class="form3group"><label class="form3label" style="color:#1D9E75">Positive observations / good practices</label><textarea id="if-pos" style="min-height:60px"></textarea></div>
-<div class="form3group"><label class="form3label" style="color:#DC2626">Issues / non-conformances found</label><textarea id="if-neg" style="min-height:60px"></textarea></div>
+<div class="form3group"><label class="form3label auris-audit-s-f9faa54401">Positive observations / good practices</label><textarea id="if-pos" class="auris-audit-s-07bdff4587"></textarea></div>
+<div class="form3group"><label class="form3label auris-audit-s-c7bff90490">Issues / non-conformances found</label><textarea id="if-neg" class="auris-audit-s-07bdff4587"></textarea></div>
 </div>
 </div>
 
 <!-- Photos & Voice notes (mobile-friendly) -->
-<div class="card" style="margin-bottom:14px">
+<div class="card auris-audit-s-42a6ced8b6">
 <div class="card-title">Evidence &amp; Media</div>
-<div style="font-size:12px;color:var(--text2);margin-bottom:10px">Upload photos, documents, videos or voice notes, or paste a link when the file is already stored elsewhere.</div>
-<div id="audit-photos-list" style="display:flex;flex-direction:column;gap:6px"></div>
+<div class="auris-audit-s-fa530ed1c3">Upload photos, documents, videos or voice notes, or paste a link when the file is already stored elsewhere.</div>
+<div id="audit-photos-list" class="auris-audit-s-67c6459975"></div>
 <button class="btn btn-sm" data-auris-onclick="h0325"><i class="ti ti-plus"></i>Add evidence / media</button>
 </div>
 
 <!-- Actions -->
-<div class="card" style="margin-bottom:14px">
+<div class="card auris-audit-s-42a6ced8b6">
 <div class="card-title">Corrective Actions</div>
-<div id="if-actions-info" style="font-size:12px;color:var(--text2);margin-bottom:8px">Actions are added to the MAP module automatically on save.</div>
+<div id="if-actions-info" class="auris-audit-s-46744debb8">Actions are added to the MAP module automatically on save.</div>
 <div id="if-actions-body"></div>
-<div id="if-actions-empty" style="color:var(--text2);font-size:12px;text-align:center;padding:12px">No actions added yet</div>
+<div id="if-actions-empty" class="auris-audit-s-12ffb2e371">No actions added yet</div>
 <button class="btn btn-primary" data-auris-onclick="h0326"><i class="ti ti-plus"></i>Add action</button>
 </div>
 </div>
 
 <div>
 <!-- Sign-off -->
-<div class="card" style="margin-bottom:14px"><div class="card-title">Sign-off</div>
+<div class="card auris-audit-s-42a6ced8b6"><div class="card-title">Sign-off</div>
 <div class="form3group"><label class="form3label">Inspector / Lead auditor</label><select id="if-sign-inspector"><option value="">Select person...</option></select></div>
 <div class="form3group"><label class="form3label">Date signed</label><input type="date" id="if-sign-date"/></div>
 <div class="form3group"><label class="form3label">Reviewer</label><select id="if-sign-reviewer"><option value="">Select person...</option></select></div>
@@ -2679,19 +2680,19 @@
 </div>
 
 <!-- Findings summary (for audits) -->
-<div class="card" style="margin-bottom:14px;display:none" id="audit-findings-section">
-<div class="card-title" style="color:#DC2626">Audit Findings</div>
-<div id="audit-findings-list" style="display:flex;flex-direction:column;gap:6px"></div>
+<div class="card auris-audit-s-19dcb71206" id="audit-findings-section">
+<div class="card-title auris-audit-s-c7bff90490">Audit Findings</div>
+<div id="audit-findings-list" class="auris-audit-s-67c6459975"></div>
 <button class="btn btn-sm btn-primary" data-auris-onclick="h0327"><i class="ti ti-plus"></i>Add finding</button>
 </div>
 
 <!-- Quick stats card -->
-<div class="card" style="margin-bottom:14px;background:linear-gradient(135deg,#185FA5,#0891B2);color:#fff">
-<div style="font-size:12px;font-weight:700;margin-bottom:8px;opacity:.9">INSPECTION SCORE</div>
-<div style="font-size:36px;font-weight:900" id="audit-score-display">-</div>
-<div style="font-size:11px;opacity:.8;margin-top:4px" id="audit-score-detail"></div>
-<div style="height:6px;background:rgba(255,255,255,.2);border-radius:99px;margin-top:10px;overflow:hidden">
-<div id="audit-score-bar" style="height:100%;background:#fff;width:0%;transition:width .8s;border-radius:99px"></div>
+<div class="card auris-audit-s-d7c91cc15b">
+<div class="auris-audit-s-cab4504a7d">INSPECTION SCORE</div>
+<div id="audit-score-display" class="auris-audit-s-2fa134e30f">-</div>
+<div id="audit-score-detail" class="auris-audit-s-668913aa3f"></div>
+<div class="auris-audit-s-47562b9a3c">
+<div id="audit-score-bar" class="auris-audit-s-fcb83c7bbc"></div>
 </div>
 </div>
 
@@ -2702,9 +2703,9 @@
 <div class="form3group"><label class="form3label">Address / location description</label><input type="text" id="audit-gps-address" placeholder="Where was inspection conducted?"/></div>
 </div>
 <div class="form3row">
-<div class="form3group"><label class="form3label">Latitude</label><input type="text" id="audit-lat" style="font-family:monospace"/></div>
-<div class="form3group"><label class="form3label">Longitude</label><input type="text" id="audit-lng" style="font-family:monospace"/></div>
-<div class="form3group" style="display:flex;align-items:flex-end"><button class="btn btn-sm" data-auris-onclick="h0328" style="width:100%"><i class="ti ti-map-pin"></i>Get GPS</button></div>
+<div class="form3group"><label class="form3label">Latitude</label><input type="text" id="audit-lat" class="auris-audit-s-7b8c3df564"/></div>
+<div class="form3group"><label class="form3label">Longitude</label><input type="text" id="audit-lng" class="auris-audit-s-7b8c3df564"/></div>
+<div class="form3group auris-audit-s-c411af100d"><button class="btn btn-sm auris-audit-s-b7aa1ec004" data-auris-onclick="h0328"><i class="ti ti-map-pin"></i>Get GPS</button></div>
 </div>
 </div>
 </div>
@@ -2712,7 +2713,7 @@
 </div>
 
 <!-- OFFLINE BANNER -->
-<div id="audit-offline-banner" style="display:none;position:fixed;bottom:16px;left:50%;transform:translateX(-50%);background:#854F0B;color:#fff;padding:10px 20px;border-radius:8px;font-size:12px;font-weight:700;z-index:9999;box-shadow:0 4px 20px rgba(0,0,0,.3)">
+<div id="audit-offline-banner" class="auris-audit-s-4124031c2e">
 Offline mode - changes will sync when connection is restored
 </div>
 
