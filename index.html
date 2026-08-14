@@ -69,6 +69,7 @@
 <link rel="stylesheet" href="auris-legal-compliance-static.css?v=20260814-1">
 <link rel="stylesheet" href="auris-fleet-management-static.css?v=20260814-1">
 <link rel="stylesheet" href="auris-atex-areas-static.css?v=20260814-1">
+<link rel="stylesheet" href="auris-tools-equipment-static.css?v=20260814-1">
 </head>
 <body>
 <div id="login-screen">
@@ -4346,15 +4347,15 @@ Offline mode - changes will sync when connection is restored
 
 <div id="page-tools" class="page">
 <div class="page-header">
-<div><div class="page-title">Tools &amp; Equipment</div><div style="font-size:12px;color:var(--text2)">Register, inspection checklists, statutory verification and vehicle checks</div></div>
-<div style="display:flex;gap:8px" id="tools-header-btns">
+<div><div class="page-title">Tools &amp; Equipment</div><div class="auris-tools-s-7299078644">Register, inspection checklists, statutory verification and vehicle checks</div></div>
+<div id="tools-header-btns" class="auris-tools-s-9c40389b4a">
 <button class="btn" data-auris-onclick="h0502"><i class="ti ti-printer"></i>Print current view</button>
-<button class="btn btn-primary" id="tools-add-btn" style="display:none" data-auris-onclick="h0503"><i class="ti ti-plus"></i>Add equipment</button>
+<button class="btn btn-primary auris-tools-s-6aa34d7432" id="tools-add-btn" data-auris-onclick="h0503"><i class="ti ti-plus"></i>Add equipment</button>
 </div>
 </div>
 
 <!-- Tabs -->
-<div style="display:flex;gap:0;margin-bottom:16px;border-bottom:2px solid var(--border)">
+<div class="auris-tools-s-475caf50fd">
 <button class="mtg-tab active" id="tools-tab-register" data-auris-onclick="h0504">Equipment Register</button>
 <button class="mtg-tab" id="tools-tab-personal" data-auris-onclick="h0505">Personal Tools</button>
 <button class="mtg-tab" id="tools-tab-inspection" data-auris-onclick="h0506">Inspection Checklist</button>
@@ -4367,18 +4368,18 @@ Offline mode - changes will sync when connection is restored
 <!-- -- EQUIPMENT REGISTER -- -->
 <div id="tools-view-register">
 <!-- Metrics -->
-<div style="display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:14px">
-<div class="card" style="padding:12px 14px;border-left:4px solid #1D9E75"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">Active</div><div style="font-size:24px;font-weight:800;color:#1D9E75" id="tools-m3active">-</div></div>
-<div class="card" style="padding:12px 14px;border-left:4px solid #E24B4A"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">Out of service</div><div style="font-size:24px;font-weight:800;color:#E24B4A" id="tools-m3oos">-</div></div>
-<div class="card" style="padding:12px 14px;border-left:4px solid #EF9F27"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">Due inspection</div><div style="font-size:24px;font-weight:800;color:#EF9F27" id="tools-m3due">-</div></div>
-<div class="card" style="padding:12px 14px;border-left:4px solid #8B5CF6"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">Statutory due</div><div style="font-size:24px;font-weight:800;color:#8B5CF6" id="tools-m3stat">-</div></div>
-<div class="card" style="padding:12px 14px;border-left:4px solid #185FA5"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">Vehicles</div><div style="font-size:24px;font-weight:800;color:#185FA5" id="tools-m3veh">-</div></div>
+<div class="auris-tools-s-eb404b018d">
+<div class="card auris-tools-s-4a56dafc2a"><div class="auris-tools-s-4422804ebb">Active</div><div id="tools-m3active" class="auris-tools-s-a1d0a4c7f2">-</div></div>
+<div class="card auris-tools-s-3b299d6ce4"><div class="auris-tools-s-4422804ebb">Out of service</div><div id="tools-m3oos" class="auris-tools-s-01137f2f4c">-</div></div>
+<div class="card auris-tools-s-bf5033d99d"><div class="auris-tools-s-4422804ebb">Due inspection</div><div id="tools-m3due" class="auris-tools-s-97309bb0fa">-</div></div>
+<div class="card auris-tools-s-c260bac5c9"><div class="auris-tools-s-4422804ebb">Statutory due</div><div id="tools-m3stat" class="auris-tools-s-5d553a9b75">-</div></div>
+<div class="card auris-tools-s-624468e090"><div class="auris-tools-s-4422804ebb">Vehicles</div><div id="tools-m3veh" class="auris-tools-s-2b9ad58fbd">-</div></div>
 </div>
 <!-- Filter bar -->
-<div class="card" style="margin-bottom:12px;padding:10px 14px">
-<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
-<input type="text" id="tools-search" placeholder="Search name, ref, serial..." data-auris-oninput="h0511" style="flex:1;min-width:180px;padding:7px 12px;border:1px solid var(--border);border-radius:8px;font-size:12px"/>
-<select id="tools-filter-cat" data-auris-onchange="h0512" style="padding:7px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px">
+<div class="card auris-tools-s-54bb9f1d16">
+<div class="auris-tools-s-d5129e1520">
+<input type="text" id="tools-search" class="auris-tools-s-11856befbc" placeholder="Search name, ref, serial..." data-auris-oninput="h0511"/>
+<select id="tools-filter-cat" class="auris-tools-s-d35063206b" data-auris-onchange="h0512">
 <option value="">All categories</option>
 <option value="hand_tool">Hand tools</option>
 <option value="power_tool">Power tools</option>
@@ -4389,13 +4390,13 @@ Offline mode - changes will sync when connection is restored
 <option value="ppe">PPE</option>
 <option value="other">Other</option>
 </select>
-<select id="tools-filter-status" data-auris-onchange="h0512" style="padding:7px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px">
+<select id="tools-filter-status" class="auris-tools-s-d35063206b" data-auris-onchange="h0512">
 <option value="">All statuses</option>
 <option value="active">Active</option>
 <option value="out_of_service">Out of service</option>
 <option value="under_maintenance">Under maintenance</option>
 </select>
-<select id="tools-filter-inspection" data-auris-onchange="h0512" style="padding:7px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px">
+<select id="tools-filter-inspection" class="auris-tools-s-d35063206b" data-auris-onchange="h0512">
 <option value="">All inspections</option>
 <option value="overdue">Inspection overdue</option>
 <option value="due_soon">Inspection due soon</option>
@@ -4404,18 +4405,18 @@ Offline mode - changes will sync when connection is restored
 </select>
 </div>
 </div>
-<div class="card" style="padding:0;overflow:hidden"><div id="tools-register-list"><div class="loading-msg">Loading...</div></div></div>
+<div class="card auris-tools-s-d9c39add3c"><div id="tools-register-list"><div class="loading-msg">Loading...</div></div></div>
 </div>
 
 <!-- -- PERSONAL TOOLS -- -->
-<div id="tools-view-personal" style="display:none">
-<div class="card" style="margin-bottom:12px;padding:10px 14px">
-<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
+<div id="tools-view-personal" class="auris-tools-s-6aa34d7432">
+<div class="card auris-tools-s-54bb9f1d16">
+<div class="auris-tools-s-5e92a26fd0">
 <div>
-<div class="card-title" style="margin:0">Personal Tool Assignments</div>
-<div style="font-size:12px;color:var(--text2);margin-top:3px">Tools assigned to individual employees - weekly self-check required</div>
+<div class="card-title auris-tools-s-ab79ea2b85">Personal Tool Assignments</div>
+<div class="auris-tools-s-9c4ae63835">Tools assigned to individual employees - weekly self-check required</div>
 </div>
-<select id="tools-personal-filter" data-auris-onchange="h0513" style="padding:7px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px">
+<select id="tools-personal-filter" class="auris-tools-s-d35063206b" data-auris-onchange="h0513">
 <option value="">All employees</option>
 </select>
 </div>
@@ -4424,87 +4425,87 @@ Offline mode - changes will sync when connection is restored
 </div>
 
 <!-- -- INSPECTION CHECKLIST -- -->
-<div id="tools-view-inspection" style="display:none">
-<div class="card" style="margin-bottom:12px;padding:10px 14px">
-<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
-<div class="card-title" style="margin:0">Recent Inspections</div>
-<button class="btn btn-primary" id="tools-insp-new-btn" style="display:none" data-auris-onclick="h0514"><i class="ti ti-plus"></i>New inspection</button>
+<div id="tools-view-inspection" class="auris-tools-s-6aa34d7432">
+<div class="card auris-tools-s-54bb9f1d16">
+<div class="auris-tools-s-5e92a26fd0">
+<div class="card-title auris-tools-s-ab79ea2b85">Recent Inspections</div>
+<button class="btn btn-primary auris-tools-s-6aa34d7432" id="tools-insp-new-btn" data-auris-onclick="h0514"><i class="ti ti-plus"></i>New inspection</button>
 </div>
 </div>
 <div id="tools-insp-list"><div class="loading-msg">Loading...</div></div>
 </div>
 
 <!-- -- LIFTING ACCESSORIES -- -->
-<div id="tools-view-lifting" style="display:none">
-<div class="card" style="margin-bottom:12px;padding:10px 14px">
-<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
+<div id="tools-view-lifting" class="auris-tools-s-6aa34d7432">
+<div class="card auris-tools-s-54bb9f1d16">
+<div class="auris-tools-s-5e92a26fd0">
 <div>
-<div class="card-title" style="margin:0">Lifting Accessories Inspection</div>
-<div style="font-size:12px;color:var(--text2);margin-top:3px">Slings, shackles, hooks, chain blocks and accessories requiring pre-use and periodic inspection</div>
+<div class="card-title auris-tools-s-ab79ea2b85">Lifting Accessories Inspection</div>
+<div class="auris-tools-s-9c4ae63835">Slings, shackles, hooks, chain blocks and accessories requiring pre-use and periodic inspection</div>
 </div>
-<button class="btn btn-primary" id="tools-lifting-new-btn" style="display:none" data-auris-onclick="h0515"><i class="ti ti-plus"></i>Add lifting accessory</button>
+<button class="btn btn-primary auris-tools-s-6aa34d7432" id="tools-lifting-new-btn" data-auris-onclick="h0515"><i class="ti ti-plus"></i>Add lifting accessory</button>
 </div>
 </div>
 <div id="tools-lifting-list"><div class="loading-msg">Loading...</div></div>
 </div>
 
 <!-- -- STATUTORY VERIFICATION -- -->
-<div id="tools-view-statutory" style="display:none">
-<div class="card" style="margin-bottom:12px;padding:10px 14px">
+<div id="tools-view-statutory" class="auris-tools-s-6aa34d7432">
+<div class="card auris-tools-s-54bb9f1d16">
 <div>
-<div class="card-title" style="margin:0">Statutory Verification Register</div>
-<div style="font-size:12px;color:var(--text2);margin-top:3px">Equipment requiring statutory thorough examination (LOLER, PUWER, Pressure vessels, etc.)</div>
+<div class="card-title auris-tools-s-ab79ea2b85">Statutory Verification Register</div>
+<div class="auris-tools-s-9c4ae63835">Equipment requiring statutory thorough examination (LOLER, PUWER, Pressure vessels, etc.)</div>
 </div>
 </div>
 <!-- Alerts -->
-<div id="tools-stat-alerts" style="margin-bottom:12px"></div>
-<div class="card" style="padding:0;overflow:hidden"><div id="tools-stat-list"><div class="loading-msg">Loading...</div></div></div>
+<div id="tools-stat-alerts" class="auris-tools-s-b56987dbcb"></div>
+<div class="card auris-tools-s-d9c39add3c"><div id="tools-stat-list"><div class="loading-msg">Loading...</div></div></div>
 </div>
 
 <!-- -- VEHICLES -- -->
-<div id="tools-view-vehicles" style="display:none">
-<div class="card" style="margin-bottom:12px;padding:10px 14px">
-<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
+<div id="tools-view-vehicles" class="auris-tools-s-6aa34d7432">
+<div class="card auris-tools-s-54bb9f1d16">
+<div class="auris-tools-s-5e92a26fd0">
 <div>
-<div class="card-title" style="margin:0">Vehicle Register</div>
-<div style="font-size:12px;color:var(--text2);margin-top:3px">Monthly inspection checklist required for each vehicle</div>
+<div class="card-title auris-tools-s-ab79ea2b85">Vehicle Register</div>
+<div class="auris-tools-s-9c4ae63835">Monthly inspection checklist required for each vehicle</div>
 </div>
-<button class="btn btn-primary" id="veh-insp-btn" style="display:none" data-auris-onclick="h0516"><i class="ti ti-clipboard-check"></i>Monthly check</button>
+<button class="btn btn-primary auris-tools-s-6aa34d7432" id="veh-insp-btn" data-auris-onclick="h0516"><i class="ti ti-clipboard-check"></i>Monthly check</button>
 </div>
 </div>
 <div id="tools-vehicles-list"><div class="loading-msg">Loading...</div></div>
 </div>
 
 <!-- -- FORM: ADD/EDIT EQUIPMENT -- -->
-<div id="tools-view-rcd" style="display:none">
-<div class="card" style="margin-bottom:12px;padding:10px 14px">
-<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
+<div id="tools-view-rcd" class="auris-tools-s-6aa34d7432">
+<div class="card auris-tools-s-54bb9f1d16">
+<div class="auris-tools-s-5e92a26fd0">
 <div>
-<div class="card-title" style="margin:0">RCD Monthly Testing Register</div>
-<div style="font-size:12px;color:var(--text2);margin-top:3px">Monthly push-button tests for RCDs and distribution boards.</div>
+<div class="card-title auris-tools-s-ab79ea2b85">RCD Monthly Testing Register</div>
+<div class="auris-tools-s-9c4ae63835">Monthly push-button tests for RCDs and distribution boards.</div>
 </div>
-<button class="btn btn-primary" id="rcd-add-btn" style="display:none" data-auris-onclick="h0517"><i class="ti ti-plus"></i>Add RCD / DB</button>
+<button class="btn btn-primary auris-tools-s-6aa34d7432" id="rcd-add-btn" data-auris-onclick="h0517"><i class="ti ti-plus"></i>Add RCD / DB</button>
 </div>
 </div>
 <div id="tools-rcd-list"><div class="loading-msg">Loading...</div></div>
 </div>
 
-<div id="tools-form" style="display:none">
-<div class="card" style="margin-bottom:14px;padding:14px 20px">
-<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
-<div><div style="font-size:16px;font-weight:700" id="tools-form3title">New Equipment</div>
-<div style="font-size:12px;color:var(--green);font-weight:600;margin-top:3px" id="tools-form3ref"></div></div>
-<div style="display:flex;gap:8px">
+<div id="tools-form" class="auris-tools-s-6aa34d7432">
+<div class="card auris-tools-s-0e8d4526b6">
+<div class="auris-tools-s-5e92a26fd0">
+<div><div id="tools-form3title" class="auris-tools-s-30e294142f">New Equipment</div>
+<div id="tools-form3ref" class="auris-tools-s-21450346c0"></div></div>
+<div class="auris-tools-s-9c40389b4a">
 <button class="btn" data-auris-onclick="h0518"><i class="ti ti-arrow-left"></i>Back</button>
-<button id="tools-del-btn" class="btn" style="display:none;color:var(--red);border-color:var(--red)" data-auris-onclick="h0519"><i class="ti ti-trash"></i>Delete</button>
+<button id="tools-del-btn" class="btn auris-tools-s-8dea1152ee" data-auris-onclick="h0519"><i class="ti ti-trash"></i>Delete</button>
 <button class="btn btn-primary" data-auris-onclick="h0520"><i class="ti ti-device-floppy"></i>Save</button>
 </div>
 </div>
 </div>
 <!-- Main info -->
-<div style="display:grid;grid-template-columns:2fr 1fr;gap:16px">
+<div class="auris-tools-s-f1bc427372">
 <div>
-<div class="card" style="margin-bottom:14px">
+<div class="card auris-tools-s-42a6ced8b6">
 <div class="card-title">Equipment Details</div>
 <div class="form3row">
 <div class="form3group"><label class="form3label">Category</label>
@@ -4542,14 +4543,14 @@ Offline mode - changes will sync when connection is restored
 <option value="statutory">Statutory only</option>
 </select></div>
 </div>
-<div class="form3group"><label class="form3label">Notes</label><textarea id="teq-notes" style="min-height:60px"></textarea></div>
+<div class="form3group"><label class="form3label">Notes</label><textarea id="teq-notes" class="auris-tools-s-07bdff4587"></textarea></div>
 </div>
 
 <!-- Vehicle section (conditional) -->
-<div id="teq-vehicle-section" style="display:none">
-<div class="card" style="margin-bottom:14px;border:2px solid #185FA5">
-<div class="card-title" style="color:#185FA5"><i class="ti ti-car"></i> Vehicle Details</div>
-<div class="form3group"><label class="form3label">Registration number</label><input type="text" id="teq-reg" placeholder="e.g. M 1234 XY" style="font-size:16px;font-weight:700;letter-spacing:2px"/></div>
+<div id="teq-vehicle-section" class="auris-tools-s-6aa34d7432">
+<div class="card auris-tools-s-9bcefa3fff">
+<div class="card-title auris-tools-s-ca32b871b2"><i class="ti ti-car"></i> Vehicle Details</div>
+<div class="form3group"><label class="form3label">Registration number</label><input type="text" id="teq-reg" class="auris-tools-s-44bb0bf630" placeholder="e.g. M 1234 XY"/></div>
 <div class="form3row">
 <div class="form3group"><label class="form3label">Insurance expiry</label><input type="date" id="teq-insurance"/></div>
 <div class="form3group"><label class="form3label">Roadworthy / Fitness expiry</label><input type="date" id="teq-roadworthy"/></div>
@@ -4559,13 +4560,13 @@ Offline mode - changes will sync when connection is restored
 </div>
 <!-- Statutory section -->
 <div>
-<div class="card" id="teq-stat-card" style="margin-bottom:14px">
-<div class="card-title"><i class="ti ti-certificate" style="color:#8B5CF6"></i> Statutory Inspection</div>
-<div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
-<input type="checkbox" id="teq-statutory" style="width:16px;height:16px" data-auris-onchange="h0522"/>
-<label for="teq-statutory" style="font-size:13px;font-weight:600">Requires statutory examination</label>
+<div class="card auris-tools-s-42a6ced8b6" id="teq-stat-card">
+<div class="card-title"><i class="ti ti-certificate auris-tools-s-48a87f51bd"></i> Statutory Inspection</div>
+<div class="auris-tools-s-b71bee5e5a">
+<input type="checkbox" id="teq-statutory" class="auris-tools-s-3e32597019" data-auris-onchange="h0522"/>
+<label class="auris-tools-s-f4d14c945c" for="teq-statutory">Requires statutory examination</label>
 </div>
-<div id="teq-statutory-fields" style="display:none">
+<div id="teq-statutory-fields" class="auris-tools-s-6aa34d7432">
 <div class="form3group"><label class="form3label">Type of examination</label>
 <input type="text" id="teq-stat-type" list="stat-types" placeholder="e.g. LOLER, PUWER, Pressure vessel"/>
 <datalist id="stat-types"><option value="LOLER (Lifting Operations)"><option value="PUWER (Work Equipment)"><option value="Pressure Vessel / Boiler"><option value="Electrical Installation (EICR)"><option value="Fire Extinguisher"><option value="LEV (Local Exhaust Ventilation)"><option value="Scaffolding Inspection"></datalist></div>
@@ -4577,86 +4578,86 @@ Offline mode - changes will sync when connection is restored
 </div>
 </div>
 <!-- Ref number display -->
-<div class="card" style="background:linear-gradient(135deg,#1a3a5c,#185FA5);color:#fff;border:none">
-<div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;opacity:.8;margin-bottom:6px">Reference Number</div>
-<div style="font-size:28px;font-weight:900;letter-spacing:4px;font-family:monospace" id="teq-ref-display">AUTO</div>
-<div style="font-size:11px;opacity:.7;margin-top:4px">Auto-generated on save</div>
+<div class="card auris-tools-s-524141b55a">
+<div class="auris-tools-s-092d51f219">Reference Number</div>
+<div id="teq-ref-display" class="auris-tools-s-4828fad1cb">AUTO</div>
+<div class="auris-tools-s-9d162f3540">Auto-generated on save</div>
 </div>
 </div>
 </div>
 </div>
 
 <!-- -- FORM: INSPECTION CHECKLIST -- -->
-<div id="tools-insp-form" style="display:none">
-<div class="card" style="margin-bottom:14px;padding:14px 20px">
-<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
-<div><div style="font-size:16px;font-weight:700" id="tools-insp-form3title">Equipment Inspection</div>
-<div style="font-size:12px;color:var(--text2)" id="tools-insp-form3sub"></div></div>
-<div style="display:flex;gap:8px">
+<div id="tools-insp-form" class="auris-tools-s-6aa34d7432">
+<div class="card auris-tools-s-0e8d4526b6">
+<div class="auris-tools-s-5e92a26fd0">
+<div><div id="tools-insp-form3title" class="auris-tools-s-30e294142f">Equipment Inspection</div>
+<div id="tools-insp-form3sub" class="auris-tools-s-7299078644"></div></div>
+<div class="auris-tools-s-9c40389b4a">
 <button class="btn" data-auris-onclick="h0523"><i class="ti ti-arrow-left"></i>Back</button>
 <button class="btn btn-primary" data-auris-onclick="h0524"><i class="ti ti-device-floppy"></i>Save inspection</button>
 </div>
 </div>
 </div>
 <!-- Inspection header -->
-<div class="card" style="margin-bottom:14px;background:linear-gradient(135deg,#f8fafc,#e8f0fe);border:1px solid #c7d7f5">
-<div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:12px">
-<div class="form3group" style="margin:0"><label class="form3label">Equipment</label><div style="font-weight:700;font-size:14px" id="insp-equip-name">-</div><div style="font-size:11px;color:var(--green);font-weight:600" id="insp-equip-ref">-</div></div>
-<div class="form3group" style="margin:0"><label class="form3label">Inspection date</label><input type="date" id="insp-date" style="font-weight:600"/></div>
-<div class="form3group" style="margin:0"><label class="form3label">Inspected by</label><select id="insp-inspector"><option value="">Select...</option></select></div>
-<div class="form3group" style="margin:0"><label class="form3label">Type</label>
+<div class="card auris-tools-s-1789231287">
+<div class="auris-tools-s-4809d78452">
+<div class="form3group auris-tools-s-ab79ea2b85"><label class="form3label">Equipment</label><div id="insp-equip-name" class="auris-tools-s-e746326d06">-</div><div id="insp-equip-ref" class="auris-tools-s-e4322b17a0">-</div></div>
+<div class="form3group auris-tools-s-ab79ea2b85"><label class="form3label">Inspection date</label><input type="date" id="insp-date" class="auris-tools-s-6e8bcfac8d"/></div>
+<div class="form3group auris-tools-s-ab79ea2b85"><label class="form3label">Inspected by</label><select id="insp-inspector"><option value="">Select...</option></select></div>
+<div class="form3group auris-tools-s-ab79ea2b85"><label class="form3label">Type</label>
 <select id="insp-type"><option value="pre_use">Pre-use check</option><option value="periodic" selected>Periodic inspection</option><option value="lifting_accessory">Lifting accessory inspection</option><option value="statutory">Statutory examination</option><option value="handover">Handover check</option></select></div>
 </div>
 </div>
 <!-- Checklist items -->
-<div class="card" style="margin-bottom:14px;padding:0;overflow:hidden">
-<div style="padding:12px 16px;background:#1a3a5c;color:#fff;display:flex;align-items:center;justify-content:space-between">
-<div style="font-weight:700;font-size:14px">Inspection Checklist</div>
-<div id="insp-score-display" style="font-size:13px;font-weight:600;color:#a8f0d4"></div>
+<div class="card auris-tools-s-54ec8874e7">
+<div class="auris-tools-s-4535378d29">
+<div class="auris-tools-s-e746326d06">Inspection Checklist</div>
+<div id="insp-score-display" class="auris-tools-s-474a4b4764"></div>
 </div>
-<table style="width:100%;border-collapse:collapse" id="insp-checklist-table">
-<thead><tr style="background:#f9fafb">
-<th style="padding:8px 16px;text-align:left;border-bottom:1px solid var(--border);font-size:11px;color:var(--text);font-weight:800">Check item</th>
-<th style="padding:8px;text-align:center;border-bottom:1px solid var(--border);font-size:11px;width:70px;color:#1D9E75;font-weight:800">OK ?</th>
-<th style="padding:8px;text-align:center;border-bottom:1px solid var(--border);font-size:11px;width:70px;color:#E24B4A;font-weight:800">Fail ?</th>
-<th style="padding:8px;text-align:center;border-bottom:1px solid var(--border);font-size:11px;width:70px;color:#6B7280;font-weight:800">N/A</th>
-<th style="padding:8px;text-align:left;border-bottom:1px solid var(--border);font-size:11px;color:var(--text);font-weight:800">Notes</th>
+<table id="insp-checklist-table" class="auris-tools-s-0ae64748d8">
+<thead><tr class="auris-tools-s-0dc955fc21">
+<th class="auris-tools-s-906a6452a9">Check item</th>
+<th class="auris-tools-s-86a8781c8b">OK ?</th>
+<th class="auris-tools-s-626271c10e">Fail ?</th>
+<th class="auris-tools-s-c4e6e908dd">N/A</th>
+<th class="auris-tools-s-a0af031d62">Notes</th>
 </tr></thead>
 <tbody id="insp-checklist-body"></tbody>
 </table>
 </div>
 <!-- Overall result + defects -->
-<div class="card" style="margin-bottom:14px">
+<div class="card auris-tools-s-42a6ced8b6">
 <div class="card-title">Overall Assessment</div>
 <div class="form3row">
 <div class="form3group"><label class="form3label">Overall result</label>
-<select id="insp-result" style="font-weight:700">
-<option value="pass" style="color:#1D9E75">PASS - Equipment safe to use</option>
+<select id="insp-result" class="auris-tools-s-c6fa01b3f1">
+<option class="auris-tools-s-f9faa54401" value="pass">PASS - Equipment safe to use</option>
 <option value="conditional">CONDITIONAL - Use with caution</option>
-<option value="fail" style="color:#E24B4A">FAIL - Remove from service</option>
+<option class="auris-tools-s-df4f0a3612" value="fail">FAIL - Remove from service</option>
 </select></div>
 <div class="form3group"><label class="form3label">Next inspection due</label><input type="date" id="insp-next-date"/></div>
 </div>
-<div class="form3group"><label class="form3label" style="color:var(--red)">Defects / Issues found</label><textarea id="insp-defects" style="min-height:70px" placeholder="Describe any defects, damage or issues observed..."></textarea></div>
-<div class="form3group"><label class="form3label">Actions taken</label><textarea id="insp-actions" style="min-height:60px" placeholder="Corrective actions taken or planned..."></textarea></div>
+<div class="form3group"><label class="form3label auris-tools-s-73cb2565d3">Defects / Issues found</label><textarea id="insp-defects" class="auris-tools-s-4d5979ac8f" placeholder="Describe any defects, damage or issues observed..."></textarea></div>
+<div class="form3group"><label class="form3label">Actions taken</label><textarea id="insp-actions" class="auris-tools-s-07bdff4587" placeholder="Corrective actions taken or planned..."></textarea></div>
 </div>
 </div>
 
-<div id="tools-rcd-form" style="display:none">
-<div class="card" style="margin-bottom:14px;padding:14px 20px">
-<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
-<div><div style="font-size:16px;font-weight:700">RCD Monthly Test</div>
-<div style="font-size:12px;color:var(--text2)" id="rcd-equip-ref"></div></div>
-<div style="display:flex;gap:8px">
+<div id="tools-rcd-form" class="auris-tools-s-6aa34d7432">
+<div class="card auris-tools-s-0e8d4526b6">
+<div class="auris-tools-s-5e92a26fd0">
+<div><div class="auris-tools-s-30e294142f">RCD Monthly Test</div>
+<div id="rcd-equip-ref" class="auris-tools-s-7299078644"></div></div>
+<div class="auris-tools-s-9c40389b4a">
 <button class="btn" data-auris-onclick="h0525"><i class="ti ti-arrow-left"></i>Back</button>
 <button class="btn btn-primary" data-auris-onclick="h0526"><i class="ti ti-device-floppy"></i>Save test</button>
 </div>
 </div>
 </div>
-<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+<div class="auris-tools-s-80f5e269f3">
 <div class="card">
 <div class="card-title">Test Details</div>
-<div class="form3group"><label class="form3label">RCD / Distribution board</label><div id="rcd-equip-name" style="font-weight:800;font-size:15px">--</div></div>
+<div class="form3group"><label class="form3label">RCD / Distribution board</label><div id="rcd-equip-name" class="auris-tools-s-62a2e8839d">--</div></div>
 <div class="form3row">
 <div class="form3group"><label class="form3label">Test date</label><input type="date" id="rcd-date"/></div>
 <div class="form3group"><label class="form3label">Tested by</label><select id="rcd-tester"><option value="">Select tester...</option></select></div>
@@ -4679,11 +4680,11 @@ Offline mode - changes will sync when connection is restored
 <div class="form3group"><label class="form3label">Label/access note</label><input type="text" id="rcd-label-note" placeholder="Not labelled, blocked, difficult to access..."/></div>
 </div>
 </div>
-<div class="card" style="margin-top:14px">
+<div class="card auris-tools-s-c53ea1da23">
 <div class="card-title">Defects / Actions</div>
 <div class="form3row">
-<div class="form3group"><label class="form3label" style="color:var(--red)">Defects found</label><textarea id="rcd-defects" style="min-height:70px" placeholder="Describe failure or defect if any..."></textarea></div>
-<div class="form3group"><label class="form3label">Actions taken / required</label><textarea id="rcd-actions" style="min-height:70px" placeholder="Removed from service, electrician informed, repair arranged..."></textarea></div>
+<div class="form3group"><label class="form3label auris-tools-s-73cb2565d3">Defects found</label><textarea id="rcd-defects" class="auris-tools-s-4d5979ac8f" placeholder="Describe failure or defect if any..."></textarea></div>
+<div class="form3group"><label class="form3label">Actions taken / required</label><textarea id="rcd-actions" class="auris-tools-s-4d5979ac8f" placeholder="Removed from service, electrician informed, repair arranged..."></textarea></div>
 </div>
 </div>
 </div>
