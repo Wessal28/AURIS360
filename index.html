@@ -61,6 +61,7 @@
 <link rel="stylesheet" href="auris-dashboard-executive.css?v=20260814-1">
 <link rel="stylesheet" href="auris-kpi-legacy.css?v=20260814-1">
 <link rel="stylesheet" href="auris-work-schedule.css?v=20260814-1">
+<link rel="stylesheet" href="auris-incident-management-static.css?v=20260814-1">
 </head>
 <body>
 <div id="login-screen">
@@ -1407,33 +1408,33 @@
 <div class="page-header">
 <div>
 <div class="page-title">Incident Dashboard</div>
-<div style="font-size:12px;color:var(--text2)" id="ev-subtitle">Capture - Investigate - Correct - Learn</div>
+<div id="ev-subtitle" class="auris-incident-s-7299078644">Capture - Investigate - Correct - Learn</div>
 </div>
-<div style="display:flex;gap:8px">
+<div class="auris-incident-s-9c40389b4a">
 <button class="btn btn-primary" data-auris-onclick="h0183" id="ims-report-btn"><i class="ti ti-plus"></i>Report incident</button>
 <button class="btn btn-sm" data-auris-onclick="h0184" title="Print PDF"><i class="ti ti-printer"></i>Print PDF</button>
 </div>
 </div>
 
 <!-- Metrics -->
-<div class="module-metrics" style="display:none;grid-template-columns:repeat(7,1fr);gap:10px;margin-bottom:14px">
-<div class="card" style="padding:10px 12px;border-left:4px solid #E24B4A"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">Total</div><div style="font-size:22px;font-weight:800;color:#E24B4A" id="ev-m3total">-</div></div>
-<div class="card" style="padding:10px 12px;border-left:4px solid #DC2626"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">Open</div><div style="font-size:22px;font-weight:800;color:#DC2626" id="ev-m3open">-</div></div>
-<div class="card" style="padding:10px 12px;border-left:4px solid #8B5CF6"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">Under Inv.</div><div style="font-size:22px;font-weight:800;color:#8B5CF6" id="ev-m3investigating">-</div></div>
-<div class="card" style="padding:10px 12px;border-left:4px solid #C2410C"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">High/Critical</div><div style="font-size:22px;font-weight:800;color:#C2410C" id="ev-m3high">-</div></div>
-<div class="card" style="padding:10px 12px;border-left:4px solid #EF9F27"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">This Month</div><div style="font-size:22px;font-weight:800;color:#EF9F27" id="ev-m3month">-</div></div>
-<div class="card" style="padding:10px 12px;border-left:4px solid #185FA5"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">Investigations</div><div style="font-size:22px;font-weight:800;color:#185FA5" id="ev-m3inv">-</div></div>
-<div class="card" style="padding:10px 12px;border-left:4px solid #1D9E75"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">Closed</div><div style="font-size:22px;font-weight:800;color:#1D9E75" id="ev-m3closed">-</div></div>
+<div class="module-metrics auris-incident-s-a2d3097cfe">
+<div class="card auris-incident-s-530946d91c"><div class="auris-incident-s-4422804ebb">Total</div><div id="ev-m3total" class="auris-incident-s-e7ad3ebe2e">-</div></div>
+<div class="card auris-incident-s-03bd966c28"><div class="auris-incident-s-4422804ebb">Open</div><div id="ev-m3open" class="auris-incident-s-ffe267bce1">-</div></div>
+<div class="card auris-incident-s-24ac637923"><div class="auris-incident-s-4422804ebb">Under Inv.</div><div id="ev-m3investigating" class="auris-incident-s-bc6456303a">-</div></div>
+<div class="card auris-incident-s-9d8960c695"><div class="auris-incident-s-4422804ebb">High/Critical</div><div id="ev-m3high" class="auris-incident-s-b6492545f8">-</div></div>
+<div class="card auris-incident-s-c70473e794"><div class="auris-incident-s-4422804ebb">This Month</div><div id="ev-m3month" class="auris-incident-s-2062f090bc">-</div></div>
+<div class="card auris-incident-s-b6d403ee7e"><div class="auris-incident-s-4422804ebb">Investigations</div><div id="ev-m3inv" class="auris-incident-s-6f56b8363e">-</div></div>
+<div class="card auris-incident-s-7a5e61eb83"><div class="auris-incident-s-4422804ebb">Closed</div><div id="ev-m3closed" class="auris-incident-s-1e4fd5f9ed">-</div></div>
 </div>
 
 <!-- Tab bar -->
-<div class="module-tabs" style="display:flex;gap:0;margin-bottom:14px;border-bottom:2px solid var(--border);overflow-x:auto">
-<button class="mtg-tab active" id="ims-tab-register"   data-auris-onclick="h0185"   style="white-space:nowrap">Incident Register</button>
-<button class="mtg-tab"        id="ims-tab-report"     data-auris-onclick="h0186"     style="white-space:nowrap">Report</button>
-<button class="mtg-tab"        id="ims-tab-investigate" data-auris-onclick="h0187" style="white-space:nowrap">Investigations</button>
-<button class="mtg-tab"        id="ims-tab-actions"    data-auris-onclick="h0188"    style="white-space:nowrap">Corrective Actions</button>
-<button class="mtg-tab"        id="ims-tab-evidence"   data-auris-onclick="h0189"   style="white-space:nowrap">Evidence</button>
-<button class="mtg-tab"        id="ims-tab-stats"      data-auris-onclick="h0190"      style="white-space:nowrap">Statistics</button>
+<div class="module-tabs auris-incident-s-0904085f3d">
+<button class="mtg-tab active auris-incident-s-eb99a4c193" id="ims-tab-register"   data-auris-onclick="h0185"  >Incident Register</button>
+<button class="mtg-tab auris-incident-s-eb99a4c193"        id="ims-tab-report"     data-auris-onclick="h0186"    >Report</button>
+<button class="mtg-tab auris-incident-s-eb99a4c193"        id="ims-tab-investigate" data-auris-onclick="h0187">Investigations</button>
+<button class="mtg-tab auris-incident-s-eb99a4c193"        id="ims-tab-actions"    data-auris-onclick="h0188"   >Corrective Actions</button>
+<button class="mtg-tab auris-incident-s-eb99a4c193"        id="ims-tab-evidence"   data-auris-onclick="h0189"  >Evidence</button>
+<button class="mtg-tab auris-incident-s-eb99a4c193"        id="ims-tab-stats"      data-auris-onclick="h0190"     >Statistics</button>
 </div>
 
 <!-- -- INCIDENT REGISTER -- -->
@@ -1486,83 +1487,83 @@
 </div>
 
 <!-- -- REPORT FORM -- -->
-<div id="ims-view-report" style="display:none">
-<div class="card" style="margin-bottom:14px;padding:0;overflow:hidden">
-<div id="ims-form3banner" style="padding:16px 24px;background:linear-gradient(135deg,#7F1D1D,#DC2626);color:#fff;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px">
+<div id="ims-view-report" class="auris-incident-s-6aa34d7432">
+<div class="card auris-incident-s-54ec8874e7">
+<div id="ims-form3banner" class="auris-incident-s-afa4f48253">
 <div>
-<div style="font-size:11px;font-weight:600;text-transform:uppercase;opacity:.8;letter-spacing:.08em;margin-bottom:4px" id="ims-form3type-label">Incident Report</div>
-<div style="font-size:18px;font-weight:800" id="ims-form3title">New Incident</div>
-<div style="font-family:monospace;font-size:12px;color:#fca5a5;margin-top:3px" id="ims-form3ref">INC-AUTO</div>
-<div id="ims-report-lock-note" style="display:none;margin-top:7px;font-size:12px;color:#fff;background:rgba(255,255,255,.16);padding:5px 9px;border-radius:7px">Submitted report locked. A manager or admin must make any changes.</div>
+<div id="ims-form3type-label" class="auris-incident-s-c542f2bc2e">Incident Report</div>
+<div id="ims-form3title" class="auris-incident-s-e56ce903a9">New Incident</div>
+<div id="ims-form3ref" class="auris-incident-s-7372276e79">INC-AUTO</div>
+<div id="ims-report-lock-note" class="auris-incident-s-03fa5b5b69">Submitted report locked. A manager or admin must make any changes.</div>
 </div>
-<div style="display:flex;gap:8px;flex-wrap:wrap">
-<button type="button" class="btn" id="ims-back-top" data-action="back-incident" style="background:rgba(255,255,255,.2);color:#fff;border-color:rgba(255,255,255,.3)" data-auris-onclick="h0193"><i class="ti ti-arrow-left"></i>Back</button>
-<button type="button" id="ims-del-btn" class="btn" style="display:none;background:rgba(0,0,0,.3);color:#fff;border-color:rgba(255,255,255,.3)" data-auris-onclick="h0194"><i class="ti ti-trash"></i></button>
-<button type="button" class="btn" id="ims-save-top" data-action="save-incident" style="background:#1D9E75;color:#fff;border-color:#1D9E75" data-auris-onclick="h0195"><i class="ti ti-device-floppy"></i>Save report</button>
-<button type="button" class="btn" style="background:#5B21B6;color:#fff;border-color:#5B21B6;display:none" id="ims-start-inv-btn" data-auris-onclick="h0196"><i class="ti ti-search"></i>Start investigation</button>
+<div class="auris-incident-s-c9dc9b5648">
+<button type="button" class="btn auris-incident-s-5c09edd131" id="ims-back-top" data-action="back-incident" data-auris-onclick="h0193"><i class="ti ti-arrow-left"></i>Back</button>
+<button type="button" id="ims-del-btn" class="btn auris-incident-s-96f7839a1b" data-auris-onclick="h0194"><i class="ti ti-trash"></i></button>
+<button type="button" class="btn auris-incident-s-c7b9e5b2c7" id="ims-save-top" data-action="save-incident" data-auris-onclick="h0195"><i class="ti ti-device-floppy"></i>Save report</button>
+<button type="button" class="btn auris-incident-s-60c30f69a1" id="ims-start-inv-btn" data-auris-onclick="h0196"><i class="ti ti-search"></i>Start investigation</button>
 </div>
 </div>
 </div>
 
 <!-- Incident type selector -->
-<div class="card" style="margin-bottom:14px">
+<div class="card auris-incident-s-42a6ced8b6">
 <div class="card-title">Incident Type</div>
-<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px" id="ims-type-grid">
-<div class="ims-type-btn" data-type="injury"               data-auris-onclick="h0197"               style="padding:10px 8px;border-radius:10px;text-align:center;cursor:pointer;border:2px solid #fecaca;background:#FEF2F2;transition:all .15s"><div style="font-size:22px;margin-bottom:4px"><i class="ti ti-circle-dot"></i></div><div style="font-weight:700;font-size:11px;color:#991B1B">Injury</div></div>
-<div class="ims-type-btn" data-type="near_miss"            data-auris-onclick="h0198"            style="padding:10px 8px;border-radius:10px;text-align:center;cursor:pointer;border:2px solid #ddd6fe;background:#F5F3FF;transition:all .15s"><div style="font-size:22px;margin-bottom:4px">?</div><div style="font-weight:700;font-size:11px;color:#5B21B6">Near Miss</div></div>
-<div class="ims-type-btn" data-type="dangerous_occurrence" data-auris-onclick="h0199" style="padding:10px 8px;border-radius:10px;text-align:center;cursor:pointer;border:2px solid #fcd34d;background:#FFFBEB;transition:all .15s"><div style="font-size:22px;margin-bottom:4px"><i class="ti ti-circle-dot"></i></div><div style="font-weight:700;font-size:11px;color:#854F0B">Dangerous Occ.</div></div>
-<div class="ims-type-btn" data-type="property_damage"      data-auris-onclick="h0200"      style="padding:10px 8px;border-radius:10px;text-align:center;cursor:pointer;border:2px solid #fed7aa;background:#FFF7ED;transition:all .15s"><div style="font-size:22px;margin-bottom:4px"><i class="ti ti-circle-dot"></i></div><div style="font-weight:700;font-size:11px;color:#9A3412">Property Damage</div></div>
-<div class="ims-type-btn" data-type="environmental"        data-auris-onclick="h0201"        style="padding:10px 8px;border-radius:10px;text-align:center;cursor:pointer;border:2px solid #a7f3d0;background:#ECFDF5;transition:all .15s"><div style="font-size:22px;margin-bottom:4px"><i class="ti ti-circle-dot"></i></div><div style="font-weight:700;font-size:11px;color:#065F46">Environmental</div></div>
-<div class="ims-type-btn" data-type="vehicle"              data-auris-onclick="h0202"              style="padding:10px 8px;border-radius:10px;text-align:center;cursor:pointer;border:2px solid #bfdbfe;background:#EFF6FF;transition:all .15s"><div style="font-size:22px;margin-bottom:4px"><i class="ti ti-circle-dot"></i></div><div style="font-weight:700;font-size:11px;color:#1e40af">Vehicle Incident</div></div>
-<div class="ims-type-btn" data-type="unsafe_act"           data-auris-onclick="h0203"           style="padding:10px 8px;border-radius:10px;text-align:center;cursor:pointer;border:2px solid #fecaca;background:#FEF2F2;transition:all .15s"><div style="font-size:22px;margin-bottom:4px"><i class="ti ti-circle-dot"></i></div><div style="font-weight:700;font-size:11px;color:#991B1B">Unsafe Act</div></div>
-<div class="ims-type-btn" data-type="unsafe_condition"     data-auris-onclick="h0204"     style="padding:10px 8px;border-radius:10px;text-align:center;cursor:pointer;border:2px solid #fed7aa;background:#FFF7ED;transition:all .15s"><div style="font-size:22px;margin-bottom:4px"><i class="ti ti-circle-dot"></i></div><div style="font-weight:700;font-size:11px;color:#9A3412">Unsafe Condition</div></div>
-<div class="ims-type-btn" data-type="fire"                 data-auris-onclick="h0205"                 style="padding:10px 8px;border-radius:10px;text-align:center;cursor:pointer;border:2px solid #fecaca;background:#FEF2F2;transition:all .15s"><div style="font-size:22px;margin-bottom:4px"><i class="ti ti-circle-dot"></i></div><div style="font-weight:700;font-size:11px;color:#991B1B">Fire/Explosion</div></div>
-<div class="ims-type-btn" data-type="occupational_disease" data-auris-onclick="h0206" style="padding:10px 8px;border-radius:10px;text-align:center;cursor:pointer;border:2px solid #ddd6fe;background:#F5F3FF;transition:all .15s"><div style="font-size:22px;margin-bottom:4px"><i class="ti ti-circle-dot"></i></div><div style="font-weight:700;font-size:11px;color:#5B21B6">Occ. Disease</div></div>
-<div class="ims-type-btn" data-type="security"             data-auris-onclick="h0207"             style="padding:10px 8px;border-radius:10px;text-align:center;cursor:pointer;border:2px solid #e5e7eb;background:#f9fafb;transition:all .15s"><div style="font-size:22px;margin-bottom:4px"><i class="ti ti-circle-dot"></i></div><div style="font-weight:700;font-size:11px;color:#374151">Security</div></div>
+<div id="ims-type-grid" class="auris-incident-s-f81f7c3fbf">
+<div class="ims-type-btn auris-incident-s-98b993485f" data-type="injury"               data-auris-onclick="h0197"              ><div class="auris-incident-s-50f588253d"><i class="ti ti-circle-dot"></i></div><div class="auris-incident-s-98763e32b6">Injury</div></div>
+<div class="ims-type-btn auris-incident-s-f0cee51bbd" data-type="near_miss"            data-auris-onclick="h0198"           ><div class="auris-incident-s-50f588253d">?</div><div class="auris-incident-s-cde036c7f0">Near Miss</div></div>
+<div class="ims-type-btn auris-incident-s-fb618c59e7" data-type="dangerous_occurrence" data-auris-onclick="h0199"><div class="auris-incident-s-50f588253d"><i class="ti ti-circle-dot"></i></div><div class="auris-incident-s-011b486d4f">Dangerous Occ.</div></div>
+<div class="ims-type-btn auris-incident-s-fbe7628c79" data-type="property_damage"      data-auris-onclick="h0200"     ><div class="auris-incident-s-50f588253d"><i class="ti ti-circle-dot"></i></div><div class="auris-incident-s-5b6287c2cf">Property Damage</div></div>
+<div class="ims-type-btn auris-incident-s-77906d6b54" data-type="environmental"        data-auris-onclick="h0201"       ><div class="auris-incident-s-50f588253d"><i class="ti ti-circle-dot"></i></div><div class="auris-incident-s-f25d2b1378">Environmental</div></div>
+<div class="ims-type-btn auris-incident-s-364862b4c9" data-type="vehicle"              data-auris-onclick="h0202"             ><div class="auris-incident-s-50f588253d"><i class="ti ti-circle-dot"></i></div><div class="auris-incident-s-f4ccaa570b">Vehicle Incident</div></div>
+<div class="ims-type-btn auris-incident-s-98b993485f" data-type="unsafe_act"           data-auris-onclick="h0203"          ><div class="auris-incident-s-50f588253d"><i class="ti ti-circle-dot"></i></div><div class="auris-incident-s-98763e32b6">Unsafe Act</div></div>
+<div class="ims-type-btn auris-incident-s-fbe7628c79" data-type="unsafe_condition"     data-auris-onclick="h0204"    ><div class="auris-incident-s-50f588253d"><i class="ti ti-circle-dot"></i></div><div class="auris-incident-s-5b6287c2cf">Unsafe Condition</div></div>
+<div class="ims-type-btn auris-incident-s-98b993485f" data-type="fire"                 data-auris-onclick="h0205"                ><div class="auris-incident-s-50f588253d"><i class="ti ti-circle-dot"></i></div><div class="auris-incident-s-98763e32b6">Fire/Explosion</div></div>
+<div class="ims-type-btn auris-incident-s-f0cee51bbd" data-type="occupational_disease" data-auris-onclick="h0206"><div class="auris-incident-s-50f588253d"><i class="ti ti-circle-dot"></i></div><div class="auris-incident-s-cde036c7f0">Occ. Disease</div></div>
+<div class="ims-type-btn auris-incident-s-f71ba5e868" data-type="security"             data-auris-onclick="h0207"            ><div class="auris-incident-s-50f588253d"><i class="ti ti-circle-dot"></i></div><div class="auris-incident-s-c698f01ecb">Security</div></div>
 </div>
-<div id="ims-type-mode-note" style="display:none;font-size:11px;color:var(--text2);margin-top:8px"></div>
+<div id="ims-type-mode-note" class="auris-incident-s-1d4daf7dd5"></div>
 <input type="hidden" id="ev-type" value=""/>
 </div>
 
-<div style="display:grid;grid-template-columns:2fr 1fr;gap:14px">
+<div class="auris-incident-s-5571af1e74">
 <div>
 <!-- Basic details -->
-<div class="card" style="margin-bottom:14px"><div class="card-title">Incident Details</div>
+<div class="card auris-incident-s-42a6ced8b6"><div class="card-title">Incident Details</div>
 <div class="form3row">
 <div class="form3group"><label class="form3label">Date &amp; time</label><input type="datetime-local" id="ev-date"/></div>
 <div class="form3group"><label class="form3label">Location</label><input type="text" id="ev-location" placeholder="Specific location..."/></div>
 <div class="form3group"><label class="form3label">Department</label><input type="text" id="ev-department"/></div>
 </div>
-<div class="form3group"><div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:4px"><label class="form3label" style="margin:0">Description of what happened</label><div style="display:flex;gap:6px;flex-wrap:wrap"><button type="button" class="btn btn-sm" data-auris-onclick="h0208"><i class="ti ti-microphone"></i> Voice</button><button type="button" class="btn btn-sm" data-auris-onclick="h0209"><i class="ti ti-sparkles"></i> AI format</button></div></div><textarea id="ev-description" style="min-height:90px" placeholder="Describe the incident clearly and factually..."></textarea><div id="ev-description-voice-status" style="font-size:11px;color:var(--text2);margin-top:4px"></div></div>
-<div class="form3group"><div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:4px"><label class="form3label" style="margin:0">Immediate actions taken</label><div style="display:flex;gap:6px;flex-wrap:wrap"><button type="button" class="btn btn-sm" data-auris-onclick="h0210"><i class="ti ti-microphone"></i> Voice</button><button type="button" class="btn btn-sm" data-auris-onclick="h0211"><i class="ti ti-sparkles"></i> AI format</button></div></div><textarea id="ev-immediate" style="min-height:60px" placeholder="What was done immediately after the incident?"></textarea><div id="ev-immediate-voice-status" style="font-size:11px;color:var(--text2);margin-top:4px"></div></div>
+<div class="form3group"><div class="auris-incident-s-502ca8a364"><label class="form3label auris-incident-s-ab79ea2b85">Description of what happened</label><div class="auris-incident-s-ed524873cf"><button type="button" class="btn btn-sm" data-auris-onclick="h0208"><i class="ti ti-microphone"></i> Voice</button><button type="button" class="btn btn-sm" data-auris-onclick="h0209"><i class="ti ti-sparkles"></i> AI format</button></div></div><textarea id="ev-description" class="auris-incident-s-a75d926385" placeholder="Describe the incident clearly and factually..."></textarea><div id="ev-description-voice-status" class="auris-incident-s-34b3cf0d1f"></div></div>
+<div class="form3group"><div class="auris-incident-s-502ca8a364"><label class="form3label auris-incident-s-ab79ea2b85">Immediate actions taken</label><div class="auris-incident-s-ed524873cf"><button type="button" class="btn btn-sm" data-auris-onclick="h0210"><i class="ti ti-microphone"></i> Voice</button><button type="button" class="btn btn-sm" data-auris-onclick="h0211"><i class="ti ti-sparkles"></i> AI format</button></div></div><textarea id="ev-immediate" class="auris-incident-s-07bdff4587" placeholder="What was done immediately after the incident?"></textarea><div id="ev-immediate-voice-status" class="auris-incident-s-34b3cf0d1f"></div></div>
 </div>
 
 <!-- Photos -->
-<div class="card" style="margin-bottom:14px"><div class="card-title"><i class="ti ti-camera"></i> Photos / Evidence</div>
-<div style="font-size:12px;color:var(--text2);margin-bottom:10px">Take photos on mobile or upload existing images. They will attach when you save the incident.</div>
-<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px">
-<label class="btn btn-sm btn-primary" style="cursor:pointer;margin:0"><i class="ti ti-camera"></i>Take / upload photos
-<input type="file" id="ev-photo-input" accept="image/*" capture="environment" multiple style="display:none" data-auris-onchange="h0212"/></label>
+<div class="card auris-incident-s-42a6ced8b6"><div class="card-title"><i class="ti ti-camera"></i> Photos / Evidence</div>
+<div class="auris-incident-s-fa530ed1c3">Take photos on mobile or upload existing images. They will attach when you save the incident.</div>
+<div class="auris-incident-s-f3b4e79614">
+<label class="btn btn-sm btn-primary auris-incident-s-3ab824a596"><i class="ti ti-camera"></i>Take / upload photos
+<input type="file" id="ev-photo-input" class="auris-incident-s-6aa34d7432" accept="image/*" capture="environment" multiple data-auris-onchange="h0212"/></label>
 <button type="button" class="btn btn-sm" data-auris-onclick="h0213"><i class="ti ti-x"></i>Clear</button>
 </div>
-<div id="ev-photo-list" style="font-size:12px;color:var(--text2)">No photos selected</div>
+<div id="ev-photo-list" class="auris-incident-s-7299078644">No photos selected</div>
 </div>
 
-<div class="card" id="ims-inline-evidence-card" style="margin-bottom:14px;display:none"><div class="card-title"><i class="ti ti-photo"></i> Saved Evidence</div>
-<div style="font-size:12px;color:var(--text2);margin-bottom:8px">Photos and files already attached to this incident.</div>
+<div class="card auris-incident-s-19dcb71206" id="ims-inline-evidence-card"><div class="card-title"><i class="ti ti-photo"></i> Saved Evidence</div>
+<div class="auris-incident-s-46744debb8">Photos and files already attached to this incident.</div>
 <div id="ims-inline-evidence-list"></div>
 </div>
 
 <!-- Company custom fields -->
-<div class="card" id="ims-custom3fields-card" style="margin-bottom:14px;display:none">
+<div class="card auris-incident-s-19dcb71206" id="ims-custom3fields-card">
 <div class="card-title"><i class="ti ti-adjustments"></i> Company Specific Fields</div>
-<div style="font-size:12px;color:var(--text2);margin-bottom:10px">Additional fields configured by your company admin for incident reporting.</div>
+<div class="auris-incident-s-fa530ed1c3">Additional fields configured by your company admin for incident reporting.</div>
 <div id="ims-custom3fields-body"></div>
 </div>
 
 <!-- Type-specific fields -->
-<div class="card" style="margin-bottom:14px;display:none" id="ims-injury-fields">
-<div class="card-title" style="color:#DC2626">Injury Details</div>
+<div class="card auris-incident-s-19dcb71206" id="ims-injury-fields">
+<div class="card-title auris-incident-s-c7bff90490">Injury Details</div>
 <div class="form3row">
 <div class="form3group"><label class="form3label">Injury type</label>
 <select id="ev-injury-type"><option value="">Select...</option>
@@ -1591,27 +1592,27 @@
 </div>
 </div>
 
-<div class="card" style="margin-bottom:14px;display:none" id="ims-vehicle-fields">
-<div class="card-title" style="color:#1e40af">Vehicle Incident Details</div>
+<div class="card auris-incident-s-19dcb71206" id="ims-vehicle-fields">
+<div class="card-title auris-incident-s-de19355c5c">Vehicle Incident Details</div>
 <div class="form3row">
-<div class="form3group"><label class="form3label">Vehicle registration</label><input type="text" id="ev-vehicle-reg" style="font-family:monospace"/></div>
+<div class="form3group"><label class="form3label">Vehicle registration</label><input type="text" id="ev-vehicle-reg" class="auris-incident-s-7b8c3df564"/></div>
 <div class="form3group"><label class="form3label">Vehicle type</label><input type="text" id="ev-vehicle-type" placeholder="e.g. Forklift, Truck, Car..."/></div>
 <div class="form3group"><label class="form3label">Estimated damage (Rs)</label><input type="number" id="ev-damage-estimate" min="0" step="1000"/></div>
 </div>
 </div>
 
-<div class="card" style="margin-bottom:14px;display:none" id="ims-env-fields">
-<div class="card-title" style="color:#065F46">Environmental Details</div>
+<div class="card auris-incident-s-19dcb71206" id="ims-env-fields">
+<div class="card-title auris-incident-s-ea719d3b52">Environmental Details</div>
 <div class="form3row">
 <div class="form3group"><label class="form3label">Media affected</label>
-<select id="ev-env-media" multiple style="height:70px"><option value="air">Air</option><option value="water">Water/Soil</option><option value="soil">Soil/Ground</option><option value="drainage">Drainage/Sewer</option></select></div>
+<select id="ev-env-media" class="auris-incident-s-55147d293a" multiple><option value="air">Air</option><option value="water">Water/Soil</option><option value="soil">Soil/Ground</option><option value="drainage">Drainage/Sewer</option></select></div>
 <div class="form3group"><label class="form3label">Quantity released</label><input type="text" id="ev-quantity" placeholder="e.g. 50L, 200kg..."/></div>
 </div>
-<div style="display:flex;align-items:center;gap:8px"><input type="checkbox" id="ev-regulator-notified" style="accent-color:var(--green)"/><label for="ev-regulator-notified" style="font-size:12px;font-weight:600;cursor:pointer">Regulator notified</label></div>
+<div class="auris-incident-s-a4e017b7b0"><input type="checkbox" id="ev-regulator-notified" class="auris-incident-s-283f12d7fe"/><label class="auris-incident-s-cc6390bafc" for="ev-regulator-notified">Regulator notified</label></div>
 </div>
 
-<div class="card" style="margin-bottom:14px;display:none" id="ims-property-fields">
-<div class="card-title" style="color:#9A3412">Property Damage Details</div>
+<div class="card auris-incident-s-19dcb71206" id="ims-property-fields">
+<div class="card-title auris-incident-s-49d706a881">Property Damage Details</div>
 <div class="form3row">
 <div class="form3group"><label class="form3label">Property / asset</label><input type="text" id="ev-property-desc" placeholder="What was damaged?"/></div>
 <div class="form3group"><label class="form3label">Estimated damage (Rs)</label><input type="number" id="ev-property-damage" min="0" step="1000"/></div>
@@ -1620,12 +1621,12 @@
 </div>
 
 <!-- GPS Location -->
-<div class="card" style="margin-bottom:14px"><div class="card-title">Location</div>
+<div class="card auris-incident-s-42a6ced8b6"><div class="card-title">Location</div>
 <div class="form3row">
 <div class="form3group"><label class="form3label">GPS Address</label><input type="text" id="ev-gps-address" placeholder="Physical address or description..."/></div>
-<div class="form3group"><label class="form3label">Latitude</label><input type="text" id="ev-lat" style="font-family:monospace" placeholder="-20.000"/></div>
-<div class="form3group"><label class="form3label">Longitude</label><input type="text" id="ev-lng" style="font-family:monospace" placeholder="57.000"/></div>
-<div class="form3group" style="display:flex;align-items:flex-end"><button class="btn btn-sm" data-auris-onclick="h0214" style="width:100%"><i class="ti ti-map-pin"></i>Get GPS</button></div>
+<div class="form3group"><label class="form3label">Latitude</label><input type="text" id="ev-lat" class="auris-incident-s-7b8c3df564" placeholder="-20.000"/></div>
+<div class="form3group"><label class="form3label">Longitude</label><input type="text" id="ev-lng" class="auris-incident-s-7b8c3df564" placeholder="57.000"/></div>
+<div class="form3group auris-incident-s-c411af100d"><button class="btn btn-sm auris-incident-s-b7aa1ec004" data-auris-onclick="h0214"><i class="ti ti-map-pin"></i>Get GPS</button></div>
 </div>
 </div>
 
@@ -1636,7 +1637,7 @@
 <div class="form3group"><label class="form3label">Role / position</label><input type="text" id="ev-person-function"/></div>
 <div class="form3group"><label class="form3label">Department</label><input type="text" id="ev-person-dept"/></div>
 </div>
-<div class="form3group"><label class="form3label">Witnesses</label><textarea id="ev-witnesses" style="min-height:50px" placeholder="Names and contact details of witnesses..."></textarea></div>
+<div class="form3group"><label class="form3label">Witnesses</label><textarea id="ev-witnesses" class="auris-incident-s-2b013fa0d9" placeholder="Names and contact details of witnesses..."></textarea></div>
 <div class="form3row">
 <div class="form3group"><label class="form3label">Reported by</label><input type="text" id="ev-reported-by-name" placeholder="Auto-filled from your account"/></div>
 <div class="form3group"><label class="form3label">Assigned to</label><input type="text" id="ev-assigned-name" list="ims-personnel-list" placeholder="Start typing a name..." autocomplete="off"/><datalist id="ims-personnel-list"></datalist></div>
@@ -1647,7 +1648,7 @@
 
 <div>
 <!-- Severity & regulatory -->
-<div class="card" style="margin-bottom:14px;border:2px solid #DC2626"><div class="card-title" style="color:#DC2626">Severity &amp; Priority</div>
+<div class="card auris-incident-s-af3424473d"><div class="card-title auris-incident-s-c7bff90490">Severity &amp; Priority</div>
 <div class="form3group"><label class="form3label">Actual severity</label>
 <select id="ev-severity">
 <option value="critical">Critical - fatality / major injury</option>
@@ -1662,30 +1663,30 @@
 <option value="medium">Medium</option>
 <option value="low">Low</option>
 </select></div>
-<div id="ev-serious-warning" style="display:none;background:#FCEBEB;border:1px solid #DC2626;border-radius:8px;padding:10px 12px;font-size:12px;font-weight:600;color:#A32D2D">This severity requires regulatory notification within 7 days (OSH Act -50)</div>
-<div class="form3group" style="margin-top:10px"><label class="form3label">Regulatory notification required?</label>
+<div id="ev-serious-warning" class="auris-incident-s-5d9af10114">This severity requires regulatory notification within 7 days (OSH Act -50)</div>
+<div class="form3group auris-incident-s-df928149c5"><label class="form3label">Regulatory notification required?</label>
 <select id="ev-reg-required"><option value="no">No</option><option value="yes">Yes - OSHI</option><option value="yes_env">Yes - MOE</option><option value="yes_both">Yes - Both OSHI &amp; MOE</option></select></div>
 </div>
 
 <!-- Status -->
-<div class="card" style="margin-bottom:14px"><div class="card-title">Status</div>
-<select id="ev-status" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:8px;font-size:13px;margin-bottom:10px">
+<div class="card auris-incident-s-42a6ced8b6"><div class="card-title">Status</div>
+<select id="ev-status" class="auris-incident-s-3d5d3355bd">
 <option value="open">Open</option>
 <option value="under_investigation">Under investigation</option>
 <option value="action_required">Action required</option>
 <option value="closed">Closed</option>
 </select>
-<div class="form3group"><label class="form3label">Root cause (brief)</label><textarea id="ev-root-cause" style="min-height:60px" placeholder="Preliminary root cause (investigation will determine full root cause)..."></textarea></div>
+<div class="form3group"><label class="form3label">Root cause (brief)</label><textarea id="ev-root-cause" class="auris-incident-s-07bdff4587" placeholder="Preliminary root cause (investigation will determine full root cause)..."></textarea></div>
 </div>
 
 <!-- Investigation required -->
-<div class="card" style="border:2px solid #5B21B6">
-<div class="card-title" style="color:#5B21B6"><i class="ti ti-search"></i> Investigation</div>
-<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px"><input type="checkbox" id="ev-inv-required" style="accent-color:#5B21B6;width:16px;height:16px;padding:0;margin:0;flex-shrink:0;cursor:pointer" data-auris-onchange="h0215"/><label for="ev-inv-required" style="font-size:13px;font-weight:600;cursor:pointer;color:#5B21B6;margin:0">Investigation required</label></div>
-<div id="ev-inv-ref-section" style="display:none">
-<div class="form3group"><label class="form3label">Investigation ref</label><input type="text" id="ev-inv-ref" style="font-family:monospace" readonly placeholder="Auto-assigned on save"/></div>
+<div class="card auris-incident-s-ee71c71db7">
+<div class="card-title auris-incident-s-868661d008"><i class="ti ti-search"></i> Investigation</div>
+<div class="auris-incident-s-ba28bccee4"><input type="checkbox" id="ev-inv-required" class="auris-incident-s-feec27458c" data-auris-onchange="h0215"/><label class="auris-incident-s-6a31020ecd" for="ev-inv-required">Investigation required</label></div>
+<div id="ev-inv-ref-section" class="auris-incident-s-6aa34d7432">
+<div class="form3group"><label class="form3label">Investigation ref</label><input type="text" id="ev-inv-ref" class="auris-incident-s-7b8c3df564" readonly placeholder="Auto-assigned on save"/></div>
 </div>
-<div style="margin-top:8px;font-size:11px;color:var(--text2)">Save the incident first, then click "Start investigation" to open the full investigation form.</div>
+<div class="auris-incident-s-21a7f8a9a8">Save the incident first, then click "Start investigation" to open the full investigation form.</div>
 </div>
 </div>
 </div>
@@ -1698,62 +1699,62 @@
 </div>
 
 <!-- -- INVESTIGATIONS -- -->
-<div id="ims-view-investigate" style="display:none">
-<div class="card" style="margin-bottom:12px;padding:10px 14px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
-<div><div class="card-title" style="margin:0">Incident Investigations</div>
-<div style="font-size:12px;color:var(--text2)">5-Why - Timeline reconstruction</div></div>
-<button class="btn btn-primary" id="inv-add-btn" data-auris-onclick="h0216" style="display:none"><i class="ti ti-plus"></i>New investigation</button>
+<div id="ims-view-investigate" class="auris-incident-s-6aa34d7432">
+<div class="card auris-incident-s-e2e1112055">
+<div><div class="card-title auris-incident-s-ab79ea2b85">Incident Investigations</div>
+<div class="auris-incident-s-7299078644">5-Why - Timeline reconstruction</div></div>
+<button class="btn btn-primary auris-incident-s-6aa34d7432" id="inv-add-btn" data-auris-onclick="h0216"><i class="ti ti-plus"></i>New investigation</button>
 </div>
 
 <!-- Investigation list -->
 <div id="ims-inv-list"><div class="loading-msg">Loading investigations...</div></div>
 
 <!-- Investigation form (hidden by default) -->
-<div id="ims-inv-form" style="display:none">
-<div class="card" style="margin-bottom:14px;padding:0;overflow:hidden">
-<div style="padding:14px 20px;background:linear-gradient(135deg,#3B0764,#5B21B6);color:#fff;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+<div id="ims-inv-form" class="auris-incident-s-6aa34d7432">
+<div class="card auris-incident-s-54ec8874e7">
+<div class="auris-incident-s-d3fafc6cd1">
 <div>
-<div style="font-size:17px;font-weight:800" id="inv-form3title">Investigation</div>
-<div style="font-family:monospace;font-size:12px;color:#ddd6fe;margin-top:3px" id="inv-form3ref">INV-AUTO</div>
-<div id="inv-lock-note" style="display:none;margin-top:7px;font-size:12px;color:#fff;background:rgba(255,255,255,.16);padding:5px 9px;border-radius:7px"></div>
+<div id="inv-form3title" class="auris-incident-s-75021e57ca">Investigation</div>
+<div id="inv-form3ref" class="auris-incident-s-be29fbce10">INV-AUTO</div>
+<div id="inv-lock-note" class="auris-incident-s-03fa5b5b69"></div>
 </div>
-<div style="display:flex;gap:8px">
-<button class="btn" style="background:rgba(255,255,255,.2);color:#fff;border-color:rgba(255,255,255,.3)" data-auris-onclick="h0217"><i class="ti ti-arrow-left"></i>Back</button>
-<button id="inv-delete-btn" class="btn" style="display:none;background:rgba(0,0,0,.3);color:#fff;border-color:rgba(255,255,255,.3)" data-auris-onclick="h0218"><i class="ti ti-trash"></i></button>
-<button id="inv-release-btn" class="btn" style="display:none;background:#fff;color:#5B21B6;font-weight:700" data-auris-onclick="h0219"><i class="ti ti-lock-open"></i>Release for edit</button>
-<button class="btn" style="background:#1D9E75;color:#fff;border-color:#1D9E75" data-auris-onclick="h0220"><i class="ti ti-device-floppy"></i>Save</button>
-<button class="btn" style="background:#fff;color:#5B21B6;font-weight:700" data-auris-onclick="h0221"><i class="ti ti-robot"></i>AI assist</button>
+<div class="auris-incident-s-9c40389b4a">
+<button class="btn auris-incident-s-5c09edd131" data-auris-onclick="h0217"><i class="ti ti-arrow-left"></i>Back</button>
+<button id="inv-delete-btn" class="btn auris-incident-s-96f7839a1b" data-auris-onclick="h0218"><i class="ti ti-trash"></i></button>
+<button id="inv-release-btn" class="btn auris-incident-s-55c44a2ed9" data-auris-onclick="h0219"><i class="ti ti-lock-open"></i>Release for edit</button>
+<button class="btn auris-incident-s-c7b9e5b2c7" data-auris-onclick="h0220"><i class="ti ti-device-floppy"></i>Save</button>
+<button class="btn auris-incident-s-c35b8f39aa" data-auris-onclick="h0221"><i class="ti ti-robot"></i>AI assist</button>
 </div>
 </div>
 </div>
 
 <!-- Investigation method selector -->
-<div class="card" style="margin-bottom:14px"><div class="card-title">Investigation Method</div>
-<div style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px" id="inv-method-selector">
-<div class="inv-meth-btn" data-meth="5why"     data-auris-onclick="h0222"     style="padding:10px;border-radius:8px;text-align:center;cursor:pointer;border:2px solid #bfdbfe;background:#EFF6FF;transition:all .15s"><div style="font-size:20px;margin-bottom:4px">?</div><div style="font-weight:700;font-size:11px;color:#1e40af">5 Why</div></div>
-<div class="inv-meth-btn" data-meth="fishbone" data-auris-onclick="h0223" style="display:none;padding:10px;border-radius:8px;text-align:center;cursor:pointer;border:2px solid #fed7aa;background:#FFF7ED;transition:all .15s"><div style="font-size:20px;margin-bottom:4px"><i class="ti ti-circle-dot"></i></div><div style="font-weight:700;font-size:11px;color:#9A3412">Fishbone</div></div>
-<div class="inv-meth-btn" data-meth="icam"     data-auris-onclick="h0224"     style="display:none;padding:10px;border-radius:8px;text-align:center;cursor:pointer;border:2px solid #ddd6fe;background:#F5F3FF;transition:all .15s"><div style="font-size:20px;margin-bottom:4px"><i class="ti ti-circle-dot"></i></div><div style="font-weight:700;font-size:11px;color:#5B21B6">ICAM</div></div>
-<div class="inv-meth-btn" data-meth="taproot"  data-auris-onclick="h0225"  style="display:none;padding:10px;border-radius:8px;text-align:center;cursor:pointer;border:2px solid #a7f3d0;background:#ECFDF5;transition:all .15s"><div style="font-size:20px;margin-bottom:4px"><i class="ti ti-circle-dot"></i></div><div style="font-weight:700;font-size:11px;color:#065F46">TapRooT</div></div>
-<div class="inv-meth-btn" data-meth="timeline" data-auris-onclick="h0226" style="padding:10px;border-radius:8px;text-align:center;cursor:pointer;border:2px solid #fcd34d;background:#FFFBEB;transition:all .15s"><div style="font-size:20px;margin-bottom:4px"><i class="ti ti-circle-dot"></i></div><div style="font-weight:700;font-size:11px;color:#854F0B">Timeline</div></div>
+<div class="card auris-incident-s-42a6ced8b6"><div class="card-title">Investigation Method</div>
+<div id="inv-method-selector" class="auris-incident-s-2b31f1fe43">
+<div class="inv-meth-btn auris-incident-s-8f685ed0f7" data-meth="5why"     data-auris-onclick="h0222"    ><div class="auris-incident-s-285cbacd20">?</div><div class="auris-incident-s-f4ccaa570b">5 Why</div></div>
+<div class="inv-meth-btn auris-incident-s-c7f45ff5c2" data-meth="fishbone" data-auris-onclick="h0223"><div class="auris-incident-s-285cbacd20"><i class="ti ti-circle-dot"></i></div><div class="auris-incident-s-5b6287c2cf">Fishbone</div></div>
+<div class="inv-meth-btn auris-incident-s-563c6641a4" data-meth="icam"     data-auris-onclick="h0224"    ><div class="auris-incident-s-285cbacd20"><i class="ti ti-circle-dot"></i></div><div class="auris-incident-s-cde036c7f0">ICAM</div></div>
+<div class="inv-meth-btn auris-incident-s-e40c41721f" data-meth="taproot"  data-auris-onclick="h0225" ><div class="auris-incident-s-285cbacd20"><i class="ti ti-circle-dot"></i></div><div class="auris-incident-s-f25d2b1378">TapRooT</div></div>
+<div class="inv-meth-btn auris-incident-s-bbae934f37" data-meth="timeline" data-auris-onclick="h0226"><div class="auris-incident-s-285cbacd20"><i class="ti ti-circle-dot"></i></div><div class="auris-incident-s-011b486d4f">Timeline</div></div>
 </div>
 <input type="hidden" id="inv-method" value="5why"/>
 </div>
 
 <!-- Investigation tabs -->
-<div style="display:flex;gap:0;margin-bottom:14px;border-bottom:2px solid var(--border);overflow-x:auto">
-<button class="mtg-tab active" id="inv-tab-ws1" data-auris-onclick="h0227" style="white-space:nowrap">Incident Facts</button>
-<button class="mtg-tab" id="inv-tab-ws2" data-auris-onclick="h0228" style="white-space:nowrap">Interview</button>
-<button class="mtg-tab" id="inv-tab-rca" data-auris-onclick="h0229" style="white-space:nowrap">Root Cause Analysis</button>
-<button class="mtg-tab" id="inv-tab-ws3" data-auris-onclick="h0230" style="white-space:nowrap">Analysis</button>
-<button class="mtg-tab" id="inv-tab-ca" data-auris-onclick="h0231" style="white-space:nowrap">Corrective Actions</button>
-<button class="mtg-tab" id="inv-tab-sign" data-auris-onclick="h0232" style="white-space:nowrap">Sign-off</button>
+<div class="auris-incident-s-0904085f3d">
+<button class="mtg-tab active auris-incident-s-eb99a4c193" id="inv-tab-ws1" data-auris-onclick="h0227">Incident Facts</button>
+<button class="mtg-tab auris-incident-s-eb99a4c193" id="inv-tab-ws2" data-auris-onclick="h0228">Interview</button>
+<button class="mtg-tab auris-incident-s-eb99a4c193" id="inv-tab-rca" data-auris-onclick="h0229">Root Cause Analysis</button>
+<button class="mtg-tab auris-incident-s-eb99a4c193" id="inv-tab-ws3" data-auris-onclick="h0230">Analysis</button>
+<button class="mtg-tab auris-incident-s-eb99a4c193" id="inv-tab-ca" data-auris-onclick="h0231">Corrective Actions</button>
+<button class="mtg-tab auris-incident-s-eb99a4c193" id="inv-tab-sign" data-auris-onclick="h0232">Sign-off</button>
 </div>
 
 <!-- WS1: Incident Facts -->
-<div id="inv-ws1" class="card" style="margin-bottom:14px">
+<div id="inv-ws1" class="card auris-incident-s-42a6ced8b6">
 <div class="card-title">Incident Facts</div>
 <div class="form3row">
-<div class="form3group"><label class="form3label">Linked incident ref</label><input type="text" id="ws1-event-link" style="font-family:monospace" placeholder="INC-2026-001"/></div>
+<div class="form3group"><label class="form3label">Linked incident ref</label><input type="text" id="ws1-event-link" class="auris-incident-s-7b8c3df564" placeholder="INC-2026-001"/></div>
 <div class="form3group"><label class="form3label">Investigator</label><input type="text" id="ws1-reported-by"/></div>
 <div class="form3group"><label class="form3label">Investigator title</label><input type="text" id="ws1-reported-title"/></div>
 <div class="form3group"><label class="form3label">Target completion</label><input type="date" id="ws1-date-completion"/></div>
@@ -1763,7 +1764,7 @@
 <div class="form3group"><label class="form3label">Time</label><input type="time" id="ws1-inc-time"/></div>
 <div class="form3group"><label class="form3label">Location</label><input type="text" id="ws1-location"/></div>
 </div>
-<div class="form3group"><label class="form3label">Full description of what happened</label><textarea id="ws1-description" style="min-height:80px"></textarea></div>
+<div class="form3group"><label class="form3label">Full description of what happened</label><textarea id="ws1-description" class="auris-incident-s-770a4152c1"></textarea></div>
 <div class="form3row">
 <div class="form3group"><label class="form3label">Actual severity</label>
 <select id="inv-type-sel"><option value="incident">Incident</option><option value="near_miss">Near Miss</option><option value="dangerous_occurrence">Dangerous Occurrence</option><option value="injury">Injury</option></select></div>
@@ -1776,116 +1777,116 @@
 <div class="form3group"><label class="form3label">Employment type</label>
 <select id="ws1-contract-type"><option value="employee">Employee</option><option value="contractor">Contractor</option><option value="visitor">Visitor</option></select></div>
 </div>
-<div class="form3group"><label class="form3label">Witnesses</label><textarea id="ws1-witnesses" style="min-height:50px" placeholder="Quick list of witness names - detailed interviews are recorded in the Interview tab"></textarea></div>
+<div class="form3group"><label class="form3label">Witnesses</label><textarea id="ws1-witnesses" class="auris-incident-s-2b013fa0d9" placeholder="Quick list of witness names - detailed interviews are recorded in the Interview tab"></textarea></div>
 <div class="form3group"><label class="form3label">Investigation team members</label>
-<div style="display:flex;gap:8px"><input type="text" id="inv-team3input" list="ims-personnel-list" placeholder="Type a name (registered personnel suggested) and click Add" autocomplete="off" data-auris-onkeydown="h0233"/><button type="button" class="btn btn-sm" data-auris-onclick="h0234" style="flex-shrink:0"><i class="ti ti-plus"></i>Add</button></div>
-<div id="inv-team3chips" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px"></div>
+<div class="auris-incident-s-9c40389b4a"><input type="text" id="inv-team3input" list="ims-personnel-list" placeholder="Type a name (registered personnel suggested) and click Add" autocomplete="off" data-auris-onkeydown="h0233"/><button type="button" class="btn btn-sm auris-incident-s-867764b6d2" data-auris-onclick="h0234"><i class="ti ti-plus"></i>Add</button></div>
+<div id="inv-team3chips" class="auris-incident-s-8927551b68"></div>
 </div>
-<div class="form3group"><label class="form3label">Immediate actions taken</label><textarea id="ws1-immediate-actions" style="min-height:60px"></textarea></div>
+<div class="form3group"><label class="form3label">Immediate actions taken</label><textarea id="ws1-immediate-actions" class="auris-incident-s-07bdff4587"></textarea></div>
 </div>
 
 <!-- WS2: Interview -->
-<div id="inv-ws2" class="card" style="display:none;margin-bottom:14px">
+<div id="inv-ws2" class="card auris-incident-s-3184233ab6">
 <div class="card-title">Witness / Person Interview</div>
 <div class="form3row">
 <div class="form3group"><label class="form3label">Interviewer</label><input type="text" id="ws2-interviewer"/></div>
 <div class="form3group"><label class="form3label">Interviewee</label><input type="text" id="ws2-interviewee"/></div>
 <div class="form3group"><label class="form3label">Interview date</label><input type="date" id="ws2-date"/></div>
 </div>
-<div class="form3group"><label class="form3label">What was the person doing at the time?</label><textarea id="ws2-proc" style="min-height:60px"></textarea></div>
-<div class="form3group"><label class="form3label">Was the correct procedure being followed?</label><textarea id="ws2-mgmt" style="min-height:50px"></textarea></div>
-<div class="form3group"><label class="form3label">Were skills/training adequate?</label><textarea id="ws2-skills" style="min-height:50px"></textarea></div>
-<div class="form3group"><label class="form3label">Were workplace conditions adequate?</label><textarea id="ws2-care" style="min-height:50px"></textarea></div>
-<div class="form3group"><label class="form3label">Root causes identified from interview</label><textarea id="ws2-root-causes" style="min-height:60px"></textarea></div>
-<div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--border)">
-<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
-<div style="font-weight:700;font-size:13px">Witness interviews &amp; statements</div>
+<div class="form3group"><label class="form3label">What was the person doing at the time?</label><textarea id="ws2-proc" class="auris-incident-s-07bdff4587"></textarea></div>
+<div class="form3group"><label class="form3label">Was the correct procedure being followed?</label><textarea id="ws2-mgmt" class="auris-incident-s-2b013fa0d9"></textarea></div>
+<div class="form3group"><label class="form3label">Were skills/training adequate?</label><textarea id="ws2-skills" class="auris-incident-s-2b013fa0d9"></textarea></div>
+<div class="form3group"><label class="form3label">Were workplace conditions adequate?</label><textarea id="ws2-care" class="auris-incident-s-2b013fa0d9"></textarea></div>
+<div class="form3group"><label class="form3label">Root causes identified from interview</label><textarea id="ws2-root-causes" class="auris-incident-s-07bdff4587"></textarea></div>
+<div class="auris-incident-s-00f9afcb21">
+<div class="auris-incident-s-94455f3402">
+<div class="auris-incident-s-2630ceee1a">Witness interviews &amp; statements</div>
 <button type="button" class="btn btn-sm" data-auris-onclick="h0235"><i class="ti ti-plus"></i>Add witness</button>
 </div>
-<div style="font-size:11px;color:var(--text2);margin-bottom:10px">Add a row per witness. Each is saved as an evidence record when you save the investigation. You can attach a scanned signed statement (PDF, photo or Word) per witness.</div>
+<div class="auris-incident-s-74799a7335">Add a row per witness. Each is saved as an evidence record when you save the investigation. You can attach a scanned signed statement (PDF, photo or Word) per witness.</div>
 <div id="inv-witness-list"></div>
-<div id="inv-witness-empty" style="text-align:center;padding:12px;color:var(--text2);font-size:12px">No witnesses added yet</div>
+<div id="inv-witness-empty" class="auris-incident-s-a5586776b7">No witnesses added yet</div>
 </div>
 </div>
 
 <!-- RCA Tab -->
-<div id="inv-rca" class="card" style="display:none;margin-bottom:14px">
+<div id="inv-rca" class="card auris-incident-s-3184233ab6">
 <div class="card-title">Root Cause Analysis</div>
 
 <!-- 5 Why section -->
 <div id="inv-rca-5why">
-<div style="background:#EFF6FF;border:1px solid #bfdbfe;border-radius:8px;padding:10px 14px;margin-bottom:12px;font-size:12px;color:#1e40af;font-weight:600">5-Why Analysis - Ask "why?" repeatedly to find the root cause</div>
+<div class="auris-incident-s-f246ead708">5-Why Analysis - Ask "why?" repeatedly to find the root cause</div>
 <div id="ws3-five-why-body"></div>
-<button class="btn btn-sm btn-primary" data-auris-onclick="h0236" style="margin-top:4px"><i class="ti ti-plus"></i>Add Why</button>
+<button class="btn btn-sm btn-primary auris-incident-s-eb2cdaa55e" data-auris-onclick="h0236"><i class="ti ti-plus"></i>Add Why</button>
 </div>
 
 <!-- Fishbone section -->
-<div id="inv-rca-fishbone" style="display:none">
-<div style="background:#FFF7ED;border:1px solid #fed7aa;border-radius:8px;padding:10px 14px;margin-bottom:12px;font-size:12px;color:#9A3412;font-weight:600">Fishbone (Ishikawa) - Categorise causes by domain</div>
-<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
-<div class="card" style="background:#FFF7ED;border:1px solid #fed7aa">
-<div style="font-weight:700;color:#9A3412;margin-bottom:6px;font-size:12px">People</div>
-<textarea id="fb-people" style="width:100%;min-height:60px;padding:6px;border:1px solid var(--border);border-radius:6px;font-size:12px" placeholder="Human factor causes..."></textarea>
+<div id="inv-rca-fishbone" class="auris-incident-s-6aa34d7432">
+<div class="auris-incident-s-31dd69f847">Fishbone (Ishikawa) - Categorise causes by domain</div>
+<div class="auris-incident-s-28fe69c991">
+<div class="card auris-incident-s-e59a07da4b">
+<div class="auris-incident-s-e20c3342b3">People</div>
+<textarea id="fb-people" class="auris-incident-s-675cf4a417" placeholder="Human factor causes..."></textarea>
 </div>
-<div class="card" style="background:#EFF6FF;border:1px solid #bfdbfe">
-<div style="font-weight:700;color:#1e40af;margin-bottom:6px;font-size:12px">Equipment / Machine</div>
-<textarea id="fb-equipment" style="width:100%;min-height:60px;padding:6px;border:1px solid var(--border);border-radius:6px;font-size:12px" placeholder="Equipment/tool causes..."></textarea>
+<div class="card auris-incident-s-3ed0cd650a">
+<div class="auris-incident-s-7f2e77bc87">Equipment / Machine</div>
+<textarea id="fb-equipment" class="auris-incident-s-675cf4a417" placeholder="Equipment/tool causes..."></textarea>
 </div>
-<div class="card" style="background:#ECFDF5;border:1px solid #a7f3d0">
-<div style="font-weight:700;color:#065F46;margin-bottom:6px;font-size:12px">Procedures / Methods</div>
-<textarea id="fb-methods" style="width:100%;min-height:60px;padding:6px;border:1px solid var(--border);border-radius:6px;font-size:12px" placeholder="Process/procedure causes..."></textarea>
+<div class="card auris-incident-s-5027eceafe">
+<div class="auris-incident-s-b57a59dbd2">Procedures / Methods</div>
+<textarea id="fb-methods" class="auris-incident-s-675cf4a417" placeholder="Process/procedure causes..."></textarea>
 </div>
-<div class="card" style="background:#FFFBEB;border:1px solid #fcd34d">
-<div style="font-weight:700;color:#854F0B;margin-bottom:6px;font-size:12px">Environment</div>
-<textarea id="fb-environment" style="width:100%;min-height:60px;padding:6px;border:1px solid var(--border);border-radius:6px;font-size:12px" placeholder="Environmental causes..."></textarea>
+<div class="card auris-incident-s-2661d0136f">
+<div class="auris-incident-s-779062a0c4">Environment</div>
+<textarea id="fb-environment" class="auris-incident-s-675cf4a417" placeholder="Environmental causes..."></textarea>
 </div>
-<div class="card" style="background:#F5F3FF;border:1px solid #ddd6fe">
-<div style="font-weight:700;color:#5B21B6;margin-bottom:6px;font-size:12px">Training / Knowledge</div>
-<textarea id="fb-training" style="width:100%;min-height:60px;padding:6px;border:1px solid var(--border);border-radius:6px;font-size:12px" placeholder="Training/competency causes..."></textarea>
+<div class="card auris-incident-s-236a9062fa">
+<div class="auris-incident-s-e093a36b3a">Training / Knowledge</div>
+<textarea id="fb-training" class="auris-incident-s-675cf4a417" placeholder="Training/competency causes..."></textarea>
 </div>
-<div class="card" style="background:#FEF2F2;border:1px solid #fecaca">
-<div style="font-weight:700;color:#991B1B;margin-bottom:6px;font-size:12px">Management / Systems</div>
-<textarea id="fb-management" style="width:100%;min-height:60px;padding:6px;border:1px solid var(--border);border-radius:6px;font-size:12px" placeholder="Management system causes..."></textarea>
+<div class="card auris-incident-s-e045d7fafd">
+<div class="auris-incident-s-f29f190852">Management / Systems</div>
+<textarea id="fb-management" class="auris-incident-s-675cf4a417" placeholder="Management system causes..."></textarea>
 </div>
 </div>
 </div>
 
 <!-- ICAM section -->
-<div id="inv-rca-icam" style="display:none">
-<div style="background:#F5F3FF;border:1px solid #ddd6fe;border-radius:8px;padding:10px 14px;margin-bottom:12px;font-size:12px;color:#5B21B6;font-weight:600">ICAM - Incident Cause Analysis Method</div>
-<div style="display:flex;flex-direction:column;gap:10px">
-<div><div style="font-weight:700;font-size:12px;color:#5B21B6;margin-bottom:4px">Absence of Controls</div><textarea id="icam3absence" style="width:100%;min-height:60px;padding:6px;border:1px solid var(--border);border-radius:6px;font-size:12px" placeholder="What controls were absent or failed?"></textarea></div>
-<div><div style="font-weight:700;font-size:12px;color:#854F0B;margin-bottom:4px">Individual/Team Factors</div><textarea id="icam3individual" style="width:100%;min-height:60px;padding:6px;border:1px solid var(--border);border-radius:6px;font-size:12px" placeholder="Individual or team contributing factors..."></textarea></div>
-<div><div style="font-weight:700;font-size:12px;color:#1e40af;margin-bottom:4px">Task / Environmental Conditions</div><textarea id="icam3task" style="width:100%;min-height:60px;padding:6px;border:1px solid var(--border);border-radius:6px;font-size:12px" placeholder="Task and environmental conditions..."></textarea></div>
-<div><div style="font-weight:700;font-size:12px;color:#065F46;margin-bottom:4px">Organisational Factors</div><textarea id="icam3org" style="width:100%;min-height:60px;padding:6px;border:1px solid var(--border);border-radius:6px;font-size:12px" placeholder="Organisational and management factors..."></textarea></div>
+<div id="inv-rca-icam" class="auris-incident-s-6aa34d7432">
+<div class="auris-incident-s-2d4605c798">ICAM - Incident Cause Analysis Method</div>
+<div class="auris-incident-s-89086d4ee3">
+<div><div class="auris-incident-s-6502364ee3">Absence of Controls</div><textarea id="icam3absence" class="auris-incident-s-675cf4a417" placeholder="What controls were absent or failed?"></textarea></div>
+<div><div class="auris-incident-s-bb814d8485">Individual/Team Factors</div><textarea id="icam3individual" class="auris-incident-s-675cf4a417" placeholder="Individual or team contributing factors..."></textarea></div>
+<div><div class="auris-incident-s-c7c4b36f76">Task / Environmental Conditions</div><textarea id="icam3task" class="auris-incident-s-675cf4a417" placeholder="Task and environmental conditions..."></textarea></div>
+<div><div class="auris-incident-s-181282be0e">Organisational Factors</div><textarea id="icam3org" class="auris-incident-s-675cf4a417" placeholder="Organisational and management factors..."></textarea></div>
 </div>
 </div>
 
 <!-- TapRooT section -->
-<div id="inv-rca-taproot" style="display:none">
-<div style="background:#ECFDF5;border:1px solid #a7f3d0;border-radius:8px;padding:10px 14px;margin-bottom:12px;font-size:12px;color:#065F46;font-weight:600">TapRooT - Systematic Root Cause Tree</div>
-<div style="display:flex;flex-direction:column;gap:8px">
-<div><div style="font-weight:700;font-size:12px;color:#065F46;margin-bottom:4px">Causal Factor 1 - Equipment difficulty</div><textarea id="tr-cf1" style="width:100%;min-height:50px;padding:6px;border:1px solid var(--border);border-radius:6px;font-size:12px" placeholder="Equipment/device problems..."></textarea></div>
-<div><div style="font-weight:700;font-size:12px;color:#065F46;margin-bottom:4px">Causal Factor 2 - Procedures</div><textarea id="tr-cf2" style="width:100%;min-height:50px;padding:6px;border:1px solid var(--border);border-radius:6px;font-size:12px" placeholder="Procedure/work instruction problems..."></textarea></div>
-<div><div style="font-weight:700;font-size:12px;color:#065F46;margin-bottom:4px">Causal Factor 3 - Training</div><textarea id="tr-cf3" style="width:100%;min-height:50px;padding:6px;border:1px solid var(--border);border-radius:6px;font-size:12px" placeholder="Training/knowledge deficiencies..."></textarea></div>
-<div><div style="font-weight:700;font-size:12px;color:#065F46;margin-bottom:4px">Causal Factor 4 - Quality control</div><textarea id="tr-cf4" style="width:100%;min-height:50px;padding:6px;border:1px solid var(--border);border-radius:6px;font-size:12px" placeholder="QC/verification issues..."></textarea></div>
-<div><div style="font-weight:700;font-size:12px;color:#065F46;margin-bottom:4px">Causal Factor 5 - Management systems</div><textarea id="tr-cf5" style="width:100%;min-height:50px;padding:6px;border:1px solid var(--border);border-radius:6px;font-size:12px" placeholder="Management and organisational issues..."></textarea></div>
+<div id="inv-rca-taproot" class="auris-incident-s-6aa34d7432">
+<div class="auris-incident-s-1f1d6a8fc1">TapRooT - Systematic Root Cause Tree</div>
+<div class="auris-incident-s-0fbf9e859f">
+<div><div class="auris-incident-s-181282be0e">Causal Factor 1 - Equipment difficulty</div><textarea id="tr-cf1" class="auris-incident-s-46bbdbcc35" placeholder="Equipment/device problems..."></textarea></div>
+<div><div class="auris-incident-s-181282be0e">Causal Factor 2 - Procedures</div><textarea id="tr-cf2" class="auris-incident-s-46bbdbcc35" placeholder="Procedure/work instruction problems..."></textarea></div>
+<div><div class="auris-incident-s-181282be0e">Causal Factor 3 - Training</div><textarea id="tr-cf3" class="auris-incident-s-46bbdbcc35" placeholder="Training/knowledge deficiencies..."></textarea></div>
+<div><div class="auris-incident-s-181282be0e">Causal Factor 4 - Quality control</div><textarea id="tr-cf4" class="auris-incident-s-46bbdbcc35" placeholder="QC/verification issues..."></textarea></div>
+<div><div class="auris-incident-s-181282be0e">Causal Factor 5 - Management systems</div><textarea id="tr-cf5" class="auris-incident-s-46bbdbcc35" placeholder="Management and organisational issues..."></textarea></div>
 </div>
 </div>
 
 <!-- Timeline section -->
-<div id="inv-rca-timeline" style="display:none">
-<div style="background:#FFFBEB;border:1px solid #fcd34d;border-radius:8px;padding:10px 14px;margin-bottom:12px;font-size:12px;color:#854F0B;font-weight:600">Timeline Reconstruction - Sequence of events</div>
+<div id="inv-rca-timeline" class="auris-incident-s-6aa34d7432">
+<div class="auris-incident-s-8e5ff65bd7">Timeline Reconstruction - Sequence of events</div>
 <div id="inv-timeline-body"></div>
 <button class="btn btn-sm btn-primary" data-auris-onclick="h0237"><i class="ti ti-plus"></i>Add event</button>
 </div>
 
-<div class="form3group" style="margin-top:16px"><label class="form3label">Root cause summary</label><textarea id="ws2-attitude" style="min-height:80px" placeholder="Summarise the identified root causes..."></textarea></div>
-<div class="form3group"><label class="form3label">Contributing / systemic factors</label><textarea id="ws2-personal" style="min-height:60px" placeholder="Wider organisational or systemic factors..."></textarea></div>
+<div class="form3group auris-incident-s-92c18f6bda"><label class="form3label">Root cause summary</label><textarea id="ws2-attitude" class="auris-incident-s-770a4152c1" placeholder="Summarise the identified root causes..."></textarea></div>
+<div class="form3group"><label class="form3label">Contributing / systemic factors</label><textarea id="ws2-personal" class="auris-incident-s-07bdff4587" placeholder="Wider organisational or systemic factors..."></textarea></div>
 </div>
 
 <!-- WS3: Analysis -->
-<div id="inv-ws3" class="card" style="display:none;margin-bottom:14px">
+<div id="inv-ws3" class="card auris-incident-s-3184233ab6">
 <div class="card-title">Detailed Analysis</div>
 <div class="form3row">
 <div class="form3group"><label class="form3label">Completed by</label><input type="text" id="ws3-completed-by"/></div>
@@ -1894,60 +1895,60 @@
 </div>
 <div class="form3row">
 <div class="form3group"><label class="form3label">Equipment involved?</label><select id="ws3-machines"><option value="no">No</option><option value="yes">Yes</option></select></div>
-<div class="form3group"><label class="form3label">Equipment details</label><textarea id="ws3-machines-explain" style="min-height:40px"></textarea></div>
+<div class="form3group"><label class="form3label">Equipment details</label><textarea id="ws3-machines-explain" class="auris-incident-s-7e000820e7"></textarea></div>
 </div>
 <div class="form3row">
 <div class="form3group"><label class="form3label">Materials/substances involved?</label><select id="ws3-materials"><option value="no">No</option><option value="yes">Yes</option></select></div>
-<div class="form3group"><label class="form3label">Details</label><textarea id="ws3-materials-explain" style="min-height:40px"></textarea></div>
+<div class="form3group"><label class="form3label">Details</label><textarea id="ws3-materials-explain" class="auris-incident-s-7e000820e7"></textarea></div>
 </div>
 <div class="form3row">
 <div class="form3group"><label class="form3label">Environmental factors?</label><select id="ws3-environment"><option value="no">No</option><option value="yes">Yes</option></select></div>
-<div class="form3group"><label class="form3label">Details</label><textarea id="ws3-environment-explain" style="min-height:40px"></textarea></div>
+<div class="form3group"><label class="form3label">Details</label><textarea id="ws3-environment-explain" class="auris-incident-s-7e000820e7"></textarea></div>
 </div>
 <div class="form3group"><label class="form3label">Likelihood of recurrence without action</label>
 <select id="inv-recurrence"><option value="unlikely">Unlikely</option><option value="possible">Possible</option><option value="likely" selected>Likely</option><option value="almost_certain">Almost certain</option></select></div>
 </div>
 
 <!-- CA Tab -->
-<div id="inv-ca" class="card" style="display:none;margin-bottom:14px">
+<div id="inv-ca" class="card auris-incident-s-3184233ab6">
 <div class="card-title">Corrective &amp; Preventive Actions</div>
-<div style="font-size:12px;color:var(--text2);margin-bottom:12px">Add corrective actions - these will be tracked in the Corrective Actions module (MAP/CAPA) with due dates, assignment and escalation.</div>
+<div class="auris-incident-s-5faab67eef">Add corrective actions - these will be tracked in the Corrective Actions module (MAP/CAPA) with due dates, assignment and escalation.</div>
 <div id="inv-ca-body"></div>
-<div id="inv-ca-empty" style="text-align:center;padding:20px;color:var(--text2);font-size:13px">No corrective actions added yet</div>
+<div id="inv-ca-empty" class="auris-incident-s-3660710a2e">No corrective actions added yet</div>
 <button class="btn btn-primary" data-auris-onclick="h0238"><i class="ti ti-plus"></i>Add corrective action</button>
 </div>
 
 <!-- Sign-off Tab -->
-<div id="inv-sign" class="card" style="display:none;margin-bottom:14px">
+<div id="inv-sign" class="card auris-incident-s-3184233ab6">
 <div class="card-title">Investigation Sign-off</div>
-<div id="inv-safety-comm3btn" style="margin-bottom:14px">
-<button class="btn" style="background:#5B21B6;color:#fff;border-color:#5B21B6" data-auris-onclick="h0239"><i class="ti ti-robot"></i>Generate AI Safety Communication</button>
+<div id="inv-safety-comm3btn" class="auris-incident-s-42a6ced8b6">
+<button class="btn auris-incident-s-a7dfccfa36" data-auris-onclick="h0239"><i class="ti ti-robot"></i>Generate AI Safety Communication</button>
 </div>
-<div style="font-size:12px;color:var(--text2);margin-bottom:12px;background:#EFF6FF;border:1px solid #bfdbfe;border-radius:8px;padding:10px 12px">Workflow: the <strong>Investigator</strong> signs when the investigation is complete ? the Reviewer is notified by email. The <strong>Reviewer</strong> signs ? the Approver is notified. The <strong>Approver</strong> signs ? the investigation is closed. Each step can only be signed by the named person (or SEPHS admin).</div>
-<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px">
-<div class="card" style="background:#f9fafb">
-<div style="font-weight:700;font-size:12px;margin-bottom:8px">1. Investigator</div>
+<div class="auris-incident-s-cce7c9c283">Workflow: the <strong>Investigator</strong> signs when the investigation is complete ? the Reviewer is notified by email. The <strong>Reviewer</strong> signs ? the Approver is notified. The <strong>Approver</strong> signs ? the investigation is closed. Each step can only be signed by the named person (or SEPHS admin).</div>
+<div class="auris-incident-s-29b0aa963a">
+<div class="card auris-incident-s-0dc955fc21">
+<div class="auris-incident-s-74a348c641">1. Investigator</div>
 <div class="form3group"><label class="form3label">Name</label><input type="text" id="inv-sign-investigator" list="ims-personnel-list" autocomplete="off" placeholder="Select from personnel..."/></div>
-<div class="form3group"><label class="form3label">Date signed</label><input type="date" id="inv-sign-inv-date" readonly style="background:#f3f4f6"/></div>
-<button type="button" class="btn btn-sm" id="inv-sign-btn-investigator" data-auris-onclick="h0240" style="width:100%;background:#1D9E75;color:#fff;border-color:#1D9E75">Sign as investigator</button>
-<div id="inv-sign-status-investigator" style="font-size:11px;margin-top:6px;text-align:center;color:var(--text2)"></div>
+<div class="form3group"><label class="form3label">Date signed</label><input type="date" id="inv-sign-inv-date" class="auris-incident-s-d1cc06de7f" readonly/></div>
+<button type="button" class="btn btn-sm auris-incident-s-b65add3f33" id="inv-sign-btn-investigator" data-auris-onclick="h0240">Sign as investigator</button>
+<div id="inv-sign-status-investigator" class="auris-incident-s-aa7983e8f8"></div>
 </div>
-<div class="card" style="background:#f9fafb">
-<div style="font-weight:700;font-size:12px;margin-bottom:8px">2. Reviewer</div>
+<div class="card auris-incident-s-0dc955fc21">
+<div class="auris-incident-s-74a348c641">2. Reviewer</div>
 <div class="form3group"><label class="form3label">Name</label><input type="text" id="inv-sign-reviewer" list="ims-personnel-list" autocomplete="off" placeholder="Select from personnel..."/></div>
-<div class="form3group"><label class="form3label">Date signed</label><input type="date" id="inv-sign-rev-date" readonly style="background:#f3f4f6"/></div>
-<button type="button" class="btn btn-sm" id="inv-sign-btn-reviewer" data-auris-onclick="h0241" style="width:100%;background:#1D9E75;color:#fff;border-color:#1D9E75">Sign as reviewer</button>
-<div id="inv-sign-status-reviewer" style="font-size:11px;margin-top:6px;text-align:center;color:var(--text2)"></div>
+<div class="form3group"><label class="form3label">Date signed</label><input type="date" id="inv-sign-rev-date" class="auris-incident-s-d1cc06de7f" readonly/></div>
+<button type="button" class="btn btn-sm auris-incident-s-b65add3f33" id="inv-sign-btn-reviewer" data-auris-onclick="h0241">Sign as reviewer</button>
+<div id="inv-sign-status-reviewer" class="auris-incident-s-aa7983e8f8"></div>
 </div>
-<div class="card" style="background:#f9fafb">
-<div style="font-weight:700;font-size:12px;margin-bottom:8px">3. Approver</div>
+<div class="card auris-incident-s-0dc955fc21">
+<div class="auris-incident-s-74a348c641">3. Approver</div>
 <div class="form3group"><label class="form3label">Name</label><input type="text" id="inv-sign-approver" list="ims-personnel-list" autocomplete="off" placeholder="Select from personnel..."/></div>
-<div class="form3group"><label class="form3label">Date signed</label><input type="date" id="inv-sign-app-date" readonly style="background:#f3f4f6"/></div>
-<button type="button" class="btn btn-sm" id="inv-sign-btn-approver" data-auris-onclick="h0242" style="width:100%;background:#1D9E75;color:#fff;border-color:#1D9E75">Approve &amp; close</button>
-<div id="inv-sign-status-approver" style="font-size:11px;margin-top:6px;text-align:center;color:var(--text2)"></div>
+<div class="form3group"><label class="form3label">Date signed</label><input type="date" id="inv-sign-app-date" class="auris-incident-s-d1cc06de7f" readonly/></div>
+<button type="button" class="btn btn-sm auris-incident-s-b65add3f33" id="inv-sign-btn-approver" data-auris-onclick="h0242">Approve &amp; close</button>
+<div id="inv-sign-status-approver" class="auris-incident-s-aa7983e8f8"></div>
 </div>
 </div>
-<div class="form3group" style="margin-top:12px"><label class="form3label">Effectiveness review date</label><input type="date" id="inv-effectiveness-date"/></div>
+<div class="form3group auris-incident-s-0ee7f66ad9"><label class="form3label">Effectiveness review date</label><input type="date" id="inv-effectiveness-date"/></div>
 <div class="form3group"><label class="form3label">Effectiveness rating (post-closure)</label>
 <select id="inv-effectiveness-rating">
 <option value="">Not yet reviewed</option>
@@ -1961,41 +1962,41 @@
 </div><!-- end ims-view-investigate -->
 
 <!-- -- CORRECTIVE ACTIONS -- -->
-<div id="ims-view-actions" style="display:none">
-<div class="card" style="margin-bottom:12px;padding:12px 16px;background:linear-gradient(135deg,#064E3B,#1D9E75);color:#fff">
-<div style="font-size:14px;font-weight:700;margin-bottom:4px"><i class="ti ti-check"></i> Corrective &amp; Preventive Actions</div>
-<div style="font-size:12px;opacity:.85">Actions from incident investigations - tracked with due dates, assignments and escalation</div>
+<div id="ims-view-actions" class="auris-incident-s-6aa34d7432">
+<div class="card auris-incident-s-9789038979">
+<div class="auris-incident-s-f26cfe9154"><i class="ti ti-check"></i> Corrective &amp; Preventive Actions</div>
+<div class="auris-incident-s-dc4ac84a01">Actions from incident investigations - tracked with due dates, assignments and escalation</div>
 </div>
-<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px">
-<div class="card" style="padding:10px 12px;border-left:4px solid #DC2626"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">Open</div><div style="font-size:22px;font-weight:800;color:#DC2626" id="ims-ca-open">-</div></div>
-<div class="card" style="padding:10px 12px;border-left:4px solid #EF9F27"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">Overdue</div><div style="font-size:22px;font-weight:800;color:#EF9F27" id="ims-ca-overdue">-</div></div>
-<div class="card" style="padding:10px 12px;border-left:4px solid #185FA5"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">In Progress</div><div style="font-size:22px;font-weight:800;color:#185FA5" id="ims-ca-inprog">-</div></div>
-<div class="card" style="padding:10px 12px;border-left:4px solid #1D9E75"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">Closed</div><div style="font-size:22px;font-weight:800;color:#1D9E75" id="ims-ca-closed">-</div></div>
+<div class="auris-incident-s-14dfb7ae67">
+<div class="card auris-incident-s-03bd966c28"><div class="auris-incident-s-4422804ebb">Open</div><div id="ims-ca-open" class="auris-incident-s-ffe267bce1">-</div></div>
+<div class="card auris-incident-s-c70473e794"><div class="auris-incident-s-4422804ebb">Overdue</div><div id="ims-ca-overdue" class="auris-incident-s-2062f090bc">-</div></div>
+<div class="card auris-incident-s-b6d403ee7e"><div class="auris-incident-s-4422804ebb">In Progress</div><div id="ims-ca-inprog" class="auris-incident-s-6f56b8363e">-</div></div>
+<div class="card auris-incident-s-7a5e61eb83"><div class="auris-incident-s-4422804ebb">Closed</div><div id="ims-ca-closed" class="auris-incident-s-1e4fd5f9ed">-</div></div>
 </div>
 <div id="ims-ca-list"><div class="loading-msg">Loading...</div></div>
 </div>
 
 <!-- -- EVIDENCE -- -->
-<div id="ims-view-evidence" style="display:none">
-<div class="card" style="margin-bottom:12px;padding:10px 14px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
-<div><div class="card-title" style="margin:0">Evidence Collection</div>
-<div style="font-size:12px;color:var(--text2)">Photos - Videos - Documents - Witness statements - Voice notes</div></div>
-<div style="display:flex;gap:8px">
-<select id="ims-ev-filter-inc" data-auris-onchange="h0243" style="padding:6px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px;width:200px"><option value="">All incidents</option></select>
-<button class="btn btn-primary" id="ims-ev-add-btn" data-auris-onclick="h0244" style="display:none"><i class="ti ti-plus"></i>Add evidence</button>
+<div id="ims-view-evidence" class="auris-incident-s-6aa34d7432">
+<div class="card auris-incident-s-e2e1112055">
+<div><div class="card-title auris-incident-s-ab79ea2b85">Evidence Collection</div>
+<div class="auris-incident-s-7299078644">Photos - Videos - Documents - Witness statements - Voice notes</div></div>
+<div class="auris-incident-s-9c40389b4a">
+<select id="ims-ev-filter-inc" class="auris-incident-s-9692487066" data-auris-onchange="h0243"><option value="">All incidents</option></select>
+<button class="btn btn-primary auris-incident-s-6aa34d7432" id="ims-ev-add-btn" data-auris-onclick="h0244"><i class="ti ti-plus"></i>Add evidence</button>
 </div>
 </div>
 <div id="ims-evidence-list"><div class="loading-msg">Loading evidence...</div></div>
 
 <!-- Evidence form -->
-<div id="ims-evidence-form" style="display:none">
-<div class="card" style="margin-bottom:14px;padding:0;overflow:hidden">
-<div style="padding:14px 20px;background:linear-gradient(135deg,#1a3a5c,#185FA5);color:#fff;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
-<div style="font-size:17px;font-weight:800" id="ims-ev-form3title">Add Evidence</div>
-<div style="display:flex;gap:8px">
-<button class="btn" style="background:rgba(255,255,255,.2);color:#fff;border-color:rgba(255,255,255,.3)" data-auris-onclick="h0245"><i class="ti ti-arrow-left"></i>Back</button>
-<button id="ims-ev-del-btn" class="btn" style="display:none;background:rgba(220,38,38,.3);color:#fff;border-color:rgba(220,38,38,.5)" data-auris-onclick="h0246"><i class="ti ti-trash"></i></button>
-<button class="btn" style="background:#1D9E75;color:#fff;border-color:#1D9E75" data-auris-onclick="h0247"><i class="ti ti-device-floppy"></i>Save</button>
+<div id="ims-evidence-form" class="auris-incident-s-6aa34d7432">
+<div class="card auris-incident-s-54ec8874e7">
+<div class="auris-incident-s-6e86c59eb5">
+<div id="ims-ev-form3title" class="auris-incident-s-75021e57ca">Add Evidence</div>
+<div class="auris-incident-s-9c40389b4a">
+<button class="btn auris-incident-s-5c09edd131" data-auris-onclick="h0245"><i class="ti ti-arrow-left"></i>Back</button>
+<button id="ims-ev-del-btn" class="btn auris-incident-s-0e610f7b67" data-auris-onclick="h0246"><i class="ti ti-trash"></i></button>
+<button class="btn auris-incident-s-c7b9e5b2c7" data-auris-onclick="h0247"><i class="ti ti-device-floppy"></i>Save</button>
 </div>
 </div>
 </div>
@@ -2016,32 +2017,32 @@
 <div class="form3group"><label class="form3label">Collected date</label><input type="date" id="ims-ev-date"/></div>
 </div>
 <div class="form3group"><label class="form3label">Evidence attachment</label><input type="text" id="ims-ev-url" placeholder="Upload file or paste link"/>
-<div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap">
-<label class="btn btn-sm" style="cursor:pointer"><i class="ti ti-upload"></i>Upload evidence<input type="file" accept=".pdf,.doc,.docx,.png,.jpg,.jpeg,.webp,.mp4,.mov,.m4a,.mp3" data-auris-onchange="h0248" style="display:none"/></label>
+<div class="auris-incident-s-df56cf13b7">
+<label class="btn btn-sm auris-incident-s-9463ff4798"><i class="ti ti-upload"></i>Upload evidence<input class="auris-incident-s-6aa34d7432" type="file" accept=".pdf,.doc,.docx,.png,.jpg,.jpeg,.webp,.mp4,.mov,.m4a,.mp3" data-auris-onchange="h0248"/></label>
 <button type="button" class="btn btn-sm" data-auris-onclick="h0249"><i class="ti ti-eye"></i>Preview</button>
 </div></div>
 <div class="form3group"><label class="form3label">File name</label><input type="text" id="ims-ev-filename"/></div>
 <!-- Witness statement fields -->
-<div id="ims-ev-witness-fields" style="display:none">
+<div id="ims-ev-witness-fields" class="auris-incident-s-6aa34d7432">
 <div class="form3row">
 <div class="form3group"><label class="form3label">Witness name</label><input type="text" id="ims-ev-witness-name"/></div>
 <div class="form3group"><label class="form3label">Contact</label><input type="text" id="ims-ev-witness-contact"/></div>
 </div>
-<div class="form3group"><label class="form3label">Witness statement</label><textarea id="ims-ev-statement" style="min-height:100px" placeholder="Record the witness statement verbatim or as a summary..."></textarea></div>
+<div class="form3group"><label class="form3label">Witness statement</label><textarea id="ims-ev-statement" class="auris-incident-s-a1c988f046" placeholder="Record the witness statement verbatim or as a summary..."></textarea></div>
 </div>
-<div class="form3group"><label class="form3label">Description / notes</label><textarea id="ims-ev-desc" style="min-height:60px"></textarea></div>
+<div class="form3group"><label class="form3label">Description / notes</label><textarea id="ims-ev-desc" class="auris-incident-s-07bdff4587"></textarea></div>
 <div class="form3row">
 <div class="form3group"><label class="form3label">GPS location description</label><input type="text" id="ims-ev-location-desc" placeholder="Where was this evidence collected?"/></div>
-<div class="form3group"><label class="form3label">Latitude</label><input type="text" id="ims-ev-lat" style="font-family:monospace"/></div>
-<div class="form3group"><label class="form3label">Longitude</label><input type="text" id="ims-ev-lng" style="font-family:monospace"/></div>
+<div class="form3group"><label class="form3label">Latitude</label><input type="text" id="ims-ev-lat" class="auris-incident-s-7b8c3df564"/></div>
+<div class="form3group"><label class="form3label">Longitude</label><input type="text" id="ims-ev-lng" class="auris-incident-s-7b8c3df564"/></div>
 </div>
 </div>
 </div>
 </div>
 
 <!-- -- STATISTICS -- -->
-<div id="ims-view-stats" style="display:none">
-<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px">
+<div id="ims-view-stats" class="auris-incident-s-6aa34d7432">
+<div class="auris-incident-s-03826b79d9">
 <div class="card">
 <div class="card-title">Incidents by Type</div>
 <div id="ims-chart-type"></div>
@@ -2051,7 +2052,7 @@
 <div id="ims-chart-monthly"></div>
 </div>
 </div>
-<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px">
+<div class="auris-incident-s-03826b79d9">
 <div class="card">
 <div class="card-title">Top Locations</div>
 <div id="ims-chart-locations"></div>
@@ -2062,19 +2063,19 @@
 </div>
 </div>
 <!-- AI Analysis -->
-<div class="card" style="border:2px solid #5B21B6">
-<div class="card-title" style="color:#5B21B6"><i class="ti ti-robot"></i> AI Incident Analysis</div>
-<div style="font-size:12px;color:var(--text2);margin-bottom:10px">AI-powered trend analysis, pattern identification and prevention recommendations</div>
-<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">
-<button class="btn btn-sm" style="background:#5B21B6;color:#fff;border-color:#5B21B6" data-auris-onclick="h0250">Incident patterns</button>
-<button class="btn btn-sm" style="background:#5B21B6;color:#fff;border-color:#5B21B6" data-auris-onclick="h0251">Prevention recommendations</button>
-<button class="btn btn-sm" style="background:#5B21B6;color:#fff;border-color:#5B21B6" data-auris-onclick="h0252">Management report</button>
+<div class="card auris-incident-s-ee71c71db7">
+<div class="card-title auris-incident-s-868661d008"><i class="ti ti-robot"></i> AI Incident Analysis</div>
+<div class="auris-incident-s-fa530ed1c3">AI-powered trend analysis, pattern identification and prevention recommendations</div>
+<div class="auris-incident-s-6f8311d1d7">
+<button class="btn btn-sm auris-incident-s-a7dfccfa36" data-auris-onclick="h0250">Incident patterns</button>
+<button class="btn btn-sm auris-incident-s-a7dfccfa36" data-auris-onclick="h0251">Prevention recommendations</button>
+<button class="btn btn-sm auris-incident-s-a7dfccfa36" data-auris-onclick="h0252">Management report</button>
 </div>
-<div style="display:flex;gap:8px;margin-bottom:8px">
-<input type="text" id="ims-ai-input" placeholder="Ask about incident trends, prevention, root causes..." style="flex:1;padding:8px 12px;border:1px solid #c4b5fd;border-radius:8px;font-size:12px" data-auris-onkeydown="h0253"/>
-<button class="btn" style="background:#5B21B6;color:#fff;border-color:#5B21B6" data-auris-onclick="h0254"><i class="ti ti-send"></i></button>
+<div class="auris-incident-s-c3d04b4505">
+<input type="text" id="ims-ai-input" class="auris-incident-s-8f9ecb2f9c" placeholder="Ask about incident trends, prevention, root causes..." data-auris-onkeydown="h0253"/>
+<button class="btn auris-incident-s-a7dfccfa36" data-auris-onclick="h0254"><i class="ti ti-send"></i></button>
 </div>
-<div id="ims-ai-response" style="display:none;background:#F5F3FF;border:1px solid #c4b5fd;border-radius:8px;padding:12px;font-size:13px;line-height:1.6;white-space:pre-wrap;max-height:360px;overflow-y:auto"></div>
+<div id="ims-ai-response" class="auris-incident-s-bc1ec76812"></div>
 </div>
 </div>
 
