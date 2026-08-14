@@ -1,0 +1,84 @@
+/* Generated from Chemical Control by scripts/extract-chemical-control-styles.cjs. */
+/* Non-important declarations preserve SDS, inventory, risk and review runtime state. */
+.auris-chemical-s-08932d3137{font-size:24px;font-weight:900;color:#185FA5}
+.auris-chemical-s-0bde976ae9{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(320px,.65fr);gap:14px}
+.auris-chemical-s-0e0379d349{padding:9px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px}
+.auris-chemical-s-0ee7f66ad9{margin-top:12px}
+.auris-chemical-s-14dfb7ae67{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px}
+.auris-chemical-s-156b6f8db9{padding:12px;border-left:4px solid #C2410C}
+.auris-chemical-s-16a254e663{padding:0;overflow:auto}
+.auris-chemical-s-1e5d1b83c0{font-size:24px;font-weight:900;color:#C2410C}
+.auris-chemical-s-1eb36bb667{font-size:24px;font-weight:900;color:#A32D2D}
+.auris-chemical-s-274288d85e{font-size:12px;color:var(--text2);margin-top:10px}
+.auris-chemical-s-28fa489803{display:none;margin-top:12px}
+.auris-chemical-s-30352171a2{font-size:18px;font-weight:900}
+.auris-chemical-s-32895d0330{width:100%;justify-content:center;color:#5B21B6;border-color:#DDD6FE;background:#F5F3FF}
+.auris-chemical-s-3a707d3f6c{font-size:16px;font-weight:900}
+.auris-chemical-s-5d565fd16c{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.auris-chemical-s-6aa34d7432{display:none}
+.auris-chemical-s-6d16aaf2b6{display:grid;gap:12px}
+.auris-chemical-s-6f5b6555d4{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}
+.auris-chemical-s-7299078644{font-size:12px;color:var(--text2)}
+.auris-chemical-s-7460b24e17{font-size:24px;font-weight:900;color:#7C3AED}
+.auris-chemical-s-7bcef63cf8{padding:16px;margin-bottom:14px}
+.auris-chemical-s-7f9708cb79{font-size:15px;font-weight:900;margin-bottom:12px}
+.auris-chemical-s-8768512fed{width:100%;padding:10px;border:1px solid var(--border);border-radius:8px;background:#f9fafb}
+.auris-chemical-s-87f8b2666a{padding:12px;border-left:4px solid #7C3AED}
+.auris-chemical-s-8cbd87102f{display:none;color:var(--red)}
+.auris-chemical-s-8ce242560c{padding:12px 16px;border-bottom:1px solid var(--border);font-weight:800}
+.auris-chemical-s-9463ff4798{cursor:pointer}
+.auris-chemical-s-a66adb6b0b{padding:16px;margin-bottom:14px;border-left:4px solid #7C3AED}
+.auris-chemical-s-ae3dca8221{padding:12px;border-left:4px solid #A32D2D}
+.auris-chemical-s-afac6844cc{font-size:12px;color:var(--text2);margin-top:4px}
+.auris-chemical-s-b283eb1d2d{padding:14px 18px;margin-bottom:14px;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.auris-chemical-s-b96f8f679a{font-size:10px;color:var(--text2);font-weight:700;text-transform:uppercase}
+.auris-chemical-s-ba41f4da07{flex:1;min-width:220px;padding:9px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px}
+.auris-chemical-s-bdd4392aa5{width:100%;justify-content:center}
+.auris-chemical-s-c02a0d15ae{padding:12px;border-left:4px solid #185FA5}
+.auris-chemical-s-c9dc9b5648{display:flex;gap:8px;flex-wrap:wrap}
+.auris-chemical-s-d8f8cdb178{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap}
+.auris-chemical-s-da50f4194a{width:100%;padding:10px;border:1px solid var(--border);border-radius:8px}
+.auris-chemical-s-e56ca7fd29{padding:12px;margin-bottom:12px}
+.auris-chemical-s-eb1a1f6dbb{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}
+.auris-chemical-s-f8beb71654{font-size:12px;font-weight:700;color:var(--text2)}
+.auris-chemical-s-ff74b57785{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+/* Preserve former inline precedence over existing ID selectors. */
+#chem3ai-panel.auris-chemical-s-28fa489803{display:none;margin-top:12px}
+#chem3consequences.auris-chemical-s-da50f4194a{width:100%;padding:10px;border:1px solid var(--border);border-radius:8px}
+#chem3controls.auris-chemical-s-da50f4194a{width:100%;padding:10px;border:1px solid var(--border);border-radius:8px}
+#chem3del-btn.auris-chemical-s-8cbd87102f{display:none;color:var(--red)}
+#chem3dept.auris-chemical-s-da50f4194a{width:100%;padding:10px;border:1px solid var(--border);border-radius:8px}
+#chem3duration.auris-chemical-s-da50f4194a{width:100%;padding:10px;border:1px solid var(--border);border-radius:8px}
+#chem3firstaid.auris-chemical-s-da50f4194a{width:100%;padding:10px;border:1px solid var(--border);border-radius:8px}
+#chem3form3ref.auris-chemical-s-7299078644{font-size:12px;color:var(--text2)}
+#chem3form3title.auris-chemical-s-30352171a2{font-size:18px;font-weight:900}
+#chem3form3view.auris-chemical-s-6aa34d7432{display:none}
+#chem3frequency.auris-chemical-s-da50f4194a{width:100%;padding:10px;border:1px solid var(--border);border-radius:8px}
+#chem3handling.auris-chemical-s-da50f4194a{width:100%;padding:10px;border:1px solid var(--border);border-radius:8px}
+#chem3hazards.auris-chemical-s-da50f4194a{width:100%;padding:10px;border:1px solid var(--border);border-radius:8px}
+#chem3hcodes.auris-chemical-s-da50f4194a{width:100%;padding:10px;border:1px solid var(--border);border-radius:8px}
+#chem3location.auris-chemical-s-da50f4194a{width:100%;padding:10px;border:1px solid var(--border);border-radius:8px}
+#chem3m3critical.auris-chemical-s-1eb36bb667{font-size:24px;font-weight:900;color:#A32D2D}
+#chem3m3high.auris-chemical-s-1e5d1b83c0{font-size:24px;font-weight:900;color:#C2410C}
+#chem3m3review.auris-chemical-s-08932d3137{font-size:24px;font-weight:900;color:#185FA5}
+#chem3m3total.auris-chemical-s-7460b24e17{font-size:24px;font-weight:900;color:#7C3AED}
+#chem3manufacturer.auris-chemical-s-da50f4194a{width:100%;padding:10px;border:1px solid var(--border);border-radius:8px}
+#chem3persons.auris-chemical-s-da50f4194a{width:100%;padding:10px;border:1px solid var(--border);border-radius:8px}
+#chem3ppe.auris-chemical-s-da50f4194a{width:100%;padding:10px;border:1px solid var(--border);border-radius:8px}
+#chem3product.auris-chemical-s-da50f4194a{width:100%;padding:10px;border:1px solid var(--border);border-radius:8px}
+#chem3qty.auris-chemical-s-da50f4194a{width:100%;padding:10px;border:1px solid var(--border);border-radius:8px}
+#chem3recommendations.auris-chemical-s-da50f4194a{width:100%;padding:10px;border:1px solid var(--border);border-radius:8px}
+#chem3review.auris-chemical-s-da50f4194a{width:100%;padding:10px;border:1px solid var(--border);border-radius:8px}
+#chem3risk-filter.auris-chemical-s-0e0379d349{padding:9px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px}
+#chem3risk-preview.auris-chemical-s-0ee7f66ad9{margin-top:12px}
+#chem3routes.auris-chemical-s-da50f4194a{width:100%;padding:10px;border:1px solid var(--border);border-radius:8px}
+#chem3sds-date.auris-chemical-s-da50f4194a{width:100%;padding:10px;border:1px solid var(--border);border-radius:8px}
+#chem3sds-file.auris-chemical-s-8768512fed{width:100%;padding:10px;border:1px solid var(--border);border-radius:8px;background:#f9fafb}
+#chem3sds-msg.auris-chemical-s-274288d85e{font-size:12px;color:var(--text2);margin-top:10px}
+#chem3search.auris-chemical-s-ba41f4da07{flex:1;min-width:220px;padding:9px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px}
+#chem3signal.auris-chemical-s-da50f4194a{width:100%;padding:10px;border:1px solid var(--border);border-radius:8px}
+#chem3status-filter.auris-chemical-s-0e0379d349{padding:9px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px}
+#chem3status.auris-chemical-s-da50f4194a{width:100%;padding:10px;border:1px solid var(--border);border-radius:8px}
+#chem3supplier.auris-chemical-s-da50f4194a{width:100%;padding:10px;border:1px solid var(--border);border-radius:8px}
+#chem3task.auris-chemical-s-da50f4194a{width:100%;padding:10px;border:1px solid var(--border);border-radius:8px}
+#chem3use.auris-chemical-s-da50f4194a{width:100%;padding:10px;border:1px solid var(--border);border-radius:8px}

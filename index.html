@@ -65,6 +65,7 @@
 <link rel="stylesheet" href="auris-bbs-observation-static.css?v=20260814-1">
 <link rel="stylesheet" href="auris-audits-inspections-static.css?v=20260814-1">
 <link rel="stylesheet" href="auris-risk-assessment-static.css?v=20260814-1">
+<link rel="stylesheet" href="auris-chemical-control-static.css?v=20260814-1">
 </head>
 <body>
 <div id="login-screen">
@@ -3516,33 +3517,33 @@ Offline mode - changes will sync when connection is restored
 <div class="page-header">
 <div>
 <div class="page-title"><i class="ti ti-flask"></i> Chemical Control</div>
-<div style="font-size:12px;color:var(--text2)">Chemical register - SDS extraction - exposure risk assessment</div>
+<div class="auris-chemical-s-7299078644">Chemical register - SDS extraction - exposure risk assessment</div>
 </div>
-<div style="display:flex;gap:8px;flex-wrap:wrap">
+<div class="auris-chemical-s-c9dc9b5648">
 <button class="btn" id="chem3print-btn" data-auris-onclick="h0414"><i class="ti ti-printer"></i>Print register</button>
 <button class="btn btn-primary" id="chem3add-btn" data-auris-onclick="h0415"><i class="ti ti-plus"></i>Add chemical</button>
 </div>
 </div>
 
 <div id="chem3register-view">
-<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px" class="mobile-stack">
-<div class="card" style="padding:12px;border-left:4px solid #7C3AED"><div style="font-size:10px;color:var(--text2);font-weight:700;text-transform:uppercase">Total chemicals</div><div style="font-size:24px;font-weight:900;color:#7C3AED" id="chem3m3total">0</div></div>
-<div class="card" style="padding:12px;border-left:4px solid #A32D2D"><div style="font-size:10px;color:var(--text2);font-weight:700;text-transform:uppercase">Critical risk</div><div style="font-size:24px;font-weight:900;color:#A32D2D" id="chem3m3critical">0</div></div>
-<div class="card" style="padding:12px;border-left:4px solid #C2410C"><div style="font-size:10px;color:var(--text2);font-weight:700;text-transform:uppercase">High risk</div><div style="font-size:24px;font-weight:900;color:#C2410C" id="chem3m3high">0</div></div>
-<div class="card" style="padding:12px;border-left:4px solid #185FA5"><div style="font-size:10px;color:var(--text2);font-weight:700;text-transform:uppercase">Review due 30d</div><div style="font-size:24px;font-weight:900;color:#185FA5" id="chem3m3review">0</div></div>
+<div class="mobile-stack auris-chemical-s-14dfb7ae67">
+<div class="card auris-chemical-s-87f8b2666a"><div class="auris-chemical-s-b96f8f679a">Total chemicals</div><div id="chem3m3total" class="auris-chemical-s-7460b24e17">0</div></div>
+<div class="card auris-chemical-s-ae3dca8221"><div class="auris-chemical-s-b96f8f679a">Critical risk</div><div id="chem3m3critical" class="auris-chemical-s-1eb36bb667">0</div></div>
+<div class="card auris-chemical-s-156b6f8db9"><div class="auris-chemical-s-b96f8f679a">High risk</div><div id="chem3m3high" class="auris-chemical-s-1e5d1b83c0">0</div></div>
+<div class="card auris-chemical-s-c02a0d15ae"><div class="auris-chemical-s-b96f8f679a">Review due 30d</div><div id="chem3m3review" class="auris-chemical-s-08932d3137">0</div></div>
 </div>
 
-<div class="card" style="padding:12px;margin-bottom:12px">
-<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
-<input id="chem3search" type="text" placeholder="Search product, supplier, location, hazard..." data-auris-oninput="h0416" style="flex:1;min-width:220px;padding:9px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px">
-<select id="chem3risk-filter" data-auris-onchange="h0417" style="padding:9px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px">
+<div class="card auris-chemical-s-e56ca7fd29">
+<div class="auris-chemical-s-5d565fd16c">
+<input id="chem3search" class="auris-chemical-s-ba41f4da07" type="text" placeholder="Search product, supplier, location, hazard..." data-auris-oninput="h0416">
+<select id="chem3risk-filter" class="auris-chemical-s-0e0379d349" data-auris-onchange="h0417">
 <option value="">All risk levels</option>
 <option value="critical">Critical</option>
 <option value="high">High</option>
 <option value="medium">Medium</option>
 <option value="low">Low</option>
 </select>
-<select id="chem3status-filter" data-auris-onchange="h0417" style="padding:9px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px">
+<select id="chem3status-filter" class="auris-chemical-s-0e0379d349" data-auris-onchange="h0417">
 <option value="active" selected>Active</option>
 <option value="">All statuses</option>
 <option value="archived">Archived</option>
@@ -3550,98 +3551,98 @@ Offline mode - changes will sync when connection is restored
 </div>
 </div>
 
-<div class="card" style="padding:0;overflow:auto">
-<div style="padding:12px 16px;border-bottom:1px solid var(--border);font-weight:800">Chemical Register</div>
+<div class="card auris-chemical-s-16a254e663">
+<div class="auris-chemical-s-8ce242560c">Chemical Register</div>
 <div id="chem3table"><div class="loading-msg">Loading...</div></div>
 </div>
 </div>
 
-<div id="chem3form3view" style="display:none">
-<div class="card" style="padding:14px 18px;margin-bottom:14px;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">
+<div id="chem3form3view" class="auris-chemical-s-6aa34d7432">
+<div class="card auris-chemical-s-b283eb1d2d">
 <div>
-<div style="font-size:18px;font-weight:900" id="chem3form3title">New Chemical</div>
-<div style="font-size:12px;color:var(--text2)" id="chem3form3ref">CHEM-AUTO</div>
+<div id="chem3form3title" class="auris-chemical-s-30352171a2">New Chemical</div>
+<div id="chem3form3ref" class="auris-chemical-s-7299078644">CHEM-AUTO</div>
 </div>
-<div style="display:flex;gap:8px;flex-wrap:wrap">
+<div class="auris-chemical-s-c9dc9b5648">
 <button class="btn" data-auris-onclick="h0418"><i class="ti ti-arrow-left"></i>Back</button>
-<button class="btn" id="chem3del-btn" style="display:none;color:var(--red)" data-auris-onclick="h0419"><i class="ti ti-trash"></i>Delete</button>
+<button class="btn auris-chemical-s-8cbd87102f" id="chem3del-btn" data-auris-onclick="h0419"><i class="ti ti-trash"></i>Delete</button>
 <button class="btn btn-primary" data-auris-onclick="h0420"><i class="ti ti-device-floppy"></i>Save chemical</button>
 </div>
 </div>
 
-<div class="card" style="padding:16px;margin-bottom:14px;border-left:4px solid #7C3AED">
-<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap">
+<div class="card auris-chemical-s-a66adb6b0b">
+<div class="auris-chemical-s-d8f8cdb178">
 <div>
-<div style="font-size:16px;font-weight:900"><i class="ti ti-file-type-pdf"></i> SDS / MSDS import</div>
-<div style="font-size:12px;color:var(--text2);margin-top:4px">Upload a PDF safety data sheet. AURIS360 will pre-fill key fields for review.</div>
+<div class="auris-chemical-s-3a707d3f6c"><i class="ti ti-file-type-pdf"></i> SDS / MSDS import</div>
+<div class="auris-chemical-s-afac6844cc">Upload a PDF safety data sheet. AURIS360 will pre-fill key fields for review.</div>
 </div>
-<label class="btn btn-primary" style="cursor:pointer">
+<label class="btn btn-primary auris-chemical-s-9463ff4798">
 <i class="ti ti-upload"></i>Upload SDS PDF
-<input type="file" accept="application/pdf,.pdf" data-auris-onchange="h0421" style="display:none">
+<input class="auris-chemical-s-6aa34d7432" type="file" accept="application/pdf,.pdf" data-auris-onchange="h0421">
 </label>
 </div>
-<div id="chem3sds-msg" style="font-size:12px;color:var(--text2);margin-top:10px"></div>
+<div id="chem3sds-msg" class="auris-chemical-s-274288d85e"></div>
 </div>
 
-<div style="display:grid;grid-template-columns:minmax(0,1.35fr) minmax(320px,.65fr);gap:14px" class="mobile-stack">
+<div class="mobile-stack auris-chemical-s-0bde976ae9">
 <div>
-<div class="card" style="padding:16px;margin-bottom:14px">
-<div style="font-size:15px;font-weight:900;margin-bottom:12px">Product identification</div>
-<div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px" class="mobile-stack">
-<div><label style="font-size:12px;font-weight:700;color:var(--text2)">Product name *</label><input id="chem3product" type="text" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:8px"></div>
-<div><label style="font-size:12px;font-weight:700;color:var(--text2)">Supplier</label><input id="chem3supplier" type="text" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:8px"></div>
-<div><label style="font-size:12px;font-weight:700;color:var(--text2)">Manufacturer</label><input id="chem3manufacturer" type="text" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:8px"></div>
-<div><label style="font-size:12px;font-weight:700;color:var(--text2)">SDS revision date</label><input id="chem3sds-date" type="date" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:8px"></div>
-<div><label style="font-size:12px;font-weight:700;color:var(--text2)">SDS file</label><input id="chem3sds-file" type="text" readonly style="width:100%;padding:10px;border:1px solid var(--border);border-radius:8px;background:#f9fafb"></div>
-<div><label style="font-size:12px;font-weight:700;color:var(--text2)">Signal word</label><input id="chem3signal" type="text" placeholder="Danger / Warning" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:8px"></div>
+<div class="card auris-chemical-s-7bcef63cf8">
+<div class="auris-chemical-s-7f9708cb79">Product identification</div>
+<div class="mobile-stack auris-chemical-s-ff74b57785">
+<div><label class="auris-chemical-s-f8beb71654">Product name *</label><input id="chem3product" class="auris-chemical-s-da50f4194a" type="text"></div>
+<div><label class="auris-chemical-s-f8beb71654">Supplier</label><input id="chem3supplier" class="auris-chemical-s-da50f4194a" type="text"></div>
+<div><label class="auris-chemical-s-f8beb71654">Manufacturer</label><input id="chem3manufacturer" class="auris-chemical-s-da50f4194a" type="text"></div>
+<div><label class="auris-chemical-s-f8beb71654">SDS revision date</label><input id="chem3sds-date" class="auris-chemical-s-da50f4194a" type="date"></div>
+<div><label class="auris-chemical-s-f8beb71654">SDS file</label><input id="chem3sds-file" class="auris-chemical-s-8768512fed" type="text" readonly></div>
+<div><label class="auris-chemical-s-f8beb71654">Signal word</label><input id="chem3signal" class="auris-chemical-s-da50f4194a" type="text" placeholder="Danger / Warning"></div>
 </div>
 </div>
 
-<div class="card" style="padding:16px;margin-bottom:14px">
-<div style="font-size:15px;font-weight:900;margin-bottom:12px">Hazards and exposure</div>
-<div style="display:grid;gap:12px">
-<div><label style="font-size:12px;font-weight:700;color:var(--text2)">Hazard statements / H-codes</label><input id="chem3hcodes" type="text" data-auris-oninput="h0422" placeholder="H315, H319..." style="width:100%;padding:10px;border:1px solid var(--border);border-radius:8px"></div>
-<div><label style="font-size:12px;font-weight:700;color:var(--text2)">Hazard identification</label><textarea id="chem3hazards" data-auris-oninput="h0422" rows="4" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:8px"></textarea></div>
-<div><label style="font-size:12px;font-weight:700;color:var(--text2)">Exposure routes</label><input id="chem3routes" type="text" placeholder="Inhalation, Skin, Eye..." style="width:100%;padding:10px;border:1px solid var(--border);border-radius:8px"></div>
-<div><label style="font-size:12px;font-weight:700;color:var(--text2)">Exposure consequences</label><textarea id="chem3consequences" data-auris-oninput="h0422" rows="4" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:8px"></textarea></div>
+<div class="card auris-chemical-s-7bcef63cf8">
+<div class="auris-chemical-s-7f9708cb79">Hazards and exposure</div>
+<div class="auris-chemical-s-6d16aaf2b6">
+<div><label class="auris-chemical-s-f8beb71654">Hazard statements / H-codes</label><input id="chem3hcodes" class="auris-chemical-s-da50f4194a" type="text" data-auris-oninput="h0422" placeholder="H315, H319..."></div>
+<div><label class="auris-chemical-s-f8beb71654">Hazard identification</label><textarea id="chem3hazards" class="auris-chemical-s-da50f4194a" data-auris-oninput="h0422" rows="4"></textarea></div>
+<div><label class="auris-chemical-s-f8beb71654">Exposure routes</label><input id="chem3routes" class="auris-chemical-s-da50f4194a" type="text" placeholder="Inhalation, Skin, Eye..."></div>
+<div><label class="auris-chemical-s-f8beb71654">Exposure consequences</label><textarea id="chem3consequences" class="auris-chemical-s-da50f4194a" data-auris-oninput="h0422" rows="4"></textarea></div>
 </div>
 </div>
 
-<div class="card" style="padding:16px;margin-bottom:14px">
-<div style="font-size:15px;font-weight:900;margin-bottom:12px">Controls from SDS</div>
-<div style="display:grid;gap:12px">
-<div><label style="font-size:12px;font-weight:700;color:var(--text2)">First aid</label><textarea id="chem3firstaid" rows="3" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:8px"></textarea></div>
-<div><label style="font-size:12px;font-weight:700;color:var(--text2)">Handling and storage</label><textarea id="chem3handling" rows="3" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:8px"></textarea></div>
-<div><label style="font-size:12px;font-weight:700;color:var(--text2)">PPE required</label><textarea id="chem3ppe" rows="3" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:8px"></textarea></div>
+<div class="card auris-chemical-s-7bcef63cf8">
+<div class="auris-chemical-s-7f9708cb79">Controls from SDS</div>
+<div class="auris-chemical-s-6d16aaf2b6">
+<div><label class="auris-chemical-s-f8beb71654">First aid</label><textarea id="chem3firstaid" class="auris-chemical-s-da50f4194a" rows="3"></textarea></div>
+<div><label class="auris-chemical-s-f8beb71654">Handling and storage</label><textarea id="chem3handling" class="auris-chemical-s-da50f4194a" rows="3"></textarea></div>
+<div><label class="auris-chemical-s-f8beb71654">PPE required</label><textarea id="chem3ppe" class="auris-chemical-s-da50f4194a" rows="3"></textarea></div>
 </div>
 </div>
 </div>
 
 <div>
-<div class="card" style="padding:16px;margin-bottom:14px">
-<div style="font-size:15px;font-weight:900;margin-bottom:12px">Use and exposure</div>
-<div style="display:grid;gap:12px">
-<div><label style="font-size:12px;font-weight:700;color:var(--text2)">Location</label><input id="chem3location" type="text" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:8px"></div>
-<div><label style="font-size:12px;font-weight:700;color:var(--text2)">Department</label><input id="chem3dept" type="text" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:8px"></div>
-<div><label style="font-size:12px;font-weight:700;color:var(--text2)">Process / use</label><textarea id="chem3use" rows="2" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:8px"></textarea></div>
-<div><label style="font-size:12px;font-weight:700;color:var(--text2)">Quantity stored</label><input id="chem3qty" type="text" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:8px"></div>
-<div><label style="font-size:12px;font-weight:700;color:var(--text2)">Persons exposed</label><input id="chem3persons" type="number" min="0" data-auris-oninput="h0422" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:8px"></div>
-<div><label style="font-size:12px;font-weight:700;color:var(--text2)">Frequency</label><select id="chem3frequency" data-auris-onchange="h0423" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:8px"><option value="rare">Rare</option><option value="occasional">Occasional</option><option value="weekly">Weekly</option><option value="daily">Daily</option><option value="continuous">Continuous</option></select></div>
-<div><label style="font-size:12px;font-weight:700;color:var(--text2)">Duration</label><select id="chem3duration" data-auris-onchange="h0423" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:8px"><option value="minutes">Minutes</option><option value="short">Short task</option><option value="hours">Several hours</option><option value="shift">Most of shift</option></select></div>
-<div><label style="font-size:12px;font-weight:700;color:var(--text2)">Task type</label><select id="chem3task" data-auris-onchange="h0423" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:8px"><option value="closed_handling">Closed handling</option><option value="open_handling">Open handling</option><option value="mixing">Mixing / pouring</option><option value="spraying">Spraying / mist</option><option value="heating">Heating / vapours</option><option value="confined_space">Confined space</option></select></div>
+<div class="card auris-chemical-s-7bcef63cf8">
+<div class="auris-chemical-s-7f9708cb79">Use and exposure</div>
+<div class="auris-chemical-s-6d16aaf2b6">
+<div><label class="auris-chemical-s-f8beb71654">Location</label><input id="chem3location" class="auris-chemical-s-da50f4194a" type="text"></div>
+<div><label class="auris-chemical-s-f8beb71654">Department</label><input id="chem3dept" class="auris-chemical-s-da50f4194a" type="text"></div>
+<div><label class="auris-chemical-s-f8beb71654">Process / use</label><textarea id="chem3use" class="auris-chemical-s-da50f4194a" rows="2"></textarea></div>
+<div><label class="auris-chemical-s-f8beb71654">Quantity stored</label><input id="chem3qty" class="auris-chemical-s-da50f4194a" type="text"></div>
+<div><label class="auris-chemical-s-f8beb71654">Persons exposed</label><input id="chem3persons" class="auris-chemical-s-da50f4194a" type="number" min="0" data-auris-oninput="h0422"></div>
+<div><label class="auris-chemical-s-f8beb71654">Frequency</label><select id="chem3frequency" class="auris-chemical-s-da50f4194a" data-auris-onchange="h0423"><option value="rare">Rare</option><option value="occasional">Occasional</option><option value="weekly">Weekly</option><option value="daily">Daily</option><option value="continuous">Continuous</option></select></div>
+<div><label class="auris-chemical-s-f8beb71654">Duration</label><select id="chem3duration" class="auris-chemical-s-da50f4194a" data-auris-onchange="h0423"><option value="minutes">Minutes</option><option value="short">Short task</option><option value="hours">Several hours</option><option value="shift">Most of shift</option></select></div>
+<div><label class="auris-chemical-s-f8beb71654">Task type</label><select id="chem3task" class="auris-chemical-s-da50f4194a" data-auris-onchange="h0423"><option value="closed_handling">Closed handling</option><option value="open_handling">Open handling</option><option value="mixing">Mixing / pouring</option><option value="spraying">Spraying / mist</option><option value="heating">Heating / vapours</option><option value="confined_space">Confined space</option></select></div>
 </div>
 </div>
 
-<div class="card" style="padding:16px;margin-bottom:14px">
-<div style="font-size:15px;font-weight:900;margin-bottom:12px">Risk assessment</div>
-<div><label style="font-size:12px;font-weight:700;color:var(--text2)">Existing controls</label><textarea id="chem3controls" rows="3" data-auris-oninput="h0422" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:8px"></textarea></div>
-<div id="chem3risk-preview" style="margin-top:12px"></div>
-<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px" class="mobile-stack"><button class="btn" style="width:100%;justify-content:center" data-auris-onclick="h0424"><i class="ti ti-sparkles"></i>Suggest controls</button><button class="btn" style="width:100%;justify-content:center;color:#5B21B6;border-color:#DDD6FE;background:#F5F3FF" data-auris-onclick="h0425"><i class="ti ti-robot"></i>AI exposure review</button></div>
-<div style="margin-top:12px"><label style="font-size:12px;font-weight:700;color:var(--text2)">Recommendations</label><textarea id="chem3recommendations" rows="5" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:8px"></textarea></div>
-<div id="chem3ai-panel" style="display:none;margin-top:12px"></div>
-<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px">
-<div><label style="font-size:12px;font-weight:700;color:var(--text2)">Review date</label><input id="chem3review" type="date" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:8px"></div>
-<div><label style="font-size:12px;font-weight:700;color:var(--text2)">Status</label><select id="chem3status" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:8px"><option value="active">Active</option><option value="archived">Archived</option></select></div>
+<div class="card auris-chemical-s-7bcef63cf8">
+<div class="auris-chemical-s-7f9708cb79">Risk assessment</div>
+<div><label class="auris-chemical-s-f8beb71654">Existing controls</label><textarea id="chem3controls" class="auris-chemical-s-da50f4194a" rows="3" data-auris-oninput="h0422"></textarea></div>
+<div id="chem3risk-preview" class="auris-chemical-s-0ee7f66ad9"></div>
+<div class="mobile-stack auris-chemical-s-eb1a1f6dbb"><button class="btn auris-chemical-s-bdd4392aa5" data-auris-onclick="h0424"><i class="ti ti-sparkles"></i>Suggest controls</button><button class="btn auris-chemical-s-32895d0330" data-auris-onclick="h0425"><i class="ti ti-robot"></i>AI exposure review</button></div>
+<div class="auris-chemical-s-0ee7f66ad9"><label class="auris-chemical-s-f8beb71654">Recommendations</label><textarea id="chem3recommendations" class="auris-chemical-s-da50f4194a" rows="5"></textarea></div>
+<div id="chem3ai-panel" class="auris-chemical-s-28fa489803"></div>
+<div class="auris-chemical-s-6f5b6555d4">
+<div><label class="auris-chemical-s-f8beb71654">Review date</label><input id="chem3review" class="auris-chemical-s-da50f4194a" type="date"></div>
+<div><label class="auris-chemical-s-f8beb71654">Status</label><select id="chem3status" class="auris-chemical-s-da50f4194a"><option value="active">Active</option><option value="archived">Archived</option></select></div>
 </div>
 </div>
 </div>
