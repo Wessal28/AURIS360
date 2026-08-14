@@ -67,6 +67,7 @@
 <link rel="stylesheet" href="auris-risk-assessment-static.css?v=20260814-1">
 <link rel="stylesheet" href="auris-chemical-control-static.css?v=20260814-1">
 <link rel="stylesheet" href="auris-legal-compliance-static.css?v=20260814-1">
+<link rel="stylesheet" href="auris-fleet-management-static.css?v=20260814-1">
 </head>
 <body>
 <div id="login-screen">
@@ -4221,27 +4222,27 @@ Offline mode - changes will sync when connection is restored
 
 <div id="page-fleet" class="page">
 <div class="page-header">
-<div><div class="page-title">Fleet Management</div><div style="font-size:12px;color:var(--text2)">Vehicle register, monthly checks, fuel usage and incident links</div></div>
-<div style="display:flex;gap:8px">
+<div><div class="page-title">Fleet Management</div><div class="auris-fleet-s-7299078644">Vehicle register, monthly checks, fuel usage and incident links</div></div>
+<div class="auris-fleet-s-9c40389b4a">
 <button class="btn" id="fleet-print-btn" data-auris-onclick="h0490"><i class="ti ti-printer"></i>Print register</button>
-<button class="btn btn-primary" id="fleet-add-vehicle-btn" style="display:none" data-auris-onclick="h0491"><i class="ti ti-plus"></i>Add vehicle</button>
+<button class="btn btn-primary auris-fleet-s-6aa34d7432" id="fleet-add-vehicle-btn" data-auris-onclick="h0491"><i class="ti ti-plus"></i>Add vehicle</button>
 <button class="btn" id="fleet-fuel-log-btn" data-auris-onclick="h0492"><i class="ti ti-gas-station"></i>Fuel log</button>
 </div>
 </div>
-<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:14px">
-<div class="card" style="padding:12px 14px;border-left:4px solid #185FA5"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">Vehicles</div><div style="font-size:24px;font-weight:800;color:#185FA5" id="fleet-m3total">--</div></div>
-<div class="card" style="padding:12px 14px;border-left:4px solid #1D9E75"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">Active</div><div style="font-size:24px;font-weight:800;color:#1D9E75" id="fleet-m3active">--</div></div>
-<div class="card" style="padding:12px 14px;border-left:4px solid #E24B4A"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">Checks overdue</div><div style="font-size:24px;font-weight:800;color:#E24B4A" id="fleet-m3overdue">--</div></div>
-<div class="card" style="padding:12px 14px;border-left:4px solid #EF9F27"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">Fuel logged</div><div style="font-size:24px;font-weight:800;color:#EF9F27"><span id="fleet-m3fuel">--</span> L</div></div>
-<div class="card" style="padding:12px 14px;border-left:4px solid #6D28D9"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">CO2e</div><div style="font-size:24px;font-weight:800;color:#6D28D9"><span id="fleet-m3co2">--</span> kg</div></div>
+<div class="auris-fleet-s-61d5ffe04d">
+<div class="card auris-fleet-s-624468e090"><div class="auris-fleet-s-4422804ebb">Vehicles</div><div id="fleet-m3total" class="auris-fleet-s-2b9ad58fbd">--</div></div>
+<div class="card auris-fleet-s-4a56dafc2a"><div class="auris-fleet-s-4422804ebb">Active</div><div id="fleet-m3active" class="auris-fleet-s-a1d0a4c7f2">--</div></div>
+<div class="card auris-fleet-s-3b299d6ce4"><div class="auris-fleet-s-4422804ebb">Checks overdue</div><div id="fleet-m3overdue" class="auris-fleet-s-01137f2f4c">--</div></div>
+<div class="card auris-fleet-s-bf5033d99d"><div class="auris-fleet-s-4422804ebb">Fuel logged</div><div class="auris-fleet-s-97309bb0fa"><span id="fleet-m3fuel">--</span> L</div></div>
+<div class="card auris-fleet-s-7650de7f10"><div class="auris-fleet-s-4422804ebb">CO2e</div><div class="auris-fleet-s-3fa9419540"><span id="fleet-m3co2">--</span> kg</div></div>
 </div>
-<div class="card" style="margin-bottom:12px;padding:10px 14px">
-<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
-<input type="text" id="fleet-search" placeholder="Search vehicle, registration, location, driver..." data-auris-oninput="h0493" style="flex:1;min-width:220px;padding:7px 12px;border:1px solid var(--border);border-radius:8px;font-size:12px"/>
-<select id="fleet-filter-status" data-auris-onchange="h0494" style="padding:7px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px">
+<div class="card auris-fleet-s-54bb9f1d16">
+<div class="auris-fleet-s-d5129e1520">
+<input type="text" id="fleet-search" class="auris-fleet-s-42afc95e9e" placeholder="Search vehicle, registration, location, driver..." data-auris-oninput="h0493"/>
+<select id="fleet-filter-status" class="auris-fleet-s-d35063206b" data-auris-onchange="h0494">
 <option value="">All statuses</option><option value="active">Active</option><option value="out_of_service">Out of service</option><option value="maintenance">Maintenance</option><option value="archived">Archived</option>
 </select>
-<select id="fleet-filter-check" data-auris-onchange="h0494" style="padding:7px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px">
+<select id="fleet-filter-check" class="auris-fleet-s-d35063206b" data-auris-onchange="h0494">
 <option value="">All checks</option><option value="overdue">Monthly check overdue</option><option value="due_soon">Monthly check due soon</option><option value="with_incidents">With vehicle incidents</option>
 </select>
 </div>

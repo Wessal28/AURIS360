@@ -1,0 +1,29 @@
+/* Generated from Fleet Management by scripts/extract-fleet-management-styles.cjs. */
+/* Non-important declarations preserve fleet metrics, filters and access-controlled actions. */
+.auris-fleet-s-01137f2f4c{font-size:24px;font-weight:800;color:#E24B4A}
+.auris-fleet-s-2b9ad58fbd{font-size:24px;font-weight:800;color:#185FA5}
+.auris-fleet-s-3b299d6ce4{padding:12px 14px;border-left:4px solid #E24B4A}
+.auris-fleet-s-3fa9419540{font-size:24px;font-weight:800;color:#6D28D9}
+.auris-fleet-s-42afc95e9e{flex:1;min-width:220px;padding:7px 12px;border:1px solid var(--border);border-radius:8px;font-size:12px}
+.auris-fleet-s-4422804ebb{font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px}
+.auris-fleet-s-4a56dafc2a{padding:12px 14px;border-left:4px solid #1D9E75}
+.auris-fleet-s-54bb9f1d16{margin-bottom:12px;padding:10px 14px}
+.auris-fleet-s-61d5ffe04d{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:14px}
+.auris-fleet-s-624468e090{padding:12px 14px;border-left:4px solid #185FA5}
+.auris-fleet-s-6aa34d7432{display:none}
+.auris-fleet-s-7299078644{font-size:12px;color:var(--text2)}
+.auris-fleet-s-7650de7f10{padding:12px 14px;border-left:4px solid #6D28D9}
+.auris-fleet-s-97309bb0fa{font-size:24px;font-weight:800;color:#EF9F27}
+.auris-fleet-s-9c40389b4a{display:flex;gap:8px}
+.auris-fleet-s-a1d0a4c7f2{font-size:24px;font-weight:800;color:#1D9E75}
+.auris-fleet-s-bf5033d99d{padding:12px 14px;border-left:4px solid #EF9F27}
+.auris-fleet-s-d35063206b{padding:7px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px}
+.auris-fleet-s-d5129e1520{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+/* Preserve former inline precedence over existing ID selectors. */
+#fleet-add-vehicle-btn.auris-fleet-s-6aa34d7432{display:none}
+#fleet-filter-check.auris-fleet-s-d35063206b{padding:7px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px}
+#fleet-filter-status.auris-fleet-s-d35063206b{padding:7px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px}
+#fleet-m3active.auris-fleet-s-a1d0a4c7f2{font-size:24px;font-weight:800;color:#1D9E75}
+#fleet-m3overdue.auris-fleet-s-01137f2f4c{font-size:24px;font-weight:800;color:#E24B4A}
+#fleet-m3total.auris-fleet-s-2b9ad58fbd{font-size:24px;font-weight:800;color:#185FA5}
+#fleet-search.auris-fleet-s-42afc95e9e{flex:1;min-width:220px;padding:7px 12px;border:1px solid var(--border);border-radius:8px;font-size:12px}
