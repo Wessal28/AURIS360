@@ -14,7 +14,7 @@ Date: 14 August 2026
 
 ## Residual migration
 
-The legacy interface still contains 2,114 inline event-handler attributes. They remain temporarily permitted through the narrower `script-src-attr 'unsafe-inline'` directive. Migrating these handlers must be performed module by module with interaction regression tests; a single broad replacement would create disproportionate risk across the application.
+Phase 2A migrated all 1,458 static-page event attributes into 1,261 precompiled handlers in `auris-static-event-handlers.js`. The remaining 648 attributes are embedded in dynamically generated module markup. They remain temporarily permitted through the narrower `script-src-attr 'unsafe-inline'` directive until the dynamic markup migration is complete.
 
 The interface also contains inline style attributes. Style CSP remains report-only with `'unsafe-inline'` until these declarations are moved into reusable classes or a nonce/hash strategy is adopted.
 
