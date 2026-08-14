@@ -9812,6 +9812,54 @@ function escH(str){
   return String(str||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
+// Validate untrusted URLs before placing them in href/src attributes. HTML
+// escaping alone does not stop executable protocols such as javascript:.
+function aurisSafeUrl(value, options){
+  options=options||{};
+  var raw=String(value||'').trim();
+  if(!raw||/[\u0000-\u001F\u007F]/.test(raw))return '';
+  if(raw.charAt(0)==='#')return options.allowHash===false?'':raw;
+  try{
+    var base=(window.location&&window.location.origin&&window.location.origin!=='null')?window.location.origin:'https://auris360.app';
+    var parsed=new URL(raw,base);
+    if(parsed.username||parsed.password)return '';
+    var protocol=parsed.protocol.toLowerCase();
+    if(protocol==='https:')return raw;
+    if(protocol==='http:'&&(options.allowHttp||/^(?:localhost|127\.0\.0\.1|\[::1\])$/i.test(parsed.hostname)))return raw;
+    if(options.allowBlob&&protocol==='blob:')return raw;
+    if(options.allowContact&&(protocol==='mailto:'||protocol==='tel:'))return raw;
+    if(options.allowDataImage&&protocol==='data:'&&/^data:image\/(?:png|jpe?g|gif|webp);base64,/i.test(raw))return raw;
+    if(options.allowDataVideo&&protocol==='data:'&&/^data:video\/(?:mp4|webm|ogg);base64,/i.test(raw))return raw;
+  }catch(_){return '';}
+  return '';
+}
+function aurisSafeMediaUrl(value, kind){
+  kind=String(kind||'document').toLowerCase();
+  return aurisSafeUrl(value,{allowBlob:true,allowDataImage:kind==='image'||kind==='document',allowDataVideo:kind==='video'||kind==='document'});
+}
+function aurisSanitizeStoredHtml(value){
+  var parser=new DOMParser();
+  var doc=parser.parseFromString(String(value||''),'text/html');
+  doc.querySelectorAll('script,iframe,object,embed,base,meta,link,form,input,button,select,textarea').forEach(function(el){el.remove();});
+  doc.querySelectorAll('*').forEach(function(el){
+    Array.from(el.attributes||[]).forEach(function(attr){
+      var name=attr.name.toLowerCase();
+      if(name.indexOf('on')===0||name==='srcdoc'||name==='formaction'){el.removeAttribute(attr.name);return;}
+      if(name==='style'&&/(?:expression\s*\(|url\s*\(|@import|-moz-binding)/i.test(attr.value)){el.removeAttribute(attr.name);return;}
+      if(name==='href'||name==='xlink:href'){
+        var href=aurisSafeUrl(attr.value,{allowHash:true});
+        if(href)el.setAttribute(attr.name,href);else el.removeAttribute(attr.name);
+      }
+      if(name==='src'){
+        var src=aurisSafeMediaUrl(attr.value,el.tagName==='IMG'?'image':el.tagName==='VIDEO'||el.tagName==='SOURCE'?'video':'document');
+        if(src)el.setAttribute(attr.name,src);else el.removeAttribute(attr.name);
+      }
+    });
+    if(el.tagName==='A'&&el.getAttribute('target')==='_blank')el.setAttribute('rel','noopener noreferrer');
+  });
+  return doc.body.innerHTML;
+}
+
 
 
 
@@ -11317,10 +11365,10 @@ function sopPrint(){
   var el=document.getElementById('sop-printable');
   if(!el){toast('No SOP to print',false);return;}
   var w=window.open('','_blank');
-  w.document.write('<!DOCTYPE html><html><head><title>SOP - '+(window.sopGeneratedData?.meta?.title||'')+'</title>'
+  w.document.write('<!DOCTYPE html><html><head><title>SOP - '+escH(window.sopGeneratedData?.meta?.title||'')+'</title>'
     +'<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">'
     +'<style>body{margin:0;padding:20px;font-family:Arial,sans-serif}@media print{body{padding:0}}[contenteditable]{outline:none}</style>'
-    +'</head><body>'+el.outerHTML
+    +'</head><body>'+aurisSanitizeStoredHtml(el.outerHTML)
     +'<scr'+'ipt>window.onload=function(){window.print();}<'+'/scr'+'ipt>'
     +'</body></html>');
   w.document.close();
@@ -11332,7 +11380,7 @@ async function sopPrintById(id){
   var w=window.open('','_blank');
   w.document.write('<!DOCTYPE html><html><head><title>SOP</title>'
     +'<style>body{margin:20px;font-family:Arial,sans-serif}@media print{body{margin:0}}</style>'
-    +'</head><body>'+sop.html_content
+    +'</head><body>'+aurisSanitizeStoredHtml(sop.html_content)
     +'<scr'+'ipt>window.onload=function(){window.print();}<'+'/scr'+'ipt></body></html>');
   w.document.close();
 }
@@ -25938,7 +25986,8 @@ function ppeCertBadge(meta){
     else txt='Valid';
   }
   var label=escH(meta.ref||meta.type||txt);
-  var link=meta.url?'<a href="'+escH(meta.url)+'" target="_blank" onclick="event.stopPropagation()" style="margin-left:6px;color:var(--green);font-weight:800">Open</a>':'';
+  var certUrl=aurisSafeUrl(meta.url);
+  var link=certUrl?'<a href="'+escH(certUrl)+'" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation()" style="margin-left:6px;color:var(--green);font-weight:800">Open</a>':'';
   return '<span class="badge '+cls+'">'+label+'</span>'+link+'<div style="font-size:10px;color:var(--text2);margin-top:3px">'+escH(txt+(meta.issuer?' - '+meta.issuer:''))+'</div>';
 }
 
@@ -29968,7 +30017,8 @@ function dcOpenViewer(doc){
   if(!doc || !doc.file_url){ toast('No file attached to this document',false); return; }
   var name = doc.file_name || doc.title || doc.file_url.split('/').pop();
   var mime = (doc.file_mime || dcMimeFromName(name)).toLowerCase();
-  var url  = doc.file_url;
+  var url  = aurisSafeMediaUrl(doc.file_url,'document');
+  if(!url){ toast('This file URL is not permitted. Use HTTPS or an approved uploaded file.',false); return; }
   var isVideo = dcLooksLikeVideo(url, mime, name);
 
   document.getElementById('dc-viewer-title').textContent = name;
@@ -37529,7 +37579,7 @@ function adminRenderOverviewCards(data) {
       + '<div style="padding:12px 14px">'
       + '<div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:8px">'
       + '<div style="display:flex;align-items:center;gap:8px">'
-      + (co.logo_url?'<img src="'+escH(co.logo_url)+'" style="width:36px;height:36px;border-radius:8px;object-fit:contain;border:1px solid #f3f4f6" onerror="this.style.display=\'none\'"/>':
+      + (aurisSafeMediaUrl(co.logo_url,'image')?'<img src="'+escH(aurisSafeMediaUrl(co.logo_url,'image'))+'" style="width:36px;height:36px;border-radius:8px;object-fit:contain;border:1px solid #f3f4f6" onerror="this.style.display=\'none\'"/>':
         '<div style="width:36px;height:36px;border-radius:8px;background:#185FA5;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:14px;flex-shrink:0">'+(co.name?co.name[0].toUpperCase():'?')+'</div>')
       + '<div><div style="font-weight:700;font-size:13px">'+escH(co.name)+'</div>'
       + '<div style="font-size:10px;color:var(--text2)">'+escH(co.industry||'-')+'</div>'
@@ -37617,7 +37667,7 @@ async function adminLoadCompanies() {
     var tierColors={starter:'#6B7280',professional:'#185FA5',enterprise:'#5B21B6'};
     h+='<tr style="border-bottom:1px solid #f0f0f0;background:'+bg+'">'
       +'<td style="padding:8px 14px"><div style="display:flex;align-items:center;gap:8px">'
-      +(co.logo_url?'<img src="'+escH(co.logo_url)+'" style="width:24px;height:24px;border-radius:4px;object-fit:contain" onerror="this.style.display=\'none\'"/>':
+      +(aurisSafeMediaUrl(co.logo_url,'image')?'<img src="'+escH(aurisSafeMediaUrl(co.logo_url,'image'))+'" style="width:24px;height:24px;border-radius:4px;object-fit:contain" onerror="this.style.display=\'none\'"/>':
         '<div style="width:24px;height:24px;border-radius:4px;background:#185FA5;color:#fff;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700">'+co.name[0].toUpperCase()+'</div>')
       +'<span style="font-weight:700">'+escH(co.name)+'</span>'
       +(co.parent_company_id?'<span style="font-size:9px;background:#EDE9FE;color:#5B21B6;padding:1px 5px;border-radius:3px">subsidiary</span>':'')
@@ -37919,7 +37969,7 @@ function adminRenderHierarchy() {
     html += '<div class="card" style="margin-bottom:12px;padding:0;overflow:hidden">'
       + '<div style="padding:12px 16px;background:linear-gradient(135deg,#1a3a5c,#185FA5);color:#fff;display:flex;align-items:center;justify-content:space-between">'
       + '<div style="display:flex;align-items:center;gap:10px">'
-      + (co.logo_url?'<img src="'+escH(co.logo_url)+'" style="width:28px;height:28px;border-radius:6px;object-fit:contain;background:#fff;padding:2px" onerror="this.style.display=\'none\'"/>':
+      + (aurisSafeMediaUrl(co.logo_url,'image')?'<img src="'+escH(aurisSafeMediaUrl(co.logo_url,'image'))+'" style="width:28px;height:28px;border-radius:6px;object-fit:contain;background:#fff;padding:2px" onerror="this.style.display=\'none\'"/>':
         '<div style="width:28px;height:28px;border-radius:6px;background:rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;font-weight:800;color:#fff">'+co.name[0]+'</div>')
       + '<div><div style="font-weight:800;font-size:14px">'+escH(co.name)+'</div>'
       + '<div style="font-size:10px;opacity:.8">'+escH(co.industry||'')+(co.country?' - '+escH(co.country):'')+(co.company_type?' - '+escH(co.company_type):'')+'</div></div></div>'
@@ -39069,9 +39119,11 @@ async function elePatchWithTrackingFallback(id,body){
 }
 function elcLaunch(id){
   var c=elcCourseById(id);if(!c||!c.course_url){toast('No course link available',false);return;}
+  var safeCourseUrl=aurisSafeMediaUrl(c.course_url,elcIsVideoUrl(c.course_url)?'video':'document');
+  if(!safeCourseUrl){toast('This course URL is not permitted. Use an HTTPS course link.',false);return;}
   auditLogEvent('open','training','E-learning course previewed',{course_id:c.id||null,course_title:c.title||null,course_url:c.course_url},{related_table:'elearning_courses',related_id:c.id||null,company_id:c.company_id||ccid()});
   if(elcIsVideoUrl(c.course_url)){eleOpenVideoPlayer({course:c,preview:true});return;}
-  window.open(c.course_url,'_blank','noopener');
+  window.open(safeCourseUrl,'_blank','noopener,noreferrer');
 }
 async function eleLaunchEnrolment(id){
   try{
@@ -39082,9 +39134,11 @@ async function eleLaunchEnrolment(id){
       course=cs?.[0]||null;if(course)elcAllData=(elcAllData||[]).concat([course]);
     }
     if(!course||!course.course_url){toast('No course video/link available',false);return;}
+    var safeCourseUrl=aurisSafeMediaUrl(course.course_url,elcIsVideoUrl(course.course_url)?'video':'document');
+    if(!safeCourseUrl){toast('This course URL is not permitted. Use an HTTPS course link.',false);return;}
     auditLogEvent('open','training','E-learning enrolment launched',{person_name:enrol.person_name,course:elcCourseLabel(enrol.course_id)},{related_table:'elearning_enrolments',related_id:id,company_id:ccid()});
     if(elcIsVideoUrl(course.course_url)){eleOpenVideoPlayer({course:course,enrolment:enrol,preview:false});return;}
-    window.open(course.course_url,'_blank','noopener');
+    window.open(safeCourseUrl,'_blank','noopener,noreferrer');
   }catch(e){toast(actionErrorMessage('Launch e-learning','Training register',e.message),false);}
 }
 function eleCloseVideoPlayer(){
@@ -39094,6 +39148,8 @@ function eleCloseVideoPlayer(){
 }
 function eleOpenVideoPlayer(opts){
   opts=opts||{};var course=opts.course||{};var enrol=opts.enrolment||null;var preview=!!opts.preview;
+  var videoUrl=aurisSafeMediaUrl(course.course_url,'video');
+  if(!videoUrl){toast('This video URL is not permitted. Use an HTTPS or approved uploaded video.',false);return;}
   var old=document.getElementById('ele-video-modal');if(old)old.remove();
   var watched=eleWatchFinished(enrol);
   var progress=eleWatchPercent(enrol);
@@ -39102,7 +39158,7 @@ function eleOpenVideoPlayer(opts){
   modal.className='ele-video-modal';
   modal.innerHTML='<div class="ele-video-shell" role="dialog" aria-modal="true">'
     +'<div class="ele-video-head"><div style="min-width:0"><div style="font-size:13px;font-weight:900;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+escH(course.title||'E-learning video')+'</div><div style="font-size:11px;opacity:.8">'+escH(preview?'Course preview':(enrol?.person_name||'Assigned learner'))+'</div></div><button type="button" class="icon-btn" style="background:rgba(255,255,255,.18);color:#fff;border-color:rgba(255,255,255,.25)" onclick="eleCloseVideoPlayer()" aria-label="Close video"><i class="ti ti-x"></i></button></div>'
-    +'<div class="ele-video-body"><video id="ele-watch-video" class="ele-watch-player" controls controlsList="nodownload noplaybackrate noremoteplayback" disablePictureInPicture playsinline webkit-playsinline preload="metadata" oncontextmenu="return false" src="'+escH(course.course_url||'')+'"></video>'
+    +'<div class="ele-video-body"><video id="ele-watch-video" class="ele-watch-player" controls controlsList="nodownload noplaybackrate noremoteplayback" disablePictureInPicture playsinline webkit-playsinline preload="metadata" oncontextmenu="return false" src="'+escH(videoUrl)+'"></video>'
     +'<div style="display:flex;justify-content:space-between;gap:10px;align-items:center;margin-top:10px;flex-wrap:wrap"><strong id="ele-watch-status">'+escH(preview?'Preview mode':(watched?'Already watched':'Watch in full to unlock certificate'))+'</strong><span class="muted" id="ele-watch-pct">'+progress+'%</span></div>'
     +'<div class="ele-video-progress" aria-hidden="true"><span id="ele-watch-bar" style="width:'+progress+'%"></span></div>'
     +'<div class="ele-watch-note">'+(preview?'Preview only. Learner progress is not recorded from this window.':'First viewing is controlled: forward seeking is blocked until the full video has been watched. Completion creates a one-year validity from the watched date.')+'</div>'
@@ -41345,7 +41401,7 @@ function aurisHeader(title, subtitle, refNo) {
   var today = new Date().toLocaleDateString('en-GB', {day:'2-digit', month:'short', year:'numeric'});
   var B = (window.Brand && window.Brand.get) ? window.Brand.get() : {};
   var companyName = (co && co.name) || (B && B.display_name) || 'Company';
-  var companyLogo = (co && co.logo_url) || null;
+  var companyLogo = aurisSafeMediaUrl((co && co.logo_url) || '','image') || null;
   var tagline = (B && B.tagline) || 'HSE Management Platform';
   var aurisLogo = '/assets/auris360-logo-final.png';
 
@@ -42564,8 +42620,9 @@ function fireRenderCerts() {
       : days <= 90 ? '<span class="badge badge-blue">'+days+'d</span>'
       : '<span class="badge badge-green">'+days+'d</span>';
     var statusHtml = fireStatusBadge(c.status);
-    var docLink = c.document_url
-      ? '<a href="'+escH(c.document_url)+'" target="_blank" class="btn btn-sm" title="View Document"><i class="ti ti-file-text"></i></a>'
+    var safeDocumentUrl = aurisSafeUrl(c.document_url);
+    var docLink = safeDocumentUrl
+      ? '<a href="'+escH(safeDocumentUrl)+'" target="_blank" rel="noopener noreferrer" class="btn btn-sm" title="View Document"><i class="ti ti-file-text"></i></a>'
       : '';
     return '<tr>'
       + '<td style="font-weight:600">' + escH(c.cert_number||'-') + '</td>'
@@ -42831,7 +42888,8 @@ function fireEquipIcon(type){
 function fireEquipIconHtml(type){
   var custom=fireLayoutCustomSymbol(type);
   if(custom){
-    if(custom.image)return '<img src="'+escH(custom.image)+'" alt="" style="width:24px;height:24px;object-fit:contain;display:block"/>';
+    var customImage=aurisSafeMediaUrl(custom.image,'image');
+    if(customImage)return '<img src="'+escH(customImage)+'" alt="" style="width:24px;height:24px;object-fit:contain;display:block"/>';
     return '<span style="font-size:11px;font-weight:900;letter-spacing:.2px">'+escH(custom.symbol||'EQ')+'</span>';
   }
   var initials={smoke_detector:'SD',heat_detector:'HD',other:'EQ'};
@@ -53506,7 +53564,7 @@ Content accurate and current<br>Consistent with legislation<br>Roles and respons
         <div id="dc-viewer-title" style="font-size:14px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">Document</div>
         <div id="dc-viewer-meta" style="font-size:11px;color:#94a3b8;margin-top:1px"></div>
       </div>
-      <a id="dc-viewer-open" href="#" target="_blank" class="btn" style="padding:6px 12px;font-size:12px;background:rgba(255,255,255,.1);color:#fff;border-color:rgba(255,255,255,.2)" title="Open in new tab"><i class="ti ti-external-link"></i>Open</a>
+      <a id="dc-viewer-open" href="#" target="_blank" rel="noopener noreferrer" class="btn" style="padding:6px 12px;font-size:12px;background:rgba(255,255,255,.1);color:#fff;border-color:rgba(255,255,255,.2)" title="Open in new tab"><i class="ti ti-external-link"></i>Open</a>
       <a id="dc-viewer-download" href="#" download class="btn btn-primary" style="padding:6px 12px;font-size:12px"><i class="ti ti-download"></i>Download</a>
       <button class="btn" style="padding:6px 10px;font-size:14px;background:rgba(255,255,255,.1);color:#fff;border-color:rgba(255,255,255,.2)" onclick="dcCloseViewer()" title="Close"><i class="ti ti-x"></i></button>
     </div>
