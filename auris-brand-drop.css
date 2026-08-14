@@ -1,0 +1,11 @@
+.brand-drop{border:2px dashed var(--border);border-radius:10px;padding:18px;display:flex;align-items:center;justify-content:center;min-height:90px;cursor:pointer;background:#fafbfc;transition:all .15s}
+.brand-drop:hover{border-color:var(--brand-primary,#1D9E75);background:#f1f7f4}
+.brand-drop.dragover{border-color:var(--brand-primary,#1D9E75);background:#e7f3ec}
+.brand-drop-dark{background:#1f2937;border-color:#374151}
+.brand-drop-dark:hover{background:#283447}
+.brand-preset{border:2px solid var(--border);border-radius:8px;padding:8px 6px;cursor:pointer;text-align:center;transition:all .12s;background:#fff}
+.brand-preset:hover{transform:translateY(-1px);box-shadow:0 4px 12px rgba(0,0,0,.08)}
+.brand-preset.active{border-color:var(--brand-primary,#1D9E75);box-shadow:0 0 0 3px rgba(29,158,117,.15)}
+.brand-preset-swatch{display:flex;gap:2px;justify-content:center;margin-bottom:5px}
+.brand-preset-swatch span{width:14px;height:14px;border-radius:3px}
+.brand-preset-name{font-size:10px;font-weight:600;color:var(--text)}

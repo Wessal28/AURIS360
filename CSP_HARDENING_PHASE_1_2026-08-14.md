@@ -28,6 +28,8 @@ Phase 2H migrated all 91 Safety Engagement attributes into 61 precompiled handle
 
 The interface also contains inline style attributes. Style CSP remains report-only with `'unsafe-inline'` until these declarations are moved into reusable classes or a nonce/hash strategy is adopted.
 
+Phase 3A began the style migration by extracting all six page-level `<style>` blocks (101,694 characters) into ordered, same-origin stylesheets. Their original cascade positions are preserved, the offline application shell now includes each stylesheet, and a regression contract prevents page-level inline style blocks from returning. Runtime style attributes and print-window templates remain staged under the report-only style policy for subsequent controlled batches.
+
 ## Security effect
 
 Injected inline `<script>` elements and inline script event attributes can no longer execute under the enforced policy. Existing action buttons use delegated, precompiled handlers.

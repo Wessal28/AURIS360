@@ -4,6 +4,8 @@ const path = require('path');
 
 const root = path.resolve(__dirname, '..');
 const html = require('./application_source.cjs')(root);
+const styles = fs.readFileSync(path.join(root, 'auris-base.css'), 'utf8') + '\n' +
+  fs.readFileSync(path.join(root, 'auris-mobile-final-polish.css'), 'utf8');
 const sw = fs.readFileSync(path.join(root, 'sw.js'), 'utf8');
 const manifest = JSON.parse(fs.readFileSync(path.join(root, 'manifest.json'), 'utf8'));
 
@@ -62,8 +64,8 @@ for (const page of ['dashboard', 'events', 'observation', 'inspection', 'risk'])
 assert.match(functionSource('mobileApplyAccess'), /canAccessPage\(m\.k\)/);
 assert.match(functionSource('imsSetFormMode'), /mobile-form3mode/);
 assert.match(functionSource('obsSetFormMode'), /mobile-form3mode/);
-assert.match(html, /@media\s*\(max-width:\s*768px\)/);
-assert.match(html, /#mobile-bottom3nav\s*\{\s*display:\s*flex\s*!important/);
+assert.match(styles, /@media\s*\(max-width:\s*768px\)/);
+assert.match(styles, /#mobile-bottom3nav\s*\{\s*display:\s*flex\s*!important/);
 
 // Record-aware links are stored through authentication and use exact-record
 // adapters after the responsive shell is ready.

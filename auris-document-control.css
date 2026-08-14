@@ -1,0 +1,4 @@
+.dc-uploader{border:2px dashed var(--border);border-radius:10px;padding:24px;display:flex;align-items:center;justify-content:center;min-height:120px;cursor:pointer;background:#fafbfc;transition:all .15s}
+.dc-uploader:hover{border-color:var(--green);background:#f1f7f4}
+.dc-uploader.dragover{border-color:var(--green);background:#e7f3ec;transform:scale(1.01)}
+@keyframes spin{from{transform:rotate(0)}to{transform:rotate(360deg)}}

@@ -1,0 +1,147 @@
+/* Final shared mobile/layout hardening. Keep this after module styles so it wins. */
+@media (min-width: 769px) {
+  .sidebar.collapsed {
+    width: 56px !important;
+    min-width: 56px !important;
+    max-width: 56px !important;
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+    scrollbar-gutter: stable;
+  }
+  .sidebar.collapsed .nav-section,
+  .sidebar.collapsed .sb-company,
+  .sidebar.collapsed .sb-user,
+  .sidebar.collapsed .sb-role,
+  .sidebar.collapsed #sb-role-changer,
+  .sidebar.collapsed #pwa-install-btn,
+  .sidebar.collapsed .nav-item span {
+    display: none !important;
+  }
+  .sidebar.collapsed .nav-item {
+    width: 56px !important;
+    min-width: 56px !important;
+    max-width: 56px !important;
+    min-height: 42px !important;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+    justify-content: center !important;
+    gap: 0 !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+  }
+  .sidebar.collapsed .nav-item i {
+    flex: 0 0 22px !important;
+    width: 22px !important;
+    margin: 0 !important;
+    text-align: center !important;
+  }
+}
+
+@media (max-width: 768px) {
+  html, body, #app, .layout, .main, .page {
+    max-width: 100vw !important;
+  }
+  .main {
+    overflow-x: hidden !important;
+    touch-action: pan-y !important;
+  }
+  .page {
+    padding-left: 10px !important;
+    padding-right: 10px !important;
+    padding-bottom: calc(78px + env(safe-area-inset-bottom, 0px)) !important;
+  }
+  .sidebar {
+    overscroll-behavior: contain !important;
+    touch-action: pan-y !important;
+  }
+  .card, .panel, .section-card, .metric, .metric-card,
+  .dash-card, .module-card, .form3panel {
+    min-width: 0 !important;
+    max-width: 100% !important;
+  }
+  .form3row, .form3row3, .grid2, .grid3, .grid4,
+  .page [style*="grid-template-columns:1fr 1fr"],
+  .page [style*="grid-template-columns: 1fr 1fr"],
+  .page [style*="grid-template-columns:repeat(2"],
+  .page [style*="grid-template-columns: repeat(2"],
+  .page [style*="grid-template-columns:repeat(3"],
+  .page [style*="grid-template-columns: repeat(3"],
+  .page [style*="grid-template-columns:repeat(4"],
+  .page [style*="grid-template-columns: repeat(4"] {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) !important;
+    gap: 10px !important;
+  }
+  .form3group, .form3group > *, input, select, textarea {
+    min-width: 0 !important;
+    max-width: 100% !important;
+  }
+  input, select, textarea {
+    font-size: 16px !important;
+    line-height: 1.35 !important;
+  }
+  textarea {
+    white-space: pre-wrap !important;
+  }
+  .btn, button {
+    min-height: 42px !important;
+    touch-action: manipulation !important;
+    -webkit-tap-highlight-color: transparent !important;
+  }
+  .page-header > div, .card-title, .card-title > div,
+  .page [style*="display:flex"], .page [style*="display: flex"] {
+    min-width: 0 !important;
+  }
+  .table-wrap, .table-scroll, .data-table-wrap,
+  .page [style*="overflow-x:auto"], .page [style*="overflow-x: auto"],
+  .page [style*="overflow:auto"], .page [style*="overflow: auto"] {
+    display: block !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    overflow-x: auto !important;
+    overflow-y: visible !important;
+    -webkit-overflow-scrolling: touch !important;
+    touch-action: pan-x pan-y !important;
+  }
+  table, .data-table, .insp-tbl {
+    min-width: 720px !important;
+    width: max-content !important;
+    max-width: none !important;
+  }
+  th, .data-table th {
+    white-space: nowrap !important;
+    vertical-align: middle !important;
+  }
+  td, .data-table td {
+    white-space: normal !important;
+    word-break: normal !important;
+    overflow-wrap: anywhere !important;
+    vertical-align: top !important;
+  }
+  .module-tabs, .tabs, .tab-row, .mtg-tabs {
+    display: flex !important;
+    flex-wrap: nowrap !important;
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    max-width: 100% !important;
+    -webkit-overflow-scrolling: touch !important;
+  }
+  .module-tabs > *, .tabs > *, .tab-row > *, .mtg-tab {
+    flex: 0 0 auto !important;
+    white-space: nowrap !important;
+  }
+  .toast {
+    left: 10px !important;
+    right: 10px !important;
+    bottom: calc(72px + env(safe-area-inset-bottom, 0px)) !important;
+    max-width: none !important;
+  }
+}
+@media (max-width: 480px) {
+  table, .data-table, .insp-tbl {
+    min-width: 660px !important;
+  }
+  .metrics, .module-metrics, .kpi-cards, .dashboard-grid {
+    grid-template-columns: 1fr !important;
+  }
+}
