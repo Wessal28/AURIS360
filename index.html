@@ -73,6 +73,7 @@
 <link rel="stylesheet" href="auris-permit-work-static.css?v=20260814-1">
 <link rel="stylesheet" href="auris-contractor-management-static.css?v=20260815-1">
 <link rel="stylesheet" href="auris-environmental-esg-static.css?v=20260815-1">
+<link rel="stylesheet" href="auris-emergency-management-static.css?v=20260815-1">
 </head>
 <body>
 <div id="login-screen">
@@ -5295,131 +5296,131 @@ Offline mode - changes will sync when connection is restored
 
 <div id="page-emergency" class="page">
 <div class="page-header">
-<div><div class="page-title">Emergency Management</div><div style="font-size:12px;color:var(--text2)">Response plans - ERT - Muster points - Drills - Activations - BCP - Equipment</div></div>
-<div style="display:flex;gap:8px" id="em3header-btns"><button class="btn" id="em3print-btn" data-auris-onclick="h0638"><i class="ti ti-printer"></i>Print current view</button></div>
+<div><div class="page-title">Emergency Management</div><div class="auris-emergency-s-7299078644">Response plans - ERT - Muster points - Drills - Activations - BCP - Equipment</div></div>
+<div id="em3header-btns" class="auris-emergency-s-9c40389b4a"><button class="btn" id="em3print-btn" data-auris-onclick="h0638"><i class="ti ti-printer"></i>Print current view</button></div>
 </div>
 
 <!-- Tabs -->
-<div style="display:flex;gap:0;margin-bottom:16px;border-bottom:2px solid var(--border);overflow-x:auto">
-<button class="mtg-tab active" id="em3tab-dash" data-auris-onclick="h0639" style="white-space:nowrap">Dashboard</button>
-<button class="mtg-tab" id="em3tab-plans" data-auris-onclick="h0640" style="white-space:nowrap">Response Plans</button>
-<button class="mtg-tab" id="em3tab-ert" data-auris-onclick="h0641" style="white-space:nowrap">ERT</button>
-<button class="mtg-tab" id="em3tab-muster" data-auris-onclick="h0642" style="white-space:nowrap">Muster Points</button>
-<button class="mtg-tab" id="em3tab-drills" data-auris-onclick="h0643" style="white-space:nowrap">Drills</button>
-<button class="mtg-tab" id="em3tab-activations" data-auris-onclick="h0644" style="white-space:nowrap">Activations</button>
-<button class="mtg-tab" id="em3tab-bcp" data-auris-onclick="h0645" style="white-space:nowrap">BCP</button>
-<button class="mtg-tab" id="em3tab-equipment" data-auris-onclick="h0646" style="white-space:nowrap">Equipment</button>
+<div class="auris-emergency-s-0cf9615f1f">
+<button class="mtg-tab active auris-emergency-s-eb99a4c193" id="em3tab-dash" data-auris-onclick="h0639">Dashboard</button>
+<button class="mtg-tab auris-emergency-s-eb99a4c193" id="em3tab-plans" data-auris-onclick="h0640">Response Plans</button>
+<button class="mtg-tab auris-emergency-s-eb99a4c193" id="em3tab-ert" data-auris-onclick="h0641">ERT</button>
+<button class="mtg-tab auris-emergency-s-eb99a4c193" id="em3tab-muster" data-auris-onclick="h0642">Muster Points</button>
+<button class="mtg-tab auris-emergency-s-eb99a4c193" id="em3tab-drills" data-auris-onclick="h0643">Drills</button>
+<button class="mtg-tab auris-emergency-s-eb99a4c193" id="em3tab-activations" data-auris-onclick="h0644">Activations</button>
+<button class="mtg-tab auris-emergency-s-eb99a4c193" id="em3tab-bcp" data-auris-onclick="h0645">BCP</button>
+<button class="mtg-tab auris-emergency-s-eb99a4c193" id="em3tab-equipment" data-auris-onclick="h0646">Equipment</button>
 </div>
 
 <!-- -- DASHBOARD -- -->
 <div id="em3view-dash">
 <!-- Alert banner - real emergency button -->
-<div style="background:linear-gradient(135deg,#7F1D1D,#DC2626);border-radius:12px;padding:20px 24px;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:14px">
+<div class="auris-emergency-s-1b6a07f74f">
 <div>
-<div style="font-size:18px;font-weight:800;color:#fff;margin-bottom:4px">Emergency Activation</div>
-<div style="font-size:13px;color:#fca5a5">In the event of a real emergency, press this button to log the activation and notify the ERT</div>
+<div class="auris-emergency-s-55ef703cfb">Emergency Activation</div>
+<div class="auris-emergency-s-2a37d92faf">In the event of a real emergency, press this button to log the activation and notify the ERT</div>
 </div>
-<button class="btn" style="background:#fff;color:#DC2626;font-weight:800;font-size:14px;padding:12px 24px;border-color:#fff" data-auris-onclick="h0647"><i class="ti ti-alert-triangle"></i>ACTIVATE EMERGENCY</button>
+<button class="btn auris-emergency-s-0dffa9c744" data-auris-onclick="h0647"><i class="ti ti-alert-triangle"></i>ACTIVATE EMERGENCY</button>
 </div>
 <!-- Metrics -->
-<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px">
-<div class="card" style="padding:14px 16px;border-left:4px solid #185FA5"><div style="font-size:11px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:4px">Active Plans</div><div style="font-size:28px;font-weight:800;color:#185FA5" id="em3m3plans">-</div><div style="font-size:11px;color:var(--text2)" id="em3m3plans-sub">response plans</div></div>
-<div class="card" style="padding:14px 16px;border-left:4px solid #1D9E75"><div style="font-size:11px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:4px">ERT Members</div><div style="font-size:28px;font-weight:800;color:#1D9E75" id="em3m3ert">-</div><div style="font-size:11px;color:var(--text2)" id="em3m3ert-sub">active members</div></div>
-<div class="card" style="padding:14px 16px;border-left:4px solid #EF9F27"><div style="font-size:11px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:4px">Last Drill</div><div style="font-size:22px;font-weight:800;color:#EF9F27" id="em3m3last-drill">-</div><div style="font-size:11px;color:var(--text2)">days ago</div></div>
-<div class="card" style="padding:14px 16px;border-left:4px solid #E24B4A"><div style="font-size:11px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:4px">Cert Expiring</div><div style="font-size:28px;font-weight:800;color:#E24B4A" id="em3m3expiring">-</div><div style="font-size:11px;color:var(--text2)">within 60 days</div></div>
+<div class="auris-emergency-s-311c2a86b4">
+<div class="card auris-emergency-s-2f72562df4"><div class="auris-emergency-s-7fd5539fb9">Active Plans</div><div id="em3m3plans" class="auris-emergency-s-c85dfe6fed">-</div><div id="em3m3plans-sub" class="auris-emergency-s-d37c8e8fe6">response plans</div></div>
+<div class="card auris-emergency-s-4f2420de03"><div class="auris-emergency-s-7fd5539fb9">ERT Members</div><div id="em3m3ert" class="auris-emergency-s-9500d42bf8">-</div><div id="em3m3ert-sub" class="auris-emergency-s-d37c8e8fe6">active members</div></div>
+<div class="card auris-emergency-s-534582b0fc"><div class="auris-emergency-s-7fd5539fb9">Last Drill</div><div id="em3m3last-drill" class="auris-emergency-s-2062f090bc">-</div><div class="auris-emergency-s-d37c8e8fe6">days ago</div></div>
+<div class="card auris-emergency-s-00e6bcdd35"><div class="auris-emergency-s-7fd5539fb9">Cert Expiring</div><div id="em3m3expiring" class="auris-emergency-s-6ca3277dba">-</div><div class="auris-emergency-s-d37c8e8fe6">within 60 days</div></div>
 </div>
 <!-- ERP Quick access + Drill schedule -->
-<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px">
+<div class="auris-emergency-s-88d0c63316">
 <div class="card">
 <div class="card-title"><i class="ti ti-flame"></i> Emergency Response Plans</div>
-<div id="em3dash-plans" style="font-size:13px"></div>
+<div id="em3dash-plans" class="auris-emergency-s-5e461f0709"></div>
 </div>
 <div class="card">
 <div class="card-title"><i class="ti ti-calendar-event"></i> Upcoming Drills</div>
-<div id="em3dash-drills" style="font-size:13px"></div>
+<div id="em3dash-drills" class="auris-emergency-s-5e461f0709"></div>
 </div>
 </div>
 <!-- ERT Quick contacts -->
 <div class="card">
 <div class="card-title"><i class="ti ti-users"></i> ERT Quick Contacts</div>
-<div id="em3dash-ert" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px"></div>
+<div id="em3dash-ert" class="auris-emergency-s-67cce973ed"></div>
 </div>
 </div>
 
 <!-- -- RESPONSE PLANS -- -->
-<div id="em3view-plans" style="display:none">
-<div class="card" style="margin-bottom:12px;padding:10px 14px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
-<div><div class="card-title" style="margin:0">Emergency Response Plans</div><div style="font-size:12px;color:var(--text2)">Site-specific plans for each emergency type</div></div>
-<button class="btn btn-primary" id="em3plan-add-btn" style="display:none" data-auris-onclick="h0648"><i class="ti ti-plus"></i>New plan</button>
+<div id="em3view-plans" class="auris-emergency-s-6aa34d7432">
+<div class="card auris-emergency-s-e2e1112055">
+<div><div class="card-title auris-emergency-s-ab79ea2b85">Emergency Response Plans</div><div class="auris-emergency-s-7299078644">Site-specific plans for each emergency type</div></div>
+<button class="btn btn-primary auris-emergency-s-6aa34d7432" id="em3plan-add-btn" data-auris-onclick="h0648"><i class="ti ti-plus"></i>New plan</button>
 </div>
 <div id="em3plans-list"></div>
 </div>
 
 <!-- -- ERT -- -->
-<div id="em3view-ert" style="display:none">
-<div class="card" style="margin-bottom:12px;padding:10px 14px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
-<div><div class="card-title" style="margin:0">Emergency Response Team</div><div style="font-size:12px;color:var(--text2)">Wardens, first aiders, fire marshals and ERT members</div></div>
-<button class="btn btn-primary" id="em3ert-add-btn" style="display:none" data-auris-onclick="h0649"><i class="ti ti-plus"></i>Add member</button>
+<div id="em3view-ert" class="auris-emergency-s-6aa34d7432">
+<div class="card auris-emergency-s-e2e1112055">
+<div><div class="card-title auris-emergency-s-ab79ea2b85">Emergency Response Team</div><div class="auris-emergency-s-7299078644">Wardens, first aiders, fire marshals and ERT members</div></div>
+<button class="btn btn-primary auris-emergency-s-6aa34d7432" id="em3ert-add-btn" data-auris-onclick="h0649"><i class="ti ti-plus"></i>Add member</button>
 </div>
-<div id="em3ert-alerts" style="margin-bottom:10px"></div>
+<div id="em3ert-alerts" class="auris-emergency-s-b922c89f16"></div>
 <div id="em3ert-list"></div>
 </div>
 
 <!-- -- MUSTER POINTS -- -->
-<div id="em3view-muster" style="display:none">
-<div class="card" style="margin-bottom:12px;padding:10px 14px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
-<div><div class="card-title" style="margin:0">Muster / Assembly Points</div><div style="font-size:12px;color:var(--text2)">Designated evacuation assembly areas</div></div>
-<button class="btn btn-primary" id="em3muster-add-btn" style="display:none" data-auris-onclick="h0650"><i class="ti ti-plus"></i>Add muster point</button>
+<div id="em3view-muster" class="auris-emergency-s-6aa34d7432">
+<div class="card auris-emergency-s-e2e1112055">
+<div><div class="card-title auris-emergency-s-ab79ea2b85">Muster / Assembly Points</div><div class="auris-emergency-s-7299078644">Designated evacuation assembly areas</div></div>
+<button class="btn btn-primary auris-emergency-s-6aa34d7432" id="em3muster-add-btn" data-auris-onclick="h0650"><i class="ti ti-plus"></i>Add muster point</button>
 </div>
 <div id="em3muster-list"></div>
 </div>
 
 <!-- -- DRILLS -- -->
-<div id="em3view-drills" style="display:none">
-<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px">
-<div class="card" style="padding:10px 12px;border-left:4px solid #185FA5"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">Total Drills</div><div style="font-size:22px;font-weight:800;color:#185FA5" id="em3drill-total">-</div></div>
-<div class="card" style="padding:10px 12px;border-left:4px solid #1D9E75"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">Completed</div><div style="font-size:22px;font-weight:800;color:#1D9E75" id="em3drill-done">-</div></div>
-<div class="card" style="padding:10px 12px;border-left:4px solid #EF9F27"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">Planned</div><div style="font-size:22px;font-weight:800;color:#EF9F27" id="em3drill-planned">-</div></div>
-<div class="card" style="padding:10px 12px;border-left:4px solid #1D9E75"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">Avg Evac Time</div><div style="font-size:22px;font-weight:800;color:#1D9E75" id="em3drill-avg-evac">- min</div></div>
+<div id="em3view-drills" class="auris-emergency-s-6aa34d7432">
+<div class="auris-emergency-s-14dfb7ae67">
+<div class="card auris-emergency-s-b6d403ee7e"><div class="auris-emergency-s-4422804ebb">Total Drills</div><div id="em3drill-total" class="auris-emergency-s-6f56b8363e">-</div></div>
+<div class="card auris-emergency-s-7a5e61eb83"><div class="auris-emergency-s-4422804ebb">Completed</div><div id="em3drill-done" class="auris-emergency-s-1e4fd5f9ed">-</div></div>
+<div class="card auris-emergency-s-c70473e794"><div class="auris-emergency-s-4422804ebb">Planned</div><div id="em3drill-planned" class="auris-emergency-s-2062f090bc">-</div></div>
+<div class="card auris-emergency-s-7a5e61eb83"><div class="auris-emergency-s-4422804ebb">Avg Evac Time</div><div id="em3drill-avg-evac" class="auris-emergency-s-1e4fd5f9ed">- min</div></div>
 </div>
-<div class="card" style="margin-bottom:12px;padding:10px 14px;display:flex;justify-content:space-between;align-items:center">
-<div class="card-title" style="margin:0">Drill Schedule &amp; Records</div>
-<button class="btn btn-primary" id="em3drill-add-btn" style="display:none" data-auris-onclick="h0651"><i class="ti ti-plus"></i>Schedule drill</button>
+<div class="card auris-emergency-s-ae71a9e48f">
+<div class="card-title auris-emergency-s-ab79ea2b85">Drill Schedule &amp; Records</div>
+<button class="btn btn-primary auris-emergency-s-6aa34d7432" id="em3drill-add-btn" data-auris-onclick="h0651"><i class="ti ti-plus"></i>Schedule drill</button>
 </div>
 <div id="em3drills-list"></div>
 </div>
 
 <!-- -- ACTIVATIONS -- -->
-<div id="em3view-activations" style="display:none">
-<div class="card" style="margin-bottom:12px;padding:10px 14px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
-<div><div class="card-title" style="margin:0">Emergency Activations</div><div style="font-size:12px;color:var(--text2)">Log of actual emergency events and responses</div></div>
-<button class="btn btn-primary" id="em3act-add-btn" style="display:none" data-auris-onclick="h0652"><i class="ti ti-plus"></i>Log activation</button>
+<div id="em3view-activations" class="auris-emergency-s-6aa34d7432">
+<div class="card auris-emergency-s-e2e1112055">
+<div><div class="card-title auris-emergency-s-ab79ea2b85">Emergency Activations</div><div class="auris-emergency-s-7299078644">Log of actual emergency events and responses</div></div>
+<button class="btn btn-primary auris-emergency-s-6aa34d7432" id="em3act-add-btn" data-auris-onclick="h0652"><i class="ti ti-plus"></i>Log activation</button>
 </div>
 <div id="em3activations-list"></div>
 </div>
 
 <!-- -- BCP -- -->
-<div id="em3view-bcp" style="display:none">
-<div class="card" style="margin-bottom:12px;padding:10px 14px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
-<div><div class="card-title" style="margin:0">Business Continuity Plans</div><div style="font-size:12px;color:var(--text2)">RTO/RPO targets and recovery strategies per business process</div></div>
-<button class="btn btn-primary" id="em3bcp-add-btn" style="display:none" data-auris-onclick="h0653"><i class="ti ti-plus"></i>New BCP</button>
+<div id="em3view-bcp" class="auris-emergency-s-6aa34d7432">
+<div class="card auris-emergency-s-e2e1112055">
+<div><div class="card-title auris-emergency-s-ab79ea2b85">Business Continuity Plans</div><div class="auris-emergency-s-7299078644">RTO/RPO targets and recovery strategies per business process</div></div>
+<button class="btn btn-primary auris-emergency-s-6aa34d7432" id="em3bcp-add-btn" data-auris-onclick="h0653"><i class="ti ti-plus"></i>New BCP</button>
 </div>
 <div id="em3bcp-list"></div>
 </div>
 
 <!-- -- EQUIPMENT -- -->
-<div id="em3view-equipment" style="display:none">
-<div style="display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:14px">
-<div class="card" style="padding:10px 12px;border-left:4px solid #185FA5"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">Total Items</div><div style="font-size:22px;font-weight:800;color:#185FA5" id="em3eq-total">-</div></div>
-<div class="card" style="padding:10px 12px;border-left:4px solid #1D9E75"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">Operational</div><div style="font-size:22px;font-weight:800;color:#1D9E75" id="em3eq-ok">-</div></div>
-<div class="card" style="padding:10px 12px;border-left:4px solid #E24B4A"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">Out of Service</div><div style="font-size:22px;font-weight:800;color:#E24B4A" id="em3eq-bad">-</div></div>
-<div class="card" style="padding:10px 12px;border-left:4px solid #EF9F27"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">Inspection Due</div><div style="font-size:22px;font-weight:800;color:#EF9F27" id="em3eq-due">-</div></div>
-<div class="card" style="padding:10px 12px;border-left:4px solid #8B5CF6"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">Fire Extinguishers</div><div style="font-size:22px;font-weight:800;color:#8B5CF6" id="em3eq-fe">-</div></div>
+<div id="em3view-equipment" class="auris-emergency-s-6aa34d7432">
+<div class="auris-emergency-s-eb404b018d">
+<div class="card auris-emergency-s-b6d403ee7e"><div class="auris-emergency-s-4422804ebb">Total Items</div><div id="em3eq-total" class="auris-emergency-s-6f56b8363e">-</div></div>
+<div class="card auris-emergency-s-7a5e61eb83"><div class="auris-emergency-s-4422804ebb">Operational</div><div id="em3eq-ok" class="auris-emergency-s-1e4fd5f9ed">-</div></div>
+<div class="card auris-emergency-s-530946d91c"><div class="auris-emergency-s-4422804ebb">Out of Service</div><div id="em3eq-bad" class="auris-emergency-s-e7ad3ebe2e">-</div></div>
+<div class="card auris-emergency-s-c70473e794"><div class="auris-emergency-s-4422804ebb">Inspection Due</div><div id="em3eq-due" class="auris-emergency-s-2062f090bc">-</div></div>
+<div class="card auris-emergency-s-24ac637923"><div class="auris-emergency-s-4422804ebb">Fire Extinguishers</div><div id="em3eq-fe" class="auris-emergency-s-bc6456303a">-</div></div>
 </div>
-<div class="card" style="margin-bottom:12px;padding:10px 14px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
-<div class="card-title" style="margin:0">Emergency Equipment Register</div>
-<div style="display:flex;gap:8px">
-<select id="em3eq-filter-type" data-auris-onchange="h0654" style="padding:6px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px">
+<div class="card auris-emergency-s-e2e1112055">
+<div class="card-title auris-emergency-s-ab79ea2b85">Emergency Equipment Register</div>
+<div class="auris-emergency-s-9c40389b4a">
+<select id="em3eq-filter-type" class="auris-emergency-s-bd0e58d190" data-auris-onchange="h0654">
 <option value="">All types</option>
 <option value="fire_extinguisher">Fire Extinguisher</option>
 <option value="fire_hose">Fire Hose</option>
@@ -5429,7 +5430,7 @@ Offline mode - changes will sync when connection is restored
 <option value="spill_kit">Spill Kit</option>
 <option value="emergency_light">Emergency Light</option>
 </select>
-<button class="btn btn-primary" id="em3eq-add-btn" style="display:none" data-auris-onclick="h0655"><i class="ti ti-plus"></i>Add equipment</button>
+<button class="btn btn-primary auris-emergency-s-6aa34d7432" id="em3eq-add-btn" data-auris-onclick="h0655"><i class="ti ti-plus"></i>Add equipment</button>
 </div>
 </div>
 <div id="em3eq-list"></div>
@@ -5438,22 +5439,22 @@ Offline mode - changes will sync when connection is restored
 <!-- ------- FORMS ------- -->
 
 <!-- Plan form -->
-<div id="em3plan-form" style="display:none">
-<div class="card" style="margin-bottom:14px;padding:0;overflow:hidden">
-<div style="padding:16px 24px;background:linear-gradient(135deg,#7F1D1D,#DC2626);color:#fff;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
-<div><div style="font-size:11px;font-weight:600;text-transform:uppercase;opacity:.8;letter-spacing:.08em;margin-bottom:4px">Emergency Response Plan</div>
-<div style="font-size:18px;font-weight:800" id="em3plan-form3title">New Plan</div>
-<div style="font-family:monospace;font-size:12px;color:#fca5a5;margin-top:3px" id="em3plan-form3ref">ERP-AUTO</div></div>
-<div style="display:flex;gap:8px">
-<button class="btn" style="background:rgba(255,255,255,.2);color:#fff;border-color:rgba(255,255,255,.3)" data-auris-onclick="h0656"><i class="ti ti-arrow-left"></i>Back</button>
-<button id="em3plan-del-btn" class="btn" style="display:none;background:rgba(0,0,0,.3);color:#fff;border-color:rgba(255,255,255,.3)" data-auris-onclick="h0657"><i class="ti ti-trash"></i></button>
-<button class="btn" style="background:#1D9E75;color:#fff;border-color:#1D9E75" data-auris-onclick="h0658"><i class="ti ti-device-floppy"></i>Save plan</button>
+<div id="em3plan-form" class="auris-emergency-s-6aa34d7432">
+<div class="card auris-emergency-s-54ec8874e7">
+<div class="auris-emergency-s-a7f0908bd9">
+<div><div class="auris-emergency-s-c542f2bc2e">Emergency Response Plan</div>
+<div id="em3plan-form3title" class="auris-emergency-s-e56ce903a9">New Plan</div>
+<div id="em3plan-form3ref" class="auris-emergency-s-7372276e79">ERP-AUTO</div></div>
+<div class="auris-emergency-s-9c40389b4a">
+<button class="btn auris-emergency-s-5c09edd131" data-auris-onclick="h0656"><i class="ti ti-arrow-left"></i>Back</button>
+<button id="em3plan-del-btn" class="btn auris-emergency-s-96f7839a1b" data-auris-onclick="h0657"><i class="ti ti-trash"></i></button>
+<button class="btn auris-emergency-s-c7b9e5b2c7" data-auris-onclick="h0658"><i class="ti ti-device-floppy"></i>Save plan</button>
 </div>
 </div>
 </div>
-<div style="display:grid;grid-template-columns:2fr 1fr;gap:14px">
+<div class="auris-emergency-s-5571af1e74">
 <div>
-<div class="card" style="margin-bottom:14px">
+<div class="card auris-emergency-s-42a6ced8b6">
 <div class="card-title"><i class="ti ti-info-circle"></i> Plan Information</div>
 <div class="form3row">
 <div class="form3group"><label class="form3label">Plan title</label><input type="text" id="epf-title" placeholder="e.g. Fire Emergency Response Plan - Main Building"/></div>
@@ -5484,40 +5485,40 @@ Offline mode - changes will sync when connection is restored
 <div class="form3group"><label class="form3label">Status</label>
 <select id="epf-status"><option value="draft">Draft</option><option value="active" selected>Active</option><option value="under_review">Under Review</option><option value="superseded">Superseded</option></select></div>
 </div>
-<div class="form3group"><label class="form3label">Scope / Objectives</label><textarea id="epf-scope" style="min-height:70px" placeholder="What this plan covers and its objectives..."></textarea></div>
+<div class="form3group"><label class="form3label">Scope / Objectives</label><textarea id="epf-scope" class="auris-emergency-s-4d5979ac8f" placeholder="What this plan covers and its objectives..."></textarea></div>
 </div>
-<div class="card" style="margin-bottom:14px;border-left:4px solid #E24B4A">
-<div class="card-title" style="color:#E24B4A"><i class="ti ti-clock"></i> Activation &amp; Immediate Actions</div>
-<div class="form3group"><label class="form3label">Activation criteria</label><textarea id="epf-activation" style="min-height:60px" placeholder="Under what conditions is this plan activated?"></textarea></div>
-<div class="form3group"><label class="form3label">Immediate actions (first 15 minutes)</label><textarea id="epf-immediate" style="min-height:80px" placeholder="Step-by-step actions in the first 15 minutes of the emergency..."></textarea></div>
-<div class="form3group"><label class="form3label">Escalation procedure</label><textarea id="epf-escalation" style="min-height:60px" placeholder="When and how to escalate - who to call at each level..."></textarea></div>
+<div class="card auris-emergency-s-27345e5d6d">
+<div class="card-title auris-emergency-s-df4f0a3612"><i class="ti ti-clock"></i> Activation &amp; Immediate Actions</div>
+<div class="form3group"><label class="form3label">Activation criteria</label><textarea id="epf-activation" class="auris-emergency-s-07bdff4587" placeholder="Under what conditions is this plan activated?"></textarea></div>
+<div class="form3group"><label class="form3label">Immediate actions (first 15 minutes)</label><textarea id="epf-immediate" class="auris-emergency-s-770a4152c1" placeholder="Step-by-step actions in the first 15 minutes of the emergency..."></textarea></div>
+<div class="form3group"><label class="form3label">Escalation procedure</label><textarea id="epf-escalation" class="auris-emergency-s-07bdff4587" placeholder="When and how to escalate - who to call at each level..."></textarea></div>
 </div>
-<div class="card" style="margin-bottom:14px">
+<div class="card auris-emergency-s-42a6ced8b6">
 <div class="card-title"><i class="ti ti-speakerphone"></i> Communication Plan</div>
-<div class="form3group"><label class="form3label">Internal communication procedure</label><textarea id="epf-comms" style="min-height:70px" placeholder="How to notify staff, management, and contractors..."></textarea></div>
-<div class="form3group"><label class="form3label">Recovery actions</label><textarea id="epf-recovery" style="min-height:70px" placeholder="Steps to return to normal operations after the emergency..."></textarea></div>
+<div class="form3group"><label class="form3label">Internal communication procedure</label><textarea id="epf-comms" class="auris-emergency-s-4d5979ac8f" placeholder="How to notify staff, management, and contractors..."></textarea></div>
+<div class="form3group"><label class="form3label">Recovery actions</label><textarea id="epf-recovery" class="auris-emergency-s-4d5979ac8f" placeholder="Steps to return to normal operations after the emergency..."></textarea></div>
 </div>
 </div>
 <div>
 <!-- Key contacts -->
-<div class="card" style="margin-bottom:14px;border:2px solid #DC2626">
-<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-<div class="card-title" style="margin:0;color:#DC2626"><i class="ti ti-phone-call"></i> Key Emergency Contacts</div>
+<div class="card auris-emergency-s-af3424473d">
+<div class="auris-emergency-s-a219ea00cb">
+<div class="card-title auris-emergency-s-e55cf03932"><i class="ti ti-phone-call"></i> Key Emergency Contacts</div>
 <button class="btn btn-sm" data-auris-onclick="h0659"><i class="ti ti-plus"></i>Add</button>
 </div>
-<div id="em3plan-contacts-list" style="margin-bottom:8px"></div>
+<div id="em3plan-contacts-list" class="auris-emergency-s-8e26c5f7a1"></div>
 </div>
 <!-- Resources -->
-<div class="card" style="margin-bottom:14px">
-<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-<div class="card-title" style="margin:0"><i class="ti ti-package"></i> Resources Required</div>
+<div class="card auris-emergency-s-42a6ced8b6">
+<div class="auris-emergency-s-a219ea00cb">
+<div class="card-title auris-emergency-s-ab79ea2b85"><i class="ti ti-package"></i> Resources Required</div>
 <button class="btn btn-sm" data-auris-onclick="h0660"><i class="ti ti-plus"></i>Add</button>
 </div>
-<div id="em3plan-resources-list" style="margin-bottom:8px"></div>
+<div id="em3plan-resources-list" class="auris-emergency-s-8e26c5f7a1"></div>
 </div>
 <!-- Approval -->
-<div class="card" style="border:2px solid #185FA5">
-<div class="card-title" style="color:#185FA5">Approval &amp; Review</div>
+<div class="card auris-emergency-s-169bb1a458">
+<div class="card-title auris-emergency-s-ca32b871b2">Approval &amp; Review</div>
 <div class="form3row">
 <div class="form3group"><label class="form3label">Approved by</label><select id="epf-approved-by"><option value="">Select person...</option></select></div>
 <div class="form3group"><label class="form3label">Approved date</label><input type="date" id="epf-approved-date"/></div>
@@ -5532,20 +5533,20 @@ Offline mode - changes will sync when connection is restored
 </div>
 
 <!-- ERT Member form -->
-<div id="em3ert-form" style="display:none">
-<div class="card" style="margin-bottom:14px;padding:0;overflow:hidden">
-<div style="padding:14px 20px;background:linear-gradient(135deg,#064E3B,#1D9E75);color:#fff;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
-<div style="font-size:17px;font-weight:800" id="em3ert-form3title">New ERT Member</div>
-<div style="display:flex;gap:8px">
-<button class="btn" style="background:rgba(255,255,255,.2);color:#fff;border-color:rgba(255,255,255,.3)" data-auris-onclick="h0661"><i class="ti ti-arrow-left"></i>Back</button>
-<button id="em3ert-del-btn" class="btn" style="display:none;background:rgba(0,0,0,.3);color:#fff;border-color:rgba(255,255,255,.3)" data-auris-onclick="h0662"><i class="ti ti-trash"></i></button>
-<button class="btn" style="background:#fff;color:#1D9E75;font-weight:700" data-auris-onclick="h0663"><i class="ti ti-device-floppy"></i>Save</button>
+<div id="em3ert-form" class="auris-emergency-s-6aa34d7432">
+<div class="card auris-emergency-s-54ec8874e7">
+<div class="auris-emergency-s-d5e9713ce7">
+<div id="em3ert-form3title" class="auris-emergency-s-75021e57ca">New ERT Member</div>
+<div class="auris-emergency-s-9c40389b4a">
+<button class="btn auris-emergency-s-5c09edd131" data-auris-onclick="h0661"><i class="ti ti-arrow-left"></i>Back</button>
+<button id="em3ert-del-btn" class="btn auris-emergency-s-96f7839a1b" data-auris-onclick="h0662"><i class="ti ti-trash"></i></button>
+<button class="btn auris-emergency-s-56ac49ff17" data-auris-onclick="h0663"><i class="ti ti-device-floppy"></i>Save</button>
 </div>
 </div>
 </div>
-<div style="display:grid;grid-template-columns:2fr 1fr;gap:14px">
+<div class="auris-emergency-s-5571af1e74">
 <div>
-<div class="card" style="margin-bottom:14px"><div class="card-title">Personal Details</div>
+<div class="card auris-emergency-s-42a6ced8b6"><div class="card-title">Personal Details</div>
 <div class="form3row">
 <div class="form3group"><label class="form3label">Full name</label><select id="ertf-name" data-auris-onchange="h0664"><option value="">Select person...</option></select></div>
 <div class="form3group"><label class="form3label">Job title</label><input type="text" id="ertf-title"/></div>
@@ -5556,7 +5557,7 @@ Offline mode - changes will sync when connection is restored
 <div class="form3group"><label class="form3label">Secondary phone</label><input type="tel" id="ertf-phone2"/></div>
 <div class="form3group"><label class="form3label">Email</label><input type="email" id="ertf-email"/></div>
 </div></div>
-<div class="card" style="margin-bottom:14px"><div class="card-title">ERT Assignment</div>
+<div class="card auris-emergency-s-42a6ced8b6"><div class="card-title">ERT Assignment</div>
 <div class="form3row">
 <div class="form3group"><label class="form3label">ERT role</label>
 <select id="ertf-role">
@@ -5574,38 +5575,38 @@ Offline mode - changes will sync when connection is restored
 </div></div>
 </div>
 <div>
-<div class="card" style="margin-bottom:14px;border:2px solid #1D9E75"><div class="card-title" style="color:#1D9E75">Qualifications &amp; Certifications</div>
-<div style="display:flex;flex-direction:column;gap:12px">
-<div style="padding:10px;background:#f9fafb;border-radius:8px">
-<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px"><input type="checkbox" id="ertf-fa-cert" style="accent-color:var(--green);width:15px;height:15px"/><label for="ertf-fa-cert" style="font-weight:600;font-size:13px;cursor:pointer">First Aid Certified</label></div>
-<div class="form3group" style="margin:0"><label class="form3label">Expiry date</label><input type="date" id="ertf-fa-expiry"/></div>
+<div class="card auris-emergency-s-f8805c5d89"><div class="card-title auris-emergency-s-f9faa54401">Qualifications &amp; Certifications</div>
+<div class="auris-emergency-s-f0de252a84">
+<div class="auris-emergency-s-49862a9706">
+<div class="auris-emergency-s-e8beef2369"><input type="checkbox" id="ertf-fa-cert" class="auris-emergency-s-702b286ca2"/><label class="auris-emergency-s-225aa5830a" for="ertf-fa-cert">First Aid Certified</label></div>
+<div class="form3group auris-emergency-s-ab79ea2b85"><label class="form3label">Expiry date</label><input type="date" id="ertf-fa-expiry"/></div>
 </div>
-<div style="padding:10px;background:#f9fafb;border-radius:8px">
-<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px"><input type="checkbox" id="ertf-fw-cert" style="accent-color:var(--green);width:15px;height:15px"/><label for="ertf-fw-cert" style="font-weight:600;font-size:13px;cursor:pointer">Fire Warden Certified</label></div>
-<div class="form3group" style="margin:0"><label class="form3label">Expiry date</label><input type="date" id="ertf-fw-expiry"/></div>
+<div class="auris-emergency-s-49862a9706">
+<div class="auris-emergency-s-e8beef2369"><input type="checkbox" id="ertf-fw-cert" class="auris-emergency-s-702b286ca2"/><label class="auris-emergency-s-225aa5830a" for="ertf-fw-cert">Fire Warden Certified</label></div>
+<div class="form3group auris-emergency-s-ab79ea2b85"><label class="form3label">Expiry date</label><input type="date" id="ertf-fw-expiry"/></div>
 </div>
-<div style="padding:10px;background:#f9fafb;border-radius:8px">
-<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px"><input type="checkbox" id="ertf-ert-trained" style="accent-color:var(--green);width:15px;height:15px"/><label for="ertf-ert-trained" style="font-weight:600;font-size:13px;cursor:pointer">ERT Trained</label></div>
-<div class="form3group" style="margin:0"><label class="form3label">Training date</label><input type="date" id="ertf-ert-date"/></div>
+<div class="auris-emergency-s-49862a9706">
+<div class="auris-emergency-s-e8beef2369"><input type="checkbox" id="ertf-ert-trained" class="auris-emergency-s-702b286ca2"/><label class="auris-emergency-s-225aa5830a" for="ertf-ert-trained">ERT Trained</label></div>
+<div class="form3group auris-emergency-s-ab79ea2b85"><label class="form3label">Training date</label><input type="date" id="ertf-ert-date"/></div>
 </div>
 </div></div>
-<div class="card" style="border:2px solid #185FA5"><div class="card-title" style="color:#185FA5">Status</div>
+<div class="card auris-emergency-s-169bb1a458"><div class="card-title auris-emergency-s-ca32b871b2">Status</div>
 <div class="form3group"><label class="form3label">Status</label><select id="ertf-status"><option value="active">Active</option><option value="on_leave">On Leave</option><option value="inactive">Inactive</option></select></div>
-<div class="form3group"><label class="form3label">Notes</label><textarea id="ertf-notes" style="min-height:50px"></textarea></div>
+<div class="form3group"><label class="form3label">Notes</label><textarea id="ertf-notes" class="auris-emergency-s-2b013fa0d9"></textarea></div>
 </div>
 </div>
 </div>
 </div>
 
 <!-- Muster Point form -->
-<div id="em3muster-form" style="display:none">
-<div class="card" style="margin-bottom:14px;padding:0;overflow:hidden">
-<div style="padding:14px 20px;background:linear-gradient(135deg,#1E3A5F,#185FA5);color:#fff;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
-<div style="font-size:17px;font-weight:800" id="em3muster-form3title">New Muster Point</div>
-<div style="display:flex;gap:8px">
-<button class="btn" style="background:rgba(255,255,255,.2);color:#fff;border-color:rgba(255,255,255,.3)" data-auris-onclick="h0665"><i class="ti ti-arrow-left"></i>Back</button>
-<button id="em3muster-del-btn" class="btn" style="display:none;background:rgba(0,0,0,.3);color:#fff;border-color:rgba(255,255,255,.3)" data-auris-onclick="h0666"><i class="ti ti-trash"></i></button>
-<button class="btn" style="background:#fff;color:#185FA5;font-weight:700" data-auris-onclick="h0667"><i class="ti ti-device-floppy"></i>Save</button>
+<div id="em3muster-form" class="auris-emergency-s-6aa34d7432">
+<div class="card auris-emergency-s-54ec8874e7">
+<div class="auris-emergency-s-b7db463746">
+<div id="em3muster-form3title" class="auris-emergency-s-75021e57ca">New Muster Point</div>
+<div class="auris-emergency-s-9c40389b4a">
+<button class="btn auris-emergency-s-5c09edd131" data-auris-onclick="h0665"><i class="ti ti-arrow-left"></i>Back</button>
+<button id="em3muster-del-btn" class="btn auris-emergency-s-96f7839a1b" data-auris-onclick="h0666"><i class="ti ti-trash"></i></button>
+<button class="btn auris-emergency-s-7e63926b0f" data-auris-onclick="h0667"><i class="ti ti-device-floppy"></i>Save</button>
 </div>
 </div>
 </div>
@@ -5620,29 +5621,29 @@ Offline mode - changes will sync when connection is restored
 <div class="form3group"><label class="form3label">Applicable emergencies</label><input type="text" id="mpf-types" placeholder="e.g. Fire, Chemical spill, All emergencies"/></div>
 <div class="form3group"><label class="form3label">Status</label><select id="mpf-status"><option value="active">Active</option><option value="inactive">Inactive</option><option value="under_review">Under review</option></select></div>
 </div>
-<div class="form3group"><label class="form3label">Notes</label><textarea id="mpf-notes" style="min-height:50px"></textarea></div>
+<div class="form3group"><label class="form3label">Notes</label><textarea id="mpf-notes" class="auris-emergency-s-2b013fa0d9"></textarea></div>
 </div>
 </div>
 
 <!-- Drill form -->
-<div id="em3drill-form" style="display:none">
-<div class="card" style="margin-bottom:14px;padding:0;overflow:hidden">
-<div style="padding:14px 20px;background:linear-gradient(135deg,#1a3a5c,#EF9F27);color:#fff;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+<div id="em3drill-form" class="auris-emergency-s-6aa34d7432">
+<div class="card auris-emergency-s-54ec8874e7">
+<div class="auris-emergency-s-1ed1ca20ea">
 <div>
-<div style="font-size:11px;font-weight:600;text-transform:uppercase;opacity:.8;margin-bottom:4px">Emergency Drill</div>
-<div style="font-size:17px;font-weight:800" id="em3drill-form3title">New Drill</div>
-<div style="font-family:monospace;font-size:12px;color:#fef3c7;margin-top:3px" id="em3drill-form3ref">DRILL-AUTO</div>
+<div class="auris-emergency-s-adf04cf81f">Emergency Drill</div>
+<div id="em3drill-form3title" class="auris-emergency-s-75021e57ca">New Drill</div>
+<div id="em3drill-form3ref" class="auris-emergency-s-4bff8bc1bc">DRILL-AUTO</div>
 </div>
-<div style="display:flex;gap:8px">
-<button class="btn" style="background:rgba(255,255,255,.2);color:#fff;border-color:rgba(255,255,255,.3)" data-auris-onclick="h0668"><i class="ti ti-arrow-left"></i>Back</button>
-<button id="em3drill-del-btn" class="btn" style="display:none;background:rgba(0,0,0,.3);color:#fff;border-color:rgba(255,255,255,.3)" data-auris-onclick="h0669"><i class="ti ti-trash"></i></button>
-<button class="btn" style="background:#1D9E75;color:#fff;border-color:#1D9E75" data-auris-onclick="h0670"><i class="ti ti-device-floppy"></i>Save</button>
+<div class="auris-emergency-s-9c40389b4a">
+<button class="btn auris-emergency-s-5c09edd131" data-auris-onclick="h0668"><i class="ti ti-arrow-left"></i>Back</button>
+<button id="em3drill-del-btn" class="btn auris-emergency-s-96f7839a1b" data-auris-onclick="h0669"><i class="ti ti-trash"></i></button>
+<button class="btn auris-emergency-s-c7b9e5b2c7" data-auris-onclick="h0670"><i class="ti ti-device-floppy"></i>Save</button>
 </div>
 </div>
 </div>
-<div style="display:grid;grid-template-columns:2fr 1fr;gap:14px">
+<div class="auris-emergency-s-5571af1e74">
 <div>
-<div class="card" style="margin-bottom:14px"><div class="card-title">Drill Details</div>
+<div class="card auris-emergency-s-42a6ced8b6"><div class="card-title">Drill Details</div>
 <div class="form3row">
 <div class="form3group"><label class="form3label">Drill type</label>
 <select id="drf-type">
@@ -5665,9 +5666,9 @@ Offline mode - changes will sync when connection is restored
 <div class="form3group"><label class="form3label">Location</label><input type="text" id="drf-location"/></div>
 <div class="form3group"><label class="form3label">Scenario</label><input type="text" id="drf-scenario" placeholder="e.g. Fire in electrical room, Block B"/></div>
 </div>
-<div class="form3group"><label class="form3label">Objectives</label><textarea id="drf-objectives" style="min-height:60px" placeholder="What are we testing in this drill?"></textarea></div>
+<div class="form3group"><label class="form3label">Objectives</label><textarea id="drf-objectives" class="auris-emergency-s-07bdff4587" placeholder="What are we testing in this drill?"></textarea></div>
 </div>
-<div class="card" style="margin-bottom:14px"><div class="card-title">Participation</div>
+<div class="card auris-emergency-s-42a6ced8b6"><div class="card-title">Participation</div>
 <div class="form3row">
 <div class="form3group"><label class="form3label">Total expected</label><input type="number" id="drf-expected" min="0"/></div>
 <div class="form3group"><label class="form3label">Total participated</label><input type="number" id="drf-participated" min="0"/></div>
@@ -5675,40 +5676,40 @@ Offline mode - changes will sync when connection is restored
 <div class="form3group"><label class="form3label">External agencies</label><input type="text" id="drf-external" placeholder="Fire brigade, Ambulance..."/></div>
 </div>
 </div>
-<div class="card" style="margin-bottom:14px"><div class="card-title">Performance Measures</div>
+<div class="card auris-emergency-s-42a6ced8b6"><div class="card-title">Performance Measures</div>
 <div class="form3row">
 <div class="form3group"><label class="form3label">Evacuation time (min)</label><input type="number" id="drf-evac-time" step="0.5" min="0"/></div>
 <div class="form3group"><label class="form3label">Planned duration (min)</label><input type="number" id="drf-planned-dur" min="0"/></div>
 <div class="form3group"><label class="form3label">Actual duration (min)</label><input type="number" id="drf-actual-dur" min="0"/></div>
 </div>
-<div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
-<input type="checkbox" id="drf-all-accounted" style="accent-color:var(--green);width:15px;height:15px"/>
-<label for="drf-all-accounted" style="font-size:13px;font-weight:600;cursor:pointer">All persons accounted for</label>
+<div class="auris-emergency-s-aa7c01383d">
+<input type="checkbox" id="drf-all-accounted" class="auris-emergency-s-702b286ca2"/>
+<label class="auris-emergency-s-22514dbec4" for="drf-all-accounted">All persons accounted for</label>
 </div>
 <div class="form3group"><label class="form3label">Unaccounted persons</label><input type="number" id="drf-unaccounted" value="0" min="0"/></div>
 </div>
 <div class="card"><div class="card-title">Debriefing Notes</div>
 <div class="form3row">
-<div class="form3group"><label class="form3label" style="color:#1D9E75">What went well</label><textarea id="drf-strengths" style="min-height:60px"></textarea></div>
-<div class="form3group"><label class="form3label" style="color:#E24B4A">Areas for improvement</label><textarea id="drf-weaknesses" style="min-height:60px"></textarea></div>
+<div class="form3group"><label class="form3label auris-emergency-s-f9faa54401">What went well</label><textarea id="drf-strengths" class="auris-emergency-s-07bdff4587"></textarea></div>
+<div class="form3group"><label class="form3label auris-emergency-s-df4f0a3612">Areas for improvement</label><textarea id="drf-weaknesses" class="auris-emergency-s-07bdff4587"></textarea></div>
 </div>
-<div class="form3group"><label class="form3label">Observations &amp; findings</label><textarea id="drf-observations" style="min-height:60px"></textarea></div>
-<div class="form3group"><label class="form3label">Corrective actions required</label><textarea id="drf-actions" style="min-height:60px"></textarea></div>
+<div class="form3group"><label class="form3label">Observations &amp; findings</label><textarea id="drf-observations" class="auris-emergency-s-07bdff4587"></textarea></div>
+<div class="form3group"><label class="form3label">Corrective actions required</label><textarea id="drf-actions" class="auris-emergency-s-07bdff4587"></textarea></div>
 </div>
 </div>
 <div>
-<div class="card" style="margin-bottom:14px;border:2px solid #EF9F27">
-<div class="card-title" style="color:#EF9F27">Overall Rating</div>
-<div style="display:flex;flex-direction:column;gap:8px">
-<label style="display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:8px;cursor:pointer;background:#f9fafb" data-auris-onclick="h0671"><input type="radio" name="drf-rating-radio" value="excellent" style="accent-color:var(--green)"> <span style="font-weight:600;font-size:13px">Excellent</span></label>
-<label style="display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:8px;cursor:pointer;background:#f9fafb" data-auris-onclick="h0672"><input type="radio" name="drf-rating-radio" value="good" style="accent-color:#185FA5"> <span style="font-weight:600;font-size:13px">Good</span></label>
-<label style="display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:8px;cursor:pointer;background:#f9fafb" data-auris-onclick="h0673"><input type="radio" name="drf-rating-radio" value="satisfactory" style="accent-color:#EF9F27"> <span style="font-weight:600;font-size:13px">~ Satisfactory</span></label>
-<label style="display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:8px;cursor:pointer;background:#f9fafb" data-auris-onclick="h0674"><input type="radio" name="drf-rating-radio" value="needs_improvement" style="accent-color:#C2410C"> <span style="font-weight:600;font-size:13px">Needs improvement</span></label>
-<label style="display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:8px;cursor:pointer;background:#f9fafb" data-auris-onclick="h0675"><input type="radio" name="drf-rating-radio" value="failed" style="accent-color:#A32D2D"> <span style="font-weight:600;font-size:13px">Failed</span></label>
+<div class="card auris-emergency-s-3a81a1fce2">
+<div class="card-title auris-emergency-s-9320640826">Overall Rating</div>
+<div class="auris-emergency-s-0fbf9e859f">
+<label class="auris-emergency-s-bca47d9fb8" data-auris-onclick="h0671"><input class="auris-emergency-s-283f12d7fe" type="radio" name="drf-rating-radio" value="excellent"> <span class="auris-emergency-s-538fe62910">Excellent</span></label>
+<label class="auris-emergency-s-bca47d9fb8" data-auris-onclick="h0672"><input class="auris-emergency-s-36b2bbe0a4" type="radio" name="drf-rating-radio" value="good"> <span class="auris-emergency-s-538fe62910">Good</span></label>
+<label class="auris-emergency-s-bca47d9fb8" data-auris-onclick="h0673"><input class="auris-emergency-s-90cf399257" type="radio" name="drf-rating-radio" value="satisfactory"> <span class="auris-emergency-s-538fe62910">~ Satisfactory</span></label>
+<label class="auris-emergency-s-bca47d9fb8" data-auris-onclick="h0674"><input class="auris-emergency-s-d27852021c" type="radio" name="drf-rating-radio" value="needs_improvement"> <span class="auris-emergency-s-538fe62910">Needs improvement</span></label>
+<label class="auris-emergency-s-bca47d9fb8" data-auris-onclick="h0675"><input class="auris-emergency-s-d08f760264" type="radio" name="drf-rating-radio" value="failed"> <span class="auris-emergency-s-538fe62910">Failed</span></label>
 </div>
 <input type="hidden" id="drf-rating" value="satisfactory"/>
 </div>
-<div class="card" style="border:2px solid #185FA5"><div class="card-title" style="color:#185FA5">Sign-off</div>
+<div class="card auris-emergency-s-169bb1a458"><div class="card-title auris-emergency-s-ca32b871b2">Sign-off</div>
 <div class="form3group"><label class="form3label">Conducted by</label><select id="drf-conducted-by"><option value="">Select person...</option></select></div>
 <div class="form3group"><label class="form3label">Reviewed by</label><select id="drf-reviewed-by"><option value="">Select person...</option></select></div>
 <div class="form3group"><label class="form3label">Approved by</label><select id="drf-approved-by"><option value="">Select person...</option></select></div>
@@ -5718,24 +5719,24 @@ Offline mode - changes will sync when connection is restored
 </div>
 
 <!-- Activation form -->
-<div id="em3activation-form" style="display:none">
-<div class="card" style="margin-bottom:14px;padding:0;overflow:hidden">
-<div style="padding:14px 20px;background:linear-gradient(135deg,#7F1D1D,#991B1B);color:#fff;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+<div id="em3activation-form" class="auris-emergency-s-6aa34d7432">
+<div class="card auris-emergency-s-54ec8874e7">
+<div class="auris-emergency-s-cf79ce6c31">
 <div>
-<div style="font-size:11px;font-weight:600;text-transform:uppercase;opacity:.8;letter-spacing:.08em;margin-bottom:4px">Emergency Activation Log</div>
-<div style="font-size:17px;font-weight:800" id="em3act-form3title">New Activation</div>
-<div style="font-family:monospace;font-size:12px;color:#fca5a5;margin-top:3px" id="em3act-form3ref">ACT-AUTO</div>
+<div class="auris-emergency-s-c542f2bc2e">Emergency Activation Log</div>
+<div id="em3act-form3title" class="auris-emergency-s-75021e57ca">New Activation</div>
+<div id="em3act-form3ref" class="auris-emergency-s-7372276e79">ACT-AUTO</div>
 </div>
-<div style="display:flex;gap:8px">
-<button class="btn" style="background:rgba(255,255,255,.2);color:#fff;border-color:rgba(255,255,255,.3)" data-auris-onclick="h0676"><i class="ti ti-arrow-left"></i>Back</button>
-<button id="em3act-del-btn" class="btn" style="display:none;background:rgba(0,0,0,.3);color:#fff;border-color:rgba(255,255,255,.3)" data-auris-onclick="h0677"><i class="ti ti-trash"></i></button>
-<button class="btn" style="background:#1D9E75;color:#fff;border-color:#1D9E75" data-auris-onclick="h0678"><i class="ti ti-device-floppy"></i>Save log</button>
+<div class="auris-emergency-s-9c40389b4a">
+<button class="btn auris-emergency-s-5c09edd131" data-auris-onclick="h0676"><i class="ti ti-arrow-left"></i>Back</button>
+<button id="em3act-del-btn" class="btn auris-emergency-s-96f7839a1b" data-auris-onclick="h0677"><i class="ti ti-trash"></i></button>
+<button class="btn auris-emergency-s-c7b9e5b2c7" data-auris-onclick="h0678"><i class="ti ti-device-floppy"></i>Save log</button>
 </div>
 </div>
 </div>
-<div style="display:grid;grid-template-columns:2fr 1fr;gap:14px">
+<div class="auris-emergency-s-5571af1e74">
 <div>
-<div class="card" style="margin-bottom:14px;border-left:4px solid #DC2626"><div class="card-title" style="color:#DC2626">Incident Details</div>
+<div class="card auris-emergency-s-d395a8868f"><div class="card-title auris-emergency-s-c7bff90490">Incident Details</div>
 <div class="form3row">
 <div class="form3group"><label class="form3label">Emergency type</label>
 <select id="actf-type"><option value="fire">Fire</option><option value="chemical_spill">Chemical Spill</option><option value="explosion">Explosion</option><option value="medical">Medical</option><option value="earthquake">Earthquake</option><option value="flood">Flood</option><option value="gas_leak">Gas Leak</option><option value="power_failure">Power Failure</option><option value="other">Other</option></select></div>
@@ -5743,73 +5744,73 @@ Offline mode - changes will sync when connection is restored
 <div class="form3group"><label class="form3label">Time detected</label><input type="time" id="actf-time"/></div>
 <div class="form3group"><label class="form3label">Location</label><input type="text" id="actf-location"/></div>
 </div>
-<div class="form3group"><label class="form3label">Description</label><textarea id="actf-desc" style="min-height:80px" placeholder="What happened? Sequence of events..."></textarea></div>
+<div class="form3group"><label class="form3label">Description</label><textarea id="actf-desc" class="auris-emergency-s-770a4152c1" placeholder="What happened? Sequence of events..."></textarea></div>
 <div class="form3group"><label class="form3label">Severity</label>
 <select id="actf-severity"><option value="minor">Minor</option><option value="moderate">Moderate</option><option value="major">Major</option><option value="critical">Critical</option></select></div>
 </div>
-<div class="card" style="margin-bottom:14px"><div class="card-title">Timeline</div>
-<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px">
-<div class="form3group" style="margin:0"><label class="form3label">ERT notified</label><input type="time" id="actf-ert-time"/></div>
-<div class="form3group" style="margin:0"><label class="form3label">Evacuation completed</label><input type="time" id="actf-evac-time"/></div>
-<div class="form3group" style="margin:0"><label class="form3label">Services called</label><input type="time" id="actf-services-time"/></div>
-<div class="form3group" style="margin:0"><label class="form3label">All clear</label><input type="time" id="actf-allclear-time"/></div>
+<div class="card auris-emergency-s-42a6ced8b6"><div class="card-title">Timeline</div>
+<div class="auris-emergency-s-6a3d96f2f7">
+<div class="form3group auris-emergency-s-ab79ea2b85"><label class="form3label">ERT notified</label><input type="time" id="actf-ert-time"/></div>
+<div class="form3group auris-emergency-s-ab79ea2b85"><label class="form3label">Evacuation completed</label><input type="time" id="actf-evac-time"/></div>
+<div class="form3group auris-emergency-s-ab79ea2b85"><label class="form3label">Services called</label><input type="time" id="actf-services-time"/></div>
+<div class="form3group auris-emergency-s-ab79ea2b85"><label class="form3label">All clear</label><input type="time" id="actf-allclear-time"/></div>
 </div>
 </div>
-<div class="card" style="margin-bottom:14px"><div class="card-title">Response</div>
+<div class="card auris-emergency-s-42a6ced8b6"><div class="card-title">Response</div>
 <div class="form3row">
-<div class="form3group"><label class="form3label">Immediate actions taken</label><textarea id="actf-immediate" style="min-height:60px"></textarea></div>
-<div class="form3group"><label class="form3label">ERT response</label><textarea id="actf-ert-response" style="min-height:60px"></textarea></div>
+<div class="form3group"><label class="form3label">Immediate actions taken</label><textarea id="actf-immediate" class="auris-emergency-s-07bdff4587"></textarea></div>
+<div class="form3group"><label class="form3label">ERT response</label><textarea id="actf-ert-response" class="auris-emergency-s-07bdff4587"></textarea></div>
 </div>
 <div class="form3group"><label class="form3label">External agencies called</label><input type="text" id="actf-agencies" placeholder="Fire brigade, Ambulance, Police..."/></div>
-<div class="form3group"><label class="form3label">Containment method</label><textarea id="actf-containment" style="min-height:50px"></textarea></div>
+<div class="form3group"><label class="form3label">Containment method</label><textarea id="actf-containment" class="auris-emergency-s-2b013fa0d9"></textarea></div>
 </div>
 <div class="card"><div class="card-title">Lessons Learned</div>
-<div class="form3group"><label class="form3label">Lessons learned</label><textarea id="actf-lessons" style="min-height:70px"></textarea></div>
-<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px"><input type="checkbox" id="actf-debrief" style="accent-color:var(--green)"/><label for="actf-debrief" style="font-size:13px;font-weight:600;cursor:pointer">Debrief conducted</label></div>
-<div style="display:flex;align-items:center;gap:8px"><input type="checkbox" id="actf-plan-update" style="accent-color:var(--green)"/><label for="actf-plan-update" style="font-size:13px;font-weight:600;cursor:pointer">Emergency plan update required</label></div>
+<div class="form3group"><label class="form3label">Lessons learned</label><textarea id="actf-lessons" class="auris-emergency-s-4d5979ac8f"></textarea></div>
+<div class="auris-emergency-s-ba28bccee4"><input type="checkbox" id="actf-debrief" class="auris-emergency-s-283f12d7fe"/><label class="auris-emergency-s-22514dbec4" for="actf-debrief">Debrief conducted</label></div>
+<div class="auris-emergency-s-a4e017b7b0"><input type="checkbox" id="actf-plan-update" class="auris-emergency-s-283f12d7fe"/><label class="auris-emergency-s-22514dbec4" for="actf-plan-update">Emergency plan update required</label></div>
 </div>
 </div>
 <div>
-<div class="card" style="margin-bottom:14px;border:2px solid #E24B4A"><div class="card-title" style="color:#E24B4A">Casualties &amp; Damage</div>
+<div class="card auris-emergency-s-077f6bdf56"><div class="card-title auris-emergency-s-df4f0a3612">Casualties &amp; Damage</div>
 <div class="form3row">
 <div class="form3group"><label class="form3label">Injuries</label><input type="number" id="actf-injuries" value="0" min="0"/></div>
 <div class="form3group"><label class="form3label">Fatalities</label><input type="number" id="actf-fatalities" value="0" min="0"/></div>
 <div class="form3group"><label class="form3label">Missing persons</label><input type="number" id="actf-missing" value="0" min="0"/></div>
 </div>
-<div class="form3group"><label class="form3label">Property damage</label><textarea id="actf-damage" style="min-height:50px"></textarea></div>
-<div class="form3group"><label class="form3label">Environmental impact</label><textarea id="actf-env-impact" style="min-height:50px"></textarea></div>
+<div class="form3group"><label class="form3label">Property damage</label><textarea id="actf-damage" class="auris-emergency-s-2b013fa0d9"></textarea></div>
+<div class="form3group"><label class="form3label">Environmental impact</label><textarea id="actf-env-impact" class="auris-emergency-s-2b013fa0d9"></textarea></div>
 <div class="form3row">
 <div class="form3group"><label class="form3label">Business impact</label><input type="text" id="actf-business-impact"/></div>
 <div class="form3group"><label class="form3label">Est. cost (Rs)</label><input type="number" id="actf-cost" step="1000" min="0"/></div>
 </div>
 </div>
-<div class="card" style="border:2px solid #185FA5"><div class="card-title" style="color:#185FA5">Status</div>
+<div class="card auris-emergency-s-169bb1a458"><div class="card-title auris-emergency-s-ca32b871b2">Status</div>
 <div class="form3group"><label class="form3label">Status</label><select id="actf-status"><option value="active">Active</option><option value="contained">Contained</option><option value="resolved">Resolved</option><option value="under_review">Under Review</option></select></div>
-<div class="form3group"><label class="form3label">Notes</label><textarea id="actf-notes" style="min-height:50px"></textarea></div>
+<div class="form3group"><label class="form3label">Notes</label><textarea id="actf-notes" class="auris-emergency-s-2b013fa0d9"></textarea></div>
 </div>
 </div>
 </div>
 </div>
 
 <!-- BCP form -->
-<div id="em3bcp-form" style="display:none">
-<div class="card" style="margin-bottom:14px;padding:0;overflow:hidden">
-<div style="padding:14px 20px;background:linear-gradient(135deg,#1E3A5F,#5B21B6);color:#fff;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+<div id="em3bcp-form" class="auris-emergency-s-6aa34d7432">
+<div class="card auris-emergency-s-54ec8874e7">
+<div class="auris-emergency-s-4fdb1544a7">
 <div>
-<div style="font-size:11px;font-weight:600;text-transform:uppercase;opacity:.8;letter-spacing:.08em;margin-bottom:4px">Business Continuity Plan</div>
-<div style="font-size:17px;font-weight:800" id="em3bcp-form3title">New BCP</div>
-<div style="font-family:monospace;font-size:12px;color:#ddd6fe;margin-top:3px" id="em3bcp-form3ref">BCP-AUTO</div>
+<div class="auris-emergency-s-c542f2bc2e">Business Continuity Plan</div>
+<div id="em3bcp-form3title" class="auris-emergency-s-75021e57ca">New BCP</div>
+<div id="em3bcp-form3ref" class="auris-emergency-s-be29fbce10">BCP-AUTO</div>
 </div>
-<div style="display:flex;gap:8px">
-<button class="btn" style="background:rgba(255,255,255,.2);color:#fff;border-color:rgba(255,255,255,.3)" data-auris-onclick="h0679"><i class="ti ti-arrow-left"></i>Back</button>
-<button id="em3bcp-del-btn" class="btn" style="display:none;background:rgba(0,0,0,.3);color:#fff;border-color:rgba(255,255,255,.3)" data-auris-onclick="h0680"><i class="ti ti-trash"></i></button>
-<button class="btn" style="background:#1D9E75;color:#fff;border-color:#1D9E75" data-auris-onclick="h0681"><i class="ti ti-device-floppy"></i>Save BCP</button>
+<div class="auris-emergency-s-9c40389b4a">
+<button class="btn auris-emergency-s-5c09edd131" data-auris-onclick="h0679"><i class="ti ti-arrow-left"></i>Back</button>
+<button id="em3bcp-del-btn" class="btn auris-emergency-s-96f7839a1b" data-auris-onclick="h0680"><i class="ti ti-trash"></i></button>
+<button class="btn auris-emergency-s-c7b9e5b2c7" data-auris-onclick="h0681"><i class="ti ti-device-floppy"></i>Save BCP</button>
 </div>
 </div>
 </div>
-<div style="display:grid;grid-template-columns:2fr 1fr;gap:14px">
+<div class="auris-emergency-s-5571af1e74">
 <div>
-<div class="card" style="margin-bottom:14px"><div class="card-title">Business Process Details</div>
+<div class="card auris-emergency-s-42a6ced8b6"><div class="card-title">Business Process Details</div>
 <div class="form3row">
 <div class="form3group"><label class="form3label">BCP Title</label><input type="text" id="bcpf-title" placeholder="e.g. IT Systems Recovery Plan"/></div>
 <div class="form3group"><label class="form3label">Business process</label><input type="text" id="bcpf-process" placeholder="e.g. Payroll, Customer service, Production"/></div>
@@ -5817,40 +5818,40 @@ Offline mode - changes will sync when connection is restored
 <div class="form3group"><label class="form3label">Priority</label>
 <select id="bcpf-priority"><option value="critical">Critical</option><option value="high">High</option><option value="medium" selected>Medium</option><option value="low">Low</option></select></div>
 </div>
-<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px">
-<div class="card" style="padding:14px;border:2px solid #185FA5">
-<div class="card-title" style="color:#185FA5;font-size:13px">RTO - Recovery Time Objective</div>
-<div class="form3row" style="margin:0">
-<div class="form3group" style="margin:0"><label class="form3label">Target hours</label><input type="number" id="bcpf-rto" min="0" placeholder="e.g. 4"/></div>
+<div class="auris-emergency-s-03826b79d9">
+<div class="card auris-emergency-s-d708be6010">
+<div class="card-title auris-emergency-s-1cc63ebf02">RTO - Recovery Time Objective</div>
+<div class="form3row auris-emergency-s-ab79ea2b85">
+<div class="form3group auris-emergency-s-ab79ea2b85"><label class="form3label">Target hours</label><input type="number" id="bcpf-rto" min="0" placeholder="e.g. 4"/></div>
 </div>
-<div style="font-size:11px;color:var(--text2);margin-top:6px">Maximum tolerable downtime before significant impact</div>
+<div class="auris-emergency-s-760bf7783f">Maximum tolerable downtime before significant impact</div>
 </div>
-<div class="card" style="padding:14px;border:2px solid #8B5CF6">
-<div class="card-title" style="color:#8B5CF6;font-size:13px">RPO - Recovery Point Objective</div>
-<div class="form3row" style="margin:0">
-<div class="form3group" style="margin:0"><label class="form3label">Target hours</label><input type="number" id="bcpf-rpo" min="0" placeholder="e.g. 1"/></div>
+<div class="card auris-emergency-s-a2705535b9">
+<div class="card-title auris-emergency-s-771671ed4e">RPO - Recovery Point Objective</div>
+<div class="form3row auris-emergency-s-ab79ea2b85">
+<div class="form3group auris-emergency-s-ab79ea2b85"><label class="form3label">Target hours</label><input type="number" id="bcpf-rpo" min="0" placeholder="e.g. 1"/></div>
 </div>
-<div style="font-size:11px;color:var(--text2);margin-top:6px">Maximum data loss measured in time</div>
+<div class="auris-emergency-s-760bf7783f">Maximum data loss measured in time</div>
 </div>
 </div>
 <div class="form3row">
-<div class="form3group"><label class="form3label">Financial impact description</label><textarea id="bcpf-fin-impact" style="min-height:50px" placeholder="Cost per hour of downtime..."></textarea></div>
-<div class="form3group"><label class="form3label">Operational impact</label><textarea id="bcpf-ops-impact" style="min-height:50px" placeholder="Effect on operations..."></textarea></div>
+<div class="form3group"><label class="form3label">Financial impact description</label><textarea id="bcpf-fin-impact" class="auris-emergency-s-2b013fa0d9" placeholder="Cost per hour of downtime..."></textarea></div>
+<div class="form3group"><label class="form3label">Operational impact</label><textarea id="bcpf-ops-impact" class="auris-emergency-s-2b013fa0d9" placeholder="Effect on operations..."></textarea></div>
 </div>
 </div>
-<div class="card" style="margin-bottom:14px;border-left:4px solid #5B21B6"><div class="card-title" style="color:#5B21B6">Recovery Strategy</div>
-<div class="form3group"><label class="form3label">Recovery strategy</label><textarea id="bcpf-strategy" style="min-height:70px" placeholder="How will we recover this process?"></textarea></div>
-<div class="form3group"><label class="form3label">Minimum resources required</label><textarea id="bcpf-resources" style="min-height:50px" placeholder="Staff, equipment, systems needed for minimum viable operation..."></textarea></div>
+<div class="card auris-emergency-s-1d2ff7b9b1"><div class="card-title auris-emergency-s-868661d008">Recovery Strategy</div>
+<div class="form3group"><label class="form3label">Recovery strategy</label><textarea id="bcpf-strategy" class="auris-emergency-s-4d5979ac8f" placeholder="How will we recover this process?"></textarea></div>
+<div class="form3group"><label class="form3label">Minimum resources required</label><textarea id="bcpf-resources" class="auris-emergency-s-2b013fa0d9" placeholder="Staff, equipment, systems needed for minimum viable operation..."></textarea></div>
 <div class="form3row">
 <div class="form3group"><label class="form3label">Alternate location</label><input type="text" id="bcpf-alt-location" placeholder="Backup site or remote work arrangement..."/></div>
 <div class="form3group"><label class="form3label">IT dependencies</label><input type="text" id="bcpf-it-deps" placeholder="Systems, servers, cloud services..."/></div>
 </div>
 <div class="form3group"><label class="form3label">Key suppliers / vendors</label><input type="text" id="bcpf-suppliers"/></div>
-<div class="form3group"><label class="form3label">Recovery steps</label><textarea id="bcpf-steps" style="min-height:80px" placeholder="Step-by-step recovery procedure..."></textarea></div>
+<div class="form3group"><label class="form3label">Recovery steps</label><textarea id="bcpf-steps" class="auris-emergency-s-770a4152c1" placeholder="Step-by-step recovery procedure..."></textarea></div>
 </div>
 </div>
 <div>
-<div class="card" style="margin-bottom:14px;border:2px solid #5B21B6"><div class="card-title" style="color:#5B21B6">Plan Details</div>
+<div class="card auris-emergency-s-8f7a06061d"><div class="card-title auris-emergency-s-868661d008">Plan Details</div>
 <div class="form3group"><label class="form3label">Version</label><input type="text" id="bcpf-version" value="1.0"/></div>
 <div class="form3group"><label class="form3label">Status</label><select id="bcpf-status"><option value="draft">Draft</option><option value="active" selected>Active</option><option value="under_review">Under Review</option><option value="superseded">Superseded</option></select></div>
 <div class="form3group"><label class="form3label">Approved by</label><select id="bcpf-approved-by"><option value="">Select person...</option></select></div>
@@ -5860,22 +5861,22 @@ Offline mode - changes will sync when connection is restored
 <div class="card"><div class="card-title">Testing</div>
 <div class="form3group"><label class="form3label">Last tested</label><input type="date" id="bcpf-last-tested"/></div>
 <div class="form3group"><label class="form3label">Next test date</label><input type="date" id="bcpf-next-test"/></div>
-<div class="form3group"><label class="form3label">Test procedure</label><textarea id="bcpf-test-proc" style="min-height:60px" placeholder="How will this plan be tested?"></textarea></div>
-<div class="form3group"><label class="form3label">Notes</label><textarea id="bcpf-notes" style="min-height:50px"></textarea></div>
+<div class="form3group"><label class="form3label">Test procedure</label><textarea id="bcpf-test-proc" class="auris-emergency-s-07bdff4587" placeholder="How will this plan be tested?"></textarea></div>
+<div class="form3group"><label class="form3label">Notes</label><textarea id="bcpf-notes" class="auris-emergency-s-2b013fa0d9"></textarea></div>
 </div>
 </div>
 </div>
 </div>
 
 <!-- Equipment form -->
-<div id="em3eq-form" style="display:none">
-<div class="card" style="margin-bottom:14px;padding:0;overflow:hidden">
-<div style="padding:14px 20px;background:linear-gradient(135deg,#7F1D1D,#B45309);color:#fff;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
-<div style="font-size:17px;font-weight:800" id="em3eq-form3title">Emergency Equipment</div>
-<div style="display:flex;gap:8px">
-<button class="btn" style="background:rgba(255,255,255,.2);color:#fff;border-color:rgba(255,255,255,.3)" data-auris-onclick="h0682"><i class="ti ti-arrow-left"></i>Back</button>
-<button id="em3eq-del-btn" class="btn" style="display:none;background:rgba(0,0,0,.3);color:#fff;border-color:rgba(255,255,255,.3)" data-auris-onclick="h0683"><i class="ti ti-trash"></i></button>
-<button class="btn" style="background:#fff;color:#B45309;font-weight:700" data-auris-onclick="h0684"><i class="ti ti-device-floppy"></i>Save</button>
+<div id="em3eq-form" class="auris-emergency-s-6aa34d7432">
+<div class="card auris-emergency-s-54ec8874e7">
+<div class="auris-emergency-s-080a5eecdc">
+<div id="em3eq-form3title" class="auris-emergency-s-75021e57ca">Emergency Equipment</div>
+<div class="auris-emergency-s-9c40389b4a">
+<button class="btn auris-emergency-s-5c09edd131" data-auris-onclick="h0682"><i class="ti ti-arrow-left"></i>Back</button>
+<button id="em3eq-del-btn" class="btn auris-emergency-s-96f7839a1b" data-auris-onclick="h0683"><i class="ti ti-trash"></i></button>
+<button class="btn auris-emergency-s-ee00f9fc7e" data-auris-onclick="h0684"><i class="ti ti-device-floppy"></i>Save</button>
 </div>
 </div>
 </div>
@@ -5915,7 +5916,7 @@ Offline mode - changes will sync when connection is restored
 <div class="form3group"><label class="form3label">Last service</label><input type="date" id="eqf-last-svc"/></div>
 <div class="form3group"><label class="form3label">Next service</label><input type="date" id="eqf-next-svc"/></div>
 </div>
-<div class="form3group"><label class="form3label">Notes</label><textarea id="eqf-notes" style="min-height:50px"></textarea></div>
+<div class="form3group"><label class="form3label">Notes</label><textarea id="eqf-notes" class="auris-emergency-s-2b013fa0d9"></textarea></div>
 </div>
 </div>
 
