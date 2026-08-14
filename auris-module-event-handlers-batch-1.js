@@ -197,7 +197,7 @@ notificationCentrePushToggle()
 notificationCentreFilter(args[0])
     },
     "b0066": function (event, args) {
-executeModuleCommand(this.getAttribute('data-auris-module-command') || '')
+executeModuleCommand(this.getAttribute('data-auris-module-command') || '', 'batch1')
     },
     "b0067": function (event, args) {
 imv2ConfigGroup(args[0])
@@ -258,17 +258,19 @@ imv2ConfigGroup(args[0])
     throw new Error('Unsupported command argument');
   }
 
-  function executeModuleCommand(encodedCommand) {
+  function executeModuleCommand(encodedCommand, namespace) {
     var command = decodeURIComponent(encodedCommand);
     splitTopLevel(command, ';').forEach(function (statement) {
       var match = /^([A-Za-z_$][\w$]*)\((.*)\)$/.exec(statement);
-      if (!match || !/^(?:noise|imv2)[A-Z]\w*$/.test(match[1])) throw new Error('Rejected module command');
+      var allowed = namespace === 'dcx' ? /^dcx[A-Z]\w*$/ : /^(?:noise|imv2)[A-Z]\w*$/;
+      if (!match || !allowed.test(match[1])) throw new Error('Rejected module command');
       var target = window[match[1]];
       if (typeof target !== 'function') throw new Error('Unknown module command');
       var commandArgs = splitTopLevel(match[2], ',').map(parseCommandValue).filter(function (value) { return value !== undefined; });
       target.apply(window, commandArgs);
     });
   }
+  window.aurisExecuteModuleCommand = executeModuleCommand;
 
   function dispatch(eventType, event) {
     var node = event.target && event.target.nodeType === 1 ? event.target : event.target && event.target.parentElement;

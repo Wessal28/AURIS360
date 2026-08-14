@@ -13,6 +13,7 @@ test('core application has no executable inline event attributes', () => {
   const eventAttribute = /\s(on[a-z]+)=(?:"[^"]*"|'[^']*')/i;
   assert.doesNotMatch(html, eventAttribute);
   assert.doesNotMatch(core, eventAttribute);
+  assert.doesNotMatch(core, /on[a-z]+=\\["']/i);
   assert.match(html, /src="auris-runtime-event-handlers\.js\?v=20260814-1"/);
 });
 

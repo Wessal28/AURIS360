@@ -8,6 +8,7 @@ const externalAssets = [
   'auris-generated-event-handlers.js',
   'auris-runtime-event-handlers.js',
   'auris-module-event-handlers-batch-1.js',
+  'auris-module-event-handlers-batch-2.js',
   'auris-core.js',
   'auris-detached-modules.js'
 ];

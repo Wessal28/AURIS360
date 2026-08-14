@@ -2,19 +2,21 @@ const fs = require('node:fs');
 const path = require('node:path');
 
 const root = path.resolve(__dirname, '..');
-const files = [
-  'kpi-configuration.js',
-  'noise-management.js',
-  'incident-management-upgrade.js',
-  'legal-compliance-upgrade.js',
-  'sop-video-upgrade.js',
-  'elearning-course-path.js',
-  'resilience-fault-simulation.js',
-  'offline-sync-diagnostic.js',
-  'rollback-rehearsal.js',
-  'notification-centre.js'
-];
-const registryPath = path.join(root, 'auris-module-event-handlers-batch-1.js');
+const batchNumber = Number((process.argv.find((value) => value.startsWith('--batch=')) || '--batch=1').split('=')[1]);
+const batches = {
+  1: {
+    prefix: 'b',
+    files: ['kpi-configuration.js','noise-management.js','incident-management-upgrade.js','legal-compliance-upgrade.js','sop-video-upgrade.js','elearning-course-path.js','resilience-fault-simulation.js','offline-sync-diagnostic.js','rollback-rehearsal.js','notification-centre.js']
+  },
+  2: {
+    prefix: 'c',
+    files: ['document-control-upgrade.js','risk-assessment-upgrade.js','chemical-control-upgrade.js']
+  }
+};
+const batch = batches[batchNumber];
+if (!batch) throw new Error(`Unknown module handler batch: ${batchNumber}`);
+const files = batch.files;
+const registryPath = path.join(root, `auris-module-event-handlers-batch-${batchNumber}.js`);
 const attributePattern = /\s(on[a-z]+)=(?:"([^"]*)"|'([^']*)')/gi;
 const handlers = new Map();
 const skipped = [];
@@ -144,7 +146,7 @@ for (const file of files) {
       return match;
     }
     const signature = `${eventType}\u0000${body}`;
-    if (!handlers.has(signature)) handlers.set(signature, `b${String(handlers.size + 1).padStart(4, '0')}`);
+    if (!handlers.has(signature)) handlers.set(signature, `${batch.prefix}${String(handlers.size + 1).padStart(4, '0')}`);
     migratedCount += 1;
     const args = expressions.length
       ? ` data-auris-module-args="'+encodeURIComponent(JSON.stringify([${expressions.join(',')}]))+'"`

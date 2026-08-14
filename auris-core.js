@@ -7272,7 +7272,7 @@ function invWS1CARow(num,ca){
     +'<td style="padding:4px"><input type="text" class="ws1-ca-desc" value="'+(ca.desc||'')+'" style="width:100%;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px"/></td>'
     +'<td style="padding:4px"><input type="text" class="ws1-ca-resp" value="'+(ca.resp||'')+'" style="width:100%;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px"/></td>'
     +'<td style="padding:4px"><input type="date" class="ws1-ca-date" value="'+(ca.date||'')+'" style="width:100%;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px"/></td>'
-    +'<td style="padding:4px;text-align:center"><button onclick=\"this.parentNode.parentNode.remove()\" style="background:none;border:none;cursor:pointer;color:var(--red)"><i class="ti ti-x"></i></button></td></tr>';
+    +'<td style="padding:4px;text-align:center"><button data-auris-runtime-onclick="r0151" style="background:none;border:none;cursor:pointer;color:var(--red)"><i class="ti ti-x"></i></button></td></tr>';
 }
 
 function ws1AddCA(){
@@ -7300,7 +7300,7 @@ function invRenderCA(cas){
       +'<td style="padding:4px;border:1px solid var(--border)"><input type="date" class="ca-date" value="'+(ca.date||'')+'" style="width:100%;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px"/></td>'
       +'<td style="padding:4px;border:1px solid var(--border)"><select class="ca-prio" style="width:100%;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px"><option value="low"'+(ca.prio==='low'?' selected':'')+'>Low</option><option value="medium"'+(ca.prio==='medium'?' selected':'')+'>Medium</option><option value="high"'+(ca.prio==='high'?' selected':'')+'>High</option><option value="critical"'+(ca.prio==='critical'?' selected':'')+'>Critical</option></select></td>'
       +'<td style="padding:4px;border:1px solid var(--border)"><select class="ca-status" style="width:100%;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px"><option value="open"'+(ca.status==='open'?' selected':'')+'>Open</option><option value="in_progress"'+(ca.status==='in_progress'?' selected':'')+'>In progress</option><option value="closed"'+(ca.status==='closed'?' selected':'')+'>Closed</option></select></td>'
-      +'<td style="padding:4px;text-align:center;border:1px solid var(--border)"><button onclick=\"this.parentNode.parentNode.remove()\" style="background:none;border:none;cursor:pointer;color:var(--red)"><i class="ti ti-x"></i></button></td></tr>';
+      +'<td style="padding:4px;text-align:center;border:1px solid var(--border)"><button data-auris-runtime-onclick="r0151" style="background:none;border:none;cursor:pointer;color:var(--red)"><i class="ti ti-x"></i></button></td></tr>';
   });
 }
 

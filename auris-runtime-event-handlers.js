@@ -450,6 +450,9 @@ smUnlinkPlan(args[0])
     },
     "r0150": function (event, args) {
 smCreateLinkedPlan(args[0])
+    },
+    "r0151": function (event, args) {
+this.parentNode.parentNode.remove()
     }
   };
   var namedActions = {

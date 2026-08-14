@@ -18,6 +18,8 @@ Phase 2A migrated all 1,458 static-page event attributes into 1,261 precompiled 
 
 Phase 2D migrated the first ten separately loaded module bundles: 83 attributes were replaced by 65 precompiled handlers plus a strict command parser for the two reusable module button factories. Those ten bundles now contain no inline event attributes, reducing the active loaded-module backlog from 419 to 336. The remaining bundles stay temporarily permitted through the narrower `script-src-attr 'unsafe-inline'` directive and will be migrated in controlled batches before that directive is removed.
 
+Phase 2E migrated another 71 attributes from Document Control, Risk Assessment and Chemical Control into 50 precompiled handlers plus the existing strict command parser. A strengthened scan also found and removed two escaped corrective-action row handlers from the core script. The core remains free of executable inline event attributes and the loaded-module backlog is now 265.
+
 The interface also contains inline style attributes. Style CSP remains report-only with `'unsafe-inline'` until these declarations are moved into reusable classes or a nonce/hash strategy is adopted.
 
 ## Security effect
