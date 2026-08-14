@@ -1,0 +1,32 @@
+/* Generated from the static login shell by scripts/extract-login-shell-styles.cjs. */
+/* Keep declarations literal so interactive element.style updates can still override them. */
+.auris-login-s-0191d0a809{height:4px;border-radius:2px;background:#e5e7eb;margin-top:-4px;margin-bottom:10px;overflow:hidden;display:none}
+.auris-login-s-043a2ca977{font-size:12px;color:var(--text2);margin-bottom:18px;line-height:1.5}
+.auris-login-s-1f7c8f29e4{position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--text2);padding:4px}
+.auris-login-s-2a9495ecbb{position:relative}
+.auris-login-s-2db5b20932{width:100%;justify-content:center;padding:11px}
+.auris-login-s-3182de3ceb{width:220px;max-width:86%;height:auto;object-fit:contain;display:block;margin:0 auto}
+.auris-login-s-35b98b6d5d{text-align:center;margin-top:16px;font-size:12px;color:var(--text2)}
+.auris-login-s-3c6adb497d{width:100%;justify-content:center;padding:11px;background:var(--green);border-color:var(--green)}
+.auris-login-s-42d633be89{position:relative;z-index:1;max-width:400px;width:100%}
+.auris-login-s-46457099df{padding-right:40px}
+.auris-login-s-4edb7f6e61{font-size:16px}
+.auris-login-s-6137e46433{font-size:16px;font-weight:700;margin-bottom:18px;color:var(--text)}
+.auris-login-s-62c6f45b79{width:36px;height:36px;border:3px solid var(--border);border-top-color:var(--green);border-radius:50%;animation:spin .8s linear infinite}
+.auris-login-s-6aa34d7432{display:none}
+.auris-login-s-6fba8910dd{font-size:11px;color:var(--text2);margin-top:4px;letter-spacing:.05em;text-transform:uppercase}
+.auris-login-s-7299078644{font-size:12px;color:var(--text2)}
+.auris-login-s-7310a46ea5{position:absolute;width:400px;height:400px;border-radius:50%;background:rgba(24,95,165,.07);bottom:-80px;right:-80px}
+.auris-login-s-7a9172888c{font-size:16px;font-weight:700;margin-bottom:8px;color:var(--text)}
+.auris-login-s-7f13091878{color:var(--blue);font-weight:600;text-decoration:none}
+.auris-login-s-97c1ecc0fb{display:none;position:absolute;inset:0;background:rgba(255,255,255,.85);border-radius:12px;z-index:10;align-items:center;justify-content:center;flex-direction:column;gap:10px}
+.auris-login-s-99ebfe3d87{display:flex;justify-content:space-between;align-items:center}
+.auris-login-s-a1780ffed9{font-size:11px;color:var(--text2);margin-bottom:10px;display:none}
+.auris-login-s-aec8bbdfd0{font-size:11px;color:var(--blue);text-decoration:none;font-weight:500}
+.auris-login-s-af57be4ffe{height:100%;width:0%;transition:width .3s;border-radius:2px}
+.auris-login-s-bb08f62732{font-size:12px;color:var(--text2);margin-bottom:18px}
+.auris-login-s-c8e4289458{display:none;background:#EAF3DE;color:#3B6D11;font-size:12px;padding:9px 12px;border-radius:8px;margin-bottom:14px;border:1px solid #bbf7d0}
+.auris-login-s-ca4419337c{text-align:center;margin-bottom:24px}
+.auris-login-s-e6426e2999{position:absolute;width:500px;height:500px;border-radius:50%;background:rgba(29,158,117,.07);top:-100px;left:-100px}
+.auris-login-s-ec5ae2eb5a{width:100%;justify-content:center;margin-top:6px;padding:11px}
+.auris-login-s-edccfd7e3e{position:absolute;inset:0;overflow:hidden;z-index:0}

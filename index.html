@@ -54,53 +54,54 @@
 <link rel="stylesheet" href="chemical-control-upgrade.css?v=20260805-1">
 <link rel="stylesheet" href="contractor-management-upgrade.css?v=20260805-1">
 <link rel="stylesheet" href="tools-equipment-upgrade.css?v=20260805-1">
+<link rel="stylesheet" href="auris-login-shell.css?v=20260814-1">
 </head>
 <body>
 <div id="login-screen">
 <!-- Animated background blobs -->
-<div style="position:absolute;inset:0;overflow:hidden;z-index:0">
-<div style="position:absolute;width:500px;height:500px;border-radius:50%;background:rgba(29,158,117,.07);top:-100px;left:-100px"></div>
-<div style="position:absolute;width:400px;height:400px;border-radius:50%;background:rgba(24,95,165,.07);bottom:-80px;right:-80px"></div>
+<div class="auris-login-s-edccfd7e3e">
+<div class="auris-login-s-e6426e2999"></div>
+<div class="auris-login-s-7310a46ea5"></div>
 </div>
-<div class="login-box" style="position:relative;z-index:1;max-width:400px;width:100%">
+<div class="login-box auris-login-s-42d633be89">
 <!-- Logo -->
-<div style="text-align:center;margin-bottom:24px">
-<img class="login-logo" src="/assets/auris360-logo-final.png" alt="AURIS 360 — Safety. Compliance. Excellence." style="width:220px;max-width:86%;height:auto;object-fit:contain;display:block;margin:0 auto"/>
-<div style="font-size:11px;color:var(--text2);margin-top:4px;letter-spacing:.05em;text-transform:uppercase">Powered by SEPHS Consulting</div>
+<div class="auris-login-s-ca4419337c">
+<img class="login-logo auris-login-s-3182de3ceb" src="/assets/auris360-logo-final.png" alt="AURIS 360 — Safety. Compliance. Excellence."/>
+<div class="auris-login-s-6fba8910dd">Powered by SEPHS Consulting</div>
 </div>
 
 <!-- Error / success message -->
 <div class="login-err" id="login-err"></div>
-<div id="login-success" style="display:none;background:#EAF3DE;color:#3B6D11;font-size:12px;padding:9px 12px;border-radius:8px;margin-bottom:14px;border:1px solid #bbf7d0"></div>
+<div class="auris-login-s-c8e4289458" id="login-success"></div>
 
 <!-- -- PANEL: Sign In -- -->
 <div id="panel-signin">
-<div style="font-size:16px;font-weight:700;margin-bottom:18px;color:var(--text)">Sign in to your account</div>
+<div class="auris-login-s-6137e46433">Sign in to your account</div>
 <div class="form3group">
   <label class="form3label">Email address</label>
   <input type="email" id="login-email" placeholder="your@email.com" autocomplete="email" data-auris-onkeydown="h0001"/>
 </div>
 <div class="form3group">
-  <label class="form3label" style="display:flex;justify-content:space-between;align-items:center">
+  <label class="form3label auris-login-s-99ebfe3d87">
     <span>Password</span>
-    <a href="#" style="font-size:11px;color:var(--blue);text-decoration:none;font-weight:500" data-auris-onclick="h0002">Forgot password?</a>
+    <a class="auris-login-s-aec8bbdfd0" href="#" data-auris-onclick="h0002">Forgot password?</a>
   </label>
-  <div style="position:relative">
-    <input type="password" id="login-pw" placeholder="--------" autocomplete="current-password" data-auris-onkeydown="h0003" style="padding-right:40px"/>
-    <button type="button" data-auris-onclick="h0004" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--text2);padding:4px"><i class="ti ti-eye" style="font-size:16px"></i></button>
+  <div class="auris-login-s-2a9495ecbb">
+    <input class="auris-login-s-46457099df" type="password" id="login-pw" placeholder="--------" autocomplete="current-password" data-auris-onkeydown="h0003"/>
+    <button class="auris-login-s-1f7c8f29e4" type="button" data-auris-onclick="h0004"><i class="ti ti-eye auris-login-s-4edb7f6e61"></i></button>
   </div>
 </div>
-<button class="btn btn-primary" style="width:100%;justify-content:center;margin-top:6px;padding:11px" data-auris-onclick="h0005" id="login-btn">
+<button class="btn btn-primary auris-login-s-ec5ae2eb5a" data-auris-onclick="h0005" id="login-btn">
   <i class="ti ti-login"></i>Sign in
 </button>
-<div style="text-align:center;margin-top:16px;font-size:12px;color:var(--text2)">
+<div class="auris-login-s-35b98b6d5d">
   Don't have an account? Contact your administrator for access.
 </div>
 </div>
 
 <!-- -- PANEL: Register -- -->
-<div id="panel-register" style="display:none">
-<div style="font-size:16px;font-weight:700;margin-bottom:18px;color:var(--text)">Create your account</div>
+<div class="auris-login-s-6aa34d7432" id="panel-register">
+<div class="auris-login-s-6137e46433">Create your account</div>
 <div class="form3group">
   <label class="form3label">Full name</label>
   <input type="text" id="reg-name" placeholder="Wesley Salomon" autocomplete="name"/>
@@ -112,9 +113,9 @@
 <div class="form3row">
   <div class="form3group">
     <label class="form3label">Password</label>
-    <div style="position:relative">
-      <input type="password" id="reg-pw" placeholder="Min 8 characters" autocomplete="new-password" style="padding-right:40px"/>
-      <button type="button" data-auris-onclick="h0006" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--text2);padding:4px"><i class="ti ti-eye" style="font-size:16px"></i></button>
+    <div class="auris-login-s-2a9495ecbb">
+      <input class="auris-login-s-46457099df" type="password" id="reg-pw" placeholder="Min 8 characters" autocomplete="new-password"/>
+      <button class="auris-login-s-1f7c8f29e4" type="button" data-auris-onclick="h0006"><i class="ti ti-eye auris-login-s-4edb7f6e61"></i></button>
     </div>
   </div>
   <div class="form3group">
@@ -136,7 +137,7 @@
       <option value="hr">HR</option>
       <option value="executive">Executive Management</option>
       <option value="admin">Company Admin</option>
-      <option value="sephs_admin" style="display:none">SEPHS Admin</option>
+      <option class="auris-login-s-6aa34d7432" value="sephs_admin">SEPHS Admin</option>
     </select>
   </div>
   <div class="form3group">
@@ -145,38 +146,38 @@
   </div>
 </div>
 <!-- Password strength indicator -->
-<div id="pw-strength-bar" style="height:4px;border-radius:2px;background:#e5e7eb;margin-top:-4px;margin-bottom:10px;overflow:hidden;display:none">
-  <div id="pw-strength-fill" style="height:100%;width:0%;transition:width .3s;border-radius:2px"></div>
+<div class="auris-login-s-0191d0a809" id="pw-strength-bar">
+  <div class="auris-login-s-af57be4ffe" id="pw-strength-fill"></div>
 </div>
-<div id="pw-strength-label" style="font-size:11px;color:var(--text2);margin-bottom:10px;display:none"></div>
-<button class="btn btn-primary" style="width:100%;justify-content:center;padding:11px;background:var(--green);border-color:var(--green)" data-auris-onclick="h0007" id="reg-btn">
+<div class="auris-login-s-a1780ffed9" id="pw-strength-label"></div>
+<button class="btn btn-primary auris-login-s-3c6adb497d" data-auris-onclick="h0007" id="reg-btn">
   <i class="ti ti-user-plus"></i>Create account
 </button>
-<div style="text-align:center;margin-top:16px;font-size:12px;color:var(--text2)">
-  Already have an account? <a href="#" style="color:var(--blue);font-weight:600;text-decoration:none" data-auris-onclick="h0008">Sign in</a>
+<div class="auris-login-s-35b98b6d5d">
+  Already have an account? <a class="auris-login-s-7f13091878" href="#" data-auris-onclick="h0008">Sign in</a>
 </div>
 </div>
 
 <!-- -- PANEL: Forgot Password -- -->
-<div id="panel-forgot" style="display:none">
-<div style="font-size:16px;font-weight:700;margin-bottom:8px;color:var(--text)">Reset your password</div>
-<div style="font-size:12px;color:var(--text2);margin-bottom:18px;line-height:1.5">Enter your email address and we'll send you a link to reset your password.</div>
+<div class="auris-login-s-6aa34d7432" id="panel-forgot">
+<div class="auris-login-s-7a9172888c">Reset your password</div>
+<div class="auris-login-s-043a2ca977">Enter your email address and we'll send you a link to reset your password.</div>
 <div class="form3group">
   <label class="form3label">Email address</label>
   <input type="email" id="reset-email" placeholder="your@email.com" autocomplete="email" data-auris-onkeydown="h0009"/>
 </div>
-<button class="btn btn-primary" style="width:100%;justify-content:center;padding:11px" data-auris-onclick="h0010" id="reset-btn">
+<button class="btn btn-primary auris-login-s-2db5b20932" data-auris-onclick="h0010" id="reset-btn">
   <i class="ti ti-mail-forward"></i>Send reset email
 </button>
-<div style="text-align:center;margin-top:16px;font-size:12px;color:var(--text2)">
-  Remembered it? <a href="#" style="color:var(--blue);font-weight:600;text-decoration:none" data-auris-onclick="h0008">Back to sign in</a>
+<div class="auris-login-s-35b98b6d5d">
+  Remembered it? <a class="auris-login-s-7f13091878" href="#" data-auris-onclick="h0008">Back to sign in</a>
 </div>
 </div>
 
 <!-- -- PANEL: Update Password (after clicking reset link) -- -->
-<div id="panel-update-pw" style="display:none">
-<div style="font-size:16px;font-weight:700;margin-bottom:8px;color:var(--text)">Set new password</div>
-<div style="font-size:12px;color:var(--text2);margin-bottom:18px">Choose a strong password for your account.</div>
+<div class="auris-login-s-6aa34d7432" id="panel-update-pw">
+<div class="auris-login-s-7a9172888c">Set new password</div>
+<div class="auris-login-s-bb08f62732">Choose a strong password for your account.</div>
 <div class="form3group">
   <label class="form3label">New password</label>
   <input type="password" id="new-pw" placeholder="Min 8 characters" autocomplete="new-password"/>
@@ -185,15 +186,15 @@
   <label class="form3label">Confirm new password</label>
   <input type="password" id="new-pw2" placeholder="Repeat password" autocomplete="new-password"/>
 </div>
-<button class="btn btn-primary" style="width:100%;justify-content:center;padding:11px" data-auris-onclick="h0011" id="update-pw-btn">
+<button class="btn btn-primary auris-login-s-2db5b20932" data-auris-onclick="h0011" id="update-pw-btn">
   <i class="ti ti-lock-check"></i>Update password
 </button>
 </div>
 
 <!-- Loading overlay -->
-<div id="auth-loading" style="display:none;position:absolute;inset:0;background:rgba(255,255,255,.85);border-radius:12px;z-index:10;align-items:center;justify-content:center;flex-direction:column;gap:10px">
-<div style="width:36px;height:36px;border:3px solid var(--border);border-top-color:var(--green);border-radius:50%;animation:spin .8s linear infinite"></div>
-<div style="font-size:12px;color:var(--text2)" id="auth-loading-msg">Signing in...</div>
+<div class="auris-login-s-97c1ecc0fb" id="auth-loading">
+<div class="auris-login-s-62c6f45b79"></div>
+<div class="auris-login-s-7299078644" id="auth-loading-msg">Signing in...</div>
 </div>
 
 </div><!-- end login-box -->
