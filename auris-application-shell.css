@@ -1,0 +1,37 @@
+/* Generated from the authenticated application chrome by scripts/extract-application-shell-styles.cjs. */
+/* Declarations remain non-important so runtime visibility and state updates retain precedence. */
+.auris-shell-s-1fc6a3e6f8{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:14px}
+.auris-shell-s-29507867a0{padding:8px 20px;border-bottom:1px solid var(--border);display:none;gap:6px;align-items:center}
+.auris-shell-s-39c68df36f{display:flex;gap:8px;align-items:center}
+.auris-shell-s-3d08178432{background:none;border:none;min-width:44px;min-height:44px;border-radius:10px;color:var(--text2)}
+.auris-shell-s-4edb7f6e61{font-size:16px}
+.auris-shell-s-624d011af0{flex:1;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:11px}
+.auris-shell-s-67ce2590ad{flex-shrink:0;padding:4px 8px;font-size:10px}
+.auris-shell-s-6aa34d7432{display:none}
+.auris-shell-s-6e8bcfac8d{font-weight:600}
+.auris-shell-s-70a5eca511{font-size:14px;font-weight:800;color:var(--text)}
+.auris-shell-s-7a84b3c65a{background:none;border:none;padding:10px;color:var(--text);border-radius:10px;min-width:44px;min-height:44px;display:flex;align-items:center;justify-content:center}
+.auris-shell-s-7ce7cf11ac{display:flex;align-items:center;justify-content:space-between;padding:16px 18px;border-bottom:1px solid var(--border)}
+.auris-shell-s-7fd766382c{display:none;align-items:center;gap:10px;padding:10px 20px;cursor:pointer;font-size:13px;color:var(--green);font-weight:600;border-top:1px solid var(--border);margin-top:auto}
+.auris-shell-s-83725d2c6e{flex:1}
+.auris-shell-s-9f25660aed{display:none;position:fixed;inset:0;background:var(--card);z-index:500;padding:14px}
+.auris-shell-s-aa29569754{right:0;left:auto}
+.auris-shell-s-aa7c01383d{display:flex;align-items:center;gap:8px;margin-bottom:12px}
+.auris-shell-s-ab19584647{font-size:14px;margin-left:2px}
+.auris-shell-s-ae2aad7cc8{background:none;border:none;min-width:44px;min-height:44px;border-radius:10px;color:var(--text)}
+.auris-shell-s-ca32b871b2{color:#185FA5}
+.auris-shell-s-de1a47fb99{flex:1;justify-content:center;color:var(--red)}
+/* ID-bearing controls retain the specificity of their former inline state over base ID selectors. */
+#app.auris-shell-s-6aa34d7432{display:none}
+#dev-mode-toggle.auris-shell-s-6aa34d7432{display:none}
+#mobile-back-btn.auris-shell-s-6aa34d7432{display:none}
+#mobile-modules-grid.auris-shell-s-1fc6a3e6f8{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:14px}
+#mobile-search-input.auris-shell-s-83725d2c6e{flex:1}
+#mobile-search-overlay.auris-shell-s-9f25660aed{display:none;position:fixed;inset:0;background:var(--card);z-index:500;padding:14px}
+#nav-admin.auris-shell-s-6aa34d7432{display:none}
+#pwa-install-btn.auris-shell-s-7fd766382c{display:none;align-items:center;gap:10px;padding:10px 20px;cursor:pointer;font-size:13px;color:var(--green);font-weight:600;border-top:1px solid var(--border);margin-top:auto}
+#sa-company-menu.auris-shell-s-aa29569754{right:0;left:auto}
+#sa-company-switcher.auris-shell-s-6aa34d7432{display:none}
+#sb-role-changer.auris-shell-s-29507867a0{padding:8px 20px;border-bottom:1px solid var(--border);display:none;gap:6px;align-items:center}
+#sb-role-select.auris-shell-s-624d011af0{flex:1;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:11px}
+#topbar-extras.auris-shell-s-39c68df36f{display:flex;gap:8px;align-items:center}

@@ -55,6 +55,7 @@
 <link rel="stylesheet" href="contractor-management-upgrade.css?v=20260805-1">
 <link rel="stylesheet" href="tools-equipment-upgrade.css?v=20260805-1">
 <link rel="stylesheet" href="auris-login-shell.css?v=20260814-1">
+<link rel="stylesheet" href="auris-application-shell.css?v=20260814-2">
 </head>
 <body>
 <div id="login-screen">
@@ -201,28 +202,28 @@
 </div><!-- end login-screen -->
 
 
-<div id="app" style="display:none">
+<div id="app" class="auris-shell-s-6aa34d7432">
 <div id="mobile-topbar">
   <button id="mobile-menu-btn" type="button" data-auris-onclick="h0012" aria-label="Open menu"><i class="ti ti-menu-2"></i></button>
-  <button id="mobile-back-btn" type="button" data-auris-onclick="h0013" aria-label="Go back" style="display:none"><i class="ti ti-arrow-left"></i></button>
+  <button class="auris-shell-s-6aa34d7432" id="mobile-back-btn" type="button" data-auris-onclick="h0013" aria-label="Go back"><i class="ti ti-arrow-left"></i></button>
   <div class="mobile-logo" id="mobile-page-title">Dashboard</div>
   <button id="nc-mobile-trigger" class="nc-mobile-trigger" type="button" data-auris-onclick="h0014" aria-label="Notifications"><i class="ti ti-bell"></i><span class="nc-badge" id="nc-mobile-badge">0</span></button>
-  <button type="button" data-auris-onclick="h0015" aria-label="Search modules" style="background:none;border:none;padding:10px;color:var(--text);border-radius:10px;min-width:44px;min-height:44px;display:flex;align-items:center;justify-content:center"><i class="ti ti-search"></i></button>
+  <button class="auris-shell-s-7a84b3c65a" type="button" data-auris-onclick="h0015" aria-label="Search modules"><i class="ti ti-search"></i></button>
 </div>
 <div id="sidebar-backdrop" data-auris-onclick="h0016"></div>
 <div id="mobile-modules-drawer" data-auris-onclick="h0017">
   <div id="mobile-modules-panel" data-auris-onclick="h0018">
-    <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 18px;border-bottom:1px solid var(--border)">
-      <div style="font-size:14px;font-weight:800;color:var(--text)">Modules</div>
-      <button type="button" data-auris-onclick="h0017" aria-label="Close modules" style="background:none;border:none;min-width:44px;min-height:44px;border-radius:10px;color:var(--text2)"><i class="ti ti-x"></i></button>
+    <div class="auris-shell-s-7ce7cf11ac">
+      <div class="auris-shell-s-70a5eca511">Modules</div>
+      <button class="auris-shell-s-3d08178432" type="button" data-auris-onclick="h0017" aria-label="Close modules"><i class="ti ti-x"></i></button>
     </div>
-    <div id="mobile-modules-grid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:14px"></div>
+    <div class="auris-shell-s-1fc6a3e6f8" id="mobile-modules-grid"></div>
   </div>
 </div>
-<div id="mobile-search-overlay" style="display:none;position:fixed;inset:0;background:var(--card);z-index:500;padding:14px">
-  <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
-    <button type="button" data-auris-onclick="h0015" aria-label="Close search" style="background:none;border:none;min-width:44px;min-height:44px;border-radius:10px;color:var(--text)"><i class="ti ti-arrow-left"></i></button>
-    <input id="mobile-search-input" type="search" placeholder="Search modules..." data-auris-oninput="h0019" style="flex:1"/>
+<div class="auris-shell-s-9f25660aed" id="mobile-search-overlay">
+  <div class="auris-shell-s-aa7c01383d">
+    <button class="auris-shell-s-ae2aad7cc8" type="button" data-auris-onclick="h0015" aria-label="Close search"><i class="ti ti-arrow-left"></i></button>
+    <input class="auris-shell-s-83725d2c6e" id="mobile-search-input" type="search" placeholder="Search modules..." data-auris-oninput="h0019"/>
   </div>
   <div id="mobile-search-results"></div>
 </div>
@@ -234,8 +235,8 @@
   <button id="mob-btn-modules" class="mob-nav-btn" type="button" data-auris-onclick="h0024"><i class="ti ti-apps"></i><span>More</span></button>
 </div>
 <div class="layout">
-<div class="sidebar"><div class="sidebar-top"><div class="sidebar-brand-row"><img id="auris-sidebar-logo" class="auris-sidebar-logo" src="/assets/auris360-logo-final.png" alt="AURIS 360 logo"/><img id="co-logo-img" class="co-logo" src="" alt="Company logo"/><div id="co-initials-div" class="co-initials">A</div></div><div class="sb-company" id="sb-company">AURIS360</div><div class="sb-user" id="sb-user">-</div><span class="sb-role" id="sb-role">-</span></div><div id="sb-role-changer" style="padding:8px 20px;border-bottom:1px solid var(--border);display:none;gap:6px;align-items:center">
-<select id="sb-role-select" style="flex:1;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:11px" data-auris-onchange="h0025">
+<div class="sidebar"><div class="sidebar-top"><div class="sidebar-brand-row"><img id="auris-sidebar-logo" class="auris-sidebar-logo" src="/assets/auris360-logo-final.png" alt="AURIS 360 logo"/><img id="co-logo-img" class="co-logo" src="" alt="Company logo"/><div id="co-initials-div" class="co-initials">A</div></div><div class="sb-company" id="sb-company">AURIS360</div><div class="sb-user" id="sb-user">-</div><span class="sb-role" id="sb-role">-</span></div><div class="auris-shell-s-29507867a0" id="sb-role-changer">
+<select class="auris-shell-s-624d011af0" id="sb-role-select" data-auris-onchange="h0025">
 <option value="employee">Employee</option>
 <option value="contractor">Contractor</option>
 <option value="supervisor">Supervisor</option>
@@ -248,7 +249,7 @@
 <option value="admin">Admin</option>
 <option value="sephs_admin">SEPHS Admin</option>
 </select>
-<button class="btn btn-sm" style="flex-shrink:0;padding:4px 8px;font-size:10px" data-auris-onclick="h0026">Apply</button>
+<button class="btn btn-sm auris-shell-s-67ce2590ad" data-auris-onclick="h0026">Apply</button>
 </div>
 <span class="nav-section">Main</span><div class="nav-item active" id="nav-dashboard" data-auris-onclick="h0027"><i class="ti ti-layout-dashboard"></i>Dashboard</div>
 <div class="nav-item" id="nav-executive" data-auris-onclick="h0028"><i class="ti ti-chart-bar"></i>Executive Dashboard</div><div class="nav-item" id="nav-ai" data-auris-onclick="h0029"><i class="ti ti-brain"></i>AI Insights</div><span class="nav-section">HSE Modules</span><div class="nav-item" data-auris-onclick="h0030"><i class="ti ti-target"></i>Objectives & KPIs</div><div class="nav-item" data-auris-onclick="h0031"><i class="ti ti-calendar-event"></i>Work Schedule</div>
@@ -264,9 +265,9 @@
 <div class="nav-item" data-auris-onclick="h0048"><i class="ti ti-volume"></i>Occupational Noise Management</div><div class="nav-item" id="nav-mtg" data-auris-onclick="h0049"><i class="ti ti-notes"></i>HSE Meetings</div><div class="nav-item" data-auris-onclick="h0050"><i class="ti ti-certificate"></i>Training</div><span class="nav-section">Management</span><div class="nav-item" data-auris-onclick="h0051"><i class="ti ti-list-check"></i>Master Action Plan</div><div class="nav-item" data-auris-onclick="h0052"><i class="ti ti-scale"></i>Legal Compliance</div>
 <div class="nav-item" data-auris-onclick="h0053"><i class="ti ti-file-description"></i>SOP Generator</div>
 <div class="nav-item" data-auris-onclick="h0054"><i class="ti ti-file-check"></i>SWMS / Method Statements</div>
-<div class="nav-item" id="nav-docs" data-auris-onclick="h0055"><i class="ti ti-files"></i>Document Control</div><div class="nav-item" data-auris-onclick="h0056"><i class="ti ti-id-badge"></i>People</div><div class="nav-item" id="nav-users" data-auris-onclick="h0057"><i class="ti ti-users"></i>Users &amp; Roles</div><div class="nav-item" id="nav-admin" style="display:none" data-auris-onclick="h0058"><i class="ti ti-building"></i>Companies</div><div class="nav-item" id="nav-integrations" data-auris-onclick="h0059"><i class="ti ti-plug"></i>Integrations</div>
-<div class="nav-item" id="nav-approvals" data-auris-onclick="h0060"><i class="ti ti-circle-check"></i>Approval Center</div><div class="nav-item" id="nav-audit" data-auris-onclick="h0061"><i class="ti ti-history"></i>Audit Trail</div><div class="nav-item" id="nav-settings" data-auris-onclick="h0062"><i class="ti ti-settings"></i>Settings</div><div class="sb-footer"><button class="btn btn-sm" style="flex:1;justify-content:center;color:var(--red)" data-auris-onclick="h0063"><i class="ti ti-logout"></i>Sign out</button></div>
-<div id="pwa-install-btn" data-auris-onclick="h0064" style="display:none;align-items:center;gap:10px;padding:10px 20px;cursor:pointer;font-size:13px;color:var(--green);font-weight:600;border-top:1px solid var(--border);margin-top:auto"><i class="ti ti-download" style="font-size:16px"></i>Install app</div></div>
+<div class="nav-item" id="nav-docs" data-auris-onclick="h0055"><i class="ti ti-files"></i>Document Control</div><div class="nav-item" data-auris-onclick="h0056"><i class="ti ti-id-badge"></i>People</div><div class="nav-item" id="nav-users" data-auris-onclick="h0057"><i class="ti ti-users"></i>Users &amp; Roles</div><div class="nav-item auris-shell-s-6aa34d7432" id="nav-admin" data-auris-onclick="h0058"><i class="ti ti-building"></i>Companies</div><div class="nav-item" id="nav-integrations" data-auris-onclick="h0059"><i class="ti ti-plug"></i>Integrations</div>
+<div class="nav-item" id="nav-approvals" data-auris-onclick="h0060"><i class="ti ti-circle-check"></i>Approval Center</div><div class="nav-item" id="nav-audit" data-auris-onclick="h0061"><i class="ti ti-history"></i>Audit Trail</div><div class="nav-item" id="nav-settings" data-auris-onclick="h0062"><i class="ti ti-settings"></i>Settings</div><div class="sb-footer"><button class="btn btn-sm auris-shell-s-de1a47fb99" data-auris-onclick="h0063"><i class="ti ti-logout"></i>Sign out</button></div>
+<div class="auris-shell-s-7fd766382c" id="pwa-install-btn" data-auris-onclick="h0064"><i class="ti ti-download auris-shell-s-4edb7f6e61"></i>Install app</div></div>
 <div class="main">
 
 <!-- ------------------------------------------------------------------------
@@ -280,26 +281,26 @@
     <button class="topbar-btn" data-auris-onclick="h0066" id="modules-trigger" aria-haspopup="true">
       <i class="ti ti-apps"></i>
       <span>Modules</span>
-      <i class="ti ti-chevron-down" style="font-size:14px;margin-left:2px"></i>
+      <i class="ti ti-chevron-down auris-shell-s-ab19584647"></i>
     </button>
     <div class="modules-menu" id="modules-menu"></div>
   </div>
-  <div style="flex:1"></div>
+  <div class="auris-shell-s-83725d2c6e"></div>
   <!-- Company context switcher - visible only to sephs_admin -->
-  <div class="modules-dropdown" id="sa-company-switcher" style="display:none">
+  <div class="modules-dropdown auris-shell-s-6aa34d7432" id="sa-company-switcher">
     <button class="topbar-btn" data-auris-onclick="h0067" id="sa-company-trigger">
-      <i class="ti ti-building" style="color:#185FA5"></i>
-      <span style="font-weight:600">Viewing:</span>
+      <i class="ti ti-building auris-shell-s-ca32b871b2"></i>
+      <span class="auris-shell-s-6e8bcfac8d">Viewing:</span>
       <span id="sa-company-label">All companies</span>
-      <i class="ti ti-chevron-down" style="font-size:14px;margin-left:2px"></i>
+      <i class="ti ti-chevron-down auris-shell-s-ab19584647"></i>
     </button>
-    <div class="modules-menu" id="sa-company-menu" style="right:0;left:auto"></div>
+    <div class="modules-menu auris-shell-s-aa29569754" id="sa-company-menu"></div>
   </div>
-  <button class="topbar-btn" id="dev-mode-toggle" data-auris-onclick="h0068" style="display:none" title="Toggle rollout view vs SEPHS admin tools">
+  <button class="topbar-btn auris-shell-s-6aa34d7432" id="dev-mode-toggle" data-auris-onclick="h0068" title="Toggle rollout view vs SEPHS admin tools">
     <i class="ti ti-flask" id="dev-mode-icon"></i>
     <span id="dev-mode-label">Rollout view</span>
   </button>
-  <div id="topbar-extras" style="display:flex;gap:8px;align-items:center"></div>
+  <div class="auris-shell-s-39c68df36f" id="topbar-extras"></div>
 </div>
 
 <!-- ------------------------------------------------------ -->
