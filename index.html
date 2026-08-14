@@ -60,6 +60,7 @@
 <link rel="stylesheet" href="auris-dashboard-org.css?v=20260814-1">
 <link rel="stylesheet" href="auris-dashboard-executive.css?v=20260814-1">
 <link rel="stylesheet" href="auris-kpi-legacy.css?v=20260814-1">
+<link rel="stylesheet" href="auris-work-schedule.css?v=20260814-1">
 </head>
 <body>
 <div id="login-screen">
@@ -954,28 +955,28 @@
 <div class="kpi-page-header auris-kpilegacy-s-328de19b1e"><div><div class="auris-kpilegacy-s-b65d47c0c6">Objectives & KPIs</div><div id="kpi-co-label" class="auris-kpilegacy-s-a2fa84dea0"></div></div><div class="auris-kpilegacy-s-39c68df36f"><div class="auris-kpilegacy-s-311c619ca0"><span class="auris-kpilegacy-s-7299078644">Year:</span><select id="year-sel" class="auris-kpilegacy-s-71a03dd464" data-auris-onchange="h0124"><option>2024</option><option>2025</option><option selected>2026</option><option>2027</option></select></div><button class="btn btn-primary auris-kpilegacy-s-6aa34d7432" id="kpi-add-obj-btn" data-auris-onclick="h0125"><i class="ti ti-plus"></i>Add objective</button><button class="btn btn-sm auris-kpilegacy-s-4b17347c23" data-auris-onclick="h0126" title="Print KPI scorecard"><i class="ti ti-printer"></i>Print</button></div></div><div class="auris-kpilegacy-s-971cc6eef7"><button class="kpi-tab active auris-kpilegacy-s-19c4c2bd89" data-auris-onclick="h0127"><i class="ti ti-layout-list auris-kpilegacy-s-086e4e22e8"></i>Overview</button><button class="kpi-tab auris-kpilegacy-s-163d0ceb31" data-auris-onclick="h0128"><i class="ti ti-calendar-stats auris-kpilegacy-s-086e4e22e8"></i>Monthly follow-up</button></div><div id="kpi-metrics" class="auris-kpilegacy-s-2a8102fc7b"><div class="auris-kpilegacy-s-cd9682fb03"><div class="auris-kpilegacy-s-ee5e12d76b">Total KPIs</div><div id="km3total" class="auris-kpilegacy-s-f4538f2c08">-</div></div><div class="auris-kpilegacy-s-cd9682fb03"><div class="auris-kpilegacy-s-ee5e12d76b">On Track</div><div id="km3ontrack" class="auris-kpilegacy-s-dccd58f7ab">-</div></div><div class="auris-kpilegacy-s-cd9682fb03"><div class="auris-kpilegacy-s-ee5e12d76b">At Risk</div><div id="km3atrisk" class="auris-kpilegacy-s-ec2a50fcd5">-</div></div><div class="auris-kpilegacy-s-cd9682fb03"><div class="auris-kpilegacy-s-ee5e12d76b">Off Track</div><div id="km3offtrack" class="auris-kpilegacy-s-c84e7d43cd">-</div></div></div><div id="kpi-tab-overview"><div id="kpi-objectives-container"><div class="kpi-loading">Loading objectives...</div></div></div><div id="kpi-tab-monthly" class="auris-kpilegacy-s-6aa34d7432"><div class="card auris-kpilegacy-s-d9c39add3c"><div class="auris-kpilegacy-s-a2b51e96c2"><div class="auris-kpilegacy-s-03ccff1d72">Monthly follow-up - <span id="kpi-monthly-year">2026</span></div><div class="auris-kpilegacy-s-7299078644">Click any cell to enter value</div></div><div class="auris-kpilegacy-s-1b1d75452f"><table id="kpi-monthly-table" class="auris-kpilegacy-s-b64233878f"><thead><tr><th class="auris-kpilegacy-s-89fc01578c">No.</th><th class="auris-kpilegacy-s-f549a00330">KPI name</th><th class="auris-kpilegacy-s-7bafeecad9">Measurement indicator</th><th class="auris-kpilegacy-s-2241557d75">Target</th><th class="auris-kpilegacy-s-f66c9d4273">Jan</th><th class="auris-kpilegacy-s-f66c9d4273">Feb</th><th class="auris-kpilegacy-s-f66c9d4273">Mar</th><th class="auris-kpilegacy-s-f66c9d4273">Apr</th><th class="auris-kpilegacy-s-f66c9d4273">May</th><th class="auris-kpilegacy-s-f66c9d4273">Jun</th><th class="auris-kpilegacy-s-f66c9d4273">Jul</th><th class="auris-kpilegacy-s-f66c9d4273">Aug</th><th class="auris-kpilegacy-s-f66c9d4273">Sep</th><th class="auris-kpilegacy-s-f66c9d4273">Oct</th><th class="auris-kpilegacy-s-f66c9d4273">Nov</th><th class="auris-kpilegacy-s-f66c9d4273">Dec</th><th class="auris-kpilegacy-s-f0dc964cb0">YTD</th><th class="auris-kpilegacy-s-f66c9d4273">Status</th></tr></thead><tbody id="kpi-monthly-body"><tr><td colspan="17" class="kpi-loading auris-kpilegacy-s-af76014ecc">Loading...</td></tr></tbody></table></div></div></div><div id="obj-modal" class="auris-kpilegacy-s-612123a942"><div class="auris-kpilegacy-s-0e271dda2d"><div class="auris-kpilegacy-s-30db984a08"><span id="obj-modal-title">Add objective</span><button class="auris-kpilegacy-s-1bfaad0397" data-auris-onclick="h0129"><i class="ti ti-x"></i></button></div><div class="form3row"><div class="form3group"><label class="form3label">Code (e.g. 1, 2)</label><input type="text" id="obj-code" class="auris-kpilegacy-s-76d73ba0e5" readonly placeholder="Auto-generated"/></div><div class="form3group"><label class="form3label">Year</label><select id="obj-year"><option>2024</option><option>2025</option><option selected>2026</option><option>2027</option></select></div></div><div class="form3group"><label class="form3label">Objective name</label><input type="text" id="obj-name" placeholder="e.g. Zero Accident & Occupational Illness"/></div><div class="form3group"><label class="form3label">Colour</label><div id="kpi-color-picker" class="auris-kpilegacy-s-47866118d9"><div class="kpi-color-dot auris-kpilegacy-s-4437a7f5b9" data-auris-onclick="h0130"></div><div class="kpi-color-dot auris-kpilegacy-s-fab5d6d591" data-auris-onclick="h0131"></div><div class="kpi-color-dot auris-kpilegacy-s-65e021d15f" data-auris-onclick="h0132"></div><div class="kpi-color-dot auris-kpilegacy-s-bd8bb29145" data-auris-onclick="h0133"></div><div class="kpi-color-dot auris-kpilegacy-s-634b1dff77" data-auris-onclick="h0134"></div><div class="kpi-color-dot auris-kpilegacy-s-dcb4941531" data-auris-onclick="h0135"></div><div class="kpi-color-dot auris-kpilegacy-s-e7e01721d9" data-auris-onclick="h0136"></div></div></div><div class="auris-kpilegacy-s-de071442a1"><button class="btn" data-auris-onclick="h0129">Cancel</button><button class="btn btn-danger auris-kpilegacy-s-6aa34d7432" id="obj-delete-btn" data-auris-onclick="h0137"><i class="ti ti-trash"></i>Delete</button><button class="btn btn-primary" data-auris-onclick="h0138"><i class="ti ti-device-floppy"></i>Save objective</button></div></div></div><div id="kpi-edit-modal" class="auris-kpilegacy-s-612123a942"><div class="auris-kpilegacy-s-53b26c74f5"><div class="auris-kpilegacy-s-30db984a08"><span id="kpi-modal-title">Add KPI</span><button class="auris-kpilegacy-s-1bfaad0397" data-auris-onclick="h0139"><i class="ti ti-x"></i></button></div><div class="form3row"><div class="form3group"><label class="form3label">Code (auto)</label><input type="text" id="kpi-code" class="auris-kpilegacy-s-76d73ba0e5" readonly placeholder="Auto-generated"/></div><div class="form3group"><label class="form3label">Objective</label><select id="kpi-obj-sel"><option value="">Select objective...</option></select></div></div><div class="form3row"><div class="form3group"><label class="form3label">KPI name</label><input type="text" id="kpi-name" placeholder="e.g. Near Miss Reporting"/></div><div class="form3group"><label class="form3label">Frequency</label><select id="kpi-freq"><option value="monthly">Monthly</option><option value="quarterly">Quarterly</option><option value="annual">Annual</option></select></div></div><div class="form3row"><div class="form3group"><label class="form3label">Responsible</label><select id="kpi-resp"><option value="">Select person...</option></select></div><div class="form3group"><label class="form3label">Status</label><select id="kpi-status"><option value="not_started">Not started</option><option value="on_track">On Track</option><option value="at_risk">At Risk</option><option value="off_track">Off Track</option></select></div></div><div class="auris-kpilegacy-s-00f9afcb21"><div class="auris-kpilegacy-s-f658f99e81"><div><div class="auris-kpilegacy-s-b45a17b9a4">Measurement indicators</div><div class="auris-kpilegacy-s-7caa561f52">Each indicator gets its own row in the monthly follow-up table</div></div><button type="button" class="btn btn-sm" data-auris-onclick="h0140"><i class="ti ti-plus"></i>Add indicator</button></div><div id="kpi-indicators-list" class="auris-kpilegacy-s-0fbf9e859f"></div></div><div class="auris-kpilegacy-s-de071442a1"><button class="btn" data-auris-onclick="h0139">Cancel</button><button class="btn btn-danger auris-kpilegacy-s-6aa34d7432" id="kpi-delete-btn" data-auris-onclick="h0141"><i class="ti ti-trash"></i>Delete KPI</button><button class="btn btn-primary" data-auris-onclick="h0142"><i class="ti ti-device-floppy"></i>Save KPI</button></div></div></div><div id="kpi-entry-modal" class="auris-kpilegacy-s-612123a942"><div class="auris-kpilegacy-s-9456a3b250"><div class="auris-kpilegacy-s-7c9444290b"><span id="entry-modal-title">Enter value</span><button class="auris-kpilegacy-s-1bfaad0397" data-auris-onclick="h0143"><i class="ti ti-x"></i></button></div><div class="auris-kpilegacy-s-2aa71f39cc"><div id="entry-kpi-name" class="auris-kpilegacy-s-b45a17b9a4"></div><div id="entry-kpi-target" class="auris-kpilegacy-s-20b350857e"></div></div><div class="form3group"><label class="form3label" id="entry-month-label">Actual value</label><input type="number" id="entry-actual" placeholder="Enter actual value" step="any"/></div><div class="form3group"><label class="form3label">YTD (leave blank to auto-calculate)</label><input type="number" id="entry-ytd" placeholder="Auto" step="any"/></div><div class="form3group"><label class="form3label">Comment (optional)</label><textarea id="entry-comment" class="auris-kpilegacy-s-2b013fa0d9"></textarea></div><div class="auris-kpilegacy-s-2bca786fd4"><button class="btn btn-danger auris-kpilegacy-s-6aa34d7432" id="kpi-clear-btn" data-auris-onclick="h0144"><i class="ti ti-trash"></i>Clear data</button><div class="auris-kpilegacy-s-70f004c11b"><button class="btn" data-auris-onclick="h0143">Cancel</button><button class="btn btn-primary" data-auris-onclick="h0145"><i class="ti ti-device-floppy"></i>Save</button></div></div></div></div></div>
 <div id="page-workschedule" class="page">
 <div class="page-header">
-<div><div class="page-title">Work Schedule</div><div style="font-size:12px;color:var(--text2)">Plan, track and manage work orders with integrated HSE checks</div></div>
-<div style="display:flex;gap:8px">
+<div><div class="page-title">Work Schedule</div><div class="auris-work-s-7299078644">Plan, track and manage work orders with integrated HSE checks</div></div>
+<div class="auris-work-s-9c40389b4a">
 <button class="btn btn-sm" data-auris-onclick="h0146" id="ws-btn-week"><i class="ti ti-calendar-week"></i>Week</button>
 <button class="btn btn-sm" data-auris-onclick="h0147" id="ws-btn-list"><i class="ti ti-list"></i>List</button>
-<button class="btn btn-primary" id="ws-add-btn" style="display:none" data-auris-onclick="h0148"><i class="ti ti-plus"></i>New work order</button>
+<button class="btn btn-primary auris-work-s-6aa34d7432" id="ws-add-btn" data-auris-onclick="h0148"><i class="ti ti-plus"></i>New work order</button>
 </div>
 </div>
 
 <!-- Metrics -->
-<div style="display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:14px">
-<div class="card" style="padding:12px 14px;border-left:4px solid #185FA5"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">Planned</div><div style="font-size:24px;font-weight:800;color:#185FA5" id="ws-m3planned">-</div></div>
-<div class="card" style="padding:12px 14px;border-left:4px solid #EF9F27"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">In Progress</div><div style="font-size:24px;font-weight:800;color:#EF9F27" id="ws-m3progress">-</div></div>
-<div class="card" style="padding:12px 14px;border-left:4px solid #1D9E75"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">Completed</div><div style="font-size:24px;font-weight:800;color:#1D9E75" id="ws-m3done">-</div></div>
-<div class="card" style="padding:12px 14px;border-left:4px solid #E24B4A"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">Overdue</div><div style="font-size:24px;font-weight:800;color:#E24B4A" id="ws-m3overdue">-</div></div>
-<div class="card" style="padding:12px 14px;border-left:4px solid #8B5CF6"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">On Hold</div><div style="font-size:24px;font-weight:800;color:#8B5CF6" id="ws-m3hold">-</div></div>
+<div class="auris-work-s-eb404b018d">
+<div class="card auris-work-s-624468e090"><div class="auris-work-s-4422804ebb">Planned</div><div id="ws-m3planned" class="auris-work-s-2b9ad58fbd">-</div></div>
+<div class="card auris-work-s-bf5033d99d"><div class="auris-work-s-4422804ebb">In Progress</div><div id="ws-m3progress" class="auris-work-s-97309bb0fa">-</div></div>
+<div class="card auris-work-s-4a56dafc2a"><div class="auris-work-s-4422804ebb">Completed</div><div id="ws-m3done" class="auris-work-s-a1d0a4c7f2">-</div></div>
+<div class="card auris-work-s-3b299d6ce4"><div class="auris-work-s-4422804ebb">Overdue</div><div id="ws-m3overdue" class="auris-work-s-01137f2f4c">-</div></div>
+<div class="card auris-work-s-c260bac5c9"><div class="auris-work-s-4422804ebb">On Hold</div><div id="ws-m3hold" class="auris-work-s-5d553a9b75">-</div></div>
 </div>
 
 <!-- Filter bar -->
-<div class="card" style="margin-bottom:12px;padding:10px 14px">
-<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
-<input type="text" id="ws-search" placeholder="Search work order, location..." data-auris-oninput="h0149" style="flex:1;min-width:180px;padding:7px 12px;border:1px solid var(--border);border-radius:8px;font-size:12px"/>
-<select id="ws-filter-status" data-auris-onchange="h0150" style="padding:7px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px">
+<div class="card auris-work-s-54bb9f1d16">
+<div class="auris-work-s-d5129e1520">
+<input type="text" id="ws-search" class="auris-work-s-11856befbc" placeholder="Search work order, location..." data-auris-oninput="h0149"/>
+<select id="ws-filter-status" class="auris-work-s-d35063206b" data-auris-onchange="h0150">
 <option value="">All statuses</option>
 <option value="planned">Planned</option>
 <option value="approved">Approved</option>
@@ -983,7 +984,7 @@
 <option value="on_hold">On Hold</option>
 <option value="completed">Completed</option>
 </select>
-<select id="ws-filter-priority" data-auris-onchange="h0150" style="padding:7px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px">
+<select id="ws-filter-priority" class="auris-work-s-d35063206b" data-auris-onchange="h0150">
 <option value="">All priorities</option>
 <option value="critical">Critical</option>
 <option value="high">High</option>
@@ -997,10 +998,10 @@
 <div id="ws-list-view"><div id="ws-list"><div class="loading-msg">Loading...</div></div></div>
 
 <!-- WEEK VIEW -->
-<div id="ws-week-view" style="display:none">
-<div class="card" style="padding:10px 16px;margin-bottom:12px;display:flex;align-items:center;gap:12px">
+<div id="ws-week-view" class="auris-work-s-6aa34d7432">
+<div class="card auris-work-s-00178fec1d">
 <button class="btn btn-sm" data-auris-onclick="h0151"><i class="ti ti-chevron-left"></i></button>
-<span style="font-size:14px;font-weight:700;flex:1;text-align:center" id="ws-week-label">Week</span>
+<span id="ws-week-label" class="auris-work-s-c3d5e9c097">Week</span>
 <button class="btn btn-sm" data-auris-onclick="h0152"><i class="ti ti-chevron-right"></i></button>
 <button class="btn btn-sm" data-auris-onclick="h0153">Today</button>
 </div>
@@ -1008,127 +1009,127 @@
 </div>
 
 <!-- WORK ORDER DETAIL VIEW -->
-<div id="ws-detail-view" style="display:none">
+<div id="ws-detail-view" class="auris-work-s-6aa34d7432">
 <!-- Detail header -->
-<div class="card" style="margin-bottom:14px;padding:0;overflow:hidden">
-<div id="ws-detail-banner" style="padding:20px 24px;background:linear-gradient(135deg,#1a3a5c,#185FA5);color:#fff">
-<div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:12px">
+<div class="card auris-work-s-54ec8874e7">
+<div id="ws-detail-banner" class="auris-work-s-72762f00c3">
+<div class="auris-work-s-73762cb933">
 <div>
-<div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.1em;opacity:.7;margin-bottom:4px" id="ws-detail-ref">-</div>
-<div style="font-size:22px;font-weight:800;margin-bottom:6px" id="ws-detail-title">-</div>
-<div style="display:flex;gap:12px;flex-wrap:wrap;font-size:12px;opacity:.85">
+<div id="ws-detail-ref" class="auris-work-s-c2709c5c2d">-</div>
+<div id="ws-detail-title" class="auris-work-s-3a1b8d6e58">-</div>
+<div class="auris-work-s-8c6a191e81">
 <span id="ws-detail-type"></span>
 <span id="ws-detail-location"></span>
 <span id="ws-detail-dates"></span>
 </div>
 </div>
-<div style="display:flex;gap:8px;flex-wrap:wrap">
-<button class="btn" style="background:rgba(255,255,255,.15);color:#fff;border-color:rgba(255,255,255,.3)" data-auris-onclick="h0154"><i class="ti ti-arrow-left"></i>Back</button>
-<button class="btn" style="background:rgba(255,255,255,.15);color:#fff;border-color:rgba(255,255,255,.3)" data-auris-onclick="h0155"><i class="ti ti-edit"></i>Edit</button>
+<div class="auris-work-s-c9dc9b5648">
+<button class="btn auris-work-s-4068d4ef8d" data-auris-onclick="h0154"><i class="ti ti-arrow-left"></i>Back</button>
+<button class="btn auris-work-s-4068d4ef8d" data-auris-onclick="h0155"><i class="ti ti-edit"></i>Edit</button>
 </div>
 </div>
 </div>
 <!-- Status bar -->
-<div id="ws-status-bar" style="padding:10px 24px;background:#f9fafb;border-top:1px solid var(--border);display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-<span style="font-size:12px;font-weight:600;color:var(--text2)">Status:</span>
+<div id="ws-status-bar" class="auris-work-s-05d8290e32">
+<span class="auris-work-s-2e4b22ec3a">Status:</span>
 <span id="ws-detail-status-badge"></span>
-<span style="font-size:12px;font-weight:600;color:var(--text2);margin-left:10px">Priority:</span>
+<span class="auris-work-s-3fdf2a3b16">Priority:</span>
 <span id="ws-detail-priority-badge"></span>
-<span style="font-size:12px;font-weight:600;color:var(--text2);margin-left:10px">Risk:</span>
+<span class="auris-work-s-3fdf2a3b16">Risk:</span>
 <span id="ws-detail-risk-badge"></span>
 </div>
 </div>
 
 <!-- ACTION BUTTONS - the main feature -->
-<div class="card" style="margin-bottom:14px;padding:0;overflow:hidden">
-<div style="padding:12px 20px;background:linear-gradient(135deg,#f8fafc,#e8f0fe);border-bottom:2px solid #185FA540">
-<div style="font-weight:700;font-size:14px;color:#1a3a5c;margin-bottom:2px"><i class="ti ti-rocket"></i> Start Work Actions</div>
-<div style="font-size:12px;color:#6b7280">Complete these HSE checks before and during the work activity</div>
+<div class="card auris-work-s-54ec8874e7">
+<div class="auris-work-s-04ce14ae73">
+<div class="auris-work-s-f6bf0d7823"><i class="ti ti-rocket"></i> Start Work Actions</div>
+<div class="auris-work-s-bbb7bfdfc7">Complete these HSE checks before and during the work activity</div>
 </div>
-<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:0">
+<div class="auris-work-s-4a5d200669">
 <!-- Toolbox Talk -->
-<div class="ws-action-card" id="ws-act-tbt" style="padding:20px;border-right:1px solid var(--border);border-bottom:1px solid var(--border);cursor:pointer;transition:background .15s;text-align:center" data-auris-onclick="h0156">
-<div style="width:52px;height:52px;border-radius:14px;background:#8B5CF620;display:flex;align-items:center;justify-content:center;margin:0 auto 10px">
-<i class="ti ti-speakerphone" style="font-size:24px;color:#8B5CF6"></i></div>
-<div style="font-weight:700;font-size:13px;margin-bottom:4px;color:#1a1a1a">Toolbox Talk</div>
-<div style="font-size:11px;color:var(--text2);margin-bottom:10px">Brief the team on hazards and controls</div>
-<div id="ws-tbt-status" style="font-size:11px;font-weight:600"></div>
-<button class="btn btn-sm" style="background:#8B5CF6;color:#fff;border-color:#8B5CF6;margin-top:8px;width:100%;justify-content:center" data-auris-onclick="h0157"><i class="ti ti-plus"></i>Open Toolbox Talk</button>
+<div class="ws-action-card auris-work-s-37d3e8c966" id="ws-act-tbt" data-auris-onclick="h0156">
+<div class="auris-work-s-3f9aa5d493">
+<i class="ti ti-speakerphone auris-work-s-eea8c1cad5"></i></div>
+<div class="auris-work-s-4f4626c86d">Toolbox Talk</div>
+<div class="auris-work-s-74799a7335">Brief the team on hazards and controls</div>
+<div id="ws-tbt-status" class="auris-work-s-63095c3b43"></div>
+<button class="btn btn-sm auris-work-s-aa127e8324" data-auris-onclick="h0157"><i class="ti ti-plus"></i>Open Toolbox Talk</button>
 </div>
 <!-- Pre-Start Inspection -->
-<div class="ws-action-card" id="ws-act-prestart" style="padding:20px;border-right:1px solid var(--border);border-bottom:1px solid var(--border);cursor:pointer;transition:background .15s;text-align:center" data-auris-onclick="h0158">
-<div style="width:52px;height:52px;border-radius:14px;background:#185FA520;display:flex;align-items:center;justify-content:center;margin:0 auto 10px">
-<i class="ti ti-shield-check" style="font-size:24px;color:#185FA5"></i></div>
-<div style="font-weight:700;font-size:13px;margin-bottom:4px;color:#1a1a1a">Pre-Start Inspection</div>
-<div style="font-size:11px;color:var(--text2);margin-bottom:10px">Safety checks before commencing work</div>
-<div id="ws-ps-status" style="font-size:11px;font-weight:600"></div>
-<button class="btn btn-sm" style="background:#185FA5;color:#fff;border-color:#185FA5;margin-top:8px;width:100%;justify-content:center" data-auris-onclick="h0159"><i class="ti ti-plus"></i>Open Pre-Start Check</button>
+<div class="ws-action-card auris-work-s-37d3e8c966" id="ws-act-prestart" data-auris-onclick="h0158">
+<div class="auris-work-s-187ca3f977">
+<i class="ti ti-shield-check auris-work-s-24dd79d0ed"></i></div>
+<div class="auris-work-s-4f4626c86d">Pre-Start Inspection</div>
+<div class="auris-work-s-74799a7335">Safety checks before commencing work</div>
+<div id="ws-ps-status" class="auris-work-s-63095c3b43"></div>
+<button class="btn btn-sm auris-work-s-5b68871bdf" data-auris-onclick="h0159"><i class="ti ti-plus"></i>Open Pre-Start Check</button>
 </div>
 <!-- Site Inspection -->
-<div class="ws-action-card" id="ws-act-siteinsp" style="padding:20px;border-right:1px solid var(--border);border-bottom:1px solid var(--border);cursor:pointer;transition:background .15s;text-align:center" data-auris-onclick="h0160">
-<div style="width:52px;height:52px;border-radius:14px;background:#1D9E7520;display:flex;align-items:center;justify-content:center;margin:0 auto 10px">
-<i class="ti ti-clipboard-check" style="font-size:24px;color:#1D9E75"></i></div>
-<div style="font-weight:700;font-size:13px;margin-bottom:4px;color:#1a1a1a">Site Inspection</div>
-<div style="font-size:11px;color:var(--text2);margin-bottom:10px">Workplace safety inspection checklist</div>
-<div id="ws-si-status" style="font-size:11px;font-weight:600"></div>
-<button class="btn btn-sm" style="background:#1D9E75;color:#fff;border-color:#1D9E75;margin-top:8px;width:100%;justify-content:center" data-auris-onclick="h0161"><i class="ti ti-plus"></i>Open Site Inspection</button>
+<div class="ws-action-card auris-work-s-37d3e8c966" id="ws-act-siteinsp" data-auris-onclick="h0160">
+<div class="auris-work-s-e82f858d59">
+<i class="ti ti-clipboard-check auris-work-s-a251612e9c"></i></div>
+<div class="auris-work-s-4f4626c86d">Site Inspection</div>
+<div class="auris-work-s-74799a7335">Workplace safety inspection checklist</div>
+<div id="ws-si-status" class="auris-work-s-63095c3b43"></div>
+<button class="btn btn-sm auris-work-s-dc68cd161d" data-auris-onclick="h0161"><i class="ti ti-plus"></i>Open Site Inspection</button>
 </div>
 <!-- Tools & Equipment -->
-<div class="ws-action-card" id="ws-act-tools" style="padding:20px;border-right:1px solid var(--border);border-bottom:1px solid var(--border);cursor:pointer;transition:background .15s;text-align:center" data-auris-onclick="h0162">
-<div style="width:52px;height:52px;border-radius:14px;background:#EF9F2720;display:flex;align-items:center;justify-content:center;margin:0 auto 10px">
-<i class="ti ti-tools" style="font-size:24px;color:#EF9F27"></i></div>
-<div style="font-weight:700;font-size:13px;margin-bottom:4px;color:#1a1a1a">Tools &amp; Equipment</div>
-<div style="font-size:11px;color:var(--text2);margin-bottom:10px">Add equipment list &amp; run checklists</div>
-<div id="ws-te-status" style="font-size:11px;font-weight:600"></div>
-<button class="btn btn-sm" style="background:#EF9F27;color:#fff;border-color:#EF9F27;margin-top:8px;width:100%;justify-content:center" data-auris-onclick="h0163"><i class="ti ti-tools"></i>Manage Equipment</button>
+<div class="ws-action-card auris-work-s-37d3e8c966" id="ws-act-tools" data-auris-onclick="h0162">
+<div class="auris-work-s-675f8acd98">
+<i class="ti ti-tools auris-work-s-0304626cde"></i></div>
+<div class="auris-work-s-4f4626c86d">Tools &amp; Equipment</div>
+<div class="auris-work-s-74799a7335">Add equipment list &amp; run checklists</div>
+<div id="ws-te-status" class="auris-work-s-63095c3b43"></div>
+<button class="btn btn-sm auris-work-s-3380461e9d" data-auris-onclick="h0163"><i class="ti ti-tools"></i>Manage Equipment</button>
 </div>
 <!-- Risk Assessment -->
-<div class="ws-action-card" id="ws-act-ra" style="padding:20px;border-right:1px solid var(--border);border-bottom:1px solid var(--border);cursor:pointer;transition:background .15s;text-align:center" data-auris-onclick="h0164">
-<div style="width:52px;height:52px;border-radius:14px;background:#E24B4A20;display:flex;align-items:center;justify-content:center;margin:0 auto 10px">
-<i class="ti ti-alert-triangle" style="font-size:24px;color:#E24B4A"></i></div>
-<div style="font-weight:700;font-size:13px;margin-bottom:4px;color:#1a1a1a">Risk Assessment</div>
-<div style="font-size:11px;color:var(--text2);margin-bottom:10px">View or create linked risk assessment</div>
-<div id="ws-ra-status" style="font-size:11px;font-weight:600"></div>
-<button class="btn btn-sm" style="background:#E24B4A;color:#fff;border-color:#E24B4A;margin-top:8px;width:100%;justify-content:center" data-auris-onclick="h0165"><i class="ti ti-alert-triangle"></i>Risk Assessment</button>
+<div class="ws-action-card auris-work-s-37d3e8c966" id="ws-act-ra" data-auris-onclick="h0164">
+<div class="auris-work-s-5219441582">
+<i class="ti ti-alert-triangle auris-work-s-894e25f410"></i></div>
+<div class="auris-work-s-4f4626c86d">Risk Assessment</div>
+<div class="auris-work-s-74799a7335">View or create linked risk assessment</div>
+<div id="ws-ra-status" class="auris-work-s-63095c3b43"></div>
+<button class="btn btn-sm auris-work-s-1424721b88" data-auris-onclick="h0165"><i class="ti ti-alert-triangle"></i>Risk Assessment</button>
 </div>
 <!-- Permit to Work -->
-<div class="ws-action-card" id="ws-act-ptw" style="padding:20px;border-bottom:1px solid var(--border);cursor:pointer;transition:background .15s;text-align:center" data-auris-onclick="h0166">
-<div style="width:52px;height:52px;border-radius:14px;background:#185FA520;display:flex;align-items:center;justify-content:center;margin:0 auto 10px">
-<i class="ti ti-key" style="font-size:24px;color:#185FA5"></i></div>
-<div style="font-weight:700;font-size:13px;margin-bottom:4px;color:#1a1a1a">Permit to Work</div>
-<div style="font-size:11px;color:var(--text2);margin-bottom:10px">Issue or view permit to work</div>
-<div id="ws-ptw-status" style="font-size:11px;font-weight:600"></div>
-<button class="btn btn-sm" style="background:#185FA5;color:#fff;border-color:#185FA5;margin-top:8px;width:100%;justify-content:center" data-auris-onclick="h0167"><i class="ti ti-key"></i>Permit to Work</button>
+<div class="ws-action-card auris-work-s-14d6c5aac7" id="ws-act-ptw" data-auris-onclick="h0166">
+<div class="auris-work-s-187ca3f977">
+<i class="ti ti-key auris-work-s-24dd79d0ed"></i></div>
+<div class="auris-work-s-4f4626c86d">Permit to Work</div>
+<div class="auris-work-s-74799a7335">Issue or view permit to work</div>
+<div id="ws-ptw-status" class="auris-work-s-63095c3b43"></div>
+<button class="btn btn-sm auris-work-s-5b68871bdf" data-auris-onclick="h0167"><i class="ti ti-key"></i>Permit to Work</button>
 </div>
 </div>
 </div>
 
 <!-- Work order details -->
-<div style="display:grid;grid-template-columns:2fr 1fr;gap:14px;margin-bottom:14px">
+<div class="auris-work-s-7de860ea7c">
 <div class="card">
 <div class="card-title">Work Order Details</div>
-<div style="font-size:13px;line-height:1.8">
-<div style="display:grid;grid-template-columns:auto 1fr;gap:4px 16px">
-<span style="color:var(--text2);font-weight:500">Description:</span><span id="ws-detail-desc">-</span>
-<span style="color:var(--text2);font-weight:500">Supervisor:</span><span id="ws-detail-supervisor">-</span>
-<span style="color:var(--text2);font-weight:500">Team:</span><span id="ws-detail-team">-</span>
-<span style="color:var(--text2);font-weight:500">Duration:</span><span id="ws-detail-duration">-</span>
-<span style="color:var(--text2);font-weight:500">RA Ref:</span><span id="ws-detail-ra" style="font-family:monospace;color:var(--green);font-weight:600">-</span>
-<span style="color:var(--text2);font-weight:500">Permit Ref:</span><span id="ws-detail-ptw" style="font-family:monospace;color:var(--green);font-weight:600">-</span>
-<span style="color:var(--text2);font-weight:500">Notes:</span><span id="ws-detail-notes">-</span>
+<div class="auris-work-s-a1a90e9aa2">
+<div class="auris-work-s-d22e3594be">
+<span class="auris-work-s-c927b5f29a">Description:</span><span id="ws-detail-desc">-</span>
+<span class="auris-work-s-c927b5f29a">Supervisor:</span><span id="ws-detail-supervisor">-</span>
+<span class="auris-work-s-c927b5f29a">Team:</span><span id="ws-detail-team">-</span>
+<span class="auris-work-s-c927b5f29a">Duration:</span><span id="ws-detail-duration">-</span>
+<span class="auris-work-s-c927b5f29a">RA Ref:</span><span id="ws-detail-ra" class="auris-work-s-1fac90730c">-</span>
+<span class="auris-work-s-c927b5f29a">Permit Ref:</span><span id="ws-detail-ptw" class="auris-work-s-1fac90730c">-</span>
+<span class="auris-work-s-c927b5f29a">Notes:</span><span id="ws-detail-notes">-</span>
 </div>
 </div>
 </div>
 <div>
 <!-- Linked records -->
-<div class="card" style="margin-bottom:12px">
-<div class="card-title" style="font-size:12px">Linked HSE Records</div>
-<div id="ws-linked-records" style="font-size:12px"></div>
+<div class="card auris-work-s-b56987dbcb">
+<div class="card-title auris-work-s-a49cca52be">Linked HSE Records</div>
+<div id="ws-linked-records" class="auris-work-s-a49cca52be"></div>
 </div>
 <!-- Quick status update -->
 <div class="card">
-<div class="card-title" style="font-size:12px">Update Status</div>
-<select id="ws-quick-status" style="width:100%;padding:7px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px;margin-bottom:8px" data-auris-onchange="h0168">
+<div class="card-title auris-work-s-a49cca52be">Update Status</div>
+<select id="ws-quick-status" class="auris-work-s-49becf2401" data-auris-onchange="h0168">
 <option value="planned">Planned</option>
 <option value="approved">Approved</option>
 <option value="in_progress">In Progress</option>
@@ -1143,21 +1144,21 @@
 </div><!-- end ws-detail-view -->
 
 <!-- WORK ORDER FORM -->
-<div id="ws-form3view" style="display:none">
-<div class="card" style="margin-bottom:14px;padding:14px 20px">
-<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
-<div><div style="font-size:16px;font-weight:700" id="ws-form3title">New Work Order</div>
-<div style="font-size:12px;color:var(--green);font-weight:600;font-family:monospace" id="ws-form3ref"></div></div>
-<div style="display:flex;gap:8px">
+<div id="ws-form3view" class="auris-work-s-6aa34d7432">
+<div class="card auris-work-s-0e8d4526b6">
+<div class="auris-work-s-5e92a26fd0">
+<div><div id="ws-form3title" class="auris-work-s-30e294142f">New Work Order</div>
+<div id="ws-form3ref" class="auris-work-s-a3f901ca41"></div></div>
+<div class="auris-work-s-9c40389b4a">
 <button class="btn" data-auris-onclick="h0169"><i class="ti ti-arrow-left"></i>Back</button>
-<button id="ws-del-btn" class="btn" style="display:none;color:var(--red);border-color:var(--red)" data-auris-onclick="h0170"><i class="ti ti-trash"></i>Delete</button>
+<button id="ws-del-btn" class="btn auris-work-s-8dea1152ee" data-auris-onclick="h0170"><i class="ti ti-trash"></i>Delete</button>
 <button class="btn btn-primary" data-auris-onclick="h0171"><i class="ti ti-device-floppy"></i>Save work order</button>
 </div>
 </div>
 </div>
-<div style="display:grid;grid-template-columns:2fr 1fr;gap:14px">
+<div class="auris-work-s-5571af1e74">
 <div>
-<div class="card" style="margin-bottom:14px">
+<div class="card auris-work-s-42a6ced8b6">
 <div class="card-title">Work Order Information</div>
 <div class="form3row">
 <div class="form3group"><label class="form3label">Work order title</label><input type="text" id="wsf-title" placeholder="e.g. Electrical panel maintenance - Building A"/></div>
@@ -1173,7 +1174,7 @@
 <option value="other">Other</option>
 </select></div>
 </div>
-<div class="form3group"><label class="form3label">Description</label><textarea id="wsf-desc" style="min-height:80px" placeholder="Detailed description of the work to be performed..."></textarea></div>
+<div class="form3group"><label class="form3label">Description</label><textarea id="wsf-desc" class="auris-work-s-770a4152c1" placeholder="Detailed description of the work to be performed..."></textarea></div>
 <div class="form3row">
 <div class="form3group"><label class="form3label">Location</label><input type="text" id="wsf-location" placeholder="e.g. Workshop B, Floor 2"/></div>
 <div class="form3group"><label class="form3label">Department</label><input type="text" id="wsf-dept"/></div>
@@ -1195,12 +1196,12 @@
 <div class="form3group"><label class="form3label">Supervisor</label><select id="wsf-supervisor"><option value="">Select...</option></select></div>
 <div class="form3group"><label class="form3label">Team members</label><input type="text" id="wsf-team" placeholder="Names of all team members..."/></div>
 </div>
-<div class="form3group"><label class="form3label">Notes</label><textarea id="wsf-notes" style="min-height:50px"></textarea></div>
+<div class="form3group"><label class="form3label">Notes</label><textarea id="wsf-notes" class="auris-work-s-2b013fa0d9"></textarea></div>
 </div>
 </div>
 <div>
-<div class="card" style="margin-bottom:14px;border:2px solid #185FA5">
-<div class="card-title" style="color:#185FA5"><i class="ti ti-shield"></i> HSE Requirements</div>
+<div class="card auris-work-s-9bcefa3fff">
+<div class="card-title auris-work-s-ca32b871b2"><i class="ti ti-shield"></i> HSE Requirements</div>
 <div class="form3row">
 <div class="form3group"><label class="form3label">Risk level</label>
 <select id="wsf-risk">
@@ -1217,43 +1218,43 @@
 <option value="critical">Critical</option>
 </select></div>
 </div>
-<div style="display:flex;gap:12px;margin-bottom:10px">
-<label style="display:flex;align-items:center;gap:6px;font-size:12px;font-weight:600;cursor:pointer">
-<input type="checkbox" id="wsf-requires-ra" checked style="accent-color:var(--green);width:15px;height:15px">Risk assessment required</label>
-<label style="display:flex;align-items:center;gap:6px;font-size:12px;font-weight:600;cursor:pointer">
-<input type="checkbox" id="wsf-requires-permit" style="accent-color:var(--green);width:15px;height:15px">Permit to work required</label>
+<div class="auris-work-s-c91d8904dc">
+<label class="auris-work-s-743fabee7b">
+<input type="checkbox" id="wsf-requires-ra" class="auris-work-s-702b286ca2" checked>Risk assessment required</label>
+<label class="auris-work-s-743fabee7b">
+<input type="checkbox" id="wsf-requires-permit" class="auris-work-s-702b286ca2">Permit to work required</label>
 </div>
-<div class="form3group"><label class="form3label">RA reference</label><div style="display:flex;gap:6px"><select id="wsf-ra-ref" style="font-family:monospace;min-width:0"><option value="">Select risk assessment...</option></select><button type="button" class="btn btn-sm" data-auris-onclick="h0172"><i class="ti ti-external-link"></i></button></div></div>
-<div class="form3group"><label class="form3label">Permit reference</label><div style="display:flex;gap:6px"><select id="wsf-ptw-ref" style="font-family:monospace;min-width:0"><option value="">Select permit...</option></select><button type="button" class="btn btn-sm" data-auris-onclick="h0173"><i class="ti ti-external-link"></i></button></div></div>
+<div class="form3group"><label class="form3label">RA reference</label><div class="auris-work-s-69374f356a"><select id="wsf-ra-ref" class="auris-work-s-c1a6ae2812"><option value="">Select risk assessment...</option></select><button type="button" class="btn btn-sm" data-auris-onclick="h0172"><i class="ti ti-external-link"></i></button></div></div>
+<div class="form3group"><label class="form3label">Permit reference</label><div class="auris-work-s-69374f356a"><select id="wsf-ptw-ref" class="auris-work-s-c1a6ae2812"><option value="">Select permit...</option></select><button type="button" class="btn btn-sm" data-auris-onclick="h0173"><i class="ti ti-external-link"></i></button></div></div>
 </div>
 <!-- Ref number display -->
-<div class="card" style="background:linear-gradient(135deg,#1a3a5c,#185FA5);color:#fff;border:none;text-align:center;padding:20px">
-<div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.1em;opacity:.8;margin-bottom:8px">Work Order Ref</div>
-<div style="font-size:26px;font-weight:900;letter-spacing:3px;font-family:monospace" id="wsf-ref-display">WO-AUTO</div>
-<div style="font-size:11px;opacity:.6;margin-top:6px">Generated on save</div>
+<div class="card auris-work-s-41d06db860">
+<div class="auris-work-s-5cd491f92c">Work Order Ref</div>
+<div id="wsf-ref-display" class="auris-work-s-55d2450d95">WO-AUTO</div>
+<div class="auris-work-s-8d4bf7b4f6">Generated on save</div>
 </div>
 </div>
 </div>
 </div>
 
 <!-- TOOLBOX TALK FORM -->
-<div id="ws-tbt-form" style="display:none">
-<div class="card" style="margin-bottom:14px;padding:0;overflow:hidden">
-<div style="padding:16px 24px;background:linear-gradient(135deg,#6D28D9,#8B5CF6);color:#fff">
-<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
-<div><div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.1em;opacity:.8;margin-bottom:4px">Toolbox Talk / Safety Briefing</div>
-<div style="font-size:18px;font-weight:800" id="tbt-wo-title">-</div></div>
-<div style="display:flex;gap:8px">
-<button class="btn" style="background:rgba(255,255,255,.2);color:#fff;border-color:rgba(255,255,255,.3)" data-auris-onclick="h0174"><i class="ti ti-arrow-left"></i>Back</button>
-<button class="btn" style="background:#1D9E75;color:#fff;border-color:#1D9E75" data-auris-onclick="h0175"><i class="ti ti-device-floppy"></i>Save briefing</button>
+<div id="ws-tbt-form" class="auris-work-s-6aa34d7432">
+<div class="card auris-work-s-54ec8874e7">
+<div class="auris-work-s-14cf22e8ff">
+<div class="auris-work-s-5e92a26fd0">
+<div><div class="auris-work-s-fbebca6539">Toolbox Talk / Safety Briefing</div>
+<div id="tbt-wo-title" class="auris-work-s-e56ce903a9">-</div></div>
+<div class="auris-work-s-9c40389b4a">
+<button class="btn auris-work-s-5c09edd131" data-auris-onclick="h0174"><i class="ti ti-arrow-left"></i>Back</button>
+<button class="btn auris-work-s-c7b9e5b2c7" data-auris-onclick="h0175"><i class="ti ti-device-floppy"></i>Save briefing</button>
 </div>
 </div>
 </div>
 </div>
-<div style="display:grid;grid-template-columns:2fr 1fr;gap:14px">
+<div class="auris-work-s-5571af1e74">
 <div>
-<div class="card" style="margin-bottom:14px;border-left:4px solid #8B5CF6">
-<div class="card-title" style="color:#8B5CF6">Briefing Details</div>
+<div class="card auris-work-s-b290320c38">
+<div class="card-title auris-work-s-48a87f51bd">Briefing Details</div>
 <div class="form3row">
 <div class="form3group"><label class="form3label">Toolbox talk title</label><input type="text" id="tbt-title"/></div>
 <div class="form3group"><label class="form3label">Date</label><input type="date" id="tbt-date"/></div>
@@ -1265,16 +1266,16 @@
 <div class="form3group"><label class="form3label">Location</label><input type="text" id="tbt-location"/></div>
 </div>
 </div>
-<div class="card" style="margin-bottom:14px">
+<div class="card auris-work-s-42a6ced8b6">
 <div class="card-title">Safety Topics Discussed</div>
 <div class="form3row">
-<div class="form3group"><label class="form3label" style="color:#E24B4A"><i class="ti ti-alert-triangle"></i> Main hazards for this work</label>
-<textarea id="tbt-hazards" style="min-height:80px" placeholder="Describe the main hazards team members need to be aware of..."></textarea></div>
-<div class="form3group"><label class="form3label" style="color:#1D9E75"><i class="ti ti-shield"></i> Control measures</label>
-<textarea id="tbt-controls" style="min-height:80px" placeholder="How will these hazards be controlled? PPE, procedures, permits..."></textarea></div>
+<div class="form3group"><label class="form3label auris-work-s-df4f0a3612"><i class="ti ti-alert-triangle"></i> Main hazards for this work</label>
+<textarea id="tbt-hazards" class="auris-work-s-770a4152c1" placeholder="Describe the main hazards team members need to be aware of..."></textarea></div>
+<div class="form3group"><label class="form3label auris-work-s-f9faa54401"><i class="ti ti-shield"></i> Control measures</label>
+<textarea id="tbt-controls" class="auris-work-s-770a4152c1" placeholder="How will these hazards be controlled? PPE, procedures, permits..."></textarea></div>
 </div>
 <div class="form3group"><label class="form3label">Topics covered</label>
-<textarea id="tbt-topics" style="min-height:70px" placeholder="Key safety points discussed (e.g. isolation procedure, PPE requirements, emergency contacts, evacuation routes...)"></textarea></div>
+<textarea id="tbt-topics" class="auris-work-s-4d5979ac8f" placeholder="Key safety points discussed (e.g. isolation procedure, PPE requirements, emergency contacts, evacuation routes...)"></textarea></div>
 <div class="form3row">
 <div class="form3group"><label class="form3label">PPE required for this work</label>
 <input type="text" id="tbt-ppe" placeholder="e.g. Safety helmet, gloves, safety glasses..."/></div>
@@ -1285,23 +1286,23 @@
 </div>
 <div>
 <!-- Attendees sign-off -->
-<div class="card" style="margin-bottom:14px;border:2px solid #8B5CF6">
-<div class="card-title" style="color:#8B5CF6"><i class="ti ti-users"></i> Attendees</div>
-<div style="font-size:11px;color:var(--text2);margin-bottom:10px">All persons who attended the toolbox talk</div>
-<div id="tbt-attendees-list" style="margin-bottom:10px"></div>
-<div style="display:flex;gap:8px">
-<input type="text" id="tbt-new-attendee" placeholder="Add attendee name..." style="flex:1;padding:6px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px" data-auris-onkeydown="h0176"/>
+<div class="card auris-work-s-a0ccbdedb4">
+<div class="card-title auris-work-s-48a87f51bd"><i class="ti ti-users"></i> Attendees</div>
+<div class="auris-work-s-74799a7335">All persons who attended the toolbox talk</div>
+<div id="tbt-attendees-list" class="auris-work-s-b922c89f16"></div>
+<div class="auris-work-s-9c40389b4a">
+<input type="text" id="tbt-new-attendee" class="auris-work-s-e62f37d977" placeholder="Add attendee name..." data-auris-onkeydown="h0176"/>
 <button class="btn btn-sm btn-primary" data-auris-onclick="h0177"><i class="ti ti-plus"></i></button>
 </div>
 </div>
 <!-- Sign-off -->
-<div class="card" style="background:linear-gradient(135deg,#f8fafc,#f3e8ff);border:1px solid #d8b4fe">
-<div class="card-title" style="color:#8B5CF6">Sign-off</div>
+<div class="card auris-work-s-1065ac7012">
+<div class="card-title auris-work-s-48a87f51bd">Sign-off</div>
 <div class="form3group"><label class="form3label">Conducted by (signature)</label><input type="text" id="tbt-sign-name"/></div>
 <div class="form3group"><label class="form3label">Date &amp; time</label><input type="datetime-local" id="tbt-sign-dt"/></div>
-<div style="display:flex;align-items:center;gap:8px;margin-top:8px">
-<input type="checkbox" id="tbt-confirmed" style="width:16px;height:16px;accent-color:#8B5CF6"/>
-<label for="tbt-confirmed" style="font-size:12px;font-weight:600">I confirm that this toolbox talk was conducted and all attendees were briefed</label>
+<div class="auris-work-s-9c3b39a8a5">
+<input type="checkbox" id="tbt-confirmed" class="auris-work-s-f23c638cca"/>
+<label class="auris-work-s-294bcb81e0" for="tbt-confirmed">I confirm that this toolbox talk was conducted and all attendees were briefed</label>
 </div>
 </div>
 </div>
@@ -1310,75 +1311,75 @@
 
 
 <!-- -- TOOLS & EQUIPMENT FORM for Work Order -- -->
-<div id="ws-te-form" style="display:none">
-<div class="card" style="margin-bottom:14px;padding:0;overflow:hidden">
-<div style="padding:16px 24px;background:linear-gradient(135deg,#92400E,#EF9F27);color:#fff">
-<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
-<div><div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.1em;opacity:.8;margin-bottom:4px">Tools &amp; Equipment Register</div>
-<div style="font-size:18px;font-weight:800" id="ws-te-wo-title">-</div>
-<div style="font-size:12px;opacity:.8;margin-top:2px">Add all tools and equipment required for this work activity</div></div>
-<div style="display:flex;gap:8px">
-<button class="btn" style="background:rgba(255,255,255,.2);color:#fff;border-color:rgba(255,255,255,.3)" data-auris-onclick="h0174"><i class="ti ti-arrow-left"></i>Back</button>
+<div id="ws-te-form" class="auris-work-s-6aa34d7432">
+<div class="card auris-work-s-54ec8874e7">
+<div class="auris-work-s-2a54e6ad25">
+<div class="auris-work-s-5e92a26fd0">
+<div><div class="auris-work-s-fbebca6539">Tools &amp; Equipment Register</div>
+<div id="ws-te-wo-title" class="auris-work-s-e56ce903a9">-</div>
+<div class="auris-work-s-b1029fb799">Add all tools and equipment required for this work activity</div></div>
+<div class="auris-work-s-9c40389b4a">
+<button class="btn auris-work-s-5c09edd131" data-auris-onclick="h0174"><i class="ti ti-arrow-left"></i>Back</button>
 </div>
 </div>
 </div>
 </div>
 
 <!-- Add equipment to this job -->
-<div class="card" style="margin-bottom:14px;border-left:4px solid #EF9F27">
-<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
-<div><div class="card-title" style="margin:0;color:#92400E"><i class="ti ti-clipboard-list"></i> Equipment Required for This Job</div>
-<div style="font-size:12px;color:var(--text2);margin-top:3px">Search and add tools/equipment from the register, or add manually</div></div>
-<button class="btn btn-sm btn-primary" style="background:#EF9F27;border-color:#EF9F27" data-auris-onclick="h0178"><i class="ti ti-plus"></i>Add equipment</button>
+<div class="card auris-work-s-7ec95abeba">
+<div class="auris-work-s-a1e97d820a">
+<div><div class="card-title auris-work-s-7eccc5f37f"><i class="ti ti-clipboard-list"></i> Equipment Required for This Job</div>
+<div class="auris-work-s-9c4ae63835">Search and add tools/equipment from the register, or add manually</div></div>
+<button class="btn btn-sm btn-primary auris-work-s-23ca5bfb79" data-auris-onclick="h0178"><i class="ti ti-plus"></i>Add equipment</button>
 </div>
 <!-- Search from register -->
-<div style="display:flex;gap:8px;margin-bottom:14px">
-<input type="text" id="ws-te-search" placeholder="Search equipment register (ref, name)..." style="flex:1;padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px" data-auris-oninput="h0179"/>
+<div class="auris-work-s-ca39e35561">
+<input type="text" id="ws-te-search" class="auris-work-s-213178a5c5" placeholder="Search equipment register (ref, name)..." data-auris-oninput="h0179"/>
 <button class="btn" data-auris-onclick="h0180"><i class="ti ti-search"></i>Search</button>
 </div>
-<div id="ws-te-search-results" style="margin-bottom:12px"></div>
+<div id="ws-te-search-results" class="auris-work-s-b56987dbcb"></div>
 <!-- Added items list -->
-<div id="ws-te-items-list"><div style="text-align:center;padding:24px;color:var(--text2);font-size:13px">No equipment added yet. Search above or add manually.</div></div>
+<div id="ws-te-items-list"><div class="auris-work-s-116caa558d">No equipment added yet. Search above or add manually.</div></div>
 </div>
 </div>
 
 <!-- -- SINGLE EQUIPMENT CHECKLIST VIEW -- -->
-<div id="ws-te-checklist-view" style="display:none">
-<div class="card" style="margin-bottom:14px;padding:0;overflow:hidden">
-<div style="padding:14px 20px;background:linear-gradient(135deg,#1a3a5c,#185FA5);color:#fff;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
+<div id="ws-te-checklist-view" class="auris-work-s-6aa34d7432">
+<div class="card auris-work-s-54ec8874e7">
+<div class="auris-work-s-be2a10716a">
 <div>
-<div style="font-size:11px;opacity:.7;margin-bottom:3px">Equipment Inspection</div>
-<div style="font-size:18px;font-weight:800" id="ws-chk-equip-name">-</div>
-<div style="font-family:monospace;font-size:12px;color:#a8f0d4" id="ws-chk-equip-ref">-</div>
+<div class="auris-work-s-49d0a471e3">Equipment Inspection</div>
+<div id="ws-chk-equip-name" class="auris-work-s-e56ce903a9">-</div>
+<div id="ws-chk-equip-ref" class="auris-work-s-78e9239fbe">-</div>
 </div>
-<div style="display:flex;gap:8px">
-<button class="btn" style="background:rgba(255,255,255,.2);color:#fff;border-color:rgba(255,255,255,.3)" data-auris-onclick="h0181"><i class="ti ti-arrow-left"></i>Back to list</button>
-<button class="btn" style="background:#1D9E75;color:#fff;border-color:#1D9E75" data-auris-onclick="h0182"><i class="ti ti-device-floppy"></i>Save inspection</button>
+<div class="auris-work-s-9c40389b4a">
+<button class="btn auris-work-s-5c09edd131" data-auris-onclick="h0181"><i class="ti ti-arrow-left"></i>Back to list</button>
+<button class="btn auris-work-s-c7b9e5b2c7" data-auris-onclick="h0182"><i class="ti ti-device-floppy"></i>Save inspection</button>
 </div>
 </div>
 </div>
 <!-- Inspection header -->
-<div class="card" style="margin-bottom:14px;background:linear-gradient(135deg,#f8fafc,#e8f0fe);border:1px solid #c7d7f5">
-<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px">
-<div class="form3group" style="margin:0"><label class="form3label">Inspection date</label><input type="date" id="ws-chk-date" style="font-weight:600"/></div>
-<div class="form3group" style="margin:0"><label class="form3label">Inspected by</label><select id="ws-chk-inspector"><option value="">Select...</option></select></div>
-<div class="form3group" style="margin:0"><label class="form3label">Type</label>
+<div class="card auris-work-s-1789231287">
+<div class="auris-work-s-f10b017e13">
+<div class="form3group auris-work-s-ab79ea2b85"><label class="form3label">Inspection date</label><input type="date" id="ws-chk-date" class="auris-work-s-6e8bcfac8d"/></div>
+<div class="form3group auris-work-s-ab79ea2b85"><label class="form3label">Inspected by</label><select id="ws-chk-inspector"><option value="">Select...</option></select></div>
+<div class="form3group auris-work-s-ab79ea2b85"><label class="form3label">Type</label>
 <select id="ws-chk-type"><option value="pre_use">Pre-use check</option><option value="periodic" selected>Periodic inspection</option></select></div>
 </div>
 </div>
 <!-- Checklist table -->
-<div class="card" style="margin-bottom:14px;padding:0;overflow:hidden">
-<div style="padding:10px 16px;background:#1a3a5c;color:#fff;display:flex;justify-content:space-between;align-items:center">
-<div style="font-weight:700">Inspection Checklist</div>
-<div id="ws-chk-score" style="font-size:12px;color:#a8f0d4"></div>
+<div class="card auris-work-s-54ec8874e7">
+<div class="auris-work-s-2fa4643a56">
+<div class="auris-work-s-c6fa01b3f1">Inspection Checklist</div>
+<div id="ws-chk-score" class="auris-work-s-266a6db663"></div>
 </div>
-<table style="width:100%;border-collapse:collapse">
-<thead><tr style="background:#f9fafb">
-<th style="padding:8px 16px;text-align:left;border-bottom:1px solid var(--border);font-size:11px">Check item</th>
-<th style="padding:8px;text-align:center;border-bottom:1px solid var(--border);font-size:11px;width:70px;color:#1D9E75">OK ?</th>
-<th style="padding:8px;text-align:center;border-bottom:1px solid var(--border);font-size:11px;width:70px;color:#E24B4A">Fail ?</th>
-<th style="padding:8px;text-align:center;border-bottom:1px solid var(--border);font-size:11px;width:70px;color:#6B7280">N/A</th>
-<th style="padding:8px;text-align:left;border-bottom:1px solid var(--border);font-size:11px">Notes</th>
+<table class="auris-work-s-0ae64748d8">
+<thead><tr class="auris-work-s-0dc955fc21">
+<th class="auris-work-s-946c4ea7fc">Check item</th>
+<th class="auris-work-s-6967ffe6d1">OK ?</th>
+<th class="auris-work-s-85cabef270">Fail ?</th>
+<th class="auris-work-s-de04d677c9">N/A</th>
+<th class="auris-work-s-5d923a254f">Notes</th>
 </tr></thead>
 <tbody id="ws-chk-body"></tbody>
 </table>
