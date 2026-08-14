@@ -71,6 +71,7 @@
 <link rel="stylesheet" href="auris-atex-areas-static.css?v=20260814-1">
 <link rel="stylesheet" href="auris-tools-equipment-static.css?v=20260814-1">
 <link rel="stylesheet" href="auris-permit-work-static.css?v=20260814-1">
+<link rel="stylesheet" href="auris-contractor-management-static.css?v=20260815-1">
 </head>
 <body>
 <div id="login-screen">
@@ -5078,10 +5079,10 @@ Offline mode - changes will sync when connection is restored
 
 <div id="page-contractor" class="page">
 <div class="page-header">
-<div><div class="page-title">Contractor Management</div><div style="font-size:12px;color:var(--text2)">Pre-assessment, evaluation, authorisation to work and incident reporting</div></div>
-<div style="display:flex;gap:8px"><button class="btn" id="con-print-btn" data-auris-onclick="h0578"><i class="ti ti-printer"></i>Print current view</button><button class="btn btn-primary" id="con-add-btn" style="display:none" data-auris-onclick="h0579"><i class="ti ti-plus"></i>Register contractor</button></div>
+<div><div class="page-title">Contractor Management</div><div class="auris-contractor-s-7299078644">Pre-assessment, evaluation, authorisation to work and incident reporting</div></div>
+<div class="auris-contractor-s-9c40389b4a"><button class="btn" id="con-print-btn" data-auris-onclick="h0578"><i class="ti ti-printer"></i>Print current view</button><button class="btn btn-primary auris-contractor-s-6aa34d7432" id="con-add-btn" data-auris-onclick="h0579"><i class="ti ti-plus"></i>Register contractor</button></div>
 </div>
-<div style="display:flex;gap:0;margin-bottom:16px;border-bottom:2px solid var(--border)">
+<div class="auris-contractor-s-475caf50fd">
 <button class="mtg-tab active" id="con-tab-register" data-auris-onclick="h0580">Register</button>
 <button class="mtg-tab" id="con-tab-score" data-auris-onclick="h0581">Safety Score</button>
 <button class="mtg-tab" id="con-tab-preassess" data-auris-onclick="h0582">Pre-Assessment</button>
@@ -5090,153 +5091,153 @@ Offline mode - changes will sync when connection is restored
 <button class="mtg-tab" id="con-tab-incidents" data-auris-onclick="h0585">Incidents</button>
 </div>
 <div id="con-view-register">
-<div style="display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:14px">
-<div class="card" style="padding:12px 14px;border-left:4px solid #1D9E75"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">Approved</div><div style="font-size:24px;font-weight:800;color:#1D9E75" id="con-m3approved">-</div></div>
-<div class="card" style="padding:12px 14px;border-left:4px solid #EF9F27"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">Pending</div><div style="font-size:24px;font-weight:800;color:#EF9F27" id="con-m3pending">-</div></div>
-<div class="card" style="padding:12px 14px;border-left:4px solid #E24B4A"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">Suspended</div><div style="font-size:24px;font-weight:800;color:#E24B4A" id="con-m3suspended">-</div></div>
-<div class="card" style="padding:12px 14px;border-left:4px solid #8B5CF6"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">Expiring</div><div style="font-size:24px;font-weight:800;color:#8B5CF6" id="con-m3expiring">-</div></div>
-<div class="card" style="padding:12px 14px;border-left:4px solid #185FA5"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">Total</div><div style="font-size:24px;font-weight:800;color:#185FA5" id="con-m3total">-</div></div>
+<div class="auris-contractor-s-eb404b018d">
+<div class="card auris-contractor-s-4a56dafc2a"><div class="auris-contractor-s-4422804ebb">Approved</div><div id="con-m3approved" class="auris-contractor-s-a1d0a4c7f2">-</div></div>
+<div class="card auris-contractor-s-bf5033d99d"><div class="auris-contractor-s-4422804ebb">Pending</div><div id="con-m3pending" class="auris-contractor-s-97309bb0fa">-</div></div>
+<div class="card auris-contractor-s-3b299d6ce4"><div class="auris-contractor-s-4422804ebb">Suspended</div><div id="con-m3suspended" class="auris-contractor-s-01137f2f4c">-</div></div>
+<div class="card auris-contractor-s-c260bac5c9"><div class="auris-contractor-s-4422804ebb">Expiring</div><div id="con-m3expiring" class="auris-contractor-s-5d553a9b75">-</div></div>
+<div class="card auris-contractor-s-624468e090"><div class="auris-contractor-s-4422804ebb">Total</div><div id="con-m3total" class="auris-contractor-s-2b9ad58fbd">-</div></div>
 </div>
-<div class="card" style="margin-bottom:12px;padding:10px 14px"><div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
-<input type="text" id="con-search" placeholder="Search name, contact, email, phone, speciality..." data-auris-oninput="h0586" style="flex:1;min-width:180px;padding:7px 12px;border:1px solid var(--border);border-radius:8px;font-size:12px"/>
-<select id="con-filter-status" data-auris-onchange="h0587" style="padding:7px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px"><option value="">All statuses</option><option value="approved">Approved</option><option value="pending">Pending</option><option value="pre_assessed">Pre-assessed</option><option value="suspended">Suspended</option></select>
-<select id="con-filter-compliance" data-auris-onchange="h0587" style="padding:7px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px"><option value="">All compliance</option><option value="expired">Expired insurance/approval</option><option value="expiring">Expiring or review due soon</option><option value="missing_insurance">Missing insurance date</option><option value="review_due">Review due</option></select>
-<select id="con-filter-cat" data-auris-onchange="h0587" style="padding:7px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px"><option value="">All categories</option><option value="electrical">Electrical</option><option value="mechanical">Mechanical</option><option value="civil">Civil</option><option value="construction">Construction</option></select>
+<div class="card auris-contractor-s-54bb9f1d16"><div class="auris-contractor-s-d5129e1520">
+<input type="text" id="con-search" class="auris-contractor-s-11856befbc" placeholder="Search name, contact, email, phone, speciality..." data-auris-oninput="h0586"/>
+<select id="con-filter-status" class="auris-contractor-s-d35063206b" data-auris-onchange="h0587"><option value="">All statuses</option><option value="approved">Approved</option><option value="pending">Pending</option><option value="pre_assessed">Pre-assessed</option><option value="suspended">Suspended</option></select>
+<select id="con-filter-compliance" class="auris-contractor-s-d35063206b" data-auris-onchange="h0587"><option value="">All compliance</option><option value="expired">Expired insurance/approval</option><option value="expiring">Expiring or review due soon</option><option value="missing_insurance">Missing insurance date</option><option value="review_due">Review due</option></select>
+<select id="con-filter-cat" class="auris-contractor-s-d35063206b" data-auris-onchange="h0587"><option value="">All categories</option><option value="electrical">Electrical</option><option value="mechanical">Mechanical</option><option value="civil">Civil</option><option value="construction">Construction</option></select>
 </div></div>
-<div class="card" style="padding:0;overflow:hidden"><div id="con-register-list"><div class="loading-msg">Loading...</div></div></div>
+<div class="card auris-contractor-s-d9c39add3c"><div id="con-register-list"><div class="loading-msg">Loading...</div></div></div>
 </div>
-<div id="con-view-score" style="display:none">
-  <div class="card" style="margin-bottom:12px;padding:12px 16px;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">
+<div id="con-view-score" class="auris-contractor-s-6aa34d7432">
+  <div class="card auris-contractor-s-69ec85d9db">
     <div>
-      <div class="card-title" style="margin:0">Live Contractor Safety Score</div>
-      <div style="font-size:12px;color:var(--text2)">Ranks contractors using approvals, insurance, reviews, evaluations, incidents and authorisations to work.</div>
+      <div class="card-title auris-contractor-s-ab79ea2b85">Live Contractor Safety Score</div>
+      <div class="auris-contractor-s-7299078644">Ranks contractors using approvals, insurance, reviews, evaluations, incidents and authorisations to work.</div>
     </div>
     <button class="btn" data-auris-onclick="h0588"><i class="ti ti-refresh"></i>Refresh scores</button>
   </div>
   <div id="con-score-list"><div class="loading-msg">Loading contractor scores...</div></div>
 </div>
-<div id="con-view-preassess" style="display:none"><div class="card" style="margin-bottom:12px;padding:10px 14px;display:flex;justify-content:space-between;align-items:center"><div class="card-title" style="margin:0">Contractor Pre-Assessments</div><button class="btn btn-primary" id="cpa-add-btn" style="display:none" data-auris-onclick="h0589"><i class="ti ti-plus"></i>New pre-assessment</button></div><div id="con-pa-list"><div class="loading-msg">Loading...</div></div></div>
-<div id="con-view-eval" style="display:none"><div class="card" style="margin-bottom:12px;padding:10px 14px;display:flex;justify-content:space-between;align-items:center"><div class="card-title" style="margin:0">Performance Evaluations</div><button class="btn btn-primary" id="cev-add-btn" style="display:none" data-auris-onclick="h0590"><i class="ti ti-plus"></i>New evaluation</button></div><div id="con-ev-list"><div class="loading-msg">Loading...</div></div></div>
-<div id="con-view-atw" style="display:none"><div class="card" style="margin-bottom:12px;padding:10px 14px;display:flex;justify-content:space-between;align-items:center"><div class="card-title" style="margin:0">Authorisation to Work</div><button class="btn btn-primary" id="catw-add-btn" style="display:none" data-auris-onclick="h0591"><i class="ti ti-plus"></i>New authorisation</button></div><div id="con-atw-alerts" style="margin-bottom:10px"></div><div class="card" style="padding:0;overflow:hidden"><div id="con-atw-list"><div class="loading-msg">Loading...</div></div></div></div>
-<div id="con-view-incidents" style="display:none"><div class="card" style="margin-bottom:12px;padding:10px 14px;display:flex;justify-content:space-between;align-items:center"><div class="card-title" style="margin:0">Contractor Incidents</div><button class="btn btn-primary" id="cir-add-btn" style="display:none" data-auris-onclick="h0592"><i class="ti ti-plus"></i>Report incident</button></div><div class="card" style="padding:0;overflow:hidden"><div id="con-inc-list"><div class="loading-msg">Loading...</div></div></div></div>
+<div id="con-view-preassess" class="auris-contractor-s-6aa34d7432"><div class="card auris-contractor-s-ae71a9e48f"><div class="card-title auris-contractor-s-ab79ea2b85">Contractor Pre-Assessments</div><button class="btn btn-primary auris-contractor-s-6aa34d7432" id="cpa-add-btn" data-auris-onclick="h0589"><i class="ti ti-plus"></i>New pre-assessment</button></div><div id="con-pa-list"><div class="loading-msg">Loading...</div></div></div>
+<div id="con-view-eval" class="auris-contractor-s-6aa34d7432"><div class="card auris-contractor-s-ae71a9e48f"><div class="card-title auris-contractor-s-ab79ea2b85">Performance Evaluations</div><button class="btn btn-primary auris-contractor-s-6aa34d7432" id="cev-add-btn" data-auris-onclick="h0590"><i class="ti ti-plus"></i>New evaluation</button></div><div id="con-ev-list"><div class="loading-msg">Loading...</div></div></div>
+<div id="con-view-atw" class="auris-contractor-s-6aa34d7432"><div class="card auris-contractor-s-ae71a9e48f"><div class="card-title auris-contractor-s-ab79ea2b85">Authorisation to Work</div><button class="btn btn-primary auris-contractor-s-6aa34d7432" id="catw-add-btn" data-auris-onclick="h0591"><i class="ti ti-plus"></i>New authorisation</button></div><div id="con-atw-alerts" class="auris-contractor-s-b922c89f16"></div><div class="card auris-contractor-s-d9c39add3c"><div id="con-atw-list"><div class="loading-msg">Loading...</div></div></div></div>
+<div id="con-view-incidents" class="auris-contractor-s-6aa34d7432"><div class="card auris-contractor-s-ae71a9e48f"><div class="card-title auris-contractor-s-ab79ea2b85">Contractor Incidents</div><button class="btn btn-primary auris-contractor-s-6aa34d7432" id="cir-add-btn" data-auris-onclick="h0592"><i class="ti ti-plus"></i>Report incident</button></div><div class="card auris-contractor-s-d9c39add3c"><div id="con-inc-list"><div class="loading-msg">Loading...</div></div></div></div>
 <!-- Contractor forms -->
-<div id="con-form" style="display:none">
-<div class="card" style="margin-bottom:14px;padding:0;overflow:hidden"><div style="padding:14px 20px;background:linear-gradient(135deg,#1a3a5c,#185FA5);color:#fff;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px"><div style="font-size:17px;font-weight:800" id="con-form3title">New Contractor</div><div style="display:flex;gap:8px"><button class="btn" style="background:rgba(255,255,255,.2);color:#fff;border-color:rgba(255,255,255,.3)" data-auris-onclick="h0593"><i class="ti ti-arrow-left"></i>Back</button><button id="con-del-btn" class="btn" style="display:none;background:rgba(220,38,38,.3);color:#fff;border-color:rgba(220,38,38,.5)" data-auris-onclick="h0594"><i class="ti ti-trash"></i></button><button class="btn" style="background:#1D9E75;color:#fff;border-color:#1D9E75" data-auris-onclick="h0595"><i class="ti ti-device-floppy"></i>Save</button></div></div></div>
-<div style="display:grid;grid-template-columns:2fr 1fr;gap:14px">
+<div id="con-form" class="auris-contractor-s-6aa34d7432">
+<div class="card auris-contractor-s-54ec8874e7"><div class="auris-contractor-s-be2a10716a"><div id="con-form3title" class="auris-contractor-s-75021e57ca">New Contractor</div><div class="auris-contractor-s-9c40389b4a"><button class="btn auris-contractor-s-5c09edd131" data-auris-onclick="h0593"><i class="ti ti-arrow-left"></i>Back</button><button id="con-del-btn" class="btn auris-contractor-s-0e610f7b67" data-auris-onclick="h0594"><i class="ti ti-trash"></i></button><button class="btn auris-contractor-s-c7b9e5b2c7" data-auris-onclick="h0595"><i class="ti ti-device-floppy"></i>Save</button></div></div></div>
+<div class="auris-contractor-s-5571af1e74">
 <div>
-<div class="card" style="margin-bottom:14px"><div class="card-title">Company Information</div>
+<div class="card auris-contractor-s-42a6ced8b6"><div class="card-title">Company Information</div>
 <div class="form3row"><div class="form3group"><label class="form3label">Company name</label><input type="text" id="conf-name"/></div><div class="form3group"><label class="form3label">Trading name</label><input type="text" id="conf-trading"/></div><div class="form3group"><label class="form3label">BRN/Registration</label><input type="text" id="conf-reg"/></div><div class="form3group"><label class="form3label">VAT number</label><input type="text" id="conf-vat"/></div></div>
-<div class="form3group"><label class="form3label">Address</label><textarea id="conf-address" style="min-height:60px"></textarea></div>
+<div class="form3group"><label class="form3label">Address</label><textarea id="conf-address" class="auris-contractor-s-07bdff4587"></textarea></div>
 <div class="form3row"><div class="form3group"><label class="form3label">Contact person</label><input type="text" id="conf-contact"/></div><div class="form3group"><label class="form3label">Email</label><input type="email" id="conf-email"/></div><div class="form3group"><label class="form3label">Phone</label><input type="tel" id="conf-phone"/></div><div class="form3group"><label class="form3label">Website</label><input type="text" id="conf-website"/></div></div>
 <div class="form3row"><div class="form3group"><label class="form3label">Category</label><select id="conf-cat"><option value="general">General</option><option value="electrical">Electrical</option><option value="mechanical">Mechanical</option><option value="civil">Civil</option><option value="construction">Construction</option><option value="cleaning">Cleaning</option><option value="security">Security</option><option value="it">IT</option><option value="catering">Catering</option><option value="other">Other</option></select></div><div class="form3group"><label class="form3label">Specialisation</label><input type="text" id="conf-spec"/></div></div>
-<div class="form3group"><label class="form3label">Notes</label><textarea id="conf-notes" style="min-height:50px"></textarea></div></div>
-<div class="card"><div class="card-title" style="color:#EF9F27">Insurance</div><div class="form3group"><label class="form3label">Insurance type</label><input type="text" id="conf-ins-type"/></div><div class="form3row"><div class="form3group"><label class="form3label">Provider</label><input type="text" id="conf-ins-provider"/></div><div class="form3group"><label class="form3label">Policy</label><input type="text" id="conf-ins-policy"/></div><div class="form3group"><label class="form3label">Expiry</label><input type="date" id="conf-ins-expiry"/></div></div></div>
+<div class="form3group"><label class="form3label">Notes</label><textarea id="conf-notes" class="auris-contractor-s-2b013fa0d9"></textarea></div></div>
+<div class="card"><div class="card-title auris-contractor-s-9320640826">Insurance</div><div class="form3group"><label class="form3label">Insurance type</label><input type="text" id="conf-ins-type"/></div><div class="form3row"><div class="form3group"><label class="form3label">Provider</label><input type="text" id="conf-ins-provider"/></div><div class="form3group"><label class="form3label">Policy</label><input type="text" id="conf-ins-policy"/></div><div class="form3group"><label class="form3label">Expiry</label><input type="date" id="conf-ins-expiry"/></div></div></div>
 </div>
 <div>
-<div class="card" style="margin-bottom:14px;border:2px solid #185FA5"><div class="card-title" style="color:#185FA5">Status</div><div class="form3group"><label class="form3label">Status</label><select id="conf-status"><option value="pending">Pending</option><option value="pre_assessed">Pre-assessed</option><option value="approved">Approved</option><option value="suspended">Suspended</option><option value="rejected">Rejected</option><option value="expired">Expired</option></select></div><div class="form3group"><label class="form3label">Approved date</label><input type="date" id="conf-approved-date"/></div><div class="form3group"><label class="form3label">Expiry date</label><input type="date" id="conf-expiry-date"/></div><div class="form3group"><label class="form3label">Next review</label><input type="date" id="conf-review-date"/></div></div>
-<div class="card" style="background:linear-gradient(135deg,#1a3a5c,#185FA5);color:#fff;border:none;text-align:center;padding:20px"><div style="font-size:40px;margin-bottom:10px"><i class="ti ti-circle-dot"></i></div><div style="font-size:14px;font-weight:700" id="conf-preview-name">New Contractor</div><div style="font-size:11px;opacity:.7">Category: <span id="conf-preview-cat">-</span></div></div>
+<div class="card auris-contractor-s-9bcefa3fff"><div class="card-title auris-contractor-s-ca32b871b2">Status</div><div class="form3group"><label class="form3label">Status</label><select id="conf-status"><option value="pending">Pending</option><option value="pre_assessed">Pre-assessed</option><option value="approved">Approved</option><option value="suspended">Suspended</option><option value="rejected">Rejected</option><option value="expired">Expired</option></select></div><div class="form3group"><label class="form3label">Approved date</label><input type="date" id="conf-approved-date"/></div><div class="form3group"><label class="form3label">Expiry date</label><input type="date" id="conf-expiry-date"/></div><div class="form3group"><label class="form3label">Next review</label><input type="date" id="conf-review-date"/></div></div>
+<div class="card auris-contractor-s-41d06db860"><div class="auris-contractor-s-d0f83c42bc"><i class="ti ti-circle-dot"></i></div><div id="conf-preview-name" class="auris-contractor-s-03ccff1d72">New Contractor</div><div class="auris-contractor-s-024f402451">Category: <span id="conf-preview-cat">-</span></div></div>
 </div>
 </div>
 </div>
 <!-- Pre-assessment form -->
-<div id="cpa-form" style="display:none">
-<div class="card" style="margin-bottom:14px;padding:0;overflow:hidden"><div style="padding:14px 20px;background:linear-gradient(135deg,#064E3B,#1D9E75);color:#fff;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px"><div style="font-size:17px;font-weight:800" id="cpa-form3contractor">Pre-Assessment</div><div style="display:flex;gap:8px"><button class="btn" style="background:rgba(255,255,255,.2);color:#fff;border-color:rgba(255,255,255,.3)" data-auris-onclick="h0596"><i class="ti ti-arrow-left"></i>Back</button><button class="btn" style="background:#1D9E75;color:#fff;border-color:#1D9E75" data-auris-onclick="h0597"><i class="ti ti-device-floppy"></i>Save</button></div></div></div>
-<div class="card" style="margin-bottom:14px"><div class="form3row"><div class="form3group"><label class="form3label">Contractor</label><select id="cpaf-contractor"><option value="">Select...</option></select></div><div class="form3group"><label class="form3label">Date</label><input type="date" id="cpaf-date"/></div><div class="form3group"><label class="form3label">Assessed by</label><select id="cpaf-assessor"><option value="">Select person...</option></select></div></div></div>
-<div class="card" style="margin-bottom:14px;border-left:4px solid #185FA5"><div class="card-title" style="color:#185FA5">Section 1 - Company &amp; Legal</div><div id="cpa-s1"></div></div>
-<div class="card" style="margin-bottom:14px;border-left:4px solid #1D9E75"><div class="card-title" style="color:#1D9E75">Section 2 - HSE Management</div><div id="cpa-s2"></div></div>
-<div class="card" style="margin-bottom:14px;border-left:4px solid #8B5CF6"><div class="card-title" style="color:#8B5CF6">Section 3 - Competency &amp; Training</div><div id="cpa-s3"></div></div>
-<div class="card" style="margin-bottom:14px;border-left:4px solid #EF9F27"><div class="card-title" style="color:#EF9F27">Section 4 - Equipment</div><div id="cpa-s4"></div></div>
-<div class="card" style="margin-bottom:14px;border-left:4px solid #0891B2"><div class="card-title" style="color:#0891B2">Section 5 - Environmental</div><div id="cpa-s5"></div></div>
-<div class="card" style="background:linear-gradient(135deg,#f8fafc,#e8f0fe);border:2px solid #185FA5">
-<div class="card-title" style="color:#185FA5">Assessment Result</div>
-<div id="cpa-score-display" style="text-align:center;padding:14px"><div style="font-size:40px;font-weight:900" id="cpa-total-score">-</div><div style="font-size:11px;color:var(--text2);font-weight:600;text-transform:uppercase">Total score / 100</div></div>
+<div id="cpa-form" class="auris-contractor-s-6aa34d7432">
+<div class="card auris-contractor-s-54ec8874e7"><div class="auris-contractor-s-924ea31ba8"><div id="cpa-form3contractor" class="auris-contractor-s-75021e57ca">Pre-Assessment</div><div class="auris-contractor-s-9c40389b4a"><button class="btn auris-contractor-s-5c09edd131" data-auris-onclick="h0596"><i class="ti ti-arrow-left"></i>Back</button><button class="btn auris-contractor-s-c7b9e5b2c7" data-auris-onclick="h0597"><i class="ti ti-device-floppy"></i>Save</button></div></div></div>
+<div class="card auris-contractor-s-42a6ced8b6"><div class="form3row"><div class="form3group"><label class="form3label">Contractor</label><select id="cpaf-contractor"><option value="">Select...</option></select></div><div class="form3group"><label class="form3label">Date</label><input type="date" id="cpaf-date"/></div><div class="form3group"><label class="form3label">Assessed by</label><select id="cpaf-assessor"><option value="">Select person...</option></select></div></div></div>
+<div class="card auris-contractor-s-347fbe0230"><div class="card-title auris-contractor-s-ca32b871b2">Section 1 - Company &amp; Legal</div><div id="cpa-s1"></div></div>
+<div class="card auris-contractor-s-f51849fc6a"><div class="card-title auris-contractor-s-f9faa54401">Section 2 - HSE Management</div><div id="cpa-s2"></div></div>
+<div class="card auris-contractor-s-b290320c38"><div class="card-title auris-contractor-s-48a87f51bd">Section 3 - Competency &amp; Training</div><div id="cpa-s3"></div></div>
+<div class="card auris-contractor-s-7ec95abeba"><div class="card-title auris-contractor-s-9320640826">Section 4 - Equipment</div><div id="cpa-s4"></div></div>
+<div class="card auris-contractor-s-948c3ac1bb"><div class="card-title auris-contractor-s-05be4e4a89">Section 5 - Environmental</div><div id="cpa-s5"></div></div>
+<div class="card auris-contractor-s-dbc41a66f6">
+<div class="card-title auris-contractor-s-ca32b871b2">Assessment Result</div>
+<div id="cpa-score-display" class="auris-contractor-s-45c174bbec"><div id="cpa-total-score" class="auris-contractor-s-fff7b68536">-</div><div class="auris-contractor-s-729df2e62f">Total score / 100</div></div>
 <div class="form3row"><div class="form3group"><label class="form3label">Result</label><select id="cpaf-result"><option value="pending">Pending</option><option value="approved">Approved</option><option value="conditional">Conditional</option><option value="rejected">Rejected</option></select></div></div>
-<div class="form3group"><label class="form3label">Conditions required</label><textarea id="cpaf-conditions" style="min-height:70px"></textarea></div>
-<div class="form3group"><label class="form3label">Assessor comments</label><textarea id="cpaf-comments" style="min-height:60px"></textarea></div>
+<div class="form3group"><label class="form3label">Conditions required</label><textarea id="cpaf-conditions" class="auris-contractor-s-4d5979ac8f"></textarea></div>
+<div class="form3group"><label class="form3label">Assessor comments</label><textarea id="cpaf-comments" class="auris-contractor-s-07bdff4587"></textarea></div>
 </div>
 </div>
 <!-- Evaluation form -->
-<div id="cev-form" style="display:none">
-<div class="card" style="margin-bottom:14px;padding:0;overflow:hidden"><div style="padding:14px 20px;background:linear-gradient(135deg,#1e3a5f,#7C3AED);color:#fff;display:flex;align-items:center;justify-content:space-between"><div style="font-size:17px;font-weight:800" id="cev-form3title">Evaluation</div><div style="display:flex;gap:8px"><button class="btn" style="background:rgba(255,255,255,.2);color:#fff;border-color:rgba(255,255,255,.3)" data-auris-onclick="h0598"><i class="ti ti-arrow-left"></i>Back</button><button class="btn" style="background:#1D9E75;color:#fff;border-color:#1D9E75" data-auris-onclick="h0599"><i class="ti ti-device-floppy"></i>Save</button></div></div></div>
-<div style="display:grid;grid-template-columns:2fr 1fr;gap:14px">
+<div id="cev-form" class="auris-contractor-s-6aa34d7432">
+<div class="card auris-contractor-s-54ec8874e7"><div class="auris-contractor-s-6b73ad6a70"><div id="cev-form3title" class="auris-contractor-s-75021e57ca">Evaluation</div><div class="auris-contractor-s-9c40389b4a"><button class="btn auris-contractor-s-5c09edd131" data-auris-onclick="h0598"><i class="ti ti-arrow-left"></i>Back</button><button class="btn auris-contractor-s-c7b9e5b2c7" data-auris-onclick="h0599"><i class="ti ti-device-floppy"></i>Save</button></div></div></div>
+<div class="auris-contractor-s-5571af1e74">
 <div>
-<div class="card" style="margin-bottom:14px"><div class="card-title">Details</div>
+<div class="card auris-contractor-s-42a6ced8b6"><div class="card-title">Details</div>
 <div class="form3row"><div class="form3group"><label class="form3label">Contractor</label><select id="cevf-contractor"><option value="">Select...</option></select></div><div class="form3group"><label class="form3label">Date</label><input type="date" id="cevf-date"/></div><div class="form3group"><label class="form3label">Evaluated by</label><input type="text" id="cevf-evaluator"/></div></div>
 <div class="form3row"><div class="form3group"><label class="form3label">Work description</label><input type="text" id="cevf-work-desc"/></div><div class="form3group"><label class="form3label">Start</label><input type="date" id="cevf-start"/></div><div class="form3group"><label class="form3label">End</label><input type="date" id="cevf-end"/></div></div></div>
-<div class="card" style="margin-bottom:14px"><div class="card-title">Scoring (1-5)</div><div id="cev-scores"></div></div>
-<div class="card"><div class="form3row"><div class="form3group"><label class="form3label" style="color:#1D9E75">Positive observations</label><textarea id="cevf-positive" style="min-height:70px"></textarea></div><div class="form3group"><label class="form3label" style="color:#E24B4A">Areas for improvement</label><textarea id="cevf-improve" style="min-height:70px"></textarea></div></div>
+<div class="card auris-contractor-s-42a6ced8b6"><div class="card-title">Scoring (1-5)</div><div id="cev-scores"></div></div>
+<div class="card"><div class="form3row"><div class="form3group"><label class="form3label auris-contractor-s-f9faa54401">Positive observations</label><textarea id="cevf-positive" class="auris-contractor-s-4d5979ac8f"></textarea></div><div class="form3group"><label class="form3label auris-contractor-s-df4f0a3612">Areas for improvement</label><textarea id="cevf-improve" class="auris-contractor-s-4d5979ac8f"></textarea></div></div>
 <div class="form3row"><div class="form3group"><label class="form3label">Incidents</label><input type="number" id="cevf-incidents" value="0"/></div><div class="form3group"><label class="form3label">Incident details</label><input type="text" id="cevf-incident-details"/></div></div></div>
 </div>
 <div>
-<div class="card" style="border:2px solid #7C3AED"><div class="card-title" style="color:#7C3AED">Overall Rating</div>
-<div style="text-align:center;padding:20px"><div style="font-size:48px;font-weight:900" id="cev-total-score">-</div><div id="cev-rating-badge" style="display:inline-block;padding:8px 16px;border-radius:99px;font-weight:700;font-size:13px">-</div></div>
+<div class="card auris-contractor-s-7d3bddef4a"><div class="card-title auris-contractor-s-ca98ae97df">Overall Rating</div>
+<div class="auris-contractor-s-651d52088e"><div id="cev-total-score" class="auris-contractor-s-337b9e03eb">-</div><div id="cev-rating-badge" class="auris-contractor-s-db5a3c91c6">-</div></div>
 <div class="form3group"><label class="form3label">Recommend for future work?</label><select id="cevf-recommend"><option value="true">Yes</option><option value="false">No</option></select></div>
-<div class="form3group"><label class="form3label">Notes</label><textarea id="cevf-rec-notes" style="min-height:50px"></textarea></div></div>
+<div class="form3group"><label class="form3label">Notes</label><textarea id="cevf-rec-notes" class="auris-contractor-s-2b013fa0d9"></textarea></div></div>
 </div>
 </div>
 </div>
 <!-- ATW form -->
-<div id="catw-form" style="display:none">
-<div class="card" style="margin-bottom:14px;padding:0;overflow:hidden"><div style="padding:14px 20px;background:linear-gradient(135deg,#1a3a5c,#1D6070);color:#fff;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
-<div><div style="font-size:17px;font-weight:800" id="catw-form3title">Authorisation to Work</div><div style="font-family:monospace;font-size:12px;color:#a8f0d4;margin-top:4px" id="catw-form3ref">ATW-AUTO</div></div>
-<div style="display:flex;gap:8px"><button class="btn" style="background:rgba(255,255,255,.2);color:#fff;border-color:rgba(255,255,255,.3)" data-auris-onclick="h0600"><i class="ti ti-arrow-left"></i>Back</button><button id="catw-del-btn" class="btn" style="display:none;background:rgba(220,38,38,.3);color:#fff;border-color:rgba(220,38,38,.5)" data-auris-onclick="h0601"><i class="ti ti-trash"></i></button><button class="btn" style="background:#1D9E75;color:#fff;border-color:#1D9E75" data-auris-onclick="h0602"><i class="ti ti-device-floppy"></i>Issue</button></div></div></div>
-<div style="display:grid;grid-template-columns:2fr 1fr;gap:14px">
+<div id="catw-form" class="auris-contractor-s-6aa34d7432">
+<div class="card auris-contractor-s-54ec8874e7"><div class="auris-contractor-s-19980e556d">
+<div><div id="catw-form3title" class="auris-contractor-s-75021e57ca">Authorisation to Work</div><div id="catw-form3ref" class="auris-contractor-s-3c8fd0b2b1">ATW-AUTO</div></div>
+<div class="auris-contractor-s-9c40389b4a"><button class="btn auris-contractor-s-5c09edd131" data-auris-onclick="h0600"><i class="ti ti-arrow-left"></i>Back</button><button id="catw-del-btn" class="btn auris-contractor-s-0e610f7b67" data-auris-onclick="h0601"><i class="ti ti-trash"></i></button><button class="btn auris-contractor-s-c7b9e5b2c7" data-auris-onclick="h0602"><i class="ti ti-device-floppy"></i>Issue</button></div></div></div>
+<div class="auris-contractor-s-5571af1e74">
 <div>
-<div class="card" style="margin-bottom:14px;border-left:4px solid #1D9E75"><div class="card-title" style="color:#1D9E75">Work Details</div>
+<div class="card auris-contractor-s-f51849fc6a"><div class="card-title auris-contractor-s-f9faa54401">Work Details</div>
 <div class="form3row"><div class="form3group"><label class="form3label">Contractor</label><select id="catwf-contractor"><option value="">Select...</option></select></div><div class="form3group"><label class="form3label">Work order</label><select id="catwf-wo"><option value="">None</option></select></div><div class="form3group"><label class="form3label">Permit</label><select id="catwf-permit"><option value="">None</option></select></div></div>
-<div class="form3group"><label class="form3label">Description</label><textarea id="catwf-desc" style="min-height:80px"></textarea></div>
+<div class="form3group"><label class="form3label">Description</label><textarea id="catwf-desc" class="auris-contractor-s-770a4152c1"></textarea></div>
 <div class="form3row"><div class="form3group"><label class="form3label">Location</label><input type="text" id="catwf-location"/></div><div class="form3group"><label class="form3label">Valid from</label><input type="date" id="catwf-from"/></div><div class="form3group"><label class="form3label">Valid until</label><input type="date" id="catwf-until"/></div></div></div>
-<div class="card" style="margin-bottom:14px;border-left:4px solid #8B5CF6">
-<div style="display:flex;justify-content:space-between;margin-bottom:10px"><div class="card-title" style="margin:0;color:#8B5CF6">Authorised Persons</div><button class="btn btn-sm" data-auris-onclick="h0603"><i class="ti ti-plus"></i>Add</button></div>
+<div class="card auris-contractor-s-b290320c38">
+<div class="auris-contractor-s-bd5d31b2fc"><div class="card-title auris-contractor-s-62a56b2c50">Authorised Persons</div><button class="btn btn-sm" data-auris-onclick="h0603"><i class="ti ti-plus"></i>Add</button></div>
 <div id="catw-persons-list"></div></div>
-<div class="card" style="margin-bottom:14px"><div class="card-title">Conditions</div>
-<div class="form3group"><label class="form3label">Conditions</label><textarea id="catwf-conditions" style="min-height:60px"></textarea></div>
+<div class="card auris-contractor-s-42a6ced8b6"><div class="card-title">Conditions</div>
+<div class="form3group"><label class="form3label">Conditions</label><textarea id="catwf-conditions" class="auris-contractor-s-07bdff4587"></textarea></div>
 <div class="form3row"><div class="form3group"><label class="form3label">PPE required</label><input type="text" id="catwf-ppe"/></div><div class="form3group"><label class="form3label">Supervision</label><input type="text" id="catwf-supervision"/></div></div>
-<div class="form3row"><div class="form3group"><label class="form3label">RA ref</label><select id="catwf-ra-ref" style="font-family:monospace"><option value="">Select risk assessment...</option></select></div><div class="form3group"><label class="form3label">Method Statement</label><select id="catwf-ms-ref" style="font-family:monospace"><option value="">Select method statement / SOP...</option></select></div></div></div>
+<div class="form3row"><div class="form3group"><label class="form3label">RA ref</label><select id="catwf-ra-ref" class="auris-contractor-s-7b8c3df564"><option value="">Select risk assessment...</option></select></div><div class="form3group"><label class="form3label">Method Statement</label><select id="catwf-ms-ref" class="auris-contractor-s-7b8c3df564"><option value="">Select method statement / SOP...</option></select></div></div></div>
 </div>
 <div>
-<div class="card" style="margin-bottom:14px;border:2px solid #1D9E75"><div class="card-title" style="color:#1D9E75">Site Induction</div>
-<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px"><input type="checkbox" id="catwf-induction-done" style="accent-color:var(--green)"/><label for="catwf-induction-done" style="font-size:13px;font-weight:600;cursor:pointer">Completed</label></div>
+<div class="card auris-contractor-s-f8805c5d89"><div class="card-title auris-contractor-s-f9faa54401">Site Induction</div>
+<div class="auris-contractor-s-ba28bccee4"><input type="checkbox" id="catwf-induction-done" class="auris-contractor-s-283f12d7fe"/><label class="auris-contractor-s-22514dbec4" for="catwf-induction-done">Completed</label></div>
 <div class="form3row"><div class="form3group"><label class="form3label">Date</label><input type="date" id="catwf-induction-date"/></div><div class="form3group"><label class="form3label">Conducted by</label><input type="text" id="catwf-induction-by"/></div></div>
-<div class="form3group"><label class="form3label">Topics covered</label><textarea id="catwf-induction-topics" style="min-height:60px"></textarea></div></div>
-<div class="card" style="border:2px solid #185FA5"><div class="card-title" style="color:#185FA5">Issue &amp; Sign-off</div>
+<div class="form3group"><label class="form3label">Topics covered</label><textarea id="catwf-induction-topics" class="auris-contractor-s-07bdff4587"></textarea></div></div>
+<div class="card auris-contractor-s-169bb1a458"><div class="card-title auris-contractor-s-ca32b871b2">Issue &amp; Sign-off</div>
 <div class="form3group"><label class="form3label">Status</label><select id="catwf-status"><option value="draft">Draft</option><option value="active">Active</option><option value="suspended">Suspended</option><option value="completed">Completed</option><option value="revoked">Revoked</option></select></div>
 <div class="form3group"><label class="form3label">Issued by</label><select id="catwf-issued-by"><option value="">Select...</option></select></div>
 <div class="form3group"><label class="form3label">Contractor signature</label><input type="text" id="catwf-con-sig"/></div>
-<div class="form3group"><label class="form3label">Notes</label><textarea id="catwf-notes" style="min-height:50px"></textarea></div></div>
+<div class="form3group"><label class="form3label">Notes</label><textarea id="catwf-notes" class="auris-contractor-s-2b013fa0d9"></textarea></div></div>
 </div>
 </div>
 </div>
 <!-- CIR form -->
-<div id="cir-form" style="display:none">
-<div class="card" style="margin-bottom:14px;padding:0;overflow:hidden"><div style="padding:14px 20px;background:linear-gradient(135deg,#7F1D1D,#E24B4A);color:#fff;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
-<div><div style="font-size:17px;font-weight:800" id="cir-form3title">Incident Report</div><div style="font-family:monospace;font-size:12px;color:#fca5a5;margin-top:4px" id="cir-form3ref">CIR-AUTO</div></div>
-<div style="display:flex;gap:8px"><button class="btn" style="background:rgba(255,255,255,.2);color:#fff;border-color:rgba(255,255,255,.3)" data-auris-onclick="h0604"><i class="ti ti-arrow-left"></i>Back</button><button id="cir-del-btn" class="btn" style="display:none;background:rgba(0,0,0,.3);color:#fff;border-color:rgba(255,255,255,.3)" data-auris-onclick="h0605"><i class="ti ti-trash"></i></button><button class="btn" style="background:#1D9E75;color:#fff;border-color:#1D9E75" data-auris-onclick="h0606"><i class="ti ti-device-floppy"></i>Save</button></div></div></div>
-<div style="display:grid;grid-template-columns:2fr 1fr;gap:14px">
+<div id="cir-form" class="auris-contractor-s-6aa34d7432">
+<div class="card auris-contractor-s-54ec8874e7"><div class="auris-contractor-s-23fbaf6dba">
+<div><div id="cir-form3title" class="auris-contractor-s-75021e57ca">Incident Report</div><div id="cir-form3ref" class="auris-contractor-s-d4fdeaefc1">CIR-AUTO</div></div>
+<div class="auris-contractor-s-9c40389b4a"><button class="btn auris-contractor-s-5c09edd131" data-auris-onclick="h0604"><i class="ti ti-arrow-left"></i>Back</button><button id="cir-del-btn" class="btn auris-contractor-s-96f7839a1b" data-auris-onclick="h0605"><i class="ti ti-trash"></i></button><button class="btn auris-contractor-s-c7b9e5b2c7" data-auris-onclick="h0606"><i class="ti ti-device-floppy"></i>Save</button></div></div></div>
+<div class="auris-contractor-s-5571af1e74">
 <div>
-<div class="card" style="margin-bottom:14px;border-left:4px solid #E24B4A"><div class="card-title" style="color:#E24B4A">Incident Details</div>
+<div class="card auris-contractor-s-27345e5d6d"><div class="card-title auris-contractor-s-df4f0a3612">Incident Details</div>
 <div class="form3row"><div class="form3group"><label class="form3label">Contractor</label><select id="cirf-contractor"><option value="">Select...</option></select></div><div class="form3group"><label class="form3label">Date</label><input type="date" id="cirf-date"/></div><div class="form3group"><label class="form3label">Time</label><input type="time" id="cirf-time"/></div><div class="form3group"><label class="form3label">Location</label><input type="text" id="cirf-location"/></div></div>
 <div class="form3row"><div class="form3group"><label class="form3label">Type</label><select id="cirf-type"><option value="near_miss">Near miss</option><option value="first_aid">First aid</option><option value="medical_treatment">Medical treatment</option><option value="lost_time">Lost time</option><option value="dangerous_occurrence">Dangerous occurrence</option><option value="property_damage">Property damage</option><option value="environmental">Environmental</option><option value="fatality">Fatality</option></select></div>
 <div class="form3group"><label class="form3label">Severity</label><select id="cirf-severity"><option value="negligible">Negligible</option><option value="low">Low</option><option value="medium">Medium</option><option value="high">High</option><option value="critical">Critical</option></select></div>
 <div class="form3group"><label class="form3label">Report date</label><input type="date" id="cirf-report-date"/></div><div class="form3group"><label class="form3label">Reported by</label><input type="text" id="cirf-reported-by"/></div></div>
-<div class="form3group"><label class="form3label">Description</label><textarea id="cirf-desc" style="min-height:80px"></textarea></div></div>
-<div class="card" style="margin-bottom:14px"><div class="card-title">Injured Person</div>
+<div class="form3group"><label class="form3label">Description</label><textarea id="cirf-desc" class="auris-contractor-s-770a4152c1"></textarea></div></div>
+<div class="card auris-contractor-s-42a6ced8b6"><div class="card-title">Injured Person</div>
 <div class="form3row"><div class="form3group"><label class="form3label">Name</label><input type="text" id="cirf-injured-name"/></div><div class="form3group"><label class="form3label">Role</label><input type="text" id="cirf-injured-role"/></div><div class="form3group"><label class="form3label">Injury type</label><input type="text" id="cirf-injury-type"/></div><div class="form3group"><label class="form3label">Body part</label><input type="text" id="cirf-injury-desc"/></div></div>
-<div class="form3group"><label class="form3label">Treatment</label><textarea id="cirf-treatment" style="min-height:50px"></textarea></div></div>
+<div class="form3group"><label class="form3label">Treatment</label><textarea id="cirf-treatment" class="auris-contractor-s-2b013fa0d9"></textarea></div></div>
 <div class="card"><div class="card-title">Investigation</div>
-<div class="form3row"><div class="form3group"><label class="form3label">Immediate cause</label><textarea id="cirf-immediate" style="min-height:60px"></textarea></div><div class="form3group"><label class="form3label">Root cause</label><textarea id="cirf-root" style="min-height:60px"></textarea></div></div>
-<div class="form3group"><label class="form3label">Contributing factors</label><textarea id="cirf-factors" style="min-height:50px"></textarea></div></div>
+<div class="form3row"><div class="form3group"><label class="form3label">Immediate cause</label><textarea id="cirf-immediate" class="auris-contractor-s-07bdff4587"></textarea></div><div class="form3group"><label class="form3label">Root cause</label><textarea id="cirf-root" class="auris-contractor-s-07bdff4587"></textarea></div></div>
+<div class="form3group"><label class="form3label">Contributing factors</label><textarea id="cirf-factors" class="auris-contractor-s-2b013fa0d9"></textarea></div></div>
 </div>
 <div>
-<div class="card" style="margin-bottom:14px;border:2px solid #E24B4A"><div class="card-title" style="color:#E24B4A">Corrective Actions</div>
-<div class="form3group"><label class="form3label">Immediate actions</label><textarea id="cirf-immediate-action" style="min-height:70px"></textarea></div>
-<div class="form3group"><label class="form3label">Corrective actions</label><textarea id="cirf-corrective" style="min-height:70px"></textarea></div>
+<div class="card auris-contractor-s-077f6bdf56"><div class="card-title auris-contractor-s-df4f0a3612">Corrective Actions</div>
+<div class="form3group"><label class="form3label">Immediate actions</label><textarea id="cirf-immediate-action" class="auris-contractor-s-4d5979ac8f"></textarea></div>
+<div class="form3group"><label class="form3label">Corrective actions</label><textarea id="cirf-corrective" class="auris-contractor-s-4d5979ac8f"></textarea></div>
 <div class="form3row"><div class="form3group"><label class="form3label">Responsible</label><input type="text" id="cirf-action-resp"/></div><div class="form3group"><label class="form3label">Due date</label><input type="date" id="cirf-action-due"/></div></div></div>
 <div class="card"><div class="card-title">Status &amp; Reporting</div>
 <div class="form3group"><label class="form3label">Status</label><select id="cirf-status"><option value="open">Open</option><option value="investigating">Investigating</option><option value="closed">Closed</option></select></div>
-<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px"><input type="checkbox" id="cirf-regulator" style="accent-color:var(--red)"/><label for="cirf-regulator" style="font-size:12px;cursor:pointer;color:var(--red)">Reported to authority</label></div>
+<div class="auris-contractor-s-ba28bccee4"><input type="checkbox" id="cirf-regulator" class="auris-contractor-s-af62d68b87"/><label class="auris-contractor-s-28d50fec9d" for="cirf-regulator">Reported to authority</label></div>
 <div class="form3group"><label class="form3label">Authority reference</label><input type="text" id="cirf-reg-ref"/></div>
-<div class="form3group"><label class="form3label">Notes</label><textarea id="cirf-notes" style="min-height:50px"></textarea></div></div>
+<div class="form3group"><label class="form3label">Notes</label><textarea id="cirf-notes" class="auris-contractor-s-2b013fa0d9"></textarea></div></div>
 </div>
 </div>
 </div>

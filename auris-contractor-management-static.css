@@ -1,0 +1,147 @@
+/* Generated from Contractor Management by scripts/extract-contractor-management-styles.cjs. */
+/* Non-important declarations preserve onboarding, performance and access-control runtime state. */
+.auris-contractor-s-01137f2f4c{font-size:24px;font-weight:800;color:#E24B4A}
+.auris-contractor-s-024f402451{font-size:11px;opacity:.7}
+.auris-contractor-s-03ccff1d72{font-size:14px;font-weight:700}
+.auris-contractor-s-05be4e4a89{color:#0891B2}
+.auris-contractor-s-077f6bdf56{margin-bottom:14px;border:2px solid #E24B4A}
+.auris-contractor-s-07bdff4587{min-height:60px}
+.auris-contractor-s-0e610f7b67{display:none;background:rgba(220,38,38,.3);color:#fff;border-color:rgba(220,38,38,.5)}
+.auris-contractor-s-11856befbc{flex:1;min-width:180px;padding:7px 12px;border:1px solid var(--border);border-radius:8px;font-size:12px}
+.auris-contractor-s-169bb1a458{border:2px solid #185FA5}
+.auris-contractor-s-19980e556d{padding:14px 20px;background:linear-gradient(135deg,#1a3a5c,#1D6070);color:#fff;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px}
+.auris-contractor-s-22514dbec4{font-size:13px;font-weight:600;cursor:pointer}
+.auris-contractor-s-23fbaf6dba{padding:14px 20px;background:linear-gradient(135deg,#7F1D1D,#E24B4A);color:#fff;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px}
+.auris-contractor-s-27345e5d6d{margin-bottom:14px;border-left:4px solid #E24B4A}
+.auris-contractor-s-283f12d7fe{accent-color:var(--green)}
+.auris-contractor-s-28d50fec9d{font-size:12px;cursor:pointer;color:var(--red)}
+.auris-contractor-s-2b013fa0d9{min-height:50px}
+.auris-contractor-s-2b9ad58fbd{font-size:24px;font-weight:800;color:#185FA5}
+.auris-contractor-s-337b9e03eb{font-size:48px;font-weight:900}
+.auris-contractor-s-347fbe0230{margin-bottom:14px;border-left:4px solid #185FA5}
+.auris-contractor-s-3b299d6ce4{padding:12px 14px;border-left:4px solid #E24B4A}
+.auris-contractor-s-3c8fd0b2b1{font-family:monospace;font-size:12px;color:#a8f0d4;margin-top:4px}
+.auris-contractor-s-41d06db860{background:linear-gradient(135deg,#1a3a5c,#185FA5);color:#fff;border:none;text-align:center;padding:20px}
+.auris-contractor-s-42a6ced8b6{margin-bottom:14px}
+.auris-contractor-s-4422804ebb{font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px}
+.auris-contractor-s-45c174bbec{text-align:center;padding:14px}
+.auris-contractor-s-475caf50fd{display:flex;gap:0;margin-bottom:16px;border-bottom:2px solid var(--border)}
+.auris-contractor-s-48a87f51bd{color:#8B5CF6}
+.auris-contractor-s-4a56dafc2a{padding:12px 14px;border-left:4px solid #1D9E75}
+.auris-contractor-s-4d5979ac8f{min-height:70px}
+.auris-contractor-s-54bb9f1d16{margin-bottom:12px;padding:10px 14px}
+.auris-contractor-s-54ec8874e7{margin-bottom:14px;padding:0;overflow:hidden}
+.auris-contractor-s-5571af1e74{display:grid;grid-template-columns:2fr 1fr;gap:14px}
+.auris-contractor-s-5c09edd131{background:rgba(255,255,255,.2);color:#fff;border-color:rgba(255,255,255,.3)}
+.auris-contractor-s-5d553a9b75{font-size:24px;font-weight:800;color:#8B5CF6}
+.auris-contractor-s-624468e090{padding:12px 14px;border-left:4px solid #185FA5}
+.auris-contractor-s-62a56b2c50{margin:0;color:#8B5CF6}
+.auris-contractor-s-651d52088e{text-align:center;padding:20px}
+.auris-contractor-s-69ec85d9db{margin-bottom:12px;padding:12px 16px;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.auris-contractor-s-6aa34d7432{display:none}
+.auris-contractor-s-6b73ad6a70{padding:14px 20px;background:linear-gradient(135deg,#1e3a5f,#7C3AED);color:#fff;display:flex;align-items:center;justify-content:space-between}
+.auris-contractor-s-7299078644{font-size:12px;color:var(--text2)}
+.auris-contractor-s-729df2e62f{font-size:11px;color:var(--text2);font-weight:600;text-transform:uppercase}
+.auris-contractor-s-75021e57ca{font-size:17px;font-weight:800}
+.auris-contractor-s-770a4152c1{min-height:80px}
+.auris-contractor-s-7b8c3df564{font-family:monospace}
+.auris-contractor-s-7d3bddef4a{border:2px solid #7C3AED}
+.auris-contractor-s-7ec95abeba{margin-bottom:14px;border-left:4px solid #EF9F27}
+.auris-contractor-s-924ea31ba8{padding:14px 20px;background:linear-gradient(135deg,#064E3B,#1D9E75);color:#fff;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px}
+.auris-contractor-s-9320640826{color:#EF9F27}
+.auris-contractor-s-948c3ac1bb{margin-bottom:14px;border-left:4px solid #0891B2}
+.auris-contractor-s-96f7839a1b{display:none;background:rgba(0,0,0,.3);color:#fff;border-color:rgba(255,255,255,.3)}
+.auris-contractor-s-97309bb0fa{font-size:24px;font-weight:800;color:#EF9F27}
+.auris-contractor-s-9bcefa3fff{margin-bottom:14px;border:2px solid #185FA5}
+.auris-contractor-s-9c40389b4a{display:flex;gap:8px}
+.auris-contractor-s-a1d0a4c7f2{font-size:24px;font-weight:800;color:#1D9E75}
+.auris-contractor-s-ab79ea2b85{margin:0}
+.auris-contractor-s-ae71a9e48f{margin-bottom:12px;padding:10px 14px;display:flex;justify-content:space-between;align-items:center}
+.auris-contractor-s-af62d68b87{accent-color:var(--red)}
+.auris-contractor-s-b290320c38{margin-bottom:14px;border-left:4px solid #8B5CF6}
+.auris-contractor-s-b922c89f16{margin-bottom:10px}
+.auris-contractor-s-ba28bccee4{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+.auris-contractor-s-bd5d31b2fc{display:flex;justify-content:space-between;margin-bottom:10px}
+.auris-contractor-s-be2a10716a{padding:14px 20px;background:linear-gradient(135deg,#1a3a5c,#185FA5);color:#fff;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px}
+.auris-contractor-s-bf5033d99d{padding:12px 14px;border-left:4px solid #EF9F27}
+.auris-contractor-s-c260bac5c9{padding:12px 14px;border-left:4px solid #8B5CF6}
+.auris-contractor-s-c7b9e5b2c7{background:#1D9E75;color:#fff;border-color:#1D9E75}
+.auris-contractor-s-ca32b871b2{color:#185FA5}
+.auris-contractor-s-ca98ae97df{color:#7C3AED}
+.auris-contractor-s-d0f83c42bc{font-size:40px;margin-bottom:10px}
+.auris-contractor-s-d35063206b{padding:7px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px}
+.auris-contractor-s-d4fdeaefc1{font-family:monospace;font-size:12px;color:#fca5a5;margin-top:4px}
+.auris-contractor-s-d5129e1520{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.auris-contractor-s-d9c39add3c{padding:0;overflow:hidden}
+.auris-contractor-s-db5a3c91c6{display:inline-block;padding:8px 16px;border-radius:99px;font-weight:700;font-size:13px}
+.auris-contractor-s-dbc41a66f6{background:linear-gradient(135deg,#f8fafc,#e8f0fe);border:2px solid #185FA5}
+.auris-contractor-s-df4f0a3612{color:#E24B4A}
+.auris-contractor-s-eb404b018d{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:14px}
+.auris-contractor-s-f51849fc6a{margin-bottom:14px;border-left:4px solid #1D9E75}
+.auris-contractor-s-f8805c5d89{margin-bottom:14px;border:2px solid #1D9E75}
+.auris-contractor-s-f9faa54401{color:#1D9E75}
+.auris-contractor-s-fff7b68536{font-size:40px;font-weight:900}
+/* Preserve former inline precedence over existing ID selectors. */
+#catw-add-btn.auris-contractor-s-6aa34d7432{display:none}
+#catw-del-btn.auris-contractor-s-0e610f7b67{display:none;background:rgba(220,38,38,.3);color:#fff;border-color:rgba(220,38,38,.5)}
+#catw-form.auris-contractor-s-6aa34d7432{display:none}
+#catw-form3ref.auris-contractor-s-3c8fd0b2b1{font-family:monospace;font-size:12px;color:#a8f0d4;margin-top:4px}
+#catw-form3title.auris-contractor-s-75021e57ca{font-size:17px;font-weight:800}
+#catwf-conditions.auris-contractor-s-07bdff4587{min-height:60px}
+#catwf-desc.auris-contractor-s-770a4152c1{min-height:80px}
+#catwf-induction-done.auris-contractor-s-283f12d7fe{accent-color:var(--green)}
+#catwf-induction-topics.auris-contractor-s-07bdff4587{min-height:60px}
+#catwf-ms-ref.auris-contractor-s-7b8c3df564{font-family:monospace}
+#catwf-notes.auris-contractor-s-2b013fa0d9{min-height:50px}
+#catwf-ra-ref.auris-contractor-s-7b8c3df564{font-family:monospace}
+#cev-add-btn.auris-contractor-s-6aa34d7432{display:none}
+#cev-form.auris-contractor-s-6aa34d7432{display:none}
+#cev-form3title.auris-contractor-s-75021e57ca{font-size:17px;font-weight:800}
+#cev-rating-badge.auris-contractor-s-db5a3c91c6{display:inline-block;padding:8px 16px;border-radius:99px;font-weight:700;font-size:13px}
+#cev-total-score.auris-contractor-s-337b9e03eb{font-size:48px;font-weight:900}
+#cevf-improve.auris-contractor-s-4d5979ac8f{min-height:70px}
+#cevf-positive.auris-contractor-s-4d5979ac8f{min-height:70px}
+#cevf-rec-notes.auris-contractor-s-2b013fa0d9{min-height:50px}
+#cir-add-btn.auris-contractor-s-6aa34d7432{display:none}
+#cir-del-btn.auris-contractor-s-96f7839a1b{display:none;background:rgba(0,0,0,.3);color:#fff;border-color:rgba(255,255,255,.3)}
+#cir-form.auris-contractor-s-6aa34d7432{display:none}
+#cir-form3ref.auris-contractor-s-d4fdeaefc1{font-family:monospace;font-size:12px;color:#fca5a5;margin-top:4px}
+#cir-form3title.auris-contractor-s-75021e57ca{font-size:17px;font-weight:800}
+#cirf-corrective.auris-contractor-s-4d5979ac8f{min-height:70px}
+#cirf-desc.auris-contractor-s-770a4152c1{min-height:80px}
+#cirf-factors.auris-contractor-s-2b013fa0d9{min-height:50px}
+#cirf-immediate-action.auris-contractor-s-4d5979ac8f{min-height:70px}
+#cirf-immediate.auris-contractor-s-07bdff4587{min-height:60px}
+#cirf-notes.auris-contractor-s-2b013fa0d9{min-height:50px}
+#cirf-regulator.auris-contractor-s-af62d68b87{accent-color:var(--red)}
+#cirf-root.auris-contractor-s-07bdff4587{min-height:60px}
+#cirf-treatment.auris-contractor-s-2b013fa0d9{min-height:50px}
+#con-add-btn.auris-contractor-s-6aa34d7432{display:none}
+#con-atw-alerts.auris-contractor-s-b922c89f16{margin-bottom:10px}
+#con-del-btn.auris-contractor-s-0e610f7b67{display:none;background:rgba(220,38,38,.3);color:#fff;border-color:rgba(220,38,38,.5)}
+#con-filter-cat.auris-contractor-s-d35063206b{padding:7px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px}
+#con-filter-compliance.auris-contractor-s-d35063206b{padding:7px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px}
+#con-filter-status.auris-contractor-s-d35063206b{padding:7px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px}
+#con-form.auris-contractor-s-6aa34d7432{display:none}
+#con-form3title.auris-contractor-s-75021e57ca{font-size:17px;font-weight:800}
+#con-m3approved.auris-contractor-s-a1d0a4c7f2{font-size:24px;font-weight:800;color:#1D9E75}
+#con-m3expiring.auris-contractor-s-5d553a9b75{font-size:24px;font-weight:800;color:#8B5CF6}
+#con-m3pending.auris-contractor-s-97309bb0fa{font-size:24px;font-weight:800;color:#EF9F27}
+#con-m3suspended.auris-contractor-s-01137f2f4c{font-size:24px;font-weight:800;color:#E24B4A}
+#con-m3total.auris-contractor-s-2b9ad58fbd{font-size:24px;font-weight:800;color:#185FA5}
+#con-search.auris-contractor-s-11856befbc{flex:1;min-width:180px;padding:7px 12px;border:1px solid var(--border);border-radius:8px;font-size:12px}
+#con-view-atw.auris-contractor-s-6aa34d7432{display:none}
+#con-view-eval.auris-contractor-s-6aa34d7432{display:none}
+#con-view-incidents.auris-contractor-s-6aa34d7432{display:none}
+#con-view-preassess.auris-contractor-s-6aa34d7432{display:none}
+#con-view-score.auris-contractor-s-6aa34d7432{display:none}
+#conf-address.auris-contractor-s-07bdff4587{min-height:60px}
+#conf-notes.auris-contractor-s-2b013fa0d9{min-height:50px}
+#conf-preview-name.auris-contractor-s-03ccff1d72{font-size:14px;font-weight:700}
+#cpa-add-btn.auris-contractor-s-6aa34d7432{display:none}
+#cpa-form.auris-contractor-s-6aa34d7432{display:none}
+#cpa-form3contractor.auris-contractor-s-75021e57ca{font-size:17px;font-weight:800}
+#cpa-score-display.auris-contractor-s-45c174bbec{text-align:center;padding:14px}
+#cpa-total-score.auris-contractor-s-fff7b68536{font-size:40px;font-weight:900}
+#cpaf-comments.auris-contractor-s-07bdff4587{min-height:60px}
+#cpaf-conditions.auris-contractor-s-4d5979ac8f{min-height:70px}
