@@ -14,7 +14,9 @@ Date: 14 August 2026
 
 ## Residual migration
 
-Phase 2A migrated all 1,458 static-page event attributes into 1,261 precompiled handlers in `auris-static-event-handlers.js`. Phase 2B migrated another 470 static-behaviour attributes from generated markup into 386 precompiled handlers in `auris-generated-event-handlers.js`. The remaining 178 attributes inject runtime record values and require explicit data arguments. They remain temporarily permitted through the narrower `script-src-attr 'unsafe-inline'` directive until that migration is complete.
+Phase 2A migrated all 1,458 static-page event attributes into 1,261 precompiled handlers in `auris-static-event-handlers.js`. Phase 2B migrated another 470 static-behaviour attributes from generated markup into 386 precompiled handlers in `auris-generated-event-handlers.js`. Phase 2C migrated all 178 remaining core handlers into 150 runtime-argument handlers plus a strict allowlist for ten complex actions. `index.html` and `auris-core.js` now contain no inline event attributes and the shipped registries do not use `eval` or `Function`.
+
+The separately loaded module bundles still contain 419 inline event attributes. They remain temporarily permitted through the narrower `script-src-attr 'unsafe-inline'` directive and will be migrated in controlled module batches before that directive is removed.
 
 The interface also contains inline style attributes. Style CSP remains report-only with `'unsafe-inline'` until these declarations are moved into reusable classes or a nonce/hash strategy is adopted.
 

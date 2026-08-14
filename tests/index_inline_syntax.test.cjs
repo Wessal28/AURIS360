@@ -3,7 +3,13 @@ const fs = require('fs');
 const html = fs.readFileSync('index.html', 'utf8');
 const scripts = [...html.matchAll(/<script\b(?![^>]*\bsrc=)[^>]*>([\s\S]*?)<\/script>/gi)].map((match) => match[1]);
 if (scripts.length) throw new Error(`Expected no inline application scripts, found ${scripts.length}`);
-const externalAssets = ['auris-core.js', 'auris-detached-modules.js'];
+const externalAssets = [
+  'auris-static-event-handlers.js',
+  'auris-generated-event-handlers.js',
+  'auris-runtime-event-handlers.js',
+  'auris-core.js',
+  'auris-detached-modules.js'
+];
 for (const asset of externalAssets) {
   if (!new RegExp(`<script\\b[^>]*\\bsrc=["']${asset.replace('.', '\\.')}(?:\\?[^"']*)?["']`, 'i').test(html)) {
     throw new Error(`Missing external application script: ${asset}`);

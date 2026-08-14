@@ -17,10 +17,9 @@ test('generated static handlers use the precompiled delegated registry', () => {
   assert.match(registry, /eventType === 'error'/);
 });
 
-test('only runtime-argument inline handlers remain in generated markup', () => {
+test('no inline handlers remain in core generated markup', () => {
   const remaining = [...core.matchAll(/\s(on[a-z]+)=(?:"([^"]*)"|'([^']*)')/gi)];
-  assert.equal(remaining.length, 178);
-  for (const match of remaining) assert.match(match[2] ?? match[3] ?? '', /\+/);
+  assert.equal(remaining.length, 0);
 });
 
 test('generated delegated handler executes with the originating element as this', () => {

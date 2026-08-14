@@ -329,7 +329,7 @@ function connectedRecordsRender(mountId){
   var canManage=connectedRecordsCanManage(state.options);
   var h='<div class="card" style="border-left:4px solid #2563EB">'
     +'<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap"><div><div class="card-title" style="margin-bottom:2px"><i class="ti ti-link"></i> Connected Records <span style="background:#E8F0FE;color:#185FA5;border-radius:99px;padding:2px 7px;font-size:10px">'+state.rows.length+'</span></div><div style="font-size:11px;color:var(--text2)">Open related evidence, controls and actions without searching another module.</div></div>'
-    +(canManage&&relationshipSchemaReady!==false?'<button type="button" class="btn btn-sm" onclick="connectedRecordsTogglePicker(\''+mountId+'\')"><i class="ti ti-plus"></i>Add relationship</button>':'')+'</div>';
+    +(canManage&&relationshipSchemaReady!==false?'<button type="button" class="btn btn-sm" data-auris-runtime-onclick="r0001" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([mountId]))+'"><i class="ti ti-plus"></i>Add relationship</button>':'')+'</div>';
   if(relationshipSchemaReady===false){
     h+='<div style="margin-top:12px;padding:10px;border-radius:8px;background:#FFF8E6;color:#854F0B;font-size:12px"><i class="ti ti-alert-triangle"></i> Run <b>shared_record_relationships_schema.sql</b> to enable Connected Records.</div>';
   }else if(!state.rows.length){
@@ -342,18 +342,18 @@ function connectedRecordsRender(mountId){
         +'<div style="min-width:0"><div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap"><span style="font-size:12px;font-weight:800;color:var(--text)">'+escH(row.related_ref||row.related_id)+'</span><span style="font-size:10px;font-weight:700;background:#EEF2F6;color:#475569;padding:2px 7px;border-radius:99px">'+escH(String(row.related_module||'').replace(/_/g,' '))+'</span><span style="font-size:10px;font-weight:700;background:'+st.bg+';color:'+st.fg+';padding:2px 7px;border-radius:99px">'+st.label+'</span></div>'
         +'<div style="font-size:11px;color:var(--text2);margin-top:3px">'+escH(String(row.relationship_type||'related_to').replace(/_/g,' '))+(row.related_revision?' · Revision '+escH(row.related_revision):'')+(warning&&row.validation_error?' · '+escH(row.validation_error):'')+'</div></div>'
         +'<div style="display:flex;gap:5px;flex-shrink:0"><button type="button" class="btn btn-sm" '+(warning?'disabled title="Resolve this relationship before opening"':'onclick="connectedRecordsOpen(\''+mountId+'\',\''+row.id+'\')"')+'><i class="ti ti-external-link"></i>Open</button>'
-        +(canManage?'<button type="button" class="btn btn-sm" title="Remove relationship" onclick="connectedRecordsRemove(\''+mountId+'\',\''+row.id+'\')"><i class="ti ti-unlink"></i></button>':'')+'</div></div>';
+        +(canManage?'<button type="button" class="btn btn-sm" title="Remove relationship" data-auris-runtime-onclick="r0002" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([mountId,row.id]))+'"><i class="ti ti-unlink"></i></button>':'')+'</div></div>';
     });
     h+='</div>';
   }
   if(canManage&&relationshipSchemaReady!==false){
     h+='<div id="'+mountId+'-picker" style="display:none;margin-top:12px;padding:12px;background:#F8FAFC;border:1px solid var(--border);border-radius:9px">'
-      +'<div class="form3row"><div class="form3group"><label class="form3label">Record type</label><select id="'+mountId+'-module" onchange="connectedRecordsSearch(\''+mountId+'\')"><option value="">Select module...</option>'
+      +'<div class="form3row"><div class="form3group"><label class="form3label">Record type</label><select id="'+mountId+'-module" data-auris-runtime-onchange="r0003" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([mountId]))+'"><option value="">Select module...</option>'
       +state.registry.filter(function(c){return !(c.module_key===state.endpoint.module&&c.table_name===state.endpoint.table);}).map(function(c){return '<option value="'+escH(c.module_key+'|'+c.table_name)+'">'+escH(c.display_label)+'</option>';}).join('')+'</select></div>'
       +'<div class="form3group"><label class="form3label">Relationship</label><select id="'+mountId+'-type"><option value="related_to">Related to</option><option value="learning_source">Learning source</option><option value="evidence_for">Evidence for</option><option value="action_for">Action for</option><option value="control_for">Control for</option><option value="supersedes">Supersedes</option><option value="derived_from">Derived from</option></select></div></div>'
-      +'<div class="form3group"><label class="form3label">Find a record</label><input id="'+mountId+'-search" placeholder="Search reference, title or description..." oninput="connectedRecordsFilterPicker(\''+mountId+'\')"/></div>'
+      +'<div class="form3group"><label class="form3label">Find a record</label><input id="'+mountId+'-search" placeholder="Search reference, title or description..." data-auris-runtime-oninput="r0004" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([mountId]))+'"/></div>'
       +'<div class="form3group"><label class="form3label">Select verified record</label><select id="'+mountId+'-result"><option value="">Choose a record type first...</option></select></div>'
-      +'<div style="display:flex;justify-content:flex-end;gap:7px"><button class="btn btn-sm" type="button" onclick="connectedRecordsTogglePicker(\''+mountId+'\',false)">Cancel</button><button class="btn btn-primary btn-sm" type="button" onclick="connectedRecordsAdd(\''+mountId+'\')"><i class="ti ti-link-plus"></i>Connect selected record</button></div></div>';
+      +'<div style="display:flex;justify-content:flex-end;gap:7px"><button class="btn btn-sm" type="button" data-auris-runtime-onclick="r0005" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([mountId]))+'">Cancel</button><button class="btn btn-primary btn-sm" type="button" data-auris-runtime-onclick="r0006" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([mountId]))+'"><i class="ti ti-link-plus"></i>Connect selected record</button></div></div>';
   }
   h+='</div>';host.innerHTML=h;var defaultType=document.getElementById(mountId+'-type');if(defaultType&&state.options.defaultRelationshipType)defaultType.value=state.options.defaultRelationshipType;
 }
@@ -1083,7 +1083,7 @@ function obsRenderPhotos(){
   var el=document.getElementById('obs-photo-list'); if(!el)return;
   if(!obsPendingPhotos.length){el.textContent='No photos selected';return;}
   el.innerHTML=obsPendingPhotos.map(function(f,i){
-    return '<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px"><i class="ti ti-photo"></i><span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+escH(f.name)+'</span><span>'+Math.round(f.size/1024)+' KB</span><button type="button" class="btn btn-sm" onclick="obsRemovePhoto('+i+')"><i class="ti ti-x"></i></button></div>';
+    return '<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px"><i class="ti ti-photo"></i><span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+escH(f.name)+'</span><span>'+Math.round(f.size/1024)+' KB</span><button type="button" class="btn btn-sm" data-auris-runtime-onclick="r0007" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([i]))+'"><i class="ti ti-x"></i></button></div>';
   }).join('');
 }
 
@@ -1211,17 +1211,17 @@ function obsFilterList() {
       +'<td style="padding:9px 10px">'+escH(x.observer_name||'-')+'</td>'
       +'<td style="padding:9px 10px;text-align:center">'+sev(x.severity||'medium')+'</td>'
       +'<td style="padding:9px 10px;text-align:center">'+stat(x.status||'open')+'</td>'
-      +'<td style="padding:9px 10px"><button class="btn btn-sm" onclick="event.stopPropagation();obsEdit(\''+x.id+'\')"><i class="ti ti-edit"></i></button></td>'
+      +'<td style="padding:9px 10px"><button class="btn btn-sm" data-auris-runtime-onclick="r0008" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([x.id]))+'"><i class="ti ti-edit"></i></button></td>'
       +'</tr>';
   });
   el.innerHTML=h+'</tbody></table></div>';
 }
 
-function obsEmptyState(title, buttonLabel, action) {
+function obsEmptyState(title, buttonLabel, observationType) {
   return '<div style="text-align:center;padding:40px;color:var(--text2)">'
     +'<div style="font-size:40px;margin-bottom:12px"><i class="ti ti-eye"></i></div>'
     +'<div style="font-weight:600;margin-bottom:8px">'+escH(title||'No observations found')+'</div>'
-    +(buttonLabel?'<button class="btn btn-primary" onclick="'+escH(action||'obsNew()')+'"><i class="ti ti-plus"></i>'+escH(buttonLabel)+'</button>':'')
+    +(buttonLabel?'<button class="btn btn-primary" data-auris-named-action="obs-new" data-observation-type="'+escH(observationType||'')+'"><i class="ti ti-plus"></i>'+escH(buttonLabel)+'</button>':'')
     +'</div>';
 }
 
@@ -1251,7 +1251,7 @@ function obsTableHtml(rows, emptyTitle, emptyButtonLabel, emptyAction) {
       +'<td style="padding:9px 10px">'+escH(x.observer_name||'-')+'</td>'
       +'<td style="padding:9px 10px;text-align:center">'+sev(x.severity||'medium')+'</td>'
       +'<td style="padding:9px 10px;text-align:center">'+stat(x.status||'open')+'</td>'
-      +'<td style="padding:9px 10px"><button class="btn btn-sm" onclick="event.stopPropagation();obsEdit(\''+x.id+'\')"><i class="ti ti-edit"></i></button></td>'
+      +'<td style="padding:9px 10px"><button class="btn btn-sm" data-auris-runtime-onclick="r0008" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([x.id]))+'"><i class="ti ti-edit"></i></button></td>'
       +'</tr>';
   });
   return h+'</tbody></table></div>';
@@ -1262,7 +1262,7 @@ async function obsLoadPositive() {
   var el = document.getElementById('obs-positive-list'); if (!el) return;
   if (!obsAllData.length) await obsLoadAll();
   var positives = obsAllData.filter(obsHasPositive);
-  el.innerHTML = obsTableHtml(positives, 'No positive observations yet', 'Add positive observation', "obsNew('positive_behaviour')");
+  el.innerHTML = obsTableHtml(positives, 'No positive observations yet', 'Add positive observation', 'positive_behaviour');
 }
 
 // -- Unsafe tab ----------------------------------------------------------------
@@ -3664,7 +3664,7 @@ function dashAttentionRow(item){
     +'<td><strong>'+escH(item.title||'-')+'</strong><div style="font-size:11px;color:var(--text2);margin-top:2px">'+escH(item.meta||'')+'</div></td>'
     +'<td>'+escH(item.owner||'-')+'</td>'
     +'<td>'+escH(item.due||'-')+'</td>'
-    +'<td><button class="btn btn-sm" onclick="showPage(\''+escH(item.page||'actions')+'\',null)">Open</button></td>'
+    +'<td><button class="btn btn-sm" data-auris-runtime-onclick="r0009" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([item.page||'actions']))+'">Open</button></td>'
     +'</tr>';
 }
 
@@ -3730,7 +3730,7 @@ function dashNavClick(event,page,id){
 function dashOpenKpiDetail(index){
   var item=(window.__hseCcKpis||[])[index];
   if(!item)return;
-  dashOpenControlCentreModal(item.label,'<div class="hse-cc-panel" style="min-height:260px"><div style="display:flex;align-items:center;gap:18px;margin-bottom:18px"><div class="hse-cc-kpi-icon">'+dashKpiAsset(item.asset)+'</div><div><div class="hse-cc-kpi-label">'+escH(item.label)+'</div><div class="hse-cc-kpi-value" style="font-size:44px">'+escH(item.value)+'</div><div class="hse-cc-kpi-hint '+(item.tone==='red'||item.tone==='amber'?'down':'up')+'">'+escH(item.hint)+'</div></div></div><button class="btn primary" onclick="dashNavigateTo(\''+dashJs(item.page)+'\')">Open related module</button></div>');
+  dashOpenControlCentreModal(item.label,'<div class="hse-cc-panel" style="min-height:260px"><div style="display:flex;align-items:center;gap:18px;margin-bottom:18px"><div class="hse-cc-kpi-icon">'+dashKpiAsset(item.asset)+'</div><div><div class="hse-cc-kpi-label">'+escH(item.label)+'</div><div class="hse-cc-kpi-value" style="font-size:44px">'+escH(item.value)+'</div><div class="hse-cc-kpi-hint '+(item.tone==='red'||item.tone==='amber'?'down':'up')+'">'+escH(item.hint)+'</div></div></div><button class="btn primary" data-auris-runtime-onclick="r0010" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([item.page]))+'">Open related module</button></div>');
 }
 
 function dashOpenWidgetDetail(key){
@@ -3914,7 +3914,7 @@ function dashRenderControlCentre(data){
       +'</div>'
     +'</div>'
     +'<div class="hse-cc-kpis">'
-      +metrics.map(function(m){return '<div class="hse-cc-kpi '+m.tone+'" onclick="showPage(\''+m.page+'\',null)"><div class="hse-cc-kpi-icon">'+dashKpiAsset(m.asset)+'</div><div class="hse-cc-kpi-label">'+escH(m.label)+'</div><div class="hse-cc-kpi-value">'+escH(m.value)+'</div><div class="hse-cc-kpi-hint '+(m.tone==='red'||m.tone==='amber'?'down':'up')+'">'+escH(m.hint)+'</div></div>';}).join('')
+      +metrics.map(function(m){return '<div class="hse-cc-kpi '+m.tone+'" data-auris-runtime-onclick="r0009" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([m.page]))+'"><div class="hse-cc-kpi-icon">'+dashKpiAsset(m.asset)+'</div><div class="hse-cc-kpi-label">'+escH(m.label)+'</div><div class="hse-cc-kpi-value">'+escH(m.value)+'</div><div class="hse-cc-kpi-hint '+(m.tone==='red'||m.tone==='amber'?'down':'up')+'">'+escH(m.hint)+'</div></div>';}).join('')
     +'</div>'
     +'<div class="hse-cc-grid">'
       +'<div class="hse-cc-panel" data-cc-widget="riskmap" data-auris-generated-onclick="g0012"><div class="hse-cc-panel-title">Risk Heat Map (By Site)</div><div style="display:grid;grid-template-columns:1fr 150px;gap:14px;align-items:center"><div class="hse-cc-map"><span class="hse-cc-marker low" style="left:26%;top:28%">'+siteLow+'</span><span class="hse-cc-marker mid" style="left:54%;top:34%">'+siteMid+'</span><span class="hse-cc-marker high" style="left:72%;top:62%">'+siteHigh+'</span><span class="hse-cc-marker low" style="left:38%;top:76%">'+Math.max(1,recentInspections.length)+'</span></div><div class="hse-cc-legend"><div><span class="hse-cc-dot" style="background:#22C55E"></span>Low</div><div><span class="hse-cc-dot" style="background:#F59E0B"></span>Moderate</div><div><span class="hse-cc-dot" style="background:#F97316"></span>High</div><div><span class="hse-cc-dot" style="background:#DC2626"></span>Very high</div></div></div></div>'
@@ -3922,9 +3922,9 @@ function dashRenderControlCentre(data){
       +'<div class="hse-cc-panel" data-cc-widget="trend" data-auris-generated-onclick="g0015"><div class="hse-cc-panel-title">Incident Trend</div><svg class="hse-cc-trend" viewBox="0 0 280 132" role="img" aria-label="Monthly incident and near miss trend"><g stroke="#E2E8F0" stroke-width="1"><line x1="18" y1="118" x2="262" y2="118"/><line x1="18" y1="90" x2="262" y2="90"/><line x1="18" y1="62" x2="262" y2="62"/><line x1="18" y1="34" x2="262" y2="34"/></g><polyline points="'+nearMissTrendPts+'" fill="none" stroke="#6D28D9" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/><polyline points="'+incidentTrendPts+'" fill="none" stroke="#2563EB" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/><g>'+nearMissTrendDots+incidentTrendDots+'</g></svg><div style="display:grid;grid-template-columns:repeat(12,1fr);gap:2px;margin:0 8px;color:#64748B;font-size:9px;font-weight:800;text-align:center">'+incidentTrendLabels+'</div><div class="hse-cc-trend-legend"><span><span class="hse-cc-dot" style="background:#2563EB"></span>Incidents</span><span><span class="hse-cc-dot" style="background:#6D28D9"></span>Near misses</span></div><div class="hse-cc-trend-note">Current year monthly counts</div><div class="hse-cc-link" data-auris-generated-onclick="g0016">View full report</div></div>'
     +'</div>'
     +'<div class="hse-cc-bottom">'
-      +'<div class="hse-cc-panel" data-cc-widget="tasks" data-auris-generated-onclick="g0017"><div class="hse-cc-panel-title">My Tasks ('+attention.length+')</div><div class="hse-cc-list">'+(attention.length?attention.slice(0,8).map(function(x){return '<div class="hse-cc-row" onclick="dashNavClick(event,\''+dashJs(x.page)+'\',\''+dashJs(x.id)+'\')"><span><strong>'+escH(x.title)+'</strong><small>'+escH(x.meta||x.priority)+'</small></span><span class="badge '+(x.tone==='red'?'br':x.tone==='green'?'bg':'ba')+'">'+escH(x.priority)+'</span></div>';}).join(''):'<div class="hse-cc-empty">No urgent task in this view</div>')+'</div><div class="hse-cc-link" data-auris-generated-onclick="g0014">View all tasks</div></div>'
-      +'<div class="hse-cc-panel" data-cc-widget="upcoming" data-auris-generated-onclick="g0018"><div class="hse-cc-panel-title">Upcoming Activities</div><div class="hse-cc-list">'+(upcoming.length?upcoming.map(function(x){return '<div class="hse-cc-row" onclick="dashNavClick(event,\''+dashJs(x.page)+'\',\''+dashJs(x.id)+'\')"><span><strong>'+escH(x.title)+'</strong><small>'+escH(x.page)+'</small></span><strong>'+escH(dashFmtDate(x.date))+'</strong></div>';}).join(''):'<div class="hse-cc-empty">No upcoming activity date loaded</div>')+'</div><div class="hse-cc-link" data-auris-generated-onclick="g0019">View calendar</div></div>'
-      +'<div class="hse-cc-panel" data-cc-widget="compliance" data-auris-generated-onclick="g0020"><div class="hse-cc-panel-title">Compliance Overview</div><div class="hse-cc-list">'+complianceBars.map(function(x){var v=Math.max(0,Math.min(100,x.value||0));return '<div class="hse-cc-row" onclick="dashNavClick(event,\''+dashJs(x.page)+'\')" style="grid-template-columns:96px 1fr 42px"><strong>'+escH(x.label)+'</strong><div class="hse-cc-progress"><i style="width:'+v+'%;background:'+x.color+'"></i></div><strong>'+v+'%</strong></div>';}).join('')+'</div><div class="hse-cc-link" data-auris-generated-onclick="g0021">View compliance report</div></div>'
+      +'<div class="hse-cc-panel" data-cc-widget="tasks" data-auris-generated-onclick="g0017"><div class="hse-cc-panel-title">My Tasks ('+attention.length+')</div><div class="hse-cc-list">'+(attention.length?attention.slice(0,8).map(function(x){return '<div class="hse-cc-row" data-auris-runtime-onclick="r0011" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([x.page,x.id]))+'"><span><strong>'+escH(x.title)+'</strong><small>'+escH(x.meta||x.priority)+'</small></span><span class="badge '+(x.tone==='red'?'br':x.tone==='green'?'bg':'ba')+'">'+escH(x.priority)+'</span></div>';}).join(''):'<div class="hse-cc-empty">No urgent task in this view</div>')+'</div><div class="hse-cc-link" data-auris-generated-onclick="g0014">View all tasks</div></div>'
+      +'<div class="hse-cc-panel" data-cc-widget="upcoming" data-auris-generated-onclick="g0018"><div class="hse-cc-panel-title">Upcoming Activities</div><div class="hse-cc-list">'+(upcoming.length?upcoming.map(function(x){return '<div class="hse-cc-row" data-auris-runtime-onclick="r0011" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([x.page,x.id]))+'"><span><strong>'+escH(x.title)+'</strong><small>'+escH(x.page)+'</small></span><strong>'+escH(dashFmtDate(x.date))+'</strong></div>';}).join(''):'<div class="hse-cc-empty">No upcoming activity date loaded</div>')+'</div><div class="hse-cc-link" data-auris-generated-onclick="g0019">View calendar</div></div>'
+      +'<div class="hse-cc-panel" data-cc-widget="compliance" data-auris-generated-onclick="g0020"><div class="hse-cc-panel-title">Compliance Overview</div><div class="hse-cc-list">'+complianceBars.map(function(x){var v=Math.max(0,Math.min(100,x.value||0));return '<div class="hse-cc-row" data-auris-runtime-onclick="r0012" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([x.page]))+'" style="grid-template-columns:96px 1fr 42px"><strong>'+escH(x.label)+'</strong><div class="hse-cc-progress"><i style="width:'+v+'%;background:'+x.color+'"></i></div><strong>'+v+'%</strong></div>';}).join('')+'</div><div class="hse-cc-link" data-auris-generated-onclick="g0021">View compliance report</div></div>'
     +'</div>';
 }
 
@@ -3960,7 +3960,7 @@ function dashRenderDemoReadiness(data){
       +'<div style="width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:'+(ok?'#E1F5EE':'#FEF9EC')+';color:'+(ok?'#0F6E56':'#854F0B')+'"><i class="ti '+(ok?'ti-check':'ti-alert-circle')+'"></i></div>'
       +'<div><div style="font-size:13px;font-weight:800">'+escH(x.label)+'</div><div style="font-size:11px;color:var(--text2)">'+x.count+' of '+x.target+' minimum readiness record'+(x.target>1?'s':'')+'</div></div>'
       +'<span class="badge '+(ok?'bg':'ba')+'">'+(ok?'Ready':'Needs data')+'</span>'
-      +'<button class="btn btn-sm" onclick="showPage(\''+x.page+'\',null)">'+escH(x.action)+'</button>'
+      +'<button class="btn btn-sm" data-auris-runtime-onclick="r0009" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([x.page]))+'">'+escH(x.action)+'</button>'
       +'</div>';
   }).join('');
 }
@@ -4075,7 +4075,7 @@ function renderClientDemoModuleMatrix(){
   return '<div style="margin-top:14px;border:1px solid var(--border);border-radius:10px;overflow:hidden;background:#fff">'
     +'<div style="padding:11px 12px;background:#0F172A;color:#fff;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><div style="font-weight:900">Module readiness matrix</div><div style="font-size:11px;opacity:.85">What to show, how to position it, and where to be careful</div></div>'
     +'<div style="overflow:auto"><table style="width:100%;min-width:980px;border-collapse:collapse;font-size:12px"><thead><tr style="background:#f8fafc;color:var(--text2);text-transform:uppercase;font-size:10px"><th style="padding:9px 10px;text-align:left">Module</th><th style="padding:9px 10px;text-align:left">Status</th><th style="padding:9px 10px;text-align:left">Client story</th><th style="padding:9px 10px;text-align:left">Caution / positioning</th><th style="padding:9px 10px;text-align:right">Open</th></tr></thead><tbody>'
-    +rows.map(function(x,i){var s=cfg[x.status]||cfg.show;return '<tr style="border-top:1px solid var(--border);background:'+(i%2?'#fafafa':'#fff')+'"><td style="padding:10px;font-weight:900">'+escH(x.module)+'</td><td style="padding:10px"><span style="background:'+s[0]+';color:'+s[1]+';padding:3px 9px;border-radius:99px;font-size:11px;font-weight:900;white-space:nowrap">'+s[2]+'</span></td><td style="padding:10px;color:#111827;line-height:1.45">'+escH(x.story)+'</td><td style="padding:10px;color:var(--text2);line-height:1.45">'+escH(x.caution)+'</td><td style="padding:10px;text-align:right"><button class="btn btn-sm" onclick="showPage(\''+x.page+'\',null)"><i class="ti ti-arrow-right"></i></button></td></tr>';}).join('')
+    +rows.map(function(x,i){var s=cfg[x.status]||cfg.show;return '<tr style="border-top:1px solid var(--border);background:'+(i%2?'#fafafa':'#fff')+'"><td style="padding:10px;font-weight:900">'+escH(x.module)+'</td><td style="padding:10px"><span style="background:'+s[0]+';color:'+s[1]+';padding:3px 9px;border-radius:99px;font-size:11px;font-weight:900;white-space:nowrap">'+s[2]+'</span></td><td style="padding:10px;color:#111827;line-height:1.45">'+escH(x.story)+'</td><td style="padding:10px;color:var(--text2);line-height:1.45">'+escH(x.caution)+'</td><td style="padding:10px;text-align:right"><button class="btn btn-sm" data-auris-runtime-onclick="r0009" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([x.page]))+'"><i class="ti ti-arrow-right"></i></button></td></tr>';}).join('')
     +'</tbody></table></div></div>';
 }
 function clientDemoSummaryText(){
@@ -4137,7 +4137,7 @@ function renderClientRolloutOnboarding(){
   return '<div style="margin-top:14px;border:1px solid var(--border);border-radius:10px;overflow:hidden;background:#fff">'
     +'<div style="padding:11px 12px;background:#0F6E56;color:#fff;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><div><div style="font-weight:900">Client rollout checklist</div><div style="font-size:11px;opacity:.85;margin-top:2px">Use this when moving from configuration to controlled client go-live</div></div><button class="btn btn-sm" style="background:rgba(255,255,255,.14);color:#fff;border-color:rgba(255,255,255,.25)" data-auris-generated-onclick="g0025"><i class="ti ti-copy"></i>Copy checklist</button></div>'
     +'<div style="overflow:auto"><table style="width:100%;min-width:900px;border-collapse:collapse;font-size:12px"><thead><tr style="background:#F8FAFC;color:var(--text2);text-transform:uppercase;font-size:10px"><th style="padding:9px 10px;text-align:left">Phase</th><th style="padding:9px 10px;text-align:left">Required action</th><th style="padding:9px 10px;text-align:left">Owner</th><th style="padding:9px 10px;text-align:right">Open</th></tr></thead><tbody>'
-    +items.map(function(x,i){return '<tr style="border-top:1px solid var(--border);background:'+(i%2?'#fafafa':'#fff')+'"><td style="padding:10px;font-weight:900;color:#0F6E56;white-space:nowrap">'+escH(x.phase)+'</td><td style="padding:10px;line-height:1.45;color:#111827">'+escH(x.task)+'</td><td style="padding:10px;color:var(--text2);font-weight:800;white-space:nowrap">'+escH(x.owner)+'</td><td style="padding:10px;text-align:right"><button class="btn btn-sm" onclick="showPage(\''+x.page+'\',null)"><i class="ti ti-arrow-right"></i></button></td></tr>';}).join('')
+    +items.map(function(x,i){return '<tr style="border-top:1px solid var(--border);background:'+(i%2?'#fafafa':'#fff')+'"><td style="padding:10px;font-weight:900;color:#0F6E56;white-space:nowrap">'+escH(x.phase)+'</td><td style="padding:10px;line-height:1.45;color:#111827">'+escH(x.task)+'</td><td style="padding:10px;color:var(--text2);font-weight:800;white-space:nowrap">'+escH(x.owner)+'</td><td style="padding:10px;text-align:right"><button class="btn btn-sm" data-auris-runtime-onclick="r0009" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([x.page]))+'"><i class="ti ti-arrow-right"></i></button></td></tr>';}).join('')
     +'</tbody></table></div></div>';
 }
 
@@ -4180,7 +4180,7 @@ function renderClientAcceptanceSignoff(){
     +'<div style="padding:12px;background:#123B5D;color:#fff;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap"><div><div style="font-weight:900">Go-live acceptance sign-off</div><div style="font-size:11px;opacity:.85;margin-top:2px">Capture the decision and next steps after a go-live readiness review</div></div><div style="min-width:190px"><div style="display:flex;justify-content:space-between;font-size:12px;font-weight:900;margin-bottom:5px"><span>Acceptance readiness</span><span>'+pct+'%</span></div><div style="height:8px;background:rgba(255,255,255,.25);border-radius:99px;overflow:hidden"><div style="height:100%;width:'+pct+'%;background:'+color+'"></div></div></div></div>'
     +'<div style="display:grid;grid-template-columns:minmax(300px,.9fr) minmax(360px,1.1fr);gap:14px;padding:12px;background:#F8FAFC">'
       +'<div style="background:#fff;border:1px solid var(--border);border-radius:10px;padding:12px"><div style="font-size:13px;font-weight:900;margin-bottom:8px;color:#111827">Acceptance criteria</div>'
-        +criteria.map(function(x,i){return '<label style="display:grid;grid-template-columns:24px 1fr;gap:10px;align-items:start;padding:10px 0;border-top:1px solid var(--border);font-size:12px;line-height:1.4;cursor:pointer"><span style="display:flex;justify-content:center;padding-top:1px"><input type="checkbox" '+(d.criteria[i]?'checked':'')+' onchange="clientRolloutToggleCriterion('+i+')" style="width:16px!important;height:16px!important;min-width:16px;margin:0"></span><span style="display:block;min-width:0;color:#111827">'+escH(x)+'</span></label>';}).join('')
+        +criteria.map(function(x,i){return '<label style="display:grid;grid-template-columns:24px 1fr;gap:10px;align-items:start;padding:10px 0;border-top:1px solid var(--border);font-size:12px;line-height:1.4;cursor:pointer"><span style="display:flex;justify-content:center;padding-top:1px"><input type="checkbox" '+(d.criteria[i]?'checked':'')+' data-auris-runtime-onchange="r0013" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([i]))+'" style="width:16px!important;height:16px!important;min-width:16px;margin:0"></span><span style="display:block;min-width:0;color:#111827">'+escH(x)+'</span></label>';}).join('')
       +'</div>'
       +'<div style="background:#fff;border:1px solid var(--border);border-radius:10px;padding:12px"><div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">'
         +'<label style="font-size:12px;font-weight:800;color:var(--text2)">Meeting date<input id="rollout-sign-date" type="date" value="'+escH(d.meeting_date||'')+'" style="width:100%;margin-top:5px"></label>'
@@ -4248,7 +4248,7 @@ function renderClientReadinessIssues(){
   return '<div style="margin-top:14px;border:1px solid var(--border);border-radius:10px;overflow:hidden;background:#fff">'
     +'<div style="padding:12px;background:#3A2F5F;color:#fff;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><div><div style="font-weight:900">Go-live issue / feedback register</div><div style="font-size:11px;opacity:.85;margin-top:2px">Track blockers, agreed improvements and follow-up actions before go-live</div></div><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn btn-sm" style="background:rgba(255,255,255,.14);color:#fff;border-color:rgba(255,255,255,.25)" data-auris-generated-onclick="g0028"><i class="ti ti-copy"></i>Copy register</button><button class="btn btn-sm" style="background:#fff;color:#3A2F5F" data-auris-generated-onclick="g0029"><i class="ti ti-plus"></i>Add issue</button></div></div>'
     +'<div style="overflow:auto"><table style="width:100%;min-width:980px;border-collapse:collapse;font-size:12px"><thead><tr style="background:#F8FAFC;color:var(--text2);text-transform:uppercase;font-size:10px"><th style="padding:9px 10px;text-align:left">Type</th><th style="padding:9px 10px;text-align:left">Issue / feedback</th><th style="padding:9px 10px;text-align:left">Owner</th><th style="padding:9px 10px;text-align:left">Due</th><th style="padding:9px 10px;text-align:left">Status</th><th style="padding:9px 10px;text-align:right">Actions</th></tr></thead><tbody>'
-    +(rows.length?rows.map(function(x,i){return '<tr style="border-top:1px solid var(--border);background:'+(i%2?'#fafafa':'#fff')+'"><td style="padding:10px;font-weight:900;color:#3A2F5F;white-space:nowrap">'+escH(x.type||'Feedback')+'</td><td style="padding:10px;line-height:1.45"><div style="font-weight:800;color:#111827">'+escH(x.title||'Untitled')+'</div>'+(x.note?'<div style="color:var(--text2);font-size:11px;margin-top:3px">'+escH(x.note)+'</div>':'')+'</td><td style="padding:10px;color:var(--text2);font-weight:800;white-space:nowrap">'+escH(x.owner||'-')+'</td><td style="padding:10px;white-space:nowrap">'+escH(x.due_date||'-')+'</td><td style="padding:10px">'+clientReadinessIssueStatusBadge(x.status)+'</td><td style="padding:10px;text-align:right;white-space:nowrap"><button class="btn btn-sm" onclick="clientRolloutEditIssue('+i+')"><i class="ti ti-edit"></i></button><button class="btn btn-sm" onclick="clientRolloutDeleteIssue('+i+')"><i class="ti ti-trash"></i></button></td></tr>';}).join(''):'<tr><td colspan="6" style="padding:18px;text-align:center;color:var(--text2)">No client issues recorded yet. Add client feedback during the meeting.</td></tr>')
+    +(rows.length?rows.map(function(x,i){return '<tr style="border-top:1px solid var(--border);background:'+(i%2?'#fafafa':'#fff')+'"><td style="padding:10px;font-weight:900;color:#3A2F5F;white-space:nowrap">'+escH(x.type||'Feedback')+'</td><td style="padding:10px;line-height:1.45"><div style="font-weight:800;color:#111827">'+escH(x.title||'Untitled')+'</div>'+(x.note?'<div style="color:var(--text2);font-size:11px;margin-top:3px">'+escH(x.note)+'</div>':'')+'</td><td style="padding:10px;color:var(--text2);font-weight:800;white-space:nowrap">'+escH(x.owner||'-')+'</td><td style="padding:10px;white-space:nowrap">'+escH(x.due_date||'-')+'</td><td style="padding:10px">'+clientReadinessIssueStatusBadge(x.status)+'</td><td style="padding:10px;text-align:right;white-space:nowrap"><button class="btn btn-sm" data-auris-runtime-onclick="r0014" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([i]))+'"><i class="ti ti-edit"></i></button><button class="btn btn-sm" data-auris-runtime-onclick="r0015" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([i]))+'"><i class="ti ti-trash"></i></button></td></tr>';}).join(''):'<tr><td colspan="6" style="padding:18px;text-align:center;color:var(--text2)">No client issues recorded yet. Add client feedback during the meeting.</td></tr>')
     +'</tbody></table></div></div>';
 }
 
@@ -4400,7 +4400,7 @@ function renderClientDecisionLog(){
   return '<div style="margin-top:14px;border:1px solid var(--border);border-radius:10px;overflow:hidden;background:#fff">'
     +'<div style="padding:12px;background:#164E63;color:#fff;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><div><div style="font-weight:900">Go-live decision log</div><div style="font-size:11px;opacity:.85;margin-top:2px">Record decisions, approvals and commitments made during rollout readiness reviews</div></div><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn btn-sm" style="background:rgba(255,255,255,.14);color:#fff;border-color:rgba(255,255,255,.25)" data-auris-generated-onclick="g0032"><i class="ti ti-copy"></i>Copy log</button><button class="btn btn-sm" style="background:#fff;color:#164E63" data-auris-generated-onclick="g0033"><i class="ti ti-plus"></i>Add decision</button></div></div>'
     +'<div style="overflow:auto"><table style="width:100%;min-width:980px;border-collapse:collapse;font-size:12px"><thead><tr style="background:#F8FAFC;color:var(--text2);text-transform:uppercase;font-size:10px"><th style="padding:9px 10px;text-align:left">Date</th><th style="padding:9px 10px;text-align:left">Decision / commitment</th><th style="padding:9px 10px;text-align:left">Agreed by</th><th style="padding:9px 10px;text-align:left">Follow-up</th><th style="padding:9px 10px;text-align:right">Actions</th></tr></thead><tbody>'
-    +(rows.length?rows.map(function(x,i){return '<tr style="border-top:1px solid var(--border);background:'+(i%2?'#fafafa':'#fff')+'"><td style="padding:10px;white-space:nowrap;font-weight:900;color:#164E63">'+escH(x.date||'-')+'</td><td style="padding:10px;line-height:1.45"><div style="font-weight:800;color:#111827">'+escH(x.decision||'Untitled decision')+'</div>'+(x.context?'<div style="color:var(--text2);font-size:11px;margin-top:3px">'+escH(x.context)+'</div>':'')+'</td><td style="padding:10px;color:var(--text2);font-weight:800;white-space:nowrap">'+escH(x.agreed_by||'-')+'</td><td style="padding:10px;line-height:1.45;color:#111827">'+escH(x.follow_up||'-')+'</td><td style="padding:10px;text-align:right;white-space:nowrap"><button class="btn btn-sm" onclick="clientDecisionEdit('+i+')"><i class="ti ti-edit"></i></button><button class="btn btn-sm" onclick="clientDecisionDelete('+i+')"><i class="ti ti-trash"></i></button></td></tr>';}).join(''):'<tr><td colspan="5" style="padding:18px;text-align:center;color:var(--text2)">No decisions recorded yet. Add the key commercial or rollout decisions agreed with the client.</td></tr>')
+    +(rows.length?rows.map(function(x,i){return '<tr style="border-top:1px solid var(--border);background:'+(i%2?'#fafafa':'#fff')+'"><td style="padding:10px;white-space:nowrap;font-weight:900;color:#164E63">'+escH(x.date||'-')+'</td><td style="padding:10px;line-height:1.45"><div style="font-weight:800;color:#111827">'+escH(x.decision||'Untitled decision')+'</div>'+(x.context?'<div style="color:var(--text2);font-size:11px;margin-top:3px">'+escH(x.context)+'</div>':'')+'</td><td style="padding:10px;color:var(--text2);font-weight:800;white-space:nowrap">'+escH(x.agreed_by||'-')+'</td><td style="padding:10px;line-height:1.45;color:#111827">'+escH(x.follow_up||'-')+'</td><td style="padding:10px;text-align:right;white-space:nowrap"><button class="btn btn-sm" data-auris-runtime-onclick="r0016" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([i]))+'"><i class="ti ti-edit"></i></button><button class="btn btn-sm" data-auris-runtime-onclick="r0017" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([i]))+'"><i class="ti ti-trash"></i></button></td></tr>';}).join(''):'<tr><td colspan="5" style="padding:18px;text-align:center;color:var(--text2)">No decisions recorded yet. Add the key commercial or rollout decisions agreed with the client.</td></tr>')
     +'</tbody></table></div></div>';
 }
 
@@ -4560,7 +4560,7 @@ async function clientDemoLoadDataChecklist(){
   el.innerHTML='<div style="border:1px solid var(--border);border-radius:10px;overflow:hidden;background:#fff;margin-top:14px">'
     +'<div style="padding:12px;background:#F8FAFC;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><div><div style="font-weight:900">Live go-live readiness checklist</div><div style="font-size:12px;color:var(--text2);margin-top:2px">Current company readiness for professional go-live</div></div><div style="min-width:180px"><div style="display:flex;justify-content:space-between;font-size:12px;font-weight:900;margin-bottom:5px"><span>Data readiness</span><span style="color:'+color+'">'+pct+'%</span></div><div style="height:8px;background:#e5e7eb;border-radius:99px;overflow:hidden"><div style="height:100%;width:'+pct+'%;background:'+color+'"></div></div></div><button class="btn btn-sm" data-auris-generated-onclick="g0035"><i class="ti ti-refresh"></i>Refresh</button></div>'
     +'<div style="overflow:auto"><table style="width:100%;min-width:820px;border-collapse:collapse;font-size:12px"><thead><tr style="background:#fff;color:var(--text2);text-transform:uppercase;font-size:10px"><th style="padding:8px 10px;text-align:left">Area</th><th style="padding:8px 10px;text-align:center">Records</th><th style="padding:8px 10px;text-align:left">Why it matters</th><th style="padding:8px 10px;text-align:left">Status</th><th style="padding:8px 10px;text-align:right">Open</th></tr></thead><tbody>'
-    +specs.map(function(x,i){var ok=x.count>=x.target;return '<tr style="border-top:1px solid var(--border);background:'+(i%2?'#fafafa':'#fff')+'"><td style="padding:9px 10px;font-weight:900">'+escH(x.label)+'</td><td style="padding:9px 10px;text-align:center;font-weight:900">'+x.count+' / '+x.target+'</td><td style="padding:9px 10px;color:var(--text2)">'+escH(x.why)+'</td><td style="padding:9px 10px"><span style="background:'+(ok?'#EAF3DE':'#FEF9EC')+';color:'+(ok?'#3B6D11':'#854F0B')+';padding:3px 9px;border-radius:99px;font-weight:900;font-size:11px">'+(ok?'Ready':'Add readiness data')+'</span></td><td style="padding:9px 10px;text-align:right"><button class="btn btn-sm" onclick="showPage(\''+x.page+'\',null)"><i class="ti ti-arrow-right"></i></button></td></tr>';}).join('')
+    +specs.map(function(x,i){var ok=x.count>=x.target;return '<tr style="border-top:1px solid var(--border);background:'+(i%2?'#fafafa':'#fff')+'"><td style="padding:9px 10px;font-weight:900">'+escH(x.label)+'</td><td style="padding:9px 10px;text-align:center;font-weight:900">'+x.count+' / '+x.target+'</td><td style="padding:9px 10px;color:var(--text2)">'+escH(x.why)+'</td><td style="padding:9px 10px"><span style="background:'+(ok?'#EAF3DE':'#FEF9EC')+';color:'+(ok?'#3B6D11':'#854F0B')+';padding:3px 9px;border-radius:99px;font-weight:900;font-size:11px">'+(ok?'Ready':'Add readiness data')+'</span></td><td style="padding:9px 10px;text-align:right"><button class="btn btn-sm" data-auris-runtime-onclick="r0009" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([x.page]))+'"><i class="ti ti-arrow-right"></i></button></td></tr>';}).join('')
     +'</tbody></table></div></div>';
 }
 function clientDemoReviewSteps(){
@@ -4600,7 +4600,7 @@ function dashOpenDemoReview(){
   if(body)body.innerHTML='<div style="display:grid;gap:10px">'+rows.map(function(x){return '<div style="display:grid;grid-template-columns:44px 1fr auto;gap:12px;align-items:start;border:1px solid var(--border);border-radius:12px;padding:12px;background:#fff">'
     +'<div style="width:34px;height:34px;border-radius:50%;background:#E0F2FE;color:#075985;font-weight:900;display:flex;align-items:center;justify-content:center">'+x.n+'</div>'
     +'<div><div style="font-size:14px;font-weight:900;margin-bottom:3px">'+escH(x.title)+'</div><div style="font-size:12px;color:#111827;line-height:1.5"><strong>Say:</strong> '+escH(x.say)+'</div><div style="font-size:12px;color:var(--text2);line-height:1.5;margin-top:4px"><strong>Show:</strong> '+escH(x.show)+'</div></div>'
-    +'<button class="btn btn-sm" onclick="dashCloseDemoReview();showPage(\''+x.page+'\',null)"><i class="ti ti-arrow-right"></i>Open</button>'
+    +'<button class="btn btn-sm" data-auris-runtime-onclick="r0018" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([x.page]))+'"><i class="ti ti-arrow-right"></i>Open</button>'
     +'</div>';}).join('')+'</div><div style="margin-top:12px;padding:12px;border:1px solid #bfdbfe;background:#EFF6FF;border-radius:10px;color:#1e40af;font-size:12px;line-height:1.55"><strong>Presenter note:</strong> keep the meeting to a story: report, investigate, act, verify, govern. Avoid opening every module unless the client asks.</div>';
   modal.style.display='flex';
 }
@@ -5040,13 +5040,13 @@ function dashRenderTrendChart(events) {
     // Build clickable segments. Incidents bar = navigate filtered to incidents only.
     // Near miss bar = navigate filtered to near miss only.
     var incBar = m.inc>0
-      ? '<div onclick="event.stopPropagation();dashNavigateToMonth('+m.yy+','+m.mm+',\'incident\')" style="width:80%;height:'+hInc+'px;background:#DC2626;border-radius:'+(m.nm?'0':'3px 3px')+' 0 0;cursor:pointer;transition:height .5s,opacity .15s" data-auris-generated-onmouseover="g0038" data-auris-generated-onmouseout="g0039" title="'+m.inc+' incident'+(m.inc>1?'s':'')+' in '+monthLabel+' - click to view"></div>'
+      ? '<div data-auris-runtime-onclick="r0019" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([m.yy,m.mm]))+'" style="width:80%;height:'+hInc+'px;background:#DC2626;border-radius:'+(m.nm?'0':'3px 3px')+' 0 0;cursor:pointer;transition:height .5s,opacity .15s" data-auris-generated-onmouseover="g0038" data-auris-generated-onmouseout="g0039" title="'+m.inc+' incident'+(m.inc>1?'s':'')+' in '+monthLabel+' - click to view"></div>'
       : '';
     var nmBar = m.nm>0
-      ? '<div onclick="event.stopPropagation();dashNavigateToMonth('+m.yy+','+m.mm+',\'near_miss\')" style="width:80%;height:'+hNm+'px;background:#EF9F27;border-radius:3px 3px 0 0;cursor:pointer;transition:height .5s,opacity .15s" data-auris-generated-onmouseover="g0038" data-auris-generated-onmouseout="g0039" title="'+m.nm+' near miss'+(m.nm>1?'es':'')+' in '+monthLabel+' - click to view"></div>'
+      ? '<div data-auris-runtime-onclick="r0020" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([m.yy,m.mm]))+'" style="width:80%;height:'+hNm+'px;background:#EF9F27;border-radius:3px 3px 0 0;cursor:pointer;transition:height .5s,opacity .15s" data-auris-generated-onmouseover="g0038" data-auris-generated-onmouseout="g0039" title="'+m.nm+' near miss'+(m.nm>1?'es':'')+' in '+monthLabel+' - click to view"></div>'
       : '';
     var empty = (m.inc===0 && m.nm===0)
-      ? '<div onclick="dashNavigateToMonth('+m.yy+','+m.mm+',\'all\')" style="width:80%;height:2px;background:#E5E7EB;border-radius:2px;cursor:pointer" title="'+monthLabel+': No incidents - click to view month"></div>'
+      ? '<div data-auris-runtime-onclick="r0021" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([m.yy,m.mm]))+'" style="width:80%;height:2px;background:#E5E7EB;border-radius:2px;cursor:pointer" title="'+monthLabel+': No incidents - click to view month"></div>'
       : '';
     return '<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:1px" title="'+tooltipText+'">'
       + nmBar + incBar + empty
@@ -5911,7 +5911,7 @@ function aiUpdateRamsHistory() {
   var el = document.getElementById('rams-history'); if(!el) return;
   if(!aiRamsHistory.length){ el.textContent='No RAMS generated yet'; return; }
   el.innerHTML = aiRamsHistory.map(function(r,i){
-    return '<div style="padding:8px 10px;border:1px solid var(--border);border-radius:6px;margin-bottom:6px;cursor:pointer" onclick="aiLoadRAMS('+i+')">'
+    return '<div style="padding:8px 10px;border:1px solid var(--border);border-radius:6px;margin-bottom:6px;cursor:pointer" data-auris-runtime-onclick="r0022" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([i]))+'">'
       +'<div style="font-weight:600;font-size:12px">'+escH(r.task)+'</div>'
       +'<div style="font-size:10px;color:var(--text2)">'+escH(r.date)+'</div>'
       +'</div>';
@@ -6890,8 +6890,8 @@ document.getElementById('ev-view-content').innerHTML=''
 const actEl=document.getElementById('ev-view-actions');
 let btns='';
 if(isMgr())btns+='<button class="btn btn-primary" data-auris-generated-onclick="g0044"><i class="ti ti-edit"></i>Edit</button>';
-if(isMgr()&&e.status!=='closed')btns+='<button class="btn" onclick="evQuickClose(\''+e.id+'\')"><i class="ti ti-check"></i>Mark closed</button>';
-if(isMgr()&&!e.investigation_id)btns+='<button class="btn" style="background:#E6F1FB;color:#185FA5;border-color:#93C5FD;font-weight:600" onclick="evStartInvestigation(\''+e.id+'\')"><i class="ti ti-search"></i>Investigate</button>';
+if(isMgr()&&e.status!=='closed')btns+='<button class="btn" data-auris-runtime-onclick="r0023" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([e.id]))+'"><i class="ti ti-check"></i>Mark closed</button>';
+if(isMgr()&&!e.investigation_id)btns+='<button class="btn" style="background:#E6F1FB;color:#185FA5;border-color:#93C5FD;font-weight:600" data-auris-runtime-onclick="r0024" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([e.id]))+'"><i class="ti ti-search"></i>Investigate</button>';
 if(e.investigation_id)btns+='<span style="font-size:12px;color:var(--green);display:flex;align-items:center;gap:6px"><i class="ti ti-check-circle"></i>Investigation linked</span>';
 actEl.innerHTML=btns;
 evOpenModal();
@@ -7463,7 +7463,7 @@ for(var i=0;i<d.length;i++){
     +'<td>'+(maxLex?'<strong style="color:'+(maxLex>=85?'#C2410C':maxLex>=80?'#854F0B':'var(--green)')+'">'+maxLex.toFixed(1)+'</strong>':'-')+'</td>'
     +'<td>'+hpeLabel+'</td>'
     +'<td style="'+(calBad?'color:#C2410C;font-weight:800':'')+'">'+(cal?cal.toLocaleDateString('en-GB'):'Not recorded')+(calBad?' - check':'')+'</td>'
-    +'<td style="text-align:right"><button class="icon-btn" title="Open survey" onclick="noiseOpenSurvey(\''+escH(x.id)+'\')"><i class="ti ti-eye"></i></button><button class="icon-btn" title="Print survey" onclick="noisePrintSurvey(\''+escH(x.id)+'\')"><i class="ti ti-printer"></i></button>'+(isMgr()?'<button class="icon-btn" style="color:var(--red)" data-id="'+x.id+'" data-auris-generated-onclick="g0045"><i class="ti ti-trash"></i></button>':'')+'</td>'
+    +'<td style="text-align:right"><button class="icon-btn" title="Open survey" data-auris-runtime-onclick="r0025" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([x.id]))+'"><i class="ti ti-eye"></i></button><button class="icon-btn" title="Print survey" data-auris-runtime-onclick="r0026" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([x.id]))+'"><i class="ti ti-printer"></i></button>'+(isMgr()?'<button class="icon-btn" style="color:var(--red)" data-id="'+x.id+'" data-auris-generated-onclick="g0045"><i class="ti ti-trash"></i></button>':'')+'</td>'
     +'</tr>';
 }
 h+='</tbody></table></div>';el.innerHTML=h;
@@ -7520,7 +7520,7 @@ function noiseSetActivePoint(v){
 }
 function noisePointRow(p,i){
   p=p||{};
-  return '<tr data-idx="'+i+'" onclick="noiseSetActivePoint('+i+')" style="cursor:pointer">'
+  return '<tr data-idx="'+i+'" data-auris-runtime-onclick="r0027" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([i]))+'" style="cursor:pointer">'
     +'<td><input class="np-loc" value="'+escH(p.loc||'')+'" placeholder="e.g. Compressor room" data-auris-generated-oninput="g0046"/></td>'
     +'<td><input class="np-source" value="'+escH(p.source||'')+'" placeholder="e.g. Compressor, grinder, generator"/></td>'
     +'<td><input class="np-leq" type="number" step="0.1" value="'+escH(p.leq||'')+'" data-auris-generated-oninput="g0046"/></td>'
@@ -7535,7 +7535,7 @@ function noisePointRow(p,i){
     +'<td><textarea class="np-further" style="min-height:42px" placeholder="Further controls / recommendations" data-auris-generated-oninput="g0047">'+escH(p.further_controls||'')+'</textarea></td>'
     +'<td><input class="np-action-by" value="'+escH(p.action_by||'')+'" placeholder="Owner"/></td>'
     +'<td><input class="np-target" type="date" value="'+escH(p.target_date||'')+'"/></td>'
-    +'<td><button class="icon-btn" onclick="event.stopPropagation();noiseRemovePoint('+i+')"><i class="ti ti-trash"></i></button></td>'
+    +'<td><button class="icon-btn" data-auris-runtime-onclick="r0028" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([i]))+'"><i class="ti ti-trash"></i></button></td>'
     +'</tr>';
 }
 function noisePointsFromForm(){
@@ -7559,7 +7559,7 @@ function noiseRenderPlanPreview(){
   img.src=data;img.style.display=data?'block':'none';if(empty)empty.style.display=data?'none':'flex';
   var rows=noisePointsFromForm();
   var heat=rows.map(function(p,i){var leq=parseFloat(p.leq)||0;var m=noiseLevelMeta(leq);var x=Math.max(0,Math.min(100,parseFloat(p.x)||50)), y=Math.max(0,Math.min(100,parseFloat(p.y)||50));var active=Number(window.noiseActivePoint||0)===i;var size=leq>=90?170:leq>=85?140:leq>=80?112:84;return '<div style="position:absolute;left:'+x+'%;top:'+y+'%;width:'+size+'px;height:'+size+'px;transform:translate(-50%,-50%);border-radius:999px;background:radial-gradient(circle, '+m.color+'55 0%, '+m.color+'24 48%, transparent 72%);pointer-events:none"></div>'
-    +'<button type="button" onclick="event.stopPropagation();noiseSetActivePoint('+i+')" title="'+escH((p.loc||'Point '+(i+1))+' - '+(p.leq||'-')+' dB(A)')+'" style="position:absolute;left:'+x+'%;top:'+y+'%;transform:translate(-50%,-50%);min-width:36px;height:32px;border-radius:999px;border:'+(active?'3px solid #111827':'2px solid #fff')+';background:'+m.color+';color:#fff;font-size:11px;font-weight:900;box-shadow:0 2px 8px rgba(0,0,0,.25);pointer-events:auto;padding:0 8px">'+(i+1)+(leq?'<span style="font-size:9px;margin-left:3px">'+Math.round(leq)+'</span>':'')+'</button>';}).join('');
+    +'<button type="button" data-auris-runtime-onclick="r0029" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([i]))+'" title="'+escH((p.loc||'Point '+(i+1))+' - '+(p.leq||'-')+' dB(A)')+'" style="position:absolute;left:'+x+'%;top:'+y+'%;transform:translate(-50%,-50%);min-width:36px;height:32px;border-radius:999px;border:'+(active?'3px solid #111827':'2px solid #fff')+';background:'+m.color+';color:#fff;font-size:11px;font-weight:900;box-shadow:0 2px 8px rgba(0,0,0,.25);pointer-events:auto;padding:0 8px">'+(i+1)+(leq?'<span style="font-size:9px;margin-left:3px">'+Math.round(leq)+'</span>':'')+'</button>';}).join('');
   layer.innerHTML=heat;
   var summary=document.getElementById('noise-map-summary');
   if(summary){
@@ -7875,7 +7875,7 @@ function chemRenderTable(){
     var bg=i%2===0?'#fff':'#f9fafb';
     var hs=Array.isArray(x.hazard_statements)?x.hazard_statements:[];
     var exp=chemExposureValues(x);
-    h+='<tr style="background:'+bg+';border-bottom:1px solid #eee;cursor:pointer" onclick="chemEdit(\''+x.id+'\')">'
+    h+='<tr style="background:'+bg+';border-bottom:1px solid #eee;cursor:pointer" data-auris-runtime-onclick="r0030" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([x.id]))+'">'
       +'<td style="padding:8px 10px;font-family:monospace;font-weight:800;color:#5B21B6">'+escH(displayRecordRef(x,'chemical_ref','CHEM-DRAFT'))+'</td>'
       +'<td style="padding:8px 10px"><div style="font-weight:800">'+escH(x.product_name||'--')+'</div><div style="font-size:11px;color:var(--text2)">'+escH([x.supplier,x.location].filter(Boolean).join(' - ')||'')+'</div></td>'
       +'<td style="padding:8px 10px;max-width:280px"><div style="font-size:11px;color:#A32D2D;font-weight:700">'+escH((hs.slice(0,3).join(', ')||x.signal_word||'--'))+'</div><div style="font-size:11px;color:var(--text2)">'+escH((x.hazard_identification||'').substring(0,90))+'</div></td>'
@@ -7883,7 +7883,7 @@ function chemRenderTable(){
       +'<td style="padding:8px 10px;text-align:center;font-weight:800">'+escH(exp.persons_exposed||0)+'</td>'
       +'<td style="padding:8px 10px">'+chemRiskBadge(x.risk_level)+'<div style="font-size:10px;color:var(--text2);margin-top:2px">Score '+escH(x.risk_score||0)+'</div></td>'
       +'<td style="padding:8px 10px;font-size:11px">'+(x.review_date?new Date(x.review_date).toLocaleDateString('en-GB'):'--')+chemDateBadge(x)+'</td>'
-      +'<td style="padding:8px 10px"><button class="btn btn-sm" onclick="event.stopPropagation();chemEdit(\''+x.id+'\')"><i class="ti ti-edit"></i></button></td>'
+      +'<td style="padding:8px 10px"><button class="btn btn-sm" data-auris-runtime-onclick="r0031" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([x.id]))+'"><i class="ti ti-edit"></i></button></td>'
       +'</tr>';
   });
   h+='</tbody></table></div>';el.innerHTML=h;
@@ -8864,8 +8864,8 @@ function swmsRenderList(){
       +'<td style="padding:10px;text-align:center"><span style="background:'+sc.bg+';color:'+sc.tc+';padding:3px 9px;border-radius:99px;font-size:11px;font-weight:800">'+escH(sc.label)+'</span></td>'
       +'<td style="padding:10px;text-align:center">'+(x.review_date?new Date(x.review_date).toLocaleDateString('en-GB'):'-')+'</td>'
       +'<td style="padding:10px"><div style="display:flex;gap:5px;justify-content:center">'
-      +'<button class="btn btn-sm" title="Edit SWMS" onclick="swmsOpen(\''+x.id+'\')"><i class="ti ti-edit"></i></button>'
-      +'<button class="btn btn-sm" title="Open in Document Control" onclick="dcEdit(\''+x.id+'\');showPage(\'documents\',null)"><i class="ti ti-file-search"></i></button>'
+      +'<button class="btn btn-sm" title="Edit SWMS" data-auris-runtime-onclick="r0032" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([x.id]))+'"><i class="ti ti-edit"></i></button>'
+      +'<button class="btn btn-sm" title="Open in Document Control" data-auris-runtime-onclick="r0033" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([x.id]))+'"><i class="ti ti-file-search"></i></button>'
       +'</div></td>'
       +'</tr>';
   });
@@ -10089,7 +10089,7 @@ function mtgRenderRoadmap(){
         var dt=occ.date.toLocaleDateString('en-GB',{day:'2-digit',month:'short'});
         html+='<td style="padding:2px 1px;text-align:center;background:'+cellBg+';border:1px solid #e5e7eb;cursor:pointer" '
           +'title="'+series.title+' - Week '+w+' ('+dt+')" '
-          +'data-series-id="'+series.id+'" onclick="mtgClickWeek(this.dataset.seriesId,'+w+')">'
+          +'data-series-id="'+series.id+'" data-auris-runtime-onclick="r0034" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([w]))+'">'
           +'<div style="background:'+dotColor+';border-radius:3px;margin:1px;height:20px;display:flex;align-items:center;justify-content:center">'
           +'<i class="ti ti-check" style="font-size:11px;color:#fff"></i>'
           +'</div>'
@@ -10511,8 +10511,8 @@ const hse=(p.induction_completed?'<span style="color:var(--green);font-weight:70
 const employment='<div>'+(p.job_title?escH(p.job_title):'--')+'</div><div style="font-size:11px;color:var(--text2)">Start: '+dateText(p.start_date)+(p.end_date?' | End: '+dateText(p.end_date):'')+'</div>';
 const contractor=p.person_type!=='employee'&&p.company_name?'<div style="font-size:11px;color:var(--blue);font-weight:700">'+escH(p.company_name)+'</div>':'';
 const onboardTitle=isDeliverableEmail(p.email)?'Send login invitation':'Create generated login';
-const profileBtn='<button class="btn btn-sm" onclick="peopleOpenProfile(\''+p.id+'\')"><i class="ti ti-id"></i>Profile</button>';
-const actions=peopleCanManage()?'<div style="display:flex;gap:6px;flex-wrap:wrap">'+profileBtn+'<button class="btn btn-sm" onclick="peopleEdit(\''+p.id+'\')"><i class="ti ti-edit"></i>Edit</button><button class="btn btn-sm" onclick="peopleOnboardUser(\''+p.id+'\')" title="'+onboardTitle+'"><i class="ti ti-user-plus"></i>Onboard user</button>'+(p.status==='inactive'?'<button class="btn btn-sm" onclick="peopleReactivate(\''+p.id+'\')">Reactivate</button>':'<button class="btn btn-sm danger" onclick="peopleDeactivate(\''+p.id+'\')">Deactivate</button>')+'</div>':profileBtn;
+const profileBtn='<button class="btn btn-sm" data-auris-runtime-onclick="r0035" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([p.id]))+'"><i class="ti ti-id"></i>Profile</button>';
+const actions=peopleCanManage()?'<div style="display:flex;gap:6px;flex-wrap:wrap">'+profileBtn+'<button class="btn btn-sm" data-auris-runtime-onclick="r0036" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([p.id]))+'"><i class="ti ti-edit"></i>Edit</button><button class="btn btn-sm" data-auris-runtime-onclick="r0037" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([p.id]))+'" title="'+onboardTitle+'"><i class="ti ti-user-plus"></i>Onboard user</button>'+(p.status==='inactive'?'<button class="btn btn-sm" data-auris-runtime-onclick="r0038" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([p.id]))+'">Reactivate</button>':'<button class="btn btn-sm danger" data-auris-runtime-onclick="r0039" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([p.id]))+'">Deactivate</button>')+'</div>':profileBtn;
 return '<tr><td><strong>'+escH(peopleName(p))+'</strong>'+contractor+'<div style="font-size:11px;color:var(--text2)">ID: '+escH(p.id_number||'--')+'</div></td><td><span class="badge '+typeBadge+'">'+escH(p.person_type||'person')+'</span></td><td>'+escH(p.department||'--')+'<br><span style="font-size:11px;color:var(--text2)">'+escH(p.site||'--')+'</span></td><td>'+escH(p.email||'--')+'<br><span style="font-size:11px;color:var(--text2)">'+escH(p.phone||'--')+'</span></td><td>'+employment+'</td><td>'+hse+'</td><td>'+stat(p.status||'active')+'</td><td>'+actions+'</td></tr>';
 }).join('')+'</tbody></table></div>';
 }
@@ -10574,7 +10574,7 @@ function rolloutRender(rows,health){
     var row=rows.find(function(r){return r.cohort_key===cohort.key;})||rolloutDefaultRow(cohort),summary=health.find(function(x){return x.cohort_key===cohort.key;})||{},gates=row.gate_results||{};
     h+='<div style="border:1px solid var(--border);border-radius:11px;padding:13px;background:#fff">'
       +'<div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start;flex-wrap:wrap"><div><div style="font-size:14px;font-weight:900">'+escH(cohort.label)+' '+rolloutStatusBadge(row.status)+'</div><div style="font-size:11px;color:var(--text2);margin-top:3px">'+escH(cohort.modules.join(' · '))+'</div></div>'
-      +'<div style="display:flex;gap:8px;align-items:end"><label style="font-size:10px;font-weight:800;color:var(--text2)">STATUS<select id="rollout-status-'+cohort.key+'" style="min-width:125px;margin-top:3px"><option value="disabled">Disabled</option><option value="pilot">Pilot</option><option value="enabled">Enabled</option><option value="paused">Paused</option></select></label><button class="btn btn-primary btn-sm" onclick="rolloutSaveCohort(\''+cohort.key+'\')"><i class="ti ti-device-floppy"></i>Save</button></div></div>'
+      +'<div style="display:flex;gap:8px;align-items:end"><label style="font-size:10px;font-weight:800;color:var(--text2)">STATUS<select id="rollout-status-'+cohort.key+'" style="min-width:125px;margin-top:3px"><option value="disabled">Disabled</option><option value="pilot">Pilot</option><option value="enabled">Enabled</option><option value="paused">Paused</option></select></label><button class="btn btn-primary btn-sm" data-auris-runtime-onclick="r0040" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([cohort.key]))+'"><i class="ti ti-device-floppy"></i>Save</button></div></div>'
       +'<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(125px,1fr));gap:6px;margin-top:11px">'+ROLLOUT_RELEASE_GATES.map(function(g){return '<label style="display:flex;gap:6px;align-items:center;font-size:10px;padding:6px 7px;border:1px solid var(--border);border-radius:7px"><input id="rollout-gate-'+cohort.key+'-'+g+'" type="checkbox" '+(gates[g]?'checked':'')+'/> '+escH(rolloutGateLabel(g))+'</label>';}).join('')+'</div>'
       +'<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(105px,1fr));gap:6px;margin-top:10px;font-size:10px;color:var(--text2)"><span><b>'+Number(summary.open_findings||0)+'</b> open</span><span><b>'+Number(summary.module_errors||0)+'</b> errors</span><span><b>'+Number(summary.orphan_relationships||0)+'</b> orphans</span><span><b>'+Number(summary.failed_deep_links||0)+'</b> failed links</span><span><b>'+Number(summary.approval_discrepancies||0)+'</b> approval gaps</span></div>'
       +'</div>';
@@ -10764,7 +10764,7 @@ function relationshipRepairStatus(status){var cfg={endpoint_archived:['Archived 
 function renderRelationshipRepairQueue(summary,rows,lastRun){var el=document.getElementById('relationship-repair-body');if(!el)return;summary=summary||{};relationshipRepairRows=rows||[];var html='<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:9px;margin-bottom:13px">'+relationshipHealthMetric('Active',summary.active_count,'#07835B','Healthy reciprocal links')+relationshipHealthMetric('Archived endpoint',summary.archived_endpoint_count,'#B45309','Source or target retired')+relationshipHealthMetric('Broken',summary.broken_count,'#DC2626','Exact record no longer exists')+relationshipHealthMetric('Unresolved',summary.unresolved_count,'#7C3AED','Registry or table needs setup')+'</div>';
 html+='<div style="display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:10px"><div style="font-size:11px;color:var(--text2)">'+(lastRun?'Last validation '+escH(new Date(lastRun).toLocaleString()):'No validation run recorded yet')+' · Links are never deleted by validation.</div><button class="btn btn-primary btn-sm" data-auris-generated-onclick="g0066"><i class="ti ti-refresh"></i>Validate now</button></div>';
 if(!relationshipRepairRows.length)html+='<div style="padding:18px;border:1px dashed var(--border);border-radius:10px;text-align:center;color:var(--text2)"><i class="ti ti-circle-check" style="color:#07835B;font-size:22px"></i><div style="font-weight:850;margin-top:5px">No relationships require repair</div></div>';
-else{html+='<div style="overflow-x:auto;border:1px solid var(--border);border-radius:10px"><table style="width:100%;border-collapse:collapse;min-width:880px"><thead><tr style="background:#F8FAFC"><th style="padding:9px;text-align:left">Status</th><th style="padding:9px;text-align:left">Source</th><th style="padding:9px;text-align:left">Relationship</th><th style="padding:9px;text-align:left">Target</th><th style="padding:9px;text-align:left">Finding</th><th style="padding:9px;text-align:right">Actions</th></tr></thead><tbody>'+relationshipRepairRows.map(function(r){return '<tr style="border-top:1px solid var(--border)"><td style="padding:9px">'+relationshipRepairStatus(r.status)+'</td><td style="padding:9px"><b>'+escH(r.source_ref||r.source_id)+'</b><div style="font-size:10px;color:var(--text2)">'+escH(r.source_module+' · '+r.source_state)+'</div></td><td style="padding:9px;font-size:11px">'+escH(String(r.relationship_type||'related_to').replace(/_/g,' '))+'</td><td style="padding:9px"><b>'+escH(r.target_ref||r.target_id)+'</b><div style="font-size:10px;color:var(--text2)">'+escH(r.target_module+' · '+r.target_state)+'</div></td><td style="padding:9px;font-size:11px;color:var(--text2);max-width:260px">'+escH(r.validation_error||'Verification required')+'</td><td style="padding:9px;text-align:right;white-space:nowrap"><button class="btn btn-sm" onclick="relationshipRepairOpen(\''+r.id+'\',\'source\')" title="Open source"><i class="ti ti-arrow-up-right"></i>Source</button> <button class="btn btn-sm" onclick="relationshipRepairOpen(\''+r.id+'\',\'target\')" title="Open target"><i class="ti ti-arrow-up-right"></i>Target</button> <button class="btn btn-sm" onclick="relationshipRepairArchive(\''+r.id+'\')" title="Archive invalid relationship"><i class="ti ti-archive"></i></button></td></tr>';}).join('')+'</tbody></table></div>';}
+else{html+='<div style="overflow-x:auto;border:1px solid var(--border);border-radius:10px"><table style="width:100%;border-collapse:collapse;min-width:880px"><thead><tr style="background:#F8FAFC"><th style="padding:9px;text-align:left">Status</th><th style="padding:9px;text-align:left">Source</th><th style="padding:9px;text-align:left">Relationship</th><th style="padding:9px;text-align:left">Target</th><th style="padding:9px;text-align:left">Finding</th><th style="padding:9px;text-align:right">Actions</th></tr></thead><tbody>'+relationshipRepairRows.map(function(r){return '<tr style="border-top:1px solid var(--border)"><td style="padding:9px">'+relationshipRepairStatus(r.status)+'</td><td style="padding:9px"><b>'+escH(r.source_ref||r.source_id)+'</b><div style="font-size:10px;color:var(--text2)">'+escH(r.source_module+' · '+r.source_state)+'</div></td><td style="padding:9px;font-size:11px">'+escH(String(r.relationship_type||'related_to').replace(/_/g,' '))+'</td><td style="padding:9px"><b>'+escH(r.target_ref||r.target_id)+'</b><div style="font-size:10px;color:var(--text2)">'+escH(r.target_module+' · '+r.target_state)+'</div></td><td style="padding:9px;font-size:11px;color:var(--text2);max-width:260px">'+escH(r.validation_error||'Verification required')+'</td><td style="padding:9px;text-align:right;white-space:nowrap"><button class="btn btn-sm" data-auris-runtime-onclick="r0041" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([r.id]))+'" title="Open source"><i class="ti ti-arrow-up-right"></i>Source</button> <button class="btn btn-sm" data-auris-runtime-onclick="r0042" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([r.id]))+'" title="Open target"><i class="ti ti-arrow-up-right"></i>Target</button> <button class="btn btn-sm" data-auris-runtime-onclick="r0043" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([r.id]))+'" title="Archive invalid relationship"><i class="ti ti-archive"></i></button></td></tr>';}).join('')+'</tbody></table></div>';}
 el.innerHTML=html;}
 async function loadRelationshipRepairQueue(runValidation){var card=document.getElementById('settings-relationship-repair-card');if(card)card.style.display=systemHealthCanView()?'block':'none';if(!systemHealthCanView())return;var el=document.getElementById('relationship-repair-body');if(!el)return;el.innerHTML='<div class="loading">'+(runValidation?'Validating both endpoints...':'Loading relationship health...')+'</div>';try{if(runValidation)await api('/rpc/validate_record_relationships',{m:'POST',p:'return=representation',b:{p_company_id:ccid(),p_limit:5000,p_trigger_source:'administrator'}});var result=await Promise.all([api('/relationship_health_summary?select=*&company_id=eq.'+encodeURIComponent(ccid())+'&limit=1'),api('/relationship_repair_queue?select=*&company_id=eq.'+encodeURIComponent(ccid())+'&order=last_validated_at.desc&limit=200'),api('/relationship_validation_runs?select=completed_at&company_id=eq.'+encodeURIComponent(ccid())+'&order=completed_at.desc&limit=1')]);renderRelationshipRepairQueue(result[0]?.[0]||{},result[1]||[],result[2]?.[0]?.completed_at||result[0]?.[0]?.last_validated_at||null);if(runValidation)toast('Relationship validation completed');}catch(e){el.innerHTML='<div class="setup-message danger"><div class="setup-message-icon"><i class="ti ti-plug-connected-x"></i></div><div><div class="setup-message-title">Relationship validation setup required</div><div>Run the updated <code>shared_record_relationships_schema.sql</code> in Supabase.</div>'+(isSA()?'<div class="setup-message-detail">'+escH(e.message||e)+'</div>':'')+'</div></div>';}}
 async function relationshipRepairOpen(id,side){var r=relationshipRepairRows.find(function(x){return String(x.id)===String(id);});if(!r)return;var moduleName=side==='target'?r.target_module:r.source_module,tableName=side==='target'?r.target_table:r.source_table,recordId=side==='target'?r.target_id:r.source_id,recordRef=side==='target'?r.target_ref:r.source_ref,state=side==='target'?r.target_state:r.source_state;if(state!=='active'&&state!=='archived')return toast('This endpoint cannot be opened because it is '+state+'.',false);if(moduleName==='action'&&tableName==='action_tracker'){showPage('actions');await new Promise(function(resolve){setTimeout(resolve,150);});return mapEdit(recordId);}var synthetic={source_module:moduleName,source_type:moduleName,source_table:tableName,source_id:recordId,source_ref:recordRef||recordId},adapter=mapSourceAdapter(synthetic);if(!adapter)return toast('No exact-record navigation adapter exists for this endpoint.',false);showPage(adapter.page);await new Promise(function(resolve){setTimeout(resolve,150);});var opened=await mapOpenExactSource(adapter,synthetic);if(!opened)mapApplySourceSearch(adapter.page,synthetic.source_ref);}
@@ -10785,7 +10785,7 @@ function renderPersonIdentityReconciliation(summary,rows,duplicates){
   else{
     var options=(people||[]).filter(function(p){return !p.company_id||p.company_id===ccid();}).map(identityPersonOption).join('');
     h+='<div style="overflow-x:auto;border:1px solid var(--border);border-radius:10px"><table style="width:100%;border-collapse:collapse;min-width:980px"><thead><tr style="background:#F8FAFC"><th style="padding:9px;text-align:left">Legacy record</th><th style="padding:9px;text-align:left">Source</th><th style="padding:9px;text-align:left">Verified person</th><th style="padding:9px;text-align:left">Review note</th><th style="padding:9px;text-align:right">Decision</th></tr></thead><tbody>';
-    h+=personIdentityReviewRows.map(function(r){return '<tr style="border-top:1px solid var(--border)"><td style="padding:9px"><b>'+escH(r.legacy_name||'Unnamed legacy record')+'</b><div style="font-size:10px;color:var(--text2)">'+escH(r.legacy_employee_number||'No employee number')+' · '+Number((r.candidate_person_ids||[]).length)+' candidate(s)</div></td><td style="padding:9px"><span class="badge badge-blue">'+escH(String(r.source_table||'').replace(/_/g,' '))+'</span><div style="font-family:monospace;font-size:9px;color:var(--text3);margin-top:4px">'+escH(r.source_id)+'</div></td><td style="padding:9px"><select id="identity-person-'+r.id+'" style="min-width:260px"><option value="">Select verified person...</option>'+options+'</select></td><td style="padding:9px"><input id="identity-note-'+r.id+'" placeholder="Reason / evidence reviewed" style="min-width:210px"></td><td style="padding:9px;text-align:right;white-space:nowrap"><button class="btn btn-primary btn-sm" onclick="personIdentityResolve(\''+r.id+'\',\'linked\')"><i class="ti ti-link"></i>Link</button> <button class="btn btn-sm" onclick="personIdentityResolve(\''+r.id+'\',\'ignored\')"><i class="ti ti-eye-off"></i>Ignore</button></td></tr>';}).join('')+'</tbody></table></div>';
+    h+=personIdentityReviewRows.map(function(r){return '<tr style="border-top:1px solid var(--border)"><td style="padding:9px"><b>'+escH(r.legacy_name||'Unnamed legacy record')+'</b><div style="font-size:10px;color:var(--text2)">'+escH(r.legacy_employee_number||'No employee number')+' · '+Number((r.candidate_person_ids||[]).length)+' candidate(s)</div></td><td style="padding:9px"><span class="badge badge-blue">'+escH(String(r.source_table||'').replace(/_/g,' '))+'</span><div style="font-family:monospace;font-size:9px;color:var(--text3);margin-top:4px">'+escH(r.source_id)+'</div></td><td style="padding:9px"><select id="identity-person-'+r.id+'" style="min-width:260px"><option value="">Select verified person...</option>'+options+'</select></td><td style="padding:9px"><input id="identity-note-'+r.id+'" placeholder="Reason / evidence reviewed" style="min-width:210px"></td><td style="padding:9px;text-align:right;white-space:nowrap"><button class="btn btn-primary btn-sm" data-auris-runtime-onclick="r0044" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([r.id]))+'"><i class="ti ti-link"></i>Link</button> <button class="btn btn-sm" data-auris-runtime-onclick="r0045" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([r.id]))+'"><i class="ti ti-eye-off"></i>Ignore</button></td></tr>';}).join('')+'</tbody></table></div>';
   }
   if(personDuplicateRows.length){h+='<details style="margin-top:13px;border:1px solid #F5D08A;border-radius:10px;background:#FFFBEB"><summary style="padding:11px 13px;cursor:pointer;font-weight:850;color:#92400E">'+personDuplicateRows.length+' possible duplicate People cluster(s) — review only</summary><div style="padding:0 13px 13px"><div style="font-size:11px;color:#854F0B;margin-bottom:8px">AURIS never merges these automatically. Open People and verify employment, contact and linked history before any manual decision.</div>'+personDuplicateRows.map(function(d){return '<div style="padding:8px 0;border-top:1px solid #FDE7B0;display:flex;justify-content:space-between;gap:10px"><div><b>'+escH(d.match_type.replace(/_/g,' '))+': '+escH(d.match_key)+'</b><div style="font-size:11px;color:var(--text2)">'+escH((d.person_names||[]).join(' · '))+'</div></div><button class="btn btn-sm" data-auris-generated-onclick="g0068"><i class="ti ti-users"></i>Open People</button></div>';}).join('')+'</div></details>';}
   el.innerHTML=h;personIdentityReviewRows.forEach(function(r){var candidate=(r.candidate_person_ids||[])[0],select=document.getElementById('identity-person-'+r.id);if(select&&candidate)select.value=candidate;});
@@ -11165,7 +11165,7 @@ function customRenderFieldSettings(moduleKey,rows){
   var table='<div style="overflow:auto;border:1px solid var(--border);border-radius:10px;margin-top:12px"><table style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr style="background:#F8FAFC"><th style="padding:9px;text-align:left">Field</th><th style="padding:9px;text-align:left">Type</th><th style="padding:9px;text-align:left">Required</th><th style="padding:9px;text-align:left">Status</th><th style="padding:9px;text-align:right">Actions</th></tr></thead><tbody>';
   if(!rows.length)table+='<tr><td colspan="5" style="padding:18px;text-align:center;color:var(--text2)">No custom fields yet for '+escH(customFieldModuleLabel(moduleKey))+'.</td></tr>';
   rows.forEach(function(f){
-    table+='<tr style="border-top:1px solid var(--border)"><td style="padding:9px;font-weight:700">'+escH(f.field_label)+'<div style="font-size:10px;color:var(--text3);font-family:monospace">'+escH(f.field_key)+'</div></td><td style="padding:9px;text-transform:capitalize">'+escH(f.field_type)+'</td><td style="padding:9px">'+(f.required?'Yes':'No')+'</td><td style="padding:9px">'+(f.active?'<span style="color:var(--green);font-weight:700">Active</span>':'Inactive')+'</td><td style="padding:9px;text-align:right"><button class="btn btn-sm" onclick="customEditField(&quot;'+f.id+'&quot;)"><i class="ti ti-edit"></i></button> <button class="btn btn-sm" style="color:var(--red);border-color:#fecaca" onclick="customDeleteField(&quot;'+f.id+'&quot;)"><i class="ti ti-trash"></i></button></td></tr>';
+    table+='<tr style="border-top:1px solid var(--border)"><td style="padding:9px;font-weight:700">'+escH(f.field_label)+'<div style="font-size:10px;color:var(--text3);font-family:monospace">'+escH(f.field_key)+'</div></td><td style="padding:9px;text-transform:capitalize">'+escH(f.field_type)+'</td><td style="padding:9px">'+(f.required?'Yes':'No')+'</td><td style="padding:9px">'+(f.active?'<span style="color:var(--green);font-weight:700">Active</span>':'Inactive')+'</td><td style="padding:9px;text-align:right"><button class="btn btn-sm" data-auris-runtime-onclick="r0046" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([f.id]))+'"><i class="ti ti-edit"></i></button> <button class="btn btn-sm" style="color:var(--red);border-color:#fecaca" data-auris-runtime-onclick="r0047" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([f.id]))+'"><i class="ti ti-trash"></i></button></td></tr>';
   });
   table+='</tbody></table></div>';
   el.innerHTML='<div style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:flex-end">'
@@ -11563,7 +11563,7 @@ function approvalRenderWorkflows(){
     return '<div style="border:1px solid var(--border);border-radius:10px;padding:12px;background:#fff;display:flex;justify-content:space-between;gap:12px;align-items:center">'
       +'<div><div style="font-size:13px;font-weight:800">'+escH(w.workflow_name||'Workflow')+' <span class="badge bg">'+escH(auditLabel(w.module_name||''))+'</span></div>'
       +'<div style="font-size:11px;color:var(--text2);margin-top:5px">'+stepText+'</div></div>'
-      +'<div style="display:flex;gap:6px;flex-shrink:0"><button class="btn btn-sm" onclick="approvalEditWorkflow(\''+w.id+'\')"><i class="ti ti-edit"></i>Edit</button><button class="btn btn-sm danger" onclick="approvalDeleteWorkflow(\''+w.id+'\')"><i class="ti ti-trash"></i></button></div>'
+      +'<div style="display:flex;gap:6px;flex-shrink:0"><button class="btn btn-sm" data-auris-runtime-onclick="r0048" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([w.id]))+'"><i class="ti ti-edit"></i>Edit</button><button class="btn btn-sm danger" data-auris-runtime-onclick="r0049" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([w.id]))+'"><i class="ti ti-trash"></i></button></div>'
       +'</div>';
   }).join(''):'<div style="padding:18px;text-align:center;color:var(--text2);border:1px dashed var(--border);border-radius:10px">No approval workflows yet. Add one for PTW, documents, risk assessments, or incidents.</div>';
   el.innerHTML='<div style="display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:12px">'
@@ -11657,7 +11657,7 @@ function brandRenderPresets(){
   var b = Brand.get();
   host.innerHTML = Brand.PRESETS.map(function(p){
     var active = (b.theme_preset===p.id) ? ' active' : '';
-    return '<div class="brand-preset'+active+'" data-preset="'+p.id+'" onclick="brandPickPreset(\''+p.id+'\')">'+
+    return '<div class="brand-preset'+active+'" data-preset="'+p.id+'" data-auris-runtime-onclick="r0050" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([p.id]))+'">'+
       '<div class="brand-preset-swatch">'+
         '<span style="background:'+p.primary+'"></span>'+
         '<span style="background:'+p.secondary+'"></span>'+
@@ -12803,7 +12803,7 @@ function wsFilter(){
       +'<td style="padding:10px;text-align:center">'+wsBadge(x.priority,WS_PRIORITY_CFG)+'</td>'
       +'<td style="padding:10px;text-align:center">'+wsBadge(x.risk_level,WS_RISK_CFG)+'</td>'
       +'<td style="padding:10px;text-align:center">'+wsBadge(x.status,WS_STATUS_CFG)+'</td>'
-      +'<td style="padding:10px;text-align:center"><button class="btn btn-sm" onclick="event.stopPropagation();wsShowDetail(\''+x.id+'\')"><i class="ti ti-eye"></i></button></td>'
+      +'<td style="padding:10px;text-align:center"><button class="btn btn-sm" data-auris-runtime-onclick="r0051" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([x.id]))+'"><i class="ti ti-eye"></i></button></td>'
       +'</tr>';
   });
   html+='</tbody></table></div>';
@@ -13034,8 +13034,8 @@ function tbtRenderAttendees(){
       +'<div style="width:28px;height:28px;border-radius:50%;background:var(--green);color:#fff;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0">'+a.name.charAt(0).toUpperCase()+'</div>'
       +'<span style="flex:1;font-size:13px;font-weight:500">'+escH(a.name)+'</span>'
       +'<label style="display:flex;align-items:center;gap:4px;font-size:11px;color:var(--green);cursor:pointer">'
-      +'<input type="checkbox" '+(a.signed?'checked':'')+' style="accent-color:var(--green)" onchange="wsTbtAttendees['+i+'].signed=this.checked;tbtRenderAttendees()"> Signed</label>'
-      +'<button class="btn btn-sm" style="color:var(--red);padding:2px 6px" onclick="wsTbtAttendees.splice('+i+',1);tbtRenderAttendees()"><i class="ti ti-x" style="font-size:11px"></i></button>'
+      +'<input type="checkbox" '+(a.signed?'checked':'')+' style="accent-color:var(--green)" data-auris-runtime-onchange="r0052" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([i]))+'"> Signed</label>'
+      +'<button class="btn btn-sm" style="color:var(--red);padding:2px 6px" data-auris-runtime-onclick="r0053" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([i]))+'"><i class="ti ti-x" style="font-size:11px"></i></button>'
       +'</div>';
   }).join('');
 }
@@ -13306,7 +13306,7 @@ function wsTERenderItems(){
     var icon=(TOOL_CAT_ICONS||{})[item.category]||'ti-package';
     var label=TOOL_CAT_LABELS?.[item.category]||item.category;
     h+='<div style="border:1px solid var(--border);border-radius:10px;padding:12px 16px;background:#fff;display:flex;align-items:center;gap:12px;cursor:pointer;transition:box-shadow .15s" '
-      +'data-idx="'+i+'" onclick="wsTEOpenChecklist('+i+')" '
+      +'data-idx="'+i+'" data-auris-runtime-onclick="r0054" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([i]))+'" '
       +'onmouseover="this.style.boxShadow=\'0 2px 12px rgba(0,0,0,.08)\'" data-auris-generated-onmouseout="g0088">'
       +'<div style="width:42px;height:42px;border-radius:10px;background:'+col+'20;display:flex;align-items:center;justify-content:center;flex-shrink:0">'
       +'<i class="ti '+icon+'" style="font-size:20px;color:'+col+'"></i></div>'
@@ -13321,8 +13321,8 @@ function wsTERenderItems(){
       +(item.inspected
         ?'<span style="background:#EAF3DE;color:#3B6D11;padding:3px 10px;border-radius:99px;font-size:11px;font-weight:700">Inspected '+(item.result==='pass'?'PASS':item.result==='fail'?'FAIL':'COND')+'</span>'
         :'<span style="background:#FEF9EC;color:#854F0B;padding:3px 10px;border-radius:99px;font-size:11px;font-weight:600">Not checked</span>')
-      +'<button class="btn btn-sm" style="color:'+col+';border-color:'+col+'40" onclick="event.stopPropagation();wsTEOpenChecklist('+i+')"><i class="ti ti-clipboard-check"></i>Inspect</button>'
-      +'<button class="btn btn-sm" style="color:var(--red)" onclick="event.stopPropagation();wsTERemove('+i+')"><i class="ti ti-x"></i></button>'
+      +'<button class="btn btn-sm" style="color:'+col+';border-color:'+col+'40" data-auris-runtime-onclick="r0055" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([i]))+'"><i class="ti ti-clipboard-check"></i>Inspect</button>'
+      +'<button class="btn btn-sm" style="color:var(--red)" data-auris-runtime-onclick="r0056" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([i]))+'"><i class="ti ti-x"></i></button>'
       +'</div>'
       +'</div>';
   });
@@ -13438,7 +13438,7 @@ function wsBackToTEForm(){
 
 function wsLinkedRefButton(kind,value,label){
   if(!value)return escH(label||'-');
-  return '<button type="button" class="link-ref-btn" onclick="event.stopPropagation();wsOpenLinkedRecord(\''+kind+'\',\''+escH(String(value))+'\')" title="Open linked record" style="border:0;background:transparent;color:var(--green);font-family:monospace;font-weight:800;cursor:pointer;padding:0;text-decoration:underline;text-underline-offset:2px">'+escH(label||value)+'</button>';
+  return '<button type="button" class="link-ref-btn" data-auris-runtime-onclick="r0057" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([kind,String(value)]))+'" title="Open linked record" style="border:0;background:transparent;color:var(--green);font-family:monospace;font-weight:800;cursor:pointer;padding:0;text-decoration:underline;text-underline-offset:2px">'+escH(label||value)+'</button>';
 }
 
 function wsSelectedLinkedValue(kind){
@@ -13508,9 +13508,9 @@ async function wsRenderLinkedRecords(x){
     return '<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid #f5f5f5">'
       +'<i class="ti '+icon+'" style="color:'+col+';font-size:14px;width:18px"></i>'
       +'<span style="font-size:12px;color:var(--text2);flex:0 0 105px">'+label+'</span>'
-      +'<select id="ws-link-'+kind+'" onchange="wsLinkedRecordChanged(\''+kind+'\',this.value)" style="flex:1;min-width:0;padding:5px 7px;border:1px solid var(--border);border-radius:7px;font-size:11px;background:#fff">'
+      +'<select id="ws-link-'+kind+'" data-auris-runtime-onchange="r0058" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([kind]))+'" style="flex:1;min-width:0;padding:5px 7px;border:1px solid var(--border);border-radius:7px;font-size:11px;background:#fff">'
       +'<option value="">Loading...</option></select>'
-      +'<button class="btn btn-sm" type="button" title="Open linked record" onclick="event.stopPropagation();wsOpenLinkedRecord(\''+kind+'\')" style="padding:5px 7px"><i class="ti ti-external-link"></i></button>'
+      +'<button class="btn btn-sm" type="button" title="Open linked record" data-auris-runtime-onclick="r0059" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([kind]))+'" style="padding:5px 7px"><i class="ti ti-external-link"></i></button>'
       +'</div>';
   };
   var h='';
@@ -13650,7 +13650,7 @@ function imsRenderPhotos(){
   var el=document.getElementById('ev-photo-list'); if(!el)return;
   if(!imsPendingPhotos.length){el.textContent='No photos selected';return;}
   el.innerHTML=imsPendingPhotos.map(function(f,i){
-    return '<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px"><i class="ti ti-photo"></i><span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+escH(f.name)+'</span><span>'+Math.round(f.size/1024)+' KB</span><button type="button" class="btn btn-sm" onclick="imsRemovePhoto('+i+')"><i class="ti ti-x"></i></button></div>';
+    return '<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px"><i class="ti ti-photo"></i><span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+escH(f.name)+'</span><span>'+Math.round(f.size/1024)+' KB</span><button type="button" class="btn btn-sm" data-auris-runtime-onclick="r0060" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([i]))+'"><i class="ti ti-x"></i></button></div>';
   }).join('');
 }
 
@@ -13884,7 +13884,7 @@ function imsMonthlySeries(data, predicate){
 }
 
 function imsKpiCard(cls, icon, label, value, sub, action){
-  return '<button type="button" class="ims-kpi-card '+cls+'" onclick="'+action+'" title="Open '+escH(label)+'">'
+  return '<button type="button" class="ims-kpi-card '+cls+'" data-auris-named-action="'+escH(action)+'" title="Open '+escH(label)+'">'
     +'<div class="icon"><i class="ti '+icon+'"></i></div>'
     +'<div class="label">'+escH(label)+'</div><div class="value">'+escH(value)+'</div><div class="sub">'+escH(sub||'')+'</div></button>';
 }
@@ -14001,12 +14001,12 @@ function imsRenderIncidentDashboard(data){
   var nearSeries=imsMonthlySeries(data,function(x){return (x.event_type||x.type)==='near_miss';});
   el.innerHTML=
     '<div class="ims-kpi-grid">'
-    +imsKpiCard('ims-kpi-red','ti-file-alert','Total Incidents',total,total+' in selected period',"imsScrollIncidentRegister()")
-    +imsKpiCard('ims-kpi-orange','ti-search','Open Investigations',investigations,investigations+' requiring follow-up',"imsOpenTabById('investigate','ims-tab-investigate')")
-    +imsKpiCard('ims-kpi-yellow','ti-clipboard-alert','Overdue Actions',overdueActions,'linked corrective actions',"imsOpenTabById('actions','ims-tab-actions')")
-    +imsKpiCard('ims-kpi-green','ti-circle-check','Closed This Month',closedMonth,closedMonth+' closed records',"imsSetFilterAndRender('ev-filter-status','closed')")
-    +imsKpiCard('ims-kpi-blue','ti-chart-line','TRIR (YTD)',trir,'indicative from current records',"imsOpenIncidentStats()")
-    +imsKpiCard('ims-kpi-purple','ti-alert-triangle','Severity Index',sevIndex,sevIndex>=3?'High risk':'Controlled',"imsOpenIncidentStats()")
+    +imsKpiCard('ims-kpi-red','ti-file-alert','Total Incidents',total,total+' in selected period','ims-scroll-register')
+    +imsKpiCard('ims-kpi-orange','ti-search','Open Investigations',investigations,investigations+' requiring follow-up','ims-open-investigations')
+    +imsKpiCard('ims-kpi-yellow','ti-clipboard-alert','Overdue Actions',overdueActions,'linked corrective actions','ims-open-actions')
+    +imsKpiCard('ims-kpi-green','ti-circle-check','Closed This Month',closedMonth,closedMonth+' closed records','ims-filter-closed')
+    +imsKpiCard('ims-kpi-blue','ti-chart-line','TRIR (YTD)',trir,'indicative from current records','ims-open-stats')
+    +imsKpiCard('ims-kpi-purple','ti-alert-triangle','Severity Index',sevIndex,sevIndex>=3?'High risk':'Controlled','ims-open-stats')
     +'</div>'
     +'<div class="ims-dash-grid">'
     +'<section class="ims-panel"><h3>Incident Heat Map</h3>'+imsHeatMapHtml(data)+'<div class="ims-legend"><span style="--dot:#22c55e">Low (1-2)</span><span style="--dot:#f59e0b">Medium (3-4)</span><span style="--dot:#ef4444">High (5+)</span></div></section>'
@@ -14614,7 +14614,7 @@ async function imsLoadInvestigations(){
       var bg=i%2===0?'#fff':'#f9fafb';
       var sc2=stCfg[x.status]||stCfg.open;
       var meth=x.investigation_method||'5why';
-      h+='<tr style="border-bottom:1px solid #f0f0f0;background:'+bg+';cursor:pointer" onclick="imsOpenInvestigation(\''+x.id+'\')">'
+      h+='<tr style="border-bottom:1px solid #f0f0f0;background:'+bg+';cursor:pointer" data-auris-runtime-onclick="r0061" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([x.id]))+'">'
         +'<td style="padding:8px 14px;font-family:monospace;font-size:11px;font-weight:800;color:#5B21B6">'+escH(displayRecordRef(x,'investigation_ref','INV-DRAFT'))+'</td>'
         +'<td style="padding:8px;max-width:280px"><div style="font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+escH((x.description||x.incident_description||'-').substring(0,80))+'</div>'+(x.location?'<div style="font-size:10px;color:var(--text2)">'+escH(x.location)+'</div>':'')+'</td>'
         +'<td style="padding:8px;text-align:center;font-size:16px" title="'+meth+'">'+(methEmoji[meth]||'<i class="ti ti-search"></i>')+'</td>'
@@ -15408,7 +15408,7 @@ async function generateSafetyComm(){
         +'<div style="font-weight:800;font-size:15px;color:#185FA5;margin-bottom:12px"><i class="ti ti-robot"></i> AI Safety Communication</div>'
         +'<div style="white-space:pre-wrap;font-size:13px;line-height:1.7;color:#1a1a1a">'+escH(text)+'</div>'
         +'<div style="display:flex;gap:8px;margin-top:16px">'
-        +'<button class="btn btn-primary" onclick="navigator.clipboard.writeText('+JSON.stringify(text)+').then(()=>toast(\'Copied!\'))"><i class="ti ti-copy"></i>Copy</button>'
+        +'<button class="btn btn-primary" data-auris-runtime-onclick="r0062" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([JSON.stringify(text)]))+'"><i class="ti ti-copy"></i>Copy</button>'
         +'<button class="btn" data-auris-generated-onclick="g0111">Close</button>'
         +'</div></div>';
       document.body.appendChild(modal);
@@ -15516,7 +15516,7 @@ async function imsLoadEvidence(){
         +'<td style="padding:10px;min-width:260px;color:var(--text2)">'+escH(notes.substring(0,130))+(notes.length>130?'...':'')+'</td>'
         +'<td style="padding:10px;text-align:center;white-space:nowrap">'
         +(x.file_url?'<button type="button" class="btn btn-sm" data-path="'+escH(x.file_url)+'" data-auris-generated-onclick="g0114" title="View file"><i class="ti ti-external-link"></i></button> ':'')
-        +'<button type="button" class="btn btn-sm" onclick="event.stopPropagation();imsEditEvidence(\''+x.id+'\')" title="Open evidence"><i class="ti ti-eye"></i></button></td>'
+        +'<button type="button" class="btn btn-sm" data-auris-runtime-onclick="r0063" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([x.id]))+'" title="Open evidence"><i class="ti ti-eye"></i></button></td>'
         +'</tr>';
     });
     el.innerHTML=h+'</tbody></table></div>';
@@ -15968,7 +15968,7 @@ function raRenderAssessmentRegister(el,rows,emptyHtml){
       +'<td style="padding:11px;text-align:center">'+raRiskBadge(sum.residualLevel,sum.residualScore)+'</td>'
       +'<td style="padding:11px;min-width:150px">'+raLinkedCell(x)+'</td>'
       +'<td style="padding:11px;text-align:center"><span style="display:inline-block;background:'+sc[0]+';color:'+sc[1]+';padding:3px 9px;border-radius:99px;font-size:11px;font-weight:800;white-space:nowrap">'+sc[2]+'</span><div style="margin-top:5px">'+raReviewCell(x)+'</div></td>'
-      +'<td style="padding:11px"><button class="btn btn-sm" title="Open assessment" onclick="event.stopPropagation();raOpen(\''+x.id+'\')"><i class="ti ti-edit"></i></button></td>'
+      +'<td style="padding:11px"><button class="btn btn-sm" title="Open assessment" data-auris-runtime-onclick="r0064" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([x.id]))+'"><i class="ti ti-edit"></i></button></td>'
       +'</tr>';
   });
   el.innerHTML=h+'</tbody></table></div>';
@@ -16008,7 +16008,7 @@ function raRenderJSAList(){
       +'<td style="padding:9px">'+escH(x.prepared_by||'-')+'</td>'
       +'<td style="padding:9px;text-align:center;font-weight:800">'+steps.length+'</td>'
       +'<td style="padding:9px;text-align:center"><span style="background:'+sc[0]+';color:'+sc[1]+';padding:2px 9px;border-radius:99px;font-size:11px;font-weight:800">'+sc[2]+'</span></td>'
-      +'<td style="padding:9px"><button class="btn btn-sm" onclick="event.stopPropagation();jsaEdit(\''+x.id+'\')"><i class="ti ti-edit"></i></button></td>'
+      +'<td style="padding:9px"><button class="btn btn-sm" data-auris-runtime-onclick="r0065" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([x.id]))+'"><i class="ti ti-edit"></i></button></td>'
       +'</tr>';
   });
   h+='</tbody></table></div>';
@@ -16063,7 +16063,7 @@ function raRenderFormGuide(tab){
     +'<div style="display:flex;gap:8px;flex-wrap:wrap">'
     +steps.map(function(s){
       var active=s.key===cur.key;
-      return '<button type="button" onclick="raFormTab(\''+s.key+'\',document.getElementById(\'ra-ftab-'+s.key+'\'))" style="border:1px solid '+(active?'#1D9E75':'#dbe3ea')+';background:'+(active?'#E1F5EE':'#fff')+';color:'+(active?'#0F6E56':'#475569')+';border-radius:999px;padding:6px 10px;font-size:12px;font-weight:800;cursor:pointer"><span style="display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:50%;background:'+(active?'#1D9E75':'#eef2f7')+';color:'+(active?'#fff':'#64748b')+';margin-right:5px">'+s.num+'</span>'+escH(s.label)+'</button>';
+      return '<button type="button" data-auris-named-action="ra-form-tab" data-ra-tab="'+escH(s.key)+'" style="border:1px solid '+(active?'#1D9E75':'#dbe3ea')+';background:'+(active?'#E1F5EE':'#fff')+';color:'+(active?'#0F6E56':'#475569')+';border-radius:999px;padding:6px 10px;font-size:12px;font-weight:800;cursor:pointer"><span style="display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:50%;background:'+(active?'#1D9E75':'#eef2f7')+';color:'+(active?'#fff':'#64748b')+';margin-right:5px">'+s.num+'</span>'+escH(s.label)+'</button>';
     }).join('')
     +'</div>'
     +'<div style="font-size:12px;color:#1E3A8A;background:#EFF6FF;border:1px solid #BFDBFE;border-radius:10px;padding:8px 10px;max-width:620px;line-height:1.4"><strong>Step '+cur.num+': '+escH(cur.label)+'.</strong> '+escH(cur.hint)+'</div>'
@@ -17034,7 +17034,7 @@ function raRenderLegalRefs(){
     return '<div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid #f5f5f5">'
       +'<i class="ti ti-book" style="color:#185FA5;font-size:12px"></i>'
       +'<span style="flex:1;font-size:12px;font-weight:500">'+escH(ref)+'</span>'
-      +'<button class="btn btn-sm" style="color:var(--red);padding:1px 5px" onclick="raLegalRefs.splice('+i+',1);raRenderLegalRefs()"><i class="ti ti-x" style="font-size:10px"></i></button>'
+      +'<button class="btn btn-sm" style="color:var(--red);padding:1px 5px" data-auris-runtime-onclick="r0066" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([i]))+'"><i class="ti ti-x" style="font-size:10px"></i></button>'
       +'</div>';
   }).join('');
 }
@@ -17215,8 +17215,8 @@ function raCompanyTemplateCard(t, compact){
     +'<div style="font-size:11px;color:var(--text2);margin-top:3px">'+escH(t.description||'Company risk assessment template')+'</div>'
     +(t.file_name?'<div style="font-size:10px;color:var(--text3);margin-top:5px"><i class="ti ti-paperclip"></i> '+escH(t.file_name)+'</div>':'')
     +'</div><div style="display:flex;gap:6px;flex-shrink:0;flex-wrap:wrap;justify-content:flex-end">'
-    +(t.file_url?'<button class="btn btn-sm" onclick="raPreviewCompanyTemplate(\''+t.id+'\')" title="Preview template"><i class="ti ti-eye"></i>'+(compact?'':'Preview')+'</button>':'')
-    +(!compact&&isMgr()?'<button class="btn btn-sm" style="color:var(--red)" onclick="raDeleteCompanyTemplate(\''+t.id+'\')" title="Remove template"><i class="ti ti-trash"></i></button>':'')
+    +(t.file_url?'<button class="btn btn-sm" data-auris-runtime-onclick="r0067" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([t.id]))+'" title="Preview template"><i class="ti ti-eye"></i>'+(compact?'':'Preview')+'</button>':'')
+    +(!compact&&isMgr()?'<button class="btn btn-sm" style="color:var(--red)" data-auris-runtime-onclick="r0068" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([t.id]))+'" title="Remove template"><i class="ti ti-trash"></i></button>':'')
     +'</div></div></div>';
 }
 
@@ -17240,7 +17240,7 @@ function libRenderTemplates(){
   h+=(raCompanyTemplates.length?raCompanyTemplates.map(function(t){return raCompanyTemplateCard(t,false);}).join(''):'<div class="card" style="padding:18px;text-align:center;color:var(--text2);grid-column:1/-1"><i class="ti ti-file-upload" style="font-size:28px;color:#94a3b8"></i><div style="font-weight:700;margin-top:6px">No company RA template uploaded</div><div style="font-size:12px;margin-top:4px">Upload a PDF, Word, Excel or image template from the client/company.</div></div>');
   h+='</div><div class="card" style="padding:12px 14px"><div class="card-title" style="margin-top:0">Built-in AURIS360 RA Templates</div><div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px">';
   h+=raBuiltInTemplates().map(function(t){
-    return '<div class="card" style="cursor:pointer;transition:all .15s;border:1px solid var(--border);padding:12px;text-align:center" onclick="raLoadTemplate(\''+t.id+'\')" data-auris-generated-onmouseover="g0129" data-auris-generated-onmouseout="g0130">'
+    return '<div class="card" style="cursor:pointer;transition:all .15s;border:1px solid var(--border);padding:12px;text-align:center" data-auris-runtime-onclick="r0069" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([t.id]))+'" data-auris-generated-onmouseover="g0129" data-auris-generated-onmouseout="g0130">'
       +'<div style="font-size:20px;font-weight:900;color:#185FA5;margin-bottom:8px">'+escH(t.emoji)+'</div><div style="font-weight:700;font-size:12px;color:#185FA5;margin-bottom:4px">'+escH(t.name)+'</div><div style="font-size:11px;color:var(--text2)">'+escH(t.desc)+'</div></div>';
   }).join('');
   h+='</div></div>';
@@ -17819,7 +17819,7 @@ function raRenderHazardLibResults(items){
       +'<div style="font-size:11px;color:var(--text2)">'+escH(item.category||'General')+' - '+escH(item.potential_harm||'')+'</div>'
       +'</div>'
       +(rl?'<span style="background:'+rlcfg[0]+';color:'+rlcfg[1]+';padding:1px 7px;border-radius:4px;font-size:10px;font-weight:700">'+rl+' '+rlLvl+'</span>':'')
-      +'<button class="btn btn-sm btn-primary" onclick="raAddFromLibrary(\''+item.id+'\')"><i class="ti ti-plus"></i>Add row</button>'
+      +'<button class="btn btn-sm btn-primary" data-auris-runtime-onclick="r0070" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([item.id]))+'"><i class="ti ti-plus"></i>Add row</button>'
       +'</div>';
   });
   h+='</div>';
@@ -18198,7 +18198,7 @@ function raRenderAISuggestions(rows){
   var h='<div style="margin-top:10px;border:2px solid #8B5CF6;border-radius:10px;overflow:hidden">'
     +'<div style="padding:8px 14px;background:#8B5CF6;color:#fff;display:flex;justify-content:space-between;align-items:center">'
     +'<span style="font-size:12px;font-weight:700">AI Generated '+rows.length+' Hazard Rows</span>'
-    +'<button class="btn btn-sm" style="background:rgba(255,255,255,.2);color:#fff;border-color:rgba(255,255,255,.3)" onclick="raAddAllAISuggestions('+JSON.stringify(rows).replace(/'/g,"\\'")+')">Add all to RA</button>'
+    +'<button class="btn btn-sm" style="background:rgba(255,255,255,.2);color:#fff;border-color:rgba(255,255,255,.3)" data-auris-named-action="ra-add-all-suggestions">Add all to RA</button>'
     +'</div>';
   rows.forEach(function(r,i){
     var rr=(r.rs||1)*(r.rop||1);
@@ -18212,7 +18212,7 @@ function raRenderAISuggestions(rows){
       +'<div style="display:flex;gap:6px;align-items:center">'
       +'<span style="background:'+rlcfg[0]+';color:'+rlcfg[1]+';padding:2px 8px;border-radius:4px;font-size:11px;font-weight:700">'+rr+' '+rl+'</span>'
       +(r.hoc_level?'<span style="background:'+( hocCfg[r.hoc_level]||'#6B7280')+'20;color:'+(hocCfg[r.hoc_level]||'#6B7280')+';padding:2px 8px;border-radius:4px;font-size:10px;font-weight:600;text-transform:capitalize">'+r.hoc_level+'</span>':'')
-      +'<button class="btn btn-sm" style="background:#8B5CF6;color:#fff;border-color:#8B5CF6;font-size:10px;padding:2px 8px" onclick="raAddSingleAISuggestion('+i+')"><i class="ti ti-plus"></i>Add</button>'
+      +'<button class="btn btn-sm" style="background:#8B5CF6;color:#fff;border-color:#8B5CF6;font-size:10px;padding:2px 8px" data-auris-runtime-onclick="r0071" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([i]))+'"><i class="ti ti-plus"></i>Add</button>'
       +'</div></div>'
       +'<div style="font-size:11px;color:#374151;background:#faf5ff;padding:6px 8px;border-radius:6px">'+escH(r.controls||'')+'</div>'
       +(r.further_controls?'<div style="font-size:11px;color:#374151;background:#fff7ed;padding:6px 8px;border-radius:6px;margin-top:5px"><b>Further controls:</b> '+escH(r.further_controls)+'</div>':'')
@@ -19041,7 +19041,7 @@ function ptwRenderList(){
       +'<td style="padding:9px 10px;white-space:nowrap">'+escH(endStr)+'</td>'
       +'<td style="padding:9px 10px;text-align:center"><span style="background:'+riskCfg[0]+';color:'+riskCfg[1]+';padding:3px 8px;border-radius:99px;font-size:10px;font-weight:800;text-transform:capitalize">'+escH(risk)+'</span></td>'
       +'<td style="padding:9px 10px;text-align:center"><span style="background:'+sc[0]+';color:'+sc[1]+';padding:3px 8px;border-radius:99px;font-size:10px;font-weight:800">'+escH(sc[2])+'</span></td>'
-      +'<td style="padding:9px 10px;text-align:center"><button class="btn btn-sm" onclick="event.stopPropagation();ptwShowDetail(\''+x.id+'\')"><i class="ti ti-eye"></i></button></td>'
+      +'<td style="padding:9px 10px;text-align:center"><button class="btn btn-sm" data-auris-runtime-onclick="r0072" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([x.id]))+'"><i class="ti ti-eye"></i></button></td>'
       +'</tr>';
   });
   el.innerHTML=h+'</tbody></table></div>';
@@ -19143,20 +19143,20 @@ function ptwRenderBlocks(x){
 function ptwRenderActionButtons(x){
   var el=document.getElementById('ptw-action-btns');if(!el)return;
   var h='';
-  var btn=function(icon,label,onclick,col){
-    return '<button class="btn" style="background:'+col+';color:#fff;border-color:'+col+'" onclick="'+onclick+'"><i class="ti '+icon+'"></i>'+label+'</button>';
+  var btn=function(icon,label,action,col){
+    return '<button class="btn" style="background:'+col+';color:#fff;border-color:'+col+'" data-auris-named-action="'+escH(action)+'"><i class="ti '+icon+'"></i>'+label+'</button>';
   };
   var canRecord=ptwCanRecordControls(x);
   var canControl=isMgr();
   if(canRecord&&['active','approved','pending_approval'].includes(x.status)){
-    h+=btn('ti-flask','Gas Tests',"ptwOpenGasPanel()",'#065F46');
-    h+=btn('ti-lock','Isolations',"ptwOpenIsolationPanel()",'#B45309');
+    h+=btn('ti-flask','Gas Tests','ptw-open-gas','#065F46');
+    h+=btn('ti-lock','Isolations','ptw-open-isolation','#B45309');
   }
-  if(canControl&&x.status==='pending_approval')h+=btn('ti-certificate','Approve/Reject',"ptwOpenApprovalPanel()",'#185FA5');
-  if(canControl&&x.status==='approved')h+=btn('ti-player-play','Activate Permit',"ptwActivate()",'#185FA5');
-  if(canControl&&x.status==='active')h+=btn('ti-circle-check','Close Permit',"ptwOpenClosurePanel()",'#1D9E75');
-  if(canControl&&['active','approved'].includes(x.status))h+=btn('ti-player-pause','Suspend/Cancel',"ptwOpenSuspensionPanel()",'#C2410C');
-  if(canControl&&x.status==='suspended')h+=btn('ti-player-play','Resume Permit',"ptwResume()",'#185FA5');
+  if(canControl&&x.status==='pending_approval')h+=btn('ti-certificate','Approve/Reject','ptw-open-approval','#185FA5');
+  if(canControl&&x.status==='approved')h+=btn('ti-player-play','Activate Permit','ptw-activate','#185FA5');
+  if(canControl&&x.status==='active')h+=btn('ti-circle-check','Close Permit','ptw-open-closure','#1D9E75');
+  if(canControl&&['active','approved'].includes(x.status))h+=btn('ti-player-pause','Suspend/Cancel','ptw-open-suspension','#C2410C');
+  if(canControl&&x.status==='suspended')h+=btn('ti-player-play','Resume Permit','ptw-resume','#185FA5');
   el.innerHTML=h;
 }
 
@@ -19317,7 +19317,7 @@ function ptwRenderApprovalStatus(x){
       +'<div style="display:flex;gap:8px;align-items:center">'
       +'<span style="background:'+sc[0]+';color:'+sc[1]+';padding:3px 10px;border-radius:99px;font-size:11px;font-weight:700">'+sc[2]+'</span>'
       +(isMgr()&&lv.status==='pending'&&x.status==='pending_approval'
-        ?'<button class="btn btn-sm" style="background:var(--green);color:#fff;border-color:var(--green)" onclick="ptwApprove('+lv.n+',\'approved\')"><i class="ti ti-check"></i>Approve</button><button class="btn btn-sm" style="color:var(--red);border-color:var(--red)" onclick="ptwApprove('+lv.n+',\'rejected\')"><i class="ti ti-x"></i>Reject</button>':'')
+        ?'<button class="btn btn-sm" style="background:var(--green);color:#fff;border-color:var(--green)" data-auris-runtime-onclick="r0073" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([lv.n]))+'"><i class="ti ti-check"></i>Approve</button><button class="btn btn-sm" style="color:var(--red);border-color:var(--red)" data-auris-runtime-onclick="r0074" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([lv.n]))+'"><i class="ti ti-x"></i>Reject</button>':'')
       +'</div></div></div>';
   }
   h+='</div></div>';
@@ -19846,8 +19846,8 @@ async function ptwRenderApprovalLevelsPanel(x){
       +(canAct
         ?'<div style="margin-top:12px"><div style="font-size:12px;color:var(--text2);margin-bottom:8px">This is the current approval step. The audit trail will use the configured approver name, or your logged-in name if no approver is configured.</div>'
         +'<div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap">'
-        +'<button class="btn btn-primary" style="background:var(--green);border-color:var(--green)" onclick="ptwApprove('+lv.n+',\'approved\')"><i class="ti ti-check"></i>Approve Level '+lv.n+'</button>'
-        +'<button class="btn" style="color:var(--red);border-color:var(--red)" onclick="ptwApprove('+lv.n+',\'rejected\')"><i class="ti ti-x"></i>Reject</button>'
+        +'<button class="btn btn-primary" style="background:var(--green);border-color:var(--green)" data-auris-runtime-onclick="r0073" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([lv.n]))+'"><i class="ti ti-check"></i>Approve Level '+lv.n+'</button>'
+        +'<button class="btn" style="color:var(--red);border-color:var(--red)" data-auris-runtime-onclick="r0074" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([lv.n]))+'"><i class="ti ti-x"></i>Reject</button>'
         +'</div></div>':(status==='pending'&&x.status==='pending_approval'?'<div style="margin-top:10px;font-size:12px;color:var(--text2)">Waiting for previous approval level.</div>':''));
     el.appendChild(card);
   }
@@ -20276,7 +20276,7 @@ function conFilterRegister(){
     var insurance=conDateState(x.insurance_expiry,60);
     var review=conDateState(x.next_review_date,60);
     var rowWarn=expiry.expired||insurance.expired?';border-left:4px solid var(--red)':expiry.soon||insurance.soon||review.soon?';border-left:4px solid #C2410C':'';
-    h+='<tr style="border-bottom:1px solid #f0f0f0;background:'+(i%2?'#fafafa':'#fff')+rowWarn+';cursor:pointer" onclick="conOpenDetail(\''+x.id+'\')">'
+    h+='<tr style="border-bottom:1px solid #f0f0f0;background:'+(i%2?'#fafafa':'#fff')+rowWarn+';cursor:pointer" data-auris-runtime-onclick="r0075" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([x.id]))+'">'
       +'<td style="padding:10px 12px"><div style="display:flex;align-items:center;gap:10px">'
       +'<div style="width:34px;height:34px;border-radius:9px;background:#185FA520;display:flex;align-items:center;justify-content:center;flex-shrink:0"><i class="ti '+icon+'" style="font-size:17px;color:#185FA5"></i></div>'
       +'<div><div style="font-weight:800;font-size:13px">'+escH(x.contractor_name||'-')+'</div><div style="font-size:11px;color:var(--text2)">'+escH(x.trading_name&&x.trading_name!==x.contractor_name?x.trading_name:(x.registration_number||x.specialisation||'-'))+'</div></div></div></td>'
@@ -20771,7 +20771,7 @@ function catwRenderPersons(){
     return '<div style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:#f9fafb;border-radius:8px;margin-bottom:6px">'
       +'<div style="width:32px;height:32px;border-radius:50%;background:#185FA5;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;flex-shrink:0">'+p.name.charAt(0).toUpperCase()+'</div>'
       +'<div style="flex:1"><div style="font-weight:600;font-size:13px">'+escH(p.name)+'</div><div style="font-size:11px;color:var(--text2)">'+escH(p.role||'-')+'</div></div>'
-      +'<button class="btn btn-sm" style="color:var(--red);padding:3px 8px" onclick="catwPersons.splice('+i+',1);catwRenderPersons()"><i class="ti ti-x" style="font-size:11px"></i></button>'
+      +'<button class="btn btn-sm" style="color:var(--red);padding:3px 8px" data-auris-runtime-onclick="r0076" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([i]))+'"><i class="ti ti-x" style="font-size:11px"></i></button>'
       +'</div>';
   }).join('');
 }
@@ -22006,13 +22006,13 @@ function emRenderPlanContacts(){
     return '<div style="border:1px solid var(--border);border-radius:8px;padding:10px;margin-bottom:8px">'
       +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">'
       +'<span style="font-weight:600;font-size:12px">Contact '+( i+1)+'</span>'
-      +'<button class="btn btn-sm" style="color:var(--red);padding:2px 6px" onclick="emPlanContacts.splice('+i+',1);emRenderPlanContacts()"><i class="ti ti-x"></i></button>'
+      +'<button class="btn btn-sm" style="color:var(--red);padding:2px 6px" data-auris-runtime-onclick="r0077" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([i]))+'"><i class="ti ti-x"></i></button>'
       +'</div>'
       +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">'
-      +'<input type="text" value="'+escH2(c.name)+'" placeholder="Name" style="padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px" onchange="emPlanContacts['+i+'].name=this.value"/>'
-      +'<input type="text" value="'+escH2(c.role)+'" placeholder="Role/Title" style="padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px" onchange="emPlanContacts['+i+'].role=this.value"/>'
-      +'<input type="tel" value="'+escH2(c.phone)+'" placeholder="Phone" style="padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px" onchange="emPlanContacts['+i+'].phone=this.value"/>'
-      +'<input type="email" value="'+escH2(c.email)+'" placeholder="Email" style="padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px" onchange="emPlanContacts['+i+'].email=this.value"/>'
+      +'<input type="text" value="'+escH2(c.name)+'" placeholder="Name" style="padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px" data-auris-runtime-onchange="r0078" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([i]))+'"/>'
+      +'<input type="text" value="'+escH2(c.role)+'" placeholder="Role/Title" style="padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px" data-auris-runtime-onchange="r0079" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([i]))+'"/>'
+      +'<input type="tel" value="'+escH2(c.phone)+'" placeholder="Phone" style="padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px" data-auris-runtime-onchange="r0080" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([i]))+'"/>'
+      +'<input type="email" value="'+escH2(c.email)+'" placeholder="Email" style="padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px" data-auris-runtime-onchange="r0081" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([i]))+'"/>'
       +'</div></div>';
   }).join('');
 }
@@ -22025,9 +22025,9 @@ function emRenderPlanResources(){
   if(!emPlanResources.length){el.innerHTML='<div style="color:var(--text2);font-size:12px;padding:6px 0">No resources added</div>';return;}
   el.innerHTML=emPlanResources.map(function(r,i){
     return '<div style="display:flex;gap:6px;align-items:center;margin-bottom:6px">'
-      +'<input type="text" value="'+escH2(r.type)+'" placeholder="Type (e.g. Fire extinguisher)" style="flex:1;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px" onchange="emPlanResources['+i+'].type=this.value"/>'
-      +'<input type="text" value="'+escH2(r.location)+'" placeholder="Location" style="flex:1;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px" onchange="emPlanResources['+i+'].location=this.value"/>'
-      +'<button class="btn btn-sm" style="color:var(--red)" onclick="emPlanResources.splice('+i+',1);emRenderPlanResources()"><i class="ti ti-x"></i></button>'
+      +'<input type="text" value="'+escH2(r.type)+'" placeholder="Type (e.g. Fire extinguisher)" style="flex:1;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px" data-auris-runtime-onchange="r0082" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([i]))+'"/>'
+      +'<input type="text" value="'+escH2(r.location)+'" placeholder="Location" style="flex:1;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px" data-auris-runtime-onchange="r0083" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([i]))+'"/>'
+      +'<button class="btn btn-sm" style="color:var(--red)" data-auris-runtime-onclick="r0084" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([i]))+'"><i class="ti ti-x"></i></button>'
       +'</div>';
   }).join('');
 }
@@ -23495,7 +23495,7 @@ async function ppeLoadCatalogue(){
         +'<td style="padding:10px;min-width:190px">'+ppeCertBadge(cert)+'</td>'
         +'<td style="padding:10px;min-width:180px">'+(x.hazard_types?.length?x.hazard_types.map(function(h){return '<span style="display:inline-flex;margin:1px;background:'+cfg.color+'20;color:'+cfg.color+';padding:2px 7px;border-radius:99px;font-size:10px;font-weight:700">'+escH(h)+'</span>';}).join(''):'<span style="color:var(--text3)">-</span>')+'</td>'
         +'<td style="padding:10px;text-align:center">'+statusHtml+'</td>'
-        +'<td style="padding:10px;text-align:center"><button class="btn btn-sm" onclick="event.stopPropagation();ppeCatEdit(\''+x.id+'\')"><i class="ti ti-eye"></i></button></td>'
+        +'<td style="padding:10px;text-align:center"><button class="btn btn-sm" data-auris-runtime-onclick="r0085" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([x.id]))+'"><i class="ti ti-eye"></i></button></td>'
         +'</tr>';
     });
     h+='</tbody></table></div>';el.innerHTML=h;
@@ -23566,7 +23566,7 @@ async function ppeLoadInventory(){
         +'<td style="padding:10px">'+escH(x.supplier||'-')+'</td>'
         +'<td style="padding:10px;min-width:180px">'+ppeCertBadge(cert)+'</td>'
         +'<td style="padding:10px;text-align:center">'+stockLabel+'</td>'
-        +'<td style="padding:10px;text-align:center"><button class="btn btn-sm" onclick="event.stopPropagation();ppeCatEdit(\''+x.id+'\')"><i class="ti ti-pencil"></i></button></td>'
+        +'<td style="padding:10px;text-align:center"><button class="btn btn-sm" data-auris-runtime-onclick="r0085" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([x.id]))+'"><i class="ti ti-pencil"></i></button></td>'
         +'</tr>';
     });
     h+='</tbody></table></div>';el.innerHTML=h;
@@ -23959,7 +23959,7 @@ async function ppeLoadExpiry(){
         +'<td style="padding:8px;font-size:11px">'+(x.issued_date?new Date(x.issued_date).toLocaleDateString('en-GB'):'-')+'</td>'
         +'<td style="padding:8px;font-size:11px;font-weight:700;color:'+( expDate&&expDate<=now?'#A32D2D':'inherit')+'">'+(expDate?expDate.toLocaleDateString('en-GB')+(expDate<=now?' EXPIRED':''):'-')+'</td>'
         +'<td style="padding:8px;font-size:11px;font-weight:700;color:'+(repDate&&repDate<=now?'#C2410C':'inherit')+'">'+(repDate?repDate.toLocaleDateString('en-GB')+(repDate<=now?' DUE':''):'-')+'</td>'
-        +'<td style="padding:8px"><button class="btn btn-sm btn-primary" style="font-size:10px;padding:3px 8px" onclick="ppeQuickReplace(\''+x.id+'\',\''+escH2(x.employee_name)+'\',\''+escH2(x.ppe_name)+'\')"><i class="ti ti-refresh"></i>Replace</button></td>'
+        +'<td style="padding:8px"><button class="btn btn-sm btn-primary" style="font-size:10px;padding:3px 8px" data-auris-runtime-onclick="r0086" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([x.id,x.employee_name,x.ppe_name]))+'"><i class="ti ti-refresh"></i>Replace</button></td>'
         +'</tr>';
     });
     h+='</tbody></table></div>';el.innerHTML=h;
@@ -24368,7 +24368,7 @@ async function toolsLoadPersonal(){
         +'<div><div style="font-weight:700;font-size:14px">'+escH(person)+'</div>'
         +'<div style="font-size:11px;color:var(--text2)">'+tools.length+' tool'+(tools.length!==1?'s':'')+' assigned - weekly self-check required</div>'
         +'</div></div>'
-        +'<button class="btn btn-sm btn-primary" style="font-size:11px" onclick="toolsStartPersonalCheck(\''+person+'\')"><i class="ti ti-clipboard-check"></i>Weekly check</button>'
+        +'<button class="btn btn-sm btn-primary" style="font-size:11px" data-auris-runtime-onclick="r0087" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([person]))+'"><i class="ti ti-clipboard-check"></i>Weekly check</button>'
         +'</div>';
       html+='<table style="width:100%;border-collapse:collapse;font-size:12px">'
         +'<thead><tr style="background:#f9fafb"><th style="'+TOOLS_TH_STYLE_LIGHT+'">Ref</th>'
@@ -25659,7 +25659,7 @@ async function mapLoadList(){
           +'<div style="display:flex;flex-wrap:wrap;gap:8px">'
           +escalated.map(function(x){
             var pc=MAP_PRIORITY_CFG[x.priority]||MAP_PRIORITY_CFG.medium;
-            return '<span style="background:'+pc.bg+';color:'+pc.tc+';padding:2px 10px;border-radius:99px;font-size:11px;font-weight:600;cursor:pointer" onclick="mapEdit(\''+x.id+'\')">'
+            return '<span style="background:'+pc.bg+';color:'+pc.tc+';padding:2px 10px;border-radius:99px;font-size:11px;font-weight:600;cursor:pointer" data-auris-runtime-onclick="r0088" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([x.id]))+'">'
               +escH(mapDisplayRef(x))+' - '+escH((x.title||x.description||'').substring(0,40))+'</span>';
           }).join('')+'</div></div>';
       }else escBanner.style.display='none';
@@ -26203,7 +26203,7 @@ function mapRenderList(){
       +(x.department?'<span><i class="ti ti-building" style="font-size:10px"></i> '+escH(x.department)+'</span>':'')
       +(x.target_date?'<span style="font-weight:'+(isOverdue?'700':'400')+';color:'+(isOverdue?'var(--red)':'inherit')+'">'
         +'<i class="ti ti-calendar" style="font-size:10px"></i> '+new Date(x.target_date).toLocaleDateString('en-GB')+(isOverdue?' ('+daysOverdue+'d overdue)':'')+'</span>':'')
-      +(x.source_ref?'<button type="button" onclick="event.stopPropagation();mapOpenSourceRecord(\''+x.id+'\')" style="border:0;background:transparent;padding:0;font-family:monospace;font-size:10px;color:'+srcCfg.color+';font-weight:700;text-decoration:underline;cursor:pointer">'+escH(x.source_ref)+'</button>':'')
+      +(x.source_ref?'<button type="button" data-auris-runtime-onclick="r0089" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([x.id]))+'" style="border:0;background:transparent;padding:0;font-family:monospace;font-size:10px;color:'+srcCfg.color+';font-weight:700;text-decoration:underline;cursor:pointer">'+escH(x.source_ref)+'</button>':'')
       +'</div>'
       // Progress bar
       +(progress>0?'<div style="margin-top:6px;display:flex;align-items:center;gap:8px"><div style="flex:1;background:#e5e7eb;border-radius:99px;height:5px;overflow:hidden"><div style="width:'+progress+'%;background:'+(progress===100?'var(--green)':'#185FA5')+';height:100%;border-radius:99px"></div></div><span style="font-size:10px;font-weight:700;color:#185FA5">'+progress+'%</span></div>':'')
@@ -26282,10 +26282,10 @@ function mapRenderTableList(){
     var due=x.target_date?new Date(x.target_date).toLocaleDateString('en-GB'):'-';
     var dueExtra=isOverdue?' <span style="color:var(--red);font-weight:700">('+daysOverdue+'d overdue)</span>':'';
 
-    h+='<tr data-id="'+x.id+'" data-auris-generated-onclick="g0253" style="cursor:pointer;border-left:4px solid '+pc.color+';background:'+(isOverdue?'#fff7f7':'#fff')+'" onmouseover="this.style.background=\''+(isOverdue?'#fff1f1':'#f9fafb')+'\'" onmouseout="this.style.background=\''+(isOverdue?'#fff7f7':'#fff')+'\'">'
+    h+='<tr data-id="'+x.id+'" data-auris-generated-onclick="g0253" style="cursor:pointer;border-left:4px solid '+pc.color+';background:'+(isOverdue?'#fff7f7':'#fff')+'" data-auris-runtime-onmouseover="r0090" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([(isOverdue?'#fff1f1':'#f9fafb')]))+'" data-auris-runtime-onmouseout="r0091" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([(isOverdue?'#fff7f7':'#fff')]))+'">'
       +'<td style="'+cell+';font-family:monospace;font-size:11px;font-weight:700;color:'+pc.color+';white-space:nowrap">'+escH(ref)+'</td>'
       +'<td style="'+cell+'"><span style="display:inline-flex;align-items:center;gap:6px;background:'+srcCfg.color+'15;color:'+srcCfg.color+';padding:3px 8px;border-radius:99px;font-size:11px;font-weight:700;white-space:nowrap">'+srcCfg.emoji+' '+escH(srcCfg.label)+'</span>'
-      +(x.source_ref?'<button type="button" onclick="event.stopPropagation();mapOpenSourceRecord(\''+x.id+'\')" style="border:0;background:transparent;padding:0;margin-top:4px;font-family:monospace;font-size:10px;color:var(--green);font-weight:700;text-decoration:underline;cursor:pointer">'+escH(x.source_ref)+'</button>':'')+'</td>'
+      +(x.source_ref?'<button type="button" data-auris-runtime-onclick="r0089" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([x.id]))+'" style="border:0;background:transparent;padding:0;margin-top:4px;font-family:monospace;font-size:10px;color:var(--green);font-weight:700;text-decoration:underline;cursor:pointer">'+escH(x.source_ref)+'</button>':'')+'</td>'
       +'<td style="'+cell+'"><div style="font-weight:700;font-size:13px;line-height:1.35">'+escH(title)+'</div>'
       +'<div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-top:4px;color:var(--text2);font-size:11px">'
       +'<span>'+escH(typeCfg.emoji+' '+typeCfg.label)+'</span>'
@@ -26297,7 +26297,7 @@ function mapRenderTableList(){
       +'<td style="'+cell+'"><span style="background:'+pc.bg+';color:'+pc.tc+';padding:3px 8px;border-radius:99px;font-size:11px;font-weight:700;white-space:nowrap">'+pc.label+'</span></td>'
       +'<td style="'+cell+'"><span style="background:'+sc.bg+';color:'+sc.tc+';padding:3px 8px;border-radius:99px;font-size:11px;font-weight:700;white-space:nowrap">'+sc.label+'</span></td>'
       +'<td style="'+cell+'"><div style="display:flex;align-items:center;gap:7px"><div style="width:64px;background:#e5e7eb;border-radius:99px;height:6px;overflow:hidden"><div style="width:'+progress+'%;background:'+(progress===100?'var(--green)':'#185FA5')+';height:100%"></div></div><span style="font-size:11px;font-weight:700;color:#185FA5">'+progress+'%</span></div></td>'
-      +'<td style="'+cell+';text-align:center"><button class="btn btn-sm" onclick="event.stopPropagation();mapEdit(\''+x.id+'\')" title="Open action"><i class="ti ti-chevron-right"></i></button></td>'
+      +'<td style="'+cell+';text-align:center"><button class="btn btn-sm" data-auris-runtime-onclick="r0092" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([x.id]))+'" title="Open action"><i class="ti ti-chevron-right"></i></button></td>'
       +'</tr>';
   });
   h+='</tbody></table></div></div>';
@@ -26441,14 +26441,14 @@ function mapAssignedToSelect(){
 function mapRenderActionButtons(x){
   var el=document.getElementById('map-action-btns');if(!el)return;
   var h='';
-  var btn=function(icon,label,onclick,col){return '<button class="btn" style="background:'+col+';color:#fff;border-color:'+col+'" onclick="'+onclick+'"><i class="ti '+icon+'"></i>'+label+'</button>';};
-  if(x.status==='open')h+=btn('ti-player-play','Start Working',"mapChangeStatus('in_progress')",'#185FA5');
-  if(x.status==='in_progress')h+=btn('ti-search','Submit for Verification',"mapChangeStatus('pending_verification')",'#8B5CF6');
-  if(x.status==='in_progress')h+=btn('ti-check','Mark Complete - Skip to Closure',"mapChangeStatus('pending_closure')",'#1D9E75');
-  if(x.status==='pending_verification')h+=btn('ti-certificate','Approve Verification',"mapApproveVerification()",'#8B5CF6');
-  if(x.status==='pending_closure')h+=btn('ti-circle-check','Approve Closure',"mapApproveClosure()",'#1D9E75');
-  if(['open','in_progress'].includes(x.status))h+=btn('ti-arrow-up','Escalate',"mapFormTab('assignment',document.getElementById('map-ftab-assignment'))",'#E24B4A');
-  if(x.status!=='closed'&&x.status!=='cancelled')h+=btn('ti-ban','Cancel Action',"mapChangeStatus('cancelled')",'#6B7280');
+  var btn=function(icon,label,action,col){return '<button class="btn" style="background:'+col+';color:#fff;border-color:'+col+'" data-auris-named-action="'+escH(action)+'"><i class="ti '+icon+'"></i>'+label+'</button>';};
+  if(x.status==='open')h+=btn('ti-player-play','Start Working','map-start','#185FA5');
+  if(x.status==='in_progress')h+=btn('ti-search','Submit for Verification','map-submit-verification','#8B5CF6');
+  if(x.status==='in_progress')h+=btn('ti-check','Mark Complete - Skip to Closure','map-submit-closure','#1D9E75');
+  if(x.status==='pending_verification')h+=btn('ti-certificate','Approve Verification','map-approve-verification','#8B5CF6');
+  if(x.status==='pending_closure')h+=btn('ti-circle-check','Approve Closure','map-approve-closure','#1D9E75');
+  if(['open','in_progress'].includes(x.status))h+=btn('ti-arrow-up','Escalate','map-escalate','#E24B4A');
+  if(x.status!=='closed'&&x.status!=='cancelled')h+=btn('ti-ban','Cancel Action','map-cancel','#6B7280');
   el.innerHTML=h;
 }
 
@@ -26488,7 +26488,7 @@ function mapSetEffectiveness(val){
 function mapUpdateEffectivenessStars(val){
   var el=document.getElementById('map-effectiveness-stars');if(!el)return;
   el.innerHTML=[1,2,3,4,5].map(function(i){
-    return '<span style="cursor:pointer;color:'+(i<=val?'#EF9F27':'#d1d5db')+';font-size:24px" onclick="mapSetEffectiveness('+i+')">'+(i<=val?'?':'?')+'</span>';
+    return '<span style="cursor:pointer;color:'+(i<=val?'#EF9F27':'#d1d5db')+';font-size:24px" data-auris-runtime-onclick="r0093" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([i]))+'">'+(i<=val?'?':'?')+'</span>';
   }).join('');
 }
 
@@ -26538,7 +26538,7 @@ function mapAISuggestionCard(label,key){
   if(v==null||v==='')return '';
   return '<div style="border:1px solid #BFDBFE;background:#fff;border-radius:8px;padding:10px;margin-top:8px">'
     +'<div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start"><div style="font-weight:800;color:#1E3A8A">'+escH(label)+'</div>'
-    +'<button class="btn btn-sm" onclick="mapApplyAISuggestion(\''+key+'\')"><i class="ti ti-wand"></i>Apply</button></div>'
+    +'<button class="btn btn-sm" data-auris-runtime-onclick="r0094" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([key]))+'"><i class="ti ti-wand"></i>Apply</button></div>'
     +'<div style="white-space:pre-wrap;margin-top:6px;color:#1f2937;line-height:1.45">'+escH(String(v))+'</div></div>';
 }
 async function mapAIReviewAction(){
@@ -27072,7 +27072,7 @@ function dcFilterList(){
       +(x.effective_date||x.issue_date?'<span><i class="ti ti-calendar" style="font-size:10px"></i> Issued: '+new Date(x.effective_date||x.issue_date).toLocaleDateString('en-GB')+'</span>':'')
       +(x.review_date?'<span style="color:'+(isReviewDue?'#C2410C':'inherit')+'"><i class="ti ti-refresh" style="font-size:10px"></i> Review: '+new Date(x.review_date).toLocaleDateString('en-GB')+'</span>':'')
       +(x.expiry_date?'<span style="color:'+(isExpired?'var(--red)':'inherit')+'"><i class="ti ti-clock" style="font-size:10px"></i> Expires: '+new Date(x.expiry_date).toLocaleDateString('en-GB')+'</span>':'')
-      +(x.file_url?'<a href="javascript:void(0)" onclick="event.stopPropagation();dcViewDocById(\''+x.id+'\')" style="color:var(--green);font-weight:600"><i class="ti ti-eye" style="font-size:11px"></i> Preview</a>':'')
+      +(x.file_url?'<a href="javascript:void(0)" data-auris-runtime-onclick="r0095" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([x.id]))+'" style="color:var(--green);font-weight:600"><i class="ti ti-eye" style="font-size:11px"></i> Preview</a>':'')
       +'</div></div>'
       +'<div style="padding:12px;display:flex;align-items:center;color:var(--text3)"><i class="ti ti-chevron-right" style="font-size:18px"></i></div>'
       +'</div></div>';
@@ -27586,13 +27586,13 @@ function dcRenderActionButtons(x){
   var approvalSt=x.approval_status||x.status||'draft';
   if(approvalSt==='under_review')approvalSt='pending_review';
   var h='';
-  var btn=function(icon,label,onclick,col){return '<button class="btn" style="background:'+col+';color:#fff;border-color:'+col+'" onclick="'+onclick+'"><i class="ti '+icon+'"></i>'+label+'</button>';};
-  if(approvalSt==='draft')h+=btn('ti-send','Submit for Review',"dcSubmitForApproval()",'#185FA5');
-  if(approvalSt==='pending_review')h+=btn('ti-check','Submit for Approval',"dcSubmitForApproval()",'#8B5CF6');
-  if(approvalSt==='pending_approval'&&isMgr())h+=btn('ti-certificate','Approve Document',"dcApprove()",'#1D9E75');
-  if(approvalSt==='pending_approval'&&isMgr())h+=btn('ti-x','Reject',"dcReject()",'#E24B4A');
-  if(approvalSt==='approved'&&(isMgr()||canAdministerControlledRecord()))h+=btn('ti-refresh','Create New Revision',"dcCreateNewRevision()",'#185FA5');
-  if(approvalSt==='approved'&&(isMgr()||canAdministerControlledRecord()))h+=btn('ti-send','Issue Acknowledgements',"dcFormTab('ack',document.getElementById('dc-ftab-ack'));dcIssueAck()",'#8B5CF6');
+  var btn=function(icon,label,action,col){return '<button class="btn" style="background:'+col+';color:#fff;border-color:'+col+'" data-auris-named-action="'+escH(action)+'"><i class="ti '+icon+'"></i>'+label+'</button>';};
+  if(approvalSt==='draft')h+=btn('ti-send','Submit for Review','dc-submit','#185FA5');
+  if(approvalSt==='pending_review')h+=btn('ti-check','Submit for Approval','dc-submit','#8B5CF6');
+  if(approvalSt==='pending_approval'&&isMgr())h+=btn('ti-certificate','Approve Document','dc-approve','#1D9E75');
+  if(approvalSt==='pending_approval'&&isMgr())h+=btn('ti-x','Reject','dc-reject','#E24B4A');
+  if(approvalSt==='approved'&&(isMgr()||canAdministerControlledRecord()))h+=btn('ti-refresh','Create New Revision','dc-new-revision','#185FA5');
+  if(approvalSt==='approved'&&(isMgr()||canAdministerControlledRecord()))h+=btn('ti-send','Issue Acknowledgements','dc-issue-ack','#8B5CF6');
   el.innerHTML=h;
 }
 
@@ -28051,7 +28051,7 @@ async function dcLoadRevisions(docId){
             +'<div style="font-size:12px;font-weight:600;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+escH(snapFileName||'Archived file')+'</div>'
             +'<div style="font-size:10px;color:var(--text3)">Archived '+escH(snapFileMime||'')+(snapFileSize?' - '+dcFormatSize(snapFileSize):'')+'</div>'
             +'</div>'
-            +'<button type="button" class="btn" style="padding:5px 10px;font-size:11px" onclick="dcPreviewRevision(\''+r.id+'\')"><i class="ti ti-eye"></i>Preview</button>'
+            +'<button type="button" class="btn" style="padding:5px 10px;font-size:11px" data-auris-runtime-onclick="r0096" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([r.id]))+'"><i class="ti ti-eye"></i>Preview</button>'
             +'<a class="btn" href="'+escH(snapFileUrl)+'" download="'+escH(snapFileName||'archived-file')+'" style="padding:5px 10px;font-size:11px"><i class="ti ti-download"></i></a>'
             +'</div>'
           : '<div style="font-size:11px;color:var(--text3);font-style:italic">No file attached to this revision</div>'
@@ -28779,7 +28779,7 @@ function legalFilterRegister(){
     var score=x.compliance_score!=null?x.compliance_score:sc.score;
     var scoreColor=score==null?'#6B7280':score>=80?'#1D9E75':score>=50?'#EF9F27':score>=20?'#C2410C':'#A32D2D';
     var archived=legalReqArchived(x);
-    h+='<tr style="border-bottom:1px solid #f0f0f0;background:'+bg+';cursor:pointer'+(archived?';opacity:.62':'')+'" onclick="legalOpenReq(\''+x.id+'\')">'
+    h+='<tr style="border-bottom:1px solid #f0f0f0;background:'+bg+';cursor:pointer'+(archived?';opacity:.62':'')+'" data-auris-runtime-onclick="r0097" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([x.id]))+'">'
       +(isMgr()?'<td style="padding:8px;text-align:center"><input type="checkbox" class="lr-row-select" data-id="'+x.id+'" data-auris-generated-onclick="g0179" style="width:16px!important;height:16px!important;margin:0"/></td>':'')
       +'<td style="padding:8px 14px;font-family:monospace;font-size:11px;font-weight:700;color:#185FA5">'+escH(displayRecordRef(x,'req_ref','LEG-DRAFT'))+'</td>'
       +'<td style="padding:8px;max-width:180px"><div style="font-size:11px;font-weight:600;color:#185FA5">'+escH((x.legislation||'-').substring(0,45))+'</div>'+(x.legislation_type?'<div style="font-size:10px;color:var(--text2);text-transform:capitalize">'+escH(x.legislation_type.replace(/_/g,' '))+'</div>':'')+'</td>'
@@ -29713,7 +29713,7 @@ async function calLoad(filter, btn){
         +'<div style="text-align:right">'
         +'<div style="font-weight:700;color:#185FA5">'+(x.due_date?new Date(x.due_date).toLocaleDateString('en-GB'):'-')+'</div>'
         +(x.department?'<div style="font-size:11px;color:var(--text2)">'+escH(x.department)+'</div>':'')
-        +'<button class="btn btn-sm btn-primary" style="margin-top:6px;font-size:10px" onclick="event.stopPropagation();calMarkComplete(\''+x.id+'\')"><i class="ti ti-check"></i>Mark done</button>'
+        +'<button class="btn btn-sm btn-primary" style="margin-top:6px;font-size:10px" data-auris-runtime-onclick="r0098" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([x.id]))+'"><i class="ti ti-check"></i>Mark done</button>'
         +'</div>'
         +'</div>'
         +(x.description?'<div style="padding:6px 16px 10px;font-size:11px;color:var(--text2);border-top:1px solid #f0f0f0">'+escH(x.description.substring(0,120))+'</div>':'')
@@ -30090,7 +30090,7 @@ async function tbtLoad(){
         +'<td style="padding:10px;text-align:center;font-weight:800;color:#185FA5">'+attendees+'</td>'
         +'<td style="padding:10px;text-align:center;font-weight:800;color:'+(actions>0?'#854F0B':'#6B7280')+'">'+actions+'</td>'
         +'<td style="padding:10px;text-align:center"><span style="font-size:10px;font-weight:800;color:'+stColor+';background:'+stColor+'15;padding:3px 8px;border-radius:99px;text-transform:capitalize">'+escH(x.status||'completed')+'</span></td>'
-        +'<td style="padding:10px;text-align:center"><button class="btn btn-sm" onclick="event.stopPropagation();tbtEdit(\''+x.id+'\')"><i class="ti ti-eye"></i></button></td>'
+        +'<td style="padding:10px;text-align:center"><button class="btn btn-sm" data-auris-runtime-onclick="r0099" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([x.id]))+'"><i class="ti ti-eye"></i></button></td>'
         +'</tr>';
     });
     h+='</tbody></table></div>';el.innerHTML=h;
@@ -30748,8 +30748,8 @@ async function bulletinLoad(){
         +'<td style="padding:10px"><div style="font-weight:700">'+escH(latest?latest.name||latest.email||'-':'-')+'</div><div style="font-size:10px;color:var(--text2)">'+escH(latest&&latest.checked_at?new Date(latest.checked_at).toLocaleString('en-GB'):'')+'</div></td>'
         +'<td style="padding:10px;text-align:center"><span style="background:'+stColor+'15;color:'+stColor+';padding:3px 8px;border-radius:99px;font-size:10px;font-weight:800;text-transform:capitalize">'+escH(x.status||'published')+'</span></td>'
         +'<td style="padding:10px;text-align:center;white-space:nowrap">'
-        +(x.file_url?'<button class="btn btn-sm" onclick="event.stopPropagation();bulletinPreview(\''+x.id+'\')" title="Preview bulletin file and record opening"><i class="ti ti-eye-check"></i></button> ':'')
-        +'<button class="btn btn-sm" onclick="event.stopPropagation();bulletinEdit(\''+x.id+'\')" title="Open bulletin"><i class="ti ti-eye"></i></button></td>'
+        +(x.file_url?'<button class="btn btn-sm" data-auris-runtime-onclick="r0100" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([x.id]))+'" title="Preview bulletin file and record opening"><i class="ti ti-eye-check"></i></button> ':'')
+        +'<button class="btn btn-sm" data-auris-runtime-onclick="r0101" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([x.id]))+'" title="Open bulletin"><i class="ti ti-eye"></i></button></td>'
         +'</tr>';
     });
     h+='</tbody></table></div>';el.innerHTML=h;
@@ -32139,7 +32139,7 @@ function auditFilter() {
       + '<td style="padding:10px;color:var(--text2)">'+escH(x.audit_standard||'-')+'</td>'
       + '<td style="padding:10px;text-align:center;font-weight:800;color:'+scoreColor+'">'+(score!=null?score+'%':'-')+'</td>'
       + '<td style="padding:10px;text-align:center"><span style="background:'+sc[0]+';color:'+sc[1]+';padding:3px 8px;border-radius:99px;font-size:10px;font-weight:700;text-transform:capitalize">'+escH(x.status||'open')+'</span></td>'
-      + '<td style="padding:10px;text-align:center"><button class="btn btn-sm" onclick="event.stopPropagation();auditOpen(\''+x.id+'\')"><i class="ti ti-edit"></i></button></td>'
+      + '<td style="padding:10px;text-align:center"><button class="btn btn-sm" data-auris-runtime-onclick="r0102" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([x.id]))+'"><i class="ti ti-edit"></i></button></td>'
       + '</tr>';
   });
   el.innerHTML = h + '</tbody></table></div>';
@@ -32887,9 +32887,9 @@ function buildChecklist(preloadedItems) {
     tr.style.cssText='border-bottom:1px solid #f3f4f6;';
     tr.innerHTML='<td style="padding:8px 10px;font-size:11px;color:var(--text2);vertical-align:top">'+escH(c.ca||'')+'</td>'
       +'<td style="padding:8px 10px;font-size:12px;font-weight:700;line-height:1.35;vertical-align:top">'+escH(c.item)+(c.guidance?'<br><span style="font-size:10px;color:var(--text2);font-style:italic;font-weight:500">'+escH(c.guidance)+'</span>':'')+'</td>'
-      +'<td style="text-align:center;padding:7px 4px;vertical-align:top"><input type="checkbox" id="cg-'+i+'" '+(isGood?'checked':'')+' onchange="syncChk('+i+',\'g\')" style="accent-color:#1D9E75;width:18px;height:18px;cursor:pointer"/></td>'
-      +'<td style="text-align:center;padding:7px 4px;vertical-align:top"><input type="checkbox" id="ci-'+i+'" '+(isInsuf?'checked':'')+' onchange="syncChk('+i+',\'i\')" style="accent-color:#DC2626;width:18px;height:18px;cursor:pointer"/></td>'
-      +'<td style="text-align:center;padding:7px 4px;vertical-align:top"><input type="checkbox" id="cn-'+i+'" '+(isNA?'checked':'')+' onchange="syncChk('+i+',\'n\')" style="accent-color:#9CA3AF;width:18px;height:18px;cursor:pointer"/></td>'
+      +'<td style="text-align:center;padding:7px 4px;vertical-align:top"><input type="checkbox" id="cg-'+i+'" '+(isGood?'checked':'')+' data-auris-runtime-onchange="r0103" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([i]))+'" style="accent-color:#1D9E75;width:18px;height:18px;cursor:pointer"/></td>'
+      +'<td style="text-align:center;padding:7px 4px;vertical-align:top"><input type="checkbox" id="ci-'+i+'" '+(isInsuf?'checked':'')+' data-auris-runtime-onchange="r0104" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([i]))+'" style="accent-color:#DC2626;width:18px;height:18px;cursor:pointer"/></td>'
+      +'<td style="text-align:center;padding:7px 4px;vertical-align:top"><input type="checkbox" id="cn-'+i+'" '+(isNA?'checked':'')+' data-auris-runtime-onchange="r0105" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([i]))+'" style="accent-color:#9CA3AF;width:18px;height:18px;cursor:pointer"/></td>'
       +'<td style="text-align:center;padding:6px 4px;vertical-align:top"><button class="btn btn-sm" style="padding:3px 6px;font-size:10px" data-auris-generated-onclick="g0332" title="Add evidence"><i class="ti ti-camera"></i></button></td>'
       +'<td style="padding:6px 8px;vertical-align:top"><textarea id="co-'+i+'" placeholder="Observation, evidence, action required..." style="width:100%;min-height:42px;padding:5px 7px;border:1px solid var(--border);border-radius:5px;font-size:11px;resize:vertical">'+escH(obs)+'</textarea></td>';
     tbody.appendChild(tr);
@@ -32970,7 +32970,7 @@ async function psLoad(){
       var dec=x.decision||'go'; var dc=decColors[dec]||decColors.go;
       var score=x.score_good!=null&&(x.score_good+x.score_insuf)>0?Math.round(x.score_good/(x.score_good+x.score_insuf)*100):null;
       var dt=x.inspection_date||x.if_date||x.created_at||'';
-      h+='<tr style="border-bottom:1px solid #f0f0f0;background:'+bg+';cursor:pointer" onclick="psOpen(\''+x.id+'\')">'
+      h+='<tr style="border-bottom:1px solid #f0f0f0;background:'+bg+';cursor:pointer" data-auris-runtime-onclick="r0106" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([x.id]))+'">'
         +'<td style="padding:8px 14px;font-size:11px">'+(dt?new Date(dt).toLocaleDateString('en-GB'):'-')+'</td>'
         +'<td style="padding:8px;font-weight:600">'+escH(x.site||x.activity||'-')+'</td>'
         +'<td style="padding:8px;font-size:11px">'+escH(x.location||'-')+'</td>'
@@ -33433,7 +33433,7 @@ async function cuSubmit() {
         + '<div><strong>Username:</strong> ' + escH(synth) + '</div>'
         + '<div><strong>Password:</strong> ' + escH(pw) + '</div>'
         + '</div>'
-        + '<button class="btn btn-sm" style="margin-top:10px" onclick="navigator.clipboard.writeText(\'Username: ' + escH(synth) + '\\nPassword: ' + escH(pw) + '\').then(function(){toast(\'Copied to clipboard\');})"><i class="ti ti-copy"></i>Copy credentials</button>'
+        + '<button class="btn btn-sm" style="margin-top:10px" data-auris-named-action="copy-created-credentials" data-auris-runtime-args="' + encodeURIComponent(JSON.stringify([synth,pw])) + '"><i class="ti ti-copy"></i>Copy credentials</button>'
         + '</div>';
     }
     // Refresh the users list
@@ -33744,7 +33744,7 @@ function usersRenderProfileModal(){
   var tabs=['profile','journey','history','notifications'];
   var tabsHtml=tabs.map(function(t){
     var label=t.charAt(0).toUpperCase()+t.slice(1);
-    return '<button type="button" onclick="usersProfileSwitch(\''+t+'\')" style="background:none;border:none;padding:14px 0 11px;margin-right:28px;border-bottom:3px solid '+(usersProfileCurrentTab===t?'#185FA5':'transparent')+';color:'+(usersProfileCurrentTab===t?'#185FA5':'#8b8f98')+';font-size:14px;font-weight:'+(usersProfileCurrentTab===t?'800':'500')+';cursor:pointer">'+label+'</button>';
+    return '<button type="button" data-auris-runtime-onclick="r0107" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([t]))+'" style="background:none;border:none;padding:14px 0 11px;margin-right:28px;border-bottom:3px solid '+(usersProfileCurrentTab===t?'#185FA5':'transparent')+';color:'+(usersProfileCurrentTab===t?'#185FA5':'#8b8f98')+';font-size:14px;font-weight:'+(usersProfileCurrentTab===t?'800':'500')+';cursor:pointer">'+label+'</button>';
   }).join('');
   var content='';
   if(usersProfileCurrentTab==='profile'){
@@ -33786,7 +33786,7 @@ function usersRenderProfileModal(){
     +'<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-top:-28px">'
     +'<div style="display:flex;gap:14px;align-items:flex-end"><div style="width:64px;height:64px;border-radius:50%;background:'+rc.color+';color:#fff;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:800;border:4px solid #fff">'+escH(initials)+'</div>'
     +'<div><div style="font-size:18px;font-weight:800">'+escH(u.full_name||'User')+'</div><div style="font-size:13px;color:var(--text2);font-family:monospace">'+escH(u.email||'')+'</div><div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap"><span class="badge bgr"><i class="ti ti-map-pin"></i> '+escH(u.site||'No site')+'</span><span class="badge bgr"><i class="ti ti-clock"></i> '+escH(usersFmtLastLogin(u.last_login))+'</span></div></div></div>'
-    +'<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end"><span class="badge bg"><i class="ti ti-circle-check"></i> '+escH(u.status==='inactive'?'Inactive':'Active')+'</span><button class="btn btn-sm" onclick="usersCloseProfile();usersEdit(\''+u.id+'\')"><i class="ti ti-edit"></i>Edit</button></div>'
+    +'<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end"><span class="badge bg"><i class="ti ti-circle-check"></i> '+escH(u.status==='inactive'?'Inactive':'Active')+'</span><button class="btn btn-sm" data-auris-runtime-onclick="r0108" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([u.id]))+'"><i class="ti ti-edit"></i>Edit</button></div>'
     +'</div><div style="border-bottom:1px solid var(--border);margin:22px -20px 18px;padding-left:20px">'+tabsHtml+'</div><div>'+content+'</div>';
   if(usersProfileCurrentTab==='notifications'&&u.id===prof?.id)setTimeout(usersLoadNotificationPreferences,0);
 }
@@ -34287,7 +34287,7 @@ function saCompanyMenuBuild() {
     html += '<div class="modules-menu-section">Companies (' + saCompanyList.length + ')</div>';
     saCompanyList.forEach(function(c){
       var isActive = sephsCompanyContext === c.id;
-      html += '<div class="modules-menu-item'+(isActive?' active':'')+'" onclick="saCompanyPick(\''+c.id+'\')"><i class="ti ti-building"></i>'+escapeHtml(c.name||'(unnamed)')+'</div>';
+      html += '<div class="modules-menu-item'+(isActive?' active':'')+'" data-auris-runtime-onclick="r0109" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([c.id]))+'"><i class="ti ti-building"></i>'+escapeHtml(c.name||'(unnamed)')+'</div>';
     });
   }
   menu.innerHTML = html;
@@ -34497,7 +34497,7 @@ function modulesMenuBuild() {
     html += '<div class="modules-menu-section">'+sec+'</div>';
     sections[sec].forEach(function(m){
       var isActive = (m.k === activePage);
-      html += '<div class="modules-menu-item'+(isActive?' active':'')+'" onclick="modulesMenuNavigate(\''+m.k+'\')"><i class="ti '+m.i+'"></i>'+escapeHtml(m.l)+'</div>';
+      html += '<div class="modules-menu-item'+(isActive?' active':'')+'" data-auris-runtime-onclick="r0110" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([m.k]))+'"><i class="ti '+m.i+'"></i>'+escapeHtml(m.l)+'</div>';
     });
   });
   menu.innerHTML = html;
@@ -34894,7 +34894,7 @@ function adminRenderOverviewCards(data) {
     var tierColors = {starter:['#6B7280','#f3f4f6'],professional:['#185FA5','#EFF6FF'],enterprise:['#5B21B6','#F5F3FF']};
     var tc = tierColors[co.subscription_tier||'professional']||tierColors.professional;
     var typeCfg = {group:'Group',subsidiary:'Subsidiary',client:'Client',standalone:'Standalone'};
-    return '<div class="card" style="padding:0;overflow:hidden;cursor:pointer;border:2px solid '+(co.active!==false?'#185FA5':'#e5e7eb')+';transition:all .15s" onclick="adminEditCompany(\''+co.id+'\')" data-auris-generated-onmouseover="g0288" data-auris-generated-onmouseout="g0088">'
+    return '<div class="card" style="padding:0;overflow:hidden;cursor:pointer;border:2px solid '+(co.active!==false?'#185FA5':'#e5e7eb')+';transition:all .15s" data-auris-runtime-onclick="r0111" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([co.id]))+'" data-auris-generated-onmouseover="g0288" data-auris-generated-onmouseout="g0088">'
       + '<div style="height:4px;background:'+(co.active!==false?'linear-gradient(90deg,#185FA5,#1D9E75)':'#e5e7eb')+'"></div>'
       + '<div style="padding:12px 14px">'
       + '<div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:8px">'
@@ -35177,7 +35177,7 @@ async function adminLoadSites() {
       +'<td style="padding:8px"><span style="background:'+sc[0]+';color:'+sc[1]+';padding:2px 8px;border-radius:99px;font-size:10px;font-weight:700;text-transform:capitalize">'+escH(s.status||'active')+'</span></td>'
       +'<td style="padding:8px"><div style="display:flex;gap:4px">'
       +'<button class="btn btn-sm" title="Edit site" data-id="'+s.id+'" data-auris-generated-onclick="g0350"><i class="ti ti-edit"></i></button>'
-      +'<button class="btn btn-sm" title="Set as active site" data-id="'+s.id+'" onclick="adminSwitchSite(this.dataset.id);document.getElementById(\'adm3site-switcher\').value=this.dataset.id;toast(\'Viewing: \'+(adminSitesData.find(function(x){return x.id===this.dataset.id;})?.name||\'Site\'))"><i class="ti ti-eye"></i></button>'
+      +'<button class="btn btn-sm" title="Set as active site" data-id="'+s.id+'" data-auris-named-action="admin-switch-site"><i class="ti ti-eye"></i></button>'
       +'</div></td></tr>';
   });
   el.innerHTML=h+'</tbody></table></div>';
@@ -35295,8 +35295,8 @@ function adminRenderHierarchy() {
       + '<div style="font-size:10px;opacity:.8">'+escH(co.industry||'')+(co.country?' - '+escH(co.country):'')+(co.company_type?' - '+escH(co.company_type):'')+'</div></div></div>'
       + '<div style="display:flex;gap:8px;align-items:center">'
       + '<span style="font-size:11px;opacity:.8">'+coSites.length+' sites</span>'
-      + '<button class="btn btn-sm" style="background:rgba(255,255,255,.2);color:#fff;border-color:rgba(255,255,255,.3)" onclick="openModuleAccess(\''+co.id+'\')" title="Manage which modules this company can access"><i class="ti ti-apps"></i>Modules</button>'
-      + '<button class="btn btn-sm" style="background:rgba(255,255,255,.2);color:#fff;border-color:rgba(255,255,255,.3)" onclick="adminNewSite(\''+co.id+'\')"><i class="ti ti-plus"></i>Add site</button>'
+      + '<button class="btn btn-sm" style="background:rgba(255,255,255,.2);color:#fff;border-color:rgba(255,255,255,.3)" data-auris-runtime-onclick="r0112" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([co.id]))+'" title="Manage which modules this company can access"><i class="ti ti-apps"></i>Modules</button>'
+      + '<button class="btn btn-sm" style="background:rgba(255,255,255,.2);color:#fff;border-color:rgba(255,255,255,.3)" data-auris-runtime-onclick="r0113" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([co.id]))+'"><i class="ti ti-plus"></i>Add site</button>'
       + '</div></div>'
       + '<div style="padding:12px 16px">';
     if(!coSites.length){
@@ -35695,7 +35695,7 @@ function renderModuleAccessList() {
       ? '<span style="font-size:9px;background:#ECFDF5;color:#047857;padding:2px 6px;border-radius:999px;font-weight:600">LIVE</span>'
       : '<span style="font-size:9px;background:#F3F4F6;color:#4B5563;padding:2px 6px;border-radius:999px;font-weight:600">DISABLED</span>';
     return '<label style="display:flex;align-items:center;gap:10px;padding:9px 11px;border:1px solid '+(checked?'#5B21B6':'#E5E7EB')+';border-radius:8px;cursor:'+(disabled?'not-allowed':'pointer')+';background:'+(checked?'#F5F3FF':'#fff')+';opacity:'+(disabled?'0.7':'1')+'">'
-      + '<input type="checkbox" '+(checked?'checked':'')+' '+(disabled?'disabled':'')+' onchange="toggleModuleAccess(\''+m.key+'\', this.checked)" style="width:16px;height:16px;cursor:'+(disabled?'not-allowed':'pointer')+'"/>'
+      + '<input type="checkbox" '+(checked?'checked':'')+' '+(disabled?'disabled':'')+' data-auris-runtime-onchange="r0114" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([m.key]))+'" style="width:16px;height:16px;cursor:'+(disabled?'not-allowed':'pointer')+'"/>'
       + '<i class="ti '+m.icon+'" style="font-size:18px;color:'+(checked?'#5B21B6':'#6B7280')+'"></i>'
       + '<div style="flex:1;min-width:0">'
       + '<div style="font-size:12px;font-weight:600;color:var(--text)">'+escH(m.name)+'</div>'
@@ -36007,7 +36007,7 @@ function integRenderGrid(typeFilter) {
       var status = saved ? (saved.status||'disconnected') : 'disconnected';
       var sc = STATUS_CFG[status] || STATUS_CFG.disconnected;
       var isConnected = status==='connected';
-      html += '<div class="card" style="padding:0;overflow:hidden;cursor:pointer;border:2px solid '+(isConnected?integ.color||'#185FA5':'var(--border)')+';transition:all .15s" data-key="'+integ.key+'" onclick="integOpenConfig(\''+integ.key+'\')" data-auris-generated-onmouseover="g0358" data-auris-generated-onmouseout="g0088">'
+      html += '<div class="card" style="padding:0;overflow:hidden;cursor:pointer;border:2px solid '+(isConnected?integ.color||'#185FA5':'var(--border)')+';transition:all .15s" data-key="'+integ.key+'" data-auris-runtime-onclick="r0115" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([integ.key]))+'" data-auris-generated-onmouseover="g0358" data-auris-generated-onmouseout="g0088">'
         // Top colour bar
         + '<div style="height:4px;background:'+(isConnected?integ.color||'#185FA5':'#e5e7eb')+'"></div>'
         + '<div style="padding:14px 16px">'
@@ -36024,7 +36024,7 @@ function integRenderGrid(typeFilter) {
         + '<div style="font-size:11px;color:var(--text2);line-height:1.5;margin-bottom:10px">'+escH(integ.desc.substring(0,90)+(integ.desc.length>90?'-':''))+'</div>'
         + '<div style="font-size:10px;color:var(--text2);padding:6px 8px;background:#f9fafb;border-radius:6px;margin-bottom:8px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+escH(integ.dataMap||'')+'">'+escH(integ.dataMap||'-')+'</div>'
         + (saved&&saved.last_sync?'<div style="font-size:10px;color:var(--text2)">Last sync: '+new Date(saved.last_sync).toLocaleString('en-GB',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'})+'</div>':'')
-        + '<button class="btn btn-sm" style="width:100%;margin-top:8px;background:'+(isConnected?integ.color||'#185FA5':'transparent')+';color:'+(isConnected?'#fff':integ.color||'#185FA5')+';border-color:'+(integ.color||'#185FA5')+';font-weight:700" onclick="event.stopPropagation();integOpenConfig(\''+integ.key+'\')">'
+        + '<button class="btn btn-sm" style="width:100%;margin-top:8px;background:'+(isConnected?integ.color||'#185FA5':'transparent')+';color:'+(isConnected?'#fff':integ.color||'#185FA5')+';border-color:'+(integ.color||'#185FA5')+';font-weight:700" data-auris-runtime-onclick="r0116" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([integ.key]))+'">'
         + (isConnected?'Configure':'Connect')+'</button>'
         + '</div></div>';
     });
@@ -36669,8 +36669,8 @@ async function dashLoadMyElearning(){
       +'<div style="font-size:11px;color:var(--text2);margin-top:3px">Target: '+escH(due)+(x.completion_date?' - Completed: '+escH(x.completion_date):'')+(cert?' - Certificate: '+escH(cert):'')+'</div></div>'
       +'<span class="pill" style="background:'+tone+';color:'+color+'">'+escH(done?'Completed':(overdue?'Overdue':(x.status||'Assigned')))+'</span></div>'
       +'<div style="display:flex;gap:6px;margin-top:9px;flex-wrap:wrap">'
-      +(course.course_url?'<button class="btn btn-sm" onclick="eleLaunchEnrolment(\''+escH(x.id)+'\')"><i class="ti ti-player-play"></i>'+escH(done?'Review':'Watch')+'</button>':'')
-      +(!done&&eleWatchFinished(x)&&isMgr()?'<button class="btn btn-sm btn-primary" onclick="dashCompleteElearning(\''+escH(x.id)+'\')"><i class="ti ti-certificate"></i>Issue certificate</button>':'')
+      +(course.course_url?'<button class="btn btn-sm" data-auris-runtime-onclick="r0117" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([x.id]))+'"><i class="ti ti-player-play"></i>'+escH(done?'Review':'Watch')+'</button>':'')
+      +(!done&&eleWatchFinished(x)&&isMgr()?'<button class="btn btn-sm btn-primary" data-auris-runtime-onclick="r0118" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([x.id]))+'"><i class="ti ti-certificate"></i>Issue certificate</button>':'')
       +'</div></div>';
   }).join('')+(mine.length>5?'<button class="btn btn-sm" data-auris-generated-onclick="g0361">View all assigned courses</button>':'');
 }
@@ -36777,7 +36777,7 @@ function compFilter(){
     return (!q||hay.includes(q)) && (!cat||String(x.category||'')===cat);
   });
   host.innerHTML='<table class="data-table"><thead><tr><th>Person</th><th>Department</th><th>Competency</th><th>Level</th><th>Assessor</th><th>Expiry</th><th>Evidence</th><th>Actions</th></tr></thead><tbody>'+
-    (rows.length?rows.map(function(x){var ev=x.evidence||x.evidence_ref||'';return '<tr><td><strong>'+escH(x.person_name||'-')+'</strong><div class="muted">'+escH(x.job_title||'')+'</div></td><td>'+escH(x.department||'-')+'</td><td>'+escH(x.competency_name||'-')+'</td><td>'+escH(x.level||'-')+'</td><td>'+escH(x.assessor||'-')+'</td><td>'+escH(x.expiry_date||'-')+'</td><td>'+(ev?'<span class="pill" style="background:#EFF6FF;color:#185FA5">'+escH(ev)+'</span>':'-')+'</td><td><button class="icon-btn" title="Edit competency record" aria-label="Edit competency record" onclick="compEdit(\''+escH(x.id)+'\')"><i class="ti ti-edit"></i></button></td></tr>';}).join(''):'<tr><td colspan="8" class="empty">No competency records yet.</td></tr>')+
+    (rows.length?rows.map(function(x){var ev=x.evidence||x.evidence_ref||'';return '<tr><td><strong>'+escH(x.person_name||'-')+'</strong><div class="muted">'+escH(x.job_title||'')+'</div></td><td>'+escH(x.department||'-')+'</td><td>'+escH(x.competency_name||'-')+'</td><td>'+escH(x.level||'-')+'</td><td>'+escH(x.assessor||'-')+'</td><td>'+escH(x.expiry_date||'-')+'</td><td>'+(ev?'<span class="pill" style="background:#EFF6FF;color:#185FA5">'+escH(ev)+'</span>':'-')+'</td><td><button class="icon-btn" title="Edit competency record" aria-label="Edit competency record" data-auris-runtime-onclick="r0119" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([x.id]))+'"><i class="ti ti-edit"></i></button></td></tr>';}).join(''):'<tr><td colspan="8" class="empty">No competency records yet.</td></tr>')+
     '</tbody></table>';
 }
 async function compLoadCatalogSelect(selectedName){
@@ -36842,7 +36842,7 @@ async function indLoad(){
     var pending=rows.filter(function(x){return String(x.status||'').toLowerCase()==='pending';}).length;
     var m=function(id,v){var e=document.getElementById(id);if(e)e.textContent=v;};m('ind-m3total',rows.length);m('ind-m3done',completed);m('ind-m3pending',pending);m('ind-m3refresh',rows.filter(function(x){return String(x.status||'').toLowerCase()==='refresher_due';}).length);
     host.innerHTML='<table class="data-table"><thead><tr><th>Person</th><th>Type</th><th>Date</th><th>Inducted by</th><th>Checklist</th><th>Evidence</th><th>Status</th><th>Actions</th></tr></thead><tbody>'+
-      (rows.length?rows.map(function(x){var cs=indChecklistSummary(x);var pct=cs.total?Math.round((cs.covered+cs.na)/cs.total*100):0;var ev=indEvidenceSummary(x);var evOk=ev!=='Pending evidence';return '<tr><td><strong>'+escH(x.person_name||'-')+'</strong><div class="muted">'+escH(x.department||x.job_title||'')+'</div></td><td>'+escH((x.induction_type||'-').replaceAll('_',' '))+'</td><td>'+escH(x.induction_date||'-')+'</td><td>'+escH(x.inducted_by||'-')+'</td><td><strong>'+cs.covered+'/'+cs.total+'</strong><div class="muted">'+pct+'% covered'+(cs.na?' - '+cs.na+' N/A':'')+'</div></td><td><span class="pill" style="background:'+(evOk?'#ECFDF5':'#FFFBEB')+';color:'+(evOk?'#065F46':'#854F0B')+'">'+escH(ev)+'</span></td><td><span class="pill">'+escH(x.status||'-')+'</span></td><td><button class="icon-btn" title="Edit induction record" aria-label="Edit induction record" onclick="indEdit(\''+escH(x.id)+'\')"><i class="ti ti-edit"></i></button></td></tr>';}).join(''):'<tr><td colspan="8" class="empty">No induction records yet.</td></tr>')+
+      (rows.length?rows.map(function(x){var cs=indChecklistSummary(x);var pct=cs.total?Math.round((cs.covered+cs.na)/cs.total*100):0;var ev=indEvidenceSummary(x);var evOk=ev!=='Pending evidence';return '<tr><td><strong>'+escH(x.person_name||'-')+'</strong><div class="muted">'+escH(x.department||x.job_title||'')+'</div></td><td>'+escH((x.induction_type||'-').replaceAll('_',' '))+'</td><td>'+escH(x.induction_date||'-')+'</td><td>'+escH(x.inducted_by||'-')+'</td><td><strong>'+cs.covered+'/'+cs.total+'</strong><div class="muted">'+pct+'% covered'+(cs.na?' - '+cs.na+' N/A':'')+'</div></td><td><span class="pill" style="background:'+(evOk?'#ECFDF5':'#FFFBEB')+';color:'+(evOk?'#065F46':'#854F0B')+'">'+escH(ev)+'</span></td><td><span class="pill">'+escH(x.status||'-')+'</span></td><td><button class="icon-btn" title="Edit induction record" aria-label="Edit induction record" data-auris-runtime-onclick="r0120" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([x.id]))+'"><i class="ti ti-edit"></i></button></td></tr>';}).join(''):'<tr><td colspan="8" class="empty">No induction records yet.</td></tr>')+
       '</tbody></table>';
   }catch(e){host.innerHTML=setupFriendlyMessage('Induction register',e.message);}
 }
@@ -36879,9 +36879,9 @@ async function elcLoad(){
   var ch=document.getElementById('elc-list'), eh=document.getElementById('ele-list');if(!ch&&!eh)return;
   try{
     var courses=await api('/elearning_courses?company_id=eq.'+ccid()+'&select=*&order=title.asc');elcAllData=courses||[];
-    if(ch)ch.innerHTML='<table class="data-table"><thead><tr><th>Course</th><th>Duration</th><th>Status</th><th>Actions</th></tr></thead><tbody>'+(courses.length?courses.map(function(x){var mandatory=x.mandatory?'<span class="pill" style="background:#FEF2F2;color:#991B1B;margin-left:6px">Mandatory</span>':'';return '<tr><td><strong>'+escH(x.title||'-')+'</strong>'+mandatory+'<div class="muted">'+escH(x.course_code||x.description||'')+'</div></td><td>'+escH(x.duration_minutes?x.duration_minutes+' min':'-')+'</td><td>'+escH(x.status||'active')+'</td><td>'+(x.course_url?'<button class="icon-btn" title="Launch course" aria-label="Launch course" onclick="elcLaunch(\''+escH(x.id||x.title)+'\')"><i class="ti ti-player-play"></i></button>':'')+'<button class="icon-btn" title="Edit e-learning course" aria-label="Edit e-learning course" onclick="elcEdit(\''+escH(x.id)+'\')"><i class="ti ti-edit"></i></button></td></tr>';}).join(''):'<tr><td colspan="4" class="empty">No e-learning courses yet.</td></tr>')+'</tbody></table>';
+    if(ch)ch.innerHTML='<table class="data-table"><thead><tr><th>Course</th><th>Duration</th><th>Status</th><th>Actions</th></tr></thead><tbody>'+(courses.length?courses.map(function(x){var mandatory=x.mandatory?'<span class="pill" style="background:#FEF2F2;color:#991B1B;margin-left:6px">Mandatory</span>':'';return '<tr><td><strong>'+escH(x.title||'-')+'</strong>'+mandatory+'<div class="muted">'+escH(x.course_code||x.description||'')+'</div></td><td>'+escH(x.duration_minutes?x.duration_minutes+' min':'-')+'</td><td>'+escH(x.status||'active')+'</td><td>'+(x.course_url?'<button class="icon-btn" title="Launch course" aria-label="Launch course" data-auris-runtime-onclick="r0121" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([x.id||x.title]))+'"><i class="ti ti-player-play"></i></button>':'')+'<button class="icon-btn" title="Edit e-learning course" aria-label="Edit e-learning course" data-auris-runtime-onclick="r0122" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([x.id]))+'"><i class="ti ti-edit"></i></button></td></tr>';}).join(''):'<tr><td colspan="4" class="empty">No e-learning courses yet.</td></tr>')+'</tbody></table>';
     var enrol=await api('/elearning_enrolments?company_id=eq.'+ccid()+'&select=*&order=enrolment_date.desc');
-    if(eh)eh.innerHTML='<table class="data-table"><thead><tr><th>Person</th><th>Course</th><th>Status</th><th>Timeframe</th><th>Target</th><th>Completion</th><th>Certificate</th><th>Actions</th></tr></thead><tbody>'+(enrol.length?enrol.map(function(x){var c=elcCourseById(x.course_id);var canLaunch=c&&c.course_url;var due=x.target_date||x.due_date||'-';var done=String(x.status||'').toLowerCase()==='completed';var watched=eleWatchFinished(x);var cert=eleCertificateDisplay(x);var tf=eleTimeframeState(x);return '<tr><td><strong>'+escH(x.person_name||'-')+'</strong><div class="muted">'+escH(x.department||'')+'</div></td><td>'+escH(elcCourseLabel(x.course_id))+'</td><td>'+escH((x.status||'-').replaceAll('_',' '))+'<div class="muted" style="font-size:11px;margin-top:3px">'+escH(eleWatchLabel(x))+'</div></td><td><span class="pill" style="background:'+tf.bg+';color:'+tf.color+'">'+escH(tf.label)+'</span></td><td>'+escH(due)+'</td><td>'+escH(x.completion_date||'-')+'</td><td><span class="pill" style="background:#EFF6FF;color:#185FA5">'+escH(cert)+'</span></td><td>'+(canLaunch?'<button class="icon-btn" title="Launch course" aria-label="Launch course" onclick="eleLaunchEnrolment(\''+escH(x.id)+'\')"><i class="ti ti-player-play"></i></button>':'')+(!done&&watched&&isMgr()?'<button class="icon-btn" title="Complete and issue certificate" aria-label="Complete and issue certificate" onclick="eleQuickComplete(\''+escH(x.id)+'\')"><i class="ti ti-certificate"></i></button>':'')+'<button class="icon-btn" title="Edit e-learning enrolment" aria-label="Edit e-learning enrolment" onclick="eleEdit(\''+escH(x.id)+'\')"><i class="ti ti-edit"></i></button></td></tr>';}).join(''):'<tr><td colspan="8" class="empty">No e-learning enrolments yet.</td></tr>')+'</tbody></table>';
+    if(eh)eh.innerHTML='<table class="data-table"><thead><tr><th>Person</th><th>Course</th><th>Status</th><th>Timeframe</th><th>Target</th><th>Completion</th><th>Certificate</th><th>Actions</th></tr></thead><tbody>'+(enrol.length?enrol.map(function(x){var c=elcCourseById(x.course_id);var canLaunch=c&&c.course_url;var due=x.target_date||x.due_date||'-';var done=String(x.status||'').toLowerCase()==='completed';var watched=eleWatchFinished(x);var cert=eleCertificateDisplay(x);var tf=eleTimeframeState(x);return '<tr><td><strong>'+escH(x.person_name||'-')+'</strong><div class="muted">'+escH(x.department||'')+'</div></td><td>'+escH(elcCourseLabel(x.course_id))+'</td><td>'+escH((x.status||'-').replaceAll('_',' '))+'<div class="muted" style="font-size:11px;margin-top:3px">'+escH(eleWatchLabel(x))+'</div></td><td><span class="pill" style="background:'+tf.bg+';color:'+tf.color+'">'+escH(tf.label)+'</span></td><td>'+escH(due)+'</td><td>'+escH(x.completion_date||'-')+'</td><td><span class="pill" style="background:#EFF6FF;color:#185FA5">'+escH(cert)+'</span></td><td>'+(canLaunch?'<button class="icon-btn" title="Launch course" aria-label="Launch course" data-auris-runtime-onclick="r0117" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([x.id]))+'"><i class="ti ti-player-play"></i></button>':'')+(!done&&watched&&isMgr()?'<button class="icon-btn" title="Complete and issue certificate" aria-label="Complete and issue certificate" data-auris-runtime-onclick="r0123" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([x.id]))+'"><i class="ti ti-certificate"></i></button>':'')+'<button class="icon-btn" title="Edit e-learning enrolment" aria-label="Edit e-learning enrolment" data-auris-runtime-onclick="r0124" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([x.id]))+'"><i class="ti ti-edit"></i></button></td></tr>';}).join(''):'<tr><td colspan="8" class="empty">No e-learning enrolments yet.</td></tr>')+'</tbody></table>';
   }catch(e){if(ch)ch.innerHTML=setupFriendlyMessage('E-learning',e.message);if(eh)eh.innerHTML='';}
 }
 async function elcEdit(id){
@@ -37418,7 +37418,7 @@ function offlineRenderQueueSettings(){
         +'<td style="padding:9px;color:var(--text2)">'+(x.created_at?new Date(x.created_at).toLocaleString():'-')+'</td>'
         +'<td style="padding:9px;text-align:center">'+((x.photos||[]).length||0)+'</td>'
         +'<td style="padding:9px">'+(x.last_error?'<span style="color:var(--red);font-weight:700">'+escH(x.last_error)+'</span>':'<span style="color:#854F0B;font-weight:700">Pending</span>')+'</td>'
-        +'<td style="padding:9px;text-align:right;white-space:nowrap"><button class="btn btn-sm" onclick="offlineRetryDraft(\''+x.local_id+'\')"><i class="ti ti-refresh"></i>Retry</button> <button class="btn btn-sm" onclick="offlineDeleteDraft(\''+x.local_id+'\')" style="color:var(--red)"><i class="ti ti-trash"></i></button></td>'
+        +'<td style="padding:9px;text-align:right;white-space:nowrap"><button class="btn btn-sm" data-auris-runtime-onclick="r0125" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([x.local_id]))+'"><i class="ti ti-refresh"></i>Retry</button> <button class="btn btn-sm" data-auris-runtime-onclick="r0126" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([x.local_id]))+'" style="color:var(--red)"><i class="ti ti-trash"></i></button></td>'
         +'</tr>';
     }).join('')+'</tbody></table></div>';
 }
@@ -37732,7 +37732,7 @@ function mobileRenderModulesGrid() {
     var color = MODULE_COLORS[m.k] || '#185FA5';
     var isCur = m.k === _mobileCurrentPg;
     html += '<button type="button" data-page="' + m.k + '" data-label="' + m.l + '" class="mob-module-btn"'
-      + ' onclick="mobileNavTo(\'' + m.k + '\',\'' + m.l.replace(/'/g, "\\'") + '\',this)"'
+      + ' data-auris-named-action="mobile-nav"'
       + ' style="display:flex;flex-direction:column;align-items:center;justify-content:center;'
       + 'gap:6px;padding:14px 6px;border:2px solid ' + (isCur ? color : 'transparent') + ';'
       + 'background:' + (isCur ? color + '18' : 'transparent') + ';'
@@ -38009,7 +38009,7 @@ function renderNotifSettings(s, queue, whatsappSettings) {
       + '<td style="padding:8px 10px">' + notifStatusBadge(n) + '</td>'
       + '<td style="padding:8px 10px;color:var(--text2);font-size:11px">'
       + (n.created_at ? new Date(n.created_at).toLocaleString() : '') + '</td>'
-      + '<td style="padding:8px 10px;text-align:right">'+(canOpen?'<button class="btn btn-sm" onclick="notificationOpen(\''+escH(n.id)+'\')"><i class="ti ti-external-link"></i>Open record</button>':'<span style="font-size:10px;color:var(--text3)">Not applicable</span>')+'</td>'
+      + '<td style="padding:8px 10px;text-align:right">'+(canOpen?'<button class="btn btn-sm" data-auris-runtime-onclick="r0127" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([n.id]))+'"><i class="ti ti-external-link"></i>Open record</button>':'<span style="font-size:10px;color:var(--text3)">Not applicable</span>')+'</td>'
       + '</tr>';
   }).join('') : '<tr><td colspan="6" style="padding:16px;text-align:center;color:var(--text2)">No notifications yet</td></tr>';
   var recipientRows = incidentTypeKeys.map(function(k) {
@@ -38381,7 +38381,7 @@ function approvalsRender(){
       +'<td style="padding:10px 12px;white-space:nowrap;'+(approvalsDate(x.due_date)&&approvalsDate(x.due_date)<new Date()?'color:var(--red);font-weight:800':'color:var(--text2)')+'">'+escH(approvalsDateLabel(x.due_date,'Not set'))+'</td>'
       +'<td style="padding:10px 12px;color:var(--text2);font-size:11px">'+escH(x.confidentiality||'Standard')+'</td>'
       +'<td style="padding:10px 12px;color:var(--text2);white-space:nowrap">'+escH(approvalsDateLabel(x.updated_at,'-'))+'</td>'
-      +'<td style="padding:10px 12px;text-align:right"><button class="btn btn-sm" onclick="approvalsOpen(\''+escH(x.row_key)+'\')"><i class="ti ti-arrow-right"></i>Open record</button></td>'
+      +'<td style="padding:10px 12px;text-align:right"><button class="btn btn-sm" data-auris-runtime-onclick="r0128" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([x.row_key]))+'"><i class="ti ti-arrow-right"></i>Open record</button></td>'
       +'</tr>';
   }).join('');
 }
@@ -38530,7 +38530,7 @@ function auditRender(){
       +'<td style="padding:10px 12px">'+escH(x.actor_name||'-')+'<div style="font-size:11px;color:var(--text2)">'+escH(auditLabel(x.actor_role||''))+'</div></td>'
       +'<td style="padding:10px 12px;max-width:360px">'+escH(x.summary||'')+'<div style="font-size:11px;color:var(--text2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+escH(fields||details.path||'')+'</div></td>'
       +'<td style="padding:10px 12px;font-family:monospace;font-size:11px;color:var(--text2)">'+escH(x.related_ref||x.related_id||'-')+(x.relationship_id?'<div style="margin-top:3px;color:#047857">Relationship '+escH(String(x.relationship_id).slice(0,8))+'</div>':'')+'</td>'
-      +'<td style="padding:10px 12px;text-align:right"><button class="btn btn-sm" onclick="auditCopyDetails(\''+escH(x.id)+'\')"><i class="ti ti-copy"></i>Details</button></td>'
+      +'<td style="padding:10px 12px;text-align:right"><button class="btn btn-sm" data-auris-runtime-onclick="r0129" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([x.id]))+'"><i class="ti ti-copy"></i>Details</button></td>'
       +'</tr>';
   }).join('');
 }
@@ -39618,7 +39618,7 @@ function obAddSite() {
   div.innerHTML = '<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">'
     + '<i class="ti ti-building" style="color:var(--green)"></i>'
     + '<span style="font-size:13px;font-weight:600">Site ' + _obSiteCount + '</span>'
-    + (_obSiteCount > 1 ? '<button onclick="obRemoveSite(' + _obSiteCount + ')" style="background:none;border:none;color:var(--red);cursor:pointer;margin-left:auto;font-size:11px">Remove</button>' : '')
+    + (_obSiteCount > 1 ? '<button data-auris-runtime-onclick="r0130" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([_obSiteCount]))+'" style="background:none;border:none;color:var(--red);cursor:pointer;margin-left:auto;font-size:11px">Remove</button>' : '')
     + '</div>'
     + '<div class="form3row">'
     + '<div class="form3group"><label class="form3label">Site Name *</label>'
@@ -39954,8 +39954,8 @@ function fireRenderCerts() {
       + '<td>' + statusHtml + '</td>'
       + '<td style="white-space:nowrap">'
         + docLink
-        + (isMgr() ? '<button class="btn btn-sm" onclick="fireShowCertForm(\''+c.id+'\')" title="Edit"><i class="ti ti-edit"></i></button>' : '')
-        + (isMgr() ? '<button class="btn btn-sm" onclick="fireDeleteCert(\''+c.id+'\')" title="Delete" style="color:var(--red)"><i class="ti ti-trash"></i></button>' : '')
+        + (isMgr() ? '<button class="btn btn-sm" data-auris-runtime-onclick="r0131" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([c.id]))+'" title="Edit"><i class="ti ti-edit"></i></button>' : '')
+        + (isMgr() ? '<button class="btn btn-sm" data-auris-runtime-onclick="r0132" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([c.id]))+'" title="Delete" style="color:var(--red)"><i class="ti ti-trash"></i></button>' : '')
       + '</td>'
       + '</tr>';
   }).join('');
@@ -40015,8 +40015,8 @@ function fireRenderInsp() {
       + '<td style="max-width:180px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + escH(i.findings||'-') + '</td>'
       + '<td>' + fireStatusBadge(i.status) + '</td>'
       + '<td style="white-space:nowrap">'
-        + (isMgr() ? '<button class="btn btn-sm" onclick="fireShowInspForm(\''+i.id+'\')" title="Edit"><i class="ti ti-edit"></i></button>' : '')
-        + (isMgr() ? '<button class="btn btn-sm" onclick="fireDeleteInsp(\''+i.id+'\')" title="Delete" style="color:var(--red)"><i class="ti ti-trash"></i></button>' : '')
+        + (isMgr() ? '<button class="btn btn-sm" data-auris-runtime-onclick="r0133" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([i.id]))+'" title="Edit"><i class="ti ti-edit"></i></button>' : '')
+        + (isMgr() ? '<button class="btn btn-sm" data-auris-runtime-onclick="r0134" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([i.id]))+'" title="Delete" style="color:var(--red)"><i class="ti ti-trash"></i></button>' : '')
       + '</td>'
       + '</tr>';
   }).join('');
@@ -40051,8 +40051,8 @@ function fireRenderEquip() {
       + '<td>' + fireServiceStatusBadge(e) + '</td>'
       + '<td>' + fireEquipStatusBadge(e.status) + '</td>'
       + '<td style="white-space:nowrap">'
-        + (isMgr() ? '<button class="btn btn-sm" onclick="fireShowEquipForm(\''+e.id+'\')" title="Edit"><i class="ti ti-edit"></i></button>' : '')
-        + (isMgr() ? '<button class="btn btn-sm" onclick="fireDeleteEquip(\''+e.id+'\')" title="Delete" style="color:var(--red)"><i class="ti ti-trash"></i></button>' : '')
+        + (isMgr() ? '<button class="btn btn-sm" data-auris-runtime-onclick="r0135" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([e.id]))+'" title="Edit"><i class="ti ti-edit"></i></button>' : '')
+        + (isMgr() ? '<button class="btn btn-sm" data-auris-runtime-onclick="r0136" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([e.id]))+'" title="Delete" style="color:var(--red)"><i class="ti ti-trash"></i></button>' : '')
       + '</td>'
       + '</tr>';
   }).join('');
@@ -40312,7 +40312,7 @@ function fireRenderCustomSymbols(){
         +'<td><strong>'+escH(x.label||'-')+'</strong><div class="muted">Available in the equipment-to-position list</div></td>'
         +'<td><span style="font-family:monospace;font-weight:800">'+escH(x.symbol||'EQ')+'</span></td>'
         +'<td>'+(x.shared?'<span class="badge badge-green">Shared company symbol</span>':'<span class="badge badge-amber">Local only</span>')+'</td>'
-        +'<td style="text-align:right"><button class="btn btn-sm" style="color:var(--red)" onclick="fireDeleteCustomSymbol(\''+escH(x.type)+'\')"><i class="ti ti-trash"></i></button></td>'
+        +'<td style="text-align:right"><button class="btn btn-sm" style="color:var(--red)" data-auris-runtime-onclick="r0137" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([x.type]))+'"><i class="ti ti-trash"></i></button></td>'
         +'</tr>';
     }).join('')+'</tbody></table></div>';
 }
@@ -40642,7 +40642,7 @@ function fireRenderLayoutDetails(marker){
     +'<tr><td style="padding:6px;color:var(--text2)">Last service</td><td style="padding:6px">'+last+'</td></tr>'
     +'<tr><td style="padding:6px;color:var(--text2)">Next service</td><td style="padding:6px;font-weight:800;color:'+(overdue?'var(--red)':'var(--green)')+'">'+next+(overdue?' overdue':'')+'</td></tr>'
     +'<tr><td style="padding:6px;color:var(--text2)">Status</td><td style="padding:6px">'+fireEquipStatusBadge(e.status)+'</td></tr>'
-    +'</tbody></table><div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap"><button class="btn btn-sm" data-auris-generated-onclick="g0376"><i class="ti ti-arrows-move"></i>Move marker</button><button class="btn btn-sm" onclick="fireShowEquipForm(\''+escH(e.id||'')+'\')"><i class="ti ti-edit"></i>Edit equipment</button><button class="btn btn-sm" style="color:var(--red)" data-auris-generated-onclick="g0377"><i class="ti ti-trash"></i>Remove marker</button></div>'
+    +'</tbody></table><div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap"><button class="btn btn-sm" data-auris-generated-onclick="g0376"><i class="ti ti-arrows-move"></i>Move marker</button><button class="btn btn-sm" data-auris-runtime-onclick="r0135" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([e.id||'']))+'"><i class="ti ti-edit"></i>Edit equipment</button><button class="btn btn-sm" style="color:var(--red)" data-auris-generated-onclick="g0377"><i class="ti ti-trash"></i>Remove marker</button></div>'
     +'<div style="border-top:1px solid var(--border);margin-top:14px;padding-top:12px"><div style="font-weight:900;font-size:13px;margin-bottom:6px"><i class="ti ti-map-search"></i> Area HSE records</div><div style="font-size:12px;color:var(--text2);margin-bottom:8px">Matching records for: <b>'+escH(area||'this location')+'</b></div><div id="fire-layout-area-records"><div style="font-size:12px;color:var(--text2)">Loading linked records...</div></div></div>';
   fireLoadAreaRecords(area);
 }
@@ -40796,7 +40796,7 @@ async function fireRenderDashboard() {
     + '<div style="overflow-x:auto"><table class="data-table" style="min-width:760px;margin:0"><thead><tr><th>Plan title</th><th>Markers</th><th>Image</th><th>Updated</th><th></th></tr></thead><tbody>'
     + ((fireLayoutPlans||[]).length ? (fireLayoutPlans||[]).slice(0,8).map(function(p){
         var markers=Array.isArray(p.markers)?p.markers.length:0;
-        return '<tr style="cursor:pointer" onclick="fireSelectLayoutPlan(\''+escH(p.id)+'\')"><td><strong>'+escH(p.title||'Untitled plan')+'</strong>'+(p.local_only?' <span class="badge badge-amber">Local draft</span>':'')+'</td><td>'+markers+'</td><td>'+((p.image_url||p.image)?'<span class="badge badge-green">Uploaded</span>':'<span class="badge badge-grey">No image</span>')+'</td><td>'+(p.updated_at?new Date(p.updated_at).toLocaleString():'--')+'</td><td style="text-align:right"><button class="btn btn-sm btn-primary" onclick="event.stopPropagation();fireSelectLayoutPlan(\''+escH(p.id)+'\')"><i class="ti ti-folder-open"></i>Open</button></td></tr>';
+        return '<tr style="cursor:pointer" data-auris-runtime-onclick="r0138" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([p.id]))+'"><td><strong>'+escH(p.title||'Untitled plan')+'</strong>'+(p.local_only?' <span class="badge badge-amber">Local draft</span>':'')+'</td><td>'+markers+'</td><td>'+((p.image_url||p.image)?'<span class="badge badge-green">Uploaded</span>':'<span class="badge badge-grey">No image</span>')+'</td><td>'+(p.updated_at?new Date(p.updated_at).toLocaleString():'--')+'</td><td style="text-align:right"><button class="btn btn-sm btn-primary" data-auris-runtime-onclick="r0139" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([p.id]))+'"><i class="ti ti-folder-open"></i>Open</button></td></tr>';
       }).join('') : '<tr><td colspan="5" style="text-align:center;color:var(--text2);padding:18px">No saved layout plans yet.</td></tr>')
     + '</tbody></table></div></div>';
 
@@ -41341,8 +41341,8 @@ function smRenderPlanList(){
   var title=document.getElementById('sitemap-plan-title');if(title)title.value=layout.title||'Site map';
   var plans=siteMapState.plans||[];
   var parents=smPlanParents(layout.id);
-  var parentPanel=parents.length?'<div style="border:1px solid #bfdbfe;background:#eff6ff;border-radius:8px;padding:8px 10px;margin-bottom:8px;display:flex;gap:8px;align-items:center;flex-wrap:wrap"><span style="font-size:12px;color:#1e3a8a;font-weight:900"><i class="ti ti-arrow-back-up"></i> Linked from</span>'+parents.map(function(p){return '<button class="btn btn-sm" onclick="smOpenPlan(\''+escH(p.id)+'\')"><i class="ti ti-map"></i>'+escH(p.title||'Parent plan')+'</button>';}).join('')+'</div>':'';
-  el.innerHTML=plans.length?parentPanel+'<table class="data-table" style="margin:0"><thead><tr><th>Plan</th><th>Type</th><th>Linked</th><th>Updated</th><th></th></tr></thead><tbody>'+plans.map(function(p){var childCount=smPlanChildCount(p);return '<tr style="cursor:pointer" onclick="smOpenPlan(\''+escH(p.id)+'\')"><td><strong>'+escH(p.title||'Untitled plan')+'</strong>'+(p.local_only?' <span class="badge badge-amber">Local draft</span>':'')+(layout.id===p.id?' <span class="badge badge-green">Open</span>':'')+'</td><td>'+smPlanTypeBadge(p)+'</td><td>'+(childCount?'<span class="badge badge-blue">'+childCount+' linked map'+(childCount>1?'s':'')+'</span>':'<span style="color:var(--text2)">--</span>')+'</td><td>'+escH(smSafeDate(p.updated_at))+'</td><td style="text-align:right;white-space:nowrap"><button class="btn btn-sm" onclick="event.stopPropagation();smOpenPlan(\''+escH(p.id)+'\')"><i class="ti ti-folder-open"></i></button><button class="btn btn-sm" onclick="event.stopPropagation();smDeletePlan(\''+escH(p.id)+'\')" style="color:var(--red)"><i class="ti ti-trash"></i></button></td></tr>';}).join('')+'</tbody></table>':'<div class="empty" style="padding:18px">No saved site map plans yet. Add a title, upload a plan, then save.</div>';
+  var parentPanel=parents.length?'<div style="border:1px solid #bfdbfe;background:#eff6ff;border-radius:8px;padding:8px 10px;margin-bottom:8px;display:flex;gap:8px;align-items:center;flex-wrap:wrap"><span style="font-size:12px;color:#1e3a8a;font-weight:900"><i class="ti ti-arrow-back-up"></i> Linked from</span>'+parents.map(function(p){return '<button class="btn btn-sm" data-auris-runtime-onclick="r0140" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([p.id]))+'"><i class="ti ti-map"></i>'+escH(p.title||'Parent plan')+'</button>';}).join('')+'</div>':'';
+  el.innerHTML=plans.length?parentPanel+'<table class="data-table" style="margin:0"><thead><tr><th>Plan</th><th>Type</th><th>Linked</th><th>Updated</th><th></th></tr></thead><tbody>'+plans.map(function(p){var childCount=smPlanChildCount(p);return '<tr style="cursor:pointer" data-auris-runtime-onclick="r0140" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([p.id]))+'"><td><strong>'+escH(p.title||'Untitled plan')+'</strong>'+(p.local_only?' <span class="badge badge-amber">Local draft</span>':'')+(layout.id===p.id?' <span class="badge badge-green">Open</span>':'')+'</td><td>'+smPlanTypeBadge(p)+'</td><td>'+(childCount?'<span class="badge badge-blue">'+childCount+' linked map'+(childCount>1?'s':'')+'</span>':'<span style="color:var(--text2)">--</span>')+'</td><td>'+escH(smSafeDate(p.updated_at))+'</td><td style="text-align:right;white-space:nowrap"><button class="btn btn-sm" data-auris-runtime-onclick="r0141" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([p.id]))+'"><i class="ti ti-folder-open"></i></button><button class="btn btn-sm" data-auris-runtime-onclick="r0142" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([p.id]))+'" style="color:var(--red)"><i class="ti ti-trash"></i></button></td></tr>';}).join('')+'</tbody></table>':'<div class="empty" style="padding:18px">No saved site map plans yet. Add a title, upload a plan, then save.</div>';
 }
 function smMarkerForSite(site){
   var key=smSiteKey(site), layout=siteMapState.layout||smLayoutEmpty();
@@ -41592,11 +41592,11 @@ function smRenderSiteList(){
   el.innerHTML=sites.map(function(s){
     var rec=smRecordsForSite(s),n=smCount(rec),col=smRiskColor(n);
     var marker=smMarkerForSite(s), linked=marker&&marker.linked_plan_id, linkedTitle=linked?smLinkedPlanTitle(linked):'';
-    return '<button type="button" onclick="smSelectSite(\''+escH(smSiteKey(s))+'\')" style="width:100%;text-align:left;border:1px solid var(--border);background:#fff;border-radius:8px;padding:10px 12px;margin-bottom:8px;cursor:pointer;display:flex;gap:10px;align-items:flex-start">'
+    return '<button type="button" data-auris-runtime-onclick="r0143" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([smSiteKey(s)]))+'" style="width:100%;text-align:left;border:1px solid var(--border);background:#fff;border-radius:8px;padding:10px 12px;margin-bottom:8px;cursor:pointer;display:flex;gap:10px;align-items:flex-start">'
       +'<div style="width:34px;height:34px;border-radius:999px;background:'+col+';color:#fff;display:flex;align-items:center;justify-content:center;font-weight:900"><i class="ti '+(linked?'ti-map-share':'ti-map-pin')+'"></i></div>'
       +'<div style="min-width:0;flex:1"><div style="display:flex;align-items:center;gap:6px;min-width:0"><div style="font-weight:900;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+escH(smSiteName(s))+'</div>'+(linked?'<span class="badge badge-blue">Linked map</span>':'')+'</div><div style="font-size:11px;color:var(--text2);margin-top:2px">'+escH([s.site_code,s.site_type,s.city].filter(Boolean).join(' - ')||'Site / area')+'</div>'
       +(linked?'<div style="font-size:11px;color:#185FA5;font-weight:800;margin-top:4px"><i class="ti ti-corner-down-right"></i> '+escH(linkedTitle||'Linked layout')+'</div>':'')
-      +'<div style="display:flex;gap:5px;flex-wrap:wrap;margin-top:7px"><span class="badge badge-red">'+rec.events.length+' Inc</span><span class="badge badge-amber">'+rec.risks.length+' RA</span><span class="badge badge-blue">'+rec.inspections.length+' Insp</span><span class="badge badge-green">'+rec.actions.length+' Act</span>'+(linked?'<span class="badge badge-purple" onclick="event.stopPropagation();smOpenLinkedPlan(\''+escH(smSiteKey(s))+'\')">Open map</span>':'')+'</div></div></button>';
+      +'<div style="display:flex;gap:5px;flex-wrap:wrap;margin-top:7px"><span class="badge badge-red">'+rec.events.length+' Inc</span><span class="badge badge-amber">'+rec.risks.length+' RA</span><span class="badge badge-blue">'+rec.inspections.length+' Insp</span><span class="badge badge-green">'+rec.actions.length+' Act</span>'+(linked?'<span class="badge badge-purple" data-auris-runtime-onclick="r0144" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([smSiteKey(s)]))+'">Open map</span>':'')+'</div></div></button>';
   }).join('');
 }
 function smRenderCanvas(){
@@ -41608,7 +41608,7 @@ function smRenderCanvas(){
   var layout=siteMapState.layout||smLayoutEmpty();
   var img=layout.image_url||layout.image||'';
   var parents=smPlanParents(layout.id);
-  var context='<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px;padding:8px 10px;border:1px solid var(--border);border-radius:8px;background:#fff"><div style="min-width:0"><div style="font-size:11px;color:var(--text2);font-weight:800;text-transform:uppercase">Current layout</div><div style="font-weight:900;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+escH(layout.title||'Site map')+'</div></div>'+(parents.length?'<div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap"><span style="font-size:11px;color:var(--text2);font-weight:800">Back to</span>'+parents.map(function(p){return '<button class="btn btn-sm" onclick="smOpenPlan(\''+escH(p.id)+'\')"><i class="ti ti-arrow-back-up"></i>'+escH(p.title||'Parent plan')+'</button>';}).join('')+'</div>':'<span class="badge badge-grey">Top-level layout</span>')+'</div>'+smMapEventPreview()+smMapRiskPreview();
+  var context='<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px;padding:8px 10px;border:1px solid var(--border);border-radius:8px;background:#fff"><div style="min-width:0"><div style="font-size:11px;color:var(--text2);font-weight:800;text-transform:uppercase">Current layout</div><div style="font-weight:900;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+escH(layout.title||'Site map')+'</div></div>'+(parents.length?'<div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap"><span style="font-size:11px;color:var(--text2);font-weight:800">Back to</span>'+parents.map(function(p){return '<button class="btn btn-sm" data-auris-runtime-onclick="r0140" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([p.id]))+'"><i class="ti ti-arrow-back-up"></i>'+escH(p.title||'Parent plan')+'</button>';}).join('')+'</div>':'<span class="badge badge-grey">Top-level layout</span>')+'</div>'+smMapEventPreview()+smMapRiskPreview();
   var openEvents=siteMapState.showEvents?(siteMapState.events||[]).filter(function(e){return !['closed','resolved'].includes(String(e.status||'').toLowerCase());}).slice(0,40):[];
   var highRisks=siteMapState.showRisks?(siteMapState.risks||[]).filter(function(r){return /high|critical|very/i.test(String(r.overall_risk_level||r.risk_level||''));}).slice(0,40):[];
   el.innerHTML=context+'<div data-auris-generated-onclick="g0386" style="position:relative;min-height:420px;border:1px solid var(--border);border-radius:10px;background:'+(img?'#fff':'linear-gradient(135deg,#EFF6FF,#F8FAFC)')+';overflow:hidden;cursor:'+(siteMapState.placing?'crosshair':'default')+'">'
@@ -41618,7 +41618,7 @@ function smRenderCanvas(){
       var rec=smRecordsForSite(s),n=smCount(rec),col=smRiskColor(n);
       var pos=smSitePosition(s,i), x=pos.x, y=pos.y;
       var marker=smMarkerForSite(s), linked=marker&&marker.linked_plan_id;
-      return '<button type="button" onclick="event.stopPropagation();smOpenLinkedPlan(\''+escH(smSiteKey(s))+'\')" title="'+escH(smSiteName(s))+(linked?' - opens '+smLinkedPlanTitle(linked):'')+'" style="position:absolute;left:'+x+'%;top:'+y+'%;transform:translate(-50%,-50%);border:0;background:transparent;cursor:pointer">'
+      return '<button type="button" data-auris-runtime-onclick="r0144" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([smSiteKey(s)]))+'" title="'+escH(smSiteName(s))+(linked?' - opens '+smLinkedPlanTitle(linked):'')+'" style="position:absolute;left:'+x+'%;top:'+y+'%;transform:translate(-50%,-50%);border:0;background:transparent;cursor:pointer">'
         +'<div style="width:46px;height:46px;border-radius:999px;background:'+col+';color:#fff;display:flex;align-items:center;justify-content:center;font-weight:900;box-shadow:0 10px 22px rgba(0,0,0,.18);position:relative"><i class="ti '+(linked?'ti-map-share':'ti-map-pin')+'" style="font-size:22px"></i>'+(linked?'<span style="position:absolute;right:-4px;top:-4px;width:16px;height:16px;border-radius:999px;background:#185FA5;border:2px solid #fff"></span>':'')+'</div>'
         +'<div style="margin-top:5px;background:#fff;border:1px solid var(--border);border-radius:999px;padding:2px 8px;font-size:10px;font-weight:800;white-space:nowrap;box-shadow:0 4px 12px rgba(0,0,0,.08)">'+escH(smSiteName(s).slice(0,22))+' - '+n+(linked?' link':(pos.manual?'':' *'))+'</div></button>';
     }).join('')
@@ -41626,11 +41626,11 @@ function smRenderCanvas(){
       var p=smEventPosition(ev,i), sev=String(ev.severity||'').toLowerCase();
       var col=/critical|high/.test(sev)?'#DC2626':'#F97316';
       var title=smRecordTitle(ev,['event_ref','event_type','description']);
-      return '<button type="button" onclick="event.stopPropagation();smSelectMapEvent(\''+escH(ev.id||'')+'\')" title="'+escH(title)+'" style="position:absolute;left:'+p.x+'%;top:'+p.y+'%;transform:translate(-50%,-50%);border:2px solid #fff;background:'+col+';width:18px;height:18px;border-radius:999px;box-shadow:0 3px 10px rgba(220,38,38,.35);cursor:pointer;z-index:4"></button>';
+      return '<button type="button" data-auris-runtime-onclick="r0145" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([ev.id||'']))+'" title="'+escH(title)+'" style="position:absolute;left:'+p.x+'%;top:'+p.y+'%;transform:translate(-50%,-50%);border:2px solid #fff;background:'+col+';width:18px;height:18px;border-radius:999px;box-shadow:0 3px 10px rgba(220,38,38,.35);cursor:pointer;z-index:4"></button>';
     }).join('')
     +highRisks.map(function(r,i){
       var p=smRiskPosition(r,i), title=smRecordTitle(r,['ra_ref','title','activity']);
-      return '<button type="button" onclick="event.stopPropagation();smSelectMapRisk(\''+escH(r.id||'')+'\')" title="'+escH(title)+'" style="position:absolute;left:'+p.x+'%;top:'+p.y+'%;transform:translate(-50%,-50%);border:2px solid #fff;background:#C2410C;color:#fff;width:22px;height:22px;border-radius:6px;box-shadow:0 3px 10px rgba(194,65,12,.35);cursor:pointer;z-index:4;display:flex;align-items:center;justify-content:center"><i class="ti ti-shield-exclamation" style="font-size:14px"></i></button>';
+      return '<button type="button" data-auris-runtime-onclick="r0146" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([r.id||'']))+'" title="'+escH(title)+'" style="position:absolute;left:'+p.x+'%;top:'+p.y+'%;transform:translate(-50%,-50%);border:2px solid #fff;background:#C2410C;color:#fff;width:22px;height:22px;border-radius:6px;box-shadow:0 3px 10px rgba(194,65,12,.35);cursor:pointer;z-index:4;display:flex;align-items:center;justify-content:center"><i class="ti ti-shield-exclamation" style="font-size:14px"></i></button>';
     }).join('')+'</div>';
 }
 function smSelectSite(id,scroll){
@@ -41643,10 +41643,10 @@ function smSelectSite(id,scroll){
   if(scroll!==false){var el=document.getElementById('sitemap-details');if(el)el.scrollIntoView({behavior:'smooth',block:'nearest'});}
 }
 function smRecordTitle(r,keys){return displayRecordRef(r,keys,'Record');}
-function smModuleButton(page,label){return '<button class="btn btn-sm" onclick="showPage(\''+page+'\',null)" style="font-size:11px"><i class="ti ti-external-link"></i>'+label+'</button>';}
+function smModuleButton(page,label){return '<button class="btn btn-sm" data-auris-runtime-onclick="r0009" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([page]))+'" style="font-size:11px"><i class="ti ti-external-link"></i>'+label+'</button>';}
 function smSection(name,icon,page,rows,keys,meta){
   return '<div style="border:1px solid var(--border);border-radius:8px;overflow:hidden;margin-bottom:10px;background:#fff"><div style="display:flex;justify-content:space-between;align-items:center;background:#f8fafc;padding:9px 11px;border-bottom:1px solid var(--border)"><div style="font-weight:900;font-size:13px"><i class="ti '+icon+'"></i> '+escH(name)+' <span class="badge badge-grey">'+rows.length+'</span></div>'+smModuleButton(page,'Open')+'</div>'
-    +(rows.length?'<div style="overflow:auto"><table class="data-table" style="margin:0"><tbody>'+rows.slice(0,12).map(function(r){return '<tr onclick="showPage(\''+page+'\',null)" title="Open '+escH(name)+' module" style="cursor:pointer"><td style="padding:8px 10px"><div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start"><div style="min-width:0"><div style="font-weight:800">'+escH(smRecordTitle(r,keys))+(r.__sm_match_mode==='legacy'?' <span class="badge badge-amber" title="Matched using historical location text; reconcile this record to a canonical Site or Area">Legacy text match</span>':'')+'</div><div style="font-size:11px;color:var(--text2)">'+escH(meta(r)||'--')+'</div></div><i class="ti ti-chevron-right" style="color:var(--text3);margin-top:2px"></i></div></td></tr>';}).join('')+'</tbody></table></div>':'<div style="padding:12px;color:var(--text2);font-size:12px">No records linked to this location yet.</div>')+'</div>';
+    +(rows.length?'<div style="overflow:auto"><table class="data-table" style="margin:0"><tbody>'+rows.slice(0,12).map(function(r){return '<tr data-auris-runtime-onclick="r0009" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([page]))+'" title="Open '+escH(name)+' module" style="cursor:pointer"><td style="padding:8px 10px"><div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start"><div style="min-width:0"><div style="font-weight:800">'+escH(smRecordTitle(r,keys))+(r.__sm_match_mode==='legacy'?' <span class="badge badge-amber" title="Matched using historical location text; reconcile this record to a canonical Site or Area">Legacy text match</span>':'')+'</div><div style="font-size:11px;color:var(--text2)">'+escH(meta(r)||'--')+'</div></div><i class="ti ti-chevron-right" style="color:var(--text3);margin-top:2px"></i></div></td></tr>';}).join('')+'</tbody></table></div>':'<div style="padding:12px;color:var(--text2);font-size:12px">No records linked to this location yet.</div>')+'</div>';
 }
 function smRenderDetails(site){
   var el=document.getElementById('sitemap-details');if(!el)return;
@@ -41663,7 +41663,7 @@ function smRenderDetails(site){
     +'<div><div class="form3label">Records</div><div style="font-weight:900;color:'+smRiskColor(smCount(rec))+'">'+smCount(rec)+'</div></div>'
     +'</div></div>'
     +(legacyCount?'<div style="margin:-2px 0 12px;padding:9px 11px;border:1px solid #FCD34D;background:#FFFBEB;border-radius:8px;color:#92400E;font-size:11px;font-weight:700"><i class="ti ti-alert-triangle"></i> '+legacyCount+' record'+(legacyCount===1?'':'s')+' linked by historical text only. Confirm the canonical Site / Area before relying on location totals.</div>':'')
-    +'<div class="card" style="margin-bottom:12px"><div style="display:flex;align-items:flex-end;gap:10px;flex-wrap:wrap"><div style="flex:1;min-width:240px"><label class="form3label">Linked layout / drill-down map</label><select onchange="smSetLinkedPlan(\''+escH(smSiteKey(site))+'\',this.value)">'+linkOptions+'</select><div style="font-size:11px;color:var(--text2);margin-top:5px">When set, clicking this marker opens the selected building or area layout.</div></div>'+(marker&&marker.linked_plan_id?'<button class="btn btn-sm" onclick="smOpenLinkedPlan(\''+escH(smSiteKey(site))+'\')"><i class="ti ti-map-share"></i>Open linked layout</button><button class="btn btn-sm" onclick="smUnlinkPlan(\''+escH(smSiteKey(site))+'\')" style="color:var(--red)"><i class="ti ti-unlink"></i>Unlink</button>':'<button class="btn btn-sm" onclick="smCreateLinkedPlan(\''+escH(smSiteKey(site))+'\')"><i class="ti ti-plus"></i>Create child layout</button>')+'</div></div>'
+    +'<div class="card" style="margin-bottom:12px"><div style="display:flex;align-items:flex-end;gap:10px;flex-wrap:wrap"><div style="flex:1;min-width:240px"><label class="form3label">Linked layout / drill-down map</label><select data-auris-runtime-onchange="r0147" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([smSiteKey(site)]))+'">'+linkOptions+'</select><div style="font-size:11px;color:var(--text2);margin-top:5px">When set, clicking this marker opens the selected building or area layout.</div></div>'+(marker&&marker.linked_plan_id?'<button class="btn btn-sm" data-auris-runtime-onclick="r0148" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([smSiteKey(site)]))+'"><i class="ti ti-map-share"></i>Open linked layout</button><button class="btn btn-sm" data-auris-runtime-onclick="r0149" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([smSiteKey(site)]))+'" style="color:var(--red)"><i class="ti ti-unlink"></i>Unlink</button>':'<button class="btn btn-sm" data-auris-runtime-onclick="r0150" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([smSiteKey(site)]))+'"><i class="ti ti-plus"></i>Create child layout</button>')+'</div></div>'
     +smSection('Incidents','ti-alert-triangle','events',rec.events,['event_ref','event_type','description'],function(r){return [r.severity,r.status,smSafeDate(r.event_date||r.created_at)].filter(Boolean).join(' - ');})
     +smSection('BBS observations','ti-eye','observation',rec.observations,['observation_ref','observation_type','description'],function(r){return [r.status,r.department,smSafeDate(r.observation_date||r.created_at)].filter(Boolean).join(' - ');})
     +smSection('Inspections','ti-clipboard-check','inspection',rec.inspections,['reference_no','inspection_type','site'],function(r){return [r.status,smSafeDate(r.inspection_date||r.created_at)].filter(Boolean).join(' - ');})
