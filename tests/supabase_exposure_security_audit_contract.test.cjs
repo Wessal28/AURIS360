@@ -1,0 +1,10 @@
+const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path');
+const sql=fs.readFileSync(path.resolve(__dirname,'..','supabase_exposure_security_audit.sql'),'utf8');
+assert.match(sql,/set transaction read only/i);assert.match(sql,/rollback;\s*$/i);
+for(const catalog of ['pg_class','pg_namespace','pg_policies','pg_proc','information_schema.column_privileges','pg_default_acl'])assert.match(sql,new RegExp(catalog.replace('.','\\.'),'i'));
+for(const check of ['relrowsecurity','security_invoker','SECURITY DEFINER','search_path','has_schema_privilege','has_table_privilege','has_function_privilege','storage.objects'])assert.match(sql,new RegExp(check.replace('.','\\.'),'i'));
+for(const role of ['anon','authenticated','PUBLIC'])assert.match(sql,new RegExp(role));
+assert.doesNotMatch(sql,/has_(?:schema|table|function)_privilege\('public'/i);assert.match(sql,/x\.grantee=0/);
+const executableSql=sql.replace(/--[^\n]*/g,'').replace(/'(?:''|[^'])*'/g,"''");assert.doesNotMatch(executableSql,/\b(insert|update|delete|truncate|alter|create|drop|grant|revoke)\b/i);
+assert.match(sql,/'PASS','Summary'/);assert.match(sql,/'CRITICAL'/);assert.match(sql,/'REVIEW'/);
+console.log('Supabase exposure security audit contract passed (read-only RLS, grants, views, RPCs, defaults and storage checks).');
