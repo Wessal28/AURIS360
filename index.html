@@ -13244,7 +13244,7 @@ window.addEventListener('error',function(event){try{var active=document.querySel
 
 function loadSettings(){
 if(isAdm())document.getElementById('logo-settings').style.display='block';
-document.getElementById('my-profile-info').innerHTML='<div style="font-size:13px"><strong>'+(prof?.full_name||'--')+'</strong><br><span style="color:var(--text2)">'+(prof?.email||'--')+'</span><br>'+stat(prof?.role)+'</div>';
+document.getElementById('my-profile-info').innerHTML='<div style="font-size:13px"><strong>'+escH(prof?.full_name||'--')+'</strong><br><span style="color:var(--text2)">'+escH(prof?.email||'--')+'</span><br>'+stat(prof?.role)+'</div>';
 try{ brandInit(); }catch(e){ console.error('brandInit:',e); }
 try{ loadSecuritySlaSettings(); }catch(e){ console.error('loadSecuritySlaSettings:',e); }
 try{ loadSystemHealth(); }catch(e){ console.error('loadSystemHealth:',e); }

@@ -17,6 +17,7 @@
     "test:controlled-rollback": "node tests/controlled_rollback_contract.test.cjs",
     "test:rollback-rehearsal": "node tests/rollback_rehearsal_contract.test.cjs",
     "test:rollout-evidence": "node tests/rollout_evidence_snapshot_contract.test.cjs",
+    "test:transport-security": "node tests/transport_security_headers_contract.test.cjs",
     "test:live-gates": "node tests/live_gate_verification_contract.test.cjs",
     "test:index-syntax": "node tests/index_inline_syntax.test.cjs",
     "test:audit-contract": "node tests/audit_contract.test.cjs",
