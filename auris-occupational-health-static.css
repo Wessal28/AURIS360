@@ -1,0 +1,283 @@
+/* Generated from Occupational Health by scripts/extract-occupational-health-styles.cjs. */
+/* Non-important declarations preserve surveillance, exposure, diagnostic and vaccination runtime state. */
+.auris-ohealth-s-01f2e0961e{font-size:14px;font-weight:700;color:var(--text2)}
+.auris-ohealth-s-02e9423f33{color:#1a1a1a}
+.auris-ohealth-s-03bd966c28{padding:10px 12px;border-left:4px solid #DC2626}
+.auris-ohealth-s-05be4e4a89{color:#0891B2}
+.auris-ohealth-s-064eb06bc7{display:flex;gap:14px;margin-bottom:10px}
+.auris-ohealth-s-07bdff4587{min-height:60px}
+.auris-ohealth-s-089deee0fc{accent-color:#7C3AED}
+.auris-ohealth-s-0a97429e22{display:flex;align-items:center;gap:8px;margin-top:10px}
+.auris-ohealth-s-0b8cad26ad{display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin-bottom:14px}
+.auris-ohealth-s-0cf9615f1f{display:flex;gap:0;margin-bottom:16px;border-bottom:2px solid var(--border);overflow-x:auto}
+.auris-ohealth-s-0e610f7b67{display:none;background:rgba(220,38,38,.3);color:#fff;border-color:rgba(220,38,38,.5)}
+.auris-ohealth-s-0ee7f66ad9{margin-top:12px}
+.auris-ohealth-s-14dfb7ae67{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px}
+.auris-ohealth-s-1b1d75452f{overflow-x:auto}
+.auris-ohealth-s-1e4fd5f9ed{font-size:22px;font-weight:800;color:#1D9E75}
+.auris-ohealth-s-2062f090bc{font-size:22px;font-weight:800;color:#EF9F27}
+.auris-ohealth-s-21ac3ff165{padding:10px 12px;border-left:4px solid #6B7280}
+.auris-ohealth-s-21fd010064{display:flex;gap:14px;flex-wrap:wrap}
+.auris-ohealth-s-22514dbec4{font-size:13px;font-weight:600;cursor:pointer}
+.auris-ohealth-s-24ac637923{padding:10px 12px;border-left:4px solid #8B5CF6}
+.auris-ohealth-s-27345e5d6d{margin-bottom:14px;border-left:4px solid #E24B4A}
+.auris-ohealth-s-283f12d7fe{accent-color:var(--green)}
+.auris-ohealth-s-2b013fa0d9{min-height:50px}
+.auris-ohealth-s-327a892d1b{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.auris-ohealth-s-34362c1a82{font-size:22px;font-weight:800;color:#6B7280}
+.auris-ohealth-s-3536b249e1{display:flex;align-items:center;gap:8px;padding:10px;border-radius:8px;cursor:pointer;background:#FFF7ED;border:1px solid #fed7aa}
+.auris-ohealth-s-36b2bbe0a4{accent-color:#185FA5}
+.auris-ohealth-s-37d51e048e{padding:14px 20px;background:linear-gradient(135deg,#064E3B,#0891B2);color:#fff;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px}
+.auris-ohealth-s-404ed66541{display:flex;align-items:center;gap:8px;padding:10px;border-radius:8px;cursor:pointer;background:#FFFBEB;border:1px solid #fcd34d}
+.auris-ohealth-s-42a6ced8b6{margin-bottom:14px}
+.auris-ohealth-s-4422804ebb{font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px}
+.auris-ohealth-s-477ac35876{width:55px;padding:4px;border:1px solid #fca5a5;border-radius:6px;text-align:center;font-size:12px;background:#fff1f2}
+.auris-ohealth-s-483803c5cc{font-size:40px;margin-bottom:8px}
+.auris-ohealth-s-485acb7ee6{font-weight:700;color:#166534}
+.auris-ohealth-s-48a87f51bd{color:#8B5CF6}
+.auris-ohealth-s-498a5137d9{display:flex;flex-direction:column;gap:8px;margin-bottom:12px}
+.auris-ohealth-s-49acb3c3b7{font-size:10px;color:var(--text2)}
+.auris-ohealth-s-4bcaf372e4{padding:8px;text-align:center;border-bottom:1px solid var(--border);color:#7C3AED}
+.auris-ohealth-s-4bff8bc1bc{font-family:monospace;font-size:12px;color:#fef3c7;margin-top:3px}
+.auris-ohealth-s-4d5979ac8f{min-height:70px}
+.auris-ohealth-s-4deab6bc5d{border-bottom:1px solid #f0f0f0}
+.auris-ohealth-s-50f50c978c{padding:4px;background:#fff1f2}
+.auris-ohealth-s-530946d91c{padding:10px 12px;border-left:4px solid #E24B4A}
+.auris-ohealth-s-541d2a7e2a{background:#e0f7fa}
+.auris-ohealth-s-54593e9172{font-size:11px;color:var(--text2);margin-top:8px}
+.auris-ohealth-s-54ec8874e7{margin-bottom:14px;padding:0;overflow:hidden}
+.auris-ohealth-s-5571af1e74{display:grid;grid-template-columns:2fr 1fr;gap:14px}
+.auris-ohealth-s-56ac49ff17{background:#fff;color:#1D9E75;font-weight:700}
+.auris-ohealth-s-57b252ee5a{margin-bottom:14px;border:2px solid #854F0B}
+.auris-ohealth-s-5c09edd131{background:rgba(255,255,255,.2);color:#fff;border-color:rgba(255,255,255,.3)}
+.auris-ohealth-s-5e461f0709{font-size:13px}
+.auris-ohealth-s-5f9267d7a0{width:55px;padding:4px;border:1px solid var(--border);border-radius:6px;text-align:center;font-size:12px}
+.auris-ohealth-s-66f411b444{accent-color:#E24B4A}
+.auris-ohealth-s-69a5c11372{padding:8px;text-align:center;border-bottom:1px solid var(--border);color:#E24B4A}
+.auris-ohealth-s-6aa34d7432{display:none}
+.auris-ohealth-s-6ab37c1f2f{border-bottom:1px solid #f5f5f5}
+.auris-ohealth-s-6b2aa997a6{font-size:13px;cursor:pointer;color:var(--red);font-weight:600}
+.auris-ohealth-s-6e86c59eb5{padding:14px 20px;background:linear-gradient(135deg,#1a3a5c,#185FA5);color:#fff;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px}
+.auris-ohealth-s-6f56b8363e{font-size:22px;font-weight:800;color:#185FA5}
+.auris-ohealth-s-72893568c5{padding:6px}
+.auris-ohealth-s-7299078644{font-size:12px;color:var(--text2)}
+.auris-ohealth-s-7372276e79{font-family:monospace;font-size:12px;color:#fca5a5;margin-top:3px}
+.auris-ohealth-s-75021e57ca{font-size:17px;font-weight:800}
+.auris-ohealth-s-75a9bf628c{padding:14px 20px;background:linear-gradient(135deg,#3B0764,#7C3AED);color:#fff;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px}
+.auris-ohealth-s-770a4152c1{min-height:80px}
+.auris-ohealth-s-7781968c56{padding:14px 20px;background:linear-gradient(135deg,#1a3a5c,#854F0B);color:#fff;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px}
+.auris-ohealth-s-7a5e61eb83{padding:10px 12px;border-left:4px solid #1D9E75}
+.auris-ohealth-s-7b8c3df564{font-family:monospace}
+.auris-ohealth-s-7c731db5cd{background:#f3e8ff}
+.auris-ohealth-s-7d4be32b42{padding:8px 12px;font-weight:700;color:#E24B4A}
+.auris-ohealth-s-7d6b7128d2{padding:8px;text-align:center;border-bottom:1px solid var(--border)}
+.auris-ohealth-s-7e000820e7{min-height:40px}
+.auris-ohealth-s-80c001e58c{padding:8px 12px;text-align:left;border-bottom:1px solid var(--border)}
+.auris-ohealth-s-81b66f52ad{padding:8px 12px;font-weight:700;color:#185FA5}
+.auris-ohealth-s-82a6809479{width:70px;padding:4px;border:1px solid var(--border);border-radius:6px;text-align:center;font-size:12px}
+.auris-ohealth-s-82b53ac0cc{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:14px}
+.auris-ohealth-s-8588fe5ce6{padding:8px;text-align:center;color:var(--text2);font-size:11px}
+.auris-ohealth-s-88a8942883{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px}
+.auris-ohealth-s-89ef43f38f{display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer;margin-top:10px}
+.auris-ohealth-s-8c5a7fbdc5{display:flex;align-items:center;gap:8px;padding:10px;border-radius:8px;cursor:pointer;background:#FEF2F2;border:1px solid #fecaca}
+.auris-ohealth-s-902474a541{padding:14px;overflow-x:auto}
+.auris-ohealth-s-90cf399257{accent-color:#EF9F27}
+.auris-ohealth-s-913c8bfa3e{color:#854F0B}
+.auris-ohealth-s-9149dc5be2{margin-bottom:14px;border-left:4px solid #854F0B}
+.auris-ohealth-s-9214aa7fbd{padding:16px;text-align:center}
+.auris-ohealth-s-948c3ac1bb{margin-bottom:14px;border-left:4px solid #0891B2}
+.auris-ohealth-s-96f7839a1b{display:none;background:rgba(0,0,0,.3);color:#fff;border-color:rgba(255,255,255,.3)}
+.auris-ohealth-s-9afc82cb60{font-size:11px;line-height:1.6;color:var(--text2)}
+.auris-ohealth-s-9bcefa3fff{margin-bottom:14px;border:2px solid #185FA5}
+.auris-ohealth-s-9c40389b4a{display:flex;gap:8px}
+.auris-ohealth-s-a02a2a81ab{padding:14px 20px;background:linear-gradient(135deg,#166534,#1D9E75);color:#fff;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px}
+.auris-ohealth-s-a0935e17ff{padding:8px;text-align:center}
+.auris-ohealth-s-a41bff61e4{font-size:13px;color:var(--text2)}
+.auris-ohealth-s-a4e017b7b0{display:flex;align-items:center;gap:8px}
+.auris-ohealth-s-ab79ea2b85{margin:0}
+.auris-ohealth-s-adf04cf81f{font-size:11px;font-weight:600;text-transform:uppercase;opacity:.8;margin-bottom:4px}
+.auris-ohealth-s-af3424473d{margin-bottom:14px;border:2px solid #DC2626}
+.auris-ohealth-s-af62d68b87{accent-color:var(--red)}
+.auris-ohealth-s-b1dc1235c7{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.auris-ohealth-s-b5bd38212a{font-size:12px;font-weight:600;cursor:pointer;color:var(--red)}
+.auris-ohealth-s-b65d08a1eb{padding:10px 16px;background:linear-gradient(135deg,#3B0764,#7C3AED);color:#fff;font-weight:700}
+.auris-ohealth-s-b6d403ee7e{padding:10px 12px;border-left:4px solid #185FA5}
+.auris-ohealth-s-b922c89f16{margin-bottom:10px}
+.auris-ohealth-s-ba28bccee4{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+.auris-ohealth-s-bc6456303a{font-size:22px;font-weight:800;color:#8B5CF6}
+.auris-ohealth-s-bc997d300e{border:2px solid #0891B2}
+.auris-ohealth-s-bd0e58d190{padding:6px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px}
+.auris-ohealth-s-be20c78cf6{padding:8px 10px;border:1px solid var(--border);border-radius:8px;font-weight:700;font-size:16px}
+.auris-ohealth-s-c08484bf16{width:100%;border-collapse:collapse;font-size:13px}
+.auris-ohealth-s-c542f2bc2e{font-size:11px;font-weight:600;text-transform:uppercase;opacity:.8;letter-spacing:.08em;margin-bottom:4px}
+.auris-ohealth-s-c69f0ac716{width:100%;min-width:600px;border-collapse:collapse;font-size:13px}
+.auris-ohealth-s-c70473e794{padding:10px 12px;border-left:4px solid #EF9F27}
+.auris-ohealth-s-c7b9e5b2c7{background:#1D9E75;color:#fff;border-color:#1D9E75}
+.auris-ohealth-s-c7bff90490{color:#DC2626}
+.auris-ohealth-s-ca32b871b2{color:#185FA5}
+.auris-ohealth-s-cc6390bafc{font-size:12px;font-weight:600;cursor:pointer}
+.auris-ohealth-s-ccd7ff7041{display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer}
+.auris-ohealth-s-cfaccf08c6{padding:14px 20px;background:linear-gradient(135deg,#7F1D1D,#DC2626);color:#fff;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px}
+.auris-ohealth-s-d27852021c{accent-color:#C2410C}
+.auris-ohealth-s-d48bfa87bb{text-align:center;padding:16px}
+.auris-ohealth-s-d7e6ac50e1{padding:8px;text-align:center;font-weight:700}
+.auris-ohealth-s-daca1bce76{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.auris-ohealth-s-de208977cc{padding:4px}
+.auris-ohealth-s-df4f0a3612{color:#E24B4A}
+.auris-ohealth-s-df928149c5{margin-top:10px}
+.auris-ohealth-s-e2e1112055{margin-bottom:12px;padding:10px 14px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px}
+.auris-ohealth-s-e6499d5863{display:flex;align-items:center;gap:8px;padding:10px;border-radius:8px;cursor:pointer;background:#f0fdf4;border:1px solid #bbf7d0}
+.auris-ohealth-s-e6aeeaf7e8{font-weight:700;color:#C2410C}
+.auris-ohealth-s-e7ad3ebe2e{font-size:22px;font-weight:800;color:#E24B4A}
+.auris-ohealth-s-e8beef2369{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.auris-ohealth-s-eb99a4c193{white-space:nowrap}
+.auris-ohealth-s-f08cc9c7cb{display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer;font-weight:600}
+.auris-ohealth-s-f4c1e6637c{padding:8px 12px;font-weight:600}
+.auris-ohealth-s-f59a8847ec{font-weight:700;color:var(--red)}
+.auris-ohealth-s-fc967cc03b{display:flex;align-items:flex-end;padding-bottom:6px}
+.auris-ohealth-s-fe395009b0{font-weight:700;color:#854F0B}
+.auris-ohealth-s-ffe267bce1{font-size:22px;font-weight:800;color:#DC2626}
+/* Preserve former inline precedence over existing ID selectors. */
+#aud-l-1000.auris-ohealth-s-5f9267d7a0{width:55px;padding:4px;border:1px solid var(--border);border-radius:6px;text-align:center;font-size:12px}
+#aud-l-2000.auris-ohealth-s-5f9267d7a0{width:55px;padding:4px;border:1px solid var(--border);border-radius:6px;text-align:center;font-size:12px}
+#aud-l-3000.auris-ohealth-s-5f9267d7a0{width:55px;padding:4px;border:1px solid var(--border);border-radius:6px;text-align:center;font-size:12px}
+#aud-l-4000.auris-ohealth-s-477ac35876{width:55px;padding:4px;border:1px solid #fca5a5;border-radius:6px;text-align:center;font-size:12px;background:#fff1f2}
+#aud-l-500.auris-ohealth-s-5f9267d7a0{width:55px;padding:4px;border:1px solid var(--border);border-radius:6px;text-align:center;font-size:12px}
+#aud-l-6000.auris-ohealth-s-5f9267d7a0{width:55px;padding:4px;border:1px solid var(--border);border-radius:6px;text-align:center;font-size:12px}
+#aud-l-8000.auris-ohealth-s-5f9267d7a0{width:55px;padding:4px;border:1px solid var(--border);border-radius:6px;text-align:center;font-size:12px}
+#aud-l-avg.auris-ohealth-s-d7e6ac50e1{padding:8px;text-align:center;font-weight:700}
+#aud-l-result.auris-ohealth-s-a0935e17ff{padding:8px;text-align:center}
+#aud-overall-result.auris-ohealth-s-d48bfa87bb{text-align:center;padding:16px}
+#aud-r-1000.auris-ohealth-s-5f9267d7a0{width:55px;padding:4px;border:1px solid var(--border);border-radius:6px;text-align:center;font-size:12px}
+#aud-r-2000.auris-ohealth-s-5f9267d7a0{width:55px;padding:4px;border:1px solid var(--border);border-radius:6px;text-align:center;font-size:12px}
+#aud-r-3000.auris-ohealth-s-5f9267d7a0{width:55px;padding:4px;border:1px solid var(--border);border-radius:6px;text-align:center;font-size:12px}
+#aud-r-4000.auris-ohealth-s-477ac35876{width:55px;padding:4px;border:1px solid #fca5a5;border-radius:6px;text-align:center;font-size:12px;background:#fff1f2}
+#aud-r-500.auris-ohealth-s-5f9267d7a0{width:55px;padding:4px;border:1px solid var(--border);border-radius:6px;text-align:center;font-size:12px}
+#aud-r-6000.auris-ohealth-s-5f9267d7a0{width:55px;padding:4px;border:1px solid var(--border);border-radius:6px;text-align:center;font-size:12px}
+#aud-r-8000.auris-ohealth-s-5f9267d7a0{width:55px;padding:4px;border:1px solid var(--border);border-radius:6px;text-align:center;font-size:12px}
+#aud-r-avg.auris-ohealth-s-d7e6ac50e1{padding:8px;text-align:center;font-weight:700}
+#aud-r-result.auris-ohealth-s-a0935e17ff{padding:8px;text-align:center}
+#audf-age-corr.auris-ohealth-s-283f12d7fe{accent-color:var(--green)}
+#audf-baseline.auris-ohealth-s-089deee0fc{accent-color:#7C3AED}
+#audf-hp-worn.auris-ohealth-s-283f12d7fe{accent-color:var(--green)}
+#audf-notes.auris-ohealth-s-2b013fa0d9{min-height:50px}
+#audf-referral.auris-ohealth-s-af62d68b87{accent-color:var(--red)}
+#audf-sts-l.auris-ohealth-s-36b2bbe0a4{accent-color:#185FA5}
+#audf-sts-r.auris-ohealth-s-66f411b444{accent-color:#E24B4A}
+#exp-risk-panel.auris-ohealth-s-9214aa7fbd{padding:16px;text-align:center}
+#expf-actions.auris-ohealth-s-2b013fa0d9{min-height:50px}
+#expf-add-controls.auris-ohealth-s-2b013fa0d9{min-height:50px}
+#expf-cal-ref.auris-ohealth-s-7b8c3df564{font-family:monospace}
+#expf-controls-ok.auris-ohealth-s-283f12d7fe{accent-color:var(--green)}
+#expf-controls.auris-ohealth-s-07bdff4587{min-height:60px}
+#expf-type-specific.auris-ohealth-s-42a6ced8b6{margin-bottom:14px}
+#msf-bmi-display.auris-ohealth-s-be20c78cf6{padding:8px 10px;border:1px solid var(--border);border-radius:8px;font-weight:700;font-size:16px}
+#msf-cardiac.auris-ohealth-s-af62d68b87{accent-color:var(--red)}
+#msf-dm.auris-ohealth-s-af62d68b87{accent-color:var(--red)}
+#msf-exp-chem.auris-ohealth-s-283f12d7fe{accent-color:var(--green)}
+#msf-exp-dust.auris-ohealth-s-283f12d7fe{accent-color:var(--green)}
+#msf-exp-noise.auris-ohealth-s-283f12d7fe{accent-color:var(--green)}
+#msf-exp-vib.auris-ohealth-s-283f12d7fe{accent-color:var(--green)}
+#msf-followup.auris-ohealth-s-283f12d7fe{accent-color:var(--green)}
+#msf-htn.auris-ohealth-s-af62d68b87{accent-color:var(--red)}
+#msf-msk.auris-ohealth-s-af62d68b87{accent-color:var(--red)}
+#msf-notes.auris-ohealth-s-770a4152c1{min-height:80px}
+#msf-referral.auris-ohealth-s-af62d68b87{accent-color:var(--red)}
+#msf-resp.auris-ohealth-s-af62d68b87{accent-color:var(--red)}
+#msf-restrictions.auris-ohealth-s-2b013fa0d9{min-height:50px}
+#msf-skin.auris-ohealth-s-af62d68b87{accent-color:var(--red)}
+#odf-comp.auris-ohealth-s-283f12d7fe{accent-color:var(--green)}
+#odf-group-monitor.auris-ohealth-s-283f12d7fe{accent-color:var(--green)}
+#odf-icd.auris-ohealth-s-7b8c3df564{font-family:monospace}
+#odf-notes.auris-ohealth-s-2b013fa0d9{min-height:50px}
+#odf-notified.auris-ohealth-s-283f12d7fe{accent-color:var(--green)}
+#odf-preventive.auris-ohealth-s-4d5979ac8f{min-height:70px}
+#odf-restricted.auris-ohealth-s-283f12d7fe{accent-color:var(--green)}
+#odf-similar-risk.auris-ohealth-s-af62d68b87{accent-color:var(--red)}
+#odf-treatment.auris-ohealth-s-07bdff4587{min-height:60px}
+#odf-work-assess.auris-ohealth-s-07bdff4587{min-height:60px}
+#odf-work-related.auris-ohealth-s-283f12d7fe{accent-color:var(--green)}
+#oh-aud-add-btn.auris-ohealth-s-6aa34d7432{display:none}
+#oh-aud-alerts.auris-ohealth-s-b922c89f16{margin-bottom:10px}
+#oh-aud-del-btn.auris-ohealth-s-96f7839a1b{display:none;background:rgba(0,0,0,.3);color:#fff;border-color:rgba(255,255,255,.3)}
+#oh-aud-form.auris-ohealth-s-6aa34d7432{display:none}
+#oh-aud-form3title.auris-ohealth-s-75021e57ca{font-size:17px;font-weight:800}
+#oh-dash-audio.auris-ohealth-s-5e461f0709{font-size:13px}
+#oh-dash-exposure.auris-ohealth-s-5e461f0709{font-size:13px}
+#oh-dash-fitness.auris-ohealth-s-5e461f0709{font-size:13px}
+#oh-dash-upcoming.auris-ohealth-s-5e461f0709{font-size:13px}
+#oh-exp-add-btn.auris-ohealth-s-6aa34d7432{display:none}
+#oh-exp-del-btn.auris-ohealth-s-96f7839a1b{display:none;background:rgba(0,0,0,.3);color:#fff;border-color:rgba(255,255,255,.3)}
+#oh-exp-exceeded.auris-ohealth-s-e7ad3ebe2e{font-size:22px;font-weight:800;color:#E24B4A}
+#oh-exp-filter.auris-ohealth-s-bd0e58d190{padding:6px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px}
+#oh-exp-form.auris-ohealth-s-6aa34d7432{display:none}
+#oh-exp-form3ref.auris-ohealth-s-4bff8bc1bc{font-family:monospace;font-size:12px;color:#fef3c7;margin-top:3px}
+#oh-exp-form3title.auris-ohealth-s-75021e57ca{font-size:17px;font-weight:800}
+#oh-exp-high.auris-ohealth-s-2062f090bc{font-size:22px;font-weight:800;color:#EF9F27}
+#oh-exp-total.auris-ohealth-s-1e4fd5f9ed{font-size:22px;font-weight:800;color:#1D9E75}
+#oh-header-btns.auris-ohealth-s-9c40389b4a{display:flex;gap:8px}
+#oh-m3due.auris-ohealth-s-2062f090bc{font-size:22px;font-weight:800;color:#EF9F27}
+#oh-m3fit.auris-ohealth-s-1e4fd5f9ed{font-size:22px;font-weight:800;color:#1D9E75}
+#oh-m3ms.auris-ohealth-s-6f56b8363e{font-size:22px;font-weight:800;color:#185FA5}
+#oh-m3od.auris-ohealth-s-ffe267bce1{font-size:22px;font-weight:800;color:#DC2626}
+#oh-m3oel.auris-ohealth-s-e7ad3ebe2e{font-size:22px;font-weight:800;color:#E24B4A}
+#oh-m3sts.auris-ohealth-s-bc6456303a{font-size:22px;font-weight:800;color:#8B5CF6}
+#oh-ms-add-btn.auris-ohealth-s-6aa34d7432{display:none}
+#oh-ms-del-btn.auris-ohealth-s-0e610f7b67{display:none;background:rgba(220,38,38,.3);color:#fff;border-color:rgba(220,38,38,.5)}
+#oh-ms-filter.auris-ohealth-s-bd0e58d190{padding:6px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px}
+#oh-ms-form.auris-ohealth-s-6aa34d7432{display:none}
+#oh-ms-form3title.auris-ohealth-s-75021e57ca{font-size:17px;font-weight:800}
+#oh-od-add-btn.auris-ohealth-s-6aa34d7432{display:none}
+#oh-od-del-btn.auris-ohealth-s-96f7839a1b{display:none;background:rgba(0,0,0,.3);color:#fff;border-color:rgba(255,255,255,.3)}
+#oh-od-form.auris-ohealth-s-6aa34d7432{display:none}
+#oh-od-form3ref.auris-ohealth-s-7372276e79{font-family:monospace;font-size:12px;color:#fca5a5;margin-top:3px}
+#oh-od-form3title.auris-ohealth-s-75021e57ca{font-size:17px;font-weight:800}
+#oh-spi-add-btn.auris-ohealth-s-6aa34d7432{display:none}
+#oh-spi-del-btn.auris-ohealth-s-96f7839a1b{display:none;background:rgba(0,0,0,.3);color:#fff;border-color:rgba(255,255,255,.3)}
+#oh-spi-form.auris-ohealth-s-6aa34d7432{display:none}
+#oh-spi-form3title.auris-ohealth-s-75021e57ca{font-size:17px;font-weight:800}
+#oh-tab-audiometry.auris-ohealth-s-eb99a4c193{white-space:nowrap}
+#oh-tab-dash.auris-ohealth-s-eb99a4c193{white-space:nowrap}
+#oh-tab-disease.auris-ohealth-s-eb99a4c193{white-space:nowrap}
+#oh-tab-exposure.auris-ohealth-s-eb99a4c193{white-space:nowrap}
+#oh-tab-spirometry.auris-ohealth-s-eb99a4c193{white-space:nowrap}
+#oh-tab-surveillance.auris-ohealth-s-eb99a4c193{white-space:nowrap}
+#oh-tab-vaccination.auris-ohealth-s-eb99a4c193{white-space:nowrap}
+#oh-vax-add-btn.auris-ohealth-s-6aa34d7432{display:none}
+#oh-vax-declined.auris-ohealth-s-34362c1a82{font-size:22px;font-weight:800;color:#6B7280}
+#oh-vax-del-btn.auris-ohealth-s-96f7839a1b{display:none;background:rgba(0,0,0,.3);color:#fff;border-color:rgba(255,255,255,.3)}
+#oh-vax-done.auris-ohealth-s-1e4fd5f9ed{font-size:22px;font-weight:800;color:#1D9E75}
+#oh-vax-filter.auris-ohealth-s-bd0e58d190{padding:6px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px}
+#oh-vax-form.auris-ohealth-s-6aa34d7432{display:none}
+#oh-vax-form3title.auris-ohealth-s-75021e57ca{font-size:17px;font-weight:800}
+#oh-vax-overdue.auris-ohealth-s-e7ad3ebe2e{font-size:22px;font-weight:800;color:#E24B4A}
+#oh-vax-sched.auris-ohealth-s-2062f090bc{font-size:22px;font-weight:800;color:#EF9F27}
+#oh-view-audiometry.auris-ohealth-s-6aa34d7432{display:none}
+#oh-view-disease.auris-ohealth-s-6aa34d7432{display:none}
+#oh-view-exposure.auris-ohealth-s-6aa34d7432{display:none}
+#oh-view-spirometry.auris-ohealth-s-6aa34d7432{display:none}
+#oh-view-surveillance.auris-ohealth-s-6aa34d7432{display:none}
+#oh-view-vaccination.auris-ohealth-s-6aa34d7432{display:none}
+#spi-fev1-meas.auris-ohealth-s-82a6809479{width:70px;padding:4px;border:1px solid var(--border);border-radius:6px;text-align:center;font-size:12px}
+#spi-fev1-pct.auris-ohealth-s-d7e6ac50e1{padding:8px;text-align:center;font-weight:700}
+#spi-fev1-pred.auris-ohealth-s-82a6809479{width:70px;padding:4px;border:1px solid var(--border);border-radius:6px;text-align:center;font-size:12px}
+#spi-fev1-status.auris-ohealth-s-a0935e17ff{padding:8px;text-align:center}
+#spi-fvc-meas.auris-ohealth-s-82a6809479{width:70px;padding:4px;border:1px solid var(--border);border-radius:6px;text-align:center;font-size:12px}
+#spi-fvc-pct.auris-ohealth-s-d7e6ac50e1{padding:8px;text-align:center;font-weight:700}
+#spi-fvc-pred.auris-ohealth-s-82a6809479{width:70px;padding:4px;border:1px solid var(--border);border-radius:6px;text-align:center;font-size:12px}
+#spi-fvc-status.auris-ohealth-s-a0935e17ff{padding:8px;text-align:center}
+#spi-interpretation.auris-ohealth-s-9214aa7fbd{padding:16px;text-align:center}
+#spi-ratio-meas.auris-ohealth-s-82a6809479{width:70px;padding:4px;border:1px solid var(--border);border-radius:6px;text-align:center;font-size:12px}
+#spi-ratio-pct.auris-ohealth-s-a0935e17ff{padding:8px;text-align:center}
+#spi-ratio-status.auris-ohealth-s-a0935e17ff{padding:8px;text-align:center}
+#spif-asbestos.auris-ohealth-s-283f12d7fe{accent-color:var(--green)}
+#spif-bd.auris-ohealth-s-283f12d7fe{accent-color:var(--green)}
+#spif-chem3fumes.auris-ohealth-s-283f12d7fe{accent-color:var(--green)}
+#spif-dust.auris-ohealth-s-283f12d7fe{accent-color:var(--green)}
+#spif-notes.auris-ohealth-s-2b013fa0d9{min-height:50px}
+#spif-referral.auris-ohealth-s-af62d68b87{accent-color:var(--red)}
+#spif-sig-rev.auris-ohealth-s-af62d68b87{accent-color:var(--red)}
+#spif-silica.auris-ohealth-s-283f12d7fe{accent-color:var(--green)}
+#vaxf-batch.auris-ohealth-s-7b8c3df564{font-family:monospace}
+#vaxf-notes.auris-ohealth-s-7e000820e7{min-height:40px}
+#vaxf-reaction.auris-ohealth-s-af62d68b87{accent-color:var(--red)}

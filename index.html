@@ -74,6 +74,7 @@
 <link rel="stylesheet" href="auris-contractor-management-static.css?v=20260815-1">
 <link rel="stylesheet" href="auris-environmental-esg-static.css?v=20260815-1">
 <link rel="stylesheet" href="auris-emergency-management-static.css?v=20260815-1">
+<link rel="stylesheet" href="auris-occupational-health-static.css?v=20260815-1">
 </head>
 <body>
 <div id="login-screen">
@@ -5924,57 +5925,57 @@ Offline mode - changes will sync when connection is restored
 
 <div id="page-ohealth" class="page">
 <div class="page-header">
-<div><div class="page-title">Occupational Health</div><div style="font-size:12px;color:var(--text2)">Medical surveillance - Audiometry - Spirometry - Vaccination - Exposure monitoring - Occupational disease</div></div>
-<div style="display:flex;gap:8px" id="oh-header-btns"><button class="btn" data-auris-onclick="h0685"><i class="ti ti-printer"></i>Print current view</button></div>
+<div><div class="page-title">Occupational Health</div><div class="auris-ohealth-s-7299078644">Medical surveillance - Audiometry - Spirometry - Vaccination - Exposure monitoring - Occupational disease</div></div>
+<div id="oh-header-btns" class="auris-ohealth-s-9c40389b4a"><button class="btn" data-auris-onclick="h0685"><i class="ti ti-printer"></i>Print current view</button></div>
 </div>
 
 <!-- Tabs -->
-<div style="display:flex;gap:0;margin-bottom:16px;border-bottom:2px solid var(--border);overflow-x:auto">
-<button class="mtg-tab active" id="oh-tab-dash" data-auris-onclick="h0686" style="white-space:nowrap">Dashboard</button>
-<button class="mtg-tab" id="oh-tab-surveillance" data-auris-onclick="h0687" style="white-space:nowrap">Medical Surveillance</button>
-<button class="mtg-tab" id="oh-tab-audiometry" data-auris-onclick="h0688" style="white-space:nowrap">Audiometry</button>
-<button class="mtg-tab" id="oh-tab-spirometry" data-auris-onclick="h0689" style="white-space:nowrap">Spirometry</button>
-<button class="mtg-tab" id="oh-tab-vaccination" data-auris-onclick="h0690" style="white-space:nowrap">Vaccination</button>
-<button class="mtg-tab" id="oh-tab-exposure" data-auris-onclick="h0691" style="white-space:nowrap">Exposure Monitoring</button>
-<button class="mtg-tab" id="oh-tab-disease" data-auris-onclick="h0692" style="white-space:nowrap">Occ. Disease</button>
+<div class="auris-ohealth-s-0cf9615f1f">
+<button class="mtg-tab active auris-ohealth-s-eb99a4c193" id="oh-tab-dash" data-auris-onclick="h0686">Dashboard</button>
+<button class="mtg-tab auris-ohealth-s-eb99a4c193" id="oh-tab-surveillance" data-auris-onclick="h0687">Medical Surveillance</button>
+<button class="mtg-tab auris-ohealth-s-eb99a4c193" id="oh-tab-audiometry" data-auris-onclick="h0688">Audiometry</button>
+<button class="mtg-tab auris-ohealth-s-eb99a4c193" id="oh-tab-spirometry" data-auris-onclick="h0689">Spirometry</button>
+<button class="mtg-tab auris-ohealth-s-eb99a4c193" id="oh-tab-vaccination" data-auris-onclick="h0690">Vaccination</button>
+<button class="mtg-tab auris-ohealth-s-eb99a4c193" id="oh-tab-exposure" data-auris-onclick="h0691">Exposure Monitoring</button>
+<button class="mtg-tab auris-ohealth-s-eb99a4c193" id="oh-tab-disease" data-auris-onclick="h0692">Occ. Disease</button>
 </div>
 
 <!-- -- DASHBOARD -- -->
 <div id="oh-view-dash">
-<div style="display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin-bottom:14px">
-<div class="card" style="padding:10px 12px;border-left:4px solid #185FA5"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">Medical Reviews</div><div style="font-size:22px;font-weight:800;color:#185FA5" id="oh-m3ms">-</div><div style="font-size:10px;color:var(--text2)">this year</div></div>
-<div class="card" style="padding:10px 12px;border-left:4px solid #1D9E75"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">Fit Workers</div><div style="font-size:22px;font-weight:800;color:#1D9E75" id="oh-m3fit">-</div></div>
-<div class="card" style="padding:10px 12px;border-left:4px solid #EF9F27"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">Exams Due</div><div style="font-size:22px;font-weight:800;color:#EF9F27" id="oh-m3due">-</div><div style="font-size:10px;color:var(--text2)">within 60 days</div></div>
-<div class="card" style="padding:10px 12px;border-left:4px solid #E24B4A"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">OEL Exceeded</div><div style="font-size:22px;font-weight:800;color:#E24B4A" id="oh-m3oel">-</div><div style="font-size:10px;color:var(--text2)">open cases</div></div>
-<div class="card" style="padding:10px 12px;border-left:4px solid #8B5CF6"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">STS Detected</div><div style="font-size:22px;font-weight:800;color:#8B5CF6" id="oh-m3sts">-</div><div style="font-size:10px;color:var(--text2)">hearing loss</div></div>
-<div class="card" style="padding:10px 12px;border-left:4px solid #DC2626"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">Occ. Diseases</div><div style="font-size:22px;font-weight:800;color:#DC2626" id="oh-m3od">-</div><div style="font-size:10px;color:var(--text2)">active cases</div></div>
+<div class="auris-ohealth-s-0b8cad26ad">
+<div class="card auris-ohealth-s-b6d403ee7e"><div class="auris-ohealth-s-4422804ebb">Medical Reviews</div><div id="oh-m3ms" class="auris-ohealth-s-6f56b8363e">-</div><div class="auris-ohealth-s-49acb3c3b7">this year</div></div>
+<div class="card auris-ohealth-s-7a5e61eb83"><div class="auris-ohealth-s-4422804ebb">Fit Workers</div><div id="oh-m3fit" class="auris-ohealth-s-1e4fd5f9ed">-</div></div>
+<div class="card auris-ohealth-s-c70473e794"><div class="auris-ohealth-s-4422804ebb">Exams Due</div><div id="oh-m3due" class="auris-ohealth-s-2062f090bc">-</div><div class="auris-ohealth-s-49acb3c3b7">within 60 days</div></div>
+<div class="card auris-ohealth-s-530946d91c"><div class="auris-ohealth-s-4422804ebb">OEL Exceeded</div><div id="oh-m3oel" class="auris-ohealth-s-e7ad3ebe2e">-</div><div class="auris-ohealth-s-49acb3c3b7">open cases</div></div>
+<div class="card auris-ohealth-s-24ac637923"><div class="auris-ohealth-s-4422804ebb">STS Detected</div><div id="oh-m3sts" class="auris-ohealth-s-bc6456303a">-</div><div class="auris-ohealth-s-49acb3c3b7">hearing loss</div></div>
+<div class="card auris-ohealth-s-03bd966c28"><div class="auris-ohealth-s-4422804ebb">Occ. Diseases</div><div id="oh-m3od" class="auris-ohealth-s-ffe267bce1">-</div><div class="auris-ohealth-s-49acb3c3b7">active cases</div></div>
 </div>
-<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:14px">
+<div class="auris-ohealth-s-82b53ac0cc">
 <div class="card">
 <div class="card-title"><i class="ti ti-activity-heartbeat"></i> Medical Fitness Summary</div>
-<div id="oh-dash-fitness" style="font-size:13px"></div>
+<div id="oh-dash-fitness" class="auris-ohealth-s-5e461f0709"></div>
 </div>
 <div class="card">
-<div class="card-title" style="color:#8B5CF6"><i class="ti ti-ear"></i> Audiometry Risk</div>
-<div id="oh-dash-audio" style="font-size:13px"></div>
+<div class="card-title auris-ohealth-s-48a87f51bd"><i class="ti ti-ear"></i> Audiometry Risk</div>
+<div id="oh-dash-audio" class="auris-ohealth-s-5e461f0709"></div>
 </div>
 <div class="card">
-<div class="card-title" style="color:#E24B4A"><i class="ti ti-cloud"></i> Top Exposure Risks</div>
-<div id="oh-dash-exposure" style="font-size:13px"></div>
+<div class="card-title auris-ohealth-s-df4f0a3612"><i class="ti ti-cloud"></i> Top Exposure Risks</div>
+<div id="oh-dash-exposure" class="auris-ohealth-s-5e461f0709"></div>
 </div>
 </div>
 <div class="card">
 <div class="card-title"><i class="ti ti-calendar-exclamation"></i> Upcoming Medical Examinations</div>
-<div id="oh-dash-upcoming" style="font-size:13px"></div>
+<div id="oh-dash-upcoming" class="auris-ohealth-s-5e461f0709"></div>
 </div>
 </div>
 
 <!-- -- MEDICAL SURVEILLANCE -- -->
-<div id="oh-view-surveillance" style="display:none">
-<div class="card" style="margin-bottom:12px;padding:10px 14px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
-<div><div class="card-title" style="margin:0">Medical Surveillance Register</div><div style="font-size:12px;color:var(--text2)">Pre-employment, periodic, fitness-for-duty and exit examinations</div></div>
-<div style="display:flex;gap:8px">
-<select id="oh-ms-filter" data-auris-onchange="h0693" style="padding:6px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px">
+<div id="oh-view-surveillance" class="auris-ohealth-s-6aa34d7432">
+<div class="card auris-ohealth-s-e2e1112055">
+<div><div class="card-title auris-ohealth-s-ab79ea2b85">Medical Surveillance Register</div><div class="auris-ohealth-s-7299078644">Pre-employment, periodic, fitness-for-duty and exit examinations</div></div>
+<div class="auris-ohealth-s-9c40389b4a">
+<select id="oh-ms-filter" class="auris-ohealth-s-bd0e58d190" data-auris-onchange="h0693">
 <option value="">All exam types</option>
 <option value="pre_employment">Pre-employment</option>
 <option value="periodic">Periodic</option>
@@ -5984,66 +5985,66 @@ Offline mode - changes will sync when connection is restored
 <option value="due_60">Due within 60 days</option>
 <option value="overdue">Overdue</option>
 </select>
-<button class="btn btn-primary" id="oh-ms-add-btn" style="display:none" data-auris-onclick="h0694"><i class="ti ti-plus"></i>New examination</button>
+<button class="btn btn-primary auris-ohealth-s-6aa34d7432" id="oh-ms-add-btn" data-auris-onclick="h0694"><i class="ti ti-plus"></i>New examination</button>
 </div>
 </div>
 <div id="oh-ms-list"><div class="loading-msg">Loading...</div></div>
 </div>
 
 <!-- -- AUDIOMETRY -- -->
-<div id="oh-view-audiometry" style="display:none">
-<div class="card" style="margin-bottom:12px;padding:10px 14px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
-<div><div class="card-title" style="margin:0">Audiometry Records</div><div style="font-size:12px;color:var(--text2)">Hearing threshold monitoring - baseline and periodic tests</div></div>
-<button class="btn btn-primary" id="oh-aud-add-btn" style="display:none" data-auris-onclick="h0695"><i class="ti ti-plus"></i>New audiogram</button>
+<div id="oh-view-audiometry" class="auris-ohealth-s-6aa34d7432">
+<div class="card auris-ohealth-s-e2e1112055">
+<div><div class="card-title auris-ohealth-s-ab79ea2b85">Audiometry Records</div><div class="auris-ohealth-s-7299078644">Hearing threshold monitoring - baseline and periodic tests</div></div>
+<button class="btn btn-primary auris-ohealth-s-6aa34d7432" id="oh-aud-add-btn" data-auris-onclick="h0695"><i class="ti ti-plus"></i>New audiogram</button>
 </div>
-<div id="oh-aud-alerts" style="margin-bottom:10px"></div>
+<div id="oh-aud-alerts" class="auris-ohealth-s-b922c89f16"></div>
 <div id="oh-aud-list"><div class="loading-msg">Loading...</div></div>
 </div>
 
 <!-- -- SPIROMETRY -- -->
-<div id="oh-view-spirometry" style="display:none">
-<div class="card" style="margin-bottom:12px;padding:10px 14px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
-<div><div class="card-title" style="margin:0">Spirometry / Lung Function Records</div><div style="font-size:12px;color:var(--text2)">FVC, FEV1 and respiratory function monitoring</div></div>
-<button class="btn btn-primary" id="oh-spi-add-btn" style="display:none" data-auris-onclick="h0696"><i class="ti ti-plus"></i>New spirometry</button>
+<div id="oh-view-spirometry" class="auris-ohealth-s-6aa34d7432">
+<div class="card auris-ohealth-s-e2e1112055">
+<div><div class="card-title auris-ohealth-s-ab79ea2b85">Spirometry / Lung Function Records</div><div class="auris-ohealth-s-7299078644">FVC, FEV1 and respiratory function monitoring</div></div>
+<button class="btn btn-primary auris-ohealth-s-6aa34d7432" id="oh-spi-add-btn" data-auris-onclick="h0696"><i class="ti ti-plus"></i>New spirometry</button>
 </div>
 <div id="oh-spi-list"><div class="loading-msg">Loading...</div></div>
 </div>
 
 <!-- -- VACCINATION -- -->
-<div id="oh-view-vaccination" style="display:none">
-<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px">
-<div class="card" style="padding:10px 12px;border-left:4px solid #1D9E75"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">Completed</div><div style="font-size:22px;font-weight:800;color:#1D9E75" id="oh-vax-done">-</div></div>
-<div class="card" style="padding:10px 12px;border-left:4px solid #EF9F27"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">Scheduled</div><div style="font-size:22px;font-weight:800;color:#EF9F27" id="oh-vax-sched">-</div></div>
-<div class="card" style="padding:10px 12px;border-left:4px solid #E24B4A"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">Overdue</div><div style="font-size:22px;font-weight:800;color:#E24B4A" id="oh-vax-overdue">-</div></div>
-<div class="card" style="padding:10px 12px;border-left:4px solid #6B7280"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">Declined</div><div style="font-size:22px;font-weight:800;color:#6B7280" id="oh-vax-declined">-</div></div>
+<div id="oh-view-vaccination" class="auris-ohealth-s-6aa34d7432">
+<div class="auris-ohealth-s-14dfb7ae67">
+<div class="card auris-ohealth-s-7a5e61eb83"><div class="auris-ohealth-s-4422804ebb">Completed</div><div id="oh-vax-done" class="auris-ohealth-s-1e4fd5f9ed">-</div></div>
+<div class="card auris-ohealth-s-c70473e794"><div class="auris-ohealth-s-4422804ebb">Scheduled</div><div id="oh-vax-sched" class="auris-ohealth-s-2062f090bc">-</div></div>
+<div class="card auris-ohealth-s-530946d91c"><div class="auris-ohealth-s-4422804ebb">Overdue</div><div id="oh-vax-overdue" class="auris-ohealth-s-e7ad3ebe2e">-</div></div>
+<div class="card auris-ohealth-s-21ac3ff165"><div class="auris-ohealth-s-4422804ebb">Declined</div><div id="oh-vax-declined" class="auris-ohealth-s-34362c1a82">-</div></div>
 </div>
-<div class="card" style="margin-bottom:12px;padding:10px 14px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
-<div class="card-title" style="margin:0">Vaccination Records</div>
-<div style="display:flex;gap:8px">
-<select id="oh-vax-filter" data-auris-onchange="h0697" style="padding:6px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px">
+<div class="card auris-ohealth-s-e2e1112055">
+<div class="card-title auris-ohealth-s-ab79ea2b85">Vaccination Records</div>
+<div class="auris-ohealth-s-9c40389b4a">
+<select id="oh-vax-filter" class="auris-ohealth-s-bd0e58d190" data-auris-onchange="h0697">
 <option value="">All vaccines</option>
 <option value="occupational">Occupational</option>
 <option value="travel">Travel</option>
 <option value="routine">Routine</option>
 <option value="pandemic">Pandemic</option>
 </select>
-<button class="btn btn-primary" id="oh-vax-add-btn" style="display:none" data-auris-onclick="h0698"><i class="ti ti-plus"></i>Add vaccination</button>
+<button class="btn btn-primary auris-ohealth-s-6aa34d7432" id="oh-vax-add-btn" data-auris-onclick="h0698"><i class="ti ti-plus"></i>Add vaccination</button>
 </div>
 </div>
 <div id="oh-vax-list"><div class="loading-msg">Loading...</div></div>
 </div>
 
 <!-- -- EXPOSURE MONITORING -- -->
-<div id="oh-view-exposure" style="display:none">
-<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px">
-<div class="card" style="padding:10px 12px;border-left:4px solid #E24B4A"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">OEL Exceeded</div><div style="font-size:22px;font-weight:800;color:#E24B4A" id="oh-exp-exceeded">-</div></div>
-<div class="card" style="padding:10px 12px;border-left:4px solid #EF9F27"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">High Risk</div><div style="font-size:22px;font-weight:800;color:#EF9F27" id="oh-exp-high">-</div></div>
-<div class="card" style="padding:10px 12px;border-left:4px solid #1D9E75"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">Total Measurements</div><div style="font-size:22px;font-weight:800;color:#1D9E75" id="oh-exp-total">-</div></div>
+<div id="oh-view-exposure" class="auris-ohealth-s-6aa34d7432">
+<div class="auris-ohealth-s-88a8942883">
+<div class="card auris-ohealth-s-530946d91c"><div class="auris-ohealth-s-4422804ebb">OEL Exceeded</div><div id="oh-exp-exceeded" class="auris-ohealth-s-e7ad3ebe2e">-</div></div>
+<div class="card auris-ohealth-s-c70473e794"><div class="auris-ohealth-s-4422804ebb">High Risk</div><div id="oh-exp-high" class="auris-ohealth-s-2062f090bc">-</div></div>
+<div class="card auris-ohealth-s-7a5e61eb83"><div class="auris-ohealth-s-4422804ebb">Total Measurements</div><div id="oh-exp-total" class="auris-ohealth-s-1e4fd5f9ed">-</div></div>
 </div>
-<div class="card" style="margin-bottom:12px;padding:10px 14px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
-<div><div class="card-title" style="margin:0">Exposure Monitoring Records</div><div style="font-size:12px;color:var(--text2)">Noise - Dust - Silica - Chemicals - Heat stress - Vibration</div></div>
-<div style="display:flex;gap:8px">
-<select id="oh-exp-filter" data-auris-onchange="h0699" style="padding:6px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px">
+<div class="card auris-ohealth-s-e2e1112055">
+<div><div class="card-title auris-ohealth-s-ab79ea2b85">Exposure Monitoring Records</div><div class="auris-ohealth-s-7299078644">Noise - Dust - Silica - Chemicals - Heat stress - Vibration</div></div>
+<div class="auris-ohealth-s-9c40389b4a">
+<select id="oh-exp-filter" class="auris-ohealth-s-bd0e58d190" data-auris-onchange="h0699">
 <option value="">All types</option>
 <option value="noise">Noise</option>
 <option value="dust">Dust</option>
@@ -6052,17 +6053,17 @@ Offline mode - changes will sync when connection is restored
 <option value="heat_stress">Heat stress</option>
 <option value="vibration">Vibration</option>
 </select>
-<button class="btn btn-primary" id="oh-exp-add-btn" style="display:none" data-auris-onclick="h0700"><i class="ti ti-plus"></i>New measurement</button>
+<button class="btn btn-primary auris-ohealth-s-6aa34d7432" id="oh-exp-add-btn" data-auris-onclick="h0700"><i class="ti ti-plus"></i>New measurement</button>
 </div>
 </div>
 <div id="oh-exp-list"><div class="loading-msg">Loading...</div></div>
 </div>
 
 <!-- -- OCCUPATIONAL DISEASE -- -->
-<div id="oh-view-disease" style="display:none">
-<div class="card" style="margin-bottom:12px;padding:10px 14px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
-<div><div class="card-title" style="margin:0">Occupational Disease Register</div><div style="font-size:12px;color:var(--text2)">Work-related illness tracking and management</div></div>
-<button class="btn btn-primary" id="oh-od-add-btn" style="display:none" data-auris-onclick="h0701"><i class="ti ti-plus"></i>Record disease</button>
+<div id="oh-view-disease" class="auris-ohealth-s-6aa34d7432">
+<div class="card auris-ohealth-s-e2e1112055">
+<div><div class="card-title auris-ohealth-s-ab79ea2b85">Occupational Disease Register</div><div class="auris-ohealth-s-7299078644">Work-related illness tracking and management</div></div>
+<button class="btn btn-primary auris-ohealth-s-6aa34d7432" id="oh-od-add-btn" data-auris-onclick="h0701"><i class="ti ti-plus"></i>Record disease</button>
 </div>
 <div id="oh-od-list"><div class="loading-msg">Loading...</div></div>
 </div>
@@ -6070,21 +6071,21 @@ Offline mode - changes will sync when connection is restored
 <!-- ------- FORMS ------- -->
 
 <!-- Medical Surveillance Form -->
-<div id="oh-ms-form" style="display:none">
-<div class="card" style="margin-bottom:14px;padding:0;overflow:hidden">
-<div style="padding:14px 20px;background:linear-gradient(135deg,#1a3a5c,#185FA5);color:#fff;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
-<div><div style="font-size:11px;font-weight:600;text-transform:uppercase;opacity:.8;letter-spacing:.08em;margin-bottom:4px">Medical Examination</div>
-<div style="font-size:17px;font-weight:800" id="oh-ms-form3title">New Examination</div></div>
-<div style="display:flex;gap:8px">
-<button class="btn" style="background:rgba(255,255,255,.2);color:#fff;border-color:rgba(255,255,255,.3)" data-auris-onclick="h0702"><i class="ti ti-arrow-left"></i>Back</button>
-<button id="oh-ms-del-btn" class="btn" style="display:none;background:rgba(220,38,38,.3);color:#fff;border-color:rgba(220,38,38,.5)" data-auris-onclick="h0703"><i class="ti ti-trash"></i></button>
-<button class="btn" style="background:#1D9E75;color:#fff;border-color:#1D9E75" data-auris-onclick="h0704"><i class="ti ti-device-floppy"></i>Save</button>
+<div id="oh-ms-form" class="auris-ohealth-s-6aa34d7432">
+<div class="card auris-ohealth-s-54ec8874e7">
+<div class="auris-ohealth-s-6e86c59eb5">
+<div><div class="auris-ohealth-s-c542f2bc2e">Medical Examination</div>
+<div id="oh-ms-form3title" class="auris-ohealth-s-75021e57ca">New Examination</div></div>
+<div class="auris-ohealth-s-9c40389b4a">
+<button class="btn auris-ohealth-s-5c09edd131" data-auris-onclick="h0702"><i class="ti ti-arrow-left"></i>Back</button>
+<button id="oh-ms-del-btn" class="btn auris-ohealth-s-0e610f7b67" data-auris-onclick="h0703"><i class="ti ti-trash"></i></button>
+<button class="btn auris-ohealth-s-c7b9e5b2c7" data-auris-onclick="h0704"><i class="ti ti-device-floppy"></i>Save</button>
 </div>
 </div>
 </div>
-<div style="display:grid;grid-template-columns:2fr 1fr;gap:14px">
+<div class="auris-ohealth-s-5571af1e74">
 <div>
-<div class="card" style="margin-bottom:14px"><div class="card-title">Employee Information</div>
+<div class="card auris-ohealth-s-42a6ced8b6"><div class="card-title">Employee Information</div>
 <div class="form3row">
 <div class="form3group"><label class="form3label">Employee name</label><select id="msf-name" data-auris-onchange="h0705"><option value="">Select person...</option></select></div>
 <div class="form3group"><label class="form3label">Employee ID</label><input type="text" id="msf-eid"/></div>
@@ -6095,7 +6096,7 @@ Offline mode - changes will sync when connection is restored
 <div class="form3group"><label class="form3label">Date of birth</label><input type="date" id="msf-dob"/></div>
 <div class="form3group"><label class="form3label">Gender</label><select id="msf-gender"><option value="male">Male</option><option value="female">Female</option><option value="other">Other</option><option value="prefer_not_to_say">Prefer not to say</option></select></div>
 </div></div>
-<div class="card" style="margin-bottom:14px"><div class="card-title">Examination Details</div>
+<div class="card auris-ohealth-s-42a6ced8b6"><div class="card-title">Examination Details</div>
 <div class="form3row">
 <div class="form3group"><label class="form3label">Exam type</label><select id="msf-type"><option value="pre_employment">Pre-employment</option><option value="periodic">Periodic</option><option value="return_to_work">Return to work</option><option value="exit">Exit</option><option value="special">Special</option><option value="fitness_for_duty">Fitness for duty</option></select></div>
 <div class="form3group"><label class="form3label">Exam date</label><input type="date" id="msf-date"/></div>
@@ -6105,11 +6106,11 @@ Offline mode - changes will sync when connection is restored
 <div class="form3group"><label class="form3label">Examining doctor</label><input type="text" id="msf-doctor"/></div>
 <div class="form3group"><label class="form3label">Clinic / Hospital</label><input type="text" id="msf-clinic"/></div>
 </div></div>
-<div class="card" style="margin-bottom:14px"><div class="card-title"><i class="ti ti-heartbeat"></i> Vital Signs</div>
+<div class="card auris-ohealth-s-42a6ced8b6"><div class="card-title"><i class="ti ti-heartbeat"></i> Vital Signs</div>
 <div class="form3row">
 <div class="form3group"><label class="form3label">Height (cm)</label><input type="number" id="msf-height" step="0.1" min="100" max="250" data-auris-oninput="h0706"/></div>
 <div class="form3group"><label class="form3label">Weight (kg)</label><input type="number" id="msf-weight" step="0.1" min="30" max="300" data-auris-oninput="h0706"/></div>
-<div class="form3group"><label class="form3label">BMI</label><div style="padding:8px 10px;border:1px solid var(--border);border-radius:8px;font-weight:700;font-size:16px" id="msf-bmi-display">-</div></div>
+<div class="form3group"><label class="form3label">BMI</label><div id="msf-bmi-display" class="auris-ohealth-s-be20c78cf6">-</div></div>
 </div>
 <div class="form3row">
 <div class="form3group"><label class="form3label">BP Systolic (mmHg)</label><input type="number" id="msf-bp-sys" min="70" max="250"/></div>
@@ -6118,10 +6119,10 @@ Offline mode - changes will sync when connection is restored
 <div class="form3group"><label class="form3label">Blood glucose (mmol/L)</label><input type="number" id="msf-glucose" step="0.1" min="2" max="30"/></div>
 </div></div>
 <div class="card"><div class="card-title">Medical Notes</div>
-<div class="form3group"><label class="form3label">Medical notes / findings</label><textarea id="msf-notes" style="min-height:80px"></textarea></div>
-<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
-<input type="checkbox" id="msf-followup" style="accent-color:var(--green)"/>
-<label for="msf-followup" style="font-size:13px;font-weight:600;cursor:pointer">Follow-up required</label>
+<div class="form3group"><label class="form3label">Medical notes / findings</label><textarea id="msf-notes" class="auris-ohealth-s-770a4152c1"></textarea></div>
+<div class="auris-ohealth-s-ba28bccee4">
+<input type="checkbox" id="msf-followup" class="auris-ohealth-s-283f12d7fe"/>
+<label class="auris-ohealth-s-22514dbec4" for="msf-followup">Follow-up required</label>
 </div>
 <div class="form3row">
 <div class="form3group"><label class="form3label">Follow-up date</label><input type="date" id="msf-followup-date"/></div>
@@ -6129,55 +6130,55 @@ Offline mode - changes will sync when connection is restored
 </div></div>
 </div>
 <div>
-<div class="card" style="margin-bottom:14px;border:2px solid #185FA5"><div class="card-title" style="color:#185FA5"><i class="ti ti-certificate"></i> Fitness Decision</div>
-<div style="display:flex;flex-direction:column;gap:8px;margin-bottom:12px">
-<label style="display:flex;align-items:center;gap:8px;padding:10px;border-radius:8px;cursor:pointer;background:#f0fdf4;border:1px solid #bbf7d0" data-auris-onclick="h0707">
-<input type="radio" name="ms-fitness" value="fit" style="accent-color:var(--green)" checked> <span style="font-weight:700;color:#166534">Fit for work</span></label>
-<label style="display:flex;align-items:center;gap:8px;padding:10px;border-radius:8px;cursor:pointer;background:#FFFBEB;border:1px solid #fcd34d" data-auris-onclick="h0708">
-<input type="radio" name="ms-fitness" value="fit_with_restrictions" style="accent-color:#EF9F27"> <span style="font-weight:700;color:#854F0B">Fit with restrictions</span></label>
-<label style="display:flex;align-items:center;gap:8px;padding:10px;border-radius:8px;cursor:pointer;background:#FFF7ED;border:1px solid #fed7aa" data-auris-onclick="h0709">
-<input type="radio" name="ms-fitness" value="temporarily_unfit" style="accent-color:#C2410C"> <span style="font-weight:700;color:#C2410C">Temporarily unfit</span></label>
-<label style="display:flex;align-items:center;gap:8px;padding:10px;border-radius:8px;cursor:pointer;background:#FEF2F2;border:1px solid #fecaca" data-auris-onclick="h0710">
-<input type="radio" name="ms-fitness" value="permanently_unfit" style="accent-color:var(--red)"> <span style="font-weight:700;color:var(--red)">Permanently unfit</span></label>
+<div class="card auris-ohealth-s-9bcefa3fff"><div class="card-title auris-ohealth-s-ca32b871b2"><i class="ti ti-certificate"></i> Fitness Decision</div>
+<div class="auris-ohealth-s-498a5137d9">
+<label class="auris-ohealth-s-e6499d5863" data-auris-onclick="h0707">
+<input class="auris-ohealth-s-283f12d7fe" type="radio" name="ms-fitness" value="fit" checked> <span class="auris-ohealth-s-485acb7ee6">Fit for work</span></label>
+<label class="auris-ohealth-s-404ed66541" data-auris-onclick="h0708">
+<input class="auris-ohealth-s-90cf399257" type="radio" name="ms-fitness" value="fit_with_restrictions"> <span class="auris-ohealth-s-fe395009b0">Fit with restrictions</span></label>
+<label class="auris-ohealth-s-3536b249e1" data-auris-onclick="h0709">
+<input class="auris-ohealth-s-d27852021c" type="radio" name="ms-fitness" value="temporarily_unfit"> <span class="auris-ohealth-s-e6aeeaf7e8">Temporarily unfit</span></label>
+<label class="auris-ohealth-s-8c5a7fbdc5" data-auris-onclick="h0710">
+<input class="auris-ohealth-s-af62d68b87" type="radio" name="ms-fitness" value="permanently_unfit"> <span class="auris-ohealth-s-f59a8847ec">Permanently unfit</span></label>
 </div>
 <input type="hidden" id="msf-fitness" value="fit"/>
-<div class="form3group"><label class="form3label">Restrictions (if any)</label><textarea id="msf-restrictions" style="min-height:50px" placeholder="Describe any work restrictions..."></textarea></div>
-<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px"><input type="checkbox" id="msf-referral" style="accent-color:var(--red)"/><label for="msf-referral" style="font-size:12px;font-weight:600;cursor:pointer;color:var(--red)">Referral to specialist required</label></div>
+<div class="form3group"><label class="form3label">Restrictions (if any)</label><textarea id="msf-restrictions" class="auris-ohealth-s-2b013fa0d9" placeholder="Describe any work restrictions..."></textarea></div>
+<div class="auris-ohealth-s-e8beef2369"><input type="checkbox" id="msf-referral" class="auris-ohealth-s-af62d68b87"/><label class="auris-ohealth-s-b5bd38212a" for="msf-referral">Referral to specialist required</label></div>
 <div class="form3group"><label class="form3label">Referral details</label><input type="text" id="msf-referral-details"/></div></div>
-<div class="card" style="margin-bottom:14px"><div class="card-title">Exposure History</div>
-<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
-<label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer"><input type="checkbox" id="msf-exp-noise" style="accent-color:var(--green)"/> Noise exposed</label>
-<label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer"><input type="checkbox" id="msf-exp-chem" style="accent-color:var(--green)"/> Chemical exposed</label>
-<label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer"><input type="checkbox" id="msf-exp-dust" style="accent-color:var(--green)"/> Dust/silica exposed</label>
-<label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer"><input type="checkbox" id="msf-exp-vib" style="accent-color:var(--green)"/> Vibration exposed</label>
+<div class="card auris-ohealth-s-42a6ced8b6"><div class="card-title">Exposure History</div>
+<div class="auris-ohealth-s-daca1bce76">
+<label class="auris-ohealth-s-ccd7ff7041"><input type="checkbox" id="msf-exp-noise" class="auris-ohealth-s-283f12d7fe"/> Noise exposed</label>
+<label class="auris-ohealth-s-ccd7ff7041"><input type="checkbox" id="msf-exp-chem" class="auris-ohealth-s-283f12d7fe"/> Chemical exposed</label>
+<label class="auris-ohealth-s-ccd7ff7041"><input type="checkbox" id="msf-exp-dust" class="auris-ohealth-s-283f12d7fe"/> Dust/silica exposed</label>
+<label class="auris-ohealth-s-ccd7ff7041"><input type="checkbox" id="msf-exp-vib" class="auris-ohealth-s-283f12d7fe"/> Vibration exposed</label>
 </div></div>
 <div class="card"><div class="card-title">Medical Conditions</div>
-<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
-<label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer"><input type="checkbox" id="msf-htn" style="accent-color:var(--red)"/> Hypertension</label>
-<label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer"><input type="checkbox" id="msf-dm" style="accent-color:var(--red)"/> Diabetes</label>
-<label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer"><input type="checkbox" id="msf-resp" style="accent-color:var(--red)"/> Respiratory condition</label>
-<label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer"><input type="checkbox" id="msf-cardiac" style="accent-color:var(--red)"/> Cardiac condition</label>
-<label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer"><input type="checkbox" id="msf-msk" style="accent-color:var(--red)"/> MSK condition</label>
-<label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer"><input type="checkbox" id="msf-skin" style="accent-color:var(--red)"/> Skin condition</label>
+<div class="auris-ohealth-s-b1dc1235c7">
+<label class="auris-ohealth-s-ccd7ff7041"><input type="checkbox" id="msf-htn" class="auris-ohealth-s-af62d68b87"/> Hypertension</label>
+<label class="auris-ohealth-s-ccd7ff7041"><input type="checkbox" id="msf-dm" class="auris-ohealth-s-af62d68b87"/> Diabetes</label>
+<label class="auris-ohealth-s-ccd7ff7041"><input type="checkbox" id="msf-resp" class="auris-ohealth-s-af62d68b87"/> Respiratory condition</label>
+<label class="auris-ohealth-s-ccd7ff7041"><input type="checkbox" id="msf-cardiac" class="auris-ohealth-s-af62d68b87"/> Cardiac condition</label>
+<label class="auris-ohealth-s-ccd7ff7041"><input type="checkbox" id="msf-msk" class="auris-ohealth-s-af62d68b87"/> MSK condition</label>
+<label class="auris-ohealth-s-ccd7ff7041"><input type="checkbox" id="msf-skin" class="auris-ohealth-s-af62d68b87"/> Skin condition</label>
 </div></div>
 </div>
 </div>
 </div>
 
 <!-- Audiometry Form -->
-<div id="oh-aud-form" style="display:none">
-<div class="card" style="margin-bottom:14px;padding:0;overflow:hidden">
-<div style="padding:14px 20px;background:linear-gradient(135deg,#3B0764,#7C3AED);color:#fff;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
-<div><div style="font-size:11px;font-weight:600;text-transform:uppercase;opacity:.8;margin-bottom:4px">Audiometry / Hearing Test</div>
-<div style="font-size:17px;font-weight:800" id="oh-aud-form3title">New Audiogram</div></div>
-<div style="display:flex;gap:8px">
-<button class="btn" style="background:rgba(255,255,255,.2);color:#fff;border-color:rgba(255,255,255,.3)" data-auris-onclick="h0711"><i class="ti ti-arrow-left"></i>Back</button>
-<button id="oh-aud-del-btn" class="btn" style="display:none;background:rgba(0,0,0,.3);color:#fff;border-color:rgba(255,255,255,.3)" data-auris-onclick="h0712"><i class="ti ti-trash"></i></button>
-<button class="btn" style="background:#1D9E75;color:#fff;border-color:#1D9E75" data-auris-onclick="h0713"><i class="ti ti-device-floppy"></i>Save</button>
+<div id="oh-aud-form" class="auris-ohealth-s-6aa34d7432">
+<div class="card auris-ohealth-s-54ec8874e7">
+<div class="auris-ohealth-s-75a9bf628c">
+<div><div class="auris-ohealth-s-adf04cf81f">Audiometry / Hearing Test</div>
+<div id="oh-aud-form3title" class="auris-ohealth-s-75021e57ca">New Audiogram</div></div>
+<div class="auris-ohealth-s-9c40389b4a">
+<button class="btn auris-ohealth-s-5c09edd131" data-auris-onclick="h0711"><i class="ti ti-arrow-left"></i>Back</button>
+<button id="oh-aud-del-btn" class="btn auris-ohealth-s-96f7839a1b" data-auris-onclick="h0712"><i class="ti ti-trash"></i></button>
+<button class="btn auris-ohealth-s-c7b9e5b2c7" data-auris-onclick="h0713"><i class="ti ti-device-floppy"></i>Save</button>
 </div>
 </div>
 </div>
-<div class="card" style="margin-bottom:14px">
+<div class="card auris-ohealth-s-42a6ced8b6">
 <div class="form3row">
 <div class="form3group"><label class="form3label">Employee name</label><select id="audf-name" data-auris-onchange="h0714"><option value="">Select person...</option></select></div>
 <div class="form3group"><label class="form3label">Department</label><input type="text" id="audf-dept"/></div>
@@ -6190,97 +6191,97 @@ Offline mode - changes will sync when connection is restored
 <div class="form3group"><label class="form3label">Noise exposure level (dB(A))</label><input type="number" id="audf-noise-level" step="0.1"/></div>
 <div class="form3group"><label class="form3label">Years of noise exposure</label><input type="number" id="audf-noise-years" step="0.5" min="0"/></div>
 <div class="form3group"><label class="form3label">Audiometer calibration date</label><input type="date" id="audf-cal-date"/></div>
-<div style="display:flex;align-items:flex-end;padding-bottom:6px">
-<label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer;font-weight:600"><input type="checkbox" id="audf-baseline" style="accent-color:#7C3AED"/> This is a BASELINE test</label>
+<div class="auris-ohealth-s-fc967cc03b">
+<label class="auris-ohealth-s-f08cc9c7cb"><input type="checkbox" id="audf-baseline" class="auris-ohealth-s-089deee0fc"/> This is a BASELINE test</label>
 </div>
 </div>
 </div>
 <!-- Audiogram thresholds -->
-<div class="card" style="margin-bottom:14px;padding:0;overflow:hidden">
-<div style="padding:10px 16px;background:linear-gradient(135deg,#3B0764,#7C3AED);color:#fff;font-weight:700">Hearing Thresholds (dB HL - enter values for each frequency)</div>
-<div style="padding:14px;overflow-x:auto">
-<table style="width:100%;min-width:600px;border-collapse:collapse;font-size:13px">
-<thead><tr style="background:#f3e8ff">
-<th style="padding:8px 12px;text-align:left;border-bottom:1px solid var(--border)">Ear</th>
-<th style="padding:8px;text-align:center;border-bottom:1px solid var(--border);color:#7C3AED">500 Hz</th>
-<th style="padding:8px;text-align:center;border-bottom:1px solid var(--border);color:#7C3AED">1 kHz</th>
-<th style="padding:8px;text-align:center;border-bottom:1px solid var(--border);color:#7C3AED">2 kHz</th>
-<th style="padding:8px;text-align:center;border-bottom:1px solid var(--border);color:#7C3AED">3 kHz</th>
-<th style="padding:8px;text-align:center;border-bottom:1px solid var(--border);color:#E24B4A">4 kHz</th>
-<th style="padding:8px;text-align:center;border-bottom:1px solid var(--border);color:#7C3AED">6 kHz</th>
-<th style="padding:8px;text-align:center;border-bottom:1px solid var(--border);color:#7C3AED">8 kHz</th>
-<th style="padding:8px;text-align:center;border-bottom:1px solid var(--border)">Avg</th>
-<th style="padding:8px;text-align:center;border-bottom:1px solid var(--border)">Result</th>
+<div class="card auris-ohealth-s-54ec8874e7">
+<div class="auris-ohealth-s-b65d08a1eb">Hearing Thresholds (dB HL - enter values for each frequency)</div>
+<div class="auris-ohealth-s-902474a541">
+<table class="auris-ohealth-s-c69f0ac716">
+<thead><tr class="auris-ohealth-s-7c731db5cd">
+<th class="auris-ohealth-s-80c001e58c">Ear</th>
+<th class="auris-ohealth-s-4bcaf372e4">500 Hz</th>
+<th class="auris-ohealth-s-4bcaf372e4">1 kHz</th>
+<th class="auris-ohealth-s-4bcaf372e4">2 kHz</th>
+<th class="auris-ohealth-s-4bcaf372e4">3 kHz</th>
+<th class="auris-ohealth-s-69a5c11372">4 kHz</th>
+<th class="auris-ohealth-s-4bcaf372e4">6 kHz</th>
+<th class="auris-ohealth-s-4bcaf372e4">8 kHz</th>
+<th class="auris-ohealth-s-7d6b7128d2">Avg</th>
+<th class="auris-ohealth-s-7d6b7128d2">Result</th>
 </tr></thead>
 <tbody>
-<tr style="border-bottom:1px solid #f0f0f0">
-<td style="padding:8px 12px;font-weight:700;color:#E24B4A">RIGHT EAR</td>
-<td style="padding:4px"><input type="number" id="aud-r-500" min="-10" max="120" style="width:55px;padding:4px;border:1px solid var(--border);border-radius:6px;text-align:center;font-size:12px" data-auris-onchange="h0715"/></td>
-<td style="padding:4px"><input type="number" id="aud-r-1000" min="-10" max="120" style="width:55px;padding:4px;border:1px solid var(--border);border-radius:6px;text-align:center;font-size:12px" data-auris-onchange="h0715"/></td>
-<td style="padding:4px"><input type="number" id="aud-r-2000" min="-10" max="120" style="width:55px;padding:4px;border:1px solid var(--border);border-radius:6px;text-align:center;font-size:12px" data-auris-onchange="h0715"/></td>
-<td style="padding:4px"><input type="number" id="aud-r-3000" min="-10" max="120" style="width:55px;padding:4px;border:1px solid var(--border);border-radius:6px;text-align:center;font-size:12px" data-auris-onchange="h0715"/></td>
-<td style="padding:4px;background:#fff1f2"><input type="number" id="aud-r-4000" min="-10" max="120" style="width:55px;padding:4px;border:1px solid #fca5a5;border-radius:6px;text-align:center;font-size:12px;background:#fff1f2" data-auris-onchange="h0715"/></td>
-<td style="padding:4px"><input type="number" id="aud-r-6000" min="-10" max="120" style="width:55px;padding:4px;border:1px solid var(--border);border-radius:6px;text-align:center;font-size:12px" data-auris-onchange="h0715"/></td>
-<td style="padding:4px"><input type="number" id="aud-r-8000" min="-10" max="120" style="width:55px;padding:4px;border:1px solid var(--border);border-radius:6px;text-align:center;font-size:12px" data-auris-onchange="h0715"/></td>
-<td style="padding:8px;text-align:center;font-weight:700" id="aud-r-avg">-</td>
-<td style="padding:8px;text-align:center" id="aud-r-result">-</td>
+<tr class="auris-ohealth-s-4deab6bc5d">
+<td class="auris-ohealth-s-7d4be32b42">RIGHT EAR</td>
+<td class="auris-ohealth-s-de208977cc"><input type="number" id="aud-r-500" class="auris-ohealth-s-5f9267d7a0" min="-10" max="120" data-auris-onchange="h0715"/></td>
+<td class="auris-ohealth-s-de208977cc"><input type="number" id="aud-r-1000" class="auris-ohealth-s-5f9267d7a0" min="-10" max="120" data-auris-onchange="h0715"/></td>
+<td class="auris-ohealth-s-de208977cc"><input type="number" id="aud-r-2000" class="auris-ohealth-s-5f9267d7a0" min="-10" max="120" data-auris-onchange="h0715"/></td>
+<td class="auris-ohealth-s-de208977cc"><input type="number" id="aud-r-3000" class="auris-ohealth-s-5f9267d7a0" min="-10" max="120" data-auris-onchange="h0715"/></td>
+<td class="auris-ohealth-s-50f50c978c"><input type="number" id="aud-r-4000" class="auris-ohealth-s-477ac35876" min="-10" max="120" data-auris-onchange="h0715"/></td>
+<td class="auris-ohealth-s-de208977cc"><input type="number" id="aud-r-6000" class="auris-ohealth-s-5f9267d7a0" min="-10" max="120" data-auris-onchange="h0715"/></td>
+<td class="auris-ohealth-s-de208977cc"><input type="number" id="aud-r-8000" class="auris-ohealth-s-5f9267d7a0" min="-10" max="120" data-auris-onchange="h0715"/></td>
+<td id="aud-r-avg" class="auris-ohealth-s-d7e6ac50e1">-</td>
+<td id="aud-r-result" class="auris-ohealth-s-a0935e17ff">-</td>
 </tr>
 <tr>
-<td style="padding:8px 12px;font-weight:700;color:#185FA5">LEFT EAR</td>
-<td style="padding:4px"><input type="number" id="aud-l-500" min="-10" max="120" style="width:55px;padding:4px;border:1px solid var(--border);border-radius:6px;text-align:center;font-size:12px" data-auris-onchange="h0716"/></td>
-<td style="padding:4px"><input type="number" id="aud-l-1000" min="-10" max="120" style="width:55px;padding:4px;border:1px solid var(--border);border-radius:6px;text-align:center;font-size:12px" data-auris-onchange="h0716"/></td>
-<td style="padding:4px"><input type="number" id="aud-l-2000" min="-10" max="120" style="width:55px;padding:4px;border:1px solid var(--border);border-radius:6px;text-align:center;font-size:12px" data-auris-onchange="h0716"/></td>
-<td style="padding:4px"><input type="number" id="aud-l-3000" min="-10" max="120" style="width:55px;padding:4px;border:1px solid var(--border);border-radius:6px;text-align:center;font-size:12px" data-auris-onchange="h0716"/></td>
-<td style="padding:4px;background:#fff1f2"><input type="number" id="aud-l-4000" min="-10" max="120" style="width:55px;padding:4px;border:1px solid #fca5a5;border-radius:6px;text-align:center;font-size:12px;background:#fff1f2" data-auris-onchange="h0716"/></td>
-<td style="padding:4px"><input type="number" id="aud-l-6000" min="-10" max="120" style="width:55px;padding:4px;border:1px solid var(--border);border-radius:6px;text-align:center;font-size:12px" data-auris-onchange="h0716"/></td>
-<td style="padding:4px"><input type="number" id="aud-l-8000" min="-10" max="120" style="width:55px;padding:4px;border:1px solid var(--border);border-radius:6px;text-align:center;font-size:12px" data-auris-onchange="h0716"/></td>
-<td style="padding:8px;text-align:center;font-weight:700" id="aud-l-avg">-</td>
-<td style="padding:8px;text-align:center" id="aud-l-result">-</td>
+<td class="auris-ohealth-s-81b66f52ad">LEFT EAR</td>
+<td class="auris-ohealth-s-de208977cc"><input type="number" id="aud-l-500" class="auris-ohealth-s-5f9267d7a0" min="-10" max="120" data-auris-onchange="h0716"/></td>
+<td class="auris-ohealth-s-de208977cc"><input type="number" id="aud-l-1000" class="auris-ohealth-s-5f9267d7a0" min="-10" max="120" data-auris-onchange="h0716"/></td>
+<td class="auris-ohealth-s-de208977cc"><input type="number" id="aud-l-2000" class="auris-ohealth-s-5f9267d7a0" min="-10" max="120" data-auris-onchange="h0716"/></td>
+<td class="auris-ohealth-s-de208977cc"><input type="number" id="aud-l-3000" class="auris-ohealth-s-5f9267d7a0" min="-10" max="120" data-auris-onchange="h0716"/></td>
+<td class="auris-ohealth-s-50f50c978c"><input type="number" id="aud-l-4000" class="auris-ohealth-s-477ac35876" min="-10" max="120" data-auris-onchange="h0716"/></td>
+<td class="auris-ohealth-s-de208977cc"><input type="number" id="aud-l-6000" class="auris-ohealth-s-5f9267d7a0" min="-10" max="120" data-auris-onchange="h0716"/></td>
+<td class="auris-ohealth-s-de208977cc"><input type="number" id="aud-l-8000" class="auris-ohealth-s-5f9267d7a0" min="-10" max="120" data-auris-onchange="h0716"/></td>
+<td id="aud-l-avg" class="auris-ohealth-s-d7e6ac50e1">-</td>
+<td id="aud-l-result" class="auris-ohealth-s-a0935e17ff">-</td>
 </tr>
 </tbody>
 </table>
-<div style="font-size:11px;color:var(--text2);margin-top:8px">4 kHz is the critical frequency for noise-induced hearing loss. Normal: =25 dB HL | Mild: 26-40 | Moderate: 41-55 | Severe: 56-70 | Profound: &gt;70</div>
+<div class="auris-ohealth-s-54593e9172">4 kHz is the critical frequency for noise-induced hearing loss. Normal: =25 dB HL | Mild: 26-40 | Moderate: 41-55 | Severe: 56-70 | Profound: &gt;70</div>
 </div>
 </div>
-<div style="display:grid;grid-template-columns:2fr 1fr;gap:14px">
+<div class="auris-ohealth-s-5571af1e74">
 <div class="card">
 <div class="card-title">STS (Standard Threshold Shift) Assessment</div>
-<div style="display:flex;gap:14px;margin-bottom:10px">
-<label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer;font-weight:600"><input type="checkbox" id="audf-sts-r" style="accent-color:#E24B4A"/> STS detected - RIGHT ear</label>
-<label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer;font-weight:600"><input type="checkbox" id="audf-sts-l" style="accent-color:#185FA5"/> STS detected - LEFT ear</label>
-<label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer"><input type="checkbox" id="audf-age-corr" style="accent-color:var(--green)"/> Age correction applied</label>
+<div class="auris-ohealth-s-064eb06bc7">
+<label class="auris-ohealth-s-f08cc9c7cb"><input type="checkbox" id="audf-sts-r" class="auris-ohealth-s-66f411b444"/> STS detected - RIGHT ear</label>
+<label class="auris-ohealth-s-f08cc9c7cb"><input type="checkbox" id="audf-sts-l" class="auris-ohealth-s-36b2bbe0a4"/> STS detected - LEFT ear</label>
+<label class="auris-ohealth-s-ccd7ff7041"><input type="checkbox" id="audf-age-corr" class="auris-ohealth-s-283f12d7fe"/> Age correction applied</label>
 </div>
 <div class="form3row">
 <div class="form3group"><label class="form3label">PPE recommendation</label><input type="text" id="audf-ppe" placeholder="e.g. Class 5 hearing protectors required"/></div>
 </div>
-<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px"><input type="checkbox" id="audf-referral" style="accent-color:var(--red)"/><label for="audf-referral" style="font-size:12px;font-weight:600;cursor:pointer;color:var(--red)">Referral to audiologist required</label></div>
-<div class="form3group"><label class="form3label">Notes</label><textarea id="audf-notes" style="min-height:50px"></textarea></div>
+<div class="auris-ohealth-s-e8beef2369"><input type="checkbox" id="audf-referral" class="auris-ohealth-s-af62d68b87"/><label class="auris-ohealth-s-b5bd38212a" for="audf-referral">Referral to audiologist required</label></div>
+<div class="form3group"><label class="form3label">Notes</label><textarea id="audf-notes" class="auris-ohealth-s-2b013fa0d9"></textarea></div>
 </div>
 <div class="card">
 <div class="card-title">Overall Assessment</div>
-<div id="aud-overall-result" style="text-align:center;padding:16px">
-<div style="font-size:40px;margin-bottom:8px"><i class="ti ti-circle-dot"></i></div>
-<div style="font-size:14px;font-weight:700;color:var(--text2)">Enter threshold values to see assessment</div>
+<div id="aud-overall-result" class="auris-ohealth-s-d48bfa87bb">
+<div class="auris-ohealth-s-483803c5cc"><i class="ti ti-circle-dot"></i></div>
+<div class="auris-ohealth-s-01f2e0961e">Enter threshold values to see assessment</div>
 </div>
-<label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer;margin-top:10px"><input type="checkbox" id="audf-hp-worn" checked style="accent-color:var(--green)"/> Hearing protection worn at time of test</label>
+<label class="auris-ohealth-s-89ef43f38f"><input type="checkbox" id="audf-hp-worn" class="auris-ohealth-s-283f12d7fe" checked/> Hearing protection worn at time of test</label>
 </div>
 </div>
 </div>
 
 <!-- Spirometry Form -->
-<div id="oh-spi-form" style="display:none">
-<div class="card" style="margin-bottom:14px;padding:0;overflow:hidden">
-<div style="padding:14px 20px;background:linear-gradient(135deg,#064E3B,#0891B2);color:#fff;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
-<div><div style="font-size:11px;font-weight:600;text-transform:uppercase;opacity:.8;margin-bottom:4px">Spirometry / Lung Function Test</div>
-<div style="font-size:17px;font-weight:800" id="oh-spi-form3title">New Spirometry</div></div>
-<div style="display:flex;gap:8px">
-<button class="btn" style="background:rgba(255,255,255,.2);color:#fff;border-color:rgba(255,255,255,.3)" data-auris-onclick="h0717"><i class="ti ti-arrow-left"></i>Back</button>
-<button id="oh-spi-del-btn" class="btn" style="display:none;background:rgba(0,0,0,.3);color:#fff;border-color:rgba(255,255,255,.3)" data-auris-onclick="h0718"><i class="ti ti-trash"></i></button>
-<button class="btn" style="background:#1D9E75;color:#fff;border-color:#1D9E75" data-auris-onclick="h0719"><i class="ti ti-device-floppy"></i>Save</button>
+<div id="oh-spi-form" class="auris-ohealth-s-6aa34d7432">
+<div class="card auris-ohealth-s-54ec8874e7">
+<div class="auris-ohealth-s-37d51e048e">
+<div><div class="auris-ohealth-s-adf04cf81f">Spirometry / Lung Function Test</div>
+<div id="oh-spi-form3title" class="auris-ohealth-s-75021e57ca">New Spirometry</div></div>
+<div class="auris-ohealth-s-9c40389b4a">
+<button class="btn auris-ohealth-s-5c09edd131" data-auris-onclick="h0717"><i class="ti ti-arrow-left"></i>Back</button>
+<button id="oh-spi-del-btn" class="btn auris-ohealth-s-96f7839a1b" data-auris-onclick="h0718"><i class="ti ti-trash"></i></button>
+<button class="btn auris-ohealth-s-c7b9e5b2c7" data-auris-onclick="h0719"><i class="ti ti-device-floppy"></i>Save</button>
 </div>
 </div>
 </div>
-<div class="card" style="margin-bottom:14px">
+<div class="card auris-ohealth-s-42a6ced8b6">
 <div class="form3row">
 <div class="form3group"><label class="form3label">Employee name</label><select id="spif-name" data-auris-onchange="h0720"><option value="">Select person...</option></select></div>
 <div class="form3group"><label class="form3label">Department</label><input type="text" id="spif-dept"/></div>
@@ -6289,68 +6290,68 @@ Offline mode - changes will sync when connection is restored
 <div class="form3group"><label class="form3label">Examiner</label><input type="text" id="spif-examiner"/></div>
 </div>
 </div>
-<div style="display:grid;grid-template-columns:2fr 1fr;gap:14px">
+<div class="auris-ohealth-s-5571af1e74">
 <div>
-<div class="card" style="margin-bottom:14px;border-left:4px solid #0891B2">
-<div class="card-title" style="color:#0891B2">Spirometry Values</div>
-<div style="overflow-x:auto">
-<table style="width:100%;border-collapse:collapse;font-size:13px">
-<thead><tr style="background:#e0f7fa"><th style="padding:8px 12px;text-align:left;border-bottom:1px solid var(--border)">Measure</th><th style="padding:8px;text-align:center;border-bottom:1px solid var(--border)">Predicted</th><th style="padding:8px;text-align:center;border-bottom:1px solid var(--border)">Measured</th><th style="padding:8px;text-align:center;border-bottom:1px solid var(--border)">% Predicted</th><th style="padding:8px;text-align:center;border-bottom:1px solid var(--border)">Status</th></tr></thead>
+<div class="card auris-ohealth-s-948c3ac1bb">
+<div class="card-title auris-ohealth-s-05be4e4a89">Spirometry Values</div>
+<div class="auris-ohealth-s-1b1d75452f">
+<table class="auris-ohealth-s-c08484bf16">
+<thead><tr class="auris-ohealth-s-541d2a7e2a"><th class="auris-ohealth-s-80c001e58c">Measure</th><th class="auris-ohealth-s-7d6b7128d2">Predicted</th><th class="auris-ohealth-s-7d6b7128d2">Measured</th><th class="auris-ohealth-s-7d6b7128d2">% Predicted</th><th class="auris-ohealth-s-7d6b7128d2">Status</th></tr></thead>
 <tbody>
-<tr style="border-bottom:1px solid #f5f5f5">
-<td style="padding:8px 12px;font-weight:600">FVC (L)</td>
-<td style="padding:6px"><input type="number" id="spi-fvc-pred" step="0.01" min="0" max="10" style="width:70px;padding:4px;border:1px solid var(--border);border-radius:6px;text-align:center;font-size:12px" data-auris-onchange="h0721"/></td>
-<td style="padding:6px"><input type="number" id="spi-fvc-meas" step="0.01" min="0" max="10" style="width:70px;padding:4px;border:1px solid var(--border);border-radius:6px;text-align:center;font-size:12px" data-auris-onchange="h0721"/></td>
-<td style="padding:8px;text-align:center;font-weight:700" id="spi-fvc-pct">-</td>
-<td style="padding:8px;text-align:center" id="spi-fvc-status">-</td>
+<tr class="auris-ohealth-s-6ab37c1f2f">
+<td class="auris-ohealth-s-f4c1e6637c">FVC (L)</td>
+<td class="auris-ohealth-s-72893568c5"><input type="number" id="spi-fvc-pred" class="auris-ohealth-s-82a6809479" step="0.01" min="0" max="10" data-auris-onchange="h0721"/></td>
+<td class="auris-ohealth-s-72893568c5"><input type="number" id="spi-fvc-meas" class="auris-ohealth-s-82a6809479" step="0.01" min="0" max="10" data-auris-onchange="h0721"/></td>
+<td id="spi-fvc-pct" class="auris-ohealth-s-d7e6ac50e1">-</td>
+<td id="spi-fvc-status" class="auris-ohealth-s-a0935e17ff">-</td>
 </tr>
-<tr style="border-bottom:1px solid #f5f5f5">
-<td style="padding:8px 12px;font-weight:600">FEV1 (L)</td>
-<td style="padding:6px"><input type="number" id="spi-fev1-pred" step="0.01" min="0" max="10" style="width:70px;padding:4px;border:1px solid var(--border);border-radius:6px;text-align:center;font-size:12px" data-auris-onchange="h0721"/></td>
-<td style="padding:6px"><input type="number" id="spi-fev1-meas" step="0.01" min="0" max="10" style="width:70px;padding:4px;border:1px solid var(--border);border-radius:6px;text-align:center;font-size:12px" data-auris-onchange="h0721"/></td>
-<td style="padding:8px;text-align:center;font-weight:700" id="spi-fev1-pct">-</td>
-<td style="padding:8px;text-align:center" id="spi-fev1-status">-</td>
+<tr class="auris-ohealth-s-6ab37c1f2f">
+<td class="auris-ohealth-s-f4c1e6637c">FEV1 (L)</td>
+<td class="auris-ohealth-s-72893568c5"><input type="number" id="spi-fev1-pred" class="auris-ohealth-s-82a6809479" step="0.01" min="0" max="10" data-auris-onchange="h0721"/></td>
+<td class="auris-ohealth-s-72893568c5"><input type="number" id="spi-fev1-meas" class="auris-ohealth-s-82a6809479" step="0.01" min="0" max="10" data-auris-onchange="h0721"/></td>
+<td id="spi-fev1-pct" class="auris-ohealth-s-d7e6ac50e1">-</td>
+<td id="spi-fev1-status" class="auris-ohealth-s-a0935e17ff">-</td>
 </tr>
 <tr>
-<td style="padding:8px 12px;font-weight:600">FEV1/FVC (%)</td>
-<td style="padding:8px;text-align:center;color:var(--text2);font-size:11px">=70%</td>
-<td style="padding:6px"><input type="number" id="spi-ratio-meas" step="0.1" min="0" max="100" style="width:70px;padding:4px;border:1px solid var(--border);border-radius:6px;text-align:center;font-size:12px" data-auris-onchange="h0721"/></td>
-<td style="padding:8px;text-align:center" id="spi-ratio-pct">-</td>
-<td style="padding:8px;text-align:center" id="spi-ratio-status">-</td>
+<td class="auris-ohealth-s-f4c1e6637c">FEV1/FVC (%)</td>
+<td class="auris-ohealth-s-8588fe5ce6">=70%</td>
+<td class="auris-ohealth-s-72893568c5"><input type="number" id="spi-ratio-meas" class="auris-ohealth-s-82a6809479" step="0.1" min="0" max="100" data-auris-onchange="h0721"/></td>
+<td id="spi-ratio-pct" class="auris-ohealth-s-a0935e17ff">-</td>
+<td id="spi-ratio-status" class="auris-ohealth-s-a0935e17ff">-</td>
 </tr>
 </tbody>
 </table>
 </div>
-<div class="form3row" style="margin-top:12px">
+<div class="form3row auris-ohealth-s-0ee7f66ad9">
 <div class="form3group"><label class="form3label">PEF (L/min)</label><input type="number" id="spif-pef" step="1" min="0" max="1000"/></div>
 </div>
 </div>
-<div class="card" style="margin-bottom:14px"><div class="card-title">Bronchodilator Response (if performed)</div>
-<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px"><input type="checkbox" id="spif-bd" style="accent-color:var(--green)"/><label for="spif-bd" style="font-size:13px;font-weight:600;cursor:pointer">Post-bronchodilator test performed</label></div>
+<div class="card auris-ohealth-s-42a6ced8b6"><div class="card-title">Bronchodilator Response (if performed)</div>
+<div class="auris-ohealth-s-ba28bccee4"><input type="checkbox" id="spif-bd" class="auris-ohealth-s-283f12d7fe"/><label class="auris-ohealth-s-22514dbec4" for="spif-bd">Post-bronchodilator test performed</label></div>
 <div class="form3row">
 <div class="form3group"><label class="form3label">Post-BD FEV1 (L)</label><input type="number" id="spif-bd-fev1" step="0.01" min="0" max="10"/></div>
 <div class="form3group"><label class="form3label">Post-BD FVC (L)</label><input type="number" id="spif-bd-fvc" step="0.01" min="0" max="10"/></div>
 <div class="form3group"><label class="form3label">Reversibility (%)</label><input type="number" id="spif-rev-pct" step="0.1" min="0" max="100"/></div>
 </div>
-<div style="display:flex;align-items:center;gap:8px"><input type="checkbox" id="spif-sig-rev" style="accent-color:var(--red)"/><label for="spif-sig-rev" style="font-size:13px;cursor:pointer;color:var(--red);font-weight:600">Significant reversibility (&gt;12% and &gt;200ml)</label></div>
+<div class="auris-ohealth-s-a4e017b7b0"><input type="checkbox" id="spif-sig-rev" class="auris-ohealth-s-af62d68b87"/><label class="auris-ohealth-s-6b2aa997a6" for="spif-sig-rev">Significant reversibility (&gt;12% and &gt;200ml)</label></div>
 </div>
 <div class="card"><div class="card-title">Exposure History</div>
-<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
-<label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer"><input type="checkbox" id="spif-dust" style="accent-color:var(--green)"/> Dust exposed</label>
-<label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer"><input type="checkbox" id="spif-silica" style="accent-color:var(--green)"/> Silica exposed</label>
-<label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer"><input type="checkbox" id="spif-asbestos" style="accent-color:var(--green)"/> Asbestos exposed</label>
-<label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer"><input type="checkbox" id="spif-chem3fumes" style="accent-color:var(--green)"/> Chemical fumes</label>
+<div class="auris-ohealth-s-b1dc1235c7">
+<label class="auris-ohealth-s-ccd7ff7041"><input type="checkbox" id="spif-dust" class="auris-ohealth-s-283f12d7fe"/> Dust exposed</label>
+<label class="auris-ohealth-s-ccd7ff7041"><input type="checkbox" id="spif-silica" class="auris-ohealth-s-283f12d7fe"/> Silica exposed</label>
+<label class="auris-ohealth-s-ccd7ff7041"><input type="checkbox" id="spif-asbestos" class="auris-ohealth-s-283f12d7fe"/> Asbestos exposed</label>
+<label class="auris-ohealth-s-ccd7ff7041"><input type="checkbox" id="spif-chem3fumes" class="auris-ohealth-s-283f12d7fe"/> Chemical fumes</label>
 </div>
-<div style="display:flex;align-items:center;gap:8px;margin-top:10px"><input type="checkbox" id="spif-referral" style="accent-color:var(--red)"/><label for="spif-referral" style="font-size:12px;font-weight:600;cursor:pointer;color:var(--red)">Specialist referral required</label></div>
-<div class="form3group" style="margin-top:10px"><label class="form3label">Notes</label><textarea id="spif-notes" style="min-height:50px"></textarea></div>
+<div class="auris-ohealth-s-0a97429e22"><input type="checkbox" id="spif-referral" class="auris-ohealth-s-af62d68b87"/><label class="auris-ohealth-s-b5bd38212a" for="spif-referral">Specialist referral required</label></div>
+<div class="form3group auris-ohealth-s-df928149c5"><label class="form3label">Notes</label><textarea id="spif-notes" class="auris-ohealth-s-2b013fa0d9"></textarea></div>
 </div>
 </div>
 <div>
-<div class="card" style="border:2px solid #0891B2">
-<div class="card-title" style="color:#0891B2">Interpretation</div>
-<div id="spi-interpretation" style="padding:16px;text-align:center">
-<div style="font-size:40px;margin-bottom:8px"><i class="ti ti-circle-dot"></i></div>
-<div style="font-size:13px;color:var(--text2)">Enter FVC and FEV1 values to see interpretation</div>
+<div class="card auris-ohealth-s-bc997d300e">
+<div class="card-title auris-ohealth-s-05be4e4a89">Interpretation</div>
+<div id="spi-interpretation" class="auris-ohealth-s-9214aa7fbd">
+<div class="auris-ohealth-s-483803c5cc"><i class="ti ti-circle-dot"></i></div>
+<div class="auris-ohealth-s-a41bff61e4">Enter FVC and FEV1 values to see interpretation</div>
 </div>
 </div>
 </div>
@@ -6358,14 +6359,14 @@ Offline mode - changes will sync when connection is restored
 </div>
 
 <!-- Vaccination Form -->
-<div id="oh-vax-form" style="display:none">
-<div class="card" style="margin-bottom:14px;padding:0;overflow:hidden">
-<div style="padding:14px 20px;background:linear-gradient(135deg,#166534,#1D9E75);color:#fff;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
-<div style="font-size:17px;font-weight:800" id="oh-vax-form3title">New Vaccination Record</div>
-<div style="display:flex;gap:8px">
-<button class="btn" style="background:rgba(255,255,255,.2);color:#fff;border-color:rgba(255,255,255,.3)" data-auris-onclick="h0722"><i class="ti ti-arrow-left"></i>Back</button>
-<button id="oh-vax-del-btn" class="btn" style="display:none;background:rgba(0,0,0,.3);color:#fff;border-color:rgba(255,255,255,.3)" data-auris-onclick="h0723"><i class="ti ti-trash"></i></button>
-<button class="btn" style="background:#fff;color:#1D9E75;font-weight:700" data-auris-onclick="h0724"><i class="ti ti-device-floppy"></i>Save</button>
+<div id="oh-vax-form" class="auris-ohealth-s-6aa34d7432">
+<div class="card auris-ohealth-s-54ec8874e7">
+<div class="auris-ohealth-s-a02a2a81ab">
+<div id="oh-vax-form3title" class="auris-ohealth-s-75021e57ca">New Vaccination Record</div>
+<div class="auris-ohealth-s-9c40389b4a">
+<button class="btn auris-ohealth-s-5c09edd131" data-auris-onclick="h0722"><i class="ti ti-arrow-left"></i>Back</button>
+<button id="oh-vax-del-btn" class="btn auris-ohealth-s-96f7839a1b" data-auris-onclick="h0723"><i class="ti ti-trash"></i></button>
+<button class="btn auris-ohealth-s-56ac49ff17" data-auris-onclick="h0724"><i class="ti ti-device-floppy"></i>Save</button>
 </div>
 </div>
 </div>
@@ -6386,36 +6387,36 @@ Offline mode - changes will sync when connection is restored
 <div class="form3row">
 <div class="form3group"><label class="form3label">Administered by</label><input type="text" id="vaxf-admin-by"/></div>
 <div class="form3group"><label class="form3label">Clinic</label><input type="text" id="vaxf-clinic"/></div>
-<div class="form3group"><label class="form3label">Batch number</label><input type="text" id="vaxf-batch" style="font-family:monospace"/></div>
+<div class="form3group"><label class="form3label">Batch number</label><input type="text" id="vaxf-batch" class="auris-ohealth-s-7b8c3df564"/></div>
 <div class="form3group"><label class="form3label">Status</label><select id="vaxf-status"><option value="completed">Completed</option><option value="scheduled">Scheduled</option><option value="declined">Declined</option><option value="overdue">Overdue</option><option value="not_applicable">Not applicable</option></select></div>
 </div>
-<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px"><input type="checkbox" id="vaxf-reaction" style="accent-color:var(--red)"/><label for="vaxf-reaction" style="font-size:12px;font-weight:600;cursor:pointer;color:var(--red)">Adverse reaction noted</label></div>
+<div class="auris-ohealth-s-ba28bccee4"><input type="checkbox" id="vaxf-reaction" class="auris-ohealth-s-af62d68b87"/><label class="auris-ohealth-s-b5bd38212a" for="vaxf-reaction">Adverse reaction noted</label></div>
 <div class="form3row">
 <div class="form3group"><label class="form3label">Reaction details</label><input type="text" id="vaxf-reaction-details"/></div>
-<div class="form3group"><label class="form3label">Notes</label><textarea id="vaxf-notes" style="min-height:40px"></textarea></div>
+<div class="form3group"><label class="form3label">Notes</label><textarea id="vaxf-notes" class="auris-ohealth-s-7e000820e7"></textarea></div>
 </div>
 </div>
 </div>
 
 <!-- Exposure Monitoring Form -->
-<div id="oh-exp-form" style="display:none">
-<div class="card" style="margin-bottom:14px;padding:0;overflow:hidden">
-<div style="padding:14px 20px;background:linear-gradient(135deg,#1a3a5c,#854F0B);color:#fff;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+<div id="oh-exp-form" class="auris-ohealth-s-6aa34d7432">
+<div class="card auris-ohealth-s-54ec8874e7">
+<div class="auris-ohealth-s-7781968c56">
 <div>
-<div style="font-size:11px;font-weight:600;text-transform:uppercase;opacity:.8;margin-bottom:4px">Exposure Monitoring Record</div>
-<div style="font-size:17px;font-weight:800" id="oh-exp-form3title">New Measurement</div>
-<div style="font-family:monospace;font-size:12px;color:#fef3c7;margin-top:3px" id="oh-exp-form3ref">EXP-AUTO</div>
+<div class="auris-ohealth-s-adf04cf81f">Exposure Monitoring Record</div>
+<div id="oh-exp-form3title" class="auris-ohealth-s-75021e57ca">New Measurement</div>
+<div id="oh-exp-form3ref" class="auris-ohealth-s-4bff8bc1bc">EXP-AUTO</div>
 </div>
-<div style="display:flex;gap:8px">
-<button class="btn" style="background:rgba(255,255,255,.2);color:#fff;border-color:rgba(255,255,255,.3)" data-auris-onclick="h0726"><i class="ti ti-arrow-left"></i>Back</button>
-<button id="oh-exp-del-btn" class="btn" style="display:none;background:rgba(0,0,0,.3);color:#fff;border-color:rgba(255,255,255,.3)" data-auris-onclick="h0727"><i class="ti ti-trash"></i></button>
-<button class="btn" style="background:#1D9E75;color:#fff;border-color:#1D9E75" data-auris-onclick="h0728"><i class="ti ti-device-floppy"></i>Save</button>
+<div class="auris-ohealth-s-9c40389b4a">
+<button class="btn auris-ohealth-s-5c09edd131" data-auris-onclick="h0726"><i class="ti ti-arrow-left"></i>Back</button>
+<button id="oh-exp-del-btn" class="btn auris-ohealth-s-96f7839a1b" data-auris-onclick="h0727"><i class="ti ti-trash"></i></button>
+<button class="btn auris-ohealth-s-c7b9e5b2c7" data-auris-onclick="h0728"><i class="ti ti-device-floppy"></i>Save</button>
 </div>
 </div>
 </div>
-<div style="display:grid;grid-template-columns:2fr 1fr;gap:14px">
+<div class="auris-ohealth-s-5571af1e74">
 <div>
-<div class="card" style="margin-bottom:14px"><div class="card-title">Monitoring Details</div>
+<div class="card auris-ohealth-s-42a6ced8b6"><div class="card-title">Monitoring Details</div>
 <div class="form3row">
 <div class="form3group"><label class="form3label">Monitoring type</label>
 <select id="expf-type" data-auris-onchange="h0729">
@@ -6439,8 +6440,8 @@ Offline mode - changes will sync when connection is restored
 <div class="form3group"><label class="form3label">Exposure duration (hrs)</label><input type="number" id="expf-duration" step="0.5" min="0" max="12"/></div>
 </div>
 </div>
-<div class="card" style="margin-bottom:14px;border-left:4px solid #854F0B">
-<div class="card-title" style="color:#854F0B">Measurement Values</div>
+<div class="card auris-ohealth-s-9149dc5be2">
+<div class="card-title auris-ohealth-s-913c8bfa3e">Measurement Values</div>
 <div class="form3row">
 <div class="form3group"><label class="form3label">Measured value</label><input type="number" id="expf-value" step="0.001" min="0" data-auris-oninput="h0730"/></div>
 <div class="form3group"><label class="form3label">Unit</label><input type="text" id="expf-unit" placeholder="dB(A), mg/m3, ppm, WBGT -C, m/s-..."/></div>
@@ -6456,40 +6457,40 @@ Offline mode - changes will sync when connection is restored
 <div class="form3group"><label class="form3label">OEL source / standard</label><input type="text" id="expf-oel-source" placeholder="e.g. OSH Act Schedule 5, ACGIH TLV 2024..."/></div>
 </div>
 <!-- Type-specific fields -->
-<div id="expf-type-specific" style="margin-bottom:14px"></div>
+<div id="expf-type-specific" class="auris-ohealth-s-42a6ced8b6"></div>
 <div class="card"><div class="card-title">Monitoring Method &amp; Controls</div>
 <div class="form3row">
 <div class="form3group"><label class="form3label">Monitoring method</label><input type="text" id="expf-method" placeholder="e.g. Personal dosimetry, Area sampling..."/></div>
 <div class="form3group"><label class="form3label">Instrument / sampler</label><input type="text" id="expf-instrument"/></div>
-<div class="form3group"><label class="form3label">Calibration reference</label><input type="text" id="expf-cal-ref" style="font-family:monospace"/></div>
+<div class="form3group"><label class="form3label">Calibration reference</label><input type="text" id="expf-cal-ref" class="auris-ohealth-s-7b8c3df564"/></div>
 <div class="form3group"><label class="form3label">Sampler / Technician</label><input type="text" id="expf-sampler"/></div>
 </div>
-<div class="form3group"><label class="form3label">Existing controls in place</label><textarea id="expf-controls" style="min-height:60px"></textarea></div>
-<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px"><input type="checkbox" id="expf-controls-ok" checked style="accent-color:var(--green)"/><label for="expf-controls-ok" style="font-size:13px;font-weight:600;cursor:pointer">Controls are adequate</label></div>
-<div class="form3group"><label class="form3label">Additional controls required</label><textarea id="expf-add-controls" style="min-height:50px"></textarea></div>
+<div class="form3group"><label class="form3label">Existing controls in place</label><textarea id="expf-controls" class="auris-ohealth-s-07bdff4587"></textarea></div>
+<div class="auris-ohealth-s-ba28bccee4"><input type="checkbox" id="expf-controls-ok" class="auris-ohealth-s-283f12d7fe" checked/><label class="auris-ohealth-s-22514dbec4" for="expf-controls-ok">Controls are adequate</label></div>
+<div class="form3group"><label class="form3label">Additional controls required</label><textarea id="expf-add-controls" class="auris-ohealth-s-2b013fa0d9"></textarea></div>
 <div class="form3row">
-<div class="form3group"><label class="form3label">Recommended actions</label><textarea id="expf-actions" style="min-height:50px"></textarea></div>
+<div class="form3group"><label class="form3label">Recommended actions</label><textarea id="expf-actions" class="auris-ohealth-s-2b013fa0d9"></textarea></div>
 <div class="form3group"><label class="form3label">Reassessment date</label><input type="date" id="expf-reassess"/></div>
 </div></div>
 </div>
 <div>
-<div class="card" style="margin-bottom:14px;border:2px solid #854F0B">
-<div class="card-title" style="color:#854F0B"><i class="ti ti-chart-bar"></i> Risk Calculation</div>
-<div id="exp-risk-panel" style="padding:16px;text-align:center">
-<div style="font-size:40px;margin-bottom:8px"><i class="ti ti-circle-dot"></i></div>
-<div style="font-size:13px;color:var(--text2)">Enter TWA and OEL to calculate % of limit</div>
+<div class="card auris-ohealth-s-57b252ee5a">
+<div class="card-title auris-ohealth-s-913c8bfa3e"><i class="ti ti-chart-bar"></i> Risk Calculation</div>
+<div id="exp-risk-panel" class="auris-ohealth-s-9214aa7fbd">
+<div class="auris-ohealth-s-483803c5cc"><i class="ti ti-circle-dot"></i></div>
+<div class="auris-ohealth-s-a41bff61e4">Enter TWA and OEL to calculate % of limit</div>
 </div>
-<div class="form3group" style="margin-top:10px"><label class="form3label">Status</label><select id="expf-status"><option value="open">Open - action required</option><option value="actions_taken">Actions taken</option><option value="closed">Closed</option><option value="requires_reassessment">Requires reassessment</option></select></div>
+<div class="form3group auris-ohealth-s-df928149c5"><label class="form3label">Status</label><select id="expf-status"><option value="open">Open - action required</option><option value="actions_taken">Actions taken</option><option value="closed">Closed</option><option value="requires_reassessment">Requires reassessment</option></select></div>
 </div>
 <div class="card">
 <div class="card-title">OEL Reference Guide</div>
-<div style="font-size:11px;line-height:1.6;color:var(--text2)">
-<strong style="color:#1a1a1a">Noise:</strong> OEL = 85 dB(A) TWA8h - Action = 80 dB(A)<br>
-<strong style="color:#1a1a1a">General dust:</strong> OEL = 10 mg/m3 (inhalable) - 4 mg/m3 (respirable)<br>
-<strong style="color:#1a1a1a">Silica (crystalline):</strong> OEL = 0.1 mg/m3 (ACGIH) - 0.025 mg/m3 (NIOSH)<br>
-<strong style="color:#1a1a1a">Heat stress:</strong> WBGT ceiling = 28-C (light) - 25-C (moderate) - 22-C (heavy)<br>
-<strong style="color:#1a1a1a">HAV vibration:</strong> Action = 2.5 m/s- A(8) - Limit = 5.0 m/s-<br>
-<strong style="color:#1a1a1a">WBV vibration:</strong> Action = 0.5 m/s- A(8) - Limit = 1.15 m/s-
+<div class="auris-ohealth-s-9afc82cb60">
+<strong class="auris-ohealth-s-02e9423f33">Noise:</strong> OEL = 85 dB(A) TWA8h - Action = 80 dB(A)<br>
+<strong class="auris-ohealth-s-02e9423f33">General dust:</strong> OEL = 10 mg/m3 (inhalable) - 4 mg/m3 (respirable)<br>
+<strong class="auris-ohealth-s-02e9423f33">Silica (crystalline):</strong> OEL = 0.1 mg/m3 (ACGIH) - 0.025 mg/m3 (NIOSH)<br>
+<strong class="auris-ohealth-s-02e9423f33">Heat stress:</strong> WBGT ceiling = 28-C (light) - 25-C (moderate) - 22-C (heavy)<br>
+<strong class="auris-ohealth-s-02e9423f33">HAV vibration:</strong> Action = 2.5 m/s- A(8) - Limit = 5.0 m/s-<br>
+<strong class="auris-ohealth-s-02e9423f33">WBV vibration:</strong> Action = 0.5 m/s- A(8) - Limit = 1.15 m/s-
 </div>
 </div>
 </div>
@@ -6497,24 +6498,24 @@ Offline mode - changes will sync when connection is restored
 </div>
 
 <!-- Occupational Disease Form -->
-<div id="oh-od-form" style="display:none">
-<div class="card" style="margin-bottom:14px;padding:0;overflow:hidden">
-<div style="padding:14px 20px;background:linear-gradient(135deg,#7F1D1D,#DC2626);color:#fff;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+<div id="oh-od-form" class="auris-ohealth-s-6aa34d7432">
+<div class="card auris-ohealth-s-54ec8874e7">
+<div class="auris-ohealth-s-cfaccf08c6">
 <div>
-<div style="font-size:11px;font-weight:600;text-transform:uppercase;opacity:.8;margin-bottom:4px">Occupational Disease Record</div>
-<div style="font-size:17px;font-weight:800" id="oh-od-form3title">New Record</div>
-<div style="font-family:monospace;font-size:12px;color:#fca5a5;margin-top:3px" id="oh-od-form3ref">OD-AUTO</div>
+<div class="auris-ohealth-s-adf04cf81f">Occupational Disease Record</div>
+<div id="oh-od-form3title" class="auris-ohealth-s-75021e57ca">New Record</div>
+<div id="oh-od-form3ref" class="auris-ohealth-s-7372276e79">OD-AUTO</div>
 </div>
-<div style="display:flex;gap:8px">
-<button class="btn" style="background:rgba(255,255,255,.2);color:#fff;border-color:rgba(255,255,255,.3)" data-auris-onclick="h0731"><i class="ti ti-arrow-left"></i>Back</button>
-<button id="oh-od-del-btn" class="btn" style="display:none;background:rgba(0,0,0,.3);color:#fff;border-color:rgba(255,255,255,.3)" data-auris-onclick="h0732"><i class="ti ti-trash"></i></button>
-<button class="btn" style="background:#1D9E75;color:#fff;border-color:#1D9E75" data-auris-onclick="h0733"><i class="ti ti-device-floppy"></i>Save</button>
+<div class="auris-ohealth-s-9c40389b4a">
+<button class="btn auris-ohealth-s-5c09edd131" data-auris-onclick="h0731"><i class="ti ti-arrow-left"></i>Back</button>
+<button id="oh-od-del-btn" class="btn auris-ohealth-s-96f7839a1b" data-auris-onclick="h0732"><i class="ti ti-trash"></i></button>
+<button class="btn auris-ohealth-s-c7b9e5b2c7" data-auris-onclick="h0733"><i class="ti ti-device-floppy"></i>Save</button>
 </div>
 </div>
 </div>
-<div style="display:grid;grid-template-columns:2fr 1fr;gap:14px">
+<div class="auris-ohealth-s-5571af1e74">
 <div>
-<div class="card" style="margin-bottom:14px"><div class="card-title">Employee &amp; Disease Information</div>
+<div class="card auris-ohealth-s-42a6ced8b6"><div class="card-title">Employee &amp; Disease Information</div>
 <div class="form3row">
 <div class="form3group"><label class="form3label">Employee name</label><select id="odf-name" data-auris-onchange="h0734"><option value="">Select person...</option></select></div>
 <div class="form3group"><label class="form3label">Employee ID</label><input type="text" id="odf-eid"/></div>
@@ -6523,47 +6524,47 @@ Offline mode - changes will sync when connection is restored
 </div>
 <div class="form3row">
 <div class="form3group"><label class="form3label">Disease / Condition</label><input type="text" id="odf-disease" placeholder="e.g. Noise-induced hearing loss, Occupational asthma..."/></div>
-<div class="form3group"><label class="form3label">ICD-10 code</label><input type="text" id="odf-icd" placeholder="e.g. H83.3" style="font-family:monospace"/></div>
+<div class="form3group"><label class="form3label">ICD-10 code</label><input type="text" id="odf-icd" class="auris-ohealth-s-7b8c3df564" placeholder="e.g. H83.3"/></div>
 <div class="form3group"><label class="form3label">Diagnosis date</label><input type="date" id="odf-diag-date"/></div>
 <div class="form3group"><label class="form3label">Onset date</label><input type="date" id="odf-onset-date"/></div>
 </div></div>
-<div class="card" style="margin-bottom:14px;border-left:4px solid #E24B4A"><div class="card-title" style="color:#E24B4A">Causation &amp; Exposure</div>
+<div class="card auris-ohealth-s-27345e5d6d"><div class="card-title auris-ohealth-s-df4f0a3612">Causation &amp; Exposure</div>
 <div class="form3row">
 <div class="form3group"><label class="form3label">Causative agent</label><input type="text" id="odf-agent" placeholder="e.g. Crystalline silica, High noise, Lead..."/></div>
 <div class="form3group"><label class="form3label">Exposure type</label><select id="odf-exp-type"><option value="noise">Noise</option><option value="dust">Dust</option><option value="silica">Silica</option><option value="chemical">Chemical</option><option value="vibration">Vibration</option><option value="heat">Heat</option><option value="biological">Biological</option><option value="ergonomic">Ergonomic</option><option value="psychological">Psychological</option><option value="radiation">Radiation</option><option value="other">Other</option></select></div>
 <div class="form3group"><label class="form3label">Years of exposure</label><input type="number" id="odf-exp-years" step="0.5" min="0"/></div>
 </div>
-<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px"><input type="checkbox" id="odf-work-related" checked style="accent-color:var(--green)"/><label for="odf-work-related" style="font-size:13px;font-weight:600;cursor:pointer">Work-related disease confirmed</label></div>
-<div class="form3group"><label class="form3label">Work-relatedness assessment</label><textarea id="odf-work-assess" style="min-height:60px"></textarea></div></div>
-<div class="card" style="margin-bottom:14px"><div class="card-title">Treatment &amp; Outcomes</div>
+<div class="auris-ohealth-s-ba28bccee4"><input type="checkbox" id="odf-work-related" class="auris-ohealth-s-283f12d7fe" checked/><label class="auris-ohealth-s-22514dbec4" for="odf-work-related">Work-related disease confirmed</label></div>
+<div class="form3group"><label class="form3label">Work-relatedness assessment</label><textarea id="odf-work-assess" class="auris-ohealth-s-07bdff4587"></textarea></div></div>
+<div class="card auris-ohealth-s-42a6ced8b6"><div class="card-title">Treatment &amp; Outcomes</div>
 <div class="form3row">
 <div class="form3group"><label class="form3label">Treating doctor</label><input type="text" id="odf-doctor"/></div>
 <div class="form3group"><label class="form3label">Hospital / Clinic</label><input type="text" id="odf-clinic"/></div>
 <div class="form3group"><label class="form3label">Days lost</label><input type="number" id="odf-days-lost" value="0" min="0"/></div>
 </div>
-<div class="form3group"><label class="form3label">Treatment description</label><textarea id="odf-treatment" style="min-height:60px"></textarea></div></div>
+<div class="form3group"><label class="form3label">Treatment description</label><textarea id="odf-treatment" class="auris-ohealth-s-07bdff4587"></textarea></div></div>
 <div class="card"><div class="card-title">Preventive Actions</div>
-<div class="form3group"><label class="form3label">Preventive actions taken</label><textarea id="odf-preventive" style="min-height:70px" placeholder="Actions taken to prevent recurrence or protect other workers..."></textarea></div>
-<div style="display:flex;gap:14px;flex-wrap:wrap">
-<label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer"><input type="checkbox" id="odf-similar-risk" style="accent-color:var(--red)"/> Similar workers may be at risk</label>
-<label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer"><input type="checkbox" id="odf-group-monitor" style="accent-color:var(--green)"/> Group monitoring recommended</label>
+<div class="form3group"><label class="form3label">Preventive actions taken</label><textarea id="odf-preventive" class="auris-ohealth-s-4d5979ac8f" placeholder="Actions taken to prevent recurrence or protect other workers..."></textarea></div>
+<div class="auris-ohealth-s-21fd010064">
+<label class="auris-ohealth-s-ccd7ff7041"><input type="checkbox" id="odf-similar-risk" class="auris-ohealth-s-af62d68b87"/> Similar workers may be at risk</label>
+<label class="auris-ohealth-s-ccd7ff7041"><input type="checkbox" id="odf-group-monitor" class="auris-ohealth-s-283f12d7fe"/> Group monitoring recommended</label>
 </div></div>
 </div>
 <div>
-<div class="card" style="margin-bottom:14px;border:2px solid #DC2626"><div class="card-title" style="color:#DC2626">Outcome &amp; Status</div>
+<div class="card auris-ohealth-s-af3424473d"><div class="card-title auris-ohealth-s-c7bff90490">Outcome &amp; Status</div>
 <div class="form3group"><label class="form3label">Outcome</label><select id="odf-outcome"><option value="ongoing">Ongoing treatment</option><option value="recovered">Fully recovered</option><option value="permanent_disability">Permanent disability</option><option value="under_treatment">Under treatment</option><option value="fatal">Fatal</option></select></div>
 <div class="form3group"><label class="form3label">Disability % (if applicable)</label><input type="number" id="odf-disability" step="1" min="0" max="100"/></div>
 <div class="form3row">
 <div class="form3group"><label class="form3label">Return to work date</label><input type="date" id="odf-rtw-date"/></div>
 </div>
-<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px"><input type="checkbox" id="odf-restricted" style="accent-color:var(--green)"/><label for="odf-restricted" style="font-size:12px;font-weight:600;cursor:pointer">Restricted duties on return</label></div>
+<div class="auris-ohealth-s-327a892d1b"><input type="checkbox" id="odf-restricted" class="auris-ohealth-s-283f12d7fe"/><label class="auris-ohealth-s-cc6390bafc" for="odf-restricted">Restricted duties on return</label></div>
 <div class="form3group"><label class="form3label">Status</label><select id="odf-status"><option value="active">Active</option><option value="closed">Closed</option><option value="under_review">Under review</option></select></div></div>
 <div class="card"><div class="card-title">Regulatory &amp; Compensation</div>
-<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px"><input type="checkbox" id="odf-notified" style="accent-color:var(--green)"/><label for="odf-notified" style="font-size:12px;font-weight:600;cursor:pointer">Reported to regulatory authority</label></div>
+<div class="auris-ohealth-s-e8beef2369"><input type="checkbox" id="odf-notified" class="auris-ohealth-s-283f12d7fe"/><label class="auris-ohealth-s-cc6390bafc" for="odf-notified">Reported to regulatory authority</label></div>
 <div class="form3group"><label class="form3label">Notification reference</label><input type="text" id="odf-notif-ref"/></div>
-<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px"><input type="checkbox" id="odf-comp" style="accent-color:var(--green)"/><label for="odf-comp" style="font-size:12px;font-weight:600;cursor:pointer">Compensation claim submitted</label></div>
+<div class="auris-ohealth-s-e8beef2369"><input type="checkbox" id="odf-comp" class="auris-ohealth-s-283f12d7fe"/><label class="auris-ohealth-s-cc6390bafc" for="odf-comp">Compensation claim submitted</label></div>
 <div class="form3group"><label class="form3label">Compensation reference</label><input type="text" id="odf-comp-ref"/></div>
-<div class="form3group"><label class="form3label">Notes</label><textarea id="odf-notes" style="min-height:50px"></textarea></div></div>
+<div class="form3group"><label class="form3label">Notes</label><textarea id="odf-notes" class="auris-ohealth-s-2b013fa0d9"></textarea></div></div>
 </div>
 </div>
 </div>
