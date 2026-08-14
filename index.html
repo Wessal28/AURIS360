@@ -56,6 +56,7 @@
 <link rel="stylesheet" href="tools-equipment-upgrade.css?v=20260805-1">
 <link rel="stylesheet" href="auris-login-shell.css?v=20260814-1">
 <link rel="stylesheet" href="auris-application-shell.css?v=20260814-2">
+<link rel="stylesheet" href="auris-dashboard-personal.css?v=20260814-1">
 </head>
 <body>
 <div id="login-screen">
@@ -308,60 +309,60 @@
 <!-- ------------------------------------------------------ -->
 <div id="page-dashboard" class="page active">
 
-<div class="mobile-home-panel" style="display:none">
+<div class="mobile-home-panel auris-dash-s-6aa34d7432">
   <div class="mobile-home-hero">
     <div class="mobile-home-title">AURIS360</div>
     <div class="mobile-home-sub">Quick access for field reporting, observations, and HSE performance follow-up.</div>
   </div>
   <div class="mobile-home-actions">
     <button type="button" class="mobile-home-action" id="mobile-home-incident" data-auris-onclick="h0069">
-      <i class="ti ti-alert-triangle" style="background:#FCEBEB;color:#DC2626"></i>
+      <i class="ti ti-alert-triangle auris-dash-s-088986d8fb"></i>
       <div><strong>Report an incident</strong><small>Capture injuries, near misses, damage, and follow-up.</small></div>
     </button>
     <button type="button" class="mobile-home-action" id="mobile-home-bbs" data-auris-onclick="h0070">
-      <i class="ti ti-eye" style="background:#FFF7ED;color:#C2410C"></i>
+      <i class="ti ti-eye auris-dash-s-bbf1ffed1d"></i>
       <div><strong>Record BBS observation</strong><small>Log positive behaviour, unsafe acts, or conditions.</small></div>
     </button>
     <button type="button" class="mobile-home-action" id="mobile-home-kpi" data-auris-onclick="h0071">
-      <i class="ti ti-target" style="background:#E6F1FB;color:#185FA5"></i>
+      <i class="ti ti-target auris-dash-s-186d084040"></i>
       <div><strong>Review KPIs</strong><small>Check objectives and monthly HSE performance.</small></div>
     </button>
   </div>
 </div>
 
-<div id="dash-control-centre" class="hse-cc" style="display:none"></div>
+<div id="dash-control-centre" class="hse-cc auris-dash-s-6aa34d7432"></div>
 
 <!-- ------------------------------------------------------------------------
      GREETING BAR - personalised header with name, date, controls
      ------------------------------------------------------------------------ -->
-<div class="dash-legacy-header" style="display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:18px;flex-wrap:wrap;gap:12px">
+<div class="dash-legacy-header auris-dash-s-04c8278342">
   <div>
-    <div style="font-size:11px;color:var(--text2);font-family:monospace;letter-spacing:.1em;text-transform:uppercase;margin-bottom:4px" id="dash-date-line">-</div>
-    <div style="font-size:24px;font-weight:800;color:var(--text);letter-spacing:-0.01em" id="dash-greeting">Good day</div>
-    <div style="font-size:12px;color:var(--text2);margin-top:2px" id="dash-label">Live operational overview</div>
+    <div id="dash-date-line" class="auris-dash-s-4a1d54a21c">-</div>
+    <div id="dash-greeting" class="auris-dash-s-5f76303f83">Good day</div>
+    <div id="dash-label" class="auris-dash-s-a2fa84dea0">Live operational overview</div>
   </div>
-  <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+  <div class="auris-dash-s-7598b6eb4f">
     <!-- Org-only controls - hidden for employee/contractor/inspector -->
-    <div id="dash-org-controls" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-      <select id="dash-dept-filter" data-auris-onchange="h0072" style="padding:7px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px;background:#fff">
+    <div id="dash-org-controls" class="auris-dash-s-7598b6eb4f">
+      <select id="dash-dept-filter" class="auris-dash-s-85e04c8dc1" data-auris-onchange="h0072">
         <option value="">All departments</option>
       </select>
       <button class="btn btn-sm btn-primary" data-auris-onclick="h0073"><i class="ti ti-chart-bar"></i>Executive View</button>
       <button class="btn btn-sm" data-auris-onclick="h0074" title="Monthly PDF Report"><i class="ti ti-file-analytics"></i>Monthly Report</button>
     </div>
     <!-- Refresh button - kept for both views, useful even for employees -->
-    <button class="btn btn-sm" data-auris-onclick="h0075" style="gap:4px"><i class="ti ti-refresh" id="dash-refresh-icon"></i>Refresh</button>
+    <button class="btn btn-sm auris-dash-s-ab5acf201a" data-auris-onclick="h0075"><i class="ti ti-refresh" id="dash-refresh-icon"></i>Refresh</button>
   </div>
 </div>
 
 <!-- Role banner (for non-admin roles) -->
-<div id="role-banner-dash" style="display:none;margin-bottom:12px"></div>
+<div id="role-banner-dash" class="auris-dash-s-263c7c56cd"></div>
 
 <!-- Critical alert bar -->
-<div id="dash-alert-bar" style="display:none;margin-bottom:12px;background:#FCEBEB;border:2px solid #DC2626;border-radius:10px;padding:10px 16px;align-items:center;gap:10px;flex-wrap:wrap">
-  <i class="ti ti-alert-triangle" style="color:#DC2626;font-size:20px;flex-shrink:0"></i>
-  <div id="dash-alert-text" style="flex:1;font-size:12px;font-weight:600;color:#A32D2D"></div>
-  <button class="btn btn-sm" style="background:#DC2626;color:#fff;border-color:#DC2626;flex-shrink:0" data-auris-onclick="h0076">View incidents</button>
+<div id="dash-alert-bar" class="auris-dash-s-75d744ee10">
+  <i class="ti ti-alert-triangle auris-dash-s-e0864bc67a"></i>
+  <div id="dash-alert-text" class="auris-dash-s-2a6c58018d"></div>
+  <button class="btn btn-sm auris-dash-s-01adff2787" data-auris-onclick="h0076">View incidents</button>
 </div>
 
 
@@ -369,13 +370,13 @@
      PERSONAL VIEW - for employee, contractor, inspector
      Light, personal, action-oriented. Hidden for managers/admins.
      ------------------------------------------------------------------------ -->
-<div id="dash-personal-view" style="display:none">
+<div id="dash-personal-view" class="auris-dash-s-6aa34d7432">
 
   <!-- Quick actions strip -->
-  <div style="background:linear-gradient(135deg,#185FA5 0%,#0d4a82 100%);color:#fff;border-radius:14px;padding:22px 26px;margin-bottom:16px;box-shadow:0 8px 22px rgba(24,95,165,0.18)">
-    <div style="font-size:13px;font-weight:600;opacity:0.9;text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px">What can I help you with today?</div>
-    <div style="font-size:14px;opacity:0.85;margin-bottom:16px" id="dash-personal-tagline">Report something, log an observation, or check your training.</div>
-    <div id="dash-personal-actions" style="display:flex;gap:10px;flex-wrap:wrap">
+  <div class="auris-dash-s-6560835322">
+    <div class="auris-dash-s-0b2cc03b31">What can I help you with today?</div>
+    <div id="dash-personal-tagline" class="auris-dash-s-cbd8cddec7">Report something, log an observation, or check your training.</div>
+    <div id="dash-personal-actions" class="auris-dash-s-161d174efb">
       <button class="dash-action-btn" id="dash-action-incident" data-auris-onclick="h0069"><i class="ti ti-alert-triangle"></i> Report an incident</button>
       <button class="dash-action-btn" id="dash-action-bbs" data-auris-onclick="h0070"><i class="ti ti-eye"></i> Log an observation</button>
       <button class="dash-action-btn" id="dash-action-training" data-auris-onclick="h0077"><i class="ti ti-school"></i> My training</button>
@@ -384,7 +385,7 @@
   </div>
 
   <!-- Site safety pulse: 3 small cards -->
-  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px">
+  <div class="auris-dash-s-0152dec891">
     <div class="kpi-card" data-id="dp-days" data-tone="green">
       <div class="kpi-icon"><i class="ti ti-circle-dot"></i></div>
       <div class="kpi-label">Days Since Last Incident</div>
@@ -406,72 +407,72 @@
   </div>
 
   <!-- "My Stuff" - personal lists -->
-  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
-    <div class="card" style="padding:18px 20px">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-        <div style="font-size:13px;font-weight:600;color:var(--text)">My Reports</div>
-        <button class="btn btn-sm" data-auris-onclick="h0079" style="font-size:10px">View all</button>
+  <div class="auris-dash-s-0994386629">
+    <div class="card auris-dash-s-0230ce59c8">
+      <div class="auris-dash-s-a219ea00cb">
+        <div class="auris-dash-s-b45a17b9a4">My Reports</div>
+        <button class="btn btn-sm auris-dash-s-c28fa1ae60" data-auris-onclick="h0079">View all</button>
       </div>
-      <div id="dp-my-reports" style="font-size:12px"><div class="loading-msg">Loading...</div></div>
+      <div id="dp-my-reports" class="auris-dash-s-a49cca52be"><div class="loading-msg">Loading...</div></div>
     </div>
-    <div class="card" style="padding:18px 20px">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-        <div style="font-size:13px;font-weight:600;color:var(--text)">My Observations</div>
-        <button class="btn btn-sm" data-auris-onclick="h0080" style="font-size:10px">View all</button>
+    <div class="card auris-dash-s-0230ce59c8">
+      <div class="auris-dash-s-a219ea00cb">
+        <div class="auris-dash-s-b45a17b9a4">My Observations</div>
+        <button class="btn btn-sm auris-dash-s-c28fa1ae60" data-auris-onclick="h0080">View all</button>
       </div>
-      <div id="dp-my-observations" style="font-size:12px"><div class="loading-msg">Loading...</div></div>
-    </div>
-  </div>
-
-  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
-    <div class="card" style="padding:18px 20px">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-        <div style="font-size:13px;font-weight:600;color:var(--text)">Actions Assigned to Me</div>
-        <button class="btn btn-sm" data-auris-onclick="h0081" style="font-size:10px">View mine</button>
-      </div>
-      <div id="dp-my-actions" style="font-size:12px"><div class="loading-msg">Loading...</div></div>
-    </div>
-    <div class="card" style="padding:18px 20px">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-        <div style="font-size:13px;font-weight:600;color:var(--text)">My Training Records</div>
-        <button class="btn btn-sm" data-auris-onclick="h0077" style="font-size:10px">View all</button>
-      </div>
-      <div id="dp-my-training" style="font-size:12px"><div class="loading-msg">Loading...</div></div>
+      <div id="dp-my-observations" class="auris-dash-s-a49cca52be"><div class="loading-msg">Loading...</div></div>
     </div>
   </div>
 
-  <div class="card" style="padding:18px 20px;margin-bottom:12px">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;gap:10px;flex-wrap:wrap">
+  <div class="auris-dash-s-0994386629">
+    <div class="card auris-dash-s-0230ce59c8">
+      <div class="auris-dash-s-a219ea00cb">
+        <div class="auris-dash-s-b45a17b9a4">Actions Assigned to Me</div>
+        <button class="btn btn-sm auris-dash-s-c28fa1ae60" data-auris-onclick="h0081">View mine</button>
+      </div>
+      <div id="dp-my-actions" class="auris-dash-s-a49cca52be"><div class="loading-msg">Loading...</div></div>
+    </div>
+    <div class="card auris-dash-s-0230ce59c8">
+      <div class="auris-dash-s-a219ea00cb">
+        <div class="auris-dash-s-b45a17b9a4">My Training Records</div>
+        <button class="btn btn-sm auris-dash-s-c28fa1ae60" data-auris-onclick="h0077">View all</button>
+      </div>
+      <div id="dp-my-training" class="auris-dash-s-a49cca52be"><div class="loading-msg">Loading...</div></div>
+    </div>
+  </div>
+
+  <div class="card auris-dash-s-1dba239db7">
+    <div class="auris-dash-s-697ca5b1aa">
       <div>
-        <div style="font-size:13px;font-weight:700;color:var(--text)">My E-learning Assignments</div>
-        <div style="font-size:11px;color:var(--text2);margin-top:2px">Launch assigned courses, complete them, and add the certificate to your training records.</div>
+        <div class="auris-dash-s-ffdeb9e55a">My E-learning Assignments</div>
+        <div class="auris-dash-s-7119670ed7">Launch assigned courses, complete them, and add the certificate to your training records.</div>
       </div>
-      <button class="btn btn-sm" data-auris-onclick="h0082" style="font-size:10px">Open e-learning</button>
+      <button class="btn btn-sm auris-dash-s-c28fa1ae60" data-auris-onclick="h0082">Open e-learning</button>
     </div>
-    <div id="dp-my-elearning" style="font-size:12px"><div class="loading-msg">Loading...</div></div>
+    <div id="dp-my-elearning" class="auris-dash-s-a49cca52be"><div class="loading-msg">Loading...</div></div>
   </div>
 
   <!-- My Permits section, only visible if the role can see permits -->
-  <div id="dp-permits-section" style="display:none;margin-bottom:12px">
-    <div class="card" style="padding:18px 20px">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-        <div style="font-size:13px;font-weight:600;color:var(--text)">My Active Permits</div>
-        <button class="btn btn-sm" data-auris-onclick="h0078" style="font-size:10px">View all</button>
+  <div id="dp-permits-section" class="auris-dash-s-263c7c56cd">
+    <div class="card auris-dash-s-0230ce59c8">
+      <div class="auris-dash-s-a219ea00cb">
+        <div class="auris-dash-s-b45a17b9a4">My Active Permits</div>
+        <button class="btn btn-sm auris-dash-s-c28fa1ae60" data-auris-onclick="h0078">View all</button>
       </div>
-      <div id="dp-my-permits" style="font-size:12px"><div class="loading-msg">Loading...</div></div>
+      <div id="dp-my-permits" class="auris-dash-s-a49cca52be"><div class="loading-msg">Loading...</div></div>
     </div>
   </div>
 
   <!-- Emergency contacts quick reference -->
-  <div class="card" style="padding:16px 20px;background:#FEF2F2;border:1px solid #FECACA;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap">
-    <div style="display:flex;align-items:center;gap:10px">
-      <div style="font-size:24px"><i class="ti ti-circle-dot"></i></div>
+  <div class="card auris-dash-s-c782942cc2">
+    <div class="auris-dash-s-b4e7d324c7">
+      <div class="auris-dash-s-818205ab80"><i class="ti ti-circle-dot"></i></div>
       <div>
-        <div style="font-size:13px;font-weight:700;color:#991B1B">In an emergency?</div>
-        <div style="font-size:11px;color:#7F1D1D;margin-top:2px">View emergency contacts, evacuation routes, and incident protocols.</div>
+        <div class="auris-dash-s-951e153caa">In an emergency?</div>
+        <div class="auris-dash-s-d92eff9a5d">View emergency contacts, evacuation routes, and incident protocols.</div>
       </div>
     </div>
-    <button class="btn btn-sm" style="background:#DC2626;color:#fff;border-color:#DC2626" data-auris-onclick="h0083">Open Emergency</button>
+    <button class="btn btn-sm auris-dash-s-ce950f1509" data-auris-onclick="h0083">Open Emergency</button>
   </div>
 
 </div><!-- end dash-personal-view -->

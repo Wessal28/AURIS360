@@ -1,0 +1,59 @@
+/* Generated from the dashboard header and personal view by scripts/extract-dashboard-personal-styles.cjs. */
+/* Runtime state updates retain precedence because declarations are deliberately non-important. */
+.auris-dash-s-0152dec891{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px}
+.auris-dash-s-01adff2787{background:#DC2626;color:#fff;border-color:#DC2626;flex-shrink:0}
+.auris-dash-s-0230ce59c8{padding:18px 20px}
+.auris-dash-s-04c8278342{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:18px;flex-wrap:wrap;gap:12px}
+.auris-dash-s-088986d8fb{background:#FCEBEB;color:#DC2626}
+.auris-dash-s-0994386629{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}
+.auris-dash-s-0b2cc03b31{font-size:13px;font-weight:600;opacity:0.9;text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px}
+.auris-dash-s-161d174efb{display:flex;gap:10px;flex-wrap:wrap}
+.auris-dash-s-186d084040{background:#E6F1FB;color:#185FA5}
+.auris-dash-s-1dba239db7{padding:18px 20px;margin-bottom:12px}
+.auris-dash-s-263c7c56cd{display:none;margin-bottom:12px}
+.auris-dash-s-2a6c58018d{flex:1;font-size:12px;font-weight:600;color:#A32D2D}
+.auris-dash-s-4a1d54a21c{font-size:11px;color:var(--text2);font-family:monospace;letter-spacing:.1em;text-transform:uppercase;margin-bottom:4px}
+.auris-dash-s-5f76303f83{font-size:24px;font-weight:800;color:var(--text);letter-spacing:-0.01em}
+.auris-dash-s-6560835322{background:linear-gradient(135deg,#185FA5 0%,#0d4a82 100%);color:#fff;border-radius:14px;padding:22px 26px;margin-bottom:16px;box-shadow:0 8px 22px rgba(24,95,165,0.18)}
+.auris-dash-s-697ca5b1aa{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;gap:10px;flex-wrap:wrap}
+.auris-dash-s-6aa34d7432{display:none}
+.auris-dash-s-7119670ed7{font-size:11px;color:var(--text2);margin-top:2px}
+.auris-dash-s-7598b6eb4f{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.auris-dash-s-75d744ee10{display:none;margin-bottom:12px;background:#FCEBEB;border:2px solid #DC2626;border-radius:10px;padding:10px 16px;align-items:center;gap:10px;flex-wrap:wrap}
+.auris-dash-s-818205ab80{font-size:24px}
+.auris-dash-s-85e04c8dc1{padding:7px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px;background:#fff}
+.auris-dash-s-951e153caa{font-size:13px;font-weight:700;color:#991B1B}
+.auris-dash-s-a219ea00cb{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.auris-dash-s-a2fa84dea0{font-size:12px;color:var(--text2);margin-top:2px}
+.auris-dash-s-a49cca52be{font-size:12px}
+.auris-dash-s-ab5acf201a{gap:4px}
+.auris-dash-s-b45a17b9a4{font-size:13px;font-weight:600;color:var(--text)}
+.auris-dash-s-b4e7d324c7{display:flex;align-items:center;gap:10px}
+.auris-dash-s-bbf1ffed1d{background:#FFF7ED;color:#C2410C}
+.auris-dash-s-c28fa1ae60{font-size:10px}
+.auris-dash-s-c782942cc2{padding:16px 20px;background:#FEF2F2;border:1px solid #FECACA;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+.auris-dash-s-cbd8cddec7{font-size:14px;opacity:0.85;margin-bottom:16px}
+.auris-dash-s-ce950f1509{background:#DC2626;color:#fff;border-color:#DC2626}
+.auris-dash-s-d92eff9a5d{font-size:11px;color:#7F1D1D;margin-top:2px}
+.auris-dash-s-e0864bc67a{color:#DC2626;font-size:20px;flex-shrink:0}
+.auris-dash-s-ffdeb9e55a{font-size:13px;font-weight:700;color:var(--text)}
+/* Preserve former inline precedence over existing ID selectors without blocking runtime updates. */
+#dash-alert-bar.auris-dash-s-75d744ee10{display:none;margin-bottom:12px;background:#FCEBEB;border:2px solid #DC2626;border-radius:10px;padding:10px 16px;align-items:center;gap:10px;flex-wrap:wrap}
+#dash-alert-text.auris-dash-s-2a6c58018d{flex:1;font-size:12px;font-weight:600;color:#A32D2D}
+#dash-control-centre.auris-dash-s-6aa34d7432{display:none}
+#dash-date-line.auris-dash-s-4a1d54a21c{font-size:11px;color:var(--text2);font-family:monospace;letter-spacing:.1em;text-transform:uppercase;margin-bottom:4px}
+#dash-dept-filter.auris-dash-s-85e04c8dc1{padding:7px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px;background:#fff}
+#dash-greeting.auris-dash-s-5f76303f83{font-size:24px;font-weight:800;color:var(--text);letter-spacing:-0.01em}
+#dash-label.auris-dash-s-a2fa84dea0{font-size:12px;color:var(--text2);margin-top:2px}
+#dash-org-controls.auris-dash-s-7598b6eb4f{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+#dash-personal-actions.auris-dash-s-161d174efb{display:flex;gap:10px;flex-wrap:wrap}
+#dash-personal-tagline.auris-dash-s-cbd8cddec7{font-size:14px;opacity:0.85;margin-bottom:16px}
+#dash-personal-view.auris-dash-s-6aa34d7432{display:none}
+#dp-my-actions.auris-dash-s-a49cca52be{font-size:12px}
+#dp-my-elearning.auris-dash-s-a49cca52be{font-size:12px}
+#dp-my-observations.auris-dash-s-a49cca52be{font-size:12px}
+#dp-my-permits.auris-dash-s-a49cca52be{font-size:12px}
+#dp-my-reports.auris-dash-s-a49cca52be{font-size:12px}
+#dp-my-training.auris-dash-s-a49cca52be{font-size:12px}
+#dp-permits-section.auris-dash-s-263c7c56cd{display:none;margin-bottom:12px}
+#role-banner-dash.auris-dash-s-263c7c56cd{display:none;margin-bottom:12px}
