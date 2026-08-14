@@ -44,6 +44,14 @@ function assertLocalFile(relativePath, source) {
 const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
 const manifest = JSON.parse(fs.readFileSync(path.join(root, 'manifest.json'), 'utf8'));
 const assetSet = new Set(['index.html', 'manifest.json']);
+const dynamicPrintAssets = [
+  'auris-print-qr.css', 'auris-print-noise-survey.css', 'auris-print-sop-editor.css',
+  'auris-print-sop-saved.css', 'auris-print-swms.css', 'auris-print-incident.css',
+  'auris-print-legal-register.css', 'auris-print-legal-change.css',
+  'auris-print-toolbox-talk.css', 'auris-print-risk-assessment.css',
+  'auris-print-fire-layout.css', 'auris-print-site-map.css'
+];
+for (const asset of dynamicPrintAssets) assetSet.add(asset);
 
 for (const reference of collectTagReferences(html)) assetSet.add(reference);
 for (const icon of manifest.icons || []) {

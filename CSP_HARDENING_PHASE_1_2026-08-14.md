@@ -32,6 +32,8 @@ Phase 3A began the style migration by extracting all six page-level `<style>` bl
 
 Phase 3B externalized the shared print engine stylesheet into `auris-print.css`. The engine now validates tenant brand colours before exposing them as CSS variables, applies portrait or landscape rules through classes, and waits for the external stylesheet to load before opening the print dialog. The stylesheet is included in the offline application shell. Twelve specialised report templates still contain scoped inline style blocks and remain the next print migration batch.
 
+Phase 3C externalized all twelve specialised print-template style blocks covering QR labels, noise surveys, SOPs, SWMS, incidents, legal reports, toolbox talks, risk assessments, fire layouts and site maps. All print windows now share a stylesheet-readiness gate, and every print stylesheet is available in the offline application shell. Active application scripts now contain zero `<style>` elements; runtime `style` attributes and CSS property assignments are the remaining style-CSP backlog.
+
 ## Security effect
 
 Injected inline `<script>` elements and inline script event attributes can no longer execute under the enforced policy. Existing action buttons use delegated, precompiled handlers.

@@ -16,8 +16,9 @@ const printSource = core.slice(printStart, printEnd);
 test('shared print engine loads an external stylesheet before printing', () => {
   const source = printSource;
   assert.match(source, /href="\/auris-print\.css"/);
-  assert.match(source, /addEventListener\('load',printWhenReady/);
-  assert.match(source, /setTimeout\(printWhenReady,1200\)/);
+  assert.match(source, /aurisPrintWindowWhenReady\(w,1200\)/);
+  assert.match(source, /addEventListener\('load',settled/);
+  assert.match(source, /setTimeout\(finish,fallbackDelay\|\|1500\)/);
   assert.doesNotMatch(source, /<style>/);
   assert.match(index, /href="auris-print\.css" media="print"/);
 });

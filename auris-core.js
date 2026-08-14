@@ -6086,7 +6086,7 @@ function qrRenderPreview(){
   var d=qrLabelData(rec);
   el.innerHTML='<div id="qr-label-print" style="width:88mm;min-height:58mm;background:#fff;border:1px solid #111827;border-radius:8px;padding:10px;color:#111827;text-align:left;box-shadow:0 6px 24px rgba(0,0,0,.08)"><div style="display:flex;gap:10px;align-items:center"><img src="'+escH(qrImageUrl(d.url,190))+'" alt="QR" style="width:34mm;height:34mm;border:1px solid #e5e7eb;border-radius:4px"><div style="min-width:0;flex:1"><div style="font-size:10px;color:#0F6E56;font-weight:900;letter-spacing:.08em">AURIS360</div><div style="font-size:15px;font-weight:900;line-height:1.2;margin-top:2px">'+escH(d.title)+'</div><div style="font-size:11px;font-family:monospace;color:#185FA5;font-weight:800;margin-top:5px;word-break:break-word">'+escH(d.ref)+'</div><div style="font-size:10px;color:#6b7280;margin-top:5px;line-height:1.3">'+escH(d.sub||d.note)+'</div></div></div><div style="margin-top:7px;border-top:1px solid #e5e7eb;padding-top:6px;font-size:10px;color:#374151;display:flex;justify-content:space-between;gap:8px"><span>'+escH(d.note)+'</span><span style="font-weight:800;color:#0F6E56">HSE traceability</span></div></div>';
 }
-function qrPrintLabel(){var idx=document.getElementById('qr-record')?.value;var rec=qrRecords[parseInt(idx,10)];if(!rec){toast('Select a record first',false);return;}var d=qrLabelData(rec);var html='<style>@page{size:100mm 70mm;margin:5mm}.report-page{width:90mm;padding:0}.qr-label{width:88mm;min-height:58mm;border:1px solid #111827;border-radius:8px;padding:10px;font-family:Arial,sans-serif;color:#111827}</style><div class="report-page"><div class="qr-label"><div style="display:flex;gap:10px;align-items:center"><img src="'+escH(qrImageUrl(d.url,240))+'" style="width:34mm;height:34mm;border:1px solid #e5e7eb"><div><div style="font-size:10px;color:#0F6E56;font-weight:900;letter-spacing:.08em">AURIS360</div><div style="font-size:15px;font-weight:900;line-height:1.2;margin-top:2px">'+escH(d.title)+'</div><div style="font-size:11px;font-family:monospace;color:#185FA5;font-weight:800;margin-top:5px">'+escH(d.ref)+'</div><div style="font-size:10px;color:#6b7280;margin-top:5px;line-height:1.3">'+escH(d.sub||d.note)+'</div></div></div><div style="margin-top:7px;border-top:1px solid #e5e7eb;padding-top:6px;font-size:10px;color:#374151;display:flex;justify-content:space-between"><span>'+escH(d.note)+'</span><span style="font-weight:800;color:#0F6E56">HSE traceability</span></div></div></div>';aurisPrint(html,'AURIS360 QR Label - '+d.ref);}
+function qrPrintLabel(){var idx=document.getElementById('qr-record')?.value;var rec=qrRecords[parseInt(idx,10)];if(!rec){toast('Select a record first',false);return;}var d=qrLabelData(rec);var html='<link rel="stylesheet" href="/auris-print-qr.css"><div class="report-page"><div class="qr-label"><div style="display:flex;gap:10px;align-items:center"><img src="'+escH(qrImageUrl(d.url,240))+'" style="width:34mm;height:34mm;border:1px solid #e5e7eb"><div><div style="font-size:10px;color:#0F6E56;font-weight:900;letter-spacing:.08em">AURIS360</div><div style="font-size:15px;font-weight:900;line-height:1.2;margin-top:2px">'+escH(d.title)+'</div><div style="font-size:11px;font-family:monospace;color:#185FA5;font-weight:800;margin-top:5px">'+escH(d.ref)+'</div><div style="font-size:10px;color:#6b7280;margin-top:5px;line-height:1.3">'+escH(d.sub||d.note)+'</div></div></div><div style="margin-top:7px;border-top:1px solid #e5e7eb;padding-top:6px;font-size:10px;color:#374151;display:flex;justify-content:space-between"><span>'+escH(d.note)+'</span><span style="font-weight:800;color:#0F6E56">HSE traceability</span></div></div></div>';aurisPrint(html,'AURIS360 QR Label - '+d.ref);}
 function qrCopyLink(){var idx=document.getElementById('qr-record')?.value;var rec=qrRecords[parseInt(idx,10)];if(!rec){toast('Select a record first',false);return;}var url=qrRecordUrl(rec);navigator.clipboard?.writeText(url);toast('QR link copied');}
 
 // -- SafetyOS Go / No-Go decision engine ---------------------------------------
@@ -7715,7 +7715,7 @@ function noisePrintSurveyData(x){
   var company=(typeof printReportContextLabel==='function')?printReportContextLabel():'Current company';
   var plan=x.layout_image||x.layout_url||'';
   var markers=plan?points.map(function(p,i){var m=noiseLevelMeta(parseFloat(p.leq)||0);return '<span class="nm" style="left:'+(p.x||50)+'%;top:'+(p.y||50)+'%;background:'+m.color+'">'+(i+1)+'</span>';}).join(''):'';
-  var html='<!doctype html><html><head><title>Noise Survey</title><style>@page{size:A4 landscape;margin:10mm}body{font-family:Arial,sans-serif;color:#0f172a}h1{font-size:22px;margin:0;color:#075985}.top{display:flex;justify-content:space-between;border-bottom:3px solid #0f766e;padding-bottom:8px;margin-bottom:10px}.meta{font-size:11px;text-align:right;color:#334155}.cards{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:10px 0}.card{border:1px solid #cbd5e1;border-radius:8px;padding:8px}.card b{display:block;font-size:18px;color:#0f766e}table{border-collapse:collapse;width:100%;font-size:9px;table-layout:fixed}th{background:#173f63;color:#fff;text-align:left;padding:5px;border:1px solid #173f63}td{vertical-align:top;padding:5px;border:1px solid #cbd5e1;white-space:normal;word-break:break-word}td span{color:#475569}.layout{position:relative;border:1px solid #cbd5e1;border-radius:8px;margin:10px 0;max-height:310px;overflow:hidden;text-align:center}.layout img{max-width:100%;max-height:300px}.nm{position:absolute;transform:translate(-50%,-50%);width:24px;height:24px;border-radius:999px;color:#fff;font-weight:800;font-size:11px;display:flex;align-items:center;justify-content:center;border:2px solid #fff;box-shadow:0 1px 5px #0005}.note{font-size:10px;color:#475569}.foot{margin-top:10px;font-size:10px;color:#475569;border-top:1px solid #cbd5e1;padding-top:6px}</style></head><body>'
+  var html='<!doctype html><html><head><title>Noise Survey</title><link rel="stylesheet" href="/auris-print-noise-survey.css"></head><body>'
     +'<div class="top"><div><h1>Noise Survey Report</h1><div class="note">'+escH(company)+' - Occupational noise assessment and HPE adequacy</div></div><div class="meta"><strong>'+escH(x.survey_ref||x.id||'NOISE-AUTO')+'</strong><br>Generated: '+new Date().toLocaleDateString('en-GB')+'<br>Survey date: '+escH(x.survey_date||'-')+'</div></div>'
     +'<div class="cards"><div class="card">Site / area<b>'+escH(x.site||'-')+'</b></div><div class="card">Survey type<b>'+escH(x.survey_type||'-')+'</b></div><div class="card">Max Leq<b>'+((maxLeq||0).toFixed(1))+' dB(A)</b></div><div class="card">Mandatory zones<b>'+high+'</b></div></div>'
     +'<table><tbody><tr><th>Conducted by</th><td>'+escH(x.conducted_by||'-')+'</td><th>Instrument</th><td>'+escH(x.instrument_used||'-')+'</td><th>Calibration date</th><td>'+escH(x.calibration_date||'-')+'</td><th>Conditions</th><td>'+escH(x.weather_conditions||'-')+'</td></tr></tbody></table>'
@@ -7727,7 +7727,7 @@ function noisePrintSurveyData(x){
     +'</body></html>';
   var w=window.open('','_blank','width=1280,height=820');
   if(!w){toast('Allow pop-ups to print the noise survey',false);return;}
-  w.document.write(html);w.document.close();setTimeout(function(){try{w.focus();w.print();}catch(e){}},700);
+  w.document.write(html);w.document.close();aurisPrintWindowWhenReady(w,1500);
 }
 async function noisePrintSurvey(id){
   try{var rows=await api('/noise_surveys?id=eq.'+id+'&select=*');noisePrintSurveyData(rows?.[0]);}
@@ -8686,11 +8686,11 @@ function sopPrint(){
   var w=window.open('','_blank');
   w.document.write('<!DOCTYPE html><html><head><title>SOP - '+escH(window.sopGeneratedData?.meta?.title||'')+'</title>'
     +'<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">'
-    +'<style>body{margin:0;padding:20px;font-family:Arial,sans-serif}@media print{body{padding:0}}[contenteditable]{outline:none}</style>'
+    +'<link rel="stylesheet" href="/auris-print-sop-editor.css">'
     +'</head><body>'+aurisSanitizeStoredHtml(el.outerHTML)
     +'</body></html>');
   w.document.close();
-  setTimeout(function(){if(!w.closed)w.print();},250);
+  aurisPrintWindowWhenReady(w,1500);
 }
 
 async function sopPrintById(id){
@@ -8698,11 +8698,11 @@ async function sopPrintById(id){
   if(!sop||!sop.html_content){toast('SOP content not found',false);return;}
   var w=window.open('','_blank');
   w.document.write('<!DOCTYPE html><html><head><title>SOP</title>'
-    +'<style>body{margin:20px;font-family:Arial,sans-serif}@media print{body{margin:0}}</style>'
+    +'<link rel="stylesheet" href="/auris-print-sop-saved.css">'
     +'</head><body>'+aurisSanitizeStoredHtml(sop.html_content)
     +'</body></html>');
   w.document.close();
-  setTimeout(function(){if(!w.closed)w.print();},250);
+  aurisPrintWindowWhenReady(w,1500);
 }
 
 async function sopView(id){
@@ -9065,7 +9065,7 @@ function swmsBuildHtml(){
     return '<span style="display:inline-block;background:'+c[0]+';color:'+c[1]+';padding:2px 6px;border-radius:4px;font-size:7.5pt;font-weight:800">'+escH(v||'-')+'</span>';
   };
   var rowHtml=rows.map(function(r){return '<tr><td style="'+td+';text-align:center;font-weight:700;width:4%">'+r.no+'</td><td style="'+td+'">'+escH(r.activity||'-')+'</td><td style="'+td+'">'+escH(r.hazard||'-')+'</td><td style="'+td+'">'+escH(r.risk||'-')+'</td><td style="'+td+';text-align:center">'+riskPill(r.initial_risk||'')+'</td><td style="'+td+'">'+escH(r.controls||'-')+'</td><td style="'+td+';text-align:center">'+riskPill(r.residual_risk||'')+'</td><td style="'+td+'">'+escH(r.responsible||'-')+'</td></tr>';}).join('');
-  return '<style>@page{size:A4 landscape;margin:8mm}.report-page{max-width:297mm;padding:8mm}table{font-size:8pt}th,td{padding:4px 5px}.rpt-grid{gap:4px 12px}.rpt-section{break-inside:avoid}</style>'
+  return '<link rel="stylesheet" href="/auris-print-swms.css">'
     +'<div id="swms-printable" class="report-page">'
     +aurisHeader('Safe Work Method Statement', title, ref)
     +'<div class="rpt-section"><div class="rpt-section-title secondary">Document Control</div><div class="rpt-grid-3">'
@@ -14382,7 +14382,7 @@ function imsPrintIncident(){
   var sect=function(title){return '<div style="background:#7F1D1D;color:#fff;padding:6px 10px;font-weight:700;font-size:10pt;margin-top:14px">'+e(title)+'</div>';};
 
   var sev=V('ev-severity',x.severity), stat=V('ev-status',x.status);
-  var html='<style>@page{size:A4 portrait;margin:14mm 12mm}.rpt-section{break-inside:avoid}</style><div class="report-page">'
+  var html='<link rel="stylesheet" href="/auris-print-incident.css"><div class="report-page">'
     +aurisHeader('Incident Report','Workplace Incident / Near Miss Investigation Record',ref)
     +sect('Incident Details')
     +'<table style="width:100%;border-collapse:collapse">'
@@ -29084,7 +29084,7 @@ function legalPrintRegisterEvidence(){
   var totalApplicable=rows.filter(function(x){return x.status!=='not_applicable'&&x.applicable!==false;}).length||1;
   var score=Math.round((comp*100+part*50)/totalApplicable);
   var currentLeg='';
-  var html='<style>@page{size:A4 landscape;margin:8mm}.report-page{width:297mm;max-width:none!important;padding:7mm}.legal-print-title{font-size:16pt;font-weight:900;color:#111827;margin:0}.legal-print-sub{font-size:8.5pt;color:#64748b;margin-top:2px}.legal-print-meta{font-size:8.5pt;color:#475569;text-align:right}.legal-summary{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin:10px 0 10px}.legal-chip{border:1px solid #d7dee8;border-radius:6px;padding:6px 8px;background:#f8fafc}.legal-chip b{display:block;font-size:15pt;line-height:1;color:#173F63}.legal-chip span{font-size:7.5pt;color:#64748b;text-transform:uppercase;font-weight:700}.legal-print-table{width:100%;border-collapse:collapse;table-layout:fixed;font-size:7.2pt;line-height:1.26}.legal-print-table th{background:#173F63;color:#fff;padding:5px 6px;border:1px solid #173F63;text-align:left;text-transform:uppercase;font-size:7pt;letter-spacing:.02em}.legal-print-table td{padding:5px 6px;border:1px solid #d7dee8;vertical-align:top;overflow:visible;overflow-wrap:anywhere;word-break:normal;white-space:normal}.legal-print-table tr{height:auto!important}.legal-print-table tr:nth-child(even){background:#fbfdff}.leg-group td{background:#eaf3ff!important;color:#173F63;font-weight:900;font-size:8.5pt;padding:5px 7px}.muted{color:#64748b}.small{font-size:7pt}.req-title{font-weight:900;color:#111827}.req-excerpt{color:#334155;margin-top:2px;white-space:pre-wrap;overflow:visible}.badge{display:inline-block;border-radius:999px;padding:2px 7px;font-weight:900;font-size:7pt;white-space:nowrap}.gap-yes{background:#fee2e2;color:#991b1b}.gap-no{background:#dcfce7;color:#166534}.status-compliant{background:#dcfce7;color:#166534}.status-partial{background:#fef3c7;color:#92400e}.status-non_compliant{background:#fee2e2;color:#991b1b}.status-not_applicable{background:#e5e7eb;color:#475569}tr{break-inside:auto;page-break-inside:auto}</style>'
+  var html='<link rel="stylesheet" href="/auris-print-legal-register.css">'
     +'<div class="report-page"><div class="rpt-header"><div><div class="legal-print-title">Legal Compliance Register</div><div class="legal-print-sub">'+escH(company)+' - operational evidence view</div></div><div class="legal-print-meta"><b>Generated:</b> '+new Date().toLocaleDateString('en-GB')+'<br><b>Scope:</b> '+rows.length+' visible requirements<br><b>Score:</b> '+score+'%</div></div>'
     +'<div class="legal-summary"><div class="legal-chip"><b>'+rows.length+'</b><span>Requirements</span></div><div class="legal-chip"><b>'+comp+'</b><span>Compliant</span></div><div class="legal-chip"><b>'+part+'</b><span>Partial</span></div><div class="legal-chip"><b>'+nonC+'</b><span>Non-compliant</span></div><div class="legal-chip"><b>'+gaps+'</b><span>Open gaps</span></div></div>'
     +'<table class="legal-print-table"><thead><tr><th style="width:7%">Ref</th><th style="width:23%">Section / requirement</th><th style="width:22%">Current controls</th><th style="width:9%">Status</th><th style="width:7%">Gap</th><th style="width:20%">Recommendations / further controls</th><th style="width:7%">Action by</th><th style="width:5%">Target</th></tr></thead><tbody>';
@@ -29412,7 +29412,7 @@ function legalChangeReviewHtml(x){
 }
 function legalPrintChange(){
   var x=legalChangeData(lcEditId);if(!x)return;
-  var html='<!doctype html><html><head><title>AURIS360 - Regulatory Change</title><style>@page{size:A4 portrait;margin:12mm}body{font-family:Arial,sans-serif;color:#111827}h1{color:#854F0B;margin:0}.meta{color:#475569;font-size:12px;margin-bottom:12px}.box{border:1px solid #cbd5e1;border-radius:8px;padding:10px;margin:10px 0}.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.label{font-size:11px;color:#64748b;text-transform:uppercase;font-weight:700}.text{white-space:pre-wrap;font-size:12px;line-height:1.45}.old{background:#fff1f2}.new{background:#ecfdf5}.badge{display:inline-block;padding:3px 8px;border-radius:99px;background:#f3f4f6;font-weight:700;font-size:11px}table{width:100%;border-collapse:collapse}td{border:1px solid #cbd5e1;padding:7px;font-size:12px;vertical-align:top}</style></head><body><h1>Regulatory Change Brief</h1><div class="meta">Generated '+new Date().toLocaleDateString('en-GB')+' - '+escH(companyName())+'</div>'
+  var html='<!doctype html><html><head><title>AURIS360 - Regulatory Change</title><link rel="stylesheet" href="/auris-print-legal-change.css"></head><body><h1>Regulatory Change Brief</h1><div class="meta">Generated '+new Date().toLocaleDateString('en-GB')+' - '+escH(companyName())+'</div>'
     +'<table><tr><td><div class="label">Legislation</div><b>'+escH(x.legislation||'-')+'</b></td><td><div class="label">Section / ref</div><b>'+escH(legalChangeSectionLabel(x)||'-')+'</b></td></tr><tr><td><div class="label">Date received</div>'+escH(x.date_received?new Date(x.date_received).toLocaleDateString('en-GB'):'-')+'</td><td><div class="label">Effective date</div>'+escH(x.effective_date?new Date(x.effective_date).toLocaleDateString('en-GB'):'-')+'</td></tr><tr><td><div class="label">Source</div>'+escH(x.source||'-')+'</td><td><div class="label">Status</div><span class="badge">'+(x.implemented===true||x.implemented==='true'?'Implemented':'Pending')+'</span></td></tr></table>'
     +'<div class="grid"><div class="box old"><div class="label">Previous wording</div><div class="text">'+escH(x.previous_wording||'No previous wording captured.')+'</div></div><div class="box new"><div class="label">New wording / replacement</div><div class="text">'+escH(x.new_wording||x.changes_identified||x.changes||'No replacement wording captured.')+'</div></div></div>'
     +'<div class="box"><div class="label">Change and action required</div><div class="text">'+escH(x.changes_identified||x.changes||'-')+'</div><hr><div class="text">'+escH(x.action_required||x.action||'-')+'</div></div>'
@@ -30515,7 +30515,7 @@ function printToolboxTalk(id){
   var actions=Array.isArray(t.actions_raised)?t.actions_raised:[];
   var linkedWork=t.linked_work||tbtParseLinkedWork(t.notes||'');
   var fmtDate=function(v){return v?new Date(v).toLocaleDateString('en-GB'):'-';};
-  var html='<style>@page{size:A4;margin:10mm}.rpt-section{break-inside:avoid}</style><div class="report-page">'
+  var html='<link rel="stylesheet" href="/auris-print-toolbox-talk.css"><div class="report-page">'
     +aurisHeader('Toolbox Talk / Safety Briefing',t.title||'Toolbox Talk',ref)
     +'<div class="rpt-section"><div class="rpt-section-title">Talk Details</div><div class="rpt-grid">'
     +fld('Topic Category',auditLabel(t.topic_category||'safety_general'))
@@ -38627,12 +38627,28 @@ function aurisPrint(html, title) {
     + '<link id="auris-print-styles" rel="stylesheet" href="/auris-print.css">'
     + '</head><body class="'+(isLandscapePrint?'auris-print-landscape':'auris-print-portrait')+'" style="'+printVariables+'">' + html + '</body></html>');
   w.document.close();
-  w.focus();
+  aurisPrintWindowWhenReady(w,1200);
+}
+
+function aurisPrintWindowWhenReady(w,fallbackDelay){
   var printed=false;
-  function printWhenReady(){if(printed)return;printed=true;w.focus();w.print();}
-  var stylesheet=w.document.getElementById('auris-print-styles');
-  if(stylesheet){stylesheet.addEventListener('load',printWhenReady,{once:true});stylesheet.addEventListener('error',printWhenReady,{once:true});}
-  setTimeout(printWhenReady,1200);
+  function finish(){if(printed||!w||w.closed)return;printed=true;w.focus();w.print();}
+  var links=Array.from(w.document.querySelectorAll('link[rel="stylesheet"]'));
+  var pending=links.filter(function(link){return !link.sheet;}).length;
+  if(!pending)return setTimeout(finish,80);
+  links.forEach(function(link){
+    if(link.sheet)return;
+    function settled(){pending-=1;if(pending<=0)finish();}
+    link.addEventListener('load',settled,{once:true});
+    link.addEventListener('error',settled,{once:true});
+  });
+  setTimeout(finish,fallbackDelay||1500);
+}
+
+function printHtmlDoc(html){
+  var w=window.open('','_blank','width=1000,height=760');
+  if(!w){toast('Please allow popups for printing',false);return;}
+  w.document.write(html);w.document.close();aurisPrintWindowWhenReady(w,1500);
 }
 
 function aurisPrintCSS() {
@@ -38914,7 +38930,7 @@ function printRiskAssessment(raId) {
     if(t&&!taskSteps.find(function(x){return x.text===t;}))taskSteps.push({no:taskSteps.length+1,text:t});
   });
 
-  var html = '<style>@page{size:A4 landscape;margin:8mm}html,body{width:297mm;min-height:210mm}.report-page{width:297mm;max-width:none!important;padding:8mm;box-sizing:border-box}table{font-size:7.6pt;table-layout:fixed;width:100%}th,td{padding:3px 4px;word-break:break-word;vertical-align:top}.rpt-grid{gap:4px 12px}.rpt-section{break-inside:avoid}</style><div class="report-page">'
+  var html = '<link rel="stylesheet" href="/auris-print-risk-assessment.css"><div class="report-page">'
     + aurisHeader('Controlled Risk Assessment', val(ra.title,ra.activity,'Risk assessment'), ref)
 
     + '<div class="rpt-section"><div class="rpt-section-title secondary">Document Control</div>'
@@ -40471,7 +40487,7 @@ function fireLayoutPrintHtml(){
     var ext=fireExtinguisherTypeFromNotes(e.notes);
     return '<tr><td>'+(i+1)+'</td><td>'+escH(e.description||fireEquipTypeLabel(e.equipment_type)||'Fire equipment')+'</td><td>'+escH(fireEquipTypeLabel(e.equipment_type))+'</td><td>'+escH(ext||'-')+'</td><td>'+escH(e.location||'-')+'</td><td>'+escH(next)+'</td><td><span style="display:inline-block;border-radius:12px;padding:2px 7px;background:'+st.color+';color:#fff;font-weight:700;font-size:7.5pt">'+st.label+'</span></td></tr>';
   }).join('');
-  return '<style>@page{size:A4 landscape;margin:8mm}.report-page{max-width:297mm;padding:8mm}.fire-print-map{position:relative;border:1px solid #d1d5db;border-radius:6px;padding:4px;background:#fff;margin-bottom:10px}.fire-print-map img{display:block;width:100%;height:auto;max-height:145mm;object-fit:contain}table{width:100%;border-collapse:collapse;font-size:8pt}th,td{border:1px solid #d1d5db;padding:4px 5px;text-align:left;vertical-align:top}th{background:#f3f4f6;font-weight:800}</style>'
+  return '<link rel="stylesheet" href="/auris-print-fire-layout.css">'
     +'<div class="report-page">'
     +aurisHeader('Fire Equipment Layout Plan',title,fireLayoutState.id||'DRAFT')
     +(img?'<div class="fire-print-map"><img src="'+escH(img)+'" alt="Fire equipment layout"/>'+markerHtml+'</div>':'<div style="padding:30px;text-align:center;color:#6b7280;border:1px dashed #d1d5db">No layout image uploaded.</div>')
@@ -41495,7 +41511,7 @@ function smPrintMapHtml(){
     var marker=smMarkerForSite(s), linked=marker&&marker.linked_plan_id;
     return '<tr><td>'+(i+1)+'</td><td><strong>'+escH(smSiteName(s))+'</strong><div style="font-size:7pt;color:#6b7280">'+escH([s.site_code,s.site_type,s.city].filter(Boolean).join(' - ')||'Site / area')+'</div></td><td>'+escH(linked?smLinkedPlanTitle(linked):'--')+'</td><td style="font-weight:800;color:'+col+'">'+n+'</td><td>'+rec.events.length+'</td><td>'+rec.observations.length+'</td><td>'+rec.inspections.length+'</td><td>'+rec.risks.length+'</td><td>'+rec.permits.length+'</td><td>'+rec.actions.length+'</td></tr>';
   }).join('');
-  return '<style>@page{size:A4 landscape;margin:8mm}.report-page{max-width:297mm;padding:8mm}.sm3print-map{position:relative;border:1px solid #d1d5db;border-radius:6px;background:#fff;margin-bottom:10px;min-height:130mm;overflow:hidden}.sm3print-map img{display:block;width:100%;height:auto;max-height:150mm;object-fit:contain}.sm3print-empty{height:130mm;background:linear-gradient(135deg,#EFF6FF,#F8FAFC);display:flex;align-items:center;justify-content:center;color:#6b7280}table{width:100%;border-collapse:collapse;font-size:8pt}th,td{border:1px solid #d1d5db;padding:4px 5px;text-align:left;vertical-align:top}th{background:#f3f4f6;font-weight:800}</style>'
+  return '<link rel="stylesheet" href="/auris-print-site-map.css">'
     +'<div class="report-page">'
     +aurisHeader('Interactive Site Map',layout.title||'Site / area map',layout.id||'DRAFT')
     +'<div style="font-size:8pt;color:#374151;margin:0 0 4px 2px"><strong>Map legend:</strong> numbered circles = locations, orange/red circles = open incidents, brown squares = high-risk RA hotspots, blue L = linked child layout.</div>'

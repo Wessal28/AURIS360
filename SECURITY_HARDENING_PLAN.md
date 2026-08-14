@@ -42,7 +42,7 @@ This is a targeted high-risk sink remediation. CSP phase 1 is recorded in `CSP_H
 ## Remaining gates
 
 1. Continue reviewing module-specific rich-content renderers.
-2. Continue the Phase 3 style migration: page-level blocks and the shared print engine are externalized; twelve specialised report templates and runtime style attributes remain before the complete CSP can move from report-only to enforced.
+2. Continue the Phase 3 style migration: all page and print style elements are externalized; runtime style attributes and CSS property assignments remain before the complete CSP can move from report-only to enforced.
 3. Require MFA for privileged AURIS360, Supabase, Vercel and source-control accounts.
 4. Migrate legacy Supabase `anon`/`service_role` keys to publishable/secret keys and rotate elevated credentials safely.
 5. Protect preview deployments and verify production/preview environment-variable separation.
