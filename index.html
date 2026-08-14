@@ -5899,12 +5899,13 @@ var ROLLOUT_COHORTS=[
 var rolloutRuntimeRows=[];
 function rolloutCompanyId(){return (isSA()&&sephsCompanyContext)?sephsCompanyContext:prof?.company_id||null;}
 function rolloutCohortForModule(pageKey){return ROLLOUT_COHORTS.find(function(c){return c.modules.indexOf(pageKey)!==-1;})||null;}
+function rolloutStatusAllowsModules(status){return status==='pilot'||status==='enabled';}
 function rolloutModuleAllowed(pageKey){
   if(isSA())return true;
   var cohort=rolloutCohortForModule(pageKey);if(!cohort)return true;
   var row=(rolloutRuntimeRows||[]).find(function(r){return r.cohort_key===cohort.key;});
   if(!row)return true; // Compatibility read: no explicit rollout policy yet.
-  return row.status==='pilot'||row.status==='enabled';
+  return rolloutStatusAllowsModules(row.status);
 }
 async function loadRolloutRuntimeConfig(){
   var companyId=rolloutCompanyId();rolloutRuntimeRows=[];if(!companyId)return [];
@@ -13255,6 +13256,7 @@ try{ offlineRenderQueueSettings(); }catch(e){ console.error('offlineRenderQueueS
 try{ renderClientDemoCommandCenter(); }catch(e){ console.error('renderClientDemoCommandCenter:',e); }
 try{ if(typeof renderResilienceSimulation==='function')renderResilienceSimulation(); }catch(e){ console.error('renderResilienceSimulation:',e); }
 try{ if(typeof renderOfflineSyncDiagnostic==='function')renderOfflineSyncDiagnostic(); }catch(e){ console.error('renderOfflineSyncDiagnostic:',e); }
+try{ if(typeof renderRollbackRehearsal==='function')renderRollbackRehearsal(); }catch(e){ console.error('renderRollbackRehearsal:',e); }
 var notifCard=document.getElementById('settings-notif-card');
 if(notifCard) notifCard.style.display=isAdm()?'block':'none';
 var ptwCard=document.getElementById('settings-ptw-approver-card');
@@ -55201,6 +55203,8 @@ I can help you:<br>
   <div id="rollout-control-body"><div class="loading">Loading controlled rollout...</div></div>
 </div>
 
+<div class="card" id="settings-rollback-rehearsal-card" style="display:none"></div>
+
 <div class="card" id="settings-system3health-card" style="display:none">
   <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;margin-bottom:12px">
     <div>
@@ -56228,6 +56232,7 @@ I can help you:<br>
 <script src="auris-icon-system.js?v=20260814-1"></script>
 <script src="resilience-fault-simulation.js?v=20260814-1"></script>
 <script src="offline-sync-diagnostic.js?v=20260814-1"></script>
+<script src="rollback-rehearsal.js?v=20260814-1"></script>
 <script src="notification-centre.js?v=20260814-1"></script>
 <script src="notification-escalation-settings.js?v=20260812-1"></script>
 <script src="notification-acknowledgement-settings.js?v=20260812-1"></script>

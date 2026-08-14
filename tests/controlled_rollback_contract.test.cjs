@@ -53,6 +53,7 @@ const landing = functionSource('rolloutEnsureSafeLanding');
 assert.match(landing, /\.page\.active/);
 assert.match(landing, /!canAccessPage\(pageKey\)/);
 assert.match(landing, /showPage\(['"]dashboard['"]/);
+assert.match(functionSource('rolloutStatusAllowsModules'), /status===['"]pilot['"][\s\S]*status===['"]enabled['"]/);
 
 // Status history is append-only to authenticated clients. The corrective
 // migration is rerunnable and does not delete any application/business table.
