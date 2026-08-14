@@ -70,6 +70,7 @@
 <link rel="stylesheet" href="auris-fleet-management-static.css?v=20260814-1">
 <link rel="stylesheet" href="auris-atex-areas-static.css?v=20260814-1">
 <link rel="stylesheet" href="auris-tools-equipment-static.css?v=20260814-1">
+<link rel="stylesheet" href="auris-permit-work-static.css?v=20260814-1">
 </head>
 <body>
 <div id="login-screen">
@@ -4693,31 +4694,31 @@ Offline mode - changes will sync when connection is restored
 
 <div id="page-permit" class="page">
 <div class="page-header">
-<div><div class="page-title">Permit to Work</div><div style="font-size:12px;color:var(--text2)">Digital PTW system - issue, approve, control and close work permits</div></div>
-<div style="display:flex;gap:8px">
-<button class="btn btn-sm" id="ptw-btn-active" data-auris-onclick="h0527" style="background:var(--green);color:#fff;border-color:var(--green)"><i class="ti ti-activity"></i>Active</button>
+<div><div class="page-title">Permit to Work</div><div class="auris-ptw-s-7299078644">Digital PTW system - issue, approve, control and close work permits</div></div>
+<div class="auris-ptw-s-9c40389b4a">
+<button class="btn btn-sm auris-ptw-s-8d39dd1732" id="ptw-btn-active" data-auris-onclick="h0527"><i class="ti ti-activity"></i>Active</button>
 <button class="btn btn-sm" id="ptw-btn-all" data-auris-onclick="h0528"><i class="ti ti-list"></i>All</button>
 <button class="btn btn-sm" data-auris-onclick="h0529" title="Print register"><i class="ti ti-printer"></i>Print register</button>
 <button class="btn btn-sm" data-auris-onclick="h0530" title="Print opened permit"><i class="ti ti-file-description"></i>Print permit</button>
-<button class="btn btn-primary" id="ptw-new-btn" style="display:none" data-auris-onclick="h0531"><i class="ti ti-plus"></i>New Permit</button>
+<button class="btn btn-primary auris-ptw-s-6aa34d7432" id="ptw-new-btn" data-auris-onclick="h0531"><i class="ti ti-plus"></i>New Permit</button>
 </div>
 </div>
 
 <!-- Metrics -->
-<div style="display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin-bottom:14px">
-<div class="card" style="padding:10px 12px;border-left:4px solid #185FA5"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">Active</div><div style="font-size:22px;font-weight:800;color:#185FA5" id="ptw-m3active">-</div></div>
-<div class="card" style="padding:10px 12px;border-left:4px solid #854F0B"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">Pending</div><div style="font-size:22px;font-weight:800;color:#854F0B" id="ptw-m3pending">-</div></div>
-<div class="card" style="padding:10px 12px;border-left:4px solid #C2410C"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">Suspended</div><div style="font-size:22px;font-weight:800;color:#C2410C" id="ptw-m3suspended">-</div></div>
-<div class="card" style="padding:10px 12px;border-left:4px solid #E24B4A"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">Overdue</div><div style="font-size:22px;font-weight:800;color:#E24B4A" id="ptw-m3overdue">-</div></div>
-<div class="card" style="padding:10px 12px;border-left:4px solid #1D9E75"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">Completed</div><div style="font-size:22px;font-weight:800;color:#1D9E75" id="ptw-m3completed">-</div></div>
-<div class="card" style="padding:10px 12px;border-left:4px solid #6B7280"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">Total</div><div style="font-size:22px;font-weight:800" id="ptw-m3total">-</div></div>
+<div class="auris-ptw-s-0b8cad26ad">
+<div class="card auris-ptw-s-b6d403ee7e"><div class="auris-ptw-s-4422804ebb">Active</div><div id="ptw-m3active" class="auris-ptw-s-6f56b8363e">-</div></div>
+<div class="card auris-ptw-s-eccffcaf4c"><div class="auris-ptw-s-4422804ebb">Pending</div><div id="ptw-m3pending" class="auris-ptw-s-58368c28c6">-</div></div>
+<div class="card auris-ptw-s-9d8960c695"><div class="auris-ptw-s-4422804ebb">Suspended</div><div id="ptw-m3suspended" class="auris-ptw-s-b6492545f8">-</div></div>
+<div class="card auris-ptw-s-530946d91c"><div class="auris-ptw-s-4422804ebb">Overdue</div><div id="ptw-m3overdue" class="auris-ptw-s-e7ad3ebe2e">-</div></div>
+<div class="card auris-ptw-s-7a5e61eb83"><div class="auris-ptw-s-4422804ebb">Completed</div><div id="ptw-m3completed" class="auris-ptw-s-1e4fd5f9ed">-</div></div>
+<div class="card auris-ptw-s-21ac3ff165"><div class="auris-ptw-s-4422804ebb">Total</div><div id="ptw-m3total" class="auris-ptw-s-de3631f23e">-</div></div>
 </div>
 
 <!-- Filter + search -->
-<div class="card" style="margin-bottom:12px;padding:10px 14px">
-<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
-<input type="text" id="ptw-search" placeholder="Search permit no., location, type..." data-auris-oninput="h0532" style="flex:1;min-width:180px;padding:7px 12px;border:1px solid var(--border);border-radius:8px;font-size:12px"/>
-<select id="ptw-filter-type" data-auris-onchange="h0533" style="padding:7px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px">
+<div class="card auris-ptw-s-54bb9f1d16">
+<div class="auris-ptw-s-d5129e1520">
+<input type="text" id="ptw-search" class="auris-ptw-s-11856befbc" placeholder="Search permit no., location, type..." data-auris-oninput="h0532"/>
+<select id="ptw-filter-type" class="auris-ptw-s-d35063206b" data-auris-onchange="h0533">
 <option value="">All types</option>
 <option value="hot_work">Hot Work</option>
 <option value="confined_space">Confined Space</option>
@@ -4730,7 +4731,7 @@ Offline mode - changes will sync when connection is restored
 <option value="radiation">Radiation</option>
 <option value="chemical_handling">Chemical Handling</option>
 </select>
-<select id="ptw-filter-status" data-auris-onchange="h0533" style="padding:7px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px">
+<select id="ptw-filter-status" class="auris-ptw-s-d35063206b" data-auris-onchange="h0533">
 <option value="">All statuses</option>
 <option value="draft">Draft</option>
 <option value="pending_approval">Pending Approval</option>
@@ -4744,9 +4745,9 @@ Offline mode - changes will sync when connection is restored
 </div>
 
 <!-- SIMOPS Alert banner -->
-<div id="ptw-simops-banner" style="display:none;margin-bottom:12px;background:#FCEBEB;border:2px solid #E24B4A;border-radius:10px;padding:12px 16px">
-<div style="font-weight:700;color:#A32D2D;margin-bottom:4px"><i class="ti ti-alert-triangle"></i> SIMOPS CONFLICT DETECTED</div>
-<div id="ptw-simops-details" style="font-size:12px;color:#7F1D1D"></div>
+<div id="ptw-simops-banner" class="auris-ptw-s-6423d6864a">
+<div class="auris-ptw-s-749f2c20b9"><i class="ti ti-alert-triangle"></i> SIMOPS CONFLICT DETECTED</div>
+<div id="ptw-simops-details" class="auris-ptw-s-424902e468"></div>
 </div>
 
 <!-- Permit list -->
@@ -4755,35 +4756,35 @@ Offline mode - changes will sync when connection is restored
 </div>
 
 <!-- ------- PERMIT DETAIL VIEW ------- -->
-<div id="ptw-detail-view" style="display:none">
+<div id="ptw-detail-view" class="auris-ptw-s-6aa34d7432">
 <!-- Header card with type colour -->
-<div class="card" style="margin-bottom:14px;padding:0;overflow:hidden">
-<div id="ptw-detail-banner" style="padding:20px 24px;color:#fff">
-<div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:12px">
+<div class="card auris-ptw-s-54ec8874e7">
+<div id="ptw-detail-banner" class="auris-ptw-s-75dda8aa73">
+<div class="auris-ptw-s-73762cb933">
 <div>
-<div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.1em;opacity:.8;margin-bottom:4px" id="ptw-detail-type-label">-</div>
-<div style="font-size:22px;font-weight:800;margin-bottom:6px" id="ptw-detail-ref">-</div>
-<div style="display:flex;gap:12px;flex-wrap:wrap;font-size:12px;opacity:.85" id="ptw-detail-meta"></div>
+<div id="ptw-detail-type-label" class="auris-ptw-s-fbebca6539">-</div>
+<div id="ptw-detail-ref" class="auris-ptw-s-3a1b8d6e58">-</div>
+<div id="ptw-detail-meta" class="auris-ptw-s-8c6a191e81"></div>
 </div>
-<div style="display:flex;gap:8px;flex-wrap:wrap">
+<div class="auris-ptw-s-c9dc9b5648">
 <div id="ptw-detail-status-badge"></div>
-<button class="btn" style="background:rgba(255,255,255,.2);color:#fff;border-color:rgba(255,255,255,.3)" data-auris-onclick="h0534"><i class="ti ti-arrow-left"></i>Back</button>
-<button class="btn" style="background:rgba(255,255,255,.2);color:#fff;border-color:rgba(255,255,255,.3)" id="ptw-edit-btn" data-auris-onclick="h0535"><i class="ti ti-edit"></i>Edit</button>
+<button class="btn auris-ptw-s-5c09edd131" data-auris-onclick="h0534"><i class="ti ti-arrow-left"></i>Back</button>
+<button class="btn auris-ptw-s-5c09edd131" id="ptw-edit-btn" data-auris-onclick="h0535"><i class="ti ti-edit"></i>Edit</button>
 </div>
 </div>
 </div>
 <!-- Workflow status bar -->
-<div id="ptw-workflow-bar" style="padding:12px 24px;background:#f9fafb;border-top:1px solid var(--border);display:flex;align-items:center;gap:10px;flex-wrap:wrap"></div>
+<div id="ptw-workflow-bar" class="auris-ptw-s-82cacc3cfa"></div>
 </div>
 
 <!-- Smart blocks warning -->
-<div id="ptw-blocks-panel" style="display:none;margin-bottom:14px"></div>
+<div id="ptw-blocks-panel" class="auris-ptw-s-3184233ab6"></div>
 
 <!-- Action buttons -->
-<div id="ptw-action-btns" style="display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap"></div>
+<div id="ptw-action-btns" class="auris-ptw-s-bdb99f2d36"></div>
 
 <!-- Detail tabs -->
-<div style="display:flex;gap:0;margin-bottom:14px;border-bottom:2px solid var(--border)">
+<div class="auris-ptw-s-6bf792afaa">
 <button class="mtg-tab active" id="ptw-dtab-details" data-auris-onclick="h0536">Details</button>
 <button class="mtg-tab" id="ptw-dtab-checks" data-auris-onclick="h0537">Checks</button>
 <button class="mtg-tab" id="ptw-dtab-gas" data-auris-onclick="h0538">Gas Tests</button>
@@ -4792,93 +4793,93 @@ Offline mode - changes will sync when connection is restored
 <button class="mtg-tab" id="ptw-dtab-log" data-auris-onclick="h0541">Activity Log</button>
 </div>
 <div id="ptw-dtab-view-details"><div id="ptw-detail-content"></div></div>
-<div id="ptw-dtab-view-checks" style="display:none"><div id="ptw-checks-content"></div></div>
-<div id="ptw-dtab-view-gas" style="display:none"><div id="ptw-gas-content"></div></div>
-<div id="ptw-dtab-view-isolation" style="display:none"><div id="ptw-isolation-content"></div></div>
-<div id="ptw-dtab-view-approval" style="display:none"><div id="ptw-approval-content"></div></div>
-<div id="ptw-dtab-view-log" style="display:none"><div id="ptw-log-content"></div></div>
+<div id="ptw-dtab-view-checks" class="auris-ptw-s-6aa34d7432"><div id="ptw-checks-content"></div></div>
+<div id="ptw-dtab-view-gas" class="auris-ptw-s-6aa34d7432"><div id="ptw-gas-content"></div></div>
+<div id="ptw-dtab-view-isolation" class="auris-ptw-s-6aa34d7432"><div id="ptw-isolation-content"></div></div>
+<div id="ptw-dtab-view-approval" class="auris-ptw-s-6aa34d7432"><div id="ptw-approval-content"></div></div>
+<div id="ptw-dtab-view-log" class="auris-ptw-s-6aa34d7432"><div id="ptw-log-content"></div></div>
 </div>
 
 <!-- ------- PERMIT FORM ------- -->
-<div id="ptw-form3view" style="display:none">
+<div id="ptw-form3view" class="auris-ptw-s-6aa34d7432">
 <!-- Form header -->
-<div class="card" style="margin-bottom:14px;padding:0;overflow:hidden">
-<div style="padding:16px 24px;background:linear-gradient(135deg,#1a3a5c,#185FA5);color:#fff;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
+<div class="card auris-ptw-s-54ec8874e7">
+<div class="auris-ptw-s-cfe6631fc0">
 <div>
-<div style="font-size:11px;font-weight:600;text-transform:uppercase;opacity:.8;letter-spacing:.08em;margin-bottom:4px">Permit to Work</div>
-<div style="font-size:18px;font-weight:800" id="ptw-form3title">New Permit</div>
-<div style="font-family:monospace;font-size:12px;color:#a8d8f0;margin-top:3px" id="ptw-form3ref-display"></div>
+<div class="auris-ptw-s-c542f2bc2e">Permit to Work</div>
+<div id="ptw-form3title" class="auris-ptw-s-e56ce903a9">New Permit</div>
+<div id="ptw-form3ref-display" class="auris-ptw-s-9abe12cdf2"></div>
 </div>
-<div style="display:flex;gap:8px">
-<button class="btn" style="background:rgba(255,255,255,.2);color:#fff;border-color:rgba(255,255,255,.3)" data-auris-onclick="h0542"><i class="ti ti-arrow-left"></i>Back</button>
-<button id="ptw-del-btn" class="btn" style="display:none;background:rgba(220,38,38,.3);color:#fff;border-color:rgba(220,38,38,.5)" data-auris-onclick="h0543"><i class="ti ti-trash"></i></button>
-<button class="btn" style="background:#fff;color:#5B21B6;border-color:#fff;font-weight:800" data-auris-onclick="h0544"><i class="ti ti-robot"></i>AI assist</button>
-<button class="btn" style="background:#1D9E75;color:#fff;border-color:#1D9E75" data-auris-onclick="h0545"><i class="ti ti-device-floppy"></i>Save Draft</button>
-<button class="btn" style="background:#EF9F27;color:#fff;border-color:#EF9F27" data-auris-onclick="h0546"><i class="ti ti-send"></i>Submit for Approval</button>
+<div class="auris-ptw-s-9c40389b4a">
+<button class="btn auris-ptw-s-5c09edd131" data-auris-onclick="h0542"><i class="ti ti-arrow-left"></i>Back</button>
+<button id="ptw-del-btn" class="btn auris-ptw-s-0e610f7b67" data-auris-onclick="h0543"><i class="ti ti-trash"></i></button>
+<button class="btn auris-ptw-s-923df182e7" data-auris-onclick="h0544"><i class="ti ti-robot"></i>AI assist</button>
+<button class="btn auris-ptw-s-c7b9e5b2c7" data-auris-onclick="h0545"><i class="ti ti-device-floppy"></i>Save Draft</button>
+<button class="btn auris-ptw-s-cd7d272b9d" data-auris-onclick="h0546"><i class="ti ti-send"></i>Submit for Approval</button>
 </div>
 </div>
 </div>
 
 <!-- Permit type selector (shown for new permits) -->
-<div id="ptw-type-selector" class="card" style="margin-bottom:14px">
+<div id="ptw-type-selector" class="card auris-ptw-s-42a6ced8b6">
 <div class="card-title">Select Permit Type</div>
-<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px">
-<div class="ptw-type-card" data-type="hot_work" data-auris-onclick="h0547" style="border:2px solid #FECACA;border-radius:10px;padding:14px;text-align:center;cursor:pointer;transition:all .15s;background:#fff" data-auris-onmouseover="h0548" data-auris-onmouseout="h0549">
-<div style="font-size:28px;margin-bottom:6px"><i class="ti ti-circle-dot"></i></div>
-<div style="font-size:12px;font-weight:700;color:#DC2626">Hot Work</div>
+<div class="auris-ptw-s-2f27d03410">
+<div class="ptw-type-card auris-ptw-s-01f519564e" data-type="hot_work" data-auris-onclick="h0547" data-auris-onmouseover="h0548" data-auris-onmouseout="h0549">
+<div class="auris-ptw-s-8cb6aed527"><i class="ti ti-circle-dot"></i></div>
+<div class="auris-ptw-s-b4fe86d7b1">Hot Work</div>
 </div>
-<div class="ptw-type-card" data-type="confined_space" data-auris-onclick="h0550" style="border:2px solid #EDE9FE;border-radius:10px;padding:14px;text-align:center;cursor:pointer;transition:all .15s;background:#fff" data-auris-onmouseover="h0551" data-auris-onmouseout="h0549">
-<div style="font-size:28px;margin-bottom:6px"><i class="ti ti-circle-dot"></i></div>
-<div style="font-size:12px;font-weight:700;color:#7C3AED">Confined Space</div>
+<div class="ptw-type-card auris-ptw-s-9ef7124532" data-type="confined_space" data-auris-onclick="h0550" data-auris-onmouseover="h0551" data-auris-onmouseout="h0549">
+<div class="auris-ptw-s-8cb6aed527"><i class="ti ti-circle-dot"></i></div>
+<div class="auris-ptw-s-691d43768e">Confined Space</div>
 </div>
-<div class="ptw-type-card" data-type="excavation" data-auris-onclick="h0552" style="border:2px solid #FEF3C7;border-radius:10px;padding:14px;text-align:center;cursor:pointer;transition:all .15s;background:#fff" data-auris-onmouseover="h0553" data-auris-onmouseout="h0549">
-<div style="font-size:28px;margin-bottom:6px"><i class="ti ti-circle-dot"></i></div>
-<div style="font-size:12px;font-weight:700;color:#92400E">Excavation</div>
+<div class="ptw-type-card auris-ptw-s-8a9a5b5027" data-type="excavation" data-auris-onclick="h0552" data-auris-onmouseover="h0553" data-auris-onmouseout="h0549">
+<div class="auris-ptw-s-8cb6aed527"><i class="ti ti-circle-dot"></i></div>
+<div class="auris-ptw-s-7b75a04cf6">Excavation</div>
 </div>
-<div class="ptw-type-card" data-type="electrical_isolation" data-auris-onclick="h0554" style="border:2px solid #DBEAFE;border-radius:10px;padding:14px;text-align:center;cursor:pointer;transition:all .15s;background:#fff" data-auris-onmouseover="h0555" data-auris-onmouseout="h0549">
-<div style="font-size:28px;margin-bottom:6px">?</div>
-<div style="font-size:12px;font-weight:700;color:#1D4ED8">Electrical Isolation</div>
+<div class="ptw-type-card auris-ptw-s-2eb873a7a8" data-type="electrical_isolation" data-auris-onclick="h0554" data-auris-onmouseover="h0555" data-auris-onmouseout="h0549">
+<div class="auris-ptw-s-8cb6aed527">?</div>
+<div class="auris-ptw-s-0abe418dd4">Electrical Isolation</div>
 </div>
-<div class="ptw-type-card" data-type="loto" data-auris-onclick="h0556" style="border:2px solid #FEF3C7;border-radius:10px;padding:14px;text-align:center;cursor:pointer;transition:all .15s;background:#fff" data-auris-onmouseover="h0553" data-auris-onmouseout="h0549">
-<div style="font-size:28px;margin-bottom:6px"><i class="ti ti-circle-dot"></i></div>
-<div style="font-size:12px;font-weight:700;color:#B45309">LOTO</div>
+<div class="ptw-type-card auris-ptw-s-8a9a5b5027" data-type="loto" data-auris-onclick="h0556" data-auris-onmouseover="h0553" data-auris-onmouseout="h0549">
+<div class="auris-ptw-s-8cb6aed527"><i class="ti ti-circle-dot"></i></div>
+<div class="auris-ptw-s-a62c1d4178">LOTO</div>
 </div>
-<div class="ptw-type-card" data-type="work_at_height" data-auris-onclick="h0557" style="border:2px solid #D1FAE5;border-radius:10px;padding:14px;text-align:center;cursor:pointer;transition:all .15s;background:#fff" data-auris-onmouseover="h0558" data-auris-onmouseout="h0549">
-<div style="font-size:28px;margin-bottom:6px"><i class="ti ti-circle-dot"></i></div>
-<div style="font-size:12px;font-weight:700;color:#065F46">Work at Height</div>
+<div class="ptw-type-card auris-ptw-s-c65e5ae825" data-type="work_at_height" data-auris-onclick="h0557" data-auris-onmouseover="h0558" data-auris-onmouseout="h0549">
+<div class="auris-ptw-s-8cb6aed527"><i class="ti ti-circle-dot"></i></div>
+<div class="auris-ptw-s-86abec1a24">Work at Height</div>
 </div>
-<div class="ptw-type-card" data-type="lifting_operation" data-auris-onclick="h0559" style="border:2px solid #EDE9FE;border-radius:10px;padding:14px;text-align:center;cursor:pointer;transition:all .15s;background:#fff" data-auris-onmouseover="h0551" data-auris-onmouseout="h0549">
-<div style="font-size:28px;margin-bottom:6px"><i class="ti ti-circle-dot"></i></div>
-<div style="font-size:12px;font-weight:700;color:#5B21B6">Lifting Operation</div>
+<div class="ptw-type-card auris-ptw-s-9ef7124532" data-type="lifting_operation" data-auris-onclick="h0559" data-auris-onmouseover="h0551" data-auris-onmouseout="h0549">
+<div class="auris-ptw-s-8cb6aed527"><i class="ti ti-circle-dot"></i></div>
+<div class="auris-ptw-s-74ea3ccaf8">Lifting Operation</div>
 </div>
-<div class="ptw-type-card" data-type="line_breaking" data-auris-onclick="h0560" style="border:2px solid #FFE4E6;border-radius:10px;padding:14px;text-align:center;cursor:pointer;transition:all .15s;background:#fff" data-auris-onmouseover="h0561" data-auris-onmouseout="h0549">
-<div style="font-size:28px;margin-bottom:6px"><i class="ti ti-circle-dot"></i></div>
-<div style="font-size:12px;font-weight:700;color:#9F1239">Line Breaking</div>
+<div class="ptw-type-card auris-ptw-s-b8073d98c1" data-type="line_breaking" data-auris-onclick="h0560" data-auris-onmouseover="h0561" data-auris-onmouseout="h0549">
+<div class="auris-ptw-s-8cb6aed527"><i class="ti ti-circle-dot"></i></div>
+<div class="auris-ptw-s-79e9368571">Line Breaking</div>
 </div>
-<div class="ptw-type-card" data-type="radiation" data-auris-onclick="h0562" style="border:2px solid #D1FAE5;border-radius:10px;padding:14px;text-align:center;cursor:pointer;transition:all .15s;background:#fff" data-auris-onmouseover="h0558" data-auris-onmouseout="h0549">
-<div style="font-size:28px;margin-bottom:6px"><i class="ti ti-circle-dot"></i></div>
-<div style="font-size:12px;font-weight:700;color:#064E3B">Radiation</div>
+<div class="ptw-type-card auris-ptw-s-c65e5ae825" data-type="radiation" data-auris-onclick="h0562" data-auris-onmouseover="h0558" data-auris-onmouseout="h0549">
+<div class="auris-ptw-s-8cb6aed527"><i class="ti ti-circle-dot"></i></div>
+<div class="auris-ptw-s-66b8dc2cf1">Radiation</div>
 </div>
-<div class="ptw-type-card" data-type="chemical_handling" data-auris-onclick="h0563" style="border:2px solid #DBEAFE;border-radius:10px;padding:14px;text-align:center;cursor:pointer;transition:all .15s;background:#fff" data-auris-onmouseover="h0555" data-auris-onmouseout="h0549">
-<div style="font-size:28px;margin-bottom:6px"><i class="ti ti-circle-dot"></i></div>
-<div style="font-size:12px;font-weight:700;color:#1E3A5F">Chemical Handling</div>
+<div class="ptw-type-card auris-ptw-s-2eb873a7a8" data-type="chemical_handling" data-auris-onclick="h0563" data-auris-onmouseover="h0555" data-auris-onmouseout="h0549">
+<div class="auris-ptw-s-8cb6aed527"><i class="ti ti-circle-dot"></i></div>
+<div class="auris-ptw-s-8e418996f1">Chemical Handling</div>
 </div>
 </div>
 </div>
 
-<div id="ptw-form3body" style="display:none">
+<div id="ptw-form3body" class="auris-ptw-s-6aa34d7432">
 <!-- Section 1: Work details -->
-<div class="card" style="margin-bottom:14px;border-left:4px solid #185FA5">
-<div class="card-title" style="color:#185FA5"><i class="ti ti-file-description"></i> Work Details</div>
+<div class="card auris-ptw-s-347fbe0230">
+<div class="card-title auris-ptw-s-ca32b871b2"><i class="ti ti-file-description"></i> Work Details</div>
 <div class="form3row">
 <div class="form3group"><label class="form3label">Permit number</label><input type="text" id="pf-no" placeholder="Auto-generated if blank"/></div>
-<div class="form3group"><label class="form3label">Selected type</label><div id="pf-type-display" style="padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-weight:600;font-size:13px;background:#f9fafb">-</div><input type="hidden" id="pf-type"/></div>
+<div class="form3group"><label class="form3label">Selected type</label><div id="pf-type-display" class="auris-ptw-s-3523b02283">-</div><input type="hidden" id="pf-type"/></div>
 <div class="form3group"><label class="form3label">Priority</label>
 <select id="pf-priority"><option value="low">Low</option><option value="medium" selected>Medium</option><option value="high">High</option><option value="critical">Critical</option></select></div>
 <div class="form3group"><label class="form3label">Risk level</label>
 <select id="pf-risk"><option value="low">Low</option><option value="medium" selected>Medium</option><option value="high">High</option><option value="critical">Critical</option></select></div>
 </div>
-<div class="form3group"><label class="form3label">Work description</label><textarea id="pf-desc" style="min-height:80px" placeholder="Detailed description of the work to be performed..."></textarea></div>
+<div class="form3group"><label class="form3label">Work description</label><textarea id="pf-desc" class="auris-ptw-s-770a4152c1" placeholder="Detailed description of the work to be performed..."></textarea></div>
 <div class="form3row">
 <div class="form3group"><label class="form3label">Location</label><input type="text" id="pf-loc" placeholder="Exact work location..."/></div>
 <div class="form3group"><label class="form3label">Department</label><input type="text" id="pf-dept"/></div>
@@ -4890,65 +4891,65 @@ Offline mode - changes will sync when connection is restored
 </div>
 
 <!-- Section 2: Personnel -->
-<div class="card" style="margin-bottom:14px;border-left:4px solid #8B5CF6">
-<div class="card-title" style="color:#8B5CF6"><i class="ti ti-users"></i> Personnel</div>
+<div class="card auris-ptw-s-b290320c38">
+<div class="card-title auris-ptw-s-48a87f51bd"><i class="ti ti-users"></i> Personnel</div>
 <div class="form3row">
-<div class="form3group"><label class="form3label">Permit issuer</label><input type="text" id="pf-issuer-name" readonly style="background:#f9fafb;font-weight:700" placeholder="Filled automatically"/><input type="hidden" id="pf-issuer"/></div>
-<div class="form3group"><label class="form3label">Permit receiver / Site supervisor</label><select id="pf-receiver" data-auris-onchange="h0564"><option value="">Select receiver / supervisor...</option></select><div id="pf-receiver-manual-wrap" style="display:none;margin-top:8px"><input type="text" id="pf-receiver-manual" placeholder="Type receiver name..."/></div></div>
+<div class="form3group"><label class="form3label">Permit issuer</label><input type="text" id="pf-issuer-name" class="auris-ptw-s-80b0055d7f" readonly placeholder="Filled automatically"/><input type="hidden" id="pf-issuer"/></div>
+<div class="form3group"><label class="form3label">Permit receiver / Site supervisor</label><select id="pf-receiver" data-auris-onchange="h0564"><option value="">Select receiver / supervisor...</option></select><div id="pf-receiver-manual-wrap" class="auris-ptw-s-5990b6d255"><input type="text" id="pf-receiver-manual" placeholder="Type receiver name..."/></div></div>
 <div class="form3group"><label class="form3label">Contractor (if applicable)</label><select id="pf-contractor"><option value="">Internal / No contractor</option></select></div>
 </div>
-<div class="form3group"><label class="form3label">Work team members</label><select id="pf-team" multiple size="4" style="min-height:94px"></select><div style="font-size:11px;color:var(--text2);margin-top:4px">Hold Ctrl to select several people. Use the box below for visitors or workers not yet in People.</div></div>
-<div class="form3group"><label class="form3label">Additional team names</label><textarea id="pf-team3extra" style="min-height:46px" placeholder="Visitors or workers not listed above..."></textarea></div>
+<div class="form3group"><label class="form3label">Work team members</label><select id="pf-team" class="auris-ptw-s-11e0836be6" multiple size="4"></select><div class="auris-ptw-s-34b3cf0d1f">Hold Ctrl to select several people. Use the box below for visitors or workers not yet in People.</div></div>
+<div class="form3group"><label class="form3label">Additional team names</label><textarea id="pf-team3extra" class="auris-ptw-s-33cc30c10b" placeholder="Visitors or workers not listed above..."></textarea></div>
 </div>
 
 <!-- Section 3: Linked documents -->
-<div class="card" style="margin-bottom:14px;border-left:4px solid #1D9E75">
-<div class="card-title" style="color:#1D9E75"><i class="ti ti-link"></i> Linked Documents &amp; Smart Checks</div>
+<div class="card auris-ptw-s-f51849fc6a">
+<div class="card-title auris-ptw-s-f9faa54401"><i class="ti ti-link"></i> Linked Documents &amp; Smart Checks</div>
 <div class="form3row">
-<div class="form3group"><label class="form3label">Risk Assessment ref.</label><div style="display:flex;gap:6px"><select id="pf-ra-ref" style="font-family:monospace;min-width:0"><option value="">Select risk assessment...</option></select><button type="button" class="btn btn-sm" data-auris-onclick="h0565"><i class="ti ti-external-link"></i></button></div></div>
-<div class="form3group"><label class="form3label">Method Statement ref.</label><div style="display:flex;gap:6px"><select id="pf-ms-ref" style="font-family:monospace;min-width:0"><option value="">Select method statement / SOP...</option></select><button type="button" class="btn btn-sm" data-auris-onclick="h0566"><i class="ti ti-external-link"></i></button></div></div>
-<div class="form3group"><label class="form3label">Work Order ref.</label><div style="display:flex;gap:6px"><select id="pf-wo" style="min-width:0"><option value="">None</option></select><button type="button" class="btn btn-sm" data-auris-onclick="h0567"><i class="ti ti-external-link"></i></button></div></div>
+<div class="form3group"><label class="form3label">Risk Assessment ref.</label><div class="auris-ptw-s-69374f356a"><select id="pf-ra-ref" class="auris-ptw-s-c1a6ae2812"><option value="">Select risk assessment...</option></select><button type="button" class="btn btn-sm" data-auris-onclick="h0565"><i class="ti ti-external-link"></i></button></div></div>
+<div class="form3group"><label class="form3label">Method Statement ref.</label><div class="auris-ptw-s-69374f356a"><select id="pf-ms-ref" class="auris-ptw-s-c1a6ae2812"><option value="">Select method statement / SOP...</option></select><button type="button" class="btn btn-sm" data-auris-onclick="h0566"><i class="ti ti-external-link"></i></button></div></div>
+<div class="form3group"><label class="form3label">Work Order ref.</label><div class="auris-ptw-s-69374f356a"><select id="pf-wo" class="auris-ptw-s-22a08c80a9"><option value="">None</option></select><button type="button" class="btn btn-sm" data-auris-onclick="h0567"><i class="ti ti-external-link"></i></button></div></div>
 </div>
-<div id="ptw-smart-check-panel" style="margin-top:10px"></div>
-<div style="display:flex;align-items:center;gap:10px;margin-top:12px">
-<input type="checkbox" id="pf-weather-check" style="width:16px;height:16px;accent-color:var(--green)"/>
-<label for="pf-weather-check" style="font-size:13px;font-weight:600;cursor:pointer">Outdoor work - weather check required before start</label>
+<div id="ptw-smart-check-panel" class="auris-ptw-s-df928149c5"></div>
+<div class="auris-ptw-s-ac74efa502">
+<input type="checkbox" id="pf-weather-check" class="auris-ptw-s-f0d02e2c4b"/>
+<label class="auris-ptw-s-22514dbec4" for="pf-weather-check">Outdoor work - weather check required before start</label>
 </div>
 </div>
 
 <!-- Section 4: PPE -->
-<div class="card" style="margin-bottom:14px;border-left:4px solid #EF9F27">
-<div class="card-title" style="color:#EF9F27"><i class="ti ti-shield"></i> PPE Requirements</div>
-<div style="display:flex;flex-wrap:wrap;gap:8px" id="ptw-ppe-checks">
-<label style="display:flex;align-items:center;gap:6px;font-size:12px;background:#f9fafb;padding:6px 10px;border-radius:8px;border:1px solid var(--border);cursor:pointer"><input type="checkbox" value="Safety helmet" style="accent-color:var(--green)"> Safety helmet</label>
-<label style="display:flex;align-items:center;gap:6px;font-size:12px;background:#f9fafb;padding:6px 10px;border-radius:8px;border:1px solid var(--border);cursor:pointer"><input type="checkbox" value="Safety glasses" style="accent-color:var(--green)"> Safety glasses</label>
-<label style="display:flex;align-items:center;gap:6px;font-size:12px;background:#f9fafb;padding:6px 10px;border-radius:8px;border:1px solid var(--border);cursor:pointer"><input type="checkbox" value="Face shield" style="accent-color:var(--green)"> Face shield</label>
-<label style="display:flex;align-items:center;gap:6px;font-size:12px;background:#f9fafb;padding:6px 10px;border-radius:8px;border:1px solid var(--border);cursor:pointer"><input type="checkbox" value="Flame-resistant clothing" style="accent-color:var(--green)"> FR clothing</label>
-<label style="display:flex;align-items:center;gap:6px;font-size:12px;background:#f9fafb;padding:6px 10px;border-radius:8px;border:1px solid var(--border);cursor:pointer"><input type="checkbox" value="Safety gloves" style="accent-color:var(--green)"> Safety gloves</label>
-<label style="display:flex;align-items:center;gap:6px;font-size:12px;background:#f9fafb;padding:6px 10px;border-radius:8px;border:1px solid var(--border);cursor:pointer"><input type="checkbox" value="Safety boots" style="accent-color:var(--green)"> Safety boots</label>
-<label style="display:flex;align-items:center;gap:6px;font-size:12px;background:#f9fafb;padding:6px 10px;border-radius:8px;border:1px solid var(--border);cursor:pointer"><input type="checkbox" value="SCBA / Breathing apparatus" style="accent-color:var(--green)"> SCBA / BA</label>
-<label style="display:flex;align-items:center;gap:6px;font-size:12px;background:#f9fafb;padding:6px 10px;border-radius:8px;border:1px solid var(--border);cursor:pointer"><input type="checkbox" value="Dust mask / RPE" style="accent-color:var(--green)"> Dust mask / RPE</label>
-<label style="display:flex;align-items:center;gap:6px;font-size:12px;background:#f9fafb;padding:6px 10px;border-radius:8px;border:1px solid var(--border);cursor:pointer"><input type="checkbox" value="Harness / Fall arrest" style="accent-color:var(--green)"> Harness / Fall arrest</label>
-<label style="display:flex;align-items:center;gap:6px;font-size:12px;background:#f9fafb;padding:6px 10px;border-radius:8px;border:1px solid var(--border);cursor:pointer"><input type="checkbox" value="Hi-vis vest" style="accent-color:var(--green)"> Hi-vis vest</label>
-<label style="display:flex;align-items:center;gap:6px;font-size:12px;background:#f9fafb;padding:6px 10px;border-radius:8px;border:1px solid var(--border);cursor:pointer"><input type="checkbox" value="Chemical resistant gloves" style="accent-color:var(--green)"> Chemical gloves</label>
-<label style="display:flex;align-items:center;gap:6px;font-size:12px;background:#f9fafb;padding:6px 10px;border-radius:8px;border:1px solid var(--border);cursor:pointer"><input type="checkbox" value="Radiation dosimeter" style="accent-color:var(--green)"> Dosimeter</label>
+<div class="card auris-ptw-s-7ec95abeba">
+<div class="card-title auris-ptw-s-9320640826"><i class="ti ti-shield"></i> PPE Requirements</div>
+<div id="ptw-ppe-checks" class="auris-ptw-s-e71fea5211">
+<label class="auris-ptw-s-8b56868118"><input class="auris-ptw-s-283f12d7fe" type="checkbox" value="Safety helmet"> Safety helmet</label>
+<label class="auris-ptw-s-8b56868118"><input class="auris-ptw-s-283f12d7fe" type="checkbox" value="Safety glasses"> Safety glasses</label>
+<label class="auris-ptw-s-8b56868118"><input class="auris-ptw-s-283f12d7fe" type="checkbox" value="Face shield"> Face shield</label>
+<label class="auris-ptw-s-8b56868118"><input class="auris-ptw-s-283f12d7fe" type="checkbox" value="Flame-resistant clothing"> FR clothing</label>
+<label class="auris-ptw-s-8b56868118"><input class="auris-ptw-s-283f12d7fe" type="checkbox" value="Safety gloves"> Safety gloves</label>
+<label class="auris-ptw-s-8b56868118"><input class="auris-ptw-s-283f12d7fe" type="checkbox" value="Safety boots"> Safety boots</label>
+<label class="auris-ptw-s-8b56868118"><input class="auris-ptw-s-283f12d7fe" type="checkbox" value="SCBA / Breathing apparatus"> SCBA / BA</label>
+<label class="auris-ptw-s-8b56868118"><input class="auris-ptw-s-283f12d7fe" type="checkbox" value="Dust mask / RPE"> Dust mask / RPE</label>
+<label class="auris-ptw-s-8b56868118"><input class="auris-ptw-s-283f12d7fe" type="checkbox" value="Harness / Fall arrest"> Harness / Fall arrest</label>
+<label class="auris-ptw-s-8b56868118"><input class="auris-ptw-s-283f12d7fe" type="checkbox" value="Hi-vis vest"> Hi-vis vest</label>
+<label class="auris-ptw-s-8b56868118"><input class="auris-ptw-s-283f12d7fe" type="checkbox" value="Chemical resistant gloves"> Chemical gloves</label>
+<label class="auris-ptw-s-8b56868118"><input class="auris-ptw-s-283f12d7fe" type="checkbox" value="Radiation dosimeter"> Dosimeter</label>
 </div>
-<div class="form3group" style="margin-top:10px"><label class="form3label">Additional PPE / special equipment</label><input type="text" id="pf-ppe-extra"/></div>
+<div class="form3group auris-ptw-s-df928149c5"><label class="form3label">Additional PPE / special equipment</label><input type="text" id="pf-ppe-extra"/></div>
 </div>
 
 <!-- Section 5: Type-specific form (injected dynamically) -->
 <div id="ptw-type-specific-form"></div>
 
 <!-- Section 6: Precautions -->
-<div class="card" style="margin-bottom:14px">
+<div class="card auris-ptw-s-42a6ced8b6">
 <div class="card-title"><i class="ti ti-checklist"></i> Precautions &amp; Control Measures</div>
-<div id="ptw-precautions-list" style="margin-bottom:10px"></div>
-<div class="form3group"><label class="form3label">Additional precautions / conditions</label><textarea id="pf-precautions" style="min-height:70px" placeholder="Any other specific precautions or conditions..."></textarea></div>
+<div id="ptw-precautions-list" class="auris-ptw-s-b922c89f16"></div>
+<div class="form3group"><label class="form3label">Additional precautions / conditions</label><textarea id="pf-precautions" class="auris-ptw-s-4d5979ac8f" placeholder="Any other specific precautions or conditions..."></textarea></div>
 </div>
 
 <!-- Section 7: Approval levels -->
-<div class="card" style="margin-bottom:14px;border-left:4px solid #1a3a5c">
-<div class="card-title" style="color:#1a3a5c"><i class="ti ti-certificate"></i> Approval Requirements</div>
+<div class="card auris-ptw-s-3c1a6189b6">
+<div class="card-title auris-ptw-s-263b393a20"><i class="ti ti-certificate"></i> Approval Requirements</div>
 <div class="form3group"><label class="form3label">Number of approval levels required</label>
 <select id="pf-approval-levels">
 <option value="1">1 level - Supervisor only</option>
@@ -4961,51 +4962,51 @@ Offline mode - changes will sync when connection is restored
 </div><!-- end ptw-form3view -->
 
 <!-- ------- GAS TEST PANEL ------- -->
-<div id="ptw-gas-panel" style="display:none">
-<div class="card" style="margin-bottom:14px;padding:0;overflow:hidden">
-<div style="padding:14px 20px;background:linear-gradient(135deg,#065F46,#1D9E75);color:#fff;display:flex;align-items:center;justify-content:space-between">
-<div style="font-size:16px;font-weight:700">Gas Test Recording</div>
-<button class="btn" style="background:rgba(255,255,255,.2);color:#fff;border-color:rgba(255,255,255,.3)" data-auris-onclick="h0568"><i class="ti ti-arrow-left"></i>Back</button>
+<div id="ptw-gas-panel" class="auris-ptw-s-6aa34d7432">
+<div class="card auris-ptw-s-54ec8874e7">
+<div class="auris-ptw-s-1ee0626a8e">
+<div class="auris-ptw-s-30e294142f">Gas Test Recording</div>
+<button class="btn auris-ptw-s-5c09edd131" data-auris-onclick="h0568"><i class="ti ti-arrow-left"></i>Back</button>
 </div>
 </div>
-<div class="card" style="margin-bottom:14px">
+<div class="card auris-ptw-s-42a6ced8b6">
 <div class="card-title">New Gas Test Reading</div>
 <div class="form3row">
 <div class="form3group"><label class="form3label">Test date &amp; time</label><input type="datetime-local" id="gas-datetime"/></div>
-<div class="form3group"><label class="form3label">Tested by</label><input type="text" id="gas-tester" readonly style="background:#f9fafb;font-weight:700" placeholder="Filled automatically"/></div>
+<div class="form3group"><label class="form3label">Tested by</label><input type="text" id="gas-tester" class="auris-ptw-s-80b0055d7f" readonly placeholder="Filled automatically"/></div>
 <div class="form3group"><label class="form3label">Equipment used *</label><input type="text" id="gas-equipment" placeholder="e.g. Multi-gas detector XA-3000"/></div>
 <div class="form3group"><label class="form3label">Calibration date *</label><input type="date" id="gas-cal-date"/></div>
 </div>
-<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px">
-<div class="form3group" style="margin:0"><label class="form3label">O2 (%)</label><input type="number" id="gas-o2" step="0.1" min="0" max="100" placeholder="19.5-23.5" data-auris-oninput="h0569"/>
-<div style="font-size:10px;color:var(--text2)">Safe: 19.5-23.5%</div></div>
-<div class="form3group" style="margin:0"><label class="form3label">LEL (%)</label><input type="number" id="gas-lel" step="0.1" min="0" max="100" placeholder="&lt;10%" data-auris-oninput="h0569"/>
-<div style="font-size:10px;color:var(--text2)">Safe: &lt;10%</div></div>
-<div class="form3group" style="margin:0"><label class="form3label">H2S (ppm)</label><input type="number" id="gas-h2s" step="0.1" min="0" placeholder="&lt;5 ppm" data-auris-oninput="h0569"/>
-<div style="font-size:10px;color:var(--text2)">Safe: &lt;5 ppm</div></div>
-<div class="form3group" style="margin:0"><label class="form3label">CO (ppm)</label><input type="number" id="gas-co" step="0.1" min="0" placeholder="&lt;25 ppm" data-auris-oninput="h0569"/>
-<div style="font-size:10px;color:var(--text2)">Safe: &lt;25 ppm</div></div>
+<div class="auris-ptw-s-14dfb7ae67">
+<div class="form3group auris-ptw-s-ab79ea2b85"><label class="form3label">O2 (%)</label><input type="number" id="gas-o2" step="0.1" min="0" max="100" placeholder="19.5-23.5" data-auris-oninput="h0569"/>
+<div class="auris-ptw-s-49acb3c3b7">Safe: 19.5-23.5%</div></div>
+<div class="form3group auris-ptw-s-ab79ea2b85"><label class="form3label">LEL (%)</label><input type="number" id="gas-lel" step="0.1" min="0" max="100" placeholder="&lt;10%" data-auris-oninput="h0569"/>
+<div class="auris-ptw-s-49acb3c3b7">Safe: &lt;10%</div></div>
+<div class="form3group auris-ptw-s-ab79ea2b85"><label class="form3label">H2S (ppm)</label><input type="number" id="gas-h2s" step="0.1" min="0" placeholder="&lt;5 ppm" data-auris-oninput="h0569"/>
+<div class="auris-ptw-s-49acb3c3b7">Safe: &lt;5 ppm</div></div>
+<div class="form3group auris-ptw-s-ab79ea2b85"><label class="form3label">CO (ppm)</label><input type="number" id="gas-co" step="0.1" min="0" placeholder="&lt;25 ppm" data-auris-oninput="h0569"/>
+<div class="auris-ptw-s-49acb3c3b7">Safe: &lt;25 ppm</div></div>
 </div>
 <div class="form3row">
 <div class="form3group"><label class="form3label">Test location / point</label><input type="text" id="gas-location" placeholder="e.g. Top, middle, bottom of vessel"/></div>
 <div class="form3group"><label class="form3label">Result</label>
-<select id="gas-result" disabled style="background:#f9fafb"><option value="pass">PASS - Safe to proceed</option><option value="fail">FAIL - Unsafe, do not enter</option><option value="borderline">Borderline - Monitor closely</option></select><div style="font-size:10px;color:var(--text2);margin-top:4px">Calculated automatically from gas readings</div></div>
+<select id="gas-result" class="auris-ptw-s-0dc955fc21" disabled><option value="pass">PASS - Safe to proceed</option><option value="fail">FAIL - Unsafe, do not enter</option><option value="borderline">Borderline - Monitor closely</option></select><div class="auris-ptw-s-eb6b937bc0">Calculated automatically from gas readings</div></div>
 </div>
-<div class="form3group"><label class="form3label">Notes</label><textarea id="gas-notes" style="min-height:40px"></textarea></div>
+<div class="form3group"><label class="form3label">Notes</label><textarea id="gas-notes" class="auris-ptw-s-7e000820e7"></textarea></div>
 <button class="btn btn-primary" data-auris-onclick="h0570"><i class="ti ti-plus"></i>Add this gas test</button>
 </div>
-<div id="gas-tests-history" style="margin-bottom:14px"></div>
+<div id="gas-tests-history" class="auris-ptw-s-42a6ced8b6"></div>
 </div>
 
 <!-- ------- ISOLATION PANEL ------- -->
-<div id="ptw-isolation-panel" style="display:none">
-<div class="card" style="margin-bottom:14px;padding:0;overflow:hidden">
-<div style="padding:14px 20px;background:linear-gradient(135deg,#1E3A5F,#B45309);color:#fff;display:flex;align-items:center;justify-content:space-between">
-<div style="font-size:16px;font-weight:700">LOTO / Isolation Verification</div>
-<button class="btn" style="background:rgba(255,255,255,.2);color:#fff;border-color:rgba(255,255,255,.3)" data-auris-onclick="h0571"><i class="ti ti-arrow-left"></i>Back</button>
+<div id="ptw-isolation-panel" class="auris-ptw-s-6aa34d7432">
+<div class="card auris-ptw-s-54ec8874e7">
+<div class="auris-ptw-s-a88b5d2e2f">
+<div class="auris-ptw-s-30e294142f">LOTO / Isolation Verification</div>
+<button class="btn auris-ptw-s-5c09edd131" data-auris-onclick="h0571"><i class="ti ti-arrow-left"></i>Back</button>
 </div>
 </div>
-<div class="card" style="margin-bottom:14px">
+<div class="card auris-ptw-s-42a6ced8b6">
 <div class="card-title">Add Isolation Point</div>
 <div class="form3row">
 <div class="form3group"><label class="form3label">Isolation point ID / tag</label><input type="text" id="iso-tag" placeholder="e.g. ISO-001, CB-12, VLV-45"/></div>
@@ -5014,7 +5015,7 @@ Offline mode - changes will sync when connection is restored
 <select id="iso-type"><option value="electrical">Electrical isolation</option><option value="valve">Valve - closed</option><option value="valve_blind">Valve - blinded</option><option value="mechanical">Mechanical block</option><option value="lock">LOTO lock applied</option><option value="tag">LOTO tag applied</option><option value="pressure">Pressure bled/vented</option><option value="other">Other</option></select></div>
 </div>
 <div class="form3row">
-<div class="form3group"><label class="form3label">Isolated by</label><input type="text" id="iso-by" readonly style="background:#f9fafb;font-weight:700" placeholder="Filled automatically"/></div>
+<div class="form3group"><label class="form3label">Isolated by</label><input type="text" id="iso-by" class="auris-ptw-s-80b0055d7f" readonly placeholder="Filled automatically"/></div>
 <div class="form3group"><label class="form3label">Date &amp; time isolated</label><input type="datetime-local" id="iso-datetime"/></div>
 <div class="form3group"><label class="form3label">Verified by</label><select id="iso-verified-by"><option value="">Select verifier...</option></select></div>
 <div class="form3group"><label class="form3label">Status</label>
@@ -5022,53 +5023,53 @@ Offline mode - changes will sync when connection is restored
 </div>
 <button class="btn btn-primary" data-auris-onclick="h0572"><i class="ti ti-lock"></i>Add isolation point</button>
 </div>
-<div id="isolation-list" style="margin-bottom:14px"></div>
+<div id="isolation-list" class="auris-ptw-s-42a6ced8b6"></div>
 </div>
 
 <!-- ------- APPROVAL PANEL ------- -->
-<div id="ptw-approval-panel" style="display:none">
-<div class="card" style="margin-bottom:14px;padding:0;overflow:hidden">
-<div style="padding:14px 20px;background:linear-gradient(135deg,#1a3a5c,#185FA5);color:#fff;display:flex;align-items:center;justify-content:space-between">
-<div style="font-size:16px;font-weight:700">Permit Approval</div>
-<button class="btn" style="background:rgba(255,255,255,.2);color:#fff;border-color:rgba(255,255,255,.3)" data-auris-onclick="h0573"><i class="ti ti-arrow-left"></i>Back</button>
+<div id="ptw-approval-panel" class="auris-ptw-s-6aa34d7432">
+<div class="card auris-ptw-s-54ec8874e7">
+<div class="auris-ptw-s-282eecbd45">
+<div class="auris-ptw-s-30e294142f">Permit Approval</div>
+<button class="btn auris-ptw-s-5c09edd131" data-auris-onclick="h0573"><i class="ti ti-arrow-left"></i>Back</button>
 </div>
 </div>
 <div id="ptw-approval-levels-display"></div>
 </div>
 
 <!-- ------- CLOSURE PANEL ------- -->
-<div id="ptw-closure-panel" style="display:none">
-<div class="card" style="margin-bottom:14px;padding:0;overflow:hidden">
-<div style="padding:14px 20px;background:linear-gradient(135deg,#064E3B,#1D9E75);color:#fff;display:flex;align-items:center;justify-content:space-between">
-<div style="font-size:16px;font-weight:700">Permit Closure Verification</div>
-<button class="btn" style="background:rgba(255,255,255,.2);color:#fff;border-color:rgba(255,255,255,.3)" data-auris-onclick="h0574"><i class="ti ti-arrow-left"></i>Back</button>
+<div id="ptw-closure-panel" class="auris-ptw-s-6aa34d7432">
+<div class="card auris-ptw-s-54ec8874e7">
+<div class="auris-ptw-s-f5e287e2d6">
+<div class="auris-ptw-s-30e294142f">Permit Closure Verification</div>
+<button class="btn auris-ptw-s-5c09edd131" data-auris-onclick="h0574"><i class="ti ti-arrow-left"></i>Back</button>
 </div>
 </div>
-<div class="card" style="margin-bottom:14px">
+<div class="card auris-ptw-s-42a6ced8b6">
 <div class="card-title">Closure Checklist</div>
 <div id="ptw-closure-checklist"></div>
-<div class="form3group" style="margin-top:12px"><label class="form3label">Closure notes / observations</label><textarea id="ptw-closure-notes" style="min-height:70px" placeholder="Confirm work is complete, area is clean, all isolations removed, equipment restored..."></textarea></div>
-<div class="form3group"><label class="form3label">Closed by</label><input type="text" id="ptw-close-by" readonly style="background:#f9fafb;font-weight:700" placeholder="Filled automatically"/></div>
-<button class="btn btn-primary" style="background:#1D9E75;border-color:#1D9E75;margin-top:10px;width:100%;justify-content:center" data-auris-onclick="h0575"><i class="ti ti-check"></i>Confirm permit closure</button>
+<div class="form3group auris-ptw-s-0ee7f66ad9"><label class="form3label">Closure notes / observations</label><textarea id="ptw-closure-notes" class="auris-ptw-s-4d5979ac8f" placeholder="Confirm work is complete, area is clean, all isolations removed, equipment restored..."></textarea></div>
+<div class="form3group"><label class="form3label">Closed by</label><input type="text" id="ptw-close-by" class="auris-ptw-s-80b0055d7f" readonly placeholder="Filled automatically"/></div>
+<button class="btn btn-primary auris-ptw-s-20f324f1c8" data-auris-onclick="h0575"><i class="ti ti-check"></i>Confirm permit closure</button>
 </div>
 </div>
 
 <!-- ------- SUSPENSION PANEL ------- -->
-<div id="ptw-suspension-panel" style="display:none">
-<div class="card" style="margin-bottom:14px;padding:0;overflow:hidden">
-<div style="padding:14px 20px;background:linear-gradient(135deg,#7F1D1D,#C2410C);color:#fff;display:flex;align-items:center;justify-content:space-between">
-<div style="font-size:16px;font-weight:700">Suspend / Cancel Permit</div>
-<button class="btn" style="background:rgba(255,255,255,.2);color:#fff;border-color:rgba(255,255,255,.3)" data-auris-onclick="h0576"><i class="ti ti-arrow-left"></i>Back</button>
+<div id="ptw-suspension-panel" class="auris-ptw-s-6aa34d7432">
+<div class="card auris-ptw-s-54ec8874e7">
+<div class="auris-ptw-s-2499290108">
+<div class="auris-ptw-s-30e294142f">Suspend / Cancel Permit</div>
+<button class="btn auris-ptw-s-5c09edd131" data-auris-onclick="h0576"><i class="ti ti-arrow-left"></i>Back</button>
 </div>
 </div>
 <div class="card">
 <div class="form3row">
 <div class="form3group"><label class="form3label">Action</label>
 <select id="ptw-suspend-action"><option value="suspended">Suspend (can be resumed)</option><option value="cancelled">Cancel (permanently)</option></select></div>
-<div class="form3group"><label class="form3label">Action by</label><input type="text" id="ptw-suspend-by" readonly style="background:#f9fafb;font-weight:700" placeholder="Filled automatically"/></div>
+<div class="form3group"><label class="form3label">Action by</label><input type="text" id="ptw-suspend-by" class="auris-ptw-s-80b0055d7f" readonly placeholder="Filled automatically"/></div>
 </div>
-<div class="form3group"><label class="form3label" style="color:var(--red)">Reason</label><textarea id="ptw-suspend-reason" style="min-height:70px" placeholder="Explain why the permit is being suspended or cancelled..."></textarea></div>
-<button class="btn" style="background:#C2410C;color:#fff;border-color:#C2410C;margin-top:10px" data-auris-onclick="h0577"><i class="ti ti-alert-triangle"></i>Confirm action</button>
+<div class="form3group"><label class="form3label auris-ptw-s-73cb2565d3">Reason</label><textarea id="ptw-suspend-reason" class="auris-ptw-s-4d5979ac8f" placeholder="Explain why the permit is being suspended or cancelled..."></textarea></div>
+<button class="btn auris-ptw-s-ba95861473" data-auris-onclick="h0577"><i class="ti ti-alert-triangle"></i>Confirm action</button>
 </div>
 </div>
 
