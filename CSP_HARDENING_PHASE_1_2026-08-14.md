@@ -20,6 +20,8 @@ Phase 2D migrated the first ten separately loaded module bundles: 83 attributes 
 
 Phase 2E migrated another 71 attributes from Document Control, Risk Assessment and Chemical Control into 50 precompiled handlers plus the existing strict command parser. A strengthened scan also found and removed two escaped corrective-action row handlers from the core script. The core remains free of executable inline event attributes and the loaded-module backlog is now 265.
 
+Phase 2F migrated all 99 attributes from Objectives & KPIs, SWMS, Contractor Management and Tools & Equipment into 76 precompiled handlers. No dynamic-command fallback was required. The loaded-module backlog is now 166 across Training & Competency, BBS Observations and Safety Engagement.
+
 The interface also contains inline style attributes. Style CSP remains report-only with `'unsafe-inline'` until these declarations are moved into reusable classes or a nonce/hash strategy is adopted.
 
 ## Security effect

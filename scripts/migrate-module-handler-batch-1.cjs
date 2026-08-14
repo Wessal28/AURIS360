@@ -11,6 +11,10 @@ const batches = {
   2: {
     prefix: 'c',
     files: ['document-control-upgrade.js','risk-assessment-upgrade.js','chemical-control-upgrade.js']
+  },
+  3: {
+    prefix: 'd',
+    files: ['kpi-module-upgrade.js','swms-upgrade.js','contractor-management-upgrade.js','tools-equipment-upgrade.js']
   }
 };
 const batch = batches[batchNumber];
