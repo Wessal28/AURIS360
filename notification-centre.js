@@ -62,7 +62,7 @@ function renderItem(row){
   var rel=relationship(row),canOpen=!!(rel.module&&rel.table&&rel.id),unread=!row.read_at;
   var ack=row.acknowledgement_required&&!row.acknowledged_at;
   var severity=['high','urgent'].includes(row.severity)?row.severity:'';
-  return '<article class="nc-item '+severity+(unread?' unread':'')+'" data-id="'+esc(row.id)+'" onclick="notificationCentreOpen(\''+esc(row.id)+'\')">'
+  return '<article class="nc-item '+severity+(unread?' unread':'')+'" data-id="'+esc(row.id)+'" data-auris-module-onclick="b0057" data-auris-module-args="'+encodeURIComponent(JSON.stringify([row.id]))+'">'
     +'<div class="nc-item-icon"><i class="ti '+iconFor(row)+'"></i></div><div>'
     +'<div class="nc-item-title">'+esc(row.title||'AURIS360 notification')+'</div>'
     +(row.message?'<div class="nc-item-message">'+esc(row.message)+'</div>':'')
@@ -72,9 +72,9 @@ function renderItem(row){
     +acknowledgementDeadline(row)
     +(row.acknowledged_at?'<span class="nc-pill"><i class="ti ti-check"></i>Acknowledged</span>':'')+'</div>'
     +'<div class="nc-actions">'
-    +(canOpen?'<button type="button" class="nc-action primary" onclick="event.stopPropagation();notificationCentreOpen(\''+esc(row.id)+'\')"><i class="ti ti-external-link"></i> Open record</button>':'')
-    +(ack?'<button type="button" class="nc-action" onclick="event.stopPropagation();notificationCentreAcknowledge(\''+esc(row.id)+'\')"><i class="ti ti-check"></i> Acknowledge</button>':'')
-    +(unread?'<button type="button" class="nc-action" onclick="event.stopPropagation();notificationCentreMarkRead(\''+esc(row.id)+'\')">Mark read</button>':'')
+    +(canOpen?'<button type="button" class="nc-action primary" data-auris-module-onclick="b0058" data-auris-module-args="'+encodeURIComponent(JSON.stringify([row.id]))+'"><i class="ti ti-external-link"></i> Open record</button>':'')
+    +(ack?'<button type="button" class="nc-action" data-auris-module-onclick="b0059" data-auris-module-args="'+encodeURIComponent(JSON.stringify([row.id]))+'"><i class="ti ti-check"></i> Acknowledge</button>':'')
+    +(unread?'<button type="button" class="nc-action" data-auris-module-onclick="b0060" data-auris-module-args="'+encodeURIComponent(JSON.stringify([row.id]))+'">Mark read</button>':'')
     +'</div></div></article>';
 }
 function render(){
@@ -87,16 +87,16 @@ function render(){
   else body=rows.map(renderItem).join('');
   var ps=pushStatus();
   el.innerHTML='<div class="nc-head"><div><div class="nc-title">Notifications</div><div class="nc-subtitle">Your assignments, reminders and escalations</div></div><div class="nc-head-actions">'
-    +'<button type="button" class="nc-icon-btn" title="Mark all as read" aria-label="Mark all as read" onclick="notificationCentreMarkAllRead()"><i class="ti ti-checks"></i></button>'
-    +'<button type="button" class="nc-icon-btn" title="Refresh" aria-label="Refresh notifications" onclick="notificationCentreRefresh(true)"><i class="ti ti-refresh"></i></button>'
-    +'<button type="button" class="nc-icon-btn" title="Close" aria-label="Close notifications" onclick="notificationCentreClose()"><i class="ti ti-x"></i></button></div></div>'
+    +'<button type="button" class="nc-icon-btn" title="Mark all as read" aria-label="Mark all as read" data-auris-module-onclick="b0061"><i class="ti ti-checks"></i></button>'
+    +'<button type="button" class="nc-icon-btn" title="Refresh" aria-label="Refresh notifications" data-auris-module-onclick="b0062"><i class="ti ti-refresh"></i></button>'
+    +'<button type="button" class="nc-icon-btn" title="Close" aria-label="Close notifications" data-auris-module-onclick="b0063"><i class="ti ti-x"></i></button></div></div>'
     +'<div class="nc-push"><div class="nc-push-copy"><strong><i class="ti '+(NC.push.subscribed?'ti-bell-ringing':'ti-device-mobile')+'"></i>'+esc(ps.label)+'</strong><span>'+esc(ps.detail)+'</span></div>'
-    +(ps.action?'<button type="button" class="nc-action '+(ps.action==='enable'?'primary':'')+'" '+(NC.push.loading?'disabled':'')+' onclick="notificationCentrePushToggle()">'+(NC.push.loading?'Working...':(ps.action==='enable'?'Enable':'Disable'))+'</button>':'')+'</div>'
+    +(ps.action?'<button type="button" class="nc-action '+(ps.action==='enable'?'primary':'')+'" '+(NC.push.loading?'disabled':'')+' data-auris-module-onclick="b0064">'+(NC.push.loading?'Working...':(ps.action==='enable'?'Enable':'Disable'))+'</button>':'')+'</div>'
     +'<div class="nc-filters">'+filterButton('all','Active',activeCount())+filterButton('unread','Unread',unreadCount())+filterButton('ack','Needs acknowledgement',ackCount)+'</div>'
     +'<div class="nc-list">'+body+'</div><div class="nc-footer"><span>Private to your account</span><span>'+(NC.lastLoaded?('Updated '+timeLabel(NC.lastLoaded)):'')+'</span></div>';
   updateBadges();
 }
-function filterButton(key,label,count){return '<button type="button" class="nc-filter '+(NC.filter===key?'active':'')+'" onclick="notificationCentreFilter(\''+key+'\')">'+esc(label)+' <span>'+count+'</span></button>';}
+function filterButton(key,label,count){return '<button type="button" class="nc-filter '+(NC.filter===key?'active':'')+'" data-auris-module-onclick="b0065" data-auris-module-args="'+encodeURIComponent(JSON.stringify([key]))+'">'+esc(label)+' <span>'+count+'</span></button>';}
 function ensureUi(){
   var extras=document.getElementById('topbar-extras');
   if(extras&&!document.getElementById('nc-desktop-trigger')){

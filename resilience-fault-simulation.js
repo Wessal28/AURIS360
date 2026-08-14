@@ -17,7 +17,7 @@ function renderBanner(){
   clearBanners();var option=activeOption();if(!option||!canUse())return;
   var page=document.getElementById('page-'+option.module);if(!page)return;
   var banner=document.createElement('div');banner.className='resilience-simulation-banner';
-  banner.innerHTML='<span><i class="ti ti-flask-2"></i><strong>Resilience test active:</strong> '+option.label+' is being simulated as unavailable in this browser session. No database object or record has been changed.</span><button type="button" class="btn btn-sm" onclick="aurisStopResilienceSimulation()"><i class="ti ti-player-stop"></i>Stop test</button>';
+  banner.innerHTML='<span><i class="ti ti-flask-2"></i><strong>Resilience test active:</strong> '+option.label+' is being simulated as unavailable in this browser session. No database object or record has been changed.</span><button type="button" class="btn btn-sm" data-auris-module-onclick="b0051"><i class="ti ti-player-stop"></i>Stop test</button>';
   page.insertBefore(banner,page.firstChild);
 }
 function renderSettings(){
@@ -28,7 +28,7 @@ function renderSettings(){
     +'<div style="font-size:12px;color:var(--text2);line-height:1.55;margin-bottom:12px">Safely simulate one optional API dependency failure in this browser session. This does not rename tables, change permissions, write production data or activate a rollout cohort.</div>'
     +'<div style="display:flex;align-items:end;gap:10px;flex-wrap:wrap"><div class="form3group" style="margin:0;min-width:260px;flex:1"><label class="form3label">Optional dependency</label><select id="resilience-simulation-select">'
     +Object.keys(OPTIONS).map(function(key){return '<option value="'+key+'" '+(key===selected?'selected':'')+'>'+OPTIONS[key].label+'</option>';}).join('')+'</select></div>'
-    +(option?'<button class="btn" onclick="aurisStopResilienceSimulation()"><i class="ti ti-player-stop"></i>Stop simulation</button>':'<button class="btn btn-primary" onclick="aurisStartResilienceSimulation()"><i class="ti ti-player-play"></i>Start simulation</button>')+'</div>'
+    +(option?'<button class="btn" data-auris-module-onclick="b0051"><i class="ti ti-player-stop"></i>Stop simulation</button>':'<button class="btn btn-primary" data-auris-module-onclick="b0052"><i class="ti ti-player-play"></i>Start simulation</button>')+'</div>'
     +'<div style="margin-top:12px;padding:10px 12px;border-radius:8px;background:#eff6ff;color:#1e3a8a;font-size:11px"><strong>Acceptance:</strong> open the affected module and confirm its primary register remains visible while the unavailable optional feature shows the test banner or controlled empty/error state. Stop the simulation and refresh the module to confirm recovery.</div>';
 }
 

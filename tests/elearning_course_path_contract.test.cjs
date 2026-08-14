@@ -17,7 +17,8 @@ test('course paths support ordered videos with a legacy single-video fallback', 
 
 test('videos open in the protected in-app player and not as direct downloads', () => {
   assert.match(js, /controlsList=\"nodownload noplaybackrate noremoteplayback\"/);
-  assert.match(js, /oncontextmenu=\"return false\"/);
+  assert.match(js, /data-auris-module-oncontextmenu=\"b0050\"/);
+  assert.match(html, /\"b0050\": function \(event, args\) \{\s*return false/);
   assert.doesNotMatch(js, /window\.open\(course\.course_url/);
   assert.match(js, /eleOpenVideoPlayer\(\{course:c,preview:true\}\)/);
 });
@@ -41,4 +42,3 @@ test('course path assets are loaded by the application', () => {
   assert.match(html, /elearning-course-path\.css/);
   assert.match(html, /elearning-course-path\.js/);
 });
-
