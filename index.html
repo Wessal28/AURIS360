@@ -62,6 +62,7 @@
 <link rel="stylesheet" href="auris-kpi-legacy.css?v=20260814-1">
 <link rel="stylesheet" href="auris-work-schedule.css?v=20260814-1">
 <link rel="stylesheet" href="auris-incident-management-static.css?v=20260814-1">
+<link rel="stylesheet" href="auris-bbs-observation-static.css?v=20260814-1">
 </head>
 <body>
 <div id="login-screen">
@@ -2085,38 +2086,38 @@
 <div class="page-header">
 <div>
 <div class="page-title">Observations &amp; BBS</div>
-<div style="font-size:12px;color:var(--text2)">Behaviour-Based Safety - Safety observation cards - Positive behaviour - Unsafe acts &amp; conditions - Trend analysis</div>
+<div class="auris-bbs-s-7299078644">Behaviour-Based Safety - Safety observation cards - Positive behaviour - Unsafe acts &amp; conditions - Trend analysis</div>
 </div>
-<div style="display:flex;gap:8px">
+<div class="auris-bbs-s-9c40389b4a">
 <button class="btn" id="obs-print-btn" data-auris-onclick="h0255"><i class="ti ti-printer"></i>Print current view</button>
 <button class="btn btn-primary" id="obs-new-btn" data-auris-onclick="h0256"><i class="ti ti-plus"></i>New observation</button>
 </div>
 </div>
 
 <!-- Metrics -->
-<div class="module-metrics" style="display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin-bottom:14px">
-<div class="card" style="padding:10px 12px;border-left:4px solid #1D9E75"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">Positive</div><div style="font-size:22px;font-weight:800;color:#1D9E75" id="obs-m3positive">-</div></div>
-<div class="card" style="padding:10px 12px;border-left:4px solid #E24B4A"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">Unsafe Acts</div><div style="font-size:22px;font-weight:800;color:#E24B4A" id="obs-m3unsafe-act">-</div></div>
-<div class="card" style="padding:10px 12px;border-left:4px solid #EF9F27"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">Unsafe Conditions</div><div style="font-size:22px;font-weight:800;color:#EF9F27" id="obs-m3unsafe-cond">-</div></div>
-<div class="card" style="padding:10px 12px;border-left:4px solid #8B5CF6"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">Near Misses</div><div style="font-size:22px;font-weight:800;color:#8B5CF6" id="obs-m3near-miss">-</div></div>
-<div class="card" style="padding:10px 12px;border-left:4px solid #DC2626"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">Actions Open</div><div style="font-size:22px;font-weight:800;color:#DC2626" id="obs-m3actions">-</div></div>
-<div class="card" style="padding:10px 12px;border-left:4px solid #185FA5"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">This Month</div><div style="font-size:22px;font-weight:800;color:#185FA5" id="obs-m3month">-</div></div>
+<div class="module-metrics auris-bbs-s-0b8cad26ad">
+<div class="card auris-bbs-s-7a5e61eb83"><div class="auris-bbs-s-4422804ebb">Positive</div><div id="obs-m3positive" class="auris-bbs-s-1e4fd5f9ed">-</div></div>
+<div class="card auris-bbs-s-530946d91c"><div class="auris-bbs-s-4422804ebb">Unsafe Acts</div><div id="obs-m3unsafe-act" class="auris-bbs-s-e7ad3ebe2e">-</div></div>
+<div class="card auris-bbs-s-c70473e794"><div class="auris-bbs-s-4422804ebb">Unsafe Conditions</div><div id="obs-m3unsafe-cond" class="auris-bbs-s-2062f090bc">-</div></div>
+<div class="card auris-bbs-s-24ac637923"><div class="auris-bbs-s-4422804ebb">Near Misses</div><div id="obs-m3near-miss" class="auris-bbs-s-bc6456303a">-</div></div>
+<div class="card auris-bbs-s-03bd966c28"><div class="auris-bbs-s-4422804ebb">Actions Open</div><div id="obs-m3actions" class="auris-bbs-s-ffe267bce1">-</div></div>
+<div class="card auris-bbs-s-b6d403ee7e"><div class="auris-bbs-s-4422804ebb">This Month</div><div id="obs-m3month" class="auris-bbs-s-6f56b8363e">-</div></div>
 </div>
 
 <!-- Tab bar -->
-<div class="module-tabs" style="display:flex;gap:0;margin-bottom:14px;border-bottom:2px solid var(--border);overflow-x:auto">
-<button class="mtg-tab active" id="obs-tab-list" data-auris-onclick="h0257" style="white-space:nowrap">All Observations</button>
-<button class="mtg-tab" id="obs-tab-positive" data-auris-onclick="h0258" style="white-space:nowrap">Positive Behaviours</button>
-<button class="mtg-tab" id="obs-tab-unsafe" data-auris-onclick="h0259" style="white-space:nowrap">Unsafe Acts/Conditions</button>
-<button class="mtg-tab" id="obs-tab-trends" data-auris-onclick="h0260" style="white-space:nowrap">Trend Analysis</button>
+<div class="module-tabs auris-bbs-s-0904085f3d">
+<button class="mtg-tab active auris-bbs-s-eb99a4c193" id="obs-tab-list" data-auris-onclick="h0257">All Observations</button>
+<button class="mtg-tab auris-bbs-s-eb99a4c193" id="obs-tab-positive" data-auris-onclick="h0258">Positive Behaviours</button>
+<button class="mtg-tab auris-bbs-s-eb99a4c193" id="obs-tab-unsafe" data-auris-onclick="h0259">Unsafe Acts/Conditions</button>
+<button class="mtg-tab auris-bbs-s-eb99a4c193" id="obs-tab-trends" data-auris-onclick="h0260">Trend Analysis</button>
 </div>
 
 <!-- -- ALL OBSERVATIONS -- -->
 <div id="obs-view-list">
-<div class="card" style="margin-bottom:12px;padding:10px 14px">
-<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
-<input type="text" id="obs-search" placeholder="Search observer, location, description..." data-auris-oninput="h0261" style="flex:1;min-width:180px;padding:7px 12px;border:1px solid var(--border);border-radius:8px;font-size:12px"/>
-<select id="obs-filter-type" data-auris-onchange="h0262" style="padding:7px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px">
+<div class="card auris-bbs-s-54bb9f1d16">
+<div class="auris-bbs-s-d5129e1520">
+<input type="text" id="obs-search" class="auris-bbs-s-11856befbc" placeholder="Search observer, location, description..." data-auris-oninput="h0261"/>
+<select id="obs-filter-type" class="auris-bbs-s-d35063206b" data-auris-onchange="h0262">
 <option value="">All types</option>
 <option value="positive_behaviour">Positive behaviour</option>
 <option value="unsafe_behaviour">Unsafe behaviour</option>
@@ -2124,7 +2125,7 @@
 <option value="near_miss">Near miss</option>
 <option value="good_practice">Good practice</option>
 </select>
-<select id="obs-filter-cat" data-auris-onchange="h0262" style="padding:7px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px">
+<select id="obs-filter-cat" class="auris-bbs-s-d35063206b" data-auris-onchange="h0262">
 <option value="">All categories</option>
 <option value="ppe">PPE</option><option value="housekeeping">Housekeeping</option>
 <option value="working_at_height">Working at Height</option><option value="manual_handling">Manual Handling</option>
@@ -2133,7 +2134,7 @@
 <option value="environmental">Environmental</option><option value="driving">Driving</option>
 <option value="ergonomics">Ergonomics</option><option value="procedures">Procedures</option>
 </select>
-<select id="obs-filter-sev" data-auris-onchange="h0262" style="padding:7px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px">
+<select id="obs-filter-sev" class="auris-bbs-s-d35063206b" data-auris-onchange="h0262">
 <option value="">All severities</option>
 <option value="critical">Critical</option><option value="high">High</option>
 <option value="medium">Medium</option><option value="low">Low</option>
@@ -2144,39 +2145,39 @@
 </div>
 
 <!-- -- POSITIVE BEHAVIOURS -- -->
-<div id="obs-view-positive" style="display:none">
-<div class="card" style="margin-bottom:14px;padding:16px 20px;background:linear-gradient(135deg,#064E3B,#1D9E75);color:#fff">
-<div style="font-size:15px;font-weight:800;margin-bottom:4px">Positive Behaviour Recognition</div>
-<div style="font-size:12px;opacity:.85">Recognise and reinforce safe behaviours. Every positive observation strengthens your safety culture.</div>
+<div id="obs-view-positive" class="auris-bbs-s-6aa34d7432">
+<div class="card auris-bbs-s-5bc64a1fcc">
+<div class="auris-bbs-s-287292c0e6">Positive Behaviour Recognition</div>
+<div class="auris-bbs-s-dc4ac84a01">Recognise and reinforce safe behaviours. Every positive observation strengthens your safety culture.</div>
 </div>
 <div id="obs-positive-list"></div>
 </div>
 
 <!-- -- UNSAFE ACTS/CONDITIONS -- -->
-<div id="obs-view-unsafe" style="display:none">
-<div class="card" style="margin-bottom:14px;padding:16px 20px;background:linear-gradient(135deg,#7F1D1D,#DC2626);color:#fff">
-<div style="font-size:15px;font-weight:800;margin-bottom:4px">Unsafe Acts &amp; Conditions</div>
-<div style="font-size:12px;opacity:.85">Review and act on reported unsafe behaviours and physical hazards. Critical items require immediate action.</div>
+<div id="obs-view-unsafe" class="auris-bbs-s-6aa34d7432">
+<div class="card auris-bbs-s-f440bc9674">
+<div class="auris-bbs-s-287292c0e6">Unsafe Acts &amp; Conditions</div>
+<div class="auris-bbs-s-dc4ac84a01">Review and act on reported unsafe behaviours and physical hazards. Critical items require immediate action.</div>
 </div>
-<div id="obs-unsafe-alerts" style="margin-bottom:10px"></div>
+<div id="obs-unsafe-alerts" class="auris-bbs-s-b922c89f16"></div>
 <div id="obs-unsafe-list"></div>
 </div>
 
 <!-- -- TREND ANALYSIS -- -->
-<div id="obs-view-trends" style="display:none">
-<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px">
+<div id="obs-view-trends" class="auris-bbs-s-6aa34d7432">
+<div class="auris-bbs-s-03826b79d9">
 <!-- Safe/Unsafe ratio gauge -->
 <div class="card">
 <div class="card-title"><i class="ti ti-chart-pie"></i> Safe vs Unsafe Ratio</div>
-<div id="obs-trend-ratio" style="padding:10px"></div>
+<div id="obs-trend-ratio" class="auris-bbs-s-7e9e1b04a9"></div>
 </div>
 <!-- Observations over time -->
 <div class="card">
 <div class="card-title"><i class="ti ti-trending-up"></i> Monthly Volume</div>
-<div id="obs-trend-monthly" style="padding:10px"></div>
+<div id="obs-trend-monthly" class="auris-bbs-s-7e9e1b04a9"></div>
 </div>
 </div>
-<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px">
+<div class="auris-bbs-s-03826b79d9">
 <!-- Top categories -->
 <div class="card">
 <div class="card-title"><i class="ti ti-category"></i> Top Categories (Unsafe)</div>
@@ -2189,19 +2190,19 @@
 </div>
 </div>
 <!-- Behaviour trend -->
-<div class="card" style="margin-bottom:14px">
+<div class="card auris-bbs-s-42a6ced8b6">
 <div class="card-title"><i class="ti ti-robot"></i> AI Behavioural Safety Insights</div>
-<div style="font-size:12px;color:var(--text2);margin-bottom:10px">AI-powered analysis of your observation data - patterns, root causes, and recommendations</div>
-<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">
-<button class="btn btn-sm" style="background:#5B21B6;color:#fff;border-color:#5B21B6" data-auris-onclick="h0263">Behaviour patterns</button>
-<button class="btn btn-sm" style="background:#5B21B6;color:#fff;border-color:#5B21B6" data-auris-onclick="h0264">Intervention ideas</button>
-<button class="btn btn-sm" style="background:#5B21B6;color:#fff;border-color:#5B21B6" data-auris-onclick="h0265">Generate report</button>
+<div class="auris-bbs-s-fa530ed1c3">AI-powered analysis of your observation data - patterns, root causes, and recommendations</div>
+<div class="auris-bbs-s-6f8311d1d7">
+<button class="btn btn-sm auris-bbs-s-a7dfccfa36" data-auris-onclick="h0263">Behaviour patterns</button>
+<button class="btn btn-sm auris-bbs-s-a7dfccfa36" data-auris-onclick="h0264">Intervention ideas</button>
+<button class="btn btn-sm auris-bbs-s-a7dfccfa36" data-auris-onclick="h0265">Generate report</button>
 </div>
-<div style="display:flex;gap:8px;margin-bottom:8px">
-<input type="text" id="obs-ai-input" placeholder="Ask about your observation trends, BBS programme effectiveness, root causes..." style="flex:1;padding:8px 12px;border:1px solid #c4b5fd;border-radius:8px;font-size:12px" data-auris-onkeydown="h0266"/>
-<button class="btn" style="background:#5B21B6;color:#fff;border-color:#5B21B6" data-auris-onclick="h0267"><i class="ti ti-send"></i></button>
+<div class="auris-bbs-s-c3d04b4505">
+<input type="text" id="obs-ai-input" class="auris-bbs-s-8f9ecb2f9c" placeholder="Ask about your observation trends, BBS programme effectiveness, root causes..." data-auris-onkeydown="h0266"/>
+<button class="btn auris-bbs-s-a7dfccfa36" data-auris-onclick="h0267"><i class="ti ti-send"></i></button>
 </div>
-<div id="obs-ai-response" style="display:none;background:#F5F3FF;border:1px solid #c4b5fd;border-radius:8px;padding:12px;font-size:13px;line-height:1.6;white-space:pre-wrap;max-height:360px;overflow-y:auto"></div>
+<div id="obs-ai-response" class="auris-bbs-s-bc1ec76812"></div>
 </div>
 <!-- Recent observations summary -->
 <div class="card">
@@ -2211,74 +2212,74 @@
 </div>
 
 <!-- ------- OBSERVATION FORM ------- -->
-<div id="obs-form3view" style="display:none">
+<div id="obs-form3view" class="auris-bbs-s-6aa34d7432">
 <!-- Header -->
-<div class="card" style="margin-bottom:14px;padding:0;overflow:hidden">
-<div id="obs-form3banner" style="padding:16px 24px;background:linear-gradient(135deg,#1a3a5c,#185FA5);color:#fff;display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:10px">
+<div class="card auris-bbs-s-54ec8874e7">
+<div id="obs-form3banner" class="auris-bbs-s-712a1559a6">
 <div>
-<div style="font-size:11px;font-weight:600;text-transform:uppercase;opacity:.8;letter-spacing:.08em;margin-bottom:4px" id="obs-form3type-label">Safety Observation</div>
-<div style="font-size:18px;font-weight:800" id="obs-form3title">New Observation</div>
-<div style="font-family:monospace;font-size:12px;color:#a8d8f0;margin-top:3px" id="obs-form3ref">OBS-AUTO</div>
+<div id="obs-form3type-label" class="auris-bbs-s-c542f2bc2e">Safety Observation</div>
+<div id="obs-form3title" class="auris-bbs-s-e56ce903a9">New Observation</div>
+<div id="obs-form3ref" class="auris-bbs-s-9abe12cdf2">OBS-AUTO</div>
 </div>
-<div style="display:flex;gap:8px;flex-wrap:wrap">
-<button class="btn" style="background:rgba(255,255,255,.2);color:#fff;border-color:rgba(255,255,255,.3)" data-auris-onclick="h0268"><i class="ti ti-arrow-left"></i>Back</button>
-<button id="obs-del-btn" class="btn" style="display:none;background:rgba(220,38,38,.3);color:#fff;border-color:rgba(220,38,38,.5)" data-auris-onclick="h0269"><i class="ti ti-trash"></i></button>
-<button class="btn" style="background:#1D9E75;color:#fff;border-color:#1D9E75" data-auris-onclick="h0270"><i class="ti ti-device-floppy"></i>Save</button>
+<div class="auris-bbs-s-c9dc9b5648">
+<button class="btn auris-bbs-s-5c09edd131" data-auris-onclick="h0268"><i class="ti ti-arrow-left"></i>Back</button>
+<button id="obs-del-btn" class="btn auris-bbs-s-0e610f7b67" data-auris-onclick="h0269"><i class="ti ti-trash"></i></button>
+<button class="btn auris-bbs-s-c7b9e5b2c7" data-auris-onclick="h0270"><i class="ti ti-device-floppy"></i>Save</button>
 </div>
 </div>
 </div>
 
 <!-- BBS observation scope -->
-<div class="card" style="margin-bottom:14px">
+<div class="card auris-bbs-s-42a6ced8b6">
 <div class="card-title">BBS observation scope</div>
-<div style="font-size:12px;color:var(--text2);line-height:1.45;margin-bottom:10px">Assess the work as one complete observation. Record positive behaviour, unsafe behaviour and unsafe condition together where applicable.</div>
-<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px" id="obs-type-selector">
-<div class="obs-type-btn" data-type="positive_behaviour" style="padding:14px 10px;border-radius:10px;text-align:center;border:2px solid #bbf7d0;background:#f0fdf4;transition:all .15s">
-<div style="font-size:28px;margin-bottom:6px">?</div><div style="font-weight:700;font-size:12px;color:#166534">Positive Behaviour</div><div style="font-size:10px;color:var(--text2);margin-top:3px">Safe act observed</div></div>
-<div class="obs-type-btn" data-type="unsafe_behaviour" style="padding:14px 10px;border-radius:10px;text-align:center;border:2px solid #fecaca;background:#FEF2F2;transition:all .15s">
-<div style="font-size:28px;margin-bottom:6px"><i class="ti ti-circle-dot"></i></div><div style="font-weight:700;font-size:12px;color:#991B1B">Unsafe Behaviour</div><div style="font-size:10px;color:var(--text2);margin-top:3px">At-risk act seen</div></div>
-<div class="obs-type-btn" data-type="unsafe_condition" style="padding:14px 10px;border-radius:10px;text-align:center;border:2px solid #fed7aa;background:#FFF7ED;transition:all .15s">
-<div style="font-size:28px;margin-bottom:6px"><i class="ti ti-circle-dot"></i></div><div style="font-weight:700;font-size:12px;color:#9A3412">Unsafe Condition</div><div style="font-size:10px;color:var(--text2);margin-top:3px">Physical hazard</div></div>
+<div class="auris-bbs-s-1a5ccd228d">Assess the work as one complete observation. Record positive behaviour, unsafe behaviour and unsafe condition together where applicable.</div>
+<div id="obs-type-selector" class="auris-bbs-s-6a3d96f2f7">
+<div class="obs-type-btn auris-bbs-s-2f02e2be37" data-type="positive_behaviour">
+<div class="auris-bbs-s-8cb6aed527">?</div><div class="auris-bbs-s-7be2a58c9f">Positive Behaviour</div><div class="auris-bbs-s-276b6a758d">Safe act observed</div></div>
+<div class="obs-type-btn auris-bbs-s-db0ba9da56" data-type="unsafe_behaviour">
+<div class="auris-bbs-s-8cb6aed527"><i class="ti ti-circle-dot"></i></div><div class="auris-bbs-s-b6dfb10bcf">Unsafe Behaviour</div><div class="auris-bbs-s-276b6a758d">At-risk act seen</div></div>
+<div class="obs-type-btn auris-bbs-s-b79d667b6e" data-type="unsafe_condition">
+<div class="auris-bbs-s-8cb6aed527"><i class="ti ti-circle-dot"></i></div><div class="auris-bbs-s-ac5943e50c">Unsafe Condition</div><div class="auris-bbs-s-276b6a758d">Physical hazard</div></div>
 </div>
 <input type="hidden" id="obs-type" value="bbs_observation"/>
 </div>
 
-<div style="display:grid;grid-template-columns:2fr 1fr;gap:14px">
+<div class="auris-bbs-s-5571af1e74">
 <div>
 <!-- What was observed -->
-<div class="card" style="margin-bottom:14px" id="obs-positive-section">
-<div class="card-title" style="color:#1D9E75">Positive Observation</div>
-<div class="form3group"><div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:4px"><label class="form3label" style="margin:0">What safe behaviour / good practice was observed?</label><div style="display:flex;gap:6px;flex-wrap:wrap"><button type="button" class="btn btn-sm" data-auris-onclick="h0271"><i class="ti ti-microphone"></i> Voice</button><button type="button" class="btn btn-sm" data-auris-onclick="h0272"><i class="ti ti-sparkles"></i> AI format</button></div></div><textarea id="obs-positive-text" style="min-height:80px" placeholder="Describe the safe behaviour, what was done correctly, and why it was good practice..." data-auris-oninput="h0273"></textarea><div id="obs-positive-text-voice-status" style="font-size:11px;color:var(--text2);margin-top:4px"></div></div>
-<div class="form3group"><label class="form3label">What positive aspects should be reinforced?</label><textarea id="obs-positive-reinforce" style="min-height:60px" placeholder="What should be recognised and encouraged?" data-auris-oninput="h0273"></textarea></div>
+<div class="card auris-bbs-s-42a6ced8b6" id="obs-positive-section">
+<div class="card-title auris-bbs-s-f9faa54401">Positive Observation</div>
+<div class="form3group"><div class="auris-bbs-s-502ca8a364"><label class="form3label auris-bbs-s-ab79ea2b85">What safe behaviour / good practice was observed?</label><div class="auris-bbs-s-ed524873cf"><button type="button" class="btn btn-sm" data-auris-onclick="h0271"><i class="ti ti-microphone"></i> Voice</button><button type="button" class="btn btn-sm" data-auris-onclick="h0272"><i class="ti ti-sparkles"></i> AI format</button></div></div><textarea id="obs-positive-text" class="auris-bbs-s-770a4152c1" placeholder="Describe the safe behaviour, what was done correctly, and why it was good practice..." data-auris-oninput="h0273"></textarea><div id="obs-positive-text-voice-status" class="auris-bbs-s-34b3cf0d1f"></div></div>
+<div class="form3group"><label class="form3label">What positive aspects should be reinforced?</label><textarea id="obs-positive-reinforce" class="auris-bbs-s-07bdff4587" placeholder="What should be recognised and encouraged?" data-auris-oninput="h0273"></textarea></div>
 </div>
-<div class="card" style="margin-bottom:14px" id="obs-unsafe-section" style="display:none">
-<div class="card-title" style="color:#DC2626" id="obs-unsafe-section-title">Unsafe Observation</div>
-<div class="form3group"><div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:4px"><label class="form3label" style="margin:0">Unsafe behaviour observed</label><div style="display:flex;gap:6px;flex-wrap:wrap"><button type="button" class="btn btn-sm" data-auris-onclick="h0274"><i class="ti ti-microphone"></i> Voice</button><button type="button" class="btn btn-sm" data-auris-onclick="h0275"><i class="ti ti-sparkles"></i> AI format</button></div></div><textarea id="obs-text" style="min-height:80px" placeholder="Describe the at-risk action, shortcut or unsafe behaviour observed..." data-auris-oninput="h0273"></textarea><div id="obs-text-voice-status" style="font-size:11px;color:var(--text2);margin-top:4px"></div></div>
-<div class="form3group"><div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:4px"><label class="form3label" style="margin:0">Unsafe condition observed</label><div style="display:flex;gap:6px;flex-wrap:wrap"><button type="button" class="btn btn-sm" data-auris-onclick="h0276"><i class="ti ti-microphone"></i> Voice</button><button type="button" class="btn btn-sm" data-auris-onclick="h0277"><i class="ti ti-sparkles"></i> AI format</button></div></div><textarea id="obs-condition-text" style="min-height:70px" placeholder="Describe the physical condition, workplace hazard or unsafe state observed..." data-auris-oninput="h0273"></textarea><div id="obs-condition-text-voice-status" style="font-size:11px;color:var(--text2);margin-top:4px"></div></div>
-<div class="form3group"><label class="form3label">Immediate / direct cause</label><textarea id="obs-immediate-cause" style="min-height:60px" placeholder="What was the immediate cause of the unsafe situation?"></textarea></div>
+<div class="card auris-bbs-s-42a6ced8b6 auris-bbs-s-6aa34d7432" id="obs-unsafe-section">
+<div class="card-title auris-bbs-s-c7bff90490" id="obs-unsafe-section-title">Unsafe Observation</div>
+<div class="form3group"><div class="auris-bbs-s-502ca8a364"><label class="form3label auris-bbs-s-ab79ea2b85">Unsafe behaviour observed</label><div class="auris-bbs-s-ed524873cf"><button type="button" class="btn btn-sm" data-auris-onclick="h0274"><i class="ti ti-microphone"></i> Voice</button><button type="button" class="btn btn-sm" data-auris-onclick="h0275"><i class="ti ti-sparkles"></i> AI format</button></div></div><textarea id="obs-text" class="auris-bbs-s-770a4152c1" placeholder="Describe the at-risk action, shortcut or unsafe behaviour observed..." data-auris-oninput="h0273"></textarea><div id="obs-text-voice-status" class="auris-bbs-s-34b3cf0d1f"></div></div>
+<div class="form3group"><div class="auris-bbs-s-502ca8a364"><label class="form3label auris-bbs-s-ab79ea2b85">Unsafe condition observed</label><div class="auris-bbs-s-ed524873cf"><button type="button" class="btn btn-sm" data-auris-onclick="h0276"><i class="ti ti-microphone"></i> Voice</button><button type="button" class="btn btn-sm" data-auris-onclick="h0277"><i class="ti ti-sparkles"></i> AI format</button></div></div><textarea id="obs-condition-text" class="auris-bbs-s-4d5979ac8f" placeholder="Describe the physical condition, workplace hazard or unsafe state observed..." data-auris-oninput="h0273"></textarea><div id="obs-condition-text-voice-status" class="auris-bbs-s-34b3cf0d1f"></div></div>
+<div class="form3group"><label class="form3label">Immediate / direct cause</label><textarea id="obs-immediate-cause" class="auris-bbs-s-07bdff4587" placeholder="What was the immediate cause of the unsafe situation?"></textarea></div>
 <div class="form3group"><label class="form3label">Potential consequence (if unaddressed)</label><input type="text" id="obs-consequence" placeholder="e.g. Fall from height, Chemical splash, Crush injury..."/></div>
 </div>
 
 <!-- Photos -->
-<div class="card" style="margin-bottom:14px"><div class="card-title"><i class="ti ti-camera"></i> Photos</div>
-<div style="font-size:12px;color:var(--text2);margin-bottom:10px">Take photos on mobile or upload existing images. They will attach when you save the observation.</div>
-<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px">
-<label class="btn btn-sm btn-primary" style="cursor:pointer;margin:0"><i class="ti ti-camera"></i>Take / upload photos
-<input type="file" id="obs-photo-input" accept="image/*" capture="environment" multiple style="display:none" data-auris-onchange="h0278"/></label>
+<div class="card auris-bbs-s-42a6ced8b6"><div class="card-title"><i class="ti ti-camera"></i> Photos</div>
+<div class="auris-bbs-s-fa530ed1c3">Take photos on mobile or upload existing images. They will attach when you save the observation.</div>
+<div class="auris-bbs-s-f3b4e79614">
+<label class="btn btn-sm btn-primary auris-bbs-s-3ab824a596"><i class="ti ti-camera"></i>Take / upload photos
+<input type="file" id="obs-photo-input" class="auris-bbs-s-6aa34d7432" accept="image/*" capture="environment" multiple data-auris-onchange="h0278"/></label>
 <button type="button" class="btn btn-sm" data-auris-onclick="h0279"><i class="ti ti-x"></i>Clear</button>
 </div>
-<div id="obs-photo-list" style="font-size:12px;color:var(--text2)">No photos selected</div>
+<div id="obs-photo-list" class="auris-bbs-s-7299078644">No photos selected</div>
 </div>
 
 <!-- Company custom fields -->
-<div class="card" id="obs-custom3fields-card" style="margin-bottom:14px;display:none">
+<div class="card auris-bbs-s-19dcb71206" id="obs-custom3fields-card">
 <div class="card-title"><i class="ti ti-adjustments"></i> Company Specific Fields</div>
-<div style="font-size:12px;color:var(--text2);margin-bottom:10px">Additional fields configured by your company admin for BBS observations.</div>
+<div class="auris-bbs-s-fa530ed1c3">Additional fields configured by your company admin for BBS observations.</div>
 <div id="obs-custom3fields-body"></div>
 </div>
 
 <!-- Location & Context -->
-<div class="card" style="margin-bottom:14px"><div class="card-title">Location &amp; Context</div>
+<div class="card auris-bbs-s-42a6ced8b6"><div class="card-title">Location &amp; Context</div>
 <div class="form3row">
 <div class="form3group"><label class="form3label">Location / area</label><input type="text" id="obs-location" placeholder="e.g. Production floor B, Store area, Car park..."/></div>
 <div class="form3group"><label class="form3label">Department</label><input type="text" id="obs-dept"/></div>
@@ -2292,21 +2293,21 @@
 </div>
 
 <!-- Action taken -->
-<div class="card" style="margin-bottom:14px"><div class="card-title" style="color:#185FA5">Immediate Action &amp; Feedback</div>
-<div style="display:flex;gap:20px;flex-wrap:wrap;margin-bottom:10px">
-<label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer;font-weight:600"><input type="checkbox" id="obs-immediate-action" style="accent-color:var(--green);width:16px;height:16px;padding:0;margin:0;flex-shrink:0"/> Immediate action taken</label>
-<label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer;font-weight:600"><input type="checkbox" id="obs-stopped-work" style="accent-color:var(--red);width:16px;height:16px;padding:0;margin:0;flex-shrink:0"/> Work stopped</label>
-<label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer;font-weight:600"><input type="checkbox" id="obs-feedback-given" style="accent-color:var(--green);width:16px;height:16px;padding:0;margin:0;flex-shrink:0"/> Feedback given to person</label>
+<div class="card auris-bbs-s-42a6ced8b6"><div class="card-title auris-bbs-s-ca32b871b2">Immediate Action &amp; Feedback</div>
+<div class="auris-bbs-s-3626928ad4">
+<label class="auris-bbs-s-f08cc9c7cb"><input type="checkbox" id="obs-immediate-action" class="auris-bbs-s-8b7ade549d"/> Immediate action taken</label>
+<label class="auris-bbs-s-f08cc9c7cb"><input type="checkbox" id="obs-stopped-work" class="auris-bbs-s-13543f9af4"/> Work stopped</label>
+<label class="auris-bbs-s-f08cc9c7cb"><input type="checkbox" id="obs-feedback-given" class="auris-bbs-s-8b7ade549d"/> Feedback given to person</label>
 </div>
-<div class="form3group"><div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:4px"><label class="form3label" style="margin:0">Immediate action description</label><div style="display:flex;gap:6px;flex-wrap:wrap"><button type="button" class="btn btn-sm" data-auris-onclick="h0280"><i class="ti ti-microphone"></i> Voice</button><button type="button" class="btn btn-sm" data-auris-onclick="h0281"><i class="ti ti-sparkles"></i> AI format</button></div></div><textarea id="obs-immediate-desc" style="min-height:60px" placeholder="Describe what was done immediately to address the observation..."></textarea><div id="obs-immediate-desc-voice-status" style="font-size:11px;color:var(--text2);margin-top:4px"></div></div>
-<div class="form3group"><label class="form3label">Feedback notes</label><textarea id="obs-feedback-notes" style="min-height:50px" placeholder="What was communicated to the person observed?"></textarea></div>
+<div class="form3group"><div class="auris-bbs-s-502ca8a364"><label class="form3label auris-bbs-s-ab79ea2b85">Immediate action description</label><div class="auris-bbs-s-ed524873cf"><button type="button" class="btn btn-sm" data-auris-onclick="h0280"><i class="ti ti-microphone"></i> Voice</button><button type="button" class="btn btn-sm" data-auris-onclick="h0281"><i class="ti ti-sparkles"></i> AI format</button></div></div><textarea id="obs-immediate-desc" class="auris-bbs-s-07bdff4587" placeholder="Describe what was done immediately to address the observation..."></textarea><div id="obs-immediate-desc-voice-status" class="auris-bbs-s-34b3cf0d1f"></div></div>
+<div class="form3group"><label class="form3label">Feedback notes</label><textarea id="obs-feedback-notes" class="auris-bbs-s-2b013fa0d9" placeholder="What was communicated to the person observed?"></textarea></div>
 </div>
 
 <!-- Follow-up action -->
-<div class="card"><div class="card-title" style="color:#E24B4A">Follow-up Action Required</div>
-<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px"><input type="checkbox" id="obs-action-required" style="accent-color:var(--red);width:16px;height:16px;padding:0;margin:0;flex-shrink:0;cursor:pointer" data-auris-onchange="h0282"/><label for="obs-action-required" style="font-size:13px;font-weight:600;cursor:pointer;color:#E24B4A">Further action required</label></div>
-<div id="obs-action-fields" style="display:none">
-<div class="form3group"><label class="form3label">Action description</label><textarea id="obs-action-desc" style="min-height:60px" placeholder="What action must be taken to prevent recurrence?"></textarea></div>
+<div class="card"><div class="card-title auris-bbs-s-df4f0a3612">Follow-up Action Required</div>
+<div class="auris-bbs-s-ba28bccee4"><input type="checkbox" id="obs-action-required" class="auris-bbs-s-81892d3d5e" data-auris-onchange="h0282"/><label class="auris-bbs-s-dfaf9e0b07" for="obs-action-required">Further action required</label></div>
+<div id="obs-action-fields" class="auris-bbs-s-6aa34d7432">
+<div class="form3group"><label class="form3label">Action description</label><textarea id="obs-action-desc" class="auris-bbs-s-07bdff4587" placeholder="What action must be taken to prevent recurrence?"></textarea></div>
 <div class="form3row">
 <div class="form3group"><label class="form3label">Assigned to</label><select id="obs-action-assigned"><option value="">Select person...</option></select></div>
 <div class="form3group"><label class="form3label">Due date</label><input type="date" id="obs-action-due"/></div>
@@ -2317,19 +2318,19 @@
 
 <div>
 <!-- PPE -->
-<div class="card" style="margin-bottom:14px"><div class="card-title">PPE Status</div>
-<div style="display:flex;flex-direction:column;gap:8px">
-<label style="display:flex;align-items:center;gap:8px;padding:8px;border-radius:8px;cursor:pointer;background:#f9fafb" data-auris-onclick="h0283"><input type="radio" name="obs-ppe" value="true" style="accent-color:var(--green);width:16px;height:16px;padding:0;margin:0;flex-shrink:0"> <span style="font-size:12px;font-weight:600;color:#166534">PPE worn correctly</span></label>
-<label style="display:flex;align-items:center;gap:8px;padding:8px;border-radius:8px;cursor:pointer;background:#f9fafb" data-auris-onclick="h0284"><input type="radio" name="obs-ppe" value="partial" style="accent-color:#EF9F27;width:16px;height:16px;padding:0;margin:0;flex-shrink:0"> <span style="font-size:12px;font-weight:600;color:#854F0B">PPE worn but inadequate</span></label>
-<label style="display:flex;align-items:center;gap:8px;padding:8px;border-radius:8px;cursor:pointer;background:#f9fafb" data-auris-onclick="h0285"><input type="radio" name="obs-ppe" value="false" style="accent-color:var(--red);width:16px;height:16px;padding:0;margin:0;flex-shrink:0"> <span style="font-size:12px;font-weight:600;color:#991B1B">PPE not worn</span></label>
-<label style="display:flex;align-items:center;gap:8px;padding:8px;border-radius:8px;cursor:pointer;background:#f9fafb" data-auris-onclick="h0286"><input type="radio" name="obs-ppe" value="na" style="accent-color:#6B7280;width:16px;height:16px;padding:0;margin:0;flex-shrink:0" checked> <span style="font-size:12px;font-weight:600;color:#6B7280">- Not applicable</span></label>
+<div class="card auris-bbs-s-42a6ced8b6"><div class="card-title">PPE Status</div>
+<div class="auris-bbs-s-0fbf9e859f">
+<label class="auris-bbs-s-ffcb9fa8ce" data-auris-onclick="h0283"><input class="auris-bbs-s-8b7ade549d" type="radio" name="obs-ppe" value="true"> <span class="auris-bbs-s-526e96df56">PPE worn correctly</span></label>
+<label class="auris-bbs-s-ffcb9fa8ce" data-auris-onclick="h0284"><input class="auris-bbs-s-44c56f8640" type="radio" name="obs-ppe" value="partial"> <span class="auris-bbs-s-59ab2dbdb4">PPE worn but inadequate</span></label>
+<label class="auris-bbs-s-ffcb9fa8ce" data-auris-onclick="h0285"><input class="auris-bbs-s-13543f9af4" type="radio" name="obs-ppe" value="false"> <span class="auris-bbs-s-3895270810">PPE not worn</span></label>
+<label class="auris-bbs-s-ffcb9fa8ce" data-auris-onclick="h0286"><input class="auris-bbs-s-9b5d62603f" type="radio" name="obs-ppe" value="na" checked> <span class="auris-bbs-s-544f9e4897">- Not applicable</span></label>
 </div>
 <input type="hidden" id="obs-ppe-worn" value="na"/>
-<div class="form3group" style="margin-top:10px"><label class="form3label">PPE notes</label><input type="text" id="obs-ppe-notes" placeholder="Which PPE? What was the issue?"/></div>
+<div class="form3group auris-bbs-s-df928149c5"><label class="form3label">PPE notes</label><input type="text" id="obs-ppe-notes" placeholder="Which PPE? What was the issue?"/></div>
 </div>
 
 <!-- Category -->
-<div class="card" style="margin-bottom:14px"><div class="card-title">Category &amp; Severity</div>
+<div class="card auris-bbs-s-42a6ced8b6"><div class="card-title">Category &amp; Severity</div>
 <div class="form3group"><label class="form3label">Category</label>
 <select id="obs-category">
 <option value="ppe">PPE</option>
@@ -2366,7 +2367,7 @@
 <div class="form3group"><label class="form3label">Observer name</label><select id="obs-observer" data-auris-onchange="h0287"><option value="">Select person...</option></select></div>
 <div class="form3group"><label class="form3label">Observer department</label><input type="text" id="obs-observer-dept"/></div>
 <div class="form3group"><label class="form3label">Person observed (optional)</label><select id="obs-person-observed"><option value="">Select person...</option></select></div>
-<div class="form3group"><label class="form3label">Root cause (if known)</label><textarea id="obs-root-cause" style="min-height:50px" placeholder="Why did this occur? (system, training, attitude, environment...)"></textarea></div>
+<div class="form3group"><label class="form3label">Root cause (if known)</label><textarea id="obs-root-cause" class="auris-bbs-s-2b013fa0d9" placeholder="Why did this occur? (system, training, attitude, environment...)"></textarea></div>
 </div>
 </div>
 </div>
