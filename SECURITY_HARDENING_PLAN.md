@@ -23,6 +23,8 @@ Run `supabase_exposure_security_audit.sql` in the Supabase SQL Editor. It is tra
 
 Do not apply blanket revokes. Export the result, classify intended public workflows, and implement a targeted rerunnable corrective migration. Re-run the audit and Supabase Security Advisor after remediation.
 
+Live audit completed on 14 August 2026. The classified evidence is recorded in `SUPABASE_EXPOSURE_AUDIT_REPORT_2026-08-14.md`; the syntax-verified targeted migration is `supabase_exposure_security_remediation.sql`. Applying the production permission changes requires explicit approval, followed by live verification.
+
 ## Gate 3 - client content and URL hardening
 
 Completed safeguards:
@@ -37,7 +39,7 @@ This is a targeted high-risk sink remediation. The remaining inline-script migra
 
 ## Remaining gates
 
-1. Correct confirmed RLS, grants, views and RPC findings.
+1. Apply and verify the prepared Supabase RPC/anonymous-grant remediation.
 2. Remove inline application scripts progressively and continue reviewing module-specific rich-content renderers.
 3. Move the complete CSP from report-only to enforced after inline migration.
 4. Require MFA for privileged AURIS360, Supabase, Vercel and source-control accounts.
