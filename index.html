@@ -66,6 +66,7 @@
 <link rel="stylesheet" href="auris-audits-inspections-static.css?v=20260814-1">
 <link rel="stylesheet" href="auris-risk-assessment-static.css?v=20260814-1">
 <link rel="stylesheet" href="auris-chemical-control-static.css?v=20260814-1">
+<link rel="stylesheet" href="auris-legal-compliance-static.css?v=20260814-1">
 </head>
 <body>
 <div id="login-screen">
@@ -3654,53 +3655,53 @@ Offline mode - changes will sync when connection is restored
 <div class="page-header">
 <div>
 <div class="page-title">Legal Compliance</div>
-<div style="font-size:12px;color:var(--text2)" id="legal-subtitle">Legal register - Compliance assessments - Gap analysis - Compliance calendar</div>
+<div id="legal-subtitle" class="auris-legal-s-7299078644">Legal register - Compliance assessments - Gap analysis - Compliance calendar</div>
 </div>
-<div style="display:flex;gap:8px" id="legal-header-btns">
+<div id="legal-header-btns" class="auris-legal-s-9c40389b4a">
 <button class="btn" id="legal-print-btn" data-auris-onclick="h0426"><i class="ti ti-printer"></i>Print current view</button>
-<button class="btn btn-primary" id="legal-new-btn" style="display:none" data-auris-onclick="h0427"><i class="ti ti-plus"></i>Add new</button>
+<button class="btn btn-primary auris-legal-s-6aa34d7432" id="legal-new-btn" data-auris-onclick="h0427"><i class="ti ti-plus"></i>Add new</button>
 </div>
 </div>
 
 <!-- Metrics bar -->
-<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:10px;margin-bottom:14px">
-<div class="card" style="padding:10px 12px;border-left:4px solid #1D9E75"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">Compliant</div><div style="font-size:22px;font-weight:800;color:#1D9E75" id="lr-m3compliant">-</div></div>
-<div class="card" style="padding:10px 12px;border-left:4px solid #EF9F27"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">Partial</div><div style="font-size:22px;font-weight:800;color:#EF9F27" id="lr-m3partial">-</div></div>
-<div class="card" style="padding:10px 12px;border-left:4px solid #E24B4A"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">Non-Compliant</div><div style="font-size:22px;font-weight:800;color:#E24B4A" id="lr-m3noncompliant">-</div></div>
-<div class="card" style="padding:10px 12px;border-left:4px solid #8B5CF6"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">Open Gaps</div><div style="font-size:22px;font-weight:800;color:#8B5CF6" id="lr-m3gaps">-</div></div>
-<div class="card" style="padding:10px 12px;border-left:4px solid #DC2626"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">Calendar Due</div><div style="font-size:22px;font-weight:800;color:#DC2626" id="lr-m3cal-due">-</div></div>
-<div class="card" style="padding:10px 12px;border-left:4px solid #185FA5"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">Assessments</div><div style="font-size:22px;font-weight:800;color:#185FA5" id="lr-m3assessments">-</div></div>
-<div class="card" style="padding:10px 12px;border-left:4px solid #6B7280"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">Total Reqs</div><div style="font-size:22px;font-weight:800" id="lr-m3total">-</div></div>
+<div class="auris-legal-s-f17e623d95">
+<div class="card auris-legal-s-7a5e61eb83"><div class="auris-legal-s-4422804ebb">Compliant</div><div id="lr-m3compliant" class="auris-legal-s-1e4fd5f9ed">-</div></div>
+<div class="card auris-legal-s-c70473e794"><div class="auris-legal-s-4422804ebb">Partial</div><div id="lr-m3partial" class="auris-legal-s-2062f090bc">-</div></div>
+<div class="card auris-legal-s-530946d91c"><div class="auris-legal-s-4422804ebb">Non-Compliant</div><div id="lr-m3noncompliant" class="auris-legal-s-e7ad3ebe2e">-</div></div>
+<div class="card auris-legal-s-24ac637923"><div class="auris-legal-s-4422804ebb">Open Gaps</div><div id="lr-m3gaps" class="auris-legal-s-bc6456303a">-</div></div>
+<div class="card auris-legal-s-03bd966c28"><div class="auris-legal-s-4422804ebb">Calendar Due</div><div id="lr-m3cal-due" class="auris-legal-s-ffe267bce1">-</div></div>
+<div class="card auris-legal-s-b6d403ee7e"><div class="auris-legal-s-4422804ebb">Assessments</div><div id="lr-m3assessments" class="auris-legal-s-6f56b8363e">-</div></div>
+<div class="card auris-legal-s-21ac3ff165"><div class="auris-legal-s-4422804ebb">Total Reqs</div><div id="lr-m3total" class="auris-legal-s-de3631f23e">-</div></div>
 </div>
 
 <!-- Tab bar -->
-<div style="display:flex;gap:0;margin-bottom:14px;border-bottom:2px solid var(--border);overflow-x:auto">
-<button class="mtg-tab active" id="legal-tab-register" data-auris-onclick="h0428" style="white-space:nowrap">Legal Register</button>
-<button class="mtg-tab" id="legal-tab-changes" data-auris-onclick="h0429" style="white-space:nowrap">Regulatory Changes</button>
-<button class="mtg-tab" id="legal-tab-assessments" data-auris-onclick="h0430" style="white-space:nowrap">Compliance Assessments</button>
-<button class="mtg-tab" id="legal-tab-gaps" data-auris-onclick="h0431" style="white-space:nowrap">Gap Analysis</button>
-<button class="mtg-tab" id="legal-tab-calendar" data-auris-onclick="h0432" style="white-space:nowrap">Compliance Calendar</button>
-<button class="mtg-tab" id="legal-tab-dashboard" data-auris-onclick="h0433" style="white-space:nowrap">Dashboard</button>
+<div class="auris-legal-s-0904085f3d">
+<button class="mtg-tab active auris-legal-s-eb99a4c193" id="legal-tab-register" data-auris-onclick="h0428">Legal Register</button>
+<button class="mtg-tab auris-legal-s-eb99a4c193" id="legal-tab-changes" data-auris-onclick="h0429">Regulatory Changes</button>
+<button class="mtg-tab auris-legal-s-eb99a4c193" id="legal-tab-assessments" data-auris-onclick="h0430">Compliance Assessments</button>
+<button class="mtg-tab auris-legal-s-eb99a4c193" id="legal-tab-gaps" data-auris-onclick="h0431">Gap Analysis</button>
+<button class="mtg-tab auris-legal-s-eb99a4c193" id="legal-tab-calendar" data-auris-onclick="h0432">Compliance Calendar</button>
+<button class="mtg-tab auris-legal-s-eb99a4c193" id="legal-tab-dashboard" data-auris-onclick="h0433">Dashboard</button>
 </div>
 
 <!-- -- LEGAL REGISTER -- -->
 <div id="legal-view-register">
-<div class="card" style="margin-bottom:12px;padding:10px 14px">
-<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
-<input type="text" id="lr-search" placeholder="Search legislation, requirement, ref..." data-auris-oninput="h0434" style="flex:1;min-width:180px;padding:7px 12px;border:1px solid var(--border);border-radius:8px;font-size:12px"/>
-<select id="lr-filter-status" data-auris-onchange="h0435" style="padding:7px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px">
+<div class="card auris-legal-s-54bb9f1d16">
+<div class="auris-legal-s-d5129e1520">
+<input type="text" id="lr-search" class="auris-legal-s-11856befbc" placeholder="Search legislation, requirement, ref..." data-auris-oninput="h0434"/>
+<select id="lr-filter-status" class="auris-legal-s-d35063206b" data-auris-onchange="h0435">
 <option value="">All statuses</option>
 <option value="compliant">Compliant</option><option value="partial">Partial</option>
 <option value="non_compliant">Non-Compliant</option><option value="not_applicable">N/A</option>
 </select>
-<select id="lr-filter-archived" data-auris-onchange="h0435" style="padding:7px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px">
+<select id="lr-filter-archived" class="auris-legal-s-d35063206b" data-auris-onchange="h0435">
 <option value="">Active register only</option>
 <option value="true">Include archived</option>
 </select>
-<select id="lr-filter-leg" data-auris-onchange="h0435" style="padding:7px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px;max-width:220px">
+<select id="lr-filter-leg" class="auris-legal-s-01207cd23a" data-auris-onchange="h0435">
 <option value="">All legislation</option>
 </select>
-<select id="lr-filter-cat" data-auris-onchange="h0435" style="padding:7px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px">
+<select id="lr-filter-cat" class="auris-legal-s-d35063206b" data-auris-onchange="h0435">
 <option value="">All categories</option>
 <option value="health_safety">Health &amp; Safety</option>
 <option value="workplace_conditions">Workplace conditions</option>
@@ -3721,182 +3722,182 @@ Offline mode - changes will sync when connection is restored
 <option value="client">Client Standards</option>
 <option value="other">Other</option>
 </select>
-<button class="btn" id="lr-import-pdf-btn" style="display:none" data-auris-onclick="h0436"><i class="ti ti-file-import"></i>Import Act PDF</button>
-<input type="file" id="lr-pdf-input" accept="application/pdf,.pdf" style="display:none" data-auris-onchange="h0437"/>
-<button class="btn btn-primary" id="lr-add-btn" style="display:none" data-auris-onclick="h0438"><i class="ti ti-plus"></i>Add requirement</button>
+<button class="btn auris-legal-s-6aa34d7432" id="lr-import-pdf-btn" data-auris-onclick="h0436"><i class="ti ti-file-import"></i>Import Act PDF</button>
+<input type="file" id="lr-pdf-input" class="auris-legal-s-6aa34d7432" accept="application/pdf,.pdf" data-auris-onchange="h0437"/>
+<button class="btn btn-primary auris-legal-s-6aa34d7432" id="lr-add-btn" data-auris-onclick="h0438"><i class="ti ti-plus"></i>Add requirement</button>
 </div>
 </div>
-<div id="lr-pdf-import-panel" class="card" style="display:none;margin-bottom:12px;border:2px solid #185FA5;background:#F8FBFF">
-<div style="display:flex;justify-content:space-between;gap:12px;align-items:flex-start;flex-wrap:wrap;margin-bottom:12px">
+<div id="lr-pdf-import-panel" class="card auris-legal-s-9dd33bbc47">
+<div class="auris-legal-s-0cd1a6369a">
 <div>
-<div class="card-title" style="margin:0;color:#185FA5"><i class="ti ti-file-type-pdf"></i> Import Act / Regulation PDF</div>
-<div style="font-size:12px;color:var(--text2);margin-top:3px">Upload an official legal PDF, review detected sections, then import them into the Legal Register.</div>
+<div class="card-title auris-legal-s-1e3b39fbbe"><i class="ti ti-file-type-pdf"></i> Import Act / Regulation PDF</div>
+<div class="auris-legal-s-9c4ae63835">Upload an official legal PDF, review detected sections, then import them into the Legal Register.</div>
 </div>
 <button class="btn btn-sm" data-auris-onclick="h0439"><i class="ti ti-x"></i>Close</button>
 </div>
-<div style="display:grid;grid-template-columns:2fr 1fr 1fr auto;gap:10px;align-items:end;margin-bottom:12px">
-<div class="form3group" style="margin:0"><label class="form3label">Legislation name</label><input type="text" id="lr-pdf-legislation" value="Occupational Safety and Health Act 2005"/></div>
-<div class="form3group" style="margin:0"><label class="form3label">Reference prefix</label><input type="text" id="lr-pdf-prefix" value="OSH"/></div>
-<div class="form3group" style="margin:0"><label class="form3label">Default status</label><select id="lr-pdf-status"><option value="partial">Partial - to assess</option><option value="non_compliant">Non-compliant</option><option value="compliant">Compliant</option><option value="not_applicable">Not applicable</option></select></div>
+<div class="auris-legal-s-ccd1ef9d3f">
+<div class="form3group auris-legal-s-ab79ea2b85"><label class="form3label">Legislation name</label><input type="text" id="lr-pdf-legislation" value="Occupational Safety and Health Act 2005"/></div>
+<div class="form3group auris-legal-s-ab79ea2b85"><label class="form3label">Reference prefix</label><input type="text" id="lr-pdf-prefix" value="OSH"/></div>
+<div class="form3group auris-legal-s-ab79ea2b85"><label class="form3label">Default status</label><select id="lr-pdf-status"><option value="partial">Partial - to assess</option><option value="non_compliant">Non-compliant</option><option value="compliant">Compliant</option><option value="not_applicable">Not applicable</option></select></div>
 <button class="btn btn-primary" data-auris-onclick="h0440"><i class="ti ti-upload"></i>Choose PDF</button>
 </div>
-<div id="lr-pdf-status-msg" style="font-size:12px;color:var(--text2);margin-bottom:10px">No PDF selected.</div>
+<div id="lr-pdf-status-msg" class="auris-legal-s-fa530ed1c3">No PDF selected.</div>
 <div id="lr-pdf-preview"></div>
 </div>
-<div class="card" style="padding:0;overflow:hidden"><div id="lr-table"><div class="loading-msg">Loading...</div></div></div>
+<div class="card auris-legal-s-d9c39add3c"><div id="lr-table"><div class="loading-msg">Loading...</div></div></div>
 </div>
 
 <!-- -- REGULATORY CHANGES -- -->
-<div id="legal-view-changes" style="display:none">
-<div class="card" style="margin-bottom:12px;padding:10px 14px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
-<div><div class="card-title" style="margin:0">Regulatory Changes &amp; Updates</div><div style="font-size:12px;color:var(--text2)">Track legislative changes and ensure obligations are updated</div></div>
-<button class="btn btn-primary" id="lc-add-btn" style="display:none" data-auris-onclick="h0441"><i class="ti ti-plus"></i>Add change</button>
+<div id="legal-view-changes" class="auris-legal-s-6aa34d7432">
+<div class="card auris-legal-s-e2e1112055">
+<div><div class="card-title auris-legal-s-ab79ea2b85">Regulatory Changes &amp; Updates</div><div class="auris-legal-s-7299078644">Track legislative changes and ensure obligations are updated</div></div>
+<button class="btn btn-primary auris-legal-s-6aa34d7432" id="lc-add-btn" data-auris-onclick="h0441"><i class="ti ti-plus"></i>Add change</button>
 </div>
-<div class="card" style="margin-bottom:12px;padding:12px 14px">
-<div style="display:grid;grid-template-columns:minmax(220px,2fr) repeat(3,minmax(150px,1fr)) auto;gap:10px;align-items:center">
-<input id="lc-chg-search" data-auris-oninput="h0442" placeholder="Search legislation, section, source, action..." style="padding:9px 12px;border:1px solid var(--border);border-radius:8px">
-<select id="lc-chg-category" data-auris-onchange="h0443" style="padding:9px 12px;border:1px solid var(--border);border-radius:8px">
+<div class="card auris-legal-s-837804c09d">
+<div class="auris-legal-s-b7a4539514">
+<input id="lc-chg-search" class="auris-legal-s-120c76267b" data-auris-oninput="h0442" placeholder="Search legislation, section, source, action...">
+<select id="lc-chg-category" class="auris-legal-s-120c76267b" data-auris-onchange="h0443">
 <option value="">All categories</option>
 <option value="health_safety">H&amp;S</option><option value="environment">Environment</option><option value="construction">Construction</option><option value="fire">Fire</option><option value="electrical">Electrical</option><option value="chemical">Chemical</option><option value="transport">Transport</option><option value="employment">Employment</option><option value="quality">Quality</option><option value="other">Other</option>
 </select>
-<select id="lc-chg-applicable" data-auris-onchange="h0443" style="padding:9px 12px;border:1px solid var(--border);border-radius:8px">
+<select id="lc-chg-applicable" class="auris-legal-s-120c76267b" data-auris-onchange="h0443">
 <option value="">All applicability</option><option value="true">Applicable only</option><option value="false">Not applicable</option>
 </select>
-<select id="lc-chg-implemented" data-auris-onchange="h0443" style="padding:9px 12px;border:1px solid var(--border);border-radius:8px">
+<select id="lc-chg-implemented" class="auris-legal-s-120c76267b" data-auris-onchange="h0443">
 <option value="">All implementation</option><option value="false">Pending</option><option value="true">Implemented</option>
 </select>
 <button class="btn" data-auris-onclick="h0444"><i class="ti ti-filter-off"></i>Clear</button>
 </div>
-<div id="lc-chg-count" style="font-size:11px;color:var(--text2);margin-top:8px">0 changes</div>
+<div id="lc-chg-count" class="auris-legal-s-54593e9172">0 changes</div>
 </div>
-<div class="card" style="padding:0;overflow:hidden"><div id="lc-table"><div class="loading-msg">Loading...</div></div></div>
+<div class="card auris-legal-s-d9c39add3c"><div id="lc-table"><div class="loading-msg">Loading...</div></div></div>
 </div>
 
 <!-- -- COMPLIANCE ASSESSMENTS -- -->
-<div id="legal-view-assessments" style="display:none">
-<div class="card" style="margin-bottom:12px;padding:10px 14px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
-<div><div class="card-title" style="margin:0">Compliance Assessments</div><div style="font-size:12px;color:var(--text2)">Periodic and triggered assessments of overall compliance posture</div></div>
-<button class="btn btn-primary" id="lca-add-btn" style="display:none" data-auris-onclick="h0445"><i class="ti ti-plus"></i>New assessment</button>
+<div id="legal-view-assessments" class="auris-legal-s-6aa34d7432">
+<div class="card auris-legal-s-e2e1112055">
+<div><div class="card-title auris-legal-s-ab79ea2b85">Compliance Assessments</div><div class="auris-legal-s-7299078644">Periodic and triggered assessments of overall compliance posture</div></div>
+<button class="btn btn-primary auris-legal-s-6aa34d7432" id="lca-add-btn" data-auris-onclick="h0445"><i class="ti ti-plus"></i>New assessment</button>
 </div>
 <div id="lca-list"><div class="loading-msg">Loading...</div></div>
 </div>
 
 <!-- -- GAP ANALYSIS -- -->
-<div id="legal-view-gaps" style="display:none">
-<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px">
-<div class="card" style="padding:10px 12px;border-left:4px solid #DC2626"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">Critical</div><div style="font-size:22px;font-weight:800;color:#DC2626" id="gap-m3critical">-</div></div>
-<div class="card" style="padding:10px 12px;border-left:4px solid #E24B4A"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">High</div><div style="font-size:22px;font-weight:800;color:#E24B4A" id="gap-m3high">-</div></div>
-<div class="card" style="padding:10px 12px;border-left:4px solid #EF9F27"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">Medium</div><div style="font-size:22px;font-weight:800;color:#EF9F27" id="gap-m3medium">-</div></div>
-<div class="card" style="padding:10px 12px;border-left:4px solid #1D9E75"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">Closed</div><div style="font-size:22px;font-weight:800;color:#1D9E75" id="gap-m3closed">-</div></div>
+<div id="legal-view-gaps" class="auris-legal-s-6aa34d7432">
+<div class="auris-legal-s-14dfb7ae67">
+<div class="card auris-legal-s-03bd966c28"><div class="auris-legal-s-4422804ebb">Critical</div><div id="gap-m3critical" class="auris-legal-s-ffe267bce1">-</div></div>
+<div class="card auris-legal-s-530946d91c"><div class="auris-legal-s-4422804ebb">High</div><div id="gap-m3high" class="auris-legal-s-e7ad3ebe2e">-</div></div>
+<div class="card auris-legal-s-c70473e794"><div class="auris-legal-s-4422804ebb">Medium</div><div id="gap-m3medium" class="auris-legal-s-2062f090bc">-</div></div>
+<div class="card auris-legal-s-7a5e61eb83"><div class="auris-legal-s-4422804ebb">Closed</div><div id="gap-m3closed" class="auris-legal-s-1e4fd5f9ed">-</div></div>
 </div>
-<div class="card" style="margin-bottom:12px;padding:10px 14px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
-<div><div class="card-title" style="margin:0">Compliance Gap Register</div><div style="font-size:12px;color:var(--text2)">Identified gaps between legal obligations and current controls</div></div>
-<div style="display:flex;gap:8px">
-<select id="gap-filter-risk" data-auris-onchange="h0446" style="padding:6px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px">
+<div class="card auris-legal-s-e2e1112055">
+<div><div class="card-title auris-legal-s-ab79ea2b85">Compliance Gap Register</div><div class="auris-legal-s-7299078644">Identified gaps between legal obligations and current controls</div></div>
+<div class="auris-legal-s-9c40389b4a">
+<select id="gap-filter-risk" class="auris-legal-s-bd0e58d190" data-auris-onchange="h0446">
 <option value="">All risk levels</option><option value="critical">Critical</option>
 <option value="high">High</option><option value="medium">Medium</option><option value="low">Low</option>
 </select>
-<select id="gap-filter-status" data-auris-onchange="h0446" style="padding:6px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px">
+<select id="gap-filter-status" class="auris-legal-s-bd0e58d190" data-auris-onchange="h0446">
 <option value="">All statuses</option><option value="open">Open</option>
 <option value="in_progress">In progress</option><option value="closed">Closed</option>
 <option value="accepted_risk">Accepted risk</option>
 </select>
-<button class="btn btn-primary" id="gap-add-btn" style="display:none" data-auris-onclick="h0447"><i class="ti ti-plus"></i>Add gap</button>
+<button class="btn btn-primary auris-legal-s-6aa34d7432" id="gap-add-btn" data-auris-onclick="h0447"><i class="ti ti-plus"></i>Add gap</button>
 </div>
 </div>
 <div id="gap-list"><div class="loading-msg">Loading...</div></div>
 </div>
 
 <!-- -- COMPLIANCE CALENDAR -- -->
-<div id="legal-view-calendar" style="display:none">
-<div class="card" style="margin-bottom:12px;padding:12px 16px;background:linear-gradient(135deg,#1a3a5c,#185FA5);color:#fff">
-<div style="font-size:14px;font-weight:700;margin-bottom:4px"><i class="ti ti-calendar-event"></i> Compliance Calendar</div>
-<div style="font-size:12px;opacity:.85">Upcoming compliance deadlines, renewals, assessments and regulatory submissions</div>
+<div id="legal-view-calendar" class="auris-legal-s-6aa34d7432">
+<div class="card auris-legal-s-82cbcdb038">
+<div class="auris-legal-s-f26cfe9154"><i class="ti ti-calendar-event"></i> Compliance Calendar</div>
+<div class="auris-legal-s-dc4ac84a01">Upcoming compliance deadlines, renewals, assessments and regulatory submissions</div>
 </div>
-<div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap">
-<button class="btn" id="cal-btn-overdue" data-auris-onclick="h0448" style="background:#DC2626;color:#fff;border-color:#DC2626">Overdue</button>
+<div class="auris-legal-s-7c3219e933">
+<button class="btn auris-legal-s-ce950f1509" id="cal-btn-overdue" data-auris-onclick="h0448">Overdue</button>
 <button class="btn" id="cal-btn-30" data-auris-onclick="h0449">Due &lt;30d</button>
 <button class="btn" id="cal-btn-90" data-auris-onclick="h0450">Due &lt;90d</button>
 <button class="btn" id="cal-btn-all" data-auris-onclick="h0451">All upcoming</button>
 </div>
-<div class="card" style="margin-bottom:12px;padding:10px 14px;display:flex;justify-content:space-between;align-items:center">
-<div class="card-title" style="margin:0">Compliance Events</div>
-<button class="btn btn-primary" id="cal-add-btn" style="display:none" data-auris-onclick="h0452"><i class="ti ti-plus"></i>Add event</button>
+<div class="card auris-legal-s-ae71a9e48f">
+<div class="card-title auris-legal-s-ab79ea2b85">Compliance Events</div>
+<button class="btn btn-primary auris-legal-s-6aa34d7432" id="cal-add-btn" data-auris-onclick="h0452"><i class="ti ti-plus"></i>Add event</button>
 </div>
 <div id="cal-list"><div class="loading-msg">Loading...</div></div>
 </div>
 
 <!-- -- DASHBOARD -- -->
-<div id="legal-view-dashboard" style="display:none">
-<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px">
+<div id="legal-view-dashboard" class="auris-legal-s-6aa34d7432">
+<div class="auris-legal-s-03826b79d9">
 <div class="card">
 <div class="card-title">Overall Compliance Score</div>
-<div style="display:flex;align-items:center;justify-content:center;padding:20px;flex-direction:column">
-<div style="font-size:72px;font-weight:900;line-height:1" id="lr-compliance-pct" style="color:#1D9E75">-</div>
-<div style="font-size:13px;color:var(--text2);margin-top:6px">overall compliance</div>
-<div style="display:flex;gap:8px;justify-content:center;margin-top:16px;flex-wrap:wrap" id="lr-compliance-breakdown"></div>
-<div id="lr-score-bar" style="width:100%;background:#e5e7eb;border-radius:99px;height:12px;margin-top:14px;overflow:hidden"><div id="lr-score-fill" style="height:100%;background:#1D9E75;border-radius:99px;transition:width .5s;width:0%"></div></div>
+<div class="auris-legal-s-3374764085">
+<div id="lr-compliance-pct" class="auris-legal-s-d8e9653745 auris-legal-s-f9faa54401">-</div>
+<div class="auris-legal-s-3818a58080">overall compliance</div>
+<div id="lr-compliance-breakdown" class="auris-legal-s-606479e2d0"></div>
+<div id="lr-score-bar" class="auris-legal-s-27bf8be417"><div id="lr-score-fill" class="auris-legal-s-8fcb04722a"></div></div>
 </div>
 </div>
 <div class="card">
 <div class="card-title">Compliance by Legislation / Standard</div>
-<div id="lr-by-legislation" style="font-size:13px"></div>
+<div id="lr-by-legislation" class="auris-legal-s-5e461f0709"></div>
 </div>
 </div>
-<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px">
+<div class="auris-legal-s-03826b79d9">
 <div class="card">
-<div class="card-title" style="color:#DC2626"><i class="ti ti-alert-triangle"></i> Critical Gaps</div>
+<div class="card-title auris-legal-s-c7bff90490"><i class="ti ti-alert-triangle"></i> Critical Gaps</div>
 <div id="lr-gaps-list"></div>
 </div>
 <div class="card">
-<div class="card-title" style="color:#185FA5"><i class="ti ti-calendar"></i> Next 30 Days</div>
+<div class="card-title auris-legal-s-ca32b871b2"><i class="ti ti-calendar"></i> Next 30 Days</div>
 <div id="lr-calendar-preview"></div>
 </div>
 </div>
 <!-- AI Compliance Assistant -->
-<div class="card" style="border:2px solid #5B21B6">
-<div class="card-title" style="color:#5B21B6"><i class="ti ti-robot"></i> AI Compliance Assistant</div>
-<div style="font-size:12px;color:var(--text2);margin-bottom:12px">Ask about specific requirements, get gap remediation advice, or generate compliance summaries</div>
-<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px" id="legal-ai-quick-btns">
-<button class="btn btn-sm" style="background:#5B21B6;color:#fff;border-color:#5B21B6" data-auris-onclick="h0453">Compliance summary</button>
-<button class="btn btn-sm" style="background:#5B21B6;color:#fff;border-color:#5B21B6" data-auris-onclick="h0454">OSH Act key points</button>
-<button class="btn btn-sm" style="background:#5B21B6;color:#fff;border-color:#5B21B6" data-auris-onclick="h0455">Gap remediation plan</button>
-<button class="btn btn-sm" style="background:#5B21B6;color:#fff;border-color:#5B21B6" data-auris-onclick="h0456">ISO 45001 guide</button>
+<div class="card auris-legal-s-ee71c71db7">
+<div class="card-title auris-legal-s-868661d008"><i class="ti ti-robot"></i> AI Compliance Assistant</div>
+<div class="auris-legal-s-5faab67eef">Ask about specific requirements, get gap remediation advice, or generate compliance summaries</div>
+<div id="legal-ai-quick-btns" class="auris-legal-s-6f8311d1d7">
+<button class="btn btn-sm auris-legal-s-a7dfccfa36" data-auris-onclick="h0453">Compliance summary</button>
+<button class="btn btn-sm auris-legal-s-a7dfccfa36" data-auris-onclick="h0454">OSH Act key points</button>
+<button class="btn btn-sm auris-legal-s-a7dfccfa36" data-auris-onclick="h0455">Gap remediation plan</button>
+<button class="btn btn-sm auris-legal-s-a7dfccfa36" data-auris-onclick="h0456">ISO 45001 guide</button>
 </div>
-<div style="display:flex;gap:8px;margin-bottom:10px">
-<input type="text" id="legal-ai-input" placeholder="Ask about a specific regulation, requirement or compliance question..." style="flex:1;padding:8px 12px;border:1px solid #c4b5fd;border-radius:8px;font-size:12px" data-auris-onkeydown="h0457"/>
-<button class="btn" style="background:#5B21B6;color:#fff;border-color:#5B21B6" data-auris-onclick="h0458"><i class="ti ti-send"></i>Ask AI</button>
+<div class="auris-legal-s-3bce0406cf">
+<input type="text" id="legal-ai-input" class="auris-legal-s-8f9ecb2f9c" placeholder="Ask about a specific regulation, requirement or compliance question..." data-auris-onkeydown="h0457"/>
+<button class="btn auris-legal-s-a7dfccfa36" data-auris-onclick="h0458"><i class="ti ti-send"></i>Ask AI</button>
 </div>
-<div id="legal-ai-response" style="display:none;background:#F5F3FF;border:1px solid #c4b5fd;border-radius:8px;padding:12px;font-size:13px;line-height:1.6;white-space:pre-wrap;max-height:400px;overflow-y:auto"></div>
+<div id="legal-ai-response" class="auris-legal-s-b839ed49d8"></div>
 </div>
 </div>
 
 <!-- --------- FORMS --------- -->
 
 <!-- Requirement form -->
-<div id="legal-req-form" style="display:none">
-<div class="card" style="margin-bottom:14px;padding:0;overflow:hidden">
-<div style="padding:14px 20px;background:linear-gradient(135deg,#1a3a5c,#185FA5);color:#fff;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+<div id="legal-req-form" class="auris-legal-s-6aa34d7432">
+<div class="card auris-legal-s-54ec8874e7">
+<div class="auris-legal-s-6e86c59eb5">
 <div>
-<div style="font-size:11px;font-weight:600;text-transform:uppercase;opacity:.8;margin-bottom:4px">Legal Requirement</div>
-<div style="font-size:17px;font-weight:800" id="lr-form3title">New Requirement</div>
-<div style="font-family:monospace;font-size:12px;color:#a8d8f0;margin-top:3px" id="lr-form3ref-badge">OSH-AUTO</div>
+<div class="auris-legal-s-adf04cf81f">Legal Requirement</div>
+<div id="lr-form3title" class="auris-legal-s-75021e57ca">New Requirement</div>
+<div id="lr-form3ref-badge" class="auris-legal-s-9abe12cdf2">OSH-AUTO</div>
 </div>
-<div style="display:flex;gap:8px">
-<button class="btn" style="background:rgba(255,255,255,.2);color:#fff;border-color:rgba(255,255,255,.3)" data-auris-onclick="h0459"><i class="ti ti-arrow-left"></i>Back</button>
-<button id="lr-edit-btn" class="btn" style="display:none;background:#fff;color:#185FA5;font-weight:800;border-color:#fff" data-auris-onclick="h0460"><i class="ti ti-edit"></i>Edit</button>
-<button id="lr-del-btn" class="btn" style="display:none;background:rgba(220,38,38,.3);color:#fff;border-color:rgba(220,38,38,.5)" data-auris-onclick="h0461"><i class="ti ti-trash"></i></button>
-<button id="lr-ai-btn" class="btn" style="background:#fff;color:#5B21B6;font-weight:800;border-color:#fff" data-auris-onclick="h0462"><i class="ti ti-robot"></i>AI assess</button>
-<button id="lr-save-btn" class="btn" style="background:#1D9E75;color:#fff;border-color:#1D9E75" data-auris-onclick="h0463"><i class="ti ti-device-floppy"></i>Save</button>
+<div class="auris-legal-s-9c40389b4a">
+<button class="btn auris-legal-s-5c09edd131" data-auris-onclick="h0459"><i class="ti ti-arrow-left"></i>Back</button>
+<button id="lr-edit-btn" class="btn auris-legal-s-19fbf19297" data-auris-onclick="h0460"><i class="ti ti-edit"></i>Edit</button>
+<button id="lr-del-btn" class="btn auris-legal-s-0e610f7b67" data-auris-onclick="h0461"><i class="ti ti-trash"></i></button>
+<button id="lr-ai-btn" class="btn auris-legal-s-791af40dd7" data-auris-onclick="h0462"><i class="ti ti-robot"></i>AI assess</button>
+<button id="lr-save-btn" class="btn auris-legal-s-c7b9e5b2c7" data-auris-onclick="h0463"><i class="ti ti-device-floppy"></i>Save</button>
 </div>
 </div>
 </div>
-<div id="lr-review-card" class="card" style="display:none"></div>
-<div id="legal-connected-records" style="margin-bottom:14px"></div>
+<div id="lr-review-card" class="card auris-legal-s-6aa34d7432"></div>
+<div id="legal-connected-records" class="auris-legal-s-42a6ced8b6"></div>
 <div id="lr-edit-card">
-<div id="legal-ai-assess-panel" class="card" style="display:none;margin-bottom:14px;border:1px solid #c4b5fd;background:#fbfaff"></div><div style="display:grid;grid-template-columns:2fr 1fr;gap:14px">
+<div id="legal-ai-assess-panel" class="card auris-legal-s-c26f6e130f"></div><div class="auris-legal-s-5571af1e74">
 <div>
-<div class="card" style="margin-bottom:14px"><div class="card-title">Legislation Details</div>
+<div class="card auris-legal-s-42a6ced8b6"><div class="card-title">Legislation Details</div>
 <div class="form3row">
 <div class="form3group"><label class="form3label">Legislation (main)</label><input type="text" id="lr-leg-main" placeholder="e.g. Occupational Safety and Health Act 2005"/></div>
 <div class="form3group"><label class="form3label">Legislation type</label>
@@ -3925,7 +3926,7 @@ Offline mode - changes will sync when connection is restored
 <option value="iso">ISO Standard</option><option value="client">Client Standard</option><option value="other">Other</option>
 </select></div>
 </div>
-<div class="form3group"><label class="form3label">Full legislative requirement text</label><textarea id="lr-requirement" style="min-height:100px" placeholder="Full text of the legal requirement..."></textarea></div>
+<div class="form3group"><label class="form3label">Full legislative requirement text</label><textarea id="lr-requirement" class="auris-legal-s-a1c988f046" placeholder="Full text of the legal requirement..."></textarea></div>
 <div class="form3row">
 <div class="form3group"><label class="form3label">Jurisdiction</label><input type="text" id="lr-jurisdiction" value="Mauritius"/></div>
 <div class="form3group"><label class="form3label">Regulatory authority</label><input type="text" id="lr-authority" placeholder="e.g. OSHI, MOE, Fire Services"/></div>
@@ -3942,35 +3943,35 @@ Offline mode - changes will sync when connection is restored
 </select></div>
 </div>
 </div>
-<div class="card" style="margin-bottom:14px;border-left:4px solid #1D9E75"><div class="card-title" style="color:#1D9E75">Compliance Evidence</div>
-<div class="form3group"><label class="form3label">Controls in place</label><textarea id="lr-controls" style="min-height:80px" placeholder="Describe existing controls, procedures, records..."></textarea></div>
+<div class="card auris-legal-s-f51849fc6a"><div class="card-title auris-legal-s-f9faa54401">Compliance Evidence</div>
+<div class="form3group"><label class="form3label">Controls in place</label><textarea id="lr-controls" class="auris-legal-s-770a4152c1" placeholder="Describe existing controls, procedures, records..."></textarea></div>
 <div class="form3group"><label class="form3label">Evidence required</label><input type="text" id="lr-evidence-req" placeholder="e.g. Safety committee minutes, training records, inspection reports..."/></div>
 <div class="form3group"><label class="form3label">Evidence location / document ref</label><input type="text" id="lr-evidence-loc"/></div>
 </div>
-<div class="card"><div class="card-title" style="color:#E24B4A">Gap Identification</div>
-<label for="lr-gap" style="display:flex;align-items:flex-start;gap:10px;margin-bottom:10px;padding:10px;border-radius:8px;background:#FEF2F2;border:1px solid #fecaca;cursor:pointer">
-<input type="checkbox" id="lr-gap" style="width:18px!important;height:18px!important;min-width:18px;margin-top:1px;accent-color:var(--red);flex:0 0 auto"/>
-<span style="font-weight:700;font-size:13px;line-height:1.35;color:var(--red)">Gap identified<br><span style="font-weight:500;color:#991B1B">Controls are inadequate, missing, or not supported by evidence.</span></span>
+<div class="card"><div class="card-title auris-legal-s-df4f0a3612">Gap Identification</div>
+<label class="auris-legal-s-dced0a6ec4" for="lr-gap">
+<input type="checkbox" id="lr-gap" class="auris-legal-s-07fd85f85e"/>
+<span class="auris-legal-s-5e409ac696">Gap identified<br><span class="auris-legal-s-92b7a6c93b">Controls are inadequate, missing, or not supported by evidence.</span></span>
 </label>
-<div class="form3group"><label class="form3label">Gap description / Further controls required</label><textarea id="lr-further-controls" style="min-height:70px" placeholder="Describe the compliance gap and what additional controls are needed..."></textarea></div>
+<div class="form3group"><label class="form3label">Gap description / Further controls required</label><textarea id="lr-further-controls" class="auris-legal-s-4d5979ac8f" placeholder="Describe the compliance gap and what additional controls are needed..."></textarea></div>
 <div class="form3group"><label class="form3label">Penalty / risk if non-compliant</label><input type="text" id="lr-penalty" placeholder="e.g. Fine Rs 50,000, imprisonment 2 years..."/></div>
-<div class="form3group"><label class="form3label">Notes</label><textarea id="lr-notes" style="min-height:50px"></textarea></div>
+<div class="form3group"><label class="form3label">Notes</label><textarea id="lr-notes" class="auris-legal-s-2b013fa0d9"></textarea></div>
 </div>
 </div>
 <div>
-<div class="card" style="margin-bottom:14px;border:2px solid #185FA5"><div class="card-title" style="color:#185FA5">Compliance Status</div>
-<div style="display:flex;flex-direction:column;gap:8px;margin-bottom:12px">
-<label style="display:flex;align-items:center;gap:10px;padding:12px;border-radius:8px;cursor:pointer;background:#f0fdf4;border:1px solid #bbf7d0" data-auris-onclick="h0464"><input type="radio" name="lr-status-r" value="compliant" style="width:18px!important;height:18px!important;min-width:18px;margin:0;accent-color:var(--green);flex:0 0 auto" checked><span style="font-weight:800;color:#166534;line-height:1.2">Compliant</span></label>
-<label style="display:flex;align-items:center;gap:10px;padding:12px;border-radius:8px;cursor:pointer;background:#FFFBEB;border:1px solid #fcd34d" data-auris-onclick="h0465"><input type="radio" name="lr-status-r" value="partial" style="width:18px!important;height:18px!important;min-width:18px;margin:0;accent-color:#EF9F27;flex:0 0 auto"><span style="font-weight:800;color:#854F0B;line-height:1.2">Partial compliance</span></label>
-<label style="display:flex;align-items:center;gap:10px;padding:12px;border-radius:8px;cursor:pointer;background:#FEF2F2;border:1px solid #fecaca" data-auris-onclick="h0466"><input type="radio" name="lr-status-r" value="non_compliant" style="width:18px!important;height:18px!important;min-width:18px;margin:0;accent-color:var(--red);flex:0 0 auto"><span style="font-weight:800;color:var(--red);line-height:1.2">Non-compliant</span></label>
-<label style="display:flex;align-items:center;gap:10px;padding:12px;border-radius:8px;cursor:pointer;background:#f3f4f6;border:1px solid #e5e7eb" data-auris-onclick="h0467"><input type="radio" name="lr-status-r" value="not_applicable" style="width:18px!important;height:18px!important;min-width:18px;margin:0;accent-color:#6B7280;flex:0 0 auto"><span style="font-weight:800;color:#6B7280;line-height:1.2">Not applicable</span></label>
+<div class="card auris-legal-s-9bcefa3fff"><div class="card-title auris-legal-s-ca32b871b2">Compliance Status</div>
+<div class="auris-legal-s-498a5137d9">
+<label class="auris-legal-s-1321ed78bb" data-auris-onclick="h0464"><input class="auris-legal-s-47d1d40bad" type="radio" name="lr-status-r" value="compliant" checked><span class="auris-legal-s-d834aec0f8">Compliant</span></label>
+<label class="auris-legal-s-ba03bbc764" data-auris-onclick="h0465"><input class="auris-legal-s-b25cf9d8d5" type="radio" name="lr-status-r" value="partial"><span class="auris-legal-s-f57ee6fcd1">Partial compliance</span></label>
+<label class="auris-legal-s-ffa237a31b" data-auris-onclick="h0466"><input class="auris-legal-s-319efb9ff6" type="radio" name="lr-status-r" value="non_compliant"><span class="auris-legal-s-7cd7d9cc8e">Non-compliant</span></label>
+<label class="auris-legal-s-88d58d43e0" data-auris-onclick="h0467"><input class="auris-legal-s-6aa3d63a22" type="radio" name="lr-status-r" value="not_applicable"><span class="auris-legal-s-e9afde16e0">Not applicable</span></label>
 </div>
 <input type="hidden" id="lr-status"/>
 <div class="form3group"><label class="form3label">Applicable to company?</label><select id="lr-applicable"><option value="true">Yes</option><option value="false">No</option></select></div>
 <div class="form3group"><label class="form3label">Compliance score (0-100)</label>
-<div style="display:flex;align-items:center;gap:10px"><input type="range" id="lr-compliance-score" min="0" max="100" step="5" value="0" data-auris-oninput="h0468" style="flex:1;accent-color:#185FA5"/><span id="lr-score-display" style="font-weight:800;min-width:40px;font-size:16px">0%</span></div></div>
+<div class="auris-legal-s-b4e7d324c7"><input type="range" id="lr-compliance-score" class="auris-legal-s-cc8d587d0e" min="0" max="100" step="5" value="0" data-auris-oninput="h0468"/><span id="lr-score-display" class="auris-legal-s-6752dad828">0%</span></div></div>
 </div>
-<div class="card" style="margin-bottom:14px"><div class="card-title">Responsibility &amp; Dates</div>
+<div class="card auris-legal-s-42a6ced8b6"><div class="card-title">Responsibility &amp; Dates</div>
 <div class="form3group"><label class="form3label">Responsibility</label><input type="text" id="lr-responsibility"/></div>
 <div class="form3group"><label class="form3label">Target compliance date</label><input type="date" id="lr-target-date"/></div>
 <div class="form3group"><label class="form3label">Effective date</label><input type="date" id="lr-effective-date"/></div>
@@ -3986,20 +3987,20 @@ Offline mode - changes will sync when connection is restored
 </div>
 
 <!-- Legislative change form -->
-<div id="legal-chg-form" style="display:none">
-<div class="card" style="margin-bottom:14px;padding:0;overflow:hidden">
-<div style="padding:14px 20px;background:linear-gradient(135deg,#854F0B,#B45309);color:#fff;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
-<div style="font-size:17px;font-weight:800" id="lc-form3title">New Regulatory Change</div>
-<div style="display:flex;gap:8px">
-<button class="btn" style="background:rgba(255,255,255,.2);color:#fff;border-color:rgba(255,255,255,.3)" data-auris-onclick="h0469"><i class="ti ti-arrow-left"></i>Back</button>
-<button id="lc-print-btn" class="btn" style="display:none;background:#fff;color:#854F0B;border-color:#fff;font-weight:800" data-auris-onclick="h0470"><i class="ti ti-printer"></i>Print brief</button>
-<button id="lc-edit-btn" class="btn" style="display:none;background:#fff;color:#854F0B;border-color:#fff;font-weight:800" data-auris-onclick="h0471"><i class="ti ti-edit"></i>Edit</button>
-<button id="lc-del-btn" class="btn" style="display:none;background:rgba(0,0,0,.3);color:#fff;border-color:rgba(255,255,255,.3)" data-auris-onclick="h0472"><i class="ti ti-trash"></i></button>
-<button id="lc-save-btn" class="btn" style="background:#1D9E75;color:#fff;border-color:#1D9E75" data-auris-onclick="h0473"><i class="ti ti-device-floppy"></i>Save</button>
+<div id="legal-chg-form" class="auris-legal-s-6aa34d7432">
+<div class="card auris-legal-s-54ec8874e7">
+<div class="auris-legal-s-66c5e304c5">
+<div id="lc-form3title" class="auris-legal-s-75021e57ca">New Regulatory Change</div>
+<div class="auris-legal-s-9c40389b4a">
+<button class="btn auris-legal-s-5c09edd131" data-auris-onclick="h0469"><i class="ti ti-arrow-left"></i>Back</button>
+<button id="lc-print-btn" class="btn auris-legal-s-ebf80452d6" data-auris-onclick="h0470"><i class="ti ti-printer"></i>Print brief</button>
+<button id="lc-edit-btn" class="btn auris-legal-s-ebf80452d6" data-auris-onclick="h0471"><i class="ti ti-edit"></i>Edit</button>
+<button id="lc-del-btn" class="btn auris-legal-s-96f7839a1b" data-auris-onclick="h0472"><i class="ti ti-trash"></i></button>
+<button id="lc-save-btn" class="btn auris-legal-s-c7b9e5b2c7" data-auris-onclick="h0473"><i class="ti ti-device-floppy"></i>Save</button>
 </div>
 </div>
 </div>
-<div id="lc-review-card" class="card" style="display:none"></div>
+<div id="lc-review-card" class="card auris-legal-s-6aa34d7432"></div>
 <div id="lc-edit-card" class="card">
 <div class="form3row">
 <div class="form3group"><label class="form3label">Date received</label><input type="date" id="lc-date"/></div>
@@ -4007,17 +4008,17 @@ Offline mode - changes will sync when connection is restored
 <div class="form3group"><label class="form3label">Jurisdiction</label><input type="text" id="lc-jurisdiction" value="Mauritius"/></div>
 <div class="form3group"><label class="form3label">Applicable legislation</label><input type="text" id="lc-legislation" placeholder="e.g. OSH Amendment Act 2026"/></div>
 </div>
-<div class="card" style="background:#F8FBFF;border-color:#BFDBFE;margin:10px 0 14px">
-<div class="card-title" style="color:#185FA5;margin-bottom:8px">Affected legal register section</div>
+<div class="card auris-legal-s-2679d199cb">
+<div class="card-title auris-legal-s-2fc415ab40">Affected legal register section</div>
 <div class="form3row">
 <div class="form3group"><label class="form3label">Section being amended</label><select id="lc-section-id" data-auris-onchange="h0474"><option value="">Select section to amend...</option></select></div>
 <div class="form3group"><label class="form3label">Section / ref</label><input type="text" id="lc-section-ref" placeholder="e.g. s.34, Reg. 12"/></div>
 <div class="form3group"><label class="form3label">Type of change</label><select id="lc-change-type"><option value="amendment">Amendment</option><option value="repeal">Repeal / revoked</option><option value="new_section">New section</option><option value="clarification">Clarification / guidance</option></select></div>
 </div>
-<div id="lc-section-summary" style="padding:10px 12px;margin-bottom:12px;border:1px dashed #BFDBFE;border-radius:8px;background:#fff"></div>
+<div id="lc-section-summary" class="auris-legal-s-4e9bd34377"></div>
 <div class="form3row">
-<div class="form3group"><label class="form3label">Current wording in register</label><textarea id="lc-current-wording" style="min-height:90px" readonly></textarea></div>
-<div class="form3group"><label class="form3label">New wording / replacement text</label><textarea id="lc-new-wording" style="min-height:90px" placeholder="Paste or summarise the updated legal wording. When saved, this replaces the selected register section."></textarea></div>
+<div class="form3group"><label class="form3label">Current wording in register</label><textarea id="lc-current-wording" class="auris-legal-s-a75d926385" readonly></textarea></div>
+<div class="form3group"><label class="form3label">New wording / replacement text</label><textarea id="lc-new-wording" class="auris-legal-s-a75d926385" placeholder="Paste or summarise the updated legal wording. When saved, this replaces the selected register section."></textarea></div>
 </div>
 </div>
 <div class="form3row">
@@ -4033,34 +4034,34 @@ Offline mode - changes will sync when connection is restored
 <div class="form3group"><label class="form3label">Applicable to company?</label><select id="lc-applicable"><option value="true">Yes</option><option value="false">No</option></select></div>
 <div class="form3group"><label class="form3label">Implemented?</label><select id="lc-implemented"><option value="false">Pending</option><option value="true">Done</option></select></div>
 </div>
-<div class="form3group"><label class="form3label">Changes identified / what changed?</label><textarea id="lc-changes" style="min-height:80px" placeholder="Describe the regulatory change and its implications..."></textarea></div>
+<div class="form3group"><label class="form3label">Changes identified / what changed?</label><textarea id="lc-changes" class="auris-legal-s-770a4152c1" placeholder="Describe the regulatory change and its implications..."></textarea></div>
 <div class="form3row">
-<div class="form3group"><label class="form3label">Action required</label><textarea id="lc-action" style="min-height:50px" placeholder="What action must be taken to comply with this change?"></textarea></div>
+<div class="form3group"><label class="form3label">Action required</label><textarea id="lc-action" class="auris-legal-s-2b013fa0d9" placeholder="What action must be taken to comply with this change?"></textarea></div>
 <div class="form3group"><label class="form3label">Responsible person</label><select id="lc-responsible"><option value="">Select person...</option></select></div>
 </div>
-<div class="form3group"><label class="form3label">Comments</label><textarea id="lc-comments" style="min-height:50px"></textarea></div>
+<div class="form3group"><label class="form3label">Comments</label><textarea id="lc-comments" class="auris-legal-s-2b013fa0d9"></textarea></div>
 </div>
 </div>
 
 <!-- Compliance Assessment form -->
-<div id="lca-form" style="display:none">
-<div class="card" style="margin-bottom:14px;padding:0;overflow:hidden">
-<div style="padding:14px 20px;background:linear-gradient(135deg,#064E3B,#1D9E75);color:#fff;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+<div id="lca-form" class="auris-legal-s-6aa34d7432">
+<div class="card auris-legal-s-54ec8874e7">
+<div class="auris-legal-s-d5e9713ce7">
 <div>
-<div style="font-size:11px;font-weight:600;text-transform:uppercase;opacity:.8;margin-bottom:4px">Compliance Assessment</div>
-<div style="font-size:17px;font-weight:800" id="lca-form3title">New Assessment</div>
-<div style="font-family:monospace;font-size:12px;color:#a7f3d0;margin-top:3px" id="lca-form3ref">CA-AUTO</div>
+<div class="auris-legal-s-adf04cf81f">Compliance Assessment</div>
+<div id="lca-form3title" class="auris-legal-s-75021e57ca">New Assessment</div>
+<div id="lca-form3ref" class="auris-legal-s-8703b10672">CA-AUTO</div>
 </div>
-<div style="display:flex;gap:8px">
-<button class="btn" style="background:rgba(255,255,255,.2);color:#fff;border-color:rgba(255,255,255,.3)" data-auris-onclick="h0475"><i class="ti ti-arrow-left"></i>Back</button>
-<button id="lca-del-btn" class="btn" style="display:none;background:rgba(0,0,0,.3);color:#fff;border-color:rgba(255,255,255,.3)" data-auris-onclick="h0476"><i class="ti ti-trash"></i></button>
-<button class="btn" style="background:#fff;color:#1D9E75;font-weight:700" data-auris-onclick="h0477"><i class="ti ti-device-floppy"></i>Save</button>
+<div class="auris-legal-s-9c40389b4a">
+<button class="btn auris-legal-s-5c09edd131" data-auris-onclick="h0475"><i class="ti ti-arrow-left"></i>Back</button>
+<button id="lca-del-btn" class="btn auris-legal-s-96f7839a1b" data-auris-onclick="h0476"><i class="ti ti-trash"></i></button>
+<button class="btn auris-legal-s-56ac49ff17" data-auris-onclick="h0477"><i class="ti ti-device-floppy"></i>Save</button>
 </div>
 </div>
 </div>
-<div style="display:grid;grid-template-columns:2fr 1fr;gap:14px">
+<div class="auris-legal-s-5571af1e74">
 <div>
-<div class="card" style="margin-bottom:14px"><div class="card-title">Assessment Details</div>
+<div class="card auris-legal-s-42a6ced8b6"><div class="card-title">Assessment Details</div>
 <div class="form3group"><label class="form3label">Assessment title</label><input type="text" id="lcaf-title"/></div>
 <div class="form3row">
 <div class="form3group"><label class="form3label">Assessment type</label>
@@ -4073,64 +4074,64 @@ Offline mode - changes will sync when connection is restored
 <div class="form3group"><label class="form3label">Next assessment date</label><input type="date" id="lcaf-next-date"/></div>
 <div class="form3group"><label class="form3label">Assessor</label><select id="lcaf-assessor"><option value="">Select person...</option></select></div>
 </div>
-<div class="form3group"><label class="form3label">Scope of assessment</label><textarea id="lcaf-scope" style="min-height:60px" placeholder="What legislation, activities or areas does this assessment cover?"></textarea></div>
-<div class="form3group"><label class="form3label">Methodology / how was compliance verified?</label><textarea id="lcaf-methodology" style="min-height:60px"></textarea></div>
+<div class="form3group"><label class="form3label">Scope of assessment</label><textarea id="lcaf-scope" class="auris-legal-s-07bdff4587" placeholder="What legislation, activities or areas does this assessment cover?"></textarea></div>
+<div class="form3group"><label class="form3label">Methodology / how was compliance verified?</label><textarea id="lcaf-methodology" class="auris-legal-s-07bdff4587"></textarea></div>
 </div>
-<div class="card" style="margin-bottom:14px;border-left:4px solid #1D9E75"><div class="card-title" style="color:#1D9E75">Results &amp; Scores</div>
-<div style="font-size:12px;color:var(--text2);margin-bottom:8px">Automatically calculated from the assessment worksheet below.</div>
+<div class="card auris-legal-s-f51849fc6a"><div class="card-title auris-legal-s-f9faa54401">Results &amp; Scores</div>
+<div class="auris-legal-s-46744debb8">Automatically calculated from the assessment worksheet below.</div>
 <div class="form3row">
 <div class="form3group"><label class="form3label">Compliant</label><input type="number" id="lcaf-compliant" min="0" value="0" readonly/></div>
 <div class="form3group"><label class="form3label">Partial</label><input type="number" id="lcaf-partial" min="0" value="0" readonly/></div>
 <div class="form3group"><label class="form3label">Non-compliant</label><input type="number" id="lcaf-noncompliant" min="0" value="0" readonly/></div>
 <div class="form3group"><label class="form3label">N/A</label><input type="number" id="lcaf-na" min="0" value="0" readonly/></div>
 </div>
-<div id="lca-score-preview" style="padding:14px;background:#f0fdf4;border-radius:8px;text-align:center;margin-top:8px">
-<div style="font-size:32px;font-weight:900;color:#1D9E75" id="lca-score-number">-</div>
-<div style="font-size:12px;color:var(--text2)">Compliance score</div>
+<div id="lca-score-preview" class="auris-legal-s-1a8f947ad0">
+<div id="lca-score-number" class="auris-legal-s-3cc1c95967">-</div>
+<div class="auris-legal-s-7299078644">Compliance score</div>
 </div>
 </div>
 <div class="card"><div class="card-title">Findings &amp; Actions</div>
-<div class="form3group"><label class="form3label">Key findings</label><textarea id="lcaf-findings" style="min-height:80px"></textarea></div>
-<div class="form3group"><label class="form3label">Recommendations</label><textarea id="lcaf-recommendations" style="min-height:80px"></textarea></div>
+<div class="form3group"><label class="form3label">Key findings</label><textarea id="lcaf-findings" class="auris-legal-s-770a4152c1"></textarea></div>
+<div class="form3group"><label class="form3label">Recommendations</label><textarea id="lcaf-recommendations" class="auris-legal-s-770a4152c1"></textarea></div>
 </div>
-<div class="card" style="margin-top:14px"><div class="card-title">Assessment Worksheet</div><div id="lca-matrix"></div></div>
+<div class="card auris-legal-s-c53ea1da23"><div class="card-title">Assessment Worksheet</div><div id="lca-matrix"></div></div>
 </div>
 <div>
-<div class="card" style="margin-bottom:14px;border:2px solid #1D9E75"><div class="card-title" style="color:#1D9E75">Approval</div>
+<div class="card auris-legal-s-f8805c5d89"><div class="card-title auris-legal-s-f9faa54401">Approval</div>
 <div class="form3group"><label class="form3label">Status</label>
 <select id="lcaf-status"><option value="draft">Draft</option><option value="completed">Completed</option><option value="reviewed">Reviewed</option><option value="approved">Approved</option></select></div>
 <div class="form3group"><label class="form3label">Approved by</label><select id="lcaf-approved-by"><option value="">Select person...</option></select></div>
 <div class="form3group"><label class="form3label">Approval date</label><input type="date" id="lcaf-approved-date"/></div>
-<div class="form3group"><label class="form3label">Linked audit ref</label><input type="text" id="lcaf-audit-ref" style="font-family:monospace"/></div>
+<div class="form3group"><label class="form3label">Linked audit ref</label><input type="text" id="lcaf-audit-ref" class="auris-legal-s-7b8c3df564"/></div>
 </div>
 </div>
 </div>
 </div>
 
 <!-- Gap Analysis form -->
-<div id="gap-form" style="display:none">
-<div class="card" style="margin-bottom:14px;padding:0;overflow:hidden">
-<div style="padding:14px 20px;background:linear-gradient(135deg,#7F1D1D,#DC2626);color:#fff;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+<div id="gap-form" class="auris-legal-s-6aa34d7432">
+<div class="card auris-legal-s-54ec8874e7">
+<div class="auris-legal-s-cfaccf08c6">
 <div>
-<div style="font-size:11px;font-weight:600;text-transform:uppercase;opacity:.8;margin-bottom:4px">Compliance Gap</div>
-<div style="font-size:17px;font-weight:800" id="gap-form3title">New Gap</div>
-<div style="font-family:monospace;font-size:12px;color:#fca5a5;margin-top:3px" id="gap-form3ref">GAP-AUTO</div>
+<div class="auris-legal-s-adf04cf81f">Compliance Gap</div>
+<div id="gap-form3title" class="auris-legal-s-75021e57ca">New Gap</div>
+<div id="gap-form3ref" class="auris-legal-s-7372276e79">GAP-AUTO</div>
 </div>
-<div style="display:flex;gap:8px">
-<button class="btn" style="background:rgba(255,255,255,.2);color:#fff;border-color:rgba(255,255,255,.3)" data-auris-onclick="h0478"><i class="ti ti-arrow-left"></i>Back</button>
-<button id="gap-del-btn" class="btn" style="display:none;background:rgba(0,0,0,.3);color:#fff;border-color:rgba(255,255,255,.3)" data-auris-onclick="h0479"><i class="ti ti-trash"></i></button>
-<button class="btn" style="background:#1D9E75;color:#fff;border-color:#1D9E75" data-auris-onclick="h0480"><i class="ti ti-device-floppy"></i>Save gap</button>
+<div class="auris-legal-s-9c40389b4a">
+<button class="btn auris-legal-s-5c09edd131" data-auris-onclick="h0478"><i class="ti ti-arrow-left"></i>Back</button>
+<button id="gap-del-btn" class="btn auris-legal-s-96f7839a1b" data-auris-onclick="h0479"><i class="ti ti-trash"></i></button>
+<button class="btn auris-legal-s-c7b9e5b2c7" data-auris-onclick="h0480"><i class="ti ti-device-floppy"></i>Save gap</button>
 </div>
 </div>
 </div>
-<div style="display:grid;grid-template-columns:2fr 1fr;gap:14px">
+<div class="auris-legal-s-5571af1e74">
 <div>
-<div class="card" style="margin-bottom:14px;border-left:4px solid #DC2626"><div class="card-title" style="color:#DC2626">Gap Details</div>
+<div class="card auris-legal-s-d395a8868f"><div class="card-title auris-legal-s-c7bff90490">Gap Details</div>
 <div class="form3row">
 <div class="form3group"><label class="form3label">Legislation / standard</label><input type="text" id="gapf-legislation" placeholder="e.g. OSH Act 2005"/></div>
 <div class="form3group"><label class="form3label">Section / clause</label><input type="text" id="gapf-section"/></div>
 </div>
-<div class="form3group"><label class="form3label">Gap description</label><textarea id="gapf-description" style="min-height:80px" placeholder="Describe clearly what the gap is - what obligation is not being met?"></textarea></div>
+<div class="form3group"><label class="form3label">Gap description</label><textarea id="gapf-description" class="auris-legal-s-770a4152c1" placeholder="Describe clearly what the gap is - what obligation is not being met?"></textarea></div>
 <div class="form3row">
 <div class="form3group"><label class="form3label">Gap type</label>
 <select id="gapf-type">
@@ -4146,39 +4147,39 @@ Offline mode - changes will sync when connection is restored
 </div>
 </div>
 <div class="card"><div class="card-title">Closure Plan</div>
-<div class="form3group"><label class="form3label">Action required to close gap</label><textarea id="gapf-action" style="min-height:70px" placeholder="What specific actions are needed to achieve compliance?"></textarea></div>
+<div class="form3group"><label class="form3label">Action required to close gap</label><textarea id="gapf-action" class="auris-legal-s-4d5979ac8f" placeholder="What specific actions are needed to achieve compliance?"></textarea></div>
 <div class="form3row">
 <div class="form3group"><label class="form3label">Responsible person</label><select id="gapf-responsible"><option value="">Select person...</option></select></div>
 <div class="form3group"><label class="form3label">Target closure date</label><input type="date" id="gapf-target-date"/></div>
 </div>
-<div class="form3group"><label class="form3label">MAP action reference</label><input type="text" id="gapf-action-ref" style="font-family:monospace" placeholder="MAP-CA-2026-001"/></div>
-<div class="form3group"><label class="form3label">Closure notes</label><textarea id="gapf-closure-notes" style="min-height:50px"></textarea></div>
+<div class="form3group"><label class="form3label">MAP action reference</label><input type="text" id="gapf-action-ref" class="auris-legal-s-7b8c3df564" placeholder="MAP-CA-2026-001"/></div>
+<div class="form3group"><label class="form3label">Closure notes</label><textarea id="gapf-closure-notes" class="auris-legal-s-2b013fa0d9"></textarea></div>
 </div>
 </div>
 <div>
-<div class="card" style="border:2px solid #DC2626"><div class="card-title" style="color:#DC2626">Status</div>
-<div style="display:flex;flex-direction:column;gap:8px">
-<label style="display:flex;align-items:center;gap:8px;padding:10px;border-radius:8px;cursor:pointer;background:#FEF2F2;border:1px solid #fecaca" data-auris-onclick="h0481"><input type="radio" name="gap-st-r" value="open" style="accent-color:var(--red)" checked><span style="font-weight:700;color:var(--red)">Open</span></label>
-<label style="display:flex;align-items:center;gap:8px;padding:10px;border-radius:8px;cursor:pointer;background:#EFF6FF;border:1px solid #bfdbfe" data-auris-onclick="h0482"><input type="radio" name="gap-st-r" value="in_progress" style="accent-color:#185FA5"><span style="font-weight:700;color:#185FA5">In progress</span></label>
-<label style="display:flex;align-items:center;gap:8px;padding:10px;border-radius:8px;cursor:pointer;background:#f0fdf4;border:1px solid #bbf7d0" data-auris-onclick="h0483"><input type="radio" name="gap-st-r" value="closed" style="accent-color:var(--green)"><span style="font-weight:700;color:#166534">Closed</span></label>
-<label style="display:flex;align-items:center;gap:8px;padding:10px;border-radius:8px;cursor:pointer;background:#f3f4f6;border:1px solid #e5e7eb" data-auris-onclick="h0484"><input type="radio" name="gap-st-r" value="accepted_risk" style="accent-color:#6B7280"><span style="font-weight:700;color:#6B7280">Accepted risk</span></label>
+<div class="card auris-legal-s-7a6d851284"><div class="card-title auris-legal-s-c7bff90490">Status</div>
+<div class="auris-legal-s-0fbf9e859f">
+<label class="auris-legal-s-8c5a7fbdc5" data-auris-onclick="h0481"><input class="auris-legal-s-af62d68b87" type="radio" name="gap-st-r" value="open" checked><span class="auris-legal-s-f59a8847ec">Open</span></label>
+<label class="auris-legal-s-811be3081d" data-auris-onclick="h0482"><input class="auris-legal-s-36b2bbe0a4" type="radio" name="gap-st-r" value="in_progress"><span class="auris-legal-s-639a8ffb61">In progress</span></label>
+<label class="auris-legal-s-e6499d5863" data-auris-onclick="h0483"><input class="auris-legal-s-283f12d7fe" type="radio" name="gap-st-r" value="closed"><span class="auris-legal-s-485acb7ee6">Closed</span></label>
+<label class="auris-legal-s-a5b3884ec2" data-auris-onclick="h0484"><input class="auris-legal-s-81e8367fe3" type="radio" name="gap-st-r" value="accepted_risk"><span class="auris-legal-s-b66521293e">Accepted risk</span></label>
 </div>
 <input type="hidden" id="gapf-status" value="open"/>
-<div class="form3group" style="margin-top:10px"><label class="form3label">Completion date</label><input type="date" id="gapf-completion-date"/></div>
+<div class="form3group auris-legal-s-df928149c5"><label class="form3label">Completion date</label><input type="date" id="gapf-completion-date"/></div>
 </div>
 </div>
 </div>
 </div>
 
 <!-- Calendar event form -->
-<div id="cal-form" style="display:none">
-<div class="card" style="margin-bottom:14px;padding:0;overflow:hidden">
-<div style="padding:14px 20px;background:linear-gradient(135deg,#1a3a5c,#5B21B6);color:#fff;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
-<div style="font-size:17px;font-weight:800" id="cal-form3title">New Compliance Event</div>
-<div style="display:flex;gap:8px">
-<button class="btn" style="background:rgba(255,255,255,.2);color:#fff;border-color:rgba(255,255,255,.3)" data-auris-onclick="h0485"><i class="ti ti-arrow-left"></i>Back</button>
-<button id="cal-del-btn" class="btn" style="display:none;background:rgba(0,0,0,.3);color:#fff;border-color:rgba(255,255,255,.3)" data-auris-onclick="h0486"><i class="ti ti-trash"></i></button>
-<button class="btn" style="background:#1D9E75;color:#fff;border-color:#1D9E75" data-auris-onclick="h0487"><i class="ti ti-device-floppy"></i>Save</button>
+<div id="cal-form" class="auris-legal-s-6aa34d7432">
+<div class="card auris-legal-s-54ec8874e7">
+<div class="auris-legal-s-06c4761444">
+<div id="cal-form3title" class="auris-legal-s-75021e57ca">New Compliance Event</div>
+<div class="auris-legal-s-9c40389b4a">
+<button class="btn auris-legal-s-5c09edd131" data-auris-onclick="h0485"><i class="ti ti-arrow-left"></i>Back</button>
+<button id="cal-del-btn" class="btn auris-legal-s-96f7839a1b" data-auris-onclick="h0486"><i class="ti ti-trash"></i></button>
+<button class="btn auris-legal-s-c7b9e5b2c7" data-auris-onclick="h0487"><i class="ti ti-device-floppy"></i>Save</button>
 </div>
 </div>
 </div>
@@ -4195,7 +4196,7 @@ Offline mode - changes will sync when connection is restored
 </div>
 <div class="form3row">
 <div class="form3group"><label class="form3label">Legislation / obligation</label><input type="text" id="calf-legislation" placeholder="e.g. OSH Act 2005 s.50"/></div>
-<div class="form3group"><label class="form3label">Legal Register requirement</label><div style="display:flex;gap:6px"><select id="calf-ob-ref" style="font-family:monospace;min-width:0;flex:1"><option value="">Select requirement...</option></select><button type="button" class="btn btn-sm" data-auris-onclick="h0488" title="Open linked requirement"><i class="ti ti-external-link"></i></button></div></div>
+<div class="form3group"><label class="form3label">Legal Register requirement</label><div class="auris-legal-s-69374f356a"><select id="calf-ob-ref" class="auris-legal-s-7ec1481b37"><option value="">Select requirement...</option></select><button type="button" class="btn btn-sm" data-auris-onclick="h0488" title="Open linked requirement"><i class="ti ti-external-link"></i></button></div></div>
 <div class="form3group"><label class="form3label">Due date</label><input type="date" id="calf-due-date"/></div>
 <div class="form3group"><label class="form3label">Recurrence</label>
 <select id="calf-recurrence"><option value="none">No recurrence</option><option value="monthly">Monthly</option>
@@ -4208,10 +4209,10 @@ Offline mode - changes will sync when connection is restored
 <div class="form3group"><label class="form3label">Status</label>
 <select id="calf-status"><option value="upcoming">Upcoming</option><option value="completed">Completed</option><option value="overdue">Overdue</option><option value="waived">Waived</option><option value="cancelled">Cancelled</option></select></div>
 </div>
-<div class="form3group"><label class="form3label">Description / notes</label><textarea id="calf-description" style="min-height:60px"></textarea></div>
+<div class="form3group"><label class="form3label">Description / notes</label><textarea id="calf-description" class="auris-legal-s-07bdff4587"></textarea></div>
 <div class="form3row">
 <div class="form3group"><label class="form3label">Completion date</label><input type="date" id="calf-completed-date"/></div>
-<div class="form3group"><label class="form3label">Linked Master Action</label><div style="display:flex;gap:6px"><select id="calf-action-ref" style="font-family:monospace;min-width:0;flex:1"><option value="">No linked action</option></select><button type="button" class="btn btn-sm" data-auris-onclick="h0489" title="Open linked action"><i class="ti ti-external-link"></i></button></div></div>
+<div class="form3group"><label class="form3label">Linked Master Action</label><div class="auris-legal-s-69374f356a"><select id="calf-action-ref" class="auris-legal-s-7ec1481b37"><option value="">No linked action</option></select><button type="button" class="btn btn-sm" data-auris-onclick="h0489" title="Open linked action"><i class="ti ti-external-link"></i></button></div></div>
 </div>
 </div>
 </div>

@@ -1,0 +1,259 @@
+/* Generated from Legal Compliance by scripts/extract-legal-compliance-styles.cjs. */
+/* Non-important declarations preserve register, assessment, remediation and calendar runtime state. */
+/* Governed legal checkboxes retain required 18px important dimensions over the global 16px checkbox rule. */
+.auris-legal-s-01207cd23a{padding:7px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px;max-width:220px}
+.auris-legal-s-03826b79d9{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px}
+.auris-legal-s-03bd966c28{padding:10px 12px;border-left:4px solid #DC2626}
+.auris-legal-s-06c4761444{padding:14px 20px;background:linear-gradient(135deg,#1a3a5c,#5B21B6);color:#fff;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px}
+.auris-legal-s-07bdff4587{min-height:60px}
+.auris-legal-s-07fd85f85e{width:18px!important;height:18px!important;min-width:18px;margin-top:1px;accent-color:var(--red);flex:0 0 auto}
+.auris-legal-s-0904085f3d{display:flex;gap:0;margin-bottom:14px;border-bottom:2px solid var(--border);overflow-x:auto}
+.auris-legal-s-0cd1a6369a{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;flex-wrap:wrap;margin-bottom:12px}
+.auris-legal-s-0e610f7b67{display:none;background:rgba(220,38,38,.3);color:#fff;border-color:rgba(220,38,38,.5)}
+.auris-legal-s-0fbf9e859f{display:flex;flex-direction:column;gap:8px}
+.auris-legal-s-11856befbc{flex:1;min-width:180px;padding:7px 12px;border:1px solid var(--border);border-radius:8px;font-size:12px}
+.auris-legal-s-120c76267b{padding:9px 12px;border:1px solid var(--border);border-radius:8px}
+.auris-legal-s-1321ed78bb{display:flex;align-items:center;gap:10px;padding:12px;border-radius:8px;cursor:pointer;background:#f0fdf4;border:1px solid #bbf7d0}
+.auris-legal-s-14dfb7ae67{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px}
+.auris-legal-s-19fbf19297{display:none;background:#fff;color:#185FA5;font-weight:800;border-color:#fff}
+.auris-legal-s-1a8f947ad0{padding:14px;background:#f0fdf4;border-radius:8px;text-align:center;margin-top:8px}
+.auris-legal-s-1e3b39fbbe{margin:0;color:#185FA5}
+.auris-legal-s-1e4fd5f9ed{font-size:22px;font-weight:800;color:#1D9E75}
+.auris-legal-s-2062f090bc{font-size:22px;font-weight:800;color:#EF9F27}
+.auris-legal-s-21ac3ff165{padding:10px 12px;border-left:4px solid #6B7280}
+.auris-legal-s-24ac637923{padding:10px 12px;border-left:4px solid #8B5CF6}
+.auris-legal-s-2679d199cb{background:#F8FBFF;border-color:#BFDBFE;margin:10px 0 14px}
+.auris-legal-s-27bf8be417{width:100%;background:#e5e7eb;border-radius:99px;height:12px;margin-top:14px;overflow:hidden}
+.auris-legal-s-283f12d7fe{accent-color:var(--green)}
+.auris-legal-s-2b013fa0d9{min-height:50px}
+.auris-legal-s-2fc415ab40{color:#185FA5;margin-bottom:8px}
+.auris-legal-s-319efb9ff6{width:18px!important;height:18px!important;min-width:18px;margin:0;accent-color:var(--red);flex:0 0 auto}
+.auris-legal-s-3374764085{display:flex;align-items:center;justify-content:center;padding:20px;flex-direction:column}
+.auris-legal-s-36b2bbe0a4{accent-color:#185FA5}
+.auris-legal-s-3818a58080{font-size:13px;color:var(--text2);margin-top:6px}
+.auris-legal-s-3bce0406cf{display:flex;gap:8px;margin-bottom:10px}
+.auris-legal-s-3cc1c95967{font-size:32px;font-weight:900;color:#1D9E75}
+.auris-legal-s-42a6ced8b6{margin-bottom:14px}
+.auris-legal-s-4422804ebb{font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px}
+.auris-legal-s-46744debb8{font-size:12px;color:var(--text2);margin-bottom:8px}
+.auris-legal-s-47d1d40bad{width:18px!important;height:18px!important;min-width:18px;margin:0;accent-color:var(--green);flex:0 0 auto}
+.auris-legal-s-485acb7ee6{font-weight:700;color:#166534}
+.auris-legal-s-498a5137d9{display:flex;flex-direction:column;gap:8px;margin-bottom:12px}
+.auris-legal-s-4d5979ac8f{min-height:70px}
+.auris-legal-s-4e9bd34377{padding:10px 12px;margin-bottom:12px;border:1px dashed #BFDBFE;border-radius:8px;background:#fff}
+.auris-legal-s-530946d91c{padding:10px 12px;border-left:4px solid #E24B4A}
+.auris-legal-s-54593e9172{font-size:11px;color:var(--text2);margin-top:8px}
+.auris-legal-s-54bb9f1d16{margin-bottom:12px;padding:10px 14px}
+.auris-legal-s-54ec8874e7{margin-bottom:14px;padding:0;overflow:hidden}
+.auris-legal-s-5571af1e74{display:grid;grid-template-columns:2fr 1fr;gap:14px}
+.auris-legal-s-56ac49ff17{background:#fff;color:#1D9E75;font-weight:700}
+.auris-legal-s-5c09edd131{background:rgba(255,255,255,.2);color:#fff;border-color:rgba(255,255,255,.3)}
+.auris-legal-s-5e409ac696{font-weight:700;font-size:13px;line-height:1.35;color:var(--red)}
+.auris-legal-s-5e461f0709{font-size:13px}
+.auris-legal-s-5faab67eef{font-size:12px;color:var(--text2);margin-bottom:12px}
+.auris-legal-s-606479e2d0{display:flex;gap:8px;justify-content:center;margin-top:16px;flex-wrap:wrap}
+.auris-legal-s-639a8ffb61{font-weight:700;color:#185FA5}
+.auris-legal-s-66c5e304c5{padding:14px 20px;background:linear-gradient(135deg,#854F0B,#B45309);color:#fff;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px}
+.auris-legal-s-6752dad828{font-weight:800;min-width:40px;font-size:16px}
+.auris-legal-s-69374f356a{display:flex;gap:6px}
+.auris-legal-s-6aa34d7432{display:none}
+.auris-legal-s-6aa3d63a22{width:18px!important;height:18px!important;min-width:18px;margin:0;accent-color:#6B7280;flex:0 0 auto}
+.auris-legal-s-6e86c59eb5{padding:14px 20px;background:linear-gradient(135deg,#1a3a5c,#185FA5);color:#fff;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px}
+.auris-legal-s-6f56b8363e{font-size:22px;font-weight:800;color:#185FA5}
+.auris-legal-s-6f8311d1d7{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px}
+.auris-legal-s-7299078644{font-size:12px;color:var(--text2)}
+.auris-legal-s-7372276e79{font-family:monospace;font-size:12px;color:#fca5a5;margin-top:3px}
+.auris-legal-s-75021e57ca{font-size:17px;font-weight:800}
+.auris-legal-s-770a4152c1{min-height:80px}
+.auris-legal-s-791af40dd7{background:#fff;color:#5B21B6;font-weight:800;border-color:#fff}
+.auris-legal-s-7a5e61eb83{padding:10px 12px;border-left:4px solid #1D9E75}
+.auris-legal-s-7a6d851284{border:2px solid #DC2626}
+.auris-legal-s-7b8c3df564{font-family:monospace}
+.auris-legal-s-7c3219e933{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap}
+.auris-legal-s-7cd7d9cc8e{font-weight:800;color:var(--red);line-height:1.2}
+.auris-legal-s-7ec1481b37{font-family:monospace;min-width:0;flex:1}
+.auris-legal-s-811be3081d{display:flex;align-items:center;gap:8px;padding:10px;border-radius:8px;cursor:pointer;background:#EFF6FF;border:1px solid #bfdbfe}
+.auris-legal-s-81e8367fe3{accent-color:#6B7280}
+.auris-legal-s-82cbcdb038{margin-bottom:12px;padding:12px 16px;background:linear-gradient(135deg,#1a3a5c,#185FA5);color:#fff}
+.auris-legal-s-837804c09d{margin-bottom:12px;padding:12px 14px}
+.auris-legal-s-868661d008{color:#5B21B6}
+.auris-legal-s-8703b10672{font-family:monospace;font-size:12px;color:#a7f3d0;margin-top:3px}
+.auris-legal-s-88d58d43e0{display:flex;align-items:center;gap:10px;padding:12px;border-radius:8px;cursor:pointer;background:#f3f4f6;border:1px solid #e5e7eb}
+.auris-legal-s-8c5a7fbdc5{display:flex;align-items:center;gap:8px;padding:10px;border-radius:8px;cursor:pointer;background:#FEF2F2;border:1px solid #fecaca}
+.auris-legal-s-8f9ecb2f9c{flex:1;padding:8px 12px;border:1px solid #c4b5fd;border-radius:8px;font-size:12px}
+.auris-legal-s-8fcb04722a{height:100%;background:#1D9E75;border-radius:99px;transition:width .5s;width:0%}
+.auris-legal-s-92b7a6c93b{font-weight:500;color:#991B1B}
+.auris-legal-s-96f7839a1b{display:none;background:rgba(0,0,0,.3);color:#fff;border-color:rgba(255,255,255,.3)}
+.auris-legal-s-9abe12cdf2{font-family:monospace;font-size:12px;color:#a8d8f0;margin-top:3px}
+.auris-legal-s-9bcefa3fff{margin-bottom:14px;border:2px solid #185FA5}
+.auris-legal-s-9c40389b4a{display:flex;gap:8px}
+.auris-legal-s-9c4ae63835{font-size:12px;color:var(--text2);margin-top:3px}
+.auris-legal-s-9dd33bbc47{display:none;margin-bottom:12px;border:2px solid #185FA5;background:#F8FBFF}
+.auris-legal-s-a1c988f046{min-height:100px}
+.auris-legal-s-a5b3884ec2{display:flex;align-items:center;gap:8px;padding:10px;border-radius:8px;cursor:pointer;background:#f3f4f6;border:1px solid #e5e7eb}
+.auris-legal-s-a75d926385{min-height:90px}
+.auris-legal-s-a7dfccfa36{background:#5B21B6;color:#fff;border-color:#5B21B6}
+.auris-legal-s-ab79ea2b85{margin:0}
+.auris-legal-s-adf04cf81f{font-size:11px;font-weight:600;text-transform:uppercase;opacity:.8;margin-bottom:4px}
+.auris-legal-s-ae71a9e48f{margin-bottom:12px;padding:10px 14px;display:flex;justify-content:space-between;align-items:center}
+.auris-legal-s-af62d68b87{accent-color:var(--red)}
+.auris-legal-s-b25cf9d8d5{width:18px!important;height:18px!important;min-width:18px;margin:0;accent-color:#EF9F27;flex:0 0 auto}
+.auris-legal-s-b4e7d324c7{display:flex;align-items:center;gap:10px}
+.auris-legal-s-b66521293e{font-weight:700;color:#6B7280}
+.auris-legal-s-b6d403ee7e{padding:10px 12px;border-left:4px solid #185FA5}
+.auris-legal-s-b7a4539514{display:grid;grid-template-columns:minmax(220px,2fr) repeat(3,minmax(150px,1fr)) auto;gap:10px;align-items:center}
+.auris-legal-s-b839ed49d8{display:none;background:#F5F3FF;border:1px solid #c4b5fd;border-radius:8px;padding:12px;font-size:13px;line-height:1.6;white-space:pre-wrap;max-height:400px;overflow-y:auto}
+.auris-legal-s-ba03bbc764{display:flex;align-items:center;gap:10px;padding:12px;border-radius:8px;cursor:pointer;background:#FFFBEB;border:1px solid #fcd34d}
+.auris-legal-s-bc6456303a{font-size:22px;font-weight:800;color:#8B5CF6}
+.auris-legal-s-bd0e58d190{padding:6px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px}
+.auris-legal-s-c26f6e130f{display:none;margin-bottom:14px;border:1px solid #c4b5fd;background:#fbfaff}
+.auris-legal-s-c53ea1da23{margin-top:14px}
+.auris-legal-s-c70473e794{padding:10px 12px;border-left:4px solid #EF9F27}
+.auris-legal-s-c7b9e5b2c7{background:#1D9E75;color:#fff;border-color:#1D9E75}
+.auris-legal-s-c7bff90490{color:#DC2626}
+.auris-legal-s-ca32b871b2{color:#185FA5}
+.auris-legal-s-cc8d587d0e{flex:1;accent-color:#185FA5}
+.auris-legal-s-ccd1ef9d3f{display:grid;grid-template-columns:2fr 1fr 1fr auto;gap:10px;align-items:end;margin-bottom:12px}
+.auris-legal-s-ce950f1509{background:#DC2626;color:#fff;border-color:#DC2626}
+.auris-legal-s-cfaccf08c6{padding:14px 20px;background:linear-gradient(135deg,#7F1D1D,#DC2626);color:#fff;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px}
+.auris-legal-s-d35063206b{padding:7px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px}
+.auris-legal-s-d395a8868f{margin-bottom:14px;border-left:4px solid #DC2626}
+.auris-legal-s-d5129e1520{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.auris-legal-s-d5e9713ce7{padding:14px 20px;background:linear-gradient(135deg,#064E3B,#1D9E75);color:#fff;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px}
+.auris-legal-s-d834aec0f8{font-weight:800;color:#166534;line-height:1.2}
+.auris-legal-s-d8e9653745{font-size:72px;font-weight:900;line-height:1}
+.auris-legal-s-d9c39add3c{padding:0;overflow:hidden}
+.auris-legal-s-dc4ac84a01{font-size:12px;opacity:.85}
+.auris-legal-s-dced0a6ec4{display:flex;align-items:flex-start;gap:10px;margin-bottom:10px;padding:10px;border-radius:8px;background:#FEF2F2;border:1px solid #fecaca;cursor:pointer}
+.auris-legal-s-de3631f23e{font-size:22px;font-weight:800}
+.auris-legal-s-df4f0a3612{color:#E24B4A}
+.auris-legal-s-df928149c5{margin-top:10px}
+.auris-legal-s-e2e1112055{margin-bottom:12px;padding:10px 14px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px}
+.auris-legal-s-e6499d5863{display:flex;align-items:center;gap:8px;padding:10px;border-radius:8px;cursor:pointer;background:#f0fdf4;border:1px solid #bbf7d0}
+.auris-legal-s-e7ad3ebe2e{font-size:22px;font-weight:800;color:#E24B4A}
+.auris-legal-s-e9afde16e0{font-weight:800;color:#6B7280;line-height:1.2}
+.auris-legal-s-eb99a4c193{white-space:nowrap}
+.auris-legal-s-ebf80452d6{display:none;background:#fff;color:#854F0B;border-color:#fff;font-weight:800}
+.auris-legal-s-ee71c71db7{border:2px solid #5B21B6}
+.auris-legal-s-f17e623d95{display:grid;grid-template-columns:repeat(7,1fr);gap:10px;margin-bottom:14px}
+.auris-legal-s-f26cfe9154{font-size:14px;font-weight:700;margin-bottom:4px}
+.auris-legal-s-f51849fc6a{margin-bottom:14px;border-left:4px solid #1D9E75}
+.auris-legal-s-f57ee6fcd1{font-weight:800;color:#854F0B;line-height:1.2}
+.auris-legal-s-f59a8847ec{font-weight:700;color:var(--red)}
+.auris-legal-s-f8805c5d89{margin-bottom:14px;border:2px solid #1D9E75}
+.auris-legal-s-f9faa54401{color:#1D9E75}
+.auris-legal-s-fa530ed1c3{font-size:12px;color:var(--text2);margin-bottom:10px}
+.auris-legal-s-ffa237a31b{display:flex;align-items:center;gap:10px;padding:12px;border-radius:8px;cursor:pointer;background:#FEF2F2;border:1px solid #fecaca}
+.auris-legal-s-ffe267bce1{font-size:22px;font-weight:800;color:#DC2626}
+/* Preserve former inline precedence over existing ID selectors. */
+#cal-add-btn.auris-legal-s-6aa34d7432{display:none}
+#cal-btn-overdue.auris-legal-s-ce950f1509{background:#DC2626;color:#fff;border-color:#DC2626}
+#cal-del-btn.auris-legal-s-96f7839a1b{display:none;background:rgba(0,0,0,.3);color:#fff;border-color:rgba(255,255,255,.3)}
+#cal-form.auris-legal-s-6aa34d7432{display:none}
+#cal-form3title.auris-legal-s-75021e57ca{font-size:17px;font-weight:800}
+#calf-action-ref.auris-legal-s-7ec1481b37{font-family:monospace;min-width:0;flex:1}
+#calf-description.auris-legal-s-07bdff4587{min-height:60px}
+#calf-ob-ref.auris-legal-s-7ec1481b37{font-family:monospace;min-width:0;flex:1}
+#gap-add-btn.auris-legal-s-6aa34d7432{display:none}
+#gap-del-btn.auris-legal-s-96f7839a1b{display:none;background:rgba(0,0,0,.3);color:#fff;border-color:rgba(255,255,255,.3)}
+#gap-filter-risk.auris-legal-s-bd0e58d190{padding:6px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px}
+#gap-filter-status.auris-legal-s-bd0e58d190{padding:6px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px}
+#gap-form.auris-legal-s-6aa34d7432{display:none}
+#gap-form3ref.auris-legal-s-7372276e79{font-family:monospace;font-size:12px;color:#fca5a5;margin-top:3px}
+#gap-form3title.auris-legal-s-75021e57ca{font-size:17px;font-weight:800}
+#gap-m3closed.auris-legal-s-1e4fd5f9ed{font-size:22px;font-weight:800;color:#1D9E75}
+#gap-m3critical.auris-legal-s-ffe267bce1{font-size:22px;font-weight:800;color:#DC2626}
+#gap-m3high.auris-legal-s-e7ad3ebe2e{font-size:22px;font-weight:800;color:#E24B4A}
+#gap-m3medium.auris-legal-s-2062f090bc{font-size:22px;font-weight:800;color:#EF9F27}
+#gapf-action-ref.auris-legal-s-7b8c3df564{font-family:monospace}
+#gapf-action.auris-legal-s-4d5979ac8f{min-height:70px}
+#gapf-closure-notes.auris-legal-s-2b013fa0d9{min-height:50px}
+#gapf-description.auris-legal-s-770a4152c1{min-height:80px}
+#lc-action.auris-legal-s-2b013fa0d9{min-height:50px}
+#lc-add-btn.auris-legal-s-6aa34d7432{display:none}
+#lc-changes.auris-legal-s-770a4152c1{min-height:80px}
+#lc-chg-applicable.auris-legal-s-120c76267b{padding:9px 12px;border:1px solid var(--border);border-radius:8px}
+#lc-chg-category.auris-legal-s-120c76267b{padding:9px 12px;border:1px solid var(--border);border-radius:8px}
+#lc-chg-count.auris-legal-s-54593e9172{font-size:11px;color:var(--text2);margin-top:8px}
+#lc-chg-implemented.auris-legal-s-120c76267b{padding:9px 12px;border:1px solid var(--border);border-radius:8px}
+#lc-chg-search.auris-legal-s-120c76267b{padding:9px 12px;border:1px solid var(--border);border-radius:8px}
+#lc-comments.auris-legal-s-2b013fa0d9{min-height:50px}
+#lc-current-wording.auris-legal-s-a75d926385{min-height:90px}
+#lc-del-btn.auris-legal-s-96f7839a1b{display:none;background:rgba(0,0,0,.3);color:#fff;border-color:rgba(255,255,255,.3)}
+#lc-edit-btn.auris-legal-s-ebf80452d6{display:none;background:#fff;color:#854F0B;border-color:#fff;font-weight:800}
+#lc-form3title.auris-legal-s-75021e57ca{font-size:17px;font-weight:800}
+#lc-new-wording.auris-legal-s-a75d926385{min-height:90px}
+#lc-print-btn.auris-legal-s-ebf80452d6{display:none;background:#fff;color:#854F0B;border-color:#fff;font-weight:800}
+#lc-review-card.auris-legal-s-6aa34d7432{display:none}
+#lc-save-btn.auris-legal-s-c7b9e5b2c7{background:#1D9E75;color:#fff;border-color:#1D9E75}
+#lc-section-summary.auris-legal-s-4e9bd34377{padding:10px 12px;margin-bottom:12px;border:1px dashed #BFDBFE;border-radius:8px;background:#fff}
+#lca-add-btn.auris-legal-s-6aa34d7432{display:none}
+#lca-del-btn.auris-legal-s-96f7839a1b{display:none;background:rgba(0,0,0,.3);color:#fff;border-color:rgba(255,255,255,.3)}
+#lca-form.auris-legal-s-6aa34d7432{display:none}
+#lca-form3ref.auris-legal-s-8703b10672{font-family:monospace;font-size:12px;color:#a7f3d0;margin-top:3px}
+#lca-form3title.auris-legal-s-75021e57ca{font-size:17px;font-weight:800}
+#lca-score-number.auris-legal-s-3cc1c95967{font-size:32px;font-weight:900;color:#1D9E75}
+#lca-score-preview.auris-legal-s-1a8f947ad0{padding:14px;background:#f0fdf4;border-radius:8px;text-align:center;margin-top:8px}
+#lcaf-audit-ref.auris-legal-s-7b8c3df564{font-family:monospace}
+#lcaf-findings.auris-legal-s-770a4152c1{min-height:80px}
+#lcaf-methodology.auris-legal-s-07bdff4587{min-height:60px}
+#lcaf-recommendations.auris-legal-s-770a4152c1{min-height:80px}
+#lcaf-scope.auris-legal-s-07bdff4587{min-height:60px}
+#legal-ai-assess-panel.auris-legal-s-c26f6e130f{display:none;margin-bottom:14px;border:1px solid #c4b5fd;background:#fbfaff}
+#legal-ai-input.auris-legal-s-8f9ecb2f9c{flex:1;padding:8px 12px;border:1px solid #c4b5fd;border-radius:8px;font-size:12px}
+#legal-ai-quick-btns.auris-legal-s-6f8311d1d7{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px}
+#legal-ai-response.auris-legal-s-b839ed49d8{display:none;background:#F5F3FF;border:1px solid #c4b5fd;border-radius:8px;padding:12px;font-size:13px;line-height:1.6;white-space:pre-wrap;max-height:400px;overflow-y:auto}
+#legal-chg-form.auris-legal-s-6aa34d7432{display:none}
+#legal-connected-records.auris-legal-s-42a6ced8b6{margin-bottom:14px}
+#legal-header-btns.auris-legal-s-9c40389b4a{display:flex;gap:8px}
+#legal-new-btn.auris-legal-s-6aa34d7432{display:none}
+#legal-req-form.auris-legal-s-6aa34d7432{display:none}
+#legal-subtitle.auris-legal-s-7299078644{font-size:12px;color:var(--text2)}
+#legal-tab-assessments.auris-legal-s-eb99a4c193{white-space:nowrap}
+#legal-tab-calendar.auris-legal-s-eb99a4c193{white-space:nowrap}
+#legal-tab-changes.auris-legal-s-eb99a4c193{white-space:nowrap}
+#legal-tab-dashboard.auris-legal-s-eb99a4c193{white-space:nowrap}
+#legal-tab-gaps.auris-legal-s-eb99a4c193{white-space:nowrap}
+#legal-tab-register.auris-legal-s-eb99a4c193{white-space:nowrap}
+#legal-view-assessments.auris-legal-s-6aa34d7432{display:none}
+#legal-view-calendar.auris-legal-s-6aa34d7432{display:none}
+#legal-view-changes.auris-legal-s-6aa34d7432{display:none}
+#legal-view-dashboard.auris-legal-s-6aa34d7432{display:none}
+#legal-view-gaps.auris-legal-s-6aa34d7432{display:none}
+#lr-add-btn.auris-legal-s-6aa34d7432{display:none}
+#lr-ai-btn.auris-legal-s-791af40dd7{background:#fff;color:#5B21B6;font-weight:800;border-color:#fff}
+#lr-by-legislation.auris-legal-s-5e461f0709{font-size:13px}
+#lr-compliance-breakdown.auris-legal-s-606479e2d0{display:flex;gap:8px;justify-content:center;margin-top:16px;flex-wrap:wrap}
+#lr-compliance-pct.auris-legal-s-d8e9653745{font-size:72px;font-weight:900;line-height:1}
+#lr-compliance-pct.auris-legal-s-f9faa54401{color:#1D9E75}
+#lr-compliance-score.auris-legal-s-cc8d587d0e{flex:1;accent-color:#185FA5}
+#lr-controls.auris-legal-s-770a4152c1{min-height:80px}
+#lr-del-btn.auris-legal-s-0e610f7b67{display:none;background:rgba(220,38,38,.3);color:#fff;border-color:rgba(220,38,38,.5)}
+#lr-edit-btn.auris-legal-s-19fbf19297{display:none;background:#fff;color:#185FA5;font-weight:800;border-color:#fff}
+#lr-filter-archived.auris-legal-s-d35063206b{padding:7px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px}
+#lr-filter-cat.auris-legal-s-d35063206b{padding:7px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px}
+#lr-filter-leg.auris-legal-s-01207cd23a{padding:7px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px;max-width:220px}
+#lr-filter-status.auris-legal-s-d35063206b{padding:7px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px}
+#lr-form3ref-badge.auris-legal-s-9abe12cdf2{font-family:monospace;font-size:12px;color:#a8d8f0;margin-top:3px}
+#lr-form3title.auris-legal-s-75021e57ca{font-size:17px;font-weight:800}
+#lr-further-controls.auris-legal-s-4d5979ac8f{min-height:70px}
+#lr-gap.auris-legal-s-07fd85f85e{width:18px!important;height:18px!important;min-width:18px;margin-top:1px;accent-color:var(--red);flex:0 0 auto}
+#lr-import-pdf-btn.auris-legal-s-6aa34d7432{display:none}
+#lr-m3assessments.auris-legal-s-6f56b8363e{font-size:22px;font-weight:800;color:#185FA5}
+#lr-m3cal-due.auris-legal-s-ffe267bce1{font-size:22px;font-weight:800;color:#DC2626}
+#lr-m3compliant.auris-legal-s-1e4fd5f9ed{font-size:22px;font-weight:800;color:#1D9E75}
+#lr-m3gaps.auris-legal-s-bc6456303a{font-size:22px;font-weight:800;color:#8B5CF6}
+#lr-m3noncompliant.auris-legal-s-e7ad3ebe2e{font-size:22px;font-weight:800;color:#E24B4A}
+#lr-m3partial.auris-legal-s-2062f090bc{font-size:22px;font-weight:800;color:#EF9F27}
+#lr-m3total.auris-legal-s-de3631f23e{font-size:22px;font-weight:800}
+#lr-notes.auris-legal-s-2b013fa0d9{min-height:50px}
+#lr-pdf-import-panel.auris-legal-s-9dd33bbc47{display:none;margin-bottom:12px;border:2px solid #185FA5;background:#F8FBFF}
+#lr-pdf-input.auris-legal-s-6aa34d7432{display:none}
+#lr-pdf-status-msg.auris-legal-s-fa530ed1c3{font-size:12px;color:var(--text2);margin-bottom:10px}
+#lr-requirement.auris-legal-s-a1c988f046{min-height:100px}
+#lr-review-card.auris-legal-s-6aa34d7432{display:none}
+#lr-save-btn.auris-legal-s-c7b9e5b2c7{background:#1D9E75;color:#fff;border-color:#1D9E75}
+#lr-score-bar.auris-legal-s-27bf8be417{width:100%;background:#e5e7eb;border-radius:99px;height:12px;margin-top:14px;overflow:hidden}
+#lr-score-display.auris-legal-s-6752dad828{font-weight:800;min-width:40px;font-size:16px}
+#lr-score-fill.auris-legal-s-8fcb04722a{height:100%;background:#1D9E75;border-radius:99px;transition:width .5s;width:0%}
+#lr-search.auris-legal-s-11856befbc{flex:1;min-width:180px;padding:7px 12px;border:1px solid var(--border);border-radius:8px;font-size:12px}
