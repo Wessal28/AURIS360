@@ -93,6 +93,7 @@
 <link rel="stylesheet" href="auris-audit-trail-static.css?v=20260815-1">
 <link rel="stylesheet" href="auris-settings-static.css?v=20260815-1">
 <link rel="stylesheet" href="auris-site-map-static.css?v=20260815-1">
+<link rel="stylesheet" href="auris-fire-certificates-static.css?v=20260815-1">
 </head>
 <body>
 <div id="login-screen">
@@ -11196,35 +11197,35 @@ I can help you:<br>
 <div class="page-header">
   <div>
     <div class="page-title">Fire Certificate Management</div>
-    <div style="font-size:12px;color:var(--text2)">Certificates - Inspections - Equipment - Compliance tracking</div>
+    <div class="auris-fire-certificates-s-7299078644">Certificates - Inspections - Equipment - Compliance tracking</div>
   </div>
-  <div style="display:flex;gap:8px" id="fire-header-btns">
-    <button class="btn btn-primary" id="fire-add-cert-btn" data-auris-onclick="h1234" style="display:none"><i class="ti ti-plus"></i>New Certificate</button>
+  <div id="fire-header-btns" class="auris-fire-certificates-s-9c40389b4a">
+    <button class="btn btn-primary auris-fire-certificates-s-6aa34d7432" id="fire-add-cert-btn" data-auris-onclick="h1234"><i class="ti ti-plus"></i>New Certificate</button>
     <button class="btn btn-sm" data-auris-onclick="h1235" title="Print Report"><i class="ti ti-printer"></i>Report</button>
   </div>
 </div>
 
 <!-- Tabs -->
-<div style="display:flex;gap:0;margin-bottom:16px;border-bottom:2px solid var(--border);overflow-x:auto">
-  <button class="mtg-tab active" id="fire-tab-certs" data-auris-onclick="h1236" style="white-space:nowrap">Certificates</button>
-  <button class="mtg-tab" id="fire-tab-inspections" data-auris-onclick="h1237" style="white-space:nowrap">Inspections</button>
-  <button class="mtg-tab" id="fire-tab-equipment" data-auris-onclick="h1238" style="white-space:nowrap">Equipment</button>
-  <button class="mtg-tab" id="fire-tab-layout" data-auris-onclick="h1239" style="white-space:nowrap"><i class="ti ti-map-pin"></i> Site Layout</button>
-  <button class="mtg-tab" id="fire-tab-dashboard" data-auris-onclick="h1240" style="white-space:nowrap">Overview</button>
+<div class="auris-fire-certificates-s-0cf9615f1f">
+  <button class="mtg-tab active auris-fire-certificates-s-eb99a4c193" id="fire-tab-certs" data-auris-onclick="h1236">Certificates</button>
+  <button class="mtg-tab auris-fire-certificates-s-eb99a4c193" id="fire-tab-inspections" data-auris-onclick="h1237">Inspections</button>
+  <button class="mtg-tab auris-fire-certificates-s-eb99a4c193" id="fire-tab-equipment" data-auris-onclick="h1238">Equipment</button>
+  <button class="mtg-tab auris-fire-certificates-s-eb99a4c193" id="fire-tab-layout" data-auris-onclick="h1239"><i class="ti ti-map-pin"></i> Site Layout</button>
+  <button class="mtg-tab auris-fire-certificates-s-eb99a4c193" id="fire-tab-dashboard" data-auris-onclick="h1240">Overview</button>
 </div>
 
 <!-- -- TAB: Certificates ------------------------------ -->
 <div id="fire-pane-certs">
   <!-- Stats row -->
-  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px" id="fire-cert-stats"></div>
+  <div id="fire-cert-stats" class="auris-fire-certificates-s-311c2a86b4"></div>
   <!-- Table -->
-  <div class="card" style="padding:0;overflow:hidden">
-    <div style="padding:12px 16px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center">
-      <span style="font-weight:600;font-size:14px">Fire Certificate Register</span>
-      <input type="text" id="fire-cert-search" placeholder="Search..." style="width:200px" data-auris-oninput="h1241"/>
+  <div class="card auris-fire-certificates-s-d9c39add3c">
+    <div class="auris-fire-certificates-s-73f315dd9f">
+      <span class="auris-fire-certificates-s-1f435cd084">Fire Certificate Register</span>
+      <input type="text" id="fire-cert-search" class="auris-fire-certificates-s-3cab7ef27d" placeholder="Search..." data-auris-oninput="h1241"/>
     </div>
-    <div id="fire-cert-table-wrap" style="overflow-x:auto">
-      <table style="width:100%">
+    <div id="fire-cert-table-wrap" class="auris-fire-certificates-s-1b1d75452f">
+      <table class="auris-fire-certificates-s-b7aa1ec004">
         <thead><tr>
           <th>Cert No.</th><th>Premises / Site</th><th>Type</th>
           <th>Issue Date</th><th>Expiry Date</th><th>Days Left</th>
@@ -11233,22 +11234,22 @@ I can help you:<br>
         <tbody id="fire-cert-tbody"></tbody>
       </table>
     </div>
-    <div id="fire-cert-empty" style="padding:40px;text-align:center;color:var(--text2);display:none">
-      <i class="ti ti-certificate" style="font-size:32px;opacity:.3"></i>
-      <div style="margin-top:8px">No fire certificates recorded yet.</div>
+    <div id="fire-cert-empty" class="auris-fire-certificates-s-8479077702">
+      <i class="ti ti-certificate auris-fire-certificates-s-ccf580a0b5"></i>
+      <div class="auris-fire-certificates-s-43a97fe494">No fire certificates recorded yet.</div>
     </div>
   </div>
 </div>
 
 <!-- -- TAB: Inspections ------------------------------ -->
-<div id="fire-pane-inspections" style="display:none">
-  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-    <span style="font-weight:600">Inspection Log</span>
-    <button class="btn btn-primary" id="fire-add-insp-btn" data-auris-onclick="h1242" style="display:none"><i class="ti ti-plus"></i>Record Inspection</button>
+<div id="fire-pane-inspections" class="auris-fire-certificates-s-6aa34d7432">
+  <div class="auris-fire-certificates-s-ad8736dd0f">
+    <span class="auris-fire-certificates-s-6e8bcfac8d">Inspection Log</span>
+    <button class="btn btn-primary auris-fire-certificates-s-6aa34d7432" id="fire-add-insp-btn" data-auris-onclick="h1242"><i class="ti ti-plus"></i>Record Inspection</button>
   </div>
-  <div class="card" style="padding:0;overflow:hidden">
-    <div style="overflow-x:auto">
-      <table style="width:100%">
+  <div class="card auris-fire-certificates-s-d9c39add3c">
+    <div class="auris-fire-certificates-s-1b1d75452f">
+      <table class="auris-fire-certificates-s-b7aa1ec004">
         <thead><tr>
           <th>Date</th><th>Certificate</th><th>Type</th>
           <th>Inspector</th><th>Result</th><th>Findings</th><th>Status</th><th>Actions</th>
@@ -11256,24 +11257,24 @@ I can help you:<br>
         <tbody id="fire-insp-tbody"></tbody>
       </table>
     </div>
-    <div id="fire-insp-empty" style="padding:40px;text-align:center;color:var(--text2);display:none">
-      <i class="ti ti-clipboard-list" style="font-size:32px;opacity:.3"></i>
-      <div style="margin-top:8px">No inspections recorded yet.</div>
+    <div id="fire-insp-empty" class="auris-fire-certificates-s-8479077702">
+      <i class="ti ti-clipboard-list auris-fire-certificates-s-ccf580a0b5"></i>
+      <div class="auris-fire-certificates-s-43a97fe494">No inspections recorded yet.</div>
     </div>
   </div>
 </div>
 
 <!-- -- TAB: Equipment ------------------------------- -->
-<div id="fire-pane-equipment" style="display:none">
-  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-    <span style="font-weight:600">Fire Equipment Register</span>
-    <button class="btn btn-primary" id="fire-add-equip-btn" data-auris-onclick="h1243" style="display:none"><i class="ti ti-plus"></i>Add Equipment</button>
+<div id="fire-pane-equipment" class="auris-fire-certificates-s-6aa34d7432">
+  <div class="auris-fire-certificates-s-ad8736dd0f">
+    <span class="auris-fire-certificates-s-6e8bcfac8d">Fire Equipment Register</span>
+    <button class="btn btn-primary auris-fire-certificates-s-6aa34d7432" id="fire-add-equip-btn" data-auris-onclick="h1243"><i class="ti ti-plus"></i>Add Equipment</button>
   </div>
   <!-- Equipment stats -->
-  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px" id="fire-equip-stats"></div>
-  <div class="card" style="padding:0;overflow:hidden">
-    <div style="overflow-x:auto">
-      <table style="width:100%">
+  <div id="fire-equip-stats" class="auris-fire-certificates-s-311c2a86b4"></div>
+  <div class="card auris-fire-certificates-s-d9c39add3c">
+    <div class="auris-fire-certificates-s-1b1d75452f">
+      <table class="auris-fire-certificates-s-b7aa1ec004">
         <thead><tr>
           <th>Type</th><th>Description</th><th>Location</th>
           <th>Serial No.</th><th>Last Service</th><th>Next Service</th><th>Service</th><th>Status</th><th>Actions</th>
@@ -11281,47 +11282,47 @@ I can help you:<br>
         <tbody id="fire-equip-tbody"></tbody>
       </table>
     </div>
-    <div id="fire-equip-empty" style="padding:40px;text-align:center;color:var(--text2);display:none">
-      <i class="ti ti-flame" style="font-size:32px;opacity:.3"></i>
-      <div style="margin-top:8px">No fire equipment recorded yet.</div>
+    <div id="fire-equip-empty" class="auris-fire-certificates-s-8479077702">
+      <i class="ti ti-flame auris-fire-certificates-s-ccf580a0b5"></i>
+      <div class="auris-fire-certificates-s-43a97fe494">No fire equipment recorded yet.</div>
     </div>
   </div>
 </div>
 
 <!-- -- TAB: Site Layout / Fire Map ------------------- -->
-<div id="fire-pane-layout" style="display:none">
-  <div id="fire-layout-list-view" class="card" style="margin-bottom:14px">
-    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;margin-bottom:14px">
+<div id="fire-pane-layout" class="auris-fire-certificates-s-6aa34d7432">
+  <div id="fire-layout-list-view" class="card auris-fire-certificates-s-42a6ced8b6">
+    <div class="auris-fire-certificates-s-2acb74880a">
       <div>
-        <div class="card-title" style="margin-bottom:4px">Safety Twin / Site Map</div>
-        <div style="font-size:12px;color:var(--text2)">Saved building plans, positioned fire equipment and linked HSE records by area.</div>
+        <div class="card-title auris-fire-certificates-s-0d248ae75a">Safety Twin / Site Map</div>
+        <div class="auris-fire-certificates-s-7299078644">Saved building plans, positioned fire equipment and linked HSE records by area.</div>
       </div>
       <button class="btn btn-primary" data-auris-onclick="h1244"><i class="ti ti-plus"></i>New plan</button>
     </div>
     <div id="fire-layout-plan-list"></div>
   </div>
-  <div id="fire-layout-editor" style="display:none">
-  <div class="card" style="margin-bottom:14px">
-    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap">
+  <div id="fire-layout-editor" class="auris-fire-certificates-s-6aa34d7432">
+  <div class="card auris-fire-certificates-s-42a6ced8b6">
+    <div class="auris-fire-certificates-s-d8f8cdb178">
       <div>
-        <div class="card-title" style="margin-bottom:4px">Safety Twin / Site Map</div>
-        <div style="font-size:12px;color:var(--text2)">Upload a floor or site plan, position equipment, then click markers to see incidents, risks, inspections, permits, chemicals and actions for the area.</div>
+        <div class="card-title auris-fire-certificates-s-0d248ae75a">Safety Twin / Site Map</div>
+        <div class="auris-fire-certificates-s-7299078644">Upload a floor or site plan, position equipment, then click markers to see incidents, risks, inspections, permits, chemicals and actions for the area.</div>
       </div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <div class="auris-fire-certificates-s-c9dc9b5648">
         <button class="btn" data-auris-onclick="h1245"><i class="ti ti-arrow-left"></i>Back to plans</button>
         <button class="btn" data-auris-onclick="h1244"><i class="ti ti-plus"></i>New plan</button>
         <button class="btn btn-primary" data-auris-onclick="h1246"><i class="ti ti-device-floppy"></i>Save plan</button>
         <button class="btn" data-auris-onclick="h1247"><i class="ti ti-printer"></i>Print layout</button>
-        <label class="btn" style="cursor:pointer"><i class="ti ti-upload"></i>Upload plan<input type="file" accept="image/*" data-auris-onchange="h1248" style="display:none"/></label>
-        <button class="btn" data-auris-onclick="h1249" style="color:var(--red)"><i class="ti ti-trash"></i>Clear layout</button>
+        <label class="btn auris-fire-certificates-s-9463ff4798"><i class="ti ti-upload"></i>Upload plan<input class="auris-fire-certificates-s-6aa34d7432" type="file" accept="image/*" data-auris-onchange="h1248"/></label>
+        <button class="btn auris-fire-certificates-s-73cb2565d3" data-auris-onclick="h1249"><i class="ti ti-trash"></i>Clear layout</button>
       </div>
     </div>
-    <div style="display:grid;grid-template-columns:minmax(220px,1fr) minmax(220px,1fr);gap:14px;margin-top:14px">
-      <div class="form3group" style="margin:0"><label class="form3label">Saved plan</label><select id="fire-layout-plan-select" data-auris-onchange="h1250"><option value="">New unsaved plan</option></select></div>
-      <div class="form3group" style="margin:0"><label class="form3label">Plan title</label><input id="fire-layout-title" placeholder="e.g. Main building - Ground floor"/></div>
+    <div class="auris-fire-certificates-s-dc6456a123">
+      <div class="form3group auris-fire-certificates-s-ab79ea2b85"><label class="form3label">Saved plan</label><select id="fire-layout-plan-select" data-auris-onchange="h1250"><option value="">New unsaved plan</option></select></div>
+      <div class="form3group auris-fire-certificates-s-ab79ea2b85"><label class="form3label">Plan title</label><input id="fire-layout-title" placeholder="e.g. Main building - Ground floor"/></div>
     </div>
-    <div style="display:grid;grid-template-columns:minmax(260px,1fr) 300px;gap:14px;margin-top:14px">
-      <div class="form3group" style="margin:0"><label class="form3label">Equipment to position</label><select id="fire-layout-equipment-select">
+    <div class="auris-fire-certificates-s-d827e506a8">
+      <div class="form3group auris-fire-certificates-s-ab79ea2b85"><label class="form3label">Equipment to position</label><select id="fire-layout-equipment-select">
   <option value="">Select equipment to place...</option>
   <optgroup label="Create and place a standard item">
     <option value="quick:fire_extinguisher">+ Fire extinguisher</option>
@@ -11337,39 +11338,39 @@ I can help you:<br>
     <option value="quick:fire_pump">+ Fire pump</option>
   </optgroup>
 </select></div>
-      <div style="font-size:12px;color:var(--text2);align-self:end">Green = OK, amber = service due soon, red = service overdue.<div id="fire-layout-sync-status" style="margin-top:5px"></div></div>
+      <div class="auris-fire-certificates-s-3bbe0c65ba">Green = OK, amber = service due soon, red = service overdue.<div id="fire-layout-sync-status" class="auris-fire-certificates-s-2ed8beaffe"></div></div>
     </div>
-    <div style="margin-top:14px;border:1px solid var(--border);border-radius:10px;padding:12px;background:#f8fafc">
-      <div style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:flex-start">
+    <div class="auris-fire-certificates-s-6ad2e67171">
+      <div class="auris-fire-certificates-s-87020c2263">
         <div>
-          <div style="font-weight:900;font-size:13px">Custom layout symbols</div>
-          <div style="font-size:12px;color:var(--text2);margin-top:3px">Add a site-specific item and optional pictogram, then place it on the plan.</div>
-          <div id="fire-symbol-sync-status" style="font-size:12px;color:var(--text2);margin-top:5px"></div>
+          <div class="auris-fire-certificates-s-dd59c44fba">Custom layout symbols</div>
+          <div class="auris-fire-certificates-s-9c4ae63835">Add a site-specific item and optional pictogram, then place it on the plan.</div>
+          <div id="fire-symbol-sync-status" class="auris-fire-certificates-s-e2bc1a7f07"></div>
         </div>
       </div>
-      <div style="display:grid;grid-template-columns:minmax(180px,1fr) 110px minmax(180px,1fr) auto;gap:8px;margin-top:10px;align-items:end">
-        <div class="form3group" style="margin:0"><label class="form3label">Item name</label><input id="fire-symbol-name" placeholder="e.g. Gas shut-off valve"/></div>
-        <div class="form3group" style="margin:0"><label class="form3label">Initials</label><input id="fire-symbol-code" maxlength="4" placeholder="GV"/></div>
-        <div class="form3group" style="margin:0"><label class="form3label">Symbol image</label><input id="fire-symbol-file" type="file" accept="image/*"/></div>
+      <div class="auris-fire-certificates-s-24973e3ece">
+        <div class="form3group auris-fire-certificates-s-ab79ea2b85"><label class="form3label">Item name</label><input id="fire-symbol-name" placeholder="e.g. Gas shut-off valve"/></div>
+        <div class="form3group auris-fire-certificates-s-ab79ea2b85"><label class="form3label">Initials</label><input id="fire-symbol-code" maxlength="4" placeholder="GV"/></div>
+        <div class="form3group auris-fire-certificates-s-ab79ea2b85"><label class="form3label">Symbol image</label><input id="fire-symbol-file" type="file" accept="image/*"/></div>
         <button class="btn btn-primary" data-auris-onclick="h1251"><i class="ti ti-plus"></i>Add symbol</button>
       </div>
-      <div id="fire-symbol-list" style="margin-top:8px"></div>
+      <div id="fire-symbol-list" class="auris-fire-certificates-s-43a97fe494"></div>
     </div>
 
   </div>
-  <div style="display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:14px;align-items:start">
-    <div class="card" style="padding:10px;overflow:hidden">
-      <div id="fire-layout-canvas" data-auris-onclick="h1252" style="position:relative;min-height:460px;border:1px dashed var(--border);border-radius:8px;background:#f8fafc;display:flex;align-items:center;justify-content:center;overflow:auto;cursor:crosshair">
-        <div id="fire-layout-empty" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;text-align:center;color:var(--text2);padding:20px;pointer-events:none"><div><i class="ti ti-map" style="font-size:42px;opacity:.35"></i><div style="margin-top:8px;font-weight:700">Upload a site or floor layout plan</div><div style="font-size:12px;margin-top:4px">PNG/JPG plans work best. Then click to place equipment markers.</div></div></div>
-        <img id="fire-layout-img" alt="Site layout plan" style="display:none;max-width:100%;height:auto;user-select:none;pointer-events:none"/>
-        <div id="fire-layout-marker-layer" style="position:absolute;inset:0;pointer-events:none"></div>
+  <div class="auris-fire-certificates-s-f3d0808119">
+    <div class="card auris-fire-certificates-s-8110160014">
+      <div id="fire-layout-canvas" class="auris-fire-certificates-s-a00a2e0b80" data-auris-onclick="h1252">
+        <div id="fire-layout-empty" class="auris-fire-certificates-s-efe568310f"><div><i class="ti ti-map auris-fire-certificates-s-582b35de79"></i><div class="auris-fire-certificates-s-f06a9f449c">Upload a site or floor layout plan</div><div class="auris-fire-certificates-s-e3fa01d784">PNG/JPG plans work best. Then click to place equipment markers.</div></div></div>
+        <img id="fire-layout-img" class="auris-fire-certificates-s-f268db3db0" alt="Site layout plan"/>
+        <div id="fire-layout-marker-layer" class="auris-fire-certificates-s-33f6a885ad"></div>
       </div>
     </div>
-    <div class="card" style="position:sticky;top:86px">
+    <div class="card auris-fire-certificates-s-9a6e98845f">
       <div class="card-title">Selected Equipment / Area</div>
       <div id="fire-layout-details"></div>
-      <div style="border-top:1px solid var(--border);margin-top:14px;padding-top:12px">
-        <div style="font-size:13px;font-weight:900;margin-bottom:8px">Positioned equipment</div>
+      <div class="auris-fire-certificates-s-a309d733c5">
+        <div class="auris-fire-certificates-s-5987b136a5">Positioned equipment</div>
         <div id="fire-layout-legend"></div>
       </div>
     </div>
@@ -11377,7 +11378,7 @@ I can help you:<br>
   </div>
 </div>
 <!-- -- TAB: Overview/Dashboard --------------------- -->
-<div id="fire-pane-dashboard" style="display:none">
+<div id="fire-pane-dashboard" class="auris-fire-certificates-s-6aa34d7432">
   <div id="fire-overview-content"></div>
 </div>
 
@@ -11386,11 +11387,11 @@ I can help you:<br>
 ------------------------------------------------ -->
 
 <!-- Certificate Form Modal -->
-<div id="fire-cert-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:200;align-items:center;justify-content:center;padding:16px">
-  <div class="card" style="width:100%;max-width:680px;max-height:90vh;overflow-y:auto;border-radius:12px">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
-      <div style="font-size:16px;font-weight:700" id="fire-cert-modal-title">New Fire Certificate</div>
-      <button data-auris-onclick="h1253" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--text2)">?</button>
+<div id="fire-cert-modal" class="auris-fire-certificates-s-f8bf14a4aa">
+  <div class="card auris-fire-certificates-s-526828d9b2">
+    <div class="auris-fire-certificates-s-ba21fe54fc">
+      <div id="fire-cert-modal-title" class="auris-fire-certificates-s-30e294142f">New Fire Certificate</div>
+      <button class="auris-fire-certificates-s-1bfaad0397" data-auris-onclick="h1253">?</button>
     </div>
     <div class="form3row">
       <div class="form3group"><label class="form3label">Certificate Number</label><input type="text" id="fc-number" placeholder="e.g. FC/2025/001"/></div>
@@ -11448,13 +11449,13 @@ I can help you:<br>
     </div>
     <div class="form3group"><label class="form3label">Conditions Attached to Certificate</label><textarea id="fc-conditions" rows="2" placeholder="Any conditions or requirements specified on the certificate..."></textarea></div>
     <div class="form3group"><label class="form3label">Scanned certificate attachment</label><input type="text" id="fc-doc-url" placeholder="Upload scanned certificate or paste link"/>
-      <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap">
-        <label class="btn btn-sm" style="cursor:pointer"><i class="ti ti-upload"></i>Upload certificate<input type="file" accept=".pdf,.doc,.docx,.png,.jpg,.jpeg" data-auris-onchange="h1254" style="display:none"/></label>
+      <div class="auris-fire-certificates-s-df56cf13b7">
+        <label class="btn btn-sm auris-fire-certificates-s-9463ff4798"><i class="ti ti-upload"></i>Upload certificate<input class="auris-fire-certificates-s-6aa34d7432" type="file" accept=".pdf,.doc,.docx,.png,.jpg,.jpeg" data-auris-onchange="h1254"/></label>
         <button type="button" class="btn btn-sm" data-auris-onclick="h1255"><i class="ti ti-eye"></i>Preview</button>
       </div>
     </div>
     <div class="form3group"><label class="form3label">Notes</label><textarea id="fc-notes" rows="2" placeholder="Additional notes..."></textarea></div>
-    <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:20px">
+    <div class="auris-fire-certificates-s-f06c04dd7c">
       <button class="btn" data-auris-onclick="h1253">Cancel</button>
       <button class="btn btn-primary" data-auris-onclick="h1256"><i class="ti ti-device-floppy"></i>Save Certificate</button>
     </div>
@@ -11462,11 +11463,11 @@ I can help you:<br>
 </div>
 
 <!-- Inspection Form Modal -->
-<div id="fire-insp-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:200;align-items:center;justify-content:center;padding:16px">
-  <div class="card" style="width:100%;max-width:640px;max-height:90vh;overflow-y:auto;border-radius:12px">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
-      <div style="font-size:16px;font-weight:700" id="fire-insp-modal-title">Record Inspection</div>
-      <button data-auris-onclick="h1257" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--text2)">?</button>
+<div id="fire-insp-modal" class="auris-fire-certificates-s-f8bf14a4aa">
+  <div class="card auris-fire-certificates-s-e858d43b38">
+    <div class="auris-fire-certificates-s-ba21fe54fc">
+      <div id="fire-insp-modal-title" class="auris-fire-certificates-s-30e294142f">Record Inspection</div>
+      <button class="auris-fire-certificates-s-1bfaad0397" data-auris-onclick="h1257">?</button>
     </div>
     <div class="form3row">
       <div class="form3group"><label class="form3label">Inspection Date *</label><input type="date" id="fi-date"/></div>
@@ -11508,14 +11509,14 @@ I can help you:<br>
     <div class="form3group"><label class="form3label">Recommendations</label><textarea id="fi-recommendations" rows="2" placeholder="Recommendations made..."></textarea></div>
     <div class="form3group"><label class="form3label">Follow-up Date</label><input type="date" id="fi-followup"/></div>
     <!-- Findings table -->
-    <div style="margin-top:16px">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-        <span style="font-weight:600;font-size:13px">Non-Conformances / Findings</span>
+    <div class="auris-fire-certificates-s-92c18f6bda">
+      <div class="auris-fire-certificates-s-6232af7c48">
+        <span class="auris-fire-certificates-s-538fe62910">Non-Conformances / Findings</span>
         <button class="btn btn-sm" data-auris-onclick="h1258" type="button"><i class="ti ti-plus"></i>Add Finding</button>
       </div>
       <div id="fire-findings-rows"></div>
     </div>
-    <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:20px">
+    <div class="auris-fire-certificates-s-f06c04dd7c">
       <button class="btn" data-auris-onclick="h1257">Cancel</button>
       <button class="btn btn-primary" data-auris-onclick="h1259"><i class="ti ti-device-floppy"></i>Save Inspection</button>
     </div>
@@ -11523,11 +11524,11 @@ I can help you:<br>
 </div>
 
 <!-- Equipment Form Modal -->
-<div id="fire-equip-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:200;align-items:center;justify-content:center;padding:16px">
-  <div class="card" style="width:100%;max-width:600px;max-height:90vh;overflow-y:auto;border-radius:12px">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
-      <div style="font-size:16px;font-weight:700" id="fire-equip-modal-title">Add Fire Equipment</div>
-      <button data-auris-onclick="h1260" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--text2)">?</button>
+<div id="fire-equip-modal" class="auris-fire-certificates-s-f8bf14a4aa">
+  <div class="card auris-fire-certificates-s-985258a44f">
+    <div class="auris-fire-certificates-s-ba21fe54fc">
+      <div id="fire-equip-modal-title" class="auris-fire-certificates-s-30e294142f">Add Fire Equipment</div>
+      <button class="auris-fire-certificates-s-1bfaad0397" data-auris-onclick="h1260">?</button>
     </div>
     <div class="form3row">
       <div class="form3group"><label class="form3label">Equipment Type *</label>
@@ -11587,7 +11588,7 @@ I can help you:<br>
       <div class="form3group"><label class="form3label">Next Service Date</label><input type="date" id="fe-next-service"/></div>
     </div>
     <div class="form3group"><label class="form3label">Notes</label><textarea id="fe-notes" rows="2" placeholder="Additional notes..."></textarea></div>
-    <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:20px">
+    <div class="auris-fire-certificates-s-f06c04dd7c">
       <button class="btn" data-auris-onclick="h1260">Cancel</button>
       <button class="btn btn-primary" data-auris-onclick="h1261"><i class="ti ti-device-floppy"></i>Save Equipment</button>
     </div>

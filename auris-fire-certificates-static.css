@@ -1,0 +1,97 @@
+/* Generated from Fire Certificates by scripts/extract-fire-certificates-styles.cjs. */
+/* Non-important declarations preserve certificate, inspection, equipment, layout and dashboard runtime states. */
+.auris-fire-certificates-s-0cf9615f1f{display:flex;gap:0;margin-bottom:16px;border-bottom:2px solid var(--border);overflow-x:auto}
+.auris-fire-certificates-s-0d248ae75a{margin-bottom:4px}
+.auris-fire-certificates-s-1b1d75452f{overflow-x:auto}
+.auris-fire-certificates-s-1bfaad0397{background:none;border:none;font-size:20px;cursor:pointer;color:var(--text2)}
+.auris-fire-certificates-s-1f435cd084{font-weight:600;font-size:14px}
+.auris-fire-certificates-s-24973e3ece{display:grid;grid-template-columns:minmax(180px,1fr) 110px minmax(180px,1fr) auto;gap:8px;margin-top:10px;align-items:end}
+.auris-fire-certificates-s-2acb74880a{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;margin-bottom:14px}
+.auris-fire-certificates-s-2ed8beaffe{margin-top:5px}
+.auris-fire-certificates-s-30e294142f{font-size:16px;font-weight:700}
+.auris-fire-certificates-s-311c2a86b4{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px}
+.auris-fire-certificates-s-33f6a885ad{position:absolute;inset:0;pointer-events:none}
+.auris-fire-certificates-s-3bbe0c65ba{font-size:12px;color:var(--text2);align-self:end}
+.auris-fire-certificates-s-3cab7ef27d{width:200px}
+.auris-fire-certificates-s-42a6ced8b6{margin-bottom:14px}
+.auris-fire-certificates-s-43a97fe494{margin-top:8px}
+.auris-fire-certificates-s-526828d9b2{width:100%;max-width:680px;max-height:90vh;overflow-y:auto;border-radius:12px}
+.auris-fire-certificates-s-538fe62910{font-weight:600;font-size:13px}
+.auris-fire-certificates-s-582b35de79{font-size:42px;opacity:.35}
+.auris-fire-certificates-s-5987b136a5{font-size:13px;font-weight:900;margin-bottom:8px}
+.auris-fire-certificates-s-6232af7c48{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.auris-fire-certificates-s-6aa34d7432{display:none}
+.auris-fire-certificates-s-6ad2e67171{margin-top:14px;border:1px solid var(--border);border-radius:10px;padding:12px;background:#f8fafc}
+.auris-fire-certificates-s-6e8bcfac8d{font-weight:600}
+.auris-fire-certificates-s-7299078644{font-size:12px;color:var(--text2)}
+.auris-fire-certificates-s-73cb2565d3{color:var(--red)}
+.auris-fire-certificates-s-73f315dd9f{padding:12px 16px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center}
+.auris-fire-certificates-s-8110160014{padding:10px;overflow:hidden}
+.auris-fire-certificates-s-8479077702{padding:40px;text-align:center;color:var(--text2);display:none}
+.auris-fire-certificates-s-87020c2263{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:flex-start}
+.auris-fire-certificates-s-92c18f6bda{margin-top:16px}
+.auris-fire-certificates-s-9463ff4798{cursor:pointer}
+.auris-fire-certificates-s-985258a44f{width:100%;max-width:600px;max-height:90vh;overflow-y:auto;border-radius:12px}
+.auris-fire-certificates-s-9a6e98845f{position:sticky;top:86px}
+.auris-fire-certificates-s-9c40389b4a{display:flex;gap:8px}
+.auris-fire-certificates-s-9c4ae63835{font-size:12px;color:var(--text2);margin-top:3px}
+.auris-fire-certificates-s-a00a2e0b80{position:relative;min-height:460px;border:1px dashed var(--border);border-radius:8px;background:#f8fafc;display:flex;align-items:center;justify-content:center;overflow:auto;cursor:crosshair}
+.auris-fire-certificates-s-a309d733c5{border-top:1px solid var(--border);margin-top:14px;padding-top:12px}
+.auris-fire-certificates-s-ab79ea2b85{margin:0}
+.auris-fire-certificates-s-ad8736dd0f{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+.auris-fire-certificates-s-b7aa1ec004{width:100%}
+.auris-fire-certificates-s-ba21fe54fc{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px}
+.auris-fire-certificates-s-c9dc9b5648{display:flex;gap:8px;flex-wrap:wrap}
+.auris-fire-certificates-s-ccf580a0b5{font-size:32px;opacity:.3}
+.auris-fire-certificates-s-d827e506a8{display:grid;grid-template-columns:minmax(260px,1fr) 300px;gap:14px;margin-top:14px}
+.auris-fire-certificates-s-d8f8cdb178{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap}
+.auris-fire-certificates-s-d9c39add3c{padding:0;overflow:hidden}
+.auris-fire-certificates-s-dc6456a123{display:grid;grid-template-columns:minmax(220px,1fr) minmax(220px,1fr);gap:14px;margin-top:14px}
+.auris-fire-certificates-s-dd59c44fba{font-weight:900;font-size:13px}
+.auris-fire-certificates-s-df56cf13b7{display:flex;gap:8px;margin-top:8px;flex-wrap:wrap}
+.auris-fire-certificates-s-e2bc1a7f07{font-size:12px;color:var(--text2);margin-top:5px}
+.auris-fire-certificates-s-e3fa01d784{font-size:12px;margin-top:4px}
+.auris-fire-certificates-s-e858d43b38{width:100%;max-width:640px;max-height:90vh;overflow-y:auto;border-radius:12px}
+.auris-fire-certificates-s-eb99a4c193{white-space:nowrap}
+.auris-fire-certificates-s-efe568310f{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;text-align:center;color:var(--text2);padding:20px;pointer-events:none}
+.auris-fire-certificates-s-f06a9f449c{margin-top:8px;font-weight:700}
+.auris-fire-certificates-s-f06c04dd7c{display:flex;justify-content:flex-end;gap:10px;margin-top:20px}
+.auris-fire-certificates-s-f268db3db0{display:none;max-width:100%;height:auto;user-select:none;pointer-events:none}
+.auris-fire-certificates-s-f3d0808119{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:14px;align-items:start}
+.auris-fire-certificates-s-f8bf14a4aa{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:200;align-items:center;justify-content:center;padding:16px}
+/* Preserve former inline precedence over existing ID selectors. */
+#fire-add-cert-btn.auris-fire-certificates-s-6aa34d7432{display:none}
+#fire-add-equip-btn.auris-fire-certificates-s-6aa34d7432{display:none}
+#fire-add-insp-btn.auris-fire-certificates-s-6aa34d7432{display:none}
+#fire-cert-empty.auris-fire-certificates-s-8479077702{padding:40px;text-align:center;color:var(--text2);display:none}
+#fire-cert-modal-title.auris-fire-certificates-s-30e294142f{font-size:16px;font-weight:700}
+#fire-cert-modal.auris-fire-certificates-s-f8bf14a4aa{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:200;align-items:center;justify-content:center;padding:16px}
+#fire-cert-search.auris-fire-certificates-s-3cab7ef27d{width:200px}
+#fire-cert-stats.auris-fire-certificates-s-311c2a86b4{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px}
+#fire-cert-table-wrap.auris-fire-certificates-s-1b1d75452f{overflow-x:auto}
+#fire-equip-empty.auris-fire-certificates-s-8479077702{padding:40px;text-align:center;color:var(--text2);display:none}
+#fire-equip-modal-title.auris-fire-certificates-s-30e294142f{font-size:16px;font-weight:700}
+#fire-equip-modal.auris-fire-certificates-s-f8bf14a4aa{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:200;align-items:center;justify-content:center;padding:16px}
+#fire-equip-stats.auris-fire-certificates-s-311c2a86b4{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px}
+#fire-header-btns.auris-fire-certificates-s-9c40389b4a{display:flex;gap:8px}
+#fire-insp-empty.auris-fire-certificates-s-8479077702{padding:40px;text-align:center;color:var(--text2);display:none}
+#fire-insp-modal-title.auris-fire-certificates-s-30e294142f{font-size:16px;font-weight:700}
+#fire-insp-modal.auris-fire-certificates-s-f8bf14a4aa{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:200;align-items:center;justify-content:center;padding:16px}
+#fire-layout-canvas.auris-fire-certificates-s-a00a2e0b80{position:relative;min-height:460px;border:1px dashed var(--border);border-radius:8px;background:#f8fafc;display:flex;align-items:center;justify-content:center;overflow:auto;cursor:crosshair}
+#fire-layout-editor.auris-fire-certificates-s-6aa34d7432{display:none}
+#fire-layout-empty.auris-fire-certificates-s-efe568310f{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;text-align:center;color:var(--text2);padding:20px;pointer-events:none}
+#fire-layout-img.auris-fire-certificates-s-f268db3db0{display:none;max-width:100%;height:auto;user-select:none;pointer-events:none}
+#fire-layout-list-view.auris-fire-certificates-s-42a6ced8b6{margin-bottom:14px}
+#fire-layout-marker-layer.auris-fire-certificates-s-33f6a885ad{position:absolute;inset:0;pointer-events:none}
+#fire-layout-sync-status.auris-fire-certificates-s-2ed8beaffe{margin-top:5px}
+#fire-pane-dashboard.auris-fire-certificates-s-6aa34d7432{display:none}
+#fire-pane-equipment.auris-fire-certificates-s-6aa34d7432{display:none}
+#fire-pane-inspections.auris-fire-certificates-s-6aa34d7432{display:none}
+#fire-pane-layout.auris-fire-certificates-s-6aa34d7432{display:none}
+#fire-symbol-list.auris-fire-certificates-s-43a97fe494{margin-top:8px}
+#fire-symbol-sync-status.auris-fire-certificates-s-e2bc1a7f07{font-size:12px;color:var(--text2);margin-top:5px}
+#fire-tab-certs.auris-fire-certificates-s-eb99a4c193{white-space:nowrap}
+#fire-tab-dashboard.auris-fire-certificates-s-eb99a4c193{white-space:nowrap}
+#fire-tab-equipment.auris-fire-certificates-s-eb99a4c193{white-space:nowrap}
+#fire-tab-inspections.auris-fire-certificates-s-eb99a4c193{white-space:nowrap}
+#fire-tab-layout.auris-fire-certificates-s-eb99a4c193{white-space:nowrap}
