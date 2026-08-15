@@ -76,6 +76,7 @@
 <link rel="stylesheet" href="auris-emergency-management-static.css?v=20260815-1">
 <link rel="stylesheet" href="auris-occupational-health-static.css?v=20260815-1">
 <link rel="stylesheet" href="auris-ppe-static.css?v=20260815-1">
+<link rel="stylesheet" href="auris-occupational-noise-static.css?v=20260815-1">
 </head>
 <body>
 <div id="login-screen">
@@ -7001,10 +7002,10 @@ Offline mode - changes will sync when connection is restored
 </div><!-- end page-ppe -->
 
 <div id="page-noise" class="page">
-<div class="page-header"><div><div class="page-title">Noise Survey</div><div style="font-size:12px;color:var(--text2)">Noise measurements - layout map - hearing protector adequacy</div></div><div style="display:flex;gap:8px"><button class="btn" data-auris-onclick="h0784"><i class="ti ti-printer"></i>Print register</button><button class="btn btn-primary" data-auris-onclick="h0785"><i class="ti ti-plus"></i>New survey</button></div></div>
-<div class="card" id="noise-form" style="display:none">
-<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:12px"><div class="card-title" id="noise-form3title" style="margin:0">New noise survey</div><div style="display:flex;gap:8px;flex-wrap:wrap"><button id="noise-del-btn" class="btn" style="display:none;color:var(--red)" data-auris-onclick="h0786"><i class="ti ti-trash"></i></button><button class="btn" data-auris-onclick="h0787"><i class="ti ti-printer"></i>Print survey</button><button class="btn btn-primary" data-auris-onclick="h0788"><i class="ti ti-device-floppy"></i>Save survey</button><button class="btn" data-auris-onclick="h0789">Cancel</button></div></div>
-<div class="mtg-tabs" style="margin-bottom:12px">
+<div class="page-header"><div><div class="page-title">Noise Survey</div><div class="auris-noise-s-7299078644">Noise measurements - layout map - hearing protector adequacy</div></div><div class="auris-noise-s-9c40389b4a"><button class="btn" data-auris-onclick="h0784"><i class="ti ti-printer"></i>Print register</button><button class="btn btn-primary" data-auris-onclick="h0785"><i class="ti ti-plus"></i>New survey</button></div></div>
+<div class="card auris-noise-s-6aa34d7432" id="noise-form">
+<div class="auris-noise-s-9cbea4862c"><div class="card-title auris-noise-s-ab79ea2b85" id="noise-form3title">New noise survey</div><div class="auris-noise-s-c9dc9b5648"><button id="noise-del-btn" class="btn auris-noise-s-8cbd87102f" data-auris-onclick="h0786"><i class="ti ti-trash"></i></button><button class="btn" data-auris-onclick="h0787"><i class="ti ti-printer"></i>Print survey</button><button class="btn btn-primary" data-auris-onclick="h0788"><i class="ti ti-device-floppy"></i>Save survey</button><button class="btn" data-auris-onclick="h0789">Cancel</button></div></div>
+<div class="mtg-tabs auris-noise-s-b56987dbcb">
 <button class="mtg-tab active" id="noise-tab-details" data-auris-onclick="h0790"><i class="ti ti-clipboard-text"></i>Survey details</button>
 <button class="mtg-tab" id="noise-tab-map" data-auris-onclick="h0791"><i class="ti ti-map-2"></i>Noise map</button>
 <button class="mtg-tab" id="noise-tab-hpe" data-auris-onclick="h0792"><i class="ti ti-headphones"></i>HPE adequacy</button>
@@ -7012,34 +7013,34 @@ Offline mode - changes will sync when connection is restored
 <div id="noise-section-details">
 <div class="form3row"><div class="form3group"><label class="form3label">Survey type</label><select id="nf-type"><option value="occupational">Occupational</option><option value="environmental">Environmental</option></select></div><div class="form3group"><label class="form3label">Site / area</label><input type="text" id="nf-site"/></div><div class="form3group"><label class="form3label">Survey date</label><input type="date" id="nf-date"/></div><div class="form3group"><label class="form3label">Conducted by</label><select id="nf-by"><option value="">Select person...</option></select></div></div>
 <div class="form3row"><div class="form3group"><label class="form3label">Instrument used</label><input type="text" id="nf-instrument"/></div><div class="form3group"><label class="form3label">Calibration date</label><input type="date" id="nf-cal"/></div><div class="form3group"><label class="form3label">Weather / conditions</label><input type="text" id="nf-weather"/></div></div>
-<div class="form3group"><label class="form3label">Notes</label><textarea id="nf-notes" style="min-height:54px"></textarea></div>
-<div style="display:flex;justify-content:flex-end"><button class="btn btn-primary" data-auris-onclick="h0791"><i class="ti ti-arrow-right"></i>Continue to noise map</button></div>
+<div class="form3group"><label class="form3label">Notes</label><textarea id="nf-notes" class="auris-noise-s-662ff83b43"></textarea></div>
+<div class="auris-noise-s-406e13d184"><button class="btn btn-primary" data-auris-onclick="h0791"><i class="ti ti-arrow-right"></i>Continue to noise map</button></div>
 </div>
-<div id="noise-section-map" style="display:none">
-<div class="card" style="background:#f8fafc;margin:12px 0">
-<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:10px;flex-wrap:wrap"><div><div class="card-title" style="margin:0">Site plan and noise map</div><div style="font-size:12px;color:var(--text2)">Upload a layout, name it, choose a measurement point, then click the map to position it. Coloured zones are generated from dB(A) values.</div></div><label class="btn" style="cursor:pointer"><i class="ti ti-upload"></i>Upload layout<input type="file" accept="image/*" data-auris-onchange="h0793" style="display:none"/></label></div>
-<div class="form3group" style="margin-bottom:10px"><label class="form3label">Layout / plan title</label><input type="text" id="nf-layout-name" placeholder="e.g. Workshop ground floor noise map"/></div>
-<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px">
-<div class="form3group" style="margin:0;min-width:280px"><label class="form3label">Point to position / amend</label><select id="noise-active-point" data-auris-onchange="h0794"></select></div>
-<div id="noise-map-summary" style="font-size:12px"></div>
-<div style="display:flex;gap:8px;font-size:11px;color:var(--text2);flex-wrap:wrap"><span><i style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#16A34A"></i> &lt;80</span><span><i style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#F59E0B"></i> 80-84.9</span><span><i style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#DC2626"></i> >=85 dB(A)</span></div>
+<div id="noise-section-map" class="auris-noise-s-6aa34d7432">
+<div class="card auris-noise-s-592cbbe536">
+<div class="auris-noise-s-786ff064a4"><div><div class="card-title auris-noise-s-ab79ea2b85">Site plan and noise map</div><div class="auris-noise-s-7299078644">Upload a layout, name it, choose a measurement point, then click the map to position it. Coloured zones are generated from dB(A) values.</div></div><label class="btn auris-noise-s-9463ff4798"><i class="ti ti-upload"></i>Upload layout<input class="auris-noise-s-6aa34d7432" type="file" accept="image/*" data-auris-onchange="h0793"/></label></div>
+<div class="form3group auris-noise-s-b922c89f16"><label class="form3label">Layout / plan title</label><input type="text" id="nf-layout-name" placeholder="e.g. Workshop ground floor noise map"/></div>
+<div class="auris-noise-s-fcb6c8d342">
+<div class="form3group auris-noise-s-acbeb9bb41"><label class="form3label">Point to position / amend</label><select id="noise-active-point" data-auris-onchange="h0794"></select></div>
+<div id="noise-map-summary" class="auris-noise-s-a49cca52be"></div>
+<div class="auris-noise-s-b48c15d275"><span><i class="auris-noise-s-dd9216ebc7"></i> &lt;80</span><span><i class="auris-noise-s-f44eb9e02f"></i> 80-84.9</span><span><i class="auris-noise-s-fdacbacca5"></i> >=85 dB(A)</span></div>
 </div>
 <input type="hidden" id="nf-layout-data"/>
-<div id="noise-plan-box" data-auris-onclick="h0795" style="position:relative;min-height:320px;border:1px dashed var(--border);border-radius:8px;background:#fff;overflow:auto;display:flex;align-items:center;justify-content:center;cursor:crosshair">
-<div id="noise-plan-empty" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;text-align:center;color:var(--text2);pointer-events:none"><div><i class="ti ti-map" style="font-size:38px;opacity:.35"></i><div style="font-weight:800;margin-top:8px">No layout uploaded</div><div style="font-size:12px;margin-top:4px">Measurement points still work without a plan.</div></div></div>
-<img id="noise-plan-img" alt="Noise survey layout" style="display:none;max-width:100%;height:auto;pointer-events:none;user-select:none"/>
-<div id="noise-plan-layer" style="position:absolute;inset:0;pointer-events:none"></div>
+<div id="noise-plan-box" class="auris-noise-s-8847e5a4cb" data-auris-onclick="h0795">
+<div id="noise-plan-empty" class="auris-noise-s-8bf59e3e43"><div><i class="ti ti-map auris-noise-s-32be0ef9f0"></i><div class="auris-noise-s-60a3b4da11">No layout uploaded</div><div class="auris-noise-s-e3fa01d784">Measurement points still work without a plan.</div></div></div>
+<img id="noise-plan-img" class="auris-noise-s-0c9cfa0220" alt="Noise survey layout"/>
+<div id="noise-plan-layer" class="auris-noise-s-33f6a885ad"></div>
 </div>
 </div>
-<div class="card" style="margin:12px 0;padding:0;overflow:hidden">
-<div style="padding:12px 16px;background:#164E63;color:#fff;display:flex;align-items:center;justify-content:space-between"><strong>Measurement points</strong><button class="btn btn-sm" style="background:#fff;color:#164E63" data-auris-onclick="h0796"><i class="ti ti-plus"></i>Add point</button></div>
-<div style="overflow-x:auto"><table class="data-table" style="min-width:1900px"><thead><tr><th>Location / activity</th><th>Noise source</th><th>Leq dB(A)</th><th>Peak dB(C)</th><th>Duration h</th><th>Persons</th><th>Existing controls</th><th>X %</th><th>Y %</th><th>Hearing protector</th><th>SNR/NRR</th><th>Further controls / recommendations</th><th>Action by</th><th>Target date</th><th></th></tr></thead><tbody id="noise-points-body"></tbody></table></div>
+<div class="card auris-noise-s-f15e372080">
+<div class="auris-noise-s-6a830a8827"><strong>Measurement points</strong><button class="btn btn-sm auris-noise-s-3a5548f9ec" data-auris-onclick="h0796"><i class="ti ti-plus"></i>Add point</button></div>
+<div class="auris-noise-s-1b1d75452f"><table class="data-table auris-noise-s-cd9128d486"><thead><tr><th>Location / activity</th><th>Noise source</th><th>Leq dB(A)</th><th>Peak dB(C)</th><th>Duration h</th><th>Persons</th><th>Existing controls</th><th>X %</th><th>Y %</th><th>Hearing protector</th><th>SNR/NRR</th><th>Further controls / recommendations</th><th>Action by</th><th>Target date</th><th></th></tr></thead><tbody id="noise-points-body"></tbody></table></div>
 </div>
-<div style="display:flex;justify-content:space-between;gap:8px"><button class="btn" data-auris-onclick="h0790"><i class="ti ti-arrow-left"></i>Back to details</button><button class="btn btn-primary" data-auris-onclick="h0792"><i class="ti ti-arrow-right"></i>Assess HPE</button></div>
+<div class="auris-noise-s-a41b933d67"><button class="btn" data-auris-onclick="h0790"><i class="ti ti-arrow-left"></i>Back to details</button><button class="btn btn-primary" data-auris-onclick="h0792"><i class="ti ti-arrow-right"></i>Assess HPE</button></div>
 </div>
-<div id="noise-section-hpe" style="display:none">
-<div class="card" style="margin:12px 0"><div class="card-title">Hearing protector adequacy</div><div style="font-size:12px;color:var(--text2);margin-bottom:10px">AURIS360 calculates LEX,8h from Leq and exposure duration, then estimates protected level as LEX,8h minus SNR/NRR. Aim for adequate protection without over-protection: generally below 85 dB(A), but review values below 70 dB(A) where communication and warning sounds may be affected.</div><div id="noise-hpe-results"></div></div>
-<div style="display:flex;justify-content:space-between;gap:8px"><button class="btn" data-auris-onclick="h0791"><i class="ti ti-arrow-left"></i>Back to map</button><button class="btn btn-primary" data-auris-onclick="h0788"><i class="ti ti-device-floppy"></i>Save survey</button></div>
+<div id="noise-section-hpe" class="auris-noise-s-6aa34d7432">
+<div class="card auris-noise-s-0e001e227c"><div class="card-title">Hearing protector adequacy</div><div class="auris-noise-s-fa530ed1c3">AURIS360 calculates LEX,8h from Leq and exposure duration, then estimates protected level as LEX,8h minus SNR/NRR. Aim for adequate protection without over-protection: generally below 85 dB(A), but review values below 70 dB(A) where communication and warning sounds may be affected.</div><div id="noise-hpe-results"></div></div>
+<div class="auris-noise-s-a41b933d67"><button class="btn" data-auris-onclick="h0791"><i class="ti ti-arrow-left"></i>Back to map</button><button class="btn btn-primary" data-auris-onclick="h0788"><i class="ti ti-device-floppy"></i>Save survey</button></div>
 </div>
 </div>
 <div class="card"><div class="card-title">Noise surveys</div><div id="noise-list"><div class="loading-msg">Loading...</div></div></div></div>

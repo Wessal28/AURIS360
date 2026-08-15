@@ -1,0 +1,50 @@
+/* Generated from Occupational Noise Management by scripts/extract-occupational-noise-styles.cjs. */
+/* Non-important declarations preserve survey, map, HPE and editor runtime state. */
+.auris-noise-s-0c9cfa0220{display:none;max-width:100%;height:auto;pointer-events:none;user-select:none}
+.auris-noise-s-0e001e227c{margin:12px 0}
+.auris-noise-s-1b1d75452f{overflow-x:auto}
+.auris-noise-s-32be0ef9f0{font-size:38px;opacity:.35}
+.auris-noise-s-33f6a885ad{position:absolute;inset:0;pointer-events:none}
+.auris-noise-s-3a5548f9ec{background:#fff;color:#164E63}
+.auris-noise-s-406e13d184{display:flex;justify-content:flex-end}
+.auris-noise-s-592cbbe536{background:#f8fafc;margin:12px 0}
+.auris-noise-s-60a3b4da11{font-weight:800;margin-top:8px}
+.auris-noise-s-662ff83b43{min-height:54px}
+.auris-noise-s-6a830a8827{padding:12px 16px;background:#164E63;color:#fff;display:flex;align-items:center;justify-content:space-between}
+.auris-noise-s-6aa34d7432{display:none}
+.auris-noise-s-7299078644{font-size:12px;color:var(--text2)}
+.auris-noise-s-786ff064a4{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:10px;flex-wrap:wrap}
+.auris-noise-s-8847e5a4cb{position:relative;min-height:320px;border:1px dashed var(--border);border-radius:8px;background:#fff;overflow:auto;display:flex;align-items:center;justify-content:center;cursor:crosshair}
+.auris-noise-s-8bf59e3e43{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;text-align:center;color:var(--text2);pointer-events:none}
+.auris-noise-s-8cbd87102f{display:none;color:var(--red)}
+.auris-noise-s-9463ff4798{cursor:pointer}
+.auris-noise-s-9c40389b4a{display:flex;gap:8px}
+.auris-noise-s-9cbea4862c{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:12px}
+.auris-noise-s-a41b933d67{display:flex;justify-content:space-between;gap:8px}
+.auris-noise-s-a49cca52be{font-size:12px}
+.auris-noise-s-ab79ea2b85{margin:0}
+.auris-noise-s-acbeb9bb41{margin:0;min-width:280px}
+.auris-noise-s-b48c15d275{display:flex;gap:8px;font-size:11px;color:var(--text2);flex-wrap:wrap}
+.auris-noise-s-b56987dbcb{margin-bottom:12px}
+.auris-noise-s-b922c89f16{margin-bottom:10px}
+.auris-noise-s-c9dc9b5648{display:flex;gap:8px;flex-wrap:wrap}
+.auris-noise-s-cd9128d486{min-width:1900px}
+.auris-noise-s-dd9216ebc7{display:inline-block;width:10px;height:10px;border-radius:50%;background:#16A34A}
+.auris-noise-s-e3fa01d784{font-size:12px;margin-top:4px}
+.auris-noise-s-f15e372080{margin:12px 0;padding:0;overflow:hidden}
+.auris-noise-s-f44eb9e02f{display:inline-block;width:10px;height:10px;border-radius:50%;background:#F59E0B}
+.auris-noise-s-fa530ed1c3{font-size:12px;color:var(--text2);margin-bottom:10px}
+.auris-noise-s-fcb6c8d342{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px}
+.auris-noise-s-fdacbacca5{display:inline-block;width:10px;height:10px;border-radius:50%;background:#DC2626}
+/* Preserve former inline precedence over existing ID selectors. */
+#nf-notes.auris-noise-s-662ff83b43{min-height:54px}
+#noise-del-btn.auris-noise-s-8cbd87102f{display:none;color:var(--red)}
+#noise-form.auris-noise-s-6aa34d7432{display:none}
+#noise-form3title.auris-noise-s-ab79ea2b85{margin:0}
+#noise-map-summary.auris-noise-s-a49cca52be{font-size:12px}
+#noise-plan-box.auris-noise-s-8847e5a4cb{position:relative;min-height:320px;border:1px dashed var(--border);border-radius:8px;background:#fff;overflow:auto;display:flex;align-items:center;justify-content:center;cursor:crosshair}
+#noise-plan-empty.auris-noise-s-8bf59e3e43{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;text-align:center;color:var(--text2);pointer-events:none}
+#noise-plan-img.auris-noise-s-0c9cfa0220{display:none;max-width:100%;height:auto;pointer-events:none;user-select:none}
+#noise-plan-layer.auris-noise-s-33f6a885ad{position:absolute;inset:0;pointer-events:none}
+#noise-section-hpe.auris-noise-s-6aa34d7432{display:none}
+#noise-section-map.auris-noise-s-6aa34d7432{display:none}
