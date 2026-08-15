@@ -89,6 +89,7 @@
 <link rel="stylesheet" href="auris-administration-static.css?v=20260815-1">
 <link rel="stylesheet" href="auris-integrations-static.css?v=20260815-1">
 <link rel="stylesheet" href="auris-ai-insights-static.css?v=20260815-1">
+<link rel="stylesheet" href="auris-approval-center-static.css?v=20260815-1">
 </head>
 <body>
 <div id="login-screen">
@@ -10424,48 +10425,48 @@ I can help you:<br>
 <div class="page-header">
   <div>
     <div class="page-title">Approval Center</div>
-    <div style="font-size:12px;color:var(--text2);margin-top:3px">One governed inbox for reviews, approvals, validation decisions and authorised releases across AURIS360</div>
+    <div class="auris-approval-center-s-9c4ae63835">One governed inbox for reviews, approvals, validation decisions and authorised releases across AURIS360</div>
   </div>
-  <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+  <div class="auris-approval-center-s-7598b6eb4f">
     <button class="btn" data-auris-onclick="h1183"><i class="ti ti-refresh"></i>Refresh</button>
     <button class="btn btn-primary" data-auris-onclick="h1184"><i class="ti ti-route"></i>Workflow settings</button>
   </div>
 </div>
 
-<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px">
-  <div class="card" style="padding:14px;border-left:4px solid #1D9E75">
-    <div style="font-size:11px;text-transform:uppercase;color:var(--text2);font-weight:700">Total Queue</div>
-    <div style="font-size:28px;font-weight:800" id="approvals-count">0</div>
+<div class="auris-approval-center-s-311c2a86b4">
+  <div class="card auris-approval-center-s-c7068a3214">
+    <div class="auris-approval-center-s-3649cae02b">Total Queue</div>
+    <div id="approvals-count" class="auris-approval-center-s-d8ad989962">0</div>
   </div>
-  <div class="card" style="padding:14px;border-left:4px solid #EF9F27">
-    <div style="font-size:11px;text-transform:uppercase;color:var(--text2);font-weight:700">Pending Action</div>
-    <div style="font-size:28px;font-weight:800" id="approvals-pending-count">0</div>
+  <div class="card auris-approval-center-s-d7f1d01093">
+    <div class="auris-approval-center-s-3649cae02b">Pending Action</div>
+    <div id="approvals-pending-count" class="auris-approval-center-s-d8ad989962">0</div>
   </div>
-  <div class="card" style="padding:14px;border-left:4px solid #185FA5">
-    <div style="font-size:11px;text-transform:uppercase;color:var(--text2);font-weight:700">Filtered View</div>
-    <div style="font-size:28px;font-weight:800" id="approvals-shown-count">0</div>
+  <div class="card auris-approval-center-s-500fb3acbe">
+    <div class="auris-approval-center-s-3649cae02b">Filtered View</div>
+    <div id="approvals-shown-count" class="auris-approval-center-s-d8ad989962">0</div>
   </div>
-  <div class="card" style="padding:14px;border-left:4px solid #374151">
-    <div style="font-size:11px;text-transform:uppercase;color:var(--text2);font-weight:700">Scope</div>
-    <div style="font-size:14px;font-weight:800;margin-top:8px" id="approvals-scope-label">Current company</div>
+  <div class="card auris-approval-center-s-4fb542688a">
+    <div class="auris-approval-center-s-3649cae02b">Scope</div>
+    <div id="approvals-scope-label" class="auris-approval-center-s-b6d687f2e3">Current company</div>
   </div>
 </div>
 
-<div style="background:#EFF6FF;border:1px solid #bfdbfe;border-radius:10px;padding:11px 14px;margin-bottom:16px;color:#1e40af;font-size:12px">
+<div class="auris-approval-center-s-e839521c9c">
   <strong>Approval coverage:</strong> adapters include Permit to Work, Document Control, Risk, Incident, Legal, SWMS documents, SOP, Training, MOC, Chemical, Contractor, Tools, BBS, Safety Engagement and Occupational Noise. Missing optional module tables are skipped without hiding records from available sources.
 </div>
 
-<div style="background:#F8FAFC;border:1px solid var(--border);border-radius:10px;padding:11px 14px;margin-bottom:16px;color:var(--text2);font-size:12px">
-  <strong style="color:var(--text)">Operational-only exclusions:</strong> draft observations, ordinary training attendance, active equipment custody, open corrective actions and draft noise measurements stay in their module work queues because they do not require a controlled approval decision. Submitted reviews, validations, releases and disputes remain included here.
+<div class="auris-approval-center-s-ea0848a86c">
+  <strong class="auris-approval-center-s-6c41898cb4">Operational-only exclusions:</strong> draft observations, ordinary training attendance, active equipment custody, open corrective actions and draft noise measurements stay in their module work queues because they do not require a controlled approval decision. Submitted reviews, validations, releases and disputes remain included here.
 </div>
 
-<div class="card" style="padding:14px;margin-bottom:16px">
-  <div style="display:grid;grid-template-columns:2fr 1fr 1fr auto;gap:10px;align-items:end">
-    <div class="form3group" style="margin:0">
+<div class="card auris-approval-center-s-a51870756d">
+  <div class="auris-approval-center-s-eaee585ce7">
+    <div class="form3group auris-approval-center-s-ab79ea2b85">
       <label class="form3label">Search</label>
       <input id="approvals-search" type="search" placeholder="Search reference, title, module..." data-auris-oninput="h1185"/>
     </div>
-    <div class="form3group" style="margin:0">
+    <div class="form3group auris-approval-center-s-ab79ea2b85">
       <label class="form3label">Status</label>
       <select id="approvals-filter-status" data-auris-onchange="h1186">
         <option value="">All statuses</option>
@@ -10475,7 +10476,7 @@ I can help you:<br>
         <option value="pending_approval">Pending approval</option>
       </select>
     </div>
-    <div class="form3group" style="margin:0">
+    <div class="form3group auris-approval-center-s-ab79ea2b85">
       <label class="form3label">Module</label>
       <select id="approvals-filter-module" data-auris-onchange="h1186"><option value="">All modules</option></select>
     </div>
@@ -10483,23 +10484,23 @@ I can help you:<br>
   </div>
 </div>
 
-<div class="card" style="padding:0;overflow:hidden">
+<div class="card auris-approval-center-s-d9c39add3c">
   <div class="table-scroll">
-    <table class="data-table" style="min-width:980px">
+    <table class="data-table auris-approval-center-s-01ed6fa853">
       <thead>
         <tr>
-          <th style="padding:10px 12px;text-align:left">Reference</th>
-          <th style="padding:10px 12px;text-align:left">Record</th>
-          <th style="padding:10px 12px;text-align:left">Status / Stage</th>
-          <th style="padding:10px 12px;text-align:left">Approver</th>
-          <th style="padding:10px 12px;text-align:left">Due</th>
-          <th style="padding:10px 12px;text-align:left">Confidentiality</th>
-          <th style="padding:10px 12px;text-align:left">Updated</th>
-          <th style="padding:10px 12px;text-align:right">Action</th>
+          <th class="auris-approval-center-s-54ff43d5d9">Reference</th>
+          <th class="auris-approval-center-s-54ff43d5d9">Record</th>
+          <th class="auris-approval-center-s-54ff43d5d9">Status / Stage</th>
+          <th class="auris-approval-center-s-54ff43d5d9">Approver</th>
+          <th class="auris-approval-center-s-54ff43d5d9">Due</th>
+          <th class="auris-approval-center-s-54ff43d5d9">Confidentiality</th>
+          <th class="auris-approval-center-s-54ff43d5d9">Updated</th>
+          <th class="auris-approval-center-s-a3e9fb51f5">Action</th>
         </tr>
       </thead>
       <tbody id="approvals-table-body">
-        <tr><td colspan="8" style="padding:24px;text-align:center;color:var(--text2)">Open Approval Center to load governed reviews</td></tr>
+        <tr><td class="auris-approval-center-s-455ab2efe6" colspan="8">Open Approval Center to load governed reviews</td></tr>
       </tbody>
     </table>
   </div>

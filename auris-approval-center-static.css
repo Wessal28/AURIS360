@@ -1,0 +1,23 @@
+/* Generated from Approval Center by scripts/extract-approval-center-styles.cjs. */
+/* Non-important declarations preserve queue, workflow, evidence, decision and exact-record runtime states. */
+.auris-approval-center-s-01ed6fa853{min-width:980px}
+.auris-approval-center-s-311c2a86b4{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px}
+.auris-approval-center-s-3649cae02b{font-size:11px;text-transform:uppercase;color:var(--text2);font-weight:700}
+.auris-approval-center-s-455ab2efe6{padding:24px;text-align:center;color:var(--text2)}
+.auris-approval-center-s-4fb542688a{padding:14px;border-left:4px solid #374151}
+.auris-approval-center-s-500fb3acbe{padding:14px;border-left:4px solid #185FA5}
+.auris-approval-center-s-54ff43d5d9{padding:10px 12px;text-align:left}
+.auris-approval-center-s-6c41898cb4{color:var(--text)}
+.auris-approval-center-s-7598b6eb4f{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.auris-approval-center-s-9c4ae63835{font-size:12px;color:var(--text2);margin-top:3px}
+.auris-approval-center-s-a3e9fb51f5{padding:10px 12px;text-align:right}
+.auris-approval-center-s-a51870756d{padding:14px;margin-bottom:16px}
+.auris-approval-center-s-ab79ea2b85{margin:0}
+.auris-approval-center-s-b6d687f2e3{font-size:14px;font-weight:800;margin-top:8px}
+.auris-approval-center-s-c7068a3214{padding:14px;border-left:4px solid #1D9E75}
+.auris-approval-center-s-d7f1d01093{padding:14px;border-left:4px solid #EF9F27}
+.auris-approval-center-s-d8ad989962{font-size:28px;font-weight:800}
+.auris-approval-center-s-d9c39add3c{padding:0;overflow:hidden}
+.auris-approval-center-s-e839521c9c{background:#EFF6FF;border:1px solid #bfdbfe;border-radius:10px;padding:11px 14px;margin-bottom:16px;color:#1e40af;font-size:12px}
+.auris-approval-center-s-ea0848a86c{background:#F8FAFC;border:1px solid var(--border);border-radius:10px;padding:11px 14px;margin-bottom:16px;color:var(--text2);font-size:12px}
+.auris-approval-center-s-eaee585ce7{display:grid;grid-template-columns:2fr 1fr 1fr auto;gap:10px;align-items:end}
