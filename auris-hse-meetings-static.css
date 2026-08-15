@@ -1,0 +1,203 @@
+/* Generated from HSE Meetings by scripts/extract-hse-meetings-styles.cjs. */
+/* Non-important declarations preserve meeting, minutes, toolbox, alert and bulletin runtime state. */
+.auris-meetings-s-0091e6b36a{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:12px;padding:10px 16px;background:var(--card);border:1px solid var(--border);border-radius:10px}
+.auris-meetings-s-02a84262bd{padding:8px;border:1px solid var(--border);font-size:11px;text-align:left;width:90px}
+.auris-meetings-s-02b0403f2e{padding:8px;border:1px solid var(--border);width:32px}
+.auris-meetings-s-0357e2db59{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px}
+.auris-meetings-s-03bd966c28{padding:10px 12px;border-left:4px solid #DC2626}
+.auris-meetings-s-03ccff1d72{font-size:14px;font-weight:700}
+.auris-meetings-s-06c4761444{padding:14px 20px;background:linear-gradient(135deg,#1a3a5c,#5B21B6);color:#fff;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px}
+.auris-meetings-s-071ceaf525{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.auris-meetings-s-07bdff4587{min-height:60px}
+.auris-meetings-s-0ae64748d8{width:100%;border-collapse:collapse}
+.auris-meetings-s-0bce8fec4a{padding:6px;text-align:center;border:1px solid var(--border);font-weight:700;font-size:12px;color:var(--text2)}
+.auris-meetings-s-0c0a203054{text-align:center;padding:8px 0 14px}
+.auris-meetings-s-0da4120215{background:none;border:none;cursor:pointer;color:var(--red)}
+.auris-meetings-s-0dc955fc21{background:#f9fafb}
+.auris-meetings-s-0e610f7b67{display:none;background:rgba(220,38,38,.3);color:#fff;border-color:rgba(220,38,38,.5)}
+.auris-meetings-s-12347b66ef{background:#fff;color:#185FA5;font-weight:800;border-color:#fff}
+.auris-meetings-s-14dfb7ae67{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px}
+.auris-meetings-s-16a254e663{padding:0;overflow:auto}
+.auris-meetings-s-185ca53d2c{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.auris-meetings-s-1e4fd5f9ed{font-size:22px;font-weight:800;color:#1D9E75}
+.auris-meetings-s-2030861f1b{width:100%;padding:6px 8px;border:none;border-top:1px solid var(--border);font-size:12px;min-height:40px;resize:none}
+.auris-meetings-s-2062f090bc{font-size:22px;font-weight:800;color:#EF9F27}
+.auris-meetings-s-21ac3ff165{padding:10px 12px;border-left:4px solid #6B7280}
+.auris-meetings-s-22514dbec4{font-size:13px;font-weight:600;cursor:pointer}
+.auris-meetings-s-24ac637923{padding:10px 12px;border-left:4px solid #8B5CF6}
+.auris-meetings-s-2627126d81{width:16px;height:16px;border-radius:4px;background:#3B82F6;display:inline-block}
+.auris-meetings-s-276b6a758d{font-size:10px;color:var(--text2);margin-top:3px}
+.auris-meetings-s-2b013fa0d9{min-height:50px}
+.auris-meetings-s-2d527c0bb2{padding:6px 8px;background:#f9fafb;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.auris-meetings-s-30e294142f{font-size:16px;font-weight:700}
+.auris-meetings-s-3660710a2e{text-align:center;padding:20px;color:var(--text2);font-size:13px}
+.auris-meetings-s-39c68df36f{display:flex;gap:8px;align-items:center}
+.auris-meetings-s-42a6ced8b6{margin-bottom:14px}
+.auris-meetings-s-43b2442f5a{padding:4px;border:1px solid var(--border)}
+.auris-meetings-s-4422804ebb{font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px}
+.auris-meetings-s-475caf50fd{display:flex;gap:0;margin-bottom:16px;border-bottom:2px solid var(--border)}
+.auris-meetings-s-4d5979ac8f{min-height:70px}
+.auris-meetings-s-513f2851c1{padding:8px;border:1px solid var(--border);font-size:11px;text-align:left;width:120px}
+.auris-meetings-s-530946d91c{padding:10px 12px;border-left:4px solid #E24B4A}
+.auris-meetings-s-535421f992{width:16px;height:16px;border-radius:4px;background:#E24B4A;display:inline-block}
+.auris-meetings-s-54ec8874e7{margin-bottom:14px;padding:0;overflow:hidden}
+.auris-meetings-s-5571af1e74{display:grid;grid-template-columns:2fr 1fr;gap:14px}
+.auris-meetings-s-5c09edd131{background:rgba(255,255,255,.2);color:#fff;border-color:rgba(255,255,255,.3)}
+.auris-meetings-s-5e92a26fd0{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px}
+.auris-meetings-s-61be00a6b8{display:none;margin-bottom:14px;border:1px solid #bae6fd;background:#f0f9ff}
+.auris-meetings-s-6aa34d7432{display:none}
+.auris-meetings-s-6b2b395557{width:16px;height:16px;border-radius:4px;background:#1D9E75;display:inline-block}
+.auris-meetings-s-6b8bf8aa26{width:100%;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;min-height:50px;resize:vertical}
+.auris-meetings-s-6f56b8363e{font-size:22px;font-weight:800;color:#185FA5}
+.auris-meetings-s-723cfb6439{padding:8px;border:1px solid var(--border);width:40px;text-align:center;font-size:11px}
+.auris-meetings-s-7299078644{font-size:12px;color:var(--text2)}
+.auris-meetings-s-7372276e79{font-family:monospace;font-size:12px;color:#fca5a5;margin-top:3px}
+.auris-meetings-s-75021e57ca{font-size:17px;font-weight:800}
+.auris-meetings-s-7608acb292{color:var(--green)}
+.auris-meetings-s-770a4152c1{min-height:80px}
+.auris-meetings-s-78e42ea312{display:none;background:#185FA5;color:#fff;border-color:#185FA5}
+.auris-meetings-s-7911e0887d{font-family:monospace;font-size:12px;color:#bae6fd;margin-top:3px}
+.auris-meetings-s-7a5e61eb83{padding:10px 12px;border-left:4px solid #1D9E75}
+.auris-meetings-s-7b23322844{border:1px solid var(--border);border-radius:8px;overflow:hidden}
+.auris-meetings-s-80f5e269f3{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.auris-meetings-s-82ea37ad6f{background:linear-gradient(135deg,#0891B2,#185FA5);color:#fff;border:none;text-align:center;padding:20px}
+.auris-meetings-s-868661d008{color:#5B21B6}
+.auris-meetings-s-89e6b49a98{padding:8px;border:1px solid var(--border);width:36px;font-size:11px}
+.auris-meetings-s-8cab4cf2c1{padding:0 4px}
+.auris-meetings-s-8dea1152ee{display:none;color:var(--red);border-color:var(--red)}
+.auris-meetings-s-8e18f99dc9{width:100%;justify-content:center;margin-bottom:8px}
+.auris-meetings-s-8e25059921{font-size:12px;opacity:.8}
+.auris-meetings-s-8e89e61abd{display:flex;align-items:center;gap:6px;font-size:12px}
+.auris-meetings-s-8f7a06061d{margin-bottom:14px;border:2px solid #5B21B6}
+.auris-meetings-s-96f7839a1b{display:none;background:rgba(0,0,0,.3);color:#fff;border-color:rgba(255,255,255,.3)}
+.auris-meetings-s-97f630a23b{margin-top:12px;padding:0;overflow:hidden}
+.auris-meetings-s-9bcefa3fff{margin-bottom:14px;border:2px solid #185FA5}
+.auris-meetings-s-9c40389b4a{display:flex;gap:8px}
+.auris-meetings-s-9c4ae63835{font-size:12px;color:var(--text2);margin-top:3px}
+.auris-meetings-s-9d0b23f5fa{font-size:13px;font-weight:700}
+.auris-meetings-s-9d1c7c2900{padding:10px 16px;background:#f9fafb;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;cursor:pointer}
+.auris-meetings-s-a1031cc5ff{font-size:12px;font-weight:600;color:var(--text2);margin-right:4px}
+.auris-meetings-s-a1c988f046{min-height:100px}
+.auris-meetings-s-a266aaab21{width:16px;height:16px;border-radius:4px;background:#EF9F27;display:inline-block;opacity:.5}
+.auris-meetings-s-a469533f98{width:100%;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px}
+.auris-meetings-s-ab79ea2b85{margin:0}
+.auris-meetings-s-abbed878bc{display:flex;align-items:center;gap:6px;font-size:12px;margin-left:auto}
+.auris-meetings-s-adf04cf81f{font-size:11px;font-weight:600;text-transform:uppercase;opacity:.8;margin-bottom:4px}
+.auris-meetings-s-adfd6787af{font-size:11px;padding:3px 6px;border:1px solid var(--border);border-radius:6px;max-width:200px}
+.auris-meetings-s-af280f71a7{width:16px;height:16px;border-radius:4px;background:#EF9F27;display:inline-block}
+.auris-meetings-s-af3424473d{margin-bottom:14px;border:2px solid #DC2626}
+.auris-meetings-s-af62d68b87{accent-color:var(--red)}
+.auris-meetings-s-b2b6d04b19{width:100%;justify-content:center;margin-bottom:8px;cursor:pointer}
+.auris-meetings-s-b56987dbcb{margin-bottom:12px}
+.auris-meetings-s-b6d403ee7e{padding:10px 12px;border-left:4px solid #185FA5}
+.auris-meetings-s-b922c89f16{margin-bottom:10px}
+.auris-meetings-s-ba28bccee4{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+.auris-meetings-s-bb07072e7a{padding:8px;border:1px solid var(--border);font-size:11px;text-align:left}
+.auris-meetings-s-bc6456303a{font-size:22px;font-weight:800;color:#8B5CF6}
+.auris-meetings-s-bd0e58d190{padding:6px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px}
+.auris-meetings-s-be29fbce10{font-family:monospace;font-size:12px;color:#ddd6fe;margin-top:3px}
+.auris-meetings-s-c3be7e87c4{font-size:28px;font-weight:900;margin-top:10px}
+.auris-meetings-s-c70473e794{padding:10px 12px;border-left:4px solid #EF9F27}
+.auris-meetings-s-c7b9e5b2c7{background:#1D9E75;color:#fff;border-color:#1D9E75}
+.auris-meetings-s-c7bff90490{color:#DC2626}
+.auris-meetings-s-c9dc9b5648{display:flex;gap:8px;flex-wrap:wrap}
+.auris-meetings-s-c9e40e01c9{font-size:11px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px}
+.auris-meetings-s-ca32b871b2{color:#185FA5}
+.auris-meetings-s-cfaccf08c6{padding:14px 20px;background:linear-gradient(135deg,#7F1D1D,#DC2626);color:#fff;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px}
+.auris-meetings-s-d0f83c42bc{font-size:40px;margin-bottom:10px}
+.auris-meetings-s-d37c8e8fe6{font-size:11px;color:var(--text2)}
+.auris-meetings-s-d395a8868f{margin-bottom:14px;border-left:4px solid #DC2626}
+.auris-meetings-s-d9c39add3c{padding:0;overflow:hidden}
+.auris-meetings-s-da7961b49a{margin-bottom:12px;background:#f9fafb;border:2px solid var(--green)}
+.auris-meetings-s-db7e94bbef{padding:6px 8px;min-height:36px;display:flex;flex-wrap:wrap;gap:4px}
+.auris-meetings-s-de3631f23e{font-size:22px;font-weight:800}
+.auris-meetings-s-df41c4d9ce{padding:8px;border:1px solid var(--border);font-size:11px;text-align:left;width:140px}
+.auris-meetings-s-df4f0a3612{color:#E24B4A}
+.auris-meetings-s-e2e1112055{margin-bottom:12px;padding:10px 14px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px}
+.auris-meetings-s-e5fe624e42{margin-bottom:16px;padding:14px 20px}
+.auris-meetings-s-e6c1fc189f{padding:6px 10px;border:1px solid var(--border);border-radius:8px;font-size:13px}
+.auris-meetings-s-e7ad3ebe2e{font-size:22px;font-weight:800;color:#E24B4A}
+.auris-meetings-s-e94eb65b95{margin-bottom:12px;padding:14px 20px}
+.auris-meetings-s-eb99a4c193{white-space:nowrap}
+.auris-meetings-s-f0e2e40eb6{padding:14px 20px;background:linear-gradient(135deg,#0891B2,#185FA5);color:#fff;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px}
+.auris-meetings-s-f26cfe9154{font-size:14px;font-weight:700;margin-bottom:4px}
+.auris-meetings-s-f42d0850a8{padding:8px;border:1px solid var(--border);font-size:11px;text-align:left;width:100px}
+.auris-meetings-s-fa530ed1c3{font-size:12px;color:var(--text2);margin-bottom:10px}
+.auris-meetings-s-fc22868913{padding:4px;text-align:center;border:1px solid var(--border)}
+.auris-meetings-s-fcedbb2f4c{font-size:20px;font-weight:800;color:var(--green)}
+.auris-meetings-s-ffe267bce1{font-size:22px;font-weight:800;color:#DC2626}
+/* Preserve former inline precedence over existing ID selectors. */
+#alert-add-btn.auris-meetings-s-6aa34d7432{display:none}
+#alert-del-btn.auris-meetings-s-96f7839a1b{display:none;background:rgba(0,0,0,.3);color:#fff;border-color:rgba(255,255,255,.3)}
+#alert-filter-sev.auris-meetings-s-bd0e58d190{padding:6px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px}
+#alert-form.auris-meetings-s-6aa34d7432{display:none}
+#alert-form3ref.auris-meetings-s-7372276e79{font-family:monospace;font-size:12px;color:#fca5a5;margin-top:3px}
+#alert-form3title.auris-meetings-s-75021e57ca{font-size:17px;font-weight:800}
+#alert-m3active.auris-meetings-s-ffe267bce1{font-size:22px;font-weight:800;color:#DC2626}
+#alert-m3critical.auris-meetings-s-e7ad3ebe2e{font-size:22px;font-weight:800;color:#E24B4A}
+#alert-m3high.auris-meetings-s-2062f090bc{font-size:22px;font-weight:800;color:#EF9F27}
+#alert-m3month.auris-meetings-s-de3631f23e{font-size:22px;font-weight:800}
+#alertf-action.auris-meetings-s-07bdff4587{min-height:60px}
+#alertf-background.auris-meetings-s-4d5979ac8f{min-height:70px}
+#alertf-lessons.auris-meetings-s-07bdff4587{min-height:60px}
+#alertf-req-ack.auris-meetings-s-af62d68b87{accent-color:var(--red)}
+#alertf-summary.auris-meetings-s-4d5979ac8f{min-height:70px}
+#bull-add-btn.auris-meetings-s-6aa34d7432{display:none}
+#bull-del-btn.auris-meetings-s-96f7839a1b{display:none;background:rgba(0,0,0,.3);color:#fff;border-color:rgba(255,255,255,.3)}
+#bull-filter-type.auris-meetings-s-bd0e58d190{padding:6px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px}
+#bull-form3ref.auris-meetings-s-be29fbce10{font-family:monospace;font-size:12px;color:#ddd6fe;margin-top:3px}
+#bull-form3title.auris-meetings-s-75021e57ca{font-size:17px;font-weight:800}
+#bulletin-form.auris-meetings-s-6aa34d7432{display:none}
+#bullf-content.auris-meetings-s-a1c988f046{min-height:100px}
+#bullf-key-messages.auris-meetings-s-4d5979ac8f{min-height:70px}
+#bullf-summary.auris-meetings-s-07bdff4587{min-height:60px}
+#mom3apologies-extra.auris-meetings-s-2030861f1b{width:100%;padding:6px 8px;border:none;border-top:1px solid var(--border);font-size:12px;min-height:40px;resize:none}
+#mom3apologies-sel.auris-meetings-s-adfd6787af{font-size:11px;padding:3px 6px;border:1px solid var(--border);border-radius:6px;max-width:200px}
+#mom3apologies-tags.auris-meetings-s-db7e94bbef{padding:6px 8px;min-height:36px;display:flex;flex-wrap:wrap;gap:4px}
+#mom3attendees-extra.auris-meetings-s-2030861f1b{width:100%;padding:6px 8px;border:none;border-top:1px solid var(--border);font-size:12px;min-height:40px;resize:none}
+#mom3attendees-sel.auris-meetings-s-adfd6787af{font-size:11px;padding:3px 6px;border:1px solid var(--border);border-radius:6px;max-width:200px}
+#mom3attendees-tags.auris-meetings-s-db7e94bbef{padding:6px 8px;min-height:36px;display:flex;flex-wrap:wrap;gap:4px}
+#mom3header-title.auris-meetings-s-fcedbb2f4c{font-size:20px;font-weight:800;color:var(--green)}
+#mom3notes.auris-meetings-s-770a4152c1{min-height:80px}
+#mom3rec-empty.auris-meetings-s-3660710a2e{text-align:center;padding:20px;color:var(--text2);font-size:13px}
+#mom3status.auris-meetings-s-e6c1fc189f{padding:6px 10px;border:1px solid var(--border);border-radius:8px;font-size:13px}
+#ms-notes.auris-meetings-s-07bdff4587{min-height:60px}
+#mtg-agenda-year.auris-meetings-s-7608acb292{color:var(--green)}
+#mtg-mom3del-btn.auris-meetings-s-8dea1152ee{display:none;color:var(--red);border-color:var(--red)}
+#mtg-mom3form.auris-meetings-s-6aa34d7432{display:none}
+#mtg-mom3ref.auris-meetings-s-7299078644{font-size:12px;color:var(--text2)}
+#mtg-mom3send-btn.auris-meetings-s-78e42ea312{display:none;background:#185FA5;color:#fff;border-color:#185FA5}
+#mtg-mom3title.auris-meetings-s-30e294142f{font-size:16px;font-weight:700}
+#mtg-new-series-btn2.auris-meetings-s-6aa34d7432{display:none}
+#mtg-series-del-btn.auris-meetings-s-8dea1152ee{display:none;color:var(--red);border-color:var(--red)}
+#mtg-series-form.auris-meetings-s-6aa34d7432{display:none}
+#mtg-series-list.auris-meetings-s-6aa34d7432{display:none}
+#mtg-series-title.auris-meetings-s-30e294142f{font-size:16px;font-weight:700}
+#mtg-subtitle.auris-meetings-s-7299078644{font-size:12px;color:var(--text2)}
+#mtg-tab-alerts.auris-meetings-s-eb99a4c193{white-space:nowrap}
+#mtg-tab-bulletins.auris-meetings-s-eb99a4c193{white-space:nowrap}
+#mtg-tab-minutes.auris-meetings-s-eb99a4c193{white-space:nowrap}
+#mtg-tab-tbt.auris-meetings-s-eb99a4c193{white-space:nowrap}
+#mtg-view-alerts.auris-meetings-s-6aa34d7432{display:none}
+#mtg-view-bulletins.auris-meetings-s-6aa34d7432{display:none}
+#mtg-view-minutes.auris-meetings-s-6aa34d7432{display:none}
+#mtg-view-tbt.auris-meetings-s-6aa34d7432{display:none}
+#tbt-actions-list.auris-meetings-s-b922c89f16{margin-bottom:10px}
+#tbt-add-btn.auris-meetings-s-6aa34d7432{display:none}
+#tbt-ai-draft-panel.auris-meetings-s-61be00a6b8{display:none;margin-bottom:14px;border:1px solid #bae6fd;background:#f0f9ff}
+#tbt-del-btn.auris-meetings-s-0e610f7b67{display:none;background:rgba(220,38,38,.3);color:#fff;border-color:rgba(220,38,38,.5)}
+#tbt-filter-cat.auris-meetings-s-bd0e58d190{padding:6px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px}
+#tbt-form.auris-meetings-s-6aa34d7432{display:none}
+#tbt-form3ref.auris-meetings-s-7911e0887d{font-family:monospace;font-size:12px;color:#bae6fd;margin-top:3px}
+#tbt-form3title.auris-meetings-s-75021e57ca{font-size:17px;font-weight:800}
+#tbt-m3actions.auris-meetings-s-bc6456303a{font-size:22px;font-weight:800;color:#8B5CF6}
+#tbt-m3attendees.auris-meetings-s-2062f090bc{font-size:22px;font-weight:800;color:#EF9F27}
+#tbt-m3month.auris-meetings-s-1e4fd5f9ed{font-size:22px;font-weight:800;color:#1D9E75}
+#tbt-m3total.auris-meetings-s-6f56b8363e{font-size:22px;font-weight:800;color:#185FA5}
+#tbt-preview-count.auris-meetings-s-c3be7e87c4{font-size:28px;font-weight:900;margin-top:10px}
+#tbt-preview-title.auris-meetings-s-03ccff1d72{font-size:14px;font-weight:700}
+#tbtf-att-count.auris-meetings-s-0dc955fc21{background:#f9fafb}
+#tbtf-attendees-list.auris-meetings-s-b922c89f16{margin-bottom:10px}
+#tbtf-hazards.auris-meetings-s-07bdff4587{min-height:60px}
+#tbtf-key-points.auris-meetings-s-770a4152c1{min-height:80px}
+#tbtf-notes.auris-meetings-s-2b013fa0d9{min-height:50px}

@@ -77,6 +77,7 @@
 <link rel="stylesheet" href="auris-occupational-health-static.css?v=20260815-1">
 <link rel="stylesheet" href="auris-ppe-static.css?v=20260815-1">
 <link rel="stylesheet" href="auris-occupational-noise-static.css?v=20260815-1">
+<link rel="stylesheet" href="auris-hse-meetings-static.css?v=20260815-1">
 </head>
 <body>
 <div id="login-screen">
@@ -7046,80 +7047,80 @@ Offline mode - changes will sync when connection is restored
 <div class="card"><div class="card-title">Noise surveys</div><div id="noise-list"><div class="loading-msg">Loading...</div></div></div></div>
 <div id="page-meetings" class="page">
 <div class="page-header">
-<div><div class="page-title">Meeting &amp; Communication Management</div><div style="font-size:12px;color:var(--text2)" id="mtg-subtitle">Safety meetings - Minutes - Toolbox talks - Alerts - Bulletins</div></div>
-<div style="display:flex;gap:8px">
+<div><div class="page-title">Meeting &amp; Communication Management</div><div id="mtg-subtitle" class="auris-meetings-s-7299078644">Safety meetings - Minutes - Toolbox talks - Alerts - Bulletins</div></div>
+<div class="auris-meetings-s-9c40389b4a">
 <button class="btn" data-auris-onclick="h0797"><i class="ti ti-printer"></i>Print current view</button>
 <button class="btn btn-primary" id="mtg-new-series-btn" data-auris-onclick="h0798"><i class="ti ti-settings"></i>Manage schedules</button>
 </div>
 </div>
 
 <!-- View switcher tabs -->
-<div style="display:flex;gap:0;margin-bottom:16px;border-bottom:2px solid var(--border)">
+<div class="auris-meetings-s-475caf50fd">
 <button class="mtg-tab active" id="mtg-tab-schedule" data-auris-onclick="h0799">Meeting Agenda</button>
-<button class="mtg-tab" id="mtg-tab-minutes" data-auris-onclick="h0800" style="white-space:nowrap">Minutes of Meetings</button>
-<button class="mtg-tab" id="mtg-tab-tbt" data-auris-onclick="h0801" style="white-space:nowrap">Toolbox Talks</button>
-<button class="mtg-tab" id="mtg-tab-alerts" data-auris-onclick="h0802" style="white-space:nowrap">Safety Alerts</button>
-<button class="mtg-tab" id="mtg-tab-bulletins" data-auris-onclick="h0803" style="white-space:nowrap">Safety Bulletins</button>
+<button class="mtg-tab auris-meetings-s-eb99a4c193" id="mtg-tab-minutes" data-auris-onclick="h0800">Minutes of Meetings</button>
+<button class="mtg-tab auris-meetings-s-eb99a4c193" id="mtg-tab-tbt" data-auris-onclick="h0801">Toolbox Talks</button>
+<button class="mtg-tab auris-meetings-s-eb99a4c193" id="mtg-tab-alerts" data-auris-onclick="h0802">Safety Alerts</button>
+<button class="mtg-tab auris-meetings-s-eb99a4c193" id="mtg-tab-bulletins" data-auris-onclick="h0803">Safety Bulletins</button>
 </div>
 <link rel="stylesheet" href="auris-meeting-tabs.css"/>
 
 <!-- Schedule tab -->
 <div id="mtg-view-schedule">
 <!-- Roadmap controls -->
-<div class="card" style="margin-bottom:12px;padding:14px 20px">
-<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px">
+<div class="card auris-meetings-s-e94eb65b95">
+<div class="auris-meetings-s-0357e2db59">
 <div>
-<div style="font-size:14px;font-weight:700;margin-bottom:4px">Meeting Agenda <span id="mtg-agenda-year" style="color:var(--green)"></span></div>
-<div style="font-size:12px;color:var(--text2)">Weeks 1-52 showing scheduled meetings per meeting type</div>
+<div class="auris-meetings-s-f26cfe9154">Meeting Agenda <span id="mtg-agenda-year" class="auris-meetings-s-7608acb292"></span></div>
+<div class="auris-meetings-s-7299078644">Weeks 1-52 showing scheduled meetings per meeting type</div>
 </div>
-<div style="display:flex;gap:8px;align-items:center">
+<div class="auris-meetings-s-39c68df36f">
 <button class="btn btn-sm" data-auris-onclick="h0804"><i class="ti ti-chevron-left"></i></button>
 <button class="btn btn-sm" data-auris-onclick="h0805"><i class="ti ti-chevron-right"></i></button>
 <button class="btn btn-sm" data-auris-onclick="h0806">Today</button>
-<button class="btn btn-primary btn-sm" id="mtg-new-series-btn2" style="display:none" data-auris-onclick="h0798"><i class="ti ti-plus"></i>Add schedule</button>
+<button class="btn btn-primary btn-sm auris-meetings-s-6aa34d7432" id="mtg-new-series-btn2" data-auris-onclick="h0798"><i class="ti ti-plus"></i>Add schedule</button>
 </div>
 </div>
 </div>
 <!-- Legend -->
-<div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:12px;padding:10px 16px;background:var(--card);border:1px solid var(--border);border-radius:10px">
-<div style="font-size:12px;font-weight:600;color:var(--text2);margin-right:4px">Legend:</div>
-<div style="display:flex;align-items:center;gap:6px;font-size:12px"><span style="width:16px;height:16px;border-radius:4px;background:#1D9E75;display:inline-block"></span>Completed &amp; shared</div>
-<div style="display:flex;align-items:center;gap:6px;font-size:12px"><span style="width:16px;height:16px;border-radius:4px;background:#3B82F6;display:inline-block"></span>Draft minutes</div>
-<div style="display:flex;align-items:center;gap:6px;font-size:12px"><span style="width:16px;height:16px;border-radius:4px;background:#EF9F27;display:inline-block"></span>Upcoming</div>
-<div style="display:flex;align-items:center;gap:6px;font-size:12px"><span style="width:16px;height:16px;border-radius:4px;background:#E24B4A;display:inline-block"></span>Overdue (no minutes)</div>
-<div style="display:flex;align-items:center;gap:6px;font-size:12px;margin-left:auto"><span style="width:16px;height:16px;border-radius:4px;background:#EF9F27;display:inline-block;opacity:.5"></span>Current week</div>
+<div class="auris-meetings-s-0091e6b36a">
+<div class="auris-meetings-s-a1031cc5ff">Legend:</div>
+<div class="auris-meetings-s-8e89e61abd"><span class="auris-meetings-s-6b2b395557"></span>Completed &amp; shared</div>
+<div class="auris-meetings-s-8e89e61abd"><span class="auris-meetings-s-2627126d81"></span>Draft minutes</div>
+<div class="auris-meetings-s-8e89e61abd"><span class="auris-meetings-s-af280f71a7"></span>Upcoming</div>
+<div class="auris-meetings-s-8e89e61abd"><span class="auris-meetings-s-535421f992"></span>Overdue (no minutes)</div>
+<div class="auris-meetings-s-abbed878bc"><span class="auris-meetings-s-a266aaab21"></span>Current week</div>
 </div>
 <!-- Roadmap table -->
-<div class="card" style="padding:0;overflow:auto">
+<div class="card auris-meetings-s-16a254e663">
 <div id="mtg-roadmap-container"><div class="loading-msg">Loading roadmap...</div></div>
 </div>
 <!-- Series list (collapsible) -->
-<div class="card" style="margin-top:12px;padding:0;overflow:hidden">
-<div style="padding:10px 16px;background:#f9fafb;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;cursor:pointer" data-auris-onclick="h0807">
-<div style="font-size:13px;font-weight:700">All Meeting Schedules</div>
+<div class="card auris-meetings-s-97f630a23b">
+<div class="auris-meetings-s-9d1c7c2900" data-auris-onclick="h0807">
+<div class="auris-meetings-s-9d0b23f5fa">All Meeting Schedules</div>
 <i class="ti ti-chevron-down" id="series-list-chev"></i>
 </div>
-<div id="mtg-series-list" style="display:none"><div class="loading-msg">Loading...</div></div>
+<div id="mtg-series-list" class="auris-meetings-s-6aa34d7432"><div class="loading-msg">Loading...</div></div>
 </div>
 </div>
 
 <!-- Minutes tab -->
-<div id="mtg-view-minutes" style="display:none">
-<div class="card" style="padding:0;overflow:hidden"><div id="mtg-minutes-list"><div class="loading-msg">Loading...</div></div></div>
+<div id="mtg-view-minutes" class="auris-meetings-s-6aa34d7432">
+<div class="card auris-meetings-s-d9c39add3c"><div id="mtg-minutes-list"><div class="loading-msg">Loading...</div></div></div>
 </div>
 
 <!-- -- TOOLBOX TALKS VIEW -- -->
-<div id="mtg-view-tbt" style="display:none">
-<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px">
-<div class="card" style="padding:10px 12px;border-left:4px solid #185FA5"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">Total TBTs</div><div style="font-size:22px;font-weight:800;color:#185FA5" id="tbt-m3total">-</div></div>
-<div class="card" style="padding:10px 12px;border-left:4px solid #1D9E75"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">This Month</div><div style="font-size:22px;font-weight:800;color:#1D9E75" id="tbt-m3month">-</div></div>
-<div class="card" style="padding:10px 12px;border-left:4px solid #EF9F27"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">Total Attendees</div><div style="font-size:22px;font-weight:800;color:#EF9F27" id="tbt-m3attendees">-</div></div>
-<div class="card" style="padding:10px 12px;border-left:4px solid #8B5CF6"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">Actions Raised</div><div style="font-size:22px;font-weight:800;color:#8B5CF6" id="tbt-m3actions">-</div></div>
+<div id="mtg-view-tbt" class="auris-meetings-s-6aa34d7432">
+<div class="auris-meetings-s-14dfb7ae67">
+<div class="card auris-meetings-s-b6d403ee7e"><div class="auris-meetings-s-4422804ebb">Total TBTs</div><div id="tbt-m3total" class="auris-meetings-s-6f56b8363e">-</div></div>
+<div class="card auris-meetings-s-7a5e61eb83"><div class="auris-meetings-s-4422804ebb">This Month</div><div id="tbt-m3month" class="auris-meetings-s-1e4fd5f9ed">-</div></div>
+<div class="card auris-meetings-s-c70473e794"><div class="auris-meetings-s-4422804ebb">Total Attendees</div><div id="tbt-m3attendees" class="auris-meetings-s-2062f090bc">-</div></div>
+<div class="card auris-meetings-s-24ac637923"><div class="auris-meetings-s-4422804ebb">Actions Raised</div><div id="tbt-m3actions" class="auris-meetings-s-bc6456303a">-</div></div>
 </div>
-<div class="card" style="margin-bottom:12px;padding:10px 14px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
-<div><div class="card-title" style="margin:0">Toolbox Talk Register</div><div style="font-size:12px;color:var(--text2)">All toolbox talks with attendance and action records</div></div>
-<div style="display:flex;gap:8px">
-<select id="tbt-filter-cat" data-auris-onchange="h0808" style="padding:6px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px">
+<div class="card auris-meetings-s-e2e1112055">
+<div><div class="card-title auris-meetings-s-ab79ea2b85">Toolbox Talk Register</div><div class="auris-meetings-s-7299078644">All toolbox talks with attendance and action records</div></div>
+<div class="auris-meetings-s-9c40389b4a">
+<select id="tbt-filter-cat" class="auris-meetings-s-bd0e58d190" data-auris-onchange="h0808">
 <option value="">All topics</option>
 <option value="safety_general">General Safety</option><option value="fire_safety">Fire Safety</option>
 <option value="chemical">Chemical / COSHH</option><option value="ppe">PPE</option>
@@ -7129,72 +7130,72 @@ Offline mode - changes will sync when connection is restored
 <option value="environment">Environment</option><option value="health">Occupational Health</option>
 <option value="other">Other</option>
 </select>
-<button class="btn btn-primary" id="tbt-add-btn" style="display:none" data-auris-onclick="h0809"><i class="ti ti-plus"></i>New TBT</button>
+<button class="btn btn-primary auris-meetings-s-6aa34d7432" id="tbt-add-btn" data-auris-onclick="h0809"><i class="ti ti-plus"></i>New TBT</button>
 </div>
 </div>
 <div id="tbt-list"><div class="loading-msg">Loading...</div></div>
 </div>
 
 <!-- -- SAFETY ALERTS VIEW -- -->
-<div id="mtg-view-alerts" style="display:none">
-<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px">
-<div class="card" style="padding:10px 12px;border-left:4px solid #DC2626"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">Active Alerts</div><div style="font-size:22px;font-weight:800;color:#DC2626" id="alert-m3active">-</div></div>
-<div class="card" style="padding:10px 12px;border-left:4px solid #E24B4A"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">Critical</div><div style="font-size:22px;font-weight:800;color:#E24B4A" id="alert-m3critical">-</div></div>
-<div class="card" style="padding:10px 12px;border-left:4px solid #EF9F27"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">High</div><div style="font-size:22px;font-weight:800;color:#EF9F27" id="alert-m3high">-</div></div>
-<div class="card" style="padding:10px 12px;border-left:4px solid #6B7280"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">This Month</div><div style="font-size:22px;font-weight:800" id="alert-m3month">-</div></div>
+<div id="mtg-view-alerts" class="auris-meetings-s-6aa34d7432">
+<div class="auris-meetings-s-14dfb7ae67">
+<div class="card auris-meetings-s-03bd966c28"><div class="auris-meetings-s-4422804ebb">Active Alerts</div><div id="alert-m3active" class="auris-meetings-s-ffe267bce1">-</div></div>
+<div class="card auris-meetings-s-530946d91c"><div class="auris-meetings-s-4422804ebb">Critical</div><div id="alert-m3critical" class="auris-meetings-s-e7ad3ebe2e">-</div></div>
+<div class="card auris-meetings-s-c70473e794"><div class="auris-meetings-s-4422804ebb">High</div><div id="alert-m3high" class="auris-meetings-s-2062f090bc">-</div></div>
+<div class="card auris-meetings-s-21ac3ff165"><div class="auris-meetings-s-4422804ebb">This Month</div><div id="alert-m3month" class="auris-meetings-s-de3631f23e">-</div></div>
 </div>
-<div class="card" style="margin-bottom:12px;padding:10px 14px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
-<div><div class="card-title" style="margin:0">Safety Alerts</div><div style="font-size:12px;color:var(--text2)">Hazard warnings, incident learnings, regulatory notices</div></div>
-<div style="display:flex;gap:8px">
-<select id="alert-filter-sev" data-auris-onchange="h0810" style="padding:6px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px">
+<div class="card auris-meetings-s-e2e1112055">
+<div><div class="card-title auris-meetings-s-ab79ea2b85">Safety Alerts</div><div class="auris-meetings-s-7299078644">Hazard warnings, incident learnings, regulatory notices</div></div>
+<div class="auris-meetings-s-9c40389b4a">
+<select id="alert-filter-sev" class="auris-meetings-s-bd0e58d190" data-auris-onchange="h0810">
 <option value="">All severities</option><option value="critical">Critical</option>
 <option value="high">High</option><option value="medium">Medium</option><option value="low">Low</option>
 </select>
-<button class="btn btn-primary" id="alert-add-btn" style="display:none" data-auris-onclick="h0811"><i class="ti ti-plus"></i>New alert</button>
+<button class="btn btn-primary auris-meetings-s-6aa34d7432" id="alert-add-btn" data-auris-onclick="h0811"><i class="ti ti-plus"></i>New alert</button>
 </div>
 </div>
 <div id="alert-list"><div class="loading-msg">Loading...</div></div>
 </div>
 
 <!-- -- SAFETY BULLETINS VIEW -- -->
-<div id="mtg-view-bulletins" style="display:none">
-<div class="card" style="margin-bottom:12px;padding:10px 14px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
-<div><div class="card-title" style="margin:0">Safety Bulletins &amp; Communications</div><div style="font-size:12px;color:var(--text2)">Newsletters, regulatory updates, best practice guides, campaign materials</div></div>
-<div style="display:flex;gap:8px">
-<select id="bull-filter-type" data-auris-onchange="h0812" style="padding:6px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px">
+<div id="mtg-view-bulletins" class="auris-meetings-s-6aa34d7432">
+<div class="card auris-meetings-s-e2e1112055">
+<div><div class="card-title auris-meetings-s-ab79ea2b85">Safety Bulletins &amp; Communications</div><div class="auris-meetings-s-7299078644">Newsletters, regulatory updates, best practice guides, campaign materials</div></div>
+<div class="auris-meetings-s-9c40389b4a">
+<select id="bull-filter-type" class="auris-meetings-s-bd0e58d190" data-auris-onchange="h0812">
 <option value="">All types</option>
 <option value="safety_bulletin">Safety Bulletin</option><option value="safety_newsletter">Newsletter</option>
 <option value="regulatory_update">Regulatory Update</option><option value="best_practice">Best Practice</option>
 <option value="statistics_report">Statistics Report</option><option value="campaign">Campaign</option>
 </select>
-<button class="btn btn-primary" id="bull-add-btn" style="display:none" data-auris-onclick="h0813"><i class="ti ti-plus"></i>New bulletin</button>
+<button class="btn btn-primary auris-meetings-s-6aa34d7432" id="bull-add-btn" data-auris-onclick="h0813"><i class="ti ti-plus"></i>New bulletin</button>
 </div>
 </div>
 <div id="bulletin-list"><div class="loading-msg">Loading...</div></div>
 </div>
 
 <!-- -- TBT FORM -- -->
-<div id="tbt-form" style="display:none">
-<div class="card" style="margin-bottom:14px;padding:0;overflow:hidden">
-<div style="padding:14px 20px;background:linear-gradient(135deg,#0891B2,#185FA5);color:#fff;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+<div id="tbt-form" class="auris-meetings-s-6aa34d7432">
+<div class="card auris-meetings-s-54ec8874e7">
+<div class="auris-meetings-s-f0e2e40eb6">
 <div>
-<div style="font-size:11px;font-weight:600;text-transform:uppercase;opacity:.8;margin-bottom:4px">Toolbox Talk</div>
-<div style="font-size:17px;font-weight:800" id="tbt-form3title">New Toolbox Talk</div>
-<div style="font-family:monospace;font-size:12px;color:#bae6fd;margin-top:3px" id="tbt-form3ref">TBT-AUTO</div>
+<div class="auris-meetings-s-adf04cf81f">Toolbox Talk</div>
+<div id="tbt-form3title" class="auris-meetings-s-75021e57ca">New Toolbox Talk</div>
+<div id="tbt-form3ref" class="auris-meetings-s-7911e0887d">TBT-AUTO</div>
 </div>
-<div style="display:flex;gap:8px">
-<button class="btn" style="background:rgba(255,255,255,.2);color:#fff;border-color:rgba(255,255,255,.3)" data-auris-onclick="h0814"><i class="ti ti-arrow-left"></i>Back</button>
-<button id="tbt-del-btn" class="btn" style="display:none;background:rgba(220,38,38,.3);color:#fff;border-color:rgba(220,38,38,.5)" data-auris-onclick="h0815"><i class="ti ti-trash"></i></button>
-<button class="btn" style="background:rgba(255,255,255,.2);color:#fff;border-color:rgba(255,255,255,.3)" data-auris-onclick="h0816"><i class="ti ti-printer"></i>Print</button>
-<button class="btn" style="background:#fff;color:#185FA5;font-weight:800;border-color:#fff" data-auris-onclick="h0817"><i class="ti ti-robot"></i>AI draft</button>
-<button class="btn" style="background:#1D9E75;color:#fff;border-color:#1D9E75" data-auris-onclick="h0175"><i class="ti ti-device-floppy"></i>Save</button>
+<div class="auris-meetings-s-9c40389b4a">
+<button class="btn auris-meetings-s-5c09edd131" data-auris-onclick="h0814"><i class="ti ti-arrow-left"></i>Back</button>
+<button id="tbt-del-btn" class="btn auris-meetings-s-0e610f7b67" data-auris-onclick="h0815"><i class="ti ti-trash"></i></button>
+<button class="btn auris-meetings-s-5c09edd131" data-auris-onclick="h0816"><i class="ti ti-printer"></i>Print</button>
+<button class="btn auris-meetings-s-12347b66ef" data-auris-onclick="h0817"><i class="ti ti-robot"></i>AI draft</button>
+<button class="btn auris-meetings-s-c7b9e5b2c7" data-auris-onclick="h0175"><i class="ti ti-device-floppy"></i>Save</button>
 </div>
 </div>
 </div>
-<div id="tbt-ai-draft-panel" class="card" style="display:none;margin-bottom:14px;border:1px solid #bae6fd;background:#f0f9ff"></div>
-<div style="display:grid;grid-template-columns:2fr 1fr;gap:14px">
+<div id="tbt-ai-draft-panel" class="card auris-meetings-s-61be00a6b8"></div>
+<div class="auris-meetings-s-5571af1e74">
 <div>
-<div class="card" style="margin-bottom:14px"><div class="card-title">Talk Details</div>
+<div class="card auris-meetings-s-42a6ced8b6"><div class="card-title">Talk Details</div>
 <div class="form3row">
 <div class="form3group"><label class="form3label">TBT Title</label><input type="text" id="tbtf-title" placeholder="e.g. Safe Handling of Chemicals"/></div>
 <div class="form3group"><label class="form3label">Topic category</label>
@@ -7216,59 +7217,59 @@ Offline mode - changes will sync when connection is restored
 <div class="form3group"><label class="form3label">Presenter</label><div id="tbtf-presenter-wrap"><input type="text" id="tbtf-presenter" readonly/></div></div>
 </div>
 <div class="form3row">
-<div class="form3group"><label class="form3label">Linked work / activity</label><select id="tbtf-work-link"><option value="">No linked work / activity</option></select><div style="font-size:10px;color:var(--text2);margin-top:3px">Optional: manually link this toolbox talk to a Work Schedule item.</div></div>
+<div class="form3group"><label class="form3label">Linked work / activity</label><select id="tbtf-work-link"><option value="">No linked work / activity</option></select><div class="auris-meetings-s-276b6a758d">Optional: manually link this toolbox talk to a Work Schedule item.</div></div>
 </div>
 <div class="form3row">
 <div class="form3group"><label class="form3label">Duration (minutes)</label><input type="number" id="tbtf-duration" value="15" min="5" max="120"/></div>
 <div class="form3group"><label class="form3label">Status</label><select id="tbtf-status"><option value="completed">Completed</option><option value="planned">Planned</option><option value="cancelled">Cancelled</option></select></div>
 </div>
 </div>
-<div class="card" style="margin-bottom:14px"><div class="card-title" style="color:#185FA5">Content</div>
-<div class="form3group"><label class="form3label">Key points covered</label><textarea id="tbtf-key-points" style="min-height:80px" placeholder="Main safety messages communicated during this TBT..."></textarea></div>
-<div class="form3group"><label class="form3label">Hazards discussed</label><textarea id="tbtf-hazards" style="min-height:60px" placeholder="Specific hazards addressed..."></textarea></div>
+<div class="card auris-meetings-s-42a6ced8b6"><div class="card-title auris-meetings-s-ca32b871b2">Content</div>
+<div class="form3group"><label class="form3label">Key points covered</label><textarea id="tbtf-key-points" class="auris-meetings-s-770a4152c1" placeholder="Main safety messages communicated during this TBT..."></textarea></div>
+<div class="form3group"><label class="form3label">Hazards discussed</label><textarea id="tbtf-hazards" class="auris-meetings-s-07bdff4587" placeholder="Specific hazards addressed..."></textarea></div>
 <div class="form3group"><label class="form3label">Incidents / near misses referenced</label><input type="text" id="tbtf-incidents" placeholder="Any recent incidents used as learning examples..."/></div>
-<div class="form3group"><label class="form3label">Notes</label><textarea id="tbtf-notes" style="min-height:50px"></textarea></div>
+<div class="form3group"><label class="form3label">Notes</label><textarea id="tbtf-notes" class="auris-meetings-s-2b013fa0d9"></textarea></div>
 </div>
-<div class="card"><div class="card-title" style="color:#E24B4A">Actions Raised</div>
-<div id="tbt-actions-list" style="margin-bottom:10px"></div>
+<div class="card"><div class="card-title auris-meetings-s-df4f0a3612">Actions Raised</div>
+<div id="tbt-actions-list" class="auris-meetings-s-b922c89f16"></div>
 <button class="btn btn-sm" data-auris-onclick="h0818"><i class="ti ti-plus"></i>Add action item</button>
 </div>
 </div>
 <div>
-<div class="card" style="margin-bottom:14px;border:2px solid #185FA5"><div class="card-title" style="color:#185FA5">Attendance Register</div>
-<div class="form3group"><label class="form3label">Total attendees</label><input type="number" id="tbtf-att-count" value="0" min="0" readonly style="background:#f9fafb"/></div>
-<div id="tbtf-attendees-list" style="margin-bottom:10px"></div>
+<div class="card auris-meetings-s-9bcefa3fff"><div class="card-title auris-meetings-s-ca32b871b2">Attendance Register</div>
+<div class="form3group"><label class="form3label">Total attendees</label><input type="number" id="tbtf-att-count" class="auris-meetings-s-0dc955fc21" value="0" min="0" readonly/></div>
+<div id="tbtf-attendees-list" class="auris-meetings-s-b922c89f16"></div>
 <button class="btn btn-sm btn-primary" data-auris-onclick="h0177"><i class="ti ti-plus"></i>Add attendee</button>
 </div>
-<div class="card" style="background:linear-gradient(135deg,#0891B2,#185FA5);color:#fff;border:none;text-align:center;padding:20px">
-<div style="font-size:40px;margin-bottom:10px"><i class="ti ti-circle-dot"></i></div>
-<div style="font-size:14px;font-weight:700" id="tbt-preview-title">Toolbox Talk</div>
-<div style="font-size:28px;font-weight:900;margin-top:10px" id="tbt-preview-count">0</div>
-<div style="font-size:12px;opacity:.8">Attendees</div>
+<div class="card auris-meetings-s-82ea37ad6f">
+<div class="auris-meetings-s-d0f83c42bc"><i class="ti ti-circle-dot"></i></div>
+<div id="tbt-preview-title" class="auris-meetings-s-03ccff1d72">Toolbox Talk</div>
+<div id="tbt-preview-count" class="auris-meetings-s-c3be7e87c4">0</div>
+<div class="auris-meetings-s-8e25059921">Attendees</div>
 </div>
 </div>
 </div>
 </div>
 
 <!-- -- ALERT FORM -- -->
-<div id="alert-form" style="display:none">
-<div class="card" style="margin-bottom:14px;padding:0;overflow:hidden">
-<div style="padding:14px 20px;background:linear-gradient(135deg,#7F1D1D,#DC2626);color:#fff;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+<div id="alert-form" class="auris-meetings-s-6aa34d7432">
+<div class="card auris-meetings-s-54ec8874e7">
+<div class="auris-meetings-s-cfaccf08c6">
 <div>
-<div style="font-size:11px;font-weight:600;text-transform:uppercase;opacity:.8;margin-bottom:4px">Safety Alert</div>
-<div style="font-size:17px;font-weight:800" id="alert-form3title">New Safety Alert</div>
-<div style="font-family:monospace;font-size:12px;color:#fca5a5;margin-top:3px" id="alert-form3ref">ALERT-AUTO</div>
+<div class="auris-meetings-s-adf04cf81f">Safety Alert</div>
+<div id="alert-form3title" class="auris-meetings-s-75021e57ca">New Safety Alert</div>
+<div id="alert-form3ref" class="auris-meetings-s-7372276e79">ALERT-AUTO</div>
 </div>
-<div style="display:flex;gap:8px">
-<button class="btn" style="background:rgba(255,255,255,.2);color:#fff;border-color:rgba(255,255,255,.3)" data-auris-onclick="h0819"><i class="ti ti-arrow-left"></i>Back</button>
-<button id="alert-del-btn" class="btn" style="display:none;background:rgba(0,0,0,.3);color:#fff;border-color:rgba(255,255,255,.3)" data-auris-onclick="h0820"><i class="ti ti-trash"></i></button>
-<button class="btn" style="background:#1D9E75;color:#fff;border-color:#1D9E75" data-auris-onclick="h0821"><i class="ti ti-device-floppy"></i>Save alert</button>
+<div class="auris-meetings-s-9c40389b4a">
+<button class="btn auris-meetings-s-5c09edd131" data-auris-onclick="h0819"><i class="ti ti-arrow-left"></i>Back</button>
+<button id="alert-del-btn" class="btn auris-meetings-s-96f7839a1b" data-auris-onclick="h0820"><i class="ti ti-trash"></i></button>
+<button class="btn auris-meetings-s-c7b9e5b2c7" data-auris-onclick="h0821"><i class="ti ti-device-floppy"></i>Save alert</button>
 </div>
 </div>
 </div>
-<div style="display:grid;grid-template-columns:2fr 1fr;gap:14px">
+<div class="auris-meetings-s-5571af1e74">
 <div>
-<div class="card" style="margin-bottom:14px;border-left:4px solid #DC2626"><div class="card-title" style="color:#DC2626">Alert Details</div>
+<div class="card auris-meetings-s-d395a8868f"><div class="card-title auris-meetings-s-c7bff90490">Alert Details</div>
 <div class="form3group"><label class="form3label">Alert title</label><input type="text" id="alertf-title" placeholder="Clear, concise title describing the hazard or learning..."/></div>
 <div class="form3row">
 <div class="form3group"><label class="form3label">Alert type</label>
@@ -7289,22 +7290,22 @@ Offline mode - changes will sync when connection is restored
 <option value="low">Low - for awareness</option>
 </select></div>
 </div>
-<div class="form3group"><label class="form3label">Summary / What this alert is about</label><textarea id="alertf-summary" style="min-height:70px" placeholder="Brief summary of the hazard, incident or regulatory notice..."></textarea></div>
-<div class="form3group"><label class="form3label">Background / What happened</label><textarea id="alertf-background" style="min-height:70px" placeholder="Background information and context..."></textarea></div>
-<div class="form3group"><label class="form3label">Lessons learned</label><textarea id="alertf-lessons" style="min-height:60px" placeholder="What can we learn from this? What should be done differently?"></textarea></div>
-<div class="form3group"><label class="form3label">Action required</label><textarea id="alertf-action" style="min-height:60px" placeholder="Specific actions that must be taken by the target audience..."></textarea></div>
+<div class="form3group"><label class="form3label">Summary / What this alert is about</label><textarea id="alertf-summary" class="auris-meetings-s-4d5979ac8f" placeholder="Brief summary of the hazard, incident or regulatory notice..."></textarea></div>
+<div class="form3group"><label class="form3label">Background / What happened</label><textarea id="alertf-background" class="auris-meetings-s-4d5979ac8f" placeholder="Background information and context..."></textarea></div>
+<div class="form3group"><label class="form3label">Lessons learned</label><textarea id="alertf-lessons" class="auris-meetings-s-07bdff4587" placeholder="What can we learn from this? What should be done differently?"></textarea></div>
+<div class="form3group"><label class="form3label">Action required</label><textarea id="alertf-action" class="auris-meetings-s-07bdff4587" placeholder="Specific actions that must be taken by the target audience..."></textarea></div>
 </div>
-<div class="card" style="margin-bottom:14px"><div class="card-title">Applies to</div>
+<div class="card auris-meetings-s-42a6ced8b6"><div class="card-title">Applies to</div>
 <div class="form3group"><label class="form3label">Departments / areas affected</label><input type="text" id="alertf-depts" placeholder="e.g. All departments, Production, Maintenance..."/></div>
 <div class="form3group"><label class="form3label">Who this applies to</label><input type="text" id="alertf-applies" placeholder="e.g. All workers, Supervisors, Contractors..."/></div>
 </div>
 </div>
 <div>
-<div class="card" style="margin-bottom:14px;border:2px solid #DC2626"><div class="card-title" style="color:#DC2626">Issue Details</div>
+<div class="card auris-meetings-s-af3424473d"><div class="card-title auris-meetings-s-c7bff90490">Issue Details</div>
 <div class="form3group"><label class="form3label">Issued by</label><input type="text" id="alertf-issued-by"/></div>
 <div class="form3group"><label class="form3label">Issued date</label><input type="date" id="alertf-issued-date"/></div>
 <div class="form3group"><label class="form3label">Expiry date</label><input type="date" id="alertf-expiry" placeholder="Leave blank for no expiry"/></div>
-<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px"><input type="checkbox" id="alertf-req-ack" style="accent-color:var(--red)"/><label for="alertf-req-ack" style="font-size:13px;font-weight:600;cursor:pointer">Acknowledgement required</label></div>
+<div class="auris-meetings-s-ba28bccee4"><input type="checkbox" id="alertf-req-ack" class="auris-meetings-s-af62d68b87"/><label class="auris-meetings-s-22514dbec4" for="alertf-req-ack">Acknowledgement required</label></div>
 <div class="form3group"><label class="form3label">Status</label><select id="alertf-status"><option value="active">Active</option><option value="draft">Draft</option><option value="archived">Archived</option></select></div>
 </div>
 </div>
@@ -7312,24 +7313,24 @@ Offline mode - changes will sync when connection is restored
 </div>
 
 <!-- -- BULLETIN FORM -- -->
-<div id="bulletin-form" style="display:none">
-<div class="card" style="margin-bottom:14px;padding:0;overflow:hidden">
-<div style="padding:14px 20px;background:linear-gradient(135deg,#1a3a5c,#5B21B6);color:#fff;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+<div id="bulletin-form" class="auris-meetings-s-6aa34d7432">
+<div class="card auris-meetings-s-54ec8874e7">
+<div class="auris-meetings-s-06c4761444">
 <div>
-<div style="font-size:11px;font-weight:600;text-transform:uppercase;opacity:.8;margin-bottom:4px">Safety Communication</div>
-<div style="font-size:17px;font-weight:800" id="bull-form3title">New Bulletin</div>
-<div style="font-family:monospace;font-size:12px;color:#ddd6fe;margin-top:3px" id="bull-form3ref">BULL-AUTO</div>
+<div class="auris-meetings-s-adf04cf81f">Safety Communication</div>
+<div id="bull-form3title" class="auris-meetings-s-75021e57ca">New Bulletin</div>
+<div id="bull-form3ref" class="auris-meetings-s-be29fbce10">BULL-AUTO</div>
 </div>
-<div style="display:flex;gap:8px">
-<button class="btn" style="background:rgba(255,255,255,.2);color:#fff;border-color:rgba(255,255,255,.3)" data-auris-onclick="h0822"><i class="ti ti-arrow-left"></i>Back</button>
-<button id="bull-del-btn" class="btn" style="display:none;background:rgba(0,0,0,.3);color:#fff;border-color:rgba(255,255,255,.3)" data-auris-onclick="h0823"><i class="ti ti-trash"></i></button>
-<button class="btn" style="background:#1D9E75;color:#fff;border-color:#1D9E75" data-auris-onclick="h0824"><i class="ti ti-device-floppy"></i>Save</button>
+<div class="auris-meetings-s-9c40389b4a">
+<button class="btn auris-meetings-s-5c09edd131" data-auris-onclick="h0822"><i class="ti ti-arrow-left"></i>Back</button>
+<button id="bull-del-btn" class="btn auris-meetings-s-96f7839a1b" data-auris-onclick="h0823"><i class="ti ti-trash"></i></button>
+<button class="btn auris-meetings-s-c7b9e5b2c7" data-auris-onclick="h0824"><i class="ti ti-device-floppy"></i>Save</button>
 </div>
 </div>
 </div>
-<div style="display:grid;grid-template-columns:2fr 1fr;gap:14px">
+<div class="auris-meetings-s-5571af1e74">
 <div>
-<div class="card" style="margin-bottom:14px"><div class="card-title">Bulletin Details</div>
+<div class="card auris-meetings-s-42a6ced8b6"><div class="card-title">Bulletin Details</div>
 <div class="form3group"><label class="form3label">Title</label><input type="text" id="bullf-title" placeholder="e.g. Safety Newsletter - May 2026"/></div>
 <div class="form3row">
 <div class="form3group"><label class="form3label">Type</label>
@@ -7345,13 +7346,13 @@ Offline mode - changes will sync when connection is restored
 <div class="form3group"><label class="form3label">Issue number</label><input type="number" id="bullf-issue-no" min="1" placeholder="e.g. 12"/></div>
 <div class="form3group"><label class="form3label">Publication date</label><input type="date" id="bullf-pub-date"/></div>
 </div>
-<div class="form3group"><label class="form3label">Summary / Abstract</label><textarea id="bullf-summary" style="min-height:60px" placeholder="Brief overview of what this bulletin covers..."></textarea></div>
-<div class="form3group"><label class="form3label">Key messages</label><textarea id="bullf-key-messages" style="min-height:70px" placeholder="The most important safety messages in this bulletin..."></textarea></div>
-<div class="form3group"><label class="form3label">Full content / body</label><textarea id="bullf-content" style="min-height:100px" placeholder="Full bulletin text, articles, statistics..."></textarea></div>
+<div class="form3group"><label class="form3label">Summary / Abstract</label><textarea id="bullf-summary" class="auris-meetings-s-07bdff4587" placeholder="Brief overview of what this bulletin covers..."></textarea></div>
+<div class="form3group"><label class="form3label">Key messages</label><textarea id="bullf-key-messages" class="auris-meetings-s-4d5979ac8f" placeholder="The most important safety messages in this bulletin..."></textarea></div>
+<div class="form3group"><label class="form3label">Full content / body</label><textarea id="bullf-content" class="auris-meetings-s-a1c988f046" placeholder="Full bulletin text, articles, statistics..."></textarea></div>
 <div class="form3group"><label class="form3label">Topics covered (comma separated)</label><input type="text" id="bullf-topics" placeholder="e.g. LOTO, PPE compliance, incident statistics..."/></div>
 </div>
 <div>
-<div class="card" style="margin-bottom:14px;border:2px solid #5B21B6"><div class="card-title" style="color:#5B21B6">Publication Details</div>
+<div class="card auris-meetings-s-8f7a06061d"><div class="card-title auris-meetings-s-868661d008">Publication Details</div>
 <div class="form3group"><label class="form3label">Author</label><select id="bullf-author"><option value="">Select person...</option></select></div>
 <div class="form3group"><label class="form3label">Approved by</label><select id="bullf-approved-by"><option value="">Select person...</option></select></div>
 <div class="form3group"><label class="form3label">Target audience</label><input type="text" id="bullf-audience" placeholder="e.g. All staff, Management, Supervisors"/></div>
@@ -7363,25 +7364,25 @@ Offline mode - changes will sync when connection is restored
 </select></div>
 <div class="form3group"><label class="form3label">Attachment</label><input type="text" id="bullf-file-url" placeholder="Upload document or paste link"/></div>
 <div class="form3group"><label class="form3label">File name</label><input type="text" id="bullf-file-name" placeholder="safety-bulletin-may2026.pdf"/></div>
-<label class="btn" style="width:100%;justify-content:center;margin-bottom:8px;cursor:pointer"><i class="ti ti-upload"></i>Upload document for preview<input type="file" accept=".pdf,.doc,.docx,.png,.jpg,.jpeg" data-auris-onchange="h0825" style="display:none"/></label>
-<button type="button" class="btn" style="width:100%;justify-content:center;margin-bottom:8px" data-auris-onclick="h0826"><i class="ti ti-eye-check"></i>Preview / mark as checked</button>
-<button type="button" class="btn" style="width:100%;justify-content:center;margin-bottom:8px" data-auris-onclick="h0827"><i class="ti ti-check"></i>Mark checked without preview</button>
+<label class="btn auris-meetings-s-b2b6d04b19"><i class="ti ti-upload"></i>Upload document for preview<input class="auris-meetings-s-6aa34d7432" type="file" accept=".pdf,.doc,.docx,.png,.jpg,.jpeg" data-auris-onchange="h0825"/></label>
+<button type="button" class="btn auris-meetings-s-8e18f99dc9" data-auris-onclick="h0826"><i class="ti ti-eye-check"></i>Preview / mark as checked</button>
+<button type="button" class="btn auris-meetings-s-8e18f99dc9" data-auris-onclick="h0827"><i class="ti ti-check"></i>Mark checked without preview</button>
 <div class="form3group"><label class="form3label">Status</label><select id="bullf-status"><option value="published">Published</option><option value="draft">Draft</option><option value="archived">Archived</option></select></div>
 </div>
-<div class="card" style="margin-bottom:14px"><div class="card-title">Opened / Checked Register</div><div style="font-size:12px;color:var(--text2);margin-bottom:10px">A record is added when a user previews the attachment or clicks Mark checked.</div><div id="bull-check-list"></div></div>
+<div class="card auris-meetings-s-42a6ced8b6"><div class="card-title">Opened / Checked Register</div><div class="auris-meetings-s-fa530ed1c3">A record is added when a user previews the attachment or clicks Mark checked.</div><div id="bull-check-list"></div></div>
 </div>
 </div>
 </div>
 </div>
 
 <!-- Series form (slide-in) -->
-<div id="mtg-series-form" style="display:none">
-<div class="card" style="margin-bottom:16px;padding:14px 20px">
-<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
-<div style="font-size:16px;font-weight:700" id="mtg-series-title">New Meeting Schedule</div>
-<div style="display:flex;gap:8px">
+<div id="mtg-series-form" class="auris-meetings-s-6aa34d7432">
+<div class="card auris-meetings-s-e5fe624e42">
+<div class="auris-meetings-s-5e92a26fd0">
+<div id="mtg-series-title" class="auris-meetings-s-30e294142f">New Meeting Schedule</div>
+<div class="auris-meetings-s-9c40389b4a">
 <button class="btn" data-auris-onclick="h0828"><i class="ti ti-arrow-left"></i>Back</button>
-<button id="mtg-series-del-btn" class="btn" style="display:none;color:var(--red);border-color:var(--red)" data-auris-onclick="h0829"><i class="ti ti-trash"></i>Delete</button>
+<button id="mtg-series-del-btn" class="btn auris-meetings-s-8dea1152ee" data-auris-onclick="h0829"><i class="ti ti-trash"></i>Delete</button>
 <button class="btn btn-primary" data-auris-onclick="h0830"><i class="ti ti-device-floppy"></i>Save schedule</button>
 </div>
 </div>
@@ -7414,27 +7415,27 @@ Offline mode - changes will sync when connection is restored
 <div class="form3group"><label class="form3label">Status</label>
 <select id="ms-active"><option value="true">Active</option><option value="false">Inactive</option></select></div>
 </div>
-<div class="form3group"><label class="form3label">Notes</label><textarea id="ms-notes" style="min-height:60px"></textarea></div>
+<div class="form3group"><label class="form3label">Notes</label><textarea id="ms-notes" class="auris-meetings-s-07bdff4587"></textarea></div>
 </div>
 </div>
 
 <!-- Minutes of Meeting form (full MOM template) -->
-<div id="mtg-mom3form" style="display:none">
-<div class="card" style="margin-bottom:16px;padding:14px 20px">
-<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
+<div id="mtg-mom3form" class="auris-meetings-s-6aa34d7432">
+<div class="card auris-meetings-s-e5fe624e42">
+<div class="auris-meetings-s-5e92a26fd0">
 <div>
-<div style="font-size:16px;font-weight:700" id="mtg-mom3title">Minutes of Meeting</div>
-<div style="font-size:12px;color:var(--text2)" id="mtg-mom3ref"></div>
+<div id="mtg-mom3title" class="auris-meetings-s-30e294142f">Minutes of Meeting</div>
+<div id="mtg-mom3ref" class="auris-meetings-s-7299078644"></div>
 </div>
-<div style="display:flex;gap:8px;flex-wrap:wrap">
-<select id="mom3status" style="padding:6px 10px;border:1px solid var(--border);border-radius:8px;font-size:13px">
+<div class="auris-meetings-s-c9dc9b5648">
+<select id="mom3status" class="auris-meetings-s-e6c1fc189f">
 <option value="draft">Draft</option>
 <option value="completed">Completed</option>
 <option value="cancelled">Cancelled</option>
 </select>
 <button class="btn" data-auris-onclick="h0831"><i class="ti ti-arrow-left"></i>Back</button>
-<button id="mtg-mom3del-btn" class="btn" style="display:none;color:var(--red);border-color:var(--red)" data-auris-onclick="h0832"><i class="ti ti-trash"></i>Delete</button>
-<button id="mtg-mom3send-btn" class="btn" style="display:none;background:#185FA5;color:#fff;border-color:#185FA5" data-auris-onclick="h0833"><i class="ti ti-send"></i>Send minutes</button>
+<button id="mtg-mom3del-btn" class="btn auris-meetings-s-8dea1152ee" data-auris-onclick="h0832"><i class="ti ti-trash"></i>Delete</button>
+<button id="mtg-mom3send-btn" class="btn auris-meetings-s-78e42ea312" data-auris-onclick="h0833"><i class="ti ti-send"></i>Send minutes</button>
 <button class="btn" data-auris-onclick="h0834"><i class="ti ti-printer"></i>Print minutes</button>
 <button class="btn btn-primary" data-auris-onclick="h0835"><i class="ti ti-device-floppy"></i>Save minutes</button>
 </div>
@@ -7442,12 +7443,12 @@ Offline mode - changes will sync when connection is restored
 </div>
 
 <!-- MOM Header -->
-<div class="card" style="margin-bottom:12px;background:#f9fafb;border:2px solid var(--green)">
-<div style="text-align:center;padding:8px 0 14px">
-<div style="font-size:11px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px">Minutes of Meeting</div>
-<div style="font-size:20px;font-weight:800;color:var(--green)" id="mom3header-title">HSE Meeting</div>
+<div class="card auris-meetings-s-da7961b49a">
+<div class="auris-meetings-s-0c0a203054">
+<div class="auris-meetings-s-c9e40e01c9">Minutes of Meeting</div>
+<div id="mom3header-title" class="auris-meetings-s-fcedbb2f4c">HSE Meeting</div>
 </div>
-<div class="form3row" style="padding:0 4px">
+<div class="form3row auris-meetings-s-8cab4cf2c1">
 <div class="form3group"><label class="form3label">Meeting type</label>
 <select id="mom3type">
 <option value="management_review">HSE Management Review</option>
@@ -7458,7 +7459,7 @@ Offline mode - changes will sync when connection is restored
 <div class="form3group"><label class="form3label">Date & time</label><input type="datetime-local" id="mom3date"/></div>
 <div class="form3group"><label class="form3label">Location</label><input type="text" id="mom3location"/></div>
 </div>
-<div class="form3row" style="padding:0 4px">
+<div class="form3row auris-meetings-s-8cab4cf2c1">
 <div class="form3group"><label class="form3label">Chaired by</label><select id="mom3chaired-by"><option value="">Select person...</option></select></div>
 <div class="form3group"><label class="form3label">Minutes recorded by</label><input type="text" id="mom3recorder"/></div>
 <div class="form3group"><label class="form3label">Next meeting date</label><input type="date" id="mom3next-date"/></div>
@@ -7466,89 +7467,89 @@ Offline mode - changes will sync when connection is restored
 </div>
 
 <!-- Attendees -->
-<div class="card" style="margin-bottom:12px">
+<div class="card auris-meetings-s-b56987dbcb">
 <div class="card-title">Attendees</div>
-<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+<div class="auris-meetings-s-80f5e269f3">
 <div>
 <label class="form3label">Present / Attendees</label>
-<div style="border:1px solid var(--border);border-radius:8px;overflow:hidden">
-<div style="padding:6px 8px;background:#f9fafb;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
-<span style="font-size:11px;color:var(--text2)">Select from people list or type below</span>
-<select id="mom3attendees-sel" data-auris-onchange="h0837" style="font-size:11px;padding:3px 6px;border:1px solid var(--border);border-radius:6px;max-width:200px">
+<div class="auris-meetings-s-7b23322844">
+<div class="auris-meetings-s-2d527c0bb2">
+<span class="auris-meetings-s-d37c8e8fe6">Select from people list or type below</span>
+<select id="mom3attendees-sel" class="auris-meetings-s-adfd6787af" data-auris-onchange="h0837">
 <option value="">+ Add person...</option>
 </select>
 </div>
-<div id="mom3attendees-tags" style="padding:6px 8px;min-height:36px;display:flex;flex-wrap:wrap;gap:4px"></div>
+<div id="mom3attendees-tags" class="auris-meetings-s-db7e94bbef"></div>
 <input type="hidden" id="mom3attendees"/>
-<textarea id="mom3attendees-extra" style="width:100%;padding:6px 8px;border:none;border-top:1px solid var(--border);font-size:12px;min-height:40px;resize:none" placeholder="Additional names / roles..."></textarea>
+<textarea id="mom3attendees-extra" class="auris-meetings-s-2030861f1b" placeholder="Additional names / roles..."></textarea>
 </div>
 </div>
 <div>
 <label class="form3label">Apologies</label>
-<div style="border:1px solid var(--border);border-radius:8px;overflow:hidden">
-<div style="padding:6px 8px;background:#f9fafb;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
-<span style="font-size:11px;color:var(--text2)">Select from people list or type below</span>
-<select id="mom3apologies-sel" data-auris-onchange="h0838" style="font-size:11px;padding:3px 6px;border:1px solid var(--border);border-radius:6px;max-width:200px">
+<div class="auris-meetings-s-7b23322844">
+<div class="auris-meetings-s-2d527c0bb2">
+<span class="auris-meetings-s-d37c8e8fe6">Select from people list or type below</span>
+<select id="mom3apologies-sel" class="auris-meetings-s-adfd6787af" data-auris-onchange="h0838">
 <option value="">+ Add person...</option>
 </select>
 </div>
-<div id="mom3apologies-tags" style="padding:6px 8px;min-height:36px;display:flex;flex-wrap:wrap;gap:4px"></div>
+<div id="mom3apologies-tags" class="auris-meetings-s-db7e94bbef"></div>
 <input type="hidden" id="mom3apologies"/>
-<textarea id="mom3apologies-extra" style="width:100%;padding:6px 8px;border:none;border-top:1px solid var(--border);font-size:12px;min-height:40px;resize:none" placeholder="Additional names..."></textarea>
+<textarea id="mom3apologies-extra" class="auris-meetings-s-2030861f1b" placeholder="Additional names..."></textarea>
 </div>
 </div>
 </div>
 </div>
 
 <!-- Agenda items -->
-<div class="card" style="margin-bottom:12px">
-<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
-<div class="card-title" style="margin:0">Agenda & Discussion Items</div>
+<div class="card auris-meetings-s-b56987dbcb">
+<div class="auris-meetings-s-185ca53d2c">
+<div class="card-title auris-meetings-s-ab79ea2b85">Agenda & Discussion Items</div>
 <button class="btn btn-sm btn-primary" data-auris-onclick="h0839"><i class="ti ti-plus"></i>Add item</button>
 </div>
-<table style="width:100%;border-collapse:collapse">
-<thead><tr style="background:#f9fafb">
-<th style="padding:8px;border:1px solid var(--border);width:40px;text-align:center;font-size:11px">No.</th>
-<th style="padding:8px;border:1px solid var(--border);font-size:11px;text-align:left">Agenda item</th>
-<th style="padding:8px;border:1px solid var(--border);font-size:11px;text-align:left">Discussion / Notes</th>
-<th style="padding:8px;border:1px solid var(--border);width:32px"></th>
+<table class="auris-meetings-s-0ae64748d8">
+<thead><tr class="auris-meetings-s-0dc955fc21">
+<th class="auris-meetings-s-723cfb6439">No.</th>
+<th class="auris-meetings-s-bb07072e7a">Agenda item</th>
+<th class="auris-meetings-s-bb07072e7a">Discussion / Notes</th>
+<th class="auris-meetings-s-02b0403f2e"></th>
 </tr></thead>
 <tbody id="mom3agenda-body">
-<tr><td style="padding:6px;text-align:center;border:1px solid var(--border);font-weight:700;font-size:12px;color:var(--text2)">1</td><td style="padding:4px;border:1px solid var(--border)"><input type="text" class="mom3agenda-item" style="width:100%;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px" placeholder="e.g. Review of previous minutes"/></td><td style="padding:4px;border:1px solid var(--border)"><textarea class="mom3agenda-notes" style="width:100%;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;min-height:50px;resize:vertical" placeholder="Discussion notes..."></textarea></td><td style="padding:4px;text-align:center;border:1px solid var(--border)"><button data-auris-onclick="h0840" style="background:none;border:none;cursor:pointer;color:var(--red)"><i class="ti ti-x"></i></button></td></tr>
-<tr><td style="padding:6px;text-align:center;border:1px solid var(--border);font-weight:700;font-size:12px;color:var(--text2)">2</td><td style="padding:4px;border:1px solid var(--border)"><input type="text" class="mom3agenda-item" style="width:100%;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px" placeholder="e.g. Incident review"/></td><td style="padding:4px;border:1px solid var(--border)"><textarea class="mom3agenda-notes" style="width:100%;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;min-height:50px;resize:vertical" placeholder="Discussion notes..."></textarea></td><td style="padding:4px;text-align:center;border:1px solid var(--border)"><button data-auris-onclick="h0840" style="background:none;border:none;cursor:pointer;color:var(--red)"><i class="ti ti-x"></i></button></td></tr>
-<tr><td style="padding:6px;text-align:center;border:1px solid var(--border);font-weight:700;font-size:12px;color:var(--text2)">3</td><td style="padding:4px;border:1px solid var(--border)"><input type="text" class="mom3agenda-item" style="width:100%;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px" placeholder="e.g. KPI review"/></td><td style="padding:4px;border:1px solid var(--border)"><textarea class="mom3agenda-notes" style="width:100%;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;min-height:50px;resize:vertical" placeholder="Discussion notes..."></textarea></td><td style="padding:4px;text-align:center;border:1px solid var(--border)"><button data-auris-onclick="h0840" style="background:none;border:none;cursor:pointer;color:var(--red)"><i class="ti ti-x"></i></button></td></tr>
+<tr><td class="auris-meetings-s-0bce8fec4a">1</td><td class="auris-meetings-s-43b2442f5a"><input type="text" class="mom3agenda-item auris-meetings-s-a469533f98" placeholder="e.g. Review of previous minutes"/></td><td class="auris-meetings-s-43b2442f5a"><textarea class="mom3agenda-notes auris-meetings-s-6b8bf8aa26" placeholder="Discussion notes..."></textarea></td><td class="auris-meetings-s-fc22868913"><button class="auris-meetings-s-0da4120215" data-auris-onclick="h0840"><i class="ti ti-x"></i></button></td></tr>
+<tr><td class="auris-meetings-s-0bce8fec4a">2</td><td class="auris-meetings-s-43b2442f5a"><input type="text" class="mom3agenda-item auris-meetings-s-a469533f98" placeholder="e.g. Incident review"/></td><td class="auris-meetings-s-43b2442f5a"><textarea class="mom3agenda-notes auris-meetings-s-6b8bf8aa26" placeholder="Discussion notes..."></textarea></td><td class="auris-meetings-s-fc22868913"><button class="auris-meetings-s-0da4120215" data-auris-onclick="h0840"><i class="ti ti-x"></i></button></td></tr>
+<tr><td class="auris-meetings-s-0bce8fec4a">3</td><td class="auris-meetings-s-43b2442f5a"><input type="text" class="mom3agenda-item auris-meetings-s-a469533f98" placeholder="e.g. KPI review"/></td><td class="auris-meetings-s-43b2442f5a"><textarea class="mom3agenda-notes auris-meetings-s-6b8bf8aa26" placeholder="Discussion notes..."></textarea></td><td class="auris-meetings-s-fc22868913"><button class="auris-meetings-s-0da4120215" data-auris-onclick="h0840"><i class="ti ti-x"></i></button></td></tr>
 </tbody>
 </table>
 </div>
 
 <!-- Recommendations / Action plan -->
-<div class="card" style="margin-bottom:12px">
-<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+<div class="card auris-meetings-s-b56987dbcb">
+<div class="auris-meetings-s-071ceaf525">
 <div>
-<div class="card-title" style="margin:0">Recommendations & Actions</div>
-<div style="font-size:12px;color:var(--text2);margin-top:3px">Automatically synced to Master Action Plan on save</div>
+<div class="card-title auris-meetings-s-ab79ea2b85">Recommendations & Actions</div>
+<div class="auris-meetings-s-9c4ae63835">Automatically synced to Master Action Plan on save</div>
 </div>
 <button class="btn btn-sm btn-primary" data-auris-onclick="h0841"><i class="ti ti-plus"></i>Add action</button>
 </div>
-<table style="width:100%;border-collapse:collapse">
-<thead><tr style="background:#f9fafb">
-<th style="padding:8px;border:1px solid var(--border);width:36px;font-size:11px">No.</th>
-<th style="padding:8px;border:1px solid var(--border);font-size:11px;text-align:left">Recommendation / Action</th>
-<th style="padding:8px;border:1px solid var(--border);font-size:11px;text-align:left;width:140px">Responsible</th>
-<th style="padding:8px;border:1px solid var(--border);font-size:11px;text-align:left;width:120px">Due date</th>
-<th style="padding:8px;border:1px solid var(--border);font-size:11px;text-align:left;width:100px">Priority</th>
-<th style="padding:8px;border:1px solid var(--border);font-size:11px;text-align:left;width:90px">Status</th>
-<th style="padding:8px;border:1px solid var(--border);width:32px"></th>
+<table class="auris-meetings-s-0ae64748d8">
+<thead><tr class="auris-meetings-s-0dc955fc21">
+<th class="auris-meetings-s-89e6b49a98">No.</th>
+<th class="auris-meetings-s-bb07072e7a">Recommendation / Action</th>
+<th class="auris-meetings-s-df41c4d9ce">Responsible</th>
+<th class="auris-meetings-s-513f2851c1">Due date</th>
+<th class="auris-meetings-s-f42d0850a8">Priority</th>
+<th class="auris-meetings-s-02a84262bd">Status</th>
+<th class="auris-meetings-s-02b0403f2e"></th>
 </tr></thead>
 <tbody id="mom3rec-body"></tbody>
 </table>
-<div id="mom3rec-empty" style="text-align:center;padding:20px;color:var(--text2);font-size:13px">No actions yet - click Add action above.</div>
+<div id="mom3rec-empty" class="auris-meetings-s-3660710a2e">No actions yet - click Add action above.</div>
 </div>
 
 <!-- Other notes -->
-<div class="card" style="margin-bottom:12px">
+<div class="card auris-meetings-s-b56987dbcb">
 <div class="card-title">Other Notes / Any Other Business</div>
-<textarea id="mom3notes" style="min-height:80px" placeholder="Any other business, announcements, observations..."></textarea>
+<textarea id="mom3notes" class="auris-meetings-s-770a4152c1" placeholder="Any other business, announcements, observations..."></textarea>
 </div>
 
 <!-- Sign off -->
