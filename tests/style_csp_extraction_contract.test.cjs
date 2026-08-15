@@ -25,10 +25,14 @@ test('page-level inline style blocks are externalized in cascade order', () => {
   }
 });
 
-test('report-only style policy allows only the required stylesheet origins and staged attributes', () => {
+test('stylesheet origins are enforced while legacy dynamic attributes remain temporarily allowed', () => {
   const config = JSON.parse(fs.readFileSync(path.join(root, 'vercel.json'), 'utf8'));
   const globalRule = config.headers.find((rule) => rule.source === '/(.*)');
-  const policy = globalRule.headers.find((header) => header.key === 'Content-Security-Policy-Report-Only').value;
-  assert.match(policy, /style-src 'self' 'unsafe-inline' https:\/\/cdn\.jsdelivr\.net/);
-  assert.doesNotMatch(policy, /style-src[^;]*https?:\/\/(?!cdn\.jsdelivr\.net)/);
+  const enforced = globalRule.headers.find((header) => header.key === 'Content-Security-Policy').value;
+  const reportOnly = globalRule.headers.find((header) => header.key === 'Content-Security-Policy-Report-Only').value;
+  assert.match(enforced, /style-src-elem 'self' https:\/\/cdn\.jsdelivr\.net/);
+  assert.doesNotMatch(enforced, /style-src-attr/);
+  assert.match(reportOnly, /style-src 'self' 'unsafe-inline' https:\/\/cdn\.jsdelivr\.net/);
+  assert.doesNotMatch(reportOnly, /style-src-attr/);
+  assert.doesNotMatch(reportOnly, /style-src[^;]*https?:\/\/(?!cdn\.jsdelivr\.net)/);
 });
