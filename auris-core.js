@@ -3404,7 +3404,7 @@ async function loadDash(options) {
   var loadGeneration=++_dashLoadGeneration;
   var hadApiFailure=false;
   var refreshIcon = document.getElementById('dash-refresh-icon');
-  if (refreshIcon) refreshIcon.style.animation = 'spin .8s linear infinite';
+  if (refreshIcon) refreshIcon.classList.add('auris-runtime-spinner');
   // Mount the organisation dashboard immediately so a fresh login never
   // appears blank while the live API requests are still loading.
   if(!isPersonalDashRole()) {
@@ -3502,8 +3502,8 @@ async function loadDash(options) {
     var criticals = events.filter(function(x){return x.severity==='critical'&&x.status!=='closed';});
     if(criticals.length>0 && alertBar && alertText) {
       alertText.textContent = criticals.length+' critical unresolved incident'+(criticals.length>1?'s':'')+': '+criticals.slice(0,2).map(function(x){return x.description||x.event_type||'-';}).join(', ');
-      alertBar.style.display='flex';
-    } else if(alertBar) { alertBar.style.display='none'; }
+      aurisSetDisplay(alertBar,'flex');
+    } else if(alertBar) { aurisSetDisplay(alertBar,'none'); }
 
     // Charts
     dashRenderTrendChart(events);
@@ -3557,8 +3557,8 @@ async function loadDash(options) {
     // Update role banner
     var banner = document.getElementById('role-banner-dash');
     if(banner&&prof&&prof.role) {
-      if(prof.role==='inspector'){banner.innerHTML='<div style="background:#EFF6FF;border:1px solid #bfdbfe;border-radius:8px;padding:8px 14px;font-size:12px;color:#185FA5;font-weight:600">Inspector view - showing your assigned areas only</div>';banner.style.display='block';}
-      else banner.style.display='none';
+      if(prof.role==='inspector'){banner.innerHTML='<div class="auris-dashboard-inspector-banner">Inspector view - showing your assigned areas only</div>';aurisSetDisplay(banner,'block');}
+      else aurisSetDisplay(banner,'none');
     }
 
     sm('dash-label', 'Updated '+now.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}));
@@ -3566,7 +3566,7 @@ async function loadDash(options) {
     if(dashboardPage)dashboardPage.dataset.dashboardReady='true';
   } catch(e) { console.error('Dashboard error:', e); }
   finally {
-    if(loadGeneration===_dashLoadGeneration&&refreshIcon)refreshIcon.style.animation='';
+    if(loadGeneration===_dashLoadGeneration&&refreshIcon)refreshIcon.classList.remove('auris-runtime-spinner');
     // A short-lived network/schema-cache failure during login should repair
     // itself. Retry at most twice and never compete with a newer dashboard load.
     if(loadGeneration===_dashLoadGeneration&&options.initial&&hadApiFailure&&(options.attempt||0)<2){
@@ -3600,13 +3600,13 @@ function dashRouteView() {
   var orgControls = document.getElementById('dash-org-controls');
   if(!orgView || !perView) return;
   if(isPersonalDashRole()) {
-    orgView.style.display = 'none';
-    perView.style.display = 'block';
-    if(orgControls) orgControls.style.display = 'none';
+    aurisSetDisplay(orgView,'none');
+    aurisSetDisplay(perView,'block');
+    aurisSetDisplay(orgControls,'none');
   } else {
-    orgView.style.display = 'none';
-    perView.style.display = 'none';
-    if(orgControls) orgControls.style.display = 'none';
+    aurisSetDisplay(orgView,'none');
+    aurisSetDisplay(perView,'none');
+    aurisSetDisplay(orgControls,'none');
   }
 }
 
@@ -3694,12 +3694,12 @@ function dashOpenControlCentreModal(title, bodyHtml){
   }
   document.getElementById('hse-cc-detail-title').textContent=title||'Dashboard detail';
   document.getElementById('hse-cc-detail-body').innerHTML=bodyHtml||'';
-  modal.style.display='flex';
+  aurisSetDisplay(modal,'flex');
 }
 
 function dashCloseControlCentreModal(){
   var modal=document.getElementById('hse-cc-detail-modal');
-  if(modal)modal.style.display='none';
+  aurisSetDisplay(modal,'none');
 }
 
 function dashJs(value){
@@ -3753,15 +3753,15 @@ function dashOpenWidgetDetail(key){
 
 function dashRenderControlCentre(data){
   var oldReadiness=document.getElementById('dash-demo-readiness');
-  if(oldReadiness)oldReadiness.style.display='none';
+  aurisSetDisplay(oldReadiness,'none');
 
   var panel=dashEnsureControlCentreMount();
   if(!panel)return;
   if(isPersonalDashRole()){
-    panel.style.display='none';
+    aurisSetDisplay(panel,'none');
     return;
   }
-  panel.style.display='block';
+  aurisSetDisplay(panel,'block');
   data=data||{};
   var now=new Date();
   var events=data.events||[];
@@ -3941,8 +3941,9 @@ function dashRenderDemoReadiness(data){
   var panel=document.getElementById('dash-demo-readiness');
   if(!panel)return;
   var canSee=isSA();
-  panel.style.display=canSee&&!isPersonalDashRole()?'block':'none';
-  if(panel.style.display==='none')return;
+  var visible=canSee&&!isPersonalDashRole();
+  aurisSetDisplay(panel,visible?'block':'none');
+  if(!visible)return;
   data=data||{};
   var checks=[
     {label:'People register', count:(data.people||[]).length, target:3, page:'people', action:'Add people'},
@@ -3979,7 +3980,7 @@ function dashOpenMeetingChecklist(){
   if(!modal){
     modal=document.createElement('div');
     modal.id='client-meeting-checklist-modal';
-    modal.style.cssText='display:none;position:fixed;inset:0;background:rgba(15,23,42,.55);z-index:930;align-items:center;justify-content:center;padding:18px';
+    modal.className='auris-runtime-modal';
     modal.innerHTML='<div class="card" role="dialog" aria-modal="true" aria-labelledby="client-meeting-checklist-title" style="width:100%;max-width:760px;max-height:86vh;overflow:hidden;border-radius:12px;box-shadow:0 20px 70px rgba(15,23,42,.28);padding:0">'
       +'<div style="padding:16px 18px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:flex-start;gap:12px">'
       +'<div><div id="client-meeting-checklist-title" style="font-size:18px;font-weight:900">Go-live readiness checklist</div><div style="font-size:12px;color:var(--text2);margin-top:3px">Use this before client launch to confirm records, workflows, governance and support are ready.</div></div>'
@@ -4013,12 +4014,12 @@ function dashOpenMeetingChecklist(){
       +'<div style="font-size:12px;color:var(--text2);line-height:1.5">'+escH(x[1])+'</div>'
       +'</div>';
   }).join('');
-  modal.style.display='flex';
+  aurisSetDisplay(modal,'flex');
 }
 
 function dashCloseMeetingChecklist(){
   var modal=document.getElementById('client-meeting-checklist-modal');
-  if(modal)modal.style.display='none';
+  aurisSetDisplay(modal,'none');
 }
 
 function clientDemoItems(){
@@ -4591,7 +4592,7 @@ function dashOpenDemoReview(){
   if(!modal){
     modal=document.createElement('div');
     modal.id='client-demo-review-modal';
-    modal.style.cssText='display:none;position:fixed;inset:0;background:rgba(15,23,42,.58);z-index:935;align-items:center;justify-content:center;padding:18px';
+    modal.className='auris-runtime-modal auris-runtime-modal--review';
     modal.innerHTML='<div class="card" role="dialog" aria-modal="true" aria-labelledby="client-demo-review-title" style="width:100%;max-width:980px;max-height:88vh;overflow:hidden;border-radius:12px;box-shadow:0 22px 80px rgba(15,23,42,.32);padding:0">'
       +'<div style="padding:16px 18px;background:linear-gradient(135deg,#0F172A,#1a3a5c);color:#fff;display:flex;justify-content:space-between;align-items:flex-start;gap:12px">'
       +'<div><div id="client-demo-review-title" style="font-size:19px;font-weight:900">AURIS360 Guided Rollout Review</div><div style="font-size:12px;opacity:.84;margin-top:3px">Follow this sequence during rollout reviews to validate the full operational workflow.</div></div>'
@@ -4610,12 +4611,12 @@ function dashOpenDemoReview(){
     +'<div><div style="font-size:14px;font-weight:900;margin-bottom:3px">'+escH(x.title)+'</div><div style="font-size:12px;color:#111827;line-height:1.5"><strong>Say:</strong> '+escH(x.say)+'</div><div style="font-size:12px;color:var(--text2);line-height:1.5;margin-top:4px"><strong>Show:</strong> '+escH(x.show)+'</div></div>'
     +'<button class="btn btn-sm" data-auris-runtime-onclick="r0018" data-auris-runtime-args="'+encodeURIComponent(JSON.stringify([x.page]))+'"><i class="ti ti-arrow-right"></i>Open</button>'
     +'</div>';}).join('')+'</div><div style="margin-top:12px;padding:12px;border:1px solid #bfdbfe;background:#EFF6FF;border-radius:10px;color:#1e40af;font-size:12px;line-height:1.55"><strong>Presenter note:</strong> keep the meeting to a story: report, investigate, act, verify, govern. Avoid opening every module unless the client asks.</div>';
-  modal.style.display='flex';
+  aurisSetDisplay(modal,'flex');
 }
 
 function dashCloseDemoReview(){
   var modal=document.getElementById('client-demo-review-modal');
-  if(modal)modal.style.display='none';
+  aurisSetDisplay(modal,'none');
 }
 
 function copyClientDemoReview(){
@@ -4650,13 +4651,13 @@ async function dashRenderPersonal(events, actions, people, permits, training) {
 
   // Hide permit button if role doesn't have access (canAccessPage handles this)
   var permitBtn = document.getElementById('dash-action-permit');
-  if(permitBtn) permitBtn.style.display = canAccessPage('permit') ? '' : 'none';
+  aurisSetDisplay(permitBtn,canAccessPage('permit')?null:'none');
   var trainingBtn = document.getElementById('dash-action-training');
-  if(trainingBtn) trainingBtn.style.display = canAccessPage('training') ? '' : 'none';
+  aurisSetDisplay(trainingBtn,canAccessPage('training')?null:'none');
   var incidentBtn = document.getElementById('dash-action-incident');
-  if(incidentBtn) incidentBtn.style.display = canAccessPage('events') ? '' : 'none';
+  aurisSetDisplay(incidentBtn,canAccessPage('events')?null:'none');
   var bbsBtn = document.getElementById('dash-action-bbs');
-  if(bbsBtn) bbsBtn.style.display = canAccessPage('observation') ? '' : 'none';
+  aurisSetDisplay(bbsBtn,canAccessPage('observation')?null:'none');
 
   // Find current user's person record (matches profile by email or full_name)
   var myPerson = (people||[]).find(function(p){
@@ -4800,7 +4801,7 @@ async function dashRenderPersonal(events, actions, people, permits, training) {
   var permitSection = document.getElementById('dp-permits-section');
   if(permitSection) {
     if(canAccessPage('permit')) {
-      permitSection.style.display = '';
+      aurisSetDisplay(permitSection,null);
       var myPermits = (permits||[]).filter(function(p){
         return p.permit_receiver === prof.id
             || p.permit_receiver === prof.email
@@ -4816,7 +4817,7 @@ async function dashRenderPersonal(events, actions, people, permits, training) {
         };
       }, 'No permits yet - tap "Request a permit" above if you need one.');
     } else {
-      permitSection.style.display = 'none';
+      aurisSetDisplay(permitSection,'none');
     }
   }
 }
@@ -5355,7 +5356,7 @@ function execTab(tab, btn) {
   if(btn) btn.classList.add('active');
   ['overview','safety','compliance','esg','reports'].forEach(function(t){
     var el=document.getElementById('exec-view-'+t);
-    if(el) el.style.display=t===tab?'block':'none';
+    aurisSetDisplay(el,t===tab?'block':'none');
   });
 }
 

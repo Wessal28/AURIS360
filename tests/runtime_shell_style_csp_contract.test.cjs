@@ -10,7 +10,7 @@ const index = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
 
 test('shared runtime visibility uses a bounded class helper', () => {
   assert.match(index, /auris-runtime-state\.css\?v=\d+-\d+/);
-  assert.match(index, /auris-core\.js\?v=20260815-2/);
+  assert.match(index, /auris-core\.js\?v=20260815-3/);
   assert.match(core, /function aurisSetDisplay\(target, mode\)/);
   for (const mode of ['none', 'block', 'flex', 'inline-flex']) {
     assert.match(css, new RegExp(`\\.auris-display-${mode}\\{display:${mode}!important\\}`));

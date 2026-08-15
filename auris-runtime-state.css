@@ -4,3 +4,7 @@
 .auris-display-block{display:block!important}
 .auris-display-flex{display:flex!important}
 .auris-display-inline-flex{display:inline-flex!important}
+.auris-runtime-spinner{animation:spin .8s linear infinite}
+.auris-dashboard-inspector-banner{background:#EFF6FF;border:1px solid #bfdbfe;border-radius:8px;padding:8px 14px;font-size:12px;color:#185FA5;font-weight:600}
+.auris-runtime-modal{display:none;position:fixed;inset:0;background:rgba(15,23,42,.55);z-index:930;align-items:center;justify-content:center;padding:18px}
+.auris-runtime-modal--review{background:rgba(15,23,42,.58);z-index:935}
