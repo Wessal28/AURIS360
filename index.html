@@ -90,6 +90,7 @@
 <link rel="stylesheet" href="auris-integrations-static.css?v=20260815-1">
 <link rel="stylesheet" href="auris-ai-insights-static.css?v=20260815-1">
 <link rel="stylesheet" href="auris-approval-center-static.css?v=20260815-1">
+<link rel="stylesheet" href="auris-audit-trail-static.css?v=20260815-1">
 </head>
 <body>
 <div id="login-screen">
@@ -10511,40 +10512,40 @@ I can help you:<br>
 <div class="page-header">
   <div>
     <div class="page-title">Audit Trail</div>
-    <div style="font-size:12px;color:var(--text2);margin-top:3px">Chronological record of key actions across AURIS360</div>
+    <div class="auris-audit-trail-s-9c4ae63835">Chronological record of key actions across AURIS360</div>
   </div>
-  <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+  <div class="auris-audit-trail-s-7598b6eb4f">
     <button class="btn" data-auris-onclick="h1188"><i class="ti ti-refresh"></i>Refresh</button>
     <button class="btn btn-primary" data-auris-onclick="h1189"><i class="ti ti-download"></i>Export CSV</button>
   </div>
 </div>
 
-<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px">
-  <div class="card" style="padding:14px;border-left:4px solid #185FA5">
-    <div style="font-size:11px;text-transform:uppercase;color:var(--text2);font-weight:700">Loaded Events</div>
-    <div style="font-size:28px;font-weight:800" id="audit-count">0</div>
+<div class="auris-audit-trail-s-311c2a86b4">
+  <div class="card auris-audit-trail-s-500fb3acbe">
+    <div class="auris-audit-trail-s-3649cae02b">Loaded Events</div>
+    <div id="audit-count" class="auris-audit-trail-s-d8ad989962">0</div>
   </div>
-  <div class="card" style="padding:14px;border-left:4px solid #1D9E75">
-    <div style="font-size:11px;text-transform:uppercase;color:var(--text2);font-weight:700">Filtered View</div>
-    <div style="font-size:28px;font-weight:800" id="audit-shown-count">0</div>
+  <div class="card auris-audit-trail-s-c7068a3214">
+    <div class="auris-audit-trail-s-3649cae02b">Filtered View</div>
+    <div id="audit-shown-count" class="auris-audit-trail-s-d8ad989962">0</div>
   </div>
-  <div class="card" style="padding:14px;border-left:4px solid #EF9F27">
-    <div style="font-size:11px;text-transform:uppercase;color:var(--text2);font-weight:700">Scope</div>
-    <div style="font-size:14px;font-weight:800;margin-top:8px" id="audit-scope-label">Current company</div>
+  <div class="card auris-audit-trail-s-d7f1d01093">
+    <div class="auris-audit-trail-s-3649cae02b">Scope</div>
+    <div id="audit-scope-label" class="auris-audit-trail-s-b6d687f2e3">Current company</div>
   </div>
-  <div class="card" style="padding:14px;border-left:4px solid #374151">
-    <div style="font-size:11px;text-transform:uppercase;color:var(--text2);font-weight:700">Today</div>
-    <div style="font-size:28px;font-weight:800" id="audit-today-count">0</div>
+  <div class="card auris-audit-trail-s-4fb542688a">
+    <div class="auris-audit-trail-s-3649cae02b">Today</div>
+    <div id="audit-today-count" class="auris-audit-trail-s-d8ad989962">0</div>
   </div>
 </div>
 
-<div class="card" style="padding:14px;margin-bottom:16px">
-  <div style="display:grid;grid-template-columns:2fr 1fr 1fr auto;gap:10px;align-items:end">
-    <div class="form3group" style="margin:0">
+<div class="card auris-audit-trail-s-a51870756d">
+  <div class="auris-audit-trail-s-eaee585ce7">
+    <div class="form3group auris-audit-trail-s-ab79ea2b85">
       <label class="form3label">Search</label>
       <input id="auditlog-search" type="search" placeholder="Search user, module, action, details..." data-auris-oninput="h1190"/>
     </div>
-    <div class="form3group" style="margin:0">
+    <div class="form3group auris-audit-trail-s-ab79ea2b85">
       <label class="form3label">Action</label>
       <select id="audit-filter-action" data-auris-onchange="h1191">
         <option value="">All actions</option>
@@ -10559,7 +10560,7 @@ I can help you:<br>
         <option value="sync">Offline sync</option>
       </select>
     </div>
-    <div class="form3group" style="margin:0">
+    <div class="form3group auris-audit-trail-s-ab79ea2b85">
       <label class="form3label">Module</label>
       <select id="audit-filter-module" data-auris-onchange="h1191"><option value="">All modules</option></select>
     </div>
@@ -10567,22 +10568,22 @@ I can help you:<br>
   </div>
 </div>
 
-<div class="card" style="padding:0;overflow:hidden">
+<div class="card auris-audit-trail-s-d9c39add3c">
   <div class="table-scroll">
-    <table class="data-table" style="min-width:980px">
+    <table class="data-table auris-audit-trail-s-01ed6fa853">
       <thead>
         <tr>
-          <th style="padding:10px 12px;text-align:left">Time</th>
-          <th style="padding:10px 12px;text-align:left">Action</th>
-          <th style="padding:10px 12px;text-align:left">Module</th>
-          <th style="padding:10px 12px;text-align:left">User</th>
-          <th style="padding:10px 12px;text-align:left">Summary</th>
-          <th style="padding:10px 12px;text-align:left">Record ID</th>
-          <th style="padding:10px 12px;text-align:right">Details</th>
+          <th class="auris-audit-trail-s-54ff43d5d9">Time</th>
+          <th class="auris-audit-trail-s-54ff43d5d9">Action</th>
+          <th class="auris-audit-trail-s-54ff43d5d9">Module</th>
+          <th class="auris-audit-trail-s-54ff43d5d9">User</th>
+          <th class="auris-audit-trail-s-54ff43d5d9">Summary</th>
+          <th class="auris-audit-trail-s-54ff43d5d9">Record ID</th>
+          <th class="auris-audit-trail-s-a3e9fb51f5">Details</th>
         </tr>
       </thead>
       <tbody id="audit-table-body">
-        <tr><td colspan="7" style="padding:24px;text-align:center;color:var(--text2)">Open Audit Trail to load events</td></tr>
+        <tr><td class="auris-audit-trail-s-455ab2efe6" colspan="7">Open Audit Trail to load events</td></tr>
       </tbody>
     </table>
   </div>

@@ -1,0 +1,20 @@
+/* Generated from Audit Trail by scripts/extract-audit-trail-styles.cjs. */
+/* Non-important declarations preserve event, actor, scope, filter, record and export runtime states. */
+.auris-audit-trail-s-01ed6fa853{min-width:980px}
+.auris-audit-trail-s-311c2a86b4{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px}
+.auris-audit-trail-s-3649cae02b{font-size:11px;text-transform:uppercase;color:var(--text2);font-weight:700}
+.auris-audit-trail-s-455ab2efe6{padding:24px;text-align:center;color:var(--text2)}
+.auris-audit-trail-s-4fb542688a{padding:14px;border-left:4px solid #374151}
+.auris-audit-trail-s-500fb3acbe{padding:14px;border-left:4px solid #185FA5}
+.auris-audit-trail-s-54ff43d5d9{padding:10px 12px;text-align:left}
+.auris-audit-trail-s-7598b6eb4f{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.auris-audit-trail-s-9c4ae63835{font-size:12px;color:var(--text2);margin-top:3px}
+.auris-audit-trail-s-a3e9fb51f5{padding:10px 12px;text-align:right}
+.auris-audit-trail-s-a51870756d{padding:14px;margin-bottom:16px}
+.auris-audit-trail-s-ab79ea2b85{margin:0}
+.auris-audit-trail-s-b6d687f2e3{font-size:14px;font-weight:800;margin-top:8px}
+.auris-audit-trail-s-c7068a3214{padding:14px;border-left:4px solid #1D9E75}
+.auris-audit-trail-s-d7f1d01093{padding:14px;border-left:4px solid #EF9F27}
+.auris-audit-trail-s-d8ad989962{font-size:28px;font-weight:800}
+.auris-audit-trail-s-d9c39add3c{padding:0;overflow:hidden}
+.auris-audit-trail-s-eaee585ce7{display:grid;grid-template-columns:2fr 1fr 1fr auto;gap:10px;align-items:end}
