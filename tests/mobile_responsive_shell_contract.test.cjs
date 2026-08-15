@@ -37,7 +37,7 @@ test('phone typography is compact and the new layer is cache-busted', () => {
   assert.match(css, /#app \.page \.page-title/);
   assert.match(css, /#app #page-kpi \.kpi-x-title/);
   assert.match(css, /\[role="tab"\]/);
-  assert.match(html, /auris-mobile-responsive\.css\?v=20260816-3/);
+  assert.match(html, /auris-mobile-responsive\.css\?v=20260816-5/);
   assert.match(html, /auris-icon-system\.js\?v=20260816-1/);
 });
 
@@ -45,4 +45,11 @@ test('dense operational tables have dedicated touch-scroll containers', () => {
   assert.ok((html.match(/class="auris-mobile-table-scroll"/g) || []).length >= 5);
   assert.match(css, /\.auris-mobile-table-scroll[\s\S]*overflow-x:\s*auto\s*!important/);
   assert.match(css, /#page-esg \.card:has\(> table\.auris-esg-s-0ae64748d8\)/);
+});
+
+test('mobile forms and filters retain readable touch-friendly controls', () => {
+  assert.match(css, /input:not\(\[type="checkbox"\]\):not\(\[type="radio"\]\)/);
+  assert.match(css, /min-height:\s*42px\s*!important/);
+  assert.match(css, /#app \.page input:not[\s\S]*#app \.page textarea[\s\S]*font-size:\s*16px\s*!important/);
+  assert.match(css, /@media \(max-width: 480px\)[\s\S]*\[class\*="-filters"\][\s\S]*grid-template-columns:\s*minmax\(0, 1fr\)\s*!important/);
 });
