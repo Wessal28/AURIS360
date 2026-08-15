@@ -34,6 +34,9 @@ test('dynamic mobile navigation uses the shared colourful AURIS module artwork',
 test('phone typography is compact and the new layer is cache-busted', () => {
   assert.match(css, /font-size:\s*21px\s*!important/);
   assert.match(css, /font-size:\s*10\.5px\s*!important/);
-  assert.match(html, /auris-mobile-responsive\.css\?v=20260816-1/);
+  assert.match(css, /#app \.page \.page-title/);
+  assert.match(css, /#app #page-kpi \.kpi-x-title/);
+  assert.match(css, /\[role="tab"\]/);
+  assert.match(html, /auris-mobile-responsive\.css\?v=20260816-2/);
   assert.match(html, /auris-icon-system\.js\?v=20260816-1/);
 });
