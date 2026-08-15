@@ -37,7 +37,7 @@ test('phone typography is compact and the new layer is cache-busted', () => {
   assert.match(css, /#app \.page \.page-title/);
   assert.match(css, /#app #page-kpi \.kpi-x-title/);
   assert.match(css, /\[role="tab"\]/);
-  assert.match(html, /auris-mobile-responsive\.css\?v=20260816-5/);
+  assert.match(html, /auris-mobile-responsive\.css\?v=20260816-6/);
   assert.match(html, /auris-icon-system\.js\?v=20260816-1/);
 });
 
@@ -52,4 +52,10 @@ test('mobile forms and filters retain readable touch-friendly controls', () => {
   assert.match(css, /min-height:\s*42px\s*!important/);
   assert.match(css, /#app \.page input:not[\s\S]*#app \.page textarea[\s\S]*font-size:\s*16px\s*!important/);
   assert.match(css, /@media \(max-width: 480px\)[\s\S]*\[class\*="-filters"\][\s\S]*grid-template-columns:\s*minmax\(0, 1fr\)\s*!important/);
+});
+
+test('mobile dialogs and operational drawers stay inside a scrollable viewport', () => {
+  assert.match(css, /#app :is\(\[id\$="-modal"\], \[id\$="modal"\]\)[\s\S]*max-height:\s*100dvh\s*!important[\s\S]*overflow-y:\s*auto\s*!important/);
+  assert.match(css, /\[id\$="modal"\]\) > :first-child[\s\S]*max-width:\s*calc\(100vw - 20px\)\s*!important/);
+  assert.match(css, /\.bbs-drawer,[\s\S]*\.imx-drawer[\s\S]*max-width:\s*100vw\s*!important/);
 });
