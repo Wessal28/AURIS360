@@ -86,6 +86,7 @@
 <link rel="stylesheet" href="auris-document-control-static.css?v=20260815-1">
 <link rel="stylesheet" href="auris-people-static.css?v=20260815-1">
 <link rel="stylesheet" href="auris-users-roles-static.css?v=20260815-1">
+<link rel="stylesheet" href="auris-administration-static.css?v=20260815-1">
 </head>
 <body>
 <div id="login-screen">
@@ -9532,73 +9533,73 @@ Content accurate and current<br>Consistent with legislation<br>Roles and respons
 <div class="page-header">
 <div>
 <div class="page-title">Company &amp; Site Management</div>
-<div style="font-size:12px;color:var(--text2)" id="admin-subtitle">Multi-company - Site hierarchy - Central oversight - Access control</div>
+<div id="admin-subtitle" class="auris-administration-s-7299078644">Multi-company - Site hierarchy - Central oversight - Access control</div>
 </div>
-<div style="display:flex;gap:8px" id="admin-header-btns">
+<div id="admin-header-btns" class="auris-administration-s-9c40389b4a">
 <button class="btn btn-sm btn-primary" data-auris-onclick="h1066"><i class="ti ti-building"></i>Add company</button>
-<button class="btn btn-primary" data-auris-onclick="h1048" style="background:var(--green)"><i class="ti ti-user-plus"></i>New Client</button>
+<button class="btn btn-primary auris-administration-s-2eeb30cb25" data-auris-onclick="h1048"><i class="ti ti-user-plus"></i>New Client</button>
 <button class="btn btn-sm" data-auris-onclick="h1067"><i class="ti ti-map-pin"></i>Add site</button>
 </div>
 </div>
 
 <!-- Metrics -->
-<div style="display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:14px" id="admin-metrics">
-<div class="card" style="padding:10px 12px;border-left:4px solid #185FA5"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase">Companies</div><div style="font-size:22px;font-weight:800;color:#185FA5" id="adm3m3companies">-</div></div>
-<div class="card" style="padding:10px 12px;border-left:4px solid #1D9E75"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase">Active sites</div><div style="font-size:22px;font-weight:800;color:#1D9E75" id="adm3m3sites">-</div></div>
-<div class="card" style="padding:10px 12px;border-left:4px solid #5B21B6"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase">Total workers</div><div style="font-size:22px;font-weight:800;color:#5B21B6" id="adm3m3workers">-</div></div>
-<div class="card" style="padding:10px 12px;border-left:4px solid #EF9F27"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase">Open incidents</div><div style="font-size:22px;font-weight:800;color:#EF9F27" id="adm3m3incidents">-</div></div>
-<div class="card" style="padding:10px 12px;border-left:4px solid #DC2626"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase">Open actions</div><div style="font-size:22px;font-weight:800;color:#DC2626" id="adm3m3actions">-</div></div>
+<div id="admin-metrics" class="auris-administration-s-eb404b018d">
+<div class="card auris-administration-s-b6d403ee7e"><div class="auris-administration-s-d68348462c">Companies</div><div id="adm3m3companies" class="auris-administration-s-6f56b8363e">-</div></div>
+<div class="card auris-administration-s-7a5e61eb83"><div class="auris-administration-s-d68348462c">Active sites</div><div id="adm3m3sites" class="auris-administration-s-1e4fd5f9ed">-</div></div>
+<div class="card auris-administration-s-0cd688ec8f"><div class="auris-administration-s-d68348462c">Total workers</div><div id="adm3m3workers" class="auris-administration-s-a424d06424">-</div></div>
+<div class="card auris-administration-s-c70473e794"><div class="auris-administration-s-d68348462c">Open incidents</div><div id="adm3m3incidents" class="auris-administration-s-2062f090bc">-</div></div>
+<div class="card auris-administration-s-03bd966c28"><div class="auris-administration-s-d68348462c">Open actions</div><div id="adm3m3actions" class="auris-administration-s-ffe267bce1">-</div></div>
 </div>
 
 <!-- Tab bar -->
-<div style="display:flex;gap:0;margin-bottom:14px;border-bottom:2px solid var(--border);overflow-x:auto">
-<button class="mtg-tab active" id="adm3tab-overview"   data-auris-onclick="h1068"   style="white-space:nowrap">Overview</button>
-<button class="mtg-tab"        id="adm3tab-companies"  data-auris-onclick="h1069"  style="white-space:nowrap">Companies</button>
-<button class="mtg-tab"        id="adm3tab-sites"      data-auris-onclick="h1070"      style="white-space:nowrap">Sites</button>
-<button class="mtg-tab"        id="adm3tab-hierarchy"  data-auris-onclick="h1071"  style="white-space:nowrap">Hierarchy</button>
-<button class="mtg-tab"        id="adm3tab-oversight"  data-auris-onclick="h1072"  style="white-space:nowrap">Central Oversight</button>
-<button class="mtg-tab"        id="adm3tab-access"     data-auris-onclick="h1073"     style="white-space:nowrap">Site Access</button>
-<button class="mtg-tab"        id="adm3tab-modules"    data-auris-onclick="h1074"    style="white-space:nowrap">Module Access</button>
+<div class="auris-administration-s-0904085f3d">
+<button class="mtg-tab active auris-administration-s-eb99a4c193" id="adm3tab-overview"   data-auris-onclick="h1068"  >Overview</button>
+<button class="mtg-tab auris-administration-s-eb99a4c193"        id="adm3tab-companies"  data-auris-onclick="h1069" >Companies</button>
+<button class="mtg-tab auris-administration-s-eb99a4c193"        id="adm3tab-sites"      data-auris-onclick="h1070"     >Sites</button>
+<button class="mtg-tab auris-administration-s-eb99a4c193"        id="adm3tab-hierarchy"  data-auris-onclick="h1071" >Hierarchy</button>
+<button class="mtg-tab auris-administration-s-eb99a4c193"        id="adm3tab-oversight"  data-auris-onclick="h1072" >Central Oversight</button>
+<button class="mtg-tab auris-administration-s-eb99a4c193"        id="adm3tab-access"     data-auris-onclick="h1073"    >Site Access</button>
+<button class="mtg-tab auris-administration-s-eb99a4c193"        id="adm3tab-modules"    data-auris-onclick="h1074"   >Module Access</button>
 </div>
 
 <!-- -- OVERVIEW -- -->
 <div id="adm3view-overview">
-<div style="display:grid;grid-template-columns:2fr 1fr;gap:14px;margin-bottom:14px">
+<div class="auris-administration-s-7de860ea7c">
 <!-- Company cards -->
 <div>
-<div style="font-size:13px;font-weight:700;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center">
+<div class="auris-administration-s-d07a9b498b">
 <span>All Companies</span>
-<input type="text" id="adm3search-co" placeholder="Search companies..." data-auris-oninput="h1075" style="padding:5px 10px;border:1px solid var(--border);border-radius:6px;font-size:11px;width:160px"/>
+<input type="text" id="adm3search-co" class="auris-administration-s-be64548c10" placeholder="Search companies..." data-auris-oninput="h1075"/>
 </div>
-<div id="adm3companies-grid" style="display:flex;flex-direction:column;gap:8px"><div class="loading-msg">Loading...</div></div>
+<div id="adm3companies-grid" class="auris-administration-s-0fbf9e859f"><div class="loading-msg">Loading...</div></div>
 </div>
 <!-- Quick site switcher + stats -->
 <div>
-<div class="card" style="margin-bottom:10px;background:linear-gradient(135deg,#1a3a5c,#185FA5);color:#fff;padding:14px 16px">
-<div style="font-size:12px;font-weight:700;opacity:.8;margin-bottom:6px">CURRENT CONTEXT</div>
-<div style="font-size:16px;font-weight:800" id="adm3ctx-company">-</div>
-<div style="font-size:12px;opacity:.8;margin-top:3px" id="adm3ctx-role">-</div>
+<div class="card auris-administration-s-102164f33e">
+<div class="auris-administration-s-440899845d">CURRENT CONTEXT</div>
+<div id="adm3ctx-company" class="auris-administration-s-34451d06e2">-</div>
+<div id="adm3ctx-role" class="auris-administration-s-31c4903616">-</div>
 </div>
-<div class="card" style="margin-bottom:10px">
-<div style="font-size:12px;font-weight:700;margin-bottom:8px">Quick site switch</div>
-<select id="adm3site-switcher" data-auris-onchange="h1076" style="width:100%;padding:7px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px">
+<div class="card auris-administration-s-b922c89f16">
+<div class="auris-administration-s-766dbf42c8">Quick site switch</div>
+<select id="adm3site-switcher" class="auris-administration-s-d127457eab" data-auris-onchange="h1076">
 <option value="">Select a site...</option>
 </select>
-<div style="font-size:10px;color:var(--text2);margin-top:5px">Switching site filters all module data to that location</div>
+<div class="auris-administration-s-41f30f39b5">Switching site filters all module data to that location</div>
 </div>
 <div class="card">
-<div style="font-size:12px;font-weight:700;margin-bottom:8px">Aggregate KPIs</div>
-<div id="adm3agg-kpis" style="display:flex;flex-direction:column;gap:6px"><div class="loading-msg" style="font-size:11px">Loading...</div></div>
+<div class="auris-administration-s-766dbf42c8">Aggregate KPIs</div>
+<div id="adm3agg-kpis" class="auris-administration-s-67c6459975"><div class="loading-msg auris-administration-s-33ee298127">Loading...</div></div>
 </div>
 </div>
 </div>
 </div>
 
 <!-- -- COMPANIES -- -->
-<div id="adm3view-companies" style="display:none">
-<div class="card" style="margin-bottom:14px;padding:10px 14px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
-<div style="font-size:13px;font-weight:700">Company Register</div>
-<div style="display:flex;gap:8px;flex-wrap:wrap">
+<div id="adm3view-companies" class="auris-administration-s-6aa34d7432">
+<div class="card auris-administration-s-01b4441777">
+<div class="auris-administration-s-9d0b23f5fa">Company Register</div>
+<div class="auris-administration-s-c9dc9b5648">
 <button class="btn" data-auris-onclick="h1077"><i class="ti ti-printer"></i>Print register</button>
 <button class="btn btn-primary" data-auris-onclick="h1066"><i class="ti ti-plus"></i>Add company</button>
 </div>
@@ -9607,13 +9608,13 @@ Content accurate and current<br>Consistent with legislation<br>Roles and respons
 </div>
 
 <!-- -- SITES -- -->
-<div id="adm3view-sites" style="display:none">
-<div class="card" style="margin-bottom:12px;padding:10px 14px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
-<div style="display:flex;gap:8px;flex-wrap:wrap">
-<select id="adm3sites-filter-co" data-auris-onchange="h1078" style="padding:7px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px">
+<div id="adm3view-sites" class="auris-administration-s-6aa34d7432">
+<div class="card auris-administration-s-e2e1112055">
+<div class="auris-administration-s-c9dc9b5648">
+<select id="adm3sites-filter-co" class="auris-administration-s-d35063206b" data-auris-onchange="h1078">
 <option value="">All companies</option>
 </select>
-<select id="adm3sites-filter-type" data-auris-onchange="h1078" style="padding:7px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px">
+<select id="adm3sites-filter-type" class="auris-administration-s-d35063206b" data-auris-onchange="h1078">
 <option value="">All types</option>
 <option value="group">Group</option><option value="region">Region</option>
 <option value="country">Country</option><option value="site">Site</option>
@@ -9627,10 +9628,10 @@ Content accurate and current<br>Consistent with legislation<br>Roles and respons
 </div>
 
 <!-- -- HIERARCHY TREE -- -->
-<div id="adm3view-hierarchy" style="display:none">
-<div class="card" style="margin-bottom:12px;padding:10px 14px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
-<div><div style="font-size:13px;font-weight:700">Site Hierarchy</div><div style="font-size:11px;color:var(--text2)">Group > Region > Country > Site > Facility > Building > Area > Zone</div></div>
-<select id="adm3hier-filter-co" data-auris-onchange="h1079" style="padding:7px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px">
+<div id="adm3view-hierarchy" class="auris-administration-s-6aa34d7432">
+<div class="card auris-administration-s-e2e1112055">
+<div><div class="auris-administration-s-9d0b23f5fa">Site Hierarchy</div><div class="auris-administration-s-d37c8e8fe6">Group > Region > Country > Site > Facility > Building > Area > Zone</div></div>
+<select id="adm3hier-filter-co" class="auris-administration-s-d35063206b" data-auris-onchange="h1079">
 <option value="">All companies</option>
 </select>
 </div>
@@ -9638,66 +9639,66 @@ Content accurate and current<br>Consistent with legislation<br>Roles and respons
 </div>
 
 <!-- -- CENTRAL OVERSIGHT -- -->
-<div id="adm3view-oversight" style="display:none">
-<div class="card" style="margin-bottom:14px;padding:14px 20px;background:linear-gradient(135deg,#312e81,#5B21B6);color:#fff">
-<div style="font-size:15px;font-weight:800;margin-bottom:4px">Central Oversight Dashboard</div>
-<div style="font-size:12px;opacity:.85">Aggregate KPIs across all companies - available to SEPHS Admin and executives with multi-company access</div>
+<div id="adm3view-oversight" class="auris-administration-s-6aa34d7432">
+<div class="card auris-administration-s-bcd8ca117b">
+<div class="auris-administration-s-287292c0e6">Central Oversight Dashboard</div>
+<div class="auris-administration-s-dc4ac84a01">Aggregate KPIs across all companies - available to SEPHS Admin and executives with multi-company access</div>
 </div>
 <!-- Company comparison table -->
-<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px">
+<div class="auris-administration-s-03826b79d9">
 <div class="card">
 <div class="card-title">Incidents by company - YTD</div>
-<div id="oversight-incidents-chart" style="display:flex;flex-direction:column;gap:6px"><div class="loading-msg" style="font-size:11px">Loading...</div></div>
+<div id="oversight-incidents-chart" class="auris-administration-s-67c6459975"><div class="loading-msg auris-administration-s-33ee298127">Loading...</div></div>
 </div>
 <div class="card">
 <div class="card-title">Compliance % by company</div>
-<div id="oversight-compliance-chart" style="display:flex;flex-direction:column;gap:6px"><div class="loading-msg" style="font-size:11px">Loading...</div></div>
+<div id="oversight-compliance-chart" class="auris-administration-s-67c6459975"><div class="loading-msg auris-administration-s-33ee298127">Loading...</div></div>
 </div>
 </div>
-<div class="card" style="margin-bottom:14px">
+<div class="card auris-administration-s-42a6ced8b6">
 <div class="card-title">Company performance matrix</div>
-<div style="overflow:auto" id="oversight-matrix"><div class="loading-msg">Loading...</div></div>
+<div id="oversight-matrix" class="auris-administration-s-e2c857d54b"><div class="loading-msg">Loading...</div></div>
 </div>
-<div class="card" style="border:2px solid #5B21B6">
-<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-<div class="card-title" style="margin:0;color:#5B21B6"><i class="ti ti-robot"></i> AI Group Report</div>
-<div style="display:flex;gap:6px">
-<button class="btn btn-sm" style="background:#5B21B6;color:#fff;border-color:#5B21B6" data-auris-onclick="h1080">Group summary</button>
-<button class="btn btn-sm" style="background:#5B21B6;color:#fff;border-color:#5B21B6" data-auris-onclick="h1081">Risk comparison</button>
-<button class="btn btn-sm" style="background:#5B21B6;color:#fff;border-color:#5B21B6" data-auris-onclick="h1082">Consultant report</button>
+<div class="card auris-administration-s-ee71c71db7">
+<div class="auris-administration-s-a219ea00cb">
+<div class="card-title auris-administration-s-102a816f53"><i class="ti ti-robot"></i> AI Group Report</div>
+<div class="auris-administration-s-69374f356a">
+<button class="btn btn-sm auris-administration-s-a7dfccfa36" data-auris-onclick="h1080">Group summary</button>
+<button class="btn btn-sm auris-administration-s-a7dfccfa36" data-auris-onclick="h1081">Risk comparison</button>
+<button class="btn btn-sm auris-administration-s-a7dfccfa36" data-auris-onclick="h1082">Consultant report</button>
 </div>
 </div>
-<div id="oversight-ai-output" style="display:none;background:#F5F3FF;border:1px solid #c4b5fd;border-radius:8px;padding:12px;font-size:13px;line-height:1.7;white-space:pre-wrap;max-height:400px;overflow-y:auto"></div>
-<div id="oversight-ai-placeholder" style="font-size:12px;color:var(--text2);font-style:italic">Select a report type above to generate a cross-company analysis.</div>
+<div id="oversight-ai-output" class="auris-administration-s-955681a873"></div>
+<div id="oversight-ai-placeholder" class="auris-administration-s-5d7636ec51">Select a report type above to generate a cross-company analysis.</div>
 </div>
 </div>
 
 <!-- -- SITE ACCESS -- -->
-<div id="adm3view-access" style="display:none">
-<div class="card" style="margin-bottom:12px;padding:10px 14px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
-<div><div style="font-size:13px;font-weight:700">Site Access Permissions</div><div style="font-size:11px;color:var(--text2)">Assign users to specific sites with role overrides</div></div>
+<div id="adm3view-access" class="auris-administration-s-6aa34d7432">
+<div class="card auris-administration-s-e2e1112055">
+<div><div class="auris-administration-s-9d0b23f5fa">Site Access Permissions</div><div class="auris-administration-s-d37c8e8fe6">Assign users to specific sites with role overrides</div></div>
 <button class="btn btn-primary" data-auris-onclick="h1083"><i class="ti ti-plus"></i>Grant access</button>
 </div>
 <div id="adm3access-list"><div class="loading-msg">Loading...</div></div>
 </div>
 
 <!-- -- MODULE ACCESS (per company) -- -->
-<div id="adm3view-modules" style="display:none">
-<div class="card" style="margin-bottom:12px;padding:10px 14px">
-<div style="font-size:13px;font-weight:700">Module Access by Company</div>
-<div style="font-size:11px;color:var(--text2)">Tick a module to grant a company access to it. Changes save instantly. Admin pages (Users, Settings) are always available to company admins and aren't listed here.</div>
+<div id="adm3view-modules" class="auris-administration-s-6aa34d7432">
+<div class="card auris-administration-s-54bb9f1d16">
+<div class="auris-administration-s-9d0b23f5fa">Module Access by Company</div>
+<div class="auris-administration-s-d37c8e8fe6">Tick a module to grant a company access to it. Changes save instantly. Admin pages (Users, Settings) are always available to company admins and aren't listed here.</div>
 </div>
 <div id="adm3modules-list"><div class="loading-msg">Loading...</div></div>
 </div>
-<div id="adm3company-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9999;align-items:flex-start;justify-content:center;padding:40px 20px;overflow-y:auto">
-<div style="background:#fff;border-radius:14px;max-width:980px;width:100%;box-shadow:0 24px 80px rgba(0,0,0,.35)">
-<div style="padding:16px 24px;background:linear-gradient(135deg,#1a3a5c,#185FA5);color:#fff;border-radius:14px 14px 0 0;display:flex;justify-content:space-between;align-items:center">
-<div style="font-size:17px;font-weight:800" id="adm3co-modal-title">New Company</div>
-<button class="btn btn-sm" style="background:rgba(255,255,255,.2);color:#fff;border-color:rgba(255,255,255,.3)" data-auris-onclick="h1084"><i class="ti ti-x"></i></button>
+<div id="adm3company-modal" class="auris-administration-s-26d0d74b08">
+<div class="auris-administration-s-51dd83df53">
+<div class="auris-administration-s-84e257263e">
+<div id="adm3co-modal-title" class="auris-administration-s-75021e57ca">New Company</div>
+<button class="btn btn-sm auris-administration-s-5c09edd131" data-auris-onclick="h1084"><i class="ti ti-x"></i></button>
 </div>
-<div style="padding:20px">
+<div class="auris-administration-s-46e678a98a">
 <input type="hidden" id="adm3co-id"/>
-<div style="display:grid;grid-template-columns:2fr 1fr;gap:12px">
+<div class="auris-administration-s-69737aae80">
 <div class="form3group"><label class="form3label">Company name *</label><input type="text" id="adm3co-name" placeholder="Company Ltd."/></div>
 <div class="form3group"><label class="form3label">Company type</label>
 <select id="adm3co-type">
@@ -9735,33 +9736,33 @@ Content accurate and current<br>Consistent with legislation<br>Roles and respons
 <div class="form3row">
 <div class="form3group"><label class="form3label">Headcount</label><input type="number" id="adm3co-headcount" min="0"/></div>
 <div class="form3group"><label class="form3label">Logo</label>
-<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-<input type="url" id="adm3co-logo" placeholder="https://... or upload" style="flex:1;min-width:180px"/>
-<label class="btn btn-sm" style="cursor:pointer;margin:0;white-space:nowrap">Upload logo
-<input type="file" accept="image/png,image/jpeg,image/svg+xml,image/webp" style="display:none" data-auris-onchange="h1085"/></label>
+<div class="auris-administration-s-7598b6eb4f">
+<input type="url" id="adm3co-logo" class="auris-administration-s-5a5048952d" placeholder="https://... or upload"/>
+<label class="btn btn-sm auris-administration-s-c16681b9b4">Upload logo
+<input class="auris-administration-s-6aa34d7432" type="file" accept="image/png,image/jpeg,image/svg+xml,image/webp" data-auris-onchange="h1085"/></label>
 </div>
-<div style="display:flex;align-items:center;gap:8px;margin-top:6px">
-<img id="adm3co-logo-preview" src="" alt="" style="display:none;width:44px;height:44px;object-fit:contain;border:1px solid var(--border);border-radius:8px;background:#fff"/>
-<span id="adm3co-logo-status" style="font-size:11px;color:var(--text2)"></span>
+<div class="auris-administration-s-aad1e8b51f">
+<img id="adm3co-logo-preview" class="auris-administration-s-ba2c5dddf2" src="" alt=""/>
+<span id="adm3co-logo-status" class="auris-administration-s-d37c8e8fe6"></span>
 </div>
-<div style="font-size:11px;color:var(--text2);margin-top:3px">For clients without a website: upload a PNG/JPG/SVG (max 1 MB) and we'll host it.</div>
+<div class="auris-administration-s-20b350857e">For clients without a website: upload a PNG/JPG/SVG (max 1 MB) and we'll host it.</div>
 </div>
 <div class="form3group"><label class="form3label">Subscription tier</label>
 <select id="adm3co-tier"><option value="starter">Starter</option><option value="professional" selected>Professional</option><option value="enterprise">Enterprise</option></select></div>
 </div>
-<div id="adm3co-users-panel" style="margin-top:16px;border:1px solid var(--border);border-radius:10px;overflow:hidden;background:#fff">
-<div style="padding:12px 14px;background:#f8fafc;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:10px">
+<div id="adm3co-users-panel" class="auris-administration-s-2a709a3709">
+<div class="auris-administration-s-43aa3e422a">
 <div>
-<div style="font-size:13px;font-weight:800">Company users</div>
-<div style="font-size:11px;color:var(--text2)">Users attached to this company</div>
+<div class="auris-administration-s-5eb7f7caa9">Company users</div>
+<div class="auris-administration-s-d37c8e8fe6">Users attached to this company</div>
 </div>
 <span id="adm3co-users-count" class="badge bb">0 users</span>
 </div>
-<div id="adm3co-users-list" style="padding:12px"><div class="loading-msg">Open a company to view users</div></div>
+<div id="adm3co-users-list" class="auris-administration-s-14c4ab6c56"><div class="loading-msg">Open a company to view users</div></div>
 </div>
-<div style="display:flex;gap:8px;margin-top:16px;justify-content:flex-end">
+<div class="auris-administration-s-a69af9462c">
 <button class="btn" data-auris-onclick="h1084">Cancel</button>
-<button id="adm3co-del-btn" class="btn" style="display:none;color:#DC2626" data-auris-onclick="h1086"><i class="ti ti-trash"></i>Delete</button>
+<button id="adm3co-del-btn" class="btn auris-administration-s-22b30443e6" data-auris-onclick="h1086"><i class="ti ti-trash"></i>Delete</button>
 <button class="btn btn-primary" data-auris-onclick="h1087"><i class="ti ti-device-floppy"></i>Save company</button>
 </div>
 </div>
@@ -9769,15 +9770,15 @@ Content accurate and current<br>Consistent with legislation<br>Roles and respons
 </div>
 
 <!-- -- SITE FORM MODAL -- -->
-<div id="adm3site-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9999;align-items:flex-start;justify-content:center;padding:40px 20px;overflow-y:auto">
-<div style="background:#fff;border-radius:14px;max-width:600px;width:100%;box-shadow:0 24px 80px rgba(0,0,0,.35)">
-<div style="padding:16px 24px;background:linear-gradient(135deg,#064E3B,#1D9E75);color:#fff;border-radius:14px 14px 0 0;display:flex;justify-content:space-between;align-items:center">
-<div style="font-size:17px;font-weight:800" id="adm3site-modal-title">New Site</div>
-<button class="btn btn-sm" style="background:rgba(255,255,255,.2);color:#fff;border-color:rgba(255,255,255,.3)" data-auris-onclick="h1088"><i class="ti ti-x"></i></button>
+<div id="adm3site-modal" class="auris-administration-s-26d0d74b08">
+<div class="auris-administration-s-de56484f83">
+<div class="auris-administration-s-c008b4fb9a">
+<div id="adm3site-modal-title" class="auris-administration-s-75021e57ca">New Site</div>
+<button class="btn btn-sm auris-administration-s-5c09edd131" data-auris-onclick="h1088"><i class="ti ti-x"></i></button>
 </div>
-<div style="padding:20px">
+<div class="auris-administration-s-46e678a98a">
 <input type="hidden" id="adm3site-id"/>
-<div style="display:grid;grid-template-columns:2fr 1fr;gap:12px">
+<div class="auris-administration-s-69737aae80">
 <div class="form3group"><label class="form3label">Site name *</label><input type="text" id="adm3site-name" placeholder="Site / location name..."/></div>
 <div class="form3group"><label class="form3label">Site type</label>
 <select id="adm3site-type">
@@ -9800,9 +9801,9 @@ Content accurate and current<br>Consistent with legislation<br>Roles and respons
 <div class="form3group"><label class="form3label">Country</label><input type="text" id="adm3site-country" value="Mauritius"/></div>
 </div>
 <div class="form3row">
-<div class="form3group"><label class="form3label">Latitude</label><input type="text" id="adm3site-lat" style="font-family:monospace" placeholder="-20.000"/></div>
-<div class="form3group"><label class="form3label">Longitude</label><input type="text" id="adm3site-lng" style="font-family:monospace" placeholder="57.000"/></div>
-<div class="form3group" style="display:flex;align-items:flex-end"><button class="btn btn-sm" data-auris-onclick="h1089" style="width:100%"><i class="ti ti-map-pin"></i>GPS</button></div>
+<div class="form3group"><label class="form3label">Latitude</label><input type="text" id="adm3site-lat" class="auris-administration-s-7b8c3df564" placeholder="-20.000"/></div>
+<div class="form3group"><label class="form3label">Longitude</label><input type="text" id="adm3site-lng" class="auris-administration-s-7b8c3df564" placeholder="57.000"/></div>
+<div class="form3group auris-administration-s-c411af100d"><button class="btn btn-sm auris-administration-s-b7aa1ec004" data-auris-onclick="h1089"><i class="ti ti-map-pin"></i>GPS</button></div>
 </div>
 <div class="form3row">
 <div class="form3group"><label class="form3label">Site manager</label><select id="adm3site-manager"><option value="">Select person...</option></select></div>
@@ -9815,9 +9816,9 @@ Content accurate and current<br>Consistent with legislation<br>Roles and respons
 <div class="form3group"><label class="form3label">Status</label>
 <select id="adm3site-status"><option value="active">Active</option><option value="inactive">Inactive</option><option value="construction">Under construction</option></select></div>
 </div>
-<div style="display:flex;gap:8px;margin-top:16px;justify-content:flex-end">
+<div class="auris-administration-s-a69af9462c">
 <button class="btn" data-auris-onclick="h1088">Cancel</button>
-<button id="adm3site-del-btn" class="btn" style="display:none;color:#DC2626" data-auris-onclick="h1090"><i class="ti ti-trash"></i>Delete</button>
+<button id="adm3site-del-btn" class="btn auris-administration-s-22b30443e6" data-auris-onclick="h1090"><i class="ti ti-trash"></i>Delete</button>
 <button class="btn btn-primary" data-auris-onclick="h1091"><i class="ti ti-device-floppy"></i>Save site</button>
 </div>
 </div>
@@ -9825,22 +9826,22 @@ Content accurate and current<br>Consistent with legislation<br>Roles and respons
 </div>
 
 <!-- -- MODULE ACCESS MODAL (sephs_admin: control per-company module visibility) -- -->
-<div id="adm3modules-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9999;align-items:flex-start;justify-content:center;padding:40px 20px;overflow-y:auto">
-<div style="background:#fff;border-radius:12px;max-width:640px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,.3)">
-<div style="padding:14px 20px;background:linear-gradient(135deg,#5B21B6,#3b1a8a);color:#fff;border-radius:12px 12px 0 0;display:flex;justify-content:space-between;align-items:center">
+<div id="adm3modules-modal" class="auris-administration-s-26d0d74b08">
+<div class="auris-administration-s-7bd437867b">
+<div class="auris-administration-s-241f127ce6">
 <div>
-<div style="font-size:16px;font-weight:800">Module access</div>
-<div style="font-size:11px;opacity:.85" id="adm3modules-co-name">-</div>
+<div class="auris-administration-s-34451d06e2">Module access</div>
+<div id="adm3modules-co-name" class="auris-administration-s-48a3280118">-</div>
 </div>
-<button class="btn btn-sm" style="background:rgba(255,255,255,.2);color:#fff;border-color:rgba(255,255,255,.3)" data-auris-onclick="h1092"><i class="ti ti-x"></i></button>
+<button class="btn btn-sm auris-administration-s-5c09edd131" data-auris-onclick="h1092"><i class="ti ti-x"></i></button>
 </div>
-<div style="padding:20px">
-<div style="font-size:12px;color:var(--text2);margin-bottom:14px;line-height:1.5">
+<div class="auris-administration-s-46e678a98a">
+<div class="auris-administration-s-2820a8cfc0">
 Pick the modules this client can see. Sephs admin (you) always sees everything regardless of these settings. Changes take effect the next time the client logs in or refreshes.
 </div>
 
 <!-- Quick-action buttons -->
-<div style="display:flex;gap:8px;margin-bottom:14px;padding:10px;background:#f9fafb;border-radius:8px">
+<div class="auris-administration-s-004b66438e">
 <button class="btn btn-sm" data-auris-onclick="h1093">Starter (Dashboard + KPI)</button>
 <button class="btn btn-sm" data-auris-onclick="h1094">Production suite</button>
 <button class="btn btn-sm" data-auris-onclick="h1095">Legacy rollout pack</button>
@@ -9849,9 +9850,9 @@ Pick the modules this client can see. Sephs admin (you) always sees everything r
 </div>
 
 <!-- Module checkbox grid -->
-<div id="adm3modules-modal-list" style="display:grid;grid-template-columns:repeat(2,1fr);gap:6px;max-height:380px;overflow-y:auto;padding:4px"></div>
+<div id="adm3modules-modal-list" class="auris-administration-s-7f8c31fcf5"></div>
 
-<div style="display:flex;gap:8px;margin-top:18px;justify-content:flex-end">
+<div class="auris-administration-s-b1c847241a">
 <button class="btn btn-sm" data-auris-onclick="h1092">Cancel</button>
 <button class="btn btn-sm btn-primary" data-auris-onclick="h1098"><i class="ti ti-check"></i>Save access</button>
 </div>
@@ -9860,13 +9861,13 @@ Pick the modules this client can see. Sephs admin (you) always sees everything r
 </div>
 
 <!-- -- GRANT ACCESS MODAL -- -->
-<div id="adm3access-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9999;align-items:center;justify-content:center;padding:20px">
-<div style="background:#fff;border-radius:12px;max-width:440px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,.3)">
-<div style="padding:14px 20px;background:linear-gradient(135deg,#374151,#1a1a2e);color:#fff;border-radius:12px 12px 0 0;display:flex;justify-content:space-between;align-items:center">
-<div style="font-size:16px;font-weight:800">Grant site access</div>
-<button class="btn btn-sm" style="background:rgba(255,255,255,.2);color:#fff;border-color:rgba(255,255,255,.3)" data-auris-onclick="h1099"><i class="ti ti-x"></i></button>
+<div id="adm3access-modal" class="auris-administration-s-ba18353cfd">
+<div class="auris-administration-s-f8fb8536d2">
+<div class="auris-administration-s-ebb832e156">
+<div class="auris-administration-s-34451d06e2">Grant site access</div>
+<button class="btn btn-sm auris-administration-s-5c09edd131" data-auris-onclick="h1099"><i class="ti ti-x"></i></button>
 </div>
-<div style="padding:20px">
+<div class="auris-administration-s-46e678a98a">
 <div class="form3group"><label class="form3label">User email</label><input type="email" id="adm3acc-email" placeholder="user@company.com"/></div>
 <div class="form3group"><label class="form3label">Site</label>
 <select id="adm3acc-site"><option value="">Select site...</option></select></div>
@@ -9884,7 +9885,7 @@ Pick the modules this client can see. Sephs admin (you) always sees everything r
 <option value="read_only">Read only</option>
 </select></div>
 </div>
-<div style="display:flex;gap:8px;margin-top:14px;justify-content:flex-end">
+<div class="auris-administration-s-bb029f1cde">
 <button class="btn" data-auris-onclick="h1099">Cancel</button>
 <button class="btn btn-primary" data-auris-onclick="h1100"><i class="ti ti-check"></i>Grant access</button>
 </div>
