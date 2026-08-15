@@ -1,0 +1,199 @@
+/* Generated from Training & Competency by scripts/extract-training-competency-styles.cjs. */
+/* Non-important declarations preserve planning, learning, assessment, competency and authorisation runtime state. */
+.auris-training-s-00ff6b8c67{display:flex;align-items:center;gap:8px;padding:8px;border-radius:8px;cursor:pointer;background:#FEF9EC;border:1px solid #fcd34d}
+.auris-training-s-03826b79d9{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px}
+.auris-training-s-03b0f4e055{display:flex;align-items:center;gap:12px}
+.auris-training-s-04004b3958{padding:14px 20px;background:linear-gradient(135deg,#185FA5,#0891B2);color:#fff;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px}
+.auris-training-s-07bdff4587{min-height:60px}
+.auris-training-s-0904085f3d{display:flex;gap:0;margin-bottom:14px;border-bottom:2px solid var(--border);overflow-x:auto}
+.auris-training-s-0b8cad26ad{display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin-bottom:14px}
+.auris-training-s-0e610f7b67{display:none;background:rgba(220,38,38,.3);color:#fff;border-color:rgba(220,38,38,.5)}
+.auris-training-s-14dfb7ae67{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px}
+.auris-training-s-16a254e663{padding:0;overflow:auto}
+.auris-training-s-1a6f0458db{padding:14px 20px;background:linear-gradient(135deg,#0369a1,#0891B2);color:#fff;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px}
+.auris-training-s-1ace405d22{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:6px;font-size:12px}
+.auris-training-s-1e4fd5f9ed{font-size:22px;font-weight:800;color:#1D9E75}
+.auris-training-s-1fdac48a45{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:8px;max-height:220px;overflow:auto;padding:2px}
+.auris-training-s-2062f090bc{font-size:22px;font-weight:800;color:#EF9F27}
+.auris-training-s-24ac637923{padding:10px 12px;border-left:4px solid #8B5CF6}
+.auris-training-s-263c7c56cd{display:none;margin-bottom:12px}
+.auris-training-s-283f12d7fe{accent-color:var(--green)}
+.auris-training-s-2b013fa0d9{min-height:50px}
+.auris-training-s-32defd7d83{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:6px;font-size:12px}
+.auris-training-s-33ee298127{font-size:11px}
+.auris-training-s-34451d06e2{font-size:16px;font-weight:800}
+.auris-training-s-42a6ced8b6{margin-bottom:14px}
+.auris-training-s-43a97fe494{margin-top:8px}
+.auris-training-s-4422804ebb{font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px}
+.auris-training-s-48aeeeda5f{font-size:22px;font-weight:800;color:#0891B2}
+.auris-training-s-497c2dbfe0{margin-top:10px;border:1px solid var(--border);border-radius:8px;padding:10px;background:#f9fafb}
+.auris-training-s-498b9a2f33{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px}
+.auris-training-s-530946d91c{padding:10px 12px;border-left:4px solid #E24B4A}
+.auris-training-s-54ec8874e7{margin-bottom:14px;padding:0;overflow:hidden}
+.auris-training-s-5571af1e74{display:grid;grid-template-columns:2fr 1fr;gap:14px}
+.auris-training-s-5698104cf1{font-size:11px;margin-top:6px}
+.auris-training-s-56ac49ff17{background:#fff;color:#1D9E75;font-weight:700}
+.auris-training-s-5b0c811138{display:flex;gap:10px;margin-top:8px;flex-wrap:wrap}
+.auris-training-s-5b46469907{display:flex;align-items:center;gap:8px;padding:8px;border-radius:8px;cursor:pointer;background:#f3f4f6;border:1px solid #d1d5db}
+.auris-training-s-5c09edd131{background:rgba(255,255,255,.2);color:#fff;border-color:rgba(255,255,255,.3)}
+.auris-training-s-631cc7b8b8{font-weight:700;color:var(--red);font-size:12px}
+.auris-training-s-67c6459975{display:flex;flex-direction:column;gap:6px}
+.auris-training-s-69374f356a{display:flex;gap:6px}
+.auris-training-s-6aa34d7432{display:none}
+.auris-training-s-6e86c59eb5{padding:14px 20px;background:linear-gradient(135deg,#1a3a5c,#185FA5);color:#fff;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px}
+.auris-training-s-6f56b8363e{font-size:22px;font-weight:800;color:#185FA5}
+.auris-training-s-7299078644{font-size:12px;color:var(--text2)}
+.auris-training-s-75021e57ca{font-size:17px;font-weight:800}
+.auris-training-s-75a9bf628c{padding:14px 20px;background:linear-gradient(135deg,#3B0764,#7C3AED);color:#fff;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px}
+.auris-training-s-7a5e61eb83{padding:10px 12px;border-left:4px solid #1D9E75}
+.auris-training-s-7b8c3df564{font-family:monospace}
+.auris-training-s-7e000820e7{min-height:40px}
+.auris-training-s-80486fca75{margin-top:12px;background:#eff6ff;border:1px solid #bfdbfe}
+.auris-training-s-81e8367fe3{accent-color:#6B7280}
+.auris-training-s-8e834ce5d5{display:none;color:#5B21B6;border-color:#DDD6FE;background:#F5F3FF}
+.auris-training-s-900d8093ae{padding:6px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px;width:160px}
+.auris-training-s-9051fde21b{padding:6px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px;max-width:180px}
+.auris-training-s-90cf399257{accent-color:#EF9F27}
+.auris-training-s-9382503330{font-weight:800;color:#185FA5;margin-bottom:6px}
+.auris-training-s-9463ff4798{cursor:pointer}
+.auris-training-s-94e7a77f10{margin-bottom:12px;padding:12px 16px;background:linear-gradient(135deg,#1a3a5c,#5B21B6);color:#fff}
+.auris-training-s-961764c3cd{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
+.auris-training-s-9692487066{padding:6px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px;width:200px}
+.auris-training-s-96f7839a1b{display:none;background:rgba(0,0,0,.3);color:#fff;border-color:rgba(255,255,255,.3)}
+.auris-training-s-9a709e2a2d{display:flex;align-items:center;gap:8px;padding:8px;border-radius:8px;cursor:pointer;background:#FEF2F2;border:1px solid #fecaca}
+.auris-training-s-9abe12cdf2{font-family:monospace;font-size:12px;color:#a8d8f0;margin-top:3px}
+.auris-training-s-9bcefa3fff{margin-bottom:14px;border:2px solid #185FA5}
+.auris-training-s-9c40389b4a{display:flex;gap:8px}
+.auris-training-s-a49cca52be{font-size:12px}
+.auris-training-s-a4e017b7b0{display:flex;align-items:center;gap:8px}
+.auris-training-s-a5cd1e43c2{padding:10px 12px;border-left:4px solid #0891B2}
+.auris-training-s-aaa5678eb0{display:flex;align-items:center;gap:5px;font-size:12px;cursor:pointer;font-weight:600}
+.auris-training-s-aad5c10c59{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:8px}
+.auris-training-s-ab79ea2b85{margin:0}
+.auris-training-s-aef89c74cb{justify-content:center;width:100%}
+.auris-training-s-af1808ceef{display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;align-items:center}
+.auris-training-s-af62d68b87{accent-color:var(--red)}
+.auris-training-s-b6d403ee7e{padding:10px 12px;border-left:4px solid #185FA5}
+.auris-training-s-b922c89f16{margin-bottom:10px}
+.auris-training-s-bc6456303a{font-size:22px;font-weight:800;color:#8B5CF6}
+.auris-training-s-bd0e58d190{padding:6px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px}
+.auris-training-s-c5a78eb56a{display:flex;align-items:center;gap:8px;padding:8px;border-radius:8px;cursor:pointer;background:#f0fdf4;border:1px solid #bbf7d0}
+.auris-training-s-c70473e794{padding:10px 12px;border-left:4px solid #EF9F27}
+.auris-training-s-c7b9e5b2c7{background:#1D9E75;color:#fff;border-color:#1D9E75}
+.auris-training-s-c9dc9b5648{display:flex;gap:8px;flex-wrap:wrap}
+.auris-training-s-ca32b871b2{color:#185FA5}
+.auris-training-s-cc6390bafc{font-size:12px;font-weight:600;cursor:pointer}
+.auris-training-s-ccb6e2f8fe{font-weight:700;color:#854F0B;font-size:12px}
+.auris-training-s-d25ed20ff9{padding:14px 20px;background:linear-gradient(135deg,#B45309,#D97706);color:#fff;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px}
+.auris-training-s-d5e9713ce7{padding:14px 20px;background:linear-gradient(135deg,#064E3B,#1D9E75);color:#fff;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px}
+.auris-training-s-d6abd52b48{display:flex;align-items:center;gap:6px;cursor:pointer}
+.auris-training-s-dc4ac84a01{font-size:12px;opacity:.85}
+.auris-training-s-df56cf13b7{display:flex;gap:8px;margin-top:8px;flex-wrap:wrap}
+.auris-training-s-e205b0937c{padding:6px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px;width:180px}
+.auris-training-s-e2e1112055{margin-bottom:12px;padding:10px 14px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px}
+.auris-training-s-e41e11370b{font-weight:700;color:#4B5563;font-size:12px}
+.auris-training-s-e7ad3ebe2e{font-size:22px;font-weight:800;color:#E24B4A}
+.auris-training-s-e9dc535c2c{display:none;justify-content:center;width:100%}
+.auris-training-s-eb99a4c193{white-space:nowrap}
+.auris-training-s-f26cfe9154{font-size:14px;font-weight:700;margin-bottom:4px}
+.auris-training-s-fa530ed1c3{font-size:12px;color:var(--text2);margin-bottom:10px}
+.auris-training-s-fbe0d6125a{font-weight:700;color:#166534;font-size:12px}
+/* Preserve former inline precedence over existing ID selectors. */
+#auth-add-btn.auris-training-s-6aa34d7432{display:none}
+#auth-alerts.auris-training-s-b922c89f16{margin-bottom:10px}
+#auth-del-btn.auris-training-s-96f7839a1b{display:none;background:rgba(0,0,0,.3);color:#fff;border-color:rgba(255,255,255,.3)}
+#auth-filter-type.auris-training-s-9051fde21b{padding:6px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px;max-width:180px}
+#auth-form.auris-training-s-6aa34d7432{display:none}
+#auth-form3title.auris-training-s-75021e57ca{font-size:17px;font-weight:800}
+#auth-search.auris-training-s-900d8093ae{padding:6px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px;width:160px}
+#authr-notes.auris-training-s-7e000820e7{min-height:40px}
+#authr-ref.auris-training-s-7b8c3df564{font-family:monospace}
+#cm3add-comp-btn.auris-training-s-6aa34d7432{display:none}
+#cm3btns.auris-training-s-16a254e663{padding:0;overflow:auto}
+#cm3filter-dept.auris-training-s-bd0e58d190{padding:6px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px}
+#comp-add-btn.auris-training-s-6aa34d7432{display:none}
+#comp-del-btn.auris-training-s-96f7839a1b{display:none;background:rgba(0,0,0,.3);color:#fff;border-color:rgba(255,255,255,.3)}
+#comp-filter-cat.auris-training-s-bd0e58d190{padding:6px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px}
+#comp-form.auris-training-s-6aa34d7432{display:none}
+#comp-form3title.auris-training-s-75021e57ca{font-size:17px;font-weight:800}
+#comp-gap-banner.auris-training-s-b922c89f16{margin-bottom:10px}
+#comp-search.auris-training-s-9692487066{padding:6px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px;width:200px}
+#compf-notes.auris-training-s-7e000820e7{min-height:40px}
+#elc-add-btn.auris-training-s-6aa34d7432{display:none}
+#elc-del-btn.auris-training-s-96f7839a1b{display:none;background:rgba(0,0,0,.3);color:#fff;border-color:rgba(255,255,255,.3)}
+#elc-form.auris-training-s-6aa34d7432{display:none}
+#elc-form3title.auris-training-s-75021e57ca{font-size:17px;font-weight:800}
+#elc-selected-count.auris-training-s-33ee298127{font-size:11px}
+#elc-upload-status.auris-training-s-a49cca52be{font-size:12px}
+#elcf-code.auris-training-s-7b8c3df564{font-family:monospace}
+#elcf-desc.auris-training-s-07bdff4587{min-height:60px}
+#elcf-enrol-checklist.auris-training-s-1fdac48a45{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:8px;max-height:220px;overflow:auto;padding:2px}
+#elcf-enrol-people.auris-training-s-6aa34d7432{display:none}
+#elcf-mandatory.auris-training-s-283f12d7fe{accent-color:var(--green)}
+#ele-add-btn.auris-training-s-6aa34d7432{display:none}
+#ele-del-btn.auris-training-s-96f7839a1b{display:none;background:rgba(0,0,0,.3);color:#fff;border-color:rgba(255,255,255,.3)}
+#ele-form.auris-training-s-6aa34d7432{display:none}
+#ele-form3title.auris-training-s-75021e57ca{font-size:17px;font-weight:800}
+#ele-launch-btn.auris-training-s-e9dc535c2c{display:none;justify-content:center;width:100%}
+#ele-watch-summary.auris-training-s-6aa34d7432{display:none}
+#ind-add-btn.auris-training-s-6aa34d7432{display:none}
+#ind-del-btn.auris-training-s-0e610f7b67{display:none;background:rgba(220,38,38,.3);color:#fff;border-color:rgba(220,38,38,.5)}
+#ind-filter-type.auris-training-s-bd0e58d190{padding:6px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px}
+#ind-form.auris-training-s-6aa34d7432{display:none}
+#ind-form3ref.auris-training-s-9abe12cdf2{font-family:monospace;font-size:12px;color:#a8d8f0;margin-top:3px}
+#ind-form3title.auris-training-s-75021e57ca{font-size:17px;font-weight:800}
+#ind-m3done.auris-training-s-1e4fd5f9ed{font-size:22px;font-weight:800;color:#1D9E75}
+#ind-m3pending.auris-training-s-2062f090bc{font-size:22px;font-weight:800;color:#EF9F27}
+#ind-m3refresh.auris-training-s-e7ad3ebe2e{font-size:22px;font-weight:800;color:#E24B4A}
+#ind-m3total.auris-training-s-6f56b8363e{font-size:22px;font-weight:800;color:#185FA5}
+#indf-cert-issued.auris-training-s-283f12d7fe{accent-color:var(--green)}
+#indf-extra-topics.auris-training-s-2b013fa0d9{min-height:50px}
+#indf-notes.auris-training-s-2b013fa0d9{min-height:50px}
+#indf-sig.auris-training-s-283f12d7fe{accent-color:var(--green)}
+#tf-add-btn.auris-training-s-6aa34d7432{display:none}
+#tf-del-btn.auris-training-s-96f7839a1b{display:none;background:rgba(0,0,0,.3);color:#fff;border-color:rgba(255,255,255,.3)}
+#tf-filter-exp.auris-training-s-bd0e58d190{padding:6px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px}
+#tf-form.auris-training-s-6aa34d7432{display:none}
+#tf-form3title.auris-training-s-75021e57ca{font-size:17px;font-weight:800}
+#tf-search.auris-training-s-e205b0937c{padding:6px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px;width:180px}
+#tfr-cert.auris-training-s-7b8c3df564{font-family:monospace}
+#tfr-notes.auris-training-s-7e000820e7{min-height:40px}
+#tna-add-btn.auris-training-s-6aa34d7432{display:none}
+#tp-add-btn.auris-training-s-6aa34d7432{display:none}
+#tp-del-btn.auris-training-s-0e610f7b67{display:none;background:rgba(220,38,38,.3);color:#fff;border-color:rgba(220,38,38,.5)}
+#tp-form.auris-training-s-6aa34d7432{display:none}
+#tp-form3title.auris-training-s-75021e57ca{font-size:17px;font-weight:800}
+#tp-m3completed.auris-training-s-1e4fd5f9ed{font-size:22px;font-weight:800;color:#1D9E75}
+#tp-m3overdue.auris-training-s-e7ad3ebe2e{font-size:22px;font-weight:800;color:#E24B4A}
+#tp-m3planned.auris-training-s-6f56b8363e{font-size:22px;font-weight:800;color:#185FA5}
+#tp-m3progress.auris-training-s-48aeeeda5f{font-size:22px;font-weight:800;color:#0891B2}
+#tp-notes.auris-training-s-7e000820e7{min-height:40px}
+#tp-objective.auris-training-s-07bdff4587{min-height:60px}
+#tp-year-label.auris-training-s-34451d06e2{font-size:16px;font-weight:800}
+#tr-expiry-banner.auris-training-s-263c7c56cd{display:none;margin-bottom:12px}
+#tr-m3completed.auris-training-s-1e4fd5f9ed{font-size:22px;font-weight:800;color:#1D9E75}
+#tr-m3elearning.auris-training-s-48aeeeda5f{font-size:22px;font-weight:800;color:#0891B2}
+#tr-m3expiring.auris-training-s-e7ad3ebe2e{font-size:22px;font-weight:800;color:#E24B4A}
+#tr-m3gaps.auris-training-s-bc6456303a{font-size:22px;font-weight:800;color:#8B5CF6}
+#tr-m3inductions.auris-training-s-2062f090bc{font-size:22px;font-weight:800;color:#EF9F27}
+#tr-m3plans.auris-training-s-6f56b8363e{font-size:22px;font-weight:800;color:#185FA5}
+#train-ai-btn.auris-training-s-8e834ce5d5{display:none;color:#5B21B6;border-color:#DDD6FE;background:#F5F3FF}
+#train-ai-gap-panel.auris-training-s-263c7c56cd{display:none;margin-bottom:12px}
+#train-header-btns.auris-training-s-9c40389b4a{display:flex;gap:8px}
+#train-header-sub.auris-training-s-7299078644{font-size:12px;color:var(--text2)}
+#train-new-btn.auris-training-s-6aa34d7432{display:none}
+#train-tab-auth.auris-training-s-eb99a4c193{white-space:nowrap}
+#train-tab-competency.auris-training-s-eb99a4c193{white-space:nowrap}
+#train-tab-elearning.auris-training-s-eb99a4c193{white-space:nowrap}
+#train-tab-followup.auris-training-s-eb99a4c193{white-space:nowrap}
+#train-tab-induction.auris-training-s-eb99a4c193{white-space:nowrap}
+#train-tab-matrix.auris-training-s-eb99a4c193{white-space:nowrap}
+#train-tab-plan.auris-training-s-eb99a4c193{white-space:nowrap}
+#train-tab-tna.auris-training-s-eb99a4c193{white-space:nowrap}
+#train-view-auth.auris-training-s-6aa34d7432{display:none}
+#train-view-competency.auris-training-s-6aa34d7432{display:none}
+#train-view-elearning.auris-training-s-6aa34d7432{display:none}
+#train-view-followup.auris-training-s-6aa34d7432{display:none}
+#train-view-induction.auris-training-s-6aa34d7432{display:none}
+#train-view-plan.auris-training-s-6aa34d7432{display:none}
+#train-view-tna.auris-training-s-6aa34d7432{display:none}

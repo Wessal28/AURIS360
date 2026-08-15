@@ -78,6 +78,7 @@
 <link rel="stylesheet" href="auris-ppe-static.css?v=20260815-1">
 <link rel="stylesheet" href="auris-occupational-noise-static.css?v=20260815-1">
 <link rel="stylesheet" href="auris-hse-meetings-static.css?v=20260815-1">
+<link rel="stylesheet" href="auris-training-competency-static.css?v=20260815-1">
 </head>
 <body>
 <div id="login-screen">
@@ -7570,137 +7571,137 @@ Offline mode - changes will sync when connection is restored
 <div class="page-header">
 <div>
 <div class="page-title">Training &amp; Competency</div>
-<div style="font-size:12px;color:var(--text2)" id="train-header-sub">Training matrix - Competency - Induction - E-learning - Certificates - Gap analysis</div>
+<div id="train-header-sub" class="auris-training-s-7299078644">Training matrix - Competency - Induction - E-learning - Certificates - Gap analysis</div>
 </div>
-<div style="display:flex;gap:8px" id="train-header-btns">
+<div id="train-header-btns" class="auris-training-s-9c40389b4a">
 <button class="btn" id="train-print-btn" data-auris-onclick="h0842"><i class="ti ti-printer"></i>Print current view</button>
-<button class="btn btn-primary" id="train-new-btn" style="display:none" data-auris-onclick="h0843"><i class="ti ti-plus"></i>Add new</button>
+<button class="btn btn-primary auris-training-s-6aa34d7432" id="train-new-btn" data-auris-onclick="h0843"><i class="ti ti-plus"></i>Add new</button>
 </div>
 </div>
 
 <!-- Metrics row -->
-<div style="display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin-bottom:14px">
-<div class="card" style="padding:10px 12px;border-left:4px solid #185FA5"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">Training Plans</div><div style="font-size:22px;font-weight:800;color:#185FA5" id="tr-m3plans">-</div></div>
-<div class="card" style="padding:10px 12px;border-left:4px solid #1D9E75"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">Completed</div><div style="font-size:22px;font-weight:800;color:#1D9E75" id="tr-m3completed">-</div></div>
-<div class="card" style="padding:10px 12px;border-left:4px solid #E24B4A"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">Certs Expiring</div><div style="font-size:22px;font-weight:800;color:#E24B4A" id="tr-m3expiring">-</div></div>
-<div class="card" style="padding:10px 12px;border-left:4px solid #8B5CF6"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">Comp Gaps</div><div style="font-size:22px;font-weight:800;color:#8B5CF6" id="tr-m3gaps">-</div></div>
-<div class="card" style="padding:10px 12px;border-left:4px solid #EF9F27"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">Inductions Due</div><div style="font-size:22px;font-weight:800;color:#EF9F27" id="tr-m3inductions">-</div></div>
-<div class="card" style="padding:10px 12px;border-left:4px solid #0891B2"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">E-Learning</div><div style="font-size:22px;font-weight:800;color:#0891B2" id="tr-m3elearning">-</div></div>
+<div class="auris-training-s-0b8cad26ad">
+<div class="card auris-training-s-b6d403ee7e"><div class="auris-training-s-4422804ebb">Training Plans</div><div id="tr-m3plans" class="auris-training-s-6f56b8363e">-</div></div>
+<div class="card auris-training-s-7a5e61eb83"><div class="auris-training-s-4422804ebb">Completed</div><div id="tr-m3completed" class="auris-training-s-1e4fd5f9ed">-</div></div>
+<div class="card auris-training-s-530946d91c"><div class="auris-training-s-4422804ebb">Certs Expiring</div><div id="tr-m3expiring" class="auris-training-s-e7ad3ebe2e">-</div></div>
+<div class="card auris-training-s-24ac637923"><div class="auris-training-s-4422804ebb">Comp Gaps</div><div id="tr-m3gaps" class="auris-training-s-bc6456303a">-</div></div>
+<div class="card auris-training-s-c70473e794"><div class="auris-training-s-4422804ebb">Inductions Due</div><div id="tr-m3inductions" class="auris-training-s-2062f090bc">-</div></div>
+<div class="card auris-training-s-a5cd1e43c2"><div class="auris-training-s-4422804ebb">E-Learning</div><div id="tr-m3elearning" class="auris-training-s-48aeeeda5f">-</div></div>
 </div>
 
 <!-- Expiry alert banner -->
-<div id="tr-expiry-banner" style="display:none;margin-bottom:12px"></div>
+<div id="tr-expiry-banner" class="auris-training-s-263c7c56cd"></div>
 
 <!-- Tab bar -->
-<div style="display:flex;gap:0;margin-bottom:14px;border-bottom:2px solid var(--border);overflow-x:auto">
-<button class="mtg-tab active" id="train-tab-matrix"     data-auris-onclick="h0844"     style="white-space:nowrap">Training Matrix</button>
-<button class="mtg-tab"        id="train-tab-competency" data-auris-onclick="h0845" style="white-space:nowrap">Competency</button>
-<button class="mtg-tab"        id="train-tab-induction"  data-auris-onclick="h0846"  style="white-space:nowrap">Inductions</button>
-<button class="mtg-tab"        id="train-tab-plan"       data-auris-onclick="h0847"       style="white-space:nowrap">Training Plan</button>
-<button class="mtg-tab"        id="train-tab-followup"   data-auris-onclick="h0848"   style="white-space:nowrap">Records</button>
-<button class="mtg-tab"        id="train-tab-elearning"  data-auris-onclick="h0849"  style="white-space:nowrap">E-Learning</button>
-<button class="mtg-tab"        id="train-tab-auth"       data-auris-onclick="h0850"       style="white-space:nowrap">Certificates</button>
-<button class="mtg-tab"        id="train-tab-tna"        data-auris-onclick="h0851"        style="white-space:nowrap">Gap Analysis</button>
+<div class="auris-training-s-0904085f3d">
+<button class="mtg-tab active auris-training-s-eb99a4c193" id="train-tab-matrix"     data-auris-onclick="h0844"    >Training Matrix</button>
+<button class="mtg-tab auris-training-s-eb99a4c193"        id="train-tab-competency" data-auris-onclick="h0845">Competency</button>
+<button class="mtg-tab auris-training-s-eb99a4c193"        id="train-tab-induction"  data-auris-onclick="h0846" >Inductions</button>
+<button class="mtg-tab auris-training-s-eb99a4c193"        id="train-tab-plan"       data-auris-onclick="h0847"      >Training Plan</button>
+<button class="mtg-tab auris-training-s-eb99a4c193"        id="train-tab-followup"   data-auris-onclick="h0848"  >Records</button>
+<button class="mtg-tab auris-training-s-eb99a4c193"        id="train-tab-elearning"  data-auris-onclick="h0849" >E-Learning</button>
+<button class="mtg-tab auris-training-s-eb99a4c193"        id="train-tab-auth"       data-auris-onclick="h0850"      >Certificates</button>
+<button class="mtg-tab auris-training-s-eb99a4c193"        id="train-tab-tna"        data-auris-onclick="h0851"       >Gap Analysis</button>
 </div>
 
 <!-- -- TRAINING MATRIX -- -->
 <div id="train-view-matrix">
-<div class="card" style="margin-bottom:12px;padding:10px 14px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
-<div><div class="card-title" style="margin:0">Training Matrix</div><div style="font-size:12px;color:var(--text2)">Who has been trained in what - colour-coded by competency level</div></div>
-<div style="display:flex;gap:8px">
-<select id="cm3filter-dept" data-auris-onchange="h0852" style="padding:6px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px"><option value="">All departments</option></select>
-<button class="btn btn-primary" id="cm3add-comp-btn" style="display:none" data-auris-onclick="h0853"><i class="ti ti-plus"></i>Add column</button>
+<div class="card auris-training-s-e2e1112055">
+<div><div class="card-title auris-training-s-ab79ea2b85">Training Matrix</div><div class="auris-training-s-7299078644">Who has been trained in what - colour-coded by competency level</div></div>
+<div class="auris-training-s-9c40389b4a">
+<select id="cm3filter-dept" class="auris-training-s-bd0e58d190" data-auris-onchange="h0852"><option value="">All departments</option></select>
+<button class="btn btn-primary auris-training-s-6aa34d7432" id="cm3add-comp-btn" data-auris-onclick="h0853"><i class="ti ti-plus"></i>Add column</button>
 </div>
 </div>
-<div class="card" style="padding:0;overflow:auto" id="cm3btns"><div id="cm3table"><div class="loading-msg">Loading matrix...</div></div></div>
+<div class="card auris-training-s-16a254e663" id="cm3btns"><div id="cm3table"><div class="loading-msg">Loading matrix...</div></div></div>
 </div>
 
 <!-- -- COMPETENCY MATRIX -- -->
-<div id="train-view-competency" style="display:none">
-<div class="card" style="margin-bottom:12px;padding:10px 14px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
-<div><div class="card-title" style="margin:0">Competency &amp; Licence Tracker</div>
-<div style="font-size:12px;color:var(--text2)">Forklift - Crane - Scaffolding - First Aid - Fire Warden - Confined Space - Electrical</div></div>
-<div style="display:flex;gap:8px">
-<input type="text" id="comp-search" placeholder="Search person, competency..." data-auris-oninput="h0854" style="padding:6px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px;width:200px"/>
-<select id="comp-filter-cat" data-auris-onchange="h0855" style="padding:6px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px"><option value="">All categories</option></select>
-<button class="btn btn-primary" id="comp-add-btn" style="display:none" data-auris-onclick="h0856"><i class="ti ti-plus"></i>Add record</button>
+<div id="train-view-competency" class="auris-training-s-6aa34d7432">
+<div class="card auris-training-s-e2e1112055">
+<div><div class="card-title auris-training-s-ab79ea2b85">Competency &amp; Licence Tracker</div>
+<div class="auris-training-s-7299078644">Forklift - Crane - Scaffolding - First Aid - Fire Warden - Confined Space - Electrical</div></div>
+<div class="auris-training-s-9c40389b4a">
+<input type="text" id="comp-search" class="auris-training-s-9692487066" placeholder="Search person, competency..." data-auris-oninput="h0854"/>
+<select id="comp-filter-cat" class="auris-training-s-bd0e58d190" data-auris-onchange="h0855"><option value="">All categories</option></select>
+<button class="btn btn-primary auris-training-s-6aa34d7432" id="comp-add-btn" data-auris-onclick="h0856"><i class="ti ti-plus"></i>Add record</button>
 </div>
 </div>
-<div id="comp-gap-banner" style="margin-bottom:10px"></div>
+<div id="comp-gap-banner" class="auris-training-s-b922c89f16"></div>
 <div id="comp-list"><div class="loading-msg">Loading...</div></div>
 </div>
 
 <!-- -- INDUCTIONS -- -->
-<div id="train-view-induction" style="display:none">
-<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px">
-<div class="card" style="padding:10px 12px;border-left:4px solid #185FA5"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">Total</div><div style="font-size:22px;font-weight:800;color:#185FA5" id="ind-m3total">-</div></div>
-<div class="card" style="padding:10px 12px;border-left:4px solid #1D9E75"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">Completed</div><div style="font-size:22px;font-weight:800;color:#1D9E75" id="ind-m3done">-</div></div>
-<div class="card" style="padding:10px 12px;border-left:4px solid #EF9F27"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">Pending</div><div style="font-size:22px;font-weight:800;color:#EF9F27" id="ind-m3pending">-</div></div>
-<div class="card" style="padding:10px 12px;border-left:4px solid #E24B4A"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">Refreshers Due</div><div style="font-size:22px;font-weight:800;color:#E24B4A" id="ind-m3refresh">-</div></div>
+<div id="train-view-induction" class="auris-training-s-6aa34d7432">
+<div class="auris-training-s-14dfb7ae67">
+<div class="card auris-training-s-b6d403ee7e"><div class="auris-training-s-4422804ebb">Total</div><div id="ind-m3total" class="auris-training-s-6f56b8363e">-</div></div>
+<div class="card auris-training-s-7a5e61eb83"><div class="auris-training-s-4422804ebb">Completed</div><div id="ind-m3done" class="auris-training-s-1e4fd5f9ed">-</div></div>
+<div class="card auris-training-s-c70473e794"><div class="auris-training-s-4422804ebb">Pending</div><div id="ind-m3pending" class="auris-training-s-2062f090bc">-</div></div>
+<div class="card auris-training-s-530946d91c"><div class="auris-training-s-4422804ebb">Refreshers Due</div><div id="ind-m3refresh" class="auris-training-s-e7ad3ebe2e">-</div></div>
 </div>
-<div class="card" style="margin-bottom:12px;padding:10px 14px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
-<div class="card-title" style="margin:0">Induction Register</div>
-<div style="display:flex;gap:8px">
-<select id="ind-filter-type" data-auris-onchange="h0857" style="padding:6px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px">
+<div class="card auris-training-s-e2e1112055">
+<div class="card-title auris-training-s-ab79ea2b85">Induction Register</div>
+<div class="auris-training-s-9c40389b4a">
+<select id="ind-filter-type" class="auris-training-s-bd0e58d190" data-auris-onchange="h0857">
 <option value="">All types</option><option value="new_employee">New Employee</option>
 <option value="contractor">Contractor</option><option value="visitor">Visitor</option>
 <option value="refresher">Refresher</option><option value="site_specific">Site Specific</option>
 </select>
-<button class="btn btn-primary" id="ind-add-btn" style="display:none" data-auris-onclick="h0858"><i class="ti ti-plus"></i>New induction</button>
+<button class="btn btn-primary auris-training-s-6aa34d7432" id="ind-add-btn" data-auris-onclick="h0858"><i class="ti ti-plus"></i>New induction</button>
 </div>
 </div>
 <div id="ind-list"><div class="loading-msg">Loading...</div></div>
 </div>
 
 <!-- -- TRAINING PLAN -- -->
-<div id="train-view-plan" style="display:none">
-<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px">
-<div class="card" style="padding:10px 12px;border-left:4px solid #185FA5"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">Planned</div><div style="font-size:22px;font-weight:800;color:#185FA5" id="tp-m3planned">-</div></div>
-<div class="card" style="padding:10px 12px;border-left:4px solid #1D9E75"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">Completed</div><div style="font-size:22px;font-weight:800;color:#1D9E75" id="tp-m3completed">-</div></div>
-<div class="card" style="padding:10px 12px;border-left:4px solid #0891B2"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">In Progress</div><div style="font-size:22px;font-weight:800;color:#0891B2" id="tp-m3progress">-</div></div>
-<div class="card" style="padding:10px 12px;border-left:4px solid #E24B4A"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">Overdue</div><div style="font-size:22px;font-weight:800;color:#E24B4A" id="tp-m3overdue">-</div></div>
+<div id="train-view-plan" class="auris-training-s-6aa34d7432">
+<div class="auris-training-s-14dfb7ae67">
+<div class="card auris-training-s-b6d403ee7e"><div class="auris-training-s-4422804ebb">Planned</div><div id="tp-m3planned" class="auris-training-s-6f56b8363e">-</div></div>
+<div class="card auris-training-s-7a5e61eb83"><div class="auris-training-s-4422804ebb">Completed</div><div id="tp-m3completed" class="auris-training-s-1e4fd5f9ed">-</div></div>
+<div class="card auris-training-s-a5cd1e43c2"><div class="auris-training-s-4422804ebb">In Progress</div><div id="tp-m3progress" class="auris-training-s-48aeeeda5f">-</div></div>
+<div class="card auris-training-s-530946d91c"><div class="auris-training-s-4422804ebb">Overdue</div><div id="tp-m3overdue" class="auris-training-s-e7ad3ebe2e">-</div></div>
 </div>
-<div class="card" style="margin-bottom:12px;padding:10px 14px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
-<div style="display:flex;align-items:center;gap:12px">
+<div class="card auris-training-s-e2e1112055">
+<div class="auris-training-s-03b0f4e055">
 <button class="btn btn-sm" data-auris-onclick="h0859"><i class="ti ti-chevron-left"></i></button>
-<div style="font-size:16px;font-weight:800" id="tp-year-label">2026</div>
+<div id="tp-year-label" class="auris-training-s-34451d06e2">2026</div>
 <button class="btn btn-sm" data-auris-onclick="h0860"><i class="ti ti-chevron-right"></i></button>
 </div>
-<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn" id="train-ai-btn" style="display:none;color:#5B21B6;border-color:#DDD6FE;background:#F5F3FF" data-auris-onclick="h0861"><i class="ti ti-robot"></i>AI training gaps</button><button class="btn btn-primary" id="tp-add-btn" style="display:none" data-auris-onclick="h0862"><i class="ti ti-plus"></i>Add training</button></div>
+<div class="auris-training-s-c9dc9b5648"><button class="btn auris-training-s-8e834ce5d5" id="train-ai-btn" data-auris-onclick="h0861"><i class="ti ti-robot"></i>AI training gaps</button><button class="btn btn-primary auris-training-s-6aa34d7432" id="tp-add-btn" data-auris-onclick="h0862"><i class="ti ti-plus"></i>Add training</button></div>
 </div>
-<div id="train-ai-gap-panel" style="display:none;margin-bottom:12px"></div>
-<div class="card" style="padding:0;overflow:auto"><div id="tp-table"><div class="loading-msg">Loading...</div></div></div>
+<div id="train-ai-gap-panel" class="auris-training-s-263c7c56cd"></div>
+<div class="card auris-training-s-16a254e663"><div id="tp-table"><div class="loading-msg">Loading...</div></div></div>
 </div>
 
 <!-- -- TRAINING RECORDS -- -->
-<div id="train-view-followup" style="display:none">
-<div class="card" style="margin-bottom:12px;padding:10px 14px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
-<div class="card-title" style="margin:0">Training Records &amp; Attendance</div>
-<div style="display:flex;gap:8px">
-<input type="text" id="tf-search" placeholder="Search person, course..." data-auris-oninput="h0863" style="padding:6px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px;width:180px"/>
-<select id="tf-filter-exp" data-auris-onchange="h0864" style="padding:6px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px">
+<div id="train-view-followup" class="auris-training-s-6aa34d7432">
+<div class="card auris-training-s-e2e1112055">
+<div class="card-title auris-training-s-ab79ea2b85">Training Records &amp; Attendance</div>
+<div class="auris-training-s-9c40389b4a">
+<input type="text" id="tf-search" class="auris-training-s-e205b0937c" placeholder="Search person, course..." data-auris-oninput="h0863"/>
+<select id="tf-filter-exp" class="auris-training-s-bd0e58d190" data-auris-onchange="h0864">
 <option value="">All</option><option value="expiring">Expiring &lt;90d</option><option value="expired">Expired</option>
 </select>
-<button class="btn btn-primary" id="tf-add-btn" style="display:none" data-auris-onclick="h0865"><i class="ti ti-plus"></i>Add record</button>
+<button class="btn btn-primary auris-training-s-6aa34d7432" id="tf-add-btn" data-auris-onclick="h0865"><i class="ti ti-plus"></i>Add record</button>
 </div>
 </div>
 <div id="tf-table"><div class="loading-msg">Loading...</div></div>
 </div>
 
 <!-- -- E-LEARNING -- -->
-<div id="train-view-elearning" style="display:none">
-<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px">
+<div id="train-view-elearning" class="auris-training-s-6aa34d7432">
+<div class="auris-training-s-03826b79d9">
 <div class="card"><div class="card-title">Course Library</div>
-<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px">
-<div style="font-size:12px;color:var(--text2)">Available online courses</div>
-<button class="btn btn-sm btn-primary" id="elc-add-btn" style="display:none" data-auris-onclick="h0866"><i class="ti ti-plus"></i>Add course</button>
+<div class="auris-training-s-498b9a2f33">
+<div class="auris-training-s-7299078644">Available online courses</div>
+<button class="btn btn-sm btn-primary auris-training-s-6aa34d7432" id="elc-add-btn" data-auris-onclick="h0866"><i class="ti ti-plus"></i>Add course</button>
 </div>
 <div id="elc-list"><div class="loading-msg">Loading...</div></div>
 </div>
 <div class="card"><div class="card-title">Enrolments &amp; Completions</div>
-<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px">
-<div style="font-size:12px;color:var(--text2)">Track who completed what</div>
-<button class="btn btn-sm btn-primary" id="ele-add-btn" style="display:none" data-auris-onclick="h0867"><i class="ti ti-plus"></i>Enrol person</button>
+<div class="auris-training-s-498b9a2f33">
+<div class="auris-training-s-7299078644">Track who completed what</div>
+<button class="btn btn-sm btn-primary auris-training-s-6aa34d7432" id="ele-add-btn" data-auris-onclick="h0867"><i class="ti ti-plus"></i>Enrol person</button>
 </div>
 <div id="ele-list"><div class="loading-msg">Loading...</div></div>
 </div>
@@ -7708,29 +7709,29 @@ Offline mode - changes will sync when connection is restored
 </div>
 
 <!-- -- CERTIFICATES / LICENCES -- -->
-<div id="train-view-auth" style="display:none">
-<div class="card" style="margin-bottom:12px;padding:10px 14px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
-<div><div class="card-title" style="margin:0">Licence &amp; Certificate Register</div>
-<div style="font-size:12px;color:var(--text2)">Forklift - Crane - Scaffolding - First Aid - Fire Warden - Confined Space - Electrical - NEBOSH - IOSH</div></div>
-<div style="display:flex;gap:8px">
-<input type="text" id="auth-search" placeholder="Search name, type..." data-auris-oninput="h0868" style="padding:6px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px;width:160px"/>
-<select id="auth-filter-type" data-auris-onchange="h0869" style="padding:6px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px;max-width:180px"><option value="">All types</option></select>
-<button class="btn btn-primary" id="auth-add-btn" style="display:none" data-auris-onclick="h0870"><i class="ti ti-plus"></i>Add licence</button>
+<div id="train-view-auth" class="auris-training-s-6aa34d7432">
+<div class="card auris-training-s-e2e1112055">
+<div><div class="card-title auris-training-s-ab79ea2b85">Licence &amp; Certificate Register</div>
+<div class="auris-training-s-7299078644">Forklift - Crane - Scaffolding - First Aid - Fire Warden - Confined Space - Electrical - NEBOSH - IOSH</div></div>
+<div class="auris-training-s-9c40389b4a">
+<input type="text" id="auth-search" class="auris-training-s-900d8093ae" placeholder="Search name, type..." data-auris-oninput="h0868"/>
+<select id="auth-filter-type" class="auris-training-s-9051fde21b" data-auris-onchange="h0869"><option value="">All types</option></select>
+<button class="btn btn-primary auris-training-s-6aa34d7432" id="auth-add-btn" data-auris-onclick="h0870"><i class="ti ti-plus"></i>Add licence</button>
 </div>
 </div>
-<div id="auth-alerts" style="margin-bottom:10px"></div>
+<div id="auth-alerts" class="auris-training-s-b922c89f16"></div>
 <div id="auth-table"><div class="loading-msg">Loading...</div></div>
 </div>
 
 <!-- -- GAP ANALYSIS / TNA -- -->
-<div id="train-view-tna" style="display:none">
-<div class="card" style="margin-bottom:12px;padding:12px 16px;background:linear-gradient(135deg,#1a3a5c,#5B21B6);color:#fff">
-<div style="font-size:14px;font-weight:700;margin-bottom:4px"><i class="ti ti-target"></i> Training Needs &amp; Gap Analysis</div>
-<div style="font-size:12px;opacity:.85">Identify and track outstanding training needs, retraining requirements and competency gaps</div>
+<div id="train-view-tna" class="auris-training-s-6aa34d7432">
+<div class="card auris-training-s-94e7a77f10">
+<div class="auris-training-s-f26cfe9154"><i class="ti ti-target"></i> Training Needs &amp; Gap Analysis</div>
+<div class="auris-training-s-dc4ac84a01">Identify and track outstanding training needs, retraining requirements and competency gaps</div>
 </div>
-<div class="card" style="margin-bottom:12px;padding:10px 14px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
-<div class="card-title" style="margin:0">Training Needs Register</div>
-<button class="btn btn-primary" id="tna-add-btn" style="display:none" data-auris-onclick="h0871"><i class="ti ti-plus"></i>Add need</button>
+<div class="card auris-training-s-e2e1112055">
+<div class="card-title auris-training-s-ab79ea2b85">Training Needs Register</div>
+<button class="btn btn-primary auris-training-s-6aa34d7432" id="tna-add-btn" data-auris-onclick="h0871"><i class="ti ti-plus"></i>Add need</button>
 </div>
 <div id="tna-table"><div class="loading-msg">Loading...</div></div>
 </div>
@@ -7738,20 +7739,20 @@ Offline mode - changes will sync when connection is restored
 <!-- -------- FORMS -------- -->
 
 <!-- Training Plan form -->
-<div id="tp-form" style="display:none">
-<div class="card" style="margin-bottom:14px;padding:0;overflow:hidden">
-<div style="padding:14px 20px;background:linear-gradient(135deg,#185FA5,#0891B2);color:#fff;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
-<div style="font-size:17px;font-weight:800" id="tp-form3title">New Training</div>
-<div style="display:flex;gap:8px">
-<button class="btn" style="background:rgba(255,255,255,.2);color:#fff;border-color:rgba(255,255,255,.3)" data-auris-onclick="h0872"><i class="ti ti-arrow-left"></i>Back</button>
-<button id="tp-del-btn" class="btn" style="display:none;background:rgba(220,38,38,.3);color:#fff;border-color:rgba(220,38,38,.5)" data-auris-onclick="h0873"><i class="ti ti-trash"></i></button>
-<button class="btn" style="background:#1D9E75;color:#fff;border-color:#1D9E75" data-auris-onclick="h0874"><i class="ti ti-device-floppy"></i>Save</button>
+<div id="tp-form" class="auris-training-s-6aa34d7432">
+<div class="card auris-training-s-54ec8874e7">
+<div class="auris-training-s-04004b3958">
+<div id="tp-form3title" class="auris-training-s-75021e57ca">New Training</div>
+<div class="auris-training-s-9c40389b4a">
+<button class="btn auris-training-s-5c09edd131" data-auris-onclick="h0872"><i class="ti ti-arrow-left"></i>Back</button>
+<button id="tp-del-btn" class="btn auris-training-s-0e610f7b67" data-auris-onclick="h0873"><i class="ti ti-trash"></i></button>
+<button class="btn auris-training-s-c7b9e5b2c7" data-auris-onclick="h0874"><i class="ti ti-device-floppy"></i>Save</button>
 </div>
 </div>
 </div>
-<div style="display:grid;grid-template-columns:2fr 1fr;gap:14px">
+<div class="auris-training-s-5571af1e74">
 <div>
-<div class="card" style="margin-bottom:14px"><div class="card-title">Training Details</div>
+<div class="card auris-training-s-42a6ced8b6"><div class="card-title">Training Details</div>
 <div class="form3group"><label class="form3label">Training topic / title</label><input type="text" id="tp-topic"/></div>
 <div class="form3row">
 <div class="form3group"><label class="form3label">Target group</label><input type="text" id="tp-group" placeholder="e.g. All staff, Production team..."/></div>
@@ -7771,12 +7772,12 @@ Offline mode - changes will sync when connection is restored
 <select id="tp-status"><option value="planned">Planned</option><option value="in_progress">In Progress</option><option value="completed">Completed</option><option value="cancelled">Cancelled</option><option value="overdue">Overdue</option></select></div>
 <div class="form3group"><label class="form3label">Duration (hrs)</label><input type="number" id="tp-duration" step="0.5" min="0.5" value="1"/></div>
 </div>
-<div class="form3group"><label class="form3label">Objectives</label><textarea id="tp-objective" style="min-height:60px"></textarea></div>
-<div class="form3group"><label class="form3label">Notes</label><textarea id="tp-notes" style="min-height:40px"></textarea></div>
+<div class="form3group"><label class="form3label">Objectives</label><textarea id="tp-objective" class="auris-training-s-07bdff4587"></textarea></div>
+<div class="form3group"><label class="form3label">Notes</label><textarea id="tp-notes" class="auris-training-s-7e000820e7"></textarea></div>
 </div>
 </div>
 <div>
-<div class="card" style="margin-bottom:14px"><div class="card-title">Delivery</div>
+<div class="card auris-training-s-42a6ced8b6"><div class="card-title">Delivery</div>
 <div class="form3group"><label class="form3label">Trainer / facilitator</label><select id="tp-trainer"><option value="">Select person...</option></select></div>
 <div class="form3group"><label class="form3label">Training institution / provider</label><input type="text" id="tp-provider" placeholder="e.g. Mauritius Institute of Training, SGS, BSI..."/></div>
 <div class="form3group"><label class="form3label">Location / venue</label><input type="text" id="tp-location"/></div>
@@ -7787,14 +7788,14 @@ Offline mode - changes will sync when connection is restored
 </div>
 
 <!-- Training Record form -->
-<div id="tf-form" style="display:none">
-<div class="card" style="margin-bottom:14px;padding:0;overflow:hidden">
-<div style="padding:14px 20px;background:linear-gradient(135deg,#064E3B,#1D9E75);color:#fff;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
-<div style="font-size:17px;font-weight:800" id="tf-form3title">Training Record</div>
-<div style="display:flex;gap:8px">
-<button class="btn" style="background:rgba(255,255,255,.2);color:#fff;border-color:rgba(255,255,255,.3)" data-auris-onclick="h0875"><i class="ti ti-arrow-left"></i>Back</button>
-<button id="tf-del-btn" class="btn" style="display:none;background:rgba(0,0,0,.3);color:#fff;border-color:rgba(255,255,255,.3)" data-auris-onclick="h0876"><i class="ti ti-trash"></i></button>
-<button class="btn" style="background:#fff;color:#1D9E75;font-weight:700" data-auris-onclick="h0877"><i class="ti ti-device-floppy"></i>Save</button>
+<div id="tf-form" class="auris-training-s-6aa34d7432">
+<div class="card auris-training-s-54ec8874e7">
+<div class="auris-training-s-d5e9713ce7">
+<div id="tf-form3title" class="auris-training-s-75021e57ca">Training Record</div>
+<div class="auris-training-s-9c40389b4a">
+<button class="btn auris-training-s-5c09edd131" data-auris-onclick="h0875"><i class="ti ti-arrow-left"></i>Back</button>
+<button id="tf-del-btn" class="btn auris-training-s-96f7839a1b" data-auris-onclick="h0876"><i class="ti ti-trash"></i></button>
+<button class="btn auris-training-s-56ac49ff17" data-auris-onclick="h0877"><i class="ti ti-device-floppy"></i>Save</button>
 </div>
 </div>
 </div>
@@ -7813,30 +7814,30 @@ Offline mode - changes will sync when connection is restored
 <div class="form3row">
 <div class="form3group"><label class="form3label">Score (%)</label><input type="number" id="tfr-score" min="0" max="100"/></div>
 <div class="form3group"><label class="form3label">Result</label><select id="tfr-passed"><option value="true">Pass</option><option value="false">Fail</option></select></div>
-<div class="form3group"><label class="form3label">Certificate no.</label><input type="text" id="tfr-cert" style="font-family:monospace"/></div>
+<div class="form3group"><label class="form3label">Certificate no.</label><input type="text" id="tfr-cert" class="auris-training-s-7b8c3df564"/></div>
 <div class="form3group"><label class="form3label">Certificate expiry</label><input type="date" id="tfr-expiry"/></div>
 </div>
 <div class="form3row">
 <div class="form3group"><label class="form3label">Refresher due</label><input type="date" id="tfr-refresher"/></div>
 <div class="form3group"><label class="form3label">Certificate attachment</label><input type="text" id="tfr-cert-url" placeholder="Upload certificate or paste link"/>
-<div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap">
-<label class="btn btn-sm" style="cursor:pointer"><i class="ti ti-upload"></i>Upload<input type="file" accept=".pdf,.doc,.docx,.png,.jpg,.jpeg" data-auris-onchange="h0879" style="display:none"/></label>
+<div class="auris-training-s-df56cf13b7">
+<label class="btn btn-sm auris-training-s-9463ff4798"><i class="ti ti-upload"></i>Upload<input class="auris-training-s-6aa34d7432" type="file" accept=".pdf,.doc,.docx,.png,.jpg,.jpeg" data-auris-onchange="h0879"/></label>
 <button type="button" class="btn btn-sm" data-auris-onclick="h0880"><i class="ti ti-eye"></i>Preview</button>
 </div></div>
 </div>
-<div class="form3group"><label class="form3label">Notes</label><textarea id="tfr-notes" style="min-height:40px"></textarea></div>
+<div class="form3group"><label class="form3label">Notes</label><textarea id="tfr-notes" class="auris-training-s-7e000820e7"></textarea></div>
 </div>
 </div>
 
 <!-- Competency record form -->
-<div id="comp-form" style="display:none">
-<div class="card" style="margin-bottom:14px;padding:0;overflow:hidden">
-<div style="padding:14px 20px;background:linear-gradient(135deg,#3B0764,#7C3AED);color:#fff;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
-<div style="font-size:17px;font-weight:800" id="comp-form3title">Competency Record</div>
-<div style="display:flex;gap:8px">
-<button class="btn" style="background:rgba(255,255,255,.2);color:#fff;border-color:rgba(255,255,255,.3)" data-auris-onclick="h0881"><i class="ti ti-arrow-left"></i>Back</button>
-<button id="comp-del-btn" class="btn" style="display:none;background:rgba(0,0,0,.3);color:#fff;border-color:rgba(255,255,255,.3)" data-auris-onclick="h0882"><i class="ti ti-trash"></i></button>
-<button class="btn" style="background:#1D9E75;color:#fff;border-color:#1D9E75" data-auris-onclick="h0883"><i class="ti ti-device-floppy"></i>Save</button>
+<div id="comp-form" class="auris-training-s-6aa34d7432">
+<div class="card auris-training-s-54ec8874e7">
+<div class="auris-training-s-75a9bf628c">
+<div id="comp-form3title" class="auris-training-s-75021e57ca">Competency Record</div>
+<div class="auris-training-s-9c40389b4a">
+<button class="btn auris-training-s-5c09edd131" data-auris-onclick="h0881"><i class="ti ti-arrow-left"></i>Back</button>
+<button id="comp-del-btn" class="btn auris-training-s-96f7839a1b" data-auris-onclick="h0882"><i class="ti ti-trash"></i></button>
+<button class="btn auris-training-s-c7b9e5b2c7" data-auris-onclick="h0883"><i class="ti ti-device-floppy"></i>Save</button>
 </div>
 </div>
 </div>
@@ -7866,28 +7867,28 @@ Offline mode - changes will sync when connection is restored
 <div class="form3group"><label class="form3label">Assessor</label><select id="compf-assessor"><option value="">Select person...</option></select></div>
 <div class="form3group"><label class="form3label">Evidence / certificate ref</label><input type="text" id="compf-evidence"/></div>
 </div>
-<div class="form3group"><label class="form3label">Notes</label><textarea id="compf-notes" style="min-height:40px"></textarea></div>
+<div class="form3group"><label class="form3label">Notes</label><textarea id="compf-notes" class="auris-training-s-7e000820e7"></textarea></div>
 </div>
 </div>
 
 <!-- Induction form -->
-<div id="ind-form" style="display:none">
-<div class="card" style="margin-bottom:14px;padding:0;overflow:hidden">
-<div style="padding:14px 20px;background:linear-gradient(135deg,#1a3a5c,#185FA5);color:#fff;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+<div id="ind-form" class="auris-training-s-6aa34d7432">
+<div class="card auris-training-s-54ec8874e7">
+<div class="auris-training-s-6e86c59eb5">
 <div>
-<div style="font-size:17px;font-weight:800" id="ind-form3title">New Induction</div>
-<div style="font-family:monospace;font-size:12px;color:#a8d8f0;margin-top:3px" id="ind-form3ref">IND-AUTO</div>
+<div id="ind-form3title" class="auris-training-s-75021e57ca">New Induction</div>
+<div id="ind-form3ref" class="auris-training-s-9abe12cdf2">IND-AUTO</div>
 </div>
-<div style="display:flex;gap:8px">
-<button class="btn" style="background:rgba(255,255,255,.2);color:#fff;border-color:rgba(255,255,255,.3)" data-auris-onclick="h0886"><i class="ti ti-arrow-left"></i>Back</button>
-<button id="ind-del-btn" class="btn" style="display:none;background:rgba(220,38,38,.3);color:#fff;border-color:rgba(220,38,38,.5)" data-auris-onclick="h0887"><i class="ti ti-trash"></i></button>
-<button class="btn" style="background:#1D9E75;color:#fff;border-color:#1D9E75" data-auris-onclick="h0888"><i class="ti ti-device-floppy"></i>Save</button>
+<div class="auris-training-s-9c40389b4a">
+<button class="btn auris-training-s-5c09edd131" data-auris-onclick="h0886"><i class="ti ti-arrow-left"></i>Back</button>
+<button id="ind-del-btn" class="btn auris-training-s-0e610f7b67" data-auris-onclick="h0887"><i class="ti ti-trash"></i></button>
+<button class="btn auris-training-s-c7b9e5b2c7" data-auris-onclick="h0888"><i class="ti ti-device-floppy"></i>Save</button>
 </div>
 </div>
 </div>
-<div style="display:grid;grid-template-columns:2fr 1fr;gap:14px">
+<div class="auris-training-s-5571af1e74">
 <div>
-<div class="card" style="margin-bottom:14px"><div class="card-title">Person Details</div>
+<div class="card auris-training-s-42a6ced8b6"><div class="card-title">Person Details</div>
 <div class="form3row">
 <div class="form3group"><label class="form3label">Person name</label><select id="indf-person" data-auris-onchange="h0889"><option value="">Select person...</option></select></div>
 <div class="form3group"><label class="form3label">Employee / Contractor ID</label><input type="text" id="indf-emp-id"/></div>
@@ -7901,73 +7902,73 @@ Offline mode - changes will sync when connection is restored
 <div class="form3group"><label class="form3label">Induction date</label><input type="date" id="indf-ind-date"/></div>
 </div>
 </div>
-<div class="card" style="margin-bottom:14px"><div class="card-title" style="color:#185FA5">HSE Induction Checklist</div>
-<div style="font-size:12px;color:var(--text2);margin-bottom:10px">Based on the site induction checklist format: mark each item covered, not applicable, and add remarks where required.</div>
+<div class="card auris-training-s-42a6ced8b6"><div class="card-title auris-training-s-ca32b871b2">HSE Induction Checklist</div>
+<div class="auris-training-s-fa530ed1c3">Based on the site induction checklist format: mark each item covered, not applicable, and add remarks where required.</div>
 <div id="ind-checklist-body"></div>
-<div style="margin-top:10px;border:1px solid var(--border);border-radius:8px;padding:10px;background:#f9fafb">
-<div style="font-weight:800;color:#185FA5;margin-bottom:6px">PPE issued / explained</div>
-<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:6px;font-size:12px">
-<label><input type="checkbox" class="ind-topic" value="ppe_safety_helmet" style="accent-color:var(--green)"/> Safety helmet</label>
-<label><input type="checkbox" class="ind-topic" value="ppe_safety_footwear" style="accent-color:var(--green)"/> Safety footwear</label>
-<label><input type="checkbox" class="ind-topic" value="ppe_gloves" style="accent-color:var(--green)"/> Protective gloves</label>
-<label><input type="checkbox" class="ind-topic" value="ppe_eye_face" style="accent-color:var(--green)"/> Eye / face protection</label>
-<label><input type="checkbox" class="ind-topic" value="ppe_hearing" style="accent-color:var(--green)"/> Hearing protection</label>
-<label><input type="checkbox" class="ind-topic" value="ppe_respiratory" style="accent-color:var(--green)"/> Respiratory protection</label>
-<label><input type="checkbox" class="ind-topic" value="ppe_hi_vis" style="accent-color:var(--green)"/> High visibility clothing</label>
-<label><input type="checkbox" class="ind-topic" value="ppe_fall_arrest" style="accent-color:var(--green)"/> Fall arrest harness / lanyard</label>
-<label><input type="checkbox" class="ind-topic" value="ppe_other" style="accent-color:var(--green)"/> Other PPE specified in notes</label>
+<div class="auris-training-s-497c2dbfe0">
+<div class="auris-training-s-9382503330">PPE issued / explained</div>
+<div class="auris-training-s-1ace405d22">
+<label><input type="checkbox" class="ind-topic auris-training-s-283f12d7fe" value="ppe_safety_helmet"/> Safety helmet</label>
+<label><input type="checkbox" class="ind-topic auris-training-s-283f12d7fe" value="ppe_safety_footwear"/> Safety footwear</label>
+<label><input type="checkbox" class="ind-topic auris-training-s-283f12d7fe" value="ppe_gloves"/> Protective gloves</label>
+<label><input type="checkbox" class="ind-topic auris-training-s-283f12d7fe" value="ppe_eye_face"/> Eye / face protection</label>
+<label><input type="checkbox" class="ind-topic auris-training-s-283f12d7fe" value="ppe_hearing"/> Hearing protection</label>
+<label><input type="checkbox" class="ind-topic auris-training-s-283f12d7fe" value="ppe_respiratory"/> Respiratory protection</label>
+<label><input type="checkbox" class="ind-topic auris-training-s-283f12d7fe" value="ppe_hi_vis"/> High visibility clothing</label>
+<label><input type="checkbox" class="ind-topic auris-training-s-283f12d7fe" value="ppe_fall_arrest"/> Fall arrest harness / lanyard</label>
+<label><input type="checkbox" class="ind-topic auris-training-s-283f12d7fe" value="ppe_other"/> Other PPE specified in notes</label>
 </div>
 </div>
-<div style="margin-top:10px;border:1px solid var(--border);border-radius:8px;padding:10px;background:#f9fafb">
-<div style="font-weight:800;color:#185FA5;margin-bottom:6px">Declaration and follow-up verification</div>
-<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:6px;font-size:12px">
-<label style="display:flex;align-items:center;gap:6px;cursor:pointer"><input type="checkbox" class="ind-topic" value="entrant_declaration_understood" style="accent-color:var(--green)"/> Entrant confirmed understanding and opportunity to ask questions</label>
-<label style="display:flex;align-items:center;gap:6px;cursor:pointer"><input type="checkbox" class="ind-topic" value="entrant_signed" style="accent-color:var(--green)"/> New entrant signature obtained</label>
-<label style="display:flex;align-items:center;gap:6px;cursor:pointer"><input type="checkbox" class="ind-topic" value="inductor_signed" style="accent-color:var(--green)"/> Inductor signature obtained</label>
-<label style="display:flex;align-items:center;gap:6px;cursor:pointer"><input type="checkbox" class="ind-topic" value="supervisor_signed" style="accent-color:var(--green)"/> Supervisor signature obtained</label>
-<label style="display:flex;align-items:center;gap:6px;cursor:pointer"><input type="checkbox" class="ind-topic" value="one_week_review_required" style="accent-color:var(--green)"/> 1-week behaviour / PPE / rule compliance review required</label>
-<label style="display:flex;align-items:center;gap:6px;cursor:pointer"><input type="checkbox" class="ind-topic" value="one_month_review_required" style="accent-color:var(--green)"/> 1-month competency / training progress review required</label>
+<div class="auris-training-s-497c2dbfe0">
+<div class="auris-training-s-9382503330">Declaration and follow-up verification</div>
+<div class="auris-training-s-32defd7d83">
+<label class="auris-training-s-d6abd52b48"><input type="checkbox" class="ind-topic auris-training-s-283f12d7fe" value="entrant_declaration_understood"/> Entrant confirmed understanding and opportunity to ask questions</label>
+<label class="auris-training-s-d6abd52b48"><input type="checkbox" class="ind-topic auris-training-s-283f12d7fe" value="entrant_signed"/> New entrant signature obtained</label>
+<label class="auris-training-s-d6abd52b48"><input type="checkbox" class="ind-topic auris-training-s-283f12d7fe" value="inductor_signed"/> Inductor signature obtained</label>
+<label class="auris-training-s-d6abd52b48"><input type="checkbox" class="ind-topic auris-training-s-283f12d7fe" value="supervisor_signed"/> Supervisor signature obtained</label>
+<label class="auris-training-s-d6abd52b48"><input type="checkbox" class="ind-topic auris-training-s-283f12d7fe" value="one_week_review_required"/> 1-week behaviour / PPE / rule compliance review required</label>
+<label class="auris-training-s-d6abd52b48"><input type="checkbox" class="ind-topic auris-training-s-283f12d7fe" value="one_month_review_required"/> 1-month competency / training progress review required</label>
 </div>
 </div>
-<div class="form3group" style="margin-top:8px"><label class="form3label">Additional topics / PPE covered</label><textarea id="indf-extra-topics" style="min-height:50px" placeholder="Other site-specific instructions, PPE issued, or follow-up actions..."></textarea></div>
+<div class="form3group auris-training-s-43a97fe494"><label class="form3label">Additional topics / PPE covered</label><textarea id="indf-extra-topics" class="auris-training-s-2b013fa0d9" placeholder="Other site-specific instructions, PPE issued, or follow-up actions..."></textarea></div>
 </div>
 </div>
 <div>
-<div class="card" style="margin-bottom:14px;border:2px solid #185FA5"><div class="card-title" style="color:#185FA5">Delivery</div>
+<div class="card auris-training-s-9bcefa3fff"><div class="card-title auris-training-s-ca32b871b2">Delivery</div>
 <div class="form3group"><label class="form3label">Inducted by</label><select id="indf-inducted-by"><option value="">Select person...</option></select></div>
 <div class="form3group"><label class="form3label">Duration (hours)</label><input type="number" id="indf-duration" step="0.5" value="1"/></div>
 <div class="form3group"><label class="form3label">Score (%)</label><input type="number" id="indf-score" min="0" max="100"/></div>
 </div>
-<div class="card" style="margin-bottom:14px"><div class="card-title">Outcome</div>
-<div style="display:flex;flex-direction:column;gap:6px">
-<label style="display:flex;align-items:center;gap:8px;padding:8px;border-radius:8px;cursor:pointer;background:#f0fdf4;border:1px solid #bbf7d0" data-auris-onclick="h0890"><input type="radio" name="ind-st-r" value="completed" style="accent-color:var(--green)" checked><span style="font-weight:700;color:#166534;font-size:12px">Completed</span></label>
-<label style="display:flex;align-items:center;gap:8px;padding:8px;border-radius:8px;cursor:pointer;background:#FEF9EC;border:1px solid #fcd34d" data-auris-onclick="h0891"><input type="radio" name="ind-st-r" value="in_progress" style="accent-color:#EF9F27"><span style="font-weight:700;color:#854F0B;font-size:12px">In progress</span></label>
-<label style="display:flex;align-items:center;gap:8px;padding:8px;border-radius:8px;cursor:pointer;background:#FEF2F2;border:1px solid #fecaca" data-auris-onclick="h0892"><input type="radio" name="ind-st-r" value="failed" style="accent-color:var(--red)"><span style="font-weight:700;color:var(--red);font-size:12px">Failed</span></label>
-<label style="display:flex;align-items:center;gap:8px;padding:8px;border-radius:8px;cursor:pointer;background:#f3f4f6;border:1px solid #d1d5db" data-auris-onclick="h0893"><input type="radio" name="ind-st-r" value="cancelled" style="accent-color:#6B7280"><span style="font-weight:700;color:#4B5563;font-size:12px">Cancelled</span></label>
+<div class="card auris-training-s-42a6ced8b6"><div class="card-title">Outcome</div>
+<div class="auris-training-s-67c6459975">
+<label class="auris-training-s-c5a78eb56a" data-auris-onclick="h0890"><input class="auris-training-s-283f12d7fe" type="radio" name="ind-st-r" value="completed" checked><span class="auris-training-s-fbe0d6125a">Completed</span></label>
+<label class="auris-training-s-00ff6b8c67" data-auris-onclick="h0891"><input class="auris-training-s-90cf399257" type="radio" name="ind-st-r" value="in_progress"><span class="auris-training-s-ccb6e2f8fe">In progress</span></label>
+<label class="auris-training-s-9a709e2a2d" data-auris-onclick="h0892"><input class="auris-training-s-af62d68b87" type="radio" name="ind-st-r" value="failed"><span class="auris-training-s-631cc7b8b8">Failed</span></label>
+<label class="auris-training-s-5b46469907" data-auris-onclick="h0893"><input class="auris-training-s-81e8367fe3" type="radio" name="ind-st-r" value="cancelled"><span class="auris-training-s-e41e11370b">Cancelled</span></label>
 </div>
 <input type="hidden" id="indf-status" value="completed"/>
-<div style="display:flex;gap:10px;margin-top:8px;flex-wrap:wrap">
-<label style="display:flex;align-items:center;gap:5px;font-size:12px;cursor:pointer;font-weight:600"><input type="checkbox" id="indf-cert-issued" style="accent-color:var(--green)"/> Certificate issued</label>
-<label style="display:flex;align-items:center;gap:5px;font-size:12px;cursor:pointer;font-weight:600"><input type="checkbox" id="indf-sig" style="accent-color:var(--green)"/> Signature obtained</label>
+<div class="auris-training-s-5b0c811138">
+<label class="auris-training-s-aaa5678eb0"><input type="checkbox" id="indf-cert-issued" class="auris-training-s-283f12d7fe"/> Certificate issued</label>
+<label class="auris-training-s-aaa5678eb0"><input type="checkbox" id="indf-sig" class="auris-training-s-283f12d7fe"/> Signature obtained</label>
 </div>
-<div class="form3group" style="margin-top:8px"><label class="form3label">Refresher due</label><input type="date" id="indf-refresher-due"/></div>
+<div class="form3group auris-training-s-43a97fe494"><label class="form3label">Refresher due</label><input type="date" id="indf-refresher-due"/></div>
 </div>
 <div class="card"><div class="card-title">Notes</div>
-<textarea id="indf-notes" style="min-height:50px"></textarea>
+<textarea id="indf-notes" class="auris-training-s-2b013fa0d9"></textarea>
 </div>
 </div>
 </div>
 </div>
 
 <!-- Certificate / Licence form -->
-<div id="auth-form" style="display:none">
-<div class="card" style="margin-bottom:14px;padding:0;overflow:hidden">
-<div style="padding:14px 20px;background:linear-gradient(135deg,#B45309,#D97706);color:#fff;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
-<div style="font-size:17px;font-weight:800" id="auth-form3title">Licence / Certificate</div>
-<div style="display:flex;gap:8px">
-<button class="btn" style="background:rgba(255,255,255,.2);color:#fff;border-color:rgba(255,255,255,.3)" data-auris-onclick="h0894"><i class="ti ti-arrow-left"></i>Back</button>
-<button id="auth-del-btn" class="btn" style="display:none;background:rgba(0,0,0,.3);color:#fff;border-color:rgba(255,255,255,.3)" data-auris-onclick="h0895"><i class="ti ti-trash"></i></button>
-<button class="btn" style="background:#1D9E75;color:#fff;border-color:#1D9E75" data-auris-onclick="h0896"><i class="ti ti-device-floppy"></i>Save</button>
+<div id="auth-form" class="auris-training-s-6aa34d7432">
+<div class="card auris-training-s-54ec8874e7">
+<div class="auris-training-s-d25ed20ff9">
+<div id="auth-form3title" class="auris-training-s-75021e57ca">Licence / Certificate</div>
+<div class="auris-training-s-9c40389b4a">
+<button class="btn auris-training-s-5c09edd131" data-auris-onclick="h0894"><i class="ti ti-arrow-left"></i>Back</button>
+<button id="auth-del-btn" class="btn auris-training-s-96f7839a1b" data-auris-onclick="h0895"><i class="ti ti-trash"></i></button>
+<button class="btn auris-training-s-c7b9e5b2c7" data-auris-onclick="h0896"><i class="ti ti-device-floppy"></i>Save</button>
 </div>
 </div>
 </div>
@@ -8001,7 +8002,7 @@ Offline mode - changes will sync when connection is restored
 <div id="auth-types-list"></div>
 </div>
 <div class="form3row">
-<div class="form3group"><label class="form3label">Ref / licence number</label><input type="text" id="authr-ref" style="font-family:monospace"/></div>
+<div class="form3group"><label class="form3label">Ref / licence number</label><input type="text" id="authr-ref" class="auris-training-s-7b8c3df564"/></div>
 <div class="form3group"><label class="form3label">Issuing body</label><input type="text" id="authr-issuer" placeholder="e.g. OSHI, Red Cross, NEBOSH..."/></div>
 <div class="form3group"><label class="form3label">Issue date</label><input type="date" id="authr-issue"/></div>
 <div class="form3group"><label class="form3label">Expiry date</label><input type="date" id="authr-expiry"/></div>
@@ -8010,35 +8011,35 @@ Offline mode - changes will sync when connection is restored
 <div class="form3group"><label class="form3label">Status</label>
 <select id="authr-status"><option value="active">Active</option><option value="expired">Expired</option><option value="suspended">Suspended</option><option value="pending">Pending renewal</option></select></div>
 <div class="form3group"><label class="form3label">Certificate attachment</label><input type="text" id="authr-cert-url" placeholder="Upload certificate or paste link"/>
-<div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap">
-<label class="btn btn-sm" style="cursor:pointer"><i class="ti ti-upload"></i>Upload<input type="file" accept=".pdf,.doc,.docx,.png,.jpg,.jpeg" data-auris-onchange="h0898" style="display:none"/></label>
+<div class="auris-training-s-df56cf13b7">
+<label class="btn btn-sm auris-training-s-9463ff4798"><i class="ti ti-upload"></i>Upload<input class="auris-training-s-6aa34d7432" type="file" accept=".pdf,.doc,.docx,.png,.jpg,.jpeg" data-auris-onchange="h0898"/></label>
 <button type="button" class="btn btn-sm" data-auris-onclick="h0899"><i class="ti ti-eye"></i>Preview</button>
 </div></div>
 <div class="form3group"><label class="form3label">Scope / restrictions</label><input type="text" id="authr-scope" placeholder="e.g. 5 tonne max..."/></div>
 </div>
-<div class="form3group"><label class="form3label">Notes</label><textarea id="authr-notes" style="min-height:40px"></textarea></div>
+<div class="form3group"><label class="form3label">Notes</label><textarea id="authr-notes" class="auris-training-s-7e000820e7"></textarea></div>
 </div>
 </div>
 
 <!-- E-learning course form -->
-<div id="elc-form" style="display:none">
-<div class="card" style="margin-bottom:14px;padding:0;overflow:hidden">
-<div style="padding:14px 20px;background:linear-gradient(135deg,#0369a1,#0891B2);color:#fff;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
-<div style="font-size:17px;font-weight:800" id="elc-form3title">E-Learning Course</div>
-<div style="display:flex;gap:8px">
-<button class="btn" style="background:rgba(255,255,255,.2);color:#fff;border-color:rgba(255,255,255,.3)" data-auris-onclick="h0900"><i class="ti ti-arrow-left"></i>Back</button>
-<button id="elc-del-btn" class="btn" style="display:none;background:rgba(0,0,0,.3);color:#fff;border-color:rgba(255,255,255,.3)" data-auris-onclick="h0901"><i class="ti ti-trash"></i></button>
-<button class="btn" style="background:#1D9E75;color:#fff;border-color:#1D9E75" data-auris-onclick="h0902"><i class="ti ti-device-floppy"></i>Save</button>
+<div id="elc-form" class="auris-training-s-6aa34d7432">
+<div class="card auris-training-s-54ec8874e7">
+<div class="auris-training-s-1a6f0458db">
+<div id="elc-form3title" class="auris-training-s-75021e57ca">E-Learning Course</div>
+<div class="auris-training-s-9c40389b4a">
+<button class="btn auris-training-s-5c09edd131" data-auris-onclick="h0900"><i class="ti ti-arrow-left"></i>Back</button>
+<button id="elc-del-btn" class="btn auris-training-s-96f7839a1b" data-auris-onclick="h0901"><i class="ti ti-trash"></i></button>
+<button class="btn auris-training-s-c7b9e5b2c7" data-auris-onclick="h0902"><i class="ti ti-device-floppy"></i>Save</button>
 </div>
 </div>
 </div>
 <div class="card">
 <div class="form3row">
 <div class="form3group"><label class="form3label">Course title</label><input type="text" id="elcf-title"/></div>
-<div class="form3group"><label class="form3label">Course code</label><input type="text" id="elcf-code" style="font-family:monospace"/></div>
+<div class="form3group"><label class="form3label">Course code</label><input type="text" id="elcf-code" class="auris-training-s-7b8c3df564"/></div>
 <div class="form3group"><label class="form3label">Category</label><input type="text" id="elcf-cat" placeholder="e.g. Fire Safety, Manual Handling..."/></div>
 </div>
-<div class="form3group"><label class="form3label">Description</label><textarea id="elcf-desc" style="min-height:60px"></textarea></div>
+<div class="form3group"><label class="form3label">Description</label><textarea id="elcf-desc" class="auris-training-s-07bdff4587"></textarea></div>
 <div class="form3row">
 <div class="form3group"><label class="form3label">Duration (mins)</label><input type="number" id="elcf-duration" min="1"/></div>
 <div class="form3group"><label class="form3label">Passing score (%)</label><input type="number" id="elcf-pass-score" value="80" min="1" max="100"/></div>
@@ -8047,36 +8048,36 @@ Offline mode - changes will sync when connection is restored
 </div>
 <div class="form3row">
 <div class="form3group"><label class="form3label">Course video / LMS link</label><input type="text" id="elcf-url" placeholder="https:// video, LMS or document link..."/>
-<div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;align-items:center">
-<label class="btn btn-sm" style="cursor:pointer"><i class="ti ti-upload"></i>Upload video<input type="file" accept="video/*,.mp4,.webm,.mov,.m4v" data-auris-onchange="h0903" style="display:none"/></label>
+<div class="auris-training-s-af1808ceef">
+<label class="btn btn-sm auris-training-s-9463ff4798"><i class="ti ti-upload"></i>Upload video<input class="auris-training-s-6aa34d7432" type="file" accept="video/*,.mp4,.webm,.mov,.m4v" data-auris-onchange="h0903"/></label>
 <button type="button" class="btn btn-sm" data-auris-onclick="h0904"><i class="ti ti-eye"></i>Preview</button>
-<span id="elc-upload-status" class="muted" style="font-size:12px"></span>
+<span id="elc-upload-status" class="muted auris-training-s-a49cca52be"></span>
 </div>
-<div class="muted" style="font-size:11px;margin-top:6px">Recommended mobile format: MP4 with H.264 video and AAC audio. The AURIS player hides download controls; strict copy protection needs private streaming/DRM.</div>
+<div class="muted auris-training-s-5698104cf1">Recommended mobile format: MP4 with H.264 video and AAC audio. The AURIS player hides download controls; strict copy protection needs private streaming/DRM.</div>
 </div>
 <div class="form3group"><label class="form3label">Target roles</label><input type="text" id="elcf-roles" placeholder="e.g. All staff, Supervisors..."/></div>
 </div>
-<div style="display:flex;align-items:center;gap:8px"><input type="checkbox" id="elcf-mandatory" style="accent-color:var(--green)"/><label for="elcf-mandatory" style="font-size:12px;font-weight:600;cursor:pointer">Mandatory course</label></div>
-<div class="card" style="margin-top:12px;background:#eff6ff;border:1px solid #bfdbfe">
-<div class="card-title" style="color:#185FA5">Assign required employees</div>
-<div class="muted" style="margin-bottom:10px">Select employees who must complete this course. When saved, enrolments are created and notifications are queued.</div>
+<div class="auris-training-s-a4e017b7b0"><input type="checkbox" id="elcf-mandatory" class="auris-training-s-283f12d7fe"/><label class="auris-training-s-cc6390bafc" for="elcf-mandatory">Mandatory course</label></div>
+<div class="card auris-training-s-80486fca75">
+<div class="card-title auris-training-s-ca32b871b2">Assign required employees</div>
+<div class="muted auris-training-s-b922c89f16">Select employees who must complete this course. When saved, enrolments are created and notifications are queued.</div>
 <div class="form3row">
 <div class="form3group"><label class="form3label">Target completion date</label><input type="date" id="elcf-target-date"/></div>
-<div class="form3group"><label class="form3label">Required employees</label><select id="elcf-enrol-people" multiple size="6" style="display:none"></select><div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:8px"><span id="elc-selected-count" class="muted" style="font-size:11px">0 selected</span><span style="display:flex;gap:6px"><button type="button" class="btn btn-sm" data-auris-onclick="h0905">Select all</button><button type="button" class="btn btn-sm" data-auris-onclick="h0906">Clear</button></span></div><div id="elcf-enrol-checklist" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:8px;max-height:220px;overflow:auto;padding:2px"></div></div>
+<div class="form3group"><label class="form3label">Required employees</label><select id="elcf-enrol-people" class="auris-training-s-6aa34d7432" multiple size="6"></select><div class="auris-training-s-aad5c10c59"><span id="elc-selected-count" class="muted auris-training-s-33ee298127">0 selected</span><span class="auris-training-s-69374f356a"><button type="button" class="btn btn-sm" data-auris-onclick="h0905">Select all</button><button type="button" class="btn btn-sm" data-auris-onclick="h0906">Clear</button></span></div><div id="elcf-enrol-checklist" class="auris-training-s-1fdac48a45"></div></div>
 </div>
 </div>
 </div>
 </div>
 
 <!-- E-learning enrolment form -->
-<div id="ele-form" style="display:none">
-<div class="card" style="margin-bottom:14px;padding:0;overflow:hidden">
-<div style="padding:14px 20px;background:linear-gradient(135deg,#0369a1,#0891B2);color:#fff;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
-<div style="font-size:17px;font-weight:800" id="ele-form3title">Course Enrolment</div>
-<div style="display:flex;gap:8px">
-<button class="btn" style="background:rgba(255,255,255,.2);color:#fff;border-color:rgba(255,255,255,.3)" data-auris-onclick="h0907"><i class="ti ti-arrow-left"></i>Back</button>
-<button id="ele-del-btn" class="btn" style="display:none;background:rgba(0,0,0,.3);color:#fff;border-color:rgba(255,255,255,.3)" data-auris-onclick="h0908"><i class="ti ti-trash"></i></button>
-<button class="btn" style="background:#1D9E75;color:#fff;border-color:#1D9E75" data-auris-onclick="h0909"><i class="ti ti-device-floppy"></i>Save</button>
+<div id="ele-form" class="auris-training-s-6aa34d7432">
+<div class="card auris-training-s-54ec8874e7">
+<div class="auris-training-s-1a6f0458db">
+<div id="ele-form3title" class="auris-training-s-75021e57ca">Course Enrolment</div>
+<div class="auris-training-s-9c40389b4a">
+<button class="btn auris-training-s-5c09edd131" data-auris-onclick="h0907"><i class="ti ti-arrow-left"></i>Back</button>
+<button id="ele-del-btn" class="btn auris-training-s-96f7839a1b" data-auris-onclick="h0908"><i class="ti ti-trash"></i></button>
+<button class="btn auris-training-s-c7b9e5b2c7" data-auris-onclick="h0909"><i class="ti ti-device-floppy"></i>Save</button>
 </div>
 </div>
 </div>
@@ -8099,11 +8100,11 @@ Offline mode - changes will sync when connection is restored
 <div class="form3group"><label class="form3label">Attempts</label><input type="number" id="elef-attempts" value="1" min="1"/></div>
 <div class="form3group"><label class="form3label">Time spent (mins)</label><input type="number" id="elef-time"/></div>
 </div>
-<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px">
-<button type="button" class="btn" id="ele-launch-btn" style="display:none;justify-content:center;width:100%" data-auris-onclick="h0913"><i class="ti ti-player-play"></i>Launch selected course</button>
-<button type="button" class="btn btn-primary" style="justify-content:center;width:100%" data-auris-onclick="h0914"><i class="ti ti-certificate"></i>Complete + issue certificate</button>
+<div class="auris-training-s-961764c3cd">
+<button type="button" class="btn auris-training-s-e9dc535c2c" id="ele-launch-btn" data-auris-onclick="h0913"><i class="ti ti-player-play"></i>Launch selected course</button>
+<button type="button" class="btn btn-primary auris-training-s-aef89c74cb" data-auris-onclick="h0914"><i class="ti ti-certificate"></i>Complete + issue certificate</button>
 </div>
-<div id="ele-watch-summary" class="ele-watch-note" style="display:none"></div>
+<div id="ele-watch-summary" class="ele-watch-note auris-training-s-6aa34d7432"></div>
 </div>
 </div>
 
