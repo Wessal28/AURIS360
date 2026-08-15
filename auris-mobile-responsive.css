@@ -1,4 +1,21 @@
 /* Final phone and tablet interaction layer. Loaded after module and icon styles. */
+#app :is(button, a[href], input, select, textarea, [tabindex]):focus-visible {
+  outline: 3px solid #2563eb !important;
+  outline-offset: 2px !important;
+  box-shadow: 0 0 0 5px rgba(37, 99, 235, .18) !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #app *,
+  #app *::before,
+  #app *::after {
+    scroll-behavior: auto !important;
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+  }
+}
+
 @media (max-width: 768px) {
   html,
   body,
@@ -14,6 +31,8 @@
     overscroll-behavior-y: auto !important;
     touch-action: pan-y !important;
     scrollbar-gutter: stable;
+    scroll-padding-top: calc(64px + env(safe-area-inset-top, 0px));
+    scroll-padding-bottom: calc(82px + env(safe-area-inset-bottom, 0px));
   }
 
   .page,

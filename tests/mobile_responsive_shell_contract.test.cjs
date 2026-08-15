@@ -37,7 +37,7 @@ test('phone typography is compact and the new layer is cache-busted', () => {
   assert.match(css, /#app \.page \.page-title/);
   assert.match(css, /#app #page-kpi \.kpi-x-title/);
   assert.match(css, /\[role="tab"\]/);
-  assert.match(html, /auris-mobile-responsive\.css\?v=20260816-6/);
+  assert.match(html, /auris-mobile-responsive\.css\?v=20260816-7/);
   assert.match(html, /auris-icon-system\.js\?v=20260816-1/);
 });
 
@@ -58,4 +58,22 @@ test('mobile dialogs and operational drawers stay inside a scrollable viewport',
   assert.match(css, /#app :is\(\[id\$="-modal"\], \[id\$="modal"\]\)[\s\S]*max-height:\s*100dvh\s*!important[\s\S]*overflow-y:\s*auto\s*!important/);
   assert.match(css, /\[id\$="modal"\]\) > :first-child[\s\S]*max-width:\s*calc\(100vw - 20px\)\s*!important/);
   assert.match(css, /\.bbs-drawer,[\s\S]*\.imx-drawer[\s\S]*max-width:\s*100vw\s*!important/);
+});
+
+test('mobile interaction keeps named icon actions and visible keyboard focus', () => {
+  for (const label of [
+    'Previous week',
+    'Next week',
+    'Add attendee',
+    'Add legal reference',
+    'Previous meeting period',
+    'Next meeting period',
+    'Previous training year',
+    'Next training year'
+  ]) {
+    assert.match(html, new RegExp(`aria-label="${label}"`));
+  }
+  assert.match(css, /:focus-visible[\s\S]*outline:\s*3px solid #2563eb\s*!important/);
+  assert.match(css, /@media \(prefers-reduced-motion: reduce\)/);
+  assert.match(css, /scroll-padding-bottom:\s*calc\(82px \+ env\(safe-area-inset-bottom, 0px\)\)/);
 });
