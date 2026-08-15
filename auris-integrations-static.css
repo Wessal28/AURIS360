@@ -1,0 +1,83 @@
+/* Generated from Integrations by scripts/extract-integrations-styles.cjs. */
+/* Non-important declarations preserve connector, credential, test, sync, mapping and API runtime states. */
+.auris-integrations-s-027bec3c19{font-size:11px;color:var(--text2);line-height:1.8}
+.auris-integrations-s-03826b79d9{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px}
+.auris-integrations-s-03bd966c28{padding:10px 12px;border-left:4px solid #DC2626}
+.auris-integrations-s-0904085f3d{display:flex;gap:0;margin-bottom:14px;border-bottom:2px solid var(--border);overflow-x:auto}
+.auris-integrations-s-0ca6aa9c54{padding:6px 12px;text-align:left}
+.auris-integrations-s-14dfb7ae67{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px}
+.auris-integrations-s-1e4fd5f9ed{font-size:22px;font-weight:800;color:#1D9E75}
+.auris-integrations-s-23fdbb1032{margin-top:14px;padding-top:14px;border-top:1px solid var(--border);display:none}
+.auris-integrations-s-252936a693{font-family:monospace;font-size:11px}
+.auris-integrations-s-2e4b22ec3a{font-size:12px;font-weight:600;color:var(--text2)}
+.auris-integrations-s-3184233ab6{display:none;margin-bottom:14px}
+.auris-integrations-s-42a6ced8b6{margin-bottom:14px}
+.auris-integrations-s-46e678a98a{padding:20px}
+.auris-integrations-s-5c09edd131{background:rgba(255,255,255,.2);color:#fff;border-color:rgba(255,255,255,.3)}
+.auris-integrations-s-5d3a367254{width:100%;border-collapse:collapse;font-size:11px}
+.auris-integrations-s-5faab67eef{font-size:12px;color:var(--text2);margin-bottom:12px}
+.auris-integrations-s-64561bde08{padding:18px 24px;border-radius:14px 14px 0 0;display:flex;justify-content:space-between;align-items:center;background:linear-gradient(135deg,#1a3a5c,#185FA5);color:#fff}
+.auris-integrations-s-69374f356a{display:flex;gap:6px}
+.auris-integrations-s-6aa34d7432{display:none}
+.auris-integrations-s-6c0ee4e456{font-size:11px;font-weight:600;text-transform:uppercase;opacity:.8;margin-bottom:3px}
+.auris-integrations-s-6f56b8363e{font-size:22px;font-weight:800;color:#185FA5}
+.auris-integrations-s-7299078644{font-size:12px;color:var(--text2)}
+.auris-integrations-s-766dbf42c8{font-size:12px;font-weight:700;margin-bottom:8px}
+.auris-integrations-s-79978cefc4{margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px}
+.auris-integrations-s-7a5e61eb83{padding:10px 12px;border-left:4px solid #1D9E75}
+.auris-integrations-s-8feb382960{background:#fff;border-radius:14px;max-width:560px;width:100%;max-height:85vh;overflow-y:auto;box-shadow:0 24px 80px rgba(0,0,0,.35)}
+.auris-integrations-s-911a0f1328{padding:6px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px;width:100%}
+.auris-integrations-s-933cd425ec{background:#185FA5;color:#fff}
+.auris-integrations-s-9c40389b4a{display:flex;gap:8px}
+.auris-integrations-s-a230218f38{width:10px;height:10px;border-radius:50%;background:#9CA3AF}
+.auris-integrations-s-a4e017b7b0{display:flex;align-items:center;gap:8px}
+.auris-integrations-s-a6a60facc3{background:#f9fafb;border:1px solid var(--border);border-radius:6px;padding:8px 12px;font-family:monospace;font-size:11px;color:var(--text2)}
+.auris-integrations-s-b38c056345{background:#f9fafb;border:1px solid var(--border);border-radius:6px;padding:8px 12px;font-family:monospace;font-size:11px;color:#185FA5;word-break:break-all}
+.auris-integrations-s-b4dcbce9a9{background:#f9fafb;border-radius:8px;padding:10px 14px;font-size:12px;color:var(--text2);margin-bottom:14px;line-height:1.6}
+.auris-integrations-s-b6d403ee7e{padding:10px 12px;border-left:4px solid #185FA5}
+.auris-integrations-s-ba18353cfd{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9999;align-items:center;justify-content:center;padding:20px}
+.auris-integrations-s-c70473e794{padding:10px 12px;border-left:4px solid #EF9F27}
+.auris-integrations-s-c7bff90490{color:#DC2626}
+.auris-integrations-s-d1ce4dbdff{font-size:14px;font-weight:700;color:#EF9F27;white-space:nowrap}
+.auris-integrations-s-d37c8e8fe6{font-size:11px;color:var(--text2)}
+.auris-integrations-s-d68348462c{font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase}
+.auris-integrations-s-e2c857d54b{overflow:auto}
+.auris-integrations-s-e56ce903a9{font-size:18px;font-weight:800}
+.auris-integrations-s-eb99a4c193{white-space:nowrap}
+.auris-integrations-s-ef883586d4{background:#1a1a2e;border-radius:8px;padding:14px;font-family:monospace;font-size:11px;color:#a8d8f0;overflow-x:auto;white-space:pre}
+.auris-integrations-s-f54c4d1dcf{margin-top:14px;padding-top:14px;border-top:1px solid var(--border)}
+.auris-integrations-s-ffe267bce1{font-size:22px;font-weight:800;color:#DC2626}
+/* Preserve former inline precedence over existing ID selectors. */
+#api-base-url.auris-integrations-s-b38c056345{background:#f9fafb;border:1px solid var(--border);border-radius:6px;padding:8px 12px;font-family:monospace;font-size:11px;color:#185FA5;word-break:break-all}
+#api-curl-example.auris-integrations-s-ef883586d4{background:#1a1a2e;border-radius:8px;padding:14px;font-family:monospace;font-size:11px;color:#a8d8f0;overflow-x:auto;white-space:pre}
+#integ-add-btn.auris-integrations-s-6aa34d7432{display:none}
+#integ-api-view.auris-integrations-s-6aa34d7432{display:none}
+#integ-config-modal.auris-integrations-s-ba18353cfd{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9999;align-items:center;justify-content:center;padding:20px}
+#integ-data-mapping.auris-integrations-s-d37c8e8fe6{font-size:11px;color:var(--text2)}
+#integ-disconnect-btn.auris-integrations-s-6aa34d7432{display:none}
+#integ-disconnect-btn.auris-integrations-s-c7bff90490{color:#DC2626}
+#integ-m3available.auris-integrations-s-6f56b8363e{font-size:22px;font-weight:800;color:#185FA5}
+#integ-m3connected.auris-integrations-s-1e4fd5f9ed{font-size:22px;font-weight:800;color:#1D9E75}
+#integ-m3errors.auris-integrations-s-ffe267bce1{font-size:22px;font-weight:800;color:#DC2626}
+#integ-m3last-sync.auris-integrations-s-d1ce4dbdff{font-size:14px;font-weight:700;color:#EF9F27;white-space:nowrap}
+#integ-modal-banner.auris-integrations-s-64561bde08{padding:18px 24px;border-radius:14px 14px 0 0;display:flex;justify-content:space-between;align-items:center;background:linear-gradient(135deg,#1a3a5c,#185FA5);color:#fff}
+#integ-modal-desc.auris-integrations-s-b4dcbce9a9{background:#f9fafb;border-radius:8px;padding:10px 14px;font-size:12px;color:var(--text2);margin-bottom:14px;line-height:1.6}
+#integ-modal-status-row.auris-integrations-s-79978cefc4{margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px}
+#integ-modal-title.auris-integrations-s-e56ce903a9{font-size:18px;font-weight:800}
+#integ-modal-type-label.auris-integrations-s-6c0ee4e456{font-size:11px;font-weight:600;text-transform:uppercase;opacity:.8;margin-bottom:3px}
+#integ-status-banner.auris-integrations-s-3184233ab6{display:none;margin-bottom:14px}
+#integ-status-dot.auris-integrations-s-a230218f38{width:10px;height:10px;border-radius:50%;background:#9CA3AF}
+#integ-status-text.auris-integrations-s-2e4b22ec3a{font-size:12px;font-weight:600;color:var(--text2)}
+#integ-subtitle.auris-integrations-s-7299078644{font-size:12px;color:var(--text2)}
+#integ-sync-freq.auris-integrations-s-911a0f1328{padding:6px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px;width:100%}
+#integ-sync-log-section.auris-integrations-s-23fdbb1032{margin-top:14px;padding-top:14px;border-top:1px solid var(--border);display:none}
+#integ-sync-options.auris-integrations-s-f54c4d1dcf{margin-top:14px;padding-top:14px;border-top:1px solid var(--border)}
+#integ-webhook-url.auris-integrations-s-252936a693{font-family:monospace;font-size:11px}
+#itab-all.auris-integrations-s-eb99a4c193{white-space:nowrap}
+#itab-api.auris-integrations-s-eb99a4c193{white-space:nowrap}
+#itab-bi.auris-integrations-s-eb99a4c193{white-space:nowrap}
+#itab-erp.auris-integrations-s-eb99a4c193{white-space:nowrap}
+#itab-hr.auris-integrations-s-eb99a4c193{white-space:nowrap}
+#itab-iot.auris-integrations-s-eb99a4c193{white-space:nowrap}
+#itab-productivity.auris-integrations-s-eb99a4c193{white-space:nowrap}
+#itab-security.auris-integrations-s-eb99a4c193{white-space:nowrap}
