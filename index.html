@@ -85,6 +85,7 @@
 <link rel="stylesheet" href="auris-swms-static.css?v=20260815-1">
 <link rel="stylesheet" href="auris-document-control-static.css?v=20260815-1">
 <link rel="stylesheet" href="auris-people-static.css?v=20260815-1">
+<link rel="stylesheet" href="auris-users-roles-static.css?v=20260815-1">
 </head>
 <body>
 <div id="login-screen">
@@ -9270,37 +9271,37 @@ Content accurate and current<br>Consistent with legislation<br>Roles and respons
 <div class="page-header">
 <div>
 <div class="page-title">Users &amp; Roles</div>
-<div style="font-size:12px;color:var(--text2)" id="users-subtitle">Manage access levels across all HSE roles</div>
+<div id="users-subtitle" class="auris-users-roles-s-7299078644">Manage access levels across all HSE roles</div>
 </div>
-<div style="display:flex;gap:8px">
+<div class="auris-users-roles-s-9c40389b4a">
 <button class="btn" data-auris-onclick="h1046"><i class="ti ti-printer"></i>Print register</button>
-<button class="btn btn-primary" id="users-invite-btn" data-auris-onclick="h1047" style="display:none"><i class="ti ti-user-plus"></i>Invite user</button>
-<button class="btn" data-auris-onclick="h1048" style="border-color:var(--green);color:var(--green)"><i class="ti ti-building-plus"></i>Onboard Client</button>
+<button class="btn btn-primary auris-users-roles-s-6aa34d7432" id="users-invite-btn" data-auris-onclick="h1047"><i class="ti ti-user-plus"></i>Invite user</button>
+<button class="btn auris-users-roles-s-c10eff76d5" data-auris-onclick="h1048"><i class="ti ti-building-plus"></i>Onboard Client</button>
 </div>
 </div>
 
 <!-- Metrics -->
-<div style="display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:14px" id="users-metrics">
-<div class="card" style="padding:10px 12px;border-left:4px solid #185FA5"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase">Total users</div><div style="font-size:22px;font-weight:800;color:#185FA5" id="um3total">-</div></div>
-<div class="card" style="padding:10px 12px;border-left:4px solid #1D9E75"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase">Active</div><div style="font-size:22px;font-weight:800;color:#1D9E75" id="um3active">-</div></div>
-<div class="card" style="padding:10px 12px;border-left:4px solid #5B21B6"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase">Managers</div><div style="font-size:22px;font-weight:800;color:#5B21B6" id="um3managers">-</div></div>
-<div class="card" style="padding:10px 12px;border-left:4px solid #0891B2"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase">Contractors</div><div style="font-size:22px;font-weight:800;color:#0891B2" id="um3contractors">-</div></div>
-<div class="card" style="padding:10px 12px;border-left:4px solid #EF9F27"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase">Pending</div><div style="font-size:22px;font-weight:800;color:#EF9F27" id="um3pending">-</div></div>
+<div id="users-metrics" class="auris-users-roles-s-eb404b018d">
+<div class="card auris-users-roles-s-b6d403ee7e"><div class="auris-users-roles-s-d68348462c">Total users</div><div id="um3total" class="auris-users-roles-s-6f56b8363e">-</div></div>
+<div class="card auris-users-roles-s-7a5e61eb83"><div class="auris-users-roles-s-d68348462c">Active</div><div id="um3active" class="auris-users-roles-s-1e4fd5f9ed">-</div></div>
+<div class="card auris-users-roles-s-0cd688ec8f"><div class="auris-users-roles-s-d68348462c">Managers</div><div id="um3managers" class="auris-users-roles-s-a424d06424">-</div></div>
+<div class="card auris-users-roles-s-a5cd1e43c2"><div class="auris-users-roles-s-d68348462c">Contractors</div><div id="um3contractors" class="auris-users-roles-s-48aeeeda5f">-</div></div>
+<div class="card auris-users-roles-s-c70473e794"><div class="auris-users-roles-s-d68348462c">Pending</div><div id="um3pending" class="auris-users-roles-s-2062f090bc">-</div></div>
 </div>
 
 <!-- Tab bar -->
-<div style="display:flex;gap:0;margin-bottom:14px;border-bottom:2px solid var(--border)">
-<button class="mtg-tab active" id="utab-users" data-auris-onclick="h1049" style="white-space:nowrap">Users</button>
-<button class="mtg-tab" id="utab-roles" data-auris-onclick="h1050" style="white-space:nowrap">Role Permissions</button>
-<button class="mtg-tab" id="utab-invite" data-auris-onclick="h1051" style="display:none;white-space:nowrap">Invite &amp; Manage</button>
+<div class="auris-users-roles-s-6bf792afaa">
+<button class="mtg-tab active auris-users-roles-s-eb99a4c193" id="utab-users" data-auris-onclick="h1049">Users</button>
+<button class="mtg-tab auris-users-roles-s-eb99a4c193" id="utab-roles" data-auris-onclick="h1050">Role Permissions</button>
+<button class="mtg-tab auris-users-roles-s-2acc6b6e2b" id="utab-invite" data-auris-onclick="h1051">Invite &amp; Manage</button>
 </div>
 
 <!-- -- USERS LIST -- -->
 <div id="uview-users">
-<div class="card" style="margin-bottom:12px;padding:10px 14px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
-<div style="display:flex;gap:8px;flex-wrap:wrap">
-<input type="text" id="users-search" placeholder="Search name, email, dept..." data-auris-oninput="h1052" style="padding:7px 12px;border:1px solid var(--border);border-radius:8px;font-size:12px;width:200px"/>
-<select id="users-filter-role" data-auris-onchange="h1053" style="padding:7px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px">
+<div class="card auris-users-roles-s-e2e1112055">
+<div class="auris-users-roles-s-c9dc9b5648">
+<input type="text" id="users-search" class="auris-users-roles-s-05bdd3e62a" placeholder="Search name, email, dept..." data-auris-oninput="h1052"/>
+<select id="users-filter-role" class="auris-users-roles-s-d35063206b" data-auris-onchange="h1053">
 <option value="">All roles</option>
 <option value="hse_manager">HSE Manager</option>
 <option value="hse_officer">HSE Officer</option>
@@ -9315,25 +9316,25 @@ Content accurate and current<br>Consistent with legislation<br>Roles and respons
 <option value="inspector">Inspector (legacy)</option>
 <option value="admin">Company Admin</option>
 </select>
-<select id="users-filter-status" data-auris-onchange="h1053" style="padding:7px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px">
+<select id="users-filter-status" class="auris-users-roles-s-d35063206b" data-auris-onchange="h1053">
 <option value="">All statuses</option>
 <option value="active">Active</option>
 <option value="inactive">Inactive</option>
 </select>
 </div>
-<div id="users-count-label" style="font-size:12px;color:var(--text2)"></div>
+<div id="users-count-label" class="auris-users-roles-s-7299078644"></div>
 </div>
 <div id="users-list"><div class="loading-msg">Loading...</div></div>
 </div>
 
 <!-- -- ROLE PERMISSIONS -- -->
-<div id="uview-roles" style="display:none">
-<div class="card" style="margin-bottom:14px;padding:14px 20px;background:linear-gradient(135deg,#1a3a5c,#185FA5);color:#fff">
-<div style="font-size:15px;font-weight:800;margin-bottom:4px">Role Permission Matrix</div>
-<div style="font-size:12px;opacity:.85">Access levels for each role across all AURIS360 modules. Admins can customise permissions per user.</div>
+<div id="uview-roles" class="auris-users-roles-s-6aa34d7432">
+<div class="card auris-users-roles-s-5d5e403437">
+<div class="auris-users-roles-s-287292c0e6">Role Permission Matrix</div>
+<div class="auris-users-roles-s-dc4ac84a01">Access levels for each role across all AURIS360 modules. Admins can customise permissions per user.</div>
 </div>
-<div style="overflow:auto" class="card" style="padding:0">
-<table style="width:100%;border-collapse:collapse;font-size:11px" id="roles-matrix-table">
+<div class="card auris-users-roles-s-e2c857d54b auris-users-roles-s-35eecf3e83">
+<table id="roles-matrix-table" class="auris-users-roles-s-5d3a367254">
 <thead id="roles-matrix-head"></thead>
 <tbody id="roles-matrix-body"></tbody>
 </table>
@@ -9341,14 +9342,14 @@ Content accurate and current<br>Consistent with legislation<br>Roles and respons
 </div>
 
 <!-- -- INVITE & MANAGE -- -->
-<div id="uview-invite" style="display:none">
-<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+<div id="uview-invite" class="auris-users-roles-s-6aa34d7432">
+<div class="auris-users-roles-s-67e92fd3c7">
 
 <!-- Update role card -->
 <div class="card">
 <div class="card-title">Update User Role</div>
-<div style="font-size:12px;color:var(--text2);margin-bottom:12px">Change an existing user's role and access level</div>
-<div class="form3group"><label class="form3label">User email</label><input type="email" id="ur-email" placeholder="user@company.com" style="font-family:monospace"/></div>
+<div class="auris-users-roles-s-5faab67eef">Change an existing user's role and access level</div>
+<div class="form3group"><label class="form3label">User email</label><input type="email" id="ur-email" class="auris-users-roles-s-7b8c3df564" placeholder="user@company.com"/></div>
 <div class="form3group"><label class="form3label">New role</label>
 <select id="ur-role">
 <option value="employee">Employee</option>
@@ -9366,41 +9367,41 @@ Content accurate and current<br>Consistent with legislation<br>Roles and respons
 </select></div>
 <div class="form3group"><label class="form3label">Job title (optional)</label><input type="text" id="ur-job-title" placeholder="e.g. HSE Officer, Safety Manager..."/></div>
 <div class="form3group"><label class="form3label">Department (optional)</label><input type="text" id="ur-department"/></div>
-<button class="btn btn-primary" data-auris-onclick="h1054" style="width:100%"><i class="ti ti-edit"></i>Update role &amp; details</button>
+<button class="btn btn-primary auris-users-roles-s-b7aa1ec004" data-auris-onclick="h1054"><i class="ti ti-edit"></i>Update role &amp; details</button>
 </div>
 
 <!-- Create User card (replaces the old copy-link invite) -->
 <div class="card">
 <div class="card-title">Create new User</div>
-<div style="font-size:12px;color:var(--text2);margin-bottom:12px">Provision a new user account. Choose the method based on whether they have email access.</div>
+<div class="auris-users-roles-s-5faab67eef">Provision a new user account. Choose the method based on whether they have email access.</div>
 
 <!-- Mode toggle -->
-<div style="display:flex;gap:6px;margin-bottom:14px;background:#f3f4f6;border-radius:8px;padding:4px">
-<button class="btn btn-sm" id="cu-mode-invite-btn" data-auris-onclick="h1055" style="flex:1;background:#185FA5;color:#fff;border-color:#185FA5"><i class="ti ti-mail"></i>Email Invite</button>
-<button class="btn btn-sm" id="cu-mode-direct-btn" data-auris-onclick="h1056" style="flex:1"><i class="ti ti-user-plus"></i>Direct (no email)</button>
+<div class="auris-users-roles-s-66f26e928a">
+<button class="btn btn-sm auris-users-roles-s-271af55c8e" id="cu-mode-invite-btn" data-auris-onclick="h1055"><i class="ti ti-mail"></i>Email Invite</button>
+<button class="btn btn-sm auris-users-roles-s-83725d2c6e" id="cu-mode-direct-btn" data-auris-onclick="h1056"><i class="ti ti-user-plus"></i>Direct (no email)</button>
 </div>
 
-<div id="cu-mode-hint" style="font-size:11px;color:var(--text2);background:#EFF6FF;border:1px solid #DBEAFE;border-radius:6px;padding:8px 10px;margin-bottom:12px">
+<div id="cu-mode-hint" class="auris-users-roles-s-b54432ac10">
 <i class="ti ti-info-circle"></i> The user will receive an email with a link to set their own password.
 </div>
 
 <div class="form3group"><label class="form3label">Full name *</label><input type="text" id="cu-name" placeholder="John Doe"/></div>
 
-<div class="form3group" id="cu-email-row"><label class="form3label">Email *</label><input type="email" id="cu-email" placeholder="user@company.com" style="font-family:monospace"/></div>
+<div class="form3group" id="cu-email-row"><label class="form3label">Email *</label><input type="email" id="cu-email" class="auris-users-roles-s-7b8c3df564" placeholder="user@company.com"/></div>
 
-<div class="form3group" id="cu-synthetic-row" style="display:none">
+<div class="form3group auris-users-roles-s-6aa34d7432" id="cu-synthetic-row">
 <label class="form3label">Username (auto-generated)</label>
-<input type="text" id="cu-synthetic" readonly style="font-family:monospace;background:#f9fafb"/>
-<div style="font-size:11px;color:var(--text2);margin-top:4px">This is the unique identifier the user will use to log in. They will not receive any email at this address.</div>
+<input type="text" id="cu-synthetic" class="auris-users-roles-s-7d57bc6e35" readonly/>
+<div class="auris-users-roles-s-34b3cf0d1f">This is the unique identifier the user will use to log in. They will not receive any email at this address.</div>
 </div>
 
-<div class="form3group" id="cu-password-row" style="display:none">
+<div class="form3group auris-users-roles-s-6aa34d7432" id="cu-password-row">
 <label class="form3label">Temporary password *</label>
-<div style="display:flex;gap:6px">
-<input type="text" id="cu-password" placeholder="Min 8 characters" style="flex:1;font-family:monospace"/>
+<div class="auris-users-roles-s-69374f356a">
+<input type="text" id="cu-password" class="auris-users-roles-s-55a7c52dd3" placeholder="Min 8 characters"/>
 <button type="button" class="btn btn-sm" data-auris-onclick="h1057" title="Generate"><i class="ti ti-refresh"></i></button>
 </div>
-<div style="font-size:11px;color:var(--text2);margin-top:4px">Share this with the user directly. They will be prompted to change it on first login.</div>
+<div class="auris-users-roles-s-34b3cf0d1f">Share this with the user directly. They will be prompted to change it on first login.</div>
 </div>
 
 <div class="form3group"><label class="form3label">Role *</label>
@@ -9418,28 +9419,28 @@ Content accurate and current<br>Consistent with legislation<br>Roles and respons
 </select>
 </div>
 
-<div class="form3group" id="cu-company-row" style="display:none">
+<div class="form3group auris-users-roles-s-6aa34d7432" id="cu-company-row">
 <label class="form3label">Company *</label>
 <select id="cu-company"><option value="">Loading...</option></select>
-<div style="font-size:11px;color:var(--text2);margin-top:4px">Only visible to SEPHS admins. Company admins automatically assign to their own company.</div>
+<div class="auris-users-roles-s-34b3cf0d1f">Only visible to SEPHS admins. Company admins automatically assign to their own company.</div>
 </div>
 
-<button class="btn btn-primary" data-auris-onclick="h1058" id="cu-submit-btn" style="width:100%;margin-top:6px"><i class="ti ti-user-plus"></i>Create user</button>
+<button class="btn btn-primary auris-users-roles-s-72e5bd8508" data-auris-onclick="h1058" id="cu-submit-btn"><i class="ti ti-user-plus"></i>Create user</button>
 
-<div id="cu-result" style="margin-top:14px;display:none"></div>
+<div id="cu-result" class="auris-users-roles-s-e268d77180"></div>
 </div>
 </div>
 </div>
 
 <!-- -- PASSWORD CHANGE MODAL -- -->
-<div id="pw-change-modal" style="display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,.6);z-index:10000;align-items:center;justify-content:center;padding:20px;box-sizing:border-box">
-<div style="background:#fff;border-radius:12px;max-width:420px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,.3)">
-<div style="padding:16px 20px;background:linear-gradient(135deg,#1a3a5c,#185FA5);color:#fff;border-radius:12px 12px 0 0;display:flex;justify-content:space-between;align-items:center">
-<div style="font-size:16px;font-weight:800" id="pw-change-title">Set a new password</div>
-<button class="btn btn-sm" id="pw-change-close-btn" style="background:rgba(255,255,255,.2);color:#fff;border-color:rgba(255,255,255,.3);display:none" data-auris-onclick="h1059"><i class="ti ti-x"></i></button>
+<div id="pw-change-modal" class="auris-users-roles-s-c66bb1957b">
+<div class="auris-users-roles-s-074ac5d3d7">
+<div class="auris-users-roles-s-803cb7e4fc">
+<div id="pw-change-title" class="auris-users-roles-s-34451d06e2">Set a new password</div>
+<button class="btn btn-sm auris-users-roles-s-f6567db555" id="pw-change-close-btn" data-auris-onclick="h1059"><i class="ti ti-x"></i></button>
 </div>
-<div style="padding:20px">
-<div id="pw-change-intro" style="font-size:13px;color:var(--text2);margin-bottom:16px;line-height:1.5">Your account was set up with a temporary password. Please choose a new password to continue.</div>
+<div class="auris-users-roles-s-46e678a98a">
+<div id="pw-change-intro" class="auris-users-roles-s-c122c4014c">Your account was set up with a temporary password. Please choose a new password to continue.</div>
 
 <div class="form3group">
 <label class="form3label">New password</label>
@@ -9450,36 +9451,36 @@ Content accurate and current<br>Consistent with legislation<br>Roles and respons
 <input type="password" id="pw-confirm" placeholder="Re-enter the password" autocomplete="new-password"/>
 </div>
 
-<div id="pw-change-err" style="display:none;background:#fef2f2;border:1px solid #fecaca;color:#991b1b;padding:8px 12px;border-radius:6px;font-size:12px;margin-bottom:12px"></div>
+<div id="pw-change-err" class="auris-users-roles-s-fb2f37d6d6"></div>
 
-<div style="display:flex;gap:8px;margin-top:8px">
-<button class="btn btn-primary" id="pw-change-submit-btn" data-auris-onclick="h1060" style="flex:1"><i class="ti ti-check"></i>Update password</button>
-<button class="btn" id="pw-change-cancel-btn" data-auris-onclick="h1059" style="display:none">Cancel</button>
+<div class="auris-users-roles-s-2afd852dc8">
+<button class="btn btn-primary auris-users-roles-s-83725d2c6e" id="pw-change-submit-btn" data-auris-onclick="h1060"><i class="ti ti-check"></i>Update password</button>
+<button class="btn auris-users-roles-s-6aa34d7432" id="pw-change-cancel-btn" data-auris-onclick="h1059">Cancel</button>
 </div>
 </div>
 </div>
 </div>
 
 <!-- -- USER PROFILE MODAL -- -->
-<div id="user-profile-modal" style="display:none;position:fixed;inset:0;background:rgba(15,23,42,.55);z-index:9998;align-items:center;justify-content:center;padding:20px" data-auris-onclick="h1061">
-<div style="background:#fff;border-radius:12px;max-width:760px;width:100%;max-height:88vh;overflow-y:auto;box-shadow:0 24px 70px rgba(0,0,0,.28);position:relative">
-<button class="btn btn-sm" style="position:absolute;top:10px;right:10px;z-index:2;background:#fff" data-auris-onclick="h1062"><i class="ti ti-x"></i></button>
-<div id="upm3body" style="padding:20px"></div>
+<div id="user-profile-modal" class="auris-users-roles-s-f3baa22065" data-auris-onclick="h1061">
+<div class="auris-users-roles-s-5a194626d6">
+<button class="btn btn-sm auris-users-roles-s-f4e8bbf0da" data-auris-onclick="h1062"><i class="ti ti-x"></i></button>
+<div id="upm3body" class="auris-users-roles-s-46e678a98a"></div>
 </div>
 </div>
 
 <!-- -- USER EDIT MODAL -- -->
-<div id="user-edit-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9999;align-items:center;justify-content:center;padding:20px">
-<div style="background:#fff;border-radius:12px;max-width:480px;width:100%;max-height:80vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.3)">
-<div style="padding:16px 20px;background:linear-gradient(135deg,#1a3a5c,#185FA5);color:#fff;border-radius:12px 12px 0 0;display:flex;justify-content:space-between;align-items:center">
-<div style="font-size:16px;font-weight:800" id="uem3title">Edit User</div>
-<button class="btn btn-sm" style="background:rgba(255,255,255,.2);color:#fff;border-color:rgba(255,255,255,.3)" data-auris-onclick="h1063"><i class="ti ti-x"></i></button>
+<div id="user-edit-modal" class="auris-users-roles-s-ba18353cfd">
+<div class="auris-users-roles-s-8bbde118f8">
+<div class="auris-users-roles-s-803cb7e4fc">
+<div id="uem3title" class="auris-users-roles-s-34451d06e2">Edit User</div>
+<button class="btn btn-sm auris-users-roles-s-5c09edd131" data-auris-onclick="h1063"><i class="ti ti-x"></i></button>
 </div>
-<div style="padding:20px">
+<div class="auris-users-roles-s-46e678a98a">
 <input type="hidden" id="uem3id"/>
 <div class="form3row">
 <div class="form3group"><label class="form3label">Full name</label><input type="text" id="uem3name"/></div>
-<div class="form3group"><label class="form3label">Email</label><input type="email" id="uem3email" style="font-family:monospace"/></div>
+<div class="form3group"><label class="form3label">Email</label><input type="email" id="uem3email" class="auris-users-roles-s-7b8c3df564"/></div>
 </div>
 <div class="form3group"><label class="form3label">Role</label>
 <select id="uem3role">
@@ -9504,21 +9505,21 @@ Content accurate and current<br>Consistent with legislation<br>Roles and respons
 <div class="form3group"><label class="form3label">Phone</label><input type="text" id="uem3phone"/></div>
 <div class="form3group"><label class="form3label">Site / location</label><input type="text" id="uem3site"/></div>
 </div>
-<div class="form3group" id="uem3contractor-row" style="display:none"><label class="form3label">Contractor company</label><input type="text" id="uem3contractor-co"/></div>
+<div class="form3group auris-users-roles-s-6aa34d7432" id="uem3contractor-row"><label class="form3label">Contractor company</label><input type="text" id="uem3contractor-co"/></div>
 <div class="form3group"><label class="form3label">Status</label>
 <select id="uem3status"><option value="active">Active</option><option value="inactive">Inactive</option></select></div>
-<div id="uem3temp-reset-box" style="display:none;margin-top:12px;padding:12px;border:1px solid #FED7AA;background:#FFF7ED;border-radius:10px">
-<div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
+<div id="uem3temp-reset-box" class="auris-users-roles-s-9e902ac354">
+<div class="auris-users-roles-s-dffbf7f64e">
 <div>
-<div id="uem3temp-reset-title" style="font-size:13px;font-weight:800;color:#9A3412">Login-only account</div>
-<div id="uem3temp-reset-hint" style="font-size:12px;color:#7C2D12;margin-top:3px">This user cannot receive password reset emails. Set a temporary password and give it directly to the user.</div>
+<div id="uem3temp-reset-title" class="auris-users-roles-s-a76a4f2a2c">Login-only account</div>
+<div id="uem3temp-reset-hint" class="auris-users-roles-s-9e37069dcd">This user cannot receive password reset emails. Set a temporary password and give it directly to the user.</div>
 </div>
-<button class="btn btn-sm" id="uem3temp-reset-btn" style="border-color:#FDBA74;color:#9A3412;background:#fff" data-auris-onclick="h1064"><i class="ti ti-lock-cog"></i>Set temporary password</button>
+<button class="btn btn-sm auris-users-roles-s-ffd3d7397d" id="uem3temp-reset-btn" data-auris-onclick="h1064"><i class="ti ti-lock-cog"></i>Set temporary password</button>
 </div>
-<div id="uem3temp-reset-result" style="display:none;margin-top:10px"></div>
+<div id="uem3temp-reset-result" class="auris-users-roles-s-6523cf68ed"></div>
 </div>
-<div style="display:flex;gap:8px;margin-top:16px">
-<button class="btn btn-primary" data-auris-onclick="h1065" style="flex:1"><i class="ti ti-device-floppy"></i>Save changes</button>
+<div class="auris-users-roles-s-698fd0804a">
+<button class="btn btn-primary auris-users-roles-s-83725d2c6e" data-auris-onclick="h1065"><i class="ti ti-device-floppy"></i>Save changes</button>
 <button class="btn" data-auris-onclick="h1063">Cancel</button>
 </div>
 </div>
