@@ -1,0 +1,31 @@
+/* Generated from Site Map by scripts/extract-site-map-styles.cjs. */
+/* Non-important declarations preserve site, plan, overlay, marker, canvas and detail runtime states. */
+.auris-site-map-s-116ec43738{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:10px}
+.auris-site-map-s-2b25fa4835{display:grid;grid-template-columns:330px minmax(0,1fr);gap:14px;align-items:start}
+.auris-site-map-s-36b6241ef5{font-size:12px;color:var(--text2);margin-top:6px}
+.auris-site-map-s-42a6ced8b6{margin-bottom:14px}
+.auris-site-map-s-59b6f24660{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;margin-bottom:12px}
+.auris-site-map-s-61e156f343{width:100%;margin-bottom:10px}
+.auris-site-map-s-62200f4db2{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:10px}
+.auris-site-map-s-65d72b4357{display:inline-block;width:10px;height:10px;border-radius:50%;background:#1D9E75}
+.auris-site-map-s-6aa34d7432{display:none}
+.auris-site-map-s-7299078644{font-size:12px;color:var(--text2)}
+.auris-site-map-s-8b7fe46d45{display:grid;grid-template-columns:minmax(220px,360px) 1fr;gap:12px;align-items:start}
+.auris-site-map-s-9463ff4798{cursor:pointer}
+.auris-site-map-s-9a6e98845f{position:sticky;top:86px}
+.auris-site-map-s-a8697912d2{display:flex;gap:6px;flex-wrap:wrap;font-size:11px;color:var(--text2)}
+.auris-site-map-s-a8fbf68576{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:14px}
+.auris-site-map-s-ab79ea2b85{margin:0}
+.auris-site-map-s-b3c45d2a2f{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:10px}
+.auris-site-map-s-b5f14d9f0a{display:inline-block;width:10px;height:10px;border-radius:50%;background:#EF9F27}
+.auris-site-map-s-c146410e3a{display:flex;gap:8px;flex-wrap:wrap;align-items:center;justify-content:flex-end}
+.auris-site-map-s-c9dc9b5648{display:flex;gap:8px;flex-wrap:wrap}
+.auris-site-map-s-d37c8e8fe6{font-size:11px;color:var(--text2)}
+.auris-site-map-s-e01dcde4e5{display:inline-block;width:10px;height:10px;border-radius:3px;background:#C2410C;border:1px solid #fff;box-shadow:0 0 0 1px #d1d5db}
+.auris-site-map-s-f6015f1b40{display:inline-block;width:10px;height:10px;border-radius:50%;background:#F97316;border:1px solid #fff;box-shadow:0 0 0 1px #d1d5db}
+.auris-site-map-s-fdacbacca5{display:inline-block;width:10px;height:10px;border-radius:50%;background:#DC2626}
+/* Preserve former inline precedence over existing ID selectors. */
+#sitemap-plan-status.auris-site-map-s-36b6241ef5{font-size:12px;color:var(--text2);margin-top:6px}
+#sitemap-search.auris-site-map-s-61e156f343{width:100%;margin-bottom:10px}
+#sitemap-selected-title.auris-site-map-s-ab79ea2b85{margin:0}
+#sitemap-summary.auris-site-map-s-a8fbf68576{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:14px}
