@@ -80,6 +80,7 @@
 <link rel="stylesheet" href="auris-hse-meetings-static.css?v=20260815-1">
 <link rel="stylesheet" href="auris-training-competency-static.css?v=20260815-1">
 <link rel="stylesheet" href="auris-management-of-change-static.css?v=20260815-1">
+<link rel="stylesheet" href="auris-master-action-plan-static.css?v=20260815-1">
 </head>
 <body>
 <div id="login-screen">
@@ -8204,30 +8205,30 @@ Offline mode - changes will sync when connection is restored
 <div class="page-header">
 <div>
 <div class="page-title">Master Action Plan</div>
-<div style="font-size:12px;color:var(--text2)">CAPA - Corrective &amp; Preventive Actions - Assignment - Verification - Closure</div>
+<div class="auris-map-s-7299078644">CAPA - Corrective &amp; Preventive Actions - Assignment - Verification - Closure</div>
 </div>
-<div style="display:flex;gap:8px">
+<div class="auris-map-s-9c40389b4a">
 <button class="btn" id="map-print-btn" data-auris-onclick="h0925"><i class="ti ti-printer"></i>Print register</button>
-<button class="btn btn-primary" id="map-new-btn" style="display:none" data-auris-onclick="h0926"><i class="ti ti-plus"></i>New action</button>
+<button class="btn btn-primary auris-map-s-6aa34d7432" id="map-new-btn" data-auris-onclick="h0926"><i class="ti ti-plus"></i>New action</button>
 </div>
 </div>
 
 <!-- Metrics -->
-<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:10px;margin-bottom:14px">
-<div class="card" style="padding:10px 12px;border-left:4px solid #E24B4A"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">Overdue</div><div style="font-size:22px;font-weight:800;color:#E24B4A" id="map-m3overdue">-</div></div>
-<div class="card" style="padding:10px 12px;border-left:4px solid #EF9F27"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">Open</div><div style="font-size:22px;font-weight:800;color:#EF9F27" id="map-m3open">-</div></div>
-<div class="card" style="padding:10px 12px;border-left:4px solid #185FA5"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">In Progress</div><div style="font-size:22px;font-weight:800;color:#185FA5" id="map-m3inprog">-</div></div>
-<div class="card" style="padding:10px 12px;border-left:4px solid #8B5CF6"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">Pending Verify</div><div style="font-size:22px;font-weight:800;color:#8B5CF6" id="map-m3verify">-</div></div>
-<div class="card" style="padding:10px 12px;border-left:4px solid #EF9F27"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">Pending Closure</div><div style="font-size:22px;font-weight:800;color:#EF9F27" id="map-m3pclose">-</div></div>
-<div class="card" style="padding:10px 12px;border-left:4px solid #1D9E75"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">Closed</div><div style="font-size:22px;font-weight:800;color:#1D9E75" id="map-m3closed">-</div></div>
-<div class="card" style="padding:10px 12px;border-left:4px solid #6B7280"><div style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;margin-bottom:2px">Total</div><div style="font-size:22px;font-weight:800" id="map-m3total">-</div></div>
+<div class="auris-map-s-f17e623d95">
+<div class="card auris-map-s-530946d91c"><div class="auris-map-s-4422804ebb">Overdue</div><div id="map-m3overdue" class="auris-map-s-e7ad3ebe2e">-</div></div>
+<div class="card auris-map-s-c70473e794"><div class="auris-map-s-4422804ebb">Open</div><div id="map-m3open" class="auris-map-s-2062f090bc">-</div></div>
+<div class="card auris-map-s-b6d403ee7e"><div class="auris-map-s-4422804ebb">In Progress</div><div id="map-m3inprog" class="auris-map-s-6f56b8363e">-</div></div>
+<div class="card auris-map-s-24ac637923"><div class="auris-map-s-4422804ebb">Pending Verify</div><div id="map-m3verify" class="auris-map-s-bc6456303a">-</div></div>
+<div class="card auris-map-s-c70473e794"><div class="auris-map-s-4422804ebb">Pending Closure</div><div id="map-m3pclose" class="auris-map-s-2062f090bc">-</div></div>
+<div class="card auris-map-s-7a5e61eb83"><div class="auris-map-s-4422804ebb">Closed</div><div id="map-m3closed" class="auris-map-s-1e4fd5f9ed">-</div></div>
+<div class="card auris-map-s-21ac3ff165"><div class="auris-map-s-4422804ebb">Total</div><div id="map-m3total" class="auris-map-s-de3631f23e">-</div></div>
 </div>
 
 <!-- Escalation alerts -->
-<div id="map-escalation-banner" style="display:none;margin-bottom:12px"></div>
+<div id="map-escalation-banner" class="auris-map-s-263c7c56cd"></div>
 
 <!-- Tabs -->
-<div style="display:flex;gap:0;margin-bottom:14px;border-bottom:2px solid var(--border)">
+<div class="auris-map-s-6bf792afaa">
 <button class="mtg-tab active" id="map-tab-all" data-auris-onclick="h0927">All Actions</button>
 <button class="mtg-tab" id="map-tab-mine" data-auris-onclick="h0928">Assigned to Me</button>
 <button class="mtg-tab" id="map-tab-overdue" data-auris-onclick="h0929">Overdue</button>
@@ -8236,10 +8237,10 @@ Offline mode - changes will sync when connection is restored
 </div>
 
 <!-- Filter bar -->
-<div class="card" style="margin-bottom:12px;padding:10px 14px">
-<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
-<input type="text" id="map-search" placeholder="Search ref, title, description, source..." data-auris-oninput="h0932" style="flex:1;min-width:180px;padding:7px 12px;border:1px solid var(--border);border-radius:8px;font-size:12px"/>
-<select id="map-filter-source" data-auris-onchange="h0933" style="padding:7px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px">
+<div class="card auris-map-s-54bb9f1d16">
+<div class="auris-map-s-d5129e1520">
+<input type="text" id="map-search" class="auris-map-s-11856befbc" placeholder="Search ref, title, description, source..." data-auris-oninput="h0932"/>
+<select id="map-filter-source" class="auris-map-s-d35063206b" data-auris-onchange="h0933">
 <option value="">All sources</option>
 <option value="incident">Incident</option><option value="audit">Audit</option>
 <option value="inspection">Inspection</option><option value="complaint">Complaint</option>
@@ -8247,19 +8248,19 @@ Offline mode - changes will sync when connection is restored
 <option value="permit">Permit</option><option value="ohealth">Occupational Health</option>
 <option value="esg">Environmental / ESG</option><option value="ppe">PPE</option><option value="moc">Management of Change</option><option value="manual">Manual</option>
 </select>
-<select id="filter-priority" data-auris-onchange="h0933" style="padding:7px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px">
+<select id="filter-priority" class="auris-map-s-d35063206b" data-auris-onchange="h0933">
 <option value="">All priorities</option>
 <option value="critical">Critical</option><option value="high">High</option>
 <option value="medium">Medium</option><option value="low">Low</option>
 </select>
-<select id="filter-status" data-auris-onchange="h0933" style="padding:7px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px">
+<select id="filter-status" class="auris-map-s-d35063206b" data-auris-onchange="h0933">
 <option value="">All statuses</option>
 <option value="open">Open</option><option value="in_progress">In Progress</option>
 <option value="pending_verification">Pending Verification</option>
 <option value="pending_closure">Pending Closure</option>
 <option value="closed">Closed</option><option value="cancelled">Cancelled</option>
 </select>
-<select id="map-filter-type" data-auris-onchange="h0933" style="padding:7px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px">
+<select id="map-filter-type" class="auris-map-s-d35063206b" data-auris-onchange="h0933">
 <option value="">All types</option>
 <option value="corrective">Corrective</option><option value="preventive">Preventive</option>
 <option value="improvement">Improvement</option><option value="observation">Observation</option>
@@ -8273,31 +8274,31 @@ Offline mode - changes will sync when connection is restored
 </div>
 
 <!-- -- DETAIL / FORM VIEW -- -->
-<div id="map-form3view" style="display:none">
+<div id="map-form3view" class="auris-map-s-6aa34d7432">
 <!-- Header -->
-<div class="card" style="margin-bottom:14px;padding:0;overflow:hidden">
-<div id="map-form3banner" style="padding:16px 24px;background:linear-gradient(135deg,#1a3a5c,#185FA5);color:#fff;display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:10px">
+<div class="card auris-map-s-54ec8874e7">
+<div id="map-form3banner" class="auris-map-s-712a1559a6">
 <div>
-<div style="font-size:11px;font-weight:600;text-transform:uppercase;opacity:.8;letter-spacing:.08em;margin-bottom:4px" id="map-form3type-label">CAPA Action</div>
-<div style="font-size:18px;font-weight:800" id="map-form3title">New Action</div>
-<div style="font-family:monospace;font-size:12px;color:#a8d8f0;margin-top:3px" id="map-form3ref">MAP-AUTO</div>
+<div id="map-form3type-label" class="auris-map-s-c542f2bc2e">CAPA Action</div>
+<div id="map-form3title" class="auris-map-s-e56ce903a9">New Action</div>
+<div id="map-form3ref" class="auris-map-s-9abe12cdf2">MAP-AUTO</div>
 </div>
-<div style="display:flex;gap:8px;flex-wrap:wrap">
-<button class="btn" style="background:rgba(255,255,255,.2);color:#fff;border-color:rgba(255,255,255,.3)" data-auris-onclick="h0934"><i class="ti ti-arrow-left"></i>Back</button>
-<button id="map-del-btn" class="btn" style="display:none;background:rgba(220,38,38,.3);color:#fff;border-color:rgba(220,38,38,.5)" data-auris-onclick="h0935"><i class="ti ti-trash"></i></button>
-<button class="btn" style="background:#fff;color:#5B21B6;font-weight:800;border-color:#fff" data-auris-onclick="h0936"><i class="ti ti-robot"></i>AI review</button>
-<button class="btn" style="background:rgba(255,255,255,.2);color:#fff;border-color:rgba(255,255,255,.3)" data-auris-onclick="h0937"><i class="ti ti-device-floppy"></i>Save</button>
+<div class="auris-map-s-c9dc9b5648">
+<button class="btn auris-map-s-5c09edd131" data-auris-onclick="h0934"><i class="ti ti-arrow-left"></i>Back</button>
+<button id="map-del-btn" class="btn auris-map-s-0e610f7b67" data-auris-onclick="h0935"><i class="ti ti-trash"></i></button>
+<button class="btn auris-map-s-791af40dd7" data-auris-onclick="h0936"><i class="ti ti-robot"></i>AI review</button>
+<button class="btn auris-map-s-5c09edd131" data-auris-onclick="h0937"><i class="ti ti-device-floppy"></i>Save</button>
 </div>
 </div>
 <!-- Workflow bar -->
-<div id="map-workflow-bar" style="padding:10px 24px;background:#f9fafb;border-top:1px solid var(--border);overflow-x:auto"></div>
+<div id="map-workflow-bar" class="auris-map-s-42926a8d3d"></div>
 </div>
 
 <!-- Action buttons -->
-<div id="map-action-btns" style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap"></div>
+<div id="map-action-btns" class="auris-map-s-7c3219e933"></div>
 
 <!-- Form tabs -->
-<div style="display:flex;gap:0;margin-bottom:14px;border-bottom:2px solid var(--border)">
+<div class="auris-map-s-6bf792afaa">
 <button class="mtg-tab active" id="map-ftab-details" data-auris-onclick="h0938">Details</button>
 <button class="mtg-tab" id="map-ftab-assignment" data-auris-onclick="h0939">Assignment</button>
 <button class="mtg-tab" id="map-ftab-progress" data-auris-onclick="h0940">Progress</button>
@@ -8308,11 +8309,11 @@ Offline mode - changes will sync when connection is restored
 
 <!-- Details tab -->
 <div id="map-fview-details">
-<div style="display:grid;grid-template-columns:2fr 1fr;gap:14px">
+<div class="auris-map-s-5571af1e74">
 <div>
-<div class="card" style="margin-bottom:14px"><div class="card-title">Action Details</div>
+<div class="card auris-map-s-42a6ced8b6"><div class="card-title">Action Details</div>
 <div class="form3group"><label class="form3label">Action title / brief description</label><input type="text" id="mf-title" placeholder="Short descriptive title for this action..."/></div>
-<div class="form3group"><label class="form3label">Full description / what needs to be done</label><textarea id="mf-desc" style="min-height:80px" placeholder="Detailed description of the corrective/preventive action required..."></textarea></div>
+<div class="form3group"><label class="form3label">Full description / what needs to be done</label><textarea id="mf-desc" class="auris-map-s-770a4152c1" placeholder="Detailed description of the corrective/preventive action required..."></textarea></div>
 <div class="form3row">
 <div class="form3group"><label class="form3label">Action type</label>
 <select id="mf-type">
@@ -8329,9 +8330,9 @@ Offline mode - changes will sync when connection is restored
 <option value="low">Low - within 3 months</option>
 </select></div>
 </div>
-<div class="form3group"><label class="form3label">Root cause / reason this action is needed</label><textarea id="mf-rootcause" style="min-height:60px" placeholder="What is the underlying cause? Why is this action necessary?"></textarea></div>
+<div class="form3group"><label class="form3label">Root cause / reason this action is needed</label><textarea id="mf-rootcause" class="auris-map-s-07bdff4587" placeholder="What is the underlying cause? Why is this action necessary?"></textarea></div>
 </div>
-<div class="card" style="margin-bottom:14px;border-left:4px solid #185FA5"><div class="card-title" style="color:#185FA5"><i class="ti ti-link"></i> Source &amp; Origin</div>
+<div class="card auris-map-s-347fbe0230"><div class="card-title auris-map-s-ca32b871b2"><i class="ti ti-link"></i> Source &amp; Origin</div>
 <div class="form3row">
 <div class="form3group"><label class="form3label">Source type</label>
 <select id="mf-source-type" data-auris-onchange="h0944">
@@ -8352,14 +8353,14 @@ Offline mode - changes will sync when connection is restored
 <option value="observation">Site observation</option>
 <option value="other">Other</option>
 </select></div>
-<div class="form3group"><label class="form3label" id="mf-source-ref-label">Source reference</label><input type="text" id="mf-source-ref" placeholder="Ref number of source document..." style="font-family:monospace"/></div>
+<div class="form3group"><label class="form3label" id="mf-source-ref-label">Source reference</label><input type="text" id="mf-source-ref" class="auris-map-s-7b8c3df564" placeholder="Ref number of source document..."/></div>
 </div>
 <div class="form3group"><label class="form3label">Location / area</label><input type="text" id="mf-location" placeholder="Where does this action apply?"/></div>
 </div>
-<div id="map-connected-records" style="margin-bottom:14px"></div>
+<div id="map-connected-records" class="auris-map-s-42a6ced8b6"></div>
 </div>
 <div>
-<div class="card" style="margin-bottom:14px;border:2px solid #185FA5"><div class="card-title" style="color:#185FA5">Status &amp; Dates</div>
+<div class="card auris-map-s-9bcefa3fff"><div class="card-title auris-map-s-ca32b871b2">Status &amp; Dates</div>
 <div class="form3group"><label class="form3label">Status</label>
 <select id="af-status">
 <option value="open">Open</option>
@@ -8372,8 +8373,8 @@ Offline mode - changes will sync when connection is restored
 <div class="form3group"><label class="form3label">Start date</label><input type="date" id="mf-start-date"/></div>
 <div class="form3group"><label class="form3label">Target completion date</label><input type="date" id="mf-target-date"/></div>
 <div class="form3group"><label class="form3label">Completed date</label><input type="date" id="mf-completed-date"/></div>
-<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px"><input type="checkbox" id="mf-date-extended" style="accent-color:var(--green)"/><label for="mf-date-extended" style="font-size:12px;font-weight:600;cursor:pointer">Due date extended</label></div>
-<div class="form3group"><label class="form3label">Extension reason</label><textarea id="mf-ext-reason" style="min-height:40px"></textarea></div>
+<div class="auris-map-s-ba28bccee4"><input type="checkbox" id="mf-date-extended" class="auris-map-s-283f12d7fe"/><label class="auris-map-s-cc6390bafc" for="mf-date-extended">Due date extended</label></div>
+<div class="form3group"><label class="form3label">Extension reason</label><textarea id="mf-ext-reason" class="auris-map-s-7e000820e7"></textarea></div>
 </div>
 <div class="card"><div class="card-title">Cost Tracking</div>
 <div class="form3row">
@@ -8385,81 +8386,81 @@ Offline mode - changes will sync when connection is restored
 </div>
 
 <!-- Assignment tab -->
-<div id="map-fview-assignment" style="display:none">
-<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+<div id="map-fview-assignment" class="auris-map-s-6aa34d7432">
+<div class="auris-map-s-67e92fd3c7">
 <div>
-<div class="card" style="margin-bottom:14px;border:2px solid #1D9E75"><div class="card-title" style="color:#1D9E75"><i class="ti ti-user-check"></i> Primary Assignment</div>
+<div class="card auris-map-s-f8805c5d89"><div class="card-title auris-map-s-f9faa54401"><i class="ti ti-user-check"></i> Primary Assignment</div>
 <div class="form3group"><label class="form3label">Assigned to</label><select id="mf-assigned-to" data-auris-onchange="h0945"><option value="">Select person...</option></select></div>
 <div class="form3group"><label class="form3label">Department</label><input type="text" id="mf-dept"/></div>
 <div class="form3row">
 <div class="form3group"><label class="form3label">Assigned by</label><select id="mf-assigned-by"><option value="">Select person...</option></select></div>
 <div class="form3group"><label class="form3label">Assignment date</label><input type="date" id="mf-assigned-date"/></div>
 </div>
-<div class="form3group"><label class="form3label">Instructions to assignee</label><textarea id="mf-instructions" style="min-height:70px" placeholder="What specifically does the assignee need to do?"></textarea></div>
+<div class="form3group"><label class="form3label">Instructions to assignee</label><textarea id="mf-instructions" class="auris-map-s-4d5979ac8f" placeholder="What specifically does the assignee need to do?"></textarea></div>
 </div>
 <div class="card">
-<div class="card-title" style="color:#E24B4A"><i class="ti ti-arrow-up"></i> Escalation</div>
-<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px"><input type="checkbox" id="mf-escalated" style="accent-color:var(--red)"/><label for="mf-escalated" style="font-size:13px;font-weight:600;cursor:pointer;color:var(--red)">This action has been escalated</label></div>
+<div class="card-title auris-map-s-df4f0a3612"><i class="ti ti-arrow-up"></i> Escalation</div>
+<div class="auris-map-s-ba28bccee4"><input type="checkbox" id="mf-escalated" class="auris-map-s-af62d68b87"/><label class="auris-map-s-01137020d8" for="mf-escalated">This action has been escalated</label></div>
 <div class="form3row">
 <div class="form3group"><label class="form3label">Escalated to</label><select id="mf-escalated-to"><option value="">Select person...</option></select></div>
 <div class="form3group"><label class="form3label">Escalation level</label><select id="mf-esc-level"><option value="0">Level 0 - not escalated</option><option value="1">Level 1 - supervisor</option><option value="2">Level 2 - manager</option><option value="3">Level 3 - director / executive</option></select></div>
 </div>
-<div class="form3group"><label class="form3label">Escalation reason</label><textarea id="mf-esc-reason" style="min-height:60px" placeholder="Why was this escalated? What attempts were made before escalation?"></textarea></div>
+<div class="form3group"><label class="form3label">Escalation reason</label><textarea id="mf-esc-reason" class="auris-map-s-07bdff4587" placeholder="Why was this escalated? What attempts were made before escalation?"></textarea></div>
 </div>
 </div>
 <div>
-<div class="card" style="border:2px solid #185FA5">
-<div class="card-title" style="color:#185FA5">Escalation Hierarchy</div>
-<div style="font-size:12px;color:var(--text2);margin-bottom:12px">Automatic escalation triggers when overdue thresholds are exceeded</div>
-<div style="display:flex;flex-direction:column;gap:6px">
-<div style="padding:10px 12px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px"><div style="font-weight:700;font-size:12px;color:#166534">Level 0 - Assigned person</div><div style="font-size:11px;color:var(--text2)">Primary responsibility. Notified on assignment and 7 days before due date.</div></div>
-<div style="padding:10px 12px;background:#EFF6FF;border:1px solid #bfdbfe;border-radius:8px"><div style="font-weight:700;font-size:12px;color:#185FA5">Level 1 - Supervisor (auto: 7 days overdue)</div><div style="font-size:11px;color:var(--text2)">Escalated if action not completed within 7 days of target date.</div></div>
-<div style="padding:10px 12px;background:#FEF9EC;border:1px solid #fcd34d;border-radius:8px"><div style="font-weight:700;font-size:12px;color:#854F0B">Level 2 - Manager (auto: 21 days overdue)</div><div style="font-size:11px;color:var(--text2)">Further escalation if still incomplete after 21 days overdue.</div></div>
-<div style="padding:10px 12px;background:#FEF2F2;border:1px solid #fecaca;border-radius:8px"><div style="font-weight:700;font-size:12px;color:#A32D2D">Level 3 - Director / Executive (auto: 45 days overdue)</div><div style="font-size:11px;color:var(--text2)">Final escalation for critical overdue actions requiring executive intervention.</div></div>
+<div class="card auris-map-s-169bb1a458">
+<div class="card-title auris-map-s-ca32b871b2">Escalation Hierarchy</div>
+<div class="auris-map-s-5faab67eef">Automatic escalation triggers when overdue thresholds are exceeded</div>
+<div class="auris-map-s-67c6459975">
+<div class="auris-map-s-6358d9d110"><div class="auris-map-s-7be2a58c9f">Level 0 - Assigned person</div><div class="auris-map-s-d37c8e8fe6">Primary responsibility. Notified on assignment and 7 days before due date.</div></div>
+<div class="auris-map-s-a108206f0e"><div class="auris-map-s-6e7d8f90d9">Level 1 - Supervisor (auto: 7 days overdue)</div><div class="auris-map-s-d37c8e8fe6">Escalated if action not completed within 7 days of target date.</div></div>
+<div class="auris-map-s-ae7b0436fb"><div class="auris-map-s-3bdf361602">Level 2 - Manager (auto: 21 days overdue)</div><div class="auris-map-s-d37c8e8fe6">Further escalation if still incomplete after 21 days overdue.</div></div>
+<div class="auris-map-s-581beb21ba"><div class="auris-map-s-4895ecbac8">Level 3 - Director / Executive (auto: 45 days overdue)</div><div class="auris-map-s-d37c8e8fe6">Final escalation for critical overdue actions requiring executive intervention.</div></div>
 </div>
-<button class="btn btn-sm" style="margin-top:12px;width:100%;justify-content:center;color:#E24B4A;border-color:#E24B4A" data-auris-onclick="h0946"><i class="ti ti-arrow-up"></i>Trigger manual escalation now</button>
+<button class="btn btn-sm auris-map-s-eeb02e0b0e" data-auris-onclick="h0946"><i class="ti ti-arrow-up"></i>Trigger manual escalation now</button>
 </div>
 </div>
 </div>
 </div>
 
 <!-- Progress tab -->
-<div id="map-fview-progress" style="display:none">
-<div style="display:grid;grid-template-columns:2fr 1fr;gap:14px">
+<div id="map-fview-progress" class="auris-map-s-6aa34d7432">
+<div class="auris-map-s-5571af1e74">
 <div>
-<div class="card" style="margin-bottom:14px"><div class="card-title">Progress Update</div>
+<div class="card auris-map-s-42a6ced8b6"><div class="card-title">Progress Update</div>
 <div class="form3group"><label class="form3label">% Complete</label>
-<div style="display:flex;align-items:center;gap:12px">
-<input type="range" id="mf-progress" min="0" max="100" step="5" value="0" data-auris-oninput="h0947" style="flex:1;accent-color:var(--green)"/>
-<div style="font-size:20px;font-weight:800;color:var(--green);min-width:50px" id="mf-progress-display">0%</div>
+<div class="auris-map-s-03b0f4e055">
+<input type="range" id="mf-progress" class="auris-map-s-3eb585c6be" min="0" max="100" step="5" value="0" data-auris-oninput="h0947"/>
+<div id="mf-progress-display" class="auris-map-s-13ff74a167">0%</div>
 </div>
-<div style="width:100%;background:#e5e7eb;border-radius:99px;height:8px;margin-top:6px;overflow:hidden"><div id="mf-progress-bar" style="height:100%;background:var(--green);border-radius:99px;width:0%;transition:width .3s"></div></div>
+<div class="auris-map-s-65ea43f8ee"><div id="mf-progress-bar" class="auris-map-s-26069ecfae"></div></div>
 </div>
-<div class="form3group"><label class="form3label">Progress notes / update</label><textarea id="mf-progress-notes" style="min-height:80px" placeholder="Describe what has been done so far, any obstacles, current status..."></textarea></div>
-<div class="form3group"><label class="form3label">Evidence / supporting documents</label><textarea id="mf-evidence" style="min-height:60px" placeholder="List evidence collected: photos, documents, records, test results..."></textarea></div>
-<div class="form3group"><label class="form3label">Comments</label><textarea id="af-comments" style="min-height:50px"></textarea></div>
+<div class="form3group"><label class="form3label">Progress notes / update</label><textarea id="mf-progress-notes" class="auris-map-s-770a4152c1" placeholder="Describe what has been done so far, any obstacles, current status..."></textarea></div>
+<div class="form3group"><label class="form3label">Evidence / supporting documents</label><textarea id="mf-evidence" class="auris-map-s-07bdff4587" placeholder="List evidence collected: photos, documents, records, test results..."></textarea></div>
+<div class="form3group"><label class="form3label">Comments</label><textarea id="af-comments" class="auris-map-s-2b013fa0d9"></textarea></div>
 </div>
 </div>
 <div>
-<div class="card" style="margin-bottom:14px">
+<div class="card auris-map-s-42a6ced8b6">
 <div class="card-title">Completion</div>
-<div id="map-progress-status-card" style="text-align:center;padding:20px">
-<div style="font-size:48px;margin-bottom:10px"><i class="ti ti-circle-dot"></i></div>
-<div style="font-size:14px;font-weight:700;color:var(--text2)">Enter progress above</div>
+<div id="map-progress-status-card" class="auris-map-s-651d52088e">
+<div class="auris-map-s-5450d1c6fa"><i class="ti ti-circle-dot"></i></div>
+<div class="auris-map-s-01f2e0961e">Enter progress above</div>
 </div>
 </div>
 <div class="card">
 <div class="card-title">Effectiveness</div>
-<div style="font-size:12px;color:var(--text2);margin-bottom:8px">After closure: rate how effective this action was</div>
-<div style="display:flex;gap:6px;justify-content:center;font-size:20px" id="map-effectiveness-stars">
-<span style="cursor:pointer" data-auris-onclick="h0948">?</span>
-<span style="cursor:pointer" data-auris-onclick="h0949">?</span>
-<span style="cursor:pointer" data-auris-onclick="h0950">?</span>
-<span style="cursor:pointer" data-auris-onclick="h0951">?</span>
-<span style="cursor:pointer" data-auris-onclick="h0952">?</span>
+<div class="auris-map-s-46744debb8">After closure: rate how effective this action was</div>
+<div id="map-effectiveness-stars" class="auris-map-s-3239efcd3d">
+<span class="auris-map-s-9463ff4798" data-auris-onclick="h0948">?</span>
+<span class="auris-map-s-9463ff4798" data-auris-onclick="h0949">?</span>
+<span class="auris-map-s-9463ff4798" data-auris-onclick="h0950">?</span>
+<span class="auris-map-s-9463ff4798" data-auris-onclick="h0951">?</span>
+<span class="auris-map-s-9463ff4798" data-auris-onclick="h0952">?</span>
 </div>
 <input type="hidden" id="mf-effectiveness" value="0"/>
-<div class="form3group" style="margin-top:10px"><label class="form3label">Did this prevent recurrence?</label>
+<div class="form3group auris-map-s-df928149c5"><label class="form3label">Did this prevent recurrence?</label>
 <select id="mf-recurrence"><option value="">- Not yet assessed</option><option value="true">Yes - recurrence prevented</option><option value="false">No - did not fully prevent</option></select></div>
 </div>
 </div>
@@ -8467,12 +8468,12 @@ Offline mode - changes will sync when connection is restored
 </div>
 
 <!-- Verification tab -->
-<div id="map-fview-verification" style="display:none">
-<div style="display:grid;grid-template-columns:2fr 1fr;gap:14px">
+<div id="map-fview-verification" class="auris-map-s-6aa34d7432">
+<div class="auris-map-s-5571af1e74">
 <div class="card">
-<div class="card-title" style="color:#8B5CF6"><i class="ti ti-search"></i> Verification Process</div>
-<div style="font-size:12px;color:var(--text2);margin-bottom:12px">Verification confirms the action was implemented correctly and the hazard/problem has been adequately controlled.</div>
-<div style="display:flex;align-items:center;gap:8px;margin-bottom:12px"><input type="checkbox" id="mf-req-verif" style="accent-color:#8B5CF6"/><label for="mf-req-verif" style="font-size:13px;font-weight:600;cursor:pointer">Verification required before closure</label></div>
+<div class="card-title auris-map-s-48a87f51bd"><i class="ti ti-search"></i> Verification Process</div>
+<div class="auris-map-s-5faab67eef">Verification confirms the action was implemented correctly and the hazard/problem has been adequately controlled.</div>
+<div class="auris-map-s-aa7c01383d"><input type="checkbox" id="mf-req-verif" class="auris-map-s-79db1a713a"/><label class="auris-map-s-22514dbec4" for="mf-req-verif">Verification required before closure</label></div>
 <div class="form3row">
 <div class="form3group"><label class="form3label">Verified by</label><select id="mf-verified-by"><option value="">Select verifier...</option></select></div>
 <div class="form3group"><label class="form3label">Verification date</label><input type="date" id="mf-verified-date"/></div>
@@ -8489,7 +8490,7 @@ Offline mode - changes will sync when connection is restored
 <option value="audit">Audit or re-audit</option>
 <option value="other">Other</option>
 </select></div>
-<div class="form3group"><label class="form3label">Verification notes / findings</label><textarea id="mf-verif-notes" style="min-height:80px" placeholder="What was observed/tested? How was the action verified as effective?"></textarea></div>
+<div class="form3group"><label class="form3label">Verification notes / findings</label><textarea id="mf-verif-notes" class="auris-map-s-770a4152c1" placeholder="What was observed/tested? How was the action verified as effective?"></textarea></div>
 <div class="form3group"><label class="form3label">Verification result</label>
 <select id="mf-verif-status">
 <option value="not_required">Not required</option>
@@ -8498,49 +8499,49 @@ Offline mode - changes will sync when connection is restored
 <option value="failed">Failed - action did not achieve objective</option>
 </select></div>
 </div>
-<div class="card" style="border:2px solid #8B5CF6">
-<div class="card-title" style="color:#8B5CF6">Verification Decision</div>
-<div id="map-verif-decision" style="padding:12px;text-align:center"><div style="font-size:32px;margin-bottom:8px"><i class="ti ti-circle-dot"></i></div><div style="font-size:13px;color:var(--text2)">Complete verification details to proceed to closure</div></div>
-<button class="btn btn-primary" style="width:100%;justify-content:center;background:#8B5CF6;border-color:#8B5CF6;margin-top:10px" data-auris-onclick="h0953"><i class="ti ti-check"></i>Mark as Verified - proceed to closure</button>
-<button class="btn" style="width:100%;justify-content:center;margin-top:6px;color:#E24B4A;border-color:#E24B4A" data-auris-onclick="h0954"><i class="ti ti-x"></i>Verification failed - reopen action</button>
+<div class="card auris-map-s-82d616954c">
+<div class="card-title auris-map-s-48a87f51bd">Verification Decision</div>
+<div id="map-verif-decision" class="auris-map-s-c3b7f6e8b2"><div class="auris-map-s-d0e4588d0b"><i class="ti ti-circle-dot"></i></div><div class="auris-map-s-a41bff61e4">Complete verification details to proceed to closure</div></div>
+<button class="btn btn-primary auris-map-s-2449a32f8b" data-auris-onclick="h0953"><i class="ti ti-check"></i>Mark as Verified - proceed to closure</button>
+<button class="btn auris-map-s-c0b34699b5" data-auris-onclick="h0954"><i class="ti ti-x"></i>Verification failed - reopen action</button>
 </div>
 </div>
 </div>
 
 <!-- Closure tab -->
-<div id="map-fview-closure" style="display:none">
-<div style="display:grid;grid-template-columns:2fr 1fr;gap:14px">
+<div id="map-fview-closure" class="auris-map-s-6aa34d7432">
+<div class="auris-map-s-5571af1e74">
 <div class="card">
-<div class="card-title" style="color:#1D9E75"><i class="ti ti-check"></i> Closure Approval</div>
-<div style="font-size:12px;color:var(--text2);margin-bottom:12px">Formal closure approval confirms the action is complete, effective and no further follow-up is required.</div>
-<div style="display:flex;align-items:center;gap:8px;margin-bottom:12px"><input type="checkbox" id="mf-req-closure-approval" style="accent-color:var(--green)"/><label for="mf-req-closure-approval" style="font-size:13px;font-weight:600;cursor:pointer">Closure approval required (for high/critical priority)</label></div>
+<div class="card-title auris-map-s-f9faa54401"><i class="ti ti-check"></i> Closure Approval</div>
+<div class="auris-map-s-5faab67eef">Formal closure approval confirms the action is complete, effective and no further follow-up is required.</div>
+<div class="auris-map-s-aa7c01383d"><input type="checkbox" id="mf-req-closure-approval" class="auris-map-s-283f12d7fe"/><label class="auris-map-s-22514dbec4" for="mf-req-closure-approval">Closure approval required (for high/critical priority)</label></div>
 <div class="form3row">
 <div class="form3group"><label class="form3label">Closure approved by</label><select id="mf-closure-by"><option value="">Select approver...</option></select></div>
 <div class="form3group"><label class="form3label">Closure date</label><input type="date" id="mf-closure-date"/></div>
 </div>
-<div class="form3group"><label class="form3label">Closure notes - summary of what was achieved</label><textarea id="mf-closure-notes" style="min-height:80px" placeholder="Summarise what was done, evidence of completion, and confirmation that the risk/problem has been controlled..."></textarea></div>
-<div class="form3group"><label class="form3label">Rejection reason (if closure is refused)</label><textarea id="mf-closure-rejected" style="min-height:50px" placeholder="If closure is being rejected, explain why and what additional work is required..."></textarea></div>
+<div class="form3group"><label class="form3label">Closure notes - summary of what was achieved</label><textarea id="mf-closure-notes" class="auris-map-s-770a4152c1" placeholder="Summarise what was done, evidence of completion, and confirmation that the risk/problem has been controlled..."></textarea></div>
+<div class="form3group"><label class="form3label">Rejection reason (if closure is refused)</label><textarea id="mf-closure-rejected" class="auris-map-s-2b013fa0d9" placeholder="If closure is being rejected, explain why and what additional work is required..."></textarea></div>
 </div>
 <div>
-<div class="card" style="margin-bottom:14px;border:2px solid #1D9E75">
-<div class="card-title" style="color:#1D9E75">Closure Checklist</div>
-<div style="display:flex;flex-direction:column;gap:8px;font-size:12px">
-<label style="display:flex;align-items:flex-start;gap:8px;cursor:pointer"><input type="checkbox" id="mcc-1" style="accent-color:var(--green);margin-top:1px"/> Action completed as described</label>
-<label style="display:flex;align-items:flex-start;gap:8px;cursor:pointer"><input type="checkbox" id="mcc-2" style="accent-color:var(--green);margin-top:1px"/> Evidence of completion available</label>
-<label style="display:flex;align-items:flex-start;gap:8px;cursor:pointer"><input type="checkbox" id="mcc-3" style="accent-color:var(--green);margin-top:1px"/> Verification completed (if required)</label>
-<label style="display:flex;align-items:flex-start;gap:8px;cursor:pointer"><input type="checkbox" id="mcc-4" style="accent-color:var(--green);margin-top:1px"/> Root cause addressed</label>
-<label style="display:flex;align-items:flex-start;gap:8px;cursor:pointer"><input type="checkbox" id="mcc-5" style="accent-color:var(--green);margin-top:1px"/> Similar areas / tasks reviewed</label>
-<label style="display:flex;align-items:flex-start;gap:8px;cursor:pointer"><input type="checkbox" id="mcc-6" style="accent-color:var(--green);margin-top:1px"/> No further risk identified</label>
+<div class="card auris-map-s-f8805c5d89">
+<div class="card-title auris-map-s-f9faa54401">Closure Checklist</div>
+<div class="auris-map-s-f09da34d1d">
+<label class="auris-map-s-567f6b379f"><input type="checkbox" id="mcc-1" class="auris-map-s-51997edd5c"/> Action completed as described</label>
+<label class="auris-map-s-567f6b379f"><input type="checkbox" id="mcc-2" class="auris-map-s-51997edd5c"/> Evidence of completion available</label>
+<label class="auris-map-s-567f6b379f"><input type="checkbox" id="mcc-3" class="auris-map-s-51997edd5c"/> Verification completed (if required)</label>
+<label class="auris-map-s-567f6b379f"><input type="checkbox" id="mcc-4" class="auris-map-s-51997edd5c"/> Root cause addressed</label>
+<label class="auris-map-s-567f6b379f"><input type="checkbox" id="mcc-5" class="auris-map-s-51997edd5c"/> Similar areas / tasks reviewed</label>
+<label class="auris-map-s-567f6b379f"><input type="checkbox" id="mcc-6" class="auris-map-s-51997edd5c"/> No further risk identified</label>
 </div>
-<button class="btn btn-primary" style="background:#1D9E75;border-color:#1D9E75;width:100%;justify-content:center;margin-top:12px" data-auris-onclick="h0955"><i class="ti ti-check"></i>Approve &amp; Close Action</button>
-<button class="btn" style="color:#E24B4A;border-color:#E24B4A;width:100%;justify-content:center;margin-top:6px" data-auris-onclick="h0956"><i class="ti ti-x"></i>Reject closure - reopen</button>
+<button class="btn btn-primary auris-map-s-2fd6bd9512" data-auris-onclick="h0955"><i class="ti ti-check"></i>Approve &amp; Close Action</button>
+<button class="btn auris-map-s-76feb07c8d" data-auris-onclick="h0956"><i class="ti ti-x"></i>Reject closure - reopen</button>
 </div>
 </div>
 </div>
 </div>
 
 <!-- Activity Log tab -->
-<div id="map-fview-log" style="display:none">
+<div id="map-fview-log" class="auris-map-s-6aa34d7432">
 <div id="map-log-content"><div class="loading-msg">Loading...</div></div>
 </div>
 
