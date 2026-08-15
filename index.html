@@ -91,6 +91,7 @@
 <link rel="stylesheet" href="auris-ai-insights-static.css?v=20260815-1">
 <link rel="stylesheet" href="auris-approval-center-static.css?v=20260815-1">
 <link rel="stylesheet" href="auris-audit-trail-static.css?v=20260815-1">
+<link rel="stylesheet" href="auris-settings-static.css?v=20260815-1">
 </head>
 <body>
 <div id="login-screen">
@@ -10593,185 +10594,185 @@ I can help you:<br>
 <div id="page-settings" class="page">
 <div class="page-header"><div class="page-title">Settings</div></div>
 
-<div class="card" id="settings-resilience-simulation-card" style="display:none"></div>
+<div class="card auris-settings-s-6aa34d7432" id="settings-resilience-simulation-card"></div>
 
 <!-- ------- BRANDING STUDIO (white-label) ------- -->
-<div class="card" id="branding-studio" style="display:none;padding:0;overflow:hidden">
-  <div style="padding:18px 22px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap">
+<div class="card auris-settings-s-c4789ee909" id="branding-studio">
+  <div class="auris-settings-s-0dfddbb46f">
     <div>
-      <div style="font-size:16px;font-weight:700;display:flex;align-items:center;gap:8px"><i class="ti ti-palette" style="color:var(--brand-primary,#1D9E75)"></i>Company Branding</div>
-      <div style="font-size:12px;color:var(--text2);margin-top:2px">Add the client company identity used beside the fixed AURIS360 platform mark on reports, emails and the app experience.</div>
+      <div class="auris-settings-s-bd722b0c8d"><i class="ti ti-palette auris-settings-s-2f510ae667"></i>Company Branding</div>
+      <div class="auris-settings-s-a2fa84dea0">Add the client company identity used beside the fixed AURIS360 platform mark on reports, emails and the app experience.</div>
     </div>
-    <div style="display:flex;gap:8px">
+    <div class="auris-settings-s-9c40389b4a">
       <button class="btn" data-auris-onclick="h1193"><i class="ti ti-restore"></i>Reset</button>
       <button class="btn btn-primary" data-auris-onclick="h1194"><i class="ti ti-device-floppy"></i>Save company branding</button>
     </div>
   </div>
 
-  <div style="display:grid;grid-template-columns:1fr 360px;gap:0;align-items:stretch">
+  <div class="auris-settings-s-c8f25b8484">
     <!-- LEFT: editor -->
-    <div style="padding:22px;border-right:1px solid var(--border)">
+    <div class="auris-settings-s-e1bd3a9d1b">
 
       <!-- Theme presets -->
-      <div style="font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--text3);font-weight:600;margin-bottom:10px">Theme preset</div>
-      <div id="brand-presets" style="display:grid;grid-template-columns:repeat(6,1fr);gap:8px;margin-bottom:22px"></div>
+      <div class="auris-settings-s-4c2e60e092">Theme preset</div>
+      <div id="brand-presets" class="auris-settings-s-873381f374"></div>
 
       <!-- Colours -->
-      <div style="font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--text3);font-weight:600;margin-bottom:10px">Brand colours</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:22px">
+      <div class="auris-settings-s-4c2e60e092">Brand colours</div>
+      <div class="auris-settings-s-cf31ea3599">
         <div>
-          <label class="form3label" style="font-size:11px">Primary</label>
-          <div style="display:flex;gap:6px;align-items:center">
-            <input type="color" id="br-primary" style="width:36px;height:36px;padding:0;border:1px solid var(--border);border-radius:6px;cursor:pointer" data-auris-oninput="h1195"/>
-            <input type="text" id="br-primary-hex" style="flex:1;font-family:monospace;font-size:12px" data-auris-oninput="h1196"/>
+          <label class="form3label auris-settings-s-33ee298127">Primary</label>
+          <div class="auris-settings-s-d1a8f8bc31">
+            <input type="color" id="br-primary" class="auris-settings-s-2decaa52c3" data-auris-oninput="h1195"/>
+            <input type="text" id="br-primary-hex" class="auris-settings-s-f282774b26" data-auris-oninput="h1196"/>
           </div>
-          <div style="font-size:10px;color:var(--text3);margin-top:3px">Buttons, links, active nav</div>
+          <div class="auris-settings-s-0602f7e8aa">Buttons, links, active nav</div>
         </div>
         <div>
-          <label class="form3label" style="font-size:11px">Secondary (dark)</label>
-          <div style="display:flex;gap:6px;align-items:center">
-            <input type="color" id="br-secondary" style="width:36px;height:36px;padding:0;border:1px solid var(--border);border-radius:6px;cursor:pointer" data-auris-oninput="h1195"/>
-            <input type="text" id="br-secondary-hex" style="flex:1;font-family:monospace;font-size:12px" data-auris-oninput="h1197"/>
+          <label class="form3label auris-settings-s-33ee298127">Secondary (dark)</label>
+          <div class="auris-settings-s-d1a8f8bc31">
+            <input type="color" id="br-secondary" class="auris-settings-s-2decaa52c3" data-auris-oninput="h1195"/>
+            <input type="text" id="br-secondary-hex" class="auris-settings-s-f282774b26" data-auris-oninput="h1197"/>
           </div>
-          <div style="font-size:10px;color:var(--text3);margin-top:3px">Hover states, depth</div>
+          <div class="auris-settings-s-0602f7e8aa">Hover states, depth</div>
         </div>
         <div>
-          <label class="form3label" style="font-size:11px">Accent</label>
-          <div style="display:flex;gap:6px;align-items:center">
-            <input type="color" id="br-accent" style="width:36px;height:36px;padding:0;border:1px solid var(--border);border-radius:6px;cursor:pointer" data-auris-oninput="h1195"/>
-            <input type="text" id="br-accent-hex" style="flex:1;font-family:monospace;font-size:12px" data-auris-oninput="h1198"/>
+          <label class="form3label auris-settings-s-33ee298127">Accent</label>
+          <div class="auris-settings-s-d1a8f8bc31">
+            <input type="color" id="br-accent" class="auris-settings-s-2decaa52c3" data-auris-oninput="h1195"/>
+            <input type="text" id="br-accent-hex" class="auris-settings-s-f282774b26" data-auris-oninput="h1198"/>
           </div>
-          <div style="font-size:10px;color:var(--text3);margin-top:3px">Highlights, badges</div>
+          <div class="auris-settings-s-0602f7e8aa">Highlights, badges</div>
         </div>
       </div>
 
       <!-- Logos -->
-      <div style="font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--text3);font-weight:600;margin-bottom:10px">Company logos</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:22px">
+      <div class="auris-settings-s-4c2e60e092">Company logos</div>
+      <div class="auris-settings-s-177d44ad79">
         <div>
-          <label class="form3label" style="font-size:11px">Company logo (light backgrounds)</label>
+          <label class="form3label auris-settings-s-33ee298127">Company logo (light backgrounds)</label>
           <div id="br-logo-drop" class="brand-drop" data-auris-onclick="h1199" data-auris-ondragover="h1015" data-auris-ondragleave="h1016" data-auris-ondrop="h1200">
-            <img id="br-logo-preview" style="max-height:54px;max-width:100%;display:none"/>
-            <div id="br-logo-placeholder" style="text-align:center;color:var(--text2);font-size:12px"><i class="ti ti-upload" style="font-size:22px;display:block;margin-bottom:4px"></i>Upload company logo<div style="font-size:10px;color:var(--text3);margin-top:2px">AURIS360 logo remains fixed - PNG, JPG or SVG - max 1 MB</div></div>
+            <img id="br-logo-preview" class="auris-settings-s-15f2def25a"/>
+            <div id="br-logo-placeholder" class="auris-settings-s-5899365c1f"><i class="ti ti-upload auris-settings-s-e55b9ad8e8"></i>Upload company logo<div class="auris-settings-s-4e9beeb8d1">AURIS360 logo remains fixed - PNG, JPG or SVG - max 1 MB</div></div>
           </div>
-          <input type="file" id="br-logo-file" accept="image/*" style="display:none" data-auris-onchange="h1201"/>
-          <div style="display:flex;gap:6px;margin-top:6px">
-            <input type="url" id="br-logo-url" placeholder="-or paste company logo URL" style="flex:1;font-size:12px" data-auris-oninput="h1202"/>
-            <button class="btn" style="padding:6px 10px;font-size:11px" data-auris-onclick="h1203"><i class="ti ti-x"></i></button>
+          <input type="file" id="br-logo-file" class="auris-settings-s-6aa34d7432" accept="image/*" data-auris-onchange="h1201"/>
+          <div class="auris-settings-s-4d67e17d03">
+            <input type="url" id="br-logo-url" class="auris-settings-s-f2f8c8529d" placeholder="-or paste company logo URL" data-auris-oninput="h1202"/>
+            <button class="btn auris-settings-s-b715c21d86" data-auris-onclick="h1203"><i class="ti ti-x"></i></button>
           </div>
         </div>
         <div>
-          <label class="form3label" style="font-size:11px">Optional company logo for dark backgrounds</label>
+          <label class="form3label auris-settings-s-33ee298127">Optional company logo for dark backgrounds</label>
           <div id="br-logo-dark-drop" class="brand-drop brand-drop-dark" data-auris-onclick="h1204" data-auris-ondragover="h1015" data-auris-ondragleave="h1016" data-auris-ondrop="h1205">
-            <img id="br-logo-dark-preview" style="max-height:54px;max-width:100%;display:none"/>
-            <div id="br-logo-dark-placeholder" style="text-align:center;color:#9aa4b2;font-size:12px"><i class="ti ti-upload" style="font-size:22px;display:block;margin-bottom:4px"></i>Optional dark variant<div style="font-size:10px;color:#778;margin-top:2px">Falls back to company logo if empty</div></div>
+            <img id="br-logo-dark-preview" class="auris-settings-s-15f2def25a"/>
+            <div id="br-logo-dark-placeholder" class="auris-settings-s-20b43d43cd"><i class="ti ti-upload auris-settings-s-e55b9ad8e8"></i>Optional dark variant<div class="auris-settings-s-31b3f022e5">Falls back to company logo if empty</div></div>
           </div>
-          <input type="file" id="br-logo-dark-file" accept="image/*" style="display:none" data-auris-onchange="h1206"/>
-          <div style="display:flex;gap:6px;margin-top:6px">
-            <input type="url" id="br-logo-dark-url" placeholder="-or paste company logo URL" style="flex:1;font-size:12px" data-auris-oninput="h1207"/>
-            <button class="btn" style="padding:6px 10px;font-size:11px" data-auris-onclick="h1208"><i class="ti ti-x"></i></button>
+          <input type="file" id="br-logo-dark-file" class="auris-settings-s-6aa34d7432" accept="image/*" data-auris-onchange="h1206"/>
+          <div class="auris-settings-s-4d67e17d03">
+            <input type="url" id="br-logo-dark-url" class="auris-settings-s-f2f8c8529d" placeholder="-or paste company logo URL" data-auris-oninput="h1207"/>
+            <button class="btn auris-settings-s-b715c21d86" data-auris-onclick="h1208"><i class="ti ti-x"></i></button>
           </div>
         </div>
       </div>
 
       <!-- Identity -->
-      <div style="font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--text3);font-weight:600;margin-bottom:10px">Identity</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px">
-        <div class="form3group" style="margin:0">
-          <label class="form3label" style="font-size:11px">Display name (appears in sidebar &amp; login)</label>
+      <div class="auris-settings-s-4c2e60e092">Identity</div>
+      <div class="auris-settings-s-0adece173b">
+        <div class="form3group auris-settings-s-ab79ea2b85">
+          <label class="form3label auris-settings-s-33ee298127">Display name (appears in sidebar &amp; login)</label>
           <input type="text" id="br-display-name" placeholder="e.g. Acme Manufacturing" data-auris-oninput="h1195"/>
         </div>
-        <div class="form3group" style="margin:0">
-          <label class="form3label" style="font-size:11px">Tagline / strapline</label>
+        <div class="form3group auris-settings-s-ab79ea2b85">
+          <label class="form3label auris-settings-s-33ee298127">Tagline / strapline</label>
           <input type="text" id="br-tagline" placeholder="e.g. Safer every shift" data-auris-oninput="h1195"/>
         </div>
       </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:22px">
-        <div class="form3group" style="margin:0">
-          <label class="form3label" style="font-size:11px">Browser tab title</label>
+      <div class="auris-settings-s-177d44ad79">
+        <div class="form3group auris-settings-s-ab79ea2b85">
+          <label class="form3label auris-settings-s-33ee298127">Browser tab title</label>
           <input type="text" id="br-tab-title" placeholder="e.g. Acme HSE Portal" data-auris-oninput="h1195"/>
         </div>
-        <div class="form3group" style="margin:0">
-          <label class="form3label" style="font-size:11px">PDF / report footer line</label>
+        <div class="form3group auris-settings-s-ab79ea2b85">
+          <label class="form3label auris-settings-s-33ee298127">PDF / report footer line</label>
           <input type="text" id="br-pdf-footer" placeholder="e.g. - Acme Manufacturing - Confidential"/>
         </div>
       </div>
 
       <!-- Advanced -->
-      <details style="margin-bottom:8px">
-        <summary style="cursor:pointer;font-size:12px;color:var(--text2);font-weight:600;padding:8px 0">Advanced options</summary>
-        <div style="padding-top:12px;display:grid;grid-template-columns:1fr 1fr;gap:12px">
+      <details class="auris-settings-s-8e26c5f7a1">
+        <summary class="auris-settings-s-df145d4c6c">Advanced options</summary>
+        <div class="auris-settings-s-2ac0ea5cf9">
           <div>
-            <label class="form3label" style="font-size:11px">Favicon URL</label>
+            <label class="form3label auris-settings-s-33ee298127">Favicon URL</label>
             <input type="url" id="br-favicon" placeholder="https://..."/>
-            <div style="font-size:10px;color:var(--text3);margin-top:3px">PNG or ICO, 32-32 recommended</div>
+            <div class="auris-settings-s-0602f7e8aa">PNG or ICO, 32-32 recommended</div>
           </div>
           <div>
-            <label class="form3label" style="font-size:11px">Email header colour</label>
-            <div style="display:flex;gap:6px;align-items:center">
-              <input type="color" id="br-email-color" style="width:36px;height:36px;padding:0;border:1px solid var(--border);border-radius:6px;cursor:pointer"/>
-              <input type="text" id="br-email-color-hex" style="flex:1;font-family:monospace;font-size:12px"/>
+            <label class="form3label auris-settings-s-33ee298127">Email header colour</label>
+            <div class="auris-settings-s-d1a8f8bc31">
+              <input type="color" id="br-email-color" class="auris-settings-s-2decaa52c3"/>
+              <input type="text" id="br-email-color-hex" class="auris-settings-s-f282774b26"/>
             </div>
-            <div style="font-size:10px;color:var(--text3);margin-top:3px">Used in notification emails (defaults to Primary)</div>
+            <div class="auris-settings-s-0602f7e8aa">Used in notification emails (defaults to Primary)</div>
           </div>
-          <div style="grid-column:span 2">
-            <label style="display:flex;align-items:center;gap:8px;font-size:12px;cursor:pointer"><input type="checkbox" id="br-hide-poweredby"/> Hide "Powered by SEPHS Consulting" footer (Enterprise tier only)</label>
+          <div class="auris-settings-s-aeb7cdee96">
+            <label class="auris-settings-s-b3819038f5"><input type="checkbox" id="br-hide-poweredby"/> Hide "Powered by SEPHS Consulting" footer (Enterprise tier only)</label>
           </div>
         </div>
       </details>
     </div>
 
     <!-- RIGHT: live preview -->
-    <div style="background:var(--bg);padding:18px;display:flex;flex-direction:column;gap:12px">
-      <div style="font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--text3);font-weight:600">Live preview</div>
+    <div class="auris-settings-s-6aadb64fbb">
+      <div class="auris-settings-s-6a5d85b93f">Live preview</div>
 
       <!-- Sidebar preview -->
-      <div style="background:#fff;border:1px solid var(--border);border-radius:10px;overflow:hidden">
-        <div style="display:flex;height:140px">
-          <div id="prev-sidebar" style="width:90px;background:#fff;border-right:1px solid var(--border);padding:10px;display:flex;flex-direction:column;align-items:center;gap:6px">
-            <div id="prev-logo-wrap" style="width:38px;height:38px;border-radius:8px;background:var(--brand-primary,#1D9E75);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:14px;overflow:hidden">
-              <img id="prev-logo-img" style="width:100%;height:100%;object-fit:contain;display:none"/>
+      <div class="auris-settings-s-03833c9ef7">
+        <div class="auris-settings-s-665dce53b3">
+          <div id="prev-sidebar" class="auris-settings-s-d10207b7bd">
+            <div id="prev-logo-wrap" class="auris-settings-s-22243b023f">
+              <img id="prev-logo-img" class="auris-settings-s-baee56b4c5"/>
               <span id="prev-logo-initials">A</span>
             </div>
-            <div id="prev-co-name" style="font-size:9px;font-weight:700;text-align:center;line-height:1.2">AURIS360</div>
-            <div style="height:6px"></div>
-            <div style="width:100%;height:6px;border-radius:3px;background:var(--brand-primary,#1D9E75);opacity:.15"></div>
-            <div style="width:100%;height:6px;border-radius:3px;background:#e5e7eb"></div>
-            <div style="width:100%;height:6px;border-radius:3px;background:#e5e7eb"></div>
+            <div id="prev-co-name" class="auris-settings-s-5dae9fed2d">AURIS360</div>
+            <div class="auris-settings-s-e593254ea2"></div>
+            <div class="auris-settings-s-056f5dfc92"></div>
+            <div class="auris-settings-s-6b068e12eb"></div>
+            <div class="auris-settings-s-6b068e12eb"></div>
           </div>
-          <div style="flex:1;padding:10px;background:var(--bg)">
-            <div style="font-size:10px;font-weight:700;color:var(--text)">Dashboard</div>
-            <div style="display:flex;gap:6px;margin-top:6px">
-              <button id="prev-btn" style="background:var(--brand-primary,#1D9E75);color:#fff;border:none;padding:4px 8px;border-radius:5px;font-size:9px;font-weight:600">Primary CTA</button>
-              <span id="prev-badge" style="background:var(--brand-accent,#EF9F27);color:#fff;padding:2px 6px;border-radius:99px;font-size:8px;font-weight:600">Badge</span>
+          <div class="auris-settings-s-e3d185a48f">
+            <div class="auris-settings-s-405e2d2b03">Dashboard</div>
+            <div class="auris-settings-s-4d67e17d03">
+              <button id="prev-btn" class="auris-settings-s-049a510eb6">Primary CTA</button>
+              <span id="prev-badge" class="auris-settings-s-6afb9fabb9">Badge</span>
             </div>
-            <div style="margin-top:8px;padding:6px;background:#fff;border:1px solid var(--border);border-radius:5px">
-              <div style="font-size:8px;color:var(--text2)">KPI</div>
-              <div id="prev-kpi" style="font-size:14px;font-weight:700;color:var(--brand-primary,#1D9E75)">94%</div>
+            <div class="auris-settings-s-2569355785">
+              <div class="auris-settings-s-79a285bda1">KPI</div>
+              <div id="prev-kpi" class="auris-settings-s-55c3fa8f94">94%</div>
             </div>
           </div>
         </div>
       </div>
 
       <!-- Email preview -->
-      <div style="background:#fff;border:1px solid var(--border);border-radius:10px;overflow:hidden">
-        <div id="prev-email-header" style="background:var(--brand-primary,#1D9E75);padding:10px 12px;color:#fff;display:flex;align-items:center;gap:8px">
-          <img id="prev-email-logo" style="height:18px;display:none"/>
-          <span id="prev-email-title" style="font-size:11px;font-weight:700">AURIS360</span>
+      <div class="auris-settings-s-03833c9ef7">
+        <div id="prev-email-header" class="auris-settings-s-26878806fc">
+          <img id="prev-email-logo" class="auris-settings-s-9ff406f934"/>
+          <span id="prev-email-title" class="auris-settings-s-19af22939e">AURIS360</span>
         </div>
-        <div style="padding:10px 12px;font-size:10px;color:var(--text2);line-height:1.5">
-          <strong style="color:var(--text)">Hi James,</strong><br>
+        <div class="auris-settings-s-0115395cc7">
+          <strong class="auris-settings-s-6c41898cb4">Hi James,</strong><br>
           A new incident has been logged. Click to review.
-          <div style="margin-top:8px"><span id="prev-email-btn" style="background:var(--brand-primary,#1D9E75);color:#fff;padding:5px 10px;border-radius:5px;font-size:9px;font-weight:600">View incident</span></div>
+          <div class="auris-settings-s-43a97fe494"><span id="prev-email-btn" class="auris-settings-s-503282d200">View incident</span></div>
         </div>
       </div>
 
       <!-- Login screen preview -->
-      <div style="background:#fff;border:1px solid var(--border);border-radius:10px;padding:14px;text-align:center">
-        <div style="font-size:10px;color:var(--text3);margin-bottom:6px">Login screen</div>
-        <div id="prev-login-logo" style="font-size:16px;font-weight:800;color:var(--brand-primary,#1D9E75);letter-spacing:-.3px">AURIS360</div>
-        <div id="prev-login-tag" style="font-size:9px;color:var(--text2);margin-top:2px">HSE Management Platform</div>
-        <div style="margin-top:8px"><button style="background:var(--brand-primary,#1D9E75);color:#fff;border:none;padding:5px 14px;border-radius:5px;font-size:9px;font-weight:600;width:100%">Sign in</button></div>
+      <div class="auris-settings-s-2da23f84cd">
+        <div class="auris-settings-s-aab1afd32b">Login screen</div>
+        <div id="prev-login-logo" class="auris-settings-s-71c0747dfd">AURIS360</div>
+        <div id="prev-login-tag" class="auris-settings-s-3f3fba55c7">HSE Management Platform</div>
+        <div class="auris-settings-s-43a97fe494"><button class="auris-settings-s-e82d776d31">Sign in</button></div>
       </div>
     </div>
   </div>
@@ -10781,59 +10782,59 @@ I can help you:<br>
 
 <div class="card"><div class="card-title">My profile</div><div id="my-profile-info"></div></div>
 
-<div class="card" id="settings-rollout-control-card" style="display:none">
-  <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;margin-bottom:12px">
+<div class="card auris-settings-s-6aa34d7432" id="settings-rollout-control-card">
+  <div class="auris-settings-s-59b6f24660">
     <div>
-      <div class="card-title" style="display:flex;align-items:center;gap:8px;margin-bottom:4px"><i class="ti ti-flag-3" style="color:#7C3AED"></i>Controlled Rollout</div>
-      <div style="font-size:12px;color:var(--text2);line-height:1.5">Enable module cohorts per tenant only after their release gates pass; pause a cohort without deleting its configuration or data.</div>
+      <div class="card-title auris-settings-s-76c78741d9"><i class="ti ti-flag-3 auris-settings-s-ca98ae97df"></i>Controlled Rollout</div>
+      <div class="auris-settings-s-3d962333c1">Enable module cohorts per tenant only after their release gates pass; pause a cohort without deleting its configuration or data.</div>
     </div>
     <button class="btn" data-auris-onclick="h1209"><i class="ti ti-refresh"></i>Refresh rollout</button>
   </div>
   <div id="rollout-control-body"><div class="loading">Loading controlled rollout...</div></div>
 </div>
 
-<div class="card" id="settings-rollback-rehearsal-card" style="display:none"></div>
+<div class="card auris-settings-s-6aa34d7432" id="settings-rollback-rehearsal-card"></div>
 
-<div class="card" id="settings-system3health-card" style="display:none">
-  <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;margin-bottom:12px">
+<div class="card auris-settings-s-6aa34d7432" id="settings-system3health-card">
+  <div class="auris-settings-s-59b6f24660">
     <div>
-      <div class="card-title" style="display:flex;align-items:center;gap:8px;margin-bottom:4px"><i class="ti ti-heartbeat" style="color:#1D9E75"></i>System Health &amp; Setup</div>
-      <div style="font-size:12px;color:var(--text2);line-height:1.5">Internal finalisation check for database tables, permissions, notification queue, offline drafts and core setup readiness.</div>
+      <div class="card-title auris-settings-s-76c78741d9"><i class="ti ti-heartbeat auris-settings-s-f9faa54401"></i>System Health &amp; Setup</div>
+      <div class="auris-settings-s-3d962333c1">Internal finalisation check for database tables, permissions, notification queue, offline drafts and core setup readiness.</div>
     </div>
     <button class="btn" data-auris-onclick="h1210"><i class="ti ti-refresh"></i>Refresh checks</button>
   </div>
   <div id="system3health-body"><div class="loading">Checking system health...</div></div>
 </div>
 
-<div class="card" id="settings-relationship-repair-card" style="display:none">
-  <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;margin-bottom:12px">
+<div class="card auris-settings-s-6aa34d7432" id="settings-relationship-repair-card">
+  <div class="auris-settings-s-59b6f24660">
     <div>
-      <div class="card-title" style="display:flex;align-items:center;gap:8px;margin-bottom:4px"><i class="ti ti-link" style="color:#2563EB"></i>Relationship Health &amp; Repair</div>
-      <div style="font-size:12px;color:var(--text2);line-height:1.5">Validate both endpoints, distinguish retired records from broken or unresolved links, and repair relationships without silently deleting history.</div>
+      <div class="card-title auris-settings-s-76c78741d9"><i class="ti ti-link auris-settings-s-4957b28e9a"></i>Relationship Health &amp; Repair</div>
+      <div class="auris-settings-s-3d962333c1">Validate both endpoints, distinguish retired records from broken or unresolved links, and repair relationships without silently deleting history.</div>
     </div>
     <button class="btn" data-auris-onclick="h1211"><i class="ti ti-refresh"></i>Validate now</button>
   </div>
   <div id="relationship-repair-body"><div class="loading">Loading relationship health...</div></div>
 </div>
 
-<div class="card" id="settings-person-identity-card" style="display:none">
-  <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;margin-bottom:12px">
+<div class="card auris-settings-s-6aa34d7432" id="settings-person-identity-card">
+  <div class="auris-settings-s-59b6f24660">
     <div>
-      <div class="card-title" style="display:flex;align-items:center;gap:8px;margin-bottom:4px"><i class="ti ti-user-search" style="color:#7C3AED"></i>People Identity Reconciliation</div>
-      <div style="font-size:12px;color:var(--text2);line-height:1.5">Link ambiguous legacy names to verified People records, retain historical snapshots and review possible duplicate profiles without automatic merging.</div>
+      <div class="card-title auris-settings-s-76c78741d9"><i class="ti ti-user-search auris-settings-s-ca98ae97df"></i>People Identity Reconciliation</div>
+      <div class="auris-settings-s-3d962333c1">Link ambiguous legacy names to verified People records, retain historical snapshots and review possible duplicate profiles without automatic merging.</div>
     </div>
     <button class="btn" data-auris-onclick="h1212"><i class="ti ti-refresh"></i>Rescan records</button>
   </div>
   <div id="person-identity-reconciliation-body"><div class="loading">Loading identity reconciliation...</div></div>
 </div>
 
-<div class="card" id="settings-client-demo-card" style="display:none">
-  <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;margin-bottom:12px">
+<div class="card auris-settings-s-6aa34d7432" id="settings-client-demo-card">
+  <div class="auris-settings-s-59b6f24660">
     <div>
-      <div class="card-title" style="display:flex;align-items:center;gap:8px;margin-bottom:4px"><i class="ti ti-presentation" style="color:#5B21B6"></i>Go-live Readiness Center</div>
-      <div style="font-size:12px;color:var(--text2);line-height:1.5">Internal readiness guide: verify configuration, live data, module access, governance and support points before go-live.</div>
+      <div class="card-title auris-settings-s-76c78741d9"><i class="ti ti-presentation auris-settings-s-868661d008"></i>Go-live Readiness Center</div>
+      <div class="auris-settings-s-3d962333c1">Internal readiness guide: verify configuration, live data, module access, governance and support points before go-live.</div>
     </div>
-    <div style="display:flex;gap:8px;flex-wrap:wrap">
+    <div class="auris-settings-s-c9dc9b5648">
       <button class="btn" data-auris-onclick="h1213"><i class="ti ti-list-check"></i>Checklist</button><button class="btn" data-auris-onclick="h1214"><i class="ti ti-player-play"></i>Guided review</button>
       <button class="btn btn-primary" data-auris-onclick="h1215"><i class="ti ti-copy"></i>Copy readiness summary</button>
     </div>
@@ -10842,62 +10843,62 @@ I can help you:<br>
 </div>
 
 <div class="card" id="settings-security-readiness-card">
-  <div class="card-title" style="display:flex;align-items:center;gap:8px"><i class="ti ti-shield-lock" style="color:#185FA5"></i>Security, Infrastructure &amp; SLA Readiness</div>
-  <div style="font-size:12px;color:var(--text2);margin-bottom:14px;line-height:1.5">
+  <div class="card-title auris-settings-s-a4e017b7b0"><i class="ti ti-shield-lock auris-settings-s-ca32b871b2"></i>Security, Infrastructure &amp; SLA Readiness</div>
+  <div class="auris-settings-s-2820a8cfc0">
     Internal readiness view for client confidence. This is not a public promise by itself; it helps prepare the security, backup, SLA and governance statements needed for professional rollout.
   </div>
   <div id="security-readiness-body"><div class="loading">Loading readiness...</div></div>
 </div>
 
-<div class="card" id="settings-ptw-approver-card" style="display:none">
-  <div class="card-title" style="display:flex;align-items:center;gap:8px"><i class="ti ti-certificate" style="color:#185FA5"></i>Permit Approval Settings</div>
-  <div style="font-size:12px;color:var(--text2);margin-bottom:14px">Define who approves Permit to Work requests at Level 1, Level 2 and Level 3.</div>
+<div class="card auris-settings-s-6aa34d7432" id="settings-ptw-approver-card">
+  <div class="card-title auris-settings-s-a4e017b7b0"><i class="ti ti-certificate auris-settings-s-ca32b871b2"></i>Permit Approval Settings</div>
+  <div class="auris-settings-s-934634063f">Define who approves Permit to Work requests at Level 1, Level 2 and Level 3.</div>
   <div id="ptw-approver-settings-body"><div class="loading">Loading approvers...</div></div>
 </div>
 
-<div class="card" id="settings-workflow-card" style="display:none">
-  <div class="card-title" style="display:flex;align-items:center;gap:8px"><i class="ti ti-route" style="color:#5B21B6"></i>Approval Workflow Settings</div>
-  <div style="font-size:12px;color:var(--text2);margin-bottom:14px">Create reusable approval routes for permits, documents, risk assessments, investigations and other controlled records. For PTW, this replaces the old permit-only approver setup.</div>
+<div class="card auris-settings-s-6aa34d7432" id="settings-workflow-card">
+  <div class="card-title auris-settings-s-a4e017b7b0"><i class="ti ti-route auris-settings-s-868661d008"></i>Approval Workflow Settings</div>
+  <div class="auris-settings-s-934634063f">Create reusable approval routes for permits, documents, risk assessments, investigations and other controlled records. For PTW, this replaces the old permit-only approver setup.</div>
   <div id="workflow-settings-body"><div class="loading">Loading workflows...</div></div>
 </div>
 
-<div class="card" id="settings-custom3fields-card" style="display:none">
-  <div class="card-title" style="display:flex;align-items:center;gap:8px"><i class="ti ti-adjustments" style="color:#1D9E75"></i>No-code Custom Fields</div>
-  <div style="font-size:12px;color:var(--text2);margin-bottom:14px">Add company-specific fields without changing the software code. Enabled for Incident Management and BBS Observations.</div>
+<div class="card auris-settings-s-6aa34d7432" id="settings-custom3fields-card">
+  <div class="card-title auris-settings-s-a4e017b7b0"><i class="ti ti-adjustments auris-settings-s-f9faa54401"></i>No-code Custom Fields</div>
+  <div class="auris-settings-s-934634063f">Add company-specific fields without changing the software code. Enabled for Incident Management and BBS Observations.</div>
   <div id="custom3fields-settings-body"><div class="loading">Loading custom fields...</div></div>
 </div>
 
 <div class="card" id="settings-offline-drafts-card">
-  <div class="card-title" style="display:flex;align-items:center;gap:8px"><i class="ti ti-cloud-upload" style="color:#185FA5"></i>Offline Drafts</div>
-  <div style="font-size:12px;color:var(--text2);margin-bottom:14px">Field reports saved while offline are listed here until they sync. Photos are compressed before being stored locally.</div>
+  <div class="card-title auris-settings-s-a4e017b7b0"><i class="ti ti-cloud-upload auris-settings-s-ca32b871b2"></i>Offline Drafts</div>
+  <div class="auris-settings-s-934634063f">Field reports saved while offline are listed here until they sync. Photos are compressed before being stored locally.</div>
   <div id="offline-drafts-body"><div class="loading">Loading offline drafts...</div></div>
 </div>
 
-<div class="card" id="settings-offline-sync-diagnostic-card" style="display:none"></div>
+<div class="card auris-settings-s-6aa34d7432" id="settings-offline-sync-diagnostic-card"></div>
 
-<div class="card" id="settings-notif-card" style="display:none">
-  <div class="card-title" style="display:flex;align-items:center;gap:8px"><i class="ti ti-bell" style="color:var(--green)"></i>Email Notifications</div>
-  <div style="font-size:12px;color:var(--text2);margin-bottom:14px">Company Admin can configure who receives incident emails by incident type. Go to the section below called "Incident recipients by event type".</div>
+<div class="card auris-settings-s-6aa34d7432" id="settings-notif-card">
+  <div class="card-title auris-settings-s-a4e017b7b0"><i class="ti ti-bell auris-settings-s-7608acb292"></i>Email Notifications</div>
+  <div class="auris-settings-s-934634063f">Company Admin can configure who receives incident emails by incident type. Go to the section below called "Incident recipients by event type".</div>
   <div id="notif-settings-body"><div class="loading">Loading...</div></div>
 </div>
 
 <!-- Legacy logo-settings card kept hidden for backwards compatibility with saveLogo() -->
-<div id="logo-settings" style="display:none"><input type="url" id="set-logo"/></div>
+<div id="logo-settings" class="auris-settings-s-6aa34d7432"><input type="url" id="set-logo"/></div>
 
 </div>
 
 </div>
 </div>
 </div>
-<div class="ai-panel" id="ai-panel" style="display:none"><div class="ai-window" id="ai-window"><div class="ai-header"><div style="width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;font-size:18px"><i class="ti ti-brain" style="color:#fff"></i></div><div style="font-size:11px;color:rgba(255,255,255,.8)">Powered by AURIS AI</div><button class="ai-close" data-auris-onclick="h1216"><i class="ti ti-x"></i></button></div><div class="ai-messages" id="ai-messages"></div><div class="ai-suggestions" id="ai-suggestions"></div><div class="ai-input-row"><input type="text" class="ai-input" id="ai-input" placeholder="Ask about HSE performance..." data-auris-onkeydown="h1217"/><button class="ai-send" data-auris-onclick="h1218">Send</button></div></div><button class="ai-toggle" data-auris-onclick="h1219"><i class="ti ti-brain"></i></button></div>
+<div class="ai-panel auris-settings-s-6aa34d7432" id="ai-panel"><div class="ai-window" id="ai-window"><div class="ai-header"><div class="auris-settings-s-52a429974d"><i class="ti ti-brain auris-settings-s-eedb2619ac"></i></div><div class="auris-settings-s-59ce0fc7fd">Powered by AURIS AI</div><button class="ai-close" data-auris-onclick="h1216"><i class="ti ti-x"></i></button></div><div class="ai-messages" id="ai-messages"></div><div class="ai-suggestions" id="ai-suggestions"></div><div class="ai-input-row"><input type="text" class="ai-input" id="ai-input" placeholder="Ask about HSE performance..." data-auris-onkeydown="h1217"/><button class="ai-send" data-auris-onclick="h1218">Send</button></div></div><button class="ai-toggle" data-auris-onclick="h1219"><i class="ti ti-brain"></i></button></div>
 <div class="toast" id="toast">
 
 <!-- NOTIFICATIONS TAB CONTENT -->
-<div id="integ-notif-panel" style="display:none">
-  <div class="card-title" style="display:flex;align-items:center;gap:8px">
-    <i class="ti ti-bell" style="color:var(--green)"></i>Email Notifications
+<div id="integ-notif-panel" class="auris-settings-s-6aa34d7432">
+  <div class="card-title auris-settings-s-a4e017b7b0">
+    <i class="ti ti-bell auris-settings-s-7608acb292"></i>Email Notifications
   </div>
-  <p style="font-size:13px;color:var(--text2);margin-bottom:16px">
+  <p class="auris-settings-s-7cbea06605">
     Configure automatic email alerts for incidents, permits, actions and more.
     The sender is configured securely on the server, normally using the same SMTP provider as password reset emails.
   </p>
@@ -10907,46 +10908,46 @@ I can help you:<br>
 </div>
 
 <!-- ------- CLIENT ONBOARDING WIZARD ------- -->
-<div id="app-confirm3modal" style="display:none;position:fixed;inset:0;background:rgba(15,23,42,.55);z-index:900;align-items:center;justify-content:center;padding:16px">
-  <div class="card" role="dialog" aria-modal="true" aria-labelledby="app-confirm3title" style="width:100%;max-width:440px;border-radius:12px;box-shadow:0 20px 70px rgba(15,23,42,.28);padding:0;overflow:hidden">
-    <div style="padding:18px 20px;border-bottom:1px solid var(--border);display:flex;gap:12px;align-items:flex-start">
-      <div style="width:36px;height:36px;border-radius:10px;background:#FEF2F2;color:var(--red);display:flex;align-items:center;justify-content:center;flex-shrink:0"><i class="ti ti-alert-triangle"></i></div>
+<div id="app-confirm3modal" class="auris-settings-s-ddcbc6274a">
+  <div class="card auris-settings-s-795bfa84d1" role="dialog" aria-modal="true" aria-labelledby="app-confirm3title">
+    <div class="auris-settings-s-4246380492">
+      <div class="auris-settings-s-9413e610e3"><i class="ti ti-alert-triangle"></i></div>
       <div>
-        <div id="app-confirm3title" style="font-size:16px;font-weight:900;color:var(--text)">Please confirm</div>
-        <div id="app-confirm3message" style="font-size:13px;color:var(--text2);margin-top:4px;line-height:1.45">Are you sure?</div>
+        <div id="app-confirm3title" class="auris-settings-s-64822dc391">Please confirm</div>
+        <div id="app-confirm3message" class="auris-settings-s-92e2e1bc76">Are you sure?</div>
       </div>
     </div>
-    <div id="app-confirm3detail" style="display:none;padding:14px 20px;font-size:12px;color:var(--text2);line-height:1.45;background:#F8FAFC;border-bottom:1px solid var(--border)"></div>
-    <div style="padding:14px 20px;display:flex;justify-content:flex-end;gap:10px;flex-wrap:wrap">
+    <div id="app-confirm3detail" class="auris-settings-s-f65e484bda"></div>
+    <div class="auris-settings-s-57c14c8486">
       <button class="btn" id="app-confirm3cancel" type="button">Cancel</button>
-      <button class="btn" id="app-confirm3ok" type="button" style="background:var(--red);color:#fff;border-color:var(--red)">Confirm</button>
+      <button class="btn auris-settings-s-98e2b3311c" id="app-confirm3ok" type="button">Confirm</button>
     </div>
   </div>
 </div>
 
-<div id="onboard-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:500;align-items:center;justify-content:center;padding:16px">
-  <div style="background:var(--card);border-radius:16px;width:100%;max-width:640px;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.3)">
+<div id="onboard-modal" class="auris-settings-s-a41363537b">
+  <div class="auris-settings-s-1661f0c6ad">
 
     <!-- Header -->
-    <div style="background:var(--green);padding:20px 24px;border-radius:16px 16px 0 0;color:#fff;display:flex;align-items:center;justify-content:space-between">
+    <div class="auris-settings-s-ba6d5be0c9">
       <div>
-        <div style="font-size:18px;font-weight:700">New Client Onboarding</div>
-        <div style="font-size:12px;opacity:.85" id="ob-step-label">Step 1 of 4 - Company Details</div>
+        <div class="auris-settings-s-952bc020f8">New Client Onboarding</div>
+        <div id="ob-step-label" class="auris-settings-s-dc4ac84a01">Step 1 of 4 - Company Details</div>
       </div>
-      <button data-auris-onclick="h1220" style="background:rgba(255,255,255,.2);border:none;color:#fff;width:32px;height:32px;border-radius:50%;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center">?</button>
+      <button class="auris-settings-s-11e3d5df81" data-auris-onclick="h1220">?</button>
     </div>
 
     <!-- Progress bar -->
-    <div style="height:4px;background:rgba(255,255,255,.2);margin-top:-4px">
-      <div id="ob-progress" style="height:100%;background:#fff;width:25%;transition:width .3s;border-radius:0 2px 2px 0"></div>
+    <div class="auris-settings-s-4c8d3e1b51">
+      <div id="ob-progress" class="auris-settings-s-7201e7c06d"></div>
     </div>
 
     <!-- Step content -->
-    <div style="padding:24px" id="ob-content">
+    <div id="ob-content" class="auris-settings-s-a859f9d073">
 
       <!-- STEP 1: Company Details -->
       <div id="ob-step-1">
-        <div style="font-size:14px;font-weight:600;margin-bottom:16px;color:var(--text)">Company Information</div>
+        <div class="auris-settings-s-be25bcadeb">Company Information</div>
         <div class="form3row">
           <div class="form3group">
             <label class="form3label">Company Name *</label>
@@ -11013,19 +11014,19 @@ I can help you:<br>
       </div>
 
       <!-- STEP 2: Sites -->
-      <div id="ob-step-2" style="display:none">
-        <div style="font-size:14px;font-weight:600;margin-bottom:4px;color:var(--text)">Work Sites</div>
-        <div style="font-size:12px;color:var(--text2);margin-bottom:16px">Add at least one site. You can add more later.</div>
-        <div id="ob-sites-list" style="display:flex;flex-direction:column;gap:10px;margin-bottom:14px"></div>
-        <button class="btn btn-sm" data-auris-onclick="h1221" style="background:var(--bg);border-color:var(--green);color:var(--green)">
+      <div id="ob-step-2" class="auris-settings-s-6aa34d7432">
+        <div class="auris-settings-s-74a621e525">Work Sites</div>
+        <div class="auris-settings-s-440b455c82">Add at least one site. You can add more later.</div>
+        <div id="ob-sites-list" class="auris-settings-s-c5a13d147b"></div>
+        <button class="btn btn-sm auris-settings-s-7476278ae0" data-auris-onclick="h1221">
           <i class="ti ti-plus"></i>Add Another Site
         </button>
       </div>
 
       <!-- STEP 3: Admin User -->
-      <div id="ob-step-3" style="display:none">
-        <div style="font-size:14px;font-weight:600;margin-bottom:4px;color:var(--text)">Client Admin Account</div>
-        <div style="font-size:12px;color:var(--text2);margin-bottom:16px">This person will be the company admin - they can manage users, sites and settings.</div>
+      <div id="ob-step-3" class="auris-settings-s-6aa34d7432">
+        <div class="auris-settings-s-74a621e525">Client Admin Account</div>
+        <div class="auris-settings-s-440b455c82">This person will be the company admin - they can manage users, sites and settings.</div>
         <div class="form3row">
           <div class="form3group">
             <label class="form3label">Full Name *</label>
@@ -11061,21 +11062,21 @@ I can help you:<br>
             <input type="password" id="ob-admin-pw2" placeholder="Repeat password"/>
           </div>
         </div>
-        <div style="background:var(--bg);border-radius:8px;padding:12px;font-size:12px;color:var(--text2);margin-top:4px">
-          <i class="ti ti-info-circle" style="color:var(--green)"></i>
+        <div class="auris-settings-s-d650d5f65c">
+          <i class="ti ti-info-circle auris-settings-s-7608acb292"></i>
           The admin will receive a welcome email with their login details and a link to set their own password.
         </div>
       </div>
 
       <!-- STEP 4: Confirmation -->
-      <div id="ob-step-4" style="display:none">
-        <div style="text-align:center;padding:8px 0 20px">
-          <div style="font-size:40px;margin-bottom:8px"><i class="ti ti-circle-dot"></i></div>
-          <div style="font-size:16px;font-weight:700;color:var(--text)">Ready to onboard!</div>
-          <div style="font-size:13px;color:var(--text2);margin-top:4px">Review the summary below then click Create to set everything up.</div>
+      <div id="ob-step-4" class="auris-settings-s-6aa34d7432">
+        <div class="auris-settings-s-8e8a1bc5d0">
+          <div class="auris-settings-s-483803c5cc"><i class="ti ti-circle-dot"></i></div>
+          <div class="auris-settings-s-43cfaf9847">Ready to onboard!</div>
+          <div class="auris-settings-s-b7abebae41">Review the summary below then click Create to set everything up.</div>
         </div>
-        <div id="ob-summary" style="background:var(--bg);border-radius:10px;padding:16px;font-size:13px;line-height:1.8"></div>
-        <div style="margin-top:16px;padding:12px;background:#EAF3DE;border-radius:8px;font-size:12px;color:#3B6D11">
+        <div id="ob-summary" class="auris-settings-s-e72a521dda"></div>
+        <div class="auris-settings-s-8377ba3201">
           <strong>What happens next:</strong><br>
           Company and site(s) created in the database<br>
           Admin account registered with Supabase Auth<br>
@@ -11086,10 +11087,10 @@ I can help you:<br>
     </div>
 
     <!-- Footer buttons -->
-    <div style="padding:16px 24px;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center">
-      <button id="ob-back-btn" class="btn" data-auris-onclick="h1222" style="display:none"><i class="ti ti-arrow-left"></i>Back</button>
-      <div style="flex:1"></div>
-      <div style="display:flex;gap:10px">
+    <div class="auris-settings-s-05f791c884">
+      <button id="ob-back-btn" class="btn auris-settings-s-6aa34d7432" data-auris-onclick="h1222"><i class="ti ti-arrow-left"></i>Back</button>
+      <div class="auris-settings-s-83725d2c6e"></div>
+      <div class="auris-settings-s-0d76d82849">
         <button class="btn" data-auris-onclick="h1220">Cancel</button>
         <button id="ob-next-btn" class="btn btn-primary" data-auris-onclick="h1223">
           Next <i class="ti ti-arrow-right"></i>
