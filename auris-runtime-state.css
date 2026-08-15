@@ -1,0 +1,6 @@
+/* CSP-safe runtime display states. JavaScript toggles these classes instead of
+   writing element.style so the same state model works under style-src-attr. */
+.auris-display-none{display:none!important}
+.auris-display-block{display:block!important}
+.auris-display-flex{display:flex!important}
+.auris-display-inline-flex{display:inline-flex!important}

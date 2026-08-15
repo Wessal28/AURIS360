@@ -1920,16 +1920,27 @@ var _authRefreshTimer = null;
 var _authRefreshPromise = null;
 var _authSessionGeneration = 0;
 
+var AURIS_DISPLAY_CLASSES=['auris-display-none','auris-display-block','auris-display-flex','auris-display-inline-flex'];
+function aurisSetDisplay(target, mode) {
+  var el=typeof target==='string'?document.getElementById(target):target;
+  if(!el)return null;
+  AURIS_DISPLAY_CLASSES.forEach(function(name){el.classList.remove(name);});
+  if(mode)el.classList.add('auris-display-'+mode);
+  if(mode==='none')el.setAttribute('aria-hidden','true');
+  else el.removeAttribute('aria-hidden');
+  return el;
+}
+
 // -- Panel switching ------------------------------------------------------------
 function authShowPanel(name) {
   ['signin','register','forgot','update-pw'].forEach(function(p){
     var el=document.getElementById('panel-'+p);
-    if(el) el.style.display = p===name ? 'block' : 'none';
+    aurisSetDisplay(el,p===name?'block':'none');
   });
   var err=document.getElementById('login-err');
   var suc=document.getElementById('login-success');
-  if(err){err.style.display='none';err.textContent='';}
-  if(suc){suc.style.display='none';suc.textContent='';}
+  if(err){aurisSetDisplay(err,'none');err.textContent='';}
+  if(suc){aurisSetDisplay(suc,'none');suc.textContent='';}
   // Pre-fill reset email from login email
   if(name==='forgot'){
     var loginEmail=document.getElementById('login-email')?.value;
@@ -1940,28 +1951,28 @@ function authShowPanel(name) {
 
 function authShowErr(msg) {
   var err=document.getElementById('login-err');
-  if(err){err.textContent=msg;err.style.display='block';}
+  if(err){err.textContent=msg;aurisSetDisplay(err,'block');}
   authHideLoading();
 }
 
 function authShowSuccess(msg) {
   var suc=document.getElementById('login-success');
-  if(suc){suc.textContent=msg;suc.style.display='block';}
+  if(suc){suc.textContent=msg;aurisSetDisplay(suc,'block');}
   var err=document.getElementById('login-err');
-  if(err) err.style.display='none';
+  aurisSetDisplay(err,'none');
   authHideLoading();
 }
 
 function authShowLoading(msg) {
   var el=document.getElementById('auth-loading');
   var msgEl=document.getElementById('auth-loading-msg');
-  if(el) el.style.display='flex';
+  aurisSetDisplay(el,'flex');
   if(msgEl) msgEl.textContent=msg||'Please wait...';
 }
 
 function authHideLoading() {
   var el=document.getElementById('auth-loading');
-  if(el) el.style.display='none';
+  aurisSetDisplay(el,'none');
 }
 
 // -- Show/hide password toggle --------------------------------------------------
@@ -1991,8 +2002,8 @@ function authUpdateStrength() {
   var fill=document.getElementById('pw-strength-fill');
   var label=document.getElementById('pw-strength-label');
   if(!bar||!fill||!label) return;
-  if(!pw){ bar.style.display='none'; label.style.display='none'; return; }
-  bar.style.display='block'; label.style.display='block';
+  if(!pw){ aurisSetDisplay(bar,'none'); aurisSetDisplay(label,'none'); return; }
+  aurisSetDisplay(bar,'block'); aurisSetDisplay(label,'block');
   var score=authCheckStrength(pw);
   var configs=[
     {w:'20%',color:'#DC2626',text:'Very weak'},
@@ -2315,8 +2326,8 @@ function authScheduleRefresh(session) {
       if((e.status===400||e.status===401)&&latest){
         authClearSession();tok=null;prof=null;co=null;_authSession=null;
         authShowPanel('signin');
-        document.getElementById('login-screen').style.display='flex';
-        document.getElementById('app').style.display='none';
+        aurisSetDisplay('login-screen','flex');
+        aurisSetDisplay('app','none');
         authShowErr('Your session has expired. Please sign in again.');
       } else if(tok&&latest){
         _authRefreshTimer=setTimeout(function(){authScheduleRefresh(authGetStoredSession());},60000);
@@ -2353,11 +2364,11 @@ async function authOnSignIn(authData) {
   } catch(ex) {}
   // Show app
   authHideLoading();
-  document.getElementById('login-screen').style.display='none';
-  document.getElementById('app').style.display='block';
+  aurisSetDisplay('login-screen','none');
+  aurisSetDisplay('app','block');
   var aiPanel=document.getElementById('ai-panel');
-  if(aiPanel) aiPanel.style.display='block';
-  document.getElementById('page-dashboard').style.display='block';
+  aurisSetDisplay(aiPanel,'block');
+  document.getElementById('page-dashboard').classList.add('active');
   dashRouteView();
   if(!isPersonalDashRole()) dashRenderControlCentre({});
   applyRoles();
@@ -2396,10 +2407,10 @@ function doLogout() {
   authClearSession();
   try{ Brand.reset(); }catch(_){}
   authShowPanel('signin');
-  document.getElementById('login-screen').style.display='flex';
-  document.getElementById('app').style.display='none';
+  aurisSetDisplay('login-screen','flex');
+  aurisSetDisplay('app','none');
   var aiPanel=document.getElementById('ai-panel');
-  if(aiPanel) aiPanel.style.display='none';
+  aurisSetDisplay(aiPanel,'none');
 }
 
 // -- Auto-restore session on page load -----------------------------------------
@@ -2435,18 +2446,18 @@ async function authInitSession() {
           }));
         } catch(_){}
         history.replaceState(null,'',window.location.pathname);
-        document.getElementById('login-screen').style.display='flex';
+        aurisSetDisplay('login-screen','flex');
         authShowPanel('update-pw');
         return;
       } else {
         history.replaceState(null,'',window.location.pathname);
-        document.getElementById('login-screen').style.display='flex';
+        aurisSetDisplay('login-screen','flex');
         authShowPanel('signin');
         authShowErr('This reset link has expired or was already used. Please request a new password reset.');
         return;
       }
     } catch(ex) {
-      document.getElementById('login-screen').style.display='flex';
+      aurisSetDisplay('login-screen','flex');
       authShowPanel('signin');
       authShowErr('Could not verify the reset link. Please request a new one.');
       return;
@@ -2463,18 +2474,18 @@ async function authInitSession() {
         tok = vd.access_token;
         try{localStorage.setItem('auris360_session',JSON.stringify({access_token:vd.access_token,refresh_token:vd.refresh_token,expires_at:Math.floor(Date.now()/1000)+(vd.expires_in||3600),user:null}));}catch(_){}
         history.replaceState(null,'',window.location.pathname);
-        document.getElementById('login-screen').style.display='flex';
+        aurisSetDisplay('login-screen','flex');
         authShowPanel(qpType==='recovery'?'update-pw':'signin');
         return;
       } else {
         history.replaceState(null,'',window.location.pathname);
-        document.getElementById('login-screen').style.display='flex';
+        aurisSetDisplay('login-screen','flex');
         authShowPanel('signin');
         authShowErr('This reset link has expired or was already used. Please request a new one.');
         return;
       }
     } catch(ex) {
-      document.getElementById('login-screen').style.display='flex';
+      aurisSetDisplay('login-screen','flex');
       authShowPanel('signin');
       authShowErr('Could not verify the reset link. Please try again.');
       return;
@@ -2491,18 +2502,18 @@ async function authInitSession() {
         tok = vd.access_token;
         try{localStorage.setItem('auris360_session',JSON.stringify({access_token:vd.access_token,refresh_token:vd.refresh_token,expires_at:Math.floor(Date.now()/1000)+(vd.expires_in||3600),user:null}));}catch(_){}
         history.replaceState(null,'',window.location.pathname);
-        document.getElementById('login-screen').style.display='flex';
+        aurisSetDisplay('login-screen','flex');
         authShowPanel(qpType==='recovery'?'update-pw':'signin');
         return;
       } else {
         history.replaceState(null,'',window.location.pathname);
-        document.getElementById('login-screen').style.display='flex';
+        aurisSetDisplay('login-screen','flex');
         authShowPanel('signin');
         authShowErr('This reset link has expired or was already used. Please request a new one.');
         return;
       }
     } catch(ex) {
-      document.getElementById('login-screen').style.display='flex';
+      aurisSetDisplay('login-screen','flex');
       authShowPanel('signin');
       authShowErr('Could not verify the reset link. Please try again.');
       return;
@@ -2528,7 +2539,7 @@ async function authInitSession() {
 
       if(hashType === 'recovery') {
         // Password recovery flow - show update-pw panel on login screen
-        document.getElementById('login-screen').style.display='flex';
+        aurisSetDisplay('login-screen','flex');
         authShowPanel('update-pw');
         return;
       }
@@ -2539,8 +2550,8 @@ async function authInitSession() {
         var payload = JSON.parse(atob(hashToken.split('.')[1]));
         var uid = payload.sub;
         // Hide the login screen and show the dashboard scaffold
-        document.getElementById('login-screen').style.display = 'none';
-        document.getElementById('app').style.display = 'flex';
+        aurisSetDisplay('login-screen','none');
+        aurisSetDisplay('app','flex');
         // Patch the profile to set must_change_password=true so loadProf shows the modal
         try {
           await api('/profiles?id=eq.' + uid, {
@@ -2568,13 +2579,13 @@ async function authInitSession() {
   var stored = authGetStoredSession();
   if(!stored || !stored.access_token) {
     // No session - show login normally
-    document.getElementById('login-screen').style.display='flex';
+    aurisSetDisplay('login-screen','flex');
     return;
   }
 
   // Show a subtle restoring indicator (not the full loading overlay)
   var loginScreen = document.getElementById('login-screen');
-  if(loginScreen) loginScreen.style.display='flex';
+  aurisSetDisplay(loginScreen,'flex');
 
   // A slow profile/network response must not erase a valid session. Keep the
   // restoration state visible and let the request complete.
@@ -2616,11 +2627,11 @@ async function authInitSession() {
     await loadRolloutRuntimeConfig();
     clearTimeout(timeout);
     // Hide login, show app
-    document.getElementById('login-screen').style.display='none';
-    document.getElementById('app').style.display='block';
+    aurisSetDisplay('login-screen','none');
+    aurisSetDisplay('app','block');
     var aiPanel = document.getElementById('ai-panel');
-    if(aiPanel) aiPanel.style.display='block';
-    document.getElementById('page-dashboard').style.display='block';
+    aurisSetDisplay(aiPanel,'block');
+    document.getElementById('page-dashboard').classList.add('active');
     dashRouteView();
     if(!isPersonalDashRole()) dashRenderControlCentre({});
     applyRoles();
@@ -2635,7 +2646,7 @@ async function authInitSession() {
   } catch(e) {
     clearTimeout(timeout);
     authHideLoading();
-    document.getElementById('login-screen').style.display='flex';
+    aurisSetDisplay('login-screen','flex');
     authShowErr('We could not restore your session. Please check your connection or sign in again.');
   }
 }
@@ -3339,16 +3350,13 @@ function showPage(name,el){
   }
 
 closeTransientOverlays();
-// Hide all pages using inline style
+// Shared page CSS owns visibility; routing only changes the active state.
 document.querySelectorAll('.page').forEach(p=>{
-  p.style.display='none';
   p.classList.remove('active');
 });
 document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
-// Show target page using inline style
 const target=document.getElementById('page-'+name);
 if(target){
-  target.style.display='block';
   target.classList.add('active');
 }
 if(el&&el.classList)el.classList.add('active');
@@ -6519,7 +6527,7 @@ function toastMessageForUser(m,ok){
   }
   return msg;
 }
-function toast(m,ok=true){const t=document.getElementById('toast');var msg=toastMessageForUser(m,ok);if(!t){console.log('Toast:',msg);return;}t.textContent=msg;t.className='toast '+(ok?'toast-ok':'toast-err');t.style.display='block';setTimeout(()=>t.style.display='none',3500);}
+function toast(m,ok=true){const t=document.getElementById('toast');var msg=toastMessageForUser(m,ok);if(!t){console.log('Toast:',msg);return;}t.textContent=msg;t.className='toast '+(ok?'toast-ok':'toast-err');aurisSetDisplay(t,'block');setTimeout(()=>aurisSetDisplay(t,'none'),3500);}
 
 // Field voice capture and AI formatting for mobile reporting.
 var aurisVoiceRec=null;
