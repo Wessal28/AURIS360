@@ -1,0 +1,63 @@
+/* Generated from SWMS / Method Statements by scripts/extract-swms-styles.cjs. */
+/* Non-important declarations preserve register, briefing, verification, change and editor runtime state. */
+.auris-swms-s-005f6b0246{width:100%;min-width:1320px;border-collapse:collapse;font-size:12px}
+.auris-swms-s-0b2b1bb5c1{background:#fff;color:#0F766E;border-color:#fff}
+.auris-swms-s-1bebc9634a{min-height:96px}
+.auris-swms-s-25583169ff{min-height:72px}
+.auris-swms-s-42a6ced8b6{margin-bottom:14px}
+.auris-swms-s-4d5979ac8f{min-height:70px}
+.auris-swms-s-52ee95b95f{font-weight:900}
+.auris-swms-s-54ec8874e7{margin-bottom:14px;padding:0;overflow:hidden}
+.auris-swms-s-5c76c1c257{padding:8px;border-bottom:1px solid var(--border);min-width:130px;text-align:left}
+.auris-swms-s-642d87e696{min-height:56px}
+.auris-swms-s-69374f356a{display:flex;gap:6px}
+.auris-swms-s-69e801a47c{padding:12px;border-left:4px solid #0F766E}
+.auris-swms-s-6aa34d7432{display:none}
+.auris-swms-s-7299078644{font-size:12px;color:var(--text2)}
+.auris-swms-s-7434964a1a{min-height:66px}
+.auris-swms-s-760f9f7af3{font-size:11px;text-transform:uppercase;letter-spacing:.08em;opacity:.82;font-weight:800}
+.auris-swms-s-768f025ce3{background:rgba(255,255,255,.18);color:#fff;border-color:rgba(255,255,255,.35)}
+.auris-swms-s-7ab2dd0041{background:rgba(255,255,255,.18);color:#fff;border-color:rgba(255,255,255,.3)}
+.auris-swms-s-7da287dd9c{font-family:monospace;font-size:18px;font-weight:900}
+.auris-swms-s-7e38dbb596{flex:1;padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:12px}
+.auris-swms-s-88a8942883{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px}
+.auris-swms-s-921ca1c7b2{font-size:28px;font-weight:900;color:#0F766E}
+.auris-swms-s-923df182e7{background:#fff;color:#5B21B6;border-color:#fff;font-weight:800}
+.auris-swms-s-97a4fb8820{padding:12px;border-left:4px solid #EF9F27}
+.auris-swms-s-9941f762fe{background:#f8fafc}
+.auris-swms-s-9bad9a77c0{padding:10px 14px;background:#0F766E;color:#fff;display:flex;align-items:center;justify-content:space-between}
+.auris-swms-s-9c40389b4a{display:flex;gap:8px}
+.auris-swms-s-a8e092d4e4{padding:16px 22px;background:linear-gradient(135deg,#0F766E,#1D9E75);color:#fff;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.auris-swms-s-b96f8f679a{font-size:10px;color:var(--text2);font-weight:700;text-transform:uppercase}
+.auris-swms-s-bb25e2d645{padding:8px;border-bottom:1px solid var(--border);width:44px}
+.auris-swms-s-c1a6ae2812{font-family:monospace;min-width:0}
+.auris-swms-s-c44c709d0d{padding:8px;border-bottom:1px solid var(--border);min-width:240px;text-align:left}
+.auris-swms-s-c53ea1da23{margin-top:14px}
+.auris-swms-s-c9dc9b5648{display:flex;gap:8px;flex-wrap:wrap}
+.auris-swms-s-cb4fefaed8{padding:12px;border-left:4px solid #1D9E75}
+.auris-swms-s-d030eead6c{font-size:28px;font-weight:900;color:#EF9F27}
+.auris-swms-s-d45b0d7132{min-height:64px}
+.auris-swms-s-d7ac5269e9{margin-bottom:12px;padding:10px 14px;display:flex;gap:10px;align-items:center}
+.auris-swms-s-d9c39add3c{padding:0;overflow:hidden}
+.auris-swms-s-defaa7c614{padding:8px;border-bottom:1px solid var(--border);min-width:170px;text-align:left}
+.auris-swms-s-e2c857d54b{overflow:auto}
+.auris-swms-s-e5d11ce289{padding:8px;border-bottom:1px solid var(--border);min-width:105px;text-align:left}
+.auris-swms-s-e7d631169e{font-size:28px;font-weight:900;color:#1D9E75}
+.auris-swms-s-f18c5899bd{padding:8px;border-bottom:1px solid var(--border);min-width:160px;text-align:left}
+/* Preserve former inline precedence over existing ID selectors. */
+#swms-competency.auris-swms-s-7434964a1a{min-height:66px}
+#swms-emergency.auris-swms-s-1bebc9634a{min-height:96px}
+#swms-form3view.auris-swms-s-6aa34d7432{display:none}
+#swms-m3approved.auris-swms-s-e7d631169e{font-size:28px;font-weight:900;color:#1D9E75}
+#swms-m3review.auris-swms-s-d030eead6c{font-size:28px;font-weight:900;color:#EF9F27}
+#swms-m3total.auris-swms-s-921ca1c7b2{font-size:28px;font-weight:900;color:#0F766E}
+#swms-plant.auris-swms-s-1bebc9634a{min-height:96px}
+#swms-ppe.auris-swms-s-4d5979ac8f{min-height:70px}
+#swms-prestart.auris-swms-s-7434964a1a{min-height:66px}
+#swms-ptw-ref.auris-swms-s-c1a6ae2812{font-family:monospace;min-width:0}
+#swms-ra-ref.auris-swms-s-c1a6ae2812{font-family:monospace;min-width:0}
+#swms-ref.auris-swms-s-7da287dd9c{font-family:monospace;font-size:18px;font-weight:900}
+#swms-references.auris-swms-s-642d87e696{min-height:56px}
+#swms-review-triggers.auris-swms-s-d45b0d7132{min-height:64px}
+#swms-scope.auris-swms-s-25583169ff{min-height:72px}
+#swms-search.auris-swms-s-7e38dbb596{flex:1;padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:12px}
