@@ -37,6 +37,12 @@ test('phone typography is compact and the new layer is cache-busted', () => {
   assert.match(css, /#app \.page \.page-title/);
   assert.match(css, /#app #page-kpi \.kpi-x-title/);
   assert.match(css, /\[role="tab"\]/);
-  assert.match(html, /auris-mobile-responsive\.css\?v=20260816-2/);
+  assert.match(html, /auris-mobile-responsive\.css\?v=20260816-3/);
   assert.match(html, /auris-icon-system\.js\?v=20260816-1/);
+});
+
+test('dense operational tables have dedicated touch-scroll containers', () => {
+  assert.ok((html.match(/class="auris-mobile-table-scroll"/g) || []).length >= 5);
+  assert.match(css, /\.auris-mobile-table-scroll[\s\S]*overflow-x:\s*auto\s*!important/);
+  assert.match(css, /#page-esg \.card:has\(> table\.auris-esg-s-0ae64748d8\)/);
 });

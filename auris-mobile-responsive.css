@@ -24,6 +24,22 @@
     touch-action: pan-y !important;
   }
 
+  .auris-mobile-table-scroll,
+  #page-esg .card:has(> table.auris-esg-s-0ae64748d8) {
+    display: block !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    overflow-x: auto !important;
+    overflow-y: visible !important;
+    -webkit-overflow-scrolling: touch !important;
+    overscroll-behavior-x: contain !important;
+    touch-action: pan-x pan-y !important;
+  }
+
+  .auris-mobile-table-scroll > table {
+    margin-bottom: 0 !important;
+  }
+
   /* The drawer remains mounted so its closing transform can animate. */
   #mobile-modules-drawer {
     display: block !important;
